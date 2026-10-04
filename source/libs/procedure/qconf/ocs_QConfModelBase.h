@@ -161,6 +161,27 @@ namespace ocs {
        */
       [[nodiscard]] const std::vector<std::string> &get_filtered_names() const { return filtered_names_; }
 
+      /** @brief The node paths `-sstnode` and `-rsstnode` were asked for (CS-2820)
+       *
+       * Split from the comma separated argument and checked against the tree in
+       * the model, because a path that names no node has to be reported and only
+       * the model has an answer list. The view renders whatever is in here; a
+       * path that was not found renders nothing.
+       *
+       * @return the paths, in the order they were given
+       */
+      [[nodiscard]] const std::vector<std::string> &get_sharetree_paths() const { return sharetree_paths_; }
+
+      /** @brief The root of the fetched share tree, mutable (CS-2820)
+       *
+       * `show_sharetree_path()` takes a non const node, because the CULL search it
+       * uses is not const correct. Exposing just the root rather than the whole
+       * list keeps that need where it belongs instead of widening the model.
+       *
+       * @return the root node, or nullptr when no tree was fetched
+       */
+      [[nodiscard]] lListElem *get_sharetree_root() const { return lFirstRW(object_list_); }
+
       /** @brief The queue references the operation was asked about (CS-2818)
        *
        * Parsed here because the filter is built from them, and kept so that the
@@ -224,6 +245,7 @@ namespace ocs {
       std::vector<CQueueOutput> cqueue_output_;   ///< filled by the cluster queue sub-procedure only
       std::string sick_report_;                  ///< filled by the -sds sub-procedure only
       std::vector<std::string> filtered_names_;  ///< filled by the -sobjl sub-procedure only
+      std::vector<std::string> sharetree_paths_; ///< filled by the -sstnode/-rsstnode sub-procedure only
 
    public:
       static const qconf_read_entry *resolve(const char *switch_name);
@@ -250,6 +272,7 @@ namespace ocs {
       bool make_sobjl_snapshot(lList **answer_list, QConfParameter &parameter);
       bool make_eventclient_snapshot(lList **answer_list, QConfParameter &parameter);
       bool make_processor_snapshot(lList **answer_list);
+      bool make_sharetree_snapshot(lList **answer_list, QConfParameter &parameter);
       bool collect_exechost_matches(lList **answer_list, const char *attr, const char *val);
       bool collect_cqueue_matches(lList **answer_list, const char *spec, const char *attr, const char *val);
 

@@ -31,6 +31,7 @@
 #include "sgeobj/sge_hgroup.h"
 #include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_qref.h"
+#include "sgeobj/sge_sharetree.h"
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_href.h"
 #include "sgeobj/sge_centry.h"
@@ -778,6 +779,88 @@ ocs::QConfModelBase::make_sobjl_snapshot(lList **answer_list, QConfParameter &pa
  * @param answer_list used to return error messages
  * @return true unless the queues could not be read
  */
+/** @brief Fetch the share tree, and check the node paths that were asked for (CS-2820)
+ *
+ * Serves `-sst`, `-bonsai`, `-sstnode` and `-rsstnode`. The tree is a singleton,
+ * so the whole object is read and the root is its first element.
+ *
+ * For the two node path switches the comma separated argument is split here and
+ * every path is checked against the tree, because a path that names no node has
+ * to be reported and the view is handed no answer list. The report is an ERROR
+ * answer and the function still returns **true**: the paths that do exist have
+ * to be rendered all the same, which is what the hand written switch did. Only a
+ * read that failed outright returns false.
+ *
+ * A cluster without a share tree keeps its old answer: the "no share tree"
+ * message and nothing else.
+ *
+ * @param answer_list used to return error messages
+ * @param parameter the invocation, consulted for the node paths
+ * @return true unless the share tree could not be read
+ */
+bool
+ocs::QConfModelBase::make_sharetree_snapshot(lList **answer_list, QConfParameter &parameter) {
+   DENTER(TOP_LAYER);
+
+   object_ = QConfObj::STN;
+   /* not consulted on a sub-procedure path, set for the reason given in
+    * make_eventclient_snapshot() */
+   kind_ = QConfReadKind::SINGLE_OBJECT;
+   desc_ = &qconf_desc(object_);
+   key_nm_ = desc_->name_nm;
+
+   lEnumeration *what = lWhat("%T(ALL)", desc_->descr);
+   const bool ok = fetch(answer_list, desc_->target, nullptr, what);
+   lFreeWhat(&what);
+   if (!ok) {
+      DRETURN(false);
+   }
+
+   lListElem *root = lFirstRW(object_list_);
+   if (root == nullptr) {
+      answer_list_add_sprintf(answer_list, STATUS_EEXIST, ANSWER_QUALITY_ERROR,
+                              "%s", MSG_TREE_NOSHARETREE);
+      DRETURN(false);
+   }
+
+   if (parameter.get_sub_procedure_name() != QConfParameter::SHARETREE_NODES) {
+      DRETURN(true);
+   }
+
+   const char *paths = parameter.get_operation().arg(0);
+   if (paths == nullptr) {
+      answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
+                              "%s", MSG_PARSE_NOOPTIONARGUMENT);
+      DRETURN(false);
+   }
+
+   /* the same split the hand written switch used, so an empty element between two
+    * commas is skipped rather than reported as a missing node */
+   lList *path_list = nullptr;
+   lString2List(paths, &path_list, STN_Type, STN_name, ", ");
+   for_each_ep_lv(path_elem, path_list) {
+      const char *path = lGetString(path_elem, STN_name);
+      if (path == nullptr) {
+         continue;
+      }
+      sharetree_paths_.emplace_back(path);
+
+      /* the same two spellings of the root the renderer accepts */
+      const bool is_root = (strcmp(path, "/") == 0) || (strcasecmp(path, "Root") == 0);
+      if (!is_root) {
+         ancestors_t ancestors{};
+         if (search_named_node_path(root, path, &ancestors) == nullptr) {
+            answer_list_add_sprintf(answer_list, STATUS_EEXIST, ANSWER_QUALITY_ERROR,
+                                    MSG_TREE_UNABLETOLACATEXINSHARETREE_S, path);
+         }
+         free_ancestors(&ancestors);
+      }
+   }
+   lFreeList(&path_list);
+
+   DRETURN(true);
+}
+
 /** @brief Fetch the execution hosts `qconf -sep` reports on (CS-2820)
  *
  * The same reduced field set and the same filter the hand written switch used:
@@ -1181,6 +1264,10 @@ ocs::QConfModelBase::make_snapshot(lList **answer_list, QConfParameter &paramete
    }
    if (parameter.get_sub_procedure_name() == QConfParameter::QUEUE_SICK) {
       DRETURN(make_sick_snapshot(answer_list));
+   }
+   if (parameter.get_sub_procedure_name() == QConfParameter::SHARETREE_TREE ||
+       parameter.get_sub_procedure_name() == QConfParameter::SHARETREE_NODES) {
+      DRETURN(make_sharetree_snapshot(answer_list, parameter));
    }
    if (parameter.get_sub_procedure_name() == QConfParameter::PROCESSOR_LIST) {
       DRETURN(make_processor_snapshot(answer_list));

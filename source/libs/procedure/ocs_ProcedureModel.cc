@@ -57,15 +57,18 @@ ocs::ProcedureModel::make_snapshot(lList **answer_list, ProcedureParameter &para
    *answer_list = gdi::Client::sge_gdi(gdi::Target::PROCEDURE, gdi::Command::GET_PROCEDURE, gdi::SubCommand::NONE,
                                        &request_and_response, nullptr, nullptr);
 
-   if (answer_list_has_error(answer_list)) {
-      lFreeList(&request_and_response);
-      DRETURN(false);
-   }
-
+   /* CS-2820: the response is kept even when the answer list carries an error.
+    * A procedure may legitimately render output *and* report a problem -
+    * "qconf -sstnode /,/nosuchnode" prints the node it found and reports the one
+    * it did not - and exec_procedure() in qmaster makes exactly that
+    * distinction: it skips the rendering only when the snapshot fails. Dropping
+    * the text here discarded half of what the server had decided to send. A read
+    * that really failed renders nothing, so its response is empty and the
+    * caller prints nothing extra. */
    procedure_response = request_and_response;
    request_and_response = nullptr;
 
-   DRETURN(true);
+   DRETURN(!answer_list_has_error(answer_list));
 }
 
 /** @brief Return the pre-rendered output text received from qmaster.

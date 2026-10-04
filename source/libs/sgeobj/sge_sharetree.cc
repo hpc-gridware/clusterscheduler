@@ -162,8 +162,12 @@ int level
  * @param path the path prefix the printed paths start with
  * @return 0 on success, 1 when `root` is nullptr or `path` names no node
  *
- * @note The "no such node" message is a diagnostic and stays on stderr; only
- *       the payload goes to @a os.
+ * @note It writes **no** diagnostic of its own. Until CS-2820 it printed "Unable
+ *       to locate <path> in sharetree" to stderr, which works in a client and
+ *       not in qmaster - there the line lands in the daemon's stderr and the
+ *       user is left with a silent failure, the same trap CS-2799 and CS-2819
+ *       hit. The return value is the whole signal now, and the caller turns it
+ *       into a message where it has an answer list to put one in.
  */
 int show_sharetree_path(
 std::ostream &os,
@@ -206,8 +210,6 @@ const char *path
       }
    }
    else {
-      fprintf(stderr, MSG_TREE_UNABLETOLACATEXINSHARETREE_S, path);
-      fprintf(stderr, "\n");
       sge_dstring_free(&sb);
       DRETURN(1);
    }

@@ -100,6 +100,9 @@
 #include "qconf/ocs_QConfController.h"
 #include "qconf/table/ocs_QConfTableController.h"
 #include "qconf/table/ocs_QConfTableView.h"
+#include "qconf/sharetree/ocs_QConfShareTreeNodesController.h"
+#include "qconf/sharetree/ocs_QConfShareTreeTreeController.h"
+#include "qconf/sharetree/ocs_QConfShareTreeView.h"
 #include "qconf/processors/ocs_QConfProcessorController.h"
 #include "qconf/processors/ocs_QConfProcessorView.h"
 #include "qconf/eventclient/ocs_QConfEventClientController.h"
@@ -1308,11 +1311,15 @@ qconf_dispatch_procedure(std::ostream &os, ocs::QConfParameterClient &param, lLi
    if (param.get_exec_context() == ocs::ProcedureParameter::ExecContext::SERVER) {
       ocs::ProcedureModel model;
       ok = model.make_snapshot(alpp, param);
-      if (ok) {
-         ocs::ProcedureView view(param);
-         ocs::ProcedureController controller(os);
-         controller.process_request(param, model, view);
-      }
+
+      /* Rendered unconditionally since CS-2820: whatever qmaster produced is
+       * printed even when it also reported a problem, because a procedure may
+       * mean both - see the note in ProcedureModel::make_snapshot(). A read that
+       * failed produced no text, so this prints nothing for it, and the caller
+       * still sees "ok" as false and reports the error as before. */
+      ocs::ProcedureView view(param);
+      ocs::ProcedureController controller(os);
+      controller.process_request(param, model, view);
    } else {
       ocs::QConfModelClient model;
       ok = model.make_snapshot(alpp, param);
@@ -1350,6 +1357,14 @@ qconf_dispatch_procedure(std::ostream &os, ocs::QConfParameterClient &param, lLi
          } else if (sub == ocs::QConfParameter::PROCESSOR_LIST) {
             ocs::QConfProcessorView view(param);
             ocs::QConfProcessorController controller(os);
+            controller.process_request(param, model, view);
+         } else if (sub == ocs::QConfParameter::SHARETREE_TREE) {
+            ocs::QConfShareTreeView view(param);
+            ocs::QConfShareTreeTreeController controller(os);
+            controller.process_request(param, model, view);
+         } else if (sub == ocs::QConfParameter::SHARETREE_NODES) {
+            ocs::QConfShareTreeView view(param);
+            ocs::QConfShareTreeNodesController controller(os);
             controller.process_request(param, model, view);
          } else if (sub == ocs::QConfParameter::OBJECT_FILTER) {
             ocs::QConfObjectFilterView view(param);
@@ -5270,51 +5285,27 @@ int sge_parse_qconf(char *argv[]) {
       /* "-sstnode node_path[,...]"  show sharetree node */
 
       if (strcmp("-sstnode", *spp) == 0) {
-         int found = 0;
+         lList *answer_list = nullptr;
+         qconf_op op;
 
+         op.token = "-sstnode";
          spp = sge_parser_get_next(spp);
+         op.args.emplace_back(*spp);
 
-         /* get the sharetree .. */
-         what = lWhat("%T(ALL)", STN_Type);
-         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::STN_LIST, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, &lp, nullptr, what);
-         lFreeWhat(&what);
+         /* CS-2820: a sub-procedure. The paths are taken apart in the model,
+          * because a path that names no node has to be reported and the view is
+          * handed no answer list - the renderer used to write that line to its
+          * own stderr, which is nowhere once it runs in qmaster. */
+         param.set_operation(op);
+         param.set_sub_procedure_name(ocs::QConfParameter::SHARETREE_NODES);
+         const bool ok = qconf_dispatch_procedure(os, param, &answer_list);
+         param.set_sub_procedure_name("");
 
-         aep = lFirst(alp);
-         answer_exit_if_not_recoverable(aep);
-         if (answer_get_status(aep) != STATUS_OK) {
-            fprintf(stderr, "%s\n", lGetString(aep, AN_text));
-            spp++;
-            continue;
+         sge_parse_return |= show_answer(answer_list);
+         if (!ok) {
+            sge_parse_return = 1;
          }
-         lFreeList(&alp);
-
-         ep = lFirstRW(lp);
-         if (!ep) {
-            fprintf(stderr, "%s\n", MSG_TREE_NOSHARETREE);
-            spp++;
-            continue;
-         }
-
-         lString2List(*spp, &arglp, STN_Type, STN_name, ", ");
-
-         for_each_rw_lv (argep, arglp) {
-            const char *nodepath = lGetString(argep, STN_name);
-
-            if (nodepath) {
-               /* CS-2850: accumulate, do not assign. An assignment lets the last
-                * path overwrite the verdict of every earlier one, so
-                * "-sstnode /nosuchnode,/" exited zero while "/,/nosuchnode"
-                * exited one - the same defect CS-2800 fixed in -rsstnode. */
-               found |= show_sharetree_path(os, ep, nodepath);
-            }
-         }
-
-         if (found != 0) {
-            DRETURN(1);
-         }
-
-         lFreeList(&arglp);
-         lFreeList(&lp);
+         lFreeList(&answer_list);
          spp++;
          continue;
       }
@@ -5324,51 +5315,27 @@ int sge_parse_qconf(char *argv[]) {
       /* "-rsstnode node_path[,...]"  show sharetree node */
 
       if (strcmp("-rsstnode", *spp) == 0) {
-         int found = 0;
+         lList *answer_list = nullptr;
+         qconf_op op;
 
+         op.token = "-rsstnode";
          spp = sge_parser_get_next(spp);
+         op.args.emplace_back(*spp);
 
-         /* get the sharetree .. */
-         what = lWhat("%T(ALL)", STN_Type);
-         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::STN_LIST, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, &lp, nullptr, what);
-         lFreeWhat(&what);
+         /* CS-2820: a sub-procedure. The paths are taken apart in the model,
+          * because a path that names no node has to be reported and the view is
+          * handed no answer list - the renderer used to write that line to its
+          * own stderr, which is nowhere once it runs in qmaster. */
+         param.set_operation(op);
+         param.set_sub_procedure_name(ocs::QConfParameter::SHARETREE_NODES);
+         const bool ok = qconf_dispatch_procedure(os, param, &answer_list);
+         param.set_sub_procedure_name("");
 
-         aep = lFirst(alp);
-         answer_exit_if_not_recoverable(aep);
-         if (answer_get_status(aep) != STATUS_OK) {
-            fprintf(stderr, "%s\n", lGetString(aep, AN_text));
-            spp++;
-            continue;
+         sge_parse_return |= show_answer(answer_list);
+         if (!ok) {
+            sge_parse_return = 1;
          }
-         lFreeList(&alp);
-
-         ep = lFirstRW(lp);
-         if (!ep) {
-            fprintf(stderr, "%s\n", MSG_TREE_NOSHARETREE);
-            spp++;
-            continue;
-         }
-
-         lString2List(*spp, &arglp, STN_Type, STN_name, ", ");
-
-         for_each_rw_lv(argep, arglp) {
-            const char *nodepath = nullptr;
-            nodepath = lGetString(argep, STN_name);
-            if (nodepath) {
-               /* CS-2800: the result decides the exit code. It used to be discarded,
-                * leaving "found" at 0, so the branch below fired on success whenever
-                * -rsstnode was the last option and never fired when one followed.
-                * Accumulate so that a failure on any of several paths is reported. */
-               found |= show_sharetree_path(os, ep, nodepath);
-            }
-         }
-
-         if (found != 0) {
-            DRETURN(1);
-         }
-
-         lFreeList(&arglp);
-         lFreeList(&lp);
+         lFreeList(&answer_list);
          spp++;
          continue;
       }
@@ -5379,33 +5346,23 @@ int sge_parse_qconf(char *argv[]) {
          we keep this switch  for compatibility reasons */
 
       if (strcmp("-bonsai", *spp) == 0) {
-         /* get the sharetree .. */
-         what = lWhat("%T(ALL)", STN_Type);
-         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::STN_LIST, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, &lp, nullptr, what);
-         lFreeWhat(&what);
+         lList *answer_list = nullptr;
+         qconf_op op;
 
-         aep = lFirst(alp);
-         answer_exit_if_not_recoverable(aep);
-         if (answer_get_status(aep) != STATUS_OK) {
-            fprintf(stderr, "%s\n", lGetString(aep, AN_text));
-            spp++;
-            continue;
+         op.token = "-bonsai";
+
+         /* CS-2820: a sub-procedure. -bonsai is the undocumented older spelling of -sst and is kept for
+          * compatibility; both render the same tree through the same procedure. */
+         param.set_operation(op);
+         param.set_sub_procedure_name(ocs::QConfParameter::SHARETREE_TREE);
+         const bool ok = qconf_dispatch_procedure(os, param, &answer_list);
+         param.set_sub_procedure_name("");
+
+         sge_parse_return |= show_answer(answer_list);
+         if (!ok) {
+            sge_parse_return = 1;
          }
-         lFreeList(&alp);
-
-         ep = lFirstRW(lp);
-
-         /* CS-2800: -bonsai is an alias of -sst and has to report a missing share
-          * tree the same way. Without this it printed nothing at all. */
-         if (!ep) {
-            fprintf(stderr, "%s\n", MSG_TREE_NOSHARETREE);
-            spp++;
-            continue;
-         }
-
-         show_sharetree(os, ep, nullptr);
-
-         lFreeList(&lp);
+         lFreeList(&answer_list);
          spp++;
          continue;
       }
@@ -5414,31 +5371,23 @@ int sge_parse_qconf(char *argv[]) {
       /* "-sst" This is the documented switch of showing the share tree */
 
       if (strcmp("-sst", *spp) == 0) {
-         /* get the sharetree .. */
-         what = lWhat("%T(ALL)", STN_Type);
-         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::STN_LIST, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, &lp, nullptr, what);
-         lFreeWhat(&what);
+         lList *answer_list = nullptr;
+         qconf_op op;
 
-         aep = lFirst(alp);
-         answer_exit_if_not_recoverable(aep);
-         if (answer_get_status(aep) != STATUS_OK) {
-            fprintf(stderr, "%s\n", lGetString(aep, AN_text));
-            spp++;
-            continue;
+         op.token = "-sst";
+
+         /* CS-2820: a sub-procedure. the indented tree view. -sstree is a different switch: it renders
+          * the share tree as an object and has had JSON since CS-2313a. */
+         param.set_operation(op);
+         param.set_sub_procedure_name(ocs::QConfParameter::SHARETREE_TREE);
+         const bool ok = qconf_dispatch_procedure(os, param, &answer_list);
+         param.set_sub_procedure_name("");
+
+         sge_parse_return |= show_answer(answer_list);
+         if (!ok) {
+            sge_parse_return = 1;
          }
-         lFreeList(&alp);
-
-         ep = lFirstRW(lp);
-
-         if (!ep) {
-            fprintf(stderr, "%s\n", MSG_TREE_NOSHARETREE);
-            spp++;
-            continue;
-         } else {
-          show_sharetree(os, ep, nullptr);
-         }
-
-         lFreeList(&lp);
+         lFreeList(&answer_list);
          spp++;
          continue;
       }
