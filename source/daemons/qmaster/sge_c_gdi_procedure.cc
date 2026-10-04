@@ -39,6 +39,8 @@
 #include "procedure/qconf/table/ocs_QConfTableView.h"
 #include "procedure/qconf/objl/ocs_QConfObjectFilterController.h"
 #include "procedure/qconf/eventclient/ocs_QConfEventClientView.h"
+#include "procedure/qconf/threadpool/ocs_QConfThreadPoolController.h"
+#include "procedure/qconf/threadpool/ocs_QConfThreadPoolView.h"
 #include "procedure/qconf/sharetree/ocs_QConfShareTreeNodesController.h"
 #include "procedure/qconf/sharetree/ocs_QConfShareTreeTreeController.h"
 #include "procedure/qconf/sharetree/ocs_QConfShareTreeView.h"
@@ -378,6 +380,27 @@ namespace {
       }
    };
 
+   /** @brief `qconf -stl`: the qmaster thread pools. One view for all three
+    * factories - it picks the table or the JSON array itself. */
+   struct QConfThreadPoolTraits {
+      using Parameter = ocs::QConfParameter;
+      using Model = ocs::QConfModelServer;
+      using ViewBase = ocs::QConfThreadPoolView;
+      using Controller = ocs::QConfThreadPoolController;
+
+      static constexpr ProgName prog_number = QCONF;
+
+      static std::unique_ptr<ViewBase> make_xml_view(const Parameter &parameter) {
+         return std::make_unique<ViewBase>(parameter);
+      }
+      static std::unique_ptr<ViewBase> make_plain_view(const Parameter &parameter) {
+         return std::make_unique<ViewBase>(parameter);
+      }
+      static std::unique_ptr<ViewBase> make_json_view(const Parameter &parameter) {
+         return std::make_unique<ViewBase>(parameter);
+      }
+   };
+
    /** @brief `qconf -sst` and `-bonsai`: the indented share tree view. */
    struct QConfShareTreeTreeTraits {
       using Parameter = ocs::QConfParameter;
@@ -654,6 +677,7 @@ namespace {
       {to_string_view(QCONF), ocs::QConfParameter::OBJECT_FILTER, &run_procedure<QConfObjectFilterTraits>},
       {to_string_view(QCONF), ocs::QConfParameter::EVENT_CLIENT_LIST, &run_procedure<QConfEventClientTraits>},
       {to_string_view(QCONF), ocs::QConfParameter::PROCESSOR_LIST, &run_procedure<QConfProcessorTraits>},
+      {to_string_view(QCONF), ocs::QConfParameter::THREAD_POOL_LIST, &run_procedure<QConfThreadPoolTraits>},
       {to_string_view(QCONF), ocs::QConfParameter::SHARETREE_TREE, &run_procedure<QConfShareTreeTreeTraits>},
       {to_string_view(QCONF), ocs::QConfParameter::SHARETREE_NODES, &run_procedure<QConfShareTreeNodesTraits>},
       {to_string_view(QCONF), ocs::QConfParameter::CQUEUE_SHOW, &run_procedure<QConfCQueueShowTraits>},

@@ -257,6 +257,19 @@ namespace ocs {
       static lCondition *get_object_where(const lDescr *descr, int key_nm, const char *name);
       static lCondition *get_names_where(const lDescr *descr, int key_nm, const qconf_op &op);
 
+      /** @brief Fetch the qmaster thread pools (CS-2820)
+       *
+       * Its own fetch because the thread pools are not a data store object: they
+       * are the running daemon's own state, produced by `get_active_thread_list()`
+       * in `daemons/qmaster`. A library cannot call into a daemon, so the server
+       * side reaches it through a provider the daemon registers at startup,
+       * while the client side asks over GDI as it always has.
+       *
+       * @param answer_list used to return error messages
+       * @return true on success
+       */
+      virtual bool fetch_thread_pools(lList **answer_list) = 0;
+
       virtual bool fetch_centries(lList **answer_list) = 0;
 
       virtual bool fetch_hgroups(lList **answer_list) = 0;
@@ -273,6 +286,7 @@ namespace ocs {
       bool make_eventclient_snapshot(lList **answer_list, QConfParameter &parameter);
       bool make_processor_snapshot(lList **answer_list);
       bool make_sharetree_snapshot(lList **answer_list, QConfParameter &parameter);
+      bool make_threadpool_snapshot(lList **answer_list);
       bool collect_exechost_matches(lList **answer_list, const char *attr, const char *val);
       bool collect_cqueue_matches(lList **answer_list, const char *spec, const char *attr, const char *val);
 

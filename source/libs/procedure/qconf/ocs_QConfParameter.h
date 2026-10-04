@@ -149,6 +149,7 @@ namespace ocs {
       static constexpr auto OBJECT_FILTER = "object-filter";        ///< `qconf -sobjl`
       static constexpr auto EVENT_CLIENT_LIST = "event-clients";    ///< `qconf -secl`
       static constexpr auto PROCESSOR_LIST = "processors";          ///< `qconf -sep`
+      static constexpr auto THREAD_POOL_LIST = "thread-pools";      ///< `qconf -stl`
       static constexpr auto SHARETREE_TREE = "sharetree-tree";      ///< `qconf -sst`, `-bonsai`
       static constexpr auto SHARETREE_NODES = "sharetree-nodes";    ///< `qconf -sstnode`, `-rsstnode`
 

@@ -138,6 +138,41 @@ ocs::QConfModelServer::fetch(lList **answer_list, gdi::Target target,
    DRETURN(true);
 }
 
+namespace {
+   /** @brief The provider qmaster registered, nullptr until it does */
+   ocs::qconf_thread_pool_provider thread_pool_provider = nullptr;
+}
+
+void
+ocs::qconf_set_thread_pool_provider(ocs::qconf_thread_pool_provider provider) {
+   thread_pool_provider = provider;
+}
+
+/** @brief Build the thread pool list through the provider qmaster registered (CS-2820)
+ *
+ * Unlike every other read of this model there is no data store behind it: the
+ * thread pools are the daemon's own state. An unset provider is an internal
+ * error, not a user error - it means qmaster started without wiring itself up -
+ * and it is reported the same way the missing master list in fetch() is, without
+ * a catalogue entry.
+ *
+ * @param answer_list used to return error messages
+ * @return true on success
+ */
+bool
+ocs::QConfModelServer::fetch_thread_pools(lList **answer_list) {
+   DENTER(TOP_LAYER);
+
+   if (thread_pool_provider == nullptr) {
+      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                              "no thread pool provider registered in " SFQ, __func__);
+      DRETURN(false);
+   }
+   object_list_ = thread_pool_provider();
+
+   DRETURN(true);
+}
+
 /**
  * @brief Take the complex entries from qmaster's own list
  *

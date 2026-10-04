@@ -91,6 +91,30 @@ ocs::QConfModelClient::fetch_hgroups(lList **answer_list) {
    DRETURN(!failed);
 }
 
+/** @brief Ask qmaster for its thread pools over GDI (CS-2820)
+ *
+ * The target has no master list and no `lWhat`: qmaster answers a GET on
+ * `DUMMY_LIST` by building the list from its own thread state.
+ *
+ * @param answer_list used to return error messages
+ * @return true on success
+ */
+bool
+ocs::QConfModelClient::fetch_thread_pools(lList **answer_list) {
+   DENTER(TOP_LAYER);
+
+   lList *alp = gdi::Client::sge_gdi(gdi::Target::DUMMY_LIST, gdi::Command::GET,
+                                     gdi::SubCommand::NONE, &object_list_, nullptr, nullptr);
+   const bool failed = answer_list_has_error(&alp);
+   if (failed) {
+      answer_list_append_list(answer_list, &alp);
+      lFreeList(&object_list_);
+   }
+   lFreeList(&alp);
+
+   DRETURN(!failed);
+}
+
 /**
  * @brief Ask qmaster for the complex entries
  *

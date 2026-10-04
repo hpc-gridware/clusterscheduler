@@ -29,6 +29,25 @@
 #include "ocs_QConfModelBase.h"
 
 namespace ocs {
+   /** @brief What produces the qmaster thread pool list
+    *
+    * The thread pools are the running daemon's own state, so the function that
+    * builds the list lives in `daemons/qmaster`. A library must not call into a
+    * daemon, so qmaster hands it in at startup and the server side model calls
+    * back through this (CS-2820). It is the only read of the whole qconf set
+    * whose data is not a configuration object - which is also why RBAC output
+    * reduction has nothing to do here: there is no object and no owner, only the
+    * question whether a caller may see the daemon's thread configuration at all.
+    *
+    * @return a newly created ST_Type list the caller owns
+    */
+   using qconf_thread_pool_provider = lList *(*)();
+
+   /** @brief Tell the server side model how to reach the thread pools
+    * @param provider the function qmaster offers, or nullptr to clear it
+    */
+   void qconf_set_thread_pool_provider(qconf_thread_pool_provider provider);
+
    /** @brief The server side model: read qmaster's own lists
     * @ingroup libprocedure
     */
@@ -43,6 +62,7 @@ namespace ocs {
    protected:
       bool fetch(lList **answer_list, gdi::Target target,
                  lCondition *where, lEnumeration *what) override;
+      bool fetch_thread_pools(lList **answer_list) override;
       bool fetch_centries(lList **answer_list) override;
       bool fetch_hgroups(lList **answer_list) override;
 

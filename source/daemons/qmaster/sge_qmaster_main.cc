@@ -78,6 +78,8 @@
 #include "sge_thread_worker.h"
 #include "sge_thread_reader.h"
 #include "sge_thread_event_master.h"
+#include "procedure/qconf/ocs_QConfModelServer.h"
+
 #include "sge_thread_utility.h"
 #include "setup_qmaster.h"
 #include "qmaster_heartbeat.h"
@@ -288,6 +290,12 @@ int main(int argc, char *argv[]) {
    sge_event_master_init();
 
    sge_setup_qmaster(argv);
+
+   /* CS-2820: "qconf -stl" runs as a stored procedure, and its data is this
+    * daemon's own thread state rather than a data store object. A library must
+    * not call into a daemon, so the function that builds the list is handed to
+    * the procedure model here, before any worker can answer a request. */
+   ocs::qconf_set_thread_pool_provider(get_active_thread_list);
 
    /*
     * Setup all threads and initialize corresponding modules.

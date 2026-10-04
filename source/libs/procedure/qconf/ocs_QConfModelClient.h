@@ -33,6 +33,7 @@ namespace ocs {
    protected:
       bool fetch(lList **answer_list, gdi::Target target,
                  lCondition *where, lEnumeration *what) override;
+      bool fetch_thread_pools(lList **answer_list) override;
       bool fetch_centries(lList **answer_list) override;
       bool fetch_hgroups(lList **answer_list) override;
    public:

@@ -100,6 +100,8 @@
 #include "qconf/ocs_QConfController.h"
 #include "qconf/table/ocs_QConfTableController.h"
 #include "qconf/table/ocs_QConfTableView.h"
+#include "qconf/threadpool/ocs_QConfThreadPoolController.h"
+#include "qconf/threadpool/ocs_QConfThreadPoolView.h"
 #include "qconf/sharetree/ocs_QConfShareTreeNodesController.h"
 #include "qconf/sharetree/ocs_QConfShareTreeTreeController.h"
 #include "qconf/sharetree/ocs_QConfShareTreeView.h"
@@ -139,7 +141,6 @@ static int sge_next_is_an_opt(char **ptr);
 static int sge_error_and_exit(const char *ptr);
 
 /* ------------------------------------------------------------- */
-static int show_thread_list(std::ostream &os);
 
 /* ------------------------------------------------------------- */
 static void parse_name_list_to_cull(const char *name, lList **lpp, lDescr *dp, int nm, char *s);
@@ -1357,6 +1358,10 @@ qconf_dispatch_procedure(std::ostream &os, ocs::QConfParameterClient &param, lLi
          } else if (sub == ocs::QConfParameter::PROCESSOR_LIST) {
             ocs::QConfProcessorView view(param);
             ocs::QConfProcessorController controller(os);
+            controller.process_request(param, model, view);
+         } else if (sub == ocs::QConfParameter::THREAD_POOL_LIST) {
+            ocs::QConfThreadPoolView view(param);
+            ocs::QConfThreadPoolController controller(os);
             controller.process_request(param, model, view);
          } else if (sub == ocs::QConfParameter::SHARETREE_TREE) {
             ocs::QConfShareTreeView view(param);
@@ -5239,11 +5244,26 @@ int sge_parse_qconf(char *argv[]) {
 /*----------------------------------------------------------------------------*/
       /* "-stl " */
       if (strcmp("-stl", *spp) == 0) {
-         /* show_thread_list() returns 0 on success and -1 on error (not a bool),
-          * so compare against 0 - a plain !ret would flag success as an error */
-         if (show_thread_list(os) != 0) {
+         lList *answer_list = nullptr;
+         qconf_op op;
+
+         op.token = "-stl";
+
+         /* CS-2820: a sub-procedure, and the one read of the set whose data is
+          * not a configuration object - the thread pools are qmaster's own
+          * state. The server side model reaches them through a provider the
+          * daemon registers at startup, because a library must not call into a
+          * daemon. */
+         param.set_operation(op);
+         param.set_sub_procedure_name(ocs::QConfParameter::THREAD_POOL_LIST);
+         const bool ok = qconf_dispatch_procedure(os, param, &answer_list);
+         param.set_sub_procedure_name("");
+
+         if (!ok) {
+            answer_list_output(&answer_list);
             sge_parse_return = 1;
          }
+         lFreeList(&answer_list);
          spp++;
          continue;
       }
@@ -6816,53 +6836,6 @@ static lListElem *edit_sharetree(lListElem *ep, uid_t uid, gid_t gid) {
 
 
 
-/**
- * @brief Print the qmaster thread pools and their sizes, the `-sts` switch
- *
- * @param os the stream the table is written to (CS-1841)
- * @return 0 on success, 1 when qmaster answered with an error
- */
-static int
-show_thread_list(std::ostream &os) {
-   DENTER(TOP_LAYER);
-
-   // send the request
-   lList *lp = nullptr;
-   lList *alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::DUMMY_LIST, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, &lp, nullptr, nullptr);
-
-   // check the answer
-   const lListElem *ep1 = lFirstRW(alp);
-   answer_exit_if_not_recoverable(ep1);
-   if (answer_get_status(ep1) != STATUS_OK) {
-      fprintf(stderr, "%s\n", lGetString(ep1, AN_text));
-      fprintf(stderr, "\n");
-      DRETURN(-1);
-   }
-
-   if (qconf_opt_format == SP_FORM_JSON) {
-      /* CS-2313a: render the thread pools as a JSON array of { pool, size } objects */
-      static spooling_field st_fields[] = {
-         { ST_name, 0, "pool", false, nullptr, false, nullptr, nullptr, nullptr },
-         { ST_id,   0, "size", false, nullptr, false, nullptr, nullptr, nullptr },
-         { NoName,  0, nullptr, false, nullptr, false, nullptr, nullptr, nullptr }
-      };
-      dstring out = DSTRING_INIT;
-      spool_json_write_typed_list(&alp, lp, st_fields, "thread_pools", &out);
-      os << qconf_cstr(sge_dstring_get_string(&out));
-      sge_dstring_free(&out);
-   } else if (lp != nullptr && lGetNumberOfElem(lp) > 0) {
-      os << std::format("{:<15} {}\n", MSG_TABLE_EV_POOL, MSG_TABLE_SIZE);
-      os << "--------------------\n";
-      for_each_ep_lv(ep, lp) {
-         os << std::format("{:<15} {}\n", qconf_cstr(lGetString(ep, ST_name)), lGetUlong(ep, ST_id));
-      }
-   }
-   lFreeList(&alp);
-   lFreeList(&lp);
-
-
-   DRETURN(0);
-}
 
 
 

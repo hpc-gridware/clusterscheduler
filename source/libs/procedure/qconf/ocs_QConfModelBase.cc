@@ -762,23 +762,41 @@ ocs::QConfModelBase::make_sobjl_snapshot(lList **answer_list, QConfParameter &pa
    DRETURN(true);
 }
 
-/** @brief Run the sick check over every cluster queue (CS-2819)
+/** @brief Fetch the qmaster thread pools for `qconf -stl` (CS-2820)
  *
- * `qconf -sds` reports queues whose configuration is accepted but cannot take
- * effect - most often an attribute overridden for a host or host group the queue
- * does not actually contain, so the override reads as if it applied.
+ * The only read of this model whose data is not a configuration object: the
+ * pools are the running daemon's own state. Both contexts therefore go through
+ * fetch_thread_pools() rather than through fetch(), which reads the data store.
  *
- * The report is built here rather than in the view for the same reason the
- * cluster queue references are resolved here: this is where the answer list is,
- * and a report that is not empty has always set a non-zero exit status as well as
- * being printed. That status travels in an ANSWER_QUALITY_END answer, which
- * show_answer() counts without printing - the mechanism -shgrp_why introduced in
- * CS-2816. Output and a status together is exactly what this switch means, unlike
- * a reference that matched nothing, which is an error and prints nothing.
+ * An empty answer is left as an empty list and not reported: the hand written
+ * switch printed nothing at all in that case, header included, and said nothing
+ * about it.
  *
  * @param answer_list used to return error messages
- * @return true unless the queues could not be read
+ * @return true on success
  */
+bool
+ocs::QConfModelBase::make_threadpool_snapshot(lList **answer_list) {
+   DENTER(TOP_LAYER);
+
+   /* there is no descriptor row for the thread pools, and nothing downstream
+    * consults these on a sub-procedure path - they are set so that no field is
+    * left over from a previous call, the way make_eventclient_snapshot() does */
+   object_ = QConfObj::EV;
+   kind_ = QConfReadKind::NAME_LIST;
+   desc_ = &qconf_desc(object_);
+   key_nm_ = desc_->name_nm;
+
+   if (!fetch_thread_pools(answer_list)) {
+      DRETURN(false);
+   }
+   if (object_list_ == nullptr) {
+      object_list_ = lCreateList("", ST_Type);
+   }
+
+   DRETURN(true);
+}
+
 /** @brief Fetch the share tree, and check the node paths that were asked for (CS-2820)
  *
  * Serves `-sst`, `-bonsai`, `-sstnode` and `-rsstnode`. The tree is a singleton,
@@ -962,6 +980,23 @@ ocs::QConfModelBase::make_eventclient_snapshot(lList **answer_list, QConfParamet
    DRETURN(true);
 }
 
+/** @brief Run the sick check over every cluster queue (CS-2819)
+ *
+ * `qconf -sds` reports queues whose configuration is accepted but cannot take
+ * effect - most often an attribute overridden for a host or host group the queue
+ * does not actually contain, so the override reads as if it applied.
+ *
+ * The report is built here rather than in the view for the same reason the
+ * cluster queue references are resolved here: this is where the answer list is,
+ * and a report that is not empty has always set a non-zero exit status as well as
+ * being printed. That status travels in an ANSWER_QUALITY_END answer, which
+ * show_answer() counts without printing - the mechanism -shgrp_why introduced in
+ * CS-2816. Output and a status together is exactly what this switch means, unlike
+ * a reference that matched nothing, which is an error and prints nothing.
+ *
+ * @param answer_list used to return error messages
+ * @return true unless the queues could not be read
+ */
 bool
 ocs::QConfModelBase::make_sick_snapshot(lList **answer_list) {
    DENTER(TOP_LAYER);
@@ -1264,6 +1299,9 @@ ocs::QConfModelBase::make_snapshot(lList **answer_list, QConfParameter &paramete
    }
    if (parameter.get_sub_procedure_name() == QConfParameter::QUEUE_SICK) {
       DRETURN(make_sick_snapshot(answer_list));
+   }
+   if (parameter.get_sub_procedure_name() == QConfParameter::THREAD_POOL_LIST) {
+      DRETURN(make_threadpool_snapshot(answer_list));
    }
    if (parameter.get_sub_procedure_name() == QConfParameter::SHARETREE_TREE ||
        parameter.get_sub_procedure_name() == QConfParameter::SHARETREE_NODES) {
