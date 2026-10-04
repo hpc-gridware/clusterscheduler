@@ -108,6 +108,15 @@ ocs::QConfViewBase::show_object(std::ostream &os, const lListElem *ep,
       (output_format_ == ProcedureParameter::OutputFormat::JSON) ? SP_FORM_JSON
                                                                       : SP_FORM_ASCII;
 
+   /* CS-2820: the configuration prefixes its object with a "#<name>:" comment so
+    * that the blocks of "-sconf host1,host2" can be told apart. It is a comment,
+    * so it has no place in JSON - which is what CS-2313a decided when the JSON
+    * form was built. */
+   if (desc.read.name_header && format != SP_FORM_JSON) {
+      const char *name = (desc.name_nm != NoName) ? lGetHost(ep, desc.name_nm) : nullptr;
+      os << "#" << ((name != nullptr) ? name : "") << ":\n";
+   }
+
    const qconf_build_fields_fn provider =
       (desc.read.fields != nullptr) ? desc.read.fields : desc.build_fields;
    bool owned = false;

@@ -39,6 +39,8 @@
 #include "procedure/qconf/table/ocs_QConfTableView.h"
 #include "procedure/qconf/objl/ocs_QConfObjectFilterController.h"
 #include "procedure/qconf/eventclient/ocs_QConfEventClientView.h"
+#include "procedure/qconf/processors/ocs_QConfProcessorController.h"
+#include "procedure/qconf/processors/ocs_QConfProcessorView.h"
 #include "procedure/qconf/eventclient/ocs_QConfEventClientController.h"
 #include "procedure/qconf/objl/ocs_QConfObjectFilterView.h"
 #include "procedure/qconf/sick/ocs_QConfSickController.h"
@@ -351,6 +353,28 @@ namespace {
       }
    };
 
+   /** @brief `qconf -sep`: the processor table. One view for all three factories -
+    * the switch never looked at the output format and still does not, which the
+    * check pins; a JSON form is CS-2845. */
+   struct QConfProcessorTraits {
+      using Parameter = ocs::QConfParameter;
+      using Model = ocs::QConfModelServer;
+      using ViewBase = ocs::QConfProcessorView;
+      using Controller = ocs::QConfProcessorController;
+
+      static constexpr ProgName prog_number = QCONF;
+
+      static std::unique_ptr<ViewBase> make_xml_view(const Parameter &parameter) {
+         return std::make_unique<ViewBase>(parameter);
+      }
+      static std::unique_ptr<ViewBase> make_plain_view(const Parameter &parameter) {
+         return std::make_unique<ViewBase>(parameter);
+      }
+      static std::unique_ptr<ViewBase> make_json_view(const Parameter &parameter) {
+         return std::make_unique<ViewBase>(parameter);
+      }
+   };
+
    struct QQuotaTraits {
       using Parameter = ocs::QQuotaParameter;
       using Model = ocs::QQuotaModelServer;
@@ -584,6 +608,7 @@ namespace {
       {to_string_view(QCONF), ocs::QConfParameter::QUEUE_SICK, &run_procedure<QConfSickTraits>},
       {to_string_view(QCONF), ocs::QConfParameter::OBJECT_FILTER, &run_procedure<QConfObjectFilterTraits>},
       {to_string_view(QCONF), ocs::QConfParameter::EVENT_CLIENT_LIST, &run_procedure<QConfEventClientTraits>},
+      {to_string_view(QCONF), ocs::QConfParameter::PROCESSOR_LIST, &run_procedure<QConfProcessorTraits>},
       {to_string_view(QCONF), ocs::QConfParameter::CQUEUE_SHOW, &run_procedure<QConfCQueueShowTraits>},
       {to_string_view(QHOST), "",  &run_procedure<QHostTraits>},
       {to_string_view(QQUOTA), "",  &run_procedure<QQuotaTraits>},

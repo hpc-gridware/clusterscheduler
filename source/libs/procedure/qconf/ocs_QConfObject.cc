@@ -231,10 +231,11 @@ static const qconf_object_desc qconf_object_table[] = {
     * of the two messages (CS-2808). */
    /* SC   */ { ocs::gdi::Target::SC_LIST,   SC_Type,   NoName,    qconf_fields_SC,   &qconf_comma_sfi,           "sched_conf", nullptr,             nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr,
               { .empty_msg = MSG_SCHEDCONF_CANTCREATESCHEDULERCONFIGURATION } },
-   /* CONF: read only (CS-2808). -sconf/-mconf keep their own code and never ask
-    * this table, so every write field is left empty on purpose. */
+   /* CONF: read only. -sconf reaches this row through qconf_show_object() since
+    * CS-2820; the write options of the same block keep their own code, so every
+    * write field is left empty on purpose. */
    /* CONF */ { ocs::gdi::Target::CONF_LIST, CONF_Type, CONF_name, qconf_fields_CONF, &qconf_sfi,                nullptr,      nullptr,             nullptr,           ocs::gdi::SubCommand::NONE,    false, false, false, nullptr,            nullptr,
-              { .list_name = "config" } },
+              { .list_name = "config", .not_found_msg = MSG_ANSWER_CONFIGXNOTDEFINED_S, .name_header = true } },
    /* EV: read only and name-list only (CS-2808). There is no field list because
     * EV_Type is not a registered object type and no -s<obj>/export path reaches
     * this row - show_name_list() renders the key field and nothing else. */

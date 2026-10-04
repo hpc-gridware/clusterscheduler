@@ -88,6 +88,9 @@ static const ocs::qconf_read_entry qconf_read_table[] = {
    {"-suser",  QConfObj::UU,   ocs::QConfReadKind::SINGLE_OBJECT},
    {"-sprj",   QConfObj::PR,   ocs::QConfReadKind::SINGLE_OBJECT},
    {"-sce",    QConfObj::CE,   ocs::QConfReadKind::SINGLE_OBJECT},
+   /* the configuration is keyed by host name and prefixes its object with a
+    * "#<host>:" comment, see read.name_header (CS-2820) */
+   {"-sconf",  QConfObj::CONF, ocs::QConfReadKind::SINGLE_OBJECT},
 
    /* group N: several named objects, or every one of them when no name is given.
     * -su demands at least one name, -srqs takes none and then shows all, and the
@@ -775,6 +778,50 @@ ocs::QConfModelBase::make_sobjl_snapshot(lList **answer_list, QConfParameter &pa
  * @param answer_list used to return error messages
  * @return true unless the queues could not be read
  */
+/** @brief Fetch the execution hosts `qconf -sep` reports on (CS-2820)
+ *
+ * The same reduced field set and the same filter the hand written switch used:
+ * only the name, the processor count and the load values are needed, and the
+ * pseudo hosts `global` and `template` are left out - they have no processors and
+ * the SUM row would be wrong if they were counted.
+ *
+ * An empty cluster is an error here rather than an empty table, because that is
+ * what the switch did: it wrote the diagnostic to stderr and no table at all.
+ *
+ * @param answer_list used to return error messages
+ * @return true on success; false with @p answer_list filled when nothing could be read
+ */
+bool
+ocs::QConfModelBase::make_processor_snapshot(lList **answer_list) {
+   DENTER(TOP_LAYER);
+
+   object_ = QConfObj::EH;
+   /* not consulted on a sub-procedure path, set for the reason given in
+    * make_eventclient_snapshot() */
+   kind_ = QConfReadKind::NAME_LIST;
+   desc_ = &qconf_desc(object_);
+   key_nm_ = desc_->name_nm;
+
+   lEnumeration *what = lWhat("%T(%I %I %I)", EH_Type, EH_name, EH_processors, EH_load_list);
+   lCondition *where = lWhere("%T(!(%Ic=%s || %Ic=%s))", EH_Type, EH_name,
+                              SGE_TEMPLATE_NAME, EH_name, SGE_GLOBAL_NAME);
+   const bool ok = fetch(answer_list, desc_->target, where, what);
+   lFreeWhat(&what);
+   lFreeWhere(&where);
+   if (!ok) {
+      DRETURN(false);
+   }
+
+   if (lGetNumberOfElem(object_list_) == 0) {
+      answer_list_add_sprintf(answer_list, STATUS_EEXIST, ANSWER_QUALITY_ERROR,
+                              "%s", MSG_QCONF_NOEXECUTIONHOSTSDEFINED);
+      DRETURN(false);
+   }
+   lPSortList(object_list_, "%I+", EH_name);
+
+   DRETURN(true);
+}
+
 /** @brief The snapshot of `qconf -secl` (CS-2820)
  *
  * Fetches the registered event clients with the three fields the switch shows
@@ -1134,6 +1181,9 @@ ocs::QConfModelBase::make_snapshot(lList **answer_list, QConfParameter &paramete
    }
    if (parameter.get_sub_procedure_name() == QConfParameter::QUEUE_SICK) {
       DRETURN(make_sick_snapshot(answer_list));
+   }
+   if (parameter.get_sub_procedure_name() == QConfParameter::PROCESSOR_LIST) {
+      DRETURN(make_processor_snapshot(answer_list));
    }
    if (parameter.get_sub_procedure_name() == QConfParameter::EVENT_CLIENT_LIST) {
       DRETURN(make_eventclient_snapshot(answer_list, parameter));

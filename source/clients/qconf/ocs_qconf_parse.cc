@@ -100,6 +100,8 @@
 #include "qconf/ocs_QConfController.h"
 #include "qconf/table/ocs_QConfTableController.h"
 #include "qconf/table/ocs_QConfTableView.h"
+#include "qconf/processors/ocs_QConfProcessorController.h"
+#include "qconf/processors/ocs_QConfProcessorView.h"
 #include "qconf/eventclient/ocs_QConfEventClientController.h"
 #include "qconf/eventclient/ocs_QConfEventClientView.h"
 #include "qconf/objl/ocs_QConfObjectFilterController.h"
@@ -135,7 +137,6 @@ static int sge_error_and_exit(const char *ptr);
 
 /* ------------------------------------------------------------- */
 static int show_thread_list(std::ostream &os);
-static int show_processors(std::ostream &os, bool has_binding_param);
 
 /* ------------------------------------------------------------- */
 static void parse_name_list_to_cull(const char *name, lList **lpp, lDescr *dp, int nm, char *s);
@@ -147,7 +148,6 @@ static lListElem *edit_exechost(lListElem *ep, uid_t uid, gid_t gid);
 static int edit_usersets(std::ostream &os, lList *arglp);
 
 /************************************************************************/
-static int print_config(std::ostream &os, const char *config_name);
 static int delete_configs(const lList *conf_list);
 static int add_modify_config(const char *cfn, const char *filename, uint32_t flags);
 static lList* edit_sched_conf(lList *confl, uid_t uid, gid_t gid);
@@ -1347,6 +1347,10 @@ qconf_dispatch_procedure(std::ostream &os, ocs::QConfParameterClient &param, lLi
             ocs::QConfEventClientView view(param);
             ocs::QConfEventClientController controller(os);
             controller.process_request(param, model, view);
+         } else if (sub == ocs::QConfParameter::PROCESSOR_LIST) {
+            ocs::QConfProcessorView view(param);
+            ocs::QConfProcessorController controller(os);
+            controller.process_request(param, model, view);
          } else if (sub == ocs::QConfParameter::OBJECT_FILTER) {
             ocs::QConfObjectFilterView view(param);
             ocs::QConfObjectFilterController controller(os);
@@ -2174,7 +2178,6 @@ int sge_parse_qconf(char *argv[]) {
    uint32_t prog_number = component_get_component_id();
    uid_t uid = component_get_uid();
    gid_t gid = component_get_gid();
-   bool has_binding_param = false;
 
    /* The one place the sink is chosen (CS-1841). Everything below renders into
     * this stream instead of writing to stdout, so that step 8 (CS-2799) can hand
@@ -2230,7 +2233,6 @@ int sge_parse_qconf(char *argv[]) {
     * show options of group N. They are never read by anything that runs inside
     * qmaster, which is what the rule is about; a client is one process per
     * invocation. They go when that code moves. */
-   has_binding_param = param.get_binding();
    qconf_opt_dry_run = param.get_dry_run();
    qconf_opt_force = param.get_force();
    qconf_opt_strict = param.get_strict();
@@ -4989,7 +4991,23 @@ int sge_parse_qconf(char *argv[]) {
             }
 
             if (action == ACTION_sconf) {
-               if (print_config(os, hostname) != 0) {
+               /* CS-2820: only the leaf moved. What this block shares with
+                * -aconf/-mconf/-Aconf/-Mconf is the argument handling - the
+                * comma separated host list, sge_resolve_host() per entry and the
+                * blank line between blocks - not the object, so splitting the
+                * block would have copied exactly the parts most likely to drift.
+                * The "global" alias is resolved here because it is an argument
+                * spelling, not a property of the object. */
+               const char *cfn = (strcasecmp(hostname, "global") == 0) ? SGE_GLOBAL_NAME : hostname;
+
+               /* Unlike -scal, a configuration that does not exist must not stop
+                * the parse: the host list may name several hosts and the others
+                * still have to be shown. The leaf this replaced recorded the
+                * failure and carried on, so NOT_FOUND - which the helper reports
+                * by returning true - sets the exit code here instead of
+                * aborting. A write failure still exits, inside the helper. */
+               if (qconf_show_status_classic(qconf_show_object(os, param, QConfObj::CONF, cfn),
+                                             &sge_parse_return)) {
                   sge_parse_return = 1;
                }
             } else if (action == ACTION_aconf || action == ACTION_mconf) {
@@ -5154,7 +5172,27 @@ int sge_parse_qconf(char *argv[]) {
 /*----------------------------------------------------------------------------*/
       /* "-sep" */
       if (strcmp("-sep", *spp) == 0) {
-         show_processors(os, has_binding_param);
+         lList *answer_list = nullptr;
+         qconf_op op;
+
+         op.token = "-sep";
+
+         /* CS-2820: a sub-procedure rather than a table row, for the same reason
+          * as -secl - a hand written header, two fixed rule lines and a SUM row
+          * that is an aggregate over the rows rather than one of them. The -cb
+          * flag travels in the parameter bundle, so it needs no second entry. */
+         param.set_operation(op);
+         param.set_sub_procedure_name(ocs::QConfParameter::PROCESSOR_LIST);
+         const bool ok = qconf_dispatch_procedure(os, param, &answer_list);
+         param.set_sub_procedure_name("");
+
+         if (!ok) {
+            /* "no execution hosts defined" used to go to stderr without setting
+             * the exit code; now it does both (CS-2820) */
+            answer_list_output(&answer_list);
+            sge_parse_return = 1;
+         }
+         lFreeList(&answer_list);
          spp++;
          continue;
       }
@@ -6878,120 +6916,6 @@ show_thread_list(std::ostream &os) {
 }
 
 
-/**
- * @brief Print the processor counts of every execution host, the `-sep` switch
- *
- * One line per host with its processor count and architecture, followed by a
- * total. With @a has_binding_param the socket and core columns are shown as
- * well. An empty execution host list is reported on stderr.
- *
- * @param os                the stream the table is written to (CS-1841)
- * @param has_binding_param also show the socket and core columns
- * @return 0 on success, -1 when qmaster answered with an error
- */
-static int show_processors(std::ostream &os, bool has_binding_param) {
-   DENTER(TOP_LAYER);
-
-   lEnumeration *what = nullptr;
-   lCondition *where = nullptr;
-   lList *alp = nullptr, *lp = nullptr;
-   const lListElem *ep = nullptr;
-   const char *cp = nullptr;
-   uint32_t sum = 0;
-   uint32_t socket_sum = 0;
-   uint32_t core_sum = 0;
-
-   what = lWhat("%T(%I %I %I)", EH_Type, EH_name, EH_processors, EH_load_list);
-   where = lWhere("%T(!(%Ic=%s || %Ic=%s))", EH_Type, EH_name,
-                  SGE_TEMPLATE_NAME, EH_name, SGE_GLOBAL_NAME);
-
-   alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::EH_LIST, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, &lp, where, what);
-   lFreeWhat(&what);
-   lFreeWhere(&where);
-
-   ep = lFirst(alp);
-   answer_exit_if_not_recoverable(ep);
-   if (answer_get_status(ep) != STATUS_OK) {
-      fprintf(stderr, "%s\n", lGetString(ep, AN_text));
-      DRETURN(-1);
-   }
-
-   if (lp != nullptr && lGetNumberOfElem(lp) > 0) {
-      lPSortList(lp,"%I+", EH_name);
-
-      if (has_binding_param) {
-         os << std::format("{:<25.24}{:>10.9}{:>6.5}{:>6.5}{:>12.11}\n", MSG_TABLE_HOST, MSG_TABLE_PROCESSORS,
-            MSG_TABLE_SOCKETS, MSG_TABLE_CORES, MSG_TABLE_ARCH);
-      } else {
-         os << std::format("{:<25.24}{:>10.9}{:>12.11}\n", MSG_TABLE_HOST, MSG_TABLE_PROCESSORS, MSG_TABLE_ARCH);
-      }
-      os << "===============================================";
-      if (has_binding_param) {
-         os << "============";
-      }
-      os << "\n";
-      for_each_ep(ep, lp) {
-         const lListElem *arch_elem = lGetSubStr(ep, HL_name, "arch", EH_load_list);
-         uint32_t sockets = 0;
-         uint32_t cores = 0;
-
-         os << std::format("{:<25.24}", ((cp = lGetHost(ep, EH_name)) ? cp : ""));
-         os << std::format("{:>10}", static_cast<int32_t>(lGetUlong(ep, EH_processors)));
-
-         if (has_binding_param) {
-            const lListElem *socket_elem = lGetSubStr(ep, HL_name, "m_socket", EH_load_list);
-            const lListElem *core_elem = lGetSubStr(ep, HL_name, "m_core", EH_load_list);
-
-            if (socket_elem != nullptr) {
-               os << std::format("{:>6.5}", qconf_cstr(lGetString(socket_elem, HL_value)));
-               sockets = atol(lGetString(socket_elem, HL_value));
-            } else {
-               os << std::format("{:>6.5}", "-");
-            }
-            if (core_elem != nullptr) {
-               os << std::format("{:>6.5}", qconf_cstr(lGetString(core_elem, HL_value)));
-               cores = atol(lGetString(core_elem, HL_value));
-            } else {
-               os << std::format("{:>6.5}", "-");
-            }
-         }
-         if (arch_elem) {
-            os << std::format("{:>12.11}", qconf_cstr(lGetString(arch_elem, HL_value)));
-         }
-         os << "\n";
-         sum += lGetUlong(ep, EH_processors);
-         socket_sum += sockets;
-         core_sum += cores;
-      }
-      os << "===============================================";
-      if (has_binding_param) {
-         os << "============";
-      }
-      os << "\n";
-
-      os << std::format("{:<25.24}{:>10}", MSG_TABLE_SUM_F, static_cast<int32_t>(sum));
-      if (has_binding_param) {
-         if (socket_sum > 0) {
-            os << std::format("{:>6}", static_cast<int32_t>(socket_sum));
-         } else {
-            os << std::format("{:>6.5}", "-");
-         }
-         if (core_sum > 0) {
-            os << std::format("{:>6}", static_cast<int32_t>(core_sum));
-         } else {
-            os << std::format("{:>6.5}", "-");
-         }
-      }
-      os << "\n";
-   } else {
-      fprintf(stderr,  "%s\n", MSG_QCONF_NOEXECUTIONHOSTSDEFINED);
-   }
-
-   lFreeList(&alp);
-   lFreeList(&lp);
-
-   DRETURN(0);
-}
 
 /* - -- -- -- -- -- -- -- -- -- -- -- -- -- -- -
 
@@ -7117,70 +7041,6 @@ static int edit_usersets(std::ostream &os, lList *arglp) {
    DRETURN(0);
 }
 
-/***************************************************************************
-  -sconf option
- * @param os the stream the output is written to (CS-1841)
- ***************************************************************************/
-static int print_config(std::ostream &os, const char *config_name) {
-   DENTER(TOP_LAYER);
-
-   lCondition *where = nullptr;
-   lEnumeration *what = nullptr;
-   lList *alp = nullptr, *lp = nullptr;
-   const lListElem *ep = nullptr;
-   int fail=0;
-   const char *cfn = nullptr;
-   spooling_field *fields = nullptr;
-
-   /* get config */
-   if (!strcasecmp(config_name, "global")) {
-      cfn = SGE_GLOBAL_NAME;
-   } else {
-      cfn = config_name;
-   }
-
-   where = lWhere("%T(%Ih=%s)", CONF_Type, CONF_name, cfn);
-   what = lWhat("%T(ALL)", CONF_Type);
-   alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::CONF_LIST, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, &lp, where, what);
-   lFreeWhat(&what);
-   lFreeWhere(&where);
-
-   ep = lFirst(alp);
-   answer_exit_if_not_recoverable(ep);
-   if (answer_get_status(ep) != STATUS_OK) {
-      fprintf(stderr, "%s\n", lGetString(ep, AN_text));
-      fail = 1;
-   } else {
-      const char *filename_stdout;
-
-      if (!(ep = lFirst(lp))) {
-         fprintf(stderr, MSG_ANSWER_CONFIGXNOTDEFINED_S, cfn);
-         fprintf(stderr, "\n");
-         lFreeList(&alp);
-         lFreeList(&lp);
-         DRETURN(1);
-      }
-      /* CS-2313a: the "#name:" header is an ASCII-format comment; omit it for JSON */
-      if (qconf_opt_format != SP_FORM_JSON) {
-         os << "#" << qconf_cstr(cfn) << ":\n";
-      }
-
-      fields = sge_build_CONF_field_list(false);
-      filename_stdout = spool_flatfile_write_object(&alp, ep, false, fields, &qconf_sfi,
-                                  SP_DEST_STREAM, qconf_opt_format, nullptr, false, nullptr, &os);
-      sge_free(&fields);
-      sge_free(&filename_stdout);
-
-      if (answer_list_output(&alp)) {
-         sge_error_and_exit(nullptr);
-      }
-   }
-
-   lFreeList(&alp);
-   lFreeList(&lp);
-
-   DRETURN(fail);
-}
 
 /** @brief Delete every named configuration in one request
  *

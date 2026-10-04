@@ -121,6 +121,12 @@ struct qconf_read_desc {
    const char *not_found_noun;     ///< OBJECT_LIST: what a name that matched nothing is
                                    ///< called in "denied: <noun> \"x\" does not exist";
                                    ///< nullptr reports the whole read as empty instead
+   bool name_header;               ///< SINGLE_OBJECT: write a "#<name>:" comment line before
+                                   ///< the object in a text format. Only the configuration
+                                   ///< does this, and only because -sconf has always done
+                                   ///< it: the header is what tells the blocks of
+                                   ///< "-sconf host1,host2" apart, and omitting it in JSON
+                                   ///< is what CS-2313a decided (a comment is not JSON)
    bool write_as_list;             ///< OBJECT_LIST: render the whole list through the
                                    ///< spooling instruction in one go, rather than one
                                    ///< object at a time separated by blank lines. It is a
