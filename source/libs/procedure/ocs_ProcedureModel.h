@@ -45,11 +45,32 @@ namespace ocs {
    class ProcedureModel {
 
 #pragma region Data
-   private:
-      lList *procedure_response = nullptr; ///< CULL list received from qmaster; owned by this object.
+   protected:
+      /** @brief CULL list received from qmaster; owned by this object
+       *
+       * Protected rather than private so that a unit test can hand in a response
+       * it built itself and check the readers against it (CS-2821). Ownership is
+       * unchanged - the destructor still frees whatever is here.
+       */
+      lList *procedure_response = nullptr;
 
    public:
       [[nodiscard]] const char *get_output_text() const;
+
+      /** @brief What RBAC removed from this response (CS-2821)
+       *
+       * A mask of `ProcedureParameter::REDUCTION_*`, zero when nothing was
+       * removed - which is every response today, because reduction does not
+       * exist yet. The channel is here so that the write guard of CS-2823 and
+       * the redaction work have something to agree on.
+       *
+       * An absent entry reads as zero, so a response from an older qmaster is
+       * treated as not reduced. That is the right way round: an old daemon does
+       * not reduce.
+       *
+       * @return the reduction mask
+       */
+      [[nodiscard]] uint32_t get_reduction() const;
 
       /** @brief Write what the model holds to the log
        *

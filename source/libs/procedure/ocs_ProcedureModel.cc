@@ -25,6 +25,7 @@
 #include "uti/sge_rmon_macros.h"
 
 #include "sgeobj/cull/sge_param_SPP_L.h"
+#include "sgeobj/cull/sge_ulong_ULNG_L.h"
 #include "sgeobj/sge_str.h"
 
 #include "gdi/ocs_gdi_Client.h"
@@ -69,6 +70,31 @@ ocs::ProcedureModel::make_snapshot(lList **answer_list, ProcedureParameter &para
    request_and_response = nullptr;
 
    DRETURN(!answer_list_has_error(answer_list));
+}
+
+/** @brief What RBAC removed from this response, see the header
+ * @return the reduction mask, zero when the entry is absent
+ */
+uint32_t
+ocs::ProcedureModel::get_reduction() const {
+   DENTER(TOP_LAYER);
+
+   /* The two "not reduced" answers are traced apart on purpose. Both return
+    * zero, so a reading of zero alone cannot tell "qmaster said nothing was
+    * reduced" from "the entry never arrived" - and the second would mean the
+    * channel is broken while looking exactly like the healthy case. */
+   const lListElem *entry = lGetElemStr(procedure_response, SPP_name, ProcedureParameter::REDUCTION);
+   if (entry == nullptr) {
+      DPRINTF("no reduction entry in the response\n");
+      DRETURN(ProcedureParameter::REDUCTION_NONE);
+   }
+   const lListElem *value = lFirst(lGetList(entry, SPP_value_list));
+   if (value == nullptr) {
+      DPRINTF("reduction entry present but empty\n");
+      DRETURN(ProcedureParameter::REDUCTION_NONE);
+   }
+
+   DRETURN(static_cast<uint32_t>(lGetUlong(value, ULNG_value)));
 }
 
 /** @brief Return the pre-rendered output text received from qmaster.

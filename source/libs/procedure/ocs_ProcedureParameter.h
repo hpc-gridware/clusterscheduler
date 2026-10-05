@@ -136,6 +136,28 @@ namespace ocs {
       static constexpr auto PROCEDURE = "procedure";               ///< The command being run
       static constexpr auto SUB_PROCEDURE = "sub_procedure";       ///< Its sub-command, if any
       static constexpr auto RESPONSE = "response";                 ///< The rendered response, on the way back
+      static constexpr auto REDUCTION = "reduction";               ///< What RBAC removed from that response
+
+      /** @name What a response had removed from it by RBAC (CS-2821)
+       *
+       * A bit mask, zero when nothing was removed. The two bits are the two
+       * mechanisms the specification names, and they are deliberately separate
+       * although both mean the same thing to the write guard today: more may
+       * follow, and a mask leaves room for it without touching the wire format.
+       *
+       * The distinction is not cosmetic. Masking keeps the structure and
+       * substitutes placeholder values, so an object that looks complete is not;
+       * writing it back would store the placeholder. Hiding leaves things out, so
+       * the structure itself is short. Either way the response is not a faithful
+       * copy of what qmaster holds, which is why the editor may not run on it -
+       * see CS-2823.
+       *
+       * @{
+       */
+      static constexpr uint32_t REDUCTION_NONE = 0;        ///< nothing was removed
+      static constexpr uint32_t REDUCTION_MASKED = 1;      ///< placeholder values, structure intact
+      static constexpr uint32_t REDUCTION_HIDDEN = 2;      ///< data left out, structure shortened
+      /** @} */
       static constexpr auto OUTPUT_FORMAT = "output_format";       ///< Plain, XML or JSON
       static constexpr auto ENVIRONMENT = "environment";           ///< The environment variables
       /** @} */

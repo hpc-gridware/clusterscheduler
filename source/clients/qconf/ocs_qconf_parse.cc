@@ -1313,6 +1313,13 @@ qconf_dispatch_procedure(std::ostream &os, ocs::QConfParameterClient &param, lLi
       ocs::ProcedureModel model;
       ok = model.make_snapshot(alpp, param);
 
+      /* CS-2821: the one consumer of the reduction channel so far. Nothing acts
+       * on it yet - the write guard of CS-2823 will - but asking for it here
+       * means the value is read on every call and shows up in a traced run,
+       * which is what proves the entry survived the GDI round trip rather than
+       * only the unit test's own bundle. */
+      DPRINTF("procedure reduction mask: " sge_u32 "\n", model.get_reduction());
+
       /* Rendered unconditionally since CS-2820: whatever qmaster produced is
        * printed even when it also reported a problem, because a procedure may
        * mean both - see the note in ProcedureModel::make_snapshot(). A read that

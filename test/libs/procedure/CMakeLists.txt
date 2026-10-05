@@ -46,3 +46,8 @@ if (INSTALL_SGE_TEST)
    install(TARGETS test_procedure_qquota_plain DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_procedure_qstat_summary DESTINATION testbin/${SGE_ARCH})
 endif ()
+
+add_executable(test_procedure_reduction test_procedure_reduction.cc)
+target_include_directories(test_procedure_reduction PRIVATE "./")
+target_link_libraries(test_procedure_reduction PRIVATE procedure sched gdi sgeobj cull comm commlists uti ${SGE_LIBS})
+add_test(NAME test_procedure_reduction COMMAND test_procedure_reduction)

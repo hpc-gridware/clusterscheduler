@@ -570,7 +570,8 @@ namespace {
    };
 
    template<typename Traits>
-   void exec_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, std::ostringstream &os) {
+   void exec_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, std::ostringstream &os,
+                       uint32_t &reduction) {
       DENTER(TOP_LAYER);
 
       using Parameter = typename Traits::Parameter;
@@ -611,11 +612,19 @@ namespace {
       Controller controller(os);
       controller.process_request(parameter, model, *view);
 
+      /* CS-2821: where the model's verdict on RBAC reduction will be read once a
+       * model can give one. Nothing reduces today, so it stays NONE - the seam is
+       * a parameter rather than a comment so that it is typed and visible at the
+       * call site, and it is not an accessor on each of the five model
+       * hierarchies because "always zero" is not worth five edits. */
+      reduction = ocs::ProcedureParameter::REDUCTION_NONE;
+
       DRETURN_VOID;
    }
 
    template<typename Traits>
-   void prepare_response(ocs::gdi::Packet *packet, ocs::gdi::Task *task, std::ostringstream &os) {
+   void prepare_response(ocs::gdi::Packet *packet, ocs::gdi::Task *task, std::ostringstream &os,
+                         uint32_t reduction) {
       DENTER(TOP_LAYER);
 
       // if exec_procedure failed then the answer_list contains already an error
@@ -632,6 +641,14 @@ namespace {
       lList *output_list = nullptr;
       lAddElemStr(&output_list, ST_name, os.str().c_str(), ST_Type);
       ocs::ProcedureParameter::add_parameter_bundle(bundle, ocs::ProcedureParameter::RESPONSE, output_list);
+
+      /* CS-2821: and what RBAC removed from it. A separate entry rather than a
+       * field of the response, because the response is a text and this is about
+       * the text. The bundle's sublist is CULL_ANY_SUBTYPE, so a ULNG entry
+       * round-trips without a wire format change. */
+      lList *reduction_list = nullptr;
+      lAddElemUlong(&reduction_list, ULNG_value, reduction, ULNG_Type);
+      ocs::ProcedureParameter::add_parameter_bundle(bundle, ocs::ProcedureParameter::REDUCTION, reduction_list);
 #if 0
       DPRINTF("response:\n %s", os.str().c_str());
 #endif
@@ -647,8 +664,9 @@ namespace {
       DENTER(TOP_LAYER);
 
       std::ostringstream out_ss;
-      exec_procedure<Traits>(packet, task, out_ss);
-      prepare_response<Traits>(packet, task, out_ss);
+      uint32_t reduction = ocs::ProcedureParameter::REDUCTION_NONE;
+      exec_procedure<Traits>(packet, task, out_ss, reduction);
+      prepare_response<Traits>(packet, task, out_ss, reduction);
 
       DRETURN_VOID;
    }
