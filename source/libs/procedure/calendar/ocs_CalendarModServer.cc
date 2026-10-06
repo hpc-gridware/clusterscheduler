@@ -82,25 +82,15 @@ ocs::CalendarModModelServer::make_snapshot(lList **answer_list, CalendarModParam
       DRETURN(false);
    }
 
-   /* The response text IS the message the old GET/MOD path printed, taken from
-    * the answer list rather than formulated again - one source for the wording.
+   /* No response text. What a write has to say is already in the answer list -
+    * sge_gdi_add_mod_generic() puts MSG_SGETEXT_MODIFIEDINLIST_SSSS there - and
+    * that list reaches the client (measured 2026-10-06). A procedure that
+    * invented its own confirmation would say the same thing in different words
+    * and in a different stream, which is exactly what qconf's callers and the
+    * testsuite match against.
     *
-    * It has to travel this way because a write's answer list does not reach the
-    * client through the procedure path: sge_gdi_add_mod_generic() adds its
-    * MSG_SGETEXT_MODIFIEDINLIST_SSSS as an INFO with STATUS_OK, and the client
-    * receives a list without it, so answer_list_output() there prints nothing.
-    * Measured on 2026-10-06: "qconf -Mcal" prints the line, "qconf -mcal"
-    * through the procedure printed only an invented confirmation until this.
-    * Carrying it in the response keeps qconf's output exactly what it was; the
-    * transport gap itself is wider than this procedure and needs its own fix. */
-   const lListElem *info = nullptr;
-   for (const lListElem *aep = lFirst(*answer_list); aep != nullptr; aep = lNext(aep)) {
-      if (lGetUlong(aep, AN_quality) == ANSWER_QUALITY_INFO && lGetString(aep, AN_text) != nullptr) {
-         info = aep;
-      }
-   }
-   if (info != nullptr) {
-      message_ = lGetString(info, AN_text);
-   }
+    * A reading procedure's response is its rendered output; a writing one has
+    * no output, only a verdict. */
+
    DRETURN(true);
 }

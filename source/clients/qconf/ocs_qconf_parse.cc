@@ -50,6 +50,7 @@
 #include "uti/ocs_Pattern.h"
 #include "uti/sge_dstring.h"
 #include "uti/sge_edit.h"
+#include "uti/sge_tmpnam.h"
 #include "uti/sge_io.h"
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
@@ -93,6 +94,7 @@
 #include "sge_options.h"
 #include "usage.h"
 #include "ocs_qconf_acl.h"
+#include "procedure/calendar/ocs_CalendarModModelClient.h"
 #include "procedure/ocs_ProcedureController.h"
 #include "procedure/ocs_ProcedureModel.h"
 #include "procedure/ocs_ProcedureView.h"
@@ -1305,20 +1307,33 @@ enum class QConfShowStatus {
  * @return true when the operation was rendered
  */
 static bool
-qconf_dispatch_procedure(std::ostream &os, ocs::QConfParameterClient &param, lList **alpp) {
+qconf_dispatch_procedure(std::ostream &os, ocs::QConfParameterClient &param, lList **alpp,
+                         uint32_t *reduction = nullptr) {
    DENTER(TOP_LAYER);
+
+   /* CS-2822: the client context has no reduction channel at all - a plain GET
+    * returns the whole object - so it answers "not reduced" and would be the
+    * wrong basis for a decision that depends on it. The write path therefore
+    * refuses that context rather than trusting this value; see
+    * qconf_modify_cal_procedure(). */
+   if (reduction != nullptr) {
+      *reduction = ocs::ProcedureParameter::REDUCTION_NONE;
+   }
 
    bool ok;
    if (param.get_exec_context() == ocs::ProcedureParameter::ExecContext::SERVER) {
       ocs::ProcedureModel model;
       ok = model.make_snapshot(alpp, param);
 
-      /* CS-2821: the one consumer of the reduction channel so far. Nothing acts
-       * on it yet - the write guard of CS-2823 will - but asking for it here
-       * means the value is read on every call and shows up in a traced run,
-       * which is what proves the entry survived the GDI round trip rather than
-       * only the unit test's own bundle. */
-      DPRINTF("procedure reduction mask: " sge_u32 "\n", model.get_reduction());
+      /* CS-2821 opened this channel, CS-2822 is its first consumer: the write
+       * path refuses to offer an object for editing that the caller can only
+       * see in part. Read on every call, not only where it is wanted, so a
+       * traced run shows that the entry survived the GDI round trip. */
+      const uint32_t mask = model.get_reduction();
+      DPRINTF("procedure reduction mask: " sge_u32 "\n", mask);
+      if (reduction != nullptr) {
+         *reduction = mask;
+      }
 
       /* Rendered unconditionally since CS-2820: whatever qmaster produced is
        * printed even when it also reported a problem, because a procedure may
@@ -1424,7 +1439,8 @@ qconf_dispatch_procedure(std::ostream &os, ocs::QConfParameterClient &param, lLi
  * @return what happened, see QConfShowStatus
  */
 static QConfShowStatus
-qconf_show_object(std::ostream &os, ocs::QConfParameterClient &param, QConfObj o, const char *name) {
+qconf_show_object(std::ostream &os, ocs::QConfParameterClient &param, QConfObj o, const char *name,
+                  uint32_t *reduction = nullptr) {
    DENTER(TOP_LAYER);
 
    /* CS-2799: the body of this function is a stored procedure call now. The
@@ -1450,7 +1466,7 @@ qconf_show_object(std::ostream &os, ocs::QConfParameterClient &param, QConfObj o
    param.set_operation(op);
 
    lList *alp = nullptr;
-   const bool ok = qconf_dispatch_procedure(os, param, &alp);
+   const bool ok = qconf_dispatch_procedure(os, param, &alp, reduction);
    if (ok) {
       lFreeList(&alp);
       DRETURN(QConfShowStatus::OK);
@@ -1698,6 +1714,111 @@ enum class QConfEditStatus {
    READ_FAILED    ///< the result did not parse, or left a field unprocessed
 };
 
+/** @brief Read a whole file into a string
+ * @param filename the file to read
+ * @param text receives the content, cleared first
+ * @return true when the file was read without error
+ */
+static bool
+qconf_read_file_text(const char *filename, std::string &text) {
+   DENTER(TOP_LAYER);
+
+   FILE *fp = fopen(filename, "r");
+   if (fp == nullptr) {
+      DRETURN(false);
+   }
+   text.clear();
+   char chunk[4096];
+   size_t n;
+   while ((n = fread(chunk, 1, sizeof(chunk), fp)) > 0) {
+      text.append(chunk, n);
+   }
+   const bool ok = (ferror(fp) == 0);
+   fclose(fp);
+
+   DRETURN(ok);
+}
+
+/** @brief Offer a rendered object text to $EDITOR and read the result back
+ *
+ * The text-level sibling of qconf_edit_obj(), and the shape a stored procedure
+ * write needs: a procedure read produces text and a procedure write consumes
+ * text, so the client carries it to the editor and back without rendering or
+ * parsing anything itself.
+ *
+ * That is not a convenience. It is the only arrangement that survives output
+ * reduction: when a value the caller may not see is rendered as a placeholder,
+ * only qmaster knows which fields those were. A client that parsed the text
+ * would hand the placeholder back as if it were a value and overwrite the
+ * original.
+ *
+ * Exit-free like qconf_edit_obj(), and the temporary file is consumed on every
+ * path including every error path.
+ *
+ * @param text in: the text to offer; out: the text that came back
+ * @param uid  uid to run the editor as
+ * @param gid  gid to run the editor as
+ * @return OK, or the reason no text came back
+ */
+static QConfEditStatus
+qconf_edit_text(std::string &text, uid_t uid, gid_t gid) {
+   DENTER(TOP_LAYER);
+
+   char *filename = sge_malloc(sizeof(char) * SGE_PATH_MAX);
+   if (filename == nullptr) {
+      ERROR(SFNMAX, MSG_MEMORY_MALLOCFAILED);
+      DRETURN(QConfEditStatus::WRITE_FAILED);
+   }
+   int fd = -1;
+   dstring error_message = DSTRING_INIT;
+   if (sge_tmpnam(filename, &fd, &error_message) == nullptr) {
+      ERROR(SFNMAX, sge_dstring_get_string(&error_message));
+      sge_dstring_free(&error_message);
+      sge_free(&filename);
+      DRETURN(QConfEditStatus::WRITE_FAILED);
+   }
+   sge_dstring_free(&error_message);
+
+   /* Every failure below says why. WRITE_FAILED is reported by
+    * qconf_edit_fail_exit() through sge_error_and_exit(nullptr), which prints
+    * nothing of its own - so a silent return here leaves the user with a
+    * non-zero exit and no reason at all. */
+   errno = 0;
+   FILE *fp = fdopen(fd, "w");
+   if (fp == nullptr) {
+      ERROR(MSG_ERROROPENINGFILEFORWRITING_SS, filename, strerror(errno));
+      close(fd);
+      unlink(filename);
+      sge_free(&filename);
+      DRETURN(QConfEditStatus::WRITE_FAILED);
+   }
+   errno = 0;
+   fprintf(fp, "%s", text.c_str());
+   const bool written = (fclose(fp) == 0);
+   if (!written) {
+      ERROR(MSG_ERROROPENINGFILEFORWRITING_SS, filename, strerror(errno));
+      unlink(filename);
+      sge_free(&filename);
+      DRETURN(QConfEditStatus::WRITE_FAILED);
+   }
+
+   const int status = sge_edit(filename, uid, gid);
+   if (status != 0) {
+      unlink(filename);
+      sge_free(&filename);
+      DRETURN((status < 0) ? QConfEditStatus::EDIT_FAILED : QConfEditStatus::UNCHANGED);
+   }
+
+   const bool read_ok = qconf_read_file_text(filename, text);
+   if (!read_ok) {
+      ERROR(MSG_ERROROPENINGFILEFORREADING_SS, filename, strerror(errno));
+   }
+   unlink(filename);
+   sge_free(&filename);
+
+   DRETURN(read_ok ? QConfEditStatus::OK : QConfEditStatus::READ_FAILED);
+}
+
 /** @brief Offer an object to $EDITOR and read the result back.
  *
  * Deliberately **exit-free**: every failure is reported through the return
@@ -1768,6 +1889,106 @@ qconf_edit_fail_exit(QConfEditStatus st) {
          break;
    }
 }
+
+/** @brief Modify one calendar through the stored procedure (CS-2822)
+ *
+ * The write round trip in the shape it is meant to have: the object is read by
+ * a procedure, so qmaster rendered it and could have reduced it; the text goes
+ * to the editor unchanged; the edited text goes back as a procedure, where
+ * qmaster parses it and applies it through the object's own modifier, spooler
+ * and event hooks. The client renders nothing and parses nothing.
+ *
+ * Two refusals are deliberate and are the reason the function exists rather
+ * than being a few lines at the option:
+ *
+ *  - a **reduced** read is not offered for editing at all. Asking someone to
+ *    edit a text whose values are placeholders invites them to save the
+ *    placeholder as the value.
+ *  - the **client execution context** is declined outright. It reads with a
+ *    plain GET, which returns the whole object and cannot reduce, so accepting
+ *    it would make the first refusal depend on which context the caller chose -
+ *    which is the same as not having it. CS-2856 removes the choice; until then
+ *    the write path says no.
+ *
+ * @param os     where the response text goes
+ * @param param  the invocation, used for the procedure read
+ * @param name   the calendar to modify
+ * @param uid    uid to run the editor as
+ * @param gid    gid to run the editor as
+ * @return 0 when the calendar was modified or the editor left it unchanged, 1 otherwise
+ */
+static int
+qconf_modify_cal_procedure(std::ostream &os, ocs::QConfParameterClient &param, const char *name,
+                           uid_t uid, gid_t gid) {
+   DENTER(TOP_LAYER);
+
+   if (param.get_exec_context() != ocs::ProcedureParameter::ExecContext::SERVER) {
+      ERROR("qconf -mcal needs the server execution context; \"-ectx client\" cannot "
+            "see whether the output was reduced");
+      DRETURN(1);
+   }
+
+   std::ostringstream rendered;
+   uint32_t reduction = ocs::ProcedureParameter::REDUCTION_NONE;
+   const QConfShowStatus st = qconf_show_object(rendered, param, QConfObj::CAL, name, &reduction);
+
+   std::string text;
+   if (st == QConfShowStatus::OK) {
+      if (reduction != ocs::ProcedureParameter::REDUCTION_NONE) {
+         ERROR(MSG_QCONF_REDUCEDNOTMODIFIABLE_S, name != nullptr ? name : "");
+         DRETURN(1);
+      }
+      text = rendered.str();
+   } else if (st == QConfShowStatus::NOT_FOUND) {
+      /* CS-2299 C2: modifying a calendar that does not exist adds it, and a
+       * generic template is offered instead of an error. Rendered in the client
+       * because there is no object in qmaster to render - the one place where
+       * the client still writes a flat file, and only for a template that
+       * carries no data of anyone's. */
+      lList *alp = nullptr;
+      lListElem *generic = sge_generic_cal(const_cast<char *>(name));
+      char *filename = qconf_write_tmp_obj(QConfObj::CAL, &alp, generic);
+      lFreeElem(&generic);
+      const bool read_ok = (filename != nullptr) && qconf_read_file_text(filename, text);
+      if (filename != nullptr) {
+         unlink(filename);
+         sge_free(&filename);
+      }
+      answer_list_output(&alp);
+      if (!read_ok) {
+         DRETURN(1);
+      }
+   } else {
+      /* qconf_show_object() put the reason into the answer list already */
+      DRETURN(1);
+   }
+
+   const QConfEditStatus est = qconf_edit_text(text, uid, gid);
+   if (est != QConfEditStatus::OK) {
+      qconf_edit_fail_exit(est);
+      DRETURN(1);
+   }
+
+   ocs::CalendarModParameter mod_param;
+   mod_param.set_object_text(text);
+   ocs::CalendarModModelClient model;
+
+   lList *alp = nullptr;
+   const bool ok = model.make_snapshot(&alp, mod_param);
+
+   /* show_answer_list() and not answer_list_output(), and no response text of
+    * our own: the message a write produces is the one qmaster put into the
+    * answer list, and this is how every other qconf write surfaces it - see
+    * qconf_apply_path(). Measured on 2026-10-06: the answer list does arrive
+    * with the INFO in it, answer_list_output() just does not put it where the
+    * user sees it, and printing an invented confirmation instead both lost the
+    * wording and moved it from stderr to stdout. */
+   const int shown = show_answer_list(alp);
+   lFreeList(&alp);
+
+   DRETURN((ok && shown == 0) ? 0 : 1);
+}
+
 
 /* ===== CS-2307: resource quota set helpers =================================
  * RQS files hold a *list* of rule sets (read with spool_flatfile_read_list and
@@ -2153,7 +2374,7 @@ qconf_run_read_procedure(std::ostream &os, ocs::QConfParameterClient &param,
 
    param.set_operation(op);
    lList *alp = nullptr;
-   const bool ok = qconf_dispatch_procedure(os, param, &alp);
+   const bool ok = qconf_dispatch_procedure(os, param, &alp, nullptr);
 
    if (!ok) {
       /* CS-2808: a singleton that finds nothing keeps the bare wording its hand
@@ -3764,59 +3985,29 @@ int sge_parse_qconf(char *argv[]) {
       if ((strcmp("-mcal", *spp) == 0) ||
           (strcmp("-Mcal", *spp) == 0)) {
          if (!strcmp("-mcal", *spp)) {
-            lListElem *cal_src = nullptr;
-
             qconf_is_manager_on_admin_host(username, qualified_hostname);
-
             spp = sge_parser_get_next(spp);
 
-            where = lWhere("%T( %I==%s )", CAL_Type, CAL_name, *spp);
-            what = lWhat("%T(ALL)", CAL_Type);
-            alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::CAL_LIST, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, &lp, where, what);
-            lFreeWhere(&where);
-            lFreeWhat(&what);
-
-            aep = lFirst(alp);
-            answer_exit_if_not_recoverable(aep);
-            if (answer_get_status(aep) != STATUS_OK) {
-               fprintf(stderr, "%s\n", lGetString(aep, AN_text));
-               lFreeList(&alp);
+            /* CS-2822: the interactive modify is a stored procedure round trip
+             * now. qmaster renders the object, the client carries the text to
+             * the editor and back, and qmaster parses and applies it. The
+             * GET/MOD path this option used is gone - leaving it beside the new
+             * one would mean two writers for the same object, one of which
+             * cannot see a reduced read.
+             *
+             * -Mcal below still uses it: that is the file batch of
+             * qconf_apply_path(), which reads a whole directory, partitions add
+             * against modify from one name GET and honours -strict and
+             * -dry-run. Moving it needs the procedure to accept a set of object
+             * texts, which is a decision of its own. */
+            if (qconf_modify_cal_procedure(os, param, *spp, uid, gid) != 0) {
                sge_parse_return = 1;
-               spp++;
-               continue;
             }
-            lFreeList(&alp);
-
-            if (lp != nullptr && lGetNumberOfElem(lp) > 0) {
-               cal_src = lDechainElem(lp, lFirstRW(lp));
-            } else {
-               /* CS-2299 C2: modifying a non-existent calendar implicitly adds
-                * it — offer a generic template for editing instead of failing. */
-               cal_src = sge_generic_cal(*spp);
-            }
-            lFreeList(&lp);
-
-            /* hand it to the editor and read the result back; the engine is
-             * exit-free, the client decides that a failure is fatal */
-            QConfEditStatus est = qconf_edit_obj(QConfObj::CAL, &alp, &cal_src, uid, gid);
-            if (est != QConfEditStatus::OK) {
-               sge_parse_return = 1;
-               qconf_edit_fail_exit(est);
-               continue;
-            }
-            ep = cal_src;
-} else { /* -Mcal: CS-2299 C3 — accept a file OR a directory, upsert each */
+         } else { /* -Mcal: CS-2299 C3 — accept a file OR a directory, upsert each */
             spp = sge_parser_get_next(spp);
             if (qconf_apply_obj(os, QConfObj::CAL, *spp) != 0) {
                sge_parse_return = 1;
             }
-            spp++;
-            continue;
-         }
-
-         /* -mcal editor path: CS-2299 C2 — upsert (add if it did not exist) */
-         if (ep != nullptr) {
-            sge_parse_return |= qconf_send_upsert_obj(os, QConfObj::CAL, ep);
          }
 
          spp++;
