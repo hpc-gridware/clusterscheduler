@@ -113,6 +113,20 @@ namespace ocs {
    }
 
    /**
+    * Returns the data store which is active for the calling thread.
+    *
+    * Needed where code may run in more than one thread context and has to know which data it is
+    * about to read - a thread which has its own snapshot selected does not see the master lists.
+    *
+    * @return the active data store of this thread
+    */
+   DataStore::Id
+   DataStore::get_active_ds() {
+      GET_SPECIFIC(obj_thread_local_t, obj_state, obj_state_init, obj_state_key);
+      return obj_state->ds_id;
+   }
+
+   /**
     * Returns the master list (RW-access) of the currently active data store for the specified type.
     *
     * @param type master list type

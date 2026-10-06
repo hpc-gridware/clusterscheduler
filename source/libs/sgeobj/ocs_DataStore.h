@@ -40,6 +40,9 @@ namespace ocs {
       static void
       select_active_ds(ocs::DataStore::Id ds_id);
 
+      static ocs::DataStore::Id
+      get_active_ds();
+
       static lList **
       get_master_list_rw(sge_object_type type, bool for_read = false);
 
