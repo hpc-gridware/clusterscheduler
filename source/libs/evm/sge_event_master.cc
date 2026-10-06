@@ -412,6 +412,8 @@ static int event_master_control_cond_init_ret = ocs::uti::condition_initialize(&
 static void       init_send_events();
 static void       flush_events(lListElem*, int);
 static void       total_update(lListElem*, uint64_t gdi_session);
+static ocs::DataStore::Id ev_total_update_enter_global();
+static void       ev_total_update_leave_global(ocs::DataStore::Id active_ds);
 static void       build_subscription(lListElem*);
 static void       remove_event_client(lListElem **client, bool lock_event_master);
 static void       check_send_new_subscribed_list(const subscription_t*,
@@ -552,11 +554,17 @@ int sge_add_event_client(const ocs::gdi::Packet *packet, lListElem *clio, lList 
       DRETURN(STATUS_ESEMANTIC);
    }
 
+   /* The registration ends in a total_update(), which has to read the qmaster's master lists
+    * and not this thread's own snapshot (CS-2624). Entered before the event master mutex,
+    * because LOCK_GLOBAL is always taken before it - see send_events(). */
+   const ocs::DataStore::Id entry_ds = ev_total_update_enter_global();
+
    /* Acquire the event master mutex - we access the event client list */
    sge_mutex_lock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
 
    if (Event_Master_Control.is_prepare_shutdown) {
       sge_mutex_unlock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
+      ev_total_update_leave_global(entry_ds);
       ERROR(SFNMAX, MSG_EVE_QMASTERISGOINGDOWN);
       answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_ESEMANTIC);
@@ -581,6 +589,7 @@ int sge_add_event_client(const ocs::gdi::Packet *packet, lListElem *clio, lList 
 
       if (id == 0) {
          sge_mutex_unlock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
+         ev_total_update_leave_global(entry_ds);
          DRETURN(STATUS_ESEMANTIC);
       }
 
@@ -600,6 +609,7 @@ int sge_add_event_client(const ocs::gdi::Packet *packet, lListElem *clio, lList 
       */
       if (update_func == nullptr && !manop_is_manager(packet)) {
          sge_mutex_unlock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
+         ev_total_update_leave_global(entry_ds);
          ERROR(SFNMAX, MSG_WRONG_USER_FORFIXEDID);
          answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_ESEMANTIC);
@@ -667,6 +677,7 @@ int sge_add_event_client(const ocs::gdi::Packet *packet, lListElem *clio, lList 
    flush_events(ep, 0);
 
    sge_mutex_unlock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
+   ev_total_update_leave_global(entry_ds);
 
    INFO(MSG_SGETEXT_ADDEDTOLIST_SSSS, packet->user, packet->host, name, MSG_EVE_EVENTCLIENT);
    answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
@@ -1707,6 +1718,11 @@ int sge_resync_schedd(monitoring_t *monitor, uint64_t gdi_session) {
 
    lListElem *client;
    int ret = -1;
+
+   // total_update() reads the master lists, so this thread has to be in the GLOBAL data store -
+   // entered before the event master mutex, see ev_total_update_enter_global()
+   const ocs::DataStore::Id entry_ds = ev_total_update_enter_global();
+
    sge_mutex_lock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
 
    if ((client = get_event_client(EV_ID_SCHEDD)) != nullptr) {
@@ -1721,6 +1737,7 @@ int sge_resync_schedd(monitoring_t *monitor, uint64_t gdi_session) {
    }
 
    sge_mutex_unlock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
+   ev_total_update_leave_global(entry_ds);
    DRETURN(ret);
 } /* sge_resync_schedd() */
 
@@ -2100,6 +2117,58 @@ flush_events(lListElem *event_client, int interval) {
 } /* flush_events() */
 
 /**
+ * @brief put this thread into the GLOBAL data store for a total update
+ *
+ * total_update() copies the qmaster's master lists to an event client, so it has to read the
+ * GLOBAL data store. An internal event client - the scheduler, a mirror - does not go through
+ * the event master thread: it calls sge_add_event_client() and therefore total_update() in its
+ * own thread, where ocs::DataStore has that thread's own snapshot selected. Reading the lists
+ * there means the client builds its total update out of the very data the update is meant to
+ * deliver, and a client whose snapshot is empty sends itself empty lists - after which every
+ * MOD event it receives fails with "element does not exist" and it never recovers (CS-2624).
+ *
+ * Must be called *before* the event client list lock is taken. LOCK_GLOBAL is always acquired
+ * before that lock - see send_events() - and acquiring the two the other way round deadlocks
+ * against it as soon as a writer queues for LOCK_GLOBAL: the writer makes the new reader wait,
+ * the reader holds the event client list lock, and send_events() holds a read lock and waits for
+ * that very lock.
+ *
+ * An external event client is registered from a worker thread, which already has GLOBAL active
+ * and already holds the lock, so nothing is acquired twice.
+ *
+ * @return the data store to hand back to ev_total_update_leave_global()
+ */
+static ocs::DataStore::Id
+ev_total_update_enter_global() {
+   const ocs::DataStore::Id active_ds = ocs::DataStore::get_active_ds();
+
+   if (active_ds != ocs::DataStore::Id::GLOBAL) {
+      // The lock first, the data store second, and the other way round when leaving. Which lock
+      // is taken does not depend on the active data store - sge_lock() picks it from the
+      // LOCK_GLOBAL constant - but the order decides whether there is an instant in which this
+      // thread points at the GLOBAL lists without holding the lock on them. This way there is
+      // not one.
+      SGE_LOCK(LOCK_GLOBAL, LOCK_READ);
+      ocs::DataStore::select_active_ds(ocs::DataStore::Id::GLOBAL);
+   }
+
+   return active_ds;
+}
+
+/**
+ * @brief restore what ev_total_update_enter_global() changed
+ *
+ * @param active_ds what ev_total_update_enter_global() returned
+ */
+static void
+ev_total_update_leave_global(ocs::DataStore::Id active_ds) {
+   if (active_ds != ocs::DataStore::Id::GLOBAL) {
+      ocs::DataStore::select_active_ds(active_ds);
+      SGE_UNLOCK(LOCK_GLOBAL, LOCK_READ);
+   }
+}
+
+/**
  * @brief Send all data to eventclient
  *
  * Sends all complete lists it subscribed to an eventclient.
@@ -2112,13 +2181,19 @@ flush_events(lListElem *event_client, int interval) {
  *       MT-NOTE: 'LOCK_EVENT_CLIENT_LST' locked! This is in accordance with
  *       MT-NOTE: the acquire/release protocol as defined by the Cluster Scheduler
  *       MT-NOTE: Locking API.
- *       MT-NOTE: the method also locks the global lock. One has to make sure,
- *       MT-NOTE: that no calling method has that lock already.
+ *       MT-NOTE: The lists are read from the data store which is active for the calling
+ *       MT-NOTE: thread, and that must be GLOBAL - a thread reading its own snapshot
+ *       MT-NOTE: would send the client the data the update is meant to deliver (CS-2624).
+ *       MT-NOTE: Callers establish that with ev_total_update_enter_global() *before*
+ *       MT-NOTE: taking the event client list lock, because LOCK_GLOBAL is always
+ *       MT-NOTE: acquired before it - see send_events().
  */
 static void
 total_update(lListElem *event_client, uint64_t gdi_session) {
    DENTER(TOP_LAYER);
 
+   // The lists read below are the ones of the data store this thread has active, and
+   // that has to be GLOBAL - see the note above and ev_total_update_enter_global().
    blockEvents(event_client, sgeE_ALL_EVENTS, true);
 
    sge_set_commit_required();
