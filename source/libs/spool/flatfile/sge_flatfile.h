@@ -224,7 +224,8 @@ spool_flatfile_read_object(lList **answer_list, const lDescr *descr, lListElem *
                            bool parse_values, const spool_flatfile_instr *instr,
                            const spool_flatfile_format format,
                            FILE *file,
-                           const char *filepath);
+                           const char *filepath,
+                           const char *content = nullptr);
 lList *
 spool_flatfile_read_list(lList **answer_list, const lDescr *descr, 
                          const spooling_field *fields_in, int fields_out[],

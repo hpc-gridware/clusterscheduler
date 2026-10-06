@@ -1647,6 +1647,64 @@ spool_flatfile_write_list_fields(lList **answer_list, const lList *list,
    DRETURN(ret);
 }
 
+/* The flex scanner is generated into sge_spooling_flatfile_scanner.cc, and that
+ * file is CHECKED IN - flex does not run during the build (its CMakeLists only
+ * mentions flex to silence the warnings of the generated code). Adding an entry
+ * point to the .l would therefore compile nothing and change nothing, which is
+ * why these two are declared here instead of there: flex already emits them,
+ * renamed by its "spool_" prefix, they have simply been unused so far.
+ *
+ * Deliberately not extern "C": the generated scanner is a C++ translation unit,
+ * so both sides mangle these names the same way.
+ */
+struct yy_buffer_state;
+struct yy_buffer_state *spool__scan_string(const char *str);
+void spool__delete_buffer(struct yy_buffer_state *buffer);
+
+namespace {
+   /* The buffer spool__scan_string() handed out, kept so it can be released
+    * again. One at a time is enough, and no worse than what is already there:
+    * the scanner keeps its whole state - spool_line, spool_text and the rest -
+    * in globals, so a flatfile read was never reentrant. */
+   struct yy_buffer_state *scanner_string_buffer = nullptr;
+
+   /** @brief Point the scanner at a string instead of a file
+    *
+    * The mirror of spool_scanner_initialize(), and it exists for the mirror of
+    * the reason the writer has SP_DEST_STREAM: a stored procedure runs inside
+    * qmaster and has the object's text in memory, not in a file. The writer got
+    * its stream destination so the procedure views could render without one;
+    * this is the same need in the reading direction, for a procedure that
+    * modifies (CS-2822).
+    *
+    * @param content the text to parse, NUL terminated
+    * @return the first token, or #SPFT_ERROR_NO_MEMORY when no buffer was made
+    */
+   int scanner_initialize_string(const char *content) {
+      spool_line = 1;
+      spool_return_whitespace = 0;
+      spool_finish_line = 0;
+      scanner_string_buffer = spool__scan_string(content);
+      if (scanner_string_buffer == nullptr) {
+         return SPFT_ERROR_NO_MEMORY;
+      }
+      return spool_lex();
+   }
+
+   /** @brief Release the buffer scanner_initialize_string() created
+    *
+    * Called beside every spool_scanner_shutdown() of the reader. Does nothing
+    * when the input came from a file, so the call can be unconditional and
+    * cannot be forgotten on one branch and not another.
+    */
+   void scanner_release_string() {
+      if (scanner_string_buffer != nullptr) {
+         spool__delete_buffer(scanner_string_buffer);
+         scanner_string_buffer = nullptr;
+      }
+   }
+}
+
 /**
  * @brief Read an object from file / stream
  *
@@ -1680,7 +1738,8 @@ spool_flatfile_read_object(lList **answer_list, const lDescr *descr,
                            const spool_flatfile_instr *instr,
                            const spool_flatfile_format format,
                            FILE *file,
-                           const char *filepath) {
+                           const char *filepath,
+                           const char *content) {
    DENTER(FLATFILE_LAYER);
 
    bool file_opened = false;
@@ -1692,8 +1751,8 @@ spool_flatfile_read_object(lList **answer_list, const lDescr *descr,
    SGE_CHECK_POINTER_NULL(descr, answer_list);
    SGE_CHECK_POINTER_NULL(instr, answer_list);
 
-   /* if no file handle is passed, try to open file for reading */
-   if (file == nullptr) {
+   /* if no file handle and no text is passed, try to open file for reading */
+   if (file == nullptr && content == nullptr) {
       SGE_CHECK_POINTER_NULL(filepath, answer_list);
 
       if (sge_is_file(filepath) == 0) {
@@ -1728,16 +1787,21 @@ spool_flatfile_read_object(lList **answer_list, const lDescr *descr,
          fields = my_fields;
       }
 
-      dstring json = DSTRING_INIT;
-      char chunk[4097];
-      size_t n;
-      while ((n = fread(chunk, 1, sizeof(chunk) - 1, file)) > 0) {
-         chunk[n] = '\0';
-         sge_dstring_append(&json, chunk);
+      if (content != nullptr) {
+         // already in memory, nothing to read
+         object = spool_json_read_object(answer_list, descr, fields, fields_out, content);
+      } else {
+         dstring json = DSTRING_INIT;
+         char chunk[4097];
+         size_t n;
+         while ((n = fread(chunk, 1, sizeof(chunk) - 1, file)) > 0) {
+            chunk[n] = '\0';
+            sge_dstring_append(&json, chunk);
+         }
+         object = spool_json_read_object(answer_list, descr, fields, fields_out,
+                                         sge_dstring_get_string(&json));
+         sge_dstring_free(&json);
       }
-      object = spool_json_read_object(answer_list, descr, fields, fields_out,
-                                      sge_dstring_get_string(&json));
-      sge_dstring_free(&json);
       if (my_fields != nullptr) {
          spool_free_spooling_fields(my_fields);
       }
@@ -1747,12 +1811,14 @@ spool_flatfile_read_object(lList **answer_list, const lDescr *descr,
       DRETURN(object);
    }
 
-   /* initialize scanner */
-   token = spool_scanner_initialize(file);
+   /* initialize scanner, from the text when one was handed in */
+   token = (content != nullptr) ? scanner_initialize_string(content)
+                                : spool_scanner_initialize(file);
 
    if (token == SPFT_ERROR_NO_MEMORY) {
       /* messages generated in spool_get_fields_to_spool */
       spool_scanner_shutdown();
+      scanner_release_string();
       answer_list_add_sprintf(answer_list, STATUS_EDISK,
                               ANSWER_QUALITY_ERROR, 
                               MSG_GDI_OUTOFMEMORY);
@@ -1769,6 +1835,7 @@ spool_flatfile_read_object(lList **answer_list, const lDescr *descr,
       if (my_fields == nullptr) {
          /* messages generated in spool_get_fields_to_spool */
          spool_scanner_shutdown();
+         scanner_release_string();
          if (file_opened) {
             FCLOSE(file);
          }
@@ -1788,6 +1855,7 @@ spool_flatfile_read_object(lList **answer_list, const lDescr *descr,
                               filepath);
    }
    spool_scanner_shutdown();
+   scanner_release_string();
 
    /* if we opened the file, we also have to close it */
    if (file_opened) {
