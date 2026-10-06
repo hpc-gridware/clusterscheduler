@@ -56,6 +56,10 @@
 #include "sgeobj/ocs_DataStore.h"
 
 #include "spool/sge_spooling.h"
+#include "spool/flatfile/sge_flatfile.h"
+#include "spool/flatfile/sge_flatfile_obj.h"
+
+#include "procedure/qconf/ocs_QConfObject.h"
 
 #include "evm/sge_event_master.h"
 
@@ -96,6 +100,101 @@ calendar_initalize_timer(monitoring_t *monitor) {
    lFreeList(&ppList);
 
    DRETURN_VOID;
+}
+
+/** @brief Modify one calendar on behalf of a stored procedure
+ *
+ * Installed as the provider the procedure library calls (CS-2822). It exists
+ * here and not in `libs/procedure` because `sge_gdi_add_mod_generic()` is the
+ * daemon's and the procedure library is linked into the clients as well.
+ *
+ * Two halves, and both are deliberately the ones that already exist:
+ *
+ *  - the text is parsed by `spool_flatfile_read_object()` with the very
+ *    descriptor and field list a client uses for this object type, through the
+ *    string source the reader gained for this purpose. Parsing in qmaster is
+ *    what makes a reduced read editable at all: only qmaster knows which values
+ *    it masked, so only qmaster can tell a placeholder from a new value.
+ *  - the parsed element then goes through `sge_gdi_add_mod_generic()`, the same
+ *    function a `qconf -mcal` reaches, so `calendar_mod()` validates it,
+ *    `calendar_spool()` spools it and `calendar_update_queue_states()` does the
+ *    follow-up work and emits the event. Nothing about the write is new.
+ *
+ * @param packet the client request, for the user and host the change is logged under
+ * @param task the GDI task being answered
+ * @param monitor for monitoring qmaster threads
+ * @param parameter the object text to apply
+ * @param answer_list receives the messages parsing and writing produced
+ * @return true when the calendar was modified
+ */
+bool
+calendar_mod_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monitor,
+                            const ocs::CalendarModParameter &parameter, lList **answer_list) {
+   DENTER(TOP_LAYER);
+
+   gdi_object_t *object = get_gdi_object(ocs::gdi::Target::CAL_LIST);
+   if (object == nullptr) {
+      answer_list_add(answer_list, MSG_UNKNOWN_OBJECT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
+      DRETURN(false);
+   }
+
+   /* The text is in the form the read rendered it, which is what the caller's
+    * -fmt asked for - so the same value decides how it is parsed back. */
+   spool_flatfile_format format = SP_FORM_ASCII;
+   switch (parameter.get_output_format()) {
+      case ocs::ProcedureParameter::OutputFormat::XML:
+         format = SP_FORM_XML;
+         break;
+      case ocs::ProcedureParameter::OutputFormat::JSON:
+         format = SP_FORM_JSON;
+         break;
+      case ocs::ProcedureParameter::OutputFormat::PLAIN:
+      default:
+         format = SP_FORM_ASCII;
+         break;
+   }
+
+   const qconf_object_desc &desc = qconf_desc(QConfObj::CAL);
+   bool fields_owned = false;
+   spooling_field *fields = desc.build_fields(format, &fields_owned);
+   int fields_out[MAX_NUM_FIELDS];
+   fields_out[0] = NoName;
+
+   lListElem *instructions = spool_flatfile_read_object(answer_list, desc.descr, nullptr, fields,
+                                                        fields_out, true, desc.sfi, format,
+                                                        nullptr, nullptr,
+                                                        parameter.get_object_text().c_str());
+   if (instructions == nullptr) {
+      // the reader wrote the reason
+      if (fields_owned) {
+         spool_free_spooling_fields(fields);
+      }
+      DRETURN(false);
+   }
+
+   /* Checked before the fields are freed, as the client does it: a name the
+    * reader did not consume means the text carries something this object type
+    * has no attribute for, and applying the rest of it would silently drop it. */
+   const int unprocessed = spool_get_unprocessed_field(fields, fields_out, answer_list);
+   if (fields_owned) {
+      spool_free_spooling_fields(fields);
+   }
+   if (unprocessed != NoName) {
+      lFreeElem(&instructions);
+      DRETURN(false);
+   }
+
+   /* add == 0: this modifies an existing calendar and must fail when there is
+    * none, which sge_gdi_add_mod_generic() enforces before the modifier runs.
+    * Which calendar is decided by the name in the text, exactly as it is for
+    * "qconf -Mcal file" today. */
+   const int result = sge_gdi_add_mod_generic(packet, task, answer_list, instructions, 0, object,
+                                              packet->user, packet->host,
+                                              ocs::gdi::Command::MOD_PROCEDURE,
+                                              ocs::gdi::SubCommand::NONE, nullptr, monitor);
+   lFreeElem(&instructions);
+
+   DRETURN(result == STATUS_OK);
 }
 
 /** @brief Apply one attribute change to a calendar

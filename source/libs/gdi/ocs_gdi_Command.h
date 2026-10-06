@@ -40,7 +40,11 @@ namespace ocs::gdi {
       COPY,           ///< create objects by copying existing ones
       REPLACE,        ///< replace the whole target list
       GET_PROCEDURE,  ///< read a procedure definition
+      MOD_PROCEDURE,  ///< run a procedure that may change state
    };
+
+   // Appended, not inserted: the value travels over the wire as a uint32, so the
+   // existing ones have to keep their numbers.
 
    /**
     * @brief The name of a command, for logging and error messages
@@ -120,6 +124,7 @@ namespace ocs::gdi {
     */
    inline bool get_response_from_master(Command cmd, SubCommand sub_cmd) {
       return cmd == Command::GET || cmd == Command::PERMCHECK || cmd == Command::GET_PROCEDURE
+             || cmd == Command::MOD_PROCEDURE
              || (cmd == Command::ADD && sub_cmd == SubCommand::RETURN_NEW_VERSION);
    }
 }

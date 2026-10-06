@@ -32,7 +32,10 @@
 
 #include "sgeobj/sge_answer.h"
 
+#include "gdi/ocs_gdi_Target.h"
+
 #include "procedure/ocs_ProcedureParameter.h"
+#include "procedure/calendar/ocs_CalendarModServer.h"
 
 #include "procedure/qconf/ocs_QConfController.h"
 #include "procedure/qconf/table/ocs_QConfTableController.h"
@@ -570,8 +573,8 @@ namespace {
    };
 
    template<typename Traits>
-   void exec_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, std::ostringstream &os,
-                       uint32_t &reduction) {
+   void exec_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monitor,
+                       std::ostringstream &os, uint32_t &reduction) {
       DENTER(TOP_LAYER);
 
       using Parameter = typename Traits::Parameter;
@@ -585,6 +588,14 @@ namespace {
 
       // Create the server side model and make a snapshot of the required data
       Model model(packet, task);
+      /* A model that modifies also needs the thread's monitoring structure,
+       * because the write reaches qinstance_change_state_on_calendar_all()
+       * through the object's on_success hook and that one monitors. Detected
+       * rather than imposed: the reading models neither have nor need it, and
+       * requiring the setter of all of them would be 22 empty overrides. */
+      if constexpr (requires { model.set_monitor(monitor); }) {
+         model.set_monitor(monitor);
+      }
       if (!model.make_snapshot(&task->answer_list, parameter)) {
          // error was written by make_snapshot()
          DRETURN_VOID;
@@ -660,22 +671,90 @@ namespace {
    }
 
    template<typename Traits>
-   void run_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task) {
+   void run_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monitor) {
       DENTER(TOP_LAYER);
 
       std::ostringstream out_ss;
       uint32_t reduction = ocs::ProcedureParameter::REDUCTION_NONE;
-      exec_procedure<Traits>(packet, task, out_ss, reduction);
+      exec_procedure<Traits>(packet, task, monitor, out_ss, reduction);
       prepare_response<Traits>(packet, task, out_ss, reduction);
 
       DRETURN_VOID;
    }
 
-   using ProcedureHandler = void (*)(ocs::gdi::Packet *, ocs::gdi::Task *);
+   /** @brief `calendar_mod`: the first procedure that changes state (CS-2822)
+    *
+    * One view for all three factories - the response is a confirmation line
+    * with nothing to structure, so XML and JSON would add a wrapper and no
+    * information.
+    */
+   struct CalendarModTraits {
+      using Parameter = ocs::CalendarModParameter;
+      using Model = ocs::CalendarModModelServer;
+      using ViewBase = ocs::CalendarModView;
+      using Controller = ocs::CalendarModController;
+
+      static constexpr ProgName prog_number = QCONF;
+
+      static std::unique_ptr<ViewBase> make_xml_view(const Parameter &parameter) {
+         return std::make_unique<ocs::CalendarModView>(parameter);
+      }
+
+      static std::unique_ptr<ViewBase> make_plain_view(const Parameter &parameter) {
+         return std::make_unique<ocs::CalendarModView>(parameter);
+      }
+
+      static std::unique_ptr<ViewBase> make_json_view(const Parameter &parameter) {
+         return std::make_unique<ocs::CalendarModView>(parameter);
+      }
+   };
+
+   using ProcedureHandler = void (*)(ocs::gdi::Packet *, ocs::gdi::Task *, monitoring_t *);
+
+   /** @brief What a caller must satisfy before a procedure may run
+    *
+    * Both halves exist because the dispatch below used to look at the procedure
+    * name alone and ignore how the request had been addressed. Permission is
+    * decided before the dispatch, from the command and the target:
+    * sge_c_gdi_check_execution_permission() picks the read or the modify branch
+    * by command, and the modify branch asks about task->target. A client could
+    * therefore name a modifying procedure in a GET_PROCEDURE request and have it
+    * checked as a read - no modify permission, no admin host - or name an object
+    * it does not touch and be checked against that one instead. The entry
+    * declares both, the dispatch refuses a request that disagrees, and a new
+    * procedure cannot be registered without saying what it writes.
+    */
+   struct ProcedureRequirements {
+      ocs::gdi::Command command;  ///< the command the request must carry
+      ocs::gdi::Target target;    ///< the object list it acts on, for the permission check
+   };
+
+   /* A procedure that only reads, addressed as Target::PROCEDURE. That target
+    * owns no permission of its own, which is right for a read: the GET branch
+    * checks the host through sge_task_check_get_perm_host() and does not look at
+    * an object list at all. A write cannot use it - sge_chck_mod_perm_user()
+    * does not know it and refuses through its default - which is why a
+    * modifying entry names the list it writes instead. */
+   constexpr ProcedureRequirements READS{ocs::gdi::Command::GET_PROCEDURE, ocs::gdi::Target::PROCEDURE};
+
+   /** @brief A procedure that modifies @p target
+    *
+    * The request must be addressed to that same list, so the permission checks
+    * of the modify branch ask about the object the procedure really writes, and
+    * so get_gdi_object() hands the dispatch the row carrying its modifier,
+    * writer and on_success hooks.
+    *
+    * @param target the object list the procedure writes
+    * @return its requirements
+    */
+   constexpr ProcedureRequirements modifies(const ocs::gdi::Target target) {
+      return {ocs::gdi::Command::MOD_PROCEDURE, target};
+   }
 
    struct ProcedureDispatchEntry {
       std::string_view procedure_name;
       std::string_view sub_procedure_name;
+      ProcedureRequirements requirements;
       ProcedureHandler handler;
    };
 
@@ -684,28 +763,33 @@ namespace {
     * coupling in the 9.1 request limits, where the fill was a loop rather than a
     * brace list, silently overran the array instead (CS-2829). */
    constexpr auto procedure_dispatch_table = std::to_array<ProcedureDispatchEntry>({
-      {to_string_view(QCONF), "", &run_procedure<QConfTraits>},
-      {to_string_view(QCONF), ocs::QConfParameter::HGROUP_SHOW, &run_procedure<QConfHGroupShowTraits>},
-      {to_string_view(QCONF), ocs::QConfParameter::HGROUP_TREE, &run_procedure<QConfHGroupTreeTraits>},
-      {to_string_view(QCONF), ocs::QConfParameter::HGROUP_RESOLVED, &run_procedure<QConfHGroupResolvedTraits>},
-      {to_string_view(QCONF), ocs::QConfParameter::HGROUP_WHY, &run_procedure<QConfHGroupWhyTraits>},
-      {to_string_view(QCONF), ocs::QConfParameter::CENTRY_LIST, &run_procedure<QConfTableTraits>},
-      {to_string_view(QCONF), ocs::QConfParameter::CATEGORY_LIST, &run_procedure<QConfTableTraits>},
-      {to_string_view(QCONF), ocs::QConfParameter::QUEUE_SICK, &run_procedure<QConfSickTraits>},
-      {to_string_view(QCONF), ocs::QConfParameter::OBJECT_FILTER, &run_procedure<QConfObjectFilterTraits>},
-      {to_string_view(QCONF), ocs::QConfParameter::EVENT_CLIENT_LIST, &run_procedure<QConfEventClientTraits>},
-      {to_string_view(QCONF), ocs::QConfParameter::PROCESSOR_LIST, &run_procedure<QConfProcessorTraits>},
-      {to_string_view(QCONF), ocs::QConfParameter::THREAD_POOL_LIST, &run_procedure<QConfThreadPoolTraits>},
-      {to_string_view(QCONF), ocs::QConfParameter::SHARETREE_TREE, &run_procedure<QConfShareTreeTreeTraits>},
-      {to_string_view(QCONF), ocs::QConfParameter::SHARETREE_NODES, &run_procedure<QConfShareTreeNodesTraits>},
-      {to_string_view(QCONF), ocs::QConfParameter::CQUEUE_SHOW, &run_procedure<QConfCQueueShowTraits>},
-      {to_string_view(QHOST), "",  &run_procedure<QHostTraits>},
-      {to_string_view(QQUOTA), "",  &run_procedure<QQuotaTraits>},
-      {to_string_view(QRSTAT), "", &run_procedure<QRStatTraits>},
-      {to_string_view(QSTAT), to_string_view(QSELECT), &run_procedure<QStatSelectTraits>},
-      {to_string_view(QSTAT), ocs::QStatParameter::DEFAULT_FORMAT, &run_procedure<QStatDefaultTraits>},
-      {to_string_view(QSTAT), ocs::QStatParameter::CQ_FORMAT, &run_procedure<QStatCQFormatTraits>},
-      {to_string_view(QSTAT), ocs::QStatParameter::JOB_FORMAT, &run_procedure<QStatJobTraits>},
+      {to_string_view(QCONF), "", READS, &run_procedure<QConfTraits>},
+      {to_string_view(QCONF), ocs::QConfParameter::HGROUP_SHOW, READS, &run_procedure<QConfHGroupShowTraits>},
+      {to_string_view(QCONF), ocs::QConfParameter::HGROUP_TREE, READS, &run_procedure<QConfHGroupTreeTraits>},
+      {to_string_view(QCONF), ocs::QConfParameter::HGROUP_RESOLVED, READS, &run_procedure<QConfHGroupResolvedTraits>},
+      {to_string_view(QCONF), ocs::QConfParameter::HGROUP_WHY, READS, &run_procedure<QConfHGroupWhyTraits>},
+      {to_string_view(QCONF), ocs::QConfParameter::CENTRY_LIST, READS, &run_procedure<QConfTableTraits>},
+      {to_string_view(QCONF), ocs::QConfParameter::CATEGORY_LIST, READS, &run_procedure<QConfTableTraits>},
+      {to_string_view(QCONF), ocs::QConfParameter::QUEUE_SICK, READS, &run_procedure<QConfSickTraits>},
+      {to_string_view(QCONF), ocs::QConfParameter::OBJECT_FILTER, READS, &run_procedure<QConfObjectFilterTraits>},
+      {to_string_view(QCONF), ocs::QConfParameter::EVENT_CLIENT_LIST, READS, &run_procedure<QConfEventClientTraits>},
+      {to_string_view(QCONF), ocs::QConfParameter::PROCESSOR_LIST, READS, &run_procedure<QConfProcessorTraits>},
+      {to_string_view(QCONF), ocs::QConfParameter::THREAD_POOL_LIST, READS, &run_procedure<QConfThreadPoolTraits>},
+      {to_string_view(QCONF), ocs::QConfParameter::SHARETREE_TREE, READS, &run_procedure<QConfShareTreeTreeTraits>},
+      {to_string_view(QCONF), ocs::QConfParameter::SHARETREE_NODES, READS, &run_procedure<QConfShareTreeNodesTraits>},
+      {to_string_view(QCONF), ocs::QConfParameter::CQUEUE_SHOW, READS, &run_procedure<QConfCQueueShowTraits>},
+      /* The only entry that writes. It names CAL_LIST, which is what the
+       * request must be addressed to and what the modify permission is checked
+       * against - see ProcedureRequirements above. */
+      {to_string_view(QCONF), ocs::CalendarModParameter::CALENDAR_MOD,
+       modifies(ocs::gdi::Target::CAL_LIST), &run_procedure<CalendarModTraits>},
+      {to_string_view(QHOST), "", READS, &run_procedure<QHostTraits>},
+      {to_string_view(QQUOTA), "", READS, &run_procedure<QQuotaTraits>},
+      {to_string_view(QRSTAT), "", READS, &run_procedure<QRStatTraits>},
+      {to_string_view(QSTAT), to_string_view(QSELECT), READS, &run_procedure<QStatSelectTraits>},
+      {to_string_view(QSTAT), ocs::QStatParameter::DEFAULT_FORMAT, READS, &run_procedure<QStatDefaultTraits>},
+      {to_string_view(QSTAT), ocs::QStatParameter::CQ_FORMAT, READS, &run_procedure<QStatCQFormatTraits>},
+      {to_string_view(QSTAT), ocs::QStatParameter::JOB_FORMAT, READS, &run_procedure<QStatJobTraits>},
    });
 } // namespace
 
@@ -728,9 +812,27 @@ void sge_c_gdi_procedure(gdi_object_t *ao, ocs::gdi::Packet *packet, ocs::gdi::T
    DPRINTF("requested procedure: \"" SFN "/" SFN "\"\n", name.c_str(), sub_name.c_str());
 
    // Find and trigger the procedures handler
-   for (const auto &[procedure_name, sub_procedure_name, handler]: procedure_dispatch_table) {
+   for (const auto &[procedure_name, sub_procedure_name, requirements, handler]: procedure_dispatch_table) {
       if (procedure_name == name && sub_procedure_name == sub_name) {
-         handler(packet, task);
+         /* The request said which permission checks ran before we got here:
+          * the command chose between the read and the modify branch of
+          * sge_c_gdi_check_execution_permission(), and the target chose which
+          * object list those checks asked about. Neither is believed - both
+          * must match what this procedure's entry declares, or a caller could
+          * have a modifying procedure checked as a read, or have it checked
+          * against an object it does not touch. Refused here rather than in the
+          * permission path because this is the function the worker dispatch
+          * reaches, so the guard must not depend on a caller having looked
+          * first. */
+         if (cmd != requirements.command || task->target != requirements.target) {
+            snprintf(SGE_EVENT, SGE_EVENT_SIZE,
+                     "stored procedure \"" SFN "/" SFN "\" cannot be executed as " SFN " on " SFN,
+                     name.c_str(), sub_name.c_str(), to_string(cmd).c_str(),
+                     to_string(task->target).c_str());
+            answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_ENOIMP, ANSWER_QUALITY_ERROR);
+            DRETURN_VOID;
+         }
+         handler(packet, task, monitor);
          DRETURN_VOID;
       }
    }

@@ -36,6 +36,7 @@ std::string ocs::gdi::to_string(const Command cmd) {
       case Command::COPY: return "COPY";
       case Command::REPLACE: return "REPLACE";
       case Command::GET_PROCEDURE: return "PROCEDURE";
+      case Command::MOD_PROCEDURE: return "PROCEDURE_MOD";
       case Command::NONE: return "NONE";
    }
    return "UNKNOWN_COMMAND";

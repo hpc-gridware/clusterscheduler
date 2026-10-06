@@ -338,6 +338,15 @@ get_gdi_executor_ds(ocs::gdi::Packet *packet) {
          } else {
             type = get_most_restrictive_datastore(type, ocs::DataStore::READER);
          }
+      } else if (operation == ocs::gdi::Command::MOD_PROCEDURE) {
+         // A procedure that may change state always needs the GLOBAL DS. Unlike
+         // GET_PROCEDURE above there is no reader option to weigh: the reader
+         // threads must never see it, and the global queue is what puts it on a
+         // worker, where it takes the write lock because it is deliberately
+         // absent from the read exemption in sge_thread_worker.cc. The final
+         // else below would reach the same answer; it is spelled out so that
+         // the routing of a write does not rest on a fallthrough.
+         type = get_most_restrictive_datastore(type, ocs::DataStore::GLOBAL);
       } else if (operation == ocs::gdi::Command::GET) {
          bool is_qconf = (strcmp(packet->commproc, to_cstr(QCONF)) == 0);
          bool is_manager = manop_is_manager(packet);

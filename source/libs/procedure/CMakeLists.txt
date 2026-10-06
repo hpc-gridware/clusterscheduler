@@ -26,6 +26,9 @@ set(LIBRARY_SOURCES
         ocs_ProcedureView.cc
         ocs_ProcedureController.cc
 
+        calendar/ocs_CalendarModParameter.cc
+        calendar/ocs_CalendarModServer.cc
+
         qhost/ocs_QHostContoller.cc
         qhost/ocs_QHostParameter.cc
         qhost/ocs_QHostParameterClient.cc

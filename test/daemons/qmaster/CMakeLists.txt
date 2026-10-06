@@ -48,6 +48,18 @@ target_link_libraries(test_qmaster_hgroup_cache PRIVATE gdi sgeobj cull comm com
 add_test(NAME test_qmaster_hgroup_cache COMMAND test_qmaster_hgroup_cache)
 set_tests_properties(test_qmaster_hgroup_cache PROPERTIES DISABLED TRUE)
 
+# CS-2822: which command and target a modifying stored procedure may arrive
+# under is enforced where the request is dispatched, and the permission checks
+# behind it need a data store and a live GDI packet -- so this one talks to a
+# RUNNING qmaster over GDI, the way a client would. Same DISABLED + installed
+# treatment as test_qmaster_hgroup_reserved above: a plain ctest run has no
+# cluster, and a testsuite check drives it.
+add_executable(test_qmaster_procedure_mod test_qmaster_procedure_mod.cc)
+target_include_directories(test_qmaster_procedure_mod PRIVATE "./")
+target_link_libraries(test_qmaster_procedure_mod PRIVATE procedure gdi sgeobj cull comm commlists uti ${SGE_LIBS})
+add_test(NAME test_qmaster_procedure_mod COMMAND test_qmaster_procedure_mod)
+set_tests_properties(test_qmaster_procedure_mod PROPERTIES DISABLED TRUE)
+
 add_executable(test_qmaster_rusage
       test_qmaster_rusage.cc
       ../../../source/daemons/qmaster/sge_rusage.cc)
@@ -133,6 +145,7 @@ add_test(NAME test_qmaster_calendar COMMAND test_qmaster_calendar)
 if (INSTALL_SGE_TEST)
    install(TARGETS test_qmaster_hgroup_reserved DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_qmaster_hgroup_cache DESTINATION testbin/${SGE_ARCH})
+   install(TARGETS test_qmaster_procedure_mod DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_qmaster_timed_event DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_qmaster_rusage DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_qmaster_calendar DESTINATION testbin/${SGE_ARCH})

@@ -305,6 +305,18 @@ sge_c_gdi_check_execution_permission(ocs::gdi::Packet *packet, ocs::gdi::Task *t
       case ocs::gdi::Command::COPY:
       case ocs::gdi::Command::REPLACE:
       case ocs::gdi::Command::DEL:
+      case ocs::gdi::Command::MOD_PROCEDURE:
+         /* MOD_PROCEDURE belongs here and not beside GET_PROCEDURE above: a
+          * procedure that may change state has to pass the same two checks a
+          * MOD does. It can do so because such a request carries the object
+          * list it writes as its target, not Target::PROCEDURE - which owns no
+          * permission of its own, so checking that would have refused every
+          * write procedure through the fail-closed default of
+          * sge_chck_mod_perm_user(). What the client claims there is not
+          * believed: sge_c_gdi_procedure() refuses a request whose target or
+          * command disagrees with the dispatch entry of the procedure it names,
+          * so a caller cannot pick a weaker permission by naming a different
+          * object than the procedure actually writes. */
          if (!sge_chck_mod_perm_user(packet, &(task->answer_list), task->target)) {
             DRETURN(false);
          }
@@ -452,9 +464,19 @@ sge_c_gdi_process_in_worker(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
          MONITOR_GDI_REPLACE(monitor);
          sge_c_gdi_replace(ao, packet, task, command, sub_command, monitor);
          break;
+      // The two procedure commands share a dispatch, which refuses a procedure
+      // whose entry declares the other one, but they are counted apart: a read
+      // is served from a reader thread, a modification serialises the daemon
+      // under the global write lock.
+      // @todo CS-1913 the remaining monitoring work for procedures is the
+      //       per-procedure breakdown and timing; the two request counters are
+      //       in place since CS-2822.
       case ocs::gdi::Command::GET_PROCEDURE:
-         // @todo CS-1913 Enhance monitoring interface to monitor stored procedures
-         //MONITOR_GDI_REPLACE(monitor);
+         MONITOR_GDI_PROC_GET(monitor);
+         sge_c_gdi_procedure(ao, packet, task, command, sub_command, monitor);
+         break;
+      case ocs::gdi::Command::MOD_PROCEDURE:
+         MONITOR_GDI_PROC_MOD(monitor);
          sge_c_gdi_procedure(ao, packet, task, command, sub_command, monitor);
          break;
       default:

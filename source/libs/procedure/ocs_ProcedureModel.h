@@ -24,6 +24,8 @@
  */
 
 #include "cull/cull.h"
+#include "gdi/ocs_gdi_Command.h"
+#include "gdi/ocs_gdi_Target.h"
 
 #include "ocs_ProcedureParameter.h"
 
@@ -82,6 +84,38 @@ namespace ocs {
 
 #pragma region Data Retrieval
    public:
+      /** @brief The GDI command this model's procedure runs under
+       *
+       * A reading procedure arrives as `GET_PROCEDURE`, which is checked like a
+       * plain read; one that may change state arrives as `MOD_PROCEDURE` and is
+       * checked like a MOD (CS-2822). The two are not interchangeable: qmaster
+       * decides the permission checks from the command and then refuses a
+       * procedure whose dispatch entry declares the other one, so a model that
+       * writes must say so here or its request is turned down.
+       *
+       * @return the command to send
+       */
+      [[nodiscard]] virtual gdi::Command get_command() const {
+         return gdi::Command::GET_PROCEDURE;
+      }
+
+      /** @brief The GDI target this model's procedure is addressed to
+       *
+       * A read is addressed to `Target::PROCEDURE`, which owns no permission of
+       * its own - right for a read, which is checked by host only. A procedure
+       * that may change state must name the object list it writes instead, so
+       * that the modify permission and admin host checks ask about that list
+       * and so that qmaster's dispatch is handed the row carrying its write
+       * hooks (CS-2822). qmaster refuses a request whose target disagrees with
+       * what the procedure's dispatch entry declares, so this is checked, not
+       * trusted.
+       *
+       * @return the target to address
+       */
+      [[nodiscard]] virtual gdi::Target get_target() const {
+         return gdi::Target::PROCEDURE;
+      }
+
       virtual bool make_snapshot(lList **answer_list, ProcedureParameter &parameter);
 #pragma endregion
 

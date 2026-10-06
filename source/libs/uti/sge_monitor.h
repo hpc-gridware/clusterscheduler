@@ -329,6 +329,8 @@ typedef struct {
    uint32_t gdi_trig_count;     ///< GDI trigger requests
    uint32_t gdi_perm_count;     ///< GDI permission requests
    uint32_t gdi_replace_count;  ///< GDI replace requests
+   uint32_t gdi_proc_get_count; ///< stored procedure calls that only read
+   uint32_t gdi_proc_mod_count; ///< stored procedure calls that may change state
 
    uint32_t eload_count;        ///< load reports received from execd
    uint32_t econf_count;        ///< configuration version requests from execd
@@ -357,6 +359,24 @@ typedef struct {
 #define MONITOR_GDI_PERM(monitor)   if ((monitor->monitor_time > 0) && (monitor->ext_type == GDI_EXT)) ((m_gdi_t*)(monitor->ext_data))->gdi_perm_count++
 /// count one GDI replace request
 #define MONITOR_GDI_REPLACE(monitor) if ((monitor->monitor_time > 0) && (monitor->ext_type == GDI_EXT)) ((m_gdi_t*)(monitor->ext_data))->gdi_replace_count++
+
+/** @def MONITOR_GDI_PROC_GET
+ * @brief Count one stored procedure call that only reads
+ * @param monitor the thread's monitoring structure
+ */
+#define MONITOR_GDI_PROC_GET(monitor) if ((monitor->monitor_time > 0) && (monitor->ext_type == GDI_EXT)) ((m_gdi_t*)(monitor->ext_data))->gdi_proc_get_count++
+
+/** @def MONITOR_GDI_PROC_MOD
+ * @brief Count one stored procedure call that may change state
+ *
+ * Counted apart from the reading ones on purpose: a reading procedure is served
+ * from a reader thread under a read lock, while one that may modify runs on a
+ * worker under the global write lock and therefore serialises the daemon. One
+ * number for both would hide exactly the load an administrator is looking for.
+ *
+ * @param monitor the thread's monitoring structure
+ */
+#define MONITOR_GDI_PROC_MOD(monitor) if ((monitor->monitor_time > 0) && (monitor->ext_type == GDI_EXT)) ((m_gdi_t*)(monitor->ext_data))->gdi_proc_mod_count++
 
 /** @brief Count one acknowledgement
  *

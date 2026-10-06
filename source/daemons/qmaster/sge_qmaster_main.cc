@@ -79,6 +79,7 @@
 #include "sge_thread_reader.h"
 #include "sge_thread_event_master.h"
 #include "procedure/qconf/ocs_QConfModelServer.h"
+#include "sge_calendar_qmaster.h"
 
 #include "sge_thread_utility.h"
 #include "setup_qmaster.h"
@@ -296,6 +297,9 @@ int main(int argc, char *argv[]) {
     * not call into a daemon, so the function that builds the list is handed to
     * the procedure model here, before any worker can answer a request. */
    ocs::qconf_set_thread_pool_provider(get_active_thread_list);
+   // CS-2822: the procedure library cannot call into the daemon, so the writing
+   // code is handed to it here, once, the same way the thread pool list is.
+   ocs::set_calendar_mod_provider(calendar_mod_from_procedure);
 
    /*
     * Setup all threads and initialize corresponding modules.

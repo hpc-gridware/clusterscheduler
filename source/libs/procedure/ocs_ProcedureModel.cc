@@ -40,9 +40,9 @@
 
 /** @brief Send the procedure request to qmaster and store the response.
  *
- * Serialises @p parameter into a CULL bundle, issues a GDI GET_PROCEDURE
- * request, and stores the resulting response list.  On success the rendered
- * output is accessible via get_output_text().
+ * Serialises @p parameter into a CULL bundle, issues a GDI procedure request
+ * under the command get_command() names, and stores the resulting response
+ * list.  On success the rendered output is accessible via get_output_text().
  *
  * @param answer_list  Receives error messages on failure.
  * @param parameter    The parsed procedure parameters to send.
@@ -55,7 +55,7 @@ ocs::ProcedureModel::make_snapshot(lList **answer_list, ProcedureParameter &para
    // Fetch the SPP_Type list and pass it to qmaster
    lList *request_and_response = parameter.get_bundle();
 
-   *answer_list = gdi::Client::sge_gdi(gdi::Target::PROCEDURE, gdi::Command::GET_PROCEDURE, gdi::SubCommand::NONE,
+   *answer_list = gdi::Client::sge_gdi(get_target(), get_command(), gdi::SubCommand::NONE,
                                        &request_and_response, nullptr, nullptr);
 
    /* CS-2820: the response is kept even when the answer list carries an error.

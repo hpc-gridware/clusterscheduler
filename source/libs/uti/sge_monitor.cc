@@ -679,7 +679,7 @@ static void ext_sch_output(dstring *message, void *monitoring_extension, double 
 static void ext_gdi_output(dstring *message, void *monitoring_extension, double time, rapidjson::Writer<rapidjson::StringBuffer> *writer) {
    auto *gdi_ext = (m_gdi_t *) monitoring_extension;
 
-   sge_dstring_sprintf_append(message, MSG_UTI_MONITOR_GDIEXT_FFFFFFFFFFFFUUU,
+   sge_dstring_sprintf_append(message, MSG_UTI_MONITOR_GDIEXT_FFFFFFFFFFFFFFUUU,
                               gdi_ext->eload_count / time, gdi_ext->ejob_count / time,
                               gdi_ext->econf_count / time, gdi_ext->eproc_count / time,
                               gdi_ext->eack_count / time,
@@ -687,6 +687,8 @@ static void ext_gdi_output(dstring *message, void *monitoring_extension, double 
                               gdi_ext->gdi_mod_count / time, gdi_ext->gdi_del_count / time,
                               gdi_ext->gdi_cp_count / time, gdi_ext->gdi_trig_count / time,
                               gdi_ext->gdi_perm_count / time,
+                              gdi_ext->gdi_proc_get_count / time,
+                              gdi_ext->gdi_proc_mod_count / time,
                               gdi_ext->queue_length,
                               gdi_ext->rqueue_length,
                               gdi_ext->wrqueue_length
@@ -714,6 +716,8 @@ static void ext_gdi_output(dstring *message, void *monitoring_extension, double 
       write_json(*writer, "cp_requests", gdi_ext->gdi_cp_count);
       write_json(*writer, "trigger_requests", gdi_ext->gdi_trig_count);
       write_json(*writer, "permission_requests", gdi_ext->gdi_perm_count);
+      write_json(*writer, "procedure_get_requests", gdi_ext->gdi_proc_get_count);
+      write_json(*writer, "procedure_mod_requests", gdi_ext->gdi_proc_mod_count);
       writer->EndObject();
 
       writer->Key("queue_lengths");
