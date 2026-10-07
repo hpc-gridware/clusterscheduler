@@ -1167,7 +1167,12 @@ bool centry_elem_validate(lListElem *centry, const lList *centry_list,
    }
 
    if (type == TYPE_RSMAP) {
-      ret = centry_check_rsmap(answer_list, lGetUlong(centry, CE_consumable), attrname);
+      // accumulate: this used to assign, which discarded every earlier failure in this
+      // function for a resource map - an invalid relation operator, for instance, was
+      // reported into the answer list and the complex was accepted anyway
+      if (!centry_check_rsmap(answer_list, lGetUlong(centry, CE_consumable), attrname)) {
+         ret = false;
+      }
    }
 
 
