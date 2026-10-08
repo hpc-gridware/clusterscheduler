@@ -521,8 +521,14 @@ ar_del(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lListElem *ep
             ar_where = lOrWhere(ar_where, new_where);
          }
       }
-   } else if (sge_is_pattern(id_str)) {
-      /* if no userlist and wildcard jobs was requested only delete the own ars */
+   } else if (id_str != nullptr && !isdigit(id_str[0])) {
+      /* CS-2863: no user list and a selection by name - plain or wildcard - selects only the
+       * caller's own ARs. That is what qrdel(1) documents, and it is what qdel does for a job
+       * name, down to this same isdigit() test (job_list_filter() in sge_job_qmaster.cc). The
+       * restriction used to be added for a pattern only, so an exact name reached the ARs of
+       * every user. Selecting by id is deliberately not restricted here - an id names one AR,
+       * and the permission check below decides whether the caller may have it. A manager who
+       * wants the ARs of all users asks for them with -u '*'. */
       lCondition *new_where = nullptr;
       new_where = lWhere("%T(%I p= %s)", AR_Type, AR_owner, packet->user);
       if (ar_where == nullptr) {
