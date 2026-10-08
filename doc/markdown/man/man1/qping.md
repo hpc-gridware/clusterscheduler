@@ -56,17 +56,17 @@ Show full status information on each ping interval.
 
   **qmaster**:
   * *0* There is no unusual timing situation.
-  * *1* One or more threads has reached warning timeout. This may happen when at least one thread does not increment 
-    his time stamp for a not usual long time. A possible reason for this is a high workload for this thread.
-  * *2* One or more threads has reached error timeout. This may happen when at least one thread has not incremented 
-    his time stamp for longer than 10 minutes.
+  * *1* One or more threads has reached warning timeout. This may happen when at least one thread does not increment
+    its time stamp for a not usual long time. A possible reason for this is a high workload for this thread.
+  * *2* One or more threads has reached error timeout. This may happen when at least one thread has not incremented
+    its time stamp for longer than 10 minutes.
   * *3* The time measurement is not initialized.
 
   **execd**:
   * *0* There is no unusual timing situation.
-  * *1* Dispatcher has reached warning timeout. This may happen when the dispatcher does not increment his time stamp 
+  * *1* Dispatcher has reached warning timeout. This may happen when the dispatcher does not increment its time stamp
     for an unusual long time. A possible reason for this is a high workload.
-  * *2* Dispatcher has reached error timeout. This may happen when the dispatcher has not incremented his time stamp 
+  * *2* Dispatcher has reached error timeout. This may happen when the dispatcher has not incremented its time stamp
     for longer than 10 minutes.
   * *3* The time measurement is not initialized.
   

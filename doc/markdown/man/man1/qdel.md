@@ -17,8 +17,8 @@ date: __DATE__
 # DESCRIPTION
 
 `qdel` provides a means for a user/operator/manager to delete one or more jobs. A manager/operator can delete jobs 
-belonging to any user, while a regular user can only delete his or her own jobs. If a manager wants to delete another 
-user's job, the manager can specify the job id. If the manager is using a job name or pattern, he or she must also
+belonging to any user, while a regular user can delete only their own jobs. If a manager wants to delete another
+user's job, the manager can specify the job id. If the manager is using a job name or pattern, they must also
 specify the user's name via `-u` *wc_user_list*. A `qdel` *wc_job_name* will delete only the jobs of the calling user 
 by default. Find additional information concerning *wc_user_list* and *wc_job_list* in sge_types(1).
 
@@ -49,7 +49,7 @@ job array by command `qdel job_id -t 5-10`. All other tasks (1-4 and 11-100) wil
 ## -u *wc_user_list* 
 Deletes only those jobs which were submitted by users specified in the list of usernames. For managers, it is 
 possible to use `qdel -u "\*"` to delete all jobs of all users. If a manager wants to delete a specific job of 
-a user, he has to specify the user and the job. If no job is specified all jobs from that user are deleted.
+a user, they have to specify the user and the job. If no job is specified all jobs from that user are deleted.
 
 ## *wc_job_range_list*
 A list of jobs, which should be deleted. Find details in xxqs_name_sxx_types(1).
