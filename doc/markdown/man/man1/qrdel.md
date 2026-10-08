@@ -20,7 +20,10 @@ date: __DATE__
 A manager/operator can delete ARs belonging to any user, while a regular user can only delete his or her
 own ARs. If a manager wants to delete another user's AR, the manager can specify the AR id. 
 
-By default, `qrdel` *wc_ar_name* will delete only the ARs belonging to that user. A manager is able to delete another 
+By default, `qrdel` *wc_ar_name* will delete only the ARs belonging to the calling user, whether
+the name is given in full or as a pattern. An AR id is not restricted that way; it names a single
+AR, and the permission rules above decide whether the caller may delete it.
+A manager is able to delete another
 user's AR via `-u` *wc_user_list*. Jobs referring to an AR tagged for deletion will also be removed. 
 Only if all jobs referring to an AR are removed from the xxQS_NAMExx database will the AR also be removed.
 
@@ -46,7 +49,8 @@ possible to use `qrdel -u "\*"` to delete all ARs for all users. If a manager wa
 AR for a user, he has to specify the user and the AR id. If no AR is specified, all ARs belonging to that user are deleted.
 
 ## *wc_ar_list*
-A list of AR ID's that should be deleted
+A list of AR ids, AR names or AR name patterns that should be deleted. See
+xxqs_name_sxx_types(1) for the syntax.
 
 # ENVIRONMENTAL VARIABLES
 
