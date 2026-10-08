@@ -53,7 +53,7 @@ cluster configuration.
 independent make steps across a cluster of suitable machines.
 
 ## qmod(1)  
-`qmod` allows the owner(s) of a queue to suspend and enable all queues associated with his machine (all currently 
+`qmod` allows the owner(s) of a queue to suspend and enable all queues associated with their machine (all currently
 active processes in this queue are also signaled) or to suspend and enable jobs executing in the owned queues.
 
 ## qping(1)

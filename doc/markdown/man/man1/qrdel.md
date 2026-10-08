@@ -17,7 +17,7 @@ date: __DATE__
 # DESCRIPTION
 
 `Qrdel` provides a means for a user/operator/manager to delete one or more advance reservations (AR). 
-A manager/operator can delete ARs belonging to any user, while a regular user can only delete his or her
+A manager/operator can delete ARs belonging to any user, while a regular user can delete only their
 own ARs. If a manager wants to delete another user's AR, the manager can specify the AR id. 
 
 By default, `qrdel` *wc_ar_name* will delete only the ARs belonging to the calling user, whether
@@ -46,7 +46,7 @@ Prints a list of all options.
 ## -u *wc_user_list*
 Deletes only those ARs which were submitted by users specified in the list of usernames. For managers, it is 
 possible to use `qrdel -u "\*"` to delete all ARs for all users. If a manager wants to delete a specific
-AR for a user, he has to specify the user and the AR id. If no AR is specified, all ARs belonging to that user are deleted.
+AR for a user, they have to specify the user and the AR id. If no AR is specified, all ARs belonging to that user are deleted.
 
 ## *wc_ar_list*
 A list of AR ids, AR names or AR name patterns that should be deleted. See
