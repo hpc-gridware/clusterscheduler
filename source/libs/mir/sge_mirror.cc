@@ -183,11 +183,24 @@ static const mirror_description dev_mirror_base[SGE_TYPE_ALL] = {
 /* multithreading support. */
 /*-------------------------*/
 
+/* CS-2859: how many failed callbacks, and how close together, are taken as proof that the
+ * mirrored lists disagree with the qmaster's, and how often that may be acted upon. See
+ * mir_note_callback_failure(). */
+constexpr u_long32 MIR_RESYNC_FAILURE_THRESHOLD = 10;
+constexpr u_long32 MIR_RESYNC_FAILURE_WINDOW = 60;
+constexpr u_long32 MIR_RESYNC_MIN_INTERVAL = 60;
+
 typedef struct {
    bool produce_qmaster_alive_timeout; /* used to produce qmaster alive timeout when
                                         * SGE_PRODUCE_ALIVE_TIMEOUT_ERROR environment
                                         * variable is set. */
    mirror_description mirror_base[SGE_TYPE_ALL]; /* subscription handlers */
+   u_long32 callback_failures;         /* CS-2859: failed callbacks in the current window */
+   u_long64 first_callback_failure;    /* CS-2859: when that window opened */
+   u_long64 last_resync_request;       /* CS-2859: when a total update was last asked for */
+   u_long32 produce_callback_failures; /* CS-2859: callbacks still to be failed on purpose when
+                                        * the SGE_PRODUCE_MIRROR_CALLBACK_ERROR environment
+                                        * variable is set. */
 } mir_state_t;
 
 static pthread_key_t   mir_state_key;
@@ -214,6 +227,25 @@ static void mir_state_init(mir_state_t* state)
       state->mirror_base[i].callback_default = dev_mirror_base[i].callback_default;
       state->mirror_base[i].client_data       = nullptr;
    }
+
+   state->callback_failures = 0;
+   state->first_callback_failure = 0;
+   state->last_resync_request = 0;
+
+   /*
+    * if the environment variable SGE_PRODUCE_MIRROR_CALLBACK_ERROR is defined, that many
+    * callbacks fail on purpose, which is how the recovery of a mirror that disagrees with the
+    * qmaster is tested. A value which is not a positive number fails enough of them to reach
+    * MIR_RESYNC_FAILURE_THRESHOLD, so that setting the variable is never a silent no-op.
+    */
+   state->produce_callback_failures = 0;
+   const char *produce_callback_failures = getenv("SGE_PRODUCE_MIRROR_CALLBACK_ERROR");
+   if (produce_callback_failures != nullptr) {
+      state->produce_callback_failures = atoi(produce_callback_failures);
+      if (state->produce_callback_failures == 0) {
+         state->produce_callback_failures = MIR_RESYNC_FAILURE_THRESHOLD * 2;
+      }
+   }
 }
 
 static void mir_state_destroy(void* state)
@@ -238,9 +270,94 @@ static mirror_description *mir_get_mirror_base()
    return mir_state->mirror_base;
 }
 
+static bool mir_produce_callback_failure()
+{
+   GET_SPECIFIC(mir_state_t, mir_state, mir_state_init, mir_state_key);
+   if (mir_state->produce_callback_failures == 0) {
+      return false;
+   }
+   mir_state->produce_callback_failures--;
+   return true;
+}
+
 /*----------------------------*/
 /* End multithreading support */
 /*----------------------------*/
+
+/**
+ * @brief note a failed callback and ask for a total update once they prove the mirror is broken
+ *
+ * A failed callback is the client's own assertion that its mirrored lists disagree with the
+ * qmaster's: a MOD or a DEL event can only be applied to an object the client already holds, so
+ * a callback which cannot find that object proves the two views have drifted apart. A single
+ * failure can be benign - an object removed while an event about it was in flight - so it is the
+ * repetition which is taken as evidence: MIR_RESYNC_FAILURE_THRESHOLD failures within
+ * MIR_RESYNC_FAILURE_WINDOW seconds. Failures further apart than that say nothing about the
+ * state the mirror is in now and open a new window instead of adding to the old one.
+ *
+ * Successful callbacks in between are deliberately not counted and do not clear the window. An
+ * empty mirror still applies every ADD and every LIST event without complaint, so a run of
+ * failures is broken up by successes while the client is quite unable to work - which is the
+ * state this exists to get out of.
+ *
+ * Nothing else repairs it. sge_resync_schedd() is the only function which forces a full resend,
+ * it is reachable only from the GDI order path, and a scheduler whose mirror holds no exec hosts
+ * dispatches nothing and therefore sends no orders - so the single trigger sits behind the very
+ * outage it would cure, and the only cure left is restarting the thread (CS-2859). Asking for a
+ * new registration reaches the same end down the path which already serves the acknowledge
+ * timeout: the client registers again and sge_add_event_client() answers with a total update of
+ * every subscribed list.
+ *
+ * The flag is acted upon by the client's own loop and not here. The scheduler thread and the mirror
+ * threads both ask ec_need_new_registration() before they process an event list, so the
+ * registration happens on their next pass through it - one wait at worst. That order is deliberate
+ * for the acknowledge timeout, which is marked while the list is being fetched and so is caught in
+ * the same pass, and it is left as it is.
+ *
+ * A total update is expensive, so one is asked for at most every MIR_RESYNC_MIN_INTERVAL
+ * seconds. That bound is what matters when the registration does not help: without it a client
+ * whose mirror stays broken would ask again as fast as events arrive.
+ *
+ * @param evc the event client whose callback failed
+ */
+static void
+mir_note_callback_failure(sge_evc_class_t *evc) {
+   DENTER(TOP_LAYER);
+   GET_SPECIFIC(mir_state_t, mir_state, mir_state_init, mir_state_key);
+
+   const u_long64 now = sge_get_gmt64();
+
+   if (mir_state->callback_failures == 0 ||
+       now - mir_state->first_callback_failure > sge_gmt32_to_gmt64(MIR_RESYNC_FAILURE_WINDOW)) {
+      mir_state->first_callback_failure = now;
+      mir_state->callback_failures = 0;
+   }
+
+   if (++mir_state->callback_failures < MIR_RESYNC_FAILURE_THRESHOLD) {
+      DRETURN_VOID;
+   }
+
+   // A registration which is already pending delivers the total update anyway
+   if (evc->ec_need_new_registration(evc)) {
+      mir_state->callback_failures = 0;
+      DRETURN_VOID;
+   }
+
+   if (mir_state->last_resync_request != 0 &&
+       now - mir_state->last_resync_request < sge_gmt32_to_gmt64(MIR_RESYNC_MIN_INTERVAL)) {
+      DPRINTF("mirror still broken, but a total update was asked for less than " sge_u32
+              " seconds ago\n", MIR_RESYNC_MIN_INTERVAL);
+      DRETURN_VOID;
+   }
+
+   ERROR(MSG_MIRROR_RESYNC_UUU, static_cast<u_long32>(evc->ec_get_id(evc)),
+         mir_state->callback_failures, MIR_RESYNC_FAILURE_WINDOW);
+   evc->ec_mark4registration(evc);
+
+   mir_state->last_resync_request = now;
+   mir_state->callback_failures = 0;
+   DRETURN_VOID;
+}
 
 /****** Eventmirror/sge_mirror_initialize() ********************************************
 *  NAME
@@ -1483,6 +1600,12 @@ sge_mirror_process_event_list_(sge_evc_class_t *evc, lList *event_list)
        */
       if (ret != SGE_EM_OK) {
          function_ret = SGE_EM_PROCESS_ERRORS;
+
+         if (ret == SGE_EM_CALLBACK_FAILED) {
+            // CS-2859: enough of these close together mean the events this client receives can
+            // no longer repair its lists, and only a total update can
+            mir_note_callback_failure(evc);
+         }
       }
    }
 
@@ -1517,6 +1640,14 @@ sge_mirror_process_event(sge_evc_class_t *evc, mirror_description *mirror_base,
    DENTER(TOP_LAYER);
 
    sge_dstring_init(&buffer_wrapper, buffer, sizeof(buffer));
+
+   // CS-2859: SGE_PRODUCE_MIRROR_CALLBACK_ERROR fails callbacks on purpose, to test that a
+   // client whose lists no longer agree with the qmaster's asks for a total update. The event is
+   // not mirrored either, so the lists really do fall behind, as they do in the real case.
+   if (mir_produce_callback_failure()) {
+      ERROR(MSG_MIRROR_CALLBACKFAILED_S, event_text(event, &buffer_wrapper));
+      DRETURN(SGE_EM_CALLBACK_FAILED);
+   }
 
 /* DEBUG */
 #if 1

@@ -49,6 +49,7 @@
 #define MSG_MIRROR_CALLBACKFAILED                  _MESSAGE(67008, _("callback failed"))
 #define MSG_MIRROR_PROCESSERRORS                   _MESSAGE(67009, _("errors processing events"))
 #define MSG_MIRROR_OK                              _MESSAGE(67010, _("ok"))
+#define MSG_MIRROR_RESYNC_UUU                      _MESSAGE(67019, _("the mirrored lists of event client " sge_u32 " disagree with the qmaster: " sge_u32 " callbacks failed within " sge_u32 " seconds. Requesting a new registration, which answers with a total update of all subscribed lists"))
 
 #define MSG_JOB_RECEIVEDINVALIDUSAGEEVENTFORJOB_S  _MESSAGE(67012, _("received invalid job usage event for job " SFN))
 #define MSG_JOB_CANTFINDJOBFORUPDATEIN_SS          _MESSAGE(67014, _("can't find job " SFN " for update in function " SFN))
