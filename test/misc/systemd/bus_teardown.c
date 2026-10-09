@@ -186,7 +186,9 @@ main(int argc, char *argv[]) {
    char *version = NULL;
    ret = read_version(bus, &version);
    printf("first read          ret=%d version=%s\n", ret, version != NULL ? version : "(none)");
-   if (ret < 0) {
+   if (ret < 0 && f_is_open(bus) <= 0) {
+      /* an error reply, e.g. access denied, still proves that the bus answered - only give up
+       * when the connection itself is not up */
       fprintf(stderr, "the connection did not work in the first place - giving up\n");
       return 2;
    }
