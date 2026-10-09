@@ -23,6 +23,8 @@
 #include <fstream>
 #include <limits>
 #include <dlfcn.h>
+#include <sys/stat.h>
+#include <system_error>
 
 #include "sge_bootstrap_env.h"
 #include "sge_log.h"
@@ -40,6 +42,9 @@ namespace ocs::uti {
    void *ocs::uti::Systemd::lib_handle = nullptr;
    sd_bus_open_system_func_t Systemd::sd_bus_open_system_func = nullptr;
    sd_bus_unref_func_t Systemd::sd_bus_unref_func = nullptr;
+   sd_bus_unref_func_t Systemd::sd_bus_flush_close_unref_func = nullptr;
+   sd_bus_is_open_func_t Systemd::sd_bus_is_open_func = nullptr;
+   sd_bus_get_fd_func_t Systemd::sd_bus_get_fd_func = nullptr;
    sd_bus_call_method_func_t Systemd::sd_bus_call_method_func = nullptr;
    sd_bus_message_read_func_t Systemd::sd_bus_message_read_func = nullptr;
    sd_bus_message_new_method_call_func_t Systemd::sd_bus_message_new_method_call_func = nullptr;
@@ -160,11 +165,36 @@ namespace ocs::uti {
          }
       }
       if (ret) {
-         // func = "sd_bus_unref";
-         // safer is sd_bus_flush_close_unref()
-         func = "sd_bus_flush_close_unref";
+         // we need both ways of dropping a connection: sd_bus_flush_close_unref() for one which is
+         // still open, sd_bus_unref() for one which is broken - see the destructor
+         func = "sd_bus_unref";
          sd_bus_unref_func = reinterpret_cast<sd_bus_unref_func_t>(dlsym(lib_handle, func));
          if (sd_bus_unref_func == nullptr) {
+            sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_LOAD_FUNC_SS, func, dlerror());
+            ret = false;
+         }
+      }
+      if (ret) {
+         func = "sd_bus_flush_close_unref";
+         sd_bus_flush_close_unref_func =
+               reinterpret_cast<sd_bus_unref_func_t>(dlsym(lib_handle, func));
+         if (sd_bus_flush_close_unref_func == nullptr) {
+            sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_LOAD_FUNC_SS, func, dlerror());
+            ret = false;
+         }
+      }
+      if (ret) {
+         func = "sd_bus_is_open";
+         sd_bus_is_open_func = reinterpret_cast<sd_bus_is_open_func_t>(dlsym(lib_handle, func));
+         if (sd_bus_is_open_func == nullptr) {
+            sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_LOAD_FUNC_SS, func, dlerror());
+            ret = false;
+         }
+      }
+      if (ret) {
+         func = "sd_bus_get_fd";
+         sd_bus_get_fd_func = reinterpret_cast<sd_bus_get_fd_func_t>(dlsym(lib_handle, func));
+         if (sd_bus_get_fd_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_LOAD_FUNC_SS, func, dlerror());
             ret = false;
          }
@@ -471,19 +501,93 @@ namespace ocs::uti {
     * This constructor initializes the Systemd object and sets the bus pointer to nullptr.
     */
    Systemd::Systemd()
-      : bus(nullptr) {
+      : bus(nullptr), bus_fd(-1), bus_fd_inode(0) {
+   }
+
+   /*!
+    * @brief Is the file descriptor of the connection still the one we got when we connected?
+    *
+    * libsystemd owns the file descriptor of a connection and closes it when the connection is
+    * dropped. If another part of the process closed it in the meantime, libsystemd aborts the
+    * whole process in an assertion in its safe_close(). And if the number has been reused for an
+    * unrelated file or socket by then, libsystemd would close that one instead.
+    *
+    * Both cases are detected by comparing the inode the file descriptor points to with the one it
+    * pointed to when we connected.
+    *
+    * @return true if the file descriptor is still ours, or if we have none to check
+    */
+   bool
+   Systemd::bus_fd_is_ours() const {
+      DENTER(TOP_LAYER);
+
+      if (bus_fd < 0) {
+         // we never got a file descriptor - there is nothing we could verify
+         DRETURN(true);
+      }
+
+      struct stat st{};
+      if (fstat(bus_fd, &st) != 0) {
+         DRETURN(false);
+      }
+
+      DRETURN(static_cast<uint64_t>(st.st_ino) == bus_fd_inode);
+   }
+
+   /*!
+    * @brief What the file descriptor of the connection refers to now
+    *
+    * Used when reporting a file descriptor which has been closed by someone else: what the number
+    * has been reused for usually points at the code which closed it.
+    *
+    * @return the target of /proc/self/fd/<file descriptor>, or "unknown" if it cannot be read
+    */
+   std::string
+   Systemd::bus_fd_target() const {
+      DENTER(TOP_LAYER);
+      std::string ret{"unknown"};
+
+      if (bus_fd >= 0) {
+         std::string link{"/proc/self/fd/"};
+         link += std::to_string(bus_fd);
+
+         std::error_code ec;
+         std::filesystem::path target = std::filesystem::read_symlink(link, ec);
+         if (!ec) {
+            ret = target.string();
+         }
+      }
+
+      DRETURN(ret);
    }
 
    /*!
     * @brief Destructor for the Systemd class
     *
-    * This destructor cleans up the Systemd object by unreferencing the bus pointer
-    * if it is not nullptr.
+    * Drops the reference to the bus connection, if there is one.
+    *
+    * A connection whose file descriptor has been closed by someone else is not dropped at all,
+    * see bus_fd_is_ours().
+    *
+    * A connection which is still open is flushed and closed, so that messages which have not been
+    * written yet still get delivered. A connection which is no longer open is only unreferenced:
+    * flushing it would do I/O on a dead socket without being able to deliver anything.
+    * sd_bus_is_open() also reports an error for a connection which was created in a different
+    * process, e.g. in a child after fork(), which again means: do not do any I/O on it.
     */
    Systemd::~Systemd() {
-      // Destructor implementation
       if (bus != nullptr) {
-         sd_bus_unref_func(bus);
+         if (!bus_fd_is_ours()) {
+            // Dropping the connection makes libsystemd close the file descriptor, and it aborts
+            // the process when that fails. Leak the connection object instead: a small leak in a
+            // rare case is better than a dead daemon. The error message tells us that we have a
+            // bug somewhere else - whoever closed the file descriptor did not own it.
+            ERROR(MSG_SYSTEMD_BUS_FD_CLOSED_IS, bus_fd, bus_fd_target().c_str());
+         } else if (sd_bus_is_open_func(bus) > 0) {
+            sd_bus_flush_close_unref_func(bus);
+         } else {
+            sd_bus_unref_func(bus);
+         }
          bus = nullptr;
       }
    }
@@ -506,6 +610,15 @@ namespace ocs::uti {
       if (r < 0) {
          sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_CONNECT_IS, r, strerror(-r));
          ret = false;
+      } else {
+         // remember the file descriptor and the socket it points to, see bus_fd_is_ours()
+         struct stat st{};
+         bus_fd = sd_bus_get_fd_func(bus);
+         if (bus_fd >= 0 && fstat(bus_fd, &st) == 0) {
+            bus_fd_inode = st.st_ino;
+         } else {
+            bus_fd = -1;
+         }
       }
 
       return ret;
