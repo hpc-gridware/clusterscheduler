@@ -240,6 +240,7 @@
 #define MSG_SYSTEMD_CANNOT_ENCODE_PATH_SIS         _MESSAGE(59264, _("cannot encode path for unit " PFNMAX ": error %d: " SFN4))
 #define MSG_SYSTEMD_CANNOT_DETECT_CGROUP_VERSION   _MESSAGE(59265, _("cannot detect cgroup version"))
 #define MSG_SYSTEMD_NOT_ROOT                       _MESSAGE(59266, _("cannot initialize the systemd integration, we are not running as root user"))
+#define MSG_SYSTEMD_BUS_FD_CLOSED_IS               _MESSAGE(59317, _("the file descriptor %d of our connection to systemd has been closed by someone else, it now refers to " SFQ " - not closing the connection"))
 
 // ocs_OpenSSL.cc
 #define MSG_OPENSSL_ALREADY_INITIALIZED            _MESSAGE(59280, _("openssl library already loaded"))

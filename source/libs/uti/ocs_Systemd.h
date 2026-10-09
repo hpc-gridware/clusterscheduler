@@ -52,6 +52,8 @@ namespace ocs::uti {
    /// @cond   pointer types mirroring the libsystemd sd-bus ABI, resolved with dlsym at runtime
    using sd_bus_open_system_func_t = int (*)(sd_bus **bus);
    using sd_bus_unref_func_t = sd_bus *(*)(sd_bus *bus);
+   using sd_bus_is_open_func_t = int (*)(sd_bus *bus);
+   using sd_bus_get_fd_func_t = int (*)(sd_bus *bus);
    using sd_bus_call_method_func_t = int (*)(sd_bus *bus, const char *destination, const char *path,
       const char *interface, const char *member, sd_bus_error *ret_error, sd_bus_message **reply,
       const char *types, ...);
@@ -99,6 +101,9 @@ namespace ocs::uti {
          static void *lib_handle;
          static sd_bus_open_system_func_t sd_bus_open_system_func;
          static sd_bus_unref_func_t sd_bus_unref_func;
+         static sd_bus_unref_func_t sd_bus_flush_close_unref_func;
+         static sd_bus_is_open_func_t sd_bus_is_open_func;
+         static sd_bus_get_fd_func_t sd_bus_get_fd_func;
          static sd_bus_call_method_func_t sd_bus_call_method_func;
          static sd_bus_message_read_func_t sd_bus_message_read_func;
          static sd_bus_message_new_method_call_func_t sd_bus_message_new_method_call_func;
@@ -158,8 +163,12 @@ namespace ocs::uti {
       private:
          // instance data
          sd_bus *bus;
+         int bus_fd;              // file descriptor of the connection, -1 if we could not get it
+         uint64_t bus_fd_inode;   // inode bus_fd pointed to when we connected
 
          // instance methods
+         bool bus_fd_is_ours() const;
+         std::string bus_fd_target() const;
          bool sd_bus_method_s_o(const std::string &method, std::string &input, std::string &output, dstring *error_dstr) const;
          bool sd_bus_method_u_o(const std::string &method, uint32_t input, std::string &output, dstring *error_dstr) const;
          sd_bus_slot *sd_bus_wait_for_job_subscribe(const std::string &signal, dstring *error_dstr) const;
@@ -169,6 +178,10 @@ namespace ocs::uti {
       public:
          Systemd();
          ~Systemd();
+
+         // an instance owns one sd_bus connection - copying it would unref the connection twice
+         Systemd(const Systemd &) = delete;
+         Systemd &operator=(const Systemd &) = delete;
 
          bool connect(dstring *error_dstr);
          bool connected() const;
