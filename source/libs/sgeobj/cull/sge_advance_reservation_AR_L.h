@@ -155,6 +155,11 @@
 *    SGE_OBJECT(AR_pe_object) - PE Object
 *    PE object granted to this AR (PE_Type) when it was scheduled.
 *
+*    SGE_STRING(AR_allocation_rule) - Allocation Rule
+*    The PE allocation rule the advance reservation reserves its slots with (qrsub -par).
+*    It overrides the allocation_rule of the requested PE, in the same way as the -par
+*    switch of qsub overrides it for a job. Only set when the AR requests a PE.
+*
 */
 
 enum {
@@ -192,7 +197,8 @@ enum {
    AR_granted_resources_list,   ///< Granted Resources
    AR_binding,   ///< Binding Strategy
    AR_project,   ///< Project
-   AR_pe_object   ///< PE Object
+   AR_pe_object,   ///< PE Object
+   AR_allocation_rule   ///< Allocation Rule
 };
 
 LISTDEF(AR_Type)
@@ -231,6 +237,7 @@ LISTDEF(AR_Type)
    SGE_OBJECT(AR_binding, BN_Type, CULL_SPOOL)
    SGE_STRING(AR_project, CULL_SPOOL)
    SGE_OBJECT(AR_pe_object, PE_Type, CULL_SPOOL)
+   SGE_STRING(AR_allocation_rule, CULL_SPOOL)
 LISTEND
 
 NAMEDEF(ARN)
@@ -269,6 +276,7 @@ NAMEDEF(ARN)
    NAME("AR_binding")
    NAME("AR_project")
    NAME("AR_pe_object")
+   NAME("AR_allocation_rule")
 NAMEEND
 
 /** @brief Number of attributes of the type, i.e. the size of its name table */

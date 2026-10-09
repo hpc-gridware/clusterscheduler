@@ -1173,6 +1173,7 @@
 
 #define MSG_GDI_USAGE_PAR_OPT             "[-par allocation_rule]"
 #define MSG_GDI_UTEXT_PAR_OPT             _MESSAGE(60746, _("set the parallel job allocation rule"))
+#define MSG_GDI_UTEXT_PAR_qrsub_OPT       _MESSAGE(60792, _("set the parallel AR allocation rule"))
 
 #define MSG_GDI_USAGE_fmt_OPT             "[-fmt plain|xml|json]"
 #define MSG_GDI_UTEXT_fmt_OPT             _MESSAGE(60747, _("show output in specified format"))

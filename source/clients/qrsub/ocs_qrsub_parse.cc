@@ -278,6 +278,14 @@ bool sge_parse_qrsub(lList *pcmdline, lList **alpp, lListElem **ar) {
       lSwapList(*ar, AR_pe_range, ep, SPA_argval_lListT);       /* SGE_LIST */
       lRemoveElem(pcmdline, &ep);
    }
+   /*  -par allocation_rule  reserve the slots with this rule instead of the PE's allocation_rule */
+   while ((ep = lGetElemStrRW(pcmdline, SPA_switch_val, "-par"))) {
+      /* The scope the tokenizer stored in SPA_argval_lCharT is always the global one: qrsub has no
+       * -scope switch, and a -scope given anyway stays in pcmdline and is rejected further down. */
+      lSetString(*ar, AR_allocation_rule, lGetString(ep, SPA_switch_arg));
+      lRemoveElem(pcmdline, &ep);
+   }
+
    /*   AR_master_queue_list  -masterq wc_queue_list, SGE_LIST bind master task to queue(s) */
    parse_list_simple(pcmdline, "-masterq", *ar, AR_master_queue_list, 0, 0, FLG_LIST_APPEND);
 

@@ -186,6 +186,9 @@ ocs::QRStatController::process_request(QRStatParameter &parameter, QRStatModelBa
             view.report_granted_parallel_environment_finish(out_);
             sge_dstring_free(&pe_range_string);
          }
+         if (lGetString(ar, AR_allocation_rule) != nullptr) {
+            view.report_ar_node_string(out_, "allocation_rule", lGetString(ar, AR_allocation_rule));
+         }
          if (lGetList(ar, AR_master_queue_list) != nullptr) {
             char tmp_buffer[MAX_STRING_SIZE];
             int fields[] = {QR_name, 0 };

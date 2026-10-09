@@ -14,7 +14,8 @@ date: __DATE__
 
 `qrsub` \[`-a` *date_time*\] \[`-A` *account_string*\] \[`-ckpt` *ckpt_name*\] \[`-d` *time*\] \[`-e` *date_time*\] 
 \[`-he` *yes*\|*no*\] \[`-help`\] \[`-l` *resource_list*\] \[`-now`\] \[`-M` *user*\[@*host*\],...\] 
-\[`-N` *ar_name*\] \[`-w` e \| v \] \[`-pe` *pe_name* *slot_range*\] \[`-q` *wc_queue_list*\] \[`-u` *wc_user_list*\]
+\[`-N` *ar_name*\] \[`-w` e \| v \] \[`-pe` *pe_name* *slot_range*\] \[`-par` *allocation_rule*\]
+\[`-q` *wc_queue_list*\] \[`-u` *wc_user_list*\]
 
 # DESCRIPTION
 
@@ -127,6 +128,20 @@ The specifiers *e* and *v* define the following validation modes:
 ## -pe *parallel_env* *n*\[-\[*m*\]\] \| [-\[*m*\]\],...  
 Parallel programming environment (PE) to select for the AR queue reservation. Please see the details of a PE 
 in xxqs_name_sxx_pe(5).
+
+## -par *allocation_rule*
+Overrides the allocation rule of the PE requested with `-pe`, see xxqs_name_sxx_pe(5), attribute
+`allocation_rule`. The AR then reserves its slots the way *allocation_rule* prescribes instead of the way the PE
+is configured, which allows an AR to reserve resources in the shape the jobs that will run in it need.
+
+`-par` requires `-pe`. It takes the same values as the `-par` option of `qsub`: a fixed number of slots per host,
+or one of `$pe_slots`, `$fill_up` and `$round_robin`.
+
+A job submitted into the AR does not have to request the same allocation rule. It only has to fit into the slots
+the AR reserved, as it does for every other resource the AR holds.
+
+Example: `qrsub -pe mpi 4 -par '$pe_slots' -d 3600` reserves all four slots on a single host, whatever the
+allocation rule of the PE *mpi* says.
 
 ## -q *wc_queue_list*
 Defines or redefines a list of cluster queues, queue domains or queue instances, that may be reserved by the AR. 

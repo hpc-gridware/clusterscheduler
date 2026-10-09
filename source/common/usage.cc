@@ -1116,7 +1116,11 @@ void sge_usage(ProgName prog_number, FILE *fp) {
    }
 
    if (VALID_OPT(par_OPT, prog_number)) {
-      PRINTITD(MSG_GDI_USAGE_PAR_OPT, MSG_GDI_UTEXT_PAR_OPT);
+      if (prog_number == QRSUB) {
+         PRINTITD(MSG_GDI_USAGE_PAR_OPT, MSG_GDI_UTEXT_PAR_qrsub_OPT);
+      } else {
+         PRINTITD(MSG_GDI_USAGE_PAR_OPT, MSG_GDI_UTEXT_PAR_OPT);
+      }
       MARK(OA_ALLOCATION_RULE);
    }
 

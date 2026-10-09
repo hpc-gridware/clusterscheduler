@@ -114,6 +114,9 @@ attributes are printed in the order below.
   as *queue*=*slots*.
 * *granted_parallel_environment* - the parallel environment the AR was granted, followed by the
   slot range it was submitted with, in the form *pe_name* slots *range*.
+* *allocation_rule* - the allocation rule the AR reserved its slots with, as given with
+  `qrsub -par`. Printed only for an AR which overrode the allocation rule of its parallel
+  environment.
 * *master hard queue_list* - the queues the AR requested for its master task, as given with
   `qrsub -masterq`.
 * *checkpoint_name* - the checkpointing environment the AR requested, as given with `qrsub -ckpt`.

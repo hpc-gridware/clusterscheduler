@@ -245,6 +245,26 @@ bool ar_validate(lListElem *ar, lList **alpp, bool in_master, bool is_spool, con
          }
       }
 
+      /*   AR_allocation_rule, SGE_STRING - from qrsub -par */
+      {
+         const char *allocation_rule = lGetString(ar, AR_allocation_rule);
+         if (allocation_rule != nullptr) {
+            /* The rule overrides the allocation_rule of the requested PE, so there has to be one.
+             * Unlike a job, which can still be given a PE with qalter -pe, an AR keeps the PE it was
+             * submitted with, and a rule which can never apply would only mislead the reader of
+             * qrstat output. */
+            if (lGetString(ar, AR_pe) == nullptr) {
+               answer_list_add_sprintf(alpp, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, SFNMAX,
+                                       MSG_AR_PAR_WITHOUT_PE);
+               goto ERROR;
+            }
+            /* same check qsub -par gets, see sge_job_verify_adjust() */
+            if (!pe_validate_allocation_rule(alpp, allocation_rule)) {
+               goto ERROR;
+            }
+         }
+      }
+
       /*   AR_acl_list, SGE_LIST */
       if (userset_list_validate_access(lGetList(ar, AR_acl_list), ARA_name, alpp, master_userset_list) != STATUS_OK) {
          goto ERROR;

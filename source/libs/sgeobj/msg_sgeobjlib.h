@@ -329,6 +329,7 @@
 #define MSG_AR_START_END_DURATION_INVALID        _MESSAGE(64387, _("difference between end and start time does not correspond to duration"))
 #define MSG_AR_START_LATER_THAN_END              _MESSAGE(64388, _("start time is later than end time"))
 #define MSG_AR_START_IN_PAST                     _MESSAGE(64389, _("start time is in the past"))
+#define MSG_AR_PAR_WITHOUT_PE                    _MESSAGE(64390, _("-par can be used only together with -pe: an allocation rule applies to the slots of a parallel environment"))
 
 #define MSG_OBJECT_INVALID_NAME_S                _MESSAGE(64391, _("denied: " SFQ " is not a valid object name (cannot start with a digit)"))
 #define MSG_OBJECT_PERANGEMUSTBEGRZERO_S         _MESSAGE(64392, _(SFQ " rejected: pe range must be greater than zero"))

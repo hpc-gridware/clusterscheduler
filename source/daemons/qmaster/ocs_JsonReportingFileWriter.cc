@@ -539,6 +539,8 @@ namespace ocs {
          write_json(writer, "ar_start_time", lGetUlong64(ar, AR_start_time));
          write_json(writer, "ar_end_time", lGetUlong64(ar, AR_end_time));
          write_json(writer, "ar_granted_pe", lGetString(ar, AR_pe));
+         // the key is left out for an AR which did not request an allocation rule of its own
+         write_json(writer, "ar_allocation_rule", lGetString(ar, AR_allocation_rule));
 
          writer.Key("ar_granted_resources");
          writer.StartObject();
