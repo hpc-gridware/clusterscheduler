@@ -456,5 +456,19 @@
 			"flags":	[{
 				"name":	"SPOOL"
 			}]
+		}, {
+			"name":	"allocation_rule",
+			"summary":	"Allocation Rule",
+			"description":	[{
+				"line":	"The PE allocation rule the advance reservation reserves its slots with (qrsub -par)."
+			}, {
+				"line":	"It overrides the allocation_rule of the requested PE, in the same way as the -par"
+			}, {
+				"line":	"switch of qsub overrides it for a job. Only set when the AR requests a PE."
+			}],
+			"type":	"lStringT",
+			"flags":	[{
+				"name":	"SPOOL"
+			}]
 		}]
 }

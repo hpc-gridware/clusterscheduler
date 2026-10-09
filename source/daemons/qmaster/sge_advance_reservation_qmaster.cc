@@ -304,6 +304,8 @@ int ar_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListEl
    attr_mod_sub_list(alpp, new_ar, AR_master_queue_list, AR_name, ar, cmd, sub_command, SGE_ATTR_QUEUE_LIST, SGE_OBJ_AR, 0, nullptr);
    /*   AR_pe_range, SGE_LIST */
    attr_mod_sub_list(alpp, new_ar, AR_pe_range, AR_name, ar, cmd, sub_command, SGE_ATTR_PE_LIST, SGE_OBJ_AR, 0, nullptr);
+   /*   AR_allocation_rule, SGE_STRING */
+   attr_mod_zerostr(ar, new_ar, AR_allocation_rule, object->object_name);
    /*   AR_acl_list, SGE_LIST */
    attr_mod_sub_list(alpp, new_ar, AR_acl_list, AR_name, ar, cmd, sub_command, SGE_ATTR_USER_LISTS, SGE_OBJ_AR, 0, nullptr);
    /*   AR_xacl_list, SGE_LIST */
@@ -1200,6 +1202,14 @@ ar_reserve_queues(lList **alpp, lListElem *ar, u_long64 gdi_session) {
    if (lGetString(ar, AR_pe)) {
       lSetString(dummy_job, JB_pe, lGetString(ar, AR_pe));
       lSetList(dummy_job, JB_pe_range, lCopyList("", lGetList(ar, AR_pe_range)));
+
+      // CS-2864: qrsub -par overrides the allocation_rule of the requested PE, exactly as qsub -par
+      // does for a job. The dummy job carries the rule in its global request set, which is where
+      // assignment_init_pe() already looks for it, so the scheduler needs no knowledge of ARs here.
+      const char *allocation_rule = lGetString(ar, AR_allocation_rule);
+      if (allocation_rule != nullptr) {
+         job_set_allocation_rule(dummy_job, allocation_rule, JRS_SCOPE_GLOBAL);
+      }
 
       result = sge_select_parallel_environment(&a, master_pe_list);
       if (result == DISPATCH_OK) {

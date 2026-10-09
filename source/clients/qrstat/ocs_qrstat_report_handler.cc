@@ -221,6 +221,10 @@ qrstat_print(lList **answer_list, qrstat_report_handler_t *handler, qrstat_env_t
                   handler->report_finish_granted_parallel_environment(handler, answer_list);
                   sge_dstring_free(&pe_range_string);
                }
+               if (lGetString(ar, AR_allocation_rule) != nullptr) {
+                  handler->report_ar_node_string(handler, answer_list, "allocation_rule",
+                                                 lGetString(ar, AR_allocation_rule));
+               }
                if (lGetList(ar, AR_master_queue_list) != nullptr) {
                   char tmp_buffer[MAX_STRING_SIZE];
                   int fields[] = {QR_name, 0 };

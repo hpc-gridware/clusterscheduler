@@ -1117,5 +1117,6 @@
 
 #define MSG_GDI_USAGE_PAR_OPT             "[-par allocation_rule]"
 #define MSG_GDI_UTEXT_PAR_OPT             _MESSAGE(60746, _("set the parallel job allocation rule"))
+#define MSG_GDI_UTEXT_PAR_qrsub_OPT       _MESSAGE(60792, _("set the parallel AR allocation rule"))
 
 // clang-format on
