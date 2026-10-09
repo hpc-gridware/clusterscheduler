@@ -404,6 +404,13 @@ advance reservation has changed. It has the following fields:
 * ar_granted_pe  
   The parallel environment which was selected for an advance reservation.
 
+* ar_allocation_rule  
+  The allocation rule with which the advance reservation reserved its slots, as requested with the
+  `-par` option of qrsub(1). It overrides the allocation rule of the granted parallel environment.
+  The attribute is written only for an advance reservation which overrode that rule. It is emitted
+  only to the JSONL reporting format; the deprecated colon-separated format does not carry it,
+  because its fields are parsed by position.
+
 * ar_granted_resources  
   The granted resources which were selected for an advance reservation.
 
