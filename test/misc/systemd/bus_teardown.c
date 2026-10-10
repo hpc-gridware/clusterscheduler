@@ -50,6 +50,8 @@
  *    shutdown   shutdown() on the connection's socket - what a peer reset looks like (default)
  *    close      close() the connection's file descriptor behind libsystemd's back
  *    reuse      close() it and let an unrelated file take the number
+ *    closeall   close() every descriptor by number, which is what the shepherd does in son()
+ *               before it starts the job
  *
  * Expected, verified on Rocky 8 (systemd 239) and Ubuntu 24 (systemd 255):
  *
@@ -60,6 +62,8 @@
  *               process in libsystemd's safe_close(), guard reports the lost descriptor instead.
  *    reuse      as close, but flush and unref silently close the unrelated file rather than
  *               aborting. Only guard notices.
+ *    closeall   as close: a loop which closes descriptors by number takes the connection's
+ *               descriptor with it, and libsystemd is not told.
  */
 
 #define _GNU_SOURCE
@@ -194,7 +198,20 @@ main(int argc, char *argv[]) {
    }
    report_state(bus, "before reset");
 
-   if (strcmp(reset, "close") == 0 || strcmp(reset, "reuse") == 0) {
+   if (strcmp(reset, "closeall") == 0) {
+      /* What son() in the shepherd does before it starts the job: close every descriptor by
+       * number, without asking who owns it. The loop starts at 3 here so that the test keeps
+       * its own output, son() starts at 0 for a batch job without a pty. */
+      long fdmax = sysconf(_SC_OPEN_MAX);
+      int closed = 0;
+
+      for (int i = 3; i < fdmax; i++) {
+         if (close(i) == 0) {
+            closed++;
+         }
+      }
+      printf("closed              %d of %ld descriptors blindly\n", closed, fdmax);
+   } else if (strcmp(reset, "close") == 0 || strcmp(reset, "reuse") == 0) {
       if (close(fd) < 0) {
          fprintf(stderr, "close: %s\n", strerror(errno));
          return 2;
