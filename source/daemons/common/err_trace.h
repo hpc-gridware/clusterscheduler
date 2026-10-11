@@ -51,5 +51,5 @@ void shepherd_error_ptr(const char *text);
 void shepherd_write_exit_status( const char *exit_status );
 
 int get_shepherd_trace_fp();
-int is_shepherd_trace_fd(int fd);
+int get_shepherd_trace_fds(int *fds);
 int count_exit_status();

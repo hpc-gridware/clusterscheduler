@@ -514,36 +514,33 @@ void shepherd_write_exit_status(const char *exit_status)
 	}
 }
 
-/****** is_shepherd_trace_fd **************************************************
-*  NAME
-*     is_shepherd_trace_fd() -- Check if given file descriptor is a file descr.
-*                               to the trace, error or exit_status file.
-*
-*  SYNOPSIS
-*     int is_shepherd_trace_fd(int fd)
-*
-*  FUNCTION
-*     Checks if the given file descriptor is a file descriptor of the open file
-*     handles to the trace, error or exit_status file.
-*     This function is needed during daemonizing to close all file descriptors
-*     except the ones to the trace, error and exit_status files.
-*
-*  INPUTS
-*     fd: The file descriptor that has to be checked.
-*
-*  RESULT
-*     int - 1 if fd is a file descriptor to trace, error or exit_status file,
-*           0 if it is not.
-*******************************************************************************/
-int is_shepherd_trace_fd(int fd)
-{
-   if ((shepherd_trace_fp && fd==fileno(shepherd_trace_fp))
-      || (shepherd_error_fp && fd==fileno(shepherd_error_fp))
-      || (shepherd_exit_status_fp && fd==fileno(shepherd_exit_status_fp))) {
-      return 1;
-   } else {
-      return 0;
+/**
+ * @brief Collect the file descriptors of the trace, error and exit_status files
+ *
+ * Fills the caller's array with the file descriptors of those of the trace, error and
+ * exit_status files which are currently open. This is the keep_open list which
+ * sge_close_all_fds() needs in order to close every other file descriptor of the process,
+ * e.g. before the job is started.
+ *
+ * @param fds - int array with room for at least 3 entries
+ * @return number of file descriptors written to fds
+ *
+ * @see uti/sge_os/sge_close_all_fds()
+ */
+int get_shepherd_trace_fds(int *fds) {
+   int nr_of_fds = 0;
+
+   if (shepherd_trace_fp != nullptr) {
+      fds[nr_of_fds++] = fileno(shepherd_trace_fp);
    }
+   if (shepherd_error_fp != nullptr) {
+      fds[nr_of_fds++] = fileno(shepherd_error_fp);
+   }
+   if (shepherd_exit_status_fp != nullptr) {
+      fds[nr_of_fds++] = fileno(shepherd_exit_status_fp);
+   }
+
+   return nr_of_fds;
 }
 
 int get_shepherd_trace_fp() {
