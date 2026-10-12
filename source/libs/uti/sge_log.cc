@@ -108,7 +108,16 @@ sge_do_log(uint32_t prog_number, const char *prog_or_thread_name, int thread_id,
          Log_State.log_fd = SGE_OPEN3(Log_State.log_file, O_WRONLY | O_APPEND | O_CREAT, 0666);
          Log_State.last_inode_check = now;
       }
-      const int fd = Log_State.log_fd;
+      // Hand out a duplicate rather than Log_State.log_fd itself. The rotation check in
+      // another thread may close that descriptor as soon as the lock is released, and the
+      // number is then free to be reused - by a spool file, a commlib socket or anything
+      // else. The duplicate holds the open file until this thread is done with it, so the
+      // line can only ever land in the message file.
+      const int log_fd = Log_State.log_fd;
+      int fd = -1;
+      if (log_fd >= 0) {
+         fd = fcntl(log_fd, F_DUPFD_CLOEXEC, 3);
+      }
 
       sge_mutex_unlock("Log_State_Lock", __func__, __LINE__, &Log_State.mutex);
 
@@ -117,6 +126,10 @@ sge_do_log(uint32_t prog_number, const char *prog_or_thread_name, int thread_id,
          if (write(fd, msg_str, len) != len) {
             fprintf(stderr, "can't log to file %s: %s\n", log_state_get_log_file(), sge_strerror(errno, &msg_dstr));
          }
+         close(fd);
+      } else if (log_fd >= 0) {
+         // the message file is open but the descriptor could not be duplicated
+         fprintf(stderr, "can't log to file %s: %s\n", log_state_get_log_file(), sge_strerror(errno, &msg_dstr));
       }
    }
 }
@@ -196,7 +209,9 @@ void log_state_set_log_level(uint32_t theLevel) {
  */
 void log_state_set_log_file(const char *file) {
    sge_mutex_lock("Log_State_Lock", __func__, __LINE__, &Log_State.mutex);
-   // close the persistent fd so it is re-opened against the new path on next use
+   // close the persistent fd so it is re-opened against the new path on next use. A thread
+   // which is writing a line right now works on a duplicate of its own, so this cannot pull
+   // the descriptor out from under it.
    if (Log_State.log_fd >= 0) {
       close(Log_State.log_fd);
       Log_State.log_fd = -1;
