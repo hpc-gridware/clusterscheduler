@@ -588,6 +588,25 @@ static bool setup_x11_forwarding(const char *cookie_hex) {
 }
 
 /**
+ * @brief Switch the effective uid back after the Xauthority file work.
+ *
+ * The switch down to the file's owner is checked, so the way back has to be as
+ * well: prev_euid is root here, the shepherd goes on to start processes, and
+ * carrying the job owner's effective uid into that would be the wrong state to
+ * do it in. A failure must not abort the cleanup, which is the whole point of
+ * CS-2498, so it is traced and nothing more -- the same reaction the switch
+ * down already has.
+ *
+ * @param prev_euid the effective uid to return to
+ */
+static void restore_euid_after_xauth(uid_t prev_euid) {
+   if (seteuid(prev_euid) != 0) {
+      shepherd_trace("cleanup_x11_xauth_entry: cannot switch back to uid %d: %s",
+                     (int)prev_euid, strerror(errno));
+   }
+}
+
+/**
  * @brief Remove this session's Xau record from the user's ~/.Xauthority.
  *
  * Counterpart to the in-line Xau record append in setup_x11_forwarding()
@@ -661,7 +680,7 @@ static void cleanup_x11_xauth_entry() {
    if (src == nullptr) {
       // No xauth file: nothing to clean.
       if (lock_fd >= 0) { flock(lock_fd, LOCK_UN); close(lock_fd); }
-      if (euid_switched) { seteuid(prev_euid); }
+      if (euid_switched) { restore_euid_after_xauth(prev_euid); }
       return;
    }
 
@@ -805,7 +824,7 @@ static void cleanup_x11_xauth_entry() {
       close(lock_fd);
    }
    if (euid_switched) {
-      seteuid(prev_euid);
+      restore_euid_after_xauth(prev_euid);
    }
 }
 
