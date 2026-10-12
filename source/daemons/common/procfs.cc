@@ -546,13 +546,13 @@ int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_ti
           * Read the line and append a 0-Byte 
           */
          if ((ret = read(fd, buffer, BIGLINE-1))<=0) {
-            pt_close_fd(fd);
-            if (ret == -1 && errno != ENOENT) {
+            if (ret == -1) {
 #ifdef MONITOR_PDC
                INFO("could not read %s: %s\n", procnam, strerror(errno));
 #endif
                touch_time_stamp(dent->d_name, time_stamp, job_list);
             }
+            pt_close_fd(fd);
             continue;
          }
          buffer[BIGLINE-1] = '\0';
@@ -658,13 +658,11 @@ int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_ti
        * get prstatus 
        */
       if (ioctl(fd, PIOCSTATUS, &pr)==-1) {
-         pt_close_fd(fd);
-         if (errno != ENOENT) {
 #ifdef MONITOR_PDC
-            INFO("could not ioctl(PIOCSTATUS) %s: %s\n", procnam, strerror(errno));
+         INFO("could not ioctl(PIOCSTATUS) %s: %s\n", procnam, strerror(errno));
 #endif
-            touch_time_stamp(dent->d_name, time_stamp, job_list);
-         }
+         touch_time_stamp(dent->d_name, time_stamp, job_list);
+         pt_close_fd(fd);
          continue;
       }
                                     
@@ -673,13 +671,11 @@ int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_ti
        */
       ret=ioctl(fd, PIOCCRED, &proc_cred);
       if (ret < 0) {
-         pt_close_fd(fd);
-         if (errno != ENOENT) {
 #ifdef MONITOR_PDC
-            INFO("could not ioctl(PIOCCRED) %s: %s\n", procnam, strerror(errno));
+         INFO("could not ioctl(PIOCCRED) %s: %s\n", procnam, strerror(errno));
 #endif
-            touch_time_stamp(dent->d_name, time_stamp, job_list);
-         }
+         touch_time_stamp(dent->d_name, time_stamp, job_list);
+         pt_close_fd(fd);
          continue;
       }
       
@@ -689,13 +685,11 @@ int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_ti
       groups = proc_cred.pr_ngroups;
       ret=ioctl(fd, PIOCGROUPS, list);
       if (ret<0) {
-         pt_close_fd(fd);
-         if (errno != ENOENT) {
 #ifdef MONITOR_PDC
-            INFO("could not ioctl(PIOCCRED) %s: %s\n", procnam, strerror(errno));
+         INFO("could not ioctl(PIOCGROUPS) %s: %s\n", procnam, strerror(errno));
 #endif
-            touch_time_stamp(dent->d_name, time_stamp, job_list);
-         }
+         touch_time_stamp(dent->d_name, time_stamp, job_list);
+         pt_close_fd(fd);
          continue;
       }
 
