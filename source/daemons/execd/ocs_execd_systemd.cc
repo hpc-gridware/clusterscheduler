@@ -467,7 +467,8 @@ namespace ocs::execd {
     *       - CS-1389: IO needs to be re-considered, as the values delivered by Systemd looked incorrect, at least
     *                  on certain OSes, possibly depending on the Systemd or the Cgroup version.
     *       - CS-1398: Re-evaluate how we handle MemoryPeak, as it is not available on all OSes and Systemd versions.
-    * @note Need to be root for calling this function - call switch2start_user().
+    * @note The function switches to the start user for the connect itself, so it can be called
+    *       as the admin user.
     */
    void
    ptf_get_usage_from_systemd() {
@@ -481,9 +482,15 @@ namespace ocs::execd {
       // it works again.
       static bool connect_failure_reported = false;
 
-      // Initialize the systemd connection and retrieve usage information
+      // Initialize the systemd connection and retrieve usage information.
+      // Connect as the start user, as the other systemd call sites do. Reading unit properties
+      // works for any uid under the default bus policy, but the connection would be charged to
+      // the admin user, and where several clusters run on one host under one admin account all
+      // of their execd connections would count against that one uid's bus quota.
       ocs::uti::Systemd systemd;
+      sge_switch2start_user();
       bool success = systemd.connect(&error_dstr);
+      sge_switch2admin_user();
       if (!success) {
          if (!connect_failure_reported) {
             connect_failure_reported = true;
