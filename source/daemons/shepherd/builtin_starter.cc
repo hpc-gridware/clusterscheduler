@@ -52,6 +52,7 @@
 #include "uti/sge_stdio.h"
 #include "uti/sge_stdlib.h"
 #include "uti/sge_signal.h"
+#include "uti/sge_os.h"
 #include "uti/sge_unistd.h"
 #include "uti/sge_arch.h"
 #include "uti/config_file.h"
@@ -133,7 +134,6 @@ static int count_command(char *command) {
  ************************************************************************/
 void son(const char *childname, char *script_file, int truncate_stderr_out, bool is_interactive_job) {
    int   in, out, err;          /* hold fds */
-   int   i;
    int   merge_stderr;
    int   fs_stdin, fs_stdout, fs_stderr;
    int   min_gid, min_uid;
@@ -401,37 +401,34 @@ void son(const char *childname, char *script_file, int truncate_stderr_out, bool
    fflush(stderr);
 
    {
-		/* Close all file descriptors except the ones used by tracing
-		 * (for the files "trace", "error" and "exit_status") and,
+      /* Close all file descriptors except the ones used by tracing
+       * (for the files "trace", "error" and "exit_status") and,
        * in interactive job case, the ones used to redirect stdin,
        * stdout and stderr.
-		 * These files will be closed automatically in the exec() call
-		 * due to the FD_CLOEXEC flag.
-		 */
-      int fdmax = sysconf(_SC_OPEN_MAX);
+       * These files will be closed automatically in the exec() call
+       * due to the FD_CLOEXEC flag.
+       */
+      int keep_open[6];
+      unsigned long nr_of_keep_open = get_shepherd_trace_fds(keep_open);
+
       pty = atoi(get_conf_val("pty"));
 
       /* For batch jobs with not pty, also close stdin, stdout and stderr.
        * For new interactive jobs or batch jobs with pty, keep stdin,
        * stdout and stderr open, they are already connected to the pty
        * and/or the pipes.
+       * The same holds when we have a qlogin type job, but are starting
+       * e.g. the prolog.
        */
-      if ((g_new_interactive_job_support && is_qlogin_starter) || (!g_new_interactive_job_support && pty == 1)) {
-         i=3;
-      } else {
-         if (close_first_three_fds) {
-            i=0;
-         } else {
-            // we have a qlogin type job, but are starting e.g. the prolog
-            i=3;
-         }
+      if ((g_new_interactive_job_support && is_qlogin_starter) ||
+          (!g_new_interactive_job_support && pty == 1) || !close_first_three_fds) {
+         keep_open[nr_of_keep_open++] = 0;
+         keep_open[nr_of_keep_open++] = 1;
+         keep_open[nr_of_keep_open++] = 2;
       }
-      shepherd_trace("closing fd's from %d to %d", i, fdmax-1);
-      for ( ; i < fdmax; i++) {
-         if (!is_shepherd_trace_fd(i)) {
-         	SGE_CLOSE(i);
-         }
-      }
+
+      shepherd_trace("closing all file descriptors but the %lu we keep open", nr_of_keep_open);
+      sge_close_all_fds(keep_open, nr_of_keep_open);
    }
    foreground = false;
 

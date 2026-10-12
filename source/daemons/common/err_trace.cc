@@ -457,23 +457,30 @@ void shepherd_write_exit_status(const char *exit_status) {
 	}
 }
 
-/** @brief Is this descriptor one of the shepherd's three report files?
+/** @brief Collect the descriptors of the shepherd's three report files
  *
- * Daemonizing closes every descriptor; these three have to survive it, or the
- * shepherd loses the only channel it has for saying what went wrong.
+ * Fills the caller's array with the descriptors of those of the trace, error and
+ * exit_status files which are currently open. This is the keep_open list which
+ * sge_close_all_fds() needs in order to close every other descriptor of the process,
+ * e.g. before the job is started.
  *
- * @param fd The file descriptor that has to be checked.
- * @return 1 if fd is a file descriptor to trace, error or exit_status file,
- *         0 if it is not.
+ * @param fds int array with room for at least 3 entries
+ * @return number of file descriptors written to fds
  */
-int is_shepherd_trace_fd(int fd) {
-   if ((shepherd_trace_fp && fd==fileno(shepherd_trace_fp))
-      || (shepherd_error_fp && fd==fileno(shepherd_error_fp))
-      || (shepherd_exit_status_fp && fd==fileno(shepherd_exit_status_fp))) {
-      return 1;
-   } else {
-      return 0;
+int get_shepherd_trace_fds(int *fds) {
+   int nr_of_fds = 0;
+
+   if (shepherd_trace_fp != nullptr) {
+      fds[nr_of_fds++] = fileno(shepherd_trace_fp);
    }
+   if (shepherd_error_fp != nullptr) {
+      fds[nr_of_fds++] = fileno(shepherd_error_fp);
+   }
+   if (shepherd_exit_status_fp != nullptr) {
+      fds[nr_of_fds++] = fileno(shepherd_exit_status_fp);
+   }
+
+   return nr_of_fds;
 }
 
 /** @brief The descriptor of the open trace file

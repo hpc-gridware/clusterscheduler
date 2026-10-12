@@ -54,6 +54,7 @@
 #include <cstring>
 #include <netdb.h>
 
+#include "uti/sge_os.h"
 #include "uti/sge_stdio.h"
 #include "uti/sge_uidgid.h"
 #include "uti/config_file.h"
@@ -347,8 +348,6 @@ FCLOSE_ERROR:
 int qlogin_starter(const char *cwd, char *daemon, char **env) {
    int ret;
    int port;
-   int fd;
-   int maxfd;
    int sockfd;
    int on = 1;
    int sso = 1;
@@ -486,13 +485,14 @@ int qlogin_starter(const char *cwd, char *daemon, char **env) {
    dup2( newsfd, 1 );
    dup2( newsfd, 2 );
    
-   /* close all the rest */
-   maxfd = sysconf(_SC_OPEN_MAX);
-
-   /* we do not use any FD_SET call it is ok to use _SC_OPEN_MAX */
-   for (fd=3; fd<maxfd; fd++) {
-      close(fd);
-   }
+   /* Close all the rest, the socket itself included - it lives on as stdin,
+    * stdout and stderr.
+    */
+   int keep_open[3];
+   keep_open[0] = 0;
+   keep_open[1] = 1;
+   keep_open[2] = 2;
+   sge_close_all_fds(keep_open, 3);
 
    shepherd_trace("daemon to start: |%s|", daemon);
 
