@@ -225,7 +225,12 @@ static int sge_ls_start_ls(const char *qualified_hostname, lListElem *this_ls) {
       sge_free(&envp);
    }
    if (pid == -1) {
-      return LS_CANT_PEOPEN;
+      // There is no load sensor process and therefore there are no streams. Whatever the
+      // previous run of this sensor left in the refs has been closed by sge_ls_stop_ls().
+      lSetRef(this_ls, LS_in, nullptr);
+      lSetRef(this_ls, LS_out, nullptr);
+      lSetRef(this_ls, LS_err, nullptr);
+      DRETURN(LS_CANT_PEOPEN);
    }
    /* we need load reports non blocking */
    fcntl(fileno(fp_out), F_SETFL, O_NONBLOCK);
@@ -240,7 +245,7 @@ static int sge_ls_start_ls(const char *qualified_hostname, lListElem *this_ls) {
    /* request first load report after starting */
    ls_send_command(this_ls, "\n");
 
-   return LS_OK;
+   DRETURN(LS_OK);
 }
 
 /**
@@ -342,6 +347,12 @@ static void sge_ls_stop_ls(lListElem *this_ls, int send_no_quit_command) {
                             (t.tv_sec ? &t : nullptr));
       DPRINTF("%s: load sensor `%s` stopped, exit status from sge_peclose= %d\n",
               __func__, lGetString(this_ls, LS_command), exit_status);
+
+      // sge_peclose() has fclose()d the three streams. Their descriptor numbers are free for
+      // the process to hand out again, so nothing may be left pointing at them.
+      lSetRef(this_ls, LS_in, nullptr);
+      lSetRef(this_ls, LS_out, nullptr);
+      lSetRef(this_ls, LS_err, nullptr);
    }
 
    sge_ls_set_pid(this_ls, -1);
@@ -374,11 +385,11 @@ static int read_ls() {
    bool flag = true;
 
    for_each_rw_lv(ls_elem, ls_list) {
-         FILE *file = (FILE *)lGetRef(ls_elem, LS_out);
-      
       if (sge_ls_get_pid(ls_elem) == -1) {
          continue;
       }
+
+      FILE *file = (FILE *)lGetRef(ls_elem, LS_out);
 
       DPRINTF("receiving from %s\n", lGetString(ls_elem, LS_command));
 
@@ -437,21 +448,26 @@ static int read_ls() {
 static int ls_send_command(lListElem *this_ls, const char *command) {
    DENTER(TOP_LAYER);
 
-   fd_set writefds;
-   struct timeval timeleft;
-   int ret;
-   FILE *file;
-   int higest_fd;
+   // A sensor which has been stopped has no streams any more. fileno() on a closed stream
+   // reads freed memory, and the descriptor number it used to hold may belong to someone
+   // else by now, so refuse here instead of trusting the caller to have checked LS_pid.
+   FILE *file = (FILE *)lGetRef(this_ls, LS_in);
+   if (file == nullptr) {
+      DPRINTF("load sensor is not running, cannot send command\n");
+      DRETURN(-1);
+   }
 
+   fd_set writefds;
    FD_ZERO(&writefds);
-   higest_fd = fileno((FILE *) lGetRef(this_ls, LS_in));
+   int higest_fd = fileno(file);
    FD_SET(higest_fd, &writefds);
 
+   struct timeval timeleft;
    timeleft.tv_sec = 0;
    timeleft.tv_usec = 0;
 
    /* wait for writing on fd_in */
-   ret = select(higest_fd + 1, nullptr, &writefds, nullptr, &timeleft);
+   int ret = select(higest_fd + 1, nullptr, &writefds, nullptr, &timeleft);
    if (ret == -1) {
       switch (errno) {
       case EINTR:
@@ -473,14 +489,13 @@ static int ls_send_command(lListElem *this_ls, const char *command) {
       DRETURN(-1);
    }
 
-   if (!FD_ISSET(fileno((FILE *) lGetRef(this_ls, LS_in)), &writefds)) {
+   if (!FD_ISSET(higest_fd, &writefds)) {
       DPRINTF("received: cannot read\n");
       WARNING("[load_sensor %s] received: cannot read", lGetString(this_ls, LS_pid));
       DRETURN(-1);
    }
 
    /* send command to load sensor */
-   file = (FILE *)lGetRef(this_ls, LS_in);
    if (fprintf(file, "%s", command) != (int)strlen(command)) {
       WARNING("[load_sensor %s] couldn't send command [%s]", lGetString(this_ls, LS_pid), strerror(errno));
       DRETURN(-1);
