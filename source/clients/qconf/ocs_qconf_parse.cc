@@ -1516,11 +1516,14 @@ qconf_dispatch_procedure(std::ostream &os, ocs::QConfParameterClient &param, lLi
  * @param param the invocation, whose operation is set for the call
  * @param o    the object type
  * @param name the object name, ignored for a type without a name field
+ * @param reduction where the reduction flags of the read are stored, nullptr to ignore them
+ * @param not_found_is_normal true when the caller handles a missing object itself, which
+ *        keeps the "does not exist" out of the output; the status still reports it
  * @return what happened, see QConfShowStatus
  */
 static QConfShowStatus
 qconf_show_object(std::ostream &os, ocs::QConfParameterClient &param, QConfObj o, const char *name,
-                  uint32_t *reduction = nullptr) {
+                  uint32_t *reduction = nullptr, bool not_found_is_normal = false) {
    DENTER(TOP_LAYER);
 
    /* CS-2799: the body of this function is a stored procedure call now. The
@@ -1553,7 +1556,15 @@ qconf_show_object(std::ostream &os, ocs::QConfParameterClient &param, QConfObj o
    }
 
    const bool not_found = answer_list_has_status(&alp, STATUS_EEXIST);
-   answer_list_output(&alp);
+   /* A caller that turns a missing object into an upsert must not see the read
+    * complain about it first. The GET this path replaced asked with a lWhere
+    * filter, where no match is an empty list and not an error, so it printed
+    * nothing - the procedure reports STATUS_EEXIST instead, and reporting it
+    * here put an "x is not a calendar" in front of the editor that qconf never
+    * printed before (CS-2822). The status is unchanged; only the output is. */
+   if (!not_found || !not_found_is_normal) {
+      answer_list_output(&alp);
+   }
    lFreeList(&alp);
    DRETURN(not_found ? QConfShowStatus::NOT_FOUND : QConfShowStatus::GDI_FAILED);
 }
@@ -2019,7 +2030,7 @@ qconf_modify_cal_procedure(std::ostream &os, ocs::QConfParameterClient &param, c
 
    std::ostringstream rendered;
    uint32_t reduction = ocs::ProcedureParameter::REDUCTION_NONE;
-   const QConfShowStatus st = qconf_show_object(rendered, param, QConfObj::CAL, name, &reduction);
+   const QConfShowStatus st = qconf_show_object(rendered, param, QConfObj::CAL, name, &reduction, true);
 
    std::string text;
    if (st == QConfShowStatus::OK) {
