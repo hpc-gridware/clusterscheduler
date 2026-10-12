@@ -129,7 +129,8 @@ qconf_write_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monit
        * exactly why it is the right one: the caller gets back "this item failed,
        * because that", and only the caller knows what it called the item. */
       lListElem *ep = qconf_parse_object(answer_list, desc.descr, fields, format,
-                                         label, text, desc.validate, desc.sfi, desc.prepare, true);
+                                         label, text, desc.validate, desc.sfi, desc.prepare,
+                                         desc.parse_values);
       if (ep == nullptr) {
          // the reader, the transform or the validator wrote the reason
          result->parse_failed++;

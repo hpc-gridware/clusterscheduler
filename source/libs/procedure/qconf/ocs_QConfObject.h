@@ -160,7 +160,7 @@ struct qconf_object_desc {
    int (*prepare)(lListElem *, lList **);            ///< pre-send fixup, nullptr for none
    ocs::gdi::SubCommand sub_cmd;                     ///< GDI sub-command of an upsert
    bool as_list;                                     ///< file holds a list, not one object
-   bool del_parse_values;                            ///< parse values when reading for a delete
+   bool parse_values;                                ///< parse attribute values when reading a file
    bool is_root;                                     ///< singleton export: object is the root
    const char *exclude1;                             ///< export: skip this name
    const char *exclude2;                             ///< export: skip this name too

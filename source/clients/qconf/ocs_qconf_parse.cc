@@ -743,8 +743,14 @@ qconf_apply_path(std::ostream &os, const qconf_object_desc &d, spooling_field *f
    bool is_dir = sge_is_directory(path);
 
    /* 1. Read every file (running prepare/validate per object) into one list.
-    * The apply path always parses values; only a delete may skip it. */
-   qconf_file_ctx ctx = {&os, &d, fields, true, nullptr,
+    *
+    * Whether attribute values are parsed is the object type's business, not the
+    * path's: cluster queues are read with it off (CS-2305), because their values
+    * carry the host-specific syntax that the parse would eat. Hard-coding true
+    * here was a regression of CS-2795 - it rejected every queue file whose value
+    * uses a backslash continuation, since the continuation then swallowed the
+    * following attribute line. */
+   qconf_file_ctx ctx = {&os, &d, fields, d.parse_values, nullptr,
                          lCreateList("qconf apply", descr), 0, 0};
    qconf_for_each_file(path, qconf_collect_elem, &ctx);
    int n_read_fail = ctx.n_fail;   /* files that did not parse (skipped) */
@@ -871,7 +877,7 @@ static int
 qconf_delete_path(std::ostream &os, const qconf_object_desc &d, spooling_field *fields, const char *path) {
    const lDescr *descr = d.descr;
    const int name_nm = d.name_nm;
-   qconf_file_ctx ctx = {&os, &d, fields, d.del_parse_values,
+   qconf_file_ctx ctx = {&os, &d, fields, d.parse_values,
                          lCreateList("qconf del", descr), nullptr, 0, 0};
    bool is_dir = sge_is_directory(path);
    qconf_for_each_file(path, qconf_collect_name, &ctx);
