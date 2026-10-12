@@ -381,6 +381,24 @@ void pt_close() {
    closedir(cwd);
 }
 
+/** @brief Close a /proc file descriptor and mark it closed
+ *
+ * pt_dispatch_proc_to_job() closes its descriptor in the success path and in several error
+ * paths, and the paths overlap: the close at the end of the function used to run on a number
+ * which the success path had already closed, which cost an EBADF per process per usage pass,
+ * and closed a descriptor belonging to someone else whenever the number had been reused in
+ * between. Closing through this function cannot do that, because it marks the descriptor
+ * closed.
+ *
+ * @param fd descriptor to close, -1 when the function returns
+ */
+static void pt_close_fd(int &fd) {
+   if (fd >= 0) {
+      close(fd);
+      fd = -1;
+   }
+}
+
 int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_time, bool enable_mem_details) {
    DENTER(TOP_LAYER);
 
@@ -528,7 +546,7 @@ int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_ti
           * Read the line and append a 0-Byte 
           */
          if ((ret = read(fd, buffer, BIGLINE-1))<=0) {
-            close(fd);
+            pt_close_fd(fd);
             if (ret == -1 && errno != ENOENT) {
 #ifdef MONITOR_PDC
                INFO("could not read %s: %s\n", procnam, strerror(errno));
@@ -557,7 +575,7 @@ int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_ti
                       );
 
          if (ret != 6) {
-            close(fd);
+            pt_close_fd(fd);
             continue;
          }
 
@@ -574,7 +592,7 @@ int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_ti
          lSetPosUlong64(pr, pos_rss, rss * pagesize);
          lSetPosUlong64(pr, pos_iow, static_cast<u_long64>(iow));
 
-         close(fd);
+         pt_close_fd(fd);
       }
       /* mark this proc as running */
       lSetPosBool(pr, pos_run, true);
@@ -640,7 +658,7 @@ int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_ti
        * get prstatus 
        */
       if (ioctl(fd, PIOCSTATUS, &pr)==-1) {
-         close(fd);
+         pt_close_fd(fd);
          if (errno != ENOENT) {
 #ifdef MONITOR_PDC
             INFO("could not ioctl(PIOCSTATUS) %s: %s\n", procnam, strerror(errno));
@@ -655,7 +673,7 @@ int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_ti
        */
       ret=ioctl(fd, PIOCCRED, &proc_cred);
       if (ret < 0) {
-         close(fd);
+         pt_close_fd(fd);
          if (errno != ENOENT) {
 #ifdef MONITOR_PDC
             INFO("could not ioctl(PIOCCRED) %s: %s\n", procnam, strerror(errno));
@@ -671,7 +689,7 @@ int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_ti
       groups = proc_cred.pr_ngroups;
       ret=ioctl(fd, PIOCGROUPS, list);
       if (ret<0) {
-         close(fd);
+         pt_close_fd(fd);
          if (errno != ENOENT) {
 #ifdef MONITOR_PDC
             INFO("could not ioctl(PIOCCRED) %s: %s\n", procnam, strerror(errno));
@@ -706,7 +724,7 @@ int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_ti
       }
 
       if (curr == job_list) { /* this is not a traced process */ 
-         close(fd);
+         pt_close_fd(fd);
          continue;
       }
 
@@ -742,8 +760,7 @@ int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_ti
    if (curr == &job_elem->procs) { 
       /* new process, add a proc element into jobs proc list */
       if (!(proc_elem=(proc_elem_t *)sge_malloc(sizeof(proc_elem_t)))) {
-         if (fd >= 0)
-            close(fd);
+         pt_close_fd(fd);
          DRETURN(0);
       }
       memset(proc_elem, 0, sizeof(proc_elem_t));
@@ -897,10 +914,10 @@ int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_ti
          ((proc_elem->proc.pd_stime + proc_elem->proc.pd_utime) - old_time) * 
          (( old_vmem + proc_elem->vmem)/2);
 
-   // @todo Here we are closing /proc/pid/stat. Really this late?
-   //       Yes, at least on Solaris we access it still a few lines above.
-   //       But shouldn't we better set it to -1 when we close it and check for -1 here?
-   close(fd);
+   // Close /proc/pid/stat. It cannot be closed earlier than this: on Solaris it is still
+   // read a few lines above. On Linux it was closed right after it had been read, and
+   // pt_close_fd() knows that, so this is not a second close of the same number.
+   pt_close_fd(fd);
 
    DRETURN(0);
 }
