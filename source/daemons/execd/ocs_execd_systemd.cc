@@ -261,8 +261,13 @@ namespace ocs::execd {
                lSetDouble(usage_elem, UA_value, usage_value);
                DPRINTF("==> Updated usage %s for scope '%s': %f\n", usage_attr_str, scope.c_str(), usage_value);
             }
+         } else if (systemd.get_error_class() == ocs::uti::Systemd::ErrorClass::unit_gone) {
+            // the job ended between two polls - expected, and there is nothing left to read
+            DPRINTF("==> systemd scope '%s' is gone, no %s to read\n", scope.c_str(), property_str);
+         } else if (systemd.get_error_class() == ocs::uti::Systemd::ErrorClass::transport) {
+            // the lost connection has been reported once already, with errno and bus state
+            DPRINTF("==> no %s for scope '%s': the connection to systemd is gone\n", property_str, scope.c_str());
          } else {
-            // I18N, and the message should already contain all necessary information (?)
             WARNING(MSG_CANNOT_TO_GET_PROPERTY_SSS, property.c_str(), scope.c_str(), sge_dstring_get_string(&error_dstr));
          }
       }
@@ -334,13 +339,28 @@ namespace ocs::execd {
 
       DSTRING_STATIC(error_dstr, MAX_STRING_SIZE);
 
+      // This function runs about once a second. A systemd which cannot be reached would cost
+      // one warning per pass, 3600 lines an hour from every execd on the host, and every one of
+      // them would say the same thing. Report the state instead: once when it breaks, once when
+      // it works again.
+      static bool connect_failure_reported = false;
+
       // Initialize the systemd connection and retrieve usage information
       ocs::uti::Systemd systemd;
       bool success = systemd.connect(&error_dstr);
       if (!success) {
-         WARNING(MSG_EXECD_CANNOT_CONNECT_TO_SYSTEMD_S, sge_dstring_get_string(&error_dstr));
+         if (!connect_failure_reported) {
+            connect_failure_reported = true;
+            WARNING(MSG_EXECD_CANNOT_CONNECT_TO_SYSTEMD_S, sge_dstring_get_string(&error_dstr));
+         }
       } else {
+         if (connect_failure_reported) {
+            connect_failure_reported = false;
+            INFO(SFNMAX, MSG_EXECD_SYSTEMD_REACHABLE_AGAIN);
+         }
+
          // Loop over all jobs, ja_tasks, and pe_tasks
+         bool connection_lost = false;
          lListElem *ptf_job;
          for_each_rw (ptf_job, ptf_jobs) {
             lListElem *os_job;
@@ -389,10 +409,27 @@ namespace ocs::execd {
                       } else {
                         DPRINTF("==> Job is not active in systemd scope %s, state: %s\n", scope.c_str(), state.c_str());
                      }
+                  } else if (systemd.get_error_class() == ocs::uti::Systemd::ErrorClass::unit_gone) {
+                     // the job ended between two polls - this is how a finished job looks here
+                     DPRINTF("==> systemd scope %s is gone\n", scope.c_str());
+                  } else if (systemd.get_error_class() == ocs::uti::Systemd::ErrorClass::transport) {
+                     // the lost connection has been reported once already
+                     DPRINTF("==> systemd scope %s unreadable: the connection is gone\n", scope.c_str());
                   } else {
-                     WARNING("Failed to get property '%s' from systemd scope '%s': %s", "ActiveState", scope.c_str(), sge_dstring_get_string(&error_dstr));
+                     WARNING(MSG_CANNOT_TO_GET_PROPERTY_SSS, "ActiveState", scope.c_str(), sge_dstring_get_string(&error_dstr));
                   }
                }
+
+               // A dead connection cannot recover within this pass. Carrying on would produce one
+               // warning per scope and no usage for any job at all, so stop here; the next pass
+               // opens a new connection.
+               if (!systemd.is_usable()) {
+                  connection_lost = true;
+                  break;
+               }
+            }
+            if (connection_lost) {
+               break;
             }
          }
 
