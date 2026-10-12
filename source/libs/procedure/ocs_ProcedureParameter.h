@@ -160,6 +160,23 @@ namespace ocs {
       /** @} */
       static constexpr auto OUTPUT_FORMAT = "output_format";       ///< Plain, XML or JSON
       static constexpr auto ENVIRONMENT = "environment";           ///< The environment variables
+      /** @name What a write did, on the way back (CS-2822)
+       *
+       * Two counts beside the rendered response, for the same reason the
+       * reduction mask is beside it: they are a verdict on the call, not part of
+       * its output, and the caller has to act on them.
+       *
+       * A set write reports per item through the answer list, and the caller can
+       * count the failures there - but it cannot tell *which phase* they come
+       * from, and `-strict` turns exactly on that: one item that could not be
+       * **read** rejects the batch, while one that could not be **applied**
+       * does not. Counting error entries cannot separate the two, so the side
+       * that knows says so.
+       * @{
+       */
+      static constexpr auto WRITE_APPLIED = "write_applied";       ///< How many objects a write applied
+      static constexpr auto WRITE_PARSE_FAILED = "write_parse_failed"; ///< How many could not be read
+      /** @} */
       /** @} */
 #pragma endregion
 

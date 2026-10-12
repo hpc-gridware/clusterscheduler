@@ -20,22 +20,22 @@
 /*___INFO__MARK_END_NEW__*/
 
 /** @file
- * @brief The client half of the calendar modify procedure
+ * @brief The client half of the qconf write procedure
  *
  * Nothing but the two addressing answers; the work happens in qmaster. Kept
- * apart from ocs_CalendarModServer.h so a client translation unit needs
- * neither the server model nor the monitoring structure it uses.
+ * apart from ocs_QConfWriteServer.h so a client translation unit needs neither
+ * the server model nor the monitoring structure it uses.
  */
 
 #include "gdi/ocs_gdi_Command.h"
 #include "gdi/ocs_gdi_Target.h"
 
 #include "../ocs_ProcedureModel.h"
-#include "ocs_CalendarModParameter.h"
+#include "ocs_QConfWriteParameter.h"
 
 namespace ocs {
 
-   /** @brief The client half: sends the modification to qmaster
+   /** @brief The client half: sends a set of objects to qmaster
     *
     * Only the two addressing answers differ from a reading model, and they are
     * what the whole of CS-2822 turns on: the command puts the request through
@@ -44,18 +44,30 @@ namespace ocs {
     * the request if either disagrees with what the procedure's dispatch entry
     * declares, so this is not a free choice.
     *
+    * The target is a constructor argument because one procedure writes every
+    * object type; which one is decided by the switch the user typed, and the
+    * caller is the side that knows it.
+    *
     * @ingroup libprocedure
     */
-   class CalendarModModelClient : public ProcedureModel {
+   class QConfWriteModelClient : public ProcedureModel {
+   private:
+      gdi::Target target_;   ///< the object list being written
+
    public:
+      /** @brief Address the request at one object list
+       * @param target the object list the write procedure is to write
+       */
+      explicit QConfWriteModelClient(const gdi::Target target) : target_(target) {}
+
       /// @return MOD_PROCEDURE, because this procedure changes state
       [[nodiscard]] gdi::Command get_command() const override {
          return gdi::Command::MOD_PROCEDURE;
       }
 
-      /// @return the calendar list, the object the procedure writes
+      /// @return the object list the procedure writes
       [[nodiscard]] gdi::Target get_target() const override {
-         return gdi::Target::CAL_LIST;
+         return target_;
       }
    };
 

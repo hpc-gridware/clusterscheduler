@@ -35,7 +35,6 @@
 #include "gdi/ocs_gdi_Target.h"
 
 #include "procedure/ocs_ProcedureParameter.h"
-#include "procedure/calendar/ocs_CalendarModServer.h"
 
 #include "procedure/qconf/ocs_QConfController.h"
 #include "procedure/qconf/table/ocs_QConfTableController.h"
@@ -67,6 +66,7 @@
 #include "procedure/qconf/ocs_QConfViewJSON.h"
 #include "procedure/qconf/ocs_QConfViewPlain.h"
 #include "procedure/qconf/ocs_QConfViewXML.h"
+#include "procedure/qconf/ocs_QConfWriteServer.h"
 
 #include "procedure/qhost/ocs_QHostContoller.h"
 #include "procedure/qhost/ocs_QHostModelServer.h"
@@ -572,9 +572,25 @@ namespace {
       }
    };
 
+   /** @brief What a procedure decided about itself, beside its output
+    *
+    * Everything a caller has to act on that is not the rendered text: how much
+    * of it RBAC removed, and - for a procedure that writes - what the write
+    * did. prepare_response() puts it into the response bundle.
+    *
+    * One struct rather than a growing list of out-parameters, because every one
+    * of these has to be threaded through exec_procedure() and run_procedure()
+    * whether the procedure at hand produces it or not.
+    */
+   struct ProcedureOutcome {
+      uint32_t reduction = ocs::ProcedureParameter::REDUCTION_NONE;  ///< what RBAC removed
+      ocs::QConfWriteResult write;                                   ///< what a write did
+      bool has_write_result = false;                                 ///< whether @ref write was filled
+   };
+
    template<typename Traits>
    void exec_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monitor,
-                       std::ostringstream &os, uint32_t &reduction) {
+                       std::ostringstream &os, ProcedureOutcome &outcome) {
       DENTER(TOP_LAYER);
 
       using Parameter = typename Traits::Parameter;
@@ -596,7 +612,26 @@ namespace {
       if constexpr (requires { model.set_monitor(monitor); }) {
          model.set_monitor(monitor);
       }
-      if (!model.make_snapshot(&task->answer_list, parameter)) {
+      /* And which object type it writes. The dispatch entry names the target the
+       * request must carry; the traits name the row of the qconf object table
+       * that goes with it, because a target does not identify one - HGRP_LIST and
+       * US_LIST each carry three rows. The provider compares the two, see
+       * qconf_write_from_procedure(). */
+      if constexpr (requires { Traits::write_object; }) {
+         model.set_object(Traits::write_object);
+      }
+
+      const bool snapshot_ok = model.make_snapshot(&task->answer_list, parameter);
+
+      /* Read before the verdict is acted on, not after: a write that the policy
+       * refused still has to report how many items it could not read, because
+       * that count is what -strict reports to the user. */
+      if constexpr (requires { model.get_write_result(); }) {
+         outcome.write = model.get_write_result();
+         outcome.has_write_result = true;
+      }
+
+      if (!snapshot_ok) {
          // error was written by make_snapshot()
          DRETURN_VOID;
       }
@@ -628,14 +663,14 @@ namespace {
        * a parameter rather than a comment so that it is typed and visible at the
        * call site, and it is not an accessor on each of the five model
        * hierarchies because "always zero" is not worth five edits. */
-      reduction = ocs::ProcedureParameter::REDUCTION_NONE;
+      outcome.reduction = ocs::ProcedureParameter::REDUCTION_NONE;
 
       DRETURN_VOID;
    }
 
    template<typename Traits>
    void prepare_response(ocs::gdi::Packet *packet, ocs::gdi::Task *task, std::ostringstream &os,
-                         uint32_t reduction) {
+                         const ProcedureOutcome &outcome) {
       DENTER(TOP_LAYER);
 
       // if exec_procedure failed then the answer_list contains already an error
@@ -658,8 +693,23 @@ namespace {
        * the text. The bundle's sublist is CULL_ANY_SUBTYPE, so a ULNG entry
        * round-trips without a wire format change. */
       lList *reduction_list = nullptr;
-      lAddElemUlong(&reduction_list, ULNG_value, reduction, ULNG_Type);
+      lAddElemUlong(&reduction_list, ULNG_value, outcome.reduction, ULNG_Type);
       ocs::ProcedureParameter::add_parameter_bundle(bundle, ocs::ProcedureParameter::REDUCTION, reduction_list);
+
+      /* CS-2822: and what a write did, when this was one. Sent only then, so a
+       * reading procedure's response is unchanged and the client can tell "no
+       * write happened here" from "a write applied nothing". */
+      if (outcome.has_write_result) {
+         lList *applied_list = nullptr;
+         lAddElemUlong(&applied_list, ULNG_value, outcome.write.applied, ULNG_Type);
+         ocs::ProcedureParameter::add_parameter_bundle(bundle, ocs::ProcedureParameter::WRITE_APPLIED,
+                                                       applied_list);
+
+         lList *failed_list = nullptr;
+         lAddElemUlong(&failed_list, ULNG_value, outcome.write.parse_failed, ULNG_Type);
+         ocs::ProcedureParameter::add_parameter_bundle(bundle, ocs::ProcedureParameter::WRITE_PARSE_FAILED,
+                                                       failed_list);
+      }
 #if 0
       DPRINTF("response:\n %s", os.str().c_str());
 #endif
@@ -675,37 +725,45 @@ namespace {
       DENTER(TOP_LAYER);
 
       std::ostringstream out_ss;
-      uint32_t reduction = ocs::ProcedureParameter::REDUCTION_NONE;
-      exec_procedure<Traits>(packet, task, monitor, out_ss, reduction);
-      prepare_response<Traits>(packet, task, out_ss, reduction);
+      ProcedureOutcome outcome;
+      exec_procedure<Traits>(packet, task, monitor, out_ss, outcome);
+      prepare_response<Traits>(packet, task, out_ss, outcome);
 
       DRETURN_VOID;
    }
 
-   /** @brief `calendar_mod`: the first procedure that changes state (CS-2822)
+   /** @brief `object_write`: the procedure that changes state (CS-2822)
     *
-    * One view for all three factories - the response is a confirmation line
-    * with nothing to structure, so XML and JSON would add a wrapper and no
-    * information.
+    * One procedure for every object type and any number of objects. The type is
+    * a template argument rather than a field, so each registered type is its own
+    * handler and the model learns which row of the qconf object table it writes
+    * without the request having to say - a request that said so could lie.
+    *
+    * One view for all three factories: a write renders nothing, so XML and JSON
+    * would wrap an empty text. What it has to say is in the answer list.
+    *
+    * @tparam OBJ the object type this entry writes
     */
-   struct CalendarModTraits {
-      using Parameter = ocs::CalendarModParameter;
-      using Model = ocs::CalendarModModelServer;
-      using ViewBase = ocs::CalendarModView;
-      using Controller = ocs::CalendarModController;
+   template<QConfObj OBJ>
+   struct QConfWriteTraits {
+      using Parameter = ocs::QConfWriteParameter;
+      using Model = ocs::QConfWriteModelServer;
+      using ViewBase = ocs::QConfWriteView;
+      using Controller = ocs::QConfWriteController;
 
       static constexpr ProgName prog_number = QCONF;
+      static constexpr QConfObj write_object = OBJ;   ///< read by exec_procedure()
 
       static std::unique_ptr<ViewBase> make_xml_view(const Parameter &parameter) {
-         return std::make_unique<ocs::CalendarModView>(parameter);
+         return std::make_unique<ocs::QConfWriteView>(parameter);
       }
 
       static std::unique_ptr<ViewBase> make_plain_view(const Parameter &parameter) {
-         return std::make_unique<ocs::CalendarModView>(parameter);
+         return std::make_unique<ocs::QConfWriteView>(parameter);
       }
 
       static std::unique_ptr<ViewBase> make_json_view(const Parameter &parameter) {
-         return std::make_unique<ocs::CalendarModView>(parameter);
+         return std::make_unique<ocs::QConfWriteView>(parameter);
       }
    };
 
@@ -778,11 +836,19 @@ namespace {
       {to_string_view(QCONF), ocs::QConfParameter::SHARETREE_TREE, READS, &run_procedure<QConfShareTreeTreeTraits>},
       {to_string_view(QCONF), ocs::QConfParameter::SHARETREE_NODES, READS, &run_procedure<QConfShareTreeNodesTraits>},
       {to_string_view(QCONF), ocs::QConfParameter::CQUEUE_SHOW, READS, &run_procedure<QConfCQueueShowTraits>},
-      /* The only entry that writes. It names CAL_LIST, which is what the
-       * request must be addressed to and what the modify permission is checked
-       * against - see ProcedureRequirements above. */
-      {to_string_view(QCONF), ocs::CalendarModParameter::CALENDAR_MOD,
-       modifies(ocs::gdi::Target::CAL_LIST), &run_procedure<CalendarModTraits>},
+      /* The entries that write. All of them name the same procedure and
+       * sub-procedure and differ only in the object they write, which is why the
+       * lookup below matches on the target as well - see sge_c_gdi_procedure().
+       *
+       * Each names the GDI target the request must be addressed to and the row
+       * of the qconf object table that is written. The two have to agree, and
+       * the provider checks that they do; it cannot be a static_assert because
+       * the object table is not constexpr.
+       *
+       * Only the calendar so far. The other object types are CS-2823 and are one
+       * line each, which is the point of templating the traits. */
+      {to_string_view(QCONF), ocs::QConfWriteParameter::OBJECT_WRITE,
+       modifies(ocs::gdi::Target::CAL_LIST), &run_procedure<QConfWriteTraits<QConfObj::CAL>>},
       {to_string_view(QHOST), "", READS, &run_procedure<QHostTraits>},
       {to_string_view(QQUOTA), "", READS, &run_procedure<QQuotaTraits>},
       {to_string_view(QRSTAT), "", READS, &run_procedure<QRStatTraits>},
@@ -812,29 +878,49 @@ void sge_c_gdi_procedure(gdi_object_t *ao, ocs::gdi::Packet *packet, ocs::gdi::T
    DPRINTF("requested procedure: \"" SFN "/" SFN "\"\n", name.c_str(), sub_name.c_str());
 
    // Find and trigger the procedures handler
+   /* The name pair alone no longer picks an entry: every object type the write
+    * procedure covers registers the same procedure and sub-procedure and differs
+    * only in the target it writes (CS-2822). So the addressing is part of the
+    * key, and the first entry that matches the name pair is no longer
+    * necessarily the right one.
+    *
+    * The two misses are told apart because they mean different things to the
+    * caller. An unknown name is a procedure this daemon does not have; a known
+    * name with the wrong command or target is a procedure that exists and was
+    * addressed in a way it refuses - which is the guard itself, and the message
+    * has to say so. */
+   bool name_matched = false;
    for (const auto &[procedure_name, sub_procedure_name, requirements, handler]: procedure_dispatch_table) {
-      if (procedure_name == name && sub_procedure_name == sub_name) {
-         /* The request said which permission checks ran before we got here:
-          * the command chose between the read and the modify branch of
-          * sge_c_gdi_check_execution_permission(), and the target chose which
-          * object list those checks asked about. Neither is believed - both
-          * must match what this procedure's entry declares, or a caller could
-          * have a modifying procedure checked as a read, or have it checked
-          * against an object it does not touch. Refused here rather than in the
-          * permission path because this is the function the worker dispatch
-          * reaches, so the guard must not depend on a caller having looked
-          * first. */
-         if (cmd != requirements.command || task->target != requirements.target) {
-            snprintf(SGE_EVENT, SGE_EVENT_SIZE,
-                     "stored procedure \"" SFN "/" SFN "\" cannot be executed as " SFN " on " SFN,
-                     name.c_str(), sub_name.c_str(), to_string(cmd).c_str(),
-                     to_string(task->target).c_str());
-            answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_ENOIMP, ANSWER_QUALITY_ERROR);
-            DRETURN_VOID;
-         }
-         handler(packet, task, monitor);
-         DRETURN_VOID;
+      if (procedure_name != name || sub_procedure_name != sub_name) {
+         continue;
       }
+      name_matched = true;
+
+      /* The request said which permission checks ran before we got here:
+       * the command chose between the read and the modify branch of
+       * sge_c_gdi_check_execution_permission(), and the target chose which
+       * object list those checks asked about. Neither is believed - both
+       * must match what this procedure's entry declares, or a caller could
+       * have a modifying procedure checked as a read, or have it checked
+       * against an object it does not touch. Refused here rather than in the
+       * permission path because this is the function the worker dispatch
+       * reaches, so the guard must not depend on a caller having looked
+       * first. */
+      if (cmd != requirements.command || task->target != requirements.target) {
+         continue;
+      }
+
+      handler(packet, task, monitor);
+      DRETURN_VOID;
+   }
+
+   if (name_matched) {
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE,
+               "stored procedure \"" SFN "/" SFN "\" cannot be executed as " SFN " on " SFN,
+               name.c_str(), sub_name.c_str(), to_string(cmd).c_str(),
+               to_string(task->target).c_str());
+      answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_ENOIMP, ANSWER_QUALITY_ERROR);
+      DRETURN_VOID;
    }
 
    // show an error if no method was found

@@ -94,10 +94,10 @@
 #include "sge_options.h"
 #include "usage.h"
 #include "ocs_qconf_acl.h"
-#include "procedure/calendar/ocs_CalendarModModelClient.h"
 #include "procedure/ocs_ProcedureController.h"
 #include "procedure/ocs_ProcedureModel.h"
 #include "procedure/ocs_ProcedureView.h"
+#include "procedure/qconf/ocs_QConfWriteModelClient.h"
 
 #include "qconf/ocs_QConfController.h"
 #include "qconf/table/ocs_QConfTableController.h"
@@ -270,23 +270,6 @@ qconf_confirm(const char *prompt) {
    return (buf[0] == 'y' || buf[0] == 'Y');
 }
 
-/** @brief True if the name attribute @a name_nm of @a descr is a host field
- *  (lHostT) rather than a plain string (CS-2304: e.g. EH_name). */
-static bool
-qconf_name_is_host(const lDescr *descr, int name_nm) {
-   return lGetType(descr, name_nm) == lHostT;
-}
-
-/** @brief Read an object's name attribute as a string, whether it is a plain
- *  string field or a host field (CS-2304). */
-static const char *
-qconf_get_name(const lListElem *ep, int name_nm) {
-   if (lGetType(lGetElemDescr(ep), name_nm) == lHostT) {
-      return lGetHost(ep, name_nm);
-   }
-   return lGetString(ep, name_nm);
-}
-
 /**
  * @brief Test whether an object of a given name already exists in qmaster.
  *
@@ -336,28 +319,6 @@ qconf_get_name_list(ocs::gdi::Target target, const lDescr *descr, int name_nm) {
    lFreeWhat(&what);
    lFreeList(&alp);
    return lp;
-}
-
-/**
- * @brief Whether @p name is present in a name list (CS-2315).
- *
- * Host-typed name fields are compared with the host comparison, plain ones with
- * a string comparison - mirroring qconf_object_exists().
- *
- * @param names   list of name-only elements (from qconf_get_name_list)
- * @param descr   CULL descriptor of the object type
- * @param name_nm name attribute of the object
- * @param name    name to look for
- * @return true if the list contains an element with that name
- */
-static bool
-qconf_name_in_list(const lList *names, const lDescr *descr, int name_nm, const char *name) {
-   if (names == nullptr || name == nullptr) {
-      return false;
-   }
-   return qconf_name_is_host(descr, name_nm)
-      ? (lGetElemHost(names, name_nm, name) != nullptr)
-      : (lGetElemStr(names, name_nm, name) != nullptr);
 }
 
 /**
@@ -449,40 +410,15 @@ qconf_read_object_file(const lDescr *descr, spooling_field *fields,
                        const spool_flatfile_instr *sfi = &qconf_sfi,
                        int (*prepare)(lListElem *, lList **) = nullptr,
                        bool parse_values = true) {
+   /* The chain itself moved to qconf_parse_object() in the procedure library,
+    * because qmaster needs the same one for a write procedure and two copies
+    * would drift. What stays here is the client's half of it: the format comes
+    * from this process's -fmt, and the messages are printed rather than carried
+    * back to a caller. */
    lList *alp = nullptr;
-   int fields_out[MAX_NUM_FIELDS];
-   fields_out[0] = NoName;
-
-   /* CS-2299 H4: "-" reads the object from stdin. spool_flatfile_read_object()
-    * only closes the stream when it opened it itself, so passing stdin is safe. */
-   bool from_stdin = (filename != nullptr && strcmp(filename, "-") == 0);
-   lListElem *ep = spool_flatfile_read_object(&alp, descr, nullptr, fields,
-                                              fields_out, parse_values, sfi,
-                                              qconf_opt_format,
-                                              from_stdin ? stdin : nullptr,
-                                              filename);
-   if (answer_list_output(&alp)) {
-      lFreeElem(&ep);
-      return nullptr;
-   }
-   if (ep != nullptr && spool_get_unprocessed_field(fields, fields_out, &alp) != NoName) {
-      answer_list_output(&alp);
-      lFreeElem(&ep);
-      return nullptr;
-   }
-   /* CS-2304: optional transform of the parsed object (e.g. resolve a hostname)
-    * before the name is used for the existence check / send. */
-   if (ep != nullptr && prepare != nullptr && prepare(ep, &alp) != STATUS_OK) {
-      answer_list_output(&alp);
-      lFreeElem(&ep);
-      return nullptr;
-   }
-   if (ep != nullptr && validate != nullptr && validate(ep, &alp) != STATUS_OK) {
-      answer_list_output(&alp);
-      lFreeElem(&ep);
-      return nullptr;
-   }
-   lFreeList(&alp);
+   lListElem *ep = qconf_parse_object(&alp, descr, fields, qconf_opt_format, filename, nullptr,
+                                      validate, sfi, prepare, parse_values);
+   answer_list_output(&alp);
    return ep;
 }
 
@@ -629,6 +565,144 @@ qconf_collect_elem(const char *filepath, void *vctx) {
    }
    lAppendElem(ctx->elems, ep);
    return 0;
+}
+
+/** @brief Read a whole file into a string, see the definition below. */
+static bool qconf_read_file_text(const char *filename, std::string &text);
+
+/** @brief Context of the batch being assembled for the write procedure (CS-2822). */
+struct qconf_text_ctx {
+   ocs::QConfWriteParameter *param;   ///< the batch being filled
+   int n_fail;                        ///< files this side could not read at all
+};
+
+/** @brief qconf_for_each_file() callback: hand one file's text to the batch
+ *
+ * The file is not parsed here. That is the whole point of the write procedure:
+ * only qmaster knows what it masked when it rendered the object, so only qmaster
+ * may read the text back - see ocs::QConfWriteParameter.
+ *
+ * What is still this side's business is the file itself, and a file that cannot
+ * be opened is reported with the same message the flat file reader used to
+ * report it with, because that is what the user has always seen.
+ *
+ * @param filepath the file to read, `-` for stdin
+ * @param vctx the batch being filled
+ * @return 0 when the text was added, 1 when the file could not be read
+ */
+static int
+qconf_collect_text(const char *filepath, void *vctx) {
+   auto *ctx = static_cast<qconf_text_ctx *>(vctx);
+
+   std::string text;
+   bool ok;
+   if (strcmp(filepath, "-") == 0) {
+      // CS-2299 H4: "-" reads the object from stdin
+      ok = true;
+      char chunk[4096];
+      size_t n;
+      while ((n = fread(chunk, 1, sizeof(chunk), stdin)) > 0) {
+         text.append(chunk, n);
+      }
+      ok = (ferror(stdin) == 0);
+   } else {
+      ok = qconf_read_file_text(filepath, text);
+   }
+
+   if (!ok) {
+      ERROR(MSG_ERROROPENINGFILEFORREADING_SS, filepath, strerror(errno));
+      ctx->n_fail++;
+      return 1;
+   }
+
+   ctx->param->add_item(filepath, text);
+   return 0;
+}
+
+/** @brief Add or modify every object at a path through the write procedure (CS-2822)
+ *
+ * The successor of qconf_apply_path() for the object types that have a write
+ * procedure. What is left here is what is genuinely the client's: walking the
+ * path, reading the files, and the summary line that names the path. The parse,
+ * the add against modify decision and the writes are qmaster's, in one request.
+ *
+ * @param os the stream the summary is written to (CS-1841)
+ * @param o the object type
+ * @param path file or directory to apply
+ * @return the number of objects that failed
+ */
+static int
+qconf_apply_path_procedure(std::ostream &os, const QConfObj o, const char *path) {
+   DENTER(TOP_LAYER);
+
+   const qconf_object_desc &d = qconf_desc(o);
+   const bool is_dir = sge_is_directory(path);
+
+   ocs::QConfWriteParameter param;
+   param.set_output_format(qconf_opt_format == SP_FORM_JSON
+                              ? ocs::ProcedureParameter::OutputFormat::JSON
+                              : ocs::ProcedureParameter::OutputFormat::PLAIN);
+   param.set_mode((qconf_opt_strict ? ocs::QConfWriteParameter::MODE_STRICT : 0u) |
+                  (qconf_opt_dry_run ? ocs::QConfWriteParameter::MODE_DRY : 0u));
+
+   qconf_text_ctx ctx = {&param, 0};
+   qconf_for_each_file(path, qconf_collect_text, &ctx);
+
+   /* A file this side could not even open counts as a file that failed to parse,
+    * which is what it was when the parse happened here - so -strict rejects the
+    * batch before it is sent. The mode cannot be left to qmaster alone: qmaster
+    * never learns of a file it was not sent. */
+   if (qconf_opt_strict && ctx.n_fail > 0) {
+      ERROR(MSG_QCONF_STRICTNOTHINGAPPLIED_SI, path, ctx.n_fail);
+      DRETURN(ctx.n_fail);
+   }
+
+   const int n_items = param.get_item_count();
+   uint32_t applied = 0;
+   uint32_t parse_failed = 0;
+
+   /* Nothing readable at the path means nothing to send - but still a summary
+    * below, because an empty directory has always produced one. */
+   if (n_items > 0) {
+      ocs::QConfWriteModelClient model(d.target);
+      lList *alp = nullptr;
+      model.make_snapshot(&alp, param);
+
+      /* The counts come back typed rather than being inferred from the answers,
+       * because the two kinds of failure are not distinguishable there and
+       * -strict turns on exactly that difference - see
+       * ProcedureParameter::WRITE_APPLIED. */
+      if (!model.get_write_result(applied, parse_failed)) {
+         /* No write result means the request never reached the procedure -
+          * refused on permission, say. Nothing was applied, and the reason is in
+          * the answer list. */
+         DPRINTF("no write result, treating all %d item(s) as failed\n", n_items);
+      }
+
+      /* show_answer_list() and not answer_list_output(): the per-item messages
+       * are what qmaster put into the answer list, and this is where every
+       * qconf write surfaces them - see qconf_modify_cal_procedure(). */
+      show_answer_list(alp);
+      lFreeList(&alp);
+
+      if (qconf_opt_strict && parse_failed > 0) {
+         /* qmaster applied nothing. The message names the path, which is this
+          * side's, and it is the one place where the two phases have to be told
+          * apart - hence the typed count rather than a count of error entries. */
+         ERROR(MSG_QCONF_STRICTNOTHINGAPPLIED_SI, path, static_cast<int>(parse_failed));
+         DRETURN(static_cast<int>(parse_failed));
+      }
+   }
+
+   const int n_ok = static_cast<int>(applied);
+   const int n_fail = n_items - n_ok + ctx.n_fail;
+   if (is_dir) {
+      /* CS-2299 H1: one summary line per directory batch. Still printed here and
+       * still to this stream - it names the path, which is this side's. */
+      qconf_info(os, MSG_QCONF_ADDMODSUMMARY_SII, path, n_ok, n_fail);
+   }
+
+   DRETURN(n_fail);
 }
 
 /**
@@ -1562,6 +1636,15 @@ qconf_delete_names(QConfObj o, const char *names) {
  */
 static int
 qconf_apply_obj(std::ostream &os, QConfObj o, const char *path) {
+   /* CS-2822: the object types whose write runs as a stored procedure take the
+    * other path, which parses in qmaster instead of here. Only the calendar so
+    * far; the rest follow in CS-2823, and the list is here rather than in a
+    * field of the descriptor table so that it disappears with the last entry
+    * instead of becoming a permanent column. */
+   if (o == QConfObj::CAL) {
+      return qconf_apply_path_procedure(os, o, path);
+   }
+
    const qconf_object_desc &d = qconf_desc(o);
    bool owned = false;
    spooling_field *fields = d.build_fields(qconf_opt_format, &owned);
@@ -1969,9 +2052,13 @@ qconf_modify_cal_procedure(std::ostream &os, ocs::QConfParameterClient &param, c
       DRETURN(1);
    }
 
-   ocs::CalendarModParameter mod_param;
-   mod_param.set_object_text(text);
-   ocs::CalendarModModelClient model;
+   /* A set of one. CS-2822 started with a procedure of its own for the calendar;
+    * the file batch made it one procedure for every object type and any number
+    * of objects, and an interactive modify is that with the number one - so
+    * there is one writing path and not two that could drift. */
+   ocs::QConfWriteParameter mod_param;
+   mod_param.add_item(nullptr, text);
+   ocs::QConfWriteModelClient model(ocs::gdi::Target::CAL_LIST);
 
    lList *alp = nullptr;
    const bool ok = model.make_snapshot(&alp, mod_param);
@@ -3995,11 +4082,9 @@ int sge_parse_qconf(char *argv[]) {
              * one would mean two writers for the same object, one of which
              * cannot see a reduced read.
              *
-             * -Mcal below still uses it: that is the file batch of
-             * qconf_apply_path(), which reads a whole directory, partitions add
-             * against modify from one name GET and honours -strict and
-             * -dry-run. Moving it needs the procedure to accept a set of object
-             * texts, which is a decision of its own. */
+             * -Mcal below goes through the same procedure, as a set of many
+             * instead of a set of one, so the calendar has one writer and not
+             * two - see qconf_apply_path_procedure(). */
             if (qconf_modify_cal_procedure(os, param, *spp, uid, gid) != 0) {
                sge_parse_return = 1;
             }

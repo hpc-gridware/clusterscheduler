@@ -97,6 +97,37 @@ ocs::ProcedureModel::get_reduction() const {
    DRETURN(static_cast<uint32_t>(lGetUlong(value, ULNG_value)));
 }
 
+/** @brief What a write procedure did, see the header
+ * @param applied receives how many objects were written
+ * @param parse_failed receives how many could not be read
+ * @return true when the response carried a write result
+ */
+bool
+ocs::ProcedureModel::get_write_result(uint32_t &applied, uint32_t &parse_failed) const {
+   DENTER(TOP_LAYER);
+
+   const lListElem *applied_entry = lGetElemStr(procedure_response, SPP_name,
+                                                ProcedureParameter::WRITE_APPLIED);
+   const lListElem *failed_entry = lGetElemStr(procedure_response, SPP_name,
+                                               ProcedureParameter::WRITE_PARSE_FAILED);
+   if (applied_entry == nullptr || failed_entry == nullptr) {
+      DPRINTF("no write result in the response\n");
+      DRETURN(false);
+   }
+
+   const lListElem *applied_value = lFirst(lGetList(applied_entry, SPP_value_list));
+   const lListElem *failed_value = lFirst(lGetList(failed_entry, SPP_value_list));
+   if (applied_value == nullptr || failed_value == nullptr) {
+      DPRINTF("write result present but empty\n");
+      DRETURN(false);
+   }
+
+   applied = static_cast<uint32_t>(lGetUlong(applied_value, ULNG_value));
+   parse_failed = static_cast<uint32_t>(lGetUlong(failed_value, ULNG_value));
+
+   DRETURN(true);
+}
+
 /** @brief Return the pre-rendered output text received from qmaster.
  *
  * Returns an empty string if the response list is absent or malformed.

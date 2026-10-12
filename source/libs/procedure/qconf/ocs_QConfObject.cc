@@ -313,6 +313,134 @@ qconf_desc(QConfObj o) {
    return qconf_object_table[static_cast<size_t>(o)];
 }
 
+/** @brief Whether an object's name attribute is a host field
+ *
+ * Host names are compared case- and domain-insensitively, plain strings byte by
+ * byte, so which of the two a name field is decides how it is looked up
+ * (CS-2304: EH_name and friends are lHostT).
+ *
+ * @param descr the object's CULL descriptor
+ * @param name_nm the name attribute
+ * @return true when the attribute is a host field
+ */
+bool
+qconf_name_is_host(const lDescr *descr, const int name_nm) {
+   return lGetType(descr, name_nm) == lHostT;
+}
+
+/** @brief Read an object's name attribute as a string
+ *
+ * Whether the field is a plain string or a host field (CS-2304), what the
+ * caller wants is its text.
+ *
+ * @param ep the object
+ * @param name_nm the name attribute
+ * @return the name, owned by @p ep
+ */
+const char *
+qconf_get_name(const lListElem *ep, const int name_nm) {
+   if (qconf_name_is_host(lGetElemDescr(ep), name_nm)) {
+      return lGetHost(ep, name_nm);
+   }
+   return lGetString(ep, name_nm);
+}
+
+/** @brief Whether a name is present in a list of objects
+ *
+ * Compared the way the name field demands, see qconf_name_is_host().
+ *
+ * @param names the list to search
+ * @param descr the object's CULL descriptor
+ * @param name_nm the name attribute
+ * @param name the name to look for
+ * @return true when the list holds an element of that name
+ */
+bool
+qconf_name_in_list(const lList *names, const lDescr *descr, const int name_nm, const char *name) {
+   if (names == nullptr || name == nullptr) {
+      return false;
+   }
+   return qconf_name_is_host(descr, name_nm)
+      ? (lGetElemHost(names, name_nm, name) != nullptr)
+      : (lGetElemStr(names, name_nm, name) != nullptr);
+}
+
+/** @brief Parse one object from a flat file or from text, collecting the messages
+ *
+ * The chain qconf has always run before it sends an object: read it, make sure
+ * no field was left unprocessed, let the object type's `prepare` transform it
+ * (resolving a host name, for instance), then let its `validate` judge it.
+ *
+ * It used to be a private function of the client. It lives here because a
+ * stored procedure runs inside qmaster and needs the very same chain - and
+ * because having it twice would mean two behaviours drifting apart, with only
+ * one of them covered by the characterisation test.
+ *
+ * The one deliberate difference to the client's old copy: it **collects** its
+ * messages in @p answer_list rather than printing them. Printing is not an
+ * option in the daemon, and the messages are what travels back to the caller
+ * as the request's answers. The client keeps a thin wrapper that collects and
+ * then prints.
+ *
+ * Parsing goes into a local list first and is appended on the way out. That is
+ * not tidiness: the test for "did this read fail" is whether an **error** was
+ * produced, not only whether the reader returned nothing, and asking that of a
+ * list shared by a whole batch would let one bad item discard every item after
+ * it.
+ *
+ * @param answer_list receives the messages of this parse
+ * @param descr the object's CULL descriptor
+ * @param fields the field list to read
+ * @param format the flatfile format the text is in
+ * @param filename the file to read, `-` for stdin, or nullptr when @p content is given
+ * @param content the object's text, or nullptr to read from @p filename
+ * @param validate the object type's validator, or nullptr
+ * @param sfi the object type's spooling instruction
+ * @param prepare the object type's transform, or nullptr
+ * @param parse_values whether attribute values are parsed
+ * @return the parsed object, which the caller owns, or nullptr when it could not be read
+ */
+lListElem *
+qconf_parse_object(lList **answer_list, const lDescr *descr, spooling_field *fields,
+                   const spool_flatfile_format format, const char *filename, const char *content,
+                   int (*validate)(const lListElem *, lList **),
+                   const spool_flatfile_instr *sfi,
+                   int (*prepare)(lListElem *, lList **),
+                   const bool parse_values) {
+   DENTER(TOP_LAYER);
+
+   lList *local = nullptr;
+   int fields_out[MAX_NUM_FIELDS];
+   fields_out[0] = NoName;
+
+   /* CS-2299 H4: "-" reads the object from stdin. spool_flatfile_read_object()
+    * only closes the stream when it opened it itself, so passing stdin is safe. */
+   const bool from_stdin = (content == nullptr && filename != nullptr && strcmp(filename, "-") == 0);
+   lListElem *ep = spool_flatfile_read_object(&local, descr, nullptr, fields, fields_out,
+                                              parse_values, sfi, format,
+                                              from_stdin ? stdin : nullptr, filename, content);
+   bool failed = answer_list_has_error(&local);
+
+   if (!failed && ep != nullptr &&
+       spool_get_unprocessed_field(fields, fields_out, &local) != NoName) {
+      failed = true;
+   }
+   /* CS-2304: the transform runs before the name is used, so a prepare that
+    * fails must stop the object from being applied. */
+   if (!failed && ep != nullptr && prepare != nullptr && prepare(ep, &local) != STATUS_OK) {
+      failed = true;
+   }
+   if (!failed && ep != nullptr && validate != nullptr && validate(ep, &local) != STATUS_OK) {
+      failed = true;
+   }
+   if (failed) {
+      lFreeElem(&ep);
+   }
+
+   answer_list_append_list(answer_list, &local);
+   DRETURN(ep);
+}
+
 /**
  * @brief Fill complex-value sublists with their CULL type/numeric value (CS-2313a).
  *

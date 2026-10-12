@@ -74,6 +74,25 @@ namespace ocs {
        */
       [[nodiscard]] uint32_t get_reduction() const;
 
+      /** @brief What a write procedure did (CS-2822)
+       *
+       * The two counts the caller of a set write needs and cannot derive: how
+       * many items were applied, and how many of them never got that far
+       * because they could not be read. The reasons are in the answer list; what
+       * is here is the arithmetic, which only the writing side can do - see
+       * ProcedureParameter::WRITE_APPLIED.
+       *
+       * A reading procedure sends neither entry, so false means "this was not a
+       * write" and the two values are untouched. Both are then also left
+       * untouched when only one entry arrived, because a half-filled result
+       * would be indistinguishable from a complete one.
+       *
+       * @param applied receives how many objects were written
+       * @param parse_failed receives how many could not be read
+       * @return true when the response carried a write result
+       */
+      [[nodiscard]] bool get_write_result(uint32_t &applied, uint32_t &parse_failed) const;
+
       /** @brief Write what the model holds to the log
        *
        * Does nothing in the base; a subclass overrides it to dump its own

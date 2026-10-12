@@ -64,7 +64,7 @@
 #include "gdi/ocs_gdi_Client.h"
 #include "gdi/ocs_gdi_ClientBase.h"
 
-#include "procedure/calendar/ocs_CalendarModModelClient.h"
+#include "procedure/qconf/ocs_QConfWriteModelClient.h"
 
 #include "basis_types.h"
 
@@ -143,6 +143,25 @@ public:
 
    [[nodiscard]] ocs::gdi::Target get_target() const override {
       return ocs::gdi::Target::CQ_LIST;
+   }
+};
+
+/** @brief A model that addresses the writing procedure to the readers' target
+ *
+ * `Target::PROCEDURE` is what every reading entry declares, so this is the way
+ * a request could end up checked by the GET branch - which asks about no object
+ * list at all - while naming a procedure that writes. It is also the case the
+ * target aware lookup has to get right: the name pair matches the write entry,
+ * the target does not, and no reading entry may be picked up instead.
+ */
+class ReadTargetWriteModel : public ocs::ProcedureModel {
+public:
+   [[nodiscard]] ocs::gdi::Command get_command() const override {
+      return ocs::gdi::Command::MOD_PROCEDURE;
+   }
+
+   [[nodiscard]] ocs::gdi::Target get_target() const override {
+      return ocs::gdi::Target::PROCEDURE;
    }
 };
 
@@ -242,9 +261,9 @@ main(int /*argc*/, char * /*argv*/[]) {
 
    /* ---- the round trip ---------------------------------------------------- */
    {
-      ocs::CalendarModParameter parameter;
-      parameter.set_object_text(calendar_text(CAL_NAME, WEEK_AFTER));
-      ocs::CalendarModModelClient model;
+      ocs::QConfWriteParameter parameter;
+      parameter.add_item(nullptr, calendar_text(CAL_NAME, WEEK_AFTER));
+      ocs::QConfWriteModelClient model(ocs::gdi::Target::CAL_LIST);
 
       lList *call_alp = nullptr;
       const bool ok = model.make_snapshot(&call_alp, parameter);
@@ -260,9 +279,9 @@ main(int /*argc*/, char * /*argv*/[]) {
    /* ---- every wrong way of addressing it --------------------------------- */
    {
       /* back to the known value, so each refusal can be checked against it */
-      ocs::CalendarModParameter reset;
-      reset.set_object_text(calendar_text(CAL_NAME, WEEK_BEFORE));
-      ocs::CalendarModModelClient reset_model;
+      ocs::QConfWriteParameter reset;
+      reset.add_item(nullptr, calendar_text(CAL_NAME, WEEK_BEFORE));
+      ocs::QConfWriteModelClient reset_model(ocs::gdi::Target::CAL_LIST);
       lList *reset_alp = nullptr;
       const bool reset_ok = reset_model.make_snapshot(&reset_alp, reset);
       lFreeList(&reset_alp);
@@ -274,8 +293,8 @@ main(int /*argc*/, char * /*argv*/[]) {
 
       /* the writing procedure under the reading command */
       {
-         ocs::CalendarModParameter parameter;
-         parameter.set_object_text(calendar_text(CAL_NAME, WEEK_AFTER));
+         ocs::QConfWriteParameter parameter;
+         parameter.add_item(nullptr, calendar_text(CAL_NAME, WEEK_AFTER));
          WrongCommandModel model;
          CHECK(6, "writing procedure under GET_PROCEDURE refused",
                procedure_refused(model, parameter));
@@ -283,8 +302,8 @@ main(int /*argc*/, char * /*argv*/[]) {
 
       /* the writing procedure addressed to a different object list */
       {
-         ocs::CalendarModParameter parameter;
-         parameter.set_object_text(calendar_text(CAL_NAME, WEEK_AFTER));
+         ocs::QConfWriteParameter parameter;
+         parameter.add_item(nullptr, calendar_text(CAL_NAME, WEEK_AFTER));
          WrongTargetModel model;
          CHECK(7, "writing procedure addressed to CQ_LIST refused",
                procedure_refused(model, parameter));
@@ -293,20 +312,20 @@ main(int /*argc*/, char * /*argv*/[]) {
       /* a reading procedure under the writing command: sub-procedure "" is the
        * plain qconf read entry, which declares GET_PROCEDURE */
       {
-         ocs::CalendarModParameter parameter;
-         parameter.set_object_text(calendar_text(CAL_NAME, WEEK_AFTER));
+         ocs::QConfWriteParameter parameter;
+         parameter.add_item(nullptr, calendar_text(CAL_NAME, WEEK_AFTER));
          parameter.set_sub_procedure_name("");
-         ocs::CalendarModModelClient model;
+         ocs::QConfWriteModelClient model(ocs::gdi::Target::CAL_LIST);
          CHECK(8, "reading procedure under MOD_PROCEDURE refused",
                procedure_refused(model, parameter));
       }
 
       /* a procedure that does not exist at all */
       {
-         ocs::CalendarModParameter parameter;
-         parameter.set_object_text(calendar_text(CAL_NAME, WEEK_AFTER));
+         ocs::QConfWriteParameter parameter;
+         parameter.add_item(nullptr, calendar_text(CAL_NAME, WEEK_AFTER));
          parameter.set_sub_procedure_name("no_such_sub_procedure");
-         ocs::CalendarModModelClient model;
+         ocs::QConfWriteModelClient model(ocs::gdi::Target::CAL_LIST);
          CHECK(9, "unknown procedure under MOD_PROCEDURE refused",
                procedure_refused(model, parameter));
       }
@@ -319,20 +338,49 @@ main(int /*argc*/, char * /*argv*/[]) {
 
    /* ---- what the procedure itself rejects -------------------------------- */
    {
-      /* an empty text has no object in it and must not reach the write lock */
-      ocs::CalendarModParameter parameter;
-      ocs::CalendarModModelClient model;
-      CHECK(11, "a call with an empty object text is refused", procedure_refused(model, parameter));
+      /* an empty set has nothing to write and must not reach the write lock */
+      ocs::QConfWriteParameter parameter;
+      ocs::QConfWriteModelClient model(ocs::gdi::Target::CAL_LIST);
+      CHECK(11, "a call with an empty object set is refused", procedure_refused(model, parameter));
 
-      /* text naming a calendar that does not exist */
-      ocs::CalendarModParameter missing;
-      missing.set_object_text(calendar_text("test_cs2822_no_such_calendar", WEEK_AFTER));
-      ocs::CalendarModModelClient missing_model;
-      CHECK(12, "modifying a calendar that does not exist is refused",
-            procedure_refused(missing_model, missing));
+      /* the writing procedure addressed to the target the readers use */
+      ocs::QConfWriteParameter read_target;
+      read_target.add_item(nullptr, calendar_text(CAL_NAME, WEEK_AFTER));
+      ReadTargetWriteModel read_target_model;
+      CHECK(12, "writing procedure addressed to Target::PROCEDURE refused",
+            procedure_refused(read_target_model, read_target));
+
+      CHECK(13, "neither call changed the calendar", get_week_calendar(CAL_NAME) == WEEK_BEFORE);
    }
 
-   CHECK(13, "the test calendar could be removed again", del_calendar(CAL_NAME));
+   /* ---- the upsert ------------------------------------------------------- */
+   {
+      /* A name that does not exist yet is added, not refused - which is what
+       * "qconf -Mcal" and "qconf -mcal" have always done (CS-2299 C2). It is
+       * decided from the master list inside the procedure, so this is the check
+       * that the decision is made at all: the calendar specific predecessor of
+       * this procedure always modified, and nothing noticed. */
+      const char *new_name = "test_cs2822_new_calendar";
+      del_calendar(new_name);   /* in case an earlier run was interrupted */
+
+      ocs::QConfWriteParameter parameter;
+      parameter.add_item(nullptr, calendar_text(new_name, WEEK_AFTER));
+      ocs::QConfWriteModelClient model(ocs::gdi::Target::CAL_LIST);
+
+      lList *call_alp = nullptr;
+      const bool ok = model.make_snapshot(&call_alp, parameter);
+      if (!ok) {
+         answer_list_output(&call_alp);
+      }
+      lFreeList(&call_alp);
+
+      CHECK(14, "writing a calendar that does not exist was accepted", ok);
+      CHECK(15, "it was created with the week calendar that was sent",
+            get_week_calendar(new_name) == WEEK_AFTER);
+      CHECK(16, "the created calendar could be removed again", del_calendar(new_name));
+   }
+
+   CHECK(17, "the test calendar could be removed again", del_calendar(CAL_NAME));
 
    ocs::gdi::ClientBase::shutdown();
 

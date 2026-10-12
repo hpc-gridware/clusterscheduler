@@ -774,3 +774,18 @@
 #define MSG_AUTOREMOVEHOSTS_FAILED_S               _MESSAGE(34013, _("exec host " SFQ " could not be removed from the cluster, it is no longer treated as a host which added itself"))
 
 // clang-format on
+
+/* CS-2822: the qconf write procedure, which applies a set of objects.
+ *
+ * The two dry-run lines repeat the wording of MSG_QCONF_DRYRUNWOULDADD_S and
+ * MSG_QCONF_DRYRUNWOULDMODIFY_S in the qconf client on purpose. Add against
+ * modify is decided here, in qmaster, because only this side holds the master
+ * list - so this is the side that has to say which it would be. The client keeps
+ * its own copies for the paths that are not procedures yet, the bulk delete and
+ * the configuration, and the two catalogues cannot include each other: both
+ * files are called msg_qconf.h and the bands must not overlap. */
+#define MSG_QCONF_WRITEWOULDADD_S                  _MESSAGE(34007, _("[dry-run] would add " SFQ))
+#define MSG_QCONF_WRITEWOULDMODIFY_S               _MESSAGE(34008, _("[dry-run] would modify " SFQ))
+#define MSG_QCONF_WRITEWRONGTARGET_SS              _MESSAGE(34009, _("the write procedure was addressed to " SFQ " but writes " SFQ))
+#define MSG_QCONF_WRITELISTUNSUPPORTED_S           _MESSAGE(34010, _("the write procedure cannot write " SFN " yet: its file holds a list of objects"))
+#define MSG_QCONF_WRITEEMPTYTEXT_S                 _MESSAGE(34011, _(PFNMAX ": no object text was sent"))

@@ -41,7 +41,6 @@
 #include "sge_qmaster_timed_event.h"
 #include "uti/sge_monitor.h"
 #include "sgeobj/sge_daemonize.h"
-#include "procedure/calendar/ocs_CalendarModServer.h"
 
 
 int
@@ -50,10 +49,6 @@ calendar_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lList
 
 int
 calendar_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *cep, gdi_object_t *object);
-
-bool
-calendar_mod_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monitor,
-                            const ocs::CalendarModParameter &parameter, lList **answer_list);
 
 int
 calendar_update_queue_states(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *cep, lListElem *old_cep, gdi_object_t *object,

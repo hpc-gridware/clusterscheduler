@@ -71,5 +71,8 @@
  * number, which is why the read table reports it with the parsed id rather
  * than with the text the user typed */
 #define MSG_CAT_DOESNOTEXIST_U                        _MESSAGE(12009, _("Category " sge_u32 " does not exist"))
+#define MSG_QCONF_NOWRITEPROVIDER                     _MESSAGE(12010, _("no write provider installed - a write procedure can only run inside qmaster"))
+#define MSG_QCONF_NOWRITEOBJECT                       _MESSAGE(12011, _("the write procedure was not told which object type to write"))
+#define MSG_QCONF_EMPTYOBJECTSET                      _MESSAGE(12012, _("no object was given to write"))
 
 // clang-format on

@@ -26,9 +26,6 @@ set(LIBRARY_SOURCES
         ocs_ProcedureView.cc
         ocs_ProcedureController.cc
 
-        calendar/ocs_CalendarModParameter.cc
-        calendar/ocs_CalendarModServer.cc
-
         qhost/ocs_QHostContoller.cc
         qhost/ocs_QHostParameter.cc
         qhost/ocs_QHostParameterClient.cc
@@ -53,6 +50,8 @@ set(LIBRARY_SOURCES
         qrstat/ocs_QRStatViewXML.cc
 
         qconf/ocs_QConfObject.cc
+        qconf/ocs_QConfWriteParameter.cc
+        qconf/ocs_QConfWriteServer.cc
         qconf/ocs_QConfParameter.cc
         qconf/ocs_QConfParameterClient.cc
         qconf/ocs_QConfModelBase.cc
