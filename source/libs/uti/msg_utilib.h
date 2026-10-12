@@ -241,6 +241,8 @@
 #define MSG_SYSTEMD_CANNOT_DETECT_CGROUP_VERSION   _MESSAGE(59265, _("cannot detect cgroup version"))
 #define MSG_SYSTEMD_NOT_ROOT                       _MESSAGE(59266, _("cannot initialize the systemd integration, we are not running as root user"))
 #define MSG_SYSTEMD_BUS_FD_CLOSED_IS               _MESSAGE(59317, _("the file descriptor %d of our connection to systemd has been closed by someone else, it now refers to " SFQ " - not closing the connection"))
+#define MSG_SYSTEMD_CONNECTION_LOST_SISI           _MESSAGE(59318, _("lost the connection to systemd (" SFN "): error %d: " SFN4 " (sd_bus_is_open returns %d) - no further calls will be made on this connection"))
+#define MSG_SYSTEMD_CONNECTION_DEAD                _MESSAGE(59319, _("the connection to systemd is dead"))
 
 // ocs_OpenSSL.cc
 #define MSG_OPENSSL_ALREADY_INITIALIZED            _MESSAGE(59280, _("openssl library already loaded"))

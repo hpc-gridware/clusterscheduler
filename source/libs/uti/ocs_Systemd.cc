@@ -516,7 +516,56 @@ namespace ocs::uti {
     * This constructor initializes the Systemd object and sets the bus pointer to nullptr.
     */
    Systemd::Systemd()
-      : bus(nullptr), bus_fd(-1), bus_fd_inode(0) {
+      : bus(nullptr), bus_fd(-1), bus_fd_inode(0), error_class(ErrorClass::none) {
+   }
+
+   /*!
+    * @brief Classify the return code of a failed sd-bus call
+    *
+    * The raw return code is the only place where the three situations behind a failure can still
+    * be told apart, and it is visible here and nowhere else. Callers get the result through
+    * get_error_class() and can then decide whether to carry on, to report, or to give up.
+    *
+    * A transport failure is sticky: the connection stays unusable until a new one is opened. It
+    * is reported once, with the bus state, so that a recurrence can be diagnosed from the
+    * messages file; the calls which follow it are failed without touching the socket.
+    *
+    * @param r the negative errno an sd-bus function returned
+    * @param error_dstr the message the caller has already built for this failure, used in the log
+    */
+   void
+   Systemd::classify_error(int r, const dstring *error_dstr) const {
+      if (error_class == ErrorClass::transport) {
+         // The connection is already known to be gone. A later error code cannot change that,
+         // and it is also what keeps the message below to one per lost connection.
+         return;
+      }
+
+      switch (-r) {
+         case ECONNRESET:
+         case ENOTCONN:
+         case EPIPE:
+         case ESHUTDOWN:
+         // The connection also counts as gone when its file descriptor is not a socket of ours
+         // any more, which is what CS-2552 is about: another part of the process closed the
+         // number and something else may own it now. Talking to that is worse than futile.
+         case EBADF:
+         case ENOTSOCK:
+            error_class = ErrorClass::transport;
+            ERROR(MSG_SYSTEMD_CONNECTION_LOST_SISI, sge_dstring_get_string(error_dstr), r,
+                  strerror(-r), bus != nullptr ? sd_bus_is_open_func(bus) : -1);
+            break;
+         case ENOENT:
+            error_class = ErrorClass::unit_gone;
+            break;
+         case EACCES:
+         case EPERM:
+            error_class = ErrorClass::refused;
+            break;
+         default:
+            error_class = ErrorClass::other;
+            break;
+      }
    }
 
    /*!
@@ -621,6 +670,8 @@ namespace ocs::uti {
    Systemd::connect(dstring *error_dstr) {
       bool ret = true;
 
+      error_class = ErrorClass::none;
+
       int r = sd_bus_open_system_func(&bus);
       if (r < 0) {
          sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_CONNECT_IS, r, strerror(-r));
@@ -653,6 +704,24 @@ namespace ocs::uti {
    }
 
    /*!
+    * @brief Can this connection still be used?
+    *
+    * connected() only says that we once got a bus object; it stays true after the connection has
+    * been reset. This asks systemd itself, and it also honours a transport failure we have
+    * already seen, so that the calls after a lost connection fail without touching the socket.
+    *
+    * @return true if a call on this connection still has a chance of succeeding
+    */
+   bool
+   Systemd::is_usable() const {
+      if (bus == nullptr || error_class == ErrorClass::transport) {
+         return false;
+      }
+
+      return sd_bus_is_open_func(bus) > 0;
+   }
+
+   /*!
     * @brief Call a systemd method with a string input and get an object output
     *
     * This function calls a systemd method with a string input and retrieves an object output.
@@ -669,6 +738,13 @@ namespace ocs::uti {
    bool
    Systemd::sd_bus_method_s_o(const std::string &method, std::string &input, std::string &output, dstring *error_dstr) const {
       bool ret = true;
+
+      // Once the connection is gone every further call on it is futile. Fail here, without
+      // touching the socket, see classify_error().
+      if (!is_usable()) {
+         sge_dstring_copy_string(error_dstr, MSG_SYSTEMD_CONNECTION_DEAD);
+         return false;
+      }
 
       bool retry_on_interrupt = true;        // retry on EINTR
       int retries = 0;
@@ -689,6 +765,7 @@ namespace ocs::uti {
                retry_on_interrupt = true;
             } else {
                sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_CALL_SSIS, method.c_str(), input.c_str(), r, error.message);
+               classify_error(r, error_dstr);
                if (retries > 0) {
                   sge_dstring_sprintf_append(error_dstr, MSG_SYSTEMD_AFTER_RETRIES_I, retries);
                }
@@ -733,6 +810,13 @@ namespace ocs::uti {
    Systemd::sd_bus_method_u_o(const std::string &method, uint32_t input, std::string &output, dstring *error_dstr) const {
       bool ret = true;
 
+      // Once the connection is gone every further call on it is futile. Fail here, without
+      // touching the socket, see classify_error().
+      if (!is_usable()) {
+         sge_dstring_copy_string(error_dstr, MSG_SYSTEMD_CONNECTION_DEAD);
+         return false;
+      }
+
       bool retry_on_interrupt = true;        // retry on EINTR
       int retries = 0;
       while (ret && retry_on_interrupt) {
@@ -752,6 +836,7 @@ namespace ocs::uti {
                retry_on_interrupt = true;
             } else {
                sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_CALL_SSIS, method.c_str(), std::to_string(input), r, error.message);
+               classify_error(r, error_dstr);
                if (retries > 0) {
                   sge_dstring_sprintf_append(error_dstr, MSG_SYSTEMD_AFTER_RETRIES_I, retries);
                }
@@ -795,6 +880,14 @@ namespace ocs::uti {
    Systemd::move_shepherd_to_scope(pid_t pid, dstring *error_dstr) const {
       DENTER(TOP_LAYER);
 
+      // Once the connection is gone every further call on it is futile. Fail here, without
+      // touching the socket, see classify_error(). This function calls GetUnit itself, it does
+      // not only go through the guarded helpers below.
+      if (!is_usable()) {
+         sge_dstring_copy_string(error_dstr, MSG_SYSTEMD_CONNECTION_DEAD);
+         DRETURN(false);
+      }
+
       bool ret = true;
       bool create = false;
       std::string full_scope_name = slice_name + "-" + "shepherds.scope";
@@ -830,6 +923,7 @@ namespace ocs::uti {
                retry_on_interrupt = true;
             } else {
                sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_CALL_SSIS, "GetUnit", full_scope_name.c_str(), r, error.message);
+               classify_error(r, error_dstr);
                if (retries > 0) {
                   sge_dstring_sprintf_append(error_dstr, MSG_SYSTEMD_AFTER_RETRIES_I, retries);
                }
@@ -920,6 +1014,13 @@ namespace ocs::uti {
       bool ret = true;
       scope_not_exists = false;
 
+      // Once the connection is gone every further call on it is futile. Fail here, without
+      // touching the socket, see classify_error().
+      if (!is_usable()) {
+         sge_dstring_copy_string(error_dstr, MSG_SYSTEMD_CONNECTION_DEAD);
+         DRETURN(false);
+      }
+
       DPRINTF("Systemd::attach_pid_to_scope: calling AttachProcessesToUnit\n");
       sd_bus_message *m = nullptr;
       sd_bus_error error = SD_BUS_ERROR_NULL;
@@ -942,11 +1043,13 @@ namespace ocs::uti {
                scope_not_exists = true;
                DPRINTF("Systemd::attach_pid_to_scope: scope does not exist\n");
                sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_CALL_SSIS, "AttachProcessesToUnit", scope.c_str(), r, error.message);
+               classify_error(r, error_dstr);
                ret = false;
             } else if (-r == EINTR && retries++ < NUM_SD_BUS_RETRIES) {
                retry_on_interrupt = true;
             } else {
                sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_CALL_SSIS, "AttachProcessesToUnit", scope.c_str(), r, error.message);
+               classify_error(r, error_dstr);
                if (retries > 0) {
                   sge_dstring_sprintf_append(error_dstr, MSG_SYSTEMD_AFTER_RETRIES_I, retries);
                }
@@ -992,6 +1095,14 @@ namespace ocs::uti {
       DENTER(TOP_LAYER);
 
       bool ret = true;
+
+      // Once the connection is gone every further call on it is futile. Fail here, without
+      // touching the socket, see classify_error().
+      if (!is_usable()) {
+         scope_already_exists = false;
+         sge_dstring_copy_string(error_dstr, MSG_SYSTEMD_CONNECTION_DEAD);
+         DRETURN(false);
+      }
 
       DPRINTF("Systemd::move_shepherd_to_scope: calling StartTransientUnit\n");
 
@@ -1206,11 +1317,13 @@ namespace ocs::uti {
                scope_already_exists = true;
                DPRINTF("Systemd::attach_pid_to_scope: scope does not exist\n");
                sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_CALL_SSIS, "StartTransientUnit", scope.c_str(), r, error.message);
+               classify_error(r, error_dstr);
                ret = false;
             } else if (-r == EINTR && retries++ < NUM_SD_BUS_RETRIES) {
                retry_on_interrupt = true;
             } else {
                sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_CALL_SSIS, "StartTransientUnit", scope.c_str(), r, error.message);
+               classify_error(r, error_dstr);
                if (retries > 0) {
                   sge_dstring_sprintf_append(error_dstr, MSG_SYSTEMD_AFTER_RETRIES_I, retries);
                }
@@ -1327,6 +1440,7 @@ namespace ocs::uti {
             if (-r != EINTR) {
                // We ignore EINTR, as we might get it, e.g., when sge_execd gets a SIGCHILD from an exiting sge_shepherd.
                sge_dstring_sprintf(error_dstr, SFN ": processing bus failed: error %d: " SFN, __func__, r, strerror(-r));
+               classify_error(r, error_dstr);
                ret = false;
             }
          } else {
@@ -1339,6 +1453,7 @@ namespace ocs::uti {
                DPRINTF("sd_bus_wait_func(bus, nullptr) returned %d", r);
                if (r < 0) {
                   sge_dstring_sprintf(error_dstr, SFN ": waiting for bus failed: error %d: " SFN, __func__, r, strerror(-r));
+                  classify_error(r, error_dstr);
                   ret = false;
                }
                // do the next sd_bus_process call
@@ -1400,6 +1515,13 @@ namespace ocs::uti {
 
       bool ret = true;
 
+      // Once the connection is gone every further call on it is futile. Fail here, without
+      // touching the socket, see classify_error().
+      if (!is_usable()) {
+         sge_dstring_copy_string(error_dstr, MSG_SYSTEMD_CONNECTION_DEAD);
+         DRETURN(false);
+      }
+
       // encode the object path
       char *path = nullptr;
       if (unit.empty()) {
@@ -1435,6 +1557,7 @@ namespace ocs::uti {
                   *not_exists = true; // property does not exist
                }
                sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_CALL_SSIS, "sd_bus_get_property", property.c_str(), r, error.message);
+               classify_error(r, error_dstr);
                if (retries > 0) {
                   sge_dstring_sprintf_append(error_dstr, MSG_SYSTEMD_AFTER_RETRIES_I, retries);
                }
@@ -1483,6 +1606,13 @@ namespace ocs::uti {
 
       bool ret = true;
 
+      // Once the connection is gone every further call on it is futile. Fail here, without
+      // touching the socket, see classify_error().
+      if (!is_usable()) {
+         sge_dstring_copy_string(error_dstr, MSG_SYSTEMD_CONNECTION_DEAD);
+         DRETURN(false);
+      }
+
       // encode the object path
       char *path = nullptr;
       int r = sd_bus_path_encode_func("/org/freedesktop/systemd1/unit", unit.c_str(), &path);
@@ -1514,6 +1644,7 @@ namespace ocs::uti {
                   *not_exists = true; // property does not exist
                }
                sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_CALL_SSIS, "sd_bus_get_property", property.c_str(), r, error.message);
+               classify_error(r, error_dstr);
                if (retries > 0) {
                   sge_dstring_sprintf_append(error_dstr, MSG_SYSTEMD_AFTER_RETRIES_I, retries);
                }
@@ -1554,6 +1685,13 @@ namespace ocs::uti {
    Systemd::stop_unit(const std::string &unit, dstring *error_dstr) const {
       bool ret = true;
 
+      // Once the connection is gone every further call on it is futile. Fail here, without
+      // touching the socket, see classify_error().
+      if (!is_usable()) {
+         sge_dstring_copy_string(error_dstr, MSG_SYSTEMD_CONNECTION_DEAD);
+         return false;
+      }
+
       bool retry_on_interrupt = true;        // retry on EINTR
       int retries = 0;
       while (ret && retry_on_interrupt) {
@@ -1575,6 +1713,7 @@ namespace ocs::uti {
                retry_on_interrupt = true;
             } else {
                sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_CALL_SSIS, "StopUnit", unit.c_str(), r, error.message);
+               classify_error(r, error_dstr);
                if (retries > 0) {
                   sge_dstring_sprintf_append(error_dstr, MSG_SYSTEMD_AFTER_RETRIES_I, retries);
                }
@@ -1602,6 +1741,13 @@ namespace ocs::uti {
    Systemd::freeze_unit(const std::string &unit, dstring *error_dstr) const {
       bool ret = true;
 
+      // Once the connection is gone every further call on it is futile. Fail here, without
+      // touching the socket, see classify_error().
+      if (!is_usable()) {
+         sge_dstring_copy_string(error_dstr, MSG_SYSTEMD_CONNECTION_DEAD);
+         return false;
+      }
+
       bool retry_on_interrupt = true;        // retry on EINTR
       int retries = 0;
       while (ret && retry_on_interrupt) {
@@ -1620,6 +1766,7 @@ namespace ocs::uti {
                retry_on_interrupt = true;
             } else {
                sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_CALL_SSIS, "FreezeUnit", unit.c_str(), r, error.message);
+               classify_error(r, error_dstr);
                if (retries > 0) {
                   sge_dstring_sprintf_append(error_dstr, MSG_SYSTEMD_AFTER_RETRIES_I, retries);
                }
@@ -1648,6 +1795,13 @@ namespace ocs::uti {
    Systemd::thaw_unit(const std::string &unit, dstring *error_dstr) const {
       bool ret = true;
 
+      // Once the connection is gone every further call on it is futile. Fail here, without
+      // touching the socket, see classify_error().
+      if (!is_usable()) {
+         sge_dstring_copy_string(error_dstr, MSG_SYSTEMD_CONNECTION_DEAD);
+         return false;
+      }
+
       bool retry_on_interrupt = true;        // retry on EINTR
       int retries = 0;
       while (ret && retry_on_interrupt) {
@@ -1666,6 +1820,7 @@ namespace ocs::uti {
                retry_on_interrupt = true;
             } else {
                sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_CALL_SSIS, "ThawUnit", unit.c_str(), r, error.message);
+               classify_error(r, error_dstr);
                if (retries > 0) {
                   sge_dstring_sprintf_append(error_dstr, MSG_SYSTEMD_AFTER_RETRIES_I, retries);
                }
@@ -1700,6 +1855,13 @@ namespace ocs::uti {
    Systemd::signal_unit(const std::string &unit, int signal, bool only_main, dstring *error_dstr) const {
       bool ret = true;
 
+      // Once the connection is gone every further call on it is futile. Fail here, without
+      // touching the socket, see classify_error().
+      if (!is_usable()) {
+         sge_dstring_copy_string(error_dstr, MSG_SYSTEMD_CONNECTION_DEAD);
+         return false;
+      }
+
       bool retry_on_interrupt = true;        // retry on EINTR
       int retries = 0;
       while (ret && retry_on_interrupt) {
@@ -1720,6 +1882,7 @@ namespace ocs::uti {
                retry_on_interrupt = true;
             } else {
                sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_CALL_SSIS, "SignalUnit", unit.c_str(), r, error.message);
+               classify_error(r, error_dstr);
                if (retries > 0) {
                   sge_dstring_sprintf_append(error_dstr, MSG_SYSTEMD_AFTER_RETRIES_I, retries);
                }

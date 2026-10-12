@@ -133,6 +133,16 @@ namespace ocs::uti {
          static std::map<std::string, bool>unclear_properties;   // properties that are not available on all OSes or Systemd versions
 
       public:
+         // What a failed call ran into. Every method still returns bool; a caller which has to
+         // tell the three situations apart asks get_error_class() after a method returned false.
+         enum class ErrorClass {
+            none,       // no call has failed yet
+            unit_gone,  // the unit does not exist any more - the job ended, this is expected
+            refused,    // the call was refused, by policy or for lack of privilege
+            transport,  // the connection is dead, every further call on it is futile
+            other       // anything else
+         };
+
          // constants
          /// Name of the systemd service the execd runs as
          static const std::string execd_service_name;
@@ -165,8 +175,10 @@ namespace ocs::uti {
          sd_bus *bus;
          int bus_fd;              // file descriptor of the connection, -1 if we could not get it
          uint64_t bus_fd_inode;   // inode bus_fd pointed to when we connected
+         mutable ErrorClass error_class;  // what the last failed call ran into
 
          // instance methods
+         void classify_error(int r, const dstring *error_dstr) const;
          bool bus_fd_is_ours() const;
          std::string bus_fd_target() const;
          bool sd_bus_method_s_o(const std::string &method, std::string &input, std::string &output, dstring *error_dstr) const;
@@ -185,6 +197,8 @@ namespace ocs::uti {
 
          bool connect(dstring *error_dstr);
          bool connected() const;
+         bool is_usable() const;
+         ErrorClass get_error_class() const { return error_class; }
 
          bool move_shepherd_to_scope(pid_t pid, dstring *error_dstr) const;
          bool create_scope_with_pid(const std::string &scope, const std::string &slice,
