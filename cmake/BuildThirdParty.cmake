@@ -54,6 +54,13 @@ set(PROJECT_3RDPARTY_RAPIDJSON_COMMIT "24b5e7a8b27f42fa16b96fc70aade9106cf7102f"
 set(PROJECT_3RDPARTY_HWLOC_SHA256
     "c7fd8a1404a9719c76aadc642864b9f77aed1dc1fc8882d6af861a9260ba240d")
 
+# CPM fetches rapidjson. It is a build tool, not part of the product, and the SBOM lists it as
+# one. cmake/CPM.cmake downloads this release and verifies it by the SHA-256 of its CPM.cmake,
+# see get_cpm.cmake of the release for the hash.
+set(PROJECT_3RDPARTY_CPM_VERSION "0.43.2")
+set(PROJECT_3RDPARTY_CPM_SHA256
+    "49a3bef91ceb65bb66d57255e12d1ffd22abc2f6408fa9fe4534c544a2f232aa")
+
 # the download directory of hwloc carries major.minor only, e.g. v2.10/hwloc-2.10.0
 string(REGEX MATCH "^[0-9]+\\.[0-9]+" hwloc_series ${PROJECT_3RDPARTY_HWLOC_VERSION})
 set(PROJECT_3RDPARTY_HWLOC_URL "https://download.open-mpi.org/release/hwloc/v${hwloc_series}")
