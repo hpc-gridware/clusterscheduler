@@ -70,6 +70,7 @@ namespace ocs::uti {
    using sd_bus_path_encode_func_t = int (*)(const char *prefix, const char *external_id, char **ret_path);
    using sd_bus_get_property_func_t = int (*)(sd_bus *bus, const char *destination, const char *path, const char *interface, const char *member, sd_bus_error *ret_error, sd_bus_message **reply, const char *type);
    using sd_bus_error_free_func_t = void (*)(sd_bus_error *error);
+   using sd_bus_set_method_call_timeout_func_t = int (*)(sd_bus *bus, uint64_t usec);
 
    // @brief Systemd class
    //
@@ -107,6 +108,8 @@ namespace ocs::uti {
          static sd_bus_path_encode_func_t sd_bus_path_encode_func;
          static sd_bus_get_property_func_t sd_bus_get_property_func;
          static sd_bus_error_free_func_t sd_bus_error_free_func;
+         // optional, see initialize(): a libsystemd without it keeps the default timeout
+         static sd_bus_set_method_call_timeout_func_t sd_bus_set_method_call_timeout_func;
 
          // name of toplevel slice (from $SGE_ROOT/$SGE_CELL/common/slice_name, when running under Systemd control)
          static std::string slice_name;
@@ -124,10 +127,19 @@ namespace ocs::uti {
             unit_gone,  // the unit does not exist any more - the job ended, this is expected
             refused,    // the call was refused, by policy or for lack of privilege
             transport,  // the connection is dead, every further call on it is futile
+            timeout,    // the bus did not answer in time - the connection is open, nobody replies
             other       // anything else
          };
 
          // constants
+         // What one call on a connection may take before it is given up on. Every sd-bus call is
+         // synchronous, and in the execd they are made from the main loop, so this is also the
+         // time the daemon can be held up by one of them. libsystemd defaults to 25 seconds,
+         // which is longer than a daemon may spend on a whole usage pass. The execd overrides
+         // this from execd_params SYSTEMD_TIMEOUT, whose default must carry the same value, see
+         // SYSTEMD_TIMEOUT_DEFAULT in sge_conf.h.
+         static constexpr uint64_t DEFAULT_METHOD_CALL_TIMEOUT = 2 * 1000000; // microseconds
+
          static const std::string execd_service_name;
          static const std::string shepherd_scope_name;
 
@@ -164,7 +176,8 @@ namespace ocs::uti {
          Systemd(const Systemd &) = delete;
          Systemd &operator=(const Systemd &) = delete;
 
-         bool connect(dstring *error_dstr);
+         bool connect(dstring *error_dstr,
+                      uint64_t method_call_timeout = DEFAULT_METHOD_CALL_TIMEOUT);
          bool connected() const;
          bool is_usable() const;
          ErrorClass get_error_class() const { return error_class; }

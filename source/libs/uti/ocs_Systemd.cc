@@ -37,6 +37,7 @@
 namespace ocs::uti {
    static const int NUM_SD_BUS_RETRIES = 5; // Number of retries for sd_bus_* methods after EINTR
 
+
    //================================================================================
    // static members
    void *ocs::uti::Systemd::lib_handle = nullptr;
@@ -64,6 +65,7 @@ namespace ocs::uti {
    sd_bus_path_encode_func_t Systemd::sd_bus_path_encode_func = nullptr;
    sd_bus_get_property_func_t Systemd::sd_bus_get_property_func = nullptr;
    sd_bus_error_free_func_t Systemd::sd_bus_error_free_func = nullptr;
+   sd_bus_set_method_call_timeout_func_t Systemd::sd_bus_set_method_call_timeout_func = nullptr;
 
    std::string Systemd::slice_name{};
    std::string Systemd::service_name{};
@@ -375,6 +377,18 @@ namespace ocs::uti {
             ret = false;
          }
       }
+      if (ret) {
+         // Optional, and the only one which is: sd_bus_set_method_call_timeout() is in libsystemd
+         // from version 246 on, and in the Red Hat 8 backport of 239. Where it is missing, the
+         // connection keeps libsystemd's 25 second default - worse than what connect() asks for,
+         // but no reason to refuse the systemd integration altogether.
+         func = "sd_bus_set_method_call_timeout";
+         sd_bus_set_method_call_timeout_func =
+               reinterpret_cast<sd_bus_set_method_call_timeout_func_t>(dlsym(lib_handle, func));
+         if (sd_bus_set_method_call_timeout_func == nullptr) {
+            DPRINTF("the systemd library has no %s, keeping its default method call timeout", func);
+         }
+      }
 
       if (ret) {
          // We will need the slice name for the service name, read it once.
@@ -580,6 +594,12 @@ namespace ocs::uti {
             ERROR(MSG_SYSTEMD_CONNECTION_LOST_SISI, sge_dstring_get_string(error_dstr), r,
                   strerror(-r), bus != nullptr ? sd_bus_is_open_func(bus) : -1);
             break;
+         case ETIMEDOUT:
+            // The bus is there, the socket is open, but nothing answered within the timeout
+            // which connect() set. Every further call in this pass would cost the same wait,
+            // so the caller is expected to give up for now and try again later.
+            error_class = ErrorClass::timeout;
+            break;
          case ENOENT:
             error_class = ErrorClass::unit_gone;
             break;
@@ -689,10 +709,12 @@ namespace ocs::uti {
     * error_dstr with an appropriate error message and returns false.
     *
     * @param error_dstr A pointer to a dstring where error messages will be stored
+    * @param method_call_timeout How long one call on this connection may take, in microseconds.
+    *        Zero leaves libsystemd's own default in place, see DEFAULT_METHOD_CALL_TIMEOUT.
     * @return true if the connection was successful, false otherwise
     */
    bool
-   Systemd::connect(dstring *error_dstr) {
+   Systemd::connect(dstring *error_dstr, uint64_t method_call_timeout) {
       bool ret = true;
 
       error_class = ErrorClass::none;
@@ -709,6 +731,14 @@ namespace ocs::uti {
             bus_fd_inode = st.st_ino;
          } else {
             bus_fd = -1;
+         }
+
+         // Bound every call which will be made on this connection. The call can only fail on
+         // an invalid argument, and a connection with libsystemd's own timeout is still a usable
+         // one, so the result is not checked. The function is missing in an old libsystemd, see
+         // initialize(), and a caller may ask for no bound at all by passing zero.
+         if (method_call_timeout > 0 && sd_bus_set_method_call_timeout_func != nullptr) {
+            sd_bus_set_method_call_timeout_func(bus, method_call_timeout);
          }
       }
 

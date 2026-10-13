@@ -36,6 +36,7 @@
 #include "uti/sge_log.h"
 #include "uti/sge_profiling.h"
 #include "uti/sge_rmon_macros.h"
+#include "uti/sge_time.h"
 
 #include "execd.h"
 #include "ocs_execd_systemd.h"
@@ -48,6 +49,20 @@ extern lList *ptf_jobs;
 
 namespace ocs::execd {
 #if defined(OCS_WITH_SYSTEMD)
+
+   /*!
+    * @brief How long may one systemd call of this execd take?
+    *
+    * The value comes from execd_params SYSTEMD_TIMEOUT and bounds every call made on a
+    * connection, see Systemd::connect(). It is read for each connection, so a change of the
+    * configuration takes effect with the next one.
+    *
+    * @return the timeout in microseconds
+    */
+   static uint64_t
+   systemd_call_timeout() {
+      return sge_gmt32_to_gmt64(mconf_get_systemd_timeout());
+   }
 
    /*!
     * @brief Initialize the Systemd integration for execd.
@@ -94,7 +109,7 @@ namespace ocs::execd {
          ocs::uti::Systemd systemd;
          // connect as root, we want to have write access
          sge_switch2start_user();
-         bool connected = systemd.connect(&err_dstr);
+         bool connected = systemd.connect(&err_dstr, systemd_call_timeout());
          sge_switch2admin_user();
          if (connected) {
             pid_t pid = getpid();
@@ -169,7 +184,7 @@ namespace ocs::execd {
          DSTRING_STATIC(err_dstr, MAX_STRING_SIZE);
          // connect as root, we want to have write access
          sge_switch2start_user();
-         bool connected = systemd.connect(&err_dstr);
+         bool connected = systemd.connect(&err_dstr, systemd_call_timeout());
          sge_switch2admin_user();
          if (connected) {
             bool success = systemd.stop_unit(slice, &err_dstr);
@@ -267,6 +282,10 @@ namespace ocs::execd {
          } else if (systemd.get_error_class() == ocs::uti::Systemd::ErrorClass::transport) {
             // the lost connection has been reported once already, with errno and bus state
             DPRINTF("==> no %s for scope '%s': the connection to systemd is gone\n", property_str, scope.c_str());
+         } else if (systemd.get_error_class() == ocs::uti::Systemd::ErrorClass::timeout) {
+            // the pass gives up and reports it, see ptf_get_usage_from_systemd()
+            DPRINTF("==> no %s for scope '%s': systemd did not answer in time\n", property_str,
+                    scope.c_str());
          } else {
             WARNING(MSG_CANNOT_TO_GET_PROPERTY_SSS, property.c_str(), scope.c_str(), sge_dstring_get_string(&error_dstr));
          }
@@ -343,8 +362,9 @@ namespace ocs::execd {
       // This function runs about once a second. A systemd which cannot be reached would cost
       // one warning per pass, 3600 lines an hour from every execd on the host, and every one of
       // them would say the same thing. Report the state instead: once when it breaks, once when
-      // it works again.
+      // it works again. The same holds for a systemd which is there but does not answer.
       static bool connect_failure_reported = false;
+      static bool no_answer_reported = false;
 
       // Initialize the systemd connection and retrieve usage information.
       // Connect as the start user, as the other systemd call sites do. Reading unit properties
@@ -353,7 +373,7 @@ namespace ocs::execd {
       // of their execd connections would count against that one uid's bus quota.
       ocs::uti::Systemd systemd;
       sge_switch2start_user();
-      bool success = systemd.connect(&error_dstr);
+      bool success = systemd.connect(&error_dstr, systemd_call_timeout());
       sge_switch2admin_user();
       if (!success) {
          if (!connect_failure_reported) {
@@ -368,6 +388,7 @@ namespace ocs::execd {
 
          // Loop over all jobs, ja_tasks, and pe_tasks
          bool connection_lost = false;
+         bool bus_stalled = false;
          lListElem *ptf_job;
          for_each_rw (ptf_job, ptf_jobs) {
             lListElem *os_job;
@@ -422,6 +443,9 @@ namespace ocs::execd {
                   } else if (systemd.get_error_class() == ocs::uti::Systemd::ErrorClass::transport) {
                      // the lost connection has been reported once already
                      DPRINTF("==> systemd scope %s unreadable: the connection is gone\n", scope.c_str());
+                  } else if (systemd.get_error_class() == ocs::uti::Systemd::ErrorClass::timeout) {
+                     // reported below, once for the pass
+                     DPRINTF("==> systemd scope %s unreadable: no answer in time\n", scope.c_str());
                   } else {
                      WARNING(MSG_CANNOT_TO_GET_PROPERTY_SSS, "ActiveState", scope.c_str(), sge_dstring_get_string(&error_dstr));
                   }
@@ -434,10 +458,30 @@ namespace ocs::execd {
                   connection_lost = true;
                   break;
                }
+
+               // A bus which has stopped answering looks healthy from here: the socket is open
+               // and nothing was reset, so only the timeout of the call tells us. Every scope
+               // still to come would cost another one of those, and they are paid in the execd
+               // main loop - a pass over many scopes would hold up the whole daemon. Give up on
+               // this pass as well and let the next one try again.
+               if (systemd.get_error_class() == ocs::uti::Systemd::ErrorClass::timeout) {
+                  bus_stalled = true;
+                  break;
+               }
             }
-            if (connection_lost) {
+            if (connection_lost || bus_stalled) {
                break;
             }
+         }
+
+         if (bus_stalled) {
+            if (!no_answer_reported) {
+               no_answer_reported = true;
+               WARNING(SFNMAX, MSG_EXECD_SYSTEMD_NO_ANSWER);
+            }
+         } else if (no_answer_reported) {
+            no_answer_reported = false;
+            INFO(SFNMAX, MSG_EXECD_SYSTEMD_ANSWERS_AGAIN);
          }
 
          // get slice and scope for the job/ja_task/pe_task

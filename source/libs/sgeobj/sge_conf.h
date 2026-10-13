@@ -49,6 +49,14 @@
 
 #define PDC_DISABLED U_LONG64_MAX
 
+/*
+ * How long one systemd call made by the execution daemon may take, in seconds. It bounds the
+ * time the execd main loop can be held up by a systemd which does not answer. The value must
+ * match ocs::uti::Systemd::DEFAULT_METHOD_CALL_TIMEOUT, which is the same figure in microseconds
+ * and applies where there is no configuration to read, e.g. in the shepherd.
+ */
+#define SYSTEMD_TIMEOUT_DEFAULT 2
+
 #define BINDING_PARAMS_DEFAULT    "enabled=true,implicit=false,mode=default,default_unit=C,on_any_host=false,filter=NONE"
 #define JSV_PARAMS_DEFAULT        NONE_STR
 #define JSV_ALLOWED_MOD_DEFAULT   "ac,h,i,e,o,j,M,N,p,w"
@@ -220,6 +228,7 @@ bool mconf_get_enable_systemd();
 bool mconf_get_enable_submit_lib_path();
 bool mconf_get_enable_submit_ld_preload();
 u_long32 mconf_get_script_timeout();
+u_long32 mconf_get_systemd_timeout();
 
 // one function for all monitoring options
 std::tuple<u_long32, bool, bool> mconf_get_monitoring_options();

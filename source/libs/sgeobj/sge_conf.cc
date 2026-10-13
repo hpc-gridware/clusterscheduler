@@ -195,6 +195,7 @@ static usage_collection_t usage_collection = USAGE_COLLECTION_DEFAULT;
 static bool enable_mem_details = false;
 
 static u_long32 script_timeout = 120;
+static u_long32 systemd_timeout = SYSTEMD_TIMEOUT_DEFAULT;
 static bool enable_addgrp_kill = false;
 static u_long64 pdc_interval = sge_gmt32_to_gmt64(1);
 static char s_descriptors[100];
@@ -1013,6 +1014,7 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
       usage_collection = USAGE_COLLECTION_DEFAULT;
       enable_mem_details = false;
       script_timeout = 120;
+      systemd_timeout = SYSTEMD_TIMEOUT_DEFAULT;
       enable_addgrp_kill = false;
       use_qsub_gid = false;
       prof_execd_thrd = false;
@@ -1097,6 +1099,18 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
          }
 #endif
          if (parse_time_param(s, "SCRIPT_TIMEOUT", &script_timeout)) {
+            continue;
+         }
+         if (parse_time_param(s, "SYSTEMD_TIMEOUT", &systemd_timeout)) {
+            // A value which cannot be parsed arrives here as zero, and so does an explicit zero.
+            // Neither is a timeout anyone could want: it would leave the main loop waiting on
+            // libsystemd's own 25 seconds per call.
+            if (systemd_timeout == 0) {
+               answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_WARNING,
+                                       MSG_CONF_INVALIDPARAM_SSI, "execd_params", "SYSTEMD_TIMEOUT",
+                                       SYSTEMD_TIMEOUT_DEFAULT);
+               systemd_timeout = SYSTEMD_TIMEOUT_DEFAULT;
+            }
             continue;
          }
          if (parse_bool_param(s, "SIMULATE_JOBS", &simulate_jobs)) {
@@ -3242,6 +3256,26 @@ int mconf_get_jsv_timeout() {
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(timeout);
+}
+
+/** @brief Get the value of the SYSTEMD_TIMEOUT configuration parameter.
+ *
+ * The value bounds one systemd call of the execution daemon, in seconds. Every call is
+ * synchronous and is made from the main loop, so it also bounds how long a systemd which stopped
+ * answering can hold up the daemon.
+ *
+ * @return the configured timeout in seconds, SYSTEMD_TIMEOUT_DEFAULT if it was not configured
+ */
+u_long32 mconf_get_systemd_timeout() {
+   DENTER(BASIS_LAYER);
+
+   u_long32 ret;
+
+   SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
+   ret = systemd_timeout;
+   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
+
+   DRETURN(ret);
 }
 
 u_long32 mconf_get_script_timeout() {
