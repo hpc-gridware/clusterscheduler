@@ -1167,6 +1167,20 @@ manage the job's processes as a group, which is useful for resource management a
 
 This parameter is set to true by default, meaning that on hosts that support systemd, jobs will be started in a systemd scope. If a host does not support systemd, then this parameter will be ignored.
 
+***SYSTEMD_TIMEOUT***
+
+This parameter limits the time a single call from the execution daemon to systemd may take.
+SYSTEMD_TIMEOUT is a time value (see xxqs_name_sxx_queue_conf(5) for a definition of the syntax of
+time values). The default value is 2 seconds.
+
+These calls are made from the main loop of the execution daemon, which waits for each of them to
+return. A systemd that has stopped answering, for example because the system bus is saturated,
+delays the daemon by at most this value per call; the call then fails and the online usage of that
+interval is not collected. A larger value makes the daemon wait longer for a slow systemd, a
+smaller one makes it give up sooner.
+
+The value applies to hosts that support systemd and is ignored on other hosts.
+
 ***SCRIPT_TIMEOUT***
 
 This parameter allows to configure the allowed runtime of execution side scripts like prolog, epilog, and the PE 

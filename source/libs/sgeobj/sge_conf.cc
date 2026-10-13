@@ -529,6 +529,8 @@ struct execd_params_t {
    long ptf_min_priority = -999;
    /// `SCRIPT_TIMEOUT` -- runtime allowed to prolog, epilog and PE scripts, in seconds
    uint32_t script_timeout = 120;
+   /// `SYSTEMD_TIMEOUT` -- time one systemd call of the execution daemon may take, in seconds
+   uint32_t systemd_timeout = SYSTEMD_TIMEOUT_DEFAULT;
    /// `SET_LIB_PATH` -- put the product library path into the job environment
    bool set_lib_path = false;
    /// `SIMULATE_JOBS` -- do not start jobs, only pretend that they ran
@@ -1420,6 +1422,18 @@ int merge_configuration(lList **answer_list, uint32_t progid, const char *cell_r
          }
 #endif
          if (parse_time_param(s, "SCRIPT_TIMEOUT", &execd_conf.script_timeout)) {
+            continue;
+         }
+         if (parse_time_param(s, "SYSTEMD_TIMEOUT", &execd_conf.systemd_timeout)) {
+            // A value which cannot be parsed arrives here as zero, and so does an explicit zero.
+            // Neither is a timeout anyone could want: it would leave the main loop waiting on
+            // libsystemd's own 25 seconds per call.
+            if (execd_conf.systemd_timeout == 0) {
+               answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_WARNING,
+                                       MSG_CONF_INVALIDPARAM_SSI, "execd_params", "SYSTEMD_TIMEOUT",
+                                       SYSTEMD_TIMEOUT_DEFAULT);
+               execd_conf.systemd_timeout = SYSTEMD_TIMEOUT_DEFAULT;
+            }
             continue;
          }
          if (parse_bool_param(s, "SIMULATE_JOBS", &execd_conf.simulate_jobs)) {
@@ -4862,6 +4876,31 @@ int mconf_get_jsv_timeout() {
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(timeout);
+}
+
+/**
+ * @brief The `systemd_timeout` setting of the master configuration
+ *
+ * It bounds one systemd call of the execution daemon, in seconds. Every call is synchronous and
+ * is made from the main loop, so it also bounds how long a systemd which has stopped answering
+ * can hold up the daemon.
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
+uint32_t mconf_get_systemd_timeout() {
+   DENTER(BASIS_LAYER);
+
+   uint32_t ret;
+
+   SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
+
+   ret = execd_conf.systemd_timeout;
+
+   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
+   DRETURN(ret);
 }
 
 /**

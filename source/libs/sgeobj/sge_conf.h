@@ -60,6 +60,12 @@
 /// `PDC_INTERVAL` value that switches the usage collector off entirely
 #define PDC_DISABLED std::numeric_limits<uint64_t>::max()
 
+/// How long one systemd call made by the execution daemon may take, in seconds
+///
+/// It bounds the time the execd main loop can be held up by a systemd which does not answer.
+/// The value must match ocs::uti::Systemd::DEFAULT_METHOD_CALL_TIMEOUT, the same figure in
+/// microseconds, which applies where there is no configuration to read, e.g. in the shepherd.
+#define SYSTEMD_TIMEOUT_DEFAULT 2
 /// `binding_params` as it reads before an administrator changes it
 #define BINDING_PARAMS_DEFAULT    "enabled=true,implicit=false,mode=default,default_unit=C,on_any_host=true,filter=NONE"
 /// `jsv_params` as it reads before an administrator changes it
@@ -259,6 +265,7 @@ bool mconf_get_enable_systemd();
 bool mconf_get_enable_submit_lib_path();
 bool mconf_get_enable_submit_ld_preload();
 uint32_t mconf_get_script_timeout();
+uint32_t mconf_get_systemd_timeout();
 
 // one function for all monitoring options
 std::tuple<uint32_t, bool, bool> mconf_get_monitoring_options();

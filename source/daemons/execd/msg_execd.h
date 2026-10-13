@@ -259,6 +259,8 @@
 #define MSG_CANNOT_TO_GET_PROPERTY_SSS                   _MESSAGE(29234, _("cannot to get property " SFN " from systemd scope " SFN ": " SFN4))
 #define MSG_EXECD_SYSTEMD_REMOVING_STALE_JOB_SLICE_S     _MESSAGE(29235, _("removing systemd slice " SFN " of a job which is no longer known here"))
 #define MSG_EXECD_SYSTEMD_REACHABLE_AGAIN                _MESSAGE(29236, _("systemd can be reached again, usage collection continues"))
+#define MSG_EXECD_SYSTEMD_NO_ANSWER                      _MESSAGE(29237, _("systemd does not answer, the calls run into their timeout - no usage is collected while this lasts"))
+#define MSG_EXECD_SYSTEMD_ANSWERS_AGAIN                  _MESSAGE(29238, _("systemd answers again, usage collection continues"))
 
 // clang-format on
 
