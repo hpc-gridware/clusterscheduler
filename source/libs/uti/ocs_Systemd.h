@@ -207,10 +207,12 @@ namespace ocs::uti {
          attach_pid_to_scope(const std::string &scope, pid_t pid, bool &scope_not_exists, dstring *error_dstr) const;
 
          bool has_property(const std::string &property_name, const std::string &scope_name);
-         bool sd_bus_get_property(const std::string &interface, const std::string &unit, const std::string &property,
-                                  std::string &value, dstring *error_dstr, bool *not_exists = nullptr) const;
-         bool sd_bus_get_property(const std::string &interface, const std::string &unit, const std::string &property,
-                                  uint64_t &value, dstring *error_dstr, bool *not_exists = nullptr) const;
+         bool sd_bus_get_property(const std::string &interface, const std::string &unit,
+                                  const std::string &property, std::string &value,
+                                  dstring *error_dstr, bool *property_unknown = nullptr) const;
+         bool sd_bus_get_property(const std::string &interface, const std::string &unit,
+                                  const std::string &property, uint64_t &value,
+                                  dstring *error_dstr, bool *property_unknown = nullptr) const;
 
          bool stop_unit(const std::string &unit, dstring *error_dstr) const;
          bool freeze_unit(const std::string &unit, dstring *error_dstr) const;
