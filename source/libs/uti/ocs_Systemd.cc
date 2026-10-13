@@ -104,6 +104,29 @@ namespace ocs::uti {
       return ret;
    }
 
+   /*!
+    * @brief Does a failed sd-bus call report that the property does not exist?
+    *
+    * A property which systemd does not implement and a unit which does not exist reach the
+    * caller as the same negative errno, so the two can only be told apart by the D-Bus error
+    * name, and only before the sd_bus_error is freed.
+    *
+    * An unimplemented property comes back as UnknownProperty - the message text mentions the
+    * interface as well, because systemd cannot tell which of the two the caller got wrong, and
+    * a wrong interface arrives under the same name on some versions. Either way the answer is
+    * about the interface and holds for every unit. A unit which is not loaded comes back as
+    * NoSuchUnit instead, and that says nothing about the property.
+    *
+    * @param error the error object the sd-bus call filled in
+    * @return true if systemd reported an unknown property or an unknown interface
+    */
+   static bool
+   is_unknown_property_error(const sd_bus_error *error) {
+      return error->name != nullptr &&
+             (strcmp(error->name, SD_BUS_ERROR_UNKNOWN_PROPERTY) == 0 ||
+              strcmp(error->name, SD_BUS_ERROR_UNKNOWN_INTERFACE) == 0);
+   }
+
    // ================================================================================
    // @brief Initialize the Systemd class
    //
@@ -449,6 +472,11 @@ namespace ocs::uti {
     * We test on a job scope (of the first job running after sge_execd starts). So far all jobs
     * have the same accounting settings, so we can cache the result.
     *
+    * Only an answer which is about the property is remembered. The scope we probe belongs to a
+    * job and can end while we are asking about it, and a unit which is gone answers in a way
+    * that looks exactly like an unavailable property. Caching that would switch the property
+    * off for every job until the execd is restarted, so such an answer is dropped instead.
+    *
     * @param property_name The name of the property to check
     * @param scope_name The name of the job scope to check the property against
     * @return true if the property is available, false otherwise
@@ -465,21 +493,33 @@ namespace ocs::uti {
          // we do not yet know if this property is available
          uint64_t value;
          DSTRING_STATIC(error_dstr, MAX_STRING_SIZE);
-         bool not_exists = false;
-         if (sd_bus_get_property("Scope", scope_name, property_name, value, &error_dstr, &not_exists)) {
+         bool property_unknown = false;
+         if (sd_bus_get_property("Scope", scope_name, property_name, value, &error_dstr,
+                                 &property_unknown)) {
             // Some properties (e.g. MemoryPeak on cgroup v1) exist on the bus but return
             // UINT64_MAX to signal "no data". Treat that as "not really available" so we
             // fall back to the alternative code path instead of caching a bogus value.
             if (value == std::numeric_limits<uint64_t>::max()) {
-               DPRINTF("property %s is reported by systemd but returns UINT64_MAX (no data)",
-                       property_name.c_str());
-               unclear_properties[property_name] = false;
+               // A scope which has ended gives the same answer for every counter: systemd
+               // creates a stub unit for the object path we ask about and the stub has no
+               // cgroup to read. Only remember the answer while the scope is still active.
+               std::string state;
+               if (sd_bus_get_property("Unit", scope_name, "ActiveState", state, &error_dstr) &&
+                   state.compare("active") == 0) {
+                  DPRINTF("property %s is reported by systemd but returns UINT64_MAX (no data)",
+                          property_name.c_str());
+                  unclear_properties[property_name] = false;
+               } else {
+                  DPRINTF("property %s returned UINT64_MAX for scope %s, which is not active - "
+                          "the answer is about the scope, not about the property",
+                          property_name.c_str(), scope_name.c_str());
+               }
             } else {
                DPRINTF("property %s is reported by systemd", property_name.c_str());
                unclear_properties[property_name] = true;
                ret = true;
             }
-         } else if (not_exists) {
+         } else if (property_unknown) {
             DPRINTF("property %s is not reported by systemd", property_name.c_str());
             unclear_properties[property_name] = false;
          } else {
@@ -1489,11 +1529,13 @@ namespace ocs::uti {
     * @param property The name of the property to retrieve
     * @param value A reference to a string where the property value will be stored
     * @param error_dstr A pointer to a dstring where error messages will be stored
+    * @param property_unknown If not nullptr, set to true if systemd has no such property
     * @return true if the operation was successful, false otherwise
     */
    bool
-   Systemd::sd_bus_get_property(const std::string &interface, const std::string &unit, const std::string &property,
-                                std::string &value, dstring *error_dstr, bool *not_exists) const {
+   Systemd::sd_bus_get_property(const std::string &interface, const std::string &unit,
+                                const std::string &property, std::string &value,
+                                dstring *error_dstr, bool *property_unknown) const {
       DENTER(TOP_LAYER);
 
       bool ret = true;
@@ -1536,8 +1578,8 @@ namespace ocs::uti {
             if (-r == EINTR && retries++ < NUM_SD_BUS_RETRIES) {
                retry_on_interrupt = true;
             } else {
-               if (-r == ENOENT && not_exists != nullptr) {
-                  *not_exists = true; // property does not exist
+               if (property_unknown != nullptr && is_unknown_property_error(&error)) {
+                  *property_unknown = true; // systemd does not implement this property
                }
                sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_CALL_SSIS, "sd_bus_get_property", property.c_str(), r, error.message);
                classify_error(r, error_dstr);
@@ -1578,11 +1620,13 @@ namespace ocs::uti {
     * @param property The name of the property to retrieve
     * @param value A reference to a uint64_t where the property value will be stored
     * @param error_dstr A pointer to a dstring where error messages will be stored
+    * @param property_unknown If not nullptr, set to true if systemd has no such property
     * @return true if the operation was successful, false otherwise
     */
    bool
-   Systemd::sd_bus_get_property(const std::string &interface, const std::string &unit, const std::string &property,
-                                uint64_t &value, dstring *error_dstr, bool *not_exists) const {
+   Systemd::sd_bus_get_property(const std::string &interface, const std::string &unit,
+                                const std::string &property, uint64_t &value,
+                                dstring *error_dstr, bool *property_unknown) const {
       DENTER(TOP_LAYER);
 
       bool ret = true;
@@ -1621,8 +1665,8 @@ namespace ocs::uti {
             if (-r == EINTR && retries++ < NUM_SD_BUS_RETRIES) {
                retry_on_interrupt = true;
             } else {
-               if (-r == ENOENT && not_exists != nullptr) {
-                  *not_exists = true; // property does not exist
+               if (property_unknown != nullptr && is_unknown_property_error(&error)) {
+                  *property_unknown = true; // systemd does not implement this property
                }
                sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_CALL_SSIS, "sd_bus_get_property", property.c_str(), r, error.message);
                classify_error(r, error_dstr);
