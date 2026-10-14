@@ -66,12 +66,6 @@ bool
 centry_show(std::ostream &os, lList **answer_list, const char *name);
 
 bool 
-centry_add(lList **answer_list, const char *name);
-
-bool 
-centry_modify(lList **answer_list, const char *name);
-
-bool 
 centry_delete(lList **answer_list, const char *name);
 
 bool 

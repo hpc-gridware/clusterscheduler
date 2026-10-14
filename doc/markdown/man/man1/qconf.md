@@ -104,8 +104,11 @@ field. The object's configuration follows the format of its man page:
 
 Object-specific notes:
 
-- `-ae` opens a copy of the named execution host's configuration when *host_template*
-  is given, or a generic template otherwise.
+- `-ae` is the one variant that does not offer a generic template: it opens an
+  existing execution host's configuration, the entry named `template` when
+  *host_template* is omitted. A name that is no execution host is reported as such
+  and nothing is opened — a new host is created by editing the `template` entry and
+  giving it a name, which is also what `-ae` without an argument is for.
 - `-aconf` invokes an editor for each host in the comma-separated list and adds (or
   modifies) that host's local configuration.
 - `-astree` is a singleton and takes no name argument; it creates the share tree, or
@@ -510,6 +513,9 @@ object's configuration follows the format of its man page:
 
 Object-specific notes:
 
+- `-me` is the exception to the implicit add: an execution host is not created from
+  a name. A name that is no execution host is reported as such, and a new host is
+  added by editing the `template` entry with `-ae` and giving it a name.
 - `-mconf` edits the configuration of the given host(s); if the argument is omitted
   or **global**, the global configuration is edited. A configuration that does not
   yet exist is created.

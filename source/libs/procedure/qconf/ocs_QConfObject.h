@@ -106,6 +106,22 @@ struct qconf_read_desc {
    qconf_build_fields_fn fields;   ///< field list for -s<obj>, nullptr to use build_fields
    const char *list_name;          ///< object name in the "no X defined" message of -s<obj>l
    const char *not_found_msg;      ///< format string of the "X is not a Y" message of -s<obj>
+   lListElem *(*create_template)(lList **, const char *);
+                                   ///< SINGLE_OBJECT: build the type's template, for a read
+                                   ///< that feeds an editor and found no object of that name
+                                   ///< (CS-2823). It is what makes "-m<obj> <unknown>" offer
+                                   ///< a template and add on exit, and "-a<obj>" the same
+                                   ///< operation as "-m<obj>" - see
+                                   ///< QConfModelBase::make_snapshot(). Built here rather
+                                   ///< than in the client so that the text an editor sees
+                                   ///< comes out of the same renderer and the same field
+                                   ///< list as a stored object's: two renderers for one text
+                                   ///< format is how the exec host's read/write mismatch
+                                   ///< arose, see QConfParameter::get_for_edit().
+                                   ///< nullptr for a type that is not created from a name -
+                                   ///< the exec host, whose template is an entry of its own
+                                   ///< list, and every type whose write is not on the
+                                   ///< procedure yet
    const char *empty_msg;          ///< message of a singleton read that finds nothing,
                                    ///< takes no argument; nullptr for a type that is not one
    void (*prepare)(lListElem *, const lList *);   ///< fixup before rendering with the

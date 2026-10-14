@@ -773,8 +773,6 @@
 #define MSG_AUTOREMOVEHOSTS_BUSY_S                 _MESSAGE(34012, _("exec host " SFQ " added itself and is unknown, but it still has jobs running and is kept"))
 #define MSG_AUTOREMOVEHOSTS_FAILED_S               _MESSAGE(34013, _("exec host " SFQ " could not be removed from the cluster, it is no longer treated as a host which added itself"))
 
-// clang-format on
-
 /* CS-2822: the qconf write procedure, which applies a set of objects.
  *
  * The two dry-run lines repeat the wording of MSG_QCONF_DRYRUNWOULDADD_S and
@@ -789,3 +787,6 @@
 #define MSG_QCONF_WRITEWRONGTARGET_SS              _MESSAGE(34009, _("the write procedure was addressed to " SFQ " but writes " SFQ))
 #define MSG_QCONF_WRITELISTUNSUPPORTED_S           _MESSAGE(34010, _("the write procedure cannot write " SFN " yet: its file holds a list of objects"))
 #define MSG_QCONF_WRITEEMPTYTEXT_S                 _MESSAGE(34011, _(PFNMAX ": no object text was sent"))
+#define MSG_QCONF_WRITEEMPTYTEXT                   _MESSAGE(34012, _("no object text was sent"))
+
+// clang-format on

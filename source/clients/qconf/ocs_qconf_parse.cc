@@ -150,15 +150,12 @@ static bool del_host_of_type(lList *arglp, ocs::gdi::Target target);
 static bool mod_reserved_hgroup(std::ostream &os, lList *arglp, const char *group,
                                 ocs::gdi::SubCommand sub_command, const char *what);
 static int qconf_modify_attribute(lList **alpp, int from_file, char ***spp, lListElem **epp, ocs::gdi::SubCommand sub_command, struct object_info_entry *info_entry);
-static lListElem *edit_exechost(lListElem *ep, uid_t uid, gid_t gid);
 static int edit_usersets(std::ostream &os, lList *arglp);
 
 /************************************************************************/
 static int delete_configs(const lList *conf_list);
 static int add_modify_config(const char *cfn, const char *filename, uint32_t flags);
 static lList* edit_sched_conf(lList *confl, uid_t uid, gid_t gid);
-static lListElem* edit_project(lListElem *ep, uid_t uid, gid_t gid);
-static lListElem* edit_user(lListElem *ep, uid_t uid, gid_t gid);
 static lListElem *edit_sharetree(lListElem *ep, uid_t uid, gid_t gid);
 
 /************************************************************************/
@@ -681,7 +678,7 @@ qconf_apply_path_procedure(std::ostream &os, const QConfObj o, const char *path)
 
       /* show_answer_list() and not answer_list_output(): the per-item messages
        * are what qmaster put into the answer list, and this is where every
-       * qconf write surfaces them - see qconf_modify_cal_procedure(). */
+       * qconf write surfaces them - see qconf_edit_obj_procedure(). */
       show_answer_list(alp);
       lFreeList(&alp);
 
@@ -1395,7 +1392,7 @@ qconf_dispatch_procedure(std::ostream &os, ocs::QConfParameterClient &param, lLi
     * returns the whole object - so it answers "not reduced" and would be the
     * wrong basis for a decision that depends on it. The write path therefore
     * refuses that context rather than trusting this value; see
-    * qconf_modify_cal_procedure(). */
+    * qconf_edit_obj_procedure(). */
    if (reduction != nullptr) {
       *reduction = ocs::ProcedureParameter::REDUCTION_NONE;
    }
@@ -1517,13 +1514,11 @@ qconf_dispatch_procedure(std::ostream &os, ocs::QConfParameterClient &param, lLi
  * @param o    the object type
  * @param name the object name, ignored for a type without a name field
  * @param reduction where the reduction flags of the read are stored, nullptr to ignore them
- * @param not_found_is_normal true when the caller handles a missing object itself, which
- *        keeps the "does not exist" out of the output; the status still reports it
  * @return what happened, see QConfShowStatus
  */
 static QConfShowStatus
 qconf_show_object(std::ostream &os, ocs::QConfParameterClient &param, QConfObj o, const char *name,
-                  uint32_t *reduction = nullptr, bool not_found_is_normal = false) {
+                  uint32_t *reduction = nullptr) {
    DENTER(TOP_LAYER);
 
    /* CS-2799: the body of this function is a stored procedure call now. The
@@ -1556,15 +1551,14 @@ qconf_show_object(std::ostream &os, ocs::QConfParameterClient &param, QConfObj o
    }
 
    const bool not_found = answer_list_has_status(&alp, STATUS_EEXIST);
-   /* A caller that turns a missing object into an upsert must not see the read
-    * complain about it first. The GET this path replaced asked with a lWhere
-    * filter, where no match is an empty list and not an error, so it printed
-    * nothing - the procedure reports STATUS_EEXIST instead, and reporting it
-    * here put an "x is not a calendar" in front of the editor that qconf never
-    * printed before (CS-2822). The status is unchanged; only the output is. */
-   if (!not_found || !not_found_is_normal) {
-      answer_list_output(&alp);
-   }
+   /* Every caller wants to see the reason. The editor path used to suppress a
+    * missing object here, because it turned one into an upsert and the GET this
+    * path replaced reported no match as an empty list rather than an error - a
+    * difference that put an "x is not a calendar" in front of the editor
+    * (CS-2822). Since CS-2823 the read answers such a name with the type's
+    * template, so a missing object no longer reaches this point for a type that
+    * creates one, and for a type that does not the complaint is the answer. */
+   answer_list_output(&alp);
    lFreeList(&alp);
    DRETURN(not_found ? QConfShowStatus::NOT_FOUND : QConfShowStatus::GDI_FAILED);
 }
@@ -1654,12 +1648,24 @@ qconf_delete_names(QConfObj o, const char *names) {
 static int
 qconf_apply_obj(std::ostream &os, QConfObj o, const char *path) {
    /* CS-2822: the object types whose write runs as a stored procedure take the
-    * other path, which parses in qmaster instead of here. Only the calendar so
-    * far; the rest follow in CS-2823, and the list is here rather than in a
-    * field of the descriptor table so that it disappears with the last entry
-    * instead of becoming a permanent column. */
-   if (o == QConfObj::CAL) {
-      return qconf_apply_path_procedure(os, o, path);
+    * other path, which parses in qmaster instead of here. These eight are the
+    * types on the CS-2797 editor engine, converted in CS-2823; the ones with a
+    * bespoke editor follow when their read side reaches the descriptor table
+    * (CS-2816 to CS-2820). The list is here rather than in a field of the
+    * descriptor table so that it disappears with the last entry instead of
+    * becoming a permanent column. */
+   switch (o) {
+      case QConfObj::CAL:
+      case QConfObj::CE:
+      case QConfObj::CK:
+      case QConfObj::EH:
+      case QConfObj::PE:
+      case QConfObj::PR:
+      case QConfObj::RL:
+      case QConfObj::UU:
+         return qconf_apply_path_procedure(os, o, path);
+      default:
+         break;
    }
 
    const qconf_object_desc &d = qconf_desc(o);
@@ -1717,94 +1723,6 @@ qconf_export_obj_singleton(std::ostream &os, QConfObj o, const char *path) {
                                  d.sfi, d.json_type_name, d.is_root, path);
 }
 
-/** @brief Upsert one object, driven by the descriptor.
- *
- * The target, descriptor, name field and GDI sub-command all come from the
- * table, so the editor branches no longer name the object type four times.
- *
- * @param os the stream the output is written to (CS-1841)
- * @param o  the object type
- * @param ep the element to send; consumed by the call
- * @return 0 on success, non-zero on error
- */
-static int
-qconf_send_upsert_obj(std::ostream &os, QConfObj o, lListElem *ep) {
-   const qconf_object_desc &d = qconf_desc(o);
-   return qconf_send_upsert(os, d.target, d.descr, d.name_nm, ep, d.sub_cmd);
-}
-
-/** @brief Write an object to a temporary file for the editor.
- *
- * The field list and the spooling instruction come from the descriptor, so the
- * editor branches no longer name them. The list is freed here when the
- * provider allocated it.
- *
- * @param o    the object type
- * @param alpp answer list for errors
- * @param ep   the object to write
- * @return the temporary file name (caller frees), or nullptr on error
- */
-static char *
-qconf_write_tmp_obj(QConfObj o, lList **alpp, const lListElem *ep) {
-   const qconf_object_desc &d = qconf_desc(o);
-   bool owned = false;
-   spooling_field *fields = d.build_fields(qconf_opt_format, &owned);
-   auto *filename = (char *)spool_flatfile_write_object(alpp, ep, false, fields, d.sfi,
-                                                        SP_DEST_TMP, qconf_opt_format,
-                                                        nullptr, false);
-   if (owned) {
-      sge_free(&fields);
-   }
-   return filename;
-}
-
-/** @brief Read back the file the editor wrote, and consume it.
- *
- * Removes the temporary file and frees @p filename whatever the outcome, so the
- * caller does not have to unwind it on every branch. Returns nullptr when the
- * file did not parse or left a field unprocessed - the reason is in @p alpp and
- * has already been printed.
- *
- * The field list has to outlive the read, because spool_get_unprocessed_field()
- * needs it to name the field that was not consumed; it is freed only afterwards.
- *
- * @param o        the object type
- * @param alpp     answer list for errors
- * @param filename the temporary file; set to nullptr on return
- * @return the parsed object (caller owns), or nullptr on error
- */
-static lListElem *
-qconf_read_tmp_obj(QConfObj o, lList **alpp, char **filename) {
-   const qconf_object_desc &d = qconf_desc(o);
-   bool owned = false;
-   spooling_field *fields = d.build_fields(qconf_opt_format, &owned);
-   int fields_out[MAX_NUM_FIELDS];
-   fields_out[0] = NoName;
-
-   lListElem *ep = spool_flatfile_read_object(alpp, d.descr, nullptr, fields, fields_out,
-                                              true, d.sfi, qconf_opt_format, nullptr, *filename);
-   unlink(*filename);
-   sge_free(filename);
-
-   if (answer_list_output(alpp)) {
-      lFreeElem(&ep);
-   }
-   if (ep != nullptr && spool_get_unprocessed_field(fields, fields_out, alpp) != NoName) {
-      lFreeElem(&ep);
-      answer_list_output(alpp);
-   }
-   /* the descriptor knows the object's validator; the file path already runs it
-    * through qconf_read_object_file(), so the editor path does the same */
-   if (ep != nullptr && d.validate != nullptr && d.validate(ep, alpp) != STATUS_OK) {
-      lFreeElem(&ep);
-      answer_list_output(alpp);
-   }
-   if (owned) {
-      sge_free(&fields);
-   }
-   return ep;
-}
-
 /** @brief Why an interactive edit did not yield an object. */
 enum class QConfEditStatus {
    OK,            ///< the object was edited and parsed
@@ -1841,10 +1759,11 @@ qconf_read_file_text(const char *filename, std::string &text) {
 
 /** @brief Offer a rendered object text to $EDITOR and read the result back
  *
- * The text-level sibling of qconf_edit_obj(), and the shape a stored procedure
- * write needs: a procedure read produces text and a procedure write consumes
- * text, so the client carries it to the editor and back without rendering or
- * parsing anything itself.
+ * The shape a stored procedure write needs: a procedure read produces text and
+ * a procedure write consumes text, so the client carries it to the editor and
+ * back without rendering or parsing anything itself. It replaced the object
+ * level editor of the GET/MOD path, which CS-2823 removed with its last
+ * caller.
  *
  * That is not a convenience. It is the only arrangement that survives output
  * reduction: when a value the caller may not see is rendered as a placeholder,
@@ -1852,8 +1771,12 @@ qconf_read_file_text(const char *filename, std::string &text) {
  * would hand the placeholder back as if it were a value and overwrite the
  * original.
  *
- * Exit-free like qconf_edit_obj(), and the temporary file is consumed on every
- * path including every error path.
+ * Deliberately **exit-free**: every failure is reported through the return
+ * value, never by terminating the process, because the same logic runs inside
+ * qmaster, where sge_exit() would take the daemon down with it. The caller
+ * decides what a failure means - see qconf_edit_fail_exit() for what the
+ * command line client does. The temporary file is consumed on every path
+ * including every error path.
  *
  * @param text in: the text to offer; out: the text that came back
  * @param uid  uid to run the editor as
@@ -1919,55 +1842,13 @@ qconf_edit_text(std::string &text, uid_t uid, gid_t gid) {
    DRETURN(read_ok ? QConfEditStatus::OK : QConfEditStatus::READ_FAILED);
 }
 
-/** @brief Offer an object to $EDITOR and read the result back.
- *
- * Deliberately **exit-free**: every failure is reported through the return
- * value and @p alpp, never by terminating the process. Part of this logic is
- * meant to run inside qmaster once the stored procedure conversion reaches the
- * write path (CS-2792), where sge_exit() would take the daemon down with it.
- * The caller decides what a failure means - see qconf_edit_fail_exit() for what
- * the command line client does.
- *
- * The temporary file is consumed in every case, including every error path.
- *
- * @param o    the object type
- * @param alpp answer list for errors
- * @param epp  in: the object to offer, consumed; out: the edited object or nullptr
- * @param uid  uid to run the editor as
- * @param gid  gid to run the editor as
- * @return OK, or the reason no object came back
- */
-static QConfEditStatus
-qconf_edit_obj(QConfObj o, lList **alpp, lListElem **epp, uid_t uid, gid_t gid) {
-   char *filename = qconf_write_tmp_obj(o, alpp, *epp);
-   lFreeElem(epp);
-
-   if (answer_list_output(alpp) || filename == nullptr) {
-      if (filename != nullptr) {
-         unlink(filename);
-         sge_free(&filename);
-      }
-      return QConfEditStatus::WRITE_FAILED;
-   }
-
-   int status = sge_edit(filename, uid, gid);
-   if (status != 0) {
-      unlink(filename);
-      sge_free(&filename);
-      return (status < 0) ? QConfEditStatus::EDIT_FAILED : QConfEditStatus::UNCHANGED;
-   }
-
-   *epp = qconf_read_tmp_obj(o, alpp, &filename);
-   return (*epp == nullptr) ? QConfEditStatus::READ_FAILED : QConfEditStatus::OK;
-}
-
 /** @brief Report an edit failure the way the option branches always did, and exit.
  *
  * The one place where the interactive path terminates the process, kept apart
- * from qconf_edit_obj() so that the editing logic stays reusable. Does not
+ * from qconf_edit_text() so that the editing logic stays reusable. Does not
  * return - sge_error_and_exit() calls sge_exit().
  *
- * @param st the failure reported by qconf_edit_obj()
+ * @param st the failure reported by qconf_edit_text()
  * @return none
  */
 static void
@@ -1990,78 +1871,26 @@ qconf_edit_fail_exit(QConfEditStatus st) {
    }
 }
 
-/** @brief Modify one calendar through the stored procedure (CS-2822)
+/** @brief Offer a text to the editor and write the result through the procedure
  *
- * The write round trip in the shape it is meant to have: the object is read by
- * a procedure, so qmaster rendered it and could have reduced it; the text goes
- * to the editor unchanged; the edited text goes back as a procedure, where
- * qmaster parses it and applies it through the object's own modifier, spooler
- * and event hooks. The client renders nothing and parses nothing.
+ * The tail both the interactive add and the interactive modify end in: qmaster
+ * parses the edited text, validates it and applies it through the object's own
+ * modifier, spooler and event hooks.
  *
- * Two refusals are deliberate and are the reason the function exists rather
- * than being a few lines at the option:
+ * It is a **set of one**. CS-2822 started with a procedure of its own for the
+ * calendar; the file batch made it one procedure for every object type and any
+ * number of objects, and an interactive write is that with the number one - so
+ * there is one writing path and not two that could drift.
  *
- *  - a **reduced** read is not offered for editing at all. Asking someone to
- *    edit a text whose values are placeholders invites them to save the
- *    placeholder as the value.
- *  - the **client execution context** is declined outright. It reads with a
- *    plain GET, which returns the whole object and cannot reduce, so accepting
- *    it would make the first refusal depend on which context the caller chose -
- *    which is the same as not having it. CS-2856 removes the choice; until then
- *    the write path says no.
- *
- * @param os     where the response text goes
- * @param param  the invocation, used for the procedure read
- * @param name   the calendar to modify
- * @param uid    uid to run the editor as
- * @param gid    gid to run the editor as
- * @return 0 when the calendar was modified or the editor left it unchanged, 1 otherwise
+ * @param o    the object type
+ * @param text the object text; edited in place
+ * @param uid  uid to run the editor as
+ * @param gid  gid to run the editor as
+ * @return 0 when the object was written or the editor left it unchanged, 1 otherwise
  */
 static int
-qconf_modify_cal_procedure(std::ostream &os, ocs::QConfParameterClient &param, const char *name,
-                           uid_t uid, gid_t gid) {
+qconf_edit_and_write_obj(QConfObj o, std::string &text, uid_t uid, gid_t gid) {
    DENTER(TOP_LAYER);
-
-   if (param.get_exec_context() != ocs::ProcedureParameter::ExecContext::SERVER) {
-      ERROR("qconf -mcal needs the server execution context; \"-ectx client\" cannot "
-            "see whether the output was reduced");
-      DRETURN(1);
-   }
-
-   std::ostringstream rendered;
-   uint32_t reduction = ocs::ProcedureParameter::REDUCTION_NONE;
-   const QConfShowStatus st = qconf_show_object(rendered, param, QConfObj::CAL, name, &reduction, true);
-
-   std::string text;
-   if (st == QConfShowStatus::OK) {
-      if (reduction != ocs::ProcedureParameter::REDUCTION_NONE) {
-         ERROR(MSG_QCONF_REDUCEDNOTMODIFIABLE_S, name != nullptr ? name : "");
-         DRETURN(1);
-      }
-      text = rendered.str();
-   } else if (st == QConfShowStatus::NOT_FOUND) {
-      /* CS-2299 C2: modifying a calendar that does not exist adds it, and a
-       * generic template is offered instead of an error. Rendered in the client
-       * because there is no object in qmaster to render - the one place where
-       * the client still writes a flat file, and only for a template that
-       * carries no data of anyone's. */
-      lList *alp = nullptr;
-      lListElem *generic = sge_generic_cal(const_cast<char *>(name));
-      char *filename = qconf_write_tmp_obj(QConfObj::CAL, &alp, generic);
-      lFreeElem(&generic);
-      const bool read_ok = (filename != nullptr) && qconf_read_file_text(filename, text);
-      if (filename != nullptr) {
-         unlink(filename);
-         sge_free(&filename);
-      }
-      answer_list_output(&alp);
-      if (!read_ok) {
-         DRETURN(1);
-      }
-   } else {
-      /* qconf_show_object() put the reason into the answer list already */
-      DRETURN(1);
-   }
 
    const QConfEditStatus est = qconf_edit_text(text, uid, gid);
    if (est != QConfEditStatus::OK) {
@@ -2069,13 +1898,9 @@ qconf_modify_cal_procedure(std::ostream &os, ocs::QConfParameterClient &param, c
       DRETURN(1);
    }
 
-   /* A set of one. CS-2822 started with a procedure of its own for the calendar;
-    * the file batch made it one procedure for every object type and any number
-    * of objects, and an interactive modify is that with the number one - so
-    * there is one writing path and not two that could drift. */
    ocs::QConfWriteParameter mod_param;
    mod_param.add_item(nullptr, text);
-   ocs::QConfWriteModelClient model(ocs::gdi::Target::CAL_LIST);
+   ocs::QConfWriteModelClient model(qconf_desc(o).target);
 
    lList *alp = nullptr;
    const bool ok = model.make_snapshot(&alp, mod_param);
@@ -2091,6 +1916,85 @@ qconf_modify_cal_procedure(std::ostream &os, ocs::QConfParameterClient &param, c
    lFreeList(&alp);
 
    DRETURN((ok && shown == 0) ? 0 : 1);
+}
+
+/** @brief Edit one object through the stored procedures (CS-2822, CS-2823)
+ *
+ * The round trip in the shape it is meant to have: the object is read by a
+ * procedure, so qmaster rendered it and could have reduced it; the text goes to
+ * the editor unchanged; the edited text goes back as a procedure, where qmaster
+ * parses it and applies it through the object's own modifier, spooler and event
+ * hooks. The client renders nothing and parses nothing.
+ *
+ * It serves `-m<obj>` and `-a<obj>` alike, because they are one operation: a
+ * name that exists is offered as it stands, and a name that does not is
+ * answered by the read with the type's template and created on exit (CS-2299 C2
+ * and its siblings, now qconf_read_desc::create_template). The switch name is
+ * carried only so that the refusals below can name it.
+ *
+ * Two refusals are deliberate and are the reason the function exists rather
+ * than being a few lines at the option:
+ *
+ *  - a **reduced** read is not offered for editing at all. Asking someone to
+ *    edit a text whose values are placeholders invites them to save the
+ *    placeholder as the value.
+ *  - the **client execution context** is declined outright. It reads with a
+ *    plain GET, which returns the whole object and cannot reduce, so accepting
+ *    it would make the first refusal depend on which context the caller chose -
+ *    which is the same as not having it. CS-2856 removes the choice; until then
+ *    the write path says no.
+ *
+ * Nothing in it is type-specific: the GDI target comes from the descriptor row,
+ * and so does what a missing object means. The exec host is the one type among
+ * the eight whose row has no template, which is how "a host is not created from
+ * a name" is expressed - for "-me" and "-ae" alike.
+ *
+ * @param param the invocation, used for the procedure read
+ * @param o     the object type
+ * @param sw    the switch being served, named in the refusals
+ * @param name  the object to edit
+ * @param uid   uid to run the editor as
+ * @param gid   gid to run the editor as
+ * @return 0 when the object was written or the editor left it unchanged, 1 otherwise
+ */
+static int
+qconf_edit_obj_procedure(ocs::QConfParameterClient &param, QConfObj o,
+                         const char *sw, const char *name, uid_t uid, gid_t gid) {
+   DENTER(TOP_LAYER);
+
+   if (param.get_exec_context() != ocs::ProcedureParameter::ExecContext::SERVER) {
+      ERROR(MSG_QCONF_MODNEEDSSERVERCTX_S, sw);
+      DRETURN(1);
+   }
+
+   /* The read has to render what the write can parse, which for the exec host
+    * is not what "-se" displays - see QConfParameter::get_for_edit(). The same
+    * flag is what makes the read answer a name that does not exist with a
+    * template instead of a complaint. The parameter belongs to the whole
+    * invocation and one command line can carry several operations ("qconf -me
+    * host -se host"), so it is set for this read and cleared again right after
+    * it: the flag describes the read, not the call. */
+   std::ostringstream rendered;
+   uint32_t reduction = ocs::ProcedureParameter::REDUCTION_NONE;
+   param.set_for_edit(true);
+   const QConfShowStatus st = qconf_show_object(rendered, param, o, name, &reduction);
+   param.set_for_edit(false);
+
+   if (st != QConfShowStatus::OK) {
+      /* The read put the reason into the answer list and has printed it. For a
+       * type with a template a missing name cannot be the reason - it was
+       * answered with one; for the exec host it is the "x is not an execution
+       * host" of its own descriptor row. */
+      DRETURN(1);
+   }
+
+   if (reduction != ocs::ProcedureParameter::REDUCTION_NONE) {
+      ERROR(MSG_QCONF_REDUCEDNOTMODIFIABLE_SS, sw, name != nullptr ? name : "");
+      DRETURN(1);
+   }
+
+   std::string text = rendered.str();
+   DRETURN(qconf_edit_and_write_obj(o, text, uid, gid));
 }
 
 
@@ -2517,11 +2421,9 @@ int sge_parse_qconf(char *argv[]) {
    int opt;
    int sge_parse_return = 0;
    lEnumeration *what = nullptr;
-   lCondition *where = nullptr;
    lList *lp=nullptr, *arglp=nullptr, *alp=nullptr, *newlp=nullptr;
    lListElem *hep=nullptr, *ep=nullptr;
    const lListElem *aep=nullptr;
-   lListElem *newep = nullptr;
    const char *host = nullptr;
    int fields_out[MAX_NUM_FIELDS];
    int missing_field = NoName;
@@ -2579,6 +2481,16 @@ int sge_parse_qconf(char *argv[]) {
          break;
    }
 
+   /* CS-2823: a caller may ask qmaster to answer as if RBAC had reduced the
+    * response, so that the refusal to offer a reduced object to the editor can
+    * be reached before redaction exists. Shipped as a request variable the way
+    * qstat ships SGE_LONG_QNAMES; see FORCE_REDUCTION_VARIABLE for why handing
+    * it to the server grants nothing. */
+   if (const char *forced = getenv(ocs::ProcedureParameter::FORCE_REDUCTION_VARIABLE);
+       forced != nullptr) {
+      param.add_variable(ocs::ProcedureParameter::FORCE_REDUCTION_VARIABLE, forced);
+   }
+
    /* CS-2799: the parameter object is the single source of truth. The file
     * statics below are a client-side mirror, written once, for the code that
     * has not moved into libs/procedure yet - the write path and the bespoke
@@ -2633,7 +2545,7 @@ int sge_parse_qconf(char *argv[]) {
          if (!strcmp("-acal", *spp)) {
             /* CS-2299 C1: the calendar name is optional; when omitted a generic
              * template named "template" is offered for editing (cf. -aq/-ahgrp). */
-            char *cal_name = (char *)"template";
+            const char *cal_name = "template";
 
             qconf_is_manager_on_admin_host(username, qualified_hostname);
 
@@ -2642,29 +2554,18 @@ int sge_parse_qconf(char *argv[]) {
                cal_name = *spp;
             }
 
-            /* get a generic calendar */
-            ep = sge_generic_cal(cal_name);
-            /* hand it to the editor and read the result back; the engine
-             * is exit-free, the client decides that a failure is fatal */
-            QConfEditStatus est = qconf_edit_obj(QConfObj::CAL, &alp, &ep, uid, gid);
-            if (est != QConfEditStatus::OK) {
+            /* CS-2823: template, editor and write procedure in one - see
+             * qconf_edit_obj_procedure(), the single function "-a<obj>" and "-m<obj>"
+             * share. The template the upsert of CS-2299 C2 edits is built in qmaster
+             * now, from the read's descriptor row. */
+            if (qconf_edit_obj_procedure(param, QConfObj::CAL, "-acal", cal_name, uid, gid) != 0) {
                sge_parse_return = 1;
-               qconf_edit_fail_exit(est);
-               continue;
             }
-            ep = ep;
-} else { /* -Acal: CS-2299 C3 — accept a file OR a directory, upsert each */
+         } else { /* -Acal: CS-2299 C3 — accept a file OR a directory, upsert each */
             spp = sge_parser_get_next(spp);
             if (qconf_apply_obj(os, QConfObj::CAL, *spp) != 0) {
                sge_parse_return = 1;
             }
-            spp++;
-            continue;
-         }
-
-         /* -acal editor path: CS-2299 C2 — upsert (modify if it already exists) */
-         if (ep != nullptr) {
-            sge_parse_return |= qconf_send_upsert_obj(os, QConfObj::CAL, ep);
          }
 
          spp++;
@@ -2680,7 +2581,7 @@ int sge_parse_qconf(char *argv[]) {
          if (!strcmp("-ackpt", *spp)) {
             /* CS-2300 C1: the checkpoint name is optional; when omitted a generic
              * template named "template" is offered for editing. */
-            char *ckpt_name = (char *)"template";
+            const char *ckpt_name = "template";
 
             qconf_is_manager_on_admin_host(username, qualified_hostname);
 
@@ -2689,29 +2590,18 @@ int sge_parse_qconf(char *argv[]) {
                ckpt_name = *spp;
             }
 
-            /* get a generic ckpt configuration */
-            ep = sge_generic_ckpt(ckpt_name);
-            /* hand it to the editor and read the result back; the engine is
-             * exit-free, the client decides that a failure is fatal */
-            QConfEditStatus est = qconf_edit_obj(QConfObj::CK, &alp, &ep, uid, gid);
-            if (est != QConfEditStatus::OK) {
+            /* CS-2823: template, editor and write procedure in one - see
+             * qconf_edit_obj_procedure(), the single function "-a<obj>" and "-m<obj>"
+             * share. The template the upsert of CS-2300 C2 edits is built in qmaster
+             * now, from the read's descriptor row. */
+            if (qconf_edit_obj_procedure(param, QConfObj::CK, "-ackpt", ckpt_name, uid, gid) != 0) {
                sge_parse_return = 1;
-               qconf_edit_fail_exit(est);
-               continue;
             }
-            ep = ep;
-} else { /* -Ackpt: CS-2300 C3 — accept a file OR a directory, upsert each */
+         } else { /* -Ackpt: CS-2300 C3 — accept a file OR a directory, upsert each */
             spp = sge_parser_get_next(spp);
             if (qconf_apply_obj(os, QConfObj::CK, *spp) != 0) {
                sge_parse_return = 1;
             }
-            spp++;
-            continue;
-         }
-
-         /* -ackpt editor path: CS-2300 C2 — upsert (modify if it already exists) */
-         if (ep != nullptr) {
-            sge_parse_return |= qconf_send_upsert_obj(os, QConfObj::CK, ep);
          }
 
          spp++;
@@ -2719,118 +2609,66 @@ int sge_parse_qconf(char *argv[]) {
       }
 
 /*----------------------------------------------------------------------------*/
-      /* "-ae [server_name]" */
+      /* "-ae [exec_server_template]"
+       *
+       * CS-2823: the same round trip as "-me". Despite its name this is not a
+       * template add like "-acal": it *reads* an exec host - the one called
+       * "template" when no name is given - and offers that for editing. The
+       * switch it shares its code with was "-me" from the start; since the
+       * template moved into the read, "-acal" shares it too and the three run
+       * through one qconf_edit_obj_procedure(). Resolving the name stays in
+       * the client, as
+       * it does for "-me": the procedure read is asked for a name, so a short
+       * host name has to be resolved before it is asked. The template is not a
+       * host and is never resolved, which is why only the given name is.
+       *
+       * Two things changed with the conversion, both deliberate:
+       *
+       *  - a name that is no exec host is now reported as "x is not an
+       *    execution host", the message "-me" and "-se" have always used. The
+       *    descriptor row carries one not-found message per type, and the
+       *    former wording of this branch was the only user of its own macro,
+       *    so the two were merged rather than the message being made
+       *    per-switch.
+       *  - a write to a name that already exists modifies it instead of being
+       *    refused, because the write procedure upserts. That is what "-a<obj>"
+       *    has meant for every other type since CS-2299 C2 and what "-Ae" has
+       *    meant for the exec host since CS-2304 C2, so the exec host's
+       *    interactive add was the last one left out.
+       *
+       * It also gains the two refusals of the procedure path for free: a
+       * reduced read is not offered for editing, and "-ectx client" is
+       * declined. */
       if (strcmp("-ae", *spp) == 0) {
          char *hostname = nullptr;
 
-         cp = nullptr;
          qconf_is_manager_on_admin_host(username, qualified_hostname);
-         if (!sge_next_is_an_opt(spp)) {
-            lListElem *host_ep = nullptr;
-
+         if (sge_next_is_an_opt(spp)) {
+            /* no name given: the template host. It is an entry in the exec host
+             * list and not a host, so it is the one name that must not be
+             * resolved. */
+            hostname = sge_strdup(nullptr, SGE_TEMPLATE_NAME);
+         } else {
             spp = sge_parser_get_next(spp);
 
-            /* try to resolve hostname */
-            host_ep = lCreateElem(EH_Type);
+            lListElem *host_ep = lCreateElem(EH_Type);
             lSetHost(host_ep, EH_name, *spp);
 
-            switch (sge_resolve_host(host_ep, EH_name)) {
-               case CL_RETVAL_OK:
-                  break;
-               default:
-                  fprintf(stderr, MSG_SGETEXT_CANTRESOLVEHOST_S, lGetHost(host_ep, EH_name));
-                  fprintf(stderr, "\n");
-                  lFreeElem(&host_ep);
-                  DRETURN(1);
+            if (sge_resolve_host(host_ep, EH_name) != CL_RETVAL_OK) {
+               fprintf(stderr, MSG_SGETEXT_CANTRESOLVEHOST_S, lGetHost(host_ep, EH_name));
+               fprintf(stderr, "\n");
+               lFreeElem(&host_ep);
+               DRETURN(1);
             }
-
-            hostname = sge_strdup(hostname, lGetHost(host_ep, EH_name));
+            hostname = sge_strdup(nullptr, lGetHost(host_ep, EH_name));
             lFreeElem(&host_ep);
-         } else {
-            /* no template name given - then use "template" as name */
-            hostname = sge_strdup(hostname, SGE_TEMPLATE_NAME);
          }
-         /* get a template host entry .. */
-         where = lWhere("%T( %Ih=%s )", EH_Type, EH_name, hostname);
-         what = lWhat("%T(ALL)", EH_Type);
-         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::EH_LIST, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, &arglp, where, what);
-         lFreeWhat(&what);
-         lFreeWhere(&where);
 
-         aep = lFirst(alp);
-         answer_exit_if_not_recoverable(aep);
-         if (answer_get_status(aep) != STATUS_OK) {
-            fprintf(stderr, "%s\n", lGetString(aep, AN_text));
-            sge_free(&hostname);
-            lFreeList(&alp);
-            spp++;
+         if (qconf_edit_obj_procedure(param, QConfObj::EH, "-ae", hostname, uid, gid) != 0) {
             sge_parse_return = 1;
-            continue;
          }
-
-         if (arglp == nullptr || lGetNumberOfElem(arglp) == 0) {
-            fprintf(stderr, MSG_EXEC_XISNOEXECHOST_S, hostname);
-            fprintf(stderr, "\n");
-            sge_free(&hostname);
-            lFreeList(&alp);
-            lFreeList(&arglp);
-            spp++;
-            sge_parse_return = 1;
-            continue;
-         }
-
          sge_free(&hostname);
-         lFreeList(&alp);
 
-         /* edit the template */
-         lListElem *argep = lFirstRW(arglp);
-         ep = edit_exechost(argep, uid, gid);
-         if (ep == nullptr) {
-            lFreeList(&arglp);
-            spp++;
-            sge_parse_return = 1;
-            continue;
-         }
-
-         switch (sge_resolve_host(ep, EH_name)) {
-         case CL_RETVAL_OK:
-            break;
-         default:
-            fprintf(stderr, MSG_SGETEXT_CANTRESOLVEHOST_S, lGetHost(ep, EH_name));
-            fprintf(stderr, "\n");
-            lFreeList(&arglp);
-            DRETURN(1);
-         }
-
-         hostname = sge_strdup(hostname, lGetHost(ep, EH_name));
-         lFreeList(&arglp);
-
-         lp = lCreateList("hosts to add", EH_Type);
-         lAppendElem(lp, ep);
-         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::EH_LIST, ocs::gdi::Command::ADD, ocs::gdi::SubCommand::NONE, &lp, nullptr, nullptr);
-         lFreeList(&lp);
-
-         aep = lFirst(alp);
-         answer_exit_if_not_recoverable(aep);
-         if (answer_get_status(aep) != STATUS_OK) {
-            fprintf(stderr, "%s\n", lGetString(aep, AN_text));
-            sge_free(&hostname);
-            spp++;
-            sge_parse_return = 1;
-            continue;
-         }
-
-         ep = lFirstRW(alp);
-         answer_exit_if_not_recoverable(ep);
-         if (answer_get_status(ep) == STATUS_OK) {
-            fprintf(stderr, MSG_EXEC_ADDEDHOSTXTOEXECHOSTLIST_S, hostname);
-         } else {
-            fprintf(stderr, "%s", lGetString(ep, AN_text));
-         }
-         fprintf(stderr, "\n");
-
-         sge_free(&hostname);
-         lFreeList(&alp);
          spp++;
          continue;
       }
@@ -2873,7 +2711,7 @@ int sge_parse_qconf(char *argv[]) {
          if (!strcmp("-arole", *spp)) {
             /* CS-2302 C1: the role name is optional; when omitted a generic
              * template named "template" is offered for editing. */
-            char *role_name = (char *)"template";
+            const char *role_name = "template";
 
             qconf_is_manager_on_admin_host(username, qualified_hostname);
 
@@ -2882,29 +2720,18 @@ int sge_parse_qconf(char *argv[]) {
                role_name = *spp;
             }
 
-            ep = ocs::Role::create_template();
-            lSetString(ep, RL_name, role_name);
-            /* hand it to the editor and read the result back; the engine is
-             * exit-free, the client decides that a failure is fatal */
-            QConfEditStatus est = qconf_edit_obj(QConfObj::RL, &alp, &ep, uid, gid);
-            if (est != QConfEditStatus::OK) {
+            /* CS-2823: template, editor and write procedure in one - see
+             * qconf_edit_obj_procedure(), the single function "-a<obj>" and "-m<obj>"
+             * share. The template the upsert of CS-2302 C2 edits is built in qmaster
+             * now, from the read's descriptor row. */
+            if (qconf_edit_obj_procedure(param, QConfObj::RL, "-arole", role_name, uid, gid) != 0) {
                sge_parse_return = 1;
-               qconf_edit_fail_exit(est);
-               continue;
             }
-            ep = ep;
-} else { /* -Arole: CS-2302 C3 — accept a file OR a directory, upsert each */
+         } else { /* -Arole: CS-2302 C3 — accept a file OR a directory, upsert each */
             spp = sge_parser_get_next(spp);
             if (qconf_apply_obj(os, QConfObj::RL, *spp) != 0) {
                sge_parse_return = 1;
             }
-            spp++;
-            continue;
-         }
-
-         /* -arole editor path: CS-2302 C2 — upsert (modify if it already exists) */
-         if (ep != nullptr) {
-            sge_parse_return |= qconf_send_upsert_obj(os, QConfObj::RL, ep);
          }
 
          spp++;
@@ -3011,7 +2838,7 @@ int sge_parse_qconf(char *argv[]) {
          if (!strcmp("-ap", *spp)) {
             /* CS-2301 C1: the PE name is optional; when omitted a generic
              * template named "template" is offered for editing. */
-            char *pe_name = (char *)"template";
+            const char *pe_name = "template";
 
             qconf_is_manager_on_admin_host(username, qualified_hostname);
 
@@ -3020,29 +2847,18 @@ int sge_parse_qconf(char *argv[]) {
                pe_name = *spp;
             }
 
-            /* get a generic parallel environment */
-            ep = pe_create_template(pe_name);
-            /* hand it to the editor and read the result back; the engine is
-             * exit-free, the client decides that a failure is fatal */
-            QConfEditStatus est = qconf_edit_obj(QConfObj::PE, &alp, &ep, uid, gid);
-            if (est != QConfEditStatus::OK) {
+            /* CS-2823: template, editor and write procedure in one - see
+             * qconf_edit_obj_procedure(), the single function "-a<obj>" and "-m<obj>"
+             * share. The template the upsert of CS-2301 C2 edits is built in qmaster
+             * now, from the read's descriptor row. */
+            if (qconf_edit_obj_procedure(param, QConfObj::PE, "-ap", pe_name, uid, gid) != 0) {
                sge_parse_return = 1;
-               qconf_edit_fail_exit(est);
-               continue;
             }
-            ep = ep;
-} else { /* -Ap: CS-2301 C3 — accept a file OR a directory, upsert each */
+         } else { /* -Ap: CS-2301 C3 — accept a file OR a directory, upsert each */
             spp = sge_parser_get_next(spp);
             if (qconf_apply_obj(os, QConfObj::PE, *spp) != 0) {
                sge_parse_return = 1;
             }
-            spp++;
-            continue;
-         }
-
-         /* -ap editor path: CS-2301 C2 — upsert (modify if it already exists) */
-         if (ep != nullptr) {
-            sge_parse_return |= qconf_send_upsert_obj(os, QConfObj::PE, ep);
          }
 
          spp++;
@@ -3065,16 +2881,12 @@ int sge_parse_qconf(char *argv[]) {
             user_name = *spp;
          }
 
-         /* get a template for editing, pre-filled with the requested name */
-         ep = getUserTemplate();
-         lSetString(ep, UU_name, user_name);
-
-         newep = edit_user(ep, uid, gid);
-         lFreeElem(&ep);
-
-         /* CS-2308 C2: upsert (modify if the user already exists) */
-         if (newep != nullptr) {
-            sge_parse_return |= qconf_send_upsert_obj(os, QConfObj::UU, newep);
+         /* CS-2823: template, editor and write procedure in one - see
+          * qconf_edit_obj_procedure(), the single function "-a<obj>" and "-m<obj>"
+          * share. The template the upsert of CS-2308 C2 edits is built in qmaster
+          * now, from the read's descriptor row. */
+         if (qconf_edit_obj_procedure(param, QConfObj::UU, "-auser", user_name, uid, gid) != 0) {
+            sge_parse_return = 1;
          }
 
          spp++;
@@ -3097,16 +2909,12 @@ int sge_parse_qconf(char *argv[]) {
             prj_name = *spp;
          }
 
-         /* get a template for editing, pre-filled with the requested name */
-         ep = getPrjTemplate();
-         lSetString(ep, PR_name, prj_name);
-
-         newep = edit_project(ep, uid, gid);
-         lFreeElem(&ep);
-
-         /* CS-2309 C2: upsert (modify if the project already exists) */
-         if (newep != nullptr) {
-            sge_parse_return |= qconf_send_upsert_obj(os, QConfObj::PR, newep);
+         /* CS-2823: template, editor and write procedure in one - see
+          * qconf_edit_obj_procedure(), the single function "-a<obj>" and "-m<obj>"
+          * share. The template the upsert of CS-2309 C2 edits is built in qmaster
+          * now, from the read's descriptor row. */
+         if (qconf_edit_obj_procedure(param, QConfObj::PR, "-aprj", prj_name, uid, gid) != 0) {
+            sge_parse_return = 1;
          }
 
          spp++;
@@ -4102,7 +3910,7 @@ int sge_parse_qconf(char *argv[]) {
              * -Mcal below goes through the same procedure, as a set of many
              * instead of a set of one, so the calendar has one writer and not
              * two - see qconf_apply_path_procedure(). */
-            if (qconf_modify_cal_procedure(os, param, *spp, uid, gid) != 0) {
+            if (qconf_edit_obj_procedure(param, QConfObj::CAL, "-mcal", *spp, uid, gid) != 0) {
                sge_parse_return = 1;
             }
          } else { /* -Mcal: CS-2299 C3 — accept a file OR a directory, upsert each */
@@ -4145,60 +3953,21 @@ int sge_parse_qconf(char *argv[]) {
       if ((strcmp("-mckpt", *spp) == 0) ||
           (strcmp("-Mckpt", *spp) == 0)) {
          if (strcmp("-mckpt", *spp) == 0) {
-            lListElem *ckpt_src = nullptr;
-
             qconf_is_manager_on_admin_host(username, qualified_hostname);
-
             spp = sge_parser_get_next(spp);
 
-            /* get last version of this checkpoint object from qmaster */
-            where = lWhere("%T( %I==%s )", CK_Type, CK_name, *spp);
-            what = lWhat("%T(ALL)", CK_Type);
-            alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::CK_LIST, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, &lp, where, what);
-            lFreeWhere(&where);
-            lFreeWhat(&what);
-
-            aep = lFirst(alp);
-            answer_exit_if_not_recoverable(aep);
-            if (answer_get_status(aep) != STATUS_OK) {
-               fprintf(stderr, "%s\n", lGetString(aep, AN_text));
-               lFreeList(&alp);
+            /* CS-2823: the stored procedure round trip, as -mcal does it, and the
+             * same function "-a<obj>" calls. The implicit add of CS-2300 C2 is
+             * unchanged; the template it edits comes from the read's descriptor row
+             * and is built in qmaster. */
+            if (qconf_edit_obj_procedure(param, QConfObj::CK, "-mckpt", *spp, uid, gid) != 0) {
                sge_parse_return = 1;
-               spp++;
-               continue;
             }
-            lFreeList(&alp);
-
-            if (lp != nullptr && lGetNumberOfElem(lp) > 0) {
-               ckpt_src = lDechainElem(lp, lFirstRW(lp));
-            } else {
-               /* CS-2300 C2: modifying a non-existent checkpoint implicitly adds
-                * it — offer a generic template for editing instead of failing. */
-               ckpt_src = sge_generic_ckpt(*spp);
-            }
-            lFreeList(&lp);
-
-            /* hand it to the editor and read the result back; the engine is
-             * exit-free, the client decides that a failure is fatal */
-            QConfEditStatus est = qconf_edit_obj(QConfObj::CK, &alp, &ckpt_src, uid, gid);
-            if (est != QConfEditStatus::OK) {
-               sge_parse_return = 1;
-               qconf_edit_fail_exit(est);
-               continue;
-            }
-            ep = ckpt_src;
-} else { /* -Mckpt: CS-2300 C3 — accept a file OR a directory, upsert each */
+         } else { /* -Mckpt: CS-2300 C3 — accept a file OR a directory, upsert each */
             spp = sge_parser_get_next(spp);
             if (qconf_apply_obj(os, QConfObj::CK, *spp) != 0) {
                sge_parse_return = 1;
             }
-            spp++;
-            continue;
-         }
-
-         /* -mckpt editor path: CS-2300 C2 — upsert (add if it did not exist) */
-         if (ep != nullptr) {
-            sge_parse_return |= qconf_send_upsert_obj(os, QConfObj::CK, ep);
          }
 
          spp++;
@@ -4230,8 +3999,16 @@ int sge_parse_qconf(char *argv[]) {
          parse_name_list_to_cull("hosts to change", &arglp, EH_Type, EH_name,
             *spp);
 
+         /* CS-2823: the stored procedure round trip, through the same function
+          * as "-ae" - the two are one operation and differ only in the name
+          * they are given. Two things are specific to the exec host: the name
+          * is resolved here, before the read is asked for it, and the read's
+          * descriptor row carries no template, so an unknown host is reported
+          * instead of created. An execution host is not conjured from a name;
+          * it is added by installing an execd, or by "-ae" under the name of a
+          * host that resolves. The switch takes a list, so each name goes
+          * through the round trip on its own. */
          for_each_rw_lv (argep, arglp) {
-            /* resolve hostname */
             if (sge_resolve_host(argep, EH_name) != CL_RETVAL_OK) {
                fprintf(stderr, MSG_SGETEXT_CANTRESOLVEHOST_S, lGetHost(argep, EH_name));
                fprintf(stderr, "\n");
@@ -4240,43 +4017,9 @@ int sge_parse_qconf(char *argv[]) {
             }
             host = lGetHost(argep, EH_name);
 
-            /* get the existing host entry .. */
-            where = lWhere("%T( %Ih=%s )", EH_Type, EH_name, host);
-            what = lWhat("%T(ALL)", EH_Type);
-            alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::EH_LIST, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, &lp, where, what);
-            lFreeWhere(&where);
-            lFreeWhat(&what);
-
-            if (show_answer(alp) == 1) {
-               lFreeList(&alp);
+            if (qconf_edit_obj_procedure(param, QConfObj::EH, "-me", host, uid, gid) != 0) {
                sge_parse_return = 1;
-               continue;
             }
-
-            if (lGetNumberOfElem(lp) == 0) {
-               fprintf(stderr, MSG_EXEC_XISNOTANEXECUTIONHOST_S, host);
-               fprintf(stderr, "\n");
-               sge_parse_return = 1;
-               continue;
-            }
-            lFreeList(&alp);
-
-            ep = edit_exechost(lFirstRW(lp), uid, gid);
-            if (ep == nullptr) {
-               continue;
-            }
-            lFreeList(&lp);
-            lp = lCreateList("host to mod", EH_Type);
-            lAppendElem(lp, ep);
-            alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::EH_LIST, ocs::gdi::Command::MOD, ocs::gdi::SubCommand::NONE, &lp, nullptr, nullptr);
-            lFreeList(&lp);
-
-            if (show_answer(alp) == 1) {
-               lFreeList(&alp);
-               sge_parse_return = 1;
-               continue;
-            }
-            lFreeList(&alp);
          }
          lFreeList(&arglp);
          spp++;
@@ -4287,60 +4030,21 @@ int sge_parse_qconf(char *argv[]) {
       if ((strcmp("-mrole", *spp) == 0) ||
           (strcmp("-Mrole", *spp) == 0)) {
          if (!strcmp("-mrole", *spp)) {
-            lListElem *role_src = nullptr;
-
             qconf_is_manager_on_admin_host(username, qualified_hostname);
-
             spp = sge_parser_get_next(spp);
 
-            where = lWhere("%T( %I==%s )", RL_Type, RL_name, *spp);
-            what = lWhat("%T(ALL)", RL_Type);
-            alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::RL_LIST, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, &lp, where, what);
-            lFreeWhere(&where);
-            lFreeWhat(&what);
-
-            aep = lFirst(alp);
-            answer_exit_if_not_recoverable(aep);
-            if (answer_get_status(aep) != STATUS_OK) {
-               fprintf(stderr, "%s\n", lGetString(aep, AN_text));
-               lFreeList(&alp);
+            /* CS-2823: the stored procedure round trip, as -mcal does it, and the
+             * same function "-a<obj>" calls. The implicit add of CS-2302 C2 is
+             * unchanged; the template it edits comes from the read's descriptor row
+             * and is built in qmaster. */
+            if (qconf_edit_obj_procedure(param, QConfObj::RL, "-mrole", *spp, uid, gid) != 0) {
                sge_parse_return = 1;
-               spp++;
-               continue;
             }
-            lFreeList(&alp);
-
-            if (lp != nullptr && lGetNumberOfElem(lp) > 0) {
-               role_src = lDechainElem(lp, lFirstRW(lp));
-            } else {
-               /* CS-2302 C2: modifying a non-existent role implicitly adds it —
-                * offer a generic template for editing instead of failing. */
-               role_src = ocs::Role::create_template();
-               lSetString(role_src, RL_name, *spp);
-            }
-            lFreeList(&lp);
-
-            /* hand it to the editor and read the result back; the engine is
-             * exit-free, the client decides that a failure is fatal */
-            QConfEditStatus est = qconf_edit_obj(QConfObj::RL, &alp, &role_src, uid, gid);
-            if (est != QConfEditStatus::OK) {
-               sge_parse_return = 1;
-               qconf_edit_fail_exit(est);
-               continue;
-            }
-            ep = role_src;
-} else { /* -Mrole: CS-2302 C3 — accept a file OR a directory, upsert each */
+         } else { /* -Mrole: CS-2302 C3 — accept a file OR a directory, upsert each */
             spp = sge_parser_get_next(spp);
             if (qconf_apply_obj(os, QConfObj::RL, *spp) != 0) {
                sge_parse_return = 1;
             }
-            spp++;
-            continue;
-         }
-
-         /* -mrole editor path: CS-2302 C2 — upsert (add if it did not exist) */
-         if (ep != nullptr) {
-            sge_parse_return |= qconf_send_upsert_obj(os, QConfObj::RL, ep);
          }
 
          spp++;
@@ -4398,61 +4102,21 @@ int sge_parse_qconf(char *argv[]) {
           (strcmp("-Mp", *spp) == 0)) {
 
          if (!strcmp("-mp", *spp)) {
-            lListElem *pe_src = nullptr;
-
             qconf_is_manager_on_admin_host(username, qualified_hostname);
-
             spp = sge_parser_get_next(spp);
 
-            /* get last version of this pe from qmaster */
-            where = lWhere("%T( %I==%s )", PE_Type, PE_name, *spp);
-            what = lWhat("%T(ALL)", PE_Type);
-            alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::PE_LIST, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, &lp, where, what);
-            lFreeWhere(&where);
-            lFreeWhat(&what);
-
-            aep = lFirst(alp);
-            answer_exit_if_not_recoverable(aep);
-            if (answer_get_status(aep) != STATUS_OK) {
-               fprintf(stderr, "%s\n", lGetString(aep, AN_text));
-               lFreeList(&alp);
+            /* CS-2823: the stored procedure round trip, as -mcal does it, and the
+             * same function "-a<obj>" calls. The implicit add of CS-2301 C2 is
+             * unchanged; the template it edits comes from the read's descriptor row
+             * and is built in qmaster. */
+            if (qconf_edit_obj_procedure(param, QConfObj::PE, "-mp", *spp, uid, gid) != 0) {
                sge_parse_return = 1;
-               spp++;
-               continue;
             }
-            lFreeList(&alp);
-
-            if (lp != nullptr && lGetNumberOfElem(lp) > 0) {
-               pe_src = lDechainElem(lp, lFirstRW(lp));
-            } else {
-               /* CS-2301 C2: modifying a non-existent PE implicitly adds it —
-                * offer a generic template for editing instead of failing. */
-               pe_src = pe_create_template(*spp);
-            }
-            lFreeList(&lp);
-
-            /* write pe to temp file */
-            /* hand it to the editor and read the result back; the engine is
-             * exit-free, the client decides that a failure is fatal */
-            QConfEditStatus est = qconf_edit_obj(QConfObj::PE, &alp, &pe_src, uid, gid);
-            if (est != QConfEditStatus::OK) {
-               sge_parse_return = 1;
-               qconf_edit_fail_exit(est);
-               continue;
-            }
-            ep = pe_src;
-} else { /* -Mp: CS-2301 C3 — accept a file OR a directory, upsert each */
+         } else { /* -Mp: CS-2301 C3 — accept a file OR a directory, upsert each */
             spp = sge_parser_get_next(spp);
             if (qconf_apply_obj(os, QConfObj::PE, *spp) != 0) {
                sge_parse_return = 1;
             }
-            spp++;
-            continue;
-         }
-
-         /* -mp editor path: CS-2301 C2 — upsert (add if it did not exist) */
-         if (ep != nullptr) {
-            sge_parse_return |= qconf_send_upsert_obj(os, QConfObj::PE, ep);
          }
 
          spp++;
@@ -4995,48 +4659,15 @@ int sge_parse_qconf(char *argv[]) {
       /* "-muser username" */
 
       if (strcmp("-muser", *spp) == 0) {
-         lListElem *user_src = nullptr;
-
          qconf_is_manager_on_admin_host(username, qualified_hostname);
-
          spp = sge_parser_get_next(spp);
 
-         /* get user */
-         where = lWhere("%T( %I==%s )", UU_Type, UU_name, *spp);
-         what = lWhat("%T(ALL)", UU_Type);
-         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::UU_LIST, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, &lp, where, what);
-         lFreeWhere(&where);
-         lFreeWhat(&what);
-
-         aep = lFirst(alp);
-         answer_exit_if_not_recoverable(aep);
-         if (answer_get_status(aep) != STATUS_OK) {
-            fprintf(stderr, "%s\n", lGetString(aep, AN_text));
-            lFreeList(&alp);
-            lFreeList(&lp);
+         /* CS-2823: the stored procedure round trip, as -mcal does it, and the
+          * same function "-a<obj>" calls. The implicit add of CS-2308 C2 is
+          * unchanged; the template it edits comes from the read's descriptor row
+          * and is built in qmaster. */
+         if (qconf_edit_obj_procedure(param, QConfObj::UU, "-muser", *spp, uid, gid) != 0) {
             sge_parse_return = 1;
-            spp++;
-            continue;
-         }
-         lFreeList(&alp);
-
-         if (lp != nullptr && lGetNumberOfElem(lp) > 0) {
-            user_src = lDechainElem(lp, lFirstRW(lp));
-         } else {
-            /* CS-2308 C2: modifying a non-existent user implicitly adds it —
-             * offer a template pre-filled with the name instead of failing. */
-            user_src = getUserTemplate();
-            lSetString(user_src, UU_name, *spp);
-         }
-         lFreeList(&lp);
-
-         /* edit user */
-         newep = edit_user(user_src, uid, gid);
-         lFreeElem(&user_src);
-
-         /* CS-2308 C2: upsert (add if it did not exist) */
-         if (newep != nullptr) {
-            sge_parse_return |= qconf_send_upsert_obj(os, QConfObj::UU, newep);
          }
 
          spp++;
@@ -5048,47 +4679,19 @@ int sge_parse_qconf(char *argv[]) {
       /* "-mprj projectname" */
 
       if (strcmp("-mprj", *spp) == 0) {
-         lListElem *prj_src = nullptr;
-
          qconf_is_manager_on_admin_host(username, qualified_hostname);
-
          spp = sge_parser_get_next(spp);
 
-         /* get project */
-         where = lWhere("%T( %I==%s )", PR_Type, PR_name, *spp);
-         what = lWhat("%T(ALL)", PR_Type);
-         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::PR_LIST, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, &lp, where, what);
-         lFreeWhere(&where);
-         lFreeWhat(&what);
-
-         aep = lFirst(alp);
-         answer_exit_if_not_recoverable(aep);
-         if (answer_get_status(aep) != STATUS_OK) {
-            fprintf(stderr, "%s\n", lGetString(aep, AN_text));
-            lFreeList(&alp);
-            lFreeList(&lp);
-            spp++;
-            continue;
-         }
-         lFreeList(&alp);
-
-         if (lp != nullptr && lGetNumberOfElem(lp) > 0) {
-            prj_src = lDechainElem(lp, lFirstRW(lp));
-         } else {
-            /* CS-2309 C2: modifying a non-existent project implicitly adds it —
-             * offer a template pre-filled with the name instead of failing. */
-            prj_src = getPrjTemplate();
-            lSetString(prj_src, PR_name, *spp);
-         }
-         lFreeList(&lp);
-
-         /* edit project */
-         newep = edit_project(prj_src, uid, gid);
-         lFreeElem(&prj_src);
-
-         /* CS-2309 C2: upsert (add if it did not exist) */
-         if (newep != nullptr) {
-            sge_parse_return |= qconf_send_upsert_obj(os, QConfObj::PR, newep);
+         /* CS-2823: the stored procedure round trip, as -mcal does it, and the
+          * same function "-a<obj>" calls. The implicit add of CS-2309 C2 is
+          * unchanged; the template it edits comes from the read's descriptor row
+          * and is built in qmaster.
+          *
+          * A failing read sets the exit code now, which the GET path forgot to
+          * do here while the "-muser" branch beside it did - the two are one
+          * function, so the omission cannot come back. */
+         if (qconf_edit_obj_procedure(param, QConfObj::PR, "-mprj", *spp, uid, gid) != 0) {
+            sge_parse_return = 1;
          }
 
          spp++;
@@ -5788,52 +5391,19 @@ int sge_parse_qconf(char *argv[]) {
 
       /* "-mce centry"  */
       if (strcmp("-mce", *spp) == 0) {
-         lListElem *ce_src = nullptr;
-
          qconf_is_manager_on_admin_host(username, qualified_hostname);
 
          spp = sge_parser_get_next(spp);
          qconf_is_manager(username);
 
-         where = lWhere("%T( %I==%s )", CE_Type, CE_name, *spp);
-         what = lWhat("%T(ALL)", CE_Type);
-         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::CE_LIST, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, &lp, where, what);
-         lFreeWhere(&where);
-         lFreeWhat(&what);
-
-         aep = lFirst(alp);
-         answer_exit_if_not_recoverable(aep);
-         if (answer_get_status(aep) != STATUS_OK) {
-            fprintf(stderr, "%s\n", lGetString(aep, AN_text));
-            lFreeList(&alp);
+         /* CS-2823: the stored procedure round trip, as -mcal does it, and the
+          * same function "-a<obj>" calls. The implicit add of CS-2303 C2 is
+          * unchanged; the template it edits comes from the read's descriptor row
+          * and is built in qmaster. */
+         if (qconf_edit_obj_procedure(param, QConfObj::CE, "-mce", *spp, uid, gid) != 0) {
             sge_parse_return = 1;
-            spp++;
-            continue;
          }
-         lFreeList(&alp);
 
-         if (lp != nullptr && lGetNumberOfElem(lp) > 0) {
-            ce_src = lDechainElem(lp, lFirstRW(lp));
-         } else {
-            /* CS-2303 C2: modifying a non-existent complex entry implicitly adds
-             * it — offer a generic template for editing instead of failing. */
-            ce_src = centry_create(&alp, *spp);
-         }
-         lFreeList(&lp);
-
-            /* hand it to the editor and read the result back; the engine
-             * is exit-free, the client decides that a failure is fatal */
-            QConfEditStatus est = qconf_edit_obj(QConfObj::CE, &alp, &ce_src, uid, gid);
-            if (est != QConfEditStatus::OK) {
-               sge_parse_return = 1;
-               qconf_edit_fail_exit(est);
-               continue;
-            }
-            ep = ce_src;
-/* -mce editor path: CS-2303 C2 — upsert (add if it did not exist) */
-         if (ep != nullptr) {
-            sge_parse_return |= qconf_send_upsert_obj(os, QConfObj::CE, ep);
-         }
          spp++;
          continue;
       }
@@ -5882,7 +5452,7 @@ int sge_parse_qconf(char *argv[]) {
       /* "-ace [attribute]"  */
       if (strcmp("-ace", *spp) == 0) {
          /* CS-2303 C1: the complex entry name is optional; template default. */
-         char *ce_name = (char *)"template";
+         const char *ce_name = "template";
 
          qconf_is_adminhost(qualified_hostname);
          qconf_is_manager(username);
@@ -5892,19 +5462,12 @@ int sge_parse_qconf(char *argv[]) {
             ce_name = *spp;
          }
 
-         ep = centry_create(&alp, ce_name);
-            /* hand it to the editor and read the result back; the engine
-             * is exit-free, the client decides that a failure is fatal */
-            QConfEditStatus est = qconf_edit_obj(QConfObj::CE, &alp, &ep, uid, gid);
-            if (est != QConfEditStatus::OK) {
-               sge_parse_return = 1;
-               qconf_edit_fail_exit(est);
-               continue;
-            }
-            ep = ep;
-/* -ace editor path: CS-2303 C2 — upsert (modify if it already exists) */
-         if (ep != nullptr) {
-            sge_parse_return |= qconf_send_upsert_obj(os, QConfObj::CE, ep);
+         /* CS-2823: template, editor and write procedure in one - see
+          * qconf_edit_obj_procedure(), the single function "-a<obj>" and "-m<obj>"
+          * share. The template the upsert of CS-2303 C2 edits is built in qmaster
+          * now, from the read's descriptor row. */
+         if (qconf_edit_obj_procedure(param, QConfObj::CE, "-ace", ce_name, uid, gid) != 0) {
+            sge_parse_return = 1;
          }
          spp++;
          continue;
@@ -6838,35 +6401,6 @@ static bool del_host_of_type(lList *arglp, ocs::gdi::Target target) {
 
 /* ------------------------------------------------------------ */
 
-/** @brief Offer an exec host to the editor and return the edited object.
- *
- * @param ep  the host to edit; consumed
- * @param uid uid to run the editor as
- * @param gid gid to run the editor as
- * @return the edited host, or nullptr when the result could not be read
- */
-static lListElem *edit_exechost(lListElem *ep, uid_t uid, gid_t gid) {
-   DENTER(TOP_LAYER);
-   lList *alp = nullptr;
-
-   /* The caller keeps ownership of ep - it either frees it itself or it is
-    * still chained into a list - while qconf_edit_obj() consumes what it is
-    * given, so the engine works on a copy. */
-   lListElem *work = lCopyElem(ep);
-
-   QConfEditStatus st = qconf_edit_obj(QConfObj::EH, &alp, &work, uid, gid);
-   lFreeList(&alp);
-
-   /* a read failure is reported to the caller as a nullptr, the way this
-    * function has always behaved; only the editor itself is fatal */
-   if (st != QConfEditStatus::OK && st != QConfEditStatus::READ_FAILED) {
-      qconf_edit_fail_exit(st);
-   }
-   DRETURN(work);
-}
-
-/* ------------------------------------------------------------ */
-
 static lList *edit_sched_conf(lList *confl, uid_t uid, gid_t gid) {
    DENTER(TOP_LAYER);
 
@@ -6951,77 +6485,6 @@ static lList *edit_sched_conf(lList *confl, uid_t uid, gid_t gid) {
 }
 
 /* ------------------------------------------------------------ */
-
-/** @brief Offer a user to the editor and return the edited object.
- *
- * Exits when the result cannot be read, naming the object - the wording this
- * branch has always used.
- *
- * @param ep  the user to edit; consumed
- * @param uid uid to run the editor as
- * @param gid gid to run the editor as
- * @return the edited user
- */
-static lListElem *edit_user(lListElem *ep, uid_t uid, gid_t gid) {
-   DENTER(TOP_LAYER);
-   lList *alp = nullptr;
-
-   /* The caller keeps ownership of ep - it either frees it itself or it is
-    * still chained into a list - while qconf_edit_obj() consumes what it is
-    * given, so the engine works on a copy. */
-   lListElem *work = lCopyElem(ep);
-
-   QConfEditStatus st = qconf_edit_obj(QConfObj::UU, &alp, &work, uid, gid);
-   lFreeList(&alp);
-
-   if (st == QConfEditStatus::READ_FAILED) {
-      /* the user branch has always named the object in this message rather
-       * than using the generic "error reading in file" */
-      fprintf(stderr, MSG_QCONF_CANTREADX_S, MSG_OBJ_USER);
-      fprintf(stderr, "\n");
-      sge_exit(1);
-   }
-   if (st != QConfEditStatus::OK) {
-      qconf_edit_fail_exit(st);
-   }
-   DRETURN(work);
-}
-
-/* ------------------------------------------------------------ */
-/** @brief Offer a project to the editor and return the edited object.
- *
- * Exits when the result cannot be read, naming the object - the wording this
- * branch has always used.
- *
- * @param ep  the project to edit; consumed
- * @param uid uid to run the editor as
- * @param gid gid to run the editor as
- * @return the edited project
- */
-static lListElem *edit_project(lListElem *ep, uid_t uid, gid_t gid) {
-   DENTER(TOP_LAYER);
-   lList *alp = nullptr;
-
-   /* The caller keeps ownership of ep - it either frees it itself or it is
-    * still chained into a list - while qconf_edit_obj() consumes what it is
-    * given, so the engine works on a copy. */
-   lListElem *work = lCopyElem(ep);
-
-   QConfEditStatus st = qconf_edit_obj(QConfObj::PR, &alp, &work, uid, gid);
-   lFreeList(&alp);
-
-   if (st == QConfEditStatus::READ_FAILED) {
-      /* the project branch has always named the object in this message rather
-       * than using the generic "error reading in file" */
-      fprintf(stderr, MSG_QCONF_CANTREADX_S, MSG_JOB_PROJECT);
-      fprintf(stderr, "\n");
-      sge_exit(1);
-   }
-   if (st != QConfEditStatus::OK) {
-      qconf_edit_fail_exit(st);
-   }
-   DRETURN(work);
-}
 
 /****************************************************************/
 static lListElem *edit_sharetree(lListElem *ep, uid_t uid, gid_t gid) {

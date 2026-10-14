@@ -68,7 +68,6 @@
 #include "ocs_qconf_centry.h"
 #include "ocs_qconf_parse.h"   /* CS-2313a: qconf_opt_format */
 
-static bool centry_provide_modify_context(lListElem **this_elem, lList **answer_list);
 
 static bool centry_list_provide_modify_context(lList **this_list, lList **answer_list);
 
@@ -138,102 +137,6 @@ lListElem *centry_get_via_gdi(lList **answer_list, const char *name) {
    DRETURN(ret);
 }
 
-static bool centry_provide_modify_context(lListElem **this_elem, lList **answer_list) {
-   DENTER(TOP_LAYER);
-
-   bool ret = false;
-   int status = 0;
-   lList *alp = nullptr;
-   int fields_out[MAX_NUM_FIELDS];
-   int missing_field = NoName;
-   uid_t uid = component_get_uid();
-   gid_t gid = component_get_gid();
-
-   if (this_elem != nullptr && *this_elem != nullptr) {
-      const char *filename = nullptr;
-
-      filename = spool_flatfile_write_object(&alp, *this_elem, false, CE_fields, &qconf_ce_sfi, SP_DEST_TMP,
-                                             qconf_opt_format, filename, false);
-
-      if (answer_list_output(&alp)) {
-         if (filename != nullptr) {
-            unlink(filename);
-            sge_free(&filename);
-         }
-         DRETURN(false);
-      }
-
-      status = sge_edit(filename, uid, gid);
-      if (status >= 0) {
-         lListElem *centry;
-
-         fields_out[0] = NoName;
-         centry = spool_flatfile_read_object(&alp, CE_Type, nullptr, CE_fields, fields_out, true, &qconf_ce_sfi,
-                                             qconf_opt_format, nullptr, filename);
-
-         if (answer_list_output(&alp)) {
-            lFreeElem(&centry);
-         }
-
-         if (centry != nullptr) {
-            missing_field = spool_get_unprocessed_field(CE_fields, fields_out, &alp);
-         }
-
-         if (missing_field != NoName) {
-            lFreeElem(&centry);
-            answer_list_output(&alp);
-         }
-
-         if (centry != nullptr) {
-            lFreeElem(this_elem);
-            *this_elem = centry;
-            ret = true;
-         } else {
-            answer_list_add(answer_list, MSG_FILE_ERRORREADINGINFILE, STATUS_ERROR1, ANSWER_QUALITY_ERROR);
-         }
-      } else {
-         answer_list_add(answer_list, MSG_PARSE_EDITFAILED, STATUS_ERROR1, ANSWER_QUALITY_ERROR);
-      }
-      unlink(filename);
-      sge_free(&filename);
-   }
-
-   lFreeList(&alp);
-
-   DRETURN(ret);
-}
-
-/** @brief Add a complex entry, using the editor
- *
- * Builds a template, opens `$EDITOR` on it, and sends the result to qmaster.
- *
- * @param answer_list used to return error messages
- * @param name the name of the complex entry to create
- * @return true on success; false with `answer_list` filled otherwise
- */
-bool centry_add(lList **answer_list, const char *name) {
-   DENTER(TOP_LAYER);
-
-   bool ret = true;
-
-   if (name != nullptr) {
-      lListElem *centry = centry_create(answer_list, name);
-
-      if (centry == nullptr) {
-         ret = false;
-      }
-      if (ret) {
-         ret &= centry_provide_modify_context(&centry, answer_list);
-      }
-      if (ret) {
-         ret &= centry_add_del_mod_via_gdi(centry, answer_list, ocs::gdi::Command::ADD);
-      }
-      lFreeElem(&centry);
-   }
-
-   DRETURN(ret);
-}
-
 /** @brief Add a complex entry from a file, without the editor
  *
  * The non-interactive form: the file must already be complete.
@@ -282,43 +185,11 @@ bool centry_add_from_file(lList **answer_list, const char *filename) {
    DRETURN(ret);
 }
 
-/** @brief Change a complex entry, using the editor
- *
- * Fetches the current definition, opens `$EDITOR` on it, and sends back what changed.
- *
- * @param answer_list used to return error messages
- * @param name the complex entry to change
- * @return true on success; false with `answer_list` filled otherwise
- */
-bool centry_modify(lList **answer_list, const char *name) {
-   DENTER(TOP_LAYER);
-
-   bool ret = true;
-
-   if (name != nullptr) {
-      lListElem *centry = centry_get_via_gdi(answer_list, name);
-
-      if (centry == nullptr) {
-         answer_list_add_sprintf(answer_list, STATUS_ERROR1, ANSWER_QUALITY_ERROR, MSG_CENTRY_DOESNOTEXIST_S, name);
-         ret = false;
-      }
-      if (ret) {
-         ret &= centry_provide_modify_context(&centry, answer_list);
-      }
-      if (ret) {
-         ret &= centry_add_del_mod_via_gdi(centry, answer_list, ocs::gdi::Command::MOD);
-      }
-      if (centry != nullptr) {
-         lFreeElem(&centry);
-      }
-   }
-
-   DRETURN(ret);
-}
-
 /** @brief Change a complex entry from a file, without the editor
  *
- * The non-interactive form of #centry_modify.
+ * The non-interactive form. Its interactive sibling went with CS-2823: "-mce"
+ * and "-ace" read, edit and write through the stored procedures, so the client
+ * no longer renders a complex entry for an editor.
  *
  * @param answer_list used to return error messages
  * @param filename the file holding the new definition

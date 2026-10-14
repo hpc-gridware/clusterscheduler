@@ -158,8 +158,24 @@ namespace ocs {
       static constexpr uint32_t REDUCTION_MASKED = 1;      ///< placeholder values, structure intact
       static constexpr uint32_t REDUCTION_HIDDEN = 2;      ///< data left out, structure shortened
       /** @} */
+
+      /** @brief Environment variable that makes a response claim it was reduced
+       *
+       * Nothing produces a reduction yet - RBAC redaction is still ahead - so the
+       * one behaviour CS-2823 adds, refusing to offer a reduced object to the
+       * editor, cannot be reached and therefore cannot be tested. A client that
+       * finds this variable set ships its value with the request and qmaster
+       * answers with the mask it names.
+       *
+       * It grants nothing: the mask only ever makes the caller's own client
+       * refuse more than it otherwise would, and qmaster acts on it nowhere else.
+       *
+       * Values are `masked`, `hidden`, or both separated by a comma.
+       */
+      static constexpr auto FORCE_REDUCTION_VARIABLE = "SGE_PROCEDURE_FORCE_REDUCTION";
       static constexpr auto OUTPUT_FORMAT = "output_format";       ///< Plain, XML or JSON
       static constexpr auto ENVIRONMENT = "environment";           ///< The environment variables
+
       /** @name What a write did, on the way back (CS-2822)
        *
        * Two counts beside the rendered response, for the same reason the

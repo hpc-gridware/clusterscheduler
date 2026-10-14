@@ -118,8 +118,16 @@ qconf_write_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monit
       if (text == nullptr) {
          /* unpackstr() maps an empty string to a null pointer, so this is also
           * what an item with no text at all arrives as */
-         answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
-                                 MSG_QCONF_WRITEEMPTYTEXT_S, label != nullptr ? label : "");
+         /* The label is the file name for a file, and nothing for the
+          * interactive round trip, which has no file. Without a label the
+          * message must not start with the colon that introduces one. */
+         if (label != nullptr) {
+            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                                    MSG_QCONF_WRITEEMPTYTEXT_S, label);
+         } else {
+            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                                    SFNMAX, MSG_QCONF_WRITEEMPTYTEXT);
+         }
          result->parse_failed++;
          continue;
       }

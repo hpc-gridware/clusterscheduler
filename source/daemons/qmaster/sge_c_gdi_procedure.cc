@@ -588,6 +588,50 @@ namespace {
       bool has_write_result = false;                                 ///< whether @ref write was filled
    };
 
+   /** @brief The reduction a caller asked to have simulated (CS-2823)
+    *
+    * Turns ocs::ProcedureParameter::FORCE_REDUCTION_VARIABLE, which the client
+    * shipped with the request, into the mask the response carries. See that
+    * constant for why it exists and why it is harmless.
+    *
+    * An unknown token is ignored rather than refused: this is a test aid, and
+    * failing a request over it would turn a mistyped variable into an outage.
+    *
+    * @param parameter the request
+    * @return the forced mask, REDUCTION_NONE when nothing was asked for
+    */
+   uint32_t forced_reduction(const ocs::ProcedureParameter &parameter) {
+      DENTER(TOP_LAYER);
+
+      const char *value = parameter.get_variable(ocs::ProcedureParameter::FORCE_REDUCTION_VARIABLE);
+      if (value == nullptr) {
+         DRETURN(ocs::ProcedureParameter::REDUCTION_NONE);
+      }
+
+      uint32_t mask = ocs::ProcedureParameter::REDUCTION_NONE;
+      std::string_view rest{value};
+      while (true) {
+         const auto comma = rest.find(',');
+         const std::string_view token = rest.substr(0, comma);
+
+         if (token == "masked") {
+            mask |= ocs::ProcedureParameter::REDUCTION_MASKED;
+         } else if (token == "hidden") {
+            mask |= ocs::ProcedureParameter::REDUCTION_HIDDEN;
+         } else if (!token.empty()) {
+            DPRINTF("ignoring unknown " SFN " token " SFQ "\n",
+                    ocs::ProcedureParameter::FORCE_REDUCTION_VARIABLE,
+                    std::string{token}.c_str());
+         }
+
+         if (comma == std::string_view::npos) {
+            break;
+         }
+         rest.remove_prefix(comma + 1);
+      }
+      DRETURN(mask);
+   }
+
    template<typename Traits>
    void exec_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monitor,
                        std::ostringstream &os, ProcedureOutcome &outcome) {
@@ -659,11 +703,24 @@ namespace {
       controller.process_request(parameter, model, *view);
 
       /* CS-2821: where the model's verdict on RBAC reduction will be read once a
-       * model can give one. Nothing reduces today, so it stays NONE - the seam is
-       * a parameter rather than a comment so that it is typed and visible at the
+       * model can give one. Nothing reduces today, so the only non-zero mask is
+       * one a caller asked to have simulated, which is what makes the refusal of
+       * CS-2823 testable at all - see forced_reduction(). The seam stays a
+       * parameter rather than a comment so that it is typed and visible at the
        * call site, and it is not an accessor on each of the five model
        * hierarchies because "always zero" is not worth five edits. */
-      outcome.reduction = ocs::ProcedureParameter::REDUCTION_NONE;
+      /* A template is not a stored object: the model built it for this answer
+       * because the name does not exist (CS-2823), so there is nothing RBAC
+       * could have removed from it and the response must not claim otherwise.
+       * Reporting a reduction here would have the client refuse to open the
+       * editor for an object that cannot have anything masked - which is how
+       * "-a<obj>" would stop working the moment anything reduces. */
+      bool is_template = false;
+      if constexpr (requires { model.answered_with_template(); }) {
+         is_template = model.answered_with_template();
+      }
+      outcome.reduction = is_template ? ocs::ProcedureParameter::REDUCTION_NONE
+                                      : forced_reduction(parameter);
 
       DRETURN_VOID;
    }
@@ -845,10 +902,26 @@ namespace {
        * the provider checks that they do; it cannot be a static_assert because
        * the object table is not constexpr.
        *
-       * Only the calendar so far. The other object types are CS-2823 and are one
-       * line each, which is the point of templating the traits. */
+       * One row per type, which is the point of templating the traits: these
+       * eight are the types on the CS-2797 editor engine (CS-2823), and the ones
+       * with a bespoke editor follow when their read side reaches the descriptor
+       * table (CS-2816 to CS-2820). */
       {to_string_view(QCONF), ocs::QConfWriteParameter::OBJECT_WRITE,
        modifies(ocs::gdi::Target::CAL_LIST), &run_procedure<QConfWriteTraits<QConfObj::CAL>>},
+      {to_string_view(QCONF), ocs::QConfWriteParameter::OBJECT_WRITE,
+       modifies(ocs::gdi::Target::CE_LIST), &run_procedure<QConfWriteTraits<QConfObj::CE>>},
+      {to_string_view(QCONF), ocs::QConfWriteParameter::OBJECT_WRITE,
+       modifies(ocs::gdi::Target::CK_LIST), &run_procedure<QConfWriteTraits<QConfObj::CK>>},
+      {to_string_view(QCONF), ocs::QConfWriteParameter::OBJECT_WRITE,
+       modifies(ocs::gdi::Target::EH_LIST), &run_procedure<QConfWriteTraits<QConfObj::EH>>},
+      {to_string_view(QCONF), ocs::QConfWriteParameter::OBJECT_WRITE,
+       modifies(ocs::gdi::Target::PE_LIST), &run_procedure<QConfWriteTraits<QConfObj::PE>>},
+      {to_string_view(QCONF), ocs::QConfWriteParameter::OBJECT_WRITE,
+       modifies(ocs::gdi::Target::PR_LIST), &run_procedure<QConfWriteTraits<QConfObj::PR>>},
+      {to_string_view(QCONF), ocs::QConfWriteParameter::OBJECT_WRITE,
+       modifies(ocs::gdi::Target::RL_LIST), &run_procedure<QConfWriteTraits<QConfObj::RL>>},
+      {to_string_view(QCONF), ocs::QConfWriteParameter::OBJECT_WRITE,
+       modifies(ocs::gdi::Target::UU_LIST), &run_procedure<QConfWriteTraits<QConfObj::UU>>},
       {to_string_view(QHOST), "", READS, &run_procedure<QHostTraits>},
       {to_string_view(QQUOTA), "", READS, &run_procedure<QQuotaTraits>},
       {to_string_view(QRSTAT), "", READS, &run_procedure<QRStatTraits>},

@@ -1849,10 +1849,19 @@ spool_flatfile_read_object(lList **answer_list, const lDescr *descr,
                                         fields, fields_out, &token, nullptr,
                                         parse_values);
    if (object == nullptr) {
-      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
-                              ANSWER_QUALITY_ERROR, 
-                              MSG_FLATFILE_ERROR_READINGFILE_S, 
-                              filepath);
+      /* The object can come from a string rather than a file - that is how the
+       * qconf write procedure parses the text an editor sent (CS-2823). There is
+       * no path to name then, and the file variant printed "(null)". */
+      if (filepath != nullptr) {
+         answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
+                                 ANSWER_QUALITY_ERROR,
+                                 MSG_FLATFILE_ERROR_READINGFILE_S,
+                                 filepath);
+      } else {
+         answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
+                                 ANSWER_QUALITY_ERROR,
+                                 SFNMAX, MSG_FLATFILE_ERROR_READINGTEXT);
+      }
    }
    spool_scanner_shutdown();
    scanner_release_string();

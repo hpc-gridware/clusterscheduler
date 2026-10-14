@@ -85,6 +85,7 @@ namespace ocs {
       int key_nm_ = NoName;                      ///< the field holding the name
       const char *requested_name_ = nullptr;     ///< what a sub-procedure was asked about (CS-2816)
       uint32_t requested_id_ = 0;                ///< the numeric key of a SINGLE_OBJECT_BY_ID read (CS-2819)
+      bool answered_with_template_ = false;      ///< the object was built, not found (CS-2823)
 
    public:
       /** @brief The objects that were fetched
@@ -96,6 +97,21 @@ namespace ocs {
        * @return its CULL id
        */
       [[nodiscard]] int get_key_nm() const { return key_nm_; }
+
+      /** @brief Whether the answer is a template rather than a stored object
+       *
+       * An edit read of a name that does not exist answers with the type's
+       * template, so that `-m<obj>` offers one and `-a<obj>` is the same
+       * operation (CS-2823). The object was built for this answer and carries
+       * nobody's data, which the caller has to know for one reason: there is
+       * nothing RBAC could have removed from it, so the response must not report
+       * a reduction. If it did, the client would refuse to open the editor for
+       * an object that cannot have anything masked - see
+       * QConfParameter::get_for_edit() for the refusal.
+       *
+       * @return true when the object list holds a template
+       */
+      [[nodiscard]] bool answered_with_template() const { return answered_with_template_; }
 
       /** @brief The host groups a cluster queue is written in terms of (CS-2818)
        *

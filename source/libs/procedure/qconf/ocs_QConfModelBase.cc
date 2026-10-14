@@ -1429,6 +1429,38 @@ ocs::QConfModelBase::make_snapshot(lList **answer_list, QConfParameter &paramete
          }
       }
 
+      /* CS-2823: a read that feeds an editor answers a name that does not exist
+       * with the type's template instead of "x is not a y". That is what makes
+       * "-m<obj> <unknown>" offer a template and add it on exit (CS-2299 C2 and
+       * its siblings), and what makes "-a<obj>" the same operation as
+       * "-m<obj>" - one writer per type, and one reader.
+       *
+       * It is built here rather than in the client because the text goes
+       * straight back through the write: rendering it anywhere else means two
+       * renderers for one text format, which is how the exec host came to
+       * render attributes its own write cannot parse (see
+       * QConfParameter::get_for_edit()). Here the template passes the view, the
+       * field list and the format of a stored object of its type.
+       *
+       * A row without a constructor keeps the report. The exec host is the one
+       * such type among the eight: its template is an entry of its own list, so
+       * neither "-me" nor "-ae" creates a host from a name. */
+      if (kind_ == QConfReadKind::SINGLE_OBJECT && parameter.get_for_edit() &&
+          desc_->read.create_template != nullptr &&
+          (object_list_ == nullptr || lGetNumberOfElem(object_list_) == 0)) {
+         lListElem *tmpl = desc_->read.create_template(answer_list, parameter.get_operation().arg(0));
+         if (tmpl == nullptr) {
+            /* the constructor said why - a name it refuses must not reach the
+             * editor as a half built template */
+            DRETURN(false);
+         }
+         if (object_list_ == nullptr) {
+            object_list_ = lCreateList("", desc_->descr);
+         }
+         lAppendElem(object_list_, tmpl);
+         answered_with_template_ = true;
+      }
+
       /* lGetNumberOfElem() would flag a null list as a CULL error, so the list
        * itself is checked first - as the hand written engine did. The wording of
        * the "not found" message is per object type, its shape is not. */

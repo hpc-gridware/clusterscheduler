@@ -234,8 +234,6 @@
 #define MSG_PARSE_EDITFAILED                       _MESSAGE(23113, _("edit failed"))
 #define MSG_FILE_FILEUNCHANGED                     _MESSAGE(23114, _("file unchanged"))
 #define MSG_FILE_ERRORREADINGINFILE                _MESSAGE(23115, _("error reading in file"))
-#define MSG_EXEC_XISNOEXECHOST_S                   _MESSAGE(23116, _(SFN " is no exec host"))
-#define MSG_EXEC_ADDEDHOSTXTOEXECHOSTLIST_S        _MESSAGE(23117, _("added host " SFN " to exec host list"))
 #define MSG_ANSWER_INVALIDFORMAT                   _MESSAGE(23118, _("invalid format"))
 
 #define MSG_TREE_CHANGEDSHARETREE                  _MESSAGE(23121, _("changed sharetree"))
@@ -279,7 +277,6 @@
 #define MSG_QCONF_XADDEDTOYLIST_SS                 _MESSAGE(23162, _(SFN " added to " SFN " list"))
 #define MSG_QCONF_XREMOVEDFROMYLIST_SS             _MESSAGE(23163, _(SFN " removed from " SFN " list"))
 #define MSG_QCONF_CANTREADCONFIG_S                 _MESSAGE(23164, _("can't read configuration: " SFN))
-#define MSG_QCONF_CANTREADX_S                      _MESSAGE(23165, _("cant read " SFN))
 #define MSG_QCONF_CANTREADSHARETREEX_S             _MESSAGE(23166, _("cant read sharetree: " SFN))
 #define MSG_QCONF_NOXDEFINED_S                     _MESSAGE(23167, _("no " SFN " defined"))
 #define MSG_QCONF_NOEXECUTIONHOSTSDEFINED          _MESSAGE(23168, _("no execution hosts defined"))

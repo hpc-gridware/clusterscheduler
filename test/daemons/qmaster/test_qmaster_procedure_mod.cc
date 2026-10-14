@@ -45,6 +45,13 @@
  * not about this user's rights; a manager must be refused too, because what is
  * wrong is the addressing, not the caller.
  *
+ * CS-2823 makes the second half load-bearing: eight object types now share the
+ * one procedure name pair and differ only in the target they are addressed
+ * under, so the target is what selects the handler. A lookup that ignored it
+ * would write a calendar while the request was addressed at the exec host list,
+ * i.e. with the caller's rights checked against exec hosts. T14/T15 produce
+ * exactly that request.
+ *
  * Not wired into a plain "ctest" run: it needs a cluster. Registered DISABLED,
  * like test_qmaster_hgroup_reserved, and installed into testbin/ so a testsuite
  * check can drive it.
@@ -353,6 +360,38 @@ main(int /*argc*/, char * /*argv*/[]) {
       CHECK(13, "neither call changed the calendar", get_week_calendar(CAL_NAME) == WEEK_BEFORE);
    }
 
+   /* ---- the target selects the handler (CS-2823) -------------------------- */
+   {
+      /* The write procedure carries one name pair for every object type, and
+       * eight of the rows differ only in their target. A correctly formed
+       * calendar is sent under the exec host's target: the pair matches a row,
+       * the target matches a different one, and the request must be refused.
+       *
+       * The second assertion is the one that matters. A refusal can also come
+       * from the exec host's parser failing on a calendar text, which would
+       * look the same from here - but then nothing is written either way. What
+       * must never happen is the calendar being created: that is the lookup
+       * having picked the row by name alone, with the permission checks asking
+       * about exec hosts while a calendar is written. It is the direction
+       * qconf_write_from_procedure() guards (ocs_QConfWriteQmaster.cc), and the
+       * only way to see that guard from outside a deliberately broken build. */
+      const char *crossed = "test_cs2823_crossed_calendar";
+      del_calendar(crossed);   /* in case an earlier run was interrupted */
+
+      ocs::QConfWriteParameter parameter;
+      parameter.add_item(nullptr, calendar_text(crossed, WEEK_AFTER));
+      ocs::QConfWriteModelClient model(ocs::gdi::Target::EH_LIST);
+
+      CHECK(14, "a calendar sent under the exec host's target is refused",
+            procedure_refused(model, parameter));
+      CHECK(15, "and it was not created on the calendar list either",
+            get_week_calendar(crossed).empty());
+
+      /* a refused call must leave nothing behind, but an unnoticed success
+       * would otherwise be carried into the next run */
+      del_calendar(crossed);
+   }
+
    /* ---- the upsert ------------------------------------------------------- */
    {
       /* A name that does not exist yet is added, not refused - which is what
@@ -374,13 +413,13 @@ main(int /*argc*/, char * /*argv*/[]) {
       }
       lFreeList(&call_alp);
 
-      CHECK(14, "writing a calendar that does not exist was accepted", ok);
-      CHECK(15, "it was created with the week calendar that was sent",
+      CHECK(16, "writing a calendar that does not exist was accepted", ok);
+      CHECK(17, "it was created with the week calendar that was sent",
             get_week_calendar(new_name) == WEEK_AFTER);
-      CHECK(16, "the created calendar could be removed again", del_calendar(new_name));
+      CHECK(18, "the created calendar could be removed again", del_calendar(new_name));
    }
 
-   CHECK(17, "the test calendar could be removed again", del_calendar(CAL_NAME));
+   CHECK(19, "the test calendar could be removed again", del_calendar(CAL_NAME));
 
    ocs::gdi::ClientBase::shutdown();
 

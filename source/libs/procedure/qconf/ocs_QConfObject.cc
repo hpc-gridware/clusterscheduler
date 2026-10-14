@@ -187,28 +187,131 @@ qconf_us_validate(const lListElem *ep, lList **alpp) {
  * provider, instead of a tuple copied into each of the add, modify, delete and
  * export branches. */
 
+/* ===== the templates of the types that are created from a name (CS-2823) ====
+ *
+ * One wrapper per type, because the constructors disagree about their shape: the
+ * calendar, the checkpoint environment and the parallel environment take the
+ * name and set it themselves, the complex entry also takes an answer list and
+ * may refuse a name, and the role, the user and the project build an unnamed
+ * template that the caller names. All of them live in libs/sgeobj, which the
+ * client and qmaster both link, so the table can carry them - the template used
+ * to be built in the client only because this was assumed to be impossible.
+ *
+ * A name the constructor rejects yields nullptr with the reason in the answer
+ * list, which is the right reaction: a half built template must not reach an
+ * editor.
+ */
+
+/** @brief The template of a calendar
+ * @param answer_list unused, the constructor reports nothing
+ * @param name the name the template carries
+ * @return the template
+ */
+static lListElem *
+qconf_template_CAL([[maybe_unused]] lList **answer_list, const char *name) {
+   return sge_generic_cal(const_cast<char *>(name));
+}
+
+/** @brief The template of a checkpointing environment
+ * @param answer_list unused, the constructor reports nothing
+ * @param name the name the template carries
+ * @return the template
+ */
+static lListElem *
+qconf_template_CK([[maybe_unused]] lList **answer_list, const char *name) {
+   return sge_generic_ckpt(const_cast<char *>(name));
+}
+
+/** @brief The template of a parallel environment
+ * @param answer_list unused, the constructor reports nothing
+ * @param name the name the template carries
+ * @return the template
+ */
+static lListElem *
+qconf_template_PE([[maybe_unused]] lList **answer_list, const char *name) {
+   return pe_create_template(const_cast<char *>(name));
+}
+
+/** @brief The template of a complex entry
+ * @param answer_list receives the reason when the name is not a valid one
+ * @param name the name the template carries
+ * @return the template, or nullptr when the name was refused
+ */
+static lListElem *
+qconf_template_CE(lList **answer_list, const char *name) {
+   return centry_create(answer_list, name);
+}
+
+/** @brief The template of a role
+ * @param answer_list unused, the constructor reports nothing
+ * @param name the name the template carries
+ * @return the template
+ */
+static lListElem *
+qconf_template_RL([[maybe_unused]] lList **answer_list, const char *name) {
+   lListElem *ep = ocs::Role::create_template();
+   if (ep != nullptr) {
+      lSetString(ep, RL_name, name);
+   }
+   return ep;
+}
+
+/** @brief The template of a user
+ * @param answer_list unused, the constructor reports nothing
+ * @param name the name the template carries
+ * @return the template
+ */
+static lListElem *
+qconf_template_UU([[maybe_unused]] lList **answer_list, const char *name) {
+   lListElem *ep = getUserTemplate();
+   if (ep != nullptr) {
+      lSetString(ep, UU_name, name);
+   }
+   return ep;
+}
+
+/** @brief The template of a project
+ * @param answer_list unused, the constructor reports nothing
+ * @param name the name the template carries
+ * @return the template
+ */
+static lListElem *
+qconf_template_PR([[maybe_unused]] lList **answer_list, const char *name) {
+   lListElem *ep = getPrjTemplate();
+   if (ep != nullptr) {
+      lSetString(ep, PR_name, name);
+   }
+   return ep;
+}
+
 /** @brief One row per object type, indexed by QConfObj.
  *
  * Kept in the order of the enum so that qconf_desc() is a plain index. */
 static const qconf_object_desc qconf_object_table[] = {
    /* CAL  */ { ocs::gdi::Target::CAL_LIST,  CAL_Type,  CAL_name,  qconf_fields_CAL,  &qconf_sfi,                 nullptr,      nullptr,             nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr,
-              { .list_name = "calendar", .not_found_msg = MSG_CALENDAR_XISNOTACALENDAR_S } },
+              { .list_name = "calendar", .not_found_msg = MSG_CALENDAR_XISNOTACALENDAR_S,
+                .create_template = qconf_template_CAL } },
    /* CK   */ { ocs::gdi::Target::CK_LIST,   CK_Type,   CK_name,   qconf_fields_CK,   &qconf_sfi,                 nullptr,      ckpt_validate,       nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr,
-              { .list_name = "ckpt interface definition", .not_found_msg = MSG_CKPT_XISNOTCHKPINTERFACEDEF_S } },
+              { .list_name = "ckpt interface definition", .not_found_msg = MSG_CKPT_XISNOTCHKPINTERFACEDEF_S,
+                .create_template = qconf_template_CK } },
    /* CE   */ { ocs::gdi::Target::CE_LIST,   CE_Type,   CE_name,   qconf_fields_CE,   &qconf_ce_sfi,              nullptr,      nullptr,             nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr,
-              { .list_name = "complex entry", .not_found_msg = MSG_CENTRY_DOESNOTEXIST_S, .list_sfi = &qconf_ce_list_sfi } },
+              { .list_name = "complex entry", .not_found_msg = MSG_CENTRY_DOESNOTEXIST_S,
+                .create_template = qconf_template_CE, .list_sfi = &qconf_ce_list_sfi } },
    /* EH   */ { ocs::gdi::Target::EH_LIST,   EH_Type,   EH_name,   qconf_fields_EH,   &qconf_sfi,                 "exechost",   nullptr,             qconf_eh_resolve,  ocs::gdi::SubCommand::NONE,    false, true,  false, SGE_TEMPLATE_NAME,  SGE_GLOBAL_NAME,
               { .fields = qconf_show_fields_EH, .list_name = "execution host", .not_found_msg = MSG_EXEC_XISNOTANEXECUTIONHOST_S, .prepare = qconf_show_prepare_EH } },
    /* HGRP */ { ocs::gdi::Target::HGRP_LIST, HGRP_Type, HGRP_name, qconf_fields_HGRP, &qconf_sfi,                 nullptr,      nullptr,             nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr,
               { .list_name = "host group list" } },
    /* PE   */ { ocs::gdi::Target::PE_LIST,   PE_Type,   PE_name,   qconf_fields_PE,   &qconf_sfi,                 nullptr,      qconf_pe_validate,   nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr,
-              { .list_name = "parallel environment", .not_found_msg = MSG_PARALLEL_XNOTAPARALLELEVIRONMENT_S } },
+              { .list_name = "parallel environment", .not_found_msg = MSG_PARALLEL_XNOTAPARALLELEVIRONMENT_S,
+                .create_template = qconf_template_PE } },
    /* PR   */ { ocs::gdi::Target::PR_LIST,   PR_Type,   PR_name,   qconf_fields_PR,   &qconf_sfi,                 nullptr,      nullptr,             nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr,
-              { .list_name = "project list", .not_found_msg = MSG_PROJECT_XISNOKNWOWNPROJECT_S } },
+              { .list_name = "project list", .not_found_msg = MSG_PROJECT_XISNOKNWOWNPROJECT_S,
+                .create_template = qconf_template_PR } },
    /* CQ   */ { ocs::gdi::Target::CQ_LIST,   CQ_Type,   CQ_name,   qconf_fields_CQ,   &qconf_sfi,                 nullptr,      qconf_cq_verify,     nullptr,           ocs::gdi::SubCommand::SET_ALL, false, false, false, nullptr,            nullptr,
               { .list_name = "cqueue list" } },
    /* RL   */ { ocs::gdi::Target::RL_LIST,   RL_Type,   RL_name,   qconf_fields_RL,   &qconf_sfi,                 nullptr,      qconf_role_validate, nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr,
-              { .list_name = "role", .not_found_msg = MSG_ROLE_DOESNOTEXIST_S } },
+              { .list_name = "role", .not_found_msg = MSG_ROLE_DOESNOTEXIST_S,
+                .create_template = qconf_template_RL } },
    /* RQS  */ { ocs::gdi::Target::RQS_LIST,  RQS_Type,  RQS_name,  qconf_fields_RQS,  &qconf_rqs_sfi,             nullptr,      nullptr,             nullptr,           ocs::gdi::SubCommand::NONE,    true,  true,  false, nullptr,            nullptr,
               /* -srqs writes the whole list in one go: qconf_rqs_sfi wraps every
                * record in braces, which a loop over single objects would not do */
@@ -221,7 +324,8 @@ static const qconf_object_desc qconf_object_table[] = {
                * list, as it always did (CS-2819) */
               { .list_name = "userset list", .not_found_noun = "access list" } },
    /* UU   */ { ocs::gdi::Target::UU_LIST,   UU_Type,   UU_name,   qconf_fields_UU,   &qconf_sfi,                 nullptr,      nullptr,             nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr,
-              { .list_name = "user list", .not_found_msg = MSG_USER_XISNOKNOWNUSER_S } },
+              { .list_name = "user list", .not_found_msg = MSG_USER_XISNOKNOWNUSER_S,
+                .create_template = qconf_template_UU } },
    /* STN  */ { ocs::gdi::Target::STN_LIST,  STN_Type,  NoName,    qconf_fields_STN,  &qconf_name_value_list_sfi, "sharetree",  nullptr,             nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  true,  nullptr,            nullptr,
               { .empty_msg = MSG_OBJ_NOSTREEELEM } },
    /* SC: the hand written -ssconf had no empty check at all - it handed a null

@@ -43,6 +43,26 @@
  * @param list the objects, in the order they are to appear
  * @param desc the descriptor of their type
  */
+/**
+ * @brief Pick the field list a read renders with
+ *
+ * A type shows what it shows and writes what it writes, and for one type those
+ * differ: `-se` displays the runtime `load_values` and `processors`, which no
+ * write accepts. A read whose text is going to an editor therefore renders the
+ * write list, so that what comes back parses - see QConfParameter::get_for_edit().
+ *
+ * @param desc     the row of the object type
+ * @param for_edit whether the text will be written back
+ * @return the provider of the field list to render with
+ */
+static qconf_build_fields_fn
+qconf_view_fields(const qconf_object_desc &desc, const bool for_edit) {
+   if (desc.read.fields != nullptr && !for_edit) {
+      return desc.read.fields;
+   }
+   return desc.build_fields;
+}
+
 void
 ocs::QConfViewBase::show_object_list(std::ostream &os, const lList *list,
                                      const qconf_object_desc &desc) {
@@ -51,8 +71,7 @@ ocs::QConfViewBase::show_object_list(std::ostream &os, const lList *list,
    const spool_flatfile_format format =
       (output_format_ == ProcedureParameter::OutputFormat::JSON) ? SP_FORM_JSON : SP_FORM_ASCII;
 
-   const qconf_build_fields_fn provider =
-      (desc.read.fields != nullptr) ? desc.read.fields : desc.build_fields;
+   const qconf_build_fields_fn provider = qconf_view_fields(desc, for_edit_);
    bool owned = false;
    spooling_field *fields = provider(format, &owned);
 
@@ -117,8 +136,7 @@ ocs::QConfViewBase::show_object(std::ostream &os, const lListElem *ep,
       os << "#" << ((name != nullptr) ? name : "") << ":\n";
    }
 
-   const qconf_build_fields_fn provider =
-      (desc.read.fields != nullptr) ? desc.read.fields : desc.build_fields;
+   const qconf_build_fields_fn provider = qconf_view_fields(desc, for_edit_);
    bool owned = false;
    spooling_field *fields = provider(format, &owned);
 

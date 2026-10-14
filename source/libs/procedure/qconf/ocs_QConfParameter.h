@@ -171,6 +171,7 @@ namespace ocs {
       static constexpr uint32_t FLAG_FORCE = 0x4u;     ///< `-f`
       static constexpr uint32_t FLAG_STRICT = 0x8u;    ///< `-strict`
       static constexpr uint32_t FLAG_SINGLE_LINE = 0x10u;   ///< `SGE_SINGLE_LINE` in the client's environment
+      static constexpr uint32_t FLAG_FOR_EDIT = 0x20u;      ///< the read feeds an editor, see get_for_edit()
       /** @} */
 #pragma endregion
 
@@ -182,6 +183,7 @@ namespace ocs {
       bool force_ = false;      ///< `-f`: overwrite, and skip the bulk-delete prompt
       bool strict_ = false;     ///< `-strict`: apply nothing unless every file is valid
       bool single_line_ = false;   ///< `SGE_SINGLE_LINE`: do not break long lines
+      bool for_edit_ = false;   ///< the rendered text is going to an editor and comes back
       ValueFormat value_format_ = ValueFormat::COMPACT;   ///< `-fmtval`
       qconf_op operation_;      ///< the one operation this call carries
 
@@ -216,6 +218,28 @@ namespace ocs {
        * @return true when long lines must not be wrapped
        */
       [[nodiscard]] bool get_single_line() const { return single_line_; }
+
+      /** @brief Whether this read renders a text that will be written back
+       *
+       * A read that feeds an editor has to render exactly the attributes the
+       * write path can parse, which is not the same set the type shows: `-se`
+       * adds the runtime `load_values` and `processors` to what it displays,
+       * and no write accepts them. With the show list the text would come back
+       * carrying two attributes qmaster then refuses, so `-me` would fail on
+       * every exec host. The flag picks the type's write field list instead,
+       * which is the same list `-S<obj>` exports with and for the same reason.
+       *
+       * It is set by the interactive modify (CS-2823) and by nothing else;
+       * every other read renders what the type shows.
+       *
+       * @return true when the editable form is wanted
+       */
+      [[nodiscard]] bool get_for_edit() const { return for_edit_; }
+
+      /** @brief Ask for the editable form of the object
+       * @param for_edit true when the text is going to an editor
+       */
+      void set_for_edit(bool for_edit) { for_edit_ = for_edit; }
 
       /** @brief How TIME and MEM values are rendered in JSON
        * @return compact strings or plain numbers

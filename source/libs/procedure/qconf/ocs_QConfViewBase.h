@@ -52,6 +52,7 @@ namespace ocs {
        */
       ProcedureParameter::OutputFormat output_format_;
       spool_flatfile_line_breaks line_breaks_;   ///< the client's SGE_SINGLE_LINE, see QConfParameter::get_single_line()
+      bool for_edit_;   ///< render the editable form, see QConfParameter::get_for_edit()
 
    public:
       /** @brief Build a view for one procedure call
@@ -59,7 +60,8 @@ namespace ocs {
        */
       explicit QConfViewBase(const QConfParameter &parameter)
          : ProcedureView(parameter), output_format_(parameter.get_output_format()),
-           line_breaks_(parameter.get_single_line() ? SP_LINE_BREAKS_OFF : SP_LINE_BREAKS_ON) {}
+           line_breaks_(parameter.get_single_line() ? SP_LINE_BREAKS_OFF : SP_LINE_BREAKS_ON),
+           for_edit_(parameter.get_for_edit()) {}
       ~QConfViewBase() override = default;
 
       /** @brief Write the names of the fetched objects
