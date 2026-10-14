@@ -265,14 +265,25 @@ sge_gdi_add_job(lListElem **jep, lList **alpp, lList **lpp,
       DRETURN(ret);
    }
 
+   // The messages of the spooling layer go to the messages file only, the client gets a message
+   // saying that the job could not be written. They are about the spooling database, not about
+   // the job, and may contain its connection parameters.
+   lList *spool_answer_list = nullptr;
+
    // open a spooling transaction
-   spool_transaction(alpp, spool_get_default_context(), STC_begin);
+   if (!spool_transaction(&spool_answer_list, spool_get_default_context(), STC_begin)) {
+      answer_list_output(&spool_answer_list);
+      ERROR(MSG_JOB_NOWRITE_U, lGetUlong(*jep, JB_job_number));
+      answer_list_add(alpp, SGE_EVENT, STATUS_EDISK, ANSWER_QUALITY_ERROR);
+      DRETURN(STATUS_EDISK);
+   }
 
    // write script to file separately,  we do not want to hold it in memory
    if (lGetString(*jep, JB_script_file) && !JOB_TYPE_IS_BINARY(lGetUlong(*jep, JB_type))) {
-      if (!spool_write_script(alpp, lGetUlong(*jep, JB_job_number), *jep)) {
-         spool_transaction(alpp, spool_get_default_context(), STC_rollback);
-         ERROR(MSG_JOB_NOWRITE_US, lGetUlong(*jep, JB_job_number), strerror(errno));
+      if (!spool_write_script(&spool_answer_list, lGetUlong(*jep, JB_job_number), *jep)) {
+         spool_transaction(&spool_answer_list, spool_get_default_context(), STC_rollback);
+         answer_list_output(&spool_answer_list);
+         ERROR(MSG_JOB_NOWRITE_U, lGetUlong(*jep, JB_job_number));
          answer_list_add(alpp, SGE_EVENT, STATUS_EDISK, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EDISK);
       }
@@ -293,7 +304,8 @@ sge_gdi_add_job(lListElem **jep, lList **alpp, lList **lpp,
    if (!sge_event_spool(alpp, 0, sgeE_JOB_ADD,
                         lGetUlong(*jep, JB_job_number), 0, nullptr, nullptr, nullptr,
                         *jep, nullptr, nullptr, true, true, packet->gdi_session)) {
-      spool_transaction(alpp, spool_get_default_context(), STC_rollback);
+      spool_transaction(&spool_answer_list, spool_get_default_context(), STC_rollback);
+      answer_list_output(&spool_answer_list);
       ERROR(MSG_JOB_NOWRITE_U, lGetUlong(*jep, JB_job_number));
       answer_list_add(alpp, SGE_EVENT, STATUS_EDISK, ANSWER_QUALITY_ERROR);
       if ((lGetString(*jep, JB_exec_file) != nullptr)) {
@@ -304,7 +316,11 @@ sge_gdi_add_job(lListElem **jep, lList **alpp, lList **lpp,
    }
 
    // close the spooling transaction
-   spool_transaction(alpp, spool_get_default_context(), STC_commit);
+   bool committed = spool_transaction(&spool_answer_list, spool_get_default_context(), STC_commit);
+   answer_list_output(&spool_answer_list);
+   if (!committed) {
+      ERROR(SFNMAX, MSG_PERSISTENCE_CLOSINGTRANSACTION_FAILED);
+   }
 
    if (!job_is_array(*jep)) {
       DPRINTF("Added Job " sge_u32"\n", lGetUlong(*jep, JB_job_number));
@@ -1327,16 +1343,25 @@ sge_gdi_mod_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem 
       }
 
       if (!(trigger & VERIFY_EVENT)) {
-         bool dbret;
-         lList *answer_list = nullptr;
-
          // @todo CS-1156: Why not also for PRIO_EVENT, RECHAIN_JID_HOLD and RECHAIN_JA_AD_HOLD
          if (trigger & MOD_EVENT) {
             lSetUlong(new_job, JB_version, lGetUlong(new_job, JB_version) + 1);
          }
 
          // open a spooling transaction. A event transaction is open automatically within worker threads
-         spool_transaction(alpp, spool_get_default_context(), STC_begin);
+         // The messages of the spooling layer go to the messages file only, the client gets a
+         // message saying that the modification could not be written.
+         lList *answer_list = nullptr;
+         if (!spool_transaction(&answer_list, spool_get_default_context(), STC_begin)) {
+            answer_list_output(&answer_list);
+            ERROR(MSG_JOB_NOALTERNOWRITE_U, jobid);
+            answer_list_add(alpp, SGE_EVENT, STATUS_EDISK, ANSWER_QUALITY_ERROR);
+            lFreeList(&tmp_alp);
+            lFreeElem(&new_job);
+            lFreeWhere(&job_where);
+            sge_free(&job_mod_name);
+            DRETURN(STATUS_EDISK);
+         }
 
          // if the job changed then check if also the category changed and trigger required events
          if ((trigger & (PRIO_EVENT | MOD_EVENT)) > 0) {
@@ -1371,15 +1396,15 @@ sge_gdi_mod_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem 
 
          /* all job modifications to be saved on disk must be made in new_job */
          dstring buffer = DSTRING_INIT;
-         dbret = spool_write_object(&answer_list, spool_get_default_context(), new_job,
-                                    job_get_key(jobid, 0, nullptr, &buffer), SGE_TYPE_JOB, true);
+         bool dbret = spool_write_object(&answer_list, spool_get_default_context(), new_job,
+                                         job_get_key(jobid, 0, nullptr, &buffer), SGE_TYPE_JOB, true);
          answer_list_output(&answer_list);
          if (!dbret) {
+            // roll back the spooling transaction
+            spool_transaction(&answer_list, spool_get_default_context(), STC_rollback);
+            answer_list_output(&answer_list);
+
             ERROR(MSG_JOB_NOALTERNOWRITE_U, jobid);
-
-            // create a spool transaction. Evenet transaction is opened automatically within worker threads.
-            spool_transaction(alpp, spool_get_default_context(), STC_rollback);
-
             answer_list_add(alpp, SGE_EVENT, STATUS_EDISK, ANSWER_QUALITY_ERROR);
             sge_dstring_free(&buffer);
             lFreeList(&tmp_alp);
@@ -1457,7 +1482,11 @@ sge_gdi_mod_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem 
          }
 
          // close the spooling transaction
-         spool_transaction(alpp, spool_get_default_context(), STC_commit);
+         bool committed = spool_transaction(&answer_list, spool_get_default_context(), STC_commit);
+         answer_list_output(&answer_list);
+         if (!committed) {
+            ERROR(SFNMAX, MSG_PERSISTENCE_CLOSINGTRANSACTION_FAILED);
+         }
 
          INFO(MSG_SGETEXT_MODIFIEDINLIST_SSUS, packet->user, packet->host, jobid, MSG_JOB_JOB);
       }

@@ -280,13 +280,13 @@ userprj_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, l
 
 int
 userprj_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *upe, gdi_object_t *object) {
-   lList *answer_list = nullptr;
-   int user_flag = (object->target == ocs::gdi::Target::SGE_UU_LIST) ? 1 : 0;
-
    DENTER(TOP_LAYER);
 
+   int user_flag = (object->target == ocs::gdi::Target::SGE_UU_LIST) ? 1 : 0;
+
    /* write user or project to file */
-   bool dbret = spool_write_object(alpp, spool_get_default_context(), upe,
+   lList *answer_list = nullptr;
+   bool dbret = spool_write_object(&answer_list, spool_get_default_context(), upe,
                                    lGetString(upe, object->key_nm), user_flag ? SGE_TYPE_USER : SGE_TYPE_PROJECT, true);
    answer_list_output(&answer_list);
 
