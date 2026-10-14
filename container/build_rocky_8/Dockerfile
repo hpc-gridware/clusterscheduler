@@ -36,6 +36,9 @@ RUN dnf install -y epel-release && dnf clean all
 # for building cmake
 RUN dnf install -y openssl-devel && dnf clean all
 
+# for building with TLS encryption (installs to /usr/include/openssl3, next to openssl-devel)
+RUN dnf install -y openssl3-devel && dnf clean all
+
 # for building binaries
 RUN dnf install -y git autoconf automake gcc-toolset-13 systemd-devel patchelf && dnf clean all
 RUN dnf install -y libtirpc-devel  && dnf clean all

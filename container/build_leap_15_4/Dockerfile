@@ -43,7 +43,8 @@ RUN zypper --non-interactive install gnuplot xterm doxygen graphviz && zypper cl
 RUN zypper --non-interactive install pandoc cmake openssl && zypper clean --all
 
 # Install each problematic package individually and clean after each
-RUN zypper --non-interactive install libopenssl-devel && zypper clean --all
+# for building with TLS encryption - libopenssl-devel is OpenSSL 1.1 on Leap 15.4
+RUN zypper --non-interactive install libopenssl-3-devel && zypper clean --all
 # Skip libdb-5_3-devel for now
 # RUN zypper --non-interactive install libdb-5_3-devel && zypper clean --all
 RUN zypper --non-interactive install jemalloc-devel jemalloc-devel-static && zypper clean --all
