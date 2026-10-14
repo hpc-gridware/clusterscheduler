@@ -25,9 +25,11 @@ Relying on os packages for the 3rdparty tools requires the following additional 
 * BDB
 * hwloc 
 
-When building with support for TLS encryption, OpenSSL version 3.x is required.
-On build hosts the development package is required, on target hosts the runtime package is required.
-The cmake build checks for the OpenSSL header files having the correct version. If they are found, building with OpenSSL is enabled.
+Support for TLS encryption is built by default and requires OpenSSL version 3.x.
+On build hosts the development package is required, on target hosts the runtime package is required when TLS
+encryption is used.
+The cmake build checks for the OpenSSL header files having the correct version and fails if they are missing.
+To build without support for TLS encryption, pass `-DWITH_OPENSSL=OFF` to cmake.
 
 Documentation is written in Markdown. To be able to generate product man pages and PDF manuals, you need:
 
@@ -239,6 +241,10 @@ pkg install pkg:/image/gnuplot
 ```
 pkg install pkg:/developer/java/jdk-8
 ```
+Current Solaris 11.4 SRUs deliver OpenSSL 3 as the default. On older SRUs, install `pkg:/library/security/openssl-3`
+and set the `openssl` mediator to version 3 (`pkg set-mediator -V 3 openssl`), or build without support for TLS
+encryption (`-DWITH_OPENSSL=OFF`).
+
 There is no Maven package in the Solaris 11 package manager,
 so you need to install it [manually](https://maven.apache.org/install.html).
 
@@ -297,7 +303,7 @@ apt-get install -y pandoc texlive*
 
 #### for building support of TLS encryption
 
-OpenSSL version 3.x is available in Ubuntu 24.04 and later. It is *not* available from OS packages in earlier versions.
+OpenSSL version 3.x is available in Ubuntu 22.04 and later. It is *not* available from OS packages in earlier versions.
 
 ```
 apt-get install -y libssl-dev
