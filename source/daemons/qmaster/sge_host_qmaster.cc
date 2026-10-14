@@ -668,36 +668,32 @@ int
 host_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *ep, gdi_object_t *object) {
    DENTER(TOP_LAYER);
 
-   int pos;
-   int dataType;
    const char *key;
-   sge_object_type host_type = SGE_TYPE_EXECHOST;
-
-   int ret = 0;
-   lList *answer_list = nullptr;
-
-   pos = lGetPosViaElem(ep, object->key_nm, SGE_NO_ABORT);
-   dataType = lGetPosType(lGetElemDescr(ep), pos);
-   if (dataType == lHostT) {
+   int pos = lGetPosViaElem(ep, object->key_nm, SGE_NO_ABORT);
+   if (lGetPosType(lGetElemDescr(ep), pos) == lHostT) {
       key = lGetHost(ep, object->key_nm);
    } else {
       key = lGetString(ep, object->key_nm);
    }
 
+   sge_object_type host_type = SGE_TYPE_EXECHOST;
    switch (object->key_nm) {
       case EH_name:
          host_type = SGE_TYPE_EXECHOST;
          break;
    }
 
-   if (!spool_write_object(alpp, spool_get_default_context(), ep, key, host_type)) {
+   int ret = 0;
+   lList *answer_list = nullptr;
+   bool dbret = spool_write_object(&answer_list, spool_get_default_context(), ep, key, host_type);
+   answer_list_output(&answer_list);
+   if (!dbret) {
       answer_list_add_sprintf(alpp, STATUS_EUNKNOWN,
                               ANSWER_QUALITY_ERROR,
                               MSG_PERSISTENCE_WRITE_FAILED_S,
                               key);
       ret = 1;
    }
-   answer_list_output(&answer_list);
 
    DRETURN(ret);
 }
