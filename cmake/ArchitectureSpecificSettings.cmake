@@ -109,7 +109,16 @@ function(architecture_specific_settings)
          message(STATUS "Doing a release build")
          # cmake already adds -O3 and sets define NDEBUG add_compile_options(-O3)
          if (ENABLE_LTO)
-            add_link_options(-flto)
+            # CS-2894: link time optimization needs the flag on BOTH sides. At
+            # compile time it makes gcc write its intermediate representation
+            # into the object files; at link time that is what reads it back.
+            # With the link option alone the objects carry no bytecode, the LTO
+            # phase finds nothing to do and the link silently stays an ordinary
+            # one - which is what this build did from 2023-12-28 until now.
+            # "=auto" lets the link phase use as many jobs as the machine has
+            # cores; plain -flto optimises the whole program in a single process.
+            add_compile_options(-flto)
+            add_link_options(-flto=auto)
          endif ()
       endif ()
       add_compile_definitions(LINUX _GNU_SOURCE GETHOSTBYNAME_R6 GETHOSTBYADDR_R8
