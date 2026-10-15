@@ -1304,7 +1304,7 @@ ar_do_reservation(lListElem *ar, bool incslots, uint64_t gdi_session) {
    if (granted_pe != nullptr) {
       // The booking of slots into the PE's resource diagram needs to be done on the actual PE from the master pe list.
       const lList *master_pe_list = *ocs::DataStore::get_master_list(SGE_TYPE_PE);
-      const lListElem *master_pe = pe_list_locate(master_pe_list, granted_pe);
+      lListElem *master_pe = pe_list_locate(master_pe_list, granted_pe);
       if (master_pe == nullptr) {
          CRITICAL(MSG_OBJ_UNABLE2FINDPE_S, granted_pe);
 #if defined(ENABLE_DEBUG_CHECKS)
@@ -1314,7 +1314,8 @@ ar_do_reservation(lListElem *ar, bool incslots, uint64_t gdi_session) {
          utilization_add(lFirstRW(lGetList(master_pe, PE_resource_utilization)), start_time,
                          duration, pe_slots, 0, 0, PE_TAG, granted_pe,
                          SCHEDULING_RECORD_ENTRY_TYPE_RESERVING, false, false, nullptr, nullptr);
-         sge_add_event(0, sgeE_PE_MOD, 0, 0, granted_pe, nullptr, nullptr, pe, gdi_session);
+         // the event has to carry the master PE, which holds the booking, not the AR's copy
+         sge_add_event(0, sgeE_PE_MOD, 0, 0, granted_pe, nullptr, nullptr, master_pe, gdi_session);
       }
    }
 
