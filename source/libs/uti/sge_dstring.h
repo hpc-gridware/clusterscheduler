@@ -62,12 +62,17 @@
  * Declares both the buffer and the #dstring named @p n wrapping it, so no
  * allocation happens unless the content outgrows the buffer.
  *
+ * The size handed to the #dstring is one less than the buffer, exactly as
+ * #sge_dstring_init does it: for a static buffer #dstring::size counts the
+ * bytes usable for content, and the byte behind them belongs to the
+ * terminating NUL. The append functions rely on that (CS-2895).
+ *
  * @code
  * DSTRING_STATIC(error_msg, MAX_STRING_SIZE);
  * @endcode
  */
 #define DSTRING_STATIC(n, s) char _buffer_for_##n[s] = "\0"; \
-                                    dstring n = {_buffer_for_##n, 0, s, true}
+                                    dstring n = {_buffer_for_##n, 0, (s) - 1, true}
 
 /** @brief A string buffer that grows as needed
  *
@@ -76,13 +81,14 @@
  * or #sge_dstring_init_dynamic to preallocate. Release it with
  * #sge_dstring_free.
  *
- * A static buffer switches to an allocated one as soon as the content no longer
- * fits, so the caller never has to check for overflow.
+ * A static buffer does not grow: content that no longer fits is **truncated**,
+ * silently, so nothing is ever written past the caller's buffer. Only a dynamic
+ * buffer is reallocated. #sge_dstring_remaining tells how much room is left.
  */
 typedef struct {
    char *s;         ///< the buffer: allocated, or caller supplied when #is_static
    size_t length;   ///< length of the string, excluding the terminating NUL
-   size_t size;     ///< capacity of #s in bytes
+   size_t size;     ///< while #is_static, the bytes usable for content - the terminating NUL goes behind them; for a dynamic buffer, the allocated size including that NUL
    bool is_static;  ///< true while #s is the caller's buffer and must not be freed
 } dstring;
 

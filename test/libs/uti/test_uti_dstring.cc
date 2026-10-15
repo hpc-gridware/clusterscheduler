@@ -439,6 +439,52 @@ static void test_static_full_capacity(int *id) {
          sge_dstring_get_string(&ds)[STATIC_SIZE - 1] == '\0'); (*id)++;
 }
 
+/** @brief CS-2895: a DSTRING_STATIC buffer must behave like sge_dstring_init()
+ *
+ * The macro used to hand the whole buffer size to the dstring while
+ * sge_dstring_init() subtracts the byte for the terminating NUL, so content
+ * that filled the buffer exactly had its NUL written one byte behind it. The
+ * difference is observable through the API: with the macro's old size the
+ * string grows to the full buffer length instead of one less, and
+ * sge_dstring_remaining() is one too large.
+ *
+ * @param id running test number, advanced per check
+ */
+static void test_static_dstring_macro(int *id) {
+   printf("\n--- DSTRING_STATIC (buffer size %d) ---\n", STATIC_SIZE);
+
+   DSTRING_STATIC(ds, STATIC_SIZE);
+
+   // the empty buffer has room for STATIC_SIZE-1 characters, not STATIC_SIZE
+   CHECK(*id, "DSTRING_STATIC: remaining of the empty buffer is STATIC_SIZE-1",
+         sge_dstring_remaining(&ds) == STATIC_SIZE - 1); (*id)++;
+
+   // append: an overlong string truncates to the capacity, not to the buffer
+   sge_dstring_append(&ds, "this string is definitely too long for the buffer");
+   CHECK(*id, "DSTRING_STATIC: append truncates to STATIC_SIZE-1 chars",
+         sge_dstring_strlen(&ds) == STATIC_SIZE - 1); (*id)++;
+   CHECK(*id, "DSTRING_STATIC: the NUL sits on the last byte of the buffer",
+         sge_dstring_get_string(&ds)[STATIC_SIZE - 1] == '\0'); (*id)++;
+
+   // nappend: same cap, and n larger than the source does not stretch length
+   sge_dstring_clear(&ds);
+   sge_dstring_nappend(&ds, "0123456789abcdefghij", STATIC_SIZE + 5);
+   CHECK(*id, "DSTRING_STATIC: nappend truncates to STATIC_SIZE-1 chars",
+         sge_dstring_strlen(&ds) == STATIC_SIZE - 1); (*id)++;
+   sge_dstring_clear(&ds);
+   sge_dstring_nappend(&ds, "ab", 10);
+   CHECK(*id, "nappend(\"ab\", 10): length follows the source, not n",
+         sge_dstring_strlen(&ds) == 2); (*id)++;
+
+   // append_char: one character per call until the capacity is reached
+   sge_dstring_clear(&ds);
+   for (int i = 0; i < STATIC_SIZE + 3; i++) {
+      sge_dstring_append_char(&ds, 'x');
+   }
+   CHECK(*id, "DSTRING_STATIC: append_char stops at STATIC_SIZE-1 chars",
+         sge_dstring_strlen(&ds) == STATIC_SIZE - 1); (*id)++;
+}
+
 static void test_from_argv(int *id) {
    printf("\n--- sge_dstring_from_argv ---\n");
 
@@ -529,6 +575,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
    test_split_no_delimiter(&id);
    test_dynamic_growth(&id);
    test_static_full_capacity(&id);
+   test_static_dstring_macro(&id);
    test_from_argv(&id);
 
    printf("\n%s - %d failure(s)\n", s_fail == 0 ? "PASS" : "FAIL", s_fail);

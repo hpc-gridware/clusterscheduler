@@ -207,12 +207,18 @@ const char *sge_dstring_append(dstring *sb, const char *a) {
    len = strlen(a);
 
    if (sb->is_static) {
-      // @todo: what about the 0 byte?
-      if ((sb->length + len) > sb->size)
+      if ((sb->length + len) > sb->size) {
          len = sb->size - sb->length;
+      }
 
-      strncat(sb->s + sb->length, a, len);
+      // memcpy() plus an explicit NUL rather than strncat(): the bound of
+      // strncat() has to describe the room left in the destination, while the
+      // one computed here comes from the source - which is what gcc warns
+      // about under -Wstringop-overflow. strncat() would also scan the
+      // destination for its end although sb->length already knows it.
+      memcpy(sb->s + sb->length, a, len);
       sb->length += len;
+      sb->s[sb->length] = '\0';
    } else {
       size_t required;
 
@@ -235,15 +241,19 @@ const char *sge_dstring_append(dstring *sb, const char *a) {
    DRETURN(sb->s);
 }
 
-/**
-* @brief 
-*
-* @param sb
-* @param a
-* @param n
-*
-* @return 
-*/
+/** @brief Append at most @p n characters of @p a to @p sb
+ *
+ * Like #sge_dstring_append, but it stops after @p n characters of the source.
+ * A static buffer truncates what no longer fits, a dynamic one grows.
+ *
+ * @param sb dynamic string, appended to in place
+ * @param a string to append from; @p n characters at most
+ * @param n maximum number of characters to take from @p a
+ *
+ * @return the resulting string, or nullptr when @p sb or @p a is nullptr
+ *
+ * @note MT-NOTE: sge_dstring_nappend() is MT safe
+ */
 const char *sge_dstring_nappend(dstring *sb, const char *a, size_t n) {
    DENTER(DSTRING_LAYER);
 
@@ -251,12 +261,23 @@ const char *sge_dstring_nappend(dstring *sb, const char *a, size_t n) {
       DRETURN(0);
    }
 
-   if (sb->is_static) {
-      if ((sb->length + n) > sb->size)
-         n = sb->size - sb->length;
+   // How many characters there really are: strncat() stopped at a NUL inside
+   // the source, memcpy() does not. Taking the length once also fixes what the
+   // old code did when @p a was shorter than @p n - it copied up to the NUL but
+   // advanced sb->length by the full n (CS-2895).
+   size_t len = strnlen(a, n);
 
-      strncat(sb->s + sb->length, a, n);
-      sb->length += n;
+   if (sb->is_static) {
+      if ((sb->length + len) > sb->size) {
+         len = sb->size - sb->length;
+      }
+
+      // see sge_dstring_append(): memcpy() plus an explicit NUL, because the
+      // bound is the room left in the destination and strncat() must not be
+      // given one derived from the source
+      memcpy(sb->s + sb->length, a, len);
+      sb->length += len;
+      sb->s[sb->length] = '\0';
    } else {
       size_t required;
 
@@ -265,14 +286,15 @@ const char *sge_dstring_nappend(dstring *sb, const char *a, size_t n) {
          DRETURN(sb->s);
       }
 
-      required = n + sb->length + 1;
+      required = len + sb->length + 1;
 
       if (required > sb->size) {
          sge_dstring_allocate(sb, required - sb->size);
       }
 
-      strncat(sb->s + sb->length, a, n);
-      sb->length += n;
+      memcpy(sb->s + sb->length, a, len);
+      sb->length += len;
+      sb->s[sb->length] = '\0';
    }
 
    DRETURN(sb->s);
@@ -299,7 +321,8 @@ const char *sge_dstring_append_char(dstring *sb, const char a) {
    }
 
    if (sb->is_static) {
-      // @todo: what about the 0 byte?
+      // sb->size counts the bytes usable for content, so writing the NUL at
+      // sb->size is inside the buffer - see dstring::size (CS-2895)
       if (sb->length < sb->size) {
          sb->s[sb->length++] = a;
          sb->s[sb->length] = '\0';
