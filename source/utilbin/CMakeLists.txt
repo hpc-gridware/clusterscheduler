@@ -89,7 +89,7 @@ target_include_directories(now PRIVATE ${SGE_INCLUDES})
 
 # qping
 add_executable(qping qping.cc)
-target_include_directories(qping PRIVATE $SGE_INCLUDES)
+target_include_directories(qping PRIVATE ${SGE_INCLUDES})
 target_link_libraries(
       qping
       PRIVATE gdi

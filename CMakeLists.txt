@@ -193,13 +193,23 @@ if (PROJECT_FEATURES MATCHES "gcs-extensions")
    endif ()
    message(STATUS "Extension sources: ${GCS_EXTENSION_DIR}")
 
+   # CS-2897: only the extension directories that exist are handed to the
+   # compiler. An extension repository carries just the subdirectories it has
+   # sources in, and git cannot store an empty directory, so three of the six
+   # below were missing and were passed to all 189 targets anyway - 567 -I
+   # entries pointing nowhere, which gcc accepts silently. A directory that
+   # appears later is picked up by the next configure run, which a new source
+   # file needs in any case. This is also what makes -Wmissing-include-dirs
+   # usable; with the dead entries in place it would stop the build.
+   set(GCS_EXTENSION_INCLUDES "")
+   foreach (dir common clients/common daemons/common daemons/execd daemons/qmaster libs)
+      if (IS_DIRECTORY "${GCS_EXTENSION_DIR}/source/${dir}")
+         list(APPEND GCS_EXTENSION_INCLUDES "${GCS_EXTENSION_DIR}/source/${dir}")
+      endif ()
+   endforeach ()
+
    set(SGE_INCLUDES
-         "${GCS_EXTENSION_DIR}/source/common"
-         "${GCS_EXTENSION_DIR}/source/clients/common"
-         "${GCS_EXTENSION_DIR}/source/daemons/common"
-         "${GCS_EXTENSION_DIR}/source/daemons/execd"
-         "${GCS_EXTENSION_DIR}/source/daemons/qmaster"
-         "${GCS_EXTENSION_DIR}/source/libs"
+         ${GCS_EXTENSION_INCLUDES}
          ${PROJECT_SOURCE_DIR}/source/common
          ${PROJECT_SOURCE_DIR}/source/clients/common
          ${PROJECT_SOURCE_DIR}/source/daemons/common

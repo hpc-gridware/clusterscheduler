@@ -96,7 +96,13 @@ function(architecture_specific_settings)
       # tool chain file (CMAKE_<LANG>_FLAGS_INIT) alone (CS-2657). Appended to the cached
       # CMAKE_<LANG>_FLAGS instead, every cmake run added them once more, the flags of every
       # target changed, and every run rebuilt everything.
-      add_compile_options(-Wall -Werror -pedantic)
+      #
+      # CS-2897: -Wmissing-include-dirs is not part of -Wall. Without it a -I
+      # pointing at a directory that does not exist is accepted without a word,
+      # and a header is then taken from wherever else it may be found - which is
+      # how 567 dead include paths and the extension override of CS-2896 stayed
+      # invisible for two years. With -Werror the next one is a build failure.
+      add_compile_options(-Wall -Werror -pedantic -Wmissing-include-dirs)
 
       # @todo does -fPIC have any disadvantages when not required (only for shared libs)?
       add_compile_options(-fPIC)
@@ -233,7 +239,7 @@ function(architecture_specific_settings)
       message(STATUS "We are on FreeBSD: ${SGE_ARCH}")
       set(PROJECT_AUTOMAKE_SRC "/usr/local/share/automake-*/config.*" PARENT_SCOPE)
       # see the Linux branch above
-      add_compile_options(-Wall -Werror -pedantic)
+      add_compile_options(-Wall -Werror -pedantic -Wmissing-include-dirs)
       add_compile_definitions(FREEBSD GETHOSTBYNAME GETHOSTBYADDR_M SPOOLING_classic)
       add_compile_options(-fPIC)
       add_link_options(-lpthread -lutil)
@@ -278,7 +284,7 @@ function(architecture_specific_settings)
       message(STATUS "We are on macOS: ${SGE_ARCH}")
       # -Wextra
       # see the Linux branch above
-      add_compile_options(-Wall -Werror -pedantic)
+      add_compile_options(-Wall -Werror -pedantic -Wmissing-include-dirs)
       set(CMAKE_OSX_ARCHITECTURES "arm64" CACHE STRING "Build architectures for Mac OS X" FORCE)
       add_compile_definitions(DARWIN DARWIN10 GETHOSTBYNAME GETHOSTBYADDR_M SPOOLING_classic)
 
