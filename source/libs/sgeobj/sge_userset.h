@@ -80,6 +80,9 @@
 /// The userset type names, indexed by their `US_type` bit
 extern const char *userset_types[];
 
+lListElem *
+userset_create(lList **answer_list, const char *name);
+
 int
 userset_validate_entries(lListElem *object, lList **answer_list);
 

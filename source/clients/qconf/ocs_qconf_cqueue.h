@@ -48,17 +48,3 @@ cqueue_get_via_gdi(lList **answer_list, const char *cqueue);
 bool 
 cqueue_add_del_mod_via_gdi(lListElem *this_elem, lList **answer_list, ocs::gdi::Command gdi_command, ocs::gdi::SubCommand sub_cmd);
 
-bool 
-cqueue_add(lList **answer_list, const char *name);
-
-bool 
-cqueue_modify(lList **answer_list, const char *name);
-
-bool 
-cqueue_delete(lList **answer_list, const char *name);
-
-bool 
-cqueue_add_from_file(lList **answer_list, const char *filename);
-
-bool 
-cqueue_modify_from_file(lList **answer_list, const char *filename);

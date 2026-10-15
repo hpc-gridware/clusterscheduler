@@ -130,7 +130,6 @@
 #include "qconf/ocs_QConfViewPlain.h"
 #include "qconf/ocs_QConfParameterClient.h"
 #include "ocs_qconf_parse.h"
-#include "sge_qconf_hgroup.h"
 #include "ocs_qconf_centry.h"
 #include "ocs_qconf_cqueue.h"
 #include "ocs_qconf_rqs.h"
@@ -150,7 +149,6 @@ static bool del_host_of_type(lList *arglp, ocs::gdi::Target target);
 static bool mod_reserved_hgroup(std::ostream &os, lList *arglp, const char *group,
                                 ocs::gdi::SubCommand sub_command, const char *what);
 static int qconf_modify_attribute(lList **alpp, int from_file, char ***spp, lListElem **epp, ocs::gdi::SubCommand sub_command, struct object_info_entry *info_entry);
-static int edit_usersets(std::ostream &os, lList *arglp);
 
 /************************************************************************/
 static int delete_configs(const lList *conf_list);
@@ -4597,8 +4595,23 @@ int sge_parse_qconf(char *argv[]) {
          /* get userset */
          parse_name_list_to_cull("usersets", &lp, US_Type, US_name, *spp);
 
-         if (edit_usersets(os, lp) != 0) {
-            sge_parse_return = 1;
+         /* CS-2823: one round trip per name, which is what the hand written
+          * edit_usersets() did - it fetched them all in one GET and then opened
+          * one editor per userset. "-mu" is the only interactive switch that
+          * takes a list of names, and it is also the whole interactive add: a
+          * name that is no userset yet is answered by the read with the type's
+          * template and created on exit, as it was before.
+          *
+          * A name whose edit fails no longer stops the ones behind it, as
+          * before - but it now makes the command exit non-zero, where
+          * edit_usersets() reported such a failure on stderr and still
+          * returned success. */
+         const lListElem *us_ep;
+         for_each_ep(us_ep, lp) {
+            if (qconf_edit_obj_procedure(param, QConfObj::US, "-mu",
+                                         lGetString(us_ep, US_name), uid, gid) != 0) {
+               sge_parse_return = 1;
+            }
          }
          lFreeList(&lp);
 
@@ -5490,15 +5503,19 @@ int sge_parse_qconf(char *argv[]) {
 
       /* "-shgrpl" */
 
-      /* "-mhgrp user"  */
+      /* "-mhgrp group"  */
       if (strcmp("-mhgrp", *spp) == 0) {
-         lList *answer_list = nullptr;
-
          spp = sge_parser_get_next(spp);
          qconf_is_manager_on_admin_host(username, qualified_hostname);
-         hgroup_modify(&answer_list, *spp);
-         sge_parse_return |= show_answer(answer_list);
-         lFreeList(&answer_list);
+
+         /* CS-2823: the stored procedure round trip, the same function "-ahgrp"
+          * calls. A name that is no host group yet is answered by the read with
+          * the type's template and created on exit, which is what "-m<obj>" has
+          * done for every other type since CS-2299 C2 and what qconf.md has
+          * described all along - the host group only joined now. */
+         if (qconf_edit_obj_procedure(param, QConfObj::HGRP, "-mhgrp", *spp, uid, gid) != 0) {
+            sge_parse_return = 1;
+         }
 
          spp++;
          continue;
@@ -5517,23 +5534,26 @@ int sge_parse_qconf(char *argv[]) {
 
       /* "-ahgrp group"  */
       if (strcmp("-ahgrp", *spp) == 0) {
-         lList *answer_list = nullptr;
-         const char* group = "@template";
-         bool is_validate_name = false; /* This boolean is needed to create a
-                                           hgrp templete. One could have done
-                                           it with a string compare deep in
-                                           the code. I prefered this way. */
+         /* the name is optional; when omitted a template named "@template" is
+          * offered for editing, and the editor is where it gets its real name */
+         const char *group = "@template";
 
          if (!sge_next_is_an_opt(spp)) {
             spp = sge_parser_get_next(spp);
             group = *spp;
-            is_validate_name = true;
          }
 
          qconf_is_manager_on_admin_host(username, qualified_hostname);
-         hgroup_add(&answer_list, group, is_validate_name);
-         sge_parse_return |= show_answer(answer_list);
-         lFreeList(&answer_list);
+
+         /* CS-2823: template, editor and write procedure in one - see
+          * qconf_edit_obj_procedure(), the single function "-a<obj>" and
+          * "-m<obj>" share. The template is built in qmaster from the read's
+          * descriptor row, with the name check off for the reason the flag that
+          * used to stand here gave - see qconf_template_HGRP(). An impossible
+          * name is refused when the edited text is written. */
+         if (qconf_edit_obj_procedure(param, QConfObj::HGRP, "-ahgrp", group, uid, gid) != 0) {
+            sge_parse_return = 1;
+         }
 
          spp++;
          continue;
@@ -5692,14 +5712,16 @@ int sge_parse_qconf(char *argv[]) {
 
       /* "-mq cqueue"  */
       if (strcmp("-mq", *spp) == 0) {
-         lList *answer_list = nullptr;
-
          spp = sge_parser_get_next(spp);
-
          qconf_is_manager_on_admin_host(username, qualified_hostname);
-         cqueue_modify(&answer_list, *spp);
-         sge_parse_return |= show_answer(answer_list);
-         lFreeList(&answer_list);
+
+         /* CS-2823: the stored procedure round trip, the same function "-aq"
+          * calls. A name that is no cluster queue yet is answered by the read
+          * with the type's template and created on exit - the upsert every
+          * other type has had since CS-2299 C2. */
+         if (qconf_edit_obj_procedure(param, QConfObj::CQ, "-mq", *spp, uid, gid) != 0) {
+            sge_parse_return = 1;
+         }
 
          spp++;
          continue;
@@ -5718,7 +5740,8 @@ int sge_parse_qconf(char *argv[]) {
 
       /* "-aq cqueue"  */
       if (strcmp("-aq", *spp) == 0) {
-         lList *answer_list = nullptr;
+         /* the name is optional; when omitted a template named "template" is
+          * offered for editing and the editor gives it its real name */
          const char *name = "template";
 
          if (!sge_next_is_an_opt(spp)) {
@@ -5726,9 +5749,14 @@ int sge_parse_qconf(char *argv[]) {
             name = *spp;
          }
          qconf_is_manager_on_admin_host(username, qualified_hostname);
-         cqueue_add(&answer_list, name);
-         sge_parse_return |= show_answer(answer_list);
-         lFreeList(&answer_list);
+
+         /* CS-2823: template, editor and write procedure in one - see
+          * qconf_edit_obj_procedure(). The template is the one cqueue_add()
+          * built in the client, now assembled in qmaster from the read's
+          * descriptor row: the object plus the attribute defaults. */
+         if (qconf_edit_obj_procedure(param, QConfObj::CQ, "-aq", name, uid, gid) != 0) {
+            sge_parse_return = 1;
+         }
 
          spp++;
          continue;
@@ -6594,138 +6622,6 @@ static lListElem *edit_sharetree(lListElem *ep, uid_t uid, gid_t gid) {
 
    DRETURN(newep);
 }
-
-/* ------------------------------------------------------------ */
-
-
-
-
-
-
-/* - -- -- -- -- -- -- -- -- -- -- -- -- -- -- -
-
-   get all acls listed in acl_arg
-   from qmaster and print them
-
-   returns
-      0 on success
-      1 if arglp contains acl names not present at qmaster
-      -1 failed to get any acl
-*/
-
-/**************************************************************
-   get all usersets listed in arglp
-   from qmaster and edit them
-
-   This is pure client code, so output to stderr/out is allowed
-
-   returns
-      0 on success
-      1 if arglp contains userset names not present at qmaster
-      -1 failed to get any userset
-      -2 if failed due to disk error
- * @param os the stream the output is written to (CS-1841)
- **************************************************************/
-static int edit_usersets(std::ostream &os, lList *arglp) {
-   DENTER(TOP_LAYER);
-   lList *usersets = nullptr;
-   lListElem *ep=nullptr;
-   const lListElem *aep=nullptr;
-   lListElem *changed_ep=nullptr;
-   int status;
-   const char *userset_name = nullptr;
-   lList *alp = nullptr, *lp = nullptr;
-   char *fname = nullptr;
-   ocs::gdi::Command cmd;
-   int fields_out[MAX_NUM_FIELDS];
-   int missing_field = NoName;
-   uid_t uid = component_get_uid();
-   gid_t gid = component_get_gid();
-
-   /* get all usersets named in arglp, put them into usersets */
-   if (sge_client_get_acls(nullptr, arglp, &usersets)) {
-      DRETURN(-1);
-   }
-
-   for_each_ep_lv(argep, arglp) {
-      alp = nullptr;
-      userset_name = lGetString(argep, US_name);
-
-      ep = lGetElemStrRW(usersets, US_name, userset_name);
-      if (ep == nullptr) {
-         ep = lAddElemStr(&usersets, US_name, userset_name, US_Type);
-         /* initialize type field in case of sge */
-         lSetUlong(ep, US_type, US_ACL|US_DEPT);
-         cmd = ocs::gdi::Command::ADD;
-      } else {
-         cmd = ocs::gdi::Command::MOD;
-      }
-
-      fname = (char *)spool_flatfile_write_object(&alp, ep, false, US_fields,
-                                           &qconf_param_sfi, SP_DEST_TMP,
-                                           qconf_opt_format, fname, false);
-      if (answer_list_output(&alp)) {
-         fprintf(stderr, "%s\n", MSG_FILE_ERRORWRITINGUSERSETTOFILE);
-         DRETURN(-2);
-      }
-
-      status = sge_edit(fname, uid, gid);
-
-      if (status < 0) {
-         unlink(fname);
-         fprintf(stderr, "%s\n", MSG_PARSE_EDITFAILED);
-         lFreeList(&usersets);
-         DRETURN(-2);  /* why should the next edit have more luck */
-      }
-
-      if (status > 0) {
-         unlink(fname);
-         os << qconf_cstr(MSG_FILE_FILEUNCHANGED) << "\n";
-         continue;
-      }
-
-      fields_out[0] = NoName;
-      changed_ep = spool_flatfile_read_object(&alp, US_Type, nullptr,
-                                      US_fields, fields_out,  true, &qconf_param_sfi,
-                                      qconf_opt_format, nullptr, fname);
-
-      if (answer_list_output(&alp)) {
-         lFreeElem(&changed_ep);
-      }
-
-      if (changed_ep != nullptr) {
-         missing_field = spool_get_unprocessed_field(US_fields, fields_out, &alp);
-      }
-
-      if (missing_field != NoName) {
-         lFreeElem(&changed_ep);
-         answer_list_output(&alp);
-      }
-
-      if (changed_ep == nullptr) {
-         fprintf(stderr, MSG_FILE_ERRORREADINGUSERSETFROMFILE_S, fname);
-         fprintf(stderr, "\n");
-         continue;   /* May be the user made a mistake. Just proceed with
-                        the next */
-      }
-
-      /* Create List; append Element; and do a modification gdi call */
-      lp = lCreateList("userset list", US_Type);
-      lAppendElem(lp, changed_ep);
-      alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::US_LIST, cmd, ocs::gdi::SubCommand::NONE, &lp, nullptr, nullptr);
-      lFreeList(&lp);
-
-      for_each_ep(aep, alp) {
-         fprintf(stderr, "%s\n", lGetString(aep, AN_text));
-      }
-      lFreeList(&alp);
-   }
-
-   lFreeList(&usersets);
-   sge_free(&fname);
-   DRETURN(0);
-}
-
 
 /** @brief Delete every named configuration in one request
  *

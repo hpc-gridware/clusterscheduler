@@ -284,9 +284,6 @@
 #define MSG_PARSE_XOPTIONWRONGARGUMENT_SS          _MESSAGE(23170, _("ERROR! " SFN " option contains errors: " SFN))
 #define MSG_ANSWER_COMPLEXXALREADYEXISTS_SS        _MESSAGE(23172, _("complex with name " SFN " or shortcut " SFN " already exists"))
 
-#define MSG_FILE_ERRORWRITINGUSERSETTOFILE         _MESSAGE(23196, _("error writing userset to file"))
-#define MSG_FILE_ERRORREADINGUSERSETFROMFILE_S     _MESSAGE(23197, _("error reading userset from file " PFNMAX))
-
 #define MSG_ANSWER_CONFIGXNOTDEFINED_S             _MESSAGE(23201, _("configuration " SFN " not defined"))
 #define MSG_ANSWER_CONFIGXALREADYEXISTS_S          _MESSAGE(23202, _("configuration " SFN " already exists"))
 #define MSG_ANSWER_CONFIGXDOESNOTEXIST_S           _MESSAGE(23203, _("configuration " SFN " does not exist"))

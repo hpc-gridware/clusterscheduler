@@ -284,6 +284,59 @@ qconf_template_PR([[maybe_unused]] lList **answer_list, const char *name) {
    return ep;
 }
 
+/** @brief The template of a host group
+ *
+ * The name check of hgroup_create() stays **off**, which is what the client's
+ * own template always did ("This boolean is needed to create a hgrp templete").
+ * The reason is the template's own name: "-ahgrp" without an argument asks for
+ * "@template", and verify_obj_name() refuses TEMPLATE as a reserved keyword -
+ * so validating here would refuse the nameless add before the editor it is
+ * meant to open. Measured on 2026-10-15: with the check on, "qconf -ahgrp"
+ * answers "Keyword (\"TEMPLATE\") not allowed as objectname" and the editor
+ * never comes up.
+ *
+ * Nothing is lost by it. A name that cannot become a host group is refused by
+ * qmaster when the edited text is written (hgroup_check_name() in
+ * sge_hgroup_qmaster.cc), the message is the same one, and it arrives after the
+ * editor instead of before it - which is how every other type behaves.
+ *
+ * @param answer_list unused, the constructor reports nothing with the check off
+ * @param name the name the template carries
+ * @return the template
+ */
+static lListElem *
+qconf_template_HGRP(lList **answer_list, const char *name) {
+   return hgroup_create(answer_list, name, nullptr, false);
+}
+
+/** @brief The template of a cluster queue
+ *
+ * Two steps, as the client's own template always was: the object, then the
+ * attribute defaults every queue starts from.
+ *
+ * @param answer_list receives the reason when the template could not be built
+ * @param name the name the template carries
+ * @return the template, or nullptr
+ */
+static lListElem *
+qconf_template_CQ(lList **answer_list, const char *name) {
+   lListElem *ep = cqueue_create(answer_list, name);
+   if (ep != nullptr && !cqueue_set_template_attributes(ep, answer_list)) {
+      lFreeElem(&ep);
+   }
+   return ep;
+}
+
+/** @brief The template of a userset
+ * @param answer_list receives the reason when the template could not be built
+ * @param name the name the template carries
+ * @return the template, or nullptr
+ */
+static lListElem *
+qconf_template_US(lList **answer_list, const char *name) {
+   return userset_create(answer_list, name);
+}
+
 /** @brief One row per object type, indexed by QConfObj.
  *
  * Kept in the order of the enum so that qconf_desc() is a plain index. */
@@ -300,7 +353,7 @@ static const qconf_object_desc qconf_object_table[] = {
    /* EH   */ { ocs::gdi::Target::EH_LIST,   EH_Type,   EH_name,   qconf_fields_EH,   &qconf_sfi,                 "exechost",   nullptr,             qconf_eh_resolve,  ocs::gdi::SubCommand::NONE,    false, true,  false, SGE_TEMPLATE_NAME,  SGE_GLOBAL_NAME,
               { .fields = qconf_show_fields_EH, .list_name = "execution host", .not_found_msg = MSG_EXEC_XISNOTANEXECUTIONHOST_S, .prepare = qconf_show_prepare_EH } },
    /* HGRP */ { ocs::gdi::Target::HGRP_LIST, HGRP_Type, HGRP_name, qconf_fields_HGRP, &qconf_sfi,                 nullptr,      nullptr,             nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr,
-              { .list_name = "host group list" } },
+              { .list_name = "host group list", .create_template = qconf_template_HGRP } },
    /* PE   */ { ocs::gdi::Target::PE_LIST,   PE_Type,   PE_name,   qconf_fields_PE,   &qconf_sfi,                 nullptr,      qconf_pe_validate,   nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr,
               { .list_name = "parallel environment", .not_found_msg = MSG_PARALLEL_XNOTAPARALLELEVIRONMENT_S,
                 .create_template = qconf_template_PE } },
@@ -308,7 +361,7 @@ static const qconf_object_desc qconf_object_table[] = {
               { .list_name = "project list", .not_found_msg = MSG_PROJECT_XISNOKNWOWNPROJECT_S,
                 .create_template = qconf_template_PR } },
    /* CQ   */ { ocs::gdi::Target::CQ_LIST,   CQ_Type,   CQ_name,   qconf_fields_CQ,   &qconf_sfi,                 nullptr,      qconf_cq_verify,     nullptr,           ocs::gdi::SubCommand::SET_ALL, false, false, false, nullptr,            nullptr,
-              { .list_name = "cqueue list" } },
+              { .list_name = "cqueue list", .create_template = qconf_template_CQ } },
    /* RL   */ { ocs::gdi::Target::RL_LIST,   RL_Type,   RL_name,   qconf_fields_RL,   &qconf_sfi,                 nullptr,      qconf_role_validate, nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr,
               { .list_name = "role", .not_found_msg = MSG_ROLE_DOESNOTEXIST_S,
                 .create_template = qconf_template_RL } },
@@ -322,7 +375,8 @@ static const qconf_object_desc qconf_object_table[] = {
    /* US   */ { ocs::gdi::Target::US_LIST,   US_Type,   US_name,   qconf_fields_US,   &qconf_param_sfi,           nullptr,      qconf_us_validate,   nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr,
               /* -su names the userset it could not find, and calls it an access
                * list, as it always did (CS-2819) */
-              { .list_name = "userset list", .not_found_noun = "access list" } },
+              { .list_name = "userset list", .create_template = qconf_template_US,
+                .not_found_noun = "access list" } },
    /* UU   */ { ocs::gdi::Target::UU_LIST,   UU_Type,   UU_name,   qconf_fields_UU,   &qconf_sfi,                 nullptr,      nullptr,             nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr,
               { .list_name = "user list", .not_found_msg = MSG_USER_XISNOKNOWNUSER_S,
                 .create_template = qconf_template_UU } },

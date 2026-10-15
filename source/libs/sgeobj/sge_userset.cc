@@ -69,6 +69,46 @@ const char* userset_types[] = {
 };
 
 /**
+ * @brief Create a new userset
+ *
+ * Returns a userset carrying nothing but its name and the type every userset
+ * created through the configuration commands has had: both an access list and a
+ * department. It is the template `qconf -mu` offers for a name that does not
+ * exist yet, and the one qmaster builds for it (CS-2823).
+ *
+ * The two usersets qmaster creates for itself - the manager and the operator
+ * list - are access lists only and are built where they are needed.
+ *
+ * @param answer_list AN_Type list
+ * @param name the name the userset carries
+ *
+ * @return US_Type object, or nullptr with the reason in the answer list
+ */
+lListElem *
+userset_create(lList **answer_list, const char *name) {
+   DENTER(TOP_LAYER);
+
+   lListElem *ret = nullptr;
+
+   if (name != nullptr) {
+      ret = lCreateElem(US_Type);
+
+      if (ret != nullptr) {
+         lSetString(ret, US_name, name);
+         lSetUlong(ret, US_type, US_ACL | US_DEPT);
+      } else {
+         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_MEM_MEMORYALLOCFAILED_S, __func__);
+         answer_list_add(answer_list, SGE_EVENT, STATUS_EMALLOC, ANSWER_QUALITY_ERROR);
+      }
+   } else {
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_INAVLID_PARAMETER_IN_S, __func__);
+      answer_list_add(answer_list, SGE_EVENT, STATUS_ERROR1, ANSWER_QUALITY_ERROR);
+   }
+
+   DRETURN(ret);
+}
+
+/**
  * @brief Validate an acl list
  *
  * Checks if all entries of an acl list (e.g. user list of a pe)

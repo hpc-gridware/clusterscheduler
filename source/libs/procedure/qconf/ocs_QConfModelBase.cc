@@ -93,6 +93,16 @@ static const ocs::qconf_read_entry qconf_read_table[] = {
     * "#<host>:" comment, see read.name_header (CS-2820) */
    {"-sconf",  QConfObj::CONF, ocs::QConfReadKind::SINGLE_OBJECT},
 
+   /* group A, read by a modify switch (CS-2823). These three types read one
+    * object for the editor like every other one, but they have no show switch
+    * that does: "-shgrp" and "-sq" are sub-procedures with several output
+    * shapes each, and "-su" renders a list of named objects. The row says what
+    * the modify switch reads, which is what this table is for, rather than
+    * teaching qconf_show_object() a fallback. */
+   {"-mhgrp",  QConfObj::HGRP, ocs::QConfReadKind::SINGLE_OBJECT},
+   {"-mq",     QConfObj::CQ,   ocs::QConfReadKind::SINGLE_OBJECT},
+   {"-mu",     QConfObj::US,   ocs::QConfReadKind::SINGLE_OBJECT},
+
    /* group N: several named objects, or every one of them when no name is given.
     * -su demands at least one name, -srqs takes none and then shows all, and the
     * option table is what enforces the difference (CS-2819). */
@@ -1333,6 +1343,17 @@ ocs::QConfModelBase::make_snapshot(lList **answer_list, QConfParameter &paramete
    desc_ = &qconf_desc(entry->object);
    key_nm_ = desc_->name_nm;
 
+   /* CS-2677 and CS-2823: a cluster queue read in full needs the host groups,
+    * because its host list is the member list of "@@<queue>" and the stored
+    * object carries none. Without the join the editor of "-mq" would show an
+    * empty host list, and saving that text would empty the real one - the read
+    * of a round trip has to render what the write will parse. The name list of
+    * "-sql" fetches names only and needs nothing. */
+   const bool cqueue_in_full = (object_ == QConfObj::CQ && kind_ == QConfReadKind::SINGLE_OBJECT);
+   if (cqueue_in_full && !fetch_hgroups(answer_list)) {
+      DRETURN(false);
+   }
+
    lEnumeration *what;
    lCondition *where;
    if (kind_ == QConfReadKind::NAME_LIST) {
@@ -1367,6 +1388,13 @@ ocs::QConfModelBase::make_snapshot(lList **answer_list, QConfParameter &paramete
    lFreeWhere(&where);
    if (!ok) {
       DRETURN(false);
+   }
+
+   if (cqueue_in_full) {
+      /* the join itself, see above. A name that matched nothing leaves an empty
+       * list here and the template path below builds the object - which owns no
+       * group yet, so there is nothing to join on either way. */
+      cqueue_list_fill_hostlist(object_list_, hgroup_list_);
    }
 
    if (kind_ == QConfReadKind::MEMBER_LIST) {

@@ -902,10 +902,11 @@ namespace {
        * the provider checks that they do; it cannot be a static_assert because
        * the object table is not constexpr.
        *
-       * One row per type, which is the point of templating the traits: these
-       * eight are the types on the CS-2797 editor engine (CS-2823), and the ones
-       * with a bespoke editor follow when their read side reaches the descriptor
-       * table (CS-2816 to CS-2820). */
+       * One row per type, which is the point of templating the traits. The
+       * eight types on the CS-2797 editor engine came first, the three whose
+       * editor was written by hand followed when their read side had reached
+       * the descriptor table (CS-2823); the list types and the singletons are
+       * the remainder. */
       {to_string_view(QCONF), ocs::QConfWriteParameter::OBJECT_WRITE,
        modifies(ocs::gdi::Target::CAL_LIST), &run_procedure<QConfWriteTraits<QConfObj::CAL>>},
       {to_string_view(QCONF), ocs::QConfWriteParameter::OBJECT_WRITE,
@@ -913,13 +914,19 @@ namespace {
       {to_string_view(QCONF), ocs::QConfWriteParameter::OBJECT_WRITE,
        modifies(ocs::gdi::Target::CK_LIST), &run_procedure<QConfWriteTraits<QConfObj::CK>>},
       {to_string_view(QCONF), ocs::QConfWriteParameter::OBJECT_WRITE,
+       modifies(ocs::gdi::Target::CQ_LIST), &run_procedure<QConfWriteTraits<QConfObj::CQ>>},
+      {to_string_view(QCONF), ocs::QConfWriteParameter::OBJECT_WRITE,
        modifies(ocs::gdi::Target::EH_LIST), &run_procedure<QConfWriteTraits<QConfObj::EH>>},
+      {to_string_view(QCONF), ocs::QConfWriteParameter::OBJECT_WRITE,
+       modifies(ocs::gdi::Target::HGRP_LIST), &run_procedure<QConfWriteTraits<QConfObj::HGRP>>},
       {to_string_view(QCONF), ocs::QConfWriteParameter::OBJECT_WRITE,
        modifies(ocs::gdi::Target::PE_LIST), &run_procedure<QConfWriteTraits<QConfObj::PE>>},
       {to_string_view(QCONF), ocs::QConfWriteParameter::OBJECT_WRITE,
        modifies(ocs::gdi::Target::PR_LIST), &run_procedure<QConfWriteTraits<QConfObj::PR>>},
       {to_string_view(QCONF), ocs::QConfWriteParameter::OBJECT_WRITE,
        modifies(ocs::gdi::Target::RL_LIST), &run_procedure<QConfWriteTraits<QConfObj::RL>>},
+      {to_string_view(QCONF), ocs::QConfWriteParameter::OBJECT_WRITE,
+       modifies(ocs::gdi::Target::US_LIST), &run_procedure<QConfWriteTraits<QConfObj::US>>},
       {to_string_view(QCONF), ocs::QConfWriteParameter::OBJECT_WRITE,
        modifies(ocs::gdi::Target::UU_LIST), &run_procedure<QConfWriteTraits<QConfObj::UU>>},
       {to_string_view(QHOST), "", READS, &run_procedure<QHostTraits>},
