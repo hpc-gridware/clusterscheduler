@@ -207,7 +207,7 @@ if (PROJECT_FEATURES MATCHES "gcs-extensions")
          ${PROJECT_SOURCE_DIR}/source/daemons/qmaster
          ${PROJECT_SOURCE_DIR}/source/libs
          ${PROJECT_3RDPARTY_INCLUDES}
-         ${CPM_PACKAGE_rapidjson_SOURCE_DIR}/include)
+         ${RAPIDJSON_INCLUDE_DIR})
    add_compile_definitions(ADD_GRIDWARE_COPYRIGHT)
 else()
    set(SGE_INCLUDES
@@ -218,7 +218,7 @@ else()
          ${PROJECT_SOURCE_DIR}/source/daemons/qmaster
          ${PROJECT_SOURCE_DIR}/source/libs
          ${PROJECT_3RDPARTY_INCLUDES}
-         ${CPM_PACKAGE_rapidjson_SOURCE_DIR}/include)
+         ${RAPIDJSON_INCLUDE_DIR})
 endif()
 
 if (WITH_JEMALLOC)

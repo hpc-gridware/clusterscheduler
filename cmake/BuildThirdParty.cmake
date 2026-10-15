@@ -117,10 +117,34 @@ endfunction()
 function(build_third_party 3rdparty_build_path)
     set(3rdparty_includes "")
 
-    if (NOT WITH_OS_3RDPARTY)
+    # rapidjson, the only header-only 3rdparty package: either CPM fetches it or
+    # the OS provides it, and in both cases RAPIDJSON_INCLUDE_DIR is the single
+    # name the include path is built from (CS-2898). The include path used to be
+    # CPM_PACKAGE_rapidjson_SOURCE_DIR, which only exists when CPM added the
+    # package - so with WITH_OS_3RDPARTY=ON nothing set it and nothing replaced
+    # it either, and every target was compiled with -I/include: a path that does
+    # not exist and that gcc accepts without a word. Whether the build worked
+    # then depended on rapidjson happening to sit in a default search path, and
+    # the first clue when it did not was a fatal error in sge_monitor.h, in the
+    # middle of compiling rather than at configure time.
+    if (WITH_OS_3RDPARTY)
+        # The OS package puts its headers into the default search path, so the
+        # directory is looked up here only to turn a missing dependency into a
+        # configure error instead of a compile error in sge_monitor.h.
+        find_path(RAPIDJSON_OS_INCLUDE_DIR NAMES rapidjson/document.h)
+        if (NOT RAPIDJSON_OS_INCLUDE_DIR)
+            message(FATAL_ERROR "rapidjson headers not found - install rapidjson-devel (RPM) or rapidjson-dev (DEB), or configure with -DWITH_OS_3RDPARTY=OFF to let CPM fetch it")
+        endif ()
+        message(STATUS "3rdparty rapidjson is installed in ${RAPIDJSON_OS_INCLUDE_DIR}")
+        set(RAPIDJSON_INCLUDE_DIR "${RAPIDJSON_OS_INCLUDE_DIR}" PARENT_SCOPE)
+    else ()
         include(cmake/CPM.cmake)
         # a commit of master, see PROJECT_3RDPARTY_RAPIDJSON_COMMIT above
         cpmaddpackage("gh:Tencent/rapidjson#${PROJECT_3RDPARTY_RAPIDJSON_COMMIT}")
+        if (NOT IS_DIRECTORY "${CPM_PACKAGE_rapidjson_SOURCE_DIR}/include")
+            message(FATAL_ERROR "CPM did not provide the rapidjson sources: ${CPM_PACKAGE_rapidjson_SOURCE_DIR}/include is not a directory")
+        endif ()
+        set(RAPIDJSON_INCLUDE_DIR "${CPM_PACKAGE_rapidjson_SOURCE_DIR}/include" PARENT_SCOPE)
     endif ()
 
     set(3rdparty_list "")
