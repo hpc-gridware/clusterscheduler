@@ -52,7 +52,7 @@ RPMSPECFILE=sge.spec
 ErrUsage()
 {
    echo "Usage: mk_dist -vdir vdir -version version [-basedir dir] \\"
-   echo "               [-bin] [-common] [-arco] [-doc] [-drmaaj] binarchs ..."
+   echo "               [-bin] [-common] [-arco] [-doc] [-drmaaj] [-slurm-shim] binarchs ..."
    echo ""
    echo "    -vdir vdir         use subdirectory vdir to create distribution"
    echo "    -version <version> string to build filename of distribution"
@@ -65,6 +65,7 @@ ErrUsage()
    echo "    -arco              create tar.gz file of \"arco\" files"
    echo "    -doc               create tar.gz file of \"doc\" files"
    echo "    -drmaaj            create tar.gz file of \"drmaa-java\" files"
+   echo "    -slurm-shim        create tar.gz file of \"slurm-shim\" files"
    echo "    -rpm               create RPM packages instead of tar files"
    echo ""
    exit 1
@@ -128,6 +129,7 @@ CreateRpm() # Arguments: package arch files
 
 makearco=false
 makedrmaaj=false
+makeslurmshim=false
 makebin=false
 maketestbin=false
 makecommon=false
@@ -195,6 +197,12 @@ while [ $ARGC -gt 0 ]; do
    -drmaaj)
       echo "Creating tar file with drmaa-java files of distribution"
       makedrmaaj=true
+      shift
+      ARGC=`expr $ARGC - 1`
+      ;;
+   -slurm-shim)
+      echo "Creating tar file with slurm-shim files of distribution"
+      makeslurmshim=true
       shift
       ARGC=`expr $ARGC - 1`
       ;;
@@ -283,6 +291,7 @@ COMMON_PACKAGE="3rd_party ckpt dtrace examples/jobs \
 		          mpi util"
 ARCO_PACKAGE="dbwriter"
 DRMAAJ_PACKAGE="lib/jdrmaa-1.0.jar lib/drmaa.jar"
+SLURM_SHIM_PACKAGE="slurm-shim"
 
 if [ "$VERSION" = "" -o "$VDIR" = "" ]; then
    ErrUsage
@@ -354,6 +363,28 @@ if [ $makedrmaaj = true ]; then
                    $TAR cvzf $filename $DRMAAJ_PACKAGE
      if [ $? -ne 0 ]; then
         echo $TAR cvzf $filename $DRMAAJ_PACKAGE failed
+        exit 1
+     fi
+     cd ..
+   fi
+fi
+
+if [ $makeslurmshim = true ]; then
+   # do any necessary postprocessing of the "slurm-shim" package here
+   if [ -f localext/$VDIR/mk_dist.private.slurm-shim ]; then
+      echo executing commands from mk_dist.private.slurm-shim
+      . ./localext/$VDIR/mk_dist.private.slurm-shim
+   fi
+
+   if [ $makerpm = true ]; then
+      CreateRpm slurm-shim noarch $SLURM_SHIM_PACKAGE
+   else
+     cd $VDIR
+     filename=$BASEDIR/${PRODUCT}-${VERSION}-slurm-shim.tar.gz
+     echo Command: $TAR cvzf $filename $SLURM_SHIM_PACKAGE
+                   $TAR cvzf $filename $SLURM_SHIM_PACKAGE
+     if [ $? -ne 0 ]; then
+        echo $TAR cvzf $filename $SLURM_SHIM_PACKAGE failed
         exit 1
      fi
      cd ..
