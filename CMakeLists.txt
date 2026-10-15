@@ -178,13 +178,28 @@ build_third_party("${CMAKE_BINARY_DIR}/3rd_party")
 # in libs/sched/sge_urgency.h
 
 if (PROJECT_FEATURES MATCHES "gcs-extensions")
+   # CS-2896: resolve the extension tree once, here, against the top level
+   # source directory. These entries used to read "../../../../<features>/..."
+   # and cmake resolves a relative include directory against the source
+   # directory of each target that uses it - so the override only arrived for
+   # targets exactly three directories deep (the depth of source/daemons/qmaster,
+   # which it was written for) and pointed outside the workspace for the other
+   # 15 of 54, where a non-existent -I is accepted without a word and the main
+   # tree's header silently won. The path stays a formula, so it follows the
+   # checkout wherever it is.
+   get_filename_component(GCS_EXTENSION_DIR "${PROJECT_SOURCE_DIR}/../${PROJECT_FEATURES}" ABSOLUTE)
+   if (NOT IS_DIRECTORY "${GCS_EXTENSION_DIR}")
+      message(FATAL_ERROR "PROJECT_FEATURES is ${PROJECT_FEATURES} but ${GCS_EXTENSION_DIR} is not a directory")
+   endif ()
+   message(STATUS "Extension sources: ${GCS_EXTENSION_DIR}")
+
    set(SGE_INCLUDES
-         "../../../../${PROJECT_FEATURES}/source/common"
-         "../../../../${PROJECT_FEATURES}/source/clients/common"
-         "../../../../${PROJECT_FEATURES}/source/daemons/common"
-         "../../../../${PROJECT_FEATURES}/source/daemons/execd"
-         "../../../../${PROJECT_FEATURES}/source/daemons/qmaster"
-         "../../../../${PROJECT_FEATURES}/source/libs"
+         "${GCS_EXTENSION_DIR}/source/common"
+         "${GCS_EXTENSION_DIR}/source/clients/common"
+         "${GCS_EXTENSION_DIR}/source/daemons/common"
+         "${GCS_EXTENSION_DIR}/source/daemons/execd"
+         "${GCS_EXTENSION_DIR}/source/daemons/qmaster"
+         "${GCS_EXTENSION_DIR}/source/libs"
          ${PROJECT_SOURCE_DIR}/source/common
          ${PROJECT_SOURCE_DIR}/source/clients/common
          ${PROJECT_SOURCE_DIR}/source/daemons/common
