@@ -2446,6 +2446,20 @@ total_update(lListElem *event_client, u_long64 gdi_session)
    // that has to be GLOBAL - see the note above and ev_total_update_enter_global().
    blockEvents(event_client, sgeE_ALL_EVENTS, true);
 
+   // A client registering via GDI gets its total update inside the transaction the worker opens
+   // around every GDI request. The total update must not join it: the caller flushes the new
+   // client right afterwards and expects its events to be queued already. So the worker's
+   // transaction is set aside and restored after the total update has been committed.
+   GET_SPECIFIC(event_master_transaction_t, t_store, sge_event_master_init_transaction_store,
+                Event_Master_Control.transaction_key);
+   bool outer_transaction = t_store->is_transaction;
+   lList *outer_requests = nullptr;
+   if (outer_transaction) {
+      outer_requests = t_store->transaction_requests;
+      t_store->transaction_requests = lCreateListHash("Event Master Requests", EVR_Type, false);
+      t_store->is_transaction = false;
+   }
+
    sge_set_commit_required();
 
    total_update_event(event_client, sgeE_ADMINHOST_LIST, false, gdi_session);
@@ -2473,6 +2487,12 @@ total_update(lListElem *event_client, u_long64 gdi_session)
    total_update_event(event_client, sgeE_ZOMBIE_LIST, false, gdi_session);
 
    sge_commit(gdi_session);
+
+   if (outer_transaction) {
+      lFreeList(&(t_store->transaction_requests));
+      t_store->transaction_requests = outer_requests;
+      t_store->is_transaction = true;
+   }
 
    DRETURN_VOID;
 } /* total_update() */
