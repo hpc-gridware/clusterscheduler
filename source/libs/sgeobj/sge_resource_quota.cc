@@ -1471,39 +1471,3 @@ bool sge_centry_referenced_in_rqs(const lListElem *rqs, const lListElem *centry)
 
    DRETURN(ret);
 }
-
-/**
- * @brief Verify a rqs replace request
- *
- * Verify a rqs replace request (e.g. coming from a qconf -mrqs).
- * We make sure, that no duplicate names appear in the request.
- *
- * @param answer_list answer list to report errors
- * @param request the request to check
- *
- * @return true, if it is ok, false on error
- *
- * @note MT-NOTE: rqs_replace_request_verify() is MT safe
- */
-bool rqs_replace_request_verify(lList **answer_list, const lList *request) {
-   DENTER(TOP_LAYER);
-
-   const lListElem *ep;
-
-   /* search for duplicate rqs names in the request */
-   for_each_ep(ep, request) {
-      const char *name = lGetString(ep, RQS_name);
-      const lListElem *second = lNext(ep);
-      while (second != nullptr) {
-         const char *second_name = lGetString(second, RQS_name);
-         if (strcmp(name, second_name) == 0) {
-            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, 
-                                    MSG_RQS_REQUEST_DUPLICATE_NAME_S, name);
-            DRETURN(false);
-         }
-         second = lNext(second);
-      }
-   }
-
-   DRETURN(true);
-}

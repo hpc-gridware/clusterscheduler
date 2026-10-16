@@ -328,7 +328,6 @@ typedef struct {
    uint32_t gdi_cp_count;       ///< GDI copy requests
    uint32_t gdi_trig_count;     ///< GDI trigger requests
    uint32_t gdi_perm_count;     ///< GDI permission requests
-   uint32_t gdi_replace_count;  ///< GDI replace requests
    uint32_t gdi_proc_get_count; ///< stored procedure calls that only read
    uint32_t gdi_proc_mod_count; ///< stored procedure calls that may change state
 
@@ -358,7 +357,6 @@ typedef struct {
 /// count one GDI permission request
 #define MONITOR_GDI_PERM(monitor)   if ((monitor->monitor_time > 0) && (monitor->ext_type == GDI_EXT)) ((m_gdi_t*)(monitor->ext_data))->gdi_perm_count++
 /// count one GDI replace request
-#define MONITOR_GDI_REPLACE(monitor) if ((monitor->monitor_time > 0) && (monitor->ext_type == GDI_EXT)) ((m_gdi_t*)(monitor->ext_data))->gdi_replace_count++
 
 /** @def MONITOR_GDI_PROC_GET
  * @brief Count one stored procedure call that only reads

@@ -38,13 +38,19 @@ namespace ocs::gdi {
       PERMCHECK,      ///< ask which permissions the caller has
       SPECIAL,        ///< a request whose meaning depends on the target
       COPY,           ///< create objects by copying existing ones
-      REPLACE,        ///< replace the whole target list
       GET_PROCEDURE,  ///< read a procedure definition
       MOD_PROCEDURE,  ///< run a procedure that may change state
    };
 
    // Appended, not inserted: the value travels over the wire as a uint32, so the
-   // existing ones have to keep their numbers.
+   // existing ones have to keep their numbers - within a release. Across one
+   // they may be renumbered, which is what happened to REPLACE: it sat between
+   // COPY and GET_PROCEDURE, implemented one target (the resource quota sets)
+   // and had exactly one sender, "qconf -mrqs", which stopped replacing the
+   // whole list in 9.2 (CS-2823). Removing the value shifts the two procedure
+   // commands down, and that is safe because qmaster refuses a packet whose
+   // version is not exactly its own before anything is dispatched - see
+   // ocs::Version::do_versions_match() in sge_qmaster_process_message.cc.
 
    /**
     * @brief The name of a command, for logging and error messages

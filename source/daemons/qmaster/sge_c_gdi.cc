@@ -130,10 +130,6 @@ static void
 sge_gdi_do_permcheck(ocs::gdi::Packet *packet, ocs::gdi::Task *task);
 
 static void
-sge_c_gdi_replace(gdi_object_t *ao, ocs::gdi::Packet *packet, ocs::gdi::Task *task,
-                  ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command, monitoring_t *monitor);
-
-static void
 sge_gdi_shutdown_event_client(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monitor);
 
 static void
@@ -303,7 +299,6 @@ sge_c_gdi_check_execution_permission(ocs::gdi::Packet *packet, ocs::gdi::Task *t
       case ocs::gdi::Command::ADD:
       case ocs::gdi::Command::MOD:
       case ocs::gdi::Command::COPY:
-      case ocs::gdi::Command::REPLACE:
       case ocs::gdi::Command::DEL:
       case ocs::gdi::Command::MOD_PROCEDURE:
          /* MOD_PROCEDURE belongs here and not beside GET_PROCEDURE above: a
@@ -459,10 +454,6 @@ sge_c_gdi_process_in_worker(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
       case ocs::gdi::Command::PERMCHECK:
          MONITOR_GDI_PERM(monitor);
          sge_c_gdi_permcheck(packet, task, monitor);
-         break;
-      case ocs::gdi::Command::REPLACE:
-         MONITOR_GDI_REPLACE(monitor);
-         sge_c_gdi_replace(ao, packet, task, command, sub_command, monitor);
          break;
       // The two procedure commands share a dispatch, which refuses a procedure
       // whose entry declares the other one, but they are counted apart: a read
@@ -984,41 +975,6 @@ sge_c_gdi_permcheck(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t
    }
    DRETURN_VOID;
 }
-
-void sge_c_gdi_replace(gdi_object_t *ao, ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::gdi::Command cmd,
-                       ocs::gdi::SubCommand sub_command, monitoring_t *monitor) {
-   DENTER(GDI_LAYER);
-   lList *tmp_list = nullptr;
-
-   switch (task->target) {
-      case ocs::gdi::Target::RQS_LIST: {
-         if (rqs_replace_request_verify(&(task->answer_list), task->data_list) != true) {
-            break;
-         }
-         /* delete all currently defined rule sets */
-         lListElem *ep = lFirstRW(*ocs::DataStore::get_master_list(SGE_TYPE_RQS));
-         while (ep != nullptr) {
-            rqs_del(packet, task, ep, &(task->answer_list), ocs::DataStore::get_master_list_rw(SGE_TYPE_RQS), packet->user,
-                    packet->host);
-            ep = lFirstRW(*ocs::DataStore::get_master_list(SGE_TYPE_RQS));
-         }
-
-         for_each_rw (ep, task->data_list) {
-            sge_gdi_add_mod_generic(packet, task, &(task->answer_list), ep, 1, ao, packet->user, packet->host,
-                                    cmd, ocs::gdi::SubCommand::SET_ALL,
-                                    &tmp_list, monitor);
-         }
-         lFreeList(&tmp_list);
-         break;
-      }
-      default:
-         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_OPNOIMPFORTARGET_S, __func__);
-         answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_ENOIMP, ANSWER_QUALITY_ERROR);
-         break;
-   }
-   DRETURN_VOID;
-}
-
 
 static void
 sge_c_gdi_trigger_in_listener(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monitor) {

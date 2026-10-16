@@ -105,8 +105,6 @@ rqs_is_matching_rule(lListElem *rule, const char *user, const char *group, const
 
 bool sge_centry_referenced_in_rqs(const lListElem *rqs, const lListElem *centry);
 
-bool rqs_replace_request_verify(lList **answer_list, const lList *request);
-
 bool
 rqs_filter_match(lListElem *filter, int filter_type, const char *value, const lList *master_userset_list,
                  const lList *master_hgroup_list, const char *group, const lList *grp_list);
