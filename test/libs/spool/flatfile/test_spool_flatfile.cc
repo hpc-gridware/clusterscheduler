@@ -1354,6 +1354,11 @@ static int EH_test() {
    
    lSetList(ep, EH_report_variables, lp);
 
+   /* the time at which the host added itself. The spool file carries the raw value, so that it
+    * can be read back - the formatted date and time which qconf -se shows contains a blank,
+    * which is the delimiter between the name of an attribute and its value in this format */
+   lSetUlong64(ep, EH_auto_added_time, 1792143190772380);
+
    fields = sge_build_EH_field_list(true, false, false);
 
    /* Write a EH file using classic spooling */

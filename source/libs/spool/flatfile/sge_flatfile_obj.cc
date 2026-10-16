@@ -771,13 +771,17 @@ spooling_field *sge_build_EH_field_list(bool spool, bool to_stdout,
       create_spooling_field(&fields[count++], EH_reschedule_unknown_list, 21, "reschedule_unknown_list", false, RU_sub_fields, false, &qconf_sub_name_value_comma_sfi, nullptr, nullptr);
    }
 
-   /* the time at which a host added itself is not part of the field list used by qconf -Ae and
-    * qconf -Me, as it is not meant to be edited by hand, and it is not part of the spooling
-    * format either, where it would make the spool file of an execution host unreadable for a
-    * release which does not know the attribute name. The master daemon spools it through the
-    * CULL_SPOOL flag of the attribute. It is shown only when MORE_INFO is set, because an
-    * additional line in the output of qconf -se would change an interface */
-   if (to_stdout && getenv("MORE_INFO") != nullptr) {
+   /* the time at which a host added itself. It is not part of the field list used by qconf -Ae
+    * and qconf -Me, as it is not meant to be edited by hand, and qconf -se shows it only when
+    * MORE_INFO is set, because an additional line in that output would change an interface.
+    *
+    * The spool file carries the raw value, not the formatted one: the classic format separates
+    * the name of an attribute from its value by a blank, so a formatted date and time could not
+    * be read back. The two cases are mutually exclusive for every caller, and the else keeps the
+    * attribute from being added twice should that ever change */
+   if (spool) {
+      create_spooling_field(&fields[count++], EH_auto_added_time, 21, "auto_added_time", false, nullptr, false, nullptr, nullptr, nullptr);
+   } else if (to_stdout && getenv("MORE_INFO") != nullptr) {
       create_spooling_field(&fields[count++], EH_auto_added_time, 21, "auto_added_time", false, nullptr, false, nullptr, nullptr, write_EH_auto_added_time);
    }
    
