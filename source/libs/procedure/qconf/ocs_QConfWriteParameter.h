@@ -91,6 +91,36 @@ namespace ocs {
        */
       static constexpr uint32_t MODE_ROUND_TRIP = 4;
 
+      /** @brief The item text holds a list of objects, not one (CS-2823)
+       *
+       * A property of the request and not of the type, because the complex list
+       * is both: "qconf -mce <name>" edits one complex entry and "qconf -mc"
+       * edits the whole table, and the two are one QConfObj::CE with one
+       * descriptor row. The caller knows which switch it serves, so the caller
+       * says it. qconf_object_desc::as_list keeps describing how a *read*
+       * renders the type, which is a different question and was only ever the
+       * same one because the resource quota sets answered both the same way.
+       */
+      static constexpr uint32_t MODE_LIST = 8;
+
+      /** @brief What the text does not hold is deleted (CS-2823)
+       *
+       * The complex list is the type whose text is the whole truth: a complex
+       * is removed from a file-managed configuration by removing its row, and
+       * "qconf -mc" and "-Mc" have always deleted what the text left out. The
+       * resource quota sets now do the opposite on purpose, so this cannot be a
+       * property of "a text that holds a list" - it has to be a mode.
+       *
+       * Only a list request may carry it. MODE_REPLACE without MODE_LIST is a
+       * request error: a single object text names one object, and "everything
+       * the text does not hold" would then be the whole rest of the type.
+       *
+       * What may *not* be deleted this way is the descriptor's business - see
+       * qconf_write_desc::retain_on_replace, which for the complex list answers
+       * for the built-in attributes (CS-2523).
+       */
+      static constexpr uint32_t MODE_REPLACE = 16;
+
    private:
       lList *items_ = nullptr;        ///< VA_Type: VA_variable the label, VA_value the text
       uint32_t mode_ = MODE_NONE;     ///< mask of MODE_*
@@ -173,6 +203,12 @@ namespace ocs {
 
       /// @return true when the text is what a read handed out, see MODE_ROUND_TRIP
       [[nodiscard]] bool is_round_trip() const { return (mode_ & MODE_ROUND_TRIP) != 0; }
+
+      /// @return true when an item's text holds a list of objects, see MODE_LIST
+      [[nodiscard]] bool is_list() const { return (mode_ & MODE_LIST) != 0; }
+
+      /// @return true when what the text omits is to be deleted, see MODE_REPLACE
+      [[nodiscard]] bool is_replace() const { return (mode_ & MODE_REPLACE) != 0; }
 
       lList *get_bundle() override;
 

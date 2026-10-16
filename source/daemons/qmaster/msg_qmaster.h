@@ -797,4 +797,17 @@
  * omits is deleted on purpose (CS-2523). Hence the switch in the wording. */
 #define MSG_QCONF_WRITENOTREMOVED_S                _MESSAGE(34014, _(SFQ " is still there: a modify writes what the text holds and removes nothing - delete it with \"qconf -drqs\""))
 
+/* CS-2823: the complex list is a replacing write - what its text does not hold
+ * is deleted. The dry run says so in the same shape as the add and the modify
+ * above. */
+#define MSG_QCONF_WRITEWOULDDELETE_S               _MESSAGE(34015, _("[dry-run] would delete " SFQ))
+
+/* CS-2823: the three ways a replacing write is refused before anything is
+ * touched. All three are programming errors rather than user mistakes - no
+ * switch produces them - which is why they are refusals and not warnings: a
+ * replace that goes ahead on a wrong premise deletes. */
+#define MSG_QCONF_WRITEREPLACENOTLIST              _MESSAGE(34016, _("a replacing write needs a text that holds a list of objects"))
+#define MSG_QCONF_WRITENOREPLACE_S                 _MESSAGE(34017, _("objects of type " SFQ " cannot be deleted by a replacing write"))
+#define MSG_QCONF_WRITEREPLACEWITHSELECT           _MESSAGE(34018, _("a replacing write cannot be restricted to selected object names"))
+
 // clang-format on

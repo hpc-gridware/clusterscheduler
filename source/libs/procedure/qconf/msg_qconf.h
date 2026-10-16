@@ -43,6 +43,12 @@
  * CS-2523. Splitting the two across two files had hidden that collision from a
  * per-file check. Renumbering into this block settles both.
  *
+ * With CS-2823 the complex list is written by the procedure as well, so the
+ * client's three NULL messages and its retained-built-ins line followed the
+ * code here and were renumbered in turn. The collision described above is
+ * therefore gone twice: the two names now live in one file, where a per-file
+ * check can see them.
+ *
  * The texts are unchanged throughout. The ids the client gave up stay empty
  * there rather than being handed out again.
  */
@@ -74,5 +80,15 @@
 #define MSG_QCONF_NOWRITEPROVIDER                     _MESSAGE(12010, _("no write provider installed - a write procedure can only run inside qmaster"))
 #define MSG_QCONF_NOWRITEOBJECT                       _MESSAGE(12011, _("the write procedure was not told which object type to write"))
 #define MSG_QCONF_EMPTYOBJECTSET                      _MESSAGE(12012, _("no object was given to write"))
+
+/* CS-2823: the complex list is written by the procedure now, so the checks that
+ * need the whole list and the report of what a replace retained happen here.
+ * The three NULL messages and the retained-built-ins line moved over from
+ * clients/qconf/msg_qconf.h (5103-5105 and 5255) and are renumbered into this
+ * file's band, as a moved message has to be. */
+#define MSG_CENTRY_NULL_NAME                          _MESSAGE(12013, _("Invalid complex attribute definition"))
+#define MSG_CENTRY_NULL_SHORTCUT_S                    _MESSAGE(12014, _("Complex attribute " SFQ " has no shortcut defined"))
+#define MSG_CENTRY_NULL_URGENCY                       _MESSAGE(12015, _("Complex urgency definition is missing"))
+#define MSG_CENTRY_KEPT_BUILTIN_S                     _MESSAGE(12016, _("kept built-in complex attribute(s) " SFN " that the file does not define - built-ins cannot be deleted"))
 
 // clang-format on

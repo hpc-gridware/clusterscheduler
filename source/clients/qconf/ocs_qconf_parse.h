@@ -71,9 +71,11 @@ void qconf_msg(std::ostream &os, const char *fmt, ...)
 
 /** @brief The output format `-fmt` selected: plain or JSON (CS-2313a)
  *
- * A global because the `show` paths in `ocs_qconf_cqueue.cc`,
- * `ocs_qconf_centry.cc` formats its output itself
- * rather than going through the generic writer, and all of them have to agree.
+ * A global because the paths that format their own output rather than going
+ * through the generic writer all have to agree on it. CS-2823 took the last
+ * named module out - the complex list writes through the procedure now - so
+ * what is left are the generic writers in this file and the two halves of a
+ * procedure round trip, where the read's format decides the write's.
  */
 extern spool_flatfile_format qconf_opt_format;
 

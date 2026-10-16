@@ -130,7 +130,6 @@
 #include "qconf/ocs_QConfViewPlain.h"
 #include "qconf/ocs_QConfParameterClient.h"
 #include "ocs_qconf_parse.h"
-#include "ocs_qconf_centry.h"
 #include "ocs_qconf_cqueue.h"
 #include "sgeobj/ocs_Role.h"
 #include "msg_common.h"
@@ -627,10 +626,9 @@ qconf_collect_text(const char *filepath, void *vctx) {
  */
 static int
 qconf_apply_path_procedure(std::ostream &os, const QConfObj o, const char *path,
-                           const char *select = nullptr) {
+                           const char *select = nullptr, uint32_t extra_mode = 0u) {
    DENTER(TOP_LAYER);
 
-   const qconf_object_desc &d = qconf_desc(o);
    const bool is_dir = sge_is_directory(path);
 
    ocs::QConfWriteParameter param;
@@ -638,7 +636,9 @@ qconf_apply_path_procedure(std::ostream &os, const QConfObj o, const char *path,
                               ? ocs::ProcedureParameter::OutputFormat::JSON
                               : ocs::ProcedureParameter::OutputFormat::PLAIN);
    param.set_mode((qconf_opt_strict ? ocs::QConfWriteParameter::MODE_STRICT : 0u) |
-                  (qconf_opt_dry_run ? ocs::QConfWriteParameter::MODE_DRY : 0u));
+                  (qconf_opt_dry_run ? ocs::QConfWriteParameter::MODE_DRY : 0u) |
+                  extra_mode);
+   const bool as_list = (extra_mode & ocs::QConfWriteParameter::MODE_LIST) != 0;
    if (select != nullptr) {
       param.set_select(select);
    }
@@ -654,7 +654,7 @@ qconf_apply_path_procedure(std::ostream &os, const QConfObj o, const char *path,
     * A type whose text holds a list rejects such a batch whether or not -strict
     * was given: its objects come in whole texts, and the path this replaced
     * applied nothing when one file of a directory could not be read (CS-2823). */
-   if ((qconf_opt_strict || (d.as_list && is_dir)) && ctx.n_fail > 0) {
+   if ((qconf_opt_strict || (as_list && is_dir)) && ctx.n_fail > 0) {
       ERROR(MSG_QCONF_STRICTNOTHINGAPPLIED_SI, path, ctx.n_fail);
       DRETURN(ctx.n_fail);
    }
@@ -667,7 +667,7 @@ qconf_apply_path_procedure(std::ostream &os, const QConfObj o, const char *path,
    /* Nothing readable at the path means nothing to send - but still a summary
     * below, because an empty directory has always produced one. */
    if (n_items > 0) {
-      ocs::QConfWriteModelClient model(d.target);
+      ocs::QConfWriteModelClient model(qconf_desc(o).target);
       lList *alp = nullptr;
       model.make_snapshot(&alp, param);
 
@@ -688,7 +688,7 @@ qconf_apply_path_procedure(std::ostream &os, const QConfObj o, const char *path,
       show_answer_list(alp);
       lFreeList(&alp);
 
-      if ((qconf_opt_strict || (d.as_list && is_dir)) && parse_failed > 0) {
+      if ((qconf_opt_strict || (as_list && is_dir)) && parse_failed > 0) {
          /* qmaster applied nothing. The message names the path, which is this
           * side's, and it is the one place where the two phases have to be told
           * apart - hence the typed count rather than a count of error entries.
@@ -716,7 +716,7 @@ qconf_apply_path_procedure(std::ostream &os, const QConfObj o, const char *path,
        * about. The failures stay items - a file either went in whole or did
        * not (CS-2823). */
       qconf_info(os, MSG_QCONF_ADDMODSUMMARY_SII, path,
-                 d.as_list ? static_cast<int>(elements) : n_ok, n_fail);
+                 as_list ? static_cast<int>(elements) : n_ok, n_fail);
    }
 
    DRETURN(n_fail);
@@ -1666,10 +1666,15 @@ qconf_delete_names(QConfObj o, const char *names) {
  * @param select for a type whose text holds a list, the names to write out of it -
  *               "-Mrqs <file> <names>" and nothing else uses it; nullptr writes
  *               everything the text holds (CS-2823)
+ * @param extra_mode write modes the switch adds: MODE_LIST when its text holds a
+ *               list of objects, and MODE_REPLACE when what the text leaves out
+ *               is to be deleted - "-Mc" is both, "-Mce" is neither, and they
+ *               are the same object type (CS-2823)
  * @return 0 on success, non-zero on error
  */
 static int
-qconf_apply_obj(std::ostream &os, QConfObj o, const char *path, const char *select = nullptr) {
+qconf_apply_obj(std::ostream &os, QConfObj o, const char *path, const char *select = nullptr,
+                uint32_t extra_mode = 0u) {
    /* CS-2822: the object types whose write runs as a stored procedure take the
     * other path, which parses in qmaster instead of here. The list is here
     * rather than in a field of the descriptor table so that it disappears with
@@ -1684,7 +1689,7 @@ qconf_apply_obj(std::ostream &os, QConfObj o, const char *path, const char *sele
       case QConfObj::RL:
       case QConfObj::RQS:
       case QConfObj::UU:
-         return qconf_apply_path_procedure(os, o, path, select);
+         return qconf_apply_path_procedure(os, o, path, select, extra_mode);
       default:
          break;
    }
@@ -1909,11 +1914,13 @@ qconf_edit_fail_exit(QConfEditStatus st) {
  * @param gid  gid to run the editor as
  * @param select for a type whose text holds a list, the names the read was asked for -
  *               the scope qmaster reports against; nullptr when it read everything
+ * @param extra_mode write modes the switch adds on top of MODE_ROUND_TRIP, see
+ *               qconf_apply_obj()
  * @return 0 when the object was written or the editor left it unchanged, 1 otherwise
  */
 static int
 qconf_edit_and_write_obj(QConfObj o, std::string &text, uid_t uid, gid_t gid,
-                         const char *select = nullptr) {
+                         const char *select = nullptr, uint32_t extra_mode = 0u) {
    DENTER(TOP_LAYER);
 
    const QConfEditStatus est = qconf_edit_text(text, uid, gid);
@@ -1931,7 +1938,7 @@ qconf_edit_and_write_obj(QConfObj o, std::string &text, uid_t uid, gid_t gid,
                                   : ocs::ProcedureParameter::OutputFormat::PLAIN);
    /* This text is what a read handed out, not a file: see MODE_ROUND_TRIP, which
     * is what makes an object missing from it a report rather than an error. */
-   mod_param.set_mode(ocs::QConfWriteParameter::MODE_ROUND_TRIP);
+   mod_param.set_mode(ocs::QConfWriteParameter::MODE_ROUND_TRIP | extra_mode);
    if (select != nullptr) {
       mod_param.set_select(select);
    }
@@ -2053,17 +2060,27 @@ qconf_edit_obj_procedure(ocs::QConfParameterClient &param, QConfObj o,
  * template, one per name, which is what makes "-arqs" the same operation as
  * "-mrqs".
  *
+ * The read is named by the caller rather than looked up, because the two users
+ * read through different doors: "-mrqs" through the type's own OBJECT_LIST
+ * switch, "-mc" through the CENTRY_LIST sub-procedure, whose aligned table is
+ * neither a name list nor one object (CS-2817). Both hand back a text holding a
+ * list, which is all this function needs of them.
+ *
  * @param param the invocation, used for the procedure read
  * @param o     the object type, which must be one whose text holds a list
  * @param sw    the switch being served, named in the refusals
+ * @param read_token the read switch whose text is offered to the editor
+ * @param read_sub   the sub-procedure that read serves, or nullptr for a plain read
  * @param names the objects to edit, comma separated, or nullptr for all of them
  * @param uid   uid to run the editor as
  * @param gid   gid to run the editor as
+ * @param extra_mode write modes on top of MODE_LIST, see qconf_apply_obj()
  * @return 0 when the text was written or the editor left it unchanged, 1 otherwise
  */
 static int
 qconf_edit_list_procedure(ocs::QConfParameterClient &param, QConfObj o,
-                          const char *sw, const char *names, uid_t uid, gid_t gid) {
+                          const char *sw, const char *read_token, const char *read_sub,
+                          const char *names, uid_t uid, gid_t gid, uint32_t extra_mode = 0u) {
    DENTER(TOP_LAYER);
 
    if (param.get_exec_context() != ocs::ProcedureParameter::ExecContext::SERVER) {
@@ -2071,19 +2088,21 @@ qconf_edit_list_procedure(ocs::QConfParameterClient &param, QConfObj o,
       DRETURN(1);
    }
 
-   const char *switch_name = ocs::QConfModelBase::switch_for(o, ocs::QConfReadKind::OBJECT_LIST);
-   if (switch_name == nullptr) {
+   if (read_token == nullptr) {
       /* a type without a list read cannot be edited as a list - a programming
        * error, not something a caller can provoke */
       DRETURN(1);
    }
 
    qconf_op op;
-   op.token = switch_name;
+   op.token = read_token;
    if (names != nullptr) {
       op.args.emplace_back(names);
    }
    param.set_operation(op);
+   if (read_sub != nullptr) {
+      param.set_sub_procedure_name(read_sub);
+   }
 
    std::ostringstream rendered;
    uint32_t reduction = ocs::ProcedureParameter::REDUCTION_NONE;
@@ -2091,6 +2110,12 @@ qconf_edit_list_procedure(ocs::QConfParameterClient &param, QConfObj o,
    param.set_for_edit(true);
    const bool ok = qconf_dispatch_procedure(rendered, param, &alp, &reduction);
    param.set_for_edit(false);
+   if (read_sub != nullptr) {
+      /* The name belongs to this read, not to the invocation: one command line
+       * can carry several operations, so it is cleared again right away - as
+       * the -for-edit flag is. */
+      param.set_sub_procedure_name("");
+   }
 
    if (!ok) {
       /* the reason is in the answer list - a name the type cannot build a
@@ -2110,7 +2135,8 @@ qconf_edit_list_procedure(ocs::QConfParameterClient &param, QConfObj o,
    }
 
    std::string text = rendered.str();
-   DRETURN(qconf_edit_and_write_obj(o, text, uid, gid, names));
+   DRETURN(qconf_edit_and_write_obj(o, text, uid, gid, names,
+                                    ocs::QConfWriteParameter::MODE_LIST | extra_mode));
 }
 
 
@@ -2807,7 +2833,10 @@ int sge_parse_qconf(char *argv[]) {
           * function "-mrqs" calls, with the templates built in qmaster from the
           * read's descriptor row. A comma separated list of names still yields
           * one template each, as rqs_add() built them here. */
-         if (qconf_edit_list_procedure(param, QConfObj::RQS, "-arqs", name, uid, gid) != 0) {
+         if (qconf_edit_list_procedure(param, QConfObj::RQS, "-arqs",
+                                       ocs::QConfModelBase::switch_for(QConfObj::RQS,
+                                                                       ocs::QConfReadKind::OBJECT_LIST),
+                                       nullptr, name, uid, gid) != 0) {
             sge_parse_return = 1;
          }
 
@@ -2830,7 +2859,8 @@ int sge_parse_qconf(char *argv[]) {
 
          /* CS-2823: as every other type's "-A<obj>" - add or modify what the
           * text holds, which is what this did before through its own path. */
-         if (qconf_apply_obj(os, QConfObj::RQS, file) != 0) {
+         if (qconf_apply_obj(os, QConfObj::RQS, file, nullptr,
+                             ocs::QConfWriteParameter::MODE_LIST) != 0) {
             sge_parse_return = 1;
          }
 
@@ -3929,15 +3959,24 @@ int sge_parse_qconf(char *argv[]) {
       /* "-mc" */
 
       if (strcmp("-mc", *spp) == 0) {
-         lList *answer_list = nullptr;
-
          qconf_is_manager_on_admin_host(username, qualified_hostname);
 
-         if (!centry_list_modify(&answer_list)) {
+         /* CS-2823: the complex table is a stored procedure round trip now, the
+          * same three steps as "-mrqs" - qmaster renders the table, the client
+          * carries it to the editor and back, qmaster parses and applies it.
+          * The read is the "-sc" sub-procedure, whose aligned columns are what
+          * an administrator edits.
+          *
+          * MODE_REPLACE, unlike "-mrqs": the complex list keeps its wholesale
+          * replace, because a row taken out of the table is how a complex is
+          * removed - there is no "-dc" - and both halves of the object agree on
+          * it. The built-ins are retained and named, which is the property
+          * CS-2523 put into the client and which now lives on the descriptor. */
+         if (qconf_edit_list_procedure(param, QConfObj::CE, "-mc", "-sc",
+                                       ocs::QConfParameter::CENTRY_LIST, nullptr, uid, gid,
+                                       ocs::QConfWriteParameter::MODE_REPLACE) != 0) {
             sge_parse_return = 1;
          }
-         sge_parse_return |= show_answer_list(answer_list);
-         lFreeList(&answer_list);
          spp++;
          continue;
       }
@@ -3979,8 +4018,7 @@ int sge_parse_qconf(char *argv[]) {
       /* "-Mc complex file" */
 
       if (strcmp("-Mc", *spp) == 0) {
-         lList *answer_list = nullptr;
-         char* file = nullptr;
+         char *file = nullptr;
 
          /* no adminhost/manager check needed here */
 
@@ -3990,11 +4028,13 @@ int sge_parse_qconf(char *argv[]) {
          } else {
             sge_error_and_exit(MSG_FILE_NOFILEARGUMENTGIVEN);
          }
-         if (!centry_list_modify_from_file(&answer_list, file)) {
+         /* The file side of "-mc", through the same procedure with the same two
+          * modes, so the complex list has one writer and not two (CS-2823). */
+         if (qconf_apply_obj(os, QConfObj::CE, file, nullptr,
+                             ocs::QConfWriteParameter::MODE_LIST |
+                             ocs::QConfWriteParameter::MODE_REPLACE) != 0) {
             sge_parse_return = 1;
          }
-         sge_parse_return |= show_answer_list(answer_list);
-         lFreeList(&answer_list);
          spp++;
          continue;
       }
@@ -4118,7 +4158,10 @@ int sge_parse_qconf(char *argv[]) {
           * no name every rule set is shown, as before; what changed is that a
           * rule set missing from the saved text is reported as still being
           * there instead of being deleted. */
-         if (qconf_edit_list_procedure(param, QConfObj::RQS, "-mrqs", name, uid, gid) != 0) {
+         if (qconf_edit_list_procedure(param, QConfObj::RQS, "-mrqs",
+                                       ocs::QConfModelBase::switch_for(QConfObj::RQS,
+                                                                       ocs::QConfReadKind::OBJECT_LIST),
+                                       nullptr, name, uid, gid) != 0) {
             sge_parse_return = 1;
          }
 
@@ -4149,7 +4192,8 @@ int sge_parse_qconf(char *argv[]) {
           * optional name list is no longer a filter this side applies to what
           * it parsed - it travels with the request and is applied where the
           * parse happens. */
-         if (qconf_apply_obj(os, QConfObj::RQS, file, name) != 0) {
+         if (qconf_apply_obj(os, QConfObj::RQS, file, name,
+                             ocs::QConfWriteParameter::MODE_LIST) != 0) {
             sge_parse_return = 1;
          }
 

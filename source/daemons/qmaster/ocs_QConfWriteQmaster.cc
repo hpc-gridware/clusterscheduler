@@ -32,6 +32,7 @@
 #include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/sge_answer.h"
 #include "spool/flatfile/sge_flatfile.h"
+#include "uti/sge_dstring.h"
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
 
@@ -39,6 +40,67 @@
 #include "msg_qmaster.h"
 #include "ocs_QConfWriteQmaster.h"
 #include "sge_c_gdi.h"
+#include "sge_centry_qmaster.h"
+
+/** @brief Whether a replacing write can delete objects of this target (CS-2823)
+ *
+ * There is no generic delete to drive. `sge_c_gdi_del()` is a switch over the
+ * target and every type has its own function with its own preconditions - a
+ * queue checks for jobs, a host for queues, a complex for references - so a
+ * replace can only offer the targets qconf_delete_one() below actually knows.
+ * Asked before anything is applied, so a type without a delete is refused
+ * rather than half written.
+ *
+ * @param target the GDI target of the type being written
+ * @return true when qconf_delete_one() can delete one of its objects
+ */
+static bool
+qconf_can_delete(const ocs::gdi::Target target) {
+   return target == ocs::gdi::Target::CE_LIST;
+}
+
+/** @brief Delete one object a replacing write found missing from the text
+ *
+ * The same function the GDI delete handler calls for this target, with an
+ * element carrying nothing but the name - which is all a delete is given there
+ * either, because "qconf -dce x" sends exactly that.
+ *
+ * The type's own refusals therefore still apply and still produce their own
+ * messages: a complex that a queue or a rule set references is not deleted, and
+ * a built-in is not deleted at all. The replace keeps the second one from being
+ * asked for in the first place (qconf_ce_retain_builtin), the first one is a
+ * real conflict and has to be reported.
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param target the GDI target of the type being written
+ * @param name the object to delete
+ * @param answer_list receives the reason when the delete was refused
+ * @return true when the object is gone
+ */
+static bool
+qconf_delete_one(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::gdi::Target target,
+                 const char *name, lList **answer_list) {
+   DENTER(TOP_LAYER);
+
+   lListElem *ep = nullptr;
+   int ret = STATUS_EUNKNOWN;
+
+   switch (target) {
+      case ocs::gdi::Target::CE_LIST:
+         ep = lCreateElem(CE_Type);
+         lSetString(ep, CE_name, name);
+         ret = sge_del_centry(packet, task, ep, answer_list, packet->user, packet->host);
+         lFreeElem(&ep);
+         break;
+      default:
+         // qconf_can_delete() is asked first, so this is unreachable
+         answer_list_add(answer_list, MSG_UNKNOWN_OBJECT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
+         break;
+   }
+
+   DRETURN(ret == STATUS_OK);
+}
 
 /** @brief Apply a set of objects, parsing each one first, see the header
  * @param packet the client request
@@ -77,6 +139,36 @@ qconf_write_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monit
    gdi_object_t *object = get_gdi_object(desc.target);
    if (object == nullptr) {
       answer_list_add(answer_list, MSG_UNKNOWN_OBJECT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
+      DRETURN(false);
+   }
+
+   /* A replace needs a text that is the whole truth about the type, and only a
+    * list text is that: for a single object "everything the text does not hold"
+    * would be the rest of the type (CS-2823). */
+   if (parameter.is_replace() && !parameter.is_list()) {
+      answer_list_add(answer_list, MSG_QCONF_WRITEREPLACENOTLIST, STATUS_EUNKNOWN,
+                      ANSWER_QUALITY_ERROR);
+      DRETURN(false);
+   }
+
+   /* And it needs a delete. There is no generic one: sge_c_gdi_del() switches on
+    * the target and every type has its own, so the replace can only offer what
+    * qconf_delete_one() below knows. Refused rather than silently applying the
+    * additions and keeping everything else, which would be a replace in name. */
+   /* A selection says "only these objects", a replace says "the text is all
+    * there is". Together they would delete every object the selection left out,
+    * which no caller can mean. No switch produces the pair; refused so that
+    * none ever does by accident. */
+   if (parameter.is_replace() && !parameter.get_select().empty()) {
+      answer_list_add(answer_list, MSG_QCONF_WRITEREPLACEWITHSELECT, STATUS_EUNKNOWN,
+                      ANSWER_QUALITY_ERROR);
+      DRETURN(false);
+   }
+
+   if (parameter.is_replace() && !qconf_can_delete(desc.target)) {
+      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                              MSG_QCONF_WRITENOREPLACE_S,
+                              ocs::gdi::to_string(desc.target).c_str());
       DRETURN(false);
    }
 
@@ -139,36 +231,32 @@ qconf_write_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monit
        * because that", and only the caller knows what it called the item. */
       ParsedItem entry{label != nullptr ? label : "", {}};
 
-      if (desc.as_list) {
+      if (parameter.is_list()) {
+         /* The layout of a list is not the layout of one object: the complex
+          * table has a header line and aligned columns (qconf_ce_list_sfi),
+          * where a single complex entry is a block of "name value" lines. A row
+          * with a list form is parsed in it; a type whose list is just its
+          * objects one after another - the rule sets, in braces - keeps the
+          * one instruction it has. */
+         const spool_flatfile_instr *list_sfi =
+            (desc.read.list_sfi != nullptr) ? desc.read.list_sfi : desc.sfi;
          lList *lp = qconf_parse_list(answer_list, desc.descr, fields, format,
-                                      label, text, desc.validate, desc.sfi, desc.prepare,
+                                      label, text, desc.validate, list_sfi, desc.prepare,
                                       desc.parse_values);
          if (lp == nullptr) {
             // the reader, the transform or the validator wrote the reason
             result->parse_failed++;
             continue;
          }
-         /* A text that names the same object twice is ambiguous, and was
-          * refused before it was sent - with this message, which says
-          * "replacement request" because that is where the check used to live.
-          * Per item, as it was: a directory never compared across files and
-          * still does not. The name field of a list type is a string (the rule
-          * sets and the complex list), so the lookups here need no host form. */
-         for (const lListElem *a = lFirst(lp); a != nullptr; a = lNext(a)) {
-            const char *name_a = lGetString(a, object->key_nm);
-            for (const lListElem *b = lNext(a); b != nullptr; b = lNext(b)) {
-               if (name_a != nullptr && strcmp(name_a, lGetString(b, object->key_nm)) == 0) {
-                  answer_list_add_sprintf(answer_list, STATUS_ERROR1, ANSWER_QUALITY_ERROR,
-                                          MSG_RQS_REQUEST_DUPLICATE_NAME_S, name_a);
-                  lFreeList(&lp);
-                  break;
-               }
-            }
-            if (lp == nullptr) {
-               break;
-            }
-         }
-         if (lp == nullptr) {
+         /* The checks that need the whole list in hand, per type and per item:
+          * a duplicate name for the rule sets, a duplicate name or shortcut
+          * plus the fields nobody else refuses for the complex list. Per item
+          * as it always was - a directory never compared across files and still
+          * does not. A failure here fails the reading phase, which for a list
+          * text is all-or-nothing, so the text is rejected whole. */
+         if (desc.write.verify_list != nullptr &&
+             desc.write.verify_list(lp, answer_list) != STATUS_OK) {
+            lFreeList(&lp);
             result->parse_failed++;
             continue;
          }
@@ -250,7 +338,7 @@ qconf_write_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monit
     * That is the behaviour of the path this replaces - "whole-list semantics are
     * inherently strict", as the client's own comment put it: a directory of
     * resource quota files with one unreadable file applied nothing. */
-   if (result->parse_failed > 0 && (parameter.is_strict() || desc.as_list)) {
+   if (result->parse_failed > 0 && (parameter.is_strict() || parameter.is_list())) {
       for (auto &item: parsed) {
          for (lListElem *ep: item.elements) {
             lListElem *tmp = ep;
@@ -317,6 +405,79 @@ qconf_write_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monit
       }
    }
 
+   /* Phase 3: what the text did not hold is deleted, for a replacing write.
+    *
+    * The mirror image of the report below, and the reason the two are exclusive:
+    * both compare the stored objects against the names the texts held, and then
+    * one deletes what is left over while the other says it is still there. The
+    * complex list is a replace because that is how a complex is removed from a
+    * file-managed configuration - there is no "-dc", only a row taken out of
+    * the table - and a modify of the rule sets is not, because a shortened text
+    * there used to wreck the quota configuration (CS-2823).
+    *
+    * The names are collected before anything is deleted: a delete changes the
+    * very master list this walks.
+    *
+    * A parse failure stops it. Nothing was written then, so every stored object
+    * would count as "not in the text" and the replace would empty the type -
+    * which is the one way this could do real damage.
+    *
+    * Deletes are not counted in result->elements: that count is what a caller
+    * prints as "N objects written", and an object that is gone was not written. */
+   if (parameter.is_replace() && result->parse_failed == 0) {
+      lList *to_delete = nullptr;
+      dstring kept = DSTRING_INIT;
+      int num_kept = 0;
+
+      for (const lListElem *ep = lFirst(*ocs::DataStore::get_master_list(object->list_type));
+           ep != nullptr; ep = lNext(ep)) {
+         const char *name = qconf_get_name(ep, object->key_nm);
+         if (name == nullptr) {
+            continue;
+         }
+         bool in_text = false;
+         for (const auto &parsed_name: parsed_names) {
+            if (parsed_name == name) {
+               in_text = true;
+               break;
+            }
+         }
+         if (in_text) {
+            continue;
+         }
+
+         if (desc.write.retain_on_replace != nullptr && desc.write.retain_on_replace(ep)) {
+            if (num_kept > 0) {
+               sge_dstring_append(&kept, ", ");
+            }
+            sge_dstring_append(&kept, name);
+            num_kept++;
+            continue;
+         }
+         lAddElemStr(&to_delete, ST_name, name, ST_Type);
+      }
+
+      /* Say what was kept. Staying silent would hide an edit that was not
+       * carried out: whoever removed the row had an intent, and it is not being
+       * fulfilled (CS-2523). */
+      if (num_kept > 0 && desc.write.retain_msg != nullptr) {
+         answer_list_add_sprintf(answer_list, STATUS_OK, ANSWER_QUALITY_INFO,
+                                 desc.write.retain_msg, sge_dstring_get_string(&kept));
+      }
+      sge_dstring_free(&kept);
+
+      for_each_ep_lv(name_elem, to_delete) {
+         const char *name = lGetString(name_elem, ST_name);
+         if (parameter.is_dry()) {
+            answer_list_add_sprintf(answer_list, STATUS_OK, ANSWER_QUALITY_INFO,
+                                    MSG_QCONF_WRITEWOULDDELETE_S, name);
+         } else if (!qconf_delete_one(packet, task, desc.target, name, answer_list)) {
+            all_ok = false;
+         }
+      }
+      lFreeList(&to_delete);
+   }
+
    /* CS-2823: what the round trip's text left out is still there, and the
     * administrator who deleted it in the editor has to be told - silently
     * ignoring the deletion would leave them believing it happened, and applying
@@ -325,9 +486,11 @@ qconf_write_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monit
     * it asked for all of them. Only a list type can lose an object this way; a
     * single object round trip has nothing to leave out. After a text that did
     * not parse there is nothing to say either: nothing was written, so every
-    * object would be "still there" and the list would bury the parse error. */
-   if (desc.as_list && parameter.is_round_trip() && !parameter.is_dry() &&
-       result->parse_failed == 0) {
+    * object would be "still there" and the list would bury the parse error.
+    * A replacing write is excluded because phase 3 already acted on the same
+    * comparison: there is nothing left over to report, it was deleted. */
+   if (parameter.is_list() && !parameter.is_replace() && parameter.is_round_trip() &&
+       !parameter.is_dry() && result->parse_failed == 0) {
       lList *in_scope = nullptr;
       if (parameter.get_select().empty()) {
          for (const lListElem *ep = lFirst(*ocs::DataStore::get_master_list(object->list_type));

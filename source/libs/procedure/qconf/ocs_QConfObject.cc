@@ -54,6 +54,7 @@
 #include "msg_qconf.h"
 
 #include "msg_common.h"
+#include "sgeobj/msg_sgeobjlib.h"
 /* MSG_NORQSFOUND is in the clients' shared catalogue; libs/sgeobj reaches for
  * that header from the library side too, see ocs_QConfModelBase.cc */
 #include "msg_clients_common.h"
@@ -380,6 +381,128 @@ qconf_template_US(lList **answer_list, const char *name) {
    return userset_create(answer_list, name);
 }
 
+/** @brief The checks a rule set text needs the whole list for (CS-2823)
+ *
+ * One check, and it was an `if` in qconf_write_from_procedure() until the
+ * complex list brought three more: a text that names the same rule set twice is
+ * ambiguous, and was refused before it was ever sent. The message says
+ * "replacement request" because that is the request it used to guard - the
+ * wording is kept, the situation is the same one.
+ *
+ * @param lp the rule sets one item's text held
+ * @param alpp receives the reason
+ * @return STATUS_OK, or STATUS_ERROR1 with the reason in @p alpp
+ */
+static int
+qconf_rqs_verify_list(const lList *lp, lList **alpp) {
+   for (const lListElem *a = lFirst(lp); a != nullptr; a = lNext(a)) {
+      const char *name_a = lGetString(a, RQS_name);
+      if (name_a == nullptr) {
+         continue;         // a nameless rule set is qconf_rqs_validate()'s to refuse
+      }
+      for (const lListElem *b = lNext(a); b != nullptr; b = lNext(b)) {
+         const char *name_b = lGetString(b, RQS_name);
+         if (name_b != nullptr && strcmp(name_a, name_b) == 0) {
+            answer_list_add_sprintf(alpp, STATUS_ERROR1, ANSWER_QUALITY_ERROR,
+                                    MSG_RQS_REQUEST_DUPLICATE_NAME_S, name_a);
+            return STATUS_ERROR1;
+         }
+      }
+   }
+   return STATUS_OK;
+}
+
+/** @brief The checks a complex list text needs the whole list for (CS-2823)
+ *
+ * What centry_list_add_del_mod_via_gdi() ran in the client before it sent
+ * anything, minus everything qmaster already does: `centry_elem_validate()`
+ * runs per element in sge_centry_qmaster.cc on every add and every modify, and
+ * it covers the types, the operators, the consumables and - when the urgency is
+ * there at all - that it parses. What is left is what one element cannot answer
+ * or nobody asks:
+ *
+ *  - a **name or shortcut that collides** with another element's name or
+ *    shortcut. Four comparisons, not one, because the two namespaces are one:
+ *    a request may name a complex by either, so a shortcut equal to another
+ *    attribute's name makes both unreachable.
+ *  - a **missing** shortcut or urgency. The element validator takes an absent
+ *    urgency as "nothing to check", and nothing refuses an absent shortcut, so
+ *    without this the complex would be stored unusable.
+ *
+ * The client ran the per-element part of this *inside* the pairwise loop, which
+ * meant a text holding exactly one entry was never checked at all. Here each
+ * element is checked once, which is what the loop was written to do.
+ *
+ * @param lp the complex entries one item's text held
+ * @param alpp receives the reason
+ * @return STATUS_OK, or STATUS_EUNKNOWN with the reason in @p alpp
+ */
+static int
+qconf_ce_verify_list(const lList *lp, lList **alpp) {
+   for (const lListElem *a = lFirst(lp); a != nullptr; a = lNext(a)) {
+      const char *name_a = lGetString(a, CE_name);
+      const char *shortcut_a = lGetString(a, CE_shortcut);
+
+      if (name_a == nullptr) {
+         answer_list_add_sprintf(alpp, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, SFNMAX,
+                                 MSG_CENTRY_NULL_NAME);
+         return STATUS_EUNKNOWN;
+      }
+      if (shortcut_a == nullptr) {
+         answer_list_add_sprintf(alpp, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                                 MSG_CENTRY_NULL_SHORTCUT_S, name_a);
+         return STATUS_EUNKNOWN;
+      }
+      if (lGetString(a, CE_urgency_weight) == nullptr) {
+         answer_list_add_sprintf(alpp, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, SFNMAX,
+                                 MSG_CENTRY_NULL_URGENCY);
+         return STATUS_EUNKNOWN;
+      }
+
+      for (const lListElem *b = lNext(a); b != nullptr; b = lNext(b)) {
+         const char *name_b = lGetString(b, CE_name);
+         const char *shortcut_b = lGetString(b, CE_shortcut);
+         if (name_b == nullptr || shortcut_b == nullptr) {
+            continue;      // reported when the loop above reaches that element
+         }
+         if (strcmp(name_a, name_b) == 0 || strcmp(name_a, shortcut_b) == 0 ||
+             strcmp(shortcut_a, name_b) == 0 || strcmp(shortcut_a, shortcut_b) == 0) {
+            answer_list_add_sprintf(alpp, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                                    MSG_ANSWER_COMPLEXXALREADYEXISTS_SS, name_a, shortcut_a);
+            return STATUS_EUNKNOWN;
+         }
+      }
+   }
+   return STATUS_OK;
+}
+
+/** @brief A built-in complex survives a replacing write (CS-2523)
+ *
+ * It cannot be deleted - `sge_del_centry()` refuses every name `get_rsrc()`
+ * knows - so a replace that asked would abort and leave the configuration half
+ * applied. That is not hypothetical: a backup written before a built-in existed
+ * has no row for it, and "devices" broke every stored fixture from 9.0.0 to
+ * 9.1.0, on the supported upgrade path.
+ *
+ * So the replace stops *asking*, and says which ones it kept. The server's
+ * refusal stays where it is: this is the courtesy in front of it, not a
+ * replacement for it, and "qconf -dce <built-in>" still fails hard because
+ * there the intent to delete is unambiguous.
+ *
+ * @param ep the complex entry the text did not hold
+ * @return true when it is a built-in and must be kept
+ */
+static bool
+qconf_ce_retain_builtin(const lListElem *ep) {
+   const char *name = lGetString(ep, CE_name);
+   if (name == nullptr) {
+      return false;
+   }
+   // both spellings: get_rsrc() answers per queue and per host resource
+   return get_rsrc(name, true, nullptr, nullptr, nullptr, nullptr) == 0 ||
+          get_rsrc(name, false, nullptr, nullptr, nullptr, nullptr) == 0;
+}
+
 /** @brief One row per object type, indexed by QConfObj.
  *
  * Kept in the order of the enum so that qconf_desc() is a plain index. */
@@ -392,7 +515,15 @@ static const qconf_object_desc qconf_object_table[] = {
                 .create_template = qconf_template_CK } },
    /* CE   */ { ocs::gdi::Target::CE_LIST,   CE_Type,   CE_name,   qconf_fields_CE,   &qconf_ce_sfi,              nullptr,      nullptr,             nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr,
               { .list_name = "complex entry", .not_found_msg = MSG_CENTRY_DOESNOTEXIST_S,
-                .create_template = qconf_template_CE, .list_sfi = &qconf_ce_list_sfi } },
+                .create_template = qconf_template_CE, .list_sfi = &qconf_ce_list_sfi },
+              /* as_list stays false: the type's single-object switches are the
+               * ones a *read* renders, and "-mc"/"-Mc" say MODE_LIST on the
+               * request instead. The write part is what makes the table form
+               * writable at all - the whole-list checks, and the built-ins a
+               * replace keeps (CS-2823) */
+              { .verify_list = qconf_ce_verify_list,
+                .retain_on_replace = qconf_ce_retain_builtin,
+                .retain_msg = MSG_CENTRY_KEPT_BUILTIN_S } },
    /* EH   */ { ocs::gdi::Target::EH_LIST,   EH_Type,   EH_name,   qconf_fields_EH,   &qconf_sfi,                 "exechost",   nullptr,             qconf_eh_resolve,  ocs::gdi::SubCommand::NONE,    false, true,  false, SGE_TEMPLATE_NAME,  SGE_GLOBAL_NAME,
               { .fields = qconf_show_fields_EH, .list_name = "execution host", .not_found_msg = MSG_EXEC_XISNOTANEXECUTIONHOST_S, .prepare = qconf_show_prepare_EH } },
    /* HGRP */ { ocs::gdi::Target::HGRP_LIST, HGRP_Type, HGRP_name, qconf_fields_HGRP, &qconf_sfi,                 nullptr,      nullptr,             nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr,
@@ -420,7 +551,10 @@ static const qconf_object_desc qconf_object_table[] = {
                * that was missing, so there is no noun; empty_msg carries the
                * message it always printed (CS-2819) */
               { .list_name = "resource quota set list", .create_template = qconf_template_RQS,
-                .empty_msg = MSG_NORQSFOUND, .write_as_list = true } },
+                .empty_msg = MSG_NORQSFOUND, .write_as_list = true },
+              /* no retain hook and no replace: a modify writes what the text
+               * holds and removes nothing (CS-2823) */
+              { .verify_list = qconf_rqs_verify_list } },
    /* US   */ { ocs::gdi::Target::US_LIST,   US_Type,   US_name,   qconf_fields_US,   &qconf_param_sfi,           nullptr,      qconf_us_validate,   nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr,
               /* -su names the userset it could not find, and calls it an access
                * list, as it always did (CS-2819) */

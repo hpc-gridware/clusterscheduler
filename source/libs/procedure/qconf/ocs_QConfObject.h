@@ -164,6 +164,37 @@ struct qconf_read_desc {
                                    ///< names come from; unused by every other kind
 };
 
+/** @brief What the write path needs on top of the common descriptor (CS-2823)
+ *
+ * Both members exist because an item's text can hold a *list*, and a list has
+ * properties a single object has not: elements that contradict each other, and
+ * elements the text does not mention. A type whose text is one object leaves
+ * the whole struct empty.
+ */
+struct qconf_write_desc {
+   int (*verify_list)(const lList *, lList **);
+                             ///< MODE_LIST: the checks that need the whole list in
+                             ///< hand, run in the reading phase so that a text
+                             ///< failing them is rejected as a whole. Per-element
+                             ///< checks belong in qconf_object_desc::validate, or
+                             ///< in the type's own modifier where they already are -
+                             ///< this is only for what one element cannot answer:
+                             ///< the duplicate name of a rule set text, the
+                             ///< duplicate name or shortcut of a complex list.
+                             ///< nullptr for a type with nothing to check
+   bool (*retain_on_replace)(const lListElem *);
+                             ///< MODE_REPLACE: true for an object the replace must
+                             ///< *not* delete although the text left it out. The
+                             ///< complex list is the only user: a built-in cannot be
+                             ///< deleted at all, so asking would abort the load of
+                             ///< an old backup that has no row for it (CS-2523).
+                             ///< nullptr deletes everything the text omits
+   const char *retain_msg;   ///< the one line that names what was retained, taking
+                             ///< the comma separated names; required with
+                             ///< retain_on_replace, because silently keeping an
+                             ///< object would hide an edit that was not carried out
+};
+
 /** @brief Everything the generic engines need to know about one object type. */
 struct qconf_object_desc {
    ocs::gdi::Target target;                          ///< GDI target list
@@ -181,6 +212,7 @@ struct qconf_object_desc {
    const char *exclude1;                             ///< export: skip this name
    const char *exclude2;                             ///< export: skip this name too
    qconf_read_desc read;                             ///< the read path additions (CS-2796)
+   qconf_write_desc write;                           ///< the write path additions (CS-2823)
 };
 
 /** @brief The descriptor of one object type.
