@@ -571,6 +571,10 @@ does not exist yet. Queue instances for the new host then appear wherever a clus
 a cluster queue prepared for the host group is all the configuration a new host needs. If the rule names no host
 group, the host is added to the execution host list only.
 
+The slots of the new host are set to the number of processors it reports, which is also its *num_proc* load
+value, as the execution host installation would do - that installation cannot run on such a host. A value which
+an administrator configures for the host afterwards is not overwritten.
+
 Only the execution daemon of the host itself may add the host, and the host is added as an execution host and
 nothing else: it does not become an administrative host, and it does not become a submit host. Every other request
 from the host is refused as before until an administrator grants more. In particular the execution host
