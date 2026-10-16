@@ -61,6 +61,14 @@ ocs::QConfWriteParameter::get_bundle() {
    lAddElemUlong(&mode_list, ULNG_value, mode_, ULNG_Type);
    add_parameter_bundle(bundle, WRITE_MODE, mode_list);
 
+   /* sent only when there is a selection, so a request that writes everything
+    * looks exactly as it did before this existed */
+   if (!select_.empty()) {
+      lList *select_list = nullptr;
+      lAddElemStr(&select_list, ST_name, select_.c_str(), ST_Type);
+      add_parameter_bundle(bundle, OBJECT_SELECT, select_list);
+   }
+
    DRETURN(bundle);
 }
 
@@ -91,6 +99,13 @@ ocs::QConfWriteParameter::set_bundle(const lList *bundle) {
    const lListElem *mode_param = lGetElemStr(bundle, SPP_name, WRITE_MODE);
    if (mode_param != nullptr) {
       mode_ = static_cast<uint32_t>(lGetUlong(lFirst(lGetList(mode_param, SPP_value_list)), ULNG_value));
+   }
+
+   const lListElem *select_param = lGetElemStr(bundle, SPP_name, OBJECT_SELECT);
+   if (select_param != nullptr) {
+      const lListElem *value = lFirst(lGetList(select_param, SPP_value_list));
+      const char *names = (value != nullptr) ? lGetString(value, ST_name) : nullptr;
+      select_ = (names != nullptr) ? names : "";
    }
 
    DRETURN_VOID;

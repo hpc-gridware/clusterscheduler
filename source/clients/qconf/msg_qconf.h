@@ -76,7 +76,8 @@
  * handed out again. */
 #define MSG_HGROUP_FILEINCORRECT_S                    _MESSAGE(5201, _("Host group file " PFQMAX " is not correct"))
 
-#define MSG_RQS_NOTFOUNDINFILE_SS                     _MESSAGE(5251, _("resource quota set " SFQ " not found in file " PFQMAX))
+/* MSG_RQS_NOTFOUNDINFILE_SS (5251) moved to daemons/qmaster/msg_qmaster.h with
+ * the selection it belongs to - see CS-2823 */
 
 
 /* MSG_ROLE_DOESNOTEXIST_S (5253) moved to libs/procedure/qconf/msg_qconf.h with

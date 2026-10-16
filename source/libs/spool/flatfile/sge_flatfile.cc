@@ -2441,7 +2441,8 @@ spool_flatfile_read_list(lList **answer_list, const lDescr *descr,
                          bool parse_values, const spool_flatfile_instr *instr,
                          const spool_flatfile_format format,
                          FILE *file,
-                         const char *filepath) {
+                         const char *filepath,
+                         const char *content) {
    DENTER(FLATFILE_LAYER);
 
    bool file_opened = false;
@@ -2455,8 +2456,11 @@ spool_flatfile_read_list(lList **answer_list, const lDescr *descr,
    SGE_CHECK_POINTER_NULL(descr, answer_list);
    SGE_CHECK_POINTER_NULL(instr, answer_list);
 
-   /* if no file handle is passed, try to open file for reading */
-   if (file == nullptr) {
+   /* if no file handle and no text is passed, try to open file for reading.
+    * A text is what the write procedure has - the list arrives as the string an
+    * editor or a file gave the client, and is parsed where the objects are
+    * written (CS-2823), exactly as spool_flatfile_read_object() takes one. */
+   if (file == nullptr && content == nullptr) {
       SGE_CHECK_POINTER_NULL(filepath, answer_list);
 
       if (sge_is_file(filepath) == 0) {
@@ -2492,16 +2496,20 @@ spool_flatfile_read_list(lList **answer_list, const lDescr *descr,
          fields = my_fields;
       }
 
-      dstring json = DSTRING_INIT;
-      char chunk[4097];
-      size_t n;
-      while ((n = fread(chunk, 1, sizeof(chunk) - 1, file)) > 0) {
-         chunk[n] = '\0';
-         sge_dstring_append(&json, chunk);
+      if (content != nullptr) {
+         list = spool_json_read_list(answer_list, descr, fields, fields_out, content);
+      } else {
+         dstring json = DSTRING_INIT;
+         char chunk[4097];
+         size_t n;
+         while ((n = fread(chunk, 1, sizeof(chunk) - 1, file)) > 0) {
+            chunk[n] = '\0';
+            sge_dstring_append(&json, chunk);
+         }
+         list = spool_json_read_list(answer_list, descr, fields, fields_out,
+                                     sge_dstring_get_string(&json));
+         sge_dstring_free(&json);
       }
-      list = spool_json_read_list(answer_list, descr, fields, fields_out,
-                                  sge_dstring_get_string(&json));
-      sge_dstring_free(&json);
       if (my_fields != nullptr) {
          spool_free_spooling_fields(my_fields);
       }
@@ -2511,12 +2519,14 @@ spool_flatfile_read_list(lList **answer_list, const lDescr *descr,
       DRETURN(list);
    }
 
-   /* initialize scanner */
-   token = spool_scanner_initialize(file);
+   /* initialize scanner, from the text when there is one */
+   token = (content != nullptr) ? scanner_initialize_string(content)
+                                : spool_scanner_initialize(file);
 
    if (token == SPFT_ERROR_NO_MEMORY) {
       /* messages generated in spool_get_fields_to_spool */
       spool_scanner_shutdown();
+      scanner_release_string();
 
       answer_list_add_sprintf(answer_list, STATUS_EDISK,
                               ANSWER_QUALITY_ERROR, 
@@ -2535,6 +2545,7 @@ spool_flatfile_read_list(lList **answer_list, const lDescr *descr,
       if (my_fields == nullptr) {
          /* messages generated in spool_get_fields_to_spool */
          spool_scanner_shutdown();
+         scanner_release_string();
          if (file_opened) {
             FCLOSE(file);
          }
@@ -2551,6 +2562,7 @@ spool_flatfile_read_list(lList **answer_list, const lDescr *descr,
                                     fields, fields_out, &token, new_end_token,
                                     parse_values, nullptr);
    spool_scanner_shutdown();
+   scanner_release_string();
 
    /* if we opened the file, we also have to close it */
    if (file_opened) {

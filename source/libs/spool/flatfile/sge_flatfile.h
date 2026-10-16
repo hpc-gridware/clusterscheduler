@@ -232,7 +232,8 @@ spool_flatfile_read_list(lList **answer_list, const lDescr *descr,
                          bool parse_values, const spool_flatfile_instr *instr,
                          const spool_flatfile_format format,
                          FILE *file,
-                         const char *filepath);
+                         const char *filepath,
+                         const char *content = nullptr);
 
 bool 
 spool_flatfile_align_object(lList **answer_list,

@@ -56,8 +56,13 @@ namespace ocs {
     * @ingroup libprocedure
     */
    struct QConfWriteResult {
-      uint32_t applied = 0;       ///< objects written, or that would be written in a dry run
-      uint32_t parse_failed = 0;  ///< objects that could not be read, so were never applied
+      uint32_t applied = 0;       ///< items written, or that would be written in a dry run
+      uint32_t parse_failed = 0;  ///< items that could not be read, so were never applied
+      uint32_t elements = 0;      ///< objects written, which for a type whose text holds a
+                                  ///< list is more than one per item (CS-2823). For every
+                                  ///< other type it equals @ref applied, so a caller that
+                                  ///< counts objects can use it without asking which kind
+                                  ///< of type it is writing
    };
 
    /** @brief How the procedure library reaches the writing code in qmaster

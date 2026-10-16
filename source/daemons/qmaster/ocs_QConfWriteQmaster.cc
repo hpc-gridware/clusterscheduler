@@ -22,11 +22,13 @@
  * @brief The writing half of the qconf write procedure, see the header
  */
 
+#include <cstring>
 #include <string>
 #include <utility>
 #include <vector>
 
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "sgeobj/msg_sgeobjlib.h"
 #include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/sge_answer.h"
 #include "spool/flatfile/sge_flatfile.h"
@@ -78,16 +80,6 @@ qconf_write_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monit
       DRETURN(false);
    }
 
-   /* A file holding a list rather than a single object - the resource quota sets
-    * - needs a different parse and a different add/modify decision, and has its
-    * own path in the client to this day. Refused rather than mis-parsed; it is
-    * part of CS-2823. */
-   if (desc.as_list) {
-      answer_list_add_sprintf(answer_list, STATUS_ENOIMP, ANSWER_QUALITY_ERROR,
-                              MSG_QCONF_WRITELISTUNSUPPORTED_S, object->object_name);
-      DRETURN(false);
-   }
-
    /* The text is in the form a read rendered it, which is what the caller's
     * -fmt asked for - so the same value decides how it is parsed back. */
    spool_flatfile_format format = SP_FORM_ASCII;
@@ -107,10 +99,19 @@ qconf_write_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monit
    bool fields_owned = false;
    spooling_field *fields = desc.build_fields(format, &fields_owned);
 
+   /* What an item's text holds: one object, or a list of them for the resource
+    * quota sets and the complex list. An item is therefore a label and a
+    * *vector* of objects - one long for every other type, which is why phase 2
+    * below needs no second shape (CS-2823). */
+   struct ParsedItem {
+      std::string label;                 ///< what the caller called this item
+      std::vector<lListElem *> elements; ///< its objects, owned until phase 2 frees them
+   };
+
    /* Phase 1: read every item. Nothing is written yet, not even in the default
     * mode - the two phases are what makes -strict possible at all, and running
     * them for every mode keeps one code path instead of two. */
-   std::vector<std::pair<std::string, lListElem *>> parsed;
+   std::vector<ParsedItem> parsed;
    for (const lListElem *item = lFirst(parameter.get_items()); item != nullptr; item = lNext(item)) {
       const char *label = lGetString(item, VA_variable);
       const char *text = lGetString(item, VA_value);
@@ -136,15 +137,98 @@ qconf_write_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monit
        * its messages. It is the caller's string and means nothing here, which is
        * exactly why it is the right one: the caller gets back "this item failed,
        * because that", and only the caller knows what it called the item. */
-      lListElem *ep = qconf_parse_object(answer_list, desc.descr, fields, format,
-                                         label, text, desc.validate, desc.sfi, desc.prepare,
-                                         desc.parse_values);
-      if (ep == nullptr) {
-         // the reader, the transform or the validator wrote the reason
-         result->parse_failed++;
-         continue;
+      ParsedItem entry{label != nullptr ? label : "", {}};
+
+      if (desc.as_list) {
+         lList *lp = qconf_parse_list(answer_list, desc.descr, fields, format,
+                                      label, text, desc.validate, desc.sfi, desc.prepare,
+                                      desc.parse_values);
+         if (lp == nullptr) {
+            // the reader, the transform or the validator wrote the reason
+            result->parse_failed++;
+            continue;
+         }
+         /* A text that names the same object twice is ambiguous, and was
+          * refused before it was sent - with this message, which says
+          * "replacement request" because that is where the check used to live.
+          * Per item, as it was: a directory never compared across files and
+          * still does not. The name field of a list type is a string (the rule
+          * sets and the complex list), so the lookups here need no host form. */
+         for (const lListElem *a = lFirst(lp); a != nullptr; a = lNext(a)) {
+            const char *name_a = lGetString(a, object->key_nm);
+            for (const lListElem *b = lNext(a); b != nullptr; b = lNext(b)) {
+               if (name_a != nullptr && strcmp(name_a, lGetString(b, object->key_nm)) == 0) {
+                  answer_list_add_sprintf(answer_list, STATUS_ERROR1, ANSWER_QUALITY_ERROR,
+                                          MSG_RQS_REQUEST_DUPLICATE_NAME_S, name_a);
+                  lFreeList(&lp);
+                  break;
+               }
+            }
+            if (lp == nullptr) {
+               break;
+            }
+         }
+         if (lp == nullptr) {
+            result->parse_failed++;
+            continue;
+         }
+
+         /* Only the named objects, when the caller named some: "qconf -Mrqs
+          * <file> <names>" changes those and leaves every other rule set alone.
+          * The filter used to run in the client over what it had parsed; the
+          * client parses nothing any more, so it travels as a parameter and the
+          * filter runs where the parse is. A name the text does not hold fails
+          * the item, as it failed the command before. */
+         if (!parameter.get_select().empty()) {
+            lList *wanted = nullptr;
+            lString2List(parameter.get_select().c_str(), &wanted, ST_Type, ST_name, ", ");
+            bool all_found = true;
+            for_each_ep_lv(name_elem, wanted) {
+               const char *name = lGetString(name_elem, ST_name);
+               lListElem *found = (name != nullptr)
+                                  ? lGetElemStrRW(lp, object->key_nm, name) : nullptr;
+               if (found == nullptr) {
+                  answer_list_add_sprintf(answer_list, STATUS_EEXIST, ANSWER_QUALITY_ERROR,
+                                          MSG_RQS_NOTFOUNDINFILE_SS,
+                                          name != nullptr ? name : "",
+                                          label != nullptr ? label : "");
+                  all_found = false;
+                  break;
+               }
+               lDechainElem(lp, found);
+               entry.elements.push_back(found);
+            }
+            lFreeList(&wanted);
+            lFreeList(&lp);          /* what was not named stays untouched */
+            if (!all_found) {
+               for (lListElem *ep: entry.elements) {
+                  lListElem *tmp = ep;
+                  lFreeElem(&tmp);
+               }
+               result->parse_failed++;
+               continue;
+            }
+         } else {
+            lListElem *ep;
+            while ((ep = lFirstRW(lp)) != nullptr) {
+               lDechainElem(lp, ep);
+               entry.elements.push_back(ep);
+            }
+            lFreeList(&lp);
+         }
+      } else {
+         lListElem *ep = qconf_parse_object(answer_list, desc.descr, fields, format,
+                                            label, text, desc.validate, desc.sfi, desc.prepare,
+                                            desc.parse_values);
+         if (ep == nullptr) {
+            // the reader, the transform or the validator wrote the reason
+            result->parse_failed++;
+            continue;
+         }
+         entry.elements.push_back(ep);
       }
-      parsed.emplace_back(label != nullptr ? label : "", ep);
+
+      parsed.push_back(std::move(entry));
    }
 
    if (fields_owned) {
@@ -154,45 +238,73 @@ qconf_write_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monit
    /* -strict is a parse level gate, which is what it means in the client today:
     * an item that could not be read rejects the batch, one that could not be
     * applied does not. The caller names the path it was given in its own report,
-    * so the message is its own; what it gets from here is the count. */
-   if (parameter.is_strict() && result->parse_failed > 0) {
-      for (auto &[label, ep]: parsed) {
-         lFreeElem(&ep);
+    * so the message is its own; what it gets from here is the count.
+    *
+    * A type whose text holds a list is strict whether or not it was asked for.
+    * That is the behaviour of the path this replaces - "whole-list semantics are
+    * inherently strict", as the client's own comment put it: a directory of
+    * resource quota files with one unreadable file applied nothing. */
+   if (result->parse_failed > 0 && (parameter.is_strict() || desc.as_list)) {
+      for (auto &item: parsed) {
+         for (lListElem *ep: item.elements) {
+            lListElem *tmp = ep;
+            lFreeElem(&tmp);
+         }
       }
       DRETURN(false);
    }
 
-   // Phase 2: apply what was read, or say what applying would do
+   /* Phase 2: apply what was read, or say what applying would do.
+    *
+    * Two counters, because an item and an object are not the same thing for a
+    * type whose text holds a list: `applied` counts items that went in
+    * completely, which is what the caller's "N of M files" arithmetic needs,
+    * and `elements` counts the objects, which is what a summary over resource
+    * quota sets prints. For every other type each item is one object and the
+    * two are equal. */
    const lList *master_list = *ocs::DataStore::get_master_list(object->list_type);
    bool all_ok = (result->parse_failed == 0);
-   for (auto &[label, ep]: parsed) {
-      const char *name = qconf_get_name(ep, object->key_nm);
-      const bool exists = qconf_name_in_list(master_list, desc.descr, object->key_nm, name);
+   for (auto &item: parsed) {
+      size_t applied_here = 0;
 
-      if (parameter.is_dry()) {
-         answer_list_add_sprintf(answer_list, STATUS_OK, ANSWER_QUALITY_INFO,
-                                 exists ? MSG_QCONF_WRITEWOULDMODIFY_S : MSG_QCONF_WRITEWOULDADD_S,
-                                 name != nullptr ? name : "");
-         result->applied++;
-         lFreeElem(&ep);
-         continue;
+      for (lListElem *ep: item.elements) {
+         const char *name = qconf_get_name(ep, object->key_nm);
+         const bool exists = qconf_name_in_list(master_list, desc.descr, object->key_nm, name);
+
+         if (parameter.is_dry()) {
+            answer_list_add_sprintf(answer_list, STATUS_OK, ANSWER_QUALITY_INFO,
+                                    exists ? MSG_QCONF_WRITEWOULDMODIFY_S : MSG_QCONF_WRITEWOULDADD_S,
+                                    name != nullptr ? name : "");
+            applied_here++;
+            result->elements++;
+         } else {
+            /* add == 0 modifies and fails when the object is gone, add == 1 adds
+             * and fails when it is already there - sge_gdi_add_mod_generic()
+             * enforces both against the list it is about to change. Deciding it
+             * from the master list here is what the client used to decide from
+             * its bulk name GET, and it is now decided where the list actually
+             * is. */
+            const int ret = sge_gdi_add_mod_generic(packet, task, answer_list, ep, exists ? 0 : 1,
+                                                    object, packet->user, packet->host,
+                                                    ocs::gdi::Command::MOD_PROCEDURE, desc.sub_cmd,
+                                                    nullptr, monitor);
+            if (ret == STATUS_OK) {
+               applied_here++;
+               result->elements++;
+            } else {
+               all_ok = false;
+            }
+         }
+
+         lListElem *tmp = ep;
+         lFreeElem(&tmp);
       }
 
-      /* add == 0 modifies and fails when the object is gone, add == 1 adds and
-       * fails when it is already there - sge_gdi_add_mod_generic() enforces both
-       * against the list it is about to change. Deciding it from the master list
-       * here is what the client used to decide from its bulk name GET, and it is
-       * now decided where the list actually is. */
-      const int ret = sge_gdi_add_mod_generic(packet, task, answer_list, ep, exists ? 0 : 1, object,
-                                              packet->user, packet->host,
-                                              ocs::gdi::Command::MOD_PROCEDURE, desc.sub_cmd,
-                                              nullptr, monitor);
-      if (ret == STATUS_OK) {
+      if (applied_here == item.elements.size()) {
          result->applied++;
       } else {
          all_ok = false;
       }
-      lFreeElem(&ep);
    }
 
    DRETURN(all_ok);

@@ -70,6 +70,7 @@ namespace ocs {
       static constexpr auto OBJECT_WRITE = "object_write";  ///< The sub-procedure name
       static constexpr auto OBJECT_SET = "object_set";      ///< The items, as VA_variable/VA_value pairs
       static constexpr auto WRITE_MODE = "write_mode";      ///< The batch policy, a mask of MODE_*
+      static constexpr auto OBJECT_SELECT = "object_select";///< Which objects of a list item to write
 
       /* The policies qconf already has, with the meaning they already have -
        * see the design note. MODE_STRICT is parse level, as -strict is today:
@@ -82,6 +83,7 @@ namespace ocs {
    private:
       lList *items_ = nullptr;        ///< VA_Type: VA_variable the label, VA_value the text
       uint32_t mode_ = MODE_NONE;     ///< mask of MODE_*
+      std::string select_;            ///< the names of get_select(), empty for all of them
 
    public:
       /** @brief Build the parameters on the client side
@@ -122,6 +124,24 @@ namespace ocs {
        * @param mode a mask of MODE_*
        */
       void set_mode(const uint32_t mode) { mode_ = mode; }
+
+      /** @brief Write only the named objects of an item whose text holds a list
+       *
+       * "qconf -Mrqs <file> <names>" changes the named rule sets and leaves
+       * every other one alone, which used to be a filter the client applied to
+       * what it had parsed. The client parses nothing any more, so the names
+       * travel with the request and the filter runs where the parse is. A name
+       * the text does not contain is an error, as it was.
+       *
+       * The string is passed on as the caller received it and split on the
+       * server, so the separators stay the ones qconf always accepted.
+       *
+       * @param names comma or space separated object names, empty for all of them
+       */
+      void set_select(const std::string &names) { select_ = names; }
+
+      /// @return the names set_select() was given, empty when every object is to be written
+      [[nodiscard]] const std::string &get_select() const { return select_; }
 
       /** @brief Say which form the item texts are in
        *

@@ -785,8 +785,12 @@
 #define MSG_QCONF_WRITEWOULDADD_S                  _MESSAGE(34007, _("[dry-run] would add " SFQ))
 #define MSG_QCONF_WRITEWOULDMODIFY_S               _MESSAGE(34008, _("[dry-run] would modify " SFQ))
 #define MSG_QCONF_WRITEWRONGTARGET_SS              _MESSAGE(34009, _("the write procedure was addressed to " SFQ " but writes " SFQ))
-#define MSG_QCONF_WRITELISTUNSUPPORTED_S           _MESSAGE(34010, _("the write procedure cannot write " SFN " yet: its file holds a list of objects"))
+/* 34010 is free: MSG_QCONF_WRITELISTUNSUPPORTED_S refused a text holding a list
+ * of objects, which the write procedure reads since CS-2823 */
 #define MSG_QCONF_WRITEEMPTYTEXT_S                 _MESSAGE(34011, _(PFNMAX ": no object text was sent"))
 #define MSG_QCONF_WRITEEMPTYTEXT                   _MESSAGE(34012, _("no object text was sent"))
+/* moved here from clients/qconf/msg_qconf.h (5251): the names of "-Mrqs <file>
+ * <names>" are selected where the file is parsed, which is qmaster (CS-2823) */
+#define MSG_RQS_NOTFOUNDINFILE_SS                  _MESSAGE(34013, _("resource quota set " SFQ " not found in file " PFQMAX))
 
 // clang-format on

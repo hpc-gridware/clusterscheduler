@@ -195,6 +195,13 @@ const char *qconf_get_name(const lListElem *ep, int name_nm);
 
 bool qconf_name_in_list(const lList *names, const lDescr *descr, int name_nm, const char *name);
 
+lList *qconf_parse_list(lList **answer_list, const lDescr *descr, spooling_field *fields,
+                        spool_flatfile_format format, const char *filename, const char *content,
+                        int (*validate)(const lListElem *, lList **),
+                        const spool_flatfile_instr *sfi,
+                        int (*prepare)(lListElem *, lList **),
+                        bool parse_values);
+
 lListElem *qconf_parse_object(lList **answer_list, const lDescr *descr, spooling_field *fields,
                               spool_flatfile_format format, const char *filename, const char *content,
                               int (*validate)(const lListElem *, lList **),

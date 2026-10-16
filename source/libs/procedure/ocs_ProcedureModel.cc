@@ -98,12 +98,14 @@ ocs::ProcedureModel::get_reduction() const {
 }
 
 /** @brief What a write procedure did, see the header
- * @param applied receives how many objects were written
+ * @param applied receives how many items were written
  * @param parse_failed receives how many could not be read
+ * @param elements receives how many objects that was, nullptr to ignore it
  * @return true when the response carried a write result
  */
 bool
-ocs::ProcedureModel::get_write_result(uint32_t &applied, uint32_t &parse_failed) const {
+ocs::ProcedureModel::get_write_result(uint32_t &applied, uint32_t &parse_failed,
+                                      uint32_t *elements) const {
    DENTER(TOP_LAYER);
 
    const lListElem *applied_entry = lGetElemStr(procedure_response, SPP_name,
@@ -124,6 +126,21 @@ ocs::ProcedureModel::get_write_result(uint32_t &applied, uint32_t &parse_failed)
 
    applied = static_cast<uint32_t>(lGetUlong(applied_value, ULNG_value));
    parse_failed = static_cast<uint32_t>(lGetUlong(failed_value, ULNG_value));
+
+   /* The element count is reported next to the two above and asked for by the
+    * one caller that prints a count of objects. It is read on its own, so a
+    * response that carries only the two older entries is still a complete
+    * write result - the counts a caller must have are those two. */
+   if (elements != nullptr) {
+      const lListElem *elements_entry = lGetElemStr(procedure_response, SPP_name,
+                                                    ProcedureParameter::WRITE_ELEMENTS);
+      const lListElem *elements_value = (elements_entry != nullptr)
+                                        ? lFirst(lGetList(elements_entry, SPP_value_list))
+                                        : nullptr;
+      if (elements_value != nullptr) {
+         *elements = static_cast<uint32_t>(lGetUlong(elements_value, ULNG_value));
+      }
+   }
 
    DRETURN(true);
 }

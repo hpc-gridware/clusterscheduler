@@ -190,8 +190,11 @@ namespace ocs {
        * that knows says so.
        * @{
        */
-      static constexpr auto WRITE_APPLIED = "write_applied";       ///< How many objects a write applied
+      static constexpr auto WRITE_APPLIED = "write_applied";       ///< How many items a write applied
       static constexpr auto WRITE_PARSE_FAILED = "write_parse_failed"; ///< How many could not be read
+      static constexpr auto WRITE_ELEMENTS = "write_elements";     ///< How many objects that was -
+                                                                   ///< more than one per item for a
+                                                                   ///< type whose text holds a list
       /** @} */
       /** @} */
 #pragma endregion

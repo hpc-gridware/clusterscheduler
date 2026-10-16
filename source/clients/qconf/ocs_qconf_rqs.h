@@ -48,7 +48,5 @@ bool rqs_get_via_gdi(lList **answer_list, const lList *rqsref_list, lList **rqs_
 bool rqs_get_all_via_gdi(lList **answer_list, lList **rqs_list);
 bool rqs_add(lList **answer_list, const char *name);
 bool rqs_modify(lList **answer_list, const char *name);
-bool rqs_add_from_file(lList **answer_list, const char *filename);
-bool rqs_modify_from_file(lList **answer_list, const char *filename, const char *name);
 
 bool rqs_add_del_mod_via_gdi(lList *rqs_list, lList **answer_list, ocs::gdi::Command gdi_command, ocs::gdi::SubCommand gdi_sub_command);

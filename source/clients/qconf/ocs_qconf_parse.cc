@@ -627,7 +627,8 @@ qconf_collect_text(const char *filepath, void *vctx) {
  * @return the number of objects that failed
  */
 static int
-qconf_apply_path_procedure(std::ostream &os, const QConfObj o, const char *path) {
+qconf_apply_path_procedure(std::ostream &os, const QConfObj o, const char *path,
+                           const char *select = nullptr) {
    DENTER(TOP_LAYER);
 
    const qconf_object_desc &d = qconf_desc(o);
@@ -639,6 +640,9 @@ qconf_apply_path_procedure(std::ostream &os, const QConfObj o, const char *path)
                               : ocs::ProcedureParameter::OutputFormat::PLAIN);
    param.set_mode((qconf_opt_strict ? ocs::QConfWriteParameter::MODE_STRICT : 0u) |
                   (qconf_opt_dry_run ? ocs::QConfWriteParameter::MODE_DRY : 0u));
+   if (select != nullptr) {
+      param.set_select(select);
+   }
 
    qconf_text_ctx ctx = {&param, 0};
    qconf_for_each_file(path, qconf_collect_text, &ctx);
@@ -646,8 +650,12 @@ qconf_apply_path_procedure(std::ostream &os, const QConfObj o, const char *path)
    /* A file this side could not even open counts as a file that failed to parse,
     * which is what it was when the parse happened here - so -strict rejects the
     * batch before it is sent. The mode cannot be left to qmaster alone: qmaster
-    * never learns of a file it was not sent. */
-   if (qconf_opt_strict && ctx.n_fail > 0) {
+    * never learns of a file it was not sent.
+    *
+    * A type whose text holds a list rejects such a batch whether or not -strict
+    * was given: its objects come in whole texts, and the path this replaced
+    * applied nothing when one file of a directory could not be read (CS-2823). */
+   if ((qconf_opt_strict || (d.as_list && is_dir)) && ctx.n_fail > 0) {
       ERROR(MSG_QCONF_STRICTNOTHINGAPPLIED_SI, path, ctx.n_fail);
       DRETURN(ctx.n_fail);
    }
@@ -655,6 +663,7 @@ qconf_apply_path_procedure(std::ostream &os, const QConfObj o, const char *path)
    const int n_items = param.get_item_count();
    uint32_t applied = 0;
    uint32_t parse_failed = 0;
+   uint32_t elements = 0;
 
    /* Nothing readable at the path means nothing to send - but still a summary
     * below, because an empty directory has always produced one. */
@@ -667,7 +676,7 @@ qconf_apply_path_procedure(std::ostream &os, const QConfObj o, const char *path)
        * because the two kinds of failure are not distinguishable there and
        * -strict turns on exactly that difference - see
        * ProcedureParameter::WRITE_APPLIED. */
-      if (!model.get_write_result(applied, parse_failed)) {
+      if (!model.get_write_result(applied, parse_failed, &elements)) {
          /* No write result means the request never reached the procedure -
           * refused on permission, say. Nothing was applied, and the reason is in
           * the answer list. */
@@ -680,10 +689,17 @@ qconf_apply_path_procedure(std::ostream &os, const QConfObj o, const char *path)
       show_answer_list(alp);
       lFreeList(&alp);
 
-      if (qconf_opt_strict && parse_failed > 0) {
+      if ((qconf_opt_strict || (d.as_list && is_dir)) && parse_failed > 0) {
          /* qmaster applied nothing. The message names the path, which is this
           * side's, and it is the one place where the two phases have to be told
-          * apart - hence the typed count rather than a count of error entries. */
+          * apart - hence the typed count rather than a count of error entries.
+          *
+          * The same message for a **directory** of a list type without -strict,
+          * because that is what the administrator is told today: one unreadable
+          * file among several reports "nothing applied" and applies nothing. A
+          * single file does not get the line - there the per item message is the
+          * whole story, and adding one would be a new sentence for an unchanged
+          * behaviour (CS-2823). */
          ERROR(MSG_QCONF_STRICTNOTHINGAPPLIED_SI, path, static_cast<int>(parse_failed));
          DRETURN(static_cast<int>(parse_failed));
       }
@@ -693,8 +709,15 @@ qconf_apply_path_procedure(std::ostream &os, const QConfObj o, const char *path)
    const int n_fail = n_items - n_ok + ctx.n_fail;
    if (is_dir) {
       /* CS-2299 H1: one summary line per directory batch. Still printed here and
-       * still to this stream - it names the path, which is this side's. */
-      qconf_info(os, MSG_QCONF_ADDMODSUMMARY_SII, path, n_ok, n_fail);
+       * still to this stream - it names the path, which is this side's.
+       *
+       * A type whose text holds a list counts objects, not files: that is what
+       * the resource quota path printed before it came here, and "3 of 3" over
+       * two files would be a different number than the administrator asked
+       * about. The failures stay items - a file either went in whole or did
+       * not (CS-2823). */
+      qconf_info(os, MSG_QCONF_ADDMODSUMMARY_SII, path,
+                 d.as_list ? static_cast<int>(elements) : n_ok, n_fail);
    }
 
    DRETURN(n_fail);
@@ -1641,17 +1664,17 @@ qconf_delete_names(QConfObj o, const char *names) {
  * @param os the stream the output is written to (CS-1841)
  * @param o    the object type
  * @param path file or directory to read
+ * @param select for a type whose text holds a list, the names to write out of it -
+ *               "-Mrqs <file> <names>" and nothing else uses it; nullptr writes
+ *               everything the text holds (CS-2823)
  * @return 0 on success, non-zero on error
  */
 static int
-qconf_apply_obj(std::ostream &os, QConfObj o, const char *path) {
+qconf_apply_obj(std::ostream &os, QConfObj o, const char *path, const char *select = nullptr) {
    /* CS-2822: the object types whose write runs as a stored procedure take the
-    * other path, which parses in qmaster instead of here. These eight are the
-    * types on the CS-2797 editor engine, converted in CS-2823; the ones with a
-    * bespoke editor follow when their read side reaches the descriptor table
-    * (CS-2816 to CS-2820). The list is here rather than in a field of the
-    * descriptor table so that it disappears with the last entry instead of
-    * becoming a permanent column. */
+    * other path, which parses in qmaster instead of here. The list is here
+    * rather than in a field of the descriptor table so that it disappears with
+    * the last entry instead of becoming a permanent column. */
    switch (o) {
       case QConfObj::CAL:
       case QConfObj::CE:
@@ -1660,8 +1683,9 @@ qconf_apply_obj(std::ostream &os, QConfObj o, const char *path) {
       case QConfObj::PE:
       case QConfObj::PR:
       case QConfObj::RL:
+      case QConfObj::RQS:
       case QConfObj::UU:
-         return qconf_apply_path_procedure(os, o, path);
+         return qconf_apply_path_procedure(os, o, path, select);
       default:
          break;
    }
@@ -2029,71 +2053,6 @@ qconf_rqs_collect(const char *filepath, void *vctx) {
    }
    lFreeList(&l);
    return 0;
-}
-
-/**
- * @brief Add or modify the resource quota set(s) defined at @a path (CS-2307).
- *
- * A single file keeps the existing (possibly multi-rule-set) behaviour. A
- * directory merges every file's rule sets into one SET_ALL request; if any file
- * fails to parse nothing is applied (whole-list semantics are inherently strict).
- * Honours -dry and prints a one-line summary.
- *
- * @param os the stream the output is written to (CS-1841)
- * @param path file or directory to apply
- * @param cmd  ocs::gdi::Command::ADD or MOD
- * @param name optional rqs-name list for the single-file -Mrqs form, or nullptr
- * @return 0 on success, non-zero on failure
- */
-static int
-qconf_rqs_apply(std::ostream &os, const char *path, ocs::gdi::Command cmd, const char *name) {
-   bool is_dir = sge_is_directory(path);
-
-   /* preserve the existing single-file behaviour verbatim (only when actually
-    * sending - a -dry single file falls through to the report path below) */
-   if (!is_dir && !qconf_opt_dry_run) {
-      lList *alp = nullptr;
-      bool ok = (cmd == ocs::gdi::Command::ADD)
-         ? rqs_add_from_file(&alp, path)
-         : rqs_modify_from_file(&alp, path, name);
-      int ret = show_answer_list(alp);
-      lFreeList(&alp);
-      return (ok && ret == 0) ? 0 : 1;
-   }
-
-   qconf_rqs_ctx ctx = {&os, lCreateList("rqs", RQS_Type), 0};
-   qconf_for_each_file(path, qconf_rqs_collect, &ctx);
-
-   if (ctx.n_fail > 0) {
-      ERROR(MSG_QCONF_STRICTNOTHINGAPPLIED_SI, path, ctx.n_fail);
-      lFreeList(&ctx.all);
-      return ctx.n_fail;
-   }
-
-   int n_ok = lGetNumberOfElem(ctx.all);
-   if (qconf_opt_dry_run) {
-      const lListElem *r;
-      for_each_ep(r, ctx.all) {
-         qconf_info(os, cmd == ocs::gdi::Command::ADD ? MSG_QCONF_DRYRUNWOULDADD_S
-                                                         : MSG_QCONF_DRYRUNWOULDMODIFY_S,
-                           lGetString(r, RQS_name));
-      }
-      lFreeList(&ctx.all);
-      return 0;
-   }
-
-   int ret = 0;
-   if (n_ok > 0) {
-      lList *alp = nullptr;
-      rqs_add_del_mod_via_gdi(ctx.all, &alp, cmd, ocs::gdi::SubCommand::SET_ALL);
-      ret += show_answer_list(alp);
-      lFreeList(&alp);
-   }
-   if (is_dir) {
-      qconf_info(os, MSG_QCONF_ADDMODSUMMARY_SII, path, n_ok, 0);
-   }
-   lFreeList(&ctx.all);
-   return ret;
 }
 
 /**
@@ -2776,7 +2735,9 @@ int sge_parse_qconf(char *argv[]) {
          }
          qconf_is_manager_on_admin_host(username, qualified_hostname);
 
-         if (qconf_rqs_apply(os, file, ocs::gdi::Command::ADD, nullptr) != 0) {
+         /* CS-2823: as every other type's "-A<obj>" - add or modify what the
+          * text holds, which is what this did before through its own path. */
+         if (qconf_apply_obj(os, QConfObj::RQS, file) != 0) {
             sge_parse_return = 1;
          }
 
@@ -4086,7 +4047,11 @@ int sge_parse_qconf(char *argv[]) {
             name = *spp;
          }
 
-         if (qconf_rqs_apply(os, file, ocs::gdi::Command::MOD, name) != 0) {
+         /* CS-2823: the same path every other type's "-M<obj>" takes. The
+          * optional name list is no longer a filter this side applies to what
+          * it parsed - it travels with the request and is applied where the
+          * parse happens. */
+         if (qconf_apply_obj(os, QConfObj::RQS, file, name) != 0) {
             sge_parse_return = 1;
          }
 

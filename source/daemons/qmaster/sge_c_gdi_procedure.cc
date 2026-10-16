@@ -766,6 +766,11 @@ namespace {
          lAddElemUlong(&failed_list, ULNG_value, outcome.write.parse_failed, ULNG_Type);
          ocs::ProcedureParameter::add_parameter_bundle(bundle, ocs::ProcedureParameter::WRITE_PARSE_FAILED,
                                                        failed_list);
+
+         lList *elements_list = nullptr;
+         lAddElemUlong(&elements_list, ULNG_value, outcome.write.elements, ULNG_Type);
+         ocs::ProcedureParameter::add_parameter_bundle(bundle, ocs::ProcedureParameter::WRITE_ELEMENTS,
+                                                       elements_list);
       }
 #if 0
       DPRINTF("response:\n %s", os.str().c_str());
@@ -925,6 +930,8 @@ namespace {
        modifies(ocs::gdi::Target::PR_LIST), &run_procedure<QConfWriteTraits<QConfObj::PR>>},
       {to_string_view(QCONF), ocs::QConfWriteParameter::OBJECT_WRITE,
        modifies(ocs::gdi::Target::RL_LIST), &run_procedure<QConfWriteTraits<QConfObj::RL>>},
+      {to_string_view(QCONF), ocs::QConfWriteParameter::OBJECT_WRITE,
+       modifies(ocs::gdi::Target::RQS_LIST), &run_procedure<QConfWriteTraits<QConfObj::RQS>>},
       {to_string_view(QCONF), ocs::QConfWriteParameter::OBJECT_WRITE,
        modifies(ocs::gdi::Target::US_LIST), &run_procedure<QConfWriteTraits<QConfObj::US>>},
       {to_string_view(QCONF), ocs::QConfWriteParameter::OBJECT_WRITE,

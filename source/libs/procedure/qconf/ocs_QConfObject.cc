@@ -284,6 +284,29 @@ qconf_template_PR([[maybe_unused]] lList **answer_list, const char *name) {
    return ep;
 }
 
+/** @brief The shallow check a rule set had to pass in the client (CS-2823)
+ *
+ * `rqs_add_del_mod_via_gdi()` ran `rqs_list_verify_attributes(..., in_master =
+ * false, ...)` over the whole list before sending it, and sent nothing at all
+ * when one rule set failed. With `in_master` false that check is exactly two
+ * things: a rule set needs a name, and it needs at least one rule. The deep
+ * checks - the filters, the scopes, the limits - belong to qmaster's own
+ * modifier and run there as they always did.
+ *
+ * Running it here keeps that batch behaviour: a validator failure happens in
+ * the reading phase, and for a type whose text holds a list the reading phase
+ * is all-or-nothing.
+ *
+ * @param ep the rule set
+ * @param alpp receives the reason
+ * @return STATUS_OK, or STATUS_ESEMANTIC with the reason in @p alpp
+ */
+static int
+qconf_rqs_validate(const lListElem *ep, lList **alpp) {
+   return rqs_verify_attributes(const_cast<lListElem *>(ep), alpp, false, nullptr)
+      ? STATUS_OK : STATUS_ESEMANTIC;
+}
+
 /** @brief The template of a host group
  *
  * The name check of hgroup_create() stays **off**, which is what the client's
@@ -365,7 +388,12 @@ static const qconf_object_desc qconf_object_table[] = {
    /* RL   */ { ocs::gdi::Target::RL_LIST,   RL_Type,   RL_name,   qconf_fields_RL,   &qconf_sfi,                 nullptr,      qconf_role_validate, nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr,
               { .list_name = "role", .not_found_msg = MSG_ROLE_DOESNOTEXIST_S,
                 .create_template = qconf_template_RL } },
-   /* RQS  */ { ocs::gdi::Target::RQS_LIST,  RQS_Type,  RQS_name,  qconf_fields_RQS,  &qconf_rqs_sfi,             nullptr,      nullptr,             nullptr,           ocs::gdi::SubCommand::NONE,    true,  true,  false, nullptr,            nullptr,
+   /* RQS: SubCommand::SET_ALL, not NONE - every live resource quota path sends
+    * SET_ALL, and the row was only ever unread because the type had a write
+    * path of its own. With NONE a rule set's sublists would be merged instead of
+    * replaced, so a limit the administrator deleted in the editor would survive
+    * (CS-2823). */
+   /* RQS  */ { ocs::gdi::Target::RQS_LIST,  RQS_Type,  RQS_name,  qconf_fields_RQS,  &qconf_rqs_sfi,             nullptr,      qconf_rqs_validate,  nullptr,           ocs::gdi::SubCommand::SET_ALL, true,  true,  false, nullptr,            nullptr,
               /* -srqs writes the whole list in one go: qconf_rqs_sfi wraps every
                * record in braces, which a loop over single objects would not do */
               /* -srqs reports an empty result as a whole and never names the one
@@ -522,6 +550,64 @@ qconf_name_in_list(const lList *names, const lDescr *descr, const int name_nm, c
       ? (lGetElemHost(names, name_nm, name) != nullptr)
       : (lGetElemStr(names, name_nm, name) != nullptr);
 }
+
+/** @brief Read a whole list of objects out of a text or a file (CS-2823)
+ *
+ * The counterpart of qconf_parse_object() for a type whose text holds a list
+ * rather than one object - the resource quota sets and the complex list. The
+ * list is one unit: a text that does not parse yields nothing, and an element
+ * the validator refuses discards the whole list, which is what the client's own
+ * reader did with such a file (rqs_modify_from_file() sent nothing at all when
+ * one rule set was rejected).
+ *
+ * `fields_out` is deliberately not used. The resource quota sets cannot be
+ * tracked that way - the same field name appears once per rule - which is why
+ * the client passed a null pointer there too, so a list has no
+ * unprocessed-field check.
+ *
+ * @param answer_list receives the messages of this parse
+ * @param descr the CULL descriptor of one element
+ * @param fields the field list to read
+ * @param format the flatfile format the text is in
+ * @param filename the file to read, or the name a text is reported under
+ * @param content the text, or nullptr to read from @p filename
+ * @param validate the object type's validator, run per element, or nullptr
+ * @param sfi the object type's spooling instruction
+ * @param prepare the object type's transform, run per element, or nullptr
+ * @param parse_values whether attribute values are parsed
+ * @return the list, which the caller owns, or nullptr when it could not be read
+ */
+lList *
+qconf_parse_list(lList **answer_list, const lDescr *descr, spooling_field *fields,
+                 const spool_flatfile_format format, const char *filename, const char *content,
+                 int (*validate)(const lListElem *, lList **),
+                 const spool_flatfile_instr *sfi,
+                 int (*prepare)(lListElem *, lList **),
+                 const bool parse_values) {
+   DENTER(TOP_LAYER);
+
+   lList *local = nullptr;
+   lList *lp = spool_flatfile_read_list(&local, descr, fields, nullptr,
+                                        parse_values, sfi, format,
+                                        nullptr, filename, content);
+   bool failed = answer_list_has_error(&local) || lp == nullptr;
+
+   for (lListElem *ep = lFirstRW(lp); !failed && ep != nullptr; ep = lNextRW(ep)) {
+      if (prepare != nullptr && prepare(ep, &local) != STATUS_OK) {
+         failed = true;
+      } else if (validate != nullptr && validate(ep, &local) != STATUS_OK) {
+         failed = true;
+      }
+   }
+
+   if (failed) {
+      lFreeList(&lp);
+   }
+
+   answer_list_append_list(answer_list, &local);
+   DRETURN(lp);
+}
+
 
 /** @brief Parse one object from a flat file or from text, collecting the messages
  *

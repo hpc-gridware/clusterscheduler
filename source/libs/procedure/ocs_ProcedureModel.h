@@ -87,11 +87,15 @@ namespace ocs {
        * untouched when only one entry arrived, because a half-filled result
        * would be indistinguishable from a complete one.
        *
-       * @param applied receives how many objects were written
+       * @param applied receives how many items were written
        * @param parse_failed receives how many could not be read
+       * @param elements receives how many objects that was, which for a type whose text holds
+       *                 a list is more than one per item (CS-2823); nullptr to ignore it, and
+       *                 an older response without the entry leaves it untouched
        * @return true when the response carried a write result
        */
-      [[nodiscard]] bool get_write_result(uint32_t &applied, uint32_t &parse_failed) const;
+      [[nodiscard]] bool get_write_result(uint32_t &applied, uint32_t &parse_failed,
+                                          uint32_t *elements = nullptr) const;
 
       /** @brief Write what the model holds to the log
        *
