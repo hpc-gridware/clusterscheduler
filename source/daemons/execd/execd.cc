@@ -299,21 +299,14 @@ int main(int argc, char **argv)
    }
 
    /* daemonizes if qmaster is unreachable */
-   sge_setup_sge_execd(tmp_err_file_name);
+   sge_setup_sge_execd_before_register();
 
-   /* are we using qidle or not */
-   sge_ls_qidle(mconf_get_use_qidle());
-   sge_ls_gnu_ls(1);
-
-   DPRINTF("use_qidle: %d\n", mconf_get_use_qidle());
-
-   /* test load sensor (internal or external) */
-   {
-      lList *report_list = sge_build_load_report(component_get_qualified_hostname(), ocs::Bootstrap::get_binary_path());
-      lFreeList(&report_list);
-   }
-
-   /* here we have to wait for qmaster registration */
+   /* here we have to wait for qmaster registration
+    *
+    * the registration has to happen before the configuration of the host is fetched: a host which
+    * adds itself to the cluster is not known to the qmaster before it registered and may not read
+    * the configuration yet. See the qmaster_params AUTO_ADD_HOSTS.
+    */
    while (sge_execd_register_at_qmaster(false) != 0) {
       if (ocs::gdi::ClientBase::sge_get_com_error_flag(EXECD, ocs::gdi::SGE_COM_ACCESS_DENIED, true)) {
          /* This is no error */
@@ -335,6 +328,20 @@ int main(int argc, char **argv)
    if (execd_exit_state != 0 || shut_me_down != 0) {
       sge_shutdown(execd_exit_state);
       DRETURN(execd_exit_state);
+   }
+
+   sge_setup_sge_execd_after_register(tmp_err_file_name);
+
+   /* are we using qidle or not */
+   sge_ls_qidle(mconf_get_use_qidle());
+   sge_ls_gnu_ls(1);
+
+   DPRINTF("use_qidle: %d\n", mconf_get_use_qidle());
+
+   /* test load sensor (internal or external) */
+   {
+      lList *report_list = sge_build_load_report(component_get_qualified_hostname(), ocs::Bootstrap::get_binary_path());
+      lFreeList(&report_list);
    }
 
    /*

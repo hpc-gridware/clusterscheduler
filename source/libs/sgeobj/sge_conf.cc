@@ -151,6 +151,7 @@ static bool enable_enforce_master_limit = false;
 static bool enable_test_sleep_after_request = false;
 static bool enable_forced_qdel_if_unknown = false;
 static bool allow_any_submithosts = false;
+static std::string auto_add_hosts;
 static bool ignore_ngroups_max_limit = false;
 static bool enable_systemd = true;
 static bool do_credentials = true;
@@ -765,6 +766,7 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
       enable_test_sleep_after_request = false;
       enable_forced_qdel_if_unknown = false;
       allow_any_submithosts = false;
+      auto_add_hosts.clear();
       ignore_ngroups_max_limit = false;
       enable_systemd = true;
       do_credentials = true;
@@ -852,6 +854,10 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
             continue;
          }
          if (parse_bool_param(s, "ALLOW_ANY_SUBMITHOSTS", &allow_any_submithosts)) {
+            continue;
+         }
+         if (parse_string_param(s, "AUTO_ADD_HOSTS", auto_add_hosts)) {
+            // the rules are verified when the configuration is modified, see check_config()
             continue;
          }
 #ifdef LINUX
@@ -3094,6 +3100,20 @@ bool mconf_get_allow_any_submithosts() {
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
    ret = allow_any_submithosts;
+   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
+   DRETURN(ret);
+}
+
+/**
+ * The rules which let a host add itself to the cluster when its execution daemon registers.
+ *
+ * An empty value switches the automatic adding of hosts off, which is the default.
+ * See ocs::AutoAddHosts for the syntax of the rules.
+ */
+std::string mconf_get_auto_add_hosts() {
+   DENTER(BASIS_LAYER);
+   SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
+   std::string ret = auto_add_hosts;
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
 }

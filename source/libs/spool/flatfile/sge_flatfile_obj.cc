@@ -273,6 +273,12 @@ static spooling_field HL_sub_fields[] = {
    {  NoName,              0, nullptr, false, nullptr, false, nullptr, nullptr, nullptr}
 };
 
+static spooling_field VA_sub_fields[] = {
+   {  VA_variable,         0, nullptr, false, nullptr, false, nullptr, nullptr, nullptr},
+   {  VA_value,            0, nullptr, false, nullptr, false, nullptr, nullptr, nullptr},
+   {  NoName,              0, nullptr, false, nullptr, false, nullptr, nullptr, nullptr}
+};
+
 static spooling_field STU_sub_fields[] = {
    {  STU_name,            0, nullptr, false, nullptr, false, nullptr, nullptr, nullptr},
    {  NoName,              0, nullptr, false, nullptr, false, nullptr, nullptr, nullptr}
@@ -680,8 +686,8 @@ spooling_field *sge_build_STN_field_list(bool spool, bool recurse)
 spooling_field *sge_build_EH_field_list(bool spool, bool to_stdout,
                                         bool history)
 {
-   /* There are 14 possible EH_Type fields. */
-   spooling_field *fields = (spooling_field *)sge_malloc(sizeof(spooling_field)*14);
+   /* There are 15 possible EH_Type fields. */
+   spooling_field *fields = (spooling_field *)sge_malloc(sizeof(spooling_field)*15);
    int count = 0;
 
    create_spooling_field(&fields[count++], EH_name, 21, "hostname", false, nullptr, false, nullptr, nullptr, nullptr);
@@ -699,6 +705,17 @@ spooling_field *sge_build_EH_field_list(bool spool, bool to_stdout,
 
    if (spool) {
       create_spooling_field(&fields[count++], EH_reschedule_unknown_list, 21, "reschedule_unknown_list", false, RU_sub_fields, false, &qconf_sub_name_value_comma_sfi, nullptr, nullptr);
+   }
+
+   /* the joker is not part of the classic spooling format. An additional line in the spool file
+    * of an execution host would make that file unreadable for an earlier release of the same
+    * line, which does not know the attribute name. The spooling methods which store a packed
+    * object spool the joker anyway, because of its CULL_SPOOL flag. The joker is also not part
+    * of the field list used by qconf -Ae and qconf -Me, as it is not meant to be edited by hand,
+    * and qconf -se shows it only when MORE_INFO is set, because an additional line in that
+    * output would change an interface */
+   if (to_stdout && getenv("MORE_INFO") != nullptr) {
+      create_spooling_field(&fields[count++], EH_joker, 21, "joker", false, VA_sub_fields, false, &qconf_sub_name_value_comma_sfi, nullptr, nullptr);
    }
    
    create_spooling_field(&fields[count++], EH_acl, 21, "user_lists", false, US_sub_fields, false, nullptr, nullptr, nullptr);

@@ -137,7 +137,7 @@ ocs::gdi::destroy_task_queues() {
 
 ocs::gdi::Packet::Packet()
        : mutex(PTHREAD_MUTEX_INITIALIZER), cond(PTHREAD_COND_INITIALIZER), is_handled(false), is_intern_request(false),
-         request_type(PACKET_GDI_REQUEST), host(""), commproc(""), commproc_id(0),
+         request_type(PACKET_GDI_REQUEST), host(""), ip(""), commproc(""), commproc_id(0),
          response_id(0), gdi_session(0), version(0), uid(0), gid(0), amount(0), grp_array(nullptr),
          ds_type(0) {
    DENTER(TOP_LAYER);

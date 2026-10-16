@@ -706,4 +706,9 @@
 #define MSG_JOB_CANNOTBOOKRESOURCE_SSUU            _MESSAGE(33993, _("cannot book resource " SFQ " on host " SFQ " for job " sge_u32 "." sge_u32 ", the task is not started"))
 #define MSG_AR_CANNOTNAMERSMAPIDS_SSU              _MESSAGE(33994, _("cannot name the instances of resource map " SFQ " on host " SFQ " which an advance reservation was granted (" sge_u32 ")"))
 
+// qmaster_params AUTO_ADD_HOSTS
+#define MSG_AUTOADDHOSTS_HOST_S                    _MESSAGE(33995, _("exec host " SFQ " added itself to the cluster, it matches a rule of the qmaster_params AUTO_ADD_HOSTS"))
+#define MSG_AUTOADDHOSTS_HGROUP_SS                 _MESSAGE(33996, _("exec host " SFQ " was added to host group " SFQ))
+#define MSG_AUTOADDHOSTS_HGROUPFAILED_SS           _MESSAGE(33997, _("exec host " SFQ " could not be added to host group " SFQ))
+
 // clang-format on

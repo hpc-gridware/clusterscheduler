@@ -33,6 +33,8 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+#include <arpa/inet.h>
+
 #include "cull/cull.h"
 
 #include "gdi/ocs_gdi_Packet.h"
@@ -65,6 +67,7 @@ namespace ocs::gdi {
       // @todo: is this really required?
       typedef struct {
          char snd_host[CL_MAXHOSTNAMELEN]; /* sender hostname; nullptr -> all              */
+         char snd_ip[INET_ADDRSTRLEN];     /* address of the sender hostname               */
          char snd_name[CL_MAXHOSTNAMELEN]; /* sender name (aka 'commproc'); nullptr -> all */
          u_short snd_id;            /* sender identifier; 0 -> all               */
          ClientServerBaseTag tag;                   /* message tag; TAG_NONE -> all              */
@@ -83,7 +86,8 @@ namespace ocs::gdi {
                                      ClientServerBaseTag *tag, char **buffer, u_long32 *buflen, int synchron);
 
       static int sge_gdi_get_any_request(char *rhost, char *commproc, u_short *id, sge_pack_buffer *pb, ClientServerBaseTag *tag,
-                                         int synchron, u_long32 for_request_mid, u_long32 *mid);
+                                         int synchron, u_long32 for_request_mid, u_long32 *mid,
+                                         char *rip = nullptr);
 
       static int sge_gdi_send_any_request(int synchron, u_long32 *mid, const char *rhost, const char *commproc, int id,
                                           sge_pack_buffer *pb, ClientServerBaseTag tag, u_long32 response_id, lList **alpp);

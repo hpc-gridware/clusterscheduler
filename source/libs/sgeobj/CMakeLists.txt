@@ -67,6 +67,7 @@ set(LIBRARY_SOURCES
         config.cc
         cull_parse_util.cc
         ocs_AdvanceReservation.cc
+        ocs_AutoAddHosts.cc
         ocs_Binding.cc
         ocs_BindingObj.cc
         ocs_BindingIo.cc

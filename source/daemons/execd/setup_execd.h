@@ -35,6 +35,7 @@
 
 #include "sgeobj/sge_daemonize.h"
 
-void sge_setup_sge_execd(const char* tmp_err_file_name);
+void sge_setup_sge_execd_before_register();
+void sge_setup_sge_execd_after_register(const char* tmp_err_file_name);
 int daemonize_execd(void *context);
 int job_initialize_job(lListElem *job);

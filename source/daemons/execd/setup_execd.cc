@@ -65,14 +65,16 @@ extern lList *jr_list;
 
 static char execd_messages_file[SGE_PATH_MAX];
 
-/*-------------------------------------------------------------------*/
-void sge_setup_sge_execd(const char* tmp_err_file_name)
+/** @brief Sets up the execution daemon as far as possible without the qmaster.
+ *
+ * Everything which needs the configuration of the host has to be done in
+ * sge_setup_sge_execd_after_register(): the configuration can only be fetched once the host is
+ * known to the qmaster, which for a host that adds itself to the cluster is only the case after
+ * the registration. See the qmaster_params AUTO_ADD_HOSTS.
+ */
+void sge_setup_sge_execd_before_register()
 {
    DENTER(TOP_LAYER);
-
-   int allowed_get_conf_errors = 5;
-   char* spool_dir = nullptr;
-   const char *unqualified_hostname = component_get_unqualified_hostname();
 
    /* TODO: is this the right place to switch the user ?
             ports below 1024 ok */
@@ -85,6 +87,22 @@ void sge_setup_sge_execd(const char* tmp_err_file_name)
       /* TODO: remove */
       sge_exit(1);
    }
+
+   DRETURN_VOID;
+}
+
+/** @brief Sets up the execution daemon once it is registered at the qmaster.
+ *
+ * @param tmp_err_file_name name of the temporary error file written before the spool directory
+ *                          of the host exists, may be nullptr
+ */
+void sge_setup_sge_execd_after_register(const char* tmp_err_file_name)
+{
+   DENTER(TOP_LAYER);
+
+   int allowed_get_conf_errors = 5;
+   char* spool_dir = nullptr;
+   const char *unqualified_hostname = component_get_unqualified_hostname();
 
    while (ocs::gdi::ClientExecd::gdi_wait_for_conf(&Execd_Config_List)) {
       if (allowed_get_conf_errors-- <= 0) {

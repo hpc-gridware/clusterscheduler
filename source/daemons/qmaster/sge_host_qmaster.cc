@@ -44,6 +44,7 @@
 #include "uti/sge_string.h"
 #include "uti/sge_time.h"
 
+#include "sgeobj/ocs_AutoAddHosts.h"
 #include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/ocs_Session.h"
 #include "sgeobj/ocs_TopologyString.h"
@@ -51,6 +52,7 @@
 #include "sgeobj/sge_feature.h"
 #include "sgeobj/sge_id.h"
 #include "sgeobj/sge_host.h"
+#include "sgeobj/sge_hgroup.h"
 #include "sgeobj/sge_manop.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_job.h"
@@ -84,6 +86,7 @@
 #include "mail.h"
 #include "ocs_CEntry.h"
 #include "sge_cqueue_qmaster.h"
+#include "sge_hgroup_qmaster.h"
 #include "sge_userset_qmaster.h"
 #include "sge_userprj_qmaster.h"
 #include "reschedule.h"
@@ -1184,6 +1187,91 @@ notify(lListElem *lel, ocs::gdi::Packet *packet, ocs::gdi::Task *task, int kill_
  ****
  **** gdi call for old request starting_up.
  ****/
+/** @brief Marks an exec host as automatically added.
+ *
+ * The marker is stored in the joker of the exec host, which is spooled, so that the host is still
+ * known to have been added automatically after a restart of the qmaster. Its value is the time of
+ * the registration.
+ *
+ * @param hep the exec host to mark
+ * @param gdi_session the gdi session of the execd registration
+ */
+static void
+host_mark_as_auto_added(lListElem *hep, u_long64 gdi_session) {
+   DENTER(TOP_LAYER);
+
+   DSTRING_STATIC(dstr, 32);
+   sge_dstring_sprintf(&dstr, sge_u64, sge_get_gmt64());
+
+   lListElem *joker = lAddSubStr(hep, VA_variable, EH_JOKER_AUTO_ADDED, EH_joker, VA_Type);
+   lSetString(joker, VA_value, sge_dstring_get_string(&dstr));
+
+   lList *answer_list = nullptr;
+   sge_event_spool(&answer_list, 0, sgeE_EXECHOST_MOD, 0, 0, lGetHost(hep, EH_name),
+                   nullptr, nullptr, hep, nullptr, nullptr, true, true, gdi_session);
+   answer_list_output(&answer_list);
+
+   DRETURN_VOID;
+}
+
+/** @brief Adds an exec host which added itself to the cluster to a host group.
+ *
+ * The host group is created if it does not exist yet, else the host is appended to its host list.
+ * Queue instances for the new host appear through the host group resolution of the cluster queues
+ * which use the host group, nothing has to be done for them here.
+ *
+ * @param packet the gdi packet of the execd registration
+ * @param task the gdi task of the execd registration
+ * @param hostname name of the host to add
+ * @param hgroup_name name of the host group, including the leading @ character
+ * @param monitor monitoring structure
+ * @return true if the host is part of the host group, false on error
+ */
+static bool
+host_add_to_hgroup(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const char *hostname,
+                   const char *hgroup_name, monitoring_t *monitor) {
+   DENTER(TOP_LAYER);
+
+   const lList *master_hgroup_list = *ocs::DataStore::get_master_list(SGE_TYPE_HGROUP);
+   const lListElem *old_hgroup = hgroup_list_locate(master_hgroup_list, hgroup_name);
+   int add = old_hgroup == nullptr ? 1 : 0;
+   lList *href_list = nullptr;
+
+   if (add == 0) {
+      // the host can already be part of the host group, e.g. when it was removed from the exec host
+      // list but not from the host group
+      if (lGetElemHost(lGetList(old_hgroup, HGRP_host_list), HR_name, hostname) != nullptr) {
+         DPRINTF("host " SFQ " is already part of host group " SFQ "\n", hostname, hgroup_name);
+         DRETURN(true);
+      }
+      href_list = lCopyList(nullptr, lGetList(old_hgroup, HGRP_host_list));
+   }
+   lAddElemHost(&href_list, HR_name, hostname, HR_Type);
+
+   bool ret = true;
+   lList *answer_list = nullptr;
+   lListElem *hgroup = hgroup_create(&answer_list, hgroup_name, href_list, true);
+   if (hgroup == nullptr) {
+      lFreeList(&href_list);
+      ret = false;
+   } else {
+      lList *tmp_list = nullptr;
+      gdi_object_t *object = get_gdi_object(ocs::gdi::Target::SGE_HGRP_LIST);
+
+      if (sge_gdi_add_mod_generic(packet, task, &answer_list, hgroup, add, object,
+                                  component_get_username(), component_get_qualified_hostname(),
+                                  ocs::gdi::Command::SGE_GDI_NONE,
+                                  ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, &tmp_list, monitor) != STATUS_OK) {
+         ret = false;
+      }
+      lFreeList(&tmp_list);
+      lFreeElem(&hgroup);
+   }
+   answer_list_output(&answer_list);
+
+   DRETURN(ret);
+}
+
 int
 sge_execd_startedup(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *host, lList **alpp, char *ruser, char *rhost, u_long32 target,
                     monitoring_t *monitor, bool is_restart) {
@@ -1203,6 +1291,7 @@ sge_execd_startedup(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *h
       DRETURN(STATUS_EUNKNOWN);
    }
 
+   bool host_was_added = false;
    hep = host_list_locate(master_ehost_list, rhost);
    if (!hep) {
       if (sge_add_host_of_type(packet, task, rhost, ocs::gdi::Target::SGE_EH_LIST, monitor) < 0) {
@@ -1217,9 +1306,31 @@ sge_execd_startedup(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *h
          answer_list_add(alpp, SGE_EVENT, STATUS_DENIED, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_DENIED);
       }
+      host_was_added = true;
    }
 
    lSetUlong(hep, EH_report_seqno, 0);
+
+   // a host which was not known before and which matches one of the rules of the qmaster_params
+   // AUTO_ADD_HOSTS added itself to the cluster - mark it as automatically added and put it into
+   // the host group which the matching rule names
+   if (host_was_added) {
+      std::string hgroup_name;
+
+      if (ocs::AutoAddHosts::match_host(rhost, packet->ip, hgroup_name)) {
+         INFO(MSG_AUTOADDHOSTS_HOST_S, rhost);
+         host_mark_as_auto_added(hep, packet->gdi_session);
+
+         if (!hgroup_name.empty()) {
+            if (host_add_to_hgroup(packet, task, rhost, hgroup_name.c_str(), monitor)) {
+               INFO(MSG_AUTOADDHOSTS_HGROUP_SS, rhost, hgroup_name.c_str());
+            } else {
+               // the host itself is added, rejecting the registration would not help anybody
+               ERROR(MSG_AUTOADDHOSTS_HGROUPFAILED_SS, rhost, hgroup_name.c_str());
+            }
+         }
+      }
+   }
 
    /*
     * reinit state of all qinstances at this host according to initial_state

@@ -88,6 +88,11 @@
  * characteristic of an RSMAP granted to the job. */
 #define LOAD_ATTR_DEVICES        "devices"
 
+/* CS-2903: name of the EH_joker entry which marks an exec host that added itself to the
+ * cluster through one of the qmaster_params AUTO_ADD_HOSTS rules. Its value is the time
+ * of the registration. A host which was added by hand does not carry it. */
+#define EH_JOKER_AUTO_ADDED      "auto_added"
+
 bool host_is_referenced(const lListElem *host, lList **answer_list,
                         const lList *queue_list, const lList *hgrp_list);
 

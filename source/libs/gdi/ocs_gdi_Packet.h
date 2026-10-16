@@ -21,6 +21,8 @@
 
 #include <vector>
 
+#include <arpa/inet.h>
+
 #include "basis_types.h"
 #include "uti/sge_uidgid.h"
 #include "uti/sge_tq.h"
@@ -70,6 +72,13 @@ namespace ocs::gdi {
        * commlib infrastructure
        */
       char host[CL_MAXHOSTNAMELEN];
+
+      /*
+       * address of the host above, as the qmaster resolves its name. Empty for an internal
+       * request. See the qmaster_params AUTO_ADD_HOSTS, which can name a network.
+       */
+      char ip[INET_ADDRSTRLEN];
+
       char commproc[CL_MAXHOSTNAMELEN];
       u_short commproc_id;
       u_long32 response_id;

@@ -63,6 +63,7 @@
 #include "sgeobj/sge_userset.h"
 #include "sgeobj/sge_path_alias.h"
 #include "sgeobj/sge_jsv.h"
+#include "sgeobj/ocs_AutoAddHosts.h"
 #include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/ocs_RequestLimits.h"
 
@@ -514,6 +515,27 @@ check_config(lList **alpp, lListElem *conf) {
          }
          sge_free_saved_vars(context);
          if (!rp_valid) {
+            DRETURN(STATUS_EEXIST);
+         }
+      } else if (!strcmp(name, "qmaster_params")) {
+         // Validate parameters whose grammar we can fail-fast on. Today this covers only
+         // AUTO_ADD_HOSTS; other qmaster_params tokens are sanity-checked at merge time
+         // in sge_conf.cc::merge_configuration().
+         struct saved_vars_s *context = nullptr;
+         bool qp_valid = true;
+         for (const char *s = sge_strtok_r(value, PARAMS_DELIMITER, &context);
+              s != nullptr;
+              s = sge_strtok_r(nullptr, PARAMS_DELIMITER, &context)) {
+            std::string auto_add_hosts;
+            if (parse_string_param(s, "AUTO_ADD_HOSTS", auto_add_hosts)) {
+               std::vector<ocs::AutoAddHosts::Rule> discard;
+               if (!ocs::AutoAddHosts::parse(auto_add_hosts.c_str(), discard, alpp)) {
+                  qp_valid = false;
+               }
+            }
+         }
+         sge_free_saved_vars(context);
+         if (!qp_valid) {
             DRETURN(STATUS_EEXIST);
          }
       } else if (!strcmp(name, "admin_user")) {

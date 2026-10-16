@@ -206,6 +206,7 @@ bool mconf_get_enable_forced_qdel();
 bool mconf_get_enable_sup_grp_eval();
 bool mconf_get_enable_forced_qdel_if_unknown();
 bool mconf_get_allow_any_submithosts();
+std::string mconf_get_auto_add_hosts();
 bool mconf_get_enable_enforce_master_limit();
 bool mconf_get_enable_test_sleep_after_request();
 int mconf_get_max_job_deletion_time();
