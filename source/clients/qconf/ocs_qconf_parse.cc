@@ -132,7 +132,6 @@
 #include "ocs_qconf_parse.h"
 #include "ocs_qconf_centry.h"
 #include "ocs_qconf_cqueue.h"
-#include "ocs_qconf_rqs.h"
 #include "sgeobj/ocs_Role.h"
 #include "msg_common.h"
 #include "msg_clients_common.h"
@@ -1908,10 +1907,13 @@ qconf_edit_fail_exit(QConfEditStatus st) {
  * @param text the object text; edited in place
  * @param uid  uid to run the editor as
  * @param gid  gid to run the editor as
+ * @param select for a type whose text holds a list, the names the read was asked for -
+ *               the scope qmaster reports against; nullptr when it read everything
  * @return 0 when the object was written or the editor left it unchanged, 1 otherwise
  */
 static int
-qconf_edit_and_write_obj(QConfObj o, std::string &text, uid_t uid, gid_t gid) {
+qconf_edit_and_write_obj(QConfObj o, std::string &text, uid_t uid, gid_t gid,
+                         const char *select = nullptr) {
    DENTER(TOP_LAYER);
 
    const QConfEditStatus est = qconf_edit_text(text, uid, gid);
@@ -1921,6 +1923,18 @@ qconf_edit_and_write_obj(QConfObj o, std::string &text, uid_t uid, gid_t gid) {
    }
 
    ocs::QConfWriteParameter mod_param;
+   /* The read rendered in the caller's -fmt, so the write has to parse in it -
+    * they are two halves of one round trip, and the format that decided the one
+    * decides the other (CS-2823). */
+   mod_param.set_output_format(qconf_opt_format == SP_FORM_JSON
+                                  ? ocs::ProcedureParameter::OutputFormat::JSON
+                                  : ocs::ProcedureParameter::OutputFormat::PLAIN);
+   /* This text is what a read handed out, not a file: see MODE_ROUND_TRIP, which
+    * is what makes an object missing from it a report rather than an error. */
+   mod_param.set_mode(ocs::QConfWriteParameter::MODE_ROUND_TRIP);
+   if (select != nullptr) {
+      mod_param.set_select(select);
+   }
    mod_param.add_item(nullptr, text);
    ocs::QConfWriteModelClient model(qconf_desc(o).target);
 
@@ -2019,6 +2033,87 @@ qconf_edit_obj_procedure(ocs::QConfParameterClient &param, QConfObj o,
    DRETURN(qconf_edit_and_write_obj(o, text, uid, gid));
 }
 
+/** @brief Edit a whole list of objects through the stored procedures (CS-2823)
+ *
+ * The sibling of qconf_edit_obj_procedure() for a type whose text holds a list:
+ * the resource quota sets, where "-mrqs" without a name shows every rule set in
+ * one text and "-mrqs a,b" shows those two. The read, the editor and the write
+ * are the same three steps, and the two refusals are the same two - a reduced
+ * read is not offered for editing, and the client execution context is declined
+ * because it cannot reduce.
+ *
+ * What differs is the unit. The text holds N objects, so the write is told the
+ * scope the read was asked for: qmaster applies what the text holds and reports
+ * what it left out, instead of deleting it. That is the behaviour change of
+ * CS-2823 for "-mrqs", decided on 2026-10-15 - an administrator could wreck the
+ * whole quota configuration by saving a shortened text, and under output
+ * reduction they would have deleted what they were not allowed to see.
+ *
+ * A name that is no object yet is answered by the read with the type's
+ * template, one per name, which is what makes "-arqs" the same operation as
+ * "-mrqs".
+ *
+ * @param param the invocation, used for the procedure read
+ * @param o     the object type, which must be one whose text holds a list
+ * @param sw    the switch being served, named in the refusals
+ * @param names the objects to edit, comma separated, or nullptr for all of them
+ * @param uid   uid to run the editor as
+ * @param gid   gid to run the editor as
+ * @return 0 when the text was written or the editor left it unchanged, 1 otherwise
+ */
+static int
+qconf_edit_list_procedure(ocs::QConfParameterClient &param, QConfObj o,
+                          const char *sw, const char *names, uid_t uid, gid_t gid) {
+   DENTER(TOP_LAYER);
+
+   if (param.get_exec_context() != ocs::ProcedureParameter::ExecContext::SERVER) {
+      ERROR(MSG_QCONF_MODNEEDSSERVERCTX_S, sw);
+      DRETURN(1);
+   }
+
+   const char *switch_name = ocs::QConfModelBase::switch_for(o, ocs::QConfReadKind::OBJECT_LIST);
+   if (switch_name == nullptr) {
+      /* a type without a list read cannot be edited as a list - a programming
+       * error, not something a caller can provoke */
+      DRETURN(1);
+   }
+
+   qconf_op op;
+   op.token = switch_name;
+   if (names != nullptr) {
+      op.args.emplace_back(names);
+   }
+   param.set_operation(op);
+
+   std::ostringstream rendered;
+   uint32_t reduction = ocs::ProcedureParameter::REDUCTION_NONE;
+   lList *alp = nullptr;
+   param.set_for_edit(true);
+   const bool ok = qconf_dispatch_procedure(rendered, param, &alp, &reduction);
+   param.set_for_edit(false);
+
+   if (!ok) {
+      /* the reason is in the answer list - a name the type cannot build a
+       * template for, or a read that failed outright */
+      show_answer_list(alp);
+      lFreeList(&alp);
+      DRETURN(1);
+   }
+   lFreeList(&alp);
+
+   if (reduction != ocs::ProcedureParameter::REDUCTION_NONE) {
+      /* What was asked for, which for the nameless form is the whole list - the
+       * message takes a name, and an empty one would read "cannot modify \"\"". */
+      const char *what = (names != nullptr) ? names : qconf_desc(o).read.list_name;
+      ERROR(MSG_QCONF_REDUCEDNOTMODIFIABLE_SS, sw, what != nullptr ? what : "");
+      DRETURN(1);
+   }
+
+   std::string text = rendered.str();
+   DRETURN(qconf_edit_and_write_obj(o, text, uid, gid, names));
+}
+
+
 
 /* ===== CS-2307: resource quota set helpers =================================
  * RQS files hold a *list* of rule sets (read with spool_flatfile_read_list and
@@ -2106,9 +2201,10 @@ qconf_rqs_delete(std::ostream &os, const char *path) {
       }
    }
    if (n > 0) {
-      /* rqs_add_del_mod_via_gdi() only sends ADD/MOD/REPLACE (it gates the GDI
-       * call on the verify result, which is skipped for DEL); delete via a
-       * direct GDI call, exactly like the "-drqs" name-list path does. */
+      /* A direct GDI call, exactly like the "-drqs" name-list path does. The
+       * rule sets' own client module is gone with CS-2823; what is left of this
+       * type outside the descriptor table is the delete, which has no procedure
+       * yet. */
       lList *alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::RQS_LIST, ocs::gdi::Command::DEL,
                                              ocs::gdi::SubCommand::NONE, &del, nullptr, nullptr);
       ret += show_answer_list(alp);
@@ -2697,6 +2793,8 @@ int sge_parse_qconf(char *argv[]) {
 /*-----------------------------------------------------------------------------*/
       /* "-arqs rqs_name" */
       if (strcmp("-arqs", *spp) == 0) {
+         /* the name is optional; when omitted a template named "template" is
+          * offered for editing and the editor gives it its real name */
          const char *name = "template";
 
          if (!sge_next_is_an_opt(spp)) {
@@ -2704,19 +2802,14 @@ int sge_parse_qconf(char *argv[]) {
             name = *spp;
          }
          qconf_is_manager_on_admin_host(username, qualified_hostname);
-         rqs_add(&alp, name);
 
-         aep = lFirst(alp);
-         answer_exit_if_not_recoverable(aep);
-         if (answer_get_status(aep) != STATUS_OK) {
-            fprintf(stderr, "%s\n", lGetString(aep, AN_text));
-            lFreeList(&alp);
-            lFreeList(&lp);
-            DRETURN(1);
-         } else {
-            os << qconf_cstr(lGetString(aep, AN_text)) << "\n";
+         /* CS-2823: template, editor and write procedure in one - the same
+          * function "-mrqs" calls, with the templates built in qmaster from the
+          * read's descriptor row. A comma separated list of names still yields
+          * one template each, as rqs_add() built them here. */
+         if (qconf_edit_list_procedure(param, QConfObj::RQS, "-arqs", name, uid, gid) != 0) {
+            sge_parse_return = 1;
          }
-         lFreeList(&alp);
 
          spp++;
          continue;
@@ -4019,10 +4112,15 @@ int sge_parse_qconf(char *argv[]) {
             name = *spp;
          }
          qconf_is_manager_on_admin_host(username, qualified_hostname);
-         rqs_modify(&alp, name);
-         sge_parse_return |= show_answer_list(alp);
 
-         lFreeList(&alp);
+         /* CS-2823: the stored procedure round trip over a list - see
+          * qconf_edit_list_procedure(), which is also what "-arqs" calls. With
+          * no name every rule set is shown, as before; what changed is that a
+          * rule set missing from the saved text is reported as still being
+          * there instead of being deleted. */
+         if (qconf_edit_list_procedure(param, QConfObj::RQS, "-mrqs", name, uid, gid) != 0) {
+            sge_parse_return = 1;
+         }
 
          spp++;
          continue;

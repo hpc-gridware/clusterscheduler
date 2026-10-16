@@ -240,5 +240,13 @@ the new unit is installed and enabled, but the cluster has to be started afterwa
 `inst_sge -start-all`. Run it during a maintenance window, and note that it needs `root` and reaches the
 other hosts over ssh; use `-noremote` to work on the local host only.
 
+## Resource Quota Sets: *-mrqs* Does Not Delete Any More
+
+Nothing has to be done before or during the upgrade — the saved configuration is loaded with
+`-Arqs`, which never deleted anything. What changes is the interactive command afterwards:
+`qconf -mrqs` applies what the edited text holds and no longer deletes the rule sets left out of
+it, so a procedure that removed a rule set by deleting its block has to use `qconf -drqs <name>`.
+See the [Compatibility Notes](07_compatibility_notes.md#qconf--mrqs-no-longer-deletes-the-rule-sets-left-out-of-the-text).
+
 [//]: # (Each file has to end with two empty lines)
 

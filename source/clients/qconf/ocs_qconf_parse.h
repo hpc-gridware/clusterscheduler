@@ -72,7 +72,7 @@ void qconf_msg(std::ostream &os, const char *fmt, ...)
 /** @brief The output format `-fmt` selected: plain or JSON (CS-2313a)
  *
  * A global because the `show` paths in `ocs_qconf_cqueue.cc`,
- * `ocs_qconf_centry.cc` and `ocs_qconf_rqs.cc` format their output themselves
+ * `ocs_qconf_centry.cc` formats its output itself
  * rather than going through the generic writer, and all of them have to agree.
  */
 extern spool_flatfile_format qconf_opt_format;

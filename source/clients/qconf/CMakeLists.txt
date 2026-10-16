@@ -23,7 +23,6 @@ add_executable(
       qconf
         ocs_qconf_cqueue.cc
         ocs_qconf_centry.cc
-        ocs_qconf_rqs.cc
         ocs_qconf.cc
         ocs_qconf_parse.cc
         ocs_qconf_acl.cc

@@ -378,5 +378,34 @@ its exit value — the entries that could trigger it cannot exist before somebod
 The same applies to `qconf -shgrp`, which has always been able to return `@group` entries and now
 can return matchers as well.
 
+## *qconf -mrqs* No Longer Deletes the Rule Sets Left Out of the Text
+
+`qconf -mrqs` shows the resource quota sets in an editor and applies what is saved. Until now,
+**a rule set removed from that text was deleted** — the whole list was replaced by what came back.
+Version 9.2 applies what the text holds and removes nothing; a rule set that was shown and is
+missing from the saved text is reported as still being there:
+
+    "limit_gpu" is still there: a modify writes what the text holds and removes
+    nothing - delete it with "qconf -drqs"
+
+Deleting a rule set is `qconf -drqs <name>`, as before, and it is now the only way.
+
+**Why it changed.** The deletion was never documented — `qconf -mrqs` is described as editing the
+named rule set, or all of them when no name is given, and nothing said that omitting one removes
+it. The file-based side of the same object had already been changed for the same reason: `-Mrqs`
+and `-Arqs` add or modify what the file holds and leave every other rule set alone, so the two
+halves of one object disagreed. An editor round trip is also where a shortened text happens by
+accident — a truncated buffer, an aborted paste, a `:wq` in the wrong file — and the whole quota
+configuration of a cluster could go with it.
+
+**If you relied on it**, use the file-based bulk operations to change several rule sets at once
+(see *File-Based Bulk Configuration and Export with qconf* in the enhancements) and `-drqs` to
+remove one. A configuration-management tool that re-applied a shortened file was already using
+`-Mrqs`, which never deleted.
+
+**The complex list is not affected.** `qconf -mc` and `-Mc` replace the whole list by design:
+that is how a complex entry is removed from a file-managed configuration, both halves agree, and
+built-in attributes missing from the text are retained and named rather than deleted.
+
 [//]: # (Each file has to end with two empty lines)
 

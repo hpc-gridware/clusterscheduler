@@ -1436,8 +1436,9 @@ ocs::QConfModelBase::make_snapshot(lList **answer_list, QConfParameter &paramete
        * to call one - that is what -su always did, one line per userset it could
        * not find. A type without a noun, like the resource quota sets, reports the
        * read as a whole instead and never names anything (CS-2819). */
-      if (kind_ == QConfReadKind::OBJECT_LIST && desc_->read.not_found_noun != nullptr &&
-          parameter.get_operation().arg_count() > 0) {
+      if (kind_ == QConfReadKind::OBJECT_LIST && parameter.get_operation().arg_count() > 0 &&
+          (desc_->read.not_found_noun != nullptr ||
+           (parameter.get_for_edit() && desc_->read.create_template != nullptr))) {
          lList *wanted = nullptr;
          for (size_t i = 0; i < parameter.get_operation().arg_count(); i++) {
             lString2List(parameter.get_operation().arg(i), &wanted, ST_Type, ST_name, ", ");
@@ -1445,11 +1446,34 @@ ocs::QConfModelBase::make_snapshot(lList **answer_list, QConfParameter &paramete
          bool all_found = true;
          for_each_ep_lv(name_elem, wanted) {
             const char *name = lGetString(name_elem, ST_name);
-            if (lGetElemStr(object_list_, key_nm_, name) == nullptr) {
-               answer_list_add_sprintf(answer_list, STATUS_EEXIST, ANSWER_QUALITY_ERROR,
-                                       MSG_SGETEXT_DOESNOTEXIST_SS, desc_->read.not_found_noun, name);
-               all_found = false;
+            if (lGetElemStr(object_list_, key_nm_, name) != nullptr) {
+               continue;
             }
+
+            /* CS-2823: a read that feeds an editor answers a name that does not
+             * exist with the type's template, for a list exactly as for a single
+             * object - one template per name that matched nothing. That is what
+             * makes "qconf -arqs a,b" the same operation as "-mrqs a,b", and
+             * what the old switch did by building an element per name itself. */
+            if (parameter.get_for_edit() && desc_->read.create_template != nullptr) {
+               lListElem *tmpl = desc_->read.create_template(answer_list, name);
+               if (tmpl == nullptr) {
+                  /* the constructor said why - a name it refuses must not reach
+                   * the editor as a half built template */
+                  all_found = false;
+                  break;
+               }
+               if (object_list_ == nullptr) {
+                  object_list_ = lCreateList("", desc_->descr);
+               }
+               lAppendElem(object_list_, tmpl);
+               answered_with_template_ = true;
+               continue;
+            }
+
+            answer_list_add_sprintf(answer_list, STATUS_EEXIST, ANSWER_QUALITY_ERROR,
+                                    MSG_SGETEXT_DOESNOTEXIST_SS, desc_->read.not_found_noun, name);
+            all_found = false;
          }
          lFreeList(&wanted);
          if (!all_found) {
@@ -1493,6 +1517,19 @@ ocs::QConfModelBase::make_snapshot(lList **answer_list, QConfParameter &paramete
        * itself is checked first - as the hand written engine did. The wording of
        * the "not found" message is per object type, its shape is not. */
       if (object_list_ == nullptr || lGetNumberOfElem(object_list_) == 0) {
+         /* CS-2823: an edit read of a whole list finds nothing on a cluster that
+          * has none, and that is not a failure - the editor opens on an empty
+          * text, which is how "qconf -mrqs" let an administrator write the first
+          * rule set before the switch came here. A named read still reports,
+          * through the template above or the message below. */
+         if (kind_ == QConfReadKind::OBJECT_LIST && parameter.get_for_edit() &&
+             parameter.get_operation().arg_count() == 0) {
+            if (object_list_ == nullptr) {
+               object_list_ = lCreateList("", desc_->descr);
+            }
+            DRETURN(true);
+         }
+
          if (kind_ == QConfReadKind::SINGLETON || kind_ == QConfReadKind::OBJECT_LIST) {
             /* no name was given, so the message takes no argument */
             if (desc_->read.empty_msg != nullptr) {

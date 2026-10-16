@@ -520,7 +520,10 @@ Object-specific notes:
   or **global**, the global configuration is edited. A configuration that does not
   yet exist is created.
 - `-mrqs` edits the named resource quota set, or all rule sets if *rqs_name* is
-  omitted.
+  omitted. What is saved is added or modified; a rule set that was shown and is
+  **missing** from the saved text is left untouched and reported as still being
+  there -- delete one with `-drqs`. Up to version 9.1 such a rule set was
+  deleted, see the compatibility notes of 9.2.
 - `-mstree` and `-msconf` are singletons and take no name argument; `-mstree`
   creates the share tree if none exists (`-mstree` and `-astree` are
   interchangeable).

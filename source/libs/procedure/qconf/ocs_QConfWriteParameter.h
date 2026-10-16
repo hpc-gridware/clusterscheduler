@@ -80,6 +80,17 @@ namespace ocs {
       static constexpr uint32_t MODE_STRICT = 1;  ///< apply nothing unless every item reads
       static constexpr uint32_t MODE_DRY = 2;     ///< report only, change nothing
 
+      /** @brief The text came back from a read, not out of a file (CS-2823)
+       *
+       * It matters for a type whose text holds a list, and only there. A file
+       * says "write these objects", so a name the caller selected and the file
+       * does not hold is an error. A round trip says "this is what you were
+       * shown": an object missing from the returned text is one the
+       * administrator deleted in the editor, and a modify does not delete - it
+       * is reported as still being there instead of being written or refused.
+       */
+      static constexpr uint32_t MODE_ROUND_TRIP = 4;
+
    private:
       lList *items_ = nullptr;        ///< VA_Type: VA_variable the label, VA_value the text
       uint32_t mode_ = MODE_NONE;     ///< mask of MODE_*
@@ -159,6 +170,9 @@ namespace ocs {
 
       /// @return true when nothing may be changed
       [[nodiscard]] bool is_dry() const { return (mode_ & MODE_DRY) != 0; }
+
+      /// @return true when the text is what a read handed out, see MODE_ROUND_TRIP
+      [[nodiscard]] bool is_round_trip() const { return (mode_ & MODE_ROUND_TRIP) != 0; }
 
       lList *get_bundle() override;
 

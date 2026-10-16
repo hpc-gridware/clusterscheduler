@@ -178,8 +178,14 @@ qconf_write_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monit
           * The filter used to run in the client over what it had parsed; the
           * client parses nothing any more, so it travels as a parameter and the
           * filter runs where the parse is. A name the text does not hold fails
-          * the item, as it failed the command before. */
-         if (!parameter.get_select().empty()) {
+          * the item, as it failed the command before.
+          *
+          * A round trip is **not** filtered, although it carries the same
+          * names: there they are the scope the read was asked for, used after
+          * the writing to report what the text left out. Filtering by them
+          * would write nothing at all when the administrator renamed the
+          * object in the editor - which is exactly how "-arqs" creates one. */
+         if (!parameter.get_select().empty() && !parameter.is_round_trip()) {
             lList *wanted = nullptr;
             lString2List(parameter.get_select().c_str(), &wanted, ST_Type, ST_name, ", ");
             bool all_found = true;
@@ -264,11 +270,15 @@ qconf_write_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monit
     * two are equal. */
    const lList *master_list = *ocs::DataStore::get_master_list(object->list_type);
    bool all_ok = (result->parse_failed == 0);
+   std::vector<std::string> parsed_names;   ///< what the texts held, for the report below
    for (auto &item: parsed) {
       size_t applied_here = 0;
 
       for (lListElem *ep: item.elements) {
          const char *name = qconf_get_name(ep, object->key_nm);
+         if (name != nullptr) {
+            parsed_names.emplace_back(name);
+         }
          const bool exists = qconf_name_in_list(master_list, desc.descr, object->key_nm, name);
 
          if (parameter.is_dry()) {
@@ -305,6 +315,49 @@ qconf_write_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monit
       } else {
          all_ok = false;
       }
+   }
+
+   /* CS-2823: what the round trip's text left out is still there, and the
+    * administrator who deleted it in the editor has to be told - silently
+    * ignoring the deletion would leave them believing it happened, and applying
+    * it would make an editor a delete command. The scope is what the read was
+    * asked for: the names the caller selected, or every object of the type when
+    * it asked for all of them. Only a list type can lose an object this way; a
+    * single object round trip has nothing to leave out. After a text that did
+    * not parse there is nothing to say either: nothing was written, so every
+    * object would be "still there" and the list would bury the parse error. */
+   if (desc.as_list && parameter.is_round_trip() && !parameter.is_dry() &&
+       result->parse_failed == 0) {
+      lList *in_scope = nullptr;
+      if (parameter.get_select().empty()) {
+         for (const lListElem *ep = lFirst(*ocs::DataStore::get_master_list(object->list_type));
+              ep != nullptr; ep = lNext(ep)) {
+            lAddElemStr(&in_scope, ST_name, qconf_get_name(ep, object->key_nm), ST_Type);
+         }
+      } else {
+         lString2List(parameter.get_select().c_str(), &in_scope, ST_Type, ST_name, ", ");
+      }
+
+      for_each_ep_lv(name_elem, in_scope) {
+         const char *name = lGetString(name_elem, ST_name);
+         if (name == nullptr) {
+            continue;
+         }
+         bool in_text = false;
+         for (const auto &item: parsed_names) {
+            if (item == name) {
+               in_text = true;
+               break;
+            }
+         }
+         if (!in_text &&
+             qconf_name_in_list(*ocs::DataStore::get_master_list(object->list_type),
+                                desc.descr, object->key_nm, name)) {
+            answer_list_add_sprintf(answer_list, STATUS_OK, ANSWER_QUALITY_INFO,
+                                    MSG_QCONF_WRITENOTREMOVED_S, name);
+         }
+      }
+      lFreeList(&in_scope);
    }
 
    DRETURN(all_ok);

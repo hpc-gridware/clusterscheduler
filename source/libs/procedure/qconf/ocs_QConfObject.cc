@@ -284,6 +284,26 @@ qconf_template_PR([[maybe_unused]] lList **answer_list, const char *name) {
    return ep;
 }
 
+/** @brief The template of a resource quota set
+ *
+ * One rule with a `slots=0` limit and the set enabled, which is what
+ * "qconf -arqs <name>" offered before the switch came here: an element per
+ * requested name, each through rqs_set_defaults().
+ *
+ * @param answer_list unused, the constructor reports nothing
+ * @param name the name the template carries
+ * @return the template
+ */
+static lListElem *
+qconf_template_RQS([[maybe_unused]] lList **answer_list, const char *name) {
+   lListElem *ep = lCreateElem(RQS_Type);
+   if (ep != nullptr) {
+      lSetString(ep, RQS_name, name);
+      ep = rqs_set_defaults(ep);
+   }
+   return ep;
+}
+
 /** @brief The shallow check a rule set had to pass in the client (CS-2823)
  *
  * `rqs_add_del_mod_via_gdi()` ran `rqs_list_verify_attributes(..., in_master =
@@ -399,7 +419,8 @@ static const qconf_object_desc qconf_object_table[] = {
               /* -srqs reports an empty result as a whole and never names the one
                * that was missing, so there is no noun; empty_msg carries the
                * message it always printed (CS-2819) */
-              { .list_name = "resource quota set list", .empty_msg = MSG_NORQSFOUND, .write_as_list = true } },
+              { .list_name = "resource quota set list", .create_template = qconf_template_RQS,
+                .empty_msg = MSG_NORQSFOUND, .write_as_list = true } },
    /* US   */ { ocs::gdi::Target::US_LIST,   US_Type,   US_name,   qconf_fields_US,   &qconf_param_sfi,           nullptr,      qconf_us_validate,   nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr,
               /* -su names the userset it could not find, and calls it an access
                * list, as it always did (CS-2819) */

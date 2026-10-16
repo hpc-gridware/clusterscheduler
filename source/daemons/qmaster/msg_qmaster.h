@@ -792,5 +792,9 @@
 /* moved here from clients/qconf/msg_qconf.h (5251): the names of "-Mrqs <file>
  * <names>" are selected where the file is parsed, which is qmaster (CS-2823) */
 #define MSG_RQS_NOTFOUNDINFILE_SS                  _MESSAGE(34013, _("resource quota set " SFQ " not found in file " PFQMAX))
+/* Only a type whose text holds a list can produce this, and of those only the
+ * resource quota sets: the complex list replaces by design, so what its text
+ * omits is deleted on purpose (CS-2523). Hence the switch in the wording. */
+#define MSG_QCONF_WRITENOTREMOVED_S                _MESSAGE(34014, _(SFQ " is still there: a modify writes what the text holds and removes nothing - delete it with \"qconf -drqs\""))
 
 // clang-format on
