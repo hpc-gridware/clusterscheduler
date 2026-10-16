@@ -426,4 +426,11 @@
 #define MSG_RSMAP_PARAM_SCOPE_CONFLICT_SSSS    _MESSAGE(64587, _("RSMAP " SFQ ": parameter " SFQ " is " SFQ " in one request scope and " SFQ " in another"))
 #define MSG_RSMAP_DEFAULT_HAS_PARAMS_SS        _MESSAGE(64577, _("complex " SFQ ": the default value " SFQ " must be an amount, a resource map default request cannot carry a parameter list"))
 
+// qmaster_params AUTO_ADD_HOSTS
+#define MSG_AUTOADDHOSTS_IPV6_S                _MESSAGE(64589, _("AUTO_ADD_HOSTS: rule " SFQ " contains an IPv6 network, only IPv4 networks are supported"))
+#define MSG_AUTOADDHOSTS_HOSTGROUP_S           _MESSAGE(64590, _("AUTO_ADD_HOSTS: rule " SFQ ": the host group behind the colon must start with an @ character"))
+#define MSG_AUTOADDHOSTS_NO_MATCHER_S          _MESSAGE(64591, _("AUTO_ADD_HOSTS: rule " SFQ " contains neither a host name pattern nor a network"))
+#define MSG_AUTOADDHOSTS_PREFIX_S              _MESSAGE(64592, _("AUTO_ADD_HOSTS: " SFQ " does not contain a prefix length between 0 and 32"))
+#define MSG_AUTOADDHOSTS_NETWORK_S             _MESSAGE(64593, _("AUTO_ADD_HOSTS: " SFQ " is not a valid IPv4 network in CIDR notation"))
+
 // clang-format on

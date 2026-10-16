@@ -47,6 +47,7 @@
 
 #include "cull/cull.h"
 
+#include "sgeobj/ocs_AutoAddHosts.h"
 #include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/sge_resource_quota.h"
@@ -1384,10 +1385,26 @@ sge_chck_mod_perm_host(const ocs::gdi::Packet *packet, lList **alpp, const ocs::
          case ocs::gdi::Target::EH_LIST: {
             const lList *master_exec_host_list = *ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST);
             bool is_exec_host = host_list_locate(master_exec_host_list, packet->host) != nullptr ? true : false;
+            bool is_execd = strcmp(packet->commproc, to_cstr(EXECD)) == 0;
+
+            // a host which is not known yet may add itself to the cluster if one of the rules
+            // of the qmaster_params AUTO_ADD_HOSTS matches it
+            //
+            // this is limited to an execd adding an exec host: the name of the host which is
+            // added is taken from the sending host in sge_execd_startedup(), therefore such a
+            // request can add the sending host and no other one, and it grants neither admin
+            // nor submit host rights
+            bool may_add_itself = false;
+            if (is_execd && !is_exec_host && command == ocs::gdi::Command::ADD) {
+               std::string hostgroup;
+
+               may_add_itself = ocs::AutoAddHosts::match_host(packet->host, packet->ip, hostgroup);
+            }
 
             // host must be either admin host
             // or exec host and request has to come from execd
-            if (!(is_admin_host || (is_exec_host && !strcmp(packet->commproc, to_cstr(EXECD))))) {
+            // or a host which may add itself
+            if (!(is_admin_host || (is_exec_host && is_execd) || may_add_itself)) {
                ERROR(MSG_SGETEXT_NOADMINHOST_S, packet->host);
                answer_list_add(alpp, SGE_EVENT, STATUS_EDENIED2HOST, ANSWER_QUALITY_ERROR);
                DRETURN(false);

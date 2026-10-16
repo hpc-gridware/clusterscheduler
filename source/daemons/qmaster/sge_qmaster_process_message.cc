@@ -107,6 +107,7 @@ ocs_store_packet(const ocs::gdi::ClientServerBase::struct_msg_t *message, lList 
    // create a GDI packet to transport the list to a thread that is able to handle it
    auto *packet = new ocs::gdi::Packet();
    strcpy(packet->host, message->snd_host);
+   strcpy(packet->ip, message->snd_ip);
    strcpy(packet->commproc, message->snd_name);
    packet->commproc_id = message->snd_id;
    packet->response_id = message->request_mid;
@@ -223,7 +224,8 @@ sge_qmaster_process_message(monitoring_t *monitor) {
    MONITOR_IDLE_TIME((
 
       res = ocs::gdi::ClientServerBase::sge_gdi_get_any_request(msg.snd_host, msg.snd_name,
-                                       &msg.snd_id, &msg.buf, &msg.tag, 1, 0, &msg.request_mid)
+                                       &msg.snd_id, &msg.buf, &msg.tag, 1, 0, &msg.request_mid,
+                                       msg.snd_ip)
 
                      ), monitor, mconf_get_monitoring_options());
 
@@ -362,6 +364,7 @@ do_gdi_packet(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, monitoring_t *moni
    auto *packet = new ocs::gdi::Packet();
 
    strcpy(packet->host, aMsg->snd_host);
+   strcpy(packet->ip, aMsg->snd_ip);
    strcpy(packet->commproc, aMsg->snd_name);
    packet->commproc_id = aMsg->snd_id;
    packet->response_id = aMsg->request_mid;

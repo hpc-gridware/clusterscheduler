@@ -25,6 +25,8 @@
 
 #include <vector>
 
+#include <arpa/inet.h>
+
 #include <cinttypes>
 #include "uti/sge_uidgid.h"
 #include "uti/sge_tq.h"
@@ -92,6 +94,7 @@ namespace ocs::gdi {
        * commlib infrastructure
        */
       char host[CL_MAXHOSTNAMELEN];                  ///< host the request came from, so the answer reaches it
+      char ip[INET_ADDRSTRLEN];                      ///< address #host resolves to, empty for an internal request
       char commproc[CL_MAXHOSTNAMELEN];              ///< name of the sending component, e.g. `qconf`
       u_short commproc_id;                           ///< commlib id of the sending component
       uint32_t response_id;                          ///< id the answer must carry so the sender can match it

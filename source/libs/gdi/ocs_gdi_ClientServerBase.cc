@@ -36,6 +36,8 @@
  * @brief Message exchange shared by GDI client and server
  */
 
+#include <arpa/inet.h>
+
 #include "uti/ocs_Bootstrap.h"
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
@@ -436,11 +438,13 @@ ocs::gdi::ClientServerBase::sge_gdi_send_any_request(int synchron, uint32_t *mid
  * @param synchron non-zero to block until a message arrives
  * @param for_request_mid accept only the answer to this request id, or 0 for any
  * @param[out] mid receives the id of the message received
+ * @param[out] rip receives the address the sender host name resolves to, may be nullptr
  * @return CL_RETVAL_OK on success, otherwise a commlib error
  */
 int
 ocs::gdi::ClientServerBase::sge_gdi_get_any_request(char *rhost, char *commproc, u_short *id, sge_pack_buffer *pb,
-                                                ClientServerBaseTag *tag, int synchron, uint32_t for_request_mid, uint32_t *mid) {
+                                                ClientServerBaseTag *tag, int synchron, uint32_t for_request_mid, uint32_t *mid,
+                                                char *rip) {
    DENTER(GDI_LAYER);
    int i;
    ushort usid = 0;
@@ -532,6 +536,15 @@ ocs::gdi::ClientServerBase::sge_gdi_get_any_request(char *rhost, char *commproc,
          }
          if (commproc[0] == '\0') {
             strcpy(commproc, sender->comp_name); /* If we receive from anybody return the sender */
+         }
+         if (rip != nullptr) {
+            /* this is the address which the host name of the sender resolves to - the commlib
+             * accepts a connection only if that name is also the one which the address of the
+             * connection resolves back to, unless the communication parameter
+             * CL_COMMLIB_TRUST_CLIENT_HOSTNAME switches that check off */
+            if (inet_ntop(AF_INET, &sender->addr, rip, INET_ADDRSTRLEN) == nullptr) {
+               rip[0] = '\0';
+            }
          }
       }
 

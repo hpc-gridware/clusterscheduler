@@ -134,6 +134,11 @@
 *    memory information (numa nodes and caches),
 *    and attributes for those nodes (size, speed etc.)
 *
+*    SGE_ULONG64(EH_auto_added_time) - Auto Added Time
+*    The time at which the host added itself to the cluster, when its execution
+*    daemon registered and a rule of the qmaster_params AUTO_ADD_HOSTS matched it.
+*    0 for a host which an administrator added.
+*
 */
 
 enum {
@@ -165,7 +170,8 @@ enum {
    EH_report_variables,   ///< variables for reporting
    EH_merged_report_variables,   ///< merged variables for reporting
    EH_joker,   ///< Joker
-   EH_internal_topology   ///< topology string stored internally
+   EH_internal_topology,   ///< topology string stored internally
+   EH_auto_added_time   ///< time at which the host added itself to the cluster
 };
 
 LISTDEF(EH_Type)
@@ -198,6 +204,7 @@ LISTDEF(EH_Type)
    SGE_LIST(EH_merged_report_variables, STU_Type, CULL_DEFAULT)
    SGE_LIST(EH_joker, VA_Type, CULL_SPOOL)
    SGE_STRING(EH_internal_topology, CULL_DEFAULT)
+   SGE_ULONG64(EH_auto_added_time, CULL_SPOOL)
 LISTEND
 
 NAMEDEF(EHN)
@@ -230,6 +237,7 @@ NAMEDEF(EHN)
    NAME("EH_merged_report_variables")
    NAME("EH_joker")
    NAME("EH_internal_topology")
+   NAME("EH_auto_added_time")
 NAMEEND
 
 /** @brief Number of attributes of the type, i.e. the size of its name table */

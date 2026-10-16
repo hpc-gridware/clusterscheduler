@@ -550,6 +550,52 @@ What is given up is the host as a place to say no. Every host which can reach th
 a submit host, so enable this only where the network reaching the daemons is trusted, or where requests are
 authenticated by other means (see *security_mode* in xxqs_name_sxx_bootstrap(5)).
 
+***AUTO_ADD_HOSTS***
+
+A list of rules which let a host add itself to the cluster as an execution host when its execution daemon
+registers at the master daemon. Default is an empty list, which means that a host has to be in the administrative
+host list before its execution daemon may register, as before.
+
+A rule names the hosts it applies to and, optionally, the host group the host is added to:
+
+    AUTO_ADD_HOSTS=<matcher>[:@<hostgroup>][;<matcher>[:@<hostgroup>]...]
+
+A matcher which contains a slash is an IPv4 network in CIDR notation, for example *10.42.0.0/16*. Every other
+matcher is a pattern in the syntax of fnmatch(3) and is matched against the name of the host as well as against
+its address, so *gpu-\*.example.com*, *10.42.\**, the full name of a single host and its address are all valid
+matchers. The rules are evaluated in the order in which they are written and the first matching rule decides.
+Rules are separated by a semicolon because a value in *qmaster_params* can contain neither a comma nor a blank.
+
+If the matching rule names a host group, the host is added to that host group, and the host group is created if it
+does not exist yet. Queue instances for the new host then appear wherever a cluster queue uses that host group, so
+a cluster queue prepared for the host group is all the configuration a new host needs. If the rule names no host
+group, the host is added to the execution host list only.
+
+Only the execution daemon of the host itself may add the host, and the host is added as an execution host and
+nothing else: it does not become an administrative host, and it does not become a submit host. Every other request
+from the host is refused as before until an administrator grants more. In particular the execution host
+installation cannot be run on such a host, because it configures the cluster on the host's behalf and needs
+administrative rights to do so. A host which joins through these rules is expected to bring a prepared
+installation, from a machine image or over the network, and to start its execution daemon.
+
+A pattern is matched against the name of the host as the master daemon resolves it, and against the address that
+name resolves to. A network is matched against that address as well, which is not necessarily the address the
+connection comes from if the host has more than one. The communication layer accepts a connection only if the name
+the host announces is also the name its address resolves back to, unless this check has been switched off with the
+communication parameter *CL_COMMLIB_TRUST_CLIENT_HOSTNAME* (see xxqs_name_sxx_bootstrap(5)). With that check
+switched off, a name or address matches a claim the host makes about itself.
+
+Only IPv4 networks are supported. A rule which contains an IPv6 network is refused when the configuration is
+modified.
+
+Enable this only for networks or host names which are under the same administrative control as the cluster itself.
+A host which matches a rule can occupy a host name, appear in a host group, and run jobs from the queues of that
+host group.
+
+Example:
+
+    qmaster_params   AUTO_ADD_HOSTS=10.42.0.0/16:@cloud;gpu-*.example.com:@gpu
+
 ***DISABLE_SECONDARY_DS***
 
 Do not use this parameter. It is for internal use only. Default is *false*.

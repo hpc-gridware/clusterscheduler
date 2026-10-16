@@ -37,6 +37,8 @@
  * @brief Message exchange shared by GDI client and server
  */
 
+#include <arpa/inet.h>
+
 #include "cull/cull.h"
 
 #include "gdi/ocs_gdi_Packet.h"
@@ -82,6 +84,7 @@ namespace ocs::gdi {
        */
       typedef struct {
          char snd_host[CL_MAXHOSTNAMELEN]; ///< sender host name; empty matches any
+         char snd_ip[INET_ADDRSTRLEN];     ///< address the sender host name resolves to
          char snd_name[CL_MAXHOSTNAMELEN]; ///< sender component name, aka `commproc`; empty matches any
          u_short snd_id;                   ///< sender identifier; 0 matches any
          ClientServerBaseTag tag;          ///< what the message contains; #TAG_NONE matches any
@@ -99,7 +102,8 @@ namespace ocs::gdi {
                                      ClientServerBaseTag *tag, char **buffer, uint32_t *buflen, int synchron);
 
       static int sge_gdi_get_any_request(char *rhost, char *commproc, u_short *id, sge_pack_buffer *pb, ClientServerBaseTag *tag,
-                                         int synchron, uint32_t for_request_mid, uint32_t *mid);
+                                         int synchron, uint32_t for_request_mid, uint32_t *mid,
+                                         char *rip = nullptr);
 
       static int sge_gdi_send_any_request(int synchron, uint32_t *mid, const char *rhost, const char *commproc, int id,
                                           sge_pack_buffer *pb, ClientServerBaseTag tag, uint32_t response_id, lList **alpp);

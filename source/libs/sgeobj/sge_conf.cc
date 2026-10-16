@@ -385,6 +385,8 @@ struct qmaster_params_t {
    bool enable_forced_qdel_if_unknown = false;
    /// `ALLOW_ANY_SUBMITHOSTS` -- allow any host to be submit host
    bool allow_any_submithosts = false;
+   /// `AUTO_ADD_HOSTS` -- rules which let a host add itself as execution host
+   std::string auto_add_hosts;
    /// `LOG_MONITOR_MESSAGE` -- write monitoring output to the messages file
    bool is_monitor_message = true;
    /// `DISABLE_AUTO_RESCHEDULING` -- never reschedule a job automatically
@@ -1214,6 +1216,10 @@ int merge_configuration(lList **answer_list, uint32_t progid, const char *cell_r
             continue;
          }
          if (parse_bool_param(s, "ALLOW_ANY_SUBMITHOSTS", &qmaster_conf.allow_any_submithosts)) {
+            continue;
+         }
+         if (parse_string_param(s, "AUTO_ADD_HOSTS", qmaster_conf.auto_add_hosts)) {
+            // the rules are verified when the configuration is modified, see check_config()
             continue;
          }
 #ifdef LINUX
@@ -4571,6 +4577,24 @@ bool mconf_get_allow_any_submithosts() {
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
    ret = qmaster_conf.allow_any_submithosts;
+   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
+   DRETURN(ret);
+}
+
+/**
+ * @brief The `AUTO_ADD_HOSTS` setting of the master configuration
+ *
+ * The rules which let a host add itself to the cluster as an execution host when its
+ * execution daemon registers. An empty value switches the automatic adding of hosts off,
+ * which is the default. See ocs::AutoAddHosts for the syntax of the rules.
+ *
+ * @return the rules as they are configured, empty when there are none
+ */
+std::string mconf_get_auto_add_hosts() {
+   DENTER(BASIS_LAYER);
+
+   SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
+   std::string ret = qmaster_conf.auto_add_hosts;
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
 }

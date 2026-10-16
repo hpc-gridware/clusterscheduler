@@ -762,4 +762,9 @@
 #define MSG_CALENDAR_QINSTANCESTATE_SU             _MESSAGE(34005, _("calendar changes the state of queue " SFQ " to calendar order " sge_u32))
 #define MSG_TE_CANNOTADDEVENT_US                   _MESSAGE(34006, _("cannot add timed event of type " sge_u32 " for " SFQ " to the timed event list"))
 
+// qmaster_params AUTO_ADD_HOSTS
+#define MSG_AUTOADDHOSTS_HOST_S                    _MESSAGE(34007, _("exec host " SFQ " added itself to the cluster, it matches a rule of the qmaster_params AUTO_ADD_HOSTS"))
+#define MSG_AUTOADDHOSTS_HGROUP_SS                 _MESSAGE(34008, _("exec host " SFQ " was added to host group " SFQ))
+#define MSG_AUTOADDHOSTS_HGROUPFAILED_SS           _MESSAGE(34009, _("exec host " SFQ " could not be added to host group " SFQ))
+
 // clang-format on

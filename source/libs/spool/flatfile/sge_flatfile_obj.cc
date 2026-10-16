@@ -45,6 +45,7 @@
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_string.h"
 #include "uti/sge_stdlib.h"
+#include "uti/sge_time.h"
 
 #include "sgeobj/cull/sge_resource_utilization_RUE_L.h"
 #include "sgeobj/sge_answer.h"
@@ -121,6 +122,7 @@ static int write_RQR_obj(const lListElem *ep, int nm, dstring *buffer,
 
 static int read_SC_load_formula(lListElem *ep, int nm,
                                      const char *buffer, lList **alp);
+static int write_EH_auto_added_time(const lListElem *ep, int nm, dstring *buffer, lList **alp);
 
 /* Field lists for context-independent spooling of sub-lists */
 static spooling_field AMEM_sub_fields[] = {
@@ -748,8 +750,8 @@ spooling_field *sge_build_STN_json_field_list() {
  */
 spooling_field *sge_build_EH_field_list(bool spool, bool to_stdout,
                                         bool history) {
-   /* There are 14 possible EH_Type fields. */
-   spooling_field *fields = (spooling_field *)sge_malloc(sizeof(spooling_field)*14);
+   /* There are 15 possible EH_Type fields. */
+   spooling_field *fields = (spooling_field *)sge_malloc(sizeof(spooling_field)*15);
    int count = 0;
 
    create_spooling_field(&fields[count++], EH_name, 21, "hostname", false, nullptr, false, nullptr, nullptr, nullptr);
@@ -767,6 +769,16 @@ spooling_field *sge_build_EH_field_list(bool spool, bool to_stdout,
 
    if (spool) {
       create_spooling_field(&fields[count++], EH_reschedule_unknown_list, 21, "reschedule_unknown_list", false, RU_sub_fields, false, &qconf_sub_name_value_comma_sfi, nullptr, nullptr);
+   }
+
+   /* the time at which a host added itself is not part of the field list used by qconf -Ae and
+    * qconf -Me, as it is not meant to be edited by hand, and it is not part of the spooling
+    * format either, where it would make the spool file of an execution host unreadable for a
+    * release which does not know the attribute name. The master daemon spools it through the
+    * CULL_SPOOL flag of the attribute. It is shown only when MORE_INFO is set, because an
+    * additional line in the output of qconf -se would change an interface */
+   if (to_stdout && getenv("MORE_INFO") != nullptr) {
+      create_spooling_field(&fields[count++], EH_auto_added_time, 21, "auto_added_time", false, nullptr, false, nullptr, nullptr, write_EH_auto_added_time);
    }
    
    create_spooling_field(&fields[count++], EH_acl, 21, "user_lists", false, US_sub_fields, false, nullptr, nullptr, nullptr);
@@ -1432,6 +1444,30 @@ static int write_CQ_hostlist(const lListElem *ep, int nm,
       sge_dstring_append(buffer, NONE_STR);
    }
    
+   return 1;
+}
+
+/** @brief Writes the time at which an execution host added itself as a date and time
+ *
+ * An execution host which an administrator added carries 0, which is written as the empty value
+ * of this format, so that it does not read as an instant in time.
+ *
+ * @param ep the execution host
+ * @param nm the attribute to write, EH_auto_added_time
+ * @param buffer receives the formatted value
+ * @param alp receives messages for the caller, unused here
+ * @return 1 on success
+ */
+static int write_EH_auto_added_time(const lListElem *ep, int nm, dstring *buffer, lList **alp) {
+   uint64_t auto_added_time = lGetUlong64(ep, nm);
+
+   if (auto_added_time == 0) {
+      sge_dstring_append(buffer, NONE_STR);
+   } else {
+      DSTRING_STATIC(dstr, 64);
+      sge_dstring_append(buffer, sge_ctime64_short(auto_added_time, &dstr));
+   }
+
    return 1;
 }
 
