@@ -38,6 +38,9 @@
  * @brief Execution, submit and admin hosts
  */
 #include <cstring>
+#include <map>
+#include <string>
+#include <vector>
 
 #include "uti/sge_bitfield.h"
 #include "uti/sge_hostname.h"
@@ -1679,6 +1682,215 @@ host_add_to_hgroup(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const char *h
    answer_list_output(&answer_list);
 
    DRETURN(ret);
+}
+
+/** @brief Takes a host out of every host group which names it
+ *
+ * The host group itself is kept even when it becomes empty: an administrator may have built
+ * cluster queues on it, and those would lose their configuration with it. The reserved host
+ * groups are left alone, they mirror the host lists and are maintained by the master daemon.
+ *
+ * @param packet the GDI packet of the request
+ * @param task the GDI task of the request
+ * @param hostname name of the host to take out
+ * @param monitor for monitoring qmaster threads
+ * @return true if the host is in no host group any more, false if one of them could not be changed
+ */
+static bool
+host_remove_from_hgroups(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const char *hostname,
+                         monitoring_t *monitor) {
+   DENTER(TOP_LAYER);
+
+   bool ret = true;
+
+   // the list itself is re-read on every pass below, because modifying a host group replaces the
+   // element and may even replace the list
+   const lList **master_hgroup_list = ocs::DataStore::get_master_list(SGE_TYPE_HGROUP);
+
+   // the host groups to change are collected first: the list is modified while we work on it
+   std::vector<std::string> hgroup_names;
+   for_each_ep_lv(hgroup, *master_hgroup_list) {
+      const char *hgroup_name = lGetHost(hgroup, HGRP_name);
+
+      if (hgroup_is_reserved(hgroup_name)) {
+         continue;
+      }
+      if (lGetElemHost(lGetList(hgroup, HGRP_host_list), HR_name, hostname) != nullptr) {
+         hgroup_names.emplace_back(hgroup_name);
+      }
+   }
+
+   for (const std::string &hgroup_name : hgroup_names) {
+      const lListElem *old_hgroup = hgroup_list_locate(*master_hgroup_list, hgroup_name.c_str());
+      if (old_hgroup == nullptr) {
+         continue;
+      }
+
+      // the new host list is the old one without this host
+      lList *href_list = lCopyList(nullptr, lGetList(old_hgroup, HGRP_host_list));
+      lListElem *href = lGetElemHostRW(href_list, HR_name, hostname);
+      lRemoveElem(href_list, &href);
+
+      lList *answer_list = nullptr;
+      lListElem *hgroup = hgroup_create(&answer_list, hgroup_name.c_str(), href_list, true);
+      if (hgroup == nullptr) {
+         lFreeList(&href_list);
+         ret = false;
+      } else {
+         lList *tmp_list = nullptr;
+         gdi_object_t *object = get_gdi_object(ocs::gdi::Target::HGRP_LIST);
+
+         if (sge_gdi_add_mod_generic(packet, task, &answer_list, hgroup, 0, object,
+                                     component_get_username(), component_get_qualified_hostname(),
+                                     ocs::gdi::Command::NONE, ocs::gdi::SubCommand::NONE,
+                                     &tmp_list, monitor) != STATUS_OK) {
+            ret = false;
+         }
+         lFreeList(&tmp_list);
+         lFreeElem(&hgroup);
+      }
+      answer_list_output(&answer_list);
+   }
+
+   DRETURN(ret);
+}
+
+/** @brief Whether jobs are running on an execution host
+ *
+ * @param hostname name of the execution host
+ * @return true if at least one slot of one of its queue instances is in use
+ */
+static bool
+host_has_running_jobs(const char *hostname) {
+   DENTER(TOP_LAYER);
+
+   const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
+
+   for_each_ep_lv(cqueue, master_cqueue_list) {
+      const lListElem *qinstance = lGetSubHost(cqueue, QU_qhostname, hostname, CQ_qinstances);
+
+      if (qinstance != nullptr && qinstance_slots_used(qinstance) > 0) {
+         DRETURN(true);
+      }
+   }
+
+   DRETURN(false);
+}
+
+/** @brief Remove execution hosts that added themselves and went silent
+ *
+ * A host which added itself through one of the qmaster_params AUTO_ADD_HOSTS rules carries the
+ * time of its registration in EH_auto_added_time. When the qmaster_params AUTO_REMOVE_HOSTS_AFTER
+ * names a time and such a host has been unknown for that long, it is taken out of its host groups
+ * and deleted from the execution host list, which removes its queue instances with it. This is
+ * what keeps a cloud node which disappeared without a shutdown from showing up in qhost and qstat
+ * forever.
+ *
+ * A host which an administrator added is never removed, however long it has been unreachable, and
+ * a host which still has jobs running is kept until they are gone. A host which cannot be deleted,
+ * because it is still referenced somewhere, loses its marker, so that the attempt is not repeated
+ * on every tick - the same way the cleanup of the automatically created users gives up.
+ *
+ * EH_lt_heard_from is not a rolling timestamp: it holds the time at which a host became known and
+ * is set back to 0 once the master daemon declares the host unknown, which happens after
+ * max_unheard. It therefore says whether a host is alive but not for how long it has been gone,
+ * so the moment a host is first seen unknown is remembered here. That also gives the behaviour a
+ * restart of the master daemon needs: the memory starts out empty, so the time is measured from
+ * the first run of this handler rather than from a last contact nobody recorded.
+ *
+ * @param anEvent the timed event that fired
+ * @param monitor for monitoring qmaster threads
+ */
+void
+sge_automatic_host_cleanup_handler(te_event_t anEvent, monitoring_t *monitor) {
+   DENTER(TOP_LAYER);
+
+   // when each host was first seen unknown, by host name. Only this handler touches it, and it
+   // runs in the timer thread alone
+   static std::map<std::string, uint64_t> unknown_since;
+
+   uint32_t remove_after = mconf_get_auto_remove_hosts_after();
+   if (remove_after == 0) {
+      // nothing is removed, and what we remembered is of no use when it is switched on again
+      unknown_since.clear();
+      DRETURN_VOID;
+   }
+
+   uint64_t now = sge_get_gmt64();
+   uint64_t limit = sge_gmt32_to_gmt64(remove_after);
+
+   MONITOR_WAIT_TIME(SGE_LOCK(LOCK_GLOBAL, LOCK_WRITE), monitor);
+   lList **master_ehost_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST);
+
+   // not for_each_ep(): hosts are deleted from the list we walk
+   lListElem *next = lFirstRW(*master_ehost_list);
+   while (next != nullptr) {
+      lListElem *hep = next;
+      next = lNextRW(hep);
+
+      const char *hostname = lGetHost(hep, EH_name);
+
+      // a host which an administrator added carries no time and is never removed
+      if (lGetUlong64(hep, EH_auto_added_time) == 0) {
+         unknown_since.erase(hostname);
+         continue;
+      }
+
+      // a host we have heard from is alive, whenever that was
+      if (lGetUlong64(hep, EH_lt_heard_from) != 0) {
+         unknown_since.erase(hostname);
+         continue;
+      }
+
+      auto it = unknown_since.find(hostname);
+      if (it == unknown_since.end()) {
+         DPRINTF("host " SFQ " is unknown, starting to count\n", hostname);
+         unknown_since[hostname] = now;
+         continue;
+      }
+      if (now < it->second + limit) {
+         continue;
+      }
+
+      if (host_has_running_jobs(hostname)) {
+         INFO(MSG_AUTOREMOVEHOSTS_BUSY_S, hostname);
+         continue;
+      }
+
+      ocs::gdi::Packet packet;
+      ocs::gdi::Task task;
+      packet.gdi_session = ocs::SessionManager::GDI_SESSION_NONE;
+
+      uint64_t unknown_for = now - it->second;
+      lList *answer_list = nullptr;
+      bool removed = false;
+      if (host_remove_from_hgroups(&packet, &task, hostname, monitor)) {
+         char ruser[] = "qmaster";
+         char rhost[CL_MAXHOSTNAMELEN];
+         strncpy(rhost, component_get_qualified_hostname(), sizeof(rhost) - 1);
+         rhost[sizeof(rhost) - 1] = '\0';
+
+         const lList *master_hgroup_list = *ocs::DataStore::get_master_list(SGE_TYPE_HGROUP);
+         removed = sge_del_host(&packet, &task, hep, &answer_list, ruser, rhost,
+                                ocs::gdi::Target::EH_LIST, master_hgroup_list,
+                                monitor) == STATUS_OK;
+      }
+      answer_list_output(&answer_list);
+
+      if (removed) {
+         INFO(MSG_AUTOREMOVEHOSTS_REMOVED_SU, hostname,
+              static_cast<uint32_t>(sge_gmt64_to_gmt32(unknown_for)));
+         unknown_since.erase(hostname);
+      } else {
+         // do not try again on every tick, treat the host as one an administrator added
+         ERROR(MSG_AUTOREMOVEHOSTS_FAILED_S, hostname);
+         lSetUlong64(hep, EH_auto_added_time, 0);
+         unknown_since.erase(hostname);
+      }
+   }
+   SGE_UNLOCK(LOCK_GLOBAL, LOCK_WRITE);
+
+   DRETURN_VOID;
 }
 
 /****

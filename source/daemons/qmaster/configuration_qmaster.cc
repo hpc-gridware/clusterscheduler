@@ -581,6 +581,25 @@ check_config(lList **alpp, lListElem *conf) {
                if (!ocs::AutoAddHosts::parse(auto_add_hosts.c_str(), discard, alpp)) {
                   qp_valid = false;
                }
+               continue;
+            }
+
+            // parse_time_param() turns a value it cannot read into 0, which means "switched
+            // off", so the time is parsed here once more to be able to report a bad one
+            const char *time_value = strchr(s, '=');
+            if (strncasecmp(s, "AUTO_REMOVE_HOSTS_AFTER", strlen("AUTO_REMOVE_HOSTS_AFTER")) == 0 &&
+                time_value != nullptr) {
+               char err_str[MAX_STRING_SIZE];
+               uint32_t seconds = 0;
+
+               time_value++;
+               if (!extended_parse_ulong_val(nullptr, &seconds, ocs::CEntry::Type::TIME, time_value,
+                                             err_str, sizeof(err_str), 0, false)) {
+                  answer_list_add_sprintf(alpp, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
+                                          MSG_AUTOREMOVEHOSTS_TIME_SS, time_value, err_str);
+                  qp_valid = false;
+               }
+               continue;
             }
          }
          sge_free_saved_vars(context);

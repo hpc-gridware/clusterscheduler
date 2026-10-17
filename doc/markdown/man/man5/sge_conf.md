@@ -600,6 +600,31 @@ Example:
 
     qmaster_params   AUTO_ADD_HOSTS=10.42.0.0/16:@cloud;gpu-*.example.com:@gpu
 
+***AUTO_REMOVE_HOSTS_AFTER***
+
+How long an execution host which added itself to the cluster through *AUTO_ADD_HOSTS* may stay silent before it is
+removed again. Default is 0, which switches the automatic removal off.
+
+    AUTO_REMOVE_HOSTS_AFTER=<time>
+
+The value is a time, written either as a number of seconds or in the form *hours:minutes:seconds*. When such a
+host has been unknown to the master daemon for that long, the host is taken out of the host groups it is a member
+of and deleted from the execution host list, which removes its queue instances with it. This is what keeps a host
+that disappeared without shutting its execution daemon down - a cloud instance that was reclaimed, for example -
+from appearing in the output of xxqs_name_sxx_qhost(1) and xxqs_name_sxx_qstat(1) for good.
+
+A host which an administrator added is never removed, however long it has been unreachable. A host which still has
+jobs running is kept until they are gone. A host group is kept even when its last member is removed from it,
+because a cluster queue may be configured on it.
+
+The time is counted from the moment the host becomes unknown, which the master daemon notices after *max_unheard*,
+and the hosts are checked once a minute. The whole span between the last contact and the removal of a host is
+therefore *max_unheard* plus this time plus up to a minute.
+
+Example:
+
+    qmaster_params   AUTO_ADD_HOSTS=10.42.0.0/16:@cloud,AUTO_REMOVE_HOSTS_AFTER=00:10:00
+
 ***DISABLE_SECONDARY_DS***
 
 Do not use this parameter. It is for internal use only. Default is *false*.

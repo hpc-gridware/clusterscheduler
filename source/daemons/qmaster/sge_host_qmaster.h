@@ -45,6 +45,9 @@
 #include "sge_c_gdi.h"
 #include "sge_qmaster_timed_event.h"
 
+void
+sge_automatic_host_cleanup_handler(te_event_t anEvent, monitoring_t *monitor);
+
 /* funtions called via gdi and inside the qmaster */
 int
 sge_del_host(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *, lList **, char *, char *, ocs::gdi::Target traget,

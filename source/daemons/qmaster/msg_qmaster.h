@@ -767,4 +767,10 @@
 #define MSG_AUTOADDHOSTS_HGROUP_SS                 _MESSAGE(34008, _("exec host " SFQ " was added to host group " SFQ))
 #define MSG_AUTOADDHOSTS_HGROUPFAILED_SS           _MESSAGE(34009, _("exec host " SFQ " could not be added to host group " SFQ))
 
+// qmaster_params AUTO_REMOVE_HOSTS_AFTER
+#define MSG_AUTOREMOVEHOSTS_TIME_SS                _MESSAGE(34010, _("AUTO_REMOVE_HOSTS_AFTER: " SFQ " is not a time: " SFN))
+#define MSG_AUTOREMOVEHOSTS_REMOVED_SU             _MESSAGE(34011, _("exec host " SFQ " was removed from the cluster, it added itself and has not been heard from for " sge_u32 " seconds"))
+#define MSG_AUTOREMOVEHOSTS_BUSY_S                 _MESSAGE(34012, _("exec host " SFQ " added itself and has not been heard from, but it still has jobs running and is kept"))
+#define MSG_AUTOREMOVEHOSTS_FAILED_S               _MESSAGE(34013, _("exec host " SFQ " could not be removed from the cluster, it is no longer treated as a host which added itself"))
+
 // clang-format on

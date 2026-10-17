@@ -387,6 +387,9 @@ struct qmaster_params_t {
    bool allow_any_submithosts = false;
    /// `AUTO_ADD_HOSTS` -- rules which let a host add itself as execution host
    std::string auto_add_hosts;
+   /// `AUTO_REMOVE_HOSTS_AFTER` -- seconds without contact after which an automatically
+   /// added execution host is removed again, 0 switches the removal off
+   uint32_t auto_remove_hosts_after = 0;
    /// `LOG_MONITOR_MESSAGE` -- write monitoring output to the messages file
    bool is_monitor_message = true;
    /// `DISABLE_AUTO_RESCHEDULING` -- never reschedule a job automatically
@@ -1220,6 +1223,11 @@ int merge_configuration(lList **answer_list, uint32_t progid, const char *cell_r
          }
          if (parse_string_param(s, "AUTO_ADD_HOSTS", qmaster_conf.auto_add_hosts)) {
             // the rules are verified when the configuration is modified, see check_config()
+            continue;
+         }
+         if (parse_time_param(s, "AUTO_REMOVE_HOSTS_AFTER",
+                              &qmaster_conf.auto_remove_hosts_after)) {
+            // the time is verified when the configuration is modified, see check_config()
             continue;
          }
 #ifdef LINUX
@@ -4595,6 +4603,26 @@ std::string mconf_get_auto_add_hosts() {
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
    std::string ret = qmaster_conf.auto_add_hosts;
+   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
+   DRETURN(ret);
+}
+
+/**
+ * @brief The `AUTO_REMOVE_HOSTS_AFTER` setting of the master configuration
+ *
+ * How long an execution host which added itself to the cluster may stay silent before it is
+ * removed again. 0, which is the default, switches the automatic removal off. A host which an
+ * administrator added is never removed, however long it has been unreachable.
+ *
+ * @return the time in seconds, 0 when the automatic removal is switched off
+ */
+uint32_t mconf_get_auto_remove_hosts_after() {
+   DENTER(BASIS_LAYER);
+
+   uint32_t ret;
+
+   SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
+   ret = qmaster_conf.auto_remove_hosts_after;
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
 }

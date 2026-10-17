@@ -84,6 +84,7 @@ typedef enum {
    TYPE_SHARETREE_SPOOL_EVENT,         ///< CS-1239: drain ocs::SharetreeUsage FIFOs to the spool backend
    TYPE_SHARETREE_TICK_EVENT,          ///< CS-1239: periodic decay + batched USER_MOD/PROJECT_MOD/NEW_SHARETREE publish
    TYPE_FINISHED_JOBS_SWEEP_EVENT,     ///< CS-1908: periodic sweep pruning retained finished ja_tasks by time-OR-count
+   TYPE_AUTOMATIC_HOST_CLEANUP_EVENT,  ///< Automatically added execution hosts that went silent are removed
 #if defined(OCS_WITH_OPENSSL)
    TYPE_SSL_CERT_RENEWAL_EVENT,        ///< The SSL certificate is renewed before it expires
 #endif
