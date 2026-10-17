@@ -111,6 +111,8 @@ sge_timer_register_event_handler() {
 
    te_register_event_handler(sge_automatic_user_cleanup_handler, TYPE_AUTOMATIC_USER_CLEANUP_EVENT);
 
+   te_register_event_handler(sge_automatic_host_cleanup_handler, TYPE_AUTOMATIC_HOST_CLEANUP_EVENT);
+
    te_register_event_handler(ocs::SessionManager::session_cleanup_handler, TYPE_SESSION_CLEANUP_EVENT);
 
    /*
@@ -174,6 +176,10 @@ void sge_timer_start_periodic_tasks() {
    te_free_event(&ev);
 
    ev = te_new_event(sge_gmt32_to_gmt64(60), TYPE_AUTOMATIC_USER_CLEANUP_EVENT, RECURRING_EVENT, 0, 0, "automatic-user-cleanup");
+   te_add_event(ev);
+   te_free_event(&ev);
+
+   ev = te_new_event(sge_gmt32_to_gmt64(60), TYPE_AUTOMATIC_HOST_CLEANUP_EVENT, RECURRING_EVENT, 0, 0, "automatic-host-cleanup");
    te_add_event(ev);
    te_free_event(&ev);
 

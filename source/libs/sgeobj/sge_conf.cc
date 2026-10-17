@@ -152,6 +152,7 @@ static bool enable_test_sleep_after_request = false;
 static bool enable_forced_qdel_if_unknown = false;
 static bool allow_any_submithosts = false;
 static std::string auto_add_hosts;
+static u_long32 auto_remove_hosts_after = 0;
 static bool ignore_ngroups_max_limit = false;
 static bool enable_systemd = true;
 static bool do_credentials = true;
@@ -767,6 +768,7 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
       enable_forced_qdel_if_unknown = false;
       allow_any_submithosts = false;
       auto_add_hosts.clear();
+      auto_remove_hosts_after = 0;
       ignore_ngroups_max_limit = false;
       enable_systemd = true;
       do_credentials = true;
@@ -858,6 +860,10 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
          }
          if (parse_string_param(s, "AUTO_ADD_HOSTS", auto_add_hosts)) {
             // the rules are verified when the configuration is modified, see check_config()
+            continue;
+         }
+         if (parse_time_param(s, "AUTO_REMOVE_HOSTS_AFTER", &auto_remove_hosts_after)) {
+            // the time is verified when the configuration is modified, see check_config()
             continue;
          }
 #ifdef LINUX
@@ -3114,6 +3120,21 @@ std::string mconf_get_auto_add_hosts() {
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
    std::string ret = auto_add_hosts;
+   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
+   DRETURN(ret);
+}
+
+/**
+ * How long an exec host which added itself to the cluster may stay silent before it is removed
+ * again.
+ *
+ * 0, which is the default, switches the automatic removal off. A host which an administrator
+ * added is never removed, however long it has been unreachable.
+ */
+u_long32 mconf_get_auto_remove_hosts_after() {
+   DENTER(BASIS_LAYER);
+   SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
+   u_long32 ret = auto_remove_hosts_after;
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
 }
