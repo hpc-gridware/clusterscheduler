@@ -103,9 +103,8 @@ ocs::BindingShepherd::do_thread_binding() {
       }
    }
 
-   // Binding will either be done via systemd or via HWLOC API directly
-   if (g_use_systemd) {
-      add_binding_to_systemd_properties(cpuset);
+   // Binding will either be done via systemd (cgroup v2 only) or via HWLOC API directly
+   if (add_binding_to_systemd_properties(cpuset)) {
       shepherd_trace("do_thread_binding: applied thread binding via systemd");
       hwloc_bitmap_free(cpuset);
       return 0;

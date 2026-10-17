@@ -212,13 +212,19 @@ namespace ocs {
     * Fills in a vector of uint8_t with the CPU mask as bits and adds it to
     * the systemd properties under the key "AllowedCPUs".
     *
+    * systemd applies AllowedCPUs only with cgroup v2. With cgroup v1 the property is
+    * accepted but has no effect, so the binding is left to the caller.
+    *
     * @param cpuset - cpuset from hwloc which contains the CPU binding (logical cpus).
-    * @return
+    * @return true if the binding was added to the systemd properties,
+    *         false if the caller has to bind the process itself
     */
 #if defined(OCS_HWLOC)
-   void
+   bool
    add_binding_to_systemd_properties(const hwloc_const_bitmap_t cpuset) {
-      if (g_use_systemd) {
+      bool ret = false;
+#if defined (OCS_WITH_SYSTEMD)
+      if (g_use_systemd && ocs::uti::Systemd::get_cgroup_version() == 2) {
          unsigned i;
 
          // create a vector of uint8_t containing the CPU mask as bits
@@ -230,7 +236,10 @@ namespace ocs {
          hwloc_bitmap_foreach_end();
 
          g_systemd_properties["AllowedCPUs"] = cpu_mask;
+         ret = true;
       }
+#endif
+      return ret;
    }
 #endif
 
