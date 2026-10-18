@@ -54,11 +54,24 @@ Every instance the job is granted, on every host it runs on, then belongs to one
 
 ### AMD GPU Support with qgpu
 
-`qgpu` 1.2.0 supports AMD GPUs with the feature set it has had for NVIDIA: the load sensor, the installer, device selection in the prolog and epilog, per-job GPU accounting and the health checks. The vendor is detected per host by the load sensor and per grant by the prolog, so one queue configuration and one set of wrapper scripts serve NVIDIA and AMD hosts in the same cluster. Nothing changes for an NVIDIA host.
+qgpu 1.2.0 supports AMD Instinct GPUs: the load sensor, the installer, device selection in the prolog
+and epilog, per-job GPU accounting and a quick health check. The vendor is detected per host by the
+load sensor and per grant by the prolog, so one queue configuration and one set of wrapper scripts
+serve NVIDIA and AMD hosts in the same cluster.
 
-An AMD host reports `amd_gpu_count`, `amd_gpu_backend` and a set of `amd_gpu_<N>_*` load values, its devices are managed in an `AMD_GPUS` resource map, and a job is given `ROCR_VISIBLE_DEVICES` and `AMD_VISIBLE_DEVICES` for the devices it was granted. The load sensor reads the AMD SMI library where it is installed and otherwise falls back to the sysfs interface of the `amdgpu` driver and the KFD topology, so a host without the ROCm stack still reports its GPUs. Per-job accounting uses the ROCm Data Center Tool and appears as `amd_*` values in `qacct -j`, and the health checks run native checks or the ROCm Validation Suite depending on how thorough a check is asked for. Where a GPU is partitioned, each partition is a GPU in its own right, with its own index, render node and resource map identifier. For details see the *Admin Guide*.
 
-(Available in Gridware Cluster Scheduler only)
+An AMD host reports `amd_gpu_count`, `amd_gpu_backend` and a set of `amd_gpu_<N>_*` load values,
+its devices are managed in an `AMD_GPUS` resource map, and a job is given `ROCR_VISIBLE_DEVICES`
+for the devices it was granted, plus `AMD_VISIBLE_DEVICES` for container runtimes where the GPUs
+can be identified by UUID. qgpu reads the interfaces of the amdgpu kernel driver directly (KFD
+topology, sysfs and hwmon), so it needs no ROCm installation and no vendor library. Per-job
+accounting reads the driver's hardware counters at job start and end and appears as `amd_*` values
+in `qacct -j`, on MI300 and MI350 class GPUs. The health check runs quick checks of the kernel
+interfaces in the prolog. Where a GPU is partitioned, each partition is a GPU in its own right, with
+its own index, render node and resource map identifier; accounting does not cover partitioned GPUs.
+For details see the Admin Guide.
+
+*(Available in Gridware Cluster Scheduler only)*
 
 ### TLS Encryption Available in Open Cluster Scheduler
 
