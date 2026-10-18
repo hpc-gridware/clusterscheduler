@@ -320,6 +320,10 @@ int main(int argc, char **argv)
          break;
       }
       sleep(30);
+
+      // the qmaster might have been started on a different host or the act_qmaster file
+      // might have been corrected in the meantime: re-read it before the next attempt
+      ocs::gdi::ClientBase::gdi_get_act_master_host(true);
    }
 
    /*
