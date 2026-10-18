@@ -276,8 +276,9 @@ resource request: the requested value on the left of the operator, the configure
 right. No operator is written in the request.
 
 A *memory* complex defined `<=` therefore makes the request above mean at least 40G, and a
-*gpu_temp* complex defined `>=` makes `[gpu_temp=40]` mean no hotter than 40. How the complex is
-defined is what decides how a request for it reads.
+*sharing* complex defined `>=`, holding the number of jobs a card is shared by, makes
+`[sharing=2]` mean a card shared by no more than two jobs. How the complex is defined is what
+decides how a request for it reads.
 
 Whether a value may be a pattern follows from the type of the complex: *RESTRING* is matched as
 an expression, *CSTRING* without regard to case, *STRING* exactly, *HOST* by the host name rules,
