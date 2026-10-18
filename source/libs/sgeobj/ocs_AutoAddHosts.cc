@@ -23,6 +23,8 @@
 #include <cstdlib>
 #include <cstring>
 #include <fnmatch.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
 
 #include "uti/ocs_Pattern.h"
 #include "uti/sge_log.h"
