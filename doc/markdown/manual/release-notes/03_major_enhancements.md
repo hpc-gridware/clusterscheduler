@@ -1,5 +1,179 @@
 # Major Enhancements
 
+## v9.1.7
+
+### Further Resource Map Improvements
+
+Work on resource maps continued after 9.1.6. Where that release made it possible to say that the instances granted for a request have to *agree* with one another, this one makes it possible to say *which* instances a job wants, and to pick them by what the administrator recorded about them rather than by name. The scheduler now also decides which instances a job is granted while it matches a host, not afterwards while it books them, so a reservation reflects the instances a job will actually receive.
+
+For the complete grammar of a resource map, its characteristics and its requests, see the **xxqs_name_sxx_rsmap(5)** man page.
+
+#### Choosing the Instances by Identifier
+
+A request may name the instances it wants with the *id=* parameter. The value is an expression over the identifiers of the map: shell wildcards, combined with `!` for not, `&` for and and `|` for or, and grouped with brackets.
+
+```bash
+$ qsub -l 'gpu=1[id=gpu0]' job.sh
+$ qsub -l 'gpu=1[id=gpu1*]' job.sh
+$ qsub -l 'gpu=2[id=(gpu1*|gpu2*)&!*b]' job.sh
+```
+
+The first asks for exactly one instance, the second for any share of card `gpu1`, and the third for the `a` shares of two particular cards. Where the identifiers of a map say which device a share belongs to, this is how a job asks for a share of a particular device. More instances may match than the job asked for, and the scheduler chooses among those that do. A job whose expression matches nothing anywhere waits; an expression which does not parse is refused at submission time.
+
+Quote the request — a shell would otherwise read the brackets as a file name pattern.
+
+#### Matching Against the Characteristics of an Instance
+
+A parameter whose name is not one of the reserved words is read as a complex, and the request is matched against the characteristic of that name on the instance. A job can therefore ask for a GPU by what it is rather than by what it is called:
+
+```bash
+$ qsub -l 'gpu=1[gpu_memory=40G]' job.sh
+```
+
+The comparison uses the relation operator of that complex, in the same direction as an ordinary resource request, and no operator is written in the request. A *gpu_memory* complex defined `<=` makes the request above mean "at least 40G"; a *sharing* complex defined `>=`, holding the number of jobs a card is shared by, makes `[sharing=2]` mean "a card shared by no more than two jobs". How the complex is defined is what decides how a request for it reads. An instance which does not carry the characteristic never matches, there being nothing to compare against.
+
+The parameters of a request combine, so a job can constrain the device and the properties of its shares at once:
+
+```bash
+$ qsub -l 'gpu=4[same=id,gpu_memory=80G]' job.sh
+```
+
+Four shares of one card, and only of a card with at least 80G on board.
+
+#### One Group of Instances Across All Hosts of a Job
+
+The *scope=* parameter says how far a *same=* constraint reaches. It takes `host`, which is what a request leaving it out gets and what *same=* has meant so far, or `job`:
+
+```bash
+$ qsub -pe mpi 2 -l 'gpu=1[same=id,scope=job]' job.sh
+```
+
+Every instance the job is granted, on every host it runs on, then belongs to one group. The group is chosen once for the whole job over the hosts it could run on, and every host is held to it afterwards. Because identifiers belong to the host they are configured on, this is useful where a map is named consistently across the cluster — the job asks for the group of that name everywhere, and a host which does not have it cannot run the job.
+
+(Available in Open and Gridware Cluster Scheduler; characteristics and request parameters in Gridware Cluster Scheduler only.)
+
+### AMD GPU Support with qgpu
+
+`qgpu` 1.2.0 supports AMD GPUs with the feature set it has had for NVIDIA: the load sensor, the installer, device selection in the prolog and epilog, per-job GPU accounting and the health checks. The vendor is detected per host by the load sensor and per grant by the prolog, so one queue configuration and one set of wrapper scripts serve NVIDIA and AMD hosts in the same cluster. Nothing changes for an NVIDIA host.
+
+An AMD host reports `amd_gpu_count`, `amd_gpu_backend` and a set of `amd_gpu_<N>_*` load values, its devices are managed in an `AMD_GPUS` resource map, and a job is given `ROCR_VISIBLE_DEVICES` and `AMD_VISIBLE_DEVICES` for the devices it was granted. The load sensor reads the AMD SMI library where it is installed and otherwise falls back to the sysfs interface of the `amdgpu` driver and the KFD topology, so a host without the ROCm stack still reports its GPUs. Per-job accounting uses the ROCm Data Center Tool and appears as `amd_*` values in `qacct -j`, and the health checks run native checks or the ROCm Validation Suite depending on how thorough a check is asked for. Where a GPU is partitioned, each partition is a GPU in its own right, with its own index, render node and resource map identifier. For details see the *Admin Guide*.
+
+(Available in Gridware Cluster Scheduler only)
+
+### TLS Encryption Available in Open Cluster Scheduler
+
+TLS encryption of the communication between the components, introduced in 9.1.0, is no longer limited to Gridware Cluster Scheduler. `inst_sge -tls` and the `security_mode tls` setting in the bootstrap file are now part of Open Cluster Scheduler as well, so an open source cluster can be installed with encrypted component communication, certificate generation and automatic renewal.
+
+Encryption remains opt-in and requires the cluster to be set up with `security_mode` set to `tls`, which means restarting all components. OpenSSL 3 must be installed on every host of the cluster; it is not shipped with xxQS_NAMExx.
+
+For configuration and deployment details see the *Installation Guide*, chapter **"Enabling TLS Encryption"**, and the *Administration Guide*, chapter **"TLS Encryption of Communication"**.
+
+(Available in Open and Gridware Cluster Scheduler.)
+
+### slurm-shim Delivered with the Product
+
+The slurm-shim lets applications and users that expect Slurm command line tools work against an xxQS_NAMExx cluster. It is now delivered as a package alongside the other product packages, as `ocs-<version>-slurm-shim.tar.gz` and `gcs-<version>-slurm-shim.tar.gz`, instead of having to be fetched separately.
+
+The package is self-contained: the binaries for the supported architectures, their checksums, a README with the installation instructions, and its own third-party license information including the SBOM. It unpacks into `$SGE_ROOT/slurm-shim`.
+
+(Available in Open and Gridware Cluster Scheduler.)
+
+### Execution Hosts Joining the Cluster on Their Own
+
+An execution daemon on a host which is not configured in the cluster is normally refused: a host has to be an administrative host and an execution host before its daemon may register. That ordering is awkward where hosts come and go on their own — nodes started from a machine image, cloud instances, a pool that grows and shrinks — because something has to configure the cluster before each new host can report for duty.
+
+Two new *qmaster_params* entries let the cluster accept such hosts by rule. *AUTO_ADD_HOSTS* takes a list of rules naming the hosts that may add themselves, and optionally the host group each is added to:
+
+```
+qmaster_params   AUTO_ADD_HOSTS=10.42.0.0/16:@cloud;gpu-*.example.com:@gpu
+```
+
+A matcher containing a slash is an IPv4 network in CIDR notation; every other matcher is an fnmatch(3) pattern matched against the name of the host and against its address. The first matching rule decides. Where a rule names a host group, the host is added to it and the group is created if it does not exist, so queue instances for the new host appear wherever a cluster queue uses that group — a prepared cluster queue is then all the configuration a new host needs. The slots of the new host are set to the number of processors it reports, as the execution host installation would do, and a value an administrator sets afterwards is not overwritten.
+
+Only the execution daemon of the host itself may add the host, and the host is added as an execution host and nothing else: it does not become an administrative or a submit host, and every other request from it is refused until an administrator grants more.
+
+*AUTO_REMOVE_HOSTS_AFTER* takes care of the other direction. A host which added itself this way and has then been unknown to the master daemon for that long is taken out of its host groups and deleted from the execution host list, which removes its queue instances with it:
+
+```
+qmaster_params   AUTO_ADD_HOSTS=10.42.0.0/16:@cloud,AUTO_REMOVE_HOSTS_AFTER=0:30:00
+```
+
+This is what keeps a reclaimed cloud instance from appearing in `qhost` and `qstat` forever. A host an administrator added is never removed, however long it has been unreachable, and a host which still has jobs running is kept until they are gone. Unset or `0`, the default, switches the removal off.
+
+See the **xxqs_name_sxx_conf(5)** man page for both parameters.
+
+(Available in Open and Gridware Cluster Scheduler.)
+
+## v9.1.6
+
+### Resource Map Requests, Reservations and Shared Devices
+
+9.1.5 gave the instances of a resource map **characteristics** — typed metadata describing what sets one instance apart from its siblings. 9.1.6 builds on that with a large number of improvements and fixes around resource maps, of which the most visible is that a job can now state a requirement about the *relationship* between the instances it is granted, rather than only how many it wants.
+
+The motivating case is a shared device. An identifier may be listed more than once to model N-way sharing of one physical resource, so a host with two GPUs usable by four jobs each is configured as
+
+```bash
+$ qconf -mattr exechost complex_values 'gpu=8(0 0 0 0 1 1 1 1)' node01
+```
+
+The scheduler sees eight instances, so eight single-instance jobs can run, but only two identifiers are ever handed out. A multithreaded job that needs a whole card has to be granted four shares of *one* identifier — four shares spread over two cards are of no use to it.
+
+For the complete grammar see the new **xxqs_name_sxx_rsmap(5)** man page.
+
+#### Parameters in a Resource Map Request
+
+A request may carry a list of parameters in brackets after the amount:
+
+```bash
+$ qsub -l 'gpu=4[same=id]' job.sh
+```
+
+The parameters are separated by commas and combine, so an instance has to satisfy all of them. Quote the request — a shell would otherwise read the brackets as a file name pattern. The names `id`, `same`, `scope`, `distinct` and `bind` are reserved for the scheduler; any other name is read as a complex.
+
+The JSV libraries handle requests carrying such a parameter list, so a job verification script sees and may modify them. A request with a parameter list is a Gridware Cluster Scheduler feature; an Open Cluster Scheduler refuses one when the job is submitted rather than accepting it and granting whichever instances happen to be free.
+
+#### All Instances from One Device
+
+The *same=id* parameter requires every instance granted for the request to be a share of one identifier:
+
+```bash
+$ qsub -l 'gpu=4[same=id]' job.sh
+```
+
+On the host above, this is how a job asks for a whole card instead of shares of two. What the constraint costs depends on the *consumable* setting of the complex: for *consumable YES* the amount is taken per slot, so a group of four instances serves four slots of `-l 'gpu=1[same=id]'` whatever the queue would otherwise allow; for *JOB* and *HOST* the amount is taken once, so a group either serves the request or the host cannot run the job.
+
+Such a request takes part in resource reservation like any other. A job submitted with `-R y` is given a reserved start time at which one group is actually free, not merely one at which the amount is free across several groups, so a job waiting for a whole card is not passed over indefinitely by jobs asking for single shares.
+
+#### Agreement on a Characteristic
+
+*same=* also takes the name of a characteristic instead of `id`, and the instances granted then have to carry the same value for it:
+
+```bash
+$ qsub -l 'gpu=2[same=numa_node]' job.sh
+```
+
+Two instances whose `numa_node` characteristic agrees. Several identifiers may carry the same value, so unlike *same=id* the instances may come from different devices as long as they agree — which is what a job wants when it cares about the placement of its devices rather than about getting one device whole. An instance which does not carry the named characteristic cannot take part, there being nothing for it to agree with.
+
+#### Resource Maps in Advance Reservations
+
+An advance reservation now holds particular instances rather than only a count, and xxqs_name_sxx_qrstat(1) reports which ones it holds. A job running inside a reservation is granted from that set, and a job running outside one is not granted an instance a reservation holds for the time it runs. A job whose request cannot be met from the reserved instances is refused when it is submitted.
+
+#### Implicit Instance Identifiers
+
+The identifier list of a resource map may be left out, and the instances are then named `0` to *amount*-1:
+
+```bash
+$ qconf -mattr exechost complex_values 'gpu=4' node01
+```
+
+This is equivalent to `gpu=4(0-3)` and is stored and displayed in that longer form. How many identifiers may be created this way is limited by *MAX_RSMAP_IDS* in *qmaster_params*, 512 by default; a larger amount has to be written as an explicit list. Setting *MAX_RSMAP_IDS* to `0` rejects the short form altogether.
+
+#### A Manual Page for Resource Maps
+
+Resource maps were described across the complex and host configuration man pages. The new **xxqs_name_sxx_rsmap(5)** man page brings the whole subject together: defining the complex, configuring the instances on a host, characteristics, every form of request, what a job sees in its environment, device isolation, and the limitations.
+
+(Available in Open and Gridware Cluster Scheduler; characteristics and request parameters in Gridware Cluster Scheduler only.)
+
 ## v9.1.5
 
 ### RSMAP Characteristics and Device Isolation
