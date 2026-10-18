@@ -1,5 +1,109 @@
 # Full List of Fixes
 
+## v9.1.7
+
+### [CS-1129](https://hpc-gridware.atlassian.net/browse/CS-1129) Provide a UI for a modern qmon replacement for cluster configuration
+
+- [CS-2836](https://hpc-gridware.atlassian.net/browse/CS-2836) Qontrol: Advance Reservations should be configurable in UI
+- [CS-2870](https://hpc-gridware.atlassian.net/browse/CS-2870) Qontrol: Cluster configuration snapshots and comparison
+
+### [CS-1263](https://hpc-gridware.atlassian.net/browse/CS-1263) Refresh qrsh/qlogin/qsh
+
+- [CS-539](https://hpc-gridware.atlassian.net/browse/CS-539) submit man page still contains telnet example.
+
+### [CS-1388](https://hpc-gridware.atlassian.net/browse/CS-1388) improvements and fixes to systemd and cgroups integration
+
+- [CS-2552](https://hpc-gridware.atlassian.net/browse/CS-2552) execd aborts in Systemd destructor after the D-Bus connection is reset, and the host stops accepting tasks
+- [CS-2604](https://hpc-gridware.atlassian.net/browse/CS-2604) Systemd::init() checks the wrong function pointer after loading two libsystemd symbols
+- [CS-2871](https://hpc-gridware.atlassian.net/browse/CS-2871) Systemd errors are not classified, so a dead D-Bus connection costs all job usage and floods the messages file
+- [CS-2872](https://hpc-gridware.atlassian.net/browse/CS-2872) ptf_get_usage_from_systemd() connects to systemd without switching to the start user
+- [CS-2873](https://hpc-gridware.atlassian.net/browse/CS-2873) Systemd::has_property() caches a property as unavailable when the unit has disappeared
+- [CS-2874](https://hpc-gridware.atlassian.net/browse/CS-2874) systemd calls from the execd main loop are unbounded, so a stalled D-Bus can hang the daemon
+- [CS-2880](https://hpc-gridware.atlassian.net/browse/CS-2880) load sensor keeps pointers to closed FILE streams after a sensor has been stopped
+- [CS-2883](https://hpc-gridware.atlassian.net/browse/CS-2883) Use sge_close_all_fds() instead of closing file descriptors by number
+- [CS-2911](https://hpc-gridware.atlassian.net/browse/CS-2911) Binding instance "set" is not applied on execution hosts with cgroup v1
+
+### [CS-1626](https://hpc-gridware.atlassian.net/browse/CS-1626) CRA Part1: Compliance Foundation
+
+- [CS-1642](https://hpc-gridware.atlassian.net/browse/CS-1642) Generate SBOM using Syft or Trivy.
+
+### [CS-1710](https://hpc-gridware.atlassian.net/browse/CS-1710) Provide integration which allow SLURM scripts and users with SLURM knowledge to use OCS/GCS
+
+- [CS-2837](https://hpc-gridware.atlassian.net/browse/CS-2837) slurm-shim: Bundle slurm-shim package with OCS and GCS packages
+- [CS-2838](https://hpc-gridware.atlassian.net/browse/CS-2838) Qontrol: Configuration Files section should support slurm-shim
+- [CS-2846](https://hpc-gridware.atlassian.net/browse/CS-2846) slurm-shim: Add hot-spare nodes so that training and inference jobs survive k node outages
+
+### [CS-2441](https://hpc-gridware.atlassian.net/browse/CS-2441) event master / client cleanup, improvements and issues
+
+- [CS-2899](https://hpc-gridware.atlassian.net/browse/CS-2899) Registering an event client ends the event master transaction of the GDI request early
+
+### [CS-2618](https://hpc-gridware.atlassian.net/browse/CS-2618) Provide a SLURM shim that allows applications integrated with SLURM to run unchanged on OCS / GCS
+
+
+### [CS-2697](https://hpc-gridware.atlassian.net/browse/CS-2697) As a user I want to request specific RSMAP instances and the relationship between them so that a job gets e.g. all ids of one device
+
+- [CS-2731](https://hpc-gridware.atlassian.net/browse/CS-2731) Extend the same= constraint across all hosts of a job (scope=job)
+- [CS-2732](https://hpc-gridware.atlassian.net/browse/CS-2732) Select resource map instances by id or id pattern
+- [CS-2733](https://hpc-gridware.atlassian.net/browse/CS-2733) Match a resource map request against the characteristics of an instance
+- [CS-2805](https://hpc-gridware.atlassian.net/browse/CS-2805) Decide the granted resource map instances while matching, not while booking
+
+### [CS-2703](https://hpc-gridware.atlassian.net/browse/CS-2703) RSMAP improvements and fixes
+
+- [CS-2714](https://hpc-gridware.atlassian.net/browse/CS-2714) A RSMAP complex is accepted as a characteristic of a RSMAP id, which cannot have a sensible value
+- [CS-2813](https://hpc-gridware.atlassian.net/browse/CS-2813) SGE_HGR_ is wrong on multi-node jobs
+- [CS-2814](https://hpc-gridware.atlassian.net/browse/CS-2814) Any user can widen the device isolation of their own job via SGE_DEBUG_DEVICES_ALLOW
+
+### [CS-991](https://hpc-gridware.atlassian.net/browse/CS-991) Reservation or advance reservation issues and enhancements
+
+- [CS-1000](https://hpc-gridware.atlassian.net/browse/CS-1000) no resource reservations are done before a calendar disabled time period
+- [CS-2863](https://hpc-gridware.atlassian.net/browse/CS-2863) qrdel with an exact AR name deletes the advance reservations of all users
+- [CS-2864](https://hpc-gridware.atlassian.net/browse/CS-2864) qrsub: support -par to choose the PE allocation rule of an advance reservation
+
+### Bug
+
+- [CS-2624](https://hpc-gridware.atlassian.net/browse/CS-2624) Scheduler thread dies when running on laptop and laptop is closed
+- [CS-2653](https://hpc-gridware.atlassian.net/browse/CS-2653) Year calendar: a window starting at 00:00 on a future day never switches the queue
+- [CS-2670](https://hpc-gridware.atlassian.net/browse/CS-2670) qinstance_change_state_on_calendar() computes the next calendar state change and discards it - no timed event is armed
+- [CS-2804](https://hpc-gridware.atlassian.net/browse/CS-2804) Documentation: All generated docs have wrong Copyright chapter
+- [CS-2833](https://hpc-gridware.atlassian.net/browse/CS-2833) settings.sh should not set the LD_LIBRARY_PATH on Linux (and Solaris)
+- [CS-2839](https://hpc-gridware.atlassian.net/browse/CS-2839) The spooling library is not found when a preloaded library wraps dlopen()
+- [CS-2844](https://hpc-gridware.atlassian.net/browse/CS-2844) testsuite: wait_for_unknown_load exits early for hosts having multiple queue instances
+- [CS-2847](https://hpc-gridware.atlassian.net/browse/CS-2847) Every cmake run appends the warning flags to the cached compile flags again, so every build is a full rebuild
+- [CS-2848](https://hpc-gridware.atlassian.net/browse/CS-2848) Disable PostgreSQL spooling on the Solaris architectures
+- [CS-2857](https://hpc-gridware.atlassian.net/browse/CS-2857) testsuite: shall not pause on ts_log_config when option wait_on_error is set
+- [CS-2859](https://hpc-gridware.atlassian.net/browse/CS-2859) a mirror client which loses synchronisation can never recover, because nothing requests a total update
+- [CS-2860](https://hpc-gridware.atlassian.net/browse/CS-2860) check_if_test_cleaned_up fails a check silently when is_qmaster_alive returns false
+- [CS-2865](https://hpc-gridware.atlassian.net/browse/CS-2865) man pages use gendered pronouns, and qping(1) calls a thread's time stamp "his"
+- [CS-2882](https://hpc-gridware.atlassian.net/browse/CS-2882) pt_dispatch_proc_to_job() closes a stale file descriptor
+- [CS-2888](https://hpc-gridware.atlassian.net/browse/CS-2888) After a PostgreSQL restart, sge_qmaster spools via stale connections, rejects jobs and reports accepted jobs as failed
+- [CS-2889](https://hpc-gridware.atlassian.net/browse/CS-2889) sge_qmaster ignores a failed spooling transaction start and returns low-level spooling errors to the client instead of logging them
+- [CS-2890](https://hpc-gridware.atlassian.net/browse/CS-2890) testsuite: translate_macro does not know the messages defined in gcs-extensions
+- [CS-2893](https://hpc-gridware.atlassian.net/browse/CS-2893) qmaster crashes in the scheduler when a PE job is scheduled after an advance reservation using the PE was deleted following a qmaster restart
+
+### Improvement
+
+- [CS-2812](https://hpc-gridware.atlassian.net/browse/CS-2812) Make the 3rdparty build version-aware
+- [CS-2834](https://hpc-gridware.atlassian.net/browse/CS-2834) Provide a shepherd wrapper example which sets up per-task prolog and epilog
+- [CS-2858](https://hpc-gridware.atlassian.net/browse/CS-2858) testsuite: add a compile_binaries option which replaces the binaries without emptying SGE_ROOT
+- [CS-2884](https://hpc-gridware.atlassian.net/browse/CS-2884) testsuite: add a check_all option which runs all runlevels a check defines
+- [CS-2885](https://hpc-gridware.atlassian.net/browse/CS-2885) Remove the ineffective ENOENT tests in pt_dispatch_proc_to_job()
+
+### New Feature
+
+- [CS-1876](https://hpc-gridware.atlassian.net/browse/CS-1876) Add AMD GPU support to qgpu
+- [CS-2807](https://hpc-gridware.atlassian.net/browse/CS-2807) Qontrol: Configuration snapshots with compare (manual and scheduled)
+- [CS-2886](https://hpc-gridware.atlassian.net/browse/CS-2886) inst_sge -tls should be available in Open Cluster Scheduler
+- [CS-2902](https://hpc-gridware.atlassian.net/browse/CS-2902) Let an execution daemon on an unknown host join the cluster on its own
+
+### Task
+
+- [CS-2810](https://hpc-gridware.atlassian.net/browse/CS-2810) Update jemalloc to the current version 5.4.0
+- [CS-2811](https://hpc-gridware.atlassian.net/browse/CS-2811) Pin rapidjson to a commit of the master branch
+- [CS-2887](https://hpc-gridware.atlassian.net/browse/CS-2887) Update CPM.cmake to the current version 0.43.2 and add it to the SBOM file
+- [CS-2891](https://hpc-gridware.atlassian.net/browse/CS-2891) Standardize on CycloneDX 1.7 SBOMs in Makefiles
+- [CS-2907](https://hpc-gridware.atlassian.net/browse/CS-2907) Add copyright headers to slurm-shim
+- [CS-2910](https://hpc-gridware.atlassian.net/browse/CS-2910) Add munge installation to OCS/GCS quickinstall's docker compose
+
 ## v9.1.6
 
 ### [CS-1129](https://hpc-gridware.atlassian.net/browse/CS-1129) Provide a UI for a modern qmon replacement for cluster configuration
