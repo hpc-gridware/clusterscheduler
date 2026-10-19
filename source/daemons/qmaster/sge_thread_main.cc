@@ -79,10 +79,14 @@ sge_qmaster_set_exit_state(int new_state) {
 
 bool
 sge_qmaster_do_final_spooling() {
+   DENTER(TOP_LAYER);
+
    /*
-    * If the exit_state is 100 than another qmaster has taken over!
-    * and final spooling should not be done
+    * An exit state of 100 means that another qmaster has taken over. Final
+    * spooling must not be done then, it would overwrite what that instance
+    * has written in the meantime. Every other exit state is a shutdown of
+    * this master, which has to write what is still only in memory.
     */
-   return (Main_Control.exit_state == 100) ? true : false;
+   DRETURN(Main_Control.exit_state != 100);
 }
 
