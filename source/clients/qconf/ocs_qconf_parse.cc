@@ -288,93 +288,8 @@ qconf_object_exists(ocs::gdi::Target target, const lDescr *descr, int name_nm,
    return exists;
 }
 
-/**
- * @brief GET the names of every object of a type in one request (CS-2315).
- *
- * The batched apply path uses a single bulk name query to decide ADD vs MOD for
- * a whole directory, instead of one existence GET per object. The returned list
- * holds name-only elements (the @p name_nm field); the caller owns it.
- *
- * @param target  GDI target list (e.g. CAL_LIST)
- * @param descr   CULL descriptor of the object type
- * @param name_nm name attribute of the object
- * @return a (possibly empty) list of name-only elements, or nullptr on error
- */
-static lList *
-qconf_get_name_list(ocs::gdi::Target target, const lDescr *descr, int name_nm) {
-   lList *lp = nullptr;
-   lEnumeration *what = lWhat("%T(%I)", descr, name_nm);
-   lList *alp = ocs::gdi::Client::sge_gdi(target, ocs::gdi::Command::GET,
-                                          ocs::gdi::SubCommand::NONE, &lp, nullptr, what);
-   lFreeWhat(&what);
-   lFreeList(&alp);
-   return lp;
-}
 
-/**
- * @brief Count the non-OK answers in an answer list (CS-2315).
- *
- * qmaster appends one answer per processed element, so the number of error
- * answers is the number of objects that failed in a batched ADD/MOD.
- *
- * @param alp answer list returned by a (multi-)request
- * @return the number of answers whose status is not STATUS_OK
- */
-static int
-qconf_count_failures(const lList *alp) {
-   int n = 0;
-   const lListElem *aep;
-   for_each_ep(aep, alp) {
-      if (lGetUlong(aep, AN_quality) == ANSWER_QUALITY_END) {
-         continue;
-      }
-      if (lGetUlong(aep, AN_status) != STATUS_OK) {
-         n++;
-      }
-   }
-   return n;
-}
 
-/**
- * @brief Send an object to qmaster with upsert semantics (CS-2298 C2).
- *
- * Issues a MOD when an object of the same name already exists, otherwise an ADD.
- * Honours the -dry flag (reports the action and sends nothing). Consumes @p ep
- * in every case.
- *
- * @param os the stream the output is written to (CS-1841)
- * @param target  GDI target list (e.g. CAL_LIST)
- * @param descr   CULL descriptor of the object type
- * @param name_nm name attribute of the object
- * @param ep      the object element to send; consumed (freed) by this call
- * @param sub_cmd GDI sub-command (defaults to NONE; cqueue uses SET_ALL - CS-2305)
- * @return 0 on success, non-zero on error
- */
-static int
-qconf_send_upsert(std::ostream &os, ocs::gdi::Target target, const lDescr *descr, int name_nm,
-                  lListElem *ep, ocs::gdi::SubCommand sub_cmd = ocs::gdi::SubCommand::NONE) {
-   const char *name = qconf_get_name(ep, name_nm);
-   bool exists = (name != nullptr && qconf_object_exists(target, descr, name_nm, name));
-
-   if (qconf_opt_dry_run) {
-      /* CS-2299 H3: report the intended action without contacting qmaster. */
-      qconf_info(os, exists ? MSG_QCONF_DRYRUNWOULDMODIFY_S : MSG_QCONF_DRYRUNWOULDADD_S,
-                        name != nullptr ? name : "");
-      lFreeElem(&ep);
-      return 0;
-   }
-
-   ocs::gdi::Command cmd = exists ? ocs::gdi::Command::MOD : ocs::gdi::Command::ADD;
-
-   lList *lp = lCreateList("qconf upsert", descr);
-   lAppendElem(lp, ep);
-   lList *alp = ocs::gdi::Client::sge_gdi(target, cmd, sub_cmd,
-                                          &lp, nullptr, nullptr);
-   int ret = show_answer_list(alp);
-   lFreeList(&alp);
-   lFreeList(&lp);
-   return ret;
-}
 
 /**
  * @brief Read and validate a single object from an ASCII flatfile.
@@ -467,34 +382,6 @@ struct qconf_file_ctx {
    int n_fail;                ///< files that failed (CS-2299 H1)
 };
 
-/**
- * @brief Per-file callback: read one object and upsert it (CS-2298 C3).
- *
- * Updates the n_ok / n_fail counters in the context.
- *
- * @note Superseded by the batched qconf_apply_path() (CS-2315), which collects
- *       all objects and sends them in one GDI multi-request rather than one
- *       send per file. Kept for reference / possible reuse.
- *
- * @param filepath path of the object file to apply
- * @param vctx     pointer to the qconf_file_ctx for this batch
- * @return 0 on success, 1 on failure
- */
-[[maybe_unused]] static int
-qconf_apply_one(const char *filepath, void *vctx) {
-   auto *ctx = static_cast<qconf_file_ctx *>(vctx);
-   lListElem *ep = qconf_read_object_file(ctx->desc->descr, ctx->fields, filepath, ctx->desc->validate, ctx->desc->sfi, ctx->desc->prepare, ctx->parse_values);
-   if (ep == nullptr) {
-      ctx->n_fail++;
-      return 1;
-   }
-   if (qconf_send_upsert(*ctx->os, ctx->desc->target, ctx->desc->descr, ctx->desc->name_nm, ep, ctx->desc->sub_cmd) != 0) {
-      ctx->n_fail++;
-      return 1;
-   }
-   ctx->n_ok++;
-   return 0;
-}
 
 /**
  * @brief Per-file callback: read one object and queue its name for deletion (CS-2298 C5).
@@ -535,27 +422,6 @@ qconf_collect_name(const char *filepath, void *vctx) {
    return 0;
 }
 
-/**
- * @brief Per-file callback: read one object and queue it for the -strict apply pass (CS-2299 H2).
- *
- * The parsed element is appended to ctx->elems for sending later, once the whole
- * batch has been validated. Updates the n_fail counter on a read error.
- *
- * @param filepath path of the object file to read
- * @param vctx     pointer to the qconf_file_ctx for this batch
- * @return 0 on success, 1 on read failure
- */
-static int
-qconf_collect_elem(const char *filepath, void *vctx) {
-   auto *ctx = static_cast<qconf_file_ctx *>(vctx);
-   lListElem *ep = qconf_read_object_file(ctx->desc->descr, ctx->fields, filepath, ctx->desc->validate, ctx->desc->sfi, ctx->desc->prepare, ctx->parse_values);
-   if (ep == nullptr) {
-      ctx->n_fail++;
-      return 1;
-   }
-   lAppendElem(ctx->elems, ep);
-   return 0;
-}
 
 /** @brief Read a whole file into a string, see the definition below. */
 static bool qconf_read_file_text(const char *filename, std::string &text);
@@ -611,10 +477,32 @@ qconf_collect_text(const char *filepath, void *vctx) {
 
 /** @brief Add or modify every object at a path through the write procedure (CS-2822)
  *
- * The successor of qconf_apply_path() for the object types that have a write
- * procedure. What is left here is what is genuinely the client's: walking the
- * path, reading the files, and the summary line that names the path. The parse,
- * the add against modify decision and the writes are qmaster's, in one request.
+ * The only path there is since CS-2824, when the last three types joined it.
+ * What is left here is what is genuinely the client's: walking the path, reading
+ * the files, and the summary line that names the path. The parse, the add
+ * against modify decision and the writes are qmaster's, in one request.
+ *
+ * **A batch of several objects is not atomic, and that is a decision** - the one
+ * CS-2824 asked for rather than left to fall out. qmaster applies the objects one
+ * by one through the same per-type modifier a single write uses, and those spool
+ * as they go, so undoing what already went in would need a transaction the data
+ * store does not have. Making a batch atomic is its own change with its own
+ * release note, not a side effect of moving the send here. What a caller gets
+ * instead is enough to act on:
+ *
+ *  - an all-or-nothing gate at the **parse** level: "-strict", and
+ *    unconditionally for a type whose text holds a list;
+ *  - counts that are typed rather than inferred from the answer list - applied,
+ *    parse_failed and elements - so "N of M" is arithmetic and not a guess;
+ *  - one answer list entry per object, naming what went in and what did not;
+ *  - "-dry", which shows the whole plan before any of it happens.
+ *
+ * That the gate is at the *parse* level is the part worth reading twice, because
+ * the name "-strict" promises more than it keeps: a text that parses and is then
+ * refused by the modifier - a cluster queue naming a host group that does not
+ * exist, say - is not caught by it, since the cross object reference checks run
+ * in the apply and not in the parse. The phase comments in
+ * ocs_QConfWriteQmaster.cc say why, and name the ticket that could change it.
  *
  * @param os the stream the summary is written to (CS-1841)
  * @param o the object type
@@ -726,154 +614,6 @@ qconf_apply_path_procedure(std::ostream &os, const QConfObj o, const char *path,
    DRETURN(n_fail);
 }
 
-/**
- * @brief Add or modify every object found at a path (file or directory) with
- *        upsert semantics (CS-2298 C2+C3).
- *
- * CS-2315: the whole batch contacts qmaster a constant number of times instead
- * of once per object. Every file is read (and prepared/validated) into one list;
- * a single bulk name GET decides ADD vs MOD per object; and the adds and mods are
- * sent as one GDI multi-request (one connection, qmaster processes each element
- * individually and returns all answers in one reply). So a directory of N objects
- * costs ~2 contacts (1 GET + 1 multi-request) rather than 2N.
- *
- * With the -strict flag the whole batch is validated before anything is sent and
- * nothing is applied if any file is invalid (CS-2299 H2). For a directory a
- * one-line summary is printed (CS-2299 H1). This is a client-side pre-apply gate,
- * not a server-side transaction: qmaster still commits each element separately, so
- * a partial failure can leave some objects applied.
- *
- * @param os the stream the output is written to (CS-1841)
- * @param target   GDI target list (e.g. CAL_LIST)
- * @param descr    CULL descriptor of the object type
- * @param fields   spooling field list describing the file format
- * @param name_nm  name attribute of the object
- * @param path     file or directory to apply
- * @param validate optional per-object validator returning STATUS_OK on success, or nullptr
- * @param sfi      flatfile spooling instruction (defaults to qconf_sfi - CS-2303)
- * @param prepare  optional transform run on each object after read (e.g. resolve
- *                 a hostname), or nullptr - CS-2304
- * @param sub_cmd  GDI sub-command for ADD/MOD (defaults to NONE; cqueue SET_ALL - CS-2305)
- * @param parse_values spool read parse_values flag (defaults to true; cqueue false - CS-2305)
- * @return the number of objects that failed
- */
-static int
-qconf_apply_path(std::ostream &os, const qconf_object_desc &d, spooling_field *fields, const char *path) {
-   const lDescr *descr = d.descr;
-   const int name_nm = d.name_nm;
-   bool is_dir = sge_is_directory(path);
-
-   /* 1. Read every file (running prepare/validate per object) into one list.
-    *
-    * Whether attribute values are parsed is the object type's business, not the
-    * path's: cluster queues are read with it off (CS-2305), because their values
-    * carry the host-specific syntax that the parse would eat. Hard-coding true
-    * here was a regression of CS-2795 - it rejected every queue file whose value
-    * uses a backslash continuation, since the continuation then swallowed the
-    * following attribute line. */
-   qconf_file_ctx ctx = {&os, &d, fields, d.parse_values, nullptr,
-                         lCreateList("qconf apply", descr), 0, 0};
-   qconf_for_each_file(path, qconf_collect_elem, &ctx);
-   int n_read_fail = ctx.n_fail;   /* files that did not parse (skipped) */
-
-   /* CS-2299 H2 (-strict): a single malformed file rejects the whole batch. */
-   if (qconf_opt_strict && n_read_fail > 0) {
-      ERROR(MSG_QCONF_STRICTNOTHINGAPPLIED_SI, path, n_read_fail);
-      lFreeList(&ctx.elems);
-      return n_read_fail;
-   }
-
-   /* 2. One bulk name GET, then partition the parsed objects into add vs mod. */
-   lList *existing = qconf_get_name_list(d.target, descr, name_nm);
-   lList *add_list = lCreateList("qconf add", descr);
-   lList *mod_list = lCreateList("qconf mod", descr);
-   int n_dry = 0;
-   lListElem *e;
-   while ((e = lFirstRW(ctx.elems)) != nullptr) {
-      lDechainElem(ctx.elems, e);
-      const char *name = qconf_get_name(e, name_nm);
-      bool exists = qconf_name_in_list(existing, descr, name_nm, name);
-      if (qconf_opt_dry_run) {
-         /* CS-2299 H3: report the intended action, contact no one. */
-         qconf_info(os, exists ? MSG_QCONF_DRYRUNWOULDMODIFY_S : MSG_QCONF_DRYRUNWOULDADD_S,
-                           name != nullptr ? name : "");
-         lFreeElem(&e);
-         n_dry++;
-      } else {
-         lAppendElem(exists ? mod_list : add_list, e);
-      }
-   }
-   lFreeList(&existing);
-   lFreeList(&ctx.elems);
-
-   if (qconf_opt_dry_run) {
-      if (is_dir) {
-         qconf_info(os, MSG_QCONF_ADDMODSUMMARY_SII, path, n_dry, n_read_fail);
-      }
-      lFreeList(&add_list);
-      lFreeList(&mod_list);
-      return n_read_fail;
-   }
-
-   /* 3. Send the mods and adds as one GDI multi-request (one connection). The
-    * lists are consumed by request() (do_copy = false steals the pointer). */
-   int n_mod = lGetNumberOfElem(mod_list);
-   int n_add = lGetNumberOfElem(add_list);
-   int n_send = n_mod + n_add;
-   int remaining = (n_mod > 0 ? 1 : 0) + (n_add > 0 ? 1 : 0);
-   ocs::gdi::Request gdi_multi{};
-   lList *send_alp = nullptr;
-   int mod_id = -1, add_id = -1;
-
-   if (n_mod > 0) {
-      ocs::gdi::Mode mode = (--remaining > 0) ? ocs::gdi::Mode::RECORD : ocs::gdi::Mode::SEND;
-      mod_id = gdi_multi.request(&send_alp, mode, d.target, ocs::gdi::Command::MOD, d.sub_cmd,
-                                 &mod_list, nullptr, nullptr, false);
-      if (mode == ocs::gdi::Mode::SEND) {
-         gdi_multi.wait();
-      }
-   }
-   if (n_add > 0) {
-      ocs::gdi::Mode mode = (--remaining > 0) ? ocs::gdi::Mode::RECORD : ocs::gdi::Mode::SEND;
-      add_id = gdi_multi.request(&send_alp, mode, d.target, ocs::gdi::Command::ADD, d.sub_cmd,
-                                 &add_list, nullptr, nullptr, false);
-      if (mode == ocs::gdi::Mode::SEND) {
-         gdi_multi.wait();
-      }
-   }
-
-   /* 4. Collect every per-element answer into one list, report it, count failures. */
-   lList *result_alp = nullptr;
-   if (n_mod > 0) {
-      lList *resp = nullptr;
-      gdi_multi.get_response(&resp, ocs::gdi::Command::MOD, d.sub_cmd, d.target, mod_id, nullptr);
-      answer_list_append_list(&result_alp, &resp);
-   }
-   if (n_add > 0) {
-      lList *resp = nullptr;
-      gdi_multi.get_response(&resp, ocs::gdi::Command::ADD, d.sub_cmd, d.target, add_id, nullptr);
-      answer_list_append_list(&result_alp, &resp);
-   }
-   answer_list_append_list(&result_alp, &send_alp);
-
-   int n_send_fail = qconf_count_failures(result_alp);
-   if (n_send_fail > n_send) {
-      /* a transport-level failure can yield more answers than elements */
-      n_send_fail = n_send;
-   }
-   show_answer_list(result_alp);
-   lFreeList(&result_alp);
-   lFreeList(&add_list);   /* no-op: consumed by request() */
-   lFreeList(&mod_list);
-
-   int n_ok = n_send - n_send_fail;
-   int n_fail = n_read_fail + n_send_fail;
-   if (is_dir) {
-      /* CS-2299 H1: one summary line per directory batch. */
-      qconf_info(os, MSG_QCONF_ADDMODSUMMARY_SII, path, n_ok, n_fail);
-   }
-   return n_fail;
-}
 
 /**
  * @brief Delete every object named in the file(s) at a path (file or directory) (CS-2298 C5).
@@ -943,7 +683,7 @@ qconf_delete_path(std::ostream &os, const qconf_object_desc &d, spooling_field *
 
 /* ================= CS-23xx: bulk export ( qconf -S<obj> name|dir ) =================
  *
- * The inverse of qconf_apply_path(): pull objects from qmaster with a read-only GDI
+ * The inverse of the -A<obj>/-M<obj> import: pull objects from qmaster with a read-only GDI
  * GET and write each to its own re-importable flatfile. Each file is written with the
  * same IMPORT field list that -A<obj>/-M<obj> read, so an exported file round-trips
  * by construction (KTD2). The argument disambiguates like the import side: an existing
@@ -1665,12 +1405,17 @@ qconf_delete_names(QConfObj o, const char *names) {
    return qconf_delete_list(o, &lp);
 }
 
-/** @brief Add or modify from a file or directory, driven by the descriptor.
+/** @brief Add or modify from a file or directory, through the write procedure.
  *
- * The field list comes from the descriptor's provider, which allocates for the
- * object types whose list is built on demand (EH, PR, UU, STN) and hands back a
- * shared static one otherwise; @c owned says which, so this frees exactly what
- * it allocated.
+ * Every object type with a file side writes through the procedure as of CS-2824,
+ * so what is left here is the name its callers use and the defaults they rely
+ * on. The switch that used to pick between this and a client-side parse is gone
+ * with its last entries - the cluster queue, the host group and the userset,
+ * whose editor moved in CS-2823 while their "-A"/"-M" side stayed behind. That
+ * left those three objects with two writers, and the one that parsed here could
+ * not see that the read had been reduced, which is the whole reason the write
+ * moved. Its own comment had asked for the switch to disappear with the last
+ * entry rather than become a permanent column, so it does.
  *
  * @param os the stream the output is written to (CS-1841)
  * @param o    the object type
@@ -1687,36 +1432,7 @@ qconf_delete_names(QConfObj o, const char *names) {
 static int
 qconf_apply_obj(std::ostream &os, QConfObj o, const char *path, const char *select = nullptr,
                 uint32_t extra_mode = 0u, const char *name = nullptr) {
-   /* CS-2822: the object types whose write runs as a stored procedure take the
-    * other path, which parses in qmaster instead of here. The list is here
-    * rather than in a field of the descriptor table so that it disappears with
-    * the last entry instead of becoming a permanent column. */
-   switch (o) {
-      case QConfObj::CAL:
-      case QConfObj::CE:
-      case QConfObj::CK:
-      case QConfObj::EH:
-      case QConfObj::PE:
-      case QConfObj::PR:
-      case QConfObj::RL:
-      case QConfObj::RQS:
-      case QConfObj::SC:
-      case QConfObj::STN:
-      case QConfObj::CONF:
-      case QConfObj::UU:
-         return qconf_apply_path_procedure(os, o, path, select, extra_mode, name);
-      default:
-         break;
-   }
-
-   const qconf_object_desc &d = qconf_desc(o);
-   bool owned = false;
-   spooling_field *fields = d.build_fields(qconf_opt_format, &owned);
-   int ret = qconf_apply_path(os, d, fields, path);
-   if (owned) {
-      sge_free(&fields);
-   }
-   return ret;
+   return qconf_apply_path_procedure(os, o, path, select, extra_mode, name);
 }
 
 /** @brief Delete the objects named by a file or directory, driven by the descriptor.
@@ -1972,7 +1688,7 @@ qconf_edit_and_write_obj(QConfObj o, std::string &text, uid_t uid, gid_t gid,
    /* show_answer_list() and not answer_list_output(), and no response text of
     * our own: the message a write produces is the one qmaster put into the
     * answer list, and this is how every other qconf write surfaces it - see
-    * qconf_apply_path(). Measured on 2026-10-06: the answer list does arrive
+    * qconf_apply_path_procedure(). Measured on 2026-10-06: the answer list does arrive
     * with the INFO in it, answer_list_output() just does not put it where the
     * user sees it, and printing an invented confirmation instead both lost the
     * wording and moved it from stderr to stdout. */
@@ -2007,6 +1723,19 @@ qconf_edit_and_write_obj(QConfObj o, std::string &text, uid_t uid, gid_t gid,
  *    it would make the first refusal depend on which context the caller chose -
  *    which is the same as not having it. CS-2856 removes the choice; until then
  *    the write path says no.
+ *
+ * **An add is this same function, and it is never refused by the first of those
+ * two** (CS-2824). "-a<obj>" and "-m<obj>" have been one call since CS-2823, so
+ * there is no second path to audit - and the read of a name that is not stored is
+ * answered with the type's template, which is built for that answer and carries
+ * nobody's data, so there is nothing in it that could have been removed. That is
+ * enforced and not merely true today: qmaster reports REDUCTION_NONE whenever the
+ * answer was a template, in exec_procedure() in sge_c_gdi_procedure.cc.
+ *
+ * The order of the two decisions is what makes it safe, and it is this way round
+ * on purpose: the refusal sits between the read and the editor, so a "-m<obj>" on
+ * an object that is stored **and** reduced returns here and never reaches the
+ * editor. It cannot be turned into an add on the way.
  *
  * Nothing in it is type-specific: the GDI target comes from the descriptor row,
  * and so does what a missing object means. The exec host is the one type among
@@ -2173,7 +1902,7 @@ qconf_edit_list_procedure(ocs::QConfParameterClient &param, QConfObj o,
 /* ===== CS-2307: resource quota set helpers =================================
  * RQS files hold a *list* of rule sets (read with spool_flatfile_read_list and
  * applied with SET_ALL), so they get their own helpers rather than the
- * single-object qconf_apply_path/qconf_delete_path above. The directory case
+ * single-object qconf_delete_path above. The directory case
  * reuses qconf_for_each_file and emits the same catalogue messages/flags. */
 
 /** @brief Context for qconf_rqs_collect: the merged RQS list + read-failure count. */
@@ -2273,7 +2002,7 @@ qconf_rqs_delete(std::ostream &os, const char *path) {
  * The config object keys on the host name, which is the file *basename* (not a
  * field inside the file), and -Aconf/-Mconf already accept a comma-separated
  * file list. So config gets its own file/dir helpers (like RQS) rather than the
- * field-name-based qconf_apply_path/qconf_delete_path. What is left of them is
+ * field-name-based qconf_delete_path. What is left of them is
  * the path handling: since CS-2823 the writing itself is the procedure's, and
  * the basename travels with the request as the object's name, because a
  * configuration's text does not carry it. delete_configs() is forward-declared

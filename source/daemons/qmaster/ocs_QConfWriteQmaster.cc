@@ -462,6 +462,32 @@ qconf_write_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monit
 
    /* Phase 2: apply what was read, or say what applying would do.
     *
+    * **This phase is not atomic, and that is a decision** (CS-2824). Each object
+    * goes through the same per-type modifier a single write uses, and those spool
+    * as they go, so there is nothing to undo with: rolling back what already went
+    * in would need a transaction the data store does not offer. A failure here
+    * therefore sets all_ok false and the loop continues, and what the caller is
+    * given instead is the typed counts below plus one answer list entry per
+    * object - enough to see which ones went in and which did not.
+    *
+    * Two consequences worth knowing before trusting -strict. First, it is a
+    * *parse* level gate (phase 1 above) and this phase never increments
+    * parse_failed, so it cannot reject a batch over a failure here. Second, and
+    * this is what makes that matter rather than being a technicality, almost every
+    * cross object reference is checked *here* and not in phase 1: the validate
+    * hooks are the client flavour of the library validators, called with
+    * in_master false, startup 0 and no master lists, because the qconf client had
+    * none to resolve against. So a cluster queue naming a host group that does not
+    * exist, a parallel environment naming an unknown userset or a rule set naming
+    * an unknown complex all parse cleanly and are refused here, after the earlier
+    * objects of the batch have been written.
+    *
+    * Running phase 1 with the master flavour would close that gap - the procedure
+    * runs in qmaster, where the master lists are right here - and would make
+    * -strict mean what its name promises. It would also change what eight types
+    * accept and when, so it is a ticket of its own and deliberately not a rider on
+    * the migration.
+    *
     * Two counters, because an item and an object are not the same thing for a
     * type whose text holds a list: `applied` counts items that went in
     * completely, which is what the caller's "N of M files" arithmetic needs,
