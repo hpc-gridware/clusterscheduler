@@ -1278,11 +1278,15 @@ qconf_dispatch_procedure(std::ostream &os, ocs::QConfParameterClient &param, lLi
  * @param o    the object type
  * @param name the object name, ignored for a type without a name field
  * @param reduction where the reduction flags of the read are stored, nullptr to ignore them
+ * @param report_errors false to leave a failed read silent, for the reduction
+ *        probe of CS-2825: the operation it guards has its own message for an
+ *        object that cannot be read, and two complaints for one cause read as
+ *        two causes
  * @return what happened, see QConfShowStatus
  */
 static QConfShowStatus
 qconf_show_object(std::ostream &os, ocs::QConfParameterClient &param, QConfObj o, const char *name,
-                  uint32_t *reduction = nullptr) {
+                  uint32_t *reduction = nullptr, bool report_errors = true) {
    DENTER(TOP_LAYER);
 
    /* CS-2799: the body of this function is a stored procedure call now. The
@@ -1330,7 +1334,9 @@ qconf_show_object(std::ostream &os, ocs::QConfParameterClient &param, QConfObj o
     * (CS-2822). Since CS-2823 the read answers such a name with the type's
     * template, so a missing object no longer reaches this point for a type that
     * creates one, and for a type that does not the complaint is the answer. */
-   answer_list_output(&alp);
+   if (report_errors) {
+      answer_list_output(&alp);
+   }
    lFreeList(&alp);
    DRETURN(not_found ? QConfShowStatus::NOT_FOUND : QConfShowStatus::GDI_FAILED);
 }
@@ -1696,6 +1702,186 @@ qconf_edit_and_write_obj(QConfObj o, std::string &text, uid_t uid, gid_t gid,
    lFreeList(&alp);
 
    DRETURN((ok && shown == 0) ? 0 : 1);
+}
+
+/** @brief Clear the share tree usage of every user, or of every project (CS-2825)
+ *
+ * Backs half of `-clearusage` each. It used to fetch every user and every
+ * project with `%T(ALL)`, empty two lists on each of them and send all of it
+ * back - a fetch-modify-write like the five switches guarded by
+ * qconf_refuse_if_reduced(), and the most destructive of the group: the request
+ * carried every field, so under a reduced read the placeholders standing in for
+ * `oticket`, `fshare` and `default_project` would have been written back as
+ * values.
+ *
+ * It is changed rather than guarded, because for this one the fetch is not
+ * needed at all. What the operation has to say is "these objects, usage
+ * empty", and that needs the names and nothing else:
+ *
+ *  - the read asks for the key alone, which is the one field output reduction
+ *    has nothing to hide in - a name list carries no values;
+ *  - the write carries the key and the two lists being emptied, and no other
+ *    field. userprj_mod() applies a field only when the incoming element
+ *    carries it (`lGetPosViaElem(ep, ..., SGE_NO_ABORT) >= 0`,
+ *    sge_userprj_qmaster.cc), so everything left out keeps the value it has.
+ *
+ * The version is left out on purpose: qmaster increments it itself when usage
+ * or project is set (`lAddUlong(modp, obj_version, 1)`), so the value the old
+ * request carried was never used.
+ *
+ * So the switch keeps working for a role that is shown less, instead of being
+ * refused - which is the better answer wherever the operation can be expressed
+ * without the object.
+ *
+ * @param target     the master list to work on, `UU_LIST` or `PR_LIST`
+ * @param descr      the CULL type of that list's elements
+ * @param key_nm     the field holding the object's name
+ * @param usage_nm   the usage list field to empty
+ * @param project_nm the per project usage field to empty
+ * @return 0 when the usage was cleared or there was nothing to clear, 1 on a failed read
+ */
+static int
+qconf_clear_usage(ocs::gdi::Target target, const lDescr *descr, int key_nm, int usage_nm,
+                  int project_nm) {
+   DENTER(TOP_LAYER);
+
+   lList *names = nullptr;
+   lEnumeration *name_what = lWhat("%T(%I)", descr, key_nm);
+   lList *alp = ocs::gdi::Client::sge_gdi(target, ocs::gdi::Command::GET,
+                                          ocs::gdi::SubCommand::NONE, &names, nullptr, name_what);
+   lFreeWhat(&name_what);
+
+   const lListElem *aep = lFirst(alp);
+   answer_exit_if_not_recoverable(aep);
+   if (answer_get_status(aep) != STATUS_OK) {
+      answer_list_output(&alp);
+      lFreeList(&alp);
+      lFreeList(&names);
+      DRETURN(1);
+   }
+   lFreeList(&alp);
+
+   if (lGetNumberOfElem(names) == 0) {
+      lFreeList(&names);
+      DRETURN(0);
+   }
+
+   /* One element per name. A fresh element's list fields are empty, and empty
+    * is the payload: usage and per project usage cleared. */
+   lList *mod = nullptr;
+   const lListElem *name_ep;
+   for_each_ep(name_ep, names) {
+      lAddElemStr(&mod, key_nm, lGetString(name_ep, key_nm), descr);
+   }
+   lFreeList(&names);
+
+   int fields[] = {key_nm, usage_nm, project_nm, NoName};
+   lEnumeration *mod_what = lIntVector2What(descr, fields);
+   alp = ocs::gdi::Client::sge_gdi(target, ocs::gdi::Command::MOD, ocs::gdi::SubCommand::NONE,
+                                   &mod, nullptr, mod_what);
+   lFreeWhat(&mod_what);
+   answer_list_on_error_print_or_exit(&alp, stderr);
+   lFreeList(&alp);
+   lFreeList(&mod);
+
+   DRETURN(0);
+}
+
+/** @brief Refuse an operation that fetches a whole object in order to write it back (CS-2825)
+ *
+ * Six switches do not edit, export or delete, and still need the whole object:
+ * they fetch it, change one thing in it locally and send all of it back.
+ * `-dstnode`, `-astnode` and `-mstnode` on the share tree, `-purge` on a
+ * cluster queue, and `-du`/`-dm`/`-do` plus `-au`/`-am`/`-ao` on an access
+ * list. A reduced read would hand them an object whose hidden parts are
+ * placeholders, and the write back would store the placeholders - which is the
+ * same hazard the editor refuses, reached without an editor.
+ *
+ * So this is the editor's refusal pair without the editor: the client execution
+ * context is declined, because it reads with a plain GET that cannot reduce and
+ * accepting it would make the second refusal depend on a switch the caller
+ * picks; and a reduced read is refused by name.
+ *
+ * **The probe never speaks except to refuse.** A read that fails for any other
+ * reason is left to the operation, which has its own established message for it
+ * - `MSG_CQUEUE_DOESNOTEXIST_S` for a queue, `MSG_ACL_ACLDOESNOTEXIST_S` for an
+ * access list, `MSG_TREE_NOSHARETREE` for a missing tree. Printing here as well
+ * would turn one cause into two complaints, and a typo in a name would read
+ * differently than it did before.
+ *
+ * The probe reads as the editor reads (`set_for_edit`), for two reasons: the
+ * field list the editor gets is the one whose reduction behaviour the read path
+ * is tested against, and a name that is not stored is answered with a template
+ * rather than a complaint - so the probe is not stricter than the fetch it
+ * guards, which answers such a name with its own message further down.
+ *
+ * Not every fetch-modify-write needs this. `-clearusage` had the same shape and
+ * was changed instead of guarded (CS-2825): it now reads only the keys, which
+ * carry nothing that could be hidden, and writes back a field-restricted
+ * request. Where that is possible it is better, because the switch keeps
+ * working for a role that sees less rather than being refused.
+ *
+ * @param param the invocation, used for the procedure read
+ * @param o     the object type whose read is probed
+ * @param sw    the switch being served, named in the refusals
+ * @param name  the object to probe, nullptr for a type that is a singleton
+ * @return true when the operation must not go ahead, and the reason has been
+ *         printed; false when it may, including when the probe itself failed
+ */
+static bool
+qconf_refuse_if_reduced(ocs::QConfParameterClient &param, QConfObj o, const char *sw,
+                        const char *name) {
+   DENTER(TOP_LAYER);
+
+   if (param.get_exec_context() != ocs::ProcedureParameter::ExecContext::SERVER) {
+      ERROR(MSG_QCONF_MODNEEDSSERVERCTX_S, sw);
+      DRETURN(true);
+   }
+
+   std::ostringstream discarded;
+   uint32_t reduction = ocs::ProcedureParameter::REDUCTION_NONE;
+   param.set_for_edit(true);
+   const QConfShowStatus st = qconf_show_object(discarded, param, o, name, &reduction, false);
+   param.set_for_edit(false);
+
+   if (st != QConfShowStatus::OK) {
+      DRETURN(false);
+   }
+
+   if (reduction != ocs::ProcedureParameter::REDUCTION_NONE) {
+      ERROR(MSG_QCONF_REDUCEDNOTMODIFIABLE_SS, sw, qconf_object_label(qconf_desc(o), name));
+      DRETURN(true);
+   }
+
+   DRETURN(false);
+}
+
+/** @brief The same refusal for every access list a switch names (CS-2825)
+ *
+ * `-au`/`-am`/`-ao` and `-du`/`-dm`/`-do` take a cross product: a list of users
+ * and a list of access lists. Each access list is fetched whole and written
+ * back whole, one GET and one MOD per list since CS-2754, so each one is probed
+ * - a reduction in the third of three is as destructive as one in the first,
+ * and the write happens per list, so there is no "nothing applied" to fall back
+ * on. The first reduced list refuses the whole switch rather than letting the
+ * earlier ones through, which is what an administrator asking for three lists
+ * means by one command.
+ *
+ * @param param the invocation, used for the procedure read
+ * @param sw    the switch being served, named in the refusals
+ * @param acls  the access lists the switch names (`US_Type`)
+ * @return true when the operation must not go ahead, and the reason has been printed
+ */
+static bool
+qconf_refuse_if_reduced_acls(ocs::QConfParameterClient &param, const char *sw, const lList *acls) {
+   const lListElem *acl;
+
+   for_each_ep(acl, acls) {
+      if (qconf_refuse_if_reduced(param, QConfObj::US, sw, lGetString(acl, US_name))) {
+         return true;
+      }
+   }
+   return false;
 }
 
 /** @brief Edit one object through the stored procedures (CS-2822, CS-2823)
@@ -2153,18 +2339,6 @@ qconf_conf_delete_path(std::ostream &os, const char *path) {
 }
 
 
-/*------------------------------------------------------------*/
-/** @brief Work through the `qconf` command line, one switch at a time
- *
- * `qconf` accepts several switches in one invocation and applies them in the
- * order given, so this is a loop over the arguments rather than a single
- * dispatch. Most switches are handled by the table in #object_info_entry; the
- * ones that are not have their own handlers in this file.
- *
- * @param os the stream the output is written to (CS-1841)
- * @param argv the arguments, not including `argv[0]`
- * @return 0 when every switch succeeded
- */
 /**
  * @brief Run one read operation as a stored procedure, if it is one
  *
@@ -2230,6 +2404,17 @@ qconf_run_read_procedure(std::ostream &os, ocs::QConfParameterClient &param,
    DRETURN(true);
 }
 
+/*------------------------------------------------------------*/
+/** @brief Work through the `qconf` command line, one switch at a time
+ *
+ * `qconf` accepts several switches in one invocation and applies them in the
+ * order given, so this is a loop over the arguments rather than a single
+ * dispatch. Most switches are handled by the table in #object_info_entry; the
+ * ones that are not have their own handlers in this file.
+ *
+ * @param argv the arguments, not including `argv[0]`
+ * @return 0 when every switch succeeded
+ */
 int sge_parse_qconf(char *argv[]) {
    DENTER(TOP_LAYER);
 
@@ -2614,7 +2799,14 @@ int sge_parse_qconf(char *argv[]) {
          spp = sge_parser_get_next(spp);
          lString2List(*spp, &lp, UE_Type, UE_name, ", ");
          lString2List(MANAGER_USERSET, &arglp, US_Type, US_name, ", ");
-         sge_client_add_user(&alp, lp, arglp);
+         /* CS-2825: every named access list is fetched whole and written back
+          * whole, so a reduced read of any of them would store placeholders -
+          * see qconf_refuse_if_reduced_acls(). */
+         if (qconf_refuse_if_reduced_acls(param, "-am", arglp)) {
+            sge_parse_return = 1;
+         } else {
+            sge_client_add_user(&alp, lp, arglp);
+         }
          sge_parse_return |= show_answer_list(alp);
 
          lFreeList(&alp);
@@ -2636,7 +2828,11 @@ int sge_parse_qconf(char *argv[]) {
          spp = sge_parser_get_next(spp);
          lString2List(*spp, &lp, UE_Type, UE_name, ", ");
          lString2List(OPERATOR_USERSET, &arglp, US_Type, US_name, ", ");
-         sge_client_add_user(&alp, lp, arglp);
+         if (qconf_refuse_if_reduced_acls(param, "-ao", arglp)) {
+            sge_parse_return = 1;
+         } else {
+            sge_client_add_user(&alp, lp, arglp);
+         }
          sge_parse_return |= show_answer_list(alp);
 
          lFreeList(&alp);
@@ -2831,9 +3027,20 @@ int sge_parse_qconf(char *argv[]) {
           ((strcmp("-mstnode", *spp) == 0) && ((opt=mstnode_OPT) != 0))) {
          int modified = 0;
          int print_usage = 0;
+         /* kept before spp moves on, for the refusal below: this block serves
+          * two switches and the message names the one that was given */
+         const char *stnode_sw = *spp;
 
          /* no adminhost/manager check needed here */
          spp = sge_parser_get_next(spp);
+
+         /* CS-2825: the whole tree is fetched here and written back below, so a
+          * reduced read may not get that far - see qconf_refuse_if_reduced(). */
+         if (qconf_refuse_if_reduced(param, QConfObj::STN, stnode_sw, nullptr)) {
+            sge_parse_return = 1;
+            spp++;
+            continue;
+         }
 
          /* get the sharetree .. */
          what = lWhat("%T(ALL)", STN_Type);
@@ -2985,7 +3192,11 @@ int sge_parse_qconf(char *argv[]) {
          lString2List(*spp, &arglp, US_Type, US_name, ", ");
 
          /* add all users/groups from lp to the acls in alp */
-         sge_client_add_user(&alp, lp, arglp);
+         if (qconf_refuse_if_reduced_acls(param, "-au", arglp)) {
+            sge_parse_return = 1;
+         } else {
+            sge_client_add_user(&alp, lp, arglp);
+         }
          sge_parse_return |= show_answer_list(alp);
          lFreeList(&alp);
          lFreeList(&arglp);
@@ -2998,66 +3209,22 @@ int sge_parse_qconf(char *argv[]) {
       /* "-clearusage"  clear sharetree usage */
 
       if (strcmp("-clearusage", *spp) == 0) {
-         lList *lp2=nullptr;
 
          qconf_is_manager_on_admin_host(username, qualified_hostname);
 
-         /* get user list */
-         what = lWhat("%T(ALL)", STN_Type);
-         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::UU_LIST, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, &lp, nullptr, what);
-         lFreeWhat(&what);
-
-         aep = lFirst(alp);
-         answer_exit_if_not_recoverable(aep);
-         if (answer_get_status(aep) != STATUS_OK) {
-            fprintf(stderr, "%s\n", lGetString(aep, AN_text));
+         /* CS-2825: both halves read the keys and write back only the two
+          * fields they empty - see qconf_clear_usage(), which also records why
+          * this one is not a refusal like its five siblings. The two GETs this
+          * replaces both asked for "%T(ALL)" with STN_Type, the share tree node
+          * type, for the user list and for the project list alike. */
+         if (qconf_clear_usage(ocs::gdi::Target::UU_LIST, UU_Type, UU_name, UU_usage,
+                               UU_project) != 0 ||
+             qconf_clear_usage(ocs::gdi::Target::PR_LIST, PR_Type, PR_name, PR_usage,
+                               PR_project) != 0) {
+            sge_parse_return = 1;
             spp++;
             continue;
          }
-         lFreeList(&alp);
-
-         /* get project list */
-         what = lWhat("%T(ALL)", STN_Type);
-         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::PR_LIST, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, &lp2, nullptr, what);
-         lFreeWhat(&what);
-
-         aep = lFirst(alp);
-         answer_exit_if_not_recoverable(aep);
-         if (answer_get_status(aep) != STATUS_OK) {
-            fprintf(stderr, "%s\n", lGetString(aep, AN_text));
-            spp++;
-            continue;
-         }
-         lFreeList(&alp);
-
-         /* clear user usage */
-         for_each_rw (ep, lp) {
-            lSetList(ep, UU_usage, nullptr);
-            lSetList(ep, UU_project, nullptr);
-         }
-
-         /* clear project usage */
-         for_each_rw (ep, lp2) {
-            lSetList(ep, PR_usage, nullptr);
-            lSetList(ep, PR_project, nullptr);
-         }
-
-         /* update user usage */
-         if (lp != nullptr && lGetNumberOfElem(lp) > 0) {
-            alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::UU_LIST, ocs::gdi::Command::MOD, ocs::gdi::SubCommand::NONE, &lp, nullptr, nullptr);
-            answer_list_on_error_print_or_exit(&alp, stderr);
-            lFreeList(&alp);
-         }
-
-         /* update project usage */
-         if (lp2 && lGetNumberOfElem(lp2) > 0) {
-            alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::PR_LIST, ocs::gdi::Command::MOD, ocs::gdi::SubCommand::NONE, &lp2, nullptr, nullptr);
-            answer_list_on_error_print_or_exit(&alp, stderr);
-            lFreeList(&alp);
-         }
-
-         lFreeList(&lp);
-         lFreeList(&lp2);
          spp++;
          continue;
       }
@@ -3204,7 +3371,11 @@ int sge_parse_qconf(char *argv[]) {
 
          lString2List(*spp, &lp, UE_Type, UE_name, ", ");
          lString2List(MANAGER_USERSET, &arglp, US_Type, US_name, ", ");
-         sge_client_del_user(&alp, lp, arglp);
+         if (qconf_refuse_if_reduced_acls(param, "-dm", arglp)) {
+            sge_parse_return = 1;
+         } else {
+            sge_client_del_user(&alp, lp, arglp);
+         }
          sge_parse_return |= show_answer_list(alp);
          lFreeList(&alp);
          lFreeList(&lp);
@@ -3224,7 +3395,11 @@ int sge_parse_qconf(char *argv[]) {
 
          lString2List(*spp, &lp, UE_Type, UE_name, ", ");
          lString2List(OPERATOR_USERSET, &arglp, US_Type, US_name, ", ");
-         sge_client_del_user(&alp, lp, arglp);
+         if (qconf_refuse_if_reduced_acls(param, "-do", arglp)) {
+            sge_parse_return = 1;
+         } else {
+            sge_client_del_user(&alp, lp, arglp);
+         }
          sge_parse_return |= show_answer_list(alp);
          lFreeList(&alp);
          lFreeList(&lp);
@@ -3293,7 +3468,11 @@ int sge_parse_qconf(char *argv[]) {
          lString2List(*spp, &arglp, US_Type, US_name, ", ");
 
          /* remove users/groups from lp from the acls in alp */
-         sge_client_del_user(&alp, lp, arglp);
+         if (qconf_refuse_if_reduced_acls(param, "-du", arglp)) {
+            sge_parse_return = 1;
+         } else {
+            sge_client_del_user(&alp, lp, arglp);
+         }
          sge_parse_return |= show_answer_list(alp);
          lFreeList(&lp);
          lFreeList(&alp);
@@ -3347,6 +3526,17 @@ int sge_parse_qconf(char *argv[]) {
          int modified = 0;
          /* no adminhost/manager check needed here */
          spp = sge_parser_get_next(spp);
+
+         /* CS-2825: the node is removed from the fetched tree and the whole
+          * tree goes back, so a reduced read may not get that far - see
+          * qconf_refuse_if_reduced(). The tree is the one type where that is a
+          * refusal rather than a change of request: it has no per node key
+          * qmaster could act on, so the removal needs the whole object. */
+         if (qconf_refuse_if_reduced(param, QConfObj::STN, "-dstnode", nullptr)) {
+            sge_parse_return = 1;
+            spp++;
+            continue;
+         }
 
          /* get the sharetree .. */
          what = lWhat("%T(ALL)", STN_Type);
@@ -4087,6 +4277,28 @@ int sge_parse_qconf(char *argv[]) {
       sge_free(&hgroup_or_hostname);
       DRETURN(1);
    }
+
+      /* CS-2825: the queue is fetched, stripped locally and sent back with
+       * SET_ALL, which deletes every domain specific entry the request does not
+       * carry - so a reduced read here would delete whatever it had hidden.
+       *
+       * This one stays a refusal rather than becoming a targeted REMOVE on the
+       * attribute sublists, which is what its eight "-dattr" siblings do without
+       * fetching at all. The attribute pattern could be expanded locally against
+       * cqueue_attribute_array, which is static; what cannot come from there is
+       * MSG_QCONF_ATTR_ARGS_NOT_FOUND below. That warning is the answer to a
+       * mistyped host name, and it is derived from having seen the object:
+       * measured on 2026-10-19, "-dattr" with an entry that does not exist
+       * reports a plain success, so SubCommand::REMOVE carries no "nothing
+       * matched" back. Converting would either drop the warning from a switch
+       * whose only job is removal, or need a count in the answer - a ticket of
+       * its own, not a side effect of this one. */
+      if (qconf_refuse_if_reduced(param, QConfObj::CQ, "-purge", object)) {
+         sge_free(&attr);
+         sge_free(&object);
+         sge_free(&hgroup_or_hostname);
+         DRETURN(1);
+      }
 
       /* now get the queue, delete the objects and send the queue back to the master */
       cqueue = cqueue_get_via_gdi(&alp, object);
