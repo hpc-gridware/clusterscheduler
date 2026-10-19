@@ -381,6 +381,47 @@ qconf_template_US(lList **answer_list, const char *name) {
    return userset_create(answer_list, name);
 }
 
+/** @brief The template of a share tree (CS-2823)
+ *
+ * What "qconf -mstree" offered on a cluster with no share tree: the editor used
+ * to open on getSNTemplate() whenever its GET came back empty, which is how a
+ * first tree was written at all. The read answers the absent singleton with it
+ * now, so the upsert of CS-2312 survives the move into the procedure.
+ *
+ * @param answer_list unused, the constructor reports nothing
+ * @param name unused - a share tree is one object and no name selects it
+ * @return the template
+ */
+static lListElem *
+qconf_template_STN([[maybe_unused]] lList **answer_list, [[maybe_unused]] const char *name) {
+   return getSNTemplate();
+}
+
+/** @brief The template of a host configuration (CS-2823)
+ *
+ * An empty configuration carrying the host name, which is what "qconf -mconf
+ * <host>" has always offered for a host that has none: the switch is an upsert,
+ * and the editor it opened was on an object the client had just created when the
+ * GET came back empty. The read answers a missing name with this now, so the
+ * upsert survives the move into the procedure.
+ *
+ * Nothing else is filled in. The configuration's entries are what the
+ * administrator writes, and a global default list would be wrong for a host
+ * configuration, whose entries override the global one.
+ *
+ * @param answer_list unused, creating the element reports nothing
+ * @param name the host the template is for
+ * @return the template
+ */
+static lListElem *
+qconf_template_CONF([[maybe_unused]] lList **answer_list, const char *name) {
+   lListElem *ep = lCreateElem(CONF_Type);
+   if (ep != nullptr && name != nullptr) {
+      lSetHost(ep, CONF_name, name);
+   }
+   return ep;
+}
+
 /** @brief The checks a rule set text needs the whole list for (CS-2823)
  *
  * One check, and it was an `if` in qconf_write_from_procedure() until the
@@ -506,6 +547,50 @@ qconf_ce_retain_builtin(const lListElem *ep) {
 /** @brief One row per object type, indexed by QConfObj.
  *
  * Kept in the order of the enum so that qconf_desc() is a plain index. */
+/** @brief Whether a share tree's nodes carry ids
+ *
+ * The root is id 0 and the children count up from it, so a tree that was read
+ * with ids has a non-zero one somewhere below the root. A tree of one node is
+ * the single case where a numbered and an unnumbered tree look alike, and there
+ * the distinction does not matter - see qconf_stn_prepare().
+ *
+ * @param ep the root of the tree
+ * @return true when any node below the root carries a non-zero id
+ */
+static bool
+qconf_stn_has_ids(const lListElem *ep) {
+   const lListElem *child;
+   for_each_ep(child, lGetList(ep, STN_children)) {
+      if (lGetUlong(child, STN_id) != 0 || qconf_stn_has_ids(child)) {
+         return true;
+      }
+   }
+   return false;
+}
+
+/** @brief Number a share tree's nodes when its text carried no ids (CS-2823)
+ *
+ * The nested JSON form has no ids: a child is an object inside its parent, so
+ * what the flat form expresses by an id reference is the nesting itself. The
+ * spooled tree is written with ids, so a tree parsed from JSON has to be
+ * numbered before it is stored - the client did this right after its own parse,
+ * and the parse is here now.
+ *
+ * Idempotent, which is why it needs no format argument: a tree that arrived with
+ * ids keeps them.
+ *
+ * @param ep the root of the parsed tree
+ * @param answer_list receives the reason when the numbering fails
+ * @return STATUS_OK when the tree is numbered
+ */
+static int
+qconf_stn_prepare(lListElem *ep, lList **answer_list) {
+   if (qconf_stn_has_ids(ep)) {
+      return STATUS_OK;
+   }
+   return id_sharetree(answer_list, ep, 0, nullptr) ? STATUS_OK : STATUS_EUNKNOWN;
+}
+
 static const qconf_object_desc qconf_object_table[] = {
    /* CAL  */ { ocs::gdi::Target::CAL_LIST,  CAL_Type,  CAL_name,  qconf_fields_CAL,  &qconf_sfi,                 nullptr,      nullptr,             nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr,
               { .list_name = "calendar", .not_found_msg = MSG_CALENDAR_XISNOTACALENDAR_S,
@@ -563,8 +648,8 @@ static const qconf_object_desc qconf_object_table[] = {
    /* UU   */ { ocs::gdi::Target::UU_LIST,   UU_Type,   UU_name,   qconf_fields_UU,   &qconf_sfi,                 nullptr,      nullptr,             nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr,
               { .list_name = "user list", .not_found_msg = MSG_USER_XISNOKNOWNUSER_S,
                 .create_template = qconf_template_UU } },
-   /* STN  */ { ocs::gdi::Target::STN_LIST,  STN_Type,  NoName,    qconf_fields_STN,  &qconf_name_value_list_sfi, "sharetree",  nullptr,             nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  true,  nullptr,            nullptr,
-              { .empty_msg = MSG_OBJ_NOSTREEELEM } },
+   /* STN  */ { ocs::gdi::Target::STN_LIST,  STN_Type,  NoName,    qconf_fields_STN,  &qconf_name_value_list_sfi, "sharetree",  nullptr,             qconf_stn_prepare, ocs::gdi::SubCommand::NONE,    false, true,  true,  nullptr,            nullptr,
+              { .create_template = qconf_template_STN, .empty_msg = MSG_OBJ_NOSTREEELEM } },
    /* SC: the hand written -ssconf had no empty check at all - it handed a null
     * element to the writer and reported the CULL complaint plus this line. The
     * path cannot occur on a running cluster; inside qmaster a null element must
@@ -572,11 +657,15 @@ static const qconf_object_desc qconf_object_table[] = {
     * of the two messages (CS-2808). */
    /* SC   */ { ocs::gdi::Target::SC_LIST,   SC_Type,   NoName,    qconf_fields_SC,   &qconf_comma_sfi,           "sched_conf", nullptr,             nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr,
               { .empty_msg = MSG_SCHEDCONF_CANTCREATESCHEDULERCONFIGURATION } },
-   /* CONF: read only. -sconf reaches this row through qconf_show_object() since
-    * CS-2820; the write options of the same block keep their own code, so every
-    * write field is left empty on purpose. */
+   /* CONF: the one type whose text does not carry its own name - the host is the
+    * argument of "-mconf" or the basename of the "-Mconf" file, and the read
+    * renders it as a comment (name_header). So the write is given the name as a
+    * request parameter, see QConfWriteParameter::set_name(). Its modify is also
+    * an upsert in qmaster, which is why "-aconf" and "-mconf" are one thing
+    * (CS-2823). */
    /* CONF */ { ocs::gdi::Target::CONF_LIST, CONF_Type, CONF_name, qconf_fields_CONF, &qconf_sfi,                nullptr,      nullptr,             nullptr,           ocs::gdi::SubCommand::NONE,    false, false, false, nullptr,            nullptr,
-              { .list_name = "config", .not_found_msg = MSG_ANSWER_CONFIGXNOTDEFINED_S, .name_header = true } },
+              { .list_name = "config", .not_found_msg = MSG_ANSWER_CONFIGXNOTDEFINED_S,
+                .create_template = qconf_template_CONF, .name_header = true } },
    /* EV: read only and name-list only (CS-2808). There is no field list because
     * EV_Type is not a registered object type and no -s<obj>/export path reaches
     * this row - show_name_list() renders the key field and nothing else. */
@@ -620,6 +709,62 @@ static const qconf_object_desc qconf_object_table[] = {
 static_assert(sizeof(qconf_object_table) / sizeof(qconf_object_table[0]) ==
               static_cast<size_t>(QConfObj::OP) + 1,
               "qconf_object_table needs exactly one row per QConfObj value");
+
+/** @brief Which master list each object type lives in
+ *
+ * The qmaster-internal `gdi_object_t` table knows this for most types, but it
+ * sits in `daemons/qmaster/sge_c_gdi.cc`, a library cannot reach it, and for the
+ * three types whose modify is a special case there rather than a hook on the row
+ * it carries SGE_TYPE_NONE (CONF, SC) - so it knows the list for the types that
+ * never needed it. Stated here instead, where the rest of a type's traits are,
+ * and asked by the read and the write path alike (CS-2823). Kept in the order of
+ * #QConfObj so that the lookup is a plain index.
+ */
+static constexpr sge_object_type qconf_master_list[] = {
+   SGE_TYPE_CALENDAR,    /* CAL  */
+   SGE_TYPE_CKPT,        /* CK   */
+   SGE_TYPE_CENTRY,      /* CE   */
+   SGE_TYPE_EXECHOST,    /* EH   */
+   SGE_TYPE_HGROUP,      /* HGRP */
+   SGE_TYPE_PE,          /* PE   */
+   SGE_TYPE_PROJECT,     /* PR   */
+   SGE_TYPE_CQUEUE,      /* CQ   */
+   SGE_TYPE_RL,          /* RL   */
+   SGE_TYPE_RQS,         /* RQS  */
+   SGE_TYPE_USERSET,     /* US   */
+   SGE_TYPE_USER,        /* UU   */
+   SGE_TYPE_SHARETREE,   /* STN  */
+   SGE_TYPE_SCHEDD_CONF, /* SC   */
+   SGE_TYPE_CONFIG,      /* CONF */
+   SGE_TYPE_NONE,        /* EV - event clients live in the event master */
+   SGE_TYPE_CATEGORY,    /* CAT  */
+   SGE_TYPE_HGROUP,      /* AH - @admin_hosts lives in the host group list */
+   SGE_TYPE_HGROUP,      /* SH - @submit_hosts likewise */
+   SGE_TYPE_USERSET,     /* MGR - the reserved "manager" access list */
+   SGE_TYPE_USERSET,     /* OP - the reserved "operator" access list */
+};
+
+/* the second array on the same index - see the note at QConfObj (CS-2808) */
+static_assert(sizeof(qconf_master_list) / sizeof(qconf_master_list[0]) ==
+              static_cast<size_t>(QConfObj::OP) + 1,
+              "qconf_master_list needs exactly one row per QConfObj value");
+
+/** @brief Which of qmaster's master lists holds the objects of a type, see the header
+ * @param o the object type
+ * @return its master list type, SGE_TYPE_NONE when it is not held in one
+ */
+sge_object_type
+qconf_master_list_type(const QConfObj o) {
+   return qconf_master_list[static_cast<size_t>(o)];
+}
+
+const char *
+qconf_object_label(const qconf_object_desc &desc, const char *name) {
+   if (name != nullptr) {
+      return name;
+   }
+   return (desc.json_type_name != nullptr) ? desc.json_type_name : "";
+}
 
 /** @brief A private copy of a field list, see the header (CS-2817)
  *
@@ -684,6 +829,25 @@ qconf_get_name(const lListElem *ep, const int name_nm) {
       return lGetHost(ep, name_nm);
    }
    return lGetString(ep, name_nm);
+}
+
+/** @brief Write an object's name attribute
+ *
+ * The counterpart of qconf_get_name(): whether the field is a plain string or a
+ * host field decides how the name goes in, the same way it decides how it comes
+ * out (CS-2304).
+ *
+ * @param ep the object
+ * @param name_nm the name attribute
+ * @param name the name to set
+ */
+void
+qconf_set_name(lListElem *ep, const int name_nm, const char *name) {
+   if (qconf_name_is_host(lGetElemDescr(ep), name_nm)) {
+      lSetHost(ep, name_nm, name);
+   } else {
+      lSetString(ep, name_nm, name);
+   }
 }
 
 /** @brief Whether a name is present in a list of objects

@@ -335,7 +335,7 @@ sge_del_configuration(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem 
  * @param aHost target host
  * @param gdi_session the session the change belongs to
  *
- * @return 0 success -1 error
+ * @return STATUS_OK on success, a STATUS_* error code otherwise
  *
  * @note MT-NOTE: sge_mod_configuration() is MT safe
  */

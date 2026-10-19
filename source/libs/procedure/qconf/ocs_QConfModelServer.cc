@@ -34,43 +34,6 @@
 
 #include "ocs_QConfModelServer.h"
 
-/** @brief Which master list each object type lives in
- *
- * The qmaster-internal `gdi_object_t` table knows this too, but it sits in
- * `daemons/qmaster/sge_c_gdi.cc` and is about the write path - its rows carry
- * the modify, spool and success hooks. A library cannot reach it, so the read
- * path states the one thing it needs here. Kept in the order of #QConfObj so
- * that the lookup is a plain index.
- */
-static const sge_object_type qconf_master_list[] = {
-   SGE_TYPE_CALENDAR,    /* CAL  */
-   SGE_TYPE_CKPT,        /* CK   */
-   SGE_TYPE_CENTRY,      /* CE   */
-   SGE_TYPE_EXECHOST,    /* EH   */
-   SGE_TYPE_HGROUP,      /* HGRP */
-   SGE_TYPE_PE,          /* PE   */
-   SGE_TYPE_PROJECT,     /* PR   */
-   SGE_TYPE_CQUEUE,      /* CQ   */
-   SGE_TYPE_RL,          /* RL   */
-   SGE_TYPE_RQS,         /* RQS  */
-   SGE_TYPE_USERSET,     /* US   */
-   SGE_TYPE_USER,        /* UU   */
-   SGE_TYPE_SHARETREE,   /* STN  */
-   SGE_TYPE_SCHEDD_CONF, /* SC   */
-   SGE_TYPE_CONFIG,      /* CONF */
-   SGE_TYPE_NONE,        /* EV - event clients live in the event master */
-   SGE_TYPE_CATEGORY,    /* CAT  */
-   SGE_TYPE_HGROUP,      /* AH - @admin_hosts lives in the host group list */
-   SGE_TYPE_HGROUP,      /* SH - @submit_hosts likewise */
-   SGE_TYPE_USERSET,     /* MGR - the reserved "manager" access list */
-   SGE_TYPE_USERSET,     /* OP - the reserved "operator" access list */
-};
-
-/* the second array on the same index - see the note at QConfObj (CS-2808) */
-static_assert(sizeof(qconf_master_list) / sizeof(qconf_master_list[0]) ==
-              static_cast<size_t>(QConfObj::OP) + 1,
-              "qconf_master_list needs exactly one row per QConfObj value");
-
 /** @brief Read the host groups from the data store (CS-2818)
  *
  * A copy, not the master list itself: the cluster queue read joins the groups'
@@ -119,8 +82,7 @@ ocs::QConfModelServer::fetch(lList **answer_list, gdi::Target target,
       DRETURN(true);
    }
 
-   const size_t index = static_cast<size_t>(get_object());
-   const sge_object_type type = qconf_master_list[index];
+   const sge_object_type type = qconf_master_list_type(get_object());
    if (type == SGE_TYPE_NONE) {
       /* A guard, not a reachable path: every object type the read table names
        * has a master list. It exists so that adding a singleton to the table

@@ -809,5 +809,6 @@
 #define MSG_QCONF_WRITEREPLACENOTLIST              _MESSAGE(34016, _("a replacing write needs a text that holds a list of objects"))
 #define MSG_QCONF_WRITENOREPLACE_S                 _MESSAGE(34017, _("objects of type " SFQ " cannot be deleted by a replacing write"))
 #define MSG_QCONF_WRITEREPLACEWITHSELECT           _MESSAGE(34018, _("a replacing write cannot be restricted to selected object names"))
+#define MSG_QCONF_WRITENAMEWITHLIST                _MESSAGE(34019, _("a named write cannot be a list: the name would be given to every object the text holds"))
 
 // clang-format on

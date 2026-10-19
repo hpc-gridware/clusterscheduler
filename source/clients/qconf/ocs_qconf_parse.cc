@@ -150,9 +150,6 @@ static int qconf_modify_attribute(lList **alpp, int from_file, char ***spp, lLis
 
 /************************************************************************/
 static int delete_configs(const lList *conf_list);
-static int add_modify_config(const char *cfn, const char *filename, uint32_t flags);
-static lList* edit_sched_conf(lList *confl, uid_t uid, gid_t gid);
-static lListElem *edit_sharetree(lListElem *ep, uid_t uid, gid_t gid);
 
 /************************************************************************/
 static int qconf_is_manager(const char *user);
@@ -626,7 +623,8 @@ qconf_collect_text(const char *filepath, void *vctx) {
  */
 static int
 qconf_apply_path_procedure(std::ostream &os, const QConfObj o, const char *path,
-                           const char *select = nullptr, uint32_t extra_mode = 0u) {
+                           const char *select = nullptr, uint32_t extra_mode = 0u,
+                           const char *name = nullptr) {
    DENTER(TOP_LAYER);
 
    const bool is_dir = sge_is_directory(path);
@@ -641,6 +639,12 @@ qconf_apply_path_procedure(std::ostream &os, const QConfObj o, const char *path,
    const bool as_list = (extra_mode & ocs::QConfWriteParameter::MODE_LIST) != 0;
    if (select != nullptr) {
       param.set_select(select);
+   }
+   /* The one type whose text does not name its object - for "-Mconf" the name
+    * is the file's basename, resolved by the caller, see
+    * QConfWriteParameter::set_name() */
+   if (name != nullptr) {
+      param.set_name(name);
    }
 
    qconf_text_ctx ctx = {&param, 0};
@@ -1549,7 +1553,15 @@ qconf_show_object(std::ostream &os, ocs::QConfParameterClient &param, QConfObj o
     * object with STATUS_EEXIST, everything else is a fetch failure. That is the
     * only categorisation that survives the trip back from qmaster, and it is
     * the one the callers distinguish. */
-   const char *switch_name = ocs::QConfModelBase::switch_for(o, ocs::QConfReadKind::SINGLE_OBJECT);
+   /* A type without a name field is read as a singleton, because that is the
+    * only read it has: the scheduler configuration and the share tree are one
+    * object each and no name selects them (CS-2823). Derived from the descriptor
+    * rather than passed in, so a caller cannot ask for the kind the type does
+    * not have. */
+   const ocs::QConfReadKind kind = (qconf_desc(o).name_nm == NoName)
+                                   ? ocs::QConfReadKind::SINGLETON
+                                   : ocs::QConfReadKind::SINGLE_OBJECT;
+   const char *switch_name = ocs::QConfModelBase::switch_for(o, kind);
    DPRINTF("showing object type %d through %s\n", static_cast<int>(o),
            switch_name != nullptr ? switch_name : "<none>");
    if (switch_name == nullptr) {
@@ -1674,7 +1686,7 @@ qconf_delete_names(QConfObj o, const char *names) {
  */
 static int
 qconf_apply_obj(std::ostream &os, QConfObj o, const char *path, const char *select = nullptr,
-                uint32_t extra_mode = 0u) {
+                uint32_t extra_mode = 0u, const char *name = nullptr) {
    /* CS-2822: the object types whose write runs as a stored procedure take the
     * other path, which parses in qmaster instead of here. The list is here
     * rather than in a field of the descriptor table so that it disappears with
@@ -1688,8 +1700,11 @@ qconf_apply_obj(std::ostream &os, QConfObj o, const char *path, const char *sele
       case QConfObj::PR:
       case QConfObj::RL:
       case QConfObj::RQS:
+      case QConfObj::SC:
+      case QConfObj::STN:
+      case QConfObj::CONF:
       case QConfObj::UU:
-         return qconf_apply_path_procedure(os, o, path, select, extra_mode);
+         return qconf_apply_path_procedure(os, o, path, select, extra_mode, name);
       default:
          break;
    }
@@ -1920,7 +1935,8 @@ qconf_edit_fail_exit(QConfEditStatus st) {
  */
 static int
 qconf_edit_and_write_obj(QConfObj o, std::string &text, uid_t uid, gid_t gid,
-                         const char *select = nullptr, uint32_t extra_mode = 0u) {
+                         const char *select = nullptr, uint32_t extra_mode = 0u,
+                         const char *name = nullptr) {
    DENTER(TOP_LAYER);
 
    const QConfEditStatus est = qconf_edit_text(text, uid, gid);
@@ -1941,6 +1957,11 @@ qconf_edit_and_write_obj(QConfObj o, std::string &text, uid_t uid, gid_t gid,
    mod_param.set_mode(ocs::QConfWriteParameter::MODE_ROUND_TRIP | extra_mode);
    if (select != nullptr) {
       mod_param.set_select(select);
+   }
+   /* The one type whose text does not name its object, see
+    * QConfWriteParameter::set_name() */
+   if (name != nullptr) {
+      mod_param.set_name(name);
    }
    mod_param.add_item(nullptr, text);
    ocs::QConfWriteModelClient model(qconf_desc(o).target);
@@ -2032,12 +2053,20 @@ qconf_edit_obj_procedure(ocs::QConfParameterClient &param, QConfObj o,
    }
 
    if (reduction != ocs::ProcedureParameter::REDUCTION_NONE) {
-      ERROR(MSG_QCONF_REDUCEDNOTMODIFIABLE_SS, sw, name != nullptr ? name : "");
+      /* A singleton reaches this with no name - "-msconf" and "-mstree" have
+       * none to give - and the message takes one, so it is called by its type.
+       * Same reason as the nameless list form below (CS-2823). */
+      ERROR(MSG_QCONF_REDUCEDNOTMODIFIABLE_SS, sw, qconf_object_label(qconf_desc(o), name));
       DRETURN(1);
    }
 
    std::string text = rendered.str();
-   DRETURN(qconf_edit_and_write_obj(o, text, uid, gid));
+   /* read.name_header is the descriptor's way of saying that the text does not
+    * carry the object's name - the view writes it as a comment instead, which
+    * the parse ignores. For such a type the name has to travel with the write,
+    * or the edited configuration would arrive nameless (CS-2823). */
+   const char *write_name = qconf_desc(o).read.name_header ? name : nullptr;
+   DRETURN(qconf_edit_and_write_obj(o, text, uid, gid, nullptr, 0u, write_name));
 }
 
 /** @brief Edit a whole list of objects through the stored procedures (CS-2823)
@@ -2244,8 +2273,11 @@ qconf_rqs_delete(std::ostream &os, const char *path) {
  * The config object keys on the host name, which is the file *basename* (not a
  * field inside the file), and -Aconf/-Mconf already accept a comma-separated
  * file list. So config gets its own file/dir helpers (like RQS) rather than the
- * field-name-based qconf_apply_path/qconf_delete_path. add_modify_config() and
- * delete_configs() are forward-declared at the top of this file. */
+ * field-name-based qconf_apply_path/qconf_delete_path. What is left of them is
+ * the path handling: since CS-2823 the writing itself is the procedure's, and
+ * the basename travels with the request as the object's name, because a
+ * configuration's text does not carry it. delete_configs() is forward-declared
+ * at the top of this file. */
 
 /** @brief Resolve the host key of a config file: its basename, host-resolved
  *         in place into @p host_ep (EH_name). Returns the resolved host name. */
@@ -2261,7 +2293,6 @@ qconf_conf_host_of(const char *filepath, lListElem *host_ep) {
 /** @brief Context for the config apply/delete per-file callbacks. */
 struct qconf_conf_ctx {
    std::ostream *os;   ///< where the per-file messages go (CS-1841)
-   uint32_t flags;   ///< add_modify_config() flags (apply path only)
    lList *hosts;     ///< delete path: collected CONF_name host elements
    int n_ok;         ///< files applied / hosts collected (CS-2299 H1)
    int n_fail;       ///< files that failed
@@ -2282,19 +2313,19 @@ qconf_conf_apply_one(const char *filepath, void *vctx) {
    lListElem *host_ep = lCreateElem(EH_Type);
    const char *hostname = qconf_conf_host_of(filepath, host_ep);
 
-   /* CS-2299 H3: add_modify_config() always contacts qmaster, so the -dry
-    * preview is handled here - report the intended action and send nothing. */
-   if (qconf_opt_dry_run) {
-      bool exists = qconf_object_exists(ocs::gdi::Target::CONF_LIST, CONF_Type,
-                                        CONF_name, hostname);
-      qconf_info(*ctx->os, exists ? MSG_QCONF_DRYRUNWOULDMODIFY_S : MSG_QCONF_DRYRUNWOULDADD_S,
-                        hostname);
-      lFreeElem(&host_ep);
-      ctx->n_ok++;
-      return 0;
-   }
-
-   int ret = add_modify_config(hostname, filepath, ctx->flags);
+   /* CS-2299 H3 used to preview -dry here, because add_modify_config() always
+    * contacted qmaster. The procedure carries MODE_DRY itself and answers with
+    * the same two sentences - MSG_QCONF_WRITEWOULDADD_S and
+    * MSG_QCONF_WRITEWOULDMODIFY_S are the client messages word for word - so the
+    * preview is one place now, and the probe that decided it here is one bare
+    * GET less: it asked whether the host has a configuration and could not see
+    * whether it was allowed to know (CS-2823).
+    *
+    * The parse moved to qmaster; what stays here is the mapping that is a
+    * property of the path and not of the object - the host is the file's
+    * basename, and it travels with the request because a configuration's text
+    * does not carry its name (CS-2823). */
+   int ret = qconf_apply_obj(*ctx->os, QConfObj::CONF, filepath, nullptr, 0u, hostname);
    lFreeElem(&host_ep);
    if (ret != 0) {
       ctx->n_fail++;
@@ -2307,7 +2338,8 @@ qconf_conf_apply_one(const char *filepath, void *vctx) {
 /**
  * @brief Apply one config file or a whole directory of them (CS-2311 C3).
  *
- * Each file is upserted (add_modify_config flag 3); the host is the basename.
+ * Each file is upserted - sge_mod_configuration() adds what is missing and
+ * modifies what is there; the host is the basename.
  * A directory prints the H1 one-line summary.
  *
  * @param os the stream the output is written to (CS-1841)
@@ -2316,7 +2348,7 @@ qconf_conf_apply_one(const char *filepath, void *vctx) {
  */
 static int
 qconf_conf_apply_path(std::ostream &os, const char *path) {
-   qconf_conf_ctx ctx = {&os, 3 /* modify if exists, add if not */, nullptr, 0, 0};
+   qconf_conf_ctx ctx = {&os, nullptr, 0, 0};
    bool is_dir = sge_is_directory(path);
    qconf_for_each_file(path, qconf_conf_apply_one, &ctx);
    if (is_dir) {
@@ -2362,7 +2394,7 @@ qconf_conf_collect_host(const char *filepath, void *vctx) {
  */
 static int
 qconf_conf_delete_path(std::ostream &os, const char *path) {
-   qconf_conf_ctx ctx = {&os, 0, lCreateList("conf del", CONF_Type), 0, 0};
+   qconf_conf_ctx ctx = {&os, lCreateList("conf del", CONF_Type), 0, 0};
    bool is_dir = sge_is_directory(path);
    qconf_for_each_file(path, qconf_conf_collect_host, &ctx);
 
@@ -2389,29 +2421,6 @@ qconf_conf_delete_path(std::ostream &os, const char *path) {
    int ret = delete_configs(ctx.hosts);
    lFreeList(&ctx.hosts);
    return ret;
-}
-
-/**
- * @brief Whether a share tree currently exists (CS-2312 C2 upsert probe).
- *
- * The share tree is a singleton stored as a (possibly empty) list of nodes, so
- * "exists" means the STN_LIST GET returns at least one node. Used to choose
- * between a GDI ADD (no tree yet) and MOD (replace the existing tree) so that
- * -astree/-Astree and -mstree/-Mstree become interchangeable upserts.
- *
- * @return true if a share tree is configured, false otherwise
- */
-static bool
-qconf_sharetree_exists() {
-   lList *lp = nullptr;
-   lEnumeration *what = lWhat("%T(%I)", STN_Type, STN_id);
-   lList *alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::STN_LIST, ocs::gdi::Command::GET,
-                                          ocs::gdi::SubCommand::NONE, &lp, nullptr, what);
-   lFreeWhat(&what);
-   lFreeList(&alp);
-   bool exists = (lp != nullptr && lGetNumberOfElem(lp) > 0);
-   lFreeList(&lp);
-   return exists;
 }
 
 
@@ -2500,12 +2509,10 @@ int sge_parse_qconf(char *argv[]) {
    int opt;
    int sge_parse_return = 0;
    lEnumeration *what = nullptr;
-   lList *lp=nullptr, *arglp=nullptr, *alp=nullptr, *newlp=nullptr;
+   lList *lp=nullptr, *arglp=nullptr, *alp=nullptr;
    lListElem *hep=nullptr, *ep=nullptr;
    const lListElem *aep=nullptr;
    const char *host = nullptr;
-   int fields_out[MAX_NUM_FIELDS];
-   int missing_field = NoName;
    const char* qualified_hostname = component_get_qualified_hostname();
    const char* username = component_get_username();
    uint32_t prog_number = component_get_component_id();
@@ -3060,110 +3067,28 @@ int sge_parse_qconf(char *argv[]) {
       }
 
 /*----------------------------------------------------------------------------*/
-      /* "-astree", "-Astree file":  add sharetree */
-
+      /* "-astree", "-Astree file": add the share tree
+       *
+       * The same upsert as "-mstree"/"-Mstree" and the same code: the share tree
+       * is a singleton, sge_mod_sharetree() creates the list when there is none,
+       * and CS-2312 had already made the two pairs interchangeable - what is
+       * left of the distinction is the switch name. See the "-mstree" block for
+       * what moved into the procedure (CS-2823). */
       if ((strcmp("-astree", *spp) == 0) || (strcmp("-Astree", *spp) == 0)) {
-         lListElem *unspecified = nullptr;
-
          if (strcmp("-astree", *spp) == 0) {
             qconf_is_manager_on_admin_host(username, qualified_hostname);
 
-            /* get the sharetree .. */
-            what = lWhat("%T(ALL)", STN_Type);
-            alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::STN_LIST, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, &lp, nullptr, what);
-            lFreeWhat(&what);
-
-            sge_parse_return |= show_answer_list(alp);
-            if (sge_parse_return) {
-               lFreeList(&alp);
-               spp++;
-               continue;
-            }
-            lFreeList(&alp);
-
-            ep = lFirstRW(lp);
-            if (!(ep = edit_sharetree(ep, uid, gid)))
-               continue;
-
-            lFreeList(&lp);
-         } else { /* -Astree */
-            /* JSON uses the nested-tree field list (childnodes are full child
-             * objects); ASCII uses the flat id-referenced list */
-            spooling_field *fields = (qconf_opt_format == SP_FORM_JSON)
-                                     ? sge_build_STN_json_field_list()
-                                     : sge_build_STN_field_list(false, true);
-
-            spp = sge_parser_get_next(spp);
-
-            fields_out[0] = NoName;
-            ep = spool_flatfile_read_object(&alp, STN_Type, nullptr,
-                                            fields, fields_out, true,
-                                            &qconf_name_value_list_sfi,
-                                            qconf_opt_format, nullptr, *spp);
-
-            if (answer_list_output(&alp)) {
-               lFreeElem(&ep);
-            }
-
-            /* the nested JSON form carries no node ids -> assign them (as the flat
-             * ASCII reader implicitly does) so the tree is well-formed for GDI */
-            if (ep != nullptr && qconf_opt_format == SP_FORM_JSON) {
-               id_sharetree(&alp, ep, 0, nullptr);
-            }
-
-            if (ep != nullptr) {
-               missing_field = spool_get_unprocessed_field(fields, fields_out, &alp);
-            }
-
-            sge_free(&fields);
-
-            if (missing_field != NoName) {
-               lFreeElem(&ep);
-               answer_list_output(&alp);
+            if (qconf_edit_obj_procedure(param, QConfObj::STN, "-astree", nullptr, uid, gid) != 0) {
                sge_parse_return = 1;
             }
+         } else {
+            spp = sge_parser_get_next(spp);
 
-            if (ep == nullptr) {
-               if (sge_error_and_exit(MSG_FILE_ERRORREADINGINFILE)) {
-                  continue;
-               }
+            if (qconf_apply_obj(os, QConfObj::STN, *spp) != 0) {
+               sge_parse_return = 1;
             }
          }
 
-         /* Make sure that no nodes are left unspecified.  An unspecified node
-          * happens when a node appears in another node's child list, but does
-          * not appear itself. */
-         unspecified = sge_search_unspecified_node(ep);
-
-         if (unspecified != nullptr) {
-            fprintf(stderr, MSG_STREE_NOVALIDNODEREF_U, lGetUlong(unspecified, STN_id));
-            fprintf(stderr, "\n");
-
-            lFreeElem(&ep);
-            spp++;
-            continue;
-         }
-
-         newlp = lCreateList("sharetree add", STN_Type);
-         lAppendElem(newlp, ep);
-
-         /* CS-2312 C2: the share tree is a singleton - add and modify are the
-          * same upsert. Use MOD when a tree already exists, ADD otherwise, so
-          * -astree/-Astree no longer fail when a tree is already configured. */
-         what = lWhat("%T(ALL)", STN_Type);
-         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::STN_LIST,
-                                         qconf_sharetree_exists() ? ocs::gdi::Command::MOD
-                                                                  : ocs::gdi::Command::ADD,
-                                         ocs::gdi::SubCommand::NONE, &newlp, nullptr, what);
-         lFreeWhat(&what);
-
-         ep = lFirstRW(alp);
-         answer_exit_if_not_recoverable(ep);
-         if (answer_get_status(ep) == STATUS_OK)
-            fprintf(stderr, "%s\n", MSG_TREE_CHANGEDSHARETREE);
-         else
-            fprintf(stderr, "%s\n", lGetString(ep, AN_text));
-         lFreeList(&newlp);
          spp++;
          continue;
       }
@@ -4477,214 +4402,85 @@ int sge_parse_qconf(char *argv[]) {
    }
 
 /*----------------------------------------------------------------------------*/
-      /* "-Msconf" */
+      /* "-Msconf file": the scheduler configuration from a file
+       *
+       * The parse, the field list and sconf_validate_config() are gone from
+       * here: qmaster parses the text and sge_mod_sched_configuration() installs
+       * it through sconf_set_config(), which validates and refuses with the
+       * reason in the answer list - the client check was the same check, run
+       * twice (CS-2823). */
       if (strcmp("-Msconf", *spp) == 0) {
          qconf_is_manager_on_admin_host(username, qualified_hostname);
 
          spp = sge_parser_get_next(spp);
 
-         fields_out[0] = NoName;
-         ep = spool_flatfile_read_object(&alp, SC_Type, nullptr,
-                                         SC_fields, fields_out, true, &qconf_comma_sfi,
-                                         qconf_opt_format, nullptr, *spp);
-
-         if (answer_list_output(&alp)) {
-            lFreeElem(&ep);
-         }
-
-         if (ep != nullptr) {
-            missing_field = spool_get_unprocessed_field(SC_fields, fields_out, &alp);
-         }
-
-         if (missing_field != NoName) {
-            lFreeElem(&ep);
-            answer_list_output(&alp);
+         if (qconf_apply_obj(os, QConfObj::SC, *spp) != 0) {
             sge_parse_return = 1;
          }
-
-         if (ep != nullptr) {
-            lp = lCreateList("scheduler config", SC_Type);
-            lAppendElem (lp, ep);
-
-            if (!sconf_validate_config (&alp, lp)) {
-               lFreeList(&lp);
-               answer_list_output(&alp);
-            }
-         }
-
-         /* else we let the check for lp != nullptr catch the error below */
-
-         if ((lp == nullptr) && (sge_error_and_exit(MSG_FILE_ERRORREADINGINFILE))) {
-            continue;
-         }
-
-         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::SC_LIST, ocs::gdi::Command::MOD, ocs::gdi::SubCommand::NONE, &lp, nullptr, nullptr);
-         aep = lFirst(alp);
-         answer_exit_if_not_recoverable(aep);
-         if (answer_get_status(aep) == STATUS_OK)
-            fprintf(stderr, "%s\n", MSG_SCHEDD_CHANGEDSCHEDULERCONFIGURATION);
-         else { /* error */
-            fprintf(stderr, "%s\n", lGetString(aep, AN_text));
-            sge_parse_return = 1;
-         }
-
-         lFreeList(&alp);
-         lFreeList(&lp);
 
          spp++;
          continue;
-
       }
 
 /*----------------------------------------------------------------------------*/
-      /* "-msconf"  modify scheduler configuration */
-
+      /* "-msconf": the scheduler configuration in the editor
+       *
+       * The bare GET in front of the editor is what this step exists to remove:
+       * it could not see whether the output was reduced, and wrote back what it
+       * had been shown. The read now runs as a stored procedure, which refuses
+       * to edit a reduced view, and the write parses in qmaster (CS-2823). The
+       * scheduler configuration has no name - it is read as a singleton, which
+       * qconf_show_object() takes from the descriptor. */
       if (strcmp("-msconf", *spp) == 0) {
          qconf_is_manager_on_admin_host(username, qualified_hostname);
 
-         /* get the scheduler configuration .. */
-         what = lWhat("%T(ALL)", SC_Type);
-         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::SC_LIST, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, &lp, nullptr, what);
-         lFreeWhat(&what);
-
-         aep = lFirst(alp);
-         answer_exit_if_not_recoverable(aep);
-         if (answer_get_status(aep) != STATUS_OK) {
-            fprintf(stderr, "%s\n", lGetString(aep, AN_text));
-            sge_parse_return = 1;
-            spp++;
-            continue;
-         }
-         lFreeList(&alp);
-
-         if (!(newlp=edit_sched_conf(lp, uid, gid)))
-            continue;
-
-         lFreeList(&lp);
-         what = lWhat("%T(ALL)", SC_Type);
-         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::SC_LIST, ocs::gdi::Command::MOD, ocs::gdi::SubCommand::NONE, &newlp, nullptr, what);
-         lFreeWhat(&what);
-         ep = lFirstRW(alp);
-         answer_exit_if_not_recoverable(ep);
-         if (answer_get_status(ep) == STATUS_OK)
-            fprintf(stderr, "%s\n", MSG_SCHEDD_CHANGEDSCHEDULERCONFIGURATION);
-         else {
-            fprintf(stderr, "%s\n", lGetString(ep, AN_text));
+         if (qconf_edit_obj_procedure(param, QConfObj::SC, "-msconf", nullptr, uid, gid) != 0) {
             sge_parse_return = 1;
          }
-         lFreeList(&newlp);
+
          spp++;
          continue;
       }
 
 /*----------------------------------------------------------------------------*/
 
-      /* "-mstree", "-Mstree file": modify sharetree */
-
+      /* "-mstree", "-Mstree file": the share tree in the editor or from a file
+       *
+       * What left this block, and where it went (CS-2823):
+       *
+       * - the bare GET before the editor, which is the hole this step closes:
+       *   it could not see a reduced output and wrote back what it was shown.
+       *   The read is a stored procedure now and refuses to edit a reduced view.
+       * - the choice between the two field lists. The descriptor's
+       *   qconf_fields_STN() has made it by format since CS-2808, so the
+       *   ternary here was the second copy of the same decision.
+       * - id_sharetree() for the nested JSON form, which is now the
+       *   descriptor's prepare hook and runs where the parse is.
+       * - sge_search_unspecified_node(). check_sharetree() in qmaster reports
+       *   exactly that - a node with no name, with the same message - and
+       *   sge_mod_sharetree() calls it, so this was the same check run twice.
+       * - the ADD-or-MOD probe of CS-2312. sge_add_sharetree() is a one-line
+       *   forwarder to sge_mod_sharetree(), which creates the list when there is
+       *   none, so the upsert needs no probe and the client needs no extra GET
+       *   to decide it.
+       *
+       * The share tree has no name: it is read as a singleton, which
+       * qconf_show_object() takes from the descriptor. */
       if ((strcmp("-mstree", *spp) == 0) || (strcmp("-Mstree", *spp) == 0)) {
-         lListElem *unspecified = nullptr;
-
          if (strcmp("-mstree", *spp) == 0) {
             qconf_is_manager_on_admin_host(username, qualified_hostname);
 
-            /* get the sharetree .. */
-            what = lWhat("%T(ALL)", STN_Type);
-            alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::STN_LIST, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, &lp, nullptr, what);
-            lFreeWhat(&what);
-
-            aep = lFirst(alp);
-            answer_exit_if_not_recoverable(aep);
-            if (answer_get_status(aep) != STATUS_OK) {
-               fprintf(stderr, "%s\n", lGetString(aep, AN_text));
-               spp++;
-               continue;
-            }
-            lFreeList(&alp);
-
-            ep = lFirstRW(lp);
-            if (!(ep = edit_sharetree(ep, uid, gid)))
-               continue;
-
-            lFreeList(&lp);
-         } else {
-            /* JSON uses the nested-tree field list (childnodes are full child
-             * objects); ASCII uses the flat id-referenced list - same as -Astree */
-            spooling_field *fields = (qconf_opt_format == SP_FORM_JSON)
-                                     ? sge_build_STN_json_field_list()
-                                     : sge_build_STN_field_list(false, true);
-
-            spp = sge_parser_get_next(spp);
-
-            fields_out[0] = NoName;
-            ep = spool_flatfile_read_object(&alp, STN_Type, nullptr,
-                                            fields, fields_out, true,
-                                            &qconf_name_value_list_sfi,
-                                            qconf_opt_format, nullptr, *spp);
-
-            if (answer_list_output(&alp)) {
-               lFreeElem(&ep);
-            }
-
-            /* the nested JSON form carries no node ids -> assign them (as the flat
-             * ASCII reader implicitly does) so the tree is well-formed for GDI */
-            if (ep != nullptr && qconf_opt_format == SP_FORM_JSON) {
-               id_sharetree(&alp, ep, 0, nullptr);
-            }
-
-            if (ep != nullptr) {
-               missing_field = spool_get_unprocessed_field(fields, fields_out, &alp);
-            }
-
-            sge_free(&fields);
-
-            if (missing_field != NoName) {
-               lFreeElem(&ep);
-               answer_list_output(&alp);
+            if (qconf_edit_obj_procedure(param, QConfObj::STN, "-mstree", nullptr, uid, gid) != 0) {
                sge_parse_return = 1;
             }
+         } else {
+            spp = sge_parser_get_next(spp);
 
-            if (ep == nullptr) {
-               if (sge_error_and_exit(MSG_FILE_ERRORREADINGINFILE))
-                  continue;
+            if (qconf_apply_obj(os, QConfObj::STN, *spp) != 0) {
+               sge_parse_return = 1;
             }
          }
 
-         /* Make sure that no nodes are left unspecified.  An unspecified node
-          * happens when a node appears in another node's child list, but does
-          * not appear itself. */
-         unspecified = sge_search_unspecified_node(ep);
-
-         if (unspecified != nullptr) {
-            fprintf(stderr, MSG_STREE_NOVALIDNODEREF_U, lGetUlong(unspecified, STN_id));
-            fprintf(stderr, "\n");
-            sge_parse_return = 1;
-
-            lFreeElem(&ep);
-            spp++;
-            continue;
-         }
-
-         newlp = lCreateList("sharetree modify", STN_Type);
-         lAppendElem(newlp, ep);
-
-         /* CS-2312 C2: singleton upsert - ADD when no tree exists yet, MOD
-          * otherwise, so -mstree/-Mstree no longer fail when none is configured. */
-         what = lWhat("%T(ALL)", STN_Type);
-         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::STN_LIST,
-                                         qconf_sharetree_exists() ? ocs::gdi::Command::MOD
-                                                                  : ocs::gdi::Command::ADD,
-                                         ocs::gdi::SubCommand::NONE, &newlp, nullptr, what);
-         lFreeWhat(&what);
-         ep = lFirstRW(alp);
-         answer_exit_if_not_recoverable(ep);
-         if (answer_get_status(ep) == STATUS_OK)
-            fprintf(stderr, "%s\n", MSG_TREE_CHANGEDSHARETREE);
-         else {
-            fprintf(stderr, "%s\n", lGetString(ep, AN_text));
-            sge_parse_return = 1;
-         }
-         lFreeList(&alp);
-         lFreeList(&newlp);
          spp++;
          continue;
       }
@@ -5054,9 +4850,21 @@ int sge_parse_qconf(char *argv[]) {
                   sge_parse_return = 1;
                }
             } else if (action == ACTION_aconf || action == ACTION_mconf) {
-               /* CS-2311 C2: -aconf/-mconf both upsert (add if missing, modify
-                * if present) via the editor (flag 3). */
-               if (add_modify_config(hostname, nullptr, 3) != 0) {
+               /* CS-2311 C2: "-aconf" and "-mconf" both upsert - add when the
+                * host has no configuration yet, modify when it has. That stays
+                * true without a flag now, because sge_mod_configuration() is
+                * itself an upsert (CS-2823).
+                *
+                * The bare GET this replaces is the hole the step closes: it
+                * could not see whether the output was reduced and wrote back
+                * what it had been shown. The "global" spelling is resolved the
+                * same way the read resolves it, so both halves of the round trip
+                * name the object alike. */
+               const char *cfn = (strcasecmp(hostname, "global") == 0) ? SGE_GLOBAL_NAME : hostname;
+
+               if (qconf_edit_obj_procedure(param, QConfObj::CONF,
+                                            (action == ACTION_aconf) ? "-aconf" : "-mconf",
+                                            cfn, uid, gid) != 0) {
                   sge_parse_return = 1;
                }
             }
@@ -6536,199 +6344,7 @@ static bool del_host_of_type(lList *arglp, ocs::gdi::Target target) {
 
 /* ------------------------------------------------------------ */
 
-static lList *edit_sched_conf(lList *confl, uid_t uid, gid_t gid) {
-   DENTER(TOP_LAYER);
-
-   int status;
-   char *fname = nullptr;
-   lList *alp=nullptr, *newconfl=nullptr;
-   lListElem *ep = nullptr;
-   int fields_out[MAX_NUM_FIELDS];
-   int missing_field = NoName;
-
-   fname = (char *)spool_flatfile_write_object(&alp, lFirst(confl), false,
-                                       SC_fields, &qconf_comma_sfi,
-                                       SP_DEST_TMP, qconf_opt_format,
-                                       fname, false);
-   if (answer_list_output(&alp)) {
-      fprintf(stderr, "%s\n", MSG_SCHEDCONF_CANTCREATESCHEDULERCONFIGURATION);
-      sge_free(&fname);
-      sge_exit(1);
-   }
-
-   status = sge_edit(fname, uid, gid);
-
-   if (status < 0) {
-      unlink(fname);
-      sge_free(&fname);
-
-      if (sge_error_and_exit(MSG_PARSE_EDITFAILED)) {
-         DRETURN(nullptr);
-      }
-   }
-
-   if (status > 0) {
-      unlink(fname);
-      sge_free(&fname);
-
-      if (sge_error_and_exit(MSG_FILE_FILEUNCHANGED)) {
-         DRETURN(nullptr);
-      }
-   }
-
-   fields_out[0] = NoName;
-   ep = spool_flatfile_read_object(&alp, SC_Type, nullptr,
-                                   SC_fields, fields_out, true, &qconf_comma_sfi,
-                                   qconf_opt_format, nullptr, fname);
-
-   if (answer_list_output(&alp)) {
-      lFreeElem(&ep);
-   }
-
-   if (ep != nullptr) {
-      missing_field = spool_get_unprocessed_field(SC_fields, fields_out, &alp);
-   }
-
-   if (missing_field != NoName) {
-      lFreeElem(&ep);
-      answer_list_output(&alp);
-   }
-
-   if (ep != nullptr) {
-      newconfl = lCreateList("scheduler config", SC_Type);
-      lAppendElem(newconfl, ep);
-   }
-
-   if ((newconfl != nullptr) && !sconf_validate_config(&alp, newconfl)) {
-      lFreeList(&newconfl);
-      answer_list_output(&alp);
-   }
-
-   if (newconfl == nullptr) {
-      fprintf(stderr, MSG_QCONF_CANTREADCONFIG_S, "can't parse config");
-      fprintf(stderr, "\n");
-      unlink(fname);
-      sge_free(&fname);
-      sge_exit(1);
-   }
-   lFreeList(&alp);
-
-   unlink(fname);
-   sge_free(&fname);
-
-   DRETURN(newconfl);
-}
-
 /* ------------------------------------------------------------ */
-
-/****************************************************************/
-static lListElem *edit_sharetree(lListElem *ep, uid_t uid, gid_t gid) {
-   DENTER(TOP_LAYER);
-
-   int status;
-   lListElem *newep = nullptr;
-   const char *filename = nullptr;
-   lList *alp = nullptr;
-   spooling_field *fields = nullptr;
-   int fields_out[MAX_NUM_FIELDS];
-   int missing_field = NoName;
-   bool is_missing = false;
-
-   if (ep == nullptr) {
-      is_missing = true;
-   }
-   if (is_missing) {
-      ep = getSNTemplate();
-   }
-
-   /* JSON uses the nested-tree field list (no node ids - childnodes are full
-    * child objects); ASCII uses the flat id-referenced list. The "sharetree"
-    * type name is passed explicitly because the STN object type is mis-detected
-    * from its content. */
-   fields = (qconf_opt_format == SP_FORM_JSON)
-            ? sge_build_STN_json_field_list()
-            : sge_build_STN_field_list(false, true);
-
-   filename = spool_flatfile_write_object(&alp, ep, false,
-                                          fields, &qconf_name_value_list_sfi,
-                                          SP_DEST_TMP, qconf_opt_format,
-                                          nullptr, false, "sharetree");
-   if (is_missing) {
-      lFreeElem(&ep);
-   }
-
-   if (answer_list_output(&alp)) {
-      if (filename != nullptr) {
-         unlink(filename);
-         sge_free(&filename);
-      }
-      sge_free(&fields);
-      sge_error_and_exit(nullptr);
-   }
-
-   lFreeList(&alp);
-
-   status = sge_edit(filename, uid, gid);
-
-   if (status < 0) {
-      sge_free(&fields);
-      unlink(filename);
-      sge_free(&filename);
-      if (sge_error_and_exit(MSG_PARSE_EDITFAILED)) {
-         DRETURN(nullptr);
-      }
-   }
-
-   if (status > 0) {
-      sge_free(&fields);
-      unlink(filename);
-      sge_free(&filename);
-      if (sge_error_and_exit(MSG_FILE_FILEUNCHANGED)) {
-         DRETURN(nullptr);
-      }
-   }
-
-   fields_out[0] = NoName;
-   newep = spool_flatfile_read_object(&alp, STN_Type, nullptr,
-                                      fields, fields_out,  true,
-                                      &qconf_name_value_list_sfi,
-                                      qconf_opt_format, nullptr, filename);
-
-   if (answer_list_output(&alp)) {
-      lFreeElem(&newep);
-   }
-
-   /* the nested JSON form carries no node ids -> assign them (as the flat ASCII
-    * reader implicitly does) so the tree is well-formed for GDI */
-   if (newep != nullptr && qconf_opt_format == SP_FORM_JSON) {
-      id_sharetree(&alp, newep, 0, nullptr);
-   }
-
-   if (newep != nullptr) {
-      missing_field = spool_get_unprocessed_field(fields, fields_out, &alp);
-   }
-
-   sge_free(&fields);
-
-   if (missing_field != NoName) {
-      lFreeElem(&newep);
-      answer_list_output(&alp);
-   }
-
-   unlink(filename);
-   sge_free(&filename);
-
-   if (newep == nullptr) {
-      /* JG: TODO: do we need the following output?
-       * Isn't an error message already written by spool_flatfile_read_object?
-       */
-      fprintf(stderr, MSG_QCONF_CANTREADSHARETREEX_S, "");
-      fprintf(stderr, "\n");
-      sge_exit(1);
-   }
-
-   DRETURN(newep);
-}
 
 /** @brief Delete every named configuration in one request
  *
@@ -6783,182 +6399,6 @@ static int delete_configs(const lList *conf_list) {
    lFreeList(&lp);
 
    DRETURN(fail);
-}
-
-/*------------------------------------------------------------------------*
- * add_modify_config
- ** flags = 1 = add, 2 = modify, 3 = modify if exists, add if not
- *------------------------------------------------------------------------*/
-static int add_modify_config(const char *cfn, const char *filename, uint32_t flags) {
-   DENTER(TOP_LAYER);
-
-   lCondition *where = nullptr;
-   lEnumeration *what = nullptr;
-   lList *alp = nullptr, *lp = nullptr;
-   lListElem *ep = nullptr;
-   int failed=0;
-   char *tmpname = nullptr;
-   int status;
-   spooling_field *fields = nullptr;
-   int fields_out[MAX_NUM_FIELDS];
-   int missing_field = NoName;
-   uid_t uid = component_get_uid();
-   gid_t gid = component_get_gid();
-
-   where = lWhere("%T(%Ih=%s)", CONF_Type, CONF_name, cfn);
-   what = lWhat("%T(ALL)", CONF_Type);
-   alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::CONF_LIST, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, &lp, where, what);
-   lFreeWhat(&what);
-   lFreeWhere(&where);
-
-   failed = false;
-   ep = lFirstRW(alp);
-   answer_exit_if_not_recoverable(ep);
-   if (answer_get_status(ep) != STATUS_OK) {
-      fprintf(stderr, "%s\n", lGetString(ep, AN_text));
-      lFreeList(&alp);
-      lFreeList(&lp);
-      DRETURN(1);
-   }
-
-   lFreeList(&alp);
-
-   ep = lCopyElem(lFirst(lp));
-   lFreeList(&lp);
-
-   if (ep && (flags == 1)) {
-      fprintf(stderr, MSG_ANSWER_CONFIGXALREADYEXISTS_S, cfn);
-      fprintf(stderr, "\n");
-      lFreeElem(&ep);
-      DRETURN(2);
-   }
-   if (!ep && (flags == 2)) {
-      fprintf(stderr, MSG_ANSWER_CONFIGXDOESNOTEXIST_S, cfn);
-      fprintf(stderr, "\n");
-      lFreeElem(&ep);
-      DRETURN(3);
-   }
-
-   if (filename == nullptr) {
-      bool local_failed = false;
-
-      /* get config or make an empty config entry if none exists */
-      if (ep == nullptr) {
-         ep = lCreateElem(CONF_Type);
-         lSetHost(ep, CONF_name, cfn);
-      }
-
-      fields = sge_build_CONF_field_list(false);
-      tmpname = (char *)spool_flatfile_write_object(&alp, ep, false, fields,
-                                            &qconf_sfi, SP_DEST_TMP, qconf_opt_format,
-                                            tmpname, false);
-
-      lFreeElem(&ep);
-      status = sge_edit(tmpname, uid, gid);
-
-      if (status != 0) {
-         unlink(tmpname);
-         local_failed = true;
-         sge_free(&fields);
-         sge_free(&tmpname);
-      }
-      if (status < 0) {
-         fprintf(stderr, "%s\n", MSG_PARSE_EDITFAILED);
-         sge_free(&fields);
-         DRETURN(local_failed);
-      }
-      else if (status > 0) {
-         fprintf(stderr, "%s\n", MSG_ANSWER_CONFIGUNCHANGED);
-         sge_free(&fields);
-         DRETURN(local_failed);
-      }
-
-      fields_out[0] = NoName;
-      ep = spool_flatfile_read_object(&alp, CONF_Type, nullptr,
-                                      fields, fields_out, false, &qconf_sfi,
-                                      qconf_opt_format, nullptr, tmpname);
-
-      if (answer_list_output(&alp)) {
-         lFreeElem(&ep);
-         local_failed = true;
-      }
-
-      if (ep != nullptr) {
-         missing_field = spool_get_unprocessed_field(fields, fields_out, &alp);
-      }
-
-      sge_free(&fields);
-
-      if (missing_field != NoName) {
-         lFreeElem(&ep);
-         answer_list_output(&alp);
-         local_failed = true;
-      }
-
-      /* If the configuration is legitematly nullptr, create an empty object. */
-      if (!local_failed && (ep == nullptr)) {
-         ep = lCreateElem(CONF_Type);
-      }
-
-      if (ep != nullptr) {
-         lSetHost(ep, CONF_name, cfn);
-      } else {
-         fprintf(stderr, "%s\n", MSG_ANSWER_ERRORREADINGTEMPFILE);
-         unlink(tmpname);
-         sge_free(&tmpname);
-         local_failed = true;
-         DRETURN(local_failed);
-      }
-      unlink(tmpname);
-      sge_free(&tmpname);
-   } else {
-      lFreeElem(&ep);
-
-      fields_out[0] = NoName;
-      fields = sge_build_CONF_field_list(false);
-      ep = spool_flatfile_read_object(&alp, CONF_Type, nullptr,
-                                      fields, fields_out, false, &qconf_sfi,
-                                      qconf_opt_format, nullptr, filename);
-
-      if (answer_list_output(&alp)) {
-         lFreeElem(&ep);
-      }
-
-      if (ep != nullptr) {
-         missing_field = spool_get_unprocessed_field(fields, fields_out, &alp);
-      }
-
-      sge_free(&fields);
-
-      if (missing_field != NoName) {
-         lFreeElem(&ep);
-         answer_list_output(&alp);
-      }
-
-      if (ep != nullptr) {
-         lSetHost(ep, CONF_name, cfn);
-      }
-
-      if (!ep) {
-         fprintf(stderr, MSG_ANSWER_ERRORREADINGCONFIGFROMFILEX_S, filename);
-         fprintf(stderr, "\n");
-         failed = true;
-         DRETURN(failed);
-      }
-   }
-
-   lp = lCreateList("modified configuration", CONF_Type);
-   lAppendElem(lp, ep);
-
-   alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::CONF_LIST, ocs::gdi::Command::MOD, ocs::gdi::SubCommand::NONE, &lp, nullptr, nullptr);
-   lFreeList(&lp);
-
-   /* report results */
-   failed = show_answer_list(alp);
-
-   lFreeList(&alp);
-
-   DRETURN(failed);
 }
 
 static int

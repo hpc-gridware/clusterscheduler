@@ -39,8 +39,11 @@
 #include "msg_common.h"
 #include "msg_qmaster.h"
 #include "ocs_QConfWriteQmaster.h"
+#include "configuration_qmaster.h"
+#include "sched_conf_qmaster.h"
 #include "sge_c_gdi.h"
 #include "sge_centry_qmaster.h"
+#include "sge_sharetree_qmaster.h"
 
 /** @brief Whether a replacing write can delete objects of this target (CS-2823)
  *
@@ -102,6 +105,85 @@ qconf_delete_one(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::gdi:
    DRETURN(ret == STATUS_OK);
 }
 
+/** @brief An object's name, or nullptr when its type is not addressed by name
+ *
+ * The scheduler configuration and the share tree carry NoName as their key:
+ * there is one object of the type and no name selects it. CULL has no field -1,
+ * so the question is answered from the descriptor before it is asked (CS-2823).
+ *
+ * @param ep the object
+ * @param key_nm the type's key field, NoName for a singleton
+ * @return the name, owned by @p ep, or nullptr for a singleton
+ */
+static const char *
+qconf_key_of(const lListElem *ep, const int key_nm) {
+   return (key_nm == NoName) ? nullptr : qconf_get_name(ep, key_nm);
+}
+
+/** @brief Hand one parsed object to the function that applies its type (CS-2823)
+ *
+ * Most types are applied by sge_gdi_add_mod_generic() through their
+ * `gdi_object_t` row, and for them this is a pass-through. The three types that
+ * kept their own editor to the end are exactly the ones that row does not
+ * describe: `sge_c_gdi_mod()` special-cases them above the generic branch, their
+ * modifier hook is null (CONF, STN) or unreachable (SC's `schedd_mod`), and
+ * their key and list type are empty there. So the special cases are repeated
+ * here rather than invented: one call each, the same function the GDI MOD of
+ * that target performs.
+ *
+ * It is a switch here and not a hook on the descriptor for the reason
+ * qconf_delete_one() is: these are qmaster functions and the descriptor lives in
+ * a library, which cannot link against them.
+ *
+ * The share tree needs no separate add. sge_add_sharetree() is a one-line
+ * forwarder to sge_mod_sharetree(), which creates the master list when it is
+ * missing, so for a tree "add" and "modify" are the same call - which is why
+ * @p exists only reaches the generic path.
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param monitor for monitoring qmaster threads
+ * @param desc the object type's descriptor
+ * @param object the type's gdi_object_t row, for the generic path
+ * @param ep the parsed object
+ * @param exists whether an object of that name is already stored
+ * @param answer_list receives the reason on failure
+ * @return STATUS_OK when the object was applied
+ */
+static int
+qconf_apply_one(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monitor,
+                const qconf_object_desc &desc, gdi_object_t *object, lListElem *ep,
+                const bool exists, lList **answer_list) {
+   DENTER(TOP_LAYER);
+
+   switch (desc.target) {
+      case ocs::gdi::Target::CONF_LIST:
+         /* Upserts by itself, which is why "-aconf" and "-mconf" are one
+          * operation in the client (CS-2311) and why the add/modify decision
+          * above does not reach it. */
+         DRETURN(sge_mod_configuration(ep, answer_list, packet->user, packet->host,
+                                       packet->gdi_session));
+
+      case ocs::gdi::Target::SC_LIST:
+         DRETURN(sge_mod_sched_configuration(packet, task, ep, answer_list, packet->user,
+                                             packet->host));
+
+      case ocs::gdi::Target::STN_LIST:
+         DRETURN(sge_mod_sharetree(packet, task, ep,
+                                   ocs::DataStore::get_master_list_rw(SGE_TYPE_SHARETREE),
+                                   answer_list, packet->user, packet->host));
+
+      default:
+         /* add == 0 modifies and fails when the object is gone, add == 1 adds
+          * and fails when it is already there - sge_gdi_add_mod_generic()
+          * enforces both against the list it is about to change. */
+         DRETURN(sge_gdi_add_mod_generic(packet, task, answer_list, ep, exists ? 0 : 1,
+                                         object, packet->user, packet->host,
+                                         ocs::gdi::Command::MOD_PROCEDURE, desc.sub_cmd,
+                                         nullptr, monitor));
+   }
+}
+
 /** @brief Apply a set of objects, parsing each one first, see the header
  * @param packet the client request
  * @param task the GDI task being answered
@@ -139,6 +221,36 @@ qconf_write_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monit
    gdi_object_t *object = get_gdi_object(desc.target);
    if (object == nullptr) {
       answer_list_add(answer_list, MSG_UNKNOWN_OBJECT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
+      DRETURN(false);
+   }
+
+   /* A name on the request gives what the text holds its identity, for the one
+    * type whose text does not carry it (see QConfWriteParameter::set_name). A
+    * text holding a list would have every object in it renamed to that one name,
+    * so the pair is a request error rather than something to interpret. */
+   if (!parameter.get_name().empty() && parameter.is_list()) {
+      answer_list_add(answer_list, MSG_QCONF_WRITENAMEWITHLIST, STATUS_EUNKNOWN,
+                      ANSWER_QUALITY_ERROR);
+      DRETURN(false);
+   }
+
+   /* The key field and the master list come from the descriptor, not from the
+    * gdi_object_t row. That row carries both for the types whose modify is a
+    * hook on it, and empties - key 0, SGE_TYPE_NONE - for the three whose
+    * modify is a special case in sge_c_gdi_mod() instead: CONF, SC and STN. So
+    * it knows these two facts for every type that never needed them. Taken from
+    * the descriptor, a key of 0 cannot silently turn the existence check, the
+    * name collection and the leftover report into no-ops (CS-2823). */
+   const int key_nm = desc.name_nm;
+   const sge_object_type list_type = qconf_master_list_type(obj);
+   if (list_type == SGE_TYPE_NONE) {
+      /* A guard, not a reachable path: the one type without a master list is
+       * the event clients, and they are read only. It exists so that a new
+       * singleton reaches this as an error rather than writing into list zero.
+       * Reported like the dispatch's other internal errors, without a
+       * catalogue entry. */
+      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                              "no master list for the object type in " SFQ, __func__);
       DRETURN(false);
    }
 
@@ -280,7 +392,7 @@ qconf_write_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monit
             for_each_ep_lv(name_elem, wanted) {
                const char *name = lGetString(name_elem, ST_name);
                lListElem *found = (name != nullptr)
-                                  ? lGetElemStrRW(lp, object->key_nm, name) : nullptr;
+                                  ? lGetElemStrRW(lp, key_nm, name) : nullptr;
                if (found == nullptr) {
                   answer_list_add_sprintf(answer_list, STATUS_EEXIST, ANSWER_QUALITY_ERROR,
                                           MSG_RQS_NOTFOUNDINFILE_SS,
@@ -356,36 +468,44 @@ qconf_write_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monit
     * and `elements` counts the objects, which is what a summary over resource
     * quota sets prints. For every other type each item is one object and the
     * two are equal. */
-   const lList *master_list = *ocs::DataStore::get_master_list(object->list_type);
+   const lList *master_list = *ocs::DataStore::get_master_list(list_type);
    bool all_ok = (result->parse_failed == 0);
    std::vector<std::string> parsed_names;   ///< what the texts held, for the report below
    for (auto &item: parsed) {
       size_t applied_here = 0;
 
       for (lListElem *ep: item.elements) {
-         const char *name = qconf_get_name(ep, object->key_nm);
+         /* Named by the request, not by the text: the configuration's host is
+          * the argument of "-mconf" or the basename of the "-Mconf" file, and
+          * its text renders the host as a comment only. Set before the object is
+          * read back, so everything below - the existence check, the messages -
+          * sees the name the caller gave. */
+         if (!parameter.get_name().empty() && key_nm != NoName) {
+            qconf_set_name(ep, key_nm, parameter.get_name().c_str());
+         }
+         const char *name = qconf_key_of(ep, key_nm);
          if (name != nullptr) {
             parsed_names.emplace_back(name);
          }
-         const bool exists = qconf_name_in_list(master_list, desc.descr, object->key_nm, name);
+         /* For a type addressed by name the question is whether that name is
+          * stored; for a singleton there is no name to ask about and the answer
+          * is a property of the store itself - the scheduler configuration and
+          * the share tree exist, or the type is empty. Deciding it from the
+          * master list here is what the client used to decide from its bulk
+          * name GET, and it is now decided where the list actually is. */
+         const bool exists = (key_nm == NoName)
+                             ? (lGetNumberOfElem(master_list) > 0)
+                             : qconf_name_in_list(master_list, desc.descr, key_nm, name);
 
          if (parameter.is_dry()) {
             answer_list_add_sprintf(answer_list, STATUS_OK, ANSWER_QUALITY_INFO,
                                     exists ? MSG_QCONF_WRITEWOULDMODIFY_S : MSG_QCONF_WRITEWOULDADD_S,
-                                    name != nullptr ? name : "");
+                                    qconf_object_label(desc, name));
             applied_here++;
             result->elements++;
          } else {
-            /* add == 0 modifies and fails when the object is gone, add == 1 adds
-             * and fails when it is already there - sge_gdi_add_mod_generic()
-             * enforces both against the list it is about to change. Deciding it
-             * from the master list here is what the client used to decide from
-             * its bulk name GET, and it is now decided where the list actually
-             * is. */
-            const int ret = sge_gdi_add_mod_generic(packet, task, answer_list, ep, exists ? 0 : 1,
-                                                    object, packet->user, packet->host,
-                                                    ocs::gdi::Command::MOD_PROCEDURE, desc.sub_cmd,
-                                                    nullptr, monitor);
+            const int ret = qconf_apply_one(packet, task, monitor, desc, object, ep, exists,
+                                            answer_list);
             if (ret == STATUS_OK) {
                applied_here++;
                result->elements++;
@@ -429,9 +549,9 @@ qconf_write_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monit
       dstring kept = DSTRING_INIT;
       int num_kept = 0;
 
-      for (const lListElem *ep = lFirst(*ocs::DataStore::get_master_list(object->list_type));
+      for (const lListElem *ep = lFirst(*ocs::DataStore::get_master_list(list_type));
            ep != nullptr; ep = lNext(ep)) {
-         const char *name = qconf_get_name(ep, object->key_nm);
+         const char *name = qconf_key_of(ep, key_nm);
          if (name == nullptr) {
             continue;
          }
@@ -493,9 +613,9 @@ qconf_write_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monit
        !parameter.is_dry() && result->parse_failed == 0) {
       lList *in_scope = nullptr;
       if (parameter.get_select().empty()) {
-         for (const lListElem *ep = lFirst(*ocs::DataStore::get_master_list(object->list_type));
+         for (const lListElem *ep = lFirst(*ocs::DataStore::get_master_list(list_type));
               ep != nullptr; ep = lNext(ep)) {
-            lAddElemStr(&in_scope, ST_name, qconf_get_name(ep, object->key_nm), ST_Type);
+            lAddElemStr(&in_scope, ST_name, qconf_key_of(ep, key_nm), ST_Type);
          }
       } else {
          lString2List(parameter.get_select().c_str(), &in_scope, ST_Type, ST_name, ", ");
@@ -514,8 +634,8 @@ qconf_write_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monit
             }
          }
          if (!in_text &&
-             qconf_name_in_list(*ocs::DataStore::get_master_list(object->list_type),
-                                desc.descr, object->key_nm, name)) {
+             qconf_name_in_list(*ocs::DataStore::get_master_list(list_type),
+                                desc.descr, key_nm, name)) {
             answer_list_add_sprintf(answer_list, STATUS_OK, ANSWER_QUALITY_INFO,
                                     MSG_QCONF_WRITENOTREMOVED_S, name);
          }

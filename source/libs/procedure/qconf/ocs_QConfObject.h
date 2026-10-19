@@ -39,6 +39,8 @@
 #include "gdi/ocs_gdi_Target.h"
 #include "gdi/ocs_gdi_Command.h"
 
+#include "sgeobj/sge_object.h"
+
 #include "spool/sge_spooling_utilities.h"
 #include "spool/flatfile/sge_flatfile.h"
 
@@ -62,9 +64,9 @@ typedef spooling_field *(*qconf_build_fields_fn)(spool_flatfile_format format, b
  * keeps the views taking nothing but a qconf_object_desc.
  *
  * Values are **appended, never inserted**: qconf_desc() is a plain index into
- * qconf_object_table, and qconf_master_list in ocs_QConfModelServer.cc is a
- * second array on the same index. Neither carries a name to grep for, so an
- * insertion shifts every row below it in silence. */
+ * qconf_object_table, and qconf_master_list_type() indexes a second array on the
+ * same index. Neither carries a name to grep for, so an insertion shifts every
+ * row below it in silence. */
 enum class QConfObj {
    CAL, CK, CE, EH, HGRP, PE, PR, CQ, RL, RQS, US, UU, STN, SC, CONF, EV, CAT,
    AH, SH, MGR, OP
@@ -221,9 +223,41 @@ struct qconf_object_desc {
  */
 const qconf_object_desc &qconf_desc(QConfObj o);
 
+/** @brief Which of qmaster's master lists holds the objects of a type.
+ *
+ * The write path cannot take this from gdi_object_t: CONF and SC carry
+ * SGE_TYPE_NONE there and STN is one of the targets whose modify is a special
+ * case in sge_c_gdi_mod() rather than a hook on the row, so that table knows the
+ * list for the types that never needed it and not for the three that do. The
+ * fact is a property of the object type, so it lives next to the descriptor and
+ * both paths ask here (CS-2823).
+ *
+ * @param o the object type
+ * @return its master list type, SGE_TYPE_NONE for an object that is not held in
+ *         one - today only the event clients, which the event master builds on
+ *         demand
+ */
+sge_object_type qconf_master_list_type(QConfObj o);
+
+/** @brief What to call an object in a message
+ *
+ * A named object is called by its name; a singleton has none, and a message
+ * about an empty name says less than nothing, so it is called by its type. Both
+ * the client and qmaster need the same wording - the client for the refusals of
+ * "-m<obj>", qmaster for the dry-run preview - so the answer lives with the
+ * descriptor it is read from rather than once per caller (CS-2823).
+ *
+ * @param desc the object type's descriptor
+ * @param name the object's name, or nullptr for a singleton
+ * @return a label for a message, never nullptr
+ */
+const char *qconf_object_label(const qconf_object_desc &desc, const char *name);
+
 bool qconf_name_is_host(const lDescr *descr, int name_nm);
 
 const char *qconf_get_name(const lListElem *ep, int name_nm);
+
+void qconf_set_name(lListElem *ep, int name_nm, const char *name);
 
 bool qconf_name_in_list(const lList *names, const lDescr *descr, int name_nm, const char *name);
 

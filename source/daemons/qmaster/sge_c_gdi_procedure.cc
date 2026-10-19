@@ -910,14 +910,19 @@ namespace {
        * One row per type, which is the point of templating the traits. The
        * eight types on the CS-2797 editor engine came first, the three whose
        * editor was written by hand followed when their read side had reached
-       * the descriptor table (CS-2823); the list types and the singletons are
-       * the remainder. */
+       * the descriptor table (CS-2823), then the list types, and last the
+       * configuration and the two singletons - the three that gdi_object_t does
+       * not describe. A missing row here is a write refused as addressed
+       * elsewhere, which is how the resource quota row was found to be missing:
+       * by hand, after everything compiled. */
       {to_string_view(QCONF), ocs::QConfWriteParameter::OBJECT_WRITE,
        modifies(ocs::gdi::Target::CAL_LIST), &run_procedure<QConfWriteTraits<QConfObj::CAL>>},
       {to_string_view(QCONF), ocs::QConfWriteParameter::OBJECT_WRITE,
        modifies(ocs::gdi::Target::CE_LIST), &run_procedure<QConfWriteTraits<QConfObj::CE>>},
       {to_string_view(QCONF), ocs::QConfWriteParameter::OBJECT_WRITE,
        modifies(ocs::gdi::Target::CK_LIST), &run_procedure<QConfWriteTraits<QConfObj::CK>>},
+      {to_string_view(QCONF), ocs::QConfWriteParameter::OBJECT_WRITE,
+       modifies(ocs::gdi::Target::CONF_LIST), &run_procedure<QConfWriteTraits<QConfObj::CONF>>},
       {to_string_view(QCONF), ocs::QConfWriteParameter::OBJECT_WRITE,
        modifies(ocs::gdi::Target::CQ_LIST), &run_procedure<QConfWriteTraits<QConfObj::CQ>>},
       {to_string_view(QCONF), ocs::QConfWriteParameter::OBJECT_WRITE,
@@ -932,6 +937,10 @@ namespace {
        modifies(ocs::gdi::Target::RL_LIST), &run_procedure<QConfWriteTraits<QConfObj::RL>>},
       {to_string_view(QCONF), ocs::QConfWriteParameter::OBJECT_WRITE,
        modifies(ocs::gdi::Target::RQS_LIST), &run_procedure<QConfWriteTraits<QConfObj::RQS>>},
+      {to_string_view(QCONF), ocs::QConfWriteParameter::OBJECT_WRITE,
+       modifies(ocs::gdi::Target::SC_LIST), &run_procedure<QConfWriteTraits<QConfObj::SC>>},
+      {to_string_view(QCONF), ocs::QConfWriteParameter::OBJECT_WRITE,
+       modifies(ocs::gdi::Target::STN_LIST), &run_procedure<QConfWriteTraits<QConfObj::STN>>},
       {to_string_view(QCONF), ocs::QConfWriteParameter::OBJECT_WRITE,
        modifies(ocs::gdi::Target::US_LIST), &run_procedure<QConfWriteTraits<QConfObj::US>>},
       {to_string_view(QCONF), ocs::QConfWriteParameter::OBJECT_WRITE,

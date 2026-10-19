@@ -71,6 +71,7 @@ namespace ocs {
       static constexpr auto OBJECT_SET = "object_set";      ///< The items, as VA_variable/VA_value pairs
       static constexpr auto WRITE_MODE = "write_mode";      ///< The batch policy, a mask of MODE_*
       static constexpr auto OBJECT_SELECT = "object_select";///< Which objects of a list item to write
+      static constexpr auto OBJECT_NAME = "object_name";    ///< The name to give what the text holds
 
       /* The policies qconf already has, with the meaning they already have -
        * see the design note. MODE_STRICT is parse level, as -strict is today:
@@ -125,6 +126,7 @@ namespace ocs {
       lList *items_ = nullptr;        ///< VA_Type: VA_variable the label, VA_value the text
       uint32_t mode_ = MODE_NONE;     ///< mask of MODE_*
       std::string select_;            ///< the names of get_select(), empty for all of them
+      std::string name_;              ///< the name of set_name(), empty when the text carries it
 
    public:
       /** @brief Build the parameters on the client side
@@ -180,6 +182,27 @@ namespace ocs {
        * @param names comma or space separated object names, empty for all of them
        */
       void set_select(const std::string &names) { select_ = names; }
+
+      /** @brief Name what the text holds, for a type whose text does not (CS-2823)
+       *
+       * A configuration is the one object whose name is not part of its text:
+       * "qconf -sconf <host>" renders the host as a *comment* (read.name_header)
+       * and the writer sets CONF_name from the argument afterwards - the host
+       * list entry for "-mconf", the file's basename for "-Mconf". So the name
+       * is an argument of the request, like the path it came from, and it is set
+       * here rather than guessed from the text. One name per request, because
+       * the client sends one request per host and per file.
+       *
+       * Ignored by a type whose key field is NoName, and by one whose text names
+       * its objects - for those this must stay empty, or a text holding several
+       * objects would have them all renamed to the same thing.
+       *
+       * @param name the name to set on every object the texts hold
+       */
+      void set_name(const std::string &name) { name_ = name; }
+
+      /// @return the name set_name() was given, empty when the text carries it
+      [[nodiscard]] const std::string &get_name() const { return name_; }
 
       /// @return the names set_select() was given, empty when every object is to be written
       [[nodiscard]] const std::string &get_select() const { return select_; }

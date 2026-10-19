@@ -1497,10 +1497,20 @@ ocs::QConfModelBase::make_snapshot(lList **answer_list, QConfParameter &paramete
        * A row without a constructor keeps the report. The exec host is the one
        * such type among the eight: its template is an entry of its own list, so
        * neither "-me" nor "-ae" creates a host from a name. */
-      if (kind_ == QConfReadKind::SINGLE_OBJECT && parameter.get_for_edit() &&
-          desc_->read.create_template != nullptr &&
+      /* CS-2823: a singleton reaches this for the same reason. "qconf -mstree" on
+       * a cluster with no share tree opened the editor on the type's template,
+       * which is how the first tree was ever written, and the read answers that
+       * case now. A singleton has no name to pass to the constructor. Which
+       * singletons may legitimately be absent is said by the row: the share tree
+       * has a template, the scheduler configuration has none, because a cluster
+       * without one is broken rather than new. */
+      if ((kind_ == QConfReadKind::SINGLE_OBJECT || kind_ == QConfReadKind::SINGLETON) &&
+          parameter.get_for_edit() && desc_->read.create_template != nullptr &&
           (object_list_ == nullptr || lGetNumberOfElem(object_list_) == 0)) {
-         lListElem *tmpl = desc_->read.create_template(answer_list, parameter.get_operation().arg(0));
+         lListElem *tmpl = desc_->read.create_template(answer_list,
+                                                      (kind_ == QConfReadKind::SINGLETON)
+                                                      ? nullptr
+                                                      : parameter.get_operation().arg(0));
          if (tmpl == nullptr) {
             /* the constructor said why - a name it refuses must not reach the
              * editor as a half built template */

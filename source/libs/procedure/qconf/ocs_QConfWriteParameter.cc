@@ -69,6 +69,14 @@ ocs::QConfWriteParameter::get_bundle() {
       add_parameter_bundle(bundle, OBJECT_SELECT, select_list);
    }
 
+   /* likewise only when the request names what it writes, which is the one
+    * type whose text does not - see set_name() */
+   if (!name_.empty()) {
+      lList *name_list = nullptr;
+      lAddElemStr(&name_list, ST_name, name_.c_str(), ST_Type);
+      add_parameter_bundle(bundle, OBJECT_NAME, name_list);
+   }
+
    DRETURN(bundle);
 }
 
@@ -106,6 +114,13 @@ ocs::QConfWriteParameter::set_bundle(const lList *bundle) {
       const lListElem *value = lFirst(lGetList(select_param, SPP_value_list));
       const char *names = (value != nullptr) ? lGetString(value, ST_name) : nullptr;
       select_ = (names != nullptr) ? names : "";
+   }
+
+   const lListElem *name_param = lGetElemStr(bundle, SPP_name, OBJECT_NAME);
+   if (name_param != nullptr) {
+      const lListElem *value = lFirst(lGetList(name_param, SPP_value_list));
+      const char *name = (value != nullptr) ? lGetString(value, ST_name) : nullptr;
+      name_ = (name != nullptr) ? name : "";
    }
 
    DRETURN_VOID;
