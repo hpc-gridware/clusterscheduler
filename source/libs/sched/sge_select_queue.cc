@@ -1581,6 +1581,10 @@ rc_time_by_slots(sge_assignment_t *a, lList *requested, const lList *load_attr, 
          const char *name;
          double dval=0.0;
          u_long32 valtype;
+         // the default request is built in an element of our own. a->centry_list holds the
+         // complex definitions of the cluster, which other threads read while we match and
+         // which the qmaster spools - a request must not be written into one of them.
+         lListElem *default_request = nullptr;
 
          for_each_rw (attr, actual_attr) {
             name = lGetString(attr, RUE_name);
@@ -1590,19 +1594,25 @@ rc_time_by_slots(sge_assignment_t *a, lList *requested, const lList *load_attr, 
 
             /* consumable && used in this global/host/queue && not requested */
             if (!is_requested(requested, name)) {
-               lListElem *default_request = lGetElemStrRW(a->centry_list, CE_name, name);
-               const char *def_req = lGetString(default_request, CE_defaultval);
-               valtype = lGetUlong(default_request, CE_valtype);
+               const lListElem *centry = lGetElemStr(a->centry_list, CE_name, name);
+               const char *def_req = lGetString(centry, CE_defaultval);
+               valtype = lGetUlong(centry, CE_valtype);
                parse_ulong_val(&dval, nullptr, valtype, def_req, nullptr, 0);
 
                /* ignore default request if the value is 0 */
-               if ((def_req != nullptr && dval != 0.0) || lGetUlong(default_request, CE_relop) == CMPLXEXCL_OP) {
+               if ((def_req != nullptr && dval != 0.0) ||
+                   lGetUlong(centry, CE_relop) == CMPLXEXCL_OP) {
                   dstring tmp_reason;
                   char tmp_reason_buf[2048];
 
                   sge_dstring_init(&tmp_reason, tmp_reason_buf, sizeof(tmp_reason_buf));
 
-                  /* build the default request */
+                  /* build the default request - the same element serves every attribute */
+                  if (default_request == nullptr) {
+                     default_request = lCreateElem(CE_Type);
+                  }
+                  lSetString(default_request, CE_name, name);
+                  lSetUlong(default_request, CE_valtype, valtype);
                   lSetString(default_request, CE_stringval, def_req);
                   lSetDouble(default_request, CE_doubleval, dval);
 
@@ -1615,6 +1625,7 @@ rc_time_by_slots(sge_assignment_t *a, lList *requested, const lList *load_attr, 
                      /* useless to continue in these cases */
                      sge_dstring_append(reason, MSG_SCHEDD_FORDEFAULTREQUEST);
                      sge_dstring_append_dstring(reason, &tmp_reason);
+                     lFreeElem(&default_request);
                      DRETURN(ff);
                   }
 
@@ -1626,6 +1637,7 @@ rc_time_by_slots(sge_assignment_t *a, lList *requested, const lList *load_attr, 
                }
             }
          }/* end for*/
+         lFreeElem(&default_request);
       }
    } else {
       slots = 1;

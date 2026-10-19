@@ -232,6 +232,17 @@ centry_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, 
       ret = centry_elem_validate(centry, nullptr, answer_list, false);
    }
 
+   /*
+    * A complex definition carries no value - CE_stringval and CE_doubleval belong to the
+    * complex_values of a host or a queue and to a job request, which are built from the same
+    * type. Clearing them repairs a definition an earlier version left a value in, which would
+    * otherwise make every "qconf -Mc" report the entry as modified.
+    */
+   if (ret) {
+      lSetString(centry, CE_stringval, nullptr);
+      lSetDouble(centry, CE_doubleval, 0);
+   }
+
    if (ret) {
       DRETURN(0);
    } else {
