@@ -40,6 +40,8 @@
 
 namespace ocs::uti {
    static const int NUM_SD_BUS_RETRIES = 5; // Number of retries for sd_bus_* methods after EINTR
+   static const int NUM_SCOPE_ATTEMPTS = 10;  // attempts to move a shepherd into an inactive scope
+   static const int SCOPE_RETRY_DELAY_US = 20000; // delay between these attempts
 
 
    //================================================================================
@@ -942,6 +944,12 @@ namespace ocs::uti {
     * and returns true if the operation was successful, otherwise it sets the error_dstr with an
     * appropriate error message.
     *
+    * systemd stops the scope as soon as its last shepherd has exited. Until systemd has
+    * unloaded it, the scope still exists but is inactive: attaching to it is refused, and so is
+    * creating it again. That usually lasts only a few milliseconds, but a scope that ended as
+    * failed stays loaded until its failed state is reset. In that case the failed state is reset
+    * and the whole sequence is repeated, up to NUM_SCOPE_ATTEMPTS times.
+    *
     * @param pid The PID of the shepherd process to move
     * @param error_dstr A pointer to a dstring where error messages will be stored
     * @return true if the operation was successful, false otherwise
@@ -951,17 +959,61 @@ namespace ocs::uti {
       DENTER(TOP_LAYER);
 
       // Once the connection is gone every further call on it is futile. Fail here, without
-      // touching the socket, see classify_error(). This function calls GetUnit itself, it does
-      // not only go through the guarded helpers below.
+      // touching the socket, see classify_error(). move_shepherd_to_scope_once() calls GetUnit
+      // itself, it does not only go through the guarded helpers.
       if (!is_usable()) {
          sge_dstring_copy_string(error_dstr, MSG_SYSTEMD_CONNECTION_DEAD);
          DRETURN(false);
       }
 
-      bool ret = true;
-      bool create = false;
       std::string full_scope_name = slice_name + "-" + "shepherds.scope";
       std::string full_slice_name = slice_name + ".slice";
+
+      bool ret = false;
+      for (int attempt = 0; attempt < NUM_SCOPE_ATTEMPTS; attempt++) {
+         if (attempt > 0) {
+            DPRINTF("Systemd::move_shepherd_to_scope: scope is inactive, attempt %d\n",
+                    attempt + 1);
+            sge_dstring_clear(error_dstr);
+            reset_failed_unit(full_scope_name);
+            usleep(SCOPE_RETRY_DELAY_US);
+         }
+         bool scope_inactive = false;
+         ret = move_shepherd_to_scope_once(full_scope_name, full_slice_name, pid, scope_inactive,
+                                           error_dstr);
+         if (ret || !scope_inactive || !is_usable()) {
+            break;
+         }
+      }
+
+      DRETURN(ret);
+   }
+
+   /*!
+    * @brief Move a shepherd process to a systemd scope, single attempt
+    *
+    * Looks the scope up with GetUnit, attaches the shepherd to it if it exists and creates it
+    * otherwise. Handles the races with other shepherds and with systemd removing the scope.
+    *
+    * @param scope The name of the shepherds scope
+    * @param slice The name of the slice the scope is created in
+    * @param pid The PID of the shepherd process to move
+    * @param scope_inactive Set to true if the attempt failed only because the scope exists but is
+    *                       not active (being stopped or failed), so that a new attempt can succeed
+    * @param error_dstr A pointer to a dstring where error messages will be stored
+    * @return true if the operation was successful, false otherwise
+    */
+   bool
+   Systemd::move_shepherd_to_scope_once(const std::string &scope, const std::string &slice,
+                                        pid_t pid, bool &scope_inactive,
+                                        dstring *error_dstr) const {
+      DENTER(TOP_LAYER);
+
+      bool ret = true;
+      bool create = false;
+      const std::string &full_scope_name = scope;
+      const std::string &full_slice_name = slice;
+      scope_inactive = false;
 
       bool retry_on_interrupt = true;        // retry on EINTR
       int retries = 0;
@@ -1023,12 +1075,13 @@ namespace ocs::uti {
          bool scope_not_exists = false;
          ret = attach_pid_to_scope(full_scope_name, pid, scope_not_exists, error_dstr);
          if (!ret && scope_not_exists) {
-            // The scope vanished between GetUnit and AttachProcessesToUnit,
-            // we have to create it again.
+            // The scope vanished between GetUnit and AttachProcessesToUnit, or systemd is
+            // stopping it: we have to create it again.
 
             // Clear dstring as we handle the error.
             sge_dstring_clear(error_dstr);
             DPRINTF("Systemd::move_shepherd_to_scope: scope no longer exists, calling StartTransientUnit\n");
+            ret = true;
             create = true;
          }
       }
@@ -1049,12 +1102,43 @@ namespace ocs::uti {
 
                bool scope_not_exists = false;
                ret = attach_pid_to_scope(full_scope_name, pid, scope_not_exists, error_dstr);
-               // if it fails here again, then there was really a problem
+               // The scope exists but cannot be attached to: systemd is stopping it, or it ended
+               // as failed. The caller resets it and tries again.
+               scope_inactive = !ret && scope_not_exists;
             }
          }
       }
 
       DRETURN(ret);
+   }
+
+   /*!
+    * @brief Reset the failed state of a unit
+    *
+    * Calls ResetFailedUnit. A failed transient unit is unloaded by this. Errors are ignored: the
+    * unit might not be failed, or it might already be gone.
+    *
+    * @param unit The name of the unit
+    */
+   void
+   Systemd::reset_failed_unit(const std::string &unit) const {
+      DENTER(TOP_LAYER);
+
+      sd_bus_message *m = nullptr;
+      sd_bus_error error = SD_BUS_ERROR_NULL;
+      int r = sd_bus_call_method_func(bus, "org.freedesktop.systemd1", // service to contact
+                                      "/org/freedesktop/systemd1",         // object path
+                                      "org.freedesktop.systemd1.Manager",  // interface name
+                                      "ResetFailedUnit",                   // method name
+                                      &error,                              // returned error
+                                      &m,                                  // reply on success
+                                      "s",                                 // input signature
+                                      unit.c_str());                       // input argument
+      DPRINTF("Systemd::reset_failed_unit: ResetFailedUnit(%s) returned %d\n", unit.c_str(), r);
+      sd_bus_message_unref_func(m);
+      sd_bus_error_free_func(&error);
+
+      DRETURN_VOID;
    }
 
    /*!
@@ -1069,11 +1153,13 @@ namespace ocs::uti {
     * Background for the scope_not_exists flag: We can run into race conditions:
     * - We call GetUnit to check if the scope exists.
     * - If it exists, we call AttachProcessesToUnit to attach the PID to the scope.
-    * - But between GetUnit and AttachProcessesToUnit, the scope might have been removed.
+    * - But between GetUnit and AttachProcessesToUnit, the scope might have been removed,
+    *   or systemd might be stopping it. The flag is set in both cases.
     *
     * @param scope The name of the systemd scope to attach the PID to
     * @param pid The PID to attach to the scope
     * @param scope_not_exists A reference to a boolean that will be set to true if the scope does not exist
+    *                         or is not active
     * @param error_dstr A pointer to a dstring where error messages will be stored
     * @return true if the operation was successful, false otherwise
     */
@@ -1109,9 +1195,13 @@ namespace ocs::uti {
                                   "",                                   //    -> subcgroup
                                   1, pid);                              // array containing one pid
          if (r < 0) {
-            if (-r == ENOENT) {
+            // A scope that systemd is stopping, or that ended as failed, still exists but refuses
+            // new processes with InvalidArgs ("Unit is not active, refusing").
+            bool inactive = -r == EINVAL && error.name != nullptr &&
+                            strcmp(error.name, SD_BUS_ERROR_INVALID_ARGS) == 0;
+            if (-r == ENOENT || inactive) {
                scope_not_exists = true;
-               DPRINTF("Systemd::attach_pid_to_scope: scope does not exist\n");
+               DPRINTF("Systemd::attach_pid_to_scope: scope does not exist or is not active\n");
                sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_CALL_SSIS, "AttachProcessesToUnit", scope.c_str(), r, error.message);
                classify_error(r, error_dstr);
                ret = false;

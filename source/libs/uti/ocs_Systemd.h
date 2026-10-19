@@ -199,6 +199,10 @@ namespace ocs::uti {
          sd_bus_slot *sd_bus_wait_for_job_subscribe(const std::string &signal, dstring *error_dstr) const;
          void sd_bus_wait_for_job_unsubscribe(sd_bus_slot **slot) const;
          bool sd_bus_wait_for_job_completion(const std::string &job_path, dstring *error_dstr) const;
+         bool move_shepherd_to_scope_once(const std::string &scope, const std::string &slice,
+                                          pid_t pid, bool &scope_inactive,
+                                          dstring *error_dstr) const;
+         void reset_failed_unit(const std::string &unit) const;
 
       public:
          Systemd();
