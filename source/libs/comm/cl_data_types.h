@@ -478,6 +478,7 @@ typedef struct cl_com_handle {
    struct timeval start_time;                  ///< When the handle was created
    struct timeval last_statistic_update_time;  ///< Service thread: when the statistics were last recalculated
    struct timeval last_message_queue_cleanup_time;   ///< Service thread: when the received queue was last swept
+   struct timeval last_trigger_work_time;      ///< CL_NO_THREAD: when the once-a-second work ran
    /** @} */
 } cl_com_handle_t;
 
