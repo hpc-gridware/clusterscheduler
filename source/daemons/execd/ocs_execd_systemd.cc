@@ -294,52 +294,6 @@ namespace ocs::execd {
       DRETURN_VOID;
    }
 
-#if 0
-   /*!
-    * @brief Get two usage values from Systemd for a specific scope.
-    *
-    * This function retrieves and sums up two usage values from Systemd for a given scope and updates the usage_list.
-    * For example, it can be used to get both IOReadBytes and IOWriteBytes for a job scope and combine them
-    * into the one USAGE_ATTR_IO value.
-    * A scaling factor can be applied to convert the values to the desired unit.
-    *
-    * @param systemd The Systemd object used to interact with the Systemd bus.
-    * @param scope The scope for which the usage values are retrieved.
-    * @param usage_list The list where the usage values will be stored.
-    * @param property1_str The first property to retrieve from Systemd (e.g., "IOReadBytes").
-    * @param property2_str The second property to retrieve from Systemd (e.g., "IOWriteBytes").
-    * @param usage_attr_str The attribute name in the usage_list (e.g., USAGE_ATTR_IO).
-    * @param factor The factor to convert the value (e.g., 1.0 for bytes).
-    */
-   static void
-   ptf_get_usage_value_from_systemd2(ocs::uti::Systemd &systemd, std::string &scope, lList *usage_list, const char *property1_str, const char *property2_str, const char *usage_attr_str, double factor) {
-      DENTER(TOP_LAYER);
-
-      lListElem *usage_elem = lGetElemStrRW(usage_list, UA_name, usage_attr_str);
-      // the usage element must already exist in the usage_list, don't create a new one
-      if (usage_elem != nullptr) {
-         // Get the usage value from systemd
-         DSTRING_STATIC(error_dstr, MAX_STRING_SIZE);
-         uint64_t value1{}, value2{};
-         std::string property = property1_str;
-         if (!systemd.sd_bus_get_property("Scope", scope, property, value1, &error_dstr)) {
-            // I18N, and the message should already contain all necessary information (?)
-            WARNING(MSG_CANNOT_TO_GET_PROPERTY_SSS, property.c_str(), scope.c_str(), sge_dstring_get_string(&error_dstr));
-         }
-         property = property2_str;
-         if (!systemd.sd_bus_get_property("Scope", scope, property, value2, &error_dstr)) {
-            // I18N, and the message should already contain all necessary information (?)
-            WARNING(MSG_CANNOT_TO_GET_PROPERTY_SSS, property.c_str(), scope.c_str(), sge_dstring_get_string(&error_dstr));
-         }
-         double usage_value = (value1 + value2) * factor;
-         lSetDouble(usage_elem, UA_value, usage_value);
-         DPRINTF("Updated usage %s: %lu + %s: %lu = %f for scope '%s'\n", property1_str, value1, property2_str, value2, usage_value, scope.c_str());
-      }
-
-      DRETURN_VOID;
-   }
-#endif
-
    /*!
     * @brief Get usage information from Systemd for all jobs, ja_tasks, and pe_tasks.
     *
@@ -428,12 +382,14 @@ namespace ocs::execd {
                               }
                            }
                         }
-                         // IO usage
-                         // @todo I don't really find information about it.
-                         //       IOReadBytes and IOWriteBytes are not shown by introspection,
-                         //       but exist e.g. on Ubuntu 24.04 according to `systemctl show <scope>`.
-                         //       The values delivered seem not to make sense.
-                         // ptf_get_usage_value_from_systemd2(systemd, scope, usage_list, "IOReadBytes", "IOWriteBytes", USAGE_ATTR_IO, 1.0);
+
+                        // No io / ioops from systemd. Those values come from the PDC, which
+                        // counts the characters a job read and wrote through its syscalls.
+                        // Systemd reports block device bytes instead (IOReadBytes and
+                        // IOWriteBytes, which exist on cgroup v2 only): nothing at all for a
+                        // job writing to a shared filesystem, and the same bytes once per
+                        // layer of a device mapper stack, because systemd sums every device
+                        // of the cgroup's io.stat. See CS-1389.
                       } else {
                         DPRINTF("==> Job is not active in systemd scope %s, state: %s\n", scope.c_str(), state.c_str());
                      }

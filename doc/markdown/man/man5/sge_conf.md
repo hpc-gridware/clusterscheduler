@@ -1146,8 +1146,8 @@ This parameter controls how xxqs_name_sxx_execd collects the online usage inform
 
 - *FALSE* : No online usage information is collected. Use with care, this also disables limit enforcement for *s_cpu*, *h_cpu*, *s_rss*, *h_rss*, *s_vmem*, and *h_vmem*.
 - *PDC* : Online usage information is collected by the PDC (Portable Data Collector) mode, even if Systemd is available.
-- *HYBRID* : Hybrid mode, where online usage information is both gathered via Systemd (if available) and the PDC. Use this mode, when your jobs are controlled by systemd, but you also want to collect usage information for jobs that is not available via Systemd, e.g., vmem, maxvmem, io, and iow.
-- *TRUE* : This is the default mode. Online usage information is collected via Systemd if the host supports Systemd and *ENABLE_SYSTEMD* is set to *TRUE* (which is the default). It is collected by the PDC (Portable Data Collector) if the host does not support Systemd or if *ENABLE_SYSTEMD* is set to *FALSE*.
+- *HYBRID* : Hybrid mode, where online usage information is both gathered via Systemd (if available) and the PDC. Use this mode, when your jobs are controlled by systemd, but you also want to collect usage information for jobs that is not available via Systemd, e.g., vmem, maxvmem, io, ioops, and iow.
+- *TRUE* : This is the default mode. Online usage information is collected via Systemd if the host supports Systemd and *ENABLE_SYSTEMD* is set to *TRUE* (which is the default). It is collected by the PDC (Portable Data Collector) if the host does not support Systemd or if *ENABLE_SYSTEMD* is set to *FALSE*. Where Systemd is used, the values it does not deliver - *vmem*, *maxvmem*, *io*, *ioops* and *iow* - stay empty; use *HYBRID* if they are needed.
 
 ***ENABLE_MEM_DETAILS***
 
