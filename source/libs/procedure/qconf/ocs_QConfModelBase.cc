@@ -319,32 +319,41 @@ ocs::QConfModelBase::get_object_where(const lDescr *descr, int key_nm, const cha
 }
 
 /**
- * @brief What an export over everything must not pick up (CS-2826)
+ * @brief Drop from an export over everything what a restore cannot create
  *
- * The exec host list holds two entries that are not hosts: `template` carries
- * the defaults a new host starts from and `global` the settings that apply to
- * all of them. Neither is an object a restore would want to create, so a
- * directory meant to be read back by `-Ae` has no business holding a file for
- * them - which is why the client left them out of its own fetch, and why the
- * filter travels with the fetch rather than staying behind.
+ * Two kinds of object are in a type's list and have no business being a file in
+ * a backup: the entries that are not objects - the exec host list's `template`
+ * and `global`, which carry defaults rather than a host (CS-2826) - and the ones
+ * the product refuses to have written: `@exec_hosts`, which no GDI write may touch
+ * at all, and `@@<queue>`, whose add is refused and whose member list the queue's
+ * own export file already carries (CS-2906).
  *
- * Which names those are is in the object table, as it was while the client
- * built this condition for its own fetch - the comparison is the one it used,
- * case-insensitive, so an exec host spelled `Global` is left out too.
+ * Which ones those are is the object table's to say, and it says it with a
+ * predicate rather than with names: what `@@` means belongs to
+ * hgroup_is_queue_group() and is not to be spelled out a second time here.
  *
- * @param desc the row of the object type
- * @return the condition, or nullptr for a type that excludes nothing; the caller frees
+ * The filter runs after the fetch and not as a condition on it, because that is
+ * the only place a predicate can be asked. The list it works on is this read's
+ * own copy either way - in qmaster lSelect() has already copied the master list.
+ *
+ * @param list   the fetched objects, filtered in place
+ * @param desc   the row of the object type
+ * @param key_nm the field holding the name
+ * @return none
  */
-static lCondition *
-get_export_exclusion(const qconf_object_desc &desc) {
-   if (desc.name_nm == NoName || desc.exclude1 == nullptr) {
-      return nullptr;
+static void
+drop_from_export(lList *list, const qconf_object_desc &desc, int key_nm) {
+   if (desc.export_exclude == nullptr || key_nm == NoName) {
+      return;
    }
-   if (desc.exclude2 != nullptr) {
-      return lWhere("%T(!(%Ic=%s || %Ic=%s))", desc.descr,
-                    desc.name_nm, desc.exclude1, desc.name_nm, desc.exclude2);
+   lListElem *ep = lFirstRW(list);
+   while (ep != nullptr) {
+      lListElem *next = lNextRW(ep);
+      if (desc.export_exclude(qconf_get_name(ep, key_nm))) {
+         lRemoveElem(list, &ep);
+      }
+      ep = next;
    }
-   return lWhere("%T(!(%Ic=%s))", desc.descr, desc.name_nm, desc.exclude1);
 }
 
 /**
@@ -1412,14 +1421,22 @@ ocs::QConfModelBase::make_snapshot(lList **answer_list, QConfParameter &paramete
     * object carries none. Without the join the editor of "-mq" would show an
     * empty host list, and saving that text would empty the real one - the read
     * of a round trip has to render what the write will parse. The name list of
-    * "-sql" fetches names only and needs nothing. */
-   const bool cqueue_in_full = (object_ == QConfObj::CQ && kind_ == QConfReadKind::SINGLE_OBJECT);
+    * "-sql" fetches names only and needs nothing.
+    *
+    * CS-2906: every read that renders the object, which is the export as well.
+    * "qconf -Sq" wrote "hostlist NONE" for every queue and re-applying such a
+    * file emptied the host list of all of them, reported success and exited 0 -
+    * in the very path a backup takes. Asking for the kind that needs no join
+    * rather than listing the two that do is what keeps the next cluster queue
+    * read from losing it again in silence. */
+   const bool cqueue_in_full = (object_ == QConfObj::CQ && kind_ != QConfReadKind::NAME_LIST);
    if (cqueue_in_full && !fetch_hgroups(answer_list)) {
       DRETURN(false);
    }
 
    lEnumeration *what;
    lCondition *where;
+   bool bulk_export = false;   /* no name given and the read feeds an export */
    if (kind_ == QConfReadKind::NAME_LIST) {
       what = get_name_what(desc_->descr, key_nm_);
       where = get_name_where(desc_->descr, key_nm_);
@@ -1437,18 +1454,15 @@ ocs::QConfModelBase::make_snapshot(lList **answer_list, QConfParameter &paramete
        * none at all - and none means every object of the type. */
       what = lWhat("%T(ALL)", desc_->descr);
       where = get_names_where(desc_->descr, key_nm_, parameter.get_operation());
-      if (where == nullptr && parameter.get_for_export()) {
-         /* CS-2826: an export over everything leaves out the pseudo objects that
-          * are not objects - the exec host list's "template" and "global", which
-          * carry defaults rather than a host. The client filtered them out of
-          * its own fetch; the filter travels with the fetch.
-          *
-          * Only here, where no name was given: the user asking for one of them
-          * by name gets it, because a name is an instruction and not a sweep.
-          * That is also the boundary the refusal of a reduced export needs - a
-          * single export is a choice, a bulk export is a backup. */
-         where = get_export_exclusion(*desc_);
-      }
+      /* CS-2826: an export over everything leaves out what a restore cannot
+       * create, see drop_from_export() - which runs below, once the objects are
+       * there, because a predicate cannot be asked inside a condition.
+       *
+       * Only where no name was given: the user asking for one of those by name
+       * gets it, because a name is an instruction and not a sweep. That is also
+       * the boundary the refusal of a reduced export needs - a single export is
+       * a choice, a bulk export is a backup. */
+      bulk_export = (where == nullptr && parameter.get_for_export());
    } else if (kind_ == QConfReadKind::MEMBER_LIST) {
       /* One named object and its sublist. The name comes from the descriptor,
        * not from the command line - the switch itself says which reserved
@@ -1464,6 +1478,10 @@ ocs::QConfModelBase::make_snapshot(lList **answer_list, QConfParameter &paramete
    lFreeWhere(&where);
    if (!ok) {
       DRETURN(false);
+   }
+
+   if (bulk_export) {
+      drop_from_export(object_list_, *desc_, key_nm_);
    }
 
    if (cqueue_in_full) {

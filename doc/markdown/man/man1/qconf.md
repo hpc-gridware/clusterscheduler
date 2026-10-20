@@ -241,6 +241,14 @@ written to a file of that name in the current directory. Each exported file uses
 `-A<obj>`/`-M<obj>` reads, so it re-imports unchanged; for example `qconf -Sq queues/` followed by `qconf -Aq
 queues/` round-trips every queue.
 
+In directory mode only objects a re-import can create are written, so three kinds of entry are left out: the
+execution host list's `template` and `global`, which carry defaults rather than a host; the host group
+`@exec_hosts`, which xxqs_name_sxx_qmaster(8) derives from the execution host list and which no write may change;
+and the host groups named `@@`*queue*, which carry the host list of their cluster queue and are created and
+removed with it - that host list is exported with the queue, in the queue's own file. Naming one of them
+explicitly still exports it, for example `qconf -Shgrp @exec_hosts`: a name is a request for that one object and
+not a sweep.
+
 By default an existing destination file is left untouched and skipped with a warning; use `-f` to overwrite. Under
 `-fmt json` each file is written as JSON with a `.json` suffix. An object whose name is not a valid file name (for
 example, one containing `/` or beginning with `-`), or two objects in a directory export whose names differ only in

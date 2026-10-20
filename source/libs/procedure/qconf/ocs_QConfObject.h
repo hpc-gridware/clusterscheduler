@@ -211,8 +211,7 @@ struct qconf_object_desc {
    bool as_list;                                     ///< file holds a list, not one object
    bool parse_values;                                ///< parse attribute values when reading a file
    bool is_root;                                     ///< singleton export: object is the root
-   const char *exclude1;                             ///< export: skip this name
-   const char *exclude2;                             ///< export: skip this name too
+   bool (*export_exclude)(const char *name);         ///< bulk export: leave this object out
    qconf_read_desc read;                             ///< the read path additions (CS-2796)
    qconf_write_desc write;                           ///< the write path additions (CS-2823)
 };
