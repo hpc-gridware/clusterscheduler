@@ -402,6 +402,46 @@ execd_get_wallclock_limit(const char *qualified_hostname, const lList *gdil_list
    return ret;
 }
 
+/** @brief Fix the wallclock limits of an array task which has just been started
+ *
+ * The limits are absolute points in time: the earliest of the h_rt and the s_rt of the queue
+ * instances of this host which the task was granted, and of the limit the job requested itself.
+ * They have to be computed from the time the task was started. Computing them later grants the
+ * task whatever time has passed since on top of its limit, and after a restart of the daemon,
+ * which recomputes a limit it does not find in the spool file, the time the daemon was down
+ * would be granted as well.
+ *
+ * @param jep the job
+ * @param jatep the array task of the job which has been started
+ * @param qualified_hostname the name of this host, as the granted destination list names it
+ * @param start_time the time the array task was started
+ */
+static void
+execd_set_wallclock_limits(lListElem *jep, const lListElem *jatep, const char *qualified_hostname,
+                           uint64_t start_time) {
+   DENTER(TOP_LAYER);
+
+   const lList *gdil_list = lGetList(jatep, JAT_granted_destin_identifier_list);
+   lSetUlong64(jep, JB_soft_wallclock_gmt,
+               execd_get_wallclock_limit(qualified_hostname, gdil_list, QU_s_rt, start_time));
+   lSetUlong64(jep, JB_hard_wallclock_gmt,
+               execd_get_wallclock_limit(qualified_hostname, gdil_list, QU_h_rt, start_time));
+
+   uint64_t task_wallclock_limit = lGetUlong64(jatep, JAT_wallclock_limit);
+   if (task_wallclock_limit != 0) {
+      lSetUlong64(jep, JB_hard_wallclock_gmt,
+                  std::min(lGetUlong64(jep, JB_hard_wallclock_gmt),
+                           duration_add_offset(start_time, task_wallclock_limit)));
+   }
+
+   DPRINTF("job " sge_u32 "." sge_u32 " started at " sge_u64 ": soft wallclock " sge_u64
+           ", hard wallclock " sge_u64 "\n", lGetUlong(jep, JB_job_number),
+           lGetUlong(jatep, JAT_task_number), start_time,
+           lGetUlong64(jep, JB_soft_wallclock_gmt), lGetUlong64(jep, JB_hard_wallclock_gmt));
+
+   DRETURN_VOID;
+}
+
 static void
 update_wallclock_usage(uint64_t now, const lListElem *job, const lListElem *ja_task) {
    uint32_t job_id = lGetUlong(job, JB_job_number);
@@ -562,23 +602,18 @@ int do_ck_to_do(bool is_qmaster_down) {
             //       with a timeout of 1s, which should be shortened
             update_wallclock_usage(now, jep, jatep);
 
-            // limit has not yet been set
-            // @todo shouldn't we better do this already when receiving / starting a new job?
+            // the limits are fixed when the task is started, so normally there is nothing to do
+            // here. A task of a simulated job never went through the start, and a task started by
+            // an older version of the daemon may have been spooled without them, so fall back to
+            // the start time of the task, which is spooled.
             if (lGetUlong64(jep, JB_hard_wallclock_gmt) == 0) {
-               uint64_t task_wallclock_limit = lGetUlong64(jatep, JAT_wallclock_limit);
-               const lList *gdil_list = lGetList(jatep, JAT_granted_destin_identifier_list);
-
-               lSetUlong64(jep, JB_soft_wallclock_gmt,
-                           execd_get_wallclock_limit(qualified_hostname, gdil_list, QU_s_rt, now));
-               lSetUlong64(jep, JB_hard_wallclock_gmt,
-                           execd_get_wallclock_limit(qualified_hostname, gdil_list, QU_h_rt, now));
-
-               if (task_wallclock_limit != 0) {
-                  lSetUlong64(jep, JB_hard_wallclock_gmt,
-                              std::min(lGetUlong64(jep, JB_hard_wallclock_gmt), duration_add_offset(now, task_wallclock_limit)));
+               uint64_t start_time = lGetUlong64(jatep, JAT_start_time);
+               if (start_time == 0) {
+                  start_time = now;
                }
+               execd_set_wallclock_limits(jep, jatep, qualified_hostname, start_time);
                if (!mconf_get_simulate_jobs()) {
-                  job_write_spool_file(jep, lGetUlong(jatep, JAT_task_number), 
+                  job_write_spool_file(jep, lGetUlong(jatep, JAT_task_number),
                                        nullptr, SPOOL_WITHIN_EXECD);
                }
             }
@@ -881,6 +916,10 @@ static int exec_job_or_task(lListElem *jep, lListElem *jatep, lListElem *petep) 
       lSetUlong(petep, PET_pid, pid);
    } else {
       lSetUlong(jatep, JAT_pid, pid);
+
+      // the wallclock limits have to be measured from the start of the task. sge_start_jobs()
+      // spools the job as soon as this function returns, so a restart of the daemon finds them.
+      execd_set_wallclock_limits(jep, jatep, qualified_hostname, now);
    }
 
    DPRINTF("***EXECING " sge_u32 "." sge_u32 " on %s (tid = %s) (pid = %d)\n",
