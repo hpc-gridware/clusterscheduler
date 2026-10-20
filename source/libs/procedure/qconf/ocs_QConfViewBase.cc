@@ -31,6 +31,30 @@
 
 #include "ocs_QConfViewBase.h"
 
+/**
+ * @brief Pick the field list a read renders with
+ *
+ * A type shows what it shows and writes what it writes, and for one type those
+ * differ: `-se` displays the runtime `load_values` and `processors`, which no
+ * write accepts. A read whose text is going to an editor therefore renders the
+ * write list, so that what comes back parses - see QConfParameter::get_for_edit().
+ *
+ * An export renders the same list for the same reason: its files are read back
+ * by `-A<obj>`, so a text it cannot parse is a backup that cannot be restored
+ * (CS-2826).
+ *
+ * @param desc       the row of the object type
+ * @param round_trip whether the text will be read back, by an editor or an import
+ * @return the provider of the field list to render with
+ */
+static qconf_build_fields_fn
+qconf_view_fields(const qconf_object_desc &desc, const bool round_trip) {
+   if (desc.read.fields != nullptr && !round_trip) {
+      return desc.read.fields;
+   }
+   return desc.build_fields;
+}
+
 /** @brief Write several objects of one type (CS-2819)
  *
  * Two shapes, and which one a type takes is in its descriptor rather than in the
@@ -43,26 +67,6 @@
  * @param list the objects, in the order they are to appear
  * @param desc the descriptor of their type
  */
-/**
- * @brief Pick the field list a read renders with
- *
- * A type shows what it shows and writes what it writes, and for one type those
- * differ: `-se` displays the runtime `load_values` and `processors`, which no
- * write accepts. A read whose text is going to an editor therefore renders the
- * write list, so that what comes back parses - see QConfParameter::get_for_edit().
- *
- * @param desc     the row of the object type
- * @param for_edit whether the text will be written back
- * @return the provider of the field list to render with
- */
-static qconf_build_fields_fn
-qconf_view_fields(const qconf_object_desc &desc, const bool for_edit) {
-   if (desc.read.fields != nullptr && !for_edit) {
-      return desc.read.fields;
-   }
-   return desc.build_fields;
-}
-
 void
 ocs::QConfViewBase::show_object_list(std::ostream &os, const lList *list,
                                      const qconf_object_desc &desc) {
@@ -71,7 +75,7 @@ ocs::QConfViewBase::show_object_list(std::ostream &os, const lList *list,
    const spool_flatfile_format format =
       (output_format_ == ProcedureParameter::OutputFormat::JSON) ? SP_FORM_JSON : SP_FORM_ASCII;
 
-   const qconf_build_fields_fn provider = qconf_view_fields(desc, for_edit_);
+   const qconf_build_fields_fn provider = qconf_view_fields(desc, for_edit_ || for_export_);
    bool owned = false;
    spooling_field *fields = provider(format, &owned);
 
@@ -131,12 +135,18 @@ ocs::QConfViewBase::show_object(std::ostream &os, const lListElem *ep,
     * that the blocks of "-sconf host1,host2" can be told apart. It is a comment,
     * so it has no place in JSON - which is what CS-2313a decided when the JSON
     * form was built. */
-   if (desc.read.name_header && format != SP_FORM_JSON) {
+   /* CS-2826: and it has no place in an export file either. The header exists to
+    * tell the blocks of one *stream* apart; an export writes one file per host
+    * and names it after that host, so there is nothing left for the comment to
+    * disambiguate. Not written rather than written and ignored, because the
+    * client's own export never produced it and a migration of the fetch must not
+    * change what the files hold. */
+   if (desc.read.name_header && format != SP_FORM_JSON && !for_export_) {
       const char *name = (desc.name_nm != NoName) ? lGetHost(ep, desc.name_nm) : nullptr;
       os << "#" << ((name != nullptr) ? name : "") << ":\n";
    }
 
-   const qconf_build_fields_fn provider = qconf_view_fields(desc, for_edit_);
+   const qconf_build_fields_fn provider = qconf_view_fields(desc, for_edit_ || for_export_);
    bool owned = false;
    spooling_field *fields = provider(format, &owned);
 

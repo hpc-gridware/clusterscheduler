@@ -46,6 +46,7 @@
 #include <ostream>
 #include <fnmatch.h>
 #include <dirent.h>
+#include <unistd.h>
 
 #include "uti/ocs_Pattern.h"
 #include "uti/sge_dstring.h"
@@ -82,6 +83,7 @@
 #include "sgeobj/sge_href.h"
 #include "sgeobj/sge_qinstance_state.h"
 #include "sgeobj/sge_utility.h"
+#include "sgeobj/sge_var.h"
 
 #include "spool/flatfile/sge_flatfile.h"
 #include "spool/flatfile/ocs_spool_json.h"   /* CS-2313a: ocs_json_value_format_opt, name-list writer */
@@ -692,11 +694,92 @@ qconf_delete_path(std::ostream &os, const qconf_object_desc &d, spooling_field *
  */
 
 /**
+ * @brief Run one export read as a stored procedure (CS-2826)
+ *
+ * The fetch and the rendering are qmaster's: the request names the export
+ * switch, the read procedure resolves it to the object type through the same
+ * table every other read uses, and the response carries one rendered text per
+ * object together with the name its file is called after.
+ *
+ * Two things are refused here rather than attempted.
+ *
+ * The client execution context, because it has no reduction channel - a plain
+ * GET returns the whole object and so reports "not reduced" whatever the caller
+ * is allowed to see. That is the same reason the six modifying switches of
+ * CS-2825 decline it, and it holds more strongly for an export: its files are
+ * what a restore reads back, so a part of an object written as the whole of it
+ * is a backup that silently drops what it could not see.
+ *
+ * A reduced answer, for the same reason, and before a single file is written.
+ * The whole export is refused rather than the objects that were reduced,
+ * because a directory holding some objects in full and others in part is worse
+ * than no directory: nothing in it says which is which.
+ *
+ * @param param   the invocation, whose operation is set for the call
+ * @param sw      the export switch, named in the refusals
+ * @param name    the object to export, nullptr for the run over everything
+ * @param label   what the refusal calls the target - the name or the directory
+ * @param model   the caller's model; it owns the response the pairs live in
+ * @param objects receives the name/text pairs, on success only
+ * @return 0 when @p objects was filled, 1 when the export must not go ahead
+ */
+static int
+qconf_export_procedure(ocs::QConfParameterClient &param, const char *sw, const char *name,
+                       const char *label, ocs::ProcedureModel &model, const lList **objects) {
+   DENTER(TOP_LAYER);
+
+   if (param.get_exec_context() != ocs::ProcedureParameter::ExecContext::SERVER) {
+      ERROR(MSG_QCONF_MODNEEDSSERVERCTX_S, sw);
+      DRETURN(1);
+   }
+
+   qconf_op op;
+   op.token = sw;
+   if (name != nullptr) {
+      op.args.emplace_back(name);
+   }
+   param.set_operation(op);
+   param.set_sub_procedure_name(ocs::QConfParameter::OBJECT_EXPORT);
+   param.set_for_export(true);
+
+   lList *alp = nullptr;
+   const bool ok = model.make_snapshot(&alp, param);
+
+   param.set_for_export(false);
+   param.set_sub_procedure_name("");
+
+   if (!ok) {
+      answer_list_output(&alp);
+      lFreeList(&alp);
+      DRETURN(1);
+   }
+   lFreeList(&alp);
+
+   if (model.get_reduction() != ocs::ProcedureParameter::REDUCTION_NONE) {
+      ERROR(MSG_QCONF_REDUCEDNOTEXPORTABLE_SS, sw, label);
+      DRETURN(1);
+   }
+
+   /* The entry being absent is not an empty export - it is a response that never
+    * answered the question, and reporting "0 objects exported" for it would hand
+    * back a successful exit code for a backup that did not happen. */
+   if (!model.get_export_objects(objects)) {
+      ERROR(MSG_QCONF_EXPORTNORESULT_S, sw);
+      DRETURN(1);
+   }
+
+   DRETURN(0);
+}
+
+/**
  * @brief True if @p name is safe to use verbatim as an export file name (R5/KTD7).
  *
  * Rejects empty, ".", "..", a name containing '/', and a name beginning with '-'
  * (which would be reparsed as an option on re-import). Never sanitizes - an unsafe
  * name is reported as an error for that object.
+ *
+ * @param name the object name
+ * @return true when the name may be used as a file name
  */
 static bool
 qconf_name_is_fs_safe(const char *name) {
@@ -715,77 +798,61 @@ qconf_name_is_fs_safe(const char *name) {
    return true;
 }
 
-/** @brief Provider of an object type's IMPORT field list for export (KTD2/KTD8).
- *
- *  Returns the field list to write with and sets *owned to true when the engine must
- *  free it afterwards (a dynamically built list, e.g. exechost/project/user) or false
- *  for a shared static table (e.g. CQ_fields). The format lets sharetree pick its
- *  JSON vs ASCII field list. */
-
 /**
- * @brief Write one object element to @p dest as a re-importable flatfile (KTD4).
+ * @brief Write one exported object's text to its file (KTD4).
  *
  * Honors -f: an existing destination is skipped with a warning (non-fatal) unless
- * force is set, in which case it is unlinked first because COPY mode does not
- * truncate. The content is written to a tmp file (the only path-less flatfile
- * destination) then relocated with rename(), falling back to
- * sge_copy_append(src, dst, COPY) + unlink(src) across filesystems.
+ * force is set. The text goes to a temporary file beside the destination and is
+ * then relocated with rename(), so a reader never sees half a file and a failed
+ * write leaves the previous one in place. Beside it rather than in the system
+ * temporary directory, which is what makes the rename atomic: both names are on
+ * the one filesystem, so the cross-filesystem copy the flatfile writer's
+ * SP_DEST_TMP needed has no case left to serve.
  *
- * @param os the stream the output is written to (CS-1841)
- * @param as_list  write the element wrapped in a one-element list (rqs rule-set
- *                 framing) instead of as a bare object.
- * @param is_root  spool_flatfile_write_object is_root flag (sharetree writes the
- *                 root node; ignored when @p as_list is set).
+ * @param os   the stream the output is written to (CS-1841)
+ * @param text the file content, rendered by qmaster; nullptr is the wire form of
+ *             an empty text, because CULL packs an empty string as no string -
+ *             so it is an empty file and not a missing one
+ * @param dest the file to write
  * @return 0 on success or a (non-fatal) skip, 1 on a write/relocate failure.
  */
 static int
-qconf_export_write_one(std::ostream &os, const lListElem *ep, const spooling_field *fields,
-                       const spool_flatfile_instr *sfi, const char *json_type_name,
-                       bool as_list, bool is_root, const char *dest) {
+qconf_export_write_one(std::ostream &os, const char *text, const char *dest) {
+   if (text == nullptr) {
+      text = "";
+   }
    if (sge_is_file(dest)) {
       if (!qconf_opt_force) {
          WARNING(MSG_QCONF_EXPORTSKIPPEDEXISTS_S, dest);
          return 0;   /* -f overwrites (R4/KTD6); without it this is a non-fatal skip */
       }
-      unlink(dest);   /* COPY fallback does not O_TRUNC (KTD4) */
    }
 
-   lList *alp = nullptr;
-   char *tmp;
-   if (as_list) {
-      lList *one = lCreateList("export", lGetElemDescr(ep));
-      /* build a throwaway single-element list around a copy of ep */
-      lAppendElem(one, lCopyElem(ep));
-      tmp = (char *)spool_flatfile_write_list(&alp, one, fields, sfi, SP_DEST_TMP,
-                                              qconf_opt_format, nullptr, false);
-      lFreeList(&one);
-   } else {
-      tmp = (char *)spool_flatfile_write_object(&alp, ep, is_root, fields, sfi,
-                                                SP_DEST_TMP, qconf_opt_format,
-                                                nullptr, false, json_type_name);
-   }
-   if (tmp == nullptr || answer_list_output(&alp)) {
-      ERROR(MSG_QCONF_EXPORTWRITEFAILED_S, dest);
-      if (tmp != nullptr) {
-         unlink(tmp);
-         sge_free(&tmp);
-      }
-      lFreeList(&alp);
-      return 1;
-   }
-   lFreeList(&alp);
+   dstring tmp_name = DSTRING_INIT;
+   sge_dstring_sprintf(&tmp_name, "%s.%d.tmp", dest, static_cast<int>(getpid()));
+   const char *tmp = sge_dstring_get_string(&tmp_name);
 
    int ret = 0;
-   if (rename(tmp, dest) != 0) {
-      /* cross-filesystem rename fails with EXDEV: copy then drop the tmp source.
-       * sge_copy_append() takes (src, dst, mode) - src first (KTD4). */
-      if (sge_copy_append(tmp, dest, SGE_MODE_COPY) != 0) {
+   FILE *fp = fopen(tmp, "w");
+   if (fp == nullptr) {
+      ERROR(MSG_QCONF_EXPORTWRITEFAILED_S, dest);
+      ret = 1;
+   } else {
+      const size_t len = strlen(text);
+      /* fclose is checked as well: a write that only failed on the flush would
+       * otherwise be renamed into place as a truncated file. */
+      if ((len > 0 && fwrite(text, 1, len, fp) != len) || fclose(fp) != 0) {
          ERROR(MSG_QCONF_EXPORTWRITEFAILED_S, dest);
+         unlink(tmp);
+         ret = 1;
+      } else if (rename(tmp, dest) != 0) {
+         ERROR(MSG_QCONF_EXPORTWRITEFAILED_S, dest);
+         unlink(tmp);
          ret = 1;
       }
-      unlink(tmp);
    }
-   sge_free(&tmp);
+   sge_dstring_free(&tmp_name);
+
    if (ret == 0) {
       qconf_info(os, MSG_QCONF_EXPORTWROTE_S, dest);
    }
@@ -795,9 +862,11 @@ qconf_export_write_one(std::ostream &os, const lListElem *ep, const spooling_fie
 /**
  * @brief Build the destination path for one exported object (R3).
  *
+ * @param dest   receives the path
  * @param dir    directory in bulk mode, or nullptr in single mode (cwd).
  * @param name   object name (already FS-safe checked).
  * @param suffix ".json" under -fmt json, "" otherwise.
+ * @return none
  */
 static void
 qconf_export_dest(dstring *dest, const char *dir, const char *name, const char *suffix) {
@@ -810,86 +879,105 @@ qconf_export_dest(dstring *dest, const char *dir, const char *name, const char *
 }
 
 /**
+ * @brief Whether the export argument names a directory of many files (R1/R2).
+ *
+ * An existing directory or a trailing '/' selects the run over every object of
+ * the type; anything else is one object written to the working directory. The
+ * same disambiguation the import side makes.
+ *
+ * @param path the name|dir argument
+ * @return true for the run over everything
+ */
+static bool
+qconf_export_is_bulk(const char *path) {
+   const size_t plen = strlen(path);
+   return sge_is_directory(path) || (plen > 0 && path[plen - 1] == '/');
+}
+
+/**
+ * @brief Create the export directory if it is missing, and normalize its name.
+ *
+ * @param dir  receives the directory without a trailing '/'
+ * @param size the size of @p dir
+ * @param path the name|dir argument
+ * @return true when the directory exists afterwards
+ */
+static bool
+qconf_export_make_dir(char *dir, size_t size, const char *path) {
+   sge_strlcpy(dir, path, size);
+   const size_t dl = strlen(dir);
+   if (dl > 1 && dir[dl - 1] == '/') {
+      dir[dl - 1] = '\0';
+   }
+
+   if (!sge_is_directory(dir)) {
+      /* KTD3: 4-arg, non-recursive, exit_on_error=false */
+      if (sge_mkdir(dir, 0755, false, false) != 0 || !sge_is_directory(dir)) {
+         ERROR(MSG_QCONF_EXPORTCANTMKDIR_S, dir);
+         return false;
+      }
+   }
+   return true;
+}
+
+/**
  * @brief Export objects of one type to a file or a directory of files (R1-R5,R8).
  *
- * Directory mode (arg is an existing directory or ends with '/') exports every
- * object of the type, one file each, creating the directory if missing. Single mode
- * exports the one object named by @p path to ./<name>. The write uses @p build_fields
- * (the import field list), and per-object failures are counted and reported but do
- * not abort the run (continue-and-report, KTD9).
+ * Directory mode exports every object of the type, one file each, creating the
+ * directory if missing. Single mode exports the one object named by @p path to
+ * ./<name>. Per-object failures are counted and reported but do not abort the run
+ * (continue-and-report, KTD9).
  *
- * @param os the stream the output is written to (CS-1841)
- * @param target       GDI target list (e.g. CQ_LIST)
- * @param descr        CULL descriptor of the object type
- * @param name_nm      name attribute of the object
- * @param build_fields import-field-list provider (KTD8)
- * @param sfi          flatfile spooling instruction
- * @param json_type_name explicit JSON $id type, or nullptr to derive from content
- * @param as_list      rqs-style list framing (see qconf_export_write_one)
- * @param path         the name|dir argument
- * @param exclude1,2   bulk: object names to exclude from the GET (template/global)
+ * Since CS-2826 the objects arrive rendered: one text per object, from the read
+ * procedure, so what is left here is the file system - which name a text is
+ * written under, whether that name is usable, and whether it collides. Only the
+ * fetch and the rendering moved; every message this printed it still prints.
+ *
+ * @param os    the stream the output is written to (CS-1841)
+ * @param param the invocation, used for the export read
+ * @param sw    the export switch being served; it is also what names the object
+ *              type, which the read procedure resolves - so the client no longer
+ *              carries a descriptor for an export at all (CS-2826)
+ * @param path  the name|dir argument
  * @return the number of objects that failed to export
  */
 static int
-qconf_export_path(std::ostream &os, ocs::gdi::Target target, const lDescr *descr, int name_nm,
-                  qconf_build_fields_fn build_fields,
-                  const spool_flatfile_instr *sfi, const char *json_type_name,
-                  bool as_list, const char *path,
-                  const char *exclude1 = nullptr, const char *exclude2 = nullptr) {
+qconf_export_path(std::ostream &os, ocs::QConfParameterClient &param,
+                  const char *sw, const char *path) {
    const char *suffix = (qconf_opt_format == SP_FORM_JSON) ? ".json" : "";
-   size_t plen = strlen(path);
-   bool is_bulk = sge_is_directory(path) || (plen > 0 && path[plen - 1] == '/');
+   const bool is_bulk = qconf_export_is_bulk(path);
 
-   bool owned = false;
-   spooling_field *fields = build_fields(qconf_opt_format, &owned);
+   /* The directory is created before the read, as it was: a directory that
+    * cannot be created is reported on its own and no request is sent for it. */
+   char dir[4096] = {};
+   if (is_bulk && !qconf_export_make_dir(dir, sizeof(dir), path)) {
+      return 1;
+   }
+
+   if (!is_bulk && !qconf_name_is_fs_safe(path)) {
+      ERROR(MSG_QCONF_EXPORTUNSAFENAME_S, path);
+      return 1;
+   }
+
+   ocs::ProcedureModel model;
+   const lList *objects = nullptr;
+   if (qconf_export_procedure(param, sw, is_bulk ? nullptr : path,
+                              is_bulk ? dir : path, model, &objects) != 0) {
+      return 1;
+   }
 
    int failures = 0;
+   dstring dest = DSTRING_INIT;
 
    if (is_bulk) {
-      /* normalize the directory string (drop a single trailing '/') */
-      char dir[4096];
-      sge_strlcpy(dir, path, sizeof(dir));
-      size_t dl = strlen(dir);
-      if (dl > 1 && dir[dl - 1] == '/') {
-         dir[dl - 1] = '\0';
-      }
-
-      if (!sge_is_directory(dir)) {
-         /* KTD3: 4-arg, non-recursive, exit_on_error=false */
-         if (sge_mkdir(dir, 0755, false, false) != 0 || !sge_is_directory(dir)) {
-            ERROR(MSG_QCONF_EXPORTCANTMKDIR_S, dir);
-            if (owned) { sge_free(&fields); }
-            return 1;
-         }
-      }
-
-      /* KTD5: GET all, excluding template/global in the where clause. */
-      lCondition *where = nullptr;
-      if (exclude1 != nullptr && exclude2 != nullptr) {
-         where = lWhere("%T(!(%Ic=%s || %Ic=%s))", descr, name_nm, exclude1, name_nm, exclude2);
-      } else if (exclude1 != nullptr) {
-         where = lWhere("%T(!(%Ic=%s))", descr, name_nm, exclude1);
-      }
-      lEnumeration *what = lWhat("%T(ALL)", descr);
-      lList *lp = nullptr;
-      lList *alp = ocs::gdi::Client::sge_gdi(target, ocs::gdi::Command::GET,
-                                             ocs::gdi::SubCommand::NONE, &lp, where, what);
-      lFreeWhere(&where);
-      lFreeWhat(&what);
-      if (show_answer_list(alp) != 0) {
-         failures++;
-      }
-      lFreeList(&alp);
-
       /* R5/KTD7: case-insensitive basename collision guard across the run. The
        * seen list holds the lowercased names already used. */
       lList *seen = lCreateList("export seen", ST_Type);
       char lcbuf[1024];
-      dstring dest = DSTRING_INIT;
-      int n_total = lGetNumberOfElem(lp);
-      lListElem *ep;
-      for_each_rw (ep, lp) {
-         const char *name = qconf_get_name(ep, name_nm);
+      const int n_total = (objects != nullptr) ? lGetNumberOfElem(objects) : 0;
+
+      for_each_ep_lv(pair, objects) {
+         const char *name = lGetString(pair, VA_variable);
          if (!qconf_name_is_fs_safe(name)) {
             ERROR(MSG_QCONF_EXPORTUNSAFENAME_S, name != nullptr ? name : "");
             failures++;
@@ -905,53 +993,28 @@ qconf_export_path(std::ostream &os, ocs::gdi::Target target, const lDescr *descr
          lAddElemStr(&seen, ST_name, lcbuf, ST_Type);
 
          qconf_export_dest(&dest, dir, name, suffix);
-         failures += qconf_export_write_one(os, ep, fields, sfi, json_type_name, as_list,
-                                            false, sge_dstring_get_string(&dest));
+         failures += qconf_export_write_one(os, lGetString(pair, VA_value),
+                                            sge_dstring_get_string(&dest));
       }
-      sge_dstring_free(&dest);
       lFreeList(&seen);
-      lFreeList(&lp);
 
       qconf_info(os, MSG_QCONF_EXPORTSUMMARY_SII, dir, n_total - failures, failures);
    } else {
-      /* single object named by path -> ./<name>[.json] */
-      const char *name = path;
-      if (!qconf_name_is_fs_safe(name)) {
-         ERROR(MSG_QCONF_EXPORTUNSAFENAME_S, name);
-         if (owned) { sge_free(&fields); }
-         return 1;
-      }
-      lCondition *where = qconf_name_is_host(descr, name_nm)
-         ? lWhere("%T(%Ih=%s)", descr, name_nm, name)
-         : lWhere("%T(%I==%s)", descr, name_nm, name);
-      lEnumeration *what = lWhat("%T(ALL)", descr);
-      lList *lp = nullptr;
-      lList *alp = ocs::gdi::Client::sge_gdi(target, ocs::gdi::Command::GET,
-                                             ocs::gdi::SubCommand::NONE, &lp, where, what);
-      lFreeWhere(&where);
-      lFreeWhat(&what);
-      if (show_answer_list(alp) != 0) {
-         failures++;
-      }
-      lFreeList(&alp);
-
-      lListElem *ep = lFirstRW(lp);
-      if (ep == nullptr) {
-         ERROR(MSG_QCONF_EXPORTNOOBJECT_S, name);
+      /* Single mode keeps the spelling the user typed as the file name, the way
+       * it always did: "qconf -Sconf GLOBAL" writes GLOBAL, and that file
+       * re-imports to the same host key because the lookup folds case too. */
+      const lListElem *pair = lFirst(objects);
+      if (pair == nullptr) {
+         ERROR(MSG_QCONF_EXPORTNOOBJECT_S, path);
          failures++;
       } else {
-         dstring dest = DSTRING_INIT;
-         qconf_export_dest(&dest, nullptr, name, suffix);
-         failures += qconf_export_write_one(os, ep, fields, sfi, json_type_name, as_list,
-                                            false, sge_dstring_get_string(&dest));
-         sge_dstring_free(&dest);
+         qconf_export_dest(&dest, nullptr, path, suffix);
+         failures += qconf_export_write_one(os, lGetString(pair, VA_value),
+                                            sge_dstring_get_string(&dest));
       }
-      lFreeList(&lp);
    }
 
-   if (owned) {
-      sge_free(&fields);
-   }
+   sge_dstring_free(&dest);
    return failures;
 }
 
@@ -959,167 +1022,39 @@ qconf_export_path(std::ostream &os, ocs::gdi::Target target, const lDescr *descr
  * @brief Export a true singleton (sharetree, sched_conf) to a single file (R6).
  *
  * A directory argument is rejected - singletons have no directory-of-many form.
- * The one object is fetched (GET all, take the first) and written verbatim to the
- * given path.
+ * The one object is read and written verbatim to the given path.
  *
- * @param os the stream the output is written to (CS-1841)
- * @param is_root spool_flatfile_write_object is_root flag (sharetree uses true).
+ * @param os    the stream the output is written to (CS-1841)
+ * @param param the invocation, used for the export read
+ * @param sw    the export switch being served, see qconf_export_path()
+ * @param path  the file to write
  * @return the number of failures (0 on success).
  */
 static int
-qconf_export_singleton(std::ostream &os, ocs::gdi::Target target, const lDescr *descr,
-                       qconf_build_fields_fn build_fields,
-                       const spool_flatfile_instr *sfi, const char *json_type_name,
-                       bool is_root, const char *path) {
-   size_t plen = strlen(path);
-   if (sge_is_directory(path) || (plen > 0 && path[plen - 1] == '/')) {
+qconf_export_singleton(std::ostream &os, ocs::QConfParameterClient &param,
+                       const char *sw, const char *path) {
+   if (qconf_export_is_bulk(path)) {
       ERROR(MSG_QCONF_EXPORTNODIRALLOWED_S, path);
       return 1;
    }
 
-   lEnumeration *what = lWhat("%T(ALL)", descr);
-   lList *lp = nullptr;
-   lList *alp = ocs::gdi::Client::sge_gdi(target, ocs::gdi::Command::GET,
-                                          ocs::gdi::SubCommand::NONE, &lp, nullptr, what);
-   lFreeWhat(&what);
-   int failures = 0;
-   if (show_answer_list(alp) != 0) {
-      failures++;
+   ocs::ProcedureModel model;
+   const lList *objects = nullptr;
+   if (qconf_export_procedure(param, sw, nullptr, path, model, &objects) != 0) {
+      return 1;
    }
-   lFreeList(&alp);
 
-   lListElem *ep = lFirstRW(lp);
-   if (ep == nullptr) {
+   /* A singleton that is not there is reported by the path that names a file for
+    * it, because that is the name the user gave - the read answers an absent
+    * object with an empty result and leaves the wording to the caller. */
+   const lListElem *pair = lFirst(objects);
+   if (pair == nullptr) {
       ERROR(MSG_QCONF_EXPORTNOOBJECT_S, path);
-      lFreeList(&lp);
-      return failures + 1;
+      return 1;
    }
 
-   bool owned = false;
-   spooling_field *fields = build_fields(qconf_opt_format, &owned);
-   failures += qconf_export_write_one(os, ep, fields, sfi, json_type_name, false, is_root, path);
-   if (owned) {
-      sge_free(&fields);
-   }
-   lFreeList(&lp);
-   return failures;
+   return qconf_export_write_one(os, lGetString(pair, VA_value), path);
 }
-
-
-/**
- * @brief Bespoke config export (R7/KTD8): config keys on the host basename, not on
- *        a field, so it cannot use the generic engine.
- *
- * Bulk mode writes the global config (file `global`) plus every host's local config
- * (file = host), a complete re-importable set. Single mode writes one host's config
- * to a file named after it; `-Sconf global` writes the global config to `global`.
- * Unlike `-sconf host,host`, `-Sconf` takes a single name or a directory only.
- *
- * @param os the stream the output is written to (CS-1841)
- * @return the number of configs that failed to export
- */
-static int
-qconf_conf_export(std::ostream &os, const char *path) {
-   const char *suffix = (qconf_opt_format == SP_FORM_JSON) ? ".json" : "";
-   size_t plen = strlen(path);
-   bool is_bulk = sge_is_directory(path) || (plen > 0 && path[plen - 1] == '/');
-
-   spooling_field *fields = sge_build_CONF_field_list(false);
-   int failures = 0;
-
-   if (is_bulk) {
-      char dir[4096];
-      sge_strlcpy(dir, path, sizeof(dir));
-      size_t dl = strlen(dir);
-      if (dl > 1 && dir[dl - 1] == '/') {
-         dir[dl - 1] = '\0';
-      }
-      if (!sge_is_directory(dir)) {
-         if (sge_mkdir(dir, 0755, false, false) != 0 || !sge_is_directory(dir)) {
-            ERROR(MSG_QCONF_EXPORTCANTMKDIR_S, dir);
-            sge_free(&fields);
-            return 1;
-         }
-      }
-
-      lEnumeration *what = lWhat("%T(ALL)", CONF_Type);
-      lList *lp = nullptr;
-      lList *alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::CONF_LIST, ocs::gdi::Command::GET,
-                                             ocs::gdi::SubCommand::NONE, &lp, nullptr, what);
-      lFreeWhat(&what);
-      if (show_answer_list(alp) != 0) {
-         failures++;
-      }
-      lFreeList(&alp);
-
-      lList *seen = lCreateList("export seen", ST_Type);
-      char lcbuf[1024];
-      dstring dest = DSTRING_INIT;
-      int n_total = lGetNumberOfElem(lp);
-      lListElem *ep;
-      for_each_rw (ep, lp) {
-         const char *name = lGetHost(ep, CONF_name);
-         if (!qconf_name_is_fs_safe(name)) {
-            ERROR(MSG_QCONF_EXPORTUNSAFENAME_S, name != nullptr ? name : "");
-            failures++;
-            continue;
-         }
-         sge_strlcpy(lcbuf, name, sizeof(lcbuf));
-         sge_strtolower(lcbuf, sizeof(lcbuf));
-         if (lGetElemStr(seen, ST_name, lcbuf) != nullptr) {
-            ERROR(MSG_QCONF_EXPORTCOLLISION_SS, name, lcbuf);
-            failures++;
-            continue;
-         }
-         lAddElemStr(&seen, ST_name, lcbuf, ST_Type);
-         qconf_export_dest(&dest, dir, name, suffix);
-         failures += qconf_export_write_one(os, ep, fields, &qconf_sfi, nullptr, false, false,
-                                            sge_dstring_get_string(&dest));
-      }
-      sge_dstring_free(&dest);
-      lFreeList(&seen);
-      lFreeList(&lp);
-      qconf_info(os, MSG_QCONF_EXPORTSUMMARY_SII, dir, n_total - failures, failures);
-   } else {
-      if (!qconf_name_is_fs_safe(path)) {
-         ERROR(MSG_QCONF_EXPORTUNSAFENAME_S, path);
-         sge_free(&fields);
-         return 1;
-      }
-      /* "global" resolves to SGE_GLOBAL_NAME for the lookup but the file keeps the
-       * user-given basename (which re-imports to the same host key). */
-      const char *cfn = (strcasecmp(path, "global") == 0) ? SGE_GLOBAL_NAME : path;
-      lCondition *where = lWhere("%T(%Ih=%s)", CONF_Type, CONF_name, cfn);
-      lEnumeration *what = lWhat("%T(ALL)", CONF_Type);
-      lList *lp = nullptr;
-      lList *alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::CONF_LIST, ocs::gdi::Command::GET,
-                                             ocs::gdi::SubCommand::NONE, &lp, where, what);
-      lFreeWhere(&where);
-      lFreeWhat(&what);
-      if (show_answer_list(alp) != 0) {
-         failures++;
-      }
-      lFreeList(&alp);
-
-      lListElem *ep = lFirstRW(lp);
-      if (ep == nullptr) {
-         ERROR(MSG_QCONF_EXPORTNOOBJECT_S, path);
-         failures++;
-      } else {
-         dstring dest = DSTRING_INIT;
-         qconf_export_dest(&dest, nullptr, path, suffix);
-         failures += qconf_export_write_one(os, ep, fields, &qconf_sfi, nullptr, false, false,
-                                            sge_dstring_get_string(&dest));
-         sge_dstring_free(&dest);
-      }
-      lFreeList(&lp);
-   }
-
-   sge_free(&fields);
-   return failures;
-}
-
-
 
 /** @brief How a show of one object ended (CS-2796).
  *
@@ -1457,33 +1392,6 @@ qconf_delete_obj(std::ostream &os, QConfObj o, const char *path) {
       sge_free(&fields);
    }
    return ret;
-}
-
-/** @brief Export one object or a whole directory, driven by the descriptor.
- * @param os the stream the output is written to (CS-1841)
- * @param o    the object type
- * @param path object name, or a directory for the bulk export
- * @return the number of objects that failed to export
- */
-static int
-qconf_export_obj(std::ostream &os, QConfObj o, const char *path) {
-   const qconf_object_desc &d = qconf_desc(o);
-   return qconf_export_path(os, d.target, d.descr, d.name_nm, d.build_fields,
-                            d.sfi, d.json_type_name, d.as_list, path,
-                            d.exclude1, d.exclude2);
-}
-
-/** @brief Export a singleton object (share tree, scheduler configuration).
- * @param os the stream the output is written to (CS-1841)
- * @param o    the object type
- * @param path file to write
- * @return the number of objects that failed to export
- */
-static int
-qconf_export_obj_singleton(std::ostream &os, QConfObj o, const char *path) {
-   const qconf_object_desc &d = qconf_desc(o);
-   return qconf_export_singleton(os, d.target, d.descr, d.build_fields,
-                                 d.sfi, d.json_type_name, d.is_root, path);
 }
 
 /** @brief Why an interactive edit did not yield an object. */
@@ -2347,6 +2255,11 @@ qconf_conf_delete_path(std::ostream &os, const char *path) {
  * ocs::QConfModelBase::resolve() - not by a list kept here, because what a
  * caller may read is the server's question.
  *
+ * A row marked export_only is not one of them. The export reads through the
+ * same table (CS-2826), so without that mark every "-S<obj>" switch would be
+ * claimed here and its text printed instead of written to a file - which is
+ * what the installation's own configuration check measured.
+ *
  * @param os        the stream the output is written to
  * @param param     the invocation, whose operation is set to @p op for the call
  * @param op        the operation to run
@@ -2359,7 +2272,8 @@ qconf_run_read_procedure(std::ostream &os, ocs::QConfParameterClient &param,
    DENTER(TOP_LAYER);
 
    const ocs::qconf_read_entry *entry = ocs::QConfModelBase::resolve(op.token.c_str());
-   if (entry == nullptr || entry->kind == ocs::QConfReadKind::SINGLE_OBJECT) {
+   if (entry == nullptr || entry->export_only ||
+       entry->kind == ocs::QConfReadKind::SINGLE_OBJECT) {
       /* The named single-object reads are not intercepted here. Their options
        * disagree about what a failure means - the classic four leave the parser,
        * -sprj only sets the exit code, -suser ignores it and shows a whole comma
@@ -5634,7 +5548,7 @@ int sge_parse_qconf(char *argv[]) {
        * IMPORT field list so the exported files re-import unchanged. */
       if (strcmp("-Scal", *spp) == 0) {
          spp = sge_parser_get_next(spp);
-         if (qconf_export_obj(os, QConfObj::CAL, *spp) != 0) {
+         if (qconf_export_path(os, param, "-Scal", *spp) != 0) {
             sge_parse_return = 1;
          }
          spp++;
@@ -5642,7 +5556,7 @@ int sge_parse_qconf(char *argv[]) {
       }
       if (strcmp("-Sckpt", *spp) == 0) {
          spp = sge_parser_get_next(spp);
-         if (qconf_export_obj(os, QConfObj::CK, *spp) != 0) {
+         if (qconf_export_path(os, param, "-Sckpt", *spp) != 0) {
             sge_parse_return = 1;
          }
          spp++;
@@ -5650,7 +5564,7 @@ int sge_parse_qconf(char *argv[]) {
       }
       if (strcmp("-Sce", *spp) == 0) {
          spp = sge_parser_get_next(spp);
-         if (qconf_export_obj(os, QConfObj::CE, *spp) != 0) {
+         if (qconf_export_path(os, param, "-Sce", *spp) != 0) {
             sge_parse_return = 1;
          }
          spp++;
@@ -5660,7 +5574,7 @@ int sge_parse_qconf(char *argv[]) {
          spp = sge_parser_get_next(spp);
          /* exclude the template and global pseudo-hosts (KTD5); explicit "exechost"
           * JSON $id (EH shares its name field with adminhost). */
-         if (qconf_export_obj(os, QConfObj::EH, *spp) != 0) {
+         if (qconf_export_path(os, param, "-Se", *spp) != 0) {
             sge_parse_return = 1;
          }
          spp++;
@@ -5668,7 +5582,7 @@ int sge_parse_qconf(char *argv[]) {
       }
       if (strcmp("-Shgrp", *spp) == 0) {
          spp = sge_parser_get_next(spp);
-         if (qconf_export_obj(os, QConfObj::HGRP, *spp) != 0) {
+         if (qconf_export_path(os, param, "-Shgrp", *spp) != 0) {
             sge_parse_return = 1;
          }
          spp++;
@@ -5676,7 +5590,7 @@ int sge_parse_qconf(char *argv[]) {
       }
       if (strcmp("-Sp", *spp) == 0) {
          spp = sge_parser_get_next(spp);
-         if (qconf_export_obj(os, QConfObj::PE, *spp) != 0) {
+         if (qconf_export_path(os, param, "-Sp", *spp) != 0) {
             sge_parse_return = 1;
          }
          spp++;
@@ -5684,7 +5598,7 @@ int sge_parse_qconf(char *argv[]) {
       }
       if (strcmp("-Sprj", *spp) == 0) {
          spp = sge_parser_get_next(spp);
-         if (qconf_export_obj(os, QConfObj::PR, *spp) != 0) {
+         if (qconf_export_path(os, param, "-Sprj", *spp) != 0) {
             sge_parse_return = 1;
          }
          spp++;
@@ -5692,7 +5606,7 @@ int sge_parse_qconf(char *argv[]) {
       }
       if (strcmp("-Sq", *spp) == 0) {
          spp = sge_parser_get_next(spp);
-         if (qconf_export_obj(os, QConfObj::CQ, *spp) != 0) {
+         if (qconf_export_path(os, param, "-Sq", *spp) != 0) {
             sge_parse_return = 1;
          }
          spp++;
@@ -5700,7 +5614,7 @@ int sge_parse_qconf(char *argv[]) {
       }
       if (strcmp("-Srole", *spp) == 0) {
          spp = sge_parser_get_next(spp);
-         if (qconf_export_obj(os, QConfObj::RL, *spp) != 0) {
+         if (qconf_export_path(os, param, "-Srole", *spp) != 0) {
             sge_parse_return = 1;
          }
          spp++;
@@ -5709,7 +5623,7 @@ int sge_parse_qconf(char *argv[]) {
       if (strcmp("-Srqs", *spp) == 0) {
          spp = sge_parser_get_next(spp);
          /* rqs files carry a rule-set list, so export with list framing (as_list). */
-         if (qconf_export_obj(os, QConfObj::RQS, *spp) != 0) {
+         if (qconf_export_path(os, param, "-Srqs", *spp) != 0) {
             sge_parse_return = 1;
          }
          spp++;
@@ -5717,7 +5631,7 @@ int sge_parse_qconf(char *argv[]) {
       }
       if (strcmp("-Su", *spp) == 0) {
          spp = sge_parser_get_next(spp);
-         if (qconf_export_obj(os, QConfObj::US, *spp) != 0) {
+         if (qconf_export_path(os, param, "-Su", *spp) != 0) {
             sge_parse_return = 1;
          }
          spp++;
@@ -5725,7 +5639,7 @@ int sge_parse_qconf(char *argv[]) {
       }
       if (strcmp("-Suser", *spp) == 0) {
          spp = sge_parser_get_next(spp);
-         if (qconf_export_obj(os, QConfObj::UU, *spp) != 0) {
+         if (qconf_export_path(os, param, "-Suser", *spp) != 0) {
             sge_parse_return = 1;
          }
          spp++;
@@ -5735,7 +5649,7 @@ int sge_parse_qconf(char *argv[]) {
       if (strcmp("-Sstree", *spp) == 0) {
          spp = sge_parser_get_next(spp);
          /* sharetree writes the root node (is_root=true) with the name/value sfi */
-         if (qconf_export_obj_singleton(os, QConfObj::STN, *spp) != 0) {
+         if (qconf_export_singleton(os, param, "-Sstree", *spp) != 0) {
             sge_parse_return = 1;
          }
          spp++;
@@ -5743,7 +5657,7 @@ int sge_parse_qconf(char *argv[]) {
       }
       if (strcmp("-Ssconf", *spp) == 0) {
          spp = sge_parser_get_next(spp);
-         if (qconf_export_obj_singleton(os, QConfObj::SC, *spp) != 0) {
+         if (qconf_export_singleton(os, param, "-Ssconf", *spp) != 0) {
             sge_parse_return = 1;
          }
          spp++;
@@ -5752,7 +5666,7 @@ int sge_parse_qconf(char *argv[]) {
       /* bespoke config export (R7): basename keying, global + per-host */
       if (strcmp("-Sconf", *spp) == 0) {
          spp = sge_parser_get_next(spp);
-         if (qconf_conf_export(os, *spp) != 0) {
+         if (qconf_export_path(os, param, "-Sconf", *spp) != 0) {
             sge_parse_return = 1;
          }
          spp++;

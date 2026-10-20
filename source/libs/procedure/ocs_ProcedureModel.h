@@ -97,6 +97,28 @@ namespace ocs {
       [[nodiscard]] bool get_write_result(uint32_t &applied, uint32_t &parse_failed,
                                           uint32_t *elements = nullptr) const;
 
+      /** @brief What an export procedure rendered (CS-2826)
+       *
+       * The exported objects as name/value pairs, `VA_variable` carrying the
+       * object name and `VA_value` the text of its file, in the order qmaster
+       * fetched them. The caller writes one file per entry and needs the pairing
+       * to name them, see ProcedureParameter::EXPORT_OBJECTS.
+       *
+       * The entry's presence is the answer and the list is the content, the way
+       * get_write_result() reports a write: an export that matched no object
+       * sends the entry with an empty list, and CULL stores an empty list as
+       * none at all. Returning the list alone could not tell that legitimate
+       * "nothing to export" from a response that never carried the entry - and
+       * the second one would be a broken channel wearing the face of an empty
+       * cluster.
+       *
+       * The list belongs to this object and lives as long as it does.
+       *
+       * @param objects receives the pairs, left untouched when there is no entry
+       * @return true when the response carried an export result
+       */
+      [[nodiscard]] bool get_export_objects(const lList **objects) const;
+
       /** @brief Write what the model holds to the log
        *
        * Does nothing in the base; a subclass overrides it to dump its own

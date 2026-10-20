@@ -122,6 +122,41 @@ static const ocs::qconf_read_entry qconf_read_table[] = {
    {"-sm",     QConfObj::MGR,  ocs::QConfReadKind::MEMBER_LIST},
    {"-so",     QConfObj::OP,   ocs::QConfReadKind::MEMBER_LIST},
 
+   /* group S: the exports (CS-2826). One row per "-S<obj>" switch, so that the
+    * export reads through the same table every other read goes through - the
+    * fetch is qmaster's now, and the switch is what says which type it fetches.
+    *
+    * OBJECT_LIST for all of them, because that is the one kind that means both
+    * halves of an export: the names that were given, or every object of the type
+    * when none was. So "qconf -Scal dir/" and "qconf -Scal mycal" are one read
+    * with and without an argument, which is also why the single export of an
+    * object the bulk run leaves out still works - the exclusion applies to the
+    * run over everything, see the export exclusion below.
+    *
+    * The export form itself is not in this table: it is a flag on the request
+    * (QConfParameter::get_for_export()), because it changes how the objects are
+    * rendered and not which ones are read.
+    */
+   {"-Scal",   QConfObj::CAL,  ocs::QConfReadKind::OBJECT_LIST, true},
+   {"-Sckpt",  QConfObj::CK,   ocs::QConfReadKind::OBJECT_LIST, true},
+   {"-Sce",    QConfObj::CE,   ocs::QConfReadKind::OBJECT_LIST, true},
+   {"-Se",     QConfObj::EH,   ocs::QConfReadKind::OBJECT_LIST, true},
+   {"-Shgrp",  QConfObj::HGRP, ocs::QConfReadKind::OBJECT_LIST, true},
+   {"-Sp",     QConfObj::PE,   ocs::QConfReadKind::OBJECT_LIST, true},
+   {"-Sprj",   QConfObj::PR,   ocs::QConfReadKind::OBJECT_LIST, true},
+   {"-Sq",     QConfObj::CQ,   ocs::QConfReadKind::OBJECT_LIST, true},
+   {"-Srole",  QConfObj::RL,   ocs::QConfReadKind::OBJECT_LIST, true},
+   {"-Srqs",   QConfObj::RQS,  ocs::QConfReadKind::OBJECT_LIST, true},
+   {"-Su",     QConfObj::US,   ocs::QConfReadKind::OBJECT_LIST, true},
+   {"-Suser",  QConfObj::UU,   ocs::QConfReadKind::OBJECT_LIST, true},
+   {"-Sconf",  QConfObj::CONF, ocs::QConfReadKind::OBJECT_LIST, true},
+
+   /* The two singletons export the one object they have, so they read it the way
+    * "-sstree" and "-ssconf" do. A directory argument is refused in the client,
+    * where the file system is. */
+   {"-Sstree", QConfObj::STN,  ocs::QConfReadKind::SINGLETON, true},
+   {"-Ssconf", QConfObj::SC,   ocs::QConfReadKind::SINGLETON, true},
+
    /* group A: the singletons. A separate kind rather than a SINGLE_OBJECT row
     * with name_nm == NoName: that would work - get_object_where() returns
     * nullptr for NoName and arg(0) is null-safe - but a row whose switch takes
@@ -284,18 +319,34 @@ ocs::QConfModelBase::get_object_where(const lDescr *descr, int key_nm, const cha
 }
 
 /**
- * @brief Fetch what the operation asked for
+ * @brief What an export over everything must not pick up (CS-2826)
  *
- * An empty list is an error for plain output and not for JSON, which renders
- * the empty array - the distinction the hand written engine made, kept as it
- * was. The message travels back in the answer list rather than going to stderr,
- * because inside qmaster stderr is the daemon's log and not the caller's
- * terminal.
+ * The exec host list holds two entries that are not hosts: `template` carries
+ * the defaults a new host starts from and `global` the settings that apply to
+ * all of them. Neither is an object a restore would want to create, so a
+ * directory meant to be read back by `-Ae` has no business holding a file for
+ * them - which is why the client left them out of its own fetch, and why the
+ * filter travels with the fetch rather than staying behind.
  *
- * @param answer_list for error reporting
- * @param parameter   the operation and how it renders
- * @return true when there is something to show
+ * Which names those are is in the object table, as it was while the client
+ * built this condition for its own fetch - the comparison is the one it used,
+ * case-insensitive, so an exec host spelled `Global` is left out too.
+ *
+ * @param desc the row of the object type
+ * @return the condition, or nullptr for a type that excludes nothing; the caller frees
  */
+static lCondition *
+get_export_exclusion(const qconf_object_desc &desc) {
+   if (desc.name_nm == NoName || desc.exclude1 == nullptr) {
+      return nullptr;
+   }
+   if (desc.exclude2 != nullptr) {
+      return lWhere("%T(!(%Ic=%s || %Ic=%s))", desc.descr,
+                    desc.name_nm, desc.exclude1, desc.name_nm, desc.exclude2);
+   }
+   return lWhere("%T(!(%Ic=%s))", desc.descr, desc.name_nm, desc.exclude1);
+}
+
 /**
  * @brief Fetch every object of one type, for a view that needs the whole list
  *
@@ -1281,6 +1332,19 @@ ocs::QConfModelBase::make_cqueue_snapshot(lList **answer_list, QConfParameter &p
    DRETURN(matched_all);
 }
 
+/**
+ * @brief Fetch what the operation asked for
+ *
+ * An empty list is an error for plain output and not for JSON, which renders
+ * the empty array - the distinction the hand written engine made, kept as it
+ * was. The message travels back in the answer list rather than going to stderr,
+ * because inside qmaster stderr is the daemon's log and not the caller's
+ * terminal.
+ *
+ * @param answer_list for error reporting
+ * @param parameter   the operation and how it renders
+ * @return true when there is something to show
+ */
 bool
 ocs::QConfModelBase::make_snapshot(lList **answer_list, QConfParameter &parameter) {
    DENTER(TOP_LAYER);
@@ -1373,6 +1437,18 @@ ocs::QConfModelBase::make_snapshot(lList **answer_list, QConfParameter &paramete
        * none at all - and none means every object of the type. */
       what = lWhat("%T(ALL)", desc_->descr);
       where = get_names_where(desc_->descr, key_nm_, parameter.get_operation());
+      if (where == nullptr && parameter.get_for_export()) {
+         /* CS-2826: an export over everything leaves out the pseudo objects that
+          * are not objects - the exec host list's "template" and "global", which
+          * carry defaults rather than a host. The client filtered them out of
+          * its own fetch; the filter travels with the fetch.
+          *
+          * Only here, where no name was given: the user asking for one of them
+          * by name gets it, because a name is an instruction and not a sweep.
+          * That is also the boundary the refusal of a reduced export needs - a
+          * single export is a choice, a bulk export is a backup. */
+         where = get_export_exclusion(*desc_);
+      }
    } else if (kind_ == QConfReadKind::MEMBER_LIST) {
       /* One named object and its sublist. The name comes from the descriptor,
        * not from the command line - the switch itself says which reserved
@@ -1436,7 +1512,11 @@ ocs::QConfModelBase::make_snapshot(lList **answer_list, QConfParameter &paramete
        * to call one - that is what -su always did, one line per userset it could
        * not find. A type without a noun, like the resource quota sets, reports the
        * read as a whole instead and never names anything (CS-2819). */
+      /* An export says it itself, and in its own words: the client reports the
+       * file it could not write, naming the object and not the type's noun, and
+       * two complaints for one cause read as two causes (CS-2826). */
       if (kind_ == QConfReadKind::OBJECT_LIST && parameter.get_operation().arg_count() > 0 &&
+          !parameter.get_for_export() &&
           (desc_->read.not_found_noun != nullptr ||
            (parameter.get_for_edit() && desc_->read.create_template != nullptr))) {
          lList *wanted = nullptr;
@@ -1540,6 +1620,23 @@ ocs::QConfModelBase::make_snapshot(lList **answer_list, QConfParameter &paramete
             DRETURN(true);
          }
 
+         /* CS-2826: and an export finds nothing in two legitimate ways. A bulk
+          * run over a type the cluster does not use writes an empty directory
+          * and reports zero objects - which is what the client did while it
+          * fetched for itself, and what a backup script over all fifteen types
+          * depends on. A named one has a message of its own in the client, which
+          * names the object the file was to be called after.
+          *
+          * So the empty result travels back as an empty success either way and
+          * the client decides, rather than this read reporting first and the
+          * client reporting again. */
+         if (parameter.get_for_export()) {
+            if (object_list_ == nullptr) {
+               object_list_ = lCreateList("", desc_->descr);
+            }
+            DRETURN(true);
+         }
+
          if (kind_ == QConfReadKind::SINGLETON || kind_ == QConfReadKind::OBJECT_LIST) {
             /* no name was given, so the message takes no argument */
             if (desc_->read.empty_msg != nullptr) {
@@ -1564,7 +1661,15 @@ ocs::QConfModelBase::make_snapshot(lList **answer_list, QConfParameter &paramete
        * qmaster, qmaster reads its own list - so the hook runs here and the view
        * only renders. For plain output the hook did nothing anyway, which is why
        * nothing is fetched then. */
-      if (desc_->read.prepare != nullptr &&
+      /* CS-2826: not for an export. The hook types the values a *display* shows,
+       * and for the exec host it rewrites complex_values - which is a field the
+       * export writes and "-Ae" reads back, so running it would change what the
+       * files hold without anything having verified that the import still parses
+       * it. The client's own export never ran it, and the migration of the fetch
+       * is not the place to find out. It would also run on the first object
+       * only, because that is what a single-object read needs, so a directory of
+       * exec hosts would come out typed in one file and untyped in the rest. */
+      if (desc_->read.prepare != nullptr && !parameter.get_for_export() &&
           parameter.get_output_format() == ProcedureParameter::OutputFormat::JSON) {
          if (!fetch_centries(answer_list)) {
             DRETURN(false);

@@ -53,6 +53,7 @@
 #include "procedure/qconf/sick/ocs_QConfSickController.h"
 #include "procedure/qconf/sick/ocs_QConfSickView.h"
 #include "procedure/qconf/cqueue/ocs_QConfCQueueShowController.h"
+#include "procedure/qconf/objexport/ocs_QConfExportController.h"
 #include "procedure/qconf/cqueue/ocs_QConfCQueueShowView.h"
 #include "procedure/qconf/hgroup/ocs_QConfHGroupResolvedController.h"
 #include "procedure/qconf/hgroup/ocs_QConfHGroupShowController.h"
@@ -150,6 +151,35 @@ namespace {
       using Model = ocs::QConfModelServer;
       using ViewBase = ocs::QConfViewBase;
       using Controller = ocs::QConfController;
+
+      static constexpr ProgName prog_number = QCONF;
+
+      static std::unique_ptr<ViewBase> make_xml_view(const Parameter &parameter) {
+         return std::make_unique<ocs::QConfViewXML>(parameter);
+      }
+
+      static std::unique_ptr<ViewBase> make_plain_view(const Parameter &parameter) {
+         return std::make_unique<ocs::QConfViewPlain>(parameter);
+      }
+
+      static std::unique_ptr<ViewBase> make_json_view(const Parameter &parameter) {
+         return std::make_unique<ocs::QConfViewJSON>(parameter);
+      }
+   };
+
+   /** @brief `qconf -S<obj>`: the export (CS-2826)
+    *
+    * The table-driven read with two differences, and both of them are in the
+    * request rather than here: the export form of the field list, and a result
+    * that is one text per object instead of one text. So it shares the model and
+    * the views with the ordinary read and brings only its own controller, which
+    * is what pairs each text with the name of the file it becomes.
+    */
+   struct QConfExportTraits {
+      using Parameter = ocs::QConfParameter;
+      using Model = ocs::QConfModelServer;
+      using ViewBase = ocs::QConfViewBase;
+      using Controller = ocs::QConfExportController;
 
       static constexpr ProgName prog_number = QCONF;
 
@@ -586,6 +616,24 @@ namespace {
       uint32_t reduction = ocs::ProcedureParameter::REDUCTION_NONE;  ///< what RBAC removed
       ocs::QConfWriteResult write;                                   ///< what a write did
       bool has_write_result = false;                                 ///< whether @ref write was filled
+      lList *export_objects = nullptr;   ///< what an export rendered, one entry per file (CS-2826)
+      bool has_export_result = false;    ///< whether @ref export_objects was filled
+
+      /** @brief Free what prepare_response() did not take
+       *
+       * The export list is the one member that owns memory. It is handed to the
+       * response bundle when there is one to build, and the destructor catches
+       * the path where there is not - a request that left exec_procedure() with
+       * an error still rendered whatever it got that far with.
+       */
+      ~ProcedureOutcome() { lFreeList(&export_objects); }
+
+      /* One owner, and the one that frees. Copying it would hand two of them the
+       * same list, and the request path needs no copy: the struct is created in
+       * run_procedure() and passed on by reference. */
+      ProcedureOutcome() = default;
+      ProcedureOutcome(const ProcedureOutcome &) = delete;
+      ProcedureOutcome &operator=(const ProcedureOutcome &) = delete;
    };
 
    /** @brief The reduction a caller asked to have simulated (CS-2823)
@@ -702,6 +750,16 @@ namespace {
       Controller controller(os);
       controller.process_request(parameter, model, *view);
 
+      /* CS-2826: an export renders one text per object and keeps them, because
+       * the output stream has no way to say where one file ends and the next
+       * begins. Taken from the controller the way a write result is read off
+       * the model - detected rather than imposed, so no other controller needs
+       * an empty accessor for it. */
+      if constexpr (requires { controller.take_export_objects(); }) {
+         outcome.export_objects = controller.take_export_objects();
+         outcome.has_export_result = true;
+      }
+
       /* CS-2821: where the model's verdict on RBAC reduction will be read once a
        * model can give one. Nothing reduces today, so the only non-zero mask is
        * one a caller asked to have simulated, which is what makes the refusal of
@@ -727,7 +785,7 @@ namespace {
 
    template<typename Traits>
    void prepare_response(ocs::gdi::Packet *packet, ocs::gdi::Task *task, std::ostringstream &os,
-                         const ProcedureOutcome &outcome) {
+                         ProcedureOutcome &outcome) {
       DENTER(TOP_LAYER);
 
       // if exec_procedure failed then the answer_list contains already an error
@@ -771,6 +829,18 @@ namespace {
          lAddElemUlong(&elements_list, ULNG_value, outcome.write.elements, ULNG_Type);
          ocs::ProcedureParameter::add_parameter_bundle(bundle, ocs::ProcedureParameter::WRITE_ELEMENTS,
                                                        elements_list);
+      }
+
+      /* CS-2826: and the files an export rendered, as name/value pairs. Sent
+       * whenever this was an export, empty list and all: the entry's presence is
+       * what tells the caller that the export ran and found nothing from a
+       * response that never carried the answer - see
+       * ProcedureModel::get_export_objects(). The bundle takes the list, so the
+       * outcome gives up its ownership here. */
+      if (outcome.has_export_result) {
+         ocs::ProcedureParameter::add_parameter_bundle(bundle, ocs::ProcedureParameter::EXPORT_OBJECTS,
+                                                       outcome.export_objects);
+         outcome.export_objects = nullptr;
       }
 #if 0
       DPRINTF("response:\n %s", os.str().c_str());
@@ -898,6 +968,7 @@ namespace {
       {to_string_view(QCONF), ocs::QConfParameter::SHARETREE_TREE, READS, &run_procedure<QConfShareTreeTreeTraits>},
       {to_string_view(QCONF), ocs::QConfParameter::SHARETREE_NODES, READS, &run_procedure<QConfShareTreeNodesTraits>},
       {to_string_view(QCONF), ocs::QConfParameter::CQUEUE_SHOW, READS, &run_procedure<QConfCQueueShowTraits>},
+      {to_string_view(QCONF), ocs::QConfParameter::OBJECT_EXPORT, READS, &run_procedure<QConfExportTraits>},
       /* The entries that write. All of them name the same procedure and
        * sub-procedure and differ only in the object they write, which is why the
        * lookup below matches on the target as well - see sge_c_gdi_procedure().

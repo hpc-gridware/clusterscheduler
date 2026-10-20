@@ -152,6 +152,7 @@ namespace ocs {
       static constexpr auto THREAD_POOL_LIST = "thread-pools";      ///< `qconf -stl`
       static constexpr auto SHARETREE_TREE = "sharetree-tree";      ///< `qconf -sst`, `-bonsai`
       static constexpr auto SHARETREE_NODES = "sharetree-nodes";    ///< `qconf -sstnode`, `-rsstnode`
+      static constexpr auto OBJECT_EXPORT = "object-export";        ///< `qconf -S<obj>`
 
       /** @brief Whether a sub-procedure name is one of the host group views
        * @param name the name, empty for the table-driven read
@@ -172,6 +173,7 @@ namespace ocs {
       static constexpr uint32_t FLAG_STRICT = 0x8u;    ///< `-strict`
       static constexpr uint32_t FLAG_SINGLE_LINE = 0x10u;   ///< `SGE_SINGLE_LINE` in the client's environment
       static constexpr uint32_t FLAG_FOR_EDIT = 0x20u;      ///< the read feeds an editor, see get_for_edit()
+      static constexpr uint32_t FLAG_FOR_EXPORT = 0x40u;    ///< the read feeds an export, see get_for_export()
       /** @} */
 #pragma endregion
 
@@ -184,6 +186,7 @@ namespace ocs {
       bool strict_ = false;     ///< `-strict`: apply nothing unless every file is valid
       bool single_line_ = false;   ///< `SGE_SINGLE_LINE`: do not break long lines
       bool for_edit_ = false;   ///< the rendered text is going to an editor and comes back
+      bool for_export_ = false; ///< the rendered text is going into an export file
       ValueFormat value_format_ = ValueFormat::COMPACT;   ///< `-fmtval`
       qconf_op operation_;      ///< the one operation this call carries
 
@@ -240,6 +243,33 @@ namespace ocs {
        * @param for_edit true when the text is going to an editor
        */
       void set_for_edit(bool for_edit) { for_edit_ = for_edit; }
+
+      /** @brief Whether this read renders the files of an export
+       *
+       * An export has the same demand on the field list as an editor and for
+       * the same reason - what it writes must re-import - so it renders the
+       * write list too, see get_for_edit(). What it does not want is the
+       * decoration a show adds around the object: the configuration's
+       * `#<host>:` header is a comment that tells the blocks of
+       * `-sconf a,b` apart, and in a file of its own it would come back as an
+       * unknown attribute.
+       *
+       * It also decides what an empty result means. A show of a type with no
+       * objects is an error - "no calendar defined" - and a bulk export of the
+       * same cluster is not: it writes an empty directory and reports zero
+       * objects, which is what the client did while it fetched for itself, and
+       * a backup script must not fail over a type the cluster does not use.
+       *
+       * Set by the export switches (CS-2826) and by nothing else.
+       *
+       * @return true when the read produces export files
+       */
+      [[nodiscard]] bool get_for_export() const { return for_export_; }
+
+      /** @brief Ask for the export form of the object
+       * @param for_export true when the text becomes an export file
+       */
+      void set_for_export(bool for_export) { for_export_ = for_export; }
 
       /** @brief How TIME and MEM values are rendered in JSON
        * @return compact strings or plain numbers

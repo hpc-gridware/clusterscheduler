@@ -145,6 +145,30 @@ ocs::ProcedureModel::get_write_result(uint32_t &applied, uint32_t &parse_failed,
    DRETURN(true);
 }
 
+/** @brief Return the exported objects received from qmaster, see the header
+ * @param objects receives the name/value pairs
+ * @return true when the response carried an export result
+ */
+bool
+ocs::ProcedureModel::get_export_objects(const lList **objects) const {
+   DENTER(TOP_LAYER);
+
+   const lListElem *entry = lGetElemStr(procedure_response, SPP_name,
+                                        ProcedureParameter::EXPORT_OBJECTS);
+   if (entry == nullptr) {
+      DPRINTF("no export entry in the response\n");
+      DRETURN(false);
+   }
+
+   /* An empty export is stored by CULL as no list at all, so the null check
+    * comes before the count - lGetNumberOfElem() flags a null list as an error
+    * of its own. */
+   *objects = lGetList(entry, SPP_value_list);
+   DPRINTF("export entry holds %d object(s)\n",
+           (*objects != nullptr) ? lGetNumberOfElem(*objects) : 0);
+   DRETURN(true);
+}
+
 /** @brief Return the pre-rendered output text received from qmaster.
  *
  * Returns an empty string if the response list is absent or malformed.

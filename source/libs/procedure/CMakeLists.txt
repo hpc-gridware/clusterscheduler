@@ -76,6 +76,8 @@ set(LIBRARY_SOURCES
         qconf/cqueue/ocs_QConfCQueueShowController.cc
         qconf/cqueue/ocs_QConfCQueueShowView.cc
 
+        qconf/objexport/ocs_QConfExportController.cc
+
         qquota/ocs_QQuotaParameter.cc
         qquota/ocs_QQuotaParameterClient.cc
         qquota/ocs_QQuotaModelBase.cc

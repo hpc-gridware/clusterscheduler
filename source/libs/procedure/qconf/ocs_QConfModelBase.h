@@ -39,13 +39,6 @@
 #include "ocs_QConfParameter.h"
 
 namespace ocs {
-   /** @brief What a `qconf` read operation is about, resolved from its switch
-    *
-    * The switch alone says everything: `-sql` is "the names of every cluster
-    * queue". Resolving it here rather than taking the object type from the
-    * client keeps the procedure in charge of what it reads, which is what
-    * matters once RBAC decides what a caller may see.
-    */
    /** @brief What a read switch produces */
    enum class QConfReadKind {
       NAME_LIST,     ///< group B: every name of the type, one per line
@@ -56,10 +49,27 @@ namespace ocs {
       MEMBER_LIST    ///< group J: the names in one reserved object's sublist (CS-2820)
    };
 
+   /** @brief What a `qconf` read operation is about, resolved from its switch
+    *
+    * The switch alone says everything: `-sql` is "the names of every cluster
+    * queue". Resolving it here rather than taking the object type from the
+    * client keeps the procedure in charge of what it reads, which is what
+    * matters once RBAC decides what a caller may see.
+    */
    struct qconf_read_entry {
       const char *switch_name;   ///< the switch, e.g. `-sql`
       QConfObj object;           ///< the object type it reports on
       QConfReadKind kind;        ///< a name list or one object
+      /** @brief the row answers an export only, never a read that prints
+       *
+       * The generic read interception in the client claims every switch this
+       * table resolves, so a row added for the export would silently turn
+       * "-Sq" into a synonym of "-sq" - the text would be printed instead of
+       * written. A row marked here is skipped there and is reached through the
+       * export path alone, while the procedure in qmaster resolves it as any
+       * other row (CS-2826).
+       */
+      bool export_only = false;
    };
 
    /** @brief The objects one `qconf` read operation asked for

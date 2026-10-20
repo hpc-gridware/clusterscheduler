@@ -108,6 +108,8 @@
 #define MSG_QCONF_UNKNOWNFMTVAL_S                     _MESSAGE(5254, _("unknown -fmtval value " SFQ " (expected compact|numeric)"))
 #define MSG_QCONF_REDUCEDNOTMODIFIABLE_SS             _MESSAGE(5260, _("qconf " SFN " cannot modify " SFQ ": the output was reduced, so you see only part of it"))
 #define MSG_QCONF_MODNEEDSSERVERCTX_S                 _MESSAGE(5261, _("qconf " SFN " needs the server execution context; -ectx client cannot see whether the output was reduced"))
+#define MSG_QCONF_REDUCEDNOTEXPORTABLE_SS             _MESSAGE(5262, _("qconf " SFN " cannot export " SFQ ": the output was reduced, so you see only part of it"))
+#define MSG_QCONF_EXPORTNORESULT_S                    _MESSAGE(5263, _("qconf " SFN ": qmaster sent no export result"))
 
 /* CS-2680, N-I-7: "qconf -shgrp_why <group> <host>" - by which route a host is a member */
 

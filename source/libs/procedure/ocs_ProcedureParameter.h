@@ -196,6 +196,22 @@ namespace ocs {
                                                                    ///< more than one per item for a
                                                                    ///< type whose text holds a list
       /** @} */
+
+      /** @name What an export procedure produced (CS-2826)
+       *
+       * One entry per exported object, as a name/value pair: the object's name
+       * and the text of the file it becomes. A structured entry rather than the
+       * one RESPONSE text, because the caller writes one file per object and
+       * has to know which name each text belongs to - splitting a concatenated
+       * text on a separator would mean a second parser for a format the writer
+       * already knows the boundaries of.
+       *
+       * Sent only by a read that was asked for the export form, so an ordinary
+       * read's response is unchanged.
+       * @{
+       */
+      static constexpr auto EXPORT_OBJECTS = "export_objects";     ///< name -> file text, in fetch order
+      /** @} */
       /** @} */
 #pragma endregion
 
