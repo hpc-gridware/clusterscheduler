@@ -94,8 +94,16 @@ namespace ocs {
     *
     * This function sets CPU and Memory accounting properties for systemd.
     * If cgroup version 2 is used, it also enables IO accounting.
-    * @note We enable IOAccounting, but we actually do not use the IO values delivered
-    *       in sge_execd for the `io` usage value, see CS-1389.
+    *
+    * @note The IO figures are not read for the `io` and `ioops` usage values. Those come from
+    *       the PDC and count the characters a job read and wrote through its syscalls, while
+    *       systemd counts block device bytes: nothing at all for a job writing to a shared
+    *       filesystem, and the same bytes once per layer where a filesystem sits on a device
+    *       mapper stack, because systemd sums every device of the cgroup's io.stat.
+    *       IOAccounting is set nevertheless, so that an administrator sees the block device
+    *       figures of a job in `systemctl show` and `systemd-cgtop`. It adds nothing on top
+    *       of the io controller which the Delegate setting of the scope enables in any case,
+    *       see CS-1389.
     * @note We might want to enable further accounting settings in the future,
     *       like IPAccounting, see CS-1390.
     */
