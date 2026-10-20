@@ -119,14 +119,19 @@ fi
 
 #---------------------------------------------------------------------------
 # Shutdown
-# Send SIGTERM to process name $1 with pid in file $2
+# Send SIGTERM to the process with pid $2, which has to be named $1
+#
+# The pid is passed in and not read from the pid file here on purpose. Stopping
+# one daemon takes seconds, and a daemon which is started again in the meantime
+# writes its own pid into the same file - so a pid read at this point can belong
+# to an instance this stop was never meant to touch. The caller reads every pid
+# file before it stops anything, see the stop section below.
 #
 Shutdown()
 {
    name=$1
-   pidfile=$2
-   if [ -f $pidfile ]; then
-      pid=`cat $pidfile`
+   pid=$2
+   if [ -n "$pid" ]; then
       maxretries=20
       i=0
       while [ $i -lt $maxretries ]; do
@@ -825,6 +830,30 @@ if [ "$startup" = true ]; then
       exit $exit_val
    fi
 else
+   # Read the pid of every daemon which is about to be stopped before stopping the
+   # first one. Stopping the shadow daemon takes a few seconds, and a qmaster which
+   # is started within them writes its pid into the same file the qmaster stop below
+   # reads - so a file read at that point can name an instance this stop was never
+   # asked to end, and the stop would kill it. Where the cluster runs under systemd
+   # this is not a rare case: the qmaster service has no main process to track, so
+   # systemd stops the service as soon as its control group runs empty and runs this
+   # script as the ExecStop of it, which is exactly what a "qconf -km" produces.
+   shadowd_pidfile=""
+   if [ -f $qmaster_spool_dir/shadowd_$UQHOST.pid ]; then
+      shadowd_pidfile=$qmaster_spool_dir/shadowd_$UQHOST.pid
+   elif [ -f $qmaster_spool_dir/shadowd_$HOST.pid ]; then
+      shadowd_pidfile=$qmaster_spool_dir/shadowd_$HOST.pid
+   fi
+   shadowd_pid=""
+   if [ -n "$shadowd_pidfile" ]; then
+      shadowd_pid=`cat $shadowd_pidfile`
+   fi
+
+   qmaster_pid=""
+   if [ -f $qmaster_spool_dir/qmaster.pid ]; then
+      qmaster_pid=`cat $qmaster_spool_dir/qmaster.pid`
+   fi
+
    if [ $shadowd = true -a $shadow_host = true ]; then
       echo "   shutting down Cluster Scheduler shadowd"
       DetectSMFService shadowd
@@ -832,11 +861,7 @@ else
          svcadm disable -st $service
       else
          # Send SIGTERM to shadowd
-         if [ -f $qmaster_spool_dir/shadowd_$UQHOST.pid ]; then
-            Shutdown sge_shadowd $qmaster_spool_dir/shadowd_$UQHOST.pid
-         elif [ -f $qmaster_spool_dir/shadowd_$HOST.pid ]; then
-            Shutdown sge_shadowd $qmaster_spool_dir/shadowd_$HOST.pid
-         fi	
+         Shutdown sge_shadowd "$shadowd_pid"
       fi
    fi
 
@@ -849,7 +874,7 @@ else
             exit $?
          else
             # Send SIGTERM to qmaster
-            Shutdown sge_qmaster $qmaster_spool_dir/qmaster.pid
+            Shutdown sge_qmaster "$qmaster_pid"
             ret=$?
             if [ -f /var/lock/subsys/sgemaster ]; then
                uid=`$utilbin_dir/uidgid -uid`
