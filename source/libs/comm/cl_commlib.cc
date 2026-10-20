@@ -1389,6 +1389,7 @@ cl_com_handle_t *cl_com_create_handle(int *commlib_error,
    gettimeofday(&(new_handle->start_time), nullptr);
    gettimeofday(&(new_handle->last_message_queue_cleanup_time), nullptr);
    gettimeofday(&(new_handle->last_statistic_update_time), nullptr);
+   gettimeofday(&(new_handle->last_trigger_work_time), nullptr);
 
    new_handle->messages_ready_mutex = (pthread_mutex_t *) sge_malloc(sizeof(pthread_mutex_t));
    if (new_handle->messages_ready_mutex == nullptr) {
@@ -2931,9 +2932,16 @@ static int cl_com_trigger(cl_com_handle_t *handle, int synchron) {
    /* when threads enabled: this is done by cl_com_handle_service_thread() - OK */
    cl_connection_list_destroy_connections_to_close(handle);
 
-   /* calculate statistics each second */
+   /* Do the work which is due once a second. It is tracked with a timestamp of its own, and
+    * not with statistic->last_update: that one is set whenever a qping client asks for the
+    * statistics, which "qping -i 1" does every second. The work below would then be skipped
+    * every time, so a debug client would never be served and a "qping -dump" would stay
+    * silent until the server shut down (CS-2915).
+    */
    gettimeofday(&now, nullptr);
-   if (handle->statistic->last_update.tv_sec != now.tv_sec) {
+   if (handle->last_trigger_work_time.tv_sec != now.tv_sec) {
+      handle->last_trigger_work_time.tv_sec = now.tv_sec;
+      handle->last_trigger_work_time.tv_usec = now.tv_usec;
       cl_commlib_calculate_statistic(handle, false, 1); /* do not force update */
       cl_commlib_handle_debug_clients(handle, true);
       cl_commlib_app_message_queue_cleanup(handle); /* do message queue cleanup only every second */

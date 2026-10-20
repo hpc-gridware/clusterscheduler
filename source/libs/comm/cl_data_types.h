@@ -373,6 +373,7 @@ typedef struct cl_com_handle {
    struct timeval start_time;
    struct timeval last_statistic_update_time;      /* used in service thread */
    struct timeval last_message_queue_cleanup_time; /* used in service thread */
+   struct timeval last_trigger_work_time;          /* used in cl_com_trigger(), CL_NO_THREAD */
 } cl_com_handle_t;
 
 typedef struct cl_com_poll {
