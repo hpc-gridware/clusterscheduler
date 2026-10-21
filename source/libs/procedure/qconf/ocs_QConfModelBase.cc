@@ -1004,18 +1004,20 @@ ocs::QConfModelBase::make_processor_snapshot(lList **answer_list) {
  * context the read does not go through lSelect() at all - QConfModelServer
  * answers an EV read from the event master, which builds the list on demand.
  *
- * An empty list is an error for plain output and not for JSON, which renders
- * the enveloped empty array - the rule every migrated read follows. It is also
- * the one behaviour this move changes on purpose: the hand written switch wrote
- * the message to stderr and still exited 0, so a cluster without event clients
- * was indistinguishable from a successful read.
+ * An empty list is an error - the rule every migrated read follows, and the one
+ * behaviour this move changed on purpose: the hand written switch wrote the
+ * message to stderr and still exited 0, so a cluster without event clients was
+ * indistinguishable from a successful read. Since CS-2929 the rule no longer
+ * reads the output format: the error is reported and the read returns normally,
+ * so the empty output is rendered in whatever form was asked for and the exit
+ * code says the same thing in both.
  *
  * @param answer_list carries the reason when the read fails
- * @param parameter   the invocation, for the output format
+ * @param parameter   the invocation
  * @return true when the clients were fetched
  */
 bool
-ocs::QConfModelBase::make_eventclient_snapshot(lList **answer_list, QConfParameter &parameter) {
+ocs::QConfModelBase::make_eventclient_snapshot(lList **answer_list) {
    DENTER(TOP_LAYER);
 
    object_ = QConfObj::EV;
@@ -1040,11 +1042,10 @@ ocs::QConfModelBase::make_eventclient_snapshot(lList **answer_list, QConfParamet
    }
    lPSortList(object_list_, "%I+", EV_id);
 
-   if (lGetNumberOfElem(object_list_) == 0 &&
-       parameter.get_output_format() != ProcedureParameter::OutputFormat::JSON) {
+   /* reported, not failed - see the note on the same rule in make_snapshot() */
+   if (lGetNumberOfElem(object_list_) == 0) {
       answer_list_add_sprintf(answer_list, STATUS_EEXIST, ANSWER_QUALITY_ERROR,
                               "%s", MSG_QCONF_NOEVENTCLIENTSREGISTERED);
-      DRETURN(false);
    }
 
    DRETURN(true);
@@ -1344,9 +1345,11 @@ ocs::QConfModelBase::make_cqueue_snapshot(lList **answer_list, QConfParameter &p
 /**
  * @brief Fetch what the operation asked for
  *
- * An empty list is an error for plain output and not for JSON, which renders
- * the empty array - the distinction the hand written engine made, kept as it
- * was. The message travels back in the answer list rather than going to stderr,
+ * An empty list is an error, and since CS-2929 that no longer depends on the
+ * output format: the format decides what reaches stdout, not whether the read
+ * succeeded. It is reported without failing the read, so the empty output is
+ * still rendered and the answer list is what makes the caller exit non-zero.
+ * The message travels back in that answer list rather than going to stderr,
  * because inside qmaster stderr is the daemon's log and not the caller's
  * terminal.
  *
@@ -1394,7 +1397,7 @@ ocs::QConfModelBase::make_snapshot(lList **answer_list, QConfParameter &paramete
       DRETURN(make_processor_snapshot(answer_list));
    }
    if (parameter.get_sub_procedure_name() == QConfParameter::EVENT_CLIENT_LIST) {
-      DRETURN(make_eventclient_snapshot(answer_list, parameter));
+      DRETURN(make_eventclient_snapshot(answer_list));
    }
    if (parameter.get_sub_procedure_name() == QConfParameter::OBJECT_FILTER) {
       DRETURN(make_sobjl_snapshot(answer_list, parameter));
@@ -1514,16 +1517,26 @@ ocs::QConfModelBase::make_snapshot(lList **answer_list, QConfParameter &paramete
    if (kind_ == QConfReadKind::NAME_LIST || kind_ == QConfReadKind::MEMBER_LIST) {
       lPSortList(object_list_, "%I+", key_nm_);
 
-      /* An empty list is an error for plain output and not for JSON, which
-       * renders the empty array - the distinction the hand written engine made,
-       * kept as it was. The message travels back in the answer list rather than
-       * going to stderr, because inside qmaster stderr is the daemon's log and
-       * not the caller's terminal. */
-      if (lGetNumberOfElem(object_list_) == 0 &&
-          parameter.get_output_format() != ProcedureParameter::OutputFormat::JSON) {
+      /* An empty list is an error, whatever the output format. The hand written
+       * engine made that an error for plain output only, so "-s<obj>l" exited 1
+       * and "-s<obj>l -fmt json" exited 0 on the same cluster - one question,
+       * two answers, decided by a rendering flag (CS-2929). The format decides
+       * what reaches stdout and nothing else.
+       *
+       * Reported but *not* failed, which is the whole trick: exec_procedure()
+       * skips the view when the snapshot fails, so ending the read here would
+       * take the enveloped empty array away from a JSON caller and leave it
+       * with no document to parse. Returning normally renders it, and the error
+       * in the answer list is what the caller turns into a non-zero exit -
+       * ProcedureModel::make_snapshot() keeps the response text precisely for
+       * output that comes with a complaint (CS-2820).
+       *
+       * The message travels back in the answer list rather than going to stderr,
+       * because inside qmaster stderr is the daemon's log and not the caller's
+       * terminal. */
+      if (lGetNumberOfElem(object_list_) == 0) {
          answer_list_add_sprintf(answer_list, STATUS_EEXIST, ANSWER_QUALITY_ERROR,
                                  MSG_QCONF_NOXDEFINED_S, desc_->read.list_name);
-         DRETURN(false);
       }
    } else {
       /* A read naming several objects reports per name, when the type says what

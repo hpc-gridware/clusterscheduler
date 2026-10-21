@@ -900,10 +900,12 @@ delete operations the exit status reflects the number of failed objects: when a 
 to be applied (or, with `-strict`, when any file in the batch is invalid), `qconf` reports the failures and exits
 non-zero while still having applied the objects that succeeded (unless `-strict` prevented the whole batch).
 
-For the show options naming an object that does not exist is an error, so that a script can ask whether something
-exists instead of parsing the output. It exits non-zero for every name given: `-suser`*a*`,`*b* prints what it finds
-and still exits non-zero when one of the two is unknown. Listing a type of which nothing is configured exits
-non-zero as well, and prints `no `*type*` defined`.
+For the show options two cases are errors, so that a script can ask whether something exists instead of parsing the
+output. Naming an object that does not exist exits non-zero, and does so for every name given: `-suser`*a*`,`*b*
+prints what it finds and still exits non-zero when one of the two is unknown. Listing a type of which nothing is
+configured exits non-zero as well, and prints `no `*type*` defined`. Neither depends on `-fmt`: the format decides
+what is written to the standard output stream, not whether the read succeeded, so `-s`*obj*`l -fmt json` writes its
+envelope with an empty array and still exits non-zero.
 
 # ENVIRONMENTAL VARIABLES
 
