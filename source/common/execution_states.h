@@ -96,8 +96,12 @@
 #define SSTATE_CHECK_DAEMON_CONFIG 36
 #define SSTATE_QMASTER_ENFORCED_LIMIT 37
 #define SSTATE_ADD_GRP_SET_ERROR   38
+/* a systemd method failed while the job was being started: moving the child of
+ * sge_execd into the shepherds scope, or the child of sge_shepherd into the job scope
+ */
+#define SSTATE_SYSTEMD_ERROR       39
 
-#define MAX_SSTATE SSTATE_ADD_GRP_SET_ERROR
+#define MAX_SSTATE SSTATE_SYSTEMD_ERROR
 
 #define SSTATE_FAILURE_AFTER_JOB  100
 

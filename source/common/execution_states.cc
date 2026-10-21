@@ -93,7 +93,8 @@ get_sstate_description(int sstate) {
            {"unused4",                                           SSTATE_UNUSED4},
            {"unused5",                                           SSTATE_UNUSED5},
            {"checking configured daemons",                       SSTATE_CHECK_DAEMON_CONFIG},
-           {"qmaster enforced h_rt limit",                       SSTATE_QMASTER_ENFORCED_LIMIT}
+           {"qmaster enforced h_rt limit",                       SSTATE_QMASTER_ENFORCED_LIMIT},
+           {"in a systemd call",                                 SSTATE_SYSTEMD_ERROR}
    };
 
    for (i = 0; i < sizeof(state_message) / sizeof(struct _state_message); i++) {

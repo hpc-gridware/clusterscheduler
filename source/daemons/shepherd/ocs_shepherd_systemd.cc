@@ -31,6 +31,8 @@
 #include "err_trace.h"
 #include "ocs_shepherd_systemd.h"
 
+#include "execution_states.h"
+
 
 namespace ocs {
    bool g_use_systemd = true;
@@ -200,13 +202,16 @@ namespace ocs {
             if (success) {
                shepherd_trace("moving shepherd child took " sge_u64 " µs", sge_get_gmt64() - start_time);
             } else {
+               shepherd_state = SSTATE_SYSTEMD_ERROR;
                shepherd_error(1, "moving shepherd child to job scope failed: %s", sge_dstring_get_string(&error_dstr));
             }
          } else {
             // we treat a connect-error as fatal, connecting worked before
+            shepherd_state = SSTATE_SYSTEMD_ERROR;
             shepherd_error(1, "connecting to systemd failed: %s", sge_dstring_get_string(&error_dstr));
          }
       } else {
+         shepherd_state = SSTATE_SYSTEMD_ERROR;
          shepherd_error(1, "systemd_slice and/or systemd_scope missing in config file, cannot move shepherd child to job scope");
       }
    }
