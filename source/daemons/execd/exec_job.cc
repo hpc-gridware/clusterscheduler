@@ -1481,7 +1481,12 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
                return "";
             };
 
-            auto add_devices = [&](const char *value) {
+            // A device systemd does not accept makes the creation of the whole job scope fail,
+            // and with it the job start. Leave such a device out instead and say so in the
+            // messages file: that is fail-closed, the job gets less access and never more. The
+            // configuration is checked when it is written, so only a value spooled before that
+            // check existed can still arrive here (CS-2924).
+            auto add_devices = [&](const char *value, const char *rsmap_name, const char *id) {
                if (value == nullptr || *value == '\0') {
                   return;
                }
@@ -1500,6 +1505,12 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
                      mode = colon + 1;
                   }
                   if (path.empty()) {
+                     continue;
+                  }
+                  if (!ocs::uti::systemd_device_is_valid(path)) {
+                     WARNING(MSG_EXECD_SYSTEMD_DEVICE_INVALID_SSS, path.c_str(),
+                             rsmap_name != nullptr ? rsmap_name : "",
+                             id != nullptr ? id : "");
                      continue;
                   }
                   auto it = device_modes.find(path);
@@ -1527,7 +1538,8 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
                   const lListElem *dev_prop = lGetSubStr(resl, CE_name, LOAD_ATTR_DEVICES,
                                                          RESL_properties);
                   if (dev_prop != nullptr) {
-                     add_devices(lGetString(dev_prop, CE_stringval));
+                     add_devices(lGetString(dev_prop, CE_stringval), lGetString(gru, GRU_name),
+                                 lGetString(resl, RESL_value));
                   }
                }
             }

@@ -41,6 +41,11 @@ namespace ocs::uti {
                                           std::vector<uint8_t>, std::vector<SystemdDevice_t>>;
    using SystemdProperties_t = std::map<std::string, SystemdProperty_t>;
 
+   // Also needed outside OCS_WITH_SYSTEMD: the configuration is validated against this
+   // wherever the daemons are built, so that a cluster configuration stays portable
+   // between a build with and one without the systemd integration.
+   bool systemd_device_is_valid(const std::string &device);
+
 #if defined(OCS_WITH_SYSTEMD)
 
    // function types for the sdbus interface

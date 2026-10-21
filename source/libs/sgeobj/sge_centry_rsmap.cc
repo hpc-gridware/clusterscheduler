@@ -39,6 +39,7 @@
 #include "msg_common.h"
 
 #include "sgeobj/sge_centry_rsmap.h"
+#include "uti/ocs_Systemd.h"
 
 bool centry_check_rsmap(lList **answer_list, u_long32 consumable, const char *attrname) {
    bool ret = true;
@@ -167,6 +168,40 @@ bool centry_check_rsmap_characteristics(lList **answer_list, lListElem *centry,
             continue;
          }
          lFreeList(&sub_answers);
+
+         // The "devices" characteristic is the one the execd reads itself: it becomes the
+         // DeviceAllow of the systemd scope of a job which is granted the instance, and systemd
+         // refuses a value which is neither a node or pattern below /dev nor a device class
+         // specifier - which would make every such job fail to start. Reject it here instead,
+         // where an administrator sees it (CS-2924). The value holds one or more devices,
+         // "path[:mode];path[:mode];...", see exec_job.cc.
+         if (strcmp(lGetString(prop, CE_name), LOAD_ATTR_DEVICES) == 0) {
+            const char *devices = lGetString(prop, CE_stringval);
+            if (devices != nullptr) {
+               std::string rest = devices;
+               while (!rest.empty()) {
+                  size_t sep = rest.find(';');
+                  std::string device = rest.substr(0, sep);
+                  rest = sep == std::string::npos ? "" : rest.substr(sep + 1);
+
+                  // strip the optional access mode
+                  size_t colon = device.find(':');
+                  if (colon != std::string::npos) {
+                     device = device.substr(0, colon);
+                  }
+                  if (device.empty()) {
+                     continue;
+                  }
+                  if (!ocs::uti::systemd_device_is_valid(device)) {
+                     answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                                             MSG_RSMAP_CHARACTERISTIC_DEVICE_SSSS,
+                                             rsmap_name, id != nullptr ? id : "", pname,
+                                             device.c_str());
+                     ret = false;
+                  }
+               }
+            }
+         }
       }
    }
 
