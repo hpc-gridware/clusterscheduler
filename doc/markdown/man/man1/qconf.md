@@ -900,6 +900,11 @@ delete operations the exit status reflects the number of failed objects: when a 
 to be applied (or, with `-strict`, when any file in the batch is invalid), `qconf` reports the failures and exits
 non-zero while still having applied the objects that succeeded (unless `-strict` prevented the whole batch).
 
+For the show options naming an object that does not exist is an error, so that a script can ask whether something
+exists instead of parsing the output. It exits non-zero for every name given: `-suser`*a*`,`*b* prints what it finds
+and still exits non-zero when one of the two is unknown. Listing a type of which nothing is configured exits
+non-zero as well, and prints `no `*type*` defined`.
+
 # ENVIRONMENTAL VARIABLES
 
 For a complete list of common environment variables used by all xxQS_NAMExx commands, see xxqs_name_sxx_intro(1).

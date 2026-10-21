@@ -681,11 +681,16 @@ static const qconf_object_desc qconf_object_table[] = {
    /* RQS  */ { ocs::gdi::Target::RQS_LIST,  RQS_Type,  RQS_name,  qconf_fields_RQS,  &qconf_rqs_sfi,             nullptr,      qconf_rqs_validate,  nullptr,           ocs::gdi::SubCommand::SET_ALL, true,  true,  false, nullptr,
               /* -srqs writes the whole list in one go: qconf_rqs_sfi wraps every
                * record in braces, which a loop over single objects would not do */
-              /* -srqs reports an empty result as a whole and never names the one
-               * that was missing, so there is no noun; empty_msg carries the
-               * message it always printed (CS-2819) */
+              /* Both messages, because they answer two different questions and
+               * one field was serving both until CS-2928: empty_msg for "you
+               * named nothing, or nothing of what you named exists", and the
+               * noun for "this name you gave is not there". With only the
+               * former, "-srqs known,unknown" was a partial match - not empty,
+               * so nothing reported it - and the read succeeded without ever
+               * mentioning the name it could not find. */
               { .list_name = "resource quota set list", .create_template = qconf_template_RQS,
-                .empty_msg = MSG_NORQSFOUND, .write_as_list = true },
+                .empty_msg = MSG_NORQSFOUND, .not_found_noun = "resource quota set",
+                .write_as_list = true },
               /* no retain hook and no replace: a modify writes what the text
                * holds and removes nothing (CS-2823) */
               { .verify_list = qconf_rqs_verify_list } },

@@ -407,5 +407,52 @@ remove one. A configuration-management tool that re-applied a shortened file was
 that is how a complex entry is removed from a file-managed configuration, both halves agree, and
 built-in attributes missing from the text are retained and named rather than deleted.
 
+## Show Options Exit Non-Zero for a Named Object That Does Not Exist
+
+Two of them did not. `qconf -suser <name>` printed that the user is unknown and exited **0**;
+it now exits non-zero, which is what the other show options already did:
+
+    $ qconf -suser nosuchuser ; echo "rc=$?"
+    error: nosuchuser is not known as user
+    rc=1
+
+The comma separated form reports on every name given and fails afterwards, so a list in which
+one name is unknown prints the users it did find and still exits non-zero.
+
+`qconf -srqs` had the same defect in a form that was harder to see. A single unknown name was
+reported and exited non-zero, but a list in which one name matched succeeded **and** never
+mentioned the name it could not find:
+
+    $ qconf -srqs myquota,nosuchquota ; echo "rc=$?"
+    {
+       name         myquota
+       [...]
+    }
+    rc=0
+
+It now reports the missing name and exits non-zero, like every other type:
+
+    $ qconf -srqs myquota,nosuchquota ; echo "rc=$?"
+    [...]
+    error: denied: resource quota set "nosuchquota" does not exist
+    rc=1
+
+One message changes with it. A single unknown name is answered with `denied: resource quota set
+"nosuchquota" does not exist`, the wording every other type uses, instead of `No resource quota
+set found` — it names what was asked for rather than only stating that nothing came back. `No
+resource quota set found` remains the answer when no name was given and the cluster has no rule
+set at all.
+
+**Why it changed.** The exit code was the only way a script could ask whether an object exists
+without parsing output, and for these two the answer was always "yes". A line such as
+
+    qconf -suser "$u" >/dev/null 2>&1 || qconf -auser "$u"
+
+never added anything, and it failed silently because the user really was absent.
+
+**If you relied on it**, a script that treats these options as always succeeding has to look at
+the exit code now. Asking without caring whether anything exists is the list form, `qconf
+-suserl` or `-srqsl`, which does not fail on an individual name.
+
 [//]: # (Each file has to end with two empty lines)
 

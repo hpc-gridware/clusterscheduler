@@ -2275,10 +2275,14 @@ qconf_run_read_procedure(std::ostream &os, ocs::QConfParameterClient &param,
    if (entry == nullptr || entry->export_only ||
        entry->kind == ocs::QConfReadKind::SINGLE_OBJECT) {
       /* The named single-object reads are not intercepted here. Their options
-       * disagree about what a failure means - the classic four leave the parser,
-       * -sprj only sets the exit code, -suser ignores it and shows a whole comma
-       * separated list - and -se resolves the host name first. Those blocks keep
-       * their own handling and reach the procedure through qconf_show_object().
+       * still disagree about how a failure is reported - the classic four leave
+       * the parser while -sprj, -se and -suser set the exit code and carry on,
+       * and -se resolves the host name first - so those blocks keep their own
+       * handling and reach the procedure through qconf_show_object().
+       *
+       * What they no longer disagree about is the exit code itself: every one of
+       * them answers non-zero for an object that does not exist (CS-2928 closed
+       * the last gap, -suser, which used to discard the status).
        *
        * Name lists and singletons have no such quirks: a failure sets the exit
        * status and the loop carries on, which is what this function does. */
@@ -5788,8 +5792,15 @@ int sge_parse_qconf(char *argv[]) {
             } else {
                os << "\n";
             }
-            /* a user that does not exist has never changed the exit code here */
-            (void)qconf_show_object(os, param, QConfObj::UU, lGetString(uep, ST_name));
+            /* CS-2928: a name that does not exist sets the exit status, and the
+             * loop carries on so that every user the list does name is still
+             * rendered. Deliberately not qconf_show_status_classic(), which
+             * leaves the parser: "-suser a,b,c" reports on all three and fails
+             * afterwards, which is what the intercepted reads do as well. */
+            if (qconf_show_object(os, param, QConfObj::UU, lGetString(uep, ST_name)) !=
+                QConfShowStatus::OK) {
+               sge_parse_return = 1;
+            }
          }
 
          lFreeList(&uList);
