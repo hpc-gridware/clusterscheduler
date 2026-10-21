@@ -261,6 +261,7 @@
 #define MSG_EXECD_SYSTEMD_REACHABLE_AGAIN                _MESSAGE(29236, _("systemd can be reached again, usage collection continues"))
 #define MSG_EXECD_SYSTEMD_NO_ANSWER                      _MESSAGE(29237, _("systemd does not answer, the calls run into their timeout - no usage is collected while this lasts"))
 #define MSG_EXECD_SYSTEMD_ANSWERS_AGAIN                  _MESSAGE(29238, _("systemd answers again, usage collection continues"))
+#define MSG_EXECD_SYSTEMD_DEVICE_INVALID_SSS             _MESSAGE(29239, _("not granting access to device " SFQ " of resource map " SFQ " instance " SFQ ": systemd accepts only a node or pattern below /dev or a \"char-\" or \"block-\" class specifier - the job runs without access to it"))
 
 // clang-format on
 

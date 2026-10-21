@@ -330,6 +330,12 @@ The value is a list of device paths separated by `;`, each with an optional acce
 
 *mode* is `r`, `w` or `rw`. A path written without a mode is granted read access.
 
+Each path has to be one systemd accepts: a device node or a pattern below `/dev`, such as
+`/dev/nvidia0` or `/dev/nvidia*`, or a device class specifier beginning with `char-` or `block-`,
+such as `char-pts`. A value of any other shape is refused when the host is configured. Whether the
+node exists is not checked and does not matter to systemd: a path which is not there simply allows
+nothing, so a job which needs that device fails when it reaches it.
+
     qconf -mattr exechost complex_values \
       'gpu=2(gpu0[devices=/dev/nvidia0:rw;/dev/nvidiactl:r] \
              gpu1[devices=/dev/nvidia1:rw;/dev/nvidiactl:r])' node01

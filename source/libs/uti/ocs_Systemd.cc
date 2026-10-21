@@ -22,6 +22,42 @@
  * @brief Implementation of the systemd integration declared in ocs_Systemd.h
  */
 
+#include <string>
+
+#include "ocs_Systemd.h"
+
+namespace ocs::uti {
+   /** @brief Whether systemd would accept a device for the DeviceAllow of a unit
+    *
+    * systemd takes either a device node or a pattern below `/dev`, or a device class
+    * specifier beginning with `char-` or `block-`; it refuses anything else with
+    * "DeviceAllow= requires device node or pattern". Whether the node exists does not
+    * matter to it - a path which is not there simply allows nothing.
+    *
+    * A value systemd refuses makes the whole scope of a job fail to be created, so this
+    * is checked when the configuration is written and again before the property is built.
+    *
+    * @param device one device of a `devices` characteristic, without its access mode
+    * @return true when systemd would accept it
+    */
+   bool
+   systemd_device_is_valid(const std::string &device) {
+      // whitespace would make systemd read the remainder of the value as the access mode
+      if (device.empty() || device.find_first_of(" \t") != std::string::npos) {
+         return false;
+      }
+
+      // a device class specifier, e.g. "char-pts" or "block-*"
+      if (device.starts_with("char-") || device.starts_with("block-")) {
+         return true;
+      }
+
+      // a device node or a pattern below /dev. "/dev" itself is accepted by systemd,
+      // "/dev/" with nothing behind it is not.
+      return device == "/dev" || (device.starts_with("/dev/") && device.length() > 5);
+   }
+} // namespace ocs::uti
+
 #if defined(OCS_WITH_SYSTEMD)
 #include <filesystem>
 #include <fstream>
