@@ -865,7 +865,7 @@ int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_ti
                           new_iochars += (uint64) nchar;
                        }
                     } else if (strcmp("syscr:", label) == 0 ||
-                               strcmp("syscr:", label) == 0) {
+                               strcmp("syscw:", label) == 0) {
                        unsigned long long nops = 0UL;
                        if (sscanf(token, "%llu", &nops) == 1) {
                           new_ioops += (uint64) nops;
