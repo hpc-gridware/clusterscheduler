@@ -99,6 +99,8 @@
 #include "tmpdir.h"
 #include "exec_job.h"
 #include "ocs_execd_systemd.h"
+
+#include "execution_states.h"
 #include "mail.h"
 #include <cinttypes>
 #include "pdc.h"
@@ -2207,17 +2209,24 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
 
    /*---------------------------------------------------*/
    /* exec() failed - do what shepherd does if it fails */
-   // @todo can we set the host in error state (all queues) when starting_shepherd_ok is false?
-   //       Otherwise the job will get scheduled to this host over and over again.
+   // starting_shepherd_ok is false only when the move into the shepherds scope failed, which
+   // is a systemd problem and not a failing exec. Report it as such, so that the failure state
+   // of the job names systemd and the host is set into error state rather than the job being
+   // scheduled here over and over again.
    fp = fopen("error", "w");
    if (fp) {
-      fprintf(fp, "failed to exec shepherd for job" sge_u32"\n", job_id);
+      if (starting_shepherd_ok) {
+         fprintf(fp, "failed to exec shepherd for job" sge_u32"\n", job_id);
+      } else {
+         fprintf(fp, "failed to move the shepherd of job " sge_u32 " into its systemd scope\n",
+                 job_id);
+      }
       FCLOSE(fp);
    }
 
    fp = fopen("exit_status", "w");
    if (fp) {
-      fprintf(fp, "1\n");
+      fprintf(fp, "%d\n", starting_shepherd_ok ? 1 : SSTATE_SYSTEMD_ERROR);
       FCLOSE(fp);
    }
 

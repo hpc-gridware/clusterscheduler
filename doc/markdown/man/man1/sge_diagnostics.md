@@ -66,6 +66,7 @@ The following table lists the error codes and their meaning:
 |   `36` | `SSTATE_CHECK_DAEMON_CONFIG`: The daemon for an interactive job could not be found (if `rsh_daemon`, `rlogin_daemon`, `qlogin_daemon` is configured to a daemon path, instead of `builtin`)                         |
 |   `37` | `SSTATE_QMASTER_ENFORCED_LIMIT: `sge_qmaster` enforced killing the job due to a limit.                                                                                                                              |
 |   `38` | `SSTATE_ADD_GRP_SET_ERROR`: `sge_shepherd` cannot attach the additional group id to the `sge_shepherd` child process becoming the job.                                                                              |
+|   `39` | `SSTATE_SYSTEMD_ERROR`: A systemd method failed while the job was being started - `sge_execd` could not move the process which becomes `sge_shepherd` into the shepherds scope, or `sge_shepherd` could not move the process which becomes the job into the job scope. All queues of the host are set into error state, as every job on it is affected. See the `sge_execd` messages file and the `sge_shepherd` trace file for the systemd error.    |
 |  `100` | `SSTATE_FAILURE_AFTER_JOB`: The job ran through, but no `usage` file was written by `sge_shepherd`.                                                                                                                 |
 
 

@@ -100,8 +100,9 @@
 #define SSTATE_CHECK_DAEMON_CONFIG 36   ///< checking configured daemons
 #define SSTATE_QMASTER_ENFORCED_LIMIT 37   ///< qmaster enforced h_rt limit
 #define SSTATE_ADD_GRP_SET_ERROR   38   ///< setting the additional group id used to track the job's processes
+#define SSTATE_SYSTEMD_ERROR       39   ///< a systemd method failed while the job was being started
 
-#define MAX_SSTATE SSTATE_ADD_GRP_SET_ERROR   ///< the highest defined `SSTATE_*` below the "after job" range
+#define MAX_SSTATE SSTATE_SYSTEMD_ERROR   ///< highest `SSTATE_*` below the "after job" range
 
 #define SSTATE_FAILURE_AFTER_JOB  100   ///< assumedly after job
 
