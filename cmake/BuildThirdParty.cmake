@@ -127,6 +127,25 @@ function(build_third_party 3rdparty_build_path)
     if (${SGE_PACKAGE_MANAGER} STREQUAL none)
         include(ExternalProject)
 
+        # The autoconf builds below take "gcc" from PATH unless they are told which
+        # compiler to use, and that is not necessarily the one cmake/Toolchain.cmake
+        # selected for the project. On the CentOS 7 build host it is the system gcc
+        # 4.8, which cannot compile jemalloc 5.4.0: its os/detect.h uses
+        # __has_include, which gcc 4.8 does not know. The libraries are therefore
+        # handed the project's compilers, together with the toolchain flags (the -B
+        # path of the binutils and the multiarch paths) that such a compiler needs
+        # to find its assembler, linker and the system's crt files. Where no
+        # toolchain is selected, this is the system compiler cmake found, and the
+        # flags are empty.
+        # The compilers go into the environment of the configure step, not onto
+        # its command line: jemalloc 5.3.0's autogen.sh passes its arguments on
+        # as an unquoted $@, which splits "CC=gcc -B..." into words and makes
+        # configure reject the -B as an unknown option.
+        string(STRIP "${CMAKE_C_COMPILER} ${CMAKE_C_FLAGS_INIT}" 3rdparty_cc)
+        string(STRIP "${CMAKE_CXX_COMPILER} ${CMAKE_CXX_FLAGS_INIT}" 3rdparty_cxx)
+        set(3rdparty_env ${CMAKE_COMMAND} -E env "CC=${3rdparty_cc}" "CXX=${3rdparty_cxx}")
+        message(STATUS "3rdparty compilers: CC=${3rdparty_cc} CXX=${3rdparty_cxx}")
+
         # berkeleydb
         if (WITH_SPOOL_BERKELEYDB)
             message(STATUS "adding 3rdparty berkeleydb")
@@ -169,7 +188,7 @@ function(build_third_party 3rdparty_build_path)
                         GIT_TAG ${PROJECT_3RDPARTY_BERKELEYDB_COMMIT}
                         # update config.guess and config.sub with current versions of the installed automake
                         PATCH_COMMAND /bin/sh -c "cp ${PROJECT_AUTOMAKE_SRC} dist"
-                        CONFIGURE_COMMAND dist/configure
+                        CONFIGURE_COMMAND ${3rdparty_env} dist/configure
                            --prefix ${3rdparty_install_path}
                            ${CUSTOM_CFLAGS}
                         BUILD_IN_SOURCE TRUE
@@ -216,7 +235,7 @@ function(build_third_party 3rdparty_build_path)
                         INSTALL_DIR ${3rdparty_install_path}
                         GIT_REPOSITORY https://github.com/jemalloc/jemalloc.git
                         GIT_TAG ${PROJECT_3RDPARTY_JEMALLOC_VERSION}
-                        CONFIGURE_COMMAND ./autogen.sh --prefix ${3rdparty_install_path}
+                        CONFIGURE_COMMAND ${3rdparty_env} ./autogen.sh --prefix ${3rdparty_install_path}
                         --disable-shared --disable-initial-exec-tls
                         BUILD_IN_SOURCE TRUE
                         BUILD_ALWAYS FALSE
@@ -266,7 +285,7 @@ function(build_third_party 3rdparty_build_path)
                         PREFIX ${3rdparty_build_path}/hwloc
                         INSTALL_DIR ${3rdparty_install_path}
                         DOWNLOAD_EXTRACT_TIMESTAMP TRUE
-                        CONFIGURE_COMMAND ./configure
+                        CONFIGURE_COMMAND ${3rdparty_env} ./configure
                            --prefix ${3rdparty_install_path}
                            --enable-static --disable-libxml2 --disable-cuda --disable-nvml --disable-rsmi --disable-levelzero --disable-gl --disable-pci
                            ${CUSTOM_CFLAGS}
