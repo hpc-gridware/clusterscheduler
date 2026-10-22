@@ -69,6 +69,14 @@ add_executable(test_drmaa_cs2447 ../../../test/libs/drmaa/test_drmaa_cs2447.cc)
 target_include_directories(test_drmaa_cs2447 PRIVATE "./")
 target_link_libraries(test_drmaa_cs2447 PRIVATE drmaa ${SGE_LIBS})
 
+# CS-2937 probe. Times drmaa_init() and drmaa_exit() of a session to show the
+# delay a non-manager sees when the event client shutdown is denied. Driven by
+# the testsuite check at testsuite/src/checktree/bugs/jira_cs/2937; not wired
+# into CTest because it needs a live cluster.
+add_executable(test_drmaa_cs2937 ../../../test/libs/drmaa/test_drmaa_cs2937.cc)
+target_include_directories(test_drmaa_cs2937 PRIVATE "./")
+target_link_libraries(test_drmaa_cs2937 PRIVATE drmaa ${SGE_LIBS})
+
 if (INSTALL_SGE_TEST)
    install(TARGETS test_drmaa DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_drmaa_issue1768 DESTINATION testbin/${SGE_ARCH})
@@ -80,4 +88,5 @@ if (INSTALL_SGE_TEST)
    install(TARGETS test_drmaa_sync DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_drmaa_cs2404 DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_drmaa_cs2447 DESTINATION testbin/${SGE_ARCH})
+   install(TARGETS test_drmaa_cs2937 DESTINATION testbin/${SGE_ARCH})
 endif ()
