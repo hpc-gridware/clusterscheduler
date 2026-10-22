@@ -82,7 +82,7 @@
 #define ESSTATE_EXECD_LOST_RUNNING 22   ///< removed manually
 
 /* this is an error that occurs only in a SGE execd */
-#define ESSTATE_PTF_CANT_GET_PIDS  23   ///< the PTF could not read the job's process ids
+#define ESSTATE_PTF_CANT_GET_PIDS  23   ///< on reading the job's pids (not used at the moment)
 
 #define SSTATE_MIGRATE             24   ///< migrating
 #define SSTATE_AGAIN               25   ///< rescheduling

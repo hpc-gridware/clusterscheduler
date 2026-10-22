@@ -20,6 +20,7 @@
 
 # test
 
+add_subdirectory(common)
 add_subdirectory(daemons)
 add_subdirectory(libs)
 add_subdirectory(misc)
