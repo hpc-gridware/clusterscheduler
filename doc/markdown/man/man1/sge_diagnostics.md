@@ -90,44 +90,53 @@ The administrator mail address can be configured in the global configuration fil
 
 For most of the error codes the administrator mail is sent for every failed job.
 
-For specific configuration-related failures (prolog and epilog configuration), the administrator mail is sent only once for the first failed job. It will be sent again if the configuration is changed (either a local or global configuration, or a queue is changed).
+For the configuration-related failures - a prolog, an epilog or a parallel environment start or stop procedure which cannot be executed or which exits with a non-zero status, and a missing daemon for an interactive job - one mail is sent and the following ones are suppressed, because every job which runs into the same misconfiguration produces the same mail. The suppression is per error code and per queue instance, so the same mistake in two queues is reported for each of them. A mail is sent again as soon as
+
+* the queue instance changes, which includes a change of its configuration, a change of its state such as clearing its error state, and a change of the exec host, of a complex or of a user access list it refers to, or
+* the global or a local cluster configuration changes, or
+* `sge_execd` is restarted.
 
 For a few error codes no administrator mail is sent.
 
-The following table lists the error codes and the frequency of sending. See [Error Codes reported in the failed state of jobs](#error-codes-reported-in-the-failed-state-of-jobs) for a list of the error codes and their meaning.
+The following table lists the error codes and the frequency of sending. ALWAYS means one mail per failed job, ONCE means one mail until something changes as described above, and NEVER means that no administrator mail is sent for that code. See [Error Codes reported in the failed state of jobs](#error-codes-reported-in-the-failed-state-of-jobs) for a list of the error codes and their meaning.
 
-| Code                       | Frequency |
-|:---------------------------|:----------|
-| SSTATE_FAILURE_BEFORE_JOB  | NEVER     |
-| ESSTATE_NO_SHEPHERD        | NEVER     |
-| ESSTATE_NO_CONFIG          | ALWAYS    |
-| ESSTATE_NO_PID             | ALWAYS    |
-| SSTATE_PROCSET_NOT_SET     | ALWAYS    |
-| SSTATE_BEFORE_PROLOG       | ALWAYS    |
-| SSTATE_PROLOG_FAILED       | ONCE      |
-| SSTATE_BEFORE_PESTART      | ALWAYS    |
-| SSTATE_PESTART_FAILED      | ALWAYS    |
-| SSTATE_BEFORE_JOB          | ALWAYS    |
-| SSTATE_BEFORE_PESTOP       | ALWAYS    |
-| SSTATE_PESTOP_FAILED       | ALWAYS    |
-| SSTATE_BEFORE_EPILOG       | ALWAYS    |
-| SSTATE_EPILOG_FAILED       | ONCE      |
-| SSTATE_PROCSET_NOTFREED    | ALWAYS    |
-| ESSTATE_DIED_THRU_SIGNAL   | ALWAYS    |
-| ESSTATE_SHEPHERD_EXIT      | ALWAYS    |
-| ESSTATE_NO_EXITSTATUS      | ALWAYS    |
-| ESSTATE_UNEXP_ERRORFILE    | ALWAYS    |
-| ESSTATE_UNKNOWN_JOB        | ALWAYS    |
-| ESSTATE_EXECD_LOST_RUNNING | NEVER     |
-| ESSTATE_PTF_CANT_GET_PIDS  | NEVER     |
-| SSTATE_MIGRATE             | NEVER     |
-| SSTATE_AGAIN               | NEVER     |
-| SSTATE_OPEN_OUTPUT         | ALWAYS    |
-| SSTATE_NO_SHELL            | ALWAYS    |
-| SSTATE_NO_CWD              | ALWAYS    |
-| SSTATE_AFS_PROBLEM         | ALWAYS    |
-| SSTATE_APPERROR            | ALWAYS    |
-| SSTATE_CHECK_DAEMON_CONFIG | NEVER     |
+| Code                          | Frequency |
+|:------------------------------|:----------|
+| SSTATE_FAILURE_BEFORE_JOB     | ALWAYS    |
+| ESSTATE_NO_SHEPHERD           | NEVER     |
+| ESSTATE_NO_CONFIG             | ALWAYS    |
+| ESSTATE_NO_PID                | ALWAYS    |
+| SSTATE_READ_CONFIG            | ALWAYS    |
+| SSTATE_PROCSET_NOTSET         | ALWAYS    |
+| SSTATE_BEFORE_PROLOG          | ONCE      |
+| SSTATE_PROLOG_FAILED          | ONCE      |
+| SSTATE_BEFORE_PESTART         | ONCE      |
+| SSTATE_PESTART_FAILED         | ONCE      |
+| SSTATE_BEFORE_JOB             | ALWAYS    |
+| SSTATE_BEFORE_PESTOP          | ONCE      |
+| SSTATE_PESTOP_FAILED          | ONCE      |
+| SSTATE_BEFORE_EPILOG          | ONCE      |
+| SSTATE_EPILOG_FAILED          | ONCE      |
+| SSTATE_PROCSET_NOTFREED       | ALWAYS    |
+| ESSTATE_DIED_THRU_SIGNAL      | ALWAYS    |
+| ESSTATE_SHEPHERD_EXIT         | ALWAYS    |
+| ESSTATE_NO_EXITSTATUS         | ALWAYS    |
+| ESSTATE_UNEXP_ERRORFILE       | ALWAYS    |
+| ESSTATE_UNKNOWN_JOB           | ALWAYS    |
+| ESSTATE_EXECD_LOST_RUNNING    | NEVER     |
+| ESSTATE_PTF_CANT_GET_PIDS     | NEVER     |
+| SSTATE_MIGRATE                | NEVER     |
+| SSTATE_AGAIN                  | NEVER     |
+| SSTATE_OPEN_OUTPUT            | ALWAYS    |
+| SSTATE_NO_SHELL               | ALWAYS    |
+| SSTATE_NO_CWD                 | ALWAYS    |
+| SSTATE_AFS_PROBLEM            | ALWAYS    |
+| SSTATE_APPERROR               | ALWAYS    |
+| SSTATE_CHECK_DAEMON_CONFIG    | ONCE      |
+| SSTATE_QMASTER_ENFORCED_LIMIT | NEVER     |
+| SSTATE_ADD_GRP_SET_ERROR      | ALWAYS    |
+| SSTATE_SYSTEMD_ERROR          | ALWAYS    |
+| SSTATE_FAILURE_AFTER_JOB      | ALWAYS    |
 
 # ENVIRONMENTAL VARIABLES
 

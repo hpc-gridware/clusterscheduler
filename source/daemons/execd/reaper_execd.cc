@@ -386,6 +386,35 @@ static void unregister_from_ptf(u_long32 job_id, u_long32 ja_task_id,
    jobid = id of job to reap
    failed = indicates a failure of job execution, see shepherd_states.h
  ************************************************************************/
+/** @brief The version the qmaster gave the queue instance a job report names
+ *
+ * An administrator mail which is sent only once is suppressed per queue instance and sent
+ * again as soon as that queue instance changes. The queue version is what tells a change:
+ * the qmaster increases it whenever the configuration or the state of the queue instance
+ * changes, and the scheduler stores it in the granted destination list of the job, so it is
+ * at hand here without asking the qmaster for it.
+ *
+ * @param jr      the job report, which names the queue the failure is attributed to
+ * @param ja_task the array task of the job, may be nullptr
+ * @return the version of that queue instance, or 0 when it cannot be determined
+ */
+static u_long32
+reaper_get_qversion(const lListElem *jr, const lListElem *ja_task) {
+   DENTER(TOP_LAYER);
+
+   u_long32 ret = 0;
+   const char *qname = lGetString(jr, JR_queue_name);
+   if (ja_task != nullptr && qname != nullptr) {
+      const lListElem *gdil_ep = lGetSubStr(ja_task, JG_qname, qname,
+                                            JAT_granted_destin_identifier_list);
+      if (gdil_ep != nullptr) {
+         ret = lGetUlong(gdil_ep, JG_qversion);
+      }
+   }
+
+   DRETURN(ret);
+}
+
 static int clean_up_job(lListElem *jr, int failed, int shepherd_exit_status, 
                         int is_array, const lListElem *ja_task, const char* job_owner) 
 {
@@ -684,6 +713,9 @@ static int clean_up_job(lListElem *jr, int failed, int shepherd_exit_status,
                job_get_id_string(job_id, ja_task_id, pe_task_id, &id_dstring), error);
    }
 
+   /* the queue instance the failure is attributed to, for the administrator mail */
+   u_long32 qversion = reaper_get_qversion(jr, ja_task);
+
    /* general_failure */
    switch (failed) {
    case SSTATE_BEFORE_PROLOG:
@@ -695,7 +727,7 @@ static int clean_up_job(lListElem *jr, int failed, int shepherd_exit_status,
    */
       general_failure = GFSTATE_HOST;
       lSetUlong(jr, JR_general_failure, general_failure);
-      job_related_adminmail(EXECD, jr, is_array, job_owner);
+      job_related_adminmail(EXECD, jr, is_array, job_owner, qversion);
       break;
    case SSTATE_PROCSET_NOTSET:
    case SSTATE_READ_CONFIG:
@@ -708,7 +740,7 @@ static int clean_up_job(lListElem *jr, int failed, int shepherd_exit_status,
    case SSTATE_EPILOG_FAILED:
       general_failure = GFSTATE_QUEUE;
       lSetUlong(jr, JR_general_failure, general_failure);
-      job_related_adminmail(EXECD, jr, is_array, job_owner);
+      job_related_adminmail(EXECD, jr, is_array, job_owner, qversion);
       break;
    case SSTATE_ADD_GRP_SET_ERROR:
    case SSTATE_BEFORE_JOB:
@@ -746,7 +778,7 @@ static int clean_up_job(lListElem *jr, int failed, int shepherd_exit_status,
 
          general_failure = job_caused_failure ? GFSTATE_JOB : GFSTATE_QUEUE;
          lSetUlong(jr, JR_general_failure, general_failure);
-         job_related_adminmail(EXECD, jr, is_array, job_owner);
+         job_related_adminmail(EXECD, jr, is_array, job_owner, qversion);
       }
       break;
    /*
@@ -759,7 +791,7 @@ static int clean_up_job(lListElem *jr, int failed, int shepherd_exit_status,
    case SSTATE_APPERROR:
       general_failure = GFSTATE_JOB;
       lSetUlong(jr, JR_general_failure, general_failure);
-      job_related_adminmail(EXECD, jr, is_array, job_owner);
+      job_related_adminmail(EXECD, jr, is_array, job_owner, qversion);
       break;
    /*
    ** if an error occurred after the job has been run
@@ -768,7 +800,7 @@ static int clean_up_job(lListElem *jr, int failed, int shepherd_exit_status,
    case SSTATE_PROCSET_NOTFREED:
       general_failure = GFSTATE_NO_HALT;
       lSetUlong(jr, JR_general_failure, general_failure);
-      job_related_adminmail(EXECD, jr, is_array, job_owner);
+      job_related_adminmail(EXECD, jr, is_array, job_owner, qversion);
       break;
    /*
    ** these are shepherd error conditions met by the execd
@@ -785,7 +817,7 @@ static int clean_up_job(lListElem *jr, int failed, int shepherd_exit_status,
       */
       general_failure = GFSTATE_NO_HALT;
       lSetUlong(jr, JR_general_failure, general_failure);
-      job_related_adminmail(EXECD, jr, is_array, job_owner);
+      job_related_adminmail(EXECD, jr, is_array, job_owner, qversion);
       break;
    default: 
       general_failure = GFSTATE_NO_HALT;
@@ -1154,7 +1186,8 @@ static lListElem *execd_job_failure(lListElem *jep, lListElem *jatep, lListElem 
 
       lSetUlong(jr, JR_state, JEXITING);
 
-      job_related_adminmail(EXECD, jr, job_is_array(jep), lGetString(jep, JB_owner));
+      job_related_adminmail(EXECD, jr, job_is_array(jep), lGetString(jep, JB_owner),
+                            ep != nullptr ? lGetUlong(ep, JG_qversion) : 0);
    }
 
    DRETURN(jr);

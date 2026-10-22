@@ -33,6 +33,9 @@
 /*___INFO__MARK_END__*/
 #include <cstring>
 #include <cerrno>
+#include <map>
+#include <string>
+#include <utility>
 
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
@@ -54,63 +57,83 @@
 #include "msg_daemons_common.h"
 #include "uti/sge.h"
 
-/* @todo CS-1697 This list has issues:
- *    * there is an offset at the beginning: SSTATE_FAILURE_BEFORE_JOB is state 1 - they all seem shifted by one
-*     * SSTATE_PROCSET_NOTSET is missing
-*     * SSTATE_EPILOG_FAILED is duplicated
-*     * SSTATE_ADD_GRP_SET_ERROR is missing
-*     * SSTATE_PROCSET_NOTFREED is missing
-*     * possibly further issues, compare against state definition in execution_states.h
+/*
+ * How often an administrator mail is sent for an error state.
+ *
+ * The states are listed by name and looked up, not placed at an index: an entry which is
+ * missing or listed twice would otherwise shift every entry below it onto the wrong state,
+ * which is what CS-1697 was about. A state which is not listed here is mailed every time,
+ * which is BIT_ADM_ALWAYS.
+ *
+ * BIT_ADM_NEW_CONF | BIT_ADM_QCHANGE means "once until something changes": once per queue
+ * instance, and again as soon as the queue it happened in changes or the cluster
+ * configuration does. The states which carry it are the ones an administrator configures -
+ * a wrong path or a script which exits non-zero produces the same mail for every job which
+ * touches the queue, and one of them is enough until the configuration is touched.
  */
-int admail_states[MAX_SSTATE + 1] = {
-                                      0,
-                                      0,
-/* 2  SSTATE_FAILURE_BEFORE_JOB  */   0,
-/* 3  ESSTATE_NO_SHEPHERD        */   0,
-/* 4  ESSTATE_NO_CONFIG          */   0,
-/* 5  ESSTATE_NO_PID             */   0,
-/* 6  SSTATE_READ_CONFIG         */   0,
-/* 7  SSTATE_BEFORE_PROLOG       */   BIT_ADM_NEW_CONF | BIT_ADM_QCHANGE,
-/* 8  SSTATE_PROLOG_FAILED       */   0,
-/* 9  SSTATE_BEFORE_PESTART      */   0,
-/* 10 SSTATE_PESTART_FAILED      */   0,
-/* 11 SSTATE_BEFORE_JOB          */   0,
-/* 12 SSTATE_BEFORE_PESTOP       */   0,
-/* 13 SSTATE_PESTOP_FAILED       */   0,
-/* 14 SSTATE_BEFORE_EPILOG       */   BIT_ADM_NEW_CONF | BIT_ADM_QCHANGE,
-/* 15 SSTATE_EPILOG_FAILED       */   0,
-/* 16 SSTATE_EPILOG_FAILED       */   0,
-/* 17 ESSTATE_DIED_THRU_SIGNAL   */   0,
-/* 18 ESSTATE_SHEPHERD_EXIT      */   0,
-/* 19 ESSTATE_NO_EXITSTATUS      */   0,
-/* 20 ESSTATE_UNEXP_ERRORFILE    */   0,
-/* 21 ESSTATE_UNKNOWN_JOB        */   0,
-/* 22 ESSTATE_EXECD_LOST_RUNNING */   0,
-/* 23 ESSTATE_PTF_CANT_GET_PIDS  */   0,
-/* 24 SSTATE_MIGRATE             */   BIT_ADM_NEVER,
-/* 25 SSTATE_AGAIN               */   BIT_ADM_NEVER,
-/* 26 SSTATE_OPEN_OUTPUT         */   0,
-/* 27 SSTATE_NO_SHELL            */   0,
-/* 28 SSTATE_NO_CWD              */   0,
-/* 29 SSTATE_AFS_PROBLEM         */   0,
-/* 30 SSTATE_APPERROR            */   0,
-/* 31 SSTATE_UNUSED1             */   0,
-/* 32 SSTATE_UNUSED2             */   0,
-/* 33 SSTATE_UNUSED3             */   0,
-/* 34 SSTATE_UNUSED4             */   0,
-/* 35 SSTATE_UNUSED5             */   0,
-/* 36 SSTATE_CHECK_DAEMON_CONFIG */   0 };
+static const struct {
+   int state;
+   int bits;
+} admail_state_bits[] = {
+        {SSTATE_BEFORE_PROLOG,       BIT_ADM_NEW_CONF | BIT_ADM_QCHANGE},
+        {SSTATE_PROLOG_FAILED,       BIT_ADM_NEW_CONF | BIT_ADM_QCHANGE},
+        {SSTATE_BEFORE_EPILOG,       BIT_ADM_NEW_CONF | BIT_ADM_QCHANGE},
+        {SSTATE_EPILOG_FAILED,       BIT_ADM_NEW_CONF | BIT_ADM_QCHANGE},
+        {SSTATE_BEFORE_PESTART,      BIT_ADM_NEW_CONF | BIT_ADM_QCHANGE},
+        {SSTATE_PESTART_FAILED,      BIT_ADM_NEW_CONF | BIT_ADM_QCHANGE},
+        {SSTATE_BEFORE_PESTOP,       BIT_ADM_NEW_CONF | BIT_ADM_QCHANGE},
+        {SSTATE_PESTOP_FAILED,       BIT_ADM_NEW_CONF | BIT_ADM_QCHANGE},
+        {SSTATE_CHECK_DAEMON_CONFIG, BIT_ADM_NEW_CONF | BIT_ADM_QCHANGE},
 
-u_long64 admail_times[MAX_SSTATE + 1];
+        // a job the execd hands back or hands on, not a failure to report
+        {SSTATE_MIGRATE,             BIT_ADM_NEVER},
+        {SSTATE_AGAIN,               BIT_ADM_NEVER},
+};
+
+/** @brief How often an administrator mail is sent for an error state
+ *
+ * @param state one of the states of execution_states.h
+ * @return the BIT_ADM_* bits of that state, BIT_ADM_ALWAYS for a state not listed
+ */
+static int
+admail_get_bits(int state) {
+   for (const auto &entry : admail_state_bits) {
+      if (entry.state == state) {
+         return entry.bits;
+      }
+   }
+   return BIT_ADM_ALWAYS;
+}
+
+/*
+ * What has been mailed already, by error state and queue instance.
+ *
+ * Keeping the queue instance apart matters: the same misconfiguration in two queues is two
+ * things to report, and a change to one of them says nothing about the other.
+ *
+ * The queue version is what tells a change. The qmaster increases it for a queue instance
+ * whenever its configuration or its state changes, and also when the exec host, a complex
+ * or a userset it refers to changes; the scheduler stores it in the granted destination
+ * list of the job, so the execd has it at hand without asking for it. A change of the
+ * cluster configuration does not touch it and is handled by adm_mail_reset() instead.
+ */
+typedef std::pair<int, std::string> admail_key_t;
+
+struct admail_sent_t {
+   u_long64 when;        ///< when the mail was sent
+   u_long32 qversion;    ///< the version the queue instance had at that moment
+};
+
+static std::map<admail_key_t, admail_sent_t> admail_sent;
 
 /*
 ** this functions reports job failures to the admin
 ** it might not be apt to report on errors that
 ** have nothing to do with a particular job
 */
-void job_related_adminmail(u_long32 progid, lListElem *jr, int is_array, const char *job_owner)
+void job_related_adminmail(u_long32 progid, lListElem *jr, int is_array, const char *job_owner,
+                           u_long32 qversion)
 {
-   static int first = 1;
    char sge_mail_subj[1024];
    char sge_mail_body[20480];
    char sge_mail_start[128];
@@ -138,12 +161,6 @@ void job_related_adminmail(u_long32 progid, lListElem *jr, int is_array, const c
    DENTER(TOP_LAYER);
 
    sge_dstring_init(&ds, buffer, sizeof(buffer));
-
-   DPRINTF("sizeof(admail_times) : %d\n", sizeof(admail_times));
-   if (first) {
-      memset(admail_times, 0, sizeof(admail_times));
-      first = 0;
-   }
 
    char* administrator_mail = mconf_get_administrator_mail();
    if (administrator_mail == nullptr) {
@@ -179,38 +196,34 @@ void job_related_adminmail(u_long32 progid, lListElem *jr, int is_array, const c
       const char *err_str;
       size_t max_shepherd_files_size = 0;
 
-      if (failed <= MAX_SSTATE) {
-         /*
-         ** a state might have more than one bit set
-         */
-         if ((admail_states[failed] & BIT_ADM_NEVER)) {
-            DPRINTF("NEVER SENDING ADMIN MAIL for state %d\n", failed);
+      // a state might have more than one bit set
+      int admail_bits = admail_get_bits(failed);
+      admail_key_t admail_key{static_cast<int>(failed), q};
+
+      if ((admail_bits & BIT_ADM_NEVER) != 0) {
+         DPRINTF("NEVER SENDING ADMIN MAIL for state %d\n", failed);
+         sge_free(&administrator_mail);
+         DRETURN_VOID;
+      }
+      if ((admail_bits & (BIT_ADM_NEW_CONF | BIT_ADM_QCHANGE)) != 0) {
+         auto it = admail_sent.find(admail_key);
+         if (it != admail_sent.end() && it->second.qversion == qversion) {
+            DPRINTF("NOT SENDING ADMIN MAIL AGAIN for state %d in queue " SFN
+                    ": nothing changed since the last one\n", failed, q);
             sge_free(&administrator_mail);
             DRETURN_VOID;
          }
-         if ((admail_states[failed] & BIT_ADM_NEW_CONF)) {
-            if (admail_times[failed]) {
-               DPRINTF("NOT SENDING ADMIN MAIL AGAIN for state %d, again on conf\n", failed);
-               sge_free(&administrator_mail);
-               DRETURN_VOID;
-            }
-         }
-         if ((admail_states[failed] & BIT_ADM_QCHANGE)) {
-            if (admail_times[failed]) {
-               DPRINTF("NOT SENDING ADMIN MAIL AGAIN for state %d, again on qchange\n", failed);
-               sge_free(&administrator_mail);
-               DRETURN_VOID;
-            }
-         }
-         if ((admail_states[failed] & BIT_ADM_HOUR)) {
-            if ((now - admail_times[failed] < sge_gmt32_to_gmt64(3600))) {
-               DPRINTF("NOT SENDING ADMIN MAIL AGAIN for state %d, again next hour\n", failed);
-               sge_free(&administrator_mail);
-               DRETURN_VOID;
-            }
-         }
-         admail_times[failed] = now;
       }
+      if ((admail_bits & BIT_ADM_HOUR) != 0) {
+         auto it = admail_sent.find(admail_key);
+         if (it != admail_sent.end() && now - it->second.when < sge_gmt32_to_gmt64(3600)) {
+            DPRINTF("NOT SENDING ADMIN MAIL AGAIN for state %d in queue " SFN
+                    ": less than an hour since the last one\n", failed, q);
+            sge_free(&administrator_mail);
+            DRETURN_VOID;
+         }
+      }
+      admail_sent[admail_key] = {now, qversion};
       if (!(err_str=lGetString(jr, JR_err_str))) {
          err_str = MSG_MAIL_UNKNOWN_REASON;
       }
@@ -328,24 +341,24 @@ FCLOSE_ERROR:
 
 int adm_mail_reset(int state)
 {
-   int i;
-
    DENTER(TOP_LAYER);
 
    /*
    ** let 0 be a reset all
    */
    if (state == 0) {
-      memset(admail_times, 0, sizeof(admail_times));
+      admail_sent.clear();
       DRETURN(0);
    }
 
-   DPRINTF("resetting admin mail for state %d\n", state);
-   for (i = 0; i < MAX_SSTATE + 1; i++) {
-      if ((admail_states[i] & state)) {
-         admail_times[i] = 0;
+   DPRINTF("resetting admin mail for the states with bit %d\n", state);
+   for (auto it = admail_sent.begin(); it != admail_sent.end(); ) {
+      if ((admail_get_bits(it->first.first) & state) != 0) {
+         it = admail_sent.erase(it);
+      } else {
+         ++it;
       }
    }
-   
+
    DRETURN(0);
 }

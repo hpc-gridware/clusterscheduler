@@ -44,4 +44,5 @@
 #define BIT_ADM_HOUR     8
 
 int adm_mail_reset(int state);
-void job_related_adminmail(u_long32 progid, lListElem *jr, int is_array, const char *job_owner);
+void job_related_adminmail(u_long32 progid, lListElem *jr, int is_array, const char *job_owner,
+                           u_long32 qversion);
