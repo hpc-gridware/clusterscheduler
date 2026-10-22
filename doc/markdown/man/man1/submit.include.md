@@ -1726,7 +1726,7 @@ option above or find more information concerning JSV in xxqs_name_sxx_jsv(1))
 Available for `qalter` only. Changes are only made on those jobs which were submitted by users specified in the 
 list of usernames. For manager, it is possible to use the `qalter -u *` command to modify all jobs of all users.
 
-If you use the `-u switch it is not permitted to specify an additional *wc_job_range_list*.
+If you use the `-u` switch it is not permitted to specify an additional *wc_job_range_list*.
 
 ## -v variable\[=value\],...  
 Available for `qsub`, `qrsh`, `qlogin`, `qsh`, and `qalter`.

@@ -63,7 +63,7 @@ Topology strings are usually written in **uppercase**, except for components tha
 Topology of a compute node can be requested explicitly for a job or advance reservation.
 
 ```
-qsub -l m_topology=SCTTCTTCTTCTTCTTCTTCTTCTTEEEEEEEE` ...
+qsub -l m_topology=SCTTCTTCTTCTTCTTCTTCTTCTTEEEEEEEE ...
 ```
 
 Topology strings appear in various outputs (e.g. `qstat -j`, `qrstat -ar`, `qstat -F`) to illustrate granted bindings for jobs and advance reservations. Components where a job or Advance Reservation has **exclusive access** are written in **lowercase**.
@@ -132,7 +132,7 @@ If the processes or threads are **highly dependent on each other**, binding to *
 ***Example: Binding to Threads***
 
 ```bash
-qsub -pe mpi_8 16 [ -bstrategy packed -btype slot ] -bunit T -bamount 2`
+qsub -pe mpi_8 16 [ -bstrategy packed -btype slot ] -bunit T -bamount 2
 ```
 
 Here, each task is bound to **two hardware threads** instead of two cores. This configuration can be preferable for tightly coupled processes, allowing the scheduler to make more efficient use of the underlying hardware.
@@ -150,7 +150,7 @@ The **binding type**, specified with the `-btype` option, determines whether the
 In contrast to the previous slot-based example, here host-based binding is applied. The job will be assigned a total of **16 hardware threads per host** (which is similar to the previous example).
 
 ```bash
-qsub -pe mpi_8 16 [ -bstrategy packed ] -btype host -bunit T -bamount 16`
+qsub -pe mpi_8 16 [ -bstrategy packed ] -btype host -bunit T -bamount 16
 ```
 
 With **host-based binding**, the **packed** binding strategy is applied in a single sweep across all slots on the host, rather than individually per slot. This approach is often more scheduling-efficient, as it reduces fragmentation and ensures a consistent placement of resources. Efficiency is further improved when host-based binding is combined with explicit **start** and **stop** positions (described in the sections below), which allow precise control over where bindings begin and end within the host topology.
