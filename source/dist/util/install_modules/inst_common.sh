@@ -2926,14 +2926,15 @@ BackupConfig()
    # NOTE: keep these *_COMMON_FILE_LIST_TMP sets in sync with save_config.sh and
    # with RestoreConfig's *_COMMON_FILE_LIST sets - every common file backed up
    # must also be restorable. sge_request and the other user-request/default
-   # files are backed up here so a backup/restore cycle does not drop them.
-   BUP_BDB_COMMON_FILE_LIST_TMP="accounting bootstrap qtask sge_request sge_aliases sge_ar_request sge_qstat sge_qselect sge_qquota settings.sh st.enabled act_qmaster sgemaster host_aliases settings.csh sgeexecd shadow_masters cluster_name slice_name"
+   # files are backed up here so a backup/restore cycle does not drop them, and
+   # so are the dbwriter files and the JSONL accounting file.
+   BUP_BDB_COMMON_FILE_LIST_TMP="accounting accounting.jsonl bootstrap qtask sge_request sge_aliases sge_ar_request sge_qstat sge_qselect sge_qquota settings.sh st.enabled act_qmaster sgemaster host_aliases settings.csh sgeexecd sgedbwriter dbwriter.conf shadow_masters cluster_name slice_name"
    BUP_BDB_COMMON_DIR_LIST_TMP="certs"
    BUP_BDB_SPOOL_FILE_LIST_TMP="jobseqnum"
-   BUP_PG_COMMON_FILE_LIST_TMP="accounting bootstrap qtask sge_request sge_aliases sge_ar_request sge_qstat sge_qselect sge_qquota settings.sh st.enabled act_qmaster sgemaster host_aliases settings.csh sgeexecd shadow_masters cluster_name slice_name"
+   BUP_PG_COMMON_FILE_LIST_TMP="accounting accounting.jsonl bootstrap qtask sge_request sge_aliases sge_ar_request sge_qstat sge_qselect sge_qquota settings.sh st.enabled act_qmaster sgemaster host_aliases settings.csh sgeexecd sgedbwriter dbwriter.conf shadow_masters cluster_name slice_name"
    BUP_PG_COMMON_DIR_LIST_TMP="certs"
    BUP_PG_DUMP_FILE="postgres-config.sql"
-   BUP_CLASSIC_COMMON_FILE_LIST_TMP="accounting bootstrap qtask sge_request sge_aliases sge_ar_request sge_qstat sge_qselect sge_qquota settings.sh st.enabled act_qmaster sgemaster host_aliases settings.csh sgeexecd shadow_masters cluster_name slice_name"
+   BUP_CLASSIC_COMMON_FILE_LIST_TMP="accounting accounting.jsonl bootstrap qtask sge_request sge_aliases sge_ar_request sge_qstat sge_qselect sge_qquota settings.sh st.enabled act_qmaster sgemaster host_aliases settings.csh sgeexecd sgedbwriter dbwriter.conf shadow_masters cluster_name slice_name"
    BUP_CLASSIC_DIR_LIST_TMP="certs"
    # CS-2394: no managers/operators files any more - managers/operators are members of
    # the reserved "manager"/"operator" usersets, covered by the usersets entry below.
@@ -3070,17 +3071,17 @@ RestoreConfig()
    # save_config.sh backs up - otherwise restore silently drops it (the file was
    # moved aside with the cell dir and is never put back). sge_request and the
    # other user-request/default files are restored here for exactly that reason.
-   BUP_COMMON_FILE_LIST="accounting bootstrap qtask sge_request sge_aliases sge_ar_request sge_qstat sge_qselect sge_qquota settings.sh act_qmaster sgemaster host_aliases settings.csh sgeexecd shadow_masters st.enabled cluster_name slice_name"
+   BUP_COMMON_FILE_LIST="accounting accounting.jsonl bootstrap qtask sge_request sge_aliases sge_ar_request sge_qstat sge_qselect sge_qquota settings.sh act_qmaster sgemaster host_aliases settings.csh sgeexecd sgedbwriter dbwriter.conf shadow_masters st.enabled cluster_name slice_name"
    BUP_COMMON_DIR_LIST="certs"
    BUP_SPOOL_FILE_LIST="jobseqnum"
-   BUP_PG_COMMON_FILE_LIST="accounting bootstrap qtask sge_request sge_aliases sge_ar_request sge_qstat sge_qselect sge_qquota settings.sh act_qmaster sgemaster host_aliases settings.csh sgeexecd shadow_masters st.enabled cluster_name slice_name"
+   BUP_PG_COMMON_FILE_LIST="accounting accounting.jsonl bootstrap qtask sge_request sge_aliases sge_ar_request sge_qstat sge_qselect sge_qquota settings.sh act_qmaster sgemaster host_aliases settings.csh sgeexecd sgedbwriter dbwriter.conf shadow_masters st.enabled cluster_name slice_name"
    BUP_PG_COMMON_DIR_LIST="certs"
    BUP_PG_DUMP_FILE="postgres-config.sql"
    # The configs directory (global + per-host configuration) and the
    # sched_configuration file now live in the spool directory (classic spooling),
    # so they are restored into the spool dir (not common). certs remains a common
    # directory. Same-version restore only.
-   BUP_CLASSIC_COMMON_FILE_LIST="accounting bootstrap qtask sge_request sge_aliases sge_ar_request sge_qstat sge_qselect sge_qquota settings.sh act_qmaster sgemaster host_aliases settings.csh sgeexecd shadow_masters st.enabled cluster_name slice_name"
+   BUP_CLASSIC_COMMON_FILE_LIST="accounting accounting.jsonl bootstrap qtask sge_request sge_aliases sge_ar_request sge_qstat sge_qselect sge_qquota settings.sh act_qmaster sgemaster host_aliases settings.csh sgeexecd sgedbwriter dbwriter.conf shadow_masters st.enabled cluster_name slice_name"
    BUP_CLASSIC_DIR_LIST="certs"
    # CS-2394: no managers/operators files any more - their content lives in the reserved
    # "manager"/"operator" usersets, restored via the usersets entry.
