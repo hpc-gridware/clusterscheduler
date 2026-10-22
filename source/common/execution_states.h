@@ -78,7 +78,7 @@
 #define ESSTATE_EXECD_LOST_RUNNING 22
 
 /* this is an error that occurs only in a SGE execd */
-#define ESSTATE_PTF_CANT_GET_PIDS  23
+#define ESSTATE_PTF_CANT_GET_PIDS  23  /* not used at the moment */
 
 #define SSTATE_MIGRATE             24
 #define SSTATE_AGAIN               25

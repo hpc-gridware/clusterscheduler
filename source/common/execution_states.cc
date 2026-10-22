@@ -79,6 +79,7 @@ get_sstate_description(int sstate) {
            {"found unexpected error file",                       ESSTATE_UNEXP_ERRORFILE},
            {"in recognizing job",                                ESSTATE_UNKNOWN_JOB},
            {"removed manually",                                  ESSTATE_EXECD_LOST_RUNNING},
+           {"on reading the job's pids",                         ESSTATE_PTF_CANT_GET_PIDS},
            {"assumedly before job",                              SSTATE_FAILURE_BEFORE_JOB},
            {"assumedly after job",                               SSTATE_FAILURE_AFTER_JOB},
            {"migrating",                                         SSTATE_MIGRATE},
@@ -86,6 +87,7 @@ get_sstate_description(int sstate) {
            {"opening input/output file",                         SSTATE_OPEN_OUTPUT},
            {"searching requested shell",                         SSTATE_NO_SHELL},
            {"changing into working directory",                   SSTATE_NO_CWD},
+           {"setting up AFS credentials",                        SSTATE_AFS_PROBLEM},
            {"rescheduling on application error",                 SSTATE_APPERROR},
            {"unused1",                                           SSTATE_UNUSED1},
            {"unused2",                                           SSTATE_UNUSED2},
@@ -94,6 +96,7 @@ get_sstate_description(int sstate) {
            {"unused5",                                           SSTATE_UNUSED5},
            {"checking configured daemons",                       SSTATE_CHECK_DAEMON_CONFIG},
            {"qmaster enforced h_rt limit",                       SSTATE_QMASTER_ENFORCED_LIMIT},
+           {"setting the additional group id",                   SSTATE_ADD_GRP_SET_ERROR},
            {"in a systemd call",                                 SSTATE_SYSTEMD_ERROR}
    };
 
