@@ -55,4 +55,5 @@
 /** @} */
 
 int adm_mail_reset(int state);
-void job_related_adminmail(uint32_t progid, lListElem *jr, int is_array, const char *job_owner);
+void job_related_adminmail(uint32_t progid, lListElem *jr, int is_array, const char *job_owner,
+                           uint32_t qversion);

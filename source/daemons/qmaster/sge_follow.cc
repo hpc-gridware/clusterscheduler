@@ -495,6 +495,8 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
             gdil_ep = lAddElemStr(&gdil, JG_qname, q_name, JG_Type); /* free me on error! */
             lSetHost(gdil_ep, JG_qhostname, lGetHost(qep, QU_qhostname));
             lSetUlong(gdil_ep, JG_slots, q_slots);
+            // the execd uses the version to tell a queue instance change from an unchanged one
+            lSetUlong(gdil_ep, JG_qversion, lGetUlong(qep, QU_version));
             lSetList(gdil_ep, JG_binding_to_use, lCopyList("binding_to_use",lGetList(oep, OQ_binding_to_use)));
 
             /* ------------------------------------------------
