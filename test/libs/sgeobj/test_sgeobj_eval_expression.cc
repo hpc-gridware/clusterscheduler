@@ -168,6 +168,89 @@ int main(int argc, char *argv[]) {
       ret=ret|test_match(TYPE_HOST, "Latte* | Mocca*", "latte3.czech.sun.com", T);
       ret=ret|test_match(TYPE_HOST, "!(a*|b*|c*|d*|e*|f*|g*|h*|i*|j*|k*|l*|m*|n*|o*|p*|q*|r*|s*|t*|u*|v*|w*|x*|y*|z*|baaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa*)", "bla", F);
 
+
+      /* RESTRING request patterns.
+       *
+       * TYPE_RESTR is matched with fnmatch() and is case sensitive: the request is the
+       * pattern, the value the host or queue offers is matched against it. These cases are
+       * the ones the complex system test used to submit a job for - 123 of them, which is
+       * what made its first four run levels take about 50 minutes. The expectations are the
+       * ones that test asserted end to end.
+       */
+      ret=ret|test_match(TYPE_RESTR, "global", "global", T);
+      ret=ret|test_match(TYPE_RESTR, "*lobal", "global", T);
+      ret=ret|test_match(TYPE_RESTR, "globa*", "global", T);
+      ret=ret|test_match(TYPE_RESTR, "*loba*", "global", T);
+      ret=ret|test_match(TYPE_RESTR, "*global", "global", T);
+      ret=ret|test_match(TYPE_RESTR, "global*", "global", T);
+      ret=ret|test_match(TYPE_RESTR, "glo*al", "global", T);
+      ret=ret|test_match(TYPE_RESTR, "*global*", "global", T);
+      ret=ret|test_match(TYPE_RESTR, "*", "global", T);
+      ret=ret|test_match(TYPE_RESTR, "**global*", "global", T);
+      ret=ret|test_match(TYPE_RESTR, "**lobal*", "global", T);
+      ret=ret|test_match(TYPE_RESTR, "**al", "global", T);
+      ret=ret|test_match(TYPE_RESTR, "**", "global", T);
+      ret=ret|test_match(TYPE_RESTR, "gl*b*l", "global", T);
+      ret=ret|test_match(TYPE_RESTR, "xlobal", "global", F);
+      ret=ret|test_match(TYPE_RESTR, ".lobal", "global", F);
+      ret=ret|test_match(TYPE_RESTR, "g.obal", "global", F);
+      ret=ret|test_match(TYPE_RESTR, "globa.", "global", F);
+      ret=ret|test_match(TYPE_RESTR, "?lobal", "global", T);
+      ret=ret|test_match(TYPE_RESTR, "globa?", "global", T);
+      ret=ret|test_match(TYPE_RESTR, "?loba?", "global", T);
+      ret=ret|test_match(TYPE_RESTR, "?global", "global", F);
+      ret=ret|test_match(TYPE_RESTR, "global?", "global", F);
+      ret=ret|test_match(TYPE_RESTR, "glo?al", "global", T);
+      ret=ret|test_match(TYPE_RESTR, "?global?", "global", F);
+      ret=ret|test_match(TYPE_RESTR, "?", "global", F);
+      ret=ret|test_match(TYPE_RESTR, "??global", "global", F);
+      ret=ret|test_match(TYPE_RESTR, "??lobal", "global", F);
+      ret=ret|test_match(TYPE_RESTR, "global??", "global", F);
+      ret=ret|test_match(TYPE_RESTR, "??al", "global", F);
+      ret=ret|test_match(TYPE_RESTR, "??", "global", F);
+      ret=ret|test_match(TYPE_RESTR, "gl?b?l", "global", T);
+      ret=ret|test_match(TYPE_RESTR, "*?", "global", T);
+      ret=ret|test_match(TYPE_RESTR, "[a-z]lobal", "global", T);
+      ret=ret|test_match(TYPE_RESTR, "[z-a]lobal", "global", F);
+      ret=ret|test_match(TYPE_RESTR, "[a-g]lobal", "global", T);
+      ret=ret|test_match(TYPE_RESTR, "[g-z]lobal", "global", T);
+      ret=ret|test_match(TYPE_RESTR, "[a-f]lobal", "global", F);
+      ret=ret|test_match(TYPE_RESTR, "[h-z]lobal", "global", F);
+      ret=ret|test_match(TYPE_RESTR, "[g]lobal", "global", T);
+      ret=ret|test_match(TYPE_RESTR, "g[a-z]obal", "global", T);
+      ret=ret|test_match(TYPE_RESTR, "g[z-a]obal", "global", F);
+      ret=ret|test_match(TYPE_RESTR, "g[a-l]obal", "global", T);
+      ret=ret|test_match(TYPE_RESTR, "g[a-k]obal", "global", F);
+      ret=ret|test_match(TYPE_RESTR, "g[m-z]obal", "global", F);
+      ret=ret|test_match(TYPE_RESTR, "g[l]obal", "global", T);
+      ret=ret|test_match(TYPE_RESTR, "globa[a-z]", "global", T);
+      ret=ret|test_match(TYPE_RESTR, "globa[a-l]", "global", T);
+      ret=ret|test_match(TYPE_RESTR, "globa[a-k]", "global", F);
+      ret=ret|test_match(TYPE_RESTR, "globa[m-z]", "global", F);
+      ret=ret|test_match(TYPE_RESTR, "globa[l]", "global", T);
+      ret=ret|test_match(TYPE_RESTR, "local|global", "global", T);
+      ret=ret|test_match(TYPE_RESTR, "global|local", "global", T);
+      ret=ret|test_match(TYPE_RESTR, "glo*al|lo[c]al", "global", T);
+      ret=ret|test_match(TYPE_RESTR, "?glo*al?|lo[c]al", "global", F);
+      ret=ret|test_match(TYPE_RESTR, "globa[z-a]", "global", F);
+      ret=ret|test_match(TYPE_RESTR, "?glo*al|lo[c]al", "global", F);
+      ret=ret|test_match(TYPE_RESTR, "global*test", "global*test", T);
+      ret=ret|test_match(TYPE_RESTR, "global?test", "global*test", T);
+      ret=ret|test_match(TYPE_RESTR, "globaltest", "global*test", F);
+      ret=ret|test_match(TYPE_RESTR, "global*test", "global?test", T);
+      ret=ret|test_match(TYPE_RESTR, "global?test", "global?test", T);
+      ret=ret|test_match(TYPE_RESTR, "globaltest", "global?test", F);
+
+      /* a backslash makes the next character literal, so a host value which contains a
+       * wildcard character can be requested exactly
+       */
+      ret=ret|test_match(TYPE_RESTR, "global\\*test", "global*test", T);
+      ret=ret|test_match(TYPE_RESTR, "global\\?test", "global?test", T);
+      ret=ret|test_match(TYPE_RESTR, "global\\*test", "globalXtest", F);
+      ret=ret|test_match(TYPE_RESTR, "global\\?test", "globalXtest", F);
+      ret=ret|test_match(TYPE_RESTR, "globa\\[l\\]", "global", F);
+      ret=ret|test_match(TYPE_RESTR, "globa\\[l\\]", "globa[l]", T);
+
       
       fprintf(stdout, "For evaluation a single expression try: test_eval_expression <expr> <value> \n");
       fprintf(stdout, "Complex set of tests result is: %s \n", RESULT(ret));
