@@ -3004,13 +3004,18 @@ ParsePgSpoolingParams()
 BackupConfig()
 {
    DATE=`date '+%Y-%m-%d_%H_%M_%S'`
-   BUP_BDB_COMMON_FILE_LIST_TMP="accounting bootstrap qtask settings.sh st.enabled act_qmaster sgemaster host_aliases settings.csh sgeexecd sgebdb shadow_masters cluster_name slice_name"
+   # NOTE: keep these *_COMMON_FILE_LIST_TMP sets in sync with save_config.sh and
+   # with RestoreConfig's *_COMMON_FILE_LIST sets - every common file backed up
+   # must also be restorable. sge_request and the other user-request/default
+   # files are backed up here so a backup/restore cycle does not drop them, and
+   # so are the dbwriter files and the JSONL accounting file.
+   BUP_BDB_COMMON_FILE_LIST_TMP="accounting accounting.jsonl bootstrap qtask sge_request sge_aliases sge_ar_request sge_qstat sge_qselect sge_qquota settings.sh st.enabled act_qmaster sgemaster host_aliases settings.csh sgeexecd sgebdb sgedbwriter dbwriter.conf shadow_masters cluster_name slice_name"
    BUP_BDB_COMMON_DIR_LIST_TMP="sgeCA certs"
    BUP_BDB_SPOOL_FILE_LIST_TMP="jobseqnum"
-   BUP_PG_COMMON_FILE_LIST_TMP="accounting bootstrap qtask settings.sh st.enabled act_qmaster sgemaster host_aliases settings.csh sgeexecd shadow_masters cluster_name slice_name"
+   BUP_PG_COMMON_FILE_LIST_TMP="accounting accounting.jsonl bootstrap qtask sge_request sge_aliases sge_ar_request sge_qstat sge_qselect sge_qquota settings.sh st.enabled act_qmaster sgemaster host_aliases settings.csh sgeexecd sgedbwriter dbwriter.conf shadow_masters cluster_name slice_name"
    BUP_PG_COMMON_DIR_LIST_TMP="sgeCA certs"
    BUP_PG_DUMP_FILE="postgres-config.sql"
-   BUP_CLASSIC_COMMON_FILE_LIST_TMP="configuration sched_configuration accounting bootstrap qtask settings.sh st.enabled act_qmaster sgemaster host_aliases settings.csh sgeexecd shadow_masters cluster_name slice_name"
+   BUP_CLASSIC_COMMON_FILE_LIST_TMP="configuration sched_configuration accounting accounting.jsonl bootstrap qtask sge_request sge_aliases sge_ar_request sge_qstat sge_qselect sge_qquota settings.sh st.enabled act_qmaster sgemaster host_aliases settings.csh sgeexecd sgedbwriter dbwriter.conf shadow_masters cluster_name slice_name"
    BUP_CLASSIC_DIR_LIST_TMP="sgeCA local_conf certs"
    BUP_CLASSIC_SPOOL_FILE_LIST_TMP="jobseqnum advance_reservations admin_hosts calendars centry ckpt cqueues exec_hosts hostgroups resource_quotas managers operators pe projects qinstances schedd submit_hosts usermapping users usersets zombies"
    BUP_COMMON_FILE_LIST=""
@@ -3074,13 +3079,17 @@ BackupConfig()
 RestoreConfig()
 {
    DATE=`date '+%H_%M_%S'`
-   BUP_COMMON_FILE_LIST="accounting bootstrap qtask settings.sh act_qmaster sgemaster host_aliases settings.csh sgeexecd sgebdb shadow_masters st.enabled cluster_name slice_name"
+   # NOTE: the *_COMMON_FILE_LIST sets below must include every common file that
+   # save_config.sh backs up - otherwise restore silently drops it (the file was
+   # moved aside with the cell dir and is never put back). sge_request and the
+   # other user-request/default files are restored here for exactly that reason.
+   BUP_COMMON_FILE_LIST="accounting accounting.jsonl bootstrap qtask sge_request sge_aliases sge_ar_request sge_qstat sge_qselect sge_qquota settings.sh act_qmaster sgemaster host_aliases settings.csh sgeexecd sgebdb sgedbwriter dbwriter.conf shadow_masters st.enabled cluster_name slice_name"
    BUP_COMMON_DIR_LIST="sgeCA certs"
    BUP_SPOOL_FILE_LIST="jobseqnum"
-   BUP_PG_COMMON_FILE_LIST="accounting bootstrap qtask settings.sh act_qmaster sgemaster host_aliases settings.csh sgeexecd shadow_masters st.enabled cluster_name slice_name"
+   BUP_PG_COMMON_FILE_LIST="accounting accounting.jsonl bootstrap qtask sge_request sge_aliases sge_ar_request sge_qstat sge_qselect sge_qquota settings.sh act_qmaster sgemaster host_aliases settings.csh sgeexecd sgedbwriter dbwriter.conf shadow_masters st.enabled cluster_name slice_name"
    BUP_PG_COMMON_DIR_LIST="sgeCA certs"
    BUP_PG_DUMP_FILE="postgres-config.sql"
-   BUP_CLASSIC_COMMON_FILE_LIST="configuration sched_configuration accounting bootstrap qtask settings.sh act_qmaster sgemaster host_aliases settings.csh sgeexecd shadow_masters st.enabled cluster_name slice_name"
+   BUP_CLASSIC_COMMON_FILE_LIST="configuration sched_configuration accounting accounting.jsonl bootstrap qtask sge_request sge_aliases sge_ar_request sge_qstat sge_qselect sge_qquota settings.sh act_qmaster sgemaster host_aliases settings.csh sgeexecd sgedbwriter dbwriter.conf shadow_masters st.enabled cluster_name slice_name"
    BUP_CLASSIC_DIR_LIST="sgeCA local_conf certs"
    BUP_CLASSIC_SPOOL_FILE_LIST="jobseqnum admin_hosts advance_reservations calendars centry ckpt cqueues exec_hosts hostgroups managers operators pe projects qinstances resource_quotas schedd submit_hosts usermapping users usersets zombies"
 
