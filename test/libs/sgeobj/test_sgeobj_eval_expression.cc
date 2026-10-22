@@ -260,6 +260,159 @@ int main(int argc, char *argv[]) {
    CHECK(id++, "RESTR: 'a&' vs 'a' -> error (invalid syntax)",
          sge_eval_expression(ocs::CEntry::Type::RESTR, "a&", "a", nullptr) == -1);
 
+   // The request patterns the complex system test used to submit a job for - 123 of them,
+   // which is what made its first four run levels take about 50 minutes. The expectations
+   // are the ones that test asserted end to end. The request is the pattern and the value
+   // a host or queue offers is matched against it.
+
+   CHECK(id++, "RESTR: 'global' vs 'global' -> true",
+         sge_eval_expression(ocs::CEntry::Type::RESTR, "global", "global", nullptr) == 0);
+   CHECK(id++, "RESTR: '*lobal' vs 'global' -> true",
+         sge_eval_expression(ocs::CEntry::Type::RESTR, "*lobal", "global", nullptr) == 0);
+   CHECK(id++, "RESTR: 'globa*' vs 'global' -> true",
+         sge_eval_expression(ocs::CEntry::Type::RESTR, "globa*", "global", nullptr) == 0);
+   CHECK(id++, "RESTR: '*loba*' vs 'global' -> true",
+         sge_eval_expression(ocs::CEntry::Type::RESTR, "*loba*", "global", nullptr) == 0);
+   CHECK(id++, "RESTR: '*global' vs 'global' -> true",
+         sge_eval_expression(ocs::CEntry::Type::RESTR, "*global", "global", nullptr) == 0);
+   CHECK(id++, "RESTR: 'global*' vs 'global' -> true",
+         sge_eval_expression(ocs::CEntry::Type::RESTR, "global*", "global", nullptr) == 0);
+   CHECK(id++, "RESTR: 'glo*al' vs 'global' -> true",
+         sge_eval_expression(ocs::CEntry::Type::RESTR, "glo*al", "global", nullptr) == 0);
+   CHECK(id++, "RESTR: '*global*' vs 'global' -> true",
+         sge_eval_expression(ocs::CEntry::Type::RESTR, "*global*", "global", nullptr) == 0);
+   CHECK(id++, "RESTR: '*' vs 'global' -> true",
+         sge_eval_expression(ocs::CEntry::Type::RESTR, "*", "global", nullptr) == 0);
+   CHECK(id++, "RESTR: '**global*' vs 'global' -> true",
+         sge_eval_expression(ocs::CEntry::Type::RESTR, "**global*", "global", nullptr) == 0);
+   CHECK(id++, "RESTR: '**lobal*' vs 'global' -> true",
+         sge_eval_expression(ocs::CEntry::Type::RESTR, "**lobal*", "global", nullptr) == 0);
+   CHECK(id++, "RESTR: '**al' vs 'global' -> true",
+         sge_eval_expression(ocs::CEntry::Type::RESTR, "**al", "global", nullptr) == 0);
+   CHECK(id++, "RESTR: '**' vs 'global' -> true",
+         sge_eval_expression(ocs::CEntry::Type::RESTR, "**", "global", nullptr) == 0);
+   CHECK(id++, "RESTR: 'gl*b*l' vs 'global' -> true",
+         sge_eval_expression(ocs::CEntry::Type::RESTR, "gl*b*l", "global", nullptr) == 0);
+   CHECK(id++, "RESTR: 'xlobal' vs 'global' -> false",
+         sge_eval_expression(ocs::CEntry::Type::RESTR, "xlobal", "global", nullptr) == 1);
+   CHECK(id++, "RESTR: '.lobal' vs 'global' -> false",
+         sge_eval_expression(ocs::CEntry::Type::RESTR, ".lobal", "global", nullptr) == 1);
+   CHECK(id++, "RESTR: 'g.obal' vs 'global' -> false",
+         sge_eval_expression(ocs::CEntry::Type::RESTR, "g.obal", "global", nullptr) == 1);
+   CHECK(id++, "RESTR: 'globa.' vs 'global' -> false",
+         sge_eval_expression(ocs::CEntry::Type::RESTR, "globa.", "global", nullptr) == 1);
+   CHECK(id++, "RESTR: '?lobal' vs 'global' -> true",
+         sge_eval_expression(ocs::CEntry::Type::RESTR, "?lobal", "global", nullptr) == 0);
+   CHECK(id++, "RESTR: 'globa?' vs 'global' -> true",
+         sge_eval_expression(ocs::CEntry::Type::RESTR, "globa?", "global", nullptr) == 0);
+   CHECK(id++, "RESTR: '?loba?' vs 'global' -> true",
+         sge_eval_expression(ocs::CEntry::Type::RESTR, "?loba?", "global", nullptr) == 0);
+   CHECK(id++, "RESTR: '?global' vs 'global' -> false",
+         sge_eval_expression(ocs::CEntry::Type::RESTR, "?global", "global", nullptr) == 1);
+   CHECK(id++, "RESTR: 'global?' vs 'global' -> false",
+         sge_eval_expression(ocs::CEntry::Type::RESTR, "global?", "global", nullptr) == 1);
+   CHECK(id++, "RESTR: 'glo?al' vs 'global' -> true",
+         sge_eval_expression(ocs::CEntry::Type::RESTR, "glo?al", "global", nullptr) == 0);
+   CHECK(id++, "RESTR: '?global?' vs 'global' -> false",
+         sge_eval_expression(ocs::CEntry::Type::RESTR, "?global?", "global", nullptr) == 1);
+   CHECK(id++, "RESTR: '?' vs 'global' -> false",
+         sge_eval_expression(ocs::CEntry::Type::RESTR, "?", "global", nullptr) == 1);
+   CHECK(id++, "RESTR: '?\?global' vs 'global' -> false",
+         sge_eval_expression(ocs::CEntry::Type::RESTR, "?\?global", "global", nullptr) == 1);
+   CHECK(id++, "RESTR: '?\?lobal' vs 'global' -> false",
+         sge_eval_expression(ocs::CEntry::Type::RESTR, "?\?lobal", "global", nullptr) == 1);
+   CHECK(id++, "RESTR: 'global?\?' vs 'global' -> false",
+         sge_eval_expression(ocs::CEntry::Type::RESTR, "global?\?", "global", nullptr) == 1);
+   CHECK(id++, "RESTR: '?\?al' vs 'global' -> false",
+         sge_eval_expression(ocs::CEntry::Type::RESTR, "?\?al", "global", nullptr) == 1);
+   CHECK(id++, "RESTR: '?\?' vs 'global' -> false",
+         sge_eval_expression(ocs::CEntry::Type::RESTR, "?\?", "global", nullptr) == 1);
+   CHECK(id++, "RESTR: 'gl?b?l' vs 'global' -> true",
+         sge_eval_expression(ocs::CEntry::Type::RESTR, "gl?b?l", "global", nullptr) == 0);
+   CHECK(id++, "RESTR: '*?' vs 'global' -> true",
+         sge_eval_expression(ocs::CEntry::Type::RESTR, "*?", "global", nullptr) == 0);
+   CHECK(id++, "RESTR: '[a-z]lobal' vs 'global' -> true",
+         sge_eval_expression(ocs::CEntry::Type::RESTR, "[a-z]lobal", "global", nullptr) == 0);
+   CHECK(id++, "RESTR: '[z-a]lobal' vs 'global' -> false",
+         sge_eval_expression(ocs::CEntry::Type::RESTR, "[z-a]lobal", "global", nullptr) == 1);
+   CHECK(id++, "RESTR: '[a-g]lobal' vs 'global' -> true",
+         sge_eval_expression(ocs::CEntry::Type::RESTR, "[a-g]lobal", "global", nullptr) == 0);
+   CHECK(id++, "RESTR: '[g-z]lobal' vs 'global' -> true",
+         sge_eval_expression(ocs::CEntry::Type::RESTR, "[g-z]lobal", "global", nullptr) == 0);
+   CHECK(id++, "RESTR: '[a-f]lobal' vs 'global' -> false",
+         sge_eval_expression(ocs::CEntry::Type::RESTR, "[a-f]lobal", "global", nullptr) == 1);
+   CHECK(id++, "RESTR: '[h-z]lobal' vs 'global' -> false",
+         sge_eval_expression(ocs::CEntry::Type::RESTR, "[h-z]lobal", "global", nullptr) == 1);
+   CHECK(id++, "RESTR: '[g]lobal' vs 'global' -> true",
+         sge_eval_expression(ocs::CEntry::Type::RESTR, "[g]lobal", "global", nullptr) == 0);
+   CHECK(id++, "RESTR: 'g[a-z]obal' vs 'global' -> true",
+         sge_eval_expression(ocs::CEntry::Type::RESTR, "g[a-z]obal", "global", nullptr) == 0);
+   CHECK(id++, "RESTR: 'g[z-a]obal' vs 'global' -> false",
+         sge_eval_expression(ocs::CEntry::Type::RESTR, "g[z-a]obal", "global", nullptr) == 1);
+   CHECK(id++, "RESTR: 'g[a-l]obal' vs 'global' -> true",
+         sge_eval_expression(ocs::CEntry::Type::RESTR, "g[a-l]obal", "global", nullptr) == 0);
+   CHECK(id++, "RESTR: 'g[a-k]obal' vs 'global' -> false",
+         sge_eval_expression(ocs::CEntry::Type::RESTR, "g[a-k]obal", "global", nullptr) == 1);
+   CHECK(id++, "RESTR: 'g[m-z]obal' vs 'global' -> false",
+         sge_eval_expression(ocs::CEntry::Type::RESTR, "g[m-z]obal", "global", nullptr) == 1);
+   CHECK(id++, "RESTR: 'g[l]obal' vs 'global' -> true",
+         sge_eval_expression(ocs::CEntry::Type::RESTR, "g[l]obal", "global", nullptr) == 0);
+   CHECK(id++, "RESTR: 'globa[a-z]' vs 'global' -> true",
+         sge_eval_expression(ocs::CEntry::Type::RESTR, "globa[a-z]", "global", nullptr) == 0);
+   CHECK(id++, "RESTR: 'globa[a-l]' vs 'global' -> true",
+         sge_eval_expression(ocs::CEntry::Type::RESTR, "globa[a-l]", "global", nullptr) == 0);
+   CHECK(id++, "RESTR: 'globa[a-k]' vs 'global' -> false",
+         sge_eval_expression(ocs::CEntry::Type::RESTR, "globa[a-k]", "global", nullptr) == 1);
+   CHECK(id++, "RESTR: 'globa[m-z]' vs 'global' -> false",
+         sge_eval_expression(ocs::CEntry::Type::RESTR, "globa[m-z]", "global", nullptr) == 1);
+   CHECK(id++, "RESTR: 'globa[l]' vs 'global' -> true",
+         sge_eval_expression(ocs::CEntry::Type::RESTR, "globa[l]", "global", nullptr) == 0);
+   CHECK(id++, "RESTR: 'local|global' vs 'global' -> true",
+         sge_eval_expression(ocs::CEntry::Type::RESTR, "local|global", "global", nullptr) == 0);
+   CHECK(id++, "RESTR: 'global|local' vs 'global' -> true",
+         sge_eval_expression(ocs::CEntry::Type::RESTR, "global|local", "global", nullptr) == 0);
+   CHECK(id++, "RESTR: 'glo*al|lo[c]al' vs 'global' -> true",
+         sge_eval_expression(ocs::CEntry::Type::RESTR, "glo*al|lo[c]al", "global", nullptr) == 0);
+   CHECK(id++, "RESTR: '?glo*al?|lo[c]al' vs 'global' -> false",
+         sge_eval_expression(ocs::CEntry::Type::RESTR, "?glo*al?|lo[c]al", "global", nullptr) == 1);
+   CHECK(id++, "RESTR: 'globa[z-a]' vs 'global' -> false",
+         sge_eval_expression(ocs::CEntry::Type::RESTR, "globa[z-a]", "global", nullptr) == 1);
+   CHECK(id++, "RESTR: '?glo*al|lo[c]al' vs 'global' -> false",
+         sge_eval_expression(ocs::CEntry::Type::RESTR, "?glo*al|lo[c]al", "global", nullptr) == 1);
+   CHECK(id++, "RESTR: 'global*test' vs 'global*test' -> true",
+         sge_eval_expression(ocs::CEntry::Type::RESTR, "global*test", "global*test", nullptr) == 0);
+   CHECK(id++, "RESTR: 'global?test' vs 'global*test' -> true",
+         sge_eval_expression(ocs::CEntry::Type::RESTR, "global?test", "global*test", nullptr) == 0);
+   CHECK(id++, "RESTR: 'globaltest' vs 'global*test' -> false",
+         sge_eval_expression(ocs::CEntry::Type::RESTR, "globaltest", "global*test", nullptr) == 1);
+   CHECK(id++, "RESTR: 'global*test' vs 'global?test' -> true",
+         sge_eval_expression(ocs::CEntry::Type::RESTR, "global*test", "global?test", nullptr) == 0);
+   CHECK(id++, "RESTR: 'global?test' vs 'global?test' -> true",
+         sge_eval_expression(ocs::CEntry::Type::RESTR, "global?test", "global?test", nullptr) == 0);
+   CHECK(id++, "RESTR: 'globaltest' vs 'global?test' -> false",
+         sge_eval_expression(ocs::CEntry::Type::RESTR, "globaltest", "global?test", nullptr) == 1);
+
+   // a backslash makes the next character literal, so a host value which contains a
+   // wildcard character can be requested exactly
+
+   CHECK(id++, "RESTR: 'global\\*test' vs 'global*test' -> true",
+         sge_eval_expression(ocs::CEntry::Type::RESTR, "global\\*test", "global*test",
+                             nullptr) == 0);
+   CHECK(id++, "RESTR: 'global\\?test' vs 'global?test' -> true",
+         sge_eval_expression(ocs::CEntry::Type::RESTR, "global\\?test", "global?test",
+                             nullptr) == 0);
+   CHECK(id++, "RESTR: 'global\\*test' vs 'globalXtest' -> false",
+         sge_eval_expression(ocs::CEntry::Type::RESTR, "global\\*test", "globalXtest",
+                             nullptr) == 1);
+   CHECK(id++, "RESTR: 'global\\?test' vs 'globalXtest' -> false",
+         sge_eval_expression(ocs::CEntry::Type::RESTR, "global\\?test", "globalXtest",
+                             nullptr) == 1);
+   CHECK(id++, "RESTR: 'globa\\[l\\]' vs 'global' -> false",
+         sge_eval_expression(ocs::CEntry::Type::RESTR, "globa\\[l\\]", "global", nullptr) == 1);
+   CHECK(id++, "RESTR: 'globa\\[l\\]' vs 'globa[l]' -> true",
+         sge_eval_expression(ocs::CEntry::Type::RESTR, "globa\\[l\\]", "globa[l]", nullptr) == 0);
+
+
    printf("\n%s - %d failure(s)\n", s_fail == 0 ? "PASS" : "FAIL", s_fail);
    DRETURN(s_fail == 0 ? 0 : 1);
 }
