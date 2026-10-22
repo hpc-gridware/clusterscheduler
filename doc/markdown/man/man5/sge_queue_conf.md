@@ -634,6 +634,16 @@ gracefully before it is killed then you should set the *s_vmem* limit to a lower
 processes, the limit is applied per slot which means that the limit is multiplied by the number of slots being used by
 the job before being applied.
 
+On a host which runs its jobs under systemd control, what these two limits do depends on the usage collection
+mode (see the *USAGE_COLLECTION* execution daemon parameter in xxqs_name_sxx_conf(5)). The per process limit is
+always set, and both limits are always passed on to systemd, where *s_vmem* becomes the *MemoryHigh* and
+*h_vmem* the *MemoryMax* of the job's scope. A cgroup memory limit of that kind bounds the memory the job holds
+resident rather than the address space it maps, and the kernel enforces it by reclaiming pages, so a job which
+sits at its *MemoryHigh* with part of its memory swapped out keeps running. The combined check described above
+compares the virtual memory of all processes of the job against the limit and therefore needs the *vmem* usage
+value, which the default mode does not measure on a systemd host. Set *USAGE_COLLECTION* to *HYBRID* or *PDC*
+on the hosts where that check is wanted.
+
 The remaining parameters in the queue configuration template specify per job soft and hard resource limits as 
 implemented by the setrlimit(2) system call. See this manual page on your system for more information. By default, 
 each limit field is set to infinity (which means RLIM_INFINITY as described in the setrlimit(2) manual page). The

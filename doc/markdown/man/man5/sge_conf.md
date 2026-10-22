@@ -1147,11 +1147,12 @@ This parameter controls how xxqs_name_sxx_execd collects the online usage inform
 - *FALSE* : No online usage information is collected. Use with care, this also disables limit enforcement for *s_cpu*, *h_cpu*, *s_rss*, *h_rss*, *s_vmem*, and *h_vmem*.
 - *PDC* : Online usage information is collected by the PDC (Portable Data Collector) mode, even if Systemd is available.
 - *HYBRID* : Hybrid mode, where online usage information is both gathered via Systemd (if available) and the PDC. Use this mode, when your jobs are controlled by systemd, but you also want to collect usage information for jobs that is not available via Systemd, e.g., vmem, maxvmem, io, ioops, and iow.
-- *TRUE* : This is the default mode. Online usage information is collected via Systemd if the host supports Systemd and *ENABLE_SYSTEMD* is set to *TRUE* (which is the default). It is collected by the PDC (Portable Data Collector) if the host does not support Systemd or if *ENABLE_SYSTEMD* is set to *FALSE*. Where Systemd is used, the values it does not deliver - *vmem*, *maxvmem*, *io*, *ioops* and *iow* - stay empty; use *HYBRID* if they are needed.
+- *TRUE* : This is the default mode. Online usage information is collected via Systemd if the host supports Systemd and *ENABLE_SYSTEMD* is set to *TRUE* (which is the default). It is collected by the PDC (Portable Data Collector) if the host does not support Systemd or if *ENABLE_SYSTEMD* is set to *FALSE*. Where Systemd is used, the values it does not deliver - *vmem*, *maxvmem*, *io*, *ioops* and *iow* - stay empty; use *HYBRID* if they are needed. Without *vmem* the execution daemon cannot compare the combined virtual memory of a job against *s_vmem* and *h_vmem*; on a systemd host those two limits then act as a per process limit and as the *MemoryHigh* and *MemoryMax* of the job's scope, which bound resident memory rather than address space (see xxqs_name_sxx_queue_conf(5)).
 
 ***ENABLE_MEM_DETAILS***
 
 When this parameter is set to *TRUE*, then additional memory usage information is collected for each job:
+
 * pss (proportional set size) and maxpss (maximum proportional set size)
 * pmem (private memory size)
 * smem (shared memory size)
@@ -1159,7 +1160,7 @@ When this parameter is set to *TRUE*, then additional memory usage information i
 These memory values are reported in the online usage information (`qstat -j jobid`),
 and maxpss is added to the accounting records (and reported by `qacct -j jobid`).
 
-The *ENABLE_MEM_DETAILS reporting can add a significant load on the sge_execd(8), as the values are retrieved from
+The *ENABLE_MEM_DETAILS* reporting can add a significant load on the sge_execd(8), as the values are retrieved from
 the /proc/pid/smaps files of the job processes. The smaps files can be quite large, and reading them can be slow,
 especially for jobs with many processes and consuming a lot of memory.
 
