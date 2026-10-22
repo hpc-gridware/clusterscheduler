@@ -75,6 +75,7 @@
 #include "sge_resource_quota_qmaster.h"
 #include "configuration_qmaster.h"
 #include "evm/sge_event_master.h"
+#include "evm/msg_evmlib.h"
 #include "sched_conf_qmaster.h"
 #include "sge_userprj_qmaster.h"
 #include "sge_ckpt_qmaster.h"
@@ -276,8 +277,14 @@ sge_c_gdi_check_execution_permission(sge_gdi_packet_class_t *packet, sge_gdi_tas
       case SGE_GDI_TRIGGER:
          // queue and job owners are allowed to trigger queues/jobs
          // this is done via qmod command on the cluster queue list
+         //
+         // the event client list is checked per client instead of here: the owner of an event
+         // client may shut it down without being a manager, which is what a JAPI or DRMAA
+         // session does when it ends. sge_gdi_shutdown_event_client() and the event master do
+         // that check, and they keep the scheduler and "all clients at once" manager only.
+         //
          // other trigger requests must have been initiated by a manager
-         if (task->target != SGE_CQ_LIST) {
+         if (task->target != SGE_CQ_LIST && task->target != SGE_EV_LIST) {
             const lList *master_manager_list = *ocs::DataStore::get_master_list(SGE_TYPE_MANAGER);
             if (!manop_is_manager(packet, master_manager_list)) {
                ERROR(MSG_SGETEXT_MUSTBEMANAGER_S, packet->user);
@@ -1092,6 +1099,16 @@ sge_gdi_shutdown_event_client(const sge_gdi_packet_class_t *packet, sge_gdi_task
 
       /* thread shutdown */
       if (client_id == EV_ID_SCHEDD) {
+         // the permission check for TRIGGER requests lets the event client list through so that
+         // the owner of a dynamic event client can shut it down. The scheduler is not owned by
+         // the requester, so qconf -ks stays a manager operation and is checked here - the
+         // event master does the same check for a single client and for all of them at once.
+         const lList *master_manager_list = *ocs::DataStore::get_master_list(SGE_TYPE_MANAGER);
+         if (!manop_is_manager(packet, master_manager_list)) {
+            answer_list_add(&(task->answer_list), MSG_COM_NOSHUTDOWNPERMS, STATUS_DENIED,
+                            ANSWER_QUALITY_ERROR);
+            continue;
+         }
          sge_scheduler_terminate(nullptr);
       }
 
