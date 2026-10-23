@@ -31,6 +31,8 @@
 #include "sgeobj/msg_sgeobjlib.h"
 #include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/sge_answer.h"
+#include "sgeobj/sge_centry.h"
+#include "sgeobj/sge_object.h"
 #include "spool/flatfile/sge_flatfile.h"
 #include "uti/sge_dstring.h"
 #include "uti/sge_log.h"
@@ -118,6 +120,51 @@ qconf_delete_one(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::gdi:
 static const char *
 qconf_key_of(const lListElem *ep, const int key_nm) {
    return (key_nm == NoName) ? nullptr : qconf_get_name(ep, key_nm);
+}
+
+/** @brief Whether storing this object would change nothing (CS-2823)
+ *
+ * A replacing write hands the qmaster the whole table, so most of what it holds
+ * is already stored. The client used to drop those elements before it sent
+ * anything - object_has_differences() in centry_list_add_del_mod_via_gdi() freed
+ * an element equal to the stored one and put only the rest into the modify list -
+ * and the generic path has no such step, so every entry of the text was modified:
+ * a "qconf -Mc" over an unchanged complex reported 52 modifications, spooled 52
+ * objects and sent 52 sgeE_CENTRY_MOD events where the predecessor did nothing at
+ * all. That the audit trail then claims changes nobody made is the part which
+ * makes this more than a cost.
+ *
+ * Only the complex is filtered, because only the complex lost a filter. The other
+ * replacing writes never had one: the "file unchanged" refusal of "-mq" and
+ * "-mhgrp" belongs to the editor flow, not to a write from a file, and it is
+ * still in place. Widening this to every type would also stop a write the caller
+ * may want for its effect - a configuration written unchanged still raises
+ * sgeE_CONFIG_MOD and so still makes the execution daemons reread it - and that
+ * is a decision of its own, not a regression to undo.
+ *
+ * @param desc the descriptor of the type being written
+ * @param master_list the list the type is stored in
+ * @param key_nm the field holding the object's name, NoName for a singleton
+ * @param name the object's name, nullptr for a singleton
+ * @param ep the object as the text holds it
+ * @return true when an object of that name is stored and equal to @p ep
+ */
+static bool
+qconf_write_is_unchanged(const qconf_object_desc &desc, const lList *master_list,
+                         const int key_nm, const char *name, const lListElem *ep) {
+   if (desc.target != ocs::gdi::Target::CE_LIST || key_nm == NoName || name == nullptr) {
+      return false;
+   }
+
+   const lListElem *stored = centry_list_locate(master_list, name);
+   if (stored == nullptr) {
+      return false;
+   }
+
+   /* Argument order as the client had it: the element from the text first, the
+    * stored one second. The answer list stays out of it, because a difference is
+    * not a problem to report - it is the normal case. */
+   return !object_has_differences(ep, nullptr, stored);
 }
 
 /** @brief Hand one parsed object to the function that applies its type (CS-2823)
@@ -508,6 +555,8 @@ qconf_write_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monit
    bool all_ok = (result->parse_failed == 0);
    std::vector<std::string> parsed_names;   ///< what the texts held, for the report below
    lList *post_list = nullptr;              ///< what the applied objects need post-processed
+   size_t stored_objects = 0;               ///< objects written or deleted, for the summary below
+   size_t left_objects = 0;                 ///< objects the store already held as asked
    for (auto &item: parsed) {
       size_t applied_here = 0;
 
@@ -534,18 +583,32 @@ qconf_write_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monit
                              ? (lGetNumberOfElem(master_list) > 0)
                              : qconf_name_in_list(master_list, desc.descr, key_nm, name);
 
+         /* An object already stored in exactly the state the text asks for is
+          * not written at all, see qconf_write_is_unchanged(). It still counts
+          * as applied: the item was understood and the store holds what was
+          * asked for, which is what the caller wants to know. The dry run says
+          * so rather than promising a modification that would not happen. */
+         const bool unchanged = exists && qconf_write_is_unchanged(desc, master_list, key_nm, name, ep);
+
          if (parameter.is_dry()) {
             answer_list_add_sprintf(answer_list, STATUS_OK, ANSWER_QUALITY_INFO,
-                                    exists ? MSG_QCONF_WRITEWOULDMODIFY_S : MSG_QCONF_WRITEWOULDADD_S,
+                                    unchanged ? MSG_QCONF_WRITEWOULDLEAVE_S
+                                              : (exists ? MSG_QCONF_WRITEWOULDMODIFY_S
+                                                        : MSG_QCONF_WRITEWOULDADD_S),
                                     qconf_object_label(desc, name));
             applied_here++;
             result->elements++;
+         } else if (unchanged) {
+            applied_here++;
+            result->elements++;
+            left_objects++;
          } else {
             const int ret = qconf_apply_one(packet, task, monitor, desc, object, ep, exists,
                                             answer_list, &post_list);
             if (ret == STATUS_OK) {
                applied_here++;
                result->elements++;
+               stored_objects++;
             } else {
                all_ok = false;
             }
@@ -660,7 +723,9 @@ qconf_write_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monit
          if (parameter.is_dry()) {
             answer_list_add_sprintf(answer_list, STATUS_OK, ANSWER_QUALITY_INFO,
                                     MSG_QCONF_WRITEWOULDDELETE_S, name);
-         } else if (!qconf_delete_one(packet, task, desc.target, name, answer_list)) {
+         } else if (qconf_delete_one(packet, task, desc.target, name, answer_list)) {
+            stored_objects++;
+         } else {
             all_ok = false;
          }
       }
@@ -710,6 +775,26 @@ qconf_write_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monit
          }
       }
       lFreeList(&in_scope);
+   }
+
+   /* A write that changed nothing has to say so (CS-2823). Every object of the
+    * text was already stored as the text describes it, so the loop above wrote
+    * nothing and nothing was deleted either - and without a word here the
+    * command would answer an empty output with exit code 0, which is exactly
+    * what a silently broken write looks like. The predecessor had the same rule
+    * for the one type that filtered: when its answer list stayed empty it added
+    * "Complex attribute configuration has not been changed", and the testsuite
+    * reads that message as a success.
+    *
+    * It is a summary and not a line per object, because the quiet case is the
+    * common one: re-applying an unchanged complex would otherwise print more
+    * lines than a real modification does. A write that changed some of its
+    * objects already reports each of them and gets no summary - there is
+    * nothing left unsaid then. The dry run is excluded because it reports per
+    * object what it would do, including what it would leave alone. */
+   if (!parameter.is_dry() && all_ok && stored_objects == 0 && left_objects > 0) {
+      answer_list_add_sprintf(answer_list, STATUS_OK, ANSWER_QUALITY_INFO, SFNMAX,
+                              MSG_QCONF_WRITENOCHANGE);
    }
 
    DRETURN(all_ok);

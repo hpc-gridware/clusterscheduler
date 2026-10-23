@@ -810,5 +810,7 @@
 #define MSG_QCONF_WRITENOREPLACE_S                 _MESSAGE(34017, _("objects of type " SFQ " cannot be deleted by a replacing write"))
 #define MSG_QCONF_WRITEREPLACEWITHSELECT           _MESSAGE(34018, _("a replacing write cannot be restricted to selected object names"))
 #define MSG_QCONF_WRITENAMEWITHLIST                _MESSAGE(34019, _("a named write cannot be a list: the name would be given to every object the text holds"))
+#define MSG_QCONF_WRITEWOULDLEAVE_S                _MESSAGE(34020, _("[dry-run] would leave " SFQ " unchanged"))
+#define MSG_QCONF_WRITENOCHANGE                    _MESSAGE(34021, _("nothing was changed: what the text describes is already stored"))
 
 // clang-format on
