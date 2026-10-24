@@ -3157,7 +3157,9 @@ static int start_async_command(const char *descr, char *cmd) {
       // @todo if we want to account prolog etc. to the job, then we need to move the child process into the job scope
       // move_shepherd_child_to_job_scope(pid);
 
-      sge_set_environment();
+      // the async commands - the checkpointing commands and the signal methods - switch to
+      // the job owner below, so they keep the environment of the submission
+      sge_set_environment(false);
       umask(022);
       tmp_str = search_conf_val("qsub_gid");
       if (tmp_str && strcmp(tmp_str, "no")) {
@@ -3405,7 +3407,15 @@ static int notify_tasker(uint32_t exit_status) {
       if (!strcmp(name, "PVM_TASK_ID"))
          strcpy(pvm_task_id, value);
 
-      sge_set_env_value(name, value);
+      /*
+       * CS-2764: this used to call sge_set_env_value(name, value) here, which put the whole
+       * environment of the job into the environment of the shepherd itself - a side effect
+       * nothing here needs, the three values above are read into their own buffers. The
+       * procedures which run after the job, epilog and pe_stop, are forked from this process
+       * and inherited it, so they saw the loader and interpreter variables of the submission
+       * even where they do not run as the job owner. Their environment comes from
+       * sge_set_environment(), which reads the same file.
+       */
    }
 
    FCLOSE(fp);

@@ -326,8 +326,22 @@ void son(const char *childname, char *script_file, int truncate_stderr_out, bool
       ocs::move_shepherd_child_to_job_scope(pid);
    }
 
-   shepherd_trace("setting environment");
-   sge_set_environment();
+   /*
+    * CS-2764: the job runs as its owner and may carry whatever the submitter set. A
+    * procedure which runs as another user - a prolog configured as "root@/path", the
+    * qlogin starter of the legacy interactive support - must not inherit the variables
+    * which make the loader, the C library or the shell read code from a path of the
+    * submitter's choosing.
+    *
+    * The comparison is by name, as everywhere else in here. Two names for the same uid
+    * therefore scrub where it would not have been necessary, which is the harmless
+    * direction.
+    */
+   bool runs_as_job_owner = (strcmp(target_user, get_conf_val("job_owner")) == 0);
+
+   shepherd_trace("setting environment%s", runs_as_job_owner ? "" :
+                  " (without the loader variables of the submission)");
+   sge_set_environment(!runs_as_job_owner);
 
 	/* Create the "error" and the "exit" status file here.
 	 * The "exit_status" file indicates that the son is started.
@@ -833,16 +847,69 @@ void son(const char *childname, char *script_file, int truncate_stderr_out, bool
    sge_free(&buffer);
 }
 
+/** @brief The loader and interpreter variables a foreign procedure must not inherit
+ *
+ * A job runs as its owner and may carry whatever environment the submitter chose. The
+ * administrative procedures of a job - prolog, epilog, pe_start, pe_stop - can be configured
+ * to run as another user, root among them, and they are started with the job's environment.
+ * Every name below makes the dynamic loader, the C library or the shell load code or data
+ * from a path of the submitter's choosing, so for a procedure which does not run as the job
+ * owner they are dropped (CS-2764).
+ *
+ * This is a denylist and not an allowlist: a procedure legitimately reads the job's
+ * environment - SGE_TASK_ID, the site's own variables - and an allowlist would have to know
+ * them all.
+ */
+static const char *const dangerous_env_vars[] = {
+        "LD_PRELOAD",
+        "LD_AUDIT",
+        "LD_LIBRARY_PATH",
+        "LD_LIBRARY_PATH_32",
+        "LD_LIBRARY_PATH_64",
+        "LD_ORIGIN_PATH",
+        "LD_CONFIG",
+        "LIBPATH",
+        "SHLIB_PATH",
+        "DYLD_LIBRARY_PATH",
+        "DYLD_INSERT_LIBRARIES",
+        "GCONV_PATH",
+        "LOCPATH",
+        "NLSPATH",
+        "BASH_ENV",
+        "ENV",
+        "HSA_TOOLS_LIB",
+        "ROCM_PATH",
+        "RDC_LOG",
+        nullptr
+};
+
+/** @brief Is this variable one a foreign procedure must not inherit?
+ *
+ * @param name the name of an environment variable
+ * @return true if the variable is in dangerous_env_vars[]
+ */
+static bool
+is_dangerous_env_var(const char *name) {
+   for (int i = 0; dangerous_env_vars[i] != nullptr; i++) {
+      if (strcmp(name, dangerous_env_vars[i]) == 0) {
+         return true;
+      }
+   }
+   return false;
+}
+
 /** @brief Build the job's environment from the `environment` file the execd wrote
  *
  * Each entry goes into either the inherited or the internal environment,
  * depending on the configuration.
  *
+ * @param scrub_loader_vars skip the variables of dangerous_env_vars[], for a child which
+ *                          does not run as the job owner
  * @return 0 on success, 1 on error
  *
  * @note MT-NOTE: sge_set_environment() is not MT safe
  */
-int sge_set_environment() {
+int sge_set_environment(bool scrub_loader_vars) {
    const char *const filename = "environment";
    FILE *fp;
    char buf[10000], *name, *value, err_str[10000];
@@ -872,6 +939,11 @@ int sge_set_environment() {
       value = strtok(nullptr, "\n");
       if (value == nullptr) {
          value = (char *)"";
+      }
+
+      if (scrub_loader_vars && is_dangerous_env_var(name)) {
+         shepherd_trace("not passing %s on, this does not run as the job owner", name);
+         continue;
       }
 
       new_value = sge_replace_substring(value, "\\n", "\n");

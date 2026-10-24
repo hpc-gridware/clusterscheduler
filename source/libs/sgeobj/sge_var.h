@@ -91,4 +91,3 @@ int var_list_parse_from_string(lList **lpp, const char *variable_str,
 
 void getenv_and_set(lListElem *ep, char *variable);
 
-void var_list_filter_env_list(lList *env_list, lList **answer_list);

@@ -266,6 +266,11 @@ site specific tasks like the preparation of temporary file systems with the need
 information as the job. This queue configuration entry overwrites cluster global or execution host specific 
 *prolog* definitions (see xxqs_name_sxx_conf(5)).
 
+A procedure which is configured with a "user@" prefix naming someone other than the job owner is
+started without the environment variables of the submission which make the dynamic loader, the C
+library or the shell read code or data from a path the submitter chose - see
+*ENABLE_SUBMIT_LIB_PATH* in xxqs_name_sxx_conf(5).
+
 The default for *prolog* is the special value NONE, which prevents from execution of a prologue script. The 
 special variables for constituting a command line are the same like in *prolog* definitions
 of the cluster configuration (see xxqs_name_sxx_conf(5)).
@@ -287,6 +292,11 @@ job. This procedure is intended as a means for the xxQS_NAMExx administrator to 
 general site specific tasks like the cleaning up of temporary file systems with the need for the same context 
 information as the job. This queue configuration entry overwrites cluster global or execution host specific *epilog*
 definitions (see xxqs_name_sxx_conf(5)).
+
+A procedure which is configured with a "user@" prefix naming someone other than the job owner is
+started without the environment variables of the submission which make the dynamic loader, the C
+library or the shell read code or data from a path the submitter chose - see
+*ENABLE_SUBMIT_LIB_PATH* in xxqs_name_sxx_conf(5).
 
 The default for *epilog* is the special value NONE, which prevents from execution of a epilogue script. The special 
 variables for constituting a command line are the same like in *prolog* definitions of the cluster configuration 

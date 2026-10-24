@@ -2912,8 +2912,11 @@ mod_job_attributes(const ocs::gdi::Packet *packet, lListElem *new_job, lListElem
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_ENVLIST, jobid);
       answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
 
-      /* remove potentially dangerous environment variables */
-      var_list_filter_env_list(lGetListRW(new_job, JB_env_list), alpp);
+      /*
+       * The loader and interpreter variables are not removed here any more: the job runs
+       * as its owner. The shepherd drops them for the procedures which run as another
+       * user, see dangerous_env_vars[] in builtin_starter.cc (CS-2764).
+       */
    }
 
    /* ---- JB_job_args */

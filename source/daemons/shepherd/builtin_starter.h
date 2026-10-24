@@ -47,7 +47,7 @@
  */
 
 void son(const char *childname, char *script_file, int truncate_stderr_out, bool is_interactive_job);
-int sge_set_environment();
+int sge_set_environment(bool scrub_loader_vars);
 char** sge_get_environment();
 int sge_set_env_value(const char *name, const char* value);
 const char *sge_get_env_value(const char *name);

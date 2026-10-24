@@ -454,9 +454,9 @@ struct qmaster_params_t {
    int finished_jobs_sweep_batch = FINISHED_JOBS_SWEEP_BATCH_DEF;
    /// `MAX_DS_DEVIATION` -- how far the secondary data store may lag behind
    int max_ds_deviation = DEFAULT_DS_DEVIATION;
-   /// `ENABLE_SUBMIT_LIB_PATH` -- a client may pass its library path along
+   /// `ENABLE_SUBMIT_LIB_PATH` -- without effect since CS-2764, still parsed
    bool enable_submit_lib_path = false;
-   /// `ENABLE_SUBMIT_LD_PRELOAD` -- a client may pass LD_PRELOAD along
+   /// `ENABLE_SUBMIT_LD_PRELOAD` -- without effect since CS-2764, still parsed
    bool enable_submit_ld_preload = false;
    /// `max_job_deletion_time` -- seconds one job deletion request may take
    int max_job_deletion_time = 3;
@@ -1329,6 +1329,11 @@ int merge_configuration(lList **answer_list, uint32_t progid, const char *cell_r
             }
             continue;
          }
+         // CS-2764: ENABLE_SUBMIT_LIB_PATH and ENABLE_SUBMIT_LD_PRELOAD have no effect any
+         // more. The loader and interpreter variables of a submission reach the job, which
+         // runs as its owner, and the shepherd drops them for the administrative procedures
+         // which run as another user. Both are still parsed so that a configuration which
+         // carries them is accepted.
          if (parse_bool_param(s, "ENABLE_SUBMIT_LIB_PATH", &qmaster_conf.enable_submit_lib_path)) {
             continue;
          }

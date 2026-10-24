@@ -640,15 +640,12 @@ static int handle_task(lListElem *petrep, char *commproc, char *host, u_short id
       goto Error;
    }
 
-   /* filter the environment, see issue GE-3761 */
-   {
-      lList *env_list = lGetListRW(petrep, PETR_environment);
-      if (env_list != nullptr) {
-         lList *answer_list = nullptr;
-         var_list_filter_env_list(env_list, &answer_list);
-         answer_list_output(&answer_list);
-      }
-   }
+   /*
+    * The environment of a parallel task is not filtered any more (Issue GE-3761): the task
+    * runs as the job owner. The shepherd drops the loader and interpreter variables for the
+    * procedures which run as another user, see dangerous_env_vars[] in builtin_starter.cc
+    * (CS-2764).
+    */
 
    /* generate unique task id by combining consecutive number 1-max(uint32_t) */
    tid = std::max(1u, lGetUlong(jatep, JAT_next_pe_task_id));

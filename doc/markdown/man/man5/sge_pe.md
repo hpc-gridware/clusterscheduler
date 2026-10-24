@@ -63,7 +63,12 @@ The invocation command line of a start-up procedure for the parallel environment
 is required. The start-up procedure is invoked by
 xxqs_name_sxx_shepherd(8) prior to executing the job script. Its purpose is to set up the parallel environment 
 correspondingly to its needs. An optional prefix "user@" specifies the user under which this procedure is to be 
-started. The standard output of the start-up procedure is redirected to the file \<REQUEST>.po\<JID> in the job's
+started.
+A procedure which is configured with a "user@" prefix naming someone other than the job
+owner is started without the environment variables of the submission which make the dynamic
+loader, the C library or the shell read code or data from a path the submitter chose - see
+*ENABLE_SUBMIT_LIB_PATH* in xxqs_name_sxx_conf(5).
+The standard output of the start-up procedure is redirected to the file \<REQUEST>.po\<JID> in the job's
 working directory (see qsub(1)), with \<REQUEST> being the name of the job as displayed by qstat(1) and \<JID> 
 being the job's identification number. Likewise, the standard error output is redirected to \<REQUEST>.pe\<JID>.  
 The following special variables being expanded at runtime can be used (besides any other strings which have to 
@@ -131,7 +136,12 @@ The invocation command line of a shutdown procedure for the parallel environment
 is required. The shutdown procedure is invoked 
 by xxqs_name_sxx_shepherd(8) after the job script has finished. Its purpose is to stop the parallel environment and 
 to remove it from all participating systems. An optional prefix "user@" specifies the user under which this procedure 
-is to be started. The standard output of the stop procedure is also redirected to the file \<REQUEST>.po\<JID> in the
+is to be started.
+A procedure which is configured with a "user@" prefix naming someone other than the job
+owner is started without the environment variables of the submission which make the dynamic
+loader, the C library or the shell read code or data from a path the submitter chose - see
+*ENABLE_SUBMIT_LIB_PATH* in xxqs_name_sxx_conf(5).
+The standard output of the stop procedure is also redirected to the file \<REQUEST>.po\<JID> in the
 job's working directory (see qsub(1)), with \<REQUEST> being the name of the job as displayed by qstat(1) and 
 \<JID> being the job's identification number. Likewise, the standard error output is redirected to \<REQUEST>.pe\<JID>  
 The same special variables as for *start_proc_args* can be used to constitute a command line.
