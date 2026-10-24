@@ -111,17 +111,37 @@ bool rqs_parse_filter_from_string(lListElem **filter, const char* buffer, lList 
       if (buffer[strlen(buffer)-1] != '}') {
          ERROR(SFNMAX, MSG_RESOURCEQUOTA_NOVALIDEXPANDEDLIST);
          answer_list_add(alp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
+         lFreeElem(&tmp_filter);
          DRETURN(false);
       }
    } else {
       lSetBool(tmp_filter, RQRF_expand, false);
    }
 
-   lString2List(buffer, &lp, ST_Type, ST_name, delims); 
+   lString2List(buffer, &lp, ST_Type, ST_name, delims);
 
    for_each_ep(scope, lp) {
       const char *name = lGetString(scope, ST_name);
       if ( name[0] == '!' ) {
+         /* The '!' prefixes a name, so a name has to follow it. Without this
+          * check "!{a,b}" parses into an exclusion of the empty name plus the
+          * inclusions a and b: the braces are eaten as delimiters and the rule
+          * ends up limiting the very two names it was written to exempt, which
+          * is the opposite of what it says. Up to 9.1 such a write was refused
+          * by accident rather than by rule - the client parsed, packed the
+          * empty name, unpackstr() turned it into a null pointer in transit and
+          * rqs_verify_filter() rejected the null pointer in qmaster. Parsing in
+          * qmaster leaves no pack round trip to do that, so the syntax is
+          * refused here, where the text that caused it is still at hand. */
+         if (name[1] == '\0') {
+            answer_list_add_sprintf(alp, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
+                                    MSG_RESOURCEQUOTA_EXCLUDE_NONAME_S, buffer);
+            lFreeList(&lp);
+            lFreeList(&scope_list);
+            lFreeList(&xscope_list);
+            lFreeElem(&tmp_filter);
+            DRETURN(false);
+         }
          lAddElemStr(&xscope_list, ST_name, name+1, ST_Type);
       } else {
          lAddElemStr(&scope_list, ST_name, name, ST_Type);
@@ -255,6 +275,14 @@ lListElem *rqs_set_defaults(lListElem *rqs) {
  * The object names referenced in the scope and xscope parts of the rule
  * are verified.
  *
+ * An entry without a name is refused on both sides. A missing name is a null
+ * pointer, an empty one is the empty string, and the two reach this check by
+ * different routes: the first from a client that packed an empty name (see
+ * unpackstr()), the second from a parse that produced one, for instance from
+ * the "!" of an exclusion that prefixes nothing. Either way the entry names no
+ * object, and in an exclusion filter an entry that matches nothing widens the
+ * limit instead of narrowing it.
+ *
  * @param rule the rule to check
  * @param answer_list to pass back error messages
  * @param nm nm of the filter to check, e.g. RQR_filter_users
@@ -278,14 +306,16 @@ rqs_verify_filter(const lListElem *rule, lList **answer_list, int nm, const char
          const lListElem *ep;
 
          for_each_ep(ep, lGetList(filter, RQRF_scope)) {
-            if (lGetString(ep, ST_name) == nullptr) {
+            const char *name = lGetString(ep, ST_name);
+            if (name == nullptr || *name == '\0') {
                answer_list_add(answer_list, message, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
                ret = false;
                break;
             }
          }
          for_each_ep(ep, lGetList(filter, RQRF_xscope)) {
-            if (lGetString(ep, ST_name) == nullptr) {
+            const char *name = lGetString(ep, ST_name);
+            if (name == nullptr || *name == '\0') {
                answer_list_add(answer_list, message, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
                ret = false;
                break;

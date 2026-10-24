@@ -314,6 +314,7 @@
 /* CS-2680, N-B-5: the matcher notation on the reference side, that is, in a host filter */
 #define MSG_RESOURCEQUOTA_MATCHER_EMPTY_S            _MESSAGE(64566, _("host filter entry " SFQ " has an empty pattern; it would match no host"))
 #define MSG_RESOURCEQUOTA_MATCHER_PREFIX_SS          _MESSAGE(64567, _("address matchers (" SFQ ") are not supported in a host filter: " SFQ))
+#define MSG_RESOURCEQUOTA_EXCLUDE_NONAME_S           _MESSAGE(64590, _("filter " SFQ " has a '!' that prefixes no name; an exclusion is written on each name, as in {!name1,!name2}"))
 #define MSG_CENTRYREFINRQS_SS                   _MESSAGE(64379, _("Complex attribute " SFQ " is still referenced in resource quota set " SFQ "."))
 
 
