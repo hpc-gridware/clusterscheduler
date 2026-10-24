@@ -3563,14 +3563,12 @@ job_verify_submitted_job(lListElem *job, lList **answer_list)
    }
 
    /* JB_env_list
-    * Filter potentially dangerous environment variables, see also Issue GE-3761.
+    * The loader and interpreter variables of a submission used to be removed here
+    * (Issue GE-3761). They are not any more: the job runs as its owner, who may set
+    * what they like, and what has to be protected are the administrative procedures
+    * which can run as another user. The execution daemon's shepherd drops them for
+    * those, see dangerous_env_vars[] in builtin_starter.cc (CS-2764).
     */
-   if (ret) {
-      lList *env_list = lGetListRW(job, JB_env_list);
-      if (env_list != nullptr) {
-         var_list_filter_env_list(env_list, answer_list);
-      }
-   }
 
    DRETURN(ret);
 }

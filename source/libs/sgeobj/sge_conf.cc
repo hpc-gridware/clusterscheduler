@@ -975,6 +975,11 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
             }
             continue;
          }
+         // CS-2764: ENABLE_SUBMIT_LIB_PATH and ENABLE_SUBMIT_LD_PRELOAD have no effect any
+         // more. The loader and interpreter variables of a submission reach the job, which
+         // runs as its owner, and the shepherd drops them for the administrative procedures
+         // which run as another user. Both are still parsed so that a configuration which
+         // carries them is accepted.
          if (parse_bool_param(s, "ENABLE_SUBMIT_LIB_PATH", &enable_submit_lib_path)) {
             continue;
          }

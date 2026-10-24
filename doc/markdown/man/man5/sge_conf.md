@@ -106,6 +106,11 @@ temporary file systems with the need for the same context information as the job
 use a private prolog script. Correspondingly, the execution host local configurations is can be overwritten by the 
 queue configuration (see xxqs_name_sxx_queue_conf(5) ). Changing *prolog* will take immediate effect.
 
+A procedure which is configured with a "user@" prefix naming someone other than the job owner is
+started without the environment variables of the submission which make the dynamic loader, the C
+library or the shell read code or data from a path the submitter chose - see
+*ENABLE_SUBMIT_LIB_PATH* under *qmaster_params* below.
+
 The default for *prolog* is the special value NONE, which prevents from execution of a prolog script.
 
 The following special variables expanded at runtime can be used (besides any other strings which have to be 
@@ -204,6 +209,11 @@ for the xxQS_NAMExx administrator to automate the execution of general site spec
 temporary file systems with the need for the same context information as the job. Each xxqs_name_sxx_execd(8) may
 use a private epilog script. Correspondingly, the execution host local configurations is can be overwritten by the 
 queue configuration (see xxqs_name_sxx_queue_conf(5) ). Changing *epilog* will take immediate effect.
+
+A procedure which is configured with a "user@" prefix naming someone other than the job owner is
+started without the environment variables of the submission which make the dynamic loader, the C
+library or the shell read code or data from a path the submitter chose - see
+*ENABLE_SUBMIT_LIB_PATH* under *qmaster_params* below.
 
 The default for *epilog* is the special value NONE, which prevents from execution of an epilog script. The same 
 special variables as for *prolog* can be used to constitute a command line.
@@ -912,43 +922,37 @@ put at the end of the pending job list. To achive the old scheduling behavior th
 *OLD_RESCHEDULE_BEHAVIOR_ARRAY_JOB* has to be set. Please note that this parameter is declared as
 deprecated. So it might be removed with next minor release.
 
-***ENABLE_SUBMIT_LIB_PATH***
+***ENABLE_SUBMIT_LIB_PATH*** and ***ENABLE_SUBMIT_LD_PRELOAD***
 
-Environment variables like LD_PRELOAD, LD_LIBRARY_PATH and similar variables by default may no longer be set via submit option -v or -V.
+Both parameters have no effect any more. They are still accepted, so that a configuration which carries them does
+not have to be changed.
 
-Setting these variables could be misused to execute malicious code from user jobs, if the execution environment 
-contained methods (e.g. prolog) to be executed as the root user, or if the old interactive job support
-(e.g. via ssh) was configured.
+Environment variables like *LD_PRELOAD* and *LD_LIBRARY_PATH* used to be removed from a submission unless one of
+these two parameters allowed them, and the two were commonly set to *TRUE* because jobs need such variables. They
+reach the job now: a job runs as its owner, who may set whatever environment they like.
 
-Should it be necessary to allow setting environment variables like LD_LIBRARY_PATH via submit option -v or -V, 
-this can be enabled again by setting *ENABLE_SUBMIT_LIB_PATH* to TRUE.
+What they were meant to protect are the administrative procedures of a job - *prolog*, *epilog*, the PE *start*
+and *stop* procedure - because those can be configured to run as another user, root among them, while they are
+started with the environment of the job. The execution daemon protects them directly instead: a procedure which
+does not run as the job owner is started without the variables which make the dynamic loader, the C library or
+the shell read code or data from a path the submitter chose. The set is
 
-In general the correct job environment should be set up in the job script or in a prolog, making the use of the 
--v or -V option for this purpose unnecessary.
+    LD_PRELOAD LD_AUDIT LD_LIBRARY_PATH LD_LIBRARY_PATH_32 LD_LIBRARY_PATH_64
+    LD_ORIGIN_PATH LD_CONFIG LIBPATH SHLIB_PATH DYLD_LIBRARY_PATH
+    DYLD_INSERT_LIBRARIES GCONV_PATH LOCPATH NLSPATH BASH_ENV ENV
+    HSA_TOOLS_LIB ROCM_PATH RDC_LOG
 
-Changing *qmaster_params* will take immediate effect, except *gdi_timeout*, *gdi_retries*, *cl_ping*, these will 
-take effect only for new connections. The default for *qmaster_params* is *NONE*.
+A procedure which runs as the job owner, which is the default, keeps them, as does the job itself and every task
+of a parallel job.
 
-This value is a global configuration parameter only. It cannot be overwritten by the execution host local configuration.
+Note that *SET_LIB_PATH* (see *execd_params* below) has the execution daemon put its own library path into the
+environment of the job. That value is dropped for a procedure of another user as well, because it reaches the
+procedure under the same name. A procedure which needs a library path has to set it itself.
 
-***ENABLE_SUBMIT_LD_PRELOAD***
-
-The environment variable *LD_PRELOAD* by default may no longer be set via submit option `-v` or `-V`.
-
-It is automatically removed from the environment of the submitted job, even if *qmaster_param* 
-*ENABLE_SUBMIT_LIB_PATH* is set to *TRUE*.
-
-Setting *LD_PRELOAD* could be misused to execute malicious code from user jobs, if the execution environment 
-contained methods (e.g. prolog) to be executed as the root user, or if the old interactive job support
-(e.g. via ssh) was configured.
-
-Should it be necessary to allow setting *LD_PRELOAD* via submit option `-v` or `-V`, this can be enabled again by
-setting *ENABLE_SUBMIT_LD_PRELOAD* to TRUE.
-
-In general the correct job environment should be set up in the job script or in a prolog, making the use of the 
+In general the correct job environment should be set up in the job script or in a prolog, making the use of the
 `-v` or `-V` option for this purpose unnecessary.
 
-Changing *qmaster_params* will take immediate effect, except *gdi_timeout*, *gdi_retries*, *cl_ping*, these will 
+Changing *qmaster_params* will take immediate effect, except *gdi_timeout*, *gdi_retries*, *cl_ping*, these will
 take effect only for new connections. The default for *qmaster_params* is *NONE*.
 
 This value is a global configuration parameter only. It cannot be overwritten by the execution host local configuration.
