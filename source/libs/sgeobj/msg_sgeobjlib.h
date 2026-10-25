@@ -242,7 +242,7 @@
  * would make one queue's host set a member of another object's. Lives here
  * rather than in the qmaster catalogue because the same refusal is needed on
  * both sides of GDI. */
-#define MSG_HGRP_QUEUEGROUP_NOREF_S _MESSAGE(64589, _(SFQ " belongs to a cluster queue and cannot be referenced"))
+#define MSG_HGRP_QUEUEGROUP_NOREF_S _MESSAGE(64595, _(SFQ " belongs to a cluster queue and cannot be referenced"))
 /* CS-2680: two entries of a member list denoting the same set are collapsed into
  * one when the list is written. The collapse is carried out and reported; it is
  * not a rejection, so the message carries STATUS_OK. */
@@ -314,7 +314,7 @@
 /* CS-2680, N-B-5: the matcher notation on the reference side, that is, in a host filter */
 #define MSG_RESOURCEQUOTA_MATCHER_EMPTY_S            _MESSAGE(64566, _("host filter entry " SFQ " has an empty pattern; it would match no host"))
 #define MSG_RESOURCEQUOTA_MATCHER_PREFIX_SS          _MESSAGE(64567, _("address matchers (" SFQ ") are not supported in a host filter: " SFQ))
-#define MSG_RESOURCEQUOTA_EXCLUDE_NONAME_S           _MESSAGE(64590, _("filter " SFQ " has a '!' that prefixes no name; an exclusion is written on each name, as in {!name1,!name2}"))
+#define MSG_RESOURCEQUOTA_EXCLUDE_NONAME_S           _MESSAGE(64596, _("filter " SFQ " has a '!' that prefixes no name; an exclusion is written on each name, as in {!name1,!name2}"))
 #define MSG_CENTRYREFINRQS_SS                   _MESSAGE(64379, _("Complex attribute " SFQ " is still referenced in resource quota set " SFQ "."))
 
 

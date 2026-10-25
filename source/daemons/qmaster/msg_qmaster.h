@@ -782,35 +782,35 @@
  * its own copies for the paths that are not procedures yet, the bulk delete and
  * the configuration, and the two catalogues cannot include each other: both
  * files are called msg_qconf.h and the bands must not overlap. */
-#define MSG_QCONF_WRITEWOULDADD_S                  _MESSAGE(34007, _("[dry-run] would add " SFQ))
-#define MSG_QCONF_WRITEWOULDMODIFY_S               _MESSAGE(34008, _("[dry-run] would modify " SFQ))
-#define MSG_QCONF_WRITEWRONGTARGET_SS              _MESSAGE(34009, _("the write procedure was addressed to " SFQ " but writes " SFQ))
+#define MSG_QCONF_WRITEWOULDADD_S                  _MESSAGE(34014, _("[dry-run] would add " SFQ))
+#define MSG_QCONF_WRITEWOULDMODIFY_S               _MESSAGE(34015, _("[dry-run] would modify " SFQ))
+#define MSG_QCONF_WRITEWRONGTARGET_SS              _MESSAGE(34016, _("the write procedure was addressed to " SFQ " but writes " SFQ))
 /* 34010 is free: MSG_QCONF_WRITELISTUNSUPPORTED_S refused a text holding a list
  * of objects, which the write procedure reads since CS-2823 */
-#define MSG_QCONF_WRITEEMPTYTEXT_S                 _MESSAGE(34011, _(PFNMAX ": no object text was sent"))
-#define MSG_QCONF_WRITEEMPTYTEXT                   _MESSAGE(34012, _("no object text was sent"))
+#define MSG_QCONF_WRITEEMPTYTEXT_S                 _MESSAGE(34017, _(PFNMAX ": no object text was sent"))
+#define MSG_QCONF_WRITEEMPTYTEXT                   _MESSAGE(34018, _("no object text was sent"))
 /* moved here from clients/qconf/msg_qconf.h (5251): the names of "-Mrqs <file>
  * <names>" are selected where the file is parsed, which is qmaster (CS-2823) */
-#define MSG_RQS_NOTFOUNDINFILE_SS                  _MESSAGE(34013, _("resource quota set " SFQ " not found in file " PFQMAX))
+#define MSG_RQS_NOTFOUNDINFILE_SS                  _MESSAGE(34019, _("resource quota set " SFQ " not found in file " PFQMAX))
 /* Only a type whose text holds a list can produce this, and of those only the
  * resource quota sets: the complex list replaces by design, so what its text
  * omits is deleted on purpose (CS-2523). Hence the switch in the wording. */
-#define MSG_QCONF_WRITENOTREMOVED_S                _MESSAGE(34014, _(SFQ " is still there: a modify writes what the text holds and removes nothing - delete it with \"qconf -drqs\""))
+#define MSG_QCONF_WRITENOTREMOVED_S                _MESSAGE(34020, _(SFQ " is still there: a modify writes what the text holds and removes nothing - delete it with \"qconf -drqs\""))
 
 /* CS-2823: the complex list is a replacing write - what its text does not hold
  * is deleted. The dry run says so in the same shape as the add and the modify
  * above. */
-#define MSG_QCONF_WRITEWOULDDELETE_S               _MESSAGE(34015, _("[dry-run] would delete " SFQ))
+#define MSG_QCONF_WRITEWOULDDELETE_S               _MESSAGE(34021, _("[dry-run] would delete " SFQ))
 
 /* CS-2823: the three ways a replacing write is refused before anything is
  * touched. All three are programming errors rather than user mistakes - no
  * switch produces them - which is why they are refusals and not warnings: a
  * replace that goes ahead on a wrong premise deletes. */
-#define MSG_QCONF_WRITEREPLACENOTLIST              _MESSAGE(34016, _("a replacing write needs a text that holds a list of objects"))
-#define MSG_QCONF_WRITENOREPLACE_S                 _MESSAGE(34017, _("objects of type " SFQ " cannot be deleted by a replacing write"))
-#define MSG_QCONF_WRITEREPLACEWITHSELECT           _MESSAGE(34018, _("a replacing write cannot be restricted to selected object names"))
-#define MSG_QCONF_WRITENAMEWITHLIST                _MESSAGE(34019, _("a named write cannot be a list: the name would be given to every object the text holds"))
-#define MSG_QCONF_WRITEWOULDLEAVE_S                _MESSAGE(34020, _("[dry-run] would leave " SFQ " unchanged"))
-#define MSG_QCONF_WRITENOCHANGE                    _MESSAGE(34021, _("nothing was changed: what the text describes is already stored"))
+#define MSG_QCONF_WRITEREPLACENOTLIST              _MESSAGE(34022, _("a replacing write needs a text that holds a list of objects"))
+#define MSG_QCONF_WRITENOREPLACE_S                 _MESSAGE(34023, _("objects of type " SFQ " cannot be deleted by a replacing write"))
+#define MSG_QCONF_WRITEREPLACEWITHSELECT           _MESSAGE(34024, _("a replacing write cannot be restricted to selected object names"))
+#define MSG_QCONF_WRITENAMEWITHLIST                _MESSAGE(34025, _("a named write cannot be a list: the name would be given to every object the text holds"))
+#define MSG_QCONF_WRITEWOULDLEAVE_S                _MESSAGE(34026, _("[dry-run] would leave " SFQ " unchanged"))
+#define MSG_QCONF_WRITENOCHANGE                    _MESSAGE(34027, _("nothing was changed: what the text describes is already stored"))
 
 // clang-format on
