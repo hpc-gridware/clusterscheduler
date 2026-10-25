@@ -569,7 +569,7 @@
 #define MSG_HGRP_QUEUEGROUP_NOADD_S                _MESSAGE(33692, _(SFQ " is maintained by the qmaster and is created with its cluster queue"))
 #define MSG_HGRP_QUEUEGROUP_NODEL_S                _MESSAGE(33693, _(SFQ " is maintained by the qmaster and is removed with its cluster queue"))
 #define MSG_HGROUP_CYCLEINDEF_SS                   _MESSAGE(33690, _("Hostgroup " SFQ " in specification of " SFQ " would create a cycle"))
-#define MSG_HGROUP_REFINHGOUP_SS                   _MESSAGE(33691, _("denied: following hostgroups still reference " SFQ ": " SFN))
+#define MSG_HGROUP_REFINHGOUP_SS                   _MESSAGE(33691, _("denied: following hostgroups still reference " SFQ ": " SFNMAX))
 
 #define MSG_QINSTANCE_NOSSOS_S                     _MESSAGE(33694, _("Subordinate suspension prevents unsuspension due to calendar for queue " SFQ))
 #define MSG_QINSTANCE_NOSADM_S                     _MESSAGE(33695, _("Administrator suspension prevents unsuspension due to calendar for queue " SFQ))
@@ -585,7 +585,7 @@
 #define MSG_QINSTANCE_SLOTSRESERVED_USS            _MESSAGE(33727, _("denied: " sge_u32 " slots are already reserved in " SFN "@" SFN " by an advance reservation"))
 
 #define MSG_ATTR_HASAMBVAL_SSS                     _MESSAGE(33728, _("warning: " SFQ " has ambiguous value (" SFQ ", " SFQ ")"))
-#define MSG_CQUEUE_REFINHGOUP_SS                   _MESSAGE(33729, _("denied: following cluster queues still reference " SFQ ": " SFN))
+#define MSG_CQUEUE_REFINHGOUP_SS                   _MESSAGE(33729, _("denied: following cluster queues still reference " SFQ ": " SFNMAX))
 #define MSG_LOG_DELETED                            _MESSAGE(33800, _("job deleted"))
 #define MSG_LOG_SENT2EXECD                         _MESSAGE(33801, _("sent to execd"))
 #define MSG_LOG_DELIVERED                          _MESSAGE(33802, _("job received by execd"))
@@ -727,7 +727,7 @@
 #define MSG_MATCHER_IN_SUBMIT_HOSTS_SSS            _MESSAGE(33742, _("WARNING: " SFN " now contains a matcher. Every host whose name matches " SFQ " is thereby allowed to submit jobs without any further administrative act: " SFN))
 #define MSG_MATCHER_VIA_ADMIN_HOSTS_SSSS           _MESSAGE(33743, _("WARNING: " SFN " now contains the matcher " SFN " and is reached by " SFN "; every host whose name matches " SFQ " thereby becomes an administrative host without any further administrative act."))
 #define MSG_MATCHER_VIA_SUBMIT_HOSTS_SSSS          _MESSAGE(33744, _("WARNING: " SFN " now contains the matcher " SFN " and is reached by " SFN "; every host whose name matches " SFQ " is thereby allowed to submit jobs without any further administrative act."))
-#define MSG_MATCHER_IN_QUEUE_GROUP_SSS             _MESSAGE(33739, _("WARNING: " SFN " now contains the matcher " SFQ " and is referenced by cluster queue(s) " SFN "; hosts it captures receive queue instances."))
+#define MSG_MATCHER_IN_QUEUE_GROUP_SSS             _MESSAGE(33739, _("WARNING: " SFN " now contains the matcher " SFQ " and is referenced by cluster queue(s) " SFNMAX "; hosts it captures receive queue instances."))
 #define MSG_MATCHER_INEFFECTIVE_SSS                _MESSAGE(33740, _("WARNING: " SFN ": the matcher " SFQ " matches no host while " SFN " is set."))
 #define MSG_MATCHER_WHITESPACE_S                   _MESSAGE(33741, _(SFQ " contains white space. A host name cannot, so neither can a pattern for one - check for an unclosed bracket expression swallowing the next entry."))
 

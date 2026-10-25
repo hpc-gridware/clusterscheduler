@@ -89,6 +89,6 @@
 #define MSG_CENTRY_NULL_NAME                          _MESSAGE(12013, _("Invalid complex attribute definition"))
 #define MSG_CENTRY_NULL_SHORTCUT_S                    _MESSAGE(12014, _("Complex attribute " SFQ " has no shortcut defined"))
 #define MSG_CENTRY_NULL_URGENCY                       _MESSAGE(12015, _("Complex urgency definition is missing"))
-#define MSG_CENTRY_KEPT_BUILTIN_S                     _MESSAGE(12016, _("kept built-in complex attribute(s) " SFN " that the file does not define - built-ins cannot be deleted"))
+#define MSG_CENTRY_KEPT_BUILTIN_S                     _MESSAGE(12016, _("kept built-in complex attribute(s) " SFNMAX " that the file does not define - built-ins cannot be deleted"))
 
 // clang-format on
