@@ -1428,6 +1428,41 @@ qconf_read_file_text(const char *filename, std::string &text) {
    DRETURN(ok);
 }
 
+/* Whether a text the editor left unchanged is an error is decided per switch,
+ * and it has to stay that way, because the predecessor's answers differ. The
+ * table, read out of 9.1 and verified against it:
+ *
+ *   -ace, -mce   0  the mtime gate is "status >= 0" and the centry flow has no
+ *                   content comparison at all, so the unchanged object is simply
+ *                   sent again (centry_provide_modify_context())
+ *   -mc          0  same gate; the per element filter of
+ *                   centry_list_add_del_mod_via_gdi() then drops every row, so
+ *                   nothing is sent and nothing is reported
+ *   -ahgrp, -aq  0  same gate, and the add passes ignore_unchanged_message, so
+ *                   the template is accepted as it stands
+ *   -mhgrp, -mq  1  same gate, but the modify does compare: with no differences
+ *                   object_has_differences() fails and the answer is
+ *                   MSG_FILE_NOTCHANGED, "Object has not been changed"
+ *   everything   1  the gate is "status == 0" - for the rule quota sets
+ *   else            explicitly (rqs_provide_modify_context()), for the rest
+ *                   because they never had a gate of their own
+ *
+ * So "status >= 0" was never a decision that an unchanged text is acceptable. It
+ * says that the file's timestamp is not the authority, and for the host group and
+ * the cluster queue the content comparison right behind it is - which then
+ * refuses an unchanged modify, with a different message than "file unchanged" but
+ * the same exit code. The complex is the one type that really does accept it
+ * unconditionally, because its flow compares nothing, and that is an
+ * inconsistency inside 9.1 rather than the rule.
+ *
+ * What 9.2 therefore has to reproduce is five switches, not seven: -ace, -mce,
+ * -mc, -ahgrp and -aq. For -mhgrp and -mq the exit code is already right and is
+ * left alone - 9.2 reaches it through the timestamp instead of the comparison,
+ * which it has to, because the client may not parse the text (see
+ * qconf_edit_text()). Carrying the flag per call site is how 9.1 carried it, and
+ * no rule shorter than the table above is true.
+ */
+
 /** @brief Offer a rendered object text to $EDITOR and read the result back
  *
  * The shape a stored procedure write needs: a procedure read produces text and
@@ -1452,10 +1487,12 @@ qconf_read_file_text(const char *filename, std::string &text) {
  * @param text in: the text to offer; out: the text that came back
  * @param uid  uid to run the editor as
  * @param gid  gid to run the editor as
+ * @param unchanged_is_ok whether a text the editor left alone is read back and
+ *             returned like a changed one, see qconf_unchanged_is_tolerated()
  * @return OK, or the reason no text came back
  */
 static QConfEditStatus
-qconf_edit_text(std::string &text, uid_t uid, gid_t gid) {
+qconf_edit_text(std::string &text, uid_t uid, gid_t gid, bool unchanged_is_ok) {
    DENTER(TOP_LAYER);
 
    char *filename = sge_malloc(sizeof(char) * SGE_PATH_MAX);
@@ -1496,8 +1533,11 @@ qconf_edit_text(std::string &text, uid_t uid, gid_t gid) {
       DRETURN(QConfEditStatus::WRITE_FAILED);
    }
 
+   /* A status above zero is "unchanged", and for a tolerant type that is not a
+    * failure: the file is read back and written exactly as a changed one would
+    * be, which is what the per type flows did before CS-2823. */
    const int status = sge_edit(filename, uid, gid);
-   if (status != 0) {
+   if (status < 0 || (status > 0 && !unchanged_is_ok)) {
       unlink(filename);
       sge_free(&filename);
       DRETURN((status < 0) ? QConfEditStatus::EDIT_FAILED : QConfEditStatus::UNCHANGED);
@@ -1557,19 +1597,22 @@ qconf_edit_fail_exit(QConfEditStatus st) {
  * @param text the object text; edited in place
  * @param uid  uid to run the editor as
  * @param gid  gid to run the editor as
+ * @param unchanged_is_ok whether a text the editor left alone is written anyway,
+ *             see the table above qconf_edit_text()
  * @param select for a type whose text holds a list, the names the read was asked for -
  *               the scope qmaster reports against; nullptr when it read everything
  * @param extra_mode write modes the switch adds on top of MODE_ROUND_TRIP, see
  *               qconf_apply_obj()
- * @return 0 when the object was written or the editor left it unchanged, 1 otherwise
+ * @return 0 when the object was written, 1 otherwise - which an unchanged text
+ *         is unless @p unchanged_is_ok says it is not
  */
 static int
 qconf_edit_and_write_obj(QConfObj o, std::string &text, uid_t uid, gid_t gid,
-                         const char *select = nullptr, uint32_t extra_mode = 0u,
-                         const char *name = nullptr) {
+                         bool unchanged_is_ok, const char *select = nullptr,
+                         uint32_t extra_mode = 0u, const char *name = nullptr) {
    DENTER(TOP_LAYER);
 
-   const QConfEditStatus est = qconf_edit_text(text, uid, gid);
+   const QConfEditStatus est = qconf_edit_text(text, uid, gid, unchanged_is_ok);
    if (est != QConfEditStatus::OK) {
       qconf_edit_fail_exit(est);
       DRETURN(1);
@@ -1842,11 +1885,16 @@ qconf_refuse_if_reduced_acls(ocs::QConfParameterClient &param, const char *sw, c
  * @param name  the object to edit
  * @param uid   uid to run the editor as
  * @param gid   gid to run the editor as
- * @return 0 when the object was written or the editor left it unchanged, 1 otherwise
+ * @param unchanged_is_ok whether a text the editor left alone is written anyway;
+ *              true for "-ace", "-mce", "-ahgrp" and "-aq", see the table above
+ *              qconf_edit_text()
+ * @return 0 when the object was written, 1 otherwise - which an unchanged text
+ *         is unless @p unchanged_is_ok says it is not
  */
 static int
 qconf_edit_obj_procedure(ocs::QConfParameterClient &param, QConfObj o,
-                         const char *sw, const char *name, uid_t uid, gid_t gid) {
+                         const char *sw, const char *name, uid_t uid, gid_t gid,
+                         bool unchanged_is_ok = false) {
    DENTER(TOP_LAYER);
 
    if (param.get_exec_context() != ocs::ProcedureParameter::ExecContext::SERVER) {
@@ -1889,7 +1937,7 @@ qconf_edit_obj_procedure(ocs::QConfParameterClient &param, QConfObj o,
     * the parse ignores. For such a type the name has to travel with the write,
     * or the edited configuration would arrive nameless (CS-2823). */
    const char *write_name = qconf_desc(o).read.name_header ? name : nullptr;
-   DRETURN(qconf_edit_and_write_obj(o, text, uid, gid, nullptr, 0u, write_name));
+   DRETURN(qconf_edit_and_write_obj(o, text, uid, gid, unchanged_is_ok, nullptr, 0u, write_name));
 }
 
 /** @brief Edit a whole list of objects through the stored procedures (CS-2823)
@@ -1927,12 +1975,17 @@ qconf_edit_obj_procedure(ocs::QConfParameterClient &param, QConfObj o,
  * @param uid   uid to run the editor as
  * @param gid   gid to run the editor as
  * @param extra_mode write modes on top of MODE_LIST, see qconf_apply_obj()
- * @return 0 when the text was written or the editor left it unchanged, 1 otherwise
+ * @param unchanged_is_ok whether a text the editor left alone is written anyway;
+ *              true for "-mc" and false for "-mrqs", see the table above
+ *              qconf_edit_text()
+ * @return 0 when the text was written, 1 otherwise - which an unchanged text
+ *         is unless @p unchanged_is_ok says it is not
  */
 static int
 qconf_edit_list_procedure(ocs::QConfParameterClient &param, QConfObj o,
                           const char *sw, const char *read_token, const char *read_sub,
-                          const char *names, uid_t uid, gid_t gid, uint32_t extra_mode = 0u) {
+                          const char *names, uid_t uid, gid_t gid, uint32_t extra_mode = 0u,
+                          bool unchanged_is_ok = false) {
    DENTER(TOP_LAYER);
 
    if (param.get_exec_context() != ocs::ProcedureParameter::ExecContext::SERVER) {
@@ -1987,7 +2040,7 @@ qconf_edit_list_procedure(ocs::QConfParameterClient &param, QConfObj o,
    }
 
    std::string text = rendered.str();
-   DRETURN(qconf_edit_and_write_obj(o, text, uid, gid, names,
+   DRETURN(qconf_edit_and_write_obj(o, text, uid, gid, unchanged_is_ok, names,
                                     ocs::QConfWriteParameter::MODE_LIST | extra_mode));
 }
 
@@ -3736,7 +3789,7 @@ int sge_parse_qconf(char *argv[]) {
           * CS-2523 put into the client and which now lives on the descriptor. */
          if (qconf_edit_list_procedure(param, QConfObj::CE, "-mc", "-sc",
                                        ocs::QConfParameter::CENTRY_LIST, nullptr, uid, gid,
-                                       ocs::QConfWriteParameter::MODE_REPLACE) != 0) {
+                                       ocs::QConfWriteParameter::MODE_REPLACE, true) != 0) {
             sge_parse_return = 1;
          }
          spp++;
@@ -5187,7 +5240,7 @@ int sge_parse_qconf(char *argv[]) {
           * same function "-a<obj>" calls. The implicit add of CS-2303 C2 is
           * unchanged; the template it edits comes from the read's descriptor row
           * and is built in qmaster. */
-         if (qconf_edit_obj_procedure(param, QConfObj::CE, "-mce", *spp, uid, gid) != 0) {
+         if (qconf_edit_obj_procedure(param, QConfObj::CE, "-mce", *spp, uid, gid, true) != 0) {
             sge_parse_return = 1;
          }
 
@@ -5253,7 +5306,7 @@ int sge_parse_qconf(char *argv[]) {
           * qconf_edit_obj_procedure(), the single function "-a<obj>" and "-m<obj>"
           * share. The template the upsert of CS-2303 C2 edits is built in qmaster
           * now, from the read's descriptor row. */
-         if (qconf_edit_obj_procedure(param, QConfObj::CE, "-ace", ce_name, uid, gid) != 0) {
+         if (qconf_edit_obj_procedure(param, QConfObj::CE, "-ace", ce_name, uid, gid, true) != 0) {
             sge_parse_return = 1;
          }
          spp++;
@@ -5325,7 +5378,7 @@ int sge_parse_qconf(char *argv[]) {
           * descriptor row, with the name check off for the reason the flag that
           * used to stand here gave - see qconf_template_HGRP(). An impossible
           * name is refused when the edited text is written. */
-         if (qconf_edit_obj_procedure(param, QConfObj::HGRP, "-ahgrp", group, uid, gid) != 0) {
+         if (qconf_edit_obj_procedure(param, QConfObj::HGRP, "-ahgrp", group, uid, gid, true) != 0) {
             sge_parse_return = 1;
          }
 
@@ -5528,7 +5581,7 @@ int sge_parse_qconf(char *argv[]) {
           * qconf_edit_obj_procedure(). The template is the one cqueue_add()
           * built in the client, now assembled in qmaster from the read's
           * descriptor row: the object plus the attribute defaults. */
-         if (qconf_edit_obj_procedure(param, QConfObj::CQ, "-aq", name, uid, gid) != 0) {
+         if (qconf_edit_obj_procedure(param, QConfObj::CQ, "-aq", name, uid, gid, true) != 0) {
             sge_parse_return = 1;
          }
 
