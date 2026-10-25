@@ -48,27 +48,7 @@
 #include "comm/cl_commlib.h"
 #include "comm/cl_xml_parsing.h"
 
-static int s_fail = 0;
-
-/** @def CHECK
- * @brief Assert one condition and record the result
- *
- * Prints `PASS`/`FAIL` with the test's id and label and counts the failure, so
- * a run reports every problem rather than stopping at the first.
- *
- * @param id the test number, printed as `[Tnn]`
- * @param label what the check is about, printed on failure
- * @param expr the condition that must hold
- */
-#define CHECK(id, label, expr) \
-   do { \
-      if (!(expr)) { \
-         printf("FAIL  [T%02d] %s\n", (id), (label)); \
-         ++s_fail; \
-      } else { \
-         printf("ok    [T%02d] %s\n", (id), (label)); \
-      } \
-   } while (0)
+#include "ocs_module_test.h"
 
 /** @brief Run cl_xml_parse_CM() with @p payload placed flush against a guard
  * page, so any read past the buffer end faults deterministically (CS-2343).
@@ -98,43 +78,72 @@ static int parse_cm_at_guard(const char *payload, size_t len, cl_com_CM_t **msg_
    return ret;
 }
 
-int main() {
+/**
+ * @brief A well-formed version attribute is still extracted unchanged [T01].
+ * @return nothing; CHECK records the results
+ */
+static void
+test_valid_version() {
+   printf("\n--- COMM-XML: valid version attribute ---\n");
+   // A valid <port> is required to reach the version-extraction code; the CM is
+   // otherwise incomplete, so the parser returns an error - we only assert the
+   // version value here, proving the fix preserves valid parsing.
+   char ok_buf[] = "<port>1</port><z version=\"9.0\">";
+   cl_com_CM_t *msg = nullptr;
+   cl_xml_parse_CM(reinterpret_cast<unsigned char *>(ok_buf), strlen(ok_buf), &msg);
+   CHECK(1, "COMM-XML: valid version -> parsed as \"9.0\"",
+         msg != nullptr && msg->version != nullptr && strcmp(msg->version, "9.0") == 0);
+   cl_com_free_cm_message(&msg);
+}
+
+/**
+ * @brief A version attribute ending at the buffer end is rejected without a crash [T02-T03].
+ *
+ * A valid <port> (to pass the earlier required-field check) is followed by a
+ * tag whose body ends exactly at the '=' of a version attribute, so
+ * version_begin reaches buffer_length + 1. Pre-fix this hands an OOB pointer
+ * to cl_xml_parse_version() and faults; post-fix the call is skipped and the
+ * parser rejects the message cleanly (reaching these CHECKs == no crash).
+ *
+ * @return nothing; CHECK records the results
+ */
+static void
+test_version_at_buffer_end() {
+   printf("\n--- COMM-XML: version= at buffer end (CS-2343) ---\n");
+   const char attack[] = "<port>1</port><z version=";
+   cl_com_CM_t *msg = nullptr;
+   int ret = parse_cm_at_guard(attack, sizeof(attack) - 1, &msg);
+   CHECK(2, "COMM-XML: version= at end does not crash, rejected cleanly",
+         ret == CL_RETVAL_UNKNOWN);
+   CHECK(3, "COMM-XML: degenerate version attribute yields no version",
+         msg == nullptr || msg->version == nullptr);
+   cl_com_free_cm_message(&msg);
+}
+
+/**
+ * @brief Module-test entry point; runs the scenarios through the shared frame.
+ * @param argc argument count, see ocs_module_test.h for the frame's options
+ * @param argv argument vector
+ * @return 0 if all checks pass, 1 otherwise, 2 on a usage error
+ */
+int main(int argc, char *argv[]) {
    cl_com_setup_commlib(CL_NO_THREAD, CL_LOG_OFF, nullptr);
 
-   printf("\n--- COMM-XML: valid version attribute ---\n");
-   {
-      // a well-formed version="..." is still extracted unchanged. A valid
-      // <port> is required to reach the version-extraction code; the CM is
-      // otherwise incomplete, so the parser returns an error - we only assert
-      // the version value here, proving the fix preserves valid parsing.
-      char ok_buf[] = "<port>1</port><z version=\"9.0\">";
-      cl_com_CM_t *msg = nullptr;
-      cl_xml_parse_CM(reinterpret_cast<unsigned char *>(ok_buf), strlen(ok_buf), &msg);
-      CHECK(1, "COMM-XML: valid version -> parsed as \"9.0\"",
-            msg != nullptr && msg->version != nullptr && strcmp(msg->version, "9.0") == 0);
-      cl_com_free_cm_message(&msg);
-   }
-
-   printf("\n--- COMM-XML: version= at buffer end (CS-2343) ---\n");
-   {
-      // valid <port> (to pass the earlier required-field check) followed by a
-      // tag whose body ends exactly at the '=' of a version attribute, so
-      // version_begin reaches buffer_length + 1. Pre-fix this hands an OOB
-      // pointer to cl_xml_parse_version() and faults; post-fix the call is
-      // skipped and the parser rejects the message cleanly (reaching these
-      // CHECKs == no crash).
-      const char attack[] = "<port>1</port><z version=";
-      cl_com_CM_t *msg = nullptr;
-      int ret = parse_cm_at_guard(attack, sizeof(attack) - 1, &msg);
-      CHECK(2, "COMM-XML: version= at end does not crash, rejected cleanly",
-            ret == CL_RETVAL_UNKNOWN);
-      CHECK(3, "COMM-XML: degenerate version attribute yields no version",
-            msg == nullptr || msg->version == nullptr);
-      cl_com_free_cm_message(&msg);
-   }
+   int ret = ocs::module_test::run(argc, argv, {
+      {"XML-01", "version attribute of a commlib message",
+       "cl_xml_parse_CM() extracts a well-formed version attribute unchanged",
+       {"parse a CM message with <port> and version=\"9.0\""},
+       "the parsed version is \"9.0\"",
+       {}, {1}, test_valid_version},
+      {"XML-02", "version attribute at the buffer end (CS-2343)",
+       "a version attribute whose value would start past the buffer end is rejected without an "
+       "out-of-bounds read",
+       {"place a CM message ending in \"version=\" flush against an unmapped guard page",
+        "parse it"},
+       "the parser returns CL_RETVAL_UNKNOWN without a crash and yields no version",
+       {}, {2, 3}, test_version_at_buffer_end},
+   });
 
    cl_com_cleanup_commlib();
-
-   printf("\n%s - %d failure(s)\n", s_fail == 0 ? "PASS" : "FAIL", s_fail);
-   return s_fail == 0 ? 0 : 1;
+   return ret;
 }

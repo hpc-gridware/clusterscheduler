@@ -27,21 +27,7 @@
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_centry_rsmap.h"
 
-// ---------------------------------------------------------------------------
-// Test infrastructure
-// ---------------------------------------------------------------------------
-
-static int s_fail = 0;
-
-#define CHECK(id, label, expr) \
-   do { \
-      if (!(expr)) { \
-         printf("FAIL  [T%02d] %s\n", (id), (label)); \
-         ++s_fail; \
-      } else { \
-         printf("ok    [T%02d] %s\n", (id), (label)); \
-      } \
-   } while (0)
+#include "ocs_module_test.h"
 
 /**
  * @brief Return the text of the first answer-list element.
@@ -353,12 +339,35 @@ test_check_characteristics() {
 
 // ---------------------------------------------------------------------------
 
-int main(int /*argc*/, char * /*argv*/[]) {
+/**
+ * @brief Module-test entry point; runs the scenarios through the shared frame.
+ * @param argc argument count, see ocs_module_test.h for the frame's options
+ * @param argv argument vector
+ * @return 0 if all checks pass, 1 otherwise, 2 on a usage error
+ */
+int main(int argc, char *argv[]) {
    lInit(nmv);
 
-   test_expand_implicit_ids();
-   test_check_characteristics();
-
-   printf("\n%s — %d failure(s)\n", s_fail == 0 ? "PASS" : "FAIL", s_fail);
-   return s_fail == 0 ? 0 : 1;
+   return ocs::module_test::run(argc, argv, {
+      {"RSMAP-01", "implicit ids of a resource map with a bare amount (CS-2669)",
+       "an RSMAP configured with a bare amount gets the ids 0 to amount-1, bounded by the limit "
+       "the caller passes in; configured ids, amount 0 and other types are left alone",
+       {"expand a bare amount 4",
+        "expand a map with configured ids, one with amount 0 and a non-RSMAP complex",
+        "expand an amount equal to the limit and one above it",
+        "expand with the limit 0, with and without configured ids",
+        "expand nullptr"},
+       "the bare amount becomes ids 0 to 3 of amount 1 each, everything else is unchanged, an "
+       "amount above the limit and any bare amount under limit 0 are rejected, nullptr is tolerated",
+       {}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, test_expand_implicit_ids},
+      {"RSMAP-02", "characteristics of a resource map instance (CS-2714)",
+       "the characteristics of a resource map instance are checked against the complexes they "
+       "name, and a complex of type RSMAP is refused as characteristic",
+       {"check a string and a consumable characteristic",
+        "check a resource map as characteristic, and the map itself",
+        "check an unknown and a duplicate characteristic"},
+       "the string and the consumable characteristic are accepted, the string one typed; every "
+       "other case is refused with its own message",
+       {}, {11, 12, 13, 14, 15, 16}, test_check_characteristics},
+   });
 }

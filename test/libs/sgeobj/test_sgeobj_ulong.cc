@@ -32,31 +32,7 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_ulong.h"
 
-// ---------------------------------------------------------------------------
-// Test infrastructure
-// ---------------------------------------------------------------------------
-
-static int s_fail = 0;
-
-/** @def CHECK
- * @brief Assert one condition and record the result
- *
- * Prints `PASS`/`FAIL` with the test's id and label and counts the failure, so
- * a run reports every problem rather than stopping at the first.
- *
- * @param id the test number, printed as `[Tnn]`
- * @param label what the check is about, printed on failure
- * @param expr the condition that must hold
- */
-#define CHECK(id, label, expr) \
-   do { \
-      if (!(expr)) { \
-         printf("FAIL  [T%02d] %s\n", (id), (label)); \
-         ++s_fail; \
-      } else { \
-         printf("ok    [T%02d] %s\n", (id), (label)); \
-      } \
-   } while (0)
+#include "ocs_module_test.h"
 
 /**
  * @brief Return the text of the first answer-list element.
@@ -93,7 +69,7 @@ first_answer_text(lList *answer_list) {
  * as a malformed date ("Invalid format of date/hour-minute field"). T03
  * therefore fails against the unpatched code.
  *
- * @return none; failures are accumulated in the file-local s_fail counter
+ * @return nothing; CHECK records the results
  */
 static void
 test_parse_date_time() {
@@ -165,11 +141,25 @@ test_parse_date_time() {
 
 // ---------------------------------------------------------------------------
 
-int main(int /*argc*/, char * /*argv*/[]) {
+/**
+ * @brief Module-test entry point; runs the scenarios through the shared frame.
+ * @param argc argument count, see ocs_module_test.h for the frame's options
+ * @param argv argument vector
+ * @return 0 if all checks pass, 1 otherwise, 2 on a usage error
+ */
+int main(int argc, char *argv[]) {
    lInit(nmv);
 
-   test_parse_date_time();
-
-   printf("\n%s — %d failure(s)\n", s_fail == 0 ? "PASS" : "FAIL", s_fail);
-   return s_fail == 0 ? 0 : 1;
+   return ocs::module_test::run(argc, argv, {
+      {"ULONG-01", "date/time parsing at the buffer boundary (CS-2349)",
+       "ulong_parse_date_time_from_string() rejects an input of sizeof(stringT) bytes or more by its "
+       "length guard, before the copy, and still parses a valid date",
+       {"parse a valid MMDDhhmm date",
+        "parse an input of exactly sizeof(stringT) bytes and one of sizeof(stringT)+1 bytes",
+        "parse an input of sizeof(stringT)-1 bytes",
+        "parse nullptr and an empty string"},
+       "the valid date is accepted, both over-long inputs are rejected by the length guard, the "
+       "input that fits reaches the format check, nullptr and the empty string are rejected",
+       {}, {1, 2, 3, 4, 5, 6, 7, 8}, test_parse_date_time},
+   });
 }

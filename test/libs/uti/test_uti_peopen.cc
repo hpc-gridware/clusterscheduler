@@ -50,27 +50,7 @@
 
 #include <sge_log.h>
 
-static int s_fail = 0;
-
-/** @def CHECK
- * @brief Assert one condition and record the result
- *
- * Prints `PASS`/`FAIL` with the test's id and label and counts the failure, so
- * a run reports every problem rather than stopping at the first.
- *
- * @param id the test number, printed as `[Tnn]`
- * @param label what the check is about, printed on failure
- * @param expr the condition that must hold
- */
-#define CHECK(id, label, expr) \
-   do { \
-      if (!(expr)) { \
-         printf("FAIL  [T%02d] %s\n", (id), (label)); \
-         ++s_fail; \
-      } else { \
-         printf("ok    [T%02d] %s\n", (id), (label)); \
-      } \
-   } while (0)
+#include "ocs_module_test.h"
 
 /** @brief Select a usable non-root target user to switch to.
  *
@@ -170,6 +150,7 @@ run_id(bool use_r, const char *user, const char *id_arg, long *result) {
  * @param user      target user to switch to
  * @param want_uid  expected uid of the spawned child
  * @param want_gid  expected primary gid of the spawned child
+ * @return nothing; CHECK records the results
  */
 static void
 check_variant(int *id, bool use_r, const char *user, uid_t want_uid, gid_t want_gid) {
@@ -194,48 +175,93 @@ check_variant(int *id, bool use_r, const char *user, uid_t want_uid, gid_t want_
    CHECK(*id, label, ran_gid && got_gid == (long) want_gid); (*id)++;
 }
 
+/** @brief The target user of the user-switch checks, resolved once. */
+struct Target {
+   bool resolved = false;
+   bool usable = false;
+   std::string reason;
+   char user[256] = "";
+   uid_t uid = 0;
+   gid_t gid = 0;
+};
+
+/** @brief Resolve the target user, or say why the user-switch path cannot run.
+ *
+ * Requires root. The user comes from the first test argument, else
+ * TEST_PEOPEN_USER, else an auto-scan.
+ *
+ * @return the target; usable is false when the scenarios cannot run here
+ */
+static const Target &
+target() {
+   static Target t;
+   if (t.resolved) {
+      return t;
+   }
+   t.resolved = true;
+   if (geteuid() != 0) {
+      t.reason = "must run as root to exercise the user-switch path (CS-2333)";
+      return t;
+   }
+   const auto &args = ocs::module_test::args();
+   const char *requested_user = !args.empty() ? args[0].c_str() : getenv("TEST_PEOPEN_USER");
+   if (!find_target_user(requested_user, t.user, sizeof(t.user), &t.uid, &t.gid)) {
+      t.reason = "no non-root user with non-root primary group found (set TEST_PEOPEN_USER)";
+      return t;
+   }
+   printf("target user=%s uid=%ld gid=%ld\n", t.user, (long) t.uid, (long) t.gid);
+   t.usable = true;
+   return t;
+}
+
+/** @brief Run the checks of one peopen variant as a scenario, or skip it.
+ * @param use_r    true for sge_peopen_r(), false for sge_peopen()
+ * @param first_id the id of the scenario's first check
+ * @return nothing; CHECK records the results
+ */
+static void
+test_variant(bool use_r, int first_id) {
+   printf(use_r ? "\n--- PEOPEN_R: qmaster server-JSV fork path ---\n"
+                : "\n--- PEOPEN: generic user-switch path ---\n");
+   const Target &t = target();
+   if (!t.usable) {
+      ocs::module_test::unsupported(t.reason);
+      return;
+   }
+   int id = first_id;
+   check_variant(&id, use_r, t.user, t.uid, t.gid);
+}
+
 /** @brief Module test entry point for CS-2333 (sge_peopen* GID drop).
  *
- * Requires root to exercise the user-switch path. Resolves the target user
- * from argv[1], TEST_PEOPEN_USER, or an auto-scan, then checks both peopen
- * variants. Skips (and passes) when not root or no suitable user exists.
+ * Requires root to exercise the user-switch path; the first test argument
+ * optionally names the target user. Without root or a suitable user both
+ * scenarios are unsupported and the test passes.
  *
- * @param argc  argument count; argv[1] optionally names the target user
+ * @param argc  argument count, see ocs_module_test.h for the frame's options
  * @param argv  argument vector
- * @return 0 on success or skip, 1 if any check failed
+ * @return 0 on success or skip, 1 if any check failed, 2 on a usage error
  */
 int main(int argc, char *argv[]) {
    DENTER_MAIN(TOP_LAYER, "test_uti_peopen");
-   int id = 1;
 
    // suppress ERROR-level sge_log output from the spawn helpers
    component_set_daemonized(true);
 
-   if (geteuid() != 0) {
-      printf("SKIP: must run as root to exercise the user-switch path (CS-2333)\n");
-      DRETURN(0);
-   }
-
-   // target user to switch to: argv[1], else TEST_PEOPEN_USER, else auto-scan
-   const char *requested_user = (argc > 1) ? argv[1] : getenv("TEST_PEOPEN_USER");
-
-   char user[256];
-   uid_t want_uid = 0;
-   gid_t want_gid = 0;
-   if (!find_target_user(requested_user, user, sizeof(user), &want_uid, &want_gid)) {
-      printf("SKIP: no non-root user with non-root primary group found "
-             "(set TEST_PEOPEN_USER)\n");
-      DRETURN(0);
-   }
-
-   printf("target user=%s uid=%ld gid=%ld\n", user, (long) want_uid, (long) want_gid);
-
-   printf("\n--- PEOPEN_R: qmaster server-JSV fork path ---\n");
-   check_variant(&id, true, user, want_uid, want_gid);
-
-   printf("\n--- PEOPEN: generic user-switch path ---\n");
-   check_variant(&id, false, user, want_uid, want_gid);
-
-   printf("\n%s - %d failure(s)\n", s_fail == 0 ? "PASS" : "FAIL", s_fail);
-   DRETURN(s_fail == 0 ? 0 : 1);
+   int ret = ocs::module_test::run(argc, argv, {
+      {"PEOPEN-01", "sge_peopen_r() switches uid and primary gid (CS-2333)",
+       "a command spawned by sge_peopen_r() for a target user, as the qmaster server JSV does, "
+       "runs with the user's uid and primary gid, not with the parent's gid 0",
+       {"resolve a non-root target user with a non-root primary group",
+        "spawn 'id -u' and 'id -g' as that user through sge_peopen_r()"},
+       "both commands run, and print the target's uid and primary gid",
+       {}, {1, 2, 3, 4}, [] { test_variant(true, 1); }},
+      {"PEOPEN-02", "sge_peopen() switches uid and primary gid (CS-2333)",
+       "a command spawned by sge_peopen() for a target user runs with the user's uid and primary "
+       "gid",
+       {"resolve the target user", "spawn 'id -u' and 'id -g' as that user through sge_peopen()"},
+       "both commands run, and print the target's uid and primary gid",
+       {}, {5, 6, 7, 8}, [] { test_variant(false, 5); }},
+   });
+   DRETURN(ret);
 }
