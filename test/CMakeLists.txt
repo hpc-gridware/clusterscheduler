@@ -20,6 +20,9 @@
 
 # test
 
+# ocs_module_test.h, the shared frame of the module tests
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/common)
+
 add_subdirectory(common)
 add_subdirectory(daemons)
 add_subdirectory(libs)

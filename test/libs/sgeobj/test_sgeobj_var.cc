@@ -25,21 +25,7 @@
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/sge_var.h"
 
-// ---------------------------------------------------------------------------
-// Test infrastructure
-// ---------------------------------------------------------------------------
-
-static int s_fail = 0;
-
-#define CHECK(id, label, expr) \
-   do { \
-      if (!(expr)) { \
-         printf("FAIL  [T%02d] %s\n", (id), (label)); \
-         ++s_fail; \
-      } else { \
-         printf("ok    [T%02d] %s\n", (id), (label)); \
-      } \
-   } while (0)
+#include "ocs_module_test.h"
 
 /**
  * @brief Return the VA_variable string of the n-th element, or "" if absent.
@@ -73,7 +59,7 @@ nth_var(lList *lp, int n) {
  * fix rejects the token with return code 5. T02/T05/T06 exercise that path; on
  * the unpatched code they abort/segfault instead of returning.
  *
- * @return none; failures are accumulated in the file-local s_fail counter
+ * @return nothing; CHECK records the results
  */
 static void
 test_var_list_parse() {
@@ -156,14 +142,26 @@ test_var_list_parse() {
 // ---------------------------------------------------------------------------
 
 /**
- * @brief Module-test entry point.
- * @return 0 if all checks pass, 1 otherwise
+ * @brief Module-test entry point; runs the scenarios through the shared frame.
+ * @param argc argument count, see ocs_module_test.h for the frame's options
+ * @param argv argument vector
+ * @return 0 if all checks pass, 1 otherwise, 2 on a usage error
  */
-int main(int /*argc*/, char * /*argv*/[]) {
+int main(int argc, char *argv[]) {
    lInit(nmv);
 
-   test_var_list_parse();
-
-   printf("\n%s — %d failure(s)\n", s_fail == 0 ? "PASS" : "FAIL", s_fail);
-   return s_fail == 0 ? 0 : 1;
+   return ocs::module_test::run(argc, argv, {
+      {"VAR-01", "variable list parsing of malformed tokens (CS-2350)",
+       "var_list_parse_from_string() rejects a token of '=' characters only instead of aborting, "
+       "and still parses well-formed lists in order",
+       {"parse FOO=bar",
+        "parse the tokens \"==\" and \"=\"",
+        "parse a name without a value and a name with an empty value",
+        "parse a list with a malformed token in the middle and one with a malformed first token",
+        "parse a list of two valid tokens",
+        "pass nullptr as the list pointer"},
+       "every valid list is accepted with its elements in order, every malformed token and the "
+       "nullptr list pointer are rejected, nothing aborts",
+       {}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, test_var_list_parse},
+   });
 }
