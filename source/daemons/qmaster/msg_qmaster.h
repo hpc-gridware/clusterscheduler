@@ -556,7 +556,7 @@
 #define MSG_CQUEUE_NAMENOTGUILTY_S                 _MESSAGE(33687, _("cluster queue name " SFQ " is not valid"))
 #define MSG_CQUEUE_NONAMECHANGE                    _MESSAGE(33688, _("unable to change cluster queue name"))
 #define MSG_HGROUP_CYCLEINDEF_SS                   _MESSAGE(33690, _("Hostgroup " SFQ " in specification of " SFQ " would create a cycle"))
-#define MSG_HGROUP_REFINHGOUP_SS                   _MESSAGE(33691, _("denied: following hostgroups still reference " SFQ ": " SFN))
+#define MSG_HGROUP_REFINHGOUP_SS                   _MESSAGE(33691, _("denied: following hostgroups still reference " SFQ ": " SFNMAX))
 
 #define MSG_QINSTANCE_NOSSOS_S                     _MESSAGE(33694, _("Subordinate suspension prevents unsuspension due to calendar for queue " SFQ))
 #define MSG_QINSTANCE_NOSADM_S                     _MESSAGE(33695, _("Administrator suspension prevents unsuspension due to calendar for queue " SFQ))
@@ -572,7 +572,7 @@
 #define MSG_QINSTANCE_SLOTSRESERVED_USS            _MESSAGE(33727, _("denied: " sge_u32 " slots are already reserved in " SFN "@" SFN " by an advance reservation"))
 
 #define MSG_ATTR_HASAMBVAL_SSS                     _MESSAGE(33728, _("warning: " SFQ " has ambiguous value (" SFQ ", " SFQ ")"))
-#define MSG_CQUEUE_REFINHGOUP_SS                   _MESSAGE(33729, _("denied: following cluster queues still reference " SFQ ": " SFN))
+#define MSG_CQUEUE_REFINHGOUP_SS                   _MESSAGE(33729, _("denied: following cluster queues still reference " SFQ ": " SFNMAX))
 #define MSG_LOG_DELETED                            _MESSAGE(33800, _("job deleted"))
 #define MSG_LOG_SENT2EXECD                         _MESSAGE(33801, _("sent to execd"))
 #define MSG_LOG_DELIVERED                          _MESSAGE(33802, _("job received by execd"))
