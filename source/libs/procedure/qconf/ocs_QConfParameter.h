@@ -174,6 +174,7 @@ namespace ocs {
       static constexpr uint32_t FLAG_SINGLE_LINE = 0x10u;   ///< `SGE_SINGLE_LINE` in the client's environment
       static constexpr uint32_t FLAG_FOR_EDIT = 0x20u;      ///< the read feeds an editor, see get_for_edit()
       static constexpr uint32_t FLAG_FOR_EXPORT = 0x40u;    ///< the read feeds an export, see get_for_export()
+      static constexpr uint32_t FLAG_MORE_INFO = 0x80u;     ///< `MORE_INFO` in the client's environment
       /** @} */
 #pragma endregion
 
@@ -185,6 +186,7 @@ namespace ocs {
       bool force_ = false;      ///< `-f`: overwrite, and skip the bulk-delete prompt
       bool strict_ = false;     ///< `-strict`: apply nothing unless every file is valid
       bool single_line_ = false;   ///< `SGE_SINGLE_LINE`: do not break long lines
+      bool more_info_ = false;     ///< `MORE_INFO`: also render the attributes meant for diagnosis
       bool for_edit_ = false;   ///< the rendered text is going to an editor and comes back
       bool for_export_ = false; ///< the rendered text is going into an export file
       ValueFormat value_format_ = ValueFormat::COMPACT;   ///< `-fmtval`
@@ -221,6 +223,19 @@ namespace ocs {
        * @return true when long lines must not be wrapped
        */
       [[nodiscard]] bool get_single_line() const { return single_line_; }
+
+      /** @brief Whether the client's environment asks for the diagnostic attributes
+       *
+       * `MORE_INFO` adds the attributes which are meant for looking at a problem and
+       * not for everyday output: the actual consumable utilisation of an exec host and
+       * the time at which a host added itself. It is a preference of the user running
+       * the client and travels with the call for the same reason `SGE_SINGLE_LINE`
+       * does - the field list is built where the object is rendered, and that is inside
+       * qmaster, whose environment nobody set.
+       *
+       * @return true when the diagnostic attributes are wanted
+       */
+      [[nodiscard]] bool get_more_info() const { return more_info_; }
 
       /** @brief Whether this read renders a text that will be written back
        *

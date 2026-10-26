@@ -746,10 +746,14 @@ spooling_field *sge_build_STN_json_field_list() {
  * @param spool     include the fields the qmaster owns
  * @param to_stdout use the layout `qhost` prints rather than the spool layout
  * @param history   include the reporting fields
+ * @param more_info include the attributes meant for diagnosis. The caller passes the client's
+ *                  `MORE_INFO`; asking the environment here would ask qmaster's, because a
+ *                  migrated read builds this list inside the daemon (CS-2799). A spool caller
+ *                  passes false, so that no environment can add a field to a spool file.
  * @return the field list, to be freed with #spool_free_spooling_fields
  */
 spooling_field *sge_build_EH_field_list(bool spool, bool to_stdout,
-                                        bool history) {
+                                        bool history, bool more_info) {
    /* There are 15 possible EH_Type fields. */
    spooling_field *fields = (spooling_field *)sge_malloc(sizeof(spooling_field)*15);
    int count = 0;
@@ -758,7 +762,7 @@ spooling_field *sge_build_EH_field_list(bool spool, bool to_stdout,
    create_spooling_field(&fields[count++], EH_scaling_list, 21, "load_scaling", false, HS_sub_fields, false, &qconf_sub_name_value_comma_sfi, nullptr, nullptr);
    create_spooling_field(&fields[count++], EH_consumable_config_list, 21, "complex_values", false, CE_host_sub_fields, false, &qconf_sub_name_value_comma_sfi, nullptr, nullptr);
    
-   if (getenv("MORE_INFO")) {
+   if (more_info) {
       create_spooling_field(&fields[count++], EH_resource_utilization, 21, "complex_values_actual", false, RUE_sub_fields, false, &qconf_sub_name_value_comma_sfi, nullptr, nullptr);
    }
    
@@ -773,7 +777,8 @@ spooling_field *sge_build_EH_field_list(bool spool, bool to_stdout,
 
    /* the time at which a host added itself. It is not part of the field list used by qconf -Ae
     * and qconf -Me, as it is not meant to be edited by hand, and qconf -se shows it only when
-    * MORE_INFO is set, because an additional line in that output would change an interface.
+    * the caller asks for more info, because an additional line in that output would change an
+    * interface.
     *
     * The spool file carries the raw value, not the formatted one: the classic format separates
     * the name of an attribute from its value by a blank, so a formatted date and time could not
@@ -781,7 +786,7 @@ spooling_field *sge_build_EH_field_list(bool spool, bool to_stdout,
     * attribute from being added twice should that ever change */
    if (spool) {
       create_spooling_field(&fields[count++], EH_auto_added_time, 21, "auto_added_time", false, nullptr, false, nullptr, nullptr, nullptr);
-   } else if (to_stdout && getenv("MORE_INFO") != nullptr) {
+   } else if (to_stdout && more_info) {
       create_spooling_field(&fields[count++], EH_auto_added_time, 21, "auto_added_time", false, nullptr, false, nullptr, nullptr, write_EH_auto_added_time);
    }
    

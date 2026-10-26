@@ -77,7 +77,7 @@ ocs::QConfViewBase::show_object_list(std::ostream &os, const lList *list,
 
    const qconf_build_fields_fn provider = qconf_view_fields(desc, for_edit_ || for_export_);
    bool owned = false;
-   spooling_field *fields = provider(format, &owned);
+   spooling_field *fields = provider(format, more_info_, &owned);
 
    lList *alp = nullptr;
    if (desc.read.write_as_list) {
@@ -148,7 +148,7 @@ ocs::QConfViewBase::show_object(std::ostream &os, const lListElem *ep,
 
    const qconf_build_fields_fn provider = qconf_view_fields(desc, for_edit_ || for_export_);
    bool owned = false;
-   spooling_field *fields = provider(format, &owned);
+   spooling_field *fields = provider(format, more_info_, &owned);
 
    lList *alp = nullptr;
    const char *filename = spool_flatfile_write_object(&alp, ep, desc.is_root, fields, desc.sfi,

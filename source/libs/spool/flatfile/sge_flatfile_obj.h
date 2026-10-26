@@ -87,7 +87,7 @@ spooling_field *sge_build_STN_field_list(bool spool, bool recurse);
 spooling_field *sge_build_STN_json_field_list();
 
 spooling_field *sge_build_EH_field_list(bool spool, bool to_stdout,
-                                            bool history);
+                                            bool history, bool more_info);
 
 spooling_field *sge_build_CONF_field_list(bool spool_config);
 

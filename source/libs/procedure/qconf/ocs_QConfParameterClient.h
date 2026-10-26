@@ -104,6 +104,7 @@ namespace ocs {
       explicit QConfParameterClient(std::string procedure_name)
          : QConfParameter(std::move(procedure_name)) {
          single_line_ = getenv("SGE_SINGLE_LINE") != nullptr;
+         more_info_ = getenv("MORE_INFO") != nullptr;
       }
 
       ~QConfParameterClient() override = default;

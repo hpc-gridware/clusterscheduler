@@ -44,7 +44,17 @@
 #include "spool/sge_spooling_utilities.h"
 #include "spool/flatfile/sge_flatfile.h"
 
-typedef spooling_field *(*qconf_build_fields_fn)(spool_flatfile_format format, bool *owned);
+/** @brief Builds the field list one call renders or parses with
+ *
+ * @param format    the format the text is written in
+ * @param more_info the client's `MORE_INFO`, see QConfParameter::get_more_info(). It is an
+ *                  argument and not an environment lookup because the list is built where the
+ *                  object is rendered, which for a migrated read is inside qmaster.
+ * @param owned     set to true when the caller has to free the returned list
+ * @return the field list
+ */
+typedef spooling_field *(*qconf_build_fields_fn)(spool_flatfile_format format, bool more_info,
+                                                 bool *owned);
 
 /** @brief The configuration object types the generic engines handle.
  *

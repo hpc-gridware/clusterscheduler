@@ -1386,7 +1386,9 @@ static int
 qconf_delete_obj(std::ostream &os, QConfObj o, const char *path) {
    const qconf_object_desc &d = qconf_desc(o);
    bool owned = false;
-   spooling_field *fields = d.build_fields(qconf_opt_format, &owned);
+   /* the write field list, which a diagnostic attribute has no business in: the file is
+    * read to learn the names of the objects to delete */
+   spooling_field *fields = d.build_fields(qconf_opt_format, false, &owned);
    int ret = qconf_delete_path(os, d, fields, path);
    if (owned) {
       sge_free(&fields);
@@ -4100,7 +4102,7 @@ int sge_parse_qconf(char *argv[]) {
       /* This does not have to be freed later */
       info_entry[0].fields = CQ_fields;
       /* These have to be freed later */
-      info_entry[1].fields = sge_build_EH_field_list(false, false, false);
+      info_entry[1].fields = sge_build_EH_field_list(false, false, false, false);
       /* These do not */
       info_entry[2].fields = PE_fields;
       info_entry[3].fields = CK_fields;

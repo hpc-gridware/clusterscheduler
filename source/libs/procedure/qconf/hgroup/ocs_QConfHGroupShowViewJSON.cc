@@ -76,7 +76,7 @@ ocs::QConfHGroupShowViewJSON::show_object(std::ostream &os, const lListElem *ep,
    const qconf_build_fields_fn provider =
       (desc.read.fields != nullptr) ? desc.read.fields : desc.build_fields;
    bool owned = false;
-   spooling_field *fields = provider(SP_FORM_JSON, &owned);
+   spooling_field *fields = provider(SP_FORM_JSON, more_info_, &owned);
 
    lList *alp = nullptr;
    dstring document = DSTRING_INIT;

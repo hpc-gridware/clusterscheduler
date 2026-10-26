@@ -240,7 +240,7 @@ static int spool_cqueues(int argc, char *argv[]) {
 
 static int spool_exechosts(int argc, char *argv[]) {
    lList *answer_list = nullptr;
-   const spooling_field *fields = sge_build_EH_field_list(true, false, false);
+   const spooling_field *fields = sge_build_EH_field_list(true, false, false, false);
    int ret; 
 
    spool_read_list(&answer_list, spool_get_default_context(), 

@@ -101,13 +101,14 @@ ocs::QConfParameter::get_bundle() {
    }
    add_parameter_bundle(bundle, OPERATION_ARGS, args_list);
 
-   // -cb, -dry, -f, -strict and the client's SGE_SINGLE_LINE
+   // -cb, -dry, -f, -strict and the client's SGE_SINGLE_LINE and MORE_INFO
    uint32_t flags = 0;
    flags |= binding_ ? FLAG_BINDING : 0;
    flags |= dry_run_ ? FLAG_DRY_RUN : 0;
    flags |= force_ ? FLAG_FORCE : 0;
    flags |= strict_ ? FLAG_STRICT : 0;
    flags |= single_line_ ? FLAG_SINGLE_LINE : 0;
+   flags |= more_info_ ? FLAG_MORE_INFO : 0;
    flags |= for_edit_ ? FLAG_FOR_EDIT : 0;
    flags |= for_export_ ? FLAG_FOR_EXPORT : 0;
    lList *flags_list = nullptr;
@@ -165,6 +166,7 @@ ocs::QConfParameter::set_bundle(const lList *bundle) {
          force_ = (flags & FLAG_FORCE) != 0;
          strict_ = (flags & FLAG_STRICT) != 0;
          single_line_ = (flags & FLAG_SINGLE_LINE) != 0;
+         more_info_ = (flags & FLAG_MORE_INFO) != 0;
          for_edit_ = (flags & FLAG_FOR_EDIT) != 0;
          for_export_ = (flags & FLAG_FOR_EXPORT) != 0;
       }

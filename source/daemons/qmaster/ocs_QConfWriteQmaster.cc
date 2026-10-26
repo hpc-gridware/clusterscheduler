@@ -358,7 +358,10 @@ qconf_write_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monit
    }
 
    bool fields_owned = false;
-   spooling_field *fields = desc.build_fields(format, &fields_owned);
+   /* the write field list, built without the diagnostic attributes: this is the list the
+    * incoming text is parsed with, and an attribute that only a display adds would make a
+    * valid text unparseable */
+   spooling_field *fields = desc.build_fields(format, false, &fields_owned);
 
    /* What an item's text holds: one object, or a list of them for the resource
     * quota sets and the complex list. An item is therefore a label and a

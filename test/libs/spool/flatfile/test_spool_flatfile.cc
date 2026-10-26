@@ -1359,7 +1359,7 @@ static int EH_test() {
     * which is the delimiter between the name of an attribute and its value in this format */
    lSetUlong64(ep, EH_auto_added_time, 1792143190772380);
 
-   fields = sge_build_EH_field_list(true, false, false);
+   fields = sge_build_EH_field_list(true, false, false, false);
 
    /* Write a EH file using classic spooling */
    file1 = spool_flatfile_write_object(&alp, ep, false,

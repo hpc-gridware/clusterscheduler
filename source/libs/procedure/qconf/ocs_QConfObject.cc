@@ -63,29 +63,29 @@
  * report owned=false; objects whose import field list is built on demand report
  * owned=true so the engine frees it. The provider mirrors exactly the field list the
  * matching -A<obj> import handler reads with. */
-static spooling_field *qconf_fields_CAL (spool_flatfile_format, bool *o) { *o = false; return CAL_fields;  }
-static spooling_field *qconf_fields_CK  (spool_flatfile_format, bool *o) { *o = false; return CK_fields;   }
-static spooling_field *qconf_fields_CE  (spool_flatfile_format, bool *o) { *o = false; return CE_fields;   }
-static spooling_field *qconf_fields_RL  (spool_flatfile_format, bool *o) { *o = false; return RL_fields;   }
-static spooling_field *qconf_fields_PE  (spool_flatfile_format, bool *o) { *o = false; return PE_fields;   }
-static spooling_field *qconf_fields_HGRP(spool_flatfile_format, bool *o) { *o = false; return HGRP_fields; }
-static spooling_field *qconf_fields_CQ  (spool_flatfile_format, bool *o) { *o = false; return CQ_fields;   }
-static spooling_field *qconf_fields_US  (spool_flatfile_format, bool *o) { *o = false; return US_fields;   }
-static spooling_field *qconf_fields_RQS (spool_flatfile_format, bool *o) { *o = false; return RQS_fields;  }
-static spooling_field *qconf_fields_CAT (spool_flatfile_format, bool *o) { *o = false; return CAT_fields;  }
-static spooling_field *qconf_fields_SC  (spool_flatfile_format, bool *o) { *o = false; return SC_fields;   }
+static spooling_field *qconf_fields_CAL (spool_flatfile_format, bool, bool *o) { *o = false; return CAL_fields;  }
+static spooling_field *qconf_fields_CK  (spool_flatfile_format, bool, bool *o) { *o = false; return CK_fields;   }
+static spooling_field *qconf_fields_CE  (spool_flatfile_format, bool, bool *o) { *o = false; return CE_fields;   }
+static spooling_field *qconf_fields_RL  (spool_flatfile_format, bool, bool *o) { *o = false; return RL_fields;   }
+static spooling_field *qconf_fields_PE  (spool_flatfile_format, bool, bool *o) { *o = false; return PE_fields;   }
+static spooling_field *qconf_fields_HGRP(spool_flatfile_format, bool, bool *o) { *o = false; return HGRP_fields; }
+static spooling_field *qconf_fields_CQ  (spool_flatfile_format, bool, bool *o) { *o = false; return CQ_fields;   }
+static spooling_field *qconf_fields_US  (spool_flatfile_format, bool, bool *o) { *o = false; return US_fields;   }
+static spooling_field *qconf_fields_RQS (spool_flatfile_format, bool, bool *o) { *o = false; return RQS_fields;  }
+static spooling_field *qconf_fields_CAT (spool_flatfile_format, bool, bool *o) { *o = false; return CAT_fields;  }
+static spooling_field *qconf_fields_SC  (spool_flatfile_format, bool, bool *o) { *o = false; return SC_fields;   }
 /* import list omits runtime load_values/processors (to_stdout=false) so it round-trips (KTD2) */
-static spooling_field *qconf_fields_EH  (spool_flatfile_format, bool *o) { *o = true;  return sge_build_EH_field_list(false, false, false); }
+static spooling_field *qconf_fields_EH  (spool_flatfile_format, bool, bool *o) { *o = true;  return sge_build_EH_field_list(false, false, false, false); }
 /* -se shows the host as it is now, so the runtime values are included (CS-2796) */
-static spooling_field *qconf_show_fields_EH(spool_flatfile_format, bool *o) { *o = true;  return sge_build_EH_field_list(false, true, false); }
+static spooling_field *qconf_show_fields_EH(spool_flatfile_format, bool more_info, bool *o) { *o = true;  return sge_build_EH_field_list(false, true, false, more_info); }
 
 /* defined below, next to the json helpers it uses */
 static void qconf_show_prepare_EH(lListElem *ep, const lList *master_centry_list);
-static spooling_field *qconf_fields_PR  (spool_flatfile_format, bool *o) { *o = true;  return sge_build_PR_field_list(false); }
-static spooling_field *qconf_fields_UU  (spool_flatfile_format, bool *o) { *o = true;  return sge_build_UU_field_list(false); }
+static spooling_field *qconf_fields_PR  (spool_flatfile_format, bool, bool *o) { *o = true;  return sge_build_PR_field_list(false); }
+static spooling_field *qconf_fields_UU  (spool_flatfile_format, bool, bool *o) { *o = true;  return sge_build_UU_field_list(false); }
 /* the cluster configuration has no static field table, only a builder (CS-2808) */
-static spooling_field *qconf_fields_CONF(spool_flatfile_format, bool *o) { *o = true;  return sge_build_CONF_field_list(false); }
-static spooling_field *qconf_fields_STN (spool_flatfile_format fmt, bool *o) {
+static spooling_field *qconf_fields_CONF(spool_flatfile_format, bool, bool *o) { *o = true;  return sge_build_CONF_field_list(false); }
+static spooling_field *qconf_fields_STN (spool_flatfile_format fmt, bool, bool *o) {
    *o = true;
    return (fmt == SP_FORM_JSON) ? sge_build_STN_json_field_list() : sge_build_STN_field_list(false, true);
 }

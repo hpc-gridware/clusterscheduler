@@ -193,7 +193,7 @@ spool_classic_create_context(lList **answer_list, const char *args) {
                   field_info[i].instr  = &qconf_sfi;
                   break;
                case SGE_TYPE_EXECHOST:
-                  field_info[i].fields = sge_build_EH_field_list(true, false, false);
+                  field_info[i].fields = sge_build_EH_field_list(true, false, false, false);
                   field_info[i].instr  = &qconf_sfi;
                   break;
                case SGE_TYPE_PE:

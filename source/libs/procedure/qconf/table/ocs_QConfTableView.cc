@@ -55,7 +55,7 @@ ocs::QConfTableView::show_table(std::ostream &os, const lList *list,
    const qconf_build_fields_fn provider =
       (desc.read.fields != nullptr) ? desc.read.fields : desc.build_fields;
    bool owned = false;
-   spooling_field *shared = provider(format, &owned);
+   spooling_field *shared = provider(format, more_info_, &owned);
 
    /* align_list() writes the widths back, so it must not see the shared table */
    spooling_field *fields = qconf_copy_fields(shared);
