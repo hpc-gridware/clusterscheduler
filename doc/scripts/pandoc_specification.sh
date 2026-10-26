@@ -38,6 +38,7 @@ fi
 
 SETTINGS_FILE="${SOURCE_DIR}/${COMMON_DIR}/head.tex"
 ANNOTATION_FILTER="${SOURCE_DIR}/${COMMON_DIR}/annotations.lua"
+OFF_ANNOTATION_FILTER="${SOURCE_DIR}/${COMMON_DIR}/annotations_off.lua"
 NO_ANNOTATION_FILE="${SOURCE_DIR}/${COMMON_DIR}/no_annotations.tex"
 TITLE_PAGE="${SOURCE_DIR}/${COMMON_DIR}/titlepage.md"
 COPYRIGHT_PAGE="${SOURCE_DIR}/${COMMON_DIR}/copyright.md"
@@ -67,6 +68,13 @@ PANDOC=pandoc
 # aside on its own because PANDOC_VERSION is unset before pandoc 2.1. So the
 # decision is taken here, and a pandoc too old for the filter builds the
 # unannotated specification instead of breaking the build.
+#
+# Building without annotations still needs a filter: the markup has to be
+# removed, or the "annotated-only" passages, the "plain-only" duplicates and
+# the margin notes end up in the document as plain text. A pandoc 2 gets
+# annotations_off.lua, which does exactly what "annotations=off" does and uses
+# nothing pandoc 2.0 lacks. A pandoc 1 has no Lua filters at all; it builds
+# without one, and the warning says that the markup stays in.
 PANDOC_VERSION_LINE=$(${PANDOC} --version 2>/dev/null | sed -n '1p')
 PANDOC_MAJOR=$(echo "${PANDOC_VERSION_LINE}" | sed -n 's/^[^0-9]*\([0-9]*\).*/\1/p')
 if [ -z "${PANDOC_MAJOR}" ] || [ "${PANDOC_MAJOR}" -lt 3 ]; then
@@ -74,7 +82,14 @@ if [ -z "${PANDOC_MAJOR}" ] || [ "${PANDOC_MAJOR}" -lt 3 ]; then
       echo "${0##*/}: ${PANDOC_VERSION_LINE:-pandoc of unknown version} cannot run the annotation filter, building ${MANUAL}.pdf without annotations" >&2
       ANNOTATIONS=off
    fi
-   ANNOTATION_FILTER=""
+   if [ -n "${PANDOC_MAJOR}" ] && [ "${PANDOC_MAJOR}" -eq 2 ] && [ -f "${OFF_ANNOTATION_FILTER}" ]; then
+      ANNOTATION_FILTER="${OFF_ANNOTATION_FILTER}"
+   else
+      if [ -f "${OFF_ANNOTATION_FILTER}" ]; then
+         echo "${0##*/}: ${PANDOC_VERSION_LINE:-pandoc of unknown version} runs no Lua filter, the annotation markup stays in ${MANUAL}.pdf" >&2
+      fi
+      ANNOTATION_FILTER=""
+   fi
 fi
 
 # The marker has to be read before head.tex, which asks for it.
