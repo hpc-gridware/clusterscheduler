@@ -2388,6 +2388,118 @@ qconf_run_read_procedure(std::ostream &os, ocs::QConfParameterClient &param,
    DRETURN(true);
 }
 
+/** @brief The permission check a switch makes in the client before it is served
+ *
+ * Kept per switch exactly as the hand written blocks had it (CS-2952). qmaster
+ * decides in any case; which switches check here, and with which function, is
+ * the history of each ticket rather than a rule, and unifying it is a later
+ * step of CS-2946 that moves the decision into qmaster.
+ */
+enum class QConfClientCheck {
+   NONE,                  ///< no check in the client
+   MANAGER,               ///< qconf_is_manager()
+   MANAGER_ON_ADMIN_HOST  ///< qconf_is_manager_on_admin_host()
+};
+
+/** @brief How a table driven delete switch names what it deletes */
+enum class QConfDeleteKind {
+   NAMES,   ///< "-d<obj> name,...": qconf_delete_names()
+   FILE     ///< "-D<obj> file|dir": qconf_delete_obj()
+};
+
+/** @brief One delete switch served by qconf_run_delete() */
+struct qconf_delete_entry {
+   const char *switch_name;   ///< the switch as typed
+   QConfObj object;           ///< the object type it deletes
+   QConfDeleteKind kind;      ///< names or file
+   QConfClientCheck check;    ///< the check it makes in the client
+};
+
+/** @brief The delete switches that are one engine call each (CS-2952)
+ *
+ * Every "-d<obj>" and "-D<obj>" whose block did nothing but call
+ * qconf_delete_names() or qconf_delete_obj(), possibly after a permission check.
+ * The ones with handling of their own stay blocks: "-de", "-dh"/"-ds", the
+ * membership switches, "-dhgrp", "-Drqs", "-dstnode", "-dconf"/"-Dconf".
+ */
+static const qconf_delete_entry qconf_delete_table[] = {
+   {"-dcal",   QConfObj::CAL,  QConfDeleteKind::NAMES, QConfClientCheck::NONE},
+   {"-dckpt",  QConfObj::CK,   QConfDeleteKind::NAMES, QConfClientCheck::NONE},
+   {"-drole",  QConfObj::RL,   QConfDeleteKind::NAMES, QConfClientCheck::NONE},
+   {"-drqs",   QConfObj::RQS,  QConfDeleteKind::NAMES, QConfClientCheck::NONE},
+   {"-dp",     QConfObj::PE,   QConfDeleteKind::NAMES, QConfClientCheck::NONE},
+   {"-dul",    QConfObj::US,   QConfDeleteKind::NAMES, QConfClientCheck::NONE},
+   {"-duser",  QConfObj::UU,   QConfDeleteKind::NAMES, QConfClientCheck::NONE},
+   {"-dprj",   QConfObj::PR,   QConfDeleteKind::NAMES, QConfClientCheck::NONE},
+   {"-dstree", QConfObj::STN,  QConfDeleteKind::NAMES, QConfClientCheck::NONE},
+   {"-dce",    QConfObj::CE,   QConfDeleteKind::NAMES, QConfClientCheck::MANAGER},
+   {"-dq",     QConfObj::CQ,   QConfDeleteKind::NAMES, QConfClientCheck::MANAGER_ON_ADMIN_HOST},
+   {"-Dcal",   QConfObj::CAL,  QConfDeleteKind::FILE,  QConfClientCheck::NONE},
+   {"-Dckpt",  QConfObj::CK,   QConfDeleteKind::FILE,  QConfClientCheck::NONE},
+   {"-De",     QConfObj::EH,   QConfDeleteKind::FILE,  QConfClientCheck::NONE},
+   {"-Drole",  QConfObj::RL,   QConfDeleteKind::FILE,  QConfClientCheck::NONE},
+   {"-Dp",     QConfObj::PE,   QConfDeleteKind::FILE,  QConfClientCheck::NONE},
+   {"-Dce",    QConfObj::CE,   QConfDeleteKind::FILE,  QConfClientCheck::MANAGER},
+   {"-Dhgrp",  QConfObj::HGRP, QConfDeleteKind::FILE,  QConfClientCheck::MANAGER},
+   {"-Du",     QConfObj::US,   QConfDeleteKind::FILE,  QConfClientCheck::MANAGER_ON_ADMIN_HOST},
+   {"-Duser",  QConfObj::UU,   QConfDeleteKind::FILE,  QConfClientCheck::MANAGER_ON_ADMIN_HOST},
+   {"-Dprj",   QConfObj::PR,   QConfDeleteKind::FILE,  QConfClientCheck::MANAGER_ON_ADMIN_HOST},
+   {"-Dq",     QConfObj::CQ,   QConfDeleteKind::FILE,  QConfClientCheck::MANAGER_ON_ADMIN_HOST},
+};
+
+/**
+ * @brief Run one delete operation from qconf_delete_table, if it is one
+ *
+ * Makes the row's client-side check (which exits the client on a refusal, as
+ * the blocks did), then calls the engine with the operation's argument -
+ * "-dstree" has none and passes nullptr, as its block did. The exit status
+ * follows the blocks too: the names engine is or-ed in, the file engine raises
+ * it to 1 when it reports failures.
+ *
+ * @param os       the stream the output is written to
+ * @param op       the operation to run
+ * @param username the calling user, for the client-side check
+ * @param hostname the calling host, for the client-side check
+ * @param ret      the accumulated exit status
+ * @return true when the operation was handled here, false to run it locally
+ */
+static bool
+qconf_run_delete(std::ostream &os, const qconf_op &op, const char *username,
+                 const char *hostname, int *ret) {
+   DENTER(TOP_LAYER);
+
+   const qconf_delete_entry *entry = nullptr;
+   for (const qconf_delete_entry &e : qconf_delete_table) {
+      if (op.token == e.switch_name) {
+         entry = &e;
+         break;
+      }
+   }
+   if (entry == nullptr) {
+      DRETURN(false);
+   }
+
+   switch (entry->check) {
+      case QConfClientCheck::NONE:
+         break;
+      case QConfClientCheck::MANAGER:
+         qconf_is_manager(username);
+         break;
+      case QConfClientCheck::MANAGER_ON_ADMIN_HOST:
+         qconf_is_manager_on_admin_host(username, hostname);
+         break;
+   }
+
+   const char *arg = op.args.empty() ? nullptr : op.args.front().c_str();
+   if (entry->kind == QConfDeleteKind::NAMES) {
+      *ret |= qconf_delete_names(entry->object, arg);
+   } else if (qconf_delete_obj(os, entry->object, arg) != 0) {
+      *ret = 1;
+   }
+
+   DRETURN(true);
+}
+
 /*------------------------------------------------------------*/
 /** @brief Work through the `qconf` command line, one switch at a time
  *
@@ -2511,6 +2623,12 @@ int sge_parse_qconf(char *argv[]) {
        * bespoke show options of group N - falls through to the option chain
        * below and runs locally, in the order it was typed. */
       if (qconf_run_read_procedure(os, param, op, &sge_parse_return)) {
+         continue;
+      }
+
+      /* CS-2952: the delete switches that are one engine call each come from
+       * qconf_delete_table, with the client-side check each one had. */
+      if (qconf_run_delete(os, op, username, qualified_hostname, &sge_parse_return)) {
          continue;
       }
 
@@ -3213,56 +3331,7 @@ int sge_parse_qconf(char *argv[]) {
          continue;
       }
 
-/*-----------------------------------------------------------------------------*/
-      /* "-dcal calendar_name" */
-
-      if (strcmp("-dcal", *spp) == 0) {
-         /* no adminhost/manager check needed here */
-         /* CS-2299 C4: accept a comma-separated list of calendar names. */
-         spp = sge_parser_get_next(spp);
-         sge_parse_return |= qconf_delete_names(QConfObj::CAL, *spp);
-
-         spp++;
-         continue;
-      }
-/*-----------------------------------------------------------------------------*/
-      /* "-Dcal file|dir": CS-2299 C5 — delete the calendar(s) named in the file(s) */
-
-      if (strcmp("-Dcal", *spp) == 0) {
-         /* no adminhost/manager check needed here */
-         spp = sge_parser_get_next(spp);
-         if (qconf_delete_obj(os, QConfObj::CAL, *spp) != 0) {
-            sge_parse_return = 1;
-         }
-         spp++;
-         continue;
-      }
-/*-----------------------------------------------------------------------------*/
-      /* "-dckpt ckpt_name" */
-
-      if (strcmp("-dckpt", *spp) == 0) {
-         /* no adminhost/manager check needed here */
-         /* CS-2300 C4: accept a comma-separated list of checkpoint names. */
-         spp = sge_parser_get_next(spp);
-         sge_parse_return |= qconf_delete_names(QConfObj::CK, *spp);
-
-         spp++;
-         continue;
-      }
-/*-----------------------------------------------------------------------------*/
-
-      /* "-Dckpt file|dir": CS-2300 C5 — delete the checkpoint(s) named in the file(s) */
-      if (strcmp("-Dckpt", *spp) == 0) {
-         /* no adminhost/manager check needed here */
-         spp = sge_parser_get_next(spp);
-         if (qconf_delete_obj(os, QConfObj::CK, *spp) != 0) {
-            sge_parse_return = 1;
-         }
-         spp++;
-         continue;
-      }
-/*-----------------------------------------------------------------------------*/
-
+/*----------------------------------------------------------------------------*/
       /* "-de server_name[,server_name,...]" */
       if (strcmp("-de", *spp) == 0) {
          /* no adminhost/manager check needed here */
@@ -3275,20 +3344,7 @@ int sge_parse_qconf(char *argv[]) {
          spp++;
          continue;
       }
-/*-----------------------------------------------------------------------------*/
-
-      /* "-De file|dir": CS-2304 C5 — delete the exec host(s) named in the file(s) */
-      if (strcmp("-De", *spp) == 0) {
-         /* no adminhost/manager check needed here */
-         spp = sge_parser_get_next(spp);
-         if (qconf_delete_obj(os, QConfObj::EH, *spp) != 0) {
-            sge_parse_return = 1;
-         }
-         spp++;
-         continue;
-      }
-/*-----------------------------------------------------------------------------*/
-
+/*----------------------------------------------------------------------------*/
       /* "-dh server_name[,server_name,...]" */
       if (strcmp("-dh", *spp) == 0) {
          /* no adminhost/manager check needed here */
@@ -3299,36 +3355,6 @@ int sge_parse_qconf(char *argv[]) {
             sge_parse_return = 1;
          }
          lFreeList(&lp);
-
-         spp++;
-         continue;
-      }
-/*----------------------------------------------------------------------------*/
-      /* "-drole role_name" */
-      if (strcmp("-drole", *spp) == 0) {
-         /* CS-2302 C4: accept a comma-separated list of role names. */
-         spp = sge_parser_get_next(spp);
-         sge_parse_return |= qconf_delete_names(QConfObj::RL, *spp);
-
-         spp++;
-         continue;
-      }
-/*----------------------------------------------------------------------------*/
-      /* "-Drole file|dir": CS-2302 C5 — delete the role(s) named in the file(s) */
-      if (strcmp("-Drole", *spp) == 0) {
-         spp = sge_parser_get_next(spp);
-         if (qconf_delete_obj(os, QConfObj::RL, *spp) != 0) {
-            sge_parse_return = 1;
-         }
-         spp++;
-         continue;
-      }
-/*----------------------------------------------------------------------------*/
-      /* "-drqs rqs_name[,rqs_name,...]" */
-      if (strcmp("-drqs", *spp) == 0) {
-         /* no adminhost/manager check needed here */
-         spp = sge_parser_get_next(spp);
-         sge_parse_return |= qconf_delete_names(QConfObj::RQS, *spp);
 
          spp++;
          continue;
@@ -3392,30 +3418,7 @@ int sge_parse_qconf(char *argv[]) {
          spp++;
          continue;
       }
-/*-----------------------------------------------------------------------------*/
-      /* "-dp pe-name" */
-
-      if (strcmp("-dp", *spp) == 0) {
-         /* no adminhost/manager check needed here */
-         /* CS-2301 C4: accept a comma-separated list of PE names. */
-         spp = sge_parser_get_next(spp);
-         sge_parse_return |= qconf_delete_names(QConfObj::PE, *spp);
-
-         spp++;
-         continue;
-      }
-/*-----------------------------------------------------------------------------*/
-      /* "-Dp file|dir": CS-2301 C5 — delete the PE(s) named in the file(s) */
-      if (strcmp("-Dp", *spp) == 0) {
-         /* no adminhost/manager check needed here */
-         spp = sge_parser_get_next(spp);
-         if (qconf_delete_obj(os, QConfObj::PE, *spp) != 0) {
-            sge_parse_return = 1;
-         }
-         spp++;
-         continue;
-      }
-/*-----------------------------------------------------------------------------*/
+/*----------------------------------------------------------------------------*/
       /* "-ds server_name[,server_name,...]" */
       if (strcmp("-ds", *spp) == 0) {
          /* no adminhost/manager check needed here */
@@ -3467,43 +3470,6 @@ int sge_parse_qconf(char *argv[]) {
       }
 
 /*----------------------------------------------------------------------------*/
-      /* "-dul list_name_list" */
-
-      if (strcmp("-dul", *spp) == 0) {
-         /* no adminhost/manager check needed here */
-         spp = sge_parser_get_next(spp);
-         sge_parse_return |= qconf_delete_names(QConfObj::US, *spp);
-
-         spp++;
-         continue;
-      }
-/*----------------------------------------------------------------------------*/
-      /* "-duser user,..." */
-
-      if (strcmp("-duser", *spp) == 0) {
-         /* no adminhost/manager check needed here */
-         spp = sge_parser_get_next(spp);
-         sge_parse_return |= qconf_delete_names(QConfObj::UU, *spp);
-
-         spp++;
-         continue;
-      }
-
-/*----------------------------------------------------------------------------*/
-
-      /* "-dprj project,..." */
-
-      if (strcmp("-dprj", *spp) == 0) {
-         /* no adminhost/manager check needed here */
-         spp = sge_parser_get_next(spp);
-         sge_parse_return |= qconf_delete_names(QConfObj::PR, *spp);
-
-         spp++;
-         continue;
-      }
-
-/*----------------------------------------------------------------------------*/
-
       /* "-dstnode node_path[,...]"  delete sharetree node(s) */
 
       if (strcmp("-dstnode", *spp) == 0) {
@@ -3613,18 +3579,6 @@ int sge_parse_qconf(char *argv[]) {
          }
 
          lFreeList(&lp);
-         spp++;
-         continue;
-      }
-
-/*----------------------------------------------------------------------------*/
-
-      /* "-dstree" */
-
-      if (strcmp("-dstree", *spp) == 0) {
-         /* no adminhost/manager check needed here */
-         sge_parse_return |= qconf_delete_names(QConfObj::STN, nullptr);
-
          spp++;
          continue;
       }
@@ -4480,23 +4434,6 @@ int sge_parse_qconf(char *argv[]) {
       }
 
 /*----------------------------------------------------------------------------*/
-
-      /* "-Du file|dir": CS-2310 C5 — delete the userset(s) named in the file(s) */
-
-      if (strcmp("-Du", *spp) == 0) {
-         qconf_is_manager_on_admin_host(username, qualified_hostname);
-         spp = sge_parser_get_next(spp);
-         if (qconf_delete_obj(os, QConfObj::US, *spp) != 0) {
-            sge_parse_return = 1;
-         }
-
-         spp++;
-         continue;
-      }
-
-
-/*----------------------------------------------------------------------------*/
-
       /* "-muser username" */
 
       if (strcmp("-muser", *spp) == 0) {
@@ -4561,23 +4498,6 @@ int sge_parse_qconf(char *argv[]) {
       }
 
 /*----------------------------------------------------------------------------*/
-
-      /* "-Duser file|dir": CS-2308 C5 — delete the user(s) named in the file(s) */
-
-      if (strcmp("-Duser", *spp) == 0) {
-
-         qconf_is_manager_on_admin_host(username, qualified_hostname);
-         spp = sge_parser_get_next(spp);
-         if (qconf_delete_obj(os, QConfObj::UU, *spp) != 0) {
-            sge_parse_return = 1;
-         }
-
-         spp++;
-         continue;
-      }
-
-/*----------------------------------------------------------------------------*/
-
       /* "-Mprj file" */
 
       if (strcmp("-Mprj", *spp) == 0) {
@@ -4594,23 +4514,7 @@ int sge_parse_qconf(char *argv[]) {
          continue;
       }
 
-/*-----------------------------------------------------------------------------*/
-
-      /* "-Dprj file|dir": CS-2309 C5 — delete the project(s) named in the file(s) */
-
-      if (strcmp("-Dprj", *spp) == 0) {
-
-         qconf_is_manager_on_admin_host(username, qualified_hostname);
-         spp = sge_parser_get_next(spp);
-         if (qconf_delete_obj(os, QConfObj::PR, *spp) != 0) {
-            sge_parse_return = 1;
-         }
-
-         spp++;
-         continue;
-      }
-
-/*-----------------------------------------------------------------------------*/
+/*----------------------------------------------------------------------------*/
       /* "-sc" */
 
       if (strcmp("-sc", *spp) == 0) {
@@ -4817,7 +4721,6 @@ int sge_parse_qconf(char *argv[]) {
       }
 /*-----------------------------------------------------------------------------*/
       /* "-sckptl" */
-/*----------------------------------------------------------------------------*/
 /*----------------------------------------------------------------------------*/
       /* "-dconf config_list" */
       if (strcmp("-dconf", *spp) == 0) {
@@ -5030,9 +4933,6 @@ int sge_parse_qconf(char *argv[]) {
 /*-----------------------------------------------------------------------------*/
       /* "-scel" */
 /*----------------------------------------------------------------------------*/
-/*----------------------------------------------------------------------------*/
-/*----------------------------------------------------------------------------*/
-
       /* "-sstnode node_path[,...]"  show sharetree node */
 
       if (strcmp("-sstnode", *spp) == 0) {
@@ -5091,7 +4991,6 @@ int sge_parse_qconf(char *argv[]) {
          continue;
       }
 
-/*----------------------------------------------------------------------------*/
 /*----------------------------------------------------------------------------*/
       /* "-bonsai" This is the undocumented switch of showing the share tree
          we keep this switch  for compatibility reasons */
@@ -5204,33 +5103,6 @@ int sge_parse_qconf(char *argv[]) {
       }
 
 /*----------------------------------------------------------------------------*/
-
-      /* "-dce attribute[,attribute,...]"  */
-      if (strcmp("-dce", *spp) == 0) {
-         /* CS-2303 C4: accept a comma-separated list of complex entry names. */
-         spp = sge_parser_get_next(spp);
-         qconf_is_manager(username);
-         sge_parse_return |= qconf_delete_names(QConfObj::CE, *spp);
-
-         spp++;
-         continue;
-      }
-
-/*----------------------------------------------------------------------------*/
-
-      /* "-Dce file|dir": CS-2303 C5 — delete the complex entry(s) named in the file(s) */
-      if (strcmp("-Dce", *spp) == 0) {
-         qconf_is_manager(username);
-         spp = sge_parser_get_next(spp);
-         if (qconf_delete_obj(os, QConfObj::CE, *spp) != 0) {
-            sge_parse_return = 1;
-         }
-         spp++;
-         continue;
-      }
-
-/*----------------------------------------------------------------------------*/
-
       /* "-ace [attribute]"  */
       if (strcmp("-ace", *spp) == 0) {
          /* CS-2303 C1: the complex entry name is optional; template default. */
@@ -5347,17 +5219,6 @@ int sge_parse_qconf(char *argv[]) {
          parse_name_list_to_cull("host groups to del", &lp, HGRP_Type, HGRP_name, *spp);
          sge_parse_return |= qconf_delete_list(QConfObj::HGRP, &lp);
 
-         spp++;
-         continue;
-      }
-
-      /* "-Dhgrp file|dir": CS-2306 C5 — delete the host group(s) named in the file(s) */
-      if (strcmp("-Dhgrp", *spp) == 0) {
-         qconf_is_manager(username);
-         spp = sge_parser_get_next(spp);
-         if (qconf_delete_obj(os, QConfObj::HGRP, *spp) != 0) {
-            sge_parse_return = 1;
-         }
          spp++;
          continue;
       }
@@ -5542,27 +5403,6 @@ int sge_parse_qconf(char *argv[]) {
          continue;
       }
 
-      /* "-dq cqueue,..." : CS-2305 C4 — comma-separated list of cqueue names */
-      if (strcmp("-dq", *spp) == 0) {
-         spp = sge_parser_get_next(spp);
-         qconf_is_manager_on_admin_host(username, qualified_hostname);
-         sge_parse_return |= qconf_delete_names(QConfObj::CQ, *spp);
-
-         spp++;
-         continue;
-      }
-
-      /* "-Dq file|dir": CS-2305 C5 — delete the cqueue(s) named in the file(s) */
-      if (strcmp("-Dq", *spp) == 0) {
-         qconf_is_manager_on_admin_host(username, qualified_hostname);
-         spp = sge_parser_get_next(spp);
-         if (qconf_delete_obj(os, QConfObj::CQ, *spp) != 0) {
-            sge_parse_return = 1;
-         }
-         spp++;
-         continue;
-      }
-
       /* "-sq [pattern[,pattern,...]]" */
       if (strcmp("-sq", *spp) == 0) {
          lList *answer_list = nullptr;
@@ -5688,23 +5528,6 @@ int sge_parse_qconf(char *argv[]) {
          continue;
       }
 
-/*----------------------------------------------------------------------------*/
-
-/*----------------------------------------------------------------------------*/
-      /* "-sul" */
-
-
-/*----------------------------------------------------------------------------*/
-
-       /* "-suserl" */
-
-
-/*----------------------------------------------------------------------------*/
-
-       /* "-sprjl" */
-
-
-/*----------------------------------------------------------------------------*/
 
       /* "-tsm" trigger scheduler monitoring */
 
