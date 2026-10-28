@@ -40,6 +40,8 @@
 
 #include "basis_types.h"
 
+#include "ocs_module_test.h"
+
 /*
  * CS-2451 stage 2, against a RUNNING qmaster.
  *
@@ -78,28 +80,6 @@
 #define GRP_MID  "@test_cs2451_mid"    ///< contains #GRP_LEAF
 #define GRP_TOP  "@test_cs2451_top"    ///< contains #GRP_MID
 /** @} */
-
-static int s_fail = 0;
-
-/** @def CHECK
- * @brief Assert one condition and record the result
- *
- * Prints `PASS`/`FAIL` with the test's id and label and counts the failure, so
- * a run reports every problem rather than stopping at the first.
- *
- * @param id the test number, printed as `[Tnn]`
- * @param label what the check is about, printed on failure
- * @param expr the condition that must hold
- */
-#define CHECK(id, label, expr) \
-   do { \
-      if (!(expr)) { \
-         printf("FAIL  [T%02d] %s\n", (id), (label)); \
-         ++s_fail; \
-      } else { \
-         printf("ok    [T%02d] %s\n", (id), (label)); \
-      } \
-   } while (0)
 
 /** @brief Fetch the whole host group list from the qmaster. */
 static lList *
@@ -209,36 +189,17 @@ cache_contains(const lList *master_hgroup_list, const char *name, const char *ho
 
 // ---------------------------------------------------------------------------
 
-int
-main(int /*argc*/, char * /*argv*/[]) {
-   DENTER_MAIN(TOP_LAYER, "test_qmaster_hgroup_cache");
-   lList *alp = nullptr;
-
-   ocs::TerminationManager::install_signal_handler();
-   ocs::TerminationManager::install_terminate_handler();
-
-   /*
-    * Enrolled as QSTAT, not QCONF, on purpose. get_gdi_executor_ds() sends a GET
-    * from qconf-run-by-a-manager to the GLOBAL data store; every other GET goes
-    * to the READER store, which the mirror feeds from events. Reading through
-    * the mirror is what makes this a test of stage 2: a cache recomputed in
-    * hgroup_success() but never shipped as an event would still look perfect
-    * from the GLOBAL store, and be missing everywhere a reader thread answers.
-    *
-    * Writes are unaffected -- manager privileges are checked per user, and a
-    * packet containing a non-GET task is routed to a worker regardless of the
-    * component name.
-    *
-    * Automatic sessions make this deterministic: after our own writes the GET
-    * waits in ReaderWaitingRequestQueue until the mirror has caught up, so there
-    * is nothing to poll for and no sleep to tune.
-    */
-   if (ocs::gdi::ClientBase::setup_and_enroll(QSTAT, MAIN_THREAD, &alp) != ocs::gdi::AE_OK) {
-      answer_list_output(&alp);
-      printf("\nSKIP - no cluster reachable (this test needs a running qmaster)\n");
-      DRETURN(99);
-   }
-
+/**
+ * @brief Scenario HGCACHE-01: the cache of every group equals a fresh tree walk
+ *
+ * Checks the startup caches, a three-level chain built and changed by this
+ * test, and every cache again afterwards; removes its own groups at the end.
+ * Needs the GDI connection main() set up.
+ *
+ * @return nothing; the results go through CHECK
+ */
+static void
+test_cache_content_and_invalidation() {
    /* two real, resolvable host names -- the qmaster host is always one of them,
     * the second is any other host of an existing group (a made-up name would be
     * rejected by href_list_resolve_hostnames() before the cache is involved) */
@@ -315,9 +276,9 @@ main(int /*argc*/, char * /*argv*/[]) {
    /* ---- the part the incremental path is easiest to get wrong ------------
     * modifying the LEAF must refresh the caches of MID and TOP as well */
    if (host_b[0] == '\0') {
-      printf("ok    [T11] skipped - only one host name available in this cluster\n");
-      printf("ok    [T12] skipped - only one host name available in this cluster\n");
-      printf("ok    [T13] skipped - only one host name available in this cluster\n");
+      CHECK(11, "skipped - only one host name available in this cluster", true);
+      CHECK(12, "skipped - only one host name available in this cluster", true);
+      CHECK(13, "skipped - only one host name available in this cluster", true);
    } else {
       const char *leaf_members[] = {host_a, host_b};
       CHECK(11, "added a second host to " GRP_LEAF,
@@ -356,9 +317,66 @@ main(int /*argc*/, char * /*argv*/[]) {
             lGetElemHost(hgroup_list, HGRP_name, GRP_TOP) == nullptr);
       lFreeList(&hgroup_list);
    }
+}
+
+/**
+ * @brief Module-test entry point; enrolls with the qmaster and runs the scenario
+ *
+ * Without a reachable cluster it prints SKIP and exits 99 before the frame
+ * starts, as before: module_test_cluster treats 99 as an error, because its
+ * cluster is installed, and an unsupported verdict from the frame would let an
+ * unreachable cluster pass as a skipped test.
+ *
+ * @param argc argument count, see ocs_module_test.h for the frame's options
+ * @param argv argument vector
+ * @return 0 if all checks pass, 1 otherwise, 2 on a usage error, 99 without a cluster
+ */
+int
+main(int argc, char *argv[]) {
+   DENTER_MAIN(TOP_LAYER, "test_qmaster_hgroup_cache");
+   lList *alp = nullptr;
+
+   ocs::TerminationManager::install_signal_handler();
+   ocs::TerminationManager::install_terminate_handler();
+
+   /*
+    * Enrolled as QSTAT, not QCONF, on purpose. get_gdi_executor_ds() sends a GET
+    * from qconf-run-by-a-manager to the GLOBAL data store; every other GET goes
+    * to the READER store, which the mirror feeds from events. Reading through
+    * the mirror is what makes this a test of stage 2: a cache recomputed in
+    * hgroup_success() but never shipped as an event would still look perfect
+    * from the GLOBAL store, and be missing everywhere a reader thread answers.
+    *
+    * Writes are unaffected -- manager privileges are checked per user, and a
+    * packet containing a non-GET task is routed to a worker regardless of the
+    * component name.
+    *
+    * Automatic sessions make this deterministic: after our own writes the GET
+    * waits in ReaderWaitingRequestQueue until the mirror has caught up, so there
+    * is nothing to poll for and no sleep to tune.
+    */
+   if (ocs::gdi::ClientBase::setup_and_enroll(QSTAT, MAIN_THREAD, &alp) != ocs::gdi::AE_OK) {
+      answer_list_output(&alp);
+      printf("\nSKIP - no cluster reachable (this test needs a running qmaster)\n");
+      DRETURN(99);
+   }
+
+   int status = ocs::module_test::run(argc, argv, {
+      {"HGCACHE-01", "resolved host list cache equals a fresh tree walk (CS-2451)",
+       "every host group carries a cache of its resolved hosts that equals a fresh walk of the group "
+       "tree, from the start of sge_qmaster on and after groups are added and changed, including the "
+       "groups that contain a changed group; read through the reader data store",
+       {"read all host groups and compare each cache with a fresh walk",
+        "add a group with one host, a group containing it and a group containing that one",
+        "add a second host to the innermost group and read the caches of both containers",
+        "compare every cache with a fresh walk again and remove the three groups"},
+       "every group has a cache equal to the walk at startup and afterwards, the outermost group "
+       "resolves to the innermost host and caches hosts only, the new host reaches the direct and the "
+       "transitive container, and the test groups are removed",
+       {{"HGC-01", "covers"}}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15},
+       test_cache_content_and_invalidation},
+   });
 
    ocs::gdi::ClientBase::shutdown();
-
-   printf("\n%s - %d failure(s)\n", s_fail == 0 ? "PASS" : "FAIL", s_fail);
-   DRETURN(s_fail == 0 ? 0 : 1);
+   DRETURN(status);
 }
