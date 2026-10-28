@@ -2310,10 +2310,12 @@ qconf_conf_delete_path(std::ostream &os, const char *path) {
  * ocs::QConfModelBase::resolve() - not by a list kept here, because what a
  * caller may read is the server's question.
  *
- * A row marked export_only is not one of them. The export reads through the
- * same table (CS-2826), so without that mark every "-S<obj>" switch would be
- * claimed here and its text printed instead of written to a file - which is
- * what the installation's own configuration check measured.
+ * A row marked export_only is an export, not a read to print: the export reads
+ * through the same table (CS-2826), but its texts go to files. Printing them
+ * here is what the installation's own configuration check once measured, so
+ * such a row is handed to qconf_export_path() - or qconf_export_singleton() for
+ * a singleton, which takes no directory - with the operation's argument as the
+ * path (CS-2949). That is all the one block per "-S<obj>" switch used to do.
  *
  * @param os        the stream the output is written to
  * @param param     the invocation, whose operation is set to @p op for the call
@@ -2327,8 +2329,17 @@ qconf_run_read_procedure(std::ostream &os, ocs::QConfParameterClient &param,
    DENTER(TOP_LAYER);
 
    const ocs::qconf_read_entry *entry = ocs::QConfModelBase::resolve(op.token.c_str());
-   if (entry == nullptr || entry->export_only ||
-       entry->kind == ocs::QConfReadKind::SINGLE_OBJECT) {
+   if (entry != nullptr && entry->export_only) {
+      const char *path = op.args.empty() ? nullptr : op.args.front().c_str();
+      const int failed = (entry->kind == ocs::QConfReadKind::SINGLETON)
+                         ? qconf_export_singleton(os, param, op.token.c_str(), path)
+                         : qconf_export_path(os, param, op.token.c_str(), path);
+      if (failed != 0) {
+         *ret = 1;
+      }
+      DRETURN(true);
+   }
+   if (entry == nullptr || entry->kind == ocs::QConfReadKind::SINGLE_OBJECT) {
       /* The named single-object reads are not intercepted here. Their options
        * still disagree about how a failure is reported - the classic four leave
        * the parser while -sprj, -se and -suser set the exit code and carry on,
@@ -5596,136 +5607,6 @@ int sge_parse_qconf(char *argv[]) {
          qconf_is_manager_on_admin_host(username, qualified_hostname);
          spp = sge_parser_get_next(spp);
          if (qconf_apply_obj(os, QConfObj::CQ, *spp) != 0) {
-            sge_parse_return = 1;
-         }
-         spp++;
-         continue;
-      }
-
-      /* CS-23xx: "-S<obj> name|dir" — bulk export, the inverse of -A<obj>/-M<obj>.
-       * Read-only (no manager check), like -s<obj>. Each handler passes the object's
-       * IMPORT field list so the exported files re-import unchanged. */
-      if (strcmp("-Scal", *spp) == 0) {
-         spp = sge_parser_get_next(spp);
-         if (qconf_export_path(os, param, "-Scal", *spp) != 0) {
-            sge_parse_return = 1;
-         }
-         spp++;
-         continue;
-      }
-      if (strcmp("-Sckpt", *spp) == 0) {
-         spp = sge_parser_get_next(spp);
-         if (qconf_export_path(os, param, "-Sckpt", *spp) != 0) {
-            sge_parse_return = 1;
-         }
-         spp++;
-         continue;
-      }
-      if (strcmp("-Sce", *spp) == 0) {
-         spp = sge_parser_get_next(spp);
-         if (qconf_export_path(os, param, "-Sce", *spp) != 0) {
-            sge_parse_return = 1;
-         }
-         spp++;
-         continue;
-      }
-      if (strcmp("-Se", *spp) == 0) {
-         spp = sge_parser_get_next(spp);
-         /* exclude the template and global pseudo-hosts (KTD5); explicit "exechost"
-          * JSON $id (EH shares its name field with adminhost). */
-         if (qconf_export_path(os, param, "-Se", *spp) != 0) {
-            sge_parse_return = 1;
-         }
-         spp++;
-         continue;
-      }
-      if (strcmp("-Shgrp", *spp) == 0) {
-         spp = sge_parser_get_next(spp);
-         if (qconf_export_path(os, param, "-Shgrp", *spp) != 0) {
-            sge_parse_return = 1;
-         }
-         spp++;
-         continue;
-      }
-      if (strcmp("-Sp", *spp) == 0) {
-         spp = sge_parser_get_next(spp);
-         if (qconf_export_path(os, param, "-Sp", *spp) != 0) {
-            sge_parse_return = 1;
-         }
-         spp++;
-         continue;
-      }
-      if (strcmp("-Sprj", *spp) == 0) {
-         spp = sge_parser_get_next(spp);
-         if (qconf_export_path(os, param, "-Sprj", *spp) != 0) {
-            sge_parse_return = 1;
-         }
-         spp++;
-         continue;
-      }
-      if (strcmp("-Sq", *spp) == 0) {
-         spp = sge_parser_get_next(spp);
-         if (qconf_export_path(os, param, "-Sq", *spp) != 0) {
-            sge_parse_return = 1;
-         }
-         spp++;
-         continue;
-      }
-      if (strcmp("-Srole", *spp) == 0) {
-         spp = sge_parser_get_next(spp);
-         if (qconf_export_path(os, param, "-Srole", *spp) != 0) {
-            sge_parse_return = 1;
-         }
-         spp++;
-         continue;
-      }
-      if (strcmp("-Srqs", *spp) == 0) {
-         spp = sge_parser_get_next(spp);
-         /* rqs files carry a rule-set list, so export with list framing (as_list). */
-         if (qconf_export_path(os, param, "-Srqs", *spp) != 0) {
-            sge_parse_return = 1;
-         }
-         spp++;
-         continue;
-      }
-      if (strcmp("-Su", *spp) == 0) {
-         spp = sge_parser_get_next(spp);
-         if (qconf_export_path(os, param, "-Su", *spp) != 0) {
-            sge_parse_return = 1;
-         }
-         spp++;
-         continue;
-      }
-      if (strcmp("-Suser", *spp) == 0) {
-         spp = sge_parser_get_next(spp);
-         if (qconf_export_path(os, param, "-Suser", *spp) != 0) {
-            sge_parse_return = 1;
-         }
-         spp++;
-         continue;
-      }
-      /* singletons: a directory argument is rejected (R6) */
-      if (strcmp("-Sstree", *spp) == 0) {
-         spp = sge_parser_get_next(spp);
-         /* sharetree writes the root node (is_root=true) with the name/value sfi */
-         if (qconf_export_singleton(os, param, "-Sstree", *spp) != 0) {
-            sge_parse_return = 1;
-         }
-         spp++;
-         continue;
-      }
-      if (strcmp("-Ssconf", *spp) == 0) {
-         spp = sge_parser_get_next(spp);
-         if (qconf_export_singleton(os, param, "-Ssconf", *spp) != 0) {
-            sge_parse_return = 1;
-         }
-         spp++;
-         continue;
-      }
-      /* bespoke config export (R7): basename keying, global + per-host */
-      if (strcmp("-Sconf", *spp) == 0) {
-         spp = sge_parser_get_next(spp);
-         if (qconf_export_path(os, param, "-Sconf", *spp) != 0) {
             sge_parse_return = 1;
          }
          spp++;
