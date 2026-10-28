@@ -50,6 +50,5 @@
    may also be mixed.
    
 */
-int sge_client_get_acls(lList **alpp, lList *acl_args, lList **dst);
 int sge_client_add_user(lList **alpp, lList *user_args, lList *acl_args);
 int sge_client_del_user(lList **alpp, lList *user_args, lList *acl_args);

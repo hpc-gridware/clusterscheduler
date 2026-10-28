@@ -4973,31 +4973,6 @@ int sge_parse_qconf(char *argv[]) {
          continue;
       }
 /*----------------------------------------------------------------------------*/
-      /* "-srqsl " */
-/*----------------------------------------------------------------------------*/
-      /* "-srqs [rqs_name,...]" */
-      if (strcmp("-srqs", *spp) == 0) {
-         /* CS-2819: a table driven read of several objects. No argument shows
-          * every resource quota set, which is what an empty filter does. */
-         qconf_op op;
-         op.token = "-srqs";
-         if (!sge_next_is_an_opt(spp)) {
-            spp = sge_parser_get_next(spp);
-            op.args.emplace_back(*spp);
-         }
-         param.set_operation(op);
-
-         lList *answer_list = nullptr;
-         if (!qconf_dispatch_procedure(os, param, &answer_list)) {
-            show_answer(answer_list);
-            sge_parse_return = 1;
-         }
-         lFreeList(&answer_list);
-
-         spp++;
-         continue;
-      }
-/*----------------------------------------------------------------------------*/
       /* "-stl " */
       if (strcmp("-stl", *spp) == 0) {
          lList *answer_list = nullptr;
@@ -5169,52 +5144,6 @@ int sge_parse_qconf(char *argv[]) {
       }
 
 /*----------------------------------------------------------------------------*/
-/*-----------------------------------------------------------------------------*/
-/*----------------------------------------------------------------------------*/
-      /* "-su [list_name[,list_name,...]]" */
-
-      if (strcmp("-su", *spp) == 0) {
-         /* CS-2819: the same table driven read as -srqs; the option table demands
-          * at least one name here, so the "show everything" case cannot occur. */
-         spp = sge_parser_get_next(spp);
-
-         qconf_op op;
-         op.token = "-su";
-         op.args.emplace_back(*spp);
-         param.set_operation(op);
-
-         lList *answer_list = nullptr;
-         if (!qconf_dispatch_procedure(os, param, &answer_list)) {
-            show_answer(answer_list);
-            sge_parse_return = 1;
-         }
-         lFreeList(&answer_list);
-
-         spp++;
-         continue;
-      }
-
-      // -scat id
-      if (strcmp("-scat", *spp) == 0) {
-         lList *answer_list = nullptr;
-
-         /* CS-2819: a table driven read whose key is a number; the id is parsed
-          * where the filter is built, so the client passes the text through. */
-         spp = sge_parser_get_next(spp);
-         qconf_op op;
-         op.token = "-scat";
-         op.args.emplace_back(*spp);
-         param.set_operation(op);
-
-         if (!qconf_dispatch_procedure(os, param, &answer_list)) {
-            show_answer(answer_list);
-            sge_parse_return = 1;
-         }
-         lFreeList(&answer_list);
-         spp++;
-         continue;
-      }
-
       /* "-sce attribute"  */
       if (strcmp("-sce", *spp) == 0) {
          lList *answer_list = nullptr;
