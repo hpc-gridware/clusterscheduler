@@ -900,6 +900,14 @@ delete operations the exit status reflects the number of failed objects: when a 
 to be applied (or, with `-strict`, when any file in the batch is invalid), `qconf` reports the failures and exits
 non-zero while still having applied the objects that succeeded (unless `-strict` prevented the whole batch).
 
+Several options on one command line are carried out in the order given, and the first one that fails stops the
+command line: `qconf` exits non-zero, and the options after it are not carried out. The options before it stay
+applied - nothing is rolled back - so the state afterwards is "everything up to the failed option", and the last
+message is the one that explains the exit status. Inside one option the rule above holds: a list of names or a
+directory is worked through to the end and each failure is reported, unless `-strict` is given. An option whose
+non-zero exit status is an answer rather than an error stops the command line as well, for example `-shgrp_why` for
+a host that is not a member or `-sds` for a report that is not empty.
+
 For the show options two cases are errors, so that a script can ask whether something exists instead of parsing the
 output. Naming an object that does not exist exits non-zero, and does so for every name given: `-suser`*a*`,`*b*
 prints what it finds and still exits non-zero when one of the two is unknown. Listing a type of which nothing is

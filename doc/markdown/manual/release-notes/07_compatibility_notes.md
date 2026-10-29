@@ -454,5 +454,38 @@ never added anything, and it failed silently because the user really was absent.
 the exit code now. Asking without caring whether anything exists is the list form, `qconf
 -suserl` or `-srqsl`, which does not fail on an individual name.
 
+## *qconf* Stops at the First Option That Fails
+
+`qconf` accepts several options on one command line and carries them out in the order given. What
+happened after one of them failed depended on the option. `-scal`, `-sp` and `-se` stopped the
+command line; `-sprj`, `-suser`, `-sq`, `-shgrp`, `-srqs` and most of the others reported the
+failure and went on with the next option:
+
+    $ qconf -sprj nosuchproject -sql ; echo "rc=$?"
+    nosuchproject is not known as project
+    all.q
+    rc=1
+
+Now the first option that fails stops the command line, whichever option it is:
+
+    $ qconf -sprj nosuchproject -sql ; echo "rc=$?"
+    error: nosuchproject is not known as project
+    rc=1
+
+The options before the failed one stay applied; nothing is rolled back. Inside one option nothing
+changes: a list of names or a directory is still worked through to the end, each failure is
+reported, and `-strict` still makes it all or nothing. An unknown option behind a failed one is no
+longer reported, because the command line stopped before it was reached.
+
+**Why it changed.** After a failure the exit status could not say which option had failed, and the
+output was a mix of results and error messages that a script could not take apart. Now the state
+afterwards is "everything up to the failed option", and the last message is the one the exit status
+stands for.
+
+**If you relied on it**, run the options that must be carried out regardless of each other as
+separate `qconf` calls. That applies as well to options whose non-zero exit status is an answer
+rather than an error: `-shgrp_why` for a host that is not a member, or `-sds` for a report that is
+not empty, stop the command line too.
+
 [//]: # (Each file has to end with two empty lines)
 

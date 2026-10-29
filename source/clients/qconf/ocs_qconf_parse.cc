@@ -1058,11 +1058,13 @@ qconf_export_singleton(std::ostream &os, ocs::QConfParameterClient &param,
 
 /** @brief How a show of one object ended (CS-2796).
  *
- * The show options do not agree on what to do about a failure - the classic
+ * The show options did not agree on what to do about a failure - the classic
  * four leave the parser when the object does not exist, -se and -sprj only set
- * the return code and -suser ignores it altogether. The engine therefore
+ * the return code and -suser ignored it altogether. The engine therefore
  * reports what happened and leaves the reaction to the call site, which is
- * also what CS-2799 needs: no exit call inside the engine. */
+ * also what CS-2799 needs: no exit call inside the engine. Since CS-2950 a
+ * failed operation stops the command line in every case; the call sites still
+ * differ in how they get there. */
 enum class QConfShowStatus {
    OK,            ///< object found and written
    GDI_FAILED,    ///< the GDI request was answered with an error
@@ -2346,18 +2348,18 @@ qconf_run_read_procedure(std::ostream &os, ocs::QConfParameterClient &param,
       DRETURN(true);
    }
    if (entry == nullptr || entry->kind == ocs::QConfReadKind::SINGLE_OBJECT) {
-      /* The named single-object reads are not intercepted here. Their options
-       * still disagree about how a failure is reported - the classic four leave
-       * the parser while -sprj, -se and -suser set the exit code and carry on,
-       * and -se resolves the host name first - so those blocks keep their own
-       * handling and reach the procedure through qconf_show_object().
+      /* The named single-object reads are not intercepted here yet. They keep
+       * their own blocks and reach the procedure through qconf_show_object():
+       * the classic four leave the parser while -sprj, -se and -suser set the
+       * exit code, and -se resolves the host name first.
        *
-       * What they no longer disagree about is the exit code itself: every one of
-       * them answers non-zero for an object that does not exist (CS-2928 closed
-       * the last gap, -suser, which used to discard the status).
+       * Since CS-2950 the difference no longer shows: a failed operation stops
+       * the command line either way, and every one of them answers non-zero for
+       * an object that does not exist (CS-2928 closed the last gap, -suser,
+       * which used to discard the status).
        *
-       * Name lists and singletons have no such quirks: a failure sets the exit
-       * status and the loop carries on, which is what this function does. */
+       * Name lists and singletons: a failure sets the exit status, and the
+       * command line stops after this operation (CS-2950). */
       DRETURN(false);
    }
 
@@ -2880,8 +2882,18 @@ int sge_parse_qconf(char *argv[]) {
     * always read, so `*spp`, sge_parser_get_next() and sge_next_is_an_opt()
     * keep working unchanged; they simply no longer reach across the operation
     * they belong to. The trailing `spp++; continue;` of every block now means
-    * "on to the next operation". */
+    * "on to the next operation".
+    *
+    * CS-2950: the first operation that ends with a non-zero status stops the
+    * command line; the ones after it do not run. What ran before it stays
+    * applied - nothing is rolled back - so the state is "everything up to the
+    * failed switch", and the last message is the one that explains the exit
+    * status. Inside one operation a list of names or a directory still runs to
+    * the end and reports each failure, unless -strict makes it all or nothing. */
    for (qconf_op &op : param.get_operations()) {
+      if (sge_parse_return != 0) {
+         break;
+      }
       spp = op.as_argv();
 
       /* CS-2799: the read path of groups A and B is a stored procedure now. In
@@ -4552,8 +4564,10 @@ int sge_parse_qconf(char *argv[]) {
     * bad token have run, so the complaint comes after their output - which is
     * where it came out when the loop parsed and executed in one pass.
     * MISSING_ARGUMENT needs nothing: the truncated operation was handed over
-    * and its own block has already reported it. */
-   if (parse_status == QConfParseStatus::UNKNOWN_OPTION) {
+    * and its own block has already reported it. After a failed operation the
+    * command line stopped before the bad token was reached (CS-2950), so the
+    * complaint is not made - the failure is what the exit status reports. */
+   if (sge_parse_return == 0 && parse_status == QConfParseStatus::UNKNOWN_OPTION) {
       ERROR(MSG_ANSWER_INVALIDOPTIONARGX_S, bad_token.c_str());
       fprintf(stderr, MSG_SRC_X_HELP_USAGE_S, "qconf");
       fprintf(stderr, "\n");
