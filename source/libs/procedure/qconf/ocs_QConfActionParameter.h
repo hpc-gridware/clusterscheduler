@@ -54,6 +54,7 @@ namespace ocs {
       // the actions
       static constexpr auto QUEUE_PURGE = "queue_purge";         ///< `-purge` (CS-2948)
       static constexpr auto USERSET_MEMBERS = "userset_members"; ///< `-au`/`-du`/`-am`/`-ao`/`-dm`/`-do` (CS-2959)
+      static constexpr auto USAGE_CLEAR = "usage_clear";         ///< `-clearusage` (CS-2963), takes no arguments
 
       // the arguments of QUEUE_PURGE
       static constexpr auto ARG_QUEUE = "queue";           ///< the cluster queue

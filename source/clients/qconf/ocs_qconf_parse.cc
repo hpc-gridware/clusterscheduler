@@ -1633,89 +1633,6 @@ qconf_edit_and_write_obj(QConfObj o, std::string &text, uid_t uid, gid_t gid,
    DRETURN((ok && shown == 0) ? 0 : 1);
 }
 
-/** @brief Clear the share tree usage of every user, or of every project (CS-2825)
- *
- * Backs half of `-clearusage` each. It used to fetch every user and every
- * project with `%T(ALL)`, empty two lists on each of them and send all of it
- * back - a fetch-modify-write like the five switches guarded by
- * qconf_refuse_if_reduced(), and the most destructive of the group: the request
- * carried every field, so under a reduced read the placeholders standing in for
- * `oticket`, `fshare` and `default_project` would have been written back as
- * values.
- *
- * It is changed rather than guarded, because for this one the fetch is not
- * needed at all. What the operation has to say is "these objects, usage
- * empty", and that needs the names and nothing else:
- *
- *  - the read asks for the key alone, which is the one field output reduction
- *    has nothing to hide in - a name list carries no values;
- *  - the write carries the key and the two lists being emptied, and no other
- *    field. userprj_mod() applies a field only when the incoming element
- *    carries it (`lGetPosViaElem(ep, ..., SGE_NO_ABORT) >= 0`,
- *    sge_userprj_qmaster.cc), so everything left out keeps the value it has.
- *
- * The version is left out on purpose: qmaster increments it itself when usage
- * or project is set (`lAddUlong(modp, obj_version, 1)`), so the value the old
- * request carried was never used.
- *
- * So the switch keeps working for a role that is shown less, instead of being
- * refused - which is the better answer wherever the operation can be expressed
- * without the object.
- *
- * @param target     the master list to work on, `UU_LIST` or `PR_LIST`
- * @param descr      the CULL type of that list's elements
- * @param key_nm     the field holding the object's name
- * @param usage_nm   the usage list field to empty
- * @param project_nm the per project usage field to empty
- * @return 0 when the usage was cleared or there was nothing to clear, 1 on a failed read
- */
-static int
-qconf_clear_usage(ocs::gdi::Target target, const lDescr *descr, int key_nm, int usage_nm,
-                  int project_nm) {
-   DENTER(TOP_LAYER);
-
-   lList *names = nullptr;
-   lEnumeration *name_what = lWhat("%T(%I)", descr, key_nm);
-   lList *alp = ocs::gdi::Client::sge_gdi(target, ocs::gdi::Command::GET,
-                                          ocs::gdi::SubCommand::NONE, &names, nullptr, name_what);
-   lFreeWhat(&name_what);
-
-   const lListElem *aep = lFirst(alp);
-   answer_exit_if_not_recoverable(aep);
-   if (answer_get_status(aep) != STATUS_OK) {
-      answer_list_output(&alp);
-      lFreeList(&alp);
-      lFreeList(&names);
-      DRETURN(1);
-   }
-   lFreeList(&alp);
-
-   if (lGetNumberOfElem(names) == 0) {
-      lFreeList(&names);
-      DRETURN(0);
-   }
-
-   /* One element per name. A fresh element's list fields are empty, and empty
-    * is the payload: usage and per project usage cleared. */
-   lList *mod = nullptr;
-   const lListElem *name_ep;
-   for_each_ep(name_ep, names) {
-      lAddElemStr(&mod, key_nm, lGetString(name_ep, key_nm), descr);
-   }
-   lFreeList(&names);
-
-   int fields[] = {key_nm, usage_nm, project_nm, NoName};
-   lEnumeration *mod_what = lIntVector2What(descr, fields);
-   alp = ocs::gdi::Client::sge_gdi(target, ocs::gdi::Command::MOD, ocs::gdi::SubCommand::NONE,
-                                   &mod, nullptr, mod_what);
-   lFreeWhat(&mod_what);
-   answer_list_on_error_print_or_exit(&alp, stderr);
-   lFreeList(&alp);
-   lFreeList(&mod);
-
-   DRETURN(0);
-}
-
 /** @brief Refuse an operation that fetches a whole object in order to write it back (CS-2825)
  *
  * Some switches do not edit, export or delete, and still need the whole object:
@@ -1744,11 +1661,9 @@ qconf_clear_usage(ocs::gdi::Target target, const lDescr *descr, int key_nm, int 
  * rather than a complaint - so the probe is not stricter than the fetch it
  * guards, which answers such a name with its own message further down.
  *
- * Not every fetch-modify-write needs this. `-clearusage` had the same shape and
- * was changed instead of guarded (CS-2825): it now reads only the keys, which
- * carry nothing that could be hidden, and writes back a field-restricted
- * request. Where that is possible it is better, because the switch keeps
- * working for a role that sees less rather than being refused.
+ * Not every fetch-modify-write needs this. `-clearusage` had the same shape; it
+ * was first changed to read only the keys (CS-2825) and is now an action that
+ * clears the usage in qmaster (CS-2963), which reads nothing in the client.
  *
  * @param param the invocation, used for the procedure read
  * @param o     the object type whose read is probed
@@ -3274,19 +3189,24 @@ int sge_parse_qconf(char *argv[]) {
 
          qconf_is_manager_on_admin_host(username, qualified_hostname);
 
-         /* CS-2825: both halves read the keys and write back only the two
-          * fields they empty - see qconf_clear_usage(), which also records why
-          * this one is not a refusal like its five siblings. The two GETs this
-          * replaces both asked for "%T(ALL)" with STN_Type, the share tree node
-          * type, for the user list and for the project list alike. */
-         if (qconf_clear_usage(ocs::gdi::Target::UU_LIST, UU_Type, UU_name, UU_usage,
-                               UU_project) != 0 ||
-             qconf_clear_usage(ocs::gdi::Target::PR_LIST, PR_Type, PR_name, PR_usage,
-                               PR_project) != 0) {
+         /* CS-2963: the qconf action "usage_clear". qmaster clears the usage of
+          * every user and project that has some, under the lock, so an object
+          * created or deleted while it runs can no longer be missed or fail the
+          * write. A write: the client execution context has no way to make it. */
+         if (param.get_exec_context() != ocs::ProcedureParameter::ExecContext::SERVER) {
+            ERROR(MSG_QCONF_MODNEEDSSERVERCTX_S, "-clearusage");
             sge_parse_return = 1;
             spp++;
             continue;
          }
+         ocs::QConfActionParameter clear(ocs::QConfActionParameter::USAGE_CLEAR);
+         ocs::QConfWriteModelClient model(ocs::gdi::Target::UU_LIST);
+         lList *answer_list = nullptr;
+         const bool ok = model.make_snapshot(&answer_list, clear);
+         if (show_answer_list(answer_list) != 0 || !ok) {
+            sge_parse_return = 1;
+         }
+         lFreeList(&answer_list);
          spp++;
          continue;
       }

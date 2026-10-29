@@ -1058,6 +1058,11 @@ namespace {
        * manager-only rule of the reserved lists stays in userset_mod(). */
       {to_string_view(QCONF), ocs::QConfActionParameter::USERSET_MEMBERS,
        modifies(ocs::gdi::Target::US_LIST), &run_procedure<QConfActionTraits>},
+      /* CS-2963: "-clearusage" clears the usage of users and projects alike. It
+       * is checked as a modify of the user list; the project list carries the
+       * same permission (both are manager-only in sge_c_gdi.cc). */
+      {to_string_view(QCONF), ocs::QConfActionParameter::USAGE_CLEAR,
+       modifies(ocs::gdi::Target::UU_LIST), &run_procedure<QConfActionTraits>},
       {to_string_view(QHOST), "", READS, &run_procedure<QHostTraits>},
       {to_string_view(QQUOTA), "", READS, &run_procedure<QQuotaTraits>},
       {to_string_view(QRSTAT), "", READS, &run_procedure<QRStatTraits>},
