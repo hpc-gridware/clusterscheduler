@@ -81,6 +81,7 @@
 #include "procedure/qconf/ocs_QConfModelServer.h"
 #include "ocs_QConfMemberQmaster.h"
 #include "ocs_QConfPurgeQmaster.h"
+#include "ocs_QConfShareTreeQmaster.h"
 #include "ocs_QConfUsageQmaster.h"
 #include "ocs_QConfWriteQmaster.h"
 #include "sge_calendar_qmaster.h"
@@ -309,6 +310,7 @@ int main(int argc, char *argv[]) {
    ocs::set_qconf_action_provider(ocs::QConfActionParameter::QUEUE_PURGE, qconf_purge_from_procedure);
    ocs::set_qconf_action_provider(ocs::QConfActionParameter::USERSET_MEMBERS, qconf_member_from_procedure);
    ocs::set_qconf_action_provider(ocs::QConfActionParameter::USAGE_CLEAR, qconf_usage_clear_from_procedure);
+   ocs::set_qconf_action_provider(ocs::QConfActionParameter::SHARETREE_NODES, qconf_sharetree_nodes_from_procedure);
 
    /*
     * Setup all threads and initialize corresponding modules.

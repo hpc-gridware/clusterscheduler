@@ -109,5 +109,10 @@
 #define MSG_ACL_USERNOTINACL_SS                       _MESSAGE(12026, _("user " SFQ " is not in access list " SFQ))
 #define MSG_ACL_CANTDELFROMACL_SS                     _MESSAGE(12027, _("can't delete user " SFQ " from access list " SFQ))
 #define MSG_ACL_DELFROMACL_SS                         _MESSAGE(12028, _("deleted user " SFQ " from access list " SFQ))
+/* CS-2966: the share tree node switches -astnode/-mstnode/-dstnode run in qmaster;
+ * the one message of their old client path that lived in clients/qconf/msg_qconf.h
+ * (5009) moved over, name and text unchanged. */
+#define MSG_QCONF_STNODEINCOMPLETE                    _MESSAGE(12029, _("a change of share tree nodes needs a node list and an operation"))
+#define MSG_QCONF_POSITIVE_SHARE_VALUE                _MESSAGE(12030, _("share value must be positive"))
 
 // clang-format on

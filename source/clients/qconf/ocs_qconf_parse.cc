@@ -1633,73 +1633,6 @@ qconf_edit_and_write_obj(QConfObj o, std::string &text, uid_t uid, gid_t gid,
    DRETURN((ok && shown == 0) ? 0 : 1);
 }
 
-/** @brief Refuse an operation that fetches a whole object in order to write it back (CS-2825)
- *
- * Some switches do not edit, export or delete, and still need the whole object:
- * they fetch it, change one thing in it locally and send all of it back -
- * `-dstnode`, `-astnode` and `-mstnode` on the share tree. `-purge` and the
- * access list switches `-au`/`-du`/`-am`/`-ao`/`-dm`/`-do` were among them until
- * they became procedures that change the object in qmaster (CS-2948, CS-2959),
- * where there is no reduced read to refuse. A reduced read would hand them an object whose hidden parts are
- * placeholders, and the write back would store the placeholders - which is the
- * same hazard the editor refuses, reached without an editor.
- *
- * So this is the editor's refusal pair without the editor: the client execution
- * context is declined, because it reads with a plain GET that cannot reduce and
- * accepting it would make the second refusal depend on a switch the caller
- * picks; and a reduced read is refused by name.
- *
- * **The probe never speaks except to refuse.** A read that fails for any other
- * reason is left to the operation, which has its own established message for it
- * - `MSG_TREE_NOSHARETREE` for a missing tree. Printing here as well
- * would turn one cause into two complaints, and a typo in a name would read
- * differently than it did before.
- *
- * The probe reads as the editor reads (`set_for_edit`), for two reasons: the
- * field list the editor gets is the one whose reduction behaviour the read path
- * is tested against, and a name that is not stored is answered with a template
- * rather than a complaint - so the probe is not stricter than the fetch it
- * guards, which answers such a name with its own message further down.
- *
- * Not every fetch-modify-write needs this. `-clearusage` had the same shape; it
- * was first changed to read only the keys (CS-2825) and is now an action that
- * clears the usage in qmaster (CS-2963), which reads nothing in the client.
- *
- * @param param the invocation, used for the procedure read
- * @param o     the object type whose read is probed
- * @param sw    the switch being served, named in the refusals
- * @param name  the object to probe, nullptr for a type that is a singleton
- * @return true when the operation must not go ahead, and the reason has been
- *         printed; false when it may, including when the probe itself failed
- */
-static bool
-qconf_refuse_if_reduced(ocs::QConfParameterClient &param, QConfObj o, const char *sw,
-                        const char *name) {
-   DENTER(TOP_LAYER);
-
-   if (param.get_exec_context() != ocs::ProcedureParameter::ExecContext::SERVER) {
-      ERROR(MSG_QCONF_MODNEEDSSERVERCTX_S, sw);
-      DRETURN(true);
-   }
-
-   std::ostringstream discarded;
-   uint32_t reduction = ocs::ProcedureParameter::REDUCTION_NONE;
-   param.set_for_edit(true);
-   const QConfShowStatus st = qconf_show_object(discarded, param, o, name, &reduction, false);
-   param.set_for_edit(false);
-
-   if (st != QConfShowStatus::OK) {
-      DRETURN(false);
-   }
-
-   if (reduction != ocs::ProcedureParameter::REDUCTION_NONE) {
-      ERROR(MSG_QCONF_REDUCEDNOTMODIFIABLE_SS, sw, qconf_object_label(qconf_desc(o), name));
-      DRETURN(true);
-   }
-
-   DRETURN(false);
-}
-
 /** @brief Add users to or remove them from access lists in qmaster (CS-2959)
  *
  * Serves `-au`/`-am`/`-ao` and `-du`/`-dm`/`-do`, which are one operation on a
@@ -1737,6 +1670,64 @@ qconf_modify_members(const ocs::QConfParameterClient &param, const char *sw, con
    const bool ok = model.make_snapshot(&answer_list, members);
    const int shown = show_answer_list(answer_list);
    lFreeList(&answer_list);
+
+   DRETURN((ok && shown == 0) ? 0 : 1);
+}
+
+/** @brief Add, modify or delete share tree nodes in qmaster (CS-2966)
+ *
+ * Serves `-astnode`, `-mstnode` and `-dstnode`. The change runs in qmaster
+ * against the stored tree, which is why nothing is read here and nothing can be
+ * reduced; the lines the client used to print - "setting", "removing", the
+ * paths, the summary - come back as answers in the same order.
+ *
+ * The usage hint stays here: it is printed when nothing was changed and an
+ * argument of `-astnode`/`-mstnode` is not of the form "path=shares", as before.
+ *
+ * @param param the invocation, for its execution context
+ * @param sw    the switch being served
+ * @param nodes the node list, as typed
+ * @return 0 when at least one node was changed, 1 otherwise
+ */
+static int
+qconf_sharetree_nodes(const ocs::QConfParameterClient &param, const char *sw, const char *nodes) {
+   DENTER(TOP_LAYER);
+
+   /* a write: the client execution context has no way to make it */
+   if (param.get_exec_context() != ocs::ProcedureParameter::ExecContext::SERVER) {
+      ERROR(MSG_QCONF_MODNEEDSSERVERCTX_S, sw);
+      DRETURN(1);
+   }
+
+   const bool del = (strcmp(sw, "-dstnode") == 0);
+   const char *operation = del ? ocs::QConfActionParameter::OP_DELETE
+                               : (strcmp(sw, "-astnode") == 0) ? ocs::QConfActionParameter::OP_ADD
+                                                               : ocs::QConfActionParameter::OP_MODIFY;
+   ocs::QConfActionParameter action(ocs::QConfActionParameter::SHARETREE_NODES);
+   action.set_arg(ocs::QConfActionParameter::ARG_NODES, nodes != nullptr ? nodes : "");
+   action.set_arg(ocs::QConfActionParameter::ARG_OPERATION, operation);
+   ocs::QConfWriteModelClient model(ocs::gdi::Target::STN_LIST);
+
+   lList *answer_list = nullptr;
+   const bool ok = model.make_snapshot(&answer_list, action);
+   const int shown = show_answer_list(answer_list);
+   lFreeList(&answer_list);
+
+   if (!ok && !del && nodes != nullptr) {
+      lList *args = nullptr;
+      lString2List(nodes, &args, ST_Type, ST_name, ", ");
+      const lListElem *arg;
+      for_each_ep(arg, args) {
+         const char *text = lGetString(arg, ST_name);
+         const char *eq = (text != nullptr) ? strchr(text, '=') : nullptr;
+         int shares;
+         if (eq == nullptr || eq == text || sscanf(eq + 1, "%d", &shares) != 1) {
+            sge_usage(QCONF, stderr);
+            break;
+         }
+      }
+      lFreeList(&args);
+   }
 
    DRETURN((ok && shown == 0) ? 0 : 1);
 }
@@ -2685,9 +2676,7 @@ int sge_parse_qconf(char *argv[]) {
 
    char *cp = nullptr;
    char **spp = nullptr;
-   int opt;
    int sge_parse_return = 0;
-   lEnumeration *what = nullptr;
    lList *lp=nullptr, *arglp=nullptr, *alp=nullptr;
    lListElem *hep=nullptr, *ep=nullptr;
    const lListElem *aep=nullptr;
@@ -3009,150 +2998,17 @@ int sge_parse_qconf(char *argv[]) {
 
       /* "-astnode node_path=shares[,...]"  create/modify sharetree node */
       /* "-mstnode node_path=shares[,...]"  modify sharetree node */
+      /* "-dstnode node_path[,...]"         delete sharetree node(s) */
 
-      if (((strcmp("-astnode", *spp) == 0) && ((opt=astnode_OPT) != 0)) ||
-          ((strcmp("-mstnode", *spp) == 0) && ((opt=mstnode_OPT) != 0))) {
-         int modified = 0;
-         int print_usage = 0;
-         /* kept before spp moves on, for the refusal below: this block serves
-          * two switches and the message names the one that was given */
+      /* CS-2966: the qconf action "sharetree_nodes". qmaster changes the nodes
+       * of the stored tree under the lock and writes it, so a change made in
+       * between can no longer be reverted, and nothing is read here that RBAC
+       * could reduce - see qconf_sharetree_nodes(). */
+      if ((strcmp("-astnode", *spp) == 0) || (strcmp("-mstnode", *spp) == 0) ||
+          (strcmp("-dstnode", *spp) == 0)) {
          const char *stnode_sw = *spp;
-
-         /* no adminhost/manager check needed here */
          spp = sge_parser_get_next(spp);
-
-         /* CS-2825: the whole tree is fetched here and written back below, so a
-          * reduced read may not get that far - see qconf_refuse_if_reduced(). */
-         if (qconf_refuse_if_reduced(param, QConfObj::STN, stnode_sw, nullptr)) {
-            sge_parse_return = 1;
-            spp++;
-            continue;
-         }
-
-         /* get the sharetree .. */
-         what = lWhat("%T(ALL)", STN_Type);
-         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::STN_LIST, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, &lp, nullptr, what);
-         lFreeWhat(&what);
-
-         aep = lFirst(alp);
-         answer_exit_if_not_recoverable(aep);
-         if (answer_get_status(aep) != STATUS_OK) {
-            fprintf(stderr, "%s\n", lGetString(aep, AN_text));
-            spp++;
-            continue;
-         }
-         lFreeList(&alp);
-
-         ep = lFirstRW(lp);
-         if (!ep && opt == astnode_OPT) {
-            ep = lAddElemStr(&lp, STN_name, "Root", STN_Type);
-            if (ep) lSetUlong(ep, STN_shares, 1);
-         }
-         if (!ep) {
-            fprintf(stderr, "%s\n", MSG_TREE_NOSHARETREE);
-            spp++;
-            continue;
-         }
-
-         lString2List(*spp, &arglp, STN_Type, STN_name, ", ");
-
-         for_each_rw_lv (argep, arglp) {
-            lListElem *node = nullptr;
-            char *buf=nullptr, *nodepath=nullptr, *sharestr=nullptr;
-            int shares;
-            ancestors_t ancestors;
-
-            buf = sge_strdup(buf, lGetString(argep, STN_name));
-            nodepath = sge_strtok(buf, "=");
-            sharestr = sge_strtok(nullptr, "");
-            if (nodepath && sharestr && sscanf(sharestr, "%d", &shares) == 1) {
-               if (shares < 0) {
-                  fprintf(stderr, "%s\n", MSG_QCONF_POSITIVE_SHARE_VALUE);
-                  DRETURN(1);
-               }
-               memset(&ancestors, 0, sizeof(ancestors));
-               node = search_named_node_path(ep, nodepath, &ancestors);
-               if (!node && opt==astnode_OPT) {
-                  char *c, *lc = nullptr;
-                  lListElem *pnode, *nnode;
-
-                  /* scan for basename of nodepath */
-                  for (c=nodepath; *c; c++)
-                     if (*c == '/' || *c == '.')
-                        lc = c;
-
-                  /* search for parent node of new node */
-                  if (lc && *nodepath && *(lc+1)) {
-                     char savelc = *lc;
-                     *lc = '\000';
-                     if (lc == nodepath && savelc == '/') /* root? */
-                        pnode = ep;
-                     else
-                        pnode = search_named_node_path(ep, nodepath,
-                                                       &ancestors);
-                     if (pnode) {
-                        lList *children = lGetListRW(pnode, STN_children);
-
-                        nnode = lAddElemStr(&children, STN_name, lc+1, STN_Type);
-                        if (nnode && !lGetList(pnode, STN_children))
-                           lSetList(pnode, STN_children, children);
-                        free_ancestors(&ancestors);
-                        memset(&ancestors, 0, sizeof(ancestors));
-                        *lc = savelc;
-                        node = search_named_node_path(ep, nodepath, &ancestors);
-                        if (node != nnode) {
-                           fprintf(stderr, MSG_TREE_CANTADDNODEXISNONUNIQUE_S, nodepath);
-                           fprintf(stderr, "\n");
-                           DRETURN(1);
-                        }
-                     }
-                  }
-               }
-               if (node) {
-                  int i;
-                  modified++;
-                  lSetUlong(node, STN_shares, shares);
-                  fprintf(stderr, "%s\n", MSG_TREE_SETTING);
-                  for (i=0; i<ancestors.depth; i++)
-                     fprintf(stderr, "/%s",
-                             lGetString(ancestors.nodes[i], STN_name));
-                  fprintf(stderr, "=%d\n", shares);
-               } else {
-                  fprintf(stderr, MSG_TREE_UNABLETOLACATEXINSHARETREE_S,
-                          nodepath);
-                  fprintf(stderr, "\n");
-               }
-               free_ancestors(&ancestors);
-
-            } else {
-               fprintf(stderr, MSG_ANSWER_XISNOTVALIDSEENODESHARESLIST_S, *spp);
-               fprintf(stderr, "\n");
-               print_usage = 1;
-            }
-
-            sge_free(&buf);
-         }
-         lFreeList(&arglp);
-
-         if (modified) {
-            what = lWhat("%T(ALL)", STN_Type);
-            alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::STN_LIST, ocs::gdi::Command::MOD, ocs::gdi::SubCommand::NONE, &lp, nullptr, what);
-            lFreeWhat(&what);
-            ep = lFirstRW(alp);
-            answer_exit_if_not_recoverable(ep);
-            if (answer_get_status(ep) == STATUS_OK)
-               fprintf(stderr, "%s\n", MSG_TREE_MODIFIEDSHARETREE);
-            else
-               fprintf(stderr, "%s\n", lGetString(ep, AN_text));
-            lFreeList(&alp);
-         } else {
-            fprintf(stderr, "%s\n", MSG_TREE_NOMIDIFIEDSHARETREE);
-            if (print_usage)
-               sge_usage(QCONF, stderr);
-            DRETURN(1);
-         }
-
-         lFreeList(&lp);
+         sge_parse_return |= qconf_sharetree_nodes(param, stnode_sw, *spp);
          spp++;
          continue;
       }
@@ -3314,120 +3170,6 @@ int sge_parse_qconf(char *argv[]) {
          spp = sge_parser_get_next(spp);
          sge_parse_return |= qconf_modify_members(param, "-du", users, *spp, false);
 
-         spp++;
-         continue;
-      }
-
-/*----------------------------------------------------------------------------*/
-      /* "-dstnode node_path[,...]"  delete sharetree node(s) */
-
-      if (strcmp("-dstnode", *spp) == 0) {
-         int modified = 0;
-         /* no adminhost/manager check needed here */
-         spp = sge_parser_get_next(spp);
-
-         /* CS-2825: the node is removed from the fetched tree and the whole
-          * tree goes back, so a reduced read may not get that far - see
-          * qconf_refuse_if_reduced(). The tree is the one type where that is a
-          * refusal rather than a change of request: it has no per node key
-          * qmaster could act on, so the removal needs the whole object. */
-         if (qconf_refuse_if_reduced(param, QConfObj::STN, "-dstnode", nullptr)) {
-            sge_parse_return = 1;
-            spp++;
-            continue;
-         }
-
-         /* get the sharetree .. */
-         what = lWhat("%T(ALL)", STN_Type);
-         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::STN_LIST, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, &lp, nullptr, what);
-         lFreeWhat(&what);
-
-         aep = lFirst(alp);
-         answer_exit_if_not_recoverable(aep);
-         if (answer_get_status(aep) != STATUS_OK) {
-            fprintf(stderr, "%s\n", lGetString(aep, AN_text));
-            sge_parse_return = 1;
-            spp++;
-            continue;
-         }
-         lFreeList(&alp);
-
-         ep = lFirstRW(lp);
-         if (!ep) {
-            fprintf(stderr, "%s\n", MSG_TREE_NOSHARETREE);
-            sge_parse_return = 1;
-            spp++;
-            continue;
-         }
-
-         lString2List(*spp, &arglp, STN_Type, STN_name, ", ");
-
-         for_each_rw_lv (argep, arglp) {
-
-            lListElem *node = nullptr;
-            const char *nodepath = nullptr;
-            ancestors_t ancestors;
-
-            nodepath = lGetString(argep, STN_name);
-            if (nodepath) {
-               memset(&ancestors, 0, sizeof(ancestors_t));
-               node = search_named_node_path(ep, nodepath, &ancestors);
-               if (node) {
-                  if (lGetList(node, STN_children) == nullptr) {
-                     if (ancestors.depth > 0) {
-                        int i;
-                        lList *siblings = nullptr;
-                        lListElem *pnode = nullptr;
-                        modified++;
-                        if (ancestors.depth == 1)
-                           pnode = ep;
-                        else
-                           pnode = ancestors.nodes[ancestors.depth-2];
-                        fprintf(stderr, "%s\n", MSG_TREE_REMOVING);
-                        for (i=0; i<ancestors.depth; i++)
-                           fprintf(stderr, "/%s",
-                                   lGetString(ancestors.nodes[i], STN_name));
-                        fprintf(stderr, "\n");
-                        siblings = lGetListRW(pnode, STN_children);
-                        lRemoveElem(siblings, &node);
-                        if (lGetNumberOfElem(siblings) == 0)
-                           lSetList(pnode, STN_children, nullptr);
-                     } else {
-                        fprintf(stderr, "%s\n", MSG_TREE_CANTDELROOTNODE);
-                     }
-                  } else {
-                     fprintf(stderr, "%s\n", MSG_TREE_CANTDELNODESWITHCHILD);
-                  }
-               } else {
-                  fprintf(stderr, MSG_TREE_UNABLETOLACATEXINSHARETREE_S,
-                          nodepath);
-                  fprintf(stderr, "\n");
-               }
-               free_ancestors(&ancestors);
-
-            }
-         }
-         lFreeList(&arglp);
-
-         if (modified) {
-            what = lWhat("%T(ALL)", STN_Type);
-            alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::STN_LIST, ocs::gdi::Command::MOD, ocs::gdi::SubCommand::NONE, &lp, nullptr, what);
-            lFreeWhat(&what);
-            ep = lFirstRW(alp);
-            answer_exit_if_not_recoverable(ep);
-            if (answer_get_status(ep) == STATUS_OK)
-               fprintf(stderr, "%s\n", MSG_TREE_MODIFIEDSHARETREE);
-            else {
-               fprintf(stderr, "%s\n", lGetString(ep, AN_text));
-               sge_parse_return = 1;
-            }
-            lFreeList(&alp);
-         } else {
-            fprintf(stderr, "%s\n", MSG_TREE_NOMIDIFIEDSHARETREE);
-            DRETURN(1);
-         }
-
-         lFreeList(&lp);
          spp++;
          continue;
       }

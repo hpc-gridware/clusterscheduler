@@ -37,6 +37,7 @@ set(QMASTER_SOURCES
         ocs_MonitoringFileWriter.cc
         ocs_QConfMemberQmaster.cc
         ocs_QConfPurgeQmaster.cc
+        ocs_QConfShareTreeQmaster.cc
         ocs_QConfUsageQmaster.cc
         ocs_QConfWriteQmaster.cc
         ocs_ReportingFileWriter.cc

@@ -1063,6 +1063,11 @@ namespace {
        * same permission (both are manager-only in sge_c_gdi.cc). */
       {to_string_view(QCONF), ocs::QConfActionParameter::USAGE_CLEAR,
        modifies(ocs::gdi::Target::UU_LIST), &run_procedure<QConfActionTraits>},
+      /* CS-2966: "-astnode"/"-mstnode"/"-dstnode" change nodes of the share
+       * tree in place, checked as a modify of the tree - what the client's MOD
+       * of the whole tree was checked as. */
+      {to_string_view(QCONF), ocs::QConfActionParameter::SHARETREE_NODES,
+       modifies(ocs::gdi::Target::STN_LIST), &run_procedure<QConfActionTraits>},
       {to_string_view(QHOST), "", READS, &run_procedure<QHostTraits>},
       {to_string_view(QQUOTA), "", READS, &run_procedure<QQuotaTraits>},
       {to_string_view(QRSTAT), "", READS, &run_procedure<QRStatTraits>},

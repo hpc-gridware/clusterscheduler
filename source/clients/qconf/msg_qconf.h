@@ -45,7 +45,6 @@
 #define MSG_QCONF_NOATTRIBUTEGIVEN                    _MESSAGE(5006, _("No attribute given"))
 #define MSG_QCONF_GIVENOBJECTINSTANCEINCOMPLETE_S     _MESSAGE(5007, _("Given object_instance " SFQ " is incomplete"))
 #define MSG_QCONF_MODIFICATIONOFHOSTNOTSUPPORTED_S    _MESSAGE(5008, _("Modification of host " SFQ " not supported"))
-#define MSG_QCONF_POSITIVE_SHARE_VALUE                _MESSAGE(5009, _("share value must be positive"))
 
 
 #define MSG_CENTRY_NOTCHANGED                         _MESSAGE(5100, _("Complex attribute configuration has not been changed"))
