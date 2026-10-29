@@ -2197,6 +2197,28 @@ qconf_conf_delete_path(std::ostream &os, const char *path) {
 }
 
 
+/** @brief Report an operation whose command line ended before its mandatory arguments (CS-2969)
+ *
+ * The parser hands such an operation over truncated on purpose
+ * (QConfParseStatus::MISSING_ARGUMENT), so that whoever serves it reports it in
+ * the switch's own words. The option blocks did that by running into the end of
+ * their slice in sge_parser_get_next(); the table dispatchers have no slice to
+ * walk, so they ask here, and report what sge_parser_get_next() reported - the
+ * last word that was given, and the usage.
+ *
+ * @param op the operation a table is about to serve
+ * @return true when an argument is missing and the operation has been reported
+ */
+static bool
+qconf_missing_argument(const qconf_op &op) {
+   if (op.spec == nullptr || op.args.size() >= static_cast<size_t>(op.spec->min_args)) {
+      return false;
+   }
+   ERROR(MSG_QCONF_NOOPTIONARGPROVIDEDTOX_S, op.args.empty() ? op.token.c_str() : op.args.back().c_str());
+   sge_usage(QCONF, stderr);
+   return true;
+}
+
 /** @brief What one of the table driven dispatchers made of an operation
  *
  * One answer instead of two signals: before CS-2950 a dispatcher returned
@@ -2236,6 +2258,9 @@ qconf_run_read_procedure(std::ostream &os, ocs::QConfParameterClient &param, con
    DENTER(TOP_LAYER);
 
    const ocs::qconf_read_entry *entry = ocs::QConfModelBase::resolve(op.token.c_str());
+   if (entry != nullptr && entry->kind != ocs::QConfReadKind::SINGLE_OBJECT && qconf_missing_argument(op)) {
+      DRETURN(QConfOpResult::FAILED);
+   }
    if (entry != nullptr && entry->export_only) {
       const char *path = op.args.empty() ? nullptr : op.args.front().c_str();
       const int failed = (entry->kind == ocs::QConfReadKind::SINGLETON)
@@ -2402,6 +2427,9 @@ qconf_run_delete(std::ostream &os, const qconf_op &op, const char *username,
    if (entry == nullptr) {
       DRETURN(QConfOpResult::NOT_HANDLED);
    }
+   if (qconf_missing_argument(op)) {
+      DRETURN(QConfOpResult::FAILED);
+   }
 
    qconf_client_check(entry->check, username, hostname);
 
@@ -2525,6 +2553,9 @@ qconf_run_write(std::ostream &os, ocs::QConfParameterClient &param, const qconf_
    if (entry == nullptr) {
       DRETURN(QConfOpResult::NOT_HANDLED);
    }
+   if (qconf_missing_argument(op)) {
+      DRETURN(QConfOpResult::FAILED);
+   }
 
    qconf_client_check(entry->check, username, hostname);
 
@@ -2624,6 +2655,9 @@ qconf_run_sub_procedure(std::ostream &os, ocs::QConfParameterClient &param, cons
    }
    if (entry == nullptr) {
       DRETURN(QConfOpResult::NOT_HANDLED);
+   }
+   if (qconf_missing_argument(op)) {
+      DRETURN(QConfOpResult::FAILED);
    }
 
    lList *alp = nullptr;
