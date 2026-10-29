@@ -2651,6 +2651,121 @@ qconf_run_write(std::ostream &os, ocs::QConfParameterClient &param, const qconf_
    DRETURN(true);
 }
 
+/** @brief How a sub-procedure read reports its answer list and exit status
+ *
+ * Four ways, kept per switch exactly as the hand written blocks had them
+ * (CS-2955). Which one a switch uses is the history of its ticket; settling on
+ * one is CS-2950.
+ */
+enum class QConfAnswerReport {
+   SHOW_AND_STATUS,    ///< show_answer() always, its result or-ed in; a failed call sets 1
+   SHOW_ON_FAILURE,    ///< a failed call: show_answer(), status 1
+   OUTPUT_ON_FAILURE,  ///< a failed call: answer_list_output(), with the "error: " prefix, status 1
+   STATUS_FROM_ANSWER  ///< show_answer() always, its result is the status; the call's result is not used
+};
+
+/** @brief One read switch served by qconf_run_sub_procedure() */
+struct qconf_sub_procedure_entry {
+   const char *switch_name;     ///< the switch as typed
+   const char *sub_procedure;   ///< the sub-procedure qmaster runs, nullptr for a plain read
+   QConfAnswerReport report;    ///< how the answer list and the status are reported
+};
+
+/** @brief The read switches that are one procedure call each, outside the read table
+ *
+ * Their output is not one row of qconf_read_table - a table with its own header,
+ * a tree, a view over every host group, a filter whose match depends on the kind
+ * of entry - so qmaster runs a sub-procedure of its own for each of them
+ * (CS-2816 to CS-2820). "-sce" is a read table row of kind SINGLE_OBJECT, which
+ * qconf_run_read_procedure() leaves alone; it is here because it prints the bare
+ * message where qconf_show_object() would add an "error: " prefix (CS-2817).
+ * The option table fixes the arguments, so the operation is sent as parsed.
+ */
+static const qconf_sub_procedure_entry qconf_sub_procedure_table[] = {
+   {"-sobjl",          ocs::QConfParameter::OBJECT_FILTER,     QConfAnswerReport::SHOW_AND_STATUS},
+   {"-sstnode",        ocs::QConfParameter::SHARETREE_NODES,   QConfAnswerReport::SHOW_AND_STATUS},
+   {"-rsstnode",       ocs::QConfParameter::SHARETREE_NODES,   QConfAnswerReport::SHOW_AND_STATUS},
+   {"-bonsai",         ocs::QConfParameter::SHARETREE_TREE,    QConfAnswerReport::SHOW_AND_STATUS},
+   {"-sst",            ocs::QConfParameter::SHARETREE_TREE,    QConfAnswerReport::SHOW_AND_STATUS},
+   {"-sq",             ocs::QConfParameter::CQUEUE_SHOW,       QConfAnswerReport::SHOW_AND_STATUS},
+   {"-sds",            ocs::QConfParameter::QUEUE_SICK,        QConfAnswerReport::SHOW_AND_STATUS},
+   {"-sc",             ocs::QConfParameter::CENTRY_LIST,       QConfAnswerReport::SHOW_ON_FAILURE},
+   {"-scatl",          ocs::QConfParameter::CATEGORY_LIST,     QConfAnswerReport::SHOW_ON_FAILURE},
+   {"-sce",            nullptr,                                QConfAnswerReport::SHOW_ON_FAILURE},
+   {"-secl",           ocs::QConfParameter::EVENT_CLIENT_LIST, QConfAnswerReport::OUTPUT_ON_FAILURE},
+   {"-sep",            ocs::QConfParameter::PROCESSOR_LIST,    QConfAnswerReport::OUTPUT_ON_FAILURE},
+   {"-stl",            ocs::QConfParameter::THREAD_POOL_LIST,  QConfAnswerReport::OUTPUT_ON_FAILURE},
+   {"-shgrp",          ocs::QConfParameter::HGROUP_SHOW,       QConfAnswerReport::STATUS_FROM_ANSWER},
+   {"-shgrp_tree",     ocs::QConfParameter::HGROUP_TREE,       QConfAnswerReport::STATUS_FROM_ANSWER},
+   {"-shgrp_resolved", ocs::QConfParameter::HGROUP_RESOLVED,   QConfAnswerReport::STATUS_FROM_ANSWER},
+   {"-shgrp_why",      ocs::QConfParameter::HGROUP_WHY,        QConfAnswerReport::STATUS_FROM_ANSWER},
+};
+
+/**
+ * @brief Run one read operation from qconf_sub_procedure_table, if it is one
+ *
+ * Sends the operation with the row's sub-procedure name, clears the name again
+ * - it belongs to this call, not to the invocation - and reports the answer
+ * list the way the row says.
+ *
+ * @param os    the stream the output is written to
+ * @param param the invocation, whose operation is set to @p op for the call
+ * @param op    the operation to run
+ * @param ret   the accumulated exit status
+ * @return true when the operation was handled here, false to run it locally
+ */
+static bool
+qconf_run_sub_procedure(std::ostream &os, ocs::QConfParameterClient &param,
+                        const qconf_op &op, int *ret) {
+   DENTER(TOP_LAYER);
+
+   const qconf_sub_procedure_entry *entry = nullptr;
+   for (const qconf_sub_procedure_entry &e : qconf_sub_procedure_table) {
+      if (op.token == e.switch_name) {
+         entry = &e;
+         break;
+      }
+   }
+   if (entry == nullptr) {
+      DRETURN(false);
+   }
+
+   lList *alp = nullptr;
+   param.set_operation(op);
+   if (entry->sub_procedure != nullptr) {
+      param.set_sub_procedure_name(entry->sub_procedure);
+   }
+   const bool ok = qconf_dispatch_procedure(os, param, &alp);
+   param.set_sub_procedure_name("");
+
+   switch (entry->report) {
+      case QConfAnswerReport::SHOW_AND_STATUS:
+         *ret |= show_answer(alp);
+         if (!ok) {
+            *ret = 1;
+         }
+         break;
+      case QConfAnswerReport::SHOW_ON_FAILURE:
+         if (!ok) {
+            show_answer(alp);
+            *ret = 1;
+         }
+         break;
+      case QConfAnswerReport::OUTPUT_ON_FAILURE:
+         if (!ok) {
+            answer_list_output(&alp);
+            *ret = 1;
+         }
+         break;
+      case QConfAnswerReport::STATUS_FROM_ANSWER:
+         *ret |= show_answer(alp);
+         break;
+   }
+   lFreeList(&alp);
+
+   DRETURN(true);
+}
+
 /*------------------------------------------------------------*/
 /** @brief Work through the `qconf` command line, one switch at a time
  *
@@ -2774,6 +2889,11 @@ int sge_parse_qconf(char *argv[]) {
        * bespoke show options of group N - falls through to the option chain
        * below and runs locally, in the order it was typed. */
       if (qconf_run_read_procedure(os, param, op, &sge_parse_return)) {
+         continue;
+      }
+
+      /* CS-2955: the reads with a sub-procedure of their own, and "-sce". */
+      if (qconf_run_sub_procedure(os, param, op, &sge_parse_return)) {
          continue;
       }
 
@@ -3757,36 +3877,6 @@ int sge_parse_qconf(char *argv[]) {
          continue;
       }
 
-/*----------------------------------------------------------------------------*/
-      if (strcmp("-sobjl", *spp) == 0) {
-         lList *answer_list = nullptr;
-         qconf_op op;
-
-         op.token = "-sobjl";
-         spp = sge_parser_get_next(spp);
-         op.args.emplace_back(*spp);
-         spp = sge_parser_get_next(spp);
-         op.args.emplace_back(*spp);
-         spp = sge_parser_get_next(spp);
-         op.args.emplace_back(*spp);
-
-         /* CS-2819: a sub-procedure. Which name an entry produces depends on the
-          * kind of the entry, so the matching cannot be expressed as a filter on
-          * a descriptor row - it has its own model function. */
-         param.set_operation(op);
-         param.set_sub_procedure_name(ocs::QConfParameter::OBJECT_FILTER);
-         const bool ok = qconf_dispatch_procedure(os, param, &answer_list);
-         param.set_sub_procedure_name("");
-
-         sge_parse_return |= show_answer(answer_list);
-         if (!ok) {
-            sge_parse_return = 1;
-         }
-         lFreeList(&answer_list);
-         spp++;
-         continue;
-      }
-
 /*---------------------------------------------------------------------------*/
 
    if ((strcmp("-mattr", *spp) == 0) || (strcmp("-Mattr", *spp) == 0) ||
@@ -4064,55 +4154,6 @@ int sge_parse_qconf(char *argv[]) {
          continue;
       }
 
-/*----------------------------------------------------------------------------*/
-      /* "-sc" */
-
-      if (strcmp("-sc", *spp) == 0) {
-         lList *answer_list = nullptr;
-
-         /* CS-2817: a sub-procedure. The table is neither a name list nor one
-          * object, and its column alignment writes into the field list, which
-          * must not be the shared static one inside qmaster. */
-         qconf_op op;
-         op.token = "-sc";
-         param.set_operation(op);
-         param.set_sub_procedure_name(ocs::QConfParameter::CENTRY_LIST);
-         const bool ok = qconf_dispatch_procedure(os, param, &answer_list);
-         param.set_sub_procedure_name("");
-
-         if (!ok) {
-            show_answer(answer_list);
-            sge_parse_return = 1;
-         }
-         lFreeList(&answer_list);
-         spp++;
-         continue;
-      }
-
-/*-----------------------------------------------------------------------------*/
-      /* "-scatl complex_name_list" */
-
-      if (strcmp("-scatl", *spp) == 0) {
-         lList *answer_list = nullptr;
-
-         /* CS-2819: the aligned table sub-procedure, the same one -sc uses. The
-          * list has a JSON schema id of its own, which the descriptor carries. */
-         qconf_op op;
-         op.token = "-scatl";
-         param.set_operation(op);
-         param.set_sub_procedure_name(ocs::QConfParameter::CATEGORY_LIST);
-         const bool ok = qconf_dispatch_procedure(os, param, &answer_list);
-         param.set_sub_procedure_name("");
-
-         if (!ok) {
-            show_answer(answer_list);
-            sge_parse_return = 1;
-         }
-         lFreeList(&answer_list);
-         spp++;
-         continue;
-      }
-
 /*-----------------------------------------------------------------------------*/
       /* "-scal calendar_name" */
       if (strcmp("-scal", *spp) == 0) {
@@ -4368,89 +4409,6 @@ int sge_parse_qconf(char *argv[]) {
          spp++;
          continue;
       }
-/*-----------------------------------------------------------------------------*/
-      /* "-secl" */
-      if (strcmp("-secl", *spp) == 0) {
-         lList *answer_list = nullptr;
-         qconf_op op;
-
-         op.token = "-secl";
-
-         /* CS-2820: a sub-procedure rather than a table row. The output is a
-          * table with a hand written header and fixed column widths, which a
-          * flatfile spooling instruction cannot reproduce without re-deriving
-          * them from the data - and that is what a golden file would catch. */
-         param.set_operation(op);
-         param.set_sub_procedure_name(ocs::QConfParameter::EVENT_CLIENT_LIST);
-         const bool ok = qconf_dispatch_procedure(os, param, &answer_list);
-         param.set_sub_procedure_name("");
-
-         if (!ok) {
-            /* the messages the switch used to write to stderr itself: an empty
-             * list for plain output, and the reason a read failed. Unlike before,
-             * both now set the exit code (CS-2820). */
-            answer_list_output(&answer_list);
-            sge_parse_return = 1;
-         }
-         lFreeList(&answer_list);
-         spp++;
-         continue;
-      }
-/*-----------------------------------------------------------------------------*/
-      /* "-sel" */
-/*----------------------------------------------------------------------------*/
-      /* "-sep" */
-      if (strcmp("-sep", *spp) == 0) {
-         lList *answer_list = nullptr;
-         qconf_op op;
-
-         op.token = "-sep";
-
-         /* CS-2820: a sub-procedure rather than a table row, for the same reason
-          * as -secl - a hand written header, two fixed rule lines and a SUM row
-          * that is an aggregate over the rows rather than one of them. The -cb
-          * flag travels in the parameter bundle, so it needs no second entry. */
-         param.set_operation(op);
-         param.set_sub_procedure_name(ocs::QConfParameter::PROCESSOR_LIST);
-         const bool ok = qconf_dispatch_procedure(os, param, &answer_list);
-         param.set_sub_procedure_name("");
-
-         if (!ok) {
-            /* "no execution hosts defined" used to go to stderr without setting
-             * the exit code; now it does both (CS-2820) */
-            answer_list_output(&answer_list);
-            sge_parse_return = 1;
-         }
-         lFreeList(&answer_list);
-         spp++;
-         continue;
-      }
-/*----------------------------------------------------------------------------*/
-      /* "-stl " */
-      if (strcmp("-stl", *spp) == 0) {
-         lList *answer_list = nullptr;
-         qconf_op op;
-
-         op.token = "-stl";
-
-         /* CS-2820: a sub-procedure, and the one read of the set whose data is
-          * not a configuration object - the thread pools are qmaster's own
-          * state. The server side model reaches them through a provider the
-          * daemon registers at startup, because a library must not call into a
-          * daemon. */
-         param.set_operation(op);
-         param.set_sub_procedure_name(ocs::QConfParameter::THREAD_POOL_LIST);
-         const bool ok = qconf_dispatch_procedure(os, param, &answer_list);
-         param.set_sub_procedure_name("");
-
-         if (!ok) {
-            answer_list_output(&answer_list);
-            sge_parse_return = 1;
-         }
-         lFreeList(&answer_list);
-         spp++;
-         continue;
-      }
 /*----------------------------------------------------------------------------*/
       /* "-srole role_name" */
       if (strcmp("-srole", *spp) == 0) {
@@ -4477,147 +4435,8 @@ int sge_parse_qconf(char *argv[]) {
          spp++;
          continue;
       }
-/*-----------------------------------------------------------------------------*/
-      /* "-spl" */
-
-/*-----------------------------------------------------------------------------*/
-      /* "-scel" */
-/*----------------------------------------------------------------------------*/
-      /* "-sstnode node_path[,...]"  show sharetree node */
-
-      if (strcmp("-sstnode", *spp) == 0) {
-         lList *answer_list = nullptr;
-         qconf_op op;
-
-         op.token = "-sstnode";
-         spp = sge_parser_get_next(spp);
-         op.args.emplace_back(*spp);
-
-         /* CS-2820: a sub-procedure. The paths are taken apart in the model,
-          * because a path that names no node has to be reported and the view is
-          * handed no answer list - the renderer used to write that line to its
-          * own stderr, which is nowhere once it runs in qmaster. */
-         param.set_operation(op);
-         param.set_sub_procedure_name(ocs::QConfParameter::SHARETREE_NODES);
-         const bool ok = qconf_dispatch_procedure(os, param, &answer_list);
-         param.set_sub_procedure_name("");
-
-         sge_parse_return |= show_answer(answer_list);
-         if (!ok) {
-            sge_parse_return = 1;
-         }
-         lFreeList(&answer_list);
-         spp++;
-         continue;
-      }
 
 /*----------------------------------------------------------------------------*/
-
-      /* "-rsstnode node_path[,...]"  show sharetree node */
-
-      if (strcmp("-rsstnode", *spp) == 0) {
-         lList *answer_list = nullptr;
-         qconf_op op;
-
-         op.token = "-rsstnode";
-         spp = sge_parser_get_next(spp);
-         op.args.emplace_back(*spp);
-
-         /* CS-2820: a sub-procedure. The paths are taken apart in the model,
-          * because a path that names no node has to be reported and the view is
-          * handed no answer list - the renderer used to write that line to its
-          * own stderr, which is nowhere once it runs in qmaster. */
-         param.set_operation(op);
-         param.set_sub_procedure_name(ocs::QConfParameter::SHARETREE_NODES);
-         const bool ok = qconf_dispatch_procedure(os, param, &answer_list);
-         param.set_sub_procedure_name("");
-
-         sge_parse_return |= show_answer(answer_list);
-         if (!ok) {
-            sge_parse_return = 1;
-         }
-         lFreeList(&answer_list);
-         spp++;
-         continue;
-      }
-
-/*----------------------------------------------------------------------------*/
-      /* "-bonsai" This is the undocumented switch of showing the share tree
-         we keep this switch  for compatibility reasons */
-
-      if (strcmp("-bonsai", *spp) == 0) {
-         lList *answer_list = nullptr;
-         qconf_op op;
-
-         op.token = "-bonsai";
-
-         /* CS-2820: a sub-procedure. -bonsai is the undocumented older spelling of -sst and is kept for
-          * compatibility; both render the same tree through the same procedure. */
-         param.set_operation(op);
-         param.set_sub_procedure_name(ocs::QConfParameter::SHARETREE_TREE);
-         const bool ok = qconf_dispatch_procedure(os, param, &answer_list);
-         param.set_sub_procedure_name("");
-
-         sge_parse_return |= show_answer(answer_list);
-         if (!ok) {
-            sge_parse_return = 1;
-         }
-         lFreeList(&answer_list);
-         spp++;
-         continue;
-      }
-
-/*----------------------------------------------------------------------------*/
-      /* "-sst" This is the documented switch of showing the share tree */
-
-      if (strcmp("-sst", *spp) == 0) {
-         lList *answer_list = nullptr;
-         qconf_op op;
-
-         op.token = "-sst";
-
-         /* CS-2820: a sub-procedure. the indented tree view. -sstree is a different switch: it renders
-          * the share tree as an object and has had JSON since CS-2313a. */
-         param.set_operation(op);
-         param.set_sub_procedure_name(ocs::QConfParameter::SHARETREE_TREE);
-         const bool ok = qconf_dispatch_procedure(os, param, &answer_list);
-         param.set_sub_procedure_name("");
-
-         sge_parse_return |= show_answer(answer_list);
-         if (!ok) {
-            sge_parse_return = 1;
-         }
-         lFreeList(&answer_list);
-         spp++;
-         continue;
-      }
-
-/*----------------------------------------------------------------------------*/
-      /* "-sce attribute"  */
-      if (strcmp("-sce", *spp) == 0) {
-         lList *answer_list = nullptr;
-
-         spp = sge_parser_get_next(spp);
-
-         /* CS-2817: a plain single-object read. The hand written code rendered it
-          * with CE_fields and qconf_ce_sfi, which is what the CE row holds, so
-          * this needs no sub-procedure - only a row in qconf_read_table. It is
-          * dispatched here rather than through qconf_show_object(), because that
-          * one reports with answer_list_output() and would add an "error: "
-          * prefix where this block has always printed the bare message. */
-         qconf_op op;
-         op.token = "-sce";
-         op.args.emplace_back(*spp);
-         param.set_operation(op);
-         if (!qconf_dispatch_procedure(os, param, &answer_list)) {
-            show_answer(answer_list);
-            sge_parse_return = 1;
-         }
-         lFreeList(&answer_list);
-         spp++;
-         continue;
-      }
-
       /* "-dhgrp group,..." : CS-2306 C4 — comma-separated list of host groups */
       if (strcmp("-dhgrp", *spp) == 0) {
          spp = sge_parser_get_next(spp);
@@ -4626,151 +4445,6 @@ int sge_parse_qconf(char *argv[]) {
          parse_name_list_to_cull("host groups to del", &lp, HGRP_Type, HGRP_name, *spp);
          sge_parse_return |= qconf_delete_list(QConfObj::HGRP, &lp);
 
-         spp++;
-         continue;
-      }
-
-      /* "-shgrp group"  */
-      if (strcmp("-shgrp", *spp) == 0) {
-         lList *answer_list = nullptr;
-
-         spp = sge_parser_get_next(spp);
-
-         /* CS-2816: a sub-procedure, because the JSON form adds keys derived
-          * from the member list and the descriptor table cannot express that.
-          * show_answer() stays: it writes the bare text of the last message,
-          * without the "error: " prefix answer_list_output() would add, and the
-          * exit status has always come from its return value. */
-         qconf_op op;
-         op.token = "-shgrp";
-         op.args.emplace_back(*spp);
-         param.set_operation(op);
-         param.set_sub_procedure_name(ocs::QConfParameter::HGROUP_SHOW);
-         (void) qconf_dispatch_procedure(os, param, &answer_list);
-         param.set_sub_procedure_name("");
-
-         sge_parse_return |= show_answer(answer_list);
-         lFreeList(&answer_list);
-
-         spp++;
-         continue;
-      }
-
-      /* Are these two options still supported?  qconf doesn't recognise them */
-      /* "-shgrp_tree" */
-      if (strcmp("-shgrp_tree", *spp) == 0) {
-         lList *answer_list = nullptr;
-
-         spp = sge_parser_get_next(spp);
-
-         /* CS-2816: a sub-procedure - this view needs every host group, not the
-          * one named, so it cannot be a row in qconf_read_table. */
-         qconf_op op;
-         op.token = "-shgrp_tree";
-         op.args.emplace_back(*spp);
-         param.set_operation(op);
-         param.set_sub_procedure_name(ocs::QConfParameter::HGROUP_TREE);
-         (void) qconf_dispatch_procedure(os, param, &answer_list);
-         param.set_sub_procedure_name("");
-
-         sge_parse_return |= show_answer(answer_list);
-         lFreeList(&answer_list);
-
-         spp++;
-         continue;
-      }
-
-      /* "-shgrp_resolved" */
-      if (strcmp("-shgrp_resolved", *spp) == 0) {
-         lList *answer_list = nullptr;
-
-         spp = sge_parser_get_next(spp);
-
-         /* CS-2816: a sub-procedure - this view needs every host group, not the
-          * one named, so it cannot be a row in qconf_read_table. */
-         qconf_op op;
-         op.token = "-shgrp_resolved";
-         op.args.emplace_back(*spp);
-         param.set_operation(op);
-         param.set_sub_procedure_name(ocs::QConfParameter::HGROUP_RESOLVED);
-         (void) qconf_dispatch_procedure(os, param, &answer_list);
-         param.set_sub_procedure_name("");
-
-         sge_parse_return |= show_answer(answer_list);
-         lFreeList(&answer_list);
-
-         spp++;
-         continue;
-      }
-
-      /*
-       * "-shgrp_why <group> <host>"
-       *
-       * CS-2680, N-I-7/N-I-8. Once membership can be a rule instead of an
-       * enumeration, the definition no longer answers "why is this host a
-       * member" by inspection. The return value distinguishes member from
-       * non-member so the command is usable in a control flow without taking
-       * the output apart -- which is why a host that is simply not a member is
-       * not an error here, only a non-zero exit.
-       */
-      if (strcmp("-shgrp_why", *spp) == 0) {
-         lList *answer_list = nullptr;
-
-         spp = sge_parser_get_next(spp);
-         const char *why_group = *spp;
-         spp = sge_parser_get_next(spp);
-
-         /* CS-2816: a sub-procedure. The exit status used to come from a bool the
-          * client got back; it now rides on the answer list, where the model adds
-          * an ANSWER_QUALITY_END element for a host that is no member - non-OK
-          * status, so show_answer() returns 1, and END quality, so it prints
-          * nothing. A missing group is reported the loud way, as before. */
-         qconf_op op;
-         op.token = "-shgrp_why";
-         op.args.emplace_back(why_group);
-         op.args.emplace_back(*spp);
-         param.set_operation(op);
-         param.set_sub_procedure_name(ocs::QConfParameter::HGROUP_WHY);
-         (void) qconf_dispatch_procedure(os, param, &answer_list);
-         param.set_sub_procedure_name("");
-
-         sge_parse_return |= show_answer(answer_list);
-         lFreeList(&answer_list);
-
-         spp++;
-         continue;
-      }
-
-      /* "-sq [pattern[,pattern,...]]" */
-      if (strcmp("-sq", *spp) == 0) {
-         lList *answer_list = nullptr;
-
-         /* CS-2818: a sub-procedure. One switch with four output shapes - a
-          * template, cluster queues, the instances of a host pattern, the
-          * instances of a resolved queue domain - which the descriptor table
-          * cannot express. The references stay one argument each, as typed;
-          * splitting them on commas is the model's job, since it builds the
-          * filter from them. */
-         qconf_op op;
-         op.token = "-sq";
-         while (!sge_next_is_an_opt(spp)) {
-            spp = sge_parser_get_next(spp);
-            op.args.emplace_back(*spp);
-         }
-         param.set_operation(op);
-         param.set_sub_procedure_name(ocs::QConfParameter::CQUEUE_SHOW);
-         const bool ok = qconf_dispatch_procedure(os, param, &answer_list);
-         param.set_sub_procedure_name("");
-
-         /* show_answer() prints the bare message and returns non-zero for a
-          * non-OK status, which is how the hand written block set the exit code.
-          * A reference that matched nothing fails the call, so nothing has been
-          * rendered and the message is all there is to show. */
-         sge_parse_return |= show_answer(answer_list);
-         if (!ok) {
-            sge_parse_return = 1;
-         }
-         lFreeList(&answer_list);
          spp++;
          continue;
       }
@@ -4790,29 +4464,6 @@ int sge_parse_qconf(char *argv[]) {
          answer_list_on_error_print_or_exit(&alp, stderr);
          lFreeList(&alp);
          lFreeList(&lp);
-         spp++;
-         continue;
-      }
-
-      if (strcmp("-sds", *spp) == 0) {
-         lList *answer_list = nullptr;
-
-         /* CS-2819: a sub-procedure. The report is the output and a report that
-          * is not empty also sets the exit code, which travels as an
-          * ANSWER_QUALITY_END answer - show_answer() counts it without printing
-          * anything of its own. */
-         qconf_op op;
-         op.token = "-sds";
-         param.set_operation(op);
-         param.set_sub_procedure_name(ocs::QConfParameter::QUEUE_SICK);
-         const bool ok = qconf_dispatch_procedure(os, param, &answer_list);
-         param.set_sub_procedure_name("");
-
-         sge_parse_return |= show_answer(answer_list);
-         if (!ok) {
-            sge_parse_return = 1;
-         }
-         lFreeList(&answer_list);
          spp++;
          continue;
       }
