@@ -2396,10 +2396,39 @@ qconf_run_read_procedure(std::ostream &os, ocs::QConfParameterClient &param,
  * step of CS-2946 that moves the decision into qmaster.
  */
 enum class QConfClientCheck {
-   NONE,                  ///< no check in the client
-   MANAGER,               ///< qconf_is_manager()
-   MANAGER_ON_ADMIN_HOST  ///< qconf_is_manager_on_admin_host()
+   NONE,                    ///< no check in the client
+   MANAGER,                 ///< qconf_is_manager()
+   MANAGER_ON_ADMIN_HOST,   ///< qconf_is_manager_on_admin_host()
+   ADMIN_HOST_THEN_MANAGER  ///< qconf_is_adminhost(), then qconf_is_manager() ("-ace")
 };
+
+/**
+ * @brief Make the permission check a table row asks for
+ *
+ * Each check function exits the client on a refusal, so returning from here
+ * means the caller may go on.
+ *
+ * @param check    the check to make
+ * @param username the calling user
+ * @param hostname the calling host
+ */
+static void
+qconf_client_check(QConfClientCheck check, const char *username, const char *hostname) {
+   switch (check) {
+      case QConfClientCheck::NONE:
+         break;
+      case QConfClientCheck::MANAGER:
+         qconf_is_manager(username);
+         break;
+      case QConfClientCheck::MANAGER_ON_ADMIN_HOST:
+         qconf_is_manager_on_admin_host(username, hostname);
+         break;
+      case QConfClientCheck::ADMIN_HOST_THEN_MANAGER:
+         qconf_is_adminhost(hostname);
+         qconf_is_manager(username);
+         break;
+   }
+}
 
 /** @brief How a table driven delete switch names what it deletes */
 enum class QConfDeleteKind {
@@ -2479,21 +2508,143 @@ qconf_run_delete(std::ostream &os, const qconf_op &op, const char *username,
       DRETURN(false);
    }
 
-   switch (entry->check) {
-      case QConfClientCheck::NONE:
-         break;
-      case QConfClientCheck::MANAGER:
-         qconf_is_manager(username);
-         break;
-      case QConfClientCheck::MANAGER_ON_ADMIN_HOST:
-         qconf_is_manager_on_admin_host(username, hostname);
-         break;
-   }
+   qconf_client_check(entry->check, username, hostname);
 
    const char *arg = op.args.empty() ? nullptr : op.args.front().c_str();
    if (entry->kind == QConfDeleteKind::NAMES) {
       *ret |= qconf_delete_names(entry->object, arg);
    } else if (qconf_delete_obj(os, entry->object, arg) != 0) {
+      *ret = 1;
+   }
+
+   DRETURN(true);
+}
+
+/** @brief How a table driven add or modify switch writes */
+enum class QConfWriteKind {
+   EDIT,    ///< "-a<obj>"/"-m<obj> [name]": qconf_edit_obj_procedure()
+   APPLY    ///< "-A<obj>"/"-M<obj> file|dir": qconf_apply_obj()
+};
+
+/** @brief One add or modify switch served by qconf_run_write() */
+struct qconf_write_entry {
+   const char *switch_name;   ///< the switch as typed
+   QConfObj object;           ///< the object type it writes
+   QConfWriteKind kind;       ///< editor or file
+   const char *default_name;  ///< what an EDIT row edits when no name is given
+   bool unchanged_is_ok;      ///< EDIT: write a text the editor left alone
+   QConfClientCheck check;    ///< the check it makes in the client
+};
+
+/** @brief The add and modify switches that are one engine call each (CS-2954)
+ *
+ * Every "-a<obj>", "-m<obj>", "-A<obj>" and "-M<obj>" whose block did nothing
+ * but call qconf_edit_obj_procedure() or qconf_apply_obj(), possibly after a
+ * permission check. The option table decides whether a name may be given:
+ * "-a<obj>" takes an optional one and edits default_name without it, "-m<obj>"
+ * requires one, and the singletons ("-astree", "-mstree", "-msconf") take none
+ * and edit with nullptr. The ones with handling of their own stay blocks: "-ae"
+ * and "-me" (host name resolution), "-mu" (a list of names), "-arqs"/"-mrqs"/
+ * "-Arqs"/"-Mrqs" and "-mc"/"-Mc" (lists), the membership and reserved host
+ * group switches, "-astnode"/"-mstnode" and the host configuration.
+ *
+ * "-mce" checked qconf_is_manager() again after qconf_is_manager_on_admin_host(),
+ * which already exits for a non-manager; the row keeps the first check only.
+ */
+static const qconf_write_entry qconf_write_table[] = {
+   {"-acal",   QConfObj::CAL,  QConfWriteKind::EDIT,  "template",  false, QConfClientCheck::MANAGER_ON_ADMIN_HOST},
+   {"-ackpt",  QConfObj::CK,   QConfWriteKind::EDIT,  "template",  false, QConfClientCheck::MANAGER_ON_ADMIN_HOST},
+   {"-arole",  QConfObj::RL,   QConfWriteKind::EDIT,  "template",  false, QConfClientCheck::MANAGER_ON_ADMIN_HOST},
+   {"-ap",     QConfObj::PE,   QConfWriteKind::EDIT,  "template",  false, QConfClientCheck::MANAGER_ON_ADMIN_HOST},
+   {"-auser",  QConfObj::UU,   QConfWriteKind::EDIT,  "template",  false, QConfClientCheck::MANAGER_ON_ADMIN_HOST},
+   {"-aprj",   QConfObj::PR,   QConfWriteKind::EDIT,  "template",  false, QConfClientCheck::MANAGER_ON_ADMIN_HOST},
+   {"-ace",    QConfObj::CE,   QConfWriteKind::EDIT,  "template",  true,  QConfClientCheck::ADMIN_HOST_THEN_MANAGER},
+   {"-ahgrp",  QConfObj::HGRP, QConfWriteKind::EDIT,  "@template", true,  QConfClientCheck::MANAGER_ON_ADMIN_HOST},
+   {"-aq",     QConfObj::CQ,   QConfWriteKind::EDIT,  "template",  true,  QConfClientCheck::MANAGER_ON_ADMIN_HOST},
+   {"-astree", QConfObj::STN,  QConfWriteKind::EDIT,  nullptr,     false, QConfClientCheck::MANAGER_ON_ADMIN_HOST},
+   {"-mcal",   QConfObj::CAL,  QConfWriteKind::EDIT,  nullptr,     false, QConfClientCheck::MANAGER_ON_ADMIN_HOST},
+   {"-mckpt",  QConfObj::CK,   QConfWriteKind::EDIT,  nullptr,     false, QConfClientCheck::MANAGER_ON_ADMIN_HOST},
+   {"-mrole",  QConfObj::RL,   QConfWriteKind::EDIT,  nullptr,     false, QConfClientCheck::MANAGER_ON_ADMIN_HOST},
+   {"-mp",     QConfObj::PE,   QConfWriteKind::EDIT,  nullptr,     false, QConfClientCheck::MANAGER_ON_ADMIN_HOST},
+   {"-muser",  QConfObj::UU,   QConfWriteKind::EDIT,  nullptr,     false, QConfClientCheck::MANAGER_ON_ADMIN_HOST},
+   {"-mprj",   QConfObj::PR,   QConfWriteKind::EDIT,  nullptr,     false, QConfClientCheck::MANAGER_ON_ADMIN_HOST},
+   {"-mce",    QConfObj::CE,   QConfWriteKind::EDIT,  nullptr,     true,  QConfClientCheck::MANAGER_ON_ADMIN_HOST},
+   {"-mhgrp",  QConfObj::HGRP, QConfWriteKind::EDIT,  nullptr,     false, QConfClientCheck::MANAGER_ON_ADMIN_HOST},
+   {"-mq",     QConfObj::CQ,   QConfWriteKind::EDIT,  nullptr,     false, QConfClientCheck::MANAGER_ON_ADMIN_HOST},
+   {"-msconf", QConfObj::SC,   QConfWriteKind::EDIT,  nullptr,     false, QConfClientCheck::MANAGER_ON_ADMIN_HOST},
+   {"-mstree", QConfObj::STN,  QConfWriteKind::EDIT,  nullptr,     false, QConfClientCheck::MANAGER_ON_ADMIN_HOST},
+   {"-Acal",   QConfObj::CAL,  QConfWriteKind::APPLY, nullptr,     false, QConfClientCheck::NONE},
+   {"-Ackpt",  QConfObj::CK,   QConfWriteKind::APPLY, nullptr,     false, QConfClientCheck::NONE},
+   {"-Ae",     QConfObj::EH,   QConfWriteKind::APPLY, nullptr,     false, QConfClientCheck::NONE},
+   {"-Arole",  QConfObj::RL,   QConfWriteKind::APPLY, nullptr,     false, QConfClientCheck::NONE},
+   {"-Ap",     QConfObj::PE,   QConfWriteKind::APPLY, nullptr,     false, QConfClientCheck::NONE},
+   {"-Au",     QConfObj::US,   QConfWriteKind::APPLY, nullptr,     false, QConfClientCheck::NONE},
+   {"-Auser",  QConfObj::UU,   QConfWriteKind::APPLY, nullptr,     false, QConfClientCheck::NONE},
+   {"-Aprj",   QConfObj::PR,   QConfWriteKind::APPLY, nullptr,     false, QConfClientCheck::NONE},
+   {"-Astree", QConfObj::STN,  QConfWriteKind::APPLY, nullptr,     false, QConfClientCheck::NONE},
+   {"-Ace",    QConfObj::CE,   QConfWriteKind::APPLY, nullptr,     false, QConfClientCheck::MANAGER_ON_ADMIN_HOST},
+   {"-Ahgrp",  QConfObj::HGRP, QConfWriteKind::APPLY, nullptr,     false, QConfClientCheck::MANAGER_ON_ADMIN_HOST},
+   {"-Aq",     QConfObj::CQ,   QConfWriteKind::APPLY, nullptr,     false, QConfClientCheck::MANAGER_ON_ADMIN_HOST},
+   {"-Mcal",   QConfObj::CAL,  QConfWriteKind::APPLY, nullptr,     false, QConfClientCheck::NONE},
+   {"-Mckpt",  QConfObj::CK,   QConfWriteKind::APPLY, nullptr,     false, QConfClientCheck::NONE},
+   {"-Me",     QConfObj::EH,   QConfWriteKind::APPLY, nullptr,     false, QConfClientCheck::NONE},
+   {"-Mrole",  QConfObj::RL,   QConfWriteKind::APPLY, nullptr,     false, QConfClientCheck::NONE},
+   {"-Mp",     QConfObj::PE,   QConfWriteKind::APPLY, nullptr,     false, QConfClientCheck::NONE},
+   {"-Mu",     QConfObj::US,   QConfWriteKind::APPLY, nullptr,     false, QConfClientCheck::NONE},
+   {"-Muser",  QConfObj::UU,   QConfWriteKind::APPLY, nullptr,     false, QConfClientCheck::NONE},
+   {"-Mprj",   QConfObj::PR,   QConfWriteKind::APPLY, nullptr,     false, QConfClientCheck::NONE},
+   {"-Mstree", QConfObj::STN,  QConfWriteKind::APPLY, nullptr,     false, QConfClientCheck::NONE},
+   {"-Mce",    QConfObj::CE,   QConfWriteKind::APPLY, nullptr,     false, QConfClientCheck::MANAGER_ON_ADMIN_HOST},
+   {"-Mhgrp",  QConfObj::HGRP, QConfWriteKind::APPLY, nullptr,     false, QConfClientCheck::MANAGER_ON_ADMIN_HOST},
+   {"-Mq",     QConfObj::CQ,   QConfWriteKind::APPLY, nullptr,     false, QConfClientCheck::MANAGER_ON_ADMIN_HOST},
+   {"-Msconf", QConfObj::SC,   QConfWriteKind::APPLY, nullptr,     false, QConfClientCheck::MANAGER_ON_ADMIN_HOST},
+};
+
+/**
+ * @brief Run one add or modify operation from qconf_write_table, if it is one
+ *
+ * Makes the row's client-side check (which exits the client on a refusal, as
+ * the blocks did), then calls the engine with the operation's argument, or for
+ * an EDIT row without one, with the row's default name. Either engine failing
+ * sets the exit status to 1, as in the blocks.
+ *
+ * @param os       the stream the output is written to
+ * @param param    the invocation, for the procedure read of an EDIT row
+ * @param op       the operation to run
+ * @param username the calling user, for the client-side check
+ * @param hostname the calling host, for the client-side check
+ * @param uid      uid to run the editor as
+ * @param gid      gid to run the editor as
+ * @param ret      the accumulated exit status
+ * @return true when the operation was handled here, false to run it locally
+ */
+static bool
+qconf_run_write(std::ostream &os, ocs::QConfParameterClient &param, const qconf_op &op,
+                const char *username, const char *hostname, uid_t uid, gid_t gid, int *ret) {
+   DENTER(TOP_LAYER);
+
+   const qconf_write_entry *entry = nullptr;
+   for (const qconf_write_entry &e : qconf_write_table) {
+      if (op.token == e.switch_name) {
+         entry = &e;
+         break;
+      }
+   }
+   if (entry == nullptr) {
+      DRETURN(false);
+   }
+
+   qconf_client_check(entry->check, username, hostname);
+
+   int failed;
+   if (entry->kind == QConfWriteKind::EDIT) {
+      const char *name = op.args.empty() ? entry->default_name : op.args.front().c_str();
+      failed = qconf_edit_obj_procedure(param, entry->object, entry->switch_name, name,
+                                        uid, gid, entry->unchanged_is_ok);
+   } else {
+      failed = qconf_apply_obj(os, entry->object, op.args.front().c_str());
+   }
+   if (failed != 0) {
       *ret = 1;
    }
 
@@ -2632,81 +2783,9 @@ int sge_parse_qconf(char *argv[]) {
          continue;
       }
 
-/*----------------------------------------------------------------------------*/
-      /* The four skip branches that used to sit here - for -cb, the CS-2299
-       * hardening flags and the CS-2313a format switches - are gone with
-       * CS-2798. Those switches are marked invocation_wide in the option table,
-       * so the parser reads them in its first pass and does not put them into
-       * the operation list at all. There is nothing left to step over. */
-
-/*----------------------------------------------------------------------------*/
-      /* "-acal cal-name" */
-
-      if ((strcmp("-acal", *spp) == 0) ||
-          (strcmp("-Acal", *spp) == 0)) {
-         if (!strcmp("-acal", *spp)) {
-            /* CS-2299 C1: the calendar name is optional; when omitted a generic
-             * template named "template" is offered for editing (cf. -aq/-ahgrp). */
-            const char *cal_name = "template";
-
-            qconf_is_manager_on_admin_host(username, qualified_hostname);
-
-            if (!sge_next_is_an_opt(spp)) {
-               spp = sge_parser_get_next(spp);
-               cal_name = *spp;
-            }
-
-            /* CS-2823: template, editor and write procedure in one - see
-             * qconf_edit_obj_procedure(), the single function "-a<obj>" and "-m<obj>"
-             * share. The template the upsert of CS-2299 C2 edits is built in qmaster
-             * now, from the read's descriptor row. */
-            if (qconf_edit_obj_procedure(param, QConfObj::CAL, "-acal", cal_name, uid, gid) != 0) {
-               sge_parse_return = 1;
-            }
-         } else { /* -Acal: CS-2299 C3 — accept a file OR a directory, upsert each */
-            spp = sge_parser_get_next(spp);
-            if (qconf_apply_obj(os, QConfObj::CAL, *spp) != 0) {
-               sge_parse_return = 1;
-            }
-         }
-
-         spp++;
-         continue;
-      }
-
-/*-----------------------------------------------------------------------------*/
-      /* "-ackpt ckpt_name" or "-Ackpt fname" */
-
-      if ((strcmp("-ackpt", *spp) == 0) ||
-          (strcmp("-Ackpt", *spp) == 0)) {
-
-         if (!strcmp("-ackpt", *spp)) {
-            /* CS-2300 C1: the checkpoint name is optional; when omitted a generic
-             * template named "template" is offered for editing. */
-            const char *ckpt_name = "template";
-
-            qconf_is_manager_on_admin_host(username, qualified_hostname);
-
-            if (!sge_next_is_an_opt(spp)) {
-               spp = sge_parser_get_next(spp);
-               ckpt_name = *spp;
-            }
-
-            /* CS-2823: template, editor and write procedure in one - see
-             * qconf_edit_obj_procedure(), the single function "-a<obj>" and "-m<obj>"
-             * share. The template the upsert of CS-2300 C2 edits is built in qmaster
-             * now, from the read's descriptor row. */
-            if (qconf_edit_obj_procedure(param, QConfObj::CK, "-ackpt", ckpt_name, uid, gid) != 0) {
-               sge_parse_return = 1;
-            }
-         } else { /* -Ackpt: CS-2300 C3 — accept a file OR a directory, upsert each */
-            spp = sge_parser_get_next(spp);
-            if (qconf_apply_obj(os, QConfObj::CK, *spp) != 0) {
-               sge_parse_return = 1;
-            }
-         }
-
-         spp++;
+      /* CS-2954: the same for the add and modify switches, editor and file. */
+      if (qconf_run_write(os, param, op, username, qualified_hostname, uid, gid,
+                          &sge_parse_return)) {
          continue;
       }
 
@@ -2774,20 +2853,6 @@ int sge_parse_qconf(char *argv[]) {
          spp++;
          continue;
       }
-
-/*-----------------------------------------------------------------------------*/
-      /* "-Ae fname|dir": CS-2304 C2/C3 — add/modify exec host(s) from a file or directory */
-      if (strcmp("-Ae", *spp) == 0) {
-         /* no adminhost/manager check needed here */
-
-         spp = sge_parser_get_next(spp);
-         if (qconf_apply_obj(os, QConfObj::EH, *spp) != 0) {
-            sge_parse_return = 1;
-         }
-
-         spp++;
-         continue;
-      }
 /*-----------------------------------------------------------------------------*/
 
       /* "-ah server_name[,server_name,...]" */
@@ -2802,39 +2867,6 @@ int sge_parse_qconf(char *argv[]) {
          }
 
          lFreeList(&lp);
-
-         spp++;
-         continue;
-      }
-/*-----------------------------------------------------------------------------*/
-      /* "-arole role_name" / "-Arole fname" */
-      if ((strcmp("-arole", *spp) == 0) ||
-          (strcmp("-Arole", *spp) == 0)) {
-         if (!strcmp("-arole", *spp)) {
-            /* CS-2302 C1: the role name is optional; when omitted a generic
-             * template named "template" is offered for editing. */
-            const char *role_name = "template";
-
-            qconf_is_manager_on_admin_host(username, qualified_hostname);
-
-            if (!sge_next_is_an_opt(spp)) {
-               spp = sge_parser_get_next(spp);
-               role_name = *spp;
-            }
-
-            /* CS-2823: template, editor and write procedure in one - see
-             * qconf_edit_obj_procedure(), the single function "-a<obj>" and "-m<obj>"
-             * share. The template the upsert of CS-2302 C2 edits is built in qmaster
-             * now, from the read's descriptor row. */
-            if (qconf_edit_obj_procedure(param, QConfObj::RL, "-arole", role_name, uid, gid) != 0) {
-               sge_parse_return = 1;
-            }
-         } else { /* -Arole: CS-2302 C3 — accept a file OR a directory, upsert each */
-            spp = sge_parser_get_next(spp);
-            if (qconf_apply_obj(os, QConfObj::RL, *spp) != 0) {
-               sge_parse_return = 1;
-            }
-         }
 
          spp++;
          continue;
@@ -2946,136 +2978,6 @@ int sge_parse_qconf(char *argv[]) {
       }
 
 /*-----------------------------------------------------------------------------*/
-      /* "-ap pe_name" */
-
-      if ((strcmp("-ap", *spp) == 0) ||
-          (strcmp("-Ap", *spp) == 0)) {
-
-         if (!strcmp("-ap", *spp)) {
-            /* CS-2301 C1: the PE name is optional; when omitted a generic
-             * template named "template" is offered for editing. */
-            const char *pe_name = "template";
-
-            qconf_is_manager_on_admin_host(username, qualified_hostname);
-
-            if (!sge_next_is_an_opt(spp)) {
-               spp = sge_parser_get_next(spp);
-               pe_name = *spp;
-            }
-
-            /* CS-2823: template, editor and write procedure in one - see
-             * qconf_edit_obj_procedure(), the single function "-a<obj>" and "-m<obj>"
-             * share. The template the upsert of CS-2301 C2 edits is built in qmaster
-             * now, from the read's descriptor row. */
-            if (qconf_edit_obj_procedure(param, QConfObj::PE, "-ap", pe_name, uid, gid) != 0) {
-               sge_parse_return = 1;
-            }
-         } else { /* -Ap: CS-2301 C3 — accept a file OR a directory, upsert each */
-            spp = sge_parser_get_next(spp);
-            if (qconf_apply_obj(os, QConfObj::PE, *spp) != 0) {
-               sge_parse_return = 1;
-            }
-         }
-
-         spp++;
-         continue;
-      }
-
-/*----------------------------------------------------------------------------*/
-
-      /* "-auser" */
-
-      if (strcmp("-auser", *spp) == 0) {
-         /* CS-2308 C1: the user name is optional; when omitted a generic
-          * template named "template" is offered for editing (cf. -acal). */
-         const char *user_name = "template";
-
-         qconf_is_manager_on_admin_host(username, qualified_hostname);
-
-         if (!sge_next_is_an_opt(spp)) {
-            spp = sge_parser_get_next(spp);
-            user_name = *spp;
-         }
-
-         /* CS-2823: template, editor and write procedure in one - see
-          * qconf_edit_obj_procedure(), the single function "-a<obj>" and "-m<obj>"
-          * share. The template the upsert of CS-2308 C2 edits is built in qmaster
-          * now, from the read's descriptor row. */
-         if (qconf_edit_obj_procedure(param, QConfObj::UU, "-auser", user_name, uid, gid) != 0) {
-            sge_parse_return = 1;
-         }
-
-         spp++;
-         continue;
-      }
-
-/*----------------------------------------------------------------------------*/
-
-      /* "-aprj" */
-
-      if (strcmp("-aprj", *spp) == 0) {
-         /* CS-2309 C1: the project name is optional; when omitted a generic
-          * template named "template" is offered for editing (cf. -auser). */
-         const char *prj_name = "template";
-
-         qconf_is_manager_on_admin_host(username, qualified_hostname);
-
-         if (!sge_next_is_an_opt(spp)) {
-            spp = sge_parser_get_next(spp);
-            prj_name = *spp;
-         }
-
-         /* CS-2823: template, editor and write procedure in one - see
-          * qconf_edit_obj_procedure(), the single function "-a<obj>" and "-m<obj>"
-          * share. The template the upsert of CS-2309 C2 edits is built in qmaster
-          * now, from the read's descriptor row. */
-         if (qconf_edit_obj_procedure(param, QConfObj::PR, "-aprj", prj_name, uid, gid) != 0) {
-            sge_parse_return = 1;
-         }
-
-         spp++;
-         continue;
-      }
-
-/*----------------------------------------------------------------------------*/
-
-      /* "-Auser" */
-
-      if (strcmp("-Auser", *spp) == 0) {
-         /* CS-2308 C2+C3: accept a file OR a directory, upsert each user.
-          * The user object uses a dynamically built field list. */
-
-         /* no adminhost/manager check needed here */
-
-         spp = sge_parser_get_next(spp);
-         if (qconf_apply_obj(os, QConfObj::UU, *spp) != 0) {
-            sge_parse_return = 1;
-         }
-
-         spp++;
-         continue;
-      }
-
-
-/*----------------------------------------------------------------------------*/
-
-      /* "-Aprj" */
-
-      if (strcmp("-Aprj", *spp) == 0) {
-         /* CS-2309 C2+C3: accept a file OR a directory, upsert each project. */
-
-         /* no adminhost/manager check needed here */
-
-         spp = sge_parser_get_next(spp);
-         if (qconf_apply_obj(os, QConfObj::PR, *spp) != 0) {
-            sge_parse_return = 1;
-         }
-
-         spp++;
-         continue;
-      }
-
-/*-----------------------------------------------------------------------------*/
 
       /* "-as server_name[,server_name,...]" */
       if (strcmp("-as", *spp) == 0) {
@@ -3088,33 +2990,6 @@ int sge_parse_qconf(char *argv[]) {
             sge_parse_return = 1;
          }
          lFreeList(&lp);
-
-         spp++;
-         continue;
-      }
-
-/*----------------------------------------------------------------------------*/
-      /* "-astree", "-Astree file": add the share tree
-       *
-       * The same upsert as "-mstree"/"-Mstree" and the same code: the share tree
-       * is a singleton, sge_mod_sharetree() creates the list when there is none,
-       * and CS-2312 had already made the two pairs interchangeable - what is
-       * left of the distinction is the switch name. See the "-mstree" block for
-       * what moved into the procedure (CS-2823). */
-      if ((strcmp("-astree", *spp) == 0) || (strcmp("-Astree", *spp) == 0)) {
-         if (strcmp("-astree", *spp) == 0) {
-            qconf_is_manager_on_admin_host(username, qualified_hostname);
-
-            if (qconf_edit_obj_procedure(param, QConfObj::STN, "-astree", nullptr, uid, gid) != 0) {
-               sge_parse_return = 1;
-            }
-         } else {
-            spp = sge_parser_get_next(spp);
-
-            if (qconf_apply_obj(os, QConfObj::STN, *spp) != 0) {
-               sge_parse_return = 1;
-            }
-         }
 
          spp++;
          continue;
@@ -3762,40 +3637,6 @@ int sge_parse_qconf(char *argv[]) {
          spp++;
          continue;
       }
-
-/*----------------------------------------------------------------------------*/
-
-      /* "-mcal cal-name" */
-
-      if ((strcmp("-mcal", *spp) == 0) ||
-          (strcmp("-Mcal", *spp) == 0)) {
-         if (!strcmp("-mcal", *spp)) {
-            qconf_is_manager_on_admin_host(username, qualified_hostname);
-            spp = sge_parser_get_next(spp);
-
-            /* CS-2822: the interactive modify is a stored procedure round trip
-             * now. qmaster renders the object, the client carries the text to
-             * the editor and back, and qmaster parses and applies it. The
-             * GET/MOD path this option used is gone - leaving it beside the new
-             * one would mean two writers for the same object, one of which
-             * cannot see a reduced read.
-             *
-             * -Mcal below goes through the same procedure, as a set of many
-             * instead of a set of one, so the calendar has one writer and not
-             * two - see qconf_apply_path_procedure(). */
-            if (qconf_edit_obj_procedure(param, QConfObj::CAL, "-mcal", *spp, uid, gid) != 0) {
-               sge_parse_return = 1;
-            }
-         } else { /* -Mcal: CS-2299 C3 — accept a file OR a directory, upsert each */
-            spp = sge_parser_get_next(spp);
-            if (qconf_apply_obj(os, QConfObj::CAL, *spp) != 0) {
-               sge_parse_return = 1;
-            }
-         }
-
-         spp++;
-         continue;
-      }
 /*----------------------------------------------------------------------------*/
       /* "-Mc complex file" */
 
@@ -3817,48 +3658,6 @@ int sge_parse_qconf(char *argv[]) {
                              ocs::QConfWriteParameter::MODE_REPLACE) != 0) {
             sge_parse_return = 1;
          }
-         spp++;
-         continue;
-      }
-
-/*-----------------------------------------------------------------------------*/
-      /* "-mckpt ckpt_name" or "-Mckpt fname" */
-
-      if ((strcmp("-mckpt", *spp) == 0) ||
-          (strcmp("-Mckpt", *spp) == 0)) {
-         if (strcmp("-mckpt", *spp) == 0) {
-            qconf_is_manager_on_admin_host(username, qualified_hostname);
-            spp = sge_parser_get_next(spp);
-
-            /* CS-2823: the stored procedure round trip, as -mcal does it, and the
-             * same function "-a<obj>" calls. The implicit add of CS-2300 C2 is
-             * unchanged; the template it edits comes from the read's descriptor row
-             * and is built in qmaster. */
-            if (qconf_edit_obj_procedure(param, QConfObj::CK, "-mckpt", *spp, uid, gid) != 0) {
-               sge_parse_return = 1;
-            }
-         } else { /* -Mckpt: CS-2300 C3 — accept a file OR a directory, upsert each */
-            spp = sge_parser_get_next(spp);
-            if (qconf_apply_obj(os, QConfObj::CK, *spp) != 0) {
-               sge_parse_return = 1;
-            }
-         }
-
-         spp++;
-         continue;
-      }
-
-/*----------------------------------------------------------------------------*/
-      /* "-Me fname|dir": CS-2304 C2/C3 — add/modify exec host(s) from a file or directory */
-      if (strcmp("-Me", *spp) == 0) {
-
-         /* no adminhost/manager check needed here */
-
-         spp = sge_parser_get_next(spp);
-         if (qconf_apply_obj(os, QConfObj::EH, *spp) != 0) {
-            sge_parse_return = 1;
-         }
-
          spp++;
          continue;
       }
@@ -3896,31 +3695,6 @@ int sge_parse_qconf(char *argv[]) {
             }
          }
          lFreeList(&arglp);
-         spp++;
-         continue;
-      }
-/*-----------------------------------------------------------------------------*/
-      /* "-mrole role_name" / "-Mrole fname" */
-      if ((strcmp("-mrole", *spp) == 0) ||
-          (strcmp("-Mrole", *spp) == 0)) {
-         if (!strcmp("-mrole", *spp)) {
-            qconf_is_manager_on_admin_host(username, qualified_hostname);
-            spp = sge_parser_get_next(spp);
-
-            /* CS-2823: the stored procedure round trip, as -mcal does it, and the
-             * same function "-a<obj>" calls. The implicit add of CS-2302 C2 is
-             * unchanged; the template it edits comes from the read's descriptor row
-             * and is built in qmaster. */
-            if (qconf_edit_obj_procedure(param, QConfObj::RL, "-mrole", *spp, uid, gid) != 0) {
-               sge_parse_return = 1;
-            }
-         } else { /* -Mrole: CS-2302 C3 — accept a file OR a directory, upsert each */
-            spp = sge_parser_get_next(spp);
-            if (qconf_apply_obj(os, QConfObj::RL, *spp) != 0) {
-               sge_parse_return = 1;
-            }
-         }
-
          spp++;
          continue;
       }
@@ -3977,33 +3751,6 @@ int sge_parse_qconf(char *argv[]) {
          if (qconf_apply_obj(os, QConfObj::RQS, file, name,
                              ocs::QConfWriteParameter::MODE_LIST) != 0) {
             sge_parse_return = 1;
-         }
-
-         spp++;
-         continue;
-      }
-/*-----------------------------------------------------------------------------*/
-      /* "-mp pe_name" */
-
-      if ((strcmp("-mp", *spp) == 0) ||
-          (strcmp("-Mp", *spp) == 0)) {
-
-         if (!strcmp("-mp", *spp)) {
-            qconf_is_manager_on_admin_host(username, qualified_hostname);
-            spp = sge_parser_get_next(spp);
-
-            /* CS-2823: the stored procedure round trip, as -mcal does it, and the
-             * same function "-a<obj>" calls. The implicit add of CS-2301 C2 is
-             * unchanged; the template it edits comes from the read's descriptor row
-             * and is built in qmaster. */
-            if (qconf_edit_obj_procedure(param, QConfObj::PE, "-mp", *spp, uid, gid) != 0) {
-               sge_parse_return = 1;
-            }
-         } else { /* -Mp: CS-2301 C3 — accept a file OR a directory, upsert each */
-            spp = sge_parser_get_next(spp);
-            if (qconf_apply_obj(os, QConfObj::PE, *spp) != 0) {
-               sge_parse_return = 1;
-            }
          }
 
          spp++;
@@ -4281,90 +4028,6 @@ int sge_parse_qconf(char *argv[]) {
    }
 
 /*----------------------------------------------------------------------------*/
-      /* "-Msconf file": the scheduler configuration from a file
-       *
-       * The parse, the field list and sconf_validate_config() are gone from
-       * here: qmaster parses the text and sge_mod_sched_configuration() installs
-       * it through sconf_set_config(), which validates and refuses with the
-       * reason in the answer list - the client check was the same check, run
-       * twice (CS-2823). */
-      if (strcmp("-Msconf", *spp) == 0) {
-         qconf_is_manager_on_admin_host(username, qualified_hostname);
-
-         spp = sge_parser_get_next(spp);
-
-         if (qconf_apply_obj(os, QConfObj::SC, *spp) != 0) {
-            sge_parse_return = 1;
-         }
-
-         spp++;
-         continue;
-      }
-
-/*----------------------------------------------------------------------------*/
-      /* "-msconf": the scheduler configuration in the editor
-       *
-       * The bare GET in front of the editor is what this step exists to remove:
-       * it could not see whether the output was reduced, and wrote back what it
-       * had been shown. The read now runs as a stored procedure, which refuses
-       * to edit a reduced view, and the write parses in qmaster (CS-2823). The
-       * scheduler configuration has no name - it is read as a singleton, which
-       * qconf_show_object() takes from the descriptor. */
-      if (strcmp("-msconf", *spp) == 0) {
-         qconf_is_manager_on_admin_host(username, qualified_hostname);
-
-         if (qconf_edit_obj_procedure(param, QConfObj::SC, "-msconf", nullptr, uid, gid) != 0) {
-            sge_parse_return = 1;
-         }
-
-         spp++;
-         continue;
-      }
-
-/*----------------------------------------------------------------------------*/
-
-      /* "-mstree", "-Mstree file": the share tree in the editor or from a file
-       *
-       * What left this block, and where it went (CS-2823):
-       *
-       * - the bare GET before the editor, which is the hole this step closes:
-       *   it could not see a reduced output and wrote back what it was shown.
-       *   The read is a stored procedure now and refuses to edit a reduced view.
-       * - the choice between the two field lists. The descriptor's
-       *   qconf_fields_STN() has made it by format since CS-2808, so the
-       *   ternary here was the second copy of the same decision.
-       * - id_sharetree() for the nested JSON form, which is now the
-       *   descriptor's prepare hook and runs where the parse is.
-       * - sge_search_unspecified_node(). check_sharetree() in qmaster reports
-       *   exactly that - a node with no name, with the same message - and
-       *   sge_mod_sharetree() calls it, so this was the same check run twice.
-       * - the ADD-or-MOD probe of CS-2312. sge_add_sharetree() is a one-line
-       *   forwarder to sge_mod_sharetree(), which creates the list when there is
-       *   none, so the upsert needs no probe and the client needs no extra GET
-       *   to decide it.
-       *
-       * The share tree has no name: it is read as a singleton, which
-       * qconf_show_object() takes from the descriptor. */
-      if ((strcmp("-mstree", *spp) == 0) || (strcmp("-Mstree", *spp) == 0)) {
-         if (strcmp("-mstree", *spp) == 0) {
-            qconf_is_manager_on_admin_host(username, qualified_hostname);
-
-            if (qconf_edit_obj_procedure(param, QConfObj::STN, "-mstree", nullptr, uid, gid) != 0) {
-               sge_parse_return = 1;
-            }
-         } else {
-            spp = sge_parser_get_next(spp);
-
-            if (qconf_apply_obj(os, QConfObj::STN, *spp) != 0) {
-               sge_parse_return = 1;
-            }
-         }
-
-         spp++;
-         continue;
-      }
-
-/*----------------------------------------------------------------------------*/
 
       /* "-mu userset,..." */
 
@@ -4396,119 +4059,6 @@ int sge_parse_qconf(char *argv[]) {
             }
          }
          lFreeList(&lp);
-
-         spp++;
-         continue;
-      }
-
-/*----------------------------------------------------------------------------*/
-
-      /* "-Mu fname" */
-
-      if (strcmp("-Mu", *spp) == 0) {
-         /* CS-2310 C2+C3: accept a file OR a directory, upsert each userset.
-          * The userset uses the static US_fields, the param sfi and the
-          * userset entry validator. */
-         spp = sge_parser_get_next(spp);
-         if (qconf_apply_obj(os, QConfObj::US, *spp) != 0) {
-            sge_parse_return = 1;
-         }
-
-         spp++;
-         continue;
-      }
-
-/*----------------------------------------------------------------------------*/
-
-      /* "-Au fname|dir" */
-
-      if (strcmp("-Au", *spp) == 0) {
-         /* CS-2310 C2+C3: accept a file OR a directory, upsert each userset. */
-         spp = sge_parser_get_next(spp);
-         if (qconf_apply_obj(os, QConfObj::US, *spp) != 0) {
-            sge_parse_return = 1;
-         }
-
-         spp++;
-         continue;
-      }
-
-/*----------------------------------------------------------------------------*/
-      /* "-muser username" */
-
-      if (strcmp("-muser", *spp) == 0) {
-         qconf_is_manager_on_admin_host(username, qualified_hostname);
-         spp = sge_parser_get_next(spp);
-
-         /* CS-2823: the stored procedure round trip, as -mcal does it, and the
-          * same function "-a<obj>" calls. The implicit add of CS-2308 C2 is
-          * unchanged; the template it edits comes from the read's descriptor row
-          * and is built in qmaster. */
-         if (qconf_edit_obj_procedure(param, QConfObj::UU, "-muser", *spp, uid, gid) != 0) {
-            sge_parse_return = 1;
-         }
-
-         spp++;
-         continue;
-      }
-
-/*----------------------------------------------------------------------------*/
-
-      /* "-mprj projectname" */
-
-      if (strcmp("-mprj", *spp) == 0) {
-         qconf_is_manager_on_admin_host(username, qualified_hostname);
-         spp = sge_parser_get_next(spp);
-
-         /* CS-2823: the stored procedure round trip, as -mcal does it, and the
-          * same function "-a<obj>" calls. The implicit add of CS-2309 C2 is
-          * unchanged; the template it edits comes from the read's descriptor row
-          * and is built in qmaster.
-          *
-          * A failing read sets the exit code now, which the GET path forgot to
-          * do here while the "-muser" branch beside it did - the two are one
-          * function, so the omission cannot come back. */
-         if (qconf_edit_obj_procedure(param, QConfObj::PR, "-mprj", *spp, uid, gid) != 0) {
-            sge_parse_return = 1;
-         }
-
-         spp++;
-         continue;
-      }
-
-
-
-
-/*----------------------------------------------------------------------------*/
-
-      /* "-Muser file|dir" */
-
-      if (strcmp("-Muser", *spp) == 0) {
-         /* CS-2308 C2+C3: accept a file OR a directory, upsert each user. */
-
-         /* no adminhost/manager check needed here */
-
-         spp = sge_parser_get_next(spp);
-         if (qconf_apply_obj(os, QConfObj::UU, *spp) != 0) {
-            sge_parse_return = 1;
-         }
-
-         spp++;
-         continue;
-      }
-
-/*----------------------------------------------------------------------------*/
-      /* "-Mprj file" */
-
-      if (strcmp("-Mprj", *spp) == 0) {
-         /* CS-2309 C2+C3: accept a file OR a directory, upsert each project. */
-
-         /* no adminhost/manager check needed here */
-
-         spp = sge_parser_get_next(spp);
-         if (qconf_apply_obj(os, QConfObj::PR, *spp) != 0) {
-            sge_parse_return = 1;
-         }
 
          spp++;
          continue;
@@ -5068,149 +4618,6 @@ int sge_parse_qconf(char *argv[]) {
          continue;
       }
 
-/*----------------------------------------------------------------------------*/
-
-      /* "-mce centry"  */
-      if (strcmp("-mce", *spp) == 0) {
-         qconf_is_manager_on_admin_host(username, qualified_hostname);
-
-         spp = sge_parser_get_next(spp);
-         qconf_is_manager(username);
-
-         /* CS-2823: the stored procedure round trip, as -mcal does it, and the
-          * same function "-a<obj>" calls. The implicit add of CS-2303 C2 is
-          * unchanged; the template it edits comes from the read's descriptor row
-          * and is built in qmaster. */
-         if (qconf_edit_obj_procedure(param, QConfObj::CE, "-mce", *spp, uid, gid, true) != 0) {
-            sge_parse_return = 1;
-         }
-
-         spp++;
-         continue;
-      }
-
-/*----------------------------------------------------------------------------*/
-
-      /* "-Mce fname|dir": CS-2303 C2/C3 — add/modify from a file or directory */
-      if (strcmp("-Mce", *spp) == 0) {
-         qconf_is_manager_on_admin_host(username, qualified_hostname);
-         spp = sge_parser_get_next(spp);
-         if (qconf_apply_obj(os, QConfObj::CE, *spp) != 0) {
-            sge_parse_return = 1;
-         }
-         spp++;
-         continue;
-      }
-
-/*----------------------------------------------------------------------------*/
-      /* "-ace [attribute]"  */
-      if (strcmp("-ace", *spp) == 0) {
-         /* CS-2303 C1: the complex entry name is optional; template default. */
-         const char *ce_name = "template";
-
-         qconf_is_adminhost(qualified_hostname);
-         qconf_is_manager(username);
-
-         if (!sge_next_is_an_opt(spp)) {
-            spp = sge_parser_get_next(spp);
-            ce_name = *spp;
-         }
-
-         /* CS-2823: template, editor and write procedure in one - see
-          * qconf_edit_obj_procedure(), the single function "-a<obj>" and "-m<obj>"
-          * share. The template the upsert of CS-2303 C2 edits is built in qmaster
-          * now, from the read's descriptor row. */
-         if (qconf_edit_obj_procedure(param, QConfObj::CE, "-ace", ce_name, uid, gid, true) != 0) {
-            sge_parse_return = 1;
-         }
-         spp++;
-         continue;
-      }
-
-      /* "-Ace fname|dir": CS-2303 C2/C3 — add/modify from a file or directory */
-      if (strcmp("-Ace", *spp) == 0) {
-         qconf_is_manager_on_admin_host(username, qualified_hostname);
-         spp = sge_parser_get_next(spp);
-         if (qconf_apply_obj(os, QConfObj::CE, *spp) != 0) {
-            sge_parse_return = 1;
-         }
-         spp++;
-         continue;
-      }
-
-      /*
-       * Hostgroup parameters
-       */
-
-      /* "-shgrpl" */
-
-      /* "-mhgrp group"  */
-      if (strcmp("-mhgrp", *spp) == 0) {
-         spp = sge_parser_get_next(spp);
-         qconf_is_manager_on_admin_host(username, qualified_hostname);
-
-         /* CS-2823: the stored procedure round trip, the same function "-ahgrp"
-          * calls. A name that is no host group yet is answered by the read with
-          * the type's template and created on exit, which is what "-m<obj>" has
-          * done for every other type since CS-2299 C2 and what qconf.md has
-          * described all along - the host group only joined now. */
-         if (qconf_edit_obj_procedure(param, QConfObj::HGRP, "-mhgrp", *spp, uid, gid) != 0) {
-            sge_parse_return = 1;
-         }
-
-         spp++;
-         continue;
-      }
-
-      /* "-Mhgrp fname|dir": CS-2306 C2/C3 — add/modify host group(s) from a file or directory */
-      if (strcmp("-Mhgrp", *spp) == 0) {
-         qconf_is_manager_on_admin_host(username, qualified_hostname);
-         spp = sge_parser_get_next(spp);
-         if (qconf_apply_obj(os, QConfObj::HGRP, *spp) != 0) {
-            sge_parse_return = 1;
-         }
-         spp++;
-         continue;
-      }
-
-      /* "-ahgrp group"  */
-      if (strcmp("-ahgrp", *spp) == 0) {
-         /* the name is optional; when omitted a template named "@template" is
-          * offered for editing, and the editor is where it gets its real name */
-         const char *group = "@template";
-
-         if (!sge_next_is_an_opt(spp)) {
-            spp = sge_parser_get_next(spp);
-            group = *spp;
-         }
-
-         qconf_is_manager_on_admin_host(username, qualified_hostname);
-
-         /* CS-2823: template, editor and write procedure in one - see
-          * qconf_edit_obj_procedure(), the single function "-a<obj>" and
-          * "-m<obj>" share. The template is built in qmaster from the read's
-          * descriptor row, with the name check off for the reason the flag that
-          * used to stand here gave - see qconf_template_HGRP(). An impossible
-          * name is refused when the edited text is written. */
-         if (qconf_edit_obj_procedure(param, QConfObj::HGRP, "-ahgrp", group, uid, gid, true) != 0) {
-            sge_parse_return = 1;
-         }
-
-         spp++;
-         continue;
-      }
-
-      /* "-Ahgrp fname|dir": CS-2306 C2/C3 — add/modify host group(s) from a file or directory */
-      if (strcmp("-Ahgrp", *spp) == 0) {
-         qconf_is_manager_on_admin_host(username, qualified_hostname);
-         spp = sge_parser_get_next(spp);
-         if (qconf_apply_obj(os, QConfObj::HGRP, *spp) != 0) {
-            sge_parse_return = 1;
-         }
-         spp++;
-         continue;
-      }
-
       /* "-dhgrp group,..." : CS-2306 C4 — comma-separated list of host groups */
       if (strcmp("-dhgrp", *spp) == 0) {
          spp = sge_parser_get_next(spp);
@@ -5330,75 +4737,6 @@ int sge_parse_qconf(char *argv[]) {
          sge_parse_return |= show_answer(answer_list);
          lFreeList(&answer_list);
 
-         spp++;
-         continue;
-      }
-
-      /*
-       * Cluster Queue parameter
-       */
-
-      /* "-sql" */
-
-      /* "-mq cqueue"  */
-      if (strcmp("-mq", *spp) == 0) {
-         spp = sge_parser_get_next(spp);
-         qconf_is_manager_on_admin_host(username, qualified_hostname);
-
-         /* CS-2823: the stored procedure round trip, the same function "-aq"
-          * calls. A name that is no cluster queue yet is answered by the read
-          * with the type's template and created on exit - the upsert every
-          * other type has had since CS-2299 C2. */
-         if (qconf_edit_obj_procedure(param, QConfObj::CQ, "-mq", *spp, uid, gid) != 0) {
-            sge_parse_return = 1;
-         }
-
-         spp++;
-         continue;
-      }
-
-      /* "-Mq fname|dir": CS-2305 C2/C3 — add/modify cqueue(s) from a file or directory */
-      if (strcmp("-Mq", *spp) == 0) {
-         qconf_is_manager_on_admin_host(username, qualified_hostname);
-         spp = sge_parser_get_next(spp);
-         if (qconf_apply_obj(os, QConfObj::CQ, *spp) != 0) {
-            sge_parse_return = 1;
-         }
-         spp++;
-         continue;
-      }
-
-      /* "-aq cqueue"  */
-      if (strcmp("-aq", *spp) == 0) {
-         /* the name is optional; when omitted a template named "template" is
-          * offered for editing and the editor gives it its real name */
-         const char *name = "template";
-
-         if (!sge_next_is_an_opt(spp)) {
-            spp = sge_parser_get_next(spp);
-            name = *spp;
-         }
-         qconf_is_manager_on_admin_host(username, qualified_hostname);
-
-         /* CS-2823: template, editor and write procedure in one - see
-          * qconf_edit_obj_procedure(). The template is the one cqueue_add()
-          * built in the client, now assembled in qmaster from the read's
-          * descriptor row: the object plus the attribute defaults. */
-         if (qconf_edit_obj_procedure(param, QConfObj::CQ, "-aq", name, uid, gid, true) != 0) {
-            sge_parse_return = 1;
-         }
-
-         spp++;
-         continue;
-      }
-
-      /* "-Aq fname|dir": CS-2305 C2/C3 — add/modify cqueue(s) from a file or directory */
-      if (strcmp("-Aq", *spp) == 0) {
-         qconf_is_manager_on_admin_host(username, qualified_hostname);
-         spp = sge_parser_get_next(spp);
-         if (qconf_apply_obj(os, QConfObj::CQ, *spp) != 0) {
-            sge_parse_return = 1;
-         }
          spp++;
          continue;
       }
@@ -5543,8 +4881,9 @@ int sge_parse_qconf(char *argv[]) {
 
 /*----------------------------------------------------------------------------*/
       /* "-huh?" - unreachable: qconf_parse_args() rejects a switch that is not
-       * in the table, and every switch in the table has a block above. Kept as
-       * the backstop it always was, for a row added without its block. */
+       * in the table, and every switch in the table is served by the read,
+       * delete or write table or by a block above. Kept as the backstop it
+       * always was, for a row added without its handler. */
 
       ERROR(MSG_ANSWER_INVALIDOPTIONARGX_S, *spp);
       fprintf(stderr, MSG_SRC_X_HELP_USAGE_S , "qconf");
