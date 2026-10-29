@@ -67,6 +67,7 @@
 #include "procedure/qconf/ocs_QConfViewJSON.h"
 #include "procedure/qconf/ocs_QConfViewPlain.h"
 #include "procedure/qconf/ocs_QConfViewXML.h"
+#include "procedure/qconf/ocs_QConfMemberServer.h"
 #include "procedure/qconf/ocs_QConfPurgeServer.h"
 #include "procedure/qconf/ocs_QConfWriteServer.h"
 
@@ -927,6 +928,33 @@ namespace {
       }
    };
 
+   /** @brief The traits of the access list membership switches (CS-2959)
+    *
+    * A write, so it renders nothing; what it has to say is one answer per user
+    * and list. Like the purge it names no write_object, because it changes the
+    * entries of lists in place rather than applying object texts.
+    */
+   struct QConfMemberTraits {
+      using Parameter = ocs::QConfMemberParameter;
+      using Model = ocs::QConfMemberModelServer;
+      using ViewBase = ocs::QConfMemberView;
+      using Controller = ocs::QConfMemberController;
+
+      static constexpr ProgName prog_number = QCONF;
+
+      static std::unique_ptr<ViewBase> make_xml_view(const Parameter &parameter) {
+         return std::make_unique<ocs::QConfMemberView>(parameter);
+      }
+
+      static std::unique_ptr<ViewBase> make_plain_view(const Parameter &parameter) {
+         return std::make_unique<ocs::QConfMemberView>(parameter);
+      }
+
+      static std::unique_ptr<ViewBase> make_json_view(const Parameter &parameter) {
+         return std::make_unique<ocs::QConfMemberView>(parameter);
+      }
+   };
+
    using ProcedureHandler = void (*)(ocs::gdi::Packet *, ocs::gdi::Task *, monitoring_t *);
 
    /** @brief What a caller must satisfy before a procedure may run
@@ -1049,6 +1077,12 @@ namespace {
        * on the queue needs. */
       {to_string_view(QCONF), ocs::QConfPurgeParameter::QUEUE_PURGE,
        modifies(ocs::gdi::Target::CQ_LIST), &run_procedure<QConfPurgeTraits>},
+      /* CS-2959: "-au"/"-du" and "-am"/"-ao"/"-dm"/"-do" change the entries of
+       * access lists in place, so they are checked as a modify of the userset
+       * list - what the client's GET and MOD were checked as before. The
+       * manager-only rule of the reserved lists stays in userset_mod(). */
+      {to_string_view(QCONF), ocs::QConfMemberParameter::USERSET_MEMBERS,
+       modifies(ocs::gdi::Target::US_LIST), &run_procedure<QConfMemberTraits>},
       {to_string_view(QHOST), "", READS, &run_procedure<QHostTraits>},
       {to_string_view(QQUOTA), "", READS, &run_procedure<QQuotaTraits>},
       {to_string_view(QRSTAT), "", READS, &run_procedure<QRStatTraits>},

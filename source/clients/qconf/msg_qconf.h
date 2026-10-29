@@ -47,13 +47,6 @@
 #define MSG_QCONF_MODIFICATIONOFHOSTNOTSUPPORTED_S    _MESSAGE(5008, _("Modification of host " SFQ " not supported"))
 #define MSG_QCONF_POSITIVE_SHARE_VALUE                _MESSAGE(5009, _("share value must be positive"))
 
-#define MSG_ACL_USERINACL_SS                          _MESSAGE(5050, _(SFQ " is already in access list " SFQ))
-#define MSG_ACL_CANTADDTOACL_SS                       _MESSAGE(5051, _("can't add " SFQ " to access list " SFQ))
-#define MSG_ACL_ADDTOACL_SS                           _MESSAGE(5052, _("added " SFQ " to access list " SFQ))
-#define MSG_ACL_ACLDOESNOTEXIST_S                     _MESSAGE(5053, _("access list " SFQ " doesn't exist"))
-#define MSG_ACL_USERNOTINACL_SS                       _MESSAGE(5054, _("user " SFQ " is not in access list " SFQ))
-#define MSG_ACL_CANTDELFROMACL_SS                     _MESSAGE(5055, _("can't delete user " SFQ " from access list " SFQ))
-#define MSG_ACL_DELFROMACL_SS                         _MESSAGE(5056, _("deleted user " SFQ " from access list " SFQ))
 
 #define MSG_CENTRY_NOTCHANGED                         _MESSAGE(5100, _("Complex attribute configuration has not been changed"))
 /* MSG_CENTRY_DOESNOTEXIST_S (5101) moved to libs/procedure/qconf/msg_qconf.h with

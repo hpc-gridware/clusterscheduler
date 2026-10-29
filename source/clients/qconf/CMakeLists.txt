@@ -23,7 +23,6 @@ add_executable(
       qconf
         ocs_qconf.cc
         ocs_qconf_parse.cc
-        ocs_qconf_acl.cc
       ../../common/sig_handlers.cc
       ../../common/sge_options.cc
       ../../common/usage.cc)

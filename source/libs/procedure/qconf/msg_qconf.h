@@ -100,4 +100,18 @@
 #define MSG_QCONF_ATTR_ARGS_NOT_FOUND                 _MESSAGE(12019, _("Attribute name (" SFQ ") and/or value (" SFQ ") not found"))
 #define MSG_CQUEUE_DOESNOTEXIST_S                     _MESSAGE(12020, _("Cluster queue entry " SFQ " does not exist"))
 
+/* CS-2959: the access list membership switches -au/-du/-am/-ao/-dm/-do run in
+ * qmaster now. Their per-user messages moved over from clients/qconf/msg_qconf.h
+ * (5050-5056) and are renumbered into this file's band; names and texts are
+ * unchanged, because the testsuite matches them. */
+#define MSG_QCONF_NOMEMBERPROVIDER                    _MESSAGE(12021, _("no membership provider installed - access list entries can only be changed inside qmaster"))
+#define MSG_QCONF_MEMBERINCOMPLETE                    _MESSAGE(12022, _("a change of access list entries needs at least one user and one access list"))
+#define MSG_ACL_USERINACL_SS                          _MESSAGE(12023, _(SFQ " is already in access list " SFQ))
+#define MSG_ACL_CANTADDTOACL_SS                       _MESSAGE(12024, _("can't add " SFQ " to access list " SFQ))
+#define MSG_ACL_ADDTOACL_SS                           _MESSAGE(12025, _("added " SFQ " to access list " SFQ))
+#define MSG_ACL_ACLDOESNOTEXIST_S                     _MESSAGE(12026, _("access list " SFQ " doesn't exist"))
+#define MSG_ACL_USERNOTINACL_SS                       _MESSAGE(12027, _("user " SFQ " is not in access list " SFQ))
+#define MSG_ACL_CANTDELFROMACL_SS                     _MESSAGE(12028, _("can't delete user " SFQ " from access list " SFQ))
+#define MSG_ACL_DELFROMACL_SS                         _MESSAGE(12029, _("deleted user " SFQ " from access list " SFQ))
+
 // clang-format on

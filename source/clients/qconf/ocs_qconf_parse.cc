@@ -95,10 +95,10 @@
 #include "sge.h"
 #include "sge_options.h"
 #include "usage.h"
-#include "ocs_qconf_acl.h"
 #include "procedure/ocs_ProcedureController.h"
 #include "procedure/ocs_ProcedureModel.h"
 #include "procedure/ocs_ProcedureView.h"
+#include "procedure/qconf/ocs_QConfMemberParameter.h"
 #include "procedure/qconf/ocs_QConfPurgeParameter.h"
 #include "procedure/qconf/ocs_QConfWriteModelClient.h"
 
@@ -1720,11 +1720,11 @@ qconf_clear_usage(ocs::gdi::Target target, const lDescr *descr, int key_nm, int 
 /** @brief Refuse an operation that fetches a whole object in order to write it back (CS-2825)
  *
  * Some switches do not edit, export or delete, and still need the whole object:
- * they fetch it, change one thing in it locally and send all of it back.
- * `-dstnode`, `-astnode` and `-mstnode` on the share tree, and `-du`/`-dm`/`-do`
- * plus `-au`/`-am`/`-ao` on an access list. `-purge` was one of them until it
- * became a procedure that changes the queue in qmaster (CS-2948), where there is
- * no reduced read to refuse. A reduced read would hand them an object whose hidden parts are
+ * they fetch it, change one thing in it locally and send all of it back -
+ * `-dstnode`, `-astnode` and `-mstnode` on the share tree. `-purge` and the
+ * access list switches `-au`/`-du`/`-am`/`-ao`/`-dm`/`-do` were among them until
+ * they became procedures that change the object in qmaster (CS-2948, CS-2959),
+ * where there is no reduced read to refuse. A reduced read would hand them an object whose hidden parts are
  * placeholders, and the write back would store the placeholders - which is the
  * same hazard the editor refuses, reached without an editor.
  *
@@ -1735,8 +1735,7 @@ qconf_clear_usage(ocs::gdi::Target target, const lDescr *descr, int key_nm, int 
  *
  * **The probe never speaks except to refuse.** A read that fails for any other
  * reason is left to the operation, which has its own established message for it
- * - `MSG_ACL_ACLDOESNOTEXIST_S` for an access list, `MSG_TREE_NOSHARETREE` for a
- * missing tree. Printing here as well
+ * - `MSG_TREE_NOSHARETREE` for a missing tree. Printing here as well
  * would turn one cause into two complaints, and a typo in a name would read
  * differently than it did before.
  *
@@ -1787,32 +1786,43 @@ qconf_refuse_if_reduced(ocs::QConfParameterClient &param, QConfObj o, const char
    DRETURN(false);
 }
 
-/** @brief The same refusal for every access list a switch names (CS-2825)
+/** @brief Add users to or remove them from access lists in qmaster (CS-2959)
  *
- * `-au`/`-am`/`-ao` and `-du`/`-dm`/`-do` take a cross product: a list of users
- * and a list of access lists. Each access list is fetched whole and written
- * back whole, one GET and one MOD per list since CS-2754, so each one is probed
- * - a reduction in the third of three is as destructive as one in the first,
- * and the write happens per list, so there is no "nothing applied" to fall back
- * on. The first reduced list refuses the whole switch rather than letting the
- * earlier ones through, which is what an administrator asking for three lists
- * means by one command.
+ * Serves `-au`/`-am`/`-ao` and `-du`/`-dm`/`-do`, which are one operation on a
+ * list of users and a list of access lists - `-am` is `-au <users> manager`
+ * (CS-2394). The change runs in qmaster against the stored lists, which is why
+ * nothing is read here and nothing can be reduced. What it has to say is one
+ * answer per user and list, surfaced the way every qconf write surfaces its
+ * answers.
  *
- * @param param the invocation, used for the procedure read
- * @param sw    the switch being served, named in the refusals
- * @param acls  the access lists the switch names (`US_Type`)
- * @return true when the operation must not go ahead, and the reason has been printed
+ * @param param the invocation, for its execution context
+ * @param sw    the switch being served, named in the refusal
+ * @param users the users, comma separated, as typed
+ * @param lists the access lists, comma separated
+ * @param add   true to add the users, false to remove them
+ * @return 0 when every user was added or removed, 1 otherwise
  */
-static bool
-qconf_refuse_if_reduced_acls(ocs::QConfParameterClient &param, const char *sw, const lList *acls) {
-   const lListElem *acl;
+static int
+qconf_modify_members(const ocs::QConfParameterClient &param, const char *sw, const char *users,
+                     const char *lists, const bool add) {
+   DENTER(TOP_LAYER);
 
-   for_each_ep(acl, acls) {
-      if (qconf_refuse_if_reduced(param, QConfObj::US, sw, lGetString(acl, US_name))) {
-         return true;
-      }
+   /* a write: the client execution context has no way to make it */
+   if (param.get_exec_context() != ocs::ProcedureParameter::ExecContext::SERVER) {
+      ERROR(MSG_QCONF_MODNEEDSSERVERCTX_S, sw);
+      DRETURN(1);
    }
-   return false;
+
+   ocs::QConfMemberParameter members;
+   members.set_members(users, lists, add);
+   ocs::QConfWriteModelClient model(ocs::gdi::Target::US_LIST);
+
+   lList *answer_list = nullptr;
+   const bool ok = model.make_snapshot(&answer_list, members);
+   const int shown = show_answer_list(answer_list);
+   lFreeList(&answer_list);
+
+   DRETURN((ok && shown == 0) ? 0 : 1);
 }
 
 /** @brief Edit one object through the stored procedures (CS-2822, CS-2823)
@@ -3040,21 +3050,7 @@ int sge_parse_qconf(char *argv[]) {
          /* CS-2394: managers are the members of the reserved "manager" userset;
           * -am user is equivalent to -au user manager. */
          spp = sge_parser_get_next(spp);
-         lString2List(*spp, &lp, UE_Type, UE_name, ", ");
-         lString2List(MANAGER_USERSET, &arglp, US_Type, US_name, ", ");
-         /* CS-2825: every named access list is fetched whole and written back
-          * whole, so a reduced read of any of them would store placeholders -
-          * see qconf_refuse_if_reduced_acls(). */
-         if (qconf_refuse_if_reduced_acls(param, "-am", arglp)) {
-            sge_parse_return = 1;
-         } else {
-            sge_client_add_user(&alp, lp, arglp);
-         }
-         sge_parse_return |= show_answer_list(alp);
-
-         lFreeList(&alp);
-         lFreeList(&lp);
-         lFreeList(&arglp);
+         sge_parse_return |= qconf_modify_members(param, "-am", *spp, MANAGER_USERSET, true);
 
          spp++;
          continue;
@@ -3069,18 +3065,7 @@ int sge_parse_qconf(char *argv[]) {
          /* CS-2394: operators are the members of the reserved "operator" userset;
           * -ao user is equivalent to -au user operator. */
          spp = sge_parser_get_next(spp);
-         lString2List(*spp, &lp, UE_Type, UE_name, ", ");
-         lString2List(OPERATOR_USERSET, &arglp, US_Type, US_name, ", ");
-         if (qconf_refuse_if_reduced_acls(param, "-ao", arglp)) {
-            sge_parse_return = 1;
-         } else {
-            sge_client_add_user(&alp, lp, arglp);
-         }
-         sge_parse_return |= show_answer_list(alp);
-
-         lFreeList(&alp);
-         lFreeList(&lp);
-         lFreeList(&arglp);
+         sge_parse_return |= qconf_modify_members(param, "-ao", *spp, OPERATOR_USERSET, true);
 
          spp++;
          continue;
@@ -3268,25 +3253,15 @@ int sge_parse_qconf(char *argv[]) {
          if (!*(spp+1)) {
             ERROR(MSG_ANSWER_NOLISTNAMEPROVIDEDTOAUX_S, *spp);
             sge_usage(QCONF, stderr);
-            DRETURN(1);
+            sge_parse_return = 1;
+            spp++;
+            continue;
          }
-
-         lString2List(*spp, &lp, UE_Type, UE_name, ",  ");
+         const char *users = *spp;
 
          /* get list_name list */
          spp = sge_parser_get_next(spp);
-         lString2List(*spp, &arglp, US_Type, US_name, ", ");
-
-         /* add all users/groups from lp to the acls in alp */
-         if (qconf_refuse_if_reduced_acls(param, "-au", arglp)) {
-            sge_parse_return = 1;
-         } else {
-            sge_client_add_user(&alp, lp, arglp);
-         }
-         sge_parse_return |= show_answer_list(alp);
-         lFreeList(&alp);
-         lFreeList(&arglp);
-         lFreeList(&lp);
+         sge_parse_return |= qconf_modify_members(param, "-au", users, *spp, true);
 
          spp++;
          continue;
@@ -3362,18 +3337,7 @@ int sge_parse_qconf(char *argv[]) {
 
          /* CS-2394: -dm user is equivalent to -du user manager. */
          spp = sge_parser_get_next(spp);
-
-         lString2List(*spp, &lp, UE_Type, UE_name, ", ");
-         lString2List(MANAGER_USERSET, &arglp, US_Type, US_name, ", ");
-         if (qconf_refuse_if_reduced_acls(param, "-dm", arglp)) {
-            sge_parse_return = 1;
-         } else {
-            sge_client_del_user(&alp, lp, arglp);
-         }
-         sge_parse_return |= show_answer_list(alp);
-         lFreeList(&alp);
-         lFreeList(&lp);
-         lFreeList(&arglp);
+         sge_parse_return |= qconf_modify_members(param, "-dm", *spp, MANAGER_USERSET, false);
 
          spp++;
          continue;
@@ -3386,18 +3350,7 @@ int sge_parse_qconf(char *argv[]) {
 
          /* CS-2394: -do user is equivalent to -du user operator. */
          spp = sge_parser_get_next(spp);
-
-         lString2List(*spp, &lp, UE_Type, UE_name, ", ");
-         lString2List(OPERATOR_USERSET, &arglp, US_Type, US_name, ", ");
-         if (qconf_refuse_if_reduced_acls(param, "-do", arglp)) {
-            sge_parse_return = 1;
-         } else {
-            sge_client_del_user(&alp, lp, arglp);
-         }
-         sge_parse_return |= show_answer_list(alp);
-         lFreeList(&alp);
-         lFreeList(&lp);
-         lFreeList(&arglp);
+         sge_parse_return |= qconf_modify_members(param, "-do", *spp, OPERATOR_USERSET, false);
 
          spp++;
          continue;
@@ -3430,24 +3383,15 @@ int sge_parse_qconf(char *argv[]) {
          if (!*(spp+1)) {
             ERROR(MSG_ANSWER_NOLISTNAMEPROVIDEDTODUX_S, *spp);
             sge_usage(QCONF, stderr);
-            DRETURN(1);
+            sge_parse_return = 1;
+            spp++;
+            continue;
          }
-         lString2List(*spp, &lp, UE_Type, UE_name, ",  ");
+         const char *users = *spp;
 
          /* get list_name list */
          spp = sge_parser_get_next(spp);
-         lString2List(*spp, &arglp, US_Type, US_name, ", ");
-
-         /* remove users/groups from lp from the acls in alp */
-         if (qconf_refuse_if_reduced_acls(param, "-du", arglp)) {
-            sge_parse_return = 1;
-         } else {
-            sge_client_del_user(&alp, lp, arglp);
-         }
-         sge_parse_return |= show_answer_list(alp);
-         lFreeList(&lp);
-         lFreeList(&alp);
-         lFreeList(&arglp);
+         sge_parse_return |= qconf_modify_members(param, "-du", users, *spp, false);
 
          spp++;
          continue;
