@@ -1058,18 +1058,15 @@ qconf_export_singleton(std::ostream &os, ocs::QConfParameterClient &param,
 
 /** @brief How a show of one object ended (CS-2796).
  *
- * The show options did not agree on what to do about a failure - the classic
- * four leave the parser when the object does not exist, -se and -sprj only set
- * the return code and -suser ignored it altogether. The engine therefore
- * reports what happened and leaves the reaction to the call site, which is
- * also what CS-2799 needs: no exit call inside the engine. Since CS-2950 a
- * failed operation stops the command line in every case; the call sites still
- * differ in how they get there. */
+ * The engine reports what happened and leaves the reaction to the call site,
+ * which is also what CS-2799 needs: no exit call inside the engine. Since
+ * CS-2950 every call site reacts the same way - the exit status is set and the
+ * command line stops after the operation - and the callers that still tell
+ * the two failures apart are the editor paths, for their messages. */
 enum class QConfShowStatus {
    OK,            ///< object found and written
    GDI_FAILED,    ///< the GDI request was answered with an error
-   NOT_FOUND,     ///< the request succeeded but returned no object
-   WRITE_FAILED   ///< the object could not be rendered
+   NOT_FOUND      ///< the request succeeded but returned no object
 };
 
 /** @brief Run one read operation as a stored procedure (CS-2799).
@@ -1282,34 +1279,6 @@ qconf_show_object(std::ostream &os, ocs::QConfParameterClient &param, QConfObj o
    }
    lFreeList(&alp);
    DRETURN(not_found ? QConfShowStatus::NOT_FOUND : QConfShowStatus::GDI_FAILED);
-}
-
-/** @brief Map a show status onto the convention of the classic show options.
- *
- * -scal, -sckpt, -srole and -sp have always left the parser when the object
- * does not exist, printed the GDI error and carried on otherwise, and exited on
- * a rendering failure. The DRETURN cannot live in here, so the caller is told
- * to leave instead.
- *
- * @param st           the status the engine reported
- * @param parse_return the parser's return code, set on a GDI failure
- * @return true when the caller has to leave the parser with 1
- */
-static bool
-qconf_show_status_classic(QConfShowStatus st, int *parse_return) {
-   switch (st) {
-      case QConfShowStatus::OK:
-         break;
-      case QConfShowStatus::GDI_FAILED:
-         *parse_return = 1;
-         break;
-      case QConfShowStatus::NOT_FOUND:
-         return true;
-      case QConfShowStatus::WRITE_FAILED:
-         sge_error_and_exit(nullptr);
-         break;
-   }
-   return false;
 }
 
 /** @brief Delete the objects named by an already parsed list.
@@ -2310,6 +2279,20 @@ qconf_conf_delete_path(std::ostream &os, const char *path) {
 }
 
 
+/** @brief What one of the table driven dispatchers made of an operation
+ *
+ * One answer instead of two signals: before CS-2950 a dispatcher returned
+ * whether it had handled the operation and raised a separate exit status for
+ * whether that had failed, so that the loop could go on after a failure. Since
+ * a failure stops the command line, "handled" and "failed" are simply two of
+ * the three outcomes.
+ */
+enum class QConfOpResult {
+   NOT_HANDLED,  ///< not a switch of this dispatcher; the next one or a block serves it
+   OK,           ///< served, and it succeeded
+   FAILED        ///< served, and it failed; the command line stops
+};
+
 /**
  * @brief Run one read operation as a stored procedure, if it is one
  *
@@ -2328,12 +2311,10 @@ qconf_conf_delete_path(std::ostream &os, const char *path) {
  * @param os        the stream the output is written to
  * @param param     the invocation, whose operation is set to @p op for the call
  * @param op        the operation to run
- * @param ret       the accumulated exit status, raised to 1 on failure
- * @return true when the operation was handled here, false to run it locally
+ * @return what became of the operation
  */
-static bool
-qconf_run_read_procedure(std::ostream &os, ocs::QConfParameterClient &param,
-                         qconf_op &op, int *ret) {
+static QConfOpResult
+qconf_run_read_procedure(std::ostream &os, ocs::QConfParameterClient &param, const qconf_op &op) {
    DENTER(TOP_LAYER);
 
    const ocs::qconf_read_entry *entry = ocs::QConfModelBase::resolve(op.token.c_str());
@@ -2342,25 +2323,16 @@ qconf_run_read_procedure(std::ostream &os, ocs::QConfParameterClient &param,
       const int failed = (entry->kind == ocs::QConfReadKind::SINGLETON)
                          ? qconf_export_singleton(os, param, op.token.c_str(), path)
                          : qconf_export_path(os, param, op.token.c_str(), path);
-      if (failed != 0) {
-         *ret = 1;
-      }
-      DRETURN(true);
+      DRETURN(failed != 0 ? QConfOpResult::FAILED : QConfOpResult::OK);
    }
    if (entry == nullptr || entry->kind == ocs::QConfReadKind::SINGLE_OBJECT) {
-      /* The named single-object reads are not intercepted here yet. They keep
-       * their own blocks and reach the procedure through qconf_show_object():
-       * the classic four leave the parser while -sprj, -se and -suser set the
-       * exit code, and -se resolves the host name first.
-       *
-       * Since CS-2950 the difference no longer shows: a failed operation stops
-       * the command line either way, and every one of them answers non-zero for
-       * an object that does not exist (CS-2928 closed the last gap, -suser,
-       * which used to discard the status).
-       *
-       * Name lists and singletons: a failure sets the exit status, and the
-       * command line stops after this operation (CS-2950). */
-      DRETURN(false);
+      /* The named single-object reads are not taken here. The plain ones are
+       * rows of qconf_sub_procedure_table, which prints the message the way
+       * each of them always has; the rows that serve a modify switch belong to
+       * the write path; -se resolves the host name first, and -suser and
+       * -sconf take a list of names. Every one of them answers non-zero for an
+       * object that does not exist (CS-2928). */
+      DRETURN(QConfOpResult::NOT_HANDLED);
    }
 
    param.set_operation(op);
@@ -2389,11 +2361,10 @@ qconf_run_read_procedure(std::ostream &os, ocs::QConfParameterClient &param,
           * list for plain output is one of them */
          answer_list_output(&alp);
       }
-      *ret = 1;
    }
    lFreeList(&alp);
 
-   DRETURN(true);
+   DRETURN(ok ? QConfOpResult::OK : QConfOpResult::FAILED);
 }
 
 /** @brief The permission check a switch makes in the client before it is served
@@ -2489,20 +2460,18 @@ static const qconf_delete_entry qconf_delete_table[] = {
  *
  * Makes the row's client-side check (which exits the client on a refusal, as
  * the blocks did), then calls the engine with the operation's argument -
- * "-dstree" has none and passes nullptr, as its block did. The exit status
- * follows the blocks too: the names engine is or-ed in, the file engine raises
- * it to 1 when it reports failures.
+ * "-dstree" has none and passes nullptr, as its block did. Either engine
+ * reporting a failure fails the operation.
  *
  * @param os       the stream the output is written to
  * @param op       the operation to run
  * @param username the calling user, for the client-side check
  * @param hostname the calling host, for the client-side check
- * @param ret      the accumulated exit status
- * @return true when the operation was handled here, false to run it locally
+ * @return what became of the operation
  */
-static bool
+static QConfOpResult
 qconf_run_delete(std::ostream &os, const qconf_op &op, const char *username,
-                 const char *hostname, int *ret) {
+                 const char *hostname) {
    DENTER(TOP_LAYER);
 
    const qconf_delete_entry *entry = nullptr;
@@ -2513,19 +2482,17 @@ qconf_run_delete(std::ostream &os, const qconf_op &op, const char *username,
       }
    }
    if (entry == nullptr) {
-      DRETURN(false);
+      DRETURN(QConfOpResult::NOT_HANDLED);
    }
 
    qconf_client_check(entry->check, username, hostname);
 
    const char *arg = op.args.empty() ? nullptr : op.args.front().c_str();
-   if (entry->kind == QConfDeleteKind::NAMES) {
-      *ret |= qconf_delete_names(entry->object, arg);
-   } else if (qconf_delete_obj(os, entry->object, arg) != 0) {
-      *ret = 1;
-   }
+   const int failed = (entry->kind == QConfDeleteKind::NAMES)
+                      ? qconf_delete_names(entry->object, arg)
+                      : qconf_delete_obj(os, entry->object, arg);
 
-   DRETURN(true);
+   DRETURN(failed != 0 ? QConfOpResult::FAILED : QConfOpResult::OK);
 }
 
 /** @brief How a table driven add or modify switch writes */
@@ -2614,7 +2581,7 @@ static const qconf_write_entry qconf_write_table[] = {
  * Makes the row's client-side check (which exits the client on a refusal, as
  * the blocks did), then calls the engine with the operation's argument, or for
  * an EDIT row without one, with the row's default name. Either engine failing
- * sets the exit status to 1, as in the blocks.
+ * fails the operation.
  *
  * @param os       the stream the output is written to
  * @param param    the invocation, for the procedure read of an EDIT row
@@ -2623,12 +2590,11 @@ static const qconf_write_entry qconf_write_table[] = {
  * @param hostname the calling host, for the client-side check
  * @param uid      uid to run the editor as
  * @param gid      gid to run the editor as
- * @param ret      the accumulated exit status
- * @return true when the operation was handled here, false to run it locally
+ * @return what became of the operation
  */
-static bool
+static QConfOpResult
 qconf_run_write(std::ostream &os, ocs::QConfParameterClient &param, const qconf_op &op,
-                const char *username, const char *hostname, uid_t uid, gid_t gid, int *ret) {
+                const char *username, const char *hostname, uid_t uid, gid_t gid) {
    DENTER(TOP_LAYER);
 
    const qconf_write_entry *entry = nullptr;
@@ -2639,7 +2605,7 @@ qconf_run_write(std::ostream &os, ocs::QConfParameterClient &param, const qconf_
       }
    }
    if (entry == nullptr) {
-      DRETURN(false);
+      DRETURN(QConfOpResult::NOT_HANDLED);
    }
 
    qconf_client_check(entry->check, username, hostname);
@@ -2652,18 +2618,16 @@ qconf_run_write(std::ostream &os, ocs::QConfParameterClient &param, const qconf_
    } else {
       failed = qconf_apply_obj(os, entry->object, op.args.front().c_str());
    }
-   if (failed != 0) {
-      *ret = 1;
-   }
 
-   DRETURN(true);
+   DRETURN(failed != 0 ? QConfOpResult::FAILED : QConfOpResult::OK);
 }
 
 /** @brief How a sub-procedure read reports its answer list and exit status
  *
  * Four ways, kept per switch exactly as the hand written blocks had them
- * (CS-2955). Which one a switch uses is the history of its ticket; settling on
- * one is CS-2950.
+ * (CS-2955). Which one a switch uses is the history of its ticket. Since
+ * CS-2950 they agree on what a failure does to the command line; whether every
+ * message should carry the "error: " prefix is a decision of its own.
  */
 enum class QConfAnswerReport {
    SHOW_AND_STATUS,    ///< show_answer() always, its result or-ed in; a failed call sets 1
@@ -2687,7 +2651,10 @@ struct qconf_sub_procedure_entry {
  * (CS-2816 to CS-2820). "-sce" is a read table row of kind SINGLE_OBJECT, which
  * qconf_run_read_procedure() leaves alone; it is here because it prints the bare
  * message where qconf_show_object() would add an "error: " prefix (CS-2817).
- * The option table fixes the arguments, so the operation is sent as parsed.
+ * "-scal", "-sckpt", "-srole", "-sp" and "-sprj" are plain single-object reads
+ * as well; they had blocks of their own only because some of them stopped the
+ * command line on a missing object and some did not, which CS-2950 made one
+ * rule. The option table fixes the arguments, so the operation is sent as parsed.
  */
 static const qconf_sub_procedure_entry qconf_sub_procedure_table[] = {
    {"-sobjl",          ocs::QConfParameter::OBJECT_FILTER,     QConfAnswerReport::SHOW_AND_STATUS},
@@ -2700,6 +2667,11 @@ static const qconf_sub_procedure_entry qconf_sub_procedure_table[] = {
    {"-sc",             ocs::QConfParameter::CENTRY_LIST,       QConfAnswerReport::SHOW_ON_FAILURE},
    {"-scatl",          ocs::QConfParameter::CATEGORY_LIST,     QConfAnswerReport::SHOW_ON_FAILURE},
    {"-sce",            nullptr,                                QConfAnswerReport::SHOW_ON_FAILURE},
+   {"-scal",           nullptr,                                QConfAnswerReport::OUTPUT_ON_FAILURE},
+   {"-sckpt",          nullptr,                                QConfAnswerReport::OUTPUT_ON_FAILURE},
+   {"-srole",          nullptr,                                QConfAnswerReport::OUTPUT_ON_FAILURE},
+   {"-sp",             nullptr,                                QConfAnswerReport::OUTPUT_ON_FAILURE},
+   {"-sprj",           nullptr,                                QConfAnswerReport::OUTPUT_ON_FAILURE},
    {"-secl",           ocs::QConfParameter::EVENT_CLIENT_LIST, QConfAnswerReport::OUTPUT_ON_FAILURE},
    {"-sep",            ocs::QConfParameter::PROCESSOR_LIST,    QConfAnswerReport::OUTPUT_ON_FAILURE},
    {"-stl",            ocs::QConfParameter::THREAD_POOL_LIST,  QConfAnswerReport::OUTPUT_ON_FAILURE},
@@ -2719,12 +2691,10 @@ static const qconf_sub_procedure_entry qconf_sub_procedure_table[] = {
  * @param os    the stream the output is written to
  * @param param the invocation, whose operation is set to @p op for the call
  * @param op    the operation to run
- * @param ret   the accumulated exit status
- * @return true when the operation was handled here, false to run it locally
+ * @return what became of the operation
  */
-static bool
-qconf_run_sub_procedure(std::ostream &os, ocs::QConfParameterClient &param,
-                        const qconf_op &op, int *ret) {
+static QConfOpResult
+qconf_run_sub_procedure(std::ostream &os, ocs::QConfParameterClient &param, const qconf_op &op) {
    DENTER(TOP_LAYER);
 
    const qconf_sub_procedure_entry *entry = nullptr;
@@ -2735,7 +2705,7 @@ qconf_run_sub_procedure(std::ostream &os, ocs::QConfParameterClient &param,
       }
    }
    if (entry == nullptr) {
-      DRETURN(false);
+      DRETURN(QConfOpResult::NOT_HANDLED);
    }
 
    lList *alp = nullptr;
@@ -2746,32 +2716,30 @@ qconf_run_sub_procedure(std::ostream &os, ocs::QConfParameterClient &param,
    const bool ok = qconf_dispatch_procedure(os, param, &alp);
    param.set_sub_procedure_name("");
 
+   bool failed = false;
    switch (entry->report) {
       case QConfAnswerReport::SHOW_AND_STATUS:
-         *ret |= show_answer(alp);
-         if (!ok) {
-            *ret = 1;
-         }
+         failed = (show_answer(alp) != 0) || !ok;
          break;
       case QConfAnswerReport::SHOW_ON_FAILURE:
          if (!ok) {
             show_answer(alp);
-            *ret = 1;
+            failed = true;
          }
          break;
       case QConfAnswerReport::OUTPUT_ON_FAILURE:
          if (!ok) {
             answer_list_output(&alp);
-            *ret = 1;
+            failed = true;
          }
          break;
       case QConfAnswerReport::STATUS_FROM_ANSWER:
-         *ret |= show_answer(alp);
+         failed = (show_answer(alp) != 0);
          break;
    }
    lFreeList(&alp);
 
-   DRETURN(true);
+   DRETURN(failed ? QConfOpResult::FAILED : QConfOpResult::OK);
 }
 
 /*------------------------------------------------------------*/
@@ -2903,27 +2871,27 @@ int sge_parse_qconf(char *argv[]) {
        * over GDI, which is what makes the two comparable byte for byte.
        *
        * CS-2808 added the last four of groups A and B, so the whole read path
-       * of both groups goes this way. Everything else - the write path and the
-       * bespoke show options of group N - falls through to the option chain
-       * below and runs locally, in the order it was typed. */
-      if (qconf_run_read_procedure(os, param, op, &sge_parse_return)) {
-         continue;
+       * of both groups goes this way.
+       *
+       * Then the other table driven switches: the reads with a sub-procedure
+       * of their own and the plain single-object reads (CS-2955), the deletes
+       * (CS-2952) and the adds and modifies (CS-2954), each with the
+       * client-side check it had. What none of the tables serves falls through
+       * to the option blocks below and runs locally. */
+      QConfOpResult result = qconf_run_read_procedure(os, param, op);
+      if (result == QConfOpResult::NOT_HANDLED) {
+         result = qconf_run_sub_procedure(os, param, op);
       }
-
-      /* CS-2955: the reads with a sub-procedure of their own, and "-sce". */
-      if (qconf_run_sub_procedure(os, param, op, &sge_parse_return)) {
-         continue;
+      if (result == QConfOpResult::NOT_HANDLED) {
+         result = qconf_run_delete(os, op, username, qualified_hostname);
       }
-
-      /* CS-2952: the delete switches that are one engine call each come from
-       * qconf_delete_table, with the client-side check each one had. */
-      if (qconf_run_delete(os, op, username, qualified_hostname, &sge_parse_return)) {
-         continue;
+      if (result == QConfOpResult::NOT_HANDLED) {
+         result = qconf_run_write(os, param, op, username, qualified_hostname, uid, gid);
       }
-
-      /* CS-2954: the same for the add and modify switches, editor and file. */
-      if (qconf_run_write(os, param, op, username, qualified_hostname, uid, gid,
-                          &sge_parse_return)) {
+      if (result != QConfOpResult::NOT_HANDLED) {
+         if (result == QConfOpResult::FAILED) {
+            sge_parse_return = 1;
+         }
          continue;
       }
 
@@ -2977,7 +2945,9 @@ int sge_parse_qconf(char *argv[]) {
                fprintf(stderr, MSG_SGETEXT_CANTRESOLVEHOST_S, lGetHost(host_ep, EH_name));
                fprintf(stderr, "\n");
                lFreeElem(&host_ep);
-               DRETURN(1);
+               sge_parse_return = 1;
+               spp++;
+               continue;
             }
             hostname = sge_strdup(nullptr, lGetHost(host_ep, EH_name));
             lFreeElem(&host_ep);
@@ -3719,7 +3689,9 @@ int sge_parse_qconf(char *argv[]) {
             default:
                ERROR(MSG_ANSWER_XISNOTAVALIDOPTIONY_SU, *spp, prog_number);
                sge_usage(QCONF, stderr);
-               DRETURN(1);
+               sge_parse_return = 1;
+               spp++;
+               continue;
          }
 
          if (*cp == 'j') {
@@ -3964,7 +3936,8 @@ int sge_parse_qconf(char *argv[]) {
       if (!info_entry[index].object_name) {
          fprintf(stderr, "Modification of object " SFQ " not supported\n", *spp);
          sge_free(&(info_entry[1].fields));
-         DRETURN(1);
+         sge_parse_return = 1;
+         continue;
       }
 
       /* */
@@ -3990,7 +3963,8 @@ int sge_parse_qconf(char *argv[]) {
          lFreeList(&alp);
          if (exit) {
             sge_free(&(info_entry[1].fields));
-            DRETURN(1);
+            sge_parse_return = 1;
+            continue;
          }
       }
 
@@ -4173,17 +4147,6 @@ int sge_parse_qconf(char *argv[]) {
       }
 
 /*-----------------------------------------------------------------------------*/
-      /* "-scal calendar_name" */
-      if (strcmp("-scal", *spp) == 0) {
-         spp = sge_parser_get_next(spp);
-
-         if (qconf_show_status_classic(qconf_show_object(os, param, QConfObj::CAL, *spp), &sge_parse_return)) {
-            DRETURN(1);
-         }
-
-         spp++;
-         continue;
-      }
 /*-----------------------------------------------------------------------------*/
       /* "-scall" */
 
@@ -4277,14 +4240,11 @@ int sge_parse_qconf(char *argv[]) {
                 * spelling, not a property of the object. */
                const char *cfn = (strcasecmp(hostname, "global") == 0) ? SGE_GLOBAL_NAME : hostname;
 
-               /* Unlike -scal, a configuration that does not exist must not stop
-                * the parse: the host list may name several hosts and the others
-                * still have to be shown. The leaf this replaced recorded the
-                * failure and carried on, so NOT_FOUND - which the helper reports
-                * by returning true - sets the exit code here instead of
-                * aborting. A write failure still exits, inside the helper. */
-               if (qconf_show_status_classic(qconf_show_object(os, param, QConfObj::CONF, cfn),
-                                             &sge_parse_return)) {
+               /* A configuration that does not exist sets the exit status and
+                * the host list is still worked through: the others still have
+                * to be shown. The command line stops after this operation
+                * (CS-2950). */
+               if (qconf_show_object(os, param, QConfObj::CONF, cfn) != QConfShowStatus::OK) {
                   sge_parse_return = 1;
                }
             } else if (action == ACTION_aconf || action == ACTION_mconf) {
@@ -4317,17 +4277,6 @@ int sge_parse_qconf(char *argv[]) {
       }
 
 /*-----------------------------------------------------------------------------*/
-      /* "-sckpt ckpt_name" */
-      if (strcmp("-sckpt", *spp) == 0) {
-         spp = sge_parser_get_next(spp);
-
-         if (qconf_show_status_classic(qconf_show_object(os, param, QConfObj::CK, *spp), &sge_parse_return)) {
-            DRETURN(1);
-         }
-
-         spp++;
-         continue;
-      }
 /*-----------------------------------------------------------------------------*/
       /* "-sckptl" */
 /*----------------------------------------------------------------------------*/
@@ -4416,39 +4365,15 @@ int sge_parse_qconf(char *argv[]) {
             fprintf(stderr, MSG_SGETEXT_CANTRESOLVEHOST_S, lGetHost(hep, EH_name));
             fprintf(stderr, "\n");
             lFreeElem(&hep);
-            DRETURN(1);
+            sge_parse_return = 1;
+            spp++;
+            continue;
          }
 
          if (qconf_show_object(os, param, QConfObj::EH, lGetHost(hep, EH_name)) != QConfShowStatus::OK) {
             sge_parse_return = 1;
          }
          lFreeElem(&hep);
-
-         spp++;
-         continue;
-      }
-/*----------------------------------------------------------------------------*/
-      /* "-srole role_name" */
-      if (strcmp("-srole", *spp) == 0) {
-         spp = sge_parser_get_next(spp);
-
-         if (qconf_show_status_classic(qconf_show_object(os, param, QConfObj::RL, *spp), &sge_parse_return)) {
-            DRETURN(1);
-         }
-
-         spp++;
-         continue;
-      }
-/*-----------------------------------------------------------------------------*/
-      /* "-srolel" */
-/*-----------------------------------------------------------------------------*/
-      /* "-sp pe_name" */
-      if (strcmp("-sp", *spp) == 0) {
-         spp = sge_parser_get_next(spp);
-
-         if (qconf_show_status_classic(qconf_show_object(os, param, QConfObj::PE, *spp), &sge_parse_return)) {
-            DRETURN(1);
-         }
 
          spp++;
          continue;
@@ -4505,10 +4430,10 @@ int sge_parse_qconf(char *argv[]) {
                os << "\n";
             }
             /* CS-2928: a name that does not exist sets the exit status, and the
-             * loop carries on so that every user the list does name is still
-             * rendered. Deliberately not qconf_show_status_classic(), which
-             * leaves the parser: "-suser a,b,c" reports on all three and fails
-             * afterwards, which is what the intercepted reads do as well. */
+             * list is still worked through so that every user it does name is
+             * rendered: "-suser a,b,c" reports on all three and fails
+             * afterwards, which is what the list reads in qmaster do as well
+             * (CS-2957). The command line stops after this operation (CS-2950). */
             if (qconf_show_object(os, param, QConfObj::UU, lGetString(uep, ST_name)) !=
                 QConfShowStatus::OK) {
                sge_parse_return = 1;
@@ -4522,18 +4447,7 @@ int sge_parse_qconf(char *argv[]) {
 
 /*----------------------------------------------------------------------------*/
 
-      /* "-sprj projectname" */
 
-      if (strcmp("-sprj", *spp) == 0) {
-         spp = sge_parser_get_next(spp);
-
-         if (qconf_show_object(os, param, QConfObj::PR, *spp) != QConfShowStatus::OK) {
-            sge_parse_return = 1;
-         }
-
-         spp++;
-         continue;
-      }
 
 
       /* "-tsm" trigger scheduler monitoring */
