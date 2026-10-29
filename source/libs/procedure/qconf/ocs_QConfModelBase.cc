@@ -1360,6 +1360,63 @@ ocs::QConfModelBase::make_cqueue_snapshot(lList **answer_list, QConfParameter &p
    DRETURN(true);
 }
 
+/** @brief How many arguments a read needs before any of them may be used (CS-2968)
+ *
+ * The arguments come from the request, so a client that is not qconf - or a
+ * qconf that does not check, as the table dispatchers of CS-2952 to CS-2955 did
+ * not (CS-2969) - can leave them out. An argument that is not there reads back
+ * as a null pointer, and the reads below hand that on to lWhere() and its kin,
+ * which took qmaster down. CS-2840 covered the empty argument; this covers the
+ * missing one.
+ *
+ * Decided per read rather than taken from the option table, because the table
+ * describes the command line: the bulk export is sent as "-S<obj>" without a
+ * name, although the switch takes a path.
+ *
+ * @param sub_procedure the sub-procedure, empty for a table read
+ * @param kind the read kind of a table read, ignored for a sub-procedure
+ * @param for_export whether the read feeds an export, which may name nothing
+ * @return the number of arguments the read uses unconditionally
+ */
+static size_t
+qconf_required_args(const std::string &sub_procedure, const ocs::QConfReadKind kind, const bool for_export) {
+   if (sub_procedure == ocs::QConfParameter::OBJECT_FILTER) {
+      return 3;
+   }
+   if (sub_procedure == ocs::QConfParameter::HGROUP_WHY) {
+      return 2;
+   }
+   if (sub_procedure == ocs::QConfParameter::HGROUP_SHOW || sub_procedure == ocs::QConfParameter::HGROUP_TREE ||
+       sub_procedure == ocs::QConfParameter::HGROUP_RESOLVED ||
+       sub_procedure == ocs::QConfParameter::SHARETREE_NODES) {
+      return 1;
+   }
+   if (sub_procedure.empty() && !for_export &&
+       (kind == ocs::QConfReadKind::SINGLE_OBJECT || kind == ocs::QConfReadKind::SINGLE_OBJECT_BY_ID)) {
+      return 1;
+   }
+   return 0;
+}
+
+/** @brief Refuse a read that lacks an argument it needs (CS-2968)
+ * @param answer_list receives the refusal
+ * @param parameter the read
+ * @param required how many arguments it needs, see qconf_required_args()
+ * @return true when the read has to be refused
+ */
+static bool
+qconf_refuse_missing_args(lList **answer_list, const ocs::QConfParameter &parameter, const size_t required) {
+   const qconf_op &op = parameter.get_operation();
+   for (size_t i = 0; i < required; i++) {
+      if (op.arg(i) == nullptr) {
+         answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_QCONF_MISSINGARGUMENT_S,
+                                 op.token.c_str());
+         return true;
+      }
+   }
+   return false;
+}
+
 /**
  * @brief Fetch what the operation asked for
  *
@@ -1386,6 +1443,15 @@ ocs::QConfModelBase::make_snapshot(lList **answer_list, QConfParameter &paramete
        * a view is chosen there is no way left to report. */
       answer_list_add_sprintf(answer_list, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
                               "qconf has no XML output; -fmt takes plain or json");
+      DRETURN(false);
+   }
+
+   /* CS-2968: a sub-procedure that reads arguments refuses a request without
+    * them before it touches one */
+   if (!parameter.get_sub_procedure_name().empty() &&
+       qconf_refuse_missing_args(answer_list, parameter,
+                                 qconf_required_args(parameter.get_sub_procedure_name(), QConfReadKind::NAME_LIST,
+                                                     parameter.get_for_export()))) {
       DRETURN(false);
    }
 
@@ -1436,6 +1502,12 @@ ocs::QConfModelBase::make_snapshot(lList **answer_list, QConfParameter &paramete
    kind_ = entry->kind;
    desc_ = &qconf_desc(entry->object);
    key_nm_ = desc_->name_nm;
+
+   /* CS-2968: a read of one named object refuses a request that names none */
+   if (qconf_refuse_missing_args(answer_list, parameter,
+                                 qconf_required_args("", kind_, parameter.get_for_export()))) {
+      DRETURN(false);
+   }
 
    /* CS-2677 and CS-2823: a cluster queue read in full needs the host groups,
     * because its host list is the member list of "@@<queue>" and the stored

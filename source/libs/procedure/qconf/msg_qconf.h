@@ -114,5 +114,8 @@
  * (5009) moved over, name and text unchanged. */
 #define MSG_QCONF_STNODEINCOMPLETE                    _MESSAGE(12029, _("a change of share tree nodes needs a node list and an operation"))
 #define MSG_QCONF_POSITIVE_SHARE_VALUE                _MESSAGE(12030, _("share value must be positive"))
+/* CS-2968: a read that lacks an argument it needs is refused in qmaster, in the
+ * words the client uses for a command line that ends too early */
+#define MSG_QCONF_MISSINGARGUMENT_S                   _MESSAGE(12031, _("no option argument provided to " SFQ))
 
 // clang-format on
