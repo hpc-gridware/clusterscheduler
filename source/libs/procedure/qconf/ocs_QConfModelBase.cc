@@ -1131,7 +1131,10 @@ ocs::QConfModelBase::make_sick_snapshot(lList **answer_list) {
  *
  * @param answer_list used to return error messages
  * @param parameter the operation, whose arguments are the queue references
- * @return true on success; false with @p answer_list filled otherwise
+ * @return true when there is something to render - also when a reference
+ *         matched nothing and is reported in @p answer_list (CS-2957); false
+ *         with @p answer_list filled when nothing matched at all or a
+ *         reference could not be read
  */
 bool
 ocs::QConfModelBase::make_cqueue_snapshot(lList **answer_list, QConfParameter &parameter) {
@@ -1339,7 +1342,22 @@ ocs::QConfModelBase::make_cqueue_snapshot(lList **answer_list, QConfParameter &p
       sge_dstring_free(&host_domain);
    }
 
-   DRETURN(matched_all);
+   /* CS-2957: a reference that matched nothing is reported, and what the others
+    * matched is still shown - "-sq nosuch all.q" prints all.q and fails, as it
+    * did in 9.1. The answer list carries the failure, and the client keeps the
+    * text that comes with it (CS-2820). Only when nothing matched at all is
+    * there nothing to render. */
+   if (!matched_all) {
+      bool matched_any = false;
+      for (const auto &g : cqueue_output_) {
+         if (lGetNumberOfElem(g.cqueues) > 0 || lGetNumberOfElem(g.qinstances) > 0) {
+            matched_any = true;
+            break;
+         }
+      }
+      DRETURN(matched_any);
+   }
+   DRETURN(true);
 }
 
 /**
@@ -1555,6 +1573,7 @@ ocs::QConfModelBase::make_snapshot(lList **answer_list, QConfParameter &paramete
             lString2List(parameter.get_operation().arg(i), &wanted, ST_Type, ST_name, ", ");
          }
          bool all_found = true;
+         bool template_refused = false;
          for_each_ep_lv(name_elem, wanted) {
             const char *name = lGetString(name_elem, ST_name);
             if (lGetElemStr(object_list_, key_nm_, name) != nullptr) {
@@ -1572,6 +1591,7 @@ ocs::QConfModelBase::make_snapshot(lList **answer_list, QConfParameter &paramete
                   /* the constructor said why - a name it refuses must not reach
                    * the editor as a half built template */
                   all_found = false;
+                  template_refused = true;
                   break;
                }
                if (object_list_ == nullptr) {
@@ -1587,7 +1607,15 @@ ocs::QConfModelBase::make_snapshot(lList **answer_list, QConfParameter &paramete
             all_found = false;
          }
          lFreeList(&wanted);
-         if (!all_found) {
+         /* CS-2957: a name that matched nothing is reported, and the ones that
+          * did are still shown - "-su a,nosuch" prints "a" and fails, as "-suser"
+          * and every hand written list read did. The answer list carries the
+          * failure, and the client keeps the text that comes with it (CS-2820).
+          * Only a read that found nothing at all, or an edit read whose template
+          * was refused, fails as a whole: there is nothing to render then, and
+          * the empty-list message below would report the same names twice. */
+         if (!all_found &&
+             (template_refused || object_list_ == nullptr || lGetNumberOfElem(object_list_) == 0)) {
             DRETURN(false);
          }
       }

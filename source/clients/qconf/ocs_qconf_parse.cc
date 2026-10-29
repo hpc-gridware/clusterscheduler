@@ -1197,6 +1197,12 @@ qconf_dispatch_procedure(std::ostream &os, ocs::QConfParameterClient &param, lLi
                controller.process_request(param, model, *view);
             }
          }
+         /* CS-2957: a snapshot may succeed and still report a problem - a list
+          * read shows the names it found and reports the ones it did not. The
+          * server context decides on the answer list for that reason, see
+          * ProcedureModel::make_snapshot(), and this context has to decide the
+          * same way or the two would disagree on the exit status. */
+         ok = !answer_list_has_error(alpp);
       }
    }
 
