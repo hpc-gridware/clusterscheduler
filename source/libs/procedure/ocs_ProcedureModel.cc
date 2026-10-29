@@ -171,10 +171,13 @@ ocs::ProcedureModel::get_export_objects(const lList **objects) const {
 
 /** @brief Return the pre-rendered output text received from qmaster.
  *
- * Returns an empty string if the response list is absent or malformed.
+ * Returns an empty string if the response list is absent or malformed, and
+ * also when the text itself is empty: an empty string travels over GDI as a
+ * null pointer, and a null written to a stream fails the stream for good, which
+ * swallowed every later line of output after a failed read (CS-2956).
  * The returned pointer is valid for the lifetime of this object.
  *
- * @return the rendered text, empty when the response is absent or malformed
+ * @return the rendered text, never null; empty when there is none
  */
 const char *
 ocs::ProcedureModel::get_output_text() const {
@@ -188,5 +191,5 @@ ocs::ProcedureModel::get_output_text() const {
       DRETURN("");
    }
    const char *output = lGetString(output_elem, ST_name);
-   DRETURN(output);
+   DRETURN(output != nullptr ? output : "");
 }

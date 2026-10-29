@@ -288,10 +288,14 @@ void ocs::ProcedureView::show_resource_as_JSON_type(std::ostream &os, const lLis
  * this method to add format-specific wrapping (XML root element, JSON object, …).
  *
  * @param os      Destination stream (typically stdout).
- * @param output  Pre-rendered text from the model; may be empty but never null.
+ * @param output  Pre-rendered text from the model; may be empty. A null is
+ *                written as nothing rather than handed to the stream, which
+ *                it would fail for the rest of the process (CS-2956).
  */
 void ocs::ProcedureView::show(std::ostream &os, const char *output) {
    DENTER(TOP_LAYER);
-   os << output;
+   if (output != nullptr) {
+      os << output;
+   }
    DRETURN_VOID;
 }
