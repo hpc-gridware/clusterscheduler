@@ -1633,105 +1633,6 @@ qconf_edit_and_write_obj(QConfObj o, std::string &text, uid_t uid, gid_t gid,
    DRETURN((ok && shown == 0) ? 0 : 1);
 }
 
-/** @brief Add users to or remove them from access lists in qmaster (CS-2959)
- *
- * Serves `-au`/`-am`/`-ao` and `-du`/`-dm`/`-do`, which are one operation on a
- * list of users and a list of access lists - `-am` is `-au <users> manager`
- * (CS-2394). The change runs in qmaster against the stored lists, which is why
- * nothing is read here and nothing can be reduced. What it has to say is one
- * answer per user and list, surfaced the way every qconf write surfaces its
- * answers.
- *
- * @param param the invocation, for its execution context
- * @param sw    the switch being served, named in the refusal
- * @param users the users, comma separated, as typed
- * @param lists the access lists, comma separated
- * @param add   true to add the users, false to remove them
- * @return 0 when every user was added or removed, 1 otherwise
- */
-static int
-qconf_modify_members(const ocs::QConfParameterClient &param, const char *sw, const char *users,
-                     const char *lists, const bool add) {
-   DENTER(TOP_LAYER);
-
-   /* a write: the client execution context has no way to make it */
-   if (param.get_exec_context() != ocs::ProcedureParameter::ExecContext::SERVER) {
-      ERROR(MSG_QCONF_MODNEEDSSERVERCTX_S, sw);
-      DRETURN(1);
-   }
-
-   ocs::QConfActionParameter members(ocs::QConfActionParameter::USERSET_MEMBERS);
-   members.set_arg(ocs::QConfActionParameter::ARG_USERS, users);
-   members.set_arg(ocs::QConfActionParameter::ARG_LISTS, lists);
-   members.set_arg(ocs::QConfActionParameter::ARG_ADD, add ? ocs::QConfActionParameter::ARG_TRUE : "0");
-   ocs::QConfWriteModelClient model(ocs::gdi::Target::US_LIST);
-
-   lList *answer_list = nullptr;
-   const bool ok = model.make_snapshot(&answer_list, members);
-   const int shown = show_answer_list(answer_list);
-   lFreeList(&answer_list);
-
-   DRETURN((ok && shown == 0) ? 0 : 1);
-}
-
-/** @brief Add, modify or delete share tree nodes in qmaster (CS-2966)
- *
- * Serves `-astnode`, `-mstnode` and `-dstnode`. The change runs in qmaster
- * against the stored tree, which is why nothing is read here and nothing can be
- * reduced; the lines the client used to print - "setting", "removing", the
- * paths, the summary - come back as answers in the same order.
- *
- * The usage hint stays here: it is printed when nothing was changed and an
- * argument of `-astnode`/`-mstnode` is not of the form "path=shares", as before.
- *
- * @param param the invocation, for its execution context
- * @param sw    the switch being served
- * @param nodes the node list, as typed
- * @return 0 when at least one node was changed, 1 otherwise
- */
-static int
-qconf_sharetree_nodes(const ocs::QConfParameterClient &param, const char *sw, const char *nodes) {
-   DENTER(TOP_LAYER);
-
-   /* a write: the client execution context has no way to make it */
-   if (param.get_exec_context() != ocs::ProcedureParameter::ExecContext::SERVER) {
-      ERROR(MSG_QCONF_MODNEEDSSERVERCTX_S, sw);
-      DRETURN(1);
-   }
-
-   const bool del = (strcmp(sw, "-dstnode") == 0);
-   const char *operation = del ? ocs::QConfActionParameter::OP_DELETE
-                               : (strcmp(sw, "-astnode") == 0) ? ocs::QConfActionParameter::OP_ADD
-                                                               : ocs::QConfActionParameter::OP_MODIFY;
-   ocs::QConfActionParameter action(ocs::QConfActionParameter::SHARETREE_NODES);
-   action.set_arg(ocs::QConfActionParameter::ARG_NODES, nodes != nullptr ? nodes : "");
-   action.set_arg(ocs::QConfActionParameter::ARG_OPERATION, operation);
-   ocs::QConfWriteModelClient model(ocs::gdi::Target::STN_LIST);
-
-   lList *answer_list = nullptr;
-   const bool ok = model.make_snapshot(&answer_list, action);
-   const int shown = show_answer_list(answer_list);
-   lFreeList(&answer_list);
-
-   if (!ok && !del && nodes != nullptr) {
-      lList *args = nullptr;
-      lString2List(nodes, &args, ST_Type, ST_name, ", ");
-      const lListElem *arg;
-      for_each_ep(arg, args) {
-         const char *text = lGetString(arg, ST_name);
-         const char *eq = (text != nullptr) ? strchr(text, '=') : nullptr;
-         int shares;
-         if (eq == nullptr || eq == text || sscanf(eq + 1, "%d", &shares) != 1) {
-            sge_usage(QCONF, stderr);
-            break;
-         }
-      }
-      lFreeList(&args);
-   }
-
-   DRETURN((ok && shown == 0) ? 0 : 1);
-}
-
 /** @brief Edit one object through the stored procedures (CS-2822, CS-2823)
  *
  * The round trip in the shape it is meant to have: the object is read by a
@@ -2370,8 +2271,9 @@ struct qconf_delete_entry {
  *
  * Every "-d<obj>" and "-D<obj>" whose block did nothing but call
  * qconf_delete_names() or qconf_delete_obj(), possibly after a permission check.
- * The ones with handling of their own stay blocks: "-de", "-dh"/"-ds", the
- * membership switches, "-dhgrp", "-Drqs", "-dstnode", "-dconf"/"-Dconf".
+ * The ones with handling of their own stay blocks: "-de", "-dh"/"-ds", "-dhgrp",
+ * "-Drqs", "-dconf"/"-Dconf"; "-du"/"-dm"/"-do" and "-dstnode" are actions,
+ * see qconf_action_table.
  */
 static const qconf_delete_entry qconf_delete_table[] = {
    {"-dcal",   QConfObj::CAL,  QConfDeleteKind::NAMES, QConfClientCheck::NONE},
@@ -2466,8 +2368,9 @@ struct qconf_write_entry {
  * requires one, and the singletons ("-astree", "-mstree", "-msconf") take none
  * and edit with nullptr. The ones with handling of their own stay blocks: "-ae"
  * and "-me" (host name resolution), "-mu" (a list of names), "-arqs"/"-mrqs"/
- * "-Arqs"/"-Mrqs" and "-mc"/"-Mc" (lists), the membership and reserved host
- * group switches, "-astnode"/"-mstnode" and the host configuration.
+ * "-Arqs"/"-Mrqs" and "-mc"/"-Mc" (lists), the reserved host group switches
+ * and the host configuration; the membership switches and "-astnode"/
+ * "-mstnode" are actions, see qconf_action_table.
  *
  * "-mce" checked qconf_is_manager() again after qconf_is_manager_on_admin_host(),
  * which already exits for a non-manager; the row keeps the first check only.
@@ -2570,6 +2473,249 @@ qconf_run_write(std::ostream &os, ocs::QConfParameterClient &param, const qconf_
 
    DRETURN(failed != 0 ? QConfOpResult::FAILED : QConfOpResult::OK);
 }
+
+/** @brief Build the arguments of "-purge queue attr_list queue@host|queue@@hgroup"
+ *
+ * The command line is taken apart here, with the messages it always had; what
+ * the action does with it is qmaster's (CS-2948).
+ *
+ * @param op the operation
+ * @param action receives the arguments
+ * @return true when the command line was usable, false after its message
+ */
+static bool
+qconf_action_purge_args(const qconf_op &op, ocs::QConfActionParameter &action) {
+   /* "queue" is the only object type -purge knows */
+   if (op.args[0] != SGE_OBJ_CQUEUE) {
+      ERROR(MSG_QCONF_MODIFICATIONOFOBJECTNOTSUPPORTED_S, op.args[0].c_str());
+      return false;
+   }
+   if (op.args[1].empty()) {
+      ERROR(SFNMAX, MSG_QCONF_NOATTRIBUTEGIVEN);
+      return false;
+   }
+   /* the object instance looks like queue@host or queue@@hgroup */
+   const std::string &instance = op.args[2];
+   const std::string::size_type at = instance.find('@');
+   if (at == std::string::npos || at == 0 || at + 1 == instance.size()) {
+      ERROR(MSG_QCONF_GIVENOBJECTINSTANCEINCOMPLETE_S, instance.c_str());
+      return false;
+   }
+   const std::string domain = instance.substr(at + 1);
+   if (domain == "@/") {
+      ERROR(MSG_QCONF_MODIFICATIONOFHOSTNOTSUPPORTED_S, domain.c_str());
+      return false;
+   }
+   action.set_arg(ocs::QConfActionParameter::ARG_QUEUE, instance.substr(0, at));
+   action.set_arg(ocs::QConfActionParameter::ARG_ATTRIBUTES, op.args[1]);
+   action.set_arg(ocs::QConfActionParameter::ARG_DOMAIN, domain);
+   return true;
+}
+
+/** @brief Build the arguments of "-au"/"-du": users and access lists, as typed
+ * @param op the operation
+ * @param action receives the arguments
+ * @param add true for "-au"
+ * @return true
+ */
+static bool
+qconf_action_members_args(const qconf_op &op, ocs::QConfActionParameter &action, const bool add) {
+   action.set_arg(ocs::QConfActionParameter::ARG_USERS, op.args[0]);
+   action.set_arg(ocs::QConfActionParameter::ARG_LISTS, op.args[1]);
+   action.set_arg(ocs::QConfActionParameter::ARG_ADD, add ? ocs::QConfActionParameter::ARG_TRUE : "0");
+   return true;
+}
+
+/** @brief Build the arguments of "-am"/"-ao"/"-dm"/"-do": users and one reserved list (CS-2394)
+ * @param op the operation
+ * @param action receives the arguments
+ * @param list MANAGER_USERSET or OPERATOR_USERSET
+ * @param add true to add the users
+ * @return true
+ */
+static bool
+qconf_action_manop_args(const qconf_op &op, ocs::QConfActionParameter &action, const char *list, const bool add) {
+   action.set_arg(ocs::QConfActionParameter::ARG_USERS, op.args[0]);
+   action.set_arg(ocs::QConfActionParameter::ARG_LISTS, list);
+   action.set_arg(ocs::QConfActionParameter::ARG_ADD, add ? ocs::QConfActionParameter::ARG_TRUE : "0");
+   return true;
+}
+
+/** @brief Build the arguments of the share tree node switches: the node list and the operation
+ * @param op the operation
+ * @param action receives the arguments
+ * @param operation OP_ADD, OP_MODIFY or OP_DELETE
+ * @return true
+ */
+static bool
+qconf_action_stnode_args(const qconf_op &op, ocs::QConfActionParameter &action, const char *operation) {
+   action.set_arg(ocs::QConfActionParameter::ARG_NODES, op.args[0]);
+   action.set_arg(ocs::QConfActionParameter::ARG_OPERATION, operation);
+   return true;
+}
+
+/** @brief "-au"/"-du" with users but no list: the message these two always had
+ *
+ * Every other action reports a short command line in the generic words of
+ * sge_parser_get_next(); these two had a message of their own for the one case
+ * where the users were given and the lists were not.
+ *
+ * @param op the truncated operation
+ * @return true when it was reported here, false to report it the generic way
+ */
+static bool
+qconf_action_members_missing(const qconf_op &op) {
+   if (op.args.size() != 1) {
+      return false;
+   }
+   ERROR(op.is("-au") ? MSG_ANSWER_NOLISTNAMEPROVIDEDTOAUX_S : MSG_ANSWER_NOLISTNAMEPROVIDEDTODUX_S,
+         op.args[0].c_str());
+   sge_usage(QCONF, stderr);
+   return true;
+}
+
+/** @brief After a failed "-astnode"/"-mstnode": the usage, when an argument was malformed
+ *
+ * Printed as before - when nothing was changed and a node argument is not of
+ * the form "path=shares".
+ *
+ * @param op the operation
+ */
+static void
+qconf_action_stnode_failed(const qconf_op &op) {
+   lList *args = nullptr;
+   lString2List(op.args[0].c_str(), &args, ST_Type, ST_name, ", ");
+   const lListElem *arg;
+   for_each_ep(arg, args) {
+      const char *text = lGetString(arg, ST_name);
+      const char *eq = (text != nullptr) ? strchr(text, '=') : nullptr;
+      int shares;
+      if (eq == nullptr || eq == text || sscanf(eq + 1, "%d", &shares) != 1) {
+         sge_usage(QCONF, stderr);
+         break;
+      }
+   }
+   lFreeList(&args);
+}
+
+/** @brief One switch served by qconf_run_action() */
+struct qconf_action_entry {
+   const char *switch_name;                                         ///< the switch as typed
+   const char *action;                                              ///< the qconf action it runs
+   ocs::gdi::Target target;                                         ///< the object list it changes
+   QConfClientCheck check;                                          ///< the check it makes in the client
+   bool (*args)(const qconf_op &op, ocs::QConfActionParameter &action); ///< builds the arguments, or nullptr
+   bool (*missing)(const qconf_op &op);                             ///< a message of its own for a short command line, or nullptr
+   void (*failed)(const qconf_op &op);                              ///< what it adds after a failure, or nullptr
+};
+
+/** @brief The switches that run a qconf action (CS-2962, CS-2967)
+ *
+ * "-purge" (CS-2948), the access list membership (CS-2959), "-clearusage"
+ * (CS-2963) and the share tree nodes (CS-2966). Each row names the action and
+ * the object list it is addressed to, which is the list the permission check
+ * asks about, and the hooks that keep what each switch did on its own.
+ */
+static const qconf_action_entry qconf_action_table[] = {
+   {"-purge", ocs::QConfActionParameter::QUEUE_PURGE, ocs::gdi::Target::CQ_LIST, QConfClientCheck::NONE,
+    qconf_action_purge_args, nullptr, nullptr},
+   {"-au", ocs::QConfActionParameter::USERSET_MEMBERS, ocs::gdi::Target::US_LIST, QConfClientCheck::NONE,
+    [](const qconf_op &op, ocs::QConfActionParameter &a) { return qconf_action_members_args(op, a, true); },
+    qconf_action_members_missing, nullptr},
+   {"-du", ocs::QConfActionParameter::USERSET_MEMBERS, ocs::gdi::Target::US_LIST, QConfClientCheck::NONE,
+    [](const qconf_op &op, ocs::QConfActionParameter &a) { return qconf_action_members_args(op, a, false); },
+    qconf_action_members_missing, nullptr},
+   {"-am", ocs::QConfActionParameter::USERSET_MEMBERS, ocs::gdi::Target::US_LIST, QConfClientCheck::NONE,
+    [](const qconf_op &op, ocs::QConfActionParameter &a) { return qconf_action_manop_args(op, a, MANAGER_USERSET, true); },
+    nullptr, nullptr},
+   {"-ao", ocs::QConfActionParameter::USERSET_MEMBERS, ocs::gdi::Target::US_LIST, QConfClientCheck::NONE,
+    [](const qconf_op &op, ocs::QConfActionParameter &a) { return qconf_action_manop_args(op, a, OPERATOR_USERSET, true); },
+    nullptr, nullptr},
+   {"-dm", ocs::QConfActionParameter::USERSET_MEMBERS, ocs::gdi::Target::US_LIST, QConfClientCheck::NONE,
+    [](const qconf_op &op, ocs::QConfActionParameter &a) { return qconf_action_manop_args(op, a, MANAGER_USERSET, false); },
+    nullptr, nullptr},
+   {"-do", ocs::QConfActionParameter::USERSET_MEMBERS, ocs::gdi::Target::US_LIST, QConfClientCheck::NONE,
+    [](const qconf_op &op, ocs::QConfActionParameter &a) { return qconf_action_manop_args(op, a, OPERATOR_USERSET, false); },
+    nullptr, nullptr},
+   {"-astnode", ocs::QConfActionParameter::SHARETREE_NODES, ocs::gdi::Target::STN_LIST, QConfClientCheck::NONE,
+    [](const qconf_op &op, ocs::QConfActionParameter &a) { return qconf_action_stnode_args(op, a, ocs::QConfActionParameter::OP_ADD); },
+    nullptr, qconf_action_stnode_failed},
+   {"-mstnode", ocs::QConfActionParameter::SHARETREE_NODES, ocs::gdi::Target::STN_LIST, QConfClientCheck::NONE,
+    [](const qconf_op &op, ocs::QConfActionParameter &a) { return qconf_action_stnode_args(op, a, ocs::QConfActionParameter::OP_MODIFY); },
+    nullptr, qconf_action_stnode_failed},
+   {"-dstnode", ocs::QConfActionParameter::SHARETREE_NODES, ocs::gdi::Target::STN_LIST, QConfClientCheck::NONE,
+    [](const qconf_op &op, ocs::QConfActionParameter &a) { return qconf_action_stnode_args(op, a, ocs::QConfActionParameter::OP_DELETE); },
+    nullptr, nullptr},
+   {"-clearusage", ocs::QConfActionParameter::USAGE_CLEAR, ocs::gdi::Target::UU_LIST,
+    QConfClientCheck::MANAGER_ON_ADMIN_HOST, nullptr, nullptr, nullptr},
+};
+
+/**
+ * @brief Run one operation from qconf_action_table, if it is one
+ *
+ * In the order the blocks had: a short command line is reported, the row's
+ * client-side check is made, the arguments are built (which may refuse the
+ * command line with a message of its own), the client execution context is
+ * declined - an action is a write - and the action runs in qmaster. What it has
+ * to say comes back in the answer list and is surfaced the way every qconf
+ * write surfaces it; a warning is not a failure.
+ *
+ * @param param    the invocation, for its execution context
+ * @param op       the operation to run
+ * @param username the calling user, for the client-side check
+ * @param hostname the calling host, for the client-side check
+ * @return what became of the operation
+ */
+static QConfOpResult
+qconf_run_action(const ocs::QConfParameterClient &param, const qconf_op &op, const char *username,
+                 const char *hostname) {
+   DENTER(TOP_LAYER);
+
+   const qconf_action_entry *entry = nullptr;
+   for (const qconf_action_entry &e : qconf_action_table) {
+      if (op.token == e.switch_name) {
+         entry = &e;
+         break;
+      }
+   }
+   if (entry == nullptr) {
+      DRETURN(QConfOpResult::NOT_HANDLED);
+   }
+   if (op.spec != nullptr && op.args.size() < static_cast<size_t>(op.spec->min_args) &&
+       entry->missing != nullptr && entry->missing(op)) {
+      DRETURN(QConfOpResult::FAILED);
+   }
+   if (qconf_missing_argument(op)) {
+      DRETURN(QConfOpResult::FAILED);
+   }
+
+   qconf_client_check(entry->check, username, hostname);
+
+   ocs::QConfActionParameter action(entry->action);
+   if (entry->args != nullptr && !entry->args(op, action)) {
+      DRETURN(QConfOpResult::FAILED);
+   }
+
+   if (param.get_exec_context() != ocs::ProcedureParameter::ExecContext::SERVER) {
+      ERROR(MSG_QCONF_MODNEEDSSERVERCTX_S, entry->switch_name);
+      DRETURN(QConfOpResult::FAILED);
+   }
+
+   ocs::QConfWriteModelClient model(entry->target);
+   lList *answer_list = nullptr;
+   const bool ok = model.make_snapshot(&answer_list, action);
+   const int shown = show_answer_list(answer_list);
+   lFreeList(&answer_list);
+
+   if (!ok || shown != 0) {
+      if (entry->failed != nullptr) {
+         entry->failed(op);
+      }
+      DRETURN(QConfOpResult::FAILED);
+   }
+   DRETURN(QConfOpResult::OK);
+}
+
 
 /** @brief How a sub-procedure read reports its answer list and exit status
  *
@@ -2838,6 +2984,9 @@ int sge_parse_qconf(char *argv[]) {
       if (result == QConfOpResult::NOT_HANDLED) {
          result = qconf_run_write(os, param, op, username, qualified_hostname, uid, gid);
       }
+      if (result == QConfOpResult::NOT_HANDLED) {
+         result = qconf_run_action(param, op, username, qualified_hostname);
+      }
       if (result != QConfOpResult::NOT_HANDLED) {
          if (result == QConfOpResult::FAILED) {
             sge_parse_return = 1;
@@ -2980,35 +3129,6 @@ int sge_parse_qconf(char *argv[]) {
          spp++;
          continue;
       }
-/*-----------------------------------------------------------------------------*/
-      /* "-am user_list" */
-
-      if (strcmp("-am", *spp) == 0) {
-         /* no adminhost/manager check needed here */
-
-         /* CS-2394: managers are the members of the reserved "manager" userset;
-          * -am user is equivalent to -au user manager. */
-         spp = sge_parser_get_next(spp);
-         sge_parse_return |= qconf_modify_members(param, "-am", *spp, MANAGER_USERSET, true);
-
-         spp++;
-         continue;
-      }
-
-/*-----------------------------------------------------------------------------*/
-      /* "-ao user_list" */
-
-      if (strcmp("-ao", *spp) == 0) {
-         /* no adminhost/manager check needed here */
-
-         /* CS-2394: operators are the members of the reserved "operator" userset;
-          * -ao user is equivalent to -au user operator. */
-         spp = sge_parser_get_next(spp);
-         sge_parse_return |= qconf_modify_members(param, "-ao", *spp, OPERATOR_USERSET, true);
-
-         spp++;
-         continue;
-      }
 
 /*-----------------------------------------------------------------------------*/
 
@@ -3024,79 +3144,6 @@ int sge_parse_qconf(char *argv[]) {
          }
          lFreeList(&lp);
 
-         spp++;
-         continue;
-      }
-
-/*----------------------------------------------------------------------------*/
-
-      /* "-astnode node_path=shares[,...]"  create/modify sharetree node */
-      /* "-mstnode node_path=shares[,...]"  modify sharetree node */
-      /* "-dstnode node_path[,...]"         delete sharetree node(s) */
-
-      /* CS-2966: the qconf action "sharetree_nodes". qmaster changes the nodes
-       * of the stored tree under the lock and writes it, so a change made in
-       * between can no longer be reverted, and nothing is read here that RBAC
-       * could reduce - see qconf_sharetree_nodes(). */
-      if ((strcmp("-astnode", *spp) == 0) || (strcmp("-mstnode", *spp) == 0) ||
-          (strcmp("-dstnode", *spp) == 0)) {
-         const char *stnode_sw = *spp;
-         spp = sge_parser_get_next(spp);
-         sge_parse_return |= qconf_sharetree_nodes(param, stnode_sw, *spp);
-         spp++;
-         continue;
-      }
-
-/*----------------------------------------------------------------------------*/
-      /* "-au user_list list_name[,list_name,...]" */
-
-      if (strcmp("-au", *spp) == 0) {
-
-         /* no adminhost/manager check needed here */
-
-         /* get user list */
-         spp = sge_parser_get_next(spp);
-         if (!*(spp+1)) {
-            ERROR(MSG_ANSWER_NOLISTNAMEPROVIDEDTOAUX_S, *spp);
-            sge_usage(QCONF, stderr);
-            sge_parse_return = 1;
-            spp++;
-            continue;
-         }
-         const char *users = *spp;
-
-         /* get list_name list */
-         spp = sge_parser_get_next(spp);
-         sge_parse_return |= qconf_modify_members(param, "-au", users, *spp, true);
-
-         spp++;
-         continue;
-      }
-/*----------------------------------------------------------------------------*/
-      /* "-clearusage"  clear sharetree usage */
-
-      if (strcmp("-clearusage", *spp) == 0) {
-
-         qconf_is_manager_on_admin_host(username, qualified_hostname);
-
-         /* CS-2963: the qconf action "usage_clear". qmaster clears the usage of
-          * every user and project that has some, under the lock, so an object
-          * created or deleted while it runs can no longer be missed or fail the
-          * write. A write: the client execution context has no way to make it. */
-         if (param.get_exec_context() != ocs::ProcedureParameter::ExecContext::SERVER) {
-            ERROR(MSG_QCONF_MODNEEDSSERVERCTX_S, "-clearusage");
-            sge_parse_return = 1;
-            spp++;
-            continue;
-         }
-         ocs::QConfActionParameter clear(ocs::QConfActionParameter::USAGE_CLEAR);
-         ocs::QConfWriteModelClient model(ocs::gdi::Target::UU_LIST);
-         lList *answer_list = nullptr;
-         const bool ok = model.make_snapshot(&answer_list, clear);
-         if (show_answer_list(answer_list) != 0 || !ok) {
-            sge_parse_return = 1;
-         }
-         lFreeList(&answer_list);
          spp++;
          continue;
       }
@@ -3141,32 +3188,6 @@ int sge_parse_qconf(char *argv[]) {
          continue;
       }
 /*----------------------------------------------------------------------------*/
-      /* "-dm user_list" */
-
-      if (strcmp("-dm", *spp) == 0) {
-         /* no adminhost/manager check needed here */
-
-         /* CS-2394: -dm user is equivalent to -du user manager. */
-         spp = sge_parser_get_next(spp);
-         sge_parse_return |= qconf_modify_members(param, "-dm", *spp, MANAGER_USERSET, false);
-
-         spp++;
-         continue;
-      }
-/*----------------------------------------------------------------------------*/
-      /* "-do user_list" */
-
-      if (strcmp("-do", *spp) == 0) {
-         /* no adminhost/manager check needed here */
-
-         /* CS-2394: -do user is equivalent to -du user operator. */
-         spp = sge_parser_get_next(spp);
-         sge_parse_return |= qconf_modify_members(param, "-do", *spp, OPERATOR_USERSET, false);
-
-         spp++;
-         continue;
-      }
-/*----------------------------------------------------------------------------*/
       /* "-ds server_name[,server_name,...]" */
       if (strcmp("-ds", *spp) == 0) {
          /* no adminhost/manager check needed here */
@@ -3178,31 +3199,6 @@ int sge_parse_qconf(char *argv[]) {
             sge_parse_return = 1;
          }
          lFreeList(&lp);
-
-         spp++;
-         continue;
-      }
-/*-----------------------------------------------------------------------------*/
-      /* "-du user_list list_name[,list_name,...]" */
-
-      if (strcmp("-du", *spp) == 0) {
-
-         /* no adminhost/manager check needed here */
-
-         /* get user list */
-         spp = sge_parser_get_next(spp);
-         if (!*(spp+1)) {
-            ERROR(MSG_ANSWER_NOLISTNAMEPROVIDEDTODUX_S, *spp);
-            sge_usage(QCONF, stderr);
-            sge_parse_return = 1;
-            spp++;
-            continue;
-         }
-         const char *users = *spp;
-
-         /* get list_name list */
-         spp = sge_parser_get_next(spp);
-         sge_parse_return |= qconf_modify_members(param, "-du", users, *spp, false);
 
          spp++;
          continue;
@@ -3612,90 +3608,6 @@ int sge_parse_qconf(char *argv[]) {
 
       sge_free(&(info_entry[1].fields));
 
-      continue;
-   }
-
-
-/*----------------------------------------------------------------------------*/
-   /* "-purge queue attr_list queue@host|queue@@hgroup"
-    *
-    * CS-2948: a stored procedure. qmaster removes the values of the host or host
-    * group from the matching attributes of the queue it holds, under the lock,
-    * and writes only the attributes that lost an entry. The client used to fetch
-    * the queue together with the members of its host group @@<queue>, strip it
-    * locally and send the whole queue back with SET_ALL - which rewrote the host
-    * group with the members it had read, reverted whatever changed in between,
-    * and had to refuse a reduced read for fear of deleting what it hid. Nothing
-    * is read here any more, so none of that applies.
-    *
-    * What stays here is taking the command line apart, with the messages it
-    * always had. */
-   if (strcmp("-purge", *spp) == 0) {
-      spp = sge_parser_get_next(spp);
-
-      /* "queue" is the only object type -purge knows */
-      if (strcmp(SGE_OBJ_CQUEUE, *spp) != 0) {
-         ERROR(MSG_QCONF_MODIFICATIONOFOBJECTNOTSUPPORTED_S, *spp);
-         sge_parse_return = 1;
-         spp++;
-         continue;
-      }
-      spp = sge_parser_get_next(spp);
-
-      if (*spp == nullptr || **spp == '\0') {
-         ERROR(SFNMAX, MSG_QCONF_NOATTRIBUTEGIVEN);
-         sge_parse_return = 1;
-         spp++;
-         continue;
-      }
-      const std::string attr = *spp;
-      spp = sge_parser_get_next(spp);
-
-      /* the object instance looks like queue@host or queue@@hgroup */
-      const std::string instance = (*spp != nullptr) ? *spp : "";
-      const std::string::size_type at = instance.find('@');
-      if (at == std::string::npos || at == 0 || at + 1 == instance.size()) {
-         ERROR(MSG_QCONF_GIVENOBJECTINSTANCEINCOMPLETE_S, instance.c_str());
-         sge_parse_return = 1;
-         spp++;
-         continue;
-      }
-      const std::string queue = instance.substr(0, at);
-      const std::string hgroup_or_hostname = instance.substr(at + 1);
-
-      if (hgroup_or_hostname == "@/") {
-         ERROR(MSG_QCONF_MODIFICATIONOFHOSTNOTSUPPORTED_S, hgroup_or_hostname.c_str());
-         sge_parse_return = 1;
-         spp++;
-         continue;
-      }
-
-      /* a write: the client execution context has no way to make it */
-      if (param.get_exec_context() != ocs::ProcedureParameter::ExecContext::SERVER) {
-         ERROR(MSG_QCONF_MODNEEDSSERVERCTX_S, "-purge");
-         sge_parse_return = 1;
-         spp++;
-         continue;
-      }
-
-      ocs::QConfActionParameter purge(ocs::QConfActionParameter::QUEUE_PURGE);
-      purge.set_arg(ocs::QConfActionParameter::ARG_QUEUE, queue);
-      purge.set_arg(ocs::QConfActionParameter::ARG_ATTRIBUTES, attr);
-      purge.set_arg(ocs::QConfActionParameter::ARG_DOMAIN, hgroup_or_hostname);
-      ocs::QConfWriteModelClient model(ocs::gdi::Target::CQ_LIST);
-
-      lList *answer_list = nullptr;
-      const bool ok = model.make_snapshot(&answer_list, purge);
-      /* the messages are the ones qmaster put into the answer list, surfaced the
-       * way every other qconf write surfaces them - see
-       * qconf_edit_obj_procedure(). A warning that nothing matched is not a
-       * failure. */
-      if (show_answer_list(answer_list) != 0 || !ok) {
-         sge_parse_return = 1;
-      }
-      lFreeList(&answer_list);
-
-      spp++;
       continue;
    }
 
