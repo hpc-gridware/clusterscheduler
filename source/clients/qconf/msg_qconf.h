@@ -41,7 +41,6 @@
 #define MSG_QCONF_NOOPTIONARGPROVIDEDTOX_S            _MESSAGE(5001, _("no option argument provided to " SFQ ""))
 #define MSG_QCONF_BAD_ATTR_ARGS_SS                    _MESSAGE(5002, _("The attribute name (" SFQ ") and/or value (" SFQ ") is invalid"))
 #define MSG_QCONF_CANT_MODIFY_NONE                    _MESSAGE(5003, _("\"NONE\" is not a valid list attribute value for -mattr.  Try using -rattr instead."))
-#define MSG_QCONF_ATTR_ARGS_NOT_FOUND                 _MESSAGE(5004, _("Attribute name (" SFQ ") and/or value (" SFQ ") not found"))
 #define MSG_QCONF_MODIFICATIONOFOBJECTNOTSUPPORTED_S  _MESSAGE(5005, _("Modification of object " SFQ " not supported"))
 #define MSG_QCONF_NOATTRIBUTEGIVEN                    _MESSAGE(5006, _("No attribute given"))
 #define MSG_QCONF_GIVENOBJECTINSTANCEINCOMPLETE_S     _MESSAGE(5007, _("Given object_instance " SFQ " is incomplete"))
@@ -62,7 +61,6 @@
  * block. The id stays empty here. */
 #define MSG_CENTRY_FILENOTCORRECT_S                   _MESSAGE(5102, _("Complex attribute file " PFQMAX " is not correct"))
 
-#define MSG_CQUEUE_DOESNOTEXIST_S                     _MESSAGE(5150, _("Cluster queue entry " SFQ " does not exist"))
 #define MSG_CQUEUE_FILENOTCORRECT_S                   _MESSAGE(5151, _("Cluster queue file " PFQMAX " is not correct"))
 
 /* MSG_HGROUP_NOTEXIST_S (5200) and the five MSG_QCONF_WHY_* (5255-5259) moved to

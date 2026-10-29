@@ -91,4 +91,13 @@
 #define MSG_CENTRY_NULL_URGENCY                       _MESSAGE(12015, _("Complex urgency definition is missing"))
 #define MSG_CENTRY_KEPT_BUILTIN_S                     _MESSAGE(12016, _("kept built-in complex attribute(s) " SFNMAX " that the file does not define - built-ins cannot be deleted"))
 
+/* CS-2948: "qconf -purge" runs in qmaster now. The two messages of the old client
+ * path that the procedure produces moved over from clients/qconf/msg_qconf.h
+ * (5004 and 5150) and are renumbered into this file's band; their text and their
+ * names are unchanged, because the testsuite matches both. */
+#define MSG_QCONF_NOPURGEPROVIDER                     _MESSAGE(12017, _("no purge provider installed - a purge can only run inside qmaster"))
+#define MSG_QCONF_PURGEINCOMPLETE                     _MESSAGE(12018, _("a purge needs a cluster queue, an attribute list and a host or host group"))
+#define MSG_QCONF_ATTR_ARGS_NOT_FOUND                 _MESSAGE(12019, _("Attribute name (" SFQ ") and/or value (" SFQ ") not found"))
+#define MSG_CQUEUE_DOESNOTEXIST_S                     _MESSAGE(12020, _("Cluster queue entry " SFQ " does not exist"))
+
 // clang-format on

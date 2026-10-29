@@ -99,6 +99,7 @@
 #include "procedure/ocs_ProcedureController.h"
 #include "procedure/ocs_ProcedureModel.h"
 #include "procedure/ocs_ProcedureView.h"
+#include "procedure/qconf/ocs_QConfPurgeParameter.h"
 #include "procedure/qconf/ocs_QConfWriteModelClient.h"
 
 #include "qconf/ocs_QConfController.h"
@@ -132,7 +133,6 @@
 #include "qconf/ocs_QConfViewPlain.h"
 #include "qconf/ocs_QConfParameterClient.h"
 #include "ocs_qconf_parse.h"
-#include "ocs_qconf_cqueue.h"
 #include "sgeobj/ocs_Role.h"
 #include "msg_common.h"
 #include "msg_clients_common.h"
@@ -1719,11 +1719,12 @@ qconf_clear_usage(ocs::gdi::Target target, const lDescr *descr, int key_nm, int 
 
 /** @brief Refuse an operation that fetches a whole object in order to write it back (CS-2825)
  *
- * Six switches do not edit, export or delete, and still need the whole object:
+ * Some switches do not edit, export or delete, and still need the whole object:
  * they fetch it, change one thing in it locally and send all of it back.
- * `-dstnode`, `-astnode` and `-mstnode` on the share tree, `-purge` on a
- * cluster queue, and `-du`/`-dm`/`-do` plus `-au`/`-am`/`-ao` on an access
- * list. A reduced read would hand them an object whose hidden parts are
+ * `-dstnode`, `-astnode` and `-mstnode` on the share tree, and `-du`/`-dm`/`-do`
+ * plus `-au`/`-am`/`-ao` on an access list. `-purge` was one of them until it
+ * became a procedure that changes the queue in qmaster (CS-2948), where there is
+ * no reduced read to refuse. A reduced read would hand them an object whose hidden parts are
  * placeholders, and the write back would store the placeholders - which is the
  * same hazard the editor refuses, reached without an editor.
  *
@@ -1734,8 +1735,8 @@ qconf_clear_usage(ocs::gdi::Target target, const lDescr *descr, int key_nm, int 
  *
  * **The probe never speaks except to refuse.** A read that fails for any other
  * reason is left to the operation, which has its own established message for it
- * - `MSG_CQUEUE_DOESNOTEXIST_S` for a queue, `MSG_ACL_ACLDOESNOTEXIST_S` for an
- * access list, `MSG_TREE_NOSHARETREE` for a missing tree. Printing here as well
+ * - `MSG_ACL_ACLDOESNOTEXIST_S` for an access list, `MSG_TREE_NOSHARETREE` for a
+ * missing tree. Printing here as well
  * would turn one cause into two complaints, and a typo in a name would read
  * differently than it did before.
  *
@@ -3975,136 +3976,82 @@ int sge_parse_qconf(char *argv[]) {
 
 
 /*----------------------------------------------------------------------------*/
-   /* "-purge" */
+   /* "-purge queue attr_list queue@host|queue@@hgroup"
+    *
+    * CS-2948: a stored procedure. qmaster removes the values of the host or host
+    * group from the matching attributes of the queue it holds, under the lock,
+    * and writes only the attributes that lost an entry. The client used to fetch
+    * the queue together with the members of its host group @@<queue>, strip it
+    * locally and send the whole queue back with SET_ALL - which rewrote the host
+    * group with the members it had read, reverted whatever changed in between,
+    * and had to refuse a reduced read for fear of deleting what it hid. Nothing
+    * is read here any more, so none of that applies.
+    *
+    * What stays here is taking the command line apart, with the messages it
+    * always had. */
    if (strcmp("-purge", *spp) == 0) {
-
-      static object_info_entry info_entry[] = {
-         {ocs::gdi::Target::CQ_LIST, SGE_OBJ_CQUEUE, QR_Type, SGE_ATTR_QNAME, QR_name, nullptr, &qconf_sfi, cqueue_xattr_pre_gdi},
-         {ocs::gdi::Target::NO_TARGET,           nullptr,        nullptr, nullptr,        NoName,  nullptr, nullptr,    nullptr}
-      };
-
-      int index = 0;
-      char *object_instance = nullptr;
-      char *object = nullptr;
-      char *hgroup_or_hostname = nullptr;
-      char *attr = nullptr;
-      lListElem *cqueue = nullptr;
-
-      /* This does not have to be freed later */
-      info_entry[0].fields = CQ_fields;
-
       spp = sge_parser_get_next(spp);
 
-      /* is the object given in commandline
-         supported by this function */
-      index = 0;
-      while(info_entry[index].object_name) {
-         if (!strcmp(info_entry[index].object_name, *spp)) {
-            spp = sge_parser_get_next(spp);
-         break;
+      /* "queue" is the only object type -purge knows */
+      if (strcmp(SGE_OBJ_CQUEUE, *spp) != 0) {
+         ERROR(MSG_QCONF_MODIFICATIONOFOBJECTNOTSUPPORTED_S, *spp);
+         sge_parse_return = 1;
+         spp++;
+         continue;
       }
-      index++;
-   }
+      spp = sge_parser_get_next(spp);
 
-   if (!info_entry[index].object_name) {
-      ERROR(MSG_QCONF_MODIFICATIONOFOBJECTNOTSUPPORTED_S, *spp);
-      DRETURN(1);
-   }
+      if (*spp == nullptr || **spp == '\0') {
+         ERROR(SFNMAX, MSG_QCONF_NOATTRIBUTEGIVEN);
+         sge_parse_return = 1;
+         spp++;
+         continue;
+      }
+      const std::string attr = *spp;
+      spp = sge_parser_get_next(spp);
 
-   /* parse command line arguments */
-   attr = sge_strdup(nullptr, *spp);
-   if (attr == nullptr) {
-      ERROR(SFNMAX, MSG_QCONF_NOATTRIBUTEGIVEN);
-      DRETURN(1);
-   }
-   spp = sge_parser_get_next(spp);
+      /* the object instance looks like queue@host or queue@@hgroup */
+      const std::string instance = (*spp != nullptr) ? *spp : "";
+      const std::string::size_type at = instance.find('@');
+      if (at == std::string::npos || at == 0 || at + 1 == instance.size()) {
+         ERROR(MSG_QCONF_GIVENOBJECTINSTANCEINCOMPLETE_S, instance.c_str());
+         sge_parse_return = 1;
+         spp++;
+         continue;
+      }
+      const std::string queue = instance.substr(0, at);
+      const std::string hgroup_or_hostname = instance.substr(at + 1);
 
-   object_instance = sge_strdup(nullptr, *spp);
-
-   /* object_instance look like queue@host */
-   if ((object = sge_strdup(nullptr, sge_strtok(object_instance, "@"))) != nullptr) {
-       hgroup_or_hostname = sge_strdup(nullptr, sge_strtok(nullptr, nullptr));
-   }
-
-   if (object == nullptr || hgroup_or_hostname == nullptr) {
-      ERROR(MSG_QCONF_GIVENOBJECTINSTANCEINCOMPLETE_S, object_instance);
-      sge_free(&attr);
-      sge_free(&object_instance);
-      sge_free(&object);
-      DRETURN(1);
-   }
-
-   /* queue_instance no longer neede */
-   sge_free(&object_instance);
-
-   if (strcmp("@/", hgroup_or_hostname) == 0) {
-      ERROR(MSG_QCONF_MODIFICATIONOFHOSTNOTSUPPORTED_S, hgroup_or_hostname);
-      sge_free(&attr);
-      sge_free(&object);
-      sge_free(&hgroup_or_hostname);
-      DRETURN(1);
-   }
-
-      /* CS-2825: the queue is fetched, stripped locally and sent back with
-       * SET_ALL, which deletes every domain specific entry the request does not
-       * carry - so a reduced read here would delete whatever it had hidden.
-       *
-       * This one stays a refusal rather than becoming a targeted REMOVE on the
-       * attribute sublists, which is what its eight "-dattr" siblings do without
-       * fetching at all. The attribute pattern could be expanded locally against
-       * cqueue_attribute_array, which is static; what cannot come from there is
-       * MSG_QCONF_ATTR_ARGS_NOT_FOUND below. That warning is the answer to a
-       * mistyped host name, and it is derived from having seen the object:
-       * measured on 2026-10-19, "-dattr" with an entry that does not exist
-       * reports a plain success, so SubCommand::REMOVE carries no "nothing
-       * matched" back. Converting would either drop the warning from a switch
-       * whose only job is removal, or need a count in the answer - a ticket of
-       * its own, not a side effect of this one. */
-      if (qconf_refuse_if_reduced(param, QConfObj::CQ, "-purge", object)) {
-         sge_free(&attr);
-         sge_free(&object);
-         sge_free(&hgroup_or_hostname);
-         DRETURN(1);
+      if (hgroup_or_hostname == "@/") {
+         ERROR(MSG_QCONF_MODIFICATIONOFHOSTNOTSUPPORTED_S, hgroup_or_hostname.c_str());
+         sge_parse_return = 1;
+         spp++;
+         continue;
       }
 
-      /* now get the queue, delete the objects and send the queue back to the master */
-      cqueue = cqueue_get_via_gdi(&alp, object);
-
-      if (cqueue == nullptr) {
-         ERROR(MSG_CQUEUE_DOESNOTEXIST_S, object);
-         sge_free(&attr);
-         sge_free(&object);
-         sge_free(&hgroup_or_hostname);
-         DRETURN(1);
+      /* a write: the client execution context has no way to make it */
+      if (param.get_exec_context() != ocs::ProcedureParameter::ExecContext::SERVER) {
+         ERROR(MSG_QCONF_MODNEEDSSERVERCTX_S, "-purge");
+         sge_parse_return = 1;
+         spp++;
+         continue;
       }
 
-      parse_name_list_to_cull("attribute list", &lp, US_Type, US_name, attr);
-      if (cqueue_purge_host(cqueue, &alp, lp, hgroup_or_hostname)) {
-         cqueue_add_del_mod_via_gdi(cqueue, &alp, ocs::gdi::Command::MOD, ocs::gdi::SubCommand::SET_ALL);
-      } else {
-         WARNING(MSG_QCONF_ATTR_ARGS_NOT_FOUND, attr, hgroup_or_hostname);
+      ocs::QConfPurgeParameter purge;
+      purge.set_purge(queue, attr, hgroup_or_hostname);
+      ocs::QConfWriteModelClient model(ocs::gdi::Target::CQ_LIST);
+
+      lList *answer_list = nullptr;
+      const bool ok = model.make_snapshot(&answer_list, purge);
+      /* the messages are the ones qmaster put into the answer list, surfaced the
+       * way every other qconf write surfaces them - see
+       * qconf_edit_obj_procedure(). A warning that nothing matched is not a
+       * failure. */
+      if (show_answer_list(answer_list) != 0 || !ok) {
+         sge_parse_return = 1;
       }
-      lFreeList(&lp);
+      lFreeList(&answer_list);
 
-      /* Error handling */
-      for_each_ep(aep, alp) {
-            FILE *std_x = nullptr;
-
-            if (lGetUlong(aep, AN_status) != STATUS_OK) {
-               std_x = stderr;
-            } else {
-               std_x = stdout;
-            }
-            fprintf(std_x, "%s\n", lGetString(aep, AN_text));
-         }
-
-      if (cqueue != nullptr) {
-         lFreeElem(&cqueue);
-      }
-
-      sge_free(&attr);
-      sge_free(&object);
-      sge_free(&hgroup_or_hostname);
       spp++;
       continue;
    }
@@ -4145,11 +4092,6 @@ int sge_parse_qconf(char *argv[]) {
          spp++;
          continue;
       }
-
-/*-----------------------------------------------------------------------------*/
-/*-----------------------------------------------------------------------------*/
-      /* "-scall" */
-
 
 /*-----------------------------------------------------------------------------*/
       /* "-sconf host_list" || "-mconf host_list" || "-aconf host_list" || "-Mconf file_list" || "-Aconf file_list" */
@@ -4276,9 +4218,6 @@ int sge_parse_qconf(char *argv[]) {
          continue;
       }
 
-/*-----------------------------------------------------------------------------*/
-/*-----------------------------------------------------------------------------*/
-      /* "-sckptl" */
 /*----------------------------------------------------------------------------*/
       /* "-dconf config_list" */
       if (strcmp("-dconf", *spp) == 0) {
@@ -4446,9 +4385,6 @@ int sge_parse_qconf(char *argv[]) {
       }
 
 /*----------------------------------------------------------------------------*/
-
-
-
 
       /* "-tsm" trigger scheduler monitoring */
 

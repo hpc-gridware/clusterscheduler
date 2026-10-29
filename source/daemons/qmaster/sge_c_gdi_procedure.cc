@@ -67,6 +67,7 @@
 #include "procedure/qconf/ocs_QConfViewJSON.h"
 #include "procedure/qconf/ocs_QConfViewPlain.h"
 #include "procedure/qconf/ocs_QConfViewXML.h"
+#include "procedure/qconf/ocs_QConfPurgeServer.h"
 #include "procedure/qconf/ocs_QConfWriteServer.h"
 
 #include "procedure/qhost/ocs_QHostContoller.h"
@@ -899,6 +900,33 @@ namespace {
       }
    };
 
+   /** @brief The traits of `qconf -purge` (CS-2948)
+    *
+    * A write, so it renders nothing either. It names no write_object: the
+    * purge changes one cluster queue in place rather than applying object
+    * texts, and its dispatch entry is addressed to the queue list.
+    */
+   struct QConfPurgeTraits {
+      using Parameter = ocs::QConfPurgeParameter;
+      using Model = ocs::QConfPurgeModelServer;
+      using ViewBase = ocs::QConfPurgeView;
+      using Controller = ocs::QConfPurgeController;
+
+      static constexpr ProgName prog_number = QCONF;
+
+      static std::unique_ptr<ViewBase> make_xml_view(const Parameter &parameter) {
+         return std::make_unique<ocs::QConfPurgeView>(parameter);
+      }
+
+      static std::unique_ptr<ViewBase> make_plain_view(const Parameter &parameter) {
+         return std::make_unique<ocs::QConfPurgeView>(parameter);
+      }
+
+      static std::unique_ptr<ViewBase> make_json_view(const Parameter &parameter) {
+         return std::make_unique<ocs::QConfPurgeView>(parameter);
+      }
+   };
+
    using ProcedureHandler = void (*)(ocs::gdi::Packet *, ocs::gdi::Task *, monitoring_t *);
 
    /** @brief What a caller must satisfy before a procedure may run
@@ -1016,6 +1044,11 @@ namespace {
        modifies(ocs::gdi::Target::US_LIST), &run_procedure<QConfWriteTraits<QConfObj::US>>},
       {to_string_view(QCONF), ocs::QConfWriteParameter::OBJECT_WRITE,
        modifies(ocs::gdi::Target::UU_LIST), &run_procedure<QConfWriteTraits<QConfObj::UU>>},
+      /* CS-2948: "qconf -purge" changes one cluster queue in place, so it is
+       * checked as a modify of the queue list - the same permission a "-mattr"
+       * on the queue needs. */
+      {to_string_view(QCONF), ocs::QConfPurgeParameter::QUEUE_PURGE,
+       modifies(ocs::gdi::Target::CQ_LIST), &run_procedure<QConfPurgeTraits>},
       {to_string_view(QHOST), "", READS, &run_procedure<QHostTraits>},
       {to_string_view(QQUOTA), "", READS, &run_procedure<QQuotaTraits>},
       {to_string_view(QRSTAT), "", READS, &run_procedure<QRStatTraits>},
