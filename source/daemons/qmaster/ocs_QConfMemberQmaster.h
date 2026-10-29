@@ -24,26 +24,26 @@
  *
  * Lives here for the reason the write provider does: the change goes through
  * `sge_gdi_add_mod_generic()`, which is the daemon's, and the procedure library
- * is linked into the clients too. Handed over at startup, see
- * ocs::set_qconf_member_provider().
+ * is linked into the clients too. Registered as the action
+ * ocs::QConfActionParameter::USERSET_MEMBERS at startup (CS-2962).
  */
 
 #include "gdi/ocs_gdi_Packet.h"
 #include "gdi/ocs_gdi_Task.h"
-#include "procedure/qconf/ocs_QConfMemberServer.h"
+#include "procedure/qconf/ocs_QConfActionServer.h"
 #include "uti/sge_monitor.h"
 
 /** @brief Add users to or remove them from access lists
  *
- * The ocs::qconf_member_provider of this daemon.
+ * The ocs::qconf_action_provider of the action USERSET_MEMBERS.
  *
  * @param packet the client request, for the user and host the change is logged under
  * @param task the GDI task being answered
  * @param monitor for monitoring qmaster threads
- * @param parameter the users, the lists and the direction
+ * @param parameter the arguments ARG_USERS, ARG_LISTS and ARG_ADD
  * @param answer_list receives one answer per user and list
  * @return true when every user could be added or removed
  */
 bool
 qconf_member_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monitor,
-                            const ocs::QConfMemberParameter &parameter, lList **answer_list);
+                            const ocs::QConfActionParameter &parameter, lList **answer_list);

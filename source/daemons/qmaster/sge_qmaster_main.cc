@@ -303,10 +303,10 @@ int main(int argc, char *argv[]) {
    // CS-2822: the procedure library cannot call into the daemon, so the writing
    // code is handed to it here, once, the same way the thread pool list is.
    ocs::set_qconf_write_provider(qconf_write_from_procedure);
-   // CS-2948: and the purge of host specific queue values, likewise.
-   ocs::set_qconf_purge_provider(qconf_purge_from_procedure);
-   // CS-2959: and the access list membership, likewise.
-   ocs::set_qconf_member_provider(qconf_member_from_procedure);
+   // CS-2962: and the function of every qconf action, likewise - the purge of
+   // host specific queue values (CS-2948) and the access list membership (CS-2959).
+   ocs::set_qconf_action_provider(ocs::QConfActionParameter::QUEUE_PURGE, qconf_purge_from_procedure);
+   ocs::set_qconf_action_provider(ocs::QConfActionParameter::USERSET_MEMBERS, qconf_member_from_procedure);
 
    /*
     * Setup all threads and initialize corresponding modules.

@@ -91,27 +91,23 @@
 #define MSG_CENTRY_NULL_URGENCY                       _MESSAGE(12015, _("Complex urgency definition is missing"))
 #define MSG_CENTRY_KEPT_BUILTIN_S                     _MESSAGE(12016, _("kept built-in complex attribute(s) " SFNMAX " that the file does not define - built-ins cannot be deleted"))
 
-/* CS-2948: "qconf -purge" runs in qmaster now. The two messages of the old client
- * path that the procedure produces moved over from clients/qconf/msg_qconf.h
- * (5004 and 5150) and are renumbered into this file's band; their text and their
- * names are unchanged, because the testsuite matches both. */
-#define MSG_QCONF_NOPURGEPROVIDER                     _MESSAGE(12017, _("no purge provider installed - a purge can only run inside qmaster"))
+/* The qconf actions (CS-2962): "-purge" (CS-2948) and the access list
+ * membership switches "-au"/"-du"/"-am"/"-ao"/"-dm"/"-do" (CS-2959) run in
+ * qmaster. The messages of their old client paths that the actions produce moved
+ * over from clients/qconf/msg_qconf.h (5004, 5150 and 5050-5056) and are
+ * renumbered into this file's band; names and texts are unchanged, because the
+ * testsuite matches them. */
+#define MSG_QCONF_NOACTIONPROVIDER_S                  _MESSAGE(12017, _("no function for the qconf action " SFQ " is installed - an action can only run inside qmaster"))
 #define MSG_QCONF_PURGEINCOMPLETE                     _MESSAGE(12018, _("a purge needs a cluster queue, an attribute list and a host or host group"))
 #define MSG_QCONF_ATTR_ARGS_NOT_FOUND                 _MESSAGE(12019, _("Attribute name (" SFQ ") and/or value (" SFQ ") not found"))
 #define MSG_CQUEUE_DOESNOTEXIST_S                     _MESSAGE(12020, _("Cluster queue entry " SFQ " does not exist"))
-
-/* CS-2959: the access list membership switches -au/-du/-am/-ao/-dm/-do run in
- * qmaster now. Their per-user messages moved over from clients/qconf/msg_qconf.h
- * (5050-5056) and are renumbered into this file's band; names and texts are
- * unchanged, because the testsuite matches them. */
-#define MSG_QCONF_NOMEMBERPROVIDER                    _MESSAGE(12021, _("no membership provider installed - access list entries can only be changed inside qmaster"))
-#define MSG_QCONF_MEMBERINCOMPLETE                    _MESSAGE(12022, _("a change of access list entries needs at least one user and one access list"))
-#define MSG_ACL_USERINACL_SS                          _MESSAGE(12023, _(SFQ " is already in access list " SFQ))
-#define MSG_ACL_CANTADDTOACL_SS                       _MESSAGE(12024, _("can't add " SFQ " to access list " SFQ))
-#define MSG_ACL_ADDTOACL_SS                           _MESSAGE(12025, _("added " SFQ " to access list " SFQ))
-#define MSG_ACL_ACLDOESNOTEXIST_S                     _MESSAGE(12026, _("access list " SFQ " doesn't exist"))
-#define MSG_ACL_USERNOTINACL_SS                       _MESSAGE(12027, _("user " SFQ " is not in access list " SFQ))
-#define MSG_ACL_CANTDELFROMACL_SS                     _MESSAGE(12028, _("can't delete user " SFQ " from access list " SFQ))
-#define MSG_ACL_DELFROMACL_SS                         _MESSAGE(12029, _("deleted user " SFQ " from access list " SFQ))
+#define MSG_QCONF_MEMBERINCOMPLETE                    _MESSAGE(12021, _("a change of access list entries needs at least one user and one access list"))
+#define MSG_ACL_USERINACL_SS                          _MESSAGE(12022, _(SFQ " is already in access list " SFQ))
+#define MSG_ACL_CANTADDTOACL_SS                       _MESSAGE(12023, _("can't add " SFQ " to access list " SFQ))
+#define MSG_ACL_ADDTOACL_SS                           _MESSAGE(12024, _("added " SFQ " to access list " SFQ))
+#define MSG_ACL_ACLDOESNOTEXIST_S                     _MESSAGE(12025, _("access list " SFQ " doesn't exist"))
+#define MSG_ACL_USERNOTINACL_SS                       _MESSAGE(12026, _("user " SFQ " is not in access list " SFQ))
+#define MSG_ACL_CANTDELFROMACL_SS                     _MESSAGE(12027, _("can't delete user " SFQ " from access list " SFQ))
+#define MSG_ACL_DELFROMACL_SS                         _MESSAGE(12028, _("deleted user " SFQ " from access list " SFQ))
 
 // clang-format on

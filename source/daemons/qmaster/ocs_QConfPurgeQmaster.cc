@@ -22,6 +22,7 @@
  * @brief The purging half of the qconf purge procedure, see the header
  */
 
+#include <string>
 #include <vector>
 
 #include "cull/cull_db.h"
@@ -67,18 +68,28 @@
  * @param packet the client request, for the user and host the change is logged under
  * @param task the GDI task being answered
  * @param monitor for monitoring qmaster threads
- * @param parameter the queue, the attribute patterns and the host or host group
+ * @param parameter the arguments ARG_QUEUE, ARG_ATTRIBUTES and ARG_DOMAIN
  * @param answer_list receives the outcome
  * @return true when the purge did not fail
  */
 bool
 qconf_purge_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monitor,
-                           const ocs::QConfPurgeParameter &parameter, lList **answer_list) {
+                           const ocs::QConfActionParameter &parameter, lList **answer_list) {
    DENTER(TOP_LAYER);
 
-   const char *queue_name = parameter.get_queue().c_str();
-   const char *attributes = parameter.get_attributes().c_str();
-   const char *domain = parameter.get_domain().c_str();
+   const std::string queue_arg = parameter.get_arg(ocs::QConfActionParameter::ARG_QUEUE);
+   const std::string attributes_arg = parameter.get_arg(ocs::QConfActionParameter::ARG_ATTRIBUTES);
+   const std::string domain_arg = parameter.get_arg(ocs::QConfActionParameter::ARG_DOMAIN);
+
+   /* the client never sends an incomplete request; this guards the action
+    * against a caller that is not qconf */
+   if (queue_arg.empty() || attributes_arg.empty() || domain_arg.empty()) {
+      answer_list_add(answer_list, MSG_QCONF_PURGEINCOMPLETE, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
+      DRETURN(false);
+   }
+   const char *queue_name = queue_arg.c_str();
+   const char *attributes = attributes_arg.c_str();
+   const char *domain = domain_arg.c_str();
 
    const lListElem *stored = cqueue_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE), queue_name);
    if (stored == nullptr) {

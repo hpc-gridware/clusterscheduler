@@ -117,14 +117,24 @@ namespace {
  * @param packet the client request, for the user and host the change is logged under
  * @param task the GDI task being answered
  * @param monitor for monitoring qmaster threads
- * @param parameter the users, the lists and the direction
+ * @param parameter the arguments ARG_USERS, ARG_LISTS and ARG_ADD
  * @param answer_list receives one answer per user and list
  * @return true when every user could be added or removed
  */
 bool
 qconf_member_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monitor,
-                            const ocs::QConfMemberParameter &parameter, lList **answer_list) {
+                            const ocs::QConfActionParameter &parameter, lList **answer_list) {
    DENTER(TOP_LAYER);
+
+   const std::string users_arg = parameter.get_arg(ocs::QConfActionParameter::ARG_USERS);
+   const std::string lists_arg = parameter.get_arg(ocs::QConfActionParameter::ARG_LISTS);
+
+   /* the client never sends an incomplete request; this guards the action
+    * against a caller that is not qconf */
+   if (users_arg.empty() || lists_arg.empty()) {
+      answer_list_add(answer_list, MSG_QCONF_MEMBERINCOMPLETE, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
+      DRETURN(false);
+   }
 
    gdi_object_t *object = get_gdi_object(ocs::gdi::Target::US_LIST);
    if (object == nullptr) {
@@ -134,11 +144,11 @@ qconf_member_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, moni
 
    // separated as the client always separated them
    lList *users = nullptr;
-   lString2List(parameter.get_users().c_str(), &users, UE_Type, UE_name, ", ");
+   lString2List(users_arg.c_str(), &users, UE_Type, UE_name, ", ");
    lList *lists = nullptr;
-   lString2List(parameter.get_lists().c_str(), &lists, US_Type, US_name, ", ");
+   lString2List(lists_arg.c_str(), &lists, US_Type, US_name, ", ");
 
-   const bool add = parameter.is_add();
+   const bool add = (parameter.get_arg(ocs::QConfActionParameter::ARG_ADD) == ocs::QConfActionParameter::ARG_TRUE);
    bool all_ok = true;
    dstring buffer = DSTRING_INIT;
 

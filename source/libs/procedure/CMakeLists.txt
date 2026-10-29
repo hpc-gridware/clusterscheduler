@@ -50,10 +50,8 @@ set(LIBRARY_SOURCES
         qrstat/ocs_QRStatViewXML.cc
 
         qconf/ocs_QConfObject.cc
-        qconf/ocs_QConfMemberParameter.cc
-        qconf/ocs_QConfMemberServer.cc
-        qconf/ocs_QConfPurgeParameter.cc
-        qconf/ocs_QConfPurgeServer.cc
+        qconf/ocs_QConfActionParameter.cc
+        qconf/ocs_QConfActionServer.cc
         qconf/ocs_QConfWriteParameter.cc
         qconf/ocs_QConfWriteServer.cc
         qconf/ocs_QConfParameter.cc

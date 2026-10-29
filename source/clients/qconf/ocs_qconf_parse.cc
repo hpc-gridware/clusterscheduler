@@ -98,8 +98,7 @@
 #include "procedure/ocs_ProcedureController.h"
 #include "procedure/ocs_ProcedureModel.h"
 #include "procedure/ocs_ProcedureView.h"
-#include "procedure/qconf/ocs_QConfMemberParameter.h"
-#include "procedure/qconf/ocs_QConfPurgeParameter.h"
+#include "procedure/qconf/ocs_QConfActionParameter.h"
 #include "procedure/qconf/ocs_QConfWriteModelClient.h"
 
 #include "qconf/ocs_QConfController.h"
@@ -1813,8 +1812,10 @@ qconf_modify_members(const ocs::QConfParameterClient &param, const char *sw, con
       DRETURN(1);
    }
 
-   ocs::QConfMemberParameter members;
-   members.set_members(users, lists, add);
+   ocs::QConfActionParameter members(ocs::QConfActionParameter::USERSET_MEMBERS);
+   members.set_arg(ocs::QConfActionParameter::ARG_USERS, users);
+   members.set_arg(ocs::QConfActionParameter::ARG_LISTS, lists);
+   members.set_arg(ocs::QConfActionParameter::ARG_ADD, add ? ocs::QConfActionParameter::ARG_TRUE : "0");
    ocs::QConfWriteModelClient model(ocs::gdi::Target::US_LIST);
 
    lList *answer_list = nullptr;
@@ -3981,8 +3982,10 @@ int sge_parse_qconf(char *argv[]) {
          continue;
       }
 
-      ocs::QConfPurgeParameter purge;
-      purge.set_purge(queue, attr, hgroup_or_hostname);
+      ocs::QConfActionParameter purge(ocs::QConfActionParameter::QUEUE_PURGE);
+      purge.set_arg(ocs::QConfActionParameter::ARG_QUEUE, queue);
+      purge.set_arg(ocs::QConfActionParameter::ARG_ATTRIBUTES, attr);
+      purge.set_arg(ocs::QConfActionParameter::ARG_DOMAIN, hgroup_or_hostname);
       ocs::QConfWriteModelClient model(ocs::gdi::Target::CQ_LIST);
 
       lList *answer_list = nullptr;

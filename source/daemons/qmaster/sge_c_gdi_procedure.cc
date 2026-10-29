@@ -67,8 +67,7 @@
 #include "procedure/qconf/ocs_QConfViewJSON.h"
 #include "procedure/qconf/ocs_QConfViewPlain.h"
 #include "procedure/qconf/ocs_QConfViewXML.h"
-#include "procedure/qconf/ocs_QConfMemberServer.h"
-#include "procedure/qconf/ocs_QConfPurgeServer.h"
+#include "procedure/qconf/ocs_QConfActionServer.h"
 #include "procedure/qconf/ocs_QConfWriteServer.h"
 
 #include "procedure/qhost/ocs_QHostContoller.h"
@@ -901,57 +900,33 @@ namespace {
       }
    };
 
-   /** @brief The traits of `qconf -purge` (CS-2948)
+   /** @brief The traits of every qconf action (CS-2962)
     *
-    * A write, so it renders nothing either. It names no write_object: the
-    * purge changes one cluster queue in place rather than applying object
-    * texts, and its dispatch entry is addressed to the queue list.
+    * An action changes objects in qmaster without handing object texts over -
+    * "-purge" (CS-2948), the access list membership switches (CS-2959). Which
+    * function carries it out is looked up by the model from the action's name,
+    * so all of them share these traits; what tells them apart in the table below
+    * is the name and the object list each one is checked against. A write, so it
+    * renders nothing, and it names no write_object.
     */
-   struct QConfPurgeTraits {
-      using Parameter = ocs::QConfPurgeParameter;
-      using Model = ocs::QConfPurgeModelServer;
-      using ViewBase = ocs::QConfPurgeView;
-      using Controller = ocs::QConfPurgeController;
+   struct QConfActionTraits {
+      using Parameter = ocs::QConfActionParameter;
+      using Model = ocs::QConfActionModelServer;
+      using ViewBase = ocs::QConfActionView;
+      using Controller = ocs::QConfActionController;
 
       static constexpr ProgName prog_number = QCONF;
 
       static std::unique_ptr<ViewBase> make_xml_view(const Parameter &parameter) {
-         return std::make_unique<ocs::QConfPurgeView>(parameter);
+         return std::make_unique<ocs::QConfActionView>(parameter);
       }
 
       static std::unique_ptr<ViewBase> make_plain_view(const Parameter &parameter) {
-         return std::make_unique<ocs::QConfPurgeView>(parameter);
+         return std::make_unique<ocs::QConfActionView>(parameter);
       }
 
       static std::unique_ptr<ViewBase> make_json_view(const Parameter &parameter) {
-         return std::make_unique<ocs::QConfPurgeView>(parameter);
-      }
-   };
-
-   /** @brief The traits of the access list membership switches (CS-2959)
-    *
-    * A write, so it renders nothing; what it has to say is one answer per user
-    * and list. Like the purge it names no write_object, because it changes the
-    * entries of lists in place rather than applying object texts.
-    */
-   struct QConfMemberTraits {
-      using Parameter = ocs::QConfMemberParameter;
-      using Model = ocs::QConfMemberModelServer;
-      using ViewBase = ocs::QConfMemberView;
-      using Controller = ocs::QConfMemberController;
-
-      static constexpr ProgName prog_number = QCONF;
-
-      static std::unique_ptr<ViewBase> make_xml_view(const Parameter &parameter) {
-         return std::make_unique<ocs::QConfMemberView>(parameter);
-      }
-
-      static std::unique_ptr<ViewBase> make_plain_view(const Parameter &parameter) {
-         return std::make_unique<ocs::QConfMemberView>(parameter);
-      }
-
-      static std::unique_ptr<ViewBase> make_json_view(const Parameter &parameter) {
-         return std::make_unique<ocs::QConfMemberView>(parameter);
+         return std::make_unique<ocs::QConfActionView>(parameter);
       }
    };
 
@@ -1075,14 +1050,14 @@ namespace {
       /* CS-2948: "qconf -purge" changes one cluster queue in place, so it is
        * checked as a modify of the queue list - the same permission a "-mattr"
        * on the queue needs. */
-      {to_string_view(QCONF), ocs::QConfPurgeParameter::QUEUE_PURGE,
-       modifies(ocs::gdi::Target::CQ_LIST), &run_procedure<QConfPurgeTraits>},
+      {to_string_view(QCONF), ocs::QConfActionParameter::QUEUE_PURGE,
+       modifies(ocs::gdi::Target::CQ_LIST), &run_procedure<QConfActionTraits>},
       /* CS-2959: "-au"/"-du" and "-am"/"-ao"/"-dm"/"-do" change the entries of
        * access lists in place, so they are checked as a modify of the userset
        * list - what the client's GET and MOD were checked as before. The
        * manager-only rule of the reserved lists stays in userset_mod(). */
-      {to_string_view(QCONF), ocs::QConfMemberParameter::USERSET_MEMBERS,
-       modifies(ocs::gdi::Target::US_LIST), &run_procedure<QConfMemberTraits>},
+      {to_string_view(QCONF), ocs::QConfActionParameter::USERSET_MEMBERS,
+       modifies(ocs::gdi::Target::US_LIST), &run_procedure<QConfActionTraits>},
       {to_string_view(QHOST), "", READS, &run_procedure<QHostTraits>},
       {to_string_view(QQUOTA), "", READS, &run_procedure<QQuotaTraits>},
       {to_string_view(QRSTAT), "", READS, &run_procedure<QRStatTraits>},
