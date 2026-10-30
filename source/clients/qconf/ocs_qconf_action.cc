@@ -47,29 +47,30 @@
  *
  * @param op the operation
  * @param action receives the arguments
+ * @param alpp the answer list of the operation, receives the reason the command line is refused
  * @return true when the command line was usable, false after its message
  */
 static bool
-qconf_action_purge_args(const qconf_op &op, ocs::QConfActionParameter &action) {
+qconf_action_purge_args(const qconf_op &op, ocs::QConfActionParameter &action, lList **alpp) {
    /* "queue" is the only object type -purge knows */
    if (op.args[0] != SGE_OBJ_CQUEUE) {
-      ERROR(MSG_QCONF_MODIFICATIONOFOBJECTNOTSUPPORTED_S, op.args[0].c_str());
+      qconf_answer(alpp, ANSWER_QUALITY_ERROR, MSG_QCONF_MODIFICATIONOFOBJECTNOTSUPPORTED_S, op.args[0].c_str());
       return false;
    }
    if (op.args[1].empty()) {
-      ERROR(SFNMAX, MSG_QCONF_NOATTRIBUTEGIVEN);
+      qconf_answer(alpp, ANSWER_QUALITY_ERROR, SFNMAX, MSG_QCONF_NOATTRIBUTEGIVEN);
       return false;
    }
    /* the object instance looks like queue@host or queue@@hgroup */
    const std::string &instance = op.args[2];
    const std::string::size_type at = instance.find('@');
    if (at == std::string::npos || at == 0 || at + 1 == instance.size()) {
-      ERROR(MSG_QCONF_GIVENOBJECTINSTANCEINCOMPLETE_S, instance.c_str());
+      qconf_answer(alpp, ANSWER_QUALITY_ERROR, MSG_QCONF_GIVENOBJECTINSTANCEINCOMPLETE_S, instance.c_str());
       return false;
    }
    const std::string domain = instance.substr(at + 1);
    if (domain == "@/") {
-      ERROR(MSG_QCONF_MODIFICATIONOFHOSTNOTSUPPORTED_S, domain.c_str());
+      qconf_answer(alpp, ANSWER_QUALITY_ERROR, MSG_QCONF_MODIFICATIONOFHOSTNOTSUPPORTED_S, domain.c_str());
       return false;
    }
    action.set_arg(ocs::QConfActionParameter::ARG_QUEUE, instance.substr(0, at));
@@ -124,31 +125,35 @@ qconf_action_stnode_args(const qconf_op &op, ocs::QConfActionParameter &action, 
  *
  * Every other action reports a short command line in the generic words of
  * sge_parser_get_next(); these two had a message of their own for the one case
- * where the users were given and the lists were not.
+ * where the users were given and the lists were not. The usage follows, as it
+ * does for the generic report.
  *
  * @param op the truncated operation
+ * @param alpp the answer list of the operation, receives the message
  * @return true when it was reported here, false to report it the generic way
  */
 static bool
-qconf_action_members_missing(const qconf_op &op) {
+qconf_action_members_missing(const qconf_op &op, lList **alpp) {
    if (op.args.size() != 1) {
       return false;
    }
-   ERROR(op.is("-au") ? MSG_ANSWER_NOLISTNAMEPROVIDEDTOAUX_S : MSG_ANSWER_NOLISTNAMEPROVIDEDTODUX_S,
-         op.args[0].c_str());
-   sge_usage(QCONF, stderr);
+   qconf_answer(alpp, ANSWER_QUALITY_ERROR,
+                op.is("-au") ? MSG_ANSWER_NOLISTNAMEPROVIDEDTOAUX_S : MSG_ANSWER_NOLISTNAMEPROVIDEDTODUX_S,
+                op.args[0].c_str());
    return true;
 }
 
-/** @brief After a failed "-astnode"/"-mstnode": the usage, when an argument was malformed
+/** @brief After a failed "-astnode"/"-mstnode": whether the usage follows the messages
  *
- * Printed as before - when nothing was changed and a node argument is not of
- * the form "path=shares".
+ * As before - when nothing was changed and a node argument is not of the form
+ * "path=shares".
  *
  * @param op the operation
+ * @return true when the usage is to be printed
  */
-static void
+static bool
 qconf_action_stnode_failed(const qconf_op &op) {
+   bool usage = false;
    lList *args = nullptr;
    lString2List(op.args[0].c_str(), &args, ST_Type, ST_name, ", ");
    for_each_ep_lv(arg, args) {
@@ -156,11 +161,12 @@ qconf_action_stnode_failed(const qconf_op &op) {
       const char *eq = (text != nullptr) ? strchr(text, '=') : nullptr;
       int shares;
       if (eq == nullptr || eq == text || sscanf(eq + 1, "%d", &shares) != 1) {
-         sge_usage(QCONF, stderr);
+         usage = true;
          break;
       }
    }
    lFreeList(&args);
+   return usage;
 }
 
 /** @brief One switch served by qconf_run_action() */
@@ -169,9 +175,9 @@ struct qconf_action_entry {
    const char *action;                                              ///< the qconf action it runs
    ocs::gdi::Target target;                                         ///< the object list it changes
    QConfClientCheck check;                                          ///< the check it makes in the client
-   bool (*args)(const qconf_op &op, ocs::QConfActionParameter &action); ///< builds the arguments, or nullptr
-   bool (*missing)(const qconf_op &op);                             ///< a message of its own for a short command line, or nullptr
-   void (*failed)(const qconf_op &op);                              ///< what it adds after a failure, or nullptr
+   bool (*args)(const qconf_op &op, ocs::QConfActionParameter &action, lList **alpp); ///< builds the arguments, or nullptr
+   bool (*missing)(const qconf_op &op, lList **alpp);               ///< a message of its own for a short command line, or nullptr
+   bool (*failed)(const qconf_op &op);                              ///< whether the usage follows a failure, or nullptr
 };
 
 /** @brief The switches that run a qconf action (CS-2962, CS-2967)
@@ -185,31 +191,31 @@ static constexpr qconf_action_entry qconf_action_table[] = {
    {"-purge", ocs::QConfActionParameter::QUEUE_PURGE, ocs::gdi::Target::CQ_LIST, QConfClientCheck::NONE,
     qconf_action_purge_args, nullptr, nullptr},
    {"-au", ocs::QConfActionParameter::USERSET_MEMBERS, ocs::gdi::Target::US_LIST, QConfClientCheck::NONE,
-    [](const qconf_op &op, ocs::QConfActionParameter &a) { return qconf_action_members_args(op, a, true); },
+    [](const qconf_op &op, ocs::QConfActionParameter &a, [[maybe_unused]] lList **alpp) { return qconf_action_members_args(op, a, true); },
     qconf_action_members_missing, nullptr},
    {"-du", ocs::QConfActionParameter::USERSET_MEMBERS, ocs::gdi::Target::US_LIST, QConfClientCheck::NONE,
-    [](const qconf_op &op, ocs::QConfActionParameter &a) { return qconf_action_members_args(op, a, false); },
+    [](const qconf_op &op, ocs::QConfActionParameter &a, [[maybe_unused]] lList **alpp) { return qconf_action_members_args(op, a, false); },
     qconf_action_members_missing, nullptr},
    {"-am", ocs::QConfActionParameter::USERSET_MEMBERS, ocs::gdi::Target::US_LIST, QConfClientCheck::NONE,
-    [](const qconf_op &op, ocs::QConfActionParameter &a) { return qconf_action_manop_args(op, a, MANAGER_USERSET, true); },
+    [](const qconf_op &op, ocs::QConfActionParameter &a, [[maybe_unused]] lList **alpp) { return qconf_action_manop_args(op, a, MANAGER_USERSET, true); },
     nullptr, nullptr},
    {"-ao", ocs::QConfActionParameter::USERSET_MEMBERS, ocs::gdi::Target::US_LIST, QConfClientCheck::NONE,
-    [](const qconf_op &op, ocs::QConfActionParameter &a) { return qconf_action_manop_args(op, a, OPERATOR_USERSET, true); },
+    [](const qconf_op &op, ocs::QConfActionParameter &a, [[maybe_unused]] lList **alpp) { return qconf_action_manop_args(op, a, OPERATOR_USERSET, true); },
     nullptr, nullptr},
    {"-dm", ocs::QConfActionParameter::USERSET_MEMBERS, ocs::gdi::Target::US_LIST, QConfClientCheck::NONE,
-    [](const qconf_op &op, ocs::QConfActionParameter &a) { return qconf_action_manop_args(op, a, MANAGER_USERSET, false); },
+    [](const qconf_op &op, ocs::QConfActionParameter &a, [[maybe_unused]] lList **alpp) { return qconf_action_manop_args(op, a, MANAGER_USERSET, false); },
     nullptr, nullptr},
    {"-do", ocs::QConfActionParameter::USERSET_MEMBERS, ocs::gdi::Target::US_LIST, QConfClientCheck::NONE,
-    [](const qconf_op &op, ocs::QConfActionParameter &a) { return qconf_action_manop_args(op, a, OPERATOR_USERSET, false); },
+    [](const qconf_op &op, ocs::QConfActionParameter &a, [[maybe_unused]] lList **alpp) { return qconf_action_manop_args(op, a, OPERATOR_USERSET, false); },
     nullptr, nullptr},
    {"-astnode", ocs::QConfActionParameter::SHARETREE_NODES, ocs::gdi::Target::STN_LIST, QConfClientCheck::NONE,
-    [](const qconf_op &op, ocs::QConfActionParameter &a) { return qconf_action_stnode_args(op, a, ocs::QConfActionParameter::OP_ADD); },
+    [](const qconf_op &op, ocs::QConfActionParameter &a, [[maybe_unused]] lList **alpp) { return qconf_action_stnode_args(op, a, ocs::QConfActionParameter::OP_ADD); },
     nullptr, qconf_action_stnode_failed},
    {"-mstnode", ocs::QConfActionParameter::SHARETREE_NODES, ocs::gdi::Target::STN_LIST, QConfClientCheck::NONE,
-    [](const qconf_op &op, ocs::QConfActionParameter &a) { return qconf_action_stnode_args(op, a, ocs::QConfActionParameter::OP_MODIFY); },
+    [](const qconf_op &op, ocs::QConfActionParameter &a, [[maybe_unused]] lList **alpp) { return qconf_action_stnode_args(op, a, ocs::QConfActionParameter::OP_MODIFY); },
     nullptr, qconf_action_stnode_failed},
    {"-dstnode", ocs::QConfActionParameter::SHARETREE_NODES, ocs::gdi::Target::STN_LIST, QConfClientCheck::NONE,
-    [](const qconf_op &op, ocs::QConfActionParameter &a) { return qconf_action_stnode_args(op, a, ocs::QConfActionParameter::OP_DELETE); },
+    [](const qconf_op &op, ocs::QConfActionParameter &a, [[maybe_unused]] lList **alpp) { return qconf_action_stnode_args(op, a, ocs::QConfActionParameter::OP_DELETE); },
     nullptr, nullptr},
    {"-clearusage", ocs::QConfActionParameter::USAGE_CLEAR, ocs::gdi::Target::UU_LIST,
     QConfClientCheck::MANAGER_ON_ADMIN_HOST, nullptr, nullptr, nullptr},
@@ -217,7 +223,7 @@ static constexpr qconf_action_entry qconf_action_table[] = {
 
 QConfOpResult
 qconf_run_action(const ocs::QConfParameterClient &param, const qconf_op &op, const char *username,
-                 const char *hostname) {
+                 const char *hostname, lList **alpp) {
    DENTER(TOP_LAYER);
 
    const qconf_action_entry *entry = nullptr;
@@ -231,36 +237,32 @@ qconf_run_action(const ocs::QConfParameterClient &param, const qconf_op &op, con
       DRETURN(QConfOpResult::NOT_HANDLED);
    }
    if (op.spec != nullptr && op.args.size() < static_cast<size_t>(op.spec->min_args) &&
-       entry->missing != nullptr && entry->missing(op)) {
-      DRETURN(QConfOpResult::FAILED);
+       entry->missing != nullptr && entry->missing(op, alpp)) {
+      DRETURN(QConfOpResult::FAILED_USAGE);
    }
-   if (qconf_missing_argument(op)) {
-      DRETURN(QConfOpResult::FAILED);
+   if (qconf_missing_argument(op, alpp)) {
+      DRETURN(QConfOpResult::FAILED_USAGE);
    }
 
    qconf_client_check(entry->check, username, hostname);
 
    ocs::QConfActionParameter action(entry->action);
-   if (entry->args != nullptr && !entry->args(op, action)) {
+   if (entry->args != nullptr && !entry->args(op, action, alpp)) {
       DRETURN(QConfOpResult::FAILED);
    }
 
    if (param.get_exec_context() != ocs::ProcedureParameter::ExecContext::SERVER) {
-      ERROR(MSG_QCONF_MODNEEDSSERVERCTX_S, entry->switch_name);
+      qconf_answer(alpp, ANSWER_QUALITY_ERROR, MSG_QCONF_MODNEEDSSERVERCTX_S, entry->switch_name);
       DRETURN(QConfOpResult::FAILED);
    }
 
    ocs::QConfWriteModelClient model(entry->target);
    lList *answer_list = nullptr;
    const bool ok = model.make_snapshot(&answer_list, action);
-   const int shown = show_answer_list(answer_list);
-   lFreeList(&answer_list);
+   const int shown = qconf_answer_take(alpp, &answer_list);
 
    if (!ok || shown != 0) {
-      if (entry->failed != nullptr) {
-         entry->failed(op);
-      }
-      DRETURN(QConfOpResult::FAILED);
+      DRETURN((entry->failed != nullptr && entry->failed(op)) ? QConfOpResult::FAILED_USAGE : QConfOpResult::FAILED);
    }
    DRETURN(QConfOpResult::OK);
 }

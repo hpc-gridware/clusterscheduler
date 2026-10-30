@@ -72,6 +72,7 @@ qconf_dispatch_procedure(std::ostream &os, ocs::QConfParameterClient &param, lLi
  * @param param the invocation, whose operation is set for the call
  * @param o    the object type
  * @param name the object name, ignored for a type without a name field
+ * @param alpp the answer list of the operation, receives the reason a read failed
  * @param reduction where the reduction flags of the read are stored, nullptr to ignore them
  * @param report_errors false to leave a failed read silent, for the reduction
  *        probe of CS-2825: the operation it guards has its own message for an
@@ -81,7 +82,7 @@ qconf_dispatch_procedure(std::ostream &os, ocs::QConfParameterClient &param, lLi
  */
 QConfShowStatus
 qconf_show_object(std::ostream &os, ocs::QConfParameterClient &param, QConfObj o, const char *name,
-                  uint32_t *reduction = nullptr, bool report_errors = true);
+                  lList **alpp, uint32_t *reduction = nullptr, bool report_errors = true);
 
 /**
  * @brief Run one read operation as a stored procedure, if it is one
@@ -101,10 +102,12 @@ qconf_show_object(std::ostream &os, ocs::QConfParameterClient &param, QConfObj o
  * @param os        the stream the output is written to
  * @param param     the invocation, whose operation is set to @p op for the call
  * @param op        the operation to run
+ * @param alpp  the answer list of the operation, receives every message (CS-2971)
  * @return what became of the operation
  */
 QConfOpResult
-qconf_run_read_procedure(std::ostream &os, ocs::QConfParameterClient &param, const qconf_op &op);
+qconf_run_read_procedure(std::ostream &os, ocs::QConfParameterClient &param, const qconf_op &op,
+                         lList **alpp);
 
 /**
  * @brief Run one read operation from qconf_sub_procedure_table, if it is one
@@ -116,7 +119,9 @@ qconf_run_read_procedure(std::ostream &os, ocs::QConfParameterClient &param, con
  * @param os    the stream the output is written to
  * @param param the invocation, whose operation is set to @p op for the call
  * @param op    the operation to run
+ * @param alpp  the answer list of the operation, receives every message (CS-2971)
  * @return what became of the operation
  */
 QConfOpResult
-qconf_run_sub_procedure(std::ostream &os, ocs::QConfParameterClient &param, const qconf_op &op);
+qconf_run_sub_procedure(std::ostream &os, ocs::QConfParameterClient &param, const qconf_op &op,
+                        lList **alpp);

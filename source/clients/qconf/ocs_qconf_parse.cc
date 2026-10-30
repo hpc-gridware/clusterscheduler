@@ -144,9 +144,9 @@
 
 static int sge_next_is_an_opt(char **ptr);
 
-static bool del_host_of_type(lList *arglp, ocs::gdi::Target target);
+static bool del_host_of_type(lList *arglp, ocs::gdi::Target target, lList **alpp);
 static bool mod_reserved_hgroup(std::ostream &os, lList *arglp, const char *group,
-                                ocs::gdi::SubCommand sub_command, const char *what);
+                                ocs::gdi::SubCommand sub_command, const char *what, lList **alpp);
 static int qconf_modify_attribute(lList **alpp, int from_file, char ***spp, lListElem **epp, ocs::gdi::SubCommand sub_command, struct object_info_entry *info_entry);
 
 
@@ -172,6 +172,19 @@ static char **sge_parser_get_next(char **arg) {
    DRETURN(++arg);
 }
 
+/** @brief Print what an operation has to report, and the usage when it asks for it (CS-2971)
+ * @param alpp  the answer list of the operation; printed, freed and set to nullptr
+ * @param usage whether the usage follows the messages; reset
+ */
+static void
+qconf_report_operation(lList **alpp, bool &usage) {
+   qconf_answer_print(alpp);
+   if (usage) {
+      sge_usage(QCONF, stderr);
+      usage = false;
+   }
+}
+
 /** @brief Work through the `qconf` command line, one switch at a time
  *
  * `qconf` accepts several switches in one invocation and applies them in the
@@ -190,7 +203,6 @@ int sge_parse_qconf(char *argv[]) {
    int sge_parse_return = 0;
    lList *lp=nullptr, *alp=nullptr;
    lListElem *ep=nullptr;
-   const lListElem *aep=nullptr;
    const char* qualified_hostname = component_get_qualified_hostname();
    const char* username = component_get_username();
    uint32_t prog_number = component_get_component_id();
@@ -284,7 +296,14 @@ int sge_parse_qconf(char *argv[]) {
     * failed switch", and the last message is the one that explains the exit
     * status. Inside one operation a list of names or a directory still runs to
     * the end and reports each failure, unless -strict makes it all or nothing. */
+   /* CS-2971: every operation reports through an answer list of its own - what
+    * qmaster answered and what the client has to say alike - which is printed
+    * when the operation is done: before the next one runs, and before the
+    * command line stops after a failure. */
+   lList *op_alp = nullptr;
+   bool op_usage = false;
    for (qconf_op &op : param.get_operations()) {
+      qconf_report_operation(&op_alp, op_usage);
       if (sge_parse_return != 0) {
          break;
       }
@@ -304,23 +323,32 @@ int sge_parse_qconf(char *argv[]) {
        * (CS-2952) and the adds and modifies (CS-2954), each with the
        * client-side check it had. What none of the tables serves falls through
        * to the option blocks below and runs locally. */
-      QConfOpResult result = qconf_run_read_procedure(os, param, op);
+      QConfOpResult result = qconf_run_read_procedure(os, param, op, &op_alp);
       if (result == QConfOpResult::NOT_HANDLED) {
-         result = qconf_run_sub_procedure(os, param, op);
+         result = qconf_run_sub_procedure(os, param, op, &op_alp);
       }
       if (result == QConfOpResult::NOT_HANDLED) {
-         result = qconf_run_delete(os, op, username, qualified_hostname);
+         result = qconf_run_delete(os, op, username, qualified_hostname, &op_alp);
       }
       if (result == QConfOpResult::NOT_HANDLED) {
-         result = qconf_run_write(os, param, op, username, qualified_hostname, uid, gid);
+         result = qconf_run_write(os, param, op, username, qualified_hostname, uid, gid, &op_alp);
       }
       if (result == QConfOpResult::NOT_HANDLED) {
-         result = qconf_run_action(param, op, username, qualified_hostname);
+         result = qconf_run_action(param, op, username, qualified_hostname, &op_alp);
       }
       if (result != QConfOpResult::NOT_HANDLED) {
-         if (result == QConfOpResult::FAILED) {
+         if (result == QConfOpResult::FAILED || result == QConfOpResult::FAILED_USAGE) {
             sge_parse_return = 1;
          }
+         op_usage = (result == QConfOpResult::FAILED_USAGE);
+         continue;
+      }
+
+      /* the blocks below report a short command line the way the tables do;
+       * sge_parser_get_next() is left as the backstop it always was */
+      if (qconf_missing_argument(op, &op_alp)) {
+         sge_parse_return = 1;
+         op_usage = true;
          continue;
       }
 /*-----------------------------------------------------------------------------*/
@@ -332,7 +360,7 @@ int sge_parse_qconf(char *argv[]) {
          spp = sge_parser_get_next(spp);
          parse_name_list_to_cull("host to add", &lp, HR_Type, HR_name, *spp);
          if (!mod_reserved_hgroup(os, lp, ADMIN_HOSTGROUP,
-                                  ocs::gdi::SubCommand::APPEND, "administrative host")) {
+                                  ocs::gdi::SubCommand::APPEND, "administrative host", &op_alp)) {
             sge_parse_return |= 1;
          }
 
@@ -351,7 +379,7 @@ int sge_parse_qconf(char *argv[]) {
          spp = sge_parser_get_next(spp);
          parse_name_list_to_cull("host to add", &lp, HR_Type, HR_name, *spp);
          if (!mod_reserved_hgroup(os, lp, SUBMIT_HOSTGROUP,
-                                  ocs::gdi::SubCommand::APPEND, "submit host")) {
+                                  ocs::gdi::SubCommand::APPEND, "submit host", &op_alp)) {
             sge_parse_return = 1;
          }
          lFreeList(&lp);
@@ -366,7 +394,7 @@ int sge_parse_qconf(char *argv[]) {
          /* no adminhost/manager check needed here */
          spp = sge_parser_get_next(spp);
          parse_name_list_to_cull("host to del", &lp, EH_Type, EH_name, *spp);
-         if (!del_host_of_type(lp, ocs::gdi::Target::EH_LIST)) {
+         if (!del_host_of_type(lp, ocs::gdi::Target::EH_LIST, &op_alp)) {
             sge_parse_return = 1;
          }
          lFreeList(&lp);
@@ -380,7 +408,7 @@ int sge_parse_qconf(char *argv[]) {
          spp = sge_parser_get_next(spp);
          parse_name_list_to_cull("host to del", &lp, HR_Type, HR_name, *spp);
          if (!mod_reserved_hgroup(os, lp, ADMIN_HOSTGROUP,
-                                  ocs::gdi::SubCommand::REMOVE, "administrative host")) {
+                                  ocs::gdi::SubCommand::REMOVE, "administrative host", &op_alp)) {
             sge_parse_return = 1;
          }
          lFreeList(&lp);
@@ -396,7 +424,7 @@ int sge_parse_qconf(char *argv[]) {
          spp = sge_parser_get_next(spp);
          parse_name_list_to_cull("host to del", &lp, HR_Type, HR_name, *spp);
          if (!mod_reserved_hgroup(os, lp, SUBMIT_HOSTGROUP,
-                                  ocs::gdi::SubCommand::REMOVE, "submit host")) {
+                                  ocs::gdi::SubCommand::REMOVE, "submit host", &op_alp)) {
             sge_parse_return = 1;
          }
          lFreeList(&lp);
@@ -420,14 +448,7 @@ int sge_parse_qconf(char *argv[]) {
          /* no adminhost/manager check needed here */
 
          alp = ocs::gdi::Client::gdi_kill(nullptr, SCHEDD_KILL);
-         for_each_ep(aep, alp) {
-            answer_exit_if_not_recoverable(aep);
-            if (answer_get_status(aep) != STATUS_OK)
-               sge_parse_return = 1;
-            answer_print_text(aep, stderr, nullptr, nullptr);
-         }
-
-         lFreeList(&alp);
+         sge_parse_return |= qconf_answer_take(&op_alp, &alp);
 
          spp++;
          continue;
@@ -439,8 +460,7 @@ int sge_parse_qconf(char *argv[]) {
       if (strcmp("-km", *spp) == 0) {
          /* no adminhost/manager check needed here */
          alp = ocs::gdi::Client::gdi_kill(nullptr, MASTER_KILL);
-         sge_parse_return |= show_answer_list(alp);
-         lFreeList(&alp);
+         sge_parse_return |= qconf_answer_take(&op_alp, &alp);
 
          spp++;
          continue;
@@ -464,8 +484,7 @@ int sge_parse_qconf(char *argv[]) {
             lString2List(*spp, &lp, ID_Type, ID_str, ", ");
             alp = ocs::gdi::Client::gdi_kill(lp, action_flag);
          }
-         sge_parse_return |= show_answer_list(alp);
-         lFreeList(&alp);
+         sge_parse_return |= qconf_answer_take(&op_alp, &alp);
          lFreeList(&lp);
          spp++;
          continue;
@@ -486,8 +505,7 @@ int sge_parse_qconf(char *argv[]) {
          }
          alp = ocs::gdi::Client::gdi_kill(lp, action_flag);
          lFreeList(&lp);
-         answer_list_on_error_print_or_exit(&alp, stderr);
-         lFreeList(&alp);
+         qconf_answer_take(&op_alp, &alp);
          spp++;
          continue;
       }
@@ -508,8 +526,7 @@ int sge_parse_qconf(char *argv[]) {
          }
          alp = ocs::gdi::Client::gdi_kill(lp, action_flag);
          lFreeList(&lp);
-         answer_list_on_error_print_or_exit(&alp, stderr);
-         lFreeList(&alp);
+         qconf_answer_take(&op_alp, &alp);
          spp++;
          continue;
       }
@@ -526,8 +543,8 @@ int sge_parse_qconf(char *argv[]) {
             case 'e':
                break;
             default:
-               ERROR(MSG_ANSWER_XISNOTAVALIDOPTIONY_SU, *spp, prog_number);
-               sge_usage(QCONF, stderr);
+               qconf_answer(&op_alp, ANSWER_QUALITY_ERROR, MSG_ANSWER_XISNOTAVALIDOPTIONY_SU, *spp, prog_number);
+               op_usage = true;
                sge_parse_return = 1;
                spp++;
                continue;
@@ -541,8 +558,9 @@ int sge_parse_qconf(char *argv[]) {
          if (!sge_next_is_an_opt(spp)) {
             spp = sge_parser_get_next(spp);
          } else {
-            if (sge_error_and_exit(MSG_QCONF_NEEDAHOSTNAMEORALL))
-               continue;
+            qconf_answer(&op_alp, ANSWER_QUALITY_ERROR, "%s", MSG_QCONF_NEEDAHOSTNAMEORALL);
+            sge_parse_return = 1;
+            continue;
          }
 
          if (strcmp(*spp, "all") == 0) { /* kill all dynamic event clients (EV_ID_ANY) */
@@ -552,9 +570,7 @@ int sge_parse_qconf(char *argv[]) {
             lString2List(*spp, &lp, EH_Type, EH_name, ", ");
             alp = ocs::gdi::Client::gdi_kill(lp, action_flag);
          }
-         sge_parse_return |= show_answer_list(alp);
-
-         lFreeList(&alp);
+         sge_parse_return |= qconf_answer_take(&op_alp, &alp);
          lFreeList(&lp);
          spp++;
          continue;
@@ -627,7 +643,7 @@ int sge_parse_qconf(char *argv[]) {
       }
 
       if (!info_entry[index].object_name) {
-         fprintf(stderr, "Modification of object " SFQ " not supported\n", *spp);
+         qconf_answer(&op_alp, ANSWER_QUALITY_ERROR, "Modification of object " SFQ " not supported", *spp);
          sge_free(&(info_entry[1].fields));
          sge_parse_return = 1;
          continue;
@@ -638,22 +654,11 @@ int sge_parse_qconf(char *argv[]) {
       ret = qconf_modify_attribute(&alp, from_file, &spp, &ep, sub_command, &(info_entry[index]));
       lFreeElem(&ep);
 
-      /* Error handling */
+      /* Error handling: these switches report a success on stdout, so the list
+       * is printed here, with the informations on stdout (CS-2971) */
       if (ret || lGetNumberOfElem(alp)) {
-         int exit = 0;
-
-         for_each_ep(aep, alp) {
-            FILE *std_x = nullptr;
-
-            if (lGetUlong(aep, AN_status) != STATUS_OK) {
-               std_x = stderr;
-               exit = 1;
-            } else {
-               std_x = stdout;
-            }
-            fprintf(std_x, "%s\n", lGetString(aep, AN_text));
-         }
-         lFreeList(&alp);
+         const bool exit = qconf_answer_take(&op_alp, &alp) != 0;
+         qconf_answer_print(&op_alp, stdout);
          if (exit) {
             sge_free(&(info_entry[1].fields));
             sge_parse_return = 1;
@@ -675,11 +680,7 @@ int sge_parse_qconf(char *argv[]) {
          }
          alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::CQ_LIST, ocs::gdi::Command::TRIGGER, ocs::gdi::SubCommand::NONE,
                        &lp, nullptr, nullptr);
-         if (answer_list_has_error(&alp)) {
-            sge_parse_return = 1;
-         }
-         answer_list_on_error_print_or_exit(&alp, stderr);
-         lFreeList(&alp);
+         sge_parse_return |= qconf_answer_take(&op_alp, &alp);
          lFreeList(&lp);
          spp++;
          continue;
@@ -692,8 +693,7 @@ int sge_parse_qconf(char *argv[]) {
       if (strcmp("-tsm", *spp) == 0) {
          /* no adminhost/manager check needed here */
          alp = ocs::gdi::Client::gdi_tsm();
-         answer_list_on_error_print_or_exit(&alp, stderr);
-         lFreeList(&alp);
+         qconf_answer_take(&op_alp, &alp);
 
          spp++;
          continue;
@@ -705,11 +705,12 @@ int sge_parse_qconf(char *argv[]) {
        * delete or write table or by a block above. Kept as the backstop it
        * always was, for a row added without its handler. */
 
-      ERROR(MSG_ANSWER_INVALIDOPTIONARGX_S, *spp);
-      fprintf(stderr, MSG_SRC_X_HELP_USAGE_S , "qconf");
-      fprintf(stderr, "\n");
+      qconf_answer(&op_alp, ANSWER_QUALITY_ERROR, MSG_ANSWER_INVALIDOPTIONARGX_S, *spp);
+      qconf_answer(&op_alp, ANSWER_QUALITY_INFO, MSG_SRC_X_HELP_USAGE_S, "qconf");
+      qconf_report_operation(&op_alp, op_usage);
       DRETURN(1);
    }
+   qconf_report_operation(&op_alp, op_usage);
 
    /* The command line was only understood up to here. The operations before the
     * bad token have run, so the complaint comes after their output - which is
@@ -719,9 +720,9 @@ int sge_parse_qconf(char *argv[]) {
     * command line stopped before the bad token was reached (CS-2950), so the
     * complaint is not made - the failure is what the exit status reports. */
    if (sge_parse_return == 0 && parse_status == QConfParseStatus::UNKNOWN_OPTION) {
-      ERROR(MSG_ANSWER_INVALIDOPTIONARGX_S, bad_token.c_str());
-      fprintf(stderr, MSG_SRC_X_HELP_USAGE_S, "qconf");
-      fprintf(stderr, "\n");
+      qconf_answer(&op_alp, ANSWER_QUALITY_ERROR, MSG_ANSWER_INVALIDOPTIONARGX_S, bad_token.c_str());
+      qconf_answer(&op_alp, ANSWER_QUALITY_INFO, MSG_SRC_X_HELP_USAGE_S, "qconf");
+      qconf_report_operation(&op_alp, op_usage);
       lFreeList(&alp);
       DRETURN(1);
    }
@@ -803,22 +804,6 @@ static int sge_next_is_an_opt(char **pptr) {
    DRETURN(0);
 }
 
-int sge_error_and_exit(const char *ptr) {
-   DENTER(TOP_LAYER);
-
-   fflush(stderr);
-   fflush(stdout);
-
-   if (ptr) {
-      fprintf(stderr, "%s\n", ptr);
-      fflush(stderr);
-   }
-
-   fflush(stderr);
-   sge_exit(1);
-   DRETURN(1); /* to prevent warning */
-}
-
 /**
  * @brief Add/remove hosts in a reserved host group
  *
@@ -859,11 +844,12 @@ int sge_error_and_exit(const char *ptr) {
  * @param group ADMIN_HOSTGROUP or SUBMIT_HOSTGROUP
  * @param sub_command APPEND to add, REMOVE to delete
  * @param what "administrative host" / "submit host", for messages
+ * @param alpp the answer list of the operation (CS-2971)
  *
  * @return true if every named host was resolved and the request succeeded
  */
 static bool mod_reserved_hgroup(std::ostream &os, lList *arglp, const char *group,
-                                ocs::gdi::SubCommand sub_command, const char *what) {
+                                ocs::gdi::SubCommand sub_command, const char *what, lList **alpp) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
@@ -906,8 +892,7 @@ static bool mod_reserved_hgroup(std::ostream &os, lList *arglp, const char *grou
 
          case ocs::MemberClass::LITERAL_HOST:
             if (sge_resolve_host(argep, HR_name) != CL_RETVAL_OK) {
-               fprintf(stderr, MSG_SGETEXT_CANTRESOLVEHOST_S, name);
-               fprintf(stderr, "\n");
+               qconf_answer(alpp, ANSWER_QUALITY_ERROR, MSG_SGETEXT_CANTRESOLVEHOST_S, name);
                ret = false;
                continue;
             }
@@ -935,7 +920,7 @@ static bool mod_reserved_hgroup(std::ostream &os, lList *arglp, const char *grou
    lList *alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::HGRP_LIST, ocs::gdi::Command::MOD,
                                           sub_command, &lp, nullptr, nullptr);
 
-   lListElem *aep = lFirstRW(alp);
+   const lListElem *aep = lFirst(alp);
    answer_exit_if_not_recoverable(aep);
    if (answer_get_status(aep) == STATUS_OK) {
       /*
@@ -963,16 +948,15 @@ static bool mod_reserved_hgroup(std::ostream &os, lList *arglp, const char *grou
        *
        * The return value stays what it is. A note or a warning must not turn a
        * change that was carried out into a reported failure.
+       *
+       * CS-2971: they go into the answer list of the operation, which is
+       * printed here, before the per-host lines on stdout, so that they still
+       * come first.
        */
-      const lListElem *aep_msg;
-      const lListElem *aep_last = lLast(alp);
-
-      for_each_ep(aep_msg, alp) {
-         if (aep_msg == aep_last) {
-            break;
-         }
-         fprintf(stderr, "%s\n", lGetString(aep_msg, AN_text));
-      }
+      lListElem *last = lLastRW(alp);
+      lRemoveElem(alp, &last);
+      qconf_answer_take(alpp, &alp);
+      qconf_answer_print(alpp);
 
       const lListElem *host;
 
@@ -987,11 +971,7 @@ static bool mod_reserved_hgroup(std::ostream &os, lList *arglp, const char *grou
       }
    } else {
       /* every answer, not just the first: the qmaster names each offending host */
-      const lListElem *answer;
-
-      for_each_ep(answer, alp) {
-         fprintf(stderr, "%s\n", lGetString(answer, AN_text));
-      }
+      qconf_answer_take(alpp, &alp);
       ret = false;
    }
 
@@ -1023,9 +1003,10 @@ static bool mod_reserved_hgroup(std::ostream &os, lList *arglp, const char *grou
  *
  * @param arglp the hosts to delete, as parsed from the command line
  * @param target the host list to delete from, EH_LIST
+ * @param alpp the answer list of the operation (CS-2971)
  * @return true if every host was deleted
  */
-static bool del_host_of_type(lList *arglp, ocs::gdi::Target target) {
+static bool del_host_of_type(lList *arglp, ocs::gdi::Target target, lList **alpp) {
    DENTER(TOP_LAYER);
 
    lList *lp=nullptr, *alp=nullptr;
@@ -1048,13 +1029,11 @@ static bool del_host_of_type(lList *arglp, ocs::gdi::Target target) {
    /* delete them */
    alp = ocs::gdi::Client::sge_gdi(target, ocs::gdi::Command::DEL, ocs::gdi::SubCommand::NONE, &lp, nullptr, nullptr);
 
-   /* print results */
+   /* the results go into the answer list of the operation */
    if (answer_list_has_error(&alp)) {
       ret = false;
    }
-   answer_list_on_error_print_or_exit(&alp, stderr);
-
-   lFreeList(&alp);
+   qconf_answer_take(alpp, &alp);
    lFreeList(&lp);
 
    DRETURN(ret);
@@ -1062,7 +1041,7 @@ static bool del_host_of_type(lList *arglp, ocs::gdi::Target target) {
 
 /* ------------------------------------------------------------ */
 
-int delete_configs(const lList *conf_list) {
+int delete_configs(const lList *conf_list, lList **alpp) {
    DENTER(TOP_LAYER);
 
    if (lGetNumberOfElem(conf_list) == 0) {
@@ -1080,16 +1059,12 @@ int delete_configs(const lList *conf_list) {
 
    /* one line per configuration, as before -- the qmaster reports each of them */
    int fail = 0;
-   const lListElem *aep;
-   for_each_ep(aep, alp) {
-      fprintf(stderr, "%s\n", lGetString(aep, AN_text));
-      answer_exit_if_not_recoverable(aep);
+   for_each_ep_lv(aep, alp) {
       if (answer_get_status(aep) != STATUS_OK) {
          fail++;
       }
    }
-
-   lFreeList(&alp);
+   qconf_answer_take(alpp, &alp);
    lFreeList(&lp);
 
    DRETURN(fail);
@@ -1179,7 +1154,7 @@ static int qconf_modify_attribute(lList **alpp, int from_file, char ***spp,
                                         true, info_entry->instr, qconf_opt_format,
                                         nullptr, **spp);
             
-      if (answer_list_output(alpp)) {
+      if (answer_list_has_error(alpp)) {
          DRETURN(1);
       }
       if (*epp == nullptr){

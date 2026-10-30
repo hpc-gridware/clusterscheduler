@@ -32,6 +32,7 @@
 
 #include "uti/sge_dstring.h"
 #include "uti/sge_log.h"
+#include "uti/msg_utilib.h"
 #include "uti/sge_stdio.h"
 #include "uti/sge_string.h"
 #include "uti/sge_unistd.h"
@@ -97,8 +98,80 @@ qconf_info(std::ostream &os, const char *fmt, ...) {
    os << "\n";
 }
 
+void
+qconf_answer(lList **alpp, const answer_quality_t quality, const char *fmt, ...) {
+   va_list ap;
+   va_start(ap, fmt);
+   dstring buffer = DSTRING_INIT;
+   sge_dstring_vsprintf(&buffer, fmt, ap);
+   va_end(ap);
+   const uint32_t status = (quality == ANSWER_QUALITY_ERROR || quality == ANSWER_QUALITY_CRITICAL)
+                           ? STATUS_EUNKNOWN : STATUS_OK;
+   answer_list_add(alpp, sge_dstring_get_string(&buffer), status, quality);
+   sge_dstring_free(&buffer);
+}
+
+int
+qconf_answer_take(lList **alpp, lList **from) {
+   int failed = 0;
+   bool fatal = false;
+   for_each_ep_lv(aep, *from) {
+      if (lGetUlong(aep, AN_quality) == ANSWER_QUALITY_END) {
+         continue;
+      }
+      if (answer_get_status(aep) != STATUS_OK) {
+         failed = 1;
+      }
+      if (!answer_is_recoverable(aep)) {
+         fatal = true;
+      }
+   }
+   if (*from != nullptr) {
+      if (*alpp == nullptr) {
+         *alpp = lCreateList("answers", AN_Type);
+      }
+      lAddList(*alpp, from);
+   }
+   if (fatal) {
+      /* prints up to the answer that cannot be recovered from, and exits there */
+      qconf_answer_print(alpp);
+   }
+   return failed;
+}
+
+void
+qconf_answer_print(lList **alpp, FILE *info_stream) {
+   for_each_ep_lv(aep, *alpp) {
+      const uint32_t quality = lGetUlong(aep, AN_quality);
+      if (quality == ANSWER_QUALITY_END) {
+         continue;
+      }
+      answer_exit_if_not_recoverable(aep);
+      const char *text = lGetString(aep, AN_text);
+      if (text == nullptr) {
+         continue;
+      }
+      switch (quality) {
+         case ANSWER_QUALITY_CRITICAL:
+            fprintf(stderr, "%s%s\n", MSG_LOG_CRITICALERROR, text);
+            break;
+         case ANSWER_QUALITY_ERROR:
+            fprintf(stderr, "%s%s\n", MSG_LOG_ERROR, text);
+            break;
+         case ANSWER_QUALITY_WARNING:
+            fprintf(stderr, "%s\n", text);
+            break;
+         default:
+            fprintf(info_stream, "%s\n", text);
+            break;
+      }
+   }
+   lFreeList(alpp);
+}
+
 bool
-qconf_confirm(const char *prompt) {
+qconf_confirm(const char *prompt, lList **alpp) {
+   qconf_answer_print(alpp);
    printf("%s", prompt);
    fflush(stdout);
    char buf[16];
@@ -141,6 +214,7 @@ qconf_object_exists(const ocs::gdi::Target target, const lDescr *descr, const in
  * @param fields   spooling field list describing the file format
  * @param filename path to read, or "-" for stdin
  * @param validate optional object validator returning STATUS_OK on success, or nullptr
+ * @param alpp     the answer list of the operation, receives what the parse reported
  * @param sfi      flatfile spooling instruction (defaults to qconf_sfi; complex
  *                 entries use qconf_ce_sfi - CS-2303)
  * @param prepare  optional transform run on the object after the read (e.g.
@@ -152,6 +226,7 @@ static lListElem *
 qconf_read_object_file(const lDescr *descr, spooling_field *fields,
                        const char *filename,
                        int (*validate)(const lListElem *, lList **),
+                       lList **alpp,
                        const spool_flatfile_instr *sfi = &qconf_sfi,
                        int (*prepare)(lListElem *, lList **) = nullptr,
                        const bool parse_values = true) {
@@ -163,19 +238,19 @@ qconf_read_object_file(const lDescr *descr, spooling_field *fields,
    lList *alp = nullptr;
    lListElem *ep = qconf_parse_object(&alp, descr, fields, qconf_opt_format, filename, nullptr,
                                       validate, sfi, prepare, parse_values);
-   answer_list_output(&alp);
+   qconf_answer_take(alpp, &alp);
    return ep;
 }
 
 int
-qconf_for_each_file(const char *path, int (*per_file)(const char *, void *), void *ctx) {
+qconf_for_each_file(const char *path, int (*per_file)(const char *, void *), void *ctx, lList **alpp) {
    if (!sge_is_directory(path)) {
       return per_file(path, ctx);
    }
 
    DIR *dir = opendir(path);
    if (dir == nullptr) {
-      ERROR(MSG_QCONF_CANTOPENDIRECTORY_SS, path, strerror(errno));
+      qconf_answer(alpp, ANSWER_QUALITY_ERROR, MSG_QCONF_CANTOPENDIRECTORY_SS, path, strerror(errno));
       return 1;
    }
    int failures = 0;
@@ -199,7 +274,8 @@ int
 qconf_collect_name(const char *filepath, void *vctx) {
    auto *ctx = static_cast<qconf_file_ctx *>(vctx);
    /* deletion only needs the name, so no object validator is applied here */
-   lListElem *ep = qconf_read_object_file(ctx->desc->descr, ctx->fields, filepath, nullptr, ctx->desc->sfi, ctx->desc->prepare, ctx->parse_values);
+   lListElem *ep = qconf_read_object_file(ctx->desc->descr, ctx->fields, filepath, nullptr, ctx->alpp,
+                                          ctx->desc->sfi, ctx->desc->prepare, ctx->parse_values);
    if (ep == nullptr) {
       ctx->n_fail++;
       return 1;
@@ -217,7 +293,7 @@ qconf_collect_name(const char *filepath, void *vctx) {
          }
          ctx->n_ok++;
       } else {
-         WARNING(MSG_QCONF_DELSKIPPEDNOTEXIST_SS, name, filepath);
+         qconf_answer(ctx->alpp, ANSWER_QUALITY_WARNING, MSG_QCONF_DELSKIPPEDNOTEXIST_SS, name, filepath);
       }
    }
    lFreeElem(&ep);
@@ -249,7 +325,7 @@ qconf_collect_text(const char *filepath, void *vctx) {
    const bool ok = (strcmp(filepath, "-") == 0) ? qconf_read_stream_text(stdin, text)
                                                 : qconf_read_file_text(filepath, text);
    if (!ok) {
-      ERROR(MSG_ERROROPENINGFILEFORREADING_SS, filepath, strerror(errno));
+      qconf_answer(ctx->alpp, ANSWER_QUALITY_ERROR, MSG_ERROROPENINGFILEFORREADING_SS, filepath, strerror(errno));
       ctx->n_fail++;
       return 1;
    }
@@ -292,12 +368,12 @@ qconf_conf_host_of(const char *filepath, lListElem *host_ep) {
 }
 
 bool
-qconf_missing_argument(const qconf_op &op) {
+qconf_missing_argument(const qconf_op &op, lList **alpp) {
    if (op.spec == nullptr || op.args.size() >= static_cast<size_t>(op.spec->min_args)) {
       return false;
    }
-   ERROR(MSG_QCONF_NOOPTIONARGPROVIDEDTOX_S, op.args.empty() ? op.token.c_str() : op.args.back().c_str());
-   sge_usage(QCONF, stderr);
+   qconf_answer(alpp, ANSWER_QUALITY_ERROR, MSG_QCONF_NOOPTIONARGPROVIDEDTOX_S,
+                op.args.empty() ? op.token.c_str() : op.args.back().c_str());
    return true;
 }
 
@@ -315,31 +391,31 @@ qconf_client_check(const QConfClientCheck check, const char *username, const cha
 /** @brief Resolve one host name the way the exec host switches always did
  * @param name the name as typed
  * @param resolved receives the resolved name
+ * @param alpp the answer list of the operation, receives the message
  * @return true when it resolved; false after the message
  */
 static bool
-qconf_resolve_one_host(const char *name, std::string &resolved) {
+qconf_resolve_one_host(const char *name, std::string &resolved, lList **alpp) {
    lListElem *host_ep = lCreateElem(EH_Type);
    lSetHost(host_ep, EH_name, name);
    const bool ok = (sge_resolve_host(host_ep, EH_name) == CL_RETVAL_OK);
    if (ok) {
       resolved = lGetHost(host_ep, EH_name);
    } else {
-      fprintf(stderr, MSG_SGETEXT_CANTRESOLVEHOST_S, lGetHost(host_ep, EH_name));
-      fprintf(stderr, "\n");
+      qconf_answer(alpp, ANSWER_QUALITY_ERROR, MSG_SGETEXT_CANTRESOLVEHOST_S, lGetHost(host_ep, EH_name));
    }
    lFreeElem(&host_ep);
    return ok;
 }
 
 void
-qconf_names_ae(const qconf_op &op, std::vector<std::string> &names, bool &failed) {
+qconf_names_ae(const qconf_op &op, std::vector<std::string> &names, bool &failed, lList **alpp) {
    if (op.args.empty()) {
       names.emplace_back(SGE_TEMPLATE_NAME);
       return;
    }
    std::string resolved;
-   if (qconf_resolve_one_host(op.args[0].c_str(), resolved)) {
+   if (qconf_resolve_one_host(op.args[0].c_str(), resolved, alpp)) {
       names.push_back(resolved);
    } else {
       failed = true;
@@ -347,9 +423,9 @@ qconf_names_ae(const qconf_op &op, std::vector<std::string> &names, bool &failed
 }
 
 void
-qconf_names_one_host(const qconf_op &op, std::vector<std::string> &names, bool &failed) {
+qconf_names_one_host(const qconf_op &op, std::vector<std::string> &names, bool &failed, lList **alpp) {
    std::string resolved;
-   if (qconf_resolve_one_host(op.args[0].c_str(), resolved)) {
+   if (qconf_resolve_one_host(op.args[0].c_str(), resolved, alpp)) {
       names.push_back(resolved);
    } else {
       failed = true;
@@ -357,14 +433,13 @@ qconf_names_one_host(const qconf_op &op, std::vector<std::string> &names, bool &
 }
 
 void
-qconf_names_host_list(const qconf_op &op, std::vector<std::string> &names, bool &failed) {
+qconf_names_host_list(const qconf_op &op, std::vector<std::string> &names, bool &failed, lList **alpp) {
    std::string arg = op.args[0];
    lList *hosts = nullptr;
    parse_name_list_to_cull("hosts to change", &hosts, EH_Type, EH_name, arg.data());
    for_each_rw_lv(host_ep, hosts) {
       if (sge_resolve_host(host_ep, EH_name) != CL_RETVAL_OK) {
-         fprintf(stderr, MSG_SGETEXT_CANTRESOLVEHOST_S, lGetHost(host_ep, EH_name));
-         fprintf(stderr, "\n");
+         qconf_answer(alpp, ANSWER_QUALITY_ERROR, MSG_SGETEXT_CANTRESOLVEHOST_S, lGetHost(host_ep, EH_name));
          failed = true;
          continue;
       }
@@ -374,7 +449,8 @@ qconf_names_host_list(const qconf_op &op, std::vector<std::string> &names, bool 
 }
 
 void
-qconf_names_userset_list(const qconf_op &op, std::vector<std::string> &names, [[maybe_unused]] bool &failed) {
+qconf_names_userset_list(const qconf_op &op, std::vector<std::string> &names, [[maybe_unused]] bool &failed,
+                         [[maybe_unused]] lList **alpp) {
    std::string arg = op.args[0];
    lList *usersets = nullptr;
    parse_name_list_to_cull("usersets", &usersets, US_Type, US_name, arg.data());
@@ -386,7 +462,8 @@ qconf_names_userset_list(const qconf_op &op, std::vector<std::string> &names, [[
 }
 
 void
-qconf_names_user_list(const qconf_op &op, std::vector<std::string> &names, [[maybe_unused]] bool &failed) {
+qconf_names_user_list(const qconf_op &op, std::vector<std::string> &names, [[maybe_unused]] bool &failed,
+                      [[maybe_unused]] lList **alpp) {
    lList *users = nullptr;
    lString2List(op.args[0].c_str(), &users, ST_Type, ST_name, ", ");
    for_each_ep_lv(user_ep, users) {
@@ -406,10 +483,11 @@ qconf_names_user_list(const qconf_op &op, std::vector<std::string> &names, [[may
  * @param op the operation
  * @param names receives the configuration names
  * @param failed set when a host was left out
+ * @param alpp the answer list of the operation, receives the reason a host did not resolve
  * @param keep_unresolved serve a host that does not resolve under its name as typed
  */
 static void
-qconf_names_conf_hosts(const qconf_op &op, std::vector<std::string> &names, bool &failed,
+qconf_names_conf_hosts(const qconf_op &op, std::vector<std::string> &names, bool &failed, lList **alpp,
                        const bool keep_unresolved) {
    std::string list = op.args.empty() ? SGE_GLOBAL_NAME : op.args[0];
    lListElem *host_ep = lCreateElem(EH_Type);
@@ -418,8 +496,7 @@ qconf_names_conf_hosts(const qconf_op &op, std::vector<std::string> &names, bool
       lSetHost(host_ep, EH_name, cp);
       const int ret = sge_resolve_host(host_ep, EH_name);
       if (ret != CL_RETVAL_OK) {
-         fprintf(stderr, MSG_SGETEXT_CANTRESOLVEHOST_SS, cp, cl_get_error_text(ret));
-         fprintf(stderr, "\n");
+         qconf_answer(alpp, ANSWER_QUALITY_ERROR, MSG_SGETEXT_CANTRESOLVEHOST_SS, cp, cl_get_error_text(ret));
          if (!keep_unresolved) {
             failed = true;
             continue;
@@ -432,17 +509,18 @@ qconf_names_conf_hosts(const qconf_op &op, std::vector<std::string> &names, bool
 }
 
 void
-qconf_names_conf_strict(const qconf_op &op, std::vector<std::string> &names, bool &failed) {
-   qconf_names_conf_hosts(op, names, failed, false);
+qconf_names_conf_strict(const qconf_op &op, std::vector<std::string> &names, bool &failed, lList **alpp) {
+   qconf_names_conf_hosts(op, names, failed, alpp, false);
 }
 
 void
-qconf_names_conf_lenient(const qconf_op &op, std::vector<std::string> &names, bool &failed) {
-   qconf_names_conf_hosts(op, names, failed, true);
+qconf_names_conf_lenient(const qconf_op &op, std::vector<std::string> &names, bool &failed, lList **alpp) {
+   qconf_names_conf_hosts(op, names, failed, alpp, true);
 }
 
 void
-qconf_names_conf_paths(const qconf_op &op, std::vector<std::string> &names, [[maybe_unused]] bool &failed) {
+qconf_names_conf_paths(const qconf_op &op, std::vector<std::string> &names, [[maybe_unused]] bool &failed,
+                       [[maybe_unused]] lList **alpp) {
    std::string list = op.args.empty() ? SGE_GLOBAL_NAME : op.args[0];
    for (const char *cp = sge_strtok(list.data(), ","); cp != nullptr && *cp != '\0';
         cp = sge_strtok(nullptr, ",")) {

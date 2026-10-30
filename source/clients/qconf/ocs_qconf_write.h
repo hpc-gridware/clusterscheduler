@@ -47,8 +47,9 @@
  * @param hostname the calling host, for the client-side check
  * @param uid      uid to run the editor as
  * @param gid      gid to run the editor as
+ * @param alpp     the answer list of the operation, receives every message (CS-2971)
  * @return what became of the operation
  */
 QConfOpResult
 qconf_run_write(std::ostream &os, ocs::QConfParameterClient &param, const qconf_op &op,
-                const char *username, const char *hostname, uid_t uid, gid_t gid);
+                const char *username, const char *hostname, uid_t uid, gid_t gid, lList **alpp);

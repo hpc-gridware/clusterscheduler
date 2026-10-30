@@ -42,8 +42,9 @@
  * @param op       the operation to run
  * @param username the calling user, for the client-side check
  * @param hostname the calling host, for the client-side check
+ * @param alpp     the answer list of the operation, receives every message (CS-2971)
  * @return what became of the operation
  */
 QConfOpResult
 qconf_run_delete(std::ostream &os, const qconf_op &op, const char *username,
-                 const char *hostname);
+                 const char *hostname, lList **alpp);

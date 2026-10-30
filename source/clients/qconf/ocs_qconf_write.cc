@@ -82,6 +82,7 @@
  * @param os the stream the summary is written to (CS-1841)
  * @param o the object type
  * @param path file or directory to apply
+ * @param alpp the answer list of the operation (CS-2971)
  * @param select for a type whose text holds a list, the names to write out of it,
  *               see qconf_apply_obj()
  * @param extra_mode write modes the switch adds, see qconf_apply_obj()
@@ -90,7 +91,7 @@
  * @return the number of objects that failed
  */
 static int
-qconf_apply_path_procedure(std::ostream &os, const QConfObj o, const char *path,
+qconf_apply_path_procedure(std::ostream &os, const QConfObj o, const char *path, lList **alpp,
                            const char *select = nullptr, const uint32_t extra_mode = 0u,
                            const char *name = nullptr) {
    DENTER(TOP_LAYER);
@@ -115,8 +116,8 @@ qconf_apply_path_procedure(std::ostream &os, const QConfObj o, const char *path,
       param.set_name(name);
    }
 
-   qconf_text_ctx ctx = {&param, 0};
-   qconf_for_each_file(path, qconf_collect_text, &ctx);
+   qconf_text_ctx ctx = {&param, 0, alpp};
+   qconf_for_each_file(path, qconf_collect_text, &ctx, alpp);
 
    /* A file this side could not even open counts as a file that failed to parse,
     * which is what it was when the parse happened here - so -strict rejects the
@@ -127,7 +128,7 @@ qconf_apply_path_procedure(std::ostream &os, const QConfObj o, const char *path,
     * was given: its objects come in whole texts, and the path this replaced
     * applied nothing when one file of a directory could not be read (CS-2823). */
    if ((qconf_opt_strict || (as_list && is_dir)) && ctx.n_fail > 0) {
-      ERROR(MSG_QCONF_STRICTNOTHINGAPPLIED_SI, path, ctx.n_fail);
+      qconf_answer(alpp, ANSWER_QUALITY_ERROR, MSG_QCONF_STRICTNOTHINGAPPLIED_SI, path, ctx.n_fail);
       DRETURN(ctx.n_fail);
    }
 
@@ -154,11 +155,10 @@ qconf_apply_path_procedure(std::ostream &os, const QConfObj o, const char *path,
          DPRINTF("no write result, treating all %d item(s) as failed\n", n_items);
       }
 
-      /* show_answer_list() and not answer_list_output(): the per-item messages
-       * are what qmaster put into the answer list, and this is where every
-       * qconf write surfaces them - see qconf_edit_obj_procedure(). */
-      show_answer_list(alp);
-      lFreeList(&alp);
+      /* the per-item messages are what qmaster put into the answer list, and
+       * this is where every qconf write surfaces them - see
+       * qconf_edit_obj_procedure() */
+      qconf_answer_take(alpp, &alp);
 
       if ((qconf_opt_strict || (as_list && is_dir)) && parse_failed > 0) {
          /* qmaster applied nothing. The message names the path, which is this
@@ -171,7 +171,8 @@ qconf_apply_path_procedure(std::ostream &os, const QConfObj o, const char *path,
           * single file does not get the line - there the per item message is the
           * whole story, and adding one would be a new sentence for an unchanged
           * behaviour (CS-2823). */
-         ERROR(MSG_QCONF_STRICTNOTHINGAPPLIED_SI, path, static_cast<int>(parse_failed));
+         qconf_answer(alpp, ANSWER_QUALITY_ERROR, MSG_QCONF_STRICTNOTHINGAPPLIED_SI, path,
+                      static_cast<int>(parse_failed));
          DRETURN(static_cast<int>(parse_failed));
       }
    }
@@ -209,6 +210,7 @@ qconf_apply_path_procedure(std::ostream &os, const QConfObj o, const char *path,
  * @param os the stream the output is written to (CS-1841)
  * @param o    the object type
  * @param path file or directory to read
+ * @param alpp the answer list of the operation (CS-2971)
  * @param select for a type whose text holds a list, the names to write out of it -
  *               "-Mrqs <file> <names>" and nothing else uses it; nullptr writes
  *               everything the text holds (CS-2823)
@@ -221,9 +223,9 @@ qconf_apply_path_procedure(std::ostream &os, const QConfObj o, const char *path,
  * @return 0 on success, non-zero on error
  */
 static int
-qconf_apply_obj(std::ostream &os, const QConfObj o, const char *path, const char *select = nullptr,
+qconf_apply_obj(std::ostream &os, const QConfObj o, const char *path, lList **alpp, const char *select = nullptr,
                 const uint32_t extra_mode = 0u, const char *name = nullptr) {
-   return qconf_apply_path_procedure(os, o, path, select, extra_mode, name);
+   return qconf_apply_path_procedure(os, o, path, alpp, select, extra_mode, name);
 }
 
 /** @brief Why an interactive edit did not yield an object. */
@@ -287,7 +289,7 @@ enum class QConfEditStatus {
  * Deliberately **exit-free**: every failure is reported through the return
  * value, never by terminating the process, because the same logic runs inside
  * qmaster, where sge_exit() would take the daemon down with it. The caller
- * decides what a failure means - see qconf_edit_fail_exit() for what the
+ * decides what a failure means - see qconf_edit_failure() for what the
  * command line client does. The temporary file is consumed on every path
  * including every error path.
  *
@@ -296,35 +298,35 @@ enum class QConfEditStatus {
  * @param gid  gid to run the editor as
  * @param unchanged_is_ok whether a text the editor left alone is read back and
  *             returned like a changed one, see qconf_unchanged_is_tolerated()
+ * @param alpp the answer list of the operation (CS-2971)
  * @return OK, or the reason no text came back
  */
 static QConfEditStatus
-qconf_edit_text(std::string &text, const uid_t uid, const gid_t gid, const bool unchanged_is_ok) {
+qconf_edit_text(std::string &text, const uid_t uid, const gid_t gid, const bool unchanged_is_ok, lList **alpp) {
    DENTER(TOP_LAYER);
 
    char *filename = sge_malloc(sizeof(char) * SGE_PATH_MAX);
    if (filename == nullptr) {
-      ERROR(SFNMAX, MSG_MEMORY_MALLOCFAILED);
+      qconf_answer(alpp, ANSWER_QUALITY_ERROR, SFNMAX, MSG_MEMORY_MALLOCFAILED);
       DRETURN(QConfEditStatus::WRITE_FAILED);
    }
    int fd = -1;
    dstring error_message = DSTRING_INIT;
    if (sge_tmpnam(filename, &fd, &error_message) == nullptr) {
-      ERROR(SFNMAX, sge_dstring_get_string(&error_message));
+      qconf_answer(alpp, ANSWER_QUALITY_ERROR, SFNMAX, sge_dstring_get_string(&error_message));
       sge_dstring_free(&error_message);
       sge_free(&filename);
       DRETURN(QConfEditStatus::WRITE_FAILED);
    }
    sge_dstring_free(&error_message);
 
-   /* Every failure below says why. WRITE_FAILED is reported by
-    * qconf_edit_fail_exit() through sge_error_and_exit(nullptr), which prints
-    * nothing of its own - so a silent return here leaves the user with a
+   /* Every failure below says why. WRITE_FAILED adds no message of its own in
+    * qconf_edit_failure() - so a silent return here leaves the user with a
     * non-zero exit and no reason at all. */
    errno = 0;
    FILE *fp = fdopen(fd, "w");
    if (fp == nullptr) {
-      ERROR(MSG_ERROROPENINGFILEFORWRITING_SS, filename, strerror(errno));
+      qconf_answer(alpp, ANSWER_QUALITY_ERROR, MSG_ERROROPENINGFILEFORWRITING_SS, filename, strerror(errno));
       close(fd);
       unlink(filename);
       sge_free(&filename);
@@ -334,7 +336,7 @@ qconf_edit_text(std::string &text, const uid_t uid, const gid_t gid, const bool 
    fprintf(fp, "%s", text.c_str());
    const bool written = (fclose(fp) == 0);
    if (!written) {
-      ERROR(MSG_ERROROPENINGFILEFORWRITING_SS, filename, strerror(errno));
+      qconf_answer(alpp, ANSWER_QUALITY_ERROR, MSG_ERROROPENINGFILEFORWRITING_SS, filename, strerror(errno));
       unlink(filename);
       sge_free(&filename);
       DRETURN(QConfEditStatus::WRITE_FAILED);
@@ -352,7 +354,7 @@ qconf_edit_text(std::string &text, const uid_t uid, const gid_t gid, const bool 
 
    const bool read_ok = qconf_read_file_text(filename, text);
    if (!read_ok) {
-      ERROR(MSG_ERROROPENINGFILEFORREADING_SS, filename, strerror(errno));
+      qconf_answer(alpp, ANSWER_QUALITY_ERROR, MSG_ERROROPENINGFILEFORREADING_SS, filename, strerror(errno));
    }
    unlink(filename);
    sge_free(&filename);
@@ -360,28 +362,30 @@ qconf_edit_text(std::string &text, const uid_t uid, const gid_t gid, const bool 
    DRETURN(read_ok ? QConfEditStatus::OK : QConfEditStatus::READ_FAILED);
 }
 
-/** @brief Report an edit failure the way the option branches always did, and exit.
+/** @brief Report an edit failure the way the option branches always did
  *
- * The one place where the interactive path terminates the process, kept apart
- * from qconf_edit_text() so that the editing logic stays reusable. Does not
- * return - sge_error_and_exit() calls sge_exit().
+ * Kept apart from qconf_edit_text() so that the editing logic stays reusable.
+ * The branches ended the process here; since CS-2971 the failure is a message
+ * of the operation, and the command line stops after it as it stops after any
+ * failed operation (CS-2950) - with the same exit status.
  *
  * @param st the failure reported by qconf_edit_text()
+ * @param alpp the answer list of the operation, receives the message
  */
 static void
-qconf_edit_fail_exit(const QConfEditStatus st) {
+qconf_edit_failure(const QConfEditStatus st, lList **alpp) {
    switch (st) {
       case QConfEditStatus::WRITE_FAILED:
-         sge_error_and_exit(nullptr);
+         /* qconf_edit_text() has said why */
          break;
       case QConfEditStatus::EDIT_FAILED:
-         sge_error_and_exit(MSG_PARSE_EDITFAILED);
+         qconf_answer(alpp, ANSWER_QUALITY_ERROR, "%s", MSG_PARSE_EDITFAILED);
          break;
       case QConfEditStatus::UNCHANGED:
-         sge_error_and_exit(MSG_FILE_FILEUNCHANGED);
+         qconf_answer(alpp, ANSWER_QUALITY_ERROR, "%s", MSG_FILE_FILEUNCHANGED);
          break;
       case QConfEditStatus::READ_FAILED:
-         sge_error_and_exit(MSG_FILE_ERRORREADINGINFILE);
+         qconf_answer(alpp, ANSWER_QUALITY_ERROR, "%s", MSG_FILE_ERRORREADINGINFILE);
          break;
       case QConfEditStatus::OK:
          break;
@@ -411,18 +415,19 @@ qconf_edit_fail_exit(const QConfEditStatus st) {
  *               qconf_apply_obj()
  * @param name   the configuration name for a type whose text does not name its
  *               object, see qconf_apply_path_procedure(); nullptr otherwise
+ * @param alpp the answer list of the operation (CS-2971)
  * @return 0 when the object was written, 1 otherwise - which an unchanged text
  *         is unless @p unchanged_is_ok says it is not
  */
 static int
 qconf_edit_and_write_obj(const QConfObj o, std::string &text, const uid_t uid, const gid_t gid,
-                         const bool unchanged_is_ok, const char *select = nullptr,
+                         const bool unchanged_is_ok, lList **alpp, const char *select = nullptr,
                          const uint32_t extra_mode = 0u, const char *name = nullptr) {
    DENTER(TOP_LAYER);
 
-   const QConfEditStatus est = qconf_edit_text(text, uid, gid, unchanged_is_ok);
+   const QConfEditStatus est = qconf_edit_text(text, uid, gid, unchanged_is_ok, alpp);
    if (est != QConfEditStatus::OK) {
-      qconf_edit_fail_exit(est);
+      qconf_edit_failure(est, alpp);
       DRETURN(1);
    }
 
@@ -450,15 +455,14 @@ qconf_edit_and_write_obj(const QConfObj o, std::string &text, const uid_t uid, c
    lList *alp = nullptr;
    const bool ok = model.make_snapshot(&alp, mod_param);
 
-   /* show_answer_list() and not answer_list_output(), and no response text of
-    * our own: the message a write produces is the one qmaster put into the
-    * answer list, and this is how every other qconf write surfaces it - see
-    * qconf_apply_path_procedure(). Measured on 2026-10-06: the answer list does arrive
-    * with the INFO in it, answer_list_output() just does not put it where the
-    * user sees it, and printing an invented confirmation instead both lost the
-    * wording and moved it from stderr to stdout. */
-   const int shown = show_answer_list(alp);
-   lFreeList(&alp);
+   /* No response text of our own: the message a write produces is the one
+    * qmaster put into the answer list, and this is how every other qconf write
+    * surfaces it - see qconf_apply_path_procedure(). Measured on 2026-10-06: the
+    * answer list does arrive with the INFO in it, answer_list_output() just
+    * does not put it where the user sees it, and printing an invented
+    * confirmation instead both lost the wording and moved it from stderr to
+    * stdout. qconf_answer_print() prints the INFO, on stderr. */
+   const int shown = qconf_answer_take(alpp, &alp);
 
    DRETURN((ok && shown == 0) ? 0 : 1);
 }
@@ -516,17 +520,18 @@ qconf_edit_and_write_obj(const QConfObj o, std::string &text, const uid_t uid, c
  * @param unchanged_is_ok whether a text the editor left alone is written anyway;
  *              true for "-ace", "-mce", "-ahgrp" and "-aq", see the table above
  *              qconf_edit_text()
+ * @param alpp the answer list of the operation (CS-2971)
  * @return 0 when the object was written, 1 otherwise - which an unchanged text
  *         is unless @p unchanged_is_ok says it is not
  */
 static int
 qconf_edit_obj_procedure(ocs::QConfParameterClient &param, const QConfObj o,
                          const char *sw, const char *name, const uid_t uid, const gid_t gid,
-                         const bool unchanged_is_ok = false) {
+                         const bool unchanged_is_ok, lList **alpp) {
    DENTER(TOP_LAYER);
 
    if (param.get_exec_context() != ocs::ProcedureParameter::ExecContext::SERVER) {
-      ERROR(MSG_QCONF_MODNEEDSSERVERCTX_S, sw);
+      qconf_answer(alpp, ANSWER_QUALITY_ERROR, MSG_QCONF_MODNEEDSSERVERCTX_S, sw);
       DRETURN(1);
    }
 
@@ -540,7 +545,7 @@ qconf_edit_obj_procedure(ocs::QConfParameterClient &param, const QConfObj o,
    std::ostringstream rendered;
    uint32_t reduction = ocs::ProcedureParameter::REDUCTION_NONE;
    param.set_for_edit(true);
-   const QConfShowStatus st = qconf_show_object(rendered, param, o, name, &reduction);
+   const QConfShowStatus st = qconf_show_object(rendered, param, o, name, alpp, &reduction);
    param.set_for_edit(false);
 
    if (st != QConfShowStatus::OK) {
@@ -555,7 +560,8 @@ qconf_edit_obj_procedure(ocs::QConfParameterClient &param, const QConfObj o,
       /* A singleton reaches this with no name - "-msconf" and "-mstree" have
        * none to give - and the message takes one, so it is called by its type.
        * Same reason as the nameless list form below (CS-2823). */
-      ERROR(MSG_QCONF_REDUCEDNOTMODIFIABLE_SS, sw, qconf_object_label(qconf_desc(o), name));
+      qconf_answer(alpp, ANSWER_QUALITY_ERROR, MSG_QCONF_REDUCEDNOTMODIFIABLE_SS, sw,
+                   qconf_object_label(qconf_desc(o), name));
       DRETURN(1);
    }
 
@@ -565,7 +571,7 @@ qconf_edit_obj_procedure(ocs::QConfParameterClient &param, const QConfObj o,
     * the parse ignores. For such a type the name has to travel with the write,
     * or the edited configuration would arrive nameless (CS-2823). */
    const char *write_name = qconf_desc(o).read.name_header ? name : nullptr;
-   DRETURN(qconf_edit_and_write_obj(o, text, uid, gid, unchanged_is_ok, nullptr, 0u, write_name));
+   DRETURN(qconf_edit_and_write_obj(o, text, uid, gid, unchanged_is_ok, alpp, nullptr, 0u, write_name));
 }
 
 /** @brief Edit a whole list of objects through the stored procedures (CS-2823)
@@ -606,18 +612,19 @@ qconf_edit_obj_procedure(ocs::QConfParameterClient &param, const QConfObj o,
  * @param unchanged_is_ok whether a text the editor left alone is written anyway;
  *              true for "-mc" and false for "-mrqs", see the table above
  *              qconf_edit_text()
+ * @param alpp the answer list of the operation (CS-2971)
  * @return 0 when the text was written, 1 otherwise - which an unchanged text
  *         is unless @p unchanged_is_ok says it is not
  */
 static int
 qconf_edit_list_procedure(ocs::QConfParameterClient &param, const QConfObj o,
                           const char *sw, const char *read_token, const char *read_sub,
-                          const char *names, const uid_t uid, const gid_t gid, const uint32_t extra_mode = 0u,
-                          const bool unchanged_is_ok = false) {
+                          const char *names, const uid_t uid, const gid_t gid, const uint32_t extra_mode,
+                          const bool unchanged_is_ok, lList **alpp) {
    DENTER(TOP_LAYER);
 
    if (param.get_exec_context() != ocs::ProcedureParameter::ExecContext::SERVER) {
-      ERROR(MSG_QCONF_MODNEEDSSERVERCTX_S, sw);
+      qconf_answer(alpp, ANSWER_QUALITY_ERROR, MSG_QCONF_MODNEEDSSERVERCTX_S, sw);
       DRETURN(1);
    }
 
@@ -653,8 +660,7 @@ qconf_edit_list_procedure(ocs::QConfParameterClient &param, const QConfObj o,
    if (!ok) {
       /* the reason is in the answer list - a name the type cannot build a
        * template for, or a read that failed outright */
-      show_answer_list(alp);
-      lFreeList(&alp);
+      qconf_answer_take(alpp, &alp);
       DRETURN(1);
    }
    lFreeList(&alp);
@@ -663,12 +669,12 @@ qconf_edit_list_procedure(ocs::QConfParameterClient &param, const QConfObj o,
       /* What was asked for, which for the nameless form is the whole list - the
        * message takes a name, and an empty one would read "cannot modify \"\"". */
       const char *what = (names != nullptr) ? names : qconf_desc(o).read.list_name;
-      ERROR(MSG_QCONF_REDUCEDNOTMODIFIABLE_SS, sw, what != nullptr ? what : "");
+      qconf_answer(alpp, ANSWER_QUALITY_ERROR, MSG_QCONF_REDUCEDNOTMODIFIABLE_SS, sw, what != nullptr ? what : "");
       DRETURN(1);
    }
 
    std::string text = rendered.str();
-   DRETURN(qconf_edit_and_write_obj(o, text, uid, gid, unchanged_is_ok, names,
+   DRETURN(qconf_edit_and_write_obj(o, text, uid, gid, unchanged_is_ok, alpp, names,
                                     ocs::QConfWriteParameter::MODE_LIST | extra_mode));
 }
 
@@ -699,7 +705,7 @@ qconf_conf_apply_one(const char *filepath, void *vctx) {
     * property of the path and not of the object - the host is the file's
     * basename, and it travels with the request because a configuration's text
     * does not carry its name (CS-2823). */
-   const int ret = qconf_apply_obj(*ctx->os, QConfObj::CONF, filepath, nullptr, 0u, hostname);
+   const int ret = qconf_apply_obj(*ctx->os, QConfObj::CONF, filepath, ctx->alpp, nullptr, 0u, hostname);
    lFreeElem(&host_ep);
    if (ret != 0) {
       ctx->n_fail++;
@@ -718,13 +724,14 @@ qconf_conf_apply_one(const char *filepath, void *vctx) {
  *
  * @param os the stream the output is written to (CS-1841)
  * @param path  config file or directory of config files
+ * @param alpp the answer list of the operation (CS-2971)
  * @return the number of files that failed
  */
 static int
-qconf_conf_apply_path(std::ostream &os, const char *path) {
-   qconf_conf_ctx ctx = {&os, nullptr, 0, 0};
+qconf_conf_apply_path(std::ostream &os, const char *path, lList **alpp) {
+   qconf_conf_ctx ctx = {&os, nullptr, 0, 0, alpp};
    const bool is_dir = sge_is_directory(path);
-   qconf_for_each_file(path, qconf_conf_apply_one, &ctx);
+   qconf_for_each_file(path, qconf_conf_apply_one, &ctx, alpp);
    if (is_dir) {
       qconf_info(os, MSG_QCONF_ADDMODSUMMARY_SII, path, ctx.n_ok, ctx.n_fail);
    }
@@ -745,14 +752,15 @@ enum class QConfWriteKind {
  * they reported the missing file on their own.
  *
  * @param op the operation
+ * @param alpp the answer list of the operation (CS-2971)
  * @return true when the file is missing and it was reported
  */
 static bool
-qconf_write_no_file(const qconf_op &op) {
+qconf_write_no_file(const qconf_op &op, lList **alpp) {
    if (!op.args.empty()) {
       return false;
    }
-   fprintf(stderr, "%s\n", MSG_FILE_NOFILEARGUMENTGIVEN);
+   qconf_answer(alpp, ANSWER_QUALITY_ERROR, "%s", MSG_FILE_NOFILEARGUMENTGIVEN);
    return true;
 }
 
@@ -768,9 +776,9 @@ struct qconf_write_entry {
    uint32_t mode;             ///< EDIT_LIST/APPLY: write modes beyond the default, a mask of MODE_*
    const char *list_read;     ///< EDIT_LIST: the read of the list, nullptr for the type's OBJECT_LIST read
    const char *list_sub;      ///< EDIT_LIST: the sub-procedure of that read, or nullptr
-   bool (*missing)(const qconf_op &op); ///< a report of its own for a missing argument, or nullptr
+   bool (*missing)(const qconf_op &op, lList **alpp); ///< a report of its own for a missing argument, or nullptr
    bool blank_line_between;   ///< with names: the objects are separated by a blank line
-   int (*apply)(std::ostream &os, const char *path); ///< APPLY: the reader of its own, nullptr for qconf_apply_obj()
+   int (*apply)(std::ostream &os, const char *path, lList **alpp); ///< APPLY: the reader of its own, nullptr for qconf_apply_obj()
 };
 
 /** @brief The add and modify switches that are one engine call each (CS-2954)
@@ -878,7 +886,7 @@ static constexpr qconf_write_entry qconf_write_table[] = {
 
 QConfOpResult
 qconf_run_write(std::ostream &os, ocs::QConfParameterClient &param, const qconf_op &op,
-                const char *username, const char *hostname, const uid_t uid, const gid_t gid) {
+                const char *username, const char *hostname, const uid_t uid, const gid_t gid, lList **alpp) {
    DENTER(TOP_LAYER);
 
    const qconf_write_entry *entry = nullptr;
@@ -891,11 +899,11 @@ qconf_run_write(std::ostream &os, ocs::QConfParameterClient &param, const qconf_
    if (entry == nullptr) {
       DRETURN(QConfOpResult::NOT_HANDLED);
    }
-   if (entry->missing != nullptr && entry->missing(op)) {
+   if (entry->missing != nullptr && entry->missing(op, alpp)) {
       DRETURN(QConfOpResult::FAILED);
    }
-   if (qconf_missing_argument(op)) {
-      DRETURN(QConfOpResult::FAILED);
+   if (qconf_missing_argument(op, alpp)) {
+      DRETURN(QConfOpResult::FAILED_USAGE);
    }
 
    qconf_client_check(entry->check, username, hostname);
@@ -905,7 +913,7 @@ qconf_run_write(std::ostream &os, ocs::QConfParameterClient &param, const qconf_
       /* one round trip per name; a name that fails does not stop the others */
       std::vector<std::string> names;
       bool left_out = false;
-      entry->names(op, names, left_out);
+      entry->names(op, names, left_out, alpp);
       failed = left_out ? 1 : 0;
       bool first = true;
       for (const std::string &name : names) {
@@ -916,10 +924,10 @@ qconf_run_write(std::ostream &os, ocs::QConfParameterClient &param, const qconf_
          const int one =
             (entry->kind != QConfWriteKind::APPLY)
                ? qconf_edit_obj_procedure(param, entry->object, entry->switch_name, name.c_str(),
-                                          uid, gid, entry->unchanged_is_ok)
+                                          uid, gid, entry->unchanged_is_ok, alpp)
             : (entry->apply != nullptr)
-               ? entry->apply(os, name.c_str())
-               : qconf_apply_obj(os, entry->object, name.c_str(), nullptr, entry->mode);
+               ? entry->apply(os, name.c_str(), alpp)
+               : qconf_apply_obj(os, entry->object, name.c_str(), alpp, nullptr, entry->mode);
          if (one != 0) {
             failed = 1;
          }
@@ -927,19 +935,19 @@ qconf_run_write(std::ostream &os, ocs::QConfParameterClient &param, const qconf_
    } else if (entry->kind == QConfWriteKind::EDIT) {
       const char *name = op.args.empty() ? entry->default_name : op.args.front().c_str();
       failed = qconf_edit_obj_procedure(param, entry->object, entry->switch_name, name,
-                                        uid, gid, entry->unchanged_is_ok);
+                                        uid, gid, entry->unchanged_is_ok, alpp);
    } else if (entry->kind == QConfWriteKind::EDIT_LIST) {
       const char *names = op.args.empty() ? entry->default_name : op.args.front().c_str();
       const char *read = (entry->list_read != nullptr)
                          ? entry->list_read
                          : ocs::QConfModelBase::switch_for(entry->object, ocs::QConfReadKind::OBJECT_LIST);
       failed = qconf_edit_list_procedure(param, entry->object, entry->switch_name, read, entry->list_sub,
-                                         names, uid, gid, entry->mode, entry->unchanged_is_ok);
+                                         names, uid, gid, entry->mode, entry->unchanged_is_ok, alpp);
    } else {
       /* the second argument, where the option table allows one, selects which
        * objects of the file are written ("-Mrqs file names") */
       const char *select = (op.args.size() > 1) ? op.args[1].c_str() : nullptr;
-      failed = qconf_apply_obj(os, entry->object, op.args.front().c_str(), select, entry->mode);
+      failed = qconf_apply_obj(os, entry->object, op.args.front().c_str(), alpp, select, entry->mode);
    }
 
    DRETURN(failed != 0 ? QConfOpResult::FAILED : QConfOpResult::OK);

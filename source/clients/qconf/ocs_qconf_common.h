@@ -27,12 +27,14 @@
  * switch into object names, and the result every dispatcher reports.
  */
 
+#include <cstdio>
 #include <ostream>
 #include <string>
 #include <vector>
 
 #include "cull/cull.h"
 #include "gdi/ocs_gdi_Target.h"
+#include "sgeobj/sge_answer.h"
 #include "spool/sge_spooling_utilities.h"
 #include "procedure/qconf/ocs_QConfObject.h"
 #include "procedure/qconf/ocs_QConfParameter.h"
@@ -65,7 +67,11 @@ qconf_info(std::ostream &os, const char *fmt, ...) __attribute__((format(printf,
 /**
  * @brief Ask the user to confirm a prompt on the terminal (CS-2299 H6).
  *
+ * The messages the operation has collected so far are printed first, so that
+ * what the question is about stands above it (CS-2971).
+ *
  * @param prompt a MSG_* line to print, including its own "(y/n)" suffix
+ * @param alpp   the answer list of the operation
  * @return true on an explicit yes; false on no, EOF or a non-tty stdin
  *
  * @note Deliberately still on stdout/stdin rather than on the output stream
@@ -73,7 +79,7 @@ qconf_info(std::ostream &os, const char *fmt, ...) __attribute__((format(printf,
  *       nothing to ask once this runs inside qmaster.
  */
 bool
-qconf_confirm(const char *prompt);
+qconf_confirm(const char *prompt, lList **alpp);
 
 /**
  * @brief Test whether an object of a given name already exists in qmaster.
@@ -98,10 +104,11 @@ qconf_object_exists(ocs::gdi::Target target, const lDescr *descr, int name_nm,
  * @param path     file or directory to process
  * @param per_file callback invoked as per_file(filepath, ctx), returning a failure count
  * @param ctx      opaque context passed through to @p per_file
+ * @param alpp     the answer list of the operation, for a directory that cannot be opened
  * @return the total number of failures (an opendir error counts as one)
  */
 int
-qconf_for_each_file(const char *path, int (*per_file)(const char *, void *), void *ctx);
+qconf_for_each_file(const char *path, int (*per_file)(const char *, void *), void *ctx, lList **alpp);
 
 /** @brief Context shared by the per-file callbacks driven by qconf_for_each_file(). */
 struct qconf_file_ctx {
@@ -114,6 +121,7 @@ struct qconf_file_ctx {
    lList *elems;              ///< -strict apply: parsed objects pending send (CS-2299 H2)
    int n_ok;                  ///< files applied / names collected (CS-2299 H1)
    int n_fail;                ///< files that failed (CS-2299 H1)
+   lList **alpp;              ///< the answer list of the operation (CS-2971)
 };
 
 /**
@@ -133,6 +141,7 @@ qconf_collect_name(const char *filepath, void *vctx);
 struct qconf_text_ctx {
    ocs::QConfWriteParameter *param;   ///< the batch being filled
    int n_fail;                        ///< files this side could not read at all
+   lList **alpp;                      ///< the answer list of the operation (CS-2971)
 };
 
 /** @brief qconf_for_each_file() callback: hand one file's text to the batch
@@ -177,6 +186,7 @@ struct qconf_conf_ctx {
    lList *hosts;     ///< delete path: collected CONF_name host elements
    int n_ok;         ///< files applied / hosts collected (CS-2299 H1)
    int n_fail;       ///< files that failed
+   lList **alpp;     ///< the answer list of the operation (CS-2971)
 };
 
 /** @brief Report an operation whose command line ended before its mandatory arguments (CS-2969)
@@ -186,13 +196,15 @@ struct qconf_conf_ctx {
  * the switch's own words. The option blocks did that by running into the end of
  * their slice in sge_parser_get_next(); the table dispatchers have no slice to
  * walk, so they ask here, and report what sge_parser_get_next() reported - the
- * last word that was given, and the usage.
+ * last word that was given; the caller asks for the usage with
+ * QConfOpResult::FAILED_USAGE.
  *
- * @param op the operation a table is about to serve
+ * @param op   the operation a table is about to serve
+ * @param alpp the answer list of the operation, receives the message
  * @return true when an argument is missing and the operation has been reported
  */
 bool
-qconf_missing_argument(const qconf_op &op);
+qconf_missing_argument(const qconf_op &op, lList **alpp);
 
 /** @brief What one of the table driven dispatchers made of an operation
  *
@@ -205,8 +217,48 @@ qconf_missing_argument(const qconf_op &op);
 enum class QConfOpResult {
    NOT_HANDLED,  ///< not a switch of this dispatcher; the next one or a block serves it
    OK,           ///< served, and it succeeded
-   FAILED        ///< served, and it failed; the command line stops
+   FAILED,       ///< served, and it failed; the command line stops
+   FAILED_USAGE  ///< as FAILED, and the usage is printed after the messages (CS-2971)
 };
+
+/** @brief Add a message of the client's own to the answer list of an operation (CS-2971)
+ *
+ * What the client has to say goes the way of what qmaster says: into the answer
+ * list of the operation, which qconf_answer_print() prints when the operation is
+ * done. An error carries a failing status, anything else STATUS_OK.
+ *
+ * @param alpp    the answer list of the operation
+ * @param quality ANSWER_QUALITY_ERROR, _WARNING or _INFO
+ * @param fmt     a printf-style format, usually a MSG_* catalogue entry
+ * @param ...     arguments for @p fmt
+ */
+void
+qconf_answer(lList **alpp, answer_quality_t quality, const char *fmt, ...) __attribute__((format(printf, 3, 4)));
+
+/** @brief Move an answer list qmaster sent into the answer list of an operation (CS-2971)
+ *
+ * An answer the client cannot recover from - no qmaster, no commd - ends the
+ * client at once, as answer_exit_if_not_recoverable() always did: the list is
+ * printed up to that answer, then the process exits.
+ *
+ * @param alpp the answer list of the operation
+ * @param from the list to move; freed and set to nullptr
+ * @return 1 when one of the moved answers has a failing status, 0 otherwise
+ */
+int
+qconf_answer_take(lList **alpp, lList **from);
+
+/** @brief Print the answer list of an operation, the one way qconf reports (CS-2971)
+ *
+ * An error is printed with the "error: " prefix (a critical one with
+ * "critical error: "), a warning or an information as it is. Errors and
+ * warnings go to stderr, informations to @p info_stream.
+ *
+ * @param alpp        the answer list; freed and set to nullptr
+ * @param info_stream where an information goes
+ */
+void
+qconf_answer_print(lList **alpp, FILE *info_stream = stderr);
 
 /** @brief The permission check a switch makes in the client before it is served
  *
@@ -245,8 +297,9 @@ qconf_client_check(QConfClientCheck check, const char *username, const char *hos
  * @param op the operation
  * @param names receives the names to serve
  * @param failed set when a name had to be left out
+ * @param alpp the answer list of the operation, receives the reason a name was left out
  */
-using qconf_names_hook = void (*)(const qconf_op &op, std::vector<std::string> &names, bool &failed);
+using qconf_names_hook = void (*)(const qconf_op &op, std::vector<std::string> &names, bool &failed, lList **alpp);
 
 /** @brief "-ae [host]": the template when no name is given, the resolved host otherwise
  *
@@ -256,25 +309,28 @@ using qconf_names_hook = void (*)(const qconf_op &op, std::vector<std::string> &
  * @param op the operation
  * @param names receives the name to edit
  * @param failed set when the host does not resolve
+ * @param alpp the answer list of the operation
  */
 void
-qconf_names_ae(const qconf_op &op, std::vector<std::string> &names, bool &failed);
+qconf_names_ae(const qconf_op &op, std::vector<std::string> &names, bool &failed, lList **alpp);
 
 /** @brief "-se host": the one host, resolved
  * @param op the operation
  * @param names receives the name to show
  * @param failed set when the host does not resolve
+ * @param alpp the answer list of the operation
  */
 void
-qconf_names_one_host(const qconf_op &op, std::vector<std::string> &names, bool &failed);
+qconf_names_one_host(const qconf_op &op, std::vector<std::string> &names, bool &failed, lList **alpp);
 
 /** @brief "-me host,...": every host of the list, each resolved; one that does not is left out
  * @param op the operation
  * @param names receives the names to edit
  * @param failed set when a host does not resolve
+ * @param alpp the answer list of the operation
  */
 void
-qconf_names_host_list(const qconf_op &op, std::vector<std::string> &names, bool &failed);
+qconf_names_host_list(const qconf_op &op, std::vector<std::string> &names, bool &failed, lList **alpp);
 
 /** @brief "-mu userset,...": every userset of the list
  *
@@ -284,33 +340,37 @@ qconf_names_host_list(const qconf_op &op, std::vector<std::string> &names, bool 
  * @param op the operation
  * @param names receives the names to edit
  * @param failed unused, every name is served
+ * @param alpp the answer list of the operation
  */
 void
-qconf_names_userset_list(const qconf_op &op, std::vector<std::string> &names, bool &failed);
+qconf_names_userset_list(const qconf_op &op, std::vector<std::string> &names, bool &failed, lList **alpp);
 
 /** @brief "-suser user,...": every user of the list
  * @param op the operation
  * @param names receives the names to show
  * @param failed unused, every name is served
+ * @param alpp the answer list of the operation
  */
 void
-qconf_names_user_list(const qconf_op &op, std::vector<std::string> &names, bool &failed);
+qconf_names_user_list(const qconf_op &op, std::vector<std::string> &names, bool &failed, lList **alpp);
 
 /** @brief "-sconf"/"-aconf": the host list, a host that does not resolve left out
  * @param op the operation
  * @param names receives the configuration names
  * @param failed set when a host was left out
+ * @param alpp the answer list of the operation
  */
 void
-qconf_names_conf_strict(const qconf_op &op, std::vector<std::string> &names, bool &failed);
+qconf_names_conf_strict(const qconf_op &op, std::vector<std::string> &names, bool &failed, lList **alpp);
 
 /** @brief "-mconf": the host list, a host that does not resolve kept under its name as typed
  * @param op the operation
  * @param names receives the configuration names
  * @param failed unused, every host is served
+ * @param alpp the answer list of the operation
  */
 void
-qconf_names_conf_lenient(const qconf_op &op, std::vector<std::string> &names, bool &failed);
+qconf_names_conf_lenient(const qconf_op &op, std::vector<std::string> &names, bool &failed, lList **alpp);
 
 /** @brief "-Aconf"/"-Mconf": the file or directory list, "global" when none is given
  *
@@ -320,6 +380,7 @@ qconf_names_conf_lenient(const qconf_op &op, std::vector<std::string> &names, bo
  * @param op the operation
  * @param names receives the paths
  * @param failed unused
+ * @param alpp the answer list of the operation
  */
 void
-qconf_names_conf_paths(const qconf_op &op, std::vector<std::string> &names, bool &failed);
+qconf_names_conf_paths(const qconf_op &op, std::vector<std::string> &names, bool &failed, lList **alpp);

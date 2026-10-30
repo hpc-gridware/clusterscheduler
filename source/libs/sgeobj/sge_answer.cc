@@ -81,7 +81,6 @@
 /// Debug layer the answer list traces are written to
 #define ANSWER_LAYER CULL_LAYER
 
-static bool answer_is_recoverable(const lListElem *answer);
 static bool answer_log(const lListElem *answer, bool show_info);
 
 /**
@@ -115,6 +114,7 @@ bool answer_has_quality(const lListElem *answer, answer_quality_t quality) {
  *    STATUS_NOQMASTER
  *    STATUS_NOCOMMD
  *    STATUS_ENOKEY
+ *    STATUS_NOCONFIG
  *
  * @param answer AN_Type element
  *
@@ -122,7 +122,7 @@ bool answer_has_quality(const lListElem *answer, answer_quality_t quality) {
  *
  * @note MT-NOTE: answer_is_recoverable() is MT safe
  */
-static bool answer_is_recoverable(const lListElem *answer) {
+bool answer_is_recoverable(const lListElem *answer) {
    DENTER(ANSWER_LAYER);
 
    bool ret = true;

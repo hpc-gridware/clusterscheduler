@@ -102,16 +102,6 @@ typedef struct object_info_entry {
    bool (*pre_gdi_function)(lList *list, lList **answer_list);   ///< validation to run before sending, or `nullptr`
 } object_info_entry;
 
-/** @brief Print a message, if any, and exit the client with status 1
- *
- * Both streams are flushed first, so the message comes after what was
- * already written.
- *
- * @param ptr the message, or nullptr for none
- * @return never; declared int for the callers that return its value
- */
-int sge_error_and_exit(const char *ptr);
-
 /** @brief Turn a comma separated name list into a new CULL list, one element per name
  *
  * The name goes into a string or a host field, whichever @p nm is. Of a host
@@ -145,10 +135,10 @@ void parse_name_list_to_cull(const char *name, lList **lpp, lDescr *dp, int nm, 
  * round.
  *
  * @param conf_list the configurations to delete, elements carrying CONF_name
+ * @param alpp the answer list of the operation, receives the answer of every configuration (CS-2971)
  * @return the number of configurations that could not be deleted
  */
-
-int delete_configs(const lList *conf_list);
+int delete_configs(const lList *conf_list, lList **alpp);
 
 /** @brief Exit the client unless the user is a manager and the host an admin host
  *

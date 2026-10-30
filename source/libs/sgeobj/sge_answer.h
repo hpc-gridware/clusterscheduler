@@ -92,6 +92,8 @@ typedef enum {
 
 bool answer_has_quality(const lListElem *answer, answer_quality_t quality);
 
+bool answer_is_recoverable(const lListElem *answer);
+
 void answer_exit_if_not_recoverable(const lListElem *answer);
 
 const char *answer_get_quality_text(const lListElem *answer);

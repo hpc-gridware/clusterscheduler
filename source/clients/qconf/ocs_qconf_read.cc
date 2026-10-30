@@ -112,15 +112,16 @@
  * @param label   what the refusal calls the target - the name or the directory
  * @param model   the caller's model; it owns the response the pairs live in
  * @param objects receives the name/text pairs, on success only
+ * @param alpp    the answer list of the operation
  * @return 0 when @p objects was filled, 1 when the export must not go ahead
  */
 static int
 qconf_export_procedure(ocs::QConfParameterClient &param, const char *sw, const char *name,
-                       const char *label, ocs::ProcedureModel &model, const lList **objects) {
+                       const char *label, ocs::ProcedureModel &model, const lList **objects, lList **alpp) {
    DENTER(TOP_LAYER);
 
    if (param.get_exec_context() != ocs::ProcedureParameter::ExecContext::SERVER) {
-      ERROR(MSG_QCONF_MODNEEDSSERVERCTX_S, sw);
+      qconf_answer(alpp, ANSWER_QUALITY_ERROR, MSG_QCONF_MODNEEDSSERVERCTX_S, sw);
       DRETURN(1);
    }
 
@@ -140,14 +141,13 @@ qconf_export_procedure(ocs::QConfParameterClient &param, const char *sw, const c
    param.set_sub_procedure_name("");
 
    if (!ok) {
-      answer_list_output(&alp);
-      lFreeList(&alp);
+      qconf_answer_take(alpp, &alp);
       DRETURN(1);
    }
    lFreeList(&alp);
 
    if (model.get_reduction() != ocs::ProcedureParameter::REDUCTION_NONE) {
-      ERROR(MSG_QCONF_REDUCEDNOTEXPORTABLE_SS, sw, label);
+      qconf_answer(alpp, ANSWER_QUALITY_ERROR, MSG_QCONF_REDUCEDNOTEXPORTABLE_SS, sw, label);
       DRETURN(1);
    }
 
@@ -155,7 +155,7 @@ qconf_export_procedure(ocs::QConfParameterClient &param, const char *sw, const c
     * answered the question, and reporting "0 objects exported" for it would hand
     * back a successful exit code for a backup that did not happen. */
    if (!model.get_export_objects(objects)) {
-      ERROR(MSG_QCONF_EXPORTNORESULT_S, sw);
+      qconf_answer(alpp, ANSWER_QUALITY_ERROR, MSG_QCONF_EXPORTNORESULT_S, sw);
       DRETURN(1);
    }
 
@@ -205,16 +205,17 @@ qconf_name_is_fs_safe(const char *name) {
  *             an empty text, because CULL packs an empty string as no string -
  *             so it is an empty file and not a missing one
  * @param dest the file to write
+ * @param alpp the answer list of the operation
  * @return 0 on success or a (non-fatal) skip, 1 on a write/relocate failure.
  */
 static int
-qconf_export_write_one(std::ostream &os, const char *text, const char *dest) {
+qconf_export_write_one(std::ostream &os, const char *text, const char *dest, lList **alpp) {
    if (text == nullptr) {
       text = "";
    }
    if (sge_is_file(dest)) {
       if (!qconf_opt_force) {
-         WARNING(MSG_QCONF_EXPORTSKIPPEDEXISTS_S, dest);
+         qconf_answer(alpp, ANSWER_QUALITY_WARNING, MSG_QCONF_EXPORTSKIPPEDEXISTS_S, dest);
          return 0;   /* -f overwrites (R4/KTD6); without it this is a non-fatal skip */
       }
    }
@@ -226,18 +227,18 @@ qconf_export_write_one(std::ostream &os, const char *text, const char *dest) {
    int ret = 0;
    FILE *fp = fopen(tmp, "w");
    if (fp == nullptr) {
-      ERROR(MSG_QCONF_EXPORTWRITEFAILED_S, dest);
+      qconf_answer(alpp, ANSWER_QUALITY_ERROR, MSG_QCONF_EXPORTWRITEFAILED_S, dest);
       ret = 1;
    } else {
       const size_t len = strlen(text);
       /* fclose is checked as well: a write that only failed on the flush would
        * otherwise be renamed into place as a truncated file. */
       if ((len > 0 && fwrite(text, 1, len, fp) != len) || fclose(fp) != 0) {
-         ERROR(MSG_QCONF_EXPORTWRITEFAILED_S, dest);
+         qconf_answer(alpp, ANSWER_QUALITY_ERROR, MSG_QCONF_EXPORTWRITEFAILED_S, dest);
          unlink(tmp);
          ret = 1;
       } else if (rename(tmp, dest) != 0) {
-         ERROR(MSG_QCONF_EXPORTWRITEFAILED_S, dest);
+         qconf_answer(alpp, ANSWER_QUALITY_ERROR, MSG_QCONF_EXPORTWRITEFAILED_S, dest);
          unlink(tmp);
          ret = 1;
       }
@@ -290,10 +291,11 @@ qconf_export_is_bulk(const char *path) {
  * @param dir  receives the directory without a trailing '/'
  * @param size the size of @p dir
  * @param path the name|dir argument
+ * @param alpp the answer list of the operation
  * @return true when the directory exists afterwards
  */
 static bool
-qconf_export_make_dir(char *dir, const size_t size, const char *path) {
+qconf_export_make_dir(char *dir, const size_t size, const char *path, lList **alpp) {
    sge_strlcpy(dir, path, size);
    const size_t dl = strlen(dir);
    if (dl > 1 && dir[dl - 1] == '/') {
@@ -303,7 +305,7 @@ qconf_export_make_dir(char *dir, const size_t size, const char *path) {
    if (!sge_is_directory(dir)) {
       /* KTD3: 4-arg, non-recursive, exit_on_error=false */
       if (sge_mkdir(dir, 0755, false, false) != 0 || !sge_is_directory(dir)) {
-         ERROR(MSG_QCONF_EXPORTCANTMKDIR_S, dir);
+         qconf_answer(alpp, ANSWER_QUALITY_ERROR, MSG_QCONF_EXPORTCANTMKDIR_S, dir);
          return false;
       }
    }
@@ -329,30 +331,31 @@ qconf_export_make_dir(char *dir, const size_t size, const char *path) {
  *              type, which the read procedure resolves - so the client no longer
  *              carries a descriptor for an export at all (CS-2826)
  * @param path  the name|dir argument
+ * @param alpp  the answer list of the operation
  * @return the number of objects that failed to export
  */
 static int
 qconf_export_path(std::ostream &os, ocs::QConfParameterClient &param,
-                  const char *sw, const char *path) {
+                  const char *sw, const char *path, lList **alpp) {
    const char *suffix = (qconf_opt_format == SP_FORM_JSON) ? ".json" : "";
    const bool is_bulk = qconf_export_is_bulk(path);
 
    /* The directory is created before the read, as it was: a directory that
     * cannot be created is reported on its own and no request is sent for it. */
    char dir[4096] = {};
-   if (is_bulk && !qconf_export_make_dir(dir, sizeof(dir), path)) {
+   if (is_bulk && !qconf_export_make_dir(dir, sizeof(dir), path, alpp)) {
       return 1;
    }
 
    if (!is_bulk && !qconf_name_is_fs_safe(path)) {
-      ERROR(MSG_QCONF_EXPORTUNSAFENAME_S, path);
+      qconf_answer(alpp, ANSWER_QUALITY_ERROR, MSG_QCONF_EXPORTUNSAFENAME_S, path);
       return 1;
    }
 
    ocs::ProcedureModel model;
    const lList *objects = nullptr;
    if (qconf_export_procedure(param, sw, is_bulk ? nullptr : path,
-                              is_bulk ? dir : path, model, &objects) != 0) {
+                              is_bulk ? dir : path, model, &objects, alpp) != 0) {
       return 1;
    }
 
@@ -368,7 +371,7 @@ qconf_export_path(std::ostream &os, ocs::QConfParameterClient &param,
       for_each_ep_lv(pair, objects) {
          const char *name = lGetString(pair, VA_variable);
          if (!qconf_name_is_fs_safe(name)) {
-            ERROR(MSG_QCONF_EXPORTUNSAFENAME_S, name != nullptr ? name : "");
+            qconf_answer(alpp, ANSWER_QUALITY_ERROR, MSG_QCONF_EXPORTUNSAFENAME_S, name != nullptr ? name : "");
             failures++;
             continue;
          }
@@ -376,7 +379,7 @@ qconf_export_path(std::ostream &os, ocs::QConfParameterClient &param,
          sge_strlcpy(lcbuf, name, sizeof(lcbuf));
          sge_strtolower(lcbuf, sizeof(lcbuf));
          if (lGetElemStr(seen, ST_name, lcbuf) != nullptr) {
-            ERROR(MSG_QCONF_EXPORTCOLLISION_SS, name, lcbuf);
+            qconf_answer(alpp, ANSWER_QUALITY_ERROR, MSG_QCONF_EXPORTCOLLISION_SS, name, lcbuf);
             failures++;
             continue;
          }
@@ -384,7 +387,7 @@ qconf_export_path(std::ostream &os, ocs::QConfParameterClient &param,
 
          qconf_export_dest(&dest, dir, name, suffix);
          failures += qconf_export_write_one(os, lGetString(pair, VA_value),
-                                            sge_dstring_get_string(&dest));
+                                            sge_dstring_get_string(&dest), alpp);
       }
       lFreeList(&seen);
 
@@ -395,12 +398,12 @@ qconf_export_path(std::ostream &os, ocs::QConfParameterClient &param,
        * re-imports to the same host key because the lookup folds case too. */
       const lListElem *pair = lFirst(objects);
       if (pair == nullptr) {
-         ERROR(MSG_QCONF_EXPORTNOOBJECT_S, path);
+         qconf_answer(alpp, ANSWER_QUALITY_ERROR, MSG_QCONF_EXPORTNOOBJECT_S, path);
          failures++;
       } else {
          qconf_export_dest(&dest, nullptr, path, suffix);
          failures += qconf_export_write_one(os, lGetString(pair, VA_value),
-                                            sge_dstring_get_string(&dest));
+                                            sge_dstring_get_string(&dest), alpp);
       }
    }
 
@@ -418,19 +421,20 @@ qconf_export_path(std::ostream &os, ocs::QConfParameterClient &param,
  * @param param the invocation, used for the export read
  * @param sw    the export switch being served, see qconf_export_path()
  * @param path  the file to write
+ * @param alpp  the answer list of the operation
  * @return the number of failures (0 on success).
  */
 static int
 qconf_export_singleton(std::ostream &os, ocs::QConfParameterClient &param,
-                       const char *sw, const char *path) {
+                       const char *sw, const char *path, lList **alpp) {
    if (qconf_export_is_bulk(path)) {
-      ERROR(MSG_QCONF_EXPORTNODIRALLOWED_S, path);
+      qconf_answer(alpp, ANSWER_QUALITY_ERROR, MSG_QCONF_EXPORTNODIRALLOWED_S, path);
       return 1;
    }
 
    ocs::ProcedureModel model;
    const lList *objects = nullptr;
-   if (qconf_export_procedure(param, sw, nullptr, path, model, &objects) != 0) {
+   if (qconf_export_procedure(param, sw, nullptr, path, model, &objects, alpp) != 0) {
       return 1;
    }
 
@@ -439,11 +443,11 @@ qconf_export_singleton(std::ostream &os, ocs::QConfParameterClient &param,
     * object with an empty result and leaves the wording to the caller. */
    const lListElem *pair = lFirst(objects);
    if (pair == nullptr) {
-      ERROR(MSG_QCONF_EXPORTNOOBJECT_S, path);
+      qconf_answer(alpp, ANSWER_QUALITY_ERROR, MSG_QCONF_EXPORTNOOBJECT_S, path);
       return 1;
    }
 
-   return qconf_export_write_one(os, lGetString(pair, VA_value), path);
+   return qconf_export_write_one(os, lGetString(pair, VA_value), path, alpp);
 }
 
 bool
@@ -575,7 +579,7 @@ qconf_dispatch_procedure(std::ostream &os, ocs::QConfParameterClient &param, lLi
 
 QConfShowStatus
 qconf_show_object(std::ostream &os, ocs::QConfParameterClient &param, const QConfObj o, const char *name,
-                  uint32_t *reduction, const bool report_errors) {
+                  lList **alpp, uint32_t *reduction, const bool report_errors) {
    DENTER(TOP_LAYER);
 
    /* CS-2799: the body of this function is a stored procedure call now. The
@@ -624,25 +628,26 @@ qconf_show_object(std::ostream &os, ocs::QConfParameterClient &param, const QCon
     * template, so a missing object no longer reaches this point for a type that
     * creates one, and for a type that does not the complaint is the answer. */
    if (report_errors) {
-      answer_list_output(&alp);
+      qconf_answer_take(alpp, &alp);
    }
    lFreeList(&alp);
    DRETURN(not_found ? QConfShowStatus::NOT_FOUND : QConfShowStatus::GDI_FAILED);
 }
 
 QConfOpResult
-qconf_run_read_procedure(std::ostream &os, ocs::QConfParameterClient &param, const qconf_op &op) {
+qconf_run_read_procedure(std::ostream &os, ocs::QConfParameterClient &param, const qconf_op &op,
+                         lList **alpp) {
    DENTER(TOP_LAYER);
 
    const ocs::qconf_read_entry *entry = ocs::QConfModelBase::resolve(op.token.c_str());
-   if (entry != nullptr && entry->kind != ocs::QConfReadKind::SINGLE_OBJECT && qconf_missing_argument(op)) {
-      DRETURN(QConfOpResult::FAILED);
+   if (entry != nullptr && entry->kind != ocs::QConfReadKind::SINGLE_OBJECT && qconf_missing_argument(op, alpp)) {
+      DRETURN(QConfOpResult::FAILED_USAGE);
    }
    if (entry != nullptr && entry->export_only) {
       const char *path = op.args.empty() ? nullptr : op.args.front().c_str();
       const int failed = (entry->kind == ocs::QConfReadKind::SINGLETON)
-                         ? qconf_export_singleton(os, param, op.token.c_str(), path)
-                         : qconf_export_path(os, param, op.token.c_str(), path);
+                         ? qconf_export_singleton(os, param, op.token.c_str(), path, alpp)
+                         : qconf_export_path(os, param, op.token.c_str(), path, alpp);
       DRETURN(failed != 0 ? QConfOpResult::FAILED : QConfOpResult::OK);
    }
    if (entry == nullptr || entry->kind == ocs::QConfReadKind::SINGLE_OBJECT) {
@@ -660,27 +665,11 @@ qconf_run_read_procedure(std::ostream &os, ocs::QConfParameterClient &param, con
    const bool ok = qconf_dispatch_procedure(os, param, &alp, nullptr);
 
    if (!ok) {
-      /* CS-2808: a singleton that finds nothing keeps the bare wording its hand
-       * written block used - "no sharetree element", not "error: no sharetree
-       * element". The prefix comes from the ERROR() macro inside answer_log(),
-       * so the text cannot travel as an answer and be printed unchanged. It
-       * does not have to: the wording sits in the descriptor table, which is
-       * linked into the client as well, so it is written here and the answer
-       * carrying the same text is dropped.
-       *
-       * The model raises STATUS_EEXIST for exactly this case and for nothing
-       * else in a singleton read, which is what makes the answer safe to
-       * swallow. */
-      const qconf_object_desc &desc = qconf_desc(entry->object);
-      if (entry->kind == ocs::QConfReadKind::SINGLETON &&
-          desc.read.empty_msg != nullptr &&
-          answer_list_has_status(&alp, STATUS_EEXIST)) {
-         fprintf(stderr, "%s\n", desc.read.empty_msg);
-      } else {
-         /* the messages the engine used to write to stderr itself; an empty
-          * list for plain output is one of them */
-         answer_list_output(&alp);
-      }
+      /* CS-2808 kept "no sharetree element" bare by printing the descriptor's
+       * wording here and dropping the answer that carried the same text. Since
+       * CS-2971 every error is printed with the "error: " prefix, so the answer
+       * is simply reported like any other. */
+      qconf_answer_take(alpp, &alp);
    }
    lFreeList(&alp);
 
@@ -689,16 +678,17 @@ qconf_run_read_procedure(std::ostream &os, ocs::QConfParameterClient &param, con
 
 /** @brief How a sub-procedure read reports its answer list and exit status
  *
- * Four ways, kept per switch exactly as the hand written blocks had them
- * (CS-2955). Which one a switch uses is the history of its ticket. Since
- * CS-2950 they agree on what a failure does to the command line; whether every
- * message should carry the "error: " prefix is a decision of its own.
+ * Four ways, kept per switch as the hand written blocks had them (CS-2955):
+ * which answers are reported, and whether the status comes from the call or
+ * from the answers. Which one a switch uses is the history of its ticket. Since
+ * CS-2950 they agree on what a failure does to the command line, and since
+ * CS-2971 on how a message is printed - see qconf_answer_print().
  */
 enum class QConfAnswerReport {
-   SHOW_AND_STATUS,    ///< show_answer() always, its result or-ed in; a failed call sets 1
-   SHOW_ON_FAILURE,    ///< a failed call: show_answer(), status 1
-   OUTPUT_ON_FAILURE,  ///< a failed call: answer_list_output(), with the "error: " prefix, status 1
-   STATUS_FROM_ANSWER  ///< show_answer() always, its result is the status; the call's result is not used
+   SHOW_AND_STATUS,    ///< the last answer always, its status or-ed in; a failed call sets 1
+   SHOW_ON_FAILURE,    ///< a failed call: the last answer, status 1
+   OUTPUT_ON_FAILURE,  ///< a failed call: every answer, status 1
+   STATUS_FROM_ANSWER  ///< the last answer always, its status is the status; the call's result is not used
 };
 
 /** @brief One read switch served by qconf_run_sub_procedure() */
@@ -716,8 +706,8 @@ struct qconf_sub_procedure_entry {
  * a tree, a view over every host group, a filter whose match depends on the kind
  * of entry - so qmaster runs a sub-procedure of its own for each of them
  * (CS-2816 to CS-2820). "-sce" is a read table row of kind SINGLE_OBJECT, which
- * qconf_run_read_procedure() leaves alone; it is here because it prints the bare
- * message where qconf_show_object() would add an "error: " prefix (CS-2817).
+ * qconf_run_read_procedure() leaves alone; it is here because it reports the
+ * last answer only, where qconf_show_object() reports every one (CS-2817).
  * "-scal", "-sckpt", "-srole", "-sp" and "-sprj" are plain single-object reads
  * as well; they had blocks of their own only because some of them stopped the
  * command line on a missing object and some did not, which CS-2950 made one
@@ -759,11 +749,12 @@ static constexpr qconf_sub_procedure_entry qconf_sub_procedure_table[] = {
  * @param param the invocation, whose operation is set to @p op for the call
  * @param entry the row
  * @param op    the operation to send
+ * @param alpp  the answer list of the operation
  * @return true when the read failed
  */
 static bool
 qconf_sub_procedure_once(std::ostream &os, ocs::QConfParameterClient &param, const qconf_sub_procedure_entry &entry,
-                         const qconf_op &op) {
+                         const qconf_op &op, lList **alpp) {
    DENTER(TOP_LAYER);
 
    param.set_operation(op);
@@ -774,25 +765,42 @@ qconf_sub_procedure_once(std::ostream &os, ocs::QConfParameterClient &param, con
    const bool ok = qconf_dispatch_procedure(os, param, &alp);
    param.set_sub_procedure_name("");
 
+   /* the status of every answer counts, but only the last one is reported:
+    * what show_answer() did for these reads */
+   const auto take_last = [&alp, alpp]() {
+      int status = 0;
+      for_each_ep_lv(aep, alp) {
+         if (answer_get_status(aep) != STATUS_OK) {
+            status = 1;
+         }
+      }
+      while (lGetNumberOfElem(alp) > 1) {
+         lListElem *first = lFirstRW(alp);
+         lRemoveElem(alp, &first);
+      }
+      qconf_answer_take(alpp, &alp);
+      return status;
+   };
+
    bool failed = false;
    switch (entry.report) {
       case QConfAnswerReport::SHOW_AND_STATUS:
-         failed = (show_answer(alp) != 0) || !ok;
+         failed = (take_last() != 0) || !ok;
          break;
       case QConfAnswerReport::SHOW_ON_FAILURE:
          if (!ok) {
-            show_answer(alp);
+            take_last();
             failed = true;
          }
          break;
       case QConfAnswerReport::OUTPUT_ON_FAILURE:
          if (!ok) {
-            answer_list_output(&alp);
+            qconf_answer_take(alpp, &alp);
             failed = true;
          }
          break;
       case QConfAnswerReport::STATUS_FROM_ANSWER:
-         failed = (show_answer(alp) != 0);
+         failed = (take_last() != 0);
          break;
    }
    lFreeList(&alp);
@@ -801,7 +809,8 @@ qconf_sub_procedure_once(std::ostream &os, ocs::QConfParameterClient &param, con
 }
 
 QConfOpResult
-qconf_run_sub_procedure(std::ostream &os, ocs::QConfParameterClient &param, const qconf_op &op) {
+qconf_run_sub_procedure(std::ostream &os, ocs::QConfParameterClient &param, const qconf_op &op,
+                        lList **alpp) {
    DENTER(TOP_LAYER);
 
    const qconf_sub_procedure_entry *entry = nullptr;
@@ -814,18 +823,18 @@ qconf_run_sub_procedure(std::ostream &os, ocs::QConfParameterClient &param, cons
    if (entry == nullptr) {
       DRETURN(QConfOpResult::NOT_HANDLED);
    }
-   if (qconf_missing_argument(op)) {
-      DRETURN(QConfOpResult::FAILED);
+   if (qconf_missing_argument(op, alpp)) {
+      DRETURN(QConfOpResult::FAILED_USAGE);
    }
 
    if (entry->names == nullptr) {
-      DRETURN(qconf_sub_procedure_once(os, param, *entry, op) ? QConfOpResult::FAILED : QConfOpResult::OK);
+      DRETURN(qconf_sub_procedure_once(os, param, *entry, op, alpp) ? QConfOpResult::FAILED : QConfOpResult::OK);
    }
 
    /* one read per name; a name that fails does not stop the others */
    std::vector<std::string> names;
    bool failed = false;
-   entry->names(op, names, failed);
+   entry->names(op, names, failed, alpp);
    bool first = true;
    for (const std::string &name : names) {
       if (entry->blank_line_between && !first) {
@@ -836,7 +845,7 @@ qconf_run_sub_procedure(std::ostream &os, ocs::QConfParameterClient &param, cons
       one.spec = op.spec;
       one.token = op.token;
       one.args.push_back(name);
-      if (qconf_sub_procedure_once(os, param, *entry, one)) {
+      if (qconf_sub_procedure_once(os, param, *entry, one, alpp)) {
          failed = true;
       }
    }
