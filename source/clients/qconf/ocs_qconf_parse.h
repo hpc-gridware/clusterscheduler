@@ -64,7 +64,6 @@ const char *qconf_cstr(const char *s);
  * @param os  the stream to write to
  * @param fmt a printf-style format string, usually a MSG_* catalogue entry
  * @param ... arguments for @p fmt
- * @return none
  */
 void qconf_msg(std::ostream &os, const char *fmt, ...)
       __attribute__((format(printf, 2, 3)));
@@ -102,6 +101,82 @@ typedef struct object_info_entry {
    const struct spool_flatfile_instr *instr; ///< how to lay them out as text
    bool (*pre_gdi_function)(lList *list, lList **answer_list);   ///< validation to run before sending, or `nullptr`
 } object_info_entry;
+
+/** @brief Print a message, if any, and exit the client with status 1
+ *
+ * Both streams are flushed first, so the message comes after what was
+ * already written.
+ *
+ * @param ptr the message, or nullptr for none
+ * @return never; declared int for the callers that return its value
+ */
+int sge_error_and_exit(const char *ptr);
+
+/** @brief Turn a comma separated name list into a new CULL list, one element per name
+ *
+ * The name goes into a string or a host field, whichever @p nm is. Of a host
+ * list, every host but the first is resolved into EH_name.
+ *
+ * @param name the name of the new list
+ * @param lpp receives the new list
+ * @param dp the descriptor of the elements to create
+ * @param nm the field the name is written into
+ * @param s the name list; taken apart in place by sge_strtok()
+ */
+void parse_name_list_to_cull(const char *name, lList **lpp, lDescr *dp, int nm, char *s);
+
+/** @brief Delete every named configuration in one request
+ *
+ * CS-2754: one `sge_gdi(CONF_LIST, DEL)` for the whole list, where `-dconf` and
+ * `-Dconf` used to send one request per host.
+ *
+ * The qmaster needs nothing for this: sge_c_gdi_del() walks the request element
+ * by element and sge_del_configuration() appends its own answer for each, so the
+ * report stays one line per configuration and one host that cannot be deleted
+ * does not stop the others.
+ *
+ * Gone with it is the client's "if the resolved name failed, try the name as it
+ * was typed" retry. It cannot survive a single request -- the answers cannot be
+ * mapped back to the elements reliably, because sge_event_spool() adds an answer
+ * of its own when spooling fails -- and it turned out to be redundant anyway:
+ * the qmaster looks the configuration up with lGetElemHostRW(), which normalises
+ * both sides through sge_hostcpy() before comparing, so a configuration spooled
+ * under the short name is found when the FQDN is requested and the other way
+ * round.
+ *
+ * @param conf_list the configurations to delete, elements carrying CONF_name
+ * @return the number of configurations that could not be deleted
+ */
+
+int delete_configs(const lList *conf_list);
+
+/** @brief Exit the client unless the user is a manager
+ *
+ * Asks qmaster for the permission; a request that fails exits the client too.
+ *
+ * @param user the user, for the message
+ * @return 0 when the user is a manager, -1 when no user was given
+ */
+int qconf_is_manager(const char *user);
+
+/** @brief Exit the client unless the host is an admin host
+ *
+ * Asks qmaster for the permission; a request that fails exits the client too.
+ *
+ * @param host the host, for the message
+ * @return 0 when the host is an admin host, -1 when no host was given
+ */
+int qconf_is_adminhost(const char *host);
+
+/** @brief Exit the client unless the user is a manager and the host an admin host
+ *
+ * Asks qmaster for the permission; a request that fails exits the client too.
+ *
+ * @param user the user, for the message
+ * @param host the host, for the message
+ * @return 0 when both hold, -1 when no host was given
+ */
+int qconf_is_manager_on_admin_host(const char *user, const char *host);
 
 /** @brief Work through the `qconf` command line, one switch at a time
  *
