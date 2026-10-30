@@ -1096,66 +1096,6 @@ int delete_configs(const lList *conf_list) {
 }
 
 int
-qconf_is_manager(const char *user) {
-   DENTER(TOP_LAYER);
-
-   // check input parameter
-   if (user == nullptr) {
-      DRETURN(-1);
-   }
-
-   // ask master if current user is manager
-   lList *alp = nullptr;
-   bool is_manager = false;
-   bool perm_return = ocs::gdi::Client::sge_gdi_get_permission(&alp, &is_manager, nullptr, nullptr, nullptr);
-   if (!perm_return) {
-      DTRACE;
-      answer_list_output(&alp);
-      sge_exit(1);
-   }
-   lFreeList(&alp);
-
-   // if user is no manager then exit
-   if (!is_manager) {
-      fprintf(stderr, MSG_SGETEXT_MUSTBEMANAGER_S , user);
-      fprintf(stderr, "\n");
-      sge_exit(1);
-   }
-
-   DRETURN(0);
-}
-
-int
-qconf_is_adminhost(const char *host) {
-   DENTER(TOP_LAYER);
-
-   // check input parameter
-   if (host == nullptr) {
-      DRETURN(-1);
-   }
-
-   // ask master if current host is admin host
-   lList *alp = nullptr;
-   bool is_admin_host = false;
-   bool perm_return = ocs::gdi::Client::sge_gdi_get_permission(&alp, nullptr, nullptr, &is_admin_host, nullptr);
-   if (!perm_return) {
-      DTRACE;
-      answer_list_output(&alp);
-      sge_exit(1);
-   }
-   lFreeList(&alp);
-
-   // if host has no permission then exit
-   if (!is_admin_host) {
-      fprintf(stderr,MSG_SGETEXT_NOADMINHOST_S, host);
-      fprintf(stderr, "\n");
-      sge_exit(1);
-   }
-
-   DRETURN(0);
-}
-
-int
 qconf_is_manager_on_admin_host(const char *user, const char *host) {
    DENTER(TOP_LAYER);
 

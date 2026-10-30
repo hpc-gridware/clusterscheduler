@@ -150,24 +150,6 @@ void parse_name_list_to_cull(const char *name, lList **lpp, lDescr *dp, int nm, 
 
 int delete_configs(const lList *conf_list);
 
-/** @brief Exit the client unless the user is a manager
- *
- * Asks qmaster for the permission; a request that fails exits the client too.
- *
- * @param user the user, for the message
- * @return 0 when the user is a manager, -1 when no user was given
- */
-int qconf_is_manager(const char *user);
-
-/** @brief Exit the client unless the host is an admin host
- *
- * Asks qmaster for the permission; a request that fails exits the client too.
- *
- * @param host the host, for the message
- * @return 0 when the host is an admin host, -1 when no host was given
- */
-int qconf_is_adminhost(const char *host);
-
 /** @brief Exit the client unless the user is a manager and the host an admin host
  *
  * Asks qmaster for the permission; a request that fails exits the client too.

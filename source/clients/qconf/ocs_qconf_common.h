@@ -210,16 +210,15 @@ enum class QConfOpResult {
 
 /** @brief The permission check a switch makes in the client before it is served
  *
- * Kept per switch exactly as the hand written blocks had it (CS-2952). qmaster
- * decides in any case; which switches check here, and with which function, is
- * the history of each ticket rather than a rule, and unifying it is a later
- * step of CS-2946 that moves the decision into qmaster.
+ * qmaster decides in any case: a configuration write needs an admin host there,
+ * and a manager for every object but the userset, which an operator may change.
+ * One kind of check is therefore enough here (CS-2952) - for the userset rows it
+ * is stricter than qmaster. Which switches check at all is still the history of
+ * each ticket, and CS-2973 moves the decision into qmaster altogether.
  */
 enum class QConfClientCheck {
    NONE,                    ///< no check in the client
-   MANAGER,                 ///< qconf_is_manager()
-   MANAGER_ON_ADMIN_HOST,   ///< qconf_is_manager_on_admin_host()
-   ADMIN_HOST_THEN_MANAGER  ///< qconf_is_adminhost(), then qconf_is_manager() ("-ace")
+   MANAGER_ON_ADMIN_HOST    ///< qconf_is_manager_on_admin_host()
 };
 
 /**

@@ -791,6 +791,9 @@ struct qconf_write_entry {
  *
  * "-mce" checked qconf_is_manager() again after qconf_is_manager_on_admin_host(),
  * which already exits for a non-manager; the row keeps the first check only.
+ * "-ace" checked the admin host first and the manager second, in two round
+ * trips; it now makes the same single check as every other row, which reports
+ * a missing manager before a missing admin host, in qmaster's order.
  */
 static const qconf_write_entry qconf_write_table[] = {
    {"-acal",   QConfObj::CAL,  QConfWriteKind::EDIT,  "template",  false, QConfClientCheck::MANAGER_ON_ADMIN_HOST},
@@ -799,7 +802,7 @@ static const qconf_write_entry qconf_write_table[] = {
    {"-ap",     QConfObj::PE,   QConfWriteKind::EDIT,  "template",  false, QConfClientCheck::MANAGER_ON_ADMIN_HOST},
    {"-auser",  QConfObj::UU,   QConfWriteKind::EDIT,  "template",  false, QConfClientCheck::MANAGER_ON_ADMIN_HOST},
    {"-aprj",   QConfObj::PR,   QConfWriteKind::EDIT,  "template",  false, QConfClientCheck::MANAGER_ON_ADMIN_HOST},
-   {"-ace",    QConfObj::CE,   QConfWriteKind::EDIT,  "template",  true,  QConfClientCheck::ADMIN_HOST_THEN_MANAGER},
+   {"-ace",    QConfObj::CE,   QConfWriteKind::EDIT,  "template",  true,  QConfClientCheck::MANAGER_ON_ADMIN_HOST},
    {"-ahgrp",  QConfObj::HGRP, QConfWriteKind::EDIT,  "@template", true,  QConfClientCheck::MANAGER_ON_ADMIN_HOST},
    {"-aq",     QConfObj::CQ,   QConfWriteKind::EDIT,  "template",  true,  QConfClientCheck::MANAGER_ON_ADMIN_HOST},
    {"-astree", QConfObj::STN,  QConfWriteKind::EDIT,  nullptr,     false, QConfClientCheck::MANAGER_ON_ADMIN_HOST},

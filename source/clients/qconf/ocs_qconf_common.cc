@@ -311,15 +311,8 @@ qconf_client_check(QConfClientCheck check, const char *username, const char *hos
    switch (check) {
       case QConfClientCheck::NONE:
          break;
-      case QConfClientCheck::MANAGER:
-         qconf_is_manager(username);
-         break;
       case QConfClientCheck::MANAGER_ON_ADMIN_HOST:
          qconf_is_manager_on_admin_host(username, hostname);
-         break;
-      case QConfClientCheck::ADMIN_HOST_THEN_MANAGER:
-         qconf_is_adminhost(hostname);
-         qconf_is_manager(username);
          break;
    }
 }
