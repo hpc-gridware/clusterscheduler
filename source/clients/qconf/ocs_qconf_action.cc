@@ -151,8 +151,7 @@ static void
 qconf_action_stnode_failed(const qconf_op &op) {
    lList *args = nullptr;
    lString2List(op.args[0].c_str(), &args, ST_Type, ST_name, ", ");
-   const lListElem *arg;
-   for_each_ep(arg, args) {
+   for_each_ep_lv(arg, args) {
       const char *text = lGetString(arg, ST_name);
       const char *eq = (text != nullptr) ? strchr(text, '=') : nullptr;
       int shares;
@@ -182,7 +181,7 @@ struct qconf_action_entry {
  * the object list it is addressed to, which is the list the permission check
  * asks about, and the hooks that keep what each switch did on its own.
  */
-static const qconf_action_entry qconf_action_table[] = {
+static constexpr qconf_action_entry qconf_action_table[] = {
    {"-purge", ocs::QConfActionParameter::QUEUE_PURGE, ocs::gdi::Target::CQ_LIST, QConfClientCheck::NONE,
     qconf_action_purge_args, nullptr, nullptr},
    {"-au", ocs::QConfActionParameter::USERSET_MEMBERS, ocs::gdi::Target::US_LIST, QConfClientCheck::NONE,

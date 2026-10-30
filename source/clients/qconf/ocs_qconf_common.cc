@@ -59,11 +59,8 @@
  * option loop processes switches left-to-right (a flag must take effect
  * regardless of where on the command line it appears). */
 bool qconf_opt_dry_run = false;   /* H3 (-dry):    validate/report, do not send */
-
 bool qconf_opt_force = false;     /* H6 (-f):      skip the bulk-delete prompt */
-
 bool qconf_opt_strict = false;    /* H2 (-strict): apply nothing unless all files valid */
-
 spool_flatfile_format qconf_opt_format = SP_FORM_ASCII;  ///< see the declaration in `ocs_qconf_parse.h`
 
 const char *
@@ -113,19 +110,19 @@ qconf_confirm(const char *prompt) {
 }
 
 bool
-qconf_object_exists(ocs::gdi::Target target, const lDescr *descr, int name_nm,
+qconf_object_exists(const ocs::gdi::Target target, const lDescr *descr, const int name_nm,
                     const char *name) {
-   lList *lp = nullptr;
    /* CS-2304: host fields need a host comparison (%Ih), not a string one. */
    lCondition *where = qconf_name_is_host(descr, name_nm)
       ? lWhere("%T(%Ih=%s)", descr, name_nm, name)
       : lWhere("%T(%I==%s)", descr, name_nm, name);
    lEnumeration *what = lWhat("%T(%I)", descr, name_nm);
+   lList *lp = nullptr;
    lList *alp = ocs::gdi::Client::sge_gdi(target, ocs::gdi::Command::GET,
                                           ocs::gdi::SubCommand::NONE, &lp, where, what);
    lFreeWhere(&where);
    lFreeWhat(&what);
-   bool exists = (lp != nullptr && lGetNumberOfElem(lp) > 0);
+   const bool exists = (lp != nullptr && lGetNumberOfElem(lp) > 0);
    lFreeList(&lp);
    lFreeList(&alp);
    return exists;
@@ -157,7 +154,7 @@ qconf_read_object_file(const lDescr *descr, spooling_field *fields,
                        int (*validate)(const lListElem *, lList **),
                        const spool_flatfile_instr *sfi = &qconf_sfi,
                        int (*prepare)(lListElem *, lList **) = nullptr,
-                       bool parse_values = true) {
+                       const bool parse_values = true) {
    /* The chain itself moved to qconf_parse_object() in the procedure library,
     * because qmaster needs the same one for a write procedure and two copies
     * would drift. What stays here is the client's half of it: the format comes
@@ -182,8 +179,7 @@ qconf_for_each_file(const char *path, int (*per_file)(const char *, void *), voi
       return 1;
    }
    int failures = 0;
-   struct dirent *de;
-   while ((de = readdir(dir)) != nullptr) {
+   for (const dirent *de = readdir(dir); de != nullptr; de = readdir(dir)) {
       if (de->d_name[0] == '.') {
          continue;   /* skip ., .. and hidden files */
       }
@@ -228,25 +224,30 @@ qconf_collect_name(const char *filepath, void *vctx) {
    return 0;
 }
 
+/** @brief Read a stream to its end into a string
+ * @param fp the stream to read
+ * @param text receives the content, cleared first
+ * @return true when the stream was read without error
+ */
+static bool
+qconf_read_stream_text(FILE *fp, std::string &text) {
+   text.clear();
+   char chunk[4096];
+   size_t n;
+   while ((n = fread(chunk, 1, sizeof(chunk), fp)) > 0) {
+      text.append(chunk, n);
+   }
+   return ferror(fp) == 0;
+}
+
 int
 qconf_collect_text(const char *filepath, void *vctx) {
    auto *ctx = static_cast<qconf_text_ctx *>(vctx);
 
    std::string text;
-   bool ok;
-   if (strcmp(filepath, "-") == 0) {
-      // CS-2299 H4: "-" reads the object from stdin
-      ok = true;
-      char chunk[4096];
-      size_t n;
-      while ((n = fread(chunk, 1, sizeof(chunk), stdin)) > 0) {
-         text.append(chunk, n);
-      }
-      ok = (ferror(stdin) == 0);
-   } else {
-      ok = qconf_read_file_text(filepath, text);
-   }
-
+   // CS-2299 H4: "-" reads the object from stdin
+   const bool ok = (strcmp(filepath, "-") == 0) ? qconf_read_stream_text(stdin, text)
+                                                : qconf_read_file_text(filepath, text);
    if (!ok) {
       ERROR(MSG_ERROROPENINGFILEFORREADING_SS, filepath, strerror(errno));
       ctx->n_fail++;
@@ -265,13 +266,7 @@ qconf_read_file_text(const char *filename, std::string &text) {
    if (fp == nullptr) {
       DRETURN(false);
    }
-   text.clear();
-   char chunk[4096];
-   size_t n;
-   while ((n = fread(chunk, 1, sizeof(chunk), fp)) > 0) {
-      text.append(chunk, n);
-   }
-   const bool ok = (ferror(fp) == 0);
+   const bool ok = qconf_read_stream_text(fp, text);
    fclose(fp);
 
    DRETURN(ok);
@@ -307,7 +302,7 @@ qconf_missing_argument(const qconf_op &op) {
 }
 
 void
-qconf_client_check(QConfClientCheck check, const char *username, const char *hostname) {
+qconf_client_check(const QConfClientCheck check, const char *username, const char *hostname) {
    switch (check) {
       case QConfClientCheck::NONE:
          break;
@@ -383,8 +378,7 @@ qconf_names_userset_list(const qconf_op &op, std::vector<std::string> &names, [[
    std::string arg = op.args[0];
    lList *usersets = nullptr;
    parse_name_list_to_cull("usersets", &usersets, US_Type, US_name, arg.data());
-   const lListElem *us_ep;
-   for_each_ep(us_ep, usersets) {
+   for_each_ep_lv(us_ep, usersets) {
       const char *name = lGetString(us_ep, US_name);
       names.emplace_back(name != nullptr ? name : "");
    }
@@ -395,8 +389,7 @@ void
 qconf_names_user_list(const qconf_op &op, std::vector<std::string> &names, [[maybe_unused]] bool &failed) {
    lList *users = nullptr;
    lString2List(op.args[0].c_str(), &users, ST_Type, ST_name, ", ");
-   const lListElem *user_ep;
-   for_each_ep(user_ep, users) {
+   for_each_ep_lv(user_ep, users) {
       names.emplace_back(lGetString(user_ep, ST_name));
    }
    lFreeList(&users);

@@ -64,7 +64,7 @@ qconf_delete_path(std::ostream &os, const qconf_object_desc &d, spooling_field *
    const int name_nm = d.name_nm;
    qconf_file_ctx ctx = {&os, &d, fields, d.parse_values,
                          lCreateList("qconf del", descr), nullptr, 0, 0};
-   bool is_dir = sge_is_directory(path);
+   const bool is_dir = sge_is_directory(path);
    qconf_for_each_file(path, qconf_collect_name, &ctx);
 
    if (is_dir) {
@@ -72,11 +72,10 @@ qconf_delete_path(std::ostream &os, const qconf_object_desc &d, spooling_field *
       qconf_info(os, MSG_QCONF_DELCOLLECTSUMMARY_SII, path, ctx.n_ok, ctx.n_fail);
    }
 
-   int n_names = lGetNumberOfElem(ctx.names);
+   const int n_names = lGetNumberOfElem(ctx.names);
    if (n_names > 0 && qconf_opt_dry_run) {
       /* CS-2299 H3: list what would be deleted, contact no one. */
-      const lListElem *nep;
-      for_each_ep(nep, ctx.names) {
+      for_each_ep_lv(nep, ctx.names) {
          qconf_info(os, MSG_QCONF_DRYRUNWOULDDELETE_S, qconf_get_name(nep, name_nm));
       }
       lFreeList(&ctx.names);
@@ -86,7 +85,7 @@ qconf_delete_path(std::ostream &os, const qconf_object_desc &d, spooling_field *
       /* CS-2299 H6: a directory expands to a bulk delete - confirm first. */
       dstring p = DSTRING_INIT;
       sge_dstring_sprintf(&p, MSG_QCONF_CONFIRMDELETE_I, n_names);
-      bool ok = qconf_confirm(sge_dstring_get_string(&p));
+      const bool ok = qconf_confirm(sge_dstring_get_string(&p));
       sge_dstring_free(&p);
       if (!ok) {
          WARNING(MSG_QCONF_DELETEABORTED_I, n_names);
@@ -116,13 +115,13 @@ qconf_delete_path(std::ostream &os, const qconf_object_desc &d, spooling_field *
  * @return 0 on success, 1 when the master reported an error
  */
 static int
-qconf_delete_list(QConfObj o, lList **lpp) {
+qconf_delete_list(const QConfObj o, lList **lpp) {
    DENTER(TOP_LAYER);
    const qconf_object_desc &d = qconf_desc(o);
 
    lList *alp = ocs::gdi::Client::sge_gdi(d.target, ocs::gdi::Command::DEL, ocs::gdi::SubCommand::NONE,
                                           lpp, nullptr, nullptr);
-   int ret = show_answer_list(alp);
+   const int ret = show_answer_list(alp);
    lFreeList(&alp);
    lFreeList(lpp);
    DRETURN(ret);
@@ -136,11 +135,11 @@ qconf_delete_list(QConfObj o, lList **lpp) {
  * @return 0 on success, 1 when the master reported an error
  */
 static int
-qconf_delete_names(QConfObj o, const char *names) {
+qconf_delete_names(const QConfObj o, const char *names) {
    const qconf_object_desc &d = qconf_desc(o);
-   lList *lp = nullptr;
 
    // a type without a name field is deleted as a whole, so there is nothing to name
+   lList *lp = nullptr;
    if (d.name_nm != NoName) {
       lString2List(names, &lp, const_cast<lDescr *>(d.descr), d.name_nm, ", ");
    }
@@ -154,13 +153,13 @@ qconf_delete_names(QConfObj o, const char *names) {
  * @return 0 on success, non-zero on error
  */
 static int
-qconf_delete_obj(std::ostream &os, QConfObj o, const char *path) {
+qconf_delete_obj(std::ostream &os, const QConfObj o, const char *path) {
    const qconf_object_desc &d = qconf_desc(o);
    bool owned = false;
    /* the write field list, which a diagnostic attribute has no business in: the file is
     * read to learn the names of the objects to delete */
    spooling_field *fields = d.build_fields(qconf_opt_format, false, &owned);
-   int ret = qconf_delete_path(os, d, fields, path);
+   const int ret = qconf_delete_path(os, d, fields, path);
    if (owned) {
       sge_free(&fields);
    }
@@ -198,8 +197,7 @@ qconf_rqs_collect(const char *filepath, void *vctx) {
       ctx->n_fail++;
       return 1;
    }
-   lListElem *e;
-   while ((e = lFirstRW(l)) != nullptr) {
+   for (lListElem *e = lFirstRW(l); e != nullptr; e = lFirstRW(l)) {
       lDechainElem(l, e);
       lAppendElem(ctx->all, e);
    }
@@ -221,14 +219,13 @@ qconf_rqs_collect(const char *filepath, void *vctx) {
 static int
 qconf_rqs_delete(std::ostream &os, const char *path) {
    qconf_rqs_ctx ctx = {&os, lCreateList("rqs", RQS_Type), 0};
-   bool is_dir = sge_is_directory(path);
+   const bool is_dir = sge_is_directory(path);
    qconf_for_each_file(path, qconf_rqs_collect, &ctx);
    int ret = ctx.n_fail;
 
    /* keep only the names that still exist (idempotent delete) */
    lList *del = lCreateList("rqs del", RQS_Type);
-   const lListElem *r;
-   for_each_ep(r, ctx.all) {
+   for_each_ep_lv(r, ctx.all) {
       const char *nm = lGetString(r, RQS_name);
       if (qconf_object_exists(ocs::gdi::Target::RQS_LIST, RQS_Type, RQS_name, nm)) {
          lAddElemStr(&del, RQS_name, nm, RQS_Type);
@@ -238,9 +235,9 @@ qconf_rqs_delete(std::ostream &os, const char *path) {
    }
    lFreeList(&ctx.all);
 
-   int n = lGetNumberOfElem(del);
+   const int n = lGetNumberOfElem(del);
    if (n > 0 && qconf_opt_dry_run) {
-      for_each_ep(r, del) {
+      for_each_ep_lv(r, del) {
          qconf_info(os, MSG_QCONF_DRYRUNWOULDDELETE_S, lGetString(r, RQS_name));
       }
       lFreeList(&del);
@@ -249,7 +246,7 @@ qconf_rqs_delete(std::ostream &os, const char *path) {
    if (n > 0 && is_dir && !qconf_opt_force) {
       dstring p = DSTRING_INIT;
       sge_dstring_sprintf(&p, MSG_QCONF_CONFIRMDELETE_I, n);
-      bool ok = qconf_confirm(sge_dstring_get_string(&p));
+      const bool ok = qconf_confirm(sge_dstring_get_string(&p));
       sge_dstring_free(&p);
       if (!ok) {
          WARNING(MSG_QCONF_DELETEABORTED_I, n);
@@ -309,13 +306,12 @@ qconf_conf_collect_host(const char *filepath, void *vctx) {
 static int
 qconf_conf_delete_path(std::ostream &os, const char *path) {
    qconf_conf_ctx ctx = {&os, lCreateList("conf del", CONF_Type), 0, 0};
-   bool is_dir = sge_is_directory(path);
+   const bool is_dir = sge_is_directory(path);
    qconf_for_each_file(path, qconf_conf_collect_host, &ctx);
 
-   int n = lGetNumberOfElem(ctx.hosts);
+   const int n = lGetNumberOfElem(ctx.hosts);
    if (n > 0 && qconf_opt_dry_run) {
-      const lListElem *e;
-      for_each_ep(e, ctx.hosts) {
+      for_each_ep_lv(e, ctx.hosts) {
          qconf_info(os, MSG_QCONF_DRYRUNWOULDDELETE_S, lGetHost(e, CONF_name));
       }
       lFreeList(&ctx.hosts);
@@ -324,7 +320,7 @@ qconf_conf_delete_path(std::ostream &os, const char *path) {
    if (n > 0 && is_dir && !qconf_opt_force) {
       dstring p = DSTRING_INIT;
       sge_dstring_sprintf(&p, MSG_QCONF_CONFIRMDELETE_I, n);
-      bool ok = qconf_confirm(sge_dstring_get_string(&p));
+      const bool ok = qconf_confirm(sge_dstring_get_string(&p));
       sge_dstring_free(&p);
       if (!ok) {
          WARNING(MSG_QCONF_DELETEABORTED_I, n);
@@ -332,7 +328,7 @@ qconf_conf_delete_path(std::ostream &os, const char *path) {
          return 0;
       }
    }
-   int ret = delete_configs(ctx.hosts);
+   const int ret = delete_configs(ctx.hosts);
    lFreeList(&ctx.hosts);
    return ret;
 }
@@ -434,7 +430,7 @@ qconf_delete_rqs_path(std::ostream &os, const qconf_op &op) {
  * "-dh"/"-ds"; "-du"/"-dm"/"-do" and "-dstnode" are actions, see
  * qconf_action_table.
  */
-static const qconf_delete_entry qconf_delete_table[] = {
+static constexpr qconf_delete_entry qconf_delete_table[] = {
    {"-dcal",   QConfObj::CAL,  QConfDeleteKind::NAMES, QConfClientCheck::NONE},
    {"-dckpt",  QConfObj::CK,   QConfDeleteKind::NAMES, QConfClientCheck::NONE},
    {"-drole",  QConfObj::RL,   QConfDeleteKind::NAMES, QConfClientCheck::NONE},

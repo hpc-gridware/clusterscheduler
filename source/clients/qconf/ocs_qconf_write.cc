@@ -91,7 +91,7 @@
  */
 static int
 qconf_apply_path_procedure(std::ostream &os, const QConfObj o, const char *path,
-                           const char *select = nullptr, uint32_t extra_mode = 0u,
+                           const char *select = nullptr, const uint32_t extra_mode = 0u,
                            const char *name = nullptr) {
    DENTER(TOP_LAYER);
 
@@ -221,8 +221,8 @@ qconf_apply_path_procedure(std::ostream &os, const QConfObj o, const char *path,
  * @return 0 on success, non-zero on error
  */
 static int
-qconf_apply_obj(std::ostream &os, QConfObj o, const char *path, const char *select = nullptr,
-                uint32_t extra_mode = 0u, const char *name = nullptr) {
+qconf_apply_obj(std::ostream &os, const QConfObj o, const char *path, const char *select = nullptr,
+                const uint32_t extra_mode = 0u, const char *name = nullptr) {
    return qconf_apply_path_procedure(os, o, path, select, extra_mode, name);
 }
 
@@ -299,7 +299,7 @@ enum class QConfEditStatus {
  * @return OK, or the reason no text came back
  */
 static QConfEditStatus
-qconf_edit_text(std::string &text, uid_t uid, gid_t gid, bool unchanged_is_ok) {
+qconf_edit_text(std::string &text, const uid_t uid, const gid_t gid, const bool unchanged_is_ok) {
    DENTER(TOP_LAYER);
 
    char *filename = sge_malloc(sizeof(char) * SGE_PATH_MAX);
@@ -369,7 +369,7 @@ qconf_edit_text(std::string &text, uid_t uid, gid_t gid, bool unchanged_is_ok) {
  * @param st the failure reported by qconf_edit_text()
  */
 static void
-qconf_edit_fail_exit(QConfEditStatus st) {
+qconf_edit_fail_exit(const QConfEditStatus st) {
    switch (st) {
       case QConfEditStatus::WRITE_FAILED:
          sge_error_and_exit(nullptr);
@@ -415,9 +415,9 @@ qconf_edit_fail_exit(QConfEditStatus st) {
  *         is unless @p unchanged_is_ok says it is not
  */
 static int
-qconf_edit_and_write_obj(QConfObj o, std::string &text, uid_t uid, gid_t gid,
-                         bool unchanged_is_ok, const char *select = nullptr,
-                         uint32_t extra_mode = 0u, const char *name = nullptr) {
+qconf_edit_and_write_obj(const QConfObj o, std::string &text, const uid_t uid, const gid_t gid,
+                         const bool unchanged_is_ok, const char *select = nullptr,
+                         const uint32_t extra_mode = 0u, const char *name = nullptr) {
    DENTER(TOP_LAYER);
 
    const QConfEditStatus est = qconf_edit_text(text, uid, gid, unchanged_is_ok);
@@ -520,9 +520,9 @@ qconf_edit_and_write_obj(QConfObj o, std::string &text, uid_t uid, gid_t gid,
  *         is unless @p unchanged_is_ok says it is not
  */
 static int
-qconf_edit_obj_procedure(ocs::QConfParameterClient &param, QConfObj o,
-                         const char *sw, const char *name, uid_t uid, gid_t gid,
-                         bool unchanged_is_ok = false) {
+qconf_edit_obj_procedure(ocs::QConfParameterClient &param, const QConfObj o,
+                         const char *sw, const char *name, const uid_t uid, const gid_t gid,
+                         const bool unchanged_is_ok = false) {
    DENTER(TOP_LAYER);
 
    if (param.get_exec_context() != ocs::ProcedureParameter::ExecContext::SERVER) {
@@ -610,10 +610,10 @@ qconf_edit_obj_procedure(ocs::QConfParameterClient &param, QConfObj o,
  *         is unless @p unchanged_is_ok says it is not
  */
 static int
-qconf_edit_list_procedure(ocs::QConfParameterClient &param, QConfObj o,
+qconf_edit_list_procedure(ocs::QConfParameterClient &param, const QConfObj o,
                           const char *sw, const char *read_token, const char *read_sub,
-                          const char *names, uid_t uid, gid_t gid, uint32_t extra_mode = 0u,
-                          bool unchanged_is_ok = false) {
+                          const char *names, const uid_t uid, const gid_t gid, const uint32_t extra_mode = 0u,
+                          const bool unchanged_is_ok = false) {
    DENTER(TOP_LAYER);
 
    if (param.get_exec_context() != ocs::ProcedureParameter::ExecContext::SERVER) {
@@ -699,7 +699,7 @@ qconf_conf_apply_one(const char *filepath, void *vctx) {
     * property of the path and not of the object - the host is the file's
     * basename, and it travels with the request because a configuration's text
     * does not carry its name (CS-2823). */
-   int ret = qconf_apply_obj(*ctx->os, QConfObj::CONF, filepath, nullptr, 0u, hostname);
+   const int ret = qconf_apply_obj(*ctx->os, QConfObj::CONF, filepath, nullptr, 0u, hostname);
    lFreeElem(&host_ep);
    if (ret != 0) {
       ctx->n_fail++;
@@ -723,7 +723,7 @@ qconf_conf_apply_one(const char *filepath, void *vctx) {
 static int
 qconf_conf_apply_path(std::ostream &os, const char *path) {
    qconf_conf_ctx ctx = {&os, nullptr, 0, 0};
-   bool is_dir = sge_is_directory(path);
+   const bool is_dir = sge_is_directory(path);
    qconf_for_each_file(path, qconf_conf_apply_one, &ctx);
    if (is_dir) {
       qconf_info(os, MSG_QCONF_ADDMODSUMMARY_SII, path, ctx.n_ok, ctx.n_fail);
@@ -795,7 +795,7 @@ struct qconf_write_entry {
  * trips; it now makes the same single check as every other row, which reports
  * a missing manager before a missing admin host, in qmaster's order.
  */
-static const qconf_write_entry qconf_write_table[] = {
+static constexpr qconf_write_entry qconf_write_table[] = {
    {"-acal",   QConfObj::CAL,  QConfWriteKind::EDIT,  "template",  false, QConfClientCheck::MANAGER_ON_ADMIN_HOST},
    {"-ackpt",  QConfObj::CK,   QConfWriteKind::EDIT,  "template",  false, QConfClientCheck::MANAGER_ON_ADMIN_HOST},
    {"-arole",  QConfObj::RL,   QConfWriteKind::EDIT,  "template",  false, QConfClientCheck::MANAGER_ON_ADMIN_HOST},
@@ -878,7 +878,7 @@ static const qconf_write_entry qconf_write_table[] = {
 
 QConfOpResult
 qconf_run_write(std::ostream &os, ocs::QConfParameterClient &param, const qconf_op &op,
-                const char *username, const char *hostname, uid_t uid, gid_t gid) {
+                const char *username, const char *hostname, const uid_t uid, const gid_t gid) {
    DENTER(TOP_LAYER);
 
    const qconf_write_entry *entry = nullptr;
@@ -913,14 +913,13 @@ qconf_run_write(std::ostream &os, ocs::QConfParameterClient &param, const qconf_
             os << "\n";
          }
          first = false;
-         int one;
-         if (entry->kind == QConfWriteKind::APPLY) {
-            one = (entry->apply != nullptr) ? entry->apply(os, name.c_str())
-                                            : qconf_apply_obj(os, entry->object, name.c_str(), nullptr, entry->mode);
-         } else {
-            one = qconf_edit_obj_procedure(param, entry->object, entry->switch_name, name.c_str(),
-                                           uid, gid, entry->unchanged_is_ok);
-         }
+         const int one =
+            (entry->kind != QConfWriteKind::APPLY)
+               ? qconf_edit_obj_procedure(param, entry->object, entry->switch_name, name.c_str(),
+                                          uid, gid, entry->unchanged_is_ok)
+            : (entry->apply != nullptr)
+               ? entry->apply(os, name.c_str())
+               : qconf_apply_obj(os, entry->object, name.c_str(), nullptr, entry->mode);
          if (one != 0) {
             failed = 1;
          }

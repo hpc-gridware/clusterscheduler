@@ -293,7 +293,7 @@ qconf_export_is_bulk(const char *path) {
  * @return true when the directory exists afterwards
  */
 static bool
-qconf_export_make_dir(char *dir, size_t size, const char *path) {
+qconf_export_make_dir(char *dir, const size_t size, const char *path) {
    sge_strlcpy(dir, path, size);
    const size_t dl = strlen(dir);
    if (dl > 1 && dir[dl - 1] == '/') {
@@ -363,7 +363,6 @@ qconf_export_path(std::ostream &os, ocs::QConfParameterClient &param,
       /* R5/KTD7: case-insensitive basename collision guard across the run. The
        * seen list holds the lowercased names already used. */
       lList *seen = lCreateList("export seen", ST_Type);
-      char lcbuf[1024];
       const int n_total = (objects != nullptr) ? lGetNumberOfElem(objects) : 0;
 
       for_each_ep_lv(pair, objects) {
@@ -373,6 +372,7 @@ qconf_export_path(std::ostream &os, ocs::QConfParameterClient &param,
             failures++;
             continue;
          }
+         char lcbuf[1024];
          sge_strlcpy(lcbuf, name, sizeof(lcbuf));
          sge_strtolower(lcbuf, sizeof(lcbuf));
          if (lGetElemStr(seen, ST_name, lcbuf) != nullptr) {
@@ -574,8 +574,8 @@ qconf_dispatch_procedure(std::ostream &os, ocs::QConfParameterClient &param, lLi
 }
 
 QConfShowStatus
-qconf_show_object(std::ostream &os, ocs::QConfParameterClient &param, QConfObj o, const char *name,
-                  uint32_t *reduction, bool report_errors) {
+qconf_show_object(std::ostream &os, ocs::QConfParameterClient &param, const QConfObj o, const char *name,
+                  uint32_t *reduction, const bool report_errors) {
    DENTER(TOP_LAYER);
 
    /* CS-2799: the body of this function is a stored procedure call now. The
@@ -726,7 +726,7 @@ struct qconf_sub_procedure_entry {
  * (CS-2967). Otherwise the option table fixes the arguments, so the operation
  * is sent as parsed.
  */
-static const qconf_sub_procedure_entry qconf_sub_procedure_table[] = {
+static constexpr qconf_sub_procedure_entry qconf_sub_procedure_table[] = {
    {"-sobjl",          ocs::QConfParameter::OBJECT_FILTER,     QConfAnswerReport::SHOW_AND_STATUS},
    {"-sstnode",        ocs::QConfParameter::SHARETREE_NODES,   QConfAnswerReport::SHOW_AND_STATUS},
    {"-rsstnode",       ocs::QConfParameter::SHARETREE_NODES,   QConfAnswerReport::SHOW_AND_STATUS},
@@ -766,11 +766,11 @@ qconf_sub_procedure_once(std::ostream &os, ocs::QConfParameterClient &param, con
                          const qconf_op &op) {
    DENTER(TOP_LAYER);
 
-   lList *alp = nullptr;
    param.set_operation(op);
    if (entry.sub_procedure != nullptr) {
       param.set_sub_procedure_name(entry.sub_procedure);
    }
+   lList *alp = nullptr;
    const bool ok = qconf_dispatch_procedure(os, param, &alp);
    param.set_sub_procedure_name("");
 
