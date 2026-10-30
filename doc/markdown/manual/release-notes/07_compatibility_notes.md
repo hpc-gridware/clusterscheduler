@@ -167,6 +167,25 @@ directly has never been a supported interface. Clusters that use an access list 
 `operator` must rename it before upgrading; the upgrade detects the collision and aborts with an
 explanatory message — see the [Upgrade Notes](06_upgrade_notes.md#managers-and-operators-are-stored-as-access-lists).
 
+## Only Managers May Change Access Lists
+
+An operator could change every access list except *manager* and *operator*: add and delete members with
+`qconf -au`/`-du`, write it from a file with `-Au`/`-Mu`, and delete it with `-dul`/`-Du`. Only `-mu` asked
+for a manager, and only in the client. Now every change of an access list requires manager privileges, and
+it is sge_qmaster that refuses it:
+
+    $ qconf -au user1 acl1 ; echo "rc=$?"          # as an operator
+    error: denied: "operator1" must be manager to initiate operation for target US_LIST
+    rc=1
+
+**Why it changed.** Access lists grant rights: the members of *arusers* may create advance reservations,
+the members of *deadlineusers* may submit deadline jobs, and the access lists named by a queue, a project,
+a parallel environment or a host decide who may use it. An operator who could change them could give
+himself or anybody else access he was not meant to have.
+
+**If you relied on it**, run the access list changes as a manager. The operator keeps every other right:
+operating queues and jobs with *qmod*, *qdel* and the other job and queue commands.
+
 ## Admin and Submit Hosts Are Reserved Host Groups
 
 Administrative hosts and submit hosts are now stored as the members of two reserved host groups named

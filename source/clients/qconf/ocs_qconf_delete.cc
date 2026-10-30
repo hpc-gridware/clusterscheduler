@@ -339,7 +339,6 @@ struct qconf_delete_entry {
    const char *switch_name;   ///< the switch as typed
    QConfObj object;           ///< the object type it deletes
    QConfDeleteKind kind;      ///< names or file
-   QConfClientCheck check;    ///< the check it makes in the client
    int (*run)(std::ostream &os, const qconf_op &op, lList **alpp); ///< a delete of its own instead of the kind's engine, or nullptr
 };
 
@@ -422,44 +421,43 @@ qconf_delete_rqs_path(std::ostream &os, const qconf_op &op, lList **alpp) {
 /** @brief The delete switches that are one engine call each (CS-2952)
  *
  * Every "-d<obj>" and "-D<obj>" whose block did nothing but call
- * qconf_delete_names() or qconf_delete_obj(), possibly after a permission check.
+ * qconf_delete_names() or qconf_delete_obj(); the permission is qmaster's (CS-2973).
  * "-dhgrp", "-Drqs", "-dconf" and "-Dconf" are rows with a delete of their own
  * (CS-2967). The ones with handling of their own stay blocks: "-de" and
  * "-dh"/"-ds"; "-du"/"-dm"/"-do" and "-dstnode" are actions, see
  * qconf_action_table.
  */
 static constexpr qconf_delete_entry qconf_delete_table[] = {
-   {"-dcal",   QConfObj::CAL,  QConfDeleteKind::NAMES, QConfClientCheck::NONE},
-   {"-dckpt",  QConfObj::CK,   QConfDeleteKind::NAMES, QConfClientCheck::NONE},
-   {"-drole",  QConfObj::RL,   QConfDeleteKind::NAMES, QConfClientCheck::NONE},
-   {"-drqs",   QConfObj::RQS,  QConfDeleteKind::NAMES, QConfClientCheck::NONE},
-   {"-dp",     QConfObj::PE,   QConfDeleteKind::NAMES, QConfClientCheck::NONE},
-   {"-dul",    QConfObj::US,   QConfDeleteKind::NAMES, QConfClientCheck::NONE},
-   {"-duser",  QConfObj::UU,   QConfDeleteKind::NAMES, QConfClientCheck::NONE},
-   {"-dprj",   QConfObj::PR,   QConfDeleteKind::NAMES, QConfClientCheck::NONE},
-   {"-dstree", QConfObj::STN,  QConfDeleteKind::NAMES, QConfClientCheck::NONE},
-   {"-dce",    QConfObj::CE,   QConfDeleteKind::NAMES, QConfClientCheck::MANAGER_ON_ADMIN_HOST},
-   {"-dq",     QConfObj::CQ,   QConfDeleteKind::NAMES, QConfClientCheck::MANAGER_ON_ADMIN_HOST},
-   {"-Dcal",   QConfObj::CAL,  QConfDeleteKind::FILE,  QConfClientCheck::NONE},
-   {"-Dckpt",  QConfObj::CK,   QConfDeleteKind::FILE,  QConfClientCheck::NONE},
-   {"-De",     QConfObj::EH,   QConfDeleteKind::FILE,  QConfClientCheck::NONE},
-   {"-Drole",  QConfObj::RL,   QConfDeleteKind::FILE,  QConfClientCheck::NONE},
-   {"-Dp",     QConfObj::PE,   QConfDeleteKind::FILE,  QConfClientCheck::NONE},
-   {"-Dce",    QConfObj::CE,   QConfDeleteKind::FILE,  QConfClientCheck::MANAGER_ON_ADMIN_HOST},
-   {"-Dhgrp",  QConfObj::HGRP, QConfDeleteKind::FILE,  QConfClientCheck::MANAGER_ON_ADMIN_HOST},
-   {"-Du",     QConfObj::US,   QConfDeleteKind::FILE,  QConfClientCheck::MANAGER_ON_ADMIN_HOST},
-   {"-Duser",  QConfObj::UU,   QConfDeleteKind::FILE,  QConfClientCheck::MANAGER_ON_ADMIN_HOST},
-   {"-Dprj",   QConfObj::PR,   QConfDeleteKind::FILE,  QConfClientCheck::MANAGER_ON_ADMIN_HOST},
-   {"-Dq",     QConfObj::CQ,   QConfDeleteKind::FILE,  QConfClientCheck::MANAGER_ON_ADMIN_HOST},
-   {"-dhgrp",  QConfObj::HGRP, QConfDeleteKind::NAMES, QConfClientCheck::MANAGER_ON_ADMIN_HOST, qconf_delete_hgroup_list},
-   {"-Drqs",   QConfObj::RQS,  QConfDeleteKind::FILE,  QConfClientCheck::MANAGER_ON_ADMIN_HOST, qconf_delete_rqs_path},
-   {"-dconf",  QConfObj::CONF, QConfDeleteKind::NAMES, QConfClientCheck::NONE, qconf_delete_conf_hosts},
-   {"-Dconf",  QConfObj::CONF, QConfDeleteKind::FILE,  QConfClientCheck::MANAGER_ON_ADMIN_HOST, qconf_delete_conf_path},
+   {"-dcal",   QConfObj::CAL,  QConfDeleteKind::NAMES},
+   {"-dckpt",  QConfObj::CK,   QConfDeleteKind::NAMES},
+   {"-drole",  QConfObj::RL,   QConfDeleteKind::NAMES},
+   {"-drqs",   QConfObj::RQS,  QConfDeleteKind::NAMES},
+   {"-dp",     QConfObj::PE,   QConfDeleteKind::NAMES},
+   {"-dul",    QConfObj::US,   QConfDeleteKind::NAMES},
+   {"-duser",  QConfObj::UU,   QConfDeleteKind::NAMES},
+   {"-dprj",   QConfObj::PR,   QConfDeleteKind::NAMES},
+   {"-dstree", QConfObj::STN,  QConfDeleteKind::NAMES},
+   {"-dce",    QConfObj::CE,   QConfDeleteKind::NAMES},
+   {"-dq",     QConfObj::CQ,   QConfDeleteKind::NAMES},
+   {"-Dcal",   QConfObj::CAL,  QConfDeleteKind::FILE},
+   {"-Dckpt",  QConfObj::CK,   QConfDeleteKind::FILE},
+   {"-De",     QConfObj::EH,   QConfDeleteKind::FILE},
+   {"-Drole",  QConfObj::RL,   QConfDeleteKind::FILE},
+   {"-Dp",     QConfObj::PE,   QConfDeleteKind::FILE},
+   {"-Dce",    QConfObj::CE,   QConfDeleteKind::FILE},
+   {"-Dhgrp",  QConfObj::HGRP, QConfDeleteKind::FILE},
+   {"-Du",     QConfObj::US,   QConfDeleteKind::FILE},
+   {"-Duser",  QConfObj::UU,   QConfDeleteKind::FILE},
+   {"-Dprj",   QConfObj::PR,   QConfDeleteKind::FILE},
+   {"-Dq",     QConfObj::CQ,   QConfDeleteKind::FILE},
+   {"-dhgrp",  QConfObj::HGRP, QConfDeleteKind::NAMES, qconf_delete_hgroup_list},
+   {"-Drqs",   QConfObj::RQS,  QConfDeleteKind::FILE, qconf_delete_rqs_path},
+   {"-dconf",  QConfObj::CONF, QConfDeleteKind::NAMES, qconf_delete_conf_hosts},
+   {"-Dconf",  QConfObj::CONF, QConfDeleteKind::FILE, qconf_delete_conf_path},
 };
 
 QConfOpResult
-qconf_run_delete(std::ostream &os, const qconf_op &op, const char *username,
-                 const char *hostname, lList **alpp) {
+qconf_run_delete(std::ostream &os, const qconf_op &op, lList **alpp) {
    DENTER(TOP_LAYER);
 
    const qconf_delete_entry *entry = nullptr;
@@ -476,7 +474,6 @@ qconf_run_delete(std::ostream &os, const qconf_op &op, const char *username,
       DRETURN(QConfOpResult::FAILED_USAGE);
    }
 
-   qconf_client_check(entry->check, username, hostname);
 
    const char *arg = op.args.empty() ? nullptr : op.args.front().c_str();
    const int failed = (entry->run != nullptr) ? entry->run(os, op, alpp)

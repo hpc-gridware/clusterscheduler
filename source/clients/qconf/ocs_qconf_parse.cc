@@ -203,8 +203,6 @@ int sge_parse_qconf(char *argv[]) {
    int sge_parse_return = 0;
    lList *lp=nullptr, *alp=nullptr;
    lListElem *ep=nullptr;
-   const char* qualified_hostname = component_get_qualified_hostname();
-   const char* username = component_get_username();
    uint32_t prog_number = component_get_component_id();
    uid_t uid = component_get_uid();
    gid_t gid = component_get_gid();
@@ -320,21 +318,21 @@ int sge_parse_qconf(char *argv[]) {
        *
        * Then the other table driven switches: the reads with a sub-procedure
        * of their own and the plain single-object reads (CS-2955), the deletes
-       * (CS-2952) and the adds and modifies (CS-2954), each with the
-       * client-side check it had. What none of the tables serves falls through
+       * (CS-2952) and the adds and modifies (CS-2954); the permission is
+       * qmaster's (CS-2973). What none of the tables serves falls through
        * to the option blocks below and runs locally. */
       QConfOpResult result = qconf_run_read_procedure(os, param, op, &op_alp);
       if (result == QConfOpResult::NOT_HANDLED) {
          result = qconf_run_sub_procedure(os, param, op, &op_alp);
       }
       if (result == QConfOpResult::NOT_HANDLED) {
-         result = qconf_run_delete(os, op, username, qualified_hostname, &op_alp);
+         result = qconf_run_delete(os, op, &op_alp);
       }
       if (result == QConfOpResult::NOT_HANDLED) {
-         result = qconf_run_write(os, param, op, username, qualified_hostname, uid, gid, &op_alp);
+         result = qconf_run_write(os, param, op, uid, gid, &op_alp);
       }
       if (result == QConfOpResult::NOT_HANDLED) {
-         result = qconf_run_action(param, op, username, qualified_hostname, &op_alp);
+         result = qconf_run_action(param, op, &op_alp);
       }
       if (result != QConfOpResult::NOT_HANDLED) {
          if (result == QConfOpResult::FAILED || result == QConfOpResult::FAILED_USAGE) {
@@ -1068,43 +1066,6 @@ int delete_configs(const lList *conf_list, lList **alpp) {
    lFreeList(&lp);
 
    DRETURN(fail);
-}
-
-int
-qconf_is_manager_on_admin_host(const char *user, const char *host) {
-   DENTER(TOP_LAYER);
-
-   // check input parameter
-   if (host == nullptr) {
-      DRETURN(-1);
-   }
-
-   // ask master if current host is admin host
-   lList *alp = nullptr;
-   bool is_admin_host = false;
-   bool is_manager = false;
-   bool perm_return = ocs::gdi::Client::sge_gdi_get_permission(&alp, &is_manager, nullptr, &is_admin_host, nullptr);
-   if (!perm_return) {
-      DTRACE;
-      answer_list_output(&alp);
-      sge_exit(1);
-   }
-   lFreeList(&alp);
-
-   // if user is no manager then exit
-   if (!is_manager) {
-      fprintf(stderr, MSG_SGETEXT_MUSTBEMANAGER_S , user);
-      fprintf(stderr, "\n");
-      sge_exit(1);
-   }
-   // if host has no permission then exit
-   if (!is_admin_host) {
-      fprintf(stderr, MSG_SGETEXT_NOADMINHOST_S, host);
-      fprintf(stderr, "\n");
-      sge_exit(1);
-   }
-
-   DRETURN(0);
 }
 
 /**

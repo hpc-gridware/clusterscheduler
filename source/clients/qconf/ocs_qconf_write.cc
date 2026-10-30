@@ -771,7 +771,6 @@ struct qconf_write_entry {
    QConfWriteKind kind;       ///< editor or file
    const char *default_name;  ///< what an EDIT row edits when no name is given
    bool unchanged_is_ok;      ///< EDIT: write a text the editor left alone
-   QConfClientCheck check;    ///< the check it makes in the client
    qconf_names_hook names;    ///< EDIT: the names to edit one by one, nullptr for the argument as typed
    uint32_t mode;             ///< EDIT_LIST/APPLY: write modes beyond the default, a mask of MODE_*
    const char *list_read;     ///< EDIT_LIST: the read of the list, nullptr for the type's OBJECT_LIST read
@@ -784,8 +783,7 @@ struct qconf_write_entry {
 /** @brief The add and modify switches that are one engine call each (CS-2954)
  *
  * Every "-a<obj>", "-m<obj>", "-A<obj>" and "-M<obj>" whose block did nothing
- * but call qconf_edit_obj_procedure() or qconf_apply_obj(), possibly after a
- * permission check. The option table decides whether a name may be given:
+ * but call qconf_edit_obj_procedure() or qconf_apply_obj(). The option table decides whether a name may be given:
  * "-a<obj>" takes an optional one and edits default_name without it, "-m<obj>"
  * requires one, and the singletons ("-astree", "-mstree", "-msconf") take none
  * and edit with nullptr. "-ae", "-me" and "-mu" are rows with a names hook:
@@ -797,96 +795,94 @@ struct qconf_write_entry {
  * reserved host group switches; the membership switches and "-astnode"/
  * "-mstnode" are actions, see qconf_action_table.
  *
- * "-mce" checked qconf_is_manager() again after qconf_is_manager_on_admin_host(),
- * which already exits for a non-manager; the row keeps the first check only.
- * "-ace" checked the admin host first and the manager second, in two round
- * trips; it now makes the same single check as every other row, which reports
- * a missing manager before a missing admin host, in qmaster's order.
+ * No row checks permissions in the client (CS-2973): qmaster decides, and for
+ * an EDIT row it does so before the editor opens - the read that fetches the
+ * text is checked as the write it prepares.
  */
 static constexpr qconf_write_entry qconf_write_table[] = {
-   {"-acal",   QConfObj::CAL,  QConfWriteKind::EDIT,  "template",  false, QConfClientCheck::MANAGER_ON_ADMIN_HOST},
-   {"-ackpt",  QConfObj::CK,   QConfWriteKind::EDIT,  "template",  false, QConfClientCheck::MANAGER_ON_ADMIN_HOST},
-   {"-arole",  QConfObj::RL,   QConfWriteKind::EDIT,  "template",  false, QConfClientCheck::MANAGER_ON_ADMIN_HOST},
-   {"-ap",     QConfObj::PE,   QConfWriteKind::EDIT,  "template",  false, QConfClientCheck::MANAGER_ON_ADMIN_HOST},
-   {"-auser",  QConfObj::UU,   QConfWriteKind::EDIT,  "template",  false, QConfClientCheck::MANAGER_ON_ADMIN_HOST},
-   {"-aprj",   QConfObj::PR,   QConfWriteKind::EDIT,  "template",  false, QConfClientCheck::MANAGER_ON_ADMIN_HOST},
-   {"-ace",    QConfObj::CE,   QConfWriteKind::EDIT,  "template",  true,  QConfClientCheck::MANAGER_ON_ADMIN_HOST},
-   {"-ahgrp",  QConfObj::HGRP, QConfWriteKind::EDIT,  "@template", true,  QConfClientCheck::MANAGER_ON_ADMIN_HOST},
-   {"-aq",     QConfObj::CQ,   QConfWriteKind::EDIT,  "template",  true,  QConfClientCheck::MANAGER_ON_ADMIN_HOST},
-   {"-astree", QConfObj::STN,  QConfWriteKind::EDIT,  nullptr,     false, QConfClientCheck::MANAGER_ON_ADMIN_HOST},
-   {"-mcal",   QConfObj::CAL,  QConfWriteKind::EDIT,  nullptr,     false, QConfClientCheck::MANAGER_ON_ADMIN_HOST},
-   {"-mckpt",  QConfObj::CK,   QConfWriteKind::EDIT,  nullptr,     false, QConfClientCheck::MANAGER_ON_ADMIN_HOST},
-   {"-mrole",  QConfObj::RL,   QConfWriteKind::EDIT,  nullptr,     false, QConfClientCheck::MANAGER_ON_ADMIN_HOST},
-   {"-mp",     QConfObj::PE,   QConfWriteKind::EDIT,  nullptr,     false, QConfClientCheck::MANAGER_ON_ADMIN_HOST},
-   {"-muser",  QConfObj::UU,   QConfWriteKind::EDIT,  nullptr,     false, QConfClientCheck::MANAGER_ON_ADMIN_HOST},
-   {"-mprj",   QConfObj::PR,   QConfWriteKind::EDIT,  nullptr,     false, QConfClientCheck::MANAGER_ON_ADMIN_HOST},
-   {"-mce",    QConfObj::CE,   QConfWriteKind::EDIT,  nullptr,     true,  QConfClientCheck::MANAGER_ON_ADMIN_HOST},
-   {"-mhgrp",  QConfObj::HGRP, QConfWriteKind::EDIT,  nullptr,     false, QConfClientCheck::MANAGER_ON_ADMIN_HOST},
-   {"-mq",     QConfObj::CQ,   QConfWriteKind::EDIT,  nullptr,     false, QConfClientCheck::MANAGER_ON_ADMIN_HOST},
-   {"-msconf", QConfObj::SC,   QConfWriteKind::EDIT,  nullptr,     false, QConfClientCheck::MANAGER_ON_ADMIN_HOST},
-   {"-mstree", QConfObj::STN,  QConfWriteKind::EDIT,  nullptr,     false, QConfClientCheck::MANAGER_ON_ADMIN_HOST},
-   {"-ae",     QConfObj::EH,   QConfWriteKind::EDIT,  nullptr,     false, QConfClientCheck::MANAGER_ON_ADMIN_HOST, qconf_names_ae},
-   {"-me",     QConfObj::EH,   QConfWriteKind::EDIT,  nullptr,     false, QConfClientCheck::MANAGER_ON_ADMIN_HOST, qconf_names_host_list},
-   {"-mu",     QConfObj::US,   QConfWriteKind::EDIT,  nullptr,     false, QConfClientCheck::MANAGER_ON_ADMIN_HOST, qconf_names_userset_list},
+   {"-acal",   QConfObj::CAL,  QConfWriteKind::EDIT,  "template",  false},
+   {"-ackpt",  QConfObj::CK,   QConfWriteKind::EDIT,  "template",  false},
+   {"-arole",  QConfObj::RL,   QConfWriteKind::EDIT,  "template",  false},
+   {"-ap",     QConfObj::PE,   QConfWriteKind::EDIT,  "template",  false},
+   {"-auser",  QConfObj::UU,   QConfWriteKind::EDIT,  "template",  false},
+   {"-aprj",   QConfObj::PR,   QConfWriteKind::EDIT,  "template",  false},
+   {"-ace",    QConfObj::CE,   QConfWriteKind::EDIT,  "template",  true},
+   {"-ahgrp",  QConfObj::HGRP, QConfWriteKind::EDIT,  "@template", true},
+   {"-aq",     QConfObj::CQ,   QConfWriteKind::EDIT,  "template",  true},
+   {"-astree", QConfObj::STN,  QConfWriteKind::EDIT,  nullptr,     false},
+   {"-mcal",   QConfObj::CAL,  QConfWriteKind::EDIT,  nullptr,     false},
+   {"-mckpt",  QConfObj::CK,   QConfWriteKind::EDIT,  nullptr,     false},
+   {"-mrole",  QConfObj::RL,   QConfWriteKind::EDIT,  nullptr,     false},
+   {"-mp",     QConfObj::PE,   QConfWriteKind::EDIT,  nullptr,     false},
+   {"-muser",  QConfObj::UU,   QConfWriteKind::EDIT,  nullptr,     false},
+   {"-mprj",   QConfObj::PR,   QConfWriteKind::EDIT,  nullptr,     false},
+   {"-mce",    QConfObj::CE,   QConfWriteKind::EDIT,  nullptr,     true},
+   {"-mhgrp",  QConfObj::HGRP, QConfWriteKind::EDIT,  nullptr,     false},
+   {"-mq",     QConfObj::CQ,   QConfWriteKind::EDIT,  nullptr,     false},
+   {"-msconf", QConfObj::SC,   QConfWriteKind::EDIT,  nullptr,     false},
+   {"-mstree", QConfObj::STN,  QConfWriteKind::EDIT,  nullptr,     false},
+   {"-ae",     QConfObj::EH,   QConfWriteKind::EDIT,  nullptr,     false, qconf_names_ae},
+   {"-me",     QConfObj::EH,   QConfWriteKind::EDIT,  nullptr,     false, qconf_names_host_list},
+   {"-mu",     QConfObj::US,   QConfWriteKind::EDIT,  nullptr,     false, qconf_names_userset_list},
    /* CS-2967: the lists. "-arqs"/"-mrqs" edit the rule sets as one text, a
     * missing one being reported as still there rather than deleted; "-mc" edits
     * the complex table, whose replace mode is how a complex is removed, and
     * writes it even when unchanged. The file switches carry the same modes. */
-   {"-arqs",   QConfObj::RQS,  QConfWriteKind::EDIT_LIST, "template", false, QConfClientCheck::MANAGER_ON_ADMIN_HOST,
+   {"-arqs",   QConfObj::RQS,  QConfWriteKind::EDIT_LIST, "template", false,
     nullptr, 0u, nullptr, nullptr, nullptr},
-   {"-mrqs",   QConfObj::RQS,  QConfWriteKind::EDIT_LIST, nullptr,    false, QConfClientCheck::MANAGER_ON_ADMIN_HOST,
+   {"-mrqs",   QConfObj::RQS,  QConfWriteKind::EDIT_LIST, nullptr,    false,
     nullptr, 0u, nullptr, nullptr, nullptr},
-   {"-mc",     QConfObj::CE,   QConfWriteKind::EDIT_LIST, nullptr,    true,  QConfClientCheck::MANAGER_ON_ADMIN_HOST,
+   {"-mc",     QConfObj::CE,   QConfWriteKind::EDIT_LIST, nullptr,    true,
     nullptr, ocs::QConfWriteParameter::MODE_REPLACE, "-sc", ocs::QConfParameter::CENTRY_LIST, nullptr},
-   {"-Arqs",   QConfObj::RQS,  QConfWriteKind::APPLY, nullptr,     false, QConfClientCheck::MANAGER_ON_ADMIN_HOST,
+   {"-Arqs",   QConfObj::RQS,  QConfWriteKind::APPLY, nullptr,     false,
     nullptr, ocs::QConfWriteParameter::MODE_LIST, nullptr, nullptr, qconf_write_no_file},
-   {"-Mrqs",   QConfObj::RQS,  QConfWriteKind::APPLY, nullptr,     false, QConfClientCheck::MANAGER_ON_ADMIN_HOST,
+   {"-Mrqs",   QConfObj::RQS,  QConfWriteKind::APPLY, nullptr,     false,
     nullptr, ocs::QConfWriteParameter::MODE_LIST, nullptr, nullptr, qconf_write_no_file},
-   {"-Mc",     QConfObj::CE,   QConfWriteKind::APPLY, nullptr,     false, QConfClientCheck::NONE,
+   {"-Mc",     QConfObj::CE,   QConfWriteKind::APPLY, nullptr,     false,
     nullptr, ocs::QConfWriteParameter::MODE_LIST | ocs::QConfWriteParameter::MODE_REPLACE, nullptr, nullptr,
     qconf_write_no_file},
    /* CS-2967: the host configuration. One object per host, so a host list is
     * served host by host with a blank line between them, and the files of
     * "-Aconf"/"-Mconf" are named after their hosts, read by
     * qconf_conf_apply_path(). */
-   {"-aconf",  QConfObj::CONF, QConfWriteKind::EDIT,  nullptr,     false, QConfClientCheck::MANAGER_ON_ADMIN_HOST,
+   {"-aconf",  QConfObj::CONF, QConfWriteKind::EDIT,  nullptr,     false,
     qconf_names_conf_strict, 0u, nullptr, nullptr, nullptr, true, nullptr},
-   {"-mconf",  QConfObj::CONF, QConfWriteKind::EDIT,  nullptr,     false, QConfClientCheck::MANAGER_ON_ADMIN_HOST,
+   {"-mconf",  QConfObj::CONF, QConfWriteKind::EDIT,  nullptr,     false,
     qconf_names_conf_lenient, 0u, nullptr, nullptr, nullptr, true, nullptr},
-   {"-Aconf",  QConfObj::CONF, QConfWriteKind::APPLY, nullptr,     false, QConfClientCheck::NONE,
+   {"-Aconf",  QConfObj::CONF, QConfWriteKind::APPLY, nullptr,     false,
     qconf_names_conf_paths, 0u, nullptr, nullptr, nullptr, true, qconf_conf_apply_path},
-   {"-Mconf",  QConfObj::CONF, QConfWriteKind::APPLY, nullptr,     false, QConfClientCheck::NONE,
+   {"-Mconf",  QConfObj::CONF, QConfWriteKind::APPLY, nullptr,     false,
     qconf_names_conf_paths, 0u, nullptr, nullptr, nullptr, true, qconf_conf_apply_path},
-   {"-Acal",   QConfObj::CAL,  QConfWriteKind::APPLY, nullptr,     false, QConfClientCheck::NONE},
-   {"-Ackpt",  QConfObj::CK,   QConfWriteKind::APPLY, nullptr,     false, QConfClientCheck::NONE},
-   {"-Ae",     QConfObj::EH,   QConfWriteKind::APPLY, nullptr,     false, QConfClientCheck::NONE},
-   {"-Arole",  QConfObj::RL,   QConfWriteKind::APPLY, nullptr,     false, QConfClientCheck::NONE},
-   {"-Ap",     QConfObj::PE,   QConfWriteKind::APPLY, nullptr,     false, QConfClientCheck::NONE},
-   {"-Au",     QConfObj::US,   QConfWriteKind::APPLY, nullptr,     false, QConfClientCheck::NONE},
-   {"-Auser",  QConfObj::UU,   QConfWriteKind::APPLY, nullptr,     false, QConfClientCheck::NONE},
-   {"-Aprj",   QConfObj::PR,   QConfWriteKind::APPLY, nullptr,     false, QConfClientCheck::NONE},
-   {"-Astree", QConfObj::STN,  QConfWriteKind::APPLY, nullptr,     false, QConfClientCheck::NONE},
-   {"-Ace",    QConfObj::CE,   QConfWriteKind::APPLY, nullptr,     false, QConfClientCheck::MANAGER_ON_ADMIN_HOST},
-   {"-Ahgrp",  QConfObj::HGRP, QConfWriteKind::APPLY, nullptr,     false, QConfClientCheck::MANAGER_ON_ADMIN_HOST},
-   {"-Aq",     QConfObj::CQ,   QConfWriteKind::APPLY, nullptr,     false, QConfClientCheck::MANAGER_ON_ADMIN_HOST},
-   {"-Mcal",   QConfObj::CAL,  QConfWriteKind::APPLY, nullptr,     false, QConfClientCheck::NONE},
-   {"-Mckpt",  QConfObj::CK,   QConfWriteKind::APPLY, nullptr,     false, QConfClientCheck::NONE},
-   {"-Me",     QConfObj::EH,   QConfWriteKind::APPLY, nullptr,     false, QConfClientCheck::NONE},
-   {"-Mrole",  QConfObj::RL,   QConfWriteKind::APPLY, nullptr,     false, QConfClientCheck::NONE},
-   {"-Mp",     QConfObj::PE,   QConfWriteKind::APPLY, nullptr,     false, QConfClientCheck::NONE},
-   {"-Mu",     QConfObj::US,   QConfWriteKind::APPLY, nullptr,     false, QConfClientCheck::NONE},
-   {"-Muser",  QConfObj::UU,   QConfWriteKind::APPLY, nullptr,     false, QConfClientCheck::NONE},
-   {"-Mprj",   QConfObj::PR,   QConfWriteKind::APPLY, nullptr,     false, QConfClientCheck::NONE},
-   {"-Mstree", QConfObj::STN,  QConfWriteKind::APPLY, nullptr,     false, QConfClientCheck::NONE},
-   {"-Mce",    QConfObj::CE,   QConfWriteKind::APPLY, nullptr,     false, QConfClientCheck::MANAGER_ON_ADMIN_HOST},
-   {"-Mhgrp",  QConfObj::HGRP, QConfWriteKind::APPLY, nullptr,     false, QConfClientCheck::MANAGER_ON_ADMIN_HOST},
-   {"-Mq",     QConfObj::CQ,   QConfWriteKind::APPLY, nullptr,     false, QConfClientCheck::MANAGER_ON_ADMIN_HOST},
-   {"-Msconf", QConfObj::SC,   QConfWriteKind::APPLY, nullptr,     false, QConfClientCheck::MANAGER_ON_ADMIN_HOST},
+   {"-Acal",   QConfObj::CAL,  QConfWriteKind::APPLY, nullptr,     false},
+   {"-Ackpt",  QConfObj::CK,   QConfWriteKind::APPLY, nullptr,     false},
+   {"-Ae",     QConfObj::EH,   QConfWriteKind::APPLY, nullptr,     false},
+   {"-Arole",  QConfObj::RL,   QConfWriteKind::APPLY, nullptr,     false},
+   {"-Ap",     QConfObj::PE,   QConfWriteKind::APPLY, nullptr,     false},
+   {"-Au",     QConfObj::US,   QConfWriteKind::APPLY, nullptr,     false},
+   {"-Auser",  QConfObj::UU,   QConfWriteKind::APPLY, nullptr,     false},
+   {"-Aprj",   QConfObj::PR,   QConfWriteKind::APPLY, nullptr,     false},
+   {"-Astree", QConfObj::STN,  QConfWriteKind::APPLY, nullptr,     false},
+   {"-Ace",    QConfObj::CE,   QConfWriteKind::APPLY, nullptr,     false},
+   {"-Ahgrp",  QConfObj::HGRP, QConfWriteKind::APPLY, nullptr,     false},
+   {"-Aq",     QConfObj::CQ,   QConfWriteKind::APPLY, nullptr,     false},
+   {"-Mcal",   QConfObj::CAL,  QConfWriteKind::APPLY, nullptr,     false},
+   {"-Mckpt",  QConfObj::CK,   QConfWriteKind::APPLY, nullptr,     false},
+   {"-Me",     QConfObj::EH,   QConfWriteKind::APPLY, nullptr,     false},
+   {"-Mrole",  QConfObj::RL,   QConfWriteKind::APPLY, nullptr,     false},
+   {"-Mp",     QConfObj::PE,   QConfWriteKind::APPLY, nullptr,     false},
+   {"-Mu",     QConfObj::US,   QConfWriteKind::APPLY, nullptr,     false},
+   {"-Muser",  QConfObj::UU,   QConfWriteKind::APPLY, nullptr,     false},
+   {"-Mprj",   QConfObj::PR,   QConfWriteKind::APPLY, nullptr,     false},
+   {"-Mstree", QConfObj::STN,  QConfWriteKind::APPLY, nullptr,     false},
+   {"-Mce",    QConfObj::CE,   QConfWriteKind::APPLY, nullptr,     false},
+   {"-Mhgrp",  QConfObj::HGRP, QConfWriteKind::APPLY, nullptr,     false},
+   {"-Mq",     QConfObj::CQ,   QConfWriteKind::APPLY, nullptr,     false},
+   {"-Msconf", QConfObj::SC,   QConfWriteKind::APPLY, nullptr,     false},
 };
 
 QConfOpResult
 qconf_run_write(std::ostream &os, ocs::QConfParameterClient &param, const qconf_op &op,
-                const char *username, const char *hostname, const uid_t uid, const gid_t gid, lList **alpp) {
+                const uid_t uid, const gid_t gid, lList **alpp) {
    DENTER(TOP_LAYER);
 
    const qconf_write_entry *entry = nullptr;
@@ -906,7 +902,6 @@ qconf_run_write(std::ostream &os, ocs::QConfParameterClient &param, const qconf_
       DRETURN(QConfOpResult::FAILED_USAGE);
    }
 
-   qconf_client_check(entry->check, username, hostname);
 
    int failed;
    if (entry->names != nullptr) {

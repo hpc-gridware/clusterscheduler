@@ -174,7 +174,6 @@ struct qconf_action_entry {
    const char *switch_name;                                         ///< the switch as typed
    const char *action;                                              ///< the qconf action it runs
    ocs::gdi::Target target;                                         ///< the object list it changes
-   QConfClientCheck check;                                          ///< the check it makes in the client
    bool (*args)(const qconf_op &op, ocs::QConfActionParameter &action, lList **alpp); ///< builds the arguments, or nullptr
    bool (*missing)(const qconf_op &op, lList **alpp);               ///< a message of its own for a short command line, or nullptr
    bool (*failed)(const qconf_op &op);                              ///< whether the usage follows a failure, or nullptr
@@ -184,46 +183,44 @@ struct qconf_action_entry {
  *
  * "-purge" (CS-2948), the access list membership (CS-2959), "-clearusage"
  * (CS-2963) and the share tree nodes (CS-2966). Each row names the action and
- * the object list it is addressed to, which is the list the permission check
- * asks about, and the hooks that keep what each switch did on its own.
+ * the object list it is addressed to, which is the list qmaster's permission
+ * check asks about, and the hooks that keep what each switch did on its own.
  */
 static constexpr qconf_action_entry qconf_action_table[] = {
-   {"-purge", ocs::QConfActionParameter::QUEUE_PURGE, ocs::gdi::Target::CQ_LIST, QConfClientCheck::NONE,
+   {"-purge", ocs::QConfActionParameter::QUEUE_PURGE, ocs::gdi::Target::CQ_LIST,
     qconf_action_purge_args, nullptr, nullptr},
-   {"-au", ocs::QConfActionParameter::USERSET_MEMBERS, ocs::gdi::Target::US_LIST, QConfClientCheck::NONE,
+   {"-au", ocs::QConfActionParameter::USERSET_MEMBERS, ocs::gdi::Target::US_LIST,
     [](const qconf_op &op, ocs::QConfActionParameter &a, [[maybe_unused]] lList **alpp) { return qconf_action_members_args(op, a, true); },
     qconf_action_members_missing, nullptr},
-   {"-du", ocs::QConfActionParameter::USERSET_MEMBERS, ocs::gdi::Target::US_LIST, QConfClientCheck::NONE,
+   {"-du", ocs::QConfActionParameter::USERSET_MEMBERS, ocs::gdi::Target::US_LIST,
     [](const qconf_op &op, ocs::QConfActionParameter &a, [[maybe_unused]] lList **alpp) { return qconf_action_members_args(op, a, false); },
     qconf_action_members_missing, nullptr},
-   {"-am", ocs::QConfActionParameter::USERSET_MEMBERS, ocs::gdi::Target::US_LIST, QConfClientCheck::NONE,
+   {"-am", ocs::QConfActionParameter::USERSET_MEMBERS, ocs::gdi::Target::US_LIST,
     [](const qconf_op &op, ocs::QConfActionParameter &a, [[maybe_unused]] lList **alpp) { return qconf_action_manop_args(op, a, MANAGER_USERSET, true); },
     nullptr, nullptr},
-   {"-ao", ocs::QConfActionParameter::USERSET_MEMBERS, ocs::gdi::Target::US_LIST, QConfClientCheck::NONE,
+   {"-ao", ocs::QConfActionParameter::USERSET_MEMBERS, ocs::gdi::Target::US_LIST,
     [](const qconf_op &op, ocs::QConfActionParameter &a, [[maybe_unused]] lList **alpp) { return qconf_action_manop_args(op, a, OPERATOR_USERSET, true); },
     nullptr, nullptr},
-   {"-dm", ocs::QConfActionParameter::USERSET_MEMBERS, ocs::gdi::Target::US_LIST, QConfClientCheck::NONE,
+   {"-dm", ocs::QConfActionParameter::USERSET_MEMBERS, ocs::gdi::Target::US_LIST,
     [](const qconf_op &op, ocs::QConfActionParameter &a, [[maybe_unused]] lList **alpp) { return qconf_action_manop_args(op, a, MANAGER_USERSET, false); },
     nullptr, nullptr},
-   {"-do", ocs::QConfActionParameter::USERSET_MEMBERS, ocs::gdi::Target::US_LIST, QConfClientCheck::NONE,
+   {"-do", ocs::QConfActionParameter::USERSET_MEMBERS, ocs::gdi::Target::US_LIST,
     [](const qconf_op &op, ocs::QConfActionParameter &a, [[maybe_unused]] lList **alpp) { return qconf_action_manop_args(op, a, OPERATOR_USERSET, false); },
     nullptr, nullptr},
-   {"-astnode", ocs::QConfActionParameter::SHARETREE_NODES, ocs::gdi::Target::STN_LIST, QConfClientCheck::NONE,
+   {"-astnode", ocs::QConfActionParameter::SHARETREE_NODES, ocs::gdi::Target::STN_LIST,
     [](const qconf_op &op, ocs::QConfActionParameter &a, [[maybe_unused]] lList **alpp) { return qconf_action_stnode_args(op, a, ocs::QConfActionParameter::OP_ADD); },
     nullptr, qconf_action_stnode_failed},
-   {"-mstnode", ocs::QConfActionParameter::SHARETREE_NODES, ocs::gdi::Target::STN_LIST, QConfClientCheck::NONE,
+   {"-mstnode", ocs::QConfActionParameter::SHARETREE_NODES, ocs::gdi::Target::STN_LIST,
     [](const qconf_op &op, ocs::QConfActionParameter &a, [[maybe_unused]] lList **alpp) { return qconf_action_stnode_args(op, a, ocs::QConfActionParameter::OP_MODIFY); },
     nullptr, qconf_action_stnode_failed},
-   {"-dstnode", ocs::QConfActionParameter::SHARETREE_NODES, ocs::gdi::Target::STN_LIST, QConfClientCheck::NONE,
+   {"-dstnode", ocs::QConfActionParameter::SHARETREE_NODES, ocs::gdi::Target::STN_LIST,
     [](const qconf_op &op, ocs::QConfActionParameter &a, [[maybe_unused]] lList **alpp) { return qconf_action_stnode_args(op, a, ocs::QConfActionParameter::OP_DELETE); },
     nullptr, nullptr},
-   {"-clearusage", ocs::QConfActionParameter::USAGE_CLEAR, ocs::gdi::Target::UU_LIST,
-    QConfClientCheck::MANAGER_ON_ADMIN_HOST, nullptr, nullptr, nullptr},
+   {"-clearusage", ocs::QConfActionParameter::USAGE_CLEAR, ocs::gdi::Target::UU_LIST, nullptr, nullptr, nullptr},
 };
 
 QConfOpResult
-qconf_run_action(const ocs::QConfParameterClient &param, const qconf_op &op, const char *username,
-                 const char *hostname, lList **alpp) {
+qconf_run_action(const ocs::QConfParameterClient &param, const qconf_op &op, lList **alpp) {
    DENTER(TOP_LAYER);
 
    const qconf_action_entry *entry = nullptr;
@@ -244,7 +241,6 @@ qconf_run_action(const ocs::QConfParameterClient &param, const qconf_op &op, con
       DRETURN(QConfOpResult::FAILED_USAGE);
    }
 
-   qconf_client_check(entry->check, username, hostname);
 
    ocs::QConfActionParameter action(entry->action);
    if (entry->args != nullptr && !entry->args(op, action, alpp)) {

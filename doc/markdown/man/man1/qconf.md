@@ -143,7 +143,7 @@ configuration always exists and has no add form. The restrictions noted at `-a<o
 apply here as well: `-Ahgrp` refuses to create a host group whose name begins with
 "@@", and `-Aq` refuses a queue name too long for the host group derived from it.
 See also `-dry`, `-strict` and the EXIT STATUS section. Requires root/manager
-privileges (`-Au` also accepts operator privilege).
+privileges.
 
 ## -ah *hostname*,...
 Adds hosts *hostname* to the xxQS_NAMExx trusted host list. A host must be in this list to execute administrative
@@ -205,7 +205,7 @@ master process at the same time.
 
 ## -au *user*,... *acl_name*,...
 Adds users to xxQS_NAMExx access control lists (ACL). Those lists are used for object usage authentication.
-Requires root/manager/operator privileges.
+Requires root/manager privileges.
 
 ## -cb
 This parameter can be used since xxQS_NAMExx version 6.2u5 in combination with the command line switch `-sep`.
@@ -318,7 +318,7 @@ Object-specific notes:
   group of a cluster queue, whose name begins with "@@": that group is removed with
   its queue, so use `-dq` (see xxqs_name_sxx_hostgroup(5)).
 
-Requires root/manager privileges (`-dul` also accepts operator privilege).
+Requires root/manager privileges.
 
 ## -D*obj* *fname*|*dir*
 Deletes objects named in a file or a directory of files — the file/directory
@@ -367,7 +367,7 @@ Object-specific notes:
   group of a cluster queue, whose name begins with "@@" (see
   xxqs_name_sxx_hostgroup(5)).
 
-Requires root/manager privileges (`-Du` also accepts operator privilege).
+Requires root/manager privileges.
 
 ## -dh *host_name*,...
 Deletes hosts from the xxQS_NAMExx trusted host list. The host on which xxqs_name_sxx_qmaster(8) is currently
@@ -413,7 +413,7 @@ Deletes the current share tree. Requires root/manager privileges.
 
 ## -du *user*,... *acl_name*,...
 Deletes one or more users from one or more xxQS_NAMExx access control lists (ACLs). Requires
-root/manager/operator privileges.
+root/manager privileges.
 
 The user *root* and the admin user cannot be removed from the reserved *manager* and *operator* access
 lists (see xxqs_name_sxx_access_list(5)), the same restriction that applies to `-dm` and `-do`.

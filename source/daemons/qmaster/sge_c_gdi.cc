@@ -143,13 +143,7 @@ static void
 trigger_scheduler_monitoring(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monitor);
 
 static bool
-sge_chck_mod_perm_user(const ocs::gdi::Packet *packet, lList **alpp, ocs::gdi::Target target);
-
-static bool
 sge_task_check_get_perm_host(ocs::gdi::Packet *packet, ocs::gdi::Task *task);
-
-static bool
-sge_chck_mod_perm_host(const ocs::gdi::Packet *packet, lList **alpp, ocs::gdi::Target target, ocs::gdi::Command command);
 
 static int
 schedd_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *modp, lListElem *ep, int add, const char *ruser,
@@ -1272,7 +1266,7 @@ static void sge_c_gdi_mod(gdi_object_t *ao, ocs::gdi::Packet *packet, ocs::gdi::
    DRETURN_VOID;
 }
 
-static bool
+bool
 sge_chck_mod_perm_user(const ocs::gdi::Packet *packet, lList **alpp, ocs::gdi::Target target) {
    DENTER(TOP_LAYER);
 
@@ -1304,9 +1298,12 @@ sge_chck_mod_perm_user(const ocs::gdi::Packet *packet, lList **alpp, ocs::gdi::T
          break;
 
       case ocs::gdi::Target::US_LIST:
-         /* user must be a operator */
-         if (!manop_is_operator(packet)) {
-            ERROR(MSG_SGETEXT_MUSTBEOPERATORFORTAR_SS, packet->user, to_string(tar).c_str());
+         /* user must be a manager (CS-2973): access lists grant rights - the
+          * arusers and deadlineusers lists, and every list a queue, a project,
+          * a parallel environment or a host admits users by - so an operator
+          * who could change them could give himself access he does not have */
+         if (!manop_is_manager(packet)) {
+            ERROR(MSG_SGETEXT_MUSTBEMANAGERFORTAR_SS, packet->user, to_string(tar).c_str());
             answer_list_add(alpp, SGE_EVENT, STATUS_ENOMGR, ANSWER_QUALITY_ERROR);
             DRETURN(false);
          }
@@ -1368,7 +1365,7 @@ sge_chck_mod_perm_user(const ocs::gdi::Packet *packet, lList **alpp, ocs::gdi::T
  *
  * @return true if permission is granted, false otherwise
  */
-static bool
+bool
 sge_chck_mod_perm_host(const ocs::gdi::Packet *packet, lList **alpp, const ocs::gdi::Target target, const ocs::gdi::Command command) {
    DENTER(TOP_LAYER);
 

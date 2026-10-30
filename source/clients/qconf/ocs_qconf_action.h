@@ -32,8 +32,8 @@
 /**
  * @brief Run one operation from qconf_action_table, if it is one
  *
- * In the order the blocks had: a short command line is reported, the row's
- * client-side check is made, the arguments are built (which may refuse the
+ * In the order the blocks had: a short command line is reported, the
+ * arguments are built (which may refuse the
  * command line with a message of its own), the client execution context is
  * declined - an action is a write - and the action runs in qmaster. What it has
  * to say comes back in the answer list and is surfaced the way every qconf
@@ -41,11 +41,8 @@
  *
  * @param param    the invocation, for its execution context
  * @param op       the operation to run
- * @param username the calling user, for the client-side check
- * @param hostname the calling host, for the client-side check
  * @param alpp     the answer list of the operation, receives every message (CS-2971)
  * @return what became of the operation
  */
 QConfOpResult
-qconf_run_action(const ocs::QConfParameterClient &param, const qconf_op &op, const char *username,
-                 const char *hostname, lList **alpp);
+qconf_run_action(const ocs::QConfParameterClient &param, const qconf_op &op, lList **alpp);

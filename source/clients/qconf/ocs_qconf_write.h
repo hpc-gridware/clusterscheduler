@@ -35,16 +35,13 @@
 /**
  * @brief Run one add or modify operation from qconf_write_table, if it is one
  *
- * Makes the row's client-side check (which exits the client on a refusal, as
- * the blocks did), then calls the engine with the operation's argument, or for
+ * Calls the engine with the operation's argument, or for
  * an EDIT row without one, with the row's default name. Either engine failing
  * fails the operation.
  *
  * @param os       the stream the output is written to
  * @param param    the invocation, for the procedure read of an EDIT row
  * @param op       the operation to run
- * @param username the calling user, for the client-side check
- * @param hostname the calling host, for the client-side check
  * @param uid      uid to run the editor as
  * @param gid      gid to run the editor as
  * @param alpp     the answer list of the operation, receives every message (CS-2971)
@@ -52,4 +49,4 @@
  */
 QConfOpResult
 qconf_run_write(std::ostream &os, ocs::QConfParameterClient &param, const qconf_op &op,
-                const char *username, const char *hostname, uid_t uid, gid_t gid, lList **alpp);
+                uid_t uid, gid_t gid, lList **alpp);

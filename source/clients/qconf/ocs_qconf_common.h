@@ -23,7 +23,7 @@
  * @brief What every switch family of `qconf` shares (CS-2972)
  *
  * The hardening options, the message helpers, the file iteration, the
- * client side permission checks, the name hooks that turn the argument of a
+ * name hooks that turn the argument of a
  * switch into object names, and the result every dispatcher reports.
  */
 
@@ -281,32 +281,6 @@ qconf_answer_take(lList **alpp, lList **from);
  */
 void
 qconf_answer_print(lList **alpp, FILE *info_stream = stderr);
-
-/** @brief The permission check a switch makes in the client before it is served
- *
- * qmaster decides in any case: a configuration write needs an admin host there,
- * and a manager for every object but the userset, which an operator may change.
- * One kind of check is therefore enough here (CS-2952) - for the userset rows it
- * is stricter than qmaster. Which switches check at all is still the history of
- * each ticket, and CS-2973 moves the decision into qmaster altogether.
- */
-enum class QConfClientCheck {
-   NONE,                    ///< no check in the client
-   MANAGER_ON_ADMIN_HOST    ///< qconf_is_manager_on_admin_host()
-};
-
-/**
- * @brief Make the permission check a table row asks for
- *
- * Each check function exits the client on a refusal, so returning from here
- * means the caller may go on.
- *
- * @param check    the check to make
- * @param username the calling user
- * @param hostname the calling host
- */
-void
-qconf_client_check(QConfClientCheck check, const char *username, const char *hostname);
 
 /** @brief Turn the argument of a switch into the names it is served for, one call each (CS-2967)
  *

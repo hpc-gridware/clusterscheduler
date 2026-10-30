@@ -190,4 +190,8 @@
 #define MSG_QCONF_WRITEWOULDLEAVE_S                _MESSAGE(12065, _("[dry-run] would leave " SFQ " unchanged"))
 #define MSG_QCONF_WRITENOCHANGE                    _MESSAGE(12066, _("nothing was changed: what the text describes is already stored"))
 
+/* CS-2973: a read for the editor is checked as the write it prepares; one whose
+ * object type cannot be told is refused rather than let through unchecked */
+#define MSG_QCONF_EDITREADUNKNOWN_S                _MESSAGE(12067, _("the read " SFQ " names no object type that could be edited"))
+
 // clang-format on

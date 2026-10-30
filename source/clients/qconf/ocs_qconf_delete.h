@@ -33,18 +33,14 @@
 /**
  * @brief Run one delete operation from qconf_delete_table, if it is one
  *
- * Makes the row's client-side check (which exits the client on a refusal, as
- * the blocks did), then calls the engine with the operation's argument -
+ * Calls the engine with the operation's argument -
  * "-dstree" has none and passes nullptr, as its block did. Either engine
  * reporting a failure fails the operation.
  *
  * @param os       the stream the output is written to
  * @param op       the operation to run
- * @param username the calling user, for the client-side check
- * @param hostname the calling host, for the client-side check
  * @param alpp     the answer list of the operation, receives every message (CS-2971)
  * @return what became of the operation
  */
 QConfOpResult
-qconf_run_delete(std::ostream &os, const qconf_op &op, const char *username,
-                 const char *hostname, lList **alpp);
+qconf_run_delete(std::ostream &os, const qconf_op &op, lList **alpp);

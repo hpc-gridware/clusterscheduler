@@ -382,17 +382,6 @@ qconf_missing_argument(const qconf_op &op, lList **alpp) {
    return true;
 }
 
-void
-qconf_client_check(const QConfClientCheck check, const char *username, const char *hostname) {
-   switch (check) {
-      case QConfClientCheck::NONE:
-         break;
-      case QConfClientCheck::MANAGER_ON_ADMIN_HOST:
-         qconf_is_manager_on_admin_host(username, hostname);
-         break;
-   }
-}
-
 /** @brief Resolve one host name the way the exec host switches always did
  * @param name the name as typed
  * @param resolved receives the resolved name

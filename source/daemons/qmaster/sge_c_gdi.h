@@ -126,6 +126,33 @@ sge_c_gdi_process_in_listener(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
 bool
 sge_c_gdi_check_execution_permission(ocs::gdi::Packet *packet, ocs::gdi::Task *task);
 
+/** @brief Check that the user of a request may modify objects of a list
+ *
+ * A manager for the configuration lists, the access lists included; see the
+ * definition for the rest. A refusal is added to @p alpp.
+ *
+ * @param packet the request
+ * @param alpp   receives the refusal
+ * @param target the object list
+ * @return true when the user may modify the list
+ */
+bool
+sge_chck_mod_perm_user(const ocs::gdi::Packet *packet, lList **alpp, ocs::gdi::Target target);
+
+/** @brief Check that the host of a request may modify objects of a list
+ *
+ * An admin host for every configuration list; see the definition for the
+ * exceptions. A refusal is added to @p alpp.
+ *
+ * @param packet  the request
+ * @param alpp    receives the refusal
+ * @param target  the object list
+ * @param command the command of the request
+ * @return true when the host may modify the list
+ */
+bool
+sge_chck_mod_perm_host(const ocs::gdi::Packet *packet, lList **alpp, ocs::gdi::Target target, ocs::gdi::Command command);
+
 void
 sge_c_gdi_process_in_worker(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list,
                             monitoring_t *monitor, bool has_next);

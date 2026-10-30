@@ -25,6 +25,7 @@
 #include <sstream>
 #include <memory>
 #include <array>
+#include <type_traits>
 
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_log.h"
@@ -62,7 +63,9 @@
 #include "procedure/qconf/hgroup/ocs_QConfHGroupTreeController.h"
 #include "procedure/qconf/hgroup/ocs_QConfHGroupWhyController.h"
 #include "procedure/qconf/hgroup/ocs_QConfHGroupWhyView.h"
+#include "procedure/qconf/ocs_QConfModelBase.h"
 #include "procedure/qconf/ocs_QConfModelServer.h"
+#include "procedure/qconf/ocs_QConfObject.h"
 #include "procedure/qconf/ocs_QConfViewBase.h"
 #include "procedure/qconf/ocs_QConfViewJSON.h"
 #include "procedure/qconf/ocs_QConfViewPlain.h"
@@ -117,6 +120,8 @@
 
 #include "qstat/ocs_QStatModelServer.h"
 #include "qstat/ocs_QStatParameter.h"
+#include "procedure/qconf/msg_qconf.h"
+#include "sge_c_gdi.h"
 #include "sge_c_gdi_procedure.h"
 
 namespace {
@@ -681,6 +686,47 @@ namespace {
       DRETURN(mask);
    }
 
+   /** @brief Check a qconf read for the editor as the write it prepares (CS-2973)
+    *
+    * A read that is going to an editor is answered only when the caller may
+    * write what it reads - by the same rules as the write itself, for the
+    * object list of the type. Otherwise the caller would type a change into
+    * the editor only to have the write refused. The flag comes from the client;
+    * that is safe, because it can only add a check: a client that leaves it out
+    * gets a plain read, and its write is checked anyway.
+    *
+    * The editor reads by a switch of the read table, except "-mc", whose list
+    * comes from the CENTRY_LIST sub-procedure of "-sc". A read for the editor
+    * whose object type cannot be told is refused.
+    *
+    * @param packet    the request
+    * @param task      the task, receives the refusal
+    * @param parameter the read
+    * @return true when the read may go ahead
+    */
+   bool qconf_edit_read_permitted(const ocs::gdi::Packet *packet, ocs::gdi::Task *task,
+                                  const ocs::QConfParameter &parameter) {
+      DENTER(TOP_LAYER);
+
+      if (!parameter.get_for_edit()) {
+         DRETURN(true);
+      }
+      QConfObj object;
+      if (const ocs::qconf_read_entry *entry = ocs::QConfModelBase::resolve(parameter.get_operation().token.c_str());
+          entry != nullptr) {
+         object = entry->object;
+      } else if (parameter.get_sub_procedure_name() == ocs::QConfParameter::CENTRY_LIST) {
+         object = QConfObj::CE;
+      } else {
+         answer_list_add_sprintf(&task->answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                                 MSG_QCONF_EDITREADUNKNOWN_S, parameter.get_operation().token.c_str());
+         DRETURN(false);
+      }
+      const ocs::gdi::Target target = qconf_desc(object).target;
+      DRETURN(sge_chck_mod_perm_user(packet, &task->answer_list, target) &&
+              sge_chck_mod_perm_host(packet, &task->answer_list, target, ocs::gdi::Command::MOD));
+   }
+
    template<typename Traits>
    void exec_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monitor,
                        std::ostringstream &os, ProcedureOutcome &outcome) {
@@ -694,6 +740,12 @@ namespace {
       // Create parameter object containing the parsed switch information from the client
       Parameter parameter(task->data_list, packet);
       lFreeList(&task->data_list);
+
+      if constexpr (std::is_same_v<Parameter, ocs::QConfParameter>) {
+         if (!qconf_edit_read_permitted(packet, task, parameter)) {
+            DRETURN_VOID;
+         }
+      }
 
       // Create the server side model and make a snapshot of the required data
       Model model(packet, task);
