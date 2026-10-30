@@ -4264,32 +4264,26 @@ int lDelSubUlong(lListElem *ep, int nm, lUlong val, int snm) {
    DRETURN(ret);
 }
 
-/****** cull/multitype/lDelElemUlong() ****************************************
-*  NAME
-*     lDelElemUlong() -- removes elem specified by a ulong field nm 
-*
-*  SYNOPSIS
-*     int lDelElemUlong(lList** lpp, int nm, lUlong val) 
-*
-*  FUNCTION
-*     This function removes an element specified by a ulong field nm 
-*     with the value val from the list referenced by lpp. 
-*
-*  INPUTS
-*     lList** lpp - reference to a list 
-*     int nm      - field id 
-*     lUlong val  - value if nm 
-*
-*  RESULT
-*     1 element was found and removed 
-*     0 an error occurred
-******************************************************************************/
+/**
+ * @brief Removes elem specified by a ulong field nm
+ *
+ * This function removes an element specified by a ulong field nm
+ * with the value val from the list referenced by lpp. When the list
+ * becomes empty it is freed and *lpp is set to nullptr.
+ *
+ * @param lpp reference to a list
+ * @param nm field id
+ * @param val value of nm; 0 is a valid value
+ *
+ * @return 0 when lpp is nullptr, otherwise 1, whether or not an element
+ *         carrying val was found
+ */
 int lDelElemUlong(lList **lpp, int nm, lUlong val) {
    lListElem *ep;
 
    DENTER(CULL_LAYER);
 
-   if (!lpp || !val) {
+   if (lpp == nullptr) {
       DPRINTF("error: nullptr ptr passed to lDelElemUlong\n");
       DRETURN(0);
    }
@@ -4663,32 +4657,26 @@ int lDelSubUlong64(lListElem *ep, int nm, lUlong64 val, int snm) {
    DRETURN(ret);
 }
 
-/****** cull/multitype/lDelElemUlong64() **************************************
-*  NAME
-*     lDelElemUlong64() -- removes elem specified by a ulong64 field nm 
-*
-*  SYNOPSIS
-*     int lDelElemUlong64(lList** lpp, int nm, lUlong64 val) 
-*
-*  FUNCTION
-*     This function removes an element specified by a ulong64 field nm 
-*     with the value val from the list referenced by lpp. 
-*
-*  INPUTS
-*     lList** lpp    - reference to a list 
-*     int nm         - field id 
-*     lUlong64 val   - value if nm 
-*
-*  RESULT
-*     1 element was found and removed 
-*     0 an error occurred
-******************************************************************************/
+/**
+ * @brief Removes elem specified by a ulong64 field nm
+ *
+ * This function removes an element specified by a ulong64 field nm
+ * with the value val from the list referenced by lpp. When the list
+ * becomes empty it is freed and *lpp is set to nullptr.
+ *
+ * @param lpp reference to a list
+ * @param nm field id
+ * @param val value of nm; 0 is a valid value
+ *
+ * @return 0 when lpp is nullptr, otherwise 1, whether or not an element
+ *         carrying val was found
+ */
 int lDelElemUlong64(lList **lpp, int nm, lUlong64 val) {
    lListElem *ep;
 
    DENTER(CULL_LAYER);
 
-   if (!lpp || !val) {
+   if (lpp == nullptr) {
       DPRINTF("error: nullptr ptr passed to lDelElemUlong64\n");
       DRETURN(0);
    }

@@ -344,8 +344,6 @@ const lListElem *lGetSubUlong64(const lListElem *ep, int nm, lUlong64 val, int s
    functions for lists with a case insensitive char * as key
 
 */
-int lDelElemCaseStr(lList **lpp, int nm, const char *str);
-
 lListElem *lGetElemCaseStrRW(const lList *lp, int nm, const char *str);
 
 const lListElem *lGetElemCaseStr(const lList *lp, int nm, const char *str);

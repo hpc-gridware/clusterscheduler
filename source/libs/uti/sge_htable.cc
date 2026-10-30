@@ -638,54 +638,58 @@ int hash_func_string(const void *key) {
    return (int) hash;
 }
 
-/****** uti/htable/-Compare-Functions() ***************************************
-*  NAME
-*     compare_func_<type>() -- Compare functions for selected data types
-*
-*  SYNOPSIS
-*     int HashCompare_<type>(const void *a, const void *b) 
-*
-*  FUNCTION
-*     Depending on the data type of the hash key, different functions
-*     have to be used to compare two elements.
-*     Which compare function to use has to be specified when creating 
-*     a new hash table. Syntax and return value are similar to strcmp.
-*
-*  INPUTS
-*     const void *a - pointer to first element
-*     const void *b - pointer to second element
-*
-*  RESULT
-*     int - 0, if the elements are equal
-*           > 0, if the first element is bigger than the second
-*           < 0, if the first element is smaller than the second
-*
-*  NOTES
-*     The following data types are provided with this module:
-*        - strings (char *)
-*        - u_long32
-*
-*  SEE ALSO
-*     uti/htable/sge_htable_create()
-******************************************************************************/
+/** @brief Compare two `u_long32` keys
+ *
+ * Like all hash key compare functions the result follows strcmp(); the hash
+ * table only tests it for 0. Which compare function to use is chosen when the
+ * table is created, see sge_htable_create().
+ *
+ * @param a pointer to the first key
+ * @param b pointer to the second key
+ * @return 0 when equal, > 0 when @p a is greater, < 0 when it is smaller
+ */
 int hash_compare_u_long32(const void *a, const void *b) {
-   u_long32 *cast_a = (u_long32 *) a;
-   u_long32 *cast_b = (u_long32 *) b;
-   return *cast_a - *cast_b;
+   const u_long32 val_a = *static_cast<const u_long32 *>(a);
+   const u_long32 val_b = *static_cast<const u_long32 *>(b);
+   // three-way compare: the difference of two unsigned values has the wrong sign
+   // when it does not fit an int
+   return (val_a > val_b) - (val_a < val_b);
 }
 
+/** @brief Compare two `u_long64` keys
+ *
+ * @param a pointer to the first key
+ * @param b pointer to the second key
+ * @return 0 when equal, > 0 when @p a is greater, < 0 when it is smaller
+ */
 int hash_compare_u_long64(const void *a, const void *b) {
-   u_long64 *cast_a = (u_long64 *) a;
-   u_long64 *cast_b = (u_long64 *) b;
-   return *cast_a - *cast_b;
+   const u_long64 val_a = *static_cast<const u_long64 *>(a);
+   const u_long64 val_b = *static_cast<const u_long64 *>(b);
+   // three-way compare: the difference truncated to int is 0 for keys that
+   // differ only above bit 31, which made them the same key
+   return (val_a > val_b) - (val_a < val_b);
 }
 
+/** @brief Compare two `long` keys
+ *
+ * @param a pointer to the first key
+ * @param b pointer to the second key
+ * @return 0 when equal, > 0 when @p a is greater, < 0 when it is smaller
+ */
 int hash_compare_long(const void *a, const void *b) {
-   long *cast_a = (long *) a;
-   long *cast_b = (long *) b;
-   return (int) (*cast_a - *cast_b);
+   const long val_a = *static_cast<const long *>(a);
+   const long val_b = *static_cast<const long *>(b);
+   // three-way compare: on LP64 the difference truncated to int is 0 for keys
+   // that differ only above bit 31
+   return (val_a > val_b) - (val_a < val_b);
 }
 
+/** @brief Compare two pointer keys
+ *
+ * @param a pointer to the first key
+ * @param b pointer to the second key
+ * @return 0 when both point to the same address, 1 otherwise
+ */
 int hash_compare_pointer(const void *a, const void *b) {
    char **cast_a = (char **) a;
    char **cast_b = (char **) b;
@@ -697,6 +701,12 @@ int hash_compare_pointer(const void *a, const void *b) {
    }
 }
 
+/** @brief Compare two string keys
+ *
+ * @param a the first key
+ * @param b the second key
+ * @return the result of strcmp() on both keys
+ */
 int hash_compare_string(const void *a, const void *b) {
    return strcmp((const char *) a, (const char *) b);
 }
