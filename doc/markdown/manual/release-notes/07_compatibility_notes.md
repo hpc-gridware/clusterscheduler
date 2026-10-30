@@ -407,7 +407,51 @@ remove one. A configuration-management tool that re-applied a shortened file was
 that is how a complex entry is removed from a file-managed configuration, both halves agree, and
 built-in attributes missing from the text are retained and named rather than deleted.
 
-## Show Options Exit Non-Zero for a Named Object That Does Not Exist
+## *qconf* Exit Status and Error Messages
+
+In this release the exit status and the error output of `qconf` follow one rule each. Before, both depended
+on the option: some failures exited **0**, some options went on after a failure, and whether an error message
+carried the `error: ` prefix depended on where in the code it was printed. Now:
+
+* a failure sets a non-zero exit status, whichever option fails,
+* the first option that fails stops the command line,
+* every error message is printed with the prefix `error: `; warnings and informational messages are printed
+  as they are.
+
+### The First Option That Fails Stops the Command Line
+
+`qconf` accepts several options on one command line and carries them out in the order given. What
+happened after one of them failed depended on the option. `-scal`, `-sp` and `-se` stopped the
+command line; `-sprj`, `-suser`, `-sq`, `-shgrp`, `-srqs` and most of the others reported the
+failure and went on with the next option:
+
+    $ qconf -sprj nosuchproject -sql ; echo "rc=$?"
+    nosuchproject is not known as project
+    all.q
+    rc=1
+
+Now the first option that fails stops the command line, whichever option it is:
+
+    $ qconf -sprj nosuchproject -sql ; echo "rc=$?"
+    error: nosuchproject is not known as project
+    rc=1
+
+The options before the failed one stay applied; nothing is rolled back. Inside one option nothing
+changes: a list of names or a directory is still worked through to the end, each failure is
+reported, and `-strict` still makes it all or nothing. An unknown option behind a failed one is no
+longer reported, because the command line stopped before it was reached.
+
+**Why it changed.** After a failure the exit status could not say which option had failed, and the
+output was a mix of results and error messages that a script could not take apart. Now the state
+afterwards is "everything up to the failed option", and the last message is the one the exit status
+stands for.
+
+**If you relied on it**, run the options that must be carried out regardless of each other as
+separate `qconf` calls. That applies as well to options whose non-zero exit status is an answer
+rather than an error: `-shgrp_why` for a host that is not a member, or `-sds` for a report that is
+not empty, stop the command line too.
+
+### Show Options Exit Non-Zero for a Named Object That Does Not Exist
 
 Two of them did not. `qconf -suser <name>` printed that the user is unknown and exited **0**;
 it now exits non-zero, which is what the other show options already did:
@@ -454,38 +498,41 @@ never added anything, and it failed silently because the user really was absent.
 the exit code now. Asking without caring whether anything exists is the list form, `qconf
 -suserl` or `-srqsl`, which does not fail on an individual name.
 
-## *qconf* Stops at the First Option That Fails
+### Refused Options Exit Non-Zero
 
-`qconf` accepts several options on one command line and carries them out in the order given. What
-happened after one of them failed depended on the option. `-scal`, `-sp` and `-se` stopped the
-command line; `-sprj`, `-suser`, `-sq`, `-shgrp`, `-srqs` and most of the others reported the
-failure and went on with the next option:
+These options reported that sge_qmaster had refused them, or that they had failed, and exited **0**:
 
-    $ qconf -sprj nosuchproject -sql ; echo "rc=$?"
-    nosuchproject is not known as project
-    all.q
+| Options | Was | Now |
+|:---|:---|:---|
+| `-astnode`, `-mstnode`, `-dstnode` | a refused change of the share tree exited 0 | exits non-zero |
+| `-purge` | an error of the purge exited 0 | exits non-zero |
+| `-at`, `-kt`, `-tsm` | a refusal by sge_qmaster, e.g. for a user who is no manager, exited 0 | exits non-zero |
+
+For example:
+
+    $ qconf -tsm ; echo "rc=$?"
+    error: denied: "user1" must be manager to initiate TRIGGER operation
     rc=1
 
-Now the first option that fails stops the command line, whichever option it is:
+### Every Error Message Carries the Prefix "error: "
 
-    $ qconf -sprj nosuchproject -sql ; echo "rc=$?"
-    error: nosuchproject is not known as project
+Which error messages carried the prefix `error: ` depended on where they were printed: the ones `qconf`
+reported itself through the logging functions did, while host names that could not be resolved, most
+refusals of sge_qmaster and a few others were printed as they are. Now every error message carries the prefix:
+
+    $ qconf -de host1 ; echo "rc=$?"           # as a user who is no manager
+    error: denied: "user1" must be manager to initiate operation for target EH_LIST
     rc=1
 
-The options before the failed one stay applied; nothing is rolled back. Inside one option nothing
-changes: a list of names or a directory is still worked through to the end, each failure is
-reported, and `-strict` still makes it all or nothing. An unknown option behind a failed one is no
-longer reported, because the command line stopped before it was reached.
+    $ qconf -sstree ; echo "rc=$?"             # without a share tree
+    error: no sharetree element
+    rc=1
 
-**Why it changed.** After a failure the exit status could not say which option had failed, and the
-output was a mix of results and error messages that a script could not take apart. Now the state
-afterwards is "everything up to the failed option", and the last message is the one the exit status
-stands for.
+The text after the prefix is unchanged. Warnings and informational messages, for example
+`added "user1" to access list "acl1"`, are printed without a prefix as before.
 
-**If you relied on it**, run the options that must be carried out regardless of each other as
-separate `qconf` calls. That applies as well to options whose non-zero exit status is an answer
-rather than an error: `-shgrp_why` for a host that is not a member, or `-sds` for a report that is
-not empty, stop the command line too.
+**If you relied on it**, decide on the exit status rather than on the text of a message; a script that has to
+match an error message should not anchor the match at the start of the line.
 
 [//]: # (Each file has to end with two empty lines)
 

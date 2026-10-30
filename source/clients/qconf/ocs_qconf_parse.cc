@@ -505,7 +505,7 @@ int sge_parse_qconf(char *argv[]) {
          }
          alp = ocs::gdi::Client::gdi_kill(lp, action_flag);
          lFreeList(&lp);
-         qconf_answer_take(&op_alp, &alp);
+         sge_parse_return |= qconf_answer_take(&op_alp, &alp);
          spp++;
          continue;
       }
@@ -526,7 +526,7 @@ int sge_parse_qconf(char *argv[]) {
          }
          alp = ocs::gdi::Client::gdi_kill(lp, action_flag);
          lFreeList(&lp);
-         qconf_answer_take(&op_alp, &alp);
+         sge_parse_return |= qconf_answer_take(&op_alp, &alp);
          spp++;
          continue;
       }
@@ -693,7 +693,7 @@ int sge_parse_qconf(char *argv[]) {
       if (strcmp("-tsm", *spp) == 0) {
          /* no adminhost/manager check needed here */
          alp = ocs::gdi::Client::gdi_tsm();
-         qconf_answer_take(&op_alp, &alp);
+         sge_parse_return |= qconf_answer_take(&op_alp, &alp);
 
          spp++;
          continue;
