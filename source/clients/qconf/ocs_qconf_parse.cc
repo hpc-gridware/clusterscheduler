@@ -2343,6 +2343,138 @@ qconf_run_delete(std::ostream &os, const qconf_op &op, const char *username,
    DRETURN(failed != 0 ? QConfOpResult::FAILED : QConfOpResult::OK);
 }
 
+/** @brief Turn the argument of a switch into the names it is served for, one call each (CS-2967)
+ *
+ * The hook column of qconf_write_table and qconf_sub_procedure_table. A row
+ * without one is served once, with its argument as typed; a row with one is
+ * served once per name the hook returns. A name the hook cannot use it reports
+ * itself and leaves out, setting @p failed, so the others are still served -
+ * which is what the blocks did.
+ *
+ * @param op the operation
+ * @param names receives the names to serve
+ * @param failed set when a name had to be left out
+ */
+using qconf_names_hook = void (*)(const qconf_op &op, std::vector<std::string> &names, bool &failed);
+
+/** @brief Resolve one host name the way the exec host switches always did
+ * @param name the name as typed
+ * @param resolved receives the resolved name
+ * @return true when it resolved; false after the message
+ */
+static bool
+qconf_resolve_one_host(const char *name, std::string &resolved) {
+   lListElem *host_ep = lCreateElem(EH_Type);
+   lSetHost(host_ep, EH_name, name);
+   const bool ok = (sge_resolve_host(host_ep, EH_name) == CL_RETVAL_OK);
+   if (ok) {
+      resolved = lGetHost(host_ep, EH_name);
+   } else {
+      fprintf(stderr, MSG_SGETEXT_CANTRESOLVEHOST_S, lGetHost(host_ep, EH_name));
+      fprintf(stderr, "\n");
+   }
+   lFreeElem(&host_ep);
+   return ok;
+}
+
+/** @brief "-ae [host]": the template when no name is given, the resolved host otherwise
+ *
+ * The template is an entry in the exec host list and not a host, so it is the
+ * one name that must not be resolved.
+ *
+ * @param op the operation
+ * @param names receives the name to edit
+ * @param failed set when the host does not resolve
+ */
+static void
+qconf_names_ae(const qconf_op &op, std::vector<std::string> &names, bool &failed) {
+   if (op.args.empty()) {
+      names.emplace_back(SGE_TEMPLATE_NAME);
+      return;
+   }
+   std::string resolved;
+   if (qconf_resolve_one_host(op.args[0].c_str(), resolved)) {
+      names.push_back(resolved);
+   } else {
+      failed = true;
+   }
+}
+
+/** @brief "-se host": the one host, resolved
+ * @param op the operation
+ * @param names receives the name to show
+ * @param failed set when the host does not resolve
+ */
+static void
+qconf_names_one_host(const qconf_op &op, std::vector<std::string> &names, bool &failed) {
+   std::string resolved;
+   if (qconf_resolve_one_host(op.args[0].c_str(), resolved)) {
+      names.push_back(resolved);
+   } else {
+      failed = true;
+   }
+}
+
+/** @brief "-me host,...": every host of the list, each resolved; one that does not is left out
+ * @param op the operation
+ * @param names receives the names to edit
+ * @param failed set when a host does not resolve
+ */
+static void
+qconf_names_host_list(const qconf_op &op, std::vector<std::string> &names, bool &failed) {
+   std::string arg = op.args[0];
+   lList *hosts = nullptr;
+   parse_name_list_to_cull("hosts to change", &hosts, EH_Type, EH_name, arg.data());
+   for_each_rw_lv(host_ep, hosts) {
+      if (sge_resolve_host(host_ep, EH_name) != CL_RETVAL_OK) {
+         fprintf(stderr, MSG_SGETEXT_CANTRESOLVEHOST_S, lGetHost(host_ep, EH_name));
+         fprintf(stderr, "\n");
+         failed = true;
+         continue;
+      }
+      names.emplace_back(lGetHost(host_ep, EH_name));
+   }
+   lFreeList(&hosts);
+}
+
+/** @brief "-mu userset,...": every userset of the list
+ *
+ * One round trip per name, as edit_usersets() had it; a name that is no
+ * userset yet is answered by the read with the template and created on exit.
+ *
+ * @param op the operation
+ * @param names receives the names to edit
+ * @param failed unused, every name is served
+ */
+static void
+qconf_names_userset_list(const qconf_op &op, std::vector<std::string> &names, [[maybe_unused]] bool &failed) {
+   std::string arg = op.args[0];
+   lList *usersets = nullptr;
+   parse_name_list_to_cull("usersets", &usersets, US_Type, US_name, arg.data());
+   const lListElem *us_ep;
+   for_each_ep(us_ep, usersets) {
+      const char *name = lGetString(us_ep, US_name);
+      names.emplace_back(name != nullptr ? name : "");
+   }
+   lFreeList(&usersets);
+}
+
+/** @brief "-suser user,...": every user of the list
+ * @param op the operation
+ * @param names receives the names to show
+ * @param failed unused, every name is served
+ */
+static void
+qconf_names_user_list(const qconf_op &op, std::vector<std::string> &names, [[maybe_unused]] bool &failed) {
+   lList *users = nullptr;
+   lString2List(op.args[0].c_str(), &users, ST_Type, ST_name, ", ");
+   const lListElem *user_ep;
+   for_each_ep(user_ep, users) {
+      names.emplace_back(lGetString(user_ep, ST_name));
+   }
+   lFreeList(&users);
+}
+
 /** @brief How a table driven add or modify switch writes */
 enum class QConfWriteKind {
    EDIT,    ///< "-a<obj>"/"-m<obj> [name]": qconf_edit_obj_procedure()
@@ -2357,6 +2489,7 @@ struct qconf_write_entry {
    const char *default_name;  ///< what an EDIT row edits when no name is given
    bool unchanged_is_ok;      ///< EDIT: write a text the editor left alone
    QConfClientCheck check;    ///< the check it makes in the client
+   qconf_names_hook names;    ///< EDIT: the names to edit one by one, nullptr for the argument as typed
 };
 
 /** @brief The add and modify switches that are one engine call each (CS-2954)
@@ -2366,11 +2499,12 @@ struct qconf_write_entry {
  * permission check. The option table decides whether a name may be given:
  * "-a<obj>" takes an optional one and edits default_name without it, "-m<obj>"
  * requires one, and the singletons ("-astree", "-mstree", "-msconf") take none
- * and edit with nullptr. The ones with handling of their own stay blocks: "-ae"
- * and "-me" (host name resolution), "-mu" (a list of names), "-arqs"/"-mrqs"/
- * "-Arqs"/"-Mrqs" and "-mc"/"-Mc" (lists), the reserved host group switches
- * and the host configuration; the membership switches and "-astnode"/
- * "-mstnode" are actions, see qconf_action_table.
+ * and edit with nullptr. "-ae", "-me" and "-mu" are rows with a names hook:
+ * the host resolved (or the template for "-ae" without a name), or each name
+ * of a list edited on its own (CS-2967). The ones with handling of their own
+ * stay blocks: "-arqs"/"-mrqs"/"-Arqs"/"-Mrqs" and "-mc"/"-Mc" (lists), the
+ * reserved host group switches and the host configuration; the membership
+ * switches and "-astnode"/"-mstnode" are actions, see qconf_action_table.
  *
  * "-mce" checked qconf_is_manager() again after qconf_is_manager_on_admin_host(),
  * which already exits for a non-manager; the row keeps the first check only.
@@ -2397,6 +2531,9 @@ static const qconf_write_entry qconf_write_table[] = {
    {"-mq",     QConfObj::CQ,   QConfWriteKind::EDIT,  nullptr,     false, QConfClientCheck::MANAGER_ON_ADMIN_HOST},
    {"-msconf", QConfObj::SC,   QConfWriteKind::EDIT,  nullptr,     false, QConfClientCheck::MANAGER_ON_ADMIN_HOST},
    {"-mstree", QConfObj::STN,  QConfWriteKind::EDIT,  nullptr,     false, QConfClientCheck::MANAGER_ON_ADMIN_HOST},
+   {"-ae",     QConfObj::EH,   QConfWriteKind::EDIT,  nullptr,     false, QConfClientCheck::MANAGER_ON_ADMIN_HOST, qconf_names_ae},
+   {"-me",     QConfObj::EH,   QConfWriteKind::EDIT,  nullptr,     false, QConfClientCheck::MANAGER_ON_ADMIN_HOST, qconf_names_host_list},
+   {"-mu",     QConfObj::US,   QConfWriteKind::EDIT,  nullptr,     false, QConfClientCheck::MANAGER_ON_ADMIN_HOST, qconf_names_userset_list},
    {"-Acal",   QConfObj::CAL,  QConfWriteKind::APPLY, nullptr,     false, QConfClientCheck::NONE},
    {"-Ackpt",  QConfObj::CK,   QConfWriteKind::APPLY, nullptr,     false, QConfClientCheck::NONE},
    {"-Ae",     QConfObj::EH,   QConfWriteKind::APPLY, nullptr,     false, QConfClientCheck::NONE},
@@ -2463,7 +2600,19 @@ qconf_run_write(std::ostream &os, ocs::QConfParameterClient &param, const qconf_
    qconf_client_check(entry->check, username, hostname);
 
    int failed;
-   if (entry->kind == QConfWriteKind::EDIT) {
+   if (entry->kind == QConfWriteKind::EDIT && entry->names != nullptr) {
+      /* one round trip per name; a name that fails does not stop the others */
+      std::vector<std::string> names;
+      bool left_out = false;
+      entry->names(op, names, left_out);
+      failed = left_out ? 1 : 0;
+      for (const std::string &name : names) {
+         if (qconf_edit_obj_procedure(param, entry->object, entry->switch_name, name.c_str(),
+                                      uid, gid, entry->unchanged_is_ok) != 0) {
+            failed = 1;
+         }
+      }
+   } else if (entry->kind == QConfWriteKind::EDIT) {
       const char *name = op.args.empty() ? entry->default_name : op.args.front().c_str();
       failed = qconf_edit_obj_procedure(param, entry->object, entry->switch_name, name,
                                         uid, gid, entry->unchanged_is_ok);
@@ -2736,6 +2885,8 @@ struct qconf_sub_procedure_entry {
    const char *switch_name;     ///< the switch as typed
    const char *sub_procedure;   ///< the sub-procedure qmaster runs, nullptr for a plain read
    QConfAnswerReport report;    ///< how the answer list and the status are reported
+   qconf_names_hook names;      ///< the names to read one by one, nullptr for the argument as typed
+   bool blank_line_between;     ///< with names: the outputs are separated by a blank line
 };
 
 /** @brief The read switches that are one procedure call each, outside the read table
@@ -2749,7 +2900,10 @@ struct qconf_sub_procedure_entry {
  * "-scal", "-sckpt", "-srole", "-sp" and "-sprj" are plain single-object reads
  * as well; they had blocks of their own only because some of them stopped the
  * command line on a missing object and some did not, which CS-2950 made one
- * rule. The option table fixes the arguments, so the operation is sent as parsed.
+ * rule. "-se" and "-suser" are such reads with a names hook: the host resolved
+ * first, or each user of a list read on its own with a blank line between them
+ * (CS-2967). Otherwise the option table fixes the arguments, so the operation
+ * is sent as parsed.
  */
 static const qconf_sub_procedure_entry qconf_sub_procedure_table[] = {
    {"-sobjl",          ocs::QConfParameter::OBJECT_FILTER,     QConfAnswerReport::SHOW_AND_STATUS},
@@ -2767,6 +2921,8 @@ static const qconf_sub_procedure_entry qconf_sub_procedure_table[] = {
    {"-srole",          nullptr,                                QConfAnswerReport::OUTPUT_ON_FAILURE},
    {"-sp",             nullptr,                                QConfAnswerReport::OUTPUT_ON_FAILURE},
    {"-sprj",           nullptr,                                QConfAnswerReport::OUTPUT_ON_FAILURE},
+   {"-se",             nullptr,                                QConfAnswerReport::OUTPUT_ON_FAILURE, qconf_names_one_host, false},
+   {"-suser",          nullptr,                                QConfAnswerReport::OUTPUT_ON_FAILURE, qconf_names_user_list, true},
    {"-secl",           ocs::QConfParameter::EVENT_CLIENT_LIST, QConfAnswerReport::OUTPUT_ON_FAILURE},
    {"-sep",            ocs::QConfParameter::PROCESSOR_LIST,    QConfAnswerReport::OUTPUT_ON_FAILURE},
    {"-stl",            ocs::QConfParameter::THREAD_POOL_LIST,  QConfAnswerReport::OUTPUT_ON_FAILURE},
@@ -2775,6 +2931,52 @@ static const qconf_sub_procedure_entry qconf_sub_procedure_table[] = {
    {"-shgrp_resolved", ocs::QConfParameter::HGROUP_RESOLVED,   QConfAnswerReport::STATUS_FROM_ANSWER},
    {"-shgrp_why",      ocs::QConfParameter::HGROUP_WHY,        QConfAnswerReport::STATUS_FROM_ANSWER},
 };
+
+/** @brief Send one read of qconf_sub_procedure_table and report it the way its row says
+ * @param os    the stream the output is written to
+ * @param param the invocation, whose operation is set to @p op for the call
+ * @param entry the row
+ * @param op    the operation to send
+ * @return true when the read failed
+ */
+static bool
+qconf_sub_procedure_once(std::ostream &os, ocs::QConfParameterClient &param, const qconf_sub_procedure_entry &entry,
+                         const qconf_op &op) {
+   DENTER(TOP_LAYER);
+
+   lList *alp = nullptr;
+   param.set_operation(op);
+   if (entry.sub_procedure != nullptr) {
+      param.set_sub_procedure_name(entry.sub_procedure);
+   }
+   const bool ok = qconf_dispatch_procedure(os, param, &alp);
+   param.set_sub_procedure_name("");
+
+   bool failed = false;
+   switch (entry.report) {
+      case QConfAnswerReport::SHOW_AND_STATUS:
+         failed = (show_answer(alp) != 0) || !ok;
+         break;
+      case QConfAnswerReport::SHOW_ON_FAILURE:
+         if (!ok) {
+            show_answer(alp);
+            failed = true;
+         }
+         break;
+      case QConfAnswerReport::OUTPUT_ON_FAILURE:
+         if (!ok) {
+            answer_list_output(&alp);
+            failed = true;
+         }
+         break;
+      case QConfAnswerReport::STATUS_FROM_ANSWER:
+         failed = (show_answer(alp) != 0);
+         break;
+   }
+   lFreeList(&alp);
+
+   DRETURN(failed);
+}
 
 /**
  * @brief Run one read operation from qconf_sub_procedure_table, if it is one
@@ -2806,37 +3008,28 @@ qconf_run_sub_procedure(std::ostream &os, ocs::QConfParameterClient &param, cons
       DRETURN(QConfOpResult::FAILED);
    }
 
-   lList *alp = nullptr;
-   param.set_operation(op);
-   if (entry->sub_procedure != nullptr) {
-      param.set_sub_procedure_name(entry->sub_procedure);
+   if (entry->names == nullptr) {
+      DRETURN(qconf_sub_procedure_once(os, param, *entry, op) ? QConfOpResult::FAILED : QConfOpResult::OK);
    }
-   const bool ok = qconf_dispatch_procedure(os, param, &alp);
-   param.set_sub_procedure_name("");
 
+   /* one read per name; a name that fails does not stop the others */
+   std::vector<std::string> names;
    bool failed = false;
-   switch (entry->report) {
-      case QConfAnswerReport::SHOW_AND_STATUS:
-         failed = (show_answer(alp) != 0) || !ok;
-         break;
-      case QConfAnswerReport::SHOW_ON_FAILURE:
-         if (!ok) {
-            show_answer(alp);
-            failed = true;
-         }
-         break;
-      case QConfAnswerReport::OUTPUT_ON_FAILURE:
-         if (!ok) {
-            answer_list_output(&alp);
-            failed = true;
-         }
-         break;
-      case QConfAnswerReport::STATUS_FROM_ANSWER:
-         failed = (show_answer(alp) != 0);
-         break;
+   entry->names(op, names, failed);
+   bool first = true;
+   for (const std::string &name : names) {
+      if (entry->blank_line_between && !first) {
+         os << "\n";
+      }
+      first = false;
+      qconf_op one;
+      one.spec = op.spec;
+      one.token = op.token;
+      one.args.push_back(name);
+      if (qconf_sub_procedure_once(os, param, *entry, one)) {
+         failed = true;
+      }
    }
-   lFreeList(&alp);
-
    DRETURN(failed ? QConfOpResult::FAILED : QConfOpResult::OK);
 }
 
@@ -2857,10 +3050,9 @@ int sge_parse_qconf(char *argv[]) {
    char *cp = nullptr;
    char **spp = nullptr;
    int sge_parse_return = 0;
-   lList *lp=nullptr, *arglp=nullptr, *alp=nullptr;
-   lListElem *hep=nullptr, *ep=nullptr;
+   lList *lp=nullptr, *alp=nullptr;
+   lListElem *ep=nullptr;
    const lListElem *aep=nullptr;
-   const char *host = nullptr;
    const char* qualified_hostname = component_get_qualified_hostname();
    const char* username = component_get_username();
    uint32_t prog_number = component_get_component_id();
@@ -2991,73 +3183,6 @@ int sge_parse_qconf(char *argv[]) {
          if (result == QConfOpResult::FAILED) {
             sge_parse_return = 1;
          }
-         continue;
-      }
-
-/*----------------------------------------------------------------------------*/
-      /* "-ae [exec_server_template]"
-       *
-       * CS-2823: the same round trip as "-me". Despite its name this is not a
-       * template add like "-acal": it *reads* an exec host - the one called
-       * "template" when no name is given - and offers that for editing. The
-       * switch it shares its code with was "-me" from the start; since the
-       * template moved into the read, "-acal" shares it too and the three run
-       * through one qconf_edit_obj_procedure(). Resolving the name stays in
-       * the client, as
-       * it does for "-me": the procedure read is asked for a name, so a short
-       * host name has to be resolved before it is asked. The template is not a
-       * host and is never resolved, which is why only the given name is.
-       *
-       * Two things changed with the conversion, both deliberate:
-       *
-       *  - a name that is no exec host is now reported as "x is not an
-       *    execution host", the message "-me" and "-se" have always used. The
-       *    descriptor row carries one not-found message per type, and the
-       *    former wording of this branch was the only user of its own macro,
-       *    so the two were merged rather than the message being made
-       *    per-switch.
-       *  - a write to a name that already exists modifies it instead of being
-       *    refused, because the write procedure upserts. That is what "-a<obj>"
-       *    has meant for every other type since CS-2299 C2 and what "-Ae" has
-       *    meant for the exec host since CS-2304 C2, so the exec host's
-       *    interactive add was the last one left out.
-       *
-       * It also gains the two refusals of the procedure path for free: a
-       * reduced read is not offered for editing, and "-ectx client" is
-       * declined. */
-      if (strcmp("-ae", *spp) == 0) {
-         char *hostname = nullptr;
-
-         qconf_is_manager_on_admin_host(username, qualified_hostname);
-         if (sge_next_is_an_opt(spp)) {
-            /* no name given: the template host. It is an entry in the exec host
-             * list and not a host, so it is the one name that must not be
-             * resolved. */
-            hostname = sge_strdup(nullptr, SGE_TEMPLATE_NAME);
-         } else {
-            spp = sge_parser_get_next(spp);
-
-            lListElem *host_ep = lCreateElem(EH_Type);
-            lSetHost(host_ep, EH_name, *spp);
-
-            if (sge_resolve_host(host_ep, EH_name) != CL_RETVAL_OK) {
-               fprintf(stderr, MSG_SGETEXT_CANTRESOLVEHOST_S, lGetHost(host_ep, EH_name));
-               fprintf(stderr, "\n");
-               lFreeElem(&host_ep);
-               sge_parse_return = 1;
-               spp++;
-               continue;
-            }
-            hostname = sge_strdup(nullptr, lGetHost(host_ep, EH_name));
-            lFreeElem(&host_ep);
-         }
-
-         if (qconf_edit_obj_procedure(param, QConfObj::EH, "-ae", hostname, uid, gid) != 0) {
-            sge_parse_return = 1;
-         }
-         sge_free(&hostname);
-
-         spp++;
          continue;
       }
 /*-----------------------------------------------------------------------------*/
@@ -3409,43 +3534,6 @@ int sge_parse_qconf(char *argv[]) {
          spp++;
          continue;
       }
-
-/*----------------------------------------------------------------------------*/
-      /* "-me [server_name,...]" */
-
-      if (strcmp("-me", *spp) == 0) {
-         qconf_is_manager_on_admin_host(username, qualified_hostname);
-
-         spp = sge_parser_get_next(spp);
-         parse_name_list_to_cull("hosts to change", &arglp, EH_Type, EH_name,
-            *spp);
-
-         /* CS-2823: the stored procedure round trip, through the same function
-          * as "-ae" - the two are one operation and differ only in the name
-          * they are given. Two things are specific to the exec host: the name
-          * is resolved here, before the read is asked for it, and the read's
-          * descriptor row carries no template, so an unknown host is reported
-          * instead of created. An execution host is not conjured from a name;
-          * it is added by installing an execd, or by "-ae" under the name of a
-          * host that resolves. The switch takes a list, so each name goes
-          * through the round trip on its own. */
-         for_each_rw_lv (argep, arglp) {
-            if (sge_resolve_host(argep, EH_name) != CL_RETVAL_OK) {
-               fprintf(stderr, MSG_SGETEXT_CANTRESOLVEHOST_S, lGetHost(argep, EH_name));
-               fprintf(stderr, "\n");
-               sge_parse_return = 1;
-               continue;
-            }
-            host = lGetHost(argep, EH_name);
-
-            if (qconf_edit_obj_procedure(param, QConfObj::EH, "-me", host, uid, gid) != 0) {
-               sge_parse_return = 1;
-            }
-         }
-         lFreeList(&arglp);
-         spp++;
-         continue;
-      }
 /*-----------------------------------------------------------------------------*/
       /* "-mrqs rqs_name" */
       if (strcmp("-mrqs", *spp) == 0) {
@@ -3610,43 +3698,6 @@ int sge_parse_qconf(char *argv[]) {
 
       continue;
    }
-
-/*----------------------------------------------------------------------------*/
-
-      /* "-mu userset,..." */
-
-      if (strcmp("-mu", *spp) == 0) {
-         /* check for adminhost and manager privileges */
-         qconf_is_manager_on_admin_host(username, qualified_hostname);
-
-         spp = sge_parser_get_next(spp);
-
-         /* get userset */
-         parse_name_list_to_cull("usersets", &lp, US_Type, US_name, *spp);
-
-         /* CS-2823: one round trip per name, which is what the hand written
-          * edit_usersets() did - it fetched them all in one GET and then opened
-          * one editor per userset. "-mu" is the only interactive switch that
-          * takes a list of names, and it is also the whole interactive add: a
-          * name that is no userset yet is answered by the read with the type's
-          * template and created on exit, as it was before.
-          *
-          * A name whose edit fails no longer stops the ones behind it, as
-          * before - but it now makes the command exit non-zero, where
-          * edit_usersets() reported such a failure on stderr and still
-          * returned success. */
-         const lListElem *us_ep;
-         for_each_ep(us_ep, lp) {
-            if (qconf_edit_obj_procedure(param, QConfObj::US, "-mu",
-                                         lGetString(us_ep, US_name), uid, gid) != 0) {
-               sge_parse_return = 1;
-            }
-         }
-         lFreeList(&lp);
-
-         spp++;
-         continue;
-      }
 
 /*-----------------------------------------------------------------------------*/
       /* "-sconf host_list" || "-mconf host_list" || "-aconf host_list" || "-Mconf file_list" || "-Aconf file_list" */
@@ -3843,36 +3894,6 @@ int sge_parse_qconf(char *argv[]) {
          continue;
       }
 
-/*-----------------------------------------------------------------------------*/
-      /* "-se exec_server" */
-      if (strcmp("-se", *spp) == 0) {
-         spp = sge_parser_get_next(spp);
-
-         /* resolve host */
-         hep = lCreateElem(EH_Type);
-         lSetHost(hep, EH_name, *spp);
-
-         switch (sge_resolve_host(hep, EH_name)) {
-         case CL_RETVAL_OK:
-            break;
-         default:
-            fprintf(stderr, MSG_SGETEXT_CANTRESOLVEHOST_S, lGetHost(hep, EH_name));
-            fprintf(stderr, "\n");
-            lFreeElem(&hep);
-            sge_parse_return = 1;
-            spp++;
-            continue;
-         }
-
-         if (qconf_show_object(os, param, QConfObj::EH, lGetHost(hep, EH_name)) != QConfShowStatus::OK) {
-            sge_parse_return = 1;
-         }
-         lFreeElem(&hep);
-
-         spp++;
-         continue;
-      }
-
 /*----------------------------------------------------------------------------*/
       /* "-dhgrp group,..." : CS-2306 C4 — comma-separated list of host groups */
       if (strcmp("-dhgrp", *spp) == 0) {
@@ -3901,40 +3922,6 @@ int sge_parse_qconf(char *argv[]) {
          answer_list_on_error_print_or_exit(&alp, stderr);
          lFreeList(&alp);
          lFreeList(&lp);
-         spp++;
-         continue;
-      }
-
-/*----------------------------------------------------------------------------*/
-
-      /* "-suser username" */
-
-      if (strcmp("-suser", *spp) == 0) {
-         lList *uList = nullptr;
-         bool first = true;
-
-         spp = sge_parser_get_next(spp);
-
-         lString2List(*spp, &uList, ST_Type, ST_name , ", ");
-         for_each_ep_lv(uep, uList) {
-            // the users are separated by a blank line, the first one is not preceded by one
-            if (first) {
-               first = false;
-            } else {
-               os << "\n";
-            }
-            /* CS-2928: a name that does not exist sets the exit status, and the
-             * list is still worked through so that every user it does name is
-             * rendered: "-suser a,b,c" reports on all three and fails
-             * afterwards, which is what the list reads in qmaster do as well
-             * (CS-2957). The command line stops after this operation (CS-2950). */
-            if (qconf_show_object(os, param, QConfObj::UU, lGetString(uep, ST_name)) !=
-                QConfShowStatus::OK) {
-               sge_parse_return = 1;
-            }
-         }
-
-         lFreeList(&uList);
          spp++;
          continue;
       }
