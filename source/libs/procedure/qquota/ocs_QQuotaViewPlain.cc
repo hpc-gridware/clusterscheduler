@@ -33,7 +33,7 @@
 #include "ocs_QQuotaViewBase.h"
 #include "ocs_QQuotaViewPlain.h"
 
-#include "msg_clients_common.h"
+#include "msg_qquota.h"
 
 /** @brief Build the plain text view
  * @param parameter the call's parameters

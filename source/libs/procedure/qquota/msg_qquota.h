@@ -48,7 +48,12 @@
 #define MSG_QQUOTA_P_OPT_USAGE        _MESSAGE(10004, _("display only selected projects"))
 #define MSG_QQUOTA_q_OPT_USAGE        _MESSAGE(10005, _("display only selected queues"))
 
-#define MSG_QQUOTA_HELP_WCPROJECT     _MESSAGE(10010, _("wildcard expression matching a project"))
-#define MSG_QQUOTA_HELP_WCPE          _MESSAGE(10011, _("wildcard expression matching a parallel environment"))
+#define MSG_QQUOTA_HELP_WCPROJECT     _MESSAGE(10006, _("wildcard expression matching a project"))
+#define MSG_QQUOTA_HELP_WCPE          _MESSAGE(10007, _("wildcard expression matching a parallel environment"))
+
+/* CS-2970: used only by this procedure, moved here from the general catalogues */
+#define MSG_HEADER_RULE               "resource quota rule"
+#define MSG_HEADER_LIMIT              "limit"
+#define MSG_HEADER_FILTER             "filter"
 
 // clang-format on

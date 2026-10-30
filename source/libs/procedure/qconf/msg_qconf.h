@@ -118,4 +118,76 @@
  * words the client uses for a command line that ends too early */
 #define MSG_QCONF_MISSINGARGUMENT_S                   _MESSAGE(12031, _("no option argument provided to " SFQ))
 
+/* CS-2970: used only by this procedure, moved here from the general catalogues */
+#define MSG_ANSWER_CONFIGXNOTDEFINED_S                _MESSAGE(12032, _("configuration " SFN " not defined"))
+#define MSG_CALENDAR_XISNOTACALENDAR_S                _MESSAGE(12033, _(SFN " is not a calendar"))
+#define MSG_CKPT_XISNOTCHKPINTERFACEDEF_S             _MESSAGE(12034, _(SFN " is not a checkpointing interface definition"))
+#define MSG_EXEC_XISNOTANEXECUTIONHOST_S              _MESSAGE(12035, _(SFN " is not an execution host"))
+#define MSG_PARALLEL_XNOTAPARALLELEVIRONMENT_S        _MESSAGE(12036, _(SFN " is not a parallel environment"))
+#define MSG_PROJECT_XISNOKNWOWNPROJECT_S              _MESSAGE(12037, _(SFN " is not known as project"))
+#define MSG_QCONF_NOXDEFINED_S                        _MESSAGE(12038, _("no " SFN " defined"))
+#define MSG_QCONF_NOEXECUTIONHOSTSDEFINED             _MESSAGE(12039, _("no execution hosts defined"))
+#define MSG_QCONF_NOEVENTCLIENTSREGISTERED            _MESSAGE(12040, _("no event clients registered"))
+#define MSG_NORQSFOUND                                _MESSAGE(12041, _("No resource quota set found"))
+#define MSG_RQS_REQUEST_DUPLICATE_NAME_S              _MESSAGE(12042, _("Resource quota replacement request contains rqs name " SFQ " multiple times"))
+#define MSG_TREE_NOSHARETREE                          _MESSAGE(12043, _("No sharetree"))
+#define MSG_TREE_CANTADDNODEXISNONUNIQUE_S            _MESSAGE(12044, _("Could not add node " SFN " to sharetree due to non-unique path"))
+#define MSG_TREE_SETTING                              _MESSAGE(12045, _("setting "))
+#define MSG_TREE_REMOVING                             _MESSAGE(12046, _("removing "))
+#define MSG_ANSWER_XISNOTVALIDSEENODESHARESLIST_S     _MESSAGE(12047, _(SFN " is not a valid argument, see node_shares_list format"))
+#define MSG_TREE_MODIFIEDSHARETREE                    _MESSAGE(12048, _("modified sharetree"))
+#define MSG_TREE_NOMIDIFIEDSHARETREE                  _MESSAGE(12049, _("no modifications to sharetree"))
+#define MSG_TREE_CANTDELROOTNODE                      _MESSAGE(12050, _("can't delete root node"))
+#define MSG_TREE_CANTDELNODESWITHCHILD                _MESSAGE(12051, _("can't delete nodes with children"))
+#define MSG_TREE_UNABLETOLACATEXINSHARETREE_S         _MESSAGE(12052, _("Unable to locate " SFN " in sharetree"))
+#define MSG_TABLE_HOST                                "HOST"
+#define MSG_TABLE_PROCESSORS                          "PROCESSORS"
+#define MSG_TABLE_SOCKETS                             "NSOC"
+#define MSG_TABLE_CORES                               "NCOR"
+#define MSG_TABLE_ARCH                                "ARCH"
+#define MSG_TABLE_SUM_F                               "SUM"
+#define MSG_TABLE_EV_ID                               "ID"
+#define MSG_TABLE_EV_NAME                             "NAME"
+#define MSG_TABLE_EV_POOL                             "POOL"
+#define MSG_TABLE_SIZE                                "SIZE"
+
+/* CS-2822: the qconf write procedure, which applies a set of objects. Moved here
+ * from msg_qmaster.h with the procedure's other messages (CS-2970).
+ *
+ * The two dry-run lines repeat the wording of MSG_QCONF_DRYRUNWOULDADD_S and
+ * MSG_QCONF_DRYRUNWOULDMODIFY_S in the qconf client on purpose. Add against
+ * modify is decided here, in qmaster, because only this side holds the master
+ * list - so this is the side that has to say which it would be. The client keeps
+ * its own copies for the paths that are not procedures yet, the bulk delete and
+ * the configuration, and the two catalogues cannot include each other: both
+ * files are called msg_qconf.h and the bands must not overlap. */
+#define MSG_QCONF_WRITEWOULDADD_S                  _MESSAGE(12053, _("[dry-run] would add " SFQ))
+#define MSG_QCONF_WRITEWOULDMODIFY_S               _MESSAGE(12054, _("[dry-run] would modify " SFQ))
+#define MSG_QCONF_WRITEWRONGTARGET_SS              _MESSAGE(12055, _("the write procedure was addressed to " SFQ " but writes " SFQ))
+#define MSG_QCONF_WRITEEMPTYTEXT_S                 _MESSAGE(12056, _(PFNMAX ": no object text was sent"))
+#define MSG_QCONF_WRITEEMPTYTEXT                   _MESSAGE(12057, _("no object text was sent"))
+/* moved here from clients/qconf/msg_qconf.h (5251): the names of "-Mrqs <file>
+ * <names>" are selected where the file is parsed, which is qmaster (CS-2823) */
+#define MSG_RQS_NOTFOUNDINFILE_SS                  _MESSAGE(12058, _("resource quota set " SFQ " not found in file " PFQMAX))
+/* Only a type whose text holds a list can produce this, and of those only the
+ * resource quota sets: the complex list replaces by design, so what its text
+ * omits is deleted on purpose (CS-2523). Hence the switch in the wording. */
+#define MSG_QCONF_WRITENOTREMOVED_S                _MESSAGE(12059, _(SFQ " is still there: a modify writes what the text holds and removes nothing - delete it with \"qconf -drqs\""))
+
+/* CS-2823: the complex list is a replacing write - what its text does not hold
+ * is deleted. The dry run says so in the same shape as the add and the modify
+ * above. */
+#define MSG_QCONF_WRITEWOULDDELETE_S               _MESSAGE(12060, _("[dry-run] would delete " SFQ))
+
+/* CS-2823: the three ways a replacing write is refused before anything is
+ * touched. All three are programming errors rather than user mistakes - no
+ * switch produces them - which is why they are refusals and not warnings: a
+ * replace that goes ahead on a wrong premise deletes. */
+#define MSG_QCONF_WRITEREPLACENOTLIST              _MESSAGE(12061, _("a replacing write needs a text that holds a list of objects"))
+#define MSG_QCONF_WRITENOREPLACE_S                 _MESSAGE(12062, _("objects of type " SFQ " cannot be deleted by a replacing write"))
+#define MSG_QCONF_WRITEREPLACEWITHSELECT           _MESSAGE(12063, _("a replacing write cannot be restricted to selected object names"))
+#define MSG_QCONF_WRITENAMEWITHLIST                _MESSAGE(12064, _("a named write cannot be a list: the name would be given to every object the text holds"))
+#define MSG_QCONF_WRITEWOULDLEAVE_S                _MESSAGE(12065, _("[dry-run] would leave " SFQ " unchanged"))
+#define MSG_QCONF_WRITENOCHANGE                    _MESSAGE(12066, _("nothing was changed: what the text describes is already stored"))
+
 // clang-format on

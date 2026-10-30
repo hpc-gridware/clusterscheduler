@@ -58,7 +58,6 @@
 #include "sched/sge_select_queue.h"
 
 #include "ocs_QStatModelBase.h"
-#include "msg_clients_common.h"
 #include "msg_qstat.h"
 
 ocs::QStatModelBase::~QStatModelBase() {

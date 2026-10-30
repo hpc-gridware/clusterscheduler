@@ -42,6 +42,7 @@
 #include "ocs_client_parse.h"
 #include "msg_common.h"
 #include "msg_clients_common.h"
+#include "../msg_procedure.h"
 
 bool
 ocs::QQuotaParameterClient::show_usage(FILE *fp) {

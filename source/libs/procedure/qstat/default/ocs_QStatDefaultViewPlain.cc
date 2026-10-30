@@ -38,7 +38,6 @@
 #include "qstat/default/ocs_QStatDefaultViewPlain.h"
 #include "qstat/msg_qstat.h"
 
-#include "msg_clients_common.h"
 
 /** @brief Print a double in eight columns, whatever its magnitude
  *

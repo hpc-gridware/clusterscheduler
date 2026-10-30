@@ -38,7 +38,6 @@
 #include "uti/sge_string.h"
 
 #include "procedure/qconf/msg_qconf.h"
-#include "msg_common.h"
 #include "ocs_QConfShareTreeQmaster.h"
 #include "sge_sharetree_qmaster.h"
 

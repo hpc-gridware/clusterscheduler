@@ -28,7 +28,6 @@
 #include <vector>
 
 #include "sgeobj/cull/sge_all_listsL.h"
-#include "sgeobj/msg_sgeobjlib.h"
 #include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_centry.h"
@@ -39,7 +38,7 @@
 #include "uti/sge_rmon_macros.h"
 
 #include "msg_common.h"
-#include "msg_qmaster.h"
+#include "procedure/qconf/msg_qconf.h"
 #include "ocs_QConfWriteQmaster.h"
 #include "configuration_qmaster.h"
 #include "sched_conf_qmaster.h"

@@ -54,10 +54,8 @@
 #include "msg_qconf.h"
 
 #include "msg_common.h"
-#include "sgeobj/msg_sgeobjlib.h"
 /* MSG_NORQSFOUND is in the clients' shared catalogue; libs/sgeobj reaches for
  * that header from the library side too, see ocs_QConfModelBase.cc */
-#include "msg_clients_common.h"
 
 /* qconf_build_fields_fn providers (KTD8): objects with a shared static field table
  * report owned=false; objects whose import field list is built on demand report

@@ -32,7 +32,7 @@
 #include "spool/flatfile/ocs_spool_json.h"
 #include "uti/sge_dstring.h"
 
-#include "msg_common.h"
+#include "../msg_qconf.h"
 
 namespace ocs {
    /** @brief `qconf -stl`: the qmaster thread pools and their sizes

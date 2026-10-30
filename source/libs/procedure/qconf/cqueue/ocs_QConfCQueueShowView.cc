@@ -37,7 +37,6 @@
 
 #include "ocs_QConfCQueueShowView.h"
 
-#include "msg_common.h"
 
 /** @brief What `qconf_cstr()` does in the client, for the library side
  *

@@ -56,7 +56,6 @@
 #include "qstat/msg_qstat.h"
 
 #include "parse_qsub.h"
-#include "msg_clients_common.h"
 #include "sgeobj/cull_parse_util.h"
 #include "sgeobj/ocs_BindingStrategy.h"
 #include "sgeobj/ocs_BindingType.h"

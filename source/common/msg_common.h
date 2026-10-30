@@ -43,17 +43,6 @@
 
 // clang-format off
 
-#define MSG_TABLE_HOST                             "HOST"
-#define MSG_TABLE_PROCESSORS                       "PROCESSORS"
-#define MSG_TABLE_SOCKETS                          "NSOC"
-#define MSG_TABLE_CORES                            "NCOR"
-#define MSG_TABLE_ARCH                             "ARCH"
-#define MSG_TABLE_SUM_F                            "SUM"
-#define MSG_TABLE_EV_ID                            "ID"
-#define MSG_TABLE_EV_NAME                          "NAME"
-#define MSG_TABLE_EV_POOL                          "POOL"
-#define MSG_TABLE_SIZE                             "SIZE"
-
 #define MSG_GDI_ARGUMENTSYNTAX_OA_ALLOCATION_RULE      "allocation_rule         <int> | $pe_slots | $fill_up | $round_robin"
 #define MSG_GDI_ARGUMENTSYNTAX_OA_ACCOUNT_STRING       "account_string          account_name"
 #define MSG_GDI_ARGUMENTSYNTAX_OA_BINDING_FILTER_STR   "topology_string         topology string where lower case letters show masked units"
@@ -237,25 +226,10 @@
 #define MSG_ANSWER_INVALIDFORMAT                   _MESSAGE(23118, _("invalid format"))
 
 #define MSG_TREE_CHANGEDSHARETREE                  _MESSAGE(23121, _("changed sharetree"))
-#define MSG_TREE_NOSHARETREE                       _MESSAGE(23122, _("No sharetree"))
-#define MSG_TREE_CANTADDNODEXISNONUNIQUE_S         _MESSAGE(23123, _("Could not add node " SFN " to sharetree due to non-unique path"))
-#define MSG_TREE_SETTING                           _MESSAGE(23124, _("setting "))
-#define MSG_TREE_REMOVING                          _MESSAGE(23125, _("removing "))
-#define MSG_ANSWER_XISNOTVALIDSEENODESHARESLIST_S  _MESSAGE(23126, _(SFN " is not a valid argument, see node_shares_list format"))
-#define MSG_TREE_MODIFIEDSHARETREE                 _MESSAGE(23127, _("modified sharetree"))
-#define MSG_TREE_NOMIDIFIEDSHARETREE               _MESSAGE(23128, _("no modifications to sharetree"))
 #define MSG_ANSWER_NOLISTNAMEPROVIDEDTOAUX_S       _MESSAGE(23129, _("no list_name provided to \"-au " SFN "\""))
 
 #define MSG_ANSWER_NOLISTNAMEPROVIDEDTODUX_S       _MESSAGE(23130, _("no list_name provided to \"-du " SFN "\""))
-#define MSG_TREE_CANTDELROOTNODE                   _MESSAGE(23131, _("can't delete root node"))
-#define MSG_TREE_CANTDELNODESWITHCHILD             _MESSAGE(23132, _("can't delete nodes with children"))
 #define MSG_ANSWER_XISNOTAVALIDOPTIONY_SU          _MESSAGE(23133, _(SFQ " is not a valid option " sge_u32))
-
-#define MSG_CALENDAR_XISNOTACALENDAR_S             _MESSAGE(23135, _(SFN " is not a calendar"))
-#define MSG_CKPT_XISNOTCHKPINTERFACEDEF_S          _MESSAGE(23136, _(SFN " is not a checkpointing interface definition"))
-#define MSG_EXEC_XISNOTANEXECUTIONHOST_S           _MESSAGE(23137, _(SFN " is not an execution host"))
-
-#define MSG_PARALLEL_XNOTAPARALLELEVIRONMENT_S     _MESSAGE(23139, _(SFN " is not a parallel environment"))
 
 #define MSG_ANSWER_MISSINGFILENAMEASOPTIONARG_S    _MESSAGE(23142, _(SFN ": missing filename as option argument"))
 
@@ -265,7 +239,6 @@
 
 #define MSG_SCHEDD_CHANGEDSCHEDULERCONFIGURATION   _MESSAGE(23151, _("changed scheduler configuration"))
 #define MSG_USER_XISNOKNOWNUSER_S                  _MESSAGE(23152, _(SFN " is not known as user"))
-#define MSG_PROJECT_XISNOKNWOWNPROJECT_S           _MESSAGE(23153, _(SFN " is not known as project"))
 #define MSG_ANSWER_NEEDHOSTNAMETODELLOCALCONFIG    _MESSAGE(23154, _("Need hostname to delete local configuration"))
 #define MSG_ANSWER_INVALIDOPTIONARGX_S             _MESSAGE(23155, _("invalid option argument " SFQ))
 #define MSG_SRC_X_HELP_USAGE_S                     _MESSAGE(23156, _("Usage: " SFN " -help"))
@@ -278,13 +251,9 @@
 #define MSG_QCONF_XREMOVEDFROMYLIST_SS             _MESSAGE(23163, _(SFN " removed from " SFN " list"))
 #define MSG_QCONF_CANTREADCONFIG_S                 _MESSAGE(23164, _("can't read configuration: " SFN))
 #define MSG_QCONF_CANTREADSHARETREEX_S             _MESSAGE(23166, _("cant read sharetree: " SFN))
-#define MSG_QCONF_NOXDEFINED_S                     _MESSAGE(23167, _("no " SFN " defined"))
-#define MSG_QCONF_NOEXECUTIONHOSTSDEFINED          _MESSAGE(23168, _("no execution hosts defined"))
-#define MSG_QCONF_NOEVENTCLIENTSREGISTERED         _MESSAGE(23169, _("no event clients registered"))
 #define MSG_PARSE_XOPTIONWRONGARGUMENT_SS          _MESSAGE(23170, _("ERROR! " SFN " option contains errors: " SFN))
 #define MSG_ANSWER_COMPLEXXALREADYEXISTS_SS        _MESSAGE(23172, _("complex with name " SFN " or shortcut " SFN " already exists"))
 
-#define MSG_ANSWER_CONFIGXNOTDEFINED_S             _MESSAGE(23201, _("configuration " SFN " not defined"))
 #define MSG_ANSWER_CONFIGXALREADYEXISTS_S          _MESSAGE(23202, _("configuration " SFN " already exists"))
 #define MSG_ANSWER_CONFIGXDOESNOTEXIST_S           _MESSAGE(23203, _("configuration " SFN " does not exist"))
 #define MSG_ANSWER_CONFIGUNCHANGED                 _MESSAGE(23204, _("configuration unchanged"))
@@ -292,7 +261,6 @@
 #define MSG_ANSWER_ERRORREADINGCONFIGFROMFILEX_S   _MESSAGE(23206, _("error reading configuration from file " PFNMAX))
 #define MSG_SGETEXT_NOADMINHOST_S                  _MESSAGE(23207, _("denied: host " SFQ " is no admin host"))
 #define MSG_SGETEXT_NOSUBMITHOST_S                 _MESSAGE(23208, _("denied: host " SFQ " is no submit host"))
-#define MSG_TREE_UNABLETOLACATEXINSHARETREE_S      _MESSAGE(23209, _("Unable to locate " SFN " in sharetree"))
 #define MSG_OBJ_NOSTREEELEM                        _MESSAGE(23210, _("no sharetree element"))
 
 #define MSG_STREE_NOVALIDNODEREF_U                 _MESSAGE(23222, _("found reference to node " sge_u32 " but no specification"))
@@ -1174,8 +1142,6 @@
 
 #define MSG_GDI_USAGE_ectx_OPT            "[-ectx client|server]"
 #define MSG_GDI_UTEXT_ectx_OPT            _MESSAGE(60748, _("specifies the execution context for the command"))
-
-#define MSG_GDI_AR_DOES_NOT_EXIT          _MESSAGE(60749, _("Requested AR does not exist"))
 
 #define MSG_OBJ_ROLE                      _MESSAGE(60750, _("role"))
 

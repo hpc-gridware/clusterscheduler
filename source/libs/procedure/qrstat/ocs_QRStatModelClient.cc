@@ -30,7 +30,7 @@
 
 #include "ocs_QRStatModelClient.h"
 
-#include "msg_common.h"
+#include "msg_qrstat.h"
 #include "ocs_QRStatParameterClient.h"
 
 bool ocs::QRStatModelClient::fetch_data(lList **answer_list, QRStatParameter& parameter) {

@@ -29,7 +29,7 @@
 
 #include "ocs_QRStatModelServer.h"
 
-#include "msg_common.h"
+#include "msg_qrstat.h"
 
 bool ocs::QRStatModelServer::fetch_data(lList **answer_list, QRStatParameter& parameter) {
    DENTER(TOP_LAYER);

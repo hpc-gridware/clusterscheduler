@@ -46,6 +46,7 @@
 #include "msg_common.h"
 #include "msg_qhost.h"
 #include "msg_clients_common.h"
+#include "../msg_procedure.h"
 
 #include "qstat/ocs_QStatParameter.h"
 #include "ocs_QHostParameterClient.h"

@@ -32,7 +32,7 @@
 #include "sgeobj/cull/sge_host_EH_L.h"
 #include "sgeobj/cull/sge_host_HL_L.h"
 
-#include "msg_common.h"
+#include "../msg_qconf.h"
 
 namespace ocs {
    /** @brief `qconf -sep`: the processor table, with a total

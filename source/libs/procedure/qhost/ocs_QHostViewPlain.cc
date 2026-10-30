@@ -30,7 +30,7 @@
 
 #include "qhost/ocs_QHostViewPlain.h"
 
-#include "msg_clients_common.h"
+#include "msg_qhost.h"
 
 void
 ocs::QHostViewPlain::start(std::ostream &os) {
