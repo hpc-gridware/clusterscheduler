@@ -2284,6 +2284,53 @@ qconf_delete_hgroup_list([[maybe_unused]] std::ostream &os, const qconf_op &op) 
    return qconf_delete_list(QConfObj::HGRP, &groups);
 }
 
+/** @brief "-dconf host,...": the configurations of the hosts of the list (CS-2967)
+ *
+ * A host that does not resolve is reported and its name deleted as typed, and
+ * no list at all is refused with the message it always had.
+ *
+ * @param os unused
+ * @param op the operation
+ * @return 0 when every configuration was deleted, 1 otherwise
+ */
+static int
+qconf_delete_conf_hosts([[maybe_unused]] std::ostream &os, const qconf_op &op) {
+   if (op.args.empty()) {
+      fprintf(stderr, "%s\n", MSG_ANSWER_NEEDHOSTNAMETODELLOCALCONFIG);
+      return 1;
+   }
+   int ret = 0;
+   std::string list = op.args[0];
+   lListElem *host_ep = lCreateElem(EH_Type);
+   lList *conf_list = nullptr;
+   for (const char *cp = sge_strtok(list.data(), ","); cp != nullptr && *cp != '\0';
+        cp = sge_strtok(nullptr, ",")) {
+      lSetHost(host_ep, EH_name, cp);
+      if (sge_resolve_host(host_ep, EH_name) != CL_RETVAL_OK) {
+         fprintf(stderr, MSG_SGETEXT_CANTRESOLVEHOST_S, cp);
+         fprintf(stderr, "\n");
+         ret = 1;
+      }
+      lAddElemHost(&conf_list, CONF_name, lGetHost(host_ep, EH_name), CONF_Type);
+   }
+   if (delete_configs(conf_list) != 0) {
+      ret = 1;
+   }
+   lFreeList(&conf_list);
+   lFreeElem(&host_ep);
+   return ret;
+}
+
+/** @brief "-Dconf file|dir": the configurations the files are named after
+ * @param os the stream the output is written to
+ * @param op the operation
+ * @return the status of qconf_conf_delete_path()
+ */
+static int
+qconf_delete_conf_path(std::ostream &os, const qconf_op &op) {
+   return qconf_conf_delete_path(os, op.args[0].c_str());
+}
+
 /** @brief "-Drqs file|dir": the resource quota sets a file names, through the list reader of their type
  * @param os the stream the output is written to
  * @param op the operation
@@ -2298,9 +2345,10 @@ qconf_delete_rqs_path(std::ostream &os, const qconf_op &op) {
  *
  * Every "-d<obj>" and "-D<obj>" whose block did nothing but call
  * qconf_delete_names() or qconf_delete_obj(), possibly after a permission check.
- * "-dhgrp" and "-Drqs" are rows with a delete of their own (CS-2967). The ones
- * with handling of their own stay blocks: "-de", "-dh"/"-ds", "-dconf"/"-Dconf";
- * "-du"/"-dm"/"-do" and "-dstnode" are actions, see qconf_action_table.
+ * "-dhgrp", "-Drqs", "-dconf" and "-Dconf" are rows with a delete of their own
+ * (CS-2967). The ones with handling of their own stay blocks: "-de" and
+ * "-dh"/"-ds"; "-du"/"-dm"/"-do" and "-dstnode" are actions, see
+ * qconf_action_table.
  */
 static const qconf_delete_entry qconf_delete_table[] = {
    {"-dcal",   QConfObj::CAL,  QConfDeleteKind::NAMES, QConfClientCheck::NONE},
@@ -2327,6 +2375,8 @@ static const qconf_delete_entry qconf_delete_table[] = {
    {"-Dq",     QConfObj::CQ,   QConfDeleteKind::FILE,  QConfClientCheck::MANAGER_ON_ADMIN_HOST},
    {"-dhgrp",  QConfObj::HGRP, QConfDeleteKind::NAMES, QConfClientCheck::MANAGER, qconf_delete_hgroup_list},
    {"-Drqs",   QConfObj::RQS,  QConfDeleteKind::FILE,  QConfClientCheck::MANAGER_ON_ADMIN_HOST, qconf_delete_rqs_path},
+   {"-dconf",  QConfObj::CONF, QConfDeleteKind::NAMES, QConfClientCheck::NONE, qconf_delete_conf_hosts},
+   {"-Dconf",  QConfObj::CONF, QConfDeleteKind::FILE,  QConfClientCheck::MANAGER_ON_ADMIN_HOST, qconf_delete_conf_path},
 };
 
 /**
@@ -2504,6 +2554,80 @@ qconf_names_user_list(const qconf_op &op, std::vector<std::string> &names, [[may
    lFreeList(&users);
 }
 
+/** @brief The host list of the configuration switches, each host resolved (CS-2967)
+ *
+ * "host1,host2,..." as sge_strtok() takes it apart - up to the first empty
+ * entry -, "global" when no list is given, and the alias "global" in any case
+ * spelled as the global configuration's name. A host that does not resolve is
+ * reported with the reason; it is left out unless @p keep_unresolved, which is
+ * what "-mconf" always did - it edits the configuration under the name as typed.
+ *
+ * @param op the operation
+ * @param names receives the configuration names
+ * @param failed set when a host was left out
+ * @param keep_unresolved serve a host that does not resolve under its name as typed
+ */
+static void
+qconf_names_conf_hosts(const qconf_op &op, std::vector<std::string> &names, bool &failed,
+                       const bool keep_unresolved) {
+   std::string list = op.args.empty() ? SGE_GLOBAL_NAME : op.args[0];
+   lListElem *host_ep = lCreateElem(EH_Type);
+   for (const char *cp = sge_strtok(list.data(), ","); cp != nullptr && *cp != '\0';
+        cp = sge_strtok(nullptr, ",")) {
+      lSetHost(host_ep, EH_name, cp);
+      const int ret = sge_resolve_host(host_ep, EH_name);
+      if (ret != CL_RETVAL_OK) {
+         fprintf(stderr, MSG_SGETEXT_CANTRESOLVEHOST_SS, cp, cl_get_error_text(ret));
+         fprintf(stderr, "\n");
+         if (!keep_unresolved) {
+            failed = true;
+            continue;
+         }
+      }
+      const char *hostname = lGetHost(host_ep, EH_name);
+      names.emplace_back((strcasecmp(hostname, "global") == 0) ? SGE_GLOBAL_NAME : hostname);
+   }
+   lFreeElem(&host_ep);
+}
+
+/** @brief "-sconf"/"-aconf": the host list, a host that does not resolve left out
+ * @param op the operation
+ * @param names receives the configuration names
+ * @param failed set when a host was left out
+ */
+static void
+qconf_names_conf_strict(const qconf_op &op, std::vector<std::string> &names, bool &failed) {
+   qconf_names_conf_hosts(op, names, failed, false);
+}
+
+/** @brief "-mconf": the host list, a host that does not resolve kept under its name as typed
+ * @param op the operation
+ * @param names receives the configuration names
+ * @param failed unused, every host is served
+ */
+static void
+qconf_names_conf_lenient(const qconf_op &op, std::vector<std::string> &names, bool &failed) {
+   qconf_names_conf_hosts(op, names, failed, true);
+}
+
+/** @brief "-Aconf"/"-Mconf": the file or directory list, "global" when none is given
+ *
+ * The files are named after the hosts, so a missing list means the file of the
+ * global configuration, as it always did.
+ *
+ * @param op the operation
+ * @param names receives the paths
+ * @param failed unused
+ */
+static void
+qconf_names_conf_paths(const qconf_op &op, std::vector<std::string> &names, [[maybe_unused]] bool &failed) {
+   std::string list = op.args.empty() ? SGE_GLOBAL_NAME : op.args[0];
+   for (const char *cp = sge_strtok(list.data(), ","); cp != nullptr && *cp != '\0';
+        cp = sge_strtok(nullptr, ",")) {
+      names.emplace_back(cp);
+   }
+}
+
 /** @brief How a table driven add or modify switch writes */
 enum class QConfWriteKind {
    EDIT,       ///< "-a<obj>"/"-m<obj> [name]": qconf_edit_obj_procedure()
@@ -2542,6 +2666,8 @@ struct qconf_write_entry {
    const char *list_read;     ///< EDIT_LIST: the read of the list, nullptr for the type's OBJECT_LIST read
    const char *list_sub;      ///< EDIT_LIST: the sub-procedure of that read, or nullptr
    bool (*missing)(const qconf_op &op); ///< a report of its own for a missing argument, or nullptr
+   bool blank_line_between;   ///< with names: the objects are separated by a blank line
+   int (*apply)(std::ostream &os, const char *path); ///< APPLY: the reader of its own, nullptr for qconf_apply_obj()
 };
 
 /** @brief The add and modify switches that are one engine call each (CS-2954)
@@ -2555,9 +2681,10 @@ struct qconf_write_entry {
  * the host resolved (or the template for "-ae" without a name), or each name
  * of a list edited on its own (CS-2967). "-arqs"/"-mrqs"/"-mc" edit a list of
  * objects as one text and "-Arqs"/"-Mrqs"/"-Mc" apply one, with the modes of
- * their type (CS-2967). The ones with handling of their own stay blocks: the
- * reserved host group switches and the host configuration; the membership
- * switches and "-astnode"/"-mstnode" are actions, see qconf_action_table.
+ * their type (CS-2967), and the host configuration is served host by host or
+ * file by file (CS-2967). The ones with handling of their own stay blocks: the
+ * reserved host group switches; the membership switches and "-astnode"/
+ * "-mstnode" are actions, see qconf_action_table.
  *
  * "-mce" checked qconf_is_manager() again after qconf_is_manager_on_admin_host(),
  * which already exits for a non-manager; the row keeps the first check only.
@@ -2604,6 +2731,18 @@ static const qconf_write_entry qconf_write_table[] = {
    {"-Mc",     QConfObj::CE,   QConfWriteKind::APPLY, nullptr,     false, QConfClientCheck::NONE,
     nullptr, ocs::QConfWriteParameter::MODE_LIST | ocs::QConfWriteParameter::MODE_REPLACE, nullptr, nullptr,
     qconf_write_no_file},
+   /* CS-2967: the host configuration. One object per host, so a host list is
+    * served host by host with a blank line between them, and the files of
+    * "-Aconf"/"-Mconf" are named after their hosts, read by
+    * qconf_conf_apply_path(). */
+   {"-aconf",  QConfObj::CONF, QConfWriteKind::EDIT,  nullptr,     false, QConfClientCheck::MANAGER_ON_ADMIN_HOST,
+    qconf_names_conf_strict, 0u, nullptr, nullptr, nullptr, true, nullptr},
+   {"-mconf",  QConfObj::CONF, QConfWriteKind::EDIT,  nullptr,     false, QConfClientCheck::MANAGER_ON_ADMIN_HOST,
+    qconf_names_conf_lenient, 0u, nullptr, nullptr, nullptr, true, nullptr},
+   {"-Aconf",  QConfObj::CONF, QConfWriteKind::APPLY, nullptr,     false, QConfClientCheck::NONE,
+    qconf_names_conf_paths, 0u, nullptr, nullptr, nullptr, true, qconf_conf_apply_path},
+   {"-Mconf",  QConfObj::CONF, QConfWriteKind::APPLY, nullptr,     false, QConfClientCheck::NONE,
+    qconf_names_conf_paths, 0u, nullptr, nullptr, nullptr, true, qconf_conf_apply_path},
    {"-Acal",   QConfObj::CAL,  QConfWriteKind::APPLY, nullptr,     false, QConfClientCheck::NONE},
    {"-Ackpt",  QConfObj::CK,   QConfWriteKind::APPLY, nullptr,     false, QConfClientCheck::NONE},
    {"-Ae",     QConfObj::EH,   QConfWriteKind::APPLY, nullptr,     false, QConfClientCheck::NONE},
@@ -2673,15 +2812,27 @@ qconf_run_write(std::ostream &os, ocs::QConfParameterClient &param, const qconf_
    qconf_client_check(entry->check, username, hostname);
 
    int failed;
-   if (entry->kind == QConfWriteKind::EDIT && entry->names != nullptr) {
+   if (entry->names != nullptr) {
       /* one round trip per name; a name that fails does not stop the others */
       std::vector<std::string> names;
       bool left_out = false;
       entry->names(op, names, left_out);
       failed = left_out ? 1 : 0;
+      bool first = true;
       for (const std::string &name : names) {
-         if (qconf_edit_obj_procedure(param, entry->object, entry->switch_name, name.c_str(),
-                                      uid, gid, entry->unchanged_is_ok) != 0) {
+         if (entry->blank_line_between && !first) {
+            os << "\n";
+         }
+         first = false;
+         int one;
+         if (entry->kind == QConfWriteKind::APPLY) {
+            one = (entry->apply != nullptr) ? entry->apply(os, name.c_str())
+                                            : qconf_apply_obj(os, entry->object, name.c_str(), nullptr, entry->mode);
+         } else {
+            one = qconf_edit_obj_procedure(param, entry->object, entry->switch_name, name.c_str(),
+                                           uid, gid, entry->unchanged_is_ok);
+         }
+         if (one != 0) {
             failed = 1;
          }
       }
@@ -3006,6 +3157,7 @@ static const qconf_sub_procedure_entry qconf_sub_procedure_table[] = {
    {"-sprj",           nullptr,                                QConfAnswerReport::OUTPUT_ON_FAILURE},
    {"-se",             nullptr,                                QConfAnswerReport::OUTPUT_ON_FAILURE, qconf_names_one_host, false},
    {"-suser",          nullptr,                                QConfAnswerReport::OUTPUT_ON_FAILURE, qconf_names_user_list, true},
+   {"-sconf",          nullptr,                                QConfAnswerReport::OUTPUT_ON_FAILURE, qconf_names_conf_strict, true},
    {"-secl",           ocs::QConfParameter::EVENT_CLIENT_LIST, QConfAnswerReport::OUTPUT_ON_FAILURE},
    {"-sep",            ocs::QConfParameter::PROCESSOR_LIST,    QConfAnswerReport::OUTPUT_ON_FAILURE},
    {"-stl",            ocs::QConfParameter::THREAD_POOL_LIST,  QConfAnswerReport::OUTPUT_ON_FAILURE},
@@ -3116,7 +3268,6 @@ qconf_run_sub_procedure(std::ostream &os, ocs::QConfParameterClient &param, cons
    DRETURN(failed ? QConfOpResult::FAILED : QConfOpResult::OK);
 }
 
-/*------------------------------------------------------------*/
 /** @brief Work through the `qconf` command line, one switch at a time
  *
  * `qconf` accepts several switches in one invocation and applies them in the
@@ -3611,201 +3762,6 @@ int sge_parse_qconf(char *argv[]) {
       continue;
    }
 
-/*-----------------------------------------------------------------------------*/
-      /* "-sconf host_list" || "-mconf host_list" || "-aconf host_list" || "-Mconf file_list" || "-Aconf file_list" */
-      /* file list is also host list */
-      if ((strcmp("-sconf", *spp) == 0) ||
-         (strcmp("-aconf", *spp) == 0) ||
-         (strcmp("-mconf", *spp) == 0) ||
-         (strcmp("-Mconf", *spp) == 0) ||
-         (strcmp("-Aconf", *spp) == 0)) {
-         typedef enum {
-            ACTION_sconf = 0,
-            ACTION_aconf,
-            ACTION_mconf,
-            ACTION_Aconf,
-            ACTION_Mconf
-         } action_enum;
-         action_enum action = ACTION_sconf;
-         char *host_list = nullptr;
-         int ret, first = 1;
-         lListElem *host_ep;
-         const char *hostname;
-
-         if (!strcmp("-aconf", *spp)) {
-            qconf_is_manager_on_admin_host(username, qualified_hostname);
-            action = ACTION_aconf;
-         } else if (!strcmp("-mconf", *spp)) {
-            qconf_is_manager_on_admin_host(username, qualified_hostname);
-            action = ACTION_mconf;
-         } else if (!strcmp("-Aconf", *spp)) {
-            action = ACTION_Aconf;
-         } else if (!strcmp("-Mconf", *spp)) {
-            action = ACTION_Mconf;
-         }
-
-         if (!sge_next_is_an_opt(spp))  {
-            spp = sge_parser_get_next(spp);
-            host_list = sge_strdup(nullptr, *spp);
-         } else {
-            host_list = sge_strdup(nullptr, SGE_GLOBAL_NAME);
-         }
-
-         /* host_list might look like host1,host2,... */
-         host_ep = lCreateElem(EH_Type);
-
-         for ((cp = sge_strtok(host_list, ",")); cp && *cp;
-             (cp = sge_strtok(nullptr, ","))) {
-
-            if (!first) {
-               os << "\n";
-            }
-            first = 0;
-
-            /* CS-2311 C2+C3: -Aconf/-Mconf take a file OR a directory; the host
-             * key is the file basename and each is upserted (flag 3). The basename
-             * resolution happens per file inside qconf_conf_apply_path(). */
-            if (action == ACTION_Aconf || action == ACTION_Mconf) {
-               if (qconf_conf_apply_path(os, cp) != 0) {
-                  sge_parse_return = 1;
-               }
-               continue;
-            }
-
-            /* -sconf/-aconf/-mconf: cp is a host name */
-            lSetHost(host_ep, EH_name, cp);
-
-            switch ((ret=sge_resolve_host(host_ep, EH_name))) {
-            case CL_RETVAL_OK:
-               break;
-            default:
-               fprintf(stderr, MSG_SGETEXT_CANTRESOLVEHOST_SS, cp, cl_get_error_text(ret));
-               fprintf(stderr, "\n");
-               break;
-            }
-            hostname = lGetHost(host_ep, EH_name);
-
-            if (ret != CL_RETVAL_OK && (action == ACTION_sconf || action == ACTION_aconf) ) {
-               sge_parse_return = 1;
-               continue;
-            }
-
-            if (action == ACTION_sconf) {
-               /* CS-2820: only the leaf moved. What this block shares with
-                * -aconf/-mconf/-Aconf/-Mconf is the argument handling - the
-                * comma separated host list, sge_resolve_host() per entry and the
-                * blank line between blocks - not the object, so splitting the
-                * block would have copied exactly the parts most likely to drift.
-                * The "global" alias is resolved here because it is an argument
-                * spelling, not a property of the object. */
-               const char *cfn = (strcasecmp(hostname, "global") == 0) ? SGE_GLOBAL_NAME : hostname;
-
-               /* A configuration that does not exist sets the exit status and
-                * the host list is still worked through: the others still have
-                * to be shown. The command line stops after this operation
-                * (CS-2950). */
-               if (qconf_show_object(os, param, QConfObj::CONF, cfn) != QConfShowStatus::OK) {
-                  sge_parse_return = 1;
-               }
-            } else if (action == ACTION_aconf || action == ACTION_mconf) {
-               /* CS-2311 C2: "-aconf" and "-mconf" both upsert - add when the
-                * host has no configuration yet, modify when it has. That stays
-                * true without a flag now, because sge_mod_configuration() is
-                * itself an upsert (CS-2823).
-                *
-                * The bare GET this replaces is the hole the step closes: it
-                * could not see whether the output was reduced and wrote back
-                * what it had been shown. The "global" spelling is resolved the
-                * same way the read resolves it, so both halves of the round trip
-                * name the object alike. */
-               const char *cfn = (strcasecmp(hostname, "global") == 0) ? SGE_GLOBAL_NAME : hostname;
-
-               if (qconf_edit_obj_procedure(param, QConfObj::CONF,
-                                            (action == ACTION_aconf) ? "-aconf" : "-mconf",
-                                            cfn, uid, gid) != 0) {
-                  sge_parse_return = 1;
-               }
-            }
-
-         } /* end for */
-
-         sge_free(&host_list);
-         lFreeElem(&host_ep);
-
-         spp++;
-         continue;
-      }
-
-/*----------------------------------------------------------------------------*/
-      /* "-dconf config_list" */
-      if (strcmp("-dconf", *spp) == 0) {
-         char *host_list = nullptr;
-         lListElem *host_ep = nullptr;
-         lList *conf_list = nullptr;
-
-         /* no adminhost/manager check needed here */
-
-         if (!sge_next_is_an_opt(spp))  {
-            spp = sge_parser_get_next(spp);
-
-            host_list = sge_strdup(nullptr, *spp);
-            host_ep = lCreateElem(EH_Type);
-
-            /* CS-2754: collect the names, then delete them in one request */
-            for ((cp = sge_strtok(host_list, ",")); cp && *cp;
-                (cp = sge_strtok(nullptr, ","))) {
-
-               lSetHost(host_ep, EH_name, cp);
-
-               switch (sge_resolve_host(host_ep, EH_name)) {
-               case CL_RETVAL_OK:
-                  break;
-               default:
-                  fprintf(stderr, MSG_SGETEXT_CANTRESOLVEHOST_S, cp);
-                  fprintf(stderr, "\n");
-                  sge_parse_return = 1;
-                  break;
-               }
-               lAddElemHost(&conf_list, CONF_name, lGetHost(host_ep, EH_name), CONF_Type);
-            } /* end for */
-
-            /*
-             * A failed delete counts towards the exit code, as it does for
-             * every other -d<obj> switch (they all fold show_answer_list()
-             * into sge_parse_return) and as -Dconf already did. -dconf alone
-             * used to throw the result away and exit 0 after telling the
-             * administrator that it could not delete anything.
-             */
-            if (delete_configs(conf_list) != 0) {
-               sge_parse_return = 1;
-            }
-
-            lFreeList(&conf_list);
-            sge_free(&host_list);
-            lFreeElem(&host_ep);
-         }
-         else {
-            fprintf(stderr, "%s\n", MSG_ANSWER_NEEDHOSTNAMETODELLOCALCONFIG);
-            sge_parse_return = 1;
-         }
-
-         spp++;
-         continue;
-      }
-
-/*----------------------------------------------------------------------------*/
-      /* "-Dconf file|dir": CS-2311 C5 — delete the host config(s) named by the
-       * file(s); the host key is the file basename. */
-      if (strcmp("-Dconf", *spp) == 0) {
-         qconf_is_manager_on_admin_host(username, qualified_hostname);
-         spp = sge_parser_get_next(spp);
-         if (qconf_conf_delete_path(os, *spp) != 0) {
-            sge_parse_return = 1;
-         }
-         spp++;
-         continue;
-      }
-
       /* "-cq destin_id[,destin_id,...]" */
       if (strcmp("-cq", *spp) == 0) {
          spp = sge_parser_get_next(spp);
@@ -4196,8 +4152,6 @@ static bool del_host_of_type(lList *arglp, ocs::gdi::Target target) {
 
    DRETURN(ret);
 }
-
-/* ------------------------------------------------------------ */
 
 /* ------------------------------------------------------------ */
 
