@@ -23,13 +23,13 @@
  */
 
 #include <cstring>
+#include <format>
 #include <memory>
 #include <ostream>
 #include <string>
 #include <unistd.h>
 #include <vector>
 
-#include "uti/sge_dstring.h"
 #include "uti/sge_log.h"
 #include "uti/sge_stdio.h"
 #include "uti/sge_string.h"
@@ -220,9 +220,8 @@ qconf_export_write_one(std::ostream &os, const char *text, const char *dest, lLi
       }
    }
 
-   dstring tmp_name = DSTRING_INIT;
-   sge_dstring_sprintf(&tmp_name, "%s.%d.tmp", dest, static_cast<int>(getpid()));
-   const char *tmp = sge_dstring_get_string(&tmp_name);
+   const std::string tmp_name = std::format("{}.{}.tmp", dest, getpid());
+   const char *tmp = tmp_name.c_str();
 
    int ret = 0;
    FILE *fp = fopen(tmp, "w");
@@ -243,7 +242,6 @@ qconf_export_write_one(std::ostream &os, const char *text, const char *dest, lLi
          ret = 1;
       }
    }
-   sge_dstring_free(&tmp_name);
 
    if (ret == 0) {
       qconf_info(os, MSG_QCONF_EXPORTWROTE_S, dest);
@@ -254,19 +252,14 @@ qconf_export_write_one(std::ostream &os, const char *text, const char *dest, lLi
 /**
  * @brief Build the destination path for one exported object (R3).
  *
- * @param dest   receives the path
  * @param dir    directory in bulk mode, or nullptr in single mode (cwd).
  * @param name   object name (already FS-safe checked).
  * @param suffix ".json" under -fmt json, "" otherwise.
+ * @return the path
  */
-static void
-qconf_export_dest(dstring *dest, const char *dir, const char *name, const char *suffix) {
-   sge_dstring_clear(dest);
-   if (dir != nullptr) {
-      sge_dstring_sprintf(dest, "%s/%s%s", dir, name, suffix);
-   } else {
-      sge_dstring_sprintf(dest, "%s%s", name, suffix);
-   }
+static std::string
+qconf_export_dest(const char *dir, const char *name, const char *suffix) {
+   return (dir != nullptr) ? std::format("{}/{}{}", dir, name, suffix) : std::format("{}{}", name, suffix);
 }
 
 /**
@@ -360,7 +353,6 @@ qconf_export_path(std::ostream &os, ocs::QConfParameterClient &param,
    }
 
    int failures = 0;
-   dstring dest = DSTRING_INIT;
 
    if (is_bulk) {
       /* R5/KTD7: case-insensitive basename collision guard across the run. The
@@ -385,9 +377,8 @@ qconf_export_path(std::ostream &os, ocs::QConfParameterClient &param,
          }
          lAddElemStr(&seen, ST_name, lcbuf, ST_Type);
 
-         qconf_export_dest(&dest, dir, name, suffix);
          failures += qconf_export_write_one(os, lGetString(pair, VA_value),
-                                            sge_dstring_get_string(&dest), alpp);
+                                            qconf_export_dest(dir, name, suffix).c_str(), alpp);
       }
       lFreeList(&seen);
 
@@ -401,13 +392,11 @@ qconf_export_path(std::ostream &os, ocs::QConfParameterClient &param,
          qconf_answer(alpp, ANSWER_QUALITY_ERROR, MSG_QCONF_EXPORTNOOBJECT_S, path);
          failures++;
       } else {
-         qconf_export_dest(&dest, nullptr, path, suffix);
          failures += qconf_export_write_one(os, lGetString(pair, VA_value),
-                                            sge_dstring_get_string(&dest), alpp);
+                                            qconf_export_dest(nullptr, path, suffix).c_str(), alpp);
       }
    }
 
-   sge_dstring_free(&dest);
    return failures;
 }
 

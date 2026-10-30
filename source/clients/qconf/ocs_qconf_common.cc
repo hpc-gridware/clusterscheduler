@@ -26,11 +26,11 @@
 #include <cstdarg>
 #include <cstring>
 #include <dirent.h>
+#include <format>
 #include <ostream>
 #include <string>
 #include <vector>
 
-#include "uti/sge_dstring.h"
 #include "uti/sge_log.h"
 #include "uti/msg_utilib.h"
 #include "uti/sge_stdio.h"
@@ -69,46 +69,54 @@ qconf_cstr(const char *s) {
    return s != nullptr ? s : "(null)";
 }
 
+std::string
+qconf_vformat(const char *fmt, va_list ap) {
+   va_list measure;
+   va_copy(measure, ap);
+   const int len = vsnprintf(nullptr, 0, fmt, measure);
+   va_end(measure);
+   if (len <= 0) {
+      return {};
+   }
+   std::string text(static_cast<size_t>(len), '\0');
+   vsnprintf(text.data(), text.size() + 1, fmt, ap);
+   return text;
+}
+
+std::string
+qconf_format(const char *fmt, ...) {
+   va_list ap;
+   va_start(ap, fmt);
+   std::string text = qconf_vformat(fmt, ap);
+   va_end(ap);
+   return text;
+}
+
 void
 qconf_msg(std::ostream &os, const char *fmt, ...) {
    va_list ap;
    va_start(ap, fmt);
-   dstring buffer = DSTRING_INIT;
-   sge_dstring_vsprintf(&buffer, fmt, ap);
+   os << qconf_vformat(fmt, ap);
    va_end(ap);
-   const char *text = sge_dstring_get_string(&buffer);
-   if (text != nullptr) {
-      os << text;
-   }
-   sge_dstring_free(&buffer);
 }
 
 void
 qconf_info(std::ostream &os, const char *fmt, ...) {
    va_list ap;
    va_start(ap, fmt);
-   dstring buffer = DSTRING_INIT;
-   sge_dstring_vsprintf(&buffer, fmt, ap);
+   os << qconf_vformat(fmt, ap) << "\n";
    va_end(ap);
-   const char *text = sge_dstring_get_string(&buffer);
-   if (text != nullptr) {
-      os << text;
-   }
-   sge_dstring_free(&buffer);
-   os << "\n";
 }
 
 void
 qconf_answer(lList **alpp, const answer_quality_t quality, const char *fmt, ...) {
    va_list ap;
    va_start(ap, fmt);
-   dstring buffer = DSTRING_INIT;
-   sge_dstring_vsprintf(&buffer, fmt, ap);
+   const std::string text = qconf_vformat(fmt, ap);
    va_end(ap);
    const uint32_t status = (quality == ANSWER_QUALITY_ERROR || quality == ANSWER_QUALITY_CRITICAL)
                            ? STATUS_EUNKNOWN : STATUS_OK;
-   answer_list_add(alpp, sge_dstring_get_string(&buffer), status, quality);
-   sge_dstring_free(&buffer);
+   answer_list_add(alpp, text.c_str(), status, quality);
 }
 
 int
@@ -258,13 +266,10 @@ qconf_for_each_file(const char *path, int (*per_file)(const char *, void *), voi
       if (de->d_name[0] == '.') {
          continue;   /* skip ., .. and hidden files */
       }
-      dstring full = DSTRING_INIT;
-      sge_dstring_sprintf(&full, "%s/%s", path, de->d_name);
-      const char *fp = sge_dstring_get_string(&full);
-      if (!sge_is_directory(fp)) {   /* skip nested directories */
-         failures += per_file(fp, ctx);
+      const std::string fp = std::format("{}/{}", path, de->d_name);
+      if (!sge_is_directory(fp.c_str())) {   /* skip nested directories */
+         failures += per_file(fp.c_str(), ctx);
       }
-      sge_dstring_free(&full);
    }
    closedir(dir);
    return failures;

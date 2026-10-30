@@ -27,6 +27,7 @@
  * switch into object names, and the result every dispatcher reports.
  */
 
+#include <cstdarg>
 #include <cstdio>
 #include <ostream>
 #include <string>
@@ -220,6 +221,27 @@ enum class QConfOpResult {
    FAILED,       ///< served, and it failed; the command line stops
    FAILED_USAGE  ///< as FAILED, and the usage is printed after the messages (CS-2971)
 };
+
+/** @brief Format a printf-style text into a string
+ *
+ * The message catalogue (`MSG_*`) is printf shaped and only known at run time,
+ * so its texts cannot go through `std::format`; this is the one place they are
+ * formatted (CS-2972).
+ *
+ * @param fmt a printf-style format, usually a MSG_* catalogue entry
+ * @param ap  arguments for @p fmt
+ * @return the formatted text
+ */
+std::string
+qconf_vformat(const char *fmt, va_list ap) __attribute__((format(printf, 1, 0)));
+
+/** @brief Format a printf-style text into a string, see qconf_vformat()
+ * @param fmt a printf-style format, usually a MSG_* catalogue entry
+ * @param ... arguments for @p fmt
+ * @return the formatted text
+ */
+std::string
+qconf_format(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
 
 /** @brief Add a message of the client's own to the answer list of an operation (CS-2971)
  *

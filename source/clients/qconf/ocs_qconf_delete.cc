@@ -25,7 +25,6 @@
 #include <ostream>
 #include <string>
 
-#include "uti/sge_dstring.h"
 #include "uti/sge_log.h"
 #include "uti/sge_stdlib.h"
 #include "uti/sge_string.h"
@@ -85,10 +84,7 @@ qconf_delete_path(std::ostream &os, const qconf_object_desc &d, spooling_field *
    }
    if (n_names > 0 && is_dir && !qconf_opt_force) {
       /* CS-2299 H6: a directory expands to a bulk delete - confirm first. */
-      dstring p = DSTRING_INIT;
-      sge_dstring_sprintf(&p, MSG_QCONF_CONFIRMDELETE_I, n_names);
-      const bool ok = qconf_confirm(sge_dstring_get_string(&p), alpp);
-      sge_dstring_free(&p);
+      const bool ok = qconf_confirm(qconf_format(MSG_QCONF_CONFIRMDELETE_I, n_names).c_str(), alpp);
       if (!ok) {
          qconf_answer(alpp, ANSWER_QUALITY_WARNING, MSG_QCONF_DELETEABORTED_I, n_names);
          lFreeList(&ctx.names);
@@ -249,10 +245,7 @@ qconf_rqs_delete(std::ostream &os, const char *path, lList **alpp) {
       return ret;
    }
    if (n > 0 && is_dir && !qconf_opt_force) {
-      dstring p = DSTRING_INIT;
-      sge_dstring_sprintf(&p, MSG_QCONF_CONFIRMDELETE_I, n);
-      const bool ok = qconf_confirm(sge_dstring_get_string(&p), alpp);
-      sge_dstring_free(&p);
+      const bool ok = qconf_confirm(qconf_format(MSG_QCONF_CONFIRMDELETE_I, n).c_str(), alpp);
       if (!ok) {
          qconf_answer(alpp, ANSWER_QUALITY_WARNING, MSG_QCONF_DELETEABORTED_I, n);
          lFreeList(&del);
@@ -323,10 +316,7 @@ qconf_conf_delete_path(std::ostream &os, const char *path, lList **alpp) {
       return 0;
    }
    if (n > 0 && is_dir && !qconf_opt_force) {
-      dstring p = DSTRING_INIT;
-      sge_dstring_sprintf(&p, MSG_QCONF_CONFIRMDELETE_I, n);
-      const bool ok = qconf_confirm(sge_dstring_get_string(&p), alpp);
-      sge_dstring_free(&p);
+      const bool ok = qconf_confirm(qconf_format(MSG_QCONF_CONFIRMDELETE_I, n).c_str(), alpp);
       if (!ok) {
          qconf_answer(alpp, ANSWER_QUALITY_WARNING, MSG_QCONF_DELETEABORTED_I, n);
          lFreeList(&ctx.hosts);
