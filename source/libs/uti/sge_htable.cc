@@ -577,9 +577,11 @@ int hash_func_string(const void *key) {
  * @return 0 when equal, > 0 when @p a is greater, < 0 when it is smaller
  */
 int hash_compare_uint32_t(const void *a, const void *b) {
-   uint32_t *cast_a = (uint32_t *) a;
-   uint32_t *cast_b = (uint32_t *) b;
-   return *cast_a - *cast_b;
+   const uint32_t val_a = *static_cast<const uint32_t *>(a);
+   const uint32_t val_b = *static_cast<const uint32_t *>(b);
+   // three-way compare: the difference of two unsigned values has the wrong sign
+   // when it does not fit an int
+   return (val_a > val_b) - (val_a < val_b);
 }
 
 /** @brief Compare two `uint64_t` keys
@@ -591,9 +593,11 @@ int hash_compare_uint32_t(const void *a, const void *b) {
  * @return 0 when equal, > 0 when @p a is greater, < 0 when it is smaller
  */
 int hash_compare_uint64_t(const void *a, const void *b) {
-   uint64_t *cast_a = (uint64_t *) a;
-   uint64_t *cast_b = (uint64_t *) b;
-   return *cast_a - *cast_b;
+   const uint64_t val_a = *static_cast<const uint64_t *>(a);
+   const uint64_t val_b = *static_cast<const uint64_t *>(b);
+   // three-way compare: the difference truncated to int is 0 for keys that
+   // differ only above bit 31, which made them the same key
+   return (val_a > val_b) - (val_a < val_b);
 }
 
 /** @brief Compare two `long` keys
@@ -605,9 +609,11 @@ int hash_compare_uint64_t(const void *a, const void *b) {
  * @return 0 when equal, > 0 when @p a is greater, < 0 when it is smaller
  */
 int hash_compare_long(const void *a, const void *b) {
-   long *cast_a = (long *) a;
-   long *cast_b = (long *) b;
-   return (int) (*cast_a - *cast_b);
+   const long val_a = *static_cast<const long *>(a);
+   const long val_b = *static_cast<const long *>(b);
+   // three-way compare: on LP64 the difference truncated to int is 0 for keys
+   // that differ only above bit 31
+   return (val_a > val_b) - (val_a < val_b);
 }
 
 /** @brief Compare two pointer keys

@@ -1075,7 +1075,8 @@ int lSetPosInt(lListElem *ep, int pos, int value) {
  * @param name field name id
  * @param value new value
  *
- * @return error state 0 - OK -1 - Error
+ * @return 0 on success, -1 on error. A field of another type is a programming
+ *         error and aborts the process (#incompatibleType2).
  */
 int lSetInt(lListElem *ep, int name, int value) {
    DENTER(CULL_BASIS_LAYER);
@@ -1168,7 +1169,8 @@ int lSetPosUlong(lListElem *ep, int pos, lUlong value) {
  * @param name field name id
  * @param value new value
  *
- * @return error state 0 - OK -1 - Error
+ * @return 0 on success, -1 on error. A field of another type is a programming
+ *         error and aborts the process (#incompatibleType2).
  */
 int lSetUlong(lListElem *ep, int name, lUlong value) {
    DENTER(CULL_BASIS_LAYER);
@@ -1221,17 +1223,13 @@ int lSetUlong(lListElem *ep, int name, lUlong value) {
  * The 'offset' is added to the lUlong field 'name' of
  * the CULL element 'ep'.
  *
- * @code
- * int - error state
- *     0 - OK
- *    -1 - Error
- * @endcode
- *
  * @param ep element
  * @param name field name id
  * @param offset the offset
  *
- * @return int -
+ * @return 0 on success, -1 when @p ep is nullptr or @p name is not one of its
+ *         fields. A field of another type is a programming error and aborts the
+ *         process (#incompatibleType2).
  */
 int lAddUlong(lListElem *ep, int name, lUlong offset) {
    DENTER(CULL_BASIS_LAYER);
@@ -1353,7 +1351,8 @@ lUlong64 lGetUlong64Atomic(const lListElem *ep, int name) {
  * @param name field name id
  * @param value the value to store
  *
- * @return 0 on success, -1 on error
+ * @return 0 on success, -1 on error. A field of another type is a programming
+ *         error and aborts the process (#incompatibleType2).
  *
  * @see #lSetUlong64, #lGetUlong64Atomic
  */
@@ -1446,17 +1445,13 @@ int lSetUlong64(lListElem *ep, int name, lUlong64 value) {
  * The 'offset' is added to the lUlong64 field 'name' of
  * the CULL element 'ep'.
  *
- * @code
- * int - error state
- *     0 - OK
- *    -1 - Error
- * @endcode
- *
  * @param ep element
  * @param name field name id
  * @param offset the offset
  *
- * @return int -
+ * @return 0 on success, -1 when @p ep is nullptr or @p name is not one of its
+ *         fields. A field of another type is a programming error and aborts the
+ *         process (#incompatibleType2).
  */
 int lAddUlong64(lListElem *ep, int name, lUlong64 offset) {
    DENTER(CULL_BASIS_LAYER);
@@ -1728,7 +1723,8 @@ int lSetPosHost(lListElem *ep, int pos, const char *value) {
  * @param name field name id
  * @param value new string
  *
- * @return error state 0 - OK -1 - Error
+ * @return 0 on success, -1 on error. A field of another type is a programming
+ *         error and aborts the process (#incompatibleType2).
  */
 int lSetString(lListElem *ep, int name, const char *value) {
    DENTER(CULL_BASIS_LAYER);
@@ -1817,7 +1813,8 @@ int lSetString(lListElem *ep, int name, const char *value) {
  * @param name name of list element (e.g. EH_name)
  * @param value new value for list element
  *
- * @return error state -1 - Error 0 - OK
+ * @return 0 on success, -1 on error. A field of another type is a programming
+ *         error and aborts the process (#incompatibleType2).
  */
 int lSetHost(lListElem *ep, int name, const char *value) {
    DENTER(CULL_BASIS_LAYER);
@@ -2007,7 +2004,8 @@ int lSetPosList(lListElem *ep, int pos, lList *value) {
  * @param name field name value
  * @param str pointer to a string
  *
- * @return error state 0 - OK -1 - Error
+ * @return 0 on success, -1 on error. A field of another type is a programming
+ *         error and aborts the process (#incompatibleType2).
  */
 int lXchgString(lListElem *ep, int name, char **str) {
    DENTER(CULL_BASIS_LAYER);
@@ -2054,7 +2052,8 @@ int lXchgString(lListElem *ep, int name, char **str) {
  * @param name field name value
  * @param lpp pointer to CULL list
  *
- * @return error state 0 - OK -1 - Error
+ * @return 0 on success, -1 on error. A field of another type is a programming
+ *         error and aborts the process (#incompatibleType2).
  */
 int lXchgList(lListElem *ep, int name, lList **lpp) {
    DENTER(CULL_BASIS_LAYER);
@@ -2132,7 +2131,8 @@ int lSwapList(lListElem *to, int nm_to, lListElem *from, int nm_from) {
  * @param name field name id
  * @param value new list pointer
  *
- * @return error state 0 - OK -1 - Error
+ * @return 0 on success, -1 on error. A field of another type is a programming
+ *         error and aborts the process (#incompatibleType2).
  */
 int lSetObject(lListElem *ep, int name, lListElem *value) {
    DENTER(CULL_BASIS_LAYER);
@@ -2194,7 +2194,8 @@ int lSetObject(lListElem *ep, int name, lListElem *value) {
  * @param name field name id
  * @param value new list pointer
  *
- * @return error state 0 - OK -1 - Error
+ * @return 0 on success, -1 on error. A field of another type is a programming
+ *         error and aborts the process (#incompatibleType2).
  *
  * @note MT-NOTE: lAddSubList() is MT safe
  */
@@ -2285,7 +2286,8 @@ int lSetPosDouble(lListElem *ep, int pos, lDouble value) {
  * @param name field name id
  * @param value new double value
  *
- * @return error state 0 - OK -1 - Error
+ * @return 0 on success, -1 on error. A field of another type is a programming
+ *         error and aborts the process (#incompatibleType2).
  */
 int lSetDouble(lListElem *ep, int name, lDouble value) {
    DENTER(CULL_BASIS_LAYER);
@@ -2329,7 +2331,8 @@ int lSetDouble(lListElem *ep, int name, lDouble value) {
  * @param name field name id
  * @param value the amount to add
  *
- * @return 0 on success, -1 on error
+ * @return 0 on success, -1 on error. A field of another type is a programming
+ *         error and aborts the process (#incompatibleType2).
  */
 int lAddDouble(lListElem *ep, int name, lDouble value) {
    DENTER(CULL_BASIS_LAYER);
@@ -2413,7 +2416,8 @@ int lSetPosLong(lListElem *ep, int pos, lLong value) {
  * @param name field name id
  * @param value value
  *
- * @return error state 0 - OK -1 - Error
+ * @return 0 on success, -1 on error. A field of another type is a programming
+ *         error and aborts the process (#incompatibleType2).
  */
 int lSetLong(lListElem *ep, int name, lLong value) {
    DENTER(CULL_BASIS_LAYER);
@@ -2496,7 +2500,8 @@ int lSetPosBool(lListElem *ep, int pos, lBool value) {
  * @param name field name id
  * @param value new character
  *
- * @return error state 0 - OK -1 - Error
+ * @return 0 on success, -1 on error. A field of another type is a programming
+ *         error and aborts the process (#incompatibleType2).
  */
 int lSetBool(lListElem *ep, int name, lBool value) {
    DENTER(CULL_BASIS_LAYER);
@@ -2579,7 +2584,8 @@ int lSetPosRef(lListElem *ep, int pos, lRef value) {
  * @param name field name id
  * @param value new pointer
  *
- * @return error state 0 - OK -1 - Error
+ * @return 0 on success, -1 on error. A field of another type is a programming
+ *         error and aborts the process (#incompatibleType2).
  */
 int lSetRef(lListElem *ep, int name, lRef value) {
    DENTER(CULL_BASIS_LAYER);
@@ -3410,20 +3416,22 @@ int lDelSubUlong(lListElem *ep, int nm, lUlong val, int snm) {
  * @brief Removes elem specified by a ulong field nm
  *
  * This function removes an element specified by a ulong field nm
- * with the value val from the list referenced by lpp.
+ * with the value val from the list referenced by lpp. When the list
+ * becomes empty it is freed and *lpp is set to nullptr.
  *
  * @param lpp reference to a list
  * @param nm field id
- * @param val value if nm
+ * @param val value of nm; 0 is a valid value
  *
- * @return 1 element was found and removed 0 an error occurred
+ * @return 0 when lpp is nullptr, otherwise 1, whether or not an element
+ *         carrying val was found
  */
 int lDelElemUlong(lList **lpp, int nm, lUlong val) {
    DENTER(CULL_LAYER);
 
    lListElem *ep;
 
-   if (!lpp || !val) {
+   if (lpp == nullptr) {
       DPRINTF("error: nullptr ptr passed to lDelElemUlong\n");
       DRETURN(0);
    }
@@ -3764,20 +3772,22 @@ int lDelSubUlong64(lListElem *ep, int nm, lUlong64 val, int snm) {
  * @brief Removes elem specified by a ulong64 field nm
  *
  * This function removes an element specified by a ulong64 field nm
- * with the value val from the list referenced by lpp.
+ * with the value val from the list referenced by lpp. When the list
+ * becomes empty it is freed and *lpp is set to nullptr.
  *
  * @param lpp reference to a list
  * @param nm field id
- * @param val value if nm
+ * @param val value of nm; 0 is a valid value
  *
- * @return 1 element was found and removed 0 an error occurred
+ * @return 0 when lpp is nullptr, otherwise 1, whether or not an element
+ *         carrying val was found
  */
 int lDelElemUlong64(lList **lpp, int nm, lUlong64 val) {
    DENTER(CULL_LAYER);
 
    lListElem *ep;
 
-   if (!lpp || !val) {
+   if (lpp == nullptr) {
       DPRINTF("error: nullptr ptr passed to lDelElemUlong64\n");
       DRETURN(0);
    }
@@ -4376,12 +4386,16 @@ int lGetPosName(const lDescr *dp, int pos) {
 }
 
 /**
- * @brief Are all bits of a mask set in a 32 bit field?
+ * @brief Is any bit of a mask set in a 32 bit field?
+ *
+ * Every caller passes a single bit, for which "any" and "all" coincide.
  *
  * @param ep the element
  * @param nm the field
- * @param bitmask the bits required to be set
- * @return true when every bit of @p bitmask is set in the field
+ * @param bitmask the bits to test
+ * @return true when at least one bit of @p bitmask is set in the field. A field
+ *         of another type is a programming error and aborts the process
+ *         (#incompatibleType2).
  */
 bool lMatchUlongBitMask(lListElem *ep, int nm, uint32_t bitmask) {
    DENTER(CULL_BASIS_LAYER);
@@ -4401,7 +4415,8 @@ bool lMatchUlongBitMask(lListElem *ep, int nm, uint32_t bitmask) {
  * @param ep the element
  * @param nm the field
  * @param bitmask the bits to set
- * @return 0 on success, -1 when @p ep is nullptr
+ * @return 0 on success, -1 when @p ep is nullptr. A field of another type is a
+ *         programming error and aborts the process (#incompatibleType2).
  */
 int lOrUlongBitMask(lListElem *ep, int nm, uint32_t bitmask) {
    DENTER(CULL_BASIS_LAYER);
@@ -4433,7 +4448,8 @@ int lOrUlongBitMask(lListElem *ep, int nm, uint32_t bitmask) {
  * @param ep the element
  * @param nm the field
  * @param bitmask the bits to keep
- * @return 0 on success, -1 when @p ep is nullptr
+ * @return 0 on success, -1 when @p ep is nullptr. A field of another type is a
+ *         programming error and aborts the process (#incompatibleType2).
  */
 int lAndUlongBitMask(lListElem *ep, int nm, uint32_t bitmask) {
    DENTER(CULL_BASIS_LAYER);
@@ -4465,7 +4481,8 @@ int lAndUlongBitMask(lListElem *ep, int nm, uint32_t bitmask) {
  * @param ep the element
  * @param nm the field
  * @param bitmask the bits to clear
- * @return 0 on success, -1 when @p ep is nullptr
+ * @return 0 on success, -1 when @p ep is nullptr. A field of another type is a
+ *         programming error and aborts the process (#incompatibleType2).
  */
 int lClearUlongBitMask(lListElem *ep, int nm, uint32_t bitmask) {
    DENTER(CULL_BASIS_LAYER);

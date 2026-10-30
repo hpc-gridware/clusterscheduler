@@ -330,20 +330,6 @@ const lListElem *lGetSubUlong64(const lListElem *ep, int nm, lUlong64 val, int s
    functions for lists with a case insensitive char * as key
 
 */
-/**
- * @brief Remove the element whose string field matches, ignoring case
- *
- * @warning **Declared but never defined**, anywhere in the tree, and never
- *          called. Any use fails to link. Kept only because removing a public
- *          declaration is a code change; it is a deletion candidate.
- *
- * @param lpp the list to remove from
- * @param nm the field to compare
- * @param str the value to look for
- * @return would be non-zero when an element was removed
- */
-int lDelElemCaseStr(lList **lpp, int nm, const char *str);
-
 lListElem *lGetElemCaseStrRW(const lList *lp, int nm, const char *str);
 
 const lListElem *lGetElemCaseStr(const lList *lp, int nm, const char *str);
