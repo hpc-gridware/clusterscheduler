@@ -2265,15 +2265,42 @@ struct qconf_delete_entry {
    QConfObj object;           ///< the object type it deletes
    QConfDeleteKind kind;      ///< names or file
    QConfClientCheck check;    ///< the check it makes in the client
+   int (*run)(std::ostream &os, const qconf_op &op); ///< a delete of its own instead of the kind's engine, or nullptr
 };
+
+/** @brief "-dhgrp group,...": the host groups of the list, as one delete request (CS-2306 C4)
+ *
+ * The list is taken apart by parse_name_list_to_cull(), as it always was.
+ *
+ * @param os unused
+ * @param op the operation
+ * @return the status of qconf_delete_list()
+ */
+static int
+qconf_delete_hgroup_list([[maybe_unused]] std::ostream &os, const qconf_op &op) {
+   std::string arg = op.args[0];
+   lList *groups = nullptr;
+   parse_name_list_to_cull("host groups to del", &groups, HGRP_Type, HGRP_name, arg.data());
+   return qconf_delete_list(QConfObj::HGRP, &groups);
+}
+
+/** @brief "-Drqs file|dir": the resource quota sets a file names, through the list reader of their type
+ * @param os the stream the output is written to
+ * @param op the operation
+ * @return the status of qconf_rqs_delete()
+ */
+static int
+qconf_delete_rqs_path(std::ostream &os, const qconf_op &op) {
+   return qconf_rqs_delete(os, op.args[0].c_str());
+}
 
 /** @brief The delete switches that are one engine call each (CS-2952)
  *
  * Every "-d<obj>" and "-D<obj>" whose block did nothing but call
  * qconf_delete_names() or qconf_delete_obj(), possibly after a permission check.
- * The ones with handling of their own stay blocks: "-de", "-dh"/"-ds", "-dhgrp",
- * "-Drqs", "-dconf"/"-Dconf"; "-du"/"-dm"/"-do" and "-dstnode" are actions,
- * see qconf_action_table.
+ * "-dhgrp" and "-Drqs" are rows with a delete of their own (CS-2967). The ones
+ * with handling of their own stay blocks: "-de", "-dh"/"-ds", "-dconf"/"-Dconf";
+ * "-du"/"-dm"/"-do" and "-dstnode" are actions, see qconf_action_table.
  */
 static const qconf_delete_entry qconf_delete_table[] = {
    {"-dcal",   QConfObj::CAL,  QConfDeleteKind::NAMES, QConfClientCheck::NONE},
@@ -2298,6 +2325,8 @@ static const qconf_delete_entry qconf_delete_table[] = {
    {"-Duser",  QConfObj::UU,   QConfDeleteKind::FILE,  QConfClientCheck::MANAGER_ON_ADMIN_HOST},
    {"-Dprj",   QConfObj::PR,   QConfDeleteKind::FILE,  QConfClientCheck::MANAGER_ON_ADMIN_HOST},
    {"-Dq",     QConfObj::CQ,   QConfDeleteKind::FILE,  QConfClientCheck::MANAGER_ON_ADMIN_HOST},
+   {"-dhgrp",  QConfObj::HGRP, QConfDeleteKind::NAMES, QConfClientCheck::MANAGER, qconf_delete_hgroup_list},
+   {"-Drqs",   QConfObj::RQS,  QConfDeleteKind::FILE,  QConfClientCheck::MANAGER_ON_ADMIN_HOST, qconf_delete_rqs_path},
 };
 
 /**
@@ -2336,9 +2365,9 @@ qconf_run_delete(std::ostream &os, const qconf_op &op, const char *username,
    qconf_client_check(entry->check, username, hostname);
 
    const char *arg = op.args.empty() ? nullptr : op.args.front().c_str();
-   const int failed = (entry->kind == QConfDeleteKind::NAMES)
-                      ? qconf_delete_names(entry->object, arg)
-                      : qconf_delete_obj(os, entry->object, arg);
+   const int failed = (entry->run != nullptr) ? entry->run(os, op)
+                      : (entry->kind == QConfDeleteKind::NAMES) ? qconf_delete_names(entry->object, arg)
+                                                                : qconf_delete_obj(os, entry->object, arg);
 
    DRETURN(failed != 0 ? QConfOpResult::FAILED : QConfOpResult::OK);
 }
@@ -2477,9 +2506,28 @@ qconf_names_user_list(const qconf_op &op, std::vector<std::string> &names, [[may
 
 /** @brief How a table driven add or modify switch writes */
 enum class QConfWriteKind {
-   EDIT,    ///< "-a<obj>"/"-m<obj> [name]": qconf_edit_obj_procedure()
-   APPLY    ///< "-A<obj>"/"-M<obj> file|dir": qconf_apply_obj()
+   EDIT,       ///< "-a<obj>"/"-m<obj> [name]": qconf_edit_obj_procedure()
+   EDIT_LIST,  ///< "-arqs"/"-mrqs"/"-mc": qconf_edit_list_procedure(), the objects as one text
+   APPLY       ///< "-A<obj>"/"-M<obj> file|dir [names]": qconf_apply_obj()
 };
+
+/** @brief "-Arqs"/"-Mrqs"/"-Mc" without a file: the message these always had
+ *
+ * Their file is optional in the option table, so the parser hands the
+ * operation over complete and the generic "no option argument" never fires;
+ * they reported the missing file on their own.
+ *
+ * @param op the operation
+ * @return true when the file is missing and it was reported
+ */
+static bool
+qconf_write_no_file(const qconf_op &op) {
+   if (!op.args.empty()) {
+      return false;
+   }
+   fprintf(stderr, "%s\n", MSG_FILE_NOFILEARGUMENTGIVEN);
+   return true;
+}
 
 /** @brief One add or modify switch served by qconf_run_write() */
 struct qconf_write_entry {
@@ -2490,6 +2538,10 @@ struct qconf_write_entry {
    bool unchanged_is_ok;      ///< EDIT: write a text the editor left alone
    QConfClientCheck check;    ///< the check it makes in the client
    qconf_names_hook names;    ///< EDIT: the names to edit one by one, nullptr for the argument as typed
+   uint32_t mode;             ///< EDIT_LIST/APPLY: write modes beyond the default, a mask of MODE_*
+   const char *list_read;     ///< EDIT_LIST: the read of the list, nullptr for the type's OBJECT_LIST read
+   const char *list_sub;      ///< EDIT_LIST: the sub-procedure of that read, or nullptr
+   bool (*missing)(const qconf_op &op); ///< a report of its own for a missing argument, or nullptr
 };
 
 /** @brief The add and modify switches that are one engine call each (CS-2954)
@@ -2501,8 +2553,9 @@ struct qconf_write_entry {
  * requires one, and the singletons ("-astree", "-mstree", "-msconf") take none
  * and edit with nullptr. "-ae", "-me" and "-mu" are rows with a names hook:
  * the host resolved (or the template for "-ae" without a name), or each name
- * of a list edited on its own (CS-2967). The ones with handling of their own
- * stay blocks: "-arqs"/"-mrqs"/"-Arqs"/"-Mrqs" and "-mc"/"-Mc" (lists), the
+ * of a list edited on its own (CS-2967). "-arqs"/"-mrqs"/"-mc" edit a list of
+ * objects as one text and "-Arqs"/"-Mrqs"/"-Mc" apply one, with the modes of
+ * their type (CS-2967). The ones with handling of their own stay blocks: the
  * reserved host group switches and the host configuration; the membership
  * switches and "-astnode"/"-mstnode" are actions, see qconf_action_table.
  *
@@ -2534,6 +2587,23 @@ static const qconf_write_entry qconf_write_table[] = {
    {"-ae",     QConfObj::EH,   QConfWriteKind::EDIT,  nullptr,     false, QConfClientCheck::MANAGER_ON_ADMIN_HOST, qconf_names_ae},
    {"-me",     QConfObj::EH,   QConfWriteKind::EDIT,  nullptr,     false, QConfClientCheck::MANAGER_ON_ADMIN_HOST, qconf_names_host_list},
    {"-mu",     QConfObj::US,   QConfWriteKind::EDIT,  nullptr,     false, QConfClientCheck::MANAGER_ON_ADMIN_HOST, qconf_names_userset_list},
+   /* CS-2967: the lists. "-arqs"/"-mrqs" edit the rule sets as one text, a
+    * missing one being reported as still there rather than deleted; "-mc" edits
+    * the complex table, whose replace mode is how a complex is removed, and
+    * writes it even when unchanged. The file switches carry the same modes. */
+   {"-arqs",   QConfObj::RQS,  QConfWriteKind::EDIT_LIST, "template", false, QConfClientCheck::MANAGER_ON_ADMIN_HOST,
+    nullptr, 0u, nullptr, nullptr, nullptr},
+   {"-mrqs",   QConfObj::RQS,  QConfWriteKind::EDIT_LIST, nullptr,    false, QConfClientCheck::MANAGER_ON_ADMIN_HOST,
+    nullptr, 0u, nullptr, nullptr, nullptr},
+   {"-mc",     QConfObj::CE,   QConfWriteKind::EDIT_LIST, nullptr,    true,  QConfClientCheck::MANAGER_ON_ADMIN_HOST,
+    nullptr, ocs::QConfWriteParameter::MODE_REPLACE, "-sc", ocs::QConfParameter::CENTRY_LIST, nullptr},
+   {"-Arqs",   QConfObj::RQS,  QConfWriteKind::APPLY, nullptr,     false, QConfClientCheck::MANAGER_ON_ADMIN_HOST,
+    nullptr, ocs::QConfWriteParameter::MODE_LIST, nullptr, nullptr, qconf_write_no_file},
+   {"-Mrqs",   QConfObj::RQS,  QConfWriteKind::APPLY, nullptr,     false, QConfClientCheck::MANAGER_ON_ADMIN_HOST,
+    nullptr, ocs::QConfWriteParameter::MODE_LIST, nullptr, nullptr, qconf_write_no_file},
+   {"-Mc",     QConfObj::CE,   QConfWriteKind::APPLY, nullptr,     false, QConfClientCheck::NONE,
+    nullptr, ocs::QConfWriteParameter::MODE_LIST | ocs::QConfWriteParameter::MODE_REPLACE, nullptr, nullptr,
+    qconf_write_no_file},
    {"-Acal",   QConfObj::CAL,  QConfWriteKind::APPLY, nullptr,     false, QConfClientCheck::NONE},
    {"-Ackpt",  QConfObj::CK,   QConfWriteKind::APPLY, nullptr,     false, QConfClientCheck::NONE},
    {"-Ae",     QConfObj::EH,   QConfWriteKind::APPLY, nullptr,     false, QConfClientCheck::NONE},
@@ -2593,6 +2663,9 @@ qconf_run_write(std::ostream &os, ocs::QConfParameterClient &param, const qconf_
    if (entry == nullptr) {
       DRETURN(QConfOpResult::NOT_HANDLED);
    }
+   if (entry->missing != nullptr && entry->missing(op)) {
+      DRETURN(QConfOpResult::FAILED);
+   }
    if (qconf_missing_argument(op)) {
       DRETURN(QConfOpResult::FAILED);
    }
@@ -2616,8 +2689,18 @@ qconf_run_write(std::ostream &os, ocs::QConfParameterClient &param, const qconf_
       const char *name = op.args.empty() ? entry->default_name : op.args.front().c_str();
       failed = qconf_edit_obj_procedure(param, entry->object, entry->switch_name, name,
                                         uid, gid, entry->unchanged_is_ok);
+   } else if (entry->kind == QConfWriteKind::EDIT_LIST) {
+      const char *names = op.args.empty() ? entry->default_name : op.args.front().c_str();
+      const char *read = (entry->list_read != nullptr)
+                         ? entry->list_read
+                         : ocs::QConfModelBase::switch_for(entry->object, ocs::QConfReadKind::OBJECT_LIST);
+      failed = qconf_edit_list_procedure(param, entry->object, entry->switch_name, read, entry->list_sub,
+                                         names, uid, gid, entry->mode, entry->unchanged_is_ok);
    } else {
-      failed = qconf_apply_obj(os, entry->object, op.args.front().c_str());
+      /* the second argument, where the option table allows one, selects which
+       * objects of the file are written ("-Mrqs file names") */
+      const char *select = (op.args.size() > 1) ? op.args[1].c_str() : nullptr;
+      failed = qconf_apply_obj(os, entry->object, op.args.front().c_str(), select, entry->mode);
    }
 
    DRETURN(failed != 0 ? QConfOpResult::FAILED : QConfOpResult::OK);
@@ -3203,57 +3286,6 @@ int sge_parse_qconf(char *argv[]) {
          spp++;
          continue;
       }
-/*-----------------------------------------------------------------------------*/
-      /* "-arqs rqs_name" */
-      if (strcmp("-arqs", *spp) == 0) {
-         /* the name is optional; when omitted a template named "template" is
-          * offered for editing and the editor gives it its real name */
-         const char *name = "template";
-
-         if (!sge_next_is_an_opt(spp)) {
-            spp = sge_parser_get_next(spp);
-            name = *spp;
-         }
-         qconf_is_manager_on_admin_host(username, qualified_hostname);
-
-         /* CS-2823: template, editor and write procedure in one - the same
-          * function "-mrqs" calls, with the templates built in qmaster from the
-          * read's descriptor row. A comma separated list of names still yields
-          * one template each, as rqs_add() built them here. */
-         if (qconf_edit_list_procedure(param, QConfObj::RQS, "-arqs",
-                                       ocs::QConfModelBase::switch_for(QConfObj::RQS,
-                                                                       ocs::QConfReadKind::OBJECT_LIST),
-                                       nullptr, name, uid, gid) != 0) {
-            sge_parse_return = 1;
-         }
-
-         spp++;
-         continue;
-      }
-/*-----------------------------------------------------------------------------*/
-      /* "-Arqs fname|dir": CS-2307 C3 — a single (multi-rule-set) file as before,
-       * or a directory whose files together define the rule sets to add */
-      if (strcmp("-Arqs", *spp) == 0) {
-         const char *file = nullptr;
-
-         if (!sge_next_is_an_opt(spp)) {
-            spp = sge_parser_get_next(spp);
-            file = *spp;
-         } else {
-            sge_error_and_exit(MSG_FILE_NOFILEARGUMENTGIVEN);
-         }
-         qconf_is_manager_on_admin_host(username, qualified_hostname);
-
-         /* CS-2823: as every other type's "-A<obj>" - add or modify what the
-          * text holds, which is what this did before through its own path. */
-         if (qconf_apply_obj(os, QConfObj::RQS, file, nullptr,
-                             ocs::QConfWriteParameter::MODE_LIST) != 0) {
-            sge_parse_return = 1;
-         }
-
-         spp++;
-         continue;
-      }
 
 /*-----------------------------------------------------------------------------*/
 
@@ -3298,17 +3330,6 @@ int sge_parse_qconf(char *argv[]) {
          }
          lFreeList(&lp);
 
-         spp++;
-         continue;
-      }
-/*----------------------------------------------------------------------------*/
-      /* "-Drqs file|dir": CS-2307 C5 — delete the rule set(s) named in the file(s) */
-      if (strcmp("-Drqs", *spp) == 0) {
-         qconf_is_manager_on_admin_host(username, qualified_hostname);
-         spp = sge_parser_get_next(spp);
-         if (qconf_rqs_delete(os, *spp) != 0) {
-            sge_parse_return = 1;
-         }
          spp++;
          continue;
       }
@@ -3480,115 +3501,6 @@ int sge_parse_qconf(char *argv[]) {
 
          lFreeList(&alp);
          lFreeList(&lp);
-         spp++;
-         continue;
-      }
-
-/*----------------------------------------------------------------------------*/
-
-      /* "-mc" */
-
-      if (strcmp("-mc", *spp) == 0) {
-         qconf_is_manager_on_admin_host(username, qualified_hostname);
-
-         /* CS-2823: the complex table is a stored procedure round trip now, the
-          * same three steps as "-mrqs" - qmaster renders the table, the client
-          * carries it to the editor and back, qmaster parses and applies it.
-          * The read is the "-sc" sub-procedure, whose aligned columns are what
-          * an administrator edits.
-          *
-          * MODE_REPLACE, unlike "-mrqs": the complex list keeps its wholesale
-          * replace, because a row taken out of the table is how a complex is
-          * removed - there is no "-dc" - and both halves of the object agree on
-          * it. The built-ins are retained and named, which is the property
-          * CS-2523 put into the client and which now lives on the descriptor. */
-         if (qconf_edit_list_procedure(param, QConfObj::CE, "-mc", "-sc",
-                                       ocs::QConfParameter::CENTRY_LIST, nullptr, uid, gid,
-                                       ocs::QConfWriteParameter::MODE_REPLACE, true) != 0) {
-            sge_parse_return = 1;
-         }
-         spp++;
-         continue;
-      }
-/*----------------------------------------------------------------------------*/
-      /* "-Mc complex file" */
-
-      if (strcmp("-Mc", *spp) == 0) {
-         char *file = nullptr;
-
-         /* no adminhost/manager check needed here */
-
-         if (!sge_next_is_an_opt(spp)) {
-            spp = sge_parser_get_next(spp);
-            file = *spp;
-         } else {
-            sge_error_and_exit(MSG_FILE_NOFILEARGUMENTGIVEN);
-         }
-         /* The file side of "-mc", through the same procedure with the same two
-          * modes, so the complex list has one writer and not two (CS-2823). */
-         if (qconf_apply_obj(os, QConfObj::CE, file, nullptr,
-                             ocs::QConfWriteParameter::MODE_LIST |
-                             ocs::QConfWriteParameter::MODE_REPLACE) != 0) {
-            sge_parse_return = 1;
-         }
-         spp++;
-         continue;
-      }
-/*-----------------------------------------------------------------------------*/
-      /* "-mrqs rqs_name" */
-      if (strcmp("-mrqs", *spp) == 0) {
-         const char *name = nullptr;
-
-         if (!sge_next_is_an_opt(spp)) {
-            spp = sge_parser_get_next(spp);
-            name = *spp;
-         }
-         qconf_is_manager_on_admin_host(username, qualified_hostname);
-
-         /* CS-2823: the stored procedure round trip over a list - see
-          * qconf_edit_list_procedure(), which is also what "-arqs" calls. With
-          * no name every rule set is shown, as before; what changed is that a
-          * rule set missing from the saved text is reported as still being
-          * there instead of being deleted. */
-         if (qconf_edit_list_procedure(param, QConfObj::RQS, "-mrqs",
-                                       ocs::QConfModelBase::switch_for(QConfObj::RQS,
-                                                                       ocs::QConfReadKind::OBJECT_LIST),
-                                       nullptr, name, uid, gid) != 0) {
-            sge_parse_return = 1;
-         }
-
-         spp++;
-         continue;
-      }
-/*-----------------------------------------------------------------------------*/
-      /* "-Mrqs fname|dir [rqs_name,...]": CS-2307 C3 — a single file (optionally
-       * limited to the named rule sets) as before, or a directory of files */
-      if (strcmp("-Mrqs", *spp) == 0) {
-         const char *file = nullptr;
-         const char *name = nullptr;
-
-         qconf_is_manager_on_admin_host(username, qualified_hostname);
-         if (!sge_next_is_an_opt(spp)) {
-            spp = sge_parser_get_next(spp);
-            file = *spp;
-         } else {
-            sge_error_and_exit(MSG_FILE_NOFILEARGUMENTGIVEN);
-         }
-
-         if (!sge_next_is_an_opt(spp)) {
-            spp = sge_parser_get_next(spp);
-            name = *spp;
-         }
-
-         /* CS-2823: the same path every other type's "-M<obj>" takes. The
-          * optional name list is no longer a filter this side applies to what
-          * it parsed - it travels with the request and is applied where the
-          * parse happens. */
-         if (qconf_apply_obj(os, QConfObj::RQS, file, name,
-                             ocs::QConfWriteParameter::MODE_LIST) != 0) {
-            sge_parse_return = 1;
-         }
-
          spp++;
          continue;
       }
@@ -3890,19 +3802,6 @@ int sge_parse_qconf(char *argv[]) {
          if (qconf_conf_delete_path(os, *spp) != 0) {
             sge_parse_return = 1;
          }
-         spp++;
-         continue;
-      }
-
-/*----------------------------------------------------------------------------*/
-      /* "-dhgrp group,..." : CS-2306 C4 — comma-separated list of host groups */
-      if (strcmp("-dhgrp", *spp) == 0) {
-         spp = sge_parser_get_next(spp);
-         qconf_is_manager(username);
-         /* parse_name_list_to_cull() rejects an empty argument, lString2List() would not */
-         parse_name_list_to_cull("host groups to del", &lp, HGRP_Type, HGRP_name, *spp);
-         sge_parse_return |= qconf_delete_list(QConfObj::HGRP, &lp);
-
          spp++;
          continue;
       }
