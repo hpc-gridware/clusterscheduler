@@ -41,7 +41,7 @@
 #include "uti/sge_monitor.h"
 #include "uti/sge_rmon_macros.h"
 
-#include "ocs_QConfObject.h"
+#include "../ocs_QConfObject.h"
 #include "ocs_QConfWriteParameter.h"
 
 namespace ocs {

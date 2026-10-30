@@ -98,8 +98,8 @@
 #include "procedure/ocs_ProcedureController.h"
 #include "procedure/ocs_ProcedureModel.h"
 #include "procedure/ocs_ProcedureView.h"
-#include "procedure/qconf/ocs_QConfActionParameter.h"
-#include "procedure/qconf/ocs_QConfWriteModelClient.h"
+#include "procedure/qconf/action/ocs_QConfActionParameter.h"
+#include "procedure/qconf/write/ocs_QConfWriteModelClient.h"
 
 #include "qconf/ocs_QConfController.h"
 #include "qconf/table/ocs_QConfTableController.h"

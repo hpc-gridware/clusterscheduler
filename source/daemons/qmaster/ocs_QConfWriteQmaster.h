@@ -30,7 +30,7 @@
 
 #include "gdi/ocs_gdi_Packet.h"
 #include "gdi/ocs_gdi_Task.h"
-#include "procedure/qconf/ocs_QConfWriteServer.h"
+#include "procedure/qconf/write/ocs_QConfWriteServer.h"
 #include "uti/sge_monitor.h"
 
 /** @brief Apply a set of objects, parsing each one first

@@ -42,7 +42,7 @@
 #include "gdi/ocs_gdi_Packet.h"
 #include "uti/ocs_ProgName.h"
 
-#include "../ocs_ProcedureParameter.h"
+#include "../../ocs_ProcedureParameter.h"
 
 namespace ocs {
 

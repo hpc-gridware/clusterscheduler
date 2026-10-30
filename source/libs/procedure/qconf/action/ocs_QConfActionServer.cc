@@ -29,7 +29,7 @@
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_string.h"
 
-#include "msg_qconf.h"
+#include "../msg_qconf.h"
 #include "ocs_QConfActionServer.h"
 
 namespace {

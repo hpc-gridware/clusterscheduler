@@ -58,7 +58,7 @@
 #include "uti/ocs_ProgName.h"
 #include "uti/sge_rmon_macros.h"
 
-#include "../ocs_ProcedureParameter.h"
+#include "../../ocs_ProcedureParameter.h"
 
 namespace ocs {
 

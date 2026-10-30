@@ -67,8 +67,8 @@
 #include "procedure/qconf/ocs_QConfViewJSON.h"
 #include "procedure/qconf/ocs_QConfViewPlain.h"
 #include "procedure/qconf/ocs_QConfViewXML.h"
-#include "procedure/qconf/ocs_QConfActionServer.h"
-#include "procedure/qconf/ocs_QConfWriteServer.h"
+#include "procedure/qconf/action/ocs_QConfActionServer.h"
+#include "procedure/qconf/write/ocs_QConfWriteServer.h"
 
 #include "procedure/qhost/ocs_QHostContoller.h"
 #include "procedure/qhost/ocs_QHostModelServer.h"

@@ -27,7 +27,7 @@
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
 
-#include "msg_qconf.h"
+#include "../msg_qconf.h"
 #include "ocs_QConfWriteServer.h"
 
 namespace {

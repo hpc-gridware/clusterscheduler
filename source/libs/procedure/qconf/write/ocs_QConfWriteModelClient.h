@@ -30,7 +30,7 @@
 #include "gdi/ocs_gdi_Command.h"
 #include "gdi/ocs_gdi_Target.h"
 
-#include "../ocs_ProcedureModel.h"
+#include "../../ocs_ProcedureModel.h"
 #include "ocs_QConfWriteParameter.h"
 
 namespace ocs {

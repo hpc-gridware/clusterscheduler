@@ -71,7 +71,7 @@
 #include "gdi/ocs_gdi_Client.h"
 #include "gdi/ocs_gdi_ClientBase.h"
 
-#include "procedure/qconf/ocs_QConfWriteModelClient.h"
+#include "procedure/qconf/write/ocs_QConfWriteModelClient.h"
 
 #include "basis_types.h"
 

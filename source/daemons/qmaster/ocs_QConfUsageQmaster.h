@@ -29,7 +29,7 @@
 
 #include "gdi/ocs_gdi_Packet.h"
 #include "gdi/ocs_gdi_Task.h"
-#include "procedure/qconf/ocs_QConfActionServer.h"
+#include "procedure/qconf/action/ocs_QConfActionServer.h"
 #include "uti/sge_monitor.h"
 
 /** @brief Clear the share tree usage of every user and every project
