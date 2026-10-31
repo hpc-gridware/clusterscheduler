@@ -56,7 +56,6 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_ja_task.h"
 #include "sgeobj/sge_pe_task.h"
-#include "uti/sge_stdlib.h"
 
 #include "sge_job_schedd.h"
 #include "schedd_monitor.h"
@@ -424,16 +423,7 @@ void job_lists_split_with_reference_to_max_running(bool monitor_next_run, lList 
 
                lDechainElem(*(job_lists[SPLIT_PENDING]), user_job);
                if (*(job_lists[SPLIT_PENDING_EXCLUDED]) == nullptr) {
-                  lDescr *descr = user_job->descr;
-                  int pos = lGetPosInDescr(descr, JB_owner);
-        
-                  if (pos >= 0) {
-                     if (descr[pos].ht != nullptr)  {
-                        sge_free(&(descr[pos].ht));
-                     }
-                  }
-                  *(job_lists[SPLIT_PENDING_EXCLUDED]) =
-                                      lCreateList("", descr);
+                  *(job_lists[SPLIT_PENDING_EXCLUDED]) = lCreateList("", lGetElemDescr(user_job));
                }
 
                lAppendElem(*(job_lists[SPLIT_PENDING_EXCLUDED]), user_job);
