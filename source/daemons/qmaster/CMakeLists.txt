@@ -39,6 +39,7 @@ set(QMASTER_SOURCES
         ocs_QConfPurgeQmaster.cc
         ocs_QConfShareTreeQmaster.cc
         ocs_QConfUsageQmaster.cc
+        ocs_QConfDeleteQmaster.cc
         ocs_QConfWriteQmaster.cc
         ocs_ReportingFileWriter.cc
         ocs_security_qmaster.cc

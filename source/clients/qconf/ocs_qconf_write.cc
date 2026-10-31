@@ -729,7 +729,7 @@ qconf_conf_apply_one(const char *filepath, void *vctx) {
  */
 static int
 qconf_conf_apply_path(std::ostream &os, const char *path, lList **alpp) {
-   qconf_conf_ctx ctx = {&os, nullptr, 0, 0, alpp};
+   qconf_conf_ctx ctx = {&os, 0, 0, alpp};
    const bool is_dir = sge_is_directory(path);
    qconf_for_each_file(path, qconf_conf_apply_one, &ctx, alpp);
    if (is_dir) {

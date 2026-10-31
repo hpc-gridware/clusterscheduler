@@ -71,15 +71,16 @@
  * into that file's own block. The id stays empty here. */
 
 /* CS-2299: qconf add/modify/delete interface enhancements
- * (directory input, upsert, name lists, -dry, -strict, idempotent delete) */
+ * (directory input, upsert, name lists, -dry, -strict, idempotent delete).
+ * 5011 and 5017 - a skipped missing object and a delete previewed by -dry - are
+ * printed by qmaster since CS-2983 and moved to libs/procedure/qconf/msg_qconf.h
+ * as 12068 and 12069. The ids stay empty here. */
 #define MSG_QCONF_CANTOPENDIRECTORY_SS                _MESSAGE(5010, _("cannot open directory " PFQMAX ": " SFN))
-#define MSG_QCONF_DELSKIPPEDNOTEXIST_SS               _MESSAGE(5011, _(SFQ " does not exist - skipped (from file " PFNMAX ")"))
 #define MSG_QCONF_STRICTNOTHINGAPPLIED_SI             _MESSAGE(5012, _(PFNMAX ": %d file(s) failed to parse - nothing applied (-strict)"))
 #define MSG_QCONF_ADDMODSUMMARY_SII                   _MESSAGE(5013, _(PFNMAX ": %d object(s) added/modified, %d failed"))
 #define MSG_QCONF_DELCOLLECTSUMMARY_SII               _MESSAGE(5014, _(PFNMAX ": %d name(s) collected, %d file(s) failed"))
 #define MSG_QCONF_DRYRUNWOULDADD_S                    _MESSAGE(5015, _("[dry-run] would add " SFQ))
 #define MSG_QCONF_DRYRUNWOULDMODIFY_S                 _MESSAGE(5016, _("[dry-run] would modify " SFQ))
-#define MSG_QCONF_DRYRUNWOULDDELETE_S                 _MESSAGE(5017, _("[dry-run] would delete " SFQ))
 #define MSG_QCONF_CONFIRMDELETE_I                     _MESSAGE(5018, _("Delete %d object(s)? (y/n) "))
 #define MSG_QCONF_DELETEABORTED_I                     _MESSAGE(5019, _("aborted - %d object(s) not deleted"))
 #define MSG_QCONF_UNKNOWNFMT_S                        _MESSAGE(5020, _("unknown -fmt value " SFQ " (expected plain|json)"))

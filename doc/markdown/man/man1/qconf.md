@@ -215,10 +215,13 @@ functionality. If *-cb* switch is not used then *-sep* will behave as in xxQS_NA
 Please note that this command-line switch will be removed from xxQS_NAMExx with the next major release.
 
 ## -dry
-Modifier for the file and directory based add, modify and delete operations (`-A`*obj*, `-M`*obj* and `-D`*obj*,
-including `-Arqs`, `-Mrqs`, `-Mc`, `-Aconf`, `-Mconf`, `-Dconf` and `-Drqs`). The requested actions are validated and
-reported (for example `[dry-run] would add "name"`) but nothing is changed. Useful for checking a directory of
-definitions before applying it.
+Modifier for the file and directory based add and modify operations (`-A`*obj* and `-M`*obj*, including `-Arqs`,
+`-Mrqs`, `-Mc`, `-Aconf` and `-Mconf`) and for every delete operation (`-d`*obj* and `-D`*obj*, including `-de`,
+`-dconf`, `-Dconf`, `-Drqs` and `-dstree`). The requested actions are validated and reported (for example
+`[dry-run] would add "name"`) but nothing is changed. Useful for checking a directory of definitions before applying
+it. A delete under `-dry` reports each object it would delete and refuses a name that does not exist; whether
+xxqs_name_sxx_qmaster(8) would refuse a delete for another reason, for example because the object is still
+referenced, is only found out by deleting.
 
 Every other option that changes something has no dry mode, including the export options (`-S`*obj*), which write
 files. A command line that combines `-dry` with such an option is refused as a whole before any of it is carried out,

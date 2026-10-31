@@ -144,7 +144,6 @@
 
 static int sge_next_is_an_opt(char **ptr);
 
-static bool del_host_of_type(lList *arglp, ocs::gdi::Target target, lList **alpp);
 static bool mod_reserved_hgroup(std::ostream &os, lList *arglp, const char *group,
                                 ocs::gdi::SubCommand sub_command, const char *what, lList **alpp);
 static int qconf_modify_attribute(lList **alpp, int from_file, char ***spp, lListElem **epp, ocs::gdi::SubCommand sub_command, struct object_info_entry *info_entry);
@@ -408,19 +407,6 @@ int sge_parse_qconf(char *argv[]) {
          continue;
       }
 
-/*----------------------------------------------------------------------------*/
-      /* "-de server_name[,server_name,...]" */
-      if (strcmp("-de", *spp) == 0) {
-         /* no adminhost/manager check needed here */
-         spp = sge_parser_get_next(spp);
-         parse_name_list_to_cull("host to del", &lp, EH_Type, EH_name, *spp);
-         if (!del_host_of_type(lp, ocs::gdi::Target::EH_LIST, &op_alp)) {
-            sge_parse_return = 1;
-         }
-         lFreeList(&lp);
-         spp++;
-         continue;
-      }
 /*----------------------------------------------------------------------------*/
       /* "-dh server_name[,server_name,...]" */
       if (strcmp("-dh", *spp) == 0) {
@@ -1003,92 +989,6 @@ static bool mod_reserved_hgroup(std::ostream &os, lList *arglp, const char *grou
 }
 
 /* ------------------------------------------------------------ */
-
-/* add_host_of_type() removed with CS-2438: -ah/-as now modify the reserved
- * host groups through mod_reserved_hgroup(). del_host_of_type() stays -- it is
- * still the implementation of -de for EH_LIST. */
-/* ------------------------------------------------------------ */
-
-/** @brief Delete every named host, the `qconf -de` switch
- *
- * CS-2753: ONE request for the whole name list. The list syntax always existed,
- * the bulk behind it did not -- this used to send one GDI DEL per name, and each
- * of those made the qmaster rebuild `@exec_hosts` from scratch.
- *
- * Nothing is given up for it, unlike in the host group case of CS-2754.
- * sge_c_gdi_del() walks the request element by element and appends one answer per
- * host to the task's answer list, so the report stays one line per host, and a
- * host that cannot be deleted holds up the others no more than it did before --
- * every element is still handled on its own in the qmaster.
- *
- * @param arglp the hosts to delete, as parsed from the command line
- * @param target the host list to delete from, EH_LIST
- * @param alpp the answer list of the operation (CS-2971)
- * @return true if every host was deleted
- */
-static bool del_host_of_type(lList *arglp, ocs::gdi::Target target, lList **alpp) {
-   DENTER(TOP_LAYER);
-
-   lList *lp=nullptr, *alp=nullptr;
-   lDescr *type = nullptr;
-   bool ret = true;
-
-   switch (target) {
-   case ocs::gdi::Target::EH_LIST:
-      type = EH_Type;
-      break;
-   default: ;
-   }
-
-   /* every named host in one request */
-   lp = lCreateList("hosts_to_del", type);
-   for_each_rw_lv (argep, arglp) {
-      lAppendElem(lp, lCopyElem(argep));
-   }
-
-   /* delete them */
-   alp = ocs::gdi::Client::sge_gdi(target, ocs::gdi::Command::DEL, ocs::gdi::SubCommand::NONE, &lp, nullptr, nullptr);
-
-   /* the results go into the answer list of the operation */
-   if (answer_list_has_error(&alp)) {
-      ret = false;
-   }
-   qconf_answer_take(alpp, &alp);
-   lFreeList(&lp);
-
-   DRETURN(ret);
-}
-
-/* ------------------------------------------------------------ */
-
-int delete_configs(const lList *conf_list, lList **alpp) {
-   DENTER(TOP_LAYER);
-
-   if (lGetNumberOfElem(conf_list) == 0) {
-      DRETURN(0);
-   }
-
-   lList *lp = lCreateList("configs_to_del", CONF_Type);
-   const lListElem *ep;
-   for_each_ep(ep, conf_list) {
-      lAddElemHost(&lp, CONF_name, lGetHost(ep, CONF_name), CONF_Type);
-   }
-
-   lList *alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::CONF_LIST, ocs::gdi::Command::DEL,
-                                          ocs::gdi::SubCommand::NONE, &lp, nullptr, nullptr);
-
-   /* one line per configuration, as before -- the qmaster reports each of them */
-   int fail = 0;
-   for_each_ep_lv(aep, alp) {
-      if (answer_get_status(aep) != STATUS_OK) {
-         fail++;
-      }
-   }
-   qconf_answer_take(alpp, &alp);
-   lFreeList(&lp);
-
-   DRETURN(fail);
-}
 
 /**
  * @brief Sends a modify request to the master

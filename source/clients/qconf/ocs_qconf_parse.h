@@ -115,30 +115,6 @@ typedef struct object_info_entry {
  */
 void parse_name_list_to_cull(const char *name, lList **lpp, lDescr *dp, int nm, char *s);
 
-/** @brief Delete every named configuration in one request
- *
- * CS-2754: one `sge_gdi(CONF_LIST, DEL)` for the whole list, where `-dconf` and
- * `-Dconf` used to send one request per host.
- *
- * The qmaster needs nothing for this: sge_c_gdi_del() walks the request element
- * by element and sge_del_configuration() appends its own answer for each, so the
- * report stays one line per configuration and one host that cannot be deleted
- * does not stop the others.
- *
- * Gone with it is the client's "if the resolved name failed, try the name as it
- * was typed" retry. It cannot survive a single request -- the answers cannot be
- * mapped back to the elements reliably, because sge_event_spool() adds an answer
- * of its own when spooling fails -- and it turned out to be redundant anyway:
- * the qmaster looks the configuration up with lGetElemHostRW(), which normalises
- * both sides through sge_hostcpy() before comparing, so a configuration spooled
- * under the short name is found when the FQDN is requested and the other way
- * round.
- *
- * @param conf_list the configurations to delete, elements carrying CONF_name
- * @param alpp the answer list of the operation, receives the answer of every configuration (CS-2971)
- * @return the number of configurations that could not be deleted
- */
-int delete_configs(const lList *conf_list, lList **alpp);
 
 /** @brief Work through the `qconf` command line, one switch at a time
  *

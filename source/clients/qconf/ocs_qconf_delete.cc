@@ -24,6 +24,7 @@
 
 #include <ostream>
 #include <string>
+#include <vector>
 
 #include "uti/sge_log.h"
 #include "uti/sge_stdlib.h"
@@ -33,7 +34,8 @@
 #include "sgeobj/sge_host.h"
 #include "spool/flatfile/sge_flatfile.h"
 #include "spool/flatfile/sge_flatfile_obj.h"
-#include "gdi/ocs_gdi_Client.h"
+#include "procedure/qconf/action/ocs_QConfActionParameter.h"
+#include "procedure/qconf/write/ocs_QConfWriteModelClient.h"
 #include "msg_common.h"
 #include "msg_qconf.h"
 
@@ -41,115 +43,128 @@
 #include "ocs_qconf_common.h"
 #include "ocs_qconf_parse.h"
 
-/**
- * @brief Delete every object named in the file(s) at a path (file or directory) (CS-2298 C5).
+/** @brief Join names or files for one argument of the delete action
+ * @param lines the names or the files
+ * @return them, separated by QConfActionParameter::LINE_SEPARATOR
+ */
+static std::string
+qconf_delete_join(const std::vector<std::string> &lines) {
+   std::string joined;
+   for (const std::string &line : lines) {
+      if (!joined.empty()) {
+         joined += ocs::QConfActionParameter::LINE_SEPARATOR;
+      }
+      joined += line;
+   }
+   return joined;
+}
+
+/** @brief Hand the names to the delete action in qmaster (CS-2983)
  *
- * The name attribute is read from each file and the rest of the content is
- * ignored. A directory expands to a bulk delete: it is confirmed interactively
- * unless -f is given (CS-2299 H6), can be previewed with -dry (CS-2299 H3), and a
- * name that no longer exists is skipped rather than failed (CS-2299 H5).
+ * qmaster checks the permission for the object list, then deletes name after
+ * name under the lock - through the function a GDI delete uses, so a name it
+ * refuses is reported and the others are deleted all the same. With the files
+ * the names were read from, a name that does not exist is skipped with a
+ * warning naming its file (CS-2299 H5); without them it is refused, as it is
+ * for a name list. Under "-dry" qmaster reports what it would delete.
  *
- * @param os the stream the output is written to (CS-1841)
- * @param d       everything that identifies the object type: GDI target, CULL
- *                descriptor, name attribute, flatfile instruction and the
- *                transform run on each object after the read (CS-2795)
- * @param fields  spooling field list describing the file format
- * @param path    file or directory naming the objects to delete
+ * @param o       the object type
+ * @param names   the names; empty for the share tree, which is deleted as a whole
+ * @param sources for each name the file it was read from, or empty for a name list
  * @param alpp    the answer list of the operation
- * @return the number of objects that failed to be deleted
+ * @return 0 when every object was deleted, 1 otherwise
  */
 static int
-qconf_delete_path(std::ostream &os, const qconf_object_desc &d, spooling_field *fields, const char *path,
+qconf_delete_send(const QConfObj o, const std::vector<std::string> &names, const std::vector<std::string> &sources,
                   lList **alpp) {
-   const lDescr *descr = d.descr;
-   const int name_nm = d.name_nm;
-   qconf_file_ctx ctx = {&os, &d, fields, d.parse_values,
-                         lCreateList("qconf del", descr), nullptr, 0, 0, alpp};
+   DENTER(TOP_LAYER);
+
+   ocs::QConfActionParameter action(ocs::QConfActionParameter::OBJECT_DELETE);
+   action.set_arg(ocs::QConfActionParameter::ARG_NAMES, qconf_delete_join(names));
+   if (!sources.empty()) {
+      action.set_arg(ocs::QConfActionParameter::ARG_SOURCES, qconf_delete_join(sources));
+      action.set_arg(ocs::QConfActionParameter::ARG_SKIP_MISSING, ocs::QConfActionParameter::ARG_TRUE);
+   }
+   if (qconf_opt_dry_run) {
+      action.set_arg(ocs::QConfActionParameter::ARG_DRY, ocs::QConfActionParameter::ARG_TRUE);
+   }
+
+   ocs::QConfWriteModelClient model(qconf_desc(o).target);
+   lList *answer_list = nullptr;
+   const bool ok = model.make_snapshot(&answer_list, action);
+   const int shown = qconf_answer_take(alpp, &answer_list);
+
+   DRETURN((!ok || shown != 0) ? 1 : 0);
+}
+
+/** @brief The names of a parsed name list
+ * @param o  the object type, whose name field the elements carry
+ * @param lp the elements; consumed, set to nullptr
+ * @return the names, in the order given
+ */
+static std::vector<std::string>
+qconf_delete_names_of(const QConfObj o, lList **lpp) {
+   const qconf_object_desc &d = qconf_desc(o);
+   std::vector<std::string> names;
+   for_each_ep_lv(ep, *lpp) {
+      const char *name = qconf_get_name(ep, d.name_nm);
+      if (name != nullptr) {
+         names.emplace_back(name);
+      }
+   }
+   lFreeList(lpp);
+   return names;
+}
+
+/** @brief Delete the objects whose names a batch read from files collected
+ *
+ * A directory expands to a bulk delete: it is confirmed interactively unless -f
+ * is given (CS-2299 H6), and -dry previews it (CS-2299 H3), which asks nothing.
+ *
+ * @param os      the stream the output is written to (CS-1841)
+ * @param o       the object type
+ * @param path    the file or directory the names were read from
+ * @param names   the collected names
+ * @param sources for each name the file it was read from
+ * @param n_fail  the files that could not be read
+ * @param alpp    the answer list of the operation
+ * @return the number of files that could not be read, plus one when a delete failed
+ */
+static int
+qconf_delete_collected(std::ostream &os, const QConfObj o, const char *path, const std::vector<std::string> &names,
+                       const std::vector<std::string> &sources, const int n_fail, lList **alpp) {
    const bool is_dir = sge_is_directory(path);
-   qconf_for_each_file(path, qconf_collect_name, &ctx, alpp);
+   const int n_names = static_cast<int>(names.size());
 
    if (is_dir) {
       /* CS-2299 H1: report the read phase before the batch delete. */
-      qconf_info(os, MSG_QCONF_DELCOLLECTSUMMARY_SII, path, ctx.n_ok, ctx.n_fail);
+      qconf_info(os, MSG_QCONF_DELCOLLECTSUMMARY_SII, path, n_names, n_fail);
    }
-
-   const int n_names = lGetNumberOfElem(ctx.names);
-   if (n_names > 0 && qconf_opt_dry_run) {
-      /* CS-2299 H3: list what would be deleted, contact no one. */
-      for_each_ep_lv(nep, ctx.names) {
-         qconf_info(os, MSG_QCONF_DRYRUNWOULDDELETE_S, qconf_get_name(nep, name_nm));
-      }
-      lFreeList(&ctx.names);
-      return ctx.n_fail;
+   if (n_names == 0) {
+      return n_fail;
    }
-   if (n_names > 0 && is_dir && !qconf_opt_force) {
+   if (is_dir && !qconf_opt_dry_run && !qconf_opt_force) {
       /* CS-2299 H6: a directory expands to a bulk delete - confirm first. */
       const bool ok = qconf_confirm(qconf_format(MSG_QCONF_CONFIRMDELETE_I, n_names).c_str(), alpp);
       if (!ok) {
          qconf_answer(alpp, ANSWER_QUALITY_WARNING, MSG_QCONF_DELETEABORTED_I, n_names);
-         lFreeList(&ctx.names);
-         return ctx.n_fail;
+         return n_fail;
       }
    }
-   if (n_names > 0) {
-      lList *alp = ocs::gdi::Client::sge_gdi(d.target, ocs::gdi::Command::DEL,
-                                             ocs::gdi::SubCommand::NONE, &ctx.names,
-                                             nullptr, nullptr);
-      ctx.n_fail += qconf_answer_take(alpp, &alp);
-   }
-   lFreeList(&ctx.names);
-   return ctx.n_fail;
+   return n_fail + qconf_delete_send(o, names, sources, alpp);
 }
 
-/** @brief Delete the objects named by an already parsed list.
+/**
+ * @brief Delete every object named in the file(s) at a path (file or directory) (CS-2298 C5).
  *
- * Split out of qconf_delete_names() because -dhgrp parses its argument with
- * parse_name_list_to_cull() rather than lString2List(), which reports an empty
- * argument instead of accepting it.
+ * The name attribute is read from each file and the rest of the content is
+ * ignored.
  *
- * @param o   the object type
- * @param lpp the name list; consumed, set to nullptr
- * @param alpp the answer list of the operation
- * @return 0 on success, 1 when the master reported an error
- */
-static int
-qconf_delete_list(const QConfObj o, lList **lpp, lList **alpp) {
-   DENTER(TOP_LAYER);
-   const qconf_object_desc &d = qconf_desc(o);
-
-   lList *alp = ocs::gdi::Client::sge_gdi(d.target, ocs::gdi::Command::DEL, ocs::gdi::SubCommand::NONE,
-                                          lpp, nullptr, nullptr);
-   const int ret = qconf_answer_take(alpp, &alp);
-   lFreeList(lpp);
-   DRETURN(ret);
-}
-
-/** @brief Delete objects of the given type by name.
- *
- * @param o     the object type
- * @param names comma or blank separated list of names; ignored for a type
- *              without a name field, which holds exactly one object
- * @param alpp  the answer list of the operation
- * @return 0 on success, 1 when the master reported an error
- */
-static int
-qconf_delete_names(const QConfObj o, const char *names, lList **alpp) {
-   const qconf_object_desc &d = qconf_desc(o);
-
-   // a type without a name field is deleted as a whole, so there is nothing to name
-   lList *lp = nullptr;
-   if (d.name_nm != NoName) {
-      lString2List(names, &lp, const_cast<lDescr *>(d.descr), d.name_nm, ", ");
-   }
-   return qconf_delete_list(o, &lp, alpp);
-}
-
-/** @brief Delete the objects named by a file or directory, driven by the descriptor.
  * @param os the stream the output is written to (CS-1841)
- * @param o    the object type
- * @param path file or directory to read
- * @param alpp the answer list of the operation
- * @return 0 on success, non-zero on error
+ * @param o       the object type
+ * @param path    file or directory naming the objects to delete
+ * @param alpp    the answer list of the operation
+ * @return the number of files that failed, plus one when a delete failed
  */
 static int
 qconf_delete_obj(std::ostream &os, const QConfObj o, const char *path, lList **alpp) {
@@ -158,37 +173,39 @@ qconf_delete_obj(std::ostream &os, const QConfObj o, const char *path, lList **a
    /* the write field list, which a diagnostic attribute has no business in: the file is
     * read to learn the names of the objects to delete */
    spooling_field *fields = d.build_fields(qconf_opt_format, false, &owned);
-   const int ret = qconf_delete_path(os, d, fields, path, alpp);
+   std::vector<std::string> names;
+   std::vector<std::string> sources;
+   qconf_file_ctx ctx = {&os, &d, fields, d.parse_values, &names, &sources, 0, 0, alpp};
+   qconf_for_each_file(path, qconf_collect_name, &ctx, alpp);
    if (owned) {
       sge_free(&fields);
    }
-   return ret;
+   return qconf_delete_collected(os, o, path, names, sources, ctx.n_fail, alpp);
 }
 
 /* ===== CS-2307: resource quota set helpers =================================
- * RQS files hold a *list* of rule sets (read with spool_flatfile_read_list and
- * applied with SET_ALL), so they get their own helpers rather than the
- * single-object qconf_delete_path above. The directory case
- * reuses qconf_for_each_file and emits the same catalogue messages/flags. */
+ * RQS files hold a *list* of rule sets (read with spool_flatfile_read_list), so
+ * they are read by a callback of their own; what is collected is deleted the way
+ * every other type's names are (CS-2983). */
 
-/** @brief Context for qconf_rqs_collect: the merged RQS list + read-failure count. */
-struct qconf_rqs_ctx {
-   std::ostream *os;   ///< where the per-file messages go (CS-1841)
-   lList *all;   ///< merged RQS_Type list collected from every file
-   int n_fail;   ///< files that failed to read
-   lList **alpp; ///< the answer list of the operation (CS-2971)
+/** @brief Context for the per-file callbacks of a type's own: the collected names, their files and the read-failure count. */
+struct qconf_names_ctx {
+   std::vector<std::string> *names;   ///< the names of the rule sets of every file
+   std::vector<std::string> *sources; ///< for each name the file it was read from
+   int n_fail;                        ///< files that failed to read
+   lList **alpp;                      ///< the answer list of the operation (CS-2971)
 };
 
 /** @brief qconf_for_each_file callback: read one file's resource quota sets and
- *  move them into the merged list (CS-2307)
+ *  queue their names (CS-2307)
  *
  * @param filepath the file to read
- * @param vctx     the qconf_rqs_ctx of the batch
+ * @param vctx     the qconf_names_ctx of the batch
  * @return 0 when the file was read, 1 otherwise
  */
 static int
 qconf_rqs_collect(const char *filepath, void *vctx) {
-   auto *ctx = static_cast<qconf_rqs_ctx *>(vctx);
+   auto *ctx = static_cast<qconf_names_ctx *>(vctx);
    lList *alp = nullptr;
    lList *l = spool_flatfile_read_list(&alp, RQS_Type, RQS_fields, nullptr, true,
                                        &qconf_rqs_sfi, qconf_opt_format, nullptr, filepath);
@@ -197,141 +214,59 @@ qconf_rqs_collect(const char *filepath, void *vctx) {
       ctx->n_fail++;
       return 1;
    }
-   for (lListElem *e = lFirstRW(l); e != nullptr; e = lFirstRW(l)) {
-      lDechainElem(l, e);
-      lAppendElem(ctx->all, e);
+   for_each_ep_lv(e, l) {
+      ctx->names->emplace_back(lGetString(e, RQS_name));
+      ctx->sources->emplace_back(filepath);
    }
    lFreeList(&l);
    return 0;
 }
 
 /**
- * @brief Delete the resource quota set(s) named in the file(s) at @a path (CS-2307 C5).
+ * @brief Per-file callback: queue the host configuration a file is named after (CS-2311 C5).
  *
- * Reads every rule set named in the file/dir; a name that no longer exists is
- * reported and skipped (idempotent). A directory delete is confirmed unless -f,
- * and -dry previews it.
- *
- * @param os the stream the output is written to (CS-1841)
- * @param path file or directory naming the rule sets to delete
- * @param alpp the answer list of the operation
- * @return 0 on success, non-zero on failure
- */
-static int
-qconf_rqs_delete(std::ostream &os, const char *path, lList **alpp) {
-   qconf_rqs_ctx ctx = {&os, lCreateList("rqs", RQS_Type), 0, alpp};
-   const bool is_dir = sge_is_directory(path);
-   qconf_for_each_file(path, qconf_rqs_collect, &ctx, alpp);
-   int ret = ctx.n_fail;
-
-   /* keep only the names that still exist (idempotent delete) */
-   lList *del = lCreateList("rqs del", RQS_Type);
-   for_each_ep_lv(r, ctx.all) {
-      const char *nm = lGetString(r, RQS_name);
-      if (qconf_object_exists(ocs::gdi::Target::RQS_LIST, RQS_Type, RQS_name, nm)) {
-         lAddElemStr(&del, RQS_name, nm, RQS_Type);
-      } else {
-         qconf_answer(alpp, ANSWER_QUALITY_WARNING, MSG_QCONF_DELSKIPPEDNOTEXIST_SS, nm, path);
-      }
-   }
-   lFreeList(&ctx.all);
-
-   const int n = lGetNumberOfElem(del);
-   if (n > 0 && qconf_opt_dry_run) {
-      for_each_ep_lv(r, del) {
-         qconf_info(os, MSG_QCONF_DRYRUNWOULDDELETE_S, lGetString(r, RQS_name));
-      }
-      lFreeList(&del);
-      return ret;
-   }
-   if (n > 0 && is_dir && !qconf_opt_force) {
-      const bool ok = qconf_confirm(qconf_format(MSG_QCONF_CONFIRMDELETE_I, n).c_str(), alpp);
-      if (!ok) {
-         qconf_answer(alpp, ANSWER_QUALITY_WARNING, MSG_QCONF_DELETEABORTED_I, n);
-         lFreeList(&del);
-         return ret;
-      }
-   }
-   if (n > 0) {
-      /* A direct GDI call, exactly like the "-drqs" name-list path does. The
-       * rule sets' own client module is gone with CS-2823; what is left of this
-       * type outside the descriptor table is the delete, which has no procedure
-       * yet. */
-      lList *alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::RQS_LIST, ocs::gdi::Command::DEL,
-                                             ocs::gdi::SubCommand::NONE, &del, nullptr, nullptr);
-      ret += qconf_answer_take(alpp, &alp);
-   }
-   lFreeList(&del);
-   return ret;
-}
-
-/**
- * @brief Per-file delete callback: queue one host config for deletion (CS-2311 C5).
- *
- * The host key is the file basename. A config that no longer exists is reported
- * and skipped rather than queued (CS-2299 H5).
+ * The host key is the file basename, resolved as -Aconf/-dconf resolve it.
  *
  * @param filepath path of the config file naming the host
- * @param vctx     pointer to the qconf_conf_ctx for this batch
- * @return 0 always (a skipped non-existent host is not a failure)
+ * @param vctx     the qconf_names_ctx of the batch
+ * @return 0 always
  */
 static int
 qconf_conf_collect_host(const char *filepath, void *vctx) {
-   auto *ctx = static_cast<qconf_conf_ctx *>(vctx);
+   auto *ctx = static_cast<qconf_names_ctx *>(vctx);
    lListElem *host_ep = lCreateElem(EH_Type);
-   const char *hostname = qconf_conf_host_of(filepath, host_ep);
-   if (qconf_object_exists(ocs::gdi::Target::CONF_LIST, CONF_Type, CONF_name, hostname)) {
-      lAddElemHost(&ctx->hosts, CONF_name, hostname, CONF_Type);
-      ctx->n_ok++;
-   } else {
-      qconf_answer(ctx->alpp, ANSWER_QUALITY_WARNING, MSG_QCONF_DELSKIPPEDNOTEXIST_SS, hostname, filepath);
-   }
+   ctx->names->emplace_back(qconf_conf_host_of(filepath, host_ep));
+   ctx->sources->emplace_back(filepath);
    lFreeElem(&host_ep);
    return 0;
 }
 
-/**
- * @brief Delete every host config named by the file(s) at a path (CS-2311 C5).
+/** @brief Delete the objects a file or directory names, read by a callback of the type's own
  *
- * Honours -dry (preview), -f (skip the directory confirm) and is idempotent
- * (a host whose config no longer exists is skipped, not failed).
+ * The resource quota sets and the host configurations, whose files are not one
+ * object with a name field each.
  *
- * @param os the stream the output is written to (CS-1841)
- * @param path  config file or directory naming the host configs to delete
- * @param alpp  the answer list of the operation
- * @return the number of configs that failed to be deleted
+ * @param os the stream the output is written to
+ * @param o the object type
+ * @param path the file or directory
+ * @param collect the callback that reads one file's names
+ * @param alpp the answer list of the operation
+ * @return the number of files that failed, plus one when a delete failed
  */
 static int
-qconf_conf_delete_path(std::ostream &os, const char *path, lList **alpp) {
-   qconf_conf_ctx ctx = {&os, lCreateList("conf del", CONF_Type), 0, 0, alpp};
-   const bool is_dir = sge_is_directory(path);
-   qconf_for_each_file(path, qconf_conf_collect_host, &ctx, alpp);
-
-   const int n = lGetNumberOfElem(ctx.hosts);
-   if (n > 0 && qconf_opt_dry_run) {
-      for_each_ep_lv(e, ctx.hosts) {
-         qconf_info(os, MSG_QCONF_DRYRUNWOULDDELETE_S, lGetHost(e, CONF_name));
-      }
-      lFreeList(&ctx.hosts);
-      return 0;
-   }
-   if (n > 0 && is_dir && !qconf_opt_force) {
-      const bool ok = qconf_confirm(qconf_format(MSG_QCONF_CONFIRMDELETE_I, n).c_str(), alpp);
-      if (!ok) {
-         qconf_answer(alpp, ANSWER_QUALITY_WARNING, MSG_QCONF_DELETEABORTED_I, n);
-         lFreeList(&ctx.hosts);
-         return 0;
-      }
-   }
-   const int ret = delete_configs(ctx.hosts, alpp);
-   lFreeList(&ctx.hosts);
-   return ret;
+qconf_delete_path_collected(std::ostream &os, const QConfObj o, const char *path,
+                            int (*collect)(const char *, void *), lList **alpp) {
+   std::vector<std::string> names;
+   std::vector<std::string> sources;
+   qconf_names_ctx ctx = {&names, &sources, 0, alpp};
+   qconf_for_each_file(path, collect, &ctx, alpp);
+   return qconf_delete_collected(os, o, path, names, sources, ctx.n_fail, alpp);
 }
 
 /** @brief How a table driven delete switch names what it deletes */
 enum class QConfDeleteKind {
-   NAMES,   ///< "-d<obj> name,...": qconf_delete_names()
-   FILE     ///< "-D<obj> file|dir": qconf_delete_obj()
+   NAMES,   ///< "-d<obj> name,...": the names of the list
+   FILE     ///< "-D<obj> file|dir": the names the files carry
 };
 
 /** @brief One delete switch served by qconf_run_delete() */
@@ -342,21 +277,39 @@ struct qconf_delete_entry {
    int (*run)(std::ostream &os, const qconf_op &op, lList **alpp); ///< a delete of its own instead of the kind's engine, or nullptr
 };
 
-/** @brief "-dhgrp group,...": the host groups of the list, as one delete request (CS-2306 C4)
+/** @brief "-dhgrp group,...": the host groups of the list (CS-2306 C4)
  *
  * The list is taken apart by parse_name_list_to_cull(), as it always was.
  *
  * @param os unused
  * @param op the operation
  * @param alpp the answer list of the operation
- * @return the status of qconf_delete_list()
+ * @return the status of qconf_delete_send()
  */
 static int
 qconf_delete_hgroup_list([[maybe_unused]] std::ostream &os, const qconf_op &op, lList **alpp) {
    std::string arg = op.args[0];
    lList *groups = nullptr;
    parse_name_list_to_cull("host groups to del", &groups, HGRP_Type, HGRP_name, arg.data());
-   return qconf_delete_list(QConfObj::HGRP, &groups, alpp);
+   return qconf_delete_send(QConfObj::HGRP, qconf_delete_names_of(QConfObj::HGRP, &groups), {}, alpp);
+}
+
+/** @brief "-de host,...": the execution hosts of the list
+ *
+ * The list is taken apart by parse_name_list_to_cull(), as the block that
+ * served it did; qmaster resolves each host (CS-2753 made it one request).
+ *
+ * @param os unused
+ * @param op the operation
+ * @param alpp the answer list of the operation
+ * @return the status of qconf_delete_send()
+ */
+static int
+qconf_delete_exechost_list([[maybe_unused]] std::ostream &os, const qconf_op &op, lList **alpp) {
+   std::string arg = op.args[0];
+   lList *hosts = nullptr;
+   parse_name_list_to_cull("host to del", &hosts, EH_Type, EH_name, arg.data());
+   return qconf_delete_send(QConfObj::EH, qconf_delete_names_of(QConfObj::EH, &hosts), {}, alpp);
 }
 
 /** @brief "-dconf host,...": the configurations of the hosts of the list (CS-2967)
@@ -378,7 +331,7 @@ qconf_delete_conf_hosts([[maybe_unused]] std::ostream &os, const qconf_op &op, l
    int ret = 0;
    std::string list = op.args[0];
    lListElem *host_ep = lCreateElem(EH_Type);
-   lList *conf_list = nullptr;
+   std::vector<std::string> names;
    for (const char *cp = sge_strtok(list.data(), ","); cp != nullptr && *cp != '\0';
         cp = sge_strtok(nullptr, ",")) {
       lSetHost(host_ep, EH_name, cp);
@@ -386,13 +339,12 @@ qconf_delete_conf_hosts([[maybe_unused]] std::ostream &os, const qconf_op &op, l
          qconf_answer(alpp, ANSWER_QUALITY_ERROR, MSG_SGETEXT_CANTRESOLVEHOST_S, cp);
          ret = 1;
       }
-      lAddElemHost(&conf_list, CONF_name, lGetHost(host_ep, EH_name), CONF_Type);
+      names.emplace_back(lGetHost(host_ep, EH_name));
    }
-   if (delete_configs(conf_list, alpp) != 0) {
+   lFreeElem(&host_ep);
+   if (!names.empty() && qconf_delete_send(QConfObj::CONF, names, {}, alpp) != 0) {
       ret = 1;
    }
-   lFreeList(&conf_list);
-   lFreeElem(&host_ep);
    return ret;
 }
 
@@ -400,32 +352,32 @@ qconf_delete_conf_hosts([[maybe_unused]] std::ostream &os, const qconf_op &op, l
  * @param os the stream the output is written to
  * @param op the operation
  * @param alpp the answer list of the operation
- * @return the status of qconf_conf_delete_path()
+ * @return the status of qconf_delete_path_collected()
  */
 static int
 qconf_delete_conf_path(std::ostream &os, const qconf_op &op, lList **alpp) {
-   return qconf_conf_delete_path(os, op.args[0].c_str(), alpp);
+   return qconf_delete_path_collected(os, QConfObj::CONF, op.args[0].c_str(), qconf_conf_collect_host, alpp);
 }
 
 /** @brief "-Drqs file|dir": the resource quota sets a file names, through the list reader of their type
  * @param os the stream the output is written to
  * @param op the operation
  * @param alpp the answer list of the operation
- * @return the status of qconf_rqs_delete()
+ * @return the status of qconf_delete_path_collected()
  */
 static int
 qconf_delete_rqs_path(std::ostream &os, const qconf_op &op, lList **alpp) {
-   return qconf_rqs_delete(os, op.args[0].c_str(), alpp);
+   return qconf_delete_path_collected(os, QConfObj::RQS, op.args[0].c_str(), qconf_rqs_collect, alpp);
 }
 
-/** @brief The delete switches that are one engine call each (CS-2952)
+/** @brief The delete switches (CS-2952, CS-2983)
  *
- * Every "-d<obj>" and "-D<obj>" whose block did nothing but call
- * qconf_delete_names() or qconf_delete_obj(); the permission is qmaster's (CS-2973).
- * "-dhgrp", "-Drqs", "-dconf" and "-Dconf" are rows with a delete of their own
- * (CS-2967). The ones with handling of their own stay blocks: "-de" and
- * "-dh"/"-ds"; "-du"/"-dm"/"-do" and "-dstnode" are actions, see
- * qconf_action_table.
+ * Every "-d<obj>" and "-D<obj>": the names of a list, or the names the files
+ * carry, handed to the delete action in qmaster; the permission is qmaster's
+ * (CS-2973). "-dhgrp", "-de", "-dconf", "-Dconf" and "-Drqs" are rows with a
+ * reader of their own (CS-2967). "-dh"/"-ds" change the members of a reserved
+ * host group and stay blocks; "-du"/"-dm"/"-do" and "-dstnode" are actions,
+ * see qconf_action_table.
  */
 static constexpr qconf_delete_entry qconf_delete_table[] = {
    {"-dcal",   QConfObj::CAL,  QConfDeleteKind::NAMES},
@@ -451,6 +403,7 @@ static constexpr qconf_delete_entry qconf_delete_table[] = {
    {"-Dprj",   QConfObj::PR,   QConfDeleteKind::FILE},
    {"-Dq",     QConfObj::CQ,   QConfDeleteKind::FILE},
    {"-dhgrp",  QConfObj::HGRP, QConfDeleteKind::NAMES, qconf_delete_hgroup_list},
+   {"-de",     QConfObj::EH,   QConfDeleteKind::NAMES, qconf_delete_exechost_list},
    {"-Drqs",   QConfObj::RQS,  QConfDeleteKind::FILE, qconf_delete_rqs_path},
    {"-dconf",  QConfObj::CONF, QConfDeleteKind::NAMES, qconf_delete_conf_hosts},
    {"-Dconf",  QConfObj::CONF, QConfDeleteKind::FILE, qconf_delete_conf_path},
@@ -458,9 +411,10 @@ static constexpr qconf_delete_entry qconf_delete_table[] = {
 
 bool
 qconf_delete_honours_dry(const qconf_op &op) {
+   /* since CS-2983 every delete has a dry mode: qmaster answers it */
    for (const qconf_delete_entry &e : qconf_delete_table) {
       if (op.token == e.switch_name) {
-         return e.kind == QConfDeleteKind::FILE;
+         return true;
       }
    }
    return false;
@@ -484,11 +438,20 @@ qconf_run_delete(std::ostream &os, const qconf_op &op, lList **alpp) {
       DRETURN(QConfOpResult::FAILED_USAGE);
    }
 
-
-   const char *arg = op.args.empty() ? nullptr : op.args.front().c_str();
-   const int failed = (entry->run != nullptr) ? entry->run(os, op, alpp)
-                      : (entry->kind == QConfDeleteKind::NAMES) ? qconf_delete_names(entry->object, arg, alpp)
-                                                                : qconf_delete_obj(os, entry->object, arg, alpp);
+   int failed;
+   if (entry->run != nullptr) {
+      failed = entry->run(os, op, alpp);
+   } else if (entry->kind == QConfDeleteKind::FILE) {
+      failed = qconf_delete_obj(os, entry->object, op.args.front().c_str(), alpp);
+   } else {
+      /* a type without a name field is deleted as a whole, so there is nothing to name */
+      const qconf_object_desc &d = qconf_desc(entry->object);
+      lList *lp = nullptr;
+      if (d.name_nm != NoName && !op.args.empty()) {
+         lString2List(op.args.front().c_str(), &lp, const_cast<lDescr *>(d.descr), d.name_nm, ", ");
+      }
+      failed = qconf_delete_send(entry->object, qconf_delete_names_of(entry->object, &lp), {}, alpp);
+   }
 
    DRETURN(failed != 0 ? QConfOpResult::FAILED : QConfOpResult::OK);
 }

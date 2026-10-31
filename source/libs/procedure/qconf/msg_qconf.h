@@ -194,4 +194,9 @@
  * object type cannot be told is refused rather than let through unchecked */
 #define MSG_QCONF_EDITREADUNKNOWN_S                _MESSAGE(12067, _("the read " SFQ " names no object type that could be edited"))
 
+/* CS-2983: the delete procedure. The two texts are the ones the client printed
+ * while it checked the names itself, worded as they were */
+#define MSG_QCONF_DELSKIPPEDNOTEXIST_SS            _MESSAGE(12068, _(SFQ " does not exist - skipped (from file " PFNMAX ")"))
+#define MSG_QCONF_DRYRUNWOULDDELETE_S              _MESSAGE(12069, _("[dry-run] would delete " SFQ))
+
 // clang-format on

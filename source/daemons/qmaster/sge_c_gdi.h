@@ -153,6 +153,26 @@ sge_chck_mod_perm_user(const ocs::gdi::Packet *packet, lList **alpp, ocs::gdi::T
 bool
 sge_chck_mod_perm_host(const ocs::gdi::Packet *packet, lList **alpp, ocs::gdi::Target target, ocs::gdi::Command command);
 
+/** @brief Delete one object, or the whole share tree, the way a GDI delete does
+ *
+ * What sge_c_gdi_del() does for each object of its data list, for the qconf
+ * delete procedure (CS-2983).
+ *
+ * @param packet      the client request
+ * @param task        the GDI task being answered
+ * @param target      the object list
+ * @param ep          the object to delete, carrying its name; nullptr deletes the
+ *                    whole list, which only the share tree supports
+ * @param alpp        receives what the delete has to say
+ * @param cmd         the command of the request
+ * @param sub_command what kind of delete this is
+ * @param monitor     for monitoring qmaster threads
+ */
+void
+sge_c_gdi_del_element(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::gdi::Target target, lListElem *ep,
+                      lList **alpp, ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command,
+                      monitoring_t *monitor);
+
 void
 sge_c_gdi_process_in_worker(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list,
                             monitoring_t *monitor, bool has_next);

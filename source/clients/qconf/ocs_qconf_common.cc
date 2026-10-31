@@ -41,7 +41,6 @@
 #include "spool/flatfile/sge_flatfile.h"
 #include "sge.h"
 #include "usage.h"
-#include "gdi/ocs_gdi_Client.h"
 #include "msg_common.h"
 #include "msg_qconf.h"
 
@@ -190,25 +189,6 @@ qconf_confirm(const char *prompt, lList **alpp) {
    return (buf[0] == 'y' || buf[0] == 'Y');
 }
 
-bool
-qconf_object_exists(const ocs::gdi::Target target, const lDescr *descr, const int name_nm,
-                    const char *name) {
-   /* CS-2304: host fields need a host comparison (%Ih), not a string one. */
-   lCondition *where = qconf_name_is_host(descr, name_nm)
-      ? lWhere("%T(%Ih=%s)", descr, name_nm, name)
-      : lWhere("%T(%I==%s)", descr, name_nm, name);
-   lEnumeration *what = lWhat("%T(%I)", descr, name_nm);
-   lList *lp = nullptr;
-   lList *alp = ocs::gdi::Client::sge_gdi(target, ocs::gdi::Command::GET,
-                                          ocs::gdi::SubCommand::NONE, &lp, where, what);
-   lFreeWhere(&where);
-   lFreeWhat(&what);
-   const bool exists = (lp != nullptr && lGetNumberOfElem(lp) > 0);
-   lFreeList(&lp);
-   lFreeList(&alp);
-   return exists;
-}
-
 /**
  * @brief Read and validate a single object from an ASCII flatfile.
  *
@@ -287,19 +267,12 @@ qconf_collect_name(const char *filepath, void *vctx) {
    }
    const char *name = qconf_get_name(ep, ctx->desc->name_nm);
    if (name != nullptr) {
-      /* CS-2299 H5: deleting is idempotent — a name that no longer exists is a
-       * warning, not a batch failure, and is dropped from the delete request. */
-      if (qconf_object_exists(ctx->desc->target, ctx->desc->descr, ctx->desc->name_nm, name)) {
-         /* CS-2304: host fields must be added with lAddElemHost, not lAddElemStr. */
-         if (qconf_name_is_host(ctx->desc->descr, ctx->desc->name_nm)) {
-            lAddElemHost(&ctx->names, ctx->desc->name_nm, name, ctx->desc->descr);
-         } else {
-            lAddElemStr(&ctx->names, ctx->desc->name_nm, name, ctx->desc->descr);
-         }
-         ctx->n_ok++;
-      } else {
-         qconf_answer(ctx->alpp, ANSWER_QUALITY_WARNING, MSG_QCONF_DELSKIPPEDNOTEXIST_SS, name, filepath);
-      }
+      /* CS-2299 H5: deleting is idempotent - whether the object still exists is
+       * qmaster's to decide, under the lock, which skips it with a warning
+       * naming this file (CS-2983) */
+      ctx->names->emplace_back(name);
+      ctx->sources->emplace_back(filepath);
+      ctx->n_ok++;
    }
    lFreeElem(&ep);
    return 0;
@@ -360,8 +333,8 @@ qconf_read_file_text(const char *filename, std::string &text) {
  * field-name-based qconf_delete_path. What is left of them is
  * the path handling: since CS-2823 the writing itself is the procedure's, and
  * the basename travels with the request as the object's name, because a
- * configuration's text does not carry it. delete_configs() is forward-declared
- * at the top of this file. */
+ * configuration's text does not carry it. Deleting is the delete action's
+ * (CS-2983). */
 
 const char *
 qconf_conf_host_of(const char *filepath, lListElem *host_ep) {

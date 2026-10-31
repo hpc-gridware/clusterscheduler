@@ -791,8 +791,123 @@ sge_c_gdi_add(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
    DRETURN_VOID;
 }
 
-/*
- * MT-NOTE: sge_c_gdi-del() is MT safe
+/** @brief Delete one object, or the whole share tree, the way a GDI delete does
+ *
+ * The per-object half of sge_c_gdi_del(), split out so that the qconf delete
+ * procedure (CS-2983) deletes through exactly the functions, the checks and the
+ * messages a GDI delete uses.
+ *
+ * @param packet      the client request
+ * @param task        the GDI task being answered
+ * @param target      the object list
+ * @param ep          the object to delete, carrying its name; nullptr deletes the
+ *                    whole list, which only the share tree supports
+ * @param alpp        receives what the delete has to say
+ * @param cmd         the command of the request
+ * @param sub_command what kind of delete this is
+ * @param monitor     for monitoring qmaster threads
+ */
+void
+sge_c_gdi_del_element(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::gdi::Target target, lListElem *ep,
+                      lList **alpp, const ocs::gdi::Command cmd, const ocs::gdi::SubCommand sub_command,
+                      monitoring_t *monitor) {
+   DENTER(GDI_LAYER);
+
+   if (ep == nullptr) {
+      switch (target) {
+         case ocs::gdi::Target::STN_LIST:
+            sge_del_sharetree(packet, task, ocs::DataStore::get_master_list_rw(SGE_TYPE_SHARETREE), alpp,
+                              packet->user, packet->host);
+            break;
+         default:
+            snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_OPNOIMPFORTARGET_S, "sge_c_gdi_del");
+            answer_list_add(alpp, SGE_EVENT, STATUS_ENOIMP, ANSWER_QUALITY_ERROR);
+            break;
+      }
+      DRETURN_VOID;
+   }
+
+      switch (target) {
+         case ocs::gdi::Target::EH_LIST:
+            sge_del_host(packet, task, ep, alpp, packet->user, packet->host, target,
+                         *ocs::DataStore::get_master_list_rw(SGE_TYPE_HGROUP), monitor);
+            break;
+
+         case ocs::gdi::Target::CQ_LIST:
+            cqueue_del(packet, task, ep, alpp, packet->user, packet->host);
+            break;
+
+         case ocs::gdi::Target::JB_LIST:
+            sge_gdi_del_job(packet, task, ep, alpp, cmd, sub_command, monitor);
+            break;
+
+         case ocs::gdi::Target::CE_LIST:
+            sge_del_centry(packet, task, ep, alpp, packet->user, packet->host);
+            break;
+
+         case ocs::gdi::Target::PE_LIST:
+            sge_del_pe(packet, task, ep, alpp, packet->user, packet->host);
+            break;
+
+
+         case ocs::gdi::Target::CONF_LIST:
+            sge_del_configuration(packet, task, ep, alpp, packet->user, packet->host);
+            break;
+
+         case ocs::gdi::Target::UU_LIST:
+            sge_del_userprj(packet, task, ep, alpp, ocs::DataStore::get_master_list_rw(SGE_TYPE_USER),
+                            packet->user, packet->host, 1);
+            break;
+
+         case ocs::gdi::Target::US_LIST:
+            sge_del_userset(packet, task, ep, alpp, ocs::DataStore::get_master_list_rw(SGE_TYPE_USERSET),
+                            packet->user, packet->host);
+            break;
+
+         case ocs::gdi::Target::PR_LIST:
+            sge_del_userprj(packet, task, ep, alpp, ocs::DataStore::get_master_list_rw(SGE_TYPE_PROJECT),
+                            packet->user, packet->host, 0);
+            break;
+
+         case ocs::gdi::Target::RQS_LIST:
+            rqs_del(packet, task, ep, alpp, ocs::DataStore::get_master_list_rw(SGE_TYPE_RQS), packet->user,
+                    packet->host);
+            break;
+
+         case ocs::gdi::Target::CK_LIST:
+            sge_del_ckpt(packet, task, ep, alpp, packet->user, packet->host);
+            break;
+
+         case ocs::gdi::Target::CAL_LIST:
+            sge_del_calendar(packet, task, ep, alpp, packet->user, packet->host);
+            break;
+         case ocs::gdi::Target::HGRP_LIST:
+            hgroup_del(packet, task, ep, alpp, packet->user, packet->host);
+            break;
+         case ocs::gdi::Target::AR_LIST:
+            ar_del(packet, task, ep, alpp, ocs::DataStore::get_master_list_rw(SGE_TYPE_AR), monitor);
+            break;
+         case ocs::gdi::Target::RL_LIST:
+            sge_del_role(packet, task, ep, alpp, packet->user, packet->host);
+            break;
+         default:
+            snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_OPNOIMPFORTARGET_S, "sge_c_gdi_del");
+            answer_list_add(alpp, SGE_EVENT, STATUS_ENOIMP, ANSWER_QUALITY_ERROR);
+            break;
+   }
+
+   DRETURN_VOID;
+}
+
+/** @brief Carry out a GDI delete request, one object of its data list after the other
+ *
+ * MT safe.
+ *
+ * @param packet      the client request
+ * @param task        the GDI task being answered; an empty data list deletes the whole list
+ * @param cmd         the command of the request
+ * @param sub_command what kind of delete this is
+ * @param monitor     for monitoring qmaster threads
  */
 void
 sge_c_gdi_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command, monitoring_t *monitor) {
@@ -800,90 +915,11 @@ sge_c_gdi_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::gdi::Command 
 
    if (task->data_list == nullptr) {
       /* delete whole list */
-
-      switch (task->target) {
-         case ocs::gdi::Target::STN_LIST:
-            sge_del_sharetree(packet, task, ocs::DataStore::get_master_list_rw(SGE_TYPE_SHARETREE), &(task->answer_list),
-                              packet->user, packet->host);
-            break;
-         default:
-            snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_OPNOIMPFORTARGET_S, __func__);
-            answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_ENOIMP, ANSWER_QUALITY_ERROR);
-            break;
-      }
+      sge_c_gdi_del_element(packet, task, task->target, nullptr, &(task->answer_list), cmd, sub_command, monitor);
    } else {
       for_each_rw_lv(ep, task->data_list) {
-         /* try to remove the element */
-         switch (task->target) {
-            case ocs::gdi::Target::EH_LIST:
-               sge_del_host(packet, task, ep, &(task->answer_list), packet->user, packet->host, task->target,
-                            *ocs::DataStore::get_master_list_rw(SGE_TYPE_HGROUP), monitor);
-               break;
-
-            case ocs::gdi::Target::CQ_LIST:
-               cqueue_del(packet, task, ep, &(task->answer_list), packet->user, packet->host);
-               break;
-
-            case ocs::gdi::Target::JB_LIST:
-               sge_gdi_del_job(packet, task, ep, &(task->answer_list), cmd, sub_command, monitor);
-               break;
-
-            case ocs::gdi::Target::CE_LIST:
-               sge_del_centry(packet, task, ep, &(task->answer_list), packet->user, packet->host);
-               break;
-
-            case ocs::gdi::Target::PE_LIST:
-               sge_del_pe(packet, task, ep, &(task->answer_list), packet->user, packet->host);
-               break;
-
-
-            case ocs::gdi::Target::CONF_LIST:
-               sge_del_configuration(packet, task, ep, &(task->answer_list), packet->user, packet->host);
-               break;
-
-            case ocs::gdi::Target::UU_LIST:
-               sge_del_userprj(packet, task, ep, &(task->answer_list), ocs::DataStore::get_master_list_rw(SGE_TYPE_USER),
-                               packet->user, packet->host, 1);
-               break;
-
-            case ocs::gdi::Target::US_LIST:
-               sge_del_userset(packet, task, ep, &(task->answer_list), ocs::DataStore::get_master_list_rw(SGE_TYPE_USERSET),
-                               packet->user, packet->host);
-               break;
-
-            case ocs::gdi::Target::PR_LIST:
-               sge_del_userprj(packet, task, ep, &(task->answer_list), ocs::DataStore::get_master_list_rw(SGE_TYPE_PROJECT),
-                               packet->user, packet->host, 0);
-               break;
-
-            case ocs::gdi::Target::RQS_LIST:
-               rqs_del(packet, task, ep, &(task->answer_list), ocs::DataStore::get_master_list_rw(SGE_TYPE_RQS), packet->user,
-                       packet->host);
-               break;
-
-            case ocs::gdi::Target::CK_LIST:
-               sge_del_ckpt(packet, task, ep, &(task->answer_list), packet->user, packet->host);
-               break;
-
-            case ocs::gdi::Target::CAL_LIST:
-               sge_del_calendar(packet, task, ep, &(task->answer_list), packet->user, packet->host);
-               break;
-            case ocs::gdi::Target::HGRP_LIST:
-               hgroup_del(packet, task, ep, &(task->answer_list), packet->user, packet->host);
-               break;
-            case ocs::gdi::Target::AR_LIST:
-               ar_del(packet, task, ep, &(task->answer_list), ocs::DataStore::get_master_list_rw(SGE_TYPE_AR), monitor);
-               break;
-            case ocs::gdi::Target::RL_LIST:
-               sge_del_role(packet, task, ep, &(task->answer_list), packet->user, packet->host);
-               break;
-            default:
-               snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_OPNOIMPFORTARGET_S, __func__);
-               answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_ENOIMP, ANSWER_QUALITY_ERROR);
-               break;
-         } /* switch target */
-
-      } /* for_each element */
+         sge_c_gdi_del_element(packet, task, task->target, ep, &(task->answer_list), cmd, sub_command, monitor);
+      }
    }
 
    DRETURN_VOID;

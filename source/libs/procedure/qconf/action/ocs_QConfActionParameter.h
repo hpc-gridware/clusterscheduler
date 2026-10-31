@@ -56,6 +56,7 @@ namespace ocs {
       static constexpr auto USERSET_MEMBERS = "userset_members"; ///< `-au`/`-du`/`-am`/`-ao`/`-dm`/`-do` (CS-2959)
       static constexpr auto USAGE_CLEAR = "usage_clear";         ///< `-clearusage` (CS-2963), takes no arguments
       static constexpr auto SHARETREE_NODES = "sharetree_nodes"; ///< `-astnode`/`-mstnode`/`-dstnode` (CS-2966)
+      static constexpr auto OBJECT_DELETE = "object_delete";     ///< `-d<obj>`/`-D<obj>`, `-de`, `-dconf`, `-dstree` (CS-2983)
 
       // the arguments of QUEUE_PURGE
       static constexpr auto ARG_QUEUE = "queue";           ///< the cluster queue
@@ -73,6 +74,15 @@ namespace ocs {
       static constexpr auto OP_ADD = "add";                ///< `-astnode`: set the shares, add a missing node
       static constexpr auto OP_MODIFY = "modify";          ///< `-mstnode`: set the shares of existing nodes
       static constexpr auto OP_DELETE = "delete";          ///< `-dstnode`: delete leaf nodes
+
+      // the arguments of OBJECT_DELETE; the object type is the target the request is addressed to
+      static constexpr auto ARG_NAMES = "names";           ///< the names, one per line; none for the share tree
+      static constexpr auto ARG_SOURCES = "sources";       ///< for each name the file it was read from, one per
+                                                            ///< line; empty for a name list
+      static constexpr auto ARG_SKIP_MISSING = "skip_missing"; ///< ARG_TRUE: a name that does not exist is a
+                                                                ///< warning and is skipped, as for "-D<obj>"
+      static constexpr auto ARG_DRY = "dry";               ///< ARG_TRUE: report what would be deleted, delete nothing
+      static constexpr char LINE_SEPARATOR = '\n';        ///< separates the names and the sources
 
       static constexpr auto ARG_TRUE = "1";                ///< the value of a set flag argument
 

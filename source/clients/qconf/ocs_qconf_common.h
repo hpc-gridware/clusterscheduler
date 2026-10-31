@@ -83,19 +83,6 @@ bool
 qconf_confirm(const char *prompt, lList **alpp);
 
 /**
- * @brief Test whether an object of a given name already exists in qmaster.
- *
- * @param target  GDI target list to query (e.g. CAL_LIST)
- * @param descr   CULL descriptor of the object type
- * @param name_nm name attribute of the object (e.g. CAL_name)
- * @param name    object name to look up
- * @return true if an object of that name exists, false otherwise
- */
-bool
-qconf_object_exists(ocs::gdi::Target target, const lDescr *descr, int name_nm,
-                    const char *name);
-
-/**
  * @brief Apply a callback to a file, or to every file in a directory (CS-2298 C3/C5).
  *
  * When @p path is a regular file, @p per_file is invoked once for it. When it is
@@ -118,9 +105,9 @@ struct qconf_file_ctx {
    spooling_field *fields;    ///< spooling field list, resolved from the descriptor's provider
    bool parse_values;         ///< spool_flatfile_read_object parse_values flag; the delete path
                               ///< takes it from the descriptor, the apply path always parses
-   lList *names;              ///< delete path: collected name elements
-   lList *elems;              ///< -strict apply: parsed objects pending send (CS-2299 H2)
-   int n_ok;                  ///< files applied / names collected (CS-2299 H1)
+   std::vector<std::string> *names;   ///< the collected names
+   std::vector<std::string> *sources; ///< for each name the file it was read from (CS-2983)
+   int n_ok;                  ///< names collected (CS-2299 H1)
    int n_fail;                ///< files that failed (CS-2299 H1)
    lList **alpp;              ///< the answer list of the operation (CS-2971)
 };
@@ -128,12 +115,13 @@ struct qconf_file_ctx {
 /**
  * @brief Per-file callback: read one object and queue its name for deletion (CS-2298 C5).
  *
- * A name that no longer exists is reported and skipped rather than queued
- * (CS-2299 H5). Updates the n_ok / n_fail counters in the context.
+ * The name and the file are queued whether or not such an object exists: since
+ * CS-2983 qmaster skips a name that no longer exists, under the lock. Updates
+ * the n_ok / n_fail counters in the context.
  *
  * @param filepath path of the object file to read
  * @param vctx     pointer to the qconf_file_ctx for this batch
- * @return 0 on success (including a skipped non-existent name), 1 on read failure
+ * @return 0 on success, 1 on read failure
  */
 int
 qconf_collect_name(const char *filepath, void *vctx);
@@ -181,11 +169,10 @@ bool qconf_read_file_text(const char *filename, std::string &text);
 const char *
 qconf_conf_host_of(const char *filepath, lListElem *host_ep);
 
-/** @brief Context for the config apply/delete per-file callbacks. */
+/** @brief Context for the config apply per-file callback. */
 struct qconf_conf_ctx {
    std::ostream *os;   ///< where the per-file messages go (CS-1841)
-   lList *hosts;     ///< delete path: collected CONF_name host elements
-   int n_ok;         ///< files applied / hosts collected (CS-2299 H1)
+   int n_ok;         ///< files applied (CS-2299 H1)
    int n_fail;       ///< files that failed
    lList **alpp;     ///< the answer list of the operation (CS-2971)
 };
