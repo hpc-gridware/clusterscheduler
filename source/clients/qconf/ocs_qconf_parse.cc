@@ -280,6 +280,28 @@ int sge_parse_qconf(char *argv[]) {
       (param.get_value_format() == ocs::QConfParameter::ValueFormat::NUMERIC)
       ? OCS_JSON_VALUES_NUMERIC : OCS_JSON_VALUES_COMPACT;
 
+   /* CS-2984: "-dry" promises that nothing changes. Only the file and directory
+    * adds, modifies and deletes have a dry mode; every other switch would carry
+    * out its change regardless. So a command line that holds such a switch is
+    * refused as a whole, before any of it runs - refusing only that switch
+    * would leave the ones before it applied, which is just what the caller
+    * asked not to happen. A switch that only reads has nothing to hold back. */
+   if (param.get_dry_run()) {
+      lList *dry_alp = nullptr;
+      for (const qconf_op &op : param.get_operations()) {
+         /* an unknown token has no row and is reported as such by the loop below */
+         if (op.spec != nullptr && op.token != "-help" && !qconf_read_changes_nothing(op) &&
+             !qconf_write_honours_dry(op) && !qconf_delete_honours_dry(op)) {
+            qconf_answer(&dry_alp, ANSWER_QUALITY_ERROR, MSG_QCONF_DRYNOTSUPPORTED_S, op.token.c_str());
+         }
+      }
+      if (dry_alp != nullptr) {
+         qconf_answer_print(&dry_alp);
+         lFreeList(&dry_alp);
+         DRETURN(1);
+      }
+   }
+
    /* CS-2798: the execution phase. It walks the operations the parser produced,
     * in the order they were typed, and hands each option block its own argument
     * vector - { switch, arg, ..., nullptr }. That is the shape the blocks have

@@ -50,3 +50,15 @@
 QConfOpResult
 qconf_run_write(std::ostream &os, ocs::QConfParameterClient &param, const qconf_op &op,
                 uid_t uid, gid_t gid, lList **alpp);
+
+/**
+ * @brief Whether an add or modify switch previews under "-dry" (CS-2984)
+ *
+ * The file and directory switches do: qmaster validates and reports the batch
+ * and applies nothing. The editor switches do not.
+ *
+ * @param op the operation
+ * @return true when the operation is a row of qconf_write_table that applies a path
+ */
+bool
+qconf_write_honours_dry(const qconf_op &op);

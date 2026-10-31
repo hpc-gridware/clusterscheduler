@@ -456,6 +456,16 @@ static constexpr qconf_delete_entry qconf_delete_table[] = {
    {"-Dconf",  QConfObj::CONF, QConfDeleteKind::FILE, qconf_delete_conf_path},
 };
 
+bool
+qconf_delete_honours_dry(const qconf_op &op) {
+   for (const qconf_delete_entry &e : qconf_delete_table) {
+      if (op.token == e.switch_name) {
+         return e.kind == QConfDeleteKind::FILE;
+      }
+   }
+   return false;
+}
+
 QConfOpResult
 qconf_run_delete(std::ostream &os, const qconf_op &op, lList **alpp) {
    DENTER(TOP_LAYER);

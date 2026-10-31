@@ -880,6 +880,16 @@ static constexpr qconf_write_entry qconf_write_table[] = {
    {"-Msconf", QConfObj::SC,   QConfWriteKind::APPLY, nullptr,     false},
 };
 
+bool
+qconf_write_honours_dry(const qconf_op &op) {
+   for (const qconf_write_entry &e : qconf_write_table) {
+      if (op.token == e.switch_name) {
+         return e.kind == QConfWriteKind::APPLY;
+      }
+   }
+   return false;
+}
+
 QConfOpResult
 qconf_run_write(std::ostream &os, ocs::QConfParameterClient &param, const qconf_op &op,
                 const uid_t uid, const gid_t gid, lList **alpp) {

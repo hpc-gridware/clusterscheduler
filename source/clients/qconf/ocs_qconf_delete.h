@@ -44,3 +44,14 @@
  */
 QConfOpResult
 qconf_run_delete(std::ostream &os, const qconf_op &op, lList **alpp);
+
+/**
+ * @brief Whether a delete switch previews under "-dry" (CS-2984)
+ *
+ * The file and directory deletes do; the name lists do not yet (CS-2983).
+ *
+ * @param op the operation
+ * @return true when the operation is a row of qconf_delete_table that reads a path
+ */
+bool
+qconf_delete_honours_dry(const qconf_op &op);

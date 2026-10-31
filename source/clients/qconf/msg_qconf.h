@@ -100,6 +100,7 @@
 #define MSG_QCONF_MODNEEDSSERVERCTX_S                 _MESSAGE(5261, _("qconf " SFN " needs the server execution context; -ectx client cannot see whether the output was reduced"))
 #define MSG_QCONF_REDUCEDNOTEXPORTABLE_SS             _MESSAGE(5262, _("qconf " SFN " cannot export " SFQ ": the output was reduced, so you see only part of it"))
 #define MSG_QCONF_EXPORTNORESULT_S                    _MESSAGE(5263, _("qconf " SFN ": qmaster sent no export result"))
+#define MSG_QCONF_DRYNOTSUPPORTED_S                   _MESSAGE(5264, _("qconf " SFN " does not support -dry - nothing was done"))
 
 /* CS-2680, N-I-7: "qconf -shgrp_why <group> <host>" - by which route a host is a member */
 

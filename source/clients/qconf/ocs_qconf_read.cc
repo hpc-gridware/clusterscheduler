@@ -797,6 +797,19 @@ qconf_sub_procedure_once(std::ostream &os, ocs::QConfParameterClient &param, con
    DRETURN(failed);
 }
 
+bool
+qconf_read_changes_nothing(const qconf_op &op) {
+   for (const qconf_sub_procedure_entry &e : qconf_sub_procedure_table) {
+      if (op.token == e.switch_name) {
+         return true;
+      }
+   }
+   /* a SINGLE_OBJECT row the sub-procedure table does not serve is the read of
+    * a modify switch ("-mq"), which the write path serves */
+   const ocs::qconf_read_entry *entry = ocs::QConfModelBase::resolve(op.token.c_str());
+   return entry != nullptr && !entry->export_only && entry->kind != ocs::QConfReadKind::SINGLE_OBJECT;
+}
+
 QConfOpResult
 qconf_run_sub_procedure(std::ostream &os, ocs::QConfParameterClient &param, const qconf_op &op,
                         lList **alpp) {

@@ -125,3 +125,15 @@ qconf_run_read_procedure(std::ostream &os, ocs::QConfParameterClient &param, con
 QConfOpResult
 qconf_run_sub_procedure(std::ostream &os, ocs::QConfParameterClient &param, const qconf_op &op,
                         lList **alpp);
+
+/**
+ * @brief Whether an operation only reads, so that "-dry" has nothing to hold back (CS-2984)
+ *
+ * A row of the read table that prints, or a row of qconf_sub_procedure_table.
+ * An export is not one: it writes files.
+ *
+ * @param op the operation
+ * @return true when the operation changes nothing
+ */
+bool
+qconf_read_changes_nothing(const qconf_op &op);
