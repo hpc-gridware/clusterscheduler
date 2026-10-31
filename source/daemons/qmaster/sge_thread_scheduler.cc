@@ -314,7 +314,9 @@ sge_scheduler_initialize(lList **answer_list) {
          Master_Scheduler.is_running = true;
 
          INFO(MSG_THREAD_XHASSTARTED_S, to_cstr(SCHEDD_THREAD));
-         answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_INFO);
+         /* a success, so its status says so: qconf -at/-kt take their exit status
+          * from it (CS-2979) */
+         answer_list_add(answer_list, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
       } else {
          INFO(MSG_THREAD_XSTARTDISABLED_S, to_cstr(SCHEDD_THREAD));
          answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_INFO);
@@ -420,7 +422,9 @@ sge_scheduler_terminate(lList **answer_list) {
       pthread_join(thread_id, nullptr);
 
       INFO(MSG_THREAD_XTERMINATED_S, to_cstr(SCHEDD_THREAD));
-      answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_INFO);
+      /* a success, so its status says so: qconf -at/-kt take their exit status
+       * from it (CS-2979) */
+      answer_list_add(answer_list, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
    } else {
       sge_mutex_unlock("master scheduler struct", __func__, __LINE__, &(Master_Scheduler.mutex));
 
