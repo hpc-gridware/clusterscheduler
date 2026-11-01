@@ -84,23 +84,6 @@ extern spool_flatfile_format qconf_opt_format;
 /* qconf_json_fill_complex() moved to libs/procedure/qconf/ocs_QConfObject.h
  * with the descriptor table that uses it (CS-2799). */
 
-/** @brief One row of the table that drives the generic `qconf` switches
- *
- * Most `qconf` switches do the same thing to a different object: fetch it, hand
- * it to the editor, send it back. Rather than one function per object type,
- * there is one table entry per object type and one implementation that reads
- * this. Adding a configurable object means adding a row, not a switch.
- */
-typedef struct object_info_entry {
-   ocs::gdi::Target target;                  ///< which master list the object lives in
-   const char *object_name;                  ///< the name used in messages and in the `-s*`/`-m*` switch
-   lDescr *cull_descriptor;                  ///< the CULL type of the object
-   const char *attribute_name;               ///< the attribute the `-*attr` switches operate on
-   int nm_name;                              ///< the CULL field holding the object's name, its key
-   spooling_field *fields;                   ///< which fields are written out, and in what order
-   const struct spool_flatfile_instr *instr; ///< how to lay them out as text
-   bool (*pre_gdi_function)(lList *list, lList **answer_list);   ///< validation to run before sending, or `nullptr`
-} object_info_entry;
 
 /** @brief Turn a comma separated name list into a new CULL list, one element per name
  *

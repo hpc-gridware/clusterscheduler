@@ -24,6 +24,8 @@ add_executable(
         ocs_qconf.cc
         ocs_qconf_parse.cc
         ocs_qconf_action.cc
+        ocs_qconf_attr.cc
+        ocs_qconf_control.cc
         ocs_qconf_common.cc
         ocs_qconf_delete.cc
         ocs_qconf_read.cc
