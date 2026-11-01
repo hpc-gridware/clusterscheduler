@@ -21,6 +21,15 @@
 #include <cstring>
 #include <sstream>
 #include <pthread.h>
+#include <unistd.h>
+
+#if defined(LINUX)
+#  include <sys/syscall.h>
+#elif defined(FREEBSD)
+#  include <pthread_np.h>
+#elif defined(SOLARIS)
+#  include <thread.h>
+#endif
 
 #include "ocs_Bootstrap.h"
 #include "ocs_Munge.h"
@@ -225,6 +234,51 @@ static void set_thread_name(sge_component_tl0_t *tl, const char *thread_name) {
    if (thread_name != nullptr) {
       strncpy(tl->thread_name, thread_name, sizeof(tl->thread_name)-1);
    }
+}
+
+/**
+ * @brief Tell whether the calling thread is the main thread of the process
+ *
+ * @return true for the thread that started the process, false for every
+ *         thread created later, and false where the platform cannot tell
+ */
+static bool is_main_thread() {
+#if defined(LINUX)
+   return syscall(SYS_gettid) == getpid();
+#elif defined(DARWIN) || defined(FREEBSD)
+   return pthread_main_np() == 1;
+#elif defined(SOLARIS)
+   return thr_main() == 1;
+#else
+   return false;
+#endif
+}
+
+/**
+ * @brief Make the logical thread name visible to the operating system
+ *
+ * perf, top -H and debuggers then show "worker", "scheduler", ... instead of
+ * the process name for every thread. The name is cut to the 15 characters the
+ * kernels allow. The main thread is left alone: on Linux its name is the
+ * process name in /proc/<pid>/comm, which ps, pgrep, killall and the test
+ * suite use to find a daemon. Failures are ignored, the name is diagnostic.
+ *
+ * @param[in] thread_name logical name of the calling thread, may be nullptr
+ */
+static void set_os_thread_name(const char *thread_name) {
+   if (thread_name == nullptr || *thread_name == '\0' || is_main_thread()) {
+      return;
+   }
+   char name[16];
+   strncpy(name, thread_name, sizeof(name) - 1);
+   name[sizeof(name) - 1] = '\0';
+#if defined(LINUX) || defined(SOLARIS)
+   pthread_setname_np(pthread_self(), name);
+#elif defined(DARWIN)
+   pthread_setname_np(name);
+#elif defined(FREEBSD)
+   pthread_set_name_np(pthread_self(), name);
+#endif
 }
 
 /**
@@ -798,13 +852,14 @@ void component_set_thread_id(int thread_id) {
 }
 
 /**
- * @brief Set the thread name.
+ * @brief Set the thread name, also at OS level for every thread but the main thread
  *
  * @param[in] thread_name Thread name to set.
  */
 void component_set_thread_name(const char *thread_name) {
    GET_SPECIFIC(sge_component_tl0_t, tl, component_tl0_init, sge_component_tl0_key);
    set_thread_name(tl, thread_name);
+   set_os_thread_name(thread_name);
 }
 
 /**
