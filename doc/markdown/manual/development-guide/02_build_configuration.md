@@ -108,7 +108,8 @@ definitions. Some dependencies may be optional for a platform that can be enable
    ```
    cmake ... -DCMAKE_BUILD_TYPE=Release
    ```
-   With the Release build by default link time optimization is active (`gcc` option `-flto`).
+   With the Release build by default link time optimization is active (CMake interprocedural optimization,
+   `-flto` with `gcc`).
    It can be disabled with
    ```
    cmake ... -DENABLE_LTO=OFF

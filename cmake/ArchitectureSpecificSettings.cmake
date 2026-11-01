@@ -115,16 +115,33 @@ function(architecture_specific_settings)
          message(STATUS "Doing a release build")
          # cmake already adds -O3 and sets define NDEBUG add_compile_options(-O3)
          if (ENABLE_LTO)
-            # CS-2894: link time optimization needs the flag on BOTH sides. At
+            # CS-2894: link time optimization needs -flto on BOTH sides. At
             # compile time it makes gcc write its intermediate representation
             # into the object files; at link time that is what reads it back.
             # With the link option alone the objects carry no bytecode, the LTO
             # phase finds nothing to do and the link silently stays an ordinary
-            # one - which is what this build did from 2023-12-28 until now.
-            # "=auto" lets the link phase use as many jobs as the machine has
-            # cores; plain -flto optimises the whole program in a single process.
-            add_compile_options(-flto)
-            add_link_options(-flto=auto)
+            # one - which is what this build did from 2023-12-28 until CS-2894.
+            #
+            # CS-2987: objects that hold only bytecode can be archived only by
+            # an ar that loads the compiler's LTO plugin. Hand-written -flto
+            # flags left the static libraries to CMAKE_AR, i.e. whatever ar came
+            # first in the PATH: the system ar of the EL8 build hosts has no
+            # plugin and the link failed, an ar from a gcc-toolset happened to
+            # work. CMake's own IPO support sets the LTO flags for compiling and
+            # linking and archives with the compiler's wrappers (gcc-ar,
+            # gcc-ranlib), which pass the plugin of exactly that compiler.
+            # The variable has to reach the caller of this function, because
+            # it seeds the INTERPROCEDURAL_OPTIMIZATION property of every
+            # target created afterwards. A tool chain without IPO support
+            # builds without LTO instead of failing at link time.
+            include(CheckIPOSupported)
+            check_ipo_supported(RESULT _gcs_ipo OUTPUT _gcs_ipo_output LANGUAGES C CXX)
+            if (_gcs_ipo)
+               set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON PARENT_SCOPE)
+               message(STATUS "Link time optimization: on (CMake IPO)")
+            else ()
+               message(WARNING "ENABLE_LTO is on, but the tool chain does not support link time optimization; building without it: ${_gcs_ipo_output}")
+            endif ()
          endif ()
       endif ()
       add_compile_definitions(LINUX _GNU_SOURCE GETHOSTBYNAME_R6 GETHOSTBYADDR_R8
