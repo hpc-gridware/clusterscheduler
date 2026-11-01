@@ -25,6 +25,7 @@
 #include <cerrno>
 #include <cstring>
 #include <ostream>
+#include <sstream>
 #include <string>
 #include <unistd.h>
 #include <vector>

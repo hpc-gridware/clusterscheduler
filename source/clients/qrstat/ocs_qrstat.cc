@@ -38,6 +38,7 @@
 
 #include <memory>
 #include <iostream>
+#include <sstream>
 
 #include "ocs_ProcedureController.h"
 #include "ocs_ProcedureView.h"

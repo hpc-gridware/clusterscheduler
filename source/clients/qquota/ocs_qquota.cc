@@ -39,6 +39,7 @@
  */
 #include <iostream>
 #include <memory>
+#include <sstream>
 
 #include "ocs_ProcedureController.h"
 #include "ocs_ProcedureModel.h"
