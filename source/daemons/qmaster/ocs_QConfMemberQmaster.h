@@ -25,7 +25,8 @@
  * Lives here for the reason the write provider does: the change goes through
  * `sge_gdi_add_mod_generic()`, which is the daemon's, and the procedure library
  * is linked into the clients too. Registered as the action
- * ocs::QConfActionParameter::USERSET_MEMBERS at startup (CS-2962).
+ * ocs::QConfActionParameter::USERSET_MEMBERS at startup (CS-2962), and since
+ * CS-2985 the reserved host groups as HGROUP_MEMBERS.
  */
 
 #include "gdi/ocs_gdi_Packet.h"
@@ -47,3 +48,19 @@
 bool
 qconf_member_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monitor,
                             const ocs::QConfActionParameter &parameter, lList **answer_list);
+
+/** @brief Add members to or remove them from a reserved host group (CS-2985)
+ *
+ * The ocs::qconf_action_provider of the action HGROUP_MEMBERS, the host group
+ * half of the membership switches.
+ *
+ * @param packet the client request, for the user and host the change is logged under
+ * @param task the GDI task being answered
+ * @param monitor for monitoring qmaster threads
+ * @param parameter the arguments ARG_GROUP, ARG_HOSTS and ARG_ADD
+ * @param answer_list receives what qmaster says about the change, but not its generic confirmation
+ * @return true when the change was made
+ */
+bool
+qconf_hgroup_member_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monitor,
+                                   const ocs::QConfActionParameter &parameter, lList **answer_list);

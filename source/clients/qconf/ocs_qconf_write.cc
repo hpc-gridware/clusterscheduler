@@ -791,9 +791,9 @@ struct qconf_write_entry {
  * of a list edited on its own (CS-2967). "-arqs"/"-mrqs"/"-mc" edit a list of
  * objects as one text and "-Arqs"/"-Mrqs"/"-Mc" apply one, with the modes of
  * their type (CS-2967), and the host configuration is served host by host or
- * file by file (CS-2967). The ones with handling of their own stay blocks: the
- * reserved host group switches; the membership switches and "-astnode"/
- * "-mstnode" are actions, see qconf_action_table.
+ * file by file (CS-2967). The membership switches - of the access lists and,
+ * since CS-2985, of the reserved host groups - and "-astnode"/"-mstnode" are
+ * actions, see qconf_action_table.
  *
  * No row checks permissions in the client (CS-2973): qmaster decides, and for
  * an EDIT row it does so before the editor opens - the read that fetches the

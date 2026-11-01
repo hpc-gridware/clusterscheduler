@@ -1110,6 +1110,11 @@ namespace {
        * manager-only rule of the reserved lists stays in userset_mod(). */
       {to_string_view(QCONF), ocs::QConfActionParameter::USERSET_MEMBERS,
        modifies(ocs::gdi::Target::US_LIST), &run_procedure<QConfActionTraits>},
+      /* CS-2985: "-ah"/"-as"/"-dh"/"-ds" change the members of the reserved
+       * host groups in place, checked as a modify of the host group list - what
+       * the client's GDI modify of @admin_hosts/@submit_hosts was checked as. */
+      {to_string_view(QCONF), ocs::QConfActionParameter::HGROUP_MEMBERS,
+       modifies(ocs::gdi::Target::HGRP_LIST), &run_procedure<QConfActionTraits>},
       /* CS-2963: "-clearusage" clears the usage of users and projects alike. It
        * is checked as a modify of the user list; the project list carries the
        * same permission (both are manager-only in sge_c_gdi.cc). */

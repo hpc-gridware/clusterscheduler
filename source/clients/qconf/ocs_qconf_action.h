@@ -27,6 +27,8 @@
  */
 
 #include "procedure/qconf/ocs_QConfParameterClient.h"
+#include <ostream>
+
 #include "ocs_qconf_common.h"
 
 /**
@@ -39,10 +41,12 @@
  * to say comes back in the answer list and is surfaced the way every qconf
  * write surfaces it; a warning is not a failure.
  *
+ * @param os       the stream a success is reported to, one line per member for
+ *                 the reserved host groups (CS-2985)
  * @param param    the invocation, for its execution context
  * @param op       the operation to run
  * @param alpp     the answer list of the operation, receives every message (CS-2971)
  * @return what became of the operation
  */
 QConfOpResult
-qconf_run_action(const ocs::QConfParameterClient &param, const qconf_op &op, lList **alpp);
+qconf_run_action(std::ostream &os, const ocs::QConfParameterClient &param, const qconf_op &op, lList **alpp);

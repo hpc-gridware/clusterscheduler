@@ -57,6 +57,7 @@ namespace ocs {
       static constexpr auto USAGE_CLEAR = "usage_clear";         ///< `-clearusage` (CS-2963), takes no arguments
       static constexpr auto SHARETREE_NODES = "sharetree_nodes"; ///< `-astnode`/`-mstnode`/`-dstnode` (CS-2966)
       static constexpr auto OBJECT_DELETE = "object_delete";     ///< `-d<obj>`/`-D<obj>`, `-de`, `-dconf`, `-dstree` (CS-2983)
+      static constexpr auto HGROUP_MEMBERS = "hgroup_members";   ///< `-ah`/`-as`/`-dh`/`-ds` (CS-2985)
 
       // the arguments of QUEUE_PURGE
       static constexpr auto ARG_QUEUE = "queue";           ///< the cluster queue
@@ -66,7 +67,13 @@ namespace ocs {
       // the arguments of USERSET_MEMBERS
       static constexpr auto ARG_USERS = "users";           ///< comma separated user names
       static constexpr auto ARG_LISTS = "lists";           ///< comma separated access list names
-      static constexpr auto ARG_ADD = "add";               ///< ARG_TRUE to add the users, anything else removes them
+      static constexpr auto ARG_ADD = "add";               ///< ARG_TRUE to add the users or hosts, anything else
+                                                            ///< removes them
+
+      // the arguments of HGROUP_MEMBERS, and ARG_ADD
+      static constexpr auto ARG_HOSTS = "hosts";           ///< the members, one per line: host names resolved by the
+                                                            ///< client, host group references and matchers as typed
+      static constexpr auto ARG_GROUP = "group";           ///< the reserved host group, `@admin_hosts` or `@submit_hosts`
 
       // the arguments of SHARETREE_NODES
       static constexpr auto ARG_NODES = "nodes";           ///< the node list as typed, "path=shares,..." or "path,..."

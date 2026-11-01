@@ -199,4 +199,8 @@
 #define MSG_QCONF_DELSKIPPEDNOTEXIST_SS            _MESSAGE(12068, _(SFQ " does not exist - skipped (from file " PFNMAX ")"))
 #define MSG_QCONF_DRYRUNWOULDDELETE_S              _MESSAGE(12069, _("[dry-run] would delete " SFQ))
 
+/* CS-2985: the members of the reserved host groups, changed in qmaster */
+#define MSG_QCONF_HGROUPMEMBERINCOMPLETE           _MESSAGE(12070, _("a change of reserved host group members needs at least one member"))
+#define MSG_QCONF_HGROUPMEMBERNOTRESERVED_S        _MESSAGE(12071, _("the members of " SFQ " are not changed by this action: it serves the reserved host groups only"))
+
 // clang-format on

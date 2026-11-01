@@ -376,8 +376,8 @@ qconf_delete_rqs_path(std::ostream &os, const qconf_op &op, lList **alpp) {
  * carry, handed to the delete action in qmaster; the permission is qmaster's
  * (CS-2973). "-dhgrp", "-de", "-dconf", "-Dconf" and "-Drqs" are rows with a
  * reader of their own (CS-2967). "-dh"/"-ds" change the members of a reserved
- * host group and stay blocks; "-du"/"-dm"/"-do" and "-dstnode" are actions,
- * see qconf_action_table.
+ * host group, and "-du"/"-dm"/"-do" and "-dstnode" change parts of objects: all
+ * of them are actions, see qconf_action_table.
  */
 static constexpr qconf_delete_entry qconf_delete_table[] = {
    {"-dcal",   QConfObj::CAL,  QConfDeleteKind::NAMES},

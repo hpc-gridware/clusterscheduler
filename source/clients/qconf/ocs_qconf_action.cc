@@ -23,11 +23,16 @@
  */
 
 #include <cstring>
+#include <ostream>
 #include <string>
+#include <vector>
 
 #include "uti/sge_log.h"
+#include "uti/ocs_Pattern.h"
 #include "uti/sge_string.h"
 #include "sgeobj/sge_answer.h"
+#include "sgeobj/sge_hgroup.h"
+#include "sgeobj/sge_host.h"
 #include "sgeobj/sge_userset.h"
 #include "sge.h"
 #include "usage.h"
@@ -39,6 +44,7 @@
 
 #include "ocs_qconf_action.h"
 #include "ocs_qconf_common.h"
+#include "ocs_qconf_parse.h"
 
 /** @brief Build the arguments of "-purge queue attr_list queue@host|queue@@hgroup"
  *
@@ -219,9 +225,126 @@ static constexpr qconf_action_entry qconf_action_table[] = {
    {"-clearusage", ocs::QConfActionParameter::USAGE_CLEAR, ocs::gdi::Target::UU_LIST, nullptr, nullptr, nullptr},
 };
 
-QConfOpResult
-qconf_run_action(const ocs::QConfParameterClient &param, const qconf_op &op, lList **alpp) {
+/** @brief One switch that changes the members of a reserved host group (CS-2985) */
+struct qconf_reserved_hgroup_entry {
+   const char *switch_name;   ///< the switch as typed
+   const char *group;         ///< ADMIN_HOSTGROUP or SUBMIT_HOSTGROUP
+   bool add;                  ///< true to add the members, false to remove them
+   const char *what;          ///< the list's name in the per-member report
+};
+
+/** @brief The switches that change the members of the reserved host groups
+ *
+ * The host group half of the membership switches, served by the action
+ * HGROUP_MEMBERS since CS-2985, as the access list half "-am"/"-ao"/"-dm"/"-do"
+ * is by USERSET_MEMBERS since CS-2959.
+ */
+static constexpr qconf_reserved_hgroup_entry qconf_reserved_hgroup_table[] = {
+   {"-ah", ADMIN_HOSTGROUP,  true,  "administrative host"},
+   {"-as", SUBMIT_HOSTGROUP, true,  "submit host"},
+   {"-dh", ADMIN_HOSTGROUP,  false, "administrative host"},
+   {"-ds", SUBMIT_HOSTGROUP, false, "submit host"},
+};
+
+/** @brief Add members to or remove them from a reserved host group, through the action HGROUP_MEMBERS (CS-2985)
+ *
+ * The client's part is what it always was: take the list apart, resolve each
+ * host name - a host group reference and a matcher are passed as typed, the
+ * class of an entry is decided before anything is resolved (CS-2680, N-I-9) -
+ * and report. A name that does not resolve is reported and left out; the rest of
+ * the list is still changed, and the operation fails. qmaster changes the group
+ * under the lock, as one delta for the whole list, so the list is changed as a
+ * whole or not at all (CS-2754).
+ *
+ * What qmaster says on the way is printed first; then each member the change
+ * carried is reported on a line of its own on @p os, the success report the
+ * switches have had since CS-2645.
+ *
+ * @param os    the stream the per-member lines go to
+ * @param param the invocation, for its execution context
+ * @param op    the operation
+ * @param entry the row of the switch
+ * @param alpp  the answer list of the operation
+ * @return what became of the operation
+ */
+static QConfOpResult
+qconf_run_reserved_hgroup(std::ostream &os, const ocs::QConfParameterClient &param, const qconf_op &op,
+                          const qconf_reserved_hgroup_entry &entry, lList **alpp) {
    DENTER(TOP_LAYER);
+
+   if (qconf_missing_argument(op, alpp)) {
+      DRETURN(QConfOpResult::FAILED_USAGE);
+   }
+   if (param.get_exec_context() != ocs::ProcedureParameter::ExecContext::SERVER) {
+      qconf_answer(alpp, ANSWER_QUALITY_ERROR, MSG_QCONF_MODNEEDSSERVERCTX_S, entry.switch_name);
+      DRETURN(QConfOpResult::FAILED);
+   }
+
+   std::string arg = op.args[0];
+   lList *names = nullptr;
+   parse_name_list_to_cull(entry.add ? "host to add" : "host to del", &names, HR_Type, HR_name, arg.data());
+
+   bool ok = true;
+   std::vector<std::string> members;
+   for_each_rw_lv(name_ep, names) {
+      const char *name = lGetHost(name_ep, HR_name);
+      if (name == nullptr) {
+         ok = false;
+         continue;
+      }
+      if (ocs::classify_member(name) == ocs::MemberClass::LITERAL_HOST) {
+         if (sge_resolve_host(name_ep, HR_name) != CL_RETVAL_OK) {
+            qconf_answer(alpp, ANSWER_QUALITY_ERROR, MSG_SGETEXT_CANTRESOLVEHOST_S, name);
+            ok = false;
+            continue;
+         }
+         name = lGetHost(name_ep, HR_name);
+      }
+      members.emplace_back(name);
+   }
+   lFreeList(&names);
+   if (members.empty()) {
+      DRETURN(ok ? QConfOpResult::OK : QConfOpResult::FAILED);
+   }
+
+   std::string hosts;
+   for (const std::string &member : members) {
+      if (!hosts.empty()) {
+         hosts += ocs::QConfActionParameter::LINE_SEPARATOR;
+      }
+      hosts += member;
+   }
+   ocs::QConfActionParameter action(ocs::QConfActionParameter::HGROUP_MEMBERS);
+   action.set_arg(ocs::QConfActionParameter::ARG_GROUP, entry.group);
+   action.set_arg(ocs::QConfActionParameter::ARG_HOSTS, hosts);
+   action.set_arg(ocs::QConfActionParameter::ARG_ADD, entry.add ? ocs::QConfActionParameter::ARG_TRUE : "0");
+
+   ocs::QConfWriteModelClient model(ocs::gdi::Target::HGRP_LIST);
+   lList *answer_list = nullptr;
+   const bool changed = model.make_snapshot(&answer_list, action);
+   if (qconf_answer_take(alpp, &answer_list) != 0 || !changed) {
+      DRETURN(QConfOpResult::FAILED);
+   }
+
+   /* what qmaster said comes first, then one line per member */
+   qconf_answer_print(alpp);
+   for (const std::string &member : members) {
+      qconf_info(os, entry.add ? MSG_QCONF_XADDEDTOYLIST_SS : MSG_QCONF_XREMOVEDFROMYLIST_SS, member.c_str(),
+                 entry.what);
+   }
+
+   DRETURN(ok ? QConfOpResult::OK : QConfOpResult::FAILED);
+}
+
+QConfOpResult
+qconf_run_action(std::ostream &os, const ocs::QConfParameterClient &param, const qconf_op &op, lList **alpp) {
+   DENTER(TOP_LAYER);
+
+   for (const qconf_reserved_hgroup_entry &e : qconf_reserved_hgroup_table) {
+      if (op.token == e.switch_name) {
+         DRETURN(qconf_run_reserved_hgroup(os, param, op, e, alpp));
+      }
+   }
 
    const qconf_action_entry *entry = nullptr;
    for (const qconf_action_entry &e : qconf_action_table) {

@@ -23,11 +23,13 @@
  */
 
 #include <string>
+#include <vector>
 
 #include "cull/cull_db.h"
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/sge_answer.h"
+#include "sgeobj/sge_hgroup.h"
 #include "sgeobj/sge_object.h"
 #include "uti/sge_dstring.h"
 #include "uti/sge_rmon_macros.h"
@@ -223,4 +225,101 @@ qconf_member_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, moni
    lFreeList(&users);
 
    DRETURN(all_ok);
+}
+
+/** @brief Add members to or remove them from a reserved host group, see the header
+ *
+ * What the client's mod_reserved_hgroup() did over GDI until CS-2985: one modify
+ * of the host group list carrying the group name and every member to add or
+ * remove, as a delta - APPEND or REMOVE, the mechanism behind "-aattr"/"-dattr" -
+ * so the members are merged under the lock and two concurrent changes cannot
+ * lose each other (CS-2438). Now the delta is built here, which makes the
+ * membership of the reserved host groups take the path the reserved access
+ * lists took with CS-2959.
+ *
+ * The request is one change for the whole list (CS-2754), so it is atomic: a
+ * list naming one member that is already there, or one that is not there to be
+ * removed, changes nothing. sge_gdi_add_mod_generic() passes on only the last of
+ * several reasons, so such a list is refused naming one of them.
+ *
+ * What hgroup_mod() says on the way - a matcher normalised by the domain rules,
+ * a duplicate collapsed, the scope of a matcher in a reserved group (CS-2680) -
+ * is passed on. Its generic confirmation is not: the client reports each member
+ * on a line of its own instead (CS-2645).
+ *
+ * The host names arrive resolved: the client resolves them, with the messages
+ * it always had, and passes host group references and matchers as typed.
+ *
+ * @param packet the client request, for the user and host the change is logged under
+ * @param task the GDI task being answered
+ * @param monitor for monitoring qmaster threads
+ * @param parameter the arguments ARG_GROUP, ARG_HOSTS and ARG_ADD
+ * @param answer_list receives what qmaster says about the change, but not its generic confirmation
+ * @return true when the change was made
+ */
+bool
+qconf_hgroup_member_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monitor,
+                                   const ocs::QConfActionParameter &parameter, lList **answer_list) {
+   DENTER(TOP_LAYER);
+
+   const std::string group = parameter.get_arg(ocs::QConfActionParameter::ARG_GROUP);
+   const std::string hosts_arg = parameter.get_arg(ocs::QConfActionParameter::ARG_HOSTS);
+
+   /* the client never sends an incomplete request or another group; this
+    * guards the action against a caller that is not qconf */
+   if (hosts_arg.empty()) {
+      answer_list_add(answer_list, MSG_QCONF_HGROUPMEMBERINCOMPLETE, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
+      DRETURN(false);
+   }
+   if (group != ADMIN_HOSTGROUP && group != SUBMIT_HOSTGROUP) {
+      dstring buffer = DSTRING_INIT;
+      answer_list_add(answer_list, sge_dstring_sprintf(&buffer, MSG_QCONF_HGROUPMEMBERNOTRESERVED_S, group.c_str()),
+                      STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
+      sge_dstring_free(&buffer);
+      DRETURN(false);
+   }
+
+   gdi_object_t *object = get_gdi_object(ocs::gdi::Target::HGRP_LIST);
+   if (object == nullptr) {
+      answer_list_add(answer_list, MSG_UNKNOWN_OBJECT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
+      DRETURN(false);
+   }
+
+   /* the delta: the group name and every member to add or remove */
+   lList *hosts = nullptr;
+   std::string::size_type begin = 0;
+   while (begin <= hosts_arg.size()) {
+      const std::string::size_type end = hosts_arg.find(ocs::QConfActionParameter::LINE_SEPARATOR, begin);
+      const std::string host = hosts_arg.substr(begin, end == std::string::npos ? std::string::npos : end - begin);
+      if (!host.empty()) {
+         lAddElemHost(&hosts, HR_name, host.c_str(), HR_Type);
+      }
+      if (end == std::string::npos) {
+         break;
+      }
+      begin = end + 1;
+   }
+   lListElem *delta = lCreateElem(HGRP_Type);
+   lSetHost(delta, HGRP_name, group.c_str());
+   lSetList(delta, HGRP_host_list, hosts);
+
+   const bool add = (parameter.get_arg(ocs::QConfActionParameter::ARG_ADD) == ocs::QConfActionParameter::ARG_TRUE);
+   lList *alp = nullptr;
+   lList *post_list = nullptr;
+   const int ret = sge_gdi_add_mod_generic(packet, task, &alp, delta, 0, object, packet->user, packet->host,
+                                           ocs::gdi::Command::MOD_PROCEDURE,
+                                           add ? ocs::gdi::SubCommand::APPEND : ocs::gdi::SubCommand::REMOVE,
+                                           &post_list, monitor);
+   if (ret == STATUS_OK) {
+      /* the generic confirmation of the object layer is the last answer */
+      lListElem *last = lLastRW(alp);
+      if (last != nullptr) {
+         lRemoveElem(alp, &last);
+      }
+   }
+   answer_list_append_list(answer_list, &alp);
+   lFreeList(&post_list);
+   lFreeElem(&delta);
+
+   DRETURN(ret == STATUS_OK);
 }

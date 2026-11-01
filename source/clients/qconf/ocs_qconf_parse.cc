@@ -144,8 +144,6 @@
 
 static int sge_next_is_an_opt(char **ptr);
 
-static bool mod_reserved_hgroup(std::ostream &os, lList *arglp, const char *group,
-                                ocs::gdi::SubCommand sub_command, const char *what, lList **alpp);
 static int qconf_modify_attribute(lList **alpp, int from_file, char ***spp, lListElem **epp, ocs::gdi::SubCommand sub_command, struct object_info_entry *info_entry);
 
 
@@ -353,7 +351,7 @@ int sge_parse_qconf(char *argv[]) {
          result = qconf_run_write(os, param, op, uid, gid, &op_alp);
       }
       if (result == QConfOpResult::NOT_HANDLED) {
-         result = qconf_run_action(param, op, &op_alp);
+         result = qconf_run_action(os, param, op, &op_alp);
       }
       if (result != QConfOpResult::NOT_HANDLED) {
          if (result == QConfOpResult::FAILED || result == QConfOpResult::FAILED_USAGE) {
@@ -370,75 +368,6 @@ int sge_parse_qconf(char *argv[]) {
          op_usage = true;
          continue;
       }
-/*-----------------------------------------------------------------------------*/
-
-      /* "-ah server_name[,server_name,...]" */
-      if (strcmp("-ah", *spp) == 0) {
-         /* no adminhost/manager check needed here */
-
-         spp = sge_parser_get_next(spp);
-         parse_name_list_to_cull("host to add", &lp, HR_Type, HR_name, *spp);
-         if (!mod_reserved_hgroup(os, lp, ADMIN_HOSTGROUP,
-                                  ocs::gdi::SubCommand::APPEND, "administrative host", &op_alp)) {
-            sge_parse_return |= 1;
-         }
-
-         lFreeList(&lp);
-
-         spp++;
-         continue;
-      }
-
-/*-----------------------------------------------------------------------------*/
-
-      /* "-as server_name[,server_name,...]" */
-      if (strcmp("-as", *spp) == 0) {
-         /* no adminhost/manager check needed here */
-
-         spp = sge_parser_get_next(spp);
-         parse_name_list_to_cull("host to add", &lp, HR_Type, HR_name, *spp);
-         if (!mod_reserved_hgroup(os, lp, SUBMIT_HOSTGROUP,
-                                  ocs::gdi::SubCommand::APPEND, "submit host", &op_alp)) {
-            sge_parse_return = 1;
-         }
-         lFreeList(&lp);
-
-         spp++;
-         continue;
-      }
-
-/*----------------------------------------------------------------------------*/
-      /* "-dh server_name[,server_name,...]" */
-      if (strcmp("-dh", *spp) == 0) {
-         /* no adminhost/manager check needed here */
-         spp = sge_parser_get_next(spp);
-         parse_name_list_to_cull("host to del", &lp, HR_Type, HR_name, *spp);
-         if (!mod_reserved_hgroup(os, lp, ADMIN_HOSTGROUP,
-                                  ocs::gdi::SubCommand::REMOVE, "administrative host", &op_alp)) {
-            sge_parse_return = 1;
-         }
-         lFreeList(&lp);
-
-         spp++;
-         continue;
-      }
-/*----------------------------------------------------------------------------*/
-      /* "-ds server_name[,server_name,...]" */
-      if (strcmp("-ds", *spp) == 0) {
-         /* no adminhost/manager check needed here */
-
-         spp = sge_parser_get_next(spp);
-         parse_name_list_to_cull("host to del", &lp, HR_Type, HR_name, *spp);
-         if (!mod_reserved_hgroup(os, lp, SUBMIT_HOSTGROUP,
-                                  ocs::gdi::SubCommand::REMOVE, "submit host", &op_alp)) {
-            sge_parse_return = 1;
-         }
-         lFreeList(&lp);
-
-         spp++;
-         continue;
-      }
-
 /*----------------------------------------------------------------------------*/
       /* "-help" */
 
@@ -810,183 +739,6 @@ static int sge_next_is_an_opt(char **pptr) {
    DRETURN(0);
 }
 
-/**
- * @brief Add/remove hosts in a reserved host group
- *
- * CS-2438. Admin and submit hosts live in the reserved host groups
- * "@admin_hosts" and "@submit_hosts", so qconf -ah/-dh/-as/-ds modify those
- * groups instead of the retired AH_LIST/SH_LIST targets.
- * The request is a GDI MOD on HGRP_LIST with the sublist sub-command
- * APPEND or REMOVE -- the mechanism behind "qconf -aattr/-dattr". It is
- * deliberately NOT a read-modify-write of HGRP_host_list in the client:
- * read-modify-write loses a concurrent "-as" issued between the read and the
- * write, which the old dedicated ADD/DEL target could not do. The qmaster
- * merges the sublist under its own lock (attr_mod_sub_list() via
- * hgroup_mod_hostlist()), so two concurrent additions cannot lose each other.
- * Privilege is unchanged: AH_LIST, SH_LIST and HGRP_LIST are labels of the
- * same manager-only case in sge_c_gdi.cc, so redirecting the target neither
- * grants nor removes any right.
- * CS-2754: ONE request for the whole name list, not one per host. The list
- * syntax always existed, the bulk behind it did not: "qconf -ah h1,...,h1000"
- * used to be a thousand round trips, each of which made the qmaster run
- * hgroup_mod() with its cache refresh and its event.
- *
- * The operation is atomic as a consequence. "qconf -ah h1,h2" with h1 already a
- * member used to add h2 and refuse h1; it now refuses both. That is the
- * behaviour these two groups are documented to have -- a script writing
- * "qconf -ds host || alert" has to fail when the removal did not happen -- and
- * it is the safer half of the trade for a security relevant list.
- *
- * The other half of the trade is the diagnosis. hgroup_reserved_delta_is_strict()
- * does report one error per offending entry, but only the LAST of them reaches
- * the client: sge_gdi_add_mod_generic() propagates lLast(tmp_alp) alone when the
- * modifier fails, because earlier elements may be success messages. So a list
- * with several bad names is refused naming one of them, where the per-host
- * version named every one. Every answer that does arrive is printed below, so
- * lifting that restriction in the qmaster is all it would take.
- *
- * @param os the stream the output is written to (CS-1841)
- * @param arglp HR_Type list of names as parsed from the command line
- * @param group ADMIN_HOSTGROUP or SUBMIT_HOSTGROUP
- * @param sub_command APPEND to add, REMOVE to delete
- * @param what "administrative host" / "submit host", for messages
- * @param alpp the answer list of the operation (CS-2971)
- *
- * @return true if every named host was resolved and the request succeeded
- */
-static bool mod_reserved_hgroup(std::ostream &os, lList *arglp, const char *group,
-                                ocs::gdi::SubCommand sub_command, const char *what, lList **alpp) {
-   DENTER(TOP_LAYER);
-
-   bool ret = true;
-   lList *hosts = nullptr;
-
-   /* resolve first, locally, so an unusable name never reaches the request */
-   for_each_rw_lv(argep, arglp) {
-      const char *name = lGetHost(argep, HR_name);
-
-      if (name == nullptr) {
-         ret = false;
-         continue;
-      }
-
-      /*
-       * CS-2680, N-I-9. The class of the entry decides, and it is decided
-       * *before* anything is resolved.
-       *
-       * A host group reference is passed through untouched: "-ah @group" is
-       * legal (see the plan for CS-2438), and sge_resolve_host() would fail on
-       * it. hgroup_mod() checks in the qmaster that the group exists and that
-       * the reference introduces no cycle, so nothing has to be validated here.
-       *
-       * A matcher is passed through for a different reason: it describes a set
-       * of hosts rather than naming one, so there is nothing to look up. The
-       * qmaster normalises and validates it (ocs::Matcher::prepare()), which is
-       * where the domain rules and the message catalogue are.
-       *
-       * Asking the classification rather than the resolver is the whole point.
-       * sge_resolve_host() skips whatever ocs::is_expression() calls an
-       * expression, so a matcher used to get through only when it happened to
-       * carry a metacharacter: "host:gpu*" was let past by its star, while
-       * "host:gpu001" - a perfectly good matcher describing exactly one name -
-       * was sent to the name service and failed there.
-       */
-      switch (ocs::classify_member(name)) {
-         case ocs::MemberClass::GROUP_REFERENCE:
-         case ocs::MemberClass::MATCHER:
-            break;
-
-         case ocs::MemberClass::LITERAL_HOST:
-            if (sge_resolve_host(argep, HR_name) != CL_RETVAL_OK) {
-               qconf_answer(alpp, ANSWER_QUALITY_ERROR, MSG_SGETEXT_CANTRESOLVEHOST_S, name);
-               ret = false;
-               continue;
-            }
-            name = lGetHost(argep, HR_name);
-            break;
-      }
-
-      lAddElemHost(&hosts, HR_name, name, HR_Type);
-   }
-
-   if (hosts == nullptr) {
-      DRETURN(ret);
-   }
-
-   /* the names this request carries, kept for the report: the list itself
-    * belongs to the request element once it is chained in below */
-   lList *sent = lCopyList("hosts sent", hosts);
-
-   /* the reduced element the qmaster merges: the group name and every entry to
-    * add to or remove from its host list */
-   lList *lp = lCreateList("host group to modify", HGRP_Type);
-   lListElem *hgrp = lAddElemHost(&lp, HGRP_name, group, HGRP_Type);
-   lSetList(hgrp, HGRP_host_list, hosts);
-
-   lList *alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::HGRP_LIST, ocs::gdi::Command::MOD,
-                                          sub_command, &lp, nullptr, nullptr);
-
-   const lListElem *aep = lFirst(alp);
-   answer_exit_if_not_recoverable(aep);
-   if (answer_get_status(aep) == STATUS_OK) {
-      /*
-       * CS-2645: every command reports either success or failure. This used
-       * to confirm APPEND only, on the assumption that the retired targets
-       * had said nothing on a successful -dh/-ds. They did say something:
-       * their delete path printed the whole answer list of the qmaster,
-       * INFO elements included, so a successful remove was confirmed with
-       * "<user>@<host> removed \"<host>\" from submit host list". Staying
-       * silent here was therefore not the preservation of the old behaviour
-       * but a change of it, and it left a successful delete
-       * indistinguishable from one that did nothing.
-       *
-       * Still one line per host, from the list this request carried: the
-       * request became a batch, the report to the administrator did not.
-       *
-       * CS-2680, N-I-12. What the qmaster said on the way is printed first.
-       * Notes and warnings live in that answer list - the transformation of a
-       * matcher by the domain rules, the collapse of a duplicate, the catch-all,
-       * the scope of a matcher in a reserved group - and dropping them made
-       * "qconf -ah host:*" confer a standing grant on every host that can
-       * reach the qmaster without saying a word. Everything but the last element
-       * is printed; the last is the generic confirmation of the object layer,
-       * which these commands deliberately replace with the per-host lines below.
-       *
-       * The return value stays what it is. A note or a warning must not turn a
-       * change that was carried out into a reported failure.
-       *
-       * CS-2971: they go into the answer list of the operation, which is
-       * printed here, before the per-host lines on stdout, so that they still
-       * come first.
-       */
-      lListElem *last = lLastRW(alp);
-      lRemoveElem(alp, &last);
-      qconf_answer_take(alpp, &alp);
-      qconf_answer_print(alpp);
-
-      const lListElem *host;
-
-      for_each_ep(host, sent) {
-         /* CS-2645 follow-up: this reports success, so it belongs on stdout.
-          * qconf_info(os, ) writes there and appends the newline itself. */
-         if (sub_command == ocs::gdi::SubCommand::APPEND) {
-            qconf_info(os, MSG_QCONF_XADDEDTOYLIST_SS, lGetHost(host, HR_name), what);
-         } else {
-            qconf_info(os, MSG_QCONF_XREMOVEDFROMYLIST_SS, lGetHost(host, HR_name), what);
-         }
-      }
-   } else {
-      /* every answer, not just the first: the qmaster names each offending host */
-      qconf_answer_take(alpp, &alp);
-      ret = false;
-   }
-
-   lFreeList(&sent);
-   lFreeList(&lp);
-   lFreeList(&alp);
-
-   DRETURN(ret);
-}
 
 /* ------------------------------------------------------------ */
 
