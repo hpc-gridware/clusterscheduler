@@ -245,6 +245,8 @@ int lGetElemIndex(const lListElem *ep, const lList *lp);
 
 const lDescr *lGetElemDescr(const lListElem *ep);
 
+bool lIsFreeElem(const lListElem *ep);
+
 void lWriteElem(const lListElem *ep);
 
 void lWriteElemTo(const lListElem *ep, FILE *fp);

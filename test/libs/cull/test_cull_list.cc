@@ -853,6 +853,45 @@ static void test_unique_key_integrity() {
 }
 
 // ---------------------------------------------------------------------------
+// lIsFreeElem  [T71–T75]
+//
+// Code outside CULL asks lIsFreeElem() instead of reading the element status.
+// An element is free from its creation until it is bound to a list or stored
+// as a sub-object, and free again once it is dechained.
+// ---------------------------------------------------------------------------
+
+/**
+ * @brief Check lIsFreeElem() through the life of an element
+ */
+static void test_is_free_elem() {
+   printf("\n--- lIsFreeElem ---\n");
+
+   lListElem *ep = lCreateElem(TEST_Type);
+   // T71: a new element is free
+   CHECK(71, "a created element is free", lIsFreeElem(ep));
+
+   lList *list = lCreateList("free", TEST_Type);
+   lAppendElem(list, ep);
+   // T72: an element in a list is not free
+   CHECK(72, "an appended element is not free", !lIsFreeElem(ep));
+
+   ep = lDechainElem(list, ep);
+   // T73: dechaining makes it free again
+   CHECK(73, "a dechained element is free again", lIsFreeElem(ep));
+
+   lListElem *parent = lCreateElem(TEST_Type);
+   lSetObject(parent, TEST_object, ep);
+   // T74: a sub-object is not free
+   CHECK(74, "a sub-object is not free", !lIsFreeElem(lGetObject(parent, TEST_object)));
+
+   // T75: nullptr is not a free element
+   CHECK(75, "nullptr is not free", !lIsFreeElem(nullptr));
+
+   lFreeElem(&parent);
+   lFreeList(&list);
+}
+
+// ---------------------------------------------------------------------------
 
 int main(int /*argc*/, char * /*argv*/[]) {
    lInit(nmv);
@@ -874,6 +913,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
    test_sort_and_uniq();
    test_atomic_ulong64();
    test_unique_key_integrity();
+   test_is_free_elem();
 
    printf("\n%s — %d failure(s)\n", s_fail == 0 ? "PASS" : "FAIL", s_fail);
    return s_fail == 0 ? 0 : 1;

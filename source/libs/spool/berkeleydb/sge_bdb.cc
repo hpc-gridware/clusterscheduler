@@ -857,8 +857,8 @@ bool spool_berkeleydb_write_object(lList **answer_list, bdb_info info,
    /* do not spool free elems. If a free elem is passed, put a copy 
     * into a temporary list and spool this copy.
     */
-   if (object->status == FREE_ELEM) {
-      tmp_list = lCreateList("tmp", object->descr);
+   if (lIsFreeElem(object)) {
+      tmp_list = lCreateList("tmp", lGetElemDescr(object));
       lAppendElem(tmp_list, (lListElem *)object);
    }
 

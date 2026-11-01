@@ -25,9 +25,14 @@
 /*
  * ASan-runtime hook.
  *
- * libasan resolves __asan_default_options via dlsym(RTLD_DEFAULT, ...) at
- * startup and applies whatever it returns as the process-wide ASan option
+ * libasan carries a weak default definition of __asan_default_options
+ * (`nm -D libasan.so` shows it as W). The strong definition below, in the
+ * executable, takes its place through ordinary ELF symbol interposition -
+ * the executable comes first in the global lookup scope - and libasan
+ * applies what it returns at startup as the process-wide ASan option
  * defaults (still overridable via the ASAN_OPTIONS environment variable).
+ * That is why the definition has to be in the executable: one in a
+ * plugin opened with RTLD_LOCAL is never seen.
  *
  * We turn off detect_odr_violation because libsgeobj is a static library
  * and its runtime data (CULL type descriptors: nmv[], JB_Type[], and

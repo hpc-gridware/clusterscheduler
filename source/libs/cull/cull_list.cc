@@ -496,6 +496,30 @@ const lDescr *lGetElemDescr(const lListElem *ep) {
 }
 
 /**
+ * @brief Tells whether an element is free standing
+ *
+ * A free standing element belongs to no list and is no sub-object of another
+ * element; whoever holds it frees it. Code outside CULL asks this function
+ * instead of reading the element's status, which is private to CULL.
+ *
+ * @param ep CULL element
+ *
+ * @return true if the element is free standing, false if it is bound to a
+ *         list, a sub-object, or ep is nullptr
+ *
+ * @note MT-NOTE: lIsFreeElem() is MT safe
+ */
+bool lIsFreeElem(const lListElem *ep) {
+   DENTER(CULL_LAYER);
+
+   if (!ep) {
+      LERROR(LEELEMNULL);
+      DRETURN(false);
+   }
+   DRETURN(ep->status == FREE_ELEM);
+}
+
+/**
  * @brief Write a element to monitoring level CULL_LAYER
  *
  * Write a element to monitoring level CULL_LAYER a info message
