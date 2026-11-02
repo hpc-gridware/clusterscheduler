@@ -593,11 +593,19 @@ administrative rights to do so. A host which joins through these rules is expect
 installation, from a machine image or over the network, and to start its execution daemon.
 
 A pattern is matched against the name of the host as the master daemon resolves it, and against the address that
-name resolves to. A network is matched against that address as well, which is not necessarily the address the
-connection comes from if the host has more than one. The communication layer accepts a connection only if the name
-the host announces is also the name its address resolves back to, unless this check has been switched off with the
-communication parameter *CL_COMMLIB_TRUST_CLIENT_HOSTNAME* (see xxqs_name_sxx_bootstrap(5)). With that check
-switched off, a name or address matches a claim the host makes about itself.
+name resolves to. Host names are compared as everywhere else in the cluster: case-insensitively, and following the
+*ignore_fqdn* and *default_domain* settings of the bootstrap file (see xxqs_name_sxx_bootstrap(5)). With
+*ignore_fqdn* set to *true*, which the installation writes by default, the matcher *hostA* applies to the host
+*hostA.foo.com*. A pattern which contains a domain, such as *gpu-\*.example.com*, still matches the full name of the
+host in that case. With *ignore_fqdn* set to *false* and a *default_domain* configured, a plain host name without a
+domain is completed with the default domain, but a pattern is not: the pattern *server-0?* does not match the host
+*server-00.example.com*. Write such a pattern fully qualified, e.g. *server-0?.example.com*.
+
+A network is matched against that address as well, which is not necessarily the address the connection comes from
+if the host has more than one. The communication layer accepts a connection only if the name the host announces is
+also the name its address resolves back to, unless this check has been switched off with the communication
+parameter *CL_COMMLIB_TRUST_CLIENT_HOSTNAME* (see xxqs_name_sxx_bootstrap(5)). With that check switched off, a
+name or address matches a claim the host makes about itself.
 
 Only IPv4 networks are supported. A rule which contains an IPv6 network is refused when the configuration is
 modified.

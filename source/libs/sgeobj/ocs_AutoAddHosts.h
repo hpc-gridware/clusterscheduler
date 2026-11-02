@@ -40,6 +40,8 @@ namespace ocs {
     * A matcher containing a slash is an IPv4 network in CIDR notation. Every other matcher is a
     * pattern in the syntax of fnmatch(3) and is matched against the name of the host as well as
     * against its address, so a name, a name pattern, an address and an address pattern all work.
+    * Host names are compared as everywhere else in the cluster: case-insensitive, and honouring
+    * ignore_fqdn and default_domain of the bootstrap file.
     * The rules are evaluated in the order in which they are given and the first matching rule
     * decides. The rule separator is a semicolon because a value in qmaster_params can contain
     * neither a comma nor a space - both are part of PARAMS_DELIMITER.
@@ -56,6 +58,8 @@ namespace ocs {
       };
 
       static bool parse(const char *value, std::vector<Rule> &rules, lList **answer_list);
+      static bool match_rules(const std::vector<Rule> &rules, const char *hostname, const char *ip,
+                              std::string &hostgroup);
       static bool match_host(const char *hostname, const char *ip, std::string &hostgroup);
    };
 }
