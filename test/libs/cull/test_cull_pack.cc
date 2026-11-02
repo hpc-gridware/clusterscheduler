@@ -512,6 +512,45 @@ int main(int argc, char *argv[]) {
             unpackstr_at_guard(1) == PACK_FORMAT);
    }
 
+   // --- dump/undump by file name and of whole lists ---
+   printf("\n--- dump/undump of lists ---\n");
+   {
+      CHECK(27, "lUndumpElem reads back by file name what lDumpElem wrote",
+            lDumpElem(filename, obj, 0) == 0 && (copy = lUndumpElem(filename, TEST_Type)) != nullptr &&
+            compare_objects(obj, copy));
+      lFreeElem(&copy);
+      unlink(filename);
+
+      lList *dump_list = lCreateList("dump", TEST_Type);
+      for (int i = 0; i < 3; i++) {
+         lListElem *le = lCopyElem(obj);
+         lSetUlong(le, TEST_ulong, static_cast<lUlong>(i));
+         lAppendElem(dump_list, le);
+      }
+      lList *undumped = nullptr;
+      FILE *fd = fopen(filename, "w");
+      if (fd != nullptr) {
+         CHECK(28, "lDumpList returns 0", lDumpList(fd, dump_list, 0) == 0);
+         fclose(fd);
+         fd = fopen(filename, "r");
+         if (fd != nullptr) {
+            undumped = lUndumpList(fd, nullptr, TEST_Type);
+            fclose(fd);
+         }
+      }
+      CHECK(29, "lUndumpList returns a list with every element",
+            undumped != nullptr && lGetNumberOfElem(undumped) == 3);
+      bool same = undumped != nullptr;
+      for (const lListElem *a = lFirst(dump_list), *b = lFirst(undumped); same && a != nullptr;
+           a = lNext(a), b = lNext(b)) {
+         same = compare_objects(a, b);
+      }
+      CHECK(30, "dump/undump of a list: all fields identical, in order", same);
+      lFreeList(&undumped);
+      lFreeList(&dump_list);
+      unlink(filename);
+   }
+
    lFreeElem(&ep);
    lFreeElem(&empty_ep);
 

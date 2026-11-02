@@ -405,8 +405,9 @@ int main(int /*argc*/, char * /*argv*/[]) {
          lAppendElem(list, tmp_elem);
       }
       lList *list1 = lSelect("", list, nullptr, what);
-      // lSelect on a nested 5x5x5 structure with complex what does not crash
-      CHECK(17, "lSelect with complex nested what does not crash", list1 != nullptr || list1 == nullptr);
+      // all 5 elements are selected, reduced to the 4 fields of the outer level of the what
+      CHECK(17, "lSelect with complex nested what selects every element, reduced to the what",
+            list1 != nullptr && lGetNumberOfElem(list1) == 5 && lCountDescr(lGetListDescr(list1)) == 4);
       lFreeWhat(&what);
       lFreeElem(&elem);
       lFreeList(&list);
