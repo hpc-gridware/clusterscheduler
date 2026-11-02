@@ -85,7 +85,7 @@ cull_pack_cont(sge_pack_buffer *pb, const lMultiType *cp, const lDescr *dp,
 
 static int cull_unpack_object(sge_pack_buffer *pb, lListElem **epp, int flags);
 
-static int cull_pack_object(sge_pack_buffer *pb, const lListElem *ep, int flags);
+static int cull_pack_object(sge_pack_buffer *pb, const lListElem *ep, const lEnumeration *what, int flags);
 
 
 /* ------------------------------------------------------------
@@ -209,7 +209,7 @@ cull_pack_switch(sge_pack_buffer *pb, const lMultiType *src, lEnumeration *what,
          break;
 
       case lObjectT:
-         ret = cull_pack_object(pb, src->obj, flags);
+         ret = cull_pack_object(pb, src->obj, what, flags);
          break;
 
       case lDoubleT:
@@ -805,21 +805,21 @@ int cull_unpack_elem_partial(sge_pack_buffer *pb, lListElem **epp, const lDescr 
 
 /* ================================================================ */
 
-/* ------------------------------------------------------------
-
-   cull_pack_object() - packs a sub object
-
-   return values:
-   PACK_SUCCESS
-   PACK_ENOMEM
-   PACK_FORMAT
-
+/**
+ * @brief Pack a sub-object, including its descriptor
+ *
+ * A nested what reduces the sub-object the same way #cull_pack_list_partial
+ * reduces a sublist: the descriptor is packed as the selection and only the
+ * selected fields follow. The receiver takes the descriptor from the buffer, so
+ * it builds the reduced object type without further information (CS-3001).
+ *
+ * @param pb the buffer to append to
+ * @param ep the sub-object, or nullptr
+ * @param what which fields to pack, or nullptr for all of them
+ * @param flags packing options
+ * @return #PACK_SUCCESS, #PACK_ENOMEM, or #PACK_FORMAT
  */
-static int cull_pack_object(
-        sge_pack_buffer *pb,
-        const lListElem *ep,
-        int flags
-) {
+static int cull_pack_object(sge_pack_buffer *pb, const lListElem *ep, const lEnumeration *what, const int flags) {
    DENTER(CULL_LAYER);
 
    int ret;
@@ -830,12 +830,17 @@ static int cull_pack_object(
 
    if (ep != nullptr) {
       /* pack descriptor */
-      if ((ret = cull_pack_descr(pb, ep->descr)) != PACK_SUCCESS) {
+      if (what == nullptr) {
+         ret = cull_pack_descr(pb, ep->descr);
+      } else {
+         ret = cull_pack_enum_as_descr(pb, what, ep->descr);
+      }
+      if (ret != PACK_SUCCESS) {
          DRETURN(ret);
       }
 
       /* pack list element */
-      if ((ret = cull_pack_elem_partial(pb, ep, nullptr, flags)) != PACK_SUCCESS) {
+      if ((ret = cull_pack_elem_partial(pb, ep, what, flags)) != PACK_SUCCESS) {
          DRETURN(ret);
       }
    }
