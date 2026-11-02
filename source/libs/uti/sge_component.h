@@ -114,6 +114,9 @@ component_get_thread_name();
 void
 component_set_thread_name(const char *thread_name);
 
+void
+ocs_set_os_thread_name(const char *thread_name);
+
 uid_t
 component_get_uid();
 

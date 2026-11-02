@@ -263,9 +263,12 @@ static bool is_main_thread() {
  * process name in /proc/<pid>/comm, which ps, pgrep, killall and the test
  * suite use to find a daemon. Failures are ignored, the name is diagnostic.
  *
+ * Used for the threads that register a component name and for the threads of
+ * the communication library (CS-3012).
+ *
  * @param[in] thread_name logical name of the calling thread, may be nullptr
  */
-static void set_os_thread_name(const char *thread_name) {
+void ocs_set_os_thread_name(const char *thread_name) {
    if (thread_name == nullptr || *thread_name == '\0' || is_main_thread()) {
       return;
    }
@@ -859,7 +862,7 @@ void component_set_thread_id(int thread_id) {
 void component_set_thread_name(const char *thread_name) {
    GET_SPECIFIC(sge_component_tl0_t, tl, component_tl0_init, sge_component_tl0_key);
    set_thread_name(tl, thread_name);
-   set_os_thread_name(thread_name);
+   ocs_set_os_thread_name(thread_name);
 }
 
 /**

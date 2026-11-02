@@ -44,6 +44,7 @@
 #include <pthread.h>
 
 #include "uti/ocs_cond.h"
+#include "uti/sge_component.h"
 #include "uti/sge_stdlib.h"
 
 #include "comm/lists/cl_lists.h"
@@ -767,7 +768,9 @@ static int cl_thread_set_default_cancel_method() {
 /** @brief Announce that the thread is up
  *
  * Signals the startup condition #cl_thread_setup is blocked on. Must be the
- * first thing a thread main function does after its initialisation.
+ * first thing a thread main function does after its initialisation. Also sets
+ * the thread's commlib name, e.g. "qmaster_read", as its OS thread name, so
+ * that perf, top -H and /proc tell the commlib threads apart (CS-3012).
  *
  * @param thread_config the thread's settings
  * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
@@ -779,6 +782,7 @@ int cl_thread_func_startup(cl_thread_settings_t *thread_config) {
    }
 
    cl_thread_set_default_cancel_method();
+   ocs_set_os_thread_name(thread_config->thread_name);
 
    /* set thread config data */
    if (cl_thread_set_thread_config(thread_config) != CL_RETVAL_OK) {
