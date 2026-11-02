@@ -58,6 +58,7 @@
 #include "cull/cull_lerrnoP.h"
 #include "cull/cull_listP.h"
 #include "cull/cull_multitypeP.h"
+#include "cull/cull_stats.h"
 #include "cull/cull_whatP.h"
 #include "cull/cull_whereP.h"
 #include "cull/cull_pack.h"
@@ -86,6 +87,42 @@ cull_pack_cont(sge_pack_buffer *pb, const lMultiType *cp, const lDescr *dp,
 static int cull_unpack_object(sge_pack_buffer *pb, lListElem **epp, int flags);
 
 static int cull_pack_object(sge_pack_buffer *pb, const lListElem *ep, const lEnumeration *what, int flags);
+
+#ifdef OCS_CULL_STATS
+/**
+ * @brief Count a packed descriptor or field selection (CS-2993)
+ *
+ * Nothing is counted in counting mode, so that a size computation followed by
+ * the real packing counts once.
+ *
+ * @param pb the buffer it was packed into
+ * @param nm the first field of the descriptor it describes
+ * @param start `bytes_used` before packing it
+ */
+static void cull_stats_count_descr(const sge_pack_buffer *pb, const int nm, const size_t start) {
+   if (!pb->just_count) {
+      CULL_STATS_TYPE(nm, PACK_DESCR, 1);
+      CULL_STATS_TYPE(nm, PACK_DESCR_B, pb->bytes_used - start);
+   }
+}
+
+/**
+ * @brief Count the bytes of a packed field value (CS-2993)
+ *
+ * Sublists and sub-objects are left out; their fields are counted on their own.
+ * Nothing is counted in counting mode.
+ *
+ * @param pb the buffer it was packed into
+ * @param nm the field
+ * @param type the field's CULL type
+ * @param start `bytes_used` before packing it
+ */
+static void cull_stats_count_value(const sge_pack_buffer *pb, const int nm, const int type, const size_t start) {
+   if (!pb->just_count && type != lListT && type != lObjectT) {
+      CULL_STATS_FIELD(nm, PACK_VALUE_B, pb->bytes_used - start);
+   }
+}
+#endif
 
 
 /* ------------------------------------------------------------
@@ -295,6 +332,8 @@ static int cull_unpack_descr(
       dp[i].mt = temp;
       dp[i].ht = nullptr;
    }
+   CULL_STATS_TYPE(dp[0].nm, DCOPY_UNPACK, 1);
+   CULL_STATS_TYPE(dp[0].nm, DCOPY_UNPACK_B, sizeof(lDescr) * (n + 1));
 
    /* 
     * above we made the assumption that the unpacked descriptor was reduced
@@ -392,6 +431,7 @@ int cull_pack_descr(sge_pack_buffer *pb, const lDescr *dp) {
    DENTER(CULL_LAYER);
 
    int i, ret;
+   CULL_STATS_CODE(const size_t stats_start = pb->bytes_used;)
 
    /* pack the number of lDescr fields (without end mark) */
    if ((ret = packint(pb, lCountDescr(dp)))) {
@@ -406,6 +446,7 @@ int cull_pack_descr(sge_pack_buffer *pb, const lDescr *dp) {
          DRETURN(ret);
       }
    }
+   CULL_STATS_CODE(cull_stats_count_descr(pb, dp->nm, stats_start);)
 
    DRETURN(PACK_SUCCESS);
 }
@@ -429,6 +470,7 @@ cull_pack_enum_as_descr(sge_pack_buffer *pb, const lEnumeration *what,
    DENTER(CULL_LAYER);
 
    int i, ret;
+   CULL_STATS_CODE(const size_t stats_start = pb->bytes_used;)
 
    PROF_START_MEASUREMENT(SGE_PROF_PACKING);
    /* pack the number of lDescr fields (without end mark) */
@@ -465,6 +507,7 @@ cull_pack_enum_as_descr(sge_pack_buffer *pb, const lEnumeration *what,
          }
          break;
    }
+   CULL_STATS_CODE(cull_stats_count_descr(pb, descr->nm, stats_start);)
    PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
    DRETURN(PACK_SUCCESS);
 }
@@ -495,6 +538,7 @@ cull_pack_cont(sge_pack_buffer *pb, const lMultiType *cp, const lDescr *dp,
     * encoding here. */
    static constexpr lMultiType no_transfer_value{};
 
+   CULL_STATS_CODE(if (!pb->just_count) { CULL_STATS_TYPE(dp->nm, PACK_ELEMS, 1); })
    if (what == nullptr) {
       const int n = lCountDescr(dp);
 
@@ -502,7 +546,9 @@ cull_pack_cont(sge_pack_buffer *pb, const lMultiType *cp, const lDescr *dp,
          /* if flags are given, pack only fields matching flags, e.g. CULL_SPOOL */
          if (flags == 0 || (dp[i].mt & flags) != 0) {
             const lMultiType *value = mt_do_transfer(dp[i].mt) ? &cp[i] : &no_transfer_value;
+            CULL_STATS_CODE(const size_t stats_start = pb->bytes_used;)
             const int ret = cull_pack_switch(pb, value, nullptr, mt_get_type(dp[i].mt), flags);
+            CULL_STATS_CODE(cull_stats_count_value(pb, dp[i].nm, mt_get_type(dp[i].mt), stats_start);)
 
             if (ret != PACK_SUCCESS) {
                DRETURN(ret);
@@ -516,7 +562,9 @@ cull_pack_cont(sge_pack_buffer *pb, const lMultiType *cp, const lDescr *dp,
             const bool do_transfer = mt_do_transfer(what[i].mt);
             const lMultiType *value = do_transfer ? &cp[what[i].pos] : &no_transfer_value;
             lEnumeration *const sub_what = do_transfer ? what[i].ep : nullptr;
+            CULL_STATS_CODE(const size_t stats_start = pb->bytes_used;)
             const int ret = cull_pack_switch(pb, value, sub_what, mt_get_type(what[i].mt), flags);
+            CULL_STATS_CODE(cull_stats_count_value(pb, what[i].nm, mt_get_type(what[i].mt), stats_start);)
 
             if (ret != PACK_SUCCESS) {
                DRETURN(ret);
@@ -984,6 +1032,7 @@ int cull_unpack_list_partial(sge_pack_buffer *pb, lList **lpp, int flags) {
       PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
       DRETURN(PACK_SUCCESS);
    }
+   CULL_STATS_CODE(const uint64_t stats_start = ocs::cull_stats::now_ns();)
 
    if ((lp = (lList *) calloc(1, sizeof(lList))) == nullptr) {
       PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
@@ -1030,7 +1079,15 @@ int cull_unpack_list_partial(sge_pack_buffer *pb, lList **lpp, int flags) {
       }
    }
 
+   CULL_STATS_CODE(const uint64_t stats_hash = ocs::cull_stats::now_ns();)
    cull_hash_create_hashtables(lp);
+   CULL_STATS_CODE(
+      const uint64_t stats_end = ocs::cull_stats::now_ns();
+      CULL_STATS_TYPE(lp->descr->nm, UNPACK_LISTS, 1);
+      CULL_STATS_TYPE(lp->descr->nm, UNPACK_ELEMS, lGetNumberOfElem(lp));
+      CULL_STATS_TYPE(lp->descr->nm, UNPACK_NS, stats_end - stats_start);
+      CULL_STATS_TYPE(lp->descr->nm, UNPACK_HASH_NS, stats_end - stats_hash);
+   )
 
    *lpp = lp;
 

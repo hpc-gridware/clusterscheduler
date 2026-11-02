@@ -57,6 +57,7 @@
 #include "cull/cull_listP.h"
 #include "cull/cull_multitypeP.h"
 #include "cull/cull_multitype.h"
+#include "cull/cull_stats.h"
 #include "cull/msg_cull.h"
 
 /**
@@ -107,7 +108,20 @@ struct _cull_htable {
    htable ht;   ///< maps a field value to an element, or to a @ref non_unique_header
    htable nuht; ///< maps an element back to its chain node, so removal need not search
    uint32_t dup_count; ///< unique inserts that found the key already taken; see @ref cull_hash_insert
+#ifdef OCS_CULL_STATS
+   int nm;             ///< the field the table is built on, for the statistics
+   bool looked_up;     ///< the table was looked up at least once, for the statistics
+#endif
 };
+
+/**
+ * @brief Count a hash table that is about to be freed (CS-2993)
+ * @param ht the table
+ */
+static void cull_hash_count_free([[maybe_unused]] const cull_htable ht) {
+   CULL_STATS_FIELD(ht->nm, HASH_FREE_USED, ht->looked_up ? 1 : 0);
+   CULL_STATS_FIELD(ht->nm, HASH_FREE_UNUSED, ht->looked_up ? 0 : 1);
+}
 
 /**
  * @brief Create a new hash table
@@ -180,6 +194,9 @@ cull_htable cull_hash_create(const lDescr *descr, int size) {
          ret->ht = ht;
          ret->nuht = nuht;
          ret->dup_count = 0;
+         CULL_STATS_CODE(ret->nm = descr->nm; ret->looked_up = false;)
+         CULL_STATS_FIELD(descr->nm, HASH_CREATE, 1);
+         CULL_STATS_FIELD(descr->nm, HASH_BUCKET_B, (sizeof(void *) << size) * (nuht != nullptr ? 2 : 1));
       }
    }
 
@@ -301,6 +318,7 @@ void cull_hash_insert(const lListElem *ep, void *key, cull_htable ht, bool uniqu
    if (ht == nullptr || ep == nullptr || key == nullptr) {
       return;
    }
+   CULL_STATS_FIELD(ht->nm, HASH_INSERT, 1);
 
    if (unique) {
       const void *stored = nullptr;
@@ -498,6 +516,7 @@ void cull_hash_rebuild_unique(lList *lp, const int pos) {
    /* Without a table the field falls back to the linear search in
     * lGetElemStrFirstRW() and its kind: slower, but still correct. Keeping the
     * old table, which is known to be wrong, would not be. */
+   cull_hash_count_free(ht);
    sge_htable_destroy(ht->ht);
    sge_free(&(descr->ht));
    descr->ht = fresh;
@@ -605,6 +624,8 @@ lListElem *cull_hash_first(cull_htable ht, const void *key, bool unique,
       *iterator = nullptr;
       return nullptr;
    }
+   CULL_STATS_CODE(ht->looked_up = true;)
+   CULL_STATS_FIELD(ht->nm, HASH_LOOKUP, 1);
 
    if (unique) {
       *iterator = nullptr;
@@ -712,6 +733,7 @@ void cull_hash_free_descr(lDescr *descr) {
       cull_htable ht = descr[i].ht;
 
       if (ht != nullptr) {
+         cull_hash_count_free(ht);
          if (!mt_is_unique(descr[i].mt)) {
             /* delete chain of non unique elements */
             sge_htable_for_each_ep(ht->ht, cull_hash_delete_non_unique_chain);
@@ -933,6 +955,7 @@ void cull_hash_recreate_after_sort(lList *lp) {
          if (ht != nullptr) {
             if (!mt_is_unique(descr[i].mt)) {
                /* free memory of non unique elements */
+               cull_hash_count_free(ht);
                sge_htable_for_each_ep(ht->ht, cull_hash_delete_non_unique_chain);
                sge_htable_destroy(ht->nuht);
                sge_htable_destroy(ht->ht);

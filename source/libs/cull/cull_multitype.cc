@@ -60,6 +60,7 @@
 #include "cull/msg_cull.h"
 #include "cull/cull_multitypeP.h"
 #include "cull/cull_listP.h"
+#include "cull/cull_stats.h"
 #include "cull/cull_whatP.h"
 #include "cull/cull_lerrnoP.h"
 #include "cull/cull_hash.h"
@@ -258,6 +259,8 @@ lDescr *lCopyDescr(const lDescr *dp) {
       goto error;
    }
    memcpy(new_descr, dp, sizeof(lDescr) * (i + 1));
+   CULL_STATS_TYPE(dp->nm, DCOPY_OTHER, 1);
+   CULL_STATS_TYPE(dp->nm, DCOPY_OTHER_B, sizeof(lDescr) * (i + 1));
 
    /* copy hashing information */
    for (i = 0; mt_get_type(dp[i].mt) != lEndT; i++) {
@@ -361,6 +364,7 @@ int lGetPosInDescr(const lDescr *dp, int name) {
       LERROR(LEDESCRNULL);
       return -1;
    }
+   CULL_STATS_TYPE(dp->nm, POS_CALLS, 1);
 
    if ((dp->mt & CULL_IS_REDUCED) == 0) {
       long pos = name - dp->nm;
@@ -373,6 +377,8 @@ int lGetPosInDescr(const lDescr *dp, int name) {
 
    for (ldp = dp; ldp->nm != name && ldp->nm != NoName; ldp++) { ;
    }
+   CULL_STATS_TYPE(dp->nm, POS_REDUCED, 1);
+   CULL_STATS_TYPE(dp->nm, POS_ITERS, ldp - dp + 1);
 
    if (ldp->nm == NoName) {
       LERROR(LENAMENOT);

@@ -39,6 +39,9 @@ set(LIBRARY_SOURCES
         cull_what_print.cc
         cull_where.cc
         pack.cc)
+if (ENABLE_CULL_STATS)
+   list(APPEND LIBRARY_SOURCES cull_stats.cc)
+endif ()
 set(LIBRARY_INCLUDES "./")
 
 if (SGE_ARCH MATCHES "lx-arm.*")

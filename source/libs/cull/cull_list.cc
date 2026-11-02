@@ -61,6 +61,7 @@
 #include "cull/cull_where.h"
 #include "cull/cull_listP.h"
 #include "cull/cull_multitypeP.h"
+#include "cull/cull_stats.h"
 #include "cull/cull_whatP.h"
 #include "cull/cull_lerrnoP.h"
 #include "cull/cull_hash.h"
@@ -779,6 +780,8 @@ lListElem *lCreateElem(const lDescr *dp) {
       DRETURN(nullptr);
    }
    memcpy(ep->descr, dp, sizeof(lDescr) * (n + 1));
+   CULL_STATS_TYPE(dp->nm, DCOPY_ELEM, 1);
+   CULL_STATS_TYPE(dp->nm, DCOPY_ELEM_B, sizeof(lDescr) * (n + 1));
 
    /* new descr has no htables yet */
    for (i = 0; i <= n; i++) {
@@ -870,6 +873,8 @@ lList *lCreateListHash(const char *listname, const lDescr *descr, bool hash) {
       LERROR(LEMALLOC);
       DRETURN(nullptr);
    }
+   CULL_STATS_TYPE(descr->nm, DCOPY_LIST, 1);
+   CULL_STATS_TYPE(descr->nm, DCOPY_LIST_B, sizeof(lDescr) * (n + 1));
    /* copy descriptor array */
    for (i = 0; i <= n; i++) {
       lp->descr[i].mt = descr[i].mt;
