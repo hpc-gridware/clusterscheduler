@@ -27,6 +27,7 @@
 
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_time.h"
+#include "uti/ocs_FormatText.h"
 
 #include "sgeobj/sge_advance_reservation.h"
 
@@ -69,13 +70,13 @@ ocs::QRStatViewPlain::report_ar_start(std::ostream &os) {
          << "----------" << "\n";
    } else if (!header_printed) {
       std::ostringstream oss;
-      oss << std::format("{:<9.9} ", "ar-id")
-          << std::format("{:<10.10} ", "name")
-          << std::format("{:<12.12} ", "owner")
-          << std::format("{:<5.5} ", "state")
-          << std::format("{:<19.19} ", "start-at")
-          << std::format("{:<19.19} ", "end-at")
-          << std::format("{:<12.12}", "duration");
+      oss << std::format("{:<9.9} ", ocs::ascii_width("ar-id"))
+          << std::format("{:<10.10} ", ocs::ascii_width("name"))
+          << std::format("{:<12.12} ", ocs::ascii_width("owner"))
+          << std::format("{:<5.5} ", ocs::ascii_width("state"))
+          << std::format("{:<19.19} ", ocs::ascii_width("start-at"))
+          << std::format("{:<19.19} ", ocs::ascii_width("end-at"))
+          << std::format("{:<12.12}", ocs::ascii_width("duration"));
 
       const size_t length = oss.str().length();
       os << oss.str() << "\n"
@@ -102,7 +103,7 @@ ocs::QRStatViewPlain::report_ar_node_ulong(std::ostream &os, const char *name, u
    if (show_summary) {
       os << std::format("{:9} ", value);
    } else {
-      os << std::format("{:<30.30} ", name) << value << "\n";
+      os << std::format("{:<30.30} ", ocs::ascii_width(name)) << value << "\n";
    }
    DRETURN_VOID;
 }
@@ -118,7 +119,7 @@ ocs::QRStatViewPlain::report_ar_node_duration(std::ostream &os, const char *name
    const int seconds = value32 % 60;
 
    if (!show_summary) {
-      os << std::format("{:<30} ", name ? name : "");
+      os << std::format("{:<30} ", ocs::ascii_width(name ? name : ""));
    }
    if (days > 0) {
       os << std::format("{}:{:02}:{:02}:{:02}", days, hours, minutes, seconds);
@@ -142,14 +143,14 @@ ocs::QRStatViewPlain::report_ar_node_string(std::ostream &os, const char *name, 
    }
    if (show_summary) {
       if (strcmp("owner", name) == 0) {
-         os << std::format("{:<12.12} ", value);
+         os << std::format("{:<12.12} ", ocs::ascii_width(value));
       } else if (strcmp("name", name) == 0) {
-         os << std::format("{:<10.10} ", value);
+         os << std::format("{:<10.10} ", ocs::ascii_width(value));
       } else if (strcmp("message", name) == 0) {
          os << "\n       " << value;
       }
    } else {
-      os << std::format("{:<30.30} ", name) << value << "\n";
+      os << std::format("{:<30.30} ", ocs::ascii_width(name)) << value << "\n";
    }
    DRETURN_VOID;
 }
@@ -161,11 +162,11 @@ ocs::QRStatViewPlain::report_ar_node_time(std::ostream &os, const char *name, ui
    if (show_summary) {
       if (strcmp("start_time", name) == 0 || strcmp("end_time", name) == 0) {
          sge_ctime64_short(value, &time_string);
-         os << std::format("{:<19.19} ", sge_dstring_get_string(&time_string));
+         os << std::format("{:<19.19} ", ocs::ascii_width(sge_dstring_get_string(&time_string)));
       }
    } else {
       sge_ctime64(value, &time_string);
-      os << std::format("{:<30.30} ", name) << sge_dstring_get_string(&time_string) << "\n";
+      os << std::format("{:<30.30} ", ocs::ascii_width(name)) << sge_dstring_get_string(&time_string) << "\n";
    }
    DRETURN_VOID;
 }
@@ -176,9 +177,9 @@ ocs::QRStatViewPlain::report_ar_node_state(std::ostream &os, const char *name, u
    dstring state_string = DSTRING_INIT;
    ar_state2dstring(static_cast<ar_state_t>(state), &state_string);
    if (show_summary) {
-      os << std::format("{:<5.5} ", sge_dstring_get_string(&state_string));
+      os << std::format("{:<5.5} ", ocs::ascii_width(sge_dstring_get_string(&state_string)));
    } else {
-      os << std::format("{:<30.30} ", name) << sge_dstring_get_string(&state_string) << "\n";
+      os << std::format("{:<30.30} ", ocs::ascii_width(name)) << sge_dstring_get_string(&state_string) << "\n";
    }
    sge_dstring_free(&state_string);
    DRETURN_VOID;
@@ -188,7 +189,7 @@ void
 ocs::QRStatViewPlain::report_resource_list_start(std::ostream &os) {
    DENTER(TOP_LAYER);
    if (!show_summary) {
-      os << std::format("{:<30.30} ", "resource_list");
+      os << std::format("{:<30.30} ", ocs::ascii_width("resource_list"));
       first_resource = true;
    }
    DRETURN_VOID;
@@ -259,7 +260,7 @@ ocs::QRStatViewPlain::report_ar_node_boolean(std::ostream &os, const char *name,
    if (show_summary) {
       os << "       " << chvalue;
    } else {
-      os << std::format("{:<30.30} ", name) << chvalue << "\n";
+      os << std::format("{:<30.30} ", ocs::ascii_width(name)) << chvalue << "\n";
    }
    DRETURN_VOID;
 }
@@ -268,7 +269,7 @@ void
 ocs::QRStatViewPlain::report_exec_queue_list_start(std::ostream &os) {
    DENTER(TOP_LAYER);
    if (!show_summary) {
-      os << std::format("{:<30.30} ", "exec_queue_list");
+      os << std::format("{:<30.30} ", ocs::ascii_width("exec_queue_list"));
       first_exec_queue = true;
    }
    DRETURN_VOID;
@@ -299,7 +300,7 @@ void
 ocs::QRStatViewPlain::report_exec_binding_list_start(std::ostream &os) {
    DENTER(TOP_LAYER);
    if (!show_summary) {
-      os << std::format("{:<30.30} ", "exec_binding_list");
+      os << std::format("{:<30.30} ", ocs::ascii_width("exec_binding_list"));
       first_exec_queue = true;
    }
    DRETURN_VOID;
@@ -350,10 +351,10 @@ ocs::QRStatViewPlain::report_granted_resource_list_node(std::ostream &os, const 
    if (!show_summary) {
       // the label on the first line only, the rest indented to the same column
       if (first_granted_resource) {
-         os << std::format("{:<30.30} ", "granted_resources_list");
+         os << std::format("{:<30.30} ", ocs::ascii_width("granted_resources_list"));
          first_granted_resource = false;
       } else {
-         os << "\n" << std::format("{:<30.30} ", "");
+         os << "\n" << std::format("{:<30.30} ", ocs::ascii_width(""));
       }
       os << name << ": " << value;
    }
@@ -364,7 +365,7 @@ void
 ocs::QRStatViewPlain::report_granted_parallel_environment_start(std::ostream &os) {
    DENTER(TOP_LAYER);
    if (!show_summary) {
-      os << std::format("{:<30.30} ", "granted_parallel_environment");
+      os << std::format("{:<30.30} ", ocs::ascii_width("granted_parallel_environment"));
    }
    DRETURN_VOID;
 }
@@ -391,7 +392,7 @@ void
 ocs::QRStatViewPlain::report_mail_list_start(std::ostream &os) {
    DENTER(TOP_LAYER);
    if (!show_summary) {
-      os << std::format("{:<30.30} ", "mail_list");
+      os << std::format("{:<30.30} ", ocs::ascii_width("mail_list"));
       first_mail = true;
    }
    DRETURN_VOID;
@@ -422,7 +423,7 @@ void
 ocs::QRStatViewPlain::report_acl_list_start(std::ostream &os) {
    DENTER(TOP_LAYER);
    if (!show_summary) {
-      os << std::format("{:<30.30} ", "acl_list");
+      os << std::format("{:<30.30} ", ocs::ascii_width("acl_list"));
       first_acl = true;
    }
    DRETURN_VOID;
@@ -453,7 +454,7 @@ void
 ocs::QRStatViewPlain::report_xacl_list_start(std::ostream &os) {
    DENTER(TOP_LAYER);
    if (!show_summary) {
-      os << std::format("{:<30.30} ", "xacl_list");
+      os << std::format("{:<30.30} ", ocs::ascii_width("xacl_list"));
       first_xacl = true;
    }
    DRETURN_VOID;

@@ -29,6 +29,7 @@
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_stdlib.h"
 #include "uti/sge_time.h"
+#include "uti/ocs_FormatText.h"
 
 #include "cull/cull.h"
 
@@ -119,10 +120,10 @@ ocs::QStatJobViewPlain::show_reasons(std::ostream &os, QStatParameter &parameter
       bool first_run = true;
       for_each_ep_lv(mes, lGetList(sme, SME_global_message_list)) {
          if (first_run) {
-            os << std::format("{:<{}} {}\n", MSG_SCHEDD_SCHEDULINGINFO, left_width, lGetString(mes, MES_message));
+            os << std::format("{:<{}} {}\n", ocs::ascii_width(MSG_SCHEDD_SCHEDULINGINFO), left_width, lGetString(mes, MES_message));
             first_run = false;
          } else {
-            os << std::format("{:<{}} {}\n", "", left_width, lGetString(mes, MES_message));
+            os << std::format("{:<{}} {}\n", ocs::ascii_width(""), left_width, lGetString(mes, MES_message));
          }
       }
 
@@ -279,9 +280,9 @@ void ocs::QStatJobViewPlain::report_job_id(std::ostream &os, const lListElem *jo
    if (!(flags & FLG_QALTER)) {
       uint32_t jid = lGetUlong(job, JB_job_number);
       if (jid > 0) {
-         os << std::format("{:<{}} {}", "job_number:", left_width, jid) << "\n";
+         os << std::format("{:<{}} {}", ocs::ascii_width("job_number:"), left_width, jid) << "\n";
       } else {
-         os << std::format("{:<{}} {}", "job_number:", left_width, MSG_JOB_UNASSIGNED) << "\n";
+         os << std::format("{:<{}} {}", ocs::ascii_width("job_number:"), left_width, MSG_JOB_UNASSIGNED) << "\n";
       }
    }
    DRETURN_VOID;
@@ -290,7 +291,7 @@ void ocs::QStatJobViewPlain::report_job_id(std::ostream &os, const lListElem *jo
 void ocs::QStatJobViewPlain::report_category_id(std::ostream &os, const lListElem *job) {
    DENTER(TOP_LAYER);
    if (lGetPosViaElem(job, JB_category_id, SGE_NO_ABORT) >= 0) {
-      os << std::format("{:<{}} {}", "category_id:", left_width, lGetUlong(job, JB_category_id)) << "\n";
+      os << std::format("{:<{}} {}", ocs::ascii_width("category_id:"), left_width, lGetUlong(job, JB_category_id)) << "\n";
    }
    DRETURN_VOID;
 }
@@ -299,7 +300,7 @@ void ocs::QStatJobViewPlain::report_exec_file(std::ostream &os, const lListElem 
    DENTER(TOP_LAYER);
    if (lGetPosViaElem(job, JB_exec_file, SGE_NO_ABORT) >= 0) {
       if (const char *exec_file = lGetString(job, JB_exec_file)) {
-         os << std::format("{:<{}} {}", "exec_file:", left_width, exec_file) << "\n";
+         os << std::format("{:<{}} {}", ocs::ascii_width("exec_file:"), left_width, exec_file) << "\n";
       }
    }
    DRETURN_VOID;
@@ -310,7 +311,7 @@ void ocs::QStatJobViewPlain::report_submission_time(std::ostream &os, const lLis
    DSTRING_STATIC(dstr, 128);
    if (lGetPosViaElem(job, JB_submission_time, SGE_NO_ABORT) >= 0) {
       if (const uint64_t time_value = lGetUlong64(job, JB_submission_time); time_value > 0) {
-         os << std::format("{:<{}} {}", "submission_time:", left_width, sge_ctime64(time_value, &dstr)) << "\n";
+         os << std::format("{:<{}} {}", ocs::ascii_width("submission_time:"), left_width, sge_ctime64(time_value, &dstr)) << "\n";
       }
    }
    DRETURN_VOID;
@@ -321,7 +322,7 @@ void ocs::QStatJobViewPlain::report_deadline_time(std::ostream &os, const lListE
    DSTRING_STATIC(dstr, 128);
    if (lGetPosViaElem(job, JB_deadline, SGE_NO_ABORT) >= 0) {
       if (const uint64_t time_value = lGetUlong64(job, JB_deadline); time_value > 0) {
-         os << std::format("{:<{}} {}", "deadline:", left_width, sge_ctime64(time_value, &dstr)) << "\n";
+         os << std::format("{:<{}} {}", ocs::ascii_width("deadline:"), left_width, sge_ctime64(time_value, &dstr)) << "\n";
       }
    }
    DRETURN_VOID;
@@ -331,7 +332,7 @@ void ocs::QStatJobViewPlain::report_submit_cmd_line(std::ostream &os, const lLis
    DENTER(TOP_LAYER);
    if (lGetPosViaElem(job, JB_submission_command_line, SGE_NO_ABORT) >= 0) {
       if (const char *str = lGetString(job, JB_submission_command_line); str != nullptr) {
-         os << std::format("{:<{}} {}", "submit_cmd_line:", left_width, str) << "\n";
+         os << std::format("{:<{}} {}", ocs::ascii_width("submit_cmd_line:"), left_width, str) << "\n";
       }
    }
    DRETURN_VOID;
@@ -345,7 +346,7 @@ void ocs::QStatJobViewPlain::report_effective_submit_cmd_line(std::ostream &os, 
          char *saveptr = nullptr;
          if (const char *command = strtok_r(copied_str, " ", &saveptr); command != nullptr) {
             dstring dstr_cmd = DSTRING_INIT;
-            os << std::format("{:<{}} {}", "effective_submit_cmd_line:", left_width,
+            os << std::format("{:<{}} {}", ocs::ascii_width("effective_submit_cmd_line:"), left_width,
                               job_get_effective_command_line(job, &dstr_cmd, command)) << "\n";
             sge_dstring_free(&dstr_cmd);
          }
@@ -359,26 +360,26 @@ void ocs::QStatJobViewPlain::report_ownership(std::ostream &os, const lListElem 
    DENTER(TOP_LAYER);
    if (lGetPosViaElem(job, JB_owner, SGE_NO_ABORT) > NoName) {
       if (const char *owner = lGetString(job, JB_owner)) {
-         os << std::format("{:<{}} {}", "owner:", left_width, owner) << "\n";
+         os << std::format("{:<{}} {}", ocs::ascii_width("owner:"), left_width, owner) << "\n";
       } else {
-         os << std::format("{:<{}} {}", "owner:", left_width, "") << "\n";
+         os << std::format("{:<{}} {}", ocs::ascii_width("owner:"), left_width, "") << "\n";
       }
    }
 
    if (lGetPosViaElem(job, JB_uid, SGE_NO_ABORT) > NoName) {
-      os << std::format("{:<{}} {}", "uid:", left_width, (int) lGetUlong(job, JB_uid)) << "\n";
+      os << std::format("{:<{}} {}", ocs::ascii_width("uid:"), left_width, (int) lGetUlong(job, JB_uid)) << "\n";
    }
 
    if (lGetPosViaElem(job, JB_group, SGE_NO_ABORT) > NoName) {
       if (const char *group = lGetString(job, JB_group)) {
-         os << std::format("{:<{}} {}", "group:", left_width, group) << "\n";
+         os << std::format("{:<{}} {}", ocs::ascii_width("group:"), left_width, group) << "\n";
       } else {
-         os << std::format("{:<{}} {}", "group:", left_width, "") << "\n";
+         os << std::format("{:<{}} {}", ocs::ascii_width("group:"), left_width, "") << "\n";
       }
    }
 
    if (lGetPosViaElem(job, JB_gid, SGE_NO_ABORT) > NoName) {
-      os << std::format("{:<{}} {}", "gid:", left_width, lGetUlong(job, JB_gid)) << "\n";
+      os << std::format("{:<{}} {}", ocs::ascii_width("gid:"), left_width, lGetUlong(job, JB_gid)) << "\n";
    }
 
    if (lGetPosViaElem(job, JB_grp_list, SGE_NO_ABORT) > NoName) {
@@ -403,7 +404,7 @@ void ocs::QStatJobViewPlain::report_ownership(std::ostream &os, const lListElem 
 #else
       ss_groups << "NOT-AVAILABLE-IN-OCS";
 #endif
-      os << std::format("{:<{}} {}", "groups:", left_width, ss_groups.str()) << "\n";
+      os << std::format("{:<{}} {}", ocs::ascii_width("groups:"), left_width, ss_groups.str()) << "\n";
    }
    DRETURN_VOID;
 }
@@ -421,7 +422,7 @@ void ocs::QStatJobViewPlain::report_env_core(std::ostream &os, const lListElem *
       char fullname[MAX_STRING_SIZE];
       snprintf(fullname, sizeof(fullname), "%s%s", VAR_PREFIX, name[i]);
       if (const char *value = job_get_env_string(job, fullname)) {
-         os << std::format("{:<{}} {}", fmt_string[i], left_width, value) << "\n";
+         os << std::format("{:<{}} {}", ocs::ascii_width(fmt_string[i]), left_width, value) << "\n";
       }
    }
    DRETURN_VOID;
@@ -432,7 +433,7 @@ void ocs::QStatJobViewPlain::report_execution_time(std::ostream &os, const lList
    if (lGetPosViaElem(job, JB_execution_time, SGE_NO_ABORT) > NoName) {
       DSTRING_STATIC(dstr, 128);
       if (const uint64_t time_value = lGetUlong64(job, JB_execution_time); time_value > 0) {
-         os << std::format("{:<{}} {}", "execution_time:", left_width, sge_ctime64(time_value, &dstr)) << "\n";
+         os << std::format("{:<{}} {}", ocs::ascii_width("execution_time:"), left_width, sge_ctime64(time_value, &dstr)) << "\n";
       }
    }
    DRETURN_VOID;
@@ -442,7 +443,7 @@ void ocs::QStatJobViewPlain::report_account(std::ostream &os, const lListElem *j
    DENTER(TOP_LAYER);
    if (lGetPosViaElem(job, JB_account, SGE_NO_ABORT) > NoName) {
       if (const char *account = lGetString(job, JB_account)) {
-         os << std::format("{:<{}} {}", "account:", left_width, account) << "\n";
+         os << std::format("{:<{}} {}", ocs::ascii_width("account:"), left_width, account) << "\n";
       }
    }
    DRETURN_VOID;
@@ -452,7 +453,7 @@ void ocs::QStatJobViewPlain::report_checkpoint(std::ostream &os, const lListElem
    DENTER(TOP_LAYER);
    if (lGetPosViaElem(job, JB_checkpoint_name, SGE_NO_ABORT) >= 0) {
       if (const char *ckpt_name = lGetString(job, JB_checkpoint_name)) {
-         os << std::format("{:<{}} {}", "checkpoint_object:", left_width, ckpt_name) << "\n";
+         os << std::format("{:<{}} {}", ocs::ascii_width("checkpoint_object:"), left_width, ckpt_name) << "\n";
       }
    }
 
@@ -460,13 +461,13 @@ void ocs::QStatJobViewPlain::report_checkpoint(std::ostream &os, const lListElem
       if (uint32_t ckpt_attr = lGetUlong(job, JB_checkpoint_attr)) {
          std::stringstream ss_ckpt_attr;
          job_get_ckpt_attr(ss_ckpt_attr, ckpt_attr);
-         os << std::format("{:<{}} {}", "checkpoint_attr:", left_width, ss_ckpt_attr.str()) << "\n";
+         os << std::format("{:<{}} {}", ocs::ascii_width("checkpoint_attr:"), left_width, ss_ckpt_attr.str()) << "\n";
       }
    }
 
    if (lGetPosViaElem(job, JB_checkpoint_interval, SGE_NO_ABORT) >= 0) {
       if (uint32_t ckpt_int = lGetUlong(job, JB_checkpoint_interval)) {
-         os << std::format("{:<{}} {} seconds", "checkpoint_interval:", left_width, ckpt_int) << "\n";
+         os << std::format("{:<{}} {} seconds", ocs::ascii_width("checkpoint_interval:"), left_width, ckpt_int) << "\n";
       }
    }
    DRETURN_VOID;
@@ -476,7 +477,7 @@ void ocs::QStatJobViewPlain::report_cwd(std::ostream &os, const lListElem *job) 
    DENTER(TOP_LAYER);
    if (lGetPosViaElem(job, JB_cwd, SGE_NO_ABORT) >= 0) {
       if (const char *cwd = lGetString(job, JB_cwd)) {
-         os << std::format("{:<{}} {}", "cwd:", left_width, cwd) << "\n";
+         os << std::format("{:<{}} {}", ocs::ascii_width("cwd:"), left_width, cwd) << "\n";
       }
    }
    DRETURN_VOID;
@@ -486,7 +487,7 @@ void ocs::QStatJobViewPlain::report_path_aliases(std::ostream &os, const lListEl
    DENTER(TOP_LAYER);
    if (lGetPosViaElem(job, JB_cwd, SGE_NO_ABORT) >= 0) {
       if (const char *cwd = lGetString(job, JB_cwd)) {
-         os << std::format("{:<{}} {}", "cwd:", left_width, cwd) << "\n";
+         os << std::format("{:<{}} {}", ocs::ascii_width("cwd:"), left_width, cwd) << "\n";
       }
       if (lGetPosViaElem(job, JB_path_aliases, SGE_NO_ABORT) >= 0) {
          if (const lList *path_aliases = lGetList(job, JB_path_aliases)) {
@@ -495,7 +496,7 @@ void ocs::QStatJobViewPlain::report_path_aliases(std::ostream &os, const lListEl
             int fields[] = {PA_origin, PA_submit_host, PA_exec_host, PA_translation, 0};
             uni_print_list(ss_path_aliases, path_aliases, fields, delis, FLG_NO_DELIS_STRINGS);
 
-            os << std::format("{:<{}} {}", "path_aliases:", left_width, ss_path_aliases.str());
+            os << std::format("{:<{}} {}", ocs::ascii_width("path_aliases:"), left_width, ss_path_aliases.str());
          }
       }
    }
@@ -506,7 +507,7 @@ void ocs::QStatJobViewPlain::report_directive_prefix(std::ostream &os, const lLi
    DENTER(TOP_LAYER);
    if (lGetPosViaElem(job, JB_directive_prefix, SGE_NO_ABORT) >= 0) {
       if (const char *prefix = lGetString(job, JB_directive_prefix)) {
-         os << std::format("{:<{}} {}", "directive_prefix:", left_width, prefix) << "\n";
+         os << std::format("{:<{}} {}", ocs::ascii_width("directive_prefix:"), left_width, prefix) << "\n";
       }
    }
    DRETURN_VOID;
@@ -521,7 +522,7 @@ void ocs::QStatJobViewPlain::report_stdin_path_list(std::ostream &os, const lLis
          int fields[] = {PN_host, PN_file_host, PN_path, PN_file_staging, 0};
          uni_print_list(ss_list, list, fields, delis, FLG_NO_DELIS_STRINGS);
 
-         os << std::format("{:<{}} {}", "stdin_path_list:", left_width, ss_list.str()) << "\n";
+         os << std::format("{:<{}} {}", ocs::ascii_width("stdin_path_list:"), left_width, ss_list.str()) << "\n";
       }
    }
    DRETURN_VOID;
@@ -535,7 +536,7 @@ void ocs::QStatJobViewPlain::report_stdout_path_list(std::ostream &os, const lLi
          delis[0] = ":";
          int fields[] = {PN_host, PN_file_host, PN_path, PN_file_staging, 0};
          uni_print_list(ss_list, list, fields, delis, FLG_NO_DELIS_STRINGS);
-         os << std::format("{:<{}} {}", "stdout_path_list:", left_width, ss_list.str()) << "\n";
+         os << std::format("{:<{}} {}", ocs::ascii_width("stdout_path_list:"), left_width, ss_list.str()) << "\n";
       }
    }
    DRETURN_VOID;
@@ -550,7 +551,7 @@ void ocs::QStatJobViewPlain::report_stderr_path_list(std::ostream &os, const lLi
          int fields[] = {PN_host, PN_file_host, PN_path, PN_file_staging, 0};
          uni_print_list(ss_path_list, path_list, fields, delis, FLG_NO_DELIS_STRINGS);
 
-         os << std::format("{:<{}} {}", "stderr_path_list:", left_width, ss_path_list.str()) << "\n";
+         os << std::format("{:<{}} {}", ocs::ascii_width("stderr_path_list:"), left_width, ss_path_list.str()) << "\n";
       }
    }
    DRETURN_VOID;
@@ -560,7 +561,7 @@ void ocs::QStatJobViewPlain::report_reserve(std::ostream &os, const lListElem *j
    DENTER(TOP_LAYER);
    if (lGetPosViaElem(job, JB_reserve, SGE_NO_ABORT) >= 0) {
       if (const bool reserve = lGetBool(job, JB_reserve)) {
-         os << std::format("{:<{}} {}", "reserve:", left_width, reserve ? "y" : "n") << "\n";
+         os << std::format("{:<{}} {}", ocs::ascii_width("reserve:"), left_width, reserve ? "y" : "n") << "\n";
       }
    }
    DRETURN_VOID;
@@ -570,7 +571,7 @@ void ocs::QStatJobViewPlain::report_merge_stderr(std::ostream &os, const lListEl
    DENTER(TOP_LAYER);
    if (lGetPosViaElem(job, JB_merge_stderr, SGE_NO_ABORT) >= 0) {
       if (const bool merge = lGetBool(job, JB_merge_stderr)) {
-         os << std::format("{:<{}} {}", "merge:", left_width, merge ? "y" : "n") << "\n";
+         os << std::format("{:<{}} {}", ocs::ascii_width("merge:"), left_width, merge ? "y" : "n") << "\n";
       }
    }
    DRETURN_VOID;
@@ -589,7 +590,7 @@ void ocs::QStatJobViewPlain::report_request_set_list(std::ostream &os, const lLi
             std::ostringstream ss_list;
             show_ce_type_list(ss_list, lp, "", ",");
 
-            os << std::format("{:<{}} {}", str_attrib, left_width, ss_list.str()) << "\n";
+            os << std::format("{:<{}} {}", ocs::ascii_width(str_attrib), left_width, ss_list.str()) << "\n";
          }
 
          if (const lList *lp = lGetList(jrs, JRS_soft_resource_list)) {
@@ -598,7 +599,7 @@ void ocs::QStatJobViewPlain::report_request_set_list(std::ostream &os, const lLi
             std::ostringstream ss_list;
             show_ce_type_list(ss_list, lp, "", ",");
 
-            os << std::format("{:<{}} {}", str_attrib, left_width, ss_list.str()) << "\n";
+            os << std::format("{:<{}} {}", ocs::ascii_width(str_attrib), left_width, ss_list.str()) << "\n";
          }
 
          if (const lList *lp = lGetList(jrs, JRS_hard_queue_list)) {
@@ -609,7 +610,7 @@ void ocs::QStatJobViewPlain::report_request_set_list(std::ostream &os, const lLi
             int fields[] = {QR_name, 0};
             uni_print_list(ss_list, lp, fields, delis, FLG_NO_DELIS_STRINGS);
 
-            os << std::format("{:<{}} {}", str_attrib, left_width, ss_list.str());
+            os << std::format("{:<{}} {}", ocs::ascii_width(str_attrib), left_width, ss_list.str());
          }
 
          if (const lList *lp = lGetList(jrs, JRS_soft_queue_list)) {
@@ -620,14 +621,14 @@ void ocs::QStatJobViewPlain::report_request_set_list(std::ostream &os, const lLi
             int fields[] = {QR_name, 0};
             uni_print_list(ss_list, lp, fields, delis, FLG_NO_DELIS_STRINGS);
 
-            os << std::format("{:<{}} {}", str_attrib, left_width, ss_list.str());
+            os << std::format("{:<{}} {}", ocs::ascii_width(str_attrib), left_width, ss_list.str());
          }
 
          const char *allocation_rule = lGetString(jrs, JRS_allocation_rule);
          if (allocation_rule != nullptr) {
             std::string str_attrib = get_scope_list_name(scope, JRS_allocation_rule, true);
 
-            os << std::format("{:<{}} {}", str_attrib, left_width, allocation_rule) << "\n";
+            os << std::format("{:<{}} {}", ocs::ascii_width(str_attrib), left_width, allocation_rule) << "\n";
          }
       }
    }
@@ -640,7 +641,7 @@ void ocs::QStatJobViewPlain::report_mail_options(std::ostream &os, const lListEl
       if (const uint32_t mail_options = lGetUlong(job, JB_mail_options)) {
          dstring mailopt = DSTRING_INIT;
          sge_dstring_append_mailopt(&mailopt, mail_options);
-         os << std::format("{:<{}} {}", "mail_options:", left_width, sge_dstring_get_string(&mailopt)) << "\n";
+         os << std::format("{:<{}} {}", ocs::ascii_width("mail_options:"), left_width, sge_dstring_get_string(&mailopt)) << "\n";
          sge_dstring_free(&mailopt);
       }
    }
@@ -655,7 +656,7 @@ void ocs::QStatJobViewPlain::report_mail_list(std::ostream &os, const lListElem 
          int fields[] = {MR_user, MR_host, 0};
          delis[0] = "@";
          uni_print_list(ss_list, mail_list, fields, delis, FLG_NO_DELIS_STRINGS);
-         os << std::format("{:<{}} ", "mail_list:", left_width) << ss_list.str();
+         os << std::format("{:<{}} ", ocs::ascii_width("mail_list:"), left_width) << ss_list.str();
       }
    }
    DRETURN_VOID;
@@ -664,7 +665,7 @@ void ocs::QStatJobViewPlain::report_mail_list(std::ostream &os, const lListElem 
 void ocs::QStatJobViewPlain::report_notify(std::ostream &os, const lListElem *job) {
    DENTER(TOP_LAYER);
    if (lGetPosViaElem(job, JB_notify, SGE_NO_ABORT) >= 0) {
-      os << std::format("{:<{}} ", "notify:", left_width) << (lGetBool(job, JB_notify) ? "TRUE" : "FALSE") << "\n";
+      os << std::format("{:<{}} ", ocs::ascii_width("notify:"), left_width) << (lGetBool(job, JB_notify) ? "TRUE" : "FALSE") << "\n";
    }
    DRETURN_VOID;
 }
@@ -672,7 +673,7 @@ void ocs::QStatJobViewPlain::report_notify(std::ostream &os, const lListElem *jo
 void ocs::QStatJobViewPlain::report_name(std::ostream &os, const lListElem *job) {
    DENTER(TOP_LAYER);
    if (lGetPosViaElem(job, JB_job_name, SGE_NO_ABORT) >= 0) {
-      os << std::format("{:<{}} ", "job_name:", left_width) << (lGetString(job, JB_job_name)
+      os << std::format("{:<{}} ", ocs::ascii_width("job_name:"), left_width) << (lGetString(job, JB_job_name)
                                                                    ? lGetString(job, JB_job_name)
                                                                    : "") << "\n";
    }
@@ -682,7 +683,7 @@ void ocs::QStatJobViewPlain::report_name(std::ostream &os, const lListElem *job)
 void ocs::QStatJobViewPlain::report_priority(std::ostream &os, const lListElem *job) {
    DENTER(TOP_LAYER);
    if (lGetPosViaElem(job, JB_priority, SGE_NO_ABORT) >= 0) {
-      os << std::format("{:<{}} {}", "priority:", left_width,
+      os << std::format("{:<{}} {}", ocs::ascii_width("priority:"), left_width,
                         static_cast<int>(lGetUlong(job, JB_priority)) - BASE_PRIORITY) << "\n";
    }
    DRETURN_VOID;
@@ -691,7 +692,7 @@ void ocs::QStatJobViewPlain::report_priority(std::ostream &os, const lListElem *
 void ocs::QStatJobViewPlain::report_job_share(std::ostream &os, const lListElem *job) {
    DENTER(TOP_LAYER);
    if (lGetPosViaElem(job, JB_jobshare, SGE_NO_ABORT) >= 0) {
-      os << std::format("{:<{}} {}", "jobshare:", left_width, lGetUlong(job, JB_jobshare)) << "\n";
+      os << std::format("{:<{}} {}", ocs::ascii_width("jobshare:"), left_width, lGetUlong(job, JB_jobshare)) << "\n";
    }
    DRETURN_VOID;
 }
@@ -700,7 +701,7 @@ void ocs::QStatJobViewPlain::report_restart(std::ostream &os, const lListElem *j
    DENTER(TOP_LAYER);
    if (lGetPosViaElem(job, JB_restart, SGE_NO_ABORT) >= 0) {
       if (const uint32_t restart = lGetUlong(job, JB_restart)) {
-         os << std::format("{:<{}} {}", "restart:", left_width, (restart == 2) ? "n" : "y") << "\n";
+         os << std::format("{:<{}} {}", ocs::ascii_width("restart:"), left_width, (restart == 2) ? "n" : "y") << "\n";
       }
    }
    DRETURN_VOID;
@@ -714,7 +715,7 @@ void ocs::QStatJobViewPlain::report_shell_list(std::ostream &os, const lListElem
          delis[0] = ":";
          constexpr int fields[] = {PN_host, PN_path, 0};
          uni_print_list(ss_list, list, fields, delis, FLG_NO_DELIS_STRINGS);
-         os << std::format("{:<{}} {}", "shell_list:", left_width, ss_list.str());
+         os << std::format("{:<{}} {}", ocs::ascii_width("shell_list:"), left_width, ss_list.str());
       }
    }
    DRETURN_VOID;
@@ -743,13 +744,13 @@ void ocs::QStatJobViewPlain::report_env_list(std::ostream &os, const lListElem *
          var_list_split_prefix_vars(&list, &do_not_print, VAR_PREFIX);
 
          if (lGetNumberOfElem(list) == 0) {
-            os << std::format("{:<{}} {}", "env_list:", left_width, "NONE") << "\n";
+            os << std::format("{:<{}} {}", ocs::ascii_width("env_list:"), left_width, "NONE") << "\n";
          } else {
             std::ostringstream ss_list;
             delis[0] = "=";
             constexpr int fields[] = {VA_variable, VA_value, 0};
             uni_print_list(ss_list, list, fields, delis, FLG_NO_DELIS_STRINGS | FLG_NO_VALUE_AS_EMPTY);
-            os << std::format("{:<{}} {}", "env_list:", left_width, ss_list.str()) << "\n";
+            os << std::format("{:<{}} {}", ocs::ascii_width("env_list:"), left_width, ss_list.str()) << "\n";
          }
          lAddList(list, &do_not_print);
       }
@@ -761,7 +762,7 @@ void ocs::QStatJobViewPlain::report_verify(std::ostream &os, const lListElem *jo
    DENTER(TOP_LAYER);
    if (lGetPosViaElem(job, JB_verify, SGE_NO_ABORT) >= 0) {
       if (lGetUlong(job, JB_verify)) {
-         os << std::format("{:<{}} {}", "verify:", left_width, "-verify") << "\n";
+         os << std::format("{:<{}} {}", ocs::ascii_width("verify:"), left_width, "-verify") << "\n";
       }
    }
    DRETURN_VOID;
@@ -775,7 +776,7 @@ void ocs::QStatJobViewPlain::report_job_args(std::ostream &os, const lListElem *
          delis[0] = "";
          int fields[] = {ST_name, 0};
          uni_print_list(ss_list, list, fields, delis, 0);
-         os << std::format("{:<{}} {}", "job_args:", left_width, ss_list.str());
+         os << std::format("{:<{}} {}", ocs::ascii_width("job_args:"), left_width, ss_list.str());
       }
    }
    DRETURN_VOID;
@@ -789,7 +790,7 @@ void ocs::QStatJobViewPlain::report_job_identifier_list(std::ostream &os, const 
          int fields[] = {JRE_job_number, 0};
          delis[0] = "";
          uni_print_list(ss_list, list, fields, delis, 0);
-         os << std::format("{:<{}} {}", "job_identifier_list:", left_width, ss_list.str());
+         os << std::format("{:<{}} {}", ocs::ascii_width("job_identifier_list:"), left_width, ss_list.str());
       }
    }
    DRETURN_VOID;
@@ -799,7 +800,7 @@ void ocs::QStatJobViewPlain::report_script_size(std::ostream &os, const lListEle
    DENTER(TOP_LAYER);
    if (lGetPosViaElem(job, JB_script_size, SGE_NO_ABORT) >= 0) {
       if (const uint32_t size = lGetUlong(job, JB_script_size)) {
-         os << std::format("{:<{}} {}", "script_size:", left_width, size) << "\n";
+         os << std::format("{:<{}} {}", ocs::ascii_width("script_size:"), left_width, size) << "\n";
       }
    }
    DRETURN_VOID;
@@ -809,7 +810,7 @@ void ocs::QStatJobViewPlain::report_script_file(std::ostream &os, const lListEle
    DENTER(TOP_LAYER);
    if (lGetPosViaElem(job, JB_script_file, SGE_NO_ABORT) >= 0) {
       if (const char *file = lGetString(job, JB_script_file)) {
-         os << std::format("{:<{}} {}", "script_file:", left_width, file) << "\n";
+         os << std::format("{:<{}} {}", ocs::ascii_width("script_file:"), left_width, file) << "\n";
       }
    }
    DRETURN_VOID;
@@ -819,7 +820,7 @@ void ocs::QStatJobViewPlain::report_script_ptr(std::ostream &os, const lListElem
    DENTER(TOP_LAYER);
    if (lGetPosViaElem(job, JB_script_ptr, SGE_NO_ABORT) >= 0) {
       if (const char *file = lGetString(job, JB_script_ptr)) {
-         os << std::format("{:<{}} {}", "script_ptr:", left_width, file) << "\n";
+         os << std::format("{:<{}} {}", ocs::ascii_width("script_ptr:"), left_width, file) << "\n";
       }
    }
    DRETURN_VOID;
@@ -836,7 +837,7 @@ void ocs::QStatJobViewPlain::report_pe(std::ostream &os, const lListElem *job) {
          ss_pe_details << pe << " range: " << sge_dstring_get_string(&range_string);
          sge_dstring_free(&range_string);
 
-         os << std::format("{:<{}} {}", "parallel_environment:", left_width, ss_pe_details.str()) << "\n";
+         os << std::format("{:<{}} {}", ocs::ascii_width("parallel_environment:"), left_width, ss_pe_details.str()) << "\n";
       }
    }
    DRETURN_VOID;
@@ -850,7 +851,7 @@ void ocs::QStatJobViewPlain::report_jid_request_list(std::ostream &os, const lLi
          int fields[] = {JRE_job_name, 0};
          delis[0] = "";
          uni_print_list(ss_list, list, fields, delis, 0);
-         os << std::format("{:<{}} {}", "jid_request_list (req):", left_width, ss_list.str());
+         os << std::format("{:<{}} {}", ocs::ascii_width("jid_request_list (req):"), left_width, ss_list.str());
       }
    }
    DRETURN_VOID;
@@ -864,7 +865,7 @@ void ocs::QStatJobViewPlain::report_jid_predecessor_list(std::ostream &os, const
          int fields[] = {JRE_job_number, 0};
          delis[0] = "";
          uni_print_list(ss_list, list, fields, delis, 0);
-         os << std::format("{:<{}} {}", "jid_predecessor_list:", left_width, ss_list.str());
+         os << std::format("{:<{}} {}", ocs::ascii_width("jid_predecessor_list:"), left_width, ss_list.str());
       }
    }
    DRETURN_VOID;
@@ -878,7 +879,7 @@ void ocs::QStatJobViewPlain::report_jid_successor_list(std::ostream &os, const l
          int fields[] = {JRE_job_number, 0};
          delis[0] = "";
          uni_print_list(ss_list, list, fields, delis, 0);
-         os << std::format("{:<{}} {}", "jid_successor_list:", left_width, ss_list.str());
+         os << std::format("{:<{}} {}", ocs::ascii_width("jid_successor_list:"), left_width, ss_list.str());
       }
    }
    DRETURN_VOID;
@@ -892,7 +893,7 @@ void ocs::QStatJobViewPlain::report_ja_ad_request_list(std::ostream &os, const l
          int fields[] = {JRE_job_name, 0};
          delis[0] = "";
          uni_print_list(ss_list, list, fields, delis, 0);
-         os << std::format("{:<{}} {}", "ja_ad_request_list (req):", left_width, ss_list.str());
+         os << std::format("{:<{}} {}", ocs::ascii_width("ja_ad_request_list (req):"), left_width, ss_list.str());
       }
    }
    DRETURN_VOID;
@@ -906,7 +907,7 @@ void ocs::QStatJobViewPlain::report_ja_ad_predecessor_list(std::ostream &os, con
          int fields[] = {JRE_job_number, 0};
          delis[0] = "";
          uni_print_list(ss_list, list, fields, delis, 0);
-         os << std::format("{:<{}} {}", "ja_ad_predecessor_list:", left_width, ss_list.str());
+         os << std::format("{:<{}} {}", ocs::ascii_width("ja_ad_predecessor_list:"), left_width, ss_list.str());
       }
    }
    DRETURN_VOID;
@@ -920,7 +921,7 @@ void ocs::QStatJobViewPlain::report_ja_ad_successor_list(std::ostream &os, const
          int fields[] = {JRE_job_number, 0};
          delis[0] = "";
          uni_print_list(ss_list, list, fields, delis, 0);
-         os << std::format("{:<{}} {}", "ja_ad_successor_list:", left_width, ss_list.str());
+         os << std::format("{:<{}} {}", ocs::ascii_width("ja_ad_successor_list:"), left_width, ss_list.str());
       }
    }
    DRETURN_VOID;
@@ -930,7 +931,7 @@ void ocs::QStatJobViewPlain::report_verify_suitable_queues(std::ostream &os, con
    DENTER(TOP_LAYER);
    if (lGetPosViaElem(job, JB_verify_suitable_queues, SGE_NO_ABORT) >= 0) {
       if (const uint32_t vsq = lGetUlong(job, JB_verify_suitable_queues)) {
-         os << std::format("{:<{}} {}", "verify_suitable_queues:", left_width, vsq) << "\n";
+         os << std::format("{:<{}} {}", ocs::ascii_width("verify_suitable_queues:"), left_width, vsq) << "\n";
       }
    }
    DRETURN_VOID;
@@ -941,7 +942,7 @@ void ocs::QStatJobViewPlain::report_soft_wallclock_gmt(std::ostream &os, const l
    DSTRING_STATIC(dstr, 128);
    if (lGetPosViaElem(job, JB_soft_wallclock_gmt, SGE_NO_ABORT) >= 0) {
       if (const uint64_t time_value = lGetUlong64(job, JB_soft_wallclock_gmt)) {
-         os << std::format("{:<{}} {}", "soft_wallclock_gmt:", left_width, sge_ctime64(time_value, &dstr)) << "\n";
+         os << std::format("{:<{}} {}", ocs::ascii_width("soft_wallclock_gmt:"), left_width, sge_ctime64(time_value, &dstr)) << "\n";
       }
    }
    DRETURN_VOID;
@@ -952,7 +953,7 @@ void ocs::QStatJobViewPlain::report_hard_wallclock_gmt(std::ostream &os, const l
    DSTRING_STATIC(dstr, 128);
    if (lGetPosViaElem(job, JB_hard_wallclock_gmt, SGE_NO_ABORT) >= 0) {
       if (const uint64_t time_value = lGetUlong64(job, JB_hard_wallclock_gmt)) {
-         os << std::format("{:<{}} {}", "hard_wallclock_gmt:", left_width, sge_ctime64(time_value, &dstr)) << "\n";
+         os << std::format("{:<{}} {}", ocs::ascii_width("hard_wallclock_gmt:"), left_width, sge_ctime64(time_value, &dstr)) << "\n";
       }
    }
    DRETURN_VOID;
@@ -962,7 +963,7 @@ void ocs::QStatJobViewPlain::report_version(std::ostream &os, const lListElem *j
    DENTER(TOP_LAYER);
    if (lGetPosViaElem(job, JB_version, SGE_NO_ABORT) >= 0) {
       if (uint32_t version = lGetUlong(job, JB_version)) {
-         os << std::format("{:<{}} {}", "version:", left_width, version) << "\n";
+         os << std::format("{:<{}} {}", ocs::ascii_width("version:"), left_width, version) << "\n";
       }
    }
    DRETURN_VOID;
@@ -972,7 +973,7 @@ void ocs::QStatJobViewPlain::report_override_tickets(std::ostream &os, const lLi
    DENTER(TOP_LAYER);
    if (lGetPosViaElem(job, JB_override_tickets, SGE_NO_ABORT) >= 0) {
       if (uint32_t tickets = lGetUlong(job, JB_override_tickets)) {
-         os << std::format("{:<{}} {}", "override_tickets:", left_width, tickets) << "\n";
+         os << std::format("{:<{}} {}", ocs::ascii_width("override_tickets:"), left_width, tickets) << "\n";
       }
    }
    DRETURN_VOID;
@@ -982,7 +983,7 @@ void ocs::QStatJobViewPlain::report_ar(std::ostream &os, const lListElem *job) {
    DENTER(TOP_LAYER);
    if (lGetPosViaElem(job, JB_ar, SGE_NO_ABORT) >= 0) {
       if (uint32_t ar_id = lGetUlong(job, JB_ar)) {
-         os << std::format("{:<{}} {}", "ar_id:", left_width, ar_id) << "\n";
+         os << std::format("{:<{}} {}", ocs::ascii_width("ar_id:"), left_width, ar_id) << "\n";
       }
    }
    DRETURN_VOID;
@@ -992,7 +993,7 @@ void ocs::QStatJobViewPlain::report_project(std::ostream &os, const lListElem *j
    DENTER(TOP_LAYER);
    if (lGetPosViaElem(job, JB_project, SGE_NO_ABORT) >= 0) {
       if (const char *project = lGetString(job, JB_project)) {
-         os << std::format("{:<{}} {}", "project:", left_width, project) << "\n";
+         os << std::format("{:<{}} {}", ocs::ascii_width("project:"), left_width, project) << "\n";
       }
    }
    DRETURN_VOID;
@@ -1002,7 +1003,7 @@ void ocs::QStatJobViewPlain::report_department(std::ostream &os, const lListElem
    DENTER(TOP_LAYER);
    if (lGetPosViaElem(job, JB_department, SGE_NO_ABORT) >= 0) {
       if (const char *dept = lGetString(job, JB_department)) {
-         os << std::format("{:<{}} {}", "department:", left_width, dept) << "\n";
+         os << std::format("{:<{}} {}", ocs::ascii_width("department:"), left_width, dept) << "\n";
       }
    }
    DRETURN_VOID;
@@ -1013,7 +1014,7 @@ void ocs::QStatJobViewPlain::report_sync_options(std::ostream &os, const lListEl
    if (lGetPosViaElem(job, JB_sync_options, SGE_NO_ABORT) >= 0) {
       if (lGetUlong(job, JB_sync_options)) {
          std::string sync_flags = job_get_sync_options_string(job);
-         os << std::format("{:<{}} {}", "sync_options:", left_width, sync_flags) << "\n";
+         os << std::format("{:<{}} {}", ocs::ascii_width("sync_options:"), left_width, sync_flags) << "\n";
       }
    }
    DRETURN_VOID;
@@ -1027,7 +1028,7 @@ void ocs::QStatJobViewPlain::report_ja_structure(std::ostream &os, const lListEl
          job_get_submit_task_ids(job, &start, &end, &step);
          std::ostringstream ss_range;
          ss_range << std::format("{}-{}:{}", start, end, step);
-         os << std::format("{:<{}} {}", "job-array tasks:", left_width, ss_range.str()) << "\n";
+         os << std::format("{:<{}} {}", ocs::ascii_width("job-array tasks:"), left_width, ss_range.str()) << "\n";
       }
    }
    DRETURN_VOID;
@@ -1036,7 +1037,7 @@ void ocs::QStatJobViewPlain::report_ja_structure(std::ostream &os, const lListEl
 void ocs::QStatJobViewPlain::report_pending_tasks(std::ostream &os, const lListElem *job) {
    DENTER(TOP_LAYER);
    if (lGetPosViaElem(job, JB_ja_n_h_ids, SGE_NO_ABORT) >= 0) {
-      os << std::format("{:<{}} {}", "pending_tasks:", left_width, count_pending_tasks(job)) << "\n";
+      os << std::format("{:<{}} {}", ocs::ascii_width("pending_tasks:"), left_width, count_pending_tasks(job)) << "\n";
    }
    DRETURN_VOID;
 }
@@ -1045,7 +1046,7 @@ void ocs::QStatJobViewPlain::report_ja_task_concurrency(std::ostream &os, const 
    DENTER(TOP_LAYER);
    if (lGetPosViaElem(job, JB_ja_task_concurrency, SGE_NO_ABORT) >= 0) {
       if (uint32_t tc = lGetUlong(job, JB_ja_task_concurrency)) {
-         os << std::format("{:<{}} {}", "task_concurrency:", left_width, tc) << "\n";
+         os << std::format("{:<{}} {}", ocs::ascii_width("task_concurrency:"), left_width, tc) << "\n";
       }
    }
    DRETURN_VOID;
@@ -1059,7 +1060,7 @@ void ocs::QStatJobViewPlain::report_ctx_list(std::ostream &os, const lListElem *
          constexpr int fields[] = {VA_variable, VA_value, 0};
          delis[0] = "=";
          uni_print_list(ss_list, list, fields, delis, FLG_NO_DELIS_STRINGS);
-         os << std::format("{:<{}} {}", "context:", left_width, ss_list.str()) << "\n";
+         os << std::format("{:<{}} {}", ocs::ascii_width("context:"), left_width, ss_list.str()) << "\n";
       }
    }
    DRETURN_VOID;
@@ -1071,7 +1072,7 @@ void ocs::QStatJobViewPlain::report_binding(std::ostream &os, const lListElem *j
       const lListElem *binding_elem = lGetObject(job, JB_binding);
       std::string binding_param;;
       BindingIo::binding_print_to_string(binding_elem, binding_param);
-      os << std::format("{:<{}} {}", "binding:", left_width, binding_param) << "\n";
+      os << std::format("{:<{}} {}", ocs::ascii_width("binding:"), left_width, binding_param) << "\n";
    }
    DRETURN_VOID;
 }
@@ -1109,7 +1110,7 @@ void ocs::QStatJobViewPlain::report_task_state(std::ostream &os, const lListElem
    const uint32_t state = jatask_combine_state_and_status_for_output(job, task);
    job_get_state_string(state_string, state);
 
-   os << std::format("{:<{}} {:>{}}: {}", "job_state", left_width_short, task_number, mid_width, state_string) << "\n";
+   os << std::format("{:<{}} {:>{}}: {}", ocs::ascii_width("job_state"), left_width_short, task_number, mid_width, state_string) << "\n";
    DRETURN_VOID;
 }
 
@@ -1169,7 +1170,7 @@ void ocs::QStatJobViewPlain::report_task_usage(std::ostream &os, const lListElem
    }
 
    uint32_t task_number = lGetUlong(task, JAT_task_number);
-   os << std::format("{:<{}} {:>{}}: {}", "usage", left_width_short, task_number, mid_width, ss_usage.str()) << "\n";
+   os << std::format("{:<{}} {:>{}}: {}", ocs::ascii_width("usage"), left_width_short, task_number, mid_width, ss_usage.str()) << "\n";
    DRETURN_VOID;
 }
 
@@ -1181,7 +1182,7 @@ void ocs::QStatJobViewPlain::report_task_exec_binding_list(std::ostream &os, con
    // show binding information
    if (lGetUlong(task, JAT_status) == JRUNNING || lGetUlong(task, JAT_status) == JTRANSFERING) {
       const lList *granted_resources = lGetList(task, JAT_granted_resources_list);
-      os << std::format("{:<{}} {:>{}}: {}", "exec_binding_list", left_width_short, task_number,
+      os << std::format("{:<{}} {:>{}}: {}", ocs::ascii_width("exec_binding_list"), left_width_short, task_number,
                         mid_width, GrantedResources::to_string(granted_resources)) << "\n";
    }
    DRETURN_VOID;
@@ -1200,7 +1201,7 @@ void ocs::QStatJobViewPlain::report_task_exec_queue_list(std::ostream &os, const
       int queue_fields[] = {JG_qname, JG_slots, 0};
       uni_print_list(ss_list, gdil_org, queue_fields, delis, 0);
       uint32_t task_number = lGetUlong(task, JAT_task_number);
-      os << std::format("{:<{}} {:>{}}: {}", "exec_queue_list", left_width_short, task_number, mid_width,
+      os << std::format("{:<{}} {:>{}}: {}", ocs::ascii_width("exec_queue_list"), left_width_short, task_number, mid_width,
                         ss_list.str());
    }
    DRETURN_VOID;
@@ -1223,7 +1224,7 @@ void ocs::QStatJobViewPlain::report_task_exec_host_list(std::ostream &os, const 
          std::stringstream ss_list2;
          const int host_fields[] = {JG_qhostname, JG_slots, 0};
          uni_print_list(ss_list2, gdil_unique, host_fields, delis, 0);
-         os << std::format("{:<{}} {:>{}}: {}", "exec_host_list", left_width_short, task_number, mid_width,
+         os << std::format("{:<{}} {:>{}}: {}", ocs::ascii_width("exec_host_list"), left_width_short, task_number, mid_width,
                            ss_list2.str());
 
          // free the list of granted hosts
@@ -1237,7 +1238,7 @@ void ocs::QStatJobViewPlain::report_task_start_time(std::ostream &os, const lLis
    DENTER(TOP_LAYER);
    uint32_t task_number = lGetUlong(task, JAT_task_number);
    DSTRING_STATIC(time_ds, 32);
-   os << std::format("{:<{}} {:>{}}: {}", "start_time", left_width_short, task_number, mid_width,
+   os << std::format("{:<{}} {:>{}}: {}", ocs::ascii_width("start_time"), left_width_short, task_number, mid_width,
                      sge_ctime64(lGetUlong64(task, JAT_start_time), &time_ds)) << "\n";
    DRETURN_VOID;
 }
@@ -1252,7 +1253,7 @@ void ocs::QStatJobViewPlain::report_task_end_time(std::ostream &os, const lListE
    }
    uint32_t task_number = lGetUlong(task, JAT_task_number);
    DSTRING_STATIC(time_ds, 32);
-   os << std::format("{:<{}} {:>{}}: {}", "end_time", left_width_short, task_number, mid_width,
+   os << std::format("{:<{}} {:>{}}: {}", ocs::ascii_width("end_time"), left_width_short, task_number, mid_width,
                      sge_ctime64(lGetUlong64(task, JAT_end_time), &time_ds)) << "\n";
    DRETURN_VOID;
 }
@@ -1290,7 +1291,7 @@ void ocs::QStatJobViewPlain::report_task_resource_map(std::ostream &os, const lL
    /* print out granted resources */
    uint32_t task_number = lGetUlong(task, JAT_task_number);
    const char *resource_ids = sge_dstring_get_string(&task_resources);
-   os << std::format("{:<{}} {:>{}}: {}", "resource_map", left_width_short, task_number, mid_width,
+   os << std::format("{:<{}} {:>{}}: {}", ocs::ascii_width("resource_map"), left_width_short, task_number, mid_width,
                      resource_ids != nullptr ? resource_ids : "NONE") << "\n";
 
    sge_dstring_free(&task_resources);
@@ -1302,7 +1303,7 @@ void ocs::QStatJobViewPlain::report_task_error_reason(std::ostream &os, const lL
    uint32_t task_number = lGetUlong(task, JAT_task_number);
    for_each_ep_lv(mesobj, lGetList(task, JAT_message_list)) {
       if (const char *message = lGetString(mesobj, QIM_message)) {
-         os << std::format("{:<{}} {:>{}}: {}", "error_reason", left_width_short, task_number, mid_width,
+         os << std::format("{:<{}} {:>{}}: {}", ocs::ascii_width("error_reason"), left_width_short, task_number, mid_width,
                            message) << "\n";
       }
    }
@@ -1316,10 +1317,10 @@ void ocs::QStatJobViewPlain::report_schedd_job_info(std::ostream &os, const lLis
       bool first_run = true;
       auto print_sched_message = [&](const char *msg) {
          if (first_run) {
-            os << std::format("{:<{}} {}", MSG_SCHEDD_SCHEDULINGINFO, left_width, msg) << "\n";
+            os << std::format("{:<{}} {}", ocs::ascii_width(MSG_SCHEDD_SCHEDULINGINFO), left_width, msg) << "\n";
             first_run = false;
          } else {
-            os << std::format("{:<{}} {}", "", left_width, msg) << "\n";
+            os << std::format("{:<{}} {}", ocs::ascii_width(""), left_width, msg) << "\n";
          }
       };
 

@@ -38,6 +38,7 @@
 #include "uti/sge_string.h"
 #include "uti/sge_time.h"
 #include "uti/ocs_Bootstrap.h"
+#include "uti/ocs_FormatText.h"
 
 #include "comm/commlib.h"
 
@@ -552,66 +553,67 @@ ocs::QHostViewBase::show_job(std::ostream &os, lListElem *job, lListElem *jatep,
          show_job_header_ = 0;
 
          oss << indent;
-         oss << std::format("{:<10} ", "job-ID");
-         oss << std::format("{:<7} ", "prior");
+         oss << std::format("{:<10} ", ocs::ascii_width("job-ID"));
+         oss << std::format("{:<7} ", ocs::ascii_width("prior"));
          if (sge_pri || sge_urg) {
-            oss << std::format("{:<8} ", "nurg");
+            oss << std::format("{:<8} ", ocs::ascii_width("nurg"));
          }
          if (sge_pri) {
-            oss << std::format("{:<8} ", "npprior");
+            oss << std::format("{:<8} ", ocs::ascii_width("npprior"));
          }
          if (sge_pri || sge_ext) {
-            oss << std::format("{:<8} ", "ntckts");
+            oss << std::format("{:<8} ", ocs::ascii_width("ntckts"));
          }
          if (sge_urg) {
-            oss << std::format("{:<9} ", "urg");
-            oss << std::format("{:<9} ", "rrcontr");
-            oss << std::format("{:<9} ", "wtcontr");
-            oss << std::format("{:<9} ", "dlcontr");
+            oss << std::format("{:<9} ", ocs::ascii_width("urg"));
+            oss << std::format("{:<9} ", ocs::ascii_width("rrcontr"));
+            oss << std::format("{:<9} ", ocs::ascii_width("wtcontr"));
+            oss << std::format("{:<9} ", ocs::ascii_width("dlcontr"));
          }
          if (sge_pri) {
-            oss << std::format("{:<6} ", "ppri");
+            oss << std::format("{:<6} ", ocs::ascii_width("ppri"));
          }
-         oss << std::format("{:<10} ", "name");
-         oss << std::format("{:<12} ", "user");
+         oss << std::format("{:<10} ", ocs::ascii_width("name"));
+         oss << std::format("{:<12} ", ocs::ascii_width("user"));
          if (sge_ext) {
-            oss << std::format("{:<16} ", "project");
-            oss << std::format("{:<10} ", "department");
+            oss << std::format("{:<16} ", ocs::ascii_width("project"));
+            oss << std::format("{:<10} ", ocs::ascii_width("department"));
          }
-         oss << std::format("{:<5} ", "state");
+         oss << std::format("{:<5} ", ocs::ascii_width("state"));
          if (sge_time) {
-            oss << std::format("{:<19} ", "submit/start at");
+            oss << std::format("{:<19} ", ocs::ascii_width("submit/start at"));
          }
          if (sge_urg) {
-            oss << std::format("{:<19} ", "deadline");
+            oss << std::format("{:<19} ", ocs::ascii_width("deadline"));
          }
          if (sge_ext) {
-            oss << std::format("{:<10} ", USAGE_ATTR_CPU);
-            oss << std::format("{:<10} ", USAGE_ATTR_MEM);
-            oss << std::format("{:<10} ", USAGE_ATTR_IO);
-            oss << std::format("{:<6} ", "tckts");
-            oss << std::format("{:<6} ", "ovrts");
-            oss << std::format("{:<6} ", "otckt");
-            oss << std::format("{:<6} ", "ftckt");
-            oss << std::format("{:<6} ", "stckt");
-            oss << std::format("{:<6} ", "share");
+            oss << std::format("{:<10} ", ocs::ascii_width(USAGE_ATTR_CPU));
+            oss << std::format("{:<10} ", ocs::ascii_width(USAGE_ATTR_MEM));
+            oss << std::format("{:<10} ", ocs::ascii_width(USAGE_ATTR_IO));
+            oss << std::format("{:<6} ", ocs::ascii_width("tckts"));
+            oss << std::format("{:<6} ", ocs::ascii_width("ovrts"));
+            oss << std::format("{:<6} ", ocs::ascii_width("otckt"));
+            oss << std::format("{:<6} ", ocs::ascii_width("ftckt"));
+            oss << std::format("{:<6} ", ocs::ascii_width("stckt"));
+            oss << std::format("{:<6} ", ocs::ascii_width("share"));
          }
 
          // dynamic queue length
          std::string fmt = std::format("{{:<{}.{}}} ", queue_name_length, queue_name_length);
-         oss << std::vformat(fmt, std::make_format_args("queue"));
+         const auto queue_header = ocs::ascii_width("queue");
+         oss << std::vformat(fmt, std::make_format_args(queue_header));
 
-         oss << std::format("{:<6} ", (group_opt & GROUP_NO_PETASK_GROUPS) ? "master" : "slots");
-         oss << std::format("{:<10} ", "ja-task-ID");
+         oss << std::format("{:<6} ", ocs::ascii_width((group_opt & GROUP_NO_PETASK_GROUPS) ? "master" : "slots"));
+         oss << std::format("{:<10} ", ocs::ascii_width("ja-task-ID"));
 
          if (tsk_ext) {
-            oss << std::format("{:<10} ", "task-ID");
-            oss << std::format("{:<6} ", "state");
-            oss << std::format("{:<10} ", USAGE_ATTR_CPU);
-            oss << std::format("{:<10} ", USAGE_ATTR_MEM);
-            oss << std::format("{:<10} ", USAGE_ATTR_IO);
-            oss << std::format("{:<6} ", "stat");
-            oss << std::format("{:<7} ", "failed");
+            oss << std::format("{:<10} ", ocs::ascii_width("task-ID"));
+            oss << std::format("{:<6} ", ocs::ascii_width("state"));
+            oss << std::format("{:<10} ", ocs::ascii_width(USAGE_ATTR_CPU));
+            oss << std::format("{:<10} ", ocs::ascii_width(USAGE_ATTR_MEM));
+            oss << std::format("{:<10} ", ocs::ascii_width(USAGE_ATTR_IO));
+            oss << std::format("{:<6} ", ocs::ascii_width("stat"));
+            oss << std::format("{:<7} ", ocs::ascii_width("failed"));
          }
          oss << std::endl;
 

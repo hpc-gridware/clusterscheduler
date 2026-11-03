@@ -26,6 +26,7 @@
 #include <iomanip>
 
 #include "uti/sge_rmon_macros.h"
+#include "uti/ocs_FormatText.h"
 
 #include "qstat/group/ocs_QStatGroupViewPlain.h"
 
@@ -36,21 +37,21 @@ void ocs::QStatGroupViewPlain::report_started(std::ostream &os, QStatParameter &
    // Show header
    os << std::format(
          "{:<{}.{}s} {:>7} {:>6} {:>6} {:>6} {:>6} {:>6} {:>6} ",
-         "CLUSTER QUEUE",
+         ocs::ascii_width("CLUSTER QUEUE"),
          queue_length,
          queue_length,
-         "CQLOAD",
-         "USED",
-         "RES",
-         "AVAIL",
-         "TOTAL",
-         "aoACDS",
-         "cdsuE");
+         ocs::ascii_width("CQLOAD"),
+         ocs::ascii_width("USED"),
+         ocs::ascii_width("RES"),
+         ocs::ascii_width("AVAIL"),
+         ocs::ascii_width("TOTAL"),
+         ocs::ascii_width("aoACDS"),
+         ocs::ascii_width("cdsuE"));
    const bool show_states = (parameter.show_ & QSTAT_DISPLAY_EXTENDED) ? true : false;
    if (show_states) {
       os << std::format(
               "{:>5} {:>5} {:>5} {:>5} {:>5} {:>5} {:>5} {:>5} {:>5} {:>5} {:>5}",
-              "s", "A", "S", "C", "u", "a", "d", "D", "c", "o", "E");
+              ocs::ascii_width("s"), ocs::ascii_width("A"), ocs::ascii_width("S"), ocs::ascii_width("C"), ocs::ascii_width("u"), ocs::ascii_width("a"), ocs::ascii_width("d"), ocs::ascii_width("D"), ocs::ascii_width("c"), ocs::ascii_width("o"), ocs::ascii_width("E"));
    }
    os << '\n';
 
@@ -77,12 +78,12 @@ void ocs::QStatGroupViewPlain::report_cqueue(std::ostream &os, const char* cq_na
    const bool show_states = (parameter.show_ & QSTAT_DISPLAY_EXTENDED) ? true : false;
 
    int queue_length = parameter.get_longest_queue_length();
-   os << std::format("{:<{}.{}s} ", cq_name, queue_length, queue_length);
+   os << std::format("{:<{}.{}s} ", ocs::ascii_width(cq_name), queue_length, queue_length);
 
    if (cqueue_summary->is_load_available) {
       os << std::format("{:>7.2f} ", cqueue_summary->load);
    } else {
-      os << std::format("{:>7} ", "-NA-");
+      os << std::format("{:>7} ", ocs::ascii_width("-NA-"));
    }
 
    os << std::format("{:>6} ", cqueue_summary->used);

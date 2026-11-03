@@ -27,6 +27,7 @@
 #include <format>
 
 #include "uti/sge_rmon_macros.h"
+#include "uti/ocs_FormatText.h"
 
 #include "qhost/ocs_QHostViewPlain.h"
 
@@ -52,8 +53,8 @@ ocs::QHostViewPlain::host_start(std::ostream &os, const char* host_name) {
       print_host_header = false;
 
       os << std::format("{:<23} {:<13.13} {:>4.4} {:>5.5} {:>5.5} {:>5.5} {:>6.6} {:>7.7} {:>7.7} {:>7.7} {:>7.7}\n",
-         MSG_HEADER_HOSTNAME, MSG_HEADER_ARCH, MSG_HEADER_NPROC, MSG_HEADER_NSOC, MSG_HEADER_NCOR, MSG_HEADER_NTHR,
-         MSG_HEADER_LOAD, MSG_HEADER_MEMTOT, MSG_HEADER_MEMUSE, MSG_HEADER_SWAPTO, MSG_HEADER_SWAPUS)
+         ocs::ascii_width(MSG_HEADER_HOSTNAME), ocs::ascii_width(MSG_HEADER_ARCH), ocs::ascii_width(MSG_HEADER_NPROC), ocs::ascii_width(MSG_HEADER_NSOC), ocs::ascii_width(MSG_HEADER_NCOR), ocs::ascii_width(MSG_HEADER_NTHR),
+         ocs::ascii_width(MSG_HEADER_LOAD), ocs::ascii_width(MSG_HEADER_MEMTOT), ocs::ascii_width(MSG_HEADER_MEMUSE), ocs::ascii_width(MSG_HEADER_SWAPTO), ocs::ascii_width(MSG_HEADER_SWAPUS))
          << std::string(23 + 13 + 4 + 5 + 5 + 5 + 6 + 7 + 7 + 7 + 7 + 10*1, '-');
    }
    os << "\n";
@@ -69,7 +70,8 @@ ocs::QHostViewPlain::host_end(std::ostream &os) {
 void
 ocs::QHostViewPlain::host_value(std::ostream &os, const char *format_str, const char *name, const char *value) {
    DENTER(TOP_LAYER);
-   os << std::vformat(format_str, std::make_format_args(value));
+   const auto text = ocs::ascii_width(value);
+   os << std::vformat(format_str, std::make_format_args(text));
    DRETURN_VOID;
 }
 
@@ -90,7 +92,8 @@ ocs::QHostViewPlain::host_value(std::ostream &os, const char *format_str, const 
 void
 ocs::QHostViewPlain::queue_start(std::ostream &os, const char *format_str, const char *qname) {
    DENTER(TOP_LAYER);
-   os << "\n" << std::vformat(format_str, std::make_format_args(qname));
+   const auto text = ocs::ascii_width(qname);
+   os << "\n" << std::vformat(format_str, std::make_format_args(text));
    DRETURN_VOID;
 }
 
@@ -103,7 +106,8 @@ ocs::QHostViewPlain::queue_end(std::ostream &os) {
 void
 ocs::QHostViewPlain::queue_value(std::ostream &os, const char* qname, const char *format_str, const char* name, const char *value) {
    DENTER(TOP_LAYER);
-   os << std::vformat(format_str, std::make_format_args(value));
+   const auto text = ocs::ascii_width(value);
+   os << std::vformat(format_str, std::make_format_args(text));
    DRETURN_VOID;
 }
 
@@ -133,7 +137,8 @@ void
 ocs::QHostViewPlain::job_value(std::ostream &os, const uint32_t jid, const char *format_str, const char* name, const char *value) {
    DENTER(TOP_LAYER);
    if (format_str != nullptr) {
-      os << std::vformat(format_str, std::make_format_args(value));
+      const auto text = ocs::ascii_width(value);
+      os << std::vformat(format_str, std::make_format_args(text));
    }
    DRETURN_VOID;
 }

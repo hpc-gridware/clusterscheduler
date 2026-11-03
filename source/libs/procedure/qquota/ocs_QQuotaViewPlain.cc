@@ -27,6 +27,7 @@
 
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_dstring.h"
+#include "uti/ocs_FormatText.h"
 
 #include "sgeobj/sge_ulong.h"
 
@@ -62,15 +63,15 @@ ocs::QQuotaViewPlain::report_limit_rule_begin(std::ostream &os, const char *rqs_
    DENTER(TOP_LAYER);
    if (print_header) {
       print_header = false;
-      os << std::format("{:<20.20} ", MSG_HEADER_RULE)
-         << std::format("{:<20.20} ", MSG_HEADER_LIMIT)
+      os << std::format("{:<20.20} ", ocs::ascii_width(MSG_HEADER_RULE))
+         << std::format("{:<20.20} ", ocs::ascii_width(MSG_HEADER_LIMIT))
          << MSG_HEADER_FILTER << "\n";
       os << std::string(80, '-') << "\n";
    }
 
    std::ostringstream oss;
    oss << rqs_name << "/" << rule_name;
-   os << std::format("{:<20.20} ", oss.str());
+   os << std::format("{:<20.20} ", ocs::ascii_width(oss.str()));
    DRETURN_VOID;
 }
 
@@ -137,7 +138,7 @@ ocs::QQuotaViewPlain::report_resource_value(std::ostream &os, const char *resour
       value_to_dstring(used, &used_str);
       oss << resource << "=" << sge_dstring_get_string(&used_str) << "/" << sge_dstring_get_string(&max_str);
    }
-   os << std::format("{:<20} ", oss.str());
+   os << std::format("{:<20} ", ocs::ascii_width(oss.str()));
    DRETURN_VOID;
 }
 

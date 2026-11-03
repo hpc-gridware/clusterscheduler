@@ -29,6 +29,7 @@
 
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_time.h"
+#include "uti/ocs_FormatText.h"
 
 #include "sgeobj/sge_host.h"
 #include "sgeobj/sge_job.h"
@@ -110,11 +111,11 @@ void ocs::QStatDefaultViewPlain::report_queue_summary(std::ostream &os, const ch
    if (!header_printed) {
       header_printed = true;
 
-      os << std::format("{:<{}.{}} ", MSG_QSTAT_PRT_QUEUENAME, queue_length, queue_length)
-         << std::format("{:<5.5} ", MSG_QSTAT_PRT_QTYPE)
-         << std::format("{:<14.14} ", MSG_QSTAT_PRT_RESVUSEDTOT)
-         << std::format("{:<8.8} ", summary->load_avg_str)
-         << std::format("{:<13.13} ", LOAD_ATTR_ARCH)
+      os << std::format("{:<{}.{}} ", ocs::ascii_width(MSG_QSTAT_PRT_QUEUENAME), queue_length, queue_length)
+         << std::format("{:<5.5} ", ocs::ascii_width(MSG_QSTAT_PRT_QTYPE))
+         << std::format("{:<14.14} ", ocs::ascii_width(MSG_QSTAT_PRT_RESVUSEDTOT))
+         << std::format("{:<8.8} ", ocs::ascii_width(summary->load_avg_str))
+         << std::format("{:<13.13} ", ocs::ascii_width(LOAD_ATTR_ARCH))
          << std::format("{} ", MSG_QSTAT_PRT_STATES);
    }
 
@@ -129,12 +130,12 @@ void ocs::QStatDefaultViewPlain::report_queue_summary(std::ostream &os, const ch
 
    // print line with queue's data fields
    os << "\n";
-   os << std::format("{:<{}.{}} ", qname, queue_length, queue_length);
-   os << std::format("{:<5.5} ", summary->queue_type);
+   os << std::format("{:<{}.{}} ", ocs::ascii_width(qname), queue_length, queue_length);
+   os << std::format("{:<5.5} ", ocs::ascii_width(summary->queue_type));
 
    std::ostringstream ss_res_used_total;
    ss_res_used_total << std::format("{}/{}/{}", summary->resv_slots, summary->used_slots, summary->total_slots);
-   os << std::format("{:<14.14} ", ss_res_used_total.str());
+   os << std::format("{:<14.14} ", ocs::ascii_width(ss_res_used_total.str()));
 
    // Why is has_load_value required?
    std::ostringstream ss_load_avg;
@@ -148,8 +149,8 @@ void ocs::QStatDefaultViewPlain::report_queue_summary(std::ostream &os, const ch
       }
    }
 
-   os << std::format("{:<8.8} ", ss_load_avg.str());
-   os << std::format("{:<13.13} ", summary->arch.empty() ? "-NA-" : summary->arch.c_str());
+   os << std::format("{:<8.8} ", ocs::ascii_width(ss_load_avg.str()));
+   os << std::format("{:<13.13} ", ocs::ascii_width(summary->arch.empty() ? "-NA-" : summary->arch.c_str()));
    os << std::format("{} ", summary->state.c_str());   // empty state → empty column (normal queue); CS-2366 regression fix
    DRETURN_VOID;
 }
@@ -294,62 +295,62 @@ void ocs::QStatDefaultViewPlain::report_job(std::ostream &os, uint32_t jid, job_
    if (!job_header_printed) {
       std::ostringstream oss;
 
-      oss << std::format("{:<10} ", "job-ID");
-      oss << std::format("{:<7} ", "prior");
+      oss << std::format("{:<10} ", ocs::ascii_width("job-ID"));
+      oss << std::format("{:<7} ", ocs::ascii_width("prior"));
       if (sge_pri || sge_urg) {
-         oss << std::format("{:<7} ", "nurg");
+         oss << std::format("{:<7} ", ocs::ascii_width("nurg"));
       }
       if (sge_pri) {
-         oss << std::format("{:<7} ", "npprior");
+         oss << std::format("{:<7} ", ocs::ascii_width("npprior"));
       }
       if (sge_pri || sge_ext) {
-         oss << std::format("{:<7} ", "ntckts");
+         oss << std::format("{:<7} ", ocs::ascii_width("ntckts"));
       }
       if (sge_urg) {
-         oss << std::format("{:<8} ", "urg");
-         oss << std::format("{:<8} ", "rrcontr");
-         oss << std::format("{:<8} ", "wtcontr");
-         oss << std::format("{:<8} ", "dlcontr");
+         oss << std::format("{:<8} ", ocs::ascii_width("urg"));
+         oss << std::format("{:<8} ", ocs::ascii_width("rrcontr"));
+         oss << std::format("{:<8} ", ocs::ascii_width("wtcontr"));
+         oss << std::format("{:<8} ", ocs::ascii_width("dlcontr"));
       }
       if (sge_pri) {
-         oss << std::format("{:<5} ", "pri");
+         oss << std::format("{:<5} ", ocs::ascii_width("pri"));
       }
-      oss << std::format("{:<10} ", "name");
-      oss << std::format("{:<12} ", "user");
+      oss << std::format("{:<10} ", ocs::ascii_width("name"));
+      oss << std::format("{:<12} ", ocs::ascii_width("user"));
       if (sge_ext) {
-         oss << std::format("{:<16} ", "project");
-         oss << std::format("{:<10} ", "department");
+         oss << std::format("{:<16} ", ocs::ascii_width("project"));
+         oss << std::format("{:<10} ", ocs::ascii_width("department"));
       }
-      oss << std::format("{:<5} ", "state");
+      oss << std::format("{:<5} ", ocs::ascii_width("state"));
       if (sge_time) {
-         oss << std::format("{:<19} ", "submit/start at");
+         oss << std::format("{:<19} ", ocs::ascii_width("submit/start at"));
       }
       if (sge_urg) {
-         oss << std::format("{:<19} ", "deadline");
+         oss << std::format("{:<19} ", ocs::ascii_width("deadline"));
       }
       if (sge_ext) {
-         oss << std::format("{:<10} ", "cpu");
-         oss << std::format("{:<7} ", "mem");
-         oss << std::format("{:<7} ", "io");
+         oss << std::format("{:<10} ", ocs::ascii_width("cpu"));
+         oss << std::format("{:<7} ", ocs::ascii_width("mem"));
+         oss << std::format("{:<7} ", ocs::ascii_width("io"));
       }
       if (sge_ext) {
-         oss << std::format("{:<5} ", "tckts");
-         oss << std::format("{:<5} ", "ovrts");
-         oss << std::format("{:<5} ", "otckt");
-         oss << std::format("{:<5} ", "ftckt");
-         oss << std::format("{:<5} ", "stckt");
-         oss << std::format("{:<5} ", "share");
+         oss << std::format("{:<5} ", ocs::ascii_width("tckts"));
+         oss << std::format("{:<5} ", ocs::ascii_width("ovrts"));
+         oss << std::format("{:<5} ", ocs::ascii_width("otckt"));
+         oss << std::format("{:<5} ", ocs::ascii_width("ftckt"));
+         oss << std::format("{:<5} ", ocs::ascii_width("stckt"));
+         oss << std::format("{:<5} ", ocs::ascii_width("share"));
       }
-      oss << std::format("{:<{}} ", "queue", parameter.get_longest_queue_length());
-      oss << std::format("{:<6} ", (parameter.group_opt_ & GROUP_NO_PETASK_GROUPS) ? "master" : "slots");
-      oss << std::format("{:<10} ", "ja-task-ID");
+      oss << std::format("{:<{}} ", ocs::ascii_width("queue"), parameter.get_longest_queue_length());
+      oss << std::format("{:<6} ", ocs::ascii_width((parameter.group_opt_ & GROUP_NO_PETASK_GROUPS) ? "master" : "slots"));
+      oss << std::format("{:<10} ", ocs::ascii_width("ja-task-ID"));
       if (tsk_ext) {
-         oss << std::format("{:<16} ", "task-ID");
-         oss << std::format("{:<5} ", "state");
-         oss << std::format("{:<10} ", "cpu");
-         oss << std::format("{:<7} ", "mem");
-         oss << std::format("{:<7} ", "io");
-         oss << std::format("{:<4} ", "stat");
+         oss << std::format("{:<16} ", ocs::ascii_width("task-ID"));
+         oss << std::format("{:<5} ", ocs::ascii_width("state"));
+         oss << std::format("{:<10} ", ocs::ascii_width("cpu"));
+         oss << std::format("{:<7} ", ocs::ascii_width("mem"));
+         oss << std::format("{:<7} ", ocs::ascii_width("io"));
+         oss << std::format("{:<4} ", ocs::ascii_width("stat"));
       }
 
       size_t line_length = oss.str().length();
@@ -366,7 +367,7 @@ void ocs::QStatDefaultViewPlain::report_job(std::ostream &os, uint32_t jid, job_
    if (print_job_id) {
       os << std::format("{:>10} ", jid);
    } else {
-      os << std::format("{:>10} ", "");
+      os << std::format("{:>10} ", ocs::ascii_width(""));
    }
 
    if (print_job_id) {
@@ -414,23 +415,23 @@ void ocs::QStatDefaultViewPlain::report_job(std::ostream &os, uint32_t jid, job_
    }
 
    if (print_job_id) {
-      os << std::format("{:<10.10} ", summary->name);
-      os << std::format("{:<12.12} ", summary->user);
+      os << std::format("{:<10.10} ", ocs::ascii_width(summary->name));
+      os << std::format("{:<12.12} ", ocs::ascii_width(summary->user));
    } else {
       os << std::string(10 + 1 + 12 + 1, ' ');
    }
 
    if (sge_ext) {
       if (print_job_id) {
-         os << std::format("{:<16.16} ", summary->project?summary->project:"NA");
-         os << std::format("{:<10.10} ", summary->department?summary->department:"NA");
+         os << std::format("{:<16.16} ", ocs::ascii_width(summary->project?summary->project:"NA"));
+         os << std::format("{:<10.10} ", ocs::ascii_width(summary->department?summary->department:"NA"));
       } else {
          os << std::string(16 + 1 + 10 + 1, ' ');
       }
    }
 
    if (print_job_id) {
-      os << std::format("{:<5.5} ", summary->state);
+      os << std::format("{:<5.5} ", ocs::ascii_width(summary->state));
    } else {
       os << std::string(5 + 1, ' ');
    }
@@ -439,9 +440,9 @@ void ocs::QStatDefaultViewPlain::report_job(std::ostream &os, uint32_t jid, job_
    if (sge_time) {
       if (print_job_id) {
          if (summary->is_running) {
-            os << std::format("{:<19} ", sge_ctime64_short(summary->start_time, &ds));
+            os << std::format("{:<19} ", ocs::ascii_width(sge_ctime64_short(summary->start_time, &ds)));
          } else {
-            os << std::format("{:<19} ", sge_ctime64_short(summary->submit_time, &ds));
+            os << std::format("{:<19} ", ocs::ascii_width(sge_ctime64_short(summary->submit_time, &ds)));
          }
       } else {
          os << std::string(19 + 1, ' ');
@@ -451,7 +452,7 @@ void ocs::QStatDefaultViewPlain::report_job(std::ostream &os, uint32_t jid, job_
    if (sge_urg) {
       if (print_job_id) {
          if (summary->deadline) {
-            os << std::format("{:<19} ", sge_ctime64_short(summary->deadline, &ds));
+            os << std::format("{:<19} ", ocs::ascii_width(sge_ctime64_short(summary->deadline, &ds)));
          } else {
             os << std::string(19 + 1, ' ');
          }
@@ -463,7 +464,7 @@ void ocs::QStatDefaultViewPlain::report_job(std::ostream &os, uint32_t jid, job_
    if (sge_ext) {
       /* scaled cpu usage */
       if (!summary->has_cpu_usage) {
-         os << std::format("{:<10.10} ", summary->is_running ? "NA" : "");
+         os << std::format("{:<10.10} ", ocs::ascii_width(summary->is_running ? "NA" : ""));
       } else {
          int secs = static_cast<int>(summary->cpu_usage);
          int days = secs/(60*60*24);
@@ -479,14 +480,14 @@ void ocs::QStatDefaultViewPlain::report_job(std::ostream &os, uint32_t jid, job_
       if (summary->has_mem_usage) {
          os << std::format("{:<5.5f} ", summary->mem_usage);
       } else {
-         os << std::format("{:<7.7} ", summary->is_running?"NA":"");
+         os << std::format("{:<7.7} ", ocs::ascii_width(summary->is_running?"NA":""));
       }
 
       /* scaled io usage */
       if (summary->has_io_usage) {
          os << std::format("{:<5.5f} ", summary->io_usage);
       } else {
-         os << std::format("{:<7.7} ", summary->is_running ? "NA" : "");
+         os << std::format("{:<7.7} ", ocs::ascii_width(summary->is_running ? "NA" : ""));
       }
 
       /* report jobs dynamic scheduling attributes */
@@ -507,13 +508,13 @@ void ocs::QStatDefaultViewPlain::report_job(std::ostream &os, uint32_t jid, job_
    // queue
    int queue_length = parameter.get_longest_queue_length();
    if (!(parameter.show_ & QSTAT_DISPLAY_FULL)) {
-      os << std::format("{:<{}.{}} ", summary->queue ? summary->queue : "", queue_length, queue_length);
+      os << std::format("{:<{}.{}} ", ocs::ascii_width(summary->queue ? summary->queue : ""), queue_length, queue_length);
    }
 
    // master/slave or granted slots
    if ((parameter.group_opt_ & GROUP_NO_PETASK_GROUPS)) {
       if (summary->master) {
-         os << std::format("{:<6} ", summary->master);
+         os << std::format("{:<6} ", ocs::ascii_width(summary->master));
       } else {
          os << std::string(6 + 1, ' ');
       }
@@ -523,7 +524,7 @@ void ocs::QStatDefaultViewPlain::report_job(std::ostream &os, uint32_t jid, job_
 
    // job array task id(s)
    if (summary->task_id && summary->is_array) {
-      os << std::format("{:<10s} ", summary->task_id ? summary->task_id : "");
+      os << std::format("{:<10s} ", ocs::ascii_width(summary->task_id ? summary->task_id : ""));
    } else {
       os << std::string(10 + 1, ' ');
    }
@@ -540,27 +541,27 @@ void ocs::QStatDefaultViewPlain::report_sub_tasks_started(std::ostream &os) {
 void ocs::QStatDefaultViewPlain::report_sub_task(std::ostream &os, task_summary_t *summary) {
    DENTER(TOP_LAYER);
 
-   os << std::format("{:>16} ", summary->task_id ? summary->task_id : "x");
-   os << std::format("{:>5.5} ", summary->state);
+   os << std::format("{:>16} ", ocs::ascii_width(summary->task_id ? summary->task_id : "x"));
+   os << std::format("{:>5.5} ", ocs::ascii_width(summary->state));
 
    if (summary->has_cpu_usage) {
       DSTRING_STATIC(resource_string, 32);
       double_print_time_to_dstring(summary->cpu_usage, &resource_string, true);
-      os << std::format("{:>10.10} ", sge_dstring_get_string(&resource_string));
+      os << std::format("{:>10.10} ", ocs::ascii_width(sge_dstring_get_string(&resource_string)));
    } else {
-      os << std::format("{:>10.10} ", summary->is_running? "NA" : "");
+      os << std::format("{:>10.10} ", ocs::ascii_width(summary->is_running? "NA" : ""));
    }
    if (summary->has_mem_usage) {
       os << std::format("{:>5.5f} ", summary->mem_usage);
    } else {
-      os << std::format("{:>7.7} ", summary->is_running? "NA" : "");
+      os << std::format("{:>7.7} ", ocs::ascii_width(summary->is_running? "NA" : ""));
    }
 
    /* scaled io usage */
    if (summary->has_io_usage) {
       os << std::format("{:>5.5f} ", summary->io_usage);
    } else {
-      os << std::format("{:>7.7} ", summary->is_running ? "NA" : "");
+      os << std::format("{:>7.7} ", ocs::ascii_width(summary->is_running ? "NA" : ""));
    }
 
    if (summary->has_exit_status) {
@@ -607,7 +608,7 @@ void ocs::QStatDefaultViewPlain::show_header_with_subtitle(std::ostream &os, job
    }
 
    // Show the name of the additional info (e.g. "Checkpoint Env.:") and the name.
-   os << std::format("\n\t{:<36.36} {} ", name_str != nullptr ? name_str : "", name != nullptr ? name : "");
+   os << std::format("\n\t{:<36.36} {} ", ocs::ascii_width(name_str != nullptr ? name_str : ""), name != nullptr ? name : "");
    os << (value != nullptr ? value : "");
    DRETURN_VOID;
 }
@@ -679,30 +680,30 @@ void ocs::QStatDefaultViewPlain::show_queues_or_resource_started(std::ostream &o
       case JRS_SCOPE_MASTER:
          if (queue) {
             if (hard) {
-               os << std::format("{:<36.36} ", "Master task hard requested queues:");
+               os << std::format("{:<36.36} ", ocs::ascii_width("Master task hard requested queues:"));
             } else {
-               os << std::format("{:<36.36} ", "Master task soft requested queues:");
+               os << std::format("{:<36.36} ", ocs::ascii_width("Master task soft requested queues:"));
             }
          } else {
             if (hard) {
-               os << std::format("{:<36.36} ", "Master Hard Resources:");
+               os << std::format("{:<36.36} ", ocs::ascii_width("Master Hard Resources:"));
             } else {
-               os << std::format("{:<36.36} ", "Master Soft Resources:");
+               os << std::format("{:<36.36} ", ocs::ascii_width("Master Soft Resources:"));
             }
          }
          break;
       case JRS_SCOPE_SLAVE:
          if (queue) {
             if (hard) {
-               os << std::format("{:<36.36} ", "Slave task hard requested queues:");
+               os << std::format("{:<36.36} ", ocs::ascii_width("Slave task hard requested queues:"));
             } else {
-               os << std::format("{:<36.36} ", "Slave task soft requested queues:");
+               os << std::format("{:<36.36} ", ocs::ascii_width("Slave task soft requested queues:"));
             }
          } else {
             if (hard) {
-               os << std::format("{:<36.36} ", "Slave Hard Resources:");
+               os << std::format("{:<36.36} ", ocs::ascii_width("Slave Hard Resources:"));
             } else {
-               os << std::format("{:<36.36} ", "Slave Soft Resources:");
+               os << std::format("{:<36.36} ", ocs::ascii_width("Slave Soft Resources:"));
 
             }
          }
@@ -710,15 +711,15 @@ void ocs::QStatDefaultViewPlain::show_queues_or_resource_started(std::ostream &o
       case JRS_SCOPE_GLOBAL:
          if (queue) {
             if (hard) {
-               os << std::format("{:<36.36} ", "Hard requested queues:");
+               os << std::format("{:<36.36} ", ocs::ascii_width("Hard requested queues:"));
             } else {
-               os << std::format("{:<36.36} ", "Soft requested queues:");
+               os << std::format("{:<36.36} ", ocs::ascii_width("Soft requested queues:"));
             }
          } else {
             if (hard) {
-               os << std::format("{:<36.36} ", "Hard Resources:");
+               os << std::format("{:<36.36} ", ocs::ascii_width("Hard Resources:"));
             } else {
-               os << std::format("{:<36.36} ", "Soft Resources:");
+               os << std::format("{:<36.36} ", ocs::ascii_width("Soft Resources:"));
 
             }
          }
@@ -777,7 +778,7 @@ void ocs::QStatDefaultViewPlain::report_soft_requested_queues_finished(std::ostr
 void ocs::QStatDefaultViewPlain::report_hard_resource(std::ostream &os, int scope, const lListElem *resource, const char *name, const char *value, double uc) {
    DENTER(TOP_LAYER);
    if (hard_resource_count > 0 ) {
-      os << std::format("\n\t{:<36.36} ", " ");
+      os << std::format("\n\t{:<36.36} ", ocs::ascii_width(" "));
    }
    os << std::format("{}={} ({:f})", name, (value ? value : ""), uc);
    hard_resource_count++;
@@ -793,7 +794,7 @@ void ocs::QStatDefaultViewPlain::report_hard_resources_finished(std::ostream &os
 void ocs::QStatDefaultViewPlain::report_soft_resource(std::ostream &os, int scope, const lListElem *resource, const char *name, const char *value, double uc) {
    DENTER(TOP_LAYER);
    if (soft_resource_count > 0 ) {
-      os << std::format("\n\t{:<36.36} ", " ");
+      os << std::format("\n\t{:<36.36} ", ocs::ascii_width(" "));
    }
    os << std::format("{}={}", name, value ? value : "");
    soft_resource_count++;
@@ -807,7 +808,7 @@ void ocs::QStatDefaultViewPlain::report_soft_resources_finished(std::ostream &os
 
 void ocs::QStatDefaultViewPlain::report_predecessors_requested_started(std::ostream &os) {
    DENTER(TOP_LAYER);
-   os << std::format("\n\t{:<36.36} ", "Predecessor Jobs (request):");
+   os << std::format("\n\t{:<36.36} ", ocs::ascii_width("Predecessor Jobs (request):"));
    predecessor_requested_count = 0;
    DRETURN_VOID;
 }
@@ -830,7 +831,7 @@ void ocs::QStatDefaultViewPlain::report_predecessors_requested_finished(std::ost
 
 void ocs::QStatDefaultViewPlain::report_predecessors_started(std::ostream &os) {
    DENTER(TOP_LAYER);
-   os << std::format("\n\t{:<36.36} ", "Predecessor Jobs:");
+   os << std::format("\n\t{:<36.36} ", ocs::ascii_width("Predecessor Jobs:"));
    predecessor_count = 0;
    DRETURN_VOID;
 }
@@ -853,7 +854,7 @@ void ocs::QStatDefaultViewPlain::report_predecessors_finished(std::ostream &os) 
 
 void ocs::QStatDefaultViewPlain::report_ad_predecessors_requested_started(std::ostream &os) {
    DENTER(TOP_LAYER);
-   os << std::format("\n\t{:<36.36} ", "Predecessor Array Jobs (request):");
+   os << std::format("\n\t{:<36.36} ", ocs::ascii_width("Predecessor Array Jobs (request):"));
    ad_predecessor_requested_count = 0;
    DRETURN_VOID;
 }
@@ -876,7 +877,7 @@ void ocs::QStatDefaultViewPlain::report_ad_predecessors_requested_finished(std::
 
 void ocs::QStatDefaultViewPlain::report_ad_predecessors_started(std::ostream &os) {
    DENTER(TOP_LAYER);
-   os << std::format("\n\t{:<36.36} ", "Predecessor Array Jobs:");
+   os << std::format("\n\t{:<36.36} ", ocs::ascii_width("Predecessor Array Jobs:"));
    ad_predecessor_count = 0;
    DRETURN_VOID;
 }
@@ -899,7 +900,7 @@ void ocs::QStatDefaultViewPlain::report_ad_predecessors_finished(std::ostream &o
 
 void ocs::QStatDefaultViewPlain::report_binding_started(std::ostream &os) {
    DENTER(TOP_LAYER);
-   os << std::format("\n\t{:<36.36} ", "Binding:");
+   os << std::format("\n\t{:<36.36} ", ocs::ascii_width("Binding:"));
    DRETURN_VOID;
 }
 
