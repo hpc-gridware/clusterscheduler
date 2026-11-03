@@ -55,10 +55,10 @@
 void monitor_dominance(char *str, uint32_t mask);
 
 int host_complexes2scheduler(lList **new_complex_list, lListElem *host, 
-                             lList *exechost_list, lList *complex_list);  
+                             lList *exechost_list, lList *complex_list, const lList *load_adjustments);
 
 int queue_complexes2scheduler(lList **new_complex_list, lListElem *queue, 
-                              const lList *host_list, const lList *complex_list); 
+                              const lList *host_list, const lList *complex_list, const lList *load_adjustments);
 
 lListElem *
 get_attribute_by_name(const lListElem *global, const lListElem *host, const lListElem *queue, const char *attrname,

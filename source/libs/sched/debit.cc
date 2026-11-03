@@ -287,7 +287,7 @@ debit_job_from_hosts(lListElem *job, lListElem *ja_task, const lListElem *pe, lL
       /* compute new combined load for this host and put it into the host */
       old_sort_value = lGetDouble(hep, EH_sort_value);
 
-      new_sort_value = scaled_mixed_load(load_formula, global, hep, centry_list);
+      new_sort_value = scaled_mixed_load(load_formula, global, hep, centry_list, nullptr);
 
       if (new_sort_value != old_sort_value) {
          lSetDouble(hep, EH_sort_value, new_sort_value);

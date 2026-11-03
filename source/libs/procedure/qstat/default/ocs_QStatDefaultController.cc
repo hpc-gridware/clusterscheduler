@@ -587,7 +587,8 @@ void ocs::QStatDefaultController::process_job(std::ostream &os, lListElem *job, 
          lListElem *hep;
          bool first_default_request{true};
 
-         queue_complexes2scheduler(&attributes, qep, model.get_exechost_list(), model.get_centry_list());
+         queue_complexes2scheduler(&attributes, qep, model.get_exechost_list(), model.get_centry_list(),
+                                   model.get_job_load_adjustments());
          for_each_ep_lv(ce, attributes) {
             double dval;
 
@@ -1177,22 +1178,26 @@ ocs::QStatDefaultController::process_queue(std::ostream &os, lListElem *queue, Q
    // compute the load and check for alarm states
    summary.has_load_value = sge_get_double_qattr(&summary.load_avg, summary.load_avg_str, queue,
                                                  model.get_exechost_list(), model.get_centry_list(),
-                                                 &summary.has_load_value_from_object) ? true : false;
+                                                 model.get_job_load_adjustments(), &summary.has_load_value_from_object) ? true : false;
 
    char load_alarm_reason[MAX_STRING_SIZE] {};
-   if (sge_load_alarm(nullptr, 0, queue, lGetList(queue, QU_load_thresholds), model.get_exechost_list(), model.get_centry_list(), nullptr, true)) {
+   if (sge_load_alarm(nullptr, 0, queue, lGetList(queue, QU_load_thresholds), model.get_exechost_list(), model.get_centry_list(),
+                      nullptr, model.get_job_load_adjustments(), true)) {
       qinstance_state_set_alarm(queue, true);
 
-      sge_load_alarm_reason(queue, lGetListRW(queue, QU_load_thresholds), model.get_exechost_list(), model.get_centry_list(), load_alarm_reason, MAX_STRING_SIZE - 1, "load");
+      sge_load_alarm_reason(queue, lGetListRW(queue, QU_load_thresholds), model.get_exechost_list(), model.get_centry_list(),
+                            model.get_job_load_adjustments(), load_alarm_reason, MAX_STRING_SIZE - 1, "load");
    }
 
    char suspend_alarm_reason[MAX_STRING_SIZE] {};
    uint32_t interval;
    parse_ulong_val(nullptr, &interval, CEntry::Type::TIME, lGetString(queue, QU_suspend_interval), nullptr, 0);
    if (lGetUlong(queue, QU_nsuspend) != 0 && interval != 0 &&
-       sge_load_alarm(nullptr, 0, queue, lGetList(queue, QU_suspend_thresholds), model.get_exechost_list(), model.get_centry_list(), nullptr, false)) {
+       sge_load_alarm(nullptr, 0, queue, lGetList(queue, QU_suspend_thresholds), model.get_exechost_list(),
+                      model.get_centry_list(), nullptr, model.get_job_load_adjustments(), false)) {
       qinstance_state_set_suspend_alarm(queue, true);
-      sge_load_alarm_reason(queue, lGetListRW(queue, QU_suspend_thresholds), model.get_exechost_list(), model.get_centry_list(), suspend_alarm_reason, MAX_STRING_SIZE - 1, "suspend");
+      sge_load_alarm_reason(queue, lGetListRW(queue, QU_suspend_thresholds), model.get_exechost_list(), model.get_centry_list(),
+                            model.get_job_load_adjustments(), suspend_alarm_reason, MAX_STRING_SIZE - 1, "suspend");
    }
 
    DSTRING_STATIC(type_string, 32);
@@ -1204,7 +1209,8 @@ ocs::QStatDefaultController::process_queue(std::ostream &os, lListElem *queue, Q
 
    /* arch */
    char arch_string[80];
-   if (!sge_get_string_qattr(arch_string, sizeof(arch_string)-1, LOAD_ATTR_ARCH, queue, model.get_exechost_list(), model.get_centry_list())) {
+   if (!sge_get_string_qattr(arch_string, sizeof(arch_string)-1, LOAD_ATTR_ARCH, queue, model.get_exechost_list(),
+                             model.get_centry_list(), model.get_job_load_adjustments())) {
       summary.arch = arch_string;   // std::string copies; no longer aliases the stack array
    } else {
       summary.arch.clear();         // absent → empty (was nullptr)
@@ -1254,7 +1260,7 @@ ocs::QStatDefaultController::process_queue(std::ostream &os, lListElem *queue, Q
       dstring resource_string = DSTRING_INIT;
 
       lList *rlp = nullptr;
-      queue_complexes2scheduler(&rlp, queue, model.get_exechost_list(), model.get_centry_list());
+      queue_complexes2scheduler(&rlp, queue, model.get_exechost_list(), model.get_centry_list(), model.get_job_load_adjustments());
 
       bool in_resource_list = false;
       for_each_rw_lv(rep , rlp) {
@@ -1313,7 +1319,7 @@ void ocs::QStatDefaultController::process_request(QStatParameter &parameter, QSt
 
    model.calc_longest_queue_length(parameter);
 
-   correct_capacities(model.get_exechost_list(), model.get_centry_list());
+   correct_capacities(model.get_exechost_list(), model.get_centry_list(), model.get_job_load_adjustments());
 
    view.report_started(out_, parameter);
    view.report_queue_section_started(out_, parameter);

@@ -25,6 +25,7 @@
 #include "uti/sge_rmon_macros.h"
 
 #include "sgeobj/sge_answer.h"
+#include "sgeobj/sge_centry.h"
 
 #include "gdi/ocs_gdi_Request.h"
 
@@ -118,11 +119,17 @@ bool ocs::QQuotaModelClient::fetch_data(lList **answer_list, const lList *host_l
    }
    /* --- exec hosts*/
    lFreeList(answer_list);
-   gdi_multi.get_response(answer_list, gdi::Command::GET, gdi::SubCommand::NONE, gdi::Target::EH_LIST, eh_id, &hgroup_list_);
+   gdi_multi.get_response(answer_list, gdi::Command::GET, gdi::SubCommand::NONE, gdi::Target::EH_LIST, eh_id, &exec_host_list_);
 
    if (answer_list_has_error(answer_list)) {
       DRETURN(false);
    }
+
+   // @todo The client context does not fetch the scheduler configuration and therefore applies no job load
+   //       adjustments, while the server context does. Kept as it was; aligning both is a change of its own.
+   // An empty list, not nullptr: the sched helpers read nullptr as "fetch them from the data store of the
+   // calling thread" (LOAD_ADJUSTMENTS_LATE_FETCH in get_attribute()).
+   job_load_adjustments_ = lCreateList("load_adj_copy", CE_Type);
 
    DRETURN(true);
 }

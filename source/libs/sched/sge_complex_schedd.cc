@@ -79,13 +79,15 @@ static int string_cmp(ocs::CEntry::Type type, uint32_t relop, const char *reques
                       const char *offer);
 
 static lList *get_attribute_list_by_names(lListElem *global, lListElem *host, lListElem *queue, 
-                                          const lList *centry_list, lList *attrnames);
+                                          const lList *centry_list, const lList *load_adjustments,
+                                          lList *attrnames);
 
 static void build_name_filter(lList *filter, const lList *list, int t_name);
 
 static bool is_attr_prior2(lListElem *upper_el, double lower_value, int t_value, int t_dominant);
 
-static lList *get_attribute_list(lListElem *global, lListElem *host, lListElem *queue, const lList *centry_list);
+static lList *get_attribute_list(lListElem *global, lListElem *host, lListElem *queue, const lList *centry_list,
+                                 const lList *load_adjustments);
 
 /**
  * @def LOAD_ADJUSTMENTS_LATE_FETCH
@@ -604,6 +606,9 @@ static bool is_attr_prior2(lListElem *upper_el, double lower_value, int t_value,
  * @param[in]  host            the execution host
  * @param[in]  exechost_list   all execution hosts, to find the global host
  * @param[in]  centry_list     the system wide attribute configuration
+ * @param[in]  load_adjustments the job load adjustments of the scheduler
+ *                             configuration (`CE_Type`); nullptr fetches them
+ *                             from the data store of the calling thread
  *
  * @return always 0
  */
@@ -611,7 +616,8 @@ int host_complexes2scheduler(
 lList **new_centry_list,
 lListElem *host,
 lList *exechost_list,
-lList *centry_list
+lList *centry_list,
+const lList *load_adjustments
 ) {
    DENTER(TOP_LAYER);
 
@@ -620,7 +626,8 @@ lList *centry_list
    }
    /* build global complex and add it to result */
    lFreeList(new_centry_list);
-   *new_centry_list = get_attribute_list(host_list_locate(exechost_list, SGE_GLOBAL_NAME), host, nullptr, centry_list);
+   *new_centry_list = get_attribute_list(host_list_locate(exechost_list, SGE_GLOBAL_NAME), host, nullptr, centry_list,
+                                         load_adjustments);
 
    DRETURN(0);
 }
@@ -638,17 +645,20 @@ lList *centry_list
  * @param[in]  exechost_list   all execution hosts, to find the queue's host
  *                             and the global host
  * @param[in]  centry_list     the system wide attribute configuration
+ * @param[in]  load_adjustments the job load adjustments of the scheduler
+ *                             configuration (`CE_Type`); nullptr fetches them
+ *                             from the data store of the calling thread
  *
  * @return always 0
  */
 int queue_complexes2scheduler(lList **new_centry_list, lListElem *queue, const lList *exechost_list,
-                              const lList *centry_list) {
+                              const lList *centry_list, const lList *load_adjustments) {
    DENTER(BASIS_LAYER);
 
    lFreeList(new_centry_list);
    *new_centry_list = get_attribute_list(host_list_locate(exechost_list, "global"), 
                                          queue ? host_list_locate(exechost_list, lGetHost(queue, QU_qhostname)) : nullptr,
-                                         queue, centry_list);
+                                         queue, centry_list, load_adjustments);
    DRETURN(0);
 }
 
@@ -664,18 +674,19 @@ int queue_complexes2scheduler(lList **new_centry_list, lListElem *queue, const l
  * @param host host (or nullptr, if only global resources are asked for )
  * @param queue queue (or nullptr, if only global / host resources are asked for)
  * @param centry_list the system wide attribut config list
+ * @param load_adjustments the job load adjustments (`CE_Type`); nullptr fetches them from the data store
  * @param attrnames ST_Type list of attribute names
  *
  * @return a CULL list of elements or nullptr
  */
 static lList *get_attribute_list_by_names(lListElem *global, lListElem *host,
                                           lListElem *queue, const lList *centry_list,
-                                          lList *attrnames) {
+                                          const lList *load_adjustments, lList *attrnames) {
    lListElem *attr;
    lList *list = nullptr;
 
    for_each_ep_lv(elem, attrnames) {
-      attr = get_attribute_by_name(global, host, queue, lGetString(elem, ST_name), centry_list, nullptr,
+      attr = get_attribute_by_name(global, host, queue, lGetString(elem, ST_name), centry_list, load_adjustments,
                                    DISPATCH_TIME_NOW, 0);
       if (attr != nullptr) {
          if (list == nullptr) {
@@ -698,10 +709,12 @@ static lList *get_attribute_list_by_names(lListElem *global, lListElem *host,
  * @param host host (or nullptr, if only global attributes are important)
  * @param queue queue (or nullptr if only host/global attributes are important)
  * @param centry_list system wide attribute config list
+ * @param load_adjustments the job load adjustments (`CE_Type`); nullptr fetches them from the data store
  *
  * @return list of attributes or nullptr, if no attributes exist.
  */
-static lList *get_attribute_list(lListElem *global, lListElem *host, lListElem *queue, const lList *centry_list) {
+static lList *get_attribute_list(lListElem *global, lListElem *host, lListElem *queue, const lList *centry_list,
+                                 const lList *load_adjustments) {
    DENTER(BASIS_LAYER);
 
    lList *filter = nullptr;
@@ -729,7 +742,7 @@ static lList *get_attribute_list(lListElem *global, lListElem *host, lListElem *
    }
 
 
-   list = get_attribute_list_by_names(global, host, queue, centry_list, filter);
+   list = get_attribute_list_by_names(global, host, queue, centry_list, load_adjustments, filter);
 
    lFreeList(&filter);
    

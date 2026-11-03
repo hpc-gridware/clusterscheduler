@@ -37,7 +37,7 @@ namespace ocs {
       std::ostream &out_;   ///< Where the view writes
 
       bool cqueue_calculate_summary(const lListElem *cqueue, const lList *exechost_list, const lList *centry_list,
-                                    double *load, bool *is_load_available, uint32_t *used, uint32_t *resv, uint32_t *total,
+                                    const lList *load_adjustments, double *load, bool *is_load_available, uint32_t *used, uint32_t *resv, uint32_t *total,
                                     uint32_t *suspend_manual, uint32_t *suspend_threshold, uint32_t *suspend_on_subordinate,
                                     uint32_t *suspend_calendar, uint32_t *unknown, uint32_t *load_alarm,
                                     uint32_t *disabled_manual, uint32_t *disabled_calendar, uint32_t *ambiguous,

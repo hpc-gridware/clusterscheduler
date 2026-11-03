@@ -496,7 +496,7 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
     * use detected outside of Cluster Scheduler control
     * (by comparing load value vs. available due to our internal booking).
     *---------------------------------------------------------------------*/
-   correct_capacities(lists->host_list, lists->centry_list);
+   correct_capacities(lists->host_list, lists->centry_list, nullptr);
 
    /*---------------------------------------------------------------------
     * KEEP SUSPEND THRESHOLD QUEUES

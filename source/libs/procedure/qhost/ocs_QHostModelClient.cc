@@ -30,6 +30,7 @@
 #include "cull/cull.h"
 
 #include "sgeobj/sge_answer.h"
+#include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_conf.h"
 
 #include "gdi/ocs_gdi_Client.h"
@@ -212,6 +213,12 @@ ocs::QHostModelClient::fetch_data(lList **answer_list, const lList *hostname_lis
       answer_list_output(answer_list);
       DRETURN(false);
    }
+
+   // @todo The client context does not fetch the scheduler configuration and therefore applies no job load
+   //       adjustments, while the server context does. Kept as it was; aligning both is a change of its own.
+   // An empty list, not nullptr: the sched helpers read nullptr as "fetch them from the data store of the
+   // calling thread" (LOAD_ADJUSTMENTS_LATE_FETCH in get_attribute()).
+   job_load_adjustments_ = lCreateList("load_adj_copy", CE_Type);
 
    DRETURN(true);
 }

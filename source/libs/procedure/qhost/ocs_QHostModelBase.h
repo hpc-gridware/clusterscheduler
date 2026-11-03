@@ -63,6 +63,7 @@ namespace ocs {
       lList *job_list_ = nullptr;         ///< Job lists
       lList *pe_list_ = nullptr;          ///< Parallel environment lists
       lList *queue_list_ = nullptr;       ///< Queue lists
+      lList *job_load_adjustments_ = nullptr;   ///< Job load adjustments of the scheduler configuration (`CE_Type`), never nullptr after a successful fetch_data()
 
    public:
       /** @brief True if the executing user has manager privileges
@@ -93,6 +94,15 @@ namespace ocs {
        * @return access control lists
        */
       [[nodiscard]] virtual lList *get_acl_list() const { return acl_list_; }
+      /** @brief The job load adjustments of the scheduler configuration
+       *
+       * A copy taken with the snapshot, so the load values can be resolved after the data store lock was
+       * released (CS-3008). An empty list rather than nullptr when none are configured, because nullptr
+       * makes the sched helpers fetch them from the data store.
+       *
+       * @return the load adjustments (`CE_Type`)
+       */
+      [[nodiscard]] const lList *get_job_load_adjustments() const { return job_load_adjustments_; }
 #pragma endregion
 
 #pragma region Data Retrieval

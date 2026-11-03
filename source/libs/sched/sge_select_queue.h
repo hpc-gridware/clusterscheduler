@@ -81,7 +81,8 @@ sge_select_queue(lList *requested_attr, lListElem *queue, lListElem *host, lList
 
 int sge_load_alarm(char *reason, size_t reason_size, const lListElem *queue, const lList *threshold,
                    const lList *exechost_list, const lList *complex_list,
-                   const lList *load_adjustments, bool is_check_consumable);
+                   const lList *load_adjustments, const lList *consumable_load_adjustments,
+                   bool is_check_consumable);
 
 void sge_create_load_list(const lList *queue_list, const lList *host_list,
                           const lList *centry_list, lList **load_list);
@@ -94,7 +95,7 @@ void sge_remove_queue_from_load_list(lList **load_list, const lList *queue_list)
 void sge_free_load_list(lList **load_list);
 
 char *sge_load_alarm_reason(lListElem *queue, lList *threshold, const lList *exechost_list,
-                            const lList *complex_list, char  *reason, int reason_size,
+                            const lList *complex_list, const lList *load_adjustments, char *reason, int reason_size,
                             const char *type);
 
 int sge_split_queue_load(bool monitor_next_run, lList **unloaded, lList **overloaded, lList *exechost_list,
@@ -294,9 +295,10 @@ sge_host_match_static(const sge_assignment_t *a, const lListElem *host);
 
 int sge_get_double_qattr(double *dvalp, const char *attrname, const lListElem *q,
                          const lList *exechost_list, const lList *complex_list,
-                         bool *has_value_from_object);
+                         const lList *load_adjustments, bool *has_value_from_object);
 
-int sge_get_string_qattr(char *dst, int dst_len, const char *attrname, lListElem *q, const lList *exechost_list, const lList *complex_list);
+int sge_get_string_qattr(char *dst, int dst_len, const char *attrname, lListElem *q, const lList *exechost_list,
+                         const lList *complex_list, const lList *load_adjustments);
 
 dispatch_t
 parallel_rc_slots_by_time(sge_assignment_t *a, int *slots, const lList *total_list,

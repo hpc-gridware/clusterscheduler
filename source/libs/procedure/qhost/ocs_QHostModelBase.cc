@@ -51,6 +51,7 @@ ocs::QHostModelBase::~QHostModelBase() {
    lFreeList(&job_list_);
    lFreeList(&pe_list_);
    lFreeList(&queue_list_);
+   lFreeList(&job_load_adjustments_);
    DRETURN_VOID;
 }
 

@@ -46,6 +46,7 @@
  * @param cqueue the cluster queue
  * @param exechost_list the execution hosts, for the load values
  * @param centry_list the complex entries, to interpret the load
+ * @param load_adjustments the job load adjustments of the scheduler configuration (`CE_Type`)
  * @param load receives the average load
  * @param is_load_available receives whether any instance reported a load
  * @param used receives the slots in use
@@ -68,7 +69,7 @@
  * @return true when the cluster queue could be summed up
  */
 bool ocs::QStatGroupController::cqueue_calculate_summary(const lListElem *cqueue, const lList *exechost_list, const lList *centry_list,
-                                                         double *load, bool *is_load_available, uint32_t *used, uint32_t *resv, uint32_t *total,
+                                                         const lList *load_adjustments, double *load, bool *is_load_available, uint32_t *used, uint32_t *resv, uint32_t *total,
                                                          uint32_t *suspend_manual, uint32_t *suspend_threshold, uint32_t *suspend_on_subordinate,
                                                          uint32_t *suspend_calendar, uint32_t *unknown, uint32_t *load_alarm,
                                                          uint32_t *disabled_manual, uint32_t *disabled_calendar, uint32_t *ambiguous,
@@ -107,7 +108,7 @@ bool ocs::QStatGroupController::cqueue_calculate_summary(const lListElem *cqueue
          *total = ProcedureView::add_saturating_u32(*total, slots);
 
          if (!sge_get_double_qattr(&host_load_avg, LOAD_ATTR_NP_LOAD_AVG, qinstance, exechost_list, centry_list,
-                                   &has_value_from_object)) {
+                                   load_adjustments, &has_value_from_object)) {
             if (has_value_from_object) {
                load_slots = ProcedureView::add_saturating_u32(load_slots, slots);
                *load += host_load_avg * slots;
@@ -183,7 +184,7 @@ void ocs::QStatGroupController::process_request(QStatParameter &parameter, QStat
    DENTER(TOP_LAYER);
 
    model.calc_longest_queue_length(parameter);
-   correct_capacities(model.get_exechost_list(), model.get_centry_list());
+   correct_capacities(model.get_exechost_list(), model.get_centry_list(), model.get_job_load_adjustments());
 
    view.report_started(out_, parameter);
 
@@ -194,6 +195,7 @@ void ocs::QStatGroupController::process_request(QStatParameter &parameter, QStat
          cqueue_calculate_summary(cqueue,
                                   model.get_exechost_list(),
                                   model.get_centry_list(),
+                                  model.get_job_load_adjustments(),
                                   &(summary.load),
                                   &(summary.is_load_available),
                                   &(summary.used),

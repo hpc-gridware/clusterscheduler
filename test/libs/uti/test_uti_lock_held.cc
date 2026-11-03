@@ -143,6 +143,53 @@ test_per_thread() {
 #endif
 }
 
+/**
+ * @brief A read lock offered for early release is released by the code it was offered to, or by its holder
+ *
+ * @return nothing; CHECK records the results
+ */
+static void
+test_early_release() {
+#if defined(ENABLE_DEBUG_CHECKS)
+   // offered and released early: the holder must not release it again
+   SGE_LOCK(LOCK_READER, LOCK_READ);
+   ocs_lock_offer_early_release(LOCK_READER);
+   const bool released = ocs_lock_release_early();
+   const bool gone = !ocs_lock_is_held(LOCK_READER);
+   const bool holder_skips = !ocs_lock_withdraw_early_release();
+
+   // offered but not released: the holder releases it
+   SGE_LOCK(LOCK_READER, LOCK_READ);
+   ocs_lock_offer_early_release(LOCK_READER);
+   const bool holder_releases = ocs_lock_withdraw_early_release();
+   const bool kept = ocs_lock_is_held(LOCK_READER);
+   SGE_UNLOCK(LOCK_READER, LOCK_READ);
+   const bool kept_released = !ocs_lock_is_held(LOCK_READER);
+
+   // without an offer the early release does nothing
+   SGE_LOCK(LOCK_READER, LOCK_READ);
+   const bool no_offer = !ocs_lock_release_early() && ocs_lock_is_held(LOCK_READER);
+
+   // the offer belongs to the thread that made it
+   ocs_lock_offer_early_release(LOCK_READER);
+   bool other_released = true;
+   std::thread other([&other_released]() {
+      other_released = ocs_lock_release_early();
+   });
+   other.join();
+   const bool own_offer = ocs_lock_is_held(LOCK_READER) && ocs_lock_release_early() && !ocs_lock_is_held(LOCK_READER);
+
+   CHECK(9, "an offered lock released early is no longer held, and its holder does not release it again",
+                           released && gone && holder_skips);
+   CHECK(10, "an offered lock that was not released early stays held until its holder releases it",
+                           holder_releases && kept && kept_released);
+   CHECK(11, "without an offer an early release does nothing", no_offer);
+   CHECK(12, "another thread cannot release the offered lock", !other_released && own_offer);
+#else
+   ocs::module_test::unsupported("the lock bookkeeping exists only with ENABLE_DEBUG_CHECKS");
+#endif
+}
+
 int main(int argc, char *argv[]) {
    return ocs::module_test::run(argc, argv, {
       {"LOCKHELD-01", "taking and releasing a lock",
@@ -162,5 +209,13 @@ int main(int argc, char *argv[]) {
        "the other thread does not hold it until it takes it itself, and its release leaves the first "
        "thread's lock held",
        {{"LCK-03", "covers"}}, {7, 8}, test_per_thread},
+      {"LOCKHELD-04", "early release of a read lock",
+       "a read lock offered for early release is released exactly once, by the code it was offered to or "
+       "by its holder",
+       {"offer a read lock and release it early", "offer one and withdraw the offer",
+        "release early without an offer", "release early from another thread"},
+       "a lock released early is not released again by its holder, an offer that was withdrawn leaves the "
+       "release to the holder, and neither a missing offer nor another thread releases anything",
+       {{"LCK-05", "covers"}}, {9, 10, 11, 12}, test_early_release},
    });
 }

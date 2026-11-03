@@ -314,7 +314,8 @@ void ocs::QQuotaController::process_request(QQuotaParameter &parameter, QQuotaMo
                                     uint64_t limit_value;
                                     if (lGetBool(limit, RQRL_dynamic)) {
                                        exec_host = host_list_locate(model.get_exec_host_list(), host);
-                                       limit_value = static_cast<uint64_t>(scaled_mixed_load(lGetString(limit, RQRL_value), global_host, exec_host, model.get_centry_list()));
+                                       limit_value = static_cast<uint64_t>(scaled_mixed_load(lGetString(limit, RQRL_value), global_host, exec_host, model.get_centry_list(),
+                                                                                   model.get_job_load_adjustments()));
                                        sge_dstring_sprintf(&limit_str, "%d", limit_value);
 
                                     } else {

@@ -25,6 +25,7 @@
 #include "uti/sge_rmon_macros.h"
 
 #include "sgeobj/ocs_DataStore.h"
+#include "sgeobj/sge_schedd_conf.h"
 
 #include "ocs_QQuotaModelServer.h"
 
@@ -66,6 +67,17 @@ bool ocs::QQuotaModelServer::fetch_data(lList **answer_list, const lList *host_n
 
    // QHostModelClient fetches the configuration additionally which is not required in the server context
    ;
+
+   const lListElem *sc = lFirst(*DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
+   if (sc != nullptr) {
+      job_load_adjustments_ = lCopyList("load_adj_copy", lGetList(sc, SC_job_load_adjustments));
+   }
+   // An empty list, not nullptr, when none are configured: the sched helpers read nullptr as "fetch them
+   // from the data store of the calling thread" (LOAD_ADJUSTMENTS_LATE_FETCH in get_attribute()), which
+   // after the early release of the reader lock would read the data store unprotected (CS-3008).
+   if (job_load_adjustments_ == nullptr) {
+      job_load_adjustments_ = lCreateList("load_adj_copy", CE_Type);
+   }
 
    DRETURN(true);
 }

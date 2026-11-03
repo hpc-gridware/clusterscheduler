@@ -30,6 +30,7 @@
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_log.h"
 #include "uti/sge_component.h"
+#include "uti/sge_lock.h"
 
 #include "sgeobj/sge_answer.h"
 
@@ -767,6 +768,12 @@ namespace {
       }
 
       const bool snapshot_ok = model.make_snapshot(&task->answer_list, parameter);
+
+      /* CS-3008: from here on the procedure works on the model's own copies only, so a reader thread may
+       * give up its data store lock before the output is rendered, and the mirror thread can apply events
+       * meanwhile. Nothing below may read a master list or keep a pointer into one; Debug builds abort on
+       * such a read (CS-3011). Without an offer, as in a worker thread, this does nothing. */
+      ocs_lock_release_early();
 
       /* Read before the verdict is acted on, not after: a write that the policy
        * refused still has to report how many items it could not read, because

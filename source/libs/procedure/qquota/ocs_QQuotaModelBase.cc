@@ -42,6 +42,7 @@ ocs::QQuotaModelBase::~QQuotaModelBase() {
    lFreeList(&user_set_list_);
    lFreeList(&hgroup_list_);
    lFreeList(&exec_host_list_);
+   lFreeList(&job_load_adjustments_);
    DRETURN_VOID;
 }
 

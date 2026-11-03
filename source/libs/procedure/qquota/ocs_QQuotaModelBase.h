@@ -54,6 +54,7 @@ namespace ocs {
       lList *hgroup_list_ = nullptr;      ///< Host groups, to resolve the `@group` filters of a rule
       lList *exec_host_list_ = nullptr;   ///< Execution hosts
       lList *rqs_list_ = nullptr;         ///< The resource quota sets being reported
+      lList *job_load_adjustments_ = nullptr;   ///< Job load adjustments of the scheduler configuration (`CE_Type`), never nullptr after a successful fetch_data()
 
    public:
       /** @brief The resource quota sets being reported
@@ -80,6 +81,16 @@ namespace ocs {
        * @return the exec host list
        */
       [[nodiscard]] const lList *get_exec_host_list() const { return exec_host_list_; }
+
+      /** @brief The job load adjustments of the scheduler configuration
+       *
+       * A copy taken with the snapshot, so dynamic limits can be resolved after the data store lock was
+       * released (CS-3008). An empty list rather than nullptr when none are configured, because nullptr
+       * makes the sched helpers fetch them from the data store.
+       *
+       * @return the load adjustments (`CE_Type`)
+       */
+      [[nodiscard]] const lList *get_job_load_adjustments() const { return job_load_adjustments_; }
 #pragma endregion
 
 #pragma region Data Retrieval

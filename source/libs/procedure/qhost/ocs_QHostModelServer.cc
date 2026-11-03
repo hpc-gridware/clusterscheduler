@@ -26,6 +26,7 @@
 
 #include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/sge_manop.h"
+#include "sgeobj/sge_schedd_conf.h"
 
 #include "qstat/ocs_QStatParameter.h"
 #include "ocs_QHostModelBase.h"
@@ -64,12 +65,21 @@ bool ocs::QHostModelServer::fetch_data(lList **answer_list, const lList *hostnam
    centry_list_ = lSelect("", master_centry_list, nullptr, centry_what);
    lFreeWhat(&centry_what);
 
-   lWriteListTo(centry_list_, stderr);
-
    const lList *master_pe_list = *DataStore::get_master_list(SGE_TYPE_PE);
    lEnumeration *pe_what = get_pe_what();
    pe_list_ = lSelect("", master_pe_list, nullptr, pe_what);
    lFreeWhat(&pe_what);
+
+   const lListElem *sc = lFirst(*DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
+   if (sc != nullptr) {
+      job_load_adjustments_ = lCopyList("load_adj_copy", lGetList(sc, SC_job_load_adjustments));
+   }
+   // An empty list, not nullptr, when none are configured: the sched helpers read nullptr as "fetch them
+   // from the data store of the calling thread" (LOAD_ADJUSTMENTS_LATE_FETCH in get_attribute()), which
+   // after the early release of the reader lock would read the data store unprotected (CS-3008).
+   if (job_load_adjustments_ == nullptr) {
+      job_load_adjustments_ = lCreateList("load_adj_copy", CE_Type);
+   }
 
    DRETURN(true);
 }

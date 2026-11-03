@@ -28,6 +28,8 @@
 
 #include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/sge_manop.h"
+#include "sgeobj/sge_conf.h"
+#include "sgeobj/sge_schedd_conf.h"
 
 bool
 ocs::QStatModelServer::fetch_data(lList **answer_list, QStatParameter &parameter) {
@@ -99,6 +101,19 @@ ocs::QStatModelServer::fetch_data(lList **answer_list, QStatParameter &parameter
    lEnumeration *sconf_what = get_sconf_what();
    schedd_config_ = lSelect("", master_sconf_list, nullptr, sconf_what);
    lFreeWhat(&sconf_what);
+   if (const lListElem *sc = lFirst(schedd_config_); sc != nullptr) {
+      job_load_adjustments_ = lCopyList("load_adj_copy", lGetList(sc, SC_job_load_adjustments));
+   }
+   // An empty list, not nullptr, when none are configured: the sched helpers read nullptr as "fetch them
+   // from the data store of the calling thread" (LOAD_ADJUSTMENTS_LATE_FETCH in get_attribute()), which
+   // after the early release of the reader lock would read the data store unprotected (CS-3008).
+   if (job_load_adjustments_ == nullptr) {
+      job_load_adjustments_ = lCreateList("load_adj_copy", CE_Type);
+   }
+
+   // the access lists of the global configuration of qmaster
+   config_user_lists_ = mconf_get_user_lists();
+   config_xuser_lists_ = mconf_get_xuser_lists();
 
    const lList *master_hgrp_list = *DataStore::get_master_list(SGE_TYPE_HGROUP);
    lEnumeration *hgrp_what = get_hgrp_what();

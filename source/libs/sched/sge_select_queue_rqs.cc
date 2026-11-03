@@ -1105,7 +1105,7 @@ rqs_set_dynamical_limit(lListElem *limit, lListElem *global_host, lListElem *exe
    DENTER(TOP_LAYER);
 
    if (lGetBool(limit, RQRL_dynamic)) {
-      double dynamic_limit = scaled_mixed_load(lGetString(limit, RQRL_value), global_host, exec_host, centry);
+      double dynamic_limit = scaled_mixed_load(lGetString(limit, RQRL_value), global_host, exec_host, centry, nullptr);
       DPRINTF("found a dynamic limit for host %s with value %d\n", lGetHost(exec_host, EH_name), (int)dynamic_limit);
       lSetDouble(limit, RQRL_dvalue, dynamic_limit);
    }

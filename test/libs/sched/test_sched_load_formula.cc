@@ -154,39 +154,39 @@ static void test_scaled_mixed_load(lListElem *host, const lList *centry_list) {
    double val;
 
    // T13: bare attribute reference evaluates to the attribute's value
-   val = scaled_mixed_load("num_proc", nullptr, host, centry_list);
+   val = scaled_mixed_load("num_proc", nullptr, host, centry_list, nullptr);
    CHECK(13, "num_proc → 4.0",         feq(val, 4.0));
 
    // T14: '$'-prefixed reference evaluates to the same value
-   val = scaled_mixed_load("$num_proc", nullptr, host, centry_list);
+   val = scaled_mixed_load("$num_proc", nullptr, host, centry_list, nullptr);
    CHECK(14, "$num_proc → 4.0",        feq(val, 4.0));
 
    // T15: multiply by 2 → 8.0
-   val = scaled_mixed_load("$num_proc*2", nullptr, host, centry_list);
+   val = scaled_mixed_load("$num_proc*2", nullptr, host, centry_list, nullptr);
    CHECK(15, "$num_proc*2 → 8.0",      feq(val, 8.0));
 
    // T16: multiply by 0.5 → 2.0
-   val = scaled_mixed_load("$num_proc*0.5", nullptr, host, centry_list);
+   val = scaled_mixed_load("$num_proc*0.5", nullptr, host, centry_list, nullptr);
    CHECK(16, "$num_proc*0.5 → 2.0",    feq(val, 2.0));
 
    // T17: multiply without '$' prefix — same result
-   val = scaled_mixed_load("num_proc*2", nullptr, host, centry_list);
+   val = scaled_mixed_load("num_proc*2", nullptr, host, centry_list, nullptr);
    CHECK(17, "num_proc*2 → 8.0",       feq(val, 8.0));
 
    // T18: add integer constant
-   val = scaled_mixed_load("num_proc+1", nullptr, host, centry_list);
+   val = scaled_mixed_load("num_proc+1", nullptr, host, centry_list, nullptr);
    CHECK(18, "num_proc+1 → 5.0",       feq(val, 5.0));
 
    // T19: subtract integer constant
-   val = scaled_mixed_load("$num_proc-2", nullptr, host, centry_list);
+   val = scaled_mixed_load("$num_proc-2", nullptr, host, centry_list, nullptr);
    CHECK(19, "$num_proc-2 → 2.0",      feq(val, 2.0));
 
    // T20: add fractional constant
-   val = scaled_mixed_load("$num_proc+0.1", nullptr, host, centry_list);
+   val = scaled_mixed_load("$num_proc+0.1", nullptr, host, centry_list, nullptr);
    CHECK(20, "$num_proc+0.1 → 4.1",    feq(val, 4.1));
 
    // T21: leading constant + attribute + fractional constant
-   val = scaled_mixed_load("1+$num_proc+0.1", nullptr, host, centry_list);
+   val = scaled_mixed_load("1+$num_proc+0.1", nullptr, host, centry_list, nullptr);
    CHECK(21, "1+$num_proc+0.1 → 5.1",  feq(val, 5.1));
 }
 

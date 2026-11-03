@@ -45,4 +45,4 @@
 
 int correct_load(lList *lp_job, lList *lp_queue, lList *lpp_host, uint64_t decay_time, bool monitor_next_run);
 
-int correct_capacities(lList *host_list, const lList *complex_list);
+int correct_capacities(lList *host_list, const lList *complex_list, const lList *load_adjustments);

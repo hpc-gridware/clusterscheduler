@@ -42,7 +42,7 @@
 #include "uti/sge_rmon_macros.h"
 
 #if 0
-/// define to log how long each lock is held
+/// define to record how long taking a lock takes (not how long it is held); sge_debug_time() prints it
 #define SGE_DEBUG_LOCK_TIME 
 #endif
 
@@ -98,6 +98,16 @@ ocs_lock_is_held(sge_locktype_t aType);
 bool
 ocs_lock_is_held_for_write(sge_locktype_t aType);
 #endif
+
+// early release of a read lock: its holder hands the release to code further down the call chain
+void
+ocs_lock_offer_early_release(sge_locktype_t aType);
+
+bool
+ocs_lock_release_early();
+
+bool
+ocs_lock_withdraw_early_release();
 
 /// try to take a lock, reporting the calling function automatically
 #define SGE_TRY_LOCK(type, mode) sge_try_lock(type, mode, __func__, sge_locker_id())

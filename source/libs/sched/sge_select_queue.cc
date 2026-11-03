@@ -2490,7 +2490,12 @@ static int resource_cmp(uint32_t relop, double req, double src_dl) {
  * @param[in]  threshold           the thresholds to check (`CE_Type`)
  * @param[in]  exechost_list       the execution hosts, for the load values
  * @param[in]  centry_list         the system wide attribute configuration
- * @param[in]  load_adjustments    the load adjustments to apply
+ * @param[in]  load_adjustments    the load adjustments to apply to the load
+ *                                 values; nullptr applies none
+ * @param[in]  consumable_load_adjustments the load adjustments used to
+ *                                 resolve a consumable threshold; nullptr
+ *                                 fetches them from the data store of the
+ *                                 calling thread
  * @param[in]  is_check_consumable whether consumables count as load values
  *
  * @return 1 if a threshold is exceeded, 0 otherwise
@@ -2498,7 +2503,8 @@ static int resource_cmp(uint32_t relop, double req, double src_dl) {
 
 int sge_load_alarm(char *reason, size_t reason_size, const lListElem *qep, const lList *threshold,
                    const lList *exechost_list, const lList *centry_list,
-                   const lList *load_adjustments, bool is_check_consumable) {
+                   const lList *load_adjustments, const lList *consumable_load_adjustments,
+                   bool is_check_consumable) {
    DENTER(TOP_LAYER);
 
    lListElem *hep, *global_hep;
@@ -2581,7 +2587,8 @@ int sge_load_alarm(char *reason, size_t reason_size, const lListElem *qep, const
          }
       } else {
          /* load thesholds... */
-         if ((cep = get_attribute_by_name(global_hep, hep, qep, name, centry_list, load_adjustments, DISPATCH_TIME_NOW, 0)) == nullptr ) {
+         if ((cep = get_attribute_by_name(global_hep, hep, qep, name, centry_list, consumable_load_adjustments,
+                                          DISPATCH_TIME_NOW, 0)) == nullptr ) {
             if (reason)
                snprintf(reason, reason_size, MSG_SCHEDD_WHYEXCEEDNOCOMPLEX_S, name);
             DRETURN(1);
@@ -2621,6 +2628,9 @@ int sge_load_alarm(char *reason, size_t reason_size, const lListElem *qep, const
  * @param[in]  threshold      the thresholds to check (`CE_Type`)
  * @param[in]  exechost_list  the execution hosts, for the load values
  * @param[in]  centry_list    the system wide attribute configuration
+ * @param[in]  load_adjustments the job load adjustments of the scheduler
+ *                            configuration (`CE_Type`); nullptr fetches them
+ *                            from the data store of the calling thread
  * @param[out] reason         buffer receiving the reasons
  * @param[in]  reason_size    size of the `reason` buffer
  * @param[in]  threshold_type name of the threshold kind, used in the text
@@ -2630,7 +2640,7 @@ int sge_load_alarm(char *reason, size_t reason_size, const lListElem *qep, const
 
 char *sge_load_alarm_reason(lListElem *qep, lList *threshold,
                             const lList *exechost_list, const lList *centry_list,
-                            char *reason, int reason_size,
+                            const lList *load_adjustments, char *reason, int reason_size,
                             const char *threshold_type) {
    DENTER(TOP_LAYER);
 
@@ -2642,7 +2652,7 @@ char *sge_load_alarm_reason(lListElem *qep, lList *threshold,
       bool first = true;
 
       /* get actual complex values for queue */
-      queue_complexes2scheduler(&rlp, qep, exechost_list, centry_list);
+      queue_complexes2scheduler(&rlp, qep, exechost_list, centry_list, load_adjustments);
 
       /* check all thresholds */
       for_each_ep_lv(tep, threshold) {
@@ -2776,7 +2786,8 @@ uint32_t ttype
             thresholds = lGetList(qep, ttype);
             nverified++;
 
-            if (sge_load_alarm(reason, sizeof(reason), qep, thresholds, exechost_list, centry_list, load_adjustments, is_comprehensive) != 0) {
+            if (sge_load_alarm(reason, sizeof(reason), qep, thresholds, exechost_list, centry_list, load_adjustments,
+                               load_adjustments, is_comprehensive) != 0) {
                remove_queue = true;
                if (ttype==QU_suspend_thresholds) {
                   DPRINTF("queue %s tagged to be in suspend alarm: %s\n", lGetString(qep, QU_full_name), reason);
@@ -5720,6 +5731,10 @@ parallel_available_slots(const sge_assignment_t *a, int *slots) {
  * @param[in]  exechost_list         the execution hosts, for the host and
  *                                   global values
  * @param[in]  centry_list           the system wide attribute configuration
+ * @param[in]  load_adjustments      the job load adjustments of the scheduler
+ *                                   configuration (`CE_Type`); nullptr fetches
+ *                                   them from the data store of the calling
+ *                                   thread
  * @param[out] has_value_from_object true if the value came from the object
  *                                   rather than from a load value
  *
@@ -5728,7 +5743,7 @@ parallel_available_slots(const sge_assignment_t *a, int *slots) {
  */
 int sge_get_double_qattr(double *dvalp, const char *attrname, const lListElem *q,
                          const lList *exechost_list, const lList *centry_list,
-                         bool *has_value_from_object) {
+                         const lList *load_adjustments, bool *has_value_from_object) {
    DENTER(TOP_LAYER);
 
    int ret = -1;
@@ -5744,7 +5759,7 @@ int sge_get_double_qattr(double *dvalp, const char *attrname, const lListElem *q
 
    /* find matching */
    *has_value_from_object = false;
-   if (( ep = get_attribute_by_name(global, host, q, attrname, centry_list, nullptr, DISPATCH_TIME_NOW, 0)) &&
+   if (( ep = get_attribute_by_name(global, host, q, attrname, centry_list, load_adjustments, DISPATCH_TIME_NOW, 0)) &&
        ((type=static_cast<ocs::CEntry::Type>(lGetUlong(ep, CE_valtype))) != ocs::CEntry::Type::STR) &&
        (type != ocs::CEntry::Type::CSTR) && (type != ocs::CEntry::Type::RESTR) && (type != ocs::CEntry::Type::HOST) ) {
 
@@ -5780,6 +5795,9 @@ int sge_get_double_qattr(double *dvalp, const char *attrname, const lListElem *q
  * @param[in]  exechost_list the execution hosts, for the host and global
  *                           values
  * @param[in]  centry_list   the system wide attribute configuration
+ * @param[in]  load_adjustments the job load adjustments of the scheduler
+ *                           configuration (`CE_Type`); nullptr fetches them
+ *                           from the data store of the calling thread
  *
  * @return 0 on success, -1 if the queue has no such attribute
  */
@@ -5789,7 +5807,8 @@ int dst_len,
 const char *attrname,
 lListElem *q,
 const lList *exechost_list,
-const lList *centry_list
+const lList *centry_list,
+const lList *load_adjustments
 ) {
    DENTER(TOP_LAYER);
 
@@ -5801,7 +5820,7 @@ const lList *centry_list
    global = host_list_locate(exechost_list, SGE_GLOBAL_NAME);
    host = host_list_locate(exechost_list, lGetHost(q, QU_qhostname));
 
-   ep = get_attribute_by_name(global, host, q, attrname, centry_list, nullptr, DISPATCH_TIME_NOW, 0);
+   ep = get_attribute_by_name(global, host, q, attrname, centry_list, load_adjustments, DISPATCH_TIME_NOW, 0);
 
    /* first copy ... */
    if (ep && dst)
@@ -7193,7 +7212,8 @@ bool sge_load_list_alarm(bool monitor_next_run, lList *load_list, const lList *h
          queue = (lListElem *)lGetRef(queue_ref, QRL_queue);
          if (is_category_alarm) {
             lSetUlong(queue, QU_tagged4schedule, 1);
-         } else if (sge_load_alarm(reason, sizeof(reason), queue, lGetList(queue, QU_load_thresholds), host_list, centry_list, nullptr, true)) {
+         } else if (sge_load_alarm(reason, sizeof(reason), queue, lGetList(queue, QU_load_thresholds), host_list, centry_list, nullptr,
+                                   nullptr, true)) {
 
             DPRINTF("queue %s tagged to be overloaded: %s\n", lGetString(queue, QU_full_name), reason);
             schedd_mes_add_global(nullptr, monitor_next_run, SCHEDD_INFO_QUEUEOVERLOADED_SS,

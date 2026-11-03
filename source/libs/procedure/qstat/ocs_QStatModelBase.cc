@@ -66,6 +66,9 @@ ocs::QStatModelBase::~QStatModelBase() {
    lFreeList(&centry_list_);
    lFreeList(&exechost_list_);
    lFreeList(&schedd_config_);
+   lFreeList(&job_load_adjustments_);
+   lFreeList(&config_user_lists_);
+   lFreeList(&config_xuser_lists_);
    lFreeList(&pe_list_);
    lFreeList(&ckpt_list_);
    lFreeList(&acl_list_);
@@ -946,9 +949,11 @@ bool ocs::QStatModelBase::prepare_data(lList **answer_list, QStatParameter &para
  * @param exechost_list the execution hosts, for the load values
  * @param queue_list the queue instances, tagged in place
  * @param centry_list the complex entries, to interpret the load
+ * @param load_adjustments the job load adjustments of the scheduler configuration (`CE_Type`)
  * @return the number of queue instances that matched
  */
-int ocs::QStatModelBase::select_by_queue_state(uint32_t queue_states, lList *exechost_list, lList *queue_list, lList *centry_list) {
+int ocs::QStatModelBase::select_by_queue_state(uint32_t queue_states, lList *exechost_list, lList *queue_list, lList *centry_list,
+                                               const lList *load_adjustments) {
    DENTER(TOP_LAYER);
 
    /* only show queues in the requested state */
@@ -977,13 +982,16 @@ int ocs::QStatModelBase::select_by_queue_state(uint32_t queue_states, lList *exe
          uint32_t interval;
 
          /* compute the load and suspend alarm */
-         sge_get_double_qattr(&load_avg, load_avg_str, qep, exechost_list, centry_list, &has_value_from_object);
-         if (sge_load_alarm(nullptr, 0, qep, lGetList(qep, QU_load_thresholds), exechost_list, centry_list, nullptr, true)) {
+         sge_get_double_qattr(&load_avg, load_avg_str, qep, exechost_list, centry_list, load_adjustments,
+                              &has_value_from_object);
+         if (sge_load_alarm(nullptr, 0, qep, lGetList(qep, QU_load_thresholds), exechost_list, centry_list, nullptr,
+                            load_adjustments, true)) {
             qinstance_state_set_alarm(qep, true);
          }
          parse_ulong_val(nullptr, &interval, ocs::CEntry::Type::TIME, lGetString(qep, QU_suspend_interval), nullptr, 0);
          if (lGetUlong(qep, QU_nsuspend) != 0 && interval != 0 &&
-             sge_load_alarm(nullptr, 0, qep, lGetList(qep, QU_suspend_thresholds), exechost_list, centry_list, nullptr, false)) {
+             sge_load_alarm(nullptr, 0, qep, lGetList(qep, QU_suspend_thresholds), exechost_list, centry_list, nullptr,
+                            load_adjustments, false)) {
             qinstance_state_set_suspend_alarm(qep, true);
              }
 
@@ -1204,11 +1212,12 @@ int ocs::QStatModelBase::filter_queues(lList **answer_list, const QStatParameter
    }
 
    // unselect all queues not selected by -qs
-   select_by_queue_state(parameter.queue_state_, exechost_list_, queue_list_, centry_list_);
+   select_by_queue_state(parameter.queue_state_, exechost_list_, queue_list_, centry_list_, job_load_adjustments_);
 
    // unselect all queues not selected by a -U (if exist)
    if (lGetNumberOfElem(parameter.get_queue_user_list())>0) {
-      const int count = select_by_queue_user_list(exechost_list_, queue_list_, parameter.get_queue_user_list(), acl_list_, project_list_);
+      const int count = select_by_queue_user_list(exechost_list_, queue_list_, parameter.get_queue_user_list(), acl_list_, project_list_,
+                                                   config_user_lists_, config_xuser_lists_);
 
       if (count < 0) {
          DRETURN(-1);
@@ -1424,9 +1433,12 @@ int ocs::QStatModelBase::select_by_pe_list(lList *queue_list, lList *peref_list,
  * @param queue_user_list the users the user asked about
  * @param acl_list the access control lists
  * @param project_list the projects
+ * @param config_acl the `user_lists` of the global configuration
+ * @param config_xacl the `xuser_lists` of the global configuration
  * @return the number of queue instances that matched
  */
-int ocs::QStatModelBase::select_by_queue_user_list(lList *exechost_list, lList *cqueue_list, lList *queue_user_list, lList *acl_list, lList *project_list) {
+int ocs::QStatModelBase::select_by_queue_user_list(lList *exechost_list, lList *cqueue_list, lList *queue_user_list, lList *acl_list, lList *project_list,
+                                                   const lList *config_acl, const lList *config_xacl) {
    DENTER(TOP_LAYER);
    int nqueues = 0;
    lListElem *ehep = nullptr;
@@ -1434,8 +1446,6 @@ int ocs::QStatModelBase::select_by_queue_user_list(lList *exechost_list, lList *
    const lList *h_xacl = nullptr;
    const lList *global_acl = nullptr;
    const lList *global_xacl = nullptr;
-   lList *config_acl = nullptr;
-   lList *config_xacl = nullptr;
    const lList *prj = nullptr;
    const lList *xprj = nullptr;
    const lList *h_prj = nullptr;
@@ -1452,9 +1462,6 @@ int ocs::QStatModelBase::select_by_queue_user_list(lList *exechost_list, lList *
       global_prj  = lGetList(ehep, EH_prj);
       global_xprj = lGetList(ehep, EH_xprj);
    }
-
-   config_acl = mconf_get_user_lists();
-   config_xacl = mconf_get_xuser_lists();
 
    for_each_ep_lv(cqueue, cqueue_list) {
       const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
@@ -1645,8 +1652,6 @@ int ocs::QStatModelBase::select_by_queue_user_list(lList *exechost_list, lList *
       }
    }
 
-   lFreeList(&config_acl);
-   lFreeList(&config_xacl);
    DRETURN(nqueues);
 }
 
@@ -1688,7 +1693,6 @@ bool ocs::QStatModelBase::make_snapshot(lList **answer_list, QStatParameter &par
    if (!fetch_data(answer_list, parameter)) {
       DRETURN(false);
    }
-
    if (!prepare_data(answer_list, parameter)) {
       DRETURN(false);
    }

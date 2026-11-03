@@ -231,8 +231,16 @@ sge_reader_main(void *arg) {
          /*
           * acquire the correct lock
           */
+         // A packet with a single task offers its read lock for early release: a stored procedure gives it
+         // up once it has its own copy of the data, so the mirror thread can apply events while the
+         // procedure renders (CS-3008). With more tasks the next one still needs the lock.
+         const bool offer_early_release = is_only_read_request && packet->request_type == PACKET_GDI_REQUEST
+                                          && packet->tasks.size() == 1;
          if (is_only_read_request) {
             MONITOR_WAIT_TIME(SGE_LOCK(LOCK_READER, LOCK_READ), p_monitor);
+            if (offer_early_release) {
+               ocs_lock_offer_early_release(LOCK_READER);
+            }
          } else {
             MONITOR_WAIT_TIME(SGE_LOCK(LOCK_READER, LOCK_WRITE), p_monitor);
          }
@@ -308,7 +316,10 @@ sge_reader_main(void *arg) {
           * do unlock
           */
          if (is_only_read_request) {
-            SGE_UNLOCK(LOCK_READER, LOCK_READ);
+            // unless a stored procedure has already released it
+            if (!offer_early_release || ocs_lock_withdraw_early_release()) {
+               SGE_UNLOCK(LOCK_READER, LOCK_READ);
+            }
          } else {
             SGE_UNLOCK(LOCK_READER, LOCK_WRITE);
          }

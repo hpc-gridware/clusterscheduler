@@ -192,12 +192,16 @@ int correct_load(lList *running_jobs, lList *queue_list, lList *host_list,
  * That is what lets a consumable be tracked by its load value rather than
  * only by the bookings of the scheduler.
  *
- * @param[in,out] host_list   the execution hosts
- * @param[in]     centry_list the complex entries (`CE_Type`)
+ * @param[in,out] host_list        the execution hosts
+ * @param[in]     centry_list      the complex entries (`CE_Type`)
+ * @param[in]     load_adjustments the job load adjustments of the scheduler
+ *                                 configuration (`CE_Type`); nullptr fetches
+ *                                 them from the data store of the calling
+ *                                 thread
  *
  * @return always 0
  */
-int correct_capacities(lList *host_list, const lList *centry_list) {
+int correct_capacities(lList *host_list, const lList *centry_list, const lList *load_adjustments) {
    DENTER(TOP_LAYER);
    lListElem *cep;
    const lListElem *job_load;
@@ -208,9 +212,11 @@ int correct_capacities(lList *host_list, const lList *centry_list) {
    uint32_t relop;
    double dval, inuse_ext, full_capacity, sc_factor;
    double load_correction;
-   lList* job_load_adj_list = nullptr;
-
-   job_load_adj_list = sconf_get_job_load_adjustments();
+   lList *local_load_adjustments = nullptr;
+   const lList *job_load_adj_list = load_adjustments;
+   if (job_load_adj_list == nullptr) {
+      job_load_adj_list = local_load_adjustments = sconf_get_job_load_adjustments();
+   }
  
    for_each_rw_lv(hep, host_list) {
       const char *host_name = lGetHost(hep, EH_name);
@@ -286,7 +292,7 @@ int correct_capacities(lList *host_list, const lList *centry_list) {
          }
       }
    }
-   lFreeList(&job_load_adj_list);
+   lFreeList(&local_load_adjustments);
 
    DRETURN(0);
 }

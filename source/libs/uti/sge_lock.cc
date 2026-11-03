@@ -601,3 +601,64 @@ void sge_debug_time(sge_locktype_t aType) {
    fprintf(stderr, "writer_count = %f\n", writer_count[aType]);
 }
 #endif
+
+/// the read lock the calling thread offers for early release, NUM_OF_LOCK_TYPES if none
+static thread_local sge_locktype_t early_release_type = NUM_OF_LOCK_TYPES;
+
+/**
+ * @brief Offers the read lock the calling thread holds for early release
+ *
+ * Code further down the call chain may then give the lock up with ocs_lock_release_early() as soon as it
+ * no longer needs the data the lock protects, e.g. once it has taken its own copy. The holder ends the
+ * offer with ocs_lock_withdraw_early_release() and releases the lock itself only if that returns true.
+ *
+ * @param aType the lock the calling thread holds in read mode
+ */
+void
+ocs_lock_offer_early_release(const sge_locktype_t aType) {
+   DENTER(BASIS_LAYER);
+#if defined(ENABLE_DEBUG_CHECKS)
+   if (early_release_type != NUM_OF_LOCK_TYPES || !ocs_lock_is_held(aType) || ocs_lock_is_held_for_write(aType)) {
+      DPRINTF("offer of lock \"%s\" for early release while another offer is open or the lock is not held for reading\n",
+              locktype_names[aType]);
+      ocs::TerminationManager::trigger_abort();
+   }
+#endif
+   early_release_type = aType;
+   DRETURN_VOID;
+}
+
+/**
+ * @brief Releases the read lock the calling thread has offered for early release, if any
+ *
+ * @return true if a lock was released, false if none was offered
+ */
+bool
+ocs_lock_release_early() {
+   DENTER(BASIS_LAYER);
+   if (early_release_type == NUM_OF_LOCK_TYPES) {
+      DRETURN(false);
+   }
+#if defined(ENABLE_DEBUG_CHECKS)
+   if (!ocs_lock_is_held(early_release_type)) {
+      DPRINTF("early release of lock \"%s\" which is not held\n", locktype_names[early_release_type]);
+      ocs::TerminationManager::trigger_abort();
+   }
+#endif
+   sge_unlock(early_release_type, LOCK_READ, __func__, sge_locker_id());
+   early_release_type = NUM_OF_LOCK_TYPES;
+   DRETURN(true);
+}
+
+/**
+ * @brief Withdraws the offer of early release
+ *
+ * @return true if the offered lock was not released early and the calling thread still has to release
+ *         it, false if it was released early or nothing was offered
+ */
+bool
+ocs_lock_withdraw_early_release() {
+   const bool still_held = early_release_type != NUM_OF_LOCK_TYPES;
+   early_release_type = NUM_OF_LOCK_TYPES;
+   return still_held;
+}

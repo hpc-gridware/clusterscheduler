@@ -93,7 +93,8 @@ enum {
 };
 
 /* prototypes */
-static int get_load_value(double *dvalp, lListElem *global, lListElem *host, const lList *centry_list, const char *attrname);
+static int get_load_value(double *dvalp, lListElem *global, lListElem *host, const lList *centry_list,
+                          const lList *load_adjustments, const char *attrname);
 
 /**
  * @brief Sorts the host list by the load evaluation formula
@@ -118,7 +119,7 @@ int sort_host_list(lList *hl, const lList *centry_list) {
       }
 
       /* build complexes for that host */
-      double load = scaled_mixed_load(load_formula, global, hlp, centry_list);
+      double load = scaled_mixed_load(load_formula, global, hlp, centry_list, nullptr);
       lSetDouble(hlp, EH_sort_value, load);
       DPRINTF("%s: %f\n", lGetHost(hlp, EH_name), load);
    }
@@ -144,13 +145,16 @@ int sort_host_list(lList *hl, const lList *centry_list) {
  * @param[in] global       the global host, for the globally reported values
  * @param[in] host         the host to compute the load for (`EH_Type`)
  * @param[in] centry_list  the complex entry list (`CE_Type`)
+ * @param[in] load_adjustments the job load adjustments of the scheduler
+ *                         configuration (`CE_Type`); nullptr fetches them
+ *                         from the data store of the calling thread
  *
  * @return the load value the host list is sorted by, or #ERROR_LOAD_VAL on
  *         error - which sorts a host with incorrect load reporting to the end
  *         instead of to the front
  */
 double scaled_mixed_load(const char *load_formula, lListElem *global,
-                         lListElem *host, const lList *centry_list) {
+                         lListElem *host, const lList *centry_list, const lList *load_adjustments) {
    DENTER(TOP_LAYER);
 
    char *cp = nullptr;
@@ -188,7 +192,7 @@ double scaled_mixed_load(const char *load_formula, lListElem *global,
       if (!(val = strtod(cp, &ptr)) && ptr == cp) {
          /* it is not an integer ==> it's got to be a load value */
          if (!(par_name = sge_delim_str(cp, &ptr, load_ops)) ||
-               get_load_value(&val, global, host, centry_list, par_name)) {
+               get_load_value(&val, global, host, centry_list, load_adjustments, par_name)) {
             sge_free(&par_name);
             sge_free(&tf);
 
@@ -215,7 +219,7 @@ double scaled_mixed_load(const char *load_formula, lListElem *global,
          if (!(val2 = strtod(ptr,&ptr2)) && ptr2 == ptr) {
             /* it is not an integer ==> it's got to be a load value */
             if (!(par_name = sge_delim_str(ptr,nullptr,load_ops)) ||
-               get_load_value(&val2, global, host, centry_list, par_name)) {
+               get_load_value(&val2, global, host, centry_list, load_adjustments, par_name)) {
                sge_free(&par_name);
                sge_free(&tf);
                DRETURN(ERROR_LOAD_VAL);
@@ -289,12 +293,21 @@ double scaled_mixed_load(const char *load_formula, lListElem *global,
 }
 
 
-/***********************************************************************
-
-   get_load_value
-
- ***********************************************************************/
-static int get_load_value(double *dvalp, lListElem *global, lListElem *host, const lList *centry_list, const char *attrname) {
+/**
+ * @brief Reads the load value of one attribute of a host, resolved over the host and the global host
+ *
+ * @param[out] dvalp            receives the value
+ * @param[in]  global           the global host
+ * @param[in]  host             the host (`EH_Type`)
+ * @param[in]  centry_list      the complex entry list (`CE_Type`)
+ * @param[in]  load_adjustments the job load adjustments of the scheduler configuration (`CE_Type`); nullptr
+ *                              fetches them from the data store of the calling thread
+ * @param[in]  attrname         the attribute, optionally with a leading `$`
+ *
+ * @return 0 if a value was found, 1 if the host has neither a load value nor a consumable of that name
+ */
+static int get_load_value(double *dvalp, lListElem *global, lListElem *host, const lList *centry_list,
+                          const lList *load_adjustments, const char *attrname) {
    DENTER(TOP_LAYER);
 
    lListElem *cep;
@@ -304,7 +317,7 @@ static int get_load_value(double *dvalp, lListElem *global, lListElem *host, con
       attrname++;
    }
 
-   if(!(cep = get_attribute_by_name(global, host, nullptr, attrname, centry_list, nullptr, DISPATCH_TIME_NOW, 0))){
+   if(!(cep = get_attribute_by_name(global, host, nullptr, attrname, centry_list, load_adjustments, DISPATCH_TIME_NOW, 0))){
       /* neither load nor consumable available for that host */
       DRETURN(1);
    }

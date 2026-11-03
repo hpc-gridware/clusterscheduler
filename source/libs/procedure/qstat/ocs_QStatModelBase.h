@@ -70,6 +70,9 @@ namespace ocs {
       lList* centry_list_ = nullptr;     ///< Complex entries
       lList* exechost_list_ = nullptr;   ///< Execution hosts
       lList* schedd_config_ = nullptr;   ///< Scheduler configuration, for the priority columns
+      lList* job_load_adjustments_ = nullptr;   ///< Job load adjustments of the scheduler configuration (`CE_Type`), never nullptr after a successful fetch_data()
+      lList* config_user_lists_ = nullptr;      ///< `user_lists` of the global configuration, for `-U`
+      lList* config_xuser_lists_ = nullptr;     ///< `xuser_lists` of the global configuration, for `-U`
       lList* pe_list_ = nullptr;         ///< Parallel environments
       lList* ckpt_list_ = nullptr;       ///< Checkpointing environments
       lList* acl_list_ = nullptr;        ///< Access control lists
@@ -103,6 +106,16 @@ namespace ocs {
        * @return the scheduler configuration
        */
       [[nodiscard]] lList* get_schedd_config() const { return schedd_config_; }
+
+      /** @brief The job load adjustments of the scheduler configuration
+       *
+       * A copy taken with the snapshot, so the load values can be corrected after the data store lock
+       * was released (CS-3008). An empty list rather than nullptr when none are configured, because
+       * nullptr makes the sched helpers fetch them from the data store.
+       *
+       * @return the load adjustments (`CE_Type`)
+       */
+      [[nodiscard]] const lList* get_job_load_adjustments() const { return job_load_adjustments_; }
 
       /** @brief The parallel environments
        * @return the PE list
@@ -184,9 +197,11 @@ namespace ocs {
 #pragma region Data Retrieval
 
    private:
-      static int select_by_queue_state(uint32_t queue_states, lList *exechost_list, lList *queue_list, lList *centry_list);
+      static int select_by_queue_state(uint32_t queue_states, lList *exechost_list, lList *queue_list, lList *centry_list,
+                                       const lList *load_adjustments);
 
-      static int select_by_queue_user_list(lList *exechost_list, lList *cqueue_list, lList *queue_user_list, lList *acl_list, lList *project_list);
+      static int select_by_queue_user_list(lList *exechost_list, lList *cqueue_list, lList *queue_user_list, lList *acl_list, lList *project_list,
+                                           const lList *config_acl, const lList *config_xacl);
 
       static int select_by_pe_list(lList *queue_list, lList *peref_list, lList *pe_list);
 

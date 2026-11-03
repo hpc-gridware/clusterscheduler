@@ -241,6 +241,16 @@ bool ocs::QStatModelClient::fetch_data(lList **answer_list, QStatParameter &para
    if (answer_list_has_error(answer_list)) {
       DRETURN(false);
    }
+   // taken now: prepare_data() hands schedd_config_ over to the sconf module
+   if (const lListElem *sc = lFirst(schedd_config_); sc != nullptr) {
+      job_load_adjustments_ = lCopyList("load_adj_copy", lGetList(sc, SC_job_load_adjustments));
+   }
+   // An empty list, not nullptr, when none are configured: the sched helpers read nullptr as "fetch them
+   // from the data store of the calling thread" (LOAD_ADJUSTMENTS_LATE_FETCH in get_attribute()), which
+   // after the early release of the reader lock would read the data store unprotected (CS-3008).
+   if (job_load_adjustments_ == nullptr) {
+      job_load_adjustments_ = lCreateList("load_adj_copy", CE_Type);
+   }
 
    gdi_multi.get_response(answer_list, gdi::Command::GET, gdi::SubCommand::NONE, gdi::Target::HGRP_LIST, hgrp_id, &hgrp_list_);
    if (answer_list_has_error(answer_list)) {
@@ -259,6 +269,10 @@ bool ocs::QStatModelClient::fetch_data(lList **answer_list, QStatParameter &para
       merge_configuration(nullptr, progid, cell_root, lFirstRW(conf_l), local, nullptr);
    }
    lFreeList(&conf_l);
+
+   // the access lists of the global configuration just merged
+   config_user_lists_ = mconf_get_user_lists();
+   config_xuser_lists_ = mconf_get_xuser_lists();
 
    DRETURN(true);
 }
