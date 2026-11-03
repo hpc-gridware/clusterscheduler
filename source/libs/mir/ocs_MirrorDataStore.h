@@ -97,7 +97,7 @@ namespace ocs {
 
       static void thread_cleanup_monitor(void *arg);
       static void thread_cleanup_event_client(void *arg);
-      static void thread_cleanup_data_store([[maybe_unused]] void *unused);
+      static void thread_cleanup_data_store(void *arg);
 
       /// Creates the mirror threads; needs access to the private members
       friend void event_mirror_initialize();

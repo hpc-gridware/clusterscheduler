@@ -810,11 +810,12 @@ guess_highest_ar_id() {
 
    const lListElem *ar;
    uint32_t maxid = 0;
-   const lList *master_ar_list = *ocs::DataStore::get_master_list(SGE_TYPE_AR);
 
    /* this function is called during qmaster startup and not while it is running,
       we do not need to monitor this lock */
    SGE_LOCK(LOCK_GLOBAL, LOCK_READ);
+
+   const lList *master_ar_list = *ocs::DataStore::get_master_list(SGE_TYPE_AR);
 
    ar = lFirst(master_ar_list);
    if (ar) {

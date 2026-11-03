@@ -279,9 +279,10 @@ void sge_calendar_event_handler(te_event_t anEvent, monitoring_t *monitor) {
    lListElem *cep;
    const char *cal_name = te_get_alphanumeric_key(anEvent);
    lList *ppList = nullptr;
-   const lList *master_calendar_list = *ocs::DataStore::get_master_list(SGE_TYPE_CALENDAR);
 
    MONITOR_WAIT_TIME(SGE_LOCK(LOCK_GLOBAL, LOCK_WRITE), monitor);
+
+   const lList *master_calendar_list = *ocs::DataStore::get_master_list(SGE_TYPE_CALENDAR);
 
    if (!(cep = lGetElemStrRW(master_calendar_list, CAL_name, cal_name))) {
       ERROR(MSG_EVE_TE4CAL_S, cal_name);

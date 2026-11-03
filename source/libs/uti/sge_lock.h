@@ -91,6 +91,14 @@ sge_unlock(sge_locktype_t aType, sge_lockmode_t aMode, const char *func, sge_loc
 sge_locker_t
 sge_locker_id();
 
+#if defined(ENABLE_DEBUG_CHECKS)
+bool
+ocs_lock_is_held(sge_locktype_t aType);
+
+bool
+ocs_lock_is_held_for_write(sge_locktype_t aType);
+#endif
+
 /// try to take a lock, reporting the calling function automatically
 #define SGE_TRY_LOCK(type, mode) sge_try_lock(type, mode, __func__, sge_locker_id())
 /// take a lock, reporting the calling function automatically

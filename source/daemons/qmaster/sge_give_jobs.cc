@@ -671,11 +671,12 @@ sge_job_resend_event_handler(te_event_t anEvent, monitoring_t *monitor) {
    const char *qnm, *hnm;
    uint32_t jobid = te_get_first_numeric_key(anEvent);
    uint32_t jataskid = te_get_second_numeric_key(anEvent);
+
+   MONITOR_WAIT_TIME(SGE_LOCK(LOCK_GLOBAL, LOCK_WRITE), monitor);
+
    lList **master_job_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB);
    const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
    const lList *master_ehost_list = *ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST);
-
-   MONITOR_WAIT_TIME(SGE_LOCK(LOCK_GLOBAL, LOCK_WRITE), monitor);
 
    jep = lGetElemUlongRW(*master_job_list, JB_job_number, jobid);
    jatep = job_search_task(jep, nullptr, jataskid);

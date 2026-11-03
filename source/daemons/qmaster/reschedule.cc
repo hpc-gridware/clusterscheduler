@@ -120,12 +120,13 @@ void reschedule_unknown_event(te_event_t anEvent, monitoring_t *monitor) {
    const lListElem *qep;            /* QU_Type */
    lList *answer_list = nullptr; /* AN_Type */
    lListElem *hep;            /* EH_Type */
-   const lList *master_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
    uint64_t timeout = sge_gmt32_to_gmt64(te_get_first_numeric_key(anEvent));
    uint64_t new_timeout;
    char *hostname = te_get_alphanumeric_key(anEvent);
 
    MONITOR_WAIT_TIME(SGE_LOCK(LOCK_GLOBAL, LOCK_WRITE), monitor);
+
+   const lList *master_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
 
    /*
     * is the automatic rescheduling disabled

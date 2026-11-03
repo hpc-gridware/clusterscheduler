@@ -140,6 +140,52 @@ static sge_locker_t id_callback_impl();
 
 static sge_locker_t (*id_callback)() = id_callback_impl;
 
+#if defined(ENABLE_DEBUG_CHECKS)
+/// how often the calling thread holds each lock, per mode (index 0 read, 1 write)
+static thread_local int locks_held[NUM_OF_LOCK_TYPES][2] = {};
+
+/** @brief Book a lock the calling thread has taken or released
+ *
+ * @param aType the lock
+ * @param aMode the mode it was taken in
+ * @param delta 1 when it was taken, -1 when it was released
+ */
+static void
+lock_held_book(sge_locktype_t aType, sge_lockmode_t aMode, int delta) {
+   if (aType >= 0 && aType < NUM_OF_LOCK_TYPES && (aMode == LOCK_READ || aMode == LOCK_WRITE)) {
+      locks_held[aType][aMode == LOCK_WRITE ? 1 : 0] += delta;
+   }
+}
+
+/** @brief Whether the calling thread holds a lock, for reading or for writing
+ *
+ * Only available with ENABLE_DEBUG_CHECKS, which every Debug build sets.
+ *
+ * @param aType the lock
+ * @return true when the calling thread holds it in either mode
+ */
+bool
+ocs_lock_is_held(sge_locktype_t aType) {
+   return aType >= 0 && aType < NUM_OF_LOCK_TYPES && (locks_held[aType][0] > 0 || locks_held[aType][1] > 0);
+}
+
+/** @brief Whether the calling thread holds a lock for writing
+ *
+ * Only available with ENABLE_DEBUG_CHECKS, which every Debug build sets.
+ *
+ * @param aType the lock
+ * @return true when the calling thread holds it exclusively
+ */
+bool
+ocs_lock_is_held_for_write(sge_locktype_t aType) {
+   return aType >= 0 && aType < NUM_OF_LOCK_TYPES && locks_held[aType][1] > 0;
+}
+
+#define LOCK_HELD_BOOK(type, mode, delta) lock_held_book(type, mode, delta)
+#else
+#define LOCK_HELD_BOOK(type, mode, delta)
+#endif
+
 #ifdef SGE_LOCK_DEBUG
 void sge_try_lock(sge_locktype_t aType, sge_lockmode_t aMode, const char *func, sge_locker_t anID) {
    DENTER(BASIS_LAYER);
@@ -180,6 +226,7 @@ void sge_try_lock(sge_locktype_t aType, sge_lockmode_t aMode, const char *func, 
       DPRINTF(MSG_LCK_RWLOCKFORWRITINGFAILED_SSS, func, locktype_names[aType], strerror(res));
       ocs::TerminationManager::trigger_abort();
    }
+   LOCK_HELD_BOOK(aType, aMode, 1);
 
 #ifdef PRINT_LOCK
    {
@@ -233,6 +280,9 @@ bool sge_try_lock(sge_locktype_t aType, sge_lockmode_t aMode, const char *func, 
 #endif
    } else {
       DPRINTF("wrong try lock type for global lock\n");
+   }
+   if (res) {
+      LOCK_HELD_BOOK(aType, aMode, 1);
    }
 
 #ifdef SGE_DEBUG_LOCK_TIME
@@ -321,6 +371,7 @@ void sge_lock(sge_locktype_t aType, sge_lockmode_t aMode, const char *func, sge_
       DPRINTF(MSG_LCK_RWLOCKFORWRITINGFAILED_SSS, func, locktype_names[aType], strerror(res));
       ocs::TerminationManager::trigger_abort();
    }
+   LOCK_HELD_BOOK(aType, aMode, 1);
 
 #ifdef PRINT_LOCK
    {
@@ -372,6 +423,7 @@ void sge_lock(sge_locktype_t aType, sge_lockmode_t aMode, const char *func, sge_
       DPRINTF(MSG_LCK_RWLOCKFORWRITINGFAILED_SSS, func, locktype_names[aType], strerror(res));
       ocs::TerminationManager::trigger_abort();
    }
+   LOCK_HELD_BOOK(aType, aMode, 1);
 
 #ifdef SGE_DEBUG_LOCK_TIME
       gettimeofday(&after, nullptr);
@@ -433,6 +485,7 @@ void sge_unlock(sge_locktype_t aType, sge_lockmode_t aMode, const char *func, sg
       DPRINTF(MSG_LCK_RWLOCKUNLOCKFAILED_SSS, func, locktype_names[aType], strerror(res));
       ocs::TerminationManager::trigger_abort();
    }
+   LOCK_HELD_BOOK(aType, aMode, -1);
    DPRINTF("%s() unlocked rwlock \"%s\"\n", func, locktype_names[aType]);
 
 #ifdef PRINT_LOCK
@@ -463,6 +516,7 @@ void sge_unlock(sge_locktype_t aType, sge_lockmode_t aMode, const char *func, sg
       DPRINTF(MSG_LCK_RWLOCKUNLOCKFAILED_SSS, func, locktype_names[aType], strerror(res));
       ocs::TerminationManager::trigger_abort();
    }
+   LOCK_HELD_BOOK(aType, aMode, -1);
 
    DRETURN_VOID;
 } /* sge_unlock */

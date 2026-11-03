@@ -84,25 +84,38 @@ ocs::MirrorDataStore::thread_cleanup_monitor(void *arg) {
 }
 
 /**
- * pthread cleanup handler to shut down the event client
- * @param arg Event client pointer
+ * @brief pthread cleanup handler to shut down the event client
+ *
+ * Unsubscribing frees the master lists of the mirrored data store, so it runs under the write lock of that
+ * data store: reader or listener threads may still use it while qmaster shuts down. The thread is cancelled
+ * only at its cancellation point, where it does not hold the lock.
+ *
+ * @param arg the mirror (MirrorDataStore)
  */
 void
 ocs::MirrorDataStore::thread_cleanup_event_client(void *arg) {
    DENTER(TOP_LAYER);
-   auto *evc = static_cast<sge_evc_class_t *>(arg);
-   sge_mirror_shutdown(evc);
+   auto *mirror = static_cast<MirrorDataStore *>(arg);
+   SGE_LOCK(mirror->lock_type, LOCK_WRITE);
+   sge_mirror_shutdown(mirror->evc);
+   SGE_UNLOCK(mirror->lock_type, LOCK_WRITE);
    DRETURN_VOID;
 }
 
 /**
- * pthread cleanup handler to free all master lists of the mirrored data store
- * @param unused
+ * @brief pthread cleanup handler to free all master lists of the mirrored data store
+ *
+ * Runs under the write lock of the data store for the same reason as thread_cleanup_event_client().
+ *
+ * @param arg the mirror (MirrorDataStore)
  */
 void
-ocs::MirrorDataStore::thread_cleanup_data_store([[maybe_unused]] void *unused) {
+ocs::MirrorDataStore::thread_cleanup_data_store(void *arg) {
    DENTER(TOP_LAYER);
+   const auto *mirror = static_cast<MirrorDataStore *>(arg);
+   SGE_LOCK(mirror->lock_type, LOCK_WRITE);
    DataStore::free_all_master_lists();
+   SGE_UNLOCK(mirror->lock_type, LOCK_WRITE);
    DRETURN_VOID;
 }
 
@@ -447,8 +460,8 @@ ocs::MirrorDataStore::main([[maybe_unused]] void *arg) {
       do {
          int execute = 0;
          pthread_cleanup_push(thread_cleanup_monitor, static_cast<void *>(&monitor));
-         pthread_cleanup_push(thread_cleanup_data_store, nullptr);
-         pthread_cleanup_push(thread_cleanup_event_client, static_cast<void *>(evc));
+         pthread_cleanup_push(thread_cleanup_data_store, static_cast<void *>(this));
+         pthread_cleanup_push(thread_cleanup_event_client, static_cast<void *>(this));
          pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, nullptr);
          pthread_testcancel();
          pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, nullptr);

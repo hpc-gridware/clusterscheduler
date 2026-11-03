@@ -656,8 +656,12 @@ namespace ocs {
       DENTER(TOP_LAYER);
 
       if (sharelog_interval > 0) {
+         // only create sharelog entries if we have a sharetree
+         MONITOR_WAIT_TIME(SGE_LOCK(LOCK_GLOBAL, LOCK_READ), monitor);
          const lList *master_stree_list = *ocs::DataStore::get_master_list(SGE_TYPE_SHARETREE);
-         if (lGetNumberOfElem(master_stree_list) > 0) {
+         if (lGetNumberOfElem(master_stree_list) == 0) {
+            SGE_UNLOCK(LOCK_GLOBAL, LOCK_READ);
+         } else {
             rapidjson::StringBuffer stringBuffer;
 
             const lList *master_user_list = *ocs::DataStore::get_master_list(SGE_TYPE_USER);
@@ -676,8 +680,6 @@ namespace ocs {
             format.line_prefix = "sharelog";
 
             /* dump the sharetree data */
-            MONITOR_WAIT_TIME(SGE_LOCK(LOCK_GLOBAL, LOCK_READ), monitor);
-
             sge_sharetree_print(nullptr, &stringBuffer, master_stree_list, master_user_list, master_project_list,
                                 master_userset_list,
                                 true, false, nullptr, &format);

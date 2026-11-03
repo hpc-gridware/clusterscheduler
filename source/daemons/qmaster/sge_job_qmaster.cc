@@ -3390,12 +3390,13 @@ static uint32_t guess_highest_job_number() {
    const lListElem *jep;
    uint32_t maxid = 0;
    int pos;
-   const lList *master_job_list = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
 
    /* this function is called during qmaster startup and not while it is running,
       we do not need to monitor this lock */
 
    SGE_LOCK(LOCK_GLOBAL, LOCK_READ);
+
+   const lList *master_job_list = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
 
    jep = lFirst(master_job_list);
    if (jep) {

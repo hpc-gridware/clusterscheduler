@@ -28,6 +28,8 @@
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_mtutil.h"
 #include "uti/sge_stdlib.h"
+#include "uti/sge_lock.h"
+#include "uti/ocs_ThreadName.h"
 
 #include <cinttypes>
 #include "sge_object.h"
@@ -135,6 +137,50 @@ namespace ocs {
       return obj_state->ds_id;
    }
 
+#if defined (ENABLE_DEBUG_CHECKS)
+   // the locks are declared in the order of the data stores they guard
+   static_assert(static_cast<int>(LOCK_GLOBAL) == static_cast<int>(DataStore::Id::GLOBAL));
+   static_assert(static_cast<int>(LOCK_SCHEDULER) == static_cast<int>(DataStore::Id::SCHEDULER));
+   static_assert(static_cast<int>(LOCK_LISTENER) == static_cast<int>(DataStore::Id::LISTENER));
+   static_assert(static_cast<int>(LOCK_READER) == static_cast<int>(DataStore::Id::READER));
+
+   /**
+    * @brief Returns the lock which protects a data store
+    *
+    * @param ds_id the data store
+    * @return the lock guarding it
+    */
+   static sge_locktype_t
+   data_store_lock(DataStore::Id ds_id) {
+      return static_cast<sge_locktype_t>(ds_id);
+   }
+
+   /**
+    * @brief Whether the lock check applies to a thread
+    *
+    * The main thread is exempt: it reads the spooled objects into the master lists while sge_setup_qmaster()
+    * starts the qmaster, and frees them again at shutdown, both while no other thread uses the data stores, so
+    * it takes no lock for them. Threads without a qmaster thread name (the commlib threads) never use the master
+    * lists.
+    *
+    * @param thread_name the component name of the calling thread
+    * @return true for a known qmaster thread name other than the main thread's
+    */
+   static bool
+   is_checked_thread(const char *thread_name) {
+      if (thread_name == nullptr) {
+         return false;
+      }
+      const std::string_view name{thread_name};
+      for (int t = 0; t < THREAD_TYPE_COUNT; t++) {
+         if (t != MAIN_THREAD && to_string_view(static_cast<ThreadName>(t)) == name) {
+            return true;
+         }
+      }
+      return false;
+   }
+#endif
+
    /**
     * @brief Returns the master list (RW-access) of the currently active data store for the specified type.
     *
@@ -169,6 +215,31 @@ namespace ocs {
             }
 #endif
          }
+      }
+
+      // A qmaster thread must hold the lock of the data store whose master list it reads. Only the threads
+      // with a known qmaster thread name are checked: the main thread loads and frees the lists while no
+      // other thread runs, and threads without such a name (commlib) never touch them. The scheduler data
+      // store belongs to the scheduler thread alone and has no lock.
+      if (component_get_component_id() == QMASTER && is_checked_thread(thread_name)
+          && ds_id != DataStore::Id::SCHEDULER) {
+         auto lock = data_store_lock(ds_id);
+         // the configuration list of the global data store is guarded by the master configuration lock
+         const bool held = ocs_lock_is_held(lock)
+                           || (ds_id == DataStore::Id::GLOBAL && type == SGE_TYPE_CONFIG && ocs_lock_is_held(LOCK_MASTER_CONF));
+         if (!held) {
+            CRITICAL("Thread %s is trying to access list %d of data store %d without holding its lock",
+                     thread_name, type, ds_id);
+            ocs::TerminationManager::trigger_abort();
+         }
+         // @todo enable once CS-825 is fixed and a full testsuite run shows no violation
+#if 0
+         if (!for_read && !ocs_lock_is_held_for_write(lock)) {
+            CRITICAL("Thread %s is trying to get list %d of data store %d with write access holding only a read lock",
+                     thread_name, type, ds_id);
+            ocs::TerminationManager::trigger_abort();
+         }
+#endif
       }
 #endif
 

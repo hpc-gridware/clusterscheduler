@@ -837,9 +837,10 @@ sge_get_configuration(const lCondition *condition, const lEnumeration *enumerati
    DENTER(TOP_LAYER);
 
    lList *conf = nullptr;
-   const lList *config_list = *ocs::DataStore::get_master_list(SGE_TYPE_CONFIG);
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
+
+   const lList *config_list = *ocs::DataStore::get_master_list(SGE_TYPE_CONFIG);
 
    conf = lSelectHashPack("", config_list, condition, enumeration, false, nullptr);
 
@@ -856,9 +857,10 @@ sge_get_config_version_for_host(const char *aName) {
    uint32_t version = 0;
    char unique_name[CL_MAXHOSTNAMELEN];
    int ret = -1;
-   const lList *config_list = *ocs::DataStore::get_master_list(SGE_TYPE_CONFIG);
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
+
+   const lList *config_list = *ocs::DataStore::get_master_list(SGE_TYPE_CONFIG);
 
    conf = lGetElemHost(config_list, CONF_name, aName);
    if (conf == nullptr) {
@@ -902,7 +904,6 @@ sge_get_configuration_for_host(const char *aName) {
    lListElem *conf = nullptr;
    char unique_name[CL_MAXHOSTNAMELEN];
    int ret = -1;
-   const lList *config_list = *ocs::DataStore::get_master_list(SGE_TYPE_CONFIG);
 
    SGE_ASSERT((nullptr != aName));
 
@@ -919,6 +920,8 @@ sge_get_configuration_for_host(const char *aName) {
    }
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
+
+   const lList *config_list = *ocs::DataStore::get_master_list(SGE_TYPE_CONFIG);
 
    conf = lCopyElem(lGetElemHost(config_list, CONF_name, unique_name));
 
@@ -1023,7 +1026,6 @@ exchange_conf_by_name(char *aConfName, lListElem *anOldConf, lListElem *aNewConf
    lListElem *elem = nullptr;
    uint32_t old_version, new_version = 0;
    const char *old_conf_name = lGetHost(anOldConf, CONF_name);
-   lList *config_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_CONFIG);
 
    old_version = lGetUlong(anOldConf, CONF_version);
 
@@ -1035,6 +1037,8 @@ exchange_conf_by_name(char *aConfName, lListElem *anOldConf, lListElem *aNewConf
    lSetHost(aNewConf, CONF_name, old_conf_name);
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_WRITE);
+
+   lList *config_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_CONFIG);
 
    elem = lGetElemHostRW(config_list, CONF_name, old_conf_name);
 
@@ -1085,11 +1089,12 @@ do_add_config(char *aConfName, lListElem *aConf, lList **anAnswer, uint64_t gdi_
    DENTER(TOP_LAYER);
 
    lListElem *elem = nullptr;
-   lList *config_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_CONFIG);
 
    elem = lCopyElem(aConf);
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_WRITE);
+
+   lList *config_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_CONFIG);
 
    lAppendElem(config_list, elem);
 
@@ -1105,9 +1110,10 @@ remove_conf_by_name(char *aConfName) {
    DENTER(TOP_LAYER);
 
    lListElem *elem = nullptr;
-   lList *config_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_CONFIG);
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_WRITE);
+
+   lList *config_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_CONFIG);
 
    elem = lGetElemHostRW(config_list, CONF_name, aConfName);
 
@@ -1132,9 +1138,9 @@ static bool
 conf_exists_by_name(const char *aConfName) {
    DENTER(TOP_LAYER);
 
-   const lList *config_list = *ocs::DataStore::get_master_list(SGE_TYPE_CONFIG);
-
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
+
+   const lList *config_list = *ocs::DataStore::get_master_list(SGE_TYPE_CONFIG);
 
    bool exists = (lGetElemHost(config_list, CONF_name, aConfName) != nullptr);
 

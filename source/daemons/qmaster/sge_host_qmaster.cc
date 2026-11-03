@@ -1273,10 +1273,11 @@ sge_load_value_cleanup_handler(te_event_t anEvent, monitoring_t *monitor) {
    uint64_t now = sge_get_gmt64();
    uint64_t max_unheard = sge_gmt32_to_gmt64(mconf_get_max_unheard());
    bool simulate_execds = mconf_get_simulate_execds();
-   lList *master_exechost_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST);
-   lList *master_cqueue_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE);
 
    MONITOR_WAIT_TIME(SGE_LOCK(LOCK_GLOBAL, LOCK_WRITE), monitor);
+
+   lList *master_exechost_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST);
+   lList *master_cqueue_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE);
 
    /* get "global" element pointer */
    global_host_elem = host_list_locate(master_exechost_list, SGE_GLOBAL_NAME);

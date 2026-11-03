@@ -775,54 +775,56 @@ void
 ocs::ClassicReportingFileWriter::create_sharelog_record(monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
-   const lList *master_stree_list = *ocs::DataStore::get_master_list(SGE_TYPE_SHARETREE);
-   const lList *master_user_list = *ocs::DataStore::get_master_list(SGE_TYPE_USER);
-   const lList *master_userset_list = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
-   const lList *master_project_list = *ocs::DataStore::get_master_list(SGE_TYPE_PROJECT);
-
    if (sharelog_interval > 0) {
-      /* only create sharelog entries if we have a sharetree */
-      if (lGetNumberOfElem(master_stree_list) > 0) {
-         dstring prefix_dstring = DSTRING_INIT;
-         dstring data_dstring = DSTRING_INIT;
-         format_t format;
-         char delim[2];
-         delim[0] = REPORTING_DELIMITER;
-         delim[1] = '\0';
+      dstring prefix_dstring = DSTRING_INIT;
+      dstring data_dstring = DSTRING_INIT;
+      format_t format;
+      char delim[2];
+      delim[0] = REPORTING_DELIMITER;
+      delim[1] = '\0';
 
-         /* we need a prefix containing the reporting file std fields */
-         sge_dstring_sprintf(&prefix_dstring, sge_u64 "%csharelog%c", (uint64_t)sge_gmt64_to_time_t(sge_get_gmt64()),
-                             REPORTING_DELIMITER, REPORTING_DELIMITER);
+      /* we need a prefix containing the reporting file std fields */
+      sge_dstring_sprintf(&prefix_dstring, sge_u64 "%csharelog%c", (uint64_t)sge_gmt64_to_time_t(sge_get_gmt64()),
+                          REPORTING_DELIMITER, REPORTING_DELIMITER);
 
-         /* define output format */
-         format.name_format = false;
-         format.delim = delim;
-         format.line_delim = "\n";
-         format.rec_delim = "";
-         format.str_format = "%s";
-         format.field_names = nullptr;
-         format.format_times = false;
-         format.line_prefix = "sharelog";
+      /* define output format */
+      format.name_format = false;
+      format.delim = delim;
+      format.line_delim = "\n";
+      format.rec_delim = "";
+      format.str_format = "%s";
+      format.field_names = nullptr;
+      format.format_times = false;
+      format.line_prefix = "sharelog";
 
-         /* dump the sharetree data */
-         MONITOR_WAIT_TIME(SGE_LOCK(LOCK_GLOBAL, LOCK_READ), monitor);
+      /* dump the sharetree data - only create sharelog entries if we have a sharetree */
+      MONITOR_WAIT_TIME(SGE_LOCK(LOCK_GLOBAL, LOCK_READ), monitor);
+
+      const lList *master_stree_list = *ocs::DataStore::get_master_list(SGE_TYPE_SHARETREE);
+      const bool has_sharetree = lGetNumberOfElem(master_stree_list) > 0;
+      if (has_sharetree) {
+         const lList *master_user_list = *ocs::DataStore::get_master_list(SGE_TYPE_USER);
+         const lList *master_userset_list = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
+         const lList *master_project_list = *ocs::DataStore::get_master_list(SGE_TYPE_PROJECT);
 
          sge_sharetree_print(&data_dstring, nullptr, master_stree_list, master_user_list, master_project_list,
                              master_userset_list,
                              true, false, nullptr, &format);
+      }
 
-         SGE_UNLOCK(LOCK_GLOBAL, LOCK_READ);
+      SGE_UNLOCK(LOCK_GLOBAL, LOCK_READ);
 
+      if (has_sharetree) {
          /* write data to reporting buffer */
          // @todo use create_record
          sge_mutex_lock(typeid(*this).name(), __func__, __LINE__, &buffer_mutex);
          buffer += sge_dstring_get_string(&data_dstring);
          sge_mutex_unlock(typeid(*this).name(), __func__, __LINE__, &buffer_mutex);
-
-         /* cleanup */
-         sge_dstring_free(&prefix_dstring);
-         sge_dstring_free(&data_dstring);
       }
+
+      /* cleanup */
+      sge_dstring_free(&prefix_dstring);
+      sge_dstring_free(&data_dstring);
    }
 }
 
