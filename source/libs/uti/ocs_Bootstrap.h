@@ -101,6 +101,7 @@ namespace ocs {
       static int listener_thread_count;
       static int worker_thread_count;
       static int reader_thread_count;
+      static bool reader_thread_count_auto; ///< `reader_threads auto`: derive the count from the available CPUs
       static int scheduler_thread_count;
       static bool ignore_fqdn;
 
@@ -215,6 +216,12 @@ namespace ocs {
 
       static int
       get_reader_thread_count();
+
+      static bool
+      is_reader_thread_count_auto();
+
+      static int
+      reader_threads_for_cpus(int cpus);
 
       static int
       get_scheduler_thread_count();

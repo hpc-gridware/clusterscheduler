@@ -806,7 +806,7 @@ PrintBootstrap()
    $ECHO "communication_params    none"
    $ECHO "listener_threads        4"
    $ECHO "worker_threads          4"
-   $ECHO "reader_threads          4"
+   $ECHO "reader_threads          auto"
    $ECHO "scheduler_threads       1"
 }
 

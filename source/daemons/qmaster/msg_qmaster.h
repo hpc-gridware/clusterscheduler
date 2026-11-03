@@ -772,5 +772,6 @@
 #define MSG_AUTOREMOVEHOSTS_REMOVED_SU             _MESSAGE(34011, _("exec host " SFQ " was removed from the cluster, it added itself and has been unknown for " sge_u32 " seconds"))
 #define MSG_AUTOREMOVEHOSTS_BUSY_S                 _MESSAGE(34012, _("exec host " SFQ " added itself and is unknown, but it still has jobs running and is kept"))
 #define MSG_AUTOREMOVEHOSTS_FAILED_S               _MESSAGE(34013, _("exec host " SFQ " could not be removed from the cluster, it is no longer treated as a host which added itself"))
+#define MSG_QMASTER_READERTHREADS_AUTO_II          _MESSAGE(34014, _("reader_threads auto: %d CPUs available, starting %d reader threads"))
 
 // clang-format on

@@ -33,6 +33,7 @@
 
 #include "uti/sge_lock.h"
 #include "uti/sge_log.h"
+#include "uti/sge_nprocs.h"
 #include "uti/sge_os.h"
 #include "uti/sge_profiling.h"
 #include "uti/sge_rmon_macros.h"
@@ -88,6 +89,9 @@ sge_reader_initialize() {
    const int max_initial_reader_threads = ocs::Bootstrap::get_reader_thread_count();
    cl_thread_settings_t *dummy_thread_p = nullptr;
 
+   if (ocs::Bootstrap::is_reader_thread_count_auto()) {
+      INFO(MSG_QMASTER_READERTHREADS_AUTO_II, ocs_available_cpus(), max_initial_reader_threads);
+   }
    INFO(MSG_QMASTER_THREADCOUNT_IS, max_initial_reader_threads, to_cstr(READER_THREAD));
    cl_thread_list_setup(&(Main_Control.reader_thread_pool), "thread pool");
    for (int i = 0; i < max_initial_reader_threads; i++) {

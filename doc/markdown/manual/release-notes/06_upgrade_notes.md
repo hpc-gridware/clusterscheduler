@@ -248,5 +248,28 @@ Nothing has to be done before or during the upgrade — the saved configuration 
 it, so a procedure that removed a rule set by deleting its block has to use `qconf -drqs <name>`.
 See the [Compatibility Notes](07_compatibility_notes.md#qconf--mrqs-no-longer-deletes-the-rule-sets-left-out-of-the-text).
 
+## Reader Threads: *auto* for New Installations
+
+The stored procedures of qstat, qhost, qrstat and qquota evaluate requests in the server context inside the reader
+threads of `sge_qmaster`, and such requests take most of their CPU time there. With the 4 reader threads earlier
+installations configured, a master host with many CPUs answers few of those requests in parallel while its other
+CPUs stay idle.
+
+The `reader_threads` entry of the bootstrap file now also accepts *auto*: `sge_qmaster` then starts half the CPUs it
+may use as reader threads, at least 4 and at most 32, honouring its CPU affinity and a cgroup v2 CPU quota. A new
+installation writes *auto*. See xxqs_name_sxx_bootstrap(5).
+
+*An upgrade does not change the entry.* An upgraded cluster keeps its number. To switch to *auto*, change the line
+in `$SGE_ROOT/$SGE_CELL/common/bootstrap` to
+
+```text
+reader_threads          auto
+```
+
+and restart `sge_qmaster`. With *loglevel* set to *log_info* in the global configuration, the messages file then
+shows the number it started; with the default *log_warning* it does not. Each reader thread working on a request
+holds its own copy of the data, so plan for a higher peak memory of the qmaster.
+
 [//]: # (Each file has to end with two empty lines)
+
 

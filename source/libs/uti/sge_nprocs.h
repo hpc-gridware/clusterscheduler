@@ -38,3 +38,5 @@
  */
 
 int sge_nprocs();
+
+int ocs_available_cpus();

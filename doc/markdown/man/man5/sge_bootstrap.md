@@ -173,7 +173,13 @@ The number of worker threads (allowed: 1-32, default of 4 set by installation).
 
 ## *reader_threads*
 
-The number of reader threads (allowed: 1-32, default of 4 set by installation).
+The number of reader threads, or *auto* (allowed: 1-32 or *auto*, default set by installation: *auto*). An absent or zero setting means 4.
+
+The reader threads answer the requests which only read, such as those of qstat(1), qhost(1) and qquota(1). Requests evaluated in the server context take most of their CPU time there, so with too few reader threads such requests queue while CPUs of the master host stay idle.
+
+With *auto*, xxqs_name_sxx_qmaster(8) derives the number when it starts: half the CPUs it may use, at least 4 and at most 32. The CPUs it may use are those of its CPU affinity, bounded by a CPU quota of its cgroup (cgroup v2 *cpu.max*), so a master host shared through a container or a systemd slice counts only its share. A shadow master which takes over on other hardware derives its own number. The derived number is written to the messages file at start-up, but only if *loglevel* is *log_info* in the global configuration, see xxqs_name_sxx_conf(5). With the default *log_warning* it is not. Measured on a host with 16 CPUs, more reader threads than half of them lowered the throughput.
+
+Each request a reader thread works on holds its own copy of the data it needs, so the peak memory of xxqs_name_sxx_qmaster(8) grows with the number of reader threads that work at the same time.
 
 ## *scheduler_threads*
 

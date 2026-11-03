@@ -49,6 +49,15 @@
 
 #endif
 
+#if defined(LINUX)
+#   include <sched.h>
+#   include <cstdlib>
+#   include <fstream>
+#   include <string>
+#endif
+
+#include <algorithm>
+
 #if defined(FREEBSD)
 #   include <sys/types.h>
 #   include <sys/sysctl.h>
@@ -128,6 +137,83 @@ int sge_nprocs() {
    }
 
    return nprocs;
+}
+
+#if defined(LINUX)
+/**
+ * @brief The CPU quota the cgroup v2 hierarchy puts on the calling process
+ *
+ * Reads the cgroup of the process from `/proc/self/cgroup` and walks from it up to the root of the cgroup
+ * file system. Every `cpu.max` on the way limits the process, so the smallest quota counts. A quota of
+ * `<quota> <period>` allows quota / period CPUs, rounded up; `max` sets no limit.
+ *
+ * cgroup v1 has no `0::` line and is not looked at.
+ *
+ * @return the quota in whole CPUs, or 0 when no quota applies
+ */
+static int
+cgroup_cpu_quota() {
+   std::ifstream self("/proc/self/cgroup");
+   std::string path;
+   for (std::string line; std::getline(self, line);) {
+      if (line.starts_with("0::")) {
+         path = line.substr(3);
+         break;
+      }
+   }
+   if (path.empty() || path[0] != '/') {
+      return 0;
+   }
+
+   int limit = 0;
+   while (true) {
+      std::ifstream cpu_max("/sys/fs/cgroup" + path + "/cpu.max");
+      std::string quota;
+      long long period = 0;
+      if (cpu_max >> quota >> period && quota != "max" && period > 0) {
+         char *end = nullptr;
+         const long long q = strtoll(quota.c_str(), &end, 10);
+         if (end != quota.c_str() && *end == '\0' && q > 0) {
+            const int cpus = static_cast<int>((q + period - 1) / period);
+            if (limit == 0 || cpus < limit) {
+               limit = cpus;
+            }
+         }
+      }
+      if (path == "/") {
+         break;
+      }
+      const auto slash = path.find_last_of('/');
+      path = slash == 0 ? "/" : path.substr(0, slash);
+   }
+   return limit;
+}
+#endif
+
+/**
+ * @brief Number of CPUs the calling process may use
+ *
+ * Unlike sge_nprocs(), which counts the CPUs of the machine, this honours what restricts the process: on
+ * Linux the CPU affinity of the calling thread and a cgroup v2 CPU quota (`cpu.max`). A process in a
+ * container or in a systemd slice with a CPU limit gets that limit. Other operating systems report
+ * sge_nprocs().
+ *
+ * @return the number of CPUs, at least 1
+ */
+int
+ocs_available_cpus() {
+   int cpus = sge_nprocs();
+#if defined(LINUX)
+   cpu_set_t set;
+   CPU_ZERO(&set);
+   if (sched_getaffinity(0, sizeof(set), &set) == 0) {
+      cpus = CPU_COUNT(&set);
+   }
+   if (const int quota = cgroup_cpu_quota(); quota > 0 && quota < cpus) {
+      cpus = quota;
+   }
+#endif
+   return std::max(cpus, 1);
 }
 
 #ifdef NPROCS_TEST
