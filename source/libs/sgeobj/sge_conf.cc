@@ -1029,6 +1029,7 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
       ptf_min_priority = -999;
       keep_active = KEEP_ACTIVE_FALSE;
       usage_collection = USAGE_COLLECTION_DEFAULT;
+      pdc_interval = sge_gmt32_to_gmt64(1);
       enable_mem_details = false;
       script_timeout = 120;
       systemd_timeout = SYSTEMD_TIMEOUT_DEFAULT;
