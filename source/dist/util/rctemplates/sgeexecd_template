@@ -350,10 +350,26 @@ if [ "$startup" = true ]; then
          ping_port=$SGE_EXECD_PORT
       fi
       echo "   starting sge_execd"
-      exec 1>/dev/null 2>&1
-      $bin_dir/sge_execd
-      [ $? -eq 0 -a -d /var/lock/subsys ] && touch /var/lock/subsys/sgeexecd
-      
+      # The output of sge_execd and of this script stays visible: it is the only hint why a start
+      # failed. sge_execd detaches from the terminal on its own and returns non-zero if it could
+      # not start. Until it has registered at the master daemon it logs into
+      # /tmp/execd_messages.<pid>, <pid> being the process started here.
+      $bin_dir/sge_execd &
+      execd_pid=$!
+      wait $execd_pid
+      ret=$?
+      if [ $ret -ne 0 ]; then
+         # an execution daemon which is already running keeps the port, the start then fails
+         if $bin_dir/qping -info "$HOST" "$ping_port" execd 1 > /dev/null 2>&1; then
+            echo "   sge_execd is already running"
+            exit 0
+         fi
+         echo "sge_execd could not be started (exit status $ret)," \
+              "see /tmp/execd_messages.$execd_pid" >&2
+         exit 1
+      fi
+      [ -d /var/lock/subsys ] && touch /var/lock/subsys/sgeexecd >/dev/null 2>&1
+
       #Don't exit until daemon is up
       $bin_dir/qping -info "$HOST" "$ping_port" execd 1 > /dev/null 2>&1
       ret=$?
@@ -365,9 +381,33 @@ if [ "$startup" = true ]; then
          loop=`expr $loop + 1`
       done
       if [ $loop -eq 61 ]; then
-         echo "Execd did not start in 61 seconds!"
+         echo "Execd did not start in 61 seconds!" >&2
+         echo "See /tmp/execd_messages.$execd_pid or the messages file in the execd spool" \
+              "directory." >&2
          exit 1
       fi
+
+      # qping answers as soon as sge_execd listens, before it has registered at the master
+      # daemon. Wait for the result of the first registration attempt: once registered, the
+      # dispatcher thread sge_execd_process_messages shows up in the qping info, a refused
+      # registration is logged into the temporary messages file. A refused execution daemon keeps
+      # running and retries, so that a host which an administrator adds later joins on its own.
+      execd_messages=/tmp/execd_messages.$execd_pid
+      loop=0
+      while [ $loop -lt 10 ]; do
+         if $bin_dir/qping -info "$HOST" "$ping_port" execd 1 2>/dev/null | \
+            grep sge_execd_process_messages > /dev/null 2>&1; then
+            break
+         fi
+         if [ -s "$execd_messages" ]; then
+            echo "sge_execd could not register at the master daemon:" >&2
+            cut -d'|' -f6- "$execd_messages" | sed 's/^/   /' >&2
+            echo "sge_execd keeps trying to register, see $execd_messages" >&2
+            break
+         fi
+         sleep 1
+         loop=`expr $loop + 1`
+      done
       exit 0
 else
    # Shutdown execution daemon
