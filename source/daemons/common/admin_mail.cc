@@ -126,11 +126,20 @@ struct admail_sent_t {
 
 static std::map<admail_key_t, admail_sent_t> admail_sent;
 
-/*
-** this functions reports job failures to the admin
-** it might not be apt to report on errors that
-** have nothing to do with a particular job
-*/
+/** @brief Report a job failure to the administrator, subject to the rate rules
+ *
+ * The mail carries the job's own trace and error files, because by the time
+ * the administrator reads it the spool directory may already be gone.
+ *
+ * @param progid which daemon is reporting
+ * @param jr the job report carrying the failure
+ * @param is_array whether the job is an array job
+ * @param job_owner the submitting user
+ * @param qversion the version of the queue instance the job ran in
+ *
+ * @note This reports on errors that have nothing to do with a particular job
+ *       as well; it might not be apt for those.
+ */
 void job_related_adminmail(u_long32 progid, lListElem *jr, int is_array, const char *job_owner,
                            u_long32 qversion)
 {
@@ -261,13 +270,11 @@ void job_related_adminmail(u_long32 progid, lListElem *jr, int is_array, const c
           snprintf(str_general, sizeof(str_general), MSG_GFSTATE_PEJOB_U, jobid);
       }
 
-      // find the mail tag to be used
-      const char *mail_tag_str = mconf_get_mail_tag();
+      // the mail tag and the space separating it from the subject; NONE (any case) and an empty tag mean no prefix
+      char *mail_tag_str = mconf_get_mail_tag();
       std::string mail_tag;
-      if (mail_tag_str == nullptr || strcmp(mail_tag_str, "none") == 0) {
-         mail_tag = "";
-      } else {
-         mail_tag = mail_tag_str;
+      if (mail_tag_str != nullptr && mail_tag_str[0] != '\0' && strcasecmp(mail_tag_str, NONE_STR) != 0) {
+         mail_tag = std::string(mail_tag_str) + " ";
       }
       sge_free(&mail_tag_str);
 
