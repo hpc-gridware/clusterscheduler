@@ -108,6 +108,7 @@ struct _cull_htable {
    htable ht;   ///< maps a field value to an element, or to a @ref non_unique_header
    htable nuht; ///< maps an element back to its chain node, so removal need not search
    uint32_t dup_count; ///< unique inserts that found the key already taken; see @ref cull_hash_insert
+   int pos;            ///< descriptor position of the field the table is built on, for diagnostics
 #ifdef OCS_CULL_STATS
    int nm;             ///< the field the table is built on, for the statistics
    bool looked_up;     ///< the table was looked up at least once, for the statistics
@@ -133,12 +134,14 @@ static void cull_hash_count_free([[maybe_unused]] const cull_htable ht) {
  * can be minimized when the final hashtable size is known at creation time,
  * e.g. when copying complete lists.
  *
- * @param descr descriptor for the data field in a cull object.
+ * @param dp descriptor of the list the table is for
+ * @param pos position of the hashed field in @p dp
  * @param size initial size of hashtable will be 2^size
  *
  * @return initialized hash description
  */
-cull_htable cull_hash_create(const lDescr *descr, int size) {
+cull_htable cull_hash_create(const lDescr *dp, const int pos, int size) {
+   const lDescr *descr = &dp[pos];
    htable ht = nullptr;   /* hash table for keys */
    htable nuht = nullptr;   /* hash table for non unique access */
    cull_htable ret = nullptr;
@@ -194,6 +197,7 @@ cull_htable cull_hash_create(const lDescr *descr, int size) {
          ret->ht = ht;
          ret->nuht = nuht;
          ret->dup_count = 0;
+         ret->pos = pos;
          CULL_STATS_CODE(ret->nm = descr->nm; ret->looked_up = false;)
          CULL_STATS_FIELD(descr->nm, HASH_CREATE, 1);
          CULL_STATS_FIELD(descr->nm, HASH_BUCKET_B, (sizeof(void *) << size) * (nuht != nullptr ? 2 : 1));
@@ -218,11 +222,10 @@ void cull_hash_create_hashtables(lList *lp) {
       /* compute final size of hashtables when all elements are inserted */
       int size = hash_compute_size(lGetNumberOfElem(lp));
 
-      /* create hashtables, pass final size */
-      lDescr *descr = lp->descr;
-      for (int i = 0; mt_get_type(descr[i].mt) != lEndT; i++) {
-         if (mt_do_hashing(descr[i].mt) && descr[i].ht == nullptr) {
-            descr[i].ht = cull_hash_create(&descr[i], size);
+      /* create the tables missing in the list's slots, pass final size */
+      for (uint32_t i = 0; i < lp->nslots; i++) {
+         if (lp->ht[i].ht == nullptr) {
+            lp->ht[i].ht = cull_hash_create(lp->descr, lp->ht[i].pos, size);
          }
       }
 
@@ -236,22 +239,12 @@ void cull_hash_create_hashtables(lList *lp) {
 /**
  * @brief Name of the field a hash table belongs to
  *
- * The table is reached through the descriptor, not the other way round, so the
- * field is found by looking for the entry that carries this table. Walking the
- * descriptor is only worth it on a path that is already an error, which is why
- * this is not kept alongside the table.
- *
  * @param ep an element of the list the table belongs to
  * @param ht the table to name
- * @return the field's name, or "?" when it cannot be attributed
+ * @return the field's name
  */
 static const char *cull_hash_field_name(const lListElem *ep, const cull_htable ht) {
-   for (int i = 0; mt_get_type(ep->descr[i].mt) != lEndT; i++) {
-      if (ep->descr[i].ht == ht) {
-         return lNm2Str(ep->descr[i].nm);
-      }
-   }
-   return "?";
+   return lNm2Str(ep->descr[ht->pos].nm);
 }
 
 /**
@@ -263,33 +256,28 @@ static const char *cull_hash_field_name(const lListElem *ep, const cull_htable h
  * second thing.
  *
  * @param ep  the element being inserted
- * @param ht  the table it is inserted into, used to find the field
+ * @param ht  the table it is inserted into, which names the field
  * @param buf buffer for the formatted value
  * @param len size of @p buf
- * @return buf, filled with the value, or "?" when the field cannot be found
+ * @return buf, filled with the value, or "?" for a field type without a key
  */
 static const char *cull_hash_key_value(const lListElem *ep, const cull_htable ht, char *buf, size_t len) {
-   for (int i = 0; mt_get_type(ep->descr[i].mt) != lEndT; i++) {
-      if (ep->descr[i].ht != ht) {
-         continue;
-      }
-      switch (mt_get_type(ep->descr[i].mt)) {
-         case lUlongT:
-            snprintf(buf, len, sge_u32, ep->cont[i].ul);
-            return buf;
-         case lUlong64T:
-            snprintf(buf, len, sge_u64, ep->cont[i].ul64);
-            return buf;
-         case lStringT:
-            snprintf(buf, len, SFQ, ep->cont[i].str != nullptr ? ep->cont[i].str : "");
-            return buf;
-         case lHostT:
-            snprintf(buf, len, SFQ, ep->cont[i].host != nullptr ? ep->cont[i].host : "");
-            return buf;
-         default:
-            break;
-      }
-      break;
+   const int i = ht->pos;
+   switch (mt_get_type(ep->descr[i].mt)) {
+      case lUlongT:
+         snprintf(buf, len, sge_u32, ep->cont[i].ul);
+         return buf;
+      case lUlong64T:
+         snprintf(buf, len, sge_u64, ep->cont[i].ul64);
+         return buf;
+      case lStringT:
+         snprintf(buf, len, SFQ, ep->cont[i].str != nullptr ? ep->cont[i].str : "");
+         return buf;
+      case lHostT:
+         snprintf(buf, len, SFQ, ep->cont[i].host != nullptr ? ep->cont[i].host : "");
+         return buf;
+      default:
+         break;
    }
    snprintf(buf, len, "?");
    return buf;
@@ -407,9 +395,8 @@ void cull_hash_remove(const lListElem *ep, const int pos) {
       return;
    }
 
-   ht = ep->descr[pos].ht;
-
-
+   /* only a bound element is hashed, in the tables of the list that holds it */
+   ht = elem_hash_table(ep, pos);
    if (ht == nullptr) {
       return;
    }
@@ -504,22 +491,25 @@ void cull_hash_rebuild_unique(lList *lp, const int pos) {
       return;
    }
 
-   lDescr *descr = &(lp->descr[pos]);
-   cull_htable ht = descr->ht;
+   cull_hash_slot *slot = list_hash_slot(lp, pos);
+   if (slot == nullptr) {
+      return;
+   }
+   cull_htable ht = slot->ht;
 
-   if (ht == nullptr || !mt_is_unique(descr->mt) || ht->dup_count == 0) {
+   if (ht == nullptr || !mt_is_unique(lp->descr[pos].mt) || ht->dup_count == 0) {
       return;
    }
 
-   cull_htable fresh = cull_hash_create(descr, hash_compute_size(lGetNumberOfElem(lp)));
+   cull_htable fresh = cull_hash_create(lp->descr, pos, hash_compute_size(lGetNumberOfElem(lp)));
 
    /* Without a table the field falls back to the linear search in
     * lGetElemStrFirstRW() and its kind: slower, but still correct. Keeping the
     * old table, which is known to be wrong, would not be. */
    cull_hash_count_free(ht);
    sge_htable_destroy(ht->ht);
-   sge_free(&(descr->ht));
-   descr->ht = fresh;
+   sge_free(&(slot->ht));
+   slot->ht = fresh;
 
    if (fresh == nullptr) {
       return;
@@ -549,15 +539,15 @@ void cull_hash_repair(lList *lp) {
       return;
    }
 
-   for (int i = 0; mt_get_type(lp->descr[i].mt) != lEndT; i++) {
-      const cull_htable ht = lp->descr[i].ht;
+   for (uint32_t i = 0; i < lp->nslots; i++) {
+      const cull_htable ht = lp->ht[i].ht;
 
       /* Tested here rather than left to cull_hash_rebuild_unique() so that the
-       * ordinary case costs a load and a branch per field instead of a call.
-       * lFreeList() drops the tables before it removes the elements, so this
-       * runs once per element of every list being torn down. */
+       * ordinary case costs a load and a branch per hashed field instead of a
+       * call. lFreeList() drops the tables before it removes the elements, so
+       * this runs once per element of every list being torn down. */
       if (ht != nullptr && ht->dup_count > 0) {
-         cull_hash_rebuild_unique(lp, i);
+         cull_hash_rebuild_unique(lp, lp->ht[i].pos);
       }
    }
 }
@@ -565,26 +555,54 @@ void cull_hash_repair(lList *lp) {
 /**
  * @brief Insert cull object into associated hash tables
  *
- * Insert the cull element ep into all hash tables that are
- * defined for the cull list ep is member of.
+ * Insert the cull element ep into all hash tables of the list it is bound
+ * in. An element that is not bound is in no table.
  *
  * @param ep the cull object to be hashed
  */
 void cull_hash_elem(const lListElem *ep) {
-   int i;
-   lDescr *descr;
    char host_key[CL_MAXHOSTNAMELEN];
 
    if (ep == nullptr) {
       return;
    }
 
-   descr = ep->descr;
+   const lList *lp = elem_list(ep);
+   if (lp == nullptr) {
+      return;
+   }
 
-   for (i = 0; mt_get_type(descr[i].mt) != lEndT; i++) {
-      if (descr[i].ht != nullptr) {
-         cull_hash_insert(ep, cull_hash_key(ep, i, host_key), descr[i].ht,
-                          mt_is_unique(descr[i].mt));
+   for (uint32_t i = 0; i < lp->nslots; i++) {
+      const cull_hash_slot &slot = lp->ht[i];
+      if (slot.ht != nullptr) {
+         cull_hash_insert(ep, cull_hash_key(ep, slot.pos, host_key), slot.ht,
+                          mt_is_unique(ep->descr[slot.pos].mt));
+      }
+   }
+}
+
+/**
+ * @brief Remove a cull object from all hash tables of its list
+ *
+ * The counterpart of #cull_hash_elem: removes the bound element ep from every
+ * table of the list that holds it. An element that is not bound is in no
+ * table, so nothing is done.
+ *
+ * @param ep the cull object to be removed from the tables
+ */
+void cull_hash_remove_elem(const lListElem *ep) {
+   if (ep == nullptr) {
+      return;
+   }
+
+   const lList *lp = elem_list(ep);
+   if (lp == nullptr) {
+      return;
+   }
+
+   for (uint32_t i = 0; i < lp->nslots; i++) {
+      if (lp->ht[i].ht != nullptr) {
+         cull_hash_remove(ep, lp->ht[i].pos);
       }
    }
 }
@@ -745,6 +763,98 @@ void cull_hash_free_descr(lDescr *descr) {
    }
 }
 
+/**
+ * @brief Free one hash table, the chains of a non unique table included
+ *
+ * @param htp the table to free; set to nullptr. A nullptr table is ignored.
+ */
+static void cull_hash_destroy(cull_htable *htp) {
+   cull_htable ht = *htp;
+   if (ht == nullptr) {
+      return;
+   }
+   cull_hash_count_free(ht);
+   if (ht->nuht != nullptr) {
+      /* a non unique table: delete the chain of every key */
+      sge_htable_for_each_ep(ht->ht, cull_hash_delete_non_unique_chain);
+      sge_htable_destroy(ht->nuht);
+   }
+   sge_htable_destroy(ht->ht);
+   sge_free(htp);
+}
+
+/**
+ * @brief Give a new list one hash slot per hashed field of its type
+ *
+ * Called once when a list is created, after its descriptor is set. The slots
+ * exist for every field marked #CULL_HASH; whether a table is built in them is
+ * the caller's choice, as with lCreateListHash().
+ *
+ * @param lp the list, with its descriptor and no elements
+ * @param create true to build an empty table in every slot
+ * @return false if the slot array cannot be allocated
+ */
+bool cull_hash_init_slots(lList *lp, const bool create) {
+   lp->nslots = 0;
+   lp->ht = nullptr;
+
+   uint32_t n = 0;
+   for (int i = 0; mt_get_type(lp->descr[i].mt) != lEndT; i++) {
+      if (mt_do_hashing(lp->descr[i].mt)) {
+         n++;
+      }
+   }
+   if (n == 0) {
+      return true;
+   }
+
+   lp->ht = (cull_hash_slot *) sge_malloc(sizeof(cull_hash_slot) * n);
+   if (lp->ht == nullptr) {
+      return false;
+   }
+   for (int i = 0; mt_get_type(lp->descr[i].mt) != lEndT; i++) {
+      if (mt_do_hashing(lp->descr[i].mt)) {
+         cull_hash_slot &slot = lp->ht[lp->nslots++];
+         slot.pos = i;
+         slot.ht = create ? cull_hash_create(lp->descr, i, 0) : nullptr;
+      }
+   }
+   return true;
+}
+
+/**
+ * @brief Free the hash tables of a list and keep its slots
+ *
+ * The elements stay in the list; they are in no table afterwards, until
+ * #cull_hash_create_hashtables builds the tables again.
+ *
+ * @param lp the list; nullptr is ignored
+ */
+void cull_hash_free_tables(lList *lp) {
+   if (lp == nullptr) {
+      return;
+   }
+   for (uint32_t i = 0; i < lp->nslots; i++) {
+      cull_hash_destroy(&lp->ht[i].ht);
+   }
+}
+
+/**
+ * @brief Free the hash tables of a list and its slot array
+ *
+ * Called when the list itself is freed.
+ *
+ * @param lp the list; nullptr is ignored
+ */
+void cull_hash_free_slots(lList *lp) {
+   if (lp == nullptr) {
+      return;
+   }
+   cull_hash_free_tables(lp);
+   sge_free(&(lp->ht));
+   lp->nslots = 0;
+}
+
 
 /**
  * @brief Create new hash table, if it does not yet exist
@@ -780,7 +890,7 @@ int cull_hash_new_check(lList *lp, int nm, bool unique) {
    int pos = lGetPosInDescr(descr, nm);
 
    if (descr != nullptr && pos >= 0) {
-      if (descr[pos].ht == nullptr) {
+      if (list_hash_table(lp, pos) == nullptr) {
          return cull_hash_new(lp, nm, unique);
       }
    }
@@ -833,9 +943,22 @@ int cull_hash_new(lList *lp, int nm, bool unique) {
       DRETURN(0);
    }
 
-   if (descr[pos].ht != nullptr) {
+   cull_hash_slot *slot = list_hash_slot(lp, pos);
+   if (slot != nullptr && slot->ht != nullptr) {
       WARNING(MSG_CULL_HASHTABLEALREADYEXISTS_S, lNm2Str(nm));
       DRETURN(0);
+   }
+
+   /* a field that is not hashed in the type gets a slot of its own */
+   if (slot == nullptr) {
+      auto *slots = (cull_hash_slot *) sge_realloc(lp->ht, sizeof(cull_hash_slot) * (lp->nslots + 1), 0);
+      if (slots == nullptr) {
+         DRETURN(0);
+      }
+      lp->ht = slots;
+      slot = &lp->ht[lp->nslots++];
+      slot->pos = pos;
+      slot->ht = nullptr;
    }
 
    /* copy hashing information */
@@ -846,15 +969,15 @@ int cull_hash_new(lList *lp, int nm, bool unique) {
 
    size = hash_compute_size(lGetNumberOfElem(lp));
 
-   descr[pos].ht = cull_hash_create(&descr[pos], size);
+   slot->ht = cull_hash_create(descr, pos, size);
 
-   if (descr[pos].ht == nullptr) {
+   if (slot->ht == nullptr) {
       DRETURN(0);
    }
 
    /* insert all elements into the new hash table */
    for_each_ep_lv(ep, lp) {
-      cull_hash_insert(ep, cull_hash_key(ep, pos, host_key), descr[pos].ht, unique);
+      cull_hash_insert(ep, cull_hash_key(ep, pos, host_key), slot->ht, unique);
    }
 
    DRETURN(1);
@@ -943,41 +1066,30 @@ cull_hash_statistics(cull_htable ht, dstring *buffer) {
  */
 void cull_hash_recreate_after_sort(lList *lp) {
    if (lp != nullptr) {
-      lDescr *descr = lp->descr;
-      int cleared_hash_index[32];
-      int hash_index = 0;
+      bool cleared = false;
 
       int size = hash_compute_size(lGetNumberOfElem(lp));
 
-      /* at first free and recreated old non unique hashes */
-      for (int i = 0; mt_get_type(descr[i].mt) != lEndT; i++) {
-         cull_htable ht = descr[i].ht;
-         if (ht != nullptr) {
-            if (!mt_is_unique(descr[i].mt)) {
-               /* free memory of non unique elements */
-               cull_hash_count_free(ht);
-               sge_htable_for_each_ep(ht->ht, cull_hash_delete_non_unique_chain);
-               sge_htable_destroy(ht->nuht);
-               sge_htable_destroy(ht->ht);
-               sge_free(&ht);
-
-               /* recreate empty hash */
-               descr[i].ht = cull_hash_create(&descr[i], size);
-
-               cleared_hash_index[hash_index] = i;
-               hash_index++;
-            }
+      /* at first free and recreate the non unique tables, their chains carry the old order */
+      for (uint32_t i = 0; i < lp->nslots; i++) {
+         cull_hash_slot &slot = lp->ht[i];
+         if (slot.ht != nullptr && !mt_is_unique(lp->descr[slot.pos].mt)) {
+            cull_hash_destroy(&slot.ht);
+            slot.ht = cull_hash_create(lp->descr, slot.pos, size);
+            cleared = true;
          }
       }
 
-      if (hash_index > 0) {
+      if (cleared) {
          char host_key[CL_MAXHOSTNAMELEN];
 
-         /* now insert into the cleared hash list */
+         /* now insert into the recreated tables, in the new list order */
          for_each_ep_lv(ep, lp) {
-            for (int i = 0; i < hash_index; i++) {
-               int index = cleared_hash_index[i];
-               cull_hash_insert(ep, cull_hash_key(ep, index, host_key), descr[index].ht, false);
+            for (uint32_t i = 0; i < lp->nslots; i++) {
+               const cull_hash_slot &slot = lp->ht[i];
+               if (slot.ht != nullptr && !mt_is_unique(lp->descr[slot.pos].mt)) {
+                  cull_hash_insert(ep, cull_hash_key(ep, slot.pos, host_key), slot.ht, false);
+               }
             }
          }
       }

@@ -721,15 +721,15 @@ static void test_hash_after_unpack() {
    int ret = pack_unpack_list(source, &lp);
    const lDescr *dp = lGetListDescr(lp);
    CHECK(27, "the unpacked list has hash tables on both hashed fields",
-         ret == PACK_SUCCESS && dp != nullptr && dp[lGetPosInDescr(dp, SP_name)].ht != nullptr &&
-         dp[lGetPosInDescr(dp, SP_group)].ht != nullptr);
+         ret == PACK_SUCCESS && dp != nullptr && list_hash_table(lp, lGetPosInDescr(dp, SP_name)) != nullptr &&
+         list_hash_table(lp, lGetPosInDescr(dp, SP_group)) != nullptr);
    CHECK(28, "every unique key resolves to its element", all_keys_found(lp, SP_name));
    CHECK(29, "the non unique hash yields every element of a group",
          count_by_ulong(lp, SP_group, 0) == 2 && count_by_ulong(lp, SP_group, 1) == 2 &&
          count_by_ulong(lp, SP_group, 2) == 2);
    const lList *sub = lGetList(lGetElemStr(lp, SP_name, "e3"), SP_sub);
    CHECK(30, "the sublists are hashed as well",
-         sub != nullptr && lGetListDescr(sub)[lGetPosInDescr(lGetListDescr(sub), SPS_name)].ht != nullptr &&
+         sub != nullptr && list_hash_table(sub, lGetPosInDescr(lGetListDescr(sub), SPS_name)) != nullptr &&
          all_keys_found(sub, SPS_name));
    lFreeList(&lp);
 

@@ -1145,20 +1145,20 @@ int lSetPosUlong(lListElem *ep, int pos, lUlong value) {
    }
 
 #ifdef OBSERVE
-   lObserveChangeValue(ep, ep->descr[pos].ht != nullptr, lGetPosName(ep->descr, pos));
+   lObserveChangeValue(ep, elem_hash_table(ep, pos) != nullptr, lGetPosName(ep->descr, pos));
 #endif
 
    if (value != ep->cont[pos].ul) {
       /* remove old hash entry */
-      if (ep->descr[pos].ht != nullptr) {
+      if (elem_hash_table(ep, pos) != nullptr) {
          cull_hash_remove(ep, pos);
       }
 
       ep->cont[pos].ul = value;
 
       /* create entry in hash table */
-      if (ep->descr[pos].ht != nullptr) {
-         cull_hash_insert(ep, (void *) &(ep->cont[pos].ul), ep->descr[pos].ht,
+      if (elem_hash_table(ep, pos) != nullptr) {
+         cull_hash_insert(ep, (void *) &(ep->cont[pos].ul), elem_hash_table(ep, pos),
                           mt_is_unique(ep->descr[pos].mt));
       }
    }
@@ -1202,20 +1202,20 @@ int lSetUlong(lListElem *ep, int name, lUlong value) {
    }
 
 #ifdef OBSERVE
-   lObserveChangeValue(ep, ep->descr[pos].ht != nullptr, name);
+   lObserveChangeValue(ep, elem_hash_table(ep, pos) != nullptr, name);
 #endif
 
    if (value != ep->cont[pos].ul) {
       /* remove old hash entry */
-      if (ep->descr[pos].ht != nullptr) {
+      if (elem_hash_table(ep, pos) != nullptr) {
          cull_hash_remove(ep, pos);
       }
 
       ep->cont[pos].ul = value;
 
       /* create entry in hash table */
-      if (ep->descr[pos].ht != nullptr) {
-         cull_hash_insert(ep, (void *) &(ep->cont[pos].ul), ep->descr[pos].ht,
+      if (elem_hash_table(ep, pos) != nullptr) {
+         cull_hash_insert(ep, (void *) &(ep->cont[pos].ul), elem_hash_table(ep, pos),
                           mt_is_unique(ep->descr[pos].mt));
       }
    }
@@ -1261,20 +1261,20 @@ int lAddUlong(lListElem *ep, int name, lUlong offset) {
    }
 
 #ifdef OBSERVE
-   lObserveChangeValue(ep, ep->descr[pos].ht != nullptr, name);
+   lObserveChangeValue(ep, elem_hash_table(ep, pos) != nullptr, name);
 #endif
 
    if (offset != 0) {
       /* remove old hash entry */
-      if (ep->descr[pos].ht != nullptr) {
+      if (elem_hash_table(ep, pos) != nullptr) {
          cull_hash_remove(ep, pos);
       }
 
       ep->cont[pos].ul += offset;
 
       /* create entry in hash table */
-      if (ep->descr[pos].ht != nullptr) {
-         cull_hash_insert(ep, (void *) &(ep->cont[pos].ul), ep->descr[pos].ht,
+      if (elem_hash_table(ep, pos) != nullptr) {
+         cull_hash_insert(ep, (void *) &(ep->cont[pos].ul), elem_hash_table(ep, pos),
                           mt_is_unique(ep->descr[pos].mt));
       }
    }
@@ -1424,20 +1424,20 @@ int lSetUlong64(lListElem *ep, int name, lUlong64 value) {
    }
 
 #ifdef OBSERVE
-   lObserveChangeValue(ep, ep->descr[pos].ht != nullptr, name);
+   lObserveChangeValue(ep, elem_hash_table(ep, pos) != nullptr, name);
 #endif
 
    if (value != ep->cont[pos].ul64) {
       /* remove old hash entry */
-      if (ep->descr[pos].ht != nullptr) {
+      if (elem_hash_table(ep, pos) != nullptr) {
          cull_hash_remove(ep, pos);
       }
 
       ep->cont[pos].ul64 = value;
 
       /* create entry in hash table */
-      if (ep->descr[pos].ht != nullptr) {
-         cull_hash_insert(ep, (void *) &(ep->cont[pos].ul64), ep->descr[pos].ht,
+      if (elem_hash_table(ep, pos) != nullptr) {
+         cull_hash_insert(ep, (void *) &(ep->cont[pos].ul64), elem_hash_table(ep, pos),
                           mt_is_unique(ep->descr[pos].mt));
       }
    }
@@ -1483,20 +1483,20 @@ int lAddUlong64(lListElem *ep, int name, lUlong64 offset) {
    }
 
 #ifdef OBSERVE
-   lObserveChangeValue(ep, ep->descr[pos].ht != nullptr, name);
+   lObserveChangeValue(ep, elem_hash_table(ep, pos) != nullptr, name);
 #endif
 
    if (offset != 0) {
       /* remove old hash entry */
-      if (ep->descr[pos].ht != nullptr) {
+      if (elem_hash_table(ep, pos) != nullptr) {
          cull_hash_remove(ep, pos);
       }
 
       ep->cont[pos].ul64 += offset;
 
       /* create entry in hash table */
-      if (ep->descr[pos].ht != nullptr) {
-         cull_hash_insert(ep, (void *) &(ep->cont[pos].ul64), ep->descr[pos].ht,
+      if (elem_hash_table(ep, pos) != nullptr) {
+         cull_hash_insert(ep, (void *) &(ep->cont[pos].ul64), elem_hash_table(ep, pos),
                           mt_is_unique(ep->descr[pos].mt));
       }
    }
@@ -1533,20 +1533,20 @@ int lSetPosUlong64(lListElem *ep, int pos, lUlong64 value) {
    }
 
 #ifdef OBSERVE
-   lObserveChangeValue(ep, ep->descr[pos].ht != nullptr, lGetPosName(ep->descr, pos));
+   lObserveChangeValue(ep, elem_hash_table(ep, pos) != nullptr, lGetPosName(ep->descr, pos));
 #endif
 
    if (value != ep->cont[pos].ul64) {
       /* remove old hash entry */
-      if (ep->descr[pos].ht != nullptr) {
+      if (elem_hash_table(ep, pos) != nullptr) {
          cull_hash_remove(ep, pos);
       }
 
       ep->cont[pos].ul64 = value;
 
       /* create entry in hash table */
-      if (ep->descr[pos].ht != nullptr) {
-         cull_hash_insert(ep, (void *) &(ep->cont[pos].ul64), ep->descr[pos].ht,
+      if (elem_hash_table(ep, pos) != nullptr) {
+         cull_hash_insert(ep, (void *) &(ep->cont[pos].ul64), elem_hash_table(ep, pos),
                           mt_is_unique(ep->descr[pos].mt));
       }
    }
@@ -1603,12 +1603,12 @@ int lSetPosString(lListElem *ep, int pos, const char *value) {
    }
 
 #ifdef OBSERVE
-   lObserveChangeValue(ep, ep->descr[pos].ht != nullptr, lGetPosName(ep->descr, pos));
+   lObserveChangeValue(ep, elem_hash_table(ep, pos) != nullptr, lGetPosName(ep->descr, pos));
 #endif
 
    if (changed) {
       /* remove old hash entry */
-      if (ep->descr[pos].ht != nullptr) {
+      if (elem_hash_table(ep, pos) != nullptr) {
          cull_hash_remove(ep, pos);
       }
 
@@ -1627,8 +1627,8 @@ int lSetPosString(lListElem *ep, int pos, const char *value) {
       ep->cont[pos].str = str;
 
       /* create entry in hash table */
-      if (ep->descr[pos].ht != nullptr) {
-         cull_hash_insert(ep, ep->cont[pos].str, ep->descr[pos].ht,
+      if (elem_hash_table(ep, pos) != nullptr) {
+         cull_hash_insert(ep, ep->cont[pos].str, elem_hash_table(ep, pos),
                           mt_is_unique(ep->descr[pos].mt));
       }
    }
@@ -1686,12 +1686,12 @@ int lSetPosHost(lListElem *ep, int pos, const char *value) {
    }
 
 #ifdef OBSERVE
-   lObserveChangeValue(ep, ep->descr[pos].ht != nullptr, lGetPosName(ep->descr, pos));
+   lObserveChangeValue(ep, elem_hash_table(ep, pos) != nullptr, lGetPosName(ep->descr, pos));
 #endif
 
    if (changed) {
       /* remove old hash entry */
-      if (ep->descr[pos].ht != nullptr) {
+      if (elem_hash_table(ep, pos) != nullptr) {
          cull_hash_remove(ep, pos);
       }
 
@@ -1710,10 +1710,10 @@ int lSetPosHost(lListElem *ep, int pos, const char *value) {
       ep->cont[pos].host = str;
 
       /* create entry in hash table */
-      if (ep->descr[pos].ht != nullptr) {
+      if (elem_hash_table(ep, pos) != nullptr) {
          char host_key[CL_MAXHOSTNAMELEN + 1];
          cull_hash_insert(ep, cull_hash_key(ep, pos, host_key),
-                          ep->descr[pos].ht, mt_is_unique(ep->descr[pos].mt));
+                          elem_hash_table(ep, pos), mt_is_unique(ep->descr[pos].mt));
       }
    }
 
@@ -1774,12 +1774,12 @@ int lSetString(lListElem *ep, int name, const char *value) {
    }
 
 #ifdef OBSERVE
-   lObserveChangeValue(ep, ep->descr[pos].ht != nullptr, name);
+   lObserveChangeValue(ep, elem_hash_table(ep, pos) != nullptr, name);
 #endif
 
    if (changed) {
       /* remove old hash entry */
-      if (ep->descr[pos].ht != nullptr) {
+      if (elem_hash_table(ep, pos) != nullptr) {
          cull_hash_remove(ep, pos);
       }
 
@@ -1799,8 +1799,8 @@ int lSetString(lListElem *ep, int name, const char *value) {
       ep->cont[pos].str = str;
 
       /* create entry in hash table */
-      if (ep->descr[pos].ht != nullptr) {
-         cull_hash_insert(ep, ep->cont[pos].str, ep->descr[pos].ht,
+      if (elem_hash_table(ep, pos) != nullptr) {
+         cull_hash_insert(ep, ep->cont[pos].str, elem_hash_table(ep, pos),
                           mt_is_unique(ep->descr[pos].mt));
       }
    }
@@ -1865,12 +1865,12 @@ int lSetHost(lListElem *ep, int name, const char *value) {
    }
 
 #ifdef OBSERVE
-   lObserveChangeValue(ep, ep->descr[pos].ht != nullptr, name);
+   lObserveChangeValue(ep, elem_hash_table(ep, pos) != nullptr, name);
 #endif
 
    if (changed) {
       /* remove old hash entry */
-      if (ep->descr[pos].ht != nullptr) {
+      if (elem_hash_table(ep, pos) != nullptr) {
          cull_hash_remove(ep, pos);
       }
       /* strdup new string value */
@@ -1887,10 +1887,10 @@ int lSetHost(lListElem *ep, int name, const char *value) {
       ep->cont[pos].host = str;
 
       /* create entry in hash table */
-      if (ep->descr[pos].ht != nullptr) {
+      if (elem_hash_table(ep, pos) != nullptr) {
          char host_key[CL_MAXHOSTNAMELEN + 1];
          cull_hash_insert(ep, cull_hash_key(ep, pos, host_key),
-                          ep->descr[pos].ht, mt_is_unique(ep->descr[pos].mt));
+                          elem_hash_table(ep, pos), mt_is_unique(ep->descr[pos].mt));
       }
    }
    DRETURN(0);
@@ -3120,9 +3120,9 @@ lListElem *lGetElemStrFirstRW(const lList *lp, int nm, const char *str, const vo
 
    *iterator = nullptr;
 
-   if (lp->descr[pos].ht != nullptr) {
+   if (list_hash_table(lp, pos) != nullptr) {
       /* hash access */
-      lListElem *ep = cull_hash_first(lp->descr[pos].ht, str, mt_is_unique(lp->descr[pos].mt), iterator);
+      lListElem *ep = cull_hash_first(list_hash_table(lp, pos), str, mt_is_unique(lp->descr[pos].mt), iterator);
       DRETURN(ep);
    } else {
       /* seek for element */
@@ -3204,9 +3204,9 @@ lListElem *lGetElemStrNextRW(const lList *lp, int nm, const char *str, const voi
       DRETURN(nullptr);
    }
 
-   if (lp->descr[pos].ht != nullptr) {
+   if (list_hash_table(lp, pos) != nullptr) {
       /* hash access */
-      ep = cull_hash_next(lp->descr[pos].ht, iterator);
+      ep = cull_hash_next(list_hash_table(lp, pos), iterator);
       DRETURN(ep);
    } else {
       /* seek for element */
@@ -3560,9 +3560,9 @@ lListElem *lGetElemUlongFirstRW(const lList *lp, int nm, lUlong val, const void 
 
    *iterator = nullptr;
 
-   if (lp->descr[pos].ht != nullptr) {
+   if (list_hash_table(lp, pos) != nullptr) {
       /* hash access */
-      lListElem *ep = cull_hash_first(lp->descr[pos].ht, &val, mt_is_unique(lp->descr[pos].mt), iterator);
+      lListElem *ep = cull_hash_first(list_hash_table(lp, pos), &val, mt_is_unique(lp->descr[pos].mt), iterator);
       DRETURN(ep);
    } else {
       /* seek for element */
@@ -3626,9 +3626,9 @@ lListElem *lGetElemUlongNextRW(const lList *lp, int nm, lUlong val, const void *
       DRETURN(nullptr);
    }
 
-   if (lp->descr[pos].ht != nullptr) {
+   if (list_hash_table(lp, pos) != nullptr) {
       /* hash access */
-      ep = cull_hash_next(lp->descr[pos].ht, iterator);
+      ep = cull_hash_next(list_hash_table(lp, pos), iterator);
       DRETURN(ep);
    } else {
       /* seek for element */
@@ -3916,9 +3916,9 @@ lListElem *lGetElemUlong64FirstRW(const lList *lp, int nm, lUlong64 val, const v
 
    *iterator = nullptr;
 
-   if (lp->descr[pos].ht != nullptr) {
+   if (list_hash_table(lp, pos) != nullptr) {
       /* hash access */
-      lListElem *ep = cull_hash_first(lp->descr[pos].ht, &val, mt_is_unique(lp->descr[pos].mt), iterator);
+      lListElem *ep = cull_hash_first(list_hash_table(lp, pos), &val, mt_is_unique(lp->descr[pos].mt), iterator);
       DRETURN(ep);
    } else {
       /* seek for element */
@@ -3982,9 +3982,9 @@ lListElem *lGetElemUlong64NextRW(const lList *lp, int nm, lUlong64 val, const vo
       DRETURN(nullptr);
    }
 
-   if (lp->descr[pos].ht != nullptr) {
+   if (list_hash_table(lp, pos) != nullptr) {
       /* hash access */
-      ep = cull_hash_next(lp->descr[pos].ht, iterator);
+      ep = cull_hash_next(list_hash_table(lp, pos), iterator);
       DRETURN(ep);
    } else {
       /* seek for element */
@@ -4170,12 +4170,12 @@ lListElem *lGetElemHostFirstRW(const lList *lp, int nm, const char *str, const v
    }
 
    *iterator = nullptr;
-   if (lp->descr[pos].ht != nullptr) {
+   if (list_hash_table(lp, pos) != nullptr) {
       /* we have a hash table */
       char host_key[CL_MAXHOSTNAMELEN + 1];
       sge_hostcpy(host_key, str);
       sge_strtoupper(host_key, CL_MAXHOSTNAMELEN);
-      lListElem *ep = cull_hash_first(lp->descr[pos].ht, host_key, mt_is_unique(lp->descr[pos].mt), iterator);
+      lListElem *ep = cull_hash_first(list_hash_table(lp, pos), host_key, mt_is_unique(lp->descr[pos].mt), iterator);
       DRETURN(ep);
    } else {
       /* expensive host search algorithm */
@@ -4249,9 +4249,9 @@ lListElem *lGetElemHostNextRW(const lList *lp, int nm, const char *str, const vo
       DRETURN(nullptr);
    }
 
-   if (lp->descr[pos].ht != nullptr) {
+   if (list_hash_table(lp, pos) != nullptr) {
       /* we have a hash table */
-      ep = cull_hash_next(lp->descr[pos].ht, iterator);
+      ep = cull_hash_next(list_hash_table(lp, pos), iterator);
       DRETURN(ep);
    } else {
       /* expensive host search algorithm */

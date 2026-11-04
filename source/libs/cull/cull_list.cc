@@ -879,14 +879,17 @@ lList *lCreateListHash(const char *listname, const lDescr *descr, bool hash) {
    for (i = 0; i <= n; i++) {
       lp->descr[i].mt = descr[i].mt;
       lp->descr[i].nm = descr[i].nm;
-
-      /* create hashtable if necessary */
-      if (hash && mt_do_hashing(lp->descr[i].mt)) {
-         lp->descr[i].ht = cull_hash_create(&descr[i], 0);
-      } else {
-         lp->descr[i].ht = nullptr;
-      }
+      lp->descr[i].ht = nullptr;
       lp->descr[i].mt |= (descr[i].mt & CULL_IS_REDUCED);
+   }
+
+   /* the hash tables belong to the list: one slot per hashed field, with a table if requested */
+   if (!cull_hash_init_slots(lp, hash)) {
+      sge_free(&(lp->descr));
+      sge_free(&(lp->listname));
+      sge_free(&lp);
+      LERROR(LEMALLOC);
+      DRETURN(nullptr);
    }
 
 #ifdef OBSERVE
@@ -959,12 +962,10 @@ void lFreeElem(lListElem **ep1) {
       ocs::TerminationManager::trigger_abort();
    }
 
-   for (i = 0; mt_get_type(ep->descr[i].mt) != lEndT; i++) {
-      /* remove element from hash tables */
-      if (ep->descr[i].ht != nullptr) {
-         cull_hash_remove(ep, i);
-      }
+   /* remove a bound element from the hash tables of its list */
+   cull_hash_remove_elem(ep);
 
+   for (i = 0; mt_get_type(ep->descr[i].mt) != lEndT; i++) {
       switch (mt_get_type(ep->descr[i].mt)) {
 
          case lIntT:
@@ -1045,14 +1046,14 @@ void lFreeList(lList **lp) {
     * remove all hash tables,
     * it is more efficient than removing it at the end
     */
-   if ((*lp)->descr != nullptr) {
-      cull_hash_free_descr((*lp)->descr);
-   }
+   cull_hash_free_tables(*lp);
 
    while ((*lp)->first) {
       lListElem *elem = (*lp)->first;
       lRemoveElem(*lp, &elem);
    }
+
+   cull_hash_free_slots(*lp);
 
    if ((*lp)->descr) {
       sge_free(&((*lp)->descr));
@@ -1596,8 +1597,8 @@ lDechainList(lList *source, lList **target, lListElem *ep) {
       }
    }
 
-   cull_hash_free_descr(source->descr);
-   cull_hash_free_descr((*target)->descr);
+   cull_hash_free_tables(source);
+   cull_hash_free_tables(*target);
 
    target_last = source->last;
 
@@ -1679,12 +1680,8 @@ lListElem *lDechainElem(lList *lp, lListElem *ep) {
 
    lp->nelem--;
 
-   /* remove hash entries */
-   for (int i = 0; mt_get_type(ep->descr[i].mt) != lEndT; i++) {
-      if (ep->descr[i].ht != nullptr) {
-         cull_hash_remove(ep, i);
-      }
-   }
+   /* remove hash entries, while the element is still bound to the list */
+   cull_hash_remove_elem(ep);
 
    /* CS-2755: a table that has seen a duplicate key needs more than the removal
     * of this element's own entry -- the element left behind may be the one it

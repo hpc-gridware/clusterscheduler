@@ -41,6 +41,7 @@
 #include <cstdint>
 
 #include "cull/cull_list.h"
+#include "cull/cull_hashP.h"
 
 /**
  * @defgroup cull_elem_status Element state
@@ -107,18 +108,35 @@ struct _lListElem {
 };
 
 /**
+ * @brief The hash table of one hashed field of a list
+ *
+ * A list holds one slot per field of its type that is marked #CULL_HASH. The
+ * slot exists from the creation of the list; the table in it only once it is
+ * built, so a list created without hashing has slots with no table. The slot
+ * carries the field's descriptor position, which maps a position to its table
+ * by a scan over the few hashed fields of a type.
+ */
+struct cull_hash_slot {
+   int pos;        ///< position of the hashed field in the list's descriptor
+   cull_htable ht; ///< the table over that field, or nullptr while none is built
+};
+
+/**
  * @brief A cull list: a doubly linked list of elements of one object type
  *
  * Every element shares the list's descriptor, so a list is homogeneous. The
  * element count is kept rather than walked, and both ends are held so
- * appending is O(1).
+ * appending is O(1). The hash tables over its elements belong to the list,
+ * not to the descriptor, so that a descriptor carries nothing list specific.
  */
 struct _lList {
-   uint32_t nelem;    ///< number of elements currently in the list
-   char *listname;    ///< name of the list, used in dumps and error messages
-   lDescr *descr;     ///< the object type every element has
-   lListElem *first;  ///< first element, or nullptr when the list is empty
-   lListElem *last;   ///< last element, or nullptr when the list is empty
+   uint32_t nelem;      ///< number of elements currently in the list
+   uint32_t nslots;     ///< number of entries in ht, the hashed fields of the type
+   char *listname;      ///< name of the list, used in dumps and error messages
+   lDescr *descr;       ///< the object type every element has
+   lListElem *first;    ///< first element, or nullptr when the list is empty
+   lListElem *last;     ///< last element, or nullptr when the list is empty
+   cull_hash_slot *ht;  ///< nslots hash slots, or nullptr when the type has no hashed field
 };
 
 // The owner word replaces the former 4-byte status and the 4 bytes of padding
@@ -256,4 +274,55 @@ inline bool elem_kind_from_wire(const uint32_t wire, cull_elem_kind *kind) {
       default:
          return false;
    }
+}
+
+/**
+ * @brief The hash slot of a field of a list
+ *
+ * A linear scan over the hashed fields of the list's type, usually one to
+ * three, which is cheaper than mapping the position through the descriptor.
+ *
+ * @param lp the list, not nullptr
+ * @param pos position of the field in the list's descriptor
+ * @return the slot, or nullptr when the field is not hashed in this list
+ */
+inline cull_hash_slot *list_hash_slot(const lList *lp, const int pos) {
+   for (uint32_t i = 0; i < lp->nslots; i++) {
+      if (lp->ht[i].pos == pos) {
+         return &lp->ht[i];
+      }
+   }
+   return nullptr;
+}
+
+/**
+ * @brief The hash table of a field of a list
+ *
+ * @param lp the list, not nullptr
+ * @param pos position of the field in the list's descriptor
+ * @return the table, or nullptr when the field is not hashed or its table is not built
+ */
+inline cull_htable list_hash_table(const lList *lp, const int pos) {
+   const cull_hash_slot *slot = list_hash_slot(lp, pos);
+   return slot != nullptr ? slot->ht : nullptr;
+}
+
+/**
+ * @brief The hash table that holds a field of an element
+ *
+ * Only a bound element is hashed, and its tables are those of the list that
+ * holds it, found through the owner word. A free element, a sub-object and an
+ * unpacked element that is not chained in yet are in no table.
+ *
+ * @param ep the element, not nullptr
+ * @param pos position of the field in the element's descriptor
+ * @return the table, or nullptr when the element is not bound or the field is not hashed
+ */
+inline cull_htable elem_hash_table(const lListElem *ep, const int pos) {
+   // most fields are not hashed: their flag answers without looking at the list
+   if (!mt_do_hashing(ep->descr[pos].mt)) {
+      return nullptr;
+   }
+   const lList *lp = elem_list(ep);
+   return lp != nullptr ? list_hash_table(lp, pos) : nullptr;
 }

@@ -1063,6 +1063,13 @@ int cull_unpack_list_partial(sge_pack_buffer *pb, lList **lpp, int flags) {
       DRETURN(ret);
    }
 
+   /* one hash slot per hashed field; the tables are built once all elements are in */
+   if (!cull_hash_init_slots(lp, false)) {
+      lFreeList(&lp);
+      PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
+      DRETURN(PACK_ENOMEM);
+   }
+
 #ifdef OBSERVE
    lObserveAdd(lp, nullptr, true);
 #endif

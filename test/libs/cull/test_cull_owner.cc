@@ -24,6 +24,9 @@
  * The tag replaces the former element status: its two low bits hold the state, the
  * upper bits the list of a bound element. The test checks the layout, every state
  * transition, and that the pack format still carries the former status values.
+ * The hash tables belong to the list that holds an element (HTL-02): the test
+ * reads them directly, because a lookup through lGetElemStr() and its kind falls
+ * back to a linear search and would hide a table that is wrong or missing.
  */
 
 #include <cstdint>
@@ -38,16 +41,19 @@
 
 #include "cull/cull.h"
 #include "cull/cull_listP.h"
+#include "cull/cull_hash.h"
 
 #include "uti/sge_stdlib.h"
 
 #include "ocs_module_test.h"
 
-/** @brief The element type: a hashed key, a sublist and a sub-object */
+/** @brief The element type: hashed keys, a sublist and a sub-object */
 enum {
    OW_name = 1, ///< unique hashed key
    OW_sub,      ///< a sublist of OWS_Type
-   OW_obj       ///< a sub-object of OWS_Type
+   OW_obj,      ///< a sub-object of OWS_Type
+   OW_group,    ///< non unique hashed key
+   OW_count     ///< not hashed in the type, hashed later with cull_hash_new()
 };
 
 /** @brief The type of the sublist and of the sub-object */
@@ -59,6 +65,8 @@ LISTDEF(OW_Type)
    SGE_STRING(OW_name, CULL_DEFAULT | CULL_HASH | CULL_UNIQUE)
    SGE_LIST(OW_sub, OWS_Type, CULL_DEFAULT)
    SGE_OBJECT(OW_obj, OWS_Type, CULL_DEFAULT)
+   SGE_ULONG(OW_group, CULL_DEFAULT | CULL_HASH)
+   SGE_ULONG(OW_count, CULL_DEFAULT)
 LISTEND
 
 LISTDEF(OWS_Type)
@@ -69,6 +77,8 @@ NAMEDEF(OW_Name)
    NAME("OW_name")
    NAME("OW_sub")
    NAME("OW_obj")
+   NAME("OW_group")
+   NAME("OW_count")
 NAMEEND
 
 NAMEDEF(OWS_Name)
@@ -164,6 +174,60 @@ static int pack_unpack(const lListElem *ep, lListElem **epp) {
    }
    clear_packbuffer(&pb);
    return ret;
+}
+
+/**
+ * @brief Look a string key up in the hash table a list holds for a field, not by a search
+ *
+ * @param lp the list
+ * @param nm the hashed string field
+ * @param key the key
+ * @return the element the table holds for the key, or nullptr when the table has none or does not exist
+ */
+static const lListElem *table_str(const lList *lp, int nm, const char *key) {
+   const int pos = lGetPosInDescr(lGetListDescr(lp), nm);
+   const void *iterator = nullptr;
+   return cull_hash_first(list_hash_table(lp, pos), key, mt_is_unique(lGetListDescr(lp)[pos].mt), &iterator);
+}
+
+/**
+ * @brief Look an ulong key up in the hash table a list holds for a field, not by a search
+ *
+ * For a non unique table the first element of the key's chain is returned.
+ *
+ * @param lp the list
+ * @param nm the hashed ulong field
+ * @param key the key
+ * @return the element the table holds for the key, or nullptr when the table has none or does not exist
+ */
+static const lListElem *table_ulong(const lList *lp, int nm, uint32_t key) {
+   const int pos = lGetPosInDescr(lGetListDescr(lp), nm);
+   const void *iterator = nullptr;
+   return cull_hash_first(list_hash_table(lp, pos), &key, mt_is_unique(lGetListDescr(lp)[pos].mt), &iterator);
+}
+
+/**
+ * @brief Whether a moved element is found under its new keys in the target only
+ *
+ * The element's unique name and its group are changed after the move; the
+ * target's tables must hold it under the new keys, under the old name nothing
+ * may be left, and the source's tables must not know it under either.
+ *
+ * @param ep the moved element, bound to @p target
+ * @param source the list it came from
+ * @param target the list it is in now
+ * @param old_name its name before the change
+ * @param new_name the name it gets
+ * @param group the group it gets, unused by any other element of both lists
+ * @return true if both tables of both lists are as expected
+ */
+static bool follows_owner(lListElem *ep, const lList *source, const lList *target, const char *old_name,
+                          const char *new_name, uint32_t group) {
+   lSetString(ep, OW_name, new_name);
+   lSetUlong(ep, OW_group, group);
+   return table_str(target, OW_name, new_name) == ep && table_str(target, OW_name, old_name) == nullptr
+          && table_ulong(target, OW_group, group) == ep && table_str(source, OW_name, new_name) == nullptr
+          && table_str(source, OW_name, old_name) == nullptr && table_ulong(source, OW_group, group) == nullptr;
 }
 
 /**
@@ -311,6 +375,83 @@ static void test_pack() {
    lFreeList(&lp);
 }
 
+/**
+ * @brief OWNER-04: hash maintenance follows the owning list
+ *
+ * @return nothing; CHECK records the results
+ */
+static void test_hash_follows_owner() {
+   lList *source = lCreateList("source", OW_Type);
+   for (const char *name : {"a", "b", "c", "d"}) {
+      lListElem *ep = lCreateElem(OW_Type);
+      lSetString(ep, OW_name, name);
+      lSetUlong(ep, OW_group, 1);
+      lAppendElem(source, ep);
+   }
+   CHECK(19, "a created list holds a table for each hashed field, filled by appending",
+         source->nslots == 2 && table_str(source, OW_name, "a") == lFirst(source)
+         && table_ulong(source, OW_group, 1) == lFirst(source)
+         && list_hash_table(source, lGetPosInDescr(OW_Type, OW_count)) == nullptr);
+
+   // dechain and append
+   lList *target = lCreateList("target", OW_Type);
+   lListElem *a = lDechainElem(source, lFirstRW(source));
+   lAppendElem(target, a);
+   CHECK(20, "after dechain and append a changed key is maintained in the target's tables only",
+         follows_owner(a, source, target, "a", "a2", 20));
+
+   // lDechainList moves c and d into a new list
+   lList *moved = nullptr;
+   lListElem *c = lNextRW(lFirstRW(source));
+   lListElem *d = lNextRW(c);
+   lDechainList(source, &moved, c);
+   CHECK(21, "after lDechainList a changed key is maintained in the new list's tables only",
+         moved != nullptr && follows_owner(c, source, moved, "c", "c2", 21)
+         && follows_owner(d, source, moved, "d", "d2", 22) && table_str(source, OW_name, "b") == lFirst(source));
+
+   // unpacking a list hashes its elements in the unpacked list
+   sge_pack_buffer pb;
+   lList *unpacked = nullptr;
+   bool ok = init_packbuffer(&pb, 1024, false, false) == PACK_SUCCESS && cull_pack_list(&pb, moved) == PACK_SUCCESS;
+   if (ok) {
+      char *buf = sge_malloc(pb.bytes_used);
+      memcpy(buf, pb.head_ptr, pb.bytes_used);
+      sge_pack_buffer in;
+      ok = init_packbuffer_from_buffer(&in, buf, pb.bytes_used, false) == PACK_SUCCESS
+           && cull_unpack_list(&in, &unpacked) == PACK_SUCCESS;
+      clear_packbuffer(&in);
+   }
+   clear_packbuffer(&pb);
+   lListElem *u = unpacked != nullptr ? lFirstRW(unpacked) : nullptr;
+   const bool hashed_on_unpack = ok && u != nullptr && table_str(unpacked, OW_name, "c2") == u;
+   if (u != nullptr) {
+      lSetString(u, OW_name, "c3");
+   }
+   CHECK(22, "the elements of an unpacked list are maintained in that list's tables only",
+         hashed_on_unpack && table_str(unpacked, OW_name, "c3") == u && table_str(unpacked, OW_name, "c2") == nullptr
+         && table_str(moved, OW_name, "c3") == nullptr && table_str(moved, OW_name, "c2") == c);
+
+   // a hash added to a live list on a field the type does not hash
+   lSetUlong(lFirstRW(source), OW_count, 5);
+   CHECK(23, "cull_hash_new adds a slot with a table over the existing elements, maintained afterwards",
+         cull_hash_new(source, OW_count, false) == 1 && source->nslots == 3
+         && table_ulong(source, OW_count, 5) == lFirst(source)
+         && lSetUlong(lFirstRW(source), OW_count, 6) == 0 && table_ulong(source, OW_count, 6) == lFirst(source)
+         && table_ulong(source, OW_count, 5) == nullptr);
+
+   // sorting rebuilds the non unique chains in the new list order
+   lSetUlong(c, OW_group, 9);
+   lSetUlong(d, OW_group, 9);
+   lPSortList(moved, "%I-", OW_name);
+   CHECK(24, "after sorting the chain of a non unique key starts with the first element in list order",
+         lFirst(moved) == d && table_ulong(moved, OW_group, 9) == d);
+
+   lFreeList(&unpacked);
+   lFreeList(&moved);
+   lFreeList(&target);
+   lFreeList(&source);
+}
+
 int main(int argc, char *argv[]) {
    lInit(nmv);
 
@@ -336,5 +477,14 @@ int main(int argc, char *argv[]) {
        "the values are 1, 2, 8 and 4; unpacked bound elements are transitionally bound until appended; "
        "unpacked list elements are bound to the list; an unknown value is refused",
        {{"HTL-01", "covers"}, {"HTL-03", "covers"}}, {13, 14, 15, 16, 17, 18}, test_pack},
+      {"OWNER-04", "hash maintenance follows the owning list",
+       "the hash tables belong to the list that holds an element; a change of a hashed field is maintained "
+       "in that list's tables, whichever way the element got there",
+       {"create a list and append elements", "move one with lDechainElem and lAppendElem",
+        "move two with lDechainList", "pack and unpack a list", "change a hashed field of each moved element",
+        "add a hash on a field with cull_hash_new", "sort a list"},
+       "each element is found through the tables of the list that holds it, under its new key, and not "
+       "through the tables of the list it came from; the added and the sorted tables are maintained",
+       {{"HTL-02", "covers"}}, {19, 20, 21, 22, 23, 24}, test_hash_follows_owner},
    });
 }

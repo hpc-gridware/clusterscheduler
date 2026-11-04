@@ -43,7 +43,7 @@
 #include "cull/cull_list.h"
 #include "cull/cull_hashP.h"
 
-cull_htable cull_hash_create(const lDescr *descr, int size);
+cull_htable cull_hash_create(const lDescr *dp, int pos, int size);
 
 int cull_hash_new(lList *lp, int name, bool unique);
 
@@ -59,6 +59,8 @@ void cull_hash_repair(lList *lp);
 
 void cull_hash_elem(const lListElem *ep);
 
+void cull_hash_remove_elem(const lListElem *ep);
+
 lListElem *cull_hash_first(cull_htable ht, const void *key, bool unique,
                            const void **iterator);
 
@@ -67,6 +69,12 @@ lListElem *cull_hash_next(cull_htable ht, const void **iterator);
 void cull_hash_free_descr(lDescr *descr);
 
 void cull_hash_create_hashtables(lList *lp);
+
+bool cull_hash_init_slots(lList *lp, bool create);
+
+void cull_hash_free_tables(lList *lp);
+
+void cull_hash_free_slots(lList *lp);
 
 void *cull_hash_key(const lListElem *ep, int pos, char *host_key);
 

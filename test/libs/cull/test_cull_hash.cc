@@ -319,7 +319,7 @@ static BenchTimes do_test(bool unique_hash, bool non_unique_hash,
       cull_hash_new(lp, NM_STRING, false);
    }
 #ifdef HASH_STATISTICS
-   cht = lp->descr[1].ht;
+   cht = list_hash_table(lp, 1);
    printf("%s\n", cull_hash_statistics(cht, &stat_dstring));
 #endif
 
