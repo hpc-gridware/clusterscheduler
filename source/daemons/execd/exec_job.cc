@@ -1410,6 +1410,16 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
       WRITE_LIMIT(s_fsize, TYPE_MEM);
    }
 
+   // instrumentation for the testsuite: on a host with systemd, sge_shepherd also sets
+   // MemorySwapMax of the job scope, so that a job reaching MemoryMax is not just swapped out
+   {
+      const lListElem *swap_max = lGetSubStr(jep, VA_variable, "SGE_DEBUG_MEMORY_SWAP_MAX",
+                                             JB_env_list);
+      if (swap_max != nullptr && lGetString(swap_max, VA_value) != nullptr) {
+         fprintf(fp, "memory_swap_max=%s\n", lGetString(swap_max, VA_value));
+      }
+   }
+
    {
       char *s;
 

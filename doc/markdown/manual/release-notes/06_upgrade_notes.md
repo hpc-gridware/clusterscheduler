@@ -34,6 +34,20 @@ After the upgrade, these tasks get a lower limit than before:
 
 A job whose tasks used more than their new limit is killed.
 
+### Jobs Reaching their Memory Limit under systemd
+
+On a host which runs its jobs under systemd control, the lower of *h_rss* and *h_vmem* is the
+*MemoryMax* of the job's scope. When a job reaches it, the memory cgroup OOM killer kills a process
+of the job. Job scopes are delegated units, and for those systemd defaults *OOMPolicy* to
+*continue*: the job kept running and ended with its own exit status, a *DefaultOOMPolicy* set in
+the systemd configuration does not apply.
+
+On hosts with cgroup v2 and systemd 252 or newer, xxqs_name_sxx_shepherd(8) now sets
+*OOMPolicy=kill* on the job's scope ([CS-3020](https://hpc-gridware.atlassian.net/browse/CS-3020)).
+The OOM killer kills all processes of the job at once, the job ends with exit status 137 and
+failed 100, and the abort mail is sent if the job requested it. Jobs which used to survive the
+OOM kill of one of their processes now end as failed. Older systems are not affected.
+
 ## v9.1.5
 
 ### TLS: Private Keys Move Below the Cell

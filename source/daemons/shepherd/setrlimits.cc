@@ -404,6 +404,27 @@ void setrlimits(bool trace_rlimit) {
          shepherd_trace("SYSTEMD MemoryMax = " sge_u64, h_memory);
          // make sure that we have the right datatype for the std::variant
          ocs::g_systemd_properties["MemoryMax"] = static_cast<uint64_t>(h_memory);
+
+         // When the job reaches MemoryMax, the memory cgroup OOM killer kills a process of the job.
+         // Job scopes are delegated, and for delegated units systemd defaults OOMPolicy to
+         // continue: the job keeps running and ends with its own exit status. With OOMPolicy=kill
+         // the kernel kills all processes of the job at once (memory.oom.group=1).
+         // OOMPolicy is known for scopes since systemd 252 and needs cgroup v2.
+         if (ocs::uti::Systemd::get_systemd_version() >= 252 &&
+             ocs::uti::Systemd::get_cgroup_version() == 2) {
+            shepherd_trace("SYSTEMD OOMPolicy = kill");
+            ocs::g_systemd_properties["OOMPolicy"] = std::string("kill");
+         }
+
+         // instrumentation for the testsuite (SGE_DEBUG_MEMORY_SWAP_MAX in the job environment):
+         // without a swap limit, a job reaching MemoryMax is swapped out instead of being killed
+         char *swap_max_str = search_conf_val("memory_swap_max");
+         if (swap_max_str != nullptr) {
+            sge_rlim_t swap_max;
+            sge_parse_limit(&swap_max, swap_max_str, error_str, sizeof(error_str));
+            shepherd_trace("SYSTEMD MemorySwapMax = " sge_u64, swap_max);
+            ocs::g_systemd_properties["MemorySwapMax"] = static_cast<uint64_t>(swap_max);
+         }
       }
       if (s_memory != RLIM_INFINITY) {
          // make sure that we have the right datatype for the std::variant

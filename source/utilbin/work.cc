@@ -65,6 +65,8 @@ int malloc_mb = 0;
 size_t malloc_mb = 0;
 #endif
 int malloc_kb = 0;
+// memory which is not only allocated, but also written, so that it is resident
+int touch_mb = 0;
 
 /* io load profile */
 int in = -1;
@@ -111,6 +113,7 @@ static void usage(int exit_code)
    fprintf(fp, "   [-stackM n]       force stack size with at least 'n' MB\n");
    fprintf(fp, "   [-mallocK n]      force malloc() with 'n' KB\n");
    fprintf(fp, "   [-mallocM n]      force malloc() with 'n' MB\n");
+   fprintf(fp, "   [-touchM n]       force malloc() with 'n' MB and write it, so that it is resident\n");
    fprintf(fp, "cheat options:\n");
    fprintf(fp, "   [-block_sigxcpu]  ignore SIGXCPU\n");
    fprintf(fp, "   [-block_sigxfsz]  ignore SIGXFSZ\n");
@@ -181,6 +184,17 @@ int main(int argc, char *argv[])
          argv++;
          if (argc== 1 || sscanf(argv[1], "%d", &malloc_mb)!=1)
             usage(1);
+         argc--;
+         argv++;
+         continue;
+      }
+
+      if (!strcmp(argv[1], "-touchM")) {
+         argc--;
+         argv++;
+         if (argc == 1 || sscanf(argv[1], "%d", &touch_mb) != 1 || touch_mb < 0) {
+            usage(1);
+         }
          argc--;
          argv++;
          continue;
@@ -315,6 +329,19 @@ int main(int argc, char *argv[])
       } else {
          printf("got %d mb mem via malloc\n", malloc_mb); fflush(stdout);
       }
+   }
+
+   if (touch_mb) {
+      printf("going to alloc and write %d mb\n", touch_mb); fflush(stdout);
+      size_t size = static_cast<size_t>(touch_mb) * 1024 * 1024;
+      char *tmp = static_cast<char *>(sge_malloc(size));
+      if (tmp == nullptr) {
+         printf("failed getting %d mb mem via malloc\n", touch_mb); fflush(stdout);
+         return 1;
+      }
+      // write every byte - only memory which was written is resident
+      memset(tmp, 1, size);
+      printf("got and wrote %d mb\n", touch_mb); fflush(stdout);
    }
 
    if (stack_kb) {
