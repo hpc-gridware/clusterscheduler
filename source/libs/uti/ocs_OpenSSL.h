@@ -37,36 +37,32 @@
 namespace ocs::uti {
    // Function types for the OpenSSL interface. They are taken from the declarations in the OpenSSL
    // headers, so that the compiler checks every call against the OpenSSL version we build with.
-   // Deprecated functions are declared explicitly, as taking their address is a deprecation error.
    using ASN1_INTEGER_set_func_t = decltype(&::ASN1_INTEGER_set);
+   using ASN1_STRING_get0_data_func_t = decltype(&::ASN1_STRING_get0_data);
+   using ASN1_STRING_length_func_t = decltype(&::ASN1_STRING_length);
    using ASN1_TIME_diff_func_t = decltype(&::ASN1_TIME_diff);
    using BIO_free_func_t = decltype(&::BIO_free);
    using BIO_new_func_t = decltype(&::BIO_new);
    using BIO_number_written_func_t = decltype(&::BIO_number_written);
    using BIO_read_func_t = decltype(&::BIO_read);
    using BIO_s_mem_func_t = decltype(&::BIO_s_mem);
-   using BN_free_func_t = decltype(&::BN_free);
-   using BN_new_func_t = decltype(&::BN_new);
-   using BN_set_word_func_t = decltype(&::BN_set_word);
    using ERR_clear_error_func_t = decltype(&::ERR_clear_error);
    using ERR_get_error_func_t = decltype(&::ERR_get_error);
    using ERR_reason_error_string_func_t = decltype(&::ERR_reason_error_string);
-   using EVP_PKEY_assign_func_t = int (*)(EVP_PKEY *pkey, int type, void *key);
    using EVP_PKEY_free_func_t = decltype(&::EVP_PKEY_free);
-   using EVP_PKEY_new_func_t = decltype(&::EVP_PKEY_new);
+   using EVP_PKEY_Q_keygen_func_t = decltype(&::EVP_PKEY_Q_keygen);
    using EVP_sha256_func_t = decltype(&::EVP_sha256);
    using OPENSSL_init_ssl_func_t = decltype(&::OPENSSL_init_ssl);
    using OpenSSL_version_func_t = decltype(&::OpenSSL_version);
    using PEM_read_X509_func_t = decltype(&::PEM_read_X509);
    using PEM_read_PrivateKey_func_t = decltype(&::PEM_read_PrivateKey);
    using X509_check_private_key_func_t = decltype(&::X509_check_private_key);
-   using X509_NAME_get_text_by_NID_func_t = int (*)(const X509_NAME *name, int nid, char *buf, int len);
+   using X509_NAME_ENTRY_get_data_func_t = decltype(&::X509_NAME_ENTRY_get_data);
+   using X509_NAME_get_entry_func_t = decltype(&::X509_NAME_get_entry);
+   using X509_NAME_get_index_by_NID_func_t = decltype(&::X509_NAME_get_index_by_NID);
    using PEM_write_PrivateKey_func_t = decltype(&::PEM_write_PrivateKey);
    using PEM_write_X509_func_t = decltype(&::PEM_write_X509);
    using PEM_write_bio_X509_func_t = decltype(&::PEM_write_bio_X509);
-   using RSA_free_func_t = void (*)(RSA *r);
-   using RSA_generate_key_ex_func_t = int (*)(RSA *rsa, int bits, BIGNUM *e, BN_GENCB *cb);
-   using RSA_new_func_t = RSA *(*)();
    using SSL_CTX_free_func_t = decltype(&::SSL_CTX_free);
    using SSL_CTX_get0_certificate_func_t = decltype(&::SSL_CTX_get0_certificate);
    using SSL_CTX_load_verify_locations_func_t = decltype(&::SSL_CTX_load_verify_locations);
@@ -84,7 +80,11 @@ namespace ocs::uti {
    using SSL_get_error_func_t = decltype(&::SSL_get_error);
    using SSL_new_func_t = decltype(&::SSL_new);
    using SSL_read_func_t = decltype(&::SSL_read);
-   using SSL_set1_host_func_t = int (*)(SSL *ssl, const char *name);
+#if OPENSSL_VERSION_MAJOR >= 4
+   using SSL_set1_dnsname_func_t = decltype(&::SSL_set1_dnsname);
+#else
+   using SSL_set1_host_func_t = decltype(&::SSL_set1_host);
+#endif
    using SSL_set_fd_func_t = decltype(&::SSL_set_fd);
    using SSL_shutdown_func_t = decltype(&::SSL_shutdown);
    using SSL_write_func_t = decltype(&::SSL_write);
@@ -116,34 +116,31 @@ namespace ocs::uti {
       static std::string libssl_version;
 
       static ASN1_INTEGER_set_func_t ASN1_INTEGER_set_func;
+      static ASN1_STRING_get0_data_func_t ASN1_STRING_get0_data_func;
+      static ASN1_STRING_length_func_t ASN1_STRING_length_func;
       static ASN1_TIME_diff_func_t ASN1_TIME_diff_func;
       static BIO_free_func_t BIO_free_func;
       static BIO_new_func_t BIO_new_func;
       static BIO_number_written_func_t BIO_number_written_func;
       static BIO_read_func_t BIO_read_func;
       static BIO_s_mem_func_t BIO_s_mem_func;
-      static BN_free_func_t BN_free_func;
-      static BN_new_func_t BN_new_func;
-      static BN_set_word_func_t BN_set_word_func;
       static ERR_clear_error_func_t ERR_clear_error_func;
       static ERR_get_error_func_t ERR_get_error_func;
       static ERR_reason_error_string_func_t ERR_reason_error_string_func;
-      static EVP_PKEY_assign_func_t EVP_PKEY_assign_func;
       static EVP_PKEY_free_func_t EVP_PKEY_free_func;
-      static EVP_PKEY_new_func_t EVP_PKEY_new_func;
+      static EVP_PKEY_Q_keygen_func_t EVP_PKEY_Q_keygen_func;
       static EVP_sha256_func_t EVP_sha256_func;
       static OPENSSL_init_ssl_func_t OPENSSL_init_ssl_func;
       static OpenSSL_version_func_t OpenSSL_version_func;
       static PEM_read_X509_func_t PEM_read_X509_func;
       static PEM_read_PrivateKey_func_t PEM_read_PrivateKey_func;
       static X509_check_private_key_func_t X509_check_private_key_func;
-      static X509_NAME_get_text_by_NID_func_t X509_NAME_get_text_by_NID_func;
+      static X509_NAME_ENTRY_get_data_func_t X509_NAME_ENTRY_get_data_func;
+      static X509_NAME_get_entry_func_t X509_NAME_get_entry_func;
+      static X509_NAME_get_index_by_NID_func_t X509_NAME_get_index_by_NID_func;
       static PEM_write_PrivateKey_func_t PEM_write_PrivateKey_func;
       static PEM_write_X509_func_t PEM_write_X509_func;
       static PEM_write_bio_X509_func_t PEM_write_bio_X509_func;
-      static RSA_free_func_t RSA_free_func;
-      static RSA_generate_key_ex_func_t RSA_generate_key_ex_func;
-      static RSA_new_func_t RSA_new_func;
       static SSL_CTX_free_func_t SSL_CTX_free_func;
       static SSL_CTX_get0_certificate_func_t SSL_CTX_get0_certificate_func;
       static SSL_CTX_load_verify_locations_func_t SSL_CTX_load_verify_locations_func;
@@ -160,7 +157,11 @@ namespace ocs::uti {
       static SSL_get_error_func_t SSL_get_error_func;
       static SSL_new_func_t SSL_new_func;
       static SSL_read_func_t SSL_read_func;
+#if OPENSSL_VERSION_MAJOR >= 4
+      static SSL_set1_dnsname_func_t SSL_set1_dnsname_func;
+#else
       static SSL_set1_host_func_t SSL_set1_host_func;
+#endif
       static SSL_set_fd_func_t SSL_set_fd_func;
       static SSL_shutdown_func_t SSL_shutdown_func;
       static SSL_write_func_t SSL_write_func;
