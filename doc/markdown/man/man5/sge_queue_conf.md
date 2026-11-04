@@ -632,17 +632,15 @@ The resource limit parameters *s_cpu* and *h_cpu* are implemented by xxQS_NAMExx
 limit on the amount of combined CPU time consumed by all the processes in the job. If *h_cpu* is exceeded by a 
 job running in the queue, it is aborted via a SIGKILL signal (see kill(1)). If *s_cpu* is exceeded, the job is sent a
 SIGXCPU signal which can be caught by the job. If you wish to allow a job to be "warned" so it can exit gracefully 
-before it is killed then you should set the *s_cpu* limit to a lower value than *h_cpu*. For parallel processes, 
-the limit is applied per slot which means that the limit is multiplied by the number of slots being used by the 
-job before being applied.
+before it is killed then you should set the *s_cpu* limit to a lower value than *h_cpu*.
+For parallel jobs, see below.
 
 The resource limit parameters *s_vmem* and *h_vmem* are implemented by xxQS_NAMExx as a job limit. They impose a 
 limit on the amount of combined virtual memory consumed by all the processes in the job. If *h_vmem* is exceeded 
 by a job running in the queue, it is aborted via a SIGKILL signal (see kill(1)). If *s_vmem* is exceeded, the job is
 sent a SIGXCPU signal which can be caught by the job. If you wish to allow a job to be "warned" so it can exit 
-gracefully before it is killed then you should set the *s_vmem* limit to a lower value than *h_vmem*. For parallel 
-processes, the limit is applied per slot which means that the limit is multiplied by the number of slots being used by
-the job before being applied.
+gracefully before it is killed then you should set the *s_vmem* limit to a lower value than
+*h_vmem*.
 
 On a host which runs its jobs under systemd control, what these two limits do depends on the usage collection
 mode (see the *USAGE_COLLECTION* execution daemon parameter in xxqs_name_sxx_conf(5)). The per process limit is
@@ -653,6 +651,26 @@ sits at its *MemoryHigh* with part of its memory swapped out keeps running. The 
 compares the virtual memory of all processes of the job against the limit and therefore needs the *vmem* usage
 value, which the default mode does not measure on a systemd host. Set *USAGE_COLLECTION* to *HYBRID* or *PDC*
 on the hosts where that check is wanted.
+
+For a parallel job, the resource limits of the queue are limits per slot, and they apply to each
+task of the job separately. A task gets either the limit of a single slot, or the limit multiplied
+by the number of slots the job has on the host of the task:
+
+- In a loosely integrated parallel environment (*control_slaves* FALSE, see xxqs_name_sxx_pe(5)),
+  the job script starts the processes of all slots on the master host. It gets the limit of all
+  slots of the job on the master host.
+- In a tightly integrated parallel environment (*control_slaves* TRUE), every task gets the limit
+  of a single slot. With *master_forks_slaves* set to TRUE, the master task gets the limit of all
+  slots of the job on the master host. With *daemon_forks_slaves* set to TRUE, every slave task,
+  i.e. the one process per host which starts the processes of the other slots, gets the limit of
+  all slots of the job on its host.
+
+A limit which the job requests as a consumable of type JOB (see xxqs_name_sxx_complex(5)) is the
+limit of the whole job, and every task gets it as requested.
+
+xxqs_name_sxx_execd(8) checks the usage of each task against the same limit that
+xxqs_name_sxx_shepherd(8) sets for the task, both as setrlimit(2) limit and, on a host with
+systemd, as *MemoryHigh* and *MemoryMax* of the task's scope.
 
 The remaining parameters in the queue configuration template specify per job soft and hard resource limits as 
 implemented by the setrlimit(2) system call. See this manual page on your system for more information. By default, 

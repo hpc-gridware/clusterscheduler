@@ -3895,14 +3895,14 @@ job_parse_validation_level(int *level, const char *input, int prog_number, lList
 *                                       CONSUMABLE_JOB?
 *
 *  SYNOPSIS
-*     bool job_is_requesting_consumable(lListElem *jep, const char *resoure_name)
+*     bool job_is_requesting_consumable(const lListElem *jep, const char *resoure_name)
 *
 *  FUNCTION
 *     This function returns true if "job" is requesting a resource with type
 *     CONSUMABLE_JOB.
 *
 *  INPUTS
-*     lListELem *jep - JB_Type element
+*     const lListElem *jep - JB_Type element
 *     const char *resource_name - Name of resource
 *
 *  RESULT
@@ -3911,9 +3911,9 @@ job_parse_validation_level(int *level, const char *input, int prog_number, lList
 *  SEE ALSO
 ******************************************************************************/
 bool
-job_is_requesting_consumable(lListElem *jep, const char *resource_name)
+job_is_requesting_consumable(const lListElem *jep, const char *resource_name)
 {
-   lListElem *cep = nullptr;
+   const lListElem *cep = nullptr;
    u_long32 consumable;
    const lList *request_list = job_get_hard_resource_list(jep);
 

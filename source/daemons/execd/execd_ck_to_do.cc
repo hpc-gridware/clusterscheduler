@@ -208,29 +208,6 @@ static void notify_ptf() {
 
 /**
  * @brief
- * Sum up the queue limit for a job resource limit.
- * It is called multiple times for each gdil element. If a limit is INFINITY in one of the gdil elements,
- * the resulting limit will be set to INFINITY (DBL_MAX).
- *
- * @param queue The queue element to read the limit from (from gdil).
- * @param limit_nm The name of the limit attribute in the queue element (e.g., QU_h_cpu)
- * @param type The type of the limit (e.g., TYPE_TIM for time limits).
- * @param nslots The number of slots allocated for the job in this queue.
- * @param limit Reference to the variable where the summed limit will be stored.
- */
-static void
-force_job_rlimit_sum_up_limit(const lListElem *queue, int limit_nm, u_long32 type, int nslots, double &limit) {
-   double queue_limit{};
-   parse_ulong_val(&queue_limit, nullptr, type, lGetString(queue, limit_nm), nullptr, 0);
-   if (queue_limit == DBL_MAX) {
-      limit = DBL_MAX;
-   } else {
-      limit += queue_limit * nslots;
-   }
-}
-
-/**
- * @brief
  * Check if the job resource limit is exceeded and apply the limit.
  * If the limit is exceeded, the job is signaled with SGE_SIGKILL (hard limits) or SGE_SIGXCPU (soft limits).
  *
@@ -268,7 +245,90 @@ force_job_rlimit_apply_limit(double usage, double limit, const char *limit_name,
 }
 
 
-/* force job resource limits */
+/**
+ * @brief Check the usage of a task against its limits and apply them
+ *
+ * The task is checked against the limits sge_shepherd applies to it, see execd_get_task_limit():
+ * for a task of a parallel job either the limit of a single slot or the sum of the limits of all
+ * slots of the job on the host.
+ *
+ * @param jep the job
+ * @param jatep the ja_task
+ * @param petep the pe task, nullptr for the master task
+ * @param qualified_hostname the name of this host
+ * @return true if the job was signaled
+ */
+static bool
+force_job_rlimit_task(const lListElem *jep, const lListElem *jatep, const lListElem *petep,
+                      const char *qualified_hostname) {
+   DENTER(TOP_LAYER);
+
+   u_long32 jobid = lGetUlong(jep, JB_job_number);
+   u_long32 jataskid = lGetUlong(jatep, JAT_task_number);
+
+   // the usage of this task only - nullptr if the task does not run on this host
+   const char *task_id = petep != nullptr ? lGetString(petep, PET_id) : nullptr;
+   lList *usage_list = ptf_get_job_usage(jobid, jataskid, task_id);
+   if (usage_list == nullptr) {
+      DRETURN(false);
+   }
+
+   double cpu_val = usage_list_get_double_usage(usage_list, USAGE_ATTR_CPU, 0.0);
+   double vmem_val = usage_list_get_double_usage(usage_list, USAGE_ATTR_VMEM, 0.0);
+   double rss_val = usage_list_get_double_usage(usage_list, USAGE_ATTR_RSS, 0.0);
+   lFreeList(&usage_list);
+
+   DPRINTF("JOB " sge_u32 "." sge_u32 " task %s %s %10.5f %s %10.5f %s %10.5f\n", jobid, jataskid,
+           task_id != nullptr ? task_id : "master", USAGE_ATTR_CPU, cpu_val, USAGE_ATTR_VMEM,
+           vmem_val, USAGE_ATTR_RSS, rss_val);
+
+   // need the queue object - it must have been delivered by sge_qmaster
+   const lListElem *q = responsible_queue(nullptr, jatep, petep);
+   if (q == nullptr) {
+      // this should never happen, but if it does, we have to skip this task
+      CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, "gdil_ep->JG_queue");
+#if defined (ENABLE_DEBUG_CHECKS)
+      ocs::TerminationManager::trigger_abort();
+#endif
+      DRETURN(false);
+   }
+
+   // hard limits
+   double h_cpu = execd_get_task_limit(QU_h_cpu, "h_cpu", TYPE_TIM, q, jep, jatep, petep,
+                                       qualified_hostname);
+   double h_rss = execd_get_task_limit(QU_h_rss, "h_rss", TYPE_MEM, q, jep, jatep, petep,
+                                       qualified_hostname);
+   double h_vmem = execd_get_task_limit(QU_h_vmem, "h_vmem", TYPE_MEM, q, jep, jatep, petep,
+                                        qualified_hostname);
+   if (force_job_rlimit_apply_limit(cpu_val, h_cpu, "h_cpu", true, q, jobid, jataskid) ||
+       force_job_rlimit_apply_limit(rss_val, h_rss, "h_rss", true, q, jobid, jataskid) ||
+       force_job_rlimit_apply_limit(vmem_val, h_vmem, "h_vmem", true, q, jobid, jataskid)) {
+      DRETURN(true);
+   }
+
+   // soft limits
+   double s_cpu = execd_get_task_limit(QU_s_cpu, "s_cpu", TYPE_TIM, q, jep, jatep, petep,
+                                       qualified_hostname);
+   double s_rss = execd_get_task_limit(QU_s_rss, "s_rss", TYPE_MEM, q, jep, jatep, petep,
+                                       qualified_hostname);
+   double s_vmem = execd_get_task_limit(QU_s_vmem, "s_vmem", TYPE_MEM, q, jep, jatep, petep,
+                                        qualified_hostname);
+   bool signaled =
+      force_job_rlimit_apply_limit(cpu_val, s_cpu, "s_cpu", false, q, jobid, jataskid) ||
+      force_job_rlimit_apply_limit(rss_val, s_rss, "s_rss", false, q, jobid, jataskid) ||
+      force_job_rlimit_apply_limit(vmem_val, s_vmem, "s_vmem", false, q, jobid, jataskid);
+
+   DRETURN(signaled);
+}
+
+/**
+ * @brief Force the job resource limits
+ *
+ * Checks the master task and every pe task of the jobs running on this host against the limits
+ * sge_shepherd applies to the task, and signals a job which exceeds a limit.
+ *
+ * @param qualified_hostname the name of this host
+ */
 static void force_job_rlimit(const char* qualified_hostname)
 {
    DENTER(TOP_LAYER);
@@ -277,90 +337,15 @@ static void force_job_rlimit(const char* qualified_hostname)
    for_each_ep(jep, *ocs::DataStore::get_master_list(SGE_TYPE_JOB)) {
       const lListElem *jatep;
       for_each_ep(jatep, lGetList(jep, JB_ja_tasks)) {
-         u_long32 jobid = lGetUlong(jep, JB_job_number);
-         u_long32 jataskid = lGetUlong(jatep, JAT_task_number);
-
-         double s_cpu{}, h_cpu{};
-         double s_rss{}, h_rss{};
-         double s_vmem{}, h_vmem{};
-
-         /* retrieve cpu and vmem usage */
-         lList *usage_list = ptf_get_job_usage(jobid, jataskid, "*");
-         if (usage_list == nullptr) {
+         // a signaled job is not checked further
+         if (force_job_rlimit_task(jep, jatep, nullptr, qualified_hostname)) {
             continue;
          }
-
-         double cpu_val = usage_list_get_double_usage(usage_list, USAGE_ATTR_CPU, 0.0);
-         double vmem_val = usage_list_get_double_usage(usage_list, USAGE_ATTR_VMEM, 0.0);
-         double rss_val = usage_list_get_double_usage(usage_list, USAGE_ATTR_RSS, 0.0);
-
-         DPRINTF("JOB " sge_u32" %s %10.5f %s %10.5f\n", jobid,
-            USAGE_ATTR_CPU, cpu_val,
-            USAGE_ATTR_VMEM, vmem_val);
-
-         // free no longer necessary usage_list
-         lFreeList(&usage_list);
-
-         const lList *gdil = lGetList(jatep, JAT_granted_destin_identifier_list);
-         const lListElem *q = nullptr, *gdil_ep;
-         const lListElem *first_gdil_ep = lFirst(gdil);
-         const void *iterator = nullptr;
-         const lListElem *next_gdil_ep = lGetElemHostFirst(gdil, JG_qhostname, qualified_hostname, &iterator);
-         while ((gdil_ep = next_gdil_ep) != nullptr) {
-            next_gdil_ep = lGetElemHostNext(gdil, JG_qhostname, qualified_hostname, &iterator);
-
-            // need the queue object - it must have been delivered by sge_qmaster
-            q = lGetObject(gdil_ep, JG_queue);
-            if (q == nullptr) {
-               // this should never happen, but if it does, we have to skip this gdil_ep
-               CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, "gdil_ep->JG_queue");
-#if defined (ENABLE_DEBUG_CHECKS)
-               ocs::TerminationManager::trigger_abort();
-#endif
-               continue;
+         const lListElem *petep;
+         for_each_ep(petep, lGetList(jatep, JAT_task_list)) {
+            if (force_job_rlimit_task(jep, jatep, petep, qualified_hostname)) {
+               break;
             }
-
-            int nslots = lGetUlong(gdil_ep, JG_slots);
-
-            // in case of a parallel job
-            // if job_is_first_task is false, we have no slot for the master task,
-            // but it still can consume vmem and cpu
-            // Problem: @todo CS-547 we cannot differentiate between
-            //          - only the master task is running on this host (nslots = 1)
-            //          - the master task + one slave task is running on this host (nslots = 1)
-            //          only in the second case we have to increase nslots,
-            //          but better always increase it and not kill the job erroneously
-            // @todo shouldn't we handle ja_task and pe_tasks separately?
-            if (gdil_ep == first_gdil_ep) {
-               const lListElem *pe = lGetObject(jatep, JAT_pe_object);
-               if (pe != nullptr) {
-                  if (!lGetBool(pe, PE_job_is_first_task)) {
-                     nslots++;
-                  }
-               }
-            }
-
-            force_job_rlimit_sum_up_limit(q, QU_s_cpu, TYPE_TIM, nslots, s_cpu);
-            force_job_rlimit_sum_up_limit(q, QU_h_cpu, TYPE_TIM, nslots, h_cpu);
-            force_job_rlimit_sum_up_limit(q, QU_s_rss, TYPE_MEM, nslots, s_rss);
-            force_job_rlimit_sum_up_limit(q, QU_h_rss, TYPE_MEM, nslots, h_rss);
-            force_job_rlimit_sum_up_limit(q, QU_s_vmem, TYPE_MEM, nslots, s_vmem);
-            force_job_rlimit_sum_up_limit(q, QU_h_vmem, TYPE_MEM, nslots, h_vmem);
-         } /* foreach gdil_ep */
-
-         // @todo we output the queue name, which might be incorrect, we might have multiple queues on the host
-         // hard limits
-         if (force_job_rlimit_apply_limit(cpu_val, h_cpu, "h_cpu", true, q, jobid, jataskid) ||
-             force_job_rlimit_apply_limit(rss_val, h_rss, "h_rss", true, q, jobid, jataskid) ||
-             force_job_rlimit_apply_limit(vmem_val, h_vmem, "h_vmem", true, q, jobid, jataskid)) {
-            continue;
-         }
-
-         // soft limits
-         if (force_job_rlimit_apply_limit(cpu_val, s_cpu, "s_cpu", false, q, jobid, jataskid) ||
-             force_job_rlimit_apply_limit(rss_val, s_rss, "s_rss", false, q, jobid, jataskid) ||
-             force_job_rlimit_apply_limit(vmem_val, s_vmem, "s_vmem", false, q, jobid, jataskid)) {
-            continue;
          }
       } /* foreach jatep */
    } /* foreach jep */

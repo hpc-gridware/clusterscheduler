@@ -36,4 +36,7 @@
 #include "sgeobj/sge_daemonize.h"
 
 int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_str, int err_length);
-lListElem* responsible_queue(lListElem *jep, lListElem *, lListElem *petep);
+lListElem* responsible_queue(const lListElem *jep, const lListElem *jatep, const lListElem *petep);
+double execd_get_task_limit(int limit_nm, const char *limit_name, u_long32 type,
+                            const lListElem *queue, const lListElem *jep, const lListElem *jatep,
+                            const lListElem *petep, const char *qualified_hostname);
