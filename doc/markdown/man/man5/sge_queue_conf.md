@@ -658,6 +658,15 @@ compares the virtual memory of all processes of the job against the limit and th
 value, which the default mode does not measure on a systemd host. Set *USAGE_COLLECTION* to *HYBRID* or *PDC*
 on the hosts where that check is wanted.
 
+xxqs_name_sxx_shepherd(8) sets the lower of *h_rss* and *h_vmem* as *MemoryMax* of the job's scope, and the
+lower of *s_rss* and *s_vmem* as its *MemoryHigh*. When the job reaches *MemoryMax* and the kernel cannot
+reclaim enough memory, also not by swapping it out, the memory cgroup OOM killer kills a process of the job. On a
+host with cgroup v2 and systemd 252 or newer, xxqs_name_sxx_shepherd(8) sets *OOMPolicy=kill* on the job's
+scope, so that the OOM killer kills all processes of the job at once. The job then ends as killed by SIGKILL:
+the accounting record shows the exit status 137 and failed 100, and the abort mail is sent if the job requested
+it (see the *-m* option of qsub(1)). On older systems the OOM killer kills only single processes, and the job
+keeps running; how it ends depends on how it handles the loss of these processes.
+
 For a parallel job, the resource limits of the queue are limits per slot, and they apply to each
 task of the job separately. A task gets either the limit of a single slot, or the limit multiplied
 by the number of slots the job has on the host of the task:
