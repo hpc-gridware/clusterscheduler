@@ -42,6 +42,8 @@
 namespace ocs::uti {
    // static members
    void *OpenSSL::libssl_handle = nullptr;
+   std::string OpenSSL::libssl_name;
+   std::string OpenSSL::libssl_version;
 
    std::vector<OpenSSL::OpenSSLContext *> OpenSSL::OpenSSLContext::contexts_to_delete;
 
@@ -63,6 +65,7 @@ namespace ocs::uti {
    EVP_PKEY_new_func_t OpenSSL::EVP_PKEY_new_func = nullptr;
    EVP_sha256_func_t OpenSSL::EVP_sha256_func = nullptr;
    OPENSSL_init_ssl_func_t OpenSSL::OPENSSL_init_ssl_func = nullptr;
+   OpenSSL_version_func_t OpenSSL::OpenSSL_version_func = nullptr;
    PEM_read_X509_func_t OpenSSL::PEM_read_X509_func = nullptr;
    PEM_read_PrivateKey_func_t OpenSSL::PEM_read_PrivateKey_func = nullptr;
    X509_check_private_key_func_t OpenSSL::X509_check_private_key_func = nullptr;
@@ -110,11 +113,16 @@ namespace ocs::uti {
    X509_sign_func_t OpenSSL::X509_sign_func = nullptr;
 
    /**
-    * @brief Initializes the OpenSSL library by loading libssl.so.3 and resolving all required function symbols.
+    * @brief Initializes the OpenSSL library by loading libssl and resolving all required functions.
     *
-    * This function dynamically loads the OpenSSL shared library (libssl.so.3) and resolves
-    * all necessary function pointers for SSL/TLS operations. It can only be called once;
-    * later calls will fail with an error.
+    * This function dynamically loads the OpenSSL shared library and resolves all necessary
+    * function pointers for SSL/TLS operations. It can only be called once; later calls will
+    * fail with an error.
+    *
+    * libssl.so.4 is preferred over libssl.so.3 (libssl.4.dylib and libssl.3.dylib on macOS).
+    * If one of them is already loaded into the process, e.g. by libpq, then this one is used,
+    * so that the process does not hold two OpenSSL versions. The loaded library and the
+    * OpenSSL version are stored for log_library_info().
     *
     * The function loads and resolves symbols for:
     * - ASN1 operations (time, integer handling)
@@ -149,16 +157,44 @@ namespace ocs::uti {
       }
 
       // Load the shared library and the required functions
+      const char *libssl = nullptr;
       if (ret) {
 #if defined(DARWIN)
-         const char *libssl = "libssl.3.dylib";
+         const char *libssl_names[] = {"libssl.4.dylib", "libssl.3.dylib"};
 #else
-         const char *libssl = "libssl.so.3";
+         const char *libssl_names[] = {"libssl.so.4", "libssl.so.3"};
 #endif
-         libssl_handle = dlopen(libssl, RTLD_LAZY);
+         // use a libssl which is already loaded into the process
+         for (const char *name : libssl_names) {
+            libssl_handle = dlopen(name, RTLD_LAZY | RTLD_NOLOAD);
+            if (libssl_handle != nullptr) {
+               libssl = name;
+               break;
+            }
+         }
+
+         // otherwise load the newest one which is installed
          if (libssl_handle == nullptr) {
-            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_OPEN_LIB_SS, libssl, dlerror());
-            ret = false;
+            std::string names;
+            std::string errors;
+            for (const char *name : libssl_names) {
+               libssl_handle = dlopen(name, RTLD_LAZY);
+               if (libssl_handle != nullptr) {
+                  libssl = name;
+                  break;
+               }
+               if (!names.empty()) {
+                  names += ", ";
+                  errors += "; ";
+               }
+               names += name;
+               errors += dlerror();
+            }
+            if (libssl_handle == nullptr) {
+               sge_dstring_sprintf(error_dstr, MSG_OPENSSL_OPEN_LIB_SS, names.c_str(),
+                                   errors.c_str());
+               ret = false;
+            }
          }
       }
 
@@ -304,6 +340,15 @@ namespace ocs::uti {
          func = "OPENSSL_init_ssl";
          OPENSSL_init_ssl_func = reinterpret_cast<OPENSSL_init_ssl_func_t>(dlsym(libssl_handle, func));
          if (OPENSSL_init_ssl_func == nullptr) {
+            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
+            ret = false;
+         }
+      }
+      if (ret) {
+         func = "OpenSSL_version";
+         OpenSSL_version_func =
+               reinterpret_cast<OpenSSL_version_func_t>(dlsym(libssl_handle, func));
+         if (OpenSSL_version_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
          }
@@ -677,6 +722,12 @@ namespace ocs::uti {
          }
       }
 
+      if (ret) {
+         libssl_name = libssl;
+         libssl_version = OpenSSL_version_func(OPENSSL_VERSION);
+         DPRINTF("loaded %s, %s\n", libssl_name.c_str(), libssl_version.c_str());
+      }
+
       // if the initialization failed, free everything again
       if (!ret) {
          cleanup();
@@ -700,6 +751,29 @@ namespace ocs::uti {
       if (libssl_handle != nullptr) {
          dlclose(libssl_handle);
          libssl_handle = nullptr;
+      }
+      libssl_name.clear();
+      libssl_version.clear();
+      DRETURN_VOID;
+   }
+
+   /**
+    * @brief Logs the loaded libssl and the OpenSSL version.
+    *
+    * Daemons call this function once at startup, when their messages file is set. The library
+    * is loaded before the daemon knows its messages file and its configured loglevel, therefore
+    * initialize() cannot log it. The message is logged independent of the configured loglevel.
+    * If OpenSSL is not initialized, nothing is logged.
+    *
+    * @see initialize()
+    */
+   void OpenSSL::log_library_info() {
+      DENTER(TOP_LAYER);
+      if (libssl_handle != nullptr) {
+         u_long32 old_ll = log_state_get_log_level();
+         log_state_set_log_level(LOG_INFO);
+         INFO(MSG_OPENSSL_LOADED_LIB_SS, libssl_name.c_str(), libssl_version.c_str());
+         log_state_set_log_level(old_ll);
       }
       DRETURN_VOID;
    }

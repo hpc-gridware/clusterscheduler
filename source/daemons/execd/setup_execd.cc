@@ -33,6 +33,7 @@
 /*___INFO__MARK_END__*/
 #include <cstring>
 
+#include "uti/ocs_OpenSSL.h"
 #include "uti/ocs_Topo.h"
 #include "uti/sge_io.h"
 #include "uti/sge_log.h"
@@ -148,6 +149,10 @@ void sge_setup_sge_execd_after_register(const char* tmp_err_file_name)
    log_state_set_log_as_admin_user(1);
    snprintf(execd_messages_file, sizeof(execd_messages_file), "%s/%s/%s", spool_dir, unqualified_hostname, ERR_FILE);
    log_state_set_log_file(execd_messages_file);
+#if defined(OCS_WITH_OPENSSL)
+   // OpenSSL was loaded when connecting to qmaster, now we can log it into the messages file
+   ocs::uti::OpenSSL::log_library_info();
+#endif
    snprintf(execd_spool_dir, sizeof(execd_spool_dir), "%s/%s", spool_dir, unqualified_hostname);
    
    DPRINTF("Making directories----------------------------\n");

@@ -54,6 +54,7 @@ namespace ocs::uti {
    using EVP_PKEY_new_func_t = EVP_PKEY *(*)();
    using EVP_sha256_func_t = const EVP_MD *(*)();
    using OPENSSL_init_ssl_func_t = int (*)(uint64_t opts, const void *settings);
+   using OpenSSL_version_func_t = const char *(*)(int type);
    using PEM_read_X509_func_t = X509 *(*)(FILE *fp, X509 **x, pem_password_cb *cb, void *u);
    using PEM_read_PrivateKey_func_t = EVP_PKEY *(*)(FILE *fp, EVP_PKEY **x, pem_password_cb *cb, void *u);
    using X509_check_private_key_func_t = int (*)(const X509 *x509, const EVP_PKEY *pkey);
@@ -104,6 +105,9 @@ namespace ocs::uti {
       // static data
       // handle and function pointers of the libssl.so
       static void *libssl_handle;
+      // name of the loaded libssl and the OpenSSL version it reports
+      static std::string libssl_name;
+      static std::string libssl_version;
 
       static ASN1_INTEGER_set_func_t ASN1_INTEGER_set_func;
       static ASN1_TIME_diff_func_t ASN1_TIME_diff_func;
@@ -123,6 +127,7 @@ namespace ocs::uti {
       static EVP_PKEY_new_func_t EVP_PKEY_new_func;
       static EVP_sha256_func_t EVP_sha256_func;
       static OPENSSL_init_ssl_func_t OPENSSL_init_ssl_func;
+      static OpenSSL_version_func_t OpenSSL_version_func;
       static PEM_read_X509_func_t PEM_read_X509_func;
       static PEM_read_PrivateKey_func_t PEM_read_PrivateKey_func;
       static X509_check_private_key_func_t X509_check_private_key_func;
@@ -174,6 +179,7 @@ namespace ocs::uti {
       static bool initialize(dstring *error_dstr);
       static void cleanup();
       static bool is_openssl_available() { return libssl_handle != nullptr; }
+      static void log_library_info();
       static bool build_cert_path(std::string &cert_path, const char *home_dir, const char *hostname, const char *comp_name);
       static bool build_key_path(std::string &key_path, const char *home_dir, const char *hostname, u_long32 port, const char *comp_name);
       static const char *get_error_message();
