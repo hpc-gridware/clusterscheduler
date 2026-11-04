@@ -23,8 +23,8 @@
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 
-#if OPENSSL_VERSION_MAJOR != 3
-#error "Only OpenSSL version 3 is supported"
+#if OPENSSL_VERSION_MAJOR != 3 && OPENSSL_VERSION_MAJOR != 4
+#error "Only OpenSSL versions 3 and 4 are supported"
 #endif
 
 #include <filesystem>
@@ -35,71 +35,77 @@
 
 
 namespace ocs::uti {
-   // function types for the OpenSSL interface
-   using ASN1_INTEGER_set_func_t = int (*)(ASN1_INTEGER *a, long v);
-   using ASN1_TIME_diff_func_t = int (*)(int *pday, int *psec, const ASN1_TIME *from, const ASN1_TIME *to);
-   using BIO_free_func_t = int (*)(BIO *a);
-   using BIO_new_func_t = BIO *(*)(const BIO_METHOD *method);
-   using BIO_number_written_func_t = int (*)(BIO *b);
-   using BIO_read_func_t = int (*)(BIO *b, void *buf, int len);
-   using BIO_s_mem_func_t = const BIO_METHOD *(*)();
-   using BN_free_func_t = void (*)(BIGNUM *a);
-   using BN_new_func_t = BIGNUM *(*)();
-   using BN_set_word_func_t = int (*)(BIGNUM *a, unsigned long w);
-   using ERR_clear_error_func_t = void (*)();
-   using ERR_get_error_func_t = unsigned long (*)();
-   using ERR_reason_error_string_func_t = const char *(*)(unsigned long e);
+   // Function types for the OpenSSL interface. They are taken from the declarations in the OpenSSL
+   // headers, so that the compiler checks every call against the OpenSSL version we build with.
+   // Deprecated functions are declared explicitly, as taking their address is a deprecation error.
+   using ASN1_INTEGER_set_func_t = decltype(&::ASN1_INTEGER_set);
+   using ASN1_TIME_diff_func_t = decltype(&::ASN1_TIME_diff);
+   using BIO_free_func_t = decltype(&::BIO_free);
+   using BIO_new_func_t = decltype(&::BIO_new);
+   using BIO_number_written_func_t = decltype(&::BIO_number_written);
+   using BIO_read_func_t = decltype(&::BIO_read);
+   using BIO_s_mem_func_t = decltype(&::BIO_s_mem);
+   using BN_free_func_t = decltype(&::BN_free);
+   using BN_new_func_t = decltype(&::BN_new);
+   using BN_set_word_func_t = decltype(&::BN_set_word);
+   using ERR_clear_error_func_t = decltype(&::ERR_clear_error);
+   using ERR_get_error_func_t = decltype(&::ERR_get_error);
+   using ERR_reason_error_string_func_t = decltype(&::ERR_reason_error_string);
    using EVP_PKEY_assign_func_t = int (*)(EVP_PKEY *pkey, int type, void *key);
-   using EVP_PKEY_free_func_t = void (*)(EVP_PKEY *pkey);
-   using EVP_PKEY_new_func_t = EVP_PKEY *(*)();
-   using EVP_sha256_func_t = const EVP_MD *(*)();
-   using OPENSSL_init_ssl_func_t = int (*)(uint64_t opts, const void *settings);
-   using OpenSSL_version_func_t = const char *(*)(int type);
-   using PEM_read_X509_func_t = X509 *(*)(FILE *fp, X509 **x, pem_password_cb *cb, void *u);
-   using PEM_read_PrivateKey_func_t = EVP_PKEY *(*)(FILE *fp, EVP_PKEY **x, pem_password_cb *cb, void *u);
-   using X509_check_private_key_func_t = int (*)(const X509 *x509, const EVP_PKEY *pkey);
+   using EVP_PKEY_free_func_t = decltype(&::EVP_PKEY_free);
+   using EVP_PKEY_new_func_t = decltype(&::EVP_PKEY_new);
+   using EVP_sha256_func_t = decltype(&::EVP_sha256);
+   using OPENSSL_init_ssl_func_t = decltype(&::OPENSSL_init_ssl);
+   using OpenSSL_version_func_t = decltype(&::OpenSSL_version);
+   using PEM_read_X509_func_t = decltype(&::PEM_read_X509);
+   using PEM_read_PrivateKey_func_t = decltype(&::PEM_read_PrivateKey);
+   using X509_check_private_key_func_t = decltype(&::X509_check_private_key);
    using X509_NAME_get_text_by_NID_func_t = int (*)(const X509_NAME *name, int nid, char *buf, int len);
-   using PEM_write_PrivateKey_func_t = int (*)(FILE *fp, EVP_PKEY *x, const EVP_CIPHER *enc, unsigned char *kstr, int klen, pem_password_cb *cb, void *u);
-   using PEM_write_X509_func_t = int (*)(FILE *fp, X509 *x);
-   using PEM_write_bio_X509_func_t = int (*)(BIO *, X509 *);
+   using PEM_write_PrivateKey_func_t = decltype(&::PEM_write_PrivateKey);
+   using PEM_write_X509_func_t = decltype(&::PEM_write_X509);
+   using PEM_write_bio_X509_func_t = decltype(&::PEM_write_bio_X509);
    using RSA_free_func_t = void (*)(RSA *r);
    using RSA_generate_key_ex_func_t = int (*)(RSA *rsa, int bits, BIGNUM *e, BN_GENCB *cb);
    using RSA_new_func_t = RSA *(*)();
-   using SSL_CTX_free_func_t = void (*)(SSL_CTX *ctx);
-   using SSL_CTX_get0_certificate_func_t = X509 *(*)(const SSL_CTX *ctx);
-   using SSL_CTX_load_verify_locations_func_t = int (*)(SSL_CTX *ctx, const char *CAfile, const char *CApath);
-   using SSL_CTX_new_func_t = SSL_CTX *(*)(const SSL_METHOD *method);
-   using SSL_CTX_set_verify_func_t = void (*)(SSL_CTX *ctx, int mode, int (*callback)(int, X509_STORE_CTX *));
-   using SSL_CTX_use_PrivateKey_file_func_t = int (*)(SSL_CTX *ctx, const char *file, int type);
-   using SSL_CTX_use_PrivateKey_func_t = int (*)(SSL_CTX *ctx, EVP_PKEY *pkey);
-   using SSL_CTX_use_certificate_chain_file_func_t = int (*)(SSL_CTX *ctx, const char *file);
-   using SSL_CTX_use_certificate_func_t = int (*)(SSL_CTX *ctx, X509 *x509);
-   using SSL_accept_func_t = int (*)(SSL *ssl);
-   using SSL_connect_func_t = int (*)(SSL *ssl);
-   using SSL_ctrl_func_t = long (*)(SSL *ssl, int cmd, long larg, void *parg);
-   using SSL_free_func_t = void (*)(SSL *ssl);
-   using SSL_get_error_func_t = int (*)(SSL *ssl, int ret);
-   using SSL_new_func_t = SSL *(*)(SSL_CTX *ctx);
-   using SSL_read_func_t = int (*)(SSL *ssl, char *buf, int len);
+   using SSL_CTX_free_func_t = decltype(&::SSL_CTX_free);
+   using SSL_CTX_get0_certificate_func_t = decltype(&::SSL_CTX_get0_certificate);
+   using SSL_CTX_load_verify_locations_func_t = decltype(&::SSL_CTX_load_verify_locations);
+   using SSL_CTX_new_func_t = decltype(&::SSL_CTX_new);
+   using SSL_CTX_set_verify_func_t = decltype(&::SSL_CTX_set_verify);
+   using SSL_CTX_use_PrivateKey_file_func_t = decltype(&::SSL_CTX_use_PrivateKey_file);
+   using SSL_CTX_use_PrivateKey_func_t = decltype(&::SSL_CTX_use_PrivateKey);
+   using SSL_CTX_use_certificate_chain_file_func_t =
+         decltype(&::SSL_CTX_use_certificate_chain_file);
+   using SSL_CTX_use_certificate_func_t = decltype(&::SSL_CTX_use_certificate);
+   using SSL_accept_func_t = decltype(&::SSL_accept);
+   using SSL_connect_func_t = decltype(&::SSL_connect);
+   using SSL_ctrl_func_t = decltype(&::SSL_ctrl);
+   using SSL_free_func_t = decltype(&::SSL_free);
+   using SSL_get_error_func_t = decltype(&::SSL_get_error);
+   using SSL_new_func_t = decltype(&::SSL_new);
+   using SSL_read_func_t = decltype(&::SSL_read);
    using SSL_set1_host_func_t = int (*)(SSL *ssl, const char *name);
-   using SSL_set_fd_func_t = int (*)(SSL *ssl, int fd);
-   using SSL_shutdown_func_t = int (*)(SSL *ssl);
-   using SSL_write_func_t = int (*)(SSL *ssl, char *buf, int len);
-   using TLS_client_method_func_t = const SSL_METHOD *(*)();
-   using TLS_server_method_func_t = const SSL_METHOD *(*)();
-   using X509_NAME_add_entry_by_txt_func_t = int (*)(X509_NAME *name, const char *field, int type, const unsigned char *bytes, int len, int loc, int set);
-   using X509_free_func_t = void (*)(X509 *a);
-   using X509_get0_notAfter_func_t = const ASN1_TIME *(*)(const X509 *x);
-   using X509_get_serialNumber_func_t = ASN1_INTEGER *(*)(X509 *x);
-   using X509_get_subject_name_func_t = X509_NAME *(*)(X509 *x);
-   using X509_getm_notAfter_func_t = ASN1_TIME *(*)(X509 *x);
-   using X509_getm_notBefore_func_t = ASN1_TIME *(*)(X509 *x);
-   using X509_gmtime_adj_func_t = ASN1_TIME *(*)(ASN1_TIME *s, long adj);
-   using X509_new_func_t = X509 *(*)();
-   using X509_set_issuer_name_func_t = int (*)(X509 *x, X509_NAME *name);
-   using X509_set_pubkey_func_t = int (*)(X509 *x, EVP_PKEY *pkey);
-   using X509_set_version_func_t = int (*)(X509 *x, long version);
-   using X509_sign_func_t = int (*)(X509 *x, EVP_PKEY *pkey, const EVP_MD *md);
+   using SSL_set_fd_func_t = decltype(&::SSL_set_fd);
+   using SSL_shutdown_func_t = decltype(&::SSL_shutdown);
+   using SSL_write_func_t = decltype(&::SSL_write);
+   using TLS_client_method_func_t = decltype(&::TLS_client_method);
+   using TLS_server_method_func_t = decltype(&::TLS_server_method);
+   using X509_NAME_add_entry_by_txt_func_t = decltype(&::X509_NAME_add_entry_by_txt);
+   using X509_NAME_free_func_t = decltype(&::X509_NAME_free);
+   using X509_NAME_new_func_t = decltype(&::X509_NAME_new);
+   using X509_free_func_t = decltype(&::X509_free);
+   using X509_get0_notAfter_func_t = decltype(&::X509_get0_notAfter);
+   using X509_get_serialNumber_func_t = decltype(&::X509_get_serialNumber);
+   using X509_get_subject_name_func_t = decltype(&::X509_get_subject_name);
+   using X509_getm_notAfter_func_t = decltype(&::X509_getm_notAfter);
+   using X509_getm_notBefore_func_t = decltype(&::X509_getm_notBefore);
+   using X509_gmtime_adj_func_t = decltype(&::X509_gmtime_adj);
+   using X509_new_func_t = decltype(&::X509_new);
+   using X509_set_issuer_name_func_t = decltype(&::X509_set_issuer_name);
+   using X509_set_pubkey_func_t = decltype(&::X509_set_pubkey);
+   using X509_set_subject_name_func_t = decltype(&::X509_set_subject_name);
+   using X509_set_version_func_t = decltype(&::X509_set_version);
+   using X509_sign_func_t = decltype(&::X509_sign);
 
    class OpenSSL {
       // static data
@@ -161,6 +167,8 @@ namespace ocs::uti {
       static TLS_client_method_func_t TLS_client_method_func;
       static TLS_server_method_func_t TLS_server_method_func;
       static X509_NAME_add_entry_by_txt_func_t X509_NAME_add_entry_by_txt_func;
+      static X509_NAME_free_func_t X509_NAME_free_func;
+      static X509_NAME_new_func_t X509_NAME_new_func;
       static X509_free_func_t X509_free_func;
       static X509_get0_notAfter_func_t X509_get0_notAfter_func;
       static X509_get_serialNumber_func_t X509_get_serialNumber_func;
@@ -171,6 +179,7 @@ namespace ocs::uti {
       static X509_new_func_t X509_new_func;
       static X509_set_issuer_name_func_t X509_set_issuer_name_func;
       static X509_set_pubkey_func_t X509_set_pubkey_func;
+      static X509_set_subject_name_func_t X509_set_subject_name_func;
       static X509_set_version_func_t X509_set_version_func;
       static X509_sign_func_t X509_sign_func;
 

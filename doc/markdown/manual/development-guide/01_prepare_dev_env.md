@@ -25,9 +25,12 @@ Relying on os packages for the 3rdparty tools requires the following additional 
 * BDB
 * hwloc 
 
-Support for TLS encryption is built by default and requires OpenSSL version 3.x.
+Support for TLS encryption is built by default and requires OpenSSL version 3.x or 4.x.
 On build hosts the development package is required, on target hosts the runtime package is required when TLS
 encryption is used.
+Binaries built with the OpenSSL 3 header files use OpenSSL 4 on target hosts where it is installed,
+and OpenSSL 3 otherwise. Binaries built with the OpenSSL 4 header files require OpenSSL 4 on the
+target hosts.
 The cmake build checks for the OpenSSL header files having the correct version and fails if they are missing.
 To build without support for TLS encryption, pass `-DWITH_OPENSSL=OFF` to cmake.
 
@@ -303,7 +306,9 @@ apt-get install -y pandoc texlive*
 
 #### for building support of TLS encryption
 
-OpenSSL version 3.x is available in Ubuntu 22.04 and later. It is *not* available from OS packages in earlier versions.
+OpenSSL version 3.x is available in Ubuntu 22.04 up to 26.04. Ubuntu 26.10 and later come with
+OpenSSL version 4.x.
+OpenSSL 3 or 4 is *not* available from OS packages in versions before 22.04.
 
 ```
 apt-get install -y libssl-dev

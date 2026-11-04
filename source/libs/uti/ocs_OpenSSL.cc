@@ -99,6 +99,8 @@ namespace ocs::uti {
    TLS_client_method_func_t OpenSSL::TLS_client_method_func = nullptr;
    TLS_server_method_func_t OpenSSL::TLS_server_method_func = nullptr;
    X509_NAME_add_entry_by_txt_func_t OpenSSL::X509_NAME_add_entry_by_txt_func = nullptr;
+   X509_NAME_free_func_t OpenSSL::X509_NAME_free_func = nullptr;
+   X509_NAME_new_func_t OpenSSL::X509_NAME_new_func = nullptr;
    X509_free_func_t OpenSSL::X509_free_func = nullptr;
    X509_get0_notAfter_func_t OpenSSL::X509_get0_notAfter_func = nullptr;
    X509_get_serialNumber_func_t OpenSSL::X509_get_serialNumber_func = nullptr;
@@ -109,6 +111,7 @@ namespace ocs::uti {
    X509_new_func_t OpenSSL::X509_new_func = nullptr;
    X509_set_issuer_name_func_t OpenSSL::X509_set_issuer_name_func = nullptr;
    X509_set_pubkey_func_t OpenSSL::X509_set_pubkey_func = nullptr;
+   X509_set_subject_name_func_t OpenSSL::X509_set_subject_name_func = nullptr;
    X509_set_version_func_t OpenSSL::X509_set_version_func = nullptr;
    X509_sign_func_t OpenSSL::X509_sign_func = nullptr;
 
@@ -120,6 +123,7 @@ namespace ocs::uti {
     * fail with an error.
     *
     * libssl.so.4 is preferred over libssl.so.3 (libssl.4.dylib and libssl.3.dylib on macOS).
+    * When built with the OpenSSL 4 headers, only libssl.so.4 is loaded.
     * If one of them is already loaded into the process, e.g. by libpq, then this one is used,
     * so that the process does not hold two OpenSSL versions. The loaded library and the
     * OpenSSL version are stored for log_library_info().
@@ -159,10 +163,19 @@ namespace ocs::uti {
       // Load the shared library and the required functions
       const char *libssl = nullptr;
       if (ret) {
+         // built with the OpenSSL 4 headers, we might use functions which OpenSSL 3 does not have
+#if OPENSSL_VERSION_MAJOR >= 4
+#if defined(DARWIN)
+         const char *libssl_names[] = {"libssl.4.dylib"};
+#else
+         const char *libssl_names[] = {"libssl.so.4"};
+#endif
+#else
 #if defined(DARWIN)
          const char *libssl_names[] = {"libssl.4.dylib", "libssl.3.dylib"};
 #else
          const char *libssl_names[] = {"libssl.so.4", "libssl.so.3"};
+#endif
 #endif
          // use a libssl which is already loaded into the process
          for (const char *name : libssl_names) {
@@ -674,6 +687,22 @@ namespace ocs::uti {
          }
       }
       if (ret) {
+         func = "X509_NAME_free";
+         X509_NAME_free_func = reinterpret_cast<X509_NAME_free_func_t>(dlsym(libssl_handle, func));
+         if (X509_NAME_free_func == nullptr) {
+            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
+            ret = false;
+         }
+      }
+      if (ret) {
+         func = "X509_NAME_new";
+         X509_NAME_new_func = reinterpret_cast<X509_NAME_new_func_t>(dlsym(libssl_handle, func));
+         if (X509_NAME_new_func == nullptr) {
+            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
+            ret = false;
+         }
+      }
+      if (ret) {
          func = "X509_new";
          X509_new_func = reinterpret_cast<X509_new_func_t>(dlsym(libssl_handle, func));
          if (X509_new_func == nullptr) {
@@ -693,6 +722,15 @@ namespace ocs::uti {
          func = "X509_set_pubkey";
          X509_set_pubkey_func = reinterpret_cast<X509_set_pubkey_func_t>(dlsym(libssl_handle, func));
          if (X509_set_pubkey_func == nullptr) {
+            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
+            ret = false;
+         }
+      }
+      if (ret) {
+         func = "X509_set_subject_name";
+         X509_set_subject_name_func =
+               reinterpret_cast<X509_set_subject_name_func_t>(dlsym(libssl_handle, func));
+         if (X509_set_subject_name_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
          }
@@ -1363,7 +1401,8 @@ namespace ocs::uti {
          X509_gmtime_adj_func(X509_getm_notAfter_func(x509), certificate_lifetime);
          X509_set_pubkey_func(x509, pkey);
 
-         X509_NAME *name = X509_get_subject_name_func(x509);
+         // build the name, it is used as subject and as issuer name of the self-signed certificate
+         X509_NAME *name = X509_NAME_new_func();
          X509_NAME_add_entry_by_txt_func(name, "CN", MBSTRING_ASC, (unsigned char *)component_get_qualified_hostname(), -1, -1, 0);
          // Which installation does this certificate belong to? The CN must stay
          // the hostname - clients verify it with SSL_set1_host() - so the
@@ -1374,7 +1413,9 @@ namespace ocs::uti {
          if (!tag.empty()) {
             X509_NAME_add_entry_by_txt_func(name, "OU", MBSTRING_ASC, (unsigned char *)tag.c_str(), -1, -1, 0);
          }
+         X509_set_subject_name_func(x509, name);
          X509_set_issuer_name_func(x509, name);
+         X509_NAME_free_func(name);
 
          X509_sign_func(x509, pkey, EVP_sha256_func());
 
