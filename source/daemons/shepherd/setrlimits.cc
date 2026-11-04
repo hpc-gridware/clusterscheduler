@@ -175,17 +175,17 @@ static int sge_parse_limit(sge_rlim_t *rlvalp, char *s, char *error_str,
  * @param trace_rlimit write each limit to the shepherd's trace file as it is set
  */
 void setrlimits(bool trace_rlimit) {
-   sge_rlim_t s_cpu, s_cpu_is_consumable_job;
-   sge_rlim_t h_cpu, h_cpu_is_consumable_job;
+   sge_rlim_t s_cpu;
+   sge_rlim_t h_cpu;
 
-   sge_rlim_t s_data, s_data_is_consumable_job;
-   sge_rlim_t h_data, h_data_is_consumable_job;
+   sge_rlim_t s_data;
+   sge_rlim_t h_data;
 
-   sge_rlim_t s_stack, s_stack_is_consumable_job;
-   sge_rlim_t h_stack, h_stack_is_consumable_job;
+   sge_rlim_t s_stack;
+   sge_rlim_t h_stack;
 
-   sge_rlim_t s_vmem, s_vmem_is_consumable_job;
-   sge_rlim_t h_vmem, h_vmem_is_consumable_job;
+   sge_rlim_t s_vmem;
+   sge_rlim_t h_vmem;
 
    sge_rlim_t s_fsize;
    sge_rlim_t h_fsize;
@@ -224,31 +224,21 @@ void setrlimits(bool trace_rlimit) {
       sge_parse_limit(dstp, s, error_str, sizeof(error_str)); \
    }
    /*
-    * Process complex values with attribute consumble that
-    * are subject to scaling by slots.
+    * The limits of the task. For a task of a parallel job, sge_execd already wrote the limits of
+    * all the slots the task stands for, see sge_exec_job_get_limit(), they are not scaled here.
     */
    PARSE_IT(&h_vmem, "h_vmem");
-   PARSE_IT(&h_vmem_is_consumable_job, "h_vmem_is_consumable_job");
    PARSE_IT(&s_vmem, "s_vmem");
-   PARSE_IT(&s_vmem_is_consumable_job, "s_vmem_is_consumable_job");
 
    PARSE_IT(&s_cpu, "s_cpu");
-   PARSE_IT(&s_cpu_is_consumable_job, "s_cpu_is_consumable_job");
    PARSE_IT(&h_cpu, "h_cpu");
-   PARSE_IT(&h_cpu_is_consumable_job, "h_cpu_is_consumable_job");
 
    PARSE_IT(&s_data, "s_data");
-   PARSE_IT(&s_data_is_consumable_job, "s_data_is_consumable_job");
    PARSE_IT(&h_data, "h_data");
-   PARSE_IT(&h_data_is_consumable_job, "h_data_is_consumable_job");
 
    PARSE_IT(&s_stack, "s_stack");
-   PARSE_IT(&s_stack_is_consumable_job, "s_stack_is_consumable_job");
    PARSE_IT(&h_stack, "h_stack");
-   PARSE_IT(&h_stack_is_consumable_job, "h_stack_is_consumable_job");
-   /*
-    * Process regular complex values.
-    */
+
    PARSE_IT(&s_core, "s_core");
    PARSE_IT(&h_core, "h_core");
 
@@ -342,26 +332,7 @@ void setrlimits(bool trace_rlimit) {
    if (!(s=search_nonone_conf_val("host_slots")) || !(host_slots=atoi(s)))
       host_slots = 1;
 
-   /* for multithreaded jobs the per process limit
-      must be available for each thread */
-   /*
-    * Scale resource by slots for type other than CONSUMABLE_JOB.
-    */
-#define CHECK_FOR_CONSUMABLE_JOB(A) \
-   (A##_is_consumable_job) ? (A=mul_infinity(A,1)):(A=mul_infinity(A, host_slots));
-
-   CHECK_FOR_CONSUMABLE_JOB(h_cpu);
-   CHECK_FOR_CONSUMABLE_JOB(s_cpu);
-
-   CHECK_FOR_CONSUMABLE_JOB(h_vmem);
-   CHECK_FOR_CONSUMABLE_JOB(s_vmem);
-
-   CHECK_FOR_CONSUMABLE_JOB(h_data);
-   CHECK_FOR_CONSUMABLE_JOB(s_data);
-
-   CHECK_FOR_CONSUMABLE_JOB(h_stack);
-   CHECK_FOR_CONSUMABLE_JOB(s_stack);
-
+   // the limits which are not queue limits apply to each slot of the job on this host
    if (s_descriptors != (sge_rlim_t)RLIMIT_UNDEFINED) {
       s_descriptors = mul_infinity(s_descriptors, host_slots);
    }

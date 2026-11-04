@@ -556,7 +556,7 @@ bool
 job_parse_validation_level(int *level, const char *input, int prog_number, lList **answer_list);
 
 bool
-job_is_requesting_consumable(lListElem *jep, const char *resource_name);
+job_is_requesting_consumable(const lListElem *jep, const char *resource_name);
 
 /**
  * @brief Give a job a default binding element

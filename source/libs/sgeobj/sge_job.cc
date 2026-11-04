@@ -3310,8 +3310,8 @@ job_parse_validation_level(int *level, const char *input, int prog_number, lList
  *
  * @return true or false
  */
-bool job_is_requesting_consumable(lListElem *jep, const char *resource_name) {
-   lListElem *cep = nullptr;
+bool job_is_requesting_consumable(const lListElem *jep, const char *resource_name) {
+   const lListElem *cep = nullptr;
    uint32_t consumable;
    const lList *request_list = job_get_hard_resource_list(jep);
 

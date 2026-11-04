@@ -36,6 +36,7 @@
  * @brief Writing a job's configuration to disk and forking its shepherd
  */
 
+#include <cfloat>
 #include <cstring>
 #include <pwd.h>
 #include <sys/types.h>
@@ -151,7 +152,7 @@ static long get_next_addgrpid(lList *, long);
  * @param petep the PE task, or nullptr
  * @return the queue instance
  */
-lListElem *responsible_queue(lListElem *jep, lListElem *jatep, lListElem *petep) {
+lListElem *responsible_queue(const lListElem *jep, const lListElem *jatep, const lListElem *petep) {
    DENTER(TOP_LAYER);
 
    lListElem *master_q = nullptr;
@@ -278,10 +279,158 @@ exec_job_granted_resources_for_host(const lList *granted_resources_list, const c
    DRETURN(ret);
 }
 
+/**
+ * @brief Does a task get the sum of the limits of all its slots on the host?
+ *
+ * A task gets the limit of all slots of the job on the host if it runs the processes of the other
+ * slots itself:
+ * - the master task of a loosely integrated parallel job, which starts the processes of all slots;
+ * - for a tightly integrated parallel job the master task with master_forks_slaves, and every pe
+ *   task with daemon_forks_slaves - the one daemon per host which forks the slave tasks. With
+ *   daemon_forks_slaves, the master host runs the job script and one such daemon; the job script
+ *   gets the limit of all slots only with master_forks_slaves.
+ * Every other task, and a sequential job, gets the limit of a single slot.
+ *
+ * A limit the job requests as a consumable of type JOB is the limit of the whole job, it is never
+ * summed up.
+ *
+ * @param jep the job
+ * @param jatep the ja_task
+ * @param petep the pe task, nullptr for the master task
+ * @param limit_name the name of the limit, e.g. h_rss
+ * @return true if the limits of all slots of the job on the host are summed up
+ */
+static bool
+exec_job_task_limit_is_summed(const lListElem *jep, const lListElem *jatep, const lListElem *petep,
+                              const char *limit_name) {
+   DENTER(TOP_LAYER);
+
+   bool ret = false;
+   const lListElem *pe = lGetObject(jatep, JAT_pe_object);
+   if (pe != nullptr && !job_is_requesting_consumable(jep, limit_name)) {
+      if (!lGetBool(pe, PE_control_slaves)) {
+         // loosely integrated: the master task starts the processes of all slots
+         ret = petep == nullptr;
+      } else {
+         // the master task forks the slaves on the master host, or the one pe task (daemon)
+         // per host forks the slaves on its host
+         if (petep == nullptr) {
+            ret = lGetBool(pe, PE_master_forks_slaves);
+         } else {
+            ret = lGetBool(pe, PE_daemon_forks_slaves);
+         }
+      }
+   }
+
+   DRETURN(ret);
+}
+
+/**
+ * @brief Sum up a limit over all slots of a job on a host
+ *
+ * @param limit_nm the limit attribute in the queue, e.g. QU_h_rss
+ * @param type the type of the limit, e.g. ocs::CEntry::Type::MEM
+ * @param jatep the ja_task
+ * @param qualified_hostname the host
+ * @return the sum of the limit of every queue instance of the job on the host multiplied by its
+ *         slots, DBL_MAX (infinity) if one of the queue instances has no limit
+ */
+static double
+exec_job_sum_host_limit(int limit_nm, ocs::CEntry::Type type, const lListElem *jatep,
+                        const char *qualified_hostname) {
+   DENTER(TOP_LAYER);
+
+   double limit = 0;
+   const lList *gdil = lGetList(jatep, JAT_granted_destin_identifier_list);
+   const void *iterator = nullptr;
+   const lListElem *gdil_ep;
+   const lListElem *next_gdil_ep = lGetElemHostFirst(gdil, JG_qhostname, qualified_hostname,
+                                                     &iterator);
+   while ((gdil_ep = next_gdil_ep) != nullptr) {
+      next_gdil_ep = lGetElemHostNext(gdil, JG_qhostname, qualified_hostname, &iterator);
+
+      const lListElem *queue = lGetObject(gdil_ep, JG_queue);
+      if (queue != nullptr) {
+         const char *limit_str = lGetString(queue, limit_nm);
+         if (limit_str != nullptr) {
+            // if one of the queue instances has a limit of infinity the sum is infinity
+            if (strcasecmp(limit_str, INFINITY_STR) == 0) {
+               DPRINTF("exec_job_sum_host_limit: qinstance %s has infinity\n",
+                       lGetString(gdil_ep, JG_qname));
+               limit = DBL_MAX;
+               break;
+            }
+            uint32_t slots = lGetUlong(gdil_ep, JG_slots);
+            double dbl;
+            parse_ulong_val(&dbl, nullptr, type, limit_str, nullptr, 0);
+            limit += dbl * slots;
+            DPRINTF("exec_job_sum_host_limit: qinstance %s has limit %s, slots " sge_u32
+                    ", sum %f\n",
+                    lGetString(gdil_ep, JG_qname), limit_str, slots, dbl * slots);
+         }
+      }
+   }
+
+   DRETURN(limit);
+}
+
+/**
+ * @brief Get the limit of a task of a job
+ *
+ * This is the limit sge_shepherd applies to the task, see sge_exec_job_get_limit(). sge_execd
+ * checks the usage of the task against the same value.
+ *
+ * @param limit_nm the limit attribute in the queue, e.g. QU_h_rss
+ * @param limit_name the name of the limit, e.g. h_rss
+ * @param type the type of the limit, e.g. ocs::CEntry::Type::MEM
+ * @param queue the queue instance the task is running in
+ * @param jep the job
+ * @param jatep the ja_task
+ * @param petep the pe task, nullptr for the master task
+ * @param qualified_hostname the host the task is running on
+ * @return the limit, DBL_MAX (infinity) if the task has no limit
+ */
+double
+execd_get_task_limit(int limit_nm, const char *limit_name, ocs::CEntry::Type type,
+                     const lListElem *queue, const lListElem *jep, const lListElem *jatep,
+                     const lListElem *petep, const char *qualified_hostname) {
+   DENTER(TOP_LAYER);
+
+   double limit = DBL_MAX;
+   const char *limit_str = lGetString(queue, limit_nm);
+   if (limit_str != nullptr && strcasecmp(limit_str, INFINITY_STR) != 0) {
+      if (exec_job_task_limit_is_summed(jep, jatep, petep, limit_name)) {
+         limit = exec_job_sum_host_limit(limit_nm, type, jatep, qualified_hostname);
+      } else {
+         parse_ulong_val(&limit, nullptr, type, limit_str, nullptr, 0);
+      }
+   }
+
+   DRETURN(limit);
+}
+
+/**
+ * @brief Get the limit of a task as it is written into the config file of sge_shepherd
+ *
+ * For sequential jobs and for the tasks of a parallel job which get the limit of a single slot,
+ * this is the limit of the queue instance as it is configured. For the tasks which get the limit
+ * of all slots of the job on the host, see exec_job_task_limit_is_summed(), it is the sum.
+ *
+ * @param dstr buffer for a summed up limit
+ * @param limit_nm the limit attribute in the queue, e.g. QU_h_rss
+ * @param limit_name the name of the limit, e.g. h_rss
+ * @param type the type of the limit, e.g. ocs::CEntry::Type::MEM
+ * @param master_q the queue instance the task is running in
+ * @param jep the job
+ * @param jatep the ja_task
+ * @param petep the pe task, nullptr for the master task
+ * @param qualified_hostname the host the task is running on
+ * @return the limit as a string
+ */
 static const char *
 sge_exec_job_get_limit(dstring *dstr, int limit_nm, const char *limit_name, ocs::CEntry::Type type,
-                       const lListElem *master_q, const lListElem *jatep, const lListElem *petep,
-                       const char *qualified_hostname) {
+                       const lListElem *master_q, const lListElem *jep, const lListElem *jatep,
+                       const lListElem *petep, const char *qualified_hostname) {
    DENTER(TOP_LAYER);
 
    const char *ret = lGetString(master_q, limit_nm);
@@ -292,50 +441,21 @@ sge_exec_job_get_limit(dstring *dstr, int limit_nm, const char *limit_name, ocs:
 
    DPRINTF("sge_exec_job_get_limit: limit_name=%s, limit=%s\n", limit_name, ret);
 
-   // for sequential jobs we are done, for tightly integrated parallel jobs we need to check the pe settings
    // if the limit in the master queue is infinity there is no need to do calculations
-   // if it is not infinity we need to check pe setting master_forks_slave and daemon_forks_slave
-   // and sum up the limits of the (possibly multiple) queues
-   const lListElem *pe = lGetObject(jatep, JAT_pe_object);
-   if (pe != nullptr && lGetBool(pe, PE_control_slaves) &&
-       strcasecmp(ret, INFINITY_STR) != 0) {
-      DPRINTF("sge_exec_job_get_limit: we have a tightly integrated parallel job and limit is not infinity\n");
-      if ((petep == nullptr && lGetBool(pe, PE_master_forks_slaves)) || // master task forks slaves
-                               lGetBool(pe, PE_daemon_forks_slaves)) {  // one slave task forks slaves
-         DPRINTF("sge_exec_job_get_limit: we need to sum up the limits\n");
-         double limit = 0;
-         const lList *gdil = lGetList(jatep, JAT_granted_destin_identifier_list);
-         const void *iterator = nullptr;
-         const lListElem *gdil_ep;
-         const lListElem *next_gdil_ep = lGetElemHostFirst(gdil, JG_qhostname, qualified_hostname, &iterator);
-         while ((gdil_ep = next_gdil_ep) != nullptr) {
-            next_gdil_ep = lGetElemHostNext(gdil, JG_qhostname, qualified_hostname, &iterator);
-
-            const lListElem *queue = lGetObject(gdil_ep, JG_queue);
-            if (queue != nullptr) {
-               const char *limit_str = lGetString(queue, limit_nm);
-               if (limit_str != NULL) {
-                  // if one of the queue instances has a limit of infinity the sum is infinity
-                  if (strcasecmp(limit_str, INFINITY_STR) == 0) {
-                     DPRINTF("sge_exec_job_get_limit: qinstance %s has infinity\n", lGetString(gdil_ep, JG_qname));
-                     ret = INFINITY_STR;
-                     break;
-                  } else {
-                     uint32_t slots = lGetUlong(gdil_ep, JG_slots);
-                     double dbl;
-                     parse_ulong_val(&dbl, nullptr, type, limit_str, nullptr, 0);
-                     limit += dbl * slots;
-                     DPRINTF("sge_exec_job_get_limit: qinstance %s has limit %s, slots " sge_u32 ", sum %f\n",
-                             lGetString(gdil_ep, JG_qname), limit_str, slots, dbl * slots);
-                  }
-               }
-            }
-         } // end: loop over all gdil elements on this host
+   if (strcasecmp(ret, INFINITY_STR) != 0 &&
+       exec_job_task_limit_is_summed(jep, jatep, petep, limit_name)) {
+      DPRINTF("sge_exec_job_get_limit: we need to sum up the limits\n");
+      double limit = exec_job_sum_host_limit(limit_nm, type, jatep, qualified_hostname);
+      if (limit == DBL_MAX) {
+         ret = INFINITY_STR;
+      } else {
+         // double_print_to_dstring() appends, and dstr is used for all limits of the task
+         sge_dstring_clear(dstr);
          double_print_to_dstring(limit, dstr, type);
          ret = sge_dstring_get_string(dstr);
-         DPRINTF("sge_exec_job_get_limit: sum of limits %s\n", ret);
-      } // end: we need to sum up the limits
-   } // end: we have a tightly integrated pe job
+      }
+      DPRINTF("sge_exec_job_get_limit: sum of limits %s\n", ret);
+   }
 
    DRETURN(ret);
 }
@@ -1294,39 +1414,34 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
    }
 
    /*
-    * Shorthand for this code sequence:
-    *   - obtain resource A from master queue and write out to shepherd config file
-    *   - check if resource is job consumable and indicate to shepherd
+    * Write the limit A of the task, see sge_exec_job_get_limit(). For a task which stands for
+    * several slots it is already the sum, sge_shepherd applies it as it is.
     */
-#define WRITE_COMPLEX_AND_CONSUMABLE_ATTR(A, T) \
-   fprintf(fp, #A"=%s\n", sge_exec_job_get_limit(&dstr_limit, QU_##A, #A, T, master_q, jatep, petep, qualified_hostname)); \
-   job_is_requesting_consumable(jep, #A) ? fprintf(fp, #A"_is_consumable_job=1\n") : fprintf(fp, #A"_is_consumable_job=0\n")
-#define WRITE_COMPLEX_ATTR(A, T) \
-   fprintf(fp, #A"=%s\n", sge_exec_job_get_limit(&dstr_limit, QU_##A, #A, T, master_q, jatep, petep, qualified_hostname))
-                                 \
+#define WRITE_LIMIT(A, T) \
+   fprintf(fp, #A"=%s\n", sge_exec_job_get_limit(&dstr_limit, QU_##A, #A, T, master_q, jep, jatep, \
+                                                 petep, qualified_hostname))
    {
       DSTRING_STATIC(dstr_limit, 512);
-      WRITE_COMPLEX_AND_CONSUMABLE_ATTR(h_vmem, ocs::CEntry::Type::MEM);
-      WRITE_COMPLEX_AND_CONSUMABLE_ATTR(s_vmem, ocs::CEntry::Type::MEM);
+      WRITE_LIMIT(h_vmem, ocs::CEntry::Type::MEM);
+      WRITE_LIMIT(s_vmem, ocs::CEntry::Type::MEM);
 
-      WRITE_COMPLEX_AND_CONSUMABLE_ATTR(h_cpu, ocs::CEntry::Type::TIME);
-      WRITE_COMPLEX_AND_CONSUMABLE_ATTR(s_cpu, ocs::CEntry::Type::TIME);
+      WRITE_LIMIT(h_cpu, ocs::CEntry::Type::TIME);
+      WRITE_LIMIT(s_cpu, ocs::CEntry::Type::TIME);
 
-      WRITE_COMPLEX_AND_CONSUMABLE_ATTR(h_stack, ocs::CEntry::Type::MEM);
-      WRITE_COMPLEX_AND_CONSUMABLE_ATTR(s_stack, ocs::CEntry::Type::MEM);
+      WRITE_LIMIT(h_stack, ocs::CEntry::Type::MEM);
+      WRITE_LIMIT(s_stack, ocs::CEntry::Type::MEM);
 
-      WRITE_COMPLEX_AND_CONSUMABLE_ATTR(h_data, ocs::CEntry::Type::MEM);
-      WRITE_COMPLEX_AND_CONSUMABLE_ATTR(s_data, ocs::CEntry::Type::MEM);
+      WRITE_LIMIT(h_data, ocs::CEntry::Type::MEM);
+      WRITE_LIMIT(s_data, ocs::CEntry::Type::MEM);
 
-      // @todo why not use WRITE_COMPLEX_AND_CONSUMABLE_ATTR? Can't they be made consumable?
-      WRITE_COMPLEX_ATTR(h_core, ocs::CEntry::Type::MEM);
-      WRITE_COMPLEX_ATTR(s_core, ocs::CEntry::Type::MEM);
+      WRITE_LIMIT(h_core, ocs::CEntry::Type::MEM);
+      WRITE_LIMIT(s_core, ocs::CEntry::Type::MEM);
 
-      WRITE_COMPLEX_ATTR(h_rss, ocs::CEntry::Type::MEM);
-      WRITE_COMPLEX_ATTR(s_rss, ocs::CEntry::Type::MEM);
+      WRITE_LIMIT(h_rss, ocs::CEntry::Type::MEM);
+      WRITE_LIMIT(s_rss, ocs::CEntry::Type::MEM);
 
-      WRITE_COMPLEX_ATTR(h_fsize, ocs::CEntry::Type::MEM);
-      WRITE_COMPLEX_ATTR(s_fsize, ocs::CEntry::Type::MEM);
+      WRITE_LIMIT(h_fsize, ocs::CEntry::Type::MEM);
+      WRITE_LIMIT(s_fsize, ocs::CEntry::Type::MEM);
    }
 
    {

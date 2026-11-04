@@ -1,5 +1,37 @@
 # Upgrade Notes
 
+## Limits of Parallel Jobs
+
+The resource limits of a queue, e.g. *h_cpu*, *h_vmem* or *h_rss*, are limits per slot. For a
+parallel job, xxqs_name_sxx_execd(8) and xxqs_name_sxx_shepherd(8) computed the limit of a task in
+different ways ([CS-3017](https://hpc-gridware.atlassian.net/browse/CS-3017)):
+
+- The shepherd multiplied *s_cpu*, *h_cpu*, *s_vmem*, *h_vmem*, *s_data*, *h_data*, *s_stack* and
+  *h_stack* by the number of slots of the job on the host, for every task. With
+  *master_forks_slaves* or *daemon_forks_slaves* the execution daemon had already multiplied them,
+  so these tasks got the limit multiplied twice. *s_rss* and *h_rss* were not multiplied, so on a
+  host with systemd *MemoryMax* and *MemoryHigh* came from a different value than the
+  setrlimit(2) limits.
+- The execution daemon compared the usage of all tasks of the job on a host together against the
+  limit multiplied by the number of slots.
+
+Now the execution daemon computes the limit of each task once, and the shepherd applies it as it is,
+see xxqs_name_sxx_queue_conf(5). The master task of a loosely integrated parallel job, the master
+task with *master_forks_slaves* and every slave task with *daemon_forks_slaves* get the limit
+multiplied by the number of slots of the job on the host. Every other task gets the limit of a
+single slot. A limit the job requests as a consumable of type JOB is not multiplied.
+
+After the upgrade, these tasks get a lower limit than before:
+
+- a task of a tightly integrated parallel job without *master_forks_slaves* or
+  *daemon_forks_slaves*, for the limits the shepherd used to multiply;
+- the master task with *master_forks_slaves* and every slave task with *daemon_forks_slaves*,
+  which no longer get these limits multiplied twice;
+- the master task with *daemon_forks_slaves* but without *master_forks_slaves*, which got the
+  limit of all slots on the master host before, also *s_rss* and *h_rss*.
+
+A job whose tasks used more than their new limit is killed.
+
 ## TLS: Private Keys Move Below the Cell
 
 The private keys of the daemons used to be stored in `/var/lib/ocs/<qmaster_port>/private`. The path now also
