@@ -37,6 +37,7 @@
  * @brief Internal layout of a cull list and its elements
  */
 
+#include <atomic>
 #include <cassert>
 #include <cstdint>
 
@@ -115,11 +116,34 @@ struct _lListElem {
  * built, so a list created without hashing has slots with no table. The slot
  * carries the field's descriptor position, which maps a position to its table
  * by a scan over the few hashed fields of a type.
+ *
+ * The table pointer is atomic because concurrent readers of a list may each
+ * build the table on their first lookup: get() reads it with acquire semantics,
+ * so a reader that sees a table also sees it fully built. Modifications of a
+ * list never run concurrently with other access to it, so set() needs no more
+ * than release semantics.
  */
 struct cull_hash_slot {
-   int pos;        ///< position of the hashed field in the list's descriptor
-   cull_htable ht; ///< the table over that field, or nullptr while none is built
+   int pos;                     ///< position of the hashed field in the list's descriptor
+   std::atomic<cull_htable> ht; ///< the table over that field, or nullptr while none is built
+
+   /**
+    * @brief The table of the slot
+    * @return the table, or nullptr while none is built
+    */
+   cull_htable get() const {
+      return ht.load(std::memory_order_acquire);
+   }
+
+   /**
+    * @brief Store a table in the slot, by a thread that modifies the list
+    * @param t the table, or nullptr to empty the slot
+    */
+   void set(const cull_htable t) {
+      ht.store(t, std::memory_order_release);
+   }
 };
+static_assert(std::atomic<cull_htable>::is_always_lock_free, "a hash slot must not hide a mutex");
 
 /**
  * @brief A cull list: a doubly linked list of elements of one object type
@@ -304,7 +328,7 @@ inline cull_hash_slot *list_hash_slot(const lList *lp, const int pos) {
  */
 inline cull_htable list_hash_table(const lList *lp, const int pos) {
    const cull_hash_slot *slot = list_hash_slot(lp, pos);
-   return slot != nullptr ? slot->ht : nullptr;
+   return slot != nullptr ? slot->get() : nullptr;
 }
 
 /**

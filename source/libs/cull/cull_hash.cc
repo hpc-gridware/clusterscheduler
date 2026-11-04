@@ -39,6 +39,7 @@
  */
 
 #include <cstdio>
+#include <new>
 
 /* do not compile in monitoring code */
 #ifndef NO_SGE_COMPILE_DEBUG
@@ -224,8 +225,8 @@ void cull_hash_create_hashtables(lList *lp) {
 
       /* create the tables missing in the list's slots, pass final size */
       for (uint32_t i = 0; i < lp->nslots; i++) {
-         if (lp->ht[i].ht == nullptr) {
-            lp->ht[i].ht = cull_hash_create(lp->descr, lp->ht[i].pos, size);
+         if (lp->ht[i].get() == nullptr) {
+            lp->ht[i].set(cull_hash_create(lp->descr, lp->ht[i].pos, size));
          }
       }
 
@@ -495,7 +496,7 @@ void cull_hash_rebuild_unique(lList *lp, const int pos) {
    if (slot == nullptr) {
       return;
    }
-   cull_htable ht = slot->ht;
+   cull_htable ht = slot->get();
 
    if (ht == nullptr || !mt_is_unique(lp->descr[pos].mt) || ht->dup_count == 0) {
       return;
@@ -508,8 +509,8 @@ void cull_hash_rebuild_unique(lList *lp, const int pos) {
     * old table, which is known to be wrong, would not be. */
    cull_hash_count_free(ht);
    sge_htable_destroy(ht->ht);
-   sge_free(&(slot->ht));
-   slot->ht = fresh;
+   sge_free(&ht);
+   slot->set(fresh);
 
    if (fresh == nullptr) {
       return;
@@ -540,7 +541,7 @@ void cull_hash_repair(lList *lp) {
    }
 
    for (uint32_t i = 0; i < lp->nslots; i++) {
-      const cull_htable ht = lp->ht[i].ht;
+      const cull_htable ht = lp->ht[i].get();
 
       /* Tested here rather than left to cull_hash_rebuild_unique() so that the
        * ordinary case costs a load and a branch per hashed field instead of a
@@ -574,8 +575,9 @@ void cull_hash_elem(const lListElem *ep) {
 
    for (uint32_t i = 0; i < lp->nslots; i++) {
       const cull_hash_slot &slot = lp->ht[i];
-      if (slot.ht != nullptr) {
-         cull_hash_insert(ep, cull_hash_key(ep, slot.pos, host_key), slot.ht,
+      const cull_htable ht = slot.get();
+      if (ht != nullptr) {
+         cull_hash_insert(ep, cull_hash_key(ep, slot.pos, host_key), ht,
                           mt_is_unique(ep->descr[slot.pos].mt));
       }
    }
@@ -601,7 +603,7 @@ void cull_hash_remove_elem(const lListElem *ep) {
    }
 
    for (uint32_t i = 0; i < lp->nslots; i++) {
-      if (lp->ht[i].ht != nullptr) {
+      if (lp->ht[i].get() != nullptr) {
          cull_hash_remove(ep, lp->ht[i].pos);
       }
    }
@@ -783,11 +785,14 @@ bool cull_hash_init_slots(lList *lp, const bool create) {
    if (lp->ht == nullptr) {
       return false;
    }
+   /* Placement new allocates nothing, it constructs each slot in the memory
+    * from sge_malloc() above. A slot holds a std::atomic, which (unlike a plain
+    * struct) does not come into existence by malloc alone, so storing into the
+    * raw memory would be undefined behaviour. The array is still freed with
+    * sge_free(): the slots need no destructor. */
    for (int i = 0; mt_get_type(lp->descr[i].mt) != lEndT; i++) {
       if (mt_do_hashing(lp->descr[i].mt)) {
-         cull_hash_slot &slot = lp->ht[lp->nslots++];
-         slot.pos = i;
-         slot.ht = create ? cull_hash_create(lp->descr, i, 0) : nullptr;
+         new (&lp->ht[lp->nslots++]) cull_hash_slot{i, create ? cull_hash_create(lp->descr, i, 0) : nullptr};
       }
    }
    return true;
@@ -806,7 +811,9 @@ void cull_hash_free_tables(lList *lp) {
       return;
    }
    for (uint32_t i = 0; i < lp->nslots; i++) {
-      cull_hash_destroy(&lp->ht[i].ht);
+      cull_htable ht = lp->ht[i].get();
+      cull_hash_destroy(&ht);
+      lp->ht[i].set(nullptr);
    }
 }
 
@@ -915,21 +922,27 @@ int cull_hash_new(lList *lp, int nm, bool unique) {
    }
 
    cull_hash_slot *slot = list_hash_slot(lp, pos);
-   if (slot != nullptr && slot->ht != nullptr) {
+   if (slot != nullptr && slot->get() != nullptr) {
       WARNING(MSG_CULL_HASHTABLEALREADYEXISTS_S, lNm2Str(nm));
       DRETURN(0);
    }
 
-   /* a field that is not hashed in the type gets a slot of its own */
+   /* A field that is not hashed in the type gets a slot of its own. The slots
+    * hold atomics: realloc() would copy their bytes without constructing them,
+    * so the slots are constructed in a new array by placement new instead (see
+    * cull_hash_init_slots()). */
    if (slot == nullptr) {
-      auto *slots = (cull_hash_slot *) sge_realloc(lp->ht, sizeof(cull_hash_slot) * (lp->nslots + 1), 0);
+      auto *slots = (cull_hash_slot *) sge_malloc(sizeof(cull_hash_slot) * (lp->nslots + 1));
       if (slots == nullptr) {
          DRETURN(0);
       }
+      for (uint32_t i = 0; i < lp->nslots; i++) {
+         new (&slots[i]) cull_hash_slot{lp->ht[i].pos, lp->ht[i].get()};
+      }
+      new (&slots[lp->nslots]) cull_hash_slot{pos, nullptr};
+      sge_free(&(lp->ht));
       lp->ht = slots;
       slot = &lp->ht[lp->nslots++];
-      slot->pos = pos;
-      slot->ht = nullptr;
    }
 
    /* copy hashing information */
@@ -940,15 +953,16 @@ int cull_hash_new(lList *lp, int nm, bool unique) {
 
    size = hash_compute_size(lGetNumberOfElem(lp));
 
-   slot->ht = cull_hash_create(descr, pos, size);
+   cull_htable ht = cull_hash_create(descr, pos, size);
+   slot->set(ht);
 
-   if (slot->ht == nullptr) {
+   if (ht == nullptr) {
       DRETURN(0);
    }
 
    /* insert all elements into the new hash table */
    for_each_ep_lv(ep, lp) {
-      cull_hash_insert(ep, cull_hash_key(ep, pos, host_key), slot->ht, unique);
+      cull_hash_insert(ep, cull_hash_key(ep, pos, host_key), ht, unique);
    }
 
    DRETURN(1);
@@ -1044,9 +1058,10 @@ void cull_hash_recreate_after_sort(lList *lp) {
       /* at first free and recreate the non unique tables, their chains carry the old order */
       for (uint32_t i = 0; i < lp->nslots; i++) {
          cull_hash_slot &slot = lp->ht[i];
-         if (slot.ht != nullptr && !mt_is_unique(lp->descr[slot.pos].mt)) {
-            cull_hash_destroy(&slot.ht);
-            slot.ht = cull_hash_create(lp->descr, slot.pos, size);
+         cull_htable ht = slot.get();
+         if (ht != nullptr && !mt_is_unique(lp->descr[slot.pos].mt)) {
+            cull_hash_destroy(&ht);
+            slot.set(cull_hash_create(lp->descr, slot.pos, size));
             cleared = true;
          }
       }
@@ -1058,8 +1073,9 @@ void cull_hash_recreate_after_sort(lList *lp) {
          for_each_ep_lv(ep, lp) {
             for (uint32_t i = 0; i < lp->nslots; i++) {
                const cull_hash_slot &slot = lp->ht[i];
-               if (slot.ht != nullptr && !mt_is_unique(lp->descr[slot.pos].mt)) {
-                  cull_hash_insert(ep, cull_hash_key(ep, slot.pos, host_key), slot.ht, false);
+               const cull_htable ht = slot.get();
+               if (ht != nullptr && !mt_is_unique(lp->descr[slot.pos].mt)) {
+                  cull_hash_insert(ep, cull_hash_key(ep, slot.pos, host_key), ht, false);
                }
             }
          }
