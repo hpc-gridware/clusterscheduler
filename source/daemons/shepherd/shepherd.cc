@@ -1368,13 +1368,15 @@ static int start_child(
             sge_switch2admin_user();
 
             if (success != 0) {
-               /* This case should never happen */
-               /* See Issue 1679 */
-               shepherd_trace("can't get qrsh_exit_code");
-            }
-
-            /* normal exit */
-            if (WIFEXITED(qrsh_exit_code)) {
+               /*
+                * qrsh_starter did not write the exit code of the command, e.g. because it was
+                * killed together with the command (kill of the process group, OOM kill of the
+                * job scope). Keep the exit status of qrsh_starter itself.
+                */
+               shepherd_trace("can't get qrsh_exit_code, using the exit status %d of qrsh_starter",
+                              exit_status);
+            } else if (WIFEXITED(qrsh_exit_code)) {
+               /* normal exit */
                const char *qrsh_error;
 
                exit_status = WEXITSTATUS(qrsh_exit_code);
@@ -1386,10 +1388,8 @@ static int start_child(
                } else {
                   shepherd_trace("job exited normally, exit code is %d", exit_status);
                }
-            }
-
-            /* qrsh job was signaled */
-            if (WIFSIGNALED(qrsh_exit_code)) {
+            } else if (WIFSIGNALED(qrsh_exit_code)) {
+               /* qrsh job was signaled */
                child_signal = WTERMSIG(qrsh_exit_code);
                exit_status = 128 + child_signal;
                shepherd_trace("job exited on signal %d, exit code is %d",
