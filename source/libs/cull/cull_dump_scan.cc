@@ -1221,7 +1221,7 @@ static int fGetObject(FILE *fp, lListElem **epp) {
          LERROR(LEUNDUMPELEM);
          DRETURN(-1);
       }
-      (*epp)->status = OBJECT_ELEM;
+      elem_set_object(*epp);
    }
 
    DRETURN(0);

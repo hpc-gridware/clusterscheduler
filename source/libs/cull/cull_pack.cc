@@ -702,12 +702,12 @@ cull_pack_elem_partial(sge_pack_buffer *pb, const lListElem *ep,
       ocs::TerminationManager::trigger_abort();
    }
 
-   if ((ret = packint(pb, ep->status)) != PACK_SUCCESS) {
+   if ((ret = packint(pb, elem_kind_to_wire(elem_kind(ep)))) != PACK_SUCCESS) {
       PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
       DRETURN(ret);
    }
 
-   if (ep->status == FREE_ELEM) {
+   if (elem_kind(ep) == FREE_ELEM) {
       if (what == nullptr) {
          if ((ret = cull_pack_descr(pb, ep->descr)) != PACK_SUCCESS) {
             PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
@@ -772,13 +772,28 @@ int cull_unpack_elem_partial(sge_pack_buffer *pb, lListElem **epp, const lDescr 
       DRETURN(PACK_ENOMEM);
    }
 
-   if ((ret = unpackint(pb, &(ep->status))) != PACK_SUCCESS) {
+   uint32_t wire;
+   cull_elem_kind kind;
+   if ((ret = unpackint(pb, &wire)) != PACK_SUCCESS) {
       sge_free(&ep);
       PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
       DRETURN(ret);
    }
+   if (!elem_kind_from_wire(wire, &kind)) {
+      sge_free(&ep);
+      PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
+      DRETURN(PACK_FORMAT);
+   }
 
-   if (ep->status == FREE_ELEM) {
+   /* An element that was bound or a sub-object at the sender is transitionally bound here
+    * until it is chained in, so that lAppendElem does not reject it as bound. */
+   if (kind == FREE_ELEM) {
+      elem_set_free(ep);
+   } else {
+      elem_set_trans_bound(ep);
+   }
+
+   if (elem_kind(ep) == FREE_ELEM) {
       if ((ret = cull_unpack_descr(pb, &(ep->descr))) != PACK_SUCCESS) {
          sge_free(&ep);
          PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
@@ -822,10 +837,6 @@ int cull_unpack_elem_partial(sge_pack_buffer *pb, lListElem **epp, const lDescr 
       }
    }
 
-   /* This is a hack, to avoid aborts in lAppendElem */
-   if (ep->status == BOUND_ELEM || ep->status == OBJECT_ELEM)
-      ep->status = TRANS_BOUND_ELEM;
-
    /* 
       here after setting status correctly we got 
       an element in a defined state - so we may
@@ -833,7 +844,7 @@ int cull_unpack_elem_partial(sge_pack_buffer *pb, lListElem **epp, const lDescr 
     */
 
    if ((ret = cull_unpack_cont(pb, &(ep->cont), ep->descr, flags))) {
-      if (ep->status == FREE_ELEM || ep->status == OBJECT_ELEM) {
+      if (elem_kind(ep) == FREE_ELEM || elem_kind(ep) == OBJECT_ELEM) {
          sge_free(&(ep->descr));
       }
       sge_free(&ep);
@@ -1140,7 +1151,7 @@ static int cull_unpack_object(
       DRETURN(ret);
    }
 
-   ep->status = OBJECT_ELEM;
+   elem_set_object(ep);
 
 #ifdef OBSERVE
    lObserveAdd(ep, nullptr, false);

@@ -156,7 +156,7 @@ lListElem *lCopyElemHash(const lListElem *ep, bool isHash, const bool skip_no_tr
       }
    }
 
-   new_ep->status = FREE_ELEM;
+   elem_set_free(new_ep);
 
    DRETURN(new_ep);
 }
@@ -335,7 +335,7 @@ lCopySwitchPack(const lListElem *sep, lListElem *dep, int src_idx, int dst_idx,
             dep->cont[dst_idx].obj = nullptr;
          } else {
             lListElem *new_ep = lSelectElemPack(tep, nullptr, ep, isHash, pb, skip_no_transfer);
-            new_ep->status = OBJECT_ELEM;
+            elem_set_object(new_ep);
             dep->cont[dst_idx].obj = new_ep;
          }
          break;
@@ -439,7 +439,7 @@ uint32_t lGetNumberOfElem(const lList *lp) {
 int lGetElemIndex(const lListElem *ep, const lList *lp) {
    DENTER(CULL_LAYER);
 
-   if (!ep || ep->status != BOUND_ELEM) {
+   if (!ep || elem_kind(ep) != BOUND_ELEM) {
       DRETURN(-1);
    }
 
@@ -517,7 +517,7 @@ bool lIsFreeElem(const lListElem *ep) {
       LERROR(LEELEMNULL);
       DRETURN(false);
    }
-   DRETURN(ep->status == FREE_ELEM);
+   DRETURN(elem_kind(ep) == FREE_ELEM);
 }
 
 /**
@@ -789,7 +789,7 @@ lListElem *lCreateElem(const lDescr *dp) {
       ep->descr[i].mt |= (dp->mt & CULL_IS_REDUCED);
    }
 
-   ep->status = FREE_ELEM;
+   elem_set_free(ep);
    if (!(ep->cont = (lMultiType *) calloc(1, sizeof(lMultiType) * n))) {
       LERROR(LEMALLOC);
       sge_free(&(ep->descr));
@@ -1007,7 +1007,7 @@ void lFreeElem(lListElem **ep1) {
    }
 
    /* lFreeElem is not responsible for list descriptor array */
-   if (ep->status == FREE_ELEM || ep->status == OBJECT_ELEM) {
+   if (elem_kind(ep) == FREE_ELEM || elem_kind(ep) == OBJECT_ELEM) {
       cull_hash_free_descr(ep->descr);
       sge_free(&(ep->descr));
    }
@@ -1395,7 +1395,7 @@ int lInsertElem(lList *lp, lListElem *ep, lListElem *new_ep) {
    }
 
    /* is the element new_ep still chained in an other list, this is not allowed ? */
-   if (new_ep->status == BOUND_ELEM || new_ep->status == OBJECT_ELEM) {
+   if (elem_kind(new_ep) == BOUND_ELEM || elem_kind(new_ep) == OBJECT_ELEM) {
       DPRINTF("WARNING: tried to insert chained element\n");
       lWriteElem(new_ep);
       ocs::TerminationManager::trigger_abort();
@@ -1419,11 +1419,11 @@ int lInsertElem(lList *lp, lListElem *ep, lListElem *new_ep) {
       lp->first = new_ep;
    }
 
-   if (new_ep->status == FREE_ELEM) {
+   if (elem_kind(new_ep) == FREE_ELEM) {
       cull_hash_free_descr(new_ep->descr);
       sge_free(&(new_ep->descr));
    }
-   new_ep->status = BOUND_ELEM;
+   elem_set_bound(new_ep, lp);
    new_ep->descr = lp->descr;
 
    cull_hash_elem(new_ep);
@@ -1462,7 +1462,7 @@ int lAppendElem(lList *lp, lListElem *ep) {
    }
 
    /* is the element ep still chained in an other list, this is not allowed ? */
-   if (ep->status == BOUND_ELEM || ep->status == OBJECT_ELEM) {
+   if (elem_kind(ep) == BOUND_ELEM || elem_kind(ep) == OBJECT_ELEM) {
       DPRINTF("WARNING: tried to append chained element\n");
       ocs::TerminationManager::trigger_abort();
    }
@@ -1477,11 +1477,11 @@ int lAppendElem(lList *lp, lListElem *ep) {
       ep->prev = ep->next = nullptr;
    }
 
-   if (ep->status == FREE_ELEM) {
+   if (elem_kind(ep) == FREE_ELEM) {
       cull_hash_free_descr(ep->descr);
       sge_free(&(ep->descr));
    }
-   ep->status = BOUND_ELEM;
+   elem_set_bound(ep, lp);
    ep->descr = lp->descr;
 
    cull_hash_elem(ep);
@@ -1620,6 +1620,7 @@ lDechainList(lList *source, lList **target, lListElem *ep) {
 
    for (; ep != nullptr; ep = ep->next) {
       ep->descr = (*target)->descr;
+      elem_set_bound(ep, *target);
       (*target)->nelem++;
       source->nelem--;
    }
@@ -1694,7 +1695,7 @@ lListElem *lDechainElem(lList *lp, lListElem *ep) {
    /* nullptr the ep next and previous pointers */
    ep->prev = ep->next = (lListElem *) nullptr;
    ep->descr = lCopyDescr(ep->descr);
-   ep->status = FREE_ELEM;
+   elem_set_free(ep);
 
 #ifdef OBSERVE
    lObserveChangeOwner(ep, nullptr, lp, NoName);
@@ -1736,7 +1737,7 @@ lListElem *lDechainObject(lListElem *parent, int name) {
    dep = (lListElem *) parent->cont[pos].obj;
 
    if (dep != nullptr) {
-      dep->status = FREE_ELEM;
+      elem_set_free(dep);
       parent->cont[pos].obj = nullptr;
    }
 

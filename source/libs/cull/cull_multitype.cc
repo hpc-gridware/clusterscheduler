@@ -1926,7 +1926,7 @@ int lSetPosObject(lListElem *ep, int pos, lListElem *value) {
       DRETURN(-1);
    }
 
-   if (value != nullptr && value->status != FREE_ELEM && value->status != TRANS_BOUND_ELEM) {
+   if (value != nullptr && elem_kind(value) != FREE_ELEM && elem_kind(value) != TRANS_BOUND_ELEM) {
       LERROR(LEBOUNDELEM);
       DRETURN(-1);
    }
@@ -1947,7 +1947,7 @@ int lSetPosObject(lListElem *ep, int pos, lListElem *value) {
 
       /* mark lListElem as bound */
       if (value != nullptr) {
-         value->status = OBJECT_ELEM;
+         elem_set_object(value);
       }
    }
 
@@ -2163,7 +2163,7 @@ int lSetObject(lListElem *ep, int name, lListElem *value) {
       DRETURN(-1);
    }
 
-   if (value != nullptr && value->status != FREE_ELEM && value->status != TRANS_BOUND_ELEM) {
+   if (value != nullptr && elem_kind(value) != FREE_ELEM && elem_kind(value) != TRANS_BOUND_ELEM) {
       LERROR(LEBOUNDELEM);
       DRETURN(-1);
    }
@@ -2184,7 +2184,7 @@ int lSetObject(lListElem *ep, int name, lListElem *value) {
 
       /* mark lListElem as bound */
       if (value != nullptr) {
-         value->status = OBJECT_ELEM;
+         elem_set_object(value);
       }
    }
 
