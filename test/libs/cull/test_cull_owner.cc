@@ -182,12 +182,15 @@ static int pack_unpack(const lListElem *ep, lListElem **epp) {
  * @param lp the list
  * @param nm the hashed string field
  * @param key the key
- * @return the element the table holds for the key, or nullptr when the table has none or does not exist
+ * The table is built by this lookup if the list has none yet (the threshold is
+ * 0 in this test, see main()).
+ *
+ * @return the element the table holds for the key, or nullptr when the table has none or cannot be built
  */
 static const lListElem *table_str(const lList *lp, int nm, const char *key) {
    const int pos = lGetPosInDescr(lGetListDescr(lp), nm);
    const void *iterator = nullptr;
-   return cull_hash_first(list_hash_table(lp, pos), key, mt_is_unique(lGetListDescr(lp)[pos].mt), &iterator);
+   return cull_hash_first(ocs_cull_hash_lookup_table(lp, pos), key, mt_is_unique(lGetListDescr(lp)[pos].mt), &iterator);
 }
 
 /**
@@ -198,20 +201,24 @@ static const lListElem *table_str(const lList *lp, int nm, const char *key) {
  * @param lp the list
  * @param nm the hashed ulong field
  * @param key the key
- * @return the element the table holds for the key, or nullptr when the table has none or does not exist
+ * The table is built by this lookup if the list has none yet.
+ *
+ * @return the element the table holds for the key, or nullptr when the table has none or cannot be built
  */
 static const lListElem *table_ulong(const lList *lp, int nm, uint32_t key) {
    const int pos = lGetPosInDescr(lGetListDescr(lp), nm);
    const void *iterator = nullptr;
-   return cull_hash_first(list_hash_table(lp, pos), &key, mt_is_unique(lGetListDescr(lp)[pos].mt), &iterator);
+   return cull_hash_first(ocs_cull_hash_lookup_table(lp, pos), &key, mt_is_unique(lGetListDescr(lp)[pos].mt), &iterator);
 }
 
 /**
  * @brief Whether a moved element is found under its new keys in the target only
  *
- * The element's unique name and its group are changed after the move; the
- * target's tables must hold it under the new keys, under the old name nothing
- * may be left, and the source's tables must not know it under either.
+ * The tables of both lists are built first, so that the change of the
+ * element's unique name and its group after the move has to be maintained in
+ * them; the target's tables must hold it under the new keys, under the old
+ * name nothing may be left, and the source's tables must not know it under
+ * either.
  *
  * @param ep the moved element, bound to @p target
  * @param source the list it came from
@@ -223,6 +230,10 @@ static const lListElem *table_ulong(const lList *lp, int nm, uint32_t key) {
  */
 static bool follows_owner(lListElem *ep, const lList *source, const lList *target, const char *old_name,
                           const char *new_name, uint32_t group) {
+   table_str(target, OW_name, old_name);
+   table_ulong(target, OW_group, group);
+   table_str(source, OW_name, old_name);
+   table_ulong(source, OW_group, group);
    lSetString(ep, OW_name, new_name);
    lSetUlong(ep, OW_group, group);
    return table_str(target, OW_name, new_name) == ep && table_str(target, OW_name, old_name) == nullptr
@@ -388,7 +399,7 @@ static void test_hash_follows_owner() {
       lSetUlong(ep, OW_group, 1);
       lAppendElem(source, ep);
    }
-   CHECK(19, "a created list holds a table for each hashed field, filled by appending",
+   CHECK(19, "the first lookups build a table for each hashed field of a created list",
          source->nslots == 2 && table_str(source, OW_name, "a") == lFirst(source)
          && table_ulong(source, OW_group, 1) == lFirst(source)
          && list_hash_table(source, lGetPosInDescr(OW_Type, OW_count)) == nullptr);
@@ -433,7 +444,7 @@ static void test_hash_follows_owner() {
 
    // a hash added to a live list on a field the type does not hash
    lSetUlong(lFirstRW(source), OW_count, 5);
-   CHECK(23, "cull_hash_new adds a slot with a table over the existing elements, maintained afterwards",
+   CHECK(23, "cull_hash_new adds a slot whose table, built by the first lookup, is maintained afterwards",
          cull_hash_new(source, OW_count, false) == 1 && source->nslots == 3
          && table_ulong(source, OW_count, 5) == lFirst(source)
          && lSetUlong(lFirstRW(source), OW_count, 6) == 0 && table_ulong(source, OW_count, 6) == lFirst(source)
@@ -456,7 +467,8 @@ static void test_hash_follows_owner() {
 }
 
 int main(int argc, char *argv[]) {
-   lInit(nmv);
+   // the lists here are short; the maintenance of their tables is what is tested
+   lInit(nmv, 0);
 
    return ocs::module_test::run(argc, argv, {
       {"OWNER-01", "element layout",
@@ -483,7 +495,7 @@ int main(int argc, char *argv[]) {
       {"OWNER-04", "hash maintenance follows the owning list",
        "the hash tables belong to the list that holds an element; a change of a hashed field is maintained "
        "in that list's tables, whichever way the element got there",
-       {"create a list and append elements", "move one with lDechainElem and lAppendElem",
+       {"create a list, append elements and look them up", "move one with lDechainElem and lAppendElem",
         "move two with lDechainList", "pack and unpack a list", "change a hashed field of each moved element",
         "add a hash on a field with cull_hash_new", "sort a list", "check the size of a descriptor entry"},
        "each element is found through the tables of the list that holds it, under its new key, and not "

@@ -37,5 +37,16 @@
  * @brief Internal handle of a cull hash table
  */
 
+#include <cstdint>
+
 /// Handle of a cull hash table; see @ref _cull_htable
 typedef struct _cull_htable *cull_htable;
+
+/**
+ * @brief Default list length below which no hash table is built
+ *
+ * A list shorter than this is searched linearly. A table that exists stays when
+ * its list shrinks below it. Each thread can choose its own value with lInit().
+ * Provisional until fixed by measurement.
+ */
+constexpr uint32_t OCS_CULL_HASH_MIN_ELEMS = 16;

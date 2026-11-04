@@ -74,7 +74,16 @@ namespace ocs::cull_stats {
       UNPACK_LISTS,     ///< lists unpacked (type)
       UNPACK_ELEMS,     ///< their elements (type)
       UNPACK_NS,        ///< nanoseconds spent unpacking them, nested lists included (type)
-      UNPACK_HASH_NS,   ///< of that, nanoseconds spent building their hash tables (type)
+      UNPACK_HASH_NS,   ///< of that, nanoseconds spent building their hash tables (type); 0 since the tables are built on lookup
+      HASH_BUILD_LAZY,  ///< hash tables built and published by a first lookup (field)
+      LOOKUP_LINEAR,    ///< lookups on a hashable list searched linearly, as it is below the threshold (field)
+      LOOKUP_LEN_LT4,   ///< lookups on a hashable list of fewer than 4 elements (field)
+      LOOKUP_LEN_LT8,   ///< ... of 4 to 7 elements (field)
+      LOOKUP_LEN_LT16,  ///< ... of 8 to 15 elements (field)
+      LOOKUP_LEN_LT32,  ///< ... of 16 to 31 elements (field)
+      LOOKUP_LEN_LT64,  ///< ... of 32 to 63 elements (field)
+      LOOKUP_LEN_LT128, ///< ... of 64 to 127 elements (field)
+      LOOKUP_LEN_GE128, ///< ... of 128 elements or more (field)
       NUM_COUNTERS
    };
 

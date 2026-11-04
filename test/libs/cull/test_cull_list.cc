@@ -894,7 +894,8 @@ static void test_is_free_elem() {
 // ---------------------------------------------------------------------------
 
 int main(int /*argc*/, char * /*argv*/[]) {
-   lInit(nmv);
+   // the lists here are short; with the threshold at 0 every lookup goes through the hash tables
+   lInit(nmv, 0);
 
    test_what_where();
    test_field_access();

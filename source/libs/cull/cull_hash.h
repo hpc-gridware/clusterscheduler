@@ -37,6 +37,8 @@
  * @brief Hash tables over cull list fields
  */
 
+#include <cstdint>
+
 #include "uti/sge_dstring.h"
 #include "uti/sge_htable.h"
 
@@ -44,6 +46,12 @@
 #include "cull/cull_hashP.h"
 
 cull_htable cull_hash_create(const lDescr *dp, int pos, int size);
+
+cull_htable ocs_cull_hash_build(const lList *lp, int pos);
+
+cull_htable ocs_cull_hash_lookup_table(const lList *lp, int pos);
+
+void ocs_cull_hash_set_min_elems(uint32_t n);
 
 int cull_hash_new(lList *lp, int name, bool unique);
 
@@ -68,7 +76,7 @@ lListElem *cull_hash_next(cull_htable ht, const void **iterator);
 
 void cull_hash_create_hashtables(lList *lp);
 
-bool cull_hash_init_slots(lList *lp, bool create);
+bool cull_hash_init_slots(lList *lp, bool hashable);
 
 void cull_hash_free_tables(lList *lp);
 

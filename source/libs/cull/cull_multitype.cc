@@ -3112,9 +3112,11 @@ lListElem *lGetElemStrFirstRW(const lList *lp, int nm, const char *str, const vo
 
    *iterator = nullptr;
 
-   if (list_hash_table(lp, pos) != nullptr) {
+   // the first lookup on a long enough list builds the table
+   const cull_htable ht = ocs_cull_hash_lookup_table(lp, pos);
+   if (ht != nullptr) {
       /* hash access */
-      lListElem *ep = cull_hash_first(list_hash_table(lp, pos), str, mt_is_unique(lp->descr[pos].mt), iterator);
+      lListElem *ep = cull_hash_first(ht, str, mt_is_unique(lp->descr[pos].mt), iterator);
       DRETURN(ep);
    } else {
       /* seek for element */
@@ -3552,9 +3554,11 @@ lListElem *lGetElemUlongFirstRW(const lList *lp, int nm, lUlong val, const void 
 
    *iterator = nullptr;
 
-   if (list_hash_table(lp, pos) != nullptr) {
+   // the first lookup on a long enough list builds the table
+   const cull_htable ht = ocs_cull_hash_lookup_table(lp, pos);
+   if (ht != nullptr) {
       /* hash access */
-      lListElem *ep = cull_hash_first(list_hash_table(lp, pos), &val, mt_is_unique(lp->descr[pos].mt), iterator);
+      lListElem *ep = cull_hash_first(ht, &val, mt_is_unique(lp->descr[pos].mt), iterator);
       DRETURN(ep);
    } else {
       /* seek for element */
@@ -3908,9 +3912,11 @@ lListElem *lGetElemUlong64FirstRW(const lList *lp, int nm, lUlong64 val, const v
 
    *iterator = nullptr;
 
-   if (list_hash_table(lp, pos) != nullptr) {
+   // the first lookup on a long enough list builds the table
+   const cull_htable ht = ocs_cull_hash_lookup_table(lp, pos);
+   if (ht != nullptr) {
       /* hash access */
-      lListElem *ep = cull_hash_first(list_hash_table(lp, pos), &val, mt_is_unique(lp->descr[pos].mt), iterator);
+      lListElem *ep = cull_hash_first(ht, &val, mt_is_unique(lp->descr[pos].mt), iterator);
       DRETURN(ep);
    } else {
       /* seek for element */
@@ -4162,12 +4168,14 @@ lListElem *lGetElemHostFirstRW(const lList *lp, int nm, const char *str, const v
    }
 
    *iterator = nullptr;
-   if (list_hash_table(lp, pos) != nullptr) {
+   // the first lookup on a long enough list builds the table
+   const cull_htable ht = ocs_cull_hash_lookup_table(lp, pos);
+   if (ht != nullptr) {
       /* we have a hash table */
       char host_key[CL_MAXHOSTNAMELEN + 1];
       sge_hostcpy(host_key, str);
       sge_strtoupper(host_key, CL_MAXHOSTNAMELEN);
-      lListElem *ep = cull_hash_first(list_hash_table(lp, pos), host_key, mt_is_unique(lp->descr[pos].mt), iterator);
+      lListElem *ep = cull_hash_first(ht, host_key, mt_is_unique(lp->descr[pos].mt), iterator);
       DRETURN(ep);
    } else {
       /* expensive host search algorithm */

@@ -24,8 +24,9 @@
 #pragma once
 
 #include "cull/cull_list.h"
+#include "cull/cull_hashP.h"
 
-void lInit(const lNameSpace *ns_vector);
+void lInit(const lNameSpace *ns_vector, uint32_t hash_min_elems = OCS_CULL_HASH_MIN_ELEMS);
 
 const char *lNm2Str(int nm);
 

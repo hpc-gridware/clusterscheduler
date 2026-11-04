@@ -1061,8 +1061,8 @@ int cull_unpack_list_partial(sge_pack_buffer *pb, lList **lpp, int flags) {
       DRETURN(ret);
    }
 
-   /* one hash slot per hashed field; the tables are built once all elements are in */
-   if (!cull_hash_init_slots(lp, false)) {
+   /* one hash slot per hashed field; a table is built by the first lookup on its field */
+   if (!cull_hash_init_slots(lp, true)) {
       lFreeList(&lp);
       PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
       DRETURN(PACK_ENOMEM);
@@ -1095,14 +1095,11 @@ int cull_unpack_list_partial(sge_pack_buffer *pb, lList **lpp, int flags) {
       }
    }
 
-   CULL_STATS_CODE(const uint64_t stats_hash = ocs::cull_stats::now_ns();)
-   cull_hash_create_hashtables(lp);
    CULL_STATS_CODE(
       const uint64_t stats_end = ocs::cull_stats::now_ns();
       CULL_STATS_TYPE(lp->descr->nm, UNPACK_LISTS, 1);
       CULL_STATS_TYPE(lp->descr->nm, UNPACK_ELEMS, lGetNumberOfElem(lp));
       CULL_STATS_TYPE(lp->descr->nm, UNPACK_NS, stats_end - stats_start);
-      CULL_STATS_TYPE(lp->descr->nm, UNPACK_HASH_NS, stats_end - stats_hash);
    )
 
    *lpp = lp;

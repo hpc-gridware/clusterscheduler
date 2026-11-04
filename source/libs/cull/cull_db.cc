@@ -645,7 +645,7 @@ lList *lSelectDPack(const char *name, const lList *slp, const lCondition *cp,
    }
 
    if (pb == nullptr && isHash) {
-      /* now create the hash tables */
+      /* the list may be hashed from now on; its tables are built by the first lookups */
       cull_hash_create_hashtables(dlp);
 
       /* 

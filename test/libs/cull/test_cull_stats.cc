@@ -200,12 +200,14 @@ static std::string read_file(const std::string &path) {
 // ---------------------------------------------------------------------------
 
 /**
- * @brief STATS-01: hash tables are counted from creation to their release
+ * @brief STATS-01: hash tables are counted from their build on the first lookup to their release
  * @return nothing; CHECK records the results
  */
 static void test_hash_tables() {
    const uint64_t create = field_count(ST_name, ocs::cull_stats::HASH_CREATE);
    const uint64_t create_group = field_count(ST_group, ocs::cull_stats::HASH_CREATE);
+   const uint64_t lazy = field_count(ST_name, ocs::cull_stats::HASH_BUILD_LAZY);
+   const uint64_t lazy_group = field_count(ST_group, ocs::cull_stats::HASH_BUILD_LAZY);
    const uint64_t insert = field_count(ST_name, ocs::cull_stats::HASH_INSERT);
    const uint64_t lookup = field_count(ST_name, ocs::cull_stats::HASH_LOOKUP);
    const uint64_t lookup_group = field_count(ST_group, ocs::cull_stats::HASH_LOOKUP);
@@ -213,17 +215,22 @@ static void test_hash_tables() {
    const uint64_t unused = field_count(ST_name, ocs::cull_stats::HASH_FREE_UNUSED);
 
    lList *lp = make_list();
-   CHECK(1, "creating a list creates one table per hashed field",
-         field_count(ST_name, ocs::cull_stats::HASH_CREATE) == create + 1 &&
-         field_count(ST_group, ocs::cull_stats::HASH_CREATE) == create_group + 1 &&
-         field_count(ST_value, ocs::cull_stats::HASH_CREATE) == 0);
-   CHECK(2, "every appended element is one insert",
-         field_count(ST_name, ocs::cull_stats::HASH_INSERT) == insert + LIST_SIZE);
+   CHECK(1, "creating and filling a list builds no table",
+         field_count(ST_name, ocs::cull_stats::HASH_CREATE) == create &&
+         field_count(ST_group, ocs::cull_stats::HASH_CREATE) == create_group &&
+         field_count(ST_name, ocs::cull_stats::HASH_INSERT) == insert);
 
    lGetElemStr(lp, ST_name, "e3");
    lGetElemStr(lp, ST_name, "e7");
    const void *iterator = nullptr;
    lGetElemUlongFirst(lp, ST_group, 1, &iterator);
+   CHECK(2, "the first lookup on a field builds its table with one insert per element",
+         field_count(ST_name, ocs::cull_stats::HASH_CREATE) == create + 1 &&
+         field_count(ST_group, ocs::cull_stats::HASH_CREATE) == create_group + 1 &&
+         field_count(ST_value, ocs::cull_stats::HASH_CREATE) == 0 &&
+         field_count(ST_name, ocs::cull_stats::HASH_BUILD_LAZY) == lazy + 1 &&
+         field_count(ST_group, ocs::cull_stats::HASH_BUILD_LAZY) == lazy_group + 1 &&
+         field_count(ST_name, ocs::cull_stats::HASH_INSERT) == insert + LIST_SIZE);
    CHECK(3, "every hashed search is one lookup on its field",
          field_count(ST_name, ocs::cull_stats::HASH_LOOKUP) == lookup + 2 &&
          field_count(ST_group, ocs::cull_stats::HASH_LOOKUP) == lookup_group + 1);
@@ -231,9 +238,31 @@ static void test_hash_tables() {
    lFreeList(&lp);
    lp = make_list();
    lFreeList(&lp);
-   CHECK(4, "a freed table counts as used after a lookup, as unused without one",
+   CHECK(4, "a freed table counts as used after a lookup; a list never searched frees no table",
          field_count(ST_name, ocs::cull_stats::HASH_FREE_USED) == used + 1 &&
-         field_count(ST_name, ocs::cull_stats::HASH_FREE_UNUSED) == unused + 1);
+         field_count(ST_name, ocs::cull_stats::HASH_FREE_UNUSED) == unused &&
+         field_count(ST_name, ocs::cull_stats::HASH_CREATE) == create + 1);
+}
+
+/**
+ * @brief STATS-05: lookups below the threshold are counted with the list length
+ * @return nothing; CHECK records the results
+ */
+static void test_threshold() {
+   const uint64_t create = field_count(ST_name, ocs::cull_stats::HASH_CREATE);
+   const uint64_t linear = field_count(ST_name, ocs::cull_stats::LOOKUP_LINEAR);
+   const uint64_t len = field_count(ST_name, ocs::cull_stats::LOOKUP_LEN_LT16);
+
+   ocs_cull_hash_set_min_elems(LIST_SIZE + 1);
+   lList *lp = make_list();
+   const lListElem *found = lGetElemStr(lp, ST_name, "e3");
+   CHECK(17, "a lookup on a list below the threshold searches linearly and builds no table",
+         found != nullptr && field_count(ST_name, ocs::cull_stats::LOOKUP_LINEAR) == linear + 1 &&
+         field_count(ST_name, ocs::cull_stats::HASH_CREATE) == create);
+   CHECK(18, "the lookup is counted in the bucket of the list length",
+         field_count(ST_name, ocs::cull_stats::LOOKUP_LEN_LT16) == len + 1);
+   lFreeList(&lp);
+   ocs_cull_hash_set_min_elems(0);
 }
 
 /**
@@ -313,7 +342,7 @@ static void test_packing() {
    const uint64_t dcopy = type_count(ocs::cull_stats::DCOPY_UNPACK);
    const uint64_t dcopy_b = type_count(ocs::cull_stats::DCOPY_UNPACK_B);
    const uint64_t ns = type_count(ocs::cull_stats::UNPACK_NS);
-   const uint64_t hash_ns = type_count(ocs::cull_stats::UNPACK_HASH_NS);
+   const uint64_t create = field_count(ST_name, ocs::cull_stats::HASH_CREATE);
    lList *copy = nullptr;
    const bool unpacked_ok = unpack_list_from(&pb, &copy);
    CHECK(11, "unpacking counts the list, its elements and the descriptor it builds",
@@ -322,9 +351,9 @@ static void test_packing() {
          type_count(ocs::cull_stats::UNPACK_ELEMS) == unpacked + LIST_SIZE &&
          type_count(ocs::cull_stats::DCOPY_UNPACK) == dcopy + 1 &&
          type_count(ocs::cull_stats::DCOPY_UNPACK_B) == dcopy_b + DESCR_BYTES);
-   CHECK(12, "the unpack time includes the time for its hash tables",
+   CHECK(12, "unpacking counts its time and builds no hash table",
          type_count(ocs::cull_stats::UNPACK_NS) > ns &&
-         type_count(ocs::cull_stats::UNPACK_NS) - ns >= type_count(ocs::cull_stats::UNPACK_HASH_NS) - hash_ns);
+         field_count(ST_name, ocs::cull_stats::HASH_CREATE) == create);
 
    clear_packbuffer(&pb);
    lFreeList(&copy);
@@ -340,7 +369,10 @@ static void test_merge_and_write() {
    for (const char *name : {"probe1", "probe22"}) {
       std::thread worker([name] {
          component_set_thread_name(name);
+         // a new thread has the default threshold; the lookup builds the table on the short list
+         lInit(nmv, 0);
          lList *lp = make_list();
+         lGetElemStr(lp, ST_name, "e3");
          lFreeList(&lp);
       });
       worker.join();
@@ -380,17 +412,18 @@ static void test_merge_and_write() {
 }
 
 int main(int argc, char *argv[]) {
-   lInit(nmv);
+   // the lists here are short; with the threshold at 0 their first lookup builds the table
+   lInit(nmv, 0);
 
    return ocs::module_test::run(argc, argv, {
-      {"STATS-01", "hash tables are counted from creation to their release",
-       "the statistics build counts the tables a list creates, the inserts and lookups on them, and whether a "
-       "table was ever looked up when it is freed",
+      {"STATS-01", "hash tables are counted from their build to their release",
+       "the statistics build counts the tables the first lookups build, the inserts and lookups on them, and "
+       "whether a table was ever looked up when it is freed",
        {"create a list with two hashed fields and append elements", "search it by both fields",
         "free it, then create and free a second list without searching it"},
-       "one table per hashed field, one insert per element, one lookup per search; the first table is freed "
-       "as used, the second as unused",
-       {{"MSR-03", "covers"}}, {1, 2, 3, 4}, test_hash_tables},
+       "no table before the first lookup; then one table per searched field built lazily, one insert per "
+       "element, one lookup per search; the first list frees its tables as used, the second frees none",
+       {{"MSR-03", "covers"}, {"LZY-01", "covers"}}, {1, 2, 3, 4}, test_hash_tables},
       {"STATS-02", "descriptor copies and positional lookups",
        "the statistics build counts the descriptor copies of elements and lists, and the field reads that "
        "need the linear search of a reduced descriptor",
@@ -406,9 +439,15 @@ int main(int argc, char *argv[]) {
        "counting adds nothing; packing adds one descriptor of the expected size, the elements and the value "
        "bytes of each field; unpacking adds the list, its elements, the descriptor it builds and its time",
        {{"MSR-03", "covers"}}, {9, 10, 11, 12}, test_packing},
+      {"STATS-05", "lookups below the threshold",
+       "a lookup on a list shorter than the threshold is counted as a linear search, with the list length",
+       {"raise the threshold above the list length", "look an element up"},
+       "the element is found, one linear search and one lookup in the length bucket are counted, no table "
+       "is built",
+       {{"LZY-04", "covers"}}, {17, 18}, test_threshold},
       {"STATS-04", "threads are merged by class and written out",
        "the counters of ended threads add up per thread class and are written as one JSON document per dump",
-       {"run the same list operation in two threads of one class", "write the counters into a new directory",
+       {"create and search the same list in two threads of one class", "write the counters into a new directory",
         "write them a second time"},
        "one JSON document with the counters per class, type and field, both threads in it and no counter of 0; "
        "a second dump does not overwrite the first",

@@ -41,6 +41,7 @@
 
 #include "cull/cull_list.h"
 #include "cull/cull_state.h"
+#include "cull/cull_hash.h"
 #include "cull/cull_lerrnoP.h"
 #include "cull/cull_name.h"
 
@@ -233,11 +234,18 @@ int lStr2Nm(const char *str) {
 }
 
 /**
- * @brief Bind the CULL name space used by lNm2Str()/lStr2Nm() on this thread.
- * @param ns_vector  sentinel-terminated name space array
+ * @brief Initialise CULL for the calling thread
+ *
+ * Binds the name space used by lNm2Str()/lStr2Nm() and sets the list length
+ * from which a lookup builds a hash table, both for this thread only.
+ *
+ * @param ns_vector       sentinel-terminated name space array
+ * @param hash_min_elems  lists shorter than this are searched linearly by this thread;
+ *                        0 builds a table on the first lookup of any hashable list
  */
-void lInit(const lNameSpace *ns_vector) {
+void lInit(const lNameSpace *ns_vector, const uint32_t hash_min_elems) {
    cull_state_set_name_space(ns_vector);
+   ocs_cull_hash_set_min_elems(hash_min_elems);
 #ifdef OBSERVE
    lObserveInit();
 #endif

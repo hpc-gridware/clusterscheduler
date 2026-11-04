@@ -81,6 +81,11 @@
 /// A new hash table is created with 2^#MIN_CULL_HASH_SIZE buckets
 #define MIN_CULL_HASH_SIZE 4
 
+/// Lists shorter than this are searched linearly by this thread; set by lInit(), see #OCS_CULL_HASH_MIN_ELEMS
+static thread_local uint32_t cull_hash_min_elems = OCS_CULL_HASH_MIN_ELEMS;
+
+static void cull_hash_destroy(cull_htable *htp);
+
 /// One node of the chain a non unique hash key maps to; see @ref _non_unique_hash
 typedef struct _non_unique_hash non_unique_hash;
 
@@ -209,32 +214,113 @@ cull_htable cull_hash_create(const lDescr *dp, const int pos, int size) {
 }
 
 /**
- * @brief Create all hashtables on a list
+ * @brief Allow a list to be hashed
  *
- * Creates all hashtables for an empty list.
+ * Gives a list created without hashing (lCreateListHash() with hash false) its
+ * hash slots, one per hashed field of its type. No table is built here: each is
+ * built by the first lookup on its field, once the list is long enough
+ * (#ocs_cull_hash_lookup_table). A list that is hashable already is left as it
+ * is, with the tables it has.
  *
- * @param lp initialized list structure
- *
- * @note If the list already contains elements, these elements are not
- *       inserted into the hash lists.
+ * @param lp the list; nullptr is ignored
  */
 void cull_hash_create_hashtables(lList *lp) {
-   if (lp != nullptr) {
-      /* compute final size of hashtables when all elements are inserted */
-      int size = hash_compute_size(lGetNumberOfElem(lp));
+   if (lp != nullptr && lp->ht == nullptr) {
+      // without memory for the slots the list stays linear, which is slower but correct
+      cull_hash_init_slots(lp, true);
+   }
+}
 
-      /* create the tables missing in the list's slots, pass final size */
-      for (uint32_t i = 0; i < lp->nslots; i++) {
-         if (lp->ht[i].get() == nullptr) {
-            lp->ht[i].set(cull_hash_create(lp->descr, lp->ht[i].pos, size));
-         }
-      }
+/**
+ * @brief Build the hash table of one field of a list over all its elements
+ *
+ * The table is private to the caller until it is published in a slot. Building
+ * only reads the list, so concurrent readers may each build one; a unique key
+ * found twice is counted and reported as by every insert (#cull_hash_insert).
+ *
+ * @param lp the list, not nullptr
+ * @param pos position of the field in the list's descriptor
+ * @return the table, or nullptr when it cannot be allocated
+ */
+cull_htable ocs_cull_hash_build(const lList *lp, const int pos) {
+   char host_key[CL_MAXHOSTNAMELEN];
 
-      /* create hash entries for all objects */
+   cull_htable ht = cull_hash_create(lp->descr, pos, hash_compute_size(lGetNumberOfElem(lp)));
+   if (ht != nullptr) {
+      const bool unique = mt_is_unique(lp->descr[pos].mt);
       for_each_ep_lv(ep, lp) {
-         cull_hash_elem(ep);
+         cull_hash_insert(ep, cull_hash_key(ep, pos, host_key), ht, unique);
       }
    }
+   return ht;
+}
+
+/**
+ * @brief The hash table of a field for a lookup, built by the first lookup
+ *
+ * A list that is hashable and has at least the calling thread's threshold of
+ * elements (lInit()) gets the table of the field on its first lookup. Concurrent first
+ * lookups, which run under a read lock, may each build a table: the first to
+ * publish it by compare-and-swap wins, the others free theirs and use the
+ * winner's. A table that exists is kept when the list shrinks below the
+ * threshold.
+ *
+ * @param lp the list, not nullptr
+ * @param pos position of the field in the list's descriptor
+ * @return the table, or nullptr when the list is to be searched linearly
+ */
+cull_htable ocs_cull_hash_lookup_table(const lList *lp, const int pos) {
+   cull_hash_slot *slot = list_hash_slot(lp, pos);
+   if (slot == nullptr) {
+      return nullptr;
+   }
+
+   const uint32_t nelem = lp->nelem;
+   CULL_STATS_CODE(
+      const int nm = lp->descr[pos].nm;
+      // the list length at lookup time, for choosing the threshold
+      ocs::cull_stats::add_field(nm, nelem < 4 ? ocs::cull_stats::LOOKUP_LEN_LT4 :
+                                     nelem < 8 ? ocs::cull_stats::LOOKUP_LEN_LT8 :
+                                     nelem < 16 ? ocs::cull_stats::LOOKUP_LEN_LT16 :
+                                     nelem < 32 ? ocs::cull_stats::LOOKUP_LEN_LT32 :
+                                     nelem < 64 ? ocs::cull_stats::LOOKUP_LEN_LT64 :
+                                     nelem < 128 ? ocs::cull_stats::LOOKUP_LEN_LT128 :
+                                     ocs::cull_stats::LOOKUP_LEN_GE128, 1);
+   )
+
+   cull_htable ht = slot->get();
+   if (ht != nullptr) {
+      return ht;
+   }
+   if (nelem < cull_hash_min_elems) {
+      CULL_STATS_FIELD(nm, LOOKUP_LINEAR, 1);
+      return nullptr;
+   }
+
+   cull_htable fresh = ocs_cull_hash_build(lp, pos);
+   if (fresh == nullptr) {
+      return nullptr;
+   }
+   if (slot->ht.compare_exchange_strong(ht, fresh, std::memory_order_acq_rel, std::memory_order_acquire)) {
+      CULL_STATS_FIELD(nm, HASH_BUILD_LAZY, 1);
+      return fresh;
+   }
+   // another reader published its table first; ht now holds that one
+   cull_hash_destroy(&fresh);
+   return ht;
+}
+
+/**
+ * @brief Set the list length below which the calling thread builds no hash table
+ *
+ * Called by lInit(). The value is per thread: a thread that never calls lInit()
+ * uses #OCS_CULL_HASH_MIN_ELEMS. Threads with different values may share lists,
+ * since a table, once built, is maintained and used by every thread.
+ *
+ * @param n the new threshold; 0 builds a table on the first lookup of any hashable list
+ */
+void ocs_cull_hash_set_min_elems(const uint32_t n) {
+   cull_hash_min_elems = n;
 }
 
 /**
@@ -759,17 +845,21 @@ static void cull_hash_destroy(cull_htable *htp) {
 /**
  * @brief Give a new list one hash slot per hashed field of its type
  *
- * Called once when a list is created, after its descriptor is set. The slots
- * exist for every field marked #CULL_HASH; whether a table is built in them is
- * the caller's choice, as with lCreateListHash().
+ * Called when a list is created, after its descriptor is set, and by
+ * #cull_hash_create_hashtables on a list that becomes hashable. A list without
+ * slots is never hashed. The slots start empty; the first lookup on a field
+ * builds its table (#ocs_cull_hash_lookup_table).
  *
- * @param lp the list, with its descriptor and no elements
- * @param create true to build an empty table in every slot
+ * @param lp the list, with its descriptor and no slots
+ * @param hashable false to give the list no slots, so that it is always searched linearly
  * @return false if the slot array cannot be allocated
  */
-bool cull_hash_init_slots(lList *lp, const bool create) {
+bool cull_hash_init_slots(lList *lp, const bool hashable) {
    lp->nslots = 0;
    lp->ht = nullptr;
+   if (!hashable) {
+      return true;
+   }
 
    uint32_t n = 0;
    for (int i = 0; mt_get_type(lp->descr[i].mt) != lEndT; i++) {
@@ -792,7 +882,7 @@ bool cull_hash_init_slots(lList *lp, const bool create) {
     * sge_free(): the slots need no destructor. */
    for (int i = 0; mt_get_type(lp->descr[i].mt) != lEndT; i++) {
       if (mt_do_hashing(lp->descr[i].mt)) {
-         new (&lp->ht[lp->nslots++]) cull_hash_slot{i, create ? cull_hash_create(lp->descr, i, 0) : nullptr};
+         new (&lp->ht[lp->nslots++]) cull_hash_slot{i, nullptr};
       }
    }
    return true;
@@ -802,7 +892,7 @@ bool cull_hash_init_slots(lList *lp, const bool create) {
  * @brief Free the hash tables of a list and keep its slots
  *
  * The elements stay in the list; they are in no table afterwards, until
- * #cull_hash_create_hashtables builds the tables again.
+ * the next lookup on a field builds its table again.
  *
  * @param lp the list; nullptr is ignored
  */
@@ -868,7 +958,7 @@ int cull_hash_new_check(lList *lp, int nm, bool unique) {
    int pos = lGetPosInDescr(descr, nm);
 
    if (descr != nullptr && pos >= 0) {
-      if (list_hash_table(lp, pos) == nullptr) {
+      if (list_hash_slot(lp, pos) == nullptr) {
          return cull_hash_new(lp, nm, unique);
       }
    }
@@ -886,7 +976,8 @@ int cull_hash_new_check(lList *lp, int nm, bool unique) {
  * tables shall be defined to speed up certain access methods.
  *
  * cull_hash_new can be used to create a hash table for a list
- * on the contents of a certain field.
+ * on the contents of a certain field. Like every other table, it is built by
+ * the first lookup on that field.
  * The caller can choose whether the field contents have to be
  * unique within the list or not.
  *
@@ -905,8 +996,7 @@ int cull_hash_new(lList *lp, int nm, bool unique) {
    DENTER(CULL_LAYER);
 
    lDescr *descr;
-   int pos, size;
-   char host_key[CL_MAXHOSTNAMELEN];
+   int pos;
 
    if (lp == nullptr) {
       DRETURN(0);
@@ -949,20 +1039,6 @@ int cull_hash_new(lList *lp, int nm, bool unique) {
    descr[pos].mt |= CULL_HASH;
    if (unique) {
       descr[pos].mt |= CULL_UNIQUE;
-   }
-
-   size = hash_compute_size(lGetNumberOfElem(lp));
-
-   cull_htable ht = cull_hash_create(descr, pos, size);
-   slot->set(ht);
-
-   if (ht == nullptr) {
-      DRETURN(0);
-   }
-
-   /* insert all elements into the new hash table */
-   for_each_ep_lv(ep, lp) {
-      cull_hash_insert(ep, cull_hash_key(ep, pos, host_key), ht, unique);
    }
 
    DRETURN(1);
@@ -1042,42 +1118,23 @@ cull_hash_statistics(cull_htable ht, dstring *buffer) {
 }
 
 /**
- * @brief Rebuild the hash tables of a list after it has been sorted
+ * @brief Drop the non unique hash tables of a list after it has been sorted
  *
- * Sorting relinks the elements, so any hash table holding positions has to be
- * built again.
+ * The chain of a non unique key holds its elements in list order, which the
+ * sort has changed, so these tables are freed; the next lookup on such a field
+ * builds the table again in the new order. Unique tables map a key to one
+ * element and carry no order, so they stay.
  *
- * @param lp the list whose tables to rebuild; nullptr is ignored
+ * @param lp the sorted list; nullptr is ignored
  */
 void cull_hash_recreate_after_sort(lList *lp) {
    if (lp != nullptr) {
-      bool cleared = false;
-
-      int size = hash_compute_size(lGetNumberOfElem(lp));
-
-      /* at first free and recreate the non unique tables, their chains carry the old order */
       for (uint32_t i = 0; i < lp->nslots; i++) {
          cull_hash_slot &slot = lp->ht[i];
          cull_htable ht = slot.get();
          if (ht != nullptr && !mt_is_unique(lp->descr[slot.pos].mt)) {
             cull_hash_destroy(&ht);
-            slot.set(cull_hash_create(lp->descr, slot.pos, size));
-            cleared = true;
-         }
-      }
-
-      if (cleared) {
-         char host_key[CL_MAXHOSTNAMELEN];
-
-         /* now insert into the recreated tables, in the new list order */
-         for_each_ep_lv(ep, lp) {
-            for (uint32_t i = 0; i < lp->nslots; i++) {
-               const cull_hash_slot &slot = lp->ht[i];
-               const cull_htable ht = slot.get();
-               if (ht != nullptr && !mt_is_unique(lp->descr[slot.pos].mt)) {
-                  cull_hash_insert(ep, cull_hash_key(ep, slot.pos, host_key), ht, false);
-               }
-            }
+            slot.set(nullptr);
          }
       }
    }

@@ -720,17 +720,19 @@ static void test_hash_after_unpack() {
    lList *lp = nullptr;
    int ret = pack_unpack_list(source, &lp);
    const lDescr *dp = lGetListDescr(lp);
-   CHECK(27, "the unpacked list has hash tables on both hashed fields",
-         ret == PACK_SUCCESS && dp != nullptr && list_hash_table(lp, lGetPosInDescr(dp, SP_name)) != nullptr &&
-         list_hash_table(lp, lGetPosInDescr(dp, SP_group)) != nullptr);
+   CHECK(27, "the unpacked list may be hashed on both hashed fields and has no table before a lookup",
+         ret == PACK_SUCCESS && dp != nullptr && list_hash_slot(lp, lGetPosInDescr(dp, SP_name)) != nullptr &&
+         list_hash_slot(lp, lGetPosInDescr(dp, SP_group)) != nullptr &&
+         list_hash_table(lp, lGetPosInDescr(dp, SP_name)) == nullptr &&
+         list_hash_table(lp, lGetPosInDescr(dp, SP_group)) == nullptr);
    CHECK(28, "every unique key resolves to its element", all_keys_found(lp, SP_name));
    CHECK(29, "the non unique hash yields every element of a group",
          count_by_ulong(lp, SP_group, 0) == 2 && count_by_ulong(lp, SP_group, 1) == 2 &&
          count_by_ulong(lp, SP_group, 2) == 2);
    const lList *sub = lGetList(lGetElemStr(lp, SP_name, "e3"), SP_sub);
    CHECK(30, "the sublists are hashed as well",
-         sub != nullptr && list_hash_table(sub, lGetPosInDescr(lGetListDescr(sub), SPS_name)) != nullptr &&
-         all_keys_found(sub, SPS_name));
+         sub != nullptr && all_keys_found(sub, SPS_name) &&
+         list_hash_table(sub, lGetPosInDescr(lGetListDescr(sub), SPS_name)) != nullptr);
    lFreeList(&lp);
 
    // the reduced list the single pass delivers
@@ -757,7 +759,8 @@ static void test_hash_after_unpack() {
  * @return 0 if all checks pass, 1 otherwise, 2 on a usage error
  */
 int main(int argc, char *argv[]) {
-   lInit(nmv);
+   // the lists here are short; the tables built on them by a lookup are what is tested
+   lInit(nmv, 0);
 
    return ocs::module_test::run(argc, argv, {
       {"SELPACK-01", "single-pass select-and-pack equals the two-step path",
@@ -813,7 +816,7 @@ int main(int argc, char *argv[]) {
        "through unique and non unique keys, also in sublists",
        {"pack and unpack the source list", "look every element up by its unique key and by its group",
         "do the same for a sublist and for the result of select-and-pack"},
-       "the hash tables exist and every lookup finds the right elements",
+       "the lists have no table before the first lookup, which builds it; every lookup finds the right elements",
        {{"CLN-03", "covers"}}, {27, 28, 29, 30, 31}, test_hash_after_unpack},
    });
 }

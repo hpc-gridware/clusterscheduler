@@ -513,7 +513,8 @@ static void teardown_bootstrap() {
 // ---------------------------------------------------------------------------
 
 int main(int /*argc*/, char * /*argv*/[]) {
-   lInit(nmv);
+   // the lists here are short; with the threshold at 0 every lookup goes through the hash tables
+   lInit(nmv, 0);
    if (!setup_bootstrap("test_cull_lookup")) {
       printf("FAIL  cannot create the temporary bootstrap file\n");
       return 1;

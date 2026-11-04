@@ -823,11 +823,13 @@ lList *lCreateList(const char *listname, const lDescr *descr) {
  *
  * Create an empty list with a given descriptor and a user defined
  * listname.
- * The caller can choose whether hashtables shall be created or not.
+ * The caller can choose whether the list may be hashed. The hash tables of a
+ * list that may are not built here but by the first lookup on their field,
+ * once the list is long enough.
  *
  * @param listname list name
  * @param descr descriptor
- * @param hash shall hashtables be created?
+ * @param hash may the list be hashed? If false, it is always searched linearly
  *
  * @return list pointer or nullptr
  */
@@ -881,7 +883,7 @@ lList *lCreateListHash(const char *listname, const lDescr *descr, bool hash) {
       lp->descr[i].mt |= (descr[i].mt & CULL_IS_REDUCED);
    }
 
-   /* the hash tables belong to the list: one slot per hashed field, with a table if requested */
+   /* the hash tables belong to the list: one slot per hashed field if it may be hashed */
    if (!cull_hash_init_slots(lp, hash)) {
       sge_free(&(lp->descr));
       sge_free(&(lp->listname));
@@ -1340,7 +1342,7 @@ lList *lCopyListHash(const char *name, const lList *src, bool hash, const bool s
       name = "No list name specified";
 
 
-   /* create new list without hashes - we'll hash it once it is filled */
+   /* create the new list without hash slots, so that filling it maintains no table */
    if (!(dst = lCreateListHash(name, src->descr, false))) {
       LERROR(LECREATELIST);
       DRETURN(nullptr);
@@ -1354,7 +1356,7 @@ lList *lCopyListHash(const char *name, const lList *src, bool hash, const bool s
       }
    }
    if (hash) {
-      /* now create the hash tables */
+      /* the list may be hashed from now on; its tables are built by the first lookups */
       cull_hash_create_hashtables(dst);
    }
 
@@ -1621,8 +1623,7 @@ lDechainList(lList *source, lList **target, lListElem *ep) {
       source->nelem--;
    }
 
-   cull_hash_create_hashtables(source);
-   cull_hash_create_hashtables(*target);
+   /* the tables of both lists were dropped above; the next lookup on a field builds its table again */
 
 #ifdef OBSERVE
    for_each_ep_lv(elem, *target) {
