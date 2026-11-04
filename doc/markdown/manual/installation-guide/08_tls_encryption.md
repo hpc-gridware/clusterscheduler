@@ -6,20 +6,32 @@ tampering.
 Enabling TLS encryption requires that the cluster is set up with `security_mode` set to `tls` in the bootstrap file.
 This requires a re-start of all xxQS_NAMExx components.
 
-TLS encryption is supported on all platforms where OpenSSL version 3 or higher is available. It is not supported on
+TLS encryption is supported on all platforms where OpenSSL version 3 or 4 is available.
+It is not supported on
 * `ulx-*` platforms (unsupported Linux, e.g. CentOS 7)
 * `xlx-*` platforms (even older unsupported Linux, e.g. CentOS 6)
 
 ## Prerequisites for using TLS encryption
 
-OpenSSL version 3 must be installed on all hosts within the security realm (the cluster).
+OpenSSL version 3 or 4 must be installed on all hosts within the security realm (the cluster).
+A cluster can contain both hosts with OpenSSL 3 and hosts with OpenSSL 4.
+
+The xxQS_NAMExx components load the OpenSSL 4 library `libssl.so.4` if it is installed, otherwise
+the OpenSSL 3 library `libssl.so.3`. If a host has both versions installed, OpenSSL 4 is used.
+At startup, xxqs_name_sxx_qmaster and xxqs_name_sxx_execd write the name and version of the loaded
+library to their messages file, e.g.
+
+```
+loaded shared library libssl.so.4, OpenSSL 4.0.3 29 Sep 2026
+```
 
 OpenSSL is not delivered with the xxQS_NAMExx installation package and must be installed separately, ideally from your
 OS package manager, which will ensure that all dependencies are met and that security updates are applied regularly.
 
-### Installing OpenSSL 3
+### Installing OpenSSL
 
-Installing OpenSSL 3 depends on your operating system. Below are instructions for some common Linux distributions.
+Installing OpenSSL depends on your operating system. Below are instructions for some common Linux
+distributions.
 
 #### Installing OpenSSL 3 on Alma/CentOS/RHEL/Rocky 8
 ```bash
@@ -47,6 +59,7 @@ make install
 
 On newer Linux distributions (e.g., Ubuntu 24.04, Alma/CentOS/RHEL/Rocky 9 and higher, SUSE Leap / SLES)
 OpenSSL 3 is already the default version, and no additional installation is required.
+The same applies to Linux distributions which ship OpenSSL 4 as their default version.
 
 Similarly, OpenSSL 3 is included in Solaris 11.4 and higher as well as in IllumOS / OpenSolaris / OpenIndiana,
 in FreeBSD 14 and higher.
