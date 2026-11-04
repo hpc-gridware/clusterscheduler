@@ -121,36 +121,36 @@ enum _enum_lMultiType {
 #ifdef __SGE_GDI_LIBRARY_HOME_OBJECT_FILE__
 
 #define LISTDEF( name ) lDescr name[] = {                                                ///< opens an object type definition; ends with #LISTEND
-#define LISTEND {NoName, lEndT, nullptr}};                                               ///< closes an object type definition opened with #LISTDEF
-#define SGE_INT(name,flags)         { name, lIntT    | flags, nullptr }, /* don't use it, not implemented on gdi level */ ///< declares an int (not supported at GDI level) field
-#define SGE_HOST(name,flags)        { name, lHostT   | flags, nullptr },                 ///< declares a host name field
-#define SGE_STRING(name,flags)      { name, lStringT | flags, nullptr },                 ///< declares a string field
-#define SGE_DOUBLE(name,flags)      { name, lDoubleT | flags, nullptr },                 ///< declares a double field
-#define SGE_LONG(name,flags)        { name, lLongT   | flags, nullptr },                 ///< declares a signed long field
-#define SGE_ULONG(name,flags)       { name, lUlongT  | flags, nullptr },                 ///< declares a 32 bit unsigned field
-#define SGE_ULONG64(name,flags)     { name, lUlong64T  | flags, nullptr },               ///< declares a 64 bit unsigned field
-#define SGE_BOOL(name,flags)        { name, lBoolT   | flags, nullptr },                 ///< declares a boolean field
-#define SGE_LIST(name,type,flags)   { name, lListT   | flags, nullptr },                 ///< declares a sub-list of another object type field
-#define SGE_MAP(name,type,flags)   { name, lListT   | flags, nullptr },                  ///< declares a sub-list used as a key/value map field
-#define SGE_MAPLIST(name,type,flags)   { name, lListT   | flags, nullptr },              ///< declares a sub-list used as a key/value-list map field
-#define SGE_OBJECT(name,type,flags) { name, lObjectT | flags, nullptr },                 ///< declares a single sub-object field
-#define SGE_REF(name,type,flags)    { name, lRefT    | flags, nullptr },                 ///< declares an opaque pointer field
+#define LISTEND {NoName, lEndT}};                                               ///< closes an object type definition opened with #LISTDEF
+#define SGE_INT(name,flags)         { name, lIntT    | flags }, /* don't use it, not implemented on gdi level */ ///< declares an int (not supported at GDI level) field
+#define SGE_HOST(name,flags)        { name, lHostT   | flags },                 ///< declares a host name field
+#define SGE_STRING(name,flags)      { name, lStringT | flags },                 ///< declares a string field
+#define SGE_DOUBLE(name,flags)      { name, lDoubleT | flags },                 ///< declares a double field
+#define SGE_LONG(name,flags)        { name, lLongT   | flags },                 ///< declares a signed long field
+#define SGE_ULONG(name,flags)       { name, lUlongT  | flags },                 ///< declares a 32 bit unsigned field
+#define SGE_ULONG64(name,flags)     { name, lUlong64T  | flags },               ///< declares a 64 bit unsigned field
+#define SGE_BOOL(name,flags)        { name, lBoolT   | flags },                 ///< declares a boolean field
+#define SGE_LIST(name,type,flags)   { name, lListT   | flags },                 ///< declares a sub-list of another object type field
+#define SGE_MAP(name,type,flags)   { name, lListT   | flags },                  ///< declares a sub-list used as a key/value map field
+#define SGE_MAPLIST(name,type,flags)   { name, lListT   | flags },              ///< declares a sub-list used as a key/value-list map field
+#define SGE_OBJECT(name,type,flags) { name, lObjectT | flags },                 ///< declares a single sub-object field
+#define SGE_REF(name,type,flags)    { name, lRefT    | flags },                 ///< declares an opaque pointer field
 
 #define DERIVED_LISTDEF(name,parent) lDescr *name = parent                               ///< opens a type that reuses another type's fields
 #define DERIVED_LISTEND ;                                                                ///< closes a #DERIVED_LISTDEF
-#define SGE_INT_D(name,flags,def)         { name, lIntT    | flags, nullptr },           ///< declares an int (not supported at GDI level) field, with a default value
-#define SGE_HOST_D(name,flags,def)        { name, lHostT   | flags, nullptr },           ///< declares a host name field, with a default value
-#define SGE_STRING_D(name,flags,def)      { name, lStringT | flags, nullptr },           ///< declares a string field, with a default value
-#define SGE_DOUBLE_D(name,flags,def)      { name, lDoubleT | flags, nullptr },           ///< declares a double field, with a default value
-#define SGE_LONG_D(name,flags,def)        { name, lLongT   | flags, nullptr },           ///< declares a signed long field, with a default value
-#define SGE_ULONG_D(name,flags,def)       { name, lUlongT  | flags, nullptr },           ///< declares a 32 bit unsigned field, with a default value
-#define SGE_ULONG64_D(name,flags,def)     { name, lUlong64T  | flags, nullptr },         ///< declares a 64 bit unsigned field, with a default value
-#define SGE_BOOL_D(name,flags,def)        { name, lBoolT   | flags, nullptr },           ///< declares a boolean field, with a default value
-#define SGE_LIST_D(name,type,flags,def)   { name, lListT   | flags, nullptr },           ///< declares a sub-list of another object type field, with a default value
-#define SGE_MAP_D(name,type,flags,defkey,keyvalue,jgdi_keyname,jgdi_valuename)   { name, lListT   | flags, nullptr}, ///< declares a sub-list used as a key/value map field, with a default value
-#define SGE_MAPLIST_D(name,type,flags,defkey,defvalue,jgdi_keyname,jgdi_valuename)   { name, lListT   | flags, nullptr}, ///< declares a sub-list used as a key/value-list map field, with a default value
-#define SGE_OBJECT_D(name,type,flags,def) { name, lObjectT | flags, nullptr },           ///< declares a single sub-object field, with a default value
-#define SGE_REF_D(name,type,flags,def)    { name, lRefT    | flags, nullptr },           ///< declares an opaque pointer field, with a default value
+#define SGE_INT_D(name,flags,def)         { name, lIntT    | flags },           ///< declares an int (not supported at GDI level) field, with a default value
+#define SGE_HOST_D(name,flags,def)        { name, lHostT   | flags },           ///< declares a host name field, with a default value
+#define SGE_STRING_D(name,flags,def)      { name, lStringT | flags },           ///< declares a string field, with a default value
+#define SGE_DOUBLE_D(name,flags,def)      { name, lDoubleT | flags },           ///< declares a double field, with a default value
+#define SGE_LONG_D(name,flags,def)        { name, lLongT   | flags },           ///< declares a signed long field, with a default value
+#define SGE_ULONG_D(name,flags,def)       { name, lUlongT  | flags },           ///< declares a 32 bit unsigned field, with a default value
+#define SGE_ULONG64_D(name,flags,def)     { name, lUlong64T  | flags },         ///< declares a 64 bit unsigned field, with a default value
+#define SGE_BOOL_D(name,flags,def)        { name, lBoolT   | flags },           ///< declares a boolean field, with a default value
+#define SGE_LIST_D(name,type,flags,def)   { name, lListT   | flags },           ///< declares a sub-list of another object type field, with a default value
+#define SGE_MAP_D(name,type,flags,defkey,keyvalue,jgdi_keyname,jgdi_valuename)   { name, lListT   | flags }, ///< declares a sub-list used as a key/value map field, with a default value
+#define SGE_MAPLIST_D(name,type,flags,defkey,defvalue,jgdi_keyname,jgdi_valuename)   { name, lListT   | flags }, ///< declares a sub-list used as a key/value-list map field, with a default value
+#define SGE_OBJECT_D(name,type,flags,def) { name, lObjectT | flags },           ///< declares a single sub-object field, with a default value
+#define SGE_REF_D(name,type,flags,def)    { name, lRefT    | flags },           ///< declares an opaque pointer field, with a default value
 
 /* 
  * For lists, objects and references the type of the subordinate object(s) 
@@ -229,7 +229,6 @@ struct _lNameSpace {
 struct _lDescr {
    int nm;         ///< the field number, or #NoName in the terminating entry
    int mt;         ///< the field's type and attributes: a @ref _enum_lMultiType or-ed with @ref cull_field_attributes flags
-   cull_htable ht; ///< hash table over this field, when #CULL_HASH is set; otherwise nullptr
 };
 
 /* LIST SPECIFIC FUNCTIONS */

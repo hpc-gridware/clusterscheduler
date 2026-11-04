@@ -3216,8 +3216,8 @@ void sge_build_sgeee_orders(scheduler_all_data_t *lists, lList *running_jobs, lL
       if (sconf_is()) {
          lListElem *node = nullptr;
          const lDescr schedConfDesc[] = {
-                            {SC_weight_tickets_override, lUlongT  | CULL_IS_REDUCED, nullptr},
-                            {NoName, lEndT  | CULL_IS_REDUCED, nullptr}
+                            {SC_weight_tickets_override, lUlongT  | CULL_IS_REDUCED},
+                            {NoName, lEndT  | CULL_IS_REDUCED}
                            };
 
          node = lCreateElem(schedConfDesc);

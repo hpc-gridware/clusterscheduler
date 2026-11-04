@@ -184,36 +184,36 @@ lList *sge_create_orders(lList *or_list, uint32_t type, const lListElem *job, co
       static order_pos_t *order_pos = nullptr;
 
       const lDescr tixDesc[] = {
-                            {JAT_task_number, lUlongT | CULL_IS_REDUCED, nullptr},
-                            {JAT_tix, lDoubleT | CULL_IS_REDUCED, nullptr},
-                            {JAT_oticket, lDoubleT | CULL_IS_REDUCED, nullptr},
-                            {JAT_fticket, lDoubleT | CULL_IS_REDUCED, nullptr},
-                            {JAT_sticket, lDoubleT | CULL_IS_REDUCED, nullptr},
-                            {JAT_share, lDoubleT | CULL_IS_REDUCED, nullptr},
-                            {JAT_prio, lDoubleT | CULL_IS_REDUCED, nullptr},
-                            {JAT_ntix, lDoubleT | CULL_IS_REDUCED, nullptr},
-                            {JAT_granted_destin_identifier_list, lListT | CULL_IS_REDUCED, nullptr},
-                            {NoName, lEndT | CULL_IS_REDUCED, nullptr}
+                            {JAT_task_number, lUlongT | CULL_IS_REDUCED},
+                            {JAT_tix, lDoubleT | CULL_IS_REDUCED},
+                            {JAT_oticket, lDoubleT | CULL_IS_REDUCED},
+                            {JAT_fticket, lDoubleT | CULL_IS_REDUCED},
+                            {JAT_sticket, lDoubleT | CULL_IS_REDUCED},
+                            {JAT_share, lDoubleT | CULL_IS_REDUCED},
+                            {JAT_prio, lDoubleT | CULL_IS_REDUCED},
+                            {JAT_ntix, lDoubleT | CULL_IS_REDUCED},
+                            {JAT_granted_destin_identifier_list, lListT | CULL_IS_REDUCED},
+                            {NoName, lEndT | CULL_IS_REDUCED}
                            };
       const lDescr tix2Desc[] = {
-                             {JAT_task_number, lUlongT | CULL_IS_REDUCED, nullptr},
-                             {JAT_tix, lDoubleT| CULL_IS_REDUCED, nullptr},
-                             {JAT_oticket, lDoubleT | CULL_IS_REDUCED, nullptr},
-                             {JAT_fticket, lDoubleT | CULL_IS_REDUCED, nullptr},
-                             {JAT_sticket, lDoubleT | CULL_IS_REDUCED, nullptr},
-                             {JAT_share, lDoubleT | CULL_IS_REDUCED, nullptr},
-                             {JAT_prio, lDoubleT | CULL_IS_REDUCED, nullptr},
-                             {JAT_ntix, lDoubleT | CULL_IS_REDUCED, nullptr},
-                             {NoName, lEndT | CULL_IS_REDUCED, nullptr}
+                             {JAT_task_number, lUlongT | CULL_IS_REDUCED},
+                             {JAT_tix, lDoubleT| CULL_IS_REDUCED},
+                             {JAT_oticket, lDoubleT | CULL_IS_REDUCED},
+                             {JAT_fticket, lDoubleT | CULL_IS_REDUCED},
+                             {JAT_sticket, lDoubleT | CULL_IS_REDUCED},
+                             {JAT_share, lDoubleT | CULL_IS_REDUCED},
+                             {JAT_prio, lDoubleT | CULL_IS_REDUCED},
+                             {JAT_ntix, lDoubleT | CULL_IS_REDUCED},
+                             {NoName, lEndT | CULL_IS_REDUCED}
                             };
       const lDescr jobDesc[] = {
-                                 {JB_nurg, lDoubleT | CULL_IS_REDUCED, nullptr},
-                                 {JB_urg, lDoubleT | CULL_IS_REDUCED, nullptr},
-                                 {JB_rrcontr, lDoubleT | CULL_IS_REDUCED, nullptr},
-                                 {JB_dlcontr, lDoubleT | CULL_IS_REDUCED, nullptr},
-                                 {JB_wtcontr, lDoubleT | CULL_IS_REDUCED, nullptr},
-                                 {JB_ja_tasks, lListT | CULL_IS_REDUCED, nullptr},
-                                 {NoName, lEndT | CULL_IS_REDUCED, nullptr}
+                                 {JB_nurg, lDoubleT | CULL_IS_REDUCED},
+                                 {JB_urg, lDoubleT | CULL_IS_REDUCED},
+                                 {JB_rrcontr, lDoubleT | CULL_IS_REDUCED},
+                                 {JB_dlcontr, lDoubleT | CULL_IS_REDUCED},
+                                 {JB_wtcontr, lDoubleT | CULL_IS_REDUCED},
+                                 {JB_ja_tasks, lListT | CULL_IS_REDUCED},
+                                 {NoName, lEndT | CULL_IS_REDUCED}
                                };
       ja_task_pos_t *ja_pos;
       ja_task_pos_t *order_ja_pos;

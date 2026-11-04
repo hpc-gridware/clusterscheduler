@@ -919,9 +919,9 @@ static lList *qalter_parse_job_parameter(uint32_t me_who, lList *cmdline, lList 
       lList *task_list = nullptr;
       lListElem *task;
       lDescr task_descr[] = { 
-            {JAT_task_number, lUlongT | CULL_IS_REDUCED, nullptr},
-            {JAT_hold, lUlongT | CULL_IS_REDUCED, nullptr},
-            {NoName, lEndT | CULL_IS_REDUCED, nullptr}
+            {JAT_task_number, lUlongT | CULL_IS_REDUCED},
+            {JAT_hold, lUlongT | CULL_IS_REDUCED},
+            {NoName, lEndT | CULL_IS_REDUCED}
       };
 
       jobid = atol(lGetString(ep, ID_str));

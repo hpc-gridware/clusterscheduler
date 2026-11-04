@@ -735,35 +735,6 @@ void cull_hash_delete_non_unique_chain(htable table, const void *key,
 }
 
 /**
- * @brief Free the hash contents of a cull descr
- *
- * Frees the memory used by the hashing information in a cull
- * descriptor (lDescr). If a hash table is still associated to
- * the descriptor, it is also deleted.
- *
- * @param descr descriptor to free
- *
- * @see `cull_hash_delete_non_unique()`, #sge_htable_destroy
- */
-void cull_hash_free_descr(lDescr *descr) {
-   int i;
-   for (i = 0; mt_get_type(descr[i].mt) != lEndT; i++) {
-      cull_htable ht = descr[i].ht;
-
-      if (ht != nullptr) {
-         cull_hash_count_free(ht);
-         if (!mt_is_unique(descr[i].mt)) {
-            /* delete chain of non unique elements */
-            sge_htable_for_each_ep(ht->ht, cull_hash_delete_non_unique_chain);
-            sge_htable_destroy(ht->nuht);
-         }
-         sge_htable_destroy(ht->ht);
-         sge_free(&(descr[i].ht));
-      }
-   }
-}
-
-/**
  * @brief Free one hash table, the chains of a non unique table included
  *
  * @param htp the table to free; set to nullptr. A nullptr table is ignored.

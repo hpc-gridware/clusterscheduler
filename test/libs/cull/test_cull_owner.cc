@@ -446,6 +446,9 @@ static void test_hash_follows_owner() {
    CHECK(24, "after sorting the chain of a non unique key starts with the first element in list order",
          lFirst(moved) == d && table_ulong(moved, OW_group, 9) == d);
 
+   // the tables left the descriptor: an entry is field number and type only
+   CHECK(25, "a descriptor entry is 8 bytes", sizeof(lDescr) == 8);
+
    lFreeList(&unpacked);
    lFreeList(&moved);
    lFreeList(&target);
@@ -482,9 +485,10 @@ int main(int argc, char *argv[]) {
        "in that list's tables, whichever way the element got there",
        {"create a list and append elements", "move one with lDechainElem and lAppendElem",
         "move two with lDechainList", "pack and unpack a list", "change a hashed field of each moved element",
-        "add a hash on a field with cull_hash_new", "sort a list"},
+        "add a hash on a field with cull_hash_new", "sort a list", "check the size of a descriptor entry"},
        "each element is found through the tables of the list that holds it, under its new key, and not "
-       "through the tables of the list it came from; the added and the sorted tables are maintained",
-       {{"HTL-02", "covers"}}, {19, 20, 21, 22, 23, 24}, test_hash_follows_owner},
+       "through the tables of the list it came from; the added and the sorted tables are maintained; a "
+       "descriptor entry holds no table and is 8 bytes",
+       {{"HTL-02", "covers"}}, {19, 20, 21, 22, 23, 24, 25}, test_hash_follows_owner},
    });
 }

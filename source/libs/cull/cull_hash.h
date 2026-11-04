@@ -66,8 +66,6 @@ lListElem *cull_hash_first(cull_htable ht, const void *key, bool unique,
 
 lListElem *cull_hash_next(cull_htable ht, const void **iterator);
 
-void cull_hash_free_descr(lDescr *descr);
-
 void cull_hash_create_hashtables(lList *lp);
 
 bool cull_hash_init_slots(lList *lp, bool create);

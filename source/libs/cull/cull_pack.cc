@@ -315,7 +315,6 @@ static int cull_unpack_descr(
 
    dp[n].nm = NoName;
    dp[n].mt = lEndT;
-   dp[n].ht = nullptr;
 
    /* read in n lDescr fields */
    for (i = 0; i < n; i++) {
@@ -330,7 +329,6 @@ static int cull_unpack_descr(
          DRETURN(ret);
       }
       dp[i].mt = temp;
-      dp[i].ht = nullptr;
    }
    CULL_STATS_TYPE(dp[0].nm, DCOPY_UNPACK, 1);
    CULL_STATS_TYPE(dp[0].nm, DCOPY_UNPACK_B, sizeof(lDescr) * (n + 1));

@@ -186,7 +186,6 @@ lDescr *lUndumpDescr(FILE *fp) {
    }
    dp[i].nm = NoName;
    dp[i].mt = lEndT;
-   dp[i].ht = nullptr;
 
    /* read ket */
    if (fGetKet(fp)) {
@@ -906,7 +905,6 @@ static int fGetDescr(FILE *fp, lDescr *dp) {
 
    dp->nm = nm;
    dp->mt = mt;
-   dp->ht = nullptr;
 
    DRETURN(0);
 }

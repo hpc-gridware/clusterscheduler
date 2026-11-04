@@ -846,7 +846,6 @@ sge_event_master_process_mod_event_client(const lListElem *request, monitoring_t
             lFreeWhere(&(old_sub[i].where));
             lFreeWhat(&(old_sub[i].what));
             if (old_sub[i].descr){
-               cull_hash_free_descr(old_sub[i].descr);
                sge_free(&(old_sub[i].descr));
             }
          }
@@ -1845,7 +1844,6 @@ remove_event_client(lListElem **client, bool lock_event_master) {
          lFreeWhat(&old_sub[i].what);
 
          if (old_sub[i].descr) {
-            cull_hash_free_descr(old_sub[i].descr);
             sge_free(&(old_sub[i].descr));
          }
       }
@@ -2300,7 +2298,6 @@ static void build_subscription(lListElem *event_el) {
          lFreeWhere(&(old_sub_array[j].where));
          lFreeWhat(&(old_sub_array[j].what));
          if (old_sub_array[j].descr){
-            cull_hash_free_descr(old_sub_array[j].descr);
             sge_free(&(old_sub_array[j].descr));
          }
       }

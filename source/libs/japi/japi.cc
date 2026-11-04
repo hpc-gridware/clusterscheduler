@@ -1420,16 +1420,16 @@ static int japi_user_hold_add_jobid(uint32_t gdi_action, lList **request_list,
    DENTER(TOP_LAYER);
 
    const lDescr job_descr[] = {
-         {JB_job_number, lUlongT | CULL_IS_REDUCED, nullptr},
-         {JB_verify_suitable_queues, lUlongT | CULL_IS_REDUCED, nullptr},
-         {JB_ja_tasks, lListT | CULL_IS_REDUCED, nullptr},
-         {JB_ja_structure, lListT | CULL_IS_REDUCED, nullptr},
-         {NoName, lEndT | CULL_IS_REDUCED, nullptr}
+         {JB_job_number, lUlongT | CULL_IS_REDUCED},
+         {JB_verify_suitable_queues, lUlongT | CULL_IS_REDUCED},
+         {JB_ja_tasks, lListT | CULL_IS_REDUCED},
+         {JB_ja_structure, lListT | CULL_IS_REDUCED},
+         {NoName, lEndT | CULL_IS_REDUCED}
    };
    const lDescr task_descr[] = {
-         {JAT_task_number, lUlongT | CULL_IS_REDUCED, nullptr},
-         {JAT_hold, lUlongT | CULL_IS_REDUCED, nullptr},
-         {NoName, lEndT | CULL_IS_REDUCED, nullptr}
+         {JAT_task_number, lUlongT | CULL_IS_REDUCED},
+         {JAT_hold, lUlongT | CULL_IS_REDUCED},
+         {NoName, lEndT | CULL_IS_REDUCED}
    };
    lListElem *jep = nullptr;
    lListElem *tep = nullptr;

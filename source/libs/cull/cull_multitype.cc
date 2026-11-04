@@ -262,11 +262,6 @@ lDescr *lCopyDescr(const lDescr *dp) {
    CULL_STATS_TYPE(dp->nm, DCOPY_OTHER, 1);
    CULL_STATS_TYPE(dp->nm, DCOPY_OTHER_B, sizeof(lDescr) * (i + 1));
 
-   /* copy hashing information */
-   for (i = 0; mt_get_type(dp[i].mt) != lEndT; i++) {
-      new_descr[i].ht = nullptr;
-   }
-
    DRETURN(new_descr);
 
    error:
@@ -293,9 +288,9 @@ void lWriteDescrTo(const lDescr *dp, FILE *fp) {
    }
 
    for (i = 0; mt_get_type(dp[i].mt) != lEndT; i++) {
-      const char *format = "nm: %d(%-20.20s) mt: %d %c%c\n";
+      // the tables live in the lists, a descriptor only says whether a field is hashed
+      const char *format = "nm: %d(%-20.20s) mt: %d %c\n";
       int do_hash = ' ';
-      int is_hash = ' ';
       if (dp[i].mt & CULL_HASH) {
          if (dp[i].mt & CULL_UNIQUE) {
             do_hash = 'u';
@@ -303,14 +298,11 @@ void lWriteDescrTo(const lDescr *dp, FILE *fp) {
             do_hash = 'h';
          }
       }
-      if (dp[i].ht != nullptr) {
-         is_hash = '+';
-      }
 
       if (!fp) {
-         DPRINTF(format, dp[i].nm, lNm2Str(dp[i].nm), dp[i].mt, do_hash, is_hash);
+         DPRINTF(format, dp[i].nm, lNm2Str(dp[i].nm), dp[i].mt, do_hash);
       } else {
-         fprintf(fp, format, dp[i].nm, lNm2Str(dp[i].nm), dp[i].mt, do_hash, is_hash);
+         fprintf(fp, format, dp[i].nm, lNm2Str(dp[i].nm), dp[i].mt, do_hash);
       }
    }
 

@@ -383,7 +383,6 @@ lSelectElemPack(const lListElem *slp, const lCondition *cp,
       /* create reduced element */
       new_ep = lSelectElemDPack(slp, cp, dp, enp, isHash, pb, skip_no_transfer);
       /* free the descriptor, it has been copied by lCreateList */
-      cull_hash_free_descr(dp);
       sge_free(&dp);
    } else {
       /* no enumeration => make a copy of element */
@@ -526,7 +525,6 @@ lList *lSelectHashPack(const char *name, const lList *slp,
          ret = lSelectDPack(name, slp, cp, dp, enp, isHash, nullptr, skip_no_transfer);
 
          /* free the descriptor, it has been copied by lCreateList */
-         cull_hash_free_descr(dp);
          sge_free(&dp);
       } else {
          const char *pack_name = "";
@@ -703,7 +701,6 @@ int lPartialDescr(const lEnumeration *ep, const lDescr *sdp, lDescr *ddp,
          for (i = 0; mt_get_type(sdp[i].mt) != lEndT; i++) {
             ddp[*indexp].mt = sdp[i].mt;
             ddp[*indexp].nm = sdp[i].nm;
-            ddp[*indexp].ht = nullptr;
 
             (*indexp)++;
          }
@@ -723,7 +720,6 @@ int lPartialDescr(const lEnumeration *ep, const lDescr *sdp, lDescr *ddp,
                }
                ddp[*indexp].mt = sdp[ep[i].pos].mt;
                ddp[*indexp].nm = sdp[ep[i].pos].nm;
-               ddp[*indexp].ht = nullptr;
                ddp[*indexp].mt |= CULL_IS_REDUCED;
                reduced = true;
 
@@ -738,7 +734,6 @@ int lPartialDescr(const lEnumeration *ep, const lDescr *sdp, lDescr *ddp,
    /* copy end mark */
    ddp[*indexp].mt = lEndT;
    ddp[*indexp].nm = NoName;
-   ddp[*indexp].ht = nullptr;
    if (reduced) {
       ddp[*indexp].mt |= CULL_IS_REDUCED;
    }

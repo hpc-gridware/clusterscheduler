@@ -783,9 +783,8 @@ lListElem *lCreateElem(const lDescr *dp) {
    CULL_STATS_TYPE(dp->nm, DCOPY_ELEM, 1);
    CULL_STATS_TYPE(dp->nm, DCOPY_ELEM_B, sizeof(lDescr) * (n + 1));
 
-   /* new descr has no htables yet */
+   /* every field inherits the reduced flag of the type */
    for (i = 0; i <= n; i++) {
-      ep->descr[i].ht = nullptr;
       ep->descr[i].mt |= (dp->mt & CULL_IS_REDUCED);
    }
 
@@ -879,7 +878,6 @@ lList *lCreateListHash(const char *listname, const lDescr *descr, bool hash) {
    for (i = 0; i <= n; i++) {
       lp->descr[i].mt = descr[i].mt;
       lp->descr[i].nm = descr[i].nm;
-      lp->descr[i].ht = nullptr;
       lp->descr[i].mt |= (descr[i].mt & CULL_IS_REDUCED);
    }
 
@@ -1009,7 +1007,6 @@ void lFreeElem(lListElem **ep1) {
 
    /* lFreeElem is not responsible for list descriptor array */
    if (elem_kind(ep) == FREE_ELEM || elem_kind(ep) == OBJECT_ELEM) {
-      cull_hash_free_descr(ep->descr);
       sge_free(&(ep->descr));
    }
 
@@ -1421,7 +1418,6 @@ int lInsertElem(lList *lp, lListElem *ep, lListElem *new_ep) {
    }
 
    if (elem_kind(new_ep) == FREE_ELEM) {
-      cull_hash_free_descr(new_ep->descr);
       sge_free(&(new_ep->descr));
    }
    elem_set_bound(new_ep, lp);
@@ -1479,7 +1475,6 @@ int lAppendElem(lList *lp, lListElem *ep) {
    }
 
    if (elem_kind(ep) == FREE_ELEM) {
-      cull_hash_free_descr(ep->descr);
       sge_free(&(ep->descr));
    }
    elem_set_bound(ep, lp);
