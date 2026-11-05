@@ -175,7 +175,8 @@ For the contents and structure of the accounting records see xxqs_name_sxx_accou
 
 When a job was deleted before it finished, the acct record additionally contains a *deleted_by*
 attribute holding `<user>@<host>` of the `qdel` request, or `execd@<host>` / `qmaster@<host>` when
-the job was killed for exceeding a resource limit. The same attribute is also written when
+the job was killed for exceeding a resource limit, or `oom-killer@<host>` when the memory cgroup
+OOM killer ended the job. The same attribute is also written when
 qmaster rescheduled the run automatically (e.g. after a `reschedule_unknown` timeout) — in that
 case it holds `qmaster@<master-host>` — or when an operator issued `qmod -rj`/`qmod -rq`, in which
 case it holds `<user>@<host>` of the `qmod` caller. This attribute is emitted only to the JSONL

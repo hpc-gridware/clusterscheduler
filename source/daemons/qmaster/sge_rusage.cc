@@ -638,12 +638,19 @@ sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *wr
       write_json(*writer, "failed", lGetUlong(jr, JR_failed)); // @todo only when != 0?
       write_json(*writer, "exit_status", exit_status);
 
-      // who deleted the job: a value stored in JAT_joker (qdel or qmaster
-      // master-limit enforcement) takes precedence over the job report value
-      // (job killed by sge_execd for exceeding a limit).
-      const char *deleted_by = ja_task_get_deleted_by(ja_task);
+      // who deleted the job: a value stored in JAT_joker (qdel, qmaster
+      // master-limit enforcement, or the cause of a failed task) takes precedence
+      // over the job report value (job killed by sge_execd for exceeding a limit
+      // or by the OOM killer).
+      // A pe task which sge_execd or the OOM killer ended itself keeps this cause,
+      // the value of the ja task is only used for pe tasks without an own cause.
+      const char *jr_deleted_by = lGetString(jr, JR_deleted_by);
+      const char *deleted_by = pe_task_id != nullptr ? jr_deleted_by : nullptr;
       if (deleted_by == nullptr) {
-         deleted_by = lGetString(jr, JR_deleted_by);
+         deleted_by = ja_task_get_deleted_by(ja_task);
+      }
+      if (deleted_by == nullptr) {
+         deleted_by = jr_deleted_by;
       }
       if (deleted_by != nullptr) {
          write_json(*writer, "deleted_by", deleted_by);

@@ -113,6 +113,29 @@ status2str(uint32_t status) {
    return s;
 }
 
+/**
+ * @brief Record in a ja task who ended one of its tasks
+ *
+ * When sge_qmaster deletes a job because one of its tasks failed, the one who ended that task
+ * (e.g. oom-killer@<host> or execd@<host>, see JR_deleted_by) is the one who ended the job.
+ * It is stored in the ja task, so that the accounting records of the job's remaining tasks
+ * show it as well. A value which is already stored, e.g. by qdel, is kept.
+ *
+ * @param jatep the ja task of the job
+ * @param jr the job report of the failed task
+ */
+static void
+job_report_take_over_deleted_by(lListElem *jatep, const lListElem *jr) {
+   DENTER(TOP_LAYER);
+
+   const char *deleted_by = lGetString(jr, JR_deleted_by);
+   if (deleted_by != nullptr && ja_task_get_deleted_by(jatep) == nullptr) {
+      ja_task_set_deleted_by(jatep, deleted_by);
+   }
+
+   DRETURN_VOID;
+}
+
 /*
  * Protocol between qmaster and execd for tightly integrated parallel jobs:
  * ========================================================================
@@ -610,6 +633,9 @@ void process_job_report(lListElem *report, lListElem *hep, char *rhost, char *co
 
                            if (failed == SSTATE_FAILURE_AFTER_JOB && !lGetString(jep, JB_checkpoint_name)) {
                               if (!ISSET(lGetUlong(jatep, JAT_state), JDELETED)) {
+                                 // the job is deleted because the master task failed - what ended
+                                 // the master task ended the pe tasks as well
+                                 job_report_take_over_deleted_by(jatep, jr);
                                  job_mark_job_as_deleted(jep, jatep);
                                  ERROR(MSG_JOB_MASTERTASKFAILED_S, job_id_string);
                               }
@@ -739,6 +765,9 @@ void process_job_report(lListElem *report, lListElem *hep, char *rhost, char *co
 
                            if (failed == SSTATE_FAILURE_AFTER_JOB && !lGetString(jep, JB_checkpoint_name)) {
                               if (!ISSET(lGetUlong(jatep, JAT_state), JDELETED)) {
+                                 // the job is deleted because the pe task failed - what ended the
+                                 // pe task (e.g. oom-killer@<host>) ended the job as well
+                                 job_report_take_over_deleted_by(jatep, jr);
                                  job_mark_job_as_deleted(jep, jatep);
                                  ERROR(MSG_JOB_JOBTASKFAILED_S, job_id_string);
                               }

@@ -54,7 +54,14 @@ Information about who deleted (or terminated) the current run of the job, in the
 When the job was deleted with the `qdel` command it contains the user and the host of the
 `qdel` request. When the job was killed because it exceeded a resource limit (e.g. `h_rt`) it
 contains `execd@<host>` if the limit was enforced by the execution daemon, or `qmaster@<host>`
-if it was enforced by the qmaster. When the run was terminated because qmaster rescheduled
+if it was enforced by the qmaster. When the memory cgroup OOM killer ended the job on a host
+which runs its jobs under systemd control, it contains `oom-killer@<host>`, also if the execution
+daemon killed the job for exceeding a limit as well. This needs cgroup v2 and systemd 252 or
+newer, see *h_rss* in xxqs_name_sxx_queue_conf(5). When the qmaster deletes a parallel job because
+one of its tasks was ended this way, the records of the other tasks of the job contain the same
+value. Whoever deleted the job is recorded in every task of a parallel job, except for a task
+that the execution daemon or the OOM killer ended itself: its record shows that cause instead.
+When the run was terminated because qmaster rescheduled
 the job (for example after a `reschedule_unknown` timeout fired on the execution host) it
 contains `qmaster@<master-host>`. When a run was rescheduled via `qmod -rj`/`qmod -rq` it
 contains the user and host that issued the `qmod` request.

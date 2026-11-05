@@ -54,5 +54,8 @@ namespace ocs::execd {
    void
    ptf_get_usage_from_systemd();
 
+   bool
+   execd_scope_was_oom_killed(const char *scope);
+
 #endif
 }

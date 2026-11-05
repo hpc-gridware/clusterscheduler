@@ -46,6 +46,13 @@ The OOM killer kills all processes of the job at once, the job ends with exit st
 failed 100, and the abort mail is sent if the job requested it. Jobs which used to survive the
 OOM kill of one of their processes now end as failed. Older systems are not affected.
 
+The accounting record of such a job shows *deleted_by* `oom-killer@<host>`
+([CS-3022](https://hpc-gridware.atlassian.net/browse/CS-3022)), so that a workflow manager can
+tell an OOM kill from other failures. When the qmaster deletes a parallel job because one of its
+tasks failed, the records of the other tasks now show who ended that task, e.g. `oom-killer@<host>`
+or `execd@<host>`. A task of a parallel job which the execution daemon or the OOM killer ended
+itself shows that cause in its record, also when the job was deleted for another reason.
+
 ## TLS: Private Keys Move Below the Cell
 
 The private keys of the daemons used to be stored in `/var/lib/ocs/<qmaster_port>/private`. The path now also
