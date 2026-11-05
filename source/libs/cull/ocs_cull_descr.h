@@ -68,6 +68,8 @@ bool ocs_cull_descr_is_static(const lDescr *dp);
 
 const lDescr *ocs_cull_descr_static_for(int nm);
 
+const lDescr *ocs_cull_descr_static_containing(int nm, int *pos);
+
 uint32_t ocs_cull_descr_refs(const lDescr *dp);
 
 size_t ocs_cull_descr_registry_size();

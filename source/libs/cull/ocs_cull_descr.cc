@@ -251,6 +251,36 @@ const lDescr *ocs_cull_descr_static_for(const int nm) {
 }
 
 /**
+ * @brief The static block of the type a field belongs to
+ *
+ * Field numbers are allocated in one block per type, so the name space entry
+ * whose range contains the field names its type, and the field sits at the
+ * offset from the lower bound of the range.
+ *
+ * @param nm the field number
+ * @param pos set to the position of the field in the block
+ * @return the block registered in the name space of the calling thread, or
+ *         nullptr if no type of it contains the field
+ */
+const lDescr *ocs_cull_descr_static_containing(const int nm, int *pos) {
+   const lNameSpace *ns = cull_state_get_name_space();
+   if (ns == nullptr) {
+      return nullptr;
+   }
+   for (const lNameSpace *e = ns; e->lower != 0; ++e) {
+      if (e->descr != nullptr && nm >= e->lower && nm < e->lower + e->size) {
+         const int k = nm - e->lower;
+         if (e->descr[k].nm == nm) {
+            *pos = k;
+            return e->descr;
+         }
+         return nullptr;
+      }
+   }
+   return nullptr;
+}
+
+/**
  * @brief Whether a descriptor is the static block of its type
  * @param dp the entries of a descriptor, or nullptr
  * @return true if dp is the block registered for its type in the name space of the calling thread

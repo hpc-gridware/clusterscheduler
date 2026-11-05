@@ -268,6 +268,7 @@ void clear_packbuffer(sge_pack_buffer *pb) {
       sge_free(&pb->head_ptr);
       sge_free(&pb->auth_info);
       sge_free(&pb->grp_array);
+      ocs_cull_pack_table_free(pb);
    }
 }
 

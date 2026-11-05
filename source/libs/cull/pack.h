@@ -70,7 +70,8 @@
  *
  * | Version | Change |
  * |---|---|
- * | `0x10022000` | current; a full descriptor is packed as a reference to its type (CS-2997) |
+ * | `0x10023000` | current; reduced descriptors go through a descriptor table per buffer (CS-2997) |
+ * | `0x10022000` | a full descriptor is packed as a reference to its type (CS-2997) |
  * | `0x10021000` | raised for MUNGE authentication (CS-995) |
  * | `0x10020000` | fixed packing of the `lObject` type: the descriptor was sent twice |
  * | `0x10010000` | added information about attribute changes |
@@ -79,7 +80,7 @@
  * @see @ref cull_packing
  */
 
-#define CULL_VERSION 0x10022000 ///< format id written into every packbuffer; see @ref cull_pack_version
+#define CULL_VERSION 0x10023000 ///< format id written into every packbuffer; see @ref cull_pack_version
 #include <uti/sge_uidgid.h>
 
 #define INTSIZE     4 ///< size of a packed integer, in 8 bit bytes
@@ -99,6 +100,9 @@
  *
  * @see @ref cull_packing
  */
+/// the descriptor table of a pack buffer (N-W-4), see cull_pack.cc
+struct ocs_cull_descr_table;
+
 typedef struct {
    char *head_ptr;                    ///< start of the buffer
    char *cur_ptr;                     ///< read or write position within the buffer
@@ -113,6 +117,7 @@ typedef struct {
    char groupname[MAX_USER_GROUP];    ///< primary group name of the sender
    int grp_amount;                    ///< number of supplementary groups in #grp_array
    ocs_grp_elem_t *grp_array;         ///< supplementary groups of the sender
+   ocs_cull_descr_table *dtab;        ///< descriptors written or read so far, nullptr until the first; freed by #clear_packbuffer
 
 } sge_pack_buffer;
 
@@ -124,6 +129,12 @@ init_packbuffer_from_buffer(sge_pack_buffer *pb, char *buf, uint32_t buflen, boo
 
 void
 clear_packbuffer(sge_pack_buffer *pb);
+
+void
+ocs_cull_pack_table_free(sge_pack_buffer *pb);
+
+size_t
+ocs_cull_pack_table_size(const sge_pack_buffer *pb);
 
 int pb_filled(sge_pack_buffer *pb);
 

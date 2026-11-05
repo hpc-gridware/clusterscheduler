@@ -42,6 +42,8 @@
 #include <cstdlib>
 #include <cstring>
 #include <cctype>
+#include <new>
+#include <vector>
 
 /* do not compile in monitoring code */
 #ifndef NO_SGE_COMPILE_DEBUG
@@ -273,6 +275,55 @@ cull_pack_switch(sge_pack_buffer *pb, const lMultiType *src, lEnumeration *what,
 }
 
 /**
+ * @brief The descriptor table of a pack buffer (N-W-4)
+ *
+ * Both sides number the descriptors of a buffer in the order they are written
+ * and read. The sender looks a shared descriptor up by its address, which is
+ * stable because the table holds a reference on it; the receiver finds an
+ * entry by its index. Each entry holds one reference, given up by
+ * clear_packbuffer().
+ */
+struct ocs_cull_descr_table {
+   std::vector<const lDescr *> entries; ///< the shared descriptors, by table index
+};
+
+/**
+ * @brief Give up the descriptor table of a buffer
+ * @param pb the buffer; its table is released and set to nullptr
+ */
+void ocs_cull_pack_table_free(sge_pack_buffer *pb) {
+   if (pb == nullptr || pb->dtab == nullptr) {
+      return;
+   }
+   for (const lDescr *dp : pb->dtab->entries) {
+      ocs_cull_descr_release(&dp);
+   }
+   delete pb->dtab;
+   pb->dtab = nullptr;
+}
+
+/**
+ * @brief Number of entries in the descriptor table of a buffer
+ * @param pb the buffer
+ * @return the number of distinct reduced descriptors written to or read from it
+ */
+size_t ocs_cull_pack_table_size(const sge_pack_buffer *pb) {
+   return pb == nullptr || pb->dtab == nullptr ? 0 : pb->dtab->entries.size();
+}
+
+/**
+ * @brief The table of a buffer, created on first use
+ * @param pb the buffer
+ * @return its table, or nullptr if out of memory
+ */
+static ocs_cull_descr_table *pack_table(sge_pack_buffer *pb) {
+   if (pb->dtab == nullptr) {
+      pb->dtab = new (std::nothrow) ocs_cull_descr_table;
+   }
+   return pb->dtab;
+}
+
+/**
  * @brief Unpack an object type descriptor into the descriptor a list or an element holds
  *
  * A type reference (#CULL_PACK_DESCR_TYPE_REF) yields the static block of the
@@ -323,6 +374,90 @@ static int cull_unpack_descr(
       }
       *dpp = block;
       DRETURN(PACK_SUCCESS);
+   }
+
+   /* an index into the table of the buffer, or a new entry for it */
+   bool enter_table = false;
+   if (n == CULL_PACK_DESCR_TABLE_REF || n == CULL_PACK_DESCR_TABLE_DEF) {
+      if (flags != 0) {
+         LERROR(LEDESCRNULL);
+         DRETURN(PACK_FORMAT);
+      }
+      if (n == CULL_PACK_DESCR_TABLE_REF) {
+         uint32_t index = 0;
+         if ((ret = unpackint(pb, &index)) != PACK_SUCCESS) {
+            DRETURN(ret);
+         }
+         if (pb->dtab == nullptr || index >= pb->dtab->entries.size()) {
+            LERROR(LEDESCRNULL);
+            DRETURN(PACK_FORMAT);
+         }
+         *dpp = ocs_cull_descr_ref(pb->dtab->entries[index]);
+         DRETURN(PACK_SUCCESS);
+      }
+
+      uint32_t kind = 0;
+      if ((ret = unpackint(pb, &kind)) != PACK_SUCCESS) {
+         DRETURN(ret);
+      }
+      if (kind == CULL_PACK_DESCR_BY_INDEX) {
+         /* the fields by their index in one type; mt is taken from the local type (N-W-5) */
+         uint32_t type_nm = 0;
+         uint32_t count = 0;
+         if ((ret = unpackint(pb, &type_nm)) != PACK_SUCCESS || (ret = unpackint(pb, &count)) != PACK_SUCCESS) {
+            DRETURN(ret);
+         }
+         const lDescr *type = ocs_cull_descr_static_for(static_cast<int>(type_nm));
+         const int type_n = type != nullptr ? lCountDescr(type) : 0;
+         if (type == nullptr || count > static_cast<uint32_t>(type_n)) {
+            LERROR(LEDESCRNULL);
+            DRETURN(PACK_FORMAT);
+         }
+         if ((dp = (lDescr *) sge_malloc(sizeof(lDescr) * (count + 1))) == nullptr) {
+            LERROR(LEMALLOC);
+            DRETURN(PACK_ENOMEM);
+         }
+         bool full = count == static_cast<uint32_t>(type_n);
+         for (i = 0; i < count; i++) {
+            if ((ret = unpackint(pb, &temp)) != PACK_SUCCESS || temp >= static_cast<uint32_t>(type_n)) {
+               sge_free(&dp);
+               if (ret == PACK_SUCCESS) {
+                  LERROR(LEDESCRNULL);
+                  ret = PACK_FORMAT;
+               }
+               DRETURN(ret);
+            }
+            full = full && temp == i;
+            dp[i] = type[temp];
+         }
+         dp[count].nm = NoName;
+         dp[count].mt = lEndT;
+         if (!full) {
+            for (i = 0; i <= count; i++) {
+               dp[i].mt |= CULL_IS_REDUCED;
+            }
+         }
+         const lDescr *shared = ocs_cull_descr_acquire(dp);
+         sge_free(&dp);
+         ocs_cull_descr_table *tab = shared != nullptr ? pack_table(pb) : nullptr;
+         if (tab == nullptr) {
+            ocs_cull_descr_release(&shared);
+            LERROR(LEMALLOC);
+            DRETURN(PACK_ENOMEM);
+         }
+         tab->entries.push_back(shared);
+         *dpp = ocs_cull_descr_ref(shared);
+         DRETURN(PACK_SUCCESS);
+      }
+      if (kind != CULL_PACK_DESCR_BY_FIELD) {
+         LERROR(LEDESCRNULL);
+         DRETURN(PACK_FORMAT);
+      }
+      /* field by field, as without the table; the result enters the table */
+      if ((ret = unpackint(pb, &n)) != PACK_SUCCESS) {
+         DRETURN(ret);
+      }
+      enter_table = true;
    }
 
    /* n+1 does not work because this casts n to int */
@@ -446,8 +581,96 @@ static int cull_unpack_descr(
       LERROR(LEMALLOC);
       DRETURN(PACK_ENOMEM);
    }
+   if (enter_table) {
+      ocs_cull_descr_table *tab = pack_table(pb);
+      if (tab == nullptr) {
+         ocs_cull_descr_release(dpp);
+         LERROR(LEMALLOC);
+         DRETURN(PACK_ENOMEM);
+      }
+      tab->entries.push_back(ocs_cull_descr_ref(*dpp));
+   }
 
    DRETURN(PACK_SUCCESS);
+}
+
+/**
+ * @brief Pack a shared descriptor through the type reference or the descriptor table
+ *
+ * A static block is a type reference (N-W-3). A descriptor already in the table
+ * of the buffer is its index. Any other one enters the table: by the indices of
+ * its fields in their type when all fields belong to one type, so that the
+ * receiver takes `mt` from its own type (N-W-5), or else field by field.
+ *
+ * @param pb the buffer to append to
+ * @param dp a static or counted descriptor
+ * @return #PACK_SUCCESS, #PACK_ENOMEM, or #PACK_FORMAT
+ */
+static int pack_shared_descr(sge_pack_buffer *pb, const lDescr *dp) {
+   int ret;
+   const int n = lCountDescr(dp);
+
+   if (!ocs_cull_descr_is_counted(dp)) {
+      if ((ret = packint(pb, CULL_PACK_DESCR_TYPE_REF)) != PACK_SUCCESS ||
+          (ret = packint(pb, dp[0].nm)) != PACK_SUCCESS || (ret = packint(pb, n)) != PACK_SUCCESS) {
+         return ret;
+      }
+      return PACK_SUCCESS;
+   }
+
+   ocs_cull_descr_table *tab = pack_table(pb);
+   if (tab == nullptr) {
+      return PACK_ENOMEM;
+   }
+   for (size_t k = 0; k < tab->entries.size(); k++) {
+      if (tab->entries[k] == dp) {
+         if ((ret = packint(pb, CULL_PACK_DESCR_TABLE_REF)) != PACK_SUCCESS ||
+             (ret = packint(pb, static_cast<uint32_t>(k))) != PACK_SUCCESS) {
+            return ret;
+         }
+         return PACK_SUCCESS;
+      }
+   }
+   tab->entries.push_back(ocs_cull_descr_ref(dp));
+
+   // by index if every field belongs to the type of the first one, with the same data type
+   int pos = 0;
+   const lDescr *type = n > 0 ? ocs_cull_descr_static_containing(dp[0].nm, &pos) : nullptr;
+   std::vector<uint32_t> idx;
+   for (int i = 0; type != nullptr && i < n; i++) {
+      int p = 0;
+      if (ocs_cull_descr_static_containing(dp[i].nm, &p) != type || mt_get_type(type[p].mt) != mt_get_type(dp[i].mt)) {
+         type = nullptr;
+         break;
+      }
+      idx.push_back(static_cast<uint32_t>(p));
+   }
+
+   if ((ret = packint(pb, CULL_PACK_DESCR_TABLE_DEF)) != PACK_SUCCESS) {
+      return ret;
+   }
+   if (type != nullptr) {
+      if ((ret = packint(pb, CULL_PACK_DESCR_BY_INDEX)) != PACK_SUCCESS || (ret = packint(pb, type[0].nm)) != PACK_SUCCESS ||
+          (ret = packint(pb, n)) != PACK_SUCCESS) {
+         return ret;
+      }
+      for (const uint32_t p : idx) {
+         if ((ret = packint(pb, p)) != PACK_SUCCESS) {
+            return ret;
+         }
+      }
+      return PACK_SUCCESS;
+   }
+   if ((ret = packint(pb, CULL_PACK_DESCR_BY_FIELD)) != PACK_SUCCESS || (ret = packint(pb, n)) != PACK_SUCCESS) {
+      return ret;
+   }
+   for (int i = 0; i < n; i++) {
+      // the reference count flag is process local and never leaves the process
+      if ((ret = packint(pb, dp[i].nm)) != PACK_SUCCESS || (ret = packint(pb, dp[i].mt & ~CULL_DESCR_INTERNED)) != PACK_SUCCESS) {
+         return ret;
+      }
+   }
+   return PACK_SUCCESS;
 }
 
 /**
@@ -471,14 +694,19 @@ int cull_pack_descr(sge_pack_buffer *pb, const lDescr *dp, const int flags) {
    int i, ret;
    CULL_STATS_CODE(const size_t stats_start = pb->bytes_used;)
 
-   if (flags == 0 && ocs_cull_descr_is_static(dp)) {
-      if ((ret = packint(pb, CULL_PACK_DESCR_TYPE_REF)) != PACK_SUCCESS ||
-          (ret = packint(pb, dp[0].nm)) != PACK_SUCCESS ||
-          (ret = packint(pb, lCountDescr(dp))) != PACK_SUCCESS) {
-         DRETURN(ret);
+   if (flags == 0) {
+      // the shared descriptor: what a list or a free element holds, or the one equal to a plain array
+      const bool held = ocs_cull_descr_is_counted(dp) || ocs_cull_descr_is_static(dp);
+      const lDescr *shared = held ? dp : ocs_cull_descr_acquire(dp);
+      if (shared == nullptr) {
+         DRETURN(PACK_ENOMEM);
+      }
+      ret = pack_shared_descr(pb, shared);
+      if (!held) {
+         ocs_cull_descr_release(&shared);
       }
       CULL_STATS_CODE(cull_stats_count_descr(pb, dp->nm, stats_start);)
-      DRETURN(PACK_SUCCESS);
+      DRETURN(ret);
    }
 
    /* pack the number of lDescr fields (without end mark) */
@@ -506,22 +734,43 @@ int cull_pack_descr(sge_pack_buffer *pb, const lDescr *dp, const int flags) {
  * Lets the receiver build a reduced object type from the selection alone,
  * without the full descriptor being sent.
  *
+ * Without flags the reduction is the shared descriptor the selection caches
+ * (ocs_cull_what_descr()), packed through the type reference or the descriptor
+ * table of the buffer like any held descriptor. With flags it is packed field by
+ * field (N-W-8).
+ *
  * @param pb the buffer to append to
  * @param what the selection to pack
  * @param descr the descriptor the selection refers to
+ * @param flags the flags the values are packed with, 0 for all values
  * @return #PACK_SUCCESS, #PACK_ENOMEM, or #PACK_FORMAT
  *
  * @todo remove not needed exit points
  */
 int
 cull_pack_enum_as_descr(sge_pack_buffer *pb, const lEnumeration *what,
-                        const lDescr *descr) {
+                        const lDescr *descr, const int flags) {
    DENTER(CULL_LAYER);
 
    int i, ret;
    CULL_STATS_CODE(const size_t stats_start = pb->bytes_used;)
 
    PROF_START_MEASUREMENT(SGE_PROF_PACKING);
+   if (flags == 0 && what[0].pos != WHAT_NONE) {
+      bool owned;
+      const lDescr *shared = ocs_cull_what_descr(what, descr, &owned);
+      if (shared == nullptr) {
+         PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
+         DRETURN(PACK_ENOMEM);
+      }
+      ret = pack_shared_descr(pb, shared);
+      if (owned) {
+         ocs_cull_descr_release(&shared);
+      }
+      CULL_STATS_CODE(cull_stats_count_descr(pb, descr->nm, stats_start);)
+      PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
+      DRETURN(ret);
+   }
    /* pack the number of lDescr fields (without end mark) */
    if ((ret = packint(pb, lCountWhat(what, descr)))) {
       PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
@@ -763,7 +1012,7 @@ cull_pack_elem_partial(sge_pack_buffer *pb, const lListElem *ep,
             DRETURN(ret);
          }
       } else {
-         if ((ret = cull_pack_enum_as_descr(pb, what, ep->descr)) != PACK_SUCCESS) {
+         if ((ret = cull_pack_enum_as_descr(pb, what, ep->descr, flags)) != PACK_SUCCESS) {
             PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
             DRETURN(ret);
          }
@@ -942,7 +1191,7 @@ static int cull_pack_object(sge_pack_buffer *pb, const lListElem *ep, const lEnu
       if (what == nullptr) {
          ret = cull_pack_descr(pb, ep->descr, flags);
       } else {
-         ret = cull_pack_enum_as_descr(pb, what, ep->descr);
+         ret = cull_pack_enum_as_descr(pb, what, ep->descr, flags);
       }
       if (ret != PACK_SUCCESS) {
          DRETURN(ret);
@@ -1008,7 +1257,7 @@ int cull_pack_list_partial(sge_pack_buffer *pb, const lList *lp,
             DRETURN(ret);
          }
       } else {
-         if ((ret = cull_pack_enum_as_descr(pb, what, lp->descr)) != PACK_SUCCESS) {
+         if ((ret = cull_pack_enum_as_descr(pb, what, lp->descr, flags)) != PACK_SUCCESS) {
             PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
             DRETURN(ret);
          }
@@ -1388,6 +1637,14 @@ int cull_unpack_enum(
          if ((ret = unpackint(pb, &temp)))
             goto error;
          enp[i].nm = temp;
+         /* the type and the flags of a field are taken from the local type, not from the sender (N-W-5) */
+         {
+            int local_pos = 0;
+            const lDescr *type = ocs_cull_descr_static_containing(enp[i].nm, &local_pos);
+            if (type != nullptr) {
+               enp[i].mt = type[local_pos].mt;
+            }
+         }
          if ((ret = unpackint(pb, &temp)))
             goto error;
          if (temp == 1) {

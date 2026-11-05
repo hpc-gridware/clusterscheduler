@@ -526,9 +526,11 @@ static int unpack_type_ref(const uint32_t first_nm, const uint32_t count) {
 static void test_type_ref() {
    const size_t base = ocs_cull_descr_registry_size();
    lDescr *heap = heap_copy(TD_Type);
-   CHECK(32, "a static descriptor is packed as a type reference, any other and a flag-filtered one field by field",
-         first_word_of_packed(TD_Type, 0) == CULL_PACK_DESCR_TYPE_REF && first_word_of_packed(heap, 0) == 4 &&
-         first_word_of_packed(TD_Type, CULL_SPOOL) == 4 && first_word_of_packed(RED_A, 0) == 2);
+   CHECK(32, "a full descriptor is packed as a type reference, a reduced one enters the table, a flag-filtered one "
+         "goes field by field",
+         first_word_of_packed(TD_Type, 0) == CULL_PACK_DESCR_TYPE_REF &&
+         first_word_of_packed(heap, 0) == CULL_PACK_DESCR_TYPE_REF &&
+         first_word_of_packed(TD_Type, CULL_SPOOL) == 4 && first_word_of_packed(RED_A, 0) == CULL_PACK_DESCR_TABLE_DEF);
    sge_free(&heap);
 
    lList *lp = make_list(3);
@@ -541,6 +543,105 @@ static void test_type_ref() {
          unpack_type_ref(TD_id, 4) == PACK_SUCCESS);
    lFreeList(&unpacked);
    lFreeList(&lp);
+}
+
+/**
+ * @brief Pack lists into one buffer and unpack them from it again
+ * @param lists the lists, in the order to pack them
+ * @param out the unpacked lists, in the same order
+ * @param sent_entries set to the size of the sender's descriptor table
+ * @param read_entries set to the size of the receiver's descriptor table
+ * @param counted set to whether counting mode measures the same size
+ * @return true if every list was packed and unpacked
+ */
+static bool pack_unpack_many(const std::vector<const lList *> &lists, std::vector<lList *> &out,
+                             size_t *sent_entries, size_t *read_entries, bool *counted) {
+   bool ok = true;
+   sge_pack_buffer pb;
+   sge_pack_buffer cnt;
+   if (init_packbuffer(&pb, 1024, false, false) != PACK_SUCCESS || init_packbuffer(&cnt, 0, true, false) != PACK_SUCCESS) {
+      return false;
+   }
+   const size_t header = pb.bytes_used;
+   for (const lList *lp : lists) {
+      ok = ok && cull_pack_list(&pb, lp) == PACK_SUCCESS && cull_pack_list(&cnt, lp) == PACK_SUCCESS;
+   }
+   *sent_entries = ocs_cull_pack_table_size(&pb);
+   *counted = cnt.bytes_used == pb.bytes_used - header && ocs_cull_pack_table_size(&cnt) == *sent_entries;
+   char *buf = sge_malloc(pb.bytes_used);
+   memcpy(buf, pb.head_ptr, pb.bytes_used);
+   sge_pack_buffer in;
+   if (ok && init_packbuffer_from_buffer(&in, buf, pb.bytes_used, false) == PACK_SUCCESS) {
+      for (size_t i = 0; i < lists.size(); i++) {
+         lList *lp = nullptr;
+         ok = ok && cull_unpack_list(&in, &lp) == PACK_SUCCESS;
+         out.push_back(lp);
+      }
+      *read_entries = ocs_cull_pack_table_size(&in);
+   } else {
+      ok = false;
+   }
+   clear_packbuffer(&in);
+   clear_packbuffer(&cnt);
+   clear_packbuffer(&pb);
+   return ok;
+}
+
+/** @brief DESCR-11: reduced descriptors go through the descriptor table of the buffer */
+static void test_descr_table() {
+   const size_t base = ocs_cull_descr_registry_size();
+   lList *lp = make_list(4);
+   lEnumeration *what_a = lWhat("%T(%I %I)", TD_Type, TD_id, TD_name);
+   lEnumeration *what_b = lWhat("%T(%I %I)", TD_Type, TD_id, TD_value);
+   lList *a1 = lSelect("a1", lp, nullptr, what_a);
+   lList *a2 = lSelect("a2", lp, nullptr, what_a);
+   lList *b1 = lSelect("b1", lp, nullptr, what_b);
+   lFreeWhat(&what_b);
+   lFreeWhat(&what_a);
+
+   std::vector<lList *> out;
+   size_t sent = 0;
+   size_t read = 0;
+   bool counted = false;
+   const bool ok = pack_unpack_many({a1, lp, a2, b1, a2}, out, &sent, &read, &counted);
+   CHECK(35, "each distinct reduction enters the table of the buffer once, on both sides, also when counting",
+         ok && sent == 2 && read == 2 && counted);
+   CHECK(36, "the unpacked lists share the descriptors of the sender's reductions and the full type keeps its block",
+         ok && out[0]->descr == a1->descr && out[2]->descr == a1->descr && out[4]->descr == a1->descr &&
+         out[3]->descr == b1->descr && out[1]->descr == TD_Type && lGetNumberOfElem(out[2]) == 4 &&
+         lGetUlong(lFirst(out[3]), TD_value) == 0 && lGetString(lFirst(out[0]), TD_name) != nullptr);
+   for (lList *l : out) {
+      lFreeList(&l);
+   }
+   CHECK(37, "the buffers gave their table references up", ocs_cull_descr_refs(a1->descr) == 2);
+
+   // an index the buffer has not defined yet is a format error
+   sge_pack_buffer pb;
+   int forged = PACK_SUCCESS;
+   if (init_packbuffer(&pb, 256, false, false) == PACK_SUCCESS) {
+      packint(&pb, 1);
+      packstr(&pb, "forged");
+      packint(&pb, CULL_PACK_DESCR_TABLE_REF);
+      packint(&pb, 0);
+      packint(&pb, 0);
+      char *buf = sge_malloc(pb.bytes_used);
+      memcpy(buf, pb.head_ptr, pb.bytes_used);
+      sge_pack_buffer in;
+      if (init_packbuffer_from_buffer(&in, buf, pb.bytes_used, false) == PACK_SUCCESS) {
+         lList *l = nullptr;
+         forged = cull_unpack_list(&in, &l);
+         lFreeList(&l);
+      }
+      clear_packbuffer(&in);
+      clear_packbuffer(&pb);
+   }
+   CHECK(38, "an index the buffer has not defined is a format error", forged == PACK_FORMAT);
+
+   lFreeList(&b1);
+   lFreeList(&a2);
+   lFreeList(&a1);
+   lFreeList(&lp);
+   CHECK(39, "after the lists the registry is empty again", ocs_cull_descr_registry_size() == base);
 }
 
 int main(int argc, char *argv[]) {
@@ -604,8 +705,15 @@ int main(int argc, char *argv[]) {
        "a full descriptor is packed as a reference to its type and unpacked as the static block",
        {"pack a static, a heap copy, a flag-filtered and a reduced descriptor",
         "pack and unpack a list of a full type", "unpack forged type references"},
-       "only the unfiltered static descriptor becomes a type reference, the receiver gets the static block, and an "
+       "an unfiltered full descriptor becomes a type reference, the receiver gets the static block, and an "
        "unknown type or a different field count is a format error",
        {{"SHD-01", "partly"}}, {32, 33, 34}, test_type_ref},
+      {"DESCR-11", "descriptor table of a buffer",
+       "reduced descriptors are written once per buffer and referenced by index afterwards",
+       {"pack two lists of one reduction, a full list and a list of another reduction into one buffer, also counting",
+        "unpack them", "unpack a forged index"},
+       "both tables hold one entry per distinct reduction, counting measures the same size, the unpacked lists "
+       "share the descriptors, and an undefined index is a format error",
+       {{"SHD-04", "unit level"}}, {35, 36, 37, 38, 39}, test_descr_table},
    });
 }

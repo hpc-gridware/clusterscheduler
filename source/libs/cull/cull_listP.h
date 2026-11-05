@@ -93,6 +93,14 @@ constexpr uint32_t CULL_PACK_TRANS_BOUND_ELEM = 1 << 2; ///< TRANS_BOUND_ELEM on
 constexpr uint32_t CULL_PACK_OBJECT_ELEM = 1 << 3;      ///< OBJECT_ELEM on the wire
 /// first word of a descriptor packed as a reference to its type (N-W-3); no field count can take it
 constexpr uint32_t CULL_PACK_DESCR_TYPE_REF = 0xFFFFFF00;
+/// first word of a descriptor that enters the descriptor table of the buffer (N-W-4)
+constexpr uint32_t CULL_PACK_DESCR_TABLE_DEF = 0xFFFFFF01;
+/// first word of a descriptor given as the index of an earlier table entry (N-W-4)
+constexpr uint32_t CULL_PACK_DESCR_TABLE_REF = 0xFFFFFF02;
+/// a table entry lists the indices of its fields in one type; mt comes from the receiver's type (N-W-5)
+constexpr uint32_t CULL_PACK_DESCR_BY_INDEX = 0;
+/// a table entry lists its fields as (nm, mt), for descriptors that span several types
+constexpr uint32_t CULL_PACK_DESCR_BY_FIELD = 1;
 static_assert(CULL_PACK_DESCR_TYPE_REF > MAX_DESCR_SIZE, "the type reference marker must not be a field count");
 /** @} */
 
