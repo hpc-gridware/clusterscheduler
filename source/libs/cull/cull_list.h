@@ -113,7 +113,7 @@ enum _enum_lMultiType {
 #define CULL_SUBLIST       0x00010000 ///< the field is spooled when the type appears as a subtype of another, where fewer fields are written
 #define CULL_SPOOL_PROJECT 0x00020000 ///< deprecated?
 #define CULL_SPOOL_USER    0x00040000 ///< deprecated?
-#define CULL_UNUSED1       0x00080000 ///< free for reuse
+#define CULL_DESCR_INTERNED 0x00080000 ///< set in entry 0 of a reference counted descriptor (see ocs_cull_descr.h); process local, never packed
 #define CULL_UNUSED2       0x00100000 ///< free for reuse
 #define CULL_IS_REDUCED    0x00200000 ///< the descriptor is a reduced one, holding only part of the type's fields
 /** @} */
@@ -226,6 +226,9 @@ struct cull_descr_block {
 /**
  * @brief FNV-1a hash over the field numbers and types of a descriptor
  *
+ * The process-local flag #CULL_DESCR_INTERNED is not hashed, so a counted copy
+ * hashes like its source.
+ *
  * @param e the fields
  * @param n number of fields to hash
  * @return the hash
@@ -233,7 +236,7 @@ struct cull_descr_block {
 constexpr uint64_t ocs_cull_descr_hash(const lDescr *e, const size_t n) {
    uint64_t h = 0xcbf29ce484222325ULL;
    for (size_t i = 0; i < n; i++) {
-      for (const uint32_t v : {static_cast<uint32_t>(e[i].nm), static_cast<uint32_t>(e[i].mt)}) {
+      for (const uint32_t v : {static_cast<uint32_t>(e[i].nm), static_cast<uint32_t>(e[i].mt & ~CULL_DESCR_INTERNED)}) {
          for (int b = 0; b < 4; b++) {
             h ^= (v >> (8 * b)) & 0xff;
             h *= 0x100000001b3ULL;

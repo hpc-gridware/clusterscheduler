@@ -38,6 +38,7 @@ set(LIBRARY_SOURCES
         cull_what.cc
         cull_what_print.cc
         cull_where.cc
+        ocs_cull_descr.cc
         pack.cc)
 if (ENABLE_CULL_STATS)
    list(APPEND LIBRARY_SOURCES cull_stats.cc)

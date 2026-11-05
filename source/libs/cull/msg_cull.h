@@ -200,4 +200,5 @@
 #define MSG_CULL_AUTHINFO_COULDNOTRESOLVEGROUP_U           _MESSAGE(41182, _("could not resolve group name for gid " gid_t_fmt))
 #define MSG_CULL_AUTHINFO_CORRECTINGUSERNAME_SS            _MESSAGE(41183, _("correcting user name from authinfo: " SFQ " to re-resolved name " SFQ))
 #define MSG_CULL_AUTHINFO_CORRECTINGGROUPNAME_SS           _MESSAGE(41184, _("correcting group name from authinfo: " SFQ " to re-resolved name " SFQ))
+#define MSG_CULL_DESCR_SOFTCAPREACHED_U                    _MESSAGE(41185, _("CULL descriptor registry holds " sge_u32 " descriptors, further ones are private copies"))
 // clang-format on
