@@ -124,7 +124,7 @@ LISTDEF(JG_Type)
    SGE_STRING(JG_processors, CULL_DEFAULT)
    SGE_LIST(JG_binding_to_use, ST_Type, CULL_SUBLIST)
    SGE_LIST(JG_granted_rsmaps, RESL_Type, CULL_SUBLIST)
-LISTEND
+LISTEND(JG_Type)
 
 NAMEDEF(JGN)
    NAME("JG_qname")

@@ -82,7 +82,7 @@ LISTDEF(JRS_Type)
    SGE_LIST(JRS_soft_queue_list, QR_Type, CULL_SPOOL)
    SGE_STRING(JRS_allocation_rule, CULL_SPOOL)
    SGE_BOOL(JRS_ignore_slave_requests_on_master_host, CULL_SPOOL)
-LISTEND
+LISTEND(JRS_Type)
 
 NAMEDEF(JRSN)
    NAME("JRS_scope")

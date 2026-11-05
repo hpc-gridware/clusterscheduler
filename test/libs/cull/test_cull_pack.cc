@@ -91,7 +91,7 @@ LISTDEF(TEST_Type)
                 SGE_LIST   (TEST_list, TEST_Type, CULL_DEFAULT | CULL_SPOOL)
                 SGE_OBJECT (TEST_object, TEST_Type, CULL_DEFAULT | CULL_SPOOL)
                 SGE_REF    (TEST_ref, TEST_Type, CULL_DEFAULT)
-LISTEND
+LISTEND(TEST_Type)
 
 NAMEDEF(TEST_Name)
                 NAME("TEST_host")

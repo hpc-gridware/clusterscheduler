@@ -81,7 +81,7 @@ LISTDEF(GRU_Type)
    SGE_LIST(GRU_resource_map_list, RESL_Type, CULL_SPOOL)
    SGE_LIST(GRU_binding_inuse, ST_Type, CULL_SPOOL)
    SGE_HOST(GRU_host, CULL_SPOOL)
-LISTEND
+LISTEND(GRU_Type)
 
 NAMEDEF(GRUN)
    NAME("GRU_type")

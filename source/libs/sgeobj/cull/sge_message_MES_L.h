@@ -59,7 +59,7 @@ LISTDEF(MES_Type)
    SGE_LIST(MES_job_number_list, ULNG_Type, CULL_DEFAULT)
    SGE_ULONG(MES_message_number, CULL_DEFAULT)
    SGE_STRING(MES_message, CULL_DEFAULT)
-LISTEND
+LISTEND(MES_Type)
 
 NAMEDEF(MESN)
    NAME("MES_job_number_list")

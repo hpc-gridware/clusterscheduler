@@ -75,7 +75,7 @@ LISTDEF(CAL_Type)
    SGE_LIST(CAL_parsed_year_calendar, CA_Type, CULL_DEFAULT)
    SGE_LIST(CAL_parsed_week_calendar, CA_Type, CULL_DEFAULT)
    SGE_LIST(CAL_joker, VA_Type, CULL_SPOOL)
-LISTEND
+LISTEND(CAL_Type)
 
 NAMEDEF(CALN)
    NAME("CAL_name")

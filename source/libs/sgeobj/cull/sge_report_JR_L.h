@@ -129,7 +129,7 @@ LISTDEF(JR_Type)
    SGE_BOOL(JR_no_send, CULL_DEFAULT)
    SGE_BOOL(JR_delay_report, CULL_DEFAULT)
    SGE_STRING(JR_deleted_by, CULL_DEFAULT)
-LISTEND
+LISTEND(JR_Type)
 
 NAMEDEF(JRN)
    NAME("JR_job_number")

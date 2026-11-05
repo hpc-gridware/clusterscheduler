@@ -53,7 +53,7 @@ enum {
 LISTDEF(LIC_Type)
    SGE_ULONG(LIC_processors, CULL_DEFAULT)
    SGE_STRING(LIC_arch, CULL_DEFAULT)
-LISTEND
+LISTEND(LIC_Type)
 
 NAMEDEF(LICN)
    NAME("LIC_processors")

@@ -229,7 +229,7 @@ LISTDEF(SC_Type)
    SGE_DOUBLE(SC_weight_priority, CULL_SPOOL)
    SGE_ULONG(SC_max_reservation, CULL_SPOOL)
    SGE_STRING(SC_default_duration, CULL_SPOOL)
-LISTEND
+LISTEND(SC_Type)
 
 NAMEDEF(SCN)
    NAME("SC_algorithm")

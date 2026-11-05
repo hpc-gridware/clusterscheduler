@@ -104,7 +104,7 @@ LISTDEF(LS_Type)
    SGE_LIST(LS_incomplete, LR_Type, CULL_DEFAULT)
    SGE_LIST(LS_complete, LR_Type, CULL_DEFAULT)
    SGE_ULONG(LS_last_mod, CULL_DEFAULT)
-LISTEND
+LISTEND(LS_Type)
 
 NAMEDEF(LSN)
    NAME("LS_name")

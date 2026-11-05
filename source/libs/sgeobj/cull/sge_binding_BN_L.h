@@ -111,7 +111,7 @@ LISTDEF(BN_Type)
    SGE_STRING(BN_specific_binding, CULL_SUBLIST)
    SGE_LIST(BN_specific_binding_list, ST_Type, CULL_SPOOL)
    SGE_LIST(BN_joker, VA_Type, CULL_SPOOL)
-LISTEND
+LISTEND(BN_Type)
 
 NAMEDEF(BNN)
    NAME("BN_new_type")

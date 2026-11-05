@@ -545,6 +545,27 @@
                "name": "JGDI_HIDDEN"
             }
          ]
+      },
+      {
+         "name": "auto_added_time",
+         "summary": "time at which the host added itself to the cluster",
+         "description": [
+            {
+               "line": "The time at which the host added itself to the cluster, when its execution"
+            },
+            {
+               "line": "daemon registered and a rule of the qmaster_params AUTO_ADD_HOSTS matched it."
+            },
+            {
+               "line": "0 for a host which an administrator added."
+            }
+         ],
+         "type": "lUlong64T",
+         "flags": [
+            {
+               "name": "SPOOL"
+            }
+         ]
       }
    ]
 }

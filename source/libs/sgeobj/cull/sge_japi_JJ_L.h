@@ -67,7 +67,7 @@ LISTDEF(JJ_Type)
    SGE_LIST(JJ_finished_tasks, JJAT_Type, CULL_DEFAULT)
    SGE_LIST(JJ_not_yet_finished_ids, RN_Type, CULL_DEFAULT)
    SGE_LIST(JJ_started_task_ids, RN_Type, CULL_DEFAULT)
-LISTEND
+LISTEND(JJ_Type)
 
 NAMEDEF(JJN)
    NAME("JJ_jobid")

@@ -64,7 +64,7 @@ LISTDEF(PA_Type)
    SGE_HOST(PA_submit_host, CULL_SPOOL)
    SGE_HOST(PA_exec_host, CULL_SPOOL)
    SGE_STRING(PA_translation, CULL_SPOOL)
-LISTEND
+LISTEND(PA_Type)
 
 NAMEDEF(PAN)
    NAME("PA_origin")

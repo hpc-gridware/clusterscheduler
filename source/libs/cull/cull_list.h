@@ -39,7 +39,10 @@
  * @brief The public cull types and the list and element API
  */
 
+#include <atomic>
+#include <cstddef>
 #include <cstdio>
+#include <utility>
 
 #include <cinttypes>
 #include "cull/cull_hashP.h"
@@ -118,10 +121,14 @@ enum _enum_lMultiType {
 #define BASIC_UNIT 50 ///< growth unit of a descriptor; don't touch
 #define MAX_DESCR_SIZE  (4*BASIC_UNIT) ///< largest number of fields an object type may have
 
-#ifdef __SGE_GDI_LIBRARY_HOME_OBJECT_FILE__
-
-#define LISTDEF( name ) lDescr name[] = {                                                ///< opens an object type definition; ends with #LISTEND
-#define LISTEND {NoName, lEndT}};                                               ///< closes an object type definition opened with #LISTDEF
+/*
+ * An object type is a static descriptor block: a cull_descr_header followed by the
+ * fields and the terminating #lEndT entry. LISTDEF/LISTEND build it at compile
+ * time as an inline variable, so every translation unit sees the same block and
+ * its contents are constant expressions. X_Type points at the first field.
+ */
+#define LISTDEF(name) inline constexpr auto name##_blk = ocs_cull_descr_make({           ///< opens an object type definition; ends with #LISTEND
+#define LISTEND(name) {NoName, lEndT}}); inline constexpr const lDescr *name = name##_blk.e; ///< closes the object type definition opened with #LISTDEF
 #define SGE_INT(name,flags)         { name, lIntT    | flags }, /* don't use it, not implemented on gdi level */ ///< declares an int (not supported at GDI level) field
 #define SGE_HOST(name,flags)        { name, lHostT   | flags },                 ///< declares a host name field
 #define SGE_STRING(name,flags)      { name, lStringT | flags },                 ///< declares a string field
@@ -136,8 +143,6 @@ enum _enum_lMultiType {
 #define SGE_OBJECT(name,type,flags) { name, lObjectT | flags },                 ///< declares a single sub-object field
 #define SGE_REF(name,type,flags)    { name, lRefT    | flags },                 ///< declares an opaque pointer field
 
-#define DERIVED_LISTDEF(name,parent) lDescr *name = parent                               ///< opens a type that reuses another type's fields
-#define DERIVED_LISTEND ;                                                                ///< closes a #DERIVED_LISTDEF
 #define SGE_INT_D(name,flags,def)         { name, lIntT    | flags },           ///< declares an int (not supported at GDI level) field, with a default value
 #define SGE_HOST_D(name,flags,def)        { name, lHostT   | flags },           ///< declares a host name field, with a default value
 #define SGE_STRING_D(name,flags,def)      { name, lStringT | flags },           ///< declares a string field, with a default value
@@ -160,48 +165,11 @@ enum _enum_lMultiType {
  */
 #define CULL_ANY_SUBTYPE 0
 
+#ifdef __SGE_GDI_LIBRARY_HOME_OBJECT_FILE__
 #define NAMEDEF( name ) const char *name[] = {                                           ///< opens the field name table matching a #LISTDEF
 #define NAME( name ) name ,                                                              ///< one entry of a #NAMEDEF table
 #define NAMEEND    };                                                                    ///< closes a #NAMEDEF table
 #else
-
-#define LISTDEF(name) extern lDescr name[];                                              ///< declares an object type defined in another translation unit
-#define LISTEND                                                                          ///< closes a forward declared object type
-#define DERIVED_LISTDEF(name, parent) extern lDescr *name                                ///< declares a derived type defined elsewhere
-#define DERIVED_LISTEND ;                                                                ///< closes a forward declared #DERIVED_LISTDEF
-
-#define SGE_INT(name, flags)                                                             ///< declares an int (not supported at GDI level) field
-#define SGE_HOST(name, flags)                                                            ///< declares a host name field
-#define SGE_STRING(name, flags)                                                          ///< declares a string field
-#define SGE_FLOAT(name, flags)                                                           ///< declares a float field
-#define SGE_DOUBLE(name, flags)                                                          ///< declares a double field
-#define SGE_CHAR(name, flags)                                                            ///< declares a single character field
-#define SGE_LONG(name, flags)                                                            ///< declares a signed long field
-#define SGE_ULONG(name, flags)                                                           ///< declares a 32 bit unsigned field
-#define SGE_ULONG64(name, flags)                                                         ///< declares a 64 bit unsigned field
-#define SGE_BOOL(name, flags)                                                            ///< declares a boolean field
-#define SGE_LIST(name, type, flags)                                                      ///< declares a sub-list of another object type field
-#define SGE_MAP(name, type, flags)                                                       ///< declares a sub-list used as a key/value map field
-#define SGE_MAPLIST(name, type, flags)                                                   ///< declares a sub-list used as a key/value-list map field
-#define SGE_OBJECT(name, type, flags)                                                    ///< declares a single sub-object field
-#define SGE_REF(name, type, flags)                                                       ///< declares an opaque pointer field
-
-#define SGE_INT_D(name, flags, def)                                                      ///< declares an int (not supported at GDI level) field, with a default value
-#define SGE_HOST_D(name, flags, def)                                                     ///< declares a host name field, with a default value
-#define SGE_STRING_D(name, flags, def)                                                   ///< declares a string field, with a default value
-#define SGE_FLOAT_D(name, flags, def)                                                    ///< declares a float field, with a default value
-#define SGE_DOUBLE_D(name, flags, def)                                                   ///< declares a double field, with a default value
-#define SGE_CHAR_D(name, flags, def)                                                     ///< declares a single character field, with a default value
-#define SGE_LONG_D(name, flags, def)                                                     ///< declares a signed long field, with a default value
-#define SGE_ULONG_D(name, flags, def)                                                    ///< declares a 32 bit unsigned field, with a default value
-#define SGE_ULONG64_D(name, flags, def)                                                  ///< declares a 64 bit unsigned field, with a default value
-#define SGE_BOOL_D(name, flags, def)                                                     ///< declares a boolean field, with a default value
-#define SGE_LIST_D(name, type, flags, def)                                               ///< declares a sub-list of another object type field, with a default value
-#define SGE_MAP_D(name, type, flags, defkey, keyvalue, jgdi_keyname, jgdi_valuename)     ///< declares a sub-list used as a key/value map field, with a default value
-#define SGE_MAPLIST_D(name, type, flags, defkey, defvalue, jgdi_keyname, jgdi_valuename) ///< declares a sub-list used as a key/value-list map field, with a default value
-#define SGE_OBJECT_D(name, type, flags, def)                                             ///< declares a single sub-object field, with a default value
-#define SGE_REF_D(name, type, flags, def)                                                ///< declares an opaque pointer field, with a default value
-
 #define NAMEDEF(name) extern const char *name[];                                         ///< declares a field name table defined elsewhere
 #define NAME(name)                                                                       ///< one entry of a forward declared #NAMEDEF table
 #define NAMEEND                                                                          ///< closes a forward declared name table
@@ -217,7 +185,7 @@ struct _lNameSpace {
    int lower;          ///< lowest field number in this block
    int size;           ///< how many names the block holds
    const char **namev; ///< the names, indexed by `number - lower`
-   lDescr *descr;      ///< descriptor of the object type the block belongs to
+   const lDescr *descr; ///< descriptor of the object type the block belongs to
 };
 
 /**
@@ -230,6 +198,78 @@ struct _lDescr {
    int nm;         ///< the field number, or #NoName in the terminating entry
    int mt;         ///< the field's type and attributes: a @ref _enum_lMultiType or-ed with @ref cull_field_attributes flags
 };
+
+/**
+ * @brief Header in front of the fields of a static descriptor block
+ *
+ * The fields follow the header at a fixed offset (see #cull_descr_block), so
+ * the header of a block can be found from its first field.
+ */
+struct cull_descr_header {
+   std::atomic<uint32_t> refs; ///< reference count; 0 for a static block, which is never released
+   uint32_t n;                 ///< number of fields, without the terminating #lEndT entry
+   uint64_t hash;              ///< FNV-1a over field numbers and types, see ocs_cull_descr_hash()
+};
+static_assert(sizeof(cull_descr_header) == 16, "the fields must start 16 bytes after the header");
+
+/**
+ * @brief A descriptor as one block: header, fields, terminating #lEndT entry
+ *
+ * @tparam N number of entries including the terminating one
+ */
+template<size_t N>
+struct cull_descr_block {
+   cull_descr_header h; ///< header of the block
+   lDescr e[N];         ///< the fields, the last one is {#NoName, #lEndT}
+};
+
+/**
+ * @brief FNV-1a hash over the field numbers and types of a descriptor
+ *
+ * @param e the fields
+ * @param n number of fields to hash
+ * @return the hash
+ */
+constexpr uint64_t ocs_cull_descr_hash(const lDescr *e, const size_t n) {
+   uint64_t h = 0xcbf29ce484222325ULL;
+   for (size_t i = 0; i < n; i++) {
+      for (const uint32_t v : {static_cast<uint32_t>(e[i].nm), static_cast<uint32_t>(e[i].mt)}) {
+         for (int b = 0; b < 4; b++) {
+            h ^= (v >> (8 * b)) & 0xff;
+            h *= 0x100000001b3ULL;
+         }
+      }
+   }
+   return h;
+}
+
+/**
+ * @brief Builds a static descriptor block from the fields, element by element
+ *
+ * @tparam N number of entries including the terminating one
+ * @tparam I indices 0 .. N-1
+ * @param e the fields, terminated by {#NoName, #lEndT}
+ * @return the block with header and fields
+ */
+template<size_t N, size_t... I>
+consteval cull_descr_block<N> ocs_cull_descr_make_impl(const lDescr (&e)[N], std::index_sequence<I...>) {
+   return {{0, N - 1, ocs_cull_descr_hash(e, N - 1)}, {e[I]...}};
+}
+
+/**
+ * @brief Builds the static descriptor block of an object type at compile time
+ *
+ * Used by #LISTDEF/#LISTEND; N is deduced from the braced field list.
+ *
+ * @tparam N number of entries including the terminating one
+ * @param e the fields, terminated by {#NoName, #lEndT}
+ * @return the block with header and fields
+ */
+template<size_t N>
+consteval cull_descr_block<N> ocs_cull_descr_make(const lDescr (&e)[N]) {
+   static_assert(N >= 1, "a descriptor needs at least its terminating entry");
+   return ocs_cull_descr_make_impl(e, std::make_index_sequence<N>{});
+}
 
 /* LIST SPECIFIC FUNCTIONS */
 const char *lGetListName(const lList *lp);

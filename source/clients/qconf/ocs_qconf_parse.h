@@ -96,7 +96,7 @@ extern spool_flatfile_format qconf_opt_format;
  * @param nm the field the name is written into
  * @param s the name list; taken apart in place by sge_strtok()
  */
-void parse_name_list_to_cull(const char *name, lList **lpp, lDescr *dp, int nm, char *s);
+void parse_name_list_to_cull(const char *name, lList **lpp, const lDescr *dp, int nm, char *s);
 
 
 /** @brief Work through the `qconf` command line, one switch at a time

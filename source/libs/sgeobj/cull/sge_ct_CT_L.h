@@ -88,7 +88,7 @@ LISTDEF(CT_Type)
    SGE_DOUBLE(CT_resource_contribution, CULL_DEFAULT)
    SGE_BOOL(CT_rc_valid, CULL_DEFAULT)
    SGE_BOOL(CT_reservation_rejected, CULL_DEFAULT)
-LISTEND
+LISTEND(CT_Type)
 
 NAMEDEF(CTN)
    NAME("CT_id")

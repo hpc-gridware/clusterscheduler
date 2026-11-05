@@ -107,7 +107,7 @@ LISTDEF(RL_Type)
    SGE_LIST(RL_parent_role_list, ST_Type, CULL_SPOOL)
    SGE_STRING(RL_perm_list, CULL_SPOOL)
    SGE_LIST(RL_joker, VA_Type, CULL_SPOOL)
-LISTEND
+LISTEND(RL_Type)
 
 NAMEDEF(RLN)
    NAME("RL_name")

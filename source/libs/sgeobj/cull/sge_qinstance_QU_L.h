@@ -398,7 +398,7 @@ LISTDEF(QU_Type)
    SGE_ULONG(QU_gdi_do_later, CULL_DEFAULT)
    SGE_LIST(QU_state_changes, CCT_Type, CULL_DEFAULT)
    SGE_LIST(QU_joker, VA_Type, CULL_SPOOL)
-LISTEND
+LISTEND(QU_Type)
 
 NAMEDEF(QUN)
    NAME("QU_qhostname")

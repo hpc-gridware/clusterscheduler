@@ -238,7 +238,7 @@ LISTDEF(AR_Type)
    SGE_STRING(AR_project, CULL_SPOOL)
    SGE_OBJECT(AR_pe_object, PE_Type, CULL_SPOOL)
    SGE_STRING(AR_allocation_rule, CULL_SPOOL)
-LISTEND
+LISTEND(AR_Type)
 
 NAMEDEF(ARN)
    NAME("AR_id")

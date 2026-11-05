@@ -60,27 +60,27 @@
 #include "cull/cull_parse.h"
 #include "cull/cull_lerrnoP.h"
 
-static lCondition *read_val(lDescr *dp, cull_parse_state *state, va_list *app);
+static lCondition *read_val(const lDescr *dp, cull_parse_state *state, va_list *app);
 
-static lCondition *factor(lDescr *dp, cull_parse_state *state, va_list *app);
+static lCondition *factor(const lDescr *dp, cull_parse_state *state, va_list *app);
 
-static lCondition *product(lDescr *dp, cull_parse_state *state, va_list *app);
+static lCondition *product(const lDescr *dp, cull_parse_state *state, va_list *app);
 
-static lCondition *negfactor(lDescr *dp, cull_parse_state *state, va_list *app);
+static lCondition *negfactor(const lDescr *dp, cull_parse_state *state, va_list *app);
 
-static lCondition *sum(lDescr *dp, cull_parse_state *state, va_list *app);
+static lCondition *sum(const lDescr *dp, cull_parse_state *state, va_list *app);
 
 static lCondition *subscope(cull_parse_state *state, va_list *app);
 
-static lCondition *_read_val(lDescr *dp, cull_parse_state *state, WhereArgList *wapp);
+static lCondition *_read_val(const lDescr *dp, cull_parse_state *state, WhereArgList *wapp);
 
-static lCondition *_factor(lDescr *dp, cull_parse_state *state, WhereArgList *wapp);
+static lCondition *_factor(const lDescr *dp, cull_parse_state *state, WhereArgList *wapp);
 
-static lCondition *_product(lDescr *dp, cull_parse_state *state, WhereArgList *wapp);
+static lCondition *_product(const lDescr *dp, cull_parse_state *state, WhereArgList *wapp);
 
-static lCondition *_negfactor(lDescr *dp, cull_parse_state *state, WhereArgList *wapp);
+static lCondition *_negfactor(const lDescr *dp, cull_parse_state *state, WhereArgList *wapp);
 
-static lCondition *_sum(lDescr *dp, cull_parse_state *state, WhereArgList *wapp);
+static lCondition *_sum(const lDescr *dp, cull_parse_state *state, WhereArgList *wapp);
 
 static lCondition *_subscope(cull_parse_state *state, WhereArgList *wapp);
 
@@ -428,7 +428,7 @@ lCondition *lWhere(const char *fmt, ...) {
 static lCondition *subscope(cull_parse_state *state, va_list *app) {
    DENTER(CULL_LAYER);
 
-   lDescr *dp = nullptr;
+   const lDescr *dp = nullptr;
    lCondition *cp = nullptr;
 
    if (scan(nullptr, state) != TYPE) {
@@ -436,7 +436,7 @@ static lCondition *subscope(cull_parse_state *state, va_list *app) {
       DRETURN(nullptr);
    }
    eat_token(state);                 /* eat %T */
-   if (!(dp = va_arg(*app, lDescr *))) {
+   if (!(dp = va_arg(*app, const lDescr *))) {
       LERROR(LEDESCRNULL);
       DRETURN(nullptr);
    }
@@ -462,7 +462,7 @@ static lCondition *subscope(cull_parse_state *state, va_list *app) {
    DRETURN(cp);
 }
 
-static lCondition *sum(lDescr *dp, cull_parse_state *state, va_list *app) {
+static lCondition *sum(const lDescr *dp, cull_parse_state *state, va_list *app) {
    DENTER(CULL_LAYER);
 
    lCondition *cp, *newcp;
@@ -486,7 +486,7 @@ static lCondition *sum(lDescr *dp, cull_parse_state *state, va_list *app) {
    DRETURN(cp);
 }
 
-static lCondition *product(lDescr *dp, cull_parse_state *state, va_list *app) {
+static lCondition *product(const lDescr *dp, cull_parse_state *state, va_list *app) {
    DENTER(CULL_LAYER);
 
    lCondition *cp, *newcp;
@@ -510,7 +510,7 @@ static lCondition *product(lDescr *dp, cull_parse_state *state, va_list *app) {
    DRETURN(cp);
 }
 
-static lCondition *factor(lDescr *dp, cull_parse_state *state, va_list *app) {
+static lCondition *factor(const lDescr *dp, cull_parse_state *state, va_list *app) {
    DENTER(CULL_LAYER);
 
    lCondition *cp;
@@ -533,7 +533,7 @@ static lCondition *factor(lDescr *dp, cull_parse_state *state, va_list *app) {
 }
 
 static lCondition *negfactor(
-        lDescr *dp,
+        const lDescr *dp,
         cull_parse_state *state,
         va_list *app
 ) {
@@ -560,7 +560,7 @@ static lCondition *negfactor(
 
 }
 
-static lCondition *read_val(lDescr *dp, cull_parse_state *state, va_list *app) {
+static lCondition *read_val(const lDescr *dp, cull_parse_state *state, va_list *app) {
    DENTER(CULL_LAYER);
 
    /*       
@@ -704,7 +704,7 @@ static lCondition *read_val(lDescr *dp, cull_parse_state *state, va_list *app) {
 static lCondition *_subscope(cull_parse_state *state, WhereArgList *wapp) {
    DENTER(CULL_LAYER);
 
-   lDescr *dp = nullptr;
+   const lDescr *dp = nullptr;
    lCondition *cp = nullptr;
 
    if (scan(nullptr, state) != TYPE) {
@@ -744,7 +744,7 @@ static lCondition *_subscope(cull_parse_state *state, WhereArgList *wapp) {
    DRETURN(cp);
 }
 
-static lCondition *_sum(lDescr *dp, cull_parse_state *state, WhereArgList *wapp) {
+static lCondition *_sum(const lDescr *dp, cull_parse_state *state, WhereArgList *wapp) {
    DENTER(CULL_LAYER);
 
    lCondition *cp, *newcp;
@@ -768,7 +768,7 @@ static lCondition *_sum(lDescr *dp, cull_parse_state *state, WhereArgList *wapp)
    DRETURN(cp);
 }
 
-static lCondition *_product(lDescr *dp, cull_parse_state *state, WhereArgList *wapp) {
+static lCondition *_product(const lDescr *dp, cull_parse_state *state, WhereArgList *wapp) {
    DENTER(CULL_LAYER);
 
    lCondition *cp, *newcp;
@@ -792,7 +792,7 @@ static lCondition *_product(lDescr *dp, cull_parse_state *state, WhereArgList *w
    DRETURN(cp);
 }
 
-static lCondition *_factor(lDescr *dp, cull_parse_state *state, WhereArgList *wapp) {
+static lCondition *_factor(const lDescr *dp, cull_parse_state *state, WhereArgList *wapp) {
    DENTER(CULL_LAYER);
 
    lCondition *cp;
@@ -814,7 +814,7 @@ static lCondition *_factor(lDescr *dp, cull_parse_state *state, WhereArgList *wa
    DRETURN(cp);
 }
 
-static lCondition *_negfactor(lDescr *dp, cull_parse_state *state, WhereArgList *wapp) {
+static lCondition *_negfactor(const lDescr *dp, cull_parse_state *state, WhereArgList *wapp) {
    DENTER(CULL_LAYER);
 
    lCondition *cp;
@@ -837,7 +837,7 @@ static lCondition *_negfactor(lDescr *dp, cull_parse_state *state, WhereArgList 
 
 }
 
-static lCondition *_read_val(lDescr *dp, cull_parse_state *state, WhereArgList *wapp) {
+static lCondition *_read_val(const lDescr *dp, cull_parse_state *state, WhereArgList *wapp) {
    DENTER(CULL_LAYER);
 
    lCondition *cp;

@@ -80,7 +80,7 @@ LISTDEF(RUE_Type)
    SGE_LIST(RUE_utilized, RDE_Type, CULL_DEFAULT)
    SGE_DOUBLE(RUE_utilized_now_nonexclusive, CULL_DEFAULT)
    SGE_LIST(RUE_utilized_nonexclusive, RDE_Type, CULL_DEFAULT)
-LISTEND
+LISTEND(RUE_Type)
 
 NAMEDEF(RUEN)
    NAME("RUE_name")

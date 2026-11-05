@@ -381,7 +381,7 @@ int sge_parse_qconf(char *argv[]) {
 
 /***********************************************************************/
 
-void parse_name_list_to_cull(const char *name, lList **lpp, lDescr *dp, int nm, char *s) {
+void parse_name_list_to_cull(const char *name, lList **lpp, const lDescr *dp, int nm, char *s) {
    DENTER(TOP_LAYER);
 
    char *cp2 = nullptr;

@@ -80,7 +80,7 @@ LISTDEF(TNT_Type)
                 SGE_BOOL    (TNT_cache_flag, CULL_NO_TRANSFER)
                 SGE_DOUBLE  (TNT_cache_value, CULL_NO_TRANSFER)
                 SGE_REF     (TNT_cache_ref, TNT_Type, CULL_NO_TRANSFER)
-LISTEND
+LISTEND(TNT_Type)
 
 NAMEDEF(TNT_Name)
                 NAME("TNT_name")

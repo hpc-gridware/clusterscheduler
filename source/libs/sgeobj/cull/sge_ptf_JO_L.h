@@ -91,7 +91,7 @@ LISTDEF(JO_Type)
    SGE_ULONG(JO_state, CULL_DEFAULT)
    SGE_LIST(JO_usage_list, UA_Type, CULL_DEFAULT)
    SGE_LIST(JO_pid_list, JP_Type, CULL_DEFAULT)
-LISTEND
+LISTEND(JO_Type)
 
 NAMEDEF(JON)
    NAME("JO_OS_job_ID")

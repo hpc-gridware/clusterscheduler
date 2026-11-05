@@ -128,7 +128,7 @@ LISTDEF(UU_Type)
    SGE_ULONG(UU_version, CULL_DEFAULT)
    SGE_BOOL(UU_consider_with_categories, CULL_DEFAULT)
    SGE_LIST(UU_joker, VA_Type, CULL_SPOOL)
-LISTEND
+LISTEND(UU_Type)
 
 NAMEDEF(UUN)
    NAME("UU_name")

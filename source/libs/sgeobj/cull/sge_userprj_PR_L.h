@@ -124,7 +124,7 @@ LISTDEF(PR_Type)
    SGE_ULONG(PR_version, CULL_DEFAULT)
    SGE_BOOL(PR_consider_with_categories, CULL_DEFAULT)
    SGE_LIST(PR_joker, VA_Type, CULL_SPOOL)
-LISTEND
+LISTEND(PR_Type)
 
 NAMEDEF(PRN)
    NAME("PR_name")

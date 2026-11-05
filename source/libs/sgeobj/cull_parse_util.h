@@ -72,15 +72,15 @@ int parse_list_simple(lList *cmdline, const char *option, lListElem *job, int fi
 void
 parse_list_hardsoft(lList *cmdline, const char *option, lListElem *job, uint32_t scope, int hard_field, int soft_field);
 
-int cull_parse_definition_list(char *str, lList **lpp, const char *name, lDescr *descr, int *interpretation_rule);
+int cull_parse_definition_list(char *str, lList **lpp, const char *name, const lDescr *descr, int *interpretation_rule);
 
 int cull_merge_definition_list(lList **lpp_old, lList *lp_new, int nm_var, int nm_value);
 
 int cull_compress_definition_list(lList *lp_new, int nm_var, int nm_value, int double_keys);
 
-int cull_parse_simple_list(char *str, lList **lpp, char *name, lDescr *descr, int *interpretation_rule);
+int cull_parse_simple_list(char *str, lList **lpp, char *name, const lDescr *descr, int *interpretation_rule);
 
-int cull_parse_string_list(char **pstrlist, const char *listname, lDescr *descr, int *interpretation_rule, lList **pplist);
+int cull_parse_string_list(char **pstrlist, const char *listname, const lDescr *descr, int *interpretation_rule, lList **pplist);
 
 int uni_print_list(std::ostream &os, const lList *lp, const int *which_elements_rule, const char *pdelis[], unsigned long flags);
 int uni_print_list(FILE *fp, char *buff, uint32_t buff_size, const lList *lp, const int *which_elements_rule, const char *pdelis[], unsigned long flags);

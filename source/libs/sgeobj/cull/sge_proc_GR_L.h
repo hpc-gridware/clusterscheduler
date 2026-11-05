@@ -47,7 +47,7 @@ enum {
 
 LISTDEF(GR_Type)
    SGE_ULONG(GR_group, CULL_HASH)
-LISTEND
+LISTEND(GR_Type)
 
 NAMEDEF(GRN)
    NAME("GR_group")

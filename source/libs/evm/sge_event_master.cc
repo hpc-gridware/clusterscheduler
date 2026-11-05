@@ -159,7 +159,7 @@ typedef struct {
       bool         flush;        ///< true -> flush is set
       uint32_t     flush_time;   ///< seconds how much the event can be delayed
       lCondition   *where;       ///< where filter
-      lDescr       *descr;       ///< target list descriptor
+      const lDescr       *descr;       ///< target list descriptor
       lEnumeration *what;        ///< limits the target element
 } subscription_t;
 

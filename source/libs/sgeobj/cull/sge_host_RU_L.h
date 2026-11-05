@@ -63,7 +63,7 @@ LISTDEF(RU_Type)
    SGE_ULONG(RU_job_number, CULL_DEFAULT)
    SGE_ULONG(RU_task_number, CULL_DEFAULT)
    SGE_ULONG(RU_state, CULL_DEFAULT)
-LISTEND
+LISTEND(RU_Type)
 
 NAMEDEF(RUN)
    NAME("RU_job_number")

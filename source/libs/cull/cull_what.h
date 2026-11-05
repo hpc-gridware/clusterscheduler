@@ -56,7 +56,7 @@ lEnumeration *lCopyWhat(const lEnumeration *ep);
 
 int lCountWhat(const lEnumeration *ep, const lDescr *dp);
 
-int lReduceDescr(lDescr **dst_dpp, lDescr *src_dp, lEnumeration *enp);
+int lReduceDescr(lDescr **dst_dpp, const lDescr *src_dp, lEnumeration *enp);
 
 lEnumeration *lIntVector2What(const lDescr *dp, const int intv[]);
 

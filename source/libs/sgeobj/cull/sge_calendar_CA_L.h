@@ -62,7 +62,7 @@ LISTDEF(CA_Type)
    SGE_LIST(CA_wday_range_list, TMR_Type, CULL_DEFAULT)
    SGE_LIST(CA_daytime_range_list, TMR_Type, CULL_DEFAULT)
    SGE_ULONG(CA_state, CULL_DEFAULT)
-LISTEND
+LISTEND(CA_Type)
 
 NAMEDEF(CAN)
    NAME("CA_yday_range_list")

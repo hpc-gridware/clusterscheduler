@@ -52,7 +52,7 @@ enum {
 LISTDEF(SME_Type)
    SGE_LIST(SME_message_list, MES_Type, CULL_DEFAULT)
    SGE_LIST(SME_global_message_list, MES_Type, CULL_DEFAULT)
-LISTEND
+LISTEND(SME_Type)
 
 NAMEDEF(SMEN)
    NAME("SME_message_list")

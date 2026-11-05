@@ -101,7 +101,7 @@ LISTDEF(TEST_Type)
                 SGE_LIST   (TEST_list, TEST1_Type, CULL_DEFAULT)
                 SGE_OBJECT (TEST_object, TEST1_Type, CULL_DEFAULT)
                 SGE_REF    (TEST_ref, TEST1_Type, CULL_DEFAULT)
-LISTEND
+LISTEND(TEST_Type)
 
 LISTDEF(TEST1_Type)
                 SGE_INT    (TEST1_int, CULL_DEFAULT)
@@ -115,7 +115,7 @@ LISTDEF(TEST1_Type)
                 SGE_LIST   (TEST1_list, TEST_Type, CULL_DEFAULT)
                 SGE_OBJECT (TEST1_object, TEST_Type, CULL_DEFAULT)
                 SGE_REF    (TEST1_ref, TEST_Type, CULL_DEFAULT)
-LISTEND
+LISTEND(TEST1_Type)
 
 NAMEDEF(TEST_Name)
                 NAME("TEST_int")

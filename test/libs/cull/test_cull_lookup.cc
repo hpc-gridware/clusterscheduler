@@ -74,7 +74,7 @@ LISTDEF(TEST_Type)
    SGE_HOST   (TEST_host,    CULL_HASH)
    SGE_STRING (TEST_string,  CULL_HASH)
    SGE_LIST   (TEST_list,    TEST_Type, CULL_DEFAULT)
-LISTEND
+LISTEND(TEST_Type)
 
 NAMEDEF(TEST_Name)
    NAME("TEST_ulong")

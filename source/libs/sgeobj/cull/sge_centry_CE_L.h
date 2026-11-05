@@ -142,7 +142,7 @@ LISTDEF(CE_Type)
    SGE_ULONG(CE_tagged, CULL_DEFAULT)
    SGE_STRING(CE_urgency_weight, CULL_SPOOL)
    SGE_LIST(CE_resource_map_list, RESL_Type, CULL_SPOOL)
-LISTEND
+LISTEND(CE_Type)
 
 NAMEDEF(CEN)
    NAME("CE_name")

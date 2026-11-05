@@ -52,7 +52,7 @@ enum {
 LISTDEF(TMR_Type)
    SGE_LIST(TMR_begin, TM_Type, CULL_DEFAULT)
    SGE_LIST(TMR_end, TM_Type, CULL_DEFAULT)
-LISTEND
+LISTEND(TMR_Type)
 
 NAMEDEF(TMRN)
    NAME("TMR_begin")

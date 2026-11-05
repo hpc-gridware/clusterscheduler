@@ -306,7 +306,7 @@ LISTDEF(JAT_Type)
    SGE_LIST(JAT_message_list, QIM_Type, CULL_SPOOL)
    SGE_STRING(JAT_deleted_by, CULL_SUBLIST)
    SGE_LIST(JAT_joker, VA_Type, CULL_SPOOL)
-LISTEND
+LISTEND(JAT_Type)
 
 NAMEDEF(JATN)
    NAME("JAT_task_number")

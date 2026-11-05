@@ -92,7 +92,7 @@ LISTDEF(OQ_Type)
    SGE_DOUBLE(OQ_sticket, CULL_DEFAULT)
    SGE_LIST(OQ_binding_to_use, ST_Type, CULL_DEFAULT)
    SGE_LIST(OQ_granted_rsmaps, RESL_Type, CULL_DEFAULT)
-LISTEND
+LISTEND(OQ_Type)
 
 NAMEDEF(OQN)
    NAME("OQ_slots")

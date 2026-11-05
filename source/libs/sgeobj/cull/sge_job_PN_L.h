@@ -66,7 +66,7 @@ LISTDEF(PN_Type)
    SGE_HOST(PN_host, CULL_DEFAULT)
    SGE_HOST(PN_file_host, CULL_DEFAULT)
    SGE_BOOL(PN_file_staging, CULL_DEFAULT)
-LISTEND
+LISTEND(PN_Type)
 
 NAMEDEF(PNN)
    NAME("PN_path")

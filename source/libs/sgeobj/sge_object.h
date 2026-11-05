@@ -128,7 +128,7 @@ typedef enum {
 /// One row of the type table: what a #sge_object_type value actually refers to
 typedef struct {
    const char *type_name;                 ///< type name, e.g. "JOB"
-   lDescr *descr;                         ///< descriptor, e.g. JB_Type; nullptr for a type that carries no object
+   const lDescr *descr;                         ///< descriptor, e.g. JB_Type; nullptr for a type that carries no object
    const int key_nm;                      ///< nm of the key attribute, or `NoName` when the type has no key
 } object_description;
 

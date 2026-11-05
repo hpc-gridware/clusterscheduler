@@ -111,7 +111,7 @@ LISTDEF(CK_Type)
    SGE_ULONG(CK_job_pid, CULL_DEFAULT)
    SGE_STRING(CK_clean_command, CULL_SPOOL)
    SGE_LIST(CK_joker, VA_Type, CULL_SPOOL)
-LISTEND
+LISTEND(CK_Type)
 
 NAMEDEF(CKN)
    NAME("CK_name")

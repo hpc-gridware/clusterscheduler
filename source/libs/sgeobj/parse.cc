@@ -64,7 +64,7 @@
 
 /*-------------------------------------------------------------------------*/
 /* use cstring_list_parse_from_string() if you need a parsing function */
-static void sge_parse_string_list(lList **lp, const char *str, int field, lDescr *descr) {
+static void sge_parse_string_list(lList **lp, const char *str, int field, const lDescr *descr) {
    DENTER(TOP_LAYER);
 
    const char *cp;
@@ -435,7 +435,7 @@ lList **ppcmdline,
 const char *opt,
 lList **ppal,
 lList **ppdestlist,
-lDescr *type,
+const lDescr *type,
 int field 
 ) {
    DENTER(TOP_LAYER);

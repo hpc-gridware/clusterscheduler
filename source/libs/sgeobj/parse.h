@@ -68,7 +68,7 @@ lListElem *sge_add_arg(lList **popt_list, uint32_t opt_number,
 
 lListElem *sge_add_noarg(lList **popt_list, uint32_t opt_number, const char *opt_switch, const char *opt_switch_arg);
 
-bool parse_multi_stringlist(lList **ppcmdline, const char *opt, lList **ppal, lList **ppdestlist, lDescr *type, int field);
+bool parse_multi_stringlist(lList **ppcmdline, const char *opt, lList **ppal, lList **ppdestlist, const lDescr *type, int field);
 
 bool parse_flag(lList **ppcmdline, const char *opt, lList **ppal, uint32_t *pflag);
 

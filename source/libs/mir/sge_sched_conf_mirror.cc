@@ -73,7 +73,7 @@ schedd_conf_update_master_list(sge_evc_class_t *evc, sge_object_type type,
 
    lList *list = nullptr;
    lList *answer_list = nullptr;
-   lDescr *list_descr;
+   const lDescr *list_descr;
 
    lList *data_list;
    lListElem *ep = nullptr;

@@ -560,7 +560,7 @@ LISTDEF(JB_Type)
    SGE_ULONG(JB_sync_options, CULL_SPOOL)
    SGE_ULONG(JB_category_id, CULL_HASH)
    SGE_ULONG(JB_when, CULL_DEFAULT)
-LISTEND
+LISTEND(JB_Type)
 
 NAMEDEF(JBN)
    NAME("JB_job_number")

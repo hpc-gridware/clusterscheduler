@@ -72,7 +72,7 @@ struct _lCondition {
 /* the var_args model requires the knowledge of the fields at run time  */
 /// One field/value pair handed to the `lWhere()` parser
 struct _WhereArg {
-   lDescr *descriptor; ///< descriptor of the object type the field belongs to
+   const lDescr *descriptor; ///< descriptor of the object type the field belongs to
    int field;          ///< the field to compare
    lMultiType value;   ///< the value to compare against
 }; 

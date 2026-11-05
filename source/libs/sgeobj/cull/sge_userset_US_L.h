@@ -90,7 +90,7 @@ LISTDEF(US_Type)
    SGE_LIST(US_entries, UE_Type, CULL_SPOOL)
    SGE_BOOL(US_consider_with_categories, CULL_DEFAULT)
    SGE_LIST(US_joker, VA_Type, CULL_SPOOL)
-LISTEND
+LISTEND(US_Type)
 
 NAMEDEF(USN)
    NAME("US_name")

@@ -94,7 +94,7 @@ void nm_set(int job_field[], int nm) {
  *
  * @return error state 0 - OK -1 - Error
  */
-int lReduceDescr(lDescr **dst_dpp, lDescr *src_dp, lEnumeration *enp) {
+int lReduceDescr(lDescr **dst_dpp, const lDescr *src_dp, lEnumeration *enp) {
    DENTER(TOP_LAYER);
 
    int n, index = 0;
@@ -350,7 +350,7 @@ lEnumeration *lWhat(const char *fmt, ...) {
 static lEnumeration *subscope_lWhat(cull_parse_state *state, va_list *app) {
    DENTER(CULL_LAYER);
 
-   lDescr *dp = nullptr;
+   const lDescr *dp = nullptr;
    lEnumeration *enumeration = nullptr;
    int token;
    lEnumeration ep[1000];
@@ -362,7 +362,7 @@ static lEnumeration *subscope_lWhat(cull_parse_state *state, va_list *app) {
       DRETURN(nullptr);
    }
    eat_token(state);                 /* eat %T */
-   if (!(dp = va_arg(*app, lDescr *))) {
+   if (!(dp = va_arg(*app, const lDescr *))) {
       LERROR(LEDESCRNULL);
       DRETURN(nullptr);
    }

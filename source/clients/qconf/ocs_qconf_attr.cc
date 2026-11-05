@@ -55,7 +55,7 @@
 struct qconf_attr_entry {
    ocs::gdi::Target target;                  ///< which master list the object lives in
    const char *object_name;                  ///< the name the switches take, e.g. "queue"
-   lDescr *cull_descriptor;                  ///< the CULL type of the object
+   const lDescr *cull_descriptor;                  ///< the CULL type of the object
    const char *attribute_name;               ///< the attribute carrying the object's name, for the messages
    int nm_name;                              ///< the CULL field holding the object's name, its key
    spooling_field *fields;                   ///< which fields the attribute text is read with

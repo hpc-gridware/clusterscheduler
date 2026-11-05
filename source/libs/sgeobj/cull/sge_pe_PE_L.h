@@ -152,7 +152,7 @@ LISTDEF(PE_Type)
    SGE_BOOL(PE_daemon_forks_slaves, CULL_SPOOL)
    SGE_BOOL(PE_ignore_slave_requests_on_master_host, CULL_SPOOL)
    SGE_LIST(PE_joker, VA_Type, CULL_SPOOL)
-LISTEND
+LISTEND(PE_Type)
 
 NAMEDEF(PEN)
    NAME("PE_name")

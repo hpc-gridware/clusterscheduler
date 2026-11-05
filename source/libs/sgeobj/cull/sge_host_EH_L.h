@@ -134,7 +134,7 @@
 *    memory information (numa nodes and caches),
 *    and attributes for those nodes (size, speed etc.)
 *
-*    SGE_ULONG64(EH_auto_added_time) - Auto Added Time
+*    SGE_ULONG64(EH_auto_added_time) - time at which the host added itself to the cluster
 *    The time at which the host added itself to the cluster, when its execution
 *    daemon registered and a rule of the qmaster_params AUTO_ADD_HOSTS matched it.
 *    0 for a host which an administrator added.
@@ -205,7 +205,7 @@ LISTDEF(EH_Type)
    SGE_LIST(EH_joker, VA_Type, CULL_SPOOL)
    SGE_STRING(EH_internal_topology, CULL_DEFAULT)
    SGE_ULONG64(EH_auto_added_time, CULL_SPOOL)
-LISTEND
+LISTEND(EH_Type)
 
 NAMEDEF(EHN)
    NAME("EH_name")

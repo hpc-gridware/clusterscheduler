@@ -102,7 +102,7 @@
  * @param buffer_size the size of `buffer`
  * @return 0 on success
  */
-int read_config_list(FILE *fp, lList **lpp, lList **alpp, lDescr *dp, int nm1,
+int read_config_list(FILE *fp, lList **lpp, lList **alpp, const lDescr *dp, int nm1,
                      int nm2, int nm3, const char *delimitor, int flag, char *buffer,
                      int buffer_size) {
    DENTER(TOP_LAYER);
@@ -748,7 +748,7 @@ int fields[],
 const char *key,
 lListElem *ep,
 int name_nm,
-lDescr *descr,
+const lDescr *descr,
 int *interpretation_rule 
 
 ) {
@@ -1023,7 +1023,7 @@ bool set_conf_enum_none(lList **alpp, lList **clpp, int fields[], const char *ke
  * @return false on error, otherwise true
  */
 bool set_conf_list(lList **alpp, lList **clpp, int fields[], const char *key,
-                   lListElem *ep, int name_nm, lDescr *descr, int sub_name_nm) {
+                   lListElem *ep, int name_nm, const lDescr *descr, int sub_name_nm) {
    DENTER(TOP_LAYER);
 
    lList *tmplp = nullptr;
@@ -1092,7 +1092,7 @@ bool set_conf_list(lList **alpp, lList **clpp, int fields[], const char *key,
  */
 bool set_conf_str_attr_list(lList **alpp, lList **clpp, int fields[],
                             const char *key, lListElem *ep, int name_nm,
-                            lDescr *descr, int sub_name_nm, const lList *master_hgroup_list) {
+                            const lDescr *descr, int sub_name_nm, const lList *master_hgroup_list) {
    DENTER(TOP_LAYER);
 
    bool ret;
@@ -1144,7 +1144,7 @@ bool set_conf_str_attr_list(lList **alpp, lList **clpp, int fields[],
  */
 bool set_conf_strlist_attr_list(lList **alpp, lList **clpp, int fields[],
                                 const char *key, lListElem *ep, int name_nm,
-                                lDescr *descr, int sub_name_nm, const lList *master_hgroup_list) {
+                                const lDescr *descr, int sub_name_nm, const lList *master_hgroup_list) {
    DENTER(TOP_LAYER);
 
    bool ret;
@@ -1197,7 +1197,7 @@ bool set_conf_strlist_attr_list(lList **alpp, lList **clpp, int fields[],
  */
 bool set_conf_usrlist_attr_list(lList **alpp, lList **clpp, int fields[],
                                 const char *key, lListElem *ep, int name_nm,
-                                lDescr *descr, int sub_name_nm, const lList *master_hgroup_list) {
+                                const lDescr *descr, int sub_name_nm, const lList *master_hgroup_list) {
    DENTER(TOP_LAYER);
 
    bool ret;
@@ -1250,7 +1250,7 @@ bool set_conf_usrlist_attr_list(lList **alpp, lList **clpp, int fields[],
  */
 bool set_conf_prjlist_attr_list(lList **alpp, lList **clpp, int fields[],
                                 const char *key, lListElem *ep, int name_nm,
-                                lDescr *descr, int sub_name_nm, const lList *master_hgroup_list) {
+                                const lDescr *descr, int sub_name_nm, const lList *master_hgroup_list) {
    DENTER(TOP_LAYER);
 
    bool ret;
@@ -1303,7 +1303,7 @@ bool set_conf_prjlist_attr_list(lList **alpp, lList **clpp, int fields[],
  */
 bool set_conf_celist_attr_list(lList **alpp, lList **clpp, int fields[],
                                const char *key, lListElem *ep, int name_nm,
-                               lDescr *descr, int sub_name_nm, const lList *master_hgroup_list) {
+                               const lDescr *descr, int sub_name_nm, const lList *master_hgroup_list) {
    DENTER(TOP_LAYER);
 
    bool ret;
@@ -1356,7 +1356,7 @@ bool set_conf_celist_attr_list(lList **alpp, lList **clpp, int fields[],
  */
 bool set_conf_solist_attr_list(lList **alpp, lList **clpp, int fields[],
                                const char *key, lListElem *ep, int name_nm,
-                               lDescr *descr, int sub_name_nm, const lList *master_hgroup_list) {
+                               const lDescr *descr, int sub_name_nm, const lList *master_hgroup_list) {
    DENTER(TOP_LAYER);
 
    bool ret;
@@ -1409,7 +1409,7 @@ bool set_conf_solist_attr_list(lList **alpp, lList **clpp, int fields[],
  */
 bool set_conf_qtlist_attr_list(lList **alpp, lList **clpp, int fields[],
                                const char *key, lListElem *ep, int name_nm,
-                               lDescr *descr, int sub_name_nm, const lList *master_hgroup_list) {
+                               const lDescr *descr, int sub_name_nm, const lList *master_hgroup_list) {
    DENTER(TOP_LAYER);
 
    bool ret;
@@ -1462,7 +1462,7 @@ bool set_conf_qtlist_attr_list(lList **alpp, lList **clpp, int fields[],
  */
 bool set_conf_ulng_attr_list(lList **alpp, lList **clpp, int fields[],
                              const char *key, lListElem *ep, int name_nm,
-                             lDescr *descr, int sub_name_nm, const lList *master_hgroup_list) {
+                             const lDescr *descr, int sub_name_nm, const lList *master_hgroup_list) {
    DENTER(TOP_LAYER);
 
    bool ret;
@@ -1514,7 +1514,7 @@ bool set_conf_ulng_attr_list(lList **alpp, lList **clpp, int fields[],
  */
 bool set_conf_bool_attr_list(lList **alpp, lList **clpp, int fields[],
                              const char *key, lListElem *ep, int name_nm,
-                             lDescr *descr, int sub_name_nm, const lList *master_hgroup_list) {
+                             const lDescr *descr, int sub_name_nm, const lList *master_hgroup_list) {
    DENTER(TOP_LAYER);
 
    bool ret;
@@ -1566,7 +1566,7 @@ bool set_conf_bool_attr_list(lList **alpp, lList **clpp, int fields[],
  */
 bool set_conf_time_attr_list(lList **alpp, lList **clpp, int fields[],
                              const char *key, lListElem *ep, int name_nm,
-                             lDescr *descr, int sub_name_nm, const lList *master_hgroup_list) {
+                             const lDescr *descr, int sub_name_nm, const lList *master_hgroup_list) {
    DENTER(TOP_LAYER);
 
    bool ret;
@@ -1618,7 +1618,7 @@ bool set_conf_time_attr_list(lList **alpp, lList **clpp, int fields[],
  */
 bool set_conf_mem_attr_list(lList **alpp, lList **clpp, int fields[],
                             const char *key, lListElem *ep, int name_nm,
-                            lDescr *descr, int sub_name_nm, const lList *master_hgroup_list) {
+                            const lDescr *descr, int sub_name_nm, const lList *master_hgroup_list) {
    DENTER(TOP_LAYER);
 
    bool ret;
@@ -1670,7 +1670,7 @@ bool set_conf_mem_attr_list(lList **alpp, lList **clpp, int fields[],
  */
 bool set_conf_inter_attr_list(lList **alpp, lList **clpp, int fields[],
                               const char *key, lListElem *ep, int name_nm,
-                              lDescr *descr, int sub_name_nm, const lList *master_hgroup_list) {
+                              const lDescr *descr, int sub_name_nm, const lList *master_hgroup_list) {
    DENTER(TOP_LAYER);
 
    bool ret;
@@ -1748,7 +1748,7 @@ int fields[],
 const char *key,
 lListElem *ep,
 int name_nm,
-lDescr *descr,
+const lDescr *descr,
 int subname_nm,
 int subval_nm 
 ) {

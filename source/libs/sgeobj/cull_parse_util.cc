@@ -108,7 +108,7 @@ static int fprint_name_value_list(FILE *fp, char *name, lList *thresholds, int p
 int cull_parse_string_list(
 char **pstrlist,
 const char *listname,
-lDescr *descr,
+const lDescr *descr,
 int *interpretation_rule,
 lList **pplist 
 ) {
@@ -283,7 +283,7 @@ int cull_parse_definition_list(
 char *str,
 lList **lpp,
 const char *name,
-lDescr *descr,
+const lDescr *descr,
 int *interpretation_rule 
 ) {
    DENTER(BASIS_LAYER);
@@ -643,7 +643,7 @@ int cull_parse_simple_list(
 char *str,
 lList **lpp,
 char *name,
-lDescr *descr,
+const lDescr *descr,
 int *interpretation_rule 
 ) {
    DENTER(BASIS_LAYER);

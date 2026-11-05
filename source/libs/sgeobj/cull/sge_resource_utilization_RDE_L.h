@@ -88,7 +88,7 @@ LISTDEF(RDE_Type)
    SGE_DOUBLE(RDE_amount, CULL_DEFAULT)
    SGE_LIST(RDE_resource_map_list, RESL_Type, CULL_DEFAULT)
    SGE_STRING(RDE_binding_inuse, CULL_DEFAULT)
-LISTEND
+LISTEND(RDE_Type)
 
 NAMEDEF(RDEN)
    NAME("RDE_time")
