@@ -207,8 +207,6 @@ namespace ocs::uti {
          bool move_shepherd_to_scope_once(const std::string &scope, const std::string &slice,
                                           pid_t pid, bool &scope_inactive,
                                           dstring *error_dstr) const;
-         void reset_failed_unit(const std::string &unit) const;
-
       public:
          Systemd();
          ~Systemd();
@@ -224,6 +222,7 @@ namespace ocs::uti {
          ErrorClass get_error_class() const { return error_class; }
 
          bool move_shepherd_to_scope(pid_t pid, dstring *error_dstr) const;
+         void reset_failed_unit(const std::string &unit) const;
          bool create_scope_with_pid(const std::string &scope, const std::string &slice,
                                     const SystemdProperties_t &properties, pid_t pid, bool &scope_already_exists, dstring *error_dstr) const;
          bool

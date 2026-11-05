@@ -214,6 +214,17 @@ namespace ocs {
             shepherd_trace("moving shepherd child " pid_t_fmt " to job scope '%s' in slice '%s'", pid, scope, slice);
             bool scope_already_exists = false;
             bool success = systemd.create_scope_with_pid(scope, slice, g_systemd_properties, pid, scope_already_exists, &error_dstr);
+            if (!success && scope_already_exists) {
+               // A failed scope of an earlier job with the same id is still loaded, e.g. one which
+               // ended before sge_execd reset failed job scopes. Reset it and try once more.
+               // If the scope is active, the reset does nothing and creating it fails again.
+               shepherd_trace("job scope '%s' already exists, resetting its failed state: %s",
+                              scope, sge_dstring_get_string(&error_dstr));
+               sge_dstring_clear(&error_dstr);
+               systemd.reset_failed_unit(scope);
+               success = systemd.create_scope_with_pid(scope, slice, g_systemd_properties, pid,
+                                                       scope_already_exists, &error_dstr);
+            }
             if (success) {
                shepherd_trace("moving shepherd child took " sge_u64 " µs", sge_get_gmt64() - start_time);
             } else {
