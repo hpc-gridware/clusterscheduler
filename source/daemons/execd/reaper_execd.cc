@@ -63,6 +63,7 @@
 
 #include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/config.h"
+#include "sgeobj/ocs_Job.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_ja_task.h"
 #include "sgeobj/sge_pe_task.h"
@@ -122,6 +123,8 @@ static void build_derived_final_usage(lListElem *jr, u_long32 job_id, u_long32 j
 static void examine_job_task_from_file(int startup, char *dir, lListElem *jep, lListElem *jatep, lListElem *petep, pid_t *pids, int npids);
 
 static void clean_up_binding(char* binding);
+static void reaper_finish_job_scope(lListElem *jr, const lListElem *jep, const lListElem *jatep,
+                                    const lListElem *petep);
 /* TODO: global c file with #define JAPI_SINGLE_SESSION_KEY "JAPI_SSK" */
 static const char *JAPI_SINGLE_SESSION_KEY = "JAPI_SSK";
 
@@ -291,23 +294,7 @@ int sge_reap_children_execd(int max_count, bool is_qmaster_down)
 
          clean_up_job(jr, failed, exit_status, job_is_array(jep), jatep, lGetString(jep, JB_owner));
 
-#if defined(OCS_WITH_SYSTEMD)
-         // When the OOM killer ended the job scope, report it as the one who deleted the job.
-         // It is the actual cause, even if sge_execd killed the job for exceeding a limit as well.
-         {
-            const char *scope = petep != nullptr ? lGetString(petep, PET_systemd_scope)
-                                                 : lGetString(jatep, JAT_systemd_scope);
-            if (ocs::execd::execd_scope_was_oom_killed(scope)) {
-               DSTRING_STATIC(dstr, MAX_STRING_SIZE);
-               sge_dstring_sprintf(&dstr, "oom-killer@%s", component_get_qualified_hostname());
-               lSetString(jr, JR_deleted_by, sge_dstring_get_string(&dstr));
-               DSTRING_STATIC(id_dstr, MAX_STRING_SIZE);
-               const char *pe_task_id = petep != nullptr ? lGetString(petep, PET_id) : nullptr;
-               WARNING(MSG_EXECD_OOMKILLED_SS,
-                       job_get_id_string(jobid, jataskid, pe_task_id, &id_dstr), scope);
-            }
-         }
-#endif
+         reaper_finish_job_scope(jr, jep, jatep, petep);
 
          /* set JR_delay_report true if the job is a JAPI/DRMAA job ... 
           * -sync/DRMAA jobs have unique session key, qsub jobs have JAPI_SSK
@@ -432,6 +419,62 @@ reaper_get_qversion(const lListElem *jr, const lListElem *ja_task) {
    }
 
    DRETURN(ret);
+}
+
+/**
+ * @brief Finish the systemd scope of a job or pe task which has ended
+ *
+ * Called after the job (or pe task) and its epilog have ended, and after clean_up_job() has set
+ * JR_failed. Reports the OOM killer as the one who deleted the job when it ended the job scope,
+ * and resets the failed state of the scope, see ocs::execd::execd_finish_job_scope().
+ *
+ * @param jr the job report of the job or pe task
+ * @param jep the job
+ * @param jatep the ja task
+ * @param petep the pe task, nullptr for the job itself
+ */
+static void
+reaper_finish_job_scope(lListElem *jr, const lListElem *jep, const lListElem *jatep,
+                        const lListElem *petep) {
+   DENTER(TOP_LAYER);
+
+#if defined(OCS_WITH_SYSTEMD)
+   // the scope name is not spooled, after a restart of sge_execd it has to be built again
+   const char *scope_name = petep != nullptr ? lGetString(petep, PET_systemd_scope)
+                                             : lGetString(jatep, JAT_systemd_scope);
+   std::string scope;
+   if (scope_name != nullptr) {
+      scope = scope_name;
+   } else if (ocs::execd::execd_use_systemd()) {
+      std::string slice;
+      DSTRING_STATIC(error_dstr, MAX_STRING_SIZE);
+      if (!ocs::Job::job_get_systemd_slice_and_scope(jep, jatep, petep, slice, scope,
+                                                     &error_dstr)) {
+         scope.clear();
+      }
+   }
+
+   // The job has run in its scope unless it failed before it was started. A job which did not
+   // run might find a failed scope of an earlier job with the same name, which is not its own.
+   u_long32 failed = lGetUlong(jr, JR_failed);
+   bool job_has_run = failed == 0 || failed == SSTATE_FAILURE_AFTER_JOB ||
+                      (failed >= SSTATE_BEFORE_PESTOP && failed <= SSTATE_PROCSET_NOTFREED);
+
+   // When the OOM killer ended the job scope, report it as the one who deleted the job.
+   // It is the actual cause, even if sge_execd killed the job for exceeding a limit as well.
+   if (!scope.empty() && ocs::execd::execd_finish_job_scope(scope.c_str()) && job_has_run) {
+      DSTRING_STATIC(dstr, MAX_STRING_SIZE);
+      sge_dstring_sprintf(&dstr, "oom-killer@%s", component_get_qualified_hostname());
+      lSetString(jr, JR_deleted_by, sge_dstring_get_string(&dstr));
+      DSTRING_STATIC(id_dstr, MAX_STRING_SIZE);
+      const char *pe_task_id = petep != nullptr ? lGetString(petep, PET_id) : nullptr;
+      WARNING(MSG_EXECD_OOMKILLED_SS,
+              job_get_id_string(lGetUlong(jep, JB_job_number), lGetUlong(jatep, JAT_task_number),
+                                pe_task_id, &id_dstr), scope.c_str());
+   }
+#endif
+
+   DRETURN_VOID;
 }
 
 static int clean_up_job(lListElem *jr, int failed, int shepherd_exit_status, 
@@ -1730,6 +1773,7 @@ examine_job_task_from_file(int startup, char *dir, lListElem *jep,
    }
 
    clean_up_job(jr, 0, 0, job_is_array(jep), jatep, lGetString(jep, JB_owner));
+   reaper_finish_job_scope(jr, jep, jatep, petep);
    lSetUlong(jr, JR_state, JEXITING);
    
 

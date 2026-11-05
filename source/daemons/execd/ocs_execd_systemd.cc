@@ -449,19 +449,25 @@ namespace ocs::execd {
    }
 
    /*!
-    * @brief Check if the OOM killer ended a job scope.
+    * @brief Finish the job scope of a job or pe task which has ended.
+    *
+    * Reads the Result of the job scope, then resets its failed state.
     *
     * With OOMPolicy=kill systemd stops the job scope when the OOM killer has killed one of its
     * processes, and keeps the scope loaded in the failed state with Result=oom-kill.
     * A scope which ended in another way has a different Result, or it is gone already.
     *
-    * Must be called after the job (or pe task) has ended and before its failed scope is reset.
+    * A failed scope stays loaded until its failed state is reset. Without the reset the failed
+    * scopes pile up in systemd, and a later job with the same job id cannot create its scope.
+    * The reset is done when the job has ended and its epilog has run, so that the epilog can
+    * still query the scope. Errors of the reset are ignored, e.g. a scope which ended
+    * successfully has been unloaded by systemd already.
     *
     * @param scope The name of the job scope, e.g. ocs8012.25.scope, may be nullptr.
     * @return true if the job scope ended with Result=oom-kill, false otherwise or on error.
     */
    bool
-   execd_scope_was_oom_killed(const char *scope) {
+   execd_finish_job_scope(const char *scope) {
       DENTER(TOP_LAYER);
 
       bool ret = false;
@@ -477,6 +483,9 @@ namespace ocs::execd {
             if (systemd.sd_bus_get_property("Scope", scope, "Result", result, &err_dstr)) {
                DPRINTF("Result of job scope %s is %s\n", scope, result.c_str());
                ret = result == "oom-kill";
+
+               // the scope is still loaded, unload it if it has failed
+               systemd.reset_failed_unit(scope);
             } else {
                // a scope which ended successfully is usually gone already
                DPRINTF("cannot get the Result of job scope %s: %s\n", scope,

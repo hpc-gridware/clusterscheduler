@@ -55,6 +55,12 @@ tasks failed, the records of the other tasks now show who ended that task, e.g. 
 or `execd@<host>`. A task of a parallel job which the execution daemon or the OOM killer ended
 itself shows that cause in its record, also when the job was deleted for another reason.
 
+systemd keeps the scope of a job which the OOM killer ended in the failed state. Such scopes used
+to stay loaded until an administrator ran `systemctl reset-failed`, and a later job with the same
+job id failed to start. xxqs_name_sxx_execd(8) now resets the scope of a job after its epilog has
+run ([CS-3021](https://hpc-gridware.atlassian.net/browse/CS-3021)), and xxqs_name_sxx_shepherd(8)
+resets a failed scope left over from an earlier job with the same id before it starts the job.
+
 ## v9.1.5
 
 ### TLS: Private Keys Move Below the Cell

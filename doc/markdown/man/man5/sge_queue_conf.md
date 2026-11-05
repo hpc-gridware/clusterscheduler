@@ -659,8 +659,10 @@ host with cgroup v2 and systemd 252 or newer, xxqs_name_sxx_shepherd(8) sets *OO
 scope, so that the OOM killer kills all processes of the job at once. The job then ends as killed by SIGKILL:
 the accounting record shows the exit status 137, failed 100 and *deleted_by* `oom-killer@<host>` (see
 xxqs_name_sxx_accounting(5)), xxqs_name_sxx_execd(8) logs the OOM kill in its messages file, and the abort mail is
-sent if the job requested it (see the *-m* option of qsub(1)). On older systems the OOM killer kills only single
-processes, and the job keeps running; how it ends depends on how it handles the loss of these processes.
+sent if the job requested it (see the *-m* option of qsub(1)). systemd keeps the scope of such a job in the
+failed state with the result *oom-kill* until xxqs_name_sxx_execd(8) resets it after the epilog has run. On older
+systems the OOM killer kills only single processes, and the job keeps running; how it ends depends on how it
+handles the loss of these processes.
 
 For a parallel job, the resource limits of the queue are limits per slot, and they apply to each
 task of the job separately. A task gets either the limit of a single slot, or the limit multiplied
