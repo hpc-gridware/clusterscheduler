@@ -175,22 +175,24 @@ do_stree_spooling() {
    DRETURN(is_spool);
 }
 
-/**********************************************************************
- Gets an order and executes it.
-
- Return 0 if everything is fine or
-
- -1 if the scheduler has sent an inconsistent order list but we think
-    the next event delivery will correct this
-
- -2 if the scheduler has sent an inconsistent order list and we don't think
-    the next event delivery will correct this
-
- -3 if delivery to an execd failed
-
-lList **topp,   ticket orders ptr ptr
-
- **********************************************************************/
+/**
+ * @brief Execute one order of the scheduler.
+ *
+ * @param ep          the order (OR_Type)
+ * @param ruser       user who sent the order list
+ * @param rhost       host the order list came from
+ * @param topp        ticket orders that are collected here and sent to the
+ *                    execds afterwards
+ * @param monitor     monitoring of the calling thread
+ * @param gdi_session GDI session the events of this order belong to
+ * @return 0 if the order was executed or could be ignored,
+ *         -1 if the scheduler sent an inconsistent order list that the next
+ *         event delivery will probably correct,
+ *         -2 if the scheduler sent an inconsistent order list that the next
+ *         event delivery will not correct (the remaining orders are skipped
+ *         and the scheduler is reinitialized),
+ *         -3 if the delivery to an execd failed
+ */
 int
 sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitoring_t *monitor, u_long64 gdi_session) {
    DENTER(TOP_LAYER);
@@ -812,6 +814,16 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
                jatp = job_get_ja_task_template_pending(jep, task_number);
 
                if (jatp == nullptr) {
+                  // CS-3031: a task that the job defines but that is neither enrolled
+                  // nor pending any more has finished after the scheduler computed
+                  // this order. Ignore the order like the one for a finished job:
+                  // the task's DEL event has already been sent, a second one makes
+                  // every event client fail, and -2 would drop the remaining orders
+                  // and reinitialize the scheduler.
+                  if (job_is_ja_task_defined(jep, task_number)) {
+                     INFO(MSG_JOB_FINDJOBTASK_UU, task_number, job_number);
+                     DRETURN(0);
+                  }
                   ERROR(MSG_JOB_FINDJOBTASK_UU, task_number, job_number);
                   sge_add_event(now, sgeE_JATASK_DEL, job_number, task_number,
                                 nullptr, nullptr, lGetString(jep, JB_session), nullptr, gdi_session);
@@ -923,6 +935,11 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
             }
             jatp = job_search_task(jep, nullptr, task_number);
             if (jatp == nullptr) {
+               // CS-3031: a finished task, for the reason given at ORT_ptickets.
+               if (job_is_ja_task_defined(jep, task_number)) {
+                  INFO(MSG_JOB_FINDJOBTASK_UU, task_number, job_number);
+                  DRETURN(0);
+               }
                ERROR(MSG_JOB_FINDJOBTASK_UU, task_number, job_number);
                sge_add_event(now, sgeE_JATASK_DEL, job_number, task_number, nullptr, nullptr, lGetString(jep, JB_session), nullptr, gdi_session);
                DRETURN(-2);
