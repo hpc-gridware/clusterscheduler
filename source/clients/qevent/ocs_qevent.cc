@@ -546,9 +546,12 @@ int main(int argc, char *argv[]) {
 
                   /* build mask for the job structure to contain only the needed elements */
                   where = nullptr;
-                  what = lWhat("%T(%I %I %I %I %I %I %I %I)", JB_Type, JB_job_number, JB_ja_tasks,
-                                                              JB_ja_structure, JB_ja_n_h_ids, JB_ja_u_h_ids,
-                                                              JB_ja_s_h_ids,JB_ja_o_h_ids, JB_ja_template);
+                  // CS-3031: all range lists that job_is_enrolled() reads, the
+                  // mirror calls it for the DEL event of a task it does not hold
+                  what = lWhat("%T(%I %I %I %I %I %I %I %I %I)", JB_Type, JB_job_number, JB_ja_tasks,
+                                                                 JB_ja_structure, JB_ja_n_h_ids, JB_ja_u_h_ids,
+                                                                 JB_ja_s_h_ids, JB_ja_o_h_ids, JB_ja_a_h_ids,
+                                                                 JB_ja_template);
 
                   /* register for job events */
                   sge_mirror_subscribe(evc, SGE_TYPE_JOB, analyze_jatask_event, nullptr, nullptr, where, what);
@@ -629,6 +632,8 @@ static void qevent_testsuite_mode(sge_evc_class_t *evc) {
    lCondition *where =nullptr;
    lEnumeration *what = nullptr;
 
+   // CS-3031: all range lists that job_is_enrolled() reads, the mirror
+   // calls it for the DEL event of a task it does not hold
    const int job_nm[] = {
          JB_job_number,
          JB_host,
@@ -640,6 +645,7 @@ static void qevent_testsuite_mode(sge_evc_class_t *evc) {
          JB_ja_u_h_ids,
          JB_ja_s_h_ids,
          JB_ja_o_h_ids,
+         JB_ja_a_h_ids,
          JB_ja_template,
          NoName
       };
