@@ -47,6 +47,7 @@
 #include "cull/cull.h"
 #include "cull/cull_hash.h"
 #include "cull/cull_listP.h"
+#include "cull/cull_pack.h"
 #include "cull/ocs_cull_descr.h"
 
 #include "uti/sge_stdlib.h"
@@ -465,6 +466,83 @@ static void test_builders() {
    CHECK(31, "after the last list the registry is empty again", ocs_cull_descr_registry_size() == base);
 }
 
+/**
+ * @brief The first word of a packed descriptor
+ * @param dp the descriptor
+ * @param flags the flags to pack with
+ * @return the first word, or 0 on an error
+ */
+static uint32_t first_word_of_packed(const lDescr *dp, const int flags) {
+   uint32_t word = 0;
+   sge_pack_buffer pb;
+   if (init_packbuffer(&pb, 256, false, false) != PACK_SUCCESS) {
+      return 0;
+   }
+   if (cull_pack_descr(&pb, dp, flags) == PACK_SUCCESS) {
+      sge_pack_buffer in;
+      char *buf = sge_malloc(pb.bytes_used);
+      memcpy(buf, pb.head_ptr, pb.bytes_used);
+      if (init_packbuffer_from_buffer(&in, buf, pb.bytes_used, false) == PACK_SUCCESS) {
+         unpackint(&in, &word);
+      }
+      clear_packbuffer(&in);
+   }
+   clear_packbuffer(&pb);
+   return word;
+}
+
+/**
+ * @brief Unpack a list whose descriptor is a hand-written type reference
+ * @param first_nm the first field number written into the reference
+ * @param count the field count written into the reference
+ * @return the result of cull_unpack_list()
+ */
+static int unpack_type_ref(const uint32_t first_nm, const uint32_t count) {
+   int ret = PACK_FORMAT;
+   sge_pack_buffer pb;
+   if (init_packbuffer(&pb, 256, false, false) != PACK_SUCCESS) {
+      return ret;
+   }
+   packint(&pb, 1);
+   packstr(&pb, "forged");
+   packint(&pb, CULL_PACK_DESCR_TYPE_REF);
+   packint(&pb, first_nm);
+   packint(&pb, count);
+   packint(&pb, 0);
+   sge_pack_buffer in;
+   char *buf = sge_malloc(pb.bytes_used);
+   memcpy(buf, pb.head_ptr, pb.bytes_used);
+   if (init_packbuffer_from_buffer(&in, buf, pb.bytes_used, false) == PACK_SUCCESS) {
+      lList *lp = nullptr;
+      ret = cull_unpack_list(&in, &lp);
+      lFreeList(&lp);
+   }
+   clear_packbuffer(&in);
+   clear_packbuffer(&pb);
+   return ret;
+}
+
+/** @brief DESCR-10: a full descriptor travels as a reference to its type */
+static void test_type_ref() {
+   const size_t base = ocs_cull_descr_registry_size();
+   lDescr *heap = heap_copy(TD_Type);
+   CHECK(32, "a static descriptor is packed as a type reference, any other and a flag-filtered one field by field",
+         first_word_of_packed(TD_Type, 0) == CULL_PACK_DESCR_TYPE_REF && first_word_of_packed(heap, 0) == 4 &&
+         first_word_of_packed(TD_Type, CULL_SPOOL) == 4 && first_word_of_packed(RED_A, 0) == 2);
+   sge_free(&heap);
+
+   lList *lp = make_list(3);
+   lList *unpacked = pack_unpack(lp);
+   CHECK(33, "the receiver takes the static block of the type and registers nothing",
+         unpacked != nullptr && unpacked->descr == TD_Type && lGetNumberOfElem(unpacked) == 3 &&
+         ocs_cull_descr_registry_size() == base);
+   CHECK(34, "a type reference to an unknown type or with a different field count is a format error",
+         unpack_type_ref(9999, 4) == PACK_FORMAT && unpack_type_ref(TD_id, 3) == PACK_FORMAT &&
+         unpack_type_ref(TD_id, 4) == PACK_SUCCESS);
+   lFreeList(&unpacked);
+   lFreeList(&lp);
+}
+
 int main(int argc, char *argv[]) {
    lInit(nmv);
 
@@ -522,5 +600,12 @@ int main(int argc, char *argv[]) {
        "the second select and the builders only take references, freeing the selection gives the cached one up, "
        "and the registry is empty at the end",
        {{"SHD-02", "partly"}}, {28, 29, 30, 31}, test_builders},
+      {"DESCR-10", "type references on the wire",
+       "a full descriptor is packed as a reference to its type and unpacked as the static block",
+       {"pack a static, a heap copy, a flag-filtered and a reduced descriptor",
+        "pack and unpack a list of a full type", "unpack forged type references"},
+       "only the unfiltered static descriptor becomes a type reference, the receiver gets the static block, and an "
+       "unknown type or a different field count is a format error",
+       {{"SHD-01", "partly"}}, {32, 33, 34}, test_type_ref},
    });
 }

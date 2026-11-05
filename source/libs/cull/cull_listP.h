@@ -91,6 +91,9 @@ constexpr uint32_t CULL_PACK_FREE_ELEM = 1 << 0;        ///< FREE_ELEM on the wi
 constexpr uint32_t CULL_PACK_BOUND_ELEM = 1 << 1;       ///< BOUND_ELEM on the wire
 constexpr uint32_t CULL_PACK_TRANS_BOUND_ELEM = 1 << 2; ///< TRANS_BOUND_ELEM on the wire
 constexpr uint32_t CULL_PACK_OBJECT_ELEM = 1 << 3;      ///< OBJECT_ELEM on the wire
+/// first word of a descriptor packed as a reference to its type (N-W-3); no field count can take it
+constexpr uint32_t CULL_PACK_DESCR_TYPE_REF = 0xFFFFFF00;
+static_assert(CULL_PACK_DESCR_TYPE_REF > MAX_DESCR_SIZE, "the type reference marker must not be a field count");
 /** @} */
 
 /**

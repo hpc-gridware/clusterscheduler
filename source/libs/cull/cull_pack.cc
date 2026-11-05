@@ -77,7 +77,7 @@ static int
 cull_pack_switch(sge_pack_buffer *pb, const lMultiType *src, lEnumeration *what,
                  int type, int flags);
 
-static int cull_unpack_descr(sge_pack_buffer *pb, lDescr **dpp);
+static int cull_unpack_descr(sge_pack_buffer *pb, const lDescr **dpp, int flags);
 
 static int cull_unpack_cont(sge_pack_buffer *pb, lMultiType **mpp, const lDescr *dp, int flags);
 
@@ -272,19 +272,24 @@ cull_pack_switch(sge_pack_buffer *pb, const lMultiType *src, lEnumeration *what,
    DRETURN(ret);
 }
 
-/* ------------------------------------------------------------
-
-   cull_unpack_descr() - unpacks a complete descriptor
-
-   return values:
-   PACK_SUCCESS
-   PACK_ENOMEM
-   PACK_FORMAT
-
+/**
+ * @brief Unpack an object type descriptor into the descriptor a list or an element holds
+ *
+ * A type reference (#CULL_PACK_DESCR_TYPE_REF) yields the static block of the
+ * type without building anything (N-W-3); a type the name space of the calling
+ * thread does not know, or a different field count, is a format error. A
+ * descriptor packed field by field is built, marked reduced if it does not list
+ * its whole type, and replaced by the shared descriptor equal to it.
+ *
+ * @param pb the buffer to read from
+ * @param dpp the descriptor, holding a reference for the caller
+ * @param flags the flags the values were packed with; flag-filtered data never carries a type reference
+ * @return #PACK_SUCCESS, #PACK_ENOMEM, or #PACK_FORMAT
  */
 static int cull_unpack_descr(
         sge_pack_buffer *pb,
-        lDescr **dpp
+        const lDescr **dpp,
+        const int flags
 ) {
    DENTER(CULL_LAYER);
 
@@ -296,9 +301,28 @@ static int cull_unpack_descr(
 
    *dpp = nullptr;
 
-   /* read in number of lDescr fields (without end mark) */
+   /* read in number of lDescr fields (without end mark), or the type reference marker */
    if ((ret = unpackint(pb, &n))) {
       DRETURN(ret);
+   }
+
+   if (n == CULL_PACK_DESCR_TYPE_REF) {
+      uint32_t first_nm = 0;
+      uint32_t count = 0;
+      if (flags != 0) {
+         LERROR(LEDESCRNULL);
+         DRETURN(PACK_FORMAT);
+      }
+      if ((ret = unpackint(pb, &first_nm)) != PACK_SUCCESS || (ret = unpackint(pb, &count)) != PACK_SUCCESS) {
+         DRETURN(ret);
+      }
+      const lDescr *block = ocs_cull_descr_static_for(static_cast<int>(first_nm));
+      if (block == nullptr || lCountDescr(block) != static_cast<int>(count)) {
+         LERROR(LEDESCRNULL);
+         DRETURN(PACK_FORMAT);
+      }
+      *dpp = block;
+      DRETURN(PACK_SUCCESS);
    }
 
    /* n+1 does not work because this casts n to int */
@@ -415,7 +439,13 @@ static int cull_unpack_descr(
       }
    }
 
-   *dpp = dp;
+   /* the caller holds the shared descriptor equal to the one on the wire */
+   *dpp = ocs_cull_descr_acquire(dp);
+   sge_free(&dp);
+   if (*dpp == nullptr) {
+      LERROR(LEMALLOC);
+      DRETURN(PACK_ENOMEM);
+   }
 
    DRETURN(PACK_SUCCESS);
 }
@@ -423,15 +453,33 @@ static int cull_unpack_descr(
 /**
  * @brief Pack an object type descriptor
  *
+ * A full descriptor, the static block of its type, is packed as a reference to
+ * the type: #CULL_PACK_DESCR_TYPE_REF, the field number of its first field and
+ * its field count (N-W-3). Any other descriptor, and every descriptor packed
+ * with flags, is packed as its field count followed by `(nm, mt)` per field:
+ * flag-filtered packing is a contract between both sides that decides from the
+ * packed `mt` which values follow (N-W-8).
+ *
  * @param pb the buffer to append to
  * @param dp the descriptor to pack
+ * @param flags the flags the values are packed with, 0 for all values
  * @return #PACK_SUCCESS, #PACK_ENOMEM, or #PACK_FORMAT
  */
-int cull_pack_descr(sge_pack_buffer *pb, const lDescr *dp) {
+int cull_pack_descr(sge_pack_buffer *pb, const lDescr *dp, const int flags) {
    DENTER(CULL_LAYER);
 
    int i, ret;
    CULL_STATS_CODE(const size_t stats_start = pb->bytes_used;)
+
+   if (flags == 0 && ocs_cull_descr_is_static(dp)) {
+      if ((ret = packint(pb, CULL_PACK_DESCR_TYPE_REF)) != PACK_SUCCESS ||
+          (ret = packint(pb, dp[0].nm)) != PACK_SUCCESS ||
+          (ret = packint(pb, lCountDescr(dp))) != PACK_SUCCESS) {
+         DRETURN(ret);
+      }
+      CULL_STATS_CODE(cull_stats_count_descr(pb, dp->nm, stats_start);)
+      DRETURN(PACK_SUCCESS);
+   }
 
    /* pack the number of lDescr fields (without end mark) */
    if ((ret = packint(pb, lCountDescr(dp)))) {
@@ -710,7 +758,7 @@ cull_pack_elem_partial(sge_pack_buffer *pb, const lListElem *ep,
 
    if (elem_kind(ep) == FREE_ELEM) {
       if (what == nullptr) {
-         if ((ret = cull_pack_descr(pb, ep->descr)) != PACK_SUCCESS) {
+         if ((ret = cull_pack_descr(pb, ep->descr, flags)) != PACK_SUCCESS) {
             PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
             DRETURN(ret);
          }
@@ -796,18 +844,10 @@ int cull_unpack_elem_partial(sge_pack_buffer *pb, lListElem **epp, const lDescr 
 
    if (elem_kind(ep) == FREE_ELEM) {
       /* a free element holds the shared descriptor equal to the one on the wire */
-      lDescr *wire_descr = nullptr;
-      if ((ret = cull_unpack_descr(pb, &wire_descr)) != PACK_SUCCESS) {
+      if ((ret = cull_unpack_descr(pb, &(ep->descr), flags)) != PACK_SUCCESS) {
          sge_free(&ep);
          PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
          DRETURN(ret);
-      }
-      ep->descr = ocs_cull_descr_acquire(wire_descr);
-      sge_free(&wire_descr);
-      if (ep->descr == nullptr) {
-         sge_free(&ep);
-         PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-         DRETURN(PACK_ENOMEM);
       }
 
       /*
@@ -900,7 +940,7 @@ static int cull_pack_object(sge_pack_buffer *pb, const lListElem *ep, const lEnu
    if (ep != nullptr) {
       /* pack descriptor */
       if (what == nullptr) {
-         ret = cull_pack_descr(pb, ep->descr);
+         ret = cull_pack_descr(pb, ep->descr, flags);
       } else {
          ret = cull_pack_enum_as_descr(pb, what, ep->descr);
       }
@@ -963,7 +1003,7 @@ int cull_pack_list_partial(sge_pack_buffer *pb, const lList *lp,
 
       /* pack descriptor */
       if (what == nullptr) {
-         if ((ret = cull_pack_descr(pb, lp->descr)) != PACK_SUCCESS) {
+         if ((ret = cull_pack_descr(pb, lp->descr, flags)) != PACK_SUCCESS) {
             PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
             DRETURN(ret);
          }
@@ -1067,18 +1107,10 @@ int cull_unpack_list_partial(sge_pack_buffer *pb, lList **lpp, int flags) {
    }
 
    /* unpack descriptor; the list holds the shared descriptor equal to it */
-   lDescr *wire_descr = nullptr;
-   if ((ret = cull_unpack_descr(pb, &wire_descr)) != PACK_SUCCESS) {
+   if ((ret = cull_unpack_descr(pb, &(lp->descr), flags)) != PACK_SUCCESS) {
       lFreeList(&lp);
       PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
       DRETURN(ret);
-   }
-   lp->descr = ocs_cull_descr_acquire(wire_descr);
-   sge_free(&wire_descr);
-   if (lp->descr == nullptr) {
-      lFreeList(&lp);
-      PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-      DRETURN(PACK_ENOMEM);
    }
 
    /* one hash slot per hashed field; a table is built by the first lookup on its field */
@@ -1147,7 +1179,7 @@ static int cull_unpack_object(
    DENTER(CULL_LAYER);
 
    int ret;
-   lDescr *descr;
+   const lDescr *descr;
    lListElem *ep;
    uint32_t i = 0;
 
@@ -1163,27 +1195,20 @@ static int cull_unpack_object(
    }
 
    /* unpack descriptor */
-   if ((ret = cull_unpack_descr(pb, &descr)) != PACK_SUCCESS) {
+   if ((ret = cull_unpack_descr(pb, &descr, flags)) != PACK_SUCCESS) {
       DRETURN(ret);
    }
 
    /* unpack each element */
    if ((ret = cull_unpack_elem_partial(pb, &ep, descr, flags)) != PACK_SUCCESS) {
-      sge_free(&descr);
+      ocs_cull_descr_release(&descr);
       DRETURN(ret);
    }
 
-   /* a sub-object holds a reference of its own instead of the unpacked descriptor it borrowed */
-   if (ep->descr == descr) {
-      ep->descr = ocs_cull_descr_acquire(descr);
-      if (ep->descr == nullptr) {
-         ep->descr = descr;
-         lFreeElem(&ep);
-         sge_free(&descr);
-         DRETURN(PACK_ENOMEM);
-      }
+   /* the sub-object takes over the reference on the descriptor it borrowed while unpacking */
+   if (ep->descr != descr) {
+      ocs_cull_descr_release(&descr);
    }
-   sge_free(&descr);
    elem_set_object(ep);
 
 #ifdef OBSERVE

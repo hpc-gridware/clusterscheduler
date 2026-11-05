@@ -90,7 +90,7 @@ int cull_pack_cond(sge_pack_buffer *pb, const lCondition *cp);
 /*
  *   lDescr
  */
-int cull_pack_descr(sge_pack_buffer *pb, const lDescr *dp);
+int cull_pack_descr(sge_pack_buffer *pb, const lDescr *dp, int flags = 0);
 
 int cull_pack_enum_as_descr(sge_pack_buffer *pb, const lEnumeration *what, const lDescr *dp);
 

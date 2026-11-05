@@ -314,12 +314,6 @@ int pb_used(
 /*                                                           */
 /* --------------------------------------------------------- */
 
-/*
-   return values:
-   PACK_SUCCESS
-   PACK_ENOMEM
-   PACK_FORMAT
- */
 /**
  * @brief Append a 32 bit integer, in network byte order
  *
@@ -408,12 +402,6 @@ int packint64(sge_pack_buffer *pb, uint64_t i) {
 /// Size of a packed double, in bytes
 #define DOUBLESIZE 8
 
-/*
-   return values:
-   PACK_SUCCESS
-   PACK_ENOMEM
-   PACK_FORMAT
- */
 /**
  * @brief Append a double, in a platform independent representation
  *
@@ -447,14 +435,6 @@ int packdouble(sge_pack_buffer *pb, double d) {
    DRETURN(PACK_SUCCESS);
 }
 
-/* ---------------------------------------------------------
-
-   return values:
-   PACK_SUCCESS
-   PACK_ENOMEM
-   PACK_FORMAT
-
- */
 /**
  * @brief Append a string, including its terminating NUL
  *
@@ -562,14 +542,6 @@ int packbuf(
 /*                                                           */
 /* --------------------------------------------------------- */
 
-/* ---------------------------------------------------------
-
-   return values:
-   PACK_SUCCESS
-   (PACK_ENOMEM)
-   PACK_FORMAT
-
- */
 /**
  * @brief Read a 32 bit integer written by #packint
  *
@@ -598,14 +570,6 @@ int unpackint(sge_pack_buffer *pb, uint32_t *ip) {
    DRETURN(PACK_SUCCESS);
 }
 
-/* ---------------------------------------------------------
-
-   return values:
-   PACK_SUCCESS
-   (PACK_ENOMEM)
-   PACK_FORMAT
-
- */
 /**
  * @brief Read a 64 bit integer written by #packint64
  *
@@ -634,14 +598,6 @@ int unpackint64(sge_pack_buffer *pb, uint64_t *ip) {
    DRETURN(PACK_SUCCESS);
 }
 
-/* ---------------------------------------------------------
-
-   return values:
-   PACK_SUCCESS
-   (PACK_ENOMEM)
-   PACK_FORMAT
-
- */
 /**
  * @brief Read a double written by #packdouble
  *
@@ -722,13 +678,6 @@ int unpackstr(sge_pack_buffer *pb, char **str) {
    DRETURN(PACK_SUCCESS);
 }
 
-/* ---------------------------------------------------------
-
-   return values:
-   PACK_SUCCESS
-   PACK_ENOMEM
-   PACK_FORMAT
- */
 /**
  * @brief Read a raw byte block written by #packbuf
  *

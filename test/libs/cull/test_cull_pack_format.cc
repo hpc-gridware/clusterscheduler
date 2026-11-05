@@ -19,7 +19,7 @@
 /*___INFO__MARK_END_NEW__*/
 
 /** @file
- * @brief Module test: the CULL pack format is unchanged by the hash table move (CS-2995, HTL-03)
+ * @brief Module test: the CULL pack format matches its recorded reference (CS-2995 HTL-03, CS-2997)
  *
  * The test packs a fixed set of elements and lists, in every element state and
  * with a reduced field selection, and compares the buffers byte by byte with
@@ -304,9 +304,11 @@ static int dump() {
           "/** @file\n"
           " * @brief Pack buffers recorded by the base revision for test_cull_pack_format\n"
           " *\n"
-          " * Written by `test_cull_pack_format --dump` on a build of the revision before\n"
-          " * the hash table move. Do not edit, and do not regenerate with a later build:\n"
-          " * the buffers are the reference the current build is compared with.\n"
+          " * Written by `test_cull_pack_format --dump`. Do not edit. Regenerate only with\n"
+          " * a deliberate change of the pack format (CS-2997: full descriptors as type\n"
+          " * references), on the build that introduces it, and check the difference to\n"
+          " * the previous buffers: the buffers are the reference every later build is\n"
+          " * compared with.\n"
           " */\n\n"
           "#include <cstdint>\n\n");
    dump_array("free_elem", s.free_elem);

@@ -70,7 +70,8 @@
  *
  * | Version | Change |
  * |---|---|
- * | `0x10021000` | current; raised for MUNGE authentication (CS-995) |
+ * | `0x10022000` | current; a full descriptor is packed as a reference to its type (CS-2997) |
+ * | `0x10021000` | raised for MUNGE authentication (CS-995) |
  * | `0x10020000` | fixed packing of the `lObject` type: the descriptor was sent twice |
  * | `0x10010000` | added information about attribute changes |
  * | `0x10000000` | introduction of version control |
@@ -78,7 +79,7 @@
  * @see @ref cull_packing
  */
 
-#define CULL_VERSION 0x10021000 ///< format id written into every packbuffer; see @ref cull_pack_version
+#define CULL_VERSION 0x10022000 ///< format id written into every packbuffer; see @ref cull_pack_version
 #include <uti/sge_uidgid.h>
 
 #define INTSIZE     4 ///< size of a packed integer, in 8 bit bytes

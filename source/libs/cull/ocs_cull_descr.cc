@@ -235,6 +235,22 @@ bool ocs_cull_descr_is_counted(const lDescr *dp) {
 }
 
 /**
+ * @brief The static block of the type whose first field is a given one
+ * @param nm the field number of the first field of the type
+ * @return the block registered in the name space of the calling thread, or
+ *         nullptr if there is no name space or no such type
+ */
+const lDescr *ocs_cull_descr_static_for(const int nm) {
+   const lNameSpace *ns = cull_state_get_name_space();
+   if (ns == nullptr) {
+      return nullptr;
+   }
+   const StaticIndex *idx = static_index(ns);
+   auto it = idx->find(nm);
+   return it == idx->end() ? nullptr : it->second;
+}
+
+/**
  * @brief Whether a descriptor is the static block of its type
  * @param dp the entries of a descriptor, or nullptr
  * @return true if dp is the block registered for its type in the name space of the calling thread
