@@ -216,19 +216,83 @@ cull_htable cull_hash_create(const lDescr *dp, const int pos, int size) {
 /**
  * @brief Allow a list to be hashed
  *
- * Gives a list created without hashing (lCreateListHash() with hash false) its
- * hash slots, one per hashed field of its type. No table is built here: each is
- * built by the first lookup on its field, once the list is long enough
+ * Marks a list created without hashing (lCreateListHash() with hash false) as
+ * hashable, with one slot per hashed field of its type. Neither the slots nor
+ * a table are allocated here: the first lookup on a field of a long enough
+ * list allocates the slot array and builds the field's table
  * (#ocs_cull_hash_lookup_table). A list that is hashable already is left as it
  * is, with the tables it has.
  *
  * @param lp the list; nullptr is ignored
  */
 void cull_hash_create_hashtables(lList *lp) {
-   if (lp != nullptr && lp->ht == nullptr) {
-      // without memory for the slots the list stays linear, which is slower but correct
+   if (lp != nullptr && lp->nslots == 0) {
       cull_hash_init_slots(lp, true);
    }
+}
+
+/**
+ * @brief Allocate the slot array of a hashable list, with no table in it
+ *
+ * One slot per field of the list's descriptor that is marked #CULL_HASH, in
+ * descriptor order. That includes a field added by cull_hash_new(), which marks
+ * it in the descriptor.
+ *
+ * @param lp the list, with lp->nslots > 0
+ * @return the array of lp->nslots slots, or nullptr if it cannot be allocated
+ *         or the descriptor does not match lp->nslots
+ */
+static cull_hash_slot *cull_hash_alloc_slots(const lList *lp) {
+   auto *slots = (cull_hash_slot *) sge_malloc(sizeof(cull_hash_slot) * lp->nslots);
+   if (slots == nullptr) {
+      return nullptr;
+   }
+   /* Placement new allocates nothing, it constructs each slot in the memory
+    * from sge_malloc() above. A slot holds a std::atomic, which (unlike a plain
+    * struct) does not come into existence by malloc alone, so storing into the
+    * raw memory would be undefined behaviour. The array is still freed with
+    * sge_free(): the slots need no destructor. */
+   uint32_t n = 0;
+   for (int i = 0; mt_get_type(lp->descr[i].mt) != lEndT; i++) {
+      if (mt_do_hashing(lp->descr[i].mt)) {
+         if (n == lp->nslots) {
+            break;
+         }
+         new (&slots[n++]) cull_hash_slot{i, nullptr};
+      }
+   }
+   if (n != lp->nslots) {
+      // cannot happen while only cull_hash_new() adds hashed fields; the list stays linear
+      sge_free(&slots);
+   }
+   return slots;
+}
+
+/**
+ * @brief The slot array of a hashable list, allocated if it has none yet
+ *
+ * Concurrent first lookups, which run under a read lock, may each allocate an
+ * array: the first to publish it by compare-and-swap wins, the others free
+ * theirs and use the winner's.
+ *
+ * @param lp the list, with lp->nslots > 0
+ * @return the slot array, or nullptr if it cannot be allocated
+ */
+static cull_hash_slot *cull_hash_publish_slots(const lList *lp) {
+   cull_hash_slot *slots = list_slots(lp);
+   if (slots != nullptr) {
+      return slots;
+   }
+   cull_hash_slot *fresh = cull_hash_alloc_slots(lp);
+   if (fresh == nullptr) {
+      return nullptr;
+   }
+   if (lp->ht.compare_exchange_strong(slots, fresh, std::memory_order_acq_rel, std::memory_order_acquire)) {
+      return fresh;
+   }
+   // another reader published its array first; slots now holds that one
+   sge_free(&fresh);
+   return slots;
 }
 
 /**
@@ -259,19 +323,20 @@ cull_htable ocs_cull_hash_build(const lList *lp, const int pos) {
  * @brief The hash table of a field for a lookup, built by the first lookup
  *
  * A list that is hashable and has at least the calling thread's threshold of
- * elements (lInit()) gets the table of the field on its first lookup. Concurrent first
- * lookups, which run under a read lock, may each build a table: the first to
- * publish it by compare-and-swap wins, the others free theirs and use the
- * winner's. A table that exists is kept when the list shrinks below the
- * threshold.
+ * elements (lInit()) gets the table of the field on its first lookup, and with
+ * the first table of the list its slot array. Concurrent first lookups, which
+ * run under a read lock, may each allocate an array and build a table: the
+ * first to publish each by compare-and-swap wins, the others free theirs and
+ * use the winner's. A table that exists is kept when the list shrinks below
+ * the threshold.
  *
  * @param lp the list, not nullptr
  * @param pos position of the field in the list's descriptor
  * @return the table, or nullptr when the list is to be searched linearly
  */
 cull_htable ocs_cull_hash_lookup_table(const lList *lp, const int pos) {
-   cull_hash_slot *slot = list_hash_slot(lp, pos);
-   if (slot == nullptr) {
+   // a list that is never hashed, or a field that is not hashed in it, is searched linearly
+   if (lp->nslots == 0 || !mt_do_hashing(lp->descr[pos].mt)) {
       return nullptr;
    }
 
@@ -288,13 +353,25 @@ cull_htable ocs_cull_hash_lookup_table(const lList *lp, const int pos) {
                                      ocs::cull_stats::LOOKUP_LEN_GE128, 1);
    )
 
-   cull_htable ht = slot->get();
+   cull_hash_slot *slot = list_hash_slot(lp, pos);
+   cull_htable ht = slot != nullptr ? slot->get() : nullptr;
    if (ht != nullptr) {
       return ht;
    }
    if (nelem < cull_hash_min_elems) {
       CULL_STATS_FIELD(nm, LOOKUP_LINEAR, 1);
       return nullptr;
+   }
+
+   if (slot == nullptr) {
+      // the first table of the list: its slot array comes with it
+      if (cull_hash_publish_slots(lp) == nullptr || (slot = list_hash_slot(lp, pos)) == nullptr) {
+         return nullptr;
+      }
+      ht = slot->get();
+      if (ht != nullptr) {
+         return ht;
+      }
    }
 
    cull_htable fresh = ocs_cull_hash_build(lp, pos);
@@ -626,15 +703,20 @@ void cull_hash_repair(lList *lp) {
       return;
    }
 
+   // a list without a slot array has no table to repair
+   cull_hash_slot *slots = list_slots(lp);
+   if (slots == nullptr) {
+      return;
+   }
    for (uint32_t i = 0; i < lp->nslots; i++) {
-      const cull_htable ht = lp->ht[i].get();
+      const cull_htable ht = slots[i].get();
 
       /* Tested here rather than left to cull_hash_rebuild_unique() so that the
        * ordinary case costs a load and a branch per hashed field instead of a
        * call. lFreeList() drops the tables before it removes the elements, so
        * this runs once per element of every list being torn down. */
       if (ht != nullptr && ht->dup_count > 0) {
-         cull_hash_rebuild_unique(lp, lp->ht[i].pos);
+         cull_hash_rebuild_unique(lp, slots[i].pos);
       }
    }
 }
@@ -659,8 +741,12 @@ void cull_hash_elem(const lListElem *ep) {
       return;
    }
 
+   const cull_hash_slot *slots = list_slots(lp);
+   if (slots == nullptr) {
+      return;
+   }
    for (uint32_t i = 0; i < lp->nslots; i++) {
-      const cull_hash_slot &slot = lp->ht[i];
+      const cull_hash_slot &slot = slots[i];
       const cull_htable ht = slot.get();
       if (ht != nullptr) {
          cull_hash_insert(ep, cull_hash_key(ep, slot.pos, host_key), ht,
@@ -688,9 +774,13 @@ void cull_hash_remove_elem(const lListElem *ep) {
       return;
    }
 
+   const cull_hash_slot *slots = list_slots(lp);
+   if (slots == nullptr) {
+      return;
+   }
    for (uint32_t i = 0; i < lp->nslots; i++) {
-      if (lp->ht[i].get() != nullptr) {
-         cull_hash_remove(ep, lp->ht[i].pos);
+      if (slots[i].get() != nullptr) {
+         cull_hash_remove(ep, slots[i].pos);
       }
    }
 }
@@ -843,46 +933,30 @@ static void cull_hash_destroy(cull_htable *htp) {
 }
 
 /**
- * @brief Give a new list one hash slot per hashed field of its type
+ * @brief Mark a new list as hashable, with one slot per hashed field of its type
  *
  * Called when a list is created, after its descriptor is set, and by
- * #cull_hash_create_hashtables on a list that becomes hashable. A list without
- * slots is never hashed. The slots start empty; the first lookup on a field
- * builds its table (#ocs_cull_hash_lookup_table).
+ * #cull_hash_create_hashtables on a list that becomes hashable. Only the number
+ * of hashed fields is recorded; a list with none is never hashed. The slot
+ * array is allocated with the first table of the list, by the first lookup on
+ * a field of a long enough list (#ocs_cull_hash_lookup_table), so a list that
+ * is never searched costs no allocation.
  *
- * @param lp the list, with its descriptor and no slots
- * @param hashable false to give the list no slots, so that it is always searched linearly
- * @return false if the slot array cannot be allocated
+ * @param lp the list, with its descriptor and no slot array
+ * @param hashable false to leave the list unhashable, so that it is always searched linearly
+ * @return true; kept for the callers, which treated a failed slot allocation here
  */
 bool cull_hash_init_slots(lList *lp, const bool hashable) {
    lp->nslots = 0;
-   lp->ht = nullptr;
+   // the list comes from sge_malloc()/calloc(): construct the atomic before it is used
+   new (&lp->ht) std::atomic<cull_hash_slot *>(nullptr);
    if (!hashable) {
       return true;
    }
 
-   uint32_t n = 0;
    for (int i = 0; mt_get_type(lp->descr[i].mt) != lEndT; i++) {
       if (mt_do_hashing(lp->descr[i].mt)) {
-         n++;
-      }
-   }
-   if (n == 0) {
-      return true;
-   }
-
-   lp->ht = (cull_hash_slot *) sge_malloc(sizeof(cull_hash_slot) * n);
-   if (lp->ht == nullptr) {
-      return false;
-   }
-   /* Placement new allocates nothing, it constructs each slot in the memory
-    * from sge_malloc() above. A slot holds a std::atomic, which (unlike a plain
-    * struct) does not come into existence by malloc alone, so storing into the
-    * raw memory would be undefined behaviour. The array is still freed with
-    * sge_free(): the slots need no destructor. */
-   for (int i = 0; mt_get_type(lp->descr[i].mt) != lEndT; i++) {
-      if (mt_do_hashing(lp->descr[i].mt)) {
-         new (&lp->ht[lp->nslots++]) cull_hash_slot{i, nullptr};
+         lp->nslots++;
       }
    }
    return true;
@@ -900,10 +974,15 @@ void cull_hash_free_tables(lList *lp) {
    if (lp == nullptr) {
       return;
    }
+   // a list that was never searched has no slot array, and so no table
+   cull_hash_slot *slots = list_slots(lp);
+   if (slots == nullptr) {
+      return;
+   }
    for (uint32_t i = 0; i < lp->nslots; i++) {
-      cull_htable ht = lp->ht[i].get();
+      cull_htable ht = slots[i].get();
       cull_hash_destroy(&ht);
-      lp->ht[i].set(nullptr);
+      slots[i].set(nullptr);
    }
 }
 
@@ -919,7 +998,9 @@ void cull_hash_free_slots(lList *lp) {
       return;
    }
    cull_hash_free_tables(lp);
-   sge_free(&(lp->ht));
+   cull_hash_slot *slots = list_slots(lp);
+   sge_free(&slots);
+   lp->ht.store(nullptr, std::memory_order_release);
    lp->nslots = 0;
 }
 
@@ -1017,22 +1098,33 @@ int cull_hash_new(lList *lp, int nm, bool unique) {
       DRETURN(0);
    }
 
-   /* A field that is not hashed in the type gets a slot of its own. The slots
-    * hold atomics: realloc() would copy their bytes without constructing them,
-    * so the slots are constructed in a new array by placement new instead (see
-    * cull_hash_init_slots()). */
-   if (slot == nullptr) {
-      auto *slots = (cull_hash_slot *) sge_malloc(sizeof(cull_hash_slot) * (lp->nslots + 1));
-      if (slots == nullptr) {
-         DRETURN(0);
+   // a list that is never hashed becomes hashable, with the hashed fields of its type
+   if (lp->nslots == 0) {
+      cull_hash_init_slots(lp, true);
+   }
+
+   /* A field that is not hashed in the type gets a slot of its own, counted in
+    * nslots and marked in the descriptor below, so that the slot array the
+    * first lookup allocates from the descriptor contains it. A list that has
+    * an array already gets the slot added to it. The slots hold atomics:
+    * realloc() would copy their bytes without constructing them, so the slots
+    * are constructed in a new array by placement new instead (see
+    * cull_hash_alloc_slots()). */
+   if (!mt_do_hashing(descr[pos].mt)) {
+      cull_hash_slot *old = list_slots(lp);
+      if (old != nullptr) {
+         auto *slots = (cull_hash_slot *) sge_malloc(sizeof(cull_hash_slot) * (lp->nslots + 1));
+         if (slots == nullptr) {
+            DRETURN(0);
+         }
+         for (uint32_t i = 0; i < lp->nslots; i++) {
+            new (&slots[i]) cull_hash_slot{old[i].pos, old[i].get()};
+         }
+         new (&slots[lp->nslots]) cull_hash_slot{pos, nullptr};
+         sge_free(&old);
+         lp->ht.store(slots, std::memory_order_release);
       }
-      for (uint32_t i = 0; i < lp->nslots; i++) {
-         new (&slots[i]) cull_hash_slot{lp->ht[i].pos, lp->ht[i].get()};
-      }
-      new (&slots[lp->nslots]) cull_hash_slot{pos, nullptr};
-      sge_free(&(lp->ht));
-      lp->ht = slots;
-      slot = &lp->ht[lp->nslots++];
+      lp->nslots++;
    }
 
    /* copy hashing information */
@@ -1128,9 +1220,10 @@ cull_hash_statistics(cull_htable ht, dstring *buffer) {
  * @param lp the sorted list; nullptr is ignored
  */
 void cull_hash_recreate_after_sort(lList *lp) {
-   if (lp != nullptr) {
+   cull_hash_slot *slots = lp != nullptr ? list_slots(lp) : nullptr;
+   if (slots != nullptr) {
       for (uint32_t i = 0; i < lp->nslots; i++) {
-         cull_hash_slot &slot = lp->ht[i];
+         cull_hash_slot &slot = slots[i];
          cull_htable ht = slot.get();
          if (ht != nullptr && !mt_is_unique(lp->descr[slot.pos].mt)) {
             cull_hash_destroy(&ht);

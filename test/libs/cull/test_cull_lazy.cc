@@ -111,12 +111,16 @@ static lList *make_list(const int n) {
 }
 
 /**
- * @brief Whether a list has hash slots for both hashed fields and no table in them
+ * @brief Whether a list may be hashed on both hashed fields and has no table yet
+ *
+ * A hashable list that has not built a table has not allocated its slot array
+ * either, so no memory is spent on a list that is never searched.
+ *
  * @param lp the list
- * @return true if both slots exist and are empty
+ * @return true if the list counts both hashed fields and has no slot array
  */
 static bool slots_empty(const lList *lp) {
-   return lp != nullptr && list_hash_slot(lp, POS_NAME) != nullptr && list_hash_slot(lp, POS_GROUP) != nullptr &&
+   return lp != nullptr && lp->nslots == 2 && list_slots(lp) == nullptr &&
           list_hash_table(lp, POS_NAME) == nullptr && list_hash_table(lp, POS_GROUP) == nullptr;
 }
 
@@ -214,14 +218,14 @@ static lList *pack_unpack(const lList *lp) {
 static void test_no_table() {
    const int n = 2 * OCS_CULL_HASH_MIN_ELEMS;
    lList *lp = make_list(n);
-   CHECK(1, "a created and filled list has empty hash slots", slots_empty(lp));
+   CHECK(1, "a created and filled list is hashable without a slot array or a table", slots_empty(lp));
 
    lList *unpacked = pack_unpack(lp);
    lList *copy = lCopyList("copy", lp);
    lCondition *where = lWhere("%T(%I>=%u)", LZ_Type, LZ_group, 0);
    lEnumeration *what = lWhat("%T(ALL)", LZ_Type);
    lList *selected = lSelect("selected", lp, where, what);
-   CHECK(2, "unpacked, copied and selected lists have empty hash slots",
+   CHECK(2, "unpacked, copied and selected lists are hashable without a slot array or a table",
          lGetNumberOfElem(unpacked) == (uint32_t) n && slots_empty(unpacked) &&
          lGetNumberOfElem(copy) == (uint32_t) n && slots_empty(copy) &&
          lGetNumberOfElem(selected) == (uint32_t) n && slots_empty(selected));
@@ -232,7 +236,7 @@ static void test_no_table() {
    }
    CHECK(3, "a list created without hashing has no slots and stays linear after a lookup",
          plain->nslots == 0 && lGetElemStr(plain, LZ_name, "e5") == linear_find(plain, "e5") &&
-         plain->ht == nullptr);
+         list_slots(plain) == nullptr);
 
    CHECK(4, "the source list still has no table after being packed, copied and selected", slots_empty(lp));
 

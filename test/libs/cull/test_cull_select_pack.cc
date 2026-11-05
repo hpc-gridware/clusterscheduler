@@ -512,10 +512,13 @@ static void test_select_pack_empty() {
    CHECK(10, "lSelect returns no list at all for the same where", selected == nullptr);
    lFreeList(&selected);
 
-   lp = lCreateList("dummy", SP_Type);
+   // a list in the result shows that the unpack overwrites it; the unpack does not free it
+   lList *dummy = lCreateList("dummy", SP_Type);
+   lp = dummy;
    ret = select_pack_unpack(nullptr, nullptr, what, &lp, &bytes);
    CHECK(11, "a missing source list packs as a missing list", ret == PACK_SUCCESS && lp == nullptr);
    lFreeList(&lp);
+   lFreeList(&dummy);
 
    lFreeWhat(&what);
    lFreeWhere(&none);
@@ -721,8 +724,7 @@ static void test_hash_after_unpack() {
    int ret = pack_unpack_list(source, &lp);
    const lDescr *dp = lGetListDescr(lp);
    CHECK(27, "the unpacked list may be hashed on both hashed fields and has no table before a lookup",
-         ret == PACK_SUCCESS && dp != nullptr && list_hash_slot(lp, lGetPosInDescr(dp, SP_name)) != nullptr &&
-         list_hash_slot(lp, lGetPosInDescr(dp, SP_group)) != nullptr &&
+         ret == PACK_SUCCESS && dp != nullptr && lp->nslots == 2 && list_slots(lp) == nullptr &&
          list_hash_table(lp, lGetPosInDescr(dp, SP_name)) == nullptr &&
          list_hash_table(lp, lGetPosInDescr(dp, SP_group)) == nullptr);
    CHECK(28, "every unique key resolves to its element", all_keys_found(lp, SP_name));

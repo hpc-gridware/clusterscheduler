@@ -111,11 +111,11 @@ struct _lListElem {
 /**
  * @brief The hash table of one hashed field of a list
  *
- * A list holds one slot per field of its type that is marked #CULL_HASH. The
- * slot exists from the creation of the list; the table in it only once it is
- * built, so a list created without hashing has slots with no table. The slot
- * carries the field's descriptor position, which maps a position to its table
- * by a scan over the few hashed fields of a type.
+ * A list that may be hashed holds one slot per field of its type that is marked
+ * #CULL_HASH. The slot array is allocated by the first table build of the list,
+ * so a list that is never searched has none; the table in a slot exists only
+ * once it is built. The slot carries the field's descriptor position, which
+ * maps a position to its table by a scan over the few hashed fields of a type.
  *
  * The table pointer is atomic because concurrent readers of a list may each
  * build the table on their first lookup: get() reads it with acquire semantics,
@@ -155,13 +155,17 @@ static_assert(std::atomic<cull_htable>::is_always_lock_free, "a hash slot must n
  */
 struct _lList {
    uint32_t nelem;      ///< number of elements currently in the list
-   uint32_t nslots;     ///< number of entries in ht, the hashed fields of the type
+   uint32_t nslots;     ///< number of hashed fields of the type, 0 if the list is never hashed
    char *listname;      ///< name of the list, used in dumps and error messages
    lDescr *descr;       ///< the object type every element has
    lListElem *first;    ///< first element, or nullptr when the list is empty
    lListElem *last;     ///< last element, or nullptr when the list is empty
-   cull_hash_slot *ht;  ///< nslots hash slots, or nullptr when the type has no hashed field
+   /// nslots hash slots, or nullptr until the first table build; atomic and
+   /// mutable because concurrent first lookups on a const list publish it,
+   /// which does not change the list logically, see #ocs_cull_hash_lookup_table
+   mutable std::atomic<cull_hash_slot *> ht;
 };
+static_assert(std::atomic<cull_hash_slot *>::is_always_lock_free, "the slot array pointer must not hide a mutex");
 
 // The owner word replaces the former 4-byte status and the 4 bytes of padding
 // behind it, so the element keeps its five words.
@@ -301,6 +305,19 @@ inline bool elem_kind_from_wire(const uint32_t wire, cull_elem_kind *kind) {
 }
 
 /**
+ * @brief The slot array of a list
+ *
+ * Read with acquire semantics, so that a reader that sees an array published
+ * by a concurrent first lookup also sees its slots constructed.
+ *
+ * @param lp the list, not nullptr
+ * @return the lp->nslots slots, or nullptr while no table of the list was built
+ */
+inline cull_hash_slot *list_slots(const lList *lp) {
+   return lp->ht.load(std::memory_order_acquire);
+}
+
+/**
  * @brief The hash slot of a field of a list
  *
  * A linear scan over the hashed fields of the list's type, usually one to
@@ -308,12 +325,16 @@ inline bool elem_kind_from_wire(const uint32_t wire, cull_elem_kind *kind) {
  *
  * @param lp the list, not nullptr
  * @param pos position of the field in the list's descriptor
- * @return the slot, or nullptr when the field is not hashed in this list
+ * @return the slot, or nullptr when the field is not hashed in this list or the list has no slot array yet
  */
 inline cull_hash_slot *list_hash_slot(const lList *lp, const int pos) {
+   cull_hash_slot *slots = list_slots(lp);
+   if (slots == nullptr) {
+      return nullptr;
+   }
    for (uint32_t i = 0; i < lp->nslots; i++) {
-      if (lp->ht[i].pos == pos) {
-         return &lp->ht[i];
+      if (slots[i].pos == pos) {
+         return &slots[i];
       }
    }
    return nullptr;
