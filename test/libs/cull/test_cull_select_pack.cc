@@ -564,8 +564,9 @@ static void test_partial_descr() {
    int index = 0;
    const int ret = lPartialDescr(what, SP_Type, dp.data(), &index);
 
-   static const int names[] = {SP_spool, SP_name, SP_group, NoName};
-   CHECK(14, "lPartialDescr takes the fields in the order of the what",
+   // lWhat brings the fields into the order of the descriptor (CS-2997)
+   static const int names[] = {SP_name, SP_group, SP_spool, NoName};
+   CHECK(14, "lPartialDescr takes the fields in the order of the descriptor, whatever the order of the what",
          ret == 0 && n == 3 && index == 3 && descr_names_are(dp.data(), names));
 
    bool reduced = true;
@@ -575,8 +576,8 @@ static void test_partial_descr() {
    CHECK(15, "every field and the end mark carry CULL_IS_REDUCED", reduced);
 
    CHECK(16, "the field attributes of the source are kept",
-         mt_get_type(dp[1].mt) == lStringT && (dp[1].mt & CULL_HASH) != 0 && (dp[1].mt & CULL_UNIQUE) != 0 &&
-         (dp[2].mt & CULL_HASH) != 0 && (dp[2].mt & CULL_UNIQUE) == 0 && (dp[0].mt & CULL_SPOOL) != 0);
+         mt_get_type(dp[0].mt) == lStringT && (dp[0].mt & CULL_HASH) != 0 && (dp[0].mt & CULL_UNIQUE) != 0 &&
+         (dp[1].mt & CULL_HASH) != 0 && (dp[1].mt & CULL_UNIQUE) == 0 && (dp[2].mt & CULL_SPOOL) != 0);
    lFreeWhat(&what);
 
    lEnumeration *all = lWhat("%T(ALL)", SP_Type);
@@ -793,7 +794,7 @@ int main(int argc, char *argv[]) {
        "the first gives the source list unchanged, the second the same list as lSelect",
        {{"CLN-03", "covers"}}, {12, 13}, test_select_pack_all_fields},
       {"SELPACK-05", "lPartialDescr builds the reduced descriptor",
-       "lPartialDescr() takes the fields of a what in its order, marks them reduced and keeps their attributes",
+       "lPartialDescr() takes the fields of a what in descriptor order, marks them reduced and keeps their attributes",
        {"build a descriptor from a what of three fields in non-descriptor order",
         "build one from what ALL", "call it without a what"},
        "the fields come in what order with CULL_IS_REDUCED and their hash, unique and spool attributes; what ALL "

@@ -51,4 +51,8 @@ struct _lEnumeration {
    int mt;           ///< the field's type and attributes
    int nm;           ///< the selected field
    lEnumeration *ep; ///< selection applied inside the field; only for sub-objects and sub-lists
+   /// entry 0 only: the descriptor the cached reduction was built from, holding a reference
+   const lDescr *cache_src;
+   /// entry 0 only: the shared reduction of cache_src, holding a reference (see ocs_cull_what_descr())
+   const lDescr *cache_dp;
 };

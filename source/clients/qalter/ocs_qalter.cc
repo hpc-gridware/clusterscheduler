@@ -45,6 +45,7 @@
 #include "uti/sge_string.h"
 #include "uti/sge_unistd.h"
 #include "uti/sge_stdlib.h"
+#include "cull/ocs_cull_descr.h"
 
 #include "sgeobj/ocs_Binding.h"
 #include "sgeobj/ocs_Job.h"
@@ -265,7 +266,7 @@ static lList *qalter_parse_job_parameter(uint32_t me_who, lList *cmdline, lList 
    uint32_t jobid;
    int i;
    lEnumeration *what = nullptr;
-   lDescr *rdp = nullptr;
+   const lDescr *rdp = nullptr;
    lList *answer = nullptr;
    enum {NOTINIT, JOB, ALL} all_or_jidlist = NOTINIT;
    int users_flag = 0;
@@ -918,11 +919,13 @@ static lList *qalter_parse_job_parameter(uint32_t me_who, lList *cmdline, lList 
    for_each_rw(ep, lGetList(job, JB_job_identifier_list)) {
       lList *task_list = nullptr;
       lListElem *task;
-      lDescr task_descr[] = { 
+      static constexpr lDescr task_descr_entries[] = { 
             {JAT_task_number, lUlongT | CULL_IS_REDUCED},
             {JAT_hold, lUlongT | CULL_IS_REDUCED},
             {NoName, lEndT | CULL_IS_REDUCED}
       };
+      // interned once and never released, so every use only takes a reference
+      static const lDescr *const task_descr = ocs_cull_descr_intern(task_descr_entries);
 
       jobid = atol(lGetString(ep, ID_str));
 /*
@@ -941,7 +944,7 @@ static lList *qalter_parse_job_parameter(uint32_t me_who, lList *cmdline, lList 
             answer_list_add(&answer, MSG_ANSWER_ALLANDJOBIDSARENOTVALID, 
                             STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
             lFreeElem(&job);
-            sge_free(&rdp);
+            ocs_cull_descr_release(&rdp);
             DRETURN(answer);
          } else if (!strcmp(lGetString(ep, ID_str), "dummy")) {
             /* we will add a dummy-object to send parameters to qmaster */ 
@@ -949,7 +952,7 @@ static lList *qalter_parse_job_parameter(uint32_t me_who, lList *cmdline, lList 
             answer_list_add(&answer, MSG_ANSWER_0ISNOTAVALIDJOBID,
                             STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
             lFreeElem(&job);
-            sge_free(&rdp);
+            ocs_cull_descr_release(&rdp);
             DRETURN(answer);
          }
       }
@@ -981,7 +984,7 @@ static lList *qalter_parse_job_parameter(uint32_t me_who, lList *cmdline, lList 
          answer_list_add_sprintf(&answer, STATUS_EMALLOC, ANSWER_QUALITY_ERROR,
                                  MSG_MEM_MEMORYALLOCFAILED_S, __func__);
          lFreeElem(&job);
-         sge_free(&rdp);
+         ocs_cull_descr_release(&rdp);
          DRETURN(answer);
       }
 
@@ -1006,7 +1009,7 @@ static lList *qalter_parse_job_parameter(uint32_t me_who, lList *cmdline, lList 
          answer_list_add_sprintf(&answer, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                                  SFNMAX, MSG_OPTIONWORKSONLYONJOB);
          lFreeElem(&job);
-         sge_free(&rdp);
+         ocs_cull_descr_release(&rdp);
          DRETURN(answer);
       }
       lSetList(job, JB_ja_tasks, task_list);
@@ -1103,6 +1106,6 @@ static lList *qalter_parse_job_parameter(uint32_t me_who, lList *cmdline, lList 
    }
 
    lFreeElem(&job);
-   sge_free(&rdp);
+   ocs_cull_descr_release(&rdp);
    DRETURN(answer);
 }

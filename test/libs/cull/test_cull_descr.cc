@@ -350,15 +350,19 @@ static void test_reduced_shared() {
    const size_t base = ocs_cull_descr_registry_size();
    lList *lp = make_list(8);
    lEnumeration *what1 = lWhat("%T(%I %I)", TD_Type, TD_id, TD_name);
-   lEnumeration *what2 = lWhat("%T(%I %I)", TD_Type, TD_id, TD_name);
+   lEnumeration *what2 = lWhat("%T(%I %I)", TD_Type, TD_name, TD_id);
    lList *sel1 = lSelect("sel1", lp, nullptr, what1);
    lList *sel2 = lSelect("sel2", lp, nullptr, what2);
    lList *unpacked = pack_unpack(sel1);
    lListElem *ep = lCreateElem(lGetListDescr(sel1));
    lEnumeration *what3 = lWhat("%T(%I %I)", TD_Type, TD_id, TD_value);
    lList *other = lSelect("other", lp, nullptr, what3);
+   // a selection caches its reduction with a reference (DESCR-09); free them to count only lists and elements
+   lFreeWhat(&what3);
+   lFreeWhat(&what2);
+   lFreeWhat(&what1);
 
-   CHECK(19, "lists selected with two equal field selections share one counted descriptor",
+   CHECK(19, "selected lists of one reduction, in either field order, share one counted descriptor",
          sel1 != nullptr && sel2 != nullptr && sel1->descr == sel2->descr && ocs_cull_descr_is_counted(sel1->descr) &&
          elements_borrow(sel1) && elements_borrow(sel2));
    CHECK(20, "the unpacked list and a free element of that reduction share it as well",
@@ -372,9 +376,6 @@ static void test_reduced_shared() {
    lFreeList(&unpacked);
    lFreeList(&sel2);
    lFreeList(&sel1);
-   lFreeWhat(&what3);
-   lFreeWhat(&what2);
-   lFreeWhat(&what1);
    lFreeList(&lp);
    CHECK(22, "freeing the lists and elements of the reductions empties the registry",
          ocs_cull_descr_registry_size() == base);
@@ -386,6 +387,8 @@ static void test_users_release() {
    lList *lp = make_list(6);
    lEnumeration *what = lWhat("%T(%I %I)", TD_Type, TD_id, TD_value);
    lList *sel = lSelect("sel", lp, nullptr, what);
+   // the selection caches its reduction with a reference (DESCR-09); free it to count only lists and elements
+   lFreeWhat(&what);
    const lDescr *dp = lGetListDescr(sel);
 
    // a dechained element takes a reference, an appended one gives it up
@@ -404,7 +407,6 @@ static void test_users_release() {
    lFreeElem(&ep);
    CHECK(24, "the last user frees the descriptor", ocs_cull_descr_registry_size() == base);
 
-   lFreeWhat(&what);
    lFreeList(&lp);
 }
 
@@ -430,6 +432,37 @@ static void test_hash_new() {
    lFreeElem(&ep);
    lFreeList(&b);
    lFreeList(&a);
+}
+
+/** @brief DESCR-09: builders and the selection cache hand out shared descriptors */
+static void test_builders() {
+   const size_t base = ocs_cull_descr_registry_size();
+   lList *lp = make_list(8);
+   lEnumeration *what = lWhat("%T(%I %I)", TD_Type, TD_value, TD_id);
+
+   lList *sel1 = lSelect("sel1", lp, nullptr, what);
+   const lDescr *dp = lGetListDescr(sel1);
+   const uint32_t refs_one = ocs_cull_descr_refs(dp);
+   lList *sel2 = lSelect("sel2", lp, nullptr, what);
+   CHECK(28, "a selection caches its reduction: a second select adds only the reference of its list",
+         refs_one == 2 && lGetListDescr(sel2) == dp && ocs_cull_descr_refs(dp) == 3 &&
+         ocs_cull_descr_registry_size() == base + 1);
+
+   const lDescr *reduced = nullptr;
+   const int rc = lReduceDescr(&reduced, TD_Type, what);
+   const lDescr *got = lGetReducedDescr(TD_Type, what);
+   CHECK(29, "lReduceDescr and lGetReducedDescr return the shared reduction with a reference each",
+         rc == 0 && reduced == dp && got == dp && ocs_cull_descr_refs(dp) == 5);
+   ocs_cull_descr_release(&reduced);
+   ocs_cull_descr_release(&got);
+
+   lFreeWhat(&what);
+   CHECK(30, "freeing the selection gives the cached reference up", ocs_cull_descr_refs(dp) == 2);
+
+   lFreeList(&sel2);
+   lFreeList(&sel1);
+   lFreeList(&lp);
+   CHECK(31, "after the last list the registry is empty again", ocs_cull_descr_registry_size() == base);
 }
 
 int main(int argc, char *argv[]) {
@@ -466,7 +499,7 @@ int main(int argc, char *argv[]) {
        {{"SHD-01", "covers"}}, {17, 18}, test_full_static},
       {"DESCR-06", "one descriptor per reduction across builders",
        "selected, unpacked and created lists and elements of one reduction share one descriptor",
-       {"select one reduction twice with two equal field selections", "unpack one of the results",
+       {"select one reduction twice, with the fields in two orders", "unpack one of the results",
         "create a free element with its descriptor", "select a different reduction", "free everything"},
        "equal reductions share one counted descriptor with one reference per list and free element, a different one "
        "has its own, and the registry is empty again at the end",
@@ -482,5 +515,12 @@ int main(int argc, char *argv[]) {
        {"add a hash on a field of one list", "look it up and dechain an element"},
        "the list and its elements hold the copy with the flag, the static block and other lists are unchanged",
        {{"SHD-01", "partly"}}, {25, 26, 27}, test_hash_new},
+      {"DESCR-09", "builders and the selection cache",
+       "a field selection builds its reduction once, and the builders return the shared descriptor",
+       {"select twice with one selection", "reduce with lReduceDescr and lGetReducedDescr",
+        "free the selection and the lists"},
+       "the second select and the builders only take references, freeing the selection gives the cached one up, "
+       "and the registry is empty at the end",
+       {{"SHD-02", "partly"}}, {28, 29, 30, 31}, test_builders},
    });
 }

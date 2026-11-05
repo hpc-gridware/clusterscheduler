@@ -54,6 +54,7 @@
 #include "uti/sge_string.h"
 #include "uti/sge_time.h"
 #include "uti/sge_hostname.h"
+#include "cull/ocs_cull_descr.h"
 
 #include "spool/sge_spooling.h"
 
@@ -1759,8 +1760,8 @@ ar_initialize_resource_booking(lListElem *ar) {
    lEnumeration *queue_what = lIntVector2What(QU_Type, queue_fields);
    lEnumeration *host_what = lIntVector2What(EH_Type, host_fields);
 
-   lDescr *queue_descr = nullptr;
-   lDescr *host_descr = nullptr;
+   const lDescr *queue_descr = nullptr;
+   const lDescr *host_descr = nullptr;
    lReduceDescr(&queue_descr, QU_Type, queue_what);
    lReduceDescr(&host_descr, EH_Type, host_what);
    lFreeWhat(&queue_what);
@@ -1931,8 +1932,8 @@ ar_initialize_resource_booking(lListElem *ar) {
    lSetList(ar, AR_reserved_queues, queue_list);
    lSetList(ar, AR_reserved_hosts, host_list);
 
-   sge_free(&queue_descr);
-   sge_free(&host_descr);
+   ocs_cull_descr_release(&queue_descr);
+   ocs_cull_descr_release(&host_descr);
    sge_dstring_free(&buffer);
 
    DRETURN_VOID;

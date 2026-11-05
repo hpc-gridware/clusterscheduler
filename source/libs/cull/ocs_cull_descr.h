@@ -64,6 +64,8 @@ void ocs_cull_descr_release(const lDescr **dpp);
 
 bool ocs_cull_descr_is_counted(const lDescr *dp);
 
+bool ocs_cull_descr_is_static(const lDescr *dp);
+
 uint32_t ocs_cull_descr_refs(const lDescr *dp);
 
 size_t ocs_cull_descr_registry_size();

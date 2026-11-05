@@ -35,6 +35,7 @@
 /** @file
  * @brief Building and applying field selections (`lWhat`)
  */
+#include <algorithm>
 #include <cstdarg>
 #include <cstring>
 
@@ -52,6 +53,7 @@
 #include "cull/cull_multitype.h"
 #include "cull/cull_whatP.h"
 #include "cull/cull_lerrnoP.h"
+#include "cull/ocs_cull_descr.h"
 
 static lEnumeration *subscope_lWhat(cull_parse_state *state, va_list *app);
 
@@ -83,37 +85,32 @@ void nm_set(int job_field[], int nm) {
 }
 
 /**
- * @brief Reduce a descriptor
+ * @brief Build the shared reduced descriptor a field selection describes
  *
- * Makes a new descriptor in 'dst_dpp' that containes only those
- * fields from 'src_dp' that are in 'enp'.
- *
- * @param dst_dpp destination for reduced descriptor
- * @param src_dp source descriptor
- * @param enp condition
- *
- * @return error state 0 - OK -1 - Error
+ * @param dst_dpp the shared descriptor, holding a reference for the caller, who
+ *        gives it up with ocs_cull_descr_release(); nullptr if nothing is selected
+ * @param src_dp the full descriptor
+ * @param enp the field selection
+ * @return 0 on success, -1 on error
  */
-int lReduceDescr(lDescr **dst_dpp, const lDescr *src_dp, lEnumeration *enp) {
+int lReduceDescr(const lDescr **dst_dpp, const lDescr *src_dp, lEnumeration *enp) {
    DENTER(TOP_LAYER);
-
-   int n, index = 0;
 
    if (!dst_dpp || !src_dp || !enp) {
       DRETURN(-1);
    }
+   *dst_dpp = nullptr;
 
-   n = lCountWhat(enp, src_dp);
-
-   if (n == 0) {
+   if (lCountWhat(enp, src_dp) == 0) {
       DRETURN(0);
    }
 
-   /* create new partial descriptor */
-   if (!(*dst_dpp = (lDescr *) sge_malloc(sizeof(lDescr) * (n + 1)))) {
+   bool owned;
+   const lDescr *dp = ocs_cull_what_descr(enp, src_dp, &owned);
+   if (dp == nullptr) {
       DRETURN(-1);
    }
-   lPartialDescr(enp, src_dp, *dst_dpp, &index);
+   *dst_dpp = owned ? dp : ocs_cull_descr_ref(dp);
 
    DRETURN(0);
 }
@@ -122,6 +119,89 @@ int lReduceDescr(lDescr **dst_dpp, const lDescr *src_dp, lEnumeration *enp) {
    _lWhat creates an enumeration array. This is used in lWhat
    to choose special fields of a list element.
  */
+/**
+ * @brief The shared reduction of a descriptor that a field selection describes
+ *
+ * The selection caches the last reduction it built, keyed by the source
+ * descriptor (N-A-20), so a selection applied again and again to lists of one
+ * type, as for the sub-lists of every element of a list, builds and interns
+ * its descriptor once. The cache holds a reference on the source as well, so
+ * its address cannot be reused while it is cached. Only static and counted
+ * sources are cached; any other source gets a fresh reduction each time. A
+ * selection is never used by two threads at once, so the cache needs no
+ * synchronisation.
+ *
+ * @param enp the selection, not NONE
+ * @param src the descriptor it is applied to
+ * @param[out] owned set to true if the caller has to release the result
+ * @return the shared reduction borrowed from the cache, or with a reference
+ *         for the caller if @p owned is set to true; nullptr on error
+ */
+const lDescr *ocs_cull_what_descr(const lEnumeration *enp, const lDescr *src, bool *owned) {
+   DENTER(CULL_LAYER);
+
+   *owned = false;
+   auto *head = const_cast<lEnumeration *>(enp);
+   if (head->cache_dp != nullptr && head->cache_src == src) {
+      DRETURN(head->cache_dp);
+   }
+
+   const int n = lCountWhat(enp, src);
+   if (n <= 0) {
+      LERROR(LECOUNTWHAT);
+      DRETURN(nullptr);
+   }
+   auto *tmp = reinterpret_cast<lDescr *>(sge_malloc(sizeof(lDescr) * (n + 1)));
+   if (tmp == nullptr) {
+      LERROR(LEMALLOC);
+      DRETURN(nullptr);
+   }
+   int index = 0;
+   if (lPartialDescr(enp, src, tmp, &index) < 0) {
+      LERROR(LEPARTIALDESCR);
+      sge_free(&tmp);
+      DRETURN(nullptr);
+   }
+   const lDescr *dp = ocs_cull_descr_acquire(tmp);
+   sge_free(&tmp);
+   if (dp == nullptr) {
+      LERROR(LEMALLOC);
+      DRETURN(nullptr);
+   }
+
+   if (ocs_cull_descr_is_counted(src) || ocs_cull_descr_is_static(src)) {
+      ocs_cull_descr_release(&(head->cache_dp));
+      ocs_cull_descr_release(&(head->cache_src));
+      head->cache_src = ocs_cull_descr_ref(src);
+      head->cache_dp = dp;
+      DRETURN(dp);
+   }
+   *owned = true;
+   DRETURN(dp);
+}
+
+/**
+ * @brief Bring the fields of a selection into the order of the descriptor
+ *
+ * A selection is normalised to the field order of the descriptor it was built
+ * against, so two selections of the same fields yield the same partial
+ * descriptor, whatever order they were written in, and the descriptor
+ * registry can share it. Equal positions keep their order. The special
+ * selections ALL and NONE are left alone.
+ *
+ * @param ep the selection, terminated by #NoName; may be nullptr
+ */
+static void ocs_what_sort_by_pos(lEnumeration *ep) {
+   if (ep == nullptr || ep[0].pos < 0) {
+      return;
+   }
+   int n = 0;
+   while (ep[n].nm != NoName) {
+      n++;
+   }
+   std::stable_sort(ep, ep + n, [](const lEnumeration &a, const lEnumeration &b) { return a.pos < b.pos; });
+}
+
 /**
  * @brief Build a field selection from an already resolved field list
  *
@@ -179,7 +259,7 @@ lEnumeration *_lWhat(const char *fmt, const lDescr *dp,
    /* for CULL_ALL and NONE we need one lEnumeration struct */
    if (n > 1)
       n--;
-   if (!(ep = (lEnumeration *) sge_malloc(sizeof(lEnumeration) * (n + 1)))) {
+   if (!(ep = (lEnumeration *) calloc((n + 1), sizeof(lEnumeration)))) {
       error_status = LEMALLOC;
       goto error;
    }
@@ -263,7 +343,7 @@ lEnumeration *_lWhat(const char *fmt, const lDescr *dp,
       }
       eat_token(&state);
 
-      if (!(ep2 = (lEnumeration *) sge_malloc(sizeof(lEnumeration) * (size + 1)))) {
+      if (!(ep2 = (lEnumeration *) calloc((size + 1), sizeof(lEnumeration)))) {
          error_status = LEMALLOC;
          goto error;
       }
@@ -294,6 +374,7 @@ lEnumeration *_lWhat(const char *fmt, const lDescr *dp,
    }
    eat_token(&state);                 /* eat ) */
 
+   ocs_what_sort_by_pos(ep);
    DRETURN(ep);
 
    error:
@@ -437,7 +518,7 @@ static lEnumeration *subscope_lWhat(cull_parse_state *state, va_list *app) {
    eat_token(state);                 /* eat ) */
 
    /* make copy of local data */
-   enumeration = (lEnumeration *) sge_malloc(sizeof(lEnumeration) * next_id);
+   enumeration = (lEnumeration *) calloc(next_id, sizeof(lEnumeration));
    if (enumeration == nullptr) {
       LERROR(LEMALLOC);
       DRETURN(nullptr);
@@ -449,6 +530,7 @@ static lEnumeration *subscope_lWhat(cull_parse_state *state, va_list *app) {
       enumeration[i].mt = ep[i].mt;
       enumeration[i].ep = ep[i].ep;
    }
+   ocs_what_sort_by_pos(enumeration);
 
    DRETURN(enumeration);
 }
@@ -469,7 +551,7 @@ lEnumeration *lWhatAll() {
    lEnumeration *ep;
    int error_status;
 
-   if (!(ep = (lEnumeration *) sge_malloc(sizeof(lEnumeration) * 2))) {
+   if (!(ep = (lEnumeration *) calloc(2, sizeof(lEnumeration)))) {
       error_status = LEMALLOC;
       goto error;
    }
@@ -511,6 +593,8 @@ void lFreeWhat(lEnumeration **ep) {
          lFreeWhat(&((*ep)[i].ep));
       }
    }
+   ocs_cull_descr_release(&((*ep)[0].cache_dp));
+   ocs_cull_descr_release(&((*ep)[0].cache_src));
    sge_free(ep);
    DRETURN_VOID;
 }
@@ -577,7 +661,7 @@ lEnumeration *lCopyWhat(const lEnumeration *ep) {
 
    for (n = 0; mt_get_type(ep[n].mt) != lEndT; n++);
 
-   if (!(copy = (lEnumeration *) sge_malloc(sizeof(lEnumeration) * (n + 1)))) {
+   if (!(copy = (lEnumeration *) calloc((n + 1), sizeof(lEnumeration)))) {
       LERROR(LEMALLOC);
       DRETURN(nullptr);
    }
@@ -731,7 +815,7 @@ int lMergeWhat(lEnumeration **what1, lEnumeration **what2) {
       /*
        * create result what 
        */
-      *what1 = (lEnumeration *) sge_malloc(sizeof(lEnumeration) * next_id);
+      *what1 = (lEnumeration *) calloc(next_id, sizeof(lEnumeration));
       if (*what1 != nullptr) {
          for (i = 0; i < next_id; i++) {
             (*what1)[i].pos = tmp_result[i].pos;
@@ -739,6 +823,7 @@ int lMergeWhat(lEnumeration **what1, lEnumeration **what2) {
             (*what1)[i].mt = tmp_result[i].mt;
             (*what1)[i].ep = tmp_result[i].ep;
          }
+         ocs_what_sort_by_pos(*what1);
       } else {
          LERROR(LEMALLOC);
          DTRACE;

@@ -1312,7 +1312,7 @@ int cull_unpack_enum(
       goto error;
 
    if (flag != PackWhatArray) {
-      if (!(enp = (lEnumeration *) sge_malloc(2 * sizeof(lEnumeration)))) {
+      if (!(enp = (lEnumeration *) calloc(2, sizeof(lEnumeration)))) {
          PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
          DRETURN(PACK_ENOMEM);
       }
@@ -1345,7 +1345,7 @@ int cull_unpack_enum(
          DRETURN(PACK_ENOMEM);
       }
 
-      if (!(enp = (lEnumeration *) sge_malloc(sizeof(lEnumeration) * (n + 1)))) {
+      if (!(enp = (lEnumeration *) calloc(n + 1, sizeof(lEnumeration)))) {
          PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
          DRETURN(PACK_ENOMEM);
       }

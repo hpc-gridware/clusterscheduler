@@ -38,6 +38,7 @@
 #include <stdio.h>
 
 #include "uti/sge_rmon_macros.h"
+#include "cull/ocs_cull_descr.h"
 
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_order.h"
@@ -183,7 +184,7 @@ lList *sge_create_orders(lList *or_list, uint32_t type, const lListElem *job, co
 
       static order_pos_t *order_pos = nullptr;
 
-      const lDescr tixDesc[] = {
+      static constexpr lDescr tixDesc_entries[] = {
                             {JAT_task_number, lUlongT | CULL_IS_REDUCED},
                             {JAT_tix, lDoubleT | CULL_IS_REDUCED},
                             {JAT_oticket, lDoubleT | CULL_IS_REDUCED},
@@ -195,7 +196,9 @@ lList *sge_create_orders(lList *or_list, uint32_t type, const lListElem *job, co
                             {JAT_granted_destin_identifier_list, lListT | CULL_IS_REDUCED},
                             {NoName, lEndT | CULL_IS_REDUCED}
                            };
-      const lDescr tix2Desc[] = {
+      // interned once and never released, so every use only takes a reference
+      static const lDescr *const tixDesc = ocs_cull_descr_intern(tixDesc_entries);
+      static constexpr lDescr tix2Desc_entries[] = {
                              {JAT_task_number, lUlongT | CULL_IS_REDUCED},
                              {JAT_tix, lDoubleT| CULL_IS_REDUCED},
                              {JAT_oticket, lDoubleT | CULL_IS_REDUCED},
@@ -206,7 +209,9 @@ lList *sge_create_orders(lList *or_list, uint32_t type, const lListElem *job, co
                              {JAT_ntix, lDoubleT | CULL_IS_REDUCED},
                              {NoName, lEndT | CULL_IS_REDUCED}
                             };
-      const lDescr jobDesc[] = {
+      // interned once and never released, so every use only takes a reference
+      static const lDescr *const tix2Desc = ocs_cull_descr_intern(tix2Desc_entries);
+      static constexpr lDescr jobDesc_entries[] = {
                                  {JB_nurg, lDoubleT | CULL_IS_REDUCED},
                                  {JB_urg, lDoubleT | CULL_IS_REDUCED},
                                  {JB_rrcontr, lDoubleT | CULL_IS_REDUCED},
@@ -215,6 +220,8 @@ lList *sge_create_orders(lList *or_list, uint32_t type, const lListElem *job, co
                                  {JB_ja_tasks, lListT | CULL_IS_REDUCED},
                                  {NoName, lEndT | CULL_IS_REDUCED}
                                };
+      // interned once and never released, so every use only takes a reference
+      static const lDescr *const jobDesc = ocs_cull_descr_intern(jobDesc_entries);
       ja_task_pos_t *ja_pos;
       ja_task_pos_t *order_ja_pos;
       job_pos_t   *job_pos;

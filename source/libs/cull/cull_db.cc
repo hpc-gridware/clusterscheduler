@@ -56,6 +56,7 @@
 #include "cull/cull_whatP.h"
 #include "cull/cull_multitypeP.h"
 #include "cull/cull_lerrnoP.h"
+#include "cull/ocs_cull_descr.h"
 #include "cull/cull_hash.h"
 #include "cull/cull_pack.h"
 #include "cull/pack.h"
@@ -362,28 +363,17 @@ lSelectElemPack(const lListElem *slp, const lCondition *cp,
       DRETURN(nullptr);
    }
    if (enp != nullptr) {
-      lDescr *dp;
-      int n, index = 0;
-
-      /* create new lList with partial descriptor */
-      if ((n = lCountWhat(enp, slp->descr)) <= 0) {
-         LERROR(LECOUNTWHAT);
+      /* the shared partial descriptor, cached in the selection */
+      bool owned;
+      const lDescr *dp = ocs_cull_what_descr(enp, slp->descr, &owned);
+      if (dp == nullptr) {
          DRETURN(nullptr);
       }
-      if (!(dp = (lDescr *) sge_malloc(sizeof(lDescr) * (n + 1)))) {
-         LERROR(LEMALLOC);
-         DRETURN(nullptr);
-      }
-      /* INITIALIZE THE INDEX IF YOU BUILD A NEW DESCRIPTOR */
-      if (lPartialDescr(enp, slp->descr, dp, &index) < 0) {
-         LERROR(LEPARTIALDESCR);
-         sge_free(&dp);
-         DRETURN(nullptr);
-      }
-      /* create reduced element */
+      /* create reduced element; it takes a reference of its own */
       new_ep = lSelectElemDPack(slp, cp, dp, enp, isHash, pb, skip_no_transfer);
-      /* free the descriptor, it has been copied by lCreateList */
-      sge_free(&dp);
+      if (owned) {
+         ocs_cull_descr_release(&dp);
+      }
    } else {
       /* no enumeration => make a copy of element */
       new_ep = lCopyElemHash(slp, isHash, skip_no_transfer);
@@ -499,33 +489,17 @@ lList *lSelectHashPack(const char *name, const lList *slp,
 
    if (enp != nullptr) {
       if (pb == nullptr) {
-         lDescr *dp;
-         int n, index;
-
-         /* create new lList with partial descriptor */
-         n = lCountWhat(enp, slp->descr);
-         if (n <= 0) {
-            LERROR(LECOUNTWHAT);
-            DRETURN(nullptr);
-         }
-
-         dp = (lDescr *) sge_malloc(sizeof(lDescr) * (n + 1));
+         /* the shared partial descriptor, cached in the selection */
+         bool owned;
+         const lDescr *dp = ocs_cull_what_descr(enp, slp->descr, &owned);
          if (dp == nullptr) {
-            LERROR(LEMALLOC);
             DRETURN(nullptr);
          }
-
-         /* INITIALIZE THE INDEX IF YOU BUILD A NEW DESCRIPTOR */
-         index = 0;
-         if (lPartialDescr(enp, slp->descr, dp, &index) < 0) {
-            LERROR(LEPARTIALDESCR);
-            sge_free(&dp);
-            DRETURN(nullptr);
-         }
+         /* the new list takes a reference of its own */
          ret = lSelectDPack(name, slp, cp, dp, enp, isHash, nullptr, skip_no_transfer);
-
-         /* free the descriptor, it has been copied by lCreateList */
-         sge_free(&dp);
+         if (owned) {
+            ocs_cull_descr_release(&dp);
+         }
       } else {
          const char *pack_name = "";
          int local_ret;
@@ -814,31 +788,26 @@ lDescr *lJoinDescr(const lDescr *sdp0, const lDescr *sdp1,
 }
 
 /**
- * @brief Build the reduced descriptor a field selection describes
+ * @brief Build the shared reduced descriptor a field selection describes
  *
  * @param type the full object type
  * @param what the fields to keep
- * @return the reduced descriptor, owned by the caller, or nullptr on error
+ * @return the shared descriptor holding a reference for the caller, who gives it
+ *         up with ocs_cull_descr_release(), or nullptr on error
  */
-lDescr *lGetReducedDescr(const lDescr *type, const lEnumeration *what) {
+const lDescr *lGetReducedDescr(const lDescr *type, const lEnumeration *what) {
    DENTER(CULL_LAYER);
 
-   lDescr *new_descr = nullptr;
-   int index = 0;
-   int n = 0;
-   if ((n = lCountWhat(what, type)) <= 0) {
+   if (lCountWhat(what, type) <= 0) {
       DRETURN(nullptr);
    }
 
-   if (!(new_descr = (lDescr *) sge_malloc(sizeof(lDescr) * (n + 1)))) {
+   bool owned;
+   const lDescr *dp = ocs_cull_what_descr(what, type, &owned);
+   if (dp == nullptr) {
       DRETURN(nullptr);
    }
-   if (lPartialDescr(what, type, new_descr, &index) != 0) {
-      sge_free(&new_descr);
-      DRETURN(nullptr);
-   }
-
-   DRETURN(new_descr);
+   DRETURN(owned ? dp : ocs_cull_descr_ref(dp));
 }
 
 /**

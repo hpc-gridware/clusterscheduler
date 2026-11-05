@@ -54,6 +54,7 @@
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_stdlib.h"
 #include "uti/sge_time.h"
+#include "cull/ocs_cull_descr.h"
 
 #include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/ocs_Session.h"
@@ -267,7 +268,7 @@ send_slave_jobs(lListElem *jep, lListElem *jatep, monitoring_t *monitor, uint64_
    lListElem *tmpjep, *qep, *tmpjatep;
    int ret = 0;
    bool is_pe_jobs = false;
-   lDescr *rdp = nullptr;
+   const lDescr *rdp = nullptr;
    lEnumeration *what;
    const lList *master_centry_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_CENTRY);
    const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
@@ -336,7 +337,7 @@ send_slave_jobs(lListElem *jep, lListElem *jatep, monitoring_t *monitor, uint64_
    }
 
    lFreeWhat(&what);
-   sge_free(&rdp);
+   ocs_cull_descr_release(&rdp);
 
    ret = send_slave_jobs_wc(tmpjep, monitor, gdi_session);
 
@@ -454,7 +455,7 @@ send_job(const char *rhost, lListElem *jep, lListElem *jatep, lListElem *hep, in
    unsigned long last_heard_from;
    const char *myprogname = component_get_component_name();
    bool simulate_execd = mconf_get_simulate_execds();
-   lDescr *rdp = nullptr;
+   const lDescr *rdp = nullptr;
    lEnumeration *what;
    const lList *master_centry_list = *ocs::DataStore::get_master_list(SGE_TYPE_CENTRY);
    const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
@@ -544,7 +545,7 @@ send_job(const char *rhost, lListElem *jep, lListElem *jatep, lListElem *hep, in
    }
 
    lFreeWhat(&what);
-   sge_free(&rdp);
+   ocs_cull_descr_release(&rdp);
 
    /*
    ** remove some data not used at execd side

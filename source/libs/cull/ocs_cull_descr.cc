@@ -235,6 +235,15 @@ bool ocs_cull_descr_is_counted(const lDescr *dp) {
 }
 
 /**
+ * @brief Whether a descriptor is the static block of its type
+ * @param dp the entries of a descriptor, or nullptr
+ * @return true if dp is the block registered for its type in the name space of the calling thread
+ */
+bool ocs_cull_descr_is_static(const lDescr *dp) {
+   return dp != nullptr && !ocs_cull_descr_is_counted(dp) && static_block_for(dp) == dp;
+}
+
+/**
  * @brief The shared descriptor equal to a given one, with a reference for the caller
  *
  * Looks up the registry for a descriptor with the same entries and takes a

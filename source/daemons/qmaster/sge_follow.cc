@@ -48,6 +48,7 @@
 #include "uti/sge_signal.h"
 #include "uti/sge_time.h"
 #include "uti/sge_stdlib.h"
+#include "cull/ocs_cull_descr.h"
 
 #include "sgeobj/ocs_ShareTree.h"
 #include "sgeobj/sge_conf.h"
@@ -1037,7 +1038,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
                   those intervales does the ticket order structure contain a JAT_granted_destin_identifier_list.
                   We use that as an identifier to go on, or not. */
                if (distribute_tickets && topp != nullptr) {
-                  lDescr *rdp = nullptr;
+                  const lDescr *rdp = nullptr;
 
                   lEnumeration *what = lIntVector2What(OR_Type, ticket_orders_field);
                   lReduceDescr(&rdp, OR_Type, what);
@@ -1111,7 +1112,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
 
                   }
                   lFreeWhat(&what);
-                  sge_free(&rdp);
+                  ocs_cull_descr_release(&rdp);
                }
             }
             sge_add_event(now, sgeE_JATASK_MOD, job_number, task_number, nullptr, nullptr, nullptr, jatp, gdi_session);

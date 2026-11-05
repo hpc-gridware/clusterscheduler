@@ -74,6 +74,7 @@
 #include "uti/sge_stdlib.h"
 
 #include "cull/cull.h"
+#include "cull/ocs_cull_descr.h"
 
 #include "comm/lists/cl_thread.h"
 #include "comm/lists/cl_errors.h"
@@ -846,7 +847,7 @@ sge_event_master_process_mod_event_client(const lListElem *request, monitoring_t
             lFreeWhere(&(old_sub[i].where));
             lFreeWhat(&(old_sub[i].what));
             if (old_sub[i].descr){
-               sge_free(&(old_sub[i].descr));
+               ocs_cull_descr_release(&(old_sub[i].descr));
             }
          }
          sge_free(&old_sub);
@@ -1844,7 +1845,7 @@ remove_event_client(lListElem **client, bool lock_event_master) {
          lFreeWhat(&old_sub[i].what);
 
          if (old_sub[i].descr) {
-            sge_free(&(old_sub[i].descr));
+            ocs_cull_descr_release(&(old_sub[i].descr));
          }
       }
 
@@ -2298,7 +2299,7 @@ static void build_subscription(lListElem *event_el) {
          lFreeWhere(&(old_sub_array[j].where));
          lFreeWhat(&(old_sub_array[j].what));
          if (old_sub_array[j].descr){
-            sge_free(&(old_sub_array[j].descr));
+            ocs_cull_descr_release(&(old_sub_array[j].descr));
          }
       }
       sge_free(&old_sub_array);

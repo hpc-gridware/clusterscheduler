@@ -62,7 +62,7 @@ lList *lSelectHashPack(const char *name, const lList *slp,
 lList *lSelectDPack(const char *name, const lList *slp, const lCondition *cp, const lDescr *dp, const lEnumeration *enp,
                     bool isHash, sge_pack_buffer *pb, bool skip_no_transfer = false);
 
-lDescr *lGetReducedDescr(const lDescr *type, const lEnumeration *what);
+const lDescr *lGetReducedDescr(const lDescr *type, const lEnumeration *what);
 
 lList *lSelectDestroy(lList *slp, const lCondition *cp);
 

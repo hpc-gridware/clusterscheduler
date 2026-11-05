@@ -54,6 +54,7 @@
 
 #include "cull/cull.h"
 #include "cull/cull_whatP.h"
+#include "cull/ocs_cull_descr.h"
 
 /** @brief A synthetic CULL object type, defined only for these tests
  *
@@ -302,9 +303,9 @@ int main(int /*argc*/, char * /*argv*/[]) {
                                   TEST1_Type, TEST1_int, TEST1_host,
                                   TEST_object, TEST1_Type,
                                   TEST_ref, TEST1_Type);
-      lDescr *dst1 = nullptr;
-      lDescr *dst2 = nullptr;
-      lDescr *dst3 = nullptr;
+      const lDescr *dst1 = nullptr;
+      const lDescr *dst2 = nullptr;
+      const lDescr *dst3 = nullptr;
       lReduceDescr(&dst1, TEST_Type, what1);
       lReduceDescr(&dst2, TEST_Type, what2);
       lReduceDescr(&dst3, TEST_Type, what3);
@@ -318,9 +319,9 @@ int main(int /*argc*/, char * /*argv*/[]) {
       lFreeWhat(&what1);
       lFreeWhat(&what2);
       lFreeWhat(&what3);
-      sge_free(&dst1);
-      sge_free(&dst2);
-      sge_free(&dst3);
+      ocs_cull_descr_release(&dst1);
+      ocs_cull_descr_release(&dst2);
+      ocs_cull_descr_release(&dst3);
    }
 
    // --- lCopyWhat ---

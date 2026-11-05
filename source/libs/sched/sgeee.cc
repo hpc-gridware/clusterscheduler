@@ -69,6 +69,7 @@
 #include "uti/sge_time.h"
 #include "uti/sge_stdlib.h"
 #include "uti/sge_unistd.h"
+#include "cull/ocs_cull_descr.h"
 
 #include "sgeobj/ocs_ShareTree.h"
 #include "sgeobj/ocs_Usage.h"
@@ -3215,10 +3216,12 @@ void sge_build_sgeee_orders(scheduler_all_data_t *lists, lList *running_jobs, lL
 
       if (sconf_is()) {
          lListElem *node = nullptr;
-         const lDescr schedConfDesc[] = {
+         static constexpr lDescr schedConfDesc_entries[] = {
                             {SC_weight_tickets_override, lUlongT  | CULL_IS_REDUCED},
                             {NoName, lEndT  | CULL_IS_REDUCED}
                            };
+         // interned once and never released, so every use only takes a reference
+         static const lDescr *const schedConfDesc = ocs_cull_descr_intern(schedConfDesc_entries);
 
          node = lCreateElem(schedConfDesc);
          up_list = lCreateList("sched_conf_update", schedConfDesc);
