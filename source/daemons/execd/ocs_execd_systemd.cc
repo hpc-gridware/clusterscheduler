@@ -448,6 +448,48 @@ namespace ocs::execd {
       DRETURN_VOID;
    }
 
+   /*!
+    * @brief Check if the OOM killer ended a job scope.
+    *
+    * With OOMPolicy=kill systemd stops the job scope when the OOM killer has killed one of its
+    * processes, and keeps the scope loaded in the failed state with Result=oom-kill.
+    * A scope which ended in another way has a different Result, or it is gone already.
+    *
+    * Must be called after the job (or pe task) has ended and before its failed scope is reset.
+    *
+    * @param scope The name of the job scope, e.g. ocs8012.25.scope, may be nullptr.
+    * @return true if the job scope ended with Result=oom-kill, false otherwise or on error.
+    */
+   bool
+   execd_scope_was_oom_killed(const char *scope) {
+      DENTER(TOP_LAYER);
+
+      bool ret = false;
+      if (scope != nullptr && execd_use_systemd()) {
+         ocs::uti::Systemd systemd;
+         DSTRING_STATIC(err_dstr, MAX_STRING_SIZE);
+         // connect as the start user, as the other systemd call sites do
+         sge_switch2start_user();
+         bool connected = systemd.connect(&err_dstr, systemd_call_timeout());
+         sge_switch2admin_user();
+         if (connected) {
+            std::string result;
+            if (systemd.sd_bus_get_property("Scope", scope, "Result", result, &err_dstr)) {
+               DPRINTF("Result of job scope %s is %s\n", scope, result.c_str());
+               ret = result == "oom-kill";
+            } else {
+               // a scope which ended successfully is usually gone already
+               DPRINTF("cannot get the Result of job scope %s: %s\n", scope,
+                       sge_dstring_get_string(&err_dstr));
+            }
+         } else {
+            WARNING(SFNMAX, sge_dstring_get_string(&err_dstr));
+         }
+      }
+
+      DRETURN(ret);
+   }
+
 #endif
    /*!
     * @brief Check if execd should use Systemd.

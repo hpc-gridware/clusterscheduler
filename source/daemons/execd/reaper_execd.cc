@@ -97,6 +97,7 @@
 #include "msg_daemons_common.h"
 #include "msg_execd.h"
 #include "sge_io.h"
+#include "ocs_execd_systemd.h"
 
 #if defined(BINDING_SOLARIS)
 #  include "uti/sge_uidgid.h"
@@ -289,6 +290,24 @@ int sge_reap_children_execd(int max_count, bool is_qmaster_down)
          }
 
          clean_up_job(jr, failed, exit_status, job_is_array(jep), jatep, lGetString(jep, JB_owner));
+
+#if defined(OCS_WITH_SYSTEMD)
+         // When the OOM killer ended the job scope, report it as the one who deleted the job.
+         // It is the actual cause, even if sge_execd killed the job for exceeding a limit as well.
+         {
+            const char *scope = petep != nullptr ? lGetString(petep, PET_systemd_scope)
+                                                 : lGetString(jatep, JAT_systemd_scope);
+            if (ocs::execd::execd_scope_was_oom_killed(scope)) {
+               DSTRING_STATIC(dstr, MAX_STRING_SIZE);
+               sge_dstring_sprintf(&dstr, "oom-killer@%s", component_get_qualified_hostname());
+               lSetString(jr, JR_deleted_by, sge_dstring_get_string(&dstr));
+               DSTRING_STATIC(id_dstr, MAX_STRING_SIZE);
+               const char *pe_task_id = petep != nullptr ? lGetString(petep, PET_id) : nullptr;
+               WARNING(MSG_EXECD_OOMKILLED_SS,
+                       job_get_id_string(jobid, jataskid, pe_task_id, &id_dstr), scope);
+            }
+         }
+#endif
 
          /* set JR_delay_report true if the job is a JAPI/DRMAA job ... 
           * -sync/DRMAA jobs have unique session key, qsub jobs have JAPI_SSK

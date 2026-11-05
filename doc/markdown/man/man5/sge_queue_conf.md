@@ -657,9 +657,10 @@ lower of *s_rss* and *s_vmem* as its *MemoryHigh*. When the job reaches *MemoryM
 reclaim enough memory, also not by swapping it out, the memory cgroup OOM killer kills a process of the job. On a
 host with cgroup v2 and systemd 252 or newer, xxqs_name_sxx_shepherd(8) sets *OOMPolicy=kill* on the job's
 scope, so that the OOM killer kills all processes of the job at once. The job then ends as killed by SIGKILL:
-the accounting record shows the exit status 137 and failed 100, and the abort mail is sent if the job requested
-it (see the *-m* option of qsub(1)). On older systems the OOM killer kills only single processes, and the job
-keeps running; how it ends depends on how it handles the loss of these processes.
+the accounting record shows the exit status 137, failed 100 and *deleted_by* `oom-killer@<host>` (see
+xxqs_name_sxx_accounting(5)), xxqs_name_sxx_execd(8) logs the OOM kill in its messages file, and the abort mail is
+sent if the job requested it (see the *-m* option of qsub(1)). On older systems the OOM killer kills only single
+processes, and the job keeps running; how it ends depends on how it handles the loss of these processes.
 
 For a parallel job, the resource limits of the queue are limits per slot, and they apply to each
 task of the job separately. A task gets either the limit of a single slot, or the limit multiplied
