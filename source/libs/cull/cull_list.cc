@@ -69,6 +69,7 @@
 #include "cull/pack.h"
 #include "cull/cull_pack.h"
 #include "cull/cull_observe.h"
+#include "cull/ocs_cull_descr.h"
 
 #ifdef OBSERVE
 #  include "cull/cull_observe.h"
@@ -773,25 +774,38 @@ lListElem *lCreateElem(const lDescr *dp) {
    ep->next = nullptr;
    ep->prev = nullptr;
 
-   ep->descr = (lDescr *) sge_malloc(sizeof(lDescr) * (n + 1));
+   /* every field inherits the reduced flag of the type; a descriptor that does
+    * not carry it in every field yet is normalised in a temporary copy */
+   lDescr *normalised = nullptr;
+   if ((dp->mt & CULL_IS_REDUCED) != 0) {
+      for (i = 0; i <= n; i++) {
+         if ((dp[i].mt & CULL_IS_REDUCED) == 0) {
+            normalised = (lDescr *) sge_malloc(sizeof(lDescr) * (n + 1));
+            if (normalised == nullptr) {
+               LERROR(LEMALLOC);
+               sge_free(&ep);
+               DRETURN(nullptr);
+            }
+            memcpy(normalised, dp, sizeof(lDescr) * (n + 1));
+            for (int j = 0; j <= n; j++) {
+               normalised[j].mt |= CULL_IS_REDUCED;
+            }
+            break;
+         }
+      }
+   }
+   ep->descr = ocs_cull_descr_acquire(normalised != nullptr ? normalised : dp);
+   sge_free(&normalised);
    if (!ep->descr) {
       LERROR(LEMALLOC);
       sge_free(&ep);
       DRETURN(nullptr);
    }
-   memcpy(ep->descr, dp, sizeof(lDescr) * (n + 1));
-   CULL_STATS_TYPE(dp->nm, DCOPY_ELEM, 1);
-   CULL_STATS_TYPE(dp->nm, DCOPY_ELEM_B, sizeof(lDescr) * (n + 1));
-
-   /* every field inherits the reduced flag of the type */
-   for (i = 0; i <= n; i++) {
-      ep->descr[i].mt |= (dp->mt & CULL_IS_REDUCED);
-   }
 
    elem_set_free(ep);
    if (!(ep->cont = (lMultiType *) calloc(1, sizeof(lMultiType) * n))) {
       LERROR(LEMALLOC);
-      sge_free(&(ep->descr));
+      ocs_cull_descr_release(&(ep->descr));
       sge_free(&ep);
       DRETURN(nullptr);
    }
@@ -837,7 +851,6 @@ lList *lCreateListHash(const char *listname, const lDescr *descr, bool hash) {
    DENTER(CULL_LAYER);
 
    lList *lp;
-   int i, n;
 
    if (listname == nullptr) {
       listname = "No list name specified";
@@ -859,33 +872,19 @@ lList *lCreateListHash(const char *listname, const lDescr *descr, bool hash) {
    }
 
    lp->nelem = 0;
-   if ((n = lCountDescr(descr)) <= 0) {
-      sge_free(&(lp->listname));
-      sge_free(&lp);
-      LERROR(LECOUNTDESCR);
-      DRETURN(nullptr);
-   }
-
    lp->first = nullptr;
    lp->last = nullptr;
-   if (!(lp->descr = (lDescr *) sge_malloc(sizeof(lDescr) * (n + 1)))) {
+   /* the list holds a reference on the shared descriptor instead of a copy */
+   if (!(lp->descr = ocs_cull_descr_acquire(descr))) {
       sge_free(&(lp->listname));
       sge_free(&lp);
       LERROR(LEMALLOC);
       DRETURN(nullptr);
    }
-   CULL_STATS_TYPE(descr->nm, DCOPY_LIST, 1);
-   CULL_STATS_TYPE(descr->nm, DCOPY_LIST_B, sizeof(lDescr) * (n + 1));
-   /* copy descriptor array */
-   for (i = 0; i <= n; i++) {
-      lp->descr[i].mt = descr[i].mt;
-      lp->descr[i].nm = descr[i].nm;
-      lp->descr[i].mt |= (descr[i].mt & CULL_IS_REDUCED);
-   }
 
    /* the hash tables belong to the list: one slot per hashed field if it may be hashed */
    if (!cull_hash_init_slots(lp, hash)) {
-      sge_free(&(lp->descr));
+      ocs_cull_descr_release(&(lp->descr));
       sge_free(&(lp->listname));
       sge_free(&lp);
       LERROR(LEMALLOC);
@@ -1007,9 +1006,9 @@ void lFreeElem(lListElem **ep1) {
       }
    }
 
-   /* lFreeElem is not responsible for list descriptor array */
+   /* a bound element borrows the descriptor of its list; the others hold a reference */
    if (elem_kind(ep) == FREE_ELEM || elem_kind(ep) == OBJECT_ELEM) {
-      sge_free(&(ep->descr));
+      ocs_cull_descr_release(&(ep->descr));
    }
 
    if (ep->cont != nullptr) {
@@ -1054,9 +1053,7 @@ void lFreeList(lList **lp) {
 
    cull_hash_free_slots(*lp);
 
-   if ((*lp)->descr) {
-      sge_free(&((*lp)->descr));
-   }
+   ocs_cull_descr_release(&((*lp)->descr));
 
    if ((*lp)->listname) {
       sge_free(&((*lp)->listname));
@@ -1419,8 +1416,9 @@ int lInsertElem(lList *lp, lListElem *ep, lListElem *new_ep) {
       lp->first = new_ep;
    }
 
+   /* the element gives its reference up and borrows the descriptor of the list */
    if (elem_kind(new_ep) == FREE_ELEM) {
-      sge_free(&(new_ep->descr));
+      ocs_cull_descr_release(&(new_ep->descr));
    }
    elem_set_bound(new_ep, lp);
    new_ep->descr = lp->descr;
@@ -1476,8 +1474,9 @@ int lAppendElem(lList *lp, lListElem *ep) {
       ep->prev = ep->next = nullptr;
    }
 
+   /* the element gives its reference up and borrows the descriptor of the list */
    if (elem_kind(ep) == FREE_ELEM) {
-      sge_free(&(ep->descr));
+      ocs_cull_descr_release(&(ep->descr));
    }
    elem_set_bound(ep, lp);
    ep->descr = lp->descr;
@@ -1515,7 +1514,8 @@ int lRemoveElem(lList *lp, lListElem **ep1) {
 
    ep = *ep1;
 
-   if (lp->descr != ep->descr) {
+   /* descriptors are shared between lists, so only the owner tells the list of an element */
+   if (elem_list(ep) != lp) {
       CRITICAL("Removing element from other list !!!\n");
       ocs::TerminationManager::trigger_abort();
    }
@@ -1580,7 +1580,8 @@ lDechainList(lList *source, lList **target, lListElem *ep) {
       DRETURN_VOID;
    }
 
-   if (source->descr != ep->descr) {
+   /* descriptors are shared between lists, so only the owner tells the list of an element */
+   if (elem_list(ep) != source) {
       CRITICAL("Dechaining element from other list !!!\n");
       ocs::TerminationManager::trigger_abort();
    }
@@ -1657,7 +1658,8 @@ lListElem *lDechainElem(lList *lp, lListElem *ep) {
       LERROR(LEELEMNULL);
       DRETURN(nullptr);
    }
-   if (lp->descr != ep->descr) {
+   /* descriptors are shared between lists, so only the owner tells the list of an element */
+   if (elem_list(ep) != lp) {
       CRITICAL("Dechaining element from other list !!!");
       ocs::TerminationManager::trigger_abort();
    }
@@ -1687,7 +1689,8 @@ lListElem *lDechainElem(lList *lp, lListElem *ep) {
 
    /* nullptr the ep next and previous pointers */
    ep->prev = ep->next = (lListElem *) nullptr;
-   ep->descr = lCopyDescr(ep->descr);
+   /* a free element holds a reference of its own */
+   ep->descr = ocs_cull_descr_ref(ep->descr);
    elem_set_free(ep);
 
 #ifdef OBSERVE

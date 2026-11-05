@@ -24,6 +24,8 @@
 
 #include <cstddef>
 #include <cstring>
+#include <atomic>
+#include <memory>
 #include <mutex>
 #include <new>
 #include <unordered_map>
@@ -33,6 +35,7 @@
 #include "uti/sge_stdlib.h"
 
 #include "cull/cull_list.h"
+#include "cull/cull_state.h"
 #include "cull/msg_cull.h"
 #include "cull/ocs_cull_descr.h"
 
@@ -159,6 +162,67 @@ namespace {
       return false;
    }
 
+   /// the static block of each type of a name space, by the field number of its first field
+   using StaticIndex = std::unordered_map<int, const lDescr *>;
+
+   /** @brief Immutable {name space, index} pair, published as one unit */
+   struct StaticCacheEntry {
+      const lNameSpace *ns;   ///< the name space this entry resolves
+      const StaticIndex *idx; ///< its build-once index
+   };
+
+   std::mutex static_index_mtx;                                                       ///< guards static_index_map during a build
+   std::unordered_map<const lNameSpace *, std::unique_ptr<const StaticIndex>> static_index_map; ///< per name space indices
+   std::atomic<const StaticCacheEntry *> static_last{nullptr};                        ///< last used pair, lock-free fast path
+
+   /**
+    * @brief The build-once index of the static blocks of a name space
+    *
+    * Built like the name index of cull_name.cc: the mutex is taken only on the
+    * first lookup for a name space, later lookups read one atomic pointer to an
+    * immutable pair. A replaced pair is leaked on purpose, at most one per name
+    * space, because a concurrent reader may still use it.
+    *
+    * @param ns the name space
+    * @return its index
+    */
+   const StaticIndex *static_index(const lNameSpace *ns) {
+      if (const StaticCacheEntry *cached = static_last.load(std::memory_order_acquire);
+          cached != nullptr && cached->ns == ns) {
+         return cached->idx;
+      }
+      std::lock_guard<std::mutex> guard(static_index_mtx);
+      auto &slot = static_index_map[ns];
+      if (!slot) {
+         auto idx = std::make_unique<StaticIndex>();
+         for (const lNameSpace *e = ns; e->lower != 0; ++e) {
+            if (e->descr != nullptr && mt_get_type(e->descr[0].mt) != lEndT) {
+               idx->emplace(e->descr[0].nm, e->descr);
+            }
+         }
+         slot = std::move(idx);
+      }
+      const StaticIndex *idx = slot.get();
+      static_last.store(new StaticCacheEntry{ns, idx}, std::memory_order_release);
+      return idx;
+   }
+
+   /**
+    * @brief The static block of the type a descriptor starts with
+    * @param dp the entries of a descriptor
+    * @return the static block registered in the name space of the calling thread
+    *         for the type of entry 0, or nullptr if there is none
+    */
+   const lDescr *static_block_for(const lDescr *dp) {
+      const lNameSpace *ns = cull_state_get_name_space();
+      if (ns == nullptr) {
+         return nullptr;
+      }
+      const StaticIndex *idx = static_index(ns);
+      auto it = idx->find(dp[0].nm);
+      return it == idx->end() ? nullptr : it->second;
+   }
+
 } // namespace
 
 /**
@@ -233,6 +297,55 @@ const lDescr *ocs_cull_descr_intern(const lDescr *dp) {
    // log outside the lock; the copy stays private
    WARNING(MSG_CULL_DESCR_SOFTCAPREACHED_U, static_cast<uint32_t>(cap));
    DRETURN(entries_of(fresh));
+}
+
+/**
+ * @brief The descriptor a list or an element holds, with a reference for the caller
+ *
+ * A counted descriptor gets one more reference. A full descriptor yields the
+ * static block of its type, also when it is an equal copy of it; the static
+ * block is found through the name space of the calling thread. Any other
+ * descriptor is interned. The argument is left to the caller.
+ *
+ * @param dp the entries of the descriptor, terminated by #lEndT
+ * @return the descriptor to hold, or nullptr if dp is nullptr or memory is exhausted
+ */
+const lDescr *ocs_cull_descr_acquire(const lDescr *dp) {
+   if (dp == nullptr) {
+      return nullptr;
+   }
+   if (ocs_cull_descr_is_counted(dp)) {
+      return ocs_cull_descr_ref(dp);
+   }
+   const lDescr *block = static_block_for(dp);
+   if (block == dp) {
+      return dp;
+   }
+   if (block != nullptr) {
+      const uint32_t n = count_entries(dp);
+      if (count_entries(block) == n && same_entries(block, dp, n)) {
+         return block;
+      }
+   }
+   return ocs_cull_descr_intern(dp);
+}
+
+/**
+ * @brief A private counted copy of a descriptor, which the caller may still modify
+ *
+ * The copy is not registered, so no lookup finds it, and it holds one
+ * reference for the caller. It is released with ocs_cull_descr_release().
+ *
+ * @param dp the entries of the descriptor, terminated by #lEndT
+ * @return the copy, or nullptr if dp is nullptr or memory is exhausted
+ */
+const lDescr *ocs_cull_descr_private(const lDescr *dp) {
+   if (dp == nullptr) {
+      return nullptr;
+   }
+   const uint32_t n = count_entries(dp);
+   cull_descr_header *h = alloc_counted(dp, n, ocs_cull_descr_hash(dp, n));
+   return h == nullptr ? nullptr : entries_of(h);
 }
 
 /**

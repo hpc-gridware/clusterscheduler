@@ -1815,10 +1815,10 @@ object_has_differences(const lListElem *this_elem, lList **answer_list, const lL
    bool ret = false;
 
    if (this_elem != nullptr && old_elem != nullptr) {
-      lDescr *this_elem_descr = this_elem->descr;
-      lDescr *old_elem_descr = old_elem->descr;
-      lDescr *tmp_decr1;
-      lDescr *tmp_decr2;
+      const lDescr *this_elem_descr = this_elem->descr;
+      const lDescr *old_elem_descr = old_elem->descr;
+      const lDescr *tmp_decr1;
+      const lDescr *tmp_decr2;
 
       /*
        * Compare each attribute of the given elements

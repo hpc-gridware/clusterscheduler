@@ -62,6 +62,7 @@
 #include "cull/cull_whatP.h"
 #include "cull/cull_whereP.h"
 #include "cull/cull_pack.h"
+#include "cull/ocs_cull_descr.h"
 #include "cull/cull_parse.h"
 
 #ifdef OBSERVE
@@ -328,7 +329,8 @@ static int cull_unpack_descr(
          sge_free(&dp);
          DRETURN(ret);
       }
-      dp[i].mt = temp;
+      // a sender never packs the process local reference count flag; clear it anyway
+      dp[i].mt = temp & ~CULL_DESCR_INTERNED;
    }
    CULL_STATS_TYPE(dp[0].nm, DCOPY_UNPACK, 1);
    CULL_STATS_TYPE(dp[0].nm, DCOPY_UNPACK_B, sizeof(lDescr) * (n + 1));
@@ -440,7 +442,8 @@ int cull_pack_descr(sge_pack_buffer *pb, const lDescr *dp) {
       if ((ret = packint(pb, dp[i].nm))) {
          DRETURN(ret);
       }
-      if ((ret = packint(pb, dp[i].mt))) {
+      // the reference count flag is process local and never leaves the process
+      if ((ret = packint(pb, dp[i].mt & ~CULL_DESCR_INTERNED))) {
          DRETURN(ret);
       }
    }
@@ -483,7 +486,7 @@ cull_pack_enum_as_descr(sge_pack_buffer *pb, const lEnumeration *what,
                PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
                DRETURN(ret);
             }
-            if ((ret = packint(pb, descr[i].mt))) {
+            if ((ret = packint(pb, descr[i].mt & ~CULL_DESCR_INTERNED))) {
                PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
                DRETURN(ret);
             }
@@ -498,7 +501,7 @@ cull_pack_enum_as_descr(sge_pack_buffer *pb, const lEnumeration *what,
                PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
                DRETURN(ret);
             }
-            if ((ret = packint(pb, what[i].mt))) {
+            if ((ret = packint(pb, what[i].mt & ~CULL_DESCR_INTERNED))) {
                PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
                DRETURN(ret);
             }
@@ -792,10 +795,19 @@ int cull_unpack_elem_partial(sge_pack_buffer *pb, lListElem **epp, const lDescr 
    }
 
    if (elem_kind(ep) == FREE_ELEM) {
-      if ((ret = cull_unpack_descr(pb, &(ep->descr))) != PACK_SUCCESS) {
+      /* a free element holds the shared descriptor equal to the one on the wire */
+      lDescr *wire_descr = nullptr;
+      if ((ret = cull_unpack_descr(pb, &wire_descr)) != PACK_SUCCESS) {
          sge_free(&ep);
          PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
          DRETURN(ret);
+      }
+      ep->descr = ocs_cull_descr_acquire(wire_descr);
+      sge_free(&wire_descr);
+      if (ep->descr == nullptr) {
+         sge_free(&ep);
+         PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
+         DRETURN(PACK_ENOMEM);
       }
 
       /*
@@ -816,8 +828,8 @@ int cull_unpack_elem_partial(sge_pack_buffer *pb, lListElem **epp, const lDescr 
        * in sgeobj header file and not cull.
        */
       if (dp != nullptr && dp[0].nm == 50) {
-         sge_free(&(ep->descr));
-         if ((ep->descr = lCopyDescr((lDescr *) dp)) == nullptr) {
+         ocs_cull_descr_release(&(ep->descr));
+         if ((ep->descr = ocs_cull_descr_acquire(dp)) == nullptr) {
             sge_free(&ep);
             PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
             DRETURN(PACK_BADARG);
@@ -828,7 +840,7 @@ int cull_unpack_elem_partial(sge_pack_buffer *pb, lListElem **epp, const lDescr 
          if it is not a free element we need 
          a descriptor from outside 
        */
-      if ((ep->descr = (lDescr *) dp) == nullptr) {
+      if ((ep->descr = dp) == nullptr) {
          sge_free(&ep);
          PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
          DRETURN(PACK_BADARG);
@@ -843,7 +855,7 @@ int cull_unpack_elem_partial(sge_pack_buffer *pb, lListElem **epp, const lDescr 
 
    if ((ret = cull_unpack_cont(pb, &(ep->cont), ep->descr, flags))) {
       if (elem_kind(ep) == FREE_ELEM || elem_kind(ep) == OBJECT_ELEM) {
-         sge_free(&(ep->descr));
+         ocs_cull_descr_release(&(ep->descr));
       }
       sge_free(&ep);
       PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
@@ -1054,11 +1066,19 @@ int cull_unpack_list_partial(sge_pack_buffer *pb, lList **lpp, int flags) {
       DRETURN(ret);
    }
 
-   /* unpack descriptor */
-   if ((ret = cull_unpack_descr(pb, &(lp->descr))) != PACK_SUCCESS) {
+   /* unpack descriptor; the list holds the shared descriptor equal to it */
+   lDescr *wire_descr = nullptr;
+   if ((ret = cull_unpack_descr(pb, &wire_descr)) != PACK_SUCCESS) {
       lFreeList(&lp);
       PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
       DRETURN(ret);
+   }
+   lp->descr = ocs_cull_descr_acquire(wire_descr);
+   sge_free(&wire_descr);
+   if (lp->descr == nullptr) {
+      lFreeList(&lp);
+      PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
+      DRETURN(PACK_ENOMEM);
    }
 
    /* one hash slot per hashed field; a table is built by the first lookup on its field */
@@ -1153,6 +1173,17 @@ static int cull_unpack_object(
       DRETURN(ret);
    }
 
+   /* a sub-object holds a reference of its own instead of the unpacked descriptor it borrowed */
+   if (ep->descr == descr) {
+      ep->descr = ocs_cull_descr_acquire(descr);
+      if (ep->descr == nullptr) {
+         ep->descr = descr;
+         lFreeElem(&ep);
+         sge_free(&descr);
+         DRETURN(PACK_ENOMEM);
+      }
+   }
+   sge_free(&descr);
    elem_set_object(ep);
 
 #ifdef OBSERVE

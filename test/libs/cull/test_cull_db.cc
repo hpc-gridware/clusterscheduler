@@ -387,6 +387,7 @@ static void test_select() {
          nelem(src) == 3 && nelem(rest) == 2 && lGetElemStr(rest, TEST_key, "x1") != nullptr);
    CHECK(30, "lSplit: both lists consistent", hashes_consistent(src) && hashes_consistent(rest) &&
          back_links_consistent(src) && back_links_consistent(rest));
+   lFreeList(&rest);
 
    // T31: lSplit without a target list frees the non-matching elements
    lFreeList(&src);

@@ -104,7 +104,7 @@ struct _lListElem {
    lListElem *next;   ///< next element, or nullptr at the end of the list
    lListElem *prev;   ///< previous element, or nullptr at the head
    uintptr_t owner;   ///< two parts in one word: the state in the two low bits, the list of a bound element in the upper bits (see @ref cull_elem_status)
-   lDescr *descr;     ///< the object type, as an array of field descriptors
+   const lDescr *descr; ///< the object type, shared: a static block or a counted descriptor (see ocs_cull_descr.h)
    lMultiType *cont;  ///< the field values, indexed the same way as descr
 };
 
@@ -157,7 +157,7 @@ struct _lList {
    uint32_t nelem;      ///< number of elements currently in the list
    uint32_t nslots;     ///< number of hashed fields of the type, 0 if the list is never hashed
    char *listname;      ///< name of the list, used in dumps and error messages
-   lDescr *descr;       ///< the object type every element has
+   const lDescr *descr; ///< the object type every element has; one reference, see ocs_cull_descr.h
    lListElem *first;    ///< first element, or nullptr when the list is empty
    lListElem *last;     ///< last element, or nullptr when the list is empty
    /// nslots hash slots, or nullptr until the first table build; atomic and

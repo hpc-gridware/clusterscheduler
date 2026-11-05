@@ -259,6 +259,8 @@ lDescr *lCopyDescr(const lDescr *dp) {
       goto error;
    }
    memcpy(new_descr, dp, sizeof(lDescr) * (i + 1));
+   // a plain copy has no header, so it must not carry the reference count flag of a shared source
+   new_descr[0].mt &= ~CULL_DESCR_INTERNED;
    CULL_STATS_TYPE(dp->nm, DCOPY_OTHER, 1);
    CULL_STATS_TYPE(dp->nm, DCOPY_OTHER_B, sizeof(lDescr) * (i + 1));
 

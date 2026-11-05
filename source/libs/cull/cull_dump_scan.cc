@@ -735,7 +735,7 @@ lList *lUndumpList(FILE *fp, const char *name, const lDescr *dp) {
    for (j = 0; fdp[j].nm != NoName; j++) {
       for (i = 0; i < n; i++) {
          if (dp[i].nm == fdp[j].nm &&
-             dp[i].mt == fdp[j].mt) {
+             (dp[i].mt & ~CULL_DESCR_INTERNED) == fdp[j].mt) {
             if (found[i] != -1)
                     DPRINTF(("lUndumpList: field %s found twice\n",
                             lNm2Str(dp[i].nm)));

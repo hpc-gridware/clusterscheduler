@@ -28,12 +28,16 @@
  * LISTDEF/LISTEND are checked as well: their header and that reference
  * operations leave them alone.
  *
+ * Since M3-3 the lists and elements of the library hold shared descriptors;
+ * DESCR-05 to DESCR-08 check that through the list API.
+ *
  * DESCR-03 is meant to be run under the thread and the address sanitizer as well.
  */
 
 #include <atomic>
 #include <cstdint>
 #include <cstring>
+#include <string>
 #include <thread>
 #include <vector>
 
@@ -41,6 +45,8 @@
 #define __SGE_GDI_LIBRARY_HOME_OBJECT_FILE__
 
 #include "cull/cull.h"
+#include "cull/cull_hash.h"
+#include "cull/cull_listP.h"
 #include "cull/ocs_cull_descr.h"
 
 #include "uti/sge_stdlib.h"
@@ -258,6 +264,174 @@ static void test_soft_cap() {
    ocs_cull_descr_set_soft_cap(prev);
 }
 
+/**
+ * @brief A list of n elements of TD_Type with ids 0 .. n-1 and names "n<id>"
+ * @param n the number of elements
+ * @return the list
+ */
+static lList *make_list(const int n) {
+   lList *lp = lCreateList("descr", TD_Type);
+   for (int i = 0; i < n; i++) {
+      lListElem *ep = lAddElemUlong(&lp, TD_id, i, TD_Type);
+      lSetString(ep, TD_name, ("n" + std::to_string(i)).c_str());
+      lSetUlong(ep, TD_value, 2 * i);
+   }
+   return lp;
+}
+
+/**
+ * @brief Pack a list and unpack it again, as a receiver does
+ * @param lp the list
+ * @return the unpacked list, or nullptr on an error
+ */
+static lList *pack_unpack(const lList *lp) {
+   lList *result = nullptr;
+   sge_pack_buffer pb;
+   if (init_packbuffer(&pb, 1024, false, false) != PACK_SUCCESS) {
+      return nullptr;
+   }
+   if (cull_pack_list(&pb, lp) == PACK_SUCCESS) {
+      char *buf = sge_malloc(pb.bytes_used);
+      memcpy(buf, pb.head_ptr, pb.bytes_used);
+      sge_pack_buffer in;
+      if (init_packbuffer_from_buffer(&in, buf, pb.bytes_used, false) == PACK_SUCCESS) {
+         cull_unpack_list(&in, &result);
+      }
+      clear_packbuffer(&in);
+   }
+   clear_packbuffer(&pb);
+   return result;
+}
+
+/**
+ * @brief Whether every element of a list borrows the descriptor of the list
+ * @param lp the list
+ * @return true if all elements point at the descriptor of the list
+ */
+static bool elements_borrow(const lList *lp) {
+   for_each_ep_lv(ep, lp) {
+      if (ep->descr != lp->descr) {
+         return false;
+      }
+   }
+   return true;
+}
+
+/** @brief DESCR-05: full descriptors are the static block */
+static void test_full_static() {
+   const size_t base = ocs_cull_descr_registry_size();
+   lList *lp = make_list(4);
+   lListElem *free_ep = lCreateElem(TD_Type);
+   lDescr *heap = heap_copy(TD_Type);
+   lList *from_copy = lCreateList("from copy", heap);
+   sge_free(&heap);
+   lList *copied = lCopyList("copied", lp);
+   lList *unpacked = pack_unpack(lp);
+   lListElem *dechained = lDechainElem(lp, lFirstRW(lp));
+
+   CHECK(17, "created, copied, unpacked lists and free elements of a full type use its static block",
+         lp->descr == TD_Type && free_ep->descr == TD_Type && from_copy->descr == TD_Type &&
+         copied->descr == TD_Type && unpacked != nullptr && unpacked->descr == TD_Type &&
+         dechained->descr == TD_Type);
+   CHECK(18, "bound elements borrow the static block and nothing is registered",
+         elements_borrow(lp) && elements_borrow(copied) && elements_borrow(unpacked) &&
+         ocs_cull_descr_registry_size() == base);
+
+   lFreeElem(&dechained);
+   lFreeElem(&free_ep);
+   lFreeList(&unpacked);
+   lFreeList(&copied);
+   lFreeList(&from_copy);
+   lFreeList(&lp);
+}
+
+/** @brief DESCR-06: equal reductions share one descriptor across builders */
+static void test_reduced_shared() {
+   const size_t base = ocs_cull_descr_registry_size();
+   lList *lp = make_list(8);
+   lEnumeration *what1 = lWhat("%T(%I %I)", TD_Type, TD_id, TD_name);
+   lEnumeration *what2 = lWhat("%T(%I %I)", TD_Type, TD_id, TD_name);
+   lList *sel1 = lSelect("sel1", lp, nullptr, what1);
+   lList *sel2 = lSelect("sel2", lp, nullptr, what2);
+   lList *unpacked = pack_unpack(sel1);
+   lListElem *ep = lCreateElem(lGetListDescr(sel1));
+   lEnumeration *what3 = lWhat("%T(%I %I)", TD_Type, TD_id, TD_value);
+   lList *other = lSelect("other", lp, nullptr, what3);
+
+   CHECK(19, "lists selected with two equal field selections share one counted descriptor",
+         sel1 != nullptr && sel2 != nullptr && sel1->descr == sel2->descr && ocs_cull_descr_is_counted(sel1->descr) &&
+         elements_borrow(sel1) && elements_borrow(sel2));
+   CHECK(20, "the unpacked list and a free element of that reduction share it as well",
+         unpacked != nullptr && unpacked->descr == sel1->descr && ep->descr == sel1->descr &&
+         ocs_cull_descr_refs(sel1->descr) == 4);
+   CHECK(21, "a different reduction gets a descriptor of its own",
+         other != nullptr && other->descr != sel1->descr && ocs_cull_descr_registry_size() == base + 2);
+
+   lFreeList(&other);
+   lFreeElem(&ep);
+   lFreeList(&unpacked);
+   lFreeList(&sel2);
+   lFreeList(&sel1);
+   lFreeWhat(&what3);
+   lFreeWhat(&what2);
+   lFreeWhat(&what1);
+   lFreeList(&lp);
+   CHECK(22, "freeing the lists and elements of the reductions empties the registry",
+         ocs_cull_descr_registry_size() == base);
+}
+
+/** @brief DESCR-07: users of a reduced descriptor in all orders */
+static void test_users_release() {
+   const size_t base = ocs_cull_descr_registry_size();
+   lList *lp = make_list(6);
+   lEnumeration *what = lWhat("%T(%I %I)", TD_Type, TD_id, TD_value);
+   lList *sel = lSelect("sel", lp, nullptr, what);
+   const lDescr *dp = lGetListDescr(sel);
+
+   // a dechained element takes a reference, an appended one gives it up
+   lListElem *ep = lDechainElem(sel, lFirstRW(sel));
+   const bool after_dechain = ocs_cull_descr_refs(dp) == 2 && ep->descr == dp;
+   lList *second = lCreateList("second", dp);
+   lAppendElem(second, ep);
+   const bool after_append = ocs_cull_descr_refs(dp) == 2 && ep->descr == second->descr;
+   ep = lDechainElem(second, lFirstRW(second));
+   lFreeList(&sel);
+   const bool after_list_freed = ocs_cull_descr_refs(dp) == 2 && ocs_cull_descr_registry_size() == base + 1;
+   lFreeList(&second);
+   const bool after_second_freed = ocs_cull_descr_refs(dp) == 1;
+   CHECK(23, "lists hold one reference each, free elements one, bound elements none",
+         after_dechain && after_append && after_list_freed && after_second_freed);
+   lFreeElem(&ep);
+   CHECK(24, "the last user frees the descriptor", ocs_cull_descr_registry_size() == base);
+
+   lFreeWhat(&what);
+   lFreeList(&lp);
+}
+
+/** @brief DESCR-08: a hash added to one list does not change other lists */
+static void test_hash_new() {
+   const size_t base = ocs_cull_descr_registry_size();
+   lList *a = make_list(4 * OCS_CULL_HASH_MIN_ELEMS);
+   lList *b = make_list(4);
+   const int static_mt = TD_Type[1].mt;
+   const int ok = cull_hash_new(a, TD_name, false);
+
+   CHECK(25, "the list gets a private counted copy with the hash flag, its elements follow it",
+         ok == 1 && a->descr != TD_Type && ocs_cull_descr_is_counted(a->descr) && mt_do_hashing(a->descr[1].mt) &&
+         elements_borrow(a) && ocs_cull_descr_registry_size() == base);
+   CHECK(26, "the static block and the other list are unchanged",
+         TD_Type[1].mt == static_mt && !mt_do_hashing(TD_Type[1].mt) && b->descr == TD_Type);
+   const lListElem *found = lGetElemStr(a, TD_name, "n7");
+   lListElem *ep = lDechainElem(a, lFirstRW(a));
+   CHECK(27, "the added hash answers lookups, and a dechained element keeps the copy",
+         found != nullptr && lGetUlong(found, TD_id) == 7 && list_hash_table(a, 1) != nullptr &&
+         ep->descr == a->descr && ocs_cull_descr_refs(a->descr) == 2);
+
+   lFreeElem(&ep);
+   lFreeList(&b);
+   lFreeList(&a);
+}
+
 int main(int argc, char *argv[]) {
    lInit(nmv);
 
@@ -285,5 +459,28 @@ int main(int argc, char *argv[]) {
        {"lower the soft cap", "intern more distinct reductions than it allows", "release everything"},
        "the private copies are correct and unshared, registered ones stay shared, and the registry shrinks back",
        {{"SHD-06", "unit level"}}, {14, 15, 16}, test_soft_cap},
+      {"DESCR-05", "full descriptors are the static block",
+       "lists and elements of a full type use the static block of the type instead of a copy",
+       {"create, copy, unpack and dechain lists and elements of a full type", "create a list from a heap copy of it"},
+       "every descriptor is the static block, bound elements borrow it, nothing is registered",
+       {{"SHD-01", "covers"}}, {17, 18}, test_full_static},
+      {"DESCR-06", "one descriptor per reduction across builders",
+       "selected, unpacked and created lists and elements of one reduction share one descriptor",
+       {"select one reduction twice with two equal field selections", "unpack one of the results",
+        "create a free element with its descriptor", "select a different reduction", "free everything"},
+       "equal reductions share one counted descriptor with one reference per list and free element, a different one "
+       "has its own, and the registry is empty again at the end",
+       {{"SHD-02", "partly"}}, {19, 20, 21, 22}, test_reduced_shared},
+      {"DESCR-07", "users of a descriptor in all orders",
+       "lists, free and bound elements of a reduction hold and give up their references",
+       {"dechain an element", "append it to a second list", "dechain it again",
+        "free the lists before the element"},
+       "lists and free elements hold one reference each, bound ones none, and the last user frees the descriptor",
+       {{"SHD-03", "covers"}}, {23, 24}, test_users_release},
+      {"DESCR-08", "added hash stays in its list",
+       "cull_hash_new() gives the list a private copy of the descriptor instead of changing the shared one",
+       {"add a hash on a field of one list", "look it up and dechain an element"},
+       "the list and its elements hold the copy with the flag, the static block and other lists are unchanged",
+       {{"SHD-01", "partly"}}, {25, 26, 27}, test_hash_new},
    });
 }

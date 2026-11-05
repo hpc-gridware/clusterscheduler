@@ -60,6 +60,7 @@
 #include "cull/cull_multitype.h"
 #include "cull/cull_stats.h"
 #include "cull/msg_cull.h"
+#include "cull/ocs_cull_descr.h"
 
 /**
  * @defgroup cull_hash Hash tables for cull lists
@@ -1076,7 +1077,7 @@ int cull_hash_new_check(lList *lp, int nm, bool unique) {
 int cull_hash_new(lList *lp, int nm, bool unique) {
    DENTER(CULL_LAYER);
 
-   lDescr *descr;
+   const lDescr *descr;
    int pos;
 
    if (lp == nullptr) {
@@ -1127,10 +1128,22 @@ int cull_hash_new(lList *lp, int nm, bool unique) {
       lp->nslots++;
    }
 
-   /* copy hashing information */
-   descr[pos].mt |= CULL_HASH;
-   if (unique) {
-      descr[pos].mt |= CULL_UNIQUE;
+   /* The descriptor is shared with other lists, or is the static block of the
+    * type, so the hashing information goes into a private copy that only this
+    * list and its elements hold (copy on write). */
+   const int mt = descr[pos].mt | CULL_HASH | (unique ? CULL_UNIQUE : 0);
+   if (mt != descr[pos].mt) {
+      const lDescr *copy = ocs_cull_descr_private(descr);
+      if (copy == nullptr) {
+         DRETURN(0);
+      }
+      // the copy is not registered and nobody holds it yet, so it may still be written
+      const_cast<lDescr *>(copy)[pos].mt = mt;
+      for (lListElem *ep = lp->first; ep != nullptr; ep = ep->next) {
+         ep->descr = copy;
+      }
+      ocs_cull_descr_release(&(lp->descr));
+      lp->descr = copy;
    }
 
    DRETURN(1);
@@ -1148,7 +1161,7 @@ int cull_hash_new(lList *lp, int nm, bool unique) {
 void *cull_hash_key(const lListElem *ep, int pos, char *host_key) {
    void *key = nullptr;
 
-   lDescr *descr = &(ep->descr[pos]);
+   const lDescr *descr = &(ep->descr[pos]);
 
    switch (mt_get_type(descr->mt)) {
       case lUlongT:

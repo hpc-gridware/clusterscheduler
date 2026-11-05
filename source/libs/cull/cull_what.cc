@@ -240,7 +240,7 @@ lEnumeration *_lWhat(const char *fmt, const lDescr *dp,
          error_status = LENAMENOT;
          goto error;
       }
-      ep[i].mt = dp[ep[i].pos].mt;
+      ep[i].mt = dp[ep[i].pos].mt & ~CULL_DESCR_INTERNED;
       ep[i].ep = nullptr;
 
       if (scan(nullptr, &state) != FIELD) {
@@ -276,7 +276,7 @@ lEnumeration *_lWhat(const char *fmt, const lDescr *dp,
             continue;
          ep2[k].pos = i;
          ep2[k].nm = dp[i].nm;
-         ep2[k].mt = dp[i].mt;
+         ep2[k].mt = dp[i].mt & ~CULL_DESCR_INTERNED;
          ep2[k].ep = nullptr;
          k++;
       }
@@ -405,7 +405,7 @@ static lEnumeration *subscope_lWhat(cull_parse_state *state, va_list *app) {
             if (dp[i].nm == nm) {
                ep[next_id].pos = i;
                ep[next_id].nm = nm;
-               ep[next_id].mt = dp[i].mt;
+               ep[next_id].mt = dp[i].mt & ~CULL_DESCR_INTERNED;
                break;
             }
          }
