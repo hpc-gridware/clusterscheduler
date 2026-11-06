@@ -46,6 +46,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <string>
 
 #include "cull/cull_list.h"
 
@@ -73,5 +74,11 @@ const lDescr *ocs_cull_descr_static_containing(int nm, int *pos);
 uint32_t ocs_cull_descr_refs(const lDescr *dp);
 
 size_t ocs_cull_descr_registry_size();
+
+const void *ocs_cull_descr_registry_id();
+
+extern "C" const void *ocs_cull_descr_registry_seen();
+
+bool ocs_cull_descr_registry_shared(void *handle, std::string *own, std::string *seen);
 
 size_t ocs_cull_descr_set_soft_cap(size_t cap);

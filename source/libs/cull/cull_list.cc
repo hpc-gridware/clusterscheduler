@@ -2202,3 +2202,17 @@ int lUniqHost(lList *lp, int keyfield) {
  *
  * @return 1 = unique, 0 = not unique
  */
+
+/**
+ * @brief The descriptor registry the code of this object uses (N-A-22)
+ *
+ * Lives in another translation unit than the registry, so that in a loaded
+ * object holding its own copy of CULL the call goes through the dynamic linker
+ * and returns the registry the code of the object is bound to. It is exported
+ * with C linkage for dlsym().
+ *
+ * @return the identity of that registry, see ocs_cull_descr_registry_id()
+ */
+extern "C" const void *ocs_cull_descr_registry_seen() {
+   return ocs_cull_descr_registry_id();
+}

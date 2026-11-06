@@ -46,5 +46,6 @@
 #define MSG_SPOOL_LOADINGSPOOLINGMETHOD_SS   _MESSAGE(68002, _("loading spooling method " SFQ " from shared library " SFQ))
 #define MSG_SPOOL_SHLIBGETMETHODRETURNSNULL_S   _MESSAGE(68003, _("spooling shared library " SFQ " returns nullptr as spooling method"))
 #define MSG_SPOOL_SHLIBCONTAINSXWENEEDY_SSS   _MESSAGE(68004, _("spooling shared library " SFQ " contains spooling method " SFQ ", requested spooling method is " SFQ))
+#define MSG_SPOOL_SHLIBOWNDESCRREGISTRY_SSS   _MESSAGE(68005, _("spooling shared library " SFQ " uses the CULL descriptor registry of " SFQ " instead of the one of " SFQ ", not loaded"))
 
 // clang-format on

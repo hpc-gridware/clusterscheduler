@@ -54,6 +54,8 @@
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_log.h"
 
+#include "cull/ocs_cull_descr.h"
+
 #include "sgeobj/sge_answer.h"
 
 #include "spool/dynamic/msg_spoollib_dynamic.h"
@@ -110,6 +112,9 @@ spool_dynamic_get_shlib_path(const char *shlib_fullname) {
 
 /** @brief Load a spooling shared library and build its context
  *
+ * A library whose code does not use the CULL descriptor registry of this
+ * process is refused (N-A-22).
+ *
  * @param answer_list to return error messages
  * @param method      the spooling method the library must report
  * @param shlib_name  the library to load, without the platform suffix
@@ -117,7 +122,8 @@ spool_dynamic_get_shlib_path(const char *shlib_fullname) {
  *                    create-context function
  *
  * @return the new spooling context, or nullptr if the library could not be
- *         loaded, lacks the expected symbols, or implements another method
+ *         loaded, uses another descriptor registry, lacks the expected
+ *         symbols, or implements another method
  */
 lListElem *
 spool_dynamic_create_context(lList **answer_list, const char *method,
@@ -173,6 +179,17 @@ spool_dynamic_create_context(lList **answer_list, const char *method,
                               shlib_path.c_str(), dlerror());
       ok = false;
    } 
+
+   /* the library must use the descriptor registry of this process (N-A-22) */
+   if (ok) {
+      std::string own;
+      std::string seen;
+      if (!ocs_cull_descr_registry_shared(shlib_handle, &own, &seen)) {
+         answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                                 MSG_SPOOL_SHLIBOWNDESCRREGISTRY_SSS, shlib_path.c_str(), seen.c_str(), own.c_str());
+         ok = false;
+      }
+   }
 
    /* retrieve function pointer of get_method function in shared lib */
    if (ok) {

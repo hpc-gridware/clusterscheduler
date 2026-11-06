@@ -25,9 +25,11 @@
 #include <cstddef>
 #include <cstring>
 #include <atomic>
+#include <dlfcn.h>
 #include <memory>
 #include <mutex>
 #include <new>
+#include <string>
 #include <unordered_map>
 
 #include "uti/sge_log.h"
@@ -53,16 +55,39 @@ namespace {
    };
 
    /**
+    * @brief The pointer to the one registry of the process
+    *
+    * The registry is allocated on first use and never destroyed, so that a
+    * descriptor released by a thread that outlives the static destructors still
+    * finds it. The pointer lives in the data of the object holding this code, so
+    * its address names that object (N-A-22).
+    *
+    * @return the pointer, set to the registry
+    */
+   cull_descr_registry *&registry_slot() {
+      static cull_descr_registry *r = new cull_descr_registry;
+      return r;
+   }
+
+   /**
     * @brief The one registry of the process
-    *
-    * Allocated on first use and never destroyed, so that a descriptor released
-    * by a thread that outlives the static destructors still finds it.
-    *
     * @return the registry
     */
    cull_descr_registry &registry() {
-      static auto *r = new cull_descr_registry;
-      return *r;
+      return *registry_slot();
+   }
+
+   /**
+    * @brief The file name of the loaded object an address belongs to
+    * @param addr the address
+    * @return the file name, or "unknown"
+    */
+   std::string object_of(const void *addr) {
+      Dl_info info{};
+      if (addr != nullptr && dladdr(addr, &info) != 0 && info.dli_fname != nullptr) {
+         return info.dli_fname;
+      }
+      return "unknown";
    }
 
    /**
@@ -480,6 +505,51 @@ size_t ocs_cull_descr_registry_size() {
    cull_descr_registry &reg = registry();
    std::lock_guard<std::mutex> lock(reg.mtx);
    return reg.map.size();
+}
+
+/**
+ * @brief The identity of the registry this code uses
+ *
+ * The address of the registry pointer, in the data of the object holding the
+ * code. Two calls return the same value exactly when they use one registry.
+ *
+ * @return the identity
+ */
+const void *ocs_cull_descr_registry_id() {
+   return &registry_slot();
+}
+
+/**
+ * @brief Whether a loaded object uses the descriptor registry of this process (N-A-22)
+ *
+ * An object that links CULL statically carries its own copy of the registry.
+ * Its code must still be bound to the copy of the process, which it is when
+ * CULL exports its symbols and the loading executable is linked `-rdynamic`.
+ * The check calls ocs_cull_descr_registry_seen() of the loaded object, whose
+ * call to ocs_cull_descr_registry_id() resolves the way all of its calls into
+ * CULL do, and compares the result with the registry of the caller.
+ *
+ * @param handle the handle dlopen() returned for the object
+ * @param[out] own receives the file name of the object holding the registry of the caller
+ * @param[out] seen receives the file name of the object holding the registry the loaded object uses, or "none" if
+ *             it has no CULL
+ * @return true if the loaded object uses the registry of the caller
+ */
+bool ocs_cull_descr_registry_shared(void *handle, std::string *own, std::string *seen) {
+   using seen_func = const void *(*)();
+   const void *mine = ocs_cull_descr_registry_id();
+   *own = object_of(mine);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+   const auto func = reinterpret_cast<seen_func>(dlsym(handle, "ocs_cull_descr_registry_seen"));
+#pragma GCC diagnostic pop
+   if (func == nullptr) {
+      *seen = "none";
+      return false;
+   }
+   const void *theirs = func();
+   *seen = object_of(theirs);
+   return theirs == mine;
 }
 
 /**

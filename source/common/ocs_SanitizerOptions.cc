@@ -38,19 +38,21 @@
  * and its runtime data (CULL type descriptors: nmv[], JB_Type[], and
  * every other lDescr[] instantiated via LISTDEF in sge_all_listsL.h) is
  * duplicated into every output that links sgeobj — the main binary AND
- * every dlopen'd spool plugin (libspoolc.so, libspool_berkeleydb.so,
- * ...). Linux dlopen at source/libs/spool/dynamic/sge_spooling_dynamic.cc
- * uses RTLD_LOCAL, so the dynamic linker does NOT merge these copies at
- * runtime. The duplication is benign — all copies hold identical bytes
- * and no code compares descriptor-pointer identity across the plugin /
- * main-binary boundary — but strict ODR checking rejects it. Every other
+ * every dlopen'd spool plugin (libspoolc.so, libspoolb.so, ...). Each
+ * object keeps its own copy, which strict ODR checking rejects. The copies
+ * of the plugin are not used, though: the executables are linked -rdynamic,
+ * so the references of the plugin, opened with RTLD_LOCAL at
+ * source/libs/spool/dynamic/sge_spooling_dynamic.cc, bind to the copies of
+ * the executable. The loader checks that for the CULL descriptor registry
+ * and refuses a plugin bound to its own (CS-2997, N-A-22), because the
+ * identity of shared descriptors matters across the boundary. Every other
  * ASan check stays active.
  *
  * This file is compiled directly into every binary that dlopens the
- * spooling plugins: sge_qmaster (source/daemons/qmaster/CMakeLists.txt)
- * and spoolinit / spooldefaults / spooledit (source/utilbin/CMakeLists.txt).
- * Add it to any new binary that also dlopens sgeobj-consuming shared
- * libraries.
+ * spooling plugins: sge_qmaster (source/daemons/qmaster/CMakeLists.txt),
+ * spoolinit / spooldefaults / spooledit (source/utilbin/CMakeLists.txt) and
+ * test_cull_plugin (test/libs/cull/CMakeLists.txt). Add it to any new binary
+ * that also dlopens sgeobj-consuming shared libraries.
  */
 /* Clang provides __has_feature; GCC doesn't. Define it as a no-op fallback
  * so the #if below is well-formed on GCC. Just guarding with
