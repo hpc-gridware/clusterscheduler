@@ -75,6 +75,10 @@ uint32_t ocs_cull_descr_refs(const lDescr *dp);
 
 size_t ocs_cull_descr_registry_size();
 
+#ifdef OCS_CULL_STATS
+size_t ocs_cull_descr_registry_peak();
+#endif
+
 const void *ocs_cull_descr_registry_id();
 
 extern "C" const void *ocs_cull_descr_registry_seen();

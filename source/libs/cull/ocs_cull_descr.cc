@@ -24,6 +24,7 @@
 
 #include <cstddef>
 #include <cstring>
+#include <algorithm>
 #include <atomic>
 #include <dlfcn.h>
 #include <memory>
@@ -38,6 +39,7 @@
 
 #include "cull/cull_list.h"
 #include "cull/cull_state.h"
+#include "cull/cull_stats.h"
 #include "cull/msg_cull.h"
 #include "cull/ocs_cull_descr.h"
 
@@ -52,6 +54,7 @@ namespace {
       std::unordered_multimap<uint64_t, cull_descr_header *> map; ///< registered descriptors by hash
       size_t soft_cap{OCS_CULL_DESCR_SOFT_CAP};                     ///< registry size above which copies are private
       bool cap_reported{false};                                     ///< the soft cap warning was logged since the last shrink
+      CULL_STATS_CODE(size_t peak{0};)                              ///< largest size the map reached (statistics build)
    };
 
    /**
@@ -347,6 +350,7 @@ const lDescr *ocs_cull_descr_intern(const lDescr *dp) {
          cull_descr_header *h = it->second;
          if (h->n == n && same_entries(entries_of(h), dp, n)) {
             if (ref_if_alive(h)) {
+               CULL_STATS_TYPE(dp[0].nm, DESCR_INTERN_HIT, 1);
                DRETURN(entries_of(h));
             }
             // dead, its releasing thread frees it; replace the entry
@@ -355,6 +359,8 @@ const lDescr *ocs_cull_descr_intern(const lDescr *dp) {
                DRETURN(nullptr);
             }
             it->second = fresh;
+            CULL_STATS_TYPE(dp[0].nm, DESCR_INTERN_NEW, 1);
+            CULL_STATS_TYPE(dp[0].nm, DESCR_INTERN_NEW_B, sizeof(cull_descr_header) + sizeof(lDescr) * (n + 1));
             DRETURN(entries_of(fresh));
          }
       }
@@ -365,8 +371,13 @@ const lDescr *ocs_cull_descr_intern(const lDescr *dp) {
       }
       if (reg.map.size() < reg.soft_cap) {
          reg.map.emplace(hash, fresh);
+         CULL_STATS_CODE(reg.peak = std::max(reg.peak, reg.map.size());)
+         CULL_STATS_TYPE(dp[0].nm, DESCR_INTERN_NEW, 1);
+         CULL_STATS_TYPE(dp[0].nm, DESCR_INTERN_NEW_B, sizeof(cull_descr_header) + sizeof(lDescr) * (n + 1));
          DRETURN(entries_of(fresh));
       }
+      CULL_STATS_TYPE(dp[0].nm, DESCR_PRIVATE, 1);
+      CULL_STATS_TYPE(dp[0].nm, DESCR_PRIVATE_B, sizeof(cull_descr_header) + sizeof(lDescr) * (n + 1));
       if (reg.cap_reported) {
          DRETURN(entries_of(fresh));
       }
@@ -425,7 +436,12 @@ const lDescr *ocs_cull_descr_private(const lDescr *dp) {
    }
    const uint32_t n = count_entries(dp);
    cull_descr_header *h = alloc_counted(dp, n, ocs_cull_descr_hash(dp, n));
-   return h == nullptr ? nullptr : entries_of(h);
+   if (h == nullptr) {
+      return nullptr;
+   }
+   CULL_STATS_TYPE(dp[0].nm, DESCR_PRIVATE, 1);
+   CULL_STATS_TYPE(dp[0].nm, DESCR_PRIVATE_B, sizeof(cull_descr_header) + sizeof(lDescr) * (n + 1));
+   return entries_of(h);
 }
 
 /**
@@ -506,6 +522,18 @@ size_t ocs_cull_descr_registry_size() {
    std::lock_guard<std::mutex> lock(reg.mtx);
    return reg.map.size();
 }
+
+#ifdef OCS_CULL_STATS
+/**
+ * @brief The largest number of descriptors the registry held at once
+ * @return the peak size of the registry since the process started
+ */
+size_t ocs_cull_descr_registry_peak() {
+   cull_descr_registry &reg = registry();
+   std::lock_guard<std::mutex> lock(reg.mtx);
+   return reg.peak;
+}
+#endif
 
 /**
  * @brief The identity of the registry this code uses

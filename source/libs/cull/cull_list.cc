@@ -787,6 +787,8 @@ lListElem *lCreateElem(const lDescr *dp) {
                DRETURN(nullptr);
             }
             memcpy(normalised, dp, sizeof(lDescr) * (n + 1));
+            CULL_STATS_TYPE(dp[0].nm, DCOPY_ELEM, 1);
+            CULL_STATS_TYPE(dp[0].nm, DCOPY_ELEM_B, sizeof(lDescr) * (n + 1));
             for (int j = 0; j <= n; j++) {
                normalised[j].mt |= CULL_IS_REDUCED;
             }

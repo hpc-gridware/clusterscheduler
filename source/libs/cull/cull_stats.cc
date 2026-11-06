@@ -56,6 +56,7 @@
 #include "cull/cull_list.h"
 #include "cull/cull_state.h"
 #include "cull/cull_stats.h"
+#include "cull/ocs_cull_descr.h"
 
 namespace {
    using ocs::cull_stats::Counter;
@@ -64,13 +65,15 @@ namespace {
    /** @brief Names of the counters in the dump, in the order of #Counter */
    constexpr std::array<const char *, NUM_COUNTERS> counter_names = {
       "pos_calls", "pos_reduced", "pos_iters",
-      "dcopy_elem", "dcopy_elem_b", "dcopy_list", "dcopy_list_b", "dcopy_other", "dcopy_other_b",
+      "dcopy_elem", "dcopy_elem_b", "dcopy_other", "dcopy_other_b",
       "dcopy_unpack", "dcopy_unpack_b",
       "hash_create", "hash_bucket_b", "hash_insert", "hash_lookup", "hash_free_used", "hash_free_unused",
       "pack_descr", "pack_descr_b", "pack_elems", "pack_value_b",
       "unpack_lists", "unpack_elems", "unpack_ns", "unpack_hash_ns",
       "hash_build_lazy", "lookup_linear", "lookup_len_lt4", "lookup_len_lt8", "lookup_len_lt16",
-      "lookup_len_lt32", "lookup_len_lt64", "lookup_len_lt128", "lookup_len_ge128"
+      "lookup_len_lt32", "lookup_len_lt64", "lookup_len_lt128", "lookup_len_ge128",
+      "descr_intern_hit", "descr_intern_new", "descr_intern_new_b", "descr_private", "descr_private_b",
+      "descr_pack_type_ref", "descr_pack_table_def", "descr_pack_table_ref"
    };
 
    using Counters = std::array<uint64_t, NUM_COUNTERS>;
@@ -80,7 +83,7 @@ namespace {
 
    constexpr uint64_t TYPE_BIT = uint64_t{1} << 32; ///< marks the key of a type counter
 
-   constexpr int DUMP_FORMAT = 1; ///< version of the dump layout, raised when a reader has to tell layouts apart
+   constexpr int DUMP_FORMAT = 2; ///< version of the dump layout, raised when a reader has to tell layouts apart; 2: shared descriptors (CS-2997)
 
    /** @brief The counters of one thread class, as they are dumped */
    struct ThreadDump {
@@ -397,6 +400,8 @@ namespace ocs::cull_stats {
       writer.Int(static_cast<int>(getpid()));
       writer.Key("written");
       writer.String(utc_timestamp().c_str());
+      writer.Key("descr_registry_peak");
+      writer.Uint64(ocs_cull_descr_registry_peak());
       writer.Key("threads");
       writer.StartObject();
       for (const auto &[thread_class, thread] : dump) {

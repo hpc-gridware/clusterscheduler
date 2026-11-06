@@ -459,6 +459,14 @@ static void test_hash_new() {
    lFreeElem(&ep);
    lFreeList(&b);
    lFreeList(&a);
+
+   // a hash on the first field changes the entry that carries the reference count mark of the copy
+   lList *g = lCreateList("first", GR_Type);
+   const int first_ok = cull_hash_new(g, GR_id, true);
+   CHECK(46, "a hash added on the first field leaves the copy counted, so that freeing the list frees it",
+         first_ok == 1 && g->descr != GR_Type && ocs_cull_descr_is_counted(g->descr) &&
+         mt_is_unique(g->descr[0].mt) && ocs_cull_descr_refs(g->descr) == 1);
+   lFreeList(&g);
 }
 
 /** @brief DESCR-09: builders and the selection cache hand out shared descriptors */
@@ -865,9 +873,10 @@ int main(int argc, char *argv[]) {
        {{"SHD-03", "covers"}}, {23, 24}, test_users_release},
       {"DESCR-08", "added hash stays in its list",
        "cull_hash_new() gives the list a private copy of the descriptor instead of changing the shared one",
-       {"add a hash on a field of one list", "look it up and dechain an element"},
-       "the list and its elements hold the copy with the flag, the static block and other lists are unchanged",
-       {{"SHD-01", "partly"}}, {25, 26, 27}, test_hash_new},
+       {"add a hash on a field of one list", "look it up and dechain an element", "add a hash on the first field"},
+       "the list and its elements hold the copy with the flag, the static block and other lists are unchanged, and "
+       "a copy changed in its first field stays counted",
+       {{"SHD-01", "partly"}}, {25, 26, 27, 46}, test_hash_new},
       {"DESCR-09", "builders and the selection cache",
        "a field selection builds its reduction once, and the builders return the shared descriptor",
        {"select twice with one selection", "reduce with lReduceDescr and lGetReducedDescr",

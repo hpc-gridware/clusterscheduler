@@ -37,9 +37,14 @@
  * - field counters (#CULL_STATS_FIELD) take the number of the field itself,
  *   e.g. the field a hash table is built on.
  *
- * The document holds `format`, `program`, `pid`, `written` and `threads`,
- * which maps each thread class to `types` (type, then counters) and `fields`
- * (type, then field, then counters). Counters that are 0 are left out.
+ * The document holds `format`, `program`, `pid`, `written`,
+ * `descr_registry_peak` (the largest size the descriptor registry reached) and
+ * `threads`, which maps each thread class to `types` (type, then counters) and
+ * `fields` (type, then field, then counters). Counters that are 0 are left out.
+ *
+ * A descriptor copy is every descriptor the library allocates, the same before
+ * and after shared descriptors (CS-2997): the `dcopy_*` counters, which are
+ * temporary or plain copies, plus `descr_intern_new` and `descr_private`.
  */
 
 #ifdef OCS_CULL_STATS
@@ -53,13 +58,11 @@ namespace ocs::cull_stats {
       POS_CALLS,        ///< lGetPosInDescr() calls (type)
       POS_REDUCED,      ///< of them on a reduced descriptor, i.e. through the linear search (type)
       POS_ITERS,        ///< descriptor entries visited by that search (type)
-      DCOPY_ELEM,       ///< descriptor copies made by lCreateElem() (type)
+      DCOPY_ELEM,       ///< temporary copies made by lCreateElem() to mark every field reduced (type)
       DCOPY_ELEM_B,     ///< their bytes (type)
-      DCOPY_LIST,       ///< descriptor copies made by lCreateListHash() (type)
-      DCOPY_LIST_B,     ///< their bytes (type)
       DCOPY_OTHER,      ///< descriptor copies made by lCopyDescr() (type)
       DCOPY_OTHER_B,    ///< their bytes (type)
-      DCOPY_UNPACK,     ///< descriptors built while unpacking (type)
+      DCOPY_UNPACK,     ///< temporary descriptors built while unpacking, before the shared one is taken (type)
       DCOPY_UNPACK_B,   ///< their bytes (type)
       HASH_CREATE,      ///< hash tables created (field)
       HASH_BUCKET_B,    ///< bytes of their initial bucket arrays (field)
@@ -84,6 +87,14 @@ namespace ocs::cull_stats {
       LOOKUP_LEN_LT64,  ///< ... of 32 to 63 elements (field)
       LOOKUP_LEN_LT128, ///< ... of 64 to 127 elements (field)
       LOOKUP_LEN_GE128, ///< ... of 128 elements or more (field)
+      DESCR_INTERN_HIT, ///< descriptors found in the registry (type)
+      DESCR_INTERN_NEW, ///< descriptors allocated and registered by a registry miss (type)
+      DESCR_INTERN_NEW_B, ///< their bytes, header included (type)
+      DESCR_PRIVATE,    ///< counted descriptors allocated outside the registry: private copies, above the soft cap (type)
+      DESCR_PRIVATE_B,  ///< their bytes, header included (type)
+      DESCR_PACK_TYPE_REF,  ///< full descriptors packed as a reference to their type (type)
+      DESCR_PACK_TABLE_DEF, ///< reduced descriptors entered into the descriptor table of a pack buffer (type)
+      DESCR_PACK_TABLE_REF, ///< reduced descriptors packed as an index into that table (type)
       NUM_COUNTERS
    };
 

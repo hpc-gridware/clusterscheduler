@@ -113,6 +113,21 @@ static void cull_stats_count_descr(const sge_pack_buffer *pb, const int nm, cons
 }
 
 /**
+ * @brief Count how a shared descriptor was packed (CS-2997)
+ *
+ * Nothing is counted in counting mode, as in cull_stats_count_descr().
+ *
+ * @param pb the buffer it was packed into
+ * @param nm the first field of the descriptor
+ * @param c #DESCR_PACK_TYPE_REF, #DESCR_PACK_TABLE_DEF or #DESCR_PACK_TABLE_REF
+ */
+static void cull_stats_count_shared(const sge_pack_buffer *pb, const int nm, const ocs::cull_stats::Counter c) {
+   if (!pb->just_count) {
+      ocs::cull_stats::add_type(nm, c, 1);
+   }
+}
+
+/**
  * @brief Count the bytes of a packed field value (CS-2993)
  *
  * Sublists and sub-objects are left out; their fields are counted on their own.
@@ -472,6 +487,8 @@ static int cull_unpack_descr(
             LERROR(LEMALLOC);
             DRETURN(PACK_ENOMEM);
          }
+         CULL_STATS_TYPE(type[0].nm, DCOPY_UNPACK, 1);
+         CULL_STATS_TYPE(type[0].nm, DCOPY_UNPACK_B, sizeof(lDescr) * (count + 1));
          bool full = count == static_cast<uint32_t>(type_n);
          for (i = 0; i < count; i++) {
             if ((ret = unpackint(pb, &temp)) != PACK_SUCCESS || temp >= static_cast<uint32_t>(type_n)) {
@@ -690,6 +707,7 @@ static int pack_shared_descr(sge_pack_buffer *pb, const lDescr *dp) {
           (ret = packint(pb, dp[0].nm)) != PACK_SUCCESS || (ret = packint(pb, n)) != PACK_SUCCESS) {
          return ret;
       }
+      CULL_STATS_CODE(cull_stats_count_shared(pb, dp[0].nm, ocs::cull_stats::DESCR_PACK_TYPE_REF);)
       return PACK_SUCCESS;
    }
 
@@ -703,10 +721,12 @@ static int pack_shared_descr(sge_pack_buffer *pb, const lDescr *dp) {
              (ret = packint(pb, static_cast<uint32_t>(k))) != PACK_SUCCESS) {
             return ret;
          }
+         CULL_STATS_CODE(cull_stats_count_shared(pb, dp[0].nm, ocs::cull_stats::DESCR_PACK_TABLE_REF);)
          return PACK_SUCCESS;
       }
    }
    tab->entries.push_back(ocs_cull_descr_ref(dp));
+   CULL_STATS_CODE(cull_stats_count_shared(pb, dp[0].nm, ocs::cull_stats::DESCR_PACK_TABLE_DEF);)
 
    // by index if every field belongs to the type of the first one, with the same data type
    int pos = 0;

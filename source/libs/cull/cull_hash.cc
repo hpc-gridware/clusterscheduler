@@ -1137,8 +1137,9 @@ int cull_hash_new(lList *lp, int nm, bool unique) {
       if (copy == nullptr) {
          DRETURN(0);
       }
-      // the copy is not registered and nobody holds it yet, so it may still be written
-      const_cast<lDescr *>(copy)[pos].mt = mt;
+      // the copy is not registered and nobody holds it yet, so it may still be written; the flags are added, so
+      // that the reference count mark the copy carries in its first entry stays
+      const_cast<lDescr *>(copy)[pos].mt |= CULL_HASH | (unique ? CULL_UNIQUE : 0);
       for (lListElem *ep = lp->first; ep != nullptr; ep = ep->next) {
          ep->descr = copy;
       }
