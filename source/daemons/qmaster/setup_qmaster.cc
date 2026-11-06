@@ -45,6 +45,7 @@
 #include <sys/resource.h>
 
 #include "uti/ocs_Bootstrap.h"
+#include "uti/ocs_OpenSSL.h"
 #include "uti/ocs_TerminationManager.h"
 #include "uti/config_file.h"
 #include "uti/sge_bootstrap_env.h"
@@ -575,6 +576,9 @@ communication_setup() {
       INFO(MSG_QMASTER_FD_SOFT_LIMIT_SETTINGS_U, static_cast<uint32_t>(qmaster_rlimits.rlim_cur));
       INFO(MSG_QMASTER_MAX_FILE_DESCRIPTORS_LIMIT_L, max_connections);
       INFO(MSG_QMASTER_MAX_EVC_LIMIT_I, mconf_get_max_dynamic_event_clients());
+#if defined(OCS_WITH_OPENSSL)
+      ocs::uti::OpenSSL::log_library_info();
+#endif
       log_state_set_log_level(old_ll);
    }
 

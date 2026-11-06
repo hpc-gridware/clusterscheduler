@@ -374,22 +374,24 @@ function(build_third_party 3rdparty_build_path)
                     file(STRINGS "${OPENSSL_INCLUDE_DIR}/openssl/opensslv.h" OPENSSL_MAJOR REGEX "^#.*define OPENSSL_VERSION_MAJOR ")
                     string(REGEX REPLACE "#.*define OPENSSL_VERSION_MAJOR +([0-9]+).*" "\\1" OPENSSL_MAJOR "${OPENSSL_MAJOR}")
                     message(STATUS "Found openssl version: ${OPENSSL_MAJOR}")
-                    if (NOT OPENSSL_MAJOR EQUAL "3")
+                    if (NOT OPENSSL_MAJOR EQUAL "3" AND NOT OPENSSL_MAJOR EQUAL "4")
                         # OpenSSL before 3.0 does not define OPENSSL_VERSION_MAJOR
                         if (OPENSSL_MAJOR STREQUAL "")
                             set(OPENSSL_MAJOR "< 3")
                         endif()
-                        message(FATAL_ERROR "TLS encryption requires the OpenSSL 3 development files, "
-                                "found OpenSSL ${OPENSSL_MAJOR} in ${OPENSSL_INCLUDE_DIR}/openssl. "
-                                "Install OpenSSL 3 or build without TLS: -DWITH_OPENSSL=OFF")
+                        message(FATAL_ERROR "TLS encryption requires the OpenSSL 3 or 4 "
+                                "development files, found OpenSSL ${OPENSSL_MAJOR} in "
+                                "${OPENSSL_INCLUDE_DIR}/openssl. "
+                                "Install OpenSSL 3 or 4 or build without TLS: -DWITH_OPENSSL=OFF")
                     endif()
-                    # e.g., Ubuntu 22.04 and later with openssl-3.x being default (usr/include/openssl)
+                    # e.g., Ubuntu 22.04 and later with openssl-3.x being default
+                    # (usr/include/openssl), Ubuntu 26.10 and Fedora 45 with openssl-4.x
                     add_compile_definitions("OCS_WITH_OPENSSL")
                 endif()
             else()
-                message(FATAL_ERROR "TLS encryption requires the OpenSSL 3 development files, "
+                message(FATAL_ERROR "TLS encryption requires the OpenSSL 3 or 4 development files, "
                         "none found in ${OPENSSL_INCLUDE_DIR}. "
-                        "Install OpenSSL 3 or build without TLS: -DWITH_OPENSSL=OFF")
+                        "Install OpenSSL 3 or 4 or build without TLS: -DWITH_OPENSSL=OFF")
             endif()
         endif()
     endif ()

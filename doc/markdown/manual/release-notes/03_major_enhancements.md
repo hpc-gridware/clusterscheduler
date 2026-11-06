@@ -2,6 +2,14 @@
 
 ## v9.2.0
 
+### TLS Encryption with OpenSSL 4
+
+TLS encryption of the component communication now also works with OpenSSL 4. The xxQS_NAMExx components load OpenSSL 4 if it is installed on a host, otherwise OpenSSL 3. A cluster can contain both hosts with OpenSSL 3 and hosts with OpenSSL 4. At startup, xxqs_name_sxx_qmaster and xxqs_name_sxx_execd log which OpenSSL library they loaded.
+
+For details see the *Installation Guide*, chapter **"Enabling TLS Encryption"**.
+
+(Available in Open and Gridware Cluster Scheduler.)
+
 ### RSMAP Characteristics and Device Isolation
 
 A resource map (RSMAP) names the individual instances of a host resource — the GPUs in a node, its network interfaces, a pool of license seats — so that the scheduler can both count them and record which one each job received. Until now an instance was nothing more than a name. Anything an administrator knew about the hardware behind that name had to be encoded into the name itself and decoded again by a prolog script.

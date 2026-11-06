@@ -73,7 +73,8 @@ See also [Installing Munge].
 When TLS encryption of communication shall be enabled for the xxQS_NAMExx cluster, the OpenSSL shared library must be
 installed in the default location on all cluster hosts. Best use the OS package manager to install the library
 and to keep it up to date.
-OpenSSL version 3.x is required.
+OpenSSL version 3.x or 4.x is required. Hosts with OpenSSL 3 and hosts with OpenSSL 4 can be part
+of the same cluster.
 
 ## Product Component Overview
 
