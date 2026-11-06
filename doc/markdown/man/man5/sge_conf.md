@@ -1318,10 +1318,11 @@ Other values are invalid, and the default is used instead.
 
 With a factor other than 1, consider:
 
-- xxqs_name_sxx_execd(8) compares the usage with the limits in the interval of *PDC_INTERVAL*.
-  Between two checks, a job can use much more memory than its limit; without a kernel limit it can
-  exhaust the memory of the host and trigger the global OOM killer, which might kill other
-  processes.
+- xxqs_name_sxx_execd(8) compares the usage with the limits in the interval of *PDC_INTERVAL*. A
+  peak between two checks is detected where the kernel records the peak usage of the job's scope
+  (see *h_rss* in xxqs_name_sxx_queue_conf(5)), but the job is killed only at the next check. Until
+  then it can use much more memory than its limit; without a kernel limit it can exhaust the memory
+  of the host and trigger the global OOM killer, which might kill other processes.
 - When the usage is collected via systemd (see *USAGE_COLLECTION*), the rss of a job is the memory
   charged to its scope, which includes the page cache of the files the job has read or written.
   Without a kernel limit the page cache is reclaimed only when the host runs short of memory, so a

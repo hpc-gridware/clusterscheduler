@@ -23,6 +23,7 @@
  */
 
 #include <filesystem>
+#include <fstream>
 #include <iterator>
 #include <limits>
 #include <string>
@@ -475,6 +476,49 @@ namespace ocs::execd {
    }
 
    /*!
+    * @brief Read the peak memory usage of a job scope from its cgroup.
+    *
+    * For a systemd which does not provide MemoryPeak: the kernel keeps the high-water mark of the
+    * memory usage of a cgroup in memory.max_usage_in_bytes (cgroup v1), or in memory.peak (cgroup
+    * v2, Linux 5.19 and newer). Unlike a value polled from MemoryCurrent, it also contains peaks
+    * between two polls.
+    *
+    * @param systemd The Systemd object used to interact with the Systemd bus.
+    * @param scope The job scope.
+    * @param peak Receives the peak memory usage in bytes.
+    * @return true if the peak memory usage was read, false if it is not available.
+    */
+   static bool
+   ptf_get_peak_memory_from_cgroup(ocs::uti::Systemd &systemd, const std::string &scope,
+                                   double &peak) {
+      DENTER(TOP_LAYER);
+
+      DSTRING_STATIC(error_dstr, MAX_STRING_SIZE);
+      std::string cgroup;
+      if (!systemd.sd_bus_get_property("Scope", scope, "ControlGroup", cgroup, &error_dstr) ||
+          cgroup.empty()) {
+         DRETURN(false);
+      }
+
+      std::string path;
+      if (ocs::uti::Systemd::get_cgroup_version() == 1) {
+         path = "/sys/fs/cgroup/memory" + cgroup + "/memory.max_usage_in_bytes";
+      } else {
+         path = "/sys/fs/cgroup" + cgroup + "/memory.peak";
+      }
+      std::ifstream file(path);
+      uint64_t value = 0;
+      if (!(file >> value)) {
+         DPRINTF("==> cannot read the peak memory usage of scope '%s' from %s\n", scope.c_str(),
+                 path.c_str());
+         DRETURN(false);
+      }
+
+      peak = static_cast<double>(value);
+      DRETURN(true);
+   }
+
+   /*!
     * @brief Get one value from Systemd for a specific scope.
     *
     * This function retrieves one usage value from Systemd for a given scope and updates the usage_list.
@@ -606,10 +650,16 @@ namespace ocs::execd {
                            ptf_get_usage_value_from_systemd(systemd, scope, usage_list, "MemoryPeak", USAGE_ATTR_MAXRSS, 1.0);
                         } else {
                            // cgroup v1 or too old systemd version
-                           // calculate the maximum RSS from the current RSS
+                           // the peak from the cgroup if the kernel has it, else the maximum of
+                           // the polled RSS - which misses peaks between two polls
                            lListElem *usage_elem = lGetElemStrRW(usage_list, UA_name, USAGE_ATTR_RSS);
                            if (usage_elem != nullptr) {
                               double rss = lGetDouble(usage_elem, UA_value);
+                              double peak = 0.0;
+                              if (ptf_get_peak_memory_from_cgroup(systemd, scope, peak) &&
+                                  peak > rss) {
+                                 rss = peak;
+                              }
                               usage_elem = lGetElemStrRW(usage_list, UA_name, USAGE_ATTR_MAXRSS);
                               if (rss > lGetDouble(usage_elem, UA_value)) {
                                  lSetDouble(usage_elem, UA_value, rss);

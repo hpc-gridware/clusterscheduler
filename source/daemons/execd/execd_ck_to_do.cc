@@ -276,11 +276,17 @@ force_job_rlimit_task(const lListElem *jep, const lListElem *jatep, const lListE
    double cpu_val = usage_list_get_double_usage(usage_list, USAGE_ATTR_CPU, 0.0);
    double vmem_val = usage_list_get_double_usage(usage_list, USAGE_ATTR_VMEM, 0.0);
    double rss_val = usage_list_get_double_usage(usage_list, USAGE_ATTR_RSS, 0.0);
+   // A hard memory limit which was exceeded once is violated, also by a peak between two polls.
+   // With systemd, maxrss is the high-water mark the kernel keeps, see
+   // ptf_get_usage_from_systemd().
+   double maxvmem_val = usage_list_get_double_usage(usage_list, USAGE_ATTR_MAXVMEM, 0.0);
+   double maxrss_val = usage_list_get_double_usage(usage_list, USAGE_ATTR_MAXRSS, 0.0);
    lFreeList(&usage_list);
 
-   DPRINTF("JOB " sge_u32 "." sge_u32 " task %s %s %10.5f %s %10.5f %s %10.5f\n", jobid, jataskid,
-           task_id != nullptr ? task_id : "master", USAGE_ATTR_CPU, cpu_val, USAGE_ATTR_VMEM,
-           vmem_val, USAGE_ATTR_RSS, rss_val);
+   DPRINTF("JOB " sge_u32 "." sge_u32 " task %s %s %10.5f %s %10.5f %s %10.5f %s %10.5f %s %10.5f"
+           "\n", jobid, jataskid, task_id != nullptr ? task_id : "master", USAGE_ATTR_CPU, cpu_val,
+           USAGE_ATTR_VMEM, vmem_val, USAGE_ATTR_RSS, rss_val, USAGE_ATTR_MAXVMEM, maxvmem_val,
+           USAGE_ATTR_MAXRSS, maxrss_val);
 
    // need the queue object - it must have been delivered by sge_qmaster
    const lListElem *q = responsible_queue(nullptr, jatep, petep);
@@ -301,12 +307,13 @@ force_job_rlimit_task(const lListElem *jep, const lListElem *jatep, const lListE
    double h_vmem = execd_get_task_limit(QU_h_vmem, "h_vmem", ocs::CEntry::Type::MEM, q,
                                         jep, jatep, petep, qualified_hostname);
    if (force_job_rlimit_apply_limit(cpu_val, h_cpu, "h_cpu", true, q, jobid, jataskid) ||
-       force_job_rlimit_apply_limit(rss_val, h_rss, "h_rss", true, q, jobid, jataskid) ||
-       force_job_rlimit_apply_limit(vmem_val, h_vmem, "h_vmem", true, q, jobid, jataskid)) {
+       force_job_rlimit_apply_limit(maxrss_val, h_rss, "h_rss", true, q, jobid, jataskid) ||
+       force_job_rlimit_apply_limit(maxvmem_val, h_vmem, "h_vmem", true, q, jobid, jataskid)) {
       DRETURN(true);
    }
 
-   // soft limits
+   // soft limits: the current usage - a job is signaled with SIGXCPU while it exceeds the limit,
+   // a single peak would make it get the signal with every check
    double s_cpu = execd_get_task_limit(QU_s_cpu, "s_cpu", ocs::CEntry::Type::TIME, q,
                                        jep, jatep, petep, qualified_hostname);
    double s_rss = execd_get_task_limit(QU_s_rss, "s_rss", ocs::CEntry::Type::MEM, q,
