@@ -810,15 +810,6 @@ static void test_full_what_on_reduction() {
    lFreeList(&none_packed);
    lFreeWhat(&absent);
 
-   lEnumeration *neg = reduced != nullptr ? lWhat("%T(!(%I))", lGetListDescr(reduced), SP_group) : nullptr;
-   static const int neg_names[] = {SP_name, SP_spool, NoName};
-   lList *neg_selected = neg != nullptr ? lSelect("neg", reduced, nullptr, neg) : nullptr;
-   CHECK(36, "a negated what on a reduced descriptor selects its other present fields",
-         neg != nullptr && lCountWhat(neg, lGetListDescr(reduced)) == 2 && neg_selected != nullptr &&
-         descr_names_are(lGetListDescr(neg_selected), neg_names));
-   lFreeList(&neg_selected);
-   lFreeWhat(&neg);
-
    // a sender's position is not trusted: the receiver computes it from the field name
    lEnumeration *forged = lWhat("%T(%I)", SP_Type, SP_group);
    forged[0].pos = 0;
@@ -922,10 +913,9 @@ int main(int argc, char *argv[]) {
        "positions are those of the type in every descriptor, so a what built on the full type selects from "
        "reductions that hold its fields, and a receiver takes the positions of its own type",
        {"reduce a list to three fields", "select, select-and-pack and copy two of them with a what on the full type",
-        "select a field the reduction does not hold", "negate a field on the reduced descriptor",
-        "pack a what with a wrong position and unpack it"},
-       "the held fields are selected, packed and copied as from the full list, an absent field is rejected, the "
-       "negation keeps the other present fields, and the unpacked what has the local position",
-       {{"FLD-01", "partly"}}, {32, 33, 34, 35, 36, 37}, test_full_what_on_reduction},
+        "select a field the reduction does not hold", "pack a what with a wrong position and unpack it"},
+       "the held fields are selected, packed and copied as from the full list, an absent field is rejected, and "
+       "the unpacked what has the local position",
+       {{"FLD-01", "partly"}}, {32, 33, 34, 35, 37}, test_full_what_on_reduction},
    });
 }

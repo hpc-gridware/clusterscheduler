@@ -308,11 +308,12 @@ static void test_descriptors() {
    const uint64_t on_reduced = type_count(ocs::cull_stats::POS_REDUCED);
    const uint64_t iters = type_count(ocs::cull_stats::POS_ITERS);
    const lUlong value = lGetUlong(first, ST_value);
-   CHECK(7, "a field read on a reduced element is one reduced lookup over the entries up to the field",
+   // a reduced descriptor has the length of its type, so the lookup is constant time (CS-439, PRF-04)
+   CHECK(7, "a field read on a reduced element is one lookup without a search over the entries",
          value == 0 &&
          type_count(ocs::cull_stats::POS_CALLS) == calls + 1 &&
-         type_count(ocs::cull_stats::POS_REDUCED) == on_reduced + 1 &&
-         type_count(ocs::cull_stats::POS_ITERS) == iters + 2);
+         type_count(ocs::cull_stats::POS_REDUCED) == on_reduced &&
+         type_count(ocs::cull_stats::POS_ITERS) == iters);
 
    const uint64_t reduced_before = type_count(ocs::cull_stats::POS_REDUCED);
    lGetUlong(lFirst(lp), ST_value);
@@ -487,9 +488,8 @@ int main(int argc, char *argv[]) {
        {"create an element and a list of a full type", "select a reduction twice with two equal selections",
         "read a field of a reduced element", "read the same field of a full element"},
        "the full type copies and registers nothing; the reduction is one miss with its bytes and one hit, both "
-       "selections share it, and the peak covers it; the reduced read is one reduced lookup over the entries up "
-       "to the field, the full read none",
-       {{"MSR-03", "covers"}, {"PRF-03", "prepares"}}, {5, 6, 19, 7, 8}, test_descriptors},
+       "selections share it, and the peak covers it; neither the reduced nor the full read searches the entries",
+       {{"MSR-03", "covers"}, {"PRF-03", "prepares"}, {"PRF-04", "unit level"}}, {5, 6, 19, 7, 8}, test_descriptors},
       {"STATS-03", "packing and unpacking",
        "the statistics build counts packed descriptors, elements and value bytes, and unpacked lists with "
        "their time, but nothing in counting mode",

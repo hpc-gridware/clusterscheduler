@@ -48,7 +48,6 @@
 #include "uti/sge_stdlib.h"
 
 #include "cull/cull_list.h"
-#include "cull/cull_listP.h"
 #include "cull/cull_db.h"
 #include "cull/cull_parse.h"
 #include "cull/cull_multitype.h"
@@ -258,12 +257,13 @@ static void ocs_what_sort_by_pos(lEnumeration *ep) {
 }
 
 /**
- * @brief Build a field selection from an already resolved field list
+ * @brief Build a field selection from a format and a field list
  *
- * The workhorse behind #lWhat: the format has been parsed and the field names
- * collected by the caller.
+ * The flat counterpart of #lWhat, behind lIntVector2What(): the format
+ * `%T(%I...)`, `%T(ALL)` or `%T(NONE)` names no sub-selections, and the fields
+ * come as an array instead of variable arguments.
  *
- * @param fmt the format the selection came from, used in error messages
+ * @param fmt the format, with one `%I` per entry of @p nm_list
  * @param dp descriptor of the object type
  * @param nm_list the selected field names
  * @param nr_nm how many entries @p nm_list holds
@@ -273,11 +273,9 @@ lEnumeration *_lWhat(const char *fmt, const lDescr *dp,
                      const int *nm_list, int nr_nm) {
    DENTER(CULL_LAYER);
 
-   int neg = 0;
-   int i, j, k, n, size = 0;
+   int i, n;
    const char *s;
    lEnumeration *ep = nullptr;
-   lEnumeration *ep2 = nullptr;
    int error_status;
    cull_parse_state state;
 
@@ -351,23 +349,6 @@ lEnumeration *_lWhat(const char *fmt, const lDescr *dp,
          break;
    }
 
-   if (scan(nullptr, &state) == NEG) {
-      neg = 1;
-      // the fields that have a value, a reduced descriptor holds only some of its type's (CS-439)
-      if ((size = lCountPresent(dp)) == -1) {
-         error_status = LECOUNTDESCR;
-         goto error;
-      }
-      /* room for every field that has a value; the excluded ones are left out below */
-      eat_token(&state);              /* eat ! */
-      if (scan(nullptr, &state) != BRA) {
-         /* ( expected */
-         error_status = LESYNTAX;
-         goto error;
-      } else
-         eat_token(&state);           /* eat_token BRA, if it was a BRA */
-   }
-
    for (i = 0; i < n; i++) {
 
       ep[i].nm = nm_list[i];
@@ -390,40 +371,6 @@ lEnumeration *_lWhat(const char *fmt, const lDescr *dp,
    ep[n].nm = NoName;
    ep[n].mt = lEndT;
    ep[n].ep = nullptr;
-
-   if (neg) {
-      if (scan(nullptr, &state) != KET) {
-         error_status = LESYNTAX;
-         goto error;
-      }
-      eat_token(&state);
-
-      if (!(ep2 = (lEnumeration *) calloc((size + 1), sizeof(lEnumeration)))) {
-         error_status = LEMALLOC;
-         goto error;
-      }
-
-      k = 0;
-      for (const auto f : ocs_cull_present_fields(dp)) {
-         i = f.pos;
-         /* remove the elements listed in the format string */
-         for (j = 0; ep[j].nm != NoName && ep[j].nm != dp[i].nm; j++);
-         if (ep[j].nm != NoName)
-            continue;
-         ep2[k].pos = i;
-         ep2[k].nm = dp[i].nm;
-         ep2[k].mt = dp[i].mt & ~CULL_DESCR_INTERNED;
-         ep2[k].ep = nullptr;
-         k++;
-      }
-      /* the end mark follows the kept fields; a field excluded twice leaves room unused */
-      ep2[k].pos = 0;
-      ep2[k].nm = NoName;
-      ep2[k].mt = lEndT;
-      ep2[k].ep = nullptr;
-      lFreeWhat(&ep);
-      ep = ep2;
-   }
 
    if (scan(nullptr, &state) != KET) {
       error_status = LESYNTAX;
