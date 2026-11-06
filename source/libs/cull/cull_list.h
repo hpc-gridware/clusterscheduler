@@ -205,17 +205,21 @@ static_assert(sizeof(lDescr) == 12, "a descriptor entry is field number, type an
 constexpr int OCS_CULL_ABSENT = INT32_MIN;
 
 /**
- * @brief Header in front of the fields of a static descriptor block
+ * @brief Header in front of the fields of a static or counted descriptor
  *
  * The fields follow the header at a fixed offset (see #cull_descr_block), so
- * the header of a block can be found from its first field.
+ * the header of a descriptor can be found from its first field. A counted
+ * descriptor with absent fields (np < n) holds behind its terminating entry the
+ * reverse map: one `int16_t` per slot, the position of the field held there
+ * (CS-439, N-B-6).
  */
 struct cull_descr_header {
    std::atomic<uint32_t> refs; ///< reference count; 0 for a static block, which is never released
    uint32_t n;                 ///< number of fields, without the terminating #lEndT entry
+   uint32_t np;                ///< number of fields that have a value, the slots of an element
    uint64_t hash;              ///< FNV-1a over field numbers, types and slot offsets, see ocs_cull_descr_hash()
 };
-static_assert(sizeof(cull_descr_header) == 16, "the fields must start 16 bytes after the header");
+static_assert(sizeof(cull_descr_header) == 24, "the fields must start 24 bytes after the header");
 
 /**
  * @brief A descriptor as one block: header, fields, terminating #lEndT entry
@@ -262,7 +266,7 @@ constexpr uint64_t ocs_cull_descr_hash(const lDescr *e, const size_t n) {
  */
 template<size_t N, size_t... I>
 consteval cull_descr_block<N> ocs_cull_descr_make_impl(const lDescr (&e)[N], std::index_sequence<I...>) {
-   return {{0, N - 1, ocs_cull_descr_hash(e, N - 1)}, {e[I]...}};
+   return {{0, N - 1, N - 1, ocs_cull_descr_hash(e, N - 1)}, {e[I]...}};
 }
 
 /**

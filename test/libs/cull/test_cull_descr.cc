@@ -39,6 +39,7 @@
 #include <cstring>
 #include <string>
 #include <thread>
+#include <utility>
 #include <vector>
 
 /** @brief Make this translation unit the one that defines the CULL field names */
@@ -47,6 +48,7 @@
 #include "cull/cull.h"
 #include "cull/cull_hash.h"
 #include "cull/cull_listP.h"
+#include "cull/cull_multitypeP.h"
 #include "cull/cull_pack.h"
 #include "cull/ocs_cull_descr.h"
 
@@ -826,6 +828,77 @@ static void test_grown_types() {
    CHECK(45, "after the elements the registry is empty again", ocs_cull_descr_registry_size() == base);
 }
 
+/**
+ * @brief TD_Type at full length with TD_name and TD_flag present (CS-439, N-B-1)
+ *
+ * TD_name is held in slot 0 and TD_flag in slot 1; TD_id and TD_value are absent.
+ *
+ * @param out room for five entries
+ * @param flag_first true to put TD_flag into slot 0 and TD_name into slot 1
+ */
+static void full_length_name_flag(lDescr out[5], const bool flag_first) {
+   out[0] = {TD_id, lUlongT | CULL_HASH | CULL_UNIQUE | CULL_IS_REDUCED, OCS_CULL_ABSENT};
+   out[1] = {TD_name, lStringT | CULL_IS_REDUCED, flag_first ? 0 : -1};
+   out[2] = {TD_value, lUlongT | CULL_IS_REDUCED, OCS_CULL_ABSENT};
+   out[3] = {TD_flag, lBoolT | CULL_IS_REDUCED, flag_first ? -3 : -2};
+   out[4] = {NoName, lEndT | CULL_IS_REDUCED, 0};
+}
+
+/** @brief DESCR-13: slots of a full-length descriptor with absent fields */
+static void test_slots() {
+   const size_t base = ocs_cull_descr_registry_size();
+   CHECK(47, "a static block has a value for every field", TD_Type_blk.h.np == 4 && lCountPresent(TD_Type) == 4);
+
+   lDescr built[5];
+   full_length_name_flag(built, false);
+   CHECK(48, "a plain full-length array counts its present fields", lCountPresent(built) == 2 && lCountDescr(built) == 4);
+
+   const lDescr *dp = ocs_cull_descr_intern(built);
+   const cull_descr_header *h = dp != nullptr ? ocs_cull_descr_header_of(dp) : nullptr;
+   bool range_ok = h != nullptr && h->n == 4 && h->np == 2 &&
+                   lCountPresent(dp) == 2 && lCountDescr(dp) == 4;
+   std::vector<std::pair<int, int>> seen;
+   if (dp != nullptr) {
+      for (const auto f : ocs_cull_present_fields(dp)) {
+         seen.emplace_back(f.pos, f.slot);
+      }
+   }
+   range_ok = range_ok && seen == std::vector<std::pair<int, int>>{{1, 0}, {3, 1}};
+   CHECK(49, "the counted copy holds np and the reverse map, and the range walks its slots", range_ok);
+
+   lDescr swapped[5];
+   full_length_name_flag(swapped, true);
+   const lDescr *dp2 = ocs_cull_descr_intern(swapped);
+   seen.clear();
+   if (dp2 != nullptr) {
+      for (const auto f : ocs_cull_present_fields(dp2)) {
+         seen.emplace_back(f.pos, f.slot);
+      }
+   }
+   CHECK(50, "descriptors that differ only in their slot offsets are different entries",
+         dp2 != nullptr && dp2 != dp && ocs_cull_descr_registry_size() == base + 2 &&
+         seen == (std::vector<std::pair<int, int>>{{3, 0}, {1, 1}}));
+
+   lListElem *ep = lCreateElem(dp);
+   bool values_ok = ep != nullptr && ep->descr == dp;
+   if (values_ok) {
+      lSetString(ep, TD_name, "slot");
+      lSetBool(ep, TD_flag, true);
+      values_ok = strcmp(ep->cont[0].str, "slot") == 0 && ep->cont[1].b && strcmp(lGetString(ep, TD_name), "slot") == 0 &&
+                  lGetBool(ep, TD_flag);
+      lListElem *copy = lCopyElem(ep);
+      values_ok = values_ok && copy != nullptr && copy->descr == dp && strcmp(lGetString(copy, TD_name), "slot") == 0 &&
+                  lGetBool(copy, TD_flag);
+      lFreeElem(&copy);
+   }
+   CHECK(51, "an element of it holds two values in their slots, read, written and copied by field name", values_ok);
+   lFreeElem(&ep);
+
+   ocs_cull_descr_release(&dp);
+   ocs_cull_descr_release(&dp2);
+   CHECK(52, "after the release the registry is empty again", ocs_cull_descr_registry_size() == base);
+}
+
 int main(int argc, char *argv[]) {
    lInit(nmv);
 
@@ -907,5 +980,12 @@ int main(int argc, char *argv[]) {
        "shorter data becomes full elements with initial values in the added fields and the data behind it is read "
        "next, longer data and spooled data of another shape are format errors, and a selection stays reduced",
        {{"SHD-09", "unit level"}}, {40, 41, 42, 43, 44, 45}, test_grown_types},
+      {"DESCR-13", "slots of descriptors with absent fields",
+       "a full-length descriptor with absent fields holds its present fields in slots, found through its header",
+       {"read the header of a static block", "count a plain array with absent entries",
+        "intern it and a copy that differs only in the slot offsets", "create, write, read and copy an element of it"},
+       "the header holds np, the range walks the slots through the reverse map, the offsets "
+       "keep the two apart, and the values sit in their slots",
+       {{"FLD-01", "partly"}}, {47, 48, 49, 50, 51, 52}, test_slots},
    });
 }

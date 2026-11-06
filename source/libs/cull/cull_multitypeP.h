@@ -67,16 +67,27 @@ union _lMultiType {
    lCondition *cp;    ///< a condition, used when a descriptor carries a where clause
 };
 
+void ocs_cull_bad_slot(const lListElem *ep, int pos);
+
 /**
  * @brief The value of the field at a descriptor position of an element (CS-439)
  *
  * Like `ep->cont[pos]` before, the value is writable through a const element:
- * the const-ness of an element has never extended to its values.
+ * the const-ness of an element has never extended to its values. Debug builds
+ * check that the position has a slot among the element's values, and abort
+ * otherwise.
  *
  * @param ep the element
  * @param pos a valid field position in the element's descriptor
  * @return the value
  */
 inline lMultiType &ocs_cull_value(const lListElem *ep, const int pos) {
+#if defined(ENABLE_DEBUG_CHECKS)
+   const cull_descr_header *h = ocs_cull_descr_header_of(ep->descr);
+   if (pos < 0 || static_cast<uint32_t>(pos) >= h->n ||
+       ep->descr[pos].off == OCS_CULL_ABSENT || static_cast<uint32_t>(ocs_cull_slot(ep->descr, pos)) >= h->np) {
+      ocs_cull_bad_slot(ep, pos);
+   }
+#endif
    return ep->cont[ocs_cull_slot(ep->descr, pos)];
 }

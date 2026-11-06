@@ -197,4 +197,5 @@
 #define MSG_CULL_AUTHINFO_CORRECTINGUSERNAME_SS            _MESSAGE(41183, _("correcting user name from authinfo: " SFQ " to re-resolved name " SFQ))
 #define MSG_CULL_AUTHINFO_CORRECTINGGROUPNAME_SS           _MESSAGE(41184, _("correcting group name from authinfo: " SFQ " to re-resolved name " SFQ))
 #define MSG_CULL_DESCR_SOFTCAPREACHED_U                    _MESSAGE(41185, _("CULL descriptor registry holds " sge_u32 " descriptors, further ones are private copies"))
+#define MSG_CULL_BADSLOT_IIUU                              _MESSAGE(41186, _("CULL value access at position %d of the type starting at field %d lies outside its " sge_u32 " fields or " sge_u32 " values"))
 // clang-format on

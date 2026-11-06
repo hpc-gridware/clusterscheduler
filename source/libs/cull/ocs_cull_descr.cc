@@ -38,6 +38,7 @@
 #include "uti/sge_stdlib.h"
 
 #include "cull/cull_list.h"
+#include "cull/cull_multitypeP.h"
 #include "cull/cull_multitype.h"
 #include "cull/cull_state.h"
 #include "cull/cull_stats.h"
@@ -133,11 +134,12 @@ namespace {
     * @param a the entries of one descriptor
     * @param b the entries of the other
     * @param n the number of entries of both, without the terminating one
-    * @return true if every entry has the same field number and type
+    * @return true if every entry has the same field number, type and slot offset
     */
    bool same_entries(const lDescr *a, const lDescr *b, const uint32_t n) {
       for (uint32_t i = 0; i < n; i++) {
-         if (a[i].nm != b[i].nm || (a[i].mt & ~CULL_DESCR_INTERNED) != (b[i].mt & ~CULL_DESCR_INTERNED)) {
+         if (a[i].nm != b[i].nm || (a[i].mt & ~CULL_DESCR_INTERNED) != (b[i].mt & ~CULL_DESCR_INTERNED) ||
+             a[i].off != b[i].off) {
             return false;
          }
       }
@@ -145,21 +147,60 @@ namespace {
    }
 
    /**
+    * @brief Number of entries of a descriptor that have a value
+    * @param dp the entries
+    * @param n their number, without the terminating one
+    * @return the count of entries whose slot offset is not #OCS_CULL_ABSENT
+    */
+   uint32_t count_present(const lDescr *dp, const uint32_t n) {
+      uint32_t np = 0;
+      for (uint32_t i = 0; i < n; i++) {
+         if (dp[i].off != OCS_CULL_ABSENT) {
+            np++;
+         }
+      }
+      return np;
+   }
+
+   /**
+    * @brief Size of a counted descriptor with its header and reverse map
+    * @param n number of entries, without the terminating one
+    * @param np number of entries that have a value
+    * @return the bytes to allocate
+    */
+   size_t counted_size(const uint32_t n, const uint32_t np) {
+      return sizeof(cull_descr_header) + (n + 1) * sizeof(lDescr) + (np < n ? np * sizeof(int16_t) : 0);
+   }
+
+   /**
     * @brief Allocate a counted copy of a descriptor, holding one reference
+    *
+    * With absent fields the copy gets the reverse map from slot to position
+    * behind its terminating entry (N-B-6).
+    *
     * @param dp the entries to copy
     * @param n their number, without the terminating one
     * @param hash their hash
     * @return the header of the copy, or nullptr if out of memory
     */
    cull_descr_header *alloc_counted(const lDescr *dp, const uint32_t n, const uint64_t hash) {
-      void *mem = sge_malloc(sizeof(cull_descr_header) + (n + 1) * sizeof(lDescr));
+      const uint32_t np = count_present(dp, n);
+      void *mem = sge_malloc(counted_size(n, np));
       if (mem == nullptr) {
          return nullptr;
       }
-      auto *h = new (mem) cull_descr_header{1, n, hash};
+      auto *h = new (mem) cull_descr_header{1, n, np, hash};
       lDescr *e = entries_of(h);
       memcpy(e, dp, (n + 1) * sizeof(lDescr));
       e[0].mt |= CULL_DESCR_INTERNED;
+      if (np < n) {
+         auto *rmap = reinterpret_cast<int16_t *>(e + n + 1);
+         for (uint32_t pos = 0; pos < n; pos++) {
+            if (e[pos].off != OCS_CULL_ABSENT) {
+               rmap[pos + e[pos].off] = static_cast<int16_t>(pos);
+            }
+         }
+      }
       return h;
    }
 
@@ -361,7 +402,7 @@ const lDescr *ocs_cull_descr_intern(const lDescr *dp) {
             }
             it->second = fresh;
             CULL_STATS_TYPE(dp[0].nm, DESCR_INTERN_NEW, 1);
-            CULL_STATS_TYPE(dp[0].nm, DESCR_INTERN_NEW_B, sizeof(cull_descr_header) + sizeof(lDescr) * (n + 1));
+            CULL_STATS_TYPE(dp[0].nm, DESCR_INTERN_NEW_B, counted_size(n, count_present(dp, n)));
             DRETURN(entries_of(fresh));
          }
       }
@@ -374,11 +415,11 @@ const lDescr *ocs_cull_descr_intern(const lDescr *dp) {
          reg.map.emplace(hash, fresh);
          CULL_STATS_CODE(reg.peak = std::max(reg.peak, reg.map.size());)
          CULL_STATS_TYPE(dp[0].nm, DESCR_INTERN_NEW, 1);
-         CULL_STATS_TYPE(dp[0].nm, DESCR_INTERN_NEW_B, sizeof(cull_descr_header) + sizeof(lDescr) * (n + 1));
+         CULL_STATS_TYPE(dp[0].nm, DESCR_INTERN_NEW_B, counted_size(n, count_present(dp, n)));
          DRETURN(entries_of(fresh));
       }
       CULL_STATS_TYPE(dp[0].nm, DESCR_PRIVATE, 1);
-      CULL_STATS_TYPE(dp[0].nm, DESCR_PRIVATE_B, sizeof(cull_descr_header) + sizeof(lDescr) * (n + 1));
+      CULL_STATS_TYPE(dp[0].nm, DESCR_PRIVATE_B, counted_size(n, count_present(dp, n)));
       if (reg.cap_reported) {
          DRETURN(entries_of(fresh));
       }
@@ -441,7 +482,7 @@ const lDescr *ocs_cull_descr_private(const lDescr *dp) {
       return nullptr;
    }
    CULL_STATS_TYPE(dp[0].nm, DESCR_PRIVATE, 1);
-   CULL_STATS_TYPE(dp[0].nm, DESCR_PRIVATE_B, sizeof(cull_descr_header) + sizeof(lDescr) * (n + 1));
+   CULL_STATS_TYPE(dp[0].nm, DESCR_PRIVATE_B, counted_size(n, count_present(dp, n)));
    return entries_of(h);
 }
 
@@ -524,10 +565,28 @@ uint32_t ocs_cull_descr_refs(const lDescr *dp) {
  * @return the number of values, or -1 if dp is nullptr
  */
 int lCountPresent(const lDescr *dp) {
-   if (ocs_cull_descr_is_counted(dp)) {
-      return static_cast<int>(header_of(dp)->n);
+   if (dp == nullptr) {
+      return -1;
    }
-   return lCountDescr(dp);
+   if (ocs_cull_descr_is_counted(dp)) {
+      return static_cast<int>(header_of(dp)->np);
+   }
+   return static_cast<int>(count_present(dp, count_entries(dp)));
+}
+
+/**
+ * @brief Report a value access outside the slots of an element and abort (CS-439)
+ *
+ * Called by the debug check of ocs_cull_value(): the position is absent in the
+ * element's descriptor, lies outside it, or its slot lies outside the values.
+ *
+ * @param ep the element
+ * @param pos the position that was accessed
+ */
+void ocs_cull_bad_slot(const lListElem *ep, const int pos) {
+   const cull_descr_header *h = ocs_cull_descr_header_of(ep->descr);
+   CRITICAL(MSG_CULL_BADSLOT_IIUU, pos, ep->descr[0].nm, h->n, h->np);
+   abort();
 }
 
 /**

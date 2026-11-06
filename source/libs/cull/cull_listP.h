@@ -144,13 +144,33 @@ struct ocs_cull_present_field {
 };
 
 /**
+ * @brief The header of a static or counted descriptor (CS-439)
+ * @param dp the entries of a static or counted descriptor; a plain array has no header
+ * @return its header
+ */
+inline const cull_descr_header *ocs_cull_descr_header_of(const lDescr *dp) {
+   return reinterpret_cast<const cull_descr_header *>(dp) - 1;
+}
+
+/**
+ * @brief The reverse map of a counted descriptor with absent fields (CS-439, N-B-6)
+ * @param dp the entries of a counted descriptor whose header has np < n
+ * @return the field position per slot, np entries behind the terminating entry
+ */
+inline const int16_t *ocs_cull_descr_rmap(const lDescr *dp) {
+   return reinterpret_cast<const int16_t *>(dp + ocs_cull_descr_header_of(dp)->n + 1);
+}
+
+/**
  * @brief The fields of a descriptor that have a value, in slot order (CS-439)
  *
  * Value loops such as free, copy, pack, unpack and dump run over this range
  * rather than over the descriptor entries, so they visit exactly the values an
- * element holds. Today every entry of a descriptor has a value and its slot is
- * its position; the range is where that changes for descriptors with absent
- * fields, without touching the loops.
+ * element holds. A counted descriptor with absent fields is walked over its
+ * slots through the reverse map in its header, so a reduction to a few fields
+ * of a long type costs a few steps (N-B-6). Any other descriptor is walked over
+ * its entries, skipping absent ones; a full one has none, and its slots are its
+ * positions.
  *
  * @code
  * for (const auto f : ocs_cull_present_fields(ep->descr)) {
@@ -160,25 +180,33 @@ struct ocs_cull_present_field {
  */
 class ocs_cull_present_fields {
 public:
-   /// end of the range: the terminating #lEndT entry
+   /// end of the range
    struct sentinel {};
 
    /// position in the range
    class iterator {
    public:
       /**
-       * @brief An iterator at a descriptor position
+       * @brief An iterator at the first field that has a value
        * @param dp the descriptor
-       * @param pos the position
+       * @param rmap the reverse map to walk the slots by, or nullptr to walk the entries
+       * @param np the number of slots, used with a reverse map
        */
-      iterator(const lDescr *dp, const int pos) : dp_(dp), pos_(pos) {}
+      iterator(const lDescr *dp, const int16_t *rmap, const int np) : dp_(dp), rmap_(rmap), np_(np), i_(0) {
+         if (rmap_ == nullptr) {
+            skip_absent();
+         }
+      }
 
       /**
        * @brief The field at the iterator
        * @return its position and slot
        */
       ocs_cull_present_field operator*() const {
-         return {pos_, ocs_cull_slot(dp_, pos_)};
+         if (rmap_ != nullptr) {
+            return {rmap_[i_], i_};
+         }
+         return {i_, ocs_cull_slot(dp_, i_)};
       }
 
       /**
@@ -186,7 +214,10 @@ public:
        * @return the iterator
        */
       iterator &operator++() {
-         ++pos_;
+         ++i_;
+         if (rmap_ == nullptr) {
+            skip_absent();
+         }
          return *this;
       }
 
@@ -195,12 +226,26 @@ public:
        * @return true while it is at a field
        */
       bool operator!=(sentinel) const {
-         return mt_get_type(dp_[pos_].mt) != lEndT;
+         if (rmap_ != nullptr) {
+            return i_ < np_;
+         }
+         return mt_get_type(dp_[i_].mt) != lEndT;
       }
 
    private:
-      const lDescr *dp_; ///< the descriptor
-      int pos_;          ///< the current position
+      /**
+       * @brief Move an entry walk past absent entries
+       */
+      void skip_absent() {
+         while (mt_get_type(dp_[i_].mt) != lEndT && dp_[i_].off == OCS_CULL_ABSENT) {
+            ++i_;
+         }
+      }
+
+      const lDescr *dp_;    ///< the descriptor
+      const int16_t *rmap_; ///< the reverse map, or nullptr for an entry walk
+      int np_;              ///< the number of slots of a slot walk
+      int i_;               ///< the current slot of a slot walk, or position of an entry walk
    };
 
    /**
@@ -214,7 +259,13 @@ public:
     * @return an iterator at it, or at the end
     */
    iterator begin() const {
-      return {dp_, 0};
+      if ((dp_[0].mt & CULL_DESCR_INTERNED) != 0) {
+         const cull_descr_header *h = ocs_cull_descr_header_of(dp_);
+         if (h->np < h->n) {
+            return {dp_, ocs_cull_descr_rmap(dp_), static_cast<int>(h->np)};
+         }
+      }
+      return {dp_, nullptr, 0};
    }
 
    /**
