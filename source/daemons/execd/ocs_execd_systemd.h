@@ -39,6 +39,9 @@ namespace ocs::execd {
    void
    execd_systemd_init();
 
+   void
+   execd_check_systemd_features();
+
    bool
    execd_move_shepherd_to_scope();
 

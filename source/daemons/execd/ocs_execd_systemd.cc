@@ -23,6 +23,7 @@
  */
 
 #include <filesystem>
+#include <iterator>
 #include <limits>
 #include <string>
 #include <system_error>
@@ -73,6 +74,102 @@ namespace ocs::execd {
    }
 
    /*!
+    * @brief A feature of the systemd integration which depends on the systemd or cgroup version
+    *
+    * To add a feature with a version requirement, add an entry to systemd_features below.
+    */
+   struct SystemdFeature {
+      // is the feature available with this systemd and cgroup version?
+      bool (*available)(int systemd_version, int cgroup_version);
+      // log at INFO level that the feature is not available, with the reason and the consequence
+      void (*log_unavailable)(int systemd_version, int cgroup_version);
+   };
+
+   static const SystemdFeature systemd_features[] = {
+      // OOMPolicy=kill on the job scope (CS-3020) and its Result=oom-kill (CS-3022)
+      {[](int systemd_version, int cgroup_version) {
+          return systemd_version >= 252 && cgroup_version == 2;
+       },
+       [](int systemd_version, int cgroup_version) {
+          INFO(MSG_EXECD_SYSTEMD_NO_OOMPOLICY_II, systemd_version, cgroup_version);
+       }},
+      // MemoryHigh of the job scope from s_rss / s_vmem
+      {[](int, int cgroup_version) {
+          return cgroup_version == 2;
+       },
+       [](int, int cgroup_version) {
+          INFO(MSG_EXECD_SYSTEMD_NO_MEMORYHIGH_I, cgroup_version);
+       }},
+      // AllowedCPUs of the job scope from the core binding
+      {[](int, int cgroup_version) {
+          return cgroup_version == 2;
+       },
+       [](int, int cgroup_version) {
+          INFO(MSG_EXECD_SYSTEMD_NO_ALLOWEDCPUS_I, cgroup_version);
+       }},
+      // FreezeUnit / ThawUnit for suspending and resuming a job
+      {[](int systemd_version, int cgroup_version) {
+          return systemd_version >= 250 && cgroup_version == 2;
+       },
+       [](int systemd_version, int cgroup_version) {
+          INFO(MSG_EXECD_SYSTEMD_NO_FREEZE_II, systemd_version, cgroup_version);
+       }}
+   };
+
+   static constexpr size_t num_systemd_features = std::size(systemd_features);
+
+   enum class SystemdFeatureState {
+      unknown,       // not checked yet
+      not_used,      // the jobs do not run under systemd control
+      available,
+      unavailable
+   };
+
+   static SystemdFeatureState systemd_feature_states[num_systemd_features] = {};
+
+   /*!
+    * @brief Log which features of the systemd integration are not available on this host.
+    *
+    * Checks the features in systemd_features against the systemd and cgroup version of the host.
+    * For each feature which is not available, one INFO message with the reason and the
+    * consequence is logged. Nothing is logged for an available feature, nor when the jobs do not
+    * run under systemd control (ENABLE_SYSTEMD=false, or no systemd on the host).
+    *
+    * Called at startup, once the systemd integration is initialized, and whenever the
+    * configuration has changed. A message is logged only when the result for a feature has
+    * changed since the last call, e.g. when ENABLE_SYSTEMD has been switched on again.
+    */
+   void
+   execd_check_systemd_features() {
+      DENTER(TOP_LAYER);
+
+      bool used = execd_use_systemd();
+      int systemd_version = ocs::uti::Systemd::get_systemd_version();
+      int cgroup_version = ocs::uti::Systemd::get_cgroup_version();
+
+      // the messages are informational, but they shall show up with the default log level
+      uint32_t old_ll = log_state_get_log_level();
+      log_state_set_log_level(LOG_INFO);
+      for (size_t i = 0; i < num_systemd_features; i++) {
+         const SystemdFeature &feature = systemd_features[i];
+         SystemdFeatureState state = SystemdFeatureState::not_used;
+         if (used) {
+            bool available = feature.available(systemd_version, cgroup_version);
+            state = available ? SystemdFeatureState::available : SystemdFeatureState::unavailable;
+         }
+         if (state != systemd_feature_states[i]) {
+            if (state == SystemdFeatureState::unavailable) {
+               feature.log_unavailable(systemd_version, cgroup_version);
+            }
+            systemd_feature_states[i] = state;
+         }
+      }
+      log_state_set_log_level(old_ll);
+
+      DRETURN_VOID;
+   }
+
+   /*!
     * @brief Initialize the Systemd integration for execd.
     * This function checks if Systemd integration is available and if the process is running as a Systemd service.
     * It initializes the Systemd library and logs the Systemd version and cgroup version.
@@ -94,6 +191,8 @@ namespace ocs::execd {
       } else if (sge_dstring_strlen(&error_dstr) > 0) {
          WARNING(SFNMAX, sge_dstring_get_string(&error_dstr));
       }
+
+      execd_check_systemd_features();
    }
 
    /*!

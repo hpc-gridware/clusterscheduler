@@ -1266,6 +1266,22 @@ manage the job's processes as a group, which is useful for resource management a
 
 This parameter is set to true by default, meaning that on hosts that support systemd, jobs will be started in a systemd scope. If a host does not support systemd, then this parameter will be ignored.
 
+Some features of the systemd integration depend on the systemd version and the cgroup version of the host:
+
+| Feature | Prerequisite | Without the prerequisite |
+|---|---|---|
+| *OOMPolicy=kill* on the job scope, see *h_rss* in xxqs_name_sxx_queue_conf(5) | systemd 252, cgroup v2 | The memory cgroup OOM killer kills single processes of a job instead of the whole job, and an OOM kill is not reported in the accounting record. |
+| *MemoryHigh* of the job scope from *s_rss* and *s_vmem* | cgroup v2 | *s_rss* and *s_vmem* are not applied as a limit of the job scope. |
+| *AllowedCPUs* of the job scope from the core binding | cgroup v2 | xxqs_name_sxx_shepherd(8) binds the processes of the job to their cores itself. |
+| Freezing the job scope to suspend a job | systemd 250, cgroup v2 | A job is suspended by sending SIGSTOP to its processes. |
+
+At startup, xxqs_name_sxx_execd(8) logs one message in its messages file for each of these features that
+is not available on its host, e.g.
+
+    cgroup v1 does not support MemoryHigh on job scopes, it needs cgroup v2 - s_rss and s_vmem are not applied as a limit of the job scope
+
+When *ENABLE_SYSTEMD* is switched on again, the messages are logged again.
+
 ***SYSTEMD_TIMEOUT***
 
 This parameter limits the time a single call from the execution daemon to systemd may take.

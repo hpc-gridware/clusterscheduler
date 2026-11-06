@@ -53,6 +53,7 @@
 
 #include "exec_job.h"
 #include "execd_get_new_conf.h"
+#include "ocs_execd_systemd.h"
 #include "sge_load_sensor.h"
 #include "admin_mail.h"
 #include "msg_common.h"
@@ -93,6 +94,11 @@ int do_get_new_conf(ocs::gdi::ClientServerBase::struct_msg_t *aMsg) {
 #if defined(OCS_HWLOC)
    std::string topo_file = mconf_get_topology_file();
    ocs::Topo::set_fake_topo_file(topo_file);
+#endif
+
+#if defined(OCS_WITH_SYSTEMD)
+   // e.g. ENABLE_SYSTEMD might have changed
+   ocs::execd::execd_check_systemd_features();
 #endif
 
    const char *spool_dir = mconf_get_execd_spool_dir();

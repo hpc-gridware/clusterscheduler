@@ -263,6 +263,10 @@
 #define MSG_EXECD_SYSTEMD_ANSWERS_AGAIN                  _MESSAGE(29238, _("systemd answers again, usage collection continues"))
 #define MSG_EXECD_SYSTEMD_DEVICE_INVALID_SSS             _MESSAGE(29239, _("not granting access to device " SFQ " of resource map " SFQ " instance " SFQ ": systemd accepts only a node or pattern below /dev or a \"char-\" or \"block-\" class specifier - the job runs without access to it"))
 #define MSG_EXECD_OOMKILLED_SS                           _MESSAGE(29240, _(SFN " was killed by the OOM killer, it reached the memory limit of its job scope " SFN))
+#define MSG_EXECD_SYSTEMD_NO_OOMPOLICY_II                _MESSAGE(29241, _("systemd %d with cgroup v%d does not support OOMPolicy on job scopes, it needs systemd 252 and cgroup v2 - the memory cgroup OOM killer kills single processes of a job instead of the whole job, and an OOM kill is not reported in the accounting record"))
+#define MSG_EXECD_SYSTEMD_NO_MEMORYHIGH_I                _MESSAGE(29242, _("cgroup v%d does not support MemoryHigh on job scopes, it needs cgroup v2 - s_rss and s_vmem are not applied as a limit of the job scope"))
+#define MSG_EXECD_SYSTEMD_NO_ALLOWEDCPUS_I               _MESSAGE(29243, _("cgroup v%d does not support AllowedCPUs on job scopes, it needs cgroup v2 - sge_shepherd binds the processes of a job to their cores itself"))
+#define MSG_EXECD_SYSTEMD_NO_FREEZE_II                   _MESSAGE(29244, _("systemd %d with cgroup v%d does not support freezing job scopes, it needs systemd 250 and cgroup v2 - a job is suspended by sending SIGSTOP to its processes"))
 
 // clang-format on
 
