@@ -282,8 +282,7 @@ static void test_partial_pack() {
    // full copy: ALL fields
    lListElem *full = lCreateElem(TEST_Type);
    lEnumeration *all_enp = lWhat("%T(ALL)", TEST_Type);
-   int index = 0;
-   lCopyElemPartialPack(full, &index, ep, all_enp, true, nullptr);
+   lCopyElemPartialPack(full, ep, all_enp, true, nullptr);
 
    // T17: a full copy has the int field
    CHECK(17, "full partial-pack: int field copied", lGetInt(full, TEST_int) == 42);
@@ -299,8 +298,7 @@ static void test_partial_pack() {
    // partial copy: only TEST_string and TEST_double
    lListElem *part = lCreateElem(TEST_Type);
    lEnumeration *part_enp = lWhat("%T(%I %I)", TEST_Type, TEST_string, TEST_double);
-   index = lGetPosInDescr(TEST_Type, TEST_string);
-   lCopyElemPartialPack(part, &index, ep, part_enp, true, nullptr);
+   lCopyElemPartialPack(part, ep, part_enp, true, nullptr);
 
    // T19: the selected string field is present in the partial copy
    CHECK(19, "partial-pack: string (selected) copied",

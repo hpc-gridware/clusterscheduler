@@ -337,10 +337,8 @@ lListElem *lCopyElem(const lListElem *src);
 
 lListElem *lCopyElemHash(const lListElem *src, bool isHash, bool skip_no_transfer = false);
 
-int lModifyWhat(lListElem *dst, const lListElem *src, const lEnumeration *enp);
-
 int
-lCopyElemPartialPack(lListElem *dst, int *jp, const lListElem *src,
+lCopyElemPartialPack(lListElem *dst, const lListElem *src,
                      const lEnumeration *ep, bool isHash, sge_pack_buffer *pb,
                      bool skip_no_transfer = false);
 

@@ -80,14 +80,10 @@
 #define  LECOPYELEMPART 41 ///< lCopyElemPartialPack failure
 #define  LENULLARGS     42 ///< function argument is nullptr
 #define  LEFALSEFIELD   43 ///< field is not allowed here
-#define  LEJOINDESCR    44 ///< lJoinDescr failure
-#define  LEJOIN         45 ///< lJoin failure
-#define  LEJOINCOPYELEM 46 ///< lJoinCopyElem failure
 #define  LEADDLIST      47 ///< lAddList failure
 #define  LECOUNTWHAT    48 ///< lCountWhat failure
 #define  LEPARTIALDESCR 49 ///< lPartialDescr failure
 #define  LEENUMDESCR    50 ///< enumeration no subset of descriptor
-#define  LEENUMBOTHNONE 51 ///< at least one enumeration required
 #define  LENULLSTRING   52 ///< string nullptr not allowed
 #define  LEPARSECOND    53 ///< parsing condition failed
 #define  LEFORMAT       54 ///< wrong packing format

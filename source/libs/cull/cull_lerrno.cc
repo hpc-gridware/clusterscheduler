@@ -151,12 +151,6 @@ const char *get_lerror_string(int nr) {
          return MSG_CULL_LENULLARGS;
       case LEFALSEFIELD :
          return MSG_CULL_LEFALSEFIELD;
-      case LEJOINDESCR  :
-         return MSG_CULL_LEJOINDESCR;
-      case LEJOIN       :
-         return MSG_CULL_LEJOIN;
-      case LEJOINCOPYELEM:
-         return MSG_CULL_LEJOINCOPYELEM;
       case LEADDLIST    :
          return MSG_CULL_LEADDLIST;
       case LECOUNTWHAT  :
@@ -165,8 +159,6 @@ const char *get_lerror_string(int nr) {
          return MSG_CULL_LEPARTIALDESCR;
       case LEENUMDESCR  :
          return MSG_CULL_LEENUMDESCR;
-      case LEENUMBOTHNONE:
-         return MSG_CULL_LEENUMBOTHNONE;
       case LENULLSTRING :
          return MSG_CULL_LENULLSTRING;
       case LEPARSECOND  :

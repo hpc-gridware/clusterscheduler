@@ -159,38 +159,15 @@ lListElem *lCopyElemHash(const lListElem *ep, bool isHash, const bool skip_no_tr
 }
 
 /**
- * @brief Copy parts of an element
- *
- * Copies elements from 'src' to 'dst' using the enumeration 'enp'
- * as a mask or copies all elements if 'enp' is nullptr
- *
- * @param dst destination element
- * @param src source element
- * @param enp mask
- *
- * @return error state 0 - OK -1 - Error
- */
-int lModifyWhat(lListElem *dst, const lListElem *src, const lEnumeration *enp) {
-   DENTER(CULL_LAYER);
-
-   int ret, i = 0;
-
-   ret = lCopyElemPartialPack(dst, &i, src, enp, true, nullptr);
-
-   DRETURN(ret);
-}
-
-/**
  * @brief Copies parts of an element
  *
- * Copies elements from list element 'src' to 'dst' using the
- * enumeration 'enp' as a mask or copies all elements if
- * 'enp' is nullptr. Copying starts at index *jp. If pb is not nullptr
- * then the elements will be stored in the packbuffer 'pb' instead of
- * being copied.
+ * Copies the fields of 'src' that the enumeration 'enp' selects to 'dst',
+ * or all fields that have a value for #WHAT_ALL. A field keeps its position
+ * when 'dst' is of the full type; a reduced 'dst', built from 'enp', holds the
+ * selected fields in the order of 'enp'. If 'pb' is not nullptr the fields are
+ * packed into it instead of being copied.
  *
  * @param dst destination element
- * @param jp Where should the copy operation start
  * @param src src element
  * @param enp enumeration
  * @param isHash true to build the hash tables of the copy as well
@@ -201,14 +178,12 @@ int lModifyWhat(lListElem *dst, const lListElem *src, const lEnumeration *enp) {
  * @return error state 0 - OK -1 - Error
  */
 int
-lCopyElemPartialPack(lListElem *dst, int *jp, const lListElem *src,
+lCopyElemPartialPack(lListElem *dst, const lListElem *src,
                      const lEnumeration *enp, bool isHash,
                      sge_pack_buffer *pb, const bool skip_no_transfer) {
    DENTER(CULL_LAYER);
 
-   int i;
-
-   if (!enp || (!dst && !pb) || !jp) {
+   if (!enp || (!dst && !pb)) {
       LERROR(LEENUMNULL);
       DRETURN(-1);
    }
@@ -217,7 +192,7 @@ lCopyElemPartialPack(lListElem *dst, int *jp, const lListElem *src,
       case WHAT_ALL:               /* all fields of element src is copied */
          if (pb == nullptr) {
             for (const auto f : ocs_cull_present_fields(src->descr)) {
-               if (lCopySwitchPack(src, dst, f.pos, (*jp)++, isHash, enp[0].ep, nullptr, skip_no_transfer) != 0) {
+               if (lCopySwitchPack(src, dst, f.pos, f.pos, isHash, enp[0].ep, nullptr, skip_no_transfer) != 0) {
                   LERROR(LECOPYSWITCH);
                   DRETURN(-1);
                }
@@ -235,13 +210,15 @@ lCopyElemPartialPack(lListElem *dst, int *jp, const lListElem *src,
             int maxpos = 0;
             maxpos = lCountDescr(src->descr);
 
-            for (i = 0; enp[i].nm != NoName; i++, (*jp)++) {
+            const bool dst_reduced = (dst->descr[0].mt & CULL_IS_REDUCED) != 0;
+
+            for (int i = 0; enp[i].nm != NoName; i++) {
                if (enp[i].pos > maxpos || enp[i].pos < 0) {
                   LERROR(LEENUMDESCR);
                   DRETURN(-1);
                }
 
-               if (lCopySwitchPack(src, dst, enp[i].pos, *jp, isHash, enp[i].ep, nullptr,
+               if (lCopySwitchPack(src, dst, enp[i].pos, dst_reduced ? i : enp[i].pos, isHash, enp[i].ep, nullptr,
                                    skip_no_transfer) != 0) {
                   LERROR(LECOPYSWITCH);
                   DRETURN(-1);

@@ -34,7 +34,7 @@
 /*___INFO__MARK_END__*/
 
 /** @file
- * @brief Bulk operations over cull lists: select, join, delete
+ * @brief Bulk operations over cull lists: select, delete
  */
 
 #include "cull/cull_list.h"
@@ -65,11 +65,6 @@ lList *lSelectDPack(const char *name, const lList *slp, const lCondition *cp, co
 const lDescr *lGetReducedDescr(const lDescr *type, const lEnumeration *what);
 
 lList *lSelectDestroy(lList *slp, const lCondition *cp);
-
-lList *lJoin(const char *name, int nm0, const lList *lp0, const lCondition *cp0, const lEnumeration *enp0, int nm1,
-             const lList *lp1, const lCondition *cp1, const lEnumeration *enp1);
-
-lDescr *lJoinDescr(const lDescr *sdp0, const lDescr *sdp1, const lEnumeration *ep0, const lEnumeration *ep1);
 
 int lPartialDescr(const lEnumeration *enp, const lDescr *sdp, lDescr *ddp, int *indexp);
 

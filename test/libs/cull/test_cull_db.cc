@@ -25,7 +25,7 @@
  * lDechainList, lAddSubList, lOverrideStrList, lSplit, lSelectDestroy), the
  * navigation helpers (lPrev, lGetElemIndex, lFindLastRW, lFindNextRW,
  * lFindPrevRW, lCreateElemList), the string list converters (lString2List,
- * lString2ListNone, lDiffListStr) and lJoin.
+ * lString2ListNone, lDiffListStr).
  *
  * A moved element takes its descriptor from the target list, and with it the
  * target's hash tables. After every move the tests check that each element is
@@ -91,28 +91,7 @@ NAMEEND
 
 #define TEST_Size sizeof(TEST_Name) / sizeof(char *)    ///< number of attributes of the main type
 
-/** @brief A second synthetic type, the right-hand side of lJoin
- *
- * Its names start at 101 so a joined descriptor can hold fields of both types.
- */
-enum {
-   OTHER_group = 101,   ///< the join field, matched against TEST_group
-   OTHER_label   ///< a string carried into the join result
-};
-
-LISTDEF(OTHER_Type)
-   SGE_ULONG  (OTHER_group, CULL_DEFAULT)
-   SGE_STRING (OTHER_label, CULL_DEFAULT)
-LISTEND(OTHER_Type)
-
-NAMEDEF(OTHER_Name)
-   NAME("OTHER_group")
-   NAME("OTHER_label")
-NAMEEND
-
-#define OTHER_Size sizeof(OTHER_Name) / sizeof(char *)    ///< number of attributes of the second type
-
-/** @brief A third type with a different layout, for the descriptor mismatch checks */
+/** @brief A second type with a different layout, for the descriptor mismatch checks */
 enum {
    ALIEN_key = 201   ///< a string attribute
 };
@@ -125,12 +104,11 @@ NAMEDEF(ALIEN_Name)
    NAME("ALIEN_key")
 NAMEEND
 
-#define ALIEN_Size sizeof(ALIEN_Name) / sizeof(char *)    ///< number of attributes of the third type
+#define ALIEN_Size sizeof(ALIEN_Name) / sizeof(char *)    ///< number of attributes of the second type
 
 /** @brief The name space registering the synthetic types with CULL */
 lNameSpace nmv[] = {
    {1, TEST_Size, TEST_Name, TEST_Type},
-   {101, OTHER_Size, OTHER_Name, OTHER_Type},
    {201, ALIEN_Size, ALIEN_Name, ALIEN_Type},
    {0, 0, nullptr, nullptr}
 };
@@ -466,49 +444,6 @@ static void test_string_lists() {
 }
 
 // ---------------------------------------------------------------------------
-// lJoin  [T45–T47]
-//
-// lJoin builds the cross product of two lists restricted to equal join
-// fields, with a descriptor made of the selected fields of both types.
-// ---------------------------------------------------------------------------
-
-static void test_join() {
-   printf("\n--- lJoin ---\n");
-
-   lList *left = make_list("j", 4);   // groups 0 1 0 1
-   lList *right = lCreateList("right", OTHER_Type);
-   for (lUlong g = 0; g < 2; g++) {
-      lListElem *ep = lCreateElem(OTHER_Type);
-      lSetUlong(ep, OTHER_group, g);
-      lSetString(ep, OTHER_label, g == 0 ? "even" : "odd");
-      lAppendElem(right, ep);
-   }
-   lEnumeration *what_left = lWhat("%T(%I %I)", TEST_Type, TEST_key, TEST_group);
-   lEnumeration *what_right = lWhat("%T(%I)", OTHER_Type, OTHER_label);
-
-   lList *joined = lJoin("joined", TEST_group, left, nullptr, what_left, OTHER_group, right, nullptr, what_right);
-   CHECK(45, "lJoin pairs every left element with its one partner", joined != nullptr && nelem(joined) == 4);
-
-   bool labels_ok = joined != nullptr;
-   const lListElem *ep;
-   for_each_ep(ep, joined) {
-      const char *expected = lGetUlong(ep, TEST_group) == 0 ? "even" : "odd";
-      if (strcmp(lGetString(ep, OTHER_label), expected) != 0) {
-         labels_ok = false;
-      }
-   }
-   CHECK(46, "lJoin carries fields of both types", labels_ok);
-   CHECK(47, "lJoin result has the fields of both sides only",
-         joined != nullptr && lCountDescr(lGetListDescr(joined)) == 3);
-
-   lFreeList(&joined);
-   lFreeWhat(&what_left);
-   lFreeWhat(&what_right);
-   lFreeList(&left);
-   lFreeList(&right);
-}
-
-// ---------------------------------------------------------------------------
 // Throwaway bootstrap for the host compare
 // ---------------------------------------------------------------------------
 
@@ -589,7 +524,6 @@ int main(int /*argc*/, char * /*argv*/[]) {
    test_moves();
    test_select();
    test_string_lists();
-   test_join();
 
    teardown_bootstrap();
 

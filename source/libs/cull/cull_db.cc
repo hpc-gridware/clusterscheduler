@@ -35,7 +35,7 @@
 /*___INFO__MARK_END__*/
 
 /** @file
- * @brief Bulk operations over cull lists: select, join, delete
+ * @brief Bulk operations over cull lists: select, delete
  */
 
 #include <cstring>
@@ -60,198 +60,6 @@
 #include "cull/cull_hash.h"
 #include "cull/cull_pack.h"
 #include "cull/pack.h"
-
-
-static lListElem *lJoinCopyElem(const lDescr *dp,
-                                const lListElem *sep0,
-                                const lEnumeration *ep0,
-                                const lListElem *sep1,
-                                const lEnumeration *ep1);
-
-/**
- * @brief Combine two elements
- *
- * Returns a combined element with descriptor 'dp'. Uses 'src0'
- * with mask 'enp0' and 'src1' with mask 'enp1' as source.
- *
- * @param dp descriptor
- * @param src0 element1
- * @param enp0 mask1
- * @param src1 element2
- * @param enp1 mask2
- *
- * @return combined element
- */
-static lListElem *lJoinCopyElem(const lDescr *dp,
-                                const lListElem *src0,
-                                const lEnumeration *enp0,
-                                const lListElem *src1,
-                                const lEnumeration *enp1) {
-   DENTER(CULL_LAYER);
-
-   lListElem *dst;
-   int i;
-
-   if (!src0 || !src1) {
-      LERROR(LEELEMNULL);
-      DRETURN(nullptr);
-   }
-
-   if (!(dst = lCreateElem(dp))) {
-      LERROR(LECREATEELEM);
-      DRETURN(nullptr);
-   }
-
-   i = 0;
-   if (lCopyElemPartialPack(dst, &i, src0, enp0, true, nullptr) == -1) {
-      sge_free(&dst);
-      LERROR(LECOPYELEMPART);
-      DRETURN(nullptr);
-   }
-   if (lCopyElemPartialPack(dst, &i, src1, enp1, true, nullptr) == -1) {
-      sge_free(&dst);
-      LERROR(LECOPYELEMPART);
-      DRETURN(nullptr);
-   }
-
-   DRETURN(dst);
-}
-
-/**
- * @brief Joins two lists together
- *
- * Returns a new list joining together the lists 'lp0' and 'lp1'
- * For the join only these 'lines' described in condition 'cp0'
- * and 'cp1' are used.
- * The new list gets only these members described in 'enp0' and
- * 'enp1'. nullptr means every member of this list.
- * The list gets 'name' as listname.
- *
- * @param name name of new list
- * @param nm0
- * @param lp0 first list
- * @param cp0 selects rows of first list
- * @param enp0 selects column of first list
- * @param nm1
- * @param lp1 second list
- * @param cp1 selects rows of second list
- * @param enp1 selects column of seconf list
- *
- * @return Joined list
- */
-lList *lJoin(const char *name, int nm0, const lList *lp0,
-             const lCondition *cp0, const lEnumeration *enp0, int nm1,
-             const lList *lp1, const lCondition *cp1, const lEnumeration *enp1) {
-   DENTER(CULL_LAYER);
-
-   lListElem *ep0, *ep1;
-   lListElem *ep;
-   lList *dlp = nullptr;
-   lDescr *dp;
-   int lp0_pos = 0, lp1_pos = 0;
-   u_int i, j;
-   int needed;
-
-   if (!lp0 || !lp1 || !name || !enp0 || !enp1) {
-      LERROR(LENULLARGS);
-      DRETURN(nullptr);
-   }
-
-   if (nm1 != NoName) {
-      if ((lp0_pos = lGetPosInDescr(lGetListDescr(lp0), nm0)) < 0) {
-         LERROR(LENAMENOT);
-         DRETURN(nullptr);
-      }
-      if ((lp1_pos = lGetPosInDescr(lGetListDescr(lp1), nm1)) < 0) {
-         LERROR(LENAMENOT);
-         DRETURN(nullptr);
-      }
-
-      if (mt_get_type(lp0->descr[lp0_pos].mt) != mt_get_type(lp1->descr[lp1_pos].mt) ||
-          mt_get_type(lp0->descr[lp0_pos].mt) == lListT) {
-         LERROR(LEDIFFDESCR);
-         DRETURN(nullptr);
-      }
-   }
-
-   /* the real join ?! */
-   if (!(dp = lJoinDescr(lGetListDescr(lp0), lGetListDescr(lp1), enp0, enp1))) {
-      LERROR(LEJOINDESCR);
-      DRETURN(nullptr);
-   }
-   if (!(dlp = lCreateList(name, dp))) {
-      LERROR(LECREATELIST);
-      sge_free(&dp);
-      DRETURN(nullptr);
-   }
-   /* free dp it has been copied by lCreateList */
-   sge_free(&dp);
-
-   for (i = 0, ep0 = lp0->first; i < lp0->nelem; i++, ep0 = ep0->next) {
-      if (!lCompare(ep0, cp0))
-         continue;
-      for (j = 0, ep1 = lp1->first; j < lp1->nelem; j++, ep1 = ep1->next) {
-         if (!lCompare(ep1, cp1))
-            continue;
-         if (nm1 != NoName) {   /* in this case take it always */
-            /* This is a comparison of the join fields nm0 , nm1 */
-            switch (mt_get_type(lp0->descr[lp0_pos].mt)) {
-               case lIntT:
-                  needed = (ep0->cont[lp0_pos].i == ep1->cont[lp1_pos].i);
-                  break;
-               case lUlongT:
-                  needed = (ep0->cont[lp0_pos].ul == ep1->cont[lp1_pos].ul);
-                  break;
-               case lUlong64T:
-                  needed = (ep0->cont[lp0_pos].ul64 == ep1->cont[lp1_pos].ul64);
-                  break;
-               case lStringT:
-                  needed = !strcmp(ep0->cont[lp0_pos].str, ep1->cont[lp1_pos].str);
-                  break;
-               case lHostT:
-                  needed = !strcmp(ep0->cont[lp0_pos].str, ep1->cont[lp1_pos].str);
-                  break;
-               case lLongT:
-                  needed = (ep0->cont[lp0_pos].l == ep1->cont[lp1_pos].l);
-                  break;
-               case lDoubleT:
-                  needed = (ep0->cont[lp0_pos].db == ep1->cont[lp1_pos].db);
-                  break;
-               case lBoolT:
-                  needed = (ep0->cont[lp0_pos].b == ep1->cont[lp1_pos].b);
-                  break;
-               case lRefT:
-                  needed = (ep0->cont[lp0_pos].ref == ep1->cont[lp1_pos].ref);
-                  break;
-               default:
-                  unknownType("lJoin");
-                  DRETURN(nullptr);
-            }
-            if (!needed)
-               continue;
-         }
-         if (!(ep = lJoinCopyElem(dlp->descr, ep0, enp0, ep1, enp1))) {
-            LERROR(LEJOINCOPYELEM);
-            lFreeList(&dlp);
-            DRETURN(nullptr);
-         } else {
-            if (lAppendElem(dlp, ep) == -1) {
-               LERROR(LEAPPENDELEM);
-               lFreeList(&dlp);
-               DRETURN(nullptr);
-            }
-         }
-      }
-   }
-
-   /* RETURN AN EMPTY LIST OR nullptr THAT'S THE QUESTION */
-
-   if (lGetNumberOfElem(dlp) == 0) {
-      lFreeList(&dlp);
-   }
-
-   DRETURN(dlp);
-}
 
 /**
  * @brief Splits a list into two list
@@ -406,7 +214,6 @@ lSelectElemDPack(const lListElem *slp, const lCondition *cp, const lDescr *dp,
    DENTER(CULL_LAYER);
 
    lListElem *new_ep = nullptr;
-   int index = 0;
 
    if (!slp || (!dp && !pb)) {
       DRETURN(nullptr);
@@ -421,7 +228,7 @@ lSelectElemDPack(const lListElem *slp, const lCondition *cp, const lDescr *dp,
             DRETURN(nullptr);
          }
 
-         if (lCopyElemPartialPack(new_ep, &index, slp, enp, isHash, nullptr, skip_no_transfer)) {
+         if (lCopyElemPartialPack(new_ep, slp, enp, isHash, nullptr, skip_no_transfer)) {
             lFreeElem(&new_ep);
          }
       } else {
@@ -433,7 +240,7 @@ lSelectElemDPack(const lListElem *slp, const lCondition *cp, const lDescr *dp,
          }
          PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
 
-         lCopyElemPartialPack(nullptr, &index, slp, enp, isHash, pb);
+         lCopyElemPartialPack(nullptr, slp, enp, isHash, pb);
          new_ep = nullptr;
       }
    }
@@ -722,72 +529,6 @@ int lPartialDescr(const lEnumeration *ep, const lDescr *sdp, lDescr *ddp,
     */
 
    DRETURN(0);
-}
-
-/**
- * @brief Builds new descriptor using two others
- *
- * Bilds from two given descriptors 'sdp0' and 'sdp1' a new
- * descriptor masked by the enumerations 'ep0' and 'ep1'.
- *
- * @param sdp0 first descriptor
- * @param sdp1 second descriptor
- * @param ep0 first mask
- * @param ep1 second mask
- *
- * @return new descriptor
- */
-lDescr *lJoinDescr(const lDescr *sdp0, const lDescr *sdp1,
-                   const lEnumeration *ep0, const lEnumeration *ep1) {
-   DENTER(CULL_LAYER);
-
-   int n, m, index;
-   lDescr *ddp;
-
-   if (!sdp0 || !sdp1) {
-      LERROR(LEDESCRNULL);
-      DRETURN(nullptr);
-   }
-
-   if (!ep0 || !ep1) {
-      LERROR(LEELEMNULL);
-      DRETURN(nullptr);
-   }
-
-   /* compute size of new descr */
-   n = lCountWhat(ep0, sdp0);
-   m = lCountWhat(ep1, sdp1);
-
-   if (n == -1 || m == -1) {
-      LERROR(LECOUNTWHAT);
-      DRETURN(nullptr);
-   }
-
-   /* There is WHAT_NONE specified in both lEnumeration ptr's */
-   if (!n && !m) {
-      LERROR(LEENUMBOTHNONE);
-      DRETURN(nullptr);
-   }
-
-   if (!(ddp = (lDescr *) sge_malloc(sizeof(lDescr) * (n + m + 1)))) {
-      LERROR(LEMALLOC);
-      DRETURN(nullptr);
-   }
-   /* INITIALIZE THE INDEX IF YOU BUILD A NEW DESCRIPTOR */
-   index = 0;
-   if (lPartialDescr(ep0, sdp0, ddp, &index) < 0) {
-      LERROR(LEPARTIALDESCR);
-      sge_free(&ddp);
-      DRETURN(nullptr);
-   }
-   /* This one is appended */
-   if (lPartialDescr(ep1, sdp1, ddp, &index) < 0) {
-      LERROR(LEPARTIALDESCR);
-      sge_free(&ddp);
-      DRETURN(nullptr);
-   }
-
-   DRETURN(ddp);
 }
 
 /**
