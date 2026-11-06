@@ -1578,6 +1578,8 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
    {
       bool enable_systemd = ocs::execd::execd_use_systemd();
       fprintf(fp, "enable_systemd=%d\n", enable_systemd ? 1 : 0);
+      // factor for MemoryMax / MemoryHigh of the job scope, see execd_params MEMORY_MAX_FACTOR
+      fprintf(fp, "memory_max_factor=%f\n", mconf_get_memory_max_factor());
 
       if (enable_systemd) {
          // slice and scope

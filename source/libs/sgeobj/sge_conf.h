@@ -56,6 +56,7 @@
  * and applies where there is no configuration to read, e.g. in the shepherd.
  */
 #define SYSTEMD_TIMEOUT_DEFAULT 2
+#define MEMORY_MAX_FACTOR_DEFAULT 1.0
 
 #define BINDING_PARAMS_DEFAULT    "enabled=true,implicit=false,mode=default,default_unit=C,on_any_host=false,filter=NONE"
 #define JSV_PARAMS_DEFAULT        NONE_STR
@@ -231,6 +232,7 @@ bool mconf_get_enable_submit_lib_path();
 bool mconf_get_enable_submit_ld_preload();
 u_long32 mconf_get_script_timeout();
 u_long32 mconf_get_systemd_timeout();
+double mconf_get_memory_max_factor();
 
 // one function for all monitoring options
 std::tuple<u_long32, bool, bool> mconf_get_monitoring_options();

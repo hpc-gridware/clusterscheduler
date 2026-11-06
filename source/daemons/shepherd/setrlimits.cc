@@ -115,6 +115,30 @@ static int sge_parse_limit(sge_rlim_t *rlvalp, char *s, char *error_str,
    return 1;
 }
 
+#if defined(OCS_WITH_SYSTEMD)
+/**
+ * @brief Scale a memory limit for MemoryMax / MemoryHigh of the job scope
+ *
+ * @param limit the memory limit of the job, RLIM_INFINITY if it has none
+ * @param factor execd_params MEMORY_MAX_FACTOR, 0 or at least 1
+ * @return the limit multiplied by the factor, RLIM_INFINITY for no limit or a factor of 0
+ */
+static sge_rlim_t
+scale_memory_limit(sge_rlim_t limit, double factor) {
+   if (limit == RLIM_INFINITY || factor == 1.0) {
+      return limit;
+   }
+   if (factor <= 0.0) {
+      return RLIM_INFINITY;
+   }
+   double scaled = static_cast<double>(limit) * factor;
+   if (scaled >= static_cast<double>(RLIM_INFINITY)) {
+      return RLIM_INFINITY;
+   }
+   return static_cast<sge_rlim_t>(scaled);
+}
+#endif
+
 void setrlimits(bool trace_rlimit) {
    sge_rlim_t s_cpu;
    sge_rlim_t h_cpu;
@@ -400,6 +424,19 @@ void setrlimits(bool trace_rlimit) {
       // a given vmem (total memory) limit.
       sge_rlim_t h_memory = RL_MIN(h_rss, h_vmem);
       sge_rlim_t s_memory = RL_MIN(s_rss, s_vmem);
+
+      // execd_params MEMORY_MAX_FACTOR: MemoryMax / MemoryHigh are the limits multiplied by the
+      // factor, so that sge_execd kills the job at the limit and the kernel is only a backstop.
+      // 0 means no MemoryMax / MemoryHigh at all.
+      double factor = 1.0;
+      const char *factor_str = search_conf_val("memory_max_factor");
+      if (factor_str != nullptr) {
+         factor = atof(factor_str);
+      }
+      shepherd_trace("SYSTEMD memory_max_factor = %f", factor);
+      h_memory = scale_memory_limit(h_memory, factor);
+      s_memory = scale_memory_limit(s_memory, factor);
+
       if (h_memory != RLIM_INFINITY) {
          shepherd_trace("SYSTEMD MemoryMax = " sge_u64, h_memory);
          // make sure that we have the right datatype for the std::variant

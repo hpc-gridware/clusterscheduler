@@ -652,17 +652,20 @@ compares the virtual memory of all processes of the job against the limit and th
 value, which the default mode does not measure on a systemd host. Set *USAGE_COLLECTION* to *HYBRID* or *PDC*
 on the hosts where that check is wanted.
 
-xxqs_name_sxx_shepherd(8) sets the lower of *h_rss* and *h_vmem* as *MemoryMax* of the job's scope, and the
-lower of *s_rss* and *s_vmem* as its *MemoryHigh*. When the job reaches *MemoryMax* and the kernel cannot
-reclaim enough memory, also not by swapping it out, the memory cgroup OOM killer kills a process of the job. On a
-host with cgroup v2 and systemd 252 or newer, xxqs_name_sxx_shepherd(8) sets *OOMPolicy=kill* on the job's
-scope, so that the OOM killer kills all processes of the job at once. The job then ends as killed by SIGKILL:
-the accounting record shows the exit status 137, failed 100 and *deleted_by* `oom-killer@<host>` (see
-xxqs_name_sxx_accounting(5)), xxqs_name_sxx_execd(8) logs the OOM kill in its messages file, and the abort mail is
-sent if the job requested it (see the *-m* option of qsub(1)). systemd keeps the scope of such a job in the
-failed state with the result *oom-kill* until xxqs_name_sxx_execd(8) resets it after the epilog has run. On older
-systems the OOM killer kills only single processes, and the job keeps running; how it ends depends on how it
-handles the loss of these processes.
+xxqs_name_sxx_shepherd(8) sets the lower of *h_rss* and *h_vmem* as *MemoryMax* of the job's scope,
+and the lower of *s_rss* and *s_vmem* as its *MemoryHigh*. *MEMORY_MAX_FACTOR* in the *execd_params*
+(see xxqs_name_sxx_conf(5)) can raise both, or switch them off, so that xxqs_name_sxx_execd(8)
+enforces the limits. When the job reaches *MemoryMax* and the kernel cannot reclaim enough memory,
+also not by swapping it out, the memory cgroup OOM killer kills a process of the job. On a host with
+cgroup v2 and systemd 252 or newer, xxqs_name_sxx_shepherd(8) sets *OOMPolicy=kill* on the job's
+scope, so that the OOM killer kills all processes of the job at once. The job then ends as killed by
+SIGKILL: the accounting record shows the exit status 137, failed 100 and *deleted_by*
+`oom-killer@<host>` (see xxqs_name_sxx_accounting(5)), xxqs_name_sxx_execd(8) logs the OOM kill in
+its messages file, and the abort mail is sent if the job requested it (see the *-m* option of
+qsub(1)). systemd keeps the scope of such a job in the failed state with the result *oom-kill* until
+xxqs_name_sxx_execd(8) resets it after the epilog has run. On older systems the OOM killer kills
+only single processes, and the job keeps running; how it ends depends on how it handles the loss of
+these processes.
 
 For a parallel job, the resource limits of the queue are limits per slot, and they apply to each
 task of the job separately. A task gets either the limit of a single slot, or the limit multiplied

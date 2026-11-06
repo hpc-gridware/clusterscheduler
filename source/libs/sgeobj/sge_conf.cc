@@ -35,6 +35,7 @@
 /*___INFO__MARK_END__*/
 #include <cstdio>
 #include <cstring>
+#include <cmath>
 #include <cstdlib>
 #include <string>
 #include <vector>
@@ -198,6 +199,7 @@ static bool enable_mem_details = false;
 
 static u_long32 script_timeout = 120;
 static u_long32 systemd_timeout = SYSTEMD_TIMEOUT_DEFAULT;
+static double memory_max_factor = MEMORY_MAX_FACTOR_DEFAULT;
 static bool enable_addgrp_kill = false;
 static u_long64 pdc_interval = sge_gmt32_to_gmt64(1);
 static char s_descriptors[100];
@@ -1033,6 +1035,7 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
       enable_mem_details = false;
       script_timeout = 120;
       systemd_timeout = SYSTEMD_TIMEOUT_DEFAULT;
+      memory_max_factor = MEMORY_MAX_FACTOR_DEFAULT;
       enable_addgrp_kill = false;
       use_qsub_gid = false;
       prof_execd_thrd = false;
@@ -1129,6 +1132,23 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
                                        SYSTEMD_TIMEOUT_DEFAULT);
                systemd_timeout = SYSTEMD_TIMEOUT_DEFAULT;
             }
+            continue;
+         }
+         if (strncasecmp(s, "MEMORY_MAX_FACTOR=", sizeof("MEMORY_MAX_FACTOR=") - 1) == 0) {
+            // 0 (no MemoryMax / MemoryHigh on the job scope), or a factor of at least 1: below 1
+            // the kernel would kill a job before it reaches its limit
+            const char *value = &s[sizeof("MEMORY_MAX_FACTOR=") - 1];
+            char *end = nullptr;
+            double factor = strtod(value, &end);
+            if (end == value || *end != '\0' || !std::isfinite(factor) ||
+                (factor != 0.0 && factor < 1.0)) {
+               answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_WARNING,
+                                       MSG_CONF_INVALIDPARAM_SSI, "execd_params",
+                                       "MEMORY_MAX_FACTOR",
+                                       static_cast<int>(MEMORY_MAX_FACTOR_DEFAULT));
+               factor = MEMORY_MAX_FACTOR_DEFAULT;
+            }
+            memory_max_factor = factor;
             continue;
          }
          if (parse_bool_param(s, "SIMULATE_JOBS", &simulate_jobs)) {
@@ -3320,6 +3340,26 @@ u_long32 mconf_get_systemd_timeout() {
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
    ret = systemd_timeout;
+   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
+
+   DRETURN(ret);
+}
+
+/** @brief Get the value of the MEMORY_MAX_FACTOR configuration parameter.
+ *
+ * On a host with systemd, sge_shepherd sets MemoryMax and MemoryHigh of the job scope to the hard
+ * and soft memory limits of the job multiplied by this factor. 0 means that neither is set.
+ *
+ * @return the configured factor, 0 or at least 1, MEMORY_MAX_FACTOR_DEFAULT if it was not
+ *         configured
+ */
+double mconf_get_memory_max_factor() {
+   DENTER(BASIS_LAYER);
+
+   double ret;
+
+   SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
+   ret = memory_max_factor;
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    DRETURN(ret);
