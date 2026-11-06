@@ -1269,7 +1269,7 @@ This parameter is set to true by default, meaning that on hosts that support sys
 Some features of the systemd integration depend on the systemd version and the cgroup version of the host:
 
 | Feature | Prerequisite | Without the prerequisite |
-|---|---|---|
+|--------------------------|------------------------|------------------------------------------|
 | *OOMPolicy=kill* on the job scope, see *h_rss* in xxqs_name_sxx_queue_conf(5) | systemd 252, cgroup v2 | The memory cgroup OOM killer kills single processes of a job instead of the whole job, and an OOM kill is not reported in the accounting record. |
 | *MemoryHigh* of the job scope from *s_rss* and *s_vmem* | cgroup v2 | *s_rss* and *s_vmem* are not applied as a limit of the job scope. |
 | *AllowedCPUs* of the job scope from the core binding | cgroup v2 | xxqs_name_sxx_shepherd(8) binds the processes of the job to their cores itself. |
