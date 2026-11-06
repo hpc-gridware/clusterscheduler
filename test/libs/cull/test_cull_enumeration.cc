@@ -314,7 +314,8 @@ int main(int /*argc*/, char * /*argv*/[]) {
       CHECK(8,  "ALL: lCountWhat == 11",  lCountWhat(what1, TEST_Type) == 11);
       CHECK(9,  "NONE: lCountDescr == -1", lCountDescr(dst2) == -1);
       CHECK(10, "NONE: lCountWhat == 0",  lCountWhat(what2, TEST_Type) == 0);
-      CHECK(11, "partial: lCountDescr == 5", lCountDescr(dst3) == 5);
+      // a reduction has the length of its type and holds the selected fields (CS-439)
+      CHECK(11, "partial: lCountDescr == 11, lCountPresent == 5", lCountDescr(dst3) == 11 && lCountPresent(dst3) == 5);
       CHECK(12, "partial: lCountWhat == 5",  lCountWhat(what3, TEST_Type) == 5);
       lFreeWhat(&what1);
       lFreeWhat(&what2);
@@ -408,7 +409,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
       lList *list1 = lSelect("", list, nullptr, what);
       // all 5 elements are selected, reduced to the 4 fields of the outer level of the what
       CHECK(17, "lSelect with complex nested what selects every element, reduced to the what",
-            list1 != nullptr && lGetNumberOfElem(list1) == 5 && lCountDescr(lGetListDescr(list1)) == 4);
+            list1 != nullptr && lGetNumberOfElem(list1) == 5 && lCountPresent(lGetListDescr(list1)) == 4);
       lFreeWhat(&what);
       lFreeElem(&elem);
       lFreeList(&list);

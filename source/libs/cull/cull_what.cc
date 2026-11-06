@@ -146,12 +146,12 @@ const lDescr *ocs_cull_what_descr(const lEnumeration *enp, const lDescr *src, bo
       DRETURN(head->cache_dp);
    }
 
-   const int n = lCountWhat(enp, src);
-   if (n <= 0) {
+   if (lCountWhat(enp, src) <= 0) {
       LERROR(LECOUNTWHAT);
       DRETURN(nullptr);
    }
-   auto *tmp = reinterpret_cast<lDescr *>(sge_malloc(sizeof(lDescr) * (n + 1)));
+   // the reduction has the full length of the type (N-B-1)
+   auto *tmp = reinterpret_cast<lDescr *>(sge_malloc(sizeof(lDescr) * (lCountDescr(src) + 1)));
    if (tmp == nullptr) {
       LERROR(LEMALLOC);
       DRETURN(nullptr);

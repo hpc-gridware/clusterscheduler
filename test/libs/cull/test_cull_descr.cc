@@ -35,12 +35,16 @@
  */
 
 #include <atomic>
+#include <cstdio>
 #include <cstdint>
 #include <cstring>
 #include <string>
 #include <thread>
 #include <utility>
 #include <vector>
+
+#include <sys/wait.h>
+#include <unistd.h>
 
 /** @brief Make this translation unit the one that defines the CULL field names */
 #define __SGE_GDI_LIBRARY_HOME_OBJECT_FILE__
@@ -562,11 +566,13 @@ static int unpack_type_ref(const uint32_t first_nm, const uint32_t count) {
 static void test_type_ref() {
    const size_t base = ocs_cull_descr_registry_size();
    lDescr *heap = heap_copy(TD_Type);
+   const lDescr *reduced = ocs_cull_descr_reduce(TD_Type, {TD_id, TD_name});
    CHECK(32, "a full descriptor is packed as a type reference, a reduced one enters the table, a flag-filtered one "
          "goes field by field",
          first_word_of_packed(TD_Type, 0) == CULL_PACK_DESCR_TYPE_REF &&
          first_word_of_packed(heap, 0) == CULL_PACK_DESCR_TYPE_REF &&
-         first_word_of_packed(TD_Type, CULL_SPOOL) == 4 && first_word_of_packed(RED_A, 0) == CULL_PACK_DESCR_TABLE_DEF);
+         first_word_of_packed(TD_Type, CULL_SPOOL) == 4 && first_word_of_packed(reduced, 0) == CULL_PACK_DESCR_TABLE_DEF);
+   ocs_cull_descr_release(&reduced);
    sge_free(&heap);
 
    lList *lp = make_list(3);
@@ -820,7 +826,8 @@ static void test_grown_types() {
       clear_packbuffer(&pb);
    }
    CHECK(44, "a selection of the leading fields packed with flags stays a reduced element",
-         copy != nullptr && lCountDescr(copy->descr) == 2 && (copy->descr[0].mt & CULL_IS_REDUCED) != 0 &&
+         copy != nullptr && lCountPresent(copy->descr) == 2 && lCountDescr(copy->descr) == 4 &&
+         (copy->descr[0].mt & CULL_IS_REDUCED) != 0 &&
          lGetUlong(copy, GR_id) == 3);
    lFreeElem(&copy);
    lFreeWhat(&what);
@@ -905,9 +912,16 @@ static void test_reduce() {
 
    const lDescr *a = ocs_cull_descr_reduce(TD_Type, {TD_flag, TD_name, TD_flag});
    const lDescr *b = ocs_cull_descr_reduce(TD_Type, {TD_name, TD_flag});
-   bool order_ok = a != nullptr && a == b && lCountDescr(a) == 2 && a[0].nm == TD_name && a[1].nm == TD_flag &&
-                   mt_get_type(a[0].mt) == lStringT && (a[0].mt & CULL_IS_REDUCED) != 0 &&
-                   (a[2].mt & CULL_IS_REDUCED) != 0 && ocs_cull_descr_refs(a) == 2 &&
+   std::vector<std::pair<int, int>> seen;
+   if (a != nullptr) {
+      for (const auto f : ocs_cull_present_fields(a)) {
+         seen.emplace_back(f.pos, f.slot);
+      }
+   }
+   bool order_ok = a != nullptr && a == b && lCountPresent(a) == 2 && lCountDescr(a) == 4 &&
+                   seen == (std::vector<std::pair<int, int>>{{1, 0}, {3, 1}}) && a[0].off == OCS_CULL_ABSENT &&
+                   mt_get_type(a[1].mt) == lStringT && (a[0].mt & CULL_IS_REDUCED) != 0 &&
+                   (a[4].mt & CULL_IS_REDUCED) != 0 && ocs_cull_descr_refs(a) == 2 &&
                    ocs_cull_descr_registry_size() == base + 1;
    CHECK(53, "a field list in any order and with duplicates yields one descriptor in type order", order_ok);
 
@@ -983,7 +997,7 @@ static void test_wire_order() {
    lList *back = sel != nullptr ? pack_unpack(sel) : nullptr;
    const lListElem *first = back != nullptr ? lFirst(back) : nullptr;
    CHECK(61, "a field selected twice is selected once, and the reduction goes over the wire",
-         lCountWhat(what, TD_Type) == 2 && sel != nullptr && lCountDescr(lGetListDescr(sel)) == 2 &&
+         lCountWhat(what, TD_Type) == 2 && sel != nullptr && lCountPresent(lGetListDescr(sel)) == 2 &&
          back != nullptr && lGetNumberOfElem(back) == 3 && first != nullptr && lGetUlong(first, TD_id) == 0 &&
          strcmp(lGetString(first, TD_name), "n0") == 0);
    lFreeList(&back);
@@ -992,6 +1006,67 @@ static void test_wire_order() {
    lFreeList(&lp);
 
    CHECK(60, "after the buffers the registry is empty again", ocs_cull_descr_registry_size() == base);
+}
+
+/**
+ * @brief Whether reading a field through the accessor aborts the process
+ * @param ep the element
+ * @param nm the field, of type string
+ * @return true if a child that reads it dies instead of exiting normally
+ */
+static bool read_aborts(const lListElem *ep, const int nm) {
+   fflush(stdout);
+   fflush(stderr);
+   const pid_t pid = fork();
+   if (pid == 0) {
+      // silence the expected CRITICAL message of the child
+      [[maybe_unused]] FILE *err = freopen("/dev/null", "w", stderr);
+      [[maybe_unused]] FILE *out = freopen("/dev/null", "w", stdout);
+      lGetString(ep, nm);
+      _exit(0);
+   }
+   int status = 0;
+   if (pid < 0 || waitpid(pid, &status, 0) != pid) {
+      return false;
+   }
+   return !(WIFEXITED(status) && WEXITSTATUS(status) == 0);
+}
+
+/** @brief DESCR-16: positions, absent and foreign fields of full-length descriptors (N-B-2, N-B-3, N-B-4) */
+static void test_absent_fields() {
+   const size_t base = ocs_cull_descr_registry_size();
+   lList *lp = make_list(2);
+   lEnumeration *what = lWhat("%T(%I %I)", TD_Type, TD_name, TD_value);
+   lList *red = lSelect("red", lp, nullptr, what);
+   const lListElem *full = lFirst(lp);
+   const lListElem *ep = red != nullptr ? lFirst(red) : nullptr;
+   const lDescr *dp = ep != nullptr ? lGetElemDescr(ep) : nullptr;
+
+   CHECK(62, "a reduced element has the length of its type and keeps the positions of the type",
+         dp != nullptr && lCountDescr(dp) == 4 && lCountPresent(dp) == 2 &&
+         lGetPosViaElem(ep, TD_name, 0) == lGetPosInDescr(TD_Type, TD_name) &&
+         lGetPosViaElem(ep, TD_value, 0) == lGetPosInDescr(TD_Type, TD_value) &&
+         lGetPosViaElem(full, TD_value, 0) == lGetPosViaElem(ep, TD_value, 0));
+
+   CHECK(63, "a field the reduction does not hold is not found and has no type",
+         dp != nullptr && lGetPosViaElem(ep, TD_id, 0) == -1 && lGetPosInDescr(dp, TD_flag) == -1 &&
+         _lGetPosInDescr(dp, TD_flag) == -1 && lGetType(dp, TD_id) == lEndT && lGetType(dp, TD_name) == lStringT);
+
+   CHECK(64, "a field of another type is not found in a full or a reduced descriptor",
+         dp != nullptr && lGetPosInDescr(TD_Type, GR_name) == -1 && lGetPosInDescr(dp, GR_name) == -1 &&
+         lGetPosInDescr(TD_Type, TD_id + 4) == -1 && lGetPosViaElem(full, GR_id, 0) == -1);
+
+   CHECK(65, "the values of the held fields are those of the source",
+         ep != nullptr && lGetUlong(ep, TD_value) == lGetUlong(full, TD_value) &&
+         strcmp(lGetString(ep, TD_name), lGetString(full, TD_name)) == 0);
+
+   CHECK(66, "reading a field the reduction does not hold aborts",
+         ep != nullptr && !read_aborts(ep, TD_name) && read_aborts(ep, TD_id));
+
+   lFreeList(&red);
+   lFreeWhat(&what);
+   lFreeList(&lp);
+   CHECK(67, "after the lists the registry is empty again", ocs_cull_descr_registry_size() == base);
 }
 
 int main(int argc, char *argv[]) {
@@ -1096,5 +1171,12 @@ int main(int argc, char *argv[]) {
         "select with a field listed twice and send the result"},
        "both are format errors, a field selected twice is packed once, and nothing stays in the registry",
        {{"FLD-03", "partly"}}, {58, 59, 61, 60}, test_wire_order},
+      {"DESCR-16", "absent and foreign fields",
+       "reduced elements keep the positions of their type, and fields they do not hold behave as before",
+       {"select two fields of a list", "look up held, absent and foreign fields by position and type",
+        "read held and absent fields"},
+       "positions equal those of the type, absent and foreign fields are not found and have no type, held values "
+       "are those of the source, and reading an absent field aborts",
+       {{"FLD-01", "partly"}, {"FLD-02", "unit level"}}, {62, 63, 64, 65, 66, 67}, test_absent_fields},
    });
 }

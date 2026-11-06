@@ -61,7 +61,9 @@ const lDescr *ocs_cull_descr_acquire(const lDescr *dp);
 
 const lDescr *ocs_cull_descr_private(const lDescr *dp);
 
-const lDescr *ocs_cull_descr_build(const lDescr *type, const std::vector<bool> &keep);
+int ocs_cull_descr_layout(const lDescr *src, const std::vector<bool> &keep, lDescr *out);
+
+const lDescr *ocs_cull_descr_build(const lDescr *src, const std::vector<bool> &keep);
 
 const lDescr *ocs_cull_descr_reduce(const lDescr *type, std::initializer_list<int> fields);
 

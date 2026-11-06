@@ -45,6 +45,8 @@
 #include "uti/sge_string.h"
 #include "uti/sge_stdlib.h"
 
+#include "cull/ocs_cull_descr.h"
+
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_userset.h"
 #include "sgeobj/sge_qinstance.h"
@@ -276,20 +278,13 @@ void
 ensure_valid_what_and_where(sge_where_what_t *where_what) {
    DENTER(GDI_LAYER);
 
-   lDescr *tmp_what_descr = nullptr;
+   const lDescr *tmp_what_descr = nullptr;
 
    /* prepare temp data used to create new lists with partial descriptor */
    if (where_what->what_queue2 == nullptr || where_what->where_queue2 == nullptr ||
        where_what->what_queue == nullptr || where_what->where_queue == nullptr) {
-      int n = 0;
-      int index = 0;
-      lEnumeration *tmp_what_queue = nullptr;
-
-      tmp_what_queue = lIntVector2What(QU_Type, qinstance_field_ids);
-      n = lCountWhat(tmp_what_queue, QU_Type);
-      tmp_what_descr = (lDescr *) sge_malloc(sizeof(lDescr) * (n + 1));
-      lPartialDescr(tmp_what_queue, QU_Type, tmp_what_descr, &index);
-
+      lEnumeration *tmp_what_queue = lIntVector2What(QU_Type, qinstance_field_ids);
+      tmp_what_descr = lGetReducedDescr(QU_Type, tmp_what_queue);
       lFreeWhat(&tmp_what_queue);
    }
 
@@ -412,9 +407,7 @@ ensure_valid_what_and_where(sge_where_what_t *where_what) {
       CRITICAL(SFNMAX, MSG_SCHEDD_UNABLE_TO_SETUP_FILTER);
    }
    /* cleanup tmp data */
-   if (tmp_what_descr != nullptr) {
-      sge_free(&tmp_what_descr);
-   }
+   ocs_cull_descr_release(&tmp_what_descr);
    DRETURN_VOID;
 }
 

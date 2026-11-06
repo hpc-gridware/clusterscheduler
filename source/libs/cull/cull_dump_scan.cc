@@ -41,6 +41,7 @@
 #include <cstdio>
 #include <cstring>
 #include <cctype>
+#include <vector>
 
 /* do not compile in monitoring code */
 #ifndef NO_SGE_COMPILE_DEBUG
@@ -58,6 +59,7 @@
 #include "cull/cull_listP.h"
 #include "cull/cull_multitypeP.h"
 #include "cull/cull_lerrnoP.h"
+#include "cull/ocs_cull_descr.h"
 
 #include <cinttypes>
 
@@ -144,11 +146,14 @@ int lDumpDescr(FILE *fp, const lDescr *dp, int indent) {
 /**
  * @brief Read a descriptor from file (debug)
  *
- * Read a descriptor from file (for debugging purposes)
+ * Read a descriptor from file (for debugging purposes). The file lists the
+ * fields that have a value; the result has the full length of their type,
+ * with the others absent (CS-439, N-B-1). Fields of no type the name space of
+ * the calling thread knows are an error.
  *
  * @param fp file stream
  *
- * @return descriptor
+ * @return descriptor, to be freed with sge_free(), or nullptr on error
  */
 lDescr *lUndumpDescr(FILE *fp) {
    DENTER(CULL_LAYER);
@@ -199,6 +204,32 @@ lDescr *lUndumpDescr(FILE *fp) {
       LERROR(LESYNTAX);
       DRETURN(nullptr);
    }
+
+   /* the full length of the type the fields belong to; they are listed in type order, as the values follow */
+   int first = 0;
+   const lDescr *type = n > 0 ? ocs_cull_descr_static_containing(dp[0].nm, &first) : nullptr;
+   const int type_n = type != nullptr ? lCountDescr(type) : 0;
+   std::vector<bool> keep(type_n, false);
+   bool known = type != nullptr;
+   int last = -1;
+   for (i = 0; known && i < n; i++) {
+      const int pos = dp[i].nm - type[0].nm;
+      known = pos > last && pos < type_n && type[pos].nm == dp[i].nm;
+      if (known) {
+         keep[pos] = true;
+         last = pos;
+      }
+   }
+   sge_free(&dp);
+   if (!known) {
+      LERROR(LEFGETDESCR);
+      DRETURN(nullptr);
+   }
+   if ((dp = (lDescr *) sge_malloc(sizeof(lDescr) * (type_n + 1))) == nullptr) {
+      LERROR(LEMALLOC);
+      DRETURN(nullptr);
+   }
+   ocs_cull_descr_layout(type, keep, dp);
 
    DRETURN(dp);
 }
@@ -745,9 +776,12 @@ lList *lUndumpList(FILE *fp, const char *name, const lDescr *dp) {
 
    /* Here warnings are displayed if there are additional or missing fields */
    for (j = 0; fdp[j].nm != NoName; j++) {
+      if (fdp[j].off == OCS_CULL_ABSENT) {
+         continue;
+      }
       for (i = 0; i < n; i++) {
-         if (dp[i].nm == fdp[j].nm &&
-             (dp[i].mt & ~CULL_DESCR_INTERNED) == fdp[j].mt) {
+         if (dp[i].nm == fdp[j].nm && dp[i].off != OCS_CULL_ABSENT &&
+             (dp[i].mt & ~(CULL_DESCR_INTERNED | CULL_IS_REDUCED)) == (fdp[j].mt & ~CULL_IS_REDUCED)) {
             if (found[i] != -1)
                     DPRINTF(("lUndumpList: field %s found twice\n",
                             lNm2Str(dp[i].nm)));

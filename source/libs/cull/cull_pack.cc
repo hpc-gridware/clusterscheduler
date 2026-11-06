@@ -391,8 +391,10 @@ static int ocs_cull_unpack_prefix_type(const lDescr *dp, const uint32_t n, const
  * data) that is not reduced and lists the leading fields of a static type is
  * that type in the same way. With an expected static type, such a descriptor
  * must be a version of it; any other one is a format error. Every remaining
- * descriptor is built, marked reduced if it does not list its whole type, and
- * replaced by the shared descriptor equal to it.
+ * descriptor is built with the full length of the type its fields belong to,
+ * marked reduced if it does not list the whole type, and replaced by the shared
+ * descriptor equal to it; fields of no type the name space of the calling
+ * thread knows are a format error.
  *
  * The fields are listed in type order, every what being sorted by position, so
  * the values that follow go to the slots in order (N-B-8); fields out of that
@@ -588,89 +590,30 @@ static int cull_unpack_descr(
    CULL_STATS_TYPE(dp[0].nm, DCOPY_UNPACK, 1);
    CULL_STATS_TYPE(dp[0].nm, DCOPY_UNPACK_B, sizeof(lDescr) * (n + 1));
 
-   /* 
-    * above we made the assumption that the unpacked descriptor was reduced
-    * now we have to check that the assumption is correct 
-    */
+   /* the fields on the wire are held by a full-length descriptor of their type,
+    * with mt from the local type as for a table entry by index (N-B-1, N-B-8);
+    * fields of no known type, or of several, are a format error */
    {
-      const lNameSpace *ns = cull_state_get_name_space();
-      int i = 0;
-
-      /* at first we assume the element is reduced */
-      bool is_reduced = true;
-
-
-      /*
-       * EB: TODO: I don't know why but when this function is executed within drmma
-       * functionality then the namespace is sometimes nullptr.
-       * If this happens, then I assume that the element is reduced. 
-       */
-      if (ns == nullptr) {
-         is_reduced = true;
-      } else {
-         /* 
-          * check if the descriptor is really reduced.
-          * this in done by iterating over the whole namespace
-          * we try to find the element and all field for an entry in the 
-          * namespace 
-          */
-         while (ns[i].lower != 0 && ns[i].size != 0 && ns[i].namev) {
-            /* 
-             * check if the first element in the descriptor is 
-             * equivalent with the current entry in the namespace (first nm id) 
-             */
-            if (dp[0].nm == ns[i].lower) {
-               int nm;
-               uint32_t k;
-
-               /* we change the initial assumption */
-               is_reduced = false;
-
-               /* 
-                * check if all other entries are also in the descriptor 
-                * as soon as a element is missing we can break: the element is then reduced
-                */
-               for (nm = ns[i].lower, k = 0; nm < ns[i].lower + ns[i].size; nm++, k++) {
-                  if (dp[k].nm != nm) {
-                     is_reduced = true;
-                     break;
-                  }
-               }
-
-               /* 
-                * if we did not skip the loop above but the field in the
-                * descriptor are more that thet in the namespace then
-                * we have also to set the is_reduced flag. (this should never happen)
-                */
-               if (k != n) {
-                  is_reduced = true;
-                  break;
-               }
-
-               break;
-            }
-
-            /* move to next element */
-            i++;
+      int first = 0;
+      const lDescr *type = n > 0 ? ocs_cull_descr_static_containing(dp[0].nm, &first) : nullptr;
+      const int type_n = type != nullptr ? lCountDescr(type) : 0;
+      std::vector<bool> keep(type_n, false);
+      bool known = type != nullptr;
+      for (i = 0; known && i < n; i++) {
+         const int pos = dp[i].nm - type[0].nm;
+         known = pos >= 0 && pos < type_n && type[pos].nm == dp[i].nm &&
+                 mt_get_type(type[pos].mt) == mt_get_type(dp[i].mt);
+         if (known) {
+            keep[pos] = true;
          }
       }
-
-      /* 
-       * we only have to correct the is_reduced flag if the check above 
-       * found all names in the descriptor
-       */
-      {
-         uint32_t l;
-
-         for (l = 0; l <= n; l++) {
-            dp[l].mt |= is_reduced ? CULL_IS_REDUCED : 0;
-         }
+      sge_free(&dp);
+      if (!known) {
+         LERROR(LEDESCRNULL);
+         DRETURN(PACK_FORMAT);
       }
+      *dpp = ocs_cull_descr_build(type, keep);
    }
-
-   /* the caller holds the shared descriptor equal to the one on the wire */
-   *dpp = ocs_cull_descr_acquire(dp);
-   sge_free(&dp);
    if (*dpp == nullptr) {
       LERROR(LEMALLOC);
       DRETURN(PACK_ENOMEM);
@@ -879,12 +822,12 @@ cull_pack_enum_as_descr(sge_pack_buffer *pb, const lEnumeration *what,
    }
    switch (what[0].pos) {
       case WHAT_ALL:
-         for (i = 0; descr[i].nm != NoName; i++) {
-            if ((ret = packint(pb, descr[i].nm))) {
+         for (const auto f : ocs_cull_present_fields(descr)) {
+            if ((ret = packint(pb, descr[f.pos].nm))) {
                PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
                DRETURN(ret);
             }
-            if ((ret = packint(pb, descr[i].mt & ~CULL_DESCR_INTERNED))) {
+            if ((ret = packint(pb, descr[f.pos].mt & ~CULL_DESCR_INTERNED))) {
                PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
                DRETURN(ret);
             }

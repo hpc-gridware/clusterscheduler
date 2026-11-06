@@ -434,13 +434,38 @@ const lDescr *ocs_cull_descr_intern(const lDescr *dp) {
    DRETURN(entries_of(fresh));
 }
 
+#if defined(ENABLE_DEBUG_CHECKS)
+/**
+ * @brief Abort if a reduced descriptor does not have the length of its type (CS-439, N-B-9)
+ *
+ * A compact reduction, as hand-written arrays were, would make every position
+ * past its end a wrong slot. The type is found through the name space of the
+ * calling thread; without one nothing is checked.
+ *
+ * @param dp the entries of a descriptor
+ * @param n their number, without the terminating one
+ */
+static void check_full_length(const lDescr *dp, const uint32_t n) {
+   if ((dp[0].mt & CULL_IS_REDUCED) == 0 || cull_state_get_name_space() == nullptr) {
+      return;
+   }
+   int pos = 0;
+   const lDescr *type = ocs_cull_descr_static_containing(dp[0].nm, &pos);
+   if (type == nullptr || pos != 0 || count_entries(type) != n) {
+      CRITICAL(MSG_CULL_DESCRNOTFULLLENGTH_IU, dp[0].nm, n);
+      abort();
+   }
+}
+#endif
+
 /**
  * @brief The descriptor a list or an element holds, with a reference for the caller
  *
  * A counted descriptor gets one more reference. A full descriptor yields the
  * static block of its type, also when it is an equal copy of it; the static
  * block is found through the name space of the calling thread. Any other
- * descriptor is interned. The argument is left to the caller.
+ * descriptor is interned. Debug builds abort on a reduced descriptor that does
+ * not have the length of its type. The argument is left to the caller.
  *
  * @param dp the entries of the descriptor, terminated by #lEndT
  * @return the descriptor to hold, or nullptr if dp is nullptr or memory is exhausted
@@ -452,6 +477,9 @@ const lDescr *ocs_cull_descr_acquire(const lDescr *dp) {
    if (ocs_cull_descr_is_counted(dp)) {
       return ocs_cull_descr_ref(dp);
    }
+#if defined(ENABLE_DEBUG_CHECKS)
+   check_full_length(dp, count_entries(dp));
+#endif
    const lDescr *block = static_block_for(dp);
    if (block == dp) {
       return dp;
@@ -489,43 +517,72 @@ const lDescr *ocs_cull_descr_private(const lDescr *dp) {
 }
 
 /**
- * @brief The shared descriptor of a type reduced to some of its fields (CS-439)
+ * @brief Lay out a full-length descriptor that holds some fields of another (CS-439, N-B-1, N-B-5)
  *
- * The one builder of reduced descriptors: the kept fields are taken in the
- * order of the type with their type and attributes, so the same field set
- * always yields the same descriptor (N-B-5). Every entry is marked
- * #CULL_IS_REDUCED unless all fields are kept, which yields the type itself.
+ * Every entry of @p src is copied, so the result has the length of the type.
+ * The kept fields get their slots in type order; all others are marked
+ * #OCS_CULL_ABSENT. Unless every field is kept, every entry is marked
+ * #CULL_IS_REDUCED. The process-local #CULL_DESCR_INTERNED stays with the source.
  *
- * @param type the static block of the object type
- * @param keep one flag per field of the type, true for the fields to keep
- * @return the shared descriptor holding a reference for the caller, or nullptr
- *         if keep does not match the type, selects no field, or memory is exhausted
+ * @param src a full-length descriptor: a type or a reduction of it
+ * @param keep one flag per entry of src, true for the fields to keep; each must be present in src
+ * @param[out] out room for the entries of src and the terminating one; undefined on an error
+ * @return the number of kept fields, or -1 if keep does not match src
  */
-const lDescr *ocs_cull_descr_build(const lDescr *type, const std::vector<bool> &keep) {
+int ocs_cull_descr_layout(const lDescr *src, const std::vector<bool> &keep, lDescr *out) {
+   const uint32_t n = src != nullptr ? count_entries(src) : 0;
+   if (n == 0 || keep.size() != n || out == nullptr) {
+      return -1;
+   }
+   // a reduction is the common case; a selection of every field drops the mark again
+   int slot = 0;
+   for (uint32_t pos = 0; pos < n; pos++) {
+      if (keep[pos] && src[pos].off == OCS_CULL_ABSENT) {
+         return -1;
+      }
+      out[pos].nm = src[pos].nm;
+      out[pos].mt = (src[pos].mt & ~CULL_DESCR_INTERNED) | CULL_IS_REDUCED;
+      out[pos].off = keep[pos] ? slot++ - static_cast<int>(pos) : OCS_CULL_ABSENT;
+   }
+   out[n] = {NoName, lEndT | CULL_IS_REDUCED, 0};
+   if (static_cast<uint32_t>(slot) == n) {
+      for (uint32_t pos = 0; pos <= n; pos++) {
+         out[pos].mt &= ~CULL_IS_REDUCED;
+      }
+   }
+   return slot;
+}
+
+/**
+ * @brief The shared descriptor that holds some fields of a type (CS-439)
+ *
+ * The one builder of reduced descriptors (N-B-5): the result has the full
+ * length of the type, see ocs_cull_descr_layout(), and the same field set
+ * always yields the same descriptor. Keeping every field of a type yields the
+ * type itself.
+ *
+ * @param src a full-length descriptor: the static block of a type or a reduction of it
+ * @param keep one flag per field of src, true for the fields to keep; each must be present in src
+ * @return the shared descriptor holding a reference for the caller, or nullptr
+ *         if keep does not match src, selects no field, or memory is exhausted
+ */
+const lDescr *ocs_cull_descr_build(const lDescr *src, const std::vector<bool> &keep) {
    DENTER(CULL_LAYER);
 
-   const uint32_t n = type != nullptr ? count_entries(type) : 0;
-   if (n == 0 || keep.size() != n) {
-      LERROR(LEDESCRNULL);
+   const uint32_t n = src != nullptr ? count_entries(src) : 0;
+   std::vector<lDescr> entries(n + 1);
+   const int kept = ocs_cull_descr_layout(src, keep, entries.data());
+   if (kept < 0) {
+      LERROR(LEENUMDESCR);
       DRETURN(nullptr);
    }
-   const auto kept = static_cast<uint32_t>(std::count(keep.begin(), keep.end(), true));
    if (kept == 0) {
       LERROR(LEENUMNULL);
       DRETURN(nullptr);
    }
-   if (kept == n) {
-      DRETURN(ocs_cull_descr_acquire(type));
+   if (static_cast<uint32_t>(kept) == n) {
+      DRETURN(ocs_cull_descr_acquire(src));
    }
-
-   std::vector<lDescr> entries;
-   entries.reserve(kept + 1);
-   for (uint32_t pos = 0; pos < n; pos++) {
-      if (keep[pos]) {
-         entries.push_back({type[pos].nm, (type[pos].mt & ~CULL_DESCR_INTERNED) | CULL_IS_REDUCED, 0});
-      }
-   }
-   entries.push_back({NoName, lEndT | CULL_IS_REDUCED, 0});
    const lDescr *dp = ocs_cull_descr_intern(entries.data());
    if (dp == nullptr) {
       LERROR(LEMALLOC);

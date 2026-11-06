@@ -313,15 +313,15 @@ void lWriteDescrTo(const lDescr *dp, FILE *fp) {
 }
 
 /**
- * @brief Returns position of a name in a descriptor
+ * @brief Position of a field in a descriptor, by a full search
  *
- * Returns position of a name in a descriptor array. Does a full search
- * in the descriptor even if the element is not a reduced element.
+ * Walks the entries instead of computing the position, so it also works on a
+ * descriptor without header. A field the descriptor does not hold is not found.
  *
  * @param dp descriptor
- * @param name namse
+ * @param name the field
  *
- * @return position or -1 if not found
+ * @return position or -1 if not found or absent
  */
 int _lGetPosInDescr(const lDescr *dp, int name) {
    const lDescr *ldp;
@@ -334,7 +334,7 @@ int _lGetPosInDescr(const lDescr *dp, int name) {
    for (ldp = dp; ldp->nm != name && ldp->nm != NoName; ldp++) { ;
    }
 
-   if (ldp->nm == NoName) {
+   if (ldp->nm == NoName || ldp->off == OCS_CULL_ABSENT) {
       LERROR(LENAMENOT);
       return -1;
    }
@@ -343,44 +343,32 @@ int _lGetPosInDescr(const lDescr *dp, int name) {
 }
 
 /**
- * @brief Returns position of a name in a descriptor
+ * @brief Position of a field in a descriptor (CS-439, N-B-2)
  *
- * Returns position of a name in a descriptor array
+ * One path for every descriptor, full or reduced, since all have the length of
+ * their type: the position is the field number minus that of entry 0, checked
+ * against the length from the header and against the entry, so a field of
+ * another type is not found. A field a reduced descriptor does not hold is not
+ * found either (N-B-4).
  *
- * @param dp descriptor
- * @param name namse
+ * @param dp a static or counted descriptor, as lists, elements and types hold
+ * @param name the field
  *
- * @return position or -1 if not found
+ * @return position or -1 if not found or absent
  */
 int lGetPosInDescr(const lDescr *dp, int name) {
-   const lDescr *ldp;
-
    if (!dp) {
       LERROR(LEDESCRNULL);
       return -1;
    }
    CULL_STATS_TYPE(dp->nm, POS_CALLS, 1);
 
-   if ((dp->mt & CULL_IS_REDUCED) == 0) {
-      long pos = name - dp->nm;
-
-      if (pos < 0 || pos > MAX_DESCR_SIZE) {
-         pos = -1;
-      }
-      return pos;
-   }
-
-   for (ldp = dp; ldp->nm != name && ldp->nm != NoName; ldp++) { ;
-   }
-   CULL_STATS_TYPE(dp->nm, POS_REDUCED, 1);
-   CULL_STATS_TYPE(dp->nm, POS_ITERS, ldp - dp + 1);
-
-   if (ldp->nm == NoName) {
-      LERROR(LENAMENOT);
+   const int pos = name - dp->nm;
+   if (pos < 0 || static_cast<uint32_t>(pos) >= ocs_cull_descr_header_of(dp)->n || dp[pos].nm != name ||
+       dp[pos].off == OCS_CULL_ABSENT) {
       return -1;
    }
-
-   return ldp - dp;
+   return pos;
 }
 
 /**

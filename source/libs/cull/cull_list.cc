@@ -38,6 +38,7 @@
  * @brief Creating, copying and walking cull lists and elements
  */
 
+#include <algorithm>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -162,10 +163,10 @@ lListElem *lCopyElemHash(const lListElem *ep, bool isHash, const bool skip_no_tr
  * @brief Copies parts of an element
  *
  * Copies the fields of 'src' that the enumeration 'enp' selects to 'dst',
- * or all fields that have a value for #WHAT_ALL. A field keeps its position
- * when 'dst' is of the full type; a reduced 'dst', built from 'enp', holds the
- * selected fields in the order of 'enp'. If 'pb' is not nullptr the fields are
- * packed into it instead of being copied.
+ * or all fields that have a value for #WHAT_ALL. Every descriptor has the
+ * length of its type, so a field keeps its position (N-B-3); it must be present
+ * in both elements. If 'pb' is not nullptr the fields are packed into it
+ * instead of being copied.
  *
  * @param dst destination element
  * @param src src element
@@ -207,19 +208,17 @@ lCopyElemPartialPack(lListElem *dst, const lListElem *src,
 
       default:                     /* copy only the in enp enumerated elems */
          if (pb == nullptr) {
-            int maxpos = 0;
-            maxpos = lCountDescr(src->descr);
-
-            const bool dst_reduced = (dst->descr[0].mt & CULL_IS_REDUCED) != 0;
+            const int maxpos = std::min(lCountDescr(src->descr), lCountDescr(dst->descr));
 
             for (int i = 0; enp[i].nm != NoName; i++) {
-               if (enp[i].pos > maxpos || enp[i].pos < 0) {
+               const int pos = enp[i].pos;
+               if (pos >= maxpos || pos < 0 || src->descr[pos].off == OCS_CULL_ABSENT ||
+                   dst->descr[pos].off == OCS_CULL_ABSENT) {
                   LERROR(LEENUMDESCR);
                   DRETURN(-1);
                }
 
-               if (lCopySwitchPack(src, dst, enp[i].pos, dst_reduced ? i : enp[i].pos, isHash, enp[i].ep, nullptr,
-                                   skip_no_transfer) != 0) {
+               if (lCopySwitchPack(src, dst, pos, pos, isHash, enp[i].ep, nullptr, skip_no_transfer) != 0) {
                   LERROR(LECOPYSWITCH);
                   DRETURN(-1);
                }
@@ -1216,7 +1215,9 @@ int lOverrideStrList(lList *lp0, lList *lp1, int nm, const char *str) {
 /**
  * @brief Compare two descriptors
  *
- * Compare two descriptors
+ * Two descriptors are equivalent if they list the same fields with the same
+ * types and hold the same of them; attributes other than the type are not
+ * compared.
  *
  * @param dp0 descriptor one
  * @param dp1 descriptor two
@@ -1249,7 +1250,9 @@ int lCompListDescr(const lDescr *dp0, const lDescr *dp1) {
 #if 1
          int type0 = mt_get_type(dp0[i].mt);
          int type1 = mt_get_type(dp1[i].mt);
-         if (dp0[i].nm != dp1[i].nm || type0 != type1) {
+         // both full length: the same fields must be present (CS-439)
+         if (dp0[i].nm != dp1[i].nm || type0 != type1 ||
+             (dp0[i].off == OCS_CULL_ABSENT) != (dp1[i].off == OCS_CULL_ABSENT)) {
 #else
             /*
              * comparing the mt field might be too restrictive

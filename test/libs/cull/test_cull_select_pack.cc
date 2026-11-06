@@ -35,6 +35,7 @@
 #include <cstdio>
 #include <cstring>
 #include <string>
+#include <utility>
 #include <vector>
 
 /** @brief Make this translation unit the one that defines the CULL descriptors
@@ -151,8 +152,12 @@ static bool elem_equal(const lListElem *a, const lListElem *b) {
       return false;
    }
    for (int i = 0; i < n; i++) {
-      if (da[i].nm != db[i].nm || mt_get_type(da[i].mt) != mt_get_type(db[i].mt)) {
+      if (da[i].nm != db[i].nm || mt_get_type(da[i].mt) != mt_get_type(db[i].mt) ||
+          (da[i].off == OCS_CULL_ABSENT) != (db[i].off == OCS_CULL_ABSENT)) {
          return false;
+      }
+      if (da[i].off == OCS_CULL_ABSENT) {
+         continue;
       }
       bool same = true;
       switch (mt_get_type(da[i].mt)) {
@@ -225,22 +230,23 @@ static bool list_equal(const lList *a, const lList *b) {
 }
 
 /**
- * @brief Does a descriptor list exactly these field names, in this order?
+ * @brief Does a descriptor hold exactly these fields, in this slot order?
  * @param dp the descriptor
  * @param names the expected names, terminated by NoName
- * @return true if the names and their order match
+ * @return true if the fields that have a value and their order match
  */
 static bool descr_names_are(const lDescr *dp, const int *names) {
    if (dp == nullptr) {
       return false;
    }
    int i = 0;
-   for (; names[i] != NoName; i++) {
-      if (dp[i].nm != names[i]) {
+   for (const auto f : ocs_cull_present_fields(dp)) {
+      if (names[i] == NoName || dp[f.pos].nm != names[i]) {
          return false;
       }
+      i++;
    }
-   return dp[i].nm == NoName;
+   return names[i] == NoName;
 }
 
 /**
@@ -554,30 +560,38 @@ static void test_select_pack_all_fields() {
 }
 
 /**
- * @brief SELPACK-05: lPartialDescr builds the reduced descriptor
+ * @brief SELPACK-05: lPartialDescr builds the reduced descriptor at the full length of the type
  * @return nothing; CHECK records the results
  */
 static void test_partial_descr() {
    lEnumeration *what = lWhat("%T(%I %I %I)", SP_Type, SP_spool, SP_name, SP_group);
    const int n = lCountWhat(what, SP_Type);
-   std::vector<lDescr> dp(n + 1);
+   std::vector<lDescr> dp(SP_Size + 1);
    int index = 0;
    const int ret = lPartialDescr(what, SP_Type, dp.data(), &index);
 
-   // lWhat brings the fields into the order of the descriptor (CS-2997)
-   static const int names[] = {SP_name, SP_group, SP_spool, NoName};
-   CHECK(14, "lPartialDescr takes the fields in the order of the descriptor, whatever the order of the what",
-         ret == 0 && n == 3 && index == 3 && descr_names_are(dp.data(), names));
+   // lWhat brings the fields into the order of the descriptor (CS-2997); the result has the full length (CS-439)
+   const int pos_name = lGetPosInDescr(SP_Type, SP_name);
+   const int pos_group = lGetPosInDescr(SP_Type, SP_group);
+   const int pos_spool = lGetPosInDescr(SP_Type, SP_spool);
+   std::vector<std::pair<int, int>> present;
+   for (const auto f : ocs_cull_present_fields(dp.data())) {
+      present.emplace_back(f.pos, f.slot);
+   }
+   CHECK(14, "lPartialDescr keeps the length of the type and gives the fields their slots in type order",
+         ret == 0 && n == 3 && index == static_cast<int>(SP_Size) && lCountPresent(dp.data()) == 3 &&
+         present == (std::vector<std::pair<int, int>>{{pos_name, 0}, {pos_group, 1}, {pos_spool, 2}}));
 
    bool reduced = true;
-   for (int i = 0; i <= n; i++) {
+   for (size_t i = 0; i <= SP_Size; i++) {
       reduced = reduced && (dp[i].mt & CULL_IS_REDUCED) != 0;
    }
    CHECK(15, "every field and the end mark carry CULL_IS_REDUCED", reduced);
 
    CHECK(16, "the field attributes of the source are kept",
-         mt_get_type(dp[0].mt) == lStringT && (dp[0].mt & CULL_HASH) != 0 && (dp[0].mt & CULL_UNIQUE) != 0 &&
-         (dp[1].mt & CULL_HASH) != 0 && (dp[1].mt & CULL_UNIQUE) == 0 && (dp[2].mt & CULL_SPOOL) != 0);
+         mt_get_type(dp[pos_name].mt) == lStringT && (dp[pos_name].mt & CULL_HASH) != 0 &&
+         (dp[pos_name].mt & CULL_UNIQUE) != 0 && (dp[pos_group].mt & CULL_HASH) != 0 &&
+         (dp[pos_group].mt & CULL_UNIQUE) == 0 && (dp[pos_spool].mt & CULL_SPOOL) != 0);
    lFreeWhat(&what);
 
    lEnumeration *all = lWhat("%T(ALL)", SP_Type);
@@ -797,7 +811,8 @@ int main(int argc, char *argv[]) {
        "lPartialDescr() takes the fields of a what in descriptor order, marks them reduced and keeps their attributes",
        {"build a descriptor from a what of three fields in non-descriptor order",
         "build one from what ALL", "call it without a what"},
-       "the fields come in what order with CULL_IS_REDUCED and their hash, unique and spool attributes; what ALL "
+       "the fields come in type order, at the length of the type, with CULL_IS_REDUCED and their hash, unique and "
+       "spool attributes; what ALL "
        "gives the unmarked source descriptor; a missing what is rejected",
        {{"CLN-03", "covers"}}, {14, 15, 16, 17, 18}, test_partial_descr},
       {"SELPACK-06", "cull_pack_list_partial with flags and with a what",

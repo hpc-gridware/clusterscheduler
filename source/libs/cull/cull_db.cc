@@ -443,24 +443,21 @@ lList *lSelectDPack(const char *name, const lList *slp, const lCondition *cp,
 }
 
 /**
- * @brief Extracts some fields of a descriptor
+ * @brief Lay out the descriptor a field selection reduces another one to (CS-439)
  *
- * Extracts some fields of the source descriptor 'sdp' masked
- * by an enumeration 'ep' of needed fields
+ * The result has the full length of the type, with the selected fields in
+ * their slots and the others absent (see ocs_cull_descr_layout()). The source
+ * may itself be a reduction; every selected field must be present in it.
  *
- * @param ep mask
- * @param sdp source
- * @param ddp destination
- * @param indexp
+ * @param ep the selection
+ * @param sdp the source descriptor
+ * @param ddp receives the entries; room for lCountDescr(sdp) + 1 of them
+ * @param indexp set to the number of entries written, without the terminating one
  *
  * @return error state 0 - OK -1 - Error
  */
-int lPartialDescr(const lEnumeration *ep, const lDescr *sdp, lDescr *ddp,
-                  int *indexp) {
+int lPartialDescr(const lEnumeration *ep, const lDescr *sdp, lDescr *ddp, int *indexp) {
    DENTER(CULL_LAYER);
-
-   int i;
-   bool reduced = false;
 
    if (!ep) {
       LERROR(LEELEMNULL);
@@ -475,59 +472,32 @@ int lPartialDescr(const lEnumeration *ep, const lDescr *sdp, lDescr *ddp,
       DRETURN(-1);
    }
 
+   const int n = lCountDescr(sdp);
+   std::vector<bool> keep(n, false);
    switch (ep[0].pos) {
       case WHAT_NONE:
          DRETURN(0);
       case WHAT_ALL:
-         for (i = 0; mt_get_type(sdp[i].mt) != lEndT; i++) {
-            // the reference count flag of a shared source stays with the source
-            ddp[*indexp].mt = sdp[i].mt & ~CULL_DESCR_INTERNED;
-            ddp[*indexp].nm = sdp[i].nm;
-            ddp[*indexp].off = 0;
-
-            (*indexp)++;
+         for (int i = 0; i < n; i++) {
+            keep[i] = sdp[i].off != OCS_CULL_ABSENT;
          }
          break;
-      default: {
-         int maxpos = lCountDescr(sdp);
-
-         /* copy and check descr */
-         for (i = 0; mt_get_type(ep[i].mt) != lEndT; i++) {
-            if (mt_get_type(ep[i].mt) == mt_get_type(sdp[ep[i].pos].mt) &&
-                ep[i].nm == sdp[ep[i].pos].nm) {
-
-               if (ep[i].pos > maxpos || ep[i].pos < 0) {
-                  LERROR(LEENUMDESCR);
-                  DRETURN(-1);
-               }
-               ddp[*indexp].mt = sdp[ep[i].pos].mt & ~CULL_DESCR_INTERNED;
-               ddp[*indexp].nm = sdp[ep[i].pos].nm;
-               ddp[*indexp].off = 0;
-               ddp[*indexp].mt |= CULL_IS_REDUCED;
-               reduced = true;
-
-               (*indexp)++;
-            } else {
+      default:
+         for (int i = 0; mt_get_type(ep[i].mt) != lEndT; i++) {
+            const int pos = ep[i].pos;
+            if (pos < 0 || pos >= n || ep[i].nm != sdp[pos].nm || mt_get_type(ep[i].mt) != mt_get_type(sdp[pos].mt) ||
+                sdp[pos].off == OCS_CULL_ABSENT) {
                LERROR(LEENUMDESCR);
                DRETURN(-1);
             }
+            keep[pos] = true;
          }
-      }
    }
-   /* copy end mark */
-   ddp[*indexp].mt = lEndT;
-   ddp[*indexp].nm = NoName;
-   ddp[*indexp].off = 0;
-   if (reduced) {
-      ddp[*indexp].mt |= CULL_IS_REDUCED;
+   if (ocs_cull_descr_layout(sdp, keep, ddp) < 0) {
+      LERROR(LEENUMDESCR);
+      DRETURN(-1);
    }
-
-   /* 
-      We don't do (*indexp)++ in order to end up correctly if
-      nothing follows and to overwrite at the end position if
-      we concatenate two descriptors
-    */
-
+   *indexp = n;
    DRETURN(0);
 }
 
