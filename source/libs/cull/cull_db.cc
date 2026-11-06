@@ -676,6 +676,7 @@ int lPartialDescr(const lEnumeration *ep, const lDescr *sdp, lDescr *ddp,
             // the reference count flag of a shared source stays with the source
             ddp[*indexp].mt = sdp[i].mt & ~CULL_DESCR_INTERNED;
             ddp[*indexp].nm = sdp[i].nm;
+            ddp[*indexp].off = 0;
 
             (*indexp)++;
          }
@@ -694,6 +695,7 @@ int lPartialDescr(const lEnumeration *ep, const lDescr *sdp, lDescr *ddp,
                }
                ddp[*indexp].mt = sdp[ep[i].pos].mt & ~CULL_DESCR_INTERNED;
                ddp[*indexp].nm = sdp[ep[i].pos].nm;
+               ddp[*indexp].off = 0;
                ddp[*indexp].mt |= CULL_IS_REDUCED;
                reduced = true;
 
@@ -708,6 +710,7 @@ int lPartialDescr(const lEnumeration *ep, const lDescr *sdp, lDescr *ddp,
    /* copy end mark */
    ddp[*indexp].mt = lEndT;
    ddp[*indexp].nm = NoName;
+   ddp[*indexp].off = 0;
    if (reduced) {
       ddp[*indexp].mt |= CULL_IS_REDUCED;
    }

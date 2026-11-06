@@ -504,6 +504,7 @@ static int cull_unpack_descr(
          }
          dp[count].nm = NoName;
          dp[count].mt = lEndT;
+         dp[count].off = 0;
          if (!full) {
             for (i = 0; i <= count; i++) {
                dp[i].mt |= CULL_IS_REDUCED;

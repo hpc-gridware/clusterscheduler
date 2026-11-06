@@ -197,7 +197,12 @@ struct _lNameSpace {
 struct _lDescr {
    int nm;         ///< the field number, or #NoName in the terminating entry
    int mt;         ///< the field's type and attributes: a @ref _enum_lMultiType or-ed with @ref cull_field_attributes flags
+   int off;        ///< the field's value slot relative to its index (slot = index + off), or #OCS_CULL_ABSENT; 0 in a full descriptor (CS-439)
 };
+static_assert(sizeof(lDescr) == 12, "a descriptor entry is field number, type and slot offset without padding");
+
+/** @brief Slot offset of a field that a reduced descriptor does not hold (CS-439, N-B-1) */
+constexpr int OCS_CULL_ABSENT = INT32_MIN;
 
 /**
  * @brief Header in front of the fields of a static descriptor block
@@ -208,7 +213,7 @@ struct _lDescr {
 struct cull_descr_header {
    std::atomic<uint32_t> refs; ///< reference count; 0 for a static block, which is never released
    uint32_t n;                 ///< number of fields, without the terminating #lEndT entry
-   uint64_t hash;              ///< FNV-1a over field numbers and types, see ocs_cull_descr_hash()
+   uint64_t hash;              ///< FNV-1a over field numbers, types and slot offsets, see ocs_cull_descr_hash()
 };
 static_assert(sizeof(cull_descr_header) == 16, "the fields must start 16 bytes after the header");
 
@@ -224,7 +229,7 @@ struct cull_descr_block {
 };
 
 /**
- * @brief FNV-1a hash over the field numbers and types of a descriptor
+ * @brief FNV-1a hash over the field numbers, types and slot offsets of a descriptor
  *
  * The process-local flag #CULL_DESCR_INTERNED is not hashed, so a counted copy
  * hashes like its source.
@@ -236,7 +241,8 @@ struct cull_descr_block {
 constexpr uint64_t ocs_cull_descr_hash(const lDescr *e, const size_t n) {
    uint64_t h = 0xcbf29ce484222325ULL;
    for (size_t i = 0; i < n; i++) {
-      for (const uint32_t v : {static_cast<uint32_t>(e[i].nm), static_cast<uint32_t>(e[i].mt & ~CULL_DESCR_INTERNED)}) {
+      for (const uint32_t v : {static_cast<uint32_t>(e[i].nm), static_cast<uint32_t>(e[i].mt & ~CULL_DESCR_INTERNED),
+                               static_cast<uint32_t>(e[i].off)}) {
          for (int b = 0; b < 4; b++) {
             h ^= (v >> (8 * b)) & 0xff;
             h *= 0x100000001b3ULL;

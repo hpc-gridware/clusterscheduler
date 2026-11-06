@@ -457,8 +457,8 @@ static void test_hash_follows_owner() {
    CHECK(24, "after sorting the chain of a non unique key starts with the first element in list order",
          lFirst(moved) == d && table_ulong(moved, OW_group, 9) == d);
 
-   // the tables left the descriptor: an entry is field number and type only
-   CHECK(25, "a descriptor entry is 8 bytes", sizeof(lDescr) == 8);
+   // the tables left the descriptor: an entry is field number, type and slot offset (CS-439), no table
+   CHECK(25, "a descriptor entry is 12 bytes", sizeof(lDescr) == 12);
 
    lFreeList(&unpacked);
    lFreeList(&moved);

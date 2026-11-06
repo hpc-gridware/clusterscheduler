@@ -181,11 +181,13 @@ lDescr *lUndumpDescr(FILE *fp) {
       /* read descriptor */
       if (fGetDescr(fp, &(dp[i]))) {
          LERROR(LEFGETDESCR);
+         sge_free(&dp);
          DRETURN(nullptr);
       }
    }
    dp[i].nm = NoName;
    dp[i].mt = lEndT;
+   dp[i].off = 0;
 
    /* read ket */
    if (fGetKet(fp)) {
@@ -867,6 +869,15 @@ static int fGetKet(FILE *fp) {
    DRETURN(strstr(s, "}") ? 0 : -1);
 }
 
+/**
+ * @brief Read one descriptor entry `{ nm, mt }` of a dump file
+ *
+ * A dumped descriptor is compact, so the slot offset is 0.
+ *
+ * @param fp the dump file
+ * @param[out] dp receives the entry
+ * @return 0 on success, -1 on a read or syntax error
+ */
 static int fGetDescr(FILE *fp, lDescr *dp) {
    DENTER(CULL_LAYER);
 
@@ -905,6 +916,7 @@ static int fGetDescr(FILE *fp, lDescr *dp) {
 
    dp->nm = nm;
    dp->mt = mt;
+   dp->off = 0;
 
    DRETURN(0);
 }
