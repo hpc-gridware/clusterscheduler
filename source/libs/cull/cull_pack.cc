@@ -79,9 +79,12 @@ static int
 cull_pack_switch(sge_pack_buffer *pb, const lMultiType *src, lEnumeration *what,
                  int type, int flags);
 
-static int cull_unpack_descr(sge_pack_buffer *pb, const lDescr **dpp, int flags);
+static int cull_unpack_descr(sge_pack_buffer *pb, const lDescr **dpp, int flags, uint32_t *wire_n,
+                             const lDescr *expected);
 
-static int cull_unpack_cont(sge_pack_buffer *pb, lMultiType **mpp, const lDescr *dp, int flags);
+static int cull_unpack_cont(sge_pack_buffer *pb, lMultiType **mpp, const lDescr *dp, uint32_t wire_n, int flags);
+
+static int ocs_cull_unpack_elem(sge_pack_buffer *pb, lListElem **epp, const lDescr *dp, uint32_t wire_n, int flags);
 
 static int
 cull_pack_cont(sge_pack_buffer *pb, const lMultiType *cp, const lDescr *dp,
@@ -324,23 +327,71 @@ static ocs_cull_descr_table *pack_table(sge_pack_buffer *pb) {
 }
 
 /**
+ * @brief Find the static type a descriptor packed field by field is a version of
+ *
+ * A descriptor that is not reduced and lists the leading fields of a static
+ * type, with the same field numbers and data types, was packed by a release
+ * whose type had these fields only: types grow at the end within a minor
+ * release (N-W-6). Listing all fields of the type and more is a format error,
+ * because it comes from a newer release.
+ *
+ * @param dp the descriptor as read from the buffer, not reduced
+ * @param n the number of fields of dp
+ * @param[out] typep receives the static type, or nullptr if dp does not list leading fields of one
+ * @return #PACK_SUCCESS, or #PACK_FORMAT if dp is longer than its type
+ */
+static int ocs_cull_unpack_prefix_type(const lDescr *dp, const uint32_t n, const lDescr **typep) {
+   *typep = nullptr;
+   if (n == 0) {
+      return PACK_SUCCESS;
+   }
+   int pos = 0;
+   const lDescr *type = ocs_cull_descr_static_containing(dp[0].nm, &pos);
+   if (type == nullptr || pos != 0) {
+      return PACK_SUCCESS;
+   }
+   const uint32_t type_n = static_cast<uint32_t>(lCountDescr(type));
+   for (uint32_t i = 0; i < n && i < type_n; i++) {
+      if (dp[i].nm != type[i].nm || mt_get_type(dp[i].mt) != mt_get_type(type[i].mt)) {
+         return PACK_SUCCESS;
+      }
+   }
+   if (n > type_n) {
+      return PACK_FORMAT;
+   }
+   *typep = type;
+   return PACK_SUCCESS;
+}
+
+/**
  * @brief Unpack an object type descriptor into the descriptor a list or an element holds
  *
  * A type reference (#CULL_PACK_DESCR_TYPE_REF) yields the static block of the
  * type without building anything (N-W-3); a type the name space of the calling
- * thread does not know, or a different field count, is a format error. A
- * descriptor packed field by field is built, marked reduced if it does not list
- * its whole type, and replaced by the shared descriptor equal to it.
+ * thread does not know, or more fields than it has, is a format error. Fewer
+ * fields come from a release whose type had only these: the result is the full
+ * local type, and only the sent number of values follows (N-W-6).
+ *
+ * A descriptor packed field by field outside the descriptor table (flag-filtered
+ * data) that is not reduced and lists the leading fields of a static type is
+ * that type in the same way. With an expected static type, such a descriptor
+ * must be a version of it; any other one is a format error. Every remaining
+ * descriptor is built, marked reduced if it does not list its whole type, and
+ * replaced by the shared descriptor equal to it.
  *
  * @param pb the buffer to read from
  * @param dpp the descriptor, holding a reference for the caller
  * @param flags the flags the values were packed with; flag-filtered data never carries a type reference
+ * @param[out] wire_n receives the number of fields whose values follow per element
+ * @param expected the static type a free element of flag-filtered data must have, or nullptr
  * @return #PACK_SUCCESS, #PACK_ENOMEM, or #PACK_FORMAT
  */
 static int cull_unpack_descr(
         sge_pack_buffer *pb,
         const lDescr **dpp,
-        const int flags
+        const int flags,
+        uint32_t *wire_n,
+        const lDescr *expected
 ) {
    DENTER(CULL_LAYER);
 
@@ -351,6 +402,7 @@ static int cull_unpack_descr(
    uint32_t temp = 0;
 
    *dpp = nullptr;
+   *wire_n = 0;
 
    /* read in number of lDescr fields (without end mark), or the type reference marker */
    if ((ret = unpackint(pb, &n))) {
@@ -367,12 +419,14 @@ static int cull_unpack_descr(
       if ((ret = unpackint(pb, &first_nm)) != PACK_SUCCESS || (ret = unpackint(pb, &count)) != PACK_SUCCESS) {
          DRETURN(ret);
       }
+      // fewer fields than the local type: the sender's type had only these (N-W-6)
       const lDescr *block = ocs_cull_descr_static_for(static_cast<int>(first_nm));
-      if (block == nullptr || lCountDescr(block) != static_cast<int>(count)) {
+      if (block == nullptr || count == 0 || static_cast<int>(count) > lCountDescr(block)) {
          LERROR(LEDESCRNULL);
          DRETURN(PACK_FORMAT);
       }
       *dpp = block;
+      *wire_n = count;
       DRETURN(PACK_SUCCESS);
    }
 
@@ -393,6 +447,7 @@ static int cull_unpack_descr(
             DRETURN(PACK_FORMAT);
          }
          *dpp = ocs_cull_descr_ref(pb->dtab->entries[index]);
+         *wire_n = static_cast<uint32_t>(lCountDescr(*dpp));
          DRETURN(PACK_SUCCESS);
       }
 
@@ -447,6 +502,7 @@ static int cull_unpack_descr(
          }
          tab->entries.push_back(shared);
          *dpp = ocs_cull_descr_ref(shared);
+         *wire_n = count;
          DRETURN(PACK_SUCCESS);
       }
       if (kind != CULL_PACK_DESCR_BY_FIELD) {
@@ -477,6 +533,7 @@ static int cull_unpack_descr(
    dp[n].mt = lEndT;
 
    /* read in n lDescr fields */
+   bool wire_reduced = false;
    for (i = 0; i < n; i++) {
       if ((ret = unpackint(pb, &temp))) {
          sge_free(&dp);
@@ -490,6 +547,24 @@ static int cull_unpack_descr(
       }
       // a sender never packs the process local reference count flag; clear it anyway
       dp[i].mt = temp & ~CULL_DESCR_INTERNED;
+      wire_reduced = wire_reduced || (dp[i].mt & CULL_IS_REDUCED) != 0;
+   }
+   *wire_n = n;
+
+   /* a full type packed field by field is the local static type, also when the sender's type was shorter (N-W-6) */
+   if (!enter_table && !wire_reduced) {
+      const lDescr *type = nullptr;
+      if ((ret = ocs_cull_unpack_prefix_type(dp, n, &type)) != PACK_SUCCESS ||
+          (type != expected && expected != nullptr && ocs_cull_descr_is_static(expected))) {
+         sge_free(&dp);
+         LERROR(LEDESCRNULL);
+         DRETURN(PACK_FORMAT);
+      }
+      if (type != nullptr) {
+         sge_free(&dp);
+         *dpp = type;
+         DRETURN(PACK_SUCCESS);
+      }
    }
    CULL_STATS_TYPE(dp[0].nm, DCOPY_UNPACK, 1);
    CULL_STATS_TYPE(dp[0].nm, DCOPY_UNPACK_B, sizeof(lDescr) * (n + 1));
@@ -791,19 +866,22 @@ cull_pack_enum_as_descr(sge_pack_buffer *pb, const lEnumeration *what,
          break;
       case WHAT_NONE:
          break;
-      default:
-         /* pack the lEnumeration field similar to lDescr fields */
+      default: {
+         /* pack the lEnumeration field similar to lDescr fields; a selection of some fields is reduced, so that the
+          * receiver never takes its leading fields for a shorter version of the type (N-W-6) */
+         const uint32_t reduced = lCountWhat(what, descr) < lCountDescr(descr) ? CULL_IS_REDUCED : 0;
          for (i = 0; what[i].nm != NoName; i++) {
             if ((ret = packint(pb, what[i].nm))) {
                PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
                DRETURN(ret);
             }
-            if ((ret = packint(pb, what[i].mt & ~CULL_DESCR_INTERNED))) {
+            if ((ret = packint(pb, (what[i].mt & ~CULL_DESCR_INTERNED) | reduced))) {
                PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
                DRETURN(ret);
             }
          }
          break;
+      }
    }
    CULL_STATS_CODE(cull_stats_count_descr(pb, descr->nm, stats_start);)
    PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
@@ -874,89 +952,53 @@ cull_pack_cont(sge_pack_buffer *pb, const lMultiType *cp, const lDescr *dp,
    DRETURN(PACK_SUCCESS);
 }
 
-/* ------------------------------------------------------------
-
-   cull_unpack_cont() - unpacks a contents array
-
-   return values:
-   PACK_SUCCESS
-   PACK_ENOMEM
-   PACK_FORMAT
-
+/**
+ * @brief Unpack the values of an element
+ *
+ * The buffer holds the values of the first wire_n fields of dp: all of them, or
+ * the fields of a shorter version of the type that grew at the end (N-W-6). The
+ * fields beyond keep their initial values, as in a new element.
+ *
+ * @param pb the buffer to read from
+ * @param[out] mpp receives the values, owned by the caller
+ * @param dp the object type of the element
+ * @param wire_n the number of fields whose values follow, at most the field count of dp
+ * @param flags unpack only the fields whose `mt` matches, 0 for all
+ * @return #PACK_SUCCESS, #PACK_ENOMEM, or #PACK_FORMAT
  */
 static int cull_unpack_cont(
         sge_pack_buffer *pb,
         lMultiType **mpp,
         const lDescr *dp,
-        int flags
+        const uint32_t wire_n,
+        const int flags
 ) {
    DENTER(CULL_LAYER);
 
-   int i, n, ret;
-   bool only_at_bufferend = true;   /* Everything had PACK_SUCCESS or
-                                     * PACK_FORMAT error happend but only at the
-                                     * end of the descriptor */
-   bool format_error = false;       /* set to true when at least one PACK_FORMAT 
-                                     * error happens */
-   int last_error = PACK_SUCCESS;   /* error happend in last iteration 
-                                     * or PACK_SUCCESS */
-   lMultiType *cp = nullptr;
-
    *mpp = nullptr;
-   n = lCountDescr(dp);
-   if ((cp = (lMultiType *) calloc(1, sizeof(lMultiType) * (n + 1))) == nullptr) {
+   const int n = lCountDescr(dp);
+   if (wire_n > static_cast<uint32_t>(n)) {
+      LERROR(LEDESCRNULL);
+      DRETURN(PACK_FORMAT);
+   }
+   auto *cp = static_cast<lMultiType *>(calloc(1, sizeof(lMultiType) * (n + 1)));
+   if (cp == nullptr) {
       LERROR(LEMALLOC);
       DRETURN(PACK_ENOMEM);
    }
 
-   for (i = 0; i < n; i++) {
+   for (uint32_t i = 0; i < wire_n; i++) {
       /* if flags are given, unpack only fields matching flags, e.g. CULL_SPOOL */
       if (flags == 0 || (dp[i].mt & flags) != 0) {
-         int lret = cull_unpack_switch(pb, &(cp[i]), mt_get_type(dp[i].mt), flags);
-
-         last_error = lret;
-         if (lret == PACK_FORMAT) {
-            format_error = true;
-         } else if (lret != PACK_SUCCESS) {
-            only_at_bufferend = false;
-            break;
+         const int ret = cull_unpack_switch(pb, &(cp[i]), mt_get_type(dp[i].mt), flags);
+         if (ret != PACK_SUCCESS) {
+            sge_free(&cp);
+            DRETURN(ret);
          }
       }
    }
-
-   if (format_error && only_at_bufferend) {
-      /*
-       * We catch all format errors that occur during unparsing attributes 
-       * from the end of a descriptos. Format errors mean that
-       * these attributes where not contained at the end of the packbuffer
-       * This is the case after an update release has been installed.
-       * The new master finds old objects. Due to the fact that during the 
-       * process reading in all objects a full (new) descriptor is used
-       * these errors can be skipped. 
-       *
-       * Missing attributes will contain 0 values. If there is a need to
-       * initialize them then this has to happen some layers above.
-       * (setup_qmaster)
-       */
-      ret = PACK_SUCCESS;
-   } else if (last_error != PACK_SUCCESS || !only_at_bufferend) {
-      /*
-       * If we are here then an error != PACK_FORMAT happened or
-       * or a PACK_FORMAT occurred but after it occurred either
-       * a different error happended or an operation succeeded. 
-       * Format errors should only be catched if they ocure at the en of 
-       * the descriptor.
-       */
-      sge_free(&cp);
-      ret = (last_error != PACK_SUCCESS) ? last_error : PACK_FORMAT;
-   } else {
-      /*
-       * This is hopefully the default case
-       */
-      ret = PACK_SUCCESS;
-   }
    *mpp = cp;
-   DRETURN(ret);
+   DRETURN(PACK_SUCCESS);
 }
 
 /* ================================================================ */
@@ -1050,13 +1092,31 @@ int cull_unpack_elem(
 /**
  * @brief Read an element written by #cull_pack_elem_partial
  *
+ * A free element takes its object type from the buffer. With flags, a full type
+ * there must be dp or a shorter version of it (N-W-6), else the element is
+ * rejected as a format error.
+ *
  * @param pb the buffer to read from
  * @param[out] epp receives the element, owned by the caller
- * @param dp the expected object type, or nullptr to take it from the buffer
+ * @param dp the object type of a bound element; for a free element of flag-filtered data the expected one, or nullptr
  * @param flags unpacking options
  * @return #PACK_SUCCESS, #PACK_ENOMEM, or #PACK_FORMAT
  */
 int cull_unpack_elem_partial(sge_pack_buffer *pb, lListElem **epp, const lDescr *dp, int flags) {
+   return ocs_cull_unpack_elem(pb, epp, dp, dp != nullptr ? static_cast<uint32_t>(lCountDescr(dp)) : 0, flags);
+}
+
+/**
+ * @brief Read an element, knowing how many values a bound one carries
+ *
+ * @param pb the buffer to read from
+ * @param[out] epp receives the element, owned by the caller
+ * @param dp the object type of a bound element; for a free element of flag-filtered data the expected one, or nullptr
+ * @param wire_n the number of fields whose values follow for a bound element (N-W-6)
+ * @param flags unpacking options
+ * @return #PACK_SUCCESS, #PACK_ENOMEM, #PACK_BADARG, or #PACK_FORMAT
+ */
+static int ocs_cull_unpack_elem(sge_pack_buffer *pb, lListElem **epp, const lDescr *dp, uint32_t wire_n, const int flags) {
    DENTER(CULL_LAYER);
 
    int ret;
@@ -1093,36 +1153,10 @@ int cull_unpack_elem_partial(sge_pack_buffer *pb, lListElem **epp, const lDescr 
 
    if (elem_kind(ep) == FREE_ELEM) {
       /* a free element holds the shared descriptor equal to the one on the wire */
-      if ((ret = cull_unpack_descr(pb, &(ep->descr), flags)) != PACK_SUCCESS) {
+      if ((ret = cull_unpack_descr(pb, &(ep->descr), flags, &wire_n, flags != 0 ? dp : nullptr)) != PACK_SUCCESS) {
          sge_free(&ep);
          PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
          DRETURN(ret);
-      }
-
-      /*
-       * Special handling for feature update releases where the job has been changed.
-       * In all cases where we got an descriptor from outside and where the descriptor
-       * is one that contains JB_job_number as first entry we will use this 
-       * descriptor and not that one that is stored in a packbuffer.
-       *
-       * As a result we are able to read "old" JB_Type objects from a previous
-       * Cluster Scheduler version although the JB_Type object has been increased in the new
-       * version.
-       *
-       * Note: Only JB_type objects will be handled correctly and only in the case 
-       * if JB_Type contains ALL attributes of the old descriptor and new elements
-       * AT THE END of the new descriptor.
-       *
-       * 50 is JB_job_number. I did not use the enum value here because it is defined
-       * in sgeobj header file and not cull.
-       */
-      if (dp != nullptr && dp[0].nm == 50) {
-         ocs_cull_descr_release(&(ep->descr));
-         if ((ep->descr = ocs_cull_descr_acquire(dp)) == nullptr) {
-            sge_free(&ep);
-            PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-            DRETURN(PACK_BADARG);
-         }
       }
    } else {
       /* 
@@ -1142,7 +1176,7 @@ int cull_unpack_elem_partial(sge_pack_buffer *pb, lListElem **epp, const lDescr 
       call lFreeElem() in case of errors 
     */
 
-   if ((ret = cull_unpack_cont(pb, &(ep->cont), ep->descr, flags))) {
+   if ((ret = cull_unpack_cont(pb, &(ep->cont), ep->descr, wire_n, flags))) {
       if (elem_kind(ep) == FREE_ELEM || elem_kind(ep) == OBJECT_ELEM) {
          ocs_cull_descr_release(&(ep->descr));
       }
@@ -1356,7 +1390,8 @@ int cull_unpack_list_partial(sge_pack_buffer *pb, lList **lpp, int flags) {
    }
 
    /* unpack descriptor; the list holds the shared descriptor equal to it */
-   if ((ret = cull_unpack_descr(pb, &(lp->descr), flags)) != PACK_SUCCESS) {
+   uint32_t wire_n = 0;
+   if ((ret = cull_unpack_descr(pb, &(lp->descr), flags, &wire_n, nullptr)) != PACK_SUCCESS) {
       lFreeList(&lp);
       PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
       DRETURN(ret);
@@ -1382,7 +1417,7 @@ int cull_unpack_list_partial(sge_pack_buffer *pb, lList **lpp, int flags) {
       DRETURN(ret);
    }
    while (has_more_elements) {
-      if ((ret = cull_unpack_elem_partial(pb, &ep, lp->descr, flags)) != PACK_SUCCESS) {
+      if ((ret = ocs_cull_unpack_elem(pb, &ep, lp->descr, wire_n, flags)) != PACK_SUCCESS) {
          lFreeList(&lp);
          PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
          DRETURN(ret);
@@ -1444,12 +1479,13 @@ static int cull_unpack_object(
    }
 
    /* unpack descriptor */
-   if ((ret = cull_unpack_descr(pb, &descr, flags)) != PACK_SUCCESS) {
+   uint32_t wire_n = 0;
+   if ((ret = cull_unpack_descr(pb, &descr, flags, &wire_n, nullptr)) != PACK_SUCCESS) {
       DRETURN(ret);
    }
 
    /* unpack each element */
-   if ((ret = cull_unpack_elem_partial(pb, &ep, descr, flags)) != PACK_SUCCESS) {
+   if ((ret = ocs_cull_unpack_elem(pb, &ep, descr, wire_n, flags)) != PACK_SUCCESS) {
       ocs_cull_descr_release(&descr);
       DRETURN(ret);
    }

@@ -51,6 +51,7 @@
 #include "cull/ocs_cull_descr.h"
 
 #include "uti/sge_stdlib.h"
+#include "uti/sge_string.h"
 
 #include "ocs_module_test.h"
 
@@ -78,9 +79,34 @@ NAMEEND
 
 #define TD_Size sizeof(TD_Name) / sizeof(char *) ///< number of fields of TD_Type
 
-/** @brief The name space registering the type with CULL */
+/** @brief A spooled object type whose shorter and longer versions are read (N-W-6) */
+enum {
+   GR_id = 101, ///< ulong
+   GR_name,     ///< string
+   GR_value,    ///< ulong
+   GR_flag      ///< bool
+};
+
+LISTDEF(GR_Type)
+   SGE_ULONG(GR_id, CULL_SPOOL)
+   SGE_STRING(GR_name, CULL_SPOOL)
+   SGE_ULONG(GR_value, CULL_SPOOL)
+   SGE_BOOL(GR_flag, CULL_SPOOL)
+LISTEND(GR_Type)
+
+NAMEDEF(GR_Name)
+   NAME("GR_id")
+   NAME("GR_name")
+   NAME("GR_value")
+   NAME("GR_flag")
+NAMEEND
+
+#define GR_Size sizeof(GR_Name) / sizeof(char *) ///< number of fields of GR_Type
+
+/** @brief The name space registering the types with CULL */
 lNameSpace nmv[] = {
    {1, TD_Size, TD_Name, TD_Type},
+   {101, GR_Size, GR_Name, GR_Type},
    {0, 0, nullptr, nullptr}
 };
 
@@ -538,9 +564,10 @@ static void test_type_ref() {
    CHECK(33, "the receiver takes the static block of the type and registers nothing",
          unpacked != nullptr && unpacked->descr == TD_Type && lGetNumberOfElem(unpacked) == 3 &&
          ocs_cull_descr_registry_size() == base);
-   CHECK(34, "a type reference to an unknown type or with a different field count is a format error",
-         unpack_type_ref(9999, 4) == PACK_FORMAT && unpack_type_ref(TD_id, 3) == PACK_FORMAT &&
-         unpack_type_ref(TD_id, 4) == PACK_SUCCESS);
+   CHECK(34, "a type reference to an unknown type, with no field or more fields than the type is a format error",
+         unpack_type_ref(9999, 4) == PACK_FORMAT && unpack_type_ref(TD_id, 5) == PACK_FORMAT &&
+         unpack_type_ref(TD_id, 0) == PACK_FORMAT && unpack_type_ref(TD_id, 4) == PACK_SUCCESS &&
+         unpack_type_ref(TD_id, 3) == PACK_SUCCESS);
    lFreeList(&unpacked);
    lFreeList(&lp);
 }
@@ -644,6 +671,153 @@ static void test_descr_table() {
    CHECK(39, "after the lists the registry is empty again", ocs_cull_descr_registry_size() == base);
 }
 
+/**
+ * @brief Unpack a free element written by hand as an older or newer release would have packed it
+ *
+ * The element is followed by a trailer word, which must be the next thing read.
+ *
+ * @param fields the fields the sender's type has, each with a ulong, string or bool value
+ * @param type_ref true for a type reference without flags, false for flag-filtered data packed field by field
+ * @param expected the type passed to cull_unpack_elem_partial()
+ * @param[out] out receives the element, owned by the caller
+ * @param[out] trailer_ok set to whether the trailer followed the element
+ * @return the result of cull_unpack_elem_partial()
+ */
+static int unpack_forged_elem(const std::vector<lDescr> &fields, const bool type_ref, const lDescr *expected,
+                              lListElem **out, bool *trailer_ok) {
+   constexpr uint32_t trailer = 0xABCD;
+   int ret = PACK_FORMAT;
+   *out = nullptr;
+   *trailer_ok = false;
+   sge_pack_buffer pb;
+   if (init_packbuffer(&pb, 256, false, false) != PACK_SUCCESS) {
+      return ret;
+   }
+   packint(&pb, elem_kind_to_wire(FREE_ELEM));
+   if (type_ref) {
+      packint(&pb, CULL_PACK_DESCR_TYPE_REF);
+      packint(&pb, fields[0].nm);
+      packint(&pb, fields.size());
+   } else {
+      packint(&pb, fields.size());
+      for (const lDescr &f : fields) {
+         packint(&pb, f.nm);
+         packint(&pb, f.mt);
+      }
+   }
+   for (size_t i = 0; i < fields.size(); i++) {
+      switch (mt_get_type(fields[i].mt)) {
+         case lStringT:
+            packstr(&pb, "s");
+            break;
+         case lBoolT:
+            packint(&pb, 1);
+            break;
+         default:
+            packint(&pb, 7 + i);
+            break;
+      }
+   }
+   packint(&pb, trailer);
+   sge_pack_buffer in;
+   char *buf = sge_malloc(pb.bytes_used);
+   memcpy(buf, pb.head_ptr, pb.bytes_used);
+   if (init_packbuffer_from_buffer(&in, buf, pb.bytes_used, false) == PACK_SUCCESS) {
+      ret = cull_unpack_elem_partial(&in, out, expected, type_ref ? 0 : CULL_SPOOL);
+      uint32_t word = 0;
+      *trailer_ok = ret == PACK_SUCCESS && unpackint(&in, &word) == PACK_SUCCESS && word == trailer;
+   }
+   clear_packbuffer(&in);
+   clear_packbuffer(&pb);
+   return ret;
+}
+
+/**
+ * @brief Whether an element is a full GR_Type with the leading values of unpack_forged_elem() and initial ones after
+ * @param ep the element
+ * @param sent how many leading fields the sender had
+ * @return true if the element looks as expected
+ */
+static bool grown_elem_ok(const lListElem *ep, const int sent) {
+   return ep != nullptr && ep->descr == GR_Type && lGetUlong(ep, GR_id) == 7 &&
+          sge_strnullcmp(lGetString(ep, GR_name), "s") == 0 &&
+          lGetUlong(ep, GR_value) == (sent > 2 ? 9u : 0u) && lGetBool(ep, GR_flag) == (sent > 3);
+}
+
+/** @brief DESCR-12: types grown at the end stay readable (N-W-6) */
+static void test_grown_types() {
+   const size_t base = ocs_cull_descr_registry_size();
+   const std::vector<lDescr> full(GR_Type, GR_Type + 4);
+   const std::vector<lDescr> shorter(GR_Type, GR_Type + 2);
+   std::vector<lDescr> longer = full;
+   longer.push_back({GR_flag + 1, lUlongT | CULL_SPOOL});
+   const std::vector<lDescr> gap = {GR_Type[0], GR_Type[2]};
+
+   lListElem *ep = nullptr;
+   bool trailer_a = false;
+   bool trailer_b = false;
+   const int ref_ret = unpack_forged_elem(shorter, true, nullptr, &ep, &trailer_a);
+   bool ref_ok = ref_ret == PACK_SUCCESS && grown_elem_ok(ep, 2) && trailer_a;
+   lFreeElem(&ep);
+   const int spool_ret = unpack_forged_elem(shorter, false, GR_Type, &ep, &trailer_b);
+   const bool spool_ok = spool_ret == PACK_SUCCESS && grown_elem_ok(ep, 2) && trailer_b;
+   lFreeElem(&ep);
+   CHECK(40, "a shorter type reference and a shorter spooled type unpack into the full type with initial values "
+         "after the sent fields, and the data behind them is read next",
+         ref_ok && spool_ok && ocs_cull_descr_registry_size() == base);
+
+   unpack_forged_elem(full, false, GR_Type, &ep, &trailer_a);
+   ref_ok = grown_elem_ok(ep, 4) && trailer_a;
+   lFreeElem(&ep);
+   CHECK(41, "the full type packed field by field is the static block", ref_ok);
+
+   const int longer_ref = unpack_forged_elem(longer, true, nullptr, &ep, &trailer_a);
+   lFreeElem(&ep);
+   const int longer_spool = unpack_forged_elem(longer, false, nullptr, &ep, &trailer_a);
+   lFreeElem(&ep);
+   CHECK(42, "a type longer than the local one is a format error", longer_ref == PACK_FORMAT &&
+         longer_spool == PACK_FORMAT);
+
+   const int gap_expected = unpack_forged_elem(gap, false, GR_Type, &ep, &trailer_a);
+   lFreeElem(&ep);
+   const int other_expected = unpack_forged_elem(shorter, false, TD_Type, &ep, &trailer_a);
+   lFreeElem(&ep);
+   const int gap_free = unpack_forged_elem(gap, false, nullptr, &ep, &trailer_b);
+   const bool gap_reduced = gap_free == PACK_SUCCESS && ep != nullptr && (ep->descr[0].mt & CULL_IS_REDUCED) != 0;
+   lFreeElem(&ep);
+   CHECK(43, "on the spool path a descriptor that is not a version of the expected type is a format error, "
+         "without an expected type it stays a reduced element",
+         gap_expected == PACK_FORMAT && other_expected == PACK_FORMAT && gap_reduced);
+
+   // a selection of the leading fields is marked reduced by the sender and never taken for a shorter type
+   lListElem *src = lCreateElem(GR_Type);
+   lSetUlong(src, GR_id, 3);
+   lSetString(src, GR_name, "n");
+   const int sel[] = {GR_id, GR_name, NoName};
+   lEnumeration *what = lIntVector2What(GR_Type, sel);
+   lListElem *copy = nullptr;
+   sge_pack_buffer pb;
+   if (init_packbuffer(&pb, 256, false, false) == PACK_SUCCESS) {
+      if (cull_pack_elem_partial(&pb, src, what, CULL_SPOOL) == PACK_SUCCESS) {
+         char *buf = sge_malloc(pb.bytes_used);
+         memcpy(buf, pb.head_ptr, pb.bytes_used);
+         sge_pack_buffer in;
+         if (init_packbuffer_from_buffer(&in, buf, pb.bytes_used, false) == PACK_SUCCESS) {
+            cull_unpack_elem_partial(&in, &copy, nullptr, CULL_SPOOL);
+         }
+         clear_packbuffer(&in);
+      }
+      clear_packbuffer(&pb);
+   }
+   CHECK(44, "a selection of the leading fields packed with flags stays a reduced element",
+         copy != nullptr && lCountDescr(copy->descr) == 2 && (copy->descr[0].mt & CULL_IS_REDUCED) != 0 &&
+         lGetUlong(copy, GR_id) == 3);
+   lFreeElem(&copy);
+   lFreeWhat(&what);
+   lFreeElem(&src);
+   CHECK(45, "after the elements the registry is empty again", ocs_cull_descr_registry_size() == base);
+}
+
 int main(int argc, char *argv[]) {
    lInit(nmv);
 
@@ -706,7 +880,7 @@ int main(int argc, char *argv[]) {
        {"pack a static, a heap copy, a flag-filtered and a reduced descriptor",
         "pack and unpack a list of a full type", "unpack forged type references"},
        "an unfiltered full descriptor becomes a type reference, the receiver gets the static block, and an "
-       "unknown type or a different field count is a format error",
+       "unknown type, no field or more fields than the type is a format error",
        {{"SHD-01", "partly"}}, {32, 33, 34}, test_type_ref},
       {"DESCR-11", "descriptor table of a buffer",
        "reduced descriptors are written once per buffer and referenced by index afterwards",
@@ -715,5 +889,14 @@ int main(int argc, char *argv[]) {
        "both tables hold one entry per distinct reduction, counting measures the same size, the unpacked lists "
        "share the descriptors, and an undefined index is a format error",
        {{"SHD-04", "unit level"}}, {35, 36, 37, 38, 39}, test_descr_table},
+      {"DESCR-12", "types grown at the end",
+       "data packed by a release whose type had fewer fields at the end is read into the full local type",
+       {"unpack a shorter type reference and shorter spooled data, each followed by more data",
+        "unpack the full type packed field by field", "unpack a longer type both ways",
+        "unpack spooled data that is not a version of the expected type, with and without it",
+        "pack a selection of the leading fields with flags and unpack it"},
+       "shorter data becomes full elements with initial values in the added fields and the data behind it is read "
+       "next, longer data and spooled data of another shape are format errors, and a selection stays reduced",
+       {{"SHD-09", "unit level"}}, {40, 41, 42, 43, 44, 45}, test_grown_types},
    });
 }

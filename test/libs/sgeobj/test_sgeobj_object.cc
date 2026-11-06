@@ -22,14 +22,18 @@
  * @brief Unit tests for object in `libs/sgeobj`
  */
 
+#include <arpa/inet.h>
 #include <cstdio>
 #include <cstring>
+#include <vector>
 
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_component.h"
 #include "uti/sge_dstring.h"
+#include "uti/sge_stdlib.h"
 
 #include "cull/cull.h"
+#include "cull/cull_pack.h"
 
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/sge_answer.h"
@@ -475,6 +479,84 @@ static void test_object_verify_name() {
 }
 
 // ---------------------------------------------------------------------------
+// spooled job of a shorter JB_Type — types grown at the end  [T61–T62]
+//
+// A job spooled by a release whose JB_Type ended four fields earlier is read
+// into a full job; the added fields hold their initial values (N-W-6). The
+// old special case for jobs in the unpack code is gone, the rule is generic.
+// ---------------------------------------------------------------------------
+
+/**
+ * @brief Pack a job as a release with a JB_Type shorter by some fields would have spooled it
+ *
+ * The job is packed with a selection of the leading fields; clearing the reduced
+ * mark of the packed descriptor turns it into the full type of the older release.
+ *
+ * @param pb the buffer to pack into
+ * @param job the job
+ * @param dropped how many fields at the end the older JB_Type lacks
+ * @return true on success
+ */
+static bool pack_job_as_shorter(sge_pack_buffer *pb, const lListElem *job, const int dropped) {
+   const int n = lCountDescr(JB_Type) - dropped;
+   std::vector<int> nms;
+   for (int i = 0; i < n; i++) {
+      nms.push_back(JB_Type[i].nm);
+   }
+   nms.push_back(NoName);
+   lEnumeration *what = lIntVector2What(JB_Type, nms.data());
+   const size_t start = pb->bytes_used;
+   const bool ok = cull_pack_elem_partial(pb, job, what, CULL_SPOOL) == PACK_SUCCESS;
+   lFreeWhat(&what);
+   // element: kind, field count, then (nm, mt) per field
+   for (int i = 0; ok && i < n; i++) {
+      char *mt_word = pb->head_ptr + start + 8 + 8 * i + 4;
+      uint32_t mt;
+      memcpy(&mt, mt_word, sizeof(mt));
+      mt = htonl(ntohl(mt) & ~CULL_IS_REDUCED);
+      memcpy(mt_word, &mt, sizeof(mt));
+   }
+   return ok;
+}
+
+/** @brief A job spooled with a JB_Type shorter by four fields is read into a full job [T61–T62] */
+static void test_spooled_job_of_shorter_type() {
+   printf("\n--- spooled job of a shorter JB_Type ---\n");
+
+   lListElem *job = lCreateElem(JB_Type);
+   lSetUlong(job, JB_job_number, 42);
+   lSetString(job, JB_owner, "owner");
+   lSetUlong(job, JB_sync_options, 5);
+
+   lListElem *read = nullptr;
+   int ret = PACK_FORMAT;
+   sge_pack_buffer pb;
+   if (init_packbuffer(&pb, 1024, false, false) == PACK_SUCCESS) {
+      if (pack_job_as_shorter(&pb, job, 4)) {
+         char *buf = sge_malloc(pb.bytes_used);
+         memcpy(buf, pb.head_ptr, pb.bytes_used);
+         sge_pack_buffer in;
+         if (init_packbuffer_from_buffer(&in, buf, pb.bytes_used, false) == PACK_SUCCESS) {
+            ret = cull_unpack_elem_partial(&in, &read, JB_Type, CULL_SPOOL);
+         }
+         clear_packbuffer(&in);
+      }
+      clear_packbuffer(&pb);
+   }
+
+   // T61: the job is read into the full JB_Type with its values
+   CHECK(61, "shorter spooled job → full JB_Type",
+         ret == PACK_SUCCESS && read != nullptr && lGetElemDescr(read) == JB_Type &&
+         lGetUlong(read, JB_job_number) == 42 && strcmp(lGetString(read, JB_owner), "owner") == 0);
+
+   // T62: a spooled field the older type lacked holds its initial value
+   CHECK(62, "added spooled field → initial value", read != nullptr && lGetUlong(read, JB_sync_options) == 0);
+
+   lFreeElem(&read);
+   lFreeElem(&job);
+}
+
+// ---------------------------------------------------------------------------
 
 int main(int /*argc*/, char * /*argv*/[]) {
    DENTER_MAIN(TOP_LAYER, "test_sgeobj_object");
@@ -504,6 +586,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
    test_object_list_has_differences();
    test_object_verify_field_constraints();
    test_object_verify_name();
+   test_spooled_job_of_shorter_type();
 
    lFreeElem(&queue);
    lFreeList(&st_list);
