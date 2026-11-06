@@ -398,11 +398,9 @@ object_get_primary_key(const lDescr *descr) {
    int ret = NoName;
 
    if (descr != nullptr) {
-      int i;
-
-      for (i = 0; descr[i].nm != NoName; i++) {
-         if (descr[i].mt & CULL_PRIMARY_KEY) {
-            ret = descr[i].nm;
+      for (const auto f : ocs_cull_present_fields(descr)) {
+         if (descr[f.pos].mt & CULL_PRIMARY_KEY) {
+            ret = descr[f.pos].nm;
             break;
          }
       }
@@ -1817,18 +1815,21 @@ object_has_differences(const lListElem *this_elem, lList **answer_list, const lL
    if (this_elem != nullptr && old_elem != nullptr) {
       const lDescr *this_elem_descr = this_elem->descr;
       const lDescr *old_elem_descr = old_elem->descr;
-      const lDescr *tmp_decr1;
-      const lDescr *tmp_decr2;
+      const ocs_cull_present_fields this_fields(this_elem_descr);
+      const ocs_cull_present_fields old_fields(old_elem_descr);
+      auto this_it = this_fields.begin();
+      auto old_it = old_fields.begin();
 
       /*
-       * Compare each attribute of the given elements
+       * Compare each attribute of the given elements, the fields that have a value pairwise
        */
-      for (tmp_decr1 = this_elem_descr, tmp_decr2 = old_elem_descr;
-           tmp_decr1->nm != NoName && tmp_decr2->nm != NoName;
-           tmp_decr1++, tmp_decr2++) {
-         int pos = tmp_decr1 - this_elem_descr;
-         int type1 = this_elem_descr[pos].mt;
-         int type2 = old_elem_descr[pos].mt;
+      for (; this_it != this_fields.end() && old_it != old_fields.end(); ++this_it, ++old_it) {
+         const int pos = (*this_it).pos;
+         const int old_pos = (*old_it).pos;
+         const lDescr *tmp_decr1 = &this_elem_descr[pos];
+         const lDescr *tmp_decr2 = &old_elem_descr[old_pos];
+         int type1 = tmp_decr1->mt;
+         int type2 = tmp_decr2->mt;
          bool equiv;
 
          /* 
@@ -1848,23 +1849,23 @@ object_has_differences(const lListElem *this_elem, lList **answer_list, const lL
           */
          switch (mt_get_type(type1)) {
             case lDoubleT:
-               equiv = (lGetPosDouble(this_elem, pos) == lGetPosDouble(old_elem, pos)) ? true : false;
+               equiv = (lGetPosDouble(this_elem, pos) == lGetPosDouble(old_elem, old_pos)) ? true : false;
                break;
             case lUlongT:
-               equiv = (lGetPosUlong(this_elem, pos) == lGetPosUlong(old_elem, pos)) ? true : false;
+               equiv = (lGetPosUlong(this_elem, pos) == lGetPosUlong(old_elem, old_pos)) ? true : false;
                break;
             case lLongT:
-               equiv = (lGetPosLong(this_elem, pos) == lGetPosLong(old_elem, pos)) ? true : false;
+               equiv = (lGetPosLong(this_elem, pos) == lGetPosLong(old_elem, old_pos)) ? true : false;
                break;
             case lBoolT:
-               equiv = (lGetPosBool(this_elem, pos) == lGetPosBool(old_elem, pos)) ? true : false;
+               equiv = (lGetPosBool(this_elem, pos) == lGetPosBool(old_elem, old_pos)) ? true : false;
                break;
             case lIntT:
-               equiv = (lGetPosInt(this_elem, pos) == lGetPosInt(old_elem, pos)) ? true : false;
+               equiv = (lGetPosInt(this_elem, pos) == lGetPosInt(old_elem, old_pos)) ? true : false;
                break;
             case lStringT: {
                const char *new_str = lGetPosString(this_elem, pos);
-               const char *old_str = lGetPosString(old_elem, pos);
+               const char *old_str = lGetPosString(old_elem, old_pos);
 
                if ((new_str == nullptr && old_str != nullptr) || (new_str != nullptr && old_str == nullptr)) {
                   equiv = false;
@@ -1877,7 +1878,7 @@ object_has_differences(const lListElem *this_elem, lList **answer_list, const lL
                break;
             case lHostT: {
                const char *new_str = lGetPosHost(this_elem, pos);
-               const char *old_str = lGetPosHost(old_elem, pos);
+               const char *old_str = lGetPosHost(old_elem, old_pos);
 
                if ((new_str == nullptr && old_str != nullptr) || (new_str != nullptr && old_str == nullptr)) {
                   equiv = false;
@@ -1889,18 +1890,18 @@ object_has_differences(const lListElem *this_elem, lList **answer_list, const lL
             }
                break;
             case lRefT:
-               equiv = (lGetPosRef(this_elem, pos) == lGetPosRef(old_elem, pos)) ? true : false;
+               equiv = (lGetPosRef(this_elem, pos) == lGetPosRef(old_elem, old_pos)) ? true : false;
                break;
             case lObjectT: {
                lListElem *new_obj = lGetPosObject(this_elem, pos);
-               lListElem *old_obj = lGetPosObject(old_elem, pos);
+               lListElem *old_obj = lGetPosObject(old_elem, old_pos);
 
                equiv = object_has_differences(new_obj, answer_list, old_obj) ? false : true;
             }
                break;
             case lListT: {
                lList *new_list = lGetPosList(this_elem, pos);
-               lList *old_list = lGetPosList(old_elem, pos);
+               lList *old_list = lGetPosList(old_elem, old_pos);
 
                if (object_list_has_differences(new_list, answer_list, old_list)) {
                   equiv = false;
@@ -1926,7 +1927,7 @@ object_has_differences(const lListElem *this_elem, lList **answer_list, const lL
       /*
        * Compare number of attributes within each element
        */
-      if (tmp_decr1->nm != tmp_decr2->nm) {
+      if ((this_it != this_fields.end()) != (old_it != old_fields.end())) {
          DPRINTF("Descriptor size is not equivalent\n");
          ret = true;
       }
@@ -2074,8 +2075,8 @@ object_verify_cull(const lListElem *ep, const lDescr *descr) {
 
    /* check contents of subobject */
    if (ret) {
-      int i = 0;
-      while (ep->descr[i].nm != NoName) {
+      for (const auto f : ocs_cull_present_fields(ep->descr)) {
+         const int i = f.pos;
          int type = mt_get_type(ep->descr[i].mt);
          if (type == lListT) {
             const lList *lp = lGetList(ep, ep->descr[i].nm);
@@ -2096,7 +2097,6 @@ object_verify_cull(const lListElem *ep, const lDescr *descr) {
                }
             }
          }
-         i++;
       }
    }
 

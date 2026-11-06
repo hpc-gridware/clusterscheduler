@@ -280,6 +280,18 @@ void lWriteElemXMLTo(const lListElem *ep, FILE *fp) {
    DRETURN_VOID;
 }
 
+/**
+ * @brief Write an element as XML
+ *
+ * An XML head element is written as the document head, an XML element through
+ * its attributes, name and value, any other element field by field over the
+ * fields that have a value. Empty lists, unset strings and references are left
+ * out.
+ *
+ * @param ep the element
+ * @param nesting_level indentation depth
+ * @param os the stream to write to
+ */
 static void lWriteElemXML_(const lListElem *ep, int nesting_level, std::ostream &os) {
    DENTER(CULL_LAYER);
 
@@ -324,16 +336,16 @@ static void lWriteElemXML_(const lListElem *ep, int nesting_level, std::ostream 
          lWriteListXML_(lGetList(ep, XMLE_List), nesting_level, os);
       }
    } else {  
-      for (i = 0; mt_get_type(ep->descr[i].mt) != lEndT; i++) {
+      for (const auto f : ocs_cull_present_fields(ep->descr)) {
          /* ignore empty lists */
-         switch (mt_get_type(ep->descr[i].mt)) {
+         switch (mt_get_type(ep->descr[f.pos].mt)) {
          case lListT :
-            tlp = lGetPosList(ep, i);
+            tlp = lGetPosList(ep, f.pos);
             if (lGetNumberOfElem(tlp) == 0)
                continue;
             break;
          case lStringT:
-            if (lGetPosString(ep, i) == nullptr)
+            if (lGetPosString(ep, f.pos) == nullptr)
                continue;
             break;
          case lRefT:
@@ -341,18 +353,18 @@ static void lWriteElemXML_(const lListElem *ep, int nesting_level, std::ostream 
             continue;
          }
 
-         attr_name = lNm2Str(ep->descr[i].nm);
+         attr_name = lNm2Str(ep->descr[f.pos].nm);
          os << space << "<" << attr_name << ">";
-         switch (mt_get_type(ep->descr[i].mt)) {
+         switch (mt_get_type(ep->descr[f.pos].mt)) {
          case lIntT:
-            os << lGetPosInt(ep, i);
+            os << lGetPosInt(ep, f.pos);
             break;
          case lUlongT:
-            os << lGetPosUlong(ep, i);
+            os << lGetPosUlong(ep, f.pos);
             break;
          case lUlong64T:
          {
-            uint64_t value = lGetPosUlong64(ep, i);
+            uint64_t value = lGetPosUlong64(ep, f.pos);
 
             // hack: assume it is a timestamp when the attribute name contains "time"
             if (strstr(attr_name, "time") != nullptr) {
@@ -375,7 +387,7 @@ static void lWriteElemXML_(const lListElem *ep, int nesting_level, std::ostream 
          case lStringT:
             {
                dstring string = DSTRING_INIT;
-               str = lGetPosString(ep, i);
+               str = lGetPosString(ep, f.pos);
                if (escape_string(str, &string)) {
                   os << sge_dstring_get_string(&string);
                   sge_dstring_free(&string);
@@ -386,7 +398,7 @@ static void lWriteElemXML_(const lListElem *ep, int nesting_level, std::ostream 
          case lHostT:
             {
                dstring string = DSTRING_INIT;
-               str = lGetPosHost(ep, i);
+               str = lGetPosHost(ep, f.pos);
                if (escape_string(str, &string)) {
                   os << sge_dstring_get_string(&string);
                   sge_dstring_free(&string);
@@ -395,7 +407,7 @@ static void lWriteElemXML_(const lListElem *ep, int nesting_level, std::ostream 
             break;
 
          case lListT:
-            tlp = lGetPosList(ep, i);
+            tlp = lGetPosList(ep, f.pos);
             if (tlp) {
                os << "\n";
                lWriteListXML_(tlp, nesting_level + 1, os);
@@ -404,7 +416,7 @@ static void lWriteElemXML_(const lListElem *ep, int nesting_level, std::ostream 
             break;
 
          case lObjectT:
-            tep = lGetPosObject(ep, i);
+            tep = lGetPosObject(ep, f.pos);
             if (tep) {
                os << "\n";
                lWriteElemXML_(tep, nesting_level, os);
@@ -412,13 +424,13 @@ static void lWriteElemXML_(const lListElem *ep, int nesting_level, std::ostream 
             }
             break;
          case lDoubleT:
-            os << lGetPosDouble(ep, i);
+            os << lGetPosDouble(ep, f.pos);
             break;
          case lLongT:
-            os << lGetPosLong(ep,  i);
+            os << lGetPosLong(ep, f.pos);
             break;
          case lBoolT:
-            os << (lGetPosBool(ep, i) ? "true": "false");
+            os << (lGetPosBool(ep, f.pos) ? "true": "false");
             break;
          case lRefT:
             /* cannot be printed */

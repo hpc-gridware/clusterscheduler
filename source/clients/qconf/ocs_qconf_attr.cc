@@ -276,8 +276,8 @@ qconf_modify_attribute(lList **alpp, const qconf_op &op, const bool from_file, c
          /* Look for the list and see if it's nullptr.  These should all be very
           * simple CULL structures which should only contain an lHostT and an
           * lListT. */
-         int count = 1;
-         for (int nm = first->descr[0].nm; nm != NoName; nm = first->descr[count++].nm) {
+         for (const auto f : ocs_cull_present_fields(first->descr)) {
+            const int nm = first->descr[f.pos].nm;
             // for CE_Type objects which are no RSMAPs CE_resource_map_list will be nullptr - this is OK
             if (lGetType(first->descr, nm) == lListT && lGetList(first, nm) == nullptr && nm != CE_resource_map_list) {
                answer_list_add_sprintf(alpp, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, SFNMAX,

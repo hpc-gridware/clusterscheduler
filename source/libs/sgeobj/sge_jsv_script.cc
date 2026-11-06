@@ -2203,8 +2203,8 @@ jsv_is_modify_rejected(lList **answer_list, const lListElem *job) {
             // in the following code.
             const lDescr *descr = lGetElemDescr(job);
             str_list_parse_from_string(&allowed_switches, jsv_allowed_mod, ",");
-            for (const lDescr *pointer = descr; pointer->nm != NoName; pointer++) {
-               if (const char *switch_name = jsv_cull_attr2switch_name(pointer->nm, job); switch_name != nullptr) {
+            for (const auto f : ocs_cull_present_fields(descr)) {
+               if (const char *switch_name = jsv_cull_attr2switch_name(descr[f.pos].nm, job); switch_name != nullptr) {
                   lAddElemStr(&got_switches, ST_name, switch_name, ST_Type);
                }
             }

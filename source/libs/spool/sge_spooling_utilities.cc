@@ -161,6 +161,18 @@ spool_get_fields_to_spool(lList **answer_list, const lDescr *descr,
    DRETURN(fields);
 }
 
+/**
+ * @brief Build the spooling field array of an object type
+ *
+ * Takes the fields that have a value in the descriptor and match the
+ * selection of the instructions, in descriptor order, and recurses into
+ * sub-lists with the sub-instructions.
+ *
+ * @param answer_list receives error messages
+ * @param descr the object type, checked by the caller
+ * @param instr the spooling instructions, checked by the caller
+ * @return the field array terminated by #NoName, or nullptr on error
+ */
 static spooling_field *
 _spool_get_fields_to_spool(lList **answer_list, const lDescr *descr,
                            const spool_instr_t *instr) {
@@ -175,8 +187,9 @@ _spool_get_fields_to_spool(lList **answer_list, const lDescr *descr,
     */
 
    /* count fields to spool */
-   for (i = 0, size = 0; mt_get_type(descr[i].mt) != lEndT; i++) {
-      if ((descr[i].mt & instr->selection) != 0) {
+   size = 0;
+   for (const auto f : ocs_cull_present_fields(descr)) {
+      if ((descr[f.pos].mt & instr->selection) != 0) {
          size++;
       }
    }
@@ -213,22 +226,23 @@ _spool_get_fields_to_spool(lList **answer_list, const lDescr *descr,
    }
 
    /* copy field info */
-   for (i = 0, j = 0; mt_get_type(descr[i].mt) != lEndT; i++) {
-      if ((descr[i].mt & instr->selection) != 0) {
+   j = 0;
+   for (const auto f : ocs_cull_present_fields(descr)) {
+      if ((descr[f.pos].mt & instr->selection) != 0) {
          spooling_field *sub_fields = nullptr;
 
-         DPRINTF("field " SFQ " will be spooled\n", lNm2Str(descr[i].nm));
+         DPRINTF("field " SFQ " will be spooled\n", lNm2Str(descr[f.pos].nm));
 
-         fields[j].nm = descr[i].nm;
+         fields[j].nm = descr[f.pos].nm;
 
          if (instr->copy_field_names) {
             const char *name;
-            name = lNm2Str(descr[i].nm);
+            name = lNm2Str(descr[f.pos].nm);
             if (name == nullptr || strlen(name) <= strip) {
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
                                        ANSWER_QUALITY_ERROR,
                                        MSG_NONAMEFORATTRIBUTE_D,
-                                       descr[i].nm);
+                                       descr[f.pos].nm);
                fields = spool_free_spooling_fields(fields);
                DRETURN(nullptr);
             }
@@ -236,24 +250,24 @@ _spool_get_fields_to_spool(lList **answer_list, const lDescr *descr,
             fields[j].free_name = true;
          }
 
-         if (mt_get_type(descr[i].mt) == lListT) {
+         if (mt_get_type(descr[f.pos].mt) == lListT) {
             const lDescr *sub_descr;
 
             if (instr->sub_instr == nullptr) {
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
                                        ANSWER_QUALITY_ERROR,
                                        MSG_DONTKNOWHOWTOSPOOLSUBLIST_SS,
-                                       lNm2Str(descr[i].nm), __func__);
+                                       lNm2Str(descr[f.pos].nm), __func__);
                fields = spool_free_spooling_fields(fields);
                DRETURN(nullptr);
             }
 
-            sub_descr = object_get_subtype(descr[i].nm);
+            sub_descr = object_get_subtype(descr[f.pos].nm);
             if (sub_descr == nullptr) {
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
                                        ANSWER_QUALITY_ERROR,
                                        MSG_UNKNOWNOBJECTTYPEFOR_SS,
-                                       lNm2Str(descr[i].nm), __func__);
+                                       lNm2Str(descr[f.pos].nm), __func__);
                fields = spool_free_spooling_fields(fields);
                DRETURN(nullptr);
             }
@@ -261,7 +275,7 @@ _spool_get_fields_to_spool(lList **answer_list, const lDescr *descr,
             /* recursive spooling, e.g. sharetree */
             if (instr->sub_instr == instr && descr == sub_descr) {
                sub_fields = fields;
-               DPRINTF("recursive structure detected for field %s\n", lNm2Str(descr[i].nm));
+               DPRINTF("recursive structure detected for field %s\n", lNm2Str(descr[f.pos].nm));
             } else {
                sub_fields = _spool_get_fields_to_spool(answer_list, sub_descr,
                                                        instr->sub_instr);
