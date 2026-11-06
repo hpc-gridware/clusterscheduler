@@ -422,7 +422,7 @@ lList **lGetListRef(const lListElem *ep, int name) {
    if (mt_get_type(ep->descr[pos].mt) != lListT)
       incompatibleType("lGetPosListRef");
 
-   DRETURN(&(ep->cont[pos].glp));
+   DRETURN(&(ocs_cull_value(ep, pos).glp));
 }
 
 /**
@@ -438,7 +438,7 @@ char **lGetPosStringRef(const lListElem *ep, int pos) {
    if (mt_get_type(ep->descr[pos].mt) != lStringT)
       incompatibleType("lGetPosStringRef");
 
-   DRETURN(&(ep->cont[pos].str));
+   DRETURN(&(ocs_cull_value(ep, pos).str));
 }
 
 /**
@@ -454,7 +454,7 @@ char **lGetPosHostRef(const lListElem *ep, int pos) {
    if (mt_get_type(ep->descr[pos].mt) != lHostT)
       incompatibleType("lGetPosHostRef");
 
-   DRETURN(&(ep->cont[pos].host));
+   DRETURN(&(ocs_cull_value(ep, pos).host));
 }
 
 
@@ -483,7 +483,7 @@ lInt lGetPosInt(const lListElem *ep, int pos) {
    if (mt_get_type(ep->descr[pos].mt) != lIntT)
       incompatibleType("lGetPosInt");
 
-   DRETURN((lInt) ep->cont[pos].i);
+   DRETURN((lInt) ocs_cull_value(ep, pos).i);
 }
 
 /**
@@ -506,7 +506,7 @@ lInt lGetInt(const lListElem *ep, int name) {
       incompatibleType2(MSG_CULL_GETINT_WRONGTYPEFORFIELDXY_SS,
                         lNm2Str(name), multitypes[mt_get_type(ep->descr[pos].mt)]);
 
-   DRETURN((lInt) ep->cont[pos].i);
+   DRETURN((lInt) ocs_cull_value(ep, pos).i);
 }
 
 /**
@@ -531,7 +531,7 @@ lUlong lGetPosUlong(const lListElem *ep, int pos) {
 
    if (mt_get_type(ep->descr[pos].mt) != lUlongT)
       incompatibleType("lGetPosUlong");
-   DRETURN((lUlong) ep->cont[pos].ul);
+   DRETURN((lUlong) ocs_cull_value(ep, pos).ul);
 }
 
 /**
@@ -556,7 +556,7 @@ lUlong lGetUlong(const lListElem *ep, int name) {
       incompatibleType2(MSG_CULL_GETULONG_WRONGTYPEFORFIELDXY_SS,
                         lNm2Str(name), multitypes[mt_get_type(ep->descr[pos].mt)]);
 
-   DRETURN((lUlong) ep->cont[pos].ul);
+   DRETURN((lUlong) ocs_cull_value(ep, pos).ul);
 }
 
 /**
@@ -581,7 +581,7 @@ lUlong64 lGetPosUlong64(const lListElem *ep, int pos) {
 
    if (mt_get_type(ep->descr[pos].mt) != lUlong64T)
       incompatibleType("lGetPosUlong64");
-   DRETURN((lUlong64) ep->cont[pos].ul64);
+   DRETURN((lUlong64) ocs_cull_value(ep, pos).ul64);
 }
 
 /**
@@ -606,7 +606,7 @@ lUlong64 lGetUlong64(const lListElem *ep, int name) {
       incompatibleType2(MSG_CULL_GETULONG64_WRONGTYPEFORFIELDXY_SS,
                         lNm2Str(name), multitypes[mt_get_type(ep->descr[pos].mt)]);
 
-   DRETURN((lUlong64) ep->cont[pos].ul64);
+   DRETURN((lUlong64) ocs_cull_value(ep, pos).ul64);
 }
 
 /**
@@ -629,7 +629,7 @@ const char *lGetPosString(const lListElem *ep, int pos) {
    if (mt_get_type(ep->descr[pos].mt) != lStringT)
       incompatibleType("lGetPosString");
 
-   DRETURN((lString) ep->cont[pos].str);
+   DRETURN((lString) ocs_cull_value(ep, pos).str);
 }
 
 /**
@@ -651,7 +651,7 @@ const char *lGetPosHost(const lListElem *ep, int pos) {
 
    if (mt_get_type(ep->descr[pos].mt) != lHostT)
       incompatibleType("lGetPosHost");
-   DRETURN((lHost) ep->cont[pos].host);
+   DRETURN((lHost) ocs_cull_value(ep, pos).host);
 }
 
 /**
@@ -700,7 +700,7 @@ const char *lGetString(const lListElem *ep, int name) {
                         lNm2Str(name), multitypes[mt_get_type(ep->descr[pos].mt)]);
    }
 
-   DRETURN((lString) ep->cont[pos].str);
+   DRETURN((lString) ocs_cull_value(ep, pos).str);
 }
 
 /*
@@ -744,7 +744,7 @@ const char *lGetHost(const lListElem *ep, int name) {
       incompatibleType2(MSG_CULL_GETHOST_WRONGTYPEFORFILEDXY_SS,
                         lNm2Str(name), multitypes[mt_get_type(ep->descr[pos].mt)]);
 
-   DRETURN((lHost) ep->cont[pos].host);
+   DRETURN((lHost) ocs_cull_value(ep, pos).host);
 }
 
 /**
@@ -767,7 +767,7 @@ lListElem *lGetPosObject(const lListElem *ep, int pos) {
    if (mt_get_type(ep->descr[pos].mt) != lObjectT)
       incompatibleType("lGetPosObject");
 
-   DRETURN((lListElem *) ep->cont[pos].obj);
+   DRETURN((lListElem *) ocs_cull_value(ep, pos).obj);
 }
 
 /**
@@ -790,7 +790,7 @@ lList *lGetPosList(const lListElem *ep, int pos) {
    if (mt_get_type(ep->descr[pos].mt) != lListT)
       incompatibleType("lGetPosList");
 
-   DRETURN((lList *) ep->cont[pos].glp);
+   DRETURN((lList *) ocs_cull_value(ep, pos).glp);
 }
 
 /**
@@ -809,7 +809,7 @@ lListElem *lGetObject(const lListElem *ep, int name) {
    if (mt_get_type(ep->descr[pos].mt) != lObjectT)
       incompatibleType2(MSG_CULL_GETOBJECT_WRONGTYPEFORFIELDXY_SS,
                         lNm2Str(name), multitypes[mt_get_type(ep->descr[pos].mt)]);
-   DRETURN((lListElem *) ep->cont[pos].obj);
+   DRETURN((lListElem *) ocs_cull_value(ep, pos).obj);
 }
 
 /**
@@ -830,7 +830,7 @@ lList *lGetListRW(const lListElem *ep, int name) {
                         lNm2Str(name), multitypes[mt_get_type(ep->descr[pos].mt)]);
    }
 
-   DRETURN((lList *) ep->cont[pos].glp);
+   DRETURN((lList *) ocs_cull_value(ep, pos).glp);
 }
 
 /**
@@ -882,7 +882,7 @@ lDouble lGetPosDouble(const lListElem *ep, int pos) {
    DENTER(CULL_BASIS_LAYER);
    if (mt_get_type(ep->descr[pos].mt) != lDoubleT)
       incompatibleType("lGetPosDouble");
-   DRETURN(ep->cont[pos].db);
+   DRETURN(ocs_cull_value(ep, pos).db);
 }
 
 /**
@@ -904,7 +904,7 @@ lDouble lGetDouble(const lListElem *ep, int name) {
    if (mt_get_type(ep->descr[pos].mt) != lDoubleT)
       incompatibleType2(MSG_CULL_GETDOUBLE_WRONGTYPEFORFIELDXY_SS, lNm2Str(name),
                         multitypes[mt_get_type(ep->descr[pos].mt)]);
-   DRETURN(ep->cont[pos].db);
+   DRETURN(ocs_cull_value(ep, pos).db);
 }
 
 /**
@@ -921,7 +921,7 @@ lLong lGetPosLong(const lListElem *ep, int pos) {
    DENTER(CULL_BASIS_LAYER);
    if (mt_get_type(ep->descr[pos].mt) != lLongT)
       incompatibleType("lGetPosLong");
-   DRETURN(ep->cont[pos].l);
+   DRETURN(ocs_cull_value(ep, pos).l);
 }
 
 /**
@@ -943,7 +943,7 @@ lLong lGetLong(const lListElem *ep, int name) {
    if (mt_get_type(ep->descr[pos].mt) != lLongT)
       incompatibleType2(MSG_CULL_GETLONG_WRONGTYPEFORFIELDXY_SS, lNm2Str(name),
                         multitypes[mt_get_type(ep->descr[pos].mt)]);
-   DRETURN(ep->cont[pos].l);
+   DRETURN(ocs_cull_value(ep, pos).l);
 }
 
 /**
@@ -961,7 +961,7 @@ lBool lGetPosBool(const lListElem *ep, int pos) {
 
    if (mt_get_type(ep->descr[pos].mt) != lBoolT)
       incompatibleType("lGetPosBool");
-   DRETURN(ep->cont[pos].b);
+   DRETURN(ocs_cull_value(ep, pos).b);
 }
 
 /**
@@ -983,7 +983,7 @@ lBool lGetBool(const lListElem *ep, int name) {
    if (mt_get_type(ep->descr[pos].mt) != lBoolT)
       incompatibleType2(MSG_CULL_GETBOOL_WRONGTYPEFORFIELDXY_SS, lNm2Str(name),
                         multitypes[mt_get_type(ep->descr[pos].mt)]);
-   DRETURN(ep->cont[pos].b);
+   DRETURN(ocs_cull_value(ep, pos).b);
 }
 
 /**
@@ -1001,7 +1001,7 @@ lRef lGetPosRef(const lListElem *ep, int pos) {
    if (mt_get_type(ep->descr[pos].mt) != lRefT) {
       incompatibleType("lGetPosRef");
    }
-   DRETURN(ep->cont[pos].ref);
+   DRETURN(ocs_cull_value(ep, pos).ref);
 }
 
 /**
@@ -1023,7 +1023,7 @@ lRef lGetRef(const lListElem *ep, int name) {
    if (mt_get_type(ep->descr[pos].mt) != lRefT)
       incompatibleType2(MSG_CULL_GETREF_WRONGTYPEFORFIELDXY_SS, lNm2Str(name),
                         multitypes[mt_get_type(ep->descr[pos].mt)]);
-   DRETURN(ep->cont[pos].ref);
+   DRETURN(ocs_cull_value(ep, pos).ref);
 }
 
 /**
@@ -1059,8 +1059,8 @@ int lSetPosInt(lListElem *ep, int pos, int value) {
    lObserveChangeValue(ep, false, lGetPosName(ep->descr, pos));
 #endif
 
-   if (ep->cont[pos].i != value) {
-      ep->cont[pos].i = value;
+   if (ocs_cull_value(ep, pos).i != value) {
+      ocs_cull_value(ep, pos).i = value;
    }
 
    DRETURN(0);
@@ -1103,8 +1103,8 @@ int lSetInt(lListElem *ep, int name, int value) {
    lObserveChangeValue(ep, false, name);
 #endif
 
-   if (value != ep->cont[pos].i) {
-      ep->cont[pos].i = value;
+   if (value != ocs_cull_value(ep, pos).i) {
+      ocs_cull_value(ep, pos).i = value;
    }
 
    DRETURN(0);
@@ -1142,17 +1142,17 @@ int lSetPosUlong(lListElem *ep, int pos, lUlong value) {
    lObserveChangeValue(ep, elem_hash_table(ep, pos) != nullptr, lGetPosName(ep->descr, pos));
 #endif
 
-   if (value != ep->cont[pos].ul) {
+   if (value != ocs_cull_value(ep, pos).ul) {
       /* remove old hash entry */
       if (elem_hash_table(ep, pos) != nullptr) {
          cull_hash_remove(ep, pos);
       }
 
-      ep->cont[pos].ul = value;
+      ocs_cull_value(ep, pos).ul = value;
 
       /* create entry in hash table */
       if (elem_hash_table(ep, pos) != nullptr) {
-         cull_hash_insert(ep, (void *) &(ep->cont[pos].ul), elem_hash_table(ep, pos),
+         cull_hash_insert(ep, (void *) &(ocs_cull_value(ep, pos).ul), elem_hash_table(ep, pos),
                           mt_is_unique(ep->descr[pos].mt));
       }
    }
@@ -1199,17 +1199,17 @@ int lSetUlong(lListElem *ep, int name, lUlong value) {
    lObserveChangeValue(ep, elem_hash_table(ep, pos) != nullptr, name);
 #endif
 
-   if (value != ep->cont[pos].ul) {
+   if (value != ocs_cull_value(ep, pos).ul) {
       /* remove old hash entry */
       if (elem_hash_table(ep, pos) != nullptr) {
          cull_hash_remove(ep, pos);
       }
 
-      ep->cont[pos].ul = value;
+      ocs_cull_value(ep, pos).ul = value;
 
       /* create entry in hash table */
       if (elem_hash_table(ep, pos) != nullptr) {
-         cull_hash_insert(ep, (void *) &(ep->cont[pos].ul), elem_hash_table(ep, pos),
+         cull_hash_insert(ep, (void *) &(ocs_cull_value(ep, pos).ul), elem_hash_table(ep, pos),
                           mt_is_unique(ep->descr[pos].mt));
       }
    }
@@ -1264,11 +1264,11 @@ int lAddUlong(lListElem *ep, int name, lUlong offset) {
          cull_hash_remove(ep, pos);
       }
 
-      ep->cont[pos].ul += offset;
+      ocs_cull_value(ep, pos).ul += offset;
 
       /* create entry in hash table */
       if (elem_hash_table(ep, pos) != nullptr) {
-         cull_hash_insert(ep, (void *) &(ep->cont[pos].ul), elem_hash_table(ep, pos),
+         cull_hash_insert(ep, (void *) &(ocs_cull_value(ep, pos).ul), elem_hash_table(ep, pos),
                           mt_is_unique(ep->descr[pos].mt));
       }
    }
@@ -1331,7 +1331,7 @@ lUlong64 lGetUlong64Atomic(const lListElem *ep, int name) {
    static_assert(alignof(lMultiType) >= sizeof(lUlong64),
                  "a cull value is not aligned well enough to be accessed atomically");
 
-   DRETURN(__atomic_load_n(&ep->cont[pos].ul64, __ATOMIC_RELAXED));
+   DRETURN(__atomic_load_n(&ocs_cull_value(ep, pos).ul64, __ATOMIC_RELAXED));
 }
 
 /** @brief Write a 64 bit unsigned field without a reader being able to see it torn
@@ -1389,7 +1389,7 @@ int lSetUlong64Atomic(lListElem *ep, int name, lUlong64 value) {
    }
 
    // see lGetUlong64Atomic() on why this is a builtin and not std::atomic_ref
-   __atomic_store_n(&ep->cont[pos].ul64, value, __ATOMIC_RELAXED);
+   __atomic_store_n(&ocs_cull_value(ep, pos).ul64, value, __ATOMIC_RELAXED);
 
    DRETURN(0);
 }
@@ -1421,17 +1421,17 @@ int lSetUlong64(lListElem *ep, int name, lUlong64 value) {
    lObserveChangeValue(ep, elem_hash_table(ep, pos) != nullptr, name);
 #endif
 
-   if (value != ep->cont[pos].ul64) {
+   if (value != ocs_cull_value(ep, pos).ul64) {
       /* remove old hash entry */
       if (elem_hash_table(ep, pos) != nullptr) {
          cull_hash_remove(ep, pos);
       }
 
-      ep->cont[pos].ul64 = value;
+      ocs_cull_value(ep, pos).ul64 = value;
 
       /* create entry in hash table */
       if (elem_hash_table(ep, pos) != nullptr) {
-         cull_hash_insert(ep, (void *) &(ep->cont[pos].ul64), elem_hash_table(ep, pos),
+         cull_hash_insert(ep, (void *) &(ocs_cull_value(ep, pos).ul64), elem_hash_table(ep, pos),
                           mt_is_unique(ep->descr[pos].mt));
       }
    }
@@ -1486,11 +1486,11 @@ int lAddUlong64(lListElem *ep, int name, lUlong64 offset) {
          cull_hash_remove(ep, pos);
       }
 
-      ep->cont[pos].ul64 += offset;
+      ocs_cull_value(ep, pos).ul64 += offset;
 
       /* create entry in hash table */
       if (elem_hash_table(ep, pos) != nullptr) {
-         cull_hash_insert(ep, (void *) &(ep->cont[pos].ul64), elem_hash_table(ep, pos),
+         cull_hash_insert(ep, (void *) &(ocs_cull_value(ep, pos).ul64), elem_hash_table(ep, pos),
                           mt_is_unique(ep->descr[pos].mt));
       }
    }
@@ -1530,17 +1530,17 @@ int lSetPosUlong64(lListElem *ep, int pos, lUlong64 value) {
    lObserveChangeValue(ep, elem_hash_table(ep, pos) != nullptr, lGetPosName(ep->descr, pos));
 #endif
 
-   if (value != ep->cont[pos].ul64) {
+   if (value != ocs_cull_value(ep, pos).ul64) {
       /* remove old hash entry */
       if (elem_hash_table(ep, pos) != nullptr) {
          cull_hash_remove(ep, pos);
       }
 
-      ep->cont[pos].ul64 = value;
+      ocs_cull_value(ep, pos).ul64 = value;
 
       /* create entry in hash table */
       if (elem_hash_table(ep, pos) != nullptr) {
-         cull_hash_insert(ep, (void *) &(ep->cont[pos].ul64), elem_hash_table(ep, pos),
+         cull_hash_insert(ep, (void *) &(ocs_cull_value(ep, pos).ul64), elem_hash_table(ep, pos),
                           mt_is_unique(ep->descr[pos].mt));
       }
    }
@@ -1585,7 +1585,7 @@ int lSetPosString(lListElem *ep, int pos, const char *value) {
    ** if one of them is nullptr, it changed,
    ** else do a string compare
    */
-   str = ep->cont[pos].str;
+   str = ocs_cull_value(ep, pos).str;
    if (value == nullptr && str == nullptr) {
       changed = 0;
    } else {
@@ -1617,12 +1617,12 @@ int lSetPosString(lListElem *ep, int pos, const char *value) {
          str = nullptr;               /* value is nullptr */
 
       /* free old string value */
-      sge_free(&(ep->cont[pos].str));
-      ep->cont[pos].str = str;
+      sge_free(&(ocs_cull_value(ep, pos).str));
+      ocs_cull_value(ep, pos).str = str;
 
       /* create entry in hash table */
       if (elem_hash_table(ep, pos) != nullptr) {
-         cull_hash_insert(ep, ep->cont[pos].str, elem_hash_table(ep, pos),
+         cull_hash_insert(ep, ocs_cull_value(ep, pos).str, elem_hash_table(ep, pos),
                           mt_is_unique(ep->descr[pos].mt));
       }
    }
@@ -1668,7 +1668,7 @@ int lSetPosHost(lListElem *ep, int pos, const char *value) {
    ** else do a string compare (a hostcmp would be more accurate,
    ** but most probably not neccessary and too expensive
    */
-   str = ep->cont[pos].host;
+   str = ocs_cull_value(ep, pos).host;
    if (value == nullptr && str == nullptr) {
       changed = 0;
    } else {
@@ -1700,8 +1700,8 @@ int lSetPosHost(lListElem *ep, int pos, const char *value) {
          str = nullptr;               /* value is nullptr */
 
       /* free old string value */
-      sge_free(&(ep->cont[pos].host));
-      ep->cont[pos].host = str;
+      sge_free(&(ocs_cull_value(ep, pos).host));
+      ocs_cull_value(ep, pos).host = str;
 
       /* create entry in hash table */
       if (elem_hash_table(ep, pos) != nullptr) {
@@ -1756,7 +1756,7 @@ int lSetString(lListElem *ep, int name, const char *value) {
    ** if one of them is nullptr, it changed,
    ** else do a string compare
    */
-   str = ep->cont[pos].str;
+   str = ocs_cull_value(ep, pos).str;
    if (value == nullptr && str == nullptr) {
       changed = 0;
    } else {
@@ -1789,12 +1789,12 @@ int lSetString(lListElem *ep, int name, const char *value) {
       }
 
       /* free old string value */
-      sge_free(&(ep->cont[pos].str));
-      ep->cont[pos].str = str;
+      sge_free(&(ocs_cull_value(ep, pos).str));
+      ocs_cull_value(ep, pos).str = str;
 
       /* create entry in hash table */
       if (elem_hash_table(ep, pos) != nullptr) {
-         cull_hash_insert(ep, ep->cont[pos].str, elem_hash_table(ep, pos),
+         cull_hash_insert(ep, ocs_cull_value(ep, pos).str, elem_hash_table(ep, pos),
                           mt_is_unique(ep->descr[pos].mt));
       }
    }
@@ -1847,7 +1847,7 @@ int lSetHost(lListElem *ep, int name, const char *value) {
    ** else do a string compare (a hostcmp would be more accurate,
    ** but most probably not neccessary and too expensive
    */
-   str = ep->cont[pos].host;
+   str = ocs_cull_value(ep, pos).host;
    if (value == nullptr && str == nullptr) {
       changed = 0;
    } else {
@@ -1877,8 +1877,8 @@ int lSetHost(lListElem *ep, int name, const char *value) {
       } else {
          str = nullptr;               /* value is nullptr */
       }
-      sge_free(&(ep->cont[pos].host));
-      ep->cont[pos].host = str;
+      sge_free(&(ocs_cull_value(ep, pos).host));
+      ocs_cull_value(ep, pos).host = str;
 
       /* create entry in hash table */
       if (elem_hash_table(ep, pos) != nullptr) {
@@ -1926,18 +1926,18 @@ int lSetPosObject(lListElem *ep, int pos, lListElem *value) {
    }
 
 #ifdef OBSERVE
-   lObserveChangeOwner(ep->cont[pos].obj, nullptr, ep, lGetPosName(ep->descr, pos));
+   lObserveChangeOwner(ocs_cull_value(ep, pos).obj, nullptr, ep, lGetPosName(ep->descr, pos));
    lObserveChangeOwner(value, ep, nullptr, lGetPosName(ep->descr, pos));
 #endif
 
-   if (value != ep->cont[pos].obj) {
+   if (value != ocs_cull_value(ep, pos).obj) {
       /* free old element */
-      if (ep->cont[pos].obj != nullptr) {
-         lFreeElem(&(ep->cont[pos].obj));
+      if (ocs_cull_value(ep, pos).obj != nullptr) {
+         lFreeElem(&(ocs_cull_value(ep, pos).obj));
       }
 
       /* set new list */
-      ep->cont[pos].obj = value;
+      ocs_cull_value(ep, pos).obj = value;
 
       /* mark lListElem as bound */
       if (value != nullptr) {
@@ -1978,18 +1978,18 @@ int lSetPosList(lListElem *ep, int pos, lList *value) {
    }
 
 #ifdef OBSERVE
-   lObserveChangeOwner(ep->cont[pos].glp, nullptr, ep, lGetPosName(ep->descr, pos));
+   lObserveChangeOwner(ocs_cull_value(ep, pos).glp, nullptr, ep, lGetPosName(ep->descr, pos));
    lObserveChangeOwner(value, ep, nullptr, lGetPosName(ep->descr, pos));
 #endif
 
-   if (value != ep->cont[pos].glp) {
+   if (value != ocs_cull_value(ep, pos).glp) {
       /* free old list */
-      if (ep->cont[pos].glp) {
-         lFreeList(&(ep->cont[pos].glp));
+      if (ocs_cull_value(ep, pos).glp) {
+         lFreeList(&(ocs_cull_value(ep, pos).glp));
       }
 
       /* set new list */
-      ep->cont[pos].glp = value;
+      ocs_cull_value(ep, pos).glp = value;
    }
 
    DRETURN(0);
@@ -2033,9 +2033,9 @@ int lXchgString(lListElem *ep, int name, char **str) {
    lObserveChangeValue(ep, false, name);
 #endif
 
-   if (*str != ep->cont[pos].str) {
-      tmp = ep->cont[pos].str;
-      ep->cont[pos].str = *str;
+   if (*str != ocs_cull_value(ep, pos).str) {
+      tmp = ocs_cull_value(ep, pos).str;
+      ocs_cull_value(ep, pos).str = *str;
       *str = tmp;
    }
 
@@ -2078,12 +2078,12 @@ int lXchgList(lListElem *ep, int name, lList **lpp) {
    }
 
 #ifdef OBSERVE
-   lObserveSwitchOwner(ep->cont[pos].glp, *lpp, ep, nullptr, name);
+   lObserveSwitchOwner(ocs_cull_value(ep, pos).glp, *lpp, ep, nullptr, name);
 #endif
 
-   if (*lpp != ep->cont[pos].glp) {
-      tmp = ep->cont[pos].glp;
-      ep->cont[pos].glp = *lpp;
+   if (*lpp != ocs_cull_value(ep, pos).glp) {
+      tmp = ocs_cull_value(ep, pos).glp;
+      ocs_cull_value(ep, pos).glp = *lpp;
       *lpp = tmp;
    }
 
@@ -2163,18 +2163,18 @@ int lSetObject(lListElem *ep, int name, lListElem *value) {
    }
 
 #ifdef OBSERVE
-   lObserveChangeOwner(ep->cont[pos].obj, nullptr, ep, name);
+   lObserveChangeOwner(ocs_cull_value(ep, pos).obj, nullptr, ep, name);
    lObserveChangeOwner(value, ep, nullptr, name);
 #endif
 
-   if (value != ep->cont[pos].obj) {
+   if (value != ocs_cull_value(ep, pos).obj) {
       /* free old element */
-      if (ep->cont[pos].obj) {
-         lFreeElem(&(ep->cont[pos].obj));
+      if (ocs_cull_value(ep, pos).obj) {
+         lFreeElem(&(ocs_cull_value(ep, pos).obj));
       }
 
       /* set new list */
-      ep->cont[pos].obj = value;
+      ocs_cull_value(ep, pos).obj = value;
 
       /* mark lListElem as bound */
       if (value != nullptr) {
@@ -2222,16 +2222,16 @@ int lSetList(lListElem *ep, int name, lList *value) {
    }
 
 #ifdef OBSERVE
-   lObserveChangeOwner(ep->cont[pos].glp, ep, nullptr, name);
+   lObserveChangeOwner(ocs_cull_value(ep, pos).glp, ep, nullptr, name);
    lObserveChangeOwner(value, ep, nullptr, name);
 #endif
 
-   if (value != ep->cont[pos].glp) {
+   if (value != ocs_cull_value(ep, pos).glp) {
       /* free old list */
-      lFreeList(&(ep->cont[pos].glp));
+      lFreeList(&(ocs_cull_value(ep, pos).glp));
 
       /* set new list */
-      ep->cont[pos].glp = value;
+      ocs_cull_value(ep, pos).glp = value;
    }
 
    DRETURN(0);
@@ -2269,8 +2269,8 @@ int lSetPosDouble(lListElem *ep, int pos, lDouble value) {
    lObserveChangeValue(ep, false, lGetPosName(ep->descr, pos));
 #endif
 
-   if (value != ep->cont[pos].db) {
-      ep->cont[pos].db = value;
+   if (value != ocs_cull_value(ep, pos).db) {
+      ocs_cull_value(ep, pos).db = value;
    }
 
    DRETURN(0);
@@ -2315,8 +2315,8 @@ int lSetDouble(lListElem *ep, int name, lDouble value) {
    lObserveChangeValue(ep, false, name);
 #endif
 
-   if (value != ep->cont[pos].db) {
-      ep->cont[pos].db = value;
+   if (value != ocs_cull_value(ep, pos).db) {
+      ocs_cull_value(ep, pos).db = value;
    }
 
    DRETURN(0);
@@ -2361,7 +2361,7 @@ int lAddDouble(lListElem *ep, int name, lDouble value) {
 #endif
 
    if (value != 0.0) {
-      ep->cont[pos].db += value;
+      ocs_cull_value(ep, pos).db += value;
    }
 
    DRETURN(0);
@@ -2400,8 +2400,8 @@ int lSetPosLong(lListElem *ep, int pos, lLong value) {
    lObserveChangeValue(ep, false, lGetPosName(ep->descr, pos));
 #endif
 
-   if (value != ep->cont[pos].l) {
-      ep->cont[pos].l = value;
+   if (value != ocs_cull_value(ep, pos).l) {
+      ocs_cull_value(ep, pos).l = value;
    }
 
    DRETURN(0);
@@ -2445,8 +2445,8 @@ int lSetLong(lListElem *ep, int name, lLong value) {
    lObserveChangeValue(ep, false, name);
 #endif
 
-   if (value != ep->cont[pos].l) {
-      ep->cont[pos].l = value;
+   if (value != ocs_cull_value(ep, pos).l) {
+      ocs_cull_value(ep, pos).l = value;
    }
 
    DRETURN(0);
@@ -2484,8 +2484,8 @@ int lSetPosBool(lListElem *ep, int pos, lBool value) {
    lObserveChangeValue(ep, false, lGetPosName(ep->descr, pos));
 #endif
 
-   if (value != ep->cont[pos].b) {
-      ep->cont[pos].b = value;
+   if (value != ocs_cull_value(ep, pos).b) {
+      ocs_cull_value(ep, pos).b = value;
    }
 
    DRETURN(0);
@@ -2529,8 +2529,8 @@ int lSetBool(lListElem *ep, int name, lBool value) {
    lObserveChangeValue(ep, false, name);
 #endif
 
-   if (value != ep->cont[pos].b) {
-      ep->cont[pos].b = value;
+   if (value != ocs_cull_value(ep, pos).b) {
+      ocs_cull_value(ep, pos).b = value;
    }
 
    DRETURN(0);
@@ -2568,8 +2568,8 @@ int lSetPosRef(lListElem *ep, int pos, lRef value) {
    lObserveChangeValue(ep, false, lGetPosName(ep->descr, pos));
 #endif
 
-   if (value != ep->cont[pos].ref) {
-      ep->cont[pos].ref = value;
+   if (value != ocs_cull_value(ep, pos).ref) {
+      ocs_cull_value(ep, pos).ref = value;
    }
 
    DRETURN(0);
@@ -2613,8 +2613,8 @@ int lSetRef(lListElem *ep, int name, lRef value) {
    lObserveChangeValue(ep, false, name);
 #endif
 
-   if (value != ep->cont[pos].ref) {
-      ep->cont[pos].ref = value;
+   if (value != ocs_cull_value(ep, pos).ref) {
+      ocs_cull_value(ep, pos).ref = value;
    }
 
    DRETURN(0);
@@ -2771,7 +2771,7 @@ lListElem *lAddSubStr(lListElem *ep, int nm, const char *str, int snm,
       DRETURN(nullptr);
    }
 
-   ret = lAddElemStr(&(ep->cont[sublist_pos].glp), nm, str, dp);
+   ret = lAddElemStr(&(ocs_cull_value(ep, sublist_pos).glp), nm, str, dp);
 
    DRETURN(ret);
 }
@@ -2814,7 +2814,7 @@ lListElem *lAddSubHost(lListElem *ep, int nm, const char *str, int snm,
       DRETURN(nullptr);
    }
 
-   ret = lAddElemHost(&(ep->cont[sublist_pos].glp), nm, str, dp);
+   ret = lAddElemHost(&(ocs_cull_value(ep, sublist_pos).glp), nm, str, dp);
 
    DRETURN(ret);
 }
@@ -2946,7 +2946,7 @@ int lDelSubStr(lListElem *ep, int nm, const char *str, int snm) {
    /* get position of sublist in ep */
    sublist_pos = lGetPosViaElem(ep, snm, SGE_DO_ABORT);
 
-   ret = lDelElemStr(&(ep->cont[sublist_pos].glp), nm, str);
+   ret = lDelElemStr(&(ocs_cull_value(ep, sublist_pos).glp), nm, str);
 
    DRETURN(ret);
 }
@@ -3011,7 +3011,7 @@ lListElem *lGetSubStrRW(const lListElem *ep, int nm, const char *str, int snm) {
       /* get position of sublist in ep */
       sublist_pos = lGetPosViaElem(ep, snm, SGE_DO_ABORT);
 
-      ret = lGetElemStrRW(ep->cont[sublist_pos].glp, nm, str);
+      ret = lGetElemStrRW(ocs_cull_value(ep, sublist_pos).glp, nm, str);
    }
 
    DRETURN(ret);
@@ -3336,7 +3336,7 @@ lListElem *lAddSubUlong(lListElem *ep, int nm, lUlong val, int snm,
       DRETURN(nullptr);
    }
 
-   ret = lAddElemUlong(&(ep->cont[sublist_pos].glp), nm, val, dp);
+   ret = lAddElemUlong(&(ocs_cull_value(ep, sublist_pos).glp), nm, val, dp);
 
    DRETURN(ret);
 }
@@ -3409,7 +3409,7 @@ int lDelSubUlong(lListElem *ep, int nm, lUlong val, int snm) {
    /* get position of sublist in ep */
    sublist_pos = lGetPosViaElem(ep, snm, SGE_DO_ABORT);
 
-   ret = lDelElemUlong(&(ep->cont[sublist_pos].glp), nm, val);
+   ret = lDelElemUlong(&(ocs_cull_value(ep, sublist_pos).glp), nm, val);
 
    DRETURN(ret);
 }
@@ -3477,7 +3477,7 @@ lListElem *lGetSubUlongRW(const lListElem *ep, int nm, lUlong val, int snm) {
    /* get position of sublist in ep */
    sublist_pos = lGetPosViaElem(ep, snm, SGE_DO_ABORT);
 
-   ret = lGetElemUlongRW(ep->cont[sublist_pos].glp, nm, val);
+   ret = lGetElemUlongRW(ocs_cull_value(ep, sublist_pos).glp, nm, val);
 
    DRETURN(ret);
 }
@@ -3694,7 +3694,7 @@ lListElem *lAddSubUlong64(lListElem *ep, int nm, lUlong64 val, int snm,
       DRETURN(nullptr);
    }
 
-   ret = lAddElemUlong64(&(ep->cont[sublist_pos].glp), nm, val, dp);
+   ret = lAddElemUlong64(&(ocs_cull_value(ep, sublist_pos).glp), nm, val, dp);
 
    DRETURN(ret);
 }
@@ -3767,7 +3767,7 @@ int lDelSubUlong64(lListElem *ep, int nm, lUlong64 val, int snm) {
    /* get position of sublist in ep */
    sublist_pos = lGetPosViaElem(ep, snm, SGE_DO_ABORT);
 
-   ret = lDelElemUlong64(&(ep->cont[sublist_pos].glp), nm, val);
+   ret = lDelElemUlong64(&(ocs_cull_value(ep, sublist_pos).glp), nm, val);
 
    DRETURN(ret);
 }
@@ -3835,7 +3835,7 @@ lListElem *lGetSubUlong64RW(const lListElem *ep, int nm, lUlong64 val, int snm) 
    /* get position of sublist in ep */
    sublist_pos = lGetPosViaElem(ep, snm, SGE_DO_ABORT);
 
-   ret = lGetElemUlong64RW(ep->cont[sublist_pos].glp, nm, val);
+   ret = lGetElemUlong64RW(ocs_cull_value(ep, sublist_pos).glp, nm, val);
 
    DRETURN(ret);
 }
@@ -4033,7 +4033,7 @@ lListElem *lGetSubCaseStr(const lListElem *ep, int nm, const char *str,
    /* get position of sublist in ep */
    sublist_pos = lGetPosViaElem(ep, snm, SGE_DO_ABORT);
 
-   ret = lGetElemCaseStrRW(ep->cont[sublist_pos].glp, nm, str);
+   ret = lGetElemCaseStrRW(ocs_cull_value(ep, sublist_pos).glp, nm, str);
 
    DRETURN(ret);
 }
@@ -4309,7 +4309,7 @@ lListElem *lGetSubHostRW(const lListElem *ep, int nm, const char *str, int snm) 
    /* get position of sublist in ep */
    sublist_pos = lGetPosViaElem(ep, snm, SGE_DO_ABORT);
 
-   ret = lGetElemHostRW(ep->cont[sublist_pos].glp, nm, str);
+   ret = lGetElemHostRW(ocs_cull_value(ep, sublist_pos).glp, nm, str);
 
    DRETURN(ret);
 }
@@ -4414,7 +4414,7 @@ bool lMatchUlongBitMask(lListElem *ep, int nm, uint32_t bitmask) {
       incompatibleType2(MSG_CULL_GETULONG_WRONGTYPEFORFIELDXY_SS,
                         lNm2Str(nm), multitypes[mt_get_type(ep->descr[pos].mt)]);
 
-   DRETURN((ep->cont[pos].ul & bitmask) > 0 ? true : false);
+   DRETURN((ocs_cull_value(ep, pos).ul & bitmask) > 0 ? true : false);
 }
 
 /**
@@ -4446,7 +4446,7 @@ int lOrUlongBitMask(lListElem *ep, int nm, uint32_t bitmask) {
       DRETURN(-1);
    }
 
-   ep->cont[pos].ul |= bitmask;
+   ocs_cull_value(ep, pos).ul |= bitmask;
 
    DRETURN(0);
 }
@@ -4479,7 +4479,7 @@ int lAndUlongBitMask(lListElem *ep, int nm, uint32_t bitmask) {
       DRETURN(-1);
    }
 
-   ep->cont[pos].ul &= bitmask;
+   ocs_cull_value(ep, pos).ul &= bitmask;
 
    DRETURN(0);
 }
@@ -4512,7 +4512,7 @@ int lClearUlongBitMask(lListElem *ep, int nm, uint32_t bitmask) {
       DRETURN(-1);
    }
 
-   ep->cont[pos].ul &= ~bitmask;
+   ocs_cull_value(ep, pos).ul &= ~bitmask;
 
    DRETURN(0);
 

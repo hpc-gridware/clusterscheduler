@@ -289,6 +289,9 @@ lCopySwitchPack(const lListElem *sep, lListElem *dep, int src_idx, int dst_idx,
       DRETURN(-1);
    }
 
+   lMultiType &dst = ocs_cull_value(dep, dst_idx);
+   const lMultiType &src = ocs_cull_value(sep, src_idx);
+
    /* A field marked CULL_NO_TRANSFER holds state that is meaningful only in the
     * process that built it. When this copy is one that will be handed out - an
     * event payload - the destination keeps what lCreateElem() gave it, which is
@@ -296,61 +299,61 @@ lCopySwitchPack(const lListElem *sep, lListElem *dep, int src_idx, int dst_idx,
     * here, in the walk that has to happen anyway, means a marked sub-list is not
     * even descended into, let alone duplicated. */
    if (skip_no_transfer && !mt_do_transfer(dep->descr[dst_idx].mt)) {
-      dep->cont[dst_idx] = lMultiType{};
+      dst = lMultiType{};
       DRETURN(0);
    }
 
    switch (mt_get_type(dep->descr[dst_idx].mt)) {
       case lUlongT:
-         dep->cont[dst_idx].ul = sep->cont[src_idx].ul;
+         dst.ul = src.ul;
          break;
       case lUlong64T:
-         dep->cont[dst_idx].ul64 = sep->cont[src_idx].ul64;
+         dst.ul64 = src.ul64;
          break;
       case lStringT:
-         if (!sep->cont[src_idx].str)
-            dep->cont[dst_idx].str = nullptr;
+         if (!src.str)
+            dst.str = nullptr;
          else
-            dep->cont[dst_idx].str = strdup(sep->cont[src_idx].str);
+            dst.str = strdup(src.str);
          break;
       case lHostT:
-         if (!sep->cont[src_idx].host)
-            dep->cont[dst_idx].host = nullptr;
+         if (!src.host)
+            dst.host = nullptr;
          else
-            dep->cont[dst_idx].host = strdup(sep->cont[src_idx].host);
+            dst.host = strdup(src.host);
          break;
 
       case lDoubleT:
-         dep->cont[dst_idx].db = sep->cont[src_idx].db;
+         dst.db = src.db;
          break;
       case lListT:
-         if ((tlp = sep->cont[src_idx].glp) == nullptr)
-            dep->cont[dst_idx].glp = nullptr;
+         if ((tlp = src.glp) == nullptr)
+            dst.glp = nullptr;
          else {
-            dep->cont[dst_idx].glp = lSelectHashPack(tlp->listname, tlp, nullptr,
-                                                     ep, isHash, pb, skip_no_transfer);
+            dst.glp = lSelectHashPack(tlp->listname, tlp, nullptr,
+                                      ep, isHash, pb, skip_no_transfer);
          }
          break;
       case lObjectT:
-         if ((tep = sep->cont[src_idx].obj) == nullptr) {
-            dep->cont[dst_idx].obj = nullptr;
+         if ((tep = src.obj) == nullptr) {
+            dst.obj = nullptr;
          } else {
             lListElem *new_ep = lSelectElemPack(tep, nullptr, ep, isHash, pb, skip_no_transfer);
             elem_set_object(new_ep);
-            dep->cont[dst_idx].obj = new_ep;
+            dst.obj = new_ep;
          }
          break;
       case lIntT:
-         dep->cont[dst_idx].i = sep->cont[src_idx].i;
+         dst.i = src.i;
          break;
       case lLongT:
-         dep->cont[dst_idx].l = sep->cont[src_idx].l;
+         dst.l = src.l;
          break;
       case lBoolT:
-         dep->cont[dst_idx].b = sep->cont[src_idx].b;
+         dst.b = src.b;
          break;
       case lRefT:
-         dep->cont[dst_idx].ref = sep->cont[src_idx].ref;
+         dst.ref = src.ref;
          break;
       default:
          DRETURN(-1);
@@ -1732,11 +1735,11 @@ lListElem *lDechainObject(lListElem *parent, int name) {
       DRETURN(nullptr);
    }
 
-   dep = (lListElem *) parent->cont[pos].obj;
+   dep = (lListElem *) ocs_cull_value(parent, pos).obj;
 
    if (dep != nullptr) {
       elem_set_free(dep);
-      parent->cont[pos].obj = nullptr;
+      ocs_cull_value(parent, pos).obj = nullptr;
    }
 
 #ifdef OBSERVE

@@ -109,15 +109,31 @@ static_assert(CULL_PACK_DESCR_TYPE_REF > MAX_DESCR_SIZE, "the type reference mar
  *
  * An element carries its own descriptor, so it can exist outside any list —
  * `lCreateElem()` produces exactly that. Its field values live in a separate
- * array indexed the same way as the descriptor.
+ * array; ocs_cull_value() in cull_multitypeP.h gives the value of a descriptor
+ * position.
  */
 struct _lListElem {
    lListElem *next;   ///< next element, or nullptr at the end of the list
    lListElem *prev;   ///< previous element, or nullptr at the head
    uintptr_t owner;   ///< two parts in one word: the state in the two low bits, the list of a bound element in the upper bits (see @ref cull_elem_status)
    const lDescr *descr; ///< the object type, shared: a static block or a counted descriptor (see ocs_cull_descr.h)
-   lMultiType *cont;  ///< the field values, indexed the same way as descr
+   lMultiType *cont;  ///< the field values, at the slots ocs_cull_slot() gives for the descriptor positions
 };
+
+/**
+ * @brief The value slot of the field at a descriptor position (CS-439)
+ *
+ * The slot is the position plus the entry's slot offset. Every single field
+ * access to `cont` goes through here, so a descriptor whose positions and
+ * slots differ needs no change at the call sites.
+ *
+ * @param dp the descriptor
+ * @param pos a valid field position in @p dp
+ * @return the index into `cont` that holds the field's value
+ */
+inline int ocs_cull_slot(const lDescr *dp, const int pos) {
+   return pos + dp[pos].off;
+}
 
 /**
  * @brief The hash table of one hashed field of a list

@@ -428,18 +428,19 @@ static const char *cull_hash_field_name(const lListElem *ep, const cull_htable h
  */
 static const char *cull_hash_key_value(const lListElem *ep, const cull_htable ht, char *buf, size_t len) {
    const int i = ht->pos;
+   const lMultiType &v = ocs_cull_value(ep, i);
    switch (mt_get_type(ep->descr[i].mt)) {
       case lUlongT:
-         snprintf(buf, len, sge_u32, ep->cont[i].ul);
+         snprintf(buf, len, sge_u32, v.ul);
          return buf;
       case lUlong64T:
-         snprintf(buf, len, sge_u64, ep->cont[i].ul64);
+         snprintf(buf, len, sge_u64, v.ul64);
          return buf;
       case lStringT:
-         snprintf(buf, len, SFQ, ep->cont[i].str != nullptr ? ep->cont[i].str : "");
+         snprintf(buf, len, SFQ, v.str != nullptr ? v.str : "");
          return buf;
       case lHostT:
-         snprintf(buf, len, SFQ, ep->cont[i].host != nullptr ? ep->cont[i].host : "");
+         snprintf(buf, len, SFQ, v.host != nullptr ? v.host : "");
          return buf;
       default:
          break;
@@ -1163,23 +1164,24 @@ void *cull_hash_key(const lListElem *ep, int pos, char *host_key) {
    void *key = nullptr;
 
    const lDescr *descr = &(ep->descr[pos]);
+   const lMultiType &value = ocs_cull_value(ep, pos);
 
    switch (mt_get_type(descr->mt)) {
       case lUlongT:
-         key = (void *) &(ep->cont[pos].ul);
+         key = (void *) &(value.ul);
          break;
 
       case lUlong64T:
-         key = (void *) &(ep->cont[pos].ul64);
+         key = (void *) &(value.ul64);
          break;
 
       case lStringT:
-         key = ep->cont[pos].str;
+         key = value.str;
          break;
 
       case lHostT:
-         if (ep->cont[pos].host != nullptr && host_key != nullptr) {
-            sge_hostcpy(host_key, ep->cont[pos].host);
+         if (value.host != nullptr && host_key != nullptr) {
+            sge_hostcpy(host_key, value.host);
             sge_strtoupper(host_key, CL_MAXHOSTNAMELEN);
             key = host_key;
          }

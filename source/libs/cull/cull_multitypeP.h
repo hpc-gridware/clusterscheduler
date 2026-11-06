@@ -41,6 +41,7 @@
 
 #include "cull/cull_list.h"
 #include "cull/cull_multitype.h"
+#include "cull/cull_listP.h"
 
 /**
  * @brief The value of one cull field
@@ -65,3 +66,17 @@ union _lMultiType {
    lHost host;        ///< value when the field is #lHostT; owned by the element
    lCondition *cp;    ///< a condition, used when a descriptor carries a where clause
 };
+
+/**
+ * @brief The value of the field at a descriptor position of an element (CS-439)
+ *
+ * Like `ep->cont[pos]` before, the value is writable through a const element:
+ * the const-ness of an element has never extended to its values.
+ *
+ * @param ep the element
+ * @param pos a valid field position in the element's descriptor
+ * @return the value
+ */
+inline lMultiType &ocs_cull_value(const lListElem *ep, const int pos) {
+   return ep->cont[ocs_cull_slot(ep->descr, pos)];
+}
