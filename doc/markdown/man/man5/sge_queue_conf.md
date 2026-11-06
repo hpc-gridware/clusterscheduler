@@ -652,6 +652,16 @@ compares the virtual memory of all processes of the job against the limit and th
 value, which the default mode does not measure on a systemd host. Set *USAGE_COLLECTION* to *HYBRID* or *PDC*
 on the hosts where that check is wanted.
 
+xxqs_name_sxx_execd(8) compares the usage of a job with its memory limits in the interval of
+*PDC_INTERVAL* (see xxqs_name_sxx_conf(5)). The hard limits *h_rss* and *h_vmem* are compared with
+the highest usage of the job so far, *maxrss* and *maxvmem*: a job which has exceeded a hard limit
+once is killed, also if its usage is below the limit again at the next check. On a host which runs
+its jobs under systemd control, *maxrss* is the peak memory usage which the kernel records for the
+job's scope, so it also contains a peak between two checks. The kernel records it with cgroup v1,
+and with cgroup v2 on Linux 5.19 or newer; on other hosts *maxrss* is the highest of the checked
+values. The soft limits *s_rss* and *s_vmem* are compared with the current usage, so a job gets the
+SIGXCPU signal only while it exceeds the limit.
+
 xxqs_name_sxx_shepherd(8) sets the lower of *h_rss* and *h_vmem* as *MemoryMax* of the job's scope,
 and the lower of *s_rss* and *s_vmem* as its *MemoryHigh*. *MEMORY_MAX_FACTOR* in the *execd_params*
 (see xxqs_name_sxx_conf(5)) can raise both, or switch them off, so that xxqs_name_sxx_execd(8)
