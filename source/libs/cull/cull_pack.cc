@@ -787,7 +787,8 @@ int cull_pack_descr(sge_pack_buffer *pb, const lDescr *dp, const int flags) {
  * @param what the selection to pack
  * @param descr the descriptor the selection refers to
  * @param flags the flags the values are packed with, 0 for all values
- * @return #PACK_SUCCESS, #PACK_ENOMEM, or #PACK_FORMAT
+ * @return #PACK_SUCCESS, #PACK_ENOMEM, #PACK_FORMAT, or #PACK_BADARG if a selected
+ *         field is not present in descr
  *
  * @todo remove not needed exit points
  */
@@ -798,6 +799,12 @@ cull_pack_enum_as_descr(sge_pack_buffer *pb, const lEnumeration *what,
 
    int i, ret;
    CULL_STATS_CODE(const size_t stats_start = pb->bytes_used;)
+
+   /* a selection on the full type applies to a reduction holding its fields (N-B-11) */
+   if (!ocs_cull_what_fits(what, descr)) {
+      LERROR(LEENUMDESCR);
+      DRETURN(PACK_BADARG);
+   }
 
    PROF_START_MEASUREMENT(SGE_PROF_PACKING);
    if (flags == 0 && what[0].pos != WHAT_NONE) {
@@ -1647,11 +1654,13 @@ int cull_unpack_enum(
          if ((ret = unpackint(pb, &temp)))
             goto error;
          enp[i].nm = temp;
-         /* the type and the flags of a field are taken from the local type, not from the sender (N-W-5) */
+         /* the position, the type and the flags of a field are taken from the local type, not from the
+          * sender (N-W-5, N-W-11) */
          {
             int local_pos = 0;
             const lDescr *type = ocs_cull_descr_static_containing(enp[i].nm, &local_pos);
             if (type != nullptr) {
+               enp[i].pos = local_pos;
                enp[i].mt = type[local_pos].mt;
             }
          }

@@ -47,6 +47,7 @@
 #define __SGE_GDI_LIBRARY_HOME_OBJECT_FILE__
 
 #include "cull/cull.h"
+#include "cull/cull_whatP.h"
 
 #include "uti/sge_stdlib.h"
 #include "uti/sge_string.h"
@@ -767,6 +768,87 @@ static void test_hash_after_unpack() {
    lFreeList(&source);
 }
 
+/**
+ * @brief SELPACK-09: a what on the full type applied to a reduction (CS-439, N-B-11, N-W-11)
+ * @return nothing; CHECK records the results
+ */
+static void test_full_what_on_reduction() {
+   lList *source = make_source();
+   lEnumeration *reduce = lWhat("%T(%I %I %I)", SP_Type, SP_name, SP_group, SP_spool);
+   lList *reduced = lSelect("reduced", source, nullptr, reduce);
+   lEnumeration *what = lWhat("%T(%I %I)", SP_Type, SP_group, SP_name);
+
+   static const int names[] = {SP_name, SP_group, NoName};
+   lList *selected = reduced != nullptr ? lSelect("selected", reduced, nullptr, what) : nullptr;
+   const lListElem *first = selected != nullptr ? lFirst(selected) : nullptr;
+   CHECK(32, "a what on the full type selects from a reduced list that holds its fields",
+         selected != nullptr && lGetNumberOfElem(selected) == SOURCE_SIZE &&
+         descr_names_are(lGetListDescr(selected), names) && first != nullptr &&
+         strcmp(lGetString(first, SP_name), "e0") == 0 && lGetUlong(first, SP_group) == 0);
+
+   lList *packed = nullptr;
+   size_t bytes = 0;
+   const int ret = reduced != nullptr ? select_pack_unpack(reduced, nullptr, what, &packed, &bytes) : PACK_FORMAT;
+   CHECK(33, "select-and-pack in one pass delivers the same from the reduced list",
+         ret == PACK_SUCCESS && list_equal(packed, selected));
+
+   lListElem *full = lCreateElem(SP_Type);
+   const bool copied = reduced != nullptr && lCopyElemPartialPack(full, lFirst(reduced), what, true, nullptr) == 0;
+   CHECK(34, "a partial copy from a reduced element into a full one keeps the positions",
+         copied && strcmp(lGetString(full, SP_name), "e0") == 0 && lGetUlong(full, SP_group) == 0 &&
+         lGetString(full, SP_spool) == nullptr);
+   lFreeElem(&full);
+
+   lEnumeration *absent = lWhat("%T(%I %I)", SP_Type, SP_name, SP_value);
+   lList *none = reduced != nullptr ? lSelect("none", reduced, nullptr, absent) : nullptr;
+   lList *none_packed = nullptr;
+   const int absent_ret =
+      reduced != nullptr ? select_pack_unpack(reduced, nullptr, absent, &none_packed, &bytes) : PACK_SUCCESS;
+   CHECK(35, "a field the reduction does not hold is rejected by select and by select-and-pack",
+         none == nullptr && (absent_ret != PACK_SUCCESS || none_packed == nullptr));
+   lFreeList(&none);
+   lFreeList(&none_packed);
+   lFreeWhat(&absent);
+
+   lEnumeration *neg = reduced != nullptr ? lWhat("%T(!(%I))", lGetListDescr(reduced), SP_group) : nullptr;
+   static const int neg_names[] = {SP_name, SP_spool, NoName};
+   lList *neg_selected = neg != nullptr ? lSelect("neg", reduced, nullptr, neg) : nullptr;
+   CHECK(36, "a negated what on a reduced descriptor selects its other present fields",
+         neg != nullptr && lCountWhat(neg, lGetListDescr(reduced)) == 2 && neg_selected != nullptr &&
+         descr_names_are(lGetListDescr(neg_selected), neg_names));
+   lFreeList(&neg_selected);
+   lFreeWhat(&neg);
+
+   // a sender's position is not trusted: the receiver computes it from the field name
+   lEnumeration *forged = lWhat("%T(%I)", SP_Type, SP_group);
+   forged[0].pos = 0;
+   sge_pack_buffer pb;
+   lEnumeration *received = nullptr;
+   if (pb_init(&pb, false)) {
+      if (cull_pack_enum(&pb, forged) == PACK_SUCCESS) {
+         char *buf = sge_malloc(pb.bytes_used);
+         memcpy(buf, pb.head_ptr, pb.bytes_used);
+         sge_pack_buffer in;
+         if (init_packbuffer_from_buffer(&in, buf, pb.bytes_used, false) == PACK_SUCCESS) {
+            cull_unpack_enum(&in, &received);
+         }
+         clear_packbuffer(&in);
+      }
+      clear_packbuffer(&pb);
+   }
+   CHECK(37, "an unpacked what takes the positions of the local type",
+         received != nullptr && received[0].nm == SP_group && received[0].pos == lGetPosInDescr(SP_Type, SP_group));
+   lFreeWhat(&received);
+   lFreeWhat(&forged);
+
+   lFreeList(&packed);
+   lFreeList(&selected);
+   lFreeWhat(&what);
+   lFreeList(&reduced);
+   lFreeWhat(&reduce);
+   lFreeList(&source);
+}
+
 // ---------------------------------------------------------------------------
 
 /**
@@ -836,5 +918,14 @@ int main(int argc, char *argv[]) {
         "do the same for a sublist and for the result of select-and-pack"},
        "the lists have no table before the first lookup, which builds it; every lookup finds the right elements",
        {{"CLN-03", "covers"}}, {27, 28, 29, 30, 31}, test_hash_after_unpack},
+      {"SELPACK-09", "a what on the full type applied to a reduction",
+       "positions are those of the type in every descriptor, so a what built on the full type selects from "
+       "reductions that hold its fields, and a receiver takes the positions of its own type",
+       {"reduce a list to three fields", "select, select-and-pack and copy two of them with a what on the full type",
+        "select a field the reduction does not hold", "negate a field on the reduced descriptor",
+        "pack a what with a wrong position and unpack it"},
+       "the held fields are selected, packed and copied as from the full list, an absent field is rejected, the "
+       "negation keeps the other present fields, and the unpacked what has the local position",
+       {{"FLD-01", "partly"}}, {32, 33, 34, 35, 36, 37}, test_full_what_on_reduction},
    });
 }

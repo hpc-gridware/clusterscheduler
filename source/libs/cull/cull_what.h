@@ -60,6 +60,8 @@ int lReduceDescr(const lDescr **dst_dpp, const lDescr *src_dp, lEnumeration *enp
 
 const lDescr *ocs_cull_what_descr(const lEnumeration *enp, const lDescr *src, bool *owned);
 
+bool ocs_cull_what_fits(const lEnumeration *enp, const lDescr *dp);
+
 lEnumeration *lIntVector2What(const lDescr *dp, const int intv[]);
 
 void nm_set(int job_field[], int nm);

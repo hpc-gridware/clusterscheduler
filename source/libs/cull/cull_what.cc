@@ -48,6 +48,7 @@
 #include "uti/sge_stdlib.h"
 
 #include "cull/cull_list.h"
+#include "cull/cull_listP.h"
 #include "cull/cull_db.h"
 #include "cull/cull_parse.h"
 #include "cull/cull_multitype.h"
@@ -178,6 +179,34 @@ const lDescr *ocs_cull_what_descr(const lEnumeration *enp, const lDescr *src, bo
    }
    *owned = true;
    DRETURN(dp);
+}
+
+/**
+ * @brief Whether a field selection can be applied to a descriptor (CS-439, N-B-11)
+ *
+ * Positions are those of the type in every descriptor, so a selection built on
+ * the full type applies to any reduction of it that holds the selected fields.
+ * #WHAT_ALL and #WHAT_NONE apply to every descriptor.
+ *
+ * @param enp the selection
+ * @param dp the descriptor
+ * @return true if every selected field is present in dp at its position
+ */
+bool ocs_cull_what_fits(const lEnumeration *enp, const lDescr *dp) {
+   if (enp == nullptr || dp == nullptr) {
+      return false;
+   }
+   if (enp[0].pos == WHAT_ALL || enp[0].pos == WHAT_NONE) {
+      return true;
+   }
+   const int n = lCountDescr(dp);
+   for (int i = 0; enp[i].nm != NoName; i++) {
+      const int pos = enp[i].pos;
+      if (pos < 0 || pos >= n || dp[pos].nm != enp[i].nm || dp[pos].off == OCS_CULL_ABSENT) {
+         return false;
+      }
+   }
+   return true;
 }
 
 /**
@@ -324,12 +353,12 @@ lEnumeration *_lWhat(const char *fmt, const lDescr *dp,
 
    if (scan(nullptr, &state) == NEG) {
       neg = 1;
-      if ((size = lCountDescr(dp)) == -1) {
+      // the fields that have a value, a reduced descriptor holds only some of its type's (CS-439)
+      if ((size = lCountPresent(dp)) == -1) {
          error_status = LECOUNTDESCR;
          goto error;
       }
-      /* subtract the fields that shall not be enumerated */
-      size -= n;
+      /* room for every field that has a value; the excluded ones are left out below */
       eat_token(&state);              /* eat ! */
       if (scan(nullptr, &state) != BRA) {
          /* ( expected */
@@ -375,7 +404,8 @@ lEnumeration *_lWhat(const char *fmt, const lDescr *dp,
       }
 
       k = 0;
-      for (i = 0; dp[i].nm != NoName; i++) {
+      for (const auto f : ocs_cull_present_fields(dp)) {
+         i = f.pos;
          /* remove the elements listed in the format string */
          for (j = 0; ep[j].nm != NoName && ep[j].nm != dp[i].nm; j++);
          if (ep[j].nm != NoName)
@@ -386,10 +416,11 @@ lEnumeration *_lWhat(const char *fmt, const lDescr *dp,
          ep2[k].ep = nullptr;
          k++;
       }
+      /* the end mark follows the kept fields; a field excluded twice leaves room unused */
       ep2[k].pos = 0;
-      ep2[size].nm = NoName;
-      ep2[size].mt = lEndT;
-      ep2[size].ep = nullptr;
+      ep2[k].nm = NoName;
+      ep2[k].mt = lEndT;
+      ep2[k].ep = nullptr;
       lFreeWhat(&ep);
       ep = ep2;
    }
