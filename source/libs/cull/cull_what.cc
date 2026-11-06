@@ -627,7 +627,7 @@ int lCountWhat(const lEnumeration *enp, const lDescr *dp) {
          n = 0;
          break;
       case WHAT_ALL:
-         if ((n = lCountDescr(dp)) == -1) {
+         if ((n = lCountPresent(dp)) == -1) {
             LERROR(LECOUNTDESCR);
             DRETURN(-1);
          }

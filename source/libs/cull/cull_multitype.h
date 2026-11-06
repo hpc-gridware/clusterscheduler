@@ -64,6 +64,7 @@ int lGetPosInDescr(const lDescr *dp, int name);
 int lGetPosType(const lDescr *dp, int pos);
 
 int lCountDescr(const lDescr *dp);
+int lCountPresent(const lDescr *dp);
 
 lDescr *lCopyDescr(const lDescr *dp);
 

@@ -133,23 +133,19 @@ lListElem *lCopyElemHash(const lListElem *ep, bool isHash, const bool skip_no_tr
    DENTER(CULL_LAYER);
 
    lListElem *new_ep;
-   int index;
-   int max;
 
    if (!ep) {
       LERROR(LEELEMNULL);
       DRETURN(nullptr);
    }
 
-   max = lCountDescr(ep->descr);
-
    if (!(new_ep = lCreateElem(ep->descr))) {
       LERROR(LECREATEELEM);
       DRETURN(nullptr);
    }
 
-   for (index = 0; index < max; index++) {
-      if (lCopySwitchPack(ep, new_ep, index, index, isHash, nullptr, nullptr, skip_no_transfer) != 0) {
+   for (const auto f : ocs_cull_present_fields(ep->descr)) {
+      if (lCopySwitchPack(ep, new_ep, f.pos, f.pos, isHash, nullptr, nullptr, skip_no_transfer) != 0) {
          lFreeElem(&new_ep);
 
          LERROR(LECOPYSWITCH);
@@ -220,8 +216,8 @@ lCopyElemPartialPack(lListElem *dst, int *jp, const lListElem *src,
    switch (enp[0].pos) {
       case WHAT_ALL:               /* all fields of element src is copied */
          if (pb == nullptr) {
-            for (i = 0; src->descr[i].nm != NoName; i++, (*jp)++) {
-               if (lCopySwitchPack(src, dst, i, *jp, isHash, enp[0].ep, nullptr, skip_no_transfer) != 0) {
+            for (const auto f : ocs_cull_present_fields(src->descr)) {
+               if (lCopySwitchPack(src, dst, f.pos, (*jp)++, isHash, enp[0].ep, nullptr, skip_no_transfer) != 0) {
                   LERROR(LECOPYSWITCH);
                   DRETURN(-1);
                }
@@ -602,29 +598,29 @@ static void lWriteElem_(const lListElem *ep, dstring *buffer, int nesting_level)
 
    sge_dstring_sprintf_append(buffer, "%s-------------------------------\n", space);
 
-   for (i = 0; mt_get_type(ep->descr[i].mt) != lEndT; i++) {
-      const char *name = ((lNm2Str(ep->descr[i].nm) != nullptr) ? lNm2Str(ep->descr[i].nm) : "(null)");
+   for (const auto f : ocs_cull_present_fields(ep->descr)) {
+      const char *name = ((lNm2Str(ep->descr[f.pos].nm) != nullptr) ? lNm2Str(ep->descr[f.pos].nm) : "(null)");
 
-      switch (mt_get_type(ep->descr[i].mt)) {
+      switch (mt_get_type(ep->descr[f.pos].mt)) {
          case lIntT:
-            sge_dstring_sprintf_append(buffer, "%s%-20.20s (Integer) = %d\n", space, name, lGetPosInt(ep, i));
+            sge_dstring_sprintf_append(buffer, "%s%-20.20s (Integer) = %d\n", space, name, lGetPosInt(ep, f.pos));
             break;
          case lUlongT:
-            sge_dstring_sprintf_append(buffer, "%s%-20.20s (Ulong)   = " sge_u32 "\n", space, name, lGetPosUlong(ep, i));
+            sge_dstring_sprintf_append(buffer, "%s%-20.20s (Ulong)   = " sge_u32 "\n", space, name, lGetPosUlong(ep, f.pos));
             break;
          case lUlong64T:
-            sge_dstring_sprintf_append(buffer, "%s%-20.20s (Ulong64) = " sge_u64"\n", space, name, lGetPosUlong64(ep, i));
+            sge_dstring_sprintf_append(buffer, "%s%-20.20s (Ulong64) = " sge_u64"\n", space, name, lGetPosUlong64(ep, f.pos));
             break;
          case lStringT:
-            str = lGetPosString(ep, i);
+            str = lGetPosString(ep, f.pos);
             sge_dstring_sprintf_append(buffer, "%s%-20.20s (String)  = %s\n", space, name, str ? str : "(null)");
             break;
          case lHostT:
-            str = lGetPosHost(ep, i);
+            str = lGetPosHost(ep, f.pos);
             sge_dstring_sprintf_append(buffer, "%s%-20.20s (Host)    = %s\n", space, name, str ? str : "(null)");
             break;
          case lListT:
-            tlp = lGetPosList(ep, i);
+            tlp = lGetPosList(ep, f.pos);
             sge_dstring_sprintf_append(buffer, "%s%-20.20s (List)    = %s\n", space, name, tlp ? "full {" : "empty");
             if (tlp) {
                lWriteList_(tlp, buffer, nesting_level + 1);
@@ -632,7 +628,7 @@ static void lWriteElem_(const lListElem *ep, dstring *buffer, int nesting_level)
             }
             break;
          case lObjectT:
-            tep = lGetPosObject(ep, i);
+            tep = lGetPosObject(ep, f.pos);
             sge_dstring_sprintf_append(buffer, "%s%-20.20s (Object)  = %s\n", space, name, tep ? "object {" : "none");
             if (tep) {
                lWriteElem_(tep, buffer, nesting_level + 1);
@@ -640,19 +636,19 @@ static void lWriteElem_(const lListElem *ep, dstring *buffer, int nesting_level)
             }
             break;
          case lDoubleT:
-            sge_dstring_sprintf_append(buffer, "%s%-20.20s (Double)  = %f\n", space, name, lGetPosDouble(ep, i));
+            sge_dstring_sprintf_append(buffer, "%s%-20.20s (Double)  = %f\n", space, name, lGetPosDouble(ep, f.pos));
             break;
          case lLongT:
             DTRACE;
-            sge_dstring_sprintf_append(buffer, "%s%-20.20s (Long)    = %ld\n", space, name, lGetPosLong(ep, i));
+            sge_dstring_sprintf_append(buffer, "%s%-20.20s (Long)    = %ld\n", space, name, lGetPosLong(ep, f.pos));
             break;
          case lBoolT:
             DTRACE;
-            sge_dstring_sprintf_append(buffer, "%s%-20.20s (Bool)    = %s\n", space, name, lGetPosBool(ep, i) ? "true" : "false");
+            sge_dstring_sprintf_append(buffer, "%s%-20.20s (Bool)    = %s\n", space, name, lGetPosBool(ep, f.pos) ? "true" : "false");
             break;
          case lRefT:
             DTRACE;
-            sge_dstring_sprintf_append(buffer, "%s%-20.20s (Ref)     = %p\n", space, name, lGetPosRef(ep, i));
+            sge_dstring_sprintf_append(buffer, "%s%-20.20s (Ref)     = %p\n", space, name, lGetPosRef(ep, f.pos));
             break;
          default:
             DTRACE;
@@ -808,7 +804,7 @@ lListElem *lCreateElem(const lDescr *dp) {
    }
 
    elem_set_free(ep);
-   if (!(ep->cont = (lMultiType *) calloc(1, sizeof(lMultiType) * n))) {
+   if (!(ep->cont = (lMultiType *) calloc(1, sizeof(lMultiType) * lCountPresent(ep->descr)))) {
       LERROR(LEMALLOC);
       ocs_cull_descr_release(&(ep->descr));
       sge_free(&ep);
@@ -951,7 +947,6 @@ lList *lCreateElemList(const char *listname, const lDescr *descr, int nr_elem) {
 void lFreeElem(lListElem **ep1) {
    DENTER(CULL_LAYER);
 
-   int i = 0;
    lListElem *ep = nullptr;
 
    if (ep1 == nullptr || *ep1 == nullptr) {
@@ -969,8 +964,9 @@ void lFreeElem(lListElem **ep1) {
    /* remove a bound element from the hash tables of its list */
    cull_hash_remove_elem(ep);
 
-   for (i = 0; mt_get_type(ep->descr[i].mt) != lEndT; i++) {
-      switch (mt_get_type(ep->descr[i].mt)) {
+   for (const auto f : ocs_cull_present_fields(ep->descr)) {
+      lMultiType &value = ep->cont[f.slot];
+      switch (mt_get_type(ep->descr[f.pos].mt)) {
 
          case lIntT:
          case lUlongT:
@@ -982,26 +978,26 @@ void lFreeElem(lListElem **ep1) {
             break;
 
          case lStringT:
-            if (ep->cont[i].str != nullptr) {
-               sge_free(&(ep->cont[i].str));
+            if (value.str != nullptr) {
+               sge_free(&(value.str));
             }
             break;
 
          case lHostT:
-            if (ep->cont[i].host != nullptr) {
-               sge_free(&(ep->cont[i].host));
+            if (value.host != nullptr) {
+               sge_free(&(value.host));
             }
             break;
 
          case lListT:
-            if (ep->cont[i].glp != nullptr) {
-               lFreeList(&(ep->cont[i].glp));
+            if (value.glp != nullptr) {
+               lFreeList(&(value.glp));
             }
             break;
 
          case lObjectT:
-            if (ep->cont[i].obj != nullptr) {
-               lFreeElem(&(ep->cont[i].obj));
+            if (value.obj != nullptr) {
+               lFreeElem(&(value.obj));
             }
             break;
 

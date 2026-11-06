@@ -254,12 +254,12 @@ static cull_hash_slot *cull_hash_alloc_slots(const lList *lp) {
     * raw memory would be undefined behaviour. The array is still freed with
     * sge_free(): the slots need no destructor. */
    uint32_t n = 0;
-   for (int i = 0; mt_get_type(lp->descr[i].mt) != lEndT; i++) {
-      if (mt_do_hashing(lp->descr[i].mt)) {
+   for (const auto f : ocs_cull_present_fields(lp->descr)) {
+      if (mt_do_hashing(lp->descr[f.pos].mt)) {
          if (n == lp->nslots) {
             break;
          }
-         new (&slots[n++]) cull_hash_slot{i, nullptr};
+         new (&slots[n++]) cull_hash_slot{f.pos, nullptr};
       }
    }
    if (n != lp->nslots) {
@@ -956,8 +956,8 @@ bool cull_hash_init_slots(lList *lp, const bool hashable) {
       return true;
    }
 
-   for (int i = 0; mt_get_type(lp->descr[i].mt) != lEndT; i++) {
-      if (mt_do_hashing(lp->descr[i].mt)) {
+   for (const auto f : ocs_cull_present_fields(lp->descr)) {
+      if (mt_do_hashing(lp->descr[f.pos].mt)) {
          lp->nslots++;
       }
    }

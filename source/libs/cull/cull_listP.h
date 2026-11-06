@@ -136,6 +136,100 @@ inline int ocs_cull_slot(const lDescr *dp, const int pos) {
 }
 
 /**
+ * @brief A field of a descriptor that has a value: its position and its slot (CS-439)
+ */
+struct ocs_cull_present_field {
+   int pos;  ///< the field position in the descriptor
+   int slot; ///< the index into `cont` that holds the field's value
+};
+
+/**
+ * @brief The fields of a descriptor that have a value, in slot order (CS-439)
+ *
+ * Value loops such as free, copy, pack, unpack and dump run over this range
+ * rather than over the descriptor entries, so they visit exactly the values an
+ * element holds. Today every entry of a descriptor has a value and its slot is
+ * its position; the range is where that changes for descriptors with absent
+ * fields, without touching the loops.
+ *
+ * @code
+ * for (const auto f : ocs_cull_present_fields(ep->descr)) {
+ *    free_value(ep->descr[f.pos].mt, ep->cont[f.slot]);
+ * }
+ * @endcode
+ */
+class ocs_cull_present_fields {
+public:
+   /// end of the range: the terminating #lEndT entry
+   struct sentinel {};
+
+   /// position in the range
+   class iterator {
+   public:
+      /**
+       * @brief An iterator at a descriptor position
+       * @param dp the descriptor
+       * @param pos the position
+       */
+      iterator(const lDescr *dp, const int pos) : dp_(dp), pos_(pos) {}
+
+      /**
+       * @brief The field at the iterator
+       * @return its position and slot
+       */
+      ocs_cull_present_field operator*() const {
+         return {pos_, ocs_cull_slot(dp_, pos_)};
+      }
+
+      /**
+       * @brief Advance to the next field that has a value
+       * @return the iterator
+       */
+      iterator &operator++() {
+         ++pos_;
+         return *this;
+      }
+
+      /**
+       * @brief Whether the iterator has not reached the end
+       * @return true while it is at a field
+       */
+      bool operator!=(sentinel) const {
+         return mt_get_type(dp_[pos_].mt) != lEndT;
+      }
+
+   private:
+      const lDescr *dp_; ///< the descriptor
+      int pos_;          ///< the current position
+   };
+
+   /**
+    * @brief The range over a descriptor
+    * @param dp the descriptor, not nullptr
+    */
+   explicit ocs_cull_present_fields(const lDescr *dp) : dp_(dp) {}
+
+   /**
+    * @brief The first field that has a value
+    * @return an iterator at it, or at the end
+    */
+   iterator begin() const {
+      return {dp_, 0};
+   }
+
+   /**
+    * @brief The end of the range
+    * @return the sentinel
+    */
+   sentinel end() const {
+      return {};
+   }
+
+private:
+   const lDescr *dp_; ///< the descriptor
+};
+
+/**
  * @brief The hash table of one hashed field of a list
  *
  * A list that may be hashed holds one slot per field of its type that is marked

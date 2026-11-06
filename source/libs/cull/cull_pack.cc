@@ -462,7 +462,7 @@ static int cull_unpack_descr(
             DRETURN(PACK_FORMAT);
          }
          *dpp = ocs_cull_descr_ref(pb->dtab->entries[index]);
-         *wire_n = static_cast<uint32_t>(lCountDescr(*dpp));
+         *wire_n = static_cast<uint32_t>(lCountPresent(*dpp));
          DRETURN(PACK_SUCCESS);
       }
 
@@ -701,7 +701,7 @@ static int cull_unpack_descr(
  */
 static int pack_shared_descr(sge_pack_buffer *pb, const lDescr *dp) {
    int ret;
-   const int n = lCountDescr(dp);
+   const int n = lCountPresent(dp);
 
    if (!ocs_cull_descr_is_counted(dp)) {
       if ((ret = packint(pb, CULL_PACK_DESCR_TYPE_REF)) != PACK_SUCCESS ||
@@ -733,9 +733,12 @@ static int pack_shared_descr(sge_pack_buffer *pb, const lDescr *dp) {
    int pos = 0;
    const lDescr *type = n > 0 ? ocs_cull_descr_static_containing(dp[0].nm, &pos) : nullptr;
    std::vector<uint32_t> idx;
-   for (int i = 0; type != nullptr && i < n; i++) {
+   for (const auto f : ocs_cull_present_fields(dp)) {
+      if (type == nullptr) {
+         break;
+      }
       int p = 0;
-      if (ocs_cull_descr_static_containing(dp[i].nm, &p) != type || mt_get_type(type[p].mt) != mt_get_type(dp[i].mt)) {
+      if (ocs_cull_descr_static_containing(dp[f.pos].nm, &p) != type || mt_get_type(type[p].mt) != mt_get_type(dp[f.pos].mt)) {
          type = nullptr;
          break;
       }
@@ -760,9 +763,10 @@ static int pack_shared_descr(sge_pack_buffer *pb, const lDescr *dp) {
    if ((ret = packint(pb, CULL_PACK_DESCR_BY_FIELD)) != PACK_SUCCESS || (ret = packint(pb, n)) != PACK_SUCCESS) {
       return ret;
    }
-   for (int i = 0; i < n; i++) {
+   for (const auto f : ocs_cull_present_fields(dp)) {
       // the reference count flag is process local and never leaves the process
-      if ((ret = packint(pb, dp[i].nm)) != PACK_SUCCESS || (ret = packint(pb, dp[i].mt & ~CULL_DESCR_INTERNED)) != PACK_SUCCESS) {
+      if ((ret = packint(pb, dp[f.pos].nm)) != PACK_SUCCESS ||
+          (ret = packint(pb, dp[f.pos].mt & ~CULL_DESCR_INTERNED)) != PACK_SUCCESS) {
          return ret;
       }
    }
@@ -787,7 +791,7 @@ static int pack_shared_descr(sge_pack_buffer *pb, const lDescr *dp) {
 int cull_pack_descr(sge_pack_buffer *pb, const lDescr *dp, const int flags) {
    DENTER(CULL_LAYER);
 
-   int i, ret;
+   int ret;
    CULL_STATS_CODE(const size_t stats_start = pb->bytes_used;)
 
    if (flags == 0) {
@@ -805,17 +809,17 @@ int cull_pack_descr(sge_pack_buffer *pb, const lDescr *dp, const int flags) {
       DRETURN(ret);
    }
 
-   /* pack the number of lDescr fields (without end mark) */
-   if ((ret = packint(pb, lCountDescr(dp)))) {
+   /* pack the number of fields that have a value (without end mark) */
+   if ((ret = packint(pb, lCountPresent(dp)))) {
       DRETURN(ret);
    }
-   /* pack the lDescr fields */
-   for (i = 0; mt_get_type(dp[i].nm) != NoName && mt_get_type(dp[i].mt) != lEndT; i++) {
-      if ((ret = packint(pb, dp[i].nm))) {
+   /* pack those fields */
+   for (const auto f : ocs_cull_present_fields(dp)) {
+      if ((ret = packint(pb, dp[f.pos].nm))) {
          DRETURN(ret);
       }
       // the reference count flag is process local and never leaves the process
-      if ((ret = packint(pb, dp[i].mt & ~CULL_DESCR_INTERNED))) {
+      if ((ret = packint(pb, dp[f.pos].mt & ~CULL_DESCR_INTERNED))) {
          DRETURN(ret);
       }
    }
@@ -937,15 +941,14 @@ cull_pack_cont(sge_pack_buffer *pb, const lMultiType *cp, const lDescr *dp,
 
    CULL_STATS_CODE(if (!pb->just_count) { CULL_STATS_TYPE(dp->nm, PACK_ELEMS, 1); })
    if (what == nullptr) {
-      const int n = lCountDescr(dp);
-
-      for (int i = 0; i < n; i++) {
+      for (const auto f : ocs_cull_present_fields(dp)) {
+         const lDescr &d = dp[f.pos];
          /* if flags are given, pack only fields matching flags, e.g. CULL_SPOOL */
-         if (flags == 0 || (dp[i].mt & flags) != 0) {
-            const lMultiType *value = mt_do_transfer(dp[i].mt) ? &cp[i] : &no_transfer_value;
+         if (flags == 0 || (d.mt & flags) != 0) {
+            const lMultiType *value = mt_do_transfer(d.mt) ? &cp[f.slot] : &no_transfer_value;
             CULL_STATS_CODE(const size_t stats_start = pb->bytes_used;)
-            const int ret = cull_pack_switch(pb, value, nullptr, mt_get_type(dp[i].mt), flags);
-            CULL_STATS_CODE(cull_stats_count_value(pb, dp[i].nm, mt_get_type(dp[i].mt), stats_start);)
+            const int ret = cull_pack_switch(pb, value, nullptr, mt_get_type(d.mt), flags);
+            CULL_STATS_CODE(cull_stats_count_value(pb, d.nm, mt_get_type(d.mt), stats_start);)
 
             if (ret != PACK_SUCCESS) {
                DRETURN(ret);
@@ -957,7 +960,7 @@ cull_pack_cont(sge_pack_buffer *pb, const lMultiType *cp, const lDescr *dp,
          if (flags == 0 || (what[i].mt & flags) != 0) {
             /* also when the client asked for the field by name, not through ALL */
             const bool do_transfer = mt_do_transfer(what[i].mt);
-            const lMultiType *value = do_transfer ? &cp[what[i].pos] : &no_transfer_value;
+            const lMultiType *value = do_transfer ? &cp[ocs_cull_slot(dp, what[i].pos)] : &no_transfer_value;
             lEnumeration *const sub_what = do_transfer ? what[i].ep : nullptr;
             CULL_STATS_CODE(const size_t stats_start = pb->bytes_used;)
             const int ret = cull_pack_switch(pb, value, sub_what, mt_get_type(what[i].mt), flags);
@@ -997,7 +1000,7 @@ static int cull_unpack_cont(
    DENTER(CULL_LAYER);
 
    *mpp = nullptr;
-   const int n = lCountDescr(dp);
+   const int n = lCountPresent(dp);
    if (wire_n > static_cast<uint32_t>(n)) {
       LERROR(LEDESCRNULL);
       DRETURN(PACK_FORMAT);
@@ -1011,7 +1014,7 @@ static int cull_unpack_cont(
    for (uint32_t i = 0; i < wire_n; i++) {
       /* if flags are given, unpack only fields matching flags, e.g. CULL_SPOOL */
       if (flags == 0 || (dp[i].mt & flags) != 0) {
-         const int ret = cull_unpack_switch(pb, &(cp[i]), mt_get_type(dp[i].mt), flags);
+         const int ret = cull_unpack_switch(pb, &(cp[ocs_cull_slot(dp, i)]), mt_get_type(dp[i].mt), flags);
          if (ret != PACK_SUCCESS) {
             sge_free(&cp);
             DRETURN(ret);
@@ -1124,7 +1127,7 @@ int cull_unpack_elem(
  * @return #PACK_SUCCESS, #PACK_ENOMEM, or #PACK_FORMAT
  */
 int cull_unpack_elem_partial(sge_pack_buffer *pb, lListElem **epp, const lDescr *dp, int flags) {
-   return ocs_cull_unpack_elem(pb, epp, dp, dp != nullptr ? static_cast<uint32_t>(lCountDescr(dp)) : 0, flags);
+   return ocs_cull_unpack_elem(pb, epp, dp, dp != nullptr ? static_cast<uint32_t>(lCountPresent(dp)) : 0, flags);
 }
 
 /**

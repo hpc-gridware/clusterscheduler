@@ -126,11 +126,14 @@ int lDumpDescr(FILE *fp, const lDescr *dp, int indent) {
       DRETURN(-1);
    }
    ret = fprintf(fp, "%s/* NUMBER OF DESCR FIELDS */ %d\n", space,
-                 lCountDescr(dp));
+                 lCountPresent(dp));
 
-   for (i = 0; mt_get_type(dp[i].mt) != lEndT && ret != EOF; i++) {
+   for (const auto f : ocs_cull_present_fields(dp)) {
+      if (ret == EOF) {
+         break;
+      }
       ret = fprintf(fp, "%s/* %-20.20s */ { %d, %d }\n", space,
-                    lNm2Str(dp[i].nm), dp[i].nm, dp[i].mt);
+                    lNm2Str(dp[f.pos].nm), dp[f.pos].nm, dp[f.pos].mt);
    }
 
    ret = fprintf(fp, "%s} /* DESCR END */\n", space);
@@ -268,22 +271,26 @@ int lDumpElemFp(FILE *fp, const lListElem *ep, int indent) {
    }
 
    ret = fprintf(fp, "%s{ \n", space);
-   for (i = 0, ret = 0; ep->descr[i].nm != NoName && ret != EOF; i++) {
+   ret = 0;
+   for (const auto f : ocs_cull_present_fields(ep->descr)) {
+      if (ret == EOF) {
+         break;
+      }
       char *tok = nullptr;
 
-      switch (mt_get_type(ep->descr[i].mt)) {
+      switch (mt_get_type(ep->descr[f.pos].mt)) {
          case lIntT:
             ret = fprintf(fp, "%s/* %-20.20s */ %d\n",
-                          space, lNm2Str(ep->descr[i].nm), lGetPosInt(ep, i));
+                          space, lNm2Str(ep->descr[f.pos].nm), lGetPosInt(ep, f.pos));
             break;
          case lUlongT:
-            ret = fprintf(fp, "%s/* %-20.20s */ " sge_u32 "\n", space, lNm2Str(ep->descr[i].nm), lGetPosUlong(ep, i));
+            ret = fprintf(fp, "%s/* %-20.20s */ " sge_u32 "\n", space, lNm2Str(ep->descr[f.pos].nm), lGetPosUlong(ep, f.pos));
             break;
          case lUlong64T:
-            ret = fprintf(fp, "%s/* %-20.20s */ " sge_u64 "\n", space, lNm2Str(ep->descr[i].nm), lGetPosUlong64(ep, i));
+            ret = fprintf(fp, "%s/* %-20.20s */ " sge_u64 "\n", space, lNm2Str(ep->descr[f.pos].nm), lGetPosUlong64(ep, f.pos));
             break;
          case lStringT:
-            str = lGetPosString(ep, i);
+            str = lGetPosString(ep, f.pos);
             /* quote " inside str */
             if ((tok = sge_strtok(str, "\"")) != nullptr) {
                sge_dstring_append(&dstr, tok);
@@ -294,48 +301,48 @@ int lDumpElemFp(FILE *fp, const lListElem *ep, int indent) {
             }
             str = sge_dstring_get_string(&dstr);
             ret = fprintf(fp, "%s/* %-20.20s */ \"%s\"\n",
-                          space, lNm2Str(ep->descr[i].nm), str != nullptr ? str : "");
+                          space, lNm2Str(ep->descr[f.pos].nm), str != nullptr ? str : "");
             sge_dstring_clear(&dstr);
             break;
          case lHostT:
-            str = lGetPosHost(ep, i);
+            str = lGetPosHost(ep, f.pos);
             ret = fprintf(fp, "%s/* %-20.20s */ \"%s\"\n",
-                          space, lNm2Str(ep->descr[i].nm), str != nullptr ? str : "");
+                          space, lNm2Str(ep->descr[f.pos].nm), str != nullptr ? str : "");
             break;
          case lDoubleT:
             ret = fprintf(fp, "%s/* %-20.20s */ %f\n",
-                          space, lNm2Str(ep->descr[i].nm), lGetPosDouble(ep, i));
+                          space, lNm2Str(ep->descr[f.pos].nm), lGetPosDouble(ep, f.pos));
             break;
          case lLongT:
             ret = fprintf(fp, "%s/* %-20.20s */%ld \n",
-                          space, lNm2Str(ep->descr[i].nm), lGetPosLong(ep, i));
+                          space, lNm2Str(ep->descr[f.pos].nm), lGetPosLong(ep, f.pos));
             break;
          case lBoolT:
             ret = fprintf(fp, "%s/* %-20.20s */ %d\n",
-                          space, lNm2Str(ep->descr[i].nm), lGetPosBool(ep, i));
+                          space, lNm2Str(ep->descr[f.pos].nm), lGetPosBool(ep, f.pos));
             break;
          case lRefT:
             ret = fprintf(fp, "%s/* %-20.20s */ %ld\n",
-                          space, lNm2Str(ep->descr[i].nm), (long) lGetPosRef(ep, i));
+                          space, lNm2Str(ep->descr[f.pos].nm), (long) lGetPosRef(ep, f.pos));
             break;
          case lObjectT:
-            if ((tep = lGetPosObject(ep, i)) == nullptr)
+            if ((tep = lGetPosObject(ep, f.pos)) == nullptr)
                ret = fprintf(fp, "%s/* %-20.20s */ none\n",
-                             space, lNm2Str(ep->descr[i].nm));
+                             space, lNm2Str(ep->descr[f.pos].nm));
             else {
                ret = fprintf(fp, "%s/* %-20.20s */ object\n",
-                             space, lNm2Str(ep->descr[i].nm));
+                             space, lNm2Str(ep->descr[f.pos].nm));
                if (ret != EOF)
                   ret = lDumpObject(fp, tep, indent + 1);
             }
             break;
          case lListT:
-            if ((tlp = lGetPosList(ep, i)) == nullptr)
+            if ((tlp = lGetPosList(ep, f.pos)) == nullptr)
                ret = fprintf(fp, "%s/* %-20.20s */ empty\n",
-                             space, lNm2Str(ep->descr[i].nm));
+                             space, lNm2Str(ep->descr[f.pos].nm));
             else {
                ret = fprintf(fp, "%s/* %-20.20s */ full\n",
-                             space, lNm2Str(ep->descr[i].nm));
+                             space, lNm2Str(ep->descr[f.pos].nm));
                if (ret != EOF)
                   ret = lDumpList(fp, tlp, indent + 1);
             }
@@ -484,7 +491,6 @@ lListElem *lUndumpElemFp(FILE *fp, const lDescr *dp) {
    DENTER(CULL_LAYER);
 
    lListElem *ep;
-   int n, i;
    int ret = 0;
    char *str;
    uint32_t dummy;
@@ -502,7 +508,7 @@ lListElem *lUndumpElemFp(FILE *fp, const lDescr *dp) {
       DRETURN(nullptr);
    }
 
-   if ((n = lCountDescr(dp)) <= 0) {
+   if (lCountPresent(dp) <= 0) {
       LERROR(LECOUNTDESCR);
       lFreeElem(&ep);
       DRETURN(nullptr);
@@ -516,50 +522,54 @@ lListElem *lUndumpElemFp(FILE *fp, const lDescr *dp) {
       DRETURN(nullptr);
    }
 
-   for (i = 0; i < n && ret == 0; i++) {
-      switch (mt_get_type(dp[i].mt)) {
+   for (const auto f : ocs_cull_present_fields(dp)) {
+      if (ret != 0) {
+         break;
+      }
+      lMultiType &value = ep->cont[f.slot];
+      switch (mt_get_type(dp[f.pos].mt)) {
          case lIntT:
-            ret = fGetInt(fp, &(ep->cont[i].i));
+            ret = fGetInt(fp, &(value.i));
             break;
          case lUlongT:
-            ret = fGetUlong(fp, &(ep->cont[i].ul));
+            ret = fGetUlong(fp, &(value.ul));
             break;
          case lUlong64T:
-            ret = fGetUlong64(fp, &(ep->cont[i].ul64));
+            ret = fGetUlong64(fp, &(value.ul64));
             break;
          case lStringT:
             ret = fGetString(fp, &str);
             if (ret == 0) {
-               lSetPosString(ep, i, str);
+               lSetPosString(ep, f.pos, str);
                sge_free(&str);             /* fGetString strdup's */
             }
             break;
          case lHostT:
             ret = fGetHost(fp, &str);
             if (ret == 0) {
-               lSetPosHost(ep, i, str);
+               lSetPosHost(ep, f.pos, str);
                sge_free(&str);             /* fGetHost strdup's */
             }
             break;
          case lDoubleT:
-            ret = fGetDouble(fp, &(ep->cont[i].db));
+            ret = fGetDouble(fp, &(value.db));
             break;
          case lLongT:
-            ret = fGetLong(fp, &(ep->cont[i].l));
+            ret = fGetLong(fp, &(value.l));
             break;
          case lBoolT:
-            ret = fGetBool(fp, &(ep->cont[i].b));
+            ret = fGetBool(fp, &(value.b));
             break;
          case lRefT:
             /* we will not undump references! But we have to skip the line! */
             ret = fGetUlong(fp, &dummy);
-            ep->cont[i].ref = nullptr;
+            value.ref = nullptr;
             break;
          case lObjectT:
-            ret = fGetObject(fp, &(ep->cont[i].obj));
+            ret = fGetObject(fp, &(value.obj));
             break;
          case lListT:
-            ret = fGetList(fp, &(ep->cont[i].glp));
+            ret = fGetList(fp, &(value.glp));
             break;
          default:
             lFreeElem(&ep);

@@ -201,13 +201,14 @@ const char *lMt2Str(int mt) {
 }
 
 /**
- * @brief Returns the size of a descriptor
+ * @brief Returns the length of the type of a descriptor (N-B-7)
  *
- * Returns the size of a descriptor excluding lEndT Descr.
+ * The number of entries without the terminating #lEndT entry. The number of
+ * values an element holds is lCountPresent().
  *
  * @param dp pointer to descriptor
  *
- * @return size or -1 on error
+ * @return length or -1 on error
  *
  * @note MT-NOTE: lCountDescr() is MT safe
  */

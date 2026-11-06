@@ -38,6 +38,7 @@
 #include "uti/sge_stdlib.h"
 
 #include "cull/cull_list.h"
+#include "cull/cull_multitype.h"
 #include "cull/cull_state.h"
 #include "cull/cull_stats.h"
 #include "cull/msg_cull.h"
@@ -511,6 +512,22 @@ uint32_t ocs_cull_descr_refs(const lDescr *dp) {
       return 0;
    }
    return header_of(dp)->refs.load(std::memory_order_relaxed);
+}
+
+/**
+ * @brief Number of values an element of a descriptor holds (CS-439, N-B-7)
+ *
+ * This is the size of `cont` and the number of values on the wire. For a
+ * counted descriptor it comes from the header; any other is walked.
+ *
+ * @param dp the descriptor
+ * @return the number of values, or -1 if dp is nullptr
+ */
+int lCountPresent(const lDescr *dp) {
+   if (ocs_cull_descr_is_counted(dp)) {
+      return static_cast<int>(header_of(dp)->n);
+   }
+   return lCountDescr(dp);
 }
 
 /**
