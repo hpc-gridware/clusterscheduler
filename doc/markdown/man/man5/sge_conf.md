@@ -218,6 +218,12 @@ library or the shell read code or data from a path the submitter chose - see
 The default for *epilog* is the special value NONE, which prevents from execution of an epilog script. The same 
 special variables as for *prolog* can be used to constitute a command line.
 
+On a host where the jobs run under systemd control (see *ENABLE_SYSTEMD* under *execd_params* below), the
+environment variable *SGE_JOB_SCOPE* contains the name of the job's systemd scope. The scope is kept until the epilog
+has ended, so the epilog can query it with systemctl(1). For example,
+`systemctl show -p Result --value $SGE_JOB_SCOPE` returns `oom-kill` when the memory cgroup OOM killer ended the
+job, see *h_rss* in xxqs_name_sxx_queue_conf(5).
+
 The global configuration entry for this value may be overwritten by the execution host local configuration.
 
 Exit codes for the epilog attribute can be interpreted based on the following exit values:

@@ -1142,6 +1142,20 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
       var_list_set_string(&environmentList, VAR_PREFIX "JOB_SPOOL_DIR", str_buffer);
    }
 
+#ifdef OCS_WITH_SYSTEMD
+   // forward the name of the systemd scope of the job or pe task, e.g. for the epilog to query
+   // the Result of the scope
+   if (ocs::execd::execd_use_systemd()) {
+      std::string systemd_slice;
+      std::string systemd_scope;
+      DSTRING_STATIC(scope_error_dstr, MAX_STRING_SIZE);
+      if (ocs::Job::job_get_systemd_slice_and_scope(jep, jatep, petep, systemd_slice, systemd_scope,
+                                                     &scope_error_dstr)) {
+         var_list_set_string(&environmentList, VAR_PREFIX "JOB_SCOPE", systemd_scope.c_str());
+      }
+   }
+#endif
+
    /* Bugfix: Issuezilla 1300
     * Because this change could break pre-existing installations, it's been
     * made optional. */
