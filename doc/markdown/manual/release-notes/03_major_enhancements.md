@@ -1,5 +1,15 @@
 # Major Enhancements
 
+## v9.1.8
+
+### TLS Encryption with OpenSSL 4
+
+TLS encryption of the component communication now also works with OpenSSL 4. The xxQS_NAMExx components load OpenSSL 4 if it is installed on a host, otherwise OpenSSL 3. A cluster can contain both hosts with OpenSSL 3 and hosts with OpenSSL 4. At startup, xxqs_name_sxx_qmaster and xxqs_name_sxx_execd log which OpenSSL library they loaded.
+
+For details see the *Installation Guide*, chapter **"Enabling TLS Encryption"**.
+
+(Available in Open and Gridware Cluster Scheduler.)
+
 ## v9.1.7
 
 ### Further Resource Map Improvements

@@ -42,37 +42,37 @@
 namespace ocs::uti {
    // static members
    void *OpenSSL::libssl_handle = nullptr;
+   std::string OpenSSL::libssl_name;
+   std::string OpenSSL::libssl_version;
 
    std::vector<OpenSSL::OpenSSLContext *> OpenSSL::OpenSSLContext::contexts_to_delete;
 
    ASN1_INTEGER_set_func_t OpenSSL::ASN1_INTEGER_set_func = nullptr;
+   ASN1_STRING_get0_data_func_t OpenSSL::ASN1_STRING_get0_data_func = nullptr;
+   ASN1_STRING_length_func_t OpenSSL::ASN1_STRING_length_func = nullptr;
    ASN1_TIME_diff_func_t OpenSSL::ASN1_TIME_diff_func = nullptr;
    BIO_free_func_t OpenSSL::BIO_free_func = nullptr;
    BIO_new_func_t OpenSSL::BIO_new_func = nullptr;
    BIO_number_written_func_t OpenSSL::BIO_number_written_func = nullptr;
    BIO_read_func_t OpenSSL::BIO_read_func = nullptr;
    BIO_s_mem_func_t OpenSSL::BIO_s_mem_func = nullptr;
-   BN_free_func_t OpenSSL::BN_free_func = nullptr;
-   BN_new_func_t OpenSSL::BN_new_func = nullptr;
-   BN_set_word_func_t OpenSSL::BN_set_word_func = nullptr;
    ERR_clear_error_func_t OpenSSL::ERR_clear_error_func = nullptr;
    ERR_get_error_func_t OpenSSL::ERR_get_error_func = nullptr;
    ERR_reason_error_string_func_t OpenSSL::ERR_reason_error_string_func = nullptr;
-   EVP_PKEY_assign_func_t OpenSSL::EVP_PKEY_assign_func = nullptr;
    EVP_PKEY_free_func_t OpenSSL::EVP_PKEY_free_func = nullptr;
-   EVP_PKEY_new_func_t OpenSSL::EVP_PKEY_new_func = nullptr;
+   EVP_PKEY_Q_keygen_func_t OpenSSL::EVP_PKEY_Q_keygen_func = nullptr;
    EVP_sha256_func_t OpenSSL::EVP_sha256_func = nullptr;
    OPENSSL_init_ssl_func_t OpenSSL::OPENSSL_init_ssl_func = nullptr;
+   OpenSSL_version_func_t OpenSSL::OpenSSL_version_func = nullptr;
    PEM_read_X509_func_t OpenSSL::PEM_read_X509_func = nullptr;
    PEM_read_PrivateKey_func_t OpenSSL::PEM_read_PrivateKey_func = nullptr;
    X509_check_private_key_func_t OpenSSL::X509_check_private_key_func = nullptr;
-   X509_NAME_get_text_by_NID_func_t OpenSSL::X509_NAME_get_text_by_NID_func = nullptr;
+   X509_NAME_ENTRY_get_data_func_t OpenSSL::X509_NAME_ENTRY_get_data_func = nullptr;
+   X509_NAME_get_entry_func_t OpenSSL::X509_NAME_get_entry_func = nullptr;
+   X509_NAME_get_index_by_NID_func_t OpenSSL::X509_NAME_get_index_by_NID_func = nullptr;
    PEM_write_PrivateKey_func_t OpenSSL::PEM_write_PrivateKey_func = nullptr;
    PEM_write_X509_func_t OpenSSL::PEM_write_X509_func = nullptr;
    PEM_write_bio_X509_func_t OpenSSL::PEM_write_bio_X509_func = nullptr;
-   RSA_free_func_t OpenSSL::RSA_free_func = nullptr;
-   RSA_generate_key_ex_func_t OpenSSL::RSA_generate_key_ex_func = nullptr;
-   RSA_new_func_t OpenSSL::RSA_new_func = nullptr;
    SSL_CTX_free_func_t OpenSSL::SSL_CTX_free_func = nullptr;
    SSL_CTX_get0_certificate_func_t OpenSSL::SSL_CTX_get0_certificate_func = nullptr;
    SSL_CTX_load_verify_locations_func_t OpenSSL::SSL_CTX_load_verify_locations_func = nullptr;
@@ -89,13 +89,19 @@ namespace ocs::uti {
    SSL_get_error_func_t OpenSSL::SSL_get_error_func = nullptr;
    SSL_new_func_t OpenSSL::SSL_new_func = nullptr;
    SSL_read_func_t OpenSSL::SSL_read_func = nullptr;
+#if OPENSSL_VERSION_MAJOR >= 4
+   SSL_set1_dnsname_func_t OpenSSL::SSL_set1_dnsname_func = nullptr;
+#else
    SSL_set1_host_func_t OpenSSL::SSL_set1_host_func = nullptr;
+#endif
    SSL_set_fd_func_t OpenSSL::SSL_set_fd_func = nullptr;
    SSL_shutdown_func_t OpenSSL::SSL_shutdown_func = nullptr;
    SSL_write_func_t OpenSSL::SSL_write_func = nullptr;
    TLS_client_method_func_t OpenSSL::TLS_client_method_func = nullptr;
    TLS_server_method_func_t OpenSSL::TLS_server_method_func = nullptr;
    X509_NAME_add_entry_by_txt_func_t OpenSSL::X509_NAME_add_entry_by_txt_func = nullptr;
+   X509_NAME_free_func_t OpenSSL::X509_NAME_free_func = nullptr;
+   X509_NAME_new_func_t OpenSSL::X509_NAME_new_func = nullptr;
    X509_free_func_t OpenSSL::X509_free_func = nullptr;
    X509_get0_notAfter_func_t OpenSSL::X509_get0_notAfter_func = nullptr;
    X509_get_serialNumber_func_t OpenSSL::X509_get_serialNumber_func = nullptr;
@@ -106,15 +112,22 @@ namespace ocs::uti {
    X509_new_func_t OpenSSL::X509_new_func = nullptr;
    X509_set_issuer_name_func_t OpenSSL::X509_set_issuer_name_func = nullptr;
    X509_set_pubkey_func_t OpenSSL::X509_set_pubkey_func = nullptr;
+   X509_set_subject_name_func_t OpenSSL::X509_set_subject_name_func = nullptr;
    X509_set_version_func_t OpenSSL::X509_set_version_func = nullptr;
    X509_sign_func_t OpenSSL::X509_sign_func = nullptr;
 
    /**
-    * @brief Initializes the OpenSSL library by loading libssl.so.3 and resolving all required function symbols.
+    * @brief Initializes the OpenSSL library by loading libssl and resolving all required functions.
     *
-    * This function dynamically loads the OpenSSL shared library (libssl.so.3) and resolves
-    * all necessary function pointers for SSL/TLS operations. It can only be called once;
-    * later calls will fail with an error.
+    * This function dynamically loads the OpenSSL shared library and resolves all necessary
+    * function pointers for SSL/TLS operations. It can only be called once; later calls will
+    * fail with an error.
+    *
+    * libssl.so.4 is preferred over libssl.so.3 (libssl.4.dylib and libssl.3.dylib on macOS).
+    * When built with the OpenSSL 4 headers, only libssl.so.4 is loaded.
+    * If one of them is already loaded into the process, e.g. by libpq, then this one is used,
+    * so that the process does not hold two OpenSSL versions. The loaded library and the
+    * OpenSSL version are stored for log_library_info().
     *
     * The function loads and resolves symbols for:
     * - ASN1 operations (time, integer handling)
@@ -123,7 +136,7 @@ namespace ocs::uti {
     * - Error handling functions
     * - EVP (envelope) operations for keys and digests
     * - PEM file I/O
-    * - RSA key generation
+    * - key generation
     * - SSL/TLS context and connection operations
     * - X.509 certificate operations
     *
@@ -149,16 +162,53 @@ namespace ocs::uti {
       }
 
       // Load the shared library and the required functions
+      const char *libssl = nullptr;
       if (ret) {
+         // built with the OpenSSL 4 headers, we might use functions which OpenSSL 3 does not have
+#if OPENSSL_VERSION_MAJOR >= 4
 #if defined(DARWIN)
-         const char *libssl = "libssl.3.dylib";
+         const char *libssl_names[] = {"libssl.4.dylib"};
 #else
-         const char *libssl = "libssl.so.3";
+         const char *libssl_names[] = {"libssl.so.4"};
 #endif
-         libssl_handle = dlopen(libssl, RTLD_LAZY);
+#else
+#if defined(DARWIN)
+         const char *libssl_names[] = {"libssl.4.dylib", "libssl.3.dylib"};
+#else
+         const char *libssl_names[] = {"libssl.so.4", "libssl.so.3"};
+#endif
+#endif
+         // use a libssl which is already loaded into the process
+         for (const char *name : libssl_names) {
+            libssl_handle = dlopen(name, RTLD_LAZY | RTLD_NOLOAD);
+            if (libssl_handle != nullptr) {
+               libssl = name;
+               break;
+            }
+         }
+
+         // otherwise load the newest one which is installed
          if (libssl_handle == nullptr) {
-            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_OPEN_LIB_SS, libssl, dlerror());
-            ret = false;
+            std::string names;
+            std::string errors;
+            for (const char *name : libssl_names) {
+               libssl_handle = dlopen(name, RTLD_LAZY);
+               if (libssl_handle != nullptr) {
+                  libssl = name;
+                  break;
+               }
+               if (!names.empty()) {
+                  names += ", ";
+                  errors += "; ";
+               }
+               names += name;
+               errors += dlerror();
+            }
+            if (libssl_handle == nullptr) {
+               sge_dstring_sprintf(error_dstr, MSG_OPENSSL_OPEN_LIB_SS, names.c_str(),
+                                   errors.c_str());
+               ret = false;
+            }
          }
       }
 
@@ -168,6 +218,24 @@ namespace ocs::uti {
          func = "ASN1_INTEGER_set";
          ASN1_INTEGER_set_func = reinterpret_cast<ASN1_INTEGER_set_func_t>(dlsym(libssl_handle, func));
          if (ASN1_INTEGER_set_func == nullptr) {
+            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
+            ret = false;
+         }
+      }
+      if (ret) {
+         func = "ASN1_STRING_get0_data";
+         ASN1_STRING_get0_data_func =
+               reinterpret_cast<ASN1_STRING_get0_data_func_t>(dlsym(libssl_handle, func));
+         if (ASN1_STRING_get0_data_func == nullptr) {
+            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
+            ret = false;
+         }
+      }
+      if (ret) {
+         func = "ASN1_STRING_length";
+         ASN1_STRING_length_func =
+               reinterpret_cast<ASN1_STRING_length_func_t>(dlsym(libssl_handle, func));
+         if (ASN1_STRING_length_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
          }
@@ -221,30 +289,6 @@ namespace ocs::uti {
          }
       }
       if (ret) {
-         func = "BN_free";
-         BN_free_func = reinterpret_cast<BN_free_func_t>(dlsym(libssl_handle, func));
-         if (BN_free_func == nullptr) {
-            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
-            ret = false;
-         }
-      }
-      if (ret) {
-         func = "BN_new";
-         BN_new_func = reinterpret_cast<BN_new_func_t>(dlsym(libssl_handle, func));
-         if (BN_new_func == nullptr) {
-            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
-            ret = false;
-         }
-      }
-      if (ret) {
-         func = "BN_set_word";
-         BN_set_word_func = reinterpret_cast<BN_set_word_func_t>(dlsym(libssl_handle, func));
-         if (BN_set_word_func == nullptr) {
-            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
-            ret = false;
-         }
-      }
-      if (ret) {
          func = "ERR_clear_error";
          ERR_clear_error_func = reinterpret_cast<ERR_clear_error_func_t>(dlsym(libssl_handle, func));
          if (ERR_clear_error_func == nullptr) {
@@ -269,14 +313,6 @@ namespace ocs::uti {
          }
       }
       if (ret) {
-         func = "EVP_PKEY_assign";
-         EVP_PKEY_assign_func = reinterpret_cast<EVP_PKEY_assign_func_t>(dlsym(libssl_handle, func));
-         if (EVP_PKEY_assign_func == nullptr) {
-            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
-            ret = false;
-         }
-      }
-      if (ret) {
          func = "EVP_PKEY_free";
          EVP_PKEY_free_func = reinterpret_cast<EVP_PKEY_free_func_t>(dlsym(libssl_handle, func));
          if (EVP_PKEY_free_func == nullptr) {
@@ -285,9 +321,10 @@ namespace ocs::uti {
          }
       }
       if (ret) {
-         func = "EVP_PKEY_new";
-         EVP_PKEY_new_func = reinterpret_cast<EVP_PKEY_new_func_t>(dlsym(libssl_handle, func));
-         if (EVP_PKEY_new_func == nullptr) {
+         func = "EVP_PKEY_Q_keygen";
+         EVP_PKEY_Q_keygen_func =
+               reinterpret_cast<EVP_PKEY_Q_keygen_func_t>(dlsym(libssl_handle, func));
+         if (EVP_PKEY_Q_keygen_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
          }
@@ -304,6 +341,15 @@ namespace ocs::uti {
          func = "OPENSSL_init_ssl";
          OPENSSL_init_ssl_func = reinterpret_cast<OPENSSL_init_ssl_func_t>(dlsym(libssl_handle, func));
          if (OPENSSL_init_ssl_func == nullptr) {
+            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
+            ret = false;
+         }
+      }
+      if (ret) {
+         func = "OpenSSL_version";
+         OpenSSL_version_func =
+               reinterpret_cast<OpenSSL_version_func_t>(dlsym(libssl_handle, func));
+         if (OpenSSL_version_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
          }
@@ -333,9 +379,28 @@ namespace ocs::uti {
          }
       }
       if (ret) {
-         func = "X509_NAME_get_text_by_NID";
-         X509_NAME_get_text_by_NID_func = reinterpret_cast<X509_NAME_get_text_by_NID_func_t>(dlsym(libssl_handle, func));
-         if (X509_NAME_get_text_by_NID_func == nullptr) {
+         func = "X509_NAME_ENTRY_get_data";
+         X509_NAME_ENTRY_get_data_func =
+               reinterpret_cast<X509_NAME_ENTRY_get_data_func_t>(dlsym(libssl_handle, func));
+         if (X509_NAME_ENTRY_get_data_func == nullptr) {
+            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
+            ret = false;
+         }
+      }
+      if (ret) {
+         func = "X509_NAME_get_entry";
+         X509_NAME_get_entry_func =
+               reinterpret_cast<X509_NAME_get_entry_func_t>(dlsym(libssl_handle, func));
+         if (X509_NAME_get_entry_func == nullptr) {
+            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
+            ret = false;
+         }
+      }
+      if (ret) {
+         func = "X509_NAME_get_index_by_NID";
+         X509_NAME_get_index_by_NID_func =
+               reinterpret_cast<X509_NAME_get_index_by_NID_func_t>(dlsym(libssl_handle, func));
+         if (X509_NAME_get_index_by_NID_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
          }
@@ -360,30 +425,6 @@ namespace ocs::uti {
          func = "PEM_write_bio_X509";
          PEM_write_bio_X509_func = reinterpret_cast<PEM_write_bio_X509_func_t>(dlsym(libssl_handle, func));
          if (PEM_write_bio_X509_func == nullptr) {
-            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
-            ret = false;
-         }
-      }
-      if (ret) {
-         func = "RSA_free";
-         RSA_free_func = reinterpret_cast<RSA_free_func_t>(dlsym(libssl_handle, func));
-         if (RSA_free_func == nullptr) {
-            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
-            ret = false;
-         }
-      }
-      if (ret) {
-         func = "RSA_generate_key_ex";
-         RSA_generate_key_ex_func = reinterpret_cast<RSA_generate_key_ex_func_t>(dlsym(libssl_handle, func));
-         if (RSA_generate_key_ex_func == nullptr) {
-            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
-            ret = false;
-         }
-      }
-      if (ret) {
-         func = "RSA_new";
-         RSA_new_func = reinterpret_cast<RSA_new_func_t>(dlsym(libssl_handle, func));
-         if (RSA_new_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
          }
@@ -516,6 +557,17 @@ namespace ocs::uti {
             ret = false;
          }
       }
+#if OPENSSL_VERSION_MAJOR >= 4
+      if (ret) {
+         func = "SSL_set1_dnsname";
+         SSL_set1_dnsname_func =
+               reinterpret_cast<SSL_set1_dnsname_func_t>(dlsym(libssl_handle, func));
+         if (SSL_set1_dnsname_func == nullptr) {
+            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
+            ret = false;
+         }
+      }
+#else
       if (ret) {
          func = "SSL_set1_host";
          SSL_set1_host_func = reinterpret_cast<SSL_set1_host_func_t>(dlsym(libssl_handle, func));
@@ -524,6 +576,7 @@ namespace ocs::uti {
             ret = false;
          }
       }
+#endif
       if (ret) {
          func = "SSL_set_fd";
          SSL_set_fd_func = reinterpret_cast<SSL_set_fd_func_t>(dlsym(libssl_handle, func));
@@ -629,6 +682,22 @@ namespace ocs::uti {
          }
       }
       if (ret) {
+         func = "X509_NAME_free";
+         X509_NAME_free_func = reinterpret_cast<X509_NAME_free_func_t>(dlsym(libssl_handle, func));
+         if (X509_NAME_free_func == nullptr) {
+            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
+            ret = false;
+         }
+      }
+      if (ret) {
+         func = "X509_NAME_new";
+         X509_NAME_new_func = reinterpret_cast<X509_NAME_new_func_t>(dlsym(libssl_handle, func));
+         if (X509_NAME_new_func == nullptr) {
+            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
+            ret = false;
+         }
+      }
+      if (ret) {
          func = "X509_new";
          X509_new_func = reinterpret_cast<X509_new_func_t>(dlsym(libssl_handle, func));
          if (X509_new_func == nullptr) {
@@ -648,6 +717,15 @@ namespace ocs::uti {
          func = "X509_set_pubkey";
          X509_set_pubkey_func = reinterpret_cast<X509_set_pubkey_func_t>(dlsym(libssl_handle, func));
          if (X509_set_pubkey_func == nullptr) {
+            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
+            ret = false;
+         }
+      }
+      if (ret) {
+         func = "X509_set_subject_name";
+         X509_set_subject_name_func =
+               reinterpret_cast<X509_set_subject_name_func_t>(dlsym(libssl_handle, func));
+         if (X509_set_subject_name_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
          }
@@ -677,6 +755,12 @@ namespace ocs::uti {
          }
       }
 
+      if (ret) {
+         libssl_name = libssl;
+         libssl_version = OpenSSL_version_func(OPENSSL_VERSION);
+         DPRINTF("loaded %s, %s\n", libssl_name.c_str(), libssl_version.c_str());
+      }
+
       // if the initialization failed, free everything again
       if (!ret) {
          cleanup();
@@ -700,6 +784,29 @@ namespace ocs::uti {
       if (libssl_handle != nullptr) {
          dlclose(libssl_handle);
          libssl_handle = nullptr;
+      }
+      libssl_name.clear();
+      libssl_version.clear();
+      DRETURN_VOID;
+   }
+
+   /**
+    * @brief Logs the loaded libssl and the OpenSSL version.
+    *
+    * Daemons call this function once at startup, when their messages file is set. The library
+    * is loaded before the daemon knows its messages file and its configured loglevel, therefore
+    * initialize() cannot log it. The message is logged independent of the configured loglevel.
+    * If OpenSSL is not initialized, nothing is logged.
+    *
+    * @see initialize()
+    */
+   void OpenSSL::log_library_info() {
+      DENTER(TOP_LAYER);
+      if (libssl_handle != nullptr) {
+         u_long32 old_ll = log_state_get_log_level();
+         log_state_set_log_level(LOG_INFO);
+         INFO(MSG_OPENSSL_LOADED_LIB_SS, libssl_name.c_str(), libssl_version.c_str());
+         log_state_set_log_level(old_ll);
       }
       DRETURN_VOID;
    }
@@ -1098,8 +1205,16 @@ namespace ocs::uti {
       char cert_tag[256] = {};
       const std::string tag = installation_tag();
       if (ok && !tag.empty()) {
-         X509_NAME_get_text_by_NID_func(X509_get_subject_name_func(cert), NID_organizationalUnitName,
-                                        cert_tag, sizeof(cert_tag) - 1);
+         const X509_NAME *subject = X509_get_subject_name_func(cert);
+         int pos = X509_NAME_get_index_by_NID_func(subject, NID_organizationalUnitName, -1);
+         if (pos >= 0) {
+            const X509_NAME_ENTRY *entry = X509_NAME_get_entry_func(subject, pos);
+            const ASN1_STRING *data = X509_NAME_ENTRY_get_data_func(entry);
+            int len = ASN1_STRING_length_func(data);
+            if (len > 0 && static_cast<size_t>(len) < sizeof(cert_tag)) {
+               memcpy(cert_tag, ASN1_STRING_get0_data_func(data), len);
+            }
+         }
          if (cert_tag[0] != '\0' && tag != cert_tag) {
             cert_of_other_installation = true;
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_CERT_KEY_MISMATCH_SSS, cert_path.c_str(),
@@ -1266,6 +1381,16 @@ namespace ocs::uti {
       }
 
       // So far all was OK, but we have to create the certificates.
+      // Create the RSA key first, EVP_RSA_gen(2048) is a macro for this EVP_PKEY_Q_keygen() call.
+      EVP_PKEY *pkey = nullptr;
+      if (ret && create_certificate_and_key) {
+         ERR_clear_error_func();
+         pkey = EVP_PKEY_Q_keygen_func(nullptr, nullptr, "RSA", static_cast<size_t>(2048));
+         if (pkey == nullptr) {
+            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_CANNOT_CREATE_KEY_S, get_error_message());
+            ret = false;
+         }
+      }
       if (ret && create_certificate_and_key) {
          int certificate_lifetime = ocs::Bootstrap::get_cert_lifetime();
          int certificate_start_offset = ocs::Bootstrap::get_cert_start_offset();
@@ -1274,14 +1399,7 @@ namespace ocs::uti {
 
          // @todo can we create the certificate from some template?
          // @todo additional error handling?
-         EVP_PKEY *pkey = EVP_PKEY_new_func();
-         RSA *rsa = RSA_new_func();
-         BIGNUM *bn = BN_new_func();
          X509 *x509 = X509_new_func();
-
-         BN_set_word_func(bn, RSA_F4);
-         RSA_generate_key_ex_func(rsa, 2048, bn, nullptr);
-         EVP_PKEY_assign_func(pkey, EVP_PKEY_RSA, rsa);
 
          X509_set_version_func(x509, 2);
          ASN1_INTEGER_set_func(X509_get_serialNumber_func(x509), 1);
@@ -1289,18 +1407,21 @@ namespace ocs::uti {
          X509_gmtime_adj_func(X509_getm_notAfter_func(x509), certificate_lifetime);
          X509_set_pubkey_func(x509, pkey);
 
-         X509_NAME *name = X509_get_subject_name_func(x509);
+         // build the name, it is used as subject and as issuer name of the self-signed certificate
+         X509_NAME *name = X509_NAME_new_func();
          X509_NAME_add_entry_by_txt_func(name, "CN", MBSTRING_ASC, (unsigned char *)component_get_qualified_hostname(), -1, -1, 0);
          // Which installation does this certificate belong to? The CN must stay
-         // the hostname - clients verify it with SSL_set1_host() - so the
-         // installation goes into the OU. It lets a daemon tell "my key does not
+         // the hostname - clients verify it with SSL_set1_host() or SSL_set1_dnsname() - so
+         // the installation goes into the OU. It lets a daemon tell "my key does not
          // match my certificate" from "this certificate belongs to a different
          // installation, do not touch it". See CS-2487.
          const std::string tag = installation_tag();
          if (!tag.empty()) {
             X509_NAME_add_entry_by_txt_func(name, "OU", MBSTRING_ASC, (unsigned char *)tag.c_str(), -1, -1, 0);
          }
+         X509_set_subject_name_func(x509, name);
          X509_set_issuer_name_func(x509, name);
+         X509_NAME_free_func(name);
 
          X509_sign_func(x509, pkey, EVP_sha256_func());
 
@@ -1382,9 +1503,9 @@ namespace ocs::uti {
          }
 
          X509_free_func(x509);
+      }
+      if (pkey != nullptr) {
          EVP_PKEY_free_func(pkey);
-         // rsa is freed with pkey
-         BN_free_func(bn);
       }
 
       // If we have the certificates in files.
@@ -2188,8 +2309,13 @@ namespace ocs::uti {
          // Set hostname for SNI
          // Macro: SSL_set_tlsext_host_name(s, name)
          SSL_ctrl_func(ssl, SSL_CTRL_SET_TLSEXT_HOSTNAME, TLSEXT_NAMETYPE_host_name, (void *)server_name);
-         /* Configure server hostname check */
+         // Configure server hostname check. SSL_set1_dnsname() replaces SSL_set1_host() in
+         // OpenSSL 4, OpenSSL 3 does not have it.
+#if OPENSSL_VERSION_MAJOR >= 4
+         if (!SSL_set1_dnsname_func(ssl, server_name)) {
+#else
          if (!SSL_set1_host_func(ssl, server_name)) {
+#endif
             sge_dstring_sprintf(error_dstr, MSG_CANNOT_SET_SERVERNAME_S, get_error_message());
             ret = false;
          }

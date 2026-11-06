@@ -242,6 +242,8 @@
 #define MSG_OPENSSL_OPEN_LIB_SS                    _MESSAGE(59281, _("can't open shared library " SFN ": " SFN4))
 #define MSG_OPENSSL_LOAD_FUNC_SS                   _MESSAGE(59282, _("can't load function " SFN ": " SFN4))
 #define MSG_OPENSSL_INIT_FAILED                    _MESSAGE(59283, _("openssl initialization failed"))
+#define MSG_OPENSSL_CANNOT_CREATE_KEY_S            _MESSAGE(59321, _("cannot create RSA key: " SFN4))
+#define MSG_OPENSSL_LOADED_LIB_SS                  _MESSAGE(59320, _("loaded shared library " SFN ", " SFN))
 #define MSG_CANNOT_CREATE_SSL_CONTEXT_S            _MESSAGE(59284, _("cannot create SSL context: " SFN4))
 #define MSG_CANNOT_CREATE_SSL_S                    _MESSAGE(59285, _("cannot create SSL: " SFN4))
 #define MSG_CANNOT_SET_FD_S                        _MESSAGE(59286, _("cannot set file descriptor to SSL: " SFN4))
