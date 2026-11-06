@@ -1820,6 +1820,13 @@ The directory used by xxqs_name_sxx_shepherd(8) to store job related data during
 owned by root or by a xxQS_NAMExx administrative account and commonly is not open for read or write access to regular 
 users.
 
+## SGE_JOB_SCOPE
+The name of the systemd scope the job runs in, e.g. `ocs6444.25.scope`. Each task of a tightly integrated parallel
+job runs in a scope of its own, and the variable contains the name of the scope of that task. The variable is only set
+on hosts where the jobs run under systemd control, see *ENABLE_SYSTEMD* in xxqs_name_sxx_conf(5). It is also set for
+the prolog and the epilog, which can query the scope with systemctl(1), e.g. its usage or the result of the job, see
+*epilog* in xxqs_name_sxx_conf(5).
+
 ## SGE_TASK_ID  
 The index number of the current array job task (see `-t option` above). This is a unique number in each array job 
 and can be used to reference different input data records, for example. This environment variable is set to 
