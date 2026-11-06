@@ -929,6 +929,71 @@ static void test_reduce() {
    CHECK(57, "after the release the registry is empty again", ocs_cull_descr_registry_size() == base);
 }
 
+/**
+ * @brief Unpack a list whose descriptor table entry lists field indices as given
+ * @param indices the indices of TD_Type fields the sender lists
+ * @return the result of cull_unpack_list()
+ */
+static int unpack_forged_by_index(const std::vector<uint32_t> &indices) {
+   int ret = PACK_FORMAT;
+   sge_pack_buffer pb;
+   if (init_packbuffer(&pb, 256, false, false) != PACK_SUCCESS) {
+      return ret;
+   }
+   packint(&pb, 1);
+   packstr(&pb, "forged");
+   packint(&pb, CULL_PACK_DESCR_TABLE_DEF);
+   packint(&pb, CULL_PACK_DESCR_BY_INDEX);
+   packint(&pb, TD_id);
+   packint(&pb, indices.size());
+   for (const uint32_t idx : indices) {
+      packint(&pb, idx);
+   }
+   packint(&pb, 0);
+   char *buf = sge_malloc(pb.bytes_used);
+   memcpy(buf, pb.head_ptr, pb.bytes_used);
+   sge_pack_buffer in;
+   if (init_packbuffer_from_buffer(&in, buf, pb.bytes_used, false) == PACK_SUCCESS) {
+      lList *l = nullptr;
+      ret = cull_unpack_list(&in, &l);
+      lFreeList(&l);
+   }
+   clear_packbuffer(&in);
+   clear_packbuffer(&pb);
+   return ret;
+}
+
+/** @brief DESCR-15: the wire lists fields in type order (N-B-8) */
+static void test_wire_order() {
+   const size_t base = ocs_cull_descr_registry_size();
+
+   CHECK(58, "a table entry listing field indices out of order or twice is a format error",
+         unpack_forged_by_index({2, 1}) == PACK_FORMAT && unpack_forged_by_index({1, 1}) == PACK_FORMAT);
+
+   lListElem *ep = nullptr;
+   bool trailer = false;
+   const int ret = unpack_forged_elem({{TD_value, lUlongT | CULL_SPOOL}, {TD_id, lUlongT | CULL_SPOOL}}, false,
+                                      nullptr, &ep, &trailer);
+   lFreeElem(&ep);
+   CHECK(59, "a descriptor packed field by field out of type order is a format error", ret == PACK_FORMAT);
+
+   lList *lp = make_list(3);
+   lEnumeration *what = lWhat("%T(%I %I %I)", TD_Type, TD_name, TD_id, TD_name);
+   lList *sel = lSelect("dup", lp, nullptr, what);
+   lList *back = sel != nullptr ? pack_unpack(sel) : nullptr;
+   const lListElem *first = back != nullptr ? lFirst(back) : nullptr;
+   CHECK(61, "a field selected twice is selected once, and the reduction goes over the wire",
+         lCountWhat(what, TD_Type) == 2 && sel != nullptr && lCountDescr(lGetListDescr(sel)) == 2 &&
+         back != nullptr && lGetNumberOfElem(back) == 3 && first != nullptr && lGetUlong(first, TD_id) == 0 &&
+         strcmp(lGetString(first, TD_name), "n0") == 0);
+   lFreeList(&back);
+   lFreeList(&sel);
+   lFreeWhat(&what);
+   lFreeList(&lp);
+
+   CHECK(60, "after the buffers the registry is empty again", ocs_cull_descr_registry_size() == base);
+}
+
 int main(int argc, char *argv[]) {
    lInit(nmv);
 
@@ -1024,5 +1089,12 @@ int main(int argc, char *argv[]) {
        "both lists and the selection share one descriptor in type order, all fields are the static block, and "
        "a foreign or empty list is rejected",
        {{"FLD-04", "unit level"}}, {53, 54, 55, 56, 57}, test_reduce},
+      {"DESCR-15", "fields on the wire in type order",
+       "a receiver puts the values into their slots in the order the descriptor lists the fields",
+       {"unpack a table entry listing indices out of order and twice",
+        "unpack an element whose descriptor is packed field by field out of order",
+        "select with a field listed twice and send the result"},
+       "both are format errors, a field selected twice is packed once, and nothing stays in the registry",
+       {{"FLD-03", "partly"}}, {58, 59, 61, 60}, test_wire_order},
    });
 }

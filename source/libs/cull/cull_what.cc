@@ -186,8 +186,10 @@ const lDescr *ocs_cull_what_descr(const lEnumeration *enp, const lDescr *src, bo
  * A selection is normalised to the field order of the descriptor it was built
  * against, so two selections of the same fields yield the same partial
  * descriptor, whatever order they were written in, and the descriptor
- * registry can share it. Equal positions keep their order. The special
- * selections ALL and NONE are left alone.
+ * registry can share it. A field selected more than once is kept once, with
+ * the first sub-selection given for it (N-B-5); the wire then lists every field
+ * once and in type order (N-B-8). The special selections ALL and NONE are left
+ * alone.
  *
  * @param ep the selection, terminated by #NoName; may be nullptr
  */
@@ -200,6 +202,30 @@ static void ocs_what_sort_by_pos(lEnumeration *ep) {
       n++;
    }
    std::stable_sort(ep, ep + n, [](const lEnumeration &a, const lEnumeration &b) { return a.pos < b.pos; });
+   int m = 0;
+   for (int i = 0; i < n; i++) {
+      if (m > 0 && ep[i].pos == ep[m - 1].pos) {
+         if (ep[m - 1].ep == nullptr) {
+            ep[m - 1].ep = ep[i].ep;
+         } else {
+            lFreeWhat(&(ep[i].ep));
+         }
+         continue;
+      }
+      if (m != i) {
+         ep[m].pos = ep[i].pos;
+         ep[m].mt = ep[i].mt;
+         ep[m].nm = ep[i].nm;
+         ep[m].ep = ep[i].ep;
+      }
+      m++;
+   }
+   if (m != n) {
+      ep[m].pos = ep[n].pos;
+      ep[m].mt = ep[n].mt;
+      ep[m].nm = ep[n].nm;
+      ep[m].ep = ep[n].ep;
+   }
 }
 
 /**

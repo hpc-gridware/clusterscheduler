@@ -394,6 +394,10 @@ static int ocs_cull_unpack_prefix_type(const lDescr *dp, const uint32_t n, const
  * descriptor is built, marked reduced if it does not list its whole type, and
  * replaced by the shared descriptor equal to it.
  *
+ * The fields are listed in type order, every what being sorted by position, so
+ * the values that follow go to the slots in order (N-B-8); fields out of that
+ * order or listed twice are a format error.
+ *
  * @param pb the buffer to read from
  * @param dpp the descriptor, holding a reference for the caller
  * @param flags the flags the values were packed with; flag-filtered data never carries a type reference
@@ -471,7 +475,7 @@ static int cull_unpack_descr(
          DRETURN(ret);
       }
       if (kind == CULL_PACK_DESCR_BY_INDEX) {
-         /* the fields by their index in one type; mt is taken from the local type (N-W-5) */
+         /* the fields by their index in one type, in type order; mt is taken from the local type (N-W-5, N-B-8) */
          uint32_t type_nm = 0;
          uint32_t count = 0;
          if ((ret = unpackint(pb, &type_nm)) != PACK_SUCCESS || (ret = unpackint(pb, &count)) != PACK_SUCCESS) {
@@ -483,35 +487,27 @@ static int cull_unpack_descr(
             LERROR(LEDESCRNULL);
             DRETURN(PACK_FORMAT);
          }
-         if ((dp = (lDescr *) sge_malloc(sizeof(lDescr) * (count + 1))) == nullptr) {
-            LERROR(LEMALLOC);
-            DRETURN(PACK_ENOMEM);
-         }
-         CULL_STATS_TYPE(type[0].nm, DCOPY_UNPACK, 1);
-         CULL_STATS_TYPE(type[0].nm, DCOPY_UNPACK_B, sizeof(lDescr) * (count + 1));
-         bool full = count == static_cast<uint32_t>(type_n);
+         std::vector<bool> keep(type_n, false);
+         int64_t last = -1;
          for (i = 0; i < count; i++) {
-            if ((ret = unpackint(pb, &temp)) != PACK_SUCCESS || temp >= static_cast<uint32_t>(type_n)) {
-               sge_free(&dp);
+            if ((ret = unpackint(pb, &temp)) != PACK_SUCCESS || temp >= static_cast<uint32_t>(type_n) ||
+                static_cast<int64_t>(temp) <= last) {
                if (ret == PACK_SUCCESS) {
                   LERROR(LEDESCRNULL);
                   ret = PACK_FORMAT;
                }
                DRETURN(ret);
             }
-            full = full && temp == i;
-            dp[i] = type[temp];
+            last = temp;
+            keep[temp] = true;
          }
-         dp[count].nm = NoName;
-         dp[count].mt = lEndT;
-         dp[count].off = 0;
-         if (!full) {
-            for (i = 0; i <= count; i++) {
-               dp[i].mt |= CULL_IS_REDUCED;
-            }
+         if (count == 0) {
+            LERROR(LEDESCRNULL);
+            DRETURN(PACK_FORMAT);
          }
-         const lDescr *shared = ocs_cull_descr_acquire(dp);
-         sge_free(&dp);
+         CULL_STATS_TYPE(type[0].nm, DCOPY_UNPACK, 1);
+         CULL_STATS_TYPE(type[0].nm, DCOPY_UNPACK_B, sizeof(lDescr) * (count + 1));
+         const lDescr *shared = ocs_cull_descr_build(type, keep);
          ocs_cull_descr_table *tab = shared != nullptr ? pack_table(pb) : nullptr;
          if (tab == nullptr) {
             ocs_cull_descr_release(&shared);
@@ -550,7 +546,7 @@ static int cull_unpack_descr(
    dp[n].nm = NoName;
    dp[n].mt = lEndT;
 
-   /* read in n lDescr fields */
+   /* read in n lDescr fields, in type order (N-B-8) */
    bool wire_reduced = false;
    for (i = 0; i < n; i++) {
       if ((ret = unpackint(pb, &temp))) {
@@ -558,6 +554,11 @@ static int cull_unpack_descr(
          DRETURN(ret);
       }
       dp[i].nm = temp;
+      if (i > 0 && dp[i].nm <= dp[i - 1].nm) {
+         sge_free(&dp);
+         LERROR(LEDESCRNULL);
+         DRETURN(PACK_FORMAT);
+      }
 
       if ((ret = unpackint(pb, &temp))) {
          sge_free(&dp);
@@ -979,9 +980,11 @@ cull_pack_cont(sge_pack_buffer *pb, const lMultiType *cp, const lDescr *dp,
 /**
  * @brief Unpack the values of an element
  *
- * The buffer holds the values of the first wire_n fields of dp: all of them, or
- * the fields of a shorter version of the type that grew at the end (N-W-6). The
- * fields beyond keep their initial values, as in a new element.
+ * The buffer holds the values of the first wire_n fields of dp that have a
+ * value: all of them, or the fields of a shorter version of the type that grew
+ * at the end (N-W-6). The fields beyond keep their initial values, as in a new
+ * element. The wire lists the fields in type order, which is their slot order,
+ * so each value goes directly into its slot (N-B-8).
  *
  * @param pb the buffer to read from
  * @param[out] mpp receives the values, owned by the caller
@@ -1011,10 +1014,14 @@ static int cull_unpack_cont(
       DRETURN(PACK_ENOMEM);
    }
 
-   for (uint32_t i = 0; i < wire_n; i++) {
+   uint32_t i = 0;
+   for (const auto f : ocs_cull_present_fields(dp)) {
+      if (i++ == wire_n) {
+         break;
+      }
       /* if flags are given, unpack only fields matching flags, e.g. CULL_SPOOL */
-      if (flags == 0 || (dp[i].mt & flags) != 0) {
-         const int ret = cull_unpack_switch(pb, &(cp[ocs_cull_slot(dp, i)]), mt_get_type(dp[i].mt), flags);
+      if (flags == 0 || (dp[f.pos].mt & flags) != 0) {
+         const int ret = cull_unpack_switch(pb, &(cp[f.slot]), mt_get_type(dp[f.pos].mt), flags);
          if (ret != PACK_SUCCESS) {
             sge_free(&cp);
             DRETURN(ret);
