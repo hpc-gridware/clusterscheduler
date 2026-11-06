@@ -53,6 +53,7 @@
  */
 #include <cstdio>
 #include <cstring>
+#include <cmath>
 #include <cstdlib>
 #include <string>
 #include <vector>
@@ -536,6 +537,8 @@ struct execd_params_t {
    uint32_t script_timeout = 120;
    /// `SYSTEMD_TIMEOUT` -- time one systemd call of the execution daemon may take, in seconds
    uint32_t systemd_timeout = SYSTEMD_TIMEOUT_DEFAULT;
+   /// `MEMORY_MAX_FACTOR` -- factor for MemoryMax / MemoryHigh of the job scope, 0 or at least 1
+   double memory_max_factor = MEMORY_MAX_FACTOR_DEFAULT;
    /// `SET_LIB_PATH` -- put the product library path into the job environment
    bool set_lib_path = false;
    /// `SIMULATE_JOBS` -- do not start jobs, only pretend that they ran
@@ -1453,6 +1456,23 @@ int merge_configuration(lList **answer_list, uint32_t progid, const char *cell_r
                                        SYSTEMD_TIMEOUT_DEFAULT);
                execd_conf.systemd_timeout = SYSTEMD_TIMEOUT_DEFAULT;
             }
+            continue;
+         }
+         if (strncasecmp(s, "MEMORY_MAX_FACTOR=", sizeof("MEMORY_MAX_FACTOR=") - 1) == 0) {
+            // 0 (no MemoryMax / MemoryHigh on the job scope), or a factor of at least 1: below 1
+            // the kernel would kill a job before it reaches its limit
+            const char *value = &s[sizeof("MEMORY_MAX_FACTOR=") - 1];
+            char *end = nullptr;
+            double factor = strtod(value, &end);
+            if (end == value || *end != '\0' || !std::isfinite(factor) ||
+                (factor != 0.0 && factor < 1.0)) {
+               answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_WARNING,
+                                       MSG_CONF_INVALIDPARAM_SSI, "execd_params",
+                                       "MEMORY_MAX_FACTOR",
+                                       static_cast<int>(MEMORY_MAX_FACTOR_DEFAULT));
+               factor = MEMORY_MAX_FACTOR_DEFAULT;
+            }
+            execd_conf.memory_max_factor = factor;
             continue;
          }
          if (parse_bool_param(s, "SIMULATE_JOBS", &execd_conf.simulate_jobs)) {
@@ -4955,6 +4975,30 @@ uint32_t mconf_get_systemd_timeout() {
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    ret = execd_conf.systemd_timeout;
+
+   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
+   DRETURN(ret);
+}
+
+/**
+ * @brief The `memory_max_factor` setting of the master configuration
+ *
+ * On a host with systemd, sge_shepherd sets MemoryMax and MemoryHigh of the job scope to the hard
+ * and soft memory limits of the job multiplied by this factor. 0 means that neither is set.
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured factor, 0 or at least 1
+ */
+double mconf_get_memory_max_factor() {
+   DENTER(BASIS_LAYER);
+
+   double ret;
+
+   SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
+
+   ret = execd_conf.memory_max_factor;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);

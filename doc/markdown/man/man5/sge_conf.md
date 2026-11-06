@@ -1296,6 +1296,42 @@ smaller one makes it give up sooner.
 
 The value applies to hosts that support systemd and is ignored on other hosts.
 
+***MEMORY_MAX_FACTOR***
+
+On a host where the jobs run under systemd control, xxqs_name_sxx_shepherd(8) sets *MemoryMax* of
+the job's scope to the lower of *h_rss* and *h_vmem*, and *MemoryHigh* to the lower of *s_rss* and
+*s_vmem* (see xxqs_name_sxx_queue_conf(5)). The kernel then enforces the memory limit itself: when
+the job reaches it, the memory cgroup OOM killer kills the job, and xxqs_name_sxx_execd(8) does not
+see the job exceed its limit.
+
+MEMORY_MAX_FACTOR is a number which *MemoryMax* and *MemoryHigh* are multiplied by:
+
+- *1* : This is the default. *MemoryMax* and *MemoryHigh* are the limits of the job.
+- A value greater than 1, e.g. *1.5* : *MemoryMax* and *MemoryHigh* are the limits multiplied by the
+  factor. xxqs_name_sxx_execd(8) kills a job which exceeds *h_rss* or *h_vmem*, and the job ends as
+  a limit violation, as on a host without systemd. The kernel limit only stops a job which grows
+  faster than xxqs_name_sxx_execd(8) can see it.
+- *0* : Neither *MemoryMax* nor *MemoryHigh* is set, the memory limits are enforced only by
+  xxqs_name_sxx_execd(8).
+
+Other values are invalid, and the default is used instead.
+
+With a factor other than 1, consider:
+
+- xxqs_name_sxx_execd(8) compares the usage with the limits in the interval of *PDC_INTERVAL*.
+  Between two checks, a job can use much more memory than its limit; without a kernel limit it can
+  exhaust the memory of the host and trigger the global OOM killer, which might kill other
+  processes.
+- When the usage is collected via systemd (see *USAGE_COLLECTION*), the rss of a job is the memory
+  charged to its scope, which includes the page cache of the files the job has read or written.
+  Without a kernel limit the page cache is reclaimed only when the host runs short of memory, so a
+  job doing a lot of I/O can exceed *h_rss* although its processes use much less memory. Set
+  *USAGE_COLLECTION* to *PDC* on such hosts, then rss is the sum of the resident memory of the job's
+  processes.
+
+The value applies to hosts that support systemd and is ignored on other hosts. A changed value
+applies to jobs started afterwards.
+
 ***SCRIPT_TIMEOUT***
 
 This parameter allows to configure the allowed runtime of execution side scripts like prolog, epilog, and the PE 
