@@ -31,7 +31,7 @@
  *
  * ocs_cull_descr_intern() returns the registered descriptor equal to its
  * argument, registering a copy on the first call. Equality is decided by the
- * entries (field number and type with flags, in order); the hash only selects
+ * entries (field number, type with flags and slot offset, in order); the hash only selects
  * the candidates. Above the soft cap the registry stops growing and hands out
  * private counted copies, which are correct but not shared.
  *
@@ -46,7 +46,9 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <initializer_list>
 #include <string>
+#include <vector>
 
 #include "cull/cull_list.h"
 
@@ -58,6 +60,10 @@ const lDescr *ocs_cull_descr_intern(const lDescr *dp);
 const lDescr *ocs_cull_descr_acquire(const lDescr *dp);
 
 const lDescr *ocs_cull_descr_private(const lDescr *dp);
+
+const lDescr *ocs_cull_descr_build(const lDescr *type, const std::vector<bool> &keep);
+
+const lDescr *ocs_cull_descr_reduce(const lDescr *type, std::initializer_list<int> fields);
 
 const lDescr *ocs_cull_descr_ref(const lDescr *dp);
 

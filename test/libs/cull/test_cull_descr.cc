@@ -899,6 +899,36 @@ static void test_slots() {
    CHECK(52, "after the release the registry is empty again", ocs_cull_descr_registry_size() == base);
 }
 
+/** @brief DESCR-14: the builder of reduced descriptors from a field list (N-B-5, N-B-9) */
+static void test_reduce() {
+   const size_t base = ocs_cull_descr_registry_size();
+
+   const lDescr *a = ocs_cull_descr_reduce(TD_Type, {TD_flag, TD_name, TD_flag});
+   const lDescr *b = ocs_cull_descr_reduce(TD_Type, {TD_name, TD_flag});
+   bool order_ok = a != nullptr && a == b && lCountDescr(a) == 2 && a[0].nm == TD_name && a[1].nm == TD_flag &&
+                   mt_get_type(a[0].mt) == lStringT && (a[0].mt & CULL_IS_REDUCED) != 0 &&
+                   (a[2].mt & CULL_IS_REDUCED) != 0 && ocs_cull_descr_refs(a) == 2 &&
+                   ocs_cull_descr_registry_size() == base + 1;
+   CHECK(53, "a field list in any order and with duplicates yields one descriptor in type order", order_ok);
+
+   lEnumeration *what = lWhat("%T(%I %I)", TD_Type, TD_flag, TD_name);
+   const lDescr *c = lGetReducedDescr(TD_Type, what);
+   CHECK(54, "the builder and a selection of the same fields share the descriptor", c == a);
+   ocs_cull_descr_release(&c);
+   lFreeWhat(&what);
+
+   const lDescr *all = ocs_cull_descr_reduce(TD_Type, {TD_id, TD_name, TD_value, TD_flag});
+   CHECK(55, "all fields of the type yield the static block", all == TD_Type);
+
+   CHECK(56, "a field of another type or no field yields nullptr",
+         ocs_cull_descr_reduce(TD_Type, {TD_id, GR_name}) == nullptr && ocs_cull_descr_reduce(TD_Type, {}) == nullptr &&
+         ocs_cull_descr_registry_size() == base + 1);
+
+   ocs_cull_descr_release(&a);
+   ocs_cull_descr_release(&b);
+   CHECK(57, "after the release the registry is empty again", ocs_cull_descr_registry_size() == base);
+}
+
 int main(int argc, char *argv[]) {
    lInit(nmv);
 
@@ -987,5 +1017,12 @@ int main(int argc, char *argv[]) {
        "the header holds np, the range walks the slots through the reverse map, the offsets "
        "keep the two apart, and the values sit in their slots",
        {{"FLD-01", "partly"}}, {47, 48, 49, 50, 51, 52}, test_slots},
+      {"DESCR-14", "builder from a field list",
+       "descriptors written down in the code are built from a list of fields of their type",
+       {"reduce a type to a field list given in two orders and with a duplicate", "select the same fields",
+        "reduce to all fields", "reduce to a foreign field and to no field"},
+       "both lists and the selection share one descriptor in type order, all fields are the static block, and "
+       "a foreign or empty list is rejected",
+       {{"FLD-04", "unit level"}}, {53, 54, 55, 56, 57}, test_reduce},
    });
 }

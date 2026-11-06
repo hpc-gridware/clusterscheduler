@@ -1420,22 +1420,10 @@ static int japi_user_hold_add_jobid(uint32_t gdi_action, lList **request_list,
                                     dstring *diag) {
    DENTER(TOP_LAYER);
 
-   static constexpr lDescr job_descr_entries[] = {
-         {JB_job_number, lUlongT | CULL_IS_REDUCED},
-         {JB_verify_suitable_queues, lUlongT | CULL_IS_REDUCED},
-         {JB_ja_tasks, lListT | CULL_IS_REDUCED},
-         {JB_ja_structure, lListT | CULL_IS_REDUCED},
-         {NoName, lEndT | CULL_IS_REDUCED}
-   };
-   // interned once and never released, so every use only takes a reference
-   static const lDescr *const job_descr = ocs_cull_descr_intern(job_descr_entries);
-   static constexpr lDescr task_descr_entries[] = {
-         {JAT_task_number, lUlongT | CULL_IS_REDUCED},
-         {JAT_hold, lUlongT | CULL_IS_REDUCED},
-         {NoName, lEndT | CULL_IS_REDUCED}
-   };
-   // interned once and never released, so every use only takes a reference
-   static const lDescr *const task_descr = ocs_cull_descr_intern(task_descr_entries);
+   // built once and never released, so every use only takes a reference
+   static const lDescr *const job_descr =
+      ocs_cull_descr_reduce(JB_Type, {JB_job_number, JB_verify_suitable_queues, JB_ja_tasks, JB_ja_structure});
+   static const lDescr *const task_descr = ocs_cull_descr_reduce(JAT_Type, {JAT_task_number, JAT_hold});
    lListElem *jep = nullptr;
    lListElem *tep = nullptr;
 

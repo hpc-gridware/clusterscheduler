@@ -236,26 +236,22 @@ int main(int argc, const char **argv) {
    DRETURN(0);
 }
 
-/*
-** NAME
-**   qalter_parse_job_parameter
-** PARAMETER
-**   cmdline            - nullptr or SPA_Type, if nullptr, *pjob is initialised with defaults
-**   prequestlist       - pointer a list of job modify request for ocs::gdi::Client::sge_gdi
-**
-** RETURN
-**   answer list, AN_Type or nullptr if everything ok, the following stati can occur:
-**   STATUS_EUNKNOWN   - bad internal error like nullptr pointer received or no memory
-**   STATUS_EDISK      - getcwd() failed
-**   STATUS_ENOIMP     - unknown switch or -help occurred
-** DESCRIPTION
-**   step 1:
-**      parse all options into a dummy job 
-**   step 2: 
-**      iterate over the jobids in the cmd line an build 
-**      gdi requests for each using the options from 
-**      dummy job and put them into the prequestlist
-*/
+/**
+ * @brief Turn the parsed command line of qalter, qhold, qrls or qresub into job modify requests
+ *
+ * First all options are parsed into a dummy job, then a request is built for
+ * each job id of the command line from the options of the dummy job and added
+ * to the request list.
+ *
+ * @param me_who the program, QALTER, QHOLD, QRLS or QRESUB
+ * @param cmdline the parsed command line (SPA_Type), or nullptr for the defaults
+ * @param prequestlist receives the job modify requests for ocs::gdi::Client::sge_gdi
+ * @param all_jobs set to 1 if the requests address all jobs, 0 if they name jobs
+ * @param all_users not used
+ * @return nullptr on success, else an answer list (AN_Type) with STATUS_EUNKNOWN for
+ *         an internal error, STATUS_EDISK if getcwd() failed or STATUS_ENOIMP for an
+ *         unknown switch or -help
+ */
 static lList *qalter_parse_job_parameter(uint32_t me_who, lList *cmdline, lList **prequestlist,
                                          int *all_jobs, int *all_users) {
    DENTER(TOP_LAYER); 
@@ -919,13 +915,8 @@ static lList *qalter_parse_job_parameter(uint32_t me_who, lList *cmdline, lList 
    for_each_rw(ep, lGetList(job, JB_job_identifier_list)) {
       lList *task_list = nullptr;
       lListElem *task;
-      static constexpr lDescr task_descr_entries[] = { 
-            {JAT_task_number, lUlongT | CULL_IS_REDUCED},
-            {JAT_hold, lUlongT | CULL_IS_REDUCED},
-            {NoName, lEndT | CULL_IS_REDUCED}
-      };
-      // interned once and never released, so every use only takes a reference
-      static const lDescr *const task_descr = ocs_cull_descr_intern(task_descr_entries);
+      // built once and never released, so every use only takes a reference
+      static const lDescr *const task_descr = ocs_cull_descr_reduce(JAT_Type, {JAT_task_number, JAT_hold});
 
       jobid = atol(lGetString(ep, ID_str));
 /*

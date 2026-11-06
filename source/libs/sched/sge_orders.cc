@@ -98,26 +98,12 @@ lList *sge_add_schedd_info(lList *or_list, int *global_mes_count, int *job_mes_c
    DRETURN(or_list);
 }
 
-/*************************************************************
- Create a new order-list or add orders to an existing one.
- or_list==nullptr -> create new one.
- or_list!=nullptr -> append orders.
- returns updated order-list.
-
- The granted list contains granted queues.
-
- TODO SG: add adoc header, and comment on use of ja_task in here.
-
- is MT safe
- *************************************************************/
-
-
 /**
  * @brief Create a new order-list or add orders to an existing one
  *
  * - If the or_list is nullptr, a new one will be generated
- * - in case of a clear_pri order, teh ja_task is improtant. If nullptr is put
- *   in for ja_task, only the pendin tasks of the spedified job are set to nullptr.
+ * - in case of a clear_pri order, the ja_task is important. If nullptr is put
+ *   in for ja_task, only the pending tasks of the specified job are set to nullptr.
  *   If a ja_task is put in, all tasks of the job are set to nullptr
  *
  * @param or_list the order list
@@ -184,44 +170,15 @@ lList *sge_create_orders(lList *or_list, uint32_t type, const lListElem *job, co
 
       static order_pos_t *order_pos = nullptr;
 
-      static constexpr lDescr tixDesc_entries[] = {
-                            {JAT_task_number, lUlongT | CULL_IS_REDUCED},
-                            {JAT_tix, lDoubleT | CULL_IS_REDUCED},
-                            {JAT_oticket, lDoubleT | CULL_IS_REDUCED},
-                            {JAT_fticket, lDoubleT | CULL_IS_REDUCED},
-                            {JAT_sticket, lDoubleT | CULL_IS_REDUCED},
-                            {JAT_share, lDoubleT | CULL_IS_REDUCED},
-                            {JAT_prio, lDoubleT | CULL_IS_REDUCED},
-                            {JAT_ntix, lDoubleT | CULL_IS_REDUCED},
-                            {JAT_granted_destin_identifier_list, lListT | CULL_IS_REDUCED},
-                            {NoName, lEndT | CULL_IS_REDUCED}
-                           };
-      // interned once and never released, so every use only takes a reference
-      static const lDescr *const tixDesc = ocs_cull_descr_intern(tixDesc_entries);
-      static constexpr lDescr tix2Desc_entries[] = {
-                             {JAT_task_number, lUlongT | CULL_IS_REDUCED},
-                             {JAT_tix, lDoubleT| CULL_IS_REDUCED},
-                             {JAT_oticket, lDoubleT | CULL_IS_REDUCED},
-                             {JAT_fticket, lDoubleT | CULL_IS_REDUCED},
-                             {JAT_sticket, lDoubleT | CULL_IS_REDUCED},
-                             {JAT_share, lDoubleT | CULL_IS_REDUCED},
-                             {JAT_prio, lDoubleT | CULL_IS_REDUCED},
-                             {JAT_ntix, lDoubleT | CULL_IS_REDUCED},
-                             {NoName, lEndT | CULL_IS_REDUCED}
-                            };
-      // interned once and never released, so every use only takes a reference
-      static const lDescr *const tix2Desc = ocs_cull_descr_intern(tix2Desc_entries);
-      static constexpr lDescr jobDesc_entries[] = {
-                                 {JB_nurg, lDoubleT | CULL_IS_REDUCED},
-                                 {JB_urg, lDoubleT | CULL_IS_REDUCED},
-                                 {JB_rrcontr, lDoubleT | CULL_IS_REDUCED},
-                                 {JB_dlcontr, lDoubleT | CULL_IS_REDUCED},
-                                 {JB_wtcontr, lDoubleT | CULL_IS_REDUCED},
-                                 {JB_ja_tasks, lListT | CULL_IS_REDUCED},
-                                 {NoName, lEndT | CULL_IS_REDUCED}
-                               };
-      // interned once and never released, so every use only takes a reference
-      static const lDescr *const jobDesc = ocs_cull_descr_intern(jobDesc_entries);
+      // built once and never released, so every use only takes a reference
+      static const lDescr *const tixDesc =
+         ocs_cull_descr_reduce(JAT_Type, {JAT_task_number, JAT_tix, JAT_oticket, JAT_fticket, JAT_sticket, JAT_share,
+                                          JAT_prio, JAT_ntix, JAT_granted_destin_identifier_list});
+      static const lDescr *const tix2Desc =
+         ocs_cull_descr_reduce(JAT_Type, {JAT_task_number, JAT_tix, JAT_oticket, JAT_fticket, JAT_sticket, JAT_share,
+                                          JAT_prio, JAT_ntix});
+      static const lDescr *const jobDesc =
+         ocs_cull_descr_reduce(JB_Type, {JB_nurg, JB_urg, JB_rrcontr, JB_dlcontr, JB_wtcontr, JB_ja_tasks});
       ja_task_pos_t *ja_pos;
       ja_task_pos_t *order_ja_pos;
       job_pos_t   *job_pos;

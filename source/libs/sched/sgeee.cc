@@ -3216,12 +3216,8 @@ void sge_build_sgeee_orders(scheduler_all_data_t *lists, lList *running_jobs, lL
 
       if (sconf_is()) {
          lListElem *node = nullptr;
-         static constexpr lDescr schedConfDesc_entries[] = {
-                            {SC_weight_tickets_override, lUlongT  | CULL_IS_REDUCED},
-                            {NoName, lEndT  | CULL_IS_REDUCED}
-                           };
-         // interned once and never released, so every use only takes a reference
-         static const lDescr *const schedConfDesc = ocs_cull_descr_intern(schedConfDesc_entries);
+         // built once and never released, so every use only takes a reference
+         static const lDescr *const schedConfDesc = ocs_cull_descr_reduce(SC_Type, {SC_weight_tickets_override});
 
          node = lCreateElem(schedConfDesc);
          up_list = lCreateList("sched_conf_update", schedConfDesc);

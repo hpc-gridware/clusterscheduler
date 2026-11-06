@@ -32,11 +32,13 @@
 #include <new>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_stdlib.h"
 
+#include "cull/cull_lerrnoP.h"
 #include "cull/cull_list.h"
 #include "cull/cull_multitypeP.h"
 #include "cull/cull_multitype.h"
@@ -484,6 +486,82 @@ const lDescr *ocs_cull_descr_private(const lDescr *dp) {
    CULL_STATS_TYPE(dp[0].nm, DESCR_PRIVATE, 1);
    CULL_STATS_TYPE(dp[0].nm, DESCR_PRIVATE_B, counted_size(n, count_present(dp, n)));
    return entries_of(h);
+}
+
+/**
+ * @brief The shared descriptor of a type reduced to some of its fields (CS-439)
+ *
+ * The one builder of reduced descriptors: the kept fields are taken in the
+ * order of the type with their type and attributes, so the same field set
+ * always yields the same descriptor (N-B-5). Every entry is marked
+ * #CULL_IS_REDUCED unless all fields are kept, which yields the type itself.
+ *
+ * @param type the static block of the object type
+ * @param keep one flag per field of the type, true for the fields to keep
+ * @return the shared descriptor holding a reference for the caller, or nullptr
+ *         if keep does not match the type, selects no field, or memory is exhausted
+ */
+const lDescr *ocs_cull_descr_build(const lDescr *type, const std::vector<bool> &keep) {
+   DENTER(CULL_LAYER);
+
+   const uint32_t n = type != nullptr ? count_entries(type) : 0;
+   if (n == 0 || keep.size() != n) {
+      LERROR(LEDESCRNULL);
+      DRETURN(nullptr);
+   }
+   const auto kept = static_cast<uint32_t>(std::count(keep.begin(), keep.end(), true));
+   if (kept == 0) {
+      LERROR(LEENUMNULL);
+      DRETURN(nullptr);
+   }
+   if (kept == n) {
+      DRETURN(ocs_cull_descr_acquire(type));
+   }
+
+   std::vector<lDescr> entries;
+   entries.reserve(kept + 1);
+   for (uint32_t pos = 0; pos < n; pos++) {
+      if (keep[pos]) {
+         entries.push_back({type[pos].nm, (type[pos].mt & ~CULL_DESCR_INTERNED) | CULL_IS_REDUCED, 0});
+      }
+   }
+   entries.push_back({NoName, lEndT | CULL_IS_REDUCED, 0});
+   const lDescr *dp = ocs_cull_descr_intern(entries.data());
+   if (dp == nullptr) {
+      LERROR(LEMALLOC);
+   }
+   DRETURN(dp);
+}
+
+/**
+ * @brief The shared descriptor of a type reduced to a list of its fields (CS-439, N-B-9)
+ *
+ * For descriptors written down in the code: the fields may be listed in any
+ * order and more than once; the result is that of ocs_cull_descr_build().
+ *
+ * @code
+ * static const lDescr *const task_descr = ocs_cull_descr_reduce(JAT_Type, {JAT_task_number, JAT_hold});
+ * @endcode
+ *
+ * @param type the static block of the object type
+ * @param fields the field numbers to keep
+ * @return the shared descriptor holding a reference for the caller, or nullptr
+ *         if a field does not belong to the type, none is given, or memory is exhausted
+ */
+const lDescr *ocs_cull_descr_reduce(const lDescr *type, const std::initializer_list<int> fields) {
+   DENTER(CULL_LAYER);
+
+   const uint32_t n = type != nullptr ? count_entries(type) : 0;
+   std::vector<bool> keep(n, false);
+   for (const int nm : fields) {
+      const int pos = n > 0 ? nm - type[0].nm : -1;
+      if (pos < 0 || static_cast<uint32_t>(pos) >= n || type[pos].nm != nm) {
+         LERROR(LENAMENOT);
+         DRETURN(nullptr);
+      }
+      keep[pos] = true;
+   }
+   DRETURN(ocs_cull_descr_build(type, keep));
 }
 
 /**
