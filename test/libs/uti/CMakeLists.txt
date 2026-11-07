@@ -156,6 +156,21 @@ target_include_directories(test_uti_Encoder PRIVATE "./")
 target_link_libraries(test_uti_Encoder PRIVATE uti commlists ${SGE_LIBS})
 add_test(NAME test_uti_Encoder COMMAND test_uti_Encoder)
 
+# CS-3039: the C++ features of the typed element classes, and exceptions across a module
+# loaded like a spooling plugin
+add_library(test_uti_cpp_features_module MODULE test_uti_cpp_features_module.cc)
+target_include_directories(test_uti_cpp_features_module PRIVATE "./")
+target_link_libraries(test_uti_cpp_features_module PRIVATE ${SGE_LIBS_SHARED})
+set_target_properties(test_uti_cpp_features_module PROPERTIES PREFIX "")
+
+add_executable(test_uti_cpp_features test_uti_cpp_features.cc)
+target_include_directories(test_uti_cpp_features PRIVATE "./")
+target_compile_definitions(test_uti_cpp_features PRIVATE
+   "TEST_UTI_CPP_FEATURES_MODULE=\"$<TARGET_FILE_NAME:test_uti_cpp_features_module>\"")
+target_link_libraries(test_uti_cpp_features PRIVATE ${SGE_LIBS})
+add_dependencies(test_uti_cpp_features test_uti_cpp_features_module)
+add_test(NAME test_uti_cpp_features COMMAND test_uti_cpp_features)
+
 # These tests are correct but long-running, so they are kept out of the default
 # ctest run. Opt in by reconfiguring with -DENABLE_LONG_TESTS=ON. (Defined here,
 # after all listed tests are registered, so set_tests_properties can see them.)
@@ -177,6 +192,7 @@ if (INSTALL_SGE_TEST)
    install(TARGETS test_uti_bitfield DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_uti_bootstrap DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_uti_cpus DESTINATION testbin/${SGE_ARCH})
+   install(TARGETS test_uti_cpp_features test_uti_cpp_features_module DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_uti_format_text DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_uti_deadlock DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_uti_dstring DESTINATION testbin/${SGE_ARCH})
