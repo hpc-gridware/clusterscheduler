@@ -2268,21 +2268,17 @@ int main(int argc, const char **argv) {
                   b_already_logged_job_was_scheduled = true;
                }
 
-               /* For old IJS:
-                * in case of qlogin: has been scheduled / is transitting just after
-                * timeout -> loop.
-                * For new IJS:
-                * If it was a qrsh with command, it's finished here even if the
-                * QMaster didn't already recognize it -> exit.
+               /* qrsh/qlogin: the job runs, but its shepherd has not connected yet - it
+                * may still run a prolog, or the execution host is busy. With the new IJS
+                * we only get here before the connection, run_ijs_server() ends the loop.
+                * Keep waiting for the connection (CS-3034).
                 */
-               if ((!g_new_interactive_job_support && is_qlogin)
-                  || (g_new_interactive_job_support && is_qlogin && !is_rsh)) {
+               if (is_qlogin) {
                   continue;
-               } else {
-                  /* qsh: xterm has been started -> exit */
-                  do_exit = 1;
                }
-               continue; /* continue loop immediatley, don't break out of switch first */
+               /* qsh: xterm has been started -> exit */
+               do_exit = 1;
+               continue; /* continue loop immediately, don't break out of switch first */
 
             case JFINISHED:
                /* This was (or might have been) true for the old IJS
