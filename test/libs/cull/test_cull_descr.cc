@@ -109,6 +109,17 @@ NAMEEND
 
 #define GR_Size sizeof(GR_Name) / sizeof(char *) ///< number of fields of GR_Type
 
+/** @brief A type the name space does not register */
+enum {
+   UR_id = 301, ///< ulong
+   UR_text      ///< string
+};
+
+LISTDEF(UR_Type)
+   SGE_ULONG(UR_id, CULL_DEFAULT)
+   SGE_STRING(UR_text, CULL_DEFAULT)
+LISTEND(UR_Type)
+
 /** @brief The name space registering the types with CULL */
 lNameSpace nmv[] = {
    {1, TD_Size, TD_Name, TD_Type},
@@ -1069,6 +1080,36 @@ static void test_absent_fields() {
    CHECK(67, "after the lists the registry is empty again", ocs_cull_descr_registry_size() == base);
 }
 
+/** @brief DESCR-17: an element of a type the name space does not register (CS-439) */
+static void test_unregistered_type() {
+   const size_t base = ocs_cull_descr_registry_size();
+   lListElem *ep = lCreateElem(UR_Type);
+   lSetUlong(ep, UR_id, 7);
+   lSetString(ep, UR_text, "packed");
+   lListElem *back = nullptr;
+   sge_pack_buffer pb;
+   int pack_ret = PACK_FORMAT;
+   int ret = PACK_SUCCESS;
+   if (init_packbuffer(&pb, 256, false, false) == PACK_SUCCESS) {
+      pack_ret = cull_pack_elem(&pb, ep);
+      if (pack_ret == PACK_SUCCESS) {
+         char *buf = sge_malloc(pb.bytes_used);
+         memcpy(buf, pb.head_ptr, pb.bytes_used);
+         sge_pack_buffer in;
+         if (init_packbuffer_from_buffer(&in, buf, pb.bytes_used, false) == PACK_SUCCESS) {
+            ret = cull_unpack_elem(&in, &back, nullptr);
+         }
+         clear_packbuffer(&in);
+      }
+      clear_packbuffer(&pb);
+   }
+   CHECK(68, "an element of an unregistered type is packed, and unpacking it is a format error",
+         pack_ret == PACK_SUCCESS && ret == PACK_FORMAT && back == nullptr);
+   lFreeElem(&back);
+   lFreeElem(&ep);
+   CHECK(69, "after the element the registry is empty again", ocs_cull_descr_registry_size() == base);
+}
+
 int main(int argc, char *argv[]) {
    lInit(nmv);
 
@@ -1178,5 +1219,10 @@ int main(int argc, char *argv[]) {
        "positions equal those of the type, absent and foreign fields are not found and have no type, held values "
        "are those of the source, and reading an absent field aborts",
        {{"FLD-01", "partly"}, {"FLD-02", "unit level"}}, {62, 63, 64, 65, 66, 67}, test_absent_fields},
+      {"DESCR-17", "types the name space does not register",
+       "data of a type outside the name space is rejected on the wire",
+       {"pack an element of an unregistered type and unpack it"},
+       "unpacking is a format error and leaves no element and no descriptor behind",
+       {{"FLD-03", "partly"}}, {68, 69}, test_unregistered_type},
    });
 }

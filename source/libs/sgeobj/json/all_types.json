@@ -20,12 +20,6 @@
          "line": "  - size_in_basic_units - size forseen for the object type in the name space"
       },
       {
-         "line": "  - add_to_sge_all_lists - whether to add the type to the CULL sge_all_listsL.h"
-      },
-      {
-         "line": "    (needs to be set to false for internal types like PACK_Type to work around some dependency issues)"
-      },
-      {
          "line": "    we set the size in chunks of BASIC_UNITs, a BASIC_UNIT is 50 entries"
       },
       {
@@ -37,904 +31,775 @@
          "className": "Job",
          "cullPrefix": "JB",
          "cullNameSpec": "job",
-         "size_in_basic_units": 3,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 3
       },
       {
          "className": "JobRequestSet",
          "cullPrefix": "JRS",
          "cullNameSpec": "job",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "QueueInstance",
          "cullPrefix": "QU",
          "cullNameSpec": "qinstance",
-         "size_in_basic_units": 3,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 3
       },
       {
          "className": "ExecHost",
          "cullPrefix": "EH",
          "cullNameSpec": "host",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "Answer",
          "cullPrefix": "AN",
          "cullNameSpec": "answer",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "HostLoad",
          "cullPrefix": "HL",
          "cullNameSpec": "host",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "HostScaling",
          "cullPrefix": "HS",
          "cullNameSpec": "host",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "Event",
          "cullPrefix": "ET",
          "cullNameSpec": "event",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "EventClient",
          "cullPrefix": "EV",
          "cullNameSpec": "event",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "EventSubscription",
          "cullPrefix": "EVS",
          "cullNameSpec": "event",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "ComplexEntry",
          "cullPrefix": "CE",
          "cullNameSpec": "centry",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "LoadReport",
          "cullPrefix": "LR",
          "cullNameSpec": "report",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "Order",
          "cullPrefix": "OR",
          "cullNameSpec": "order",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "OrderQueue",
          "cullPrefix": "OQ",
          "cullNameSpec": "order",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "UserSet",
          "cullPrefix": "US",
          "cullNameSpec": "userset",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "UserSetEntry",
          "cullPrefix": "UE",
          "cullNameSpec": "userset",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "Range",
          "cullPrefix": "RN",
          "cullNameSpec": "range",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "PathName",
          "cullPrefix": "PN",
          "cullNameSpec": "job",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "Variable",
          "cullPrefix": "VA",
          "cullNameSpec": "var",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "MailReceiver",
          "cullPrefix": "MR",
          "cullNameSpec": "mailrec",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "ParallelEnvironment",
          "cullPrefix": "PE",
          "cullNameSpec": "pe",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "QueueReference",
          "cullPrefix": "QR",
          "cullNameSpec": "qref",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "UserJobCount",
          "cullPrefix": "JC",
          "cullNameSpec": "userset",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "Configuration",
          "cullPrefix": "CONF",
          "cullNameSpec": "conf",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "ConfigurationElement",
          "cullPrefix": "CF",
          "cullNameSpec": "conf",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "String",
          "cullPrefix": "ST",
          "cullNameSpec": "str",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "UniqueString",
          "cullPrefix": "STU",
          "cullNameSpec": "str",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "JobGrantedDestinationIdentifier",
          "cullPrefix": "JG",
          "cullNameSpec": "job",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "SubordinateQueue",
          "cullPrefix": "SO",
          "cullNameSpec": "subordinate",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "AccountingSummary",
          "cullPrefix": "QAJ",
          "cullNameSpec": "helper",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "CommandLineArgument",
          "cullPrefix": "SPA",
          "cullNameSpec": "parse",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "Report",
          "cullPrefix": "REP",
          "cullNameSpec": "report",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "UsageValue",
          "cullPrefix": "UA",
          "cullNameSpec": "usage",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "Project",
          "cullPrefix": "PR",
          "cullNameSpec": "userprj",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "User",
          "cullPrefix": "UU",
          "cullNameSpec": "userprj",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "GrantedResource",
          "cullPrefix": "GRU",
          "cullNameSpec": "grantedres",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "ResourceList",
          "cullPrefix": "RESL",
          "cullNameSpec": "host",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "ShareTreeNode",
          "cullPrefix": "STN",
          "cullNameSpec": "sharetree",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "SchedulerConfiguration",
          "cullPrefix": "SC",
          "cullNameSpec": "schedd_conf",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "PETask",
          "cullPrefix": "PET",
          "cullNameSpec": "pe_task",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "PETaskRequest",
          "cullPrefix": "PETR",
          "cullNameSpec": "pe_task",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "PETaskFinished",
          "cullPrefix": "FPET",
          "cullNameSpec": "pe_task",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "JobReport",
          "cullPrefix": "JR",
          "cullNameSpec": "report",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "LicenseReport",
          "cullPrefix": "LIC",
          "cullNameSpec": "report",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "PtfJob",
          "cullPrefix": "JL",
          "cullNameSpec": "ptf",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "JobPid",
          "cullPrefix": "JP",
          "cullNameSpec": "ptf",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "OsJob",
          "cullPrefix": "JO",
          "cullNameSpec": "ptf",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "JobUsage",
          "cullPrefix": "UPU",
          "cullNameSpec": "userprj",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "Checkpoint",
          "cullPrefix": "CK",
          "cullNameSpec": "ckpt",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "PathAlias",
          "cullPrefix": "PA",
          "cullNameSpec": "path_alias",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "JobReference",
          "cullPrefix": "JRE",
          "cullNameSpec": "job_ref",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "JobIdForAction",
          "cullPrefix": "ID",
          "cullNameSpec": "id",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "MultiGdiId",
          "cullPrefix": "MA",
          "cullNameSpec": "multi",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "TimeEvent",
          "cullPrefix": "TE",
          "cullNameSpec": "time_event",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "Calendar",
          "cullPrefix": "CAL",
          "cullNameSpec": "calendar",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "ParsedCalendar",
          "cullPrefix": "CA",
          "cullNameSpec": "calendar",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "TimeRange",
          "cullPrefix": "TMR",
          "cullNameSpec": "calendar",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "DateTime",
          "cullPrefix": "TM",
          "cullNameSpec": "calendar",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "RemoteTask",
          "cullPrefix": "RT",
          "cullNameSpec": "qexec",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "ProjectUsage",
          "cullPrefix": "UPP",
          "cullNameSpec": "userprj",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "JobSchedulingInfo",
          "cullPrefix": "SME",
          "cullNameSpec": "message",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "JobSchedulingMessage",
          "cullPrefix": "MES",
          "cullNameSpec": "message",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "JobArrayTask",
          "cullPrefix": "JAT",
          "cullNameSpec": "ja_task",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "Category",
          "cullPrefix": "CT",
          "cullNameSpec": "ct",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "JobSortObject",
          "cullPrefix": "SGEJ",
          "cullNameSpec": "eejob",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "UnsignedLong",
          "cullPrefix": "ULNG",
          "cullNameSpec": "ulong",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "HostGroup",
          "cullPrefix": "HGRP",
          "cullNameSpec": "hgroup",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "HostReference",
          "cullPrefix": "HR",
          "cullNameSpec": "href",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "Permission",
          "cullPrefix": "PERM",
          "cullNameSpec": "permission",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "LoadSensor",
          "cullPrefix": "LS",
          "cullNameSpec": "loadsensor",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "RescheduleUnknown",
          "cullPrefix": "RU",
          "cullNameSpec": "host",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "SubmitUser",
          "cullPrefix": "SU",
          "cullNameSpec": "suser",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "SpoolingContext",
          "cullPrefix": "SPC",
          "cullNameSpec": "spooling",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "SpoolingRule",
          "cullPrefix": "SPR",
          "cullNameSpec": "spooling",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "SpoolingType",
          "cullPrefix": "SPT",
          "cullNameSpec": "spooling",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "SpoolingTypeRule",
          "cullPrefix": "SPTR",
          "cullNameSpec": "spooling",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "JAPIJob",
          "cullPrefix": "JJ",
          "cullNameSpec": "japi",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "JAPIArrayTask",
          "cullPrefix": "JJAT",
          "cullNameSpec": "japi",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "NamedStringVector",
          "cullPrefix": "NSV",
          "cullNameSpec": "japi",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "AttributeString",
          "cullPrefix": "ASTR",
          "cullNameSpec": "attr",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "AttributeUlong",
          "cullPrefix": "AULNG",
          "cullNameSpec": "attr",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "AttributeBoolean",
          "cullPrefix": "ABOOL",
          "cullNameSpec": "attr",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "AttributeTime",
          "cullPrefix": "ATIME",
          "cullNameSpec": "attr",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "AttributeMemory",
          "cullPrefix": "AMEM",
          "cullNameSpec": "attr",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "AttributeInterval",
          "cullPrefix": "AINTER",
          "cullNameSpec": "attr",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "AttributeString",
          "cullPrefix": "ASTRING",
          "cullNameSpec": "attr",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "AttributeStringList",
          "cullPrefix": "ASTRLIST",
          "cullNameSpec": "attr",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "AttributeUserSetList",
          "cullPrefix": "AUSRLIST",
          "cullNameSpec": "attr",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "AttributeProjectList",
          "cullPrefix": "APRJLIST",
          "cullNameSpec": "attr",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "AttributeCentryList",
          "cullPrefix": "ACELIST",
          "cullNameSpec": "attr",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "AttributeSubordinateList",
          "cullPrefix": "ASOLIST",
          "cullNameSpec": "attr",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "AttributeQueueTypeList",
          "cullPrefix": "AQTLIST",
          "cullNameSpec": "attr",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "ClusterQueue",
          "cullPrefix": "CQ",
          "cullNameSpec": "cqueue",
-         "size_in_basic_units": 3,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 3
       },
       {
          "className": "QueueInstanceMessage",
          "cullPrefix": "QIM",
          "cullNameSpec": "mesobj",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "FunctionalCategory",
          "cullPrefix": "FCAT",
          "cullNameSpec": "eejob",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "SkipListEntry",
          "cullPrefix": "CTI",
          "cullNameSpec": "ct",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "SchedulerConfigParameter",
          "cullPrefix": "PARA",
          "cullNameSpec": "schedd_conf",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "XMLAttribute",
          "cullPrefix": "XMLA",
          "cullNameSpec": "cull_xml",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "XMLDocumentHead",
          "cullPrefix": "XMLH",
          "cullNameSpec": "cull_xml",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "XMLSchema",
          "cullPrefix": "XMLS",
          "cullNameSpec": "cull_xml",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "XMLDocumentEntry",
          "cullPrefix": "XMLE",
          "cullNameSpec": "cull_xml",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "ResourceDiagramEntry",
          "cullPrefix": "RDE",
          "cullNameSpec": "resource_utilization",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "ResourceUtilization",
          "cullPrefix": "RUE",
          "cullNameSpec": "resource_utilization",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "QueueEndTimeIterator",
          "cullPrefix": "QETI",
          "cullNameSpec": "qeti",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "LoadReference",
          "cullPrefix": "LDR",
          "cullNameSpec": "select_queue",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "QueueReferenceList",
          "cullPrefix": "QRL",
          "cullNameSpec": "select_queue",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "CategoryCache",
          "cullPrefix": "CCT",
          "cullNameSpec": "ct",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "CalendarQueueState",
          "cullPrefix": "CQU",
          "cullNameSpec": "calendar",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "SchedulerCategory",
          "cullPrefix": "SCT",
          "cullNameSpec": "ct",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "ReferenceToAnObject",
          "cullPrefix": "REF",
          "cullNameSpec": "ct",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "ResourceQuotaSet",
          "cullPrefix": "RQS",
          "cullNameSpec": "resource_quota",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "ResourceQuotaRule",
          "cullPrefix": "RQR",
          "cullNameSpec": "resource_quota",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "ResourceQuotaRuleFilter",
          "cullPrefix": "RQRF",
          "cullNameSpec": "resource_quota",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "ResourceQuotaRuleLimit",
          "cullPrefix": "RQRL",
          "cullNameSpec": "resource_quota",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "ResourceQuotaLimit",
          "cullPrefix": "RQL",
          "cullNameSpec": "resource_quota",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "AdvanceReservation",
          "cullPrefix": "AR",
          "cullNameSpec": "advance_reservation",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "AdvanceReservationACLEntryObject",
          "cullPrefix": "ARA",
          "cullNameSpec": "advance_reservation",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "Acknowledge",
          "cullPrefix": "ACK",
          "cullNameSpec": "ack",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "EventRequest",
          "cullPrefix": "EVR",
          "cullNameSpec": "event_request",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "JobSubmissionVerifier",
          "cullPrefix": "JSV",
          "cullNameSpec": "jsv",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "ReprioritizeTickets",
          "cullPrefix": "RTIC",
          "cullNameSpec": "order",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "Process",
          "cullPrefix": "PRO",
          "cullNameSpec": "proc",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "Group",
          "cullPrefix": "GR",
          "cullNameSpec": "proc",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "Binding",
          "cullPrefix": "BN",
          "cullNameSpec": "binding",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "Test",
          "cullPrefix": "TEST",
          "cullNameSpec": "test",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "Packing",
          "cullPrefix": "PACK",
          "cullNameSpec": "pack",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": false
+         "size_in_basic_units": 2
       },
       {
          "className": "StoredProcdureParameter",
          "cullPrefix": "SPP",
          "cullNameSpec": "param",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "Role",
          "cullPrefix": "RL",
          "cullNameSpec": "role",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       },
       {
          "className": "MatchCacheEntry",
          "cullPrefix": "HM",
          "cullNameSpec": "matchcache",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
+         "size_in_basic_units": 2
       }
    ]
 }

@@ -780,7 +780,8 @@ lListElem *lCreateElem(const lDescr *dp) {
    }
 
    elem_set_free(ep);
-   if (!(ep->cont = (lMultiType *) calloc(1, sizeof(lMultiType) * lCountPresent(ep->descr)))) {
+   // the held descriptor is static or counted, so its header knows the number of values
+   if (!(ep->cont = (lMultiType *) calloc(1, sizeof(lMultiType) * ocs_cull_descr_header_of(ep->descr)->np))) {
       LERROR(LEMALLOC);
       ocs_cull_descr_release(&(ep->descr));
       sge_free(&ep);

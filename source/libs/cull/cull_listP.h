@@ -168,9 +168,9 @@ inline const int16_t *ocs_cull_descr_rmap(const lDescr *dp) {
  * rather than over the descriptor entries, so they visit exactly the values an
  * element holds. A counted descriptor with absent fields is walked over its
  * slots through the reverse map in its header, so a reduction to a few fields
- * of a long type costs a few steps (N-B-6). Any other descriptor is walked over
- * its entries, skipping absent ones; a full one has none, and its slots are its
- * positions.
+ * of a long type costs a few steps (N-B-6). A full descriptor, one without
+ * #CULL_IS_REDUCED, has no absent field, and its slots are its positions. Any
+ * other descriptor is walked over its entries, skipping absent ones.
  *
  * @code
  * for (const auto f : ocs_cull_present_fields(ep->descr)) {
@@ -191,9 +191,11 @@ public:
        * @param dp the descriptor
        * @param rmap the reverse map to walk the slots by, or nullptr to walk the entries
        * @param np the number of slots, used with a reverse map
+       * @param full true if dp has no absent field, so the entry walk needs no check
        */
-      iterator(const lDescr *dp, const int16_t *rmap, const int np) : dp_(dp), rmap_(rmap), np_(np), i_(0) {
-         if (rmap_ == nullptr) {
+      iterator(const lDescr *dp, const int16_t *rmap, const int np, const bool full)
+         : dp_(dp), rmap_(rmap), np_(np), i_(0), full_(full) {
+         if (rmap_ == nullptr && !full_) {
             skip_absent();
          }
       }
@@ -206,6 +208,9 @@ public:
          if (rmap_ != nullptr) {
             return {rmap_[i_], i_};
          }
+         if (full_) {
+            return {i_, i_};
+         }
          return {i_, ocs_cull_slot(dp_, i_)};
       }
 
@@ -215,7 +220,7 @@ public:
        */
       iterator &operator++() {
          ++i_;
-         if (rmap_ == nullptr) {
+         if (rmap_ == nullptr && !full_) {
             skip_absent();
          }
          return *this;
@@ -246,6 +251,7 @@ public:
       const int16_t *rmap_; ///< the reverse map, or nullptr for an entry walk
       int np_;              ///< the number of slots of a slot walk
       int i_;               ///< the current slot of a slot walk, or position of an entry walk
+      bool full_;           ///< an entry walk over a descriptor without absent fields
    };
 
    /**
@@ -259,13 +265,17 @@ public:
     * @return an iterator at it, or at the end
     */
    iterator begin() const {
+      // only a reduced descriptor has absent fields (N-B-1)
+      if ((dp_[0].mt & CULL_IS_REDUCED) == 0) {
+         return {dp_, nullptr, 0, true};
+      }
       if ((dp_[0].mt & CULL_DESCR_INTERNED) != 0) {
          const cull_descr_header *h = ocs_cull_descr_header_of(dp_);
          if (h->np < h->n) {
-            return {dp_, ocs_cull_descr_rmap(dp_), static_cast<int>(h->np)};
+            return {dp_, ocs_cull_descr_rmap(dp_), static_cast<int>(h->np), false};
          }
       }
-      return {dp_, nullptr, 0};
+      return {dp_, nullptr, 0, false};
    }
 
    /**

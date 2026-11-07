@@ -29,8 +29,7 @@
             "className",
             "cullPrefix",
             "cullNameSpec",
-            "size_in_basic_units",
-            "add_to_sge_all_lists"
+            "size_in_basic_units"
          ],
          "properties": {
             "className": {
@@ -44,9 +43,6 @@
             },
             "size_in_basic_units": {
                "type": "integer"
-            },
-            "add_to_sge_all_lists": {
-               "type": "boolean"
             }
          },
          "additionalProperties": true

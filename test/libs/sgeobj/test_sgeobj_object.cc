@@ -34,10 +34,13 @@
 
 #include "cull/cull.h"
 #include "cull/cull_pack.h"
+#include "cull/cull_what.h"
+#include "cull/cull_where.h"
 
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_object.h"
+#include "sgeobj/sge_pack.h"
 
 // ---------------------------------------------------------------------------
 // Test infrastructure
@@ -556,6 +559,79 @@ static void test_spooled_job_of_shorter_type() {
    lFreeElem(&job);
 }
 
+/**
+ * @brief Send an element over the wire and read it back
+ *
+ * @param ep the element to pack
+ * @param back receives the unpacked element, nullptr on error
+ * @return the result of unpacking, or #PACK_FORMAT if packing failed
+ */
+static int pack_roundtrip(const lListElem *ep, lListElem **back) {
+   int ret = PACK_FORMAT;
+   *back = nullptr;
+   sge_pack_buffer pb;
+   if (init_packbuffer(&pb, 1024, false, false) == PACK_SUCCESS) {
+      if (cull_pack_elem(&pb, ep) == PACK_SUCCESS) {
+         char *buf = sge_malloc(pb.bytes_used);
+         memcpy(buf, pb.head_ptr, pb.bytes_used);
+         sge_pack_buffer in;
+         if (init_packbuffer_from_buffer(&in, buf, pb.bytes_used, false) == PACK_SUCCESS) {
+            ret = cull_unpack_elem(&in, back, nullptr);
+         }
+         clear_packbuffer(&in);
+      }
+      clear_packbuffer(&pb);
+   }
+   return ret;
+}
+
+/** @brief A what and a where packed into PACK_Type elements survive the wire, as event clients send them [T63–T66] */
+static void test_pack_type_roundtrip() {
+   printf("\n--- PACK_Type over the wire ---\n");
+
+   // T63: PACK_Type is registered in the name space
+   CHECK(63, "PACK_id is known to the name space", strcmp(lNm2Str(PACK_id), "PACK_id") == 0);
+
+   lEnumeration *what = lWhat("%T(%I %I)", QU_Type, QU_qname, QU_qhostname);
+   lListElem *what_elem = lWhatToElem(what);
+   lListElem *what_back = nullptr;
+   const int what_ret = pack_roundtrip(what_elem, &what_back);
+
+   // T64: the element comes back with the static PACK_Type descriptor
+   CHECK(64, "packed what → PACK_Type element",
+         what_ret == PACK_SUCCESS && what_back != nullptr && lGetElemDescr(what_back) == PACK_Type);
+
+   // T65: the what read from it selects the same fields
+   lEnumeration *what_read = what_back != nullptr ? lWhatFromElem(what_back) : nullptr;
+   CHECK(65, "what from the element → same fields",
+         what_read != nullptr && lCountWhat(what_read, QU_Type) == 2 && lCountWhat(what, QU_Type) == 2);
+
+   lCondition *where = lWhere("%T(%I==%s)", QU_Type, QU_qname, "all.q");
+   lListElem *where_elem = lWhereToElem(where);
+   lListElem *where_back = nullptr;
+   const int where_ret = pack_roundtrip(where_elem, &where_back);
+   lCondition *where_read = where_ret == PACK_SUCCESS && where_back != nullptr ? lWhereFromElem(where_back) : nullptr;
+
+   // T66: the where read from it matches as the original does
+   lListElem *match = lCreateElem(QU_Type);
+   lSetString(match, QU_qname, "all.q");
+   lListElem *other = lCreateElem(QU_Type);
+   lSetString(other, QU_qname, "other.q");
+   CHECK(66, "where from the element → same matches",
+         where_read != nullptr && lCompare(match, where_read) == 1 && lCompare(other, where_read) == 0);
+
+   lFreeElem(&other);
+   lFreeElem(&match);
+   lFreeWhere(&where_read);
+   lFreeElem(&where_back);
+   lFreeElem(&where_elem);
+   lFreeWhere(&where);
+   lFreeWhat(&what_read);
+   lFreeElem(&what_back);
+   lFreeElem(&what_elem);
+   lFreeWhat(&what);
+}
+
 // ---------------------------------------------------------------------------
 
 int main(int /*argc*/, char * /*argv*/[]) {
@@ -587,6 +663,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
    test_object_verify_field_constraints();
    test_object_verify_name();
    test_spooled_job_of_shorter_type();
+   test_pack_type_roundtrip();
 
    lFreeElem(&queue);
    lFreeList(&st_list);
