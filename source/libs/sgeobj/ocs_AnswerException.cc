@@ -24,4 +24,35 @@
 
 #include "ocs_AnswerException.h"
 
-// Do not delete this file otherwise symbols will be missing during linking
+#include "sgeobj/sge_answer.h"
+
+ocs::AnswerException::Holder::~Holder() {
+   lList *list = answer_list.exchange(nullptr);
+   lFreeList(&list);
+}
+
+std::string
+ocs::AnswerException::get_last_error_message(const lList *answer_list) {
+   for (const lListElem *answer = lLast(answer_list); answer != nullptr; answer = lPrev(answer)) {
+      if (answer_has_quality(answer, ANSWER_QUALITY_ERROR) || answer_has_quality(answer, ANSWER_QUALITY_CRITICAL)) {
+         const char *message = lGetString(answer, AN_text);
+         if (message != nullptr) {
+            return message;
+         }
+      }
+   }
+   return "No error details available";
+}
+
+ocs::AnswerException::AnswerException(lList **answer_list)
+   : RuntimeError(get_last_error_message(*answer_list)), m_holder(std::make_shared<Holder>(*answer_list)) {
+   // the holder owns the list from here on
+   *answer_list = nullptr;
+}
+
+lList *
+ocs::AnswerException::take_answer_list() noexcept {
+   return m_holder->answer_list.exchange(nullptr);
+}
+
+ocs::AnswerException::~AnswerException() = default;

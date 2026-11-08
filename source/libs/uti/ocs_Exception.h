@@ -20,30 +20,44 @@
 /*___INFO__MARK_END_NEW__*/
 
 /** @file
- * @brief The base exception type of the `ocs` namespace
+ * @brief The exception classes of the `ocs` namespace
+ *
+ * Two bases, each derived from its standard counterpart, so that a handler
+ * catching `std::logic_error`, `std::runtime_error` or `std::exception`
+ * catches them as well. Further classes are added only when a caller has to
+ * tell them apart by type.
  */
 
-#include <exception>
-#include <string>
+#include <stdexcept>
 
 namespace ocs {
    /**
-    * @brief Base class for exceptions thrown by `ocs` code
+    * @brief A programming error found at run time
     *
-    * @warning Currently a placeholder. The constructor **discards** its
-    *          message: it neither stores it nor passes it to `std::exception`,
-    *          so `what()` returns the default text and the reason for the
-    *          throw is lost. Do not rely on the message surviving until this
-    *          is implemented.
+    * Thrown for a condition the code should never reach, e.g. an absent
+    * field or an element of the wrong type. The message is kept and returned
+    * by `what()`.
     */
-   class Exception : public std::exception {
+   class LogicError : public std::logic_error {
    public:
-      /**
-       * @brief Construct an exception
-       *
-       * @param message the reason for the throw; currently ignored, see the
-       *        class warning
-       */
-      explicit Exception(std::string const &message) {};
+      using std::logic_error::logic_error;
+
+      /** @brief Destroy the exception; defined out of line as the key function */
+      ~LogicError() override;
+   };
+
+   /**
+    * @brief An expected error at run time
+    *
+    * Thrown for a condition the caller has to expect, e.g. a key that was not
+    * found or input that cannot be parsed. The message is kept and returned
+    * by `what()`.
+    */
+   class RuntimeError : public std::runtime_error {
+   public:
+      using std::runtime_error::runtime_error;
+
+      /** @brief Destroy the exception; defined out of line as the key function */
+      ~RuntimeError() override;
    };
 }

@@ -43,12 +43,7 @@
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_stdlib.h"
 
-#include "sgeobj/ocs_AnswerException.h"
-
 #include <rapidjson/stream.h>
-
-#include "cull/cull_list.h"
-#include "sgeobj/sge_answer.h"
 
 /** @brief Get a stacktrace of the current thread.
  *

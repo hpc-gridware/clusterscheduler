@@ -19,11 +19,17 @@
 /*___INFO__MARK_END_NEW__*/
 
 /** @file
- * @brief Translation unit for @ref ocs::Exception
+ * @brief Key functions of @ref ocs::LogicError and @ref ocs::RuntimeError
  *
- * The class is header-only, but this file must exist: without it the
- * compiler emits no translation unit for the class and its key function's
- * symbols are missing at link time.
+ * The destructors are the only out-of-line members of the classes. Defining
+ * them here makes the compiler emit vtable and type information once, in this
+ * library, instead of as a weak copy in every translation unit. Under libc++,
+ * which compares type information by address, that single copy is what lets a
+ * handler in one module catch an exception thrown in another.
  */
 
 #include "ocs_Exception.h"
+
+ocs::LogicError::~LogicError() = default;
+
+ocs::RuntimeError::~RuntimeError() = default;
