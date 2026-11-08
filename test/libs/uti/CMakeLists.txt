@@ -168,6 +168,9 @@ target_include_directories(test_uti_cpp_features PRIVATE "./")
 target_compile_definitions(test_uti_cpp_features PRIVATE
    "TEST_UTI_CPP_FEATURES_MODULE=\"$<TARGET_FILE_NAME:test_uti_cpp_features_module>\"")
 target_link_libraries(test_uti_cpp_features PRIVATE ${SGE_LIBS})
+# export the symbols of the executable like the daemons on Linux (-rdynamic), so the module
+# binds to the type information of the executable; libc++ compares it by address
+set_target_properties(test_uti_cpp_features PROPERTIES ENABLE_EXPORTS ON)
 add_dependencies(test_uti_cpp_features test_uti_cpp_features_module)
 add_test(NAME test_uti_cpp_features COMMAND test_uti_cpp_features)
 
