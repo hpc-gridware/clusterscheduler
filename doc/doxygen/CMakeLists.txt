@@ -100,7 +100,6 @@ if (DOXYGEN_FOUND)
         # directory, which is where dxm-check.sh is run from.
         ../gcs-extensions/source/libs/ocs_bridge
         ../gcs-extensions/source/libs/spool
-        ../gcs-extensions/source/libs/lwdb
         ../gcs-extensions/source/libs/sgeobj
         ../gcs-extensions/source/daemons
         ../gcs-extensions/source/tools
@@ -116,7 +115,6 @@ if (DOXYGEN_FOUND)
         # the object model documented at source. Never edit the output; fix the
         # JSON or the generator.
         source/libs/sgeobj/cull
-        source/libs/sgeobj/lwdb
    )
 
    if (DXM_FINISHED_MODULES)
