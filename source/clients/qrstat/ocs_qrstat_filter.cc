@@ -93,6 +93,7 @@ qrstat_filter_add_ar_attributes(qrstat_env_t *qrstat_env)
    lEnumeration *what = nullptr;
    const int nm_AR_Type[] = {
       AR_account,
+      AR_project,
       AR_owner,
       AR_group,
       AR_submission_time,
@@ -129,6 +130,7 @@ qrstat_filter_add_xml_attributes(qrstat_env_t *qrstat_env)
    lEnumeration *what = nullptr;
    const int nm_AR_Type[] = {
       AR_account,
+      AR_project,
       AR_owner,
       AR_group,
       AR_submission_time,

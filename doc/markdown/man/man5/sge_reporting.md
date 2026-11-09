@@ -396,6 +396,11 @@ advance reservation has changed. It has the following fields:
 * ar_account  
   An account string which was specified during the creation of the advance reservation.
 
+* ar_project  
+  The project which was specified with the `-P` option of qrsub(1). It is written only for an
+  advance reservation which requested a project, and only to the JSONL reporting format; the
+  deprecated colon-separated format does not carry it, because its fields are parsed by position.
+
 * ar_start_time  
   Start time.
 

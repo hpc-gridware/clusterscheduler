@@ -206,6 +206,12 @@ bool sge_parse_qrsub(lList *pcmdline, lList **alpp, lListElem **ar)
       lRemoveElem(pcmdline, &ep);
    }
      
+   /*  -P project_name project of the AR SGE_STRING */
+   while ((ep = lGetElemStrRW(pcmdline, SPA_switch_val, "-P"))) {
+      lSetString(*ar, AR_project, lGetString(ep, SPA_argval_lStringT));
+      lRemoveElem(pcmdline, &ep);
+   }
+
    /*  -l resource_list request the given resources  SGE_LIST */
    parse_list_simple(pcmdline, "-l", *ar, AR_resource_list, 0, 0, FLG_LIST_APPEND);
    centry_list_remove_duplicates(lGetListRW(*ar, AR_resource_list));

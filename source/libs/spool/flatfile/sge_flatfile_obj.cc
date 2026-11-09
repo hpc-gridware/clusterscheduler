@@ -523,6 +523,7 @@ spooling_field AR_fields[] = {
    {  AR_id,              20,   "id",                false, nullptr, false, nullptr, nullptr},
    {  AR_name,            20,   "name",              false, nullptr,false,  nullptr, nullptr},
    {  AR_account,         20,   "account",           false, nullptr, false, nullptr, nullptr},
+   {  AR_project,         20,   "project",           false, nullptr, false, nullptr, nullptr},
    {  AR_owner,           20,   "owner",             false, nullptr, false, nullptr, nullptr},
    {  AR_group,           20,   "group",             false, nullptr, false, nullptr, nullptr},
    {  AR_submission_time, 20,   "submission_time",   false, nullptr, false, nullptr, nullptr},

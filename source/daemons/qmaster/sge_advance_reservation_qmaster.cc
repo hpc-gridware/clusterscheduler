@@ -73,6 +73,8 @@
 #include "sgeobj/sge_grantedres.h"
 #include "sgeobj/sge_pe.h"
 #include "sgeobj/sge_str.h"
+#include "sgeobj/sge_userprj.h"
+#include "sgeobj/sge_userset.h"
 #include "sgeobj/sge_calendar.h"
 #include "sgeobj/sge_ulong.h"
 #include "sgeobj/sge_qref.h"
@@ -185,6 +187,64 @@ ar_initialize_timer(lList **answer_list, monitoring_t *monitor, u_long64 gdi_ses
    DRETURN_VOID;
 }
 
+/*!
+ * @brief Verify the project requested for an advance reservation with qrsub -P.
+ *
+ * The checks are the same as for a job requesting a project: the project has to exist, the
+ * user has to have access to it, and the projects and xprojects of the global configuration
+ * have to allow it. An advance reservation without a project is not checked.
+ *
+ * @param ar The advance reservation, AR_project holds the requested project.
+ * @param packet The GDI request, which holds the user, the group and the supplementary groups.
+ * @param alpp The answer list which receives the error message.
+ * @return true if no project is requested or the project is valid, false otherwise.
+ */
+static bool
+ar_verify_project(const lListElem *ar, const ocs::gdi::Packet *packet, lList **alpp) {
+   DENTER(TOP_LAYER);
+
+   const char *project = lGetString(ar, AR_project);
+   if (project == nullptr) {
+      DRETURN(true);
+   }
+
+   // the project has to exist
+   const lList *master_project_list = *ocs::DataStore::get_master_list(SGE_TYPE_PROJECT);
+   const lListElem *pep = prj_list_locate(master_project_list, project);
+   if (pep == nullptr) {
+      ERROR(MSG_AR_PRJUNKNOWN_S, project);
+      answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
+      DRETURN(false);
+   }
+
+   // the user has to have access to the project
+   const lList *master_userset_list = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
+   lList *grp_list = grp_list_array2list(packet->amount, packet->grp_array);
+   bool has_access = sge_has_access_(packet->user, packet->group, grp_list, lGetList(pep, PR_acl),
+                                     lGetList(pep, PR_xacl), master_userset_list) != 0;
+   lFreeList(&grp_list);
+   if (!has_access) {
+      ERROR(MSG_AR_NOACCESS2PRJ4USER_SS, project, packet->user);
+      answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
+      DRETURN(false);
+   }
+
+   // the projects and xprojects of the global configuration have to allow the project
+   lList *projects = mconf_get_projects();
+   lList *xprojects = mconf_get_xprojects();
+   bool allowed = (xprojects == nullptr || prj_list_locate(xprojects, project) == nullptr) &&
+                  (projects == nullptr || prj_list_locate(projects, project) != nullptr);
+   lFreeList(&projects);
+   lFreeList(&xprojects);
+   if (!allowed) {
+      ERROR(MSG_AR_PRJNOTALLOWED_S, project);
+      answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
+      DRETURN(false);
+   }
+
+   DRETURN(true);
+}
+
 /****** sge_advance_reservation_qmaster/ar_mod() *******************************
 *  NAME
 *     ar_mod() -- gdi callback function for adding modifing advance reservations
@@ -274,6 +334,11 @@ int ar_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListEl
    attr_mod_zerostr(ar, new_ar, AR_name, object->object_name);
    /*   AR_account, SGE_STRING */
    attr_mod_zerostr(ar, new_ar, AR_account, object->object_name);
+   /*   AR_project, SGE_STRING */
+   attr_mod_zerostr(ar, new_ar, AR_project, object->object_name);
+   if (!ar_verify_project(new_ar, packet, alpp)) {
+      goto AR_MOD_ERROR;
+   }
    /*   AR_submission_time, SGE_ULONG */
    lSetUlong64(new_ar, AR_submission_time, sge_get_gmt64());
    /*   AR_start_time, SGE_ULONG          required */
@@ -1057,6 +1122,8 @@ ar_reserve_queues(lList **alpp, lListElem *ar, u_long64 gdi_session) {
       lSetString(dummy_job, JB_owner, lGetString(ar, AR_owner));
       lSetString(dummy_job, JB_group, lGetString(ar, AR_group));
    }
+   // the queues and hosts are selected for the project of the AR, see their projects and xprojects
+   lSetString(dummy_job, JB_project, lGetString(ar, AR_project));
 
    assignment_init(&a, dummy_job, nullptr, nullptr);
    a.host_list = master_exechost_list;

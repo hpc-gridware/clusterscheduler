@@ -104,6 +104,9 @@ qrstat_print(lList **answer_list, qrstat_report_handler_t *handler, qrstat_env_t
                handler->report_ar_node_time(handler, answer_list, "submission_time", lGetUlong64(ar, AR_submission_time));
                handler->report_ar_node_string(handler, answer_list, "group", lGetString(ar, AR_group));
                handler->report_ar_node_string(handler, answer_list, "account", lGetString(ar, AR_account));
+               if (const char *project = lGetString(ar, AR_project); project != nullptr) {
+                  handler->report_ar_node_string(handler, answer_list, "project", project);
+               }
 
                if (const lListElem *binding = lGetObject(ar, AR_binding); binding != nullptr) {
                   std::string binding_string;
