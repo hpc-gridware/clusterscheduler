@@ -107,7 +107,6 @@ typedef struct {
    uint64_t next_update;               ///< used to store the last time, when the usage was stored
    spool_type is_spooling;             ///< identifies, if spooling should happen
    uint64_t now;                       ///< stores the time of the last spool computation
-   order_pos_t *cull_order_pos;        ///< stores cull positions in the job, ja-task, and order structure
 } sge_follow_t;
 
 
@@ -115,8 +114,7 @@ static sge_follow_t Follow_Control = {
         PTHREAD_MUTEX_INITIALIZER,
         0,
         NOT_DEFINED,
-        0,
-        nullptr
+        0
 };
 
 static int ticket_orders_field[] = {OR_job_number,
@@ -699,10 +697,8 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
             * ----------------------------------------------------------------------- */
       case ORT_clear_pri_info:
 
-      DPRINTF("ORDER ORT_ptickets\n");
+      DPRINTF("ORDER ORT_clear_pri_info\n");
          {
-            ja_task_pos_t *ja_pos = nullptr;
-            job_pos_t *job_pos = nullptr;
             lListElem *next_ja_task = nullptr;
             const lList *master_job_list = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
 
@@ -734,60 +730,29 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
                DRETURN(-2);
             }
 
-            sge_mutex_lock("follow_last_update_mutex", __func__, __LINE__, &Follow_Control.last_update_mutex);
-
-            if (Follow_Control.cull_order_pos != nullptr) { /* do we have the positions cached? */
-               ja_pos = &(Follow_Control.cull_order_pos->ja_task);
-               job_pos = &(Follow_Control.cull_order_pos->job);
-
-               while (jatp != nullptr) {
-                  lSetPosDouble(jatp, ja_pos->JAT_tix_pos, 0);
-                  lSetPosDouble(jatp, ja_pos->JAT_oticket_pos, 0);
-                  lSetPosDouble(jatp, ja_pos->JAT_fticket_pos, 0);
-                  lSetPosDouble(jatp, ja_pos->JAT_sticket_pos, 0);
-                  lSetPosDouble(jatp, ja_pos->JAT_share_pos, 0);
-                  lSetPosDouble(jatp, ja_pos->JAT_prio_pos, 0);
-                  lSetPosDouble(jatp, ja_pos->JAT_ntix_pos, 0);
-                  if (task_number != 0) { /* if task_number == 0, we only change the */
-                     sge_add_event(now, sgeE_JATASK_MOD, job_number, task_number, nullptr, nullptr, nullptr, jatp, gdi_session);
-                     jatp = next_ja_task; /* pending tickets, otherwise all */
-                     next_ja_task = lNextRW(next_ja_task);
-                  } else {
-                     jatp = nullptr;
-                  }
+            while (jatp != nullptr) {
+               lSetDouble(jatp, JAT_tix, 0);
+               lSetDouble(jatp, JAT_oticket, 0);
+               lSetDouble(jatp, JAT_fticket, 0);
+               lSetDouble(jatp, JAT_sticket, 0);
+               lSetDouble(jatp, JAT_share, 0);
+               lSetDouble(jatp, JAT_prio, 0);
+               lSetDouble(jatp, JAT_ntix, 0);
+               if (task_number != 0) {   /* if task_number == 0, we only change the */
+                  sge_add_event(now, sgeE_JATASK_MOD, job_number, task_number, nullptr, nullptr, nullptr, jatp, gdi_session);
+                  jatp = next_ja_task;   /* pending tickets, otherwise all */
+                  next_ja_task = lNextRW(next_ja_task);
+               } else {
+                  jatp = nullptr;
                }
-
-               lSetPosDouble(jep, job_pos->JB_nurg_pos, 0);
-               lSetPosDouble(jep, job_pos->JB_urg_pos, 0);
-               lSetPosDouble(jep, job_pos->JB_rrcontr_pos, 0);
-               lSetPosDouble(jep, job_pos->JB_dlcontr_pos, 0);
-               lSetPosDouble(jep, job_pos->JB_wtcontr_pos, 0);
-            } else {   /* we do not have the positions cached.... */
-               while (jatp != nullptr) {
-                  lSetDouble(jatp, JAT_tix, 0);
-                  lSetDouble(jatp, JAT_oticket, 0);
-                  lSetDouble(jatp, JAT_fticket, 0);
-                  lSetDouble(jatp, JAT_sticket, 0);
-                  lSetDouble(jatp, JAT_share, 0);
-                  lSetDouble(jatp, JAT_prio, 0);
-                  lSetDouble(jatp, JAT_ntix, 0);
-                  if (task_number != 0) {   /* if task_number == 0, we only change the */
-                     sge_add_event(now, sgeE_JATASK_MOD, job_number, task_number, nullptr, nullptr, nullptr, jatp, gdi_session);
-                     jatp = next_ja_task;   /* pending tickets, otherwise all */
-                     next_ja_task = lNextRW(next_ja_task);
-                  } else {
-                     jatp = nullptr;
-                  }
-               }
-
-               lSetDouble(jep, JB_nurg, 0);
-               lSetDouble(jep, JB_urg, 0);
-               lSetDouble(jep, JB_rrcontr, 0);
-               lSetDouble(jep, JB_dlcontr, 0);
-               lSetDouble(jep, JB_wtcontr, 0);
             }
 
-            sge_mutex_unlock("follow_last_update_mutex", __func__, __LINE__, &Follow_Control.last_update_mutex);
+            lSetDouble(jep, JB_nurg, 0);
+            lSetDouble(jep, JB_urg, 0);
+            lSetDouble(jep, JB_rrcontr, 0);
+            lSetDouble(jep, JB_dlcontr, 0);
+            lSetDouble(jep, JB_wtcontr, 0);
+
             // @todo CS-913 we should have the tickets in sub-objects and have a ticket event having only the sub-object as data
             sge_add_event(now, sgeE_JOB_MOD, job_number, 0, nullptr, nullptr, nullptr, jep, gdi_session);
          }
@@ -805,10 +770,6 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
       case ORT_ptickets:
       DPRINTF("ORDER ORT_ptickets\n");
          {
-            ja_task_pos_t *ja_pos;
-            ja_task_pos_t *order_ja_pos;
-            job_pos_t *job_pos;
-            job_pos_t *order_job_pos;
             const lListElem *joker;
             const lList *master_job_list = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
 
@@ -857,30 +818,13 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
                }
             }
 
-            sge_mutex_lock("follow_last_update_mutex", __func__, __LINE__, &Follow_Control.last_update_mutex);
-
-            if (Follow_Control.cull_order_pos == nullptr) {
-               const lListElem *joker_task;
-
-               joker = lFirst(lGetList(ep, OR_joker));
-               joker_task = lFirst(lGetList(joker, JB_ja_tasks));
-
-               sge_create_cull_order_pos(&(Follow_Control.cull_order_pos), jep, jatp, joker, joker_task);
-            }
-
-            ja_pos = &(Follow_Control.cull_order_pos->ja_task);
-            order_ja_pos = &(Follow_Control.cull_order_pos->order_ja_task);
-            job_pos = &(Follow_Control.cull_order_pos->job);
-            order_job_pos = &(Follow_Control.cull_order_pos->order_job);
-
-            if (lGetPosUlong(jatp, ja_pos->JAT_status_pos) == JFINISHED) {
+            if (lGetUlong(jatp, JAT_status) == JFINISHED) {
                WARNING(MSG_JOB_CHANGEPTICKETS_UU, lGetUlong(jep, JB_job_number), lGetUlong(jatp, JAT_task_number));
-               sge_mutex_unlock("follow_last_update_mutex", __func__, __LINE__, &Follow_Control.last_update_mutex);
                DRETURN(0);
             }
 
             /* modify jobs ticket amount */
-            lSetPosDouble(jatp, ja_pos->JAT_tix_pos, lGetDouble(ep, OR_ticket));
+            lSetDouble(jatp, JAT_tix, lGetDouble(ep, OR_ticket));
 
             /* check several fields to be updated */
             if ((joker = lFirst(lGetList(ep, OR_joker)))) {
@@ -888,22 +832,21 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
 
                joker_task = lFirst(lGetList(joker, JB_ja_tasks));
 
-               lSetPosDouble(jatp, ja_pos->JAT_oticket_pos, lGetPosDouble(joker_task, order_ja_pos->JAT_oticket_pos));
-               lSetPosDouble(jatp, ja_pos->JAT_fticket_pos, lGetPosDouble(joker_task, order_ja_pos->JAT_fticket_pos));
-               lSetPosDouble(jatp, ja_pos->JAT_sticket_pos, lGetPosDouble(joker_task, order_ja_pos->JAT_sticket_pos));
-               lSetPosDouble(jatp, ja_pos->JAT_share_pos, lGetPosDouble(joker_task, order_ja_pos->JAT_share_pos));
-               lSetPosDouble(jatp, ja_pos->JAT_prio_pos, lGetPosDouble(joker_task, order_ja_pos->JAT_prio_pos));
-               lSetPosDouble(jatp, ja_pos->JAT_ntix_pos, lGetPosDouble(joker_task, order_ja_pos->JAT_ntix_pos));
+               lSetDouble(jatp, JAT_oticket, lGetDouble(joker_task, JAT_oticket));
+               lSetDouble(jatp, JAT_fticket, lGetDouble(joker_task, JAT_fticket));
+               lSetDouble(jatp, JAT_sticket, lGetDouble(joker_task, JAT_sticket));
+               lSetDouble(jatp, JAT_share, lGetDouble(joker_task, JAT_share));
+               lSetDouble(jatp, JAT_prio, lGetDouble(joker_task, JAT_prio));
+               lSetDouble(jatp, JAT_ntix, lGetDouble(joker_task, JAT_ntix));
 
                // @todo do we really update the *job* values with every ja_task update?
-               lSetPosDouble(jep, job_pos->JB_nurg_pos, lGetPosDouble(joker, order_job_pos->JB_nurg_pos));
-               lSetPosDouble(jep, job_pos->JB_urg_pos, lGetPosDouble(joker, order_job_pos->JB_urg_pos));
-               lSetPosDouble(jep, job_pos->JB_rrcontr_pos, lGetPosDouble(joker, order_job_pos->JB_rrcontr_pos));
-               lSetPosDouble(jep, job_pos->JB_dlcontr_pos, lGetPosDouble(joker, order_job_pos->JB_dlcontr_pos));
-               lSetPosDouble(jep, job_pos->JB_wtcontr_pos, lGetPosDouble(joker, order_job_pos->JB_wtcontr_pos));
+               lSetDouble(jep, JB_nurg, lGetDouble(joker, JB_nurg));
+               lSetDouble(jep, JB_urg, lGetDouble(joker, JB_urg));
+               lSetDouble(jep, JB_rrcontr, lGetDouble(joker, JB_rrcontr));
+               lSetDouble(jep, JB_dlcontr, lGetDouble(joker, JB_dlcontr));
+               lSetDouble(jep, JB_wtcontr, lGetDouble(joker, JB_wtcontr));
             }
 
-            sge_mutex_unlock("follow_last_update_mutex", __func__, __LINE__, &Follow_Control.last_update_mutex);
             if (send_task_event) {
                sge_add_event(now, sgeE_JATASK_MOD, job_number, task_number, nullptr, nullptr, nullptr, jatp, gdi_session);
             }
@@ -991,47 +934,23 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
                /* check several fields to be updated */
                if ((joker = lFirst(lGetList(ep, OR_joker)))) {
                   const lListElem *joker_task;
-                  ja_task_pos_t *ja_pos;
-                  ja_task_pos_t *order_ja_pos;
-                  job_pos_t *job_pos;
-                  job_pos_t *order_job_pos;
 
                   joker_task = lFirst(lGetList(joker, JB_ja_tasks));
                   distribute_tickets = (lGetPosViaElem(joker_task, JAT_granted_destin_identifier_list, SGE_NO_ABORT) >
                                         -1) ? true : false;
 
-                  sge_mutex_lock("follow_last_update_mutex", __func__, __LINE__, &Follow_Control.last_update_mutex);
+                  lSetDouble(jatp, JAT_oticket, lGetDouble(joker_task, JAT_oticket));
+                  lSetDouble(jatp, JAT_fticket, lGetDouble(joker_task, JAT_fticket));
+                  lSetDouble(jatp, JAT_sticket, lGetDouble(joker_task, JAT_sticket));
+                  lSetDouble(jatp, JAT_share, lGetDouble(joker_task, JAT_share));
+                  lSetDouble(jatp, JAT_prio, lGetDouble(joker_task, JAT_prio));
+                  lSetDouble(jatp, JAT_ntix, lGetDouble(joker_task, JAT_ntix));
 
-                  if (Follow_Control.cull_order_pos == nullptr) {
-                     const lListElem *joker_task;
-
-                     joker = lFirst(lGetList(ep, OR_joker));
-                     joker_task = lFirst(lGetList(joker, JB_ja_tasks));
-
-                     sge_create_cull_order_pos(&(Follow_Control.cull_order_pos), jep, jatp, joker, joker_task);
-                  }
-
-                  ja_pos = &(Follow_Control.cull_order_pos->ja_task);
-                  order_ja_pos = &(Follow_Control.cull_order_pos->order_ja_task);
-                  job_pos = &(Follow_Control.cull_order_pos->job);
-                  order_job_pos = &(Follow_Control.cull_order_pos->order_job);
-
-                  lSetPosDouble(jatp, ja_pos->JAT_oticket_pos,
-                                lGetPosDouble(joker_task, order_ja_pos->JAT_oticket_pos));
-                  lSetPosDouble(jatp, ja_pos->JAT_fticket_pos,
-                                lGetPosDouble(joker_task, order_ja_pos->JAT_fticket_pos));
-                  lSetPosDouble(jatp, ja_pos->JAT_sticket_pos,
-                                lGetPosDouble(joker_task, order_ja_pos->JAT_sticket_pos));
-                  lSetPosDouble(jatp, ja_pos->JAT_share_pos, lGetPosDouble(joker_task, order_ja_pos->JAT_share_pos));
-                  lSetPosDouble(jatp, ja_pos->JAT_prio_pos, lGetPosDouble(joker_task, order_ja_pos->JAT_prio_pos));
-                  lSetPosDouble(jatp, ja_pos->JAT_ntix_pos, lGetPosDouble(joker_task, order_ja_pos->JAT_ntix_pos));
-
-                  lSetPosDouble(jep, job_pos->JB_nurg_pos, lGetPosDouble(joker, order_job_pos->JB_nurg_pos));
-                  lSetPosDouble(jep, job_pos->JB_urg_pos, lGetPosDouble(joker, order_job_pos->JB_urg_pos));
-                  lSetPosDouble(jep, job_pos->JB_rrcontr_pos, lGetPosDouble(joker, order_job_pos->JB_rrcontr_pos));
-                  lSetPosDouble(jep, job_pos->JB_dlcontr_pos, lGetPosDouble(joker, order_job_pos->JB_dlcontr_pos));
-                  lSetPosDouble(jep, job_pos->JB_wtcontr_pos, lGetPosDouble(joker, order_job_pos->JB_wtcontr_pos));
-                  sge_mutex_unlock("follow_last_update_mutex", __func__, __LINE__, &Follow_Control.last_update_mutex);
+                  lSetDouble(jep, JB_nurg, lGetDouble(joker, JB_nurg));
+                  lSetDouble(jep, JB_urg, lGetDouble(joker, JB_urg));
+                  lSetDouble(jep, JB_rrcontr, lGetDouble(joker, JB_rrcontr));
+                  lSetDouble(jep, JB_dlcontr, lGetDouble(joker, JB_dlcontr));
+                  lSetDouble(jep, JB_wtcontr, lGetDouble(joker, JB_wtcontr));
                }
 
                /* tickets should only be further distributed in the scheduler reprioritize_interval. Only in

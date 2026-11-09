@@ -168,8 +168,6 @@ lList *sge_create_orders(lList *or_list, uint32_t type, const lListElem *job, co
 
    if (type == ORT_tickets || type == ORT_ptickets) {
 
-      static order_pos_t *order_pos = nullptr;
-
       // built once and never released, so every use only takes a reference
       static const lDescr *const tixDesc =
          ocs_cull_descr_reduce(JAT_Type, {JAT_task_number, JAT_tix, JAT_oticket, JAT_fticket, JAT_sticket, JAT_share,
@@ -179,26 +177,8 @@ lList *sge_create_orders(lList *or_list, uint32_t type, const lListElem *job, co
                                           JAT_prio, JAT_ntix});
       static const lDescr *const jobDesc =
          ocs_cull_descr_reduce(JB_Type, {JB_nurg, JB_urg, JB_rrcontr, JB_dlcontr, JB_wtcontr, JB_ja_tasks});
-      ja_task_pos_t *ja_pos;
-      ja_task_pos_t *order_ja_pos;
-      job_pos_t   *job_pos;
-      job_pos_t   *order_job_pos;
       lListElem *jep = lCreateElem(jobDesc);
       lList *jlist = lCreateList("", jobDesc);
-
-      if (order_pos == nullptr) {
-         lListElem *tempElem = lCreateElem(tix2Desc);
-
-         sge_create_cull_order_pos(&order_pos, job, ja_task, jep, tempElem);
-
-         lFreeElem(&tempElem);
-      }
-
-      ja_pos = &(order_pos->ja_task);
-      order_ja_pos = &(order_pos->order_ja_task);
-      job_pos = &(order_pos->job);
-      order_job_pos = &(order_pos->order_job);
-
 
       /* Create a reduced task list with only the required fields */
       {
@@ -218,13 +198,13 @@ lList *sge_create_orders(lList *or_list, uint32_t type, const lListElem *job, co
 
          lAppendElem(tlist, tempElem);
 
-         lSetPosDouble(tempElem, order_ja_pos->JAT_tix_pos,     lGetPosDouble(ja_task,ja_pos->JAT_tix_pos));
-         lSetPosDouble(tempElem, order_ja_pos->JAT_oticket_pos, lGetPosDouble(ja_task,ja_pos->JAT_oticket_pos));
-         lSetPosDouble(tempElem, order_ja_pos->JAT_fticket_pos, lGetPosDouble(ja_task,ja_pos->JAT_fticket_pos));
-         lSetPosDouble(tempElem, order_ja_pos->JAT_sticket_pos, lGetPosDouble(ja_task,ja_pos->JAT_sticket_pos));
-         lSetPosDouble(tempElem, order_ja_pos->JAT_share_pos,   lGetPosDouble(ja_task,ja_pos->JAT_share_pos));
-         lSetPosDouble(tempElem, order_ja_pos->JAT_prio_pos,    lGetPosDouble(ja_task,ja_pos->JAT_prio_pos));
-         lSetPosDouble(tempElem, order_ja_pos->JAT_ntix_pos,    lGetPosDouble(ja_task,ja_pos->JAT_ntix_pos));
+         lSetDouble(tempElem, JAT_tix, lGetDouble(ja_task, JAT_tix));
+         lSetDouble(tempElem, JAT_oticket, lGetDouble(ja_task, JAT_oticket));
+         lSetDouble(tempElem, JAT_fticket, lGetDouble(ja_task, JAT_fticket));
+         lSetDouble(tempElem, JAT_sticket, lGetDouble(ja_task, JAT_sticket));
+         lSetDouble(tempElem, JAT_share, lGetDouble(ja_task, JAT_share));
+         lSetDouble(tempElem, JAT_prio, lGetDouble(ja_task, JAT_prio));
+         lSetDouble(tempElem, JAT_ntix, lGetDouble(ja_task, JAT_ntix));
 
          lSetList(jep, JB_ja_tasks, tlist);
       }
@@ -232,11 +212,11 @@ lList *sge_create_orders(lList *or_list, uint32_t type, const lListElem *job, co
       /* Create a reduced job list with only the required fields */
       lAppendElem(jlist, jep);
 
-      lSetPosDouble(jep, order_job_pos->JB_nurg_pos,    lGetPosDouble(job, job_pos->JB_nurg_pos));
-      lSetPosDouble(jep, order_job_pos->JB_urg_pos,     lGetPosDouble(job, job_pos->JB_urg_pos));
-      lSetPosDouble(jep, order_job_pos->JB_rrcontr_pos, lGetPosDouble(job, job_pos->JB_rrcontr_pos));
-      lSetPosDouble(jep, order_job_pos->JB_dlcontr_pos, lGetPosDouble(job, job_pos->JB_dlcontr_pos));
-      lSetPosDouble(jep, order_job_pos->JB_wtcontr_pos, lGetPosDouble(job, job_pos->JB_wtcontr_pos));
+      lSetDouble(jep, JB_nurg, lGetDouble(job, JB_nurg));
+      lSetDouble(jep, JB_urg, lGetDouble(job, JB_urg));
+      lSetDouble(jep, JB_rrcontr, lGetDouble(job, JB_rrcontr));
+      lSetDouble(jep, JB_dlcontr, lGetDouble(job, JB_dlcontr));
+      lSetDouble(jep, JB_wtcontr, lGetDouble(job, JB_wtcontr));
 
       lSetList(ep, OR_joker, jlist);
    }

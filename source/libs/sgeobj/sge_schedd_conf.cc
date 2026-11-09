@@ -36,9 +36,8 @@
  * @brief The scheduler configuration: cached access to what `qconf -msconf` sets
  *
  * The configuration itself lives in the master list as a single CULL element.
- * Reading an attribute by name would cost a search on every dispatch decision,
- * so #config_pos_type caches each attribute's field position, plus the parsed
- * form of the attributes that would otherwise be re-parsed every time.
+ * #config_pos_type caches the parsed form of the attributes that would
+ * otherwise be re-parsed on every read.
  *
  * Two kinds of state live here and must not be confused:
  *
@@ -101,10 +100,9 @@
  * Both methods should only be used, when there is no
  * other way. Usualy the values in the configuration
  * should be accessed via access-function. The module
- * stores the position for each config element for
- * fast access, validates the configuration, when it
- * is changed, and pre-computes some values to return
- * them in the right way.
+ * validates the configuration, when it is changed, and
+ * pre-computes some values to return them in the right
+ * way.
  *
  * If the configuration is changed directly in the CULL
  * list without using
@@ -257,59 +255,15 @@ typedef struct {
 }parameters_t;
 
 /**
- * @brief Cached CULL field positions and precomputed settings
+ * @brief Lock and precomputed settings of the scheduler configuration
  *
- * Looking a field up by name costs a search, and the scheduler reads these on
- * every dispatch decision. The `int` members hold the position of each
- * attribute in the scheduler configuration element; the `c_*` members hold
- * values that would otherwise be parsed again on every read.
+ * The `c_*` members hold values that would otherwise be parsed again on every
+ * read.
  *
- * @note Add a default here whenever a member is added, or `calc_pos` leaves it
- *       uninitialised.
+ * @note Add a default to the initializer of #pos whenever a member is added.
  */
 typedef struct{
    pthread_mutex_t  mutex;                           ///< guards every member below; the accessors take it, never the caller
-   bool empty;                                       ///< marks this structure as empty or set
-
-   int algorithm;                                    ///< position of the `algorithm` attribute in the scheduler configuration element
-   int schedule_interval;                            ///< position of the `schedule_interval` attribute in the scheduler configuration element
-   int maxujobs;                                     ///< position of the `maxujobs` attribute in the scheduler configuration element
-   int queue_sort_method;                            ///< position of the `queue_sort_method` attribute in the scheduler configuration element
-   int job_load_adjustments;                         ///< position of the `job_load_adjustments` attribute in the scheduler configuration element
-   int load_adjustment_decay_time;                   ///< position of the `load_adjustment_decay_time` attribute in the scheduler configuration element
-   int load_formula;                                 ///< position of the `load_formula` attribute in the scheduler configuration element
-   int schedd_job_info;                              ///< position of the `schedd_job_info` attribute in the scheduler configuration element
-   int flush_submit_sec;                             ///< position of the `flush_submit_sec` attribute in the scheduler configuration element
-   int flush_finish_sec;                             ///< position of the `flush_finish_sec` attribute in the scheduler configuration element
-   int params;                                       ///< position of the `params` attribute in the scheduler configuration element
-
-   int reprioritize_interval;                        ///< position of the `reprioritize_interval` attribute in the scheduler configuration element
-   int halftime;                                     ///< position of the `halftime` attribute in the scheduler configuration element
-   int usage_weight_list;                            ///< position of the `usage_weight_list` attribute in the scheduler configuration element
-   int compensation_factor;                          ///< position of the `compensation_factor` attribute in the scheduler configuration element
-   int weight_user;                                  ///< position of the `weight_user` attribute in the scheduler configuration element
-   int weight_project;                               ///< position of the `weight_project` attribute in the scheduler configuration element
-   int weight_department;                            ///< position of the `weight_department` attribute in the scheduler configuration element
-   int weight_job;                                   ///< position of the `weight_job` attribute in the scheduler configuration element
-   int weight_tickets_functional;                    ///< position of the `weight_tickets_functional` attribute in the scheduler configuration element
-   int weight_tickets_share;                         ///< position of the `weight_tickets_share` attribute in the scheduler configuration element
-
-   int weight_tickets_override;                      ///< position of the `weight_tickets_override` attribute in the scheduler configuration element
-   int share_override_tickets;                       ///< position of the `share_override_tickets` attribute in the scheduler configuration element
-   int share_functional_shares;                      ///< position of the `share_functional_shares` attribute in the scheduler configuration element
-   int max_functional_jobs_to_schedule;              ///< position of the `max_functional_jobs_to_schedule` attribute in the scheduler configuration element
-   int report_pjob_tickets;                          ///< position of the `report_pjob_tickets` attribute in the scheduler configuration element
-   int max_pending_tasks_per_job;                    ///< position of the `max_pending_tasks_per_job` attribute in the scheduler configuration element
-   int halflife_decay_list;                          ///< position of the `halflife_decay_list` attribute in the scheduler configuration element
-   int policy_hierarchy;                             ///< position of the `policy_hierarchy` attribute in the scheduler configuration element
-
-   int weight_ticket;                                ///< position of the `weight_ticket` attribute in the scheduler configuration element
-   int weight_waiting_time;                          ///< position of the `weight_waiting_time` attribute in the scheduler configuration element
-   int weight_deadline;                              ///< position of the `weight_deadline` attribute in the scheduler configuration element
-   int weight_urgency;                               ///< position of the `weight_urgency` attribute in the scheduler configuration element
-   int max_reservation;                              ///< position of the `max_reservation` attribute in the scheduler configuration element
-   int weight_priority;                              ///< position of the `weight_priority` attribute in the scheduler configuration element
-   int default_duration;                             ///< position of the `default_duration` attribute in the scheduler configuration element
 
    int c_is_schedd_job_info;                         ///< cached `schedd_job_info` mode, so the common case needs no parsing
    uint32_t s_duration_offset;                       ///< cached `DURATION_OFFSET` from `params`, in seconds
@@ -325,9 +279,9 @@ static bool schedd_profiling = false;
 static bool current_serf_do_monitoring = false;
 static schedd_pe_algorithm  pe_algorithm = SCHEDD_PE_AUTO;
 
-static bool calc_pos();
+static void ocs_sconf_reset_cache();
 
-static void sconf_clear_pos();
+static const lListElem *ocs_sconf_elem();
 
 static bool is_config_set();
 static const char * get_algorithm();
@@ -361,11 +315,7 @@ static int policy_hierarchy_verify_value(const char* value);
 /* array structure. pre-init. Make sure that a default value is added
  * when the config_pos_type is edited
  */
-static config_pos_type pos = {PTHREAD_MUTEX_INITIALIZER, true,
-                       -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-                       -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-                       -1, -1, -1, -1, -1, -1, -1, -1, -1,
-                       -1, -1, -1, -1, -1, -1,
+static config_pos_type pos = {PTHREAD_MUTEX_INITIALIZER,
                        SCHEDD_JOB_INFO_UNDEF, 0, nullptr, nullptr, nullptr, std::numeric_limits<uint32_t>::max(),
 
                        false};
@@ -400,127 +350,33 @@ int usage_fields[] = { UA_name, UA_value, 0 };
 const char *delis[] = {"=", ",", ""};
 
 /**
- * @brief Resets the position information
+ * @brief Resets the values cached from the configuration
  *
- * is needed, when a new configuration is set
- * MT-NOTE: is not MT safe, the calling function needs to lock LOCK_SCHED_CONF(write)
+ * Is needed when a new configuration is set.
+ *
+ * @note MT-NOTE: is not MT safe, the calling function needs to lock LOCK_SCHED_CONF(write)
  */
-static void sconf_clear_pos(){
-
-/* set config empty */
-         pos.empty = true;
-
-/* reset positions */
-         pos.algorithm = -1;
-         pos.schedule_interval = -1;
-         pos.maxujobs =  -1;
-         pos.queue_sort_method = -1;
-         pos.job_load_adjustments = -1;
-         pos.load_formula =  -1;
-         pos.schedd_job_info = -1;
-         pos.flush_submit_sec = -1;
-         pos.flush_finish_sec =  -1;
-         pos.params = -1;
-
-         pos.reprioritize_interval= -1;
-         pos.halftime = -1;
-         pos.usage_weight_list = -1;
-         pos.compensation_factor = -1;
-         pos.weight_user = -1;
-         pos.weight_project = -1;
-         pos.weight_department = -1;
-         pos.weight_job = -1;
-         pos.weight_tickets_functional = -1;
-         pos.weight_tickets_share = -1;
-         pos.weight_tickets_override = -1;
-         pos.share_override_tickets = -1;
-         pos.share_functional_shares = -1;
-         pos.max_functional_jobs_to_schedule = -1;
-         pos.report_pjob_tickets = -1;
-         pos.max_pending_tasks_per_job =  -1;
-         pos.halflife_decay_list = -1;
-         pos.policy_hierarchy = -1;
-
-         pos.weight_ticket = -1;
-         pos.weight_waiting_time = -1;
-         pos.weight_deadline = -1;
-         pos.weight_urgency = -1;
-         pos.max_reservation = -1;
-         pos.weight_priority = -1;
-         pos.default_duration = -1;
-
-/* reseting cached values */
-         pos.c_is_schedd_job_info = SCHEDD_JOB_INFO_UNDEF;
-         lFreeList(&(pos.c_schedd_job_info_range));
-         lFreeList(&(pos.c_halflife_decay_list));
-         lFreeList(&(pos.c_params));
-         pos.c_default_duration = DEFAULT_DURATION_I;
-
+static void ocs_sconf_reset_cache() {
+   pos.c_is_schedd_job_info = SCHEDD_JOB_INFO_UNDEF;
+   lFreeList(&(pos.c_schedd_job_info_range));
+   lFreeList(&(pos.c_halflife_decay_list));
+   lFreeList(&(pos.c_params));
+   pos.c_default_duration = DEFAULT_DURATION_I;
 }
 
 /**
- * @brief MT-NOTE: is not MT safe, the calling function needs to lock LOCK_SCHED_CONF(write)
+ * @brief The scheduler configuration element
+ *
+ * The element is always complete: every source yields a full SC_Type object,
+ * and the qmaster rejects a reduced one in the modify request.
+ *
+ * @return the configuration, or nullptr if none is set; the getters return
+ *         their default then
+ *
+ * @note MT-NOTE: is not MT safe, the calling function needs to hold the Sched_Conf_Lock
  */
-static bool calc_pos() {
-   DENTER(TOP_LAYER);
-
-   bool ret = true;
-
-   if (pos.empty) {
-      const lListElem *config = lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
-
-      if (config) {
-         pos.empty = false;
-
-         ret &= (pos.algorithm = lGetPosViaElem(config, SC_algorithm, SGE_NO_ABORT )) != -1;
-         ret &= (pos.schedule_interval = lGetPosViaElem(config, SC_schedule_interval, SGE_NO_ABORT)) != -1;
-         ret &= (pos.maxujobs = lGetPosViaElem(config, SC_maxujobs, SGE_NO_ABORT)) != -1;
-         ret &= (pos.queue_sort_method = lGetPosViaElem(config, SC_queue_sort_method, SGE_NO_ABORT)) != -1;
-
-         ret &= (pos.job_load_adjustments = lGetPosViaElem(config,SC_job_load_adjustments, SGE_NO_ABORT )) != -1;
-         ret &= (pos.load_adjustment_decay_time = lGetPosViaElem(config, SC_load_adjustment_decay_time, SGE_NO_ABORT)) != -1;
-         ret &= (pos.load_formula = lGetPosViaElem(config, SC_load_formula, SGE_NO_ABORT)) != -1;
-         ret &= (pos.schedd_job_info = lGetPosViaElem(config, SC_schedd_job_info, SGE_NO_ABORT)) != -1;
-         ret &= (pos.flush_submit_sec = lGetPosViaElem(config, SC_flush_submit_sec, SGE_NO_ABORT)) != -1;
-         ret &= (pos.flush_finish_sec = lGetPosViaElem(config, SC_flush_finish_sec, SGE_NO_ABORT)) != -1;
-         ret &= (pos.params = lGetPosViaElem(config, SC_params, SGE_NO_ABORT)) != -1;
-
-         ret &= (pos.reprioritize_interval = lGetPosViaElem(config, SC_reprioritize_interval, SGE_NO_ABORT)) != -1;
-         ret &= (pos.halftime = lGetPosViaElem(config, SC_halftime, SGE_NO_ABORT)) != -1;
-         ret &= (pos.usage_weight_list = lGetPosViaElem(config, SC_usage_weight_list, SGE_NO_ABORT)) != -1;
-
-         ret &= (pos.compensation_factor = lGetPosViaElem(config, SC_compensation_factor, SGE_NO_ABORT)) != -1;
-         ret &= (pos.weight_user = lGetPosViaElem(config, SC_weight_user, SGE_NO_ABORT)) != -1;
-         ret &= (pos.weight_project = lGetPosViaElem(config, SC_weight_project, SGE_NO_ABORT)) != -1;
-         ret &= (pos.weight_department = lGetPosViaElem(config, SC_weight_department, SGE_NO_ABORT)) != -1;
-         ret &= (pos.weight_job = lGetPosViaElem(config, SC_weight_job, SGE_NO_ABORT)) != -1;
-
-         ret &= (pos.weight_tickets_functional = lGetPosViaElem(config, SC_weight_tickets_functional, SGE_NO_ABORT)) != -1;
-         ret &= (pos.weight_tickets_share = lGetPosViaElem(config, SC_weight_tickets_share, SGE_NO_ABORT)) != -1;
-         ret &= (pos.weight_tickets_override = lGetPosViaElem(config, SC_weight_tickets_override, SGE_NO_ABORT)) != -1;
-
-         ret &= (pos.share_override_tickets = lGetPosViaElem(config, SC_share_override_tickets, SGE_NO_ABORT)) != -1;
-         ret &= (pos.share_functional_shares = lGetPosViaElem(config, SC_share_functional_shares, SGE_NO_ABORT)) != -1;
-         ret &= (pos.max_functional_jobs_to_schedule = lGetPosViaElem(config, SC_max_functional_jobs_to_schedule, SGE_NO_ABORT)) != -1;
-         ret &= (pos.report_pjob_tickets = lGetPosViaElem(config, SC_report_pjob_tickets, SGE_NO_ABORT)) != -1;
-         ret &= (pos.max_pending_tasks_per_job = lGetPosViaElem(config, SC_max_pending_tasks_per_job, SGE_NO_ABORT)) != -1;
-         ret &= (pos.halflife_decay_list = lGetPosViaElem(config, SC_halflife_decay_list, SGE_NO_ABORT)) != -1;
-         ret &= (pos.policy_hierarchy = lGetPosViaElem(config, SC_policy_hierarchy, SGE_NO_ABORT)) != -1;
-
-         ret &= (pos.weight_ticket = lGetPosViaElem(config, SC_weight_ticket, SGE_NO_ABORT)) != -1;
-         ret &= (pos.weight_waiting_time = lGetPosViaElem(config, SC_weight_waiting_time, SGE_NO_ABORT)) != -1;
-         ret &= (pos.weight_deadline = lGetPosViaElem(config, SC_weight_deadline, SGE_NO_ABORT)) != -1;
-         ret &= (pos.weight_urgency = lGetPosViaElem(config, SC_weight_urgency, SGE_NO_ABORT)) != -1;
-         ret &= (pos.weight_priority = lGetPosViaElem(config, SC_weight_priority, SGE_NO_ABORT)) != -1;
-         ret &= (pos.max_reservation = lGetPosViaElem(config, SC_max_reservation, SGE_NO_ABORT)) != -1;
-         ret &= (pos.default_duration = lGetPosViaElem(config, SC_default_duration, SGE_NO_ABORT)) != -1;
-      }
-      else {
-         ret = false;
-      }
-   }
-
-   DRETURN(ret);
+static const lListElem *ocs_sconf_elem() {
+   return lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
 }
 
 /**
@@ -528,7 +384,6 @@ static bool calc_pos() {
  *
  * - validates the new configuration
  * - precalculates some values and caches them
- * - stores the position of each attribute in the structure
  * - and sets the new configuration, if the validation worked
  * If the new configuration is a nullptr pointer, the current configuration
  * if deleted.
@@ -585,7 +440,7 @@ bool sconf_set_config(lList **config, lList **answer_list) {
          sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
       }
    } else {
-      sconf_clear_pos();
+      ocs_sconf_reset_cache();
    }
 
    sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -702,13 +557,10 @@ lListElem *sconf_create_default() {
  */
 bool sconf_is_centry_referenced(const lListElem *centry) {
    bool ret = false;
-   const lListElem *sc_ep = nullptr;
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
-   sc_ep = lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
-
-   if (sc_ep != nullptr) {
+   if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
       const char *name = lGetString(centry, CE_name);
       const lList *centry_list = lGetList(sc_ep, SC_job_load_adjustments);
       const lListElem *centry_ref = lGetElemStr(centry_list, CE_name, name);
@@ -736,10 +588,10 @@ bool sconf_is_centry_referenced(const lListElem *centry) {
  * @note MT-NOTE:  is not MT safe, the calling function needs to lock LOCK_SCHED_CONF(read)
  */
 static const char *get_load_adjustment_decay_time_str() {
-   const lListElem *sc_ep = lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
+   const lListElem *sc_ep = ocs_sconf_elem();
 
-   if (pos.load_adjustment_decay_time != -1) {
-      return lGetPosString(sc_ep, pos.load_adjustment_decay_time );
+   if (sc_ep != nullptr) {
+      return lGetString(sc_ep, SC_load_adjustment_decay_time);
    }
    else {
       return DEFAULT_LOAD_ADJUSTMENTS_DECAY_TIME;
@@ -801,10 +653,10 @@ lList *sconf_get_job_load_adjustments() {
  * @note MT-NOTE:  is not MT safe, the calling function needs to lock LOCK_SCHED_CONF(read)
  */
 static const lList *get_job_load_adjustments() {
-   const lListElem *sc_ep = lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
+   const lListElem *sc_ep = ocs_sconf_elem();
 
-   if (pos.job_load_adjustments != -1) {
-      return lGetPosList(sc_ep, pos.job_load_adjustments);
+   if (sc_ep != nullptr) {
+      return lGetList(sc_ep, SC_job_load_adjustments);
    } else {
       return nullptr;
    }
@@ -841,10 +693,10 @@ char* sconf_get_load_formula() {
  * @note MT-NOTE: is not MT safe, the calling function needs to lock LOCK_SCHED_CONF(read)
  */
 static const char *get_load_formula() {
-   const lListElem *sc_ep =  lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
+   const lListElem *sc_ep = ocs_sconf_elem();
 
-   if (pos.load_formula != -1) {
-      return lGetPosString(sc_ep, pos.load_formula);
+   if (sc_ep != nullptr) {
+      return lGetString(sc_ep, SC_load_formula);
    }
    else {
       return DEFAULT_LOAD_FORMULA;
@@ -861,14 +713,12 @@ static const char *get_load_formula() {
  * @note MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
  */
 uint32_t sconf_get_queue_sort_method() {
-   const lListElem *sc_ep =  nullptr;
    uint32_t sort_method = 0;
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
-   if (pos.queue_sort_method != -1) {
-      sc_ep = lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
-      sort_method = lGetPosUlong(sc_ep, pos.queue_sort_method);
+   if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
+      sort_method = lGetUlong(sc_ep, SC_queue_sort_method);
    }
 
    sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -889,9 +739,8 @@ uint32_t sconf_get_maxujobs() {
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
-   if (pos.maxujobs != -1) {
-      const lListElem *sc_ep = lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
-      jobs = lGetPosUlong(sc_ep, pos.maxujobs );
+   if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
+      jobs = lGetUlong(sc_ep, SC_maxujobs);
    }
 
    sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -908,13 +757,8 @@ uint32_t sconf_get_maxujobs() {
  * @note MT-NOTE: is not MT-safe, the caller needs to hold the LOCK_SCHED_CONF(read)
  */
 static const char *get_schedule_interval_str() {
-   if (pos.schedule_interval != -1) {
-      const lListElem *sc_ep =  lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
-      if (sc_ep != nullptr) {
-         return lGetPosString(sc_ep, pos.schedule_interval);
-      } else {
-         return nullptr;
-      }
+   if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
+      return lGetString(sc_ep, SC_schedule_interval);
    }
    else {
       return SCHEDULE_TIME;
@@ -956,9 +800,8 @@ uint32_t sconf_get_schedule_interval() {
  * @note MT-NOTE: is not MT safe, the calling function needs to lock LOCK_SCHED_CONF(read)
  */
 static const char *reprioritize_interval_str() {
-   if (pos.reprioritize_interval!= -1) {
-      const lListElem *sc_ep =  lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
-      return lGetPosString(sc_ep, pos.reprioritize_interval);
+   if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
+      return lGetString(sc_ep, SC_reprioritize_interval);
    }
    else {
       return REPRIORITIZE_INTERVAL;
@@ -1235,9 +1078,8 @@ bool sconf_is_id_in_schedd_job_info_range(uint32_t job_number) {
  * @note MT-NOTE: is not MT-safe, the caller needs the LOCK_SCHED_CONF(read)
  */
 static const char *get_algorithm() {
-   if (pos.algorithm!= -1) {
-      const lListElem *sc_ep =  lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
-      return lGetPosString(sc_ep, pos.algorithm);
+   if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
+      return lGetString(sc_ep, SC_algorithm);
    }
    else {
       return "default";
@@ -1276,10 +1118,10 @@ lList *sconf_get_usage_weight_list() {
  * @note MT-NOTE: is not MT safe, the calling function needs to lock LOCK_SCHED_CONF(read)
  */
 static const lList *get_usage_weight_list() {
-   const lListElem *sc_ep =  lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
+   const lListElem *sc_ep = ocs_sconf_elem();
 
-   if (pos.usage_weight_list != -1) {
-      return lGetPosList(sc_ep, pos.usage_weight_list );
+   if (sc_ep != nullptr) {
+      return lGetList(sc_ep, SC_usage_weight_list);
    }
    else {
       return nullptr;
@@ -1301,9 +1143,8 @@ double sconf_get_weight_user() {
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
-   if (pos.weight_user!= -1) {
-      const lListElem *sc_ep = lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
-      weight = lGetPosDouble(sc_ep, pos.weight_user);
+   if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
+      weight = lGetDouble(sc_ep, SC_weight_user);
    }
 
    sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -1324,9 +1165,8 @@ double sconf_get_weight_department() {
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
-   if (pos.weight_department != -1) {
-      const lListElem *sc_ep = lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
-      weight = lGetPosDouble(sc_ep, pos.weight_department);
+   if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
+      weight = lGetDouble(sc_ep, SC_weight_department);
    }
 
    sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -1347,9 +1187,8 @@ double sconf_get_weight_project() {
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
-   if (pos.weight_project != -1) {
-      const lListElem *sc_ep = lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
-      weight = lGetPosDouble(sc_ep, pos.weight_project);
+   if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
+      weight = lGetDouble(sc_ep, SC_weight_project);
    }
 
    sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -1370,9 +1209,8 @@ double sconf_get_weight_job() {
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
-   if (pos.weight_job != -1) {
-      const lListElem *sc_ep = lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
-      weight = lGetPosDouble(sc_ep, pos.weight_job);
+   if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
+      weight = lGetDouble(sc_ep, SC_weight_job);
    }
 
    sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -1393,9 +1231,8 @@ uint32_t sconf_get_weight_tickets_share() {
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
-   if (pos.weight_tickets_share != -1) {
-      const lListElem *sc_ep = lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
-      weight = lGetPosUlong(sc_ep, pos.weight_tickets_share );
+   if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
+      weight = lGetUlong(sc_ep, SC_weight_tickets_share);
    }
 
    sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -1416,9 +1253,8 @@ uint32_t sconf_get_weight_tickets_functional() {
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
-   if (pos.weight_tickets_functional != -1) {
-      const lListElem *sc_ep = lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
-      weight = lGetPosUlong(sc_ep, pos.weight_tickets_functional);
+   if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
+      weight = lGetUlong(sc_ep, SC_weight_tickets_functional);
    }
 
    sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -1435,14 +1271,12 @@ uint32_t sconf_get_weight_tickets_functional() {
  * @note MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
  */
 uint32_t sconf_get_halftime() {
-   const lListElem *sc_ep = nullptr;
    uint32_t halftime = 0;
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
-   if (pos.halftime != -1) {
-      sc_ep = lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
-      halftime = lGetPosUlong(sc_ep, pos.halftime);
+   if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
+      halftime = lGetUlong(sc_ep, SC_halftime);
    }
 
    sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -1466,8 +1300,8 @@ void sconf_set_weight_tickets_override(uint32_t active) {
 
    sc_ep = lFirstRW(*ocs::DataStore::get_master_list_rw(SGE_TYPE_SCHEDD_CONF));
 
-   if (pos.weight_tickets_override!= -1) {
-      lSetPosUlong(sc_ep, pos.weight_tickets_override, active);
+   if (sc_ep != nullptr) {
+      lSetUlong(sc_ep, SC_weight_tickets_override, active);
    }
 
    sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -1488,9 +1322,8 @@ uint32_t sconf_get_weight_tickets_override() {
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
-   if (pos.weight_tickets_override!= -1) {
-      const lListElem *sc_ep = lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
-      tickets = lGetPosUlong(sc_ep, pos.weight_tickets_override);
+   if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
+      tickets = lGetUlong(sc_ep, SC_weight_tickets_override);
    }
 
    sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -1511,9 +1344,8 @@ double sconf_get_compensation_factor() {
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
-   if (pos.compensation_factor!= -1) {
-      const lListElem *sc_ep = lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
-      factor = lGetPosDouble(sc_ep, pos.compensation_factor);
+   if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
+      factor = lGetDouble(sc_ep, SC_compensation_factor);
    }
 
    sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -1534,9 +1366,8 @@ double sconf_get_weight_ticket() {
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
-   if (pos.weight_ticket != -1) {
-      const lListElem *sc_ep = lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
-      weight = lGetPosDouble(sc_ep, pos.weight_ticket);
+   if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
+      weight = lGetDouble(sc_ep, SC_weight_ticket);
    }
 
    sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -1561,11 +1392,10 @@ double sconf_get_weight_ticket() {
 void sconf_get_weight_ticket_urgency_priority(double *ticket, double *urgency, double *priority) {
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
-   if (pos.weight_ticket != -1 && pos.weight_urgency != -1 && pos.weight_priority != -1) {
-      const lListElem *sc_ep = lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
-      *ticket = lGetPosDouble(sc_ep, pos.weight_ticket);
-      *urgency = lGetPosDouble(sc_ep, pos.weight_urgency);
-      *priority = lGetPosDouble(sc_ep, pos.weight_priority);
+   if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
+      *ticket = lGetDouble(sc_ep, SC_weight_ticket);
+      *urgency = lGetDouble(sc_ep, SC_weight_urgency);
+      *priority = lGetDouble(sc_ep, SC_weight_priority);
    }
 
    sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -1585,9 +1415,8 @@ double sconf_get_weight_waiting_time() {
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
-   if (pos.weight_waiting_time != -1) {
-      const lListElem *sc_ep = lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
-      weight = lGetPosDouble(sc_ep, pos.weight_waiting_time);
+   if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
+      weight = lGetDouble(sc_ep, SC_weight_waiting_time);
    }
 
    sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -1608,9 +1437,8 @@ double sconf_get_weight_deadline() {
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
-   if (pos.weight_deadline != -1) {
-      const lListElem *sc_ep = lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
-      weight = lGetPosDouble(sc_ep, pos.weight_deadline);
+   if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
+      weight = lGetDouble(sc_ep, SC_weight_deadline);
    }
 
    sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -1631,9 +1459,8 @@ double sconf_get_weight_urgency() {
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
-   if (pos.weight_urgency != -1) {
-      const lListElem *sc_ep = lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
-      weight = lGetPosDouble(sc_ep, pos.weight_urgency);
+   if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
+      weight = lGetDouble(sc_ep, SC_weight_urgency);
    }
 
    sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -1657,9 +1484,8 @@ uint32_t sconf_get_max_reservations() {
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
-   if (!pos.empty && (pos.max_reservation != -1)) {
-      const lListElem *sc_ep = lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
-      max_res = lGetPosUlong(sc_ep, pos.max_reservation);
+   if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
+      max_res = lGetUlong(sc_ep, SC_max_reservation);
    }
 
    sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -1676,10 +1502,10 @@ uint32_t sconf_get_max_reservations() {
  * @note MT-NOTE: is not MT safe, the calling function needs to lock LOCK_SCHED_CONF(read)
  */
 static const char *get_default_duration_str() {
-   const lListElem *sc_ep =  lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
+   const lListElem *sc_ep = ocs_sconf_elem();
 
-   if (pos.schedule_interval != -1) {
-      return lGetPosString(sc_ep, pos.default_duration);
+   if (sc_ep != nullptr) {
+      return lGetString(sc_ep, SC_default_duration);
    }
    else {
       return DEFAULT_DURATION;
@@ -1699,9 +1525,8 @@ double sconf_get_weight_priority() {
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
-   if (pos.weight_priority != -1) {
-      const lListElem *sc_ep = lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
-      weight = lGetPosDouble(sc_ep, pos.weight_priority);
+   if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
+      weight = lGetDouble(sc_ep, SC_weight_priority);
    }
 
    sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -1723,9 +1548,8 @@ bool sconf_get_share_override_tickets() {
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
-   if (pos.share_override_tickets != -1) {
-      const lListElem *sc_ep = lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
-      is_share = lGetPosBool(sc_ep, pos.share_override_tickets) ? true : false;
+   if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
+      is_share = lGetBool(sc_ep, SC_share_override_tickets) ? true : false;
    }
 
    sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -1743,9 +1567,8 @@ bool sconf_get_share_functional_shares() {
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
-   if (pos.share_functional_shares != -1) {
-      const lListElem *sc_ep = lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
-      is_share = lGetPosBool(sc_ep, pos.share_functional_shares) ? true : false;
+   if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
+      is_share = lGetBool(sc_ep, SC_share_functional_shares) ? true : false;
    }
 
    sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -1766,9 +1589,8 @@ bool sconf_get_report_pjob_tickets() {
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
-   if (pos.report_pjob_tickets!= -1) {
-      const lListElem *sc_ep = lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
-      is_report = lGetPosBool(sc_ep, pos.report_pjob_tickets) ? true : false;
+   if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
+      is_report = lGetBool(sc_ep, SC_report_pjob_tickets) ? true : false;
    }
 
    sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -1785,16 +1607,12 @@ bool sconf_get_report_pjob_tickets() {
  * @note MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
  */
 uint32_t sconf_get_flush_submit_sec() {
-   const lListElem *sc_ep = nullptr;
    uint32_t flush_sec = 0;
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
-   if (pos.flush_submit_sec != -1) {
-      sc_ep = lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
-      if (sc_ep != nullptr) {
-         flush_sec = lGetPosUlong(sc_ep, pos.flush_submit_sec);
-      }
+   if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
+      flush_sec = lGetUlong(sc_ep, SC_flush_submit_sec);
    }
 
    sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -1811,16 +1629,12 @@ uint32_t sconf_get_flush_submit_sec() {
  * @note MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
  */
 uint32_t sconf_get_flush_finish_sec() {
-   const lListElem *sc_ep = nullptr;
    uint32_t flush_sec = 0;
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
-   if (pos.flush_finish_sec!= -1) {
-      sc_ep = lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
-      if (sc_ep != nullptr) {
-         flush_sec = lGetPosUlong(sc_ep, pos.flush_finish_sec);
-      }
+   if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
+      flush_sec = lGetUlong(sc_ep, SC_flush_finish_sec);
    }
 
    sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -1842,9 +1656,8 @@ uint32_t sconf_get_max_functional_jobs_to_schedule() {
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
-   if (pos.max_functional_jobs_to_schedule != -1) {
-      const lListElem *sc_ep = lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
-      amount = lGetPosUlong(sc_ep, pos.max_functional_jobs_to_schedule);
+   if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
+      amount = lGetUlong(sc_ep, SC_max_functional_jobs_to_schedule);
    }
 
    sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -1865,9 +1678,8 @@ uint32_t sconf_get_max_pending_tasks_per_job() {
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
-   if (pos.max_pending_tasks_per_job != -1) {
-      const lListElem *sc_ep = lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
-      max_pending = lGetPosUlong(sc_ep, pos.max_pending_tasks_per_job);
+   if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
+      max_pending = lGetUlong(sc_ep, SC_max_pending_tasks_per_job);
    }
 
    sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -1884,10 +1696,10 @@ uint32_t sconf_get_max_pending_tasks_per_job() {
  * @note MT-NOTE: is not MT safe, the calling function needs to lock LOCK_SCHED_CONF(read)
  */
 static const char *get_halflife_decay_list_str() {
-   const lListElem *sc_ep = lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
+   const lListElem *sc_ep = ocs_sconf_elem();
 
-   if (pos.halflife_decay_list != -1) {
-      return lGetPosString(sc_ep, pos.halflife_decay_list);
+   if (sc_ep != nullptr) {
+      return lGetString(sc_ep, SC_halflife_decay_list);
    }
    else {
       return "none";
@@ -1922,13 +1734,7 @@ lList* sconf_get_halflife_decay_list(){
  * @note MT-NOTE: is not MT safe, the calling function needs to lock LOCK_SCHED_CONF(read)
  */
 static bool is_config_set() {
-   const lListElem *sc_ep = nullptr;
-
-   if (*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF)) {
-      sc_ep = lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
-   }
-
-   return ((sc_ep != nullptr) ? true : false);
+   return ocs_sconf_elem() != nullptr;
 }
 
 /**
@@ -2205,15 +2011,9 @@ bool sconf_validate_config_(lList **answer_list) {
    }
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
-   sconf_clear_pos();
+   ocs_sconf_reset_cache();
 
    pos.new_config = true;
-
-   if (!calc_pos()){
-      snprintf(SGE_EVENT, SGE_EVENT_SIZE, SFNMAX, MSG_INCOMPLETE_SCHEDD_CONFIG);
-      answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
-      ret = false;
-   }
 
  /* --- SC_params */
    {
@@ -2622,8 +2422,9 @@ void sconf_ph_fill_array(policy_hierarchy_t array[]) {
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
-   policy_hierarchy_string = lGetPosString(lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF)),
-                                           pos.policy_hierarchy);
+   if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
+      policy_hierarchy_string = lGetString(sc_ep, SC_policy_hierarchy);
+   }
 
    for (i = 0; i < POLICY_VALUES; i++) {
       is_contained[i] = 0;

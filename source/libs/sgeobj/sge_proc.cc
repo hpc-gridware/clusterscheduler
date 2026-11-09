@@ -100,7 +100,6 @@ void clean_procList() {
    lListElem *next = nullptr;
    lListElem *ep = nullptr;
    lCondition *cp = lWhere("%T(%I == %b)", PRO_Type, PRO_run, false); 
-   int pos = lGetPosInDescr(PRO_Type, PRO_run);
 
    next = lFindFirstRW(procList, cp);
 
@@ -117,6 +116,6 @@ void clean_procList() {
    /* mark all jobs to finished */
 
    for_each_rw (next, procList) {
-      lSetPosBool(next, pos, false);
+      lSetBool(next, PRO_run, false);
    }
 }

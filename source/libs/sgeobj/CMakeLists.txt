@@ -140,7 +140,6 @@ set(LIBRARY_SOURCES
         sge_manop.cc
         sge_mesobj.cc
         sge_object.cc
-        sge_order.cc
         sge_pack.cc
         sge_path_alias.cc
         sge_pe.cc

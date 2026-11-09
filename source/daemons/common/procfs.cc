@@ -425,6 +425,21 @@ static void pt_close_fd(int &fd) {
    }
 }
 
+/**
+ * @brief Walk `/proc` once and attribute every process to the job it belongs to
+ *
+ * Each process is identified by its supplementary groups, which carry the job's
+ * additional group id. The usage of a process found in a job's group is booked
+ * to that job; the process table (PRO_Type) remembers every process between
+ * walks, so the group lookup is repeated only for processes that changed.
+ *
+ * @param job_list the jobs of this execd, whose process lists are updated
+ * @param time_stamp the stamp of this walk, set on every process seen
+ * @param last_time the time of the previous walk; processes whose `/proc`
+ *        entry is older keep their cached group list
+ * @param enable_mem_details whether the detailed memory values are read as well
+ * @return 0 on success, 1 if the walk could not be done
+ */
 int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_time, bool enable_mem_details) {
    DENTER(TOP_LAYER);
 
@@ -438,18 +453,6 @@ int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_ti
    unsigned long utime{}, stime{}, vsize{}, pid{};
    unsigned long long iow{};
    long rss = 0;
-   int pos_pid = lGetPosInDescr(PRO_Type, PRO_pid);
-   int pos_utime = lGetPosInDescr(PRO_Type, PRO_utime);
-   int pos_stime = lGetPosInDescr(PRO_Type, PRO_stime);
-   int pos_vsize = lGetPosInDescr(PRO_Type, PRO_vsize);
-   int pos_rss = lGetPosInDescr(PRO_Type, PRO_rss);
-   int pos_groups = lGetPosInDescr(PRO_Type, PRO_groups);
-   int pos_rel = lGetPosInDescr(PRO_Type, PRO_rel);
-   int pos_run = lGetPosInDescr(PRO_Type, PRO_run);
-   int pos_io = lGetPosInDescr(PRO_Type, PRO_io);
-   int pos_ioops = lGetPosInDescr(PRO_Type, PRO_ioops);
-   int pos_iow = lGetPosInDescr(PRO_Type, PRO_iow);
-   int pos_group = lGetPosInDescr(GR_Type, GR_group);
 #else
    prstatus_t pr;
    prpsinfo_t pri;
@@ -520,8 +523,8 @@ int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_ti
       // check only processes that belong to a job
       if ((pr = get_pr(atoi(pidname))) != nullptr) {
          /* set process as still running */
-         lSetPosBool(pr, pos_run, true);
-         if (lGetPosBool(pr, pos_rel) != true) {
+         lSetBool(pr, PRO_run, true);
+         if (lGetBool(pr, PRO_rel) != true) {
             continue;
          }
       }
@@ -607,21 +610,21 @@ int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_ti
 
          if (pr == nullptr) {
             pr = lCreateElem(PRO_Type);
-            lSetPosUlong(pr, pos_pid, pid);
-            lSetPosBool(pr, pos_rel, false);
+            lSetUlong(pr, PRO_pid, pid);
+            lSetBool(pr, PRO_rel, false);
             append_pr(pr);
          }
 
-         lSetPosUlong(pr, pos_utime, utime);
-         lSetPosUlong(pr, pos_stime, stime);
-         lSetPosUlong64(pr, pos_vsize, vsize);
-         lSetPosUlong64(pr, pos_rss, rss * pagesize);
-         lSetPosUlong64(pr, pos_iow, static_cast<uint64_t>(iow));
+         lSetUlong(pr, PRO_utime, utime);
+         lSetUlong(pr, PRO_stime, stime);
+         lSetUlong64(pr, PRO_vsize, vsize);
+         lSetUlong64(pr, PRO_rss, rss * pagesize);
+         lSetUlong64(pr, PRO_iow, static_cast<uint64_t>(iow));
 
          pt_close_fd(fd);
       }
       /* mark this proc as running */
-      lSetPosBool(pr, pos_run, true);
+      lSetBool(pr, PRO_run, true);
 
       /* 
        * get number of groups; 
@@ -629,7 +632,7 @@ int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_ti
        */
       {
          char procnam[1024];
-         lList *groupTable = lGetPosList(pr, pos_groups);
+         lList *groupTable = lGetListRW(pr, PRO_groups);
 
          sprintf(procnam, PROC_DIR "/%s/status", dent->d_name);
          if (SGE_STAT(procnam, &fst) != 0) {
@@ -645,7 +648,7 @@ int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_ti
          groups = 0;
          if (fst.st_mtime < last_time && groupTable != nullptr) {
             for_each_ep_lv(group, groupTable) {
-               list[groups] = lGetPosUlong(group, pos_group);
+               list[groups] = lGetUlong(group, GR_group);
                groups++;
             }
          } else {
@@ -665,14 +668,14 @@ int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_ti
                      lListElem *gr = lCreateElem(GR_Type);
                      long group = atol(token);
                      list[groups] = group;
-                     lSetPosUlong(gr, pos_group, group);
+                     lSetUlong(gr, GR_group, group);
                      lAppendElem(groupTable, gr);
                      groups++;
                   }
                   break;
                }
             }
-            lSetPosList(pr, pos_groups, groupTable);
+            lSetList(pr, PRO_groups, groupTable);
             fclose(f);
          }
       } 
@@ -731,7 +734,7 @@ int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_ti
             if ((gid_t)job_elem->job.jd_jid == list[group]) {  // @todo: is this correct? jd_jid is a pid_t, list[group] gid_t
 #if defined(LINUX)
                // mark this process as relevant
-               lSetPosBool(pr, pos_rel, true);
+               lSetBool(pr, PRO_rel, true);
 #endif
                found_it = 1;
             }
@@ -763,7 +766,7 @@ int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_ti
     */
 
 #if defined(LINUX)
-   pid_tmp = lGetPosUlong(pr, pos_pid);
+   pid_tmp = lGetUlong(pr, PRO_pid);
 #else
    pid_tmp = pr.pr_pid;
 #endif
@@ -791,10 +794,10 @@ int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_ti
       {
          double utime, stime;
 #if defined(LINUX)
-         utime = ((double)lGetPosUlong(pr, pos_utime))/HZ;
-         stime = ((double)lGetPosUlong(pr, pos_stime))/HZ;
+         utime = ((double)lGetUlong(pr, PRO_utime))/HZ;
+         stime = ((double)lGetUlong(pr, PRO_stime))/HZ;
 
-         INFO("new process " sge_u32" for job " pid_t_fmt " (utime = %f stime = %f)\n", lGetPosUlong(pr, pos_pid), job_elem->job.jd_jid, utime, stime);
+         INFO("new process " sge_u32" for job " pid_t_fmt " (utime = %f stime = %f)\n", lGetUlong(pr, PRO_pid), job_elem->job.jd_jid, utime, stime);
 #else
          utime = pr.pr_utime.tv_sec + pr.pr_utime.tv_nsec*1E-9;
          stime = pr.pr_stime.tv_sec + pr.pr_stime.tv_nsec*1E-9;
@@ -813,15 +816,15 @@ int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_ti
    proc_elem->proc.pd_tstamp = time_stamp;
 
 #if defined(LINUX)
-   proc_elem->proc.pd_pid = lGetPosUlong(pr, pos_pid);
-   proc_elem->proc.pd_utime  = static_cast<double>(lGetPosUlong(pr, pos_utime)) / HZ;
-   proc_elem->proc.pd_stime  = static_cast<double>(lGetPosUlong(pr, pos_stime)) / HZ;
+   proc_elem->proc.pd_pid = lGetUlong(pr, PRO_pid);
+   proc_elem->proc.pd_utime  = static_cast<double>(lGetUlong(pr, PRO_utime)) / HZ;
+   proc_elem->proc.pd_stime  = static_cast<double>(lGetUlong(pr, PRO_stime)) / HZ;
    /* could retrieve uid/gid using stat() on stat file */
-   proc_elem->vmem           = lGetPosUlong64(pr, pos_vsize);
-   proc_elem->rss            = lGetPosUlong64(pr, pos_rss);
+   proc_elem->vmem           = lGetUlong64(pr, PRO_vsize);
+   proc_elem->rss            = lGetUlong64(pr, PRO_rss);
 
    // iow can go to 0 at job end, so we calculate a delta which we will add to iow reached so far
-   double new_iow = static_cast<double>(lGetPosUlong64(pr, pos_iow)) / HZ;
+   double new_iow = static_cast<double>(lGetUlong64(pr, PRO_iow)) / HZ;
    if (new_iow > 0 && new_iow > proc_elem->iow) {
       proc_elem->delta_iow = new_iow - proc_elem->iow;
       proc_elem->iow = new_iow;
@@ -875,13 +878,13 @@ int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_ti
                } /* while */
 
                fclose(f);
-               lSetPosUlong(pr, pos_io, new_iochars);
-               lSetPosUlong(pr, pos_ioops, new_ioops);
+               lSetUlong(pr, PRO_io, new_iochars);
+               lSetUlong(pr, PRO_ioops, new_ioops);
             }
          }
       } else {
-         new_iochars = lGetPosUlong(pr, pos_io);
-         new_ioops = lGetPosUlong(pr, pos_ioops);
+         new_iochars = lGetUlong(pr, PRO_io);
+         new_ioops = lGetUlong(pr, PRO_ioops);
       }
       /*
        *  Update process I/O info

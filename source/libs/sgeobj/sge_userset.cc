@@ -183,9 +183,8 @@ userset_list_validate_access(const lList *acl_list, int nm, lList **alpp, const 
 int userset_validate_entries(lListElem *userset, lList **alpp) {
    DENTER(TOP_LAYER);
 
-   int name_pos = lGetPosInDescr(UE_Type, UE_name);
    for_each_ep_lv(ep, lGetList(userset, US_entries)) {
-      if (!lGetPosString(ep, name_pos)) {
+      if (!lGetString(ep, UE_name)) {
          ERROR(SFNMAX, MSG_US_INVALIDUSERNAME);
          answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_ESEMANTIC);

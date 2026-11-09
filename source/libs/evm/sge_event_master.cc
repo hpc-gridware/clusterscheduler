@@ -2416,14 +2416,13 @@ static int eventclient_subscribed(const lListElem *event_client, ev_event event,
 static int purge_event_list(lList *event_list, uint32_t event_number) {
    DENTER(TOP_LAYER);
 
-   int purged = 0, pos = 0;
+   int purged = 0;
    lListElem *ev = nullptr;
 
    if (event_number == 0) {
       DRETURN(0);
    }
 
-   pos = lGetPosInDescr(ET_Type, ET_number);
    ev = lFirstRW(event_list);
 
    while (ev != nullptr) {
@@ -2431,7 +2430,7 @@ static int purge_event_list(lList *event_list, uint32_t event_number) {
 
       ev = lNextRW(ev);
 
-      if (lGetPosUlong(tmp, pos) > event_number) {
+      if (lGetUlong(tmp, ET_number) > event_number) {
          break;
       }
 

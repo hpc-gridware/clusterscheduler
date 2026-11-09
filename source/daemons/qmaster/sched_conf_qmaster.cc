@@ -42,6 +42,9 @@
 
 #include "sgeobj/sge_schedd_conf.h"
 #include "sgeobj/sge_answer.h"
+#include "sgeobj/sge_object.h"
+
+#include "sched/msg_schedd.h"
 
 #include "spool/sge_spooling.h"
 
@@ -90,13 +93,19 @@ sge_read_sched_configuration(const lListElem *aSpoolContext, lList **anAnswer, u
  * Modify scheduler configuration. We have only one entry in
  * Master_Sched_Config_List. So we replace it with the new one.
  *
+ * The element comes from a client and is checked to be a complete SC_Type
+ * object, sub-lists included, before anything reads it. Every other source of
+ * the configuration (spool, default, event mirror, full GDI get) yields a
+ * complete element, so this is the only check the configuration module needs.
+ *
  * @param packet the client request
  * @param task the GDI task being answered
- * @param confp see the description above
+ * @param confp the new configuration as sent by the client
  * @param alpp receives messages for the caller
  * @param ruser the requesting user
  * @param rhost the requesting host
- * @return see the description above
+ * @return STATUS_OK on success, STATUS_ESYNTAX if the element is reduced or not of
+ *         SC_Type, STATUS_EUNKNOWN or -1 on other errors
  */
 int
 sge_mod_sched_configuration(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *confp, lList **alpp, char *ruser, char *rhost) {
@@ -108,6 +117,10 @@ sge_mod_sched_configuration(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lLis
       CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, __func__);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
+   }
+   if (!object_verify_cull(confp, SC_Type)) {
+      answer_list_add(alpp, MSG_INCOMPLETE_SCHEDD_CONFIG, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
+      DRETURN(STATUS_ESYNTAX);
    }
    temp_conf_list = lCreateList("sched config", SC_Type);
 

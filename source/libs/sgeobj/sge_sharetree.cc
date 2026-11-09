@@ -268,23 +268,16 @@ lListElem *search_named_node(lListElem *ep, /* root of the tree */
                              const char *name) {
    DENTER(TOP_LAYER);
    lListElem *fep;
-   static int sn_children_pos = -1;
-   static int sn_name_pos = -1;
 
    if (!ep || !name) {
       DRETURN(nullptr);
    }
 
-   if (sn_name_pos == -1) {
-      sn_children_pos = lGetPosViaElem(ep, STN_children, SGE_NO_ABORT);
-      sn_name_pos = lGetPosViaElem(ep, STN_name, SGE_NO_ABORT);
-   }
-
-   if (strcmp(lGetPosString(ep, sn_name_pos), name) == 0) {
+   if (strcmp(lGetString(ep, STN_name), name) == 0) {
       DRETURN(ep);
    }
 
-   for_each_rw_lv(cep, lGetPosList(ep, sn_children_pos)) {
+   for_each_rw_lv(cep, lGetListRW(ep, STN_children)) {
       if ((fep = search_named_node(cep, name))) {
          DRETURN(fep);
       }
@@ -440,25 +433,19 @@ search_ancestors(lListElem *ep,
                  int depth) {
    DENTER(TOP_LAYER);
    lListElem *fep;
-   static int sn_children_pos = -1;
-   static int sn_name_pos = -1;
 
    if (!ep || !name) {
       DRETURN(nullptr);
    }
 
-   if (sn_name_pos == -1) {
-      sn_children_pos = lGetPosViaElem(ep, STN_children, SGE_NO_ABORT);
-      sn_name_pos = lGetPosViaElem(ep, STN_name, SGE_NO_ABORT);
-   }
-   if (strcmp(lGetPosString(ep, sn_name_pos), name) == 0) {
+   if (strcmp(lGetString(ep, STN_name), name) == 0) {
       ancestors->depth = depth;
       ancestors->nodes = (lListElem **)sge_malloc(depth * sizeof(lListElem *));
       ancestors->nodes[depth-1] = ep;
       DRETURN(ep);
    }
 
-   for_each_rw_lv(cep, lGetPosList(ep, sn_children_pos)) {
+   for_each_rw_lv(cep, lGetListRW(ep, STN_children)) {
       if ((fep = search_ancestors(cep, name, ancestors, depth+1))) {
          ancestors->nodes[depth-1] = ep;
          DRETURN(fep);

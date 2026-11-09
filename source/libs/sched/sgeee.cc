@@ -959,56 +959,32 @@ update_active_job_ref_count(lListElem *node) {
 }
 
 
-/*--------------------------------------------------------------------
- * sge_init_share_tree_node_fields - zero out the share tree node
- * fields that will be set and used during sge_calc_tickets
- *--------------------------------------------------------------------*/
-
+/**
+ * @brief Zero the share tree node fields that sge_calc_tickets sets and uses
+ *
+ * Called for every node of the share tree by ocs::ShareTree::foreach_call_func().
+ *
+ * @param node the share tree node (STN_Type)
+ * @param ptr unused
+ * @return 0, so the walk continues
+ */
 static int
 sge_init_share_tree_node_fields(lListElem *node,
-                                void *ptr) {
-   static int sn_m_share_pos = -1;
-   static int sn_adjusted_current_proportion_pos,
-              sn_last_actual_proportion_pos, sn_sum_priority_pos,
-              sn_job_ref_count_pos, sn_active_job_ref_count_pos,
-              sn_usage_list_pos, sn_stt_pos, sn_ostt_pos,
-              sn_ltt_pos, sn_oltt_pos, sn_shr_pos, sn_ref_pos,
-              sn_actual_proportion_pos;
-
-
-   if (sn_m_share_pos == -1) {
-      sn_m_share_pos = lGetPosViaElem(node, STN_m_share, SGE_NO_ABORT);
-      sn_adjusted_current_proportion_pos =
-            lGetPosViaElem(node, STN_adjusted_current_proportion, SGE_NO_ABORT);
-      sn_last_actual_proportion_pos =
-            lGetPosViaElem(node, STN_last_actual_proportion, SGE_NO_ABORT);
-      sn_job_ref_count_pos = lGetPosViaElem(node, STN_job_ref_count, SGE_NO_ABORT);
-      sn_active_job_ref_count_pos = lGetPosViaElem(node, STN_active_job_ref_count, SGE_NO_ABORT);
-      sn_usage_list_pos = lGetPosViaElem(node, STN_usage_list, SGE_NO_ABORT);
-      sn_sum_priority_pos = lGetPosViaElem(node, STN_sum_priority, SGE_NO_ABORT);
-      sn_stt_pos = lGetPosViaElem(node, STN_stt, SGE_NO_ABORT);
-      sn_ostt_pos = lGetPosViaElem(node, STN_ostt, SGE_NO_ABORT);
-      sn_ltt_pos = lGetPosViaElem(node, STN_ltt, SGE_NO_ABORT);
-      sn_oltt_pos = lGetPosViaElem(node, STN_oltt, SGE_NO_ABORT);
-      sn_shr_pos = lGetPosViaElem(node, STN_shr, SGE_NO_ABORT);
-      sn_ref_pos = lGetPosViaElem(node, STN_ref, SGE_NO_ABORT);
-      sn_actual_proportion_pos = lGetPosViaElem(node, STN_actual_proportion, SGE_NO_ABORT);
-   }
-
-   lSetPosDouble(node, sn_m_share_pos, 0);
-   lSetPosDouble(node, sn_last_actual_proportion_pos, 0);
-   lSetPosDouble(node, sn_adjusted_current_proportion_pos, 0);
-   lSetPosDouble(node, sn_actual_proportion_pos, 0);
-   lSetPosUlong(node, sn_job_ref_count_pos, 0);
-   lSetPosUlong(node, sn_active_job_ref_count_pos, 0);
-   lSetPosList(node, sn_usage_list_pos, nullptr);
-   lSetPosUlong(node, sn_sum_priority_pos, 0);
-   lSetPosDouble(node, sn_stt_pos, 0);
-   lSetPosDouble(node, sn_ostt_pos, 0);
-   lSetPosDouble(node, sn_ltt_pos, 0);
-   lSetPosDouble(node, sn_oltt_pos, 0);
-   lSetPosDouble(node, sn_shr_pos, 0);
-   lSetPosUlong(node, sn_ref_pos, 0);
+                                [[maybe_unused]] void *ptr) {
+   lSetDouble(node, STN_m_share, 0);
+   lSetDouble(node, STN_last_actual_proportion, 0);
+   lSetDouble(node, STN_adjusted_current_proportion, 0);
+   lSetDouble(node, STN_actual_proportion, 0);
+   lSetUlong(node, STN_job_ref_count, 0);
+   lSetUlong(node, STN_active_job_ref_count, 0);
+   lSetList(node, STN_usage_list, nullptr);
+   lSetUlong(node, STN_sum_priority, 0);
+   lSetDouble(node, STN_stt, 0);
+   lSetDouble(node, STN_ostt, 0);
+   lSetDouble(node, STN_ltt, 0);
+   lSetDouble(node, STN_oltt, 0);
+   lSetDouble(node, STN_shr, 0);
+   lSetUlong(node, STN_ref, 0);
    return 0;
 }
 
