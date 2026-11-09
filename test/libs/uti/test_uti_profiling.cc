@@ -57,6 +57,11 @@ int do_test();
  */
 int test_params();
 
+/** @brief Test case: the thread is active exactly while one of its levels is started (CS-3056)
+ * @return EXIT_SUCCESS when the case passed, EXIT_FAILURE otherwise
+ */
+int test_all_flag_follows_levels();
+
 void *do_sleep(void *);
 
 void *do_calc(void *);
@@ -92,7 +97,53 @@ int main(int argc, char *argv[]) {
       ret = test_params();
    }
 
+   if (ret == EXIT_SUCCESS) {
+      ret = test_all_flag_follows_levels();
+   }
+
    return ret;
+}
+
+/**
+ * @brief Compare prof_is_active(SGE_PROF_ALL) with what a step expects
+ * @param step the step, named in the error message
+ * @param expected whether the thread should be active
+ * @return true if prof_is_active(SGE_PROF_ALL) is as expected
+ */
+static bool all_flag_is(const char *step, const bool expected) {
+   if (prof_is_active(SGE_PROF_ALL) != expected) {
+      printf("%s: prof_is_active(SGE_PROF_ALL) is %s, expected %s\n", step,
+             expected ? "false" : "true", expected ? "true" : "false");
+      return false;
+   }
+   return true;
+}
+
+int test_all_flag_follows_levels() {
+   bool ok = true;
+
+   prof_start(SGE_PROF_CUSTOM1, nullptr);
+   ok = all_flag_is("one level started", true) && ok;
+   prof_stop(SGE_PROF_CUSTOM1, nullptr);
+   ok = all_flag_is("the only level stopped", false) && ok;
+
+   prof_start(SGE_PROF_CUSTOM1, nullptr);
+   prof_start(SGE_PROF_CUSTOM2, nullptr);
+   prof_stop(SGE_PROF_CUSTOM1, nullptr);
+   ok = all_flag_is("one of two levels stopped", true) && ok;
+   prof_stop(SGE_PROF_CUSTOM2, nullptr);
+   ok = all_flag_is("both levels stopped", false) && ok;
+
+   prof_start(SGE_PROF_ALL, nullptr);
+   prof_stop(SGE_PROF_CUSTOM1, nullptr);
+   ok = all_flag_is("one level of a fully profiled thread stopped", true) && ok;
+   prof_stop(SGE_PROF_ALL, nullptr);
+   ok = all_flag_is("the thread stopped as a whole", false) && ok;
+
+   if (ok) {
+      printf("test_all_flag_follows_levels successful\n\n");
+   }
+   return ok ? EXIT_SUCCESS : EXIT_FAILURE;
 }
 
 int test_params() {

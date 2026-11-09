@@ -281,8 +281,8 @@ bool prof_start(prof_level level, dstring *error) {
             ret = prof_reset(level, error);
 
             theInfo[thread_num][level].prof_is_started = true;
-            /* TODO
-             * Is there a reason we do this?  This flag in never cleared. */
+            // SGE_PROF_ALL marks that some level of the thread is active, which is what
+            // thread_output_profiling() asks; prof_stop() clears it with the last level (CS-3056)
             theInfo[thread_num][SGE_PROF_ALL].prof_is_started = true;
 
             theInfo[thread_num][level].ever_started = true;
@@ -309,12 +309,16 @@ bool prof_start(prof_level level, dstring *error) {
  *
  * Profiling can be re-enabled by calling profiling_start.
  *
+ * Stopping a single level also marks the thread inactive (SGE_PROF_ALL) when
+ * no other level of the thread is started any more, so that its profiling
+ * summary is no longer written.
+ *
  * @param level the level to operate on, see @ref uti_profiling_levels
  * @param error if != nullptr, error messages will be put here
  *
  * @return true on success, else false is returned and an error message is returned in parameter error, if error != nullptr
  *
- * @note MT-NOTE: prof_start() is MT safe
+ * @note MT-NOTE: prof_stop() is MT safe
  *
  * @see #prof_start, #prof_start_measurement, #prof_stop_measurement
  */
@@ -347,6 +351,15 @@ bool prof_stop(prof_level level, dstring *error) {
             }
          } else {
             theInfo[thread_num][level].prof_is_started = false;
+
+            // the thread is no longer active once its last level stops (CS-3056)
+            bool any_started = false;
+            for (i = SGE_PROF_OTHER; i < SGE_PROF_ALL; i++) {
+               any_started = any_started || theInfo[thread_num][i].prof_is_started;
+            }
+            if (!any_started) {
+               theInfo[thread_num][SGE_PROF_ALL].prof_is_started = false;
+            }
          }
       }
    }
