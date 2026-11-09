@@ -1682,14 +1682,22 @@ void job_get_state_string(char *str, uint32_t op) {
  * "-sc PARENT=$JOBID". By doing this we preserve information
  * about the relationship between these two jobs.
  *
+ * The variable is added to the context change request JB_context_change as a
+ * group of its own, so that a preceding -dc group cannot delete it (CS-3058).
+ *
  * @param job JB_Type element
  */
 void job_add_parent_id_to_context(lListElem *job) {
    const char *job_id_string = sge_getenv("JOB_ID");
-   lListElem *context_parent = lGetSubStrRW(job, VA_variable, CONTEXT_PARENT, JB_context);
-   if (job_id_string != nullptr && context_parent == nullptr) {
-      context_parent = lAddSubStr(job, VA_variable, CONTEXT_PARENT, JB_context, VA_Type);
-      lSetString(context_parent, VA_value, job_id_string);
+   if (job_id_string != nullptr && lGetSubStr(job, CX_variable, CONTEXT_PARENT, JB_context_change) == nullptr) {
+      lList *change = lGetListRW(job, JB_context_change);
+      bool created = change == nullptr;
+      lAddElemStr(&change, CX_variable, "+", CX_Type);
+      lListElem *parent = lAddElemStr(&change, CX_variable, CONTEXT_PARENT, CX_Type);
+      lSetString(parent, CX_value, job_id_string);
+      if (created) {
+         lSetList(job, JB_context_change, change);
+      }
    }
 }
 
@@ -2516,6 +2524,9 @@ bool sge_unparse_binding_dstring(dstring *category_str, const lListElem *job, co
    DRETURN(true);
 }
 
+static const lList *
+job_get_context_change(const lListElem *job);
+
 /**
  * @brief Verify a job object
  *
@@ -2591,6 +2602,16 @@ job_verify(const lListElem *job, lList **answer_list, bool do_cull_verify) {
    if (const lList *context_list = lGetList(job, JB_context); context_list != nullptr) {
       ret = var_list_verify(context_list, answer_list);
       if (!ret) {
+         DRETURN(false);
+      }
+   }
+
+   // the names of the context instructions, markers included, must not be empty either
+   for_each_ep_lv(change_ep, job_get_context_change(job)) {
+      const char *variable = lGetString(change_ep, CX_variable);
+      if (variable == nullptr || variable[0] == '\0') {
+         answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, SFNMAX,
+                                 MSG_OBJECT_VARIABLENAME_NOT_EMPTY);
          DRETURN(false);
       }
    }
@@ -3095,7 +3116,7 @@ job_set_owner_and_group(lListElem *job, uint32_t uid, uint32_t gid,
 /**
  * @brief Apply a context change request to a job's context
  *
- * The request is a `VA_Type` list divided into groups. A group starts with a
+ * The request is a `CX_Type` list divided into groups. A group starts with a
  * marker element naming the operation, and any combination of groups may
  * appear in one request:
  *
@@ -3105,41 +3126,31 @@ job_set_owner_and_group(lListElem *job, uint32_t uid, uint32_t gid,
  * | `-` | removed from the job's context |
  * | `=` | replacing the job's context entirely |
  *
- * `=` is the default when the list starts without a marker, which keeps the
- * behaviour compatible with a plain GDI request.
+ * `=` is the default when the list starts without a marker. The job's context
+ * `JB_context` is a `VA_Type` list with a unique name, so a variable given
+ * again keeps its last value (CS-3058).
  *
- * @param jbctx the request, a `VA_Type` list
+ * @param change the request, a `CX_Type` list; an empty request clears the context
  * @param[in,out] job the job whose `JB_context` is changed
  */
-void set_context(lList *jbctx, lListElem *job) {
-   lList* newjbctx = nullptr;
-   const lListElem* jbctxep;
-   lListElem* temp;
-   char   mode = '+';
-
-   newjbctx = lGetListRW(job, JB_context);
-
-   /* if the incoming list is empty, then simply clear the context */
-   if (!jbctx || !lGetNumberOfElem(jbctx)) {
+void set_context(const lList *change, lListElem *job) {
+   // if the incoming list is empty, or it starts without a marker, the context is replaced
+   if (change == nullptr || lGetNumberOfElem(change) == 0) {
       lSetList(job, JB_context, nullptr);
-      newjbctx = nullptr;
+      return;
    }
-   else {
-      /* if first element contains no tag => assume (=, ) */
-      switch(*lGetString(lFirst(jbctx), VA_variable)) {
-         case '+':
-         case '-':
-         case '=':
-            break;
-         default:
-            lSetList(job, JB_context, nullptr);
-            newjbctx = nullptr;
-            break;
-      }
+   const char *first = lGetString(lFirst(change), CX_variable);
+   if (first == nullptr || (*first != '+' && *first != '-' && *first != '=')) {
+      lSetList(job, JB_context, nullptr);
    }
 
-   for_each_ep(jbctxep, jbctx) {
-      switch(*(lGetString(jbctxep, VA_variable))) {
+   char mode = '+';
+   for_each_ep_lv(change_ep, change) {
+      const char *name = lGetString(change_ep, CX_variable);
+      if (name == nullptr) {
+         continue;
+      }
+      switch (*name) {
          case '+':
             mode = '+';
             break;
@@ -3148,28 +3159,86 @@ void set_context(lList *jbctx, lListElem *job) {
             break;
          case '=':
             lSetList(job, JB_context, nullptr);
-            newjbctx = nullptr;
             mode = '+';
             break;
          default:
-            switch(mode) {
-               case '+':
-                  if (!newjbctx)
-                     lSetList(job, JB_context, newjbctx = lCreateList("context_list", VA_Type));
-                  if ((temp = lGetElemStrRW(newjbctx, VA_variable, lGetString(jbctxep, VA_variable))))
-                     lSetString(temp, VA_value, lGetString(jbctxep, VA_value));
-                  else
-                     lAppendElem(newjbctx, lCopyElem(jbctxep));
-                  break;
-               case '-':
-
-                  lDelSubStr(job, VA_variable, lGetString(jbctxep, VA_variable), JB_context);
-                  /* WARNING: newjbctx is not valid when complete list was deleted */
-                  break;
+            if (mode == '+') {
+               lList *context = lGetListRW(job, JB_context);
+               if (context == nullptr) {
+                  context = lCreateList("context_list", VA_Type);
+                  lSetList(job, JB_context, context);
+               }
+               lListElem *var = lGetElemStrRW(context, VA_variable, name);
+               if (var == nullptr) {
+                  var = lAddElemStr(&context, VA_variable, name, VA_Type);
+               }
+               lSetString(var, VA_value, lGetString(change_ep, CX_value));
+            } else {
+               // frees JB_context when its last variable goes, so the list is looked up again above
+               lDelSubStr(job, VA_variable, name, JB_context);
             }
             break;
       }
    }
+}
+
+/**
+ * @brief Append the instructions of one context switch to a context change request
+ *
+ * The parsers build one `VA_Type` list per `-ac`, `-sc` or `-dc` switch, its
+ * marker first. The request concatenates them as `CX_Type` elements in the
+ * order given, where markers and names repeat by design (CS-3058).
+ *
+ * @param[in,out] change the `CX_Type` request, created if *change is nullptr
+ * @param option_list the list of one switch, a `VA_Type` list; nullptr is accepted
+ */
+void ocs_context_change_add(lList **change, const lList *option_list) {
+   for_each_ep_lv(var, option_list) {
+      lListElem *ep = lAddElemStr(change, CX_variable, lGetString(var, VA_variable), CX_Type);
+      lSetString(ep, CX_value, lGetString(var, VA_value));
+   }
+}
+
+/**
+ * @brief The context change request of a job, also of a reduced one
+ *
+ * A reduced job, such as the one qstat -j works on, need not contain
+ * `JB_context_change`; reading the field from it would abort.
+ *
+ * @param job the job (JB_Type), full or reduced
+ * @return the `CX_Type` request, or nullptr if the job has none or does not contain the field
+ */
+static const lList *
+job_get_context_change(const lListElem *job) {
+   if (lGetPosViaElem(job, JB_context_change, SGE_NO_ABORT) < 0) {
+      return nullptr;
+   }
+   return lGetList(job, JB_context_change);
+}
+
+/**
+ * @brief The context a job has once its context change request is applied
+ *
+ * Before the qmaster has processed a job, its context is `JB_context`, empty
+ * unless a GDI client set it, with the instructions of `JB_context_change`
+ * still to be applied. Afterwards `JB_context_change` is empty and the result
+ * is `JB_context` itself (CS-3058).
+ *
+ * @param job the job (JB_Type), full or reduced
+ * @return a new `VA_Type` list the caller frees, or nullptr if the context is empty
+ */
+lList *ocs_context_get_effective(const lListElem *job) {
+   lListElem *tmp_job = lCreateElem(JB_Type);
+   if (lGetPosViaElem(job, JB_context, SGE_NO_ABORT) >= 0 && lGetList(job, JB_context) != nullptr) {
+      lSetList(tmp_job, JB_context, lCopyList("context_list", lGetList(job, JB_context)));
+   }
+   if (const lList *change = job_get_context_change(job); change != nullptr) {
+      set_context(change, tmp_job);
+   }
+   lList *ret = nullptr;
+   lXchgList(tmp_job, JB_context, &ret);
+   lFreeElem(&tmp_job);
+   return ret;
 }
 
 /**
@@ -4270,6 +4339,8 @@ job_add_resource_set_list_to_command_line(const lListElem *job, dstring *dstr) {
 }
 
 /**
+ * @brief Generate the command line that submits an identical job
+ *
  * Based on the attributes of the job object the function generates a command line
  * which can be used to submit an identical job (if no sge_request files and/or JSV are active).
  * The command line is stored in the given dstring.
@@ -4388,7 +4459,15 @@ job_get_effective_command_line(const lListElem *job, dstring *dstr, const char *
    } else {
       job_add_opt_to_comand_line(dstr, "-r", "yes");
    }
-   job_add_name_value_list_opt_to_command_line(job, dstr, "-sc", JB_context, VA_variable, VA_value);
+   // the context as the job will have it, also before the qmaster applied the instructions (CS-3058)
+   if (job_get_context_change(job) == nullptr) {
+      job_add_name_value_list_opt_to_command_line(job, dstr, "-sc", JB_context, VA_variable, VA_value);
+   } else {
+      lListElem *context_job = lCreateElem(JB_Type);
+      lSetList(context_job, JB_context, ocs_context_get_effective(job));
+      job_add_name_value_list_opt_to_command_line(context_job, dstr, "-sc", JB_context, VA_variable, VA_value);
+      lFreeElem(&context_job);
+   }
    job_add_host_str_list_opt_to_command_line(job, dstr, "-shell", JB_shell_list, PN_host, PN_path);
    // -sync is not part of the job - it is only client behaviour
    // -t option

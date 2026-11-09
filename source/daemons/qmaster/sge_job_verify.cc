@@ -695,17 +695,12 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp,
       }
    }
 
-   /* 
-    * JB_context contains a raw context list, which needs to be transformed into
-    * a real context. For that, we have to take out the raw context and add it back
-    * again, processed. 
-    */
-   if (ret == STATUS_OK) {
-      lList *temp = nullptr;
-
-      lXchgList(jep, JB_context, &temp);
-      set_context(temp, jep);
-      lFreeList(&temp);
+   // the instructions of -ac, -sc and -dc are applied to the context the job was sent with,
+   // which is empty unless a GDI client sent one; the job keeps only the result (CS-3058)
+   if (ret == STATUS_OK && lGetPosViaElem(jep, JB_context_change, SGE_NO_ABORT) >= 0 &&
+       lGetList(jep, JB_context_change) != nullptr) {
+      set_context(lGetList(jep, JB_context_change), jep);
+      lSetList(jep, JB_context_change, nullptr);
    }
 
 #if 0

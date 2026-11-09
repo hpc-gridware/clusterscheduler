@@ -705,13 +705,11 @@ lList *cull_parse_job_parameter(uint32_t uid, const char *username, const char *
          !strcmp(lGetString(ep, SPA_switch_val), "-dc") ||
          !strcmp(lGetString(ep, SPA_switch_val), "-sc")) {
          lListElem* temp;
-         if(!lGetList(*pjob, JB_context)) {
-            lSetList(*pjob, JB_context, lCopyList("context", lGetList(ep, SPA_argval_lListT)));
-         }
-         else {
-            lList *copy = lCopyList("context", lGetList(ep, SPA_argval_lListT));
-            lAddList(lGetListRW(*pjob, JB_context), &copy);
-         }
+         // the switches are concatenated in their order, as instructions for the qmaster (CS-3058)
+         lList *change = nullptr;
+         lXchgList(*pjob, JB_context_change, &change);
+         ocs_context_change_add(&change, lGetList(ep, SPA_argval_lListT));
+         lXchgList(*pjob, JB_context_change, &change);
          temp = lNextRW(ep);
          lRemoveElem(cmdline, &ep);
          ep = temp;

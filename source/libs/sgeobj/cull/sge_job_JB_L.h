@@ -182,7 +182,7 @@
 *
 *    SGE_LIST(JB_context) - Job Context
 *    Custom attributes (name,val) pairs (VA_Type).
-*    ("qsub/qalter -ac/-dc context_list")
+*    The result of the -ac, -sc and -dc switches, see JB_context_change.
 *
 *    SGE_LIST(JB_job_args) - Job Arguments
 *    Job arguments (ST_Type).
@@ -384,6 +384,10 @@
 *    SGE_ULONG(JB_when) - Value of -when qalter switch
 *    Value of the -when qalter switch (enum qalter_when_t).
 *
+*    SGE_LIST(JB_context_change) - Job Context Change
+*    Instructions of the -ac, -sc and -dc switches (CX_Type), in the order given.
+*    Sent by submit and qalter, applied to JB_context by the qmaster and not spooled.
+*
 */
 
 enum {
@@ -471,7 +475,8 @@ enum {
    JB_joker,   ///< Joker
    JB_sync_options,   ///< sync options
    JB_category_id,   ///< Category ID (CAT_id)
-   JB_when   ///< Value of -when qalter switch
+   JB_when,   ///< Value of -when qalter switch
+   JB_context_change   ///< Job Context Change
 };
 
 LISTDEF(JB_Type)
@@ -560,6 +565,7 @@ LISTDEF(JB_Type)
    SGE_ULONG(JB_sync_options, CULL_SPOOL)
    SGE_ULONG(JB_category_id, CULL_HASH)
    SGE_ULONG(JB_when, CULL_DEFAULT)
+   SGE_LIST(JB_context_change, CX_Type, CULL_DEFAULT)
 LISTEND(JB_Type)
 
 NAMEDEF(JBN)
@@ -648,6 +654,7 @@ NAMEDEF(JBN)
    NAME("JB_sync_options")
    NAME("JB_category_id")
    NAME("JB_when")
+   NAME("JB_context_change")
 NAMEEND
 
 /** @brief Number of attributes of the type, i.e. the size of its name table */

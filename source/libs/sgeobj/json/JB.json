@@ -697,7 +697,7 @@
                "line": "Custom attributes (name,val) pairs (VA_Type)."
             },
             {
-               "line": "(\"qsub/qalter -ac/-dc context_list\")"
+               "line": "The result of the -ac, -sc and -dc switches, see JB_context_change."
             }
          ],
          "type": "lListT",
@@ -1641,6 +1641,22 @@
             }
          ],
          "type": "lUlongT",
+         "flags": []
+      },
+      {
+         "name": "context_change",
+         "summary": "Job Context Change",
+         "description": [
+            {
+               "line": "Instructions of the -ac, -sc and -dc switches (CX_Type), in the order given."
+            },
+            {
+               "line": "Sent by submit and qalter, applied to JB_context by the qmaster and not spooled."
+            }
+         ],
+         "type": "lListT",
+         "subClassName": "CX",
+         "subCullPrefix": "CX",
          "flags": []
       }
    ]

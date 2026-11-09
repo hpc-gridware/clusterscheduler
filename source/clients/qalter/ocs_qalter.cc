@@ -827,17 +827,15 @@ static lList *qalter_parse_job_parameter(uint32_t me_who, lList *cmdline, lList 
             !strcmp(lGetString(ep, SPA_switch_val), "-dc") ||
             !strcmp(lGetString(ep, SPA_switch_val), "-sc")) {
             lListElem* temp;
-            if(!lGetList(job, JB_context)) {
-               lSetList(job, JB_context, lCopyList("context", lGetList(ep, SPA_argval_lListT)));
-            }
-            else {
-               lList *copy = lCopyList("context", lGetList(ep, SPA_argval_lListT));
-               lAddList(lGetListRW(job, JB_context), &copy);
-            }
+            // the switches are concatenated in their order, as instructions for the qmaster (CS-3058)
+            lList *change = nullptr;
+            lXchgList(job, JB_context_change, &change);
+            ocs_context_change_add(&change, lGetList(ep, SPA_argval_lListT));
+            lXchgList(job, JB_context_change, &change);
             temp = lNextRW(ep);
             lRemoveElem(cmdline, &ep);
             ep = temp;
-            nm_set(job_field, JB_context);
+            nm_set(job_field, JB_context_change);
          } else {
             ep = lNextRW(ep);
          }
@@ -1053,6 +1051,7 @@ static lList *qalter_parse_job_parameter(uint32_t me_who, lList *cmdline, lList 
             JB_env_list,
             JB_job_args,
             JB_context,
+            JB_context_change,
             JB_ja_tasks,
             JB_ja_structure,
             JB_user_list,

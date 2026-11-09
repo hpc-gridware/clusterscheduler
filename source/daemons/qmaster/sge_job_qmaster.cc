@@ -2960,10 +2960,20 @@ mod_job_attributes(const ocs::gdi::Packet *packet, lListElem *new_job, lListElem
       }
    }
 
-   /* ---- JB_context */
-   if ((pos = lGetPosViaElem(jep, JB_context, SGE_NO_ABORT)) >= 0) {
+   /* ---- JB_context and JB_context_change */
+   // a context sent as such replaces the job's context, the instructions of -ac, -sc and -dc change it (CS-3058)
+   bool context_modified = false;
+   if (lGetPosViaElem(jep, JB_context, SGE_NO_ABORT) >= 0) {
       DPRINTF("got new JB_context\n");
-      set_context(lGetListRW(jep, JB_context), new_job);
+      lSetList(new_job, JB_context, lCopyList("context_list", lGetList(jep, JB_context)));
+      context_modified = true;
+   }
+   if (lGetPosViaElem(jep, JB_context_change, SGE_NO_ABORT) >= 0) {
+      DPRINTF("got new JB_context_change\n");
+      set_context(lGetList(jep, JB_context_change), new_job);
+      context_modified = true;
+   }
+   if (context_modified) {
       *trigger |= MOD_EVENT;
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_CONTEXT, jobid);
       answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);

@@ -800,6 +800,12 @@
          "cullPrefix": "HM",
          "cullNameSpec": "matchcache",
          "size_in_basic_units": 2
+      },
+      {
+         "className": "ContextChange",
+         "cullPrefix": "CX",
+         "cullNameSpec": "job",
+         "size_in_basic_units": 2
       }
    ]
 }

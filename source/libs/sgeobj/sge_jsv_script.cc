@@ -180,6 +180,19 @@ jsv_split_token(const dstring *input, dstring *token, dstring *args) {
    DRETURN(true);
 }
 
+/**
+ * @brief Apply a PARAM line the JSV script sent back to the new job
+ *
+ * Each parameter maps to a job attribute; the context parameter ac replaces the
+ * job's context and drops its context change request (CS-3058).
+ *
+ * @param jsv the JSV (JSV_Type), holding the new job
+ * @param answer_list receives errors
+ * @param c the command, PARAM
+ * @param s the parameter name
+ * @param a the parameter value, or an empty string
+ * @return true if the parameter was applied, false on an error
+ */
 static bool
 jsv_handle_param_command(lListElem *jsv, lList **answer_list, const dstring *c, const dstring *s, const dstring *a) {
    DENTER(TOP_LAYER);
@@ -423,7 +436,9 @@ jsv_handle_param_command(lListElem *jsv, lList **answer_list, const dstring *c, 
                }
             }
             if (ret) {
+               // the JSV answers with the whole context, which replaces the instructions (CS-3058)
                lSetList(new_job, JB_context, context_list);
+               lSetList(new_job, JB_context_change, nullptr);
             }
          }
       }
@@ -1109,6 +1124,19 @@ jsv_send_path_list(lListElem *jsv, lList **answer_list, const char *prefix, cons
    DRETURN(true);
 }
 
+/**
+ * @brief Answer the STARTED line of a JSV script with the parameters of the job
+ *
+ * Sends one PARAM line per attribute of the old job. The context is sent as the
+ * job will have it, with its context change request applied (CS-3058).
+ *
+ * @param jsv the JSV (JSV_Type), holding the old job
+ * @param answer_list receives errors
+ * @param c the command, STARTED
+ * @param s not used
+ * @param a not used
+ * @return true if all parameters were sent, false on an error
+ */
 static bool
 jsv_handle_started_command(lListElem *jsv, lList **answer_list, const dstring *c, const dstring *s, const dstring *a) {
    DENTER(TOP_LAYER);
@@ -1195,36 +1223,26 @@ jsv_handle_started_command(lListElem *jsv, lList **answer_list, const dstring *c
       jsv_send_command(jsv, answer_list, sge_dstring_get_string(&buffer));
    }
 
-   // -ac variable[=value],... (optional; also contains result of -dc and -sc options)
-   if (const lList *context_list = lGetList(old_job, JB_context); context_list != nullptr) {
-      lListElem *tmp_job = lCopyElem(old_job);
-      lList* tmp = nullptr;
+   // -ac variable[=value],... (optional; the context with the instructions of -ac, -dc and -sc applied)
+   if (lList *context_list = ocs_context_get_effective(old_job); context_list != nullptr) {
+      bool first = true;
 
-      lXchgList(tmp_job, JB_context, &tmp);
-      set_context(tmp, tmp_job);
-      context_list = lGetList(tmp_job, JB_context);
-      if (context_list != nullptr) {
-         bool first = true;
+      sge_dstring_clear(&buffer);
+      sge_dstring_sprintf(&buffer, "PARAM ac");
+      for_each_ep_lv(context, context_list) {
+         const char *name = lGetString(context, VA_variable);
+         const char *value = lGetString(context, VA_value);
 
-         sge_dstring_clear(&buffer);
-         sge_dstring_sprintf(&buffer, "PARAM ac");
-         const lListElem *context = nullptr;
-         for_each_ep(context, context_list) {
-            const char *name = lGetString(context, VA_variable);
-            const char *value = lGetString(context, VA_value);
-
-            sge_dstring_sprintf_append(&buffer, (first) ? " " : ",");
-            first = false;
-            if (value != nullptr) {
-               sge_dstring_sprintf_append(&buffer, "%s=%s", name, value);
-            } else {
-               sge_dstring_sprintf_append(&buffer, "%s", name);
-            }
+         sge_dstring_sprintf_append(&buffer, (first) ? " " : ",");
+         first = false;
+         if (value != nullptr) {
+            sge_dstring_sprintf_append(&buffer, "%s=%s", name, value);
+         } else {
+            sge_dstring_sprintf_append(&buffer, "%s", name);
          }
-         jsv_send_command(jsv, answer_list, sge_dstring_get_string(&buffer));
       }
-      lFreeList(&tmp);
-      lFreeElem(&tmp_job);
+      jsv_send_command(jsv, answer_list, sge_dstring_get_string(&buffer));
+      lFreeList(&context_list);
    }
 
    // -ar (optional)
@@ -2073,7 +2091,7 @@ bool jsv_do_communication(lListElem *jsv, lList **answer_list) {
 }
 
 /**
- * Converts a CULL attribute into a switch name as used in the JSV protocol (usually a qalter switch).
+ * @brief Convert a CULL attribute into a switch name as used in the JSV protocol (usually a qalter switch).
  *
  * @param cull_attr CULL attribute
  * @param job A JB_Type object
@@ -2086,7 +2104,7 @@ jsv_cull_attr2switch_name(const int cull_attr, const lListElem *job) {
 
    if (cull_attr == JB_execution_time) {
       ret = "a";
-   } else if (cull_attr == JB_context) {
+   } else if (cull_attr == JB_context || cull_attr == JB_context_change) {
       ret = "ac"; // although it might also be a ds or sc request we return ac here
    } else if (cull_attr == JB_ar) {
       ret = "ar";
@@ -2176,7 +2194,7 @@ jsv_cull_attr2switch_name(const int cull_attr, const lListElem *job) {
 }
 
 /**
- * Check if a modification request is rejected by the JSV script.
+ * @brief Check if a modification request is rejected by the JSV script.
  *
  * @param answer_list The answer list to append the error message to.
  * @param job The job to check.
@@ -2204,7 +2222,9 @@ jsv_is_modify_rejected(lList **answer_list, const lListElem *job) {
             const lDescr *descr = lGetElemDescr(job);
             str_list_parse_from_string(&allowed_switches, jsv_allowed_mod, ",");
             for (const auto f : ocs_cull_present_fields(descr)) {
-               if (const char *switch_name = jsv_cull_attr2switch_name(descr[f.pos].nm, job); switch_name != nullptr) {
+               // JB_context and JB_context_change both map to ac, which is listed once
+               if (const char *switch_name = jsv_cull_attr2switch_name(descr[f.pos].nm, job);
+                   switch_name != nullptr && lGetElemStr(got_switches, ST_name, switch_name) == nullptr) {
                   lAddElemStr(&got_switches, ST_name, switch_name, ST_Type);
                }
             }

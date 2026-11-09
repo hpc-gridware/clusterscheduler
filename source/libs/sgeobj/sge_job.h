@@ -550,7 +550,13 @@ bool
 job_get_verify_attr(uint32_t op, dstring *string);
 
 void
-set_context(lList *jbctx, lListElem *job);
+set_context(const lList *change, lListElem *job);
+
+void
+ocs_context_change_add(lList **change, const lList *option_list);
+
+lList *
+ocs_context_get_effective(const lListElem *job);
 
 bool
 job_parse_validation_level(int *level, const char *input, int prog_number, lList **answer_list);

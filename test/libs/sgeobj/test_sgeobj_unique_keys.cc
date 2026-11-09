@@ -19,13 +19,16 @@
 /*___INFO__MARK_END_NEW__*/
 
 /** @file
- * @brief Module test of the duplicate keys in unique attributes built from input (CS-3053)
+ * @brief Module test of the duplicate keys in unique attributes built from input (CS-3053, CS-3058)
  */
 
+#include <cstdlib>
 #include <cstring>
+#include <string>
 
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "sgeobj/sge_job.h"
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_qref.h"
 #include "sgeobj/sge_ulong.h"
@@ -171,6 +174,134 @@ test_set_lists() {
 }
 
 /**
+ * @brief Append one context switch to a request, built the way the parser builds it
+ * @param[in,out] change the context change request
+ * @param marker the marker of the switch: "+" for -ac, "-" for -dc, "=" for -sc
+ * @param vars the variables of the switch, "name[=value],..."
+ * @return nothing
+ */
+static void
+add_context_switch(lList **change, const char *marker, const char *vars) {
+   lList *option = nullptr;
+   var_list_parse_from_string(&option, vars, 0);
+   lListElem *ep = lCreateElem(VA_Type);
+   lSetString(ep, VA_variable, marker);
+   lInsertElem(option, nullptr, ep);
+   ocs_context_change_add(change, option);
+   lFreeList(&option);
+}
+
+/**
+ * @brief Whether a job's context holds a variable with a value
+ * @param job the job
+ * @param name the variable
+ * @param value the expected value
+ * @return true if the variable is in JB_context with that value
+ */
+static bool
+context_has(const lListElem *job, const char *name, const char *value) {
+   const lListElem *var = lGetSubStr(job, VA_variable, name, JB_context);
+   return var != nullptr && lGetString(var, VA_value) != nullptr && strcmp(lGetString(var, VA_value), value) == 0;
+}
+
+/**
+ * @brief The instructions of -ac, -sc and -dc repeat markers and names without a unique key
+ * @return nothing; CHECK records the results
+ */
+static void
+test_context_change() {
+   // -ac a=1 -ac b=2 -dc a -ac a=3
+   lList *change = nullptr;
+   add_context_switch(&change, "+", "a=1");
+   add_context_switch(&change, "+", "b=2");
+   add_context_switch(&change, "-", "a");
+   add_context_switch(&change, "+", "a=3");
+   const lListElem *a = lGetElemStr(change, CX_variable, "a");
+   CHECK(15, "the request holds four markers and a three times; a lookup of a finds an element",
+         lGetNumberOfElem(change) == 8 && a != nullptr);
+
+   lListElem *job = lCreateElem(JB_Type);
+   lSetList(job, JB_context_change, change);
+   lList *answer_list = nullptr;
+   CHECK(16, "the central check accepts a job holding the request",
+         ocs_object_verify_unique_keys(job, &answer_list, "job 1"));
+   lFreeList(&answer_list);
+
+   set_context(lGetList(job, JB_context_change), job);
+   CHECK(17, "the request yields the context b=2,a=3",
+         lGetNumberOfElem(lGetList(job, JB_context)) == 2 && context_has(job, "b", "2") && context_has(job, "a", "3"));
+
+   // the context loses its last variable and gets a new one
+   lList *readd = nullptr;
+   add_context_switch(&readd, "=", "a=1");
+   add_context_switch(&readd, "-", "a");
+   add_context_switch(&readd, "+", "c=1");
+   set_context(readd, job);
+   CHECK(18, "a variable added after the context became empty is kept",
+         lGetNumberOfElem(lGetList(job, JB_context)) == 1 && context_has(job, "c", "1"));
+   lFreeList(&readd);
+
+   // above the hash threshold the markers and a repeated name are hashed without a unique key
+   lList *big = nullptr;
+   for (int i = 0; i < 20; i++) {
+      const std::string var = "x" + std::to_string(i) + "=" + std::to_string(i);
+      add_context_switch(&big, "+", var.c_str());
+   }
+   add_context_switch(&big, "-", "x0");
+   add_context_switch(&big, "+", "x0=new");
+   const bool found = lGetElemStr(big, CX_variable, "+") != nullptr && lGetElemStr(big, CX_variable, "x0") != nullptr;
+   set_context(big, job);
+   CHECK(19, "above the hash threshold the lookups work; c and the 20 added variables remain, x0 with its new value",
+         lGetNumberOfElem(big) > OCS_CULL_HASH_MIN_ELEMS && found &&
+         lGetNumberOfElem(lGetList(job, JB_context)) == 21 && context_has(job, "x0", "new"));
+   lFreeList(&big);
+
+   // a request without a marker replaces the context
+   lList *plain = nullptr;
+   lList *vars = nullptr;
+   var_list_parse_from_string(&vars, "d=4", 0);
+   ocs_context_change_add(&plain, vars);
+   lFreeList(&vars);
+   set_context(plain, job);
+   CHECK(20, "a request without a marker replaces the context",
+         lGetNumberOfElem(lGetList(job, JB_context)) == 1 && context_has(job, "d", "4"));
+   lFreeList(&plain);
+   lFreeElem(&job);
+
+   // qsh adds PARENT after the switches; a trailing -dc must not delete it
+   lListElem *child = lCreateElem(JB_Type);
+   lList *child_change = nullptr;
+   add_context_switch(&child_change, "+", "e=5");
+   add_context_switch(&child_change, "-", "e");
+   lSetList(child, JB_context_change, child_change);
+   setenv("JOB_ID", "42", 1);
+   job_add_parent_id_to_context(child);
+   unsetenv("JOB_ID");
+   lList *effective = ocs_context_get_effective(child);
+   const lListElem *parent = lGetElemStr(effective, VA_variable, CONTEXT_PARENT);
+   CHECK(21, "PARENT given after a trailing -dc is in the effective context",
+         lGetNumberOfElem(effective) == 1 && parent != nullptr && strcmp(lGetString(parent, VA_value), "42") == 0);
+   lFreeList(&effective);
+   lFreeElem(&child);
+
+   // qstat -j works on a reduced job that does not contain JB_context_change
+   lList *jobs = lCreateList("jobs", JB_Type);
+   lListElem *full = lAddElemUlong(&jobs, JB_job_number, 1, JB_Type);
+   lList *context = nullptr;
+   lAddElemStr(&context, VA_variable, "f", VA_Type);
+   lSetList(full, JB_context, context);
+   lEnumeration *what = lWhat("%T(%I %I)", JB_Type, JB_job_number, JB_context);
+   lList *reduced = lSelect("reduced", jobs, nullptr, what);
+   lList *reduced_effective = ocs_context_get_effective(lFirst(reduced));
+   CHECK(22, "the effective context of a reduced job without the change request is its context",
+         lGetNumberOfElem(reduced_effective) == 1 && lGetElemStr(reduced_effective, VA_variable, "f") != nullptr);
+   lFreeList(&reduced_effective);
+   lFreeList(&reduced);
+   lFreeWhat(&what);
+   lFreeList(&jobs);
+}
+
+/**
  * @brief Run the scenarios of the duplicate keys in unique attributes
  * @param argc number of arguments
  * @param argv the arguments; the module test frame takes its own options from them
@@ -203,5 +334,16 @@ int main(int argc, char *argv[]) {
         "parse the ulong list 1,2,1"},
        "each name is held once, in its first position",
        {{"CLN-03", "covers"}}, {11, 12, 13, 14}, test_set_lists},
+      {"UNQ-05", "raw context",
+       "the instructions of -ac, -sc and -dc repeat markers and names in a list without a unique key",
+       {"build the request of -ac a=1 -ac b=2 -dc a -ac a=3, check it and apply it to a job",
+        "empty the context and add to it again",
+        "build a request above the hash threshold and look up a marker and a repeated name",
+        "apply a request without a marker",
+        "add PARENT after a trailing -dc",
+        "take the effective context of a reduced job as qstat -j has it"},
+       "the request passes the central check; the context is b=2,a=3, then c=1, then 21 variables, then d=4; "
+       "PARENT survives the -dc; a reduced job without the request does not abort",
+       {{"CLN-04", "covers"}}, {15, 16, 17, 18, 19, 20, 21, 22}, test_context_change},
    });
 }

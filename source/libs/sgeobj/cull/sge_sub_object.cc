@@ -118,6 +118,9 @@ object_get_subtype(int nm)
       case JB_joker:
          ret = VA_Type;
          break;
+      case JB_context_change:
+         ret = CX_Type;
+         break;
       case JRS_hard_resource_list:
          ret = CE_Type;
          break;

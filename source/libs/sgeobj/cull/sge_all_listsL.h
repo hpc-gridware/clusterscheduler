@@ -152,6 +152,7 @@
 #include "sgeobj/cull/sge_param_SPP_L.h"
 #include "sgeobj/cull/sge_role_RL_L.h"
 #include "sgeobj/cull/sge_matchcache_HM_L.h"
+#include "sgeobj/cull/sge_job_CX_L.h"
 #if defined(__SGE_GDI_LIBRARY_HOME_OBJECT_FILE__)
 
 lNameSpace nmv[] = {
@@ -293,6 +294,7 @@ lNameSpace nmv[] = {
    {SPP_LOWERBOUND, SPP_SIZE, SPPN, SPP_Type},
    {RL_LOWERBOUND, RL_SIZE, RLN, RL_Type},
    {HM_LOWERBOUND, HM_SIZE, HMN, HM_Type},
+   {CX_LOWERBOUND, CX_SIZE, CXN, CX_Type},
    {0, 0, nullptr, nullptr}
 };
 
