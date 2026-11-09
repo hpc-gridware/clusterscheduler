@@ -536,6 +536,8 @@ namespace ocs {
          write_json(writer, "ar_number", lGetUlong(ar, AR_id));
          write_json(writer, "ar_name", lGetString(ar, AR_name));
          write_json(writer, "ar_account", lGetString(ar, AR_account));
+         // the key is left out for an AR which did not request a project
+         write_json(writer, "ar_project", lGetString(ar, AR_project));
          write_json(writer, "ar_start_time", lGetUlong64(ar, AR_start_time));
          write_json(writer, "ar_end_time", lGetUlong64(ar, AR_end_time));
          write_json(writer, "ar_granted_pe", lGetString(ar, AR_pe));

@@ -69,6 +69,7 @@ lEnumeration *ocs::QRStatModelBase::get_ar_what(QRStatParameter& parameter) {
    if (parameter.get_output_format() != QRStatParameterClient::OutputFormat::PLAIN) {
       constexpr int xml_nm[] = {
          AR_account,
+         AR_project,
          AR_owner,
          AR_group,
          AR_submission_time,
@@ -97,6 +98,7 @@ lEnumeration *ocs::QRStatModelBase::get_ar_what(QRStatParameter& parameter) {
    if (!parameter.is_summary()) {
       constexpr int full_nm[] = {
          AR_account,
+         AR_project,
          AR_owner,
          AR_group,
          AR_submission_time,

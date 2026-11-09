@@ -80,6 +80,9 @@ ocs::QRStatController::process_request(QRStatParameter &parameter, QRStatModelBa
          view.report_ar_node_time(out_, "submission_time", lGetUlong64(ar, AR_submission_time));
          view.report_ar_node_string(out_, "group", lGetString(ar, AR_group));
          view.report_ar_node_string(out_, "account", lGetString(ar, AR_account));
+         if (const char *project = lGetString(ar, AR_project); project != nullptr) {
+            view.report_ar_node_string(out_, "project", project);
+         }
 
          if (const lListElem *binding = lGetObject(ar, AR_binding); binding != nullptr) {
             std::string binding_string;

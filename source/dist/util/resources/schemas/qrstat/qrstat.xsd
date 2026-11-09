@@ -54,6 +54,7 @@ ___INFO__MARK_END__-->
             <xs:element name="id" type="xs:unsignedInt"/>
             <xs:element name="name" type="xs:string" minOccurs="0"/>
             <xs:element name="account" type="xs:string" minOccurs="0"/>
+            <xs:element name="project" type="xs:string" minOccurs="0"/>
             <xs:element name="owner" type="xs:string"/>
 
             <xs:element name="submission_time" type="xs:dateTime"/>

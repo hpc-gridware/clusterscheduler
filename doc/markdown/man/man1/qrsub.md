@@ -125,6 +125,16 @@ The specifiers *e* and *v* define the following validation modes:
 * *v*: verify - does not submit the AR but prints extensive validation report
 * *e*: error - rejects request if requirements cannot fulfilled, default for `qrsub`
 
+## -P *project_name*
+Specifies the project the AR belongs to. The project has to exist, the AR owner has to have access
+to it (see xxqs_name_sxx_project(5)), and the *projects* and *xprojects* of the global configuration
+have to allow it (see xxqs_name_sxx_conf(5)). Only queues and hosts whose *projects* and *xprojects*
+allow the project are reserved. Without this option, the AR has no project, and only queues and
+hosts without a *projects* list are reserved.
+
+The project does not restrict the jobs which can be submitted into the AR. A job running in the AR
+has to request a project which the reserved queues and hosts allow.
+
 ## -pe *parallel_env* *n*\[-\[*m*\]\] \| [-\[*m*\]\],...  
 Parallel programming environment (PE) to select for the AR queue reservation. Please see the details of a PE 
 in xxqs_name_sxx_pe(5).

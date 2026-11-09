@@ -178,6 +178,8 @@ bool ar_validate(lListElem *ar, lList **alpp, bool in_master, bool is_spool, con
             goto ERROR;
          }
       }
+      /*   AR_project, SGE_STRING */
+      NULL_OUT_NONE(ar, AR_project);
       /*   AR_verify, SGE_ULONG              just verify the reservation or final case */
       /*   AR_error_handling, SGE_ULONG      how to deal with soft and hard exceptions */
       /*   AR_checkpoint_name, SGE_STRING    Named checkpoint */

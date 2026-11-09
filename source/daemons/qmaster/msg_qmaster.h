@@ -774,5 +774,8 @@
 #define MSG_AUTOREMOVEHOSTS_FAILED_S               _MESSAGE(34013, _("exec host " SFQ " could not be removed from the cluster, it is no longer treated as a host which added itself"))
 #define MSG_QMASTER_READERTHREADS_AUTO_II          _MESSAGE(34014, _("reader_threads auto: %d CPUs available, starting %d reader threads"))
 #define MSG_CONF_PATHMUSTSTARTWITHSLASHORSGEROOT_S _MESSAGE(34015, _("denied: the path given for " SFQ " must start with a \"/\" or with \"$sge_root\""))
+#define MSG_AR_PRJUNKNOWN_S                        _MESSAGE(34016, _("advance reservation rejected: the requested project " SFQ " does not exist"))
+#define MSG_AR_NOACCESS2PRJ4USER_SS                _MESSAGE(34017, _("advance reservation rejected: no access to project " SFQ " for user " SFQ))
+#define MSG_AR_PRJNOTALLOWED_S                     _MESSAGE(34018, _("advance reservation rejected: project " SFQ " is not allowed by the projects and xprojects of the global configuration"))
 
 // clang-format on

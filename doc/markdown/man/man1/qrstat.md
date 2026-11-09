@@ -99,6 +99,7 @@ attributes are printed in the order below.
 * *submission_time* - the time the AR was submitted.
 * *group* - the UNIX group of the AR owner.
 * *account* - the account string given with `qrsub -A`.
+* *project* - the project given with `qrsub -P`. Not printed for an AR without a project.
 * *binding* - the core binding the AR requested, as a comma separated list of the parameters the
   `qrsub` switches `-bamount`, `-btype`, `-bunit`, `-bstrategy`, `-bstart`, `-bstop`, `-bsort` and
   `-binstance` set, for example *bamount=2,btype=core,bunit=core*.
