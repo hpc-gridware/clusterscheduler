@@ -186,7 +186,9 @@ namespace ocs {
 
       static lEnumeration *get_job_what(const QStatParameter &parameter);
 
-      static lCondition *get_job_view_where(const lList *job_view_list);
+      static lCondition *get_job_owner_where(const lList *user_list);
+
+      static lCondition *get_job_view_where(const lList *job_view_list, const lList *user_list);
 
       static lEnumeration *get_job_view_what();
 

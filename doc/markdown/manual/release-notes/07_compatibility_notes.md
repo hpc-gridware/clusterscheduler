@@ -91,6 +91,18 @@ truncated it to the column width, so a 4 GiB limit could appear as the misleadin
 machine-readable, unformatted numeric values use `qquota -xml` or `qquota -json` instead — their output is
 **unchanged** and continues to report the canonical numeric value.
 
+## *qstat -j* Shows Only the Jobs of the Current User by Default
+
+In version 9.1.x, `qstat -j job_list` shows every job matching the job list, regardless of its
+owner. Up to version 9.1.7 the `-u` switch is ignored, version 9.1.8 restricts the output to the
+users given with `-u`, but has no default user. Starting with version 9.2, `qstat -j` selects the
+jobs like plain `qstat` does: only the jobs of the users given with `-u` are shown, and the default
+is `-u $user`. This applies to the plain, the XML and the JSON output.
+
+**Impact on existing scripts:** `qstat -j '*'` lists only the jobs of the calling user, and
+`qstat -j job_id` reports a job of another user as not existing. Add `-u '*'` to show the jobs of
+all users as in version 9.1.x, e.g. `qstat -u '*' -j job_id`.
+
 ## Spool Files Created With Owner-Only Permissions (0600)
 
 Flatfile spool files written by the qmaster (under `$SGE_ROOT/<cell>/spool/qmaster/...`) are now created with mode

@@ -411,6 +411,36 @@ ocs::QStatModelBase::get_job_what(const QStatParameter &parameter) {
    DRETURN(job_what);
 }
 
+/** @brief Build the CULL condition selecting the jobs of the users given with `-u`
+ *
+ * The default `-u $user` and the wildcard `*` have already been resolved, see
+ * str_list_transform_user_list(). A user name may be a wildcard pattern.
+ *
+ * @param user_list the users (ST_Type) whose jobs are selected
+ * @return the condition, which the caller owns, or nullptr if the job owner is not restricted
+ */
+lCondition *
+ocs::QStatModelBase::get_job_owner_where(const lList *user_list) {
+   DENTER(TOP_LAYER);
+   lCondition *where = nullptr;
+
+   for_each_ep_lv(ep, user_list) {
+      lCondition *nw = nullptr;
+
+      if (const char *user = lGetString(ep, ST_name); is_pattern(user)) {
+         nw = lWhere("%T(%I p= %s)", JB_Type, JB_owner, user);
+      } else {
+         nw = lWhere("%T(%I == %s)", JB_Type, JB_owner, user);
+      }
+      if (where == nullptr) {
+         where = nw;
+      } else {
+         where = lOrWhere(where, nw);
+      }
+   }
+   DRETURN(where);
+}
+
 /** @brief Build the CULL condition selecting the jobs to report
  * @param parameter the parsed parameters, holding the user and state filters
  * @return the condition, which the caller owns
@@ -418,24 +448,10 @@ ocs::QStatModelBase::get_job_what(const QStatParameter &parameter) {
 lCondition *
 ocs::QStatModelBase::get_job_where(const QStatParameter &parameter) {
    DENTER(TOP_LAYER);
-   lCondition *jw = nullptr;
    lCondition *nw = nullptr;
 
    // Retrieve jobs only for those users specified via -u switch
-   for_each_ep_lv(ep, parameter.get_user_list()) {
-      lCondition *tmp_nw = nullptr;
-
-      if (const char *user = lGetString(ep, ST_name); is_pattern(user)) {
-         tmp_nw = lWhere("%T(%I p= %s)", JB_Type, JB_owner, user);
-      } else {
-         tmp_nw = lWhere("%T(%I == %s)", JB_Type, JB_owner, user);
-      }
-      if (jw == nullptr) {
-         jw = tmp_nw;
-      } else {
-         jw = lOrWhere(jw, tmp_nw);
-      }
-   }
+   lCondition *jw = get_job_owner_where(parameter.get_user_list());
 
    // Pending jobs (all that are not running)
    if ((parameter.show_ & QSTAT_DISPLAY_PENDING) == QSTAT_DISPLAY_PENDING) {
@@ -737,9 +753,11 @@ lEnumeration *ocs::QStatModelBase::get_conf_what() {
 
 /** @brief Build the CULL condition selecting the jobs of a `qstat -j` call
  * @param job_view_list the jobs the user named, by number or pattern
+ * @param user_list the users given with `-u`, by default the current user, see get_job_owner_where()
  * @return the condition, which the caller owns
  */
-lCondition *ocs::QStatModelBase::get_job_view_where(const lList *job_view_list) {
+lCondition *ocs::QStatModelBase::get_job_view_where(const lList *job_view_list, const lList *user_list) {
+   DENTER(TOP_LAYER);
    lCondition *where = nullptr;
 
    for_each_ep_lv(j_elem, job_view_list) {
@@ -768,7 +786,12 @@ lCondition *ocs::QStatModelBase::get_job_view_where(const lList *job_view_list) 
          }
       }
    }
-   return where;
+
+   // like plain qstat, -j shows only the jobs of the users given with -u
+   if (lCondition *owner_where = get_job_owner_where(user_list); owner_where != nullptr) {
+      where = where == nullptr ? owner_where : lAndWhere(where, owner_where);
+   }
+   DRETURN(where);
 }
 /** @brief The scheduler job info fields the model needs
  * @return the enumeration, which the caller owns

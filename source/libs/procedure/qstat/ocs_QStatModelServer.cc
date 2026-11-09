@@ -43,7 +43,7 @@ ocs::QStatModelServer::fetch_data(lList **answer_list, QStatParameter &parameter
    lFreeWhat(&sme_what);
 
    if (parameter.get_jid_list() != nullptr) {
-      lCondition *job_view_where = get_job_view_where(parameter.get_jid_list());
+      lCondition *job_view_where = get_job_view_where(parameter.get_jid_list(), parameter.get_user_list());
       lEnumeration *job_view_what = get_job_view_what();
       jlp = lSelect("", master_job_list, job_view_where, job_view_what);
       lFreeWhere(&job_view_where);
