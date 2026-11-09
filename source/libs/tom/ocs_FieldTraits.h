@@ -138,6 +138,38 @@ namespace ocs::tom {
    }
 
    /**
+    * @brief The field type of a descriptor entry, for checks of a field known only at run time
+    * @param mt the entry's type and attribute bits
+    * @return the field type
+    */
+   constexpr FieldType field_type_of(const int mt) {
+      switch (mt_get_type(mt)) {
+         case lUlongT:
+            return FieldType::Uint32;
+         case lUlong64T:
+            return FieldType::Uint64;
+         case lIntT:
+            return FieldType::Int32;
+         case lLongT:
+            return FieldType::Int64;
+         case lDoubleT:
+            return FieldType::Double;
+         case lBoolT:
+            return FieldType::Bool;
+         case lStringT:
+            return FieldType::String;
+         case lHostT:
+            return FieldType::Host;
+         case lListT:
+            return FieldType::List;
+         case lObjectT:
+            return FieldType::Object;
+         default:
+            return FieldType::Ref;
+      }
+   }
+
+   /**
     * @brief The attribute bits of the list library for a set of flags
     * @param flags the flags
     * @return the bits, @ref cull_field_attributes or-ed together

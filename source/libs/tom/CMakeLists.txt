@@ -24,5 +24,7 @@
 # interfaces, so the sources here are built into the cull library rather than
 # into a library of their own.
 target_sources(cull PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/ocs_ElementCore.cc
+        ${CMAKE_CURRENT_SOURCE_DIR}/ocs_FieldException.cc
         ${CMAKE_CURRENT_SOURCE_DIR}/ocs_Host.cc
 )
