@@ -1057,7 +1057,7 @@
 #define MSG_GDI_USAGE_explain_OPT         "[-explain]"
 #define MSG_GDI_UTEXT_explain_OPT         _MESSAGE(60708, _("show reason for error state"))
 #define MSG_GDI_USAGE_w_OPT_EV            "[-w e|v]"
-#define MSG_GDI_UTEXT_w_OPT_EV            _MESSAGE(60709, _("validate availability of AR request (error|verify) for jobs"))
+#define MSG_GDI_UTEXT_w_OPT_EV            _MESSAGE(60709, _("validate the AR request (error|verify)"))
 #define MSG_GDI_USAGE_ar_list_OPT         "[-ar ar_id_list]"
 #define MSG_GDI_USAGE_wc_ar_list_OPT      "wc_ar_list"
 #define MSG_GDI_UTEXT_wc_ar_list_OPT      _MESSAGE(60711, _("delete all advance reservations given in list"))
@@ -1107,7 +1107,7 @@
 
 #define MSG_PARSE_BSORT_INVALID_S         _MESSAGE(60733, _("invalid character in binding sort " SFQ ", must be one or more of: [SsCcEeNnXxYy]"))
 #define MSG_GDI_USAGE_BSORT_OPT           "[-bsort [SsCcEeNnXxYy]]"
-#define MSG_GDI_UTEXT_BSORT_OPT           _MESSAGE(60734, _("enables and specifieds binding sort order"))
+#define MSG_GDI_UTEXT_BSORT_OPT           _MESSAGE(60734, _("enables and specifies the binding sort order"))
 
 #define MSG_PARSE_BSTART_INVALID_S        _MESSAGE(60735, _("invalid binding start " SFQ ", must be one of: [S|s|C|c|E|e|N|n|X|x|Y|y]"))
 #define MSG_GDI_USAGE_BSTART_OPT          "[-bstart [S|s|C|c|E|e|N|n|X|x|Y|y]]"
@@ -1121,7 +1121,7 @@
 #define MSG_GDI_UTEXT_BAMOUNT_OPT         _MESSAGE(60739, _("defines the number of binding units to be used"))
 
 #define MSG_PARSE_BSTRATEGY_INVALID_S     _MESSAGE(60740, _("invalid binding strategy " SFQ ", must be \'packed\'."))
-#define MSG_GDI_USAGE_BSTRATEGY_OPT       "[-bstrategy name]]"
+#define MSG_GDI_USAGE_BSTRATEGY_OPT       "[-bstrategy name]"
 #define MSG_GDI_UTEXT_BSTRATEGY_OPT       _MESSAGE(60741, _("defines the binding strategy"))
 
 #define MSG_PARSE_BINSTANCE_INVALID_S     _MESSAGE(60742, _("invalid binding instance " SFQ ", must be one of: [set|env|pe]"))
@@ -1136,6 +1136,11 @@
 #define MSG_GDI_USAGE_PAR_OPT             "[-par allocation_rule]"
 #define MSG_GDI_UTEXT_PAR_OPT             _MESSAGE(60746, _("set the parallel job allocation rule"))
 #define MSG_GDI_UTEXT_PAR_qrsub_OPT       _MESSAGE(60792, _("set the parallel AR allocation rule"))
+#define MSG_GDI_UTEXT_N_qrsub_OPT         _MESSAGE(60794, _("specify the AR name"))
+#define MSG_GDI_UTEXT_P_qrsub_OPT         _MESSAGE(60795, _("request a project for the AR"))
+#define MSG_GDI_UTEXT_pe_qrsub_OPT        _MESSAGE(60796, _("request a parallel environment and slot range for the AR"))
+#define MSG_GDI_UTEXT_q_qrsub_OPT         _MESSAGE(60797, _("reserve slots in the given queue(s)"))
+#define MSG_GDI_UTEXT_u_qrsub_OPT         _MESSAGE(60798, _("users who may submit jobs into the AR"))
 
 #define MSG_GDI_USAGE_fmt_OPT             "[-fmt plain|xml|json]"
 #define MSG_GDI_UTEXT_fmt_OPT             _MESSAGE(60747, _("show output in specified format"))
