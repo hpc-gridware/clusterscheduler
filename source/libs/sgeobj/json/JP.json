@@ -2,9 +2,7 @@
    "className": "JobPid",
    "summary": "Job Pid",
    "description": [
-      {
-         "line": "This is the list type we use to hold the process ID list for jobs in the PTF O.S. job list."
-      }
+      "This is the list type we use to hold the process ID list for jobs in the PTF O.S. job list."
    ],
    "cullPrefix": "JP",
    "attributes": [
@@ -12,9 +10,7 @@
          "name": "pid",
          "summary": "Pid",
          "description": [
-            {
-               "line": "Process Id."
-            }
+            "Process Id."
          ],
          "type": "lUlongT",
          "flags": [
@@ -30,9 +26,7 @@
          "name": "background",
          "summary": "Background",
          "description": [
-            {
-               "line": "Background flag. @todo looks as if it is not used, remove it."
-            }
+            "Background flag. @todo looks as if it is not used, remove it."
          ],
          "type": "lUlongT",
          "flags": []

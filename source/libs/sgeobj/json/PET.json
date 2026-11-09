@@ -2,9 +2,7 @@
    "className": "PETask",
    "summary": "PE Task",
    "description": [
-      {
-         "line": "A PET_Type object describes one task of a tightly integrated parallel job."
-      }
+      "A PET_Type object describes one task of a tightly integrated parallel job."
    ],
    "cullPrefix": "PET",
    "attributes": [
@@ -12,9 +10,7 @@
          "name": "id",
          "summary": "PE Task Id",
          "description": [
-            {
-               "line": "The pe task id. It is unique per job."
-            }
+            "The pe task id. It is unique per job."
          ],
          "type": "lStringT",
          "flags": [
@@ -36,9 +32,7 @@
          "name": "name",
          "summary": "Task Name",
          "description": [
-            {
-               "line": "The name of this parallel environment task, used in the job's output file names and in accounting. Defaults to `petask`."
-            }
+            "The name of this parallel environment task, used in the job's output file names and in accounting. Defaults to `petask`."
          ],
          "type": "lStringT",
          "flags": [
@@ -51,9 +45,7 @@
          "name": "status",
          "summary": "Status",
          "description": [
-            {
-               "line": "Status of the pe job, see defines in libs/gdi/sge_jobL.h."
-            }
+            "Status of the pe job, see defines in libs/gdi/sge_jobL.h."
          ],
          "type": "lUlongT",
          "flags": [
@@ -66,9 +58,7 @@
          "name": "granted_destin_identifier_list",
          "summary": "Granted Destination Identifier List",
          "description": [
-            {
-               "line": "Contains one entry specifying the queue the pe task runs in."
-            }
+            "Contains one entry specifying the queue the pe task runs in."
          ],
          "type": "lListT",
          "subClassName": "JG",
@@ -83,9 +73,7 @@
          "name": "pid",
          "summary": "Process Id",
          "description": [
-            {
-               "line": "Pid of a running pe task (process group id)"
-            }
+            "Pid of a running pe task (process group id)"
          ],
          "type": "lUlongT",
          "flags": []
@@ -94,9 +82,7 @@
          "name": "osjobid",
          "summary": "OS JobId",
          "description": [
-            {
-               "line": "OS jobid / additional group id of a running pe task."
-            }
+            "OS jobid / additional group id of a running pe task."
          ],
          "type": "lStringT",
          "flags": []
@@ -105,18 +91,10 @@
          "name": "systemd_scope",
          "summary": "Systemd Scope",
          "description": [
-            {
-               "line": "In case a pe task is started in a systemd scope, this is the"
-            },
-            {
-               "line": "scope unit name."
-            },
-            {
-               "line": "Only used in sge_execd, it is set during the startup phase of the"
-            },
-            {
-               "line": "pe task."
-            }
+            "In case a pe task is started in a systemd scope, this is the",
+            "scope unit name.",
+            "Only used in sge_execd, it is set during the startup phase of the",
+            "pe task."
          ],
          "type": "lStringT",
          "flags": []
@@ -125,12 +103,8 @@
          "name": "usage_collection",
          "summary": "Usage Collection Mode",
          "description": [
-            {
-               "line": "Usage collection mode of a pe task."
-            },
-            {
-               "line": "One of 0 (FALSE), 1 (PDC), 2 (HYBRID), 3 (TRUE)."
-            }
+            "Usage collection mode of a pe task.",
+            "One of 0 (FALSE), 1 (PDC), 2 (HYBRID), 3 (TRUE)."
          ],
          "type": "lUlongT",
          "flags": []
@@ -139,9 +113,7 @@
          "name": "usage",
          "summary": "Usage",
          "description": [
-            {
-               "line": "Usage list of a running/just finished pe task."
-            }
+            "Usage list of a running/just finished pe task."
          ],
          "type": "lListT",
          "subClassName": "UA",
@@ -156,9 +128,7 @@
          "name": "scaled_usage",
          "summary": "Scaled Usage",
          "description": [
-            {
-               "line": "Scaled usage list of a running/just finished pe task."
-            }
+            "Scaled usage list of a running/just finished pe task."
          ],
          "type": "lListT",
          "subClassName": "UA",
@@ -173,15 +143,9 @@
          "name": "reported_usage",
          "summary": "Reported Usage",
          "description": [
-            {
-               "line": "Used in reporting of long running jobs:"
-            },
-            {
-               "line": "An intermediate usage record is written around midnight every day,"
-            },
-            {
-               "line": "the usage already reported so far is stored in the PET_reported_usage list"
-            }
+            "Used in reporting of long running jobs:",
+            "An intermediate usage record is written around midnight every day,",
+            "the usage already reported so far is stored in the PET_reported_usage list"
          ],
          "type": "lListT",
          "subClassName": "UA",
@@ -196,9 +160,7 @@
          "name": "previous_usage",
          "summary": "Previous Usage",
          "description": [
-            {
-               "line": "In case a petask is re-run (@todo is this ever done?) the usage of the previous run."
-            }
+            "In case a petask is re-run (@todo is this ever done?) the usage of the previous run."
          ],
          "type": "lListT",
          "subClassName": "UA",
@@ -209,9 +171,7 @@
          "name": "submission_time",
          "summary": "Submission Time",
          "description": [
-            {
-               "line": "Submission time of a task (when qrsh -inherit was called) in microseconds since epoch"
-            }
+            "Submission time of a task (when qrsh -inherit was called) in microseconds since epoch"
          ],
          "type": "lTimestampT",
          "flags": [
@@ -224,9 +184,7 @@
          "name": "start_time",
          "summary": "Start Time",
          "description": [
-            {
-               "line": "Start time of the petask in microseconds since epoch"
-            }
+            "Start time of the petask in microseconds since epoch"
          ],
          "type": "lTimestampT",
          "flags": [
@@ -239,9 +197,7 @@
          "name": "end_time",
          "summary": "End Time",
          "description": [
-            {
-               "line": "End time of the petask in microseconds since epoch"
-            }
+            "End time of the petask in microseconds since epoch"
          ],
          "type": "lTimestampT",
          "flags": [
@@ -254,12 +210,8 @@
          "name": "cwd",
          "summary": "Current Working Directory",
          "description": [
-            {
-               "line": "Path to the petask's current working directory."
-            },
-            {
-               "line": "If not set, the cwd from the ja task is inherited."
-            }
+            "Path to the petask's current working directory.",
+            "If not set, the cwd from the ja task is inherited."
          ],
          "type": "lStringT",
          "flags": [
@@ -272,9 +224,7 @@
          "name": "path_aliases",
          "summary": "Path Aliases",
          "description": [
-            {
-               "line": "Path alias list for the petask."
-            }
+            "Path alias list for the petask."
          ],
          "type": "lListT",
          "subClassName": "PA",
@@ -285,12 +235,8 @@
          "name": "environment",
          "summary": "Environment",
          "description": [
-            {
-               "line": "Environment variables to be set when executing the job (qrsh inherit -v)."
-            },
-            {
-               "line": "They will overwrite inherited variables from the ja task."
-            }
+            "Environment variables to be set when executing the job (qrsh inherit -v).",
+            "They will overwrite inherited variables from the ja task."
          ],
          "type": "lListT",
          "subClassName": "VA",
@@ -301,12 +247,8 @@
          "name": "do_contact",
          "summary": "Do Contact",
          "description": [
-            {
-               "line": "Used in limit enforcement to remember whether to contact the host where a task is running."
-            },
-            {
-               "line": "Is set to false when the host is down/unknown."
-            }
+            "Used in limit enforcement to remember whether to contact the host where a task is running.",
+            "Is set to false when the host is down/unknown."
          ],
          "type": "lBoolT",
          "flags": [
@@ -319,12 +261,8 @@
          "name": "cred",
          "summary": "TLS Credentials",
          "description": [
-            {
-               "line": "Used with the TLS encryption to transport the credentials"
-            },
-            {
-               "line": "from qrsh to the sge_execd, which will store it in the pe_task's active_jobs directory."
-            }
+            "Used with the TLS encryption to transport the credentials",
+            "from qrsh to the sge_execd, which will store it in the pe_task's active_jobs directory."
          ],
          "type": "lStringT",
          "flags": []
@@ -333,15 +271,9 @@
          "name": "joker",
          "summary": "Joker",
          "description": [
-            {
-               "line": "Placeholder which can be used for arbitrary data."
-            },
-            {
-               "line": "Its purpose is to be able to add new attributes without changing the spooling format."
-            },
-            {
-               "line": "It is a list of arbitrary type and it is spooled."
-            }
+            "Placeholder which can be used for arbitrary data.",
+            "Its purpose is to be able to add new attributes without changing the spooling format.",
+            "It is a list of arbitrary type and it is spooled."
          ],
          "type": "lListT",
          "subClassName": "Variable",

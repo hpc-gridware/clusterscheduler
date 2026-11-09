@@ -2,9 +2,7 @@
    "className": "NamedStringVector",
    "summary": "Named String Vector",
    "description": [
-      {
-         "line": "Used in the DRMAA library to implement vector job template attributes."
-      }
+      "Used in the DRMAA library to implement vector job template attributes."
    ],
    "cullPrefix": "NSV",
    "attributes": [
@@ -12,9 +10,7 @@
          "name": "name",
          "summary": "Name",
          "description": [
-            {
-               "line": "Name of the string vector."
-            }
+            "Name of the string vector."
          ],
          "type": "lStringT",
          "flags": []
@@ -23,9 +19,7 @@
          "name": "strings",
          "summary": "Strings",
          "description": [
-            {
-               "line": "Strings of this string vector."
-            }
+            "Strings of this string vector."
          ],
          "type": "lListT",
          "subClassName": "ST",

@@ -2,9 +2,7 @@
    "className": "CalendarQueueState",
    "summary": "Calendar Queue State Change",
    "description": [
-      {
-         "line": "One state change a calendar schedules: the state to take, and until when."
-      }
+      "One state change a calendar schedules: the state to take, and until when."
    ],
    "cullPrefix": "CQU",
    "attributes": [
@@ -12,9 +10,7 @@
          "name": "state",
          "summary": "State",
          "description": [
-            {
-               "line": "The `QI_*` state to put the queue into - enabled, disabled or suspended."
-            }
+            "The `QI_*` state to put the queue into - enabled, disabled or suspended."
          ],
          "type": "lUlongT",
          "flags": []
@@ -23,9 +19,7 @@
          "name": "till",
          "summary": "Until",
          "description": [
-            {
-               "line": "When this state ends and the next entry takes over."
-            }
+            "When this state ends and the next entry takes over."
          ],
          "type": "lTimestampT",
          "flags": []

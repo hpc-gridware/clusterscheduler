@@ -2,12 +2,8 @@
    "className": "XMLDocumentHead",
    "summary": "XML Document Header",
    "description": [
-      {
-         "line": "The head of a generated XML document: its version, root element name, stylesheets and attributes."
-      },
-      {
-         "line": "Used by the clients' `-xml` output. See `sge_cull_xml.cc`."
-      }
+      "The head of a generated XML document: its version, root element name, stylesheets and attributes.",
+      "Used by the clients' `-xml` output. See `sge_cull_xml.cc`."
    ],
    "cullPrefix": "XMLH",
    "attributes": [
@@ -15,9 +11,7 @@
          "name": "Version",
          "summary": "XML Version",
          "description": [
-            {
-               "line": "The version string written into the XML declaration."
-            }
+            "The version string written into the XML declaration."
          ],
          "type": "lStringT",
          "flags": []
@@ -26,9 +20,7 @@
          "name": "Name",
          "summary": "Root Element Name",
          "description": [
-            {
-               "line": "Name of the document's root element."
-            }
+            "Name of the document's root element."
          ],
          "type": "lStringT",
          "flags": []
@@ -37,9 +29,7 @@
          "name": "Stylesheet",
          "summary": "Stylesheets",
          "description": [
-            {
-               "line": "Stylesheet processing instructions (`XMLS_Type`) emitted before the root element."
-            }
+            "Stylesheet processing instructions (`XMLS_Type`) emitted before the root element."
          ],
          "type": "lListT",
          "subClassName": "XMLS",
@@ -50,9 +40,7 @@
          "name": "Attribute",
          "summary": "Root Attributes",
          "description": [
-            {
-               "line": "Attributes (`XMLA_Type`) placed on the root element, such as the schema location."
-            }
+            "Attributes (`XMLA_Type`) placed on the root element, such as the schema location."
          ],
          "type": "lListT",
          "subClassName": "XMLA",
@@ -63,9 +51,7 @@
          "name": "Element",
          "summary": "Content",
          "description": [
-            {
-               "line": "The document body (`XMLE_Type`)."
-            }
+            "The document body (`XMLE_Type`)."
          ],
          "type": "lListT",
          "subClassName": "ANY",

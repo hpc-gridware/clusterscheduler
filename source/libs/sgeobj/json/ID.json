@@ -2,15 +2,9 @@
    "className": "JobIdForAction",
    "summary": "Job Id for Action",
    "description": [
-      {
-         "line": "The ID_Type is used to select specific jobs, e.g. by job number or by job name."
-      },
-      {
-         "line": "It is used by client commands like qalter, qconf, qdel, qrdel, ..."
-      },
-      {
-         "line": "@todo the same goal could be achieved by using a lWhere condition, why do we have this type in the first place?"
-      }
+      "The ID_Type is used to select specific jobs, e.g. by job number or by job name.",
+      "It is used by client commands like qalter, qconf, qdel, qrdel, ...",
+      "@todo the same goal could be achieved by using a lWhere condition, why do we have this type in the first place?"
    ],
    "cullPrefix": "ID",
    "attributes": [
@@ -18,9 +12,7 @@
          "name": "str",
          "summary": "Id String",
          "description": [
-            {
-               "line": "Id as string, e.g. job name or job number."
-            }
+            "Id as string, e.g. job name or job number."
          ],
          "type": "lStringT",
          "flags": []
@@ -29,9 +21,7 @@
          "name": "ja_structure",
          "summary": "Array Task Structure",
          "description": [
-            {
-               "line": "Used to transport array task specific information, e.g. status, from qalter to sge_qmaster."
-            }
+            "Used to transport array task specific information, e.g. status, from qalter to sge_qmaster."
          ],
          "type": "lListT",
          "subClassName": "RN",
@@ -42,9 +32,7 @@
          "name": "action",
          "summary": "Action",
          "description": [
-            {
-               "line": "Used by qconf to transport specific actions to sge_qmaster, e.g. start thread, stop thread, clear queue."
-            }
+            "Used by qconf to transport specific actions to sge_qmaster, e.g. start thread, stop thread, clear queue."
          ],
          "type": "lUlongT",
          "flags": []
@@ -53,9 +41,7 @@
          "name": "force",
          "summary": "Force",
          "description": [
-            {
-               "line": "Used to express that a certain action shall be forced, e.g. from qdel -f option."
-            }
+            "Used to express that a certain action shall be forced, e.g. from qdel -f option."
          ],
          "type": "lUlongT",
          "flags": []
@@ -64,9 +50,7 @@
          "name": "user_list",
          "summary": "User List",
          "description": [
-            {
-               "line": "Restricts actions to specific users, e.g. from qdel -u option."
-            }
+            "Restricts actions to specific users, e.g. from qdel -u option."
          ],
          "type": "lListT",
          "subClassName": "ST",

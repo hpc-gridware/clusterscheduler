@@ -2,9 +2,7 @@
    "className": "User",
    "summary": "User",
    "description": [
-      {
-         "line": "An object of this type holds user configuration data as well as usage accumulators."
-      }
+      "An object of this type holds user configuration data as well as usage accumulators."
    ],
    "cullPrefix": "UU",
    "attributes": [
@@ -12,9 +10,7 @@
          "name": "name",
          "summary": "User Name",
          "description": [
-            {
-               "line": "A unique name of the user."
-            }
+            "A unique name of the user."
          ],
          "type": "lStringT",
          "flags": [
@@ -42,9 +38,7 @@
          "name": "oticket",
          "summary": "Override Tickets",
          "description": [
-            {
-               "line": "Configured override tickets."
-            }
+            "Configured override tickets."
          ],
          "type": "lUlongT",
          "flags": [
@@ -60,9 +54,7 @@
          "name": "fshare",
          "summary": "Functional Shares",
          "description": [
-            {
-               "line": "Configured functional shares."
-            }
+            "Configured functional shares."
          ],
          "type": "lUlongT",
          "flags": [
@@ -78,18 +70,10 @@
          "name": "delete_time",
          "summary": "Delete Time",
          "description": [
-            {
-               "line": "If an user submits a job for whom no user object exists, a user object is created."
-            },
-            {
-               "line": "This user object will automatically be deleted at the delete time."
-            },
-            {
-               "line": "Whenever a user submits a job the delete time is updated."
-            },
-            {
-               "line": "When set to 0 (via qconf) the user object is kept forever."
-            }
+            "If an user submits a job for whom no user object exists, a user object is created.",
+            "This user object will automatically be deleted at the delete time.",
+            "Whenever a user submits a job the delete time is updated.",
+            "When set to 0 (via qconf) the user object is kept forever."
          ],
          "type": "lTimestampT",
          "flags": [
@@ -105,9 +89,7 @@
          "name": "job_cnt",
          "summary": "Job Count",
          "description": [
-            {
-               "line": "Job counter, used in scheduler thread only."
-            }
+            "Job counter, used in scheduler thread only."
          ],
          "type": "lUlongT",
          "flags": [
@@ -120,9 +102,7 @@
          "name": "pending_job_cnt",
          "summary": "Pending Job Count",
          "description": [
-            {
-               "line": "Pending job counter, used in scheduler thread only."
-            }
+            "Pending job counter, used in scheduler thread only."
          ],
          "type": "lUlongT",
          "flags": [
@@ -135,9 +115,7 @@
          "name": "usage",
          "summary": "Usage",
          "description": [
-            {
-               "line": "List of UA_Type objects storing accumulated and decayed usage of jobs belonging to this user."
-            }
+            "List of UA_Type objects storing accumulated and decayed usage of jobs belonging to this user."
          ],
          "type": "lListT",
          "subClassName": "UA",
@@ -155,9 +133,7 @@
          "name": "usage_time_stamp",
          "summary": "Usage Time Stamp",
          "description": [
-            {
-               "line": "Time stamp of last decay. Set when usage changes."
-            }
+            "Time stamp of last decay. Set when usage changes."
          ],
          "type": "lTimestampT",
          "flags": [
@@ -173,9 +149,7 @@
          "name": "usage_seqno",
          "summary": "Usage Sequence Number",
          "description": [
-            {
-               "line": "Usage sequence number used in scheduler thread only."
-            }
+            "Usage sequence number used in scheduler thread only."
          ],
          "type": "lUlongT",
          "flags": [
@@ -188,9 +162,7 @@
          "name": "long_term_usage",
          "summary": "Long Term Usage",
          "description": [
-            {
-               "line": "List of UA_Type objects holding long term accumulated non-decayed usage."
-            }
+            "List of UA_Type objects holding long term accumulated non-decayed usage."
          ],
          "type": "lListT",
          "subClassName": "UA",
@@ -208,9 +180,7 @@
          "name": "project",
          "summary": "Project",
          "description": [
-            {
-               "line": "UPP_Type list @todo add description."
-            }
+            "UPP_Type list @todo add description."
          ],
          "type": "lListT",
          "subClassName": "UPP",
@@ -228,9 +198,7 @@
          "name": "debited_job_usage",
          "summary": "Debited Job Usage",
          "description": [
-            {
-               "line": "List of UPU_Type, still debited usage per job."
-            }
+            "List of UPU_Type, still debited usage per job."
          ],
          "type": "lListT",
          "subClassName": "UPU",
@@ -248,12 +216,8 @@
          "name": "default_project",
          "summary": "Default Project",
          "description": [
-            {
-               "line": "The default project is the project to which jobs of the user are assigned"
-            },
-            {
-               "line": "if no project is specified at job submission time."
-            }
+            "The default project is the project to which jobs of the user are assigned",
+            "if no project is specified at job submission time."
          ],
          "type": "lStringT",
          "flags": [
@@ -269,9 +233,7 @@
          "name": "version",
          "summary": "User Version",
          "description": [
-            {
-               "line": "Version of the user object, increments when usage is updated"
-            }
+            "Version of the user object, increments when usage is updated"
          ],
          "type": "lUlongT",
          "flags": [
@@ -284,9 +246,7 @@
          "name": "consider_with_categories",
          "summary": "Consider With Categories",
          "description": [
-            {
-               "line": "True, if user plays role with categories."
-            }
+            "True, if user plays role with categories."
          ],
          "type": "lBoolT",
          "flags": [
@@ -299,15 +259,9 @@
          "name": "joker",
          "summary": "Joker",
          "description": [
-            {
-               "line": "Placeholder which can be used for arbitrary data."
-            },
-            {
-               "line": "Its purpose is to be able to add new attributes without changing the spooling format."
-            },
-            {
-               "line": "It is a list of arbitrary type and it is spooled."
-            }
+            "Placeholder which can be used for arbitrary data.",
+            "Its purpose is to be able to add new attributes without changing the spooling format.",
+            "It is a list of arbitrary type and it is spooled."
          ],
          "type": "lListT",
          "subClassName": "Variable",

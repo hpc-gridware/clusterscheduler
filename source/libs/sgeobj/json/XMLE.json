@@ -2,9 +2,7 @@
    "className": "XMLDocumentEntry",
    "summary": "XML Element",
    "description": [
-      {
-         "line": "One node of the XML document being built: its attributes, its children, and whether it is printed at all."
-      }
+      "One node of the XML document being built: its attributes, its children, and whether it is printed at all."
    ],
    "cullPrefix": "XMLE",
    "attributes": [
@@ -12,9 +10,7 @@
          "name": "Attribute",
          "summary": "Attributes",
          "description": [
-            {
-               "line": "The element's XML attributes (`XMLA_Type`)."
-            }
+            "The element's XML attributes (`XMLA_Type`)."
          ],
          "type": "lListT",
          "subClassName": "XMLA",
@@ -25,9 +21,7 @@
          "name": "Print",
          "summary": "Print",
          "description": [
-            {
-               "line": "Whether to emit this element. A node can be built and then suppressed, so the tree does not have to be pruned."
-            }
+            "Whether to emit this element. A node can be built and then suppressed, so the tree does not have to be pruned."
          ],
          "type": "lBoolT",
          "flags": []
@@ -36,9 +30,7 @@
          "name": "Element",
          "summary": "Value",
          "description": [
-            {
-               "line": "The element's own value, when it is a leaf."
-            }
+            "The element's own value, when it is a leaf."
          ],
          "type": "lObjectT",
          "subClassName": "ANY",
@@ -49,9 +41,7 @@
          "name": "List",
          "summary": "Children",
          "description": [
-            {
-               "line": "The child elements (`XMLE_Type`), when it is not."
-            }
+            "The child elements (`XMLE_Type`), when it is not."
          ],
          "type": "lListT",
          "subClassName": "ANY",

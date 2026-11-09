@@ -2,15 +2,9 @@
    "className": "Configuration",
    "summary": "Host Configuration",
    "description": [
-      {
-         "line": "Contains configuration options for hosts (execution hosts but also a global configuration for the sge_qmaster)."
-      },
-      {
-         "line": "Host specific configurations inherit values from the global configuration."
-      },
-      {
-         "line": "@todo there is an overlap with the exec host type (EH_Type), can this be unified?"
-      }
+      "Contains configuration options for hosts (execution hosts but also a global configuration for the sge_qmaster).",
+      "Host specific configurations inherit values from the global configuration.",
+      "@todo there is an overlap with the exec host type (EH_Type), can this be unified?"
    ],
    "cullPrefix": "CONF",
    "attributes": [
@@ -18,9 +12,7 @@
          "name": "name",
          "summary": "Host Name",
          "description": [
-            {
-               "line": "Name of the host the configuration object refers to, or global for the global configuration."
-            }
+            "Name of the host the configuration object refers to, or global for the global configuration."
          ],
          "type": "lHostT",
          "flags": [
@@ -45,9 +37,7 @@
          "name": "version",
          "summary": "Configuration Version",
          "description": [
-            {
-               "line": "Each configuration object has a version number which is increased with every change."
-            }
+            "Each configuration object has a version number which is increased with every change."
          ],
          "type": "lUlongT",
          "flags": [
@@ -63,9 +53,7 @@
          "name": "entries",
          "summary": "Configuration Entries",
          "description": [
-            {
-               "line": "A configuration consists of multiple configuration entries of CF_Type."
-            }
+            "A configuration consists of multiple configuration entries of CF_Type."
          ],
          "type": "lListT",
          "subClassName": "CF",

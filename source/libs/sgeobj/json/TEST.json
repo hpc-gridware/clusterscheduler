@@ -2,9 +2,7 @@
    "className": "Test",
    "summary": "Test Object",
    "description": [
-      {
-         "line": "Objects of this type are used for testing purposes with modules tests."
-      }
+      "Objects of this type are used for testing purposes with modules tests."
    ],
    "cullPrefix": "TEST",
    "attributes": [
@@ -12,9 +10,7 @@
          "name": "bool",
          "summary": "Boolean type attribute",
          "description": [
-            {
-               "line": "This field holds a boolean value."
-            }
+            "This field holds a boolean value."
          ],
          "type": "lBoolT",
          "flags": [
@@ -30,9 +26,7 @@
          "name": "uint32",
          "summary": "uint32_t type attribute",
          "description": [
-            {
-               "line": "This field holds a uint32_t value."
-            }
+            "This field holds a uint32_t value."
          ],
          "type": "lUlongT",
          "flags": [
@@ -51,9 +45,7 @@
          "name": "uint64",
          "summary": "uint64_t type attribute",
          "description": [
-            {
-               "line": "This field holds a uint64_t value."
-            }
+            "This field holds a uint64_t value."
          ],
          "type": "lUlong64T",
          "flags": [
@@ -69,9 +61,7 @@
          "name": "int",
          "summary": "int type attribute",
          "description": [
-            {
-               "line": "This field holds a int value."
-            }
+            "This field holds a int value."
          ],
          "type": "lIntT",
          "flags": [
@@ -84,9 +74,7 @@
          "name": "long",
          "summary": "long type attribute",
          "description": [
-            {
-               "line": "This field holds a long value."
-            }
+            "This field holds a long value."
          ],
          "type": "lLongT",
          "flags": [
@@ -99,9 +87,7 @@
          "name": "double",
          "summary": "double type attribute",
          "description": [
-            {
-               "line": "This field holds a double value."
-            }
+            "This field holds a double value."
          ],
          "type": "lDoubleT",
          "flags": [
@@ -114,9 +100,7 @@
          "name": "host",
          "summary": "host type attribute",
          "description": [
-            {
-               "line": "This field holds a host name."
-            }
+            "This field holds a host name."
          ],
          "type": "lHostT",
          "flags": [
@@ -129,9 +113,7 @@
          "name": "string",
          "summary": "string type attribute",
          "description": [
-            {
-               "line": "This field holds a string value."
-            }
+            "This field holds a string value."
          ],
          "type": "lStringT",
          "flags": [
@@ -144,9 +126,7 @@
          "name": "ref",
          "summary": "reference type attribute to store a pointer",
          "description": [
-            {
-               "line": "This filed hold a pointer"
-            }
+            "This filed hold a pointer"
          ],
          "type": "lRefT",
          "subClassName": "ANY",
@@ -157,9 +137,7 @@
          "name": "obj_jb",
          "summary": "object type attribute to store JB_Type an object",
          "description": [
-            {
-               "line": "This filed hold a object reference."
-            }
+            "This filed hold a object reference."
          ],
          "type": "lObjectT",
          "subClassName": "ANY",
@@ -170,9 +148,7 @@
          "name": "obj_any",
          "summary": "object type attribute to store any other object",
          "description": [
-            {
-               "line": "This filed hold a object reference."
-            }
+            "This filed hold a object reference."
          ],
          "type": "lObjectT",
          "subClassName": "ANY",

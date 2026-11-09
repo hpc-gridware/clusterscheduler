@@ -2,9 +2,7 @@
    "className": "JobSchedulingInfo",
    "summary": "Job SchedulingInfo",
    "description": [
-      {
-         "line": "Root object for scheduler messages enabled by scheduler config attribute schedd_job_info."
-      }
+      "Root object for scheduler messages enabled by scheduler config attribute schedd_job_info."
    ],
    "cullPrefix": "SME",
    "attributes": [
@@ -12,9 +10,7 @@
          "name": "message_list",
          "summary": "Message List",
          "description": [
-            {
-               "line": "Job specific messages explaining why certain requests of a job cannot be granted."
-            }
+            "Job specific messages explaining why certain requests of a job cannot be granted."
          ],
          "type": "lListT",
          "subClassName": "MES",
@@ -29,9 +25,7 @@
          "name": "global_message_list",
          "summary": "Global Message List",
          "description": [
-            {
-               "line": "Global messages which apply to all jobs, e.g. queues being disabled."
-            }
+            "Global messages which apply to all jobs, e.g. queues being disabled."
          ],
          "type": "lListT",
          "subClassName": "MES",

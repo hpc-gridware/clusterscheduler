@@ -2,9 +2,7 @@
    "className": "AdvanceReservationACLEntryObject",
    "summary": "Advance Reservation Access List Entry",
    "description": [
-      {
-         "line": "One user or group entry in an advance reservation's access or no-access list."
-      }
+      "One user or group entry in an advance reservation's access or no-access list."
    ],
    "cullPrefix": "ARA",
    "attributes": [
@@ -12,9 +10,7 @@
          "name": "name",
          "summary": "Name",
          "description": [
-            {
-               "line": "The user or userset allowed, or denied, access to the reservation."
-            }
+            "The user or userset allowed, or denied, access to the reservation."
          ],
          "type": "lStringT",
          "flags": [
@@ -36,9 +32,7 @@
          "name": "group",
          "summary": "Group",
          "description": [
-            {
-               "line": "The UNIX group the entry stands for, where the entry names a group."
-            }
+            "The UNIX group the entry stands for, where the entry names a group."
          ],
          "type": "lStringT",
          "flags": [

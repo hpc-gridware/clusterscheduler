@@ -2,12 +2,8 @@
    "className": "ResourceQuotaLimit",
    "summary": "Resource Quota Scheduling Cache",
    "description": [
-      {
-         "line": "Per-scheduling-run cache of what a resource quota limit answered, so an expensive limit is evaluated once rather than once per queue instance."
-      },
-      {
-         "line": "Not configuration and not spooled: it lives in the scheduler's assignment structure for the duration of one run."
-      }
+      "Per-scheduling-run cache of what a resource quota limit answered, so an expensive limit is evaluated once rather than once per queue instance.",
+      "Not configuration and not spooled: it lives in the scheduler's assignment structure for the duration of one run."
    ],
    "cullPrefix": "RQL",
    "attributes": [
@@ -15,9 +11,7 @@
          "name": "name",
          "summary": "Limit Key",
          "description": [
-            {
-               "line": "Identifies the limit this entry caches, built from the rule and resource being evaluated."
-            }
+            "Identifies the limit this entry caches, built from the rule and resource being evaluated."
          ],
          "type": "lStringT",
          "flags": [
@@ -36,9 +30,7 @@
          "name": "result",
          "summary": "Cached Result",
          "description": [
-            {
-               "line": "The `dispatch_t` the limit returned last time it was asked in this run."
-            }
+            "The `dispatch_t` the limit returned last time it was asked in this run."
          ],
          "type": "lIntT",
          "flags": []
@@ -47,9 +39,7 @@
          "name": "time",
          "summary": "Earliest Time",
          "description": [
-            {
-               "line": "Earliest time the limit would allow the job to start, for reservation scheduling."
-            }
+            "Earliest time the limit would allow the job to start, for reservation scheduling."
          ],
          "type": "lTimestampT",
          "flags": []
@@ -58,9 +48,7 @@
          "name": "slots",
          "summary": "Slots",
          "description": [
-            {
-               "line": "How many slots the limit allows, cached alongside the result."
-            }
+            "How many slots the limit allows, cached alongside the result."
          ],
          "type": "lIntT",
          "flags": []
@@ -69,9 +57,7 @@
          "name": "tagged4schedule",
          "summary": "Tagged For Schedule",
          "description": [
-            {
-               "line": "Marks the entry as belonging to the run in progress, so stale entries are not believed."
-            }
+            "Marks the entry as belonging to the run in progress, so stale entries are not believed."
          ],
          "type": "lUlongT",
          "flags": []

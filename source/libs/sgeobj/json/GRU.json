@@ -2,24 +2,12 @@
    "className": "GrantedResource",
    "summary": "Granted Resource",
    "description": [
-      {
-         "line": "An object of this type represents a granted resource."
-      },
-      {
-         "line": "A granted resource defines the amount of a resource which was requested by and granted to a job."
-      },
-      {
-         "line": "Currently only used for RSMAPs."
-      },
-      {
-         "line": "@todo Use it for all granted resources (e.g. prerequisit for soft consumables)"
-      },
-      {
-         "line": "@todo Don't we have to store it per petask?"
-      },
-      {
-         "line": "@todo we don't have a primary key and cannot search by index. Primary key would be name + host."
-      }
+      "An object of this type represents a granted resource.",
+      "A granted resource defines the amount of a resource which was requested by and granted to a job.",
+      "Currently only used for RSMAPs.",
+      "@todo Use it for all granted resources (e.g. prerequisit for soft consumables)",
+      "@todo Don't we have to store it per petask?",
+      "@todo we don't have a primary key and cannot search by index. Primary key would be name + host."
    ],
    "cullPrefix": "GRU",
    "attributes": [
@@ -27,18 +15,10 @@
          "name": "type",
          "summary": "Type",
          "description": [
-            {
-               "line": "Type of the resource:"
-            },
-            {
-               "line": "GRU_HARD_REQUEST_TYPE"
-            },
-            {
-               "line": "GRU_SOFT_REQUEST_TYPE"
-            },
-            {
-               "line": "GRU_RESOURCE_MAP_TYPE"
-            }
+            "Type of the resource:",
+            "GRU_HARD_REQUEST_TYPE",
+            "GRU_SOFT_REQUEST_TYPE",
+            "GRU_RESOURCE_MAP_TYPE"
          ],
          "type": "lUlongT",
          "flags": [
@@ -51,9 +31,7 @@
          "name": "name",
          "summary": "Name",
          "description": [
-            {
-               "line": "Name of the resource (complex variable name)."
-            }
+            "Name of the resource (complex variable name)."
          ],
          "type": "lStringT",
          "flags": [
@@ -66,9 +44,7 @@
          "name": "amount",
          "summary": "Granted Amount",
          "description": [
-            {
-               "line": "How much of the resource has been granted."
-            }
+            "How much of the resource has been granted."
          ],
          "type": "lDoubleT",
          "flags": [
@@ -81,12 +57,8 @@
          "name": "resource_map_list",
          "summary": "Resource Map List",
          "description": [
-            {
-               "line": "In case of resource maps: Which Ids and how much per Id has been granted"
-            },
-            {
-               "line": "For RSMAPs: Which ids have been granted."
-            }
+            "In case of resource maps: Which Ids and how much per Id has been granted",
+            "For RSMAPs: Which ids have been granted."
          ],
          "type": "lListT",
          "subClassName": "RESL",
@@ -101,9 +73,7 @@
          "name": "binding_inuse",
          "summary": "Grant Binding In Use",
          "description": [
-            {
-               "line": "Topology strings that show the granted core binding cores/threads."
-            }
+            "Topology strings that show the granted core binding cores/threads."
          ],
          "type": "lListT",
          "subClassName": "ST",
@@ -118,9 +88,7 @@
          "name": "host",
          "summary": "Host",
          "description": [
-            {
-               "line": "Host on which the resource has been granted (required in case of parallel jobs)."
-            }
+            "Host on which the resource has been granted (required in case of parallel jobs)."
          ],
          "type": "lHostT",
          "flags": [

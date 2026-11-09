@@ -2,12 +2,8 @@
    "className": "Variable",
    "summary": "Variable Object",
    "description": [
-      {
-         "line": "One variable objects holds a name/value pair (variable=[value])."
-      },
-      {
-         "line": "@see libs/sgeobj/sge_var.h"
-      }
+      "One variable objects holds a name/value pair (variable=[value]).",
+      "@see libs/sgeobj/sge_var.h"
    ],
    "cullPrefix": "VA",
    "attributes": [
@@ -15,9 +11,7 @@
          "name": "variable",
          "summary": "Variable Name",
          "description": [
-            {
-               "line": "Name of the Variable."
-            }
+            "Name of the Variable."
          ],
          "type": "lStringT",
          "flags": [
@@ -39,9 +33,7 @@
          "name": "value",
          "summary": "Variable Value",
          "description": [
-            {
-               "line": "Value of the Variable as String."
-            }
+            "Value of the Variable as String."
          ],
          "type": "lStringT",
          "flags": [

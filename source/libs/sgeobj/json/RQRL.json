@@ -2,9 +2,7 @@
    "className": "ResourceQuotaRuleLimit",
    "summary": "Resource Quota Rule Limit",
    "description": [
-      {
-         "line": "One resource a rule limits, the configured ceiling, and what is currently booked against it."
-      }
+      "One resource a rule limits, the configured ceiling, and what is currently booked against it."
    ],
    "cullPrefix": "RQRL",
    "attributes": [
@@ -12,9 +10,7 @@
          "name": "name",
          "summary": "Resource Name",
          "description": [
-            {
-               "line": "The complex attribute being limited, e.g. `slots`."
-            }
+            "The complex attribute being limited, e.g. `slots`."
          ],
          "type": "lStringT",
          "flags": [
@@ -39,9 +35,7 @@
          "name": "value",
          "summary": "Configured Value",
          "description": [
-            {
-               "line": "The limit as configured, still as text. For a dynamic limit this is the formula rather than a number."
-            }
+            "The limit as configured, still as text. For a dynamic limit this is the formula rather than a number."
          ],
          "type": "lStringT",
          "flags": [
@@ -57,9 +51,7 @@
          "name": "type",
          "summary": "Value Type",
          "description": [
-            {
-               "line": "The complex attribute's type, copied from `CE_valtype`, which decides how RQRL_value is parsed."
-            }
+            "The complex attribute's type, copied from `CE_valtype`, which decides how RQRL_value is parsed."
          ],
          "type": "lUlongT",
          "flags": [
@@ -75,9 +67,7 @@
          "name": "dvalue",
          "summary": "Evaluated Value",
          "description": [
-            {
-               "line": "The limit as a number. For a static limit this is RQRL_value parsed; for a dynamic one it is the formula evaluated against the host currently being considered."
-            }
+            "The limit as a number. For a static limit this is RQRL_value parsed; for a dynamic one it is the formula evaluated against the host currently being considered."
          ],
          "type": "lDoubleT",
          "flags": [
@@ -93,9 +83,7 @@
          "name": "usage",
          "summary": "Usage",
          "description": [
-            {
-               "line": "What is booked against this limit right now (`RUE_Type`), one entry per name when the filter expands."
-            }
+            "What is booked against this limit right now (`RUE_Type`), one entry per name when the filter expands."
          ],
          "type": "lListT",
          "subClassName": "RUE",
@@ -110,9 +98,7 @@
          "name": "dynamic",
          "summary": "Dynamic",
          "description": [
-            {
-               "line": "The limit is a formula over host complexes rather than a constant, so RQRL_dvalue has to be recomputed per host instead of read once."
-            }
+            "The limit is a formula over host complexes rather than a constant, so RQRL_dvalue has to be recomputed per host instead of read once."
          ],
          "type": "lBoolT",
          "flags": [

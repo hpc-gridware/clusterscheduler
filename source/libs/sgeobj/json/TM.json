@@ -2,9 +2,7 @@
    "className": "DateTime",
    "summary": "Date Time",
    "description": [
-      {
-         "line": "An object of this type represents a timestamp (date and time). It mostly corresponds to the struct tm, see man."
-      }
+      "An object of this type represents a timestamp (date and time). It mostly corresponds to the struct tm, see man."
    ],
    "cullPrefix": "TM",
    "attributes": [
@@ -12,9 +10,7 @@
          "name": "mday",
          "summary": "Month Day",
          "description": [
-            {
-               "line": "Day of the month, 1-31 (@todo 32 in the old documentation, does it have a special meaning?)."
-            }
+            "Day of the month, 1-31 (@todo 32 in the old documentation, does it have a special meaning?)."
          ],
          "type": "lUlongT",
          "flags": []
@@ -23,9 +19,7 @@
          "name": "mon",
          "summary": "Month",
          "description": [
-            {
-               "line": "Month, 0-11."
-            }
+            "Month, 0-11."
          ],
          "type": "lUlongT",
          "flags": []
@@ -34,9 +28,7 @@
          "name": "year",
          "summary": "Year",
          "description": [
-            {
-               "line": "The number of years since 1900."
-            }
+            "The number of years since 1900."
          ],
          "type": "lUlongT",
          "flags": []
@@ -45,9 +37,7 @@
          "name": "sec",
          "summary": "Seconds",
          "description": [
-            {
-               "line": "Seconds, 0-59"
-            }
+            "Seconds, 0-59"
          ],
          "type": "lUlongT",
          "flags": []
@@ -56,9 +46,7 @@
          "name": "min",
          "summary": "Minute",
          "description": [
-            {
-               "line": "Minutes, 0-59"
-            }
+            "Minutes, 0-59"
          ],
          "type": "lUlongT",
          "flags": []
@@ -67,9 +55,7 @@
          "name": "hour",
          "summary": "Hor",
          "description": [
-            {
-               "line": "Hour, 0-23"
-            }
+            "Hour, 0-23"
          ],
          "type": "lUlongT",
          "flags": []
@@ -78,9 +64,7 @@
          "name": "wday",
          "summary": "Week Day",
          "description": [
-            {
-               "line": "Week day, 0-6."
-            }
+            "Week day, 0-6."
          ],
          "type": "lUlongT",
          "flags": []
@@ -89,9 +73,7 @@
          "name": "yday",
          "summary": "Year Day",
          "description": [
-            {
-               "line": "Day in the year, 0-365."
-            }
+            "Day in the year, 0-365."
          ],
          "type": "lUlongT",
          "flags": []
@@ -100,9 +82,7 @@
          "name": "isdst",
          "summary": "Is Daylight Saving Time",
          "description": [
-            {
-               "line": "Whether daylight saving time is in effect (0 = false, 1 = true)."
-            }
+            "Whether daylight saving time is in effect (0 = false, 1 = true)."
          ],
          "type": "lUlongT",
          "flags": []

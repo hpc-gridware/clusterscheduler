@@ -2,12 +2,8 @@
    "className": "LoadReference",
    "summary": "Load Threshold Reference (unused)",
    "description": [
-      {
-         "line": "A limit with references to the global, host and queue objects it was resolved against."
-      },
-      {
-         "line": "@warning No attribute of this type is read or written anywhere in either repository, and `LDR_Type` itself is referenced nowhere. Left in place because removing a type changes the spooled object model."
-      }
+      "A limit with references to the global, host and queue objects it was resolved against.",
+      "@warning No attribute of this type is read or written anywhere in either repository, and `LDR_Type` itself is referenced nowhere. Left in place because removing a type changes the spooled object model."
    ],
    "cullPrefix": "LDR",
    "attributes": [
@@ -15,9 +11,7 @@
          "name": "queue_ref_list",
          "summary": "Queue References",
          "description": [
-            {
-               "line": "Part of the unused LDR object; see the object description."
-            }
+            "Part of the unused LDR object; see the object description."
          ],
          "type": "lListT",
          "subClassName": "QueueReference",
@@ -28,9 +22,7 @@
          "name": "limit",
          "summary": "Limit",
          "description": [
-            {
-               "line": "Part of the unused LDR object; see the object description."
-            }
+            "Part of the unused LDR object; see the object description."
          ],
          "type": "lStringT",
          "flags": []
@@ -39,9 +31,7 @@
          "name": "global",
          "summary": "Global Object",
          "description": [
-            {
-               "line": "Part of the unused LDR object; see the object description."
-            }
+            "Part of the unused LDR object; see the object description."
          ],
          "type": "lRefT",
          "subClassName": "ANY",
@@ -56,9 +46,7 @@
          "name": "host",
          "summary": "Host Object",
          "description": [
-            {
-               "line": "Part of the unused LDR object; see the object description."
-            }
+            "Part of the unused LDR object; see the object description."
          ],
          "type": "lRefT",
          "subClassName": "ANY",
@@ -73,9 +61,7 @@
          "name": "queue",
          "summary": "Queue Object",
          "description": [
-            {
-               "line": "Part of the unused LDR object; see the object description."
-            }
+            "Part of the unused LDR object; see the object description."
          ],
          "type": "lRefT",
          "subClassName": "ANY",

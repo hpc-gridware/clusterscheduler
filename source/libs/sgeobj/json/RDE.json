@@ -2,87 +2,33 @@
    "className": "ResourceDiagramEntry",
    "summary": "Resource Diagram Entry",
    "description": [
-      {
-         "line": "A resource diagram lists future resource utilization (it starts at the current time)."
-      },
-      {
-         "line": "An object of this type is related to the usage of a specific resource,"
-      },
-      {
-         "line": "whose name is defined in the parent object (RUE_Type)."
-      },
-      {
-         "line": "The list of resource diaram entries represents a diagram showing"
-      },
-      {
-         "line": "resource progression over time."
-      },
-      {
-         "line": " "
-      },
-      {
-         "line": "E.g. the following resource diagram"
-      },
-      {
-         "line": "   N ^"
-      },
-      {
-         "line": "     |             +-------+"
-      },
-      {
-         "line": "     |   +-----+   |  J3   |"
-      },
-      {
-         "line": "     |   |     +---+-------+--+"
-      },
-      {
-         "line": "     |   | J1  |      J2      |"
-      },
-      {
-         "line": "     +---+-----+--------------+-----> t"
-      },
-      {
-         "line": "     0   4     10  14      22 25"
-      },
-      {
-         "line": " "
-      },
-      {
-         "line": "is respresented by the the following table"
-      },
-      {
-         "line": "    t | N"
-      },
-      {
-         "line": "   ---+---"
-      },
-      {
-         "line": "    0 | 0"
-      },
-      {
-         "line": "    4 | 3"
-      },
-      {
-         "line": "   10 | 2"
-      },
-      {
-         "line": "   14 | 4"
-      },
-      {
-         "line": "   22 | 2"
-      },
-      {
-         "line": "   25 | 2"
-      },
-      {
-         "line": " "
-      },
-      {
-         "line": " "
-      },
-      {
-         "line": " "
-      }
+      "A resource diagram lists future resource utilization (it starts at the current time).",
+      "An object of this type is related to the usage of a specific resource,",
+      "whose name is defined in the parent object (RUE_Type).",
+      "The list of resource diaram entries represents a diagram showing",
+      "resource progression over time.",
+      " ",
+      "E.g. the following resource diagram",
+      "   N ^",
+      "     |             +-------+",
+      "     |   +-----+   |  J3   |",
+      "     |   |     +---+-------+--+",
+      "     |   | J1  |      J2      |",
+      "     +---+-----+--------------+-----> t",
+      "     0   4     10  14      22 25",
+      " ",
+      "is respresented by the the following table",
+      "    t | N",
+      "   ---+---",
+      "    0 | 0",
+      "    4 | 3",
+      "   10 | 2",
+      "   14 | 4",
+      "   22 | 2",
+      "   25 | 2",
+      " ",
+      " ",
+      " "
    ],
    "cullPrefix": "RDE",
    "attributes": [
@@ -90,9 +36,7 @@
          "name": "time",
          "summary": "Time",
          "description": [
-            {
-               "line": "Time stamp (microseconds since epoch)."
-            }
+            "Time stamp (microseconds since epoch)."
          ],
          "type": "lTimestampT",
          "flags": []
@@ -101,9 +45,7 @@
          "name": "amount",
          "summary": "Amount",
          "description": [
-            {
-               "line": "Amount of the resource which is used."
-            }
+            "Amount of the resource which is used."
          ],
          "type": "lDoubleT",
          "flags": []
@@ -112,9 +54,7 @@
          "name": "resource_map_list",
          "summary": "Resource Map List",
          "description": [
-            {
-               "line": "Amount of Resource Maps which are used."
-            }
+            "Amount of Resource Maps which are used."
          ],
          "type": "lListT",
          "subClassName": "RESL",
@@ -125,9 +65,7 @@
          "name": "binding_inuse",
          "summary": "Binding",
          "description": [
-            {
-               "line": "Cores/threads that are used by jobs. Filled only if the resource is slots and when bookkeeping is done on host level."
-            }
+            "Cores/threads that are used by jobs. Filled only if the resource is slots and when bookkeeping is done on host level."
          ],
          "type": "lStringT",
          "flags": []

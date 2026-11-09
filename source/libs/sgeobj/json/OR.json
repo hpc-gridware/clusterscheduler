@@ -2,9 +2,7 @@
    "className": "Order",
    "summary": "Scheduler Order",
    "description": [
-      {
-         "line": "A single scheduler order, e.g. to start a job"
-      }
+      "A single scheduler order, e.g. to start a job"
    ],
    "cullPrefix": "OR",
    "attributes": [
@@ -12,21 +10,11 @@
          "name": "type",
          "summary": "Order Type",
          "description": [
-            {
-               "line": "The type of the order. Defined in an enum in libs/sgeobj/sge_order.h, e.g."
-            },
-            {
-               "line": "  - ORT_start_job"
-            },
-            {
-               "line": "  - ORT_tickets"
-            },
-            {
-               "line": "  - ORT_ptickets"
-            },
-            {
-               "line": "  - ORT_..."
-            }
+            "The type of the order. Defined in an enum in libs/sgeobj/sge_order.h, e.g.",
+            "  - ORT_start_job",
+            "  - ORT_tickets",
+            "  - ORT_ptickets",
+            "  - ORT_..."
          ],
          "type": "lUlongT",
          "flags": []
@@ -35,9 +23,7 @@
          "name": "job_number",
          "summary": "Job Number",
          "description": [
-            {
-               "line": "The job id in case of job related orders."
-            }
+            "The job id in case of job related orders."
          ],
          "type": "lUlongT",
          "flags": []
@@ -46,9 +32,7 @@
          "name": "ja_task_number",
          "summary": "Array Task Number",
          "description": [
-            {
-               "line": "The array task id in case of array job related orders."
-            }
+            "The array task id in case of array job related orders."
          ],
          "type": "lUlongT",
          "flags": []
@@ -57,15 +41,9 @@
          "name": "job_version",
          "summary": "Job Version",
          "description": [
-            {
-               "line": "A job version number. Used to detect if a scheduler order is based on an older version of the job."
-            },
-            {
-               "line": "When a job is modified, the job version (in the job object) is increased."
-            },
-            {
-               "line": "If a scheduling decision has been done on an older version of the job the order is ignored."
-            }
+            "A job version number. Used to detect if a scheduler order is based on an older version of the job.",
+            "When a job is modified, the job version (in the job object) is increased.",
+            "If a scheduling decision has been done on an older version of the job the order is ignored."
          ],
          "type": "lUlongT",
          "flags": []
@@ -74,9 +52,7 @@
          "name": "queuelist",
          "summary": "Queue Instances",
          "description": [
-            {
-               "line": "List of queue instances a job has been scheduled to"
-            }
+            "List of queue instances a job has been scheduled to"
          ],
          "type": "lListT",
          "subClassName": "OQ",
@@ -87,9 +63,7 @@
          "name": "granted_resources_list",
          "summary": "Granted Resources List",
          "description": [
-            {
-               "line": "List of RSMAP (future: and resource) requests."
-            }
+            "List of RSMAP (future: and resource) requests."
          ],
          "type": "lListT",
          "subClassName": "GrantedResource",
@@ -100,9 +74,7 @@
          "name": "ticket",
          "summary": "Number of Tickets",
          "description": [
-            {
-               "line": "Number of tickets a job got during scheduling."
-            }
+            "Number of tickets a job got during scheduling."
          ],
          "type": "lDoubleT",
          "flags": []
@@ -111,24 +83,12 @@
          "name": "joker",
          "summary": "Order Specific Data",
          "description": [
-            {
-               "line": "Sublist with order specific data, depending on the order type:"
-            },
-            {
-               "line": "  - ORT_start_job:              empty"
-            },
-            {
-               "line": "  - ORT_tickets:                reduced job element"
-            },
-            {
-               "line": "  - ORT_remove_immediate_job:   empty"
-            },
-            {
-               "line": "  - ORT_job_schedd_info:        scheduler messages (SME_Type)"
-            },
-            {
-               "line": "  - ORT_ptickets:               reduced job element"
-            }
+            "Sublist with order specific data, depending on the order type:",
+            "  - ORT_start_job:              empty",
+            "  - ORT_tickets:                reduced job element",
+            "  - ORT_remove_immediate_job:   empty",
+            "  - ORT_job_schedd_info:        scheduler messages (SME_Type)",
+            "  - ORT_ptickets:               reduced job element"
          ],
          "type": "lListT",
          "subClassName": "ANY",
@@ -139,9 +99,7 @@
          "name": "pe",
          "summary": "PE Name",
          "description": [
-            {
-               "line": "In case of start order for parallel jobs: The name of the PE the job has been scheduled to."
-            }
+            "In case of start order for parallel jobs: The name of the PE the job has been scheduled to."
          ],
          "type": "lStringT",
          "flags": []
@@ -150,9 +108,7 @@
          "name": "ntix",
          "summary": "Normalized Tickets",
          "description": [
-            {
-               "line": "Number of normalized job tickets."
-            }
+            "Number of normalized job tickets."
          ],
          "type": "lDoubleT",
          "flags": []
@@ -161,9 +117,7 @@
          "name": "prio",
          "summary": "Job Priority",
          "description": [
-            {
-               "line": "Priority of a scheduled job after applying all policies."
-            }
+            "Priority of a scheduled job after applying all policies."
          ],
          "type": "lDoubleT",
          "flags": []

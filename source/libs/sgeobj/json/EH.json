@@ -2,9 +2,7 @@
    "className": "ExecHost",
    "summary": "Execution Host",
    "description": [
-      {
-         "line": "This is a host running an sge_execd."
-      }
+      "This is a host running an sge_execd."
    ],
    "cullPrefix": "EH",
    "attributes": [
@@ -12,15 +10,9 @@
          "name": "name",
          "summary": "unique name",
          "description": [
-            {
-               "line": "Unique name of the execution host."
-            },
-            {
-               "line": "This name must be resolvable on all hosts dealing with it"
-            },
-            {
-               "line": "(master host, the execution host itself, interactive and tightly integrated parallel jobs contacting it)"
-            }
+            "Unique name of the execution host.",
+            "This name must be resolvable on all hosts dealing with it",
+            "(master host, the execution host itself, interactive and tightly integrated parallel jobs contacting it)"
          ],
          "type": "lHostT",
          "flags": [
@@ -45,12 +37,8 @@
          "name": "scaling_list",
          "summary": "instructions for scaling of host load values",
          "description": [
-            {
-               "line": "Used to scale host load values."
-            },
-            {
-               "line": "Contains pairs of load value names and doubles."
-            }
+            "Used to scale host load values.",
+            "Contains pairs of load value names and doubles."
          ],
          "type": "lListT",
          "subClassName": "HS",
@@ -68,9 +56,7 @@
          "name": "consumable_config_list",
          "summary": "consumable resources",
          "description": [
-            {
-               "line": "consumable resources of host"
-            }
+            "consumable resources of host"
          ],
          "type": "lListT",
          "subClassName": "CE",
@@ -88,9 +74,7 @@
          "name": "usage_scaling_list",
          "summary": "scaling of usage values",
          "description": [
-            {
-               "line": "defines scaling of job usage values reported by this execution host"
-            }
+            "defines scaling of job usage values reported by this execution host"
          ],
          "type": "lListT",
          "subClassName": "HS",
@@ -108,9 +92,7 @@
          "name": "load_list",
          "summary": "list of load values",
          "description": [
-            {
-               "line": "list of load values (e.g. load_avg) reported by the execution host"
-            }
+            "list of load values (e.g. load_avg) reported by the execution host"
          ],
          "type": "lListT",
          "subClassName": "HL",
@@ -128,9 +110,7 @@
          "name": "lt_heard_from",
          "summary": "last heard from",
          "description": [
-            {
-               "line": "timestamp when the sge_execd on the host last communicated with sge_qmaster"
-            }
+            "timestamp when the sge_execd on the host last communicated with sge_qmaster"
          ],
          "type": "lTimestampT",
          "flags": [
@@ -143,12 +123,8 @@
          "name": "processors",
          "summary": "number of processors",
          "description": [
-            {
-               "line": "number of processors of the execution host"
-            },
-            {
-               "line": "actually the number of processor cores (@todo threads?)"
-            }
+            "number of processors of the execution host",
+            "actually the number of processor cores (@todo threads?)"
          ],
          "type": "lUlongT",
          "flags": [
@@ -164,9 +140,7 @@
          "name": "acl",
          "summary": "user access list",
          "description": [
-            {
-               "line": "userset defining who can access the host"
-            }
+            "userset defining who can access the host"
          ],
          "type": "lListT",
          "subClassName": "US",
@@ -184,9 +158,7 @@
          "name": "xacl",
          "summary": "user no access list",
          "description": [
-            {
-               "line": "userset defining who can not access the host"
-            }
+            "userset defining who can not access the host"
          ],
          "type": "lListT",
          "subClassName": "US",
@@ -204,9 +176,7 @@
          "name": "prj",
          "summary": "project access list",
          "description": [
-            {
-               "line": "project list defining which jobs of which projects can run on the host"
-            }
+            "project list defining which jobs of which projects can run on the host"
          ],
          "type": "lListT",
          "subClassName": "PR",
@@ -224,9 +194,7 @@
          "name": "xprj",
          "summary": "project no access list",
          "description": [
-            {
-               "line": "project list defining jobs of which projects can run not on the host"
-            }
+            "project list defining jobs of which projects can run not on the host"
          ],
          "type": "lListT",
          "subClassName": "PR",
@@ -244,9 +212,7 @@
          "name": "sort_value",
          "summary": "sort value based on load",
          "description": [
-            {
-               "line": "sort value which is only used in the scheduler thread"
-            }
+            "sort value which is only used in the scheduler thread"
          ],
          "type": "lDoubleT",
          "flags": [
@@ -259,9 +225,7 @@
          "name": "tagged",
          "summary": "tagging of hosts",
          "description": [
-            {
-               "line": "used in scheduler to tag hosts"
-            }
+            "used in scheduler to tag hosts"
          ],
          "type": "lUlongT",
          "flags": [
@@ -274,9 +238,7 @@
          "name": "load_correction_factor",
          "summary": "Load Correction Factor",
          "description": [
-            {
-               "line": "Artificial load added for jobs that have just started, decaying over `load_adjustment_decay_time`. Stops the scheduler overloading a host by dispatching to it faster than the reported load can rise."
-            }
+            "Artificial load added for jobs that have just started, decaying over `load_adjustment_decay_time`. Stops the scheduler overloading a host by dispatching to it faster than the reported load can rise."
          ],
          "type": "lUlongT",
          "flags": [
@@ -289,9 +251,7 @@
          "name": "seq_no",
          "summary": "host sequence number",
          "description": [
-            {
-               "line": "suitability of this host for a job, scheduler only"
-            }
+            "suitability of this host for a job, scheduler only"
          ],
          "type": "lUlongT",
          "flags": [
@@ -304,9 +264,7 @@
          "name": "sge_load",
          "summary": "SGEEE load",
          "description": [
-            {
-               "line": "calculated from load values, scheduler only"
-            }
+            "calculated from load values, scheduler only"
          ],
          "type": "lUlongT",
          "flags": [
@@ -319,9 +277,7 @@
          "name": "sge_ticket_pct",
          "summary": "percentage of tickets",
          "description": [
-            {
-               "line": "percentage of total SGEEE tickets, scheduler only"
-            }
+            "percentage of total SGEEE tickets, scheduler only"
          ],
          "type": "lDoubleT",
          "flags": [
@@ -334,9 +290,7 @@
          "name": "sge_load_pct",
          "summary": "percentage of load",
          "description": [
-            {
-               "line": "percentage of total SGEEE tickets, scheduler only"
-            }
+            "percentage of total SGEEE tickets, scheduler only"
          ],
          "type": "lDoubleT",
          "flags": [
@@ -349,9 +303,7 @@
          "name": "load_report_interval",
          "summary": "load report interval",
          "description": [
-            {
-               "line": "used for caching from global/local configuration"
-            }
+            "used for caching from global/local configuration"
          ],
          "type": "lUlongT",
          "flags": [
@@ -364,9 +316,7 @@
          "name": "resource_utilization",
          "summary": "resource utilization",
          "description": [
-            {
-               "line": "contains per consumable information about resource utilization for this host"
-            }
+            "contains per consumable information about resource utilization for this host"
          ],
          "type": "lListT",
          "subClassName": "RUE",
@@ -381,9 +331,7 @@
          "name": "cached_complexes",
          "summary": "cached complexes",
          "description": [
-            {
-               "line": "used in scheduler for caching built attributes"
-            }
+            "used in scheduler for caching built attributes"
          ],
          "type": "lListT",
          "subClassName": "CE",
@@ -398,9 +346,7 @@
          "name": "cache_version",
          "summary": "cache version",
          "description": [
-            {
-               "line": "used to decide whether QU_cached_complexes needs a refresh"
-            }
+            "used to decide whether QU_cached_complexes needs a refresh"
          ],
          "type": "lUlongT",
          "flags": [
@@ -413,9 +359,7 @@
          "name": "reschedule_unknown",
          "summary": "timeout for rescheduling jobs",
          "description": [
-            {
-               "line": "used for caching from global/local conf; timout after which jobs will be rescheduled automatically"
-            }
+            "used for caching from global/local conf; timout after which jobs will be rescheduled automatically"
          ],
          "type": "lUlongT",
          "flags": [
@@ -428,9 +372,7 @@
          "name": "reschedule_unknown_list",
          "summary": "jobs which will be rescheduled",
          "description": [
-            {
-               "line": "after the rundown of reschedule_unknown this list contains all jobs which will be rescheduled automatically"
-            }
+            "after the rundown of reschedule_unknown this list contains all jobs which will be rescheduled automatically"
          ],
          "type": "lListT",
          "subClassName": "RU",
@@ -445,15 +387,9 @@
          "name": "report_seqno",
          "summary": "sequence number of the last report",
          "description": [
-            {
-               "line": "sequence number of the last report (job/load/..) qmaster received from the execd."
-            },
-            {
-               "line": "This seqno is used to detect old * reports, because reports are send * asynchronously"
-            },
-            {
-               "line": "and we have no guarantee that they arrive in order at qmaster"
-            }
+            "sequence number of the last report (job/load/..) qmaster received from the execd.",
+            "This seqno is used to detect old * reports, because reports are send * asynchronously",
+            "and we have no guarantee that they arrive in order at qmaster"
          ],
          "type": "lUlongT",
          "flags": [
@@ -466,9 +402,7 @@
          "name": "report_variables",
          "summary": "variables for reporting",
          "description": [
-            {
-               "line": "@todo add description"
-            }
+            "@todo add description"
          ],
          "type": "lListT",
          "subClassName": "STU",
@@ -486,9 +420,7 @@
          "name": "merged_report_variables",
          "summary": "merged variables for reporting",
          "description": [
-            {
-               "line": "list of variables written to the report file, merged from global host and actual host"
-            }
+            "list of variables written to the report file, merged from global host and actual host"
          ],
          "type": "lListT",
          "subClassName": "STU",
@@ -503,15 +435,9 @@
          "name": "joker",
          "summary": "Joker",
          "description": [
-            {
-               "line": "Placeholder which can be used for arbitrary data."
-            },
-            {
-               "line": "Its purpose is to be able to add new attributes without changing the spooling format."
-            },
-            {
-               "line": "It is a list of arbitrary type and it is spooled."
-            }
+            "Placeholder which can be used for arbitrary data.",
+            "Its purpose is to be able to add new attributes without changing the spooling format.",
+            "It is a list of arbitrary type and it is spooled."
          ],
          "type": "lListT",
          "subClassName": "Variable",
@@ -526,18 +452,10 @@
          "name": "internal_topology",
          "summary": "topology string stored internally",
          "description": [
-            {
-               "line": "topology string stored internally, used by qmaster"
-            },
-            {
-               "line": "contains hardware information (socket, cores, threads),"
-            },
-            {
-               "line": "memory information (numa nodes and caches),"
-            },
-            {
-               "line": "and attributes for those nodes (size, speed etc.)"
-            }
+            "topology string stored internally, used by qmaster",
+            "contains hardware information (socket, cores, threads),",
+            "memory information (numa nodes and caches),",
+            "and attributes for those nodes (size, speed etc.)"
          ],
          "type": "lStringT",
          "flags": [
@@ -550,15 +468,9 @@
          "name": "auto_added_time",
          "summary": "time at which the host added itself to the cluster",
          "description": [
-            {
-               "line": "The time at which the host added itself to the cluster, when its execution"
-            },
-            {
-               "line": "daemon registered and a rule of the qmaster_params AUTO_ADD_HOSTS matched it."
-            },
-            {
-               "line": "0 for a host which an administrator added."
-            }
+            "The time at which the host added itself to the cluster, when its execution",
+            "daemon registered and a rule of the qmaster_params AUTO_ADD_HOSTS matched it.",
+            "0 for a host which an administrator added."
          ],
          "type": "lUlong64T",
          "flags": [

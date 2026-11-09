@@ -2,9 +2,7 @@
    "className": "Acknowledge",
    "summary": "Acknowledgement",
    "description": [
-      {
-         "line": "A short acknowledgement message, identifying what is being acknowledged rather than carrying data."
-      }
+      "A short acknowledgement message, identifying what is being acknowledged rather than carrying data."
    ],
    "cullPrefix": "ACK",
    "attributes": [
@@ -12,9 +10,7 @@
          "name": "type",
          "summary": "Acknowledgement Type",
          "description": [
-            {
-               "line": "What is being acknowledged, e.g. a job report or a signal. Dispatched on by the receiver."
-            }
+            "What is being acknowledged, e.g. a job report or a signal. Dispatched on by the receiver."
          ],
          "type": "lUlongT",
          "flags": [
@@ -27,9 +23,7 @@
          "name": "id",
          "summary": "First Id",
          "description": [
-            {
-               "line": "Primary key of the acknowledged thing, usually a job id."
-            }
+            "Primary key of the acknowledged thing, usually a job id."
          ],
          "type": "lUlongT",
          "flags": [
@@ -42,9 +36,7 @@
          "name": "id2",
          "summary": "Second Id",
          "description": [
-            {
-               "line": "Secondary key, usually an array task id."
-            }
+            "Secondary key, usually an array task id."
          ],
          "type": "lUlongT",
          "flags": [
@@ -57,9 +49,7 @@
          "name": "str",
          "summary": "Name",
          "description": [
-            {
-               "line": "String key, used where the acknowledged thing is named rather than numbered."
-            }
+            "String key, used where the acknowledged thing is named rather than numbered."
          ],
          "type": "lStringT",
          "flags": [

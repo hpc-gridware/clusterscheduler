@@ -2,24 +2,12 @@
    "$schema": "https://json-schema.org/draft/2020-12/schema",
    "$id": "https://raw.githubusercontent.com/hpc-gridware/clusterscheduler/master/source/dist/util/resources/json-schemas/v9.2/ocs-object-common.schema.json",
    "$defs": {
-      "descriptionLine": {
-         "type": "object",
-         "required": [
-            "line"
-         ],
-         "properties": {
-            "line": {
-               "type": "string",
-               "minLength": 1
-            }
-         },
-         "additionalProperties": false
-      },
       "descriptionBlock": {
          "type": "array",
          "minItems": 1,
          "items": {
-            "$ref": "#/$defs/descriptionLine"
+            "type": "string",
+            "minLength": 1
          }
       },
       "flagName": {

@@ -2,12 +2,8 @@
    "className": "JobReference",
    "summary": "Job Reference",
    "description": [
-      {
-         "line": "Reference to a job by job id or job name."
-      },
-      {
-         "line": "It is for example used to reference successor or predecessor jobs in job dependencies."
-      }
+      "Reference to a job by job id or job name.",
+      "It is for example used to reference successor or predecessor jobs in job dependencies."
    ],
    "cullPrefix": "JRE",
    "attributes": [
@@ -15,9 +11,7 @@
          "name": "job_number",
          "summary": "Job Number",
          "description": [
-            {
-               "line": "Job number of the referenced job."
-            }
+            "Job number of the referenced job."
          ],
          "type": "lUlongT",
          "flags": [
@@ -33,9 +27,7 @@
          "name": "job_name",
          "summary": "Job Name",
          "description": [
-            {
-               "line": "Job name of the referenced job(s). Multiple jobs can be referenced by the same name."
-            }
+            "Job name of the referenced job(s). Multiple jobs can be referenced by the same name."
          ],
          "type": "lStringT",
          "flags": [

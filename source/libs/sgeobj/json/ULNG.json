@@ -2,9 +2,7 @@
    "className": "UnsignedLong",
    "summary": "Unsigned Long",
    "description": [
-      {
-         "line": "Used for lists / sublists holding 32bit ulong values, e.g. job ids."
-      }
+      "Used for lists / sublists holding 32bit ulong values, e.g. job ids."
    ],
    "cullPrefix": "ULNG",
    "attributes": [
@@ -12,9 +10,7 @@
          "name": "value",
          "summary": "Value",
          "description": [
-            {
-               "line": "An ulong value."
-            }
+            "An ulong value."
          ],
          "type": "lUlongT",
          "flags": [

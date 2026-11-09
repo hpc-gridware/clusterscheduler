@@ -2,18 +2,10 @@
    "className": "PathName",
    "summary": "Path Name",
    "description": [
-      {
-         "line": "An object of the PathName type specifies a certain path on a host."
-      },
-      {
-         "line": "It is used for specifying stdin/stdout/stderr paths via submit options -i/-o/-e/-j."
-      },
-      {
-         "line": "For different hosts different paths can be specified in the form [host:]path[,[host:]path...]."
-      },
-      {
-         "line": "There is some simple file staging facility, to be evaluated."
-      }
+      "An object of the PathName type specifies a certain path on a host.",
+      "It is used for specifying stdin/stdout/stderr paths via submit options -i/-o/-e/-j.",
+      "For different hosts different paths can be specified in the form [host:]path[,[host:]path...].",
+      "There is some simple file staging facility, to be evaluated."
    ],
    "cullPrefix": "PN",
    "attributes": [
@@ -21,9 +13,7 @@
          "name": "path",
          "summary": "Path",
          "description": [
-            {
-               "line": "Path to a file or directory."
-            }
+            "Path to a file or directory."
          ],
          "type": "lStringT",
          "flags": [
@@ -39,12 +29,8 @@
          "name": "host",
          "summary": "Host Name",
          "description": [
-            {
-               "line": "Name of the host where this specification is valid."
-            },
-            {
-               "line": "If it is left empty (nullptr), then the path is valid on all hosts (default)."
-            }
+            "Name of the host where this specification is valid.",
+            "If it is left empty (nullptr), then the path is valid on all hosts (default)."
          ],
          "type": "lHostT",
          "flags": []
@@ -53,9 +39,7 @@
          "name": "file_host",
          "summary": "File Host",
          "description": [
-            {
-               "line": "@todo for file staging, the host where the file is available?"
-            }
+            "@todo for file staging, the host where the file is available?"
          ],
          "type": "lHostT",
          "flags": []
@@ -64,9 +48,7 @@
          "name": "file_staging",
          "summary": "Do File Staging",
          "description": [
-            {
-               "line": "Do file staging when set to true. @todo status of filestaging?"
-            }
+            "Do file staging when set to true. @todo status of filestaging?"
          ],
          "type": "lBoolT",
          "flags": []

@@ -2,12 +2,8 @@
    "className": "SEC",
    "summary": "Secured Connection State (unused)",
    "description": [
-      {
-         "line": "State of one secured connection in the Sun-era security layer: the peer, the session key in eight parts, the sequence numbers and the expiry."
-      },
-      {
-         "line": "@warning Nothing in either repository reads or writes this type or any of its attributes - not even the `source/security` trees, which are themselves unbuilt. It is the object model's counterpart to that dead code. Left in place because removing a type changes the spooled object model; see task 41."
-      }
+      "State of one secured connection in the Sun-era security layer: the peer, the session key in eight parts, the sequence numbers and the expiry.",
+      "@warning Nothing in either repository reads or writes this type or any of its attributes - not even the `source/security` trees, which are themselves unbuilt. It is the object model's counterpart to that dead code. Left in place because removing a type changes the spooled object model; see task 41."
    ],
    "cullPrefix": "SEC",
    "attributes": [
@@ -15,9 +11,7 @@
          "name": "ConnectionID",
          "summary": "ConnectionID",
          "description": [
-            {
-               "line": "Part of the unused SEC object; see the object description."
-            }
+            "Part of the unused SEC object; see the object description."
          ],
          "type": "lUlongT",
          "flags": []
@@ -26,9 +20,7 @@
          "name": "Host",
          "summary": "Host",
          "description": [
-            {
-               "line": "Part of the unused SEC object; see the object description."
-            }
+            "Part of the unused SEC object; see the object description."
          ],
          "type": "lHostT",
          "flags": []
@@ -37,9 +29,7 @@
          "name": "Commproc",
          "summary": "Commproc",
          "description": [
-            {
-               "line": "Part of the unused SEC object; see the object description."
-            }
+            "Part of the unused SEC object; see the object description."
          ],
          "type": "lStringT",
          "flags": []
@@ -48,9 +38,7 @@
          "name": "Id",
          "summary": "Id",
          "description": [
-            {
-               "line": "Part of the unused SEC object; see the object description."
-            }
+            "Part of the unused SEC object; see the object description."
          ],
          "type": "lIntT",
          "flags": []
@@ -59,9 +47,7 @@
          "name": "UniqueIdentifier",
          "summary": "UniqueIdentifier",
          "description": [
-            {
-               "line": "Part of the unused SEC object; see the object description."
-            }
+            "Part of the unused SEC object; see the object description."
          ],
          "type": "lStringT",
          "flags": []
@@ -70,9 +56,7 @@
          "name": "ExpiryDate",
          "summary": "ExpiryDate",
          "description": [
-            {
-               "line": "Part of the unused SEC object; see the object description."
-            }
+            "Part of the unused SEC object; see the object description."
          ],
          "type": "lStringT",
          "flags": []
@@ -81,9 +65,7 @@
          "name": "SeqNoSend",
          "summary": "SeqNoSend",
          "description": [
-            {
-               "line": "Part of the unused SEC object; see the object description."
-            }
+            "Part of the unused SEC object; see the object description."
          ],
          "type": "lUlongT",
          "flags": []
@@ -92,9 +74,7 @@
          "name": "SeqNoReceive",
          "summary": "SeqNoReceive",
          "description": [
-            {
-               "line": "Part of the unused SEC object; see the object description."
-            }
+            "Part of the unused SEC object; see the object description."
          ],
          "type": "lUlongT",
          "flags": []
@@ -103,9 +83,7 @@
          "name": "KeyPart0",
          "summary": "KeyPart0",
          "description": [
-            {
-               "line": "Part of the unused SEC object; see the object description."
-            }
+            "Part of the unused SEC object; see the object description."
          ],
          "type": "lUlongT",
          "flags": []
@@ -114,9 +92,7 @@
          "name": "KeyPart1",
          "summary": "KeyPart1",
          "description": [
-            {
-               "line": "Part of the unused SEC object; see the object description."
-            }
+            "Part of the unused SEC object; see the object description."
          ],
          "type": "lUlongT",
          "flags": []
@@ -125,9 +101,7 @@
          "name": "KeyPart2",
          "summary": "KeyPart2",
          "description": [
-            {
-               "line": "Part of the unused SEC object; see the object description."
-            }
+            "Part of the unused SEC object; see the object description."
          ],
          "type": "lUlongT",
          "flags": []
@@ -136,9 +110,7 @@
          "name": "KeyPart3",
          "summary": "KeyPart3",
          "description": [
-            {
-               "line": "Part of the unused SEC object; see the object description."
-            }
+            "Part of the unused SEC object; see the object description."
          ],
          "type": "lUlongT",
          "flags": []
@@ -147,9 +119,7 @@
          "name": "KeyPart4",
          "summary": "KeyPart4",
          "description": [
-            {
-               "line": "Part of the unused SEC object; see the object description."
-            }
+            "Part of the unused SEC object; see the object description."
          ],
          "type": "lUlongT",
          "flags": []
@@ -158,9 +128,7 @@
          "name": "KeyPart5",
          "summary": "KeyPart5",
          "description": [
-            {
-               "line": "Part of the unused SEC object; see the object description."
-            }
+            "Part of the unused SEC object; see the object description."
          ],
          "type": "lUlongT",
          "flags": []
@@ -169,9 +137,7 @@
          "name": "KeyPart6",
          "summary": "KeyPart6",
          "description": [
-            {
-               "line": "Part of the unused SEC object; see the object description."
-            }
+            "Part of the unused SEC object; see the object description."
          ],
          "type": "lUlongT",
          "flags": []
@@ -180,9 +146,7 @@
          "name": "KeyPart7",
          "summary": "KeyPart7",
          "description": [
-            {
-               "line": "Part of the unused SEC object; see the object description."
-            }
+            "Part of the unused SEC object; see the object description."
          ],
          "type": "lUlongT",
          "flags": []

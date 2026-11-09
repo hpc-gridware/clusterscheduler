@@ -2,12 +2,8 @@
    "className": "SubmitUser",
    "summary": "Submit User",
    "description": [
-      {
-         "line": "The list of these objects defines which users are allowed to submit jobs into Cluster Scheduler."
-      },
-      {
-         "line": "It is also used to count the number of active jobs of the user."
-      }
+      "The list of these objects defines which users are allowed to submit jobs into Cluster Scheduler.",
+      "It is also used to count the number of active jobs of the user."
    ],
    "cullPrefix": "SU",
    "attributes": [
@@ -15,9 +11,7 @@
          "name": "name",
          "summary": "Name",
          "description": [
-            {
-               "line": "User Name"
-            }
+            "User Name"
          ],
          "type": "lStringT",
          "flags": [
@@ -33,9 +27,7 @@
          "name": "jobs",
          "summary": "Jobs",
          "description": [
-            {
-               "line": "Currently active jobs for this user (including jobs in finished state)."
-            }
+            "Currently active jobs for this user (including jobs in finished state)."
          ],
          "type": "lUlongT",
          "flags": []

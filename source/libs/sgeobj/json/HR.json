@@ -2,9 +2,7 @@
    "className": "HostReference",
    "summary": "Host Reference",
    "description": [
-      {
-         "line": "Used to reference a host by name."
-      }
+      "Used to reference a host by name."
    ],
    "cullPrefix": "HR",
    "attributes": [
@@ -12,9 +10,7 @@
          "name": "name",
          "summary": "Name",
          "description": [
-            {
-               "line": "The host name."
-            }
+            "The host name."
          ],
          "type": "lHostT",
          "flags": [

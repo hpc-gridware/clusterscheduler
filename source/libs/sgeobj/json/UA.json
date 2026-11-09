@@ -2,9 +2,7 @@
    "className": "UsageValue",
    "summary": "Usage Value",
    "description": [
-      {
-         "line": "Usage values hold the job usage information retrieved by sge_execd per job / array task / pe task."
-      }
+      "Usage values hold the job usage information retrieved by sge_execd per job / array task / pe task."
    ],
    "cullPrefix": "UA",
    "attributes": [
@@ -12,9 +10,7 @@
          "name": "name",
          "summary": "Name",
          "description": [
-            {
-               "line": "Name of the usage value, e.g. cpu, mem, vmem, maxvmem, ..."
-            }
+            "Name of the usage value, e.g. cpu, mem, vmem, maxvmem, ..."
          ],
          "type": "lStringT",
          "flags": [
@@ -36,9 +32,7 @@
          "name": "value",
          "summary": "Value",
          "description": [
-            {
-               "line": "Usage value as a double."
-            }
+            "Usage value as a double."
          ],
          "type": "lDoubleT",
          "flags": [
@@ -51,9 +45,7 @@
          "name": "svalue",
          "summary": "String Value",
          "description": [
-            {
-               "line": "Usage value as a string, for custom usage values that are not numeric. Nullptr when the value is numeric — presence of svalue is the discriminator between string and numeric custom usage. Standard usage values (USAGE_ATTR_* names) never carry svalue. See CS-849."
-            }
+            "Usage value as a string, for custom usage values that are not numeric. Nullptr when the value is numeric — presence of svalue is the discriminator between string and numeric custom usage. Standard usage values (USAGE_ATTR_* names) never carry svalue. See CS-849."
          ],
          "type": "lStringT",
          "flags": [

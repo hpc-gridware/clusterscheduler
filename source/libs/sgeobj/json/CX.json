@@ -2,18 +2,10 @@
    "className": "ContextChange",
    "summary": "Context Change Instruction",
    "description": [
-      {
-         "line": "One element of the instructions of the -ac, -sc and -dc switches (JB_context_change)."
-      },
-      {
-         "line": "An element whose name is +, - or = starts a group that adds, deletes or sets the"
-      },
-      {
-         "line": "context variables following it; names repeat by design, so the name is not unique."
-      },
-      {
-         "line": "@see set_context()"
-      }
+      "One element of the instructions of the -ac, -sc and -dc switches (JB_context_change).",
+      "An element whose name is +, - or = starts a group that adds, deletes or sets the",
+      "context variables following it; names repeat by design, so the name is not unique.",
+      "@see set_context()"
    ],
    "cullPrefix": "CX",
    "attributes": [
@@ -21,9 +13,7 @@
          "name": "variable",
          "summary": "Variable Name or Marker",
          "description": [
-            {
-               "line": "Name of the context variable, or one of the markers +, - and =."
-            }
+            "Name of the context variable, or one of the markers +, - and =."
          ],
          "type": "lStringT",
          "flags": [
@@ -36,9 +26,7 @@
          "name": "value",
          "summary": "Variable Value",
          "description": [
-            {
-               "line": "Value of the context variable as string."
-            }
+            "Value of the context variable as string."
          ],
          "type": "lStringT",
          "flags": []

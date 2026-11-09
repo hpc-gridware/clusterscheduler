@@ -2,12 +2,8 @@
    "className": "Binding",
    "summary": "Binding",
    "description": [
-      {
-         "line": "How a job is to be bound to the cores of its execution host."
-      },
-      {
-         "line": "Holds what the user asked for with `qsub -binding`: the strategy, how much to bind, and the starting point. What was actually granted is recorded on the granted destination identifier."
-      }
+      "How a job is to be bound to the cores of its execution host.",
+      "Holds what the user asked for with `qsub -binding`: the strategy, how much to bind, and the starting point. What was actually granted is recorded on the granted destination identifier."
    ],
    "cullPrefix": "BN",
    "attributes": [
@@ -15,9 +11,7 @@
          "name": "new_type",
          "summary": "type of binding",
          "description": [
-            {
-               "line": "host or slot binding"
-            }
+            "host or slot binding"
          ],
          "type": "lUlongT",
          "flags": [
@@ -30,9 +24,7 @@
          "name": "instance",
          "summary": "Instance that applies the binding",
          "description": [
-            {
-               "line": "Set, PE or env"
-            }
+            "Set, PE or env"
          ],
          "type": "lUlongT",
          "flags": [
@@ -45,9 +37,7 @@
          "name": "amount",
          "summary": "Amount of units",
          "description": [
-            {
-               "line": "Number of units to bind to"
-            }
+            "Number of units to bind to"
          ],
          "type": "lUlongT",
          "flags": [
@@ -60,9 +50,7 @@
          "name": "unit",
          "summary": "Unit type that should be bound",
          "description": [
-            {
-               "line": "Defines if threads, cores, sockets ... should be bound"
-            }
+            "Defines if threads, cores, sockets ... should be bound"
          ],
          "type": "lUlongT",
          "flags": [
@@ -75,9 +63,7 @@
          "name": "filter",
          "summary": "Mask that defines which parts of a topology should not be bound",
          "description": [
-            {
-               "line": "Masked parts have to be lowercase in the topology string."
-            }
+            "Masked parts have to be lowercase in the topology string."
          ],
          "type": "lStringT",
          "flags": [
@@ -90,9 +76,7 @@
          "name": "sort",
          "summary": "Sort order of binding",
          "description": [
-            {
-               "line": "Defines how units within the topology string should be sorted before binding."
-            }
+            "Defines how units within the topology string should be sorted before binding."
          ],
          "type": "lStringT",
          "flags": [
@@ -105,9 +89,7 @@
          "name": "start",
          "summary": "Start position",
          "description": [
-            {
-               "line": "Defines the start position for binding within the topology string."
-            }
+            "Defines the start position for binding within the topology string."
          ],
          "type": "lUlongT",
          "flags": [
@@ -120,9 +102,7 @@
          "name": "stop",
          "summary": "Stop position",
          "description": [
-            {
-               "line": "Defines the stop position for binding within the topology string."
-            }
+            "Defines the stop position for binding within the topology string."
          ],
          "type": "lUlongT",
          "flags": [
@@ -135,9 +115,7 @@
          "name": "strategy",
          "summary": "Binding strategy ...",
          "description": [
-            {
-               "line": "Defines the strategy for binding, like linear, striding, packed or explicit"
-            }
+            "Defines the strategy for binding, like linear, striding, packed or explicit"
          ],
          "type": "lUlongT",
          "flags": [
@@ -150,9 +128,7 @@
          "name": "specific_hostname",
          "summary": "hostname of where the attributes specific_binding is valid for",
          "description": [
-            {
-               "line": "Used in scheduler only to identify where a specific binding decision was done for."
-            }
+            "Used in scheduler only to identify where a specific binding decision was done for."
          ],
          "type": "lHostT",
          "flags": [
@@ -165,9 +141,7 @@
          "name": "specific_binding",
          "summary": "A specific binding decision for a job on a host",
          "description": [
-            {
-               "line": "Used in scheduler only to hold a binding decision for a specific job on a host."
-            }
+            "Used in scheduler only to hold a binding decision for a specific job on a host."
          ],
          "type": "lStringT",
          "flags": [
@@ -180,12 +154,8 @@
          "name": "specific_binding_list",
          "summary": "Sublist of individual task specific bindings.",
          "description": [
-            {
-               "line": "Id of sublist specifies a task ID and the string the binding done for that task."
-            },
-            {
-               "line": "Exists only if task specific binding decisions have to be done."
-            }
+            "Id of sublist specifies a task ID and the string the binding done for that task.",
+            "Exists only if task specific binding decisions have to be done."
          ],
          "type": "lListT",
          "subClassName": "SpecificBindingList",
@@ -200,15 +170,9 @@
          "name": "joker",
          "summary": "Joker",
          "description": [
-            {
-               "line": "Placeholder which can be used for arbitrary data."
-            },
-            {
-               "line": "Its purpose is to be able to add new attributes without changing the spooling format."
-            },
-            {
-               "line": "It is a list of arbitrary type and it is spooled."
-            }
+            "Placeholder which can be used for arbitrary data.",
+            "Its purpose is to be able to add new attributes without changing the spooling format.",
+            "It is a list of arbitrary type and it is spooled."
          ],
          "type": "lListT",
          "subClassName": "Variable",

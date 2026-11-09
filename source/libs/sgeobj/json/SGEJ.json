@@ -2,18 +2,10 @@
    "className": "JobSortObject",
    "summary": "Job Sort Object",
    "description": [
-      {
-         "line": "This is the list type we use to sort the joblist in the sge scheduler."
-      },
-      {
-         "line": "The list will be build before the actual scheduling."
-      },
-      {
-         "line": "It is sorted by priorty ASC, submission time ASC, job number DESC."
-      },
-      {
-         "line": "Jobs in this list will then be scheduled one after the other."
-      }
+      "This is the list type we use to sort the joblist in the sge scheduler.",
+      "The list will be build before the actual scheduling.",
+      "It is sorted by priorty ASC, submission time ASC, job number DESC.",
+      "Jobs in this list will then be scheduled one after the other."
    ],
    "cullPrefix": "SGEJ",
    "attributes": [
@@ -21,12 +13,8 @@
          "name": "priority",
          "summary": "Priority",
          "description": [
-            {
-               "line": "Normalized priority of the job/array task after applying all policies."
-            },
-            {
-               "line": "The job list is sorted by priority descending as primary sort criterion."
-            }
+            "Normalized priority of the job/array task after applying all policies.",
+            "The job list is sorted by priority descending as primary sort criterion."
          ],
          "type": "lDoubleT",
          "flags": []
@@ -35,9 +23,7 @@
          "name": "job_number",
          "summary": "Job Number",
          "description": [
-            {
-               "line": "The job number. Third sort criterion."
-            }
+            "The job number. Third sort criterion."
          ],
          "type": "lUlongT",
          "flags": []
@@ -46,12 +32,8 @@
          "name": "job_name",
          "summary": "Job Name",
          "description": [
-            {
-               "line": "The job name."
-            },
-            {
-               "line": "@todo can be removed, it is only set, never read."
-            }
+            "The job name.",
+            "@todo can be removed, it is only set, never read."
          ],
          "type": "lStringT",
          "flags": []
@@ -60,12 +42,8 @@
          "name": "owner",
          "summary": "Owner",
          "description": [
-            {
-               "line": "The job owner."
-            },
-            {
-               "line": "@todo can be removed, it is only set, never read."
-            }
+            "The job owner.",
+            "@todo can be removed, it is only set, never read."
          ],
          "type": "lStringT",
          "flags": []
@@ -74,12 +52,8 @@
          "name": "state",
          "summary": "State",
          "description": [
-            {
-               "line": "The state of an enrolled array task (JAT_state)."
-            },
-            {
-               "line": "@todo can be removed, it is only set, never read."
-            }
+            "The state of an enrolled array task (JAT_state).",
+            "@todo can be removed, it is only set, never read."
          ],
          "type": "lUlongT",
          "flags": []
@@ -88,12 +62,8 @@
          "name": "master_queue",
          "summary": "Master Queue",
          "description": [
-            {
-               "line": "The master queue of an enrolled array task (JAT_master_queue)."
-            },
-            {
-               "line": "@todo can be removed, it is only set, never read."
-            }
+            "The master queue of an enrolled array task (JAT_master_queue).",
+            "@todo can be removed, it is only set, never read."
          ],
          "type": "lStringT",
          "flags": []
@@ -102,9 +72,7 @@
          "name": "job_reference",
          "summary": "Job Reference",
          "description": [
-            {
-               "line": "Reference (Pointer) to the job in the scheduler's job list."
-            }
+            "Reference (Pointer) to the job in the scheduler's job list."
          ],
          "type": "lRefT",
          "subClassName": "ANY",
@@ -119,9 +87,7 @@
          "name": "submission_time",
          "summary": "Submission Time",
          "description": [
-            {
-               "line": "The job submission time. Secondary sort criterion."
-            }
+            "The job submission time. Secondary sort criterion."
          ],
          "type": "lTimestampT",
          "flags": []

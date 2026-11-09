@@ -2,9 +2,7 @@
    "className": "Answer",
    "summary": "answer element",
    "description": [
-      {
-         "line": "element holding information for an answer to a request"
-      }
+      "element holding information for an answer to a request"
    ],
    "cullPrefix": "AN",
    "attributes": [
@@ -12,24 +10,12 @@
          "name": "status",
          "summary": "answer status",
          "description": [
-            {
-               "line": "status of an answer: a high level error code, e.g."
-            },
-            {
-               "line": " - STATUS_OK"
-            },
-            {
-               "line": " - STATUS_ESEMANTIC"
-            },
-            {
-               "line": " - STATUS_EEXIST"
-            },
-            {
-               "line": " - STATUS_EUNKNOWN"
-            },
-            {
-               "line": " - ..."
-            }
+            "status of an answer: a high level error code, e.g.",
+            " - STATUS_OK",
+            " - STATUS_ESEMANTIC",
+            " - STATUS_EEXIST",
+            " - STATUS_EUNKNOWN",
+            " - ..."
          ],
          "type": "lUlongT",
          "flags": []
@@ -38,9 +24,7 @@
          "name": "text",
          "summary": "answer text",
          "description": [
-            {
-               "line": "printable answer text, e.g. an error message"
-            }
+            "printable answer text, e.g. an error message"
          ],
          "type": "lStringT",
          "flags": []
@@ -49,21 +33,11 @@
          "name": "quality",
          "summary": "answer quality",
          "description": [
-            {
-               "line": "answer quality (level, severity):"
-            },
-            {
-               "line": " - ANSWER_QUALITY_CRITICAL"
-            },
-            {
-               "line": " - ANSWER_QUALITY_ERROR"
-            },
-            {
-               "line": " - ANSWER_QUALITY_WARNING"
-            },
-            {
-               "line": " - ANSWER_QUALITY_INFO"
-            }
+            "answer quality (level, severity):",
+            " - ANSWER_QUALITY_CRITICAL",
+            " - ANSWER_QUALITY_ERROR",
+            " - ANSWER_QUALITY_WARNING",
+            " - ANSWER_QUALITY_INFO"
          ],
          "type": "lUlongT",
          "flags": []

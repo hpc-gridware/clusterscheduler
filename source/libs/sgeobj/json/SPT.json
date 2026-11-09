@@ -2,27 +2,13 @@
    "className": "SpoolingType",
    "summary": "Spooling Type",
    "description": [
-      {
-         "line": "Objects to be spooled have a certain type that can be identified by the sge_object_type enum."
-      },
-      {
-         "line": "A spooling context can contain information about individual"
-      },
-      {
-         "line": "types and/or define a default behaviour for all (not individually handled) types."
-      },
-      {
-         "line": "The spooling behaviour for a type is defined by a list of references"
-      },
-      {
-         "line": "to rules in the spooling context."
-      },
-      {
-         "line": "One of the referenced spooling rules has to be made default rule"
-      },
-      {
-         "line": "for reading objects."
-      }
+      "Objects to be spooled have a certain type that can be identified by the sge_object_type enum.",
+      "A spooling context can contain information about individual",
+      "types and/or define a default behaviour for all (not individually handled) types.",
+      "The spooling behaviour for a type is defined by a list of references",
+      "to rules in the spooling context.",
+      "One of the referenced spooling rules has to be made default rule",
+      "for reading objects."
    ],
    "cullPrefix": "SPT",
    "attributes": [
@@ -30,15 +16,9 @@
          "name": "type",
          "summary": "Type",
          "description": [
-            {
-               "line": "Unique type identifier."
-            },
-            {
-               "line": "See enum sge_object_type in libs/gdi/sge_mirror.h"
-            },
-            {
-               "line": "SGE_TYPE_ALL describes a default type entry for all object types."
-            }
+            "Unique type identifier.",
+            "See enum sge_object_type in libs/gdi/sge_mirror.h",
+            "SGE_TYPE_ALL describes a default type entry for all object types."
          ],
          "type": "lUlongT",
          "flags": [
@@ -54,9 +34,7 @@
          "name": "name",
          "summary": "Name",
          "description": [
-            {
-               "line": "Name of the type - used for informational messages etc."
-            }
+            "Name of the type - used for informational messages etc."
          ],
          "type": "lStringT",
          "flags": []
@@ -65,15 +43,9 @@
          "name": "rules",
          "summary": "Rules",
          "description": [
-            {
-               "line": "List of rules that can be applied for a certain object type."
-            },
-            {
-               "line": "Does not reference the rules themselves, but contains mapping"
-            },
-            {
-               "line": "objects mapping between type and rule."
-            }
+            "List of rules that can be applied for a certain object type.",
+            "Does not reference the rules themselves, but contains mapping",
+            "objects mapping between type and rule."
          ],
          "type": "lListT",
          "subClassName": "SPTR",

@@ -2,12 +2,8 @@
    "className": "CommandLineArgument",
    "summary": "Commandline Argument",
    "description": [
-      {
-         "line": "Used in clients for parsing the commandline."
-      },
-      {
-         "line": "One commandline argument (including data) is one SPA_Type object."
-      }
+      "Used in clients for parsing the commandline.",
+      "One commandline argument (including data) is one SPA_Type object."
    ],
    "cullPrefix": "SPA",
    "attributes": [
@@ -15,18 +11,10 @@
          "name": "number",
          "summary": "Option Number",
          "description": [
-            {
-               "line": "Defines which option was parsed."
-            },
-            {
-               "line": "The option numbers are defined as enum in source/common/sge_options.h, e.g."
-            },
-            {
-               "line": "the -a option has option number a_OPT."
-            },
-            {
-               "line": "Every option has a unique option number."
-            }
+            "Defines which option was parsed.",
+            "The option numbers are defined as enum in source/common/sge_options.h, e.g.",
+            "the -a option has option number a_OPT.",
+            "Every option has a unique option number."
          ],
          "type": "lUlongT",
          "flags": []
@@ -35,15 +23,9 @@
          "name": "argtype",
          "summary": "Argument Type",
          "description": [
-            {
-               "line": "If an option has additional arguments the type of the argument,"
-            },
-            {
-               "line": "as defined in source/libs/cull/cull_list.h, enum _enum_lMultiType, e.g."
-            },
-            {
-               "line": "lStringT for the -N option (defining a job name as string)."
-            }
+            "If an option has additional arguments the type of the argument,",
+            "as defined in source/libs/cull/cull_list.h, enum _enum_lMultiType, e.g.",
+            "lStringT for the -N option (defining a job name as string)."
          ],
          "type": "lUlongT",
          "flags": []
@@ -52,9 +34,7 @@
          "name": "switch_val",
          "summary": "Switch",
          "description": [
-            {
-               "line": "The option as string, e.g. -N."
-            }
+            "The option as string, e.g. -N."
          ],
          "type": "lStringT",
          "flags": [
@@ -67,9 +47,7 @@
          "name": "switch_arg",
          "summary": "Switch Argument",
          "description": [
-            {
-               "line": "Optional the argument to the option, e.g. for the -N switch the job name."
-            }
+            "Optional the argument to the option, e.g. for the -N switch the job name."
          ],
          "type": "lStringT",
          "flags": []
@@ -78,18 +56,10 @@
          "name": "occurrence",
          "summary": "Occurence",
          "description": [
-            {
-               "line": "@todo Seems to define if an option has arguments or not."
-            },
-            {
-               "line": "Possible values are defined in source/common/parse_qsub.h (@todo it is *not* qsub specific, move it):"
-            },
-            {
-               "line": "- BIT_SPA_OCC_NOARG"
-            },
-            {
-               "line": "- BIT_SPA_OCC_ARG"
-            }
+            "@todo Seems to define if an option has arguments or not.",
+            "Possible values are defined in source/common/parse_qsub.h (@todo it is *not* qsub specific, move it):",
+            "- BIT_SPA_OCC_NOARG",
+            "- BIT_SPA_OCC_ARG"
          ],
          "type": "lUlongT",
          "flags": []
@@ -98,9 +68,7 @@
          "name": "argval_lDoubleT",
          "summary": "Parsed Double Argument",
          "description": [
-            {
-               "line": "If the option argument is a double then this value is the commandline argument (switch_arg) parsed to double."
-            }
+            "If the option argument is a double then this value is the commandline argument (switch_arg) parsed to double."
          ],
          "type": "lDoubleT",
          "flags": []
@@ -109,9 +77,7 @@
          "name": "argval_lUlongT",
          "summary": "Parsed Ulong Argument",
          "description": [
-            {
-               "line": "If the option argument is an ulong then this value is the commandline argument (switch_arg) parsed to ulong."
-            }
+            "If the option argument is an ulong then this value is the commandline argument (switch_arg) parsed to ulong."
          ],
          "type": "lUlongT",
          "flags": []
@@ -120,9 +86,7 @@
          "name": "argval_lUlong64T",
          "summary": "Parsed Ulong64 Argument",
          "description": [
-            {
-               "line": "If the option argument is an ulong64 then this value is the commandline argument (switch_arg) parsed to ulong64."
-            }
+            "If the option argument is an ulong64 then this value is the commandline argument (switch_arg) parsed to ulong64."
          ],
          "type": "lUlong64T",
          "flags": []
@@ -131,9 +95,7 @@
          "name": "argval_lLongT",
          "summary": "Parsed Long Argument",
          "description": [
-            {
-               "line": "If the option argument is a long then this value is the commandline argument (switch_arg) parsed to long."
-            }
+            "If the option argument is a long then this value is the commandline argument (switch_arg) parsed to long."
          ],
          "type": "lLongT",
          "flags": []
@@ -142,15 +104,9 @@
          "name": "argval_lBoolT",
          "summary": "Parsed Char Argument",
          "description": [
-            {
-               "line": "If the option argument is a single bool then this value is the commandline argument (first character of switch_arg)."
-            },
-            {
-               "line": "In parsing of the job submission command line it is used to store the scope information,"
-            },
-            {
-               "line": "JRS_SCOPE_GLOBAL, JRS_SCOPE_MASTER, JRS_SCOPE_SLAVE."
-            }
+            "If the option argument is a single bool then this value is the commandline argument (first character of switch_arg).",
+            "In parsing of the job submission command line it is used to store the scope information,",
+            "JRS_SCOPE_GLOBAL, JRS_SCOPE_MASTER, JRS_SCOPE_SLAVE."
          ],
          "type": "lBoolT",
          "flags": []
@@ -159,12 +115,8 @@
          "name": "argval_lIntT",
          "summary": "Parsed Int Argument",
          "description": [
-            {
-               "line": "If the option argument is an integer then this value is the commandline argument (switch_arg) parsed to integer."
-            },
-            {
-               "line": "In parsing of the job submission command line it is used to store the information if requests are hard or soft."
-            }
+            "If the option argument is an integer then this value is the commandline argument (switch_arg) parsed to integer.",
+            "In parsing of the job submission command line it is used to store the information if requests are hard or soft."
          ],
          "type": "lIntT",
          "flags": []
@@ -173,9 +125,7 @@
          "name": "argval_lStringT",
          "summary": "String Argument",
          "description": [
-            {
-               "line": "The commandline argument (same value as the switch_arg attribute)"
-            }
+            "The commandline argument (same value as the switch_arg attribute)"
          ],
          "type": "lStringT",
          "flags": []
@@ -184,9 +134,7 @@
          "name": "argval_lListT",
          "summary": "Parsed List Argument",
          "description": [
-            {
-               "line": "If the option argument defines a list of items then this attribute contains the parsed list."
-            }
+            "If the option argument defines a list of items then this attribute contains the parsed list."
          ],
          "type": "lListT",
          "subClassName": "ST",

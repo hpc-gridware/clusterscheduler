@@ -2,18 +2,10 @@
    "className": "AdvanceReservation",
    "summary": "Advance Reservation",
    "description": [
-      {
-         "line": "An object of this type represents an advance reservation."
-      },
-      {
-         "line": "An advance reservation reserves (consumable) resources for a certain time period."
-      },
-      {
-         "line": "Jobs which are submitted into the AR can use these resources."
-      },
-      {
-         "line": "See also man pages qrsub.1, qrstat.1, and qrdel.1"
-      }
+      "An object of this type represents an advance reservation.",
+      "An advance reservation reserves (consumable) resources for a certain time period.",
+      "Jobs which are submitted into the AR can use these resources.",
+      "See also man pages qrsub.1, qrstat.1, and qrdel.1"
    ],
    "cullPrefix": "AR",
    "attributes": [
@@ -21,9 +13,7 @@
          "name": "id",
          "summary": "AR Id",
          "description": [
-            {
-               "line": "A unique identifier for the advance reservation, similar to the job id."
-            }
+            "A unique identifier for the advance reservation, similar to the job id."
          ],
          "type": "lUlongT",
          "flags": [
@@ -45,9 +35,7 @@
          "name": "name",
          "summary": "AR Name",
          "description": [
-            {
-               "line": "A name for the advance reservation."
-            }
+            "A name for the advance reservation."
          ],
          "type": "lStringT",
          "flags": [
@@ -63,9 +51,7 @@
          "name": "account",
          "summary": "Account",
          "description": [
-            {
-               "line": "The account to which the advance reservation is charged."
-            }
+            "The account to which the advance reservation is charged."
          ],
          "type": "lStringT",
          "flags": [
@@ -81,9 +67,7 @@
          "name": "owner",
          "summary": "Owner",
          "description": [
-            {
-               "line": "The owner of the advance reservation (the user who submitted the AR)."
-            }
+            "The owner of the advance reservation (the user who submitted the AR)."
          ],
          "type": "lStringT",
          "flags": [
@@ -99,9 +83,7 @@
          "name": "group",
          "summary": "Group",
          "description": [
-            {
-               "line": "The UNIX group of the advance reservation owner."
-            }
+            "The UNIX group of the advance reservation owner."
          ],
          "type": "lStringT",
          "flags": [
@@ -117,9 +99,7 @@
          "name": "submission_time",
          "summary": "Submission Time",
          "description": [
-            {
-               "line": "The time when the AR was submitted in microseconds since epoch."
-            }
+            "The time when the AR was submitted in microseconds since epoch."
          ],
          "type": "lTimestampT",
          "flags": [
@@ -132,9 +112,7 @@
          "name": "start_time",
          "summary": "Start Time",
          "description": [
-            {
-               "line": "The start time of the AR in microseconds since epoch"
-            }
+            "The start time of the AR in microseconds since epoch"
          ],
          "type": "lTimestampT",
          "flags": [
@@ -150,9 +128,7 @@
          "name": "end_time",
          "summary": "End Time",
          "description": [
-            {
-               "line": "The end time of the AR in microseconds since epoch"
-            }
+            "The end time of the AR in microseconds since epoch"
          ],
          "type": "lTimestampT",
          "flags": [
@@ -168,9 +144,7 @@
          "name": "duration",
          "summary": "Duration",
          "description": [
-            {
-               "line": "The duration of the AR in microseconds"
-            }
+            "The duration of the AR in microseconds"
          ],
          "type": "lTimestampT",
          "flags": [
@@ -186,9 +160,7 @@
          "name": "verify",
          "summary": "Verify",
          "description": [
-            {
-               "line": "From qrsub -w v|e."
-            }
+            "From qrsub -w v|e."
          ],
          "type": "lUlongT",
          "flags": [
@@ -204,9 +176,7 @@
          "name": "error_handling",
          "summary": "Error Handling",
          "description": [
-            {
-               "line": "From qrsub -he yes/no."
-            }
+            "From qrsub -he yes/no."
          ],
          "type": "lUlongT",
          "flags": [
@@ -222,9 +192,7 @@
          "name": "state",
          "summary": "State",
          "description": [
-            {
-               "line": "The state of the advance reservation."
-            }
+            "The state of the advance reservation."
          ],
          "type": "lUlongT",
          "flags": [
@@ -240,9 +208,7 @@
          "name": "checkpoint_name",
          "summary": "Checkpoint Name",
          "description": [
-            {
-               "line": "Checkpointing environment jobs running in the AR can use."
-            }
+            "Checkpointing environment jobs running in the AR can use."
          ],
          "type": "lStringT",
          "flags": [
@@ -258,12 +224,8 @@
          "name": "resource_list",
          "summary": "Resource List",
          "description": [
-            {
-               "line": "The list of resources requested by the advance reservation (qrsub -l)."
-            },
-            {
-               "line": "Just one hard resource list. @todo The -scope feature is still missing."
-            }
+            "The list of resources requested by the advance reservation (qrsub -l).",
+            "Just one hard resource list. @todo The -scope feature is still missing."
          ],
          "type": "lListT",
          "subClassName": "CE",
@@ -281,9 +243,7 @@
          "name": "resource_utilization",
          "summary": "Resource Utilization",
          "description": [
-            {
-               "line": "The utilization of resources by jobs running in the AR."
-            }
+            "The utilization of resources by jobs running in the AR."
          ],
          "type": "lListT",
          "subClassName": "RUE",
@@ -298,12 +258,8 @@
          "name": "queue_list",
          "summary": "Queue List",
          "description": [
-            {
-               "line": "The list of queues requested by the advance reservation (qrsub -q)."
-            },
-            {
-               "line": "Just one hard queue list. @todo The -scope feature is still missing."
-            }
+            "The list of queues requested by the advance reservation (qrsub -q).",
+            "Just one hard queue list. @todo The -scope feature is still missing."
          ],
          "type": "lListT",
          "subClassName": "QR",
@@ -321,9 +277,7 @@
          "name": "granted_slots",
          "summary": "Granted Slots",
          "description": [
-            {
-               "line": "The queue instances and slot counts the reservation holds (`JG_Type`), the same shape as a job's granted destination identifier list. Set once when the reservation is confirmed."
-            }
+            "The queue instances and slot counts the reservation holds (`JG_Type`), the same shape as a job's granted destination identifier list. Set once when the reservation is confirmed."
          ],
          "type": "lListT",
          "subClassName": "JG",
@@ -341,15 +295,9 @@
          "name": "reserved_hosts",
          "summary": "Reserved Hosts",
          "description": [
-            {
-               "line": "Will hold the list of hosts which are reserved for the advance reservation"
-            },
-            {
-               "line": "together with the amount of granted consumables in EH_consumable_resources."
-            },
-            {
-               "line": "@todo not yet implemented, see CS-430"
-            }
+            "Will hold the list of hosts which are reserved for the advance reservation",
+            "together with the amount of granted consumables in EH_consumable_resources.",
+            "@todo not yet implemented, see CS-430"
          ],
          "type": "lListT",
          "subClassName": "ExecHost",
@@ -367,12 +315,8 @@
          "name": "reserved_queues",
          "summary": "Reserved Queues",
          "description": [
-            {
-               "line": "Holds the list of queues which are reserved for the advance reservation"
-            },
-            {
-               "line": "together with the amount of granted consumables in QU_consumable_resources."
-            }
+            "Holds the list of queues which are reserved for the advance reservation",
+            "together with the amount of granted consumables in QU_consumable_resources."
          ],
          "type": "lListT",
          "subClassName": "QU",
@@ -390,9 +334,7 @@
          "name": "mail_options",
          "summary": "Mail Options",
          "description": [
-            {
-               "line": "Mail options for the advance reservation from qrsub -m."
-            }
+            "Mail options for the advance reservation from qrsub -m."
          ],
          "type": "lUlongT",
          "flags": [
@@ -408,9 +350,7 @@
          "name": "mail_list",
          "summary": "Mail List",
          "description": [
-            {
-               "line": "Mail list for the advance reservation from qrsub -M."
-            }
+            "Mail list for the advance reservation from qrsub -M."
          ],
          "type": "lListT",
          "subClassName": "MR",
@@ -428,9 +368,7 @@
          "name": "pe",
          "summary": "Parallel Environment",
          "description": [
-            {
-               "line": "The parallel environment which is requested by the advance reservation from qrsub -pe."
-            }
+            "The parallel environment which is requested by the advance reservation from qrsub -pe."
          ],
          "type": "lStringT",
          "flags": [
@@ -446,9 +384,7 @@
          "name": "pe_range",
          "summary": "PE Range",
          "description": [
-            {
-               "line": "The number of slots (can be a range) which are requested for the advance reservation."
-            }
+            "The number of slots (can be a range) which are requested for the advance reservation."
          ],
          "type": "lListT",
          "subClassName": "RN",
@@ -466,9 +402,7 @@
          "name": "granted_pe",
          "summary": "Granted PE",
          "description": [
-            {
-               "line": "The parallel environment which was granted to the advance reservation based on the pe request."
-            }
+            "The parallel environment which was granted to the advance reservation based on the pe request."
          ],
          "type": "lStringT",
          "flags": [
@@ -484,9 +418,7 @@
          "name": "master_queue_list",
          "summary": "Master Queue List",
          "description": [
-            {
-               "line": "The list of possible master queues requested by the advance reservation (qrsub -masterq)."
-            }
+            "The list of possible master queues requested by the advance reservation (qrsub -masterq)."
          ],
          "type": "lListT",
          "subClassName": "QR",
@@ -501,9 +433,7 @@
          "name": "acl_list",
          "summary": "ACL List",
          "description": [
-            {
-               "line": "The acl_list defines which users may use the advance reservation."
-            }
+            "The acl_list defines which users may use the advance reservation."
          ],
          "type": "lListT",
          "subClassName": "ARA",
@@ -521,9 +451,7 @@
          "name": "xacl_list",
          "summary": "XACL List",
          "description": [
-            {
-               "line": "The xacl_list defines which users may not use the advance reservation."
-            }
+            "The xacl_list defines which users may not use the advance reservation."
          ],
          "type": "lListT",
          "subClassName": "ARA",
@@ -541,9 +469,7 @@
          "name": "type",
          "summary": "Type",
          "description": [
-            {
-               "line": "Holds the information from the qrsub -now option (immediate or batch)."
-            }
+            "Holds the information from the qrsub -now option (immediate or batch)."
          ],
          "type": "lUlongT",
          "flags": [
@@ -559,9 +485,7 @@
          "name": "qi_errors",
          "summary": "QI Errors",
          "description": [
-            {
-               "line": "Number of queue instances which are in some error state."
-            }
+            "Number of queue instances which are in some error state."
          ],
          "type": "lUlongT",
          "flags": [
@@ -574,21 +498,11 @@
          "name": "request_set_list",
          "summary": "Request Set List",
          "description": [
-            {
-               "line": "@todo placeholder for implementing the -scope switch"
-            },
-            {
-               "line": "List of request sets. 0 .. 3 request sets can exist: global, master, slave."
-            },
-            {
-               "line": "Sequential ARs can have a single job request set, the global one."
-            },
-            {
-               "line": "Parallel ARs can have up to 3 request sets: global requests,"
-            },
-            {
-               "line": "requests for the master task, requests for the slave tasks."
-            }
+            "@todo placeholder for implementing the -scope switch",
+            "List of request sets. 0 .. 3 request sets can exist: global, master, slave.",
+            "Sequential ARs can have a single job request set, the global one.",
+            "Parallel ARs can have up to 3 request sets: global requests,",
+            "requests for the master task, requests for the slave tasks."
          ],
          "type": "lListT",
          "subClassName": "JobRequestSet",
@@ -603,15 +517,9 @@
          "name": "joker",
          "summary": "Joker",
          "description": [
-            {
-               "line": "Placeholder which can be used for arbitrary data."
-            },
-            {
-               "line": "Its purpose is to be able to add new attributes without changing the spooling format."
-            },
-            {
-               "line": "It is a list of arbitrary type and it is spooled."
-            }
+            "Placeholder which can be used for arbitrary data.",
+            "Its purpose is to be able to add new attributes without changing the spooling format.",
+            "It is a list of arbitrary type and it is spooled."
          ],
          "type": "lListT",
          "subClassName": "Variable",
@@ -626,9 +534,7 @@
          "name": "granted_resources_list",
          "summary": "Granted Resources",
          "description": [
-            {
-               "line": "List of granted resources, currently these are granted bindings only."
-            }
+            "List of granted resources, currently these are granted bindings only."
          ],
          "type": "lListT",
          "subClassName": "GrantedResource",
@@ -643,9 +549,7 @@
          "name": "binding",
          "summary": "Binding Strategy",
          "description": [
-            {
-               "line": "Binding strategy for the advance reservation"
-            }
+            "Binding strategy for the advance reservation"
          ],
          "type": "lObjectT",
          "subClassName": "BN",
@@ -660,9 +564,7 @@
          "name": "project",
          "summary": "Project",
          "description": [
-            {
-               "line": "Project the AR was submitted to."
-            }
+            "Project the AR was submitted to."
          ],
          "type": "lStringT",
          "flags": [
@@ -675,9 +577,7 @@
          "name": "pe_object",
          "summary": "PE Object",
          "description": [
-            {
-               "line": "PE object granted to this AR (PE_Type) when it was scheduled."
-            }
+            "PE object granted to this AR (PE_Type) when it was scheduled."
          ],
          "type": "lObjectT",
          "subClassName": "ParallelEnvironment",
@@ -692,15 +592,9 @@
          "name": "allocation_rule",
          "summary": "Allocation Rule",
          "description": [
-            {
-               "line": "The PE allocation rule the advance reservation reserves its slots with (qrsub -par)."
-            },
-            {
-               "line": "It overrides the allocation_rule of the requested PE, in the same way as the -par"
-            },
-            {
-               "line": "switch of qsub overrides it for a job. Only set when the AR requests a PE."
-            }
+            "The PE allocation rule the advance reservation reserves its slots with (qrsub -par).",
+            "It overrides the allocation_rule of the requested PE, in the same way as the -par",
+            "switch of qsub overrides it for a job. Only set when the AR requests a PE."
          ],
          "type": "lStringT",
          "flags": [

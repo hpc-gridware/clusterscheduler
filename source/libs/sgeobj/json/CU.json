@@ -2,12 +2,8 @@
    "className": "CU",
    "summary": "Consumable Usage (unused)",
    "description": [
-      {
-         "line": "Per-user consumable usage, broken out by value type."
-      },
-      {
-         "line": "@warning No attribute of this type is read or written anywhere in either repository, and `CU_Type` itself is referenced nowhere. Left in place because removing a type changes the spooled object model."
-      }
+      "Per-user consumable usage, broken out by value type.",
+      "@warning No attribute of this type is read or written anywhere in either repository, and `CU_Type` itself is referenced nowhere. Left in place because removing a type changes the spooled object model."
    ],
    "cullPrefix": "CU",
    "attributes": [
@@ -15,9 +11,7 @@
          "name": "name",
          "summary": "Name",
          "description": [
-            {
-               "line": "Part of the unused CU object; see the object description."
-            }
+            "Part of the unused CU object; see the object description."
          ],
          "type": "lStringT",
          "flags": [
@@ -36,9 +30,7 @@
          "name": "ruser_list",
          "summary": "Referenced Users",
          "description": [
-            {
-               "line": "Part of the unused CU object; see the object description."
-            }
+            "Part of the unused CU object; see the object description."
          ],
          "type": "lListT",
          "subClassName": "ASTR",
@@ -53,9 +45,7 @@
          "name": "ulong32",
          "summary": "Integer Value",
          "description": [
-            {
-               "line": "Part of the unused CU object; see the object description."
-            }
+            "Part of the unused CU object; see the object description."
          ],
          "type": "lListT",
          "subClassName": "AULNG",
@@ -66,9 +56,7 @@
          "name": "bool",
          "summary": "Boolean Value",
          "description": [
-            {
-               "line": "Part of the unused CU object; see the object description."
-            }
+            "Part of the unused CU object; see the object description."
          ],
          "type": "lListT",
          "subClassName": "ABOOL",
@@ -79,9 +67,7 @@
          "name": "time",
          "summary": "Time Value",
          "description": [
-            {
-               "line": "Part of the unused CU object; see the object description."
-            }
+            "Part of the unused CU object; see the object description."
          ],
          "type": "lListT",
          "subClassName": "ATIME",
@@ -92,9 +78,7 @@
          "name": "mem",
          "summary": "Memory Value",
          "description": [
-            {
-               "line": "Part of the unused CU object; see the object description."
-            }
+            "Part of the unused CU object; see the object description."
          ],
          "type": "lListT",
          "subClassName": "AMEM",
@@ -105,9 +89,7 @@
          "name": "inter",
          "summary": "Interval Value",
          "description": [
-            {
-               "line": "Part of the unused CU object; see the object description."
-            }
+            "Part of the unused CU object; see the object description."
          ],
          "type": "lListT",
          "subClassName": "AINTER",

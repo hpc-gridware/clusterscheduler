@@ -2,12 +2,8 @@
    "className": "USR",
    "summary": "User Run State (unused)",
    "description": [
-      {
-         "line": "Per-user counts of running jobs, split by deadline and non-deadline, with scheduler sort state."
-      },
-      {
-         "line": "@warning No attribute of this type is read or written anywhere in either repository, and `USR_Type` itself is referenced nowhere. Left in place because removing a type changes the spooled object model."
-      }
+      "Per-user counts of running jobs, split by deadline and non-deadline, with scheduler sort state.",
+      "@warning No attribute of this type is read or written anywhere in either repository, and `USR_Type` itself is referenced nowhere. Left in place because removing a type changes the spooled object model."
    ],
    "cullPrefix": "USR",
    "attributes": [
@@ -15,9 +11,7 @@
          "name": "name",
          "summary": "User Name",
          "description": [
-            {
-               "line": "Part of the unused USR object; see the object description."
-            }
+            "Part of the unused USR object; see the object description."
          ],
          "type": "lStringT",
          "flags": []
@@ -26,9 +20,7 @@
          "name": "nrunning_el",
          "summary": "Running Jobs",
          "description": [
-            {
-               "line": "Part of the unused USR object; see the object description."
-            }
+            "Part of the unused USR object; see the object description."
          ],
          "type": "lUlongT",
          "flags": []
@@ -37,9 +29,7 @@
          "name": "nrunning_dl",
          "summary": "Running Deadline Jobs",
          "description": [
-            {
-               "line": "Part of the unused USR object; see the object description."
-            }
+            "Part of the unused USR object; see the object description."
          ],
          "type": "lUlongT",
          "flags": []
@@ -48,9 +38,7 @@
          "name": "job_references",
          "summary": "Job References",
          "description": [
-            {
-               "line": "Part of the unused USR object; see the object description."
-            }
+            "Part of the unused USR object; see the object description."
          ],
          "type": "lListT",
          "subClassName": "JRL",
@@ -61,9 +49,7 @@
          "name": "sort_me",
          "summary": "Needs Sorting",
          "description": [
-            {
-               "line": "Part of the unused USR object; see the object description."
-            }
+            "Part of the unused USR object; see the object description."
          ],
          "type": "lUlongT",
          "flags": []
@@ -72,9 +58,7 @@
          "name": "current",
          "summary": "Current Element",
          "description": [
-            {
-               "line": "Part of the unused USR object; see the object description."
-            }
+            "Part of the unused USR object; see the object description."
          ],
          "type": "lRefT",
          "subClassName": "ANY",

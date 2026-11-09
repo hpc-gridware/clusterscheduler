@@ -2,15 +2,9 @@
    "className": "UserJobCount",
    "summary": "User Job Count",
    "description": [
-      {
-         "line": "Job count per user or user group."
-      },
-      {
-         "line": "this list is used by scheduler thread to keep the number"
-      },
-      {
-         "line": "of running jobs per user/group efficiently"
-      }
+      "Job count per user or user group.",
+      "this list is used by scheduler thread to keep the number",
+      "of running jobs per user/group efficiently"
    ],
    "cullPrefix": "JC",
    "attributes": [
@@ -18,9 +12,7 @@
          "name": "name",
          "summary": "User Name",
          "description": [
-            {
-               "line": "User or user group name"
-            }
+            "User or user group name"
          ],
          "type": "lStringT",
          "flags": [
@@ -36,9 +28,7 @@
          "name": "jobs",
          "summary": "Number of Jobs",
          "description": [
-            {
-               "line": "Number of running jobs of this user / this user group."
-            }
+            "Number of running jobs of this user / this user group."
          ],
          "type": "lUlongT",
          "flags": []

@@ -2,18 +2,10 @@
    "className": "OsJob",
    "summary": "OS Job",
    "description": [
-      {
-         "line": "This is the list type we use to hold the list of"
-      },
-      {
-         "line": "OS jobs being tracked for each PTF job. There"
-      },
-      {
-         "line": "will normally only be one OS job per PTF job,"
-      },
-      {
-         "line": "except in the case of tightly integrated parallel jobs or jobs with multiple tasks."
-      }
+      "This is the list type we use to hold the list of",
+      "OS jobs being tracked for each PTF job. There",
+      "will normally only be one OS job per PTF job,",
+      "except in the case of tightly integrated parallel jobs or jobs with multiple tasks."
    ],
    "cullPrefix": "JO",
    "attributes": [
@@ -21,9 +13,7 @@
          "name": "OS_job_ID",
          "summary": "OS Job Id",
          "description": [
-            {
-               "line": "OS job id (lower 32 bits)"
-            }
+            "OS job id (lower 32 bits)"
          ],
          "type": "lUlongT",
          "flags": []
@@ -32,9 +22,7 @@
          "name": "OS_job_ID2",
          "summary": "OS Job Id 2",
          "description": [
-            {
-               "line": "OS job id (upper 32 bits). @todo Replace the two id fields by one uint64_t?"
-            }
+            "OS job id (upper 32 bits). @todo Replace the two id fields by one uint64_t?"
          ],
          "type": "lUlongT",
          "flags": []
@@ -43,9 +31,7 @@
          "name": "systemd_scope",
          "summary": "Systemd Scope",
          "description": [
-            {
-               "line": "When the job is running in a systemd scope, this field contains the name of the scope."
-            }
+            "When the job is running in a systemd scope, this field contains the name of the scope."
          ],
          "type": "lStringT",
          "flags": []
@@ -54,12 +40,8 @@
          "name": "usage_collection",
          "summary": "Usage Collection Mode",
          "description": [
-            {
-               "line": "Usage collection mode used for the os job."
-            },
-            {
-               "line": "One of 0 (FALSE), 1 (PDC), 2 (HYBRID), 3 (TRUE)."
-            }
+            "Usage collection mode used for the os job.",
+            "One of 0 (FALSE), 1 (PDC), 2 (HYBRID), 3 (TRUE)."
          ],
          "type": "lUlongT",
          "flags": []
@@ -68,9 +50,7 @@
          "name": "ja_task_ID",
          "summary": "Array Task Id",
          "description": [
-            {
-               "line": "In case of an array job: Task number of an array task."
-            }
+            "In case of an array job: Task number of an array task."
          ],
          "type": "lUlongT",
          "flags": []
@@ -79,9 +59,7 @@
          "name": "task_id_str",
          "summary": "Task Id String",
          "description": [
-            {
-               "line": "In case of a tightly integrated parallel job: Pe Task Id String."
-            }
+            "In case of a tightly integrated parallel job: Pe Task Id String."
          ],
          "type": "lStringT",
          "flags": []
@@ -90,9 +68,7 @@
          "name": "state",
          "summary": "State",
          "description": [
-            {
-               "line": "Job state (JL_JOB_* values)."
-            }
+            "Job state (JL_JOB_* values)."
          ],
          "type": "lUlongT",
          "flags": []
@@ -101,9 +77,7 @@
          "name": "usage_list",
          "summary": "Usage List",
          "description": [
-            {
-               "line": "PTF interval usage values."
-            }
+            "PTF interval usage values."
          ],
          "type": "lListT",
          "subClassName": "UA",
@@ -114,9 +88,7 @@
          "name": "pid_list",
          "summary": "Pid List",
          "description": [
-            {
-               "line": "List of process Ids belonging to this job/task."
-            }
+            "List of process Ids belonging to this job/task."
          ],
          "type": "lListT",
          "subClassName": "JP",

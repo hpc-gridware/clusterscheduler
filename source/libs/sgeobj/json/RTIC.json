@@ -2,9 +2,7 @@
    "className": "ReprioritizeTickets",
    "summary": "Resource Ticket Host Entry",
    "description": [
-      {
-         "line": "The tickets granted on one host, as the scheduler reports them back with its orders."
-      }
+      "The tickets granted on one host, as the scheduler reports them back with its orders."
    ],
    "cullPrefix": "RTIC",
    "attributes": [
@@ -12,9 +10,7 @@
          "name": "host",
          "summary": "Host",
          "description": [
-            {
-               "line": "The execution host the tickets belong to."
-            }
+            "The execution host the tickets belong to."
          ],
          "type": "lHostT",
          "flags": [
@@ -33,9 +29,7 @@
          "name": "tickets",
          "summary": "Tickets",
          "description": [
-            {
-               "line": "The per-job ticket values for that host."
-            }
+            "The per-job ticket values for that host."
          ],
          "type": "lListT",
          "subClassName": "OR",

@@ -2,12 +2,8 @@
    "className": "AttributeCentryList",
    "summary": "Attribute Centry List",
    "description": [
-      {
-         "line": "Used for complex entry list attributes in the cluster queues."
-      },
-      {
-         "line": "E.g. used for the queue complex_values, load_thresholds, suspend_thresholds."
-      }
+      "Used for complex entry list attributes in the cluster queues.",
+      "E.g. used for the queue complex_values, load_thresholds, suspend_thresholds."
    ],
    "cullPrefix": "ACELIST",
    "attributes": [
@@ -15,9 +11,7 @@
          "name": "href",
          "summary": "Host Reference",
          "description": [
-            {
-               "line": "Name of a host or a host group."
-            }
+            "Name of a host or a host group."
          ],
          "type": "lHostT",
          "flags": [
@@ -39,9 +33,7 @@
          "name": "value",
          "summary": "Value",
          "description": [
-            {
-               "line": "The complex entry list (list of CE_Type)."
-            }
+            "The complex entry list (list of CE_Type)."
          ],
          "type": "lListT",
          "subClassName": "CE",

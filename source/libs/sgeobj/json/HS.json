@@ -2,12 +2,8 @@
    "className": "HostScaling",
    "summary": "scaling of host load values",
    "description": [
-      {
-         "line": "used for scaling host load values"
-      },
-      {
-         "line": "per load variable a scaling factor can be defined"
-      }
+      "used for scaling host load values",
+      "per load variable a scaling factor can be defined"
    ],
    "cullPrefix": "HS",
    "attributes": [
@@ -15,9 +11,7 @@
          "name": "name",
          "summary": "load variable name",
          "description": [
-            {
-               "line": "The Name of the load variable / the complex variable."
-            }
+            "The Name of the load variable / the complex variable."
          ],
          "type": "lStringT",
          "flags": [
@@ -33,9 +27,7 @@
          "name": "value",
          "summary": "scaling factor",
          "description": [
-            {
-               "line": "A scaling factor as double value. Load values are multiplied by this factor."
-            }
+            "A scaling factor as double value. Load values are multiplied by this factor."
          ],
          "type": "lDoubleT",
          "flags": [

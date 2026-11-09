@@ -2,12 +2,8 @@
    "className": "UserSet",
    "summary": "User Set",
    "description": [
-      {
-         "line": "A named set of users and groups, used either as an access list or as a department."
-      },
-      {
-         "line": "One type serves both: `US_type` says which. As an access list it decides who may use a queue, project or parallel environment; as a department it carries the share-tree and override tickets its members get. A userset may be both at once."
-      }
+      "A named set of users and groups, used either as an access list or as a department.",
+      "One type serves both: `US_type` says which. As an access list it decides who may use a queue, project or parallel environment; as a department it carries the share-tree and override tickets its members get. A userset may be both at once."
    ],
    "cullPrefix": "US",
    "attributes": [
@@ -15,9 +11,7 @@
          "name": "name",
          "summary": "Name",
          "description": [
-            {
-               "line": "The set's name. `defaultdepartment` is the fallback department."
-            }
+            "The set's name. `defaultdepartment` is the fallback department."
          ],
          "type": "lStringT",
          "flags": [
@@ -45,9 +39,7 @@
          "name": "type",
          "summary": "Type",
          "description": [
-            {
-               "line": "`US_ACL`, `US_DEPT`, or both. See `sge_userset.h`."
-            }
+            "`US_ACL`, `US_DEPT`, or both. See `sge_userset.h`."
          ],
          "type": "lUlongT",
          "flags": [
@@ -63,9 +55,7 @@
          "name": "fshare",
          "summary": "Functional Share",
          "description": [
-            {
-               "line": "The department's share of functional tickets."
-            }
+            "The department's share of functional tickets."
          ],
          "type": "lUlongT",
          "flags": [
@@ -81,9 +71,7 @@
          "name": "oticket",
          "summary": "Override Tickets",
          "description": [
-            {
-               "line": "Override tickets granted to the department's jobs."
-            }
+            "Override tickets granted to the department's jobs."
          ],
          "type": "lUlongT",
          "flags": [
@@ -99,9 +87,7 @@
          "name": "job_cnt",
          "summary": "Running Job Count",
          "description": [
-            {
-               "line": "Jobs of this userset currently running, maintained by the scheduler for ticket calculation."
-            }
+            "Jobs of this userset currently running, maintained by the scheduler for ticket calculation."
          ],
          "type": "lUlongT",
          "flags": [
@@ -114,9 +100,7 @@
          "name": "pending_job_cnt",
          "summary": "Pending Job Count",
          "description": [
-            {
-               "line": "Jobs of this userset waiting to run."
-            }
+            "Jobs of this userset waiting to run."
          ],
          "type": "lUlongT",
          "flags": [
@@ -129,9 +113,7 @@
          "name": "entries",
          "summary": "Members",
          "description": [
-            {
-               "line": "The users and UNIX groups in the set (`UE_Type`). A name starting with `@` is a group."
-            }
+            "The users and UNIX groups in the set (`UE_Type`). A name starting with `@` is a group."
          ],
          "type": "lListT",
          "subClassName": "UE",
@@ -149,9 +131,7 @@
          "name": "consider_with_categories",
          "summary": "Category Relevant",
          "description": [
-            {
-               "line": "The set affects which jobs can run where, so two jobs differing only in it must not share a scheduling category."
-            }
+            "The set affects which jobs can run where, so two jobs differing only in it must not share a scheduling category."
          ],
          "type": "lBoolT",
          "flags": [
@@ -164,15 +144,9 @@
          "name": "joker",
          "summary": "Joker",
          "description": [
-            {
-               "line": "Placeholder which can be used for arbitrary data."
-            },
-            {
-               "line": "Its purpose is to be able to add new attributes without changing the spooling format."
-            },
-            {
-               "line": "It is a list of arbitrary type and it is spooled."
-            }
+            "Placeholder which can be used for arbitrary data.",
+            "Its purpose is to be able to add new attributes without changing the spooling format.",
+            "It is a list of arbitrary type and it is spooled."
          ],
          "type": "lListT",
          "subClassName": "Variable",

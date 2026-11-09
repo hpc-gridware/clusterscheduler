@@ -2,21 +2,11 @@
    "className": "SpoolingTypeRule",
    "summary": "Spooling Type Rule Mapping",
    "description": [
-      {
-         "line": "Elements of SPTR_Type define a mapping between object type (SPT_Type)"
-      },
-      {
-         "line": "and spooling rules (SPR_Type)."
-      },
-      {
-         "line": "One object type can be spooled (written) using multiple spooling rules."
-      },
-      {
-         "line": "One object type will be read using one (the default) spooling rule."
-      },
-      {
-         "line": "One spooling rule can be referenced by multiple object types."
-      }
+      "Elements of SPTR_Type define a mapping between object type (SPT_Type)",
+      "and spooling rules (SPR_Type).",
+      "One object type can be spooled (written) using multiple spooling rules.",
+      "One object type will be read using one (the default) spooling rule.",
+      "One spooling rule can be referenced by multiple object types."
    ],
    "cullPrefix": "SPTR",
    "attributes": [
@@ -24,12 +14,8 @@
          "name": "is_default",
          "summary": "Is Default",
          "description": [
-            {
-               "line": "Defines whether the referenced rule is the default rule"
-            },
-            {
-               "line": "for reading the defined object type."
-            }
+            "Defines whether the referenced rule is the default rule",
+            "for reading the defined object type."
          ],
          "type": "lBoolT",
          "flags": []
@@ -38,9 +24,7 @@
          "name": "rule_name",
          "summary": "Rule Name",
          "description": [
-            {
-               "line": "Name of the referenced rule."
-            }
+            "Name of the referenced rule."
          ],
          "type": "lStringT",
          "flags": [
@@ -53,9 +37,7 @@
          "name": "rule",
          "summary": "Rule",
          "description": [
-            {
-               "line": "Pointer/reference to the rule to be used with the defined object type."
-            }
+            "Pointer/reference to the rule to be used with the defined object type."
          ],
          "type": "lRefT",
          "subClassName": "ANY",

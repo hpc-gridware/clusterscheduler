@@ -2,18 +2,10 @@
    "className": "ResourceUtilization",
    "summary": "Resource Utilization",
    "description": [
-      {
-         "line": "Utilization of a certain resource."
-      },
-      {
-         "line": "Both the current utilization can be stored, as well as"
-      },
-      {
-         "line": "future utilization (due to currently running jobs,"
-      },
-      {
-         "line": "advance reservations and resource reservations)."
-      }
+      "Utilization of a certain resource.",
+      "Both the current utilization can be stored, as well as",
+      "future utilization (due to currently running jobs,",
+      "advance reservations and resource reservations)."
    ],
    "cullPrefix": "RUE",
    "attributes": [
@@ -21,9 +13,7 @@
          "name": "name",
          "summary": "Resource Name",
          "description": [
-            {
-               "line": "The name of the resource (= the name of the complex variable, e.g. slots)"
-            }
+            "The name of the resource (= the name of the complex variable, e.g. slots)"
          ],
          "type": "lStringT",
          "flags": [
@@ -48,9 +38,7 @@
          "name": "utilized_now",
          "summary": "Utilized Now",
          "description": [
-            {
-               "line": "Currently used amount."
-            }
+            "Currently used amount."
          ],
          "type": "lDoubleT",
          "flags": []
@@ -59,9 +47,7 @@
          "name": "utilized_now_resource_map_list",
          "summary": "Utilized Now Resource Map List",
          "description": [
-            {
-               "line": "Currently used amount of Resource Maps"
-            }
+            "Currently used amount of Resource Maps"
          ],
          "type": "lListT",
          "subClassName": "RESL",
@@ -72,9 +58,7 @@
          "name": "utilized_now_binding_inuse",
          "summary": "Utilized Now Binding In Use",
          "description": [
-            {
-               "line": "Topology string with lowercase core/threads that are currently in use."
-            }
+            "Topology string with lowercase core/threads that are currently in use."
          ],
          "type": "lStringT",
          "flags": []
@@ -83,9 +67,7 @@
          "name": "utilized",
          "summary": "Utilized",
          "description": [
-            {
-               "line": "A resource diagram indicating future utilization."
-            }
+            "A resource diagram indicating future utilization."
          ],
          "type": "lListT",
          "subClassName": "RDE",
@@ -96,9 +78,7 @@
          "name": "utilized_now_nonexclusive",
          "summary": "Utilized Now Non-Exclusive",
          "description": [
-            {
-               "line": "Currently used amount of implicitly used exclusive resources."
-            }
+            "Currently used amount of implicitly used exclusive resources."
          ],
          "type": "lDoubleT",
          "flags": []
@@ -107,9 +87,7 @@
          "name": "utilized_nonexclusive",
          "summary": "Utilized Non-Exclusive",
          "description": [
-            {
-               "line": "A resource diagram indicating future utilization of implicitly used exclusive resources."
-            }
+            "A resource diagram indicating future utilization of implicitly used exclusive resources."
          ],
          "type": "lListT",
          "subClassName": "RDE",

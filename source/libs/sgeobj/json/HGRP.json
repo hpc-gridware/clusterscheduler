@@ -2,186 +2,66 @@
    "className": "HostGroup",
    "summary": "Host Group",
    "description": [
-      {
-         "line": "HGRP_Type elements are used to define groups of hosts. Each group"
-      },
-      {
-         "line": "will be identified by a unique name."
-      },
-      {
-         "line": "Each hostgroup might refer to none, one or multiple hosts and/or"
-      },
-      {
-         "line": "hostgroups. This object makes it possible to define a network of"
-      },
-      {
-         "line": "hostgroups and hosts."
-      },
-      {
-         "line": " "
-      },
-      {
-         "line": "                  --------------"
-      },
-      {
-         "line": "                  |            |"
-      },
-      {
-         "line": "                  V            | 0:x"
-      },
-      {
-         "line": "            ------------- -----|"
-      },
-      {
-         "line": "            | HGRP_Type |"
-      },
-      {
-         "line": "            ------------- ------------> | hostname |"
-      },
-      {
-         "line": "                               0:x      ------------"
-      },
-      {
-         "line": " "
-      },
-      {
-         "line": "Example:"
-      },
-      {
-         "line": "Following diagram shows a network of 9 hostgroups (A; B; C;"
-      },
-      {
-         "line": "D; E; G; H; I). Each of those groups references one host"
-      },
-      {
-         "line": "(A -> a; B -> b; C -> c; ...). Additionally some of those"
-      },
-      {
-         "line": "hostgroups refer to one (A -> C; B -> C; C -> E; ...) or two"
-      },
-      {
-         "line": "hostgroups (E -> F,G; F -> H,I) The connections are all"
-      },
-      {
-         "line": "uni-directional, you have to read the diagram from the left"
-      },
-      {
-         "line": "to the right."
-      },
-      {
-         "line": " "
-      },
-      {
-         "line": "            -----                           -----"
-      },
-      {
-         "line": "            | A | -- a                      | H | -- h"
-      },
-      {
-         "line": "            ----- \\                       / -----"
-      },
-      {
-         "line": "                    -----           -----"
-      },
-      {
-         "line": "                    | C | -- c      | F | -- f"
-      },
-      {
-         "line": "                    -----         / -----"
-      },
-      {
-         "line": "            ----- /       \\ -----         \\ -----"
-      },
-      {
-         "line": "            | B | -- b      | E | -- e      | I | -- i"
-      },
-      {
-         "line": "            -----           -----           -----"
-      },
-      {
-         "line": "                    ----- /       \\ -----"
-      },
-      {
-         "line": "                    | D | -- d      | G | -- g"
-      },
-      {
-         "line": "                    -----           -----"
-      },
-      {
-         "line": "Several functions exist to create such networks and to find"
-      },
-      {
-         "line": "certain sets of hosts and hostgroups within such a network:"
-      },
-      {
-         "line": "hgroup_find_references(\"E\", &answer, master_list, &hosts, &groups)"
-      },
-      {
-         "line": "   hosts -> e"
-      },
-      {
-         "line": "   groups -> F, G"
-      },
-      {
-         "line": " "
-      },
-      {
-         "line": "hgroup_find_all_references(\"E\", &answer, master_list, &hosts, &groups)"
-      },
-      {
-         "line": "   hosts -> e, f, g, h, i"
-      },
-      {
-         "line": "   groups -> F, G, H, I"
-      },
-      {
-         "line": " "
-      },
-      {
-         "line": "hgroup_find_referencees(\"E\", &answer, master_list, &groups)"
-      },
-      {
-         "line": "   groups -> C, D"
-      },
-      {
-         "line": " "
-      },
-      {
-         "line": "hgroup_find_all_referencees(\"E\", &answer, master_list, &groups)"
-      },
-      {
-         "line": "   groups -> A, B, C, D"
-      },
-      {
-         "line": " "
-      },
-      {
-         "line": "@see hgroup_list_get_master_list()"
-      },
-      {
-         "line": "@see hgroup_list_locate()"
-      },
-      {
-         "line": "@see hgroup_create()"
-      },
-      {
-         "line": "@see hgroup_add_references()"
-      },
-      {
-         "line": "@see hgroup_find_all_references()"
-      },
-      {
-         "line": "@see hgroup_find_references()"
-      },
-      {
-         "line": "@see hgroup_find_all_referencees()"
-      },
-      {
-         "line": "@see hgroup_find_referencees()"
-      },
-      {
-         "line": "@see hgroup_list_exists()"
-      }
+      "HGRP_Type elements are used to define groups of hosts. Each group",
+      "will be identified by a unique name.",
+      "Each hostgroup might refer to none, one or multiple hosts and/or",
+      "hostgroups. This object makes it possible to define a network of",
+      "hostgroups and hosts.",
+      " ",
+      "                  --------------",
+      "                  |            |",
+      "                  V            | 0:x",
+      "            ------------- -----|",
+      "            | HGRP_Type |",
+      "            ------------- ------------> | hostname |",
+      "                               0:x      ------------",
+      " ",
+      "Example:",
+      "Following diagram shows a network of 9 hostgroups (A; B; C;",
+      "D; E; G; H; I). Each of those groups references one host",
+      "(A -> a; B -> b; C -> c; ...). Additionally some of those",
+      "hostgroups refer to one (A -> C; B -> C; C -> E; ...) or two",
+      "hostgroups (E -> F,G; F -> H,I) The connections are all",
+      "uni-directional, you have to read the diagram from the left",
+      "to the right.",
+      " ",
+      "            -----                           -----",
+      "            | A | -- a                      | H | -- h",
+      "            ----- \\                       / -----",
+      "                    -----           -----",
+      "                    | C | -- c      | F | -- f",
+      "                    -----         / -----",
+      "            ----- /       \\ -----         \\ -----",
+      "            | B | -- b      | E | -- e      | I | -- i",
+      "            -----           -----           -----",
+      "                    ----- /       \\ -----",
+      "                    | D | -- d      | G | -- g",
+      "                    -----           -----",
+      "Several functions exist to create such networks and to find",
+      "certain sets of hosts and hostgroups within such a network:",
+      "hgroup_find_references(\"E\", &answer, master_list, &hosts, &groups)",
+      "   hosts -> e",
+      "   groups -> F, G",
+      " ",
+      "hgroup_find_all_references(\"E\", &answer, master_list, &hosts, &groups)",
+      "   hosts -> e, f, g, h, i",
+      "   groups -> F, G, H, I",
+      " ",
+      "hgroup_find_referencees(\"E\", &answer, master_list, &groups)",
+      "   groups -> C, D",
+      " ",
+      "hgroup_find_all_referencees(\"E\", &answer, master_list, &groups)",
+      "   groups -> A, B, C, D",
+      " ",
+      "@see hgroup_list_get_master_list()",
+      "@see hgroup_list_locate()",
+      "@see hgroup_create()",
+      "@see hgroup_add_references()",
+      "@see hgroup_find_all_references()",
+      "@see hgroup_find_references()",
+      "@see hgroup_find_all_referencees()",
+      "@see hgroup_find_referencees()",
+      "@see hgroup_list_exists()"
    ],
    "cullPrefix": "HGRP",
    "attributes": [
@@ -189,9 +69,7 @@
          "name": "name",
          "summary": "Name",
          "description": [
-            {
-               "line": "Name of the hostgroup. Always starts with '@', e.g. `@allhosts`."
-            }
+            "Name of the hostgroup. Always starts with '@', e.g. `@allhosts`."
          ],
          "type": "lHostT",
          "flags": [
@@ -216,9 +94,7 @@
          "name": "host_list",
          "summary": "Host List",
          "description": [
-            {
-               "line": "List of hosts and/or other host groups which are referenced by the host group."
-            }
+            "List of hosts and/or other host groups which are referenced by the host group."
          ],
          "type": "lListT",
          "subClassName": "HR",
@@ -236,12 +112,8 @@
          "name": "cqueue_list",
          "summary": "Cluster Queue List",
          "description": [
-            {
-               "line": "Temporary list of cluster queues referencing a host group"
-            },
-            {
-               "line": "while processing creation or modification requests for host groups."
-            }
+            "Temporary list of cluster queues referencing a host group",
+            "while processing creation or modification requests for host groups."
          ],
          "type": "lListT",
          "subClassName": "CQ",
@@ -256,15 +128,9 @@
          "name": "joker",
          "summary": "Joker",
          "description": [
-            {
-               "line": "Placeholder which can be used for arbitrary data."
-            },
-            {
-               "line": "Its purpose is to be able to add new attributes without changing the spooling format."
-            },
-            {
-               "line": "It is a list of arbitrary type and it is spooled."
-            }
+            "Placeholder which can be used for arbitrary data.",
+            "Its purpose is to be able to add new attributes without changing the spooling format.",
+            "It is a list of arbitrary type and it is spooled."
          ],
          "type": "lListT",
          "subClassName": "Variable",
@@ -279,30 +145,14 @@
          "name": "cached_hosts",
          "summary": "Cached Resolved Host List",
          "description": [
-            {
-               "line": "CS-2451: the fully resolved host list of this host group - every host"
-            },
-            {
-               "line": "reachable through the nested references of host_list, flattened."
-            },
-            {
-               "line": " "
-            },
-            {
-               "line": "Maintained by qmaster whenever a host group changes and distributed with"
-            },
-            {
-               "line": "the object through the normal event mechanism, so a membership test is a"
-            },
-            {
-               "line": "hash lookup on HR_name instead of a walk of the nested tree."
-            },
-            {
-               "line": " "
-            },
-            {
-               "line": "Only valid when cache_version is non-zero - see there."
-            }
+            "CS-2451: the fully resolved host list of this host group - every host",
+            "reachable through the nested references of host_list, flattened.",
+            " ",
+            "Maintained by qmaster whenever a host group changes and distributed with",
+            "the object through the normal event mechanism, so a membership test is a",
+            "hash lookup on HR_name instead of a walk of the nested tree.",
+            " ",
+            "Only valid when cache_version is non-zero - see there."
          ],
          "type": "lListT",
          "subClassName": "HR",
@@ -317,48 +167,20 @@
          "name": "cache_version",
          "summary": "Cache Validity",
          "description": [
-            {
-               "line": "CS-2451: 0 means cached_hosts has not been computed and every consumer"
-            },
-            {
-               "line": "must fall back to walking the nested references. Any other value means"
-            },
-            {
-               "line": "cached_hosts is authoritative."
-            },
-            {
-               "line": " "
-            },
-            {
-               "line": "This is a PRESENCE FLAG, not a stamp to compare against anything. The"
-            },
-            {
-               "line": "field is needed because cull cannot distinguish an empty list from a"
-            },
-            {
-               "line": "missing one - both are nullptr - so an empty cached_hosts would otherwise"
-            },
-            {
-               "line": "be indistinguishable from an uncomputed one."
-            },
-            {
-               "line": " "
-            },
-            {
-               "line": "Staleness is prevented by construction, not detected here: qmaster"
-            },
-            {
-               "line": "recomputes every affected group before sending its events, and the mirror"
-            },
-            {
-               "line": "replaces the element wholesale on MOD, so a distributed element is never"
-            },
-            {
-               "line": "partially stale. Do not add logic that compares two version values - a"
-            },
-            {
-               "line": "consumer has nothing to compare against."
-            }
+            "CS-2451: 0 means cached_hosts has not been computed and every consumer",
+            "must fall back to walking the nested references. Any other value means",
+            "cached_hosts is authoritative.",
+            " ",
+            "This is a PRESENCE FLAG, not a stamp to compare against anything. The",
+            "field is needed because cull cannot distinguish an empty list from a",
+            "missing one - both are nullptr - so an empty cached_hosts would otherwise",
+            "be indistinguishable from an uncomputed one.",
+            " ",
+            "Staleness is prevented by construction, not detected here: qmaster",
+            "recomputes every affected group before sending its events, and the mirror",
+            "replaces the element wholesale on MOD, so a distributed element is never",
+            "partially stale. Do not add logic that compares two version values - a",
+            "consumer has nothing to compare against."
          ],
          "type": "lUlongT",
          "flags": [
@@ -371,75 +193,29 @@
          "name": "match_cache",
          "summary": "Matching Cache",
          "description": [
-            {
-               "line": "CS-2680: the hosts a matcher of this group has admitted."
-            },
-            {
-               "line": " "
-            },
-            {
-               "line": "The membership test asks the resolved host list first and this cache"
-            },
-            {
-               "line": "second. It exists because a host admitted through a matcher need not be"
-            },
-            {
-               "line": "in any object of the cluster, so it is never in the resolved list and"
-            },
-            {
-               "line": "every one of its requests would otherwise repeat the matcher walk."
-            },
-            {
-               "line": " "
-            },
-            {
-               "line": "Unlike the resolved host list this one does NOT leave the process. It is"
-            },
-            {
-               "line": "neither spooled nor packed nor delivered as event payload: a reader"
-            },
-            {
-               "line": "asking for all fields receives it empty, and so does an event"
-            },
-            {
-               "line": "subscriber, external or one of the qmaster's own mirrors. That is what"
-            },
-            {
-               "line": "NO_TRANSFER says, and this field is its first user."
-            },
-            {
-               "line": " "
-            },
-            {
-               "line": "Two reasons, the second being the sharper one. A receiver decides for"
-            },
-            {
-               "line": "itself whether it may keep what it had, so anything handed over is"
-            },
-            {
-               "line": "waste - and an execution host movement produces one event per"
-            },
-            {
-               "line": "referencing group, which multiplies that waste by their number."
-            },
-            {
-               "line": " "
-            },
-            {
-               "line": "Invalidation happens when an event is merged: the cache is carried over"
-            },
-            {
-               "line": "to the new element only if the matcher set did not change, and is"
-            },
-            {
-               "line": "discarded otherwise. A hit in it confers, so the completeness of that"
-            },
-            {
-               "line": "invalidation is a security property rather than a question of"
-            },
-            {
-               "line": "performance."
-            }
+            "CS-2680: the hosts a matcher of this group has admitted.",
+            " ",
+            "The membership test asks the resolved host list first and this cache",
+            "second. It exists because a host admitted through a matcher need not be",
+            "in any object of the cluster, so it is never in the resolved list and",
+            "every one of its requests would otherwise repeat the matcher walk.",
+            " ",
+            "Unlike the resolved host list this one does NOT leave the process. It is",
+            "neither spooled nor packed nor delivered as event payload: a reader",
+            "asking for all fields receives it empty, and so does an event",
+            "subscriber, external or one of the qmaster's own mirrors. That is what",
+            "NO_TRANSFER says, and this field is its first user.",
+            " ",
+            "Two reasons, the second being the sharper one. A receiver decides for",
+            "itself whether it may keep what it had, so anything handed over is",
+            "waste - and an execution host movement produces one event per",
+            "referencing group, which multiplies that waste by their number.",
+            " ",
+            "Invalidation happens when an event is merged: the cache is carried over",
+            "to the new element only if the matcher set did not change, and is",
+            "discarded otherwise. A hit in it confers, so the completeness of that",
+            "invalidation is a security property rather than a question of",
+            "performance."
          ],
          "type": "lListT",
          "subClassName": "MatchCacheEntry",

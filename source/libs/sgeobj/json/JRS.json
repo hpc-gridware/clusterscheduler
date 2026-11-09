@@ -2,24 +2,12 @@
    "className": "JobRequestSet",
    "summary": "Job Request Set",
    "description": [
-      {
-         "line": "A job request set contains job requests (currently: queue requests and resource requests)"
-      },
-      {
-         "line": "valid for a specific scope of parallel tasks (global, master, slaves)."
-      },
-      {
-         "line": "Sequential jobs can have a single job request set, the global one."
-      },
-      {
-         "line": "Parallel jobs can have up to 3 request sets, global requests, requests for the master task,"
-      },
-      {
-         "line": "requests for the slave tasks."
-      },
-      {
-         "line": "None of them must exist, every one can exist, depending on requests"
-      }
+      "A job request set contains job requests (currently: queue requests and resource requests)",
+      "valid for a specific scope of parallel tasks (global, master, slaves).",
+      "Sequential jobs can have a single job request set, the global one.",
+      "Parallel jobs can have up to 3 request sets, global requests, requests for the master task,",
+      "requests for the slave tasks.",
+      "None of them must exist, every one can exist, depending on requests"
    ],
    "cullPrefix": "JRS",
    "attributes": [
@@ -27,9 +15,7 @@
          "name": "scope",
          "summary": "Scope",
          "description": [
-            {
-               "line": "Request scope: global, master, slaves."
-            }
+            "Request scope: global, master, slaves."
          ],
          "type": "lUlongT",
          "flags": [
@@ -48,9 +34,7 @@
          "name": "hard_resource_list",
          "summary": "Hard Resource List",
          "description": [
-            {
-               "line": "List of hard resource requests, from qsub -l name=value request."
-            }
+            "List of hard resource requests, from qsub -l name=value request."
          ],
          "type": "lListT",
          "subClassName": "ComplexEntry",
@@ -65,9 +49,7 @@
          "name": "soft_resource_list",
          "summary": "Soft Resource List",
          "description": [
-            {
-               "line": "List of soft resource requests, from qsub -soft -l name=value request."
-            }
+            "List of soft resource requests, from qsub -soft -l name=value request."
          ],
          "type": "lListT",
          "subClassName": "ComplexEntry",
@@ -82,9 +64,7 @@
          "name": "hard_queue_list",
          "summary": "Hard Queue List",
          "description": [
-            {
-               "line": "List of hard queue requests, from qsub -q dest_identifier request."
-            }
+            "List of hard queue requests, from qsub -q dest_identifier request."
          ],
          "type": "lListT",
          "subClassName": "QueueReference",
@@ -99,9 +79,7 @@
          "name": "soft_queue_list",
          "summary": "Soft Queue List",
          "description": [
-            {
-               "line": "List of soft queue requests, from qsub -soft -q dest_identifier request."
-            }
+            "List of soft queue requests, from qsub -soft -q dest_identifier request."
          ],
          "type": "lListT",
          "subClassName": "QueueReference",
@@ -116,9 +94,7 @@
          "name": "allocation_rule",
          "summary": "Allocation Rule",
          "description": [
-            {
-               "line": "Overwrites the allocation rule of the parallel environment for this scope."
-            }
+            "Overwrites the allocation rule of the parallel environment for this scope."
          ],
          "type": "lStringT",
          "flags": [
@@ -131,9 +107,7 @@
          "name": "ignore_slave_requests_on_master_host",
          "summary": "Ignore Slave Requests on Master Host",
          "description": [
-            {
-               "line": "Overwrites the ignore_slave_requests_on_master_host option of the parallel environment for this scope."
-            }
+            "Overwrites the ignore_slave_requests_on_master_host option of the parallel environment for this scope."
          ],
          "type": "lBoolT",
          "flags": [

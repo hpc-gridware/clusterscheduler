@@ -2,12 +2,8 @@
    "className": "PtfJob",
    "summary": "PTF Job",
    "description": [
-      {
-         "line": "This is the list type we use to hold the jobs which are running under the local execution daemon."
-      },
-      {
-         "line": "@todo This is a very old module and probably noone really knows its details any more. Add better documentation."
-      }
+      "This is the list type we use to hold the jobs which are running under the local execution daemon.",
+      "@todo This is a very old module and probably noone really knows its details any more. Add better documentation."
    ],
    "cullPrefix": "JL",
    "attributes": [
@@ -15,9 +11,7 @@
          "name": "job_ID",
          "summary": "Job Id",
          "description": [
-            {
-               "line": "The Job Id."
-            }
+            "The Job Id."
          ],
          "type": "lUlongT",
          "flags": [
@@ -36,9 +30,7 @@
          "name": "OS_job_list",
          "summary": "OS Job List",
          "description": [
-            {
-               "line": "List of OS jobs (JO_Type). There should be one per running Array/PE task having one os job id each."
-            }
+            "List of OS jobs (JO_Type). There should be one per running Array/PE task having one os job id each."
          ],
          "type": "lListT",
          "subClassName": "JO",
@@ -49,9 +41,7 @@
          "name": "state",
          "summary": "State",
          "description": [
-            {
-               "line": "Job State, one of JL_JOB_ACTIVE, JL_JOB_COMPLETE, JL_JOB_DELETED."
-            }
+            "Job State, one of JL_JOB_ACTIVE, JL_JOB_COMPLETE, JL_JOB_DELETED."
          ],
          "type": "lUlongT",
          "flags": []
@@ -60,9 +50,7 @@
          "name": "tickets",
          "summary": "Tickets",
          "description": [
-            {
-               "line": "Job Tickets. Used for reprioritization."
-            }
+            "Job Tickets. Used for reprioritization."
          ],
          "type": "lUlongT",
          "flags": []
@@ -71,9 +59,7 @@
          "name": "share",
          "summary": "Share",
          "description": [
-            {
-               "line": "ptf interval share"
-            }
+            "ptf interval share"
          ],
          "type": "lDoubleT",
          "flags": []
@@ -82,9 +68,7 @@
          "name": "ticket_share",
          "summary": "Ticket Share",
          "description": [
-            {
-               "line": "ptf job ticket share"
-            }
+            "ptf job ticket share"
          ],
          "type": "lDoubleT",
          "flags": []
@@ -93,9 +77,7 @@
          "name": "timeslice",
          "summary": "Timeslice",
          "description": [
-            {
-               "line": "ptf calculated timeslice (SX)"
-            }
+            "ptf calculated timeslice (SX)"
          ],
          "type": "lDoubleT",
          "flags": []
@@ -104,9 +86,7 @@
          "name": "usage",
          "summary": "Usage",
          "description": [
-            {
-               "line": "ptf interval combined usage"
-            }
+            "ptf interval combined usage"
          ],
          "type": "lDoubleT",
          "flags": []
@@ -115,9 +95,7 @@
          "name": "old_usage_value",
          "summary": "Old Usage",
          "description": [
-            {
-               "line": "ptf interval combined usage"
-            }
+            "ptf interval combined usage"
          ],
          "type": "lDoubleT",
          "flags": []
@@ -126,9 +104,7 @@
          "name": "adjusted_usage",
          "summary": "Adjusted Usage",
          "description": [
-            {
-               "line": "ptf interval adjusted usage"
-            }
+            "ptf interval adjusted usage"
          ],
          "type": "lDoubleT",
          "flags": []
@@ -137,9 +113,7 @@
          "name": "last_usage",
          "summary": "Last Usage",
          "description": [
-            {
-               "line": "ptf last interval combined usage"
-            }
+            "ptf last interval combined usage"
          ],
          "type": "lDoubleT",
          "flags": []
@@ -148,9 +122,7 @@
          "name": "old_usage",
          "summary": "Old Usage",
          "description": [
-            {
-               "line": "prev interval combined usage"
-            }
+            "prev interval combined usage"
          ],
          "type": "lDoubleT",
          "flags": []
@@ -159,9 +131,7 @@
          "name": "proportion",
          "summary": "Proportion",
          "description": [
-            {
-               "line": "@todo add description"
-            }
+            "@todo add description"
          ],
          "type": "lDoubleT",
          "flags": []
@@ -170,9 +140,7 @@
          "name": "adjusted_proportion",
          "summary": "Adjusted Proportion",
          "description": [
-            {
-               "line": "@todo add description"
-            }
+            "@todo add description"
          ],
          "type": "lDoubleT",
          "flags": []
@@ -181,9 +149,7 @@
          "name": "adjusted_current_proportion",
          "summary": "Adjusted Current Proportion",
          "description": [
-            {
-               "line": "@todo add description"
-            }
+            "@todo add description"
          ],
          "type": "lDoubleT",
          "flags": []
@@ -192,9 +158,7 @@
          "name": "actual_proportion",
          "summary": "Actual Proportion",
          "description": [
-            {
-               "line": "@todo add description"
-            }
+            "@todo add description"
          ],
          "type": "lDoubleT",
          "flags": []
@@ -203,9 +167,7 @@
          "name": "diff_proportion",
          "summary": "Diff Proportion",
          "description": [
-            {
-               "line": "@todo add description"
-            }
+            "@todo add description"
          ],
          "type": "lDoubleT",
          "flags": []
@@ -214,9 +176,7 @@
          "name": "last_proportion",
          "summary": "Last Proportion",
          "description": [
-            {
-               "line": "@todo add description"
-            }
+            "@todo add description"
          ],
          "type": "lDoubleT",
          "flags": []
@@ -225,9 +185,7 @@
          "name": "curr_pri",
          "summary": "Current Priority",
          "description": [
-            {
-               "line": "@todo add description"
-            }
+            "@todo add description"
          ],
          "type": "lDoubleT",
          "flags": []
@@ -236,9 +194,7 @@
          "name": "pri",
          "summary": "Priority",
          "description": [
-            {
-               "line": "@todo add description"
-            }
+            "@todo add description"
          ],
          "type": "lLongT",
          "flags": []
@@ -247,9 +203,7 @@
          "name": "procfd",
          "summary": "Proc FD",
          "description": [
-            {
-               "line": "proc file descriptor"
-            }
+            "proc file descriptor"
          ],
          "type": "lUlongT",
          "flags": []
@@ -258,9 +212,7 @@
          "name": "interactive",
          "summary": "Interactive",
          "description": [
-            {
-               "line": "interactive flag"
-            }
+            "interactive flag"
          ],
          "type": "lUlongT",
          "flags": []

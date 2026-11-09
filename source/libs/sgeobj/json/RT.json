@@ -2,12 +2,8 @@
    "className": "RemoteTask",
    "summary": "Remote Task",
    "description": [
-      {
-         "line": "An object of this type represents a remote task."
-      },
-      {
-         "line": "It is used in qrsh -inherit starting tasks within a tightly integrated parallel job."
-      }
+      "An object of this type represents a remote task.",
+      "It is used in qrsh -inherit starting tasks within a tightly integrated parallel job."
    ],
    "cullPrefix": "RT",
    "attributes": [
@@ -15,9 +11,7 @@
          "name": "tid",
          "summary": "Task Id",
          "description": [
-            {
-               "line": "Task Id."
-            }
+            "Task Id."
          ],
          "type": "lStringT",
          "flags": []
@@ -26,9 +20,7 @@
          "name": "hostname",
          "summary": "Hostname",
          "description": [
-            {
-               "line": "Remote host where the task is running on."
-            }
+            "Remote host where the task is running on."
          ],
          "type": "lHostT",
          "flags": []
@@ -37,9 +29,7 @@
          "name": "status",
          "summary": "Status",
          "description": [
-            {
-               "line": "Status as it comes from waitpid(2)."
-            }
+            "Status as it comes from waitpid(2)."
          ],
          "type": "lUlongT",
          "flags": []
@@ -48,9 +38,7 @@
          "name": "state",
          "summary": "State",
          "description": [
-            {
-               "line": "Internal state used by the qrexec module."
-            }
+            "Internal state used by the qrexec module."
          ],
          "type": "lUlongT",
          "flags": []

@@ -2,9 +2,7 @@
    "className": "ShareTreeNode",
    "summary": "Share Tree Node",
    "description": [
-      {
-         "line": "Represents one node of the share tree."
-      }
+      "Represents one node of the share tree."
    ],
    "cullPrefix": "STN",
    "attributes": [
@@ -12,9 +10,7 @@
          "name": "name",
          "summary": "Node Name",
          "description": [
-            {
-               "line": "Node name (symbolic name or user or project name in the leafs)"
-            }
+            "Node name (symbolic name or user or project name in the leafs)"
          ],
          "type": "lStringT",
          "flags": [
@@ -39,12 +35,8 @@
          "name": "type",
          "summary": "Node Type",
          "description": [
-            {
-               "line": "Kind of tree: STT_USER or STT_PROJECT."
-            },
-            {
-               "line": "All nodes in a tree have the same type."
-            }
+            "Kind of tree: STT_USER or STT_PROJECT.",
+            "All nodes in a tree have the same type."
          ],
          "type": "lUlongT",
          "flags": [
@@ -60,9 +52,7 @@
          "name": "id",
          "summary": "Node Id",
          "description": [
-            {
-               "line": "Only for editing and save/restore. May be different each time."
-            }
+            "Only for editing and save/restore. May be different each time."
          ],
          "type": "lUlongT",
          "flags": [
@@ -75,9 +65,7 @@
          "name": "shares",
          "summary": "Shares",
          "description": [
-            {
-               "line": "Configured shares for the node or subtree under a leaf node."
-            }
+            "Configured shares for the node or subtree under a leaf node."
          ],
          "type": "lUlongT",
          "flags": [
@@ -93,9 +81,7 @@
          "name": "children",
          "summary": "Children",
          "description": [
-            {
-               "line": "Configured childrens of this node. Same type, it is a recursive tree structure."
-            }
+            "Configured childrens of this node. Same type, it is a recursive tree structure."
          ],
          "type": "lListT",
          "subClassName": "STN",
@@ -113,9 +99,7 @@
          "name": "job_ref_count",
          "summary": "Job Reference Count",
          "description": [
-            {
-               "line": "Number of running and pending jobs referencing this node (only used in scheduler thread)."
-            }
+            "Number of running and pending jobs referencing this node (only used in scheduler thread)."
          ],
          "type": "lUlongT",
          "flags": [
@@ -128,9 +112,7 @@
          "name": "active_job_ref_count",
          "summary": "Active Job Reference Count",
          "description": [
-            {
-               "line": "Number of running jobs referencing this node (only used in scheduler thread)."
-            }
+            "Number of running jobs referencing this node (only used in scheduler thread)."
          ],
          "type": "lUlongT",
          "flags": [
@@ -143,9 +125,7 @@
          "name": "project",
          "summary": "Is Project",
          "description": [
-            {
-               "line": "Set to 1 if this node is a project (only used in scheduler thread)."
-            }
+            "Set to 1 if this node is a project (only used in scheduler thread)."
          ],
          "type": "lUlongT",
          "flags": [
@@ -158,9 +138,7 @@
          "name": "proportion",
          "summary": "Proportion",
          "description": [
-            {
-               "line": "Share proportion (only used in scheduler thread)."
-            }
+            "Share proportion (only used in scheduler thread)."
          ],
          "type": "lDoubleT",
          "flags": [
@@ -173,9 +151,7 @@
          "name": "adjusted_proportion",
          "summary": "Adjusted Proportion",
          "description": [
-            {
-               "line": "Share adjusted proportion (only used in scheduler thread)."
-            }
+            "Share adjusted proportion (only used in scheduler thread)."
          ],
          "type": "lDoubleT",
          "flags": [
@@ -188,9 +164,7 @@
          "name": "combined_usage",
          "summary": "Combined Usage",
          "description": [
-            {
-               "line": "Combined usage (only used in scheduler thread)."
-            }
+            "Combined usage (only used in scheduler thread)."
          ],
          "type": "lDoubleT",
          "flags": [
@@ -203,9 +177,7 @@
          "name": "pass2_seqno",
          "summary": "Pass Two Sequence Number",
          "description": [
-            {
-               "line": "Sequence number for pass 2 of share calculation (only used in scheduler thread)."
-            }
+            "Sequence number for pass 2 of share calculation (only used in scheduler thread)."
          ],
          "type": "lUlongT",
          "flags": [
@@ -218,9 +190,7 @@
          "name": "sum_priority",
          "summary": "Sum of Priorities",
          "description": [
-            {
-               "line": "Sum of job priorities (only used in scheduler thread)."
-            }
+            "Sum of job priorities (only used in scheduler thread)."
          ],
          "type": "lUlongT",
          "flags": [
@@ -233,9 +203,7 @@
          "name": "actual_proportion",
          "summary": "Actual Proportion",
          "description": [
-            {
-               "line": "Long term actual proportion."
-            }
+            "Long term actual proportion."
          ],
          "type": "lDoubleT",
          "flags": [
@@ -248,9 +216,7 @@
          "name": "m_share",
          "summary": "M Share",
          "description": [
-            {
-               "line": "Dynamic long term targetted proportion."
-            }
+            "Dynamic long term targetted proportion."
          ],
          "type": "lDoubleT",
          "flags": [
@@ -263,9 +229,7 @@
          "name": "last_actual_proportion",
          "summary": "Last Actual Proportion",
          "description": [
-            {
-               "line": "Short term actual proportion."
-            }
+            "Short term actual proportion."
          ],
          "type": "lDoubleT",
          "flags": [
@@ -278,9 +242,7 @@
          "name": "adjusted_current_proportion",
          "summary": "Adjusted Current Proportion",
          "description": [
-            {
-               "line": "Short term targetted proportion."
-            }
+            "Short term targetted proportion."
          ],
          "type": "lDoubleT",
          "flags": [
@@ -293,9 +255,7 @@
          "name": "temp",
          "summary": "Temporary Node",
          "description": [
-            {
-               "line": "Temporary Node used in scheduler only."
-            }
+            "Temporary Node used in scheduler only."
          ],
          "type": "lUlongT",
          "flags": [
@@ -308,12 +268,8 @@
          "name": "stt",
          "summary": "Short Term Targeted Proportion",
          "description": [
-            {
-               "line": "Short term targeted proportion of node as compared to sibling nodes."
-            },
-            {
-               "line": "Calculated during scheduling of pending of pending jobs."
-            }
+            "Short term targeted proportion of node as compared to sibling nodes.",
+            "Calculated during scheduling of pending of pending jobs."
          ],
          "type": "lDoubleT",
          "flags": [
@@ -326,12 +282,8 @@
          "name": "ostt",
          "summary": "Overall Short Term Targeted Proportion",
          "description": [
-            {
-               "line": "Overall short term targeted proportion of node as compared to all nodes."
-            },
-            {
-               "line": "Calculated during scheduling of pending of pending jobs."
-            }
+            "Overall short term targeted proportion of node as compared to all nodes.",
+            "Calculated during scheduling of pending of pending jobs."
          ],
          "type": "lDoubleT",
          "flags": [
@@ -344,12 +296,8 @@
          "name": "ltt",
          "summary": "Long Term Targeted Proportion",
          "description": [
-            {
-               "line": "Long term targeted proportion of node as compared to all nodes."
-            },
-            {
-               "line": "Calculated during scheduling of pending of pending jobs."
-            }
+            "Long term targeted proportion of node as compared to all nodes.",
+            "Calculated during scheduling of pending of pending jobs."
          ],
          "type": "lDoubleT",
          "flags": [
@@ -362,12 +310,8 @@
          "name": "oltt",
          "summary": "Overall Long Term Targeted Proportion",
          "description": [
-            {
-               "line": "Overall long term targeted proportion of node as compared to all nodes."
-            },
-            {
-               "line": "Calculated during scheduling of pending of pending jobs."
-            }
+            "Overall long term targeted proportion of node as compared to all nodes.",
+            "Calculated during scheduling of pending of pending jobs."
          ],
          "type": "lDoubleT",
          "flags": [
@@ -380,12 +324,8 @@
          "name": "shr",
          "summary": "Share",
          "description": [
-            {
-               "line": "Hierarchical calculated share node."
-            },
-            {
-               "line": "Calculated during scheduling of pending of pending jobs."
-            }
+            "Hierarchical calculated share node.",
+            "Calculated during scheduling of pending of pending jobs."
          ],
          "type": "lDoubleT",
          "flags": [
@@ -398,12 +338,8 @@
          "name": "sort",
          "summary": "Sort Value",
          "description": [
-            {
-               "line": "Value for sorting jobs attached to a node."
-            },
-            {
-               "line": "Calculated during scheduling of pending of pending jobs."
-            }
+            "Value for sorting jobs attached to a node.",
+            "Calculated during scheduling of pending of pending jobs."
          ],
          "type": "lDoubleT",
          "flags": [
@@ -416,12 +352,8 @@
          "name": "ref",
          "summary": "Reference",
          "description": [
-            {
-               "line": "Temporary index reference back into the array of pending jobs."
-            },
-            {
-               "line": "Used during scheduling of pending of pending jobs."
-            }
+            "Temporary index reference back into the array of pending jobs.",
+            "Used during scheduling of pending of pending jobs."
          ],
          "type": "lUlongT",
          "flags": [
@@ -434,12 +366,8 @@
          "name": "tickets",
          "summary": "Tickets",
          "description": [
-            {
-               "line": "Temporary storage of pending tickets from higher level policies."
-            },
-            {
-               "line": "Used during scheduling of pending of pending jobs."
-            }
+            "Temporary storage of pending tickets from higher level policies.",
+            "Used during scheduling of pending of pending jobs."
          ],
          "type": "lDoubleT",
          "flags": [
@@ -452,12 +380,8 @@
          "name": "jobid",
          "summary": "Job Id",
          "description": [
-            {
-               "line": "Job number of a temporary job node."
-            },
-            {
-               "line": "Used during scheduling of pending of pending jobs."
-            }
+            "Job number of a temporary job node.",
+            "Used during scheduling of pending of pending jobs."
          ],
          "type": "lUlongT",
          "flags": [
@@ -470,12 +394,8 @@
          "name": "taskid",
          "summary": "Task Id",
          "description": [
-            {
-               "line": "Array task number of a temporary job node."
-            },
-            {
-               "line": "Used during scheduling of pending of pending jobs."
-            }
+            "Array task number of a temporary job node.",
+            "Used during scheduling of pending of pending jobs."
          ],
          "type": "lUlongT",
          "flags": [
@@ -488,12 +408,8 @@
          "name": "usage_list",
          "summary": "Usage List",
          "description": [
-            {
-               "line": "Node usage list."
-            },
-            {
-               "line": "Used during scheduling of pending of pending jobs."
-            }
+            "Node usage list.",
+            "Used during scheduling of pending of pending jobs."
          ],
          "type": "lListT",
          "subClassName": "UA",
@@ -508,9 +424,7 @@
          "name": "version",
          "summary": "Share Tree Version",
          "description": [
-            {
-               "line": "Incremented on every change to the tree, and again by the timer thread when usage is recomputed. Lets a reader tell whether the tree it holds is still current."
-            }
+            "Incremented on every change to the tree, and again by the timer thread when usage is recomputed. Lets a reader tell whether the tree it holds is still current."
          ],
          "type": "lUlongT",
          "flags": [
@@ -523,15 +437,9 @@
          "name": "joker",
          "summary": "Joker",
          "description": [
-            {
-               "line": "Placeholder which can be used for arbitrary data."
-            },
-            {
-               "line": "Its purpose is to be able to add new attributes without changing the spooling format."
-            },
-            {
-               "line": "It is a list of arbitrary type and it is spooled."
-            }
+            "Placeholder which can be used for arbitrary data.",
+            "Its purpose is to be able to add new attributes without changing the spooling format.",
+            "It is a list of arbitrary type and it is spooled."
          ],
          "type": "lListT",
          "subClassName": "Variable",

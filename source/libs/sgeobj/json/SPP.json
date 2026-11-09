@@ -2,9 +2,7 @@
    "className": "StoredProcedureParameter",
    "summary": "Stored Procedure Parameter",
    "description": [
-      {
-         "line": "An Object of this type stores parameter list and a name for that list."
-      }
+      "An Object of this type stores parameter list and a name for that list."
    ],
    "cullPrefix": "SPP",
    "attributes": [
@@ -12,9 +10,7 @@
          "name": "name",
          "summary": "Parameter name",
          "description": [
-            {
-               "line": "Name of the parameter list."
-            }
+            "Name of the parameter list."
          ],
          "type": "lStringT",
          "flags": [
@@ -30,9 +26,7 @@
          "name": "value_list",
          "summary": "List of value for this parameter.",
          "description": [
-            {
-               "line": "One or more entries for this parameter. The content of the list is defined by the user of the parameter list and can be used to store any kind of information, e.g. a list of strings, a list of numbers, a list of references to other objects etc."
-            }
+            "One or more entries for this parameter. The content of the list is defined by the user of the parameter list and can be used to store any kind of information, e.g. a list of strings, a list of numbers, a list of references to other objects etc."
          ],
          "type": "lListT",
          "subClassName": "ANY",

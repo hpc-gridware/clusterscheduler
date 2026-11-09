@@ -2,15 +2,9 @@
    "className": "AccountingSummary",
    "summary": "Accounting Summary",
    "description": [
-      {
-         "line": "Used in qsub for summing up usage values (?)."
-      },
-      {
-         "line": "It contains some of the fields which can appear in the qacct -j job_id output."
-      },
-      {
-         "line": "See also the sge_accounting(5) man page."
-      }
+      "Used in qsub for summing up usage values (?).",
+      "It contains some of the fields which can appear in the qacct -j job_id output.",
+      "See also the sge_accounting(5) man page."
    ],
    "cullPrefix": "QAJ",
    "attributes": [
@@ -18,9 +12,7 @@
          "name": "host",
          "summary": "Host Name",
          "description": [
-            {
-               "line": "Host where a job ran."
-            }
+            "Host where a job ran."
          ],
          "type": "lHostT",
          "flags": []
@@ -29,9 +21,7 @@
          "name": "queue",
          "summary": "Cluster Queue Name",
          "description": [
-            {
-               "line": "Cluster queue in which a job ran."
-            }
+            "Cluster queue in which a job ran."
          ],
          "type": "lStringT",
          "flags": []
@@ -40,9 +30,7 @@
          "name": "group",
          "summary": "User Group",
          "description": [
-            {
-               "line": "Unix user group of the job owner."
-            }
+            "Unix user group of the job owner."
          ],
          "type": "lStringT",
          "flags": []
@@ -51,9 +39,7 @@
          "name": "owner",
          "summary": "Owner",
          "description": [
-            {
-               "line": "Unix user name of the job owner."
-            }
+            "Unix user name of the job owner."
          ],
          "type": "lStringT",
          "flags": []
@@ -62,9 +48,7 @@
          "name": "project",
          "summary": "Project",
          "description": [
-            {
-               "line": "Project the job was running for."
-            }
+            "Project the job was running for."
          ],
          "type": "lStringT",
          "flags": []
@@ -73,9 +57,7 @@
          "name": "department",
          "summary": "Department",
          "description": [
-            {
-               "line": "The job owner's department."
-            }
+            "The job owner's department."
          ],
          "type": "lStringT",
          "flags": []
@@ -84,9 +66,7 @@
          "name": "ru_wallclock",
          "summary": "Rusage Wallclock",
          "description": [
-            {
-               "line": "Wallclock time from rusage (end time - start_time)."
-            }
+            "Wallclock time from rusage (end time - start_time)."
          ],
          "type": "lDoubleT",
          "flags": []
@@ -95,9 +75,7 @@
          "name": "ru_utime",
          "summary": "Rusage User Time",
          "description": [
-            {
-               "line": "User CPU time from rusage."
-            }
+            "User CPU time from rusage."
          ],
          "type": "lDoubleT",
          "flags": []
@@ -106,9 +84,7 @@
          "name": "ru_stime",
          "summary": "Rusage System Time",
          "description": [
-            {
-               "line": "System CPU time from rusage."
-            }
+            "System CPU time from rusage."
          ],
          "type": "lDoubleT",
          "flags": []
@@ -117,9 +93,7 @@
          "name": "ru_maxrss",
          "summary": "Rusage Maximum RSS",
          "description": [
-            {
-               "line": "Maximum resident set size of the job's processes from rusage."
-            }
+            "Maximum resident set size of the job's processes from rusage."
          ],
          "type": "lDoubleT",
          "flags": []
@@ -128,9 +102,7 @@
          "name": "ru_inblock",
          "summary": "Rusage Block Input",
          "description": [
-            {
-               "line": "Number of block input operations from rusage."
-            }
+            "Number of block input operations from rusage."
          ],
          "type": "lDoubleT",
          "flags": []
@@ -139,9 +111,7 @@
          "name": "granted_pe",
          "summary": "Granted Parallel Environment",
          "description": [
-            {
-               "line": "In case of a parallel job: The PE the job was running in."
-            }
+            "In case of a parallel job: The PE the job was running in."
          ],
          "type": "lStringT",
          "flags": []
@@ -150,9 +120,7 @@
          "name": "slots",
          "summary": "Slots",
          "description": [
-            {
-               "line": "The number of slots the job occupied."
-            }
+            "The number of slots the job occupied."
          ],
          "type": "lUlongT",
          "flags": []
@@ -161,9 +129,7 @@
          "name": "cpu",
          "summary": "Cpu Usage",
          "description": [
-            {
-               "line": "The cpu usage of the job reported by sge_execd in seconds."
-            }
+            "The cpu usage of the job reported by sge_execd in seconds."
          ],
          "type": "lDoubleT",
          "flags": []
@@ -172,9 +138,7 @@
          "name": "mem",
          "summary": "Integral Memory Usage",
          "description": [
-            {
-               "line": "The integral memory usage of the job reported by sge_execd in Gbytes cpu seconds."
-            }
+            "The integral memory usage of the job reported by sge_execd in Gbytes cpu seconds."
          ],
          "type": "lDoubleT",
          "flags": []
@@ -183,9 +147,7 @@
          "name": "io",
          "summary": "IO Usage",
          "description": [
-            {
-               "line": "The IO usage of the job reported by sge_execd (the amount of data transferred in input and output operations."
-            }
+            "The IO usage of the job reported by sge_execd (the amount of data transferred in input and output operations."
          ],
          "type": "lDoubleT",
          "flags": []
@@ -194,9 +156,7 @@
          "name": "iow",
          "summary": "IO Wait Time",
          "description": [
-            {
-               "line": "The amount of time the job waited for IO operations to happen as reported by sge_execd."
-            }
+            "The amount of time the job waited for IO operations to happen as reported by sge_execd."
          ],
          "type": "lDoubleT",
          "flags": []
@@ -205,9 +165,7 @@
          "name": "maxvmem",
          "summary": "Maximum Virtual Memory",
          "description": [
-            {
-               "line": "The maximum virtual memory usage of the job reported by sge_execd."
-            }
+            "The maximum virtual memory usage of the job reported by sge_execd."
          ],
          "type": "lDoubleT",
          "flags": []
@@ -216,9 +174,7 @@
          "name": "arid",
          "summary": "AR Id",
          "description": [
-            {
-               "line": "The id of an advance reservation the job might have run in."
-            }
+            "The id of an advance reservation the job might have run in."
          ],
          "type": "lUlongT",
          "flags": []

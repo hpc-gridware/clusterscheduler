@@ -2,9 +2,7 @@
    "className": "Category",
    "summary": "Job Category",
    "description": [
-      {
-         "line": "An object of this type describes a category of jobs."
-      }
+      "An object of this type describes a category of jobs."
    ],
    "cullPrefix": "CT",
    "attributes": [
@@ -12,9 +10,7 @@
          "name": "id",
          "summary": "Category ID",
          "description": [
-            {
-               "line": "Unique ID of a category"
-            }
+            "Unique ID of a category"
          ],
          "type": "lUlongT",
          "flags": [
@@ -30,9 +26,7 @@
          "name": "str",
          "summary": "Category String",
          "description": [
-            {
-               "line": "String holding all elements of a category (requests, user, project, ...)."
-            }
+            "String holding all elements of a category (requests, user, project, ...)."
          ],
          "type": "lStringT",
          "flags": [
@@ -48,9 +42,7 @@
          "name": "refcount",
          "summary": "Reference Count",
          "description": [
-            {
-               "line": "Number of jobs referencing this category."
-            }
+            "Number of jobs referencing this category."
          ],
          "type": "lUlongT",
          "flags": []
@@ -59,9 +51,7 @@
          "name": "rejected",
          "summary": "Rejected",
          "description": [
-            {
-               "line": "Has this category been rejected as it can not be dispatched now?"
-            }
+            "Has this category been rejected as it can not be dispatched now?"
          ],
          "type": "lBoolT",
          "flags": []
@@ -70,9 +60,7 @@
          "name": "cache",
          "summary": "Cache",
          "description": [
-            {
-               "line": "Stores all info, which cannot run this job category."
-            }
+            "Stores all info, which cannot run this job category."
          ],
          "type": "lListT",
          "subClassName": "CCT",
@@ -87,9 +75,7 @@
          "name": "messages_added",
          "summary": "Messages Added",
          "description": [
-            {
-               "line": "If true, the scheduler info messages have been added for this category."
-            }
+            "If true, the scheduler info messages have been added for this category."
          ],
          "type": "lBoolT",
          "flags": []
@@ -98,12 +84,8 @@
          "name": "resource_contribution",
          "summary": "Resource Contribution",
          "description": [
-            {
-               "line": "Resource request dependent contribution on urgency."
-            },
-            {
-               "line": "This value is common for all jobs of a category."
-            }
+            "Resource request dependent contribution on urgency.",
+            "This value is common for all jobs of a category."
          ],
          "type": "lDoubleT",
          "flags": []
@@ -112,9 +94,7 @@
          "name": "rc_valid",
          "summary": "Resource Contribution valid",
          "description": [
-            {
-               "line": "Indicates whether the cached CT_resource_contribution is valid."
-            }
+            "Indicates whether the cached CT_resource_contribution is valid."
          ],
          "type": "lBoolT",
          "flags": []
@@ -123,9 +103,7 @@
          "name": "reservation_rejected",
          "summary": "Reservation Rejected",
          "description": [
-            {
-               "line": "Has this category been rejected as it can not be reserved?"
-            }
+            "Has this category been rejected as it can not be reserved?"
          ],
          "type": "lBoolT",
          "flags": []

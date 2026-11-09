@@ -2,78 +2,30 @@
    "className": "JobArrayTask",
    "summary": "Job Array Task",
    "description": [
-      {
-         "line": "JAT_Type elements are a sub element of JB_Type elements."
-      },
-      {
-         "line": "One element of each type is necessary to hold all data for the execution of one job."
-      },
-      {
-         "line": "One JB_Type element and x JAT_Type elements are needed to execute an array job with x tasks."
-      },
-      {
-         "line": " "
-      },
-      {
-         "line": "         -----------       1:x        ------------"
-      },
-      {
-         "line": "         | JB_Type |<---------------->| JAT_Type |"
-      },
-      {
-         "line": "         -----------                  ------------"
-      },
-      {
-         "line": " "
-      },
-      {
-         "line": "The relation between these two elements is defined in the"
-      },
-      {
-         "line": "'JB_ja_tasks' sublist of a 'JB_Type' element. This list will"
-      },
-      {
-         "line": "contain all belonging JAT_Type elements."
-      },
-      {
-         "line": " "
-      },
-      {
-         "line": "The 'JAT_Type' CULL element containes all attributes in which"
-      },
-      {
-         "line": "one array task may differ from another array task of the"
-      },
-      {
-         "line": "same array job. The 'JB_Type' element defines all attributes"
-      },
-      {
-         "line": "which are equivalent for all tasks of an array job."
-      },
-      {
-         "line": "A job and an array job with one task are equivalent"
-      },
-      {
-         "line": "concerning their data structures. Both consist of one 'JB_Type'"
-      },
-      {
-         "line": "and one 'JAT_Type' element."
-      },
-      {
-         "line": " "
-      },
-      {
-         "line": "'JAT_Type' elements contain dynamic data which accrue during the"
-      },
-      {
-         "line": "execution of a job. Therefore it is not necessary to create"
-      },
-      {
-         "line": "these elements during the submition of a (array) job but"
-      },
-      {
-         "line": "after the job has been dispatched."
-      }
+      "JAT_Type elements are a sub element of JB_Type elements.",
+      "One element of each type is necessary to hold all data for the execution of one job.",
+      "One JB_Type element and x JAT_Type elements are needed to execute an array job with x tasks.",
+      " ",
+      "         -----------       1:x        ------------",
+      "         | JB_Type |<---------------->| JAT_Type |",
+      "         -----------                  ------------",
+      " ",
+      "The relation between these two elements is defined in the",
+      "'JB_ja_tasks' sublist of a 'JB_Type' element. This list will",
+      "contain all belonging JAT_Type elements.",
+      " ",
+      "The 'JAT_Type' CULL element containes all attributes in which",
+      "one array task may differ from another array task of the",
+      "same array job. The 'JB_Type' element defines all attributes",
+      "which are equivalent for all tasks of an array job.",
+      "A job and an array job with one task are equivalent",
+      "concerning their data structures. Both consist of one 'JB_Type'",
+      "and one 'JAT_Type' element.",
+      " ",
+      "'JAT_Type' elements contain dynamic data which accrue during the",
+      "execution of a job. Therefore it is not necessary to create",
+      "these elements during the submition of a (array) job but",
+      "after the job has been dispatched."
    ],
    "cullPrefix": "JAT",
    "attributes": [
@@ -81,9 +33,7 @@
          "name": "task_number",
          "summary": "Task Number",
          "description": [
-            {
-               "line": "Unique task number assigned during task creation."
-            }
+            "Unique task number assigned during task creation."
          ],
          "type": "lUlongT",
          "flags": [
@@ -105,12 +55,8 @@
          "name": "status",
          "summary": "Status",
          "description": [
-            {
-               "line": "First part of the state (see also JAT_hold, JAT_state)."
-            },
-            {
-               "line": "@todo merge status, state and hold"
-            }
+            "First part of the state (see also JAT_hold, JAT_state).",
+            "@todo merge status, state and hold"
          ],
          "type": "lUlongT",
          "flags": [
@@ -123,9 +69,7 @@
          "name": "start_time",
          "summary": "Start Time",
          "description": [
-            {
-               "line": "Start time of the array task in microseconds since epoch."
-            }
+            "Start time of the array task in microseconds since epoch."
          ],
          "type": "lTimestampT",
          "flags": [
@@ -138,12 +82,8 @@
          "name": "end_time",
          "summary": "End Time",
          "description": [
-            {
-               "line": "End time of the array task in microseconds since epoch."
-            },
-            {
-               "line": "Only used in sge_execd to simulate job runs."
-            }
+            "End time of the array task in microseconds since epoch.",
+            "Only used in sge_execd to simulate job runs."
          ],
          "type": "lTimestampT",
          "flags": [
@@ -156,12 +96,8 @@
          "name": "hold",
          "summary": "Hold",
          "description": [
-            {
-               "line": "Second part of the state (user, operator, system hold)"
-            },
-            {
-               "line": "@todo merge status, state and hold"
-            }
+            "Second part of the state (user, operator, system hold)",
+            "@todo merge status, state and hold"
          ],
          "type": "lUlongT",
          "flags": [
@@ -174,9 +110,7 @@
          "name": "granted_pe",
          "summary": "Granted PE",
          "description": [
-            {
-               "line": "Name of a granted parallel environment (in case of parallel jobs)."
-            }
+            "Name of a granted parallel environment (in case of parallel jobs)."
          ],
          "type": "lStringT",
          "flags": [
@@ -189,12 +123,8 @@
          "name": "job_restarted",
          "summary": "Job Restarted",
          "description": [
-            {
-               "line": "Was the task restarted (due to reschedule/migrate)?"
-            },
-            {
-               "line": "@todo it is no boolean, but misused for other information!"
-            }
+            "Was the task restarted (due to reschedule/migrate)?",
+            "@todo it is no boolean, but misused for other information!"
          ],
          "type": "lUlongT",
          "flags": [
@@ -207,12 +137,8 @@
          "name": "granted_destin_identifier_list",
          "summary": "Granted Destination Identifier List",
          "description": [
-            {
-               "line": "Granted destination identifier list (JG_Type)."
-            },
-            {
-               "line": "Has one element per queue instance the job is running on."
-            }
+            "Granted destination identifier list (JG_Type).",
+            "Has one element per queue instance the job is running on."
          ],
          "type": "lListT",
          "subClassName": "JG",
@@ -227,9 +153,7 @@
          "name": "granted_resources_list",
          "summary": "Granted Resources",
          "description": [
-            {
-               "line": "List of granted resources, currently these are granted RSMAPs only."
-            }
+            "List of granted resources, currently these are granted RSMAPs only."
          ],
          "type": "lListT",
          "subClassName": "GrantedResource",
@@ -244,12 +168,8 @@
          "name": "master_queue",
          "summary": "Master Queue",
          "description": [
-            {
-               "line": "Name of the master queue."
-            },
-            {
-               "line": "@todo redundant information, it is the name of the first element in the GDIL."
-            }
+            "Name of the master queue.",
+            "@todo redundant information, it is the name of the first element in the GDIL."
          ],
          "type": "lStringT",
          "flags": [
@@ -262,12 +182,8 @@
          "name": "state",
          "summary": "State",
          "description": [
-            {
-               "line": "Third part of state (see also JAT_hold, JAT_status)."
-            },
-            {
-               "line": "@todo merge status, state and hold"
-            }
+            "Third part of state (see also JAT_hold, JAT_status).",
+            "@todo merge status, state and hold"
          ],
          "type": "lUlongT",
          "flags": [
@@ -280,12 +196,8 @@
          "name": "pvm_ckpt_pid",
          "summary": "PVM Checkpoint Pid",
          "description": [
-            {
-               "line": "Pid of a previous, checkpointed run of the job/ja_task."
-            },
-            {
-               "line": "@todo was apparently required for checkpointing/restart of PVM jobs - still needed?"
-            }
+            "Pid of a previous, checkpointed run of the job/ja_task.",
+            "@todo was apparently required for checkpointing/restart of PVM jobs - still needed?"
          ],
          "type": "lUlongT",
          "flags": [
@@ -298,9 +210,7 @@
          "name": "pending_signal",
          "summary": "Pending Signal",
          "description": [
-            {
-               "line": "Pending signal (not yet acknowledged by execd)."
-            }
+            "Pending signal (not yet acknowledged by execd)."
          ],
          "type": "lUlongT",
          "flags": [
@@ -313,12 +223,8 @@
          "name": "pending_signal_delivery_time",
          "summary": "Pending Signal Delivery Time",
          "description": [
-            {
-               "line": "Time when a signal shall be delivered by sge_qmaster to sge_execd (repeated) in µs since epoch."
-            },
-            {
-               "line": "Also used in sge_execd to repeat sending of signals."
-            }
+            "Time when a signal shall be delivered by sge_qmaster to sge_execd (repeated) in µs since epoch.",
+            "Also used in sge_execd to repeat sending of signals."
          ],
          "type": "lTimestampT",
          "flags": [
@@ -331,9 +237,7 @@
          "name": "pid",
          "summary": "Pid",
          "description": [
-            {
-               "line": "Pid of the sge_shepherd of a job (child of sge_execd). Used for signal delivery."
-            }
+            "Pid of the sge_shepherd of a job (child of sge_execd). Used for signal delivery."
          ],
          "type": "lUlongT",
          "flags": [
@@ -346,27 +250,13 @@
          "name": "osjobid",
          "summary": "OS Job Id",
          "description": [
-            {
-               "line": "Unique id which applies to all os processes started"
-            },
-            {
-               "line": "on behalf of this task. Set during the startup phase of the"
-            },
-            {
-               "line": "job. Meaning depends on the architecture of the"
-            },
-            {
-               "line": "host were the task is started."
-            },
-            {
-               "line": "SOLARIS/LINUX: additional group id"
-            },
-            {
-               "line": "Could be / was a OS supported job id on no longer supported platforms"
-            },
-            {
-               "line": "like Cray, Nec, Irix."
-            }
+            "Unique id which applies to all os processes started",
+            "on behalf of this task. Set during the startup phase of the",
+            "job. Meaning depends on the architecture of the",
+            "host were the task is started.",
+            "SOLARIS/LINUX: additional group id",
+            "Could be / was a OS supported job id on no longer supported platforms",
+            "like Cray, Nec, Irix."
          ],
          "type": "lStringT",
          "flags": [
@@ -379,18 +269,10 @@
          "name": "systemd_scope",
          "summary": "Systemd Scope",
          "description": [
-            {
-               "line": "In case a job is started in a systemd scope, this is the"
-            },
-            {
-               "line": "scope unit name."
-            },
-            {
-               "line": "Only used in sge_execd, it is set during the startup phase of the"
-            },
-            {
-               "line": "job."
-            }
+            "In case a job is started in a systemd scope, this is the",
+            "scope unit name.",
+            "Only used in sge_execd, it is set during the startup phase of the",
+            "job."
          ],
          "type": "lStringT",
          "flags": [
@@ -403,21 +285,11 @@
          "name": "systemd_slice",
          "summary": "Systemd Slice",
          "description": [
-            {
-               "line": "In case of tightly integrated parallel jobs, the job's tasks (master and slave)"
-            },
-            {
-               "line": "are started within a slice. We only store it if we have a tightly integrated parallel job,"
-            },
-            {
-               "line": "and this slice needs to be deleted after the job is finished."
-            },
-            {
-               "line": "Only used in sge_execd, it is set during the startup phase of the"
-            },
-            {
-               "line": "job."
-            }
+            "In case of tightly integrated parallel jobs, the job's tasks (master and slave)",
+            "are started within a slice. We only store it if we have a tightly integrated parallel job,",
+            "and this slice needs to be deleted after the job is finished.",
+            "Only used in sge_execd, it is set during the startup phase of the",
+            "job."
          ],
          "type": "lStringT",
          "flags": [
@@ -430,12 +302,8 @@
          "name": "usage_collection",
          "summary": "Usage Collection Mode",
          "description": [
-            {
-               "line": "Usage collection mode of a pe task."
-            },
-            {
-               "line": "One of 0 (FALSE), 1 (PDC), 2 (HYBRID), 3 (TRUE)."
-            }
+            "Usage collection mode of a pe task.",
+            "One of 0 (FALSE), 1 (PDC), 2 (HYBRID), 3 (TRUE)."
          ],
          "type": "lUlongT",
          "flags": []
@@ -444,12 +312,8 @@
          "name": "usage_list",
          "summary": "Usage List",
          "description": [
-            {
-               "line": "Raw usage from data collector. Scaled by sge_qmaster to JAT_scaled_usage_list."
-            },
-            {
-               "line": "Scheduling is using the scaled usage."
-            }
+            "Raw usage from data collector. Scaled by sge_qmaster to JAT_scaled_usage_list.",
+            "Scheduling is using the scaled usage."
          ],
          "type": "lListT",
          "subClassName": "UA",
@@ -464,12 +328,8 @@
          "name": "scaled_usage_list",
          "summary": "Scaled Usage List",
          "description": [
-            {
-               "line": "Scaled usage set by qmaster, used by scheduler."
-            },
-            {
-               "line": "Usage scaling is defined in the exechost objects, see sge_host_conf.5"
-            }
+            "Scaled usage set by qmaster, used by scheduler.",
+            "Usage scaling is defined in the exechost objects, see sge_host_conf.5"
          ],
          "type": "lListT",
          "subClassName": "UA",
@@ -484,15 +344,9 @@
          "name": "reported_usage_list",
          "summary": "Reported Usage List",
          "description": [
-            {
-               "line": "Usage which has already been reported in intermediate accounting records"
-            },
-            {
-               "line": "in the reporting file. For long running jobs, written around midnight"
-            },
-            {
-               "line": "to provide daily accounting information."
-            }
+            "Usage which has already been reported in intermediate accounting records",
+            "in the reporting file. For long running jobs, written around midnight",
+            "to provide daily accounting information."
          ],
          "type": "lListT",
          "subClassName": "UA",
@@ -507,9 +361,7 @@
          "name": "fshare",
          "summary": "Functional Share",
          "description": [
-            {
-               "line": "Functional shares associated with the job."
-            }
+            "Functional shares associated with the job."
          ],
          "type": "lUlongT",
          "flags": [
@@ -522,9 +374,7 @@
          "name": "tix",
          "summary": "Tickets",
          "description": [
-            {
-               "line": "Total number of tickets."
-            }
+            "Total number of tickets."
          ],
          "type": "lDoubleT",
          "flags": [
@@ -537,9 +387,7 @@
          "name": "oticket",
          "summary": "Override Tickets",
          "description": [
-            {
-               "line": "Override tickets."
-            }
+            "Override tickets."
          ],
          "type": "lDoubleT",
          "flags": [
@@ -552,9 +400,7 @@
          "name": "fticket",
          "summary": "Functional Tickets",
          "description": [
-            {
-               "line": "Functional tickets."
-            }
+            "Functional tickets."
          ],
          "type": "lDoubleT",
          "flags": [
@@ -567,9 +413,7 @@
          "name": "sticket",
          "summary": "Sharetree Tickets",
          "description": [
-            {
-               "line": "Sharetree tickets."
-            }
+            "Sharetree tickets."
          ],
          "type": "lDoubleT",
          "flags": [
@@ -582,9 +426,7 @@
          "name": "share",
          "summary": "Share",
          "description": [
-            {
-               "line": "Job targeted proportion set by scheduler."
-            }
+            "Job targeted proportion set by scheduler."
          ],
          "type": "lDoubleT",
          "flags": [
@@ -597,9 +439,7 @@
          "name": "suitable",
          "summary": "Suitable",
          "description": [
-            {
-               "line": "Tag used in filtering in client job output (qstat, qhost)."
-            }
+            "Tag used in filtering in client job output (qstat, qhost)."
          ],
          "type": "lUlongT",
          "flags": []
@@ -608,9 +448,7 @@
          "name": "task_list",
          "summary": "Task List",
          "description": [
-            {
-               "line": "List of running parallel tasks."
-            }
+            "List of running parallel tasks."
          ],
          "type": "lListT",
          "subClassName": "PET",
@@ -625,9 +463,7 @@
          "name": "finished_task_list",
          "summary": "Finished Task List",
          "description": [
-            {
-               "line": "List of finished parallel tasks - contains only task names."
-            }
+            "List of finished parallel tasks - contains only task names."
          ],
          "type": "lListT",
          "subClassName": "FPET",
@@ -642,12 +478,8 @@
          "name": "previous_usage_list",
          "summary": "Previous Usage List",
          "description": [
-            {
-               "line": "Copy of the scaled usage list created when a job gets rescheduled."
-            },
-            {
-               "line": "@todo If a job is rescheduled multiple times, should probably be aggregated."
-            }
+            "Copy of the scaled usage list created when a job gets rescheduled.",
+            "@todo If a job is rescheduled multiple times, should probably be aggregated."
          ],
          "type": "lListT",
          "subClassName": "UA",
@@ -658,9 +490,7 @@
          "name": "pe_object",
          "summary": "PE Object",
          "description": [
-            {
-               "line": "PE object granted to this task (PE_Type) when it was scheduled."
-            }
+            "PE object granted to this task (PE_Type) when it was scheduled."
          ],
          "type": "lObjectT",
          "subClassName": "ParallelEnvironment",
@@ -675,9 +505,7 @@
          "name": "next_pe_task_id",
          "summary": "Next PE Task Id",
          "description": [
-            {
-               "line": "Used locally in execd to store next pe task id for this jatask on this execd."
-            }
+            "Used locally in execd to store next pe task id for this jatask on this execd."
          ],
          "type": "lUlongT",
          "flags": []
@@ -686,12 +514,8 @@
          "name": "stop_initiate_time",
          "summary": "Stop Initiate Time",
          "description": [
-            {
-               "line": "The time in µs since epoch when the action to initiate a job finish"
-            },
-            {
-               "line": "(i.e. job termination, or checkpoint creation) was triggered or re-triggered."
-            }
+            "The time in µs since epoch when the action to initiate a job finish",
+            "(i.e. job termination, or checkpoint creation) was triggered or re-triggered."
          ],
          "type": "lTimestampT",
          "flags": [
@@ -704,12 +528,8 @@
          "name": "prio",
          "summary": "Priority",
          "description": [
-            {
-               "line": "The priority derived from weighted normalized tickets and weighted normalized"
-            },
-            {
-               "line": "static urgency. Changes with task due to GEEE ticket dependency."
-            }
+            "The priority derived from weighted normalized tickets and weighted normalized",
+            "static urgency. Changes with task due to GEEE ticket dependency."
          ],
          "type": "lDoubleT",
          "flags": []
@@ -718,9 +538,7 @@
          "name": "ntix",
          "summary": "Normalized Tickets",
          "description": [
-            {
-               "line": "Relative importance due to JAT_tix amount in the range between 0.0 and 1.0."
-            }
+            "Relative importance due to JAT_tix amount in the range between 0.0 and 1.0."
          ],
          "type": "lDoubleT",
          "flags": []
@@ -729,12 +547,8 @@
          "name": "wallclock_limit",
          "summary": "Wallclock Limit",
          "description": [
-            {
-               "line": "Wallclock_limit. Either requested (qsub -l h_rt=...) or the minimum of queue h_rt"
-            },
-            {
-               "line": "in microseconds since epoch"
-            }
+            "Wallclock_limit. Either requested (qsub -l h_rt=...) or the minimum of queue h_rt",
+            "in microseconds since epoch"
          ],
          "type": "lTimestampT",
          "flags": [
@@ -747,12 +561,8 @@
          "name": "message_list",
          "summary": "Message List",
          "description": [
-            {
-               "line": "Task specific messages."
-            },
-            {
-               "line": "Currently only used for storing the reason why a job is in error state."
-            }
+            "Task specific messages.",
+            "Currently only used for storing the reason why a job is in error state."
          ],
          "type": "lListT",
          "subClassName": "QIM",
@@ -767,15 +577,9 @@
          "name": "deleted_by",
          "summary": "Deleted By",
          "description": [
-            {
-               "line": "Name of the user who deleted the array task (e.g. via qdel),"
-            },
-            {
-               "line": "or the component which triggered the deletion (sge_qmaster, sge_execd)."
-            },
-            {
-               "line": "Used for accounting and reporting purposes."
-            }
+            "Name of the user who deleted the array task (e.g. via qdel),",
+            "or the component which triggered the deletion (sge_qmaster, sge_execd).",
+            "Used for accounting and reporting purposes."
          ],
          "type": "lStringT",
          "flags": [
@@ -788,15 +592,9 @@
          "name": "joker",
          "summary": "Joker",
          "description": [
-            {
-               "line": "Placeholder which can be used for arbitrary data."
-            },
-            {
-               "line": "Its purpose is to be able to add new attributes without changing the spooling format."
-            },
-            {
-               "line": "It is a list of arbitrary type and it is spooled."
-            }
+            "Placeholder which can be used for arbitrary data.",
+            "Its purpose is to be able to add new attributes without changing the spooling format.",
+            "It is a list of arbitrary type and it is spooled."
          ],
          "type": "lListT",
          "subClassName": "Variable",

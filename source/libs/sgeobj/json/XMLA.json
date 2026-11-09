@@ -2,9 +2,7 @@
    "className": "XMLAttribute",
    "summary": "XML Attribute",
    "description": [
-      {
-         "line": "One name/value attribute on an XML element."
-      }
+      "One name/value attribute on an XML element."
    ],
    "cullPrefix": "XMLA",
    "attributes": [
@@ -12,9 +10,7 @@
          "name": "Name",
          "summary": "Name",
          "description": [
-            {
-               "line": "The attribute name."
-            }
+            "The attribute name."
          ],
          "type": "lStringT",
          "flags": []
@@ -23,9 +19,7 @@
          "name": "Value",
          "summary": "Value",
          "description": [
-            {
-               "line": "Its value. Escaped when the document is written, so plain text is passed in."
-            }
+            "Its value. Escaped when the document is written, so plain text is passed in."
          ],
          "type": "lStringT",
          "flags": []

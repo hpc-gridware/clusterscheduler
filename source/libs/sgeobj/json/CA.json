@@ -2,9 +2,7 @@
    "className": "ParsedCalendar",
    "summary": "Parsed Calendar",
    "description": [
-      {
-         "line": "This data structure is used for storing a parsed calendar."
-      }
+      "This data structure is used for storing a parsed calendar."
    ],
    "cullPrefix": "CA",
    "attributes": [
@@ -12,9 +10,7 @@
          "name": "yday_range_list",
          "summary": "YearDay Range List",
          "description": [
-            {
-               "line": "TMR_Type with begin/end using TM_mday/TM_mon/TM_year."
-            }
+            "TMR_Type with begin/end using TM_mday/TM_mon/TM_year."
          ],
          "type": "lListT",
          "subClassName": "TMR",
@@ -25,9 +21,7 @@
          "name": "wday_range_list",
          "summary": "WeekDay Range List",
          "description": [
-            {
-               "line": "TMR_Type with begin/end using TM_wday."
-            }
+            "TMR_Type with begin/end using TM_wday."
          ],
          "type": "lListT",
          "subClassName": "TMR",
@@ -38,9 +32,7 @@
          "name": "daytime_range_list",
          "summary": "DayTime Range List",
          "description": [
-            {
-               "line": "TMR_Type with begin/end using TM_sec/TM_min/TM_hour."
-            }
+            "TMR_Type with begin/end using TM_sec/TM_min/TM_hour."
          ],
          "type": "lListT",
          "subClassName": "TMR",
@@ -51,9 +43,7 @@
          "name": "state",
          "summary": "State",
          "description": [
-            {
-               "line": "Queue state in the given time range, e.g. QI_DO_NOTHING, QI_DO_DISABLE, QI_DO_SUSPEND, ..."
-            }
+            "Queue state in the given time range, e.g. QI_DO_NOTHING, QI_DO_DISABLE, QI_DO_SUSPEND, ..."
          ],
          "type": "lUlongT",
          "flags": []

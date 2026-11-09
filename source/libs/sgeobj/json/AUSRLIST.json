@@ -2,12 +2,8 @@
    "className": "AttributeUserSetList",
    "summary": "Attribute User Set List",
    "description": [
-      {
-         "line": "Used for user set list attributes in the cluster queues."
-      },
-      {
-         "line": "E.g. used for the queue owner, acl, xacl."
-      }
+      "Used for user set list attributes in the cluster queues.",
+      "E.g. used for the queue owner, acl, xacl."
    ],
    "cullPrefix": "AUSRLIST",
    "attributes": [
@@ -15,9 +11,7 @@
          "name": "href",
          "summary": "Host Reference",
          "description": [
-            {
-               "line": "Name of a host or a host group."
-            }
+            "Name of a host or a host group."
          ],
          "type": "lHostT",
          "flags": [
@@ -39,9 +33,7 @@
          "name": "value",
          "summary": "Value",
          "description": [
-            {
-               "line": "The user set list (list of US_Type)."
-            }
+            "The user set list (list of US_Type)."
          ],
          "type": "lListT",
          "subClassName": "US",

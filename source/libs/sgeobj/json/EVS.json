@@ -2,15 +2,9 @@
    "className": "EventSubscription",
    "summary": "Event Subscription",
    "description": [
-      {
-         "line": "An object of the EventSubscription type specifies if a certain event is subscribed"
-      },
-      {
-         "line": "and additional information for flushing and filtering"
-      },
-      {
-         "line": "see also the documentation in source/libs/evc/sge_event_client.cc"
-      }
+      "An object of the EventSubscription type specifies if a certain event is subscribed",
+      "and additional information for flushing and filtering",
+      "see also the documentation in source/libs/evc/sge_event_client.cc"
    ],
    "cullPrefix": "EVS",
    "attributes": [
@@ -18,27 +12,13 @@
          "name": "id",
          "summary": "Event Id",
          "description": [
-            {
-               "line": "The Id of the specific event from enumeration type ev_event (libs/sgeobj/sge_event.h), e.g."
-            },
-            {
-               "line": "  - sgeE_ADMIN_HOST_LIST"
-            },
-            {
-               "line": "  - sgeE_ADMIN_HOST_ADD"
-            },
-            {
-               "line": "  - sgeE_ADMIN_HOST_DEL"
-            },
-            {
-               "line": "  - sgeE_ADMIN_HOST_MOD"
-            },
-            {
-               "line": "  - sgeE_CALENDAR_LIST"
-            },
-            {
-               "line": "  - ..."
-            }
+            "The Id of the specific event from enumeration type ev_event (libs/sgeobj/sge_event.h), e.g.",
+            "  - sgeE_ADMIN_HOST_LIST",
+            "  - sgeE_ADMIN_HOST_ADD",
+            "  - sgeE_ADMIN_HOST_DEL",
+            "  - sgeE_ADMIN_HOST_MOD",
+            "  - sgeE_CALENDAR_LIST",
+            "  - ..."
          ],
          "type": "lUlongT",
          "flags": []
@@ -47,18 +27,10 @@
          "name": "flush",
          "summary": "Flush this Event",
          "description": [
-            {
-               "line": "Specifies if flushing of the event is enabled. This means that flushing of events is triggered"
-            },
-            {
-               "line": "if this event will be delivered to a specific event client."
-            },
-            {
-               "line": "Flushing of event data means that the event are sent to the client earlier than forseen"
-            },
-            {
-               "line": "by the event client's event delivery interval."
-            }
+            "Specifies if flushing of the event is enabled. This means that flushing of events is triggered",
+            "if this event will be delivered to a specific event client.",
+            "Flushing of event data means that the event are sent to the client earlier than forseen",
+            "by the event client's event delivery interval."
          ],
          "type": "lBoolT",
          "flags": []
@@ -67,12 +39,8 @@
          "name": "interval",
          "summary": "Flushing Interval",
          "description": [
-            {
-               "line": "Flushing interval in seconds."
-            },
-            {
-               "line": "Events will be sent to the event client not later than current time + interval."
-            }
+            "Flushing interval in seconds.",
+            "Events will be sent to the event client not later than current time + interval."
          ],
          "type": "lUlongT",
          "flags": []
@@ -81,12 +49,8 @@
          "name": "what",
          "summary": "Attribute Filter",
          "description": [
-            {
-               "line": "Enumeration defining which attributes of an object will be sent to the event client (reduced objects)."
-            },
-            {
-               "line": "We can for example configure: We are only interested in job id, job name and job owner."
-            }
+            "Enumeration defining which attributes of an object will be sent to the event client (reduced objects).",
+            "We can for example configure: We are only interested in job id, job name and job owner."
          ],
          "type": "lObjectT",
          "subClassName": "ANY",
@@ -97,12 +61,8 @@
          "name": "where",
          "summary": "Object Filter",
          "description": [
-            {
-               "line": "Condition filtering objects to be sent."
-            },
-            {
-               "line": "We can for example configure: Send only events for jobs of user xyz."
-            }
+            "Condition filtering objects to be sent.",
+            "We can for example configure: Send only events for jobs of user xyz."
          ],
          "type": "lObjectT",
          "subClassName": "ANY",

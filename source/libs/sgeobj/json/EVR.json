@@ -2,12 +2,8 @@
    "className": "EventRequest",
    "summary": "Event Master Request",
    "description": [
-      {
-         "line": "One request queued for the event master thread."
-      },
-      {
-         "line": "Every change to the event master - a client registering, changing its subscription, leaving, or an event being added - is posted as one of these rather than applied directly, so the callers never block on the event master's lock."
-      }
+      "One request queued for the event master thread.",
+      "Every change to the event master - a client registering, changing its subscription, leaving, or an event being added - is posted as one of these rather than applied directly, so the callers never block on the event master's lock."
    ],
    "cullPrefix": "EVR",
    "attributes": [
@@ -15,9 +11,7 @@
          "name": "operation",
          "summary": "Operation",
          "description": [
-            {
-               "line": "Which request this is: `EVR_ADD_EVC`, `EVR_MOD_EVC`, `EVR_DEL_EVC` or `EVR_ADD_EVENT`. See `sge_event.h`."
-            }
+            "Which request this is: `EVR_ADD_EVC`, `EVR_MOD_EVC`, `EVR_DEL_EVC` or `EVR_ADD_EVENT`. See `sge_event.h`."
          ],
          "type": "lUlongT",
          "flags": []
@@ -26,9 +20,7 @@
          "name": "timestamp",
          "summary": "Timestamp",
          "description": [
-            {
-               "line": "When the request was posted, so the event master can order and age requests."
-            }
+            "When the request was posted, so the event master can order and age requests."
          ],
          "type": "lTimestampT",
          "flags": []
@@ -37,9 +29,7 @@
          "name": "event_client_id",
          "summary": "Event Client Id",
          "description": [
-            {
-               "line": "Which event client the request is about."
-            }
+            "Which event client the request is about."
          ],
          "type": "lUlongT",
          "flags": []
@@ -48,9 +38,7 @@
          "name": "event_number",
          "summary": "Event Number",
          "description": [
-            {
-               "line": "The client's event serial the request refers to."
-            }
+            "The client's event serial the request refers to."
          ],
          "type": "lUlongT",
          "flags": []
@@ -59,9 +47,7 @@
          "name": "session",
          "summary": "Session",
          "description": [
-            {
-               "line": "The session the request belongs to, so a client sees its own changes."
-            }
+            "The session the request belongs to, so a client sees its own changes."
          ],
          "type": "lStringT",
          "flags": []
@@ -70,9 +56,7 @@
          "name": "event_client",
          "summary": "Event Client",
          "description": [
-            {
-               "line": "The event client object (`EV_Type`), for the register and modify operations."
-            }
+            "The event client object (`EV_Type`), for the register and modify operations."
          ],
          "type": "lObjectT",
          "subClassName": "ANY",
@@ -83,9 +67,7 @@
          "name": "event_list",
          "summary": "Events",
          "description": [
-            {
-               "line": "The events to deliver (`ET_Type`), for `EVR_ADD_EVENT`."
-            }
+            "The events to deliver (`ET_Type`), for `EVR_ADD_EVENT`."
          ],
          "type": "lListT",
          "subClassName": "ET",

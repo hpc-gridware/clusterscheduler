@@ -1,30 +1,14 @@
 {
    "summary": "This file lists all types in the correct order",
    "description": [
-      {
-         "line": "The file contains an array of JSON objects."
-      },
-      {
-         "line": "Every JSON object describes one object type."
-      },
-      {
-         "line": "Per object type we store the following data:"
-      },
-      {
-         "line": "  - className - name of the type / class, e.g. Job"
-      },
-      {
-         "line": "  - cullPrefix - prefix used in cull objects, e.g. JB"
-      },
-      {
-         "line": "  - size_in_basic_units - size forseen for the object type in the name space"
-      },
-      {
-         "line": "    we set the size in chunks of BASIC_UNITs, a BASIC_UNIT is 50 entries"
-      },
-      {
-         "line": "    and leave ample space"
-      }
+      "The file contains an array of JSON objects.",
+      "Every JSON object describes one object type.",
+      "Per object type we store the following data:",
+      "  - className - name of the type / class, e.g. Job",
+      "  - cullPrefix - prefix used in cull objects, e.g. JB",
+      "  - size_in_basic_units - size forseen for the object type in the name space",
+      "    we set the size in chunks of BASIC_UNITs, a BASIC_UNIT is 50 entries",
+      "    and leave ample space"
    ],
    "types": [
       {

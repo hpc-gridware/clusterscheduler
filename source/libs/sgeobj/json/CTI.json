@@ -2,9 +2,7 @@
    "className": "SkipListEntry",
    "summary": "Category Ignore Entry",
    "description": [
-      {
-         "line": "One name a category has already been rejected by, held in the ignore lists of `CCT_Type`."
-      }
+      "One name a category has already been rejected by, held in the ignore lists of `CCT_Type`."
    ],
    "cullPrefix": "CTI",
    "attributes": [
@@ -12,9 +10,7 @@
          "name": "name",
          "summary": "Name",
          "description": [
-            {
-               "line": "The cluster queue or host to skip for this category."
-            }
+            "The cluster queue or host to skip for this category."
          ],
          "type": "lStringT",
          "flags": [

@@ -2,12 +2,8 @@
    "className": "JobSubmissionVerifier",
    "summary": "Job Submission Verifier",
    "description": [
-      {
-         "line": "An external script that inspects, and may modify or reject, every job as it is submitted."
-      },
-      {
-         "line": "One element per configured verifier. The element holds both the configuration (where the script is and how to run it) and the live state of the running script process, because a verifier is kept alive across jobs rather than started per job."
-      }
+      "An external script that inspects, and may modify or reject, every job as it is submitted.",
+      "One element per configured verifier. The element holds both the configuration (where the script is and how to run it) and the live state of the running script process, because a verifier is kept alive across jobs rather than started per job."
    ],
    "cullPrefix": "JSV",
    "attributes": [
@@ -15,9 +11,7 @@
          "name": "name",
          "summary": "Name",
          "description": [
-            {
-               "line": "The verifier's name, unique within its context."
-            }
+            "The verifier's name, unique within its context."
          ],
          "type": "lStringT",
          "flags": []
@@ -26,9 +20,7 @@
          "name": "context",
          "summary": "Context",
          "description": [
-            {
-               "line": "Where this verifier runs: in the submit client, or in qmaster. The list is searched by context."
-            }
+            "Where this verifier runs: in the submit client, or in qmaster. The list is searched by context."
          ],
          "type": "lStringT",
          "flags": []
@@ -37,9 +29,7 @@
          "name": "url",
          "summary": "Script URL",
          "description": [
-            {
-               "line": "The configured location of the script, as written in the JSV configuration."
-            }
+            "The configured location of the script, as written in the JSV configuration."
          ],
          "type": "lStringT",
          "flags": []
@@ -48,9 +38,7 @@
          "name": "type",
          "summary": "Script Type",
          "description": [
-            {
-               "line": "How the script is to be started, derived from the URL."
-            }
+            "How the script is to be started, derived from the URL."
          ],
          "type": "lStringT",
          "flags": []
@@ -59,9 +47,7 @@
          "name": "user",
          "summary": "Run As User",
          "description": [
-            {
-               "line": "The user the script runs as, when the configuration asks for one other than the caller."
-            }
+            "The user the script runs as, when the configuration asks for one other than the caller."
          ],
          "type": "lStringT",
          "flags": []
@@ -70,9 +56,7 @@
          "name": "command",
          "summary": "Script Path",
          "description": [
-            {
-               "line": "The resolved path of the script to execute."
-            }
+            "The resolved path of the script to execute."
          ],
          "type": "lStringT",
          "flags": []
@@ -81,9 +65,7 @@
          "name": "pid",
          "summary": "Process Id",
          "description": [
-            {
-               "line": "Process id of the running script, as a string, for logging and for killing it."
-            }
+            "Process id of the running script, as a string, for logging and for killing it."
          ],
          "type": "lStringT",
          "flags": []
@@ -92,9 +74,7 @@
          "name": "in",
          "summary": "Input Stream",
          "description": [
-            {
-               "line": "`FILE *` writing to the script's stdin - how the job is sent to it."
-            }
+            "`FILE *` writing to the script's stdin - how the job is sent to it."
          ],
          "type": "lRefT",
          "subClassName": "ANY",
@@ -109,9 +89,7 @@
          "name": "out",
          "summary": "Output Stream",
          "description": [
-            {
-               "line": "`FILE *` reading the script's stdout - how its verdict comes back."
-            }
+            "`FILE *` reading the script's stdout - how its verdict comes back."
          ],
          "type": "lRefT",
          "subClassName": "ANY",
@@ -126,9 +104,7 @@
          "name": "err",
          "summary": "Error Stream",
          "description": [
-            {
-               "line": "`FILE *` reading the script's stderr, logged as JSV output."
-            }
+            "`FILE *` reading the script's stderr, logged as JSV output."
          ],
          "type": "lRefT",
          "subClassName": "ANY",
@@ -143,9 +119,7 @@
          "name": "has_to_restart",
          "summary": "Restart Pending",
          "description": [
-            {
-               "line": "Set when the configuration changed under a running script, so it is restarted before the next job."
-            }
+            "Set when the configuration changed under a running script, so it is restarted before the next job."
          ],
          "type": "lBoolT",
          "flags": []
@@ -154,9 +128,7 @@
          "name": "last_mod",
          "summary": "Script Timestamp",
          "description": [
-            {
-               "line": "Modification time of the script file when it was started. Compared on each use, so an edited script is picked up without a reconfiguration."
-            }
+            "Modification time of the script file when it was started. Compared on each use, so an edited script is picked up without a reconfiguration."
          ],
          "type": "lUlongT",
          "flags": []
@@ -165,9 +137,7 @@
          "name": "send_env",
          "summary": "Send Environment",
          "description": [
-            {
-               "line": "The script asked for the job environment as well as the job itself. Off by default because the environment can be large."
-            }
+            "The script asked for the job environment as well as the job itself. Off by default because the environment can be large."
          ],
          "type": "lBoolT",
          "flags": []
@@ -176,9 +146,7 @@
          "name": "old_job",
          "summary": "Job Before",
          "description": [
-            {
-               "line": "`lListElem *` to the job as submitted, so the changes the script asks for can be applied to a copy."
-            }
+            "`lListElem *` to the job as submitted, so the changes the script asks for can be applied to a copy."
          ],
          "type": "lRefT",
          "subClassName": "ANY",
@@ -193,9 +161,7 @@
          "name": "new_job",
          "summary": "Job After",
          "description": [
-            {
-               "line": "`lListElem *` to the job the script may modify. This is what is submitted if the verifier accepts."
-            }
+            "`lListElem *` to the job the script may modify. This is what is submitted if the verifier accepts."
          ],
          "type": "lRefT",
          "subClassName": "ANY",
@@ -210,9 +176,7 @@
          "name": "restart",
          "summary": "Restart Requested",
          "description": [
-            {
-               "line": "The script asked to be restarted. Ends the current conversation."
-            }
+            "The script asked to be restarted. Ends the current conversation."
          ],
          "type": "lBoolT",
          "flags": []
@@ -221,9 +185,7 @@
          "name": "accept",
          "summary": "Verdict",
          "description": [
-            {
-               "line": "The script accepted the job. Read together with JSV_done to tell acceptance from a script that died mid-conversation."
-            }
+            "The script accepted the job. Read together with JSV_done to tell acceptance from a script that died mid-conversation."
          ],
          "type": "lBoolT",
          "flags": []
@@ -232,9 +194,7 @@
          "name": "done",
          "summary": "Conversation Finished",
          "description": [
-            {
-               "line": "The script sent its closing command. The read loop runs until this is set."
-            }
+            "The script sent its closing command. The read loop runs until this is set."
          ],
          "type": "lBoolT",
          "flags": []
@@ -243,9 +203,7 @@
          "name": "soft_shutdown",
          "summary": "Soft Shutdown",
          "description": [
-            {
-               "line": "The script asked to be shut down cleanly after this job rather than killed."
-            }
+            "The script asked to be shut down cleanly after this job rather than killed."
          ],
          "type": "lBoolT",
          "flags": []
@@ -254,9 +212,7 @@
          "name": "test",
          "summary": "Test Mode",
          "description": [
-            {
-               "line": "Verify the script's own answers against an expected sequence, used by the JSV tests rather than in production."
-            }
+            "Verify the script's own answers against an expected sequence, used by the JSV tests rather than in production."
          ],
          "type": "lBoolT",
          "flags": []
@@ -265,9 +221,7 @@
          "name": "test_pos",
          "summary": "Test Position",
          "description": [
-            {
-               "line": "How far through the expected sequence the test has got."
-            }
+            "How far through the expected sequence the test has got."
          ],
          "type": "lUlongT",
          "flags": []
@@ -276,9 +230,7 @@
          "name": "result",
          "summary": "Last Result",
          "description": [
-            {
-               "line": "The last result string the script sent, kept for the test comparison and for the error message."
-            }
+            "The last result string the script sent, kept for the test comparison and for the error message."
          ],
          "type": "lStringT",
          "flags": []

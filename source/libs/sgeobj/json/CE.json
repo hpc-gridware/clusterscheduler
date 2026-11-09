@@ -2,18 +2,10 @@
    "className": "ComplexEntry",
    "summary": "Complex Entry",
    "description": [
-      {
-         "line": "A complex entry contains a complex variable, both its definition as well as a possible current value"
-      },
-      {
-         "line": "A complex variable is used for defining all types of attributes in Cluster Scheduler"
-      },
-      {
-         "line": "as well as defining fixed values of resources and the capacity of consumable resources."
-      },
-      {
-         "line": "@todo should be we better split definition and values into two objects?"
-      }
+      "A complex entry contains a complex variable, both its definition as well as a possible current value",
+      "A complex variable is used for defining all types of attributes in Cluster Scheduler",
+      "as well as defining fixed values of resources and the capacity of consumable resources.",
+      "@todo should be we better split definition and values into two objects?"
    ],
    "cullPrefix": "CE",
    "attributes": [
@@ -21,9 +13,7 @@
          "name": "name",
          "summary": "Full Name",
          "description": [
-            {
-               "line": "Full name of a complex variable."
-            }
+            "Full name of a complex variable."
          ],
          "type": "lStringT",
          "flags": [
@@ -51,12 +41,8 @@
          "name": "shortcut",
          "summary": "Shortcut Name",
          "description": [
-            {
-               "line": "Shortcut for the complex variable name which can be used as an alternative to the name,"
-            },
-            {
-               "line": "e.g. in job submission with qsub or when querying resources with qstat -F."
-            }
+            "Shortcut for the complex variable name which can be used as an alternative to the name,",
+            "e.g. in job submission with qsub or when querying resources with qstat -F."
          ],
          "type": "lStringT",
          "flags": [
@@ -78,27 +64,13 @@
          "name": "valtype",
          "summary": "Variable Type",
          "description": [
-            {
-               "line": "Type of the complex variable defined in common/basis_types.h, e.g."
-            },
-            {
-               "line": "  - TYPE_INT"
-            },
-            {
-               "line": "  - TYPE_STR"
-            },
-            {
-               "line": "  - TYPE_TIM"
-            },
-            {
-               "line": "  - TYPE_MEM"
-            },
-            {
-               "line": "  - ..."
-            },
-            {
-               "line": "@todo instead of defines, should we better use an enum?"
-            }
+            "Type of the complex variable defined in common/basis_types.h, e.g.",
+            "  - TYPE_INT",
+            "  - TYPE_STR",
+            "  - TYPE_TIM",
+            "  - TYPE_MEM",
+            "  - ...",
+            "@todo instead of defines, should we better use an enum?"
          ],
          "type": "lUlongT",
          "flags": [
@@ -114,9 +86,7 @@
          "name": "stringval",
          "summary": "String Value",
          "description": [
-            {
-               "line": "Value of the complex variable as string, from old docs: non overwritten value."
-            }
+            "Value of the complex variable as string, from old docs: non overwritten value."
          ],
          "type": "lStringT",
          "flags": [
@@ -135,9 +105,7 @@
          "name": "doubleval",
          "summary": "Double Value",
          "description": [
-            {
-               "line": "Value of the complex variable as double, from old docs: parsed CE_stringval"
-            }
+            "Value of the complex variable as double, from old docs: parsed CE_stringval"
          ],
          "type": "lDoubleT",
          "flags": [
@@ -150,24 +118,12 @@
          "name": "relop",
          "summary": "Relational Operator",
          "description": [
-            {
-               "line": "Relational operator used in comparison of complex variables (e.g. against requests)."
-            },
-            {
-               "line": "Defined in libs/sgeobj/sge_centry.h, e.g."
-            },
-            {
-               "line": "CMPLXEQ_OP"
-            },
-            {
-               "line": "CMPLXGE_OP"
-            },
-            {
-               "line": "CMPLXGT_OP"
-            },
-            {
-               "line": "..."
-            }
+            "Relational operator used in comparison of complex variables (e.g. against requests).",
+            "Defined in libs/sgeobj/sge_centry.h, e.g.",
+            "CMPLXEQ_OP",
+            "CMPLXGE_OP",
+            "CMPLXGT_OP",
+            "..."
          ],
          "type": "lUlongT",
          "flags": [
@@ -183,24 +139,12 @@
          "name": "consumable",
          "summary": "Consumable Flag",
          "description": [
-            {
-               "line": "Defines if a complex variable is consumable and if it is a per job or per slot consumable."
-            },
-            {
-               "line": "Defined in libs/sgeobj/sge_centry.h, possible values are"
-            },
-            {
-               "line": "CONSUMABLE_NO"
-            },
-            {
-               "line": "CONSUMABLE_YES"
-            },
-            {
-               "line": "CONSUMABLE_JOB"
-            },
-            {
-               "line": "CONSUMABLE_HOST"
-            }
+            "Defines if a complex variable is consumable and if it is a per job or per slot consumable.",
+            "Defined in libs/sgeobj/sge_centry.h, possible values are",
+            "CONSUMABLE_NO",
+            "CONSUMABLE_YES",
+            "CONSUMABLE_JOB",
+            "CONSUMABLE_HOST"
          ],
          "type": "lUlongT",
          "flags": [
@@ -216,9 +160,7 @@
          "name": "defaultval",
          "summary": "Default Value",
          "description": [
-            {
-               "line": "Default value (default request) as string."
-            }
+            "Default value (default request) as string."
          ],
          "type": "lStringT",
          "flags": [
@@ -234,9 +176,7 @@
          "name": "dominant",
          "summary": "Monitoring Facility",
          "description": [
-            {
-               "line": "@todo add description"
-            }
+            "@todo add description"
          ],
          "type": "lUlongT",
          "flags": [
@@ -249,9 +189,7 @@
          "name": "pj_stringval",
          "summary": "Per Job String Value",
          "description": [
-            {
-               "line": "Per job string value, @todo add more information"
-            }
+            "Per job string value, @todo add more information"
          ],
          "type": "lStringT",
          "flags": [
@@ -264,9 +202,7 @@
          "name": "pj_doubleval",
          "summary": "Per Job Double Value",
          "description": [
-            {
-               "line": "Per job double values, parsed from CE_stringval (?)"
-            }
+            "Per job double values, parsed from CE_stringval (?)"
          ],
          "type": "lDoubleT",
          "flags": [
@@ -279,9 +215,7 @@
          "name": "pj_dominant",
          "summary": "Per Job Monitoring Facility",
          "description": [
-            {
-               "line": "@todo add description"
-            }
+            "@todo add description"
          ],
          "type": "lUlongT",
          "flags": [
@@ -294,9 +228,7 @@
          "name": "requestable",
          "summary": "Requestable",
          "description": [
-            {
-               "line": "Whether a job may ask for this complex, and whether asking is mandatory: `NO`, `YES` or `FORCED`."
-            }
+            "Whether a job may ask for this complex, and whether asking is mandatory: `NO`, `YES` or `FORCED`."
          ],
          "type": "lUlongT",
          "flags": [
@@ -315,9 +247,7 @@
          "name": "tagged",
          "summary": "Variable Is Tagged",
          "description": [
-            {
-               "line": "Used for tagging variables, e.g. during the scheduling process."
-            }
+            "Used for tagging variables, e.g. during the scheduling process."
          ],
          "type": "lUlongT",
          "flags": [
@@ -330,9 +260,7 @@
          "name": "urgency_weight",
          "summary": "Urgency Weighting Factor",
          "description": [
-            {
-               "line": "Static Urgency Weighting Factor."
-            }
+            "Static Urgency Weighting Factor."
          ],
          "type": "lStringT",
          "flags": [
@@ -348,9 +276,7 @@
          "name": "resource_map_list",
          "summary": "Resource Map List",
          "description": [
-            {
-               "line": "on host level only: RSMAP id list"
-            }
+            "on host level only: RSMAP id list"
          ],
          "type": "lListT",
          "subClassName": "ResourceList",

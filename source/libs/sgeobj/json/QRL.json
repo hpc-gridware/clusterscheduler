@@ -2,9 +2,7 @@
    "className": "QueueReferenceList",
    "summary": "Queue Reference",
    "description": [
-      {
-         "line": "A bare reference to a queue instance, for building the scheduler's temporary candidate lists."
-      }
+      "A bare reference to a queue instance, for building the scheduler's temporary candidate lists."
    ],
    "cullPrefix": "QRL",
    "attributes": [
@@ -12,9 +10,7 @@
          "name": "queue",
          "summary": "Queue Instance",
          "description": [
-            {
-               "line": "Reference to the queue instance (`QU_Type`). Not owned by this element."
-            }
+            "Reference to the queue instance (`QU_Type`). Not owned by this element."
          ],
          "type": "lRefT",
          "subClassName": "ANY",

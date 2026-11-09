@@ -2,12 +2,8 @@
    "className": "TimeEvent",
    "summary": "Time Event",
    "description": [
-      {
-         "line": "Time Event objects are used by the timed event thread in sge_qmaster."
-      },
-      {
-         "line": "Time Event Objects store one time or recurring events which trigger predefined actions."
-      }
+      "Time Event objects are used by the timed event thread in sge_qmaster.",
+      "Time Event Objects store one time or recurring events which trigger predefined actions."
    ],
    "cullPrefix": "TE",
    "attributes": [
@@ -15,9 +11,7 @@
          "name": "when",
          "summary": "When",
          "description": [
-            {
-               "line": "Time in µs since epoch when this event must be delivered."
-            }
+            "Time in µs since epoch when this event must be delivered."
          ],
          "type": "lTimestampT",
          "flags": []
@@ -26,12 +20,8 @@
          "name": "type",
          "summary": "Type",
          "description": [
-            {
-               "line": "Used to differ between different event categories from enum te_type_t, e.g."
-            },
-            {
-               "line": "TYPE_CALENDAR_EVENT, TYPE_SIGNAL_RESEND_EVENT, ..."
-            }
+            "Used to differ between different event categories from enum te_type_t, e.g.",
+            "TYPE_CALENDAR_EVENT, TYPE_SIGNAL_RESEND_EVENT, ..."
          ],
          "type": "lUlongT",
          "flags": []
@@ -40,9 +30,7 @@
          "name": "mode",
          "summary": "Mode",
          "description": [
-            {
-               "line": "one-time or recurring event (ONE_TIME_EVENT or RECURRING_EVENT)."
-            }
+            "one-time or recurring event (ONE_TIME_EVENT or RECURRING_EVENT)."
          ],
          "type": "lUlongT",
          "flags": []
@@ -51,9 +39,7 @@
          "name": "interval",
          "summary": "Interval",
          "description": [
-            {
-               "line": "The event interval in µs, in case of recurring events."
-            }
+            "The event interval in µs, in case of recurring events."
          ],
          "type": "lTimestampT",
          "flags": []
@@ -62,9 +48,7 @@
          "name": "uval0",
          "summary": "UVal0",
          "description": [
-            {
-               "line": "1st ulong key, e.g. the job number for a job specific event like a TYPE_JOB_RESEND_EVENT."
-            }
+            "1st ulong key, e.g. the job number for a job specific event like a TYPE_JOB_RESEND_EVENT."
          ],
          "type": "lUlongT",
          "flags": []
@@ -73,9 +57,7 @@
          "name": "uval1",
          "summary": "UVal1",
          "description": [
-            {
-               "line": "2nd ulong key, e.g. the array task number for a job/task specific event like a TYPE_JOB_RESEND_EVENT."
-            }
+            "2nd ulong key, e.g. the array task number for a job/task specific event like a TYPE_JOB_RESEND_EVENT."
          ],
          "type": "lUlongT",
          "flags": []
@@ -84,9 +66,7 @@
          "name": "sval",
          "summary": "String Key",
          "description": [
-            {
-               "line": "String key, e.g. for a queue instance specific event."
-            }
+            "String key, e.g. for a queue instance specific event."
          ],
          "type": "lStringT",
          "flags": []
@@ -95,9 +75,7 @@
          "name": "seqno",
          "summary": "Sequence Number",
          "description": [
-            {
-               "line": "Every event is assigned an unique sequence number."
-            }
+            "Every event is assigned an unique sequence number."
          ],
          "type": "lUlongT",
          "flags": []

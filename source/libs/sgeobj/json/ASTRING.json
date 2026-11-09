@@ -2,15 +2,9 @@
    "className": "AttributeString",
    "summary": "Attribute String",
    "description": [
-      {
-         "line": "Used for string attributes in the cluster queues."
-      },
-      {
-         "line": "@todo Why to we have an ASTR type and an ASTRING type? They have the same definition."
-      },
-      {
-         "line": "      Looks as if ASTRING is not used at all, delete it."
-      }
+      "Used for string attributes in the cluster queues.",
+      "@todo Why to we have an ASTR type and an ASTRING type? They have the same definition.",
+      "      Looks as if ASTRING is not used at all, delete it."
    ],
    "cullPrefix": "ASTRING",
    "attributes": [
@@ -18,9 +12,7 @@
          "name": "href",
          "summary": "Host Reference",
          "description": [
-            {
-               "line": "Name of a host or a host group."
-            }
+            "Name of a host or a host group."
          ],
          "type": "lHostT",
          "flags": [
@@ -42,9 +34,7 @@
          "name": "value",
          "summary": "Value",
          "description": [
-            {
-               "line": "The string value."
-            }
+            "The string value."
          ],
          "type": "lStringT",
          "flags": [

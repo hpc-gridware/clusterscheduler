@@ -2,12 +2,8 @@
    "className": "LicenseReport",
    "summary": "License Report",
    "description": [
-      {
-         "line": "Definition for a license report."
-      },
-      {
-         "line": "There is no license management or license enforcement in Cluster Scheduler."
-      }
+      "Definition for a license report.",
+      "There is no license management or license enforcement in Cluster Scheduler."
    ],
    "cullPrefix": "LIC",
    "attributes": [
@@ -15,9 +11,7 @@
          "name": "processors",
          "summary": "Processors",
          "description": [
-            {
-               "line": "Number of processors (nprocs = number of cores) on the execution host."
-            }
+            "Number of processors (nprocs = number of cores) on the execution host."
          ],
          "type": "lUlongT",
          "flags": []
@@ -26,9 +20,7 @@
          "name": "arch",
          "summary": "Architecture",
          "description": [
-            {
-               "line": "The execution host's architecture, e.g. lx-amd64."
-            }
+            "The execution host's architecture, e.g. lx-amd64."
          ],
          "type": "lStringT",
          "flags": []

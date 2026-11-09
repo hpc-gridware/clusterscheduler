@@ -2,9 +2,7 @@
    "className": "Group",
    "summary": "Group Id",
    "description": [
-      {
-         "line": "A single UNIX group id, used where a list of supplementary groups is needed."
-      }
+      "A single UNIX group id, used where a list of supplementary groups is needed."
    ],
    "cullPrefix": "GR",
    "attributes": [
@@ -12,9 +10,7 @@
          "name": "group",
          "summary": "Group Id",
          "description": [
-            {
-               "line": "The numeric group id. Read positionally by the process data collector."
-            }
+            "The numeric group id. Read positionally by the process data collector."
          ],
          "type": "lUlongT",
          "flags": [

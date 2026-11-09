@@ -2,12 +2,8 @@
    "className": "ResourceQuotaSet",
    "summary": "Resource Quota Set",
    "description": [
-      {
-         "line": "A named, enableable set of rules that limit resource use across the object model."
-      },
-      {
-         "line": "Where a queue or host limits what it can give, a resource quota set limits what a *combination* may take - \"this project may use 100 slots in total, wherever they are\". The rules are tried in order and the first that matches decides."
-      }
+      "A named, enableable set of rules that limit resource use across the object model.",
+      "Where a queue or host limits what it can give, a resource quota set limits what a *combination* may take - \"this project may use 100 slots in total, wherever they are\". The rules are tried in order and the first that matches decides."
    ],
    "cullPrefix": "RQS",
    "attributes": [
@@ -15,9 +11,7 @@
          "name": "name",
          "summary": "Name",
          "description": [
-            {
-               "line": "The set's name, as used by `qconf -mrqs`."
-            }
+            "The set's name, as used by `qconf -mrqs`."
          ],
          "type": "lStringT",
          "flags": [
@@ -42,9 +36,7 @@
          "name": "description",
          "summary": "Description",
          "description": [
-            {
-               "line": "Free text describing what the set is for."
-            }
+            "Free text describing what the set is for."
          ],
          "type": "lStringT",
          "flags": [
@@ -60,9 +52,7 @@
          "name": "enabled",
          "summary": "Enabled",
          "description": [
-            {
-               "line": "Whether the set is applied. A disabled set stays configured but limits nothing."
-            }
+            "Whether the set is applied. A disabled set stays configured but limits nothing."
          ],
          "type": "lBoolT",
          "flags": [
@@ -78,9 +68,7 @@
          "name": "rule",
          "summary": "Rules",
          "description": [
-            {
-               "line": "The rules (`RQR_Type`), in the order they are tried."
-            }
+            "The rules (`RQR_Type`), in the order they are tried."
          ],
          "type": "lListT",
          "subClassName": "RQR",
@@ -98,15 +86,9 @@
          "name": "joker",
          "summary": "Joker",
          "description": [
-            {
-               "line": "Placeholder which can be used for arbitrary data."
-            },
-            {
-               "line": "Its purpose is to be able to add new attributes without changing the spooling format."
-            },
-            {
-               "line": "It is a list of arbitrary type and it is spooled."
-            }
+            "Placeholder which can be used for arbitrary data.",
+            "Its purpose is to be able to add new attributes without changing the spooling format.",
+            "It is a list of arbitrary type and it is spooled."
          ],
          "type": "lListT",
          "subClassName": "Variable",

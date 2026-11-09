@@ -2,9 +2,7 @@
    "className": "HostLoad",
    "summary": "host load value",
    "description": [
-      {
-         "line": "an object of this type represents a single load value"
-      }
+      "an object of this type represents a single load value"
    ],
    "cullPrefix": "HL",
    "attributes": [
@@ -12,9 +10,7 @@
          "name": "name",
          "summary": "name of the load variable",
          "description": [
-            {
-               "line": "this is the name of the complex variable representing the load value"
-            }
+            "this is the name of the complex variable representing the load value"
          ],
          "type": "lStringT",
          "flags": [
@@ -36,9 +32,7 @@
          "name": "value",
          "summary": "value of the load variable",
          "description": [
-            {
-               "line": "value of the load variable as string"
-            }
+            "value of the load variable as string"
          ],
          "type": "lStringT",
          "flags": [
@@ -51,9 +45,7 @@
          "name": "last_update",
          "summary": "date/time of last update",
          "description": [
-            {
-               "line": "timestamp (seconds since epoch) when the load value was last updated"
-            }
+            "timestamp (seconds since epoch) when the load value was last updated"
          ],
          "type": "lTimestampT",
          "flags": []
@@ -62,24 +54,12 @@
          "name": "is_static",
          "summary": "is it a static load value?",
          "description": [
-            {
-               "line": "true if it is a static load value, else false"
-            },
-            {
-               "line": "a static load value is a value which is unlikely to change, e.g."
-            },
-            {
-               "line": " - arch"
-            },
-            {
-               "line": " - num_proc"
-            },
-            {
-               "line": " - mem_total"
-            },
-            {
-               "line": "static load values are spooled and therefore are available even if an execution host is down"
-            }
+            "true if it is a static load value, else false",
+            "a static load value is a value which is unlikely to change, e.g.",
+            " - arch",
+            " - num_proc",
+            " - mem_total",
+            "static load values are spooled and therefore are available even if an execution host is down"
          ],
          "type": "lBoolT",
          "flags": []

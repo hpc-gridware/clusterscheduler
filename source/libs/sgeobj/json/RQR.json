@@ -2,12 +2,8 @@
    "className": "ResourceQuotaRule",
    "summary": "Resource Quota Rule",
    "description": [
-      {
-         "line": "One rule of a resource quota set: what it matches, and what it then limits."
-      },
-      {
-         "line": "The five filters are ANDed. An empty filter matches everything, so a rule with no filters is the catch-all."
-      }
+      "One rule of a resource quota set: what it matches, and what it then limits.",
+      "The five filters are ANDed. An empty filter matches everything, so a rule with no filters is the catch-all."
    ],
    "cullPrefix": "RQR",
    "attributes": [
@@ -15,9 +11,7 @@
          "name": "name",
          "summary": "Name",
          "description": [
-            {
-               "line": "Optional rule name, so `qquota` and the error messages can say which rule bit."
-            }
+            "Optional rule name, so `qquota` and the error messages can say which rule bit."
          ],
          "type": "lStringT",
          "flags": [
@@ -42,9 +36,7 @@
          "name": "filter_users",
          "summary": "User Filter",
          "description": [
-            {
-               "line": "Which submitting users the rule applies to (`RQRF_Type`)."
-            }
+            "Which submitting users the rule applies to (`RQRF_Type`)."
          ],
          "type": "lObjectT",
          "subClassName": "ANY",
@@ -62,9 +54,7 @@
          "name": "filter_projects",
          "summary": "Project Filter",
          "description": [
-            {
-               "line": "Which projects the rule applies to."
-            }
+            "Which projects the rule applies to."
          ],
          "type": "lObjectT",
          "subClassName": "ANY",
@@ -82,9 +72,7 @@
          "name": "filter_pes",
          "summary": "Parallel Environment Filter",
          "description": [
-            {
-               "line": "Which parallel environments the rule applies to."
-            }
+            "Which parallel environments the rule applies to."
          ],
          "type": "lObjectT",
          "subClassName": "ANY",
@@ -102,9 +90,7 @@
          "name": "filter_queues",
          "summary": "Queue Filter",
          "description": [
-            {
-               "line": "Which cluster queues the rule applies to."
-            }
+            "Which cluster queues the rule applies to."
          ],
          "type": "lObjectT",
          "subClassName": "ANY",
@@ -122,9 +108,7 @@
          "name": "filter_hosts",
          "summary": "Host Filter",
          "description": [
-            {
-               "line": "Which execution hosts the rule applies to."
-            }
+            "Which execution hosts the rule applies to."
          ],
          "type": "lObjectT",
          "subClassName": "ANY",
@@ -142,9 +126,7 @@
          "name": "limit",
          "summary": "Limits",
          "description": [
-            {
-               "line": "What the rule limits and by how much (`RQRL_Type`), one entry per resource."
-            }
+            "What the rule limits and by how much (`RQRL_Type`), one entry per resource."
          ],
          "type": "lListT",
          "subClassName": "RQRL",
@@ -162,9 +144,7 @@
          "name": "level",
          "summary": "Limit Level",
          "description": [
-            {
-               "line": "How far the limit is spread: shared by everything matched, or one limit each per host, cluster queue or queue instance. See the `RQR_*` values in `sge_resource_quota.h`."
-            }
+            "How far the limit is spread: shared by everything matched, or one limit each per host, cluster queue or queue instance. See the `RQR_*` values in `sge_resource_quota.h`."
          ],
          "type": "lUlongT",
          "flags": [

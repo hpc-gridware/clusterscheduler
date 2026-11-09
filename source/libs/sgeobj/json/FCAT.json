@@ -2,12 +2,8 @@
    "className": "FunctionalCategory",
    "summary": "Functional Category",
    "description": [
-      {
-         "line": "Objects of this type are used to sort the job list in the scheduler."
-      },
-      {
-         "line": "All attributes are references to objects in other lists."
-      }
+      "Objects of this type are used to sort the job list in the scheduler.",
+      "All attributes are references to objects in other lists."
    ],
    "cullPrefix": "FCAT",
    "attributes": [
@@ -15,9 +11,7 @@
          "name": "job_share",
          "summary": "Job Share",
          "description": [
-            {
-               "line": "All jobs in this functional category have this amount of jobs shares."
-            }
+            "All jobs in this functional category have this amount of jobs shares."
          ],
          "type": "lUlongT",
          "flags": []
@@ -26,9 +20,7 @@
          "name": "user_share",
          "summary": "User Share",
          "description": [
-            {
-               "line": "All jobs in this functional category have this amount of user shares."
-            }
+            "All jobs in this functional category have this amount of user shares."
          ],
          "type": "lUlongT",
          "flags": []
@@ -37,9 +29,7 @@
          "name": "user",
          "summary": "User",
          "description": [
-            {
-               "line": "Pointer to the user structure."
-            }
+            "Pointer to the user structure."
          ],
          "type": "lRefT",
          "subClassName": "ANY",
@@ -54,9 +44,7 @@
          "name": "project_share",
          "summary": "Project Share",
          "description": [
-            {
-               "line": "All jobs in this functional category have this amount of project shares."
-            }
+            "All jobs in this functional category have this amount of project shares."
          ],
          "type": "lUlongT",
          "flags": []
@@ -65,9 +53,7 @@
          "name": "project",
          "summary": "Project",
          "description": [
-            {
-               "line": "Pointer to the project structure."
-            }
+            "Pointer to the project structure."
          ],
          "type": "lRefT",
          "subClassName": "ANY",
@@ -82,9 +68,7 @@
          "name": "dept_share",
          "summary": "Department Share",
          "description": [
-            {
-               "line": "All jobs in this functional category have this amount of department shares."
-            }
+            "All jobs in this functional category have this amount of department shares."
          ],
          "type": "lUlongT",
          "flags": []
@@ -93,9 +77,7 @@
          "name": "dept",
          "summary": "Department",
          "description": [
-            {
-               "line": "Pointer to the department structure."
-            }
+            "Pointer to the department structure."
          ],
          "type": "lRefT",
          "subClassName": "ANY",
@@ -110,9 +92,7 @@
          "name": "jobrelated_ticket_first",
          "summary": "First Job Related Ticket",
          "description": [
-            {
-               "line": "Pointer to the first element of job ticket list."
-            }
+            "Pointer to the first element of job ticket list."
          ],
          "type": "lRefT",
          "subClassName": "ANY",
@@ -127,9 +107,7 @@
          "name": "jobrelated_ticket_last",
          "summary": "Last Job Related Ticket",
          "description": [
-            {
-               "line": "Pointer to the last element in the job ticket list."
-            }
+            "Pointer to the last element in the job ticket list."
          ],
          "type": "lRefT",
          "subClassName": "ANY",

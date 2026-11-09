@@ -2,9 +2,7 @@
    "className": "LoadReport",
    "summary": "Load Report",
    "description": [
-      {
-         "line": "A LoadReport object represents the value for a single load variable on a specific host."
-      }
+      "A LoadReport object represents the value for a single load variable on a specific host."
    ],
    "cullPrefix": "LR",
    "attributes": [
@@ -12,12 +10,8 @@
          "name": "name",
          "summary": "Load Variable Name",
          "description": [
-            {
-               "line": "Name of the load variable. In order for the load value to be processed in sge_qmaster"
-            },
-            {
-               "line": "a complex variable with this name must have been configured."
-            }
+            "Name of the load variable. In order for the load value to be processed in sge_qmaster",
+            "a complex variable with this name must have been configured."
          ],
          "type": "lStringT",
          "flags": [
@@ -30,9 +24,7 @@
          "name": "value",
          "summary": "Load Variable Value",
          "description": [
-            {
-               "line": "Value of the variable on a specific host."
-            }
+            "Value of the variable on a specific host."
          ],
          "type": "lStringT",
          "flags": []
@@ -41,18 +33,10 @@
          "name": "global",
          "summary": "Is Global",
          "description": [
-            {
-               "line": "Specifies if it is a global load variable."
-            },
-            {
-               "line": "1 means that it is a global load value (host is global in this case),"
-            },
-            {
-               "line": "0 means that it is a host specific load value."
-            },
-            {
-               "line": "@todo: make it a boolean"
-            }
+            "Specifies if it is a global load variable.",
+            "1 means that it is a global load value (host is global in this case),",
+            "0 means that it is a host specific load value.",
+            "@todo: make it a boolean"
          ],
          "type": "lUlongT",
          "flags": []
@@ -61,21 +45,11 @@
          "name": "is_static",
          "summary": "Is Static",
          "description": [
-            {
-               "line": "Specifies if it is a static load variable."
-            },
-            {
-               "line": "Static load variables represent seldomly changing variables, e.g. arch, n_proc, mem_total."
-            },
-            {
-               "line": "0 means a non static load value"
-            },
-            {
-               "line": "1 means a static load value"
-            },
-            {
-               "line": "2 is a special internal value: remove the load value"
-            }
+            "Specifies if it is a static load variable.",
+            "Static load variables represent seldomly changing variables, e.g. arch, n_proc, mem_total.",
+            "0 means a non static load value",
+            "1 means a static load value",
+            "2 is a special internal value: remove the load value"
          ],
          "type": "lUlongT",
          "flags": []
@@ -84,9 +58,7 @@
          "name": "host",
          "summary": "Host Name",
          "description": [
-            {
-               "line": "Name of the host on which the load value is valid. Specific host name or keyword global for global load values."
-            }
+            "Name of the host on which the load value is valid. Specific host name or keyword global for global load values."
          ],
          "type": "lHostT",
          "flags": [

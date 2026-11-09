@@ -2,12 +2,8 @@
    "className": "AttributeSubordinateList",
    "summary": "Attribute Subordinate List",
    "description": [
-      {
-         "line": "Used for subordinate list attributes in the cluster queues."
-      },
-      {
-         "line": "Used for the queue subordinate_list."
-      }
+      "Used for subordinate list attributes in the cluster queues.",
+      "Used for the queue subordinate_list."
    ],
    "cullPrefix": "ASOLIST",
    "attributes": [
@@ -15,9 +11,7 @@
          "name": "href",
          "summary": "Host Reference",
          "description": [
-            {
-               "line": "Name of a host or a host group."
-            }
+            "Name of a host or a host group."
          ],
          "type": "lHostT",
          "flags": [
@@ -39,9 +33,7 @@
          "name": "value",
          "summary": "Value",
          "description": [
-            {
-               "line": "The subordinate list (list of SO_Type)."
-            }
+            "The subordinate list (list of SO_Type)."
          ],
          "type": "lListT",
          "subClassName": "SO",

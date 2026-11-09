@@ -2,12 +2,8 @@
    "className": "SchedulerConfiguration",
    "summary": "Object containing scheduler configuration attributes",
    "description": [
-      {
-         "line": "In the corresponding master list there is exactly one element holding the scheduler configuration."
-      },
-      {
-         "line": "See also man page sge_sched_conf(5)."
-      }
+      "In the corresponding master list there is exactly one element holding the scheduler configuration.",
+      "See also man page sge_sched_conf(5)."
    ],
    "cullPrefix": "SC",
    "attributes": [
@@ -15,15 +11,9 @@
          "name": "algorithm",
          "summary": "Scheduler Algorithm",
          "description": [
-            {
-               "line": "Deprecated and may be removed in the future."
-            },
-            {
-               "line": "Was intended to differentiate settings for different scheduling algorithms."
-            },
-            {
-               "line": "There is exactly one algorithm called default."
-            }
+            "Deprecated and may be removed in the future.",
+            "Was intended to differentiate settings for different scheduling algorithms.",
+            "There is exactly one algorithm called default."
          ],
          "type": "lStringT",
          "flags": [
@@ -39,9 +29,7 @@
          "name": "schedule_interval",
          "summary": "Scheduling Interval",
          "description": [
-            {
-               "line": "Fixed interval (time value) defining how often scheduling runs are done."
-            }
+            "Fixed interval (time value) defining how often scheduling runs are done."
          ],
          "type": "lStringT",
          "flags": [
@@ -57,9 +45,7 @@
          "name": "maxujobs",
          "summary": "Maximum User Jobs",
          "description": [
-            {
-               "line": "The maximum number of *running* jobs per user."
-            }
+            "The maximum number of *running* jobs per user."
          ],
          "type": "lUlongT",
          "flags": [
@@ -75,15 +61,9 @@
          "name": "queue_sort_method",
          "summary": "Queue Sort Method",
          "description": [
-            {
-               "line": "For scheduling jobs the queue instances the sort order can be specified as"
-            },
-            {
-               "line": "  - seqno: requires that sequence numbers are defined in the queue definitions"
-            },
-            {
-               "line": "  - load: sorting is done by load, @see also load_formula"
-            }
+            "For scheduling jobs the queue instances the sort order can be specified as",
+            "  - seqno: requires that sequence numbers are defined in the queue definitions",
+            "  - load: sorting is done by load, @see also load_formula"
          ],
          "type": "lUlongT",
          "flags": [
@@ -99,9 +79,7 @@
          "name": "job_load_adjustments",
          "summary": "Job Load Adjustments",
          "description": [
-            {
-               "line": "Adds virtual load to just started jobs."
-            }
+            "Adds virtual load to just started jobs."
          ],
          "type": "lListT",
          "subClassName": "CE",
@@ -119,9 +97,7 @@
          "name": "load_adjustment_decay_time",
          "summary": "Load Adjustment Decay Time",
          "description": [
-            {
-               "line": "How fast to decay virtual load added via @see job_load_adjustments."
-            }
+            "How fast to decay virtual load added via @see job_load_adjustments."
          ],
          "type": "lStringT",
          "flags": [
@@ -137,9 +113,7 @@
          "name": "load_formula",
          "summary": "Load Formula",
          "description": [
-            {
-               "line": "Algebraic expression based on load values and weighting factors."
-            }
+            "Algebraic expression based on load values and weighting factors."
          ],
          "type": "lStringT",
          "flags": [
@@ -155,9 +129,7 @@
          "name": "schedd_job_info",
          "summary": "Schedd Job Info",
          "description": [
-            {
-               "line": "Boolean which defines if information why jobs cannot be schedules shall be made available."
-            }
+            "Boolean which defines if information why jobs cannot be schedules shall be made available."
          ],
          "type": "lStringT",
          "flags": [
@@ -173,9 +145,7 @@
          "name": "flush_submit_sec",
          "summary": "Flush Submit Sec",
          "description": [
-            {
-               "line": "Forces scheduling run n seconds after job submission."
-            }
+            "Forces scheduling run n seconds after job submission."
          ],
          "type": "lUlongT",
          "flags": [
@@ -191,9 +161,7 @@
          "name": "flush_finish_sec",
          "summary": "Flush Finish Sec",
          "description": [
-            {
-               "line": "Forces a scheduling run n seconds after a job finished."
-            }
+            "Forces a scheduling run n seconds after a job finished."
          ],
          "type": "lUlongT",
          "flags": [
@@ -209,9 +177,7 @@
          "name": "params",
          "summary": "Params",
          "description": [
-            {
-               "line": "Arbitrary list of scheduler parameters, usually name-value pairs."
-            }
+            "Arbitrary list of scheduler parameters, usually name-value pairs."
          ],
          "type": "lStringT",
          "flags": [
@@ -227,9 +193,7 @@
          "name": "reprioritize_interval",
          "summary": "Reprioritize Interval",
          "description": [
-            {
-               "line": "Time value defining how often running jobs will be reprioritized (based on policies)."
-            }
+            "Time value defining how often running jobs will be reprioritized (based on policies)."
          ],
          "type": "lStringT",
          "flags": [
@@ -245,9 +209,7 @@
          "name": "halftime",
          "summary": "Halftime",
          "description": [
-            {
-               "line": "Halftime for decaying sharetree usage."
-            }
+            "Halftime for decaying sharetree usage."
          ],
          "type": "lUlongT",
          "flags": [
@@ -263,9 +225,7 @@
          "name": "usage_weight_list",
          "summary": "Usage Weight List",
          "description": [
-            {
-               "line": "Defines how different usage values (e.g. cpu, mem, io) are weighted in sharetree calculations."
-            }
+            "Defines how different usage values (e.g. cpu, mem, io) are weighted in sharetree calculations."
          ],
          "type": "lListT",
          "subClassName": "UA",
@@ -283,9 +243,7 @@
          "name": "compensation_factor",
          "summary": "Compensation Factor",
          "description": [
-            {
-               "line": "Defines how fast too low or too high sharetree usage is compensated."
-            }
+            "Defines how fast too low or too high sharetree usage is compensated."
          ],
          "type": "lDoubleT",
          "flags": [
@@ -301,9 +259,7 @@
          "name": "weight_user",
          "summary": "Weight User",
          "description": [
-            {
-               "line": "Weighting factor for functional policy on user configuration."
-            }
+            "Weighting factor for functional policy on user configuration."
          ],
          "type": "lDoubleT",
          "flags": [
@@ -319,9 +275,7 @@
          "name": "weight_project",
          "summary": "Weight Project",
          "description": [
-            {
-               "line": "Weighting factor for functional policy on project configuration."
-            }
+            "Weighting factor for functional policy on project configuration."
          ],
          "type": "lDoubleT",
          "flags": [
@@ -337,9 +291,7 @@
          "name": "weight_department",
          "summary": "Weight Department",
          "description": [
-            {
-               "line": "Weighting factor for functional policy on department configuration."
-            }
+            "Weighting factor for functional policy on department configuration."
          ],
          "type": "lDoubleT",
          "flags": [
@@ -355,9 +307,7 @@
          "name": "weight_job",
          "summary": "Weight Job",
          "description": [
-            {
-               "line": "Weighting factor for functional policy on job shares (qsub -js)."
-            }
+            "Weighting factor for functional policy on job shares (qsub -js)."
          ],
          "type": "lDoubleT",
          "flags": [
@@ -373,9 +323,7 @@
          "name": "weight_tickets_functional",
          "summary": "Weight Tickets Functional",
          "description": [
-            {
-               "line": "Weight of functional policy as compared to other ticket policies."
-            }
+            "Weight of functional policy as compared to other ticket policies."
          ],
          "type": "lUlongT",
          "flags": [
@@ -391,9 +339,7 @@
          "name": "weight_tickets_share",
          "summary": "Weight Tickets Share",
          "description": [
-            {
-               "line": "Weight of sharetree policy as compared to other ticket policies."
-            }
+            "Weight of sharetree policy as compared to other ticket policies."
          ],
          "type": "lUlongT",
          "flags": [
@@ -409,9 +355,7 @@
          "name": "weight_tickets_override",
          "summary": "Weight Tickets Override",
          "description": [
-            {
-               "line": "Weight of override policy as compared to other ticket policies."
-            }
+            "Weight of override policy as compared to other ticket policies."
          ],
          "type": "lUlongT",
          "flags": [
@@ -427,12 +371,8 @@
          "name": "share_override_tickets",
          "summary": "Share Override Tickets",
          "description": [
-            {
-               "line": "Boolean defining if every job gets the same amount of tickets from a sharetree node"
-            },
-            {
-               "line": "or if tickets shall be distributed over the jobs belonging to a sharetree node."
-            }
+            "Boolean defining if every job gets the same amount of tickets from a sharetree node",
+            "or if tickets shall be distributed over the jobs belonging to a sharetree node."
          ],
          "type": "lBoolT",
          "flags": [
@@ -448,12 +388,8 @@
          "name": "share_functional_shares",
          "summary": "Share Functional Shares",
          "description": [
-            {
-               "line": "Boolean defining if functional shares of any object instance are shared among"
-            },
-            {
-               "line": "all the jobs associated with the object"
-            }
+            "Boolean defining if functional shares of any object instance are shared among",
+            "all the jobs associated with the object"
          ],
          "type": "lBoolT",
          "flags": [
@@ -469,9 +405,7 @@
          "name": "max_functional_jobs_to_schedule",
          "summary": "Max Functional Jobs to Schedule",
          "description": [
-            {
-               "line": "The maximum number of functional pending jobs to schedule using the brute-force method."
-            }
+            "The maximum number of functional pending jobs to schedule using the brute-force method."
          ],
          "type": "lUlongT",
          "flags": [
@@ -487,9 +421,7 @@
          "name": "report_pjob_tickets",
          "summary": "Report Pending Job Tickets",
          "description": [
-            {
-               "line": "Report pending job tickets to the qmaster via scheduler order or not."
-            }
+            "Report pending job tickets to the qmaster via scheduler order or not."
          ],
          "type": "lBoolT",
          "flags": [
@@ -505,9 +437,7 @@
          "name": "max_pending_tasks_per_job",
          "summary": "Maximum Pending Tasks Per Job",
          "description": [
-            {
-               "line": "The number of array tasks per pending job to schedule. Helps to reduce scheduling overhead."
-            }
+            "The number of array tasks per pending job to schedule. Helps to reduce scheduling overhead."
          ],
          "type": "lUlongT",
          "flags": [
@@ -523,9 +453,7 @@
          "name": "halflife_decay_list",
          "summary": "Halflife Decay List",
          "description": [
-            {
-               "line": "A list of halflife decay values (UA_Type)."
-            }
+            "A list of halflife decay values (UA_Type)."
          ],
          "type": "lStringT",
          "flags": [
@@ -541,9 +469,7 @@
          "name": "policy_hierarchy",
          "summary": "Policy Hierarchy",
          "description": [
-            {
-               "line": "Defines the Order of the ticket computation."
-            }
+            "Defines the Order of the ticket computation."
          ],
          "type": "lStringT",
          "flags": [
@@ -559,9 +485,7 @@
          "name": "weight_ticket",
          "summary": "Weight Ticket",
          "description": [
-            {
-               "line": "Weight of the ticket policies (functional, override, sharetree) as compared to other policies."
-            }
+            "Weight of the ticket policies (functional, override, sharetree) as compared to other policies."
          ],
          "type": "lDoubleT",
          "flags": [
@@ -577,9 +501,7 @@
          "name": "weight_waiting_time",
          "summary": "Weight Waiting Time",
          "description": [
-            {
-               "line": "Weight of the waiting time policy as compared to other policies."
-            }
+            "Weight of the waiting time policy as compared to other policies."
          ],
          "type": "lDoubleT",
          "flags": [
@@ -595,9 +517,7 @@
          "name": "weight_deadline",
          "summary": "Weight Deadline",
          "description": [
-            {
-               "line": "Weight of the deadline policy as compared to other policies."
-            }
+            "Weight of the deadline policy as compared to other policies."
          ],
          "type": "lDoubleT",
          "flags": [
@@ -613,9 +533,7 @@
          "name": "weight_urgency",
          "summary": "Weight Urgency",
          "description": [
-            {
-               "line": "Weight of the urgency policy as compared to other policies."
-            }
+            "Weight of the urgency policy as compared to other policies."
          ],
          "type": "lDoubleT",
          "flags": [
@@ -631,9 +549,7 @@
          "name": "weight_priority",
          "summary": "Weight Priority",
          "description": [
-            {
-               "line": "Weight of the posix priority as compared to other policies."
-            }
+            "Weight of the posix priority as compared to other policies."
          ],
          "type": "lDoubleT",
          "flags": [
@@ -649,9 +565,7 @@
          "name": "max_reservation",
          "summary": "Maximum Number of Reservations",
          "description": [
-            {
-               "line": "The maximum number of resource reservations. 0 disables resource reservation."
-            }
+            "The maximum number of resource reservations. 0 disables resource reservation."
          ],
          "type": "lUlongT",
          "flags": [
@@ -667,9 +581,7 @@
          "name": "default_duration",
          "summary": "Default Duration",
          "description": [
-            {
-               "line": "Default duration assumed for jobs that specify no h_rt/s_rt."
-            }
+            "Default duration assumed for jobs that specify no h_rt/s_rt."
          ],
          "type": "lStringT",
          "flags": [

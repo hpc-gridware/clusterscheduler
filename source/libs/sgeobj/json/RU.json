@@ -2,9 +2,7 @@
    "className": "RescheduleUnknown",
    "summary": "Reschedule Unknown",
    "description": [
-      {
-         "line": "Objects of this types are created for jobs which are rescheduled when a host goes into unknown state."
-      }
+      "Objects of this types are created for jobs which are rescheduled when a host goes into unknown state."
    ],
    "cullPrefix": "RU",
    "attributes": [
@@ -12,9 +10,7 @@
          "name": "job_number",
          "summary": "Job Number",
          "description": [
-            {
-               "line": "The job number (from JB_job_number)."
-            }
+            "The job number (from JB_job_number)."
          ],
          "type": "lUlongT",
          "flags": []
@@ -23,9 +19,7 @@
          "name": "task_number",
          "summary": "Task Number",
          "description": [
-            {
-               "line": "The array task number (from JAT_task_number)."
-            }
+            "The array task number (from JAT_task_number)."
          ],
          "type": "lUlongT",
          "flags": []
@@ -34,27 +28,13 @@
          "name": "state",
          "summary": "State",
          "description": [
-            {
-               "line": "The rescheduling state, one of"
-            },
-            {
-               "line": "RESCHEDULE_SKIP_JR_REMOVE"
-            },
-            {
-               "line": "RESCHEDULE_SKIP_JR_SEND_ACK"
-            },
-            {
-               "line": "RESCHEDULE_SKIP_JR"
-            },
-            {
-               "line": "RESCHEDULE_HANDLE_JR_REMOVE"
-            },
-            {
-               "line": "RESCHEDULE_HANDLE_JR_WAIT"
-            },
-            {
-               "line": "@todo add more information, esp. about the meaning of the states."
-            }
+            "The rescheduling state, one of",
+            "RESCHEDULE_SKIP_JR_REMOVE",
+            "RESCHEDULE_SKIP_JR_SEND_ACK",
+            "RESCHEDULE_SKIP_JR",
+            "RESCHEDULE_HANDLE_JR_REMOVE",
+            "RESCHEDULE_HANDLE_JR_WAIT",
+            "@todo add more information, esp. about the meaning of the states."
          ],
          "type": "lUlongT",
          "flags": []

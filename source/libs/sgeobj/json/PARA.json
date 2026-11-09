@@ -2,9 +2,7 @@
    "className": "SchedulerConfigParameter",
    "summary": "Parameter",
    "description": [
-      {
-         "line": "A name/value pair, used for the free-form `params` settings of the scheduler configuration."
-      }
+      "A name/value pair, used for the free-form `params` settings of the scheduler configuration."
    ],
    "cullPrefix": "PARA",
    "attributes": [
@@ -12,9 +10,7 @@
          "name": "name",
          "summary": "Name",
          "description": [
-            {
-               "line": "The parameter name, e.g. `profile`."
-            }
+            "The parameter name, e.g. `profile`."
          ],
          "type": "lStringT",
          "flags": [
@@ -27,9 +23,7 @@
          "name": "value",
          "summary": "Value",
          "description": [
-            {
-               "line": "Its value, always as text; the reader parses it."
-            }
+            "Its value, always as text; the reader parses it."
          ],
          "type": "lStringT",
          "flags": []

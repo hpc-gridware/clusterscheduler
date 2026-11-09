@@ -2,9 +2,7 @@
    "className": "XMLSchema",
    "summary": "XML Stylesheet",
    "description": [
-      {
-         "line": "One stylesheet processing instruction for the document header."
-      }
+      "One stylesheet processing instruction for the document header."
    ],
    "cullPrefix": "XMLS",
    "attributes": [
@@ -12,9 +10,7 @@
          "name": "Name",
          "summary": "Name",
          "description": [
-            {
-               "line": "The instruction's attribute name, e.g. `href`."
-            }
+            "The instruction's attribute name, e.g. `href`."
          ],
          "type": "lStringT",
          "flags": []
@@ -23,9 +19,7 @@
          "name": "Value",
          "summary": "Value",
          "description": [
-            {
-               "line": "Its value, e.g. the stylesheet URL."
-            }
+            "Its value, e.g. the stylesheet URL."
          ],
          "type": "lStringT",
          "flags": []
@@ -34,9 +28,7 @@
          "name": "Version",
          "summary": "Version",
          "description": [
-            {
-               "line": "The stylesheet version."
-            }
+            "The stylesheet version."
          ],
          "type": "lStringT",
          "flags": []
