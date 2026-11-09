@@ -957,7 +957,11 @@ void sge_usage(u_long32 prog_number, FILE *fp) {
    }
 
    if (VALID_OPT(N_OPT, prog_number)) {
-      PRINTITD(MSG_GDI_USAGE_N_OPT_NAME, MSG_GDI_UTEXT_N_OPT_NAME);
+      if (prog_number == QRSUB) {
+         PRINTITD(MSG_GDI_USAGE_N_OPT_NAME, MSG_GDI_UTEXT_N_qrsub_OPT);
+      } else {
+         PRINTITD(MSG_GDI_USAGE_N_OPT_NAME, MSG_GDI_UTEXT_N_OPT_NAME);
+      }
    }
 
    if (VALID_OPT(nostdin_OPT, prog_number)) {
@@ -978,8 +982,11 @@ void sge_usage(u_long32 prog_number, FILE *fp) {
    }
 
    if (VALID_OPT(P_OPT, prog_number)) {
-      PRINTITD(MSG_GDI_USAGE_P_OPT_PROJECT_NAME, 
-         MSG_GDI_UTEXT_P_OPT_PROJECT_NAME);
+      if (prog_number == QRSUB) {
+         PRINTITD(MSG_GDI_USAGE_P_OPT_PROJECT_NAME, MSG_GDI_UTEXT_P_qrsub_OPT);
+      } else {
+         PRINTITD(MSG_GDI_USAGE_P_OPT_PROJECT_NAME, MSG_GDI_UTEXT_P_OPT_PROJECT_NAME);
+      }
    }
    if (VALID_OPT(p_OPT, prog_number)) {
       if (prog_number == QSELECT || prog_number == QSH || prog_number == QLOGIN 
@@ -1001,8 +1008,11 @@ void sge_usage(u_long32 prog_number, FILE *fp) {
    }
 
    if (VALID_OPT(pe_OPT, prog_number)) {
-      PRINTITD(MSG_GDI_USAGE_pe_OPT_PE_NAME_SLOT_RANGE,
-         MSG_GDI_UTEXT_pe_OPT_PE_NAME_SLOT_RANGE );
+      if (prog_number == QRSUB) {
+         PRINTITD(MSG_GDI_USAGE_pe_OPT_PE_NAME_SLOT_RANGE, MSG_GDI_UTEXT_pe_qrsub_OPT);
+      } else {
+         PRINTITD(MSG_GDI_USAGE_pe_OPT_PE_NAME_SLOT_RANGE, MSG_GDI_UTEXT_pe_OPT_PE_NAME_SLOT_RANGE);
+      }
       MARK(OA_SLOT_RANGE);
    }
 
@@ -1017,6 +1027,8 @@ void sge_usage(u_long32 prog_number, FILE *fp) {
           || prog_number == QLOGIN || prog_number == QRSH ) {
          PRINTITD(MSG_GDI_USAGE_q_OPT_DESTIN_ID_LIST, 
             MSG_GDI_UTEXT_q_OPT_DESTIN_ID_LIST_BIND);
+      } else if (prog_number == QRSUB) {
+         PRINTITD(MSG_GDI_USAGE_q_OPT_DESTIN_ID_LIST, MSG_GDI_UTEXT_q_qrsub_OPT);
       } else {
          PRINTITD(MSG_GDI_USAGE_q_OPT_DESTIN_ID_LIST, 
             MSG_GDI_UTEXT_q_OPT_DESTIN_ID_LIST_INFO);
@@ -1323,6 +1335,8 @@ void sge_usage(u_long32 prog_number, FILE *fp) {
       } else if  ((prog_number == QRSTAT) || (prog_number == QRDEL)) {
          PRINTITD(MSG_GDI_USAGE_u_OPT_USERLISTORUALL, 
          MSG_GDI_UTEXT_u_OPT_USERLISTORUALL_QRSTAT);
+      } else if (prog_number == QRSUB) {
+         PRINTITD(MSG_GDI_USAGE_u_OPT_USERLISTORUALL, MSG_GDI_UTEXT_u_qrsub_OPT);
       } else {
          PRINTITD(MSG_GDI_USAGE_u_OPT_USERLISTORUALL, 
          MSG_GDI_UTEXT_u_OPT_USERLISTORUALL);
