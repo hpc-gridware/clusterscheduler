@@ -85,6 +85,9 @@ static const char *Static_Conf_Entries[] = {"execd_spool_dir", nullptr};
 static int
 check_config(lList **alpp, lListElem *conf);
 
+static bool
+check_config_script_path(lList **alpp, const char *name, const char *path, const char **allowed);
+
 static int
 do_mod_config(char *aConfName, lListElem *anOldConf, lListElem *aNewConf, lList **anAnswer, u_long64 gdi_session);
 
@@ -416,6 +419,40 @@ sge_mod_configuration(lListElem *aConf, lList **anAnswer, const char *aUser, con
    DRETURN(STATUS_OK);
 }
 
+/*!
+ * @brief Verify the path of a script in the configuration, which may contain special variables.
+ *
+ * The path has to be absolute: it has to start with a "/" or with the variable $sge_root.
+ * It may contain only the variables listed in allowed, which are expanded when the script
+ * is started.
+ *
+ * @param alpp The answer list which receives the error message.
+ * @param name The name of the configuration parameter.
+ * @param path The path of the script, without a user@ prefix.
+ * @param allowed The nullptr terminated list of the variables which may be used in path.
+ * @return true if the path is valid, false otherwise.
+ */
+static bool
+check_config_script_path(lList **alpp, const char *name, const char *path, const char **allowed) {
+   DENTER(TOP_LAYER);
+
+   if (!config_is_absolute_script_path(path)) {
+      ERROR(MSG_CONF_PATHMUSTSTARTWITHSLASHORSGEROOT_S, name);
+      answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
+      DRETURN(false);
+   }
+
+   // ensure that the variables are valid
+   config_errfunc = set_error;
+   if (replace_params(path, nullptr, 0, allowed) != 0) {
+      ERROR(MSG_CONF_PARAMETERXINCONFIGURATION_SS, name, err_msg);
+      answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
+      DRETURN(false);
+   }
+
+   DRETURN(true);
+}
+
 static int
 check_config(lList **alpp, lListElem *conf) {
    const lListElem *ep;
@@ -614,17 +651,8 @@ check_config(lList **alpp, lListElem *conf) {
             if ((t = strpbrk(script, "@ ")) && *t == '@')
                script = &t[1];
 
-            /* force use of absolute paths if string <> none */
-            if (script[0] != '/') {
-               ERROR(MSG_CONF_THEPATHGIVENFORXMUSTSTARTWITHANY_S, name);
-               answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
-               DRETURN(STATUS_EEXIST);
-            }
-
-            /* ensure that variables are valid */
-            if (replace_params(script, nullptr, 0, prolog_epilog_variables)) {
-               ERROR(MSG_CONF_PARAMETERXINCONFIGURATION_SS, name, err_msg);
-               answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
+            // force use of absolute paths and ensure that the variables are valid
+            if (!check_config_script_path(alpp, name, script, prolog_epilog_variables)) {
                DRETURN(STATUS_EEXIST);
             }
          }
@@ -681,8 +709,13 @@ check_config(lList **alpp, lListElem *conf) {
          struct saved_vars_s *context = nullptr;
          const char *path = sge_strtok_r(value, ",", &context);
          do {
-            if (!path_verify(path, alpp, name, true)) {
+            if (!path_verify(path, alpp, name, false)) {
                answer_list_log(alpp, false, false);
+               sge_free_saved_vars(context);
+               DRETURN(STATUS_EEXIST);
+            }
+            // force use of absolute paths and ensure that the variables are valid
+            if (!check_config_script_path(alpp, name, path, load_sensor_variables)) {
                sge_free_saved_vars(context);
                DRETURN(STATUS_EEXIST);
             }

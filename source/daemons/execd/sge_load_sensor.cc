@@ -33,11 +33,14 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 #include <fcntl.h>
+#include <cctype>
 #include <cerrno>
 #include <cstring>
+#include <string>
 
 #include "uti/sge.h"
 #include "uti/sge_arch.h"
+#include "uti/sge_bootstrap_env.h"
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_stdio.h"
@@ -61,6 +64,8 @@ static lListElem *sge_ls_create_ls(const char* qualified_hostname, const char *n
 static int sge_ls_start_ls(const char *qualified_hostname, lListElem *this_ls);
 static void sge_ls_stop_ls(lListElem *this_ls, int send_no_quit_command);
 static int sge_ls_start(const char* qualified_hostname, const char *binary_path, char *scriptfile);
+static bool sge_ls_expand_variables(const char *qualified_hostname, const char *scriptfile,
+                                    std::string &expanded);
 
 static int read_ls();
 
@@ -625,6 +630,54 @@ void sge_ls_gnu_ls(int gnu_ls)
    has_to_use_gnu_load_sensor = gnu_ls;
 }
 
+/*!
+ * @brief Expand the special variables in the path of a load sensor.
+ *
+ * The path of a load sensor in the load_sensor parameter of the configuration may contain the
+ * special variables $sge_root, $sge_cell and $host. qmaster accepts no other variables.
+ *
+ * @param qualified_hostname The name of this host, the value of $host.
+ * @param scriptfile The path of the load sensor as configured.
+ * @param expanded Receives the path with the variables replaced by their values.
+ * @return true if the path was expanded, false if it contains an unknown variable.
+ */
+static bool
+sge_ls_expand_variables(const char *qualified_hostname, const char *scriptfile,
+                        std::string &expanded) {
+   DENTER(TOP_LAYER);
+
+   expanded.clear();
+   for (const char *sp = scriptfile; *sp != '\0';) {
+      if (*sp != '$') {
+         expanded += *sp++;
+         continue;
+      }
+
+      // the variable name consists of alphanumeric characters and '_', see replace_params()
+      const char *name_start = ++sp;
+      while (isalnum(static_cast<unsigned char>(*sp)) || *sp == '_') {
+         sp++;
+      }
+      std::string name(name_start, sp - name_start);
+
+      const char *value = nullptr;
+      if (name == "sge_root") {
+         value = bootstrap_get_sge_root();
+      } else if (name == "sge_cell") {
+         value = bootstrap_get_sge_cell();
+      } else if (name == "host") {
+         value = qualified_hostname;
+      }
+      if (value == nullptr) {
+         WARNING(MSG_LS_UNKNOWNVARIABLE_SS, scriptfile, name.c_str());
+         DRETURN(false);
+      }
+      expanded += value;
+   }
+
+   DRETURN(true);
+}
+
 /****** execd/loadsensor/sge_ls_start() ***************************************
 *  NAME
 *     sge_ls_start -- start/stop/restart loadsensors 
@@ -681,11 +734,17 @@ static int sge_ls_start(const char *qualified_hostname, const char *binary_path,
        * contained in 'scriptfiles' */
       scriptfile = strtok(scriptfiles_buffer, ",\n");
       while (scriptfile) {
-         ls_elem = lGetElemStrRW(ls_list, LS_command, scriptfile);
+         // the load sensor is known by its path with the special variables expanded
+         std::string expanded;
+         if (!sge_ls_expand_variables(qualified_hostname, scriptfile, expanded)) {
+            scriptfile = strtok(nullptr, ",\n");
+            continue;
+         }
+         ls_elem = lGetElemStrRW(ls_list, LS_command, expanded.c_str());
 
          if (ls_elem == nullptr) {
-            INFO(MSG_LS_STARTLS_S, scriptfile);
-            ls_elem = sge_ls_create_ls(qualified_hostname, "extern", scriptfile);
+            INFO(MSG_LS_STARTLS_S, expanded.c_str());
+            ls_elem = sge_ls_create_ls(qualified_hostname, "extern", expanded.c_str());
 
             if (ls_list == nullptr) {
                ls_list = lCreateList("", LS_Type);

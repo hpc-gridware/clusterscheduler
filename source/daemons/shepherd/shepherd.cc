@@ -1588,7 +1588,7 @@ static void verify_method(const char *method_name)
 
    if ((override_signal = search_nonone_conf_val(method_name))) {
 
-      if (override_signal[0] != '/' &&
+      if (!config_is_absolute_script_path(override_signal) &&
          shepherd_sys_str2signal(override_signal)<0) {
          shepherd_error(1, "cannot convert " SFN " " SFQ " into a "
                               "valid signal number at this machine",

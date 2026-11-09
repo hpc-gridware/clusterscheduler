@@ -88,6 +88,21 @@ Each xxqs_name_sxx_execd(8) may use a set of private *load_sensor* programs or s
 take effect after two load report intervals (see *load_report_time*). A load sensor will be restarted automatically 
 if the file modification time of the load sensor executable changes.
 
+Each path has to start with a "/" or with the special variable *\$sge_root*. The following special
+variables are expanded by xxqs_name_sxx_execd(8) before it starts the load sensor:
+
+* \$sge_root
+  The product root directory.
+
+* \$sge_cell
+  The name of the cell directory.
+
+* \$host
+  The name of the host on which the load sensor is started.
+
+For example, `$sge_root/util/resources/loadsensors/load.sh` starts the load sensor of the
+product root directory on every host.
+
 The global configuration entry for this value may be overwritten by the execution host local configuration.
 
 In addition to the load sensors configured via *load_sensor*, xxqs_name_sxx_exec(8) searches for an executable file 
@@ -112,6 +127,9 @@ library or the shell read code or data from a path the submitter chose - see
 *ENABLE_SUBMIT_LIB_PATH* under *qmaster_params* below.
 
 The default for *prolog* is the special value NONE, which prevents from execution of a prolog script.
+
+The path of the script has to start with a "/" or with the special variable *\$sge_root*, e.g.
+`root@$sge_root/util/prolog.sh`.
 
 The following special variables expanded at runtime can be used (besides any other strings which have to be 
 interpreted by the procedure) to constitute a command line:

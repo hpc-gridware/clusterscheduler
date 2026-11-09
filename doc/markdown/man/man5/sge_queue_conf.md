@@ -321,6 +321,9 @@ job starter concerning the shell environment which was configured or requested t
 
 The starter_method will not be invoked for qsh, qlogin or qrsh acting as rlogin.
 
+The special variables for constituting the path are the same as in *prolog* definitions of the
+cluster configuration (see xxqs_name_sxx_conf(5)), e.g. `$sge_root/util/starter.sh`.
+
 ## suspend_method
 
 ## resume_method
@@ -335,10 +338,11 @@ If no executable path is given, xxQS_NAMExx takes the specified parameter entrie
 instead of the default signal. A signal must be either a positive number or a signal name with "SIG" as prefix and 
 the signal name as printed by `kill -l` (e.g. *SIGTERM*).
 
-If an executable path is given (it must be an absolute path starting with a "/") then this command together 
-with its arguments is started by xxQS_NAMExx to perform the appropriate action. The following special variables 
-are expanded at runtime and can be used (besides any other strings which have to be interpreted by the procedures) 
-to constitute a command line:
+If an executable path is given (it has to start with a "/" or with the special variable
+*\$sge_root*), then this command together with its arguments is started by xxQS_NAMExx to perform
+the appropriate action. The following special variables are expanded at runtime and can be used
+(besides any other strings which have to be interpreted by the procedures) to constitute a command
+line:
 
 * $sge_root
   The product root directory.
