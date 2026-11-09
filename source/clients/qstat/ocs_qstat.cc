@@ -330,6 +330,13 @@ int main(int argc, char *argv[]) {
    if (qstat_env.job_info) {
       int ret = 0;
 
+      // -j shows the jobs of all users unless -u is given, then $user and * have to be resolved
+      if (qstat_env.user_list != nullptr) {
+         lList *user_alp = nullptr;
+         str_list_transform_user_list(&(qstat_env.user_list), &user_alp, username);
+         lFreeList(&user_alp);
+      }
+
       if (lGetNumberOfElem(jid_list) > 0) {
          /* RH TODO: implement the qstat_show_job_info with and handler */
          ret = qstat_show_job(jid_list, isXML, &qstat_env);
@@ -1990,6 +1997,33 @@ static int qselect_stdout_report_queue(qselect_handler_t* handler, const char* q
 
 
 
+/*!
+ * @brief Build the condition which selects the jobs of the users given with -u.
+ *
+ * @param user_list The users given with -u (ST_Type), with $user already replaced by the name
+ *                  of the current user. A user name may be a wildcard pattern.
+ * @return The condition, or nullptr if the owner of the jobs is not restricted.
+ */
+static lCondition *
+qstat_job_owner_where(const lList *user_list) {
+   DENTER(TOP_LAYER);
+
+   lCondition *where = nullptr;
+   const lListElem *ep;
+   for_each_ep(ep, user_list) {
+      const char *user = lGetString(ep, ST_name);
+      lCondition *nw;
+      if (ocs::is_pattern(user)) {
+         nw = lWhere("%T(%I p= %s)", JB_Type, JB_owner, user);
+      } else {
+         nw = lWhere("%T(%I == %s)", JB_Type, JB_owner, user);
+      }
+      where = where == nullptr ? nw : lOrWhere(where, nw);
+   }
+
+   DRETURN(where);
+}
+
 /*
 ** qstat_show_job
 ** displays information about a given job
@@ -2047,6 +2081,13 @@ qstat_show_job(lList *jid_list, u_long32 isXML, qstat_env_t *qstat_env) {
          }
       }
    }
+
+   // restrict the jobs to the users given with -u
+   lCondition *owner_where = qstat_job_owner_where(qstat_env->user_list);
+   if (owner_where != nullptr) {
+      where = where == nullptr ? owner_where : lAndWhere(where, owner_where);
+   }
+
    what = lWhat("%T(%I%I%I%I"
                     "%I%I%I%I%I"
                     "%I%I%I%I"

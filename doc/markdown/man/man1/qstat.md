@@ -75,6 +75,9 @@ Prints a listing of all options.
 Prints either for all pending jobs or the jobs contained in job_list various information. The job_list can contain 
 job_ids, job_names, or wildcard expression xxqs_name_sxx_types(1).
 
+If `-u` is specified as well, then only the jobs of the given users are shown, otherwise the jobs of all users,
+e.g. `qstat -u '$user' -j '*'` shows information about all jobs of the current user.
+
 For jobs in E(rror) state the error reason is displayed. For jobs that could not be dispatched during in the last 
 scheduling interval the obstacles are shown, if 'schedd_job_info' in xxqs_name_sxx_sched_conf(5) is configured 
 accordingly.
