@@ -888,7 +888,9 @@ cl_com_tcp_read(cl_com_connection_t *connection, cl_byte_t *message, ssize_t siz
    if (data_read != size) {
       struct timeval now;
       gettimeofday(&now, nullptr);
-      if (now.tv_sec >= connection->read_buffer_timeout_time) {
+      /* a read_buffer_timeout_time of 0 means no timeout, the connection is idle */
+      if (connection->read_buffer_timeout_time != 0 &&
+          now.tv_sec >= connection->read_buffer_timeout_time) {
          return CL_RETVAL_READ_TIMEOUT;
       }
       return CL_RETVAL_UNCOMPLETE_READ;

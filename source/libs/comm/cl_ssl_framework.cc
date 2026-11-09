@@ -4536,7 +4536,9 @@ int cl_com_ssl_read(cl_com_connection_t* connection, cl_byte_t* message, unsigne
    *only_one_read = data_read;
    if (data_read != (long)size) {
       gettimeofday(&now,nullptr);
-      if (now.tv_sec >= connection->read_buffer_timeout_time) {
+      /* a read_buffer_timeout_time of 0 means no timeout, the connection is idle */
+      if (connection->read_buffer_timeout_time != 0 &&
+          now.tv_sec >= connection->read_buffer_timeout_time) {
          return CL_RETVAL_READ_TIMEOUT;
       }
       return CL_RETVAL_UNCOMPLETE_READ;
