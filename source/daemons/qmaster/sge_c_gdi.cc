@@ -41,6 +41,7 @@
 #include <cerrno>
 #include <sstream>
 #include <memory>
+#include <string>
 
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
@@ -48,6 +49,7 @@
 #include "cull/cull.h"
 
 #include "sgeobj/ocs_AutoAddHosts.h"
+#include "sgeobj/sge_object.h"
 #include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/sge_resource_quota.h"
@@ -1684,6 +1686,16 @@ sge_gdi_add_mod_generic(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **
       DRETURN(STATUS_EUNKNOWN);
    }
 
+   /* no unique attribute of the resulting object may hold a key twice (CS-3053); checked after the
+      modifier, so that the merges which collapse a repeated key on purpose (host groups) keep working */
+   {
+      const std::string object_name = std::string(object->object_name) + " " + name;
+      if (!ocs_object_verify_unique_keys(new_obj, alpp, object_name.c_str())) {
+         lFreeElem(&new_obj);
+         lFreeList(&tmp_alp);
+         DRETURN(STATUS_ESYNTAX);
+      }
+   }
 
    /* write on file */
    if (object->writer(packet, task, alpp, new_obj, object)) {

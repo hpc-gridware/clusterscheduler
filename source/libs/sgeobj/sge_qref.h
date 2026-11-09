@@ -45,6 +45,9 @@ bool
 qref_list_add(lList **this_list, lList **answer_list, 
               const char *qref_string);
 
+void
+ocs_qref_list_remove_duplicates(lList *this_list);
+
 
 bool
 qref_list_resolve(const lList *src_qref_list, lList **answer_list, 

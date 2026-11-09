@@ -2743,18 +2743,21 @@ static int opt_list_append_opts_from_drmaa_attr(lList **args, const lList *attrs
          }
          sge_dstring_append(&env, str);
 
-         nep = lCreateElem(VA_Type);
-         lAppendElem(nlp, nep);
-
          variable = sge_strtok_r(str, "=", &context);
-         lSetString(nep, VA_variable, variable);
+         if (variable == nullptr) {
+            sge_free_saved_vars(context);
+            continue;
+         }
 
-         value = sge_strtok_r((char *)nullptr, "=", &context);
+         // a variable given twice keeps the last value (CS-3053)
+         nep = lGetElemStrRW(nlp, VA_variable, variable);
+         if (nep == nullptr) {
+            nep = lAddElemStr(&nlp, VA_variable, variable, VA_Type);
+         }
 
-         if (value)
-            lSetString(nep, VA_value, value);
-         else
-            lSetString(nep, VA_value, nullptr);
+         // the value is the rest of the entry, it may contain '=' itself
+         value = sge_strtok_r((char *)nullptr, "\0", &context);
+         lSetString(nep, VA_value, value);
 
          sge_free_saved_vars(context);
       }

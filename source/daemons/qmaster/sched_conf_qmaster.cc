@@ -105,7 +105,8 @@ sge_read_sched_configuration(const lListElem *aSpoolContext, lList **anAnswer, u
  * @param ruser the requesting user
  * @param rhost the requesting host
  * @return STATUS_OK on success, STATUS_ESYNTAX if the element is reduced or not of
- *         SC_Type, STATUS_EUNKNOWN or -1 on other errors
+ *         SC_Type or a unique attribute holds a key twice, STATUS_EUNKNOWN or -1
+ *         on other errors
  */
 int
 sge_mod_sched_configuration(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *confp, lList **alpp, char *ruser, char *rhost) {
@@ -120,6 +121,9 @@ sge_mod_sched_configuration(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lLis
    }
    if (!object_verify_cull(confp, SC_Type)) {
       answer_list_add(alpp, MSG_INCOMPLETE_SCHEDD_CONFIG, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
+      DRETURN(STATUS_ESYNTAX);
+   }
+   if (!ocs_object_verify_unique_keys(confp, alpp, "scheduler configuration")) {
       DRETURN(STATUS_ESYNTAX);
    }
    temp_conf_list = lCreateList("sched config", SC_Type);

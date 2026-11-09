@@ -60,6 +60,7 @@
 #include "uti/sge_stdlib.h"
 
 #include "sgeobj/cull_parse_util.h"
+#include "sgeobj/sge_qref.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_str.h"
@@ -1074,7 +1075,8 @@ FPRINTF_ERROR:
  *
  * `-l` and `-q` may be written before or after `-soft`, which decides whether
  * the request has to be satisfied or only should be. This sorts the parsed
- * entries into the two attributes accordingly.
+ * entries into the two attributes accordingly. A queue reference given in
+ * several switches is kept once.
  *
  * @param cmdline the parsed option list to consume from
  * @param option the switch to look for
@@ -1125,6 +1127,15 @@ void parse_list_hardsoft(lList *cmdline, const char *option, lListElem *job, uin
          lRemoveElem(cmdline, &ep);
          handled_option = true;
       }
+   }
+
+   // a queue reference given in several switches is kept once (CS-3053); resource requests keep
+   // their repeats here, job_request_set_remove_duplicates() lets the last value win later
+   if (hard_field == JRS_hard_queue_list) {
+      ocs_qref_list_remove_duplicates(hard_list);
+   }
+   if (soft_field == JRS_soft_queue_list) {
+      ocs_qref_list_remove_duplicates(soft_list);
    }
 
    // now store back the request lists to the job

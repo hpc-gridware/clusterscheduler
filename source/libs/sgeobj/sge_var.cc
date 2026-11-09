@@ -594,7 +594,9 @@ bool var_list_verify(const lList *lp, lList **answer_list) {
  * @brief Parse a comma-separated variable list into a VA_Type list.
  *
  * Splits @p variable_str on ',' into "name[=value]" tokens and appends a VA_Type
- * element per token to @p lpp (creating the list if *lpp is nullptr). The input
+ * element per token to @p lpp (creating the list if *lpp is nullptr). A name
+ * that is already in the list keeps its element and takes the new value, so a
+ * variable given twice holds the last value once (CS-3053). The input
  * is attacker-controlled (qsub/qalter -v/-V/-ac/-dc, JSV); a malformed token
  * that carries no name part (e.g. "==") is rejected with an error instead of
  * dereferencing NULL. MT-NOTE: this function is MT safe.
@@ -646,9 +648,6 @@ int var_list_parse_from_string(lList **lpp, const char *variable_str,
 
    for (pstr = str_str; *pstr; pstr++) {
       struct saved_vars_s *context;
-      ep = lCreateElem(VA_Type);
-      /* SGE_ASSERT(ep); */
-      lAppendElem(*lpp, ep);
 
       context = nullptr;
       variable = sge_strtok_r(*pstr, "=", &context);
@@ -659,13 +658,15 @@ int var_list_parse_from_string(lList **lpp, const char *variable_str,
       // allocated by the first sge_strtok_r() call and must be freed here.
       if (variable == nullptr) {
          sge_free_saved_vars(context);
-         lRemoveElem(*lpp, &ep);
          sge_free(&va_string);
          sge_free(&str_str);
          DRETURN(5);
       }
       var_len=strlen(variable);
-      lSetString(ep, VA_variable, variable);
+      ep = lGetElemStrRW(*lpp, VA_variable, variable);
+      if (ep == nullptr) {
+         ep = lAddElemStr(lpp, VA_variable, variable, VA_Type);
+      }
       val_str=*pstr;
 
       /* 

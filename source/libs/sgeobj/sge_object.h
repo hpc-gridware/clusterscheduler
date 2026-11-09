@@ -254,6 +254,15 @@ bool
 object_verify_cull(const lListElem *ep, const lDescr *descr);
 
 bool
+ocs_object_verify_unique_keys(const lListElem *ep, lList **answer_list, const char *object_name);
+
+bool
+ocs_object_list_verify_unique_keys(const lList *lp, lList **answer_list, const char *object_name);
+
+void
+ocs_object_list_remove_repeated_keys(lList *lp, int nm);
+
+bool
 object_verify_ulong_not_null(const lListElem *ep, lList **answer_list, int nm);
 bool
 object_verify_ulong64_not_null(const lListElem *ep, lList **answer_list, int nm);

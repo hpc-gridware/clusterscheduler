@@ -2450,7 +2450,8 @@ static int sge_parse_checkpoint_interval(
  * @brief Create a VA_Type variable list from an environment array.
  *
  * Appends one VA_Type element per "NAME=value" entry of @p envp to @p lpp
- * (creating the list if *lpp is nullptr). A degenerate entry that carries no
+ * (creating the list if *lpp is nullptr). A name given twice keeps one element
+ * with the last value (CS-3053). A degenerate entry that carries no
  * name (an all-'=' string such as "=") is skipped rather than asserted on, so a
  * crafted ambient environment cannot crash the parse. MT-NOTE: MT safe.
  *
@@ -2488,12 +2489,13 @@ static int var_list_parse_from_environment(lList **lpp, char **envp) {
          sge_free_saved_vars(context);
          continue;
       }
-      lListElem *ep = lAddElemStr(lpp, VA_variable, env_name, VA_Type);
+      lListElem *ep = lGetElemStrRW(*lpp, VA_variable, env_name);
+      if (ep == nullptr) {
+         ep = lAddElemStr(lpp, VA_variable, env_name, VA_Type);
+      }
 
       char *env_description = sge_strtok_r((char *) 0, "\0", &context);
-      if (env_description != nullptr) {
-         lSetString(ep, VA_value, env_description);
-      }
+      lSetString(ep, VA_value, env_description);
       sge_free(&env_entry);
       sge_free_saved_vars(context);
    }

@@ -407,6 +407,7 @@ attr_mod_time_str(lList **alpp, lListElem *qep, lListElem *new_ep, int nm, char 
  * Possible errors will be reported in answer_list "alpp". The reduced_elem
  * "delta_elem" will be used to identify the changes which have been made.
  * "sub_command" defines how these changes should be applied to "this_elem".
+ * A removal removes every element of the sublist that holds the key.
  *
  * @param alpp The AN_Type, answer_list
  * @param this_elem The target object element, CQ_Type
@@ -452,6 +453,7 @@ attr_mod_sub_list(lList **alpp, lListElem *this_elem, int this_elem_name, int th
          */
          while ((reduced_element = next_reduced_element)) {
             int restart_loop = 0;
+            bool remove_reduced = false;
 
             next_reduced_element = lNextRW(reduced_element);
             next_full_element = lFirstRW(full_sublist);
@@ -514,16 +516,20 @@ attr_mod_sub_list(lList **alpp, lListElem *this_elem, int this_elem_name, int th
                      restart_loop = 1;
                      break;
                   } else if ((sub_cmd & ocs::gdi::SubCommand::REMOVE) == ocs::gdi::SubCommand::REMOVE) {
+                     // remove every element with the key, so that a key held twice (e.g. in a spool
+                     // written before CS-3053) cannot survive its removal
                      did_changes = true;
-                     new_sub_elem = lDechainElem(reduced_sublist, reduced_element);
                      old_sub_elem = lDechainElem(full_sublist, full_element);
                      lFreeElem(&old_sub_elem);
-                     lFreeElem(&new_sub_elem);
-
-                     restart_loop = 1;
-                     break;
+                     remove_reduced = true;
+                     continue;
                   }
                }
+            }
+            if (remove_reduced) {
+               lListElem *new_sub_elem = lDechainElem(reduced_sublist, reduced_element);
+               lFreeElem(&new_sub_elem);
+               restart_loop = 1;
             }
             if (!ret) {
                break;

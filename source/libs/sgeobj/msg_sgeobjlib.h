@@ -434,4 +434,7 @@
 #define MSG_AUTOADDHOSTS_PREFIX_S              _MESSAGE(64592, _("AUTO_ADD_HOSTS: " SFQ " does not contain a prefix length between 0 and 32"))
 #define MSG_AUTOADDHOSTS_NETWORK_S             _MESSAGE(64593, _("AUTO_ADD_HOSTS: " SFQ " is not a valid IPv4 network in CIDR notation"))
 
+// CS-3053: a unique attribute holds the same key twice
+#define MSG_OBJ_DUPLICATEKEY_SSS               _MESSAGE(64597, _("duplicate key " SFQ " of attribute " SFQ " in " SFQ))
+
 // clang-format on

@@ -45,6 +45,8 @@
 #include <cstdlib>
 #include <cstdio>
 #include <cstring>
+#include <string>
+#include <unordered_set>
 
 #include "uti/sge_hostname.h"
 #include "uti/sge_log.h"
@@ -2101,6 +2103,153 @@ object_verify_cull(const lListElem *ep, const lDescr *descr) {
    }
 
    return ret;
+}
+
+/**
+ * @brief Check that no unique attribute of an object holds the same key twice
+ *
+ * Walks every sub-list and sub-object of the object. In each list, every
+ * attribute flagged #CULL_UNIQUE must hold a key at most once. String and host
+ * keys compare like the hash tables of the list do, by exact string; ulong keys
+ * by value. Elements without a key are skipped.
+ *
+ * Input from clients is checked with it after the normalisation that keeps the
+ * last value of a repeated variable or request, so it rejects only what has no
+ * defined meaning (CS-3053).
+ *
+ * @param ep the object to check, nullptr is accepted
+ * @param answer_list receives an error naming the key, the attribute and the
+ *        object on the first duplicate found
+ * @param object_name the object named in the error, e.g. its type and name
+ *
+ * @return true if no unique attribute holds a key twice, false otherwise
+ *
+ * @note MT-NOTE: ocs_object_verify_unique_keys() is MT safe
+ *
+ * @see #ocs_object_list_verify_unique_keys
+ */
+bool
+ocs_object_verify_unique_keys(const lListElem *ep, lList **answer_list, const char *object_name) {
+   if (ep == nullptr) {
+      return true;
+   }
+
+   for (const auto f : ocs_cull_present_fields(ep->descr)) {
+      const int nm = ep->descr[f.pos].nm;
+      const int type = mt_get_type(ep->descr[f.pos].mt);
+
+      if (type == lListT) {
+         if (!ocs_object_list_verify_unique_keys(lGetList(ep, nm), answer_list, object_name)) {
+            return false;
+         }
+      } else if (type == lObjectT) {
+         if (!ocs_object_verify_unique_keys(lGetObject(ep, nm), answer_list, object_name)) {
+            return false;
+         }
+      }
+   }
+   return true;
+}
+
+/**
+ * @brief Check that no unique attribute of a list holds the same key twice
+ *
+ * Checks the unique attributes of the list itself, then every element as
+ * #ocs_object_verify_unique_keys does.
+ *
+ * @param lp the list to check, nullptr is accepted
+ * @param answer_list receives an error naming the key, the attribute and the
+ *        object on the first duplicate found
+ * @param object_name the object named in the error
+ *
+ * @return true if no unique attribute holds a key twice, false otherwise
+ *
+ * @note MT-NOTE: ocs_object_list_verify_unique_keys() is MT safe
+ */
+bool
+ocs_object_list_verify_unique_keys(const lList *lp, lList **answer_list, const char *object_name) {
+   if (lp == nullptr || lGetNumberOfElem(lp) == 0) {
+      return true;
+   }
+
+   const lDescr *dp = lGetListDescr(lp);
+   for (const auto f : ocs_cull_present_fields(dp)) {
+      if (!mt_is_unique(dp[f.pos].mt)) {
+         continue;
+      }
+      const int nm = dp[f.pos].nm;
+      const int type = mt_get_type(dp[f.pos].mt);
+      std::string duplicate;
+
+      if (type == lStringT || type == lHostT) {
+         std::unordered_set<std::string> seen;
+         for_each_ep_lv(ep, lp) {
+            const char *key = type == lStringT ? lGetString(ep, nm) : lGetHost(ep, nm);
+            if (key != nullptr && !seen.insert(key).second) {
+               duplicate = key;
+               break;
+            }
+         }
+      } else if (type == lUlongT) {
+         std::unordered_set<uint32_t> seen;
+         for_each_ep_lv(ep, lp) {
+            if (const uint32_t key = lGetUlong(ep, nm); !seen.insert(key).second) {
+               duplicate = std::to_string(key);
+               break;
+            }
+         }
+      } else if (type == lUlong64T) {
+         std::unordered_set<uint64_t> seen;
+         for_each_ep_lv(ep, lp) {
+            if (const uint64_t key = lGetUlong64(ep, nm); !seen.insert(key).second) {
+               duplicate = std::to_string(key);
+               break;
+            }
+         }
+      }
+
+      if (!duplicate.empty()) {
+         answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_OBJ_DUPLICATEKEY_SSS,
+                                 duplicate.c_str(), lNm2Str(nm), object_name != nullptr ? object_name : "");
+         return false;
+      }
+   }
+
+   for_each_ep_lv(ep, lp) {
+      if (!ocs_object_verify_unique_keys(ep, answer_list, object_name)) {
+         return false;
+      }
+   }
+   return true;
+}
+
+/**
+ * @brief Remove the elements of a list that repeat an earlier string key
+ *
+ * For lists that are sets, such as queue references or access lists, where a
+ * name given twice adds nothing. The first element of each key stays, later
+ * ones are removed (CS-3053).
+ *
+ * @param lp the list, nullptr is accepted
+ * @param nm the string attribute holding the key
+ *
+ * @note MT-NOTE: ocs_object_list_remove_repeated_keys() is MT safe
+ */
+void
+ocs_object_list_remove_repeated_keys(lList *lp, const int nm) {
+   if (lp == nullptr) {
+      return;
+   }
+
+   std::unordered_set<std::string> seen;
+   lListElem *next = lFirstRW(lp);
+   while (lListElem *ep = next) {
+      next = lNextRW(ep);
+      const char *key = lGetString(ep, nm);
+      if (key != nullptr && !seen.insert(key).second) {
+         lRemoveElem(lp, &ep);
+      }
+   }
 }
 
 /**

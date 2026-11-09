@@ -63,16 +63,27 @@
 #include "msg_common.h"
 
 /*-------------------------------------------------------------------------*/
-/* use cstring_list_parse_from_string() if you need a parsing function */
-static void sge_parse_string_list(lList **lp, const char *str, int field, const lDescr *descr) {
+/**
+ * @brief Append the names of a comma separated string to a list
+ *
+ * Use cstring_list_parse_from_string() if you need a parsing function. If the
+ * attribute is unique, a name already in the list is not added again (CS-3053).
+ *
+ * @param[in,out] lp the list to append to, created if *lp is nullptr
+ * @param str the comma separated names
+ * @param field the string attribute that receives a name
+ * @param descr the type of the list
+ */
+static void sge_parse_string_list(lList **lp, const char *str, const int field, const lDescr *descr) {
    DENTER(TOP_LAYER);
 
-   const char *cp;
+   const int pos = lGetPosInDescr(descr, field);
+   const bool unique = pos >= 0 && mt_is_unique(descr[pos].mt);
 
-   cp = sge_strtok(str, ",");
-   lAddElemStr(lp, field, cp, descr);
-   while((cp = sge_strtok(nullptr, ","))) {
-      lAddElemStr(lp, field, cp, descr);
+   for (const char *cp = sge_strtok(str, ","); cp != nullptr; cp = sge_strtok(nullptr, ",")) {
+      if (!unique || lGetElemStr(*lp, field, cp) == nullptr) {
+         lAddElemStr(lp, field, cp, descr);
+      }
    }
 
    DRETURN_VOID;

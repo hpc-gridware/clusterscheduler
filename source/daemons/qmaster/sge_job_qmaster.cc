@@ -41,6 +41,7 @@
 #include <cstring>
 #include <cerrno>
 #include <cctype>
+#include <string>
 
 #include "uti/ocs_Pattern.h"
 #include "uti/sge_bitfield.h"
@@ -1949,6 +1950,19 @@ int deny_soft_consumables(lList **alpp, const lList *srl, const lList *master_ce
    DRETURN(0);
 }
 
+/**
+ * @brief Apply the attributes of a qalter request to a copy of the job
+ *
+ * @param packet the client request
+ * @param new_job the copy of the job that receives the changes
+ * @param jep the request, a reduced job holding the attributes to change
+ * @param alpp receives messages for the caller
+ * @param[out] trigger receives the events and actions the change calls for
+ *
+ * @return STATUS_OK if every change was applied, another status if one was
+ *         rejected, STATUS_ESYNTAX among others when a unique attribute of the
+ *         modified job holds a key twice
+ */
 static int
 mod_job_attributes(const ocs::gdi::Packet *packet, lListElem *new_job, lListElem *jep, lList **alpp, int *trigger) {
    DENTER(TOP_LAYER);
@@ -2901,13 +2915,19 @@ mod_job_attributes(const ocs::gdi::Packet *packet, lListElem *new_job, lListElem
          }
       }
 
-      /* save existing prefix env vars from being overwritten
-         TODO: can we rule out that after that step a prefix
-               env var appears two times in the env var list ? */
+      /* save existing prefix env vars from being overwritten; they replace
+         a variable of the same name in the request, so none appears twice (CS-3053) */
       tmp_var_list = lGetListRW(new_job, JB_env_list);
       var_list_split_prefix_vars(&tmp_var_list, &prefix_vars, VAR_PREFIX);
       lSetList(new_job, JB_env_list, lCopyList("", lGetList(jep, JB_env_list)));
-      lAddList(lGetListRW(new_job, JB_env_list), &prefix_vars);
+      if (prefix_vars != nullptr) {
+         if (lGetList(new_job, JB_env_list) == nullptr) {
+            lSetList(new_job, JB_env_list, lCreateList("", VA_Type));
+         }
+         // takes the elements of prefix_vars and frees the list itself
+         var_list_add_as_set(lGetListRW(new_job, JB_env_list), prefix_vars);
+         prefix_vars = nullptr;
+      }
       *trigger |= MOD_EVENT;
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_ENVLIST, jobid);
       answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
@@ -2972,6 +2992,12 @@ mod_job_attributes(const ocs::gdi::Packet *packet, lListElem *new_job, lListElem
       ERROR(MSG_SGETEXT_CANT_MOD_RUNNING_JOBS_U, jobid);
       answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EEXIST);
+   }
+
+   // no unique attribute of the modified job may hold a key twice (CS-3053)
+   const std::string job_name = std::string("job ") + std::to_string(jobid);
+   if (!ocs_object_verify_unique_keys(new_job, alpp, job_name.c_str())) {
+      DRETURN(STATUS_ESYNTAX);
    }
 
    DRETURN(STATUS_OK);

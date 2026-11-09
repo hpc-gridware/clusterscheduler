@@ -39,6 +39,7 @@
  */
 
 #include <cerrno>
+#include <string>
 
 #include "sge.h"
 
@@ -438,7 +439,8 @@ job_verify_adjust_request_set(lList **alpp, const lListElem *jep, const lList *m
  * @param packet the client request
  * @param task the GDI task being answered
  * @param monitor for monitoring qmaster threads
- * @return STATUS_OK when the job is acceptable
+ * @return STATUS_OK when the job is acceptable, STATUS_ESYNTAX among others
+ *         when a unique attribute holds a key twice
  */
 int
 sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp,
@@ -997,6 +999,14 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp,
                DRETURN(STATUS_DENIED);
             }
          }
+      }
+   }
+
+   // no unique attribute may hold a key twice; repeated variables and requests are merged above (CS-3053)
+   {
+      const std::string job_name = std::string("job ") + std::to_string(lGetUlong(jep, JB_job_number));
+      if (!ocs_object_verify_unique_keys(jep, alpp, job_name.c_str())) {
+         DRETURN(STATUS_ESYNTAX);
       }
    }
 

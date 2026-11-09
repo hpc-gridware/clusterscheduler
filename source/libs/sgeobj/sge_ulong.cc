@@ -615,6 +615,8 @@ bool ulong_parse_from_string(uint32_t *this_ulong,
 /**
  * @brief Parse a delimited list of unsigned integers
  *
+ * A value given twice is kept once.
+ *
  * @param[out] this_list receives the parsed values
  * @param[out] answer_list receives the message naming the bad text
  * @param string the text to parse
@@ -637,7 +639,10 @@ bool ulong_list_parse_from_string(lList **this_list, lList **answer_list,
 
          ret = ulong_parse_from_string(&value, answer_list, token);
          if (ret) {
-            lAddElemUlong(this_list, ULNG_value, value, ULNG_Type);
+            // ULNG_value is unique: a value given twice is kept once (CS-3053)
+            if (lGetElemUlong(*this_list, ULNG_value, value) == nullptr) {
+               lAddElemUlong(this_list, ULNG_value, value, ULNG_Type);
+            }
          } else {
             break;
          }

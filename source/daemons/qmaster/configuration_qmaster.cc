@@ -62,6 +62,7 @@
 #include "spool/sge_spooling.h"
 
 #include "sgeobj/sge_conf.h"
+#include "sgeobj/sge_object.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_host.h"
 #include "sgeobj/sge_userprj.h"
@@ -503,6 +504,15 @@ check_config_script_path(lList **alpp, const char *name, const char *path, const
    DRETURN(true);
 }
 
+/**
+ * @brief Validate a configuration sent by a client before it is stored
+ *
+ * @param alpp receives the reason a configuration is rejected
+ * @param conf the configuration (CONF_Type)
+ *
+ * @return STATUS_OK if the configuration is valid, an error status otherwise;
+ *         STATUS_ESYNTAX when an attribute is given twice
+ */
 static int
 check_config(lList **alpp, lListElem *conf) {
    DENTER(TOP_LAYER);
@@ -512,6 +522,12 @@ check_config(lList **alpp, lListElem *conf) {
    const lList *master_userset_list = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
 
    conf_name = lGetHost(conf, CONF_name);
+
+   // an attribute given twice has no defined value (CS-3053)
+   const std::string object_name = std::string("configuration ") + (conf_name != nullptr ? conf_name : "");
+   if (!ocs_object_verify_unique_keys(conf, alpp, object_name.c_str())) {
+      DRETURN(STATUS_ESYNTAX);
+   }
 
    for_each_ep_lv(ep, lGetList(conf, CONF_entries)) {
       name = lGetString(ep, CF_name);

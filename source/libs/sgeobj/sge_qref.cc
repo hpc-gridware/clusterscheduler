@@ -55,6 +55,7 @@
 
 #include "sgeobj/cull_parse_util.h"
 #include "sgeobj/sge_answer.h"
+#include "sgeobj/sge_object.h"
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_eval_expression.h"
@@ -232,9 +233,23 @@ qref_list_resolve_qdomain_names(const lList *cq_qref_list,
 }
 
 /**
+ * @brief Remove repeated queue references from a list
+ *
+ * A queue reference list is a set: a reference given twice adds nothing. The
+ * first occurrence of each reference stays, later ones are removed, so that
+ * the unique attribute QR_name holds each reference once (CS-3053).
+ *
+ * @param this_list QR_Type list, nullptr is accepted
+ */
+void ocs_qref_list_remove_duplicates(lList *this_list) {
+   ocs_object_list_remove_repeated_keys(this_list, QR_name);
+}
+
+/**
  * @brief Add a queue reference to the list
  *
- * Add the queue reference "qref_string" to the QR_type list "this_list".
+ * Add the queue reference "qref_string" to the QR_type list "this_list",
+ * unless the list already holds it (CS-3053).
  * Errors will be reported via return value and "answer_list".
  *
  * @param this_list QR_Type
@@ -249,9 +264,11 @@ bool qref_list_add(lList **this_list, lList **answer_list, const char *qref_stri
    bool ret = true;
 
    if (this_list != nullptr && qref_string != nullptr) {
-      lListElem *new_elem; 
+      if (lGetElemStr(*this_list, QR_name, qref_string) != nullptr) {
+         DRETURN(ret);
+      }
 
-      new_elem = lAddElemStr(this_list, QR_name, qref_string, QR_Type);
+      lListElem *new_elem = lAddElemStr(this_list, QR_name, qref_string, QR_Type);
       if (new_elem == nullptr) {
          answer_list_add(answer_list, MSG_GDI_OUTOFMEMORY,
                          STATUS_EMALLOC, ANSWER_QUALITY_ERROR);
@@ -742,6 +759,9 @@ bool qref_list_trash_some_elemts(lList **this_list, const char *full_name) {
  *    - if the contained queue-pattern matches at least one
  *      queue instance
  *
+ * The host names of the references are resolved in place, and a reference
+ * that then repeats an earlier one is removed.
+ *
  * @param this_list QR_Type
  * @param answer_list AN_Type
  * @param master_cqueue_list the cluster queues a reference may name
@@ -799,6 +819,12 @@ bool qref_list_is_valid(const lList *this_list, lList **answer_list, const lList
          ERROR(SFNMAX, MSG_QREF_QNOTREQUESTABLE);
          answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          ret = false;
+      }
+
+      // the host names are resolved above, so "q@h" and "q@h.domain" may now be the same
+      // reference; like the resolution, this changes the list in place (CS-3053)
+      if (ret) {
+         ocs_qref_list_remove_duplicates(const_cast<lList *>(this_list));
       }
    }
    DRETURN(ret);
@@ -864,7 +890,8 @@ qref_resolve_hostname(lListElem *this_elem) {
 /**
  * @brief Parse a queue reference list
  *
- * Parse 'dest_str' and create a QR_type list.
+ * Parse 'dest_str' and create a QR_type list. A reference given twice is
+ * kept once.
  *
  * @param lpp QR_Type list
  * @param dest_str input string
@@ -904,6 +931,7 @@ int cull_parse_destination_identifier_list(lList **lpp, const char *dest_str) {
       sge_free(&str_str);
       DRETURN(3);
    }
+   ocs_qref_list_remove_duplicates(*lpp);
 
    sge_free(&s);
    sge_free(&str_str);
