@@ -773,5 +773,6 @@
 #define MSG_AUTOREMOVEHOSTS_BUSY_S                 _MESSAGE(34012, _("exec host " SFQ " added itself and is unknown, but it still has jobs running and is kept"))
 #define MSG_AUTOREMOVEHOSTS_FAILED_S               _MESSAGE(34013, _("exec host " SFQ " could not be removed from the cluster, it is no longer treated as a host which added itself"))
 #define MSG_QMASTER_READERTHREADS_AUTO_II          _MESSAGE(34014, _("reader_threads auto: %d CPUs available, starting %d reader threads"))
+#define MSG_CONF_PATHMUSTSTARTWITHSLASHORSGEROOT_S _MESSAGE(34015, _("denied: the path given for " SFQ " must start with a \"/\" or with \"$sge_root\""))
 
 // clang-format on

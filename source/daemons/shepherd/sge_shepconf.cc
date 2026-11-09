@@ -61,7 +61,7 @@ int shepconf_has_userdef_method(const char *method_name, dstring *method) {
    char *conf_val = search_nonone_conf_val(method_name);
    int ret = 0;
 
-   if (conf_val != nullptr && conf_val[0] == '/') {
+   if (config_is_absolute_script_path(conf_val)) {
       sge_dstring_copy_string(method, conf_val);
       ret = 1;
    }
@@ -82,7 +82,7 @@ int shepconf_has_userdef_signal(const char *method_name, int *signal) {
    char *conf_val = search_nonone_conf_val(method_name);
    int ret = 0;
 
-   if (conf_val != nullptr && conf_val[0] != '/') {
+   if (conf_val != nullptr && !config_is_absolute_script_path(conf_val)) {
       *signal = shepherd_sys_str2signal(conf_val);
       ret = 1;
    }

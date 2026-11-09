@@ -730,8 +730,12 @@ void son(const char *childname, char *script_file, int truncate_stderr_out, bool
        (starter_method = get_conf_val("starter_method")) &&
        strcasecmp(starter_method, "none")) {
 
+      // expand the special variables, e.g. $sge_root, an error is reported via config_errfunc
+      static char starter_method_path[10000];
+      replace_params(starter_method, starter_method_path, sizeof(starter_method_path) - 1,
+                     prolog_epilog_variables);
       sge_set_env_value("SGE_STARTER_SHELL_PATH", shell_path);
-      shell_path = starter_method;
+      shell_path = starter_method_path;
       use_starter_method = 1;
       sge_set_env_value("SGE_STARTER_SHELL_START_MODE", shell_start_mode);
       if (!strcasecmp("unix_behavior", shell_start_mode))

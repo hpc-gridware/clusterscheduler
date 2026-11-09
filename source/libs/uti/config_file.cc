@@ -182,6 +182,14 @@ const char *ckpt_variables[] = {
         nullptr
 };
 
+/// Variables #replace_params accepts in the path of a load sensor
+const char *load_sensor_variables[] = {
+        "sge_root",
+        "sge_cell",
+        "host",
+        nullptr
+};
+
 /// Variables #replace_params accepts in a queue's suspend, resume and terminate methods
 const char *ctrl_method_variables[] = {
         "sge_root",
@@ -404,6 +412,26 @@ void delete_config() {
       sge_free(&config_list);
       config_list = next;
    }
+}
+
+/*!
+ * @brief Check whether a configured script path is absolute.
+ *
+ * A script path in a configuration, e.g. of a prolog, a load_sensor or a suspend_method, is
+ * absolute if it starts with a "/" or with "$sge_root/". The special variable $sge_root is
+ * expanded to the absolute path of the product root directory. $sge_root alone is not a
+ * script path, it names a directory.
+ *
+ * @param path The path of the script, without a user@ prefix.
+ * @return true if the path starts with a "/" or with "$sge_root/", false otherwise.
+ */
+bool config_is_absolute_script_path(const char *path) {
+   static constexpr char sge_root_prefix[] = "$sge_root/";
+
+   if (path == nullptr) {
+      return false;
+   }
+   return path[0] == '/' || strncmp(path, sge_root_prefix, sizeof(sge_root_prefix) - 1) == 0;
 }
 
 /* JG: TODO: Cleanup:
