@@ -29,43 +29,4 @@
  */
 
 #include "cull/cull.h"
-#include "sgeobj/cull/sge_boundaries.h"
-
-/**
-* @brief Resource Quota Rule Filter
-*
-* One of a rule's five filters: the set of names it matches, and whether the limit is shared or per name.
-*
-*    SGE_BOOL(RQRF_expand) - Expand
-*    False means one limit shared by everything the filter matches; true means a separate limit for each matched name. This is what distinguishes "100 slots between all users" from "100 slots each".
-*
-*    SGE_LIST(RQRF_scope) - Scope
-*    The names the filter matches (`ST_Type`). A single `*` entry means everything.
-*
-*    SGE_LIST(RQRF_xscope) - Excluded Scope
-*    Names explicitly excluded, applied after RQRF_scope.
-*
-*/
-
-enum {
-   RQRF_expand = RQRF_LOWERBOUND,   ///< Expand
-   RQRF_scope,   ///< Scope
-   RQRF_xscope   ///< Excluded Scope
-};
-
-LISTDEF(RQRF_Type)
-   SGE_BOOL(RQRF_expand, CULL_SPOOL)
-   SGE_LIST(RQRF_scope, ST_Type, CULL_SPOOL)
-   SGE_LIST(RQRF_xscope, ST_Type, CULL_SPOOL)
-LISTEND(RQRF_Type)
-
-NAMEDEF(RQRFN)
-   NAME("RQRF_expand")
-   NAME("RQRF_scope")
-   NAME("RQRF_xscope")
-NAMEEND
-
-/** @brief Number of attributes of the type, i.e. the size of its name table */
-#define RQRF_SIZE sizeof(RQRFN)/sizeof(char *)
-
-
+#include "sgeobj/tom/ocs_tom_RQRF.h"

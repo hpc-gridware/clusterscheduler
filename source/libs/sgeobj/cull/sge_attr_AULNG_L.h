@@ -29,38 +29,4 @@
  */
 
 #include "cull/cull.h"
-#include "sgeobj/cull/sge_boundaries.h"
-
-/**
-* @brief Attribute Ulong
-*
-* Used for ulong attributes in the cluster queues.
-* E.g. used for the queue seq_no and nsuspend.
-*
-*    SGE_HOST(AULNG_href) - Host Reference
-*    Name of a host or a host group.
-*
-*    SGE_ULONG(AULNG_value) - Value
-*    The ulong value.
-*
-*/
-
-enum {
-   AULNG_href = AULNG_LOWERBOUND,   ///< Host Reference
-   AULNG_value   ///< Value
-};
-
-LISTDEF(AULNG_Type)
-   SGE_HOST(AULNG_href, CULL_PRIMARY_KEY | CULL_UNIQUE | CULL_HASH | CULL_SUBLIST)
-   SGE_ULONG(AULNG_value, CULL_SUBLIST)
-LISTEND(AULNG_Type)
-
-NAMEDEF(AULNGN)
-   NAME("AULNG_href")
-   NAME("AULNG_value")
-NAMEEND
-
-/** @brief Number of attributes of the type, i.e. the size of its name table */
-#define AULNG_SIZE sizeof(AULNGN)/sizeof(char *)
-
-
+#include "sgeobj/tom/ocs_tom_AULNG.h"

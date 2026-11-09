@@ -29,48 +29,4 @@
  */
 
 #include "cull/cull.h"
-#include "sgeobj/cull/sge_boundaries.h"
-
-/**
-* @brief Spooling Type Rule Mapping
-*
-* Elements of SPTR_Type define a mapping between object type (SPT_Type)
-* and spooling rules (SPR_Type).
-* One object type can be spooled (written) using multiple spooling rules.
-* One object type will be read using one (the default) spooling rule.
-* One spooling rule can be referenced by multiple object types.
-*
-*    SGE_BOOL(SPTR_is_default) - Is Default
-*    Defines whether the referenced rule is the default rule
-*    for reading the defined object type.
-*
-*    SGE_STRING(SPTR_rule_name) - Rule Name
-*    Name of the referenced rule.
-*
-*    SGE_REF(SPTR_rule) - Rule
-*    Pointer/reference to the rule to be used with the defined object type.
-*
-*/
-
-enum {
-   SPTR_is_default = SPTR_LOWERBOUND,   ///< Is Default
-   SPTR_rule_name,   ///< Rule Name
-   SPTR_rule   ///< Rule
-};
-
-LISTDEF(SPTR_Type)
-   SGE_BOOL(SPTR_is_default, CULL_DEFAULT)
-   SGE_STRING(SPTR_rule_name, CULL_UNIQUE)
-   SGE_REF(SPTR_rule, CULL_ANY_SUBTYPE, CULL_NO_TRANSFER)
-LISTEND(SPTR_Type)
-
-NAMEDEF(SPTRN)
-   NAME("SPTR_is_default")
-   NAME("SPTR_rule_name")
-   NAME("SPTR_rule")
-NAMEEND
-
-/** @brief Number of attributes of the type, i.e. the size of its name table */
-#define SPTR_SIZE sizeof(SPTRN)/sizeof(char *)
-
-
+#include "sgeobj/tom/ocs_tom_SPTR.h"

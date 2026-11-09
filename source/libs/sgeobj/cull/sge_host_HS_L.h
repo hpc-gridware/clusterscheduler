@@ -29,38 +29,4 @@
  */
 
 #include "cull/cull.h"
-#include "sgeobj/cull/sge_boundaries.h"
-
-/**
-* @brief scaling of host load values
-*
-* used for scaling host load values
-* per load variable a scaling factor can be defined
-*
-*    SGE_STRING(HS_name) - load variable name
-*    The Name of the load variable / the complex variable.
-*
-*    SGE_DOUBLE(HS_value) - scaling factor
-*    A scaling factor as double value. Load values are multiplied by this factor.
-*
-*/
-
-enum {
-   HS_name = HS_LOWERBOUND,   ///< load variable name
-   HS_value   ///< scaling factor
-};
-
-LISTDEF(HS_Type)
-   SGE_STRING(HS_name, CULL_PRIMARY_KEY | CULL_SUBLIST)
-   SGE_DOUBLE(HS_value, CULL_SUBLIST)
-LISTEND(HS_Type)
-
-NAMEDEF(HSN)
-   NAME("HS_name")
-   NAME("HS_value")
-NAMEEND
-
-/** @brief Number of attributes of the type, i.e. the size of its name table */
-#define HS_SIZE sizeof(HSN)/sizeof(char *)
-
-
+#include "sgeobj/tom/ocs_tom_HS.h"

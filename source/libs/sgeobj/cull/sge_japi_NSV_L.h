@@ -29,37 +29,4 @@
  */
 
 #include "cull/cull.h"
-#include "sgeobj/cull/sge_boundaries.h"
-
-/**
-* @brief Named String Vector
-*
-* Used in the DRMAA library to implement vector job template attributes.
-*
-*    SGE_STRING(NSV_name) - Name
-*    Name of the string vector.
-*
-*    SGE_LIST(NSV_strings) - Strings
-*    Strings of this string vector.
-*
-*/
-
-enum {
-   NSV_name = NSV_LOWERBOUND,   ///< Name
-   NSV_strings   ///< Strings
-};
-
-LISTDEF(NSV_Type)
-   SGE_STRING(NSV_name, CULL_DEFAULT)
-   SGE_LIST(NSV_strings, ST_Type, CULL_DEFAULT)
-LISTEND(NSV_Type)
-
-NAMEDEF(NSVN)
-   NAME("NSV_name")
-   NAME("NSV_strings")
-NAMEEND
-
-/** @brief Number of attributes of the type, i.e. the size of its name table */
-#define NSV_SIZE sizeof(NSVN)/sizeof(char *)
-
-
+#include "sgeobj/tom/ocs_tom_NSV.h"

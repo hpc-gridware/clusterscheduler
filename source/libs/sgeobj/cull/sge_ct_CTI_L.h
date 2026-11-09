@@ -29,31 +29,4 @@
  */
 
 #include "cull/cull.h"
-#include "sgeobj/cull/sge_boundaries.h"
-
-/**
-* @brief Category Ignore Entry
-*
-* One name a category has already been rejected by, held in the ignore lists of `CCT_Type`.
-*
-*    SGE_STRING(CTI_name) - Name
-*    The cluster queue or host to skip for this category.
-*
-*/
-
-enum {
-   CTI_name = CTI_LOWERBOUND   ///< Name
-};
-
-LISTDEF(CTI_Type)
-   SGE_STRING(CTI_name, CULL_UNIQUE | CULL_HASH)
-LISTEND(CTI_Type)
-
-NAMEDEF(CTIN)
-   NAME("CTI_name")
-NAMEEND
-
-/** @brief Number of attributes of the type, i.e. the size of its name table */
-#define CTI_SIZE sizeof(CTIN)/sizeof(char *)
-
-
+#include "sgeobj/tom/ocs_tom_CTI.h"

@@ -29,38 +29,4 @@
  */
 
 #include "cull/cull.h"
-#include "sgeobj/cull/sge_boundaries.h"
-
-/**
-* @brief License Report
-*
-* Definition for a license report.
-* There is no license management or license enforcement in Cluster Scheduler.
-*
-*    SGE_ULONG(LIC_processors) - Processors
-*    Number of processors (nprocs = number of cores) on the execution host.
-*
-*    SGE_STRING(LIC_arch) - Architecture
-*    The execution host's architecture, e.g. lx-amd64.
-*
-*/
-
-enum {
-   LIC_processors = LIC_LOWERBOUND,   ///< Processors
-   LIC_arch   ///< Architecture
-};
-
-LISTDEF(LIC_Type)
-   SGE_ULONG(LIC_processors, CULL_DEFAULT)
-   SGE_STRING(LIC_arch, CULL_DEFAULT)
-LISTEND(LIC_Type)
-
-NAMEDEF(LICN)
-   NAME("LIC_processors")
-   NAME("LIC_arch")
-NAMEEND
-
-/** @brief Number of attributes of the type, i.e. the size of its name table */
-#define LIC_SIZE sizeof(LICN)/sizeof(char *)
-
-
+#include "sgeobj/tom/ocs_tom_LIC.h"

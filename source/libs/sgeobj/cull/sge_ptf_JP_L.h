@@ -29,37 +29,4 @@
  */
 
 #include "cull/cull.h"
-#include "sgeobj/cull/sge_boundaries.h"
-
-/**
-* @brief Job Pid
-*
-* This is the list type we use to hold the process ID list for jobs in the PTF O.S. job list.
-*
-*    SGE_ULONG(JP_pid) - Pid
-*    Process Id.
-*
-*    SGE_ULONG(JP_background) - Background
-*    Background flag. @todo looks as if it is not used, remove it.
-*
-*/
-
-enum {
-   JP_pid = JP_LOWERBOUND,   ///< Pid
-   JP_background   ///< Background
-};
-
-LISTDEF(JP_Type)
-   SGE_ULONG(JP_pid, CULL_UNIQUE | CULL_HASH)
-   SGE_ULONG(JP_background, CULL_DEFAULT)
-LISTEND(JP_Type)
-
-NAMEDEF(JPN)
-   NAME("JP_pid")
-   NAME("JP_background")
-NAMEEND
-
-/** @brief Number of attributes of the type, i.e. the size of its name table */
-#define JP_SIZE sizeof(JPN)/sizeof(char *)
-
-
+#include "sgeobj/tom/ocs_tom_JP.h"

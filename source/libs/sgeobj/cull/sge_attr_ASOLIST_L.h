@@ -29,38 +29,4 @@
  */
 
 #include "cull/cull.h"
-#include "sgeobj/cull/sge_boundaries.h"
-
-/**
-* @brief Attribute Subordinate List
-*
-* Used for subordinate list attributes in the cluster queues.
-* Used for the queue subordinate_list.
-*
-*    SGE_HOST(ASOLIST_href) - Host Reference
-*    Name of a host or a host group.
-*
-*    SGE_LIST(ASOLIST_value) - Value
-*    The subordinate list (list of SO_Type).
-*
-*/
-
-enum {
-   ASOLIST_href = ASOLIST_LOWERBOUND,   ///< Host Reference
-   ASOLIST_value   ///< Value
-};
-
-LISTDEF(ASOLIST_Type)
-   SGE_HOST(ASOLIST_href, CULL_PRIMARY_KEY | CULL_UNIQUE | CULL_HASH | CULL_SUBLIST)
-   SGE_LIST(ASOLIST_value, SO_Type, CULL_SUBLIST)
-LISTEND(ASOLIST_Type)
-
-NAMEDEF(ASOLISTN)
-   NAME("ASOLIST_href")
-   NAME("ASOLIST_value")
-NAMEEND
-
-/** @brief Number of attributes of the type, i.e. the size of its name table */
-#define ASOLIST_SIZE sizeof(ASOLISTN)/sizeof(char *)
-
-
+#include "sgeobj/tom/ocs_tom_ASOLIST.h"

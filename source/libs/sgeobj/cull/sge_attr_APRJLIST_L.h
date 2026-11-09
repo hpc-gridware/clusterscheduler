@@ -29,38 +29,4 @@
  */
 
 #include "cull/cull.h"
-#include "sgeobj/cull/sge_boundaries.h"
-
-/**
-* @brief Attribute Project List
-*
-* Used for project list attributes in the cluster queues.
-* E.g. used for the queue projects, xprojects.
-*
-*    SGE_HOST(APRJLIST_href) - Host Reference
-*    Name of a host or a host group.
-*
-*    SGE_LIST(APRJLIST_value) - Value
-*    The project list (list of PR_Type)
-*
-*/
-
-enum {
-   APRJLIST_href = APRJLIST_LOWERBOUND,   ///< Host Reference
-   APRJLIST_value   ///< Value
-};
-
-LISTDEF(APRJLIST_Type)
-   SGE_HOST(APRJLIST_href, CULL_PRIMARY_KEY | CULL_UNIQUE | CULL_HASH | CULL_SUBLIST)
-   SGE_LIST(APRJLIST_value, PR_Type, CULL_SUBLIST)
-LISTEND(APRJLIST_Type)
-
-NAMEDEF(APRJLISTN)
-   NAME("APRJLIST_href")
-   NAME("APRJLIST_value")
-NAMEEND
-
-/** @brief Number of attributes of the type, i.e. the size of its name table */
-#define APRJLIST_SIZE sizeof(APRJLISTN)/sizeof(char *)
-
-
+#include "sgeobj/tom/ocs_tom_APRJLIST.h"

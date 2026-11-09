@@ -29,45 +29,4 @@
  */
 
 #include "cull/cull.h"
-#include "sgeobj/cull/sge_boundaries.h"
-
-/**
-* @brief Multi Gdi Id
-*
-* Multiple requests can be sent by a client to sge_qmaster in a single message.
-* Every such request gets a unique number.
-* A list of MA_Type is used to return the answers to a multi GDI request.
-*
-*    SGE_ULONG(MA_id) - Id
-*    Id of the individual request to associate request with result.
-*
-*    SGE_LIST(MA_objects) - Objects
-*    A list of the requested type containing the result of the request.
-*
-*    SGE_LIST(MA_answers) - Answers
-*    A list of answers. This can be error, warning or info messages from processing the request.
-*
-*/
-
-enum {
-   MA_id = MA_LOWERBOUND,   ///< Id
-   MA_objects,   ///< Objects
-   MA_answers   ///< Answers
-};
-
-LISTDEF(MA_Type)
-   SGE_ULONG(MA_id, CULL_DEFAULT)
-   SGE_LIST(MA_objects, CULL_ANY_SUBTYPE, CULL_DEFAULT)
-   SGE_LIST(MA_answers, AN_Type, CULL_DEFAULT)
-LISTEND(MA_Type)
-
-NAMEDEF(MAN)
-   NAME("MA_id")
-   NAME("MA_objects")
-   NAME("MA_answers")
-NAMEEND
-
-/** @brief Number of attributes of the type, i.e. the size of its name table */
-#define MA_SIZE sizeof(MAN)/sizeof(char *)
-
-
+#include "sgeobj/tom/ocs_tom_MA.h"

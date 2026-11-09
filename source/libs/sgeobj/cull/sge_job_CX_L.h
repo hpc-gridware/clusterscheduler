@@ -29,40 +29,4 @@
  */
 
 #include "cull/cull.h"
-#include "sgeobj/cull/sge_boundaries.h"
-
-/**
-* @brief Context Change Instruction
-*
-* One element of the instructions of the -ac, -sc and -dc switches (JB_context_change).
-* An element whose name is +, - or = starts a group that adds, deletes or sets the
-* context variables following it; names repeat by design, so the name is not unique.
-* @see set_context()
-*
-*    SGE_STRING(CX_variable) - Variable Name or Marker
-*    Name of the context variable, or one of the markers +, - and =.
-*
-*    SGE_STRING(CX_value) - Variable Value
-*    Value of the context variable as string.
-*
-*/
-
-enum {
-   CX_variable = CX_LOWERBOUND,   ///< Variable Name or Marker
-   CX_value   ///< Variable Value
-};
-
-LISTDEF(CX_Type)
-   SGE_STRING(CX_variable, CULL_HASH)
-   SGE_STRING(CX_value, CULL_DEFAULT)
-LISTEND(CX_Type)
-
-NAMEDEF(CXN)
-   NAME("CX_variable")
-   NAME("CX_value")
-NAMEEND
-
-/** @brief Number of attributes of the type, i.e. the size of its name table */
-#define CX_SIZE sizeof(CXN)/sizeof(char *)
-
-
+#include "sgeobj/tom/ocs_tom_CX.h"

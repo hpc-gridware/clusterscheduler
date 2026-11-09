@@ -29,31 +29,4 @@
  */
 
 #include "cull/cull.h"
-#include "sgeobj/cull/sge_boundaries.h"
-
-/**
-* @brief Unsigned Long
-*
-* Used for lists / sublists holding 32bit ulong values, e.g. job ids.
-*
-*    SGE_ULONG(ULNG_value) - Value
-*    An ulong value.
-*
-*/
-
-enum {
-   ULNG_value = ULNG_LOWERBOUND   ///< Value
-};
-
-LISTDEF(ULNG_Type)
-   SGE_ULONG(ULNG_value, CULL_UNIQUE | CULL_HASH)
-LISTEND(ULNG_Type)
-
-NAMEDEF(ULNGN)
-   NAME("ULNG_value")
-NAMEEND
-
-/** @brief Number of attributes of the type, i.e. the size of its name table */
-#define ULNG_SIZE sizeof(ULNGN)/sizeof(char *)
-
-
+#include "sgeobj/tom/ocs_tom_ULNG.h"

@@ -1,0 +1,88 @@
+#pragma once
+/*___INFO__MARK_BEGIN_NEW__*/
+/***************************************************************************
+ *
+ *  Copyright 2023-2026 HPC-Gridware GmbH
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *
+ ***************************************************************************/
+/*___INFO__MARK_END_NEW__*/
+
+/*
+ * This code was generated from file source/libs/sgeobj/json/CX.json
+ * DO NOT CHANGE
+ */
+
+/** @file
+ * @brief Context Change Instruction: object type of the typed object model
+ */
+
+#include "tom/ocs_FieldTraits.h"
+#include "sgeobj/cull/sge_boundaries.h"
+
+/**
+ * @brief The field numbers of CX, Context Change Instruction
+ *
+ * The enumeration is the type of every field number of CX, so a parameter
+ * of this type takes the field numbers of CX only.
+ */
+enum CX_Field {
+   /**
+    * @brief Variable Name or Marker
+    *
+    * Name of the context variable, or one of the markers +, - and =.
+    */
+   CX_variable = CX_LOWERBOUND,
+   /**
+    * @brief Variable Value
+    *
+    * Value of the context variable as string.
+    */
+   CX_value,
+};
+
+namespace ocs::tom {
+
+   /**
+    * @brief Context Change Instruction
+    *
+    * One element of the instructions of the -ac, -sc and -dc switches (JB_context_change).
+    * An element whose name is +, - or = starts a group that adds, deletes or sets the
+    * context variables following it; names repeat by design, so the name is not unique.
+    * @see set_context()
+    */
+   struct CX {
+      /** @brief The fields: number, name, type and flags, in the order of the field numbers */
+      static constexpr FieldInfo fields[] = {
+         {CX_variable, "CX_variable", FieldType::String, Flag::Hash},
+         {CX_value, "CX_value", FieldType::String, Flag::None},
+      };
+
+      /** @brief The descriptor of the list library, derived from the field table */
+      static constexpr auto descriptor = make_descriptor(fields);
+
+      /** @brief The field names for the list library, derived from the field table */
+      static constexpr auto names = field_names(fields);
+   };
+
+   /** @brief The field enumeration of CX belongs to CX */
+   template <>
+   struct TypeOf<CX_Field> {
+      using type = CX;   ///< the object type
+   };
+
+} // namespace ocs::tom
+
+/** @brief The descriptor of CX for the list library: a synonym for ocs::tom::CX::descriptor */
+inline constexpr const lDescr *CX_Type = ocs::tom::CX::descriptor.e;

@@ -29,37 +29,4 @@
  */
 
 #include "cull/cull.h"
-#include "sgeobj/cull/sge_boundaries.h"
-
-/**
-* @brief Resource Ticket Host Entry
-*
-* The tickets granted on one host, as the scheduler reports them back with its orders.
-*
-*    SGE_HOST(RTIC_host) - Host
-*    The execution host the tickets belong to.
-*
-*    SGE_LIST(RTIC_tickets) - Tickets
-*    The per-job ticket values for that host.
-*
-*/
-
-enum {
-   RTIC_host = RTIC_LOWERBOUND,   ///< Host
-   RTIC_tickets   ///< Tickets
-};
-
-LISTDEF(RTIC_Type)
-   SGE_HOST(RTIC_host, CULL_PRIMARY_KEY | CULL_UNIQUE | CULL_HASH)
-   SGE_LIST(RTIC_tickets, OR_Type, CULL_DEFAULT)
-LISTEND(RTIC_Type)
-
-NAMEDEF(RTICN)
-   NAME("RTIC_host")
-   NAME("RTIC_tickets")
-NAMEEND
-
-/** @brief Number of attributes of the type, i.e. the size of its name table */
-#define RTIC_SIZE sizeof(RTICN)/sizeof(char *)
-
-
+#include "sgeobj/tom/ocs_tom_RTIC.h"

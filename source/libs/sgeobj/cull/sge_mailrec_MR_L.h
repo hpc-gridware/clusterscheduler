@@ -29,40 +29,4 @@
  */
 
 #include "cull/cull.h"
-#include "sgeobj/cull/sge_boundaries.h"
-
-/**
-* @brief Mail Receiver
-*
-* One object of this type specifies a mail receiver, meaning an email address
-* in the form `user@host`.
-* It is used e.g. when submitting jobs via `qsub -M user[@host][,user[@host],...]`
-* @todo why do we split it into user and host? We could just have a single string holding an email address.
-*
-*    SGE_STRING(MR_user) - User Name
-*    User name of the mail receipient
-*
-*    SGE_HOST(MR_host) - Host Name
-*    Host / Domain part of a mail receipient.
-*
-*/
-
-enum {
-   MR_user = MR_LOWERBOUND,   ///< User Name
-   MR_host   ///< Host Name
-};
-
-LISTDEF(MR_Type)
-   SGE_STRING(MR_user, CULL_PRIMARY_KEY | CULL_SUBLIST)
-   SGE_HOST(MR_host, CULL_SUBLIST)
-LISTEND(MR_Type)
-
-NAMEDEF(MRN)
-   NAME("MR_user")
-   NAME("MR_host")
-NAMEEND
-
-/** @brief Number of attributes of the type, i.e. the size of its name table */
-#define MR_SIZE sizeof(MRN)/sizeof(char *)
-
-
+#include "sgeobj/tom/ocs_tom_MR.h"

@@ -29,31 +29,4 @@
  */
 
 #include "cull/cull.h"
-#include "sgeobj/cull/sge_boundaries.h"
-
-/**
-* @brief Host Reference
-*
-* Used to reference a host by name.
-*
-*    SGE_HOST(HR_name) - Name
-*    The host name.
-*
-*/
-
-enum {
-   HR_name = HR_LOWERBOUND   ///< Name
-};
-
-LISTDEF(HR_Type)
-   SGE_HOST(HR_name, CULL_PRIMARY_KEY | CULL_UNIQUE | CULL_HASH | CULL_SUBLIST)
-LISTEND(HR_Type)
-
-NAMEDEF(HRN)
-   NAME("HR_name")
-NAMEEND
-
-/** @brief Number of attributes of the type, i.e. the size of its name table */
-#define HR_SIZE sizeof(HRN)/sizeof(char *)
-
-
+#include "sgeobj/tom/ocs_tom_HR.h"

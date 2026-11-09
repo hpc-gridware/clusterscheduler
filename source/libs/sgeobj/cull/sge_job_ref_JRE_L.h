@@ -29,38 +29,4 @@
  */
 
 #include "cull/cull.h"
-#include "sgeobj/cull/sge_boundaries.h"
-
-/**
-* @brief Job Reference
-*
-* Reference to a job by job id or job name.
-* It is for example used to reference successor or predecessor jobs in job dependencies.
-*
-*    SGE_ULONG(JRE_job_number) - Job Number
-*    Job number of the referenced job.
-*
-*    SGE_STRING(JRE_job_name) - Job Name
-*    Job name of the referenced job(s). Multiple jobs can be referenced by the same name.
-*
-*/
-
-enum {
-   JRE_job_number = JRE_LOWERBOUND,   ///< Job Number
-   JRE_job_name   ///< Job Name
-};
-
-LISTDEF(JRE_Type)
-   SGE_ULONG(JRE_job_number, CULL_PRIMARY_KEY | CULL_SUBLIST)
-   SGE_STRING(JRE_job_name, CULL_SUBLIST)
-LISTEND(JRE_Type)
-
-NAMEDEF(JREN)
-   NAME("JRE_job_number")
-   NAME("JRE_job_name")
-NAMEEND
-
-/** @brief Number of attributes of the type, i.e. the size of its name table */
-#define JRE_SIZE sizeof(JREN)/sizeof(char *)
-
-
+#include "sgeobj/tom/ocs_tom_JRE.h"

@@ -29,43 +29,4 @@
  */
 
 #include "cull/cull.h"
-#include "sgeobj/cull/sge_boundaries.h"
-
-/**
-* @brief Usage Value
-*
-* Usage values hold the job usage information retrieved by sge_execd per job / array task / pe task.
-*
-*    SGE_STRING(UA_name) - Name
-*    Name of the usage value, e.g. cpu, mem, vmem, maxvmem, ...
-*
-*    SGE_DOUBLE(UA_value) - Value
-*    Usage value as a double.
-*
-*    SGE_STRING(UA_svalue) - String Value
-*    Usage value as a string, for custom usage values that are not numeric. Nullptr when the value is numeric — presence of svalue is the discriminator between string and numeric custom usage. Standard usage values (USAGE_ATTR_* names) never carry svalue. See CS-849.
-*
-*/
-
-enum {
-   UA_name = UA_LOWERBOUND,   ///< Name
-   UA_value,   ///< Value
-   UA_svalue   ///< String Value
-};
-
-LISTDEF(UA_Type)
-   SGE_STRING(UA_name, CULL_PRIMARY_KEY | CULL_UNIQUE | CULL_HASH | CULL_SUBLIST)
-   SGE_DOUBLE(UA_value, CULL_SUBLIST)
-   SGE_STRING(UA_svalue, CULL_SUBLIST)
-LISTEND(UA_Type)
-
-NAMEDEF(UAN)
-   NAME("UA_name")
-   NAME("UA_value")
-   NAME("UA_svalue")
-NAMEEND
-
-/** @brief Number of attributes of the type, i.e. the size of its name table */
-#define UA_SIZE sizeof(UAN)/sizeof(char *)
-
-
+#include "sgeobj/tom/ocs_tom_UA.h"

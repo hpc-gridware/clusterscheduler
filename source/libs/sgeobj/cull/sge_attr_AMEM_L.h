@@ -29,38 +29,4 @@
  */
 
 #include "cull/cull.h"
-#include "sgeobj/cull/sge_boundaries.h"
-
-/**
-* @brief Attribute Memory
-*
-* Used for memory attributes in the cluster queues.
-* E.g. used for the queue s_fsize, h_fsize, s_data, s_stack, ...
-*
-*    SGE_HOST(AMEM_href) - Host Reference
-*    Name of a host or a host group.
-*
-*    SGE_STRING(AMEM_value) - Value
-*    The memory value (represented as string).
-*
-*/
-
-enum {
-   AMEM_href = AMEM_LOWERBOUND,   ///< Host Reference
-   AMEM_value   ///< Value
-};
-
-LISTDEF(AMEM_Type)
-   SGE_HOST(AMEM_href, CULL_PRIMARY_KEY | CULL_UNIQUE | CULL_HASH | CULL_SUBLIST)
-   SGE_STRING(AMEM_value, CULL_SUBLIST)
-LISTEND(AMEM_Type)
-
-NAMEDEF(AMEMN)
-   NAME("AMEM_href")
-   NAME("AMEM_value")
-NAMEEND
-
-/** @brief Number of attributes of the type, i.e. the size of its name table */
-#define AMEM_SIZE sizeof(AMEMN)/sizeof(char *)
-
-
+#include "sgeobj/tom/ocs_tom_AMEM.h"

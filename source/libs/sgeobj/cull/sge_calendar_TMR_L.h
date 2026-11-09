@@ -29,37 +29,4 @@
  */
 
 #include "cull/cull.h"
-#include "sgeobj/cull/sge_boundaries.h"
-
-/**
-* @brief Time Range
-*
-* Used for time ranges represented by two (begin and end) timestamps (TM_Type).
-*
-*    SGE_LIST(TMR_begin) - Begin
-*    Begin time stamp.
-*
-*    SGE_LIST(TMR_end) - End
-*    End time stamp.
-*
-*/
-
-enum {
-   TMR_begin = TMR_LOWERBOUND,   ///< Begin
-   TMR_end   ///< End
-};
-
-LISTDEF(TMR_Type)
-   SGE_LIST(TMR_begin, TM_Type, CULL_DEFAULT)
-   SGE_LIST(TMR_end, TM_Type, CULL_DEFAULT)
-LISTEND(TMR_Type)
-
-NAMEDEF(TMRN)
-   NAME("TMR_begin")
-   NAME("TMR_end")
-NAMEEND
-
-/** @brief Number of attributes of the type, i.e. the size of its name table */
-#define TMR_SIZE sizeof(TMRN)/sizeof(char *)
-
-
+#include "sgeobj/tom/ocs_tom_TMR.h"

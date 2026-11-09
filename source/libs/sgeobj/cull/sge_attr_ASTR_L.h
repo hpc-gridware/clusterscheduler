@@ -29,38 +29,4 @@
  */
 
 #include "cull/cull.h"
-#include "sgeobj/cull/sge_boundaries.h"
-
-/**
-* @brief Attribute String
-*
-* Used for string attributes in the cluster queues.
-* E.g. used for the queue tmpdir, shell, calendar, prolog, ...
-*
-*    SGE_HOST(ASTR_href) - Host Reference
-*    Name of a host or a host group.
-*
-*    SGE_STRING(ASTR_value) - Value
-*    The string value.
-*
-*/
-
-enum {
-   ASTR_href = ASTR_LOWERBOUND,   ///< Host Reference
-   ASTR_value   ///< Value
-};
-
-LISTDEF(ASTR_Type)
-   SGE_HOST(ASTR_href, CULL_PRIMARY_KEY | CULL_UNIQUE | CULL_HASH | CULL_SUBLIST)
-   SGE_STRING(ASTR_value, CULL_SUBLIST)
-LISTEND(ASTR_Type)
-
-NAMEDEF(ASTRN)
-   NAME("ASTR_href")
-   NAME("ASTR_value")
-NAMEEND
-
-/** @brief Number of attributes of the type, i.e. the size of its name table */
-#define ASTR_SIZE sizeof(ASTRN)/sizeof(char *)
-
-
+#include "sgeobj/tom/ocs_tom_ASTR.h"

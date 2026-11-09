@@ -184,7 +184,7 @@ enum _enum_lMultiType {
 struct _lNameSpace {
    int lower;          ///< lowest field number in this block
    int size;           ///< how many names the block holds
-   const char **namev; ///< the names, indexed by `number - lower`
+   const char *const *namev; ///< the names, indexed by `number - lower`
    const lDescr *descr; ///< descriptor of the object type the block belongs to
 };
 

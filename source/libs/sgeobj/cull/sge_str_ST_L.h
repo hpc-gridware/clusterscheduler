@@ -29,38 +29,4 @@
  */
 
 #include "cull/cull.h"
-#include "sgeobj/cull/sge_boundaries.h"
-
-/**
-* @brief String Object
-*
-* An Object of this type stores a string.
-*
-*    SGE_STRING(ST_name) - String Name
-*    This field holds the string contents.
-*    @todo The primary key property is misleading. The string needn't be unique - we have STU_Type for that.
-*
-*    SGE_ULONG(ST_id) - String ID
-*    allows to attach a ID to each string
-*
-*/
-
-enum {
-   ST_name = ST_LOWERBOUND,   ///< String Name
-   ST_id   ///< String ID
-};
-
-LISTDEF(ST_Type)
-   SGE_STRING(ST_name, CULL_PRIMARY_KEY | CULL_HASH | CULL_SUBLIST)
-   SGE_ULONG(ST_id, CULL_HASH)
-LISTEND(ST_Type)
-
-NAMEDEF(STN)
-   NAME("ST_name")
-   NAME("ST_id")
-NAMEEND
-
-/** @brief Number of attributes of the type, i.e. the size of its name table */
-#define ST_SIZE sizeof(STN)/sizeof(char *)
-
-
+#include "sgeobj/tom/ocs_tom_ST.h"

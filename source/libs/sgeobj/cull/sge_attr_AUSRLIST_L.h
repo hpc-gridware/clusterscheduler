@@ -29,38 +29,4 @@
  */
 
 #include "cull/cull.h"
-#include "sgeobj/cull/sge_boundaries.h"
-
-/**
-* @brief Attribute User Set List
-*
-* Used for user set list attributes in the cluster queues.
-* E.g. used for the queue owner, acl, xacl.
-*
-*    SGE_HOST(AUSRLIST_href) - Host Reference
-*    Name of a host or a host group.
-*
-*    SGE_LIST(AUSRLIST_value) - Value
-*    The user set list (list of US_Type).
-*
-*/
-
-enum {
-   AUSRLIST_href = AUSRLIST_LOWERBOUND,   ///< Host Reference
-   AUSRLIST_value   ///< Value
-};
-
-LISTDEF(AUSRLIST_Type)
-   SGE_HOST(AUSRLIST_href, CULL_PRIMARY_KEY | CULL_UNIQUE | CULL_HASH | CULL_SUBLIST)
-   SGE_LIST(AUSRLIST_value, US_Type, CULL_SUBLIST)
-LISTEND(AUSRLIST_Type)
-
-NAMEDEF(AUSRLISTN)
-   NAME("AUSRLIST_href")
-   NAME("AUSRLIST_value")
-NAMEEND
-
-/** @brief Number of attributes of the type, i.e. the size of its name table */
-#define AUSRLIST_SIZE sizeof(AUSRLISTN)/sizeof(char *)
-
-
+#include "sgeobj/tom/ocs_tom_AUSRLIST.h"

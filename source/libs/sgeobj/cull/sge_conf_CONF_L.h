@@ -29,45 +29,4 @@
  */
 
 #include "cull/cull.h"
-#include "sgeobj/cull/sge_boundaries.h"
-
-/**
-* @brief Host Configuration
-*
-* Contains configuration options for hosts (execution hosts but also a global configuration for the sge_qmaster).
-* Host specific configurations inherit values from the global configuration.
-* @todo there is an overlap with the exec host type (EH_Type), can this be unified?
-*
-*    SGE_HOST(CONF_name) - Host Name
-*    Name of the host the configuration object refers to, or global for the global configuration.
-*
-*    SGE_ULONG(CONF_version) - Configuration Version
-*    Each configuration object has a version number which is increased with every change.
-*
-*    SGE_LIST(CONF_entries) - Configuration Entries
-*    A configuration consists of multiple configuration entries of CF_Type.
-*
-*/
-
-enum {
-   CONF_name = CONF_LOWERBOUND,   ///< Host Name
-   CONF_version,   ///< Configuration Version
-   CONF_entries   ///< Configuration Entries
-};
-
-LISTDEF(CONF_Type)
-   SGE_HOST(CONF_name, CULL_PRIMARY_KEY | CULL_UNIQUE | CULL_HASH | CULL_SPOOL)
-   SGE_ULONG(CONF_version, CULL_SPOOL)
-   SGE_LIST(CONF_entries, CF_Type, CULL_SPOOL)
-LISTEND(CONF_Type)
-
-NAMEDEF(CONFN)
-   NAME("CONF_name")
-   NAME("CONF_version")
-   NAME("CONF_entries")
-NAMEEND
-
-/** @brief Number of attributes of the type, i.e. the size of its name table */
-#define CONF_SIZE sizeof(CONFN)/sizeof(char *)
-
-
+#include "sgeobj/tom/ocs_tom_CONF.h"

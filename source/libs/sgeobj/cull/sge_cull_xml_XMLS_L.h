@@ -29,43 +29,4 @@
  */
 
 #include "cull/cull.h"
-#include "sgeobj/cull/sge_boundaries.h"
-
-/**
-* @brief XML Stylesheet
-*
-* One stylesheet processing instruction for the document header.
-*
-*    SGE_STRING(XMLS_Name) - Name
-*    The instruction's attribute name, e.g. `href`.
-*
-*    SGE_STRING(XMLS_Value) - Value
-*    Its value, e.g. the stylesheet URL.
-*
-*    SGE_STRING(XMLS_Version) - Version
-*    The stylesheet version.
-*
-*/
-
-enum {
-   XMLS_Name = XMLS_LOWERBOUND,   ///< Name
-   XMLS_Value,   ///< Value
-   XMLS_Version   ///< Version
-};
-
-LISTDEF(XMLS_Type)
-   SGE_STRING(XMLS_Name, CULL_DEFAULT)
-   SGE_STRING(XMLS_Value, CULL_DEFAULT)
-   SGE_STRING(XMLS_Version, CULL_DEFAULT)
-LISTEND(XMLS_Type)
-
-NAMEDEF(XMLSN)
-   NAME("XMLS_Name")
-   NAME("XMLS_Value")
-   NAME("XMLS_Version")
-NAMEEND
-
-/** @brief Number of attributes of the type, i.e. the size of its name table */
-#define XMLS_SIZE sizeof(XMLSN)/sizeof(char *)
-
-
+#include "sgeobj/tom/ocs_tom_XMLS.h"

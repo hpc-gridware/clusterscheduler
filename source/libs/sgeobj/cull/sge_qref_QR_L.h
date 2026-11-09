@@ -29,31 +29,4 @@
  */
 
 #include "cull/cull.h"
-#include "sgeobj/cull/sge_boundaries.h"
-
-/**
-* @brief Queue Reference
-*
-* Reference to a queue instance by name.
-*
-*    SGE_STRING(QR_name) - Queue Instance Name
-*    Name of the Queue Instance in the form `cluster_queue_name@host_name`.
-*
-*/
-
-enum {
-   QR_name = QR_LOWERBOUND   ///< Queue Instance Name
-};
-
-LISTDEF(QR_Type)
-   SGE_STRING(QR_name, CULL_PRIMARY_KEY | CULL_UNIQUE | CULL_HASH | CULL_SUBLIST)
-LISTEND(QR_Type)
-
-NAMEDEF(QRN)
-   NAME("QR_name")
-NAMEEND
-
-/** @brief Number of attributes of the type, i.e. the size of its name table */
-#define QR_SIZE sizeof(QRN)/sizeof(char *)
-
-
+#include "sgeobj/tom/ocs_tom_QR.h"

@@ -29,31 +29,4 @@
  */
 
 #include "cull/cull.h"
-#include "sgeobj/cull/sge_boundaries.h"
-
-/**
-* @brief Unique String
-*
-* An object of this type holds a string which is unique in a List of STU_Type.
-*
-*    SGE_STRING(STU_name) - String Name
-*    String contents.
-*
-*/
-
-enum {
-   STU_name = STU_LOWERBOUND   ///< String Name
-};
-
-LISTDEF(STU_Type)
-   SGE_STRING(STU_name, CULL_PRIMARY_KEY | CULL_UNIQUE | CULL_HASH | CULL_SUBLIST)
-LISTEND(STU_Type)
-
-NAMEDEF(STUN)
-   NAME("STU_name")
-NAMEEND
-
-/** @brief Number of attributes of the type, i.e. the size of its name table */
-#define STU_SIZE sizeof(STUN)/sizeof(char *)
-
-
+#include "sgeobj/tom/ocs_tom_STU.h"

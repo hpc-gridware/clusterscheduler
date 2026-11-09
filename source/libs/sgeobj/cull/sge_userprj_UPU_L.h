@@ -29,40 +29,4 @@
  */
 
 #include "cull/cull.h"
-#include "sgeobj/cull/sge_boundaries.h"
-
-/**
-* @brief Job Usage
-*
-* This is the list type we use to hold the
-* information for user/project. This objects are targets of throwing
-* tickets to them and as usage accumulators. There are no real differences
-* at the moment, so putting them together is convenient.
-*
-*    SGE_ULONG(UPU_job_number) - Job Number
-*    The job number. Usage of individual array tasks and/or PE tasks is accumulated.
-*
-*    SGE_LIST(UPU_old_usage_list) - Old Usage List
-*    UA_Type still debited usage set and used via orders by SGEEE ted_job_usageschedd by qmaster.
-*
-*/
-
-enum {
-   UPU_job_number = UPU_LOWERBOUND,   ///< Job Number
-   UPU_old_usage_list   ///< Old Usage List
-};
-
-LISTDEF(UPU_Type)
-   SGE_ULONG(UPU_job_number, CULL_PRIMARY_KEY | CULL_UNIQUE | CULL_HASH | CULL_SUBLIST)
-   SGE_LIST(UPU_old_usage_list, UA_Type, CULL_SUBLIST)
-LISTEND(UPU_Type)
-
-NAMEDEF(UPUN)
-   NAME("UPU_job_number")
-   NAME("UPU_old_usage_list")
-NAMEEND
-
-/** @brief Number of attributes of the type, i.e. the size of its name table */
-#define UPU_SIZE sizeof(UPUN)/sizeof(char *)
-
-
+#include "sgeobj/tom/ocs_tom_UPU.h"

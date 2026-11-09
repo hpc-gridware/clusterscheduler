@@ -29,44 +29,4 @@
  */
 
 #include "cull/cull.h"
-#include "sgeobj/cull/sge_boundaries.h"
-
-/**
-* @brief Scheduler Category Reference (unused)
-*
-* A category string with the pending and running jobs that belong to it.
-* @warning No attribute of this type is read or written anywhere in either repository, and `SCT_Type` itself is referenced nowhere. Left in place because removing a type changes the spooled object model.
-*
-*    SGE_STRING(SCT_str) - Category String
-*    Part of the unused SCT object; see the object description.
-*
-*    SGE_LIST(SCT_job_pending_ref) - Pending Jobs
-*    Part of the unused SCT object; see the object description.
-*
-*    SGE_LIST(SCT_job_ref) - Running Jobs
-*    Part of the unused SCT object; see the object description.
-*
-*/
-
-enum {
-   SCT_str = SCT_LOWERBOUND,   ///< Category String
-   SCT_job_pending_ref,   ///< Pending Jobs
-   SCT_job_ref   ///< Running Jobs
-};
-
-LISTDEF(SCT_Type)
-   SGE_STRING(SCT_str, CULL_UNIQUE | CULL_HASH)
-   SGE_LIST(SCT_job_pending_ref, REF_Type, CULL_DEFAULT)
-   SGE_LIST(SCT_job_ref, REF_Type, CULL_DEFAULT)
-LISTEND(SCT_Type)
-
-NAMEDEF(SCTN)
-   NAME("SCT_str")
-   NAME("SCT_job_pending_ref")
-   NAME("SCT_job_ref")
-NAMEEND
-
-/** @brief Number of attributes of the type, i.e. the size of its name table */
-#define SCT_SIZE sizeof(SCTN)/sizeof(char *)
-
-
+#include "sgeobj/tom/ocs_tom_SCT.h"

@@ -29,38 +29,4 @@
  */
 
 #include "cull/cull.h"
-#include "sgeobj/cull/sge_boundaries.h"
-
-/**
-* @brief Attribute String List
-*
-* Used for string list attributes in the cluster queues.
-* E.g. used for the queue pe_list and ckpt_list.
-*
-*    SGE_HOST(ASTRLIST_href) - Host Reference
-*    Name of a host or a host group.
-*
-*    SGE_LIST(ASTRLIST_value) - Value
-*    The string list (list of ST_Type objects)
-*
-*/
-
-enum {
-   ASTRLIST_href = ASTRLIST_LOWERBOUND,   ///< Host Reference
-   ASTRLIST_value   ///< Value
-};
-
-LISTDEF(ASTRLIST_Type)
-   SGE_HOST(ASTRLIST_href, CULL_PRIMARY_KEY | CULL_UNIQUE | CULL_HASH | CULL_SUBLIST)
-   SGE_LIST(ASTRLIST_value, ST_Type, CULL_SUBLIST)
-LISTEND(ASTRLIST_Type)
-
-NAMEDEF(ASTRLISTN)
-   NAME("ASTRLIST_href")
-   NAME("ASTRLIST_value")
-NAMEEND
-
-/** @brief Number of attributes of the type, i.e. the size of its name table */
-#define ASTRLIST_SIZE sizeof(ASTRLISTN)/sizeof(char *)
-
-
+#include "sgeobj/tom/ocs_tom_ASTRLIST.h"

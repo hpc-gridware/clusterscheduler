@@ -29,38 +29,4 @@
  */
 
 #include "cull/cull.h"
-#include "sgeobj/cull/sge_boundaries.h"
-
-/**
-* @brief Attribute Boolean
-*
-* Used for boolean attributes in the cluster queues.
-* Used for the queue rerun attribute.
-*
-*    SGE_HOST(ABOOL_href) - Host Reference
-*    Name of a host or a host group.
-*
-*    SGE_BOOL(ABOOL_value) - Value
-*    The boolean value.
-*
-*/
-
-enum {
-   ABOOL_href = ABOOL_LOWERBOUND,   ///< Host Reference
-   ABOOL_value   ///< Value
-};
-
-LISTDEF(ABOOL_Type)
-   SGE_HOST(ABOOL_href, CULL_PRIMARY_KEY | CULL_UNIQUE | CULL_HASH | CULL_SUBLIST)
-   SGE_BOOL(ABOOL_value, CULL_SUBLIST)
-LISTEND(ABOOL_Type)
-
-NAMEDEF(ABOOLN)
-   NAME("ABOOL_href")
-   NAME("ABOOL_value")
-NAMEEND
-
-/** @brief Number of attributes of the type, i.e. the size of its name table */
-#define ABOOL_SIZE sizeof(ABOOLN)/sizeof(char *)
-
-
+#include "sgeobj/tom/ocs_tom_ABOOL.h"

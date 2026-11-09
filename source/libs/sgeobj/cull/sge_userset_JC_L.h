@@ -29,39 +29,4 @@
  */
 
 #include "cull/cull.h"
-#include "sgeobj/cull/sge_boundaries.h"
-
-/**
-* @brief User Job Count
-*
-* Job count per user or user group.
-* this list is used by scheduler thread to keep the number
-* of running jobs per user/group efficiently
-*
-*    SGE_STRING(JC_name) - User Name
-*    User or user group name
-*
-*    SGE_ULONG(JC_jobs) - Number of Jobs
-*    Number of running jobs of this user / this user group.
-*
-*/
-
-enum {
-   JC_name = JC_LOWERBOUND,   ///< User Name
-   JC_jobs   ///< Number of Jobs
-};
-
-LISTDEF(JC_Type)
-   SGE_STRING(JC_name, CULL_UNIQUE | CULL_HASH)
-   SGE_ULONG(JC_jobs, CULL_DEFAULT)
-LISTEND(JC_Type)
-
-NAMEDEF(JCN)
-   NAME("JC_name")
-   NAME("JC_jobs")
-NAMEEND
-
-/** @brief Number of attributes of the type, i.e. the size of its name table */
-#define JC_SIZE sizeof(JCN)/sizeof(char *)
-
-
+#include "sgeobj/tom/ocs_tom_JC.h"

@@ -29,39 +29,4 @@
  */
 
 #include "cull/cull.h"
-#include "sgeobj/cull/sge_boundaries.h"
-
-/**
-* @brief Queue Instance Message
-*
-* Objects of this type hold messages attached to queues (QU_message_list).
-* It is also used for ja_task specific messages (JAT_message_list), e.g. job error messages
-*
-*    SGE_ULONG(QIM_type) - Message Type
-*    QI states defined in libs/sgeobj/sge_qinstance_state.h, e.g. QI_ERROR, QI_AMBIGUOUS, ...
-*    Seems to be always 1 for ja_task messages.
-*
-*    SGE_STRING(QIM_message) - Message
-*    Message as string.
-*
-*/
-
-enum {
-   QIM_type = QIM_LOWERBOUND,   ///< Message Type
-   QIM_message   ///< Message
-};
-
-LISTDEF(QIM_Type)
-   SGE_ULONG(QIM_type, CULL_SPOOL)
-   SGE_STRING(QIM_message, CULL_SPOOL)
-LISTEND(QIM_Type)
-
-NAMEDEF(QIMN)
-   NAME("QIM_type")
-   NAME("QIM_message")
-NAMEEND
-
-/** @brief Number of attributes of the type, i.e. the size of its name table */
-#define QIM_SIZE sizeof(QIMN)/sizeof(char *)
-
-
+#include "sgeobj/tom/ocs_tom_QIM.h"

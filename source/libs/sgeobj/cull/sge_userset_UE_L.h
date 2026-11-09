@@ -29,31 +29,4 @@
  */
 
 #include "cull/cull.h"
-#include "sgeobj/cull/sge_boundaries.h"
-
-/**
-* @brief UserSet Entry
-*
-* An object of this type represents one entry in an user set.
-*
-*    SGE_STRING(UE_name) - User or Group name
-*    Name of an user or a UNIX user group. Groups have the prefix @, e.g. `@tape`
-*
-*/
-
-enum {
-   UE_name = UE_LOWERBOUND   ///< User or Group name
-};
-
-LISTDEF(UE_Type)
-   SGE_STRING(UE_name, CULL_PRIMARY_KEY | CULL_UNIQUE | CULL_HASH | CULL_SUBLIST)
-LISTEND(UE_Type)
-
-NAMEDEF(UEN)
-   NAME("UE_name")
-NAMEEND
-
-/** @brief Number of attributes of the type, i.e. the size of its name table */
-#define UE_SIZE sizeof(UEN)/sizeof(char *)
-
-
+#include "sgeobj/tom/ocs_tom_UE.h"

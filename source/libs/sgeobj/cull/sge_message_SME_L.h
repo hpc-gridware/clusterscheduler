@@ -29,37 +29,4 @@
  */
 
 #include "cull/cull.h"
-#include "sgeobj/cull/sge_boundaries.h"
-
-/**
-* @brief Job SchedulingInfo
-*
-* Root object for scheduler messages enabled by scheduler config attribute schedd_job_info.
-*
-*    SGE_LIST(SME_message_list) - Message List
-*    Job specific messages explaining why certain requests of a job cannot be granted.
-*
-*    SGE_LIST(SME_global_message_list) - Global Message List
-*    Global messages which apply to all jobs, e.g. queues being disabled.
-*
-*/
-
-enum {
-   SME_message_list = SME_LOWERBOUND,   ///< Message List
-   SME_global_message_list   ///< Global Message List
-};
-
-LISTDEF(SME_Type)
-   SGE_LIST(SME_message_list, MES_Type, CULL_DEFAULT)
-   SGE_LIST(SME_global_message_list, MES_Type, CULL_DEFAULT)
-LISTEND(SME_Type)
-
-NAMEDEF(SMEN)
-   NAME("SME_message_list")
-   NAME("SME_global_message_list")
-NAMEEND
-
-/** @brief Number of attributes of the type, i.e. the size of its name table */
-#define SME_SIZE sizeof(SMEN)/sizeof(char *)
-
-
+#include "sgeobj/tom/ocs_tom_SME.h"

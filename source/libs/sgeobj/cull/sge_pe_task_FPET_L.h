@@ -29,34 +29,4 @@
  */
 
 #include "cull/cull.h"
-#include "sgeobj/cull/sge_boundaries.h"
-
-/**
-* @brief Finished PE Task
-*
-* We need to store information about finished pe tasks to avoid
-* duplicate accounting records (see IZ 438).
-* A ja task will contain a list of finished pe tasks.
-* Only the task id of finished tasks will be stored.
-*
-*    SGE_STRING(FPET_id) - Finished PE Task Id
-*    PE Task Id identifying a finished PE Task.
-*
-*/
-
-enum {
-   FPET_id = FPET_LOWERBOUND   ///< Finished PE Task Id
-};
-
-LISTDEF(FPET_Type)
-   SGE_STRING(FPET_id, CULL_PRIMARY_KEY | CULL_UNIQUE | CULL_HASH | CULL_SUBLIST)
-LISTEND(FPET_Type)
-
-NAMEDEF(FPETN)
-   NAME("FPET_id")
-NAMEEND
-
-/** @brief Number of attributes of the type, i.e. the size of its name table */
-#define FPET_SIZE sizeof(FPETN)/sizeof(char *)
-
-
+#include "sgeobj/tom/ocs_tom_FPET.h"

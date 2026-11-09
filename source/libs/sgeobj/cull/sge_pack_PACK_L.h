@@ -29,38 +29,4 @@
  */
 
 #include "cull/cull.h"
-#include "sgeobj/cull/sge_boundaries.h"
-
-/**
-* @brief Packed Condition
-*
-* A `where` or `what` condition in its packed form, so it can be sent over GDI.
-* The scheduler and the clients build `lCondition` and `lEnumeration` structures locally; those cannot be sent as they are, so they are packed into this and unpacked on the other side.
-*
-*    SGE_ULONG(PACK_id) - Kind
-*    `SGE_WHERE` or `SGE_WHAT`, saying which of the two the packed data is.
-*
-*    SGE_STRING(PACK_string) - Packed Data
-*    The condition in packed form.
-*
-*/
-
-enum {
-   PACK_id = PACK_LOWERBOUND,   ///< Kind
-   PACK_string   ///< Packed Data
-};
-
-LISTDEF(PACK_Type)
-   SGE_ULONG(PACK_id, CULL_DEFAULT)
-   SGE_STRING(PACK_string, CULL_DEFAULT)
-LISTEND(PACK_Type)
-
-NAMEDEF(PACKN)
-   NAME("PACK_id")
-   NAME("PACK_string")
-NAMEEND
-
-/** @brief Number of attributes of the type, i.e. the size of its name table */
-#define PACK_SIZE sizeof(PACKN)/sizeof(char *)
-
-
+#include "sgeobj/tom/ocs_tom_PACK.h"

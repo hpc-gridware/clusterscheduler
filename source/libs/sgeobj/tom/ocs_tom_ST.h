@@ -1,0 +1,86 @@
+#pragma once
+/*___INFO__MARK_BEGIN_NEW__*/
+/***************************************************************************
+ *
+ *  Copyright 2023-2026 HPC-Gridware GmbH
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *
+ ***************************************************************************/
+/*___INFO__MARK_END_NEW__*/
+
+/*
+ * This code was generated from file source/libs/sgeobj/json/ST.json
+ * DO NOT CHANGE
+ */
+
+/** @file
+ * @brief String Object: object type of the typed object model
+ */
+
+#include "tom/ocs_FieldTraits.h"
+#include "sgeobj/cull/sge_boundaries.h"
+
+/**
+ * @brief The field numbers of ST, String Object
+ *
+ * The enumeration is the type of every field number of ST, so a parameter
+ * of this type takes the field numbers of ST only.
+ */
+enum ST_Field {
+   /**
+    * @brief String Name
+    *
+    * This field holds the string contents.
+    * @todo The primary key property is misleading. The string needn't be unique - we have STU_Type for that.
+    */
+   ST_name = ST_LOWERBOUND,
+   /**
+    * @brief String ID
+    *
+    * allows to attach a ID to each string
+    */
+   ST_id,
+};
+
+namespace ocs::tom {
+
+   /**
+    * @brief String Object
+    *
+    * An Object of this type stores a string.
+    */
+   struct ST {
+      /** @brief The fields: number, name, type and flags, in the order of the field numbers */
+      static constexpr FieldInfo fields[] = {
+         {ST_name, "ST_name", FieldType::String, Flag::PrimaryKey | Flag::Hash | Flag::SpoolSublist},
+         {ST_id, "ST_id", FieldType::Uint32, Flag::Hash},
+      };
+
+      /** @brief The descriptor of the list library, derived from the field table */
+      static constexpr auto descriptor = make_descriptor(fields);
+
+      /** @brief The field names for the list library, derived from the field table */
+      static constexpr auto names = field_names(fields);
+   };
+
+   /** @brief The field enumeration of ST belongs to ST */
+   template <>
+   struct TypeOf<ST_Field> {
+      using type = ST;   ///< the object type
+   };
+
+} // namespace ocs::tom
+
+/** @brief The descriptor of ST for the list library: a synonym for ocs::tom::ST::descriptor */
+inline constexpr const lDescr *ST_Type = ocs::tom::ST::descriptor.e;

@@ -29,38 +29,4 @@
  */
 
 #include "cull/cull.h"
-#include "sgeobj/cull/sge_boundaries.h"
-
-/**
-* @brief Attribute Queue Type List
-*
-* Used for queue type list attributes in the cluster queues.
-* Used for the qtype queue attribute.
-*
-*    SGE_HOST(AQTLIST_href) - Host Reference
-*    Name of a host or a host group.
-*
-*    SGE_ULONG(AQTLIST_value) - Value
-*    The queue type list (list of ulong values representing types).
-*
-*/
-
-enum {
-   AQTLIST_href = AQTLIST_LOWERBOUND,   ///< Host Reference
-   AQTLIST_value   ///< Value
-};
-
-LISTDEF(AQTLIST_Type)
-   SGE_HOST(AQTLIST_href, CULL_PRIMARY_KEY | CULL_UNIQUE | CULL_HASH | CULL_SUBLIST)
-   SGE_ULONG(AQTLIST_value, CULL_SUBLIST)
-LISTEND(AQTLIST_Type)
-
-NAMEDEF(AQTLISTN)
-   NAME("AQTLIST_href")
-   NAME("AQTLIST_value")
-NAMEEND
-
-/** @brief Number of attributes of the type, i.e. the size of its name table */
-#define AQTLIST_SIZE sizeof(AQTLISTN)/sizeof(char *)
-
-
+#include "sgeobj/tom/ocs_tom_AQTLIST.h"

@@ -24,6 +24,7 @@
 add_subdirectory(sgeobj)
 add_subdirectory(comm)
 add_subdirectory(cull)
+add_subdirectory(tom)
 add_subdirectory(evc)
 add_subdirectory(evm)
 add_subdirectory(gdi)

@@ -29,38 +29,4 @@
  */
 
 #include "cull/cull.h"
-#include "sgeobj/cull/sge_boundaries.h"
-
-/**
-* @brief Variable Object
-*
-* One variable objects holds a name/value pair (variable=[value]).
-* @see libs/sgeobj/sge_var.h
-*
-*    SGE_STRING(VA_variable) - Variable Name
-*    Name of the Variable.
-*
-*    SGE_STRING(VA_value) - Variable Value
-*    Value of the Variable as String.
-*
-*/
-
-enum {
-   VA_variable = VA_LOWERBOUND,   ///< Variable Name
-   VA_value   ///< Variable Value
-};
-
-LISTDEF(VA_Type)
-   SGE_STRING(VA_variable, CULL_PRIMARY_KEY | CULL_UNIQUE | CULL_HASH | CULL_SUBLIST)
-   SGE_STRING(VA_value, CULL_SUBLIST)
-LISTEND(VA_Type)
-
-NAMEDEF(VAN)
-   NAME("VA_variable")
-   NAME("VA_value")
-NAMEEND
-
-/** @brief Number of attributes of the type, i.e. the size of its name table */
-#define VA_SIZE sizeof(VAN)/sizeof(char *)
-
-
+#include "sgeobj/tom/ocs_tom_VA.h"

@@ -29,38 +29,4 @@
  */
 
 #include "cull/cull.h"
-#include "sgeobj/cull/sge_boundaries.h"
-
-/**
-* @brief Attribute Centry List
-*
-* Used for complex entry list attributes in the cluster queues.
-* E.g. used for the queue complex_values, load_thresholds, suspend_thresholds.
-*
-*    SGE_HOST(ACELIST_href) - Host Reference
-*    Name of a host or a host group.
-*
-*    SGE_LIST(ACELIST_value) - Value
-*    The complex entry list (list of CE_Type).
-*
-*/
-
-enum {
-   ACELIST_href = ACELIST_LOWERBOUND,   ///< Host Reference
-   ACELIST_value   ///< Value
-};
-
-LISTDEF(ACELIST_Type)
-   SGE_HOST(ACELIST_href, CULL_PRIMARY_KEY | CULL_UNIQUE | CULL_HASH | CULL_SUBLIST)
-   SGE_LIST(ACELIST_value, CE_Type, CULL_SUBLIST)
-LISTEND(ACELIST_Type)
-
-NAMEDEF(ACELISTN)
-   NAME("ACELIST_href")
-   NAME("ACELIST_value")
-NAMEEND
-
-/** @brief Number of attributes of the type, i.e. the size of its name table */
-#define ACELIST_SIZE sizeof(ACELISTN)/sizeof(char *)
-
-
+#include "sgeobj/tom/ocs_tom_ACELIST.h"

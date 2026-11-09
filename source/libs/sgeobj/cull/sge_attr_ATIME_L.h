@@ -29,38 +29,4 @@
  */
 
 #include "cull/cull.h"
-#include "sgeobj/cull/sge_boundaries.h"
-
-/**
-* @brief Attribute Time
-*
-* Used for date/time attributes in the cluster queues.
-* E.g. used for the queue h_rt, s_rt, h_cpu, ...
-*
-*    SGE_HOST(ATIME_href) - Host Reference
-*    Name of a host or a host group.
-*
-*    SGE_STRING(ATIME_value) - Value
-*    The date/time value (represented as string).
-*
-*/
-
-enum {
-   ATIME_href = ATIME_LOWERBOUND,   ///< Host Reference
-   ATIME_value   ///< Value
-};
-
-LISTDEF(ATIME_Type)
-   SGE_HOST(ATIME_href, CULL_PRIMARY_KEY | CULL_UNIQUE | CULL_HASH | CULL_SUBLIST)
-   SGE_STRING(ATIME_value, CULL_SUBLIST)
-LISTEND(ATIME_Type)
-
-NAMEDEF(ATIMEN)
-   NAME("ATIME_href")
-   NAME("ATIME_value")
-NAMEEND
-
-/** @brief Number of attributes of the type, i.e. the size of its name table */
-#define ATIME_SIZE sizeof(ATIMEN)/sizeof(char *)
-
-
+#include "sgeobj/tom/ocs_tom_ATIME.h"

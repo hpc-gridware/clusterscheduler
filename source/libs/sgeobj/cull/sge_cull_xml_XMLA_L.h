@@ -29,37 +29,4 @@
  */
 
 #include "cull/cull.h"
-#include "sgeobj/cull/sge_boundaries.h"
-
-/**
-* @brief XML Attribute
-*
-* One name/value attribute on an XML element.
-*
-*    SGE_STRING(XMLA_Name) - Name
-*    The attribute name.
-*
-*    SGE_STRING(XMLA_Value) - Value
-*    Its value. Escaped when the document is written, so plain text is passed in.
-*
-*/
-
-enum {
-   XMLA_Name = XMLA_LOWERBOUND,   ///< Name
-   XMLA_Value   ///< Value
-};
-
-LISTDEF(XMLA_Type)
-   SGE_STRING(XMLA_Name, CULL_DEFAULT)
-   SGE_STRING(XMLA_Value, CULL_DEFAULT)
-LISTEND(XMLA_Type)
-
-NAMEDEF(XMLAN)
-   NAME("XMLA_Name")
-   NAME("XMLA_Value")
-NAMEEND
-
-/** @brief Number of attributes of the type, i.e. the size of its name table */
-#define XMLA_SIZE sizeof(XMLAN)/sizeof(char *)
-
-
+#include "sgeobj/tom/ocs_tom_XMLA.h"

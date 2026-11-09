@@ -29,37 +29,4 @@
  */
 
 #include "cull/cull.h"
-#include "sgeobj/cull/sge_boundaries.h"
-
-/**
-* @brief Advance Reservation Access List Entry
-*
-* One user or group entry in an advance reservation's access or no-access list.
-*
-*    SGE_STRING(ARA_name) - Name
-*    The user or userset allowed, or denied, access to the reservation.
-*
-*    SGE_STRING(ARA_group) - Group
-*    The UNIX group the entry stands for, where the entry names a group.
-*
-*/
-
-enum {
-   ARA_name = ARA_LOWERBOUND,   ///< Name
-   ARA_group   ///< Group
-};
-
-LISTDEF(ARA_Type)
-   SGE_STRING(ARA_name, CULL_PRIMARY_KEY | CULL_UNIQUE | CULL_HASH | CULL_SPOOL)
-   SGE_STRING(ARA_group, CULL_SPOOL)
-LISTEND(ARA_Type)
-
-NAMEDEF(ARAN)
-   NAME("ARA_name")
-   NAME("ARA_group")
-NAMEEND
-
-/** @brief Number of attributes of the type, i.e. the size of its name table */
-#define ARA_SIZE sizeof(ARAN)/sizeof(char *)
-
-
+#include "sgeobj/tom/ocs_tom_ARA.h"

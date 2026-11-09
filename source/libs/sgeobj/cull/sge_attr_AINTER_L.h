@@ -29,38 +29,4 @@
  */
 
 #include "cull/cull.h"
-#include "sgeobj/cull/sge_boundaries.h"
-
-/**
-* @brief Attribute Interval
-*
-* Used for interval attributes in the cluster queues.
-* E.g. used for the queue suspend_interval and the notify interval.
-*
-*    SGE_HOST(AINTER_href) - Host Reference
-*    Name of a host or a host group.
-*
-*    SGE_STRING(AINTER_value) - Value
-*    The interval value (represented as string).
-*
-*/
-
-enum {
-   AINTER_href = AINTER_LOWERBOUND,   ///< Host Reference
-   AINTER_value   ///< Value
-};
-
-LISTDEF(AINTER_Type)
-   SGE_HOST(AINTER_href, CULL_PRIMARY_KEY | CULL_UNIQUE | CULL_HASH | CULL_SUBLIST)
-   SGE_STRING(AINTER_value, CULL_SUBLIST)
-LISTEND(AINTER_Type)
-
-NAMEDEF(AINTERN)
-   NAME("AINTER_href")
-   NAME("AINTER_value")
-NAMEEND
-
-/** @brief Number of attributes of the type, i.e. the size of its name table */
-#define AINTER_SIZE sizeof(AINTERN)/sizeof(char *)
-
-
+#include "sgeobj/tom/ocs_tom_AINTER.h"

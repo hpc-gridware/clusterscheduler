@@ -29,38 +29,4 @@
  */
 
 #include "cull/cull.h"
-#include "sgeobj/cull/sge_boundaries.h"
-
-/**
-* @brief Submit User
-*
-* The list of these objects defines which users are allowed to submit jobs into Cluster Scheduler.
-* It is also used to count the number of active jobs of the user.
-*
-*    SGE_STRING(SU_name) - Name
-*    User Name
-*
-*    SGE_ULONG(SU_jobs) - Jobs
-*    Currently active jobs for this user (including jobs in finished state).
-*
-*/
-
-enum {
-   SU_name = SU_LOWERBOUND,   ///< Name
-   SU_jobs   ///< Jobs
-};
-
-LISTDEF(SU_Type)
-   SGE_STRING(SU_name, CULL_UNIQUE | CULL_HASH)
-   SGE_ULONG(SU_jobs, CULL_DEFAULT)
-LISTEND(SU_Type)
-
-NAMEDEF(SUN)
-   NAME("SU_name")
-   NAME("SU_jobs")
-NAMEEND
-
-/** @brief Number of attributes of the type, i.e. the size of its name table */
-#define SU_SIZE sizeof(SUN)/sizeof(char *)
-
-
+#include "sgeobj/tom/ocs_tom_SU.h"

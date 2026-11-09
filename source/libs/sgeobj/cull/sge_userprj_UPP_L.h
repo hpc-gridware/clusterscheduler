@@ -29,46 +29,4 @@
  */
 
 #include "cull/cull.h"
-#include "sgeobj/cull/sge_boundaries.h"
-
-/**
-* @brief Project Usage
-*
-* This is the project usage list type we use to hold the usage for a user on a project basis.
-* Each entry contains a project name and a usage list.
-*
-*    SGE_STRING(UPP_name) - Name
-*    Project name.
-*
-*    SGE_LIST(UPP_usage) - Usage
-*    UA_Type; decayed usage.
-*    Set and used by SGEEE scheduler stored to qmaster; spooled.
-*
-*    SGE_LIST(UPP_long_term_usage) - Long Term Usage
-*    UA_Type; long term accumulated non-decayed usage.
-*    Set by SGEEE scheduler stored to qmaster; spooled
-*
-*/
-
-enum {
-   UPP_name = UPP_LOWERBOUND,   ///< Name
-   UPP_usage,   ///< Usage
-   UPP_long_term_usage   ///< Long Term Usage
-};
-
-LISTDEF(UPP_Type)
-   SGE_STRING(UPP_name, CULL_PRIMARY_KEY | CULL_UNIQUE | CULL_HASH | CULL_SUBLIST)
-   SGE_LIST(UPP_usage, UA_Type, CULL_SUBLIST)
-   SGE_LIST(UPP_long_term_usage, UA_Type, CULL_SUBLIST)
-LISTEND(UPP_Type)
-
-NAMEDEF(UPPN)
-   NAME("UPP_name")
-   NAME("UPP_usage")
-   NAME("UPP_long_term_usage")
-NAMEEND
-
-/** @brief Number of attributes of the type, i.e. the size of its name table */
-#define UPP_SIZE sizeof(UPPN)/sizeof(char *)
-
-
+#include "sgeobj/tom/ocs_tom_UPP.h"

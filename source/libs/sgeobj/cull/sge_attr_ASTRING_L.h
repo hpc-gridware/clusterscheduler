@@ -29,39 +29,4 @@
  */
 
 #include "cull/cull.h"
-#include "sgeobj/cull/sge_boundaries.h"
-
-/**
-* @brief Attribute String
-*
-* Used for string attributes in the cluster queues.
-* @todo Why to we have an ASTR type and an ASTRING type? They have the same definition.
-*       Looks as if ASTRING is not used at all, delete it.
-*
-*    SGE_HOST(ASTRING_href) - Host Reference
-*    Name of a host or a host group.
-*
-*    SGE_STRING(ASTRING_value) - Value
-*    The string value.
-*
-*/
-
-enum {
-   ASTRING_href = ASTRING_LOWERBOUND,   ///< Host Reference
-   ASTRING_value   ///< Value
-};
-
-LISTDEF(ASTRING_Type)
-   SGE_HOST(ASTRING_href, CULL_PRIMARY_KEY | CULL_UNIQUE | CULL_HASH | CULL_SUBLIST)
-   SGE_STRING(ASTRING_value, CULL_SUBLIST)
-LISTEND(ASTRING_Type)
-
-NAMEDEF(ASTRINGN)
-   NAME("ASTRING_href")
-   NAME("ASTRING_value")
-NAMEEND
-
-/** @brief Number of attributes of the type, i.e. the size of its name table */
-#define ASTRING_SIZE sizeof(ASTRINGN)/sizeof(char *)
-
-
+#include "sgeobj/tom/ocs_tom_ASTRING.h"

@@ -29,45 +29,4 @@
  */
 
 #include "cull/cull.h"
-#include "sgeobj/cull/sge_boundaries.h"
-
-/**
-* @brief Job Scheduling Message
-*
-* An individual scheduling message,
-* e.g. explaining why a specific request of a certain job cannot be granted.
-*
-*    SGE_LIST(MES_job_number_list) - Job Number List
-*    A list of job ids to which the message applies.
-*    These are usually all jobs belonging to a specific job category (sharing the same requests).
-*
-*    SGE_ULONG(MES_message_number) - Message Number
-*    Every possible scheduler message has an unique message number.
-*
-*    SGE_STRING(MES_message) - Message
-*    The scheduler message as string.
-*
-*/
-
-enum {
-   MES_job_number_list = MES_LOWERBOUND,   ///< Job Number List
-   MES_message_number,   ///< Message Number
-   MES_message   ///< Message
-};
-
-LISTDEF(MES_Type)
-   SGE_LIST(MES_job_number_list, ULNG_Type, CULL_DEFAULT)
-   SGE_ULONG(MES_message_number, CULL_DEFAULT)
-   SGE_STRING(MES_message, CULL_DEFAULT)
-LISTEND(MES_Type)
-
-NAMEDEF(MESN)
-   NAME("MES_job_number_list")
-   NAME("MES_message_number")
-   NAME("MES_message")
-NAMEEND
-
-/** @brief Number of attributes of the type, i.e. the size of its name table */
-#define MES_SIZE sizeof(MESN)/sizeof(char *)
-
-
+#include "sgeobj/tom/ocs_tom_MES.h"
