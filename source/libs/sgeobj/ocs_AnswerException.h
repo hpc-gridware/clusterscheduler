@@ -43,7 +43,7 @@ namespace ocs {
     * exception: it is freed once, when the last copy is destroyed, and handed
     * out once, by the first take_answer_list() on any copy.
     */
-   class AnswerException : public RuntimeError {
+   class AnswerException : public RuntimeException {
       /** @brief The answer list shared by all copies of one exception */
       struct Holder {
          std::atomic<lList *> answer_list; ///< the list, nullptr once it was taken

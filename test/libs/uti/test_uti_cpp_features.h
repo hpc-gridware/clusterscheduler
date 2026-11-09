@@ -38,19 +38,19 @@
 namespace ocs::probe {
 
    /** @brief A broken precondition: a programming error found at run time */
-   class LogicError : public std::logic_error {
+   class LogicException : public std::logic_error {
    public:
       using std::logic_error::logic_error;
    };
 
    /** @brief An expected runtime error */
-   class RuntimeError : public std::runtime_error {
+   class RuntimeException : public std::runtime_error {
    public:
       using std::runtime_error::runtime_error;
    };
 
    /** @brief A runtime error with a detail of its own: a required entry is missing */
-   class NotFound : public RuntimeError {
+   class NotFound : public RuntimeException {
       int key_;   ///< the key that was not found
 
    public:
@@ -59,7 +59,7 @@ namespace ocs::probe {
        * @param message what happened
        * @param key the key that was not found
        */
-      NotFound(const std::string &message, int key) : RuntimeError(message), key_(key) {}
+      NotFound(const std::string &message, int key) : RuntimeException(message), key_(key) {}
 
       /**
        * @brief The key that was not found
@@ -71,7 +71,7 @@ namespace ocs::probe {
    /// what the module throws in test_uti_cpp_features_throw()
    enum class ThrowKind : int {
       not_found = 1,   ///< NotFound
-      logic = 2,       ///< LogicError
+      logic = 2,       ///< LogicException
       standard = 3     ///< std::runtime_error, no class of ours
    };
 

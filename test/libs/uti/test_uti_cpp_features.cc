@@ -217,11 +217,11 @@ namespace probe_model {
       /**
        * @brief The checked way in from a raw pointer
        * @param ep the element, or nullptr for an empty handle
-       * @throws ocs::probe::LogicError if the element is of another type
+       * @throws ocs::probe::LogicException if the element is of another type
        */
       constexpr explicit Handle(RawElem *ep) : ep_(ep) {
          if (ep != nullptr && ep->base != T::base) {
-            throw ocs::probe::LogicError("element is not of the handle's type");
+            throw ocs::probe::LogicException("element is not of the handle's type");
          }
       }
 
@@ -475,10 +475,10 @@ static void test_model() {
    bool thrown = false;
    try {
       [[maybe_unused]] const Handle<XX> wrong{&other};
-   } catch (const ocs::probe::LogicError &) {
+   } catch (const ocs::probe::LogicException &) {
       thrown = true;
    }
-   CHECK(3, "the checked constructor throws a LogicError for an element of another type", thrown);
+   CHECK(3, "the checked constructor throws a LogicException for an element of another type", thrown);
 
    ListView<XX> list{std::span<RawElem>{elems}};
    uint32_t sum = 0;
@@ -520,11 +520,11 @@ static void test_local_exceptions() {
 
    bool logic = false;
    try {
-      throw ocs::probe::LogicError("absent field read");
+      throw ocs::probe::LogicException("absent field read");
    } catch (const std::logic_error &e) {
       logic = strcmp(e.what(), "absent field read") == 0;
    }
-   CHECK(9, "a LogicError is caught as std::logic_error", logic);
+   CHECK(9, "a LogicException is caught as std::logic_error", logic);
 }
 
 /**
@@ -618,7 +618,7 @@ static void test_module_exceptions() {
       standard_from_module = strcmp(e.what(), "standard in the module") == 0;
    } catch (...) {
    }
-   CHECK(12, "a LogicError and a std::runtime_error from the module are caught by their standard base",
+   CHECK(12, "a LogicException and a std::runtime_error from the module are caught by their standard base",
          logic_from_module && standard_from_module);
 
    bool through_module = false;
@@ -661,11 +661,11 @@ int main(int argc, char *argv[]) {
        {"build field traits, a consteval table, a handle and a list view of a model type",
         "read and write fields, iterate, look up, convert to the raw pointer",
         "enter the handle with an element of another type"},
-       "values and hash maintenance are right, the wrong type throws a LogicError",
+       "values and hash maintenance are right, the wrong type throws a LogicException",
        {}, {1, 2, 3, 4, 5, 6}, test_model},
       {"CPP-02", "exceptions inside the executable",
        "our exception classes are caught by their own type and by the standard base, with message and detail",
-       {"throw a NotFound and a LogicError", "catch them by derived and by base type"},
+       {"throw a NotFound and a LogicException", "catch them by derived and by base type"},
        "every exception is caught with its message",
        {}, {7, 8, 9}, test_local_exceptions},
       {"CPP-03", "exceptions across a loaded module",

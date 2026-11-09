@@ -19,7 +19,7 @@
 /*___INFO__MARK_END_NEW__*/
 
 /** @file
- * @brief Key functions of @ref ocs::LogicError and @ref ocs::RuntimeError
+ * @brief Key functions of @ref ocs::LogicException and @ref ocs::RuntimeException
  *
  * The destructors are the only out-of-line members of the classes. Defining
  * them here makes the compiler emit vtable and type information once, in this
@@ -30,6 +30,6 @@
 
 #include "ocs_Exception.h"
 
-ocs::LogicError::~LogicError() = default;
+ocs::LogicException::~LogicException() = default;
 
-ocs::RuntimeError::~RuntimeError() = default;
+ocs::RuntimeException::~RuntimeException() = default;

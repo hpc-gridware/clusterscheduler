@@ -41,7 +41,7 @@ extern "C" void test_uti_cpp_features_throw(int kind, const char *message) {
       case ocs::probe::ThrowKind::not_found:
          throw ocs::probe::NotFound(message, TEST_UTI_CPP_FEATURES_KEY);
       case ocs::probe::ThrowKind::logic:
-         throw ocs::probe::LogicError(message);
+         throw ocs::probe::LogicException(message);
       case ocs::probe::ThrowKind::standard:
       default:
          throw std::runtime_error(message);

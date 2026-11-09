@@ -45,7 +45,7 @@ ocs::AnswerException::get_last_error_message(const lList *answer_list) {
 }
 
 ocs::AnswerException::AnswerException(lList **answer_list)
-   : RuntimeError(get_last_error_message(*answer_list)), m_holder(std::make_shared<Holder>(*answer_list)) {
+   : RuntimeException(get_last_error_message(*answer_list)), m_holder(std::make_shared<Holder>(*answer_list)) {
    // the holder owns the list from here on
    *answer_list = nullptr;
 }

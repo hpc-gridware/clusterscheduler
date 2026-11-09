@@ -38,12 +38,12 @@ namespace ocs {
     * field or an element of the wrong type. The message is kept and returned
     * by `what()`.
     */
-   class LogicError : public std::logic_error {
+   class LogicException : public std::logic_error {
    public:
       using std::logic_error::logic_error;
 
       /** @brief Destroy the exception; defined out of line as the key function */
-      ~LogicError() override;
+      ~LogicException() override;
    };
 
    /**
@@ -53,11 +53,11 @@ namespace ocs {
     * found or input that cannot be parsed. The message is kept and returned
     * by `what()`.
     */
-   class RuntimeError : public std::runtime_error {
+   class RuntimeException : public std::runtime_error {
    public:
       using std::runtime_error::runtime_error;
 
       /** @brief Destroy the exception; defined out of line as the key function */
-      ~RuntimeError() override;
+      ~RuntimeException() override;
    };
 }
