@@ -3489,8 +3489,19 @@ static int cl_commlib_handle_connection_read(cl_com_connection_t *connection) {
                gettimeofday(&now, nullptr);
                connection->read_buffer_timeout_time = now.tv_sec + connection->handler->read_timeout;
                CL_LOG(CL_LOG_INFO, "recalculate read buffer timeout time (CL_MS_RCV_GMSH)");
+            } else if (connection->data_read_buffer_pos == 0) {
+               /* no byte of a new message has arrived yet, e.g. the socket was readable but
+                * only delivered a TLS record without application data: the connection is idle,
+                * a read timeout must not close it */
+               connection->read_buffer_timeout_time = 0;
             }
             return return_value;
+         }
+         if (connection->read_buffer_timeout_time == 0) {
+            /* the read timeout was disarmed while the connection was idle, the message has
+             * started now */
+            gettimeofday(&now, nullptr);
+            connection->read_buffer_timeout_time = now.tv_sec + connection->handler->read_timeout;
          }
          connection->statistic->real_bytes_received =
                  connection->statistic->real_bytes_received + connection->data_read_buffer_pos;
