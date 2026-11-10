@@ -35,6 +35,11 @@ target_include_directories(test_tom_list PRIVATE "./")
 target_link_libraries(test_tom_list PRIVATE sgeobj cull comm commlists uti ${SGE_LIBS})
 add_test(NAME test_tom_list COMMAND test_tom_list)
 
+add_executable(test_tom_legacy test_tom_legacy.cc)
+target_include_directories(test_tom_legacy PRIVATE "./")
+target_link_libraries(test_tom_legacy PRIVATE sgeobj cull comm commlists uti ${SGE_LIBS})
+add_test(NAME test_tom_legacy COMMAND test_tom_legacy)
+
 # TRT-02: sources that must not compile. Each is compiled with the flags of
 # test_tom_handles as part of the build, which fails if one compiles or fails
 # with another error than the one it names; test_tom_handles holds the correct
@@ -62,4 +67,5 @@ if (INSTALL_SGE_TEST)
    install(TARGETS test_tom_traits DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_tom_handles DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_tom_list DESTINATION testbin/${SGE_ARCH})
+   install(TARGETS test_tom_legacy DESTINATION testbin/${SGE_ARCH})
 endif ()

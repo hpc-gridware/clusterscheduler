@@ -34,6 +34,7 @@
 
 #include "cull/cull_list.h"
 #include "tom/ocs_FieldException.h"
+#include "tom/ocs_FieldTraits.h"
 
 namespace ocs::tom {
 
@@ -48,6 +49,21 @@ namespace ocs::tom {
     * @return the position, or -1 if the field does not belong to the type
     */
    int field_pos(const lDescr *descr, int nm) noexcept;
+
+   /**
+    * @brief The position of a field an element must hold, with the field type it must have
+    *
+    * The checks of an accessor whose field number is known only at run time,
+    * in the order of the old interface: the element, the field's type, its
+    * presence in a reduced element, and the field type.
+    *
+    * @param ep the element
+    * @param nm the field number
+    * @param type the field type the caller reads or writes
+    * @return the field's position
+    * @throw FieldException with reason NullElement, ForeignField, AbsentField or WrongType
+    */
+   int checked_pos(const lListElem *ep, int nm, FieldType type);
 
    /**
     * @brief Store a string or host value, copying it and maintaining the hash table

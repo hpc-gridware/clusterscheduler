@@ -65,6 +65,8 @@
 #include "cull/cull_lerrnoP.h"
 #include "cull/cull_hash.h"
 
+#include "tom/ocs_ElementCore.h"
+
 #ifdef OBSERVE
 #  include "cull/cull_observe.h"
 #endif
@@ -151,6 +153,100 @@ int unknownType(const char *str) {
    LERROR(LEUNKTYPE);
    DRETURN(-1);
 }
+
+namespace {
+
+   /**
+    * @brief The position of a field for a getter by name, through the core of the typed object model
+    *
+    * The core checks; this maps its exception back to what the old getters
+    * did on every error: log the message of the error and abort.
+    *
+    * @param ep the element
+    * @param name the field number
+    * @param type the field type the getter reads
+    * @param wrong_type_fmt the getter's message for a field of another field type
+    * @return the field's position; does not return on an error
+    */
+   int legacy_getter_pos(const lListElem *ep, const int name, const ocs::tom::FieldType type,
+                         const char *wrong_type_fmt) {
+      DENTER(CULL_BASIS_LAYER);
+      try {
+         DRETURN(ocs::tom::checked_pos(ep, name, type));
+      } catch (const ocs::tom::FieldException &e) {
+         switch (e.reason()) {
+            case ocs::tom::FieldException::Reason::NullElement:
+               CRITICAL(MSG_CULL_POINTER_NULLELEMENTFORX_S, lNm2Str(name));
+               break;
+            case ocs::tom::FieldException::Reason::WrongType: {
+               const int pos = ocs::tom::field_pos(ep->descr, name);
+               incompatibleType2(wrong_type_fmt, lNm2Str(name), multitypes[mt_get_type(ep->descr[pos].mt)]);
+               break;
+            }
+            default:
+               CRITICAL(MSG_CULL_XNOTFOUNDINELEMENT_S, lNm2Str(name));
+               break;
+         }
+         ocs::TerminationManager::trigger_abort();
+      }
+      DRETURN(-1);
+   }
+
+   /** @brief What an old setter by name does with a field the element does not hold */
+   enum class LegacyMissing {
+      Silent,   ///< return -1 without an error number
+      NegPos,   ///< return -1 with LENEGPOS
+      Abort     ///< log the "no such name" message and abort
+   };
+
+   /**
+    * @brief The position of a field for a setter by name, through the core of the typed object model
+    *
+    * The core checks; this maps its exception back to what the old setter of
+    * the field type did: -1 with LEELEMNULL for a null element, the setter's
+    * own behaviour for a field the element does not hold, and an abort for a
+    * field of another field type.
+    *
+    * @param ep the element
+    * @param name the field number
+    * @param type the field type the setter writes
+    * @param missing what the setter does with a field the element does not hold
+    * @param wrong_type_fmt the setter's message for a field of another field type
+    * @param no_such_name_fmt the setter's message for a missing field, if it aborts on one
+    * @param setter the setter's name, for the debug message of a silent miss
+    * @return the field's position, or -1 where the old setter returned -1
+    */
+   int legacy_setter_pos(const lListElem *ep, const int name, const ocs::tom::FieldType type,
+                         const LegacyMissing missing, const char *wrong_type_fmt, const char *no_such_name_fmt,
+                         [[maybe_unused]] const char *setter) {
+      DENTER(CULL_BASIS_LAYER);
+      try {
+         DRETURN(ocs::tom::checked_pos(ep, name, type));
+      } catch (const ocs::tom::FieldException &e) {
+         switch (e.reason()) {
+            case ocs::tom::FieldException::Reason::NullElement:
+               LERROR(LEELEMNULL);
+               break;
+            case ocs::tom::FieldException::Reason::WrongType: {
+               const int pos = ocs::tom::field_pos(ep->descr, name);
+               incompatibleType2(wrong_type_fmt, lNm2Str(name), multitypes[mt_get_type(ep->descr[pos].mt)]);
+               break;
+            }
+            default:
+               if (missing == LegacyMissing::NegPos) {
+                  LERROR(LENEGPOS);
+               } else if (missing == LegacyMissing::Abort) {
+                  incompatibleType2(no_such_name_fmt, name, lNm2Str(name));
+               } else {
+                  DPRINTF("!!!!!!!!!! %s(): %s not found in element !!!!!!!!!!\n", setter, lNm2Str(name));
+               }
+               break;
+         }
+      }
+      DRETURN(-1);
+   }
+
+} // namespace
 
 /**
  * @brief Get Position of name within element
@@ -363,9 +459,9 @@ int lGetPosInDescr(const lDescr *dp, int name) {
    }
    CULL_STATS_TYPE(dp->nm, POS_CALLS, 1);
 
-   const int pos = name - dp->nm;
-   if (pos < 0 || static_cast<uint32_t>(pos) >= ocs_cull_descr_header_of(dp)->n || dp[pos].nm != name ||
-       dp[pos].off == OCS_CULL_ABSENT) {
+   // the core computes the position; a field the reduced descriptor does not hold is a miss here as well
+   const int pos = ocs::tom::field_pos(dp, name);
+   if (pos < 0 || dp[pos].off == OCS_CULL_ABSENT) {
       return -1;
    }
    return pos;
@@ -488,12 +584,7 @@ lInt lGetPosInt(const lListElem *ep, int pos) {
 lInt lGetInt(const lListElem *ep, int name) {
    DENTER(CULL_BASIS_LAYER);
 
-   int pos;
-   pos = lGetPosViaElem(ep, name, SGE_DO_ABORT);
-
-   if (mt_get_type(ep->descr[pos].mt) != lIntT)
-      incompatibleType2(MSG_CULL_GETINT_WRONGTYPEFORFIELDXY_SS,
-                        lNm2Str(name), multitypes[mt_get_type(ep->descr[pos].mt)]);
+   const int pos = legacy_getter_pos(ep, name, ocs::tom::FieldType::Int32, MSG_CULL_GETINT_WRONGTYPEFORFIELDXY_SS);
 
    DRETURN((lInt) ocs_cull_value(ep, pos).i);
 }
@@ -538,12 +629,7 @@ lUlong lGetPosUlong(const lListElem *ep, int pos) {
 lUlong lGetUlong(const lListElem *ep, int name) {
    DENTER(CULL_BASIS_LAYER);
 
-   int pos;
-   pos = lGetPosViaElem(ep, name, SGE_DO_ABORT);
-
-   if (mt_get_type(ep->descr[pos].mt) != lUlongT)
-      incompatibleType2(MSG_CULL_GETULONG_WRONGTYPEFORFIELDXY_SS,
-                        lNm2Str(name), multitypes[mt_get_type(ep->descr[pos].mt)]);
+   const int pos = legacy_getter_pos(ep, name, ocs::tom::FieldType::Uint32, MSG_CULL_GETULONG_WRONGTYPEFORFIELDXY_SS);
 
    DRETURN((lUlong) ocs_cull_value(ep, pos).ul);
 }
@@ -588,12 +674,7 @@ lUlong64 lGetPosUlong64(const lListElem *ep, int pos) {
 lUlong64 lGetUlong64(const lListElem *ep, int name) {
    DENTER(CULL_BASIS_LAYER);
 
-   int pos;
-   pos = lGetPosViaElem(ep, name, SGE_DO_ABORT);
-
-   if (mt_get_type(ep->descr[pos].mt) != lUlong64T)
-      incompatibleType2(MSG_CULL_GETULONG64_WRONGTYPEFORFIELDXY_SS,
-                        lNm2Str(name), multitypes[mt_get_type(ep->descr[pos].mt)]);
+   const int pos = legacy_getter_pos(ep, name, ocs::tom::FieldType::Uint64, MSG_CULL_GETULONG64_WRONGTYPEFORFIELDXY_SS);
 
    DRETURN((lUlong64) ocs_cull_value(ep, pos).ul64);
 }
@@ -681,13 +762,7 @@ int lGetType(const lDescr *dp, int nm) {
 const char *lGetString(const lListElem *ep, int name) {
    DENTER(CULL_BASIS_LAYER);
 
-   int pos;
-   pos = lGetPosViaElem(ep, name, SGE_DO_ABORT);
-
-   if (mt_get_type(ep->descr[pos].mt) != lStringT) {
-      incompatibleType2(MSG_CULL_GETSTRING_WRONGTYPEFORFILEDXY_SS,
-                        lNm2Str(name), multitypes[mt_get_type(ep->descr[pos].mt)]);
-   }
+   const int pos = legacy_getter_pos(ep, name, ocs::tom::FieldType::String, MSG_CULL_GETSTRING_WRONGTYPEFORFILEDXY_SS);
 
    DRETURN((lString) ocs_cull_value(ep, pos).str);
 }
@@ -726,12 +801,7 @@ const char *lGetStringNotNull(const lListElem *ep, int name) {
 const char *lGetHost(const lListElem *ep, int name) {
    DENTER(CULL_BASIS_LAYER);
 
-   int pos;
-   pos = lGetPosViaElem(ep, name, SGE_DO_ABORT);
-
-   if (mt_get_type(ep->descr[pos].mt) != lHostT)
-      incompatibleType2(MSG_CULL_GETHOST_WRONGTYPEFORFILEDXY_SS,
-                        lNm2Str(name), multitypes[mt_get_type(ep->descr[pos].mt)]);
+   const int pos = legacy_getter_pos(ep, name, ocs::tom::FieldType::Host, MSG_CULL_GETHOST_WRONGTYPEFORFILEDXY_SS);
 
    DRETURN((lHost) ocs_cull_value(ep, pos).host);
 }
@@ -792,12 +862,7 @@ lList *lGetPosList(const lListElem *ep, int pos) {
 lListElem *lGetObject(const lListElem *ep, int name) {
    DENTER(CULL_BASIS_LAYER);
 
-   int pos;
-   pos = lGetPosViaElem(ep, name, SGE_DO_ABORT);
-
-   if (mt_get_type(ep->descr[pos].mt) != lObjectT)
-      incompatibleType2(MSG_CULL_GETOBJECT_WRONGTYPEFORFIELDXY_SS,
-                        lNm2Str(name), multitypes[mt_get_type(ep->descr[pos].mt)]);
+   const int pos = legacy_getter_pos(ep, name, ocs::tom::FieldType::Object, MSG_CULL_GETOBJECT_WRONGTYPEFORFIELDXY_SS);
    DRETURN((lListElem *) ocs_cull_value(ep, pos).obj);
 }
 
@@ -811,13 +876,7 @@ lListElem *lGetObject(const lListElem *ep, int name) {
 lList *lGetListRW(const lListElem *ep, int name) {
    DENTER(CULL_BASIS_LAYER);
 
-   int pos;
-   pos = lGetPosViaElem(ep, name, SGE_DO_ABORT);
-
-   if (mt_get_type(ep->descr[pos].mt) != lListT) {
-      incompatibleType2(MSG_CULL_GETLIST_WRONGTYPEFORFIELDXY_SS,
-                        lNm2Str(name), multitypes[mt_get_type(ep->descr[pos].mt)]);
-   }
+   const int pos = legacy_getter_pos(ep, name, ocs::tom::FieldType::List, MSG_CULL_GETLIST_WRONGTYPEFORFIELDXY_SS);
 
    DRETURN((lList *) ocs_cull_value(ep, pos).glp);
 }
@@ -887,12 +946,7 @@ lDouble lGetPosDouble(const lListElem *ep, int pos) {
 lDouble lGetDouble(const lListElem *ep, int name) {
    DENTER(CULL_BASIS_LAYER);
 
-   int pos;
-   pos = lGetPosViaElem(ep, name, SGE_DO_ABORT);
-
-   if (mt_get_type(ep->descr[pos].mt) != lDoubleT)
-      incompatibleType2(MSG_CULL_GETDOUBLE_WRONGTYPEFORFIELDXY_SS, lNm2Str(name),
-                        multitypes[mt_get_type(ep->descr[pos].mt)]);
+   const int pos = legacy_getter_pos(ep, name, ocs::tom::FieldType::Double, MSG_CULL_GETDOUBLE_WRONGTYPEFORFIELDXY_SS);
    DRETURN(ocs_cull_value(ep, pos).db);
 }
 
@@ -926,12 +980,7 @@ lLong lGetPosLong(const lListElem *ep, int pos) {
 lLong lGetLong(const lListElem *ep, int name) {
    DENTER(CULL_BASIS_LAYER);
 
-   int pos;
-   pos = lGetPosViaElem(ep, name, SGE_DO_ABORT);
-
-   if (mt_get_type(ep->descr[pos].mt) != lLongT)
-      incompatibleType2(MSG_CULL_GETLONG_WRONGTYPEFORFIELDXY_SS, lNm2Str(name),
-                        multitypes[mt_get_type(ep->descr[pos].mt)]);
+   const int pos = legacy_getter_pos(ep, name, ocs::tom::FieldType::Int64, MSG_CULL_GETLONG_WRONGTYPEFORFIELDXY_SS);
    DRETURN(ocs_cull_value(ep, pos).l);
 }
 
@@ -966,12 +1015,7 @@ lBool lGetPosBool(const lListElem *ep, int pos) {
 lBool lGetBool(const lListElem *ep, int name) {
    DENTER(CULL_BASIS_LAYER);
 
-   int pos;
-   pos = lGetPosViaElem(ep, name, SGE_DO_ABORT);
-
-   if (mt_get_type(ep->descr[pos].mt) != lBoolT)
-      incompatibleType2(MSG_CULL_GETBOOL_WRONGTYPEFORFIELDXY_SS, lNm2Str(name),
-                        multitypes[mt_get_type(ep->descr[pos].mt)]);
+   const int pos = legacy_getter_pos(ep, name, ocs::tom::FieldType::Bool, MSG_CULL_GETBOOL_WRONGTYPEFORFIELDXY_SS);
    DRETURN(ocs_cull_value(ep, pos).b);
 }
 
@@ -1006,12 +1050,7 @@ lRef lGetPosRef(const lListElem *ep, int pos) {
 lRef lGetRef(const lListElem *ep, int name) {
    DENTER(CULL_BASIS_LAYER);
 
-   int pos;
-   pos = lGetPosViaElem(ep, name, SGE_DO_ABORT);
-
-   if (mt_get_type(ep->descr[pos].mt) != lRefT)
-      incompatibleType2(MSG_CULL_GETREF_WRONGTYPEFORFIELDXY_SS, lNm2Str(name),
-                        multitypes[mt_get_type(ep->descr[pos].mt)]);
+   const int pos = legacy_getter_pos(ep, name, ocs::tom::FieldType::Ref, MSG_CULL_GETREF_WRONGTYPEFORFIELDXY_SS);
    DRETURN(ocs_cull_value(ep, pos).ref);
 }
 
@@ -1070,33 +1109,12 @@ int lSetPosInt(lListElem *ep, int pos, int value) {
 int lSetInt(lListElem *ep, int name, int value) {
    DENTER(CULL_BASIS_LAYER);
 
-   int pos;
-   if (!ep) {
-      LERROR(LEELEMNULL);
-      DRETURN(-1);
-   }
-
-   pos = lGetPosViaElem(ep, name, SGE_NO_ABORT);
+   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::Int32, LegacyMissing::NegPos, MSG_CULL_SETINT_WRONGTYPEFORFIELDXY_SS, nullptr, "lSetInt");
    if (pos < 0) {
-      LERROR(LENEGPOS);
       DRETURN(-1);
    }
 
-   if (mt_get_type(ep->descr[pos].mt) != lIntT) {
-      incompatibleType2(MSG_CULL_SETINT_WRONGTYPEFORFIELDXY_SS, lNm2Str(name),
-                        multitypes[mt_get_type(ep->descr[pos].mt)]);
-      DRETURN(-1);
-   }
-
-#ifdef OBSERVE
-   lObserveChangeValue(ep, false, name);
-#endif
-
-   if (value != ocs_cull_value(ep, pos).i) {
-      ocs_cull_value(ep, pos).i = value;
-   }
-
-   DRETURN(0);
+   DRETURN(lSetPosInt(ep, pos, value));
 }
 
 /**
@@ -1127,22 +1145,12 @@ int lSetPosUlong(lListElem *ep, int pos, lUlong value) {
       DRETURN(-1);
    }
 
-#ifdef OBSERVE
-   lObserveChangeValue(ep, elem_hash_table(ep, pos) != nullptr, lGetPosName(ep->descr, pos));
-#endif
-
+   ocs::tom::observe_value(ep, pos);
    if (value != ocs_cull_value(ep, pos).ul) {
-      /* remove old hash entry */
       if (elem_hash_table(ep, pos) != nullptr) {
-         cull_hash_remove(ep, pos);
-      }
-
-      ocs_cull_value(ep, pos).ul = value;
-
-      /* create entry in hash table */
-      if (elem_hash_table(ep, pos) != nullptr) {
-         cull_hash_insert(ep, (void *) &(ocs_cull_value(ep, pos).ul), elem_hash_table(ep, pos),
-                          mt_is_unique(ep->descr[pos].mt));
+         ocs::tom::store_hashed_number(ep, pos, value);
+      } else {
+         ocs_cull_value(ep, pos).ul = value;
       }
    }
 
@@ -1164,46 +1172,12 @@ int lSetPosUlong(lListElem *ep, int pos, lUlong value) {
 int lSetUlong(lListElem *ep, int name, lUlong value) {
    DENTER(CULL_BASIS_LAYER);
 
-   int pos;
-
-   if (!ep) {
-      LERROR(LEELEMNULL);
-      DRETURN(-1);
-   }
-
-   pos = lGetPosViaElem(ep, name, SGE_NO_ABORT);
+   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::Uint32, LegacyMissing::Silent, MSG_CULL_SETULONG_WRONGTYPEFORFIELDXY_SS, nullptr, "lSetUlong");
    if (pos < 0) {
-      DPRINTF(("!!!!!!!!!! lSetUlong(): %s not found in element !!!!!!!!!!\n",
-              lNm2Str(name)));
       DRETURN(-1);
    }
 
-   if (mt_get_type(ep->descr[pos].mt) != lUlongT) {
-      incompatibleType2(MSG_CULL_SETULONG_WRONGTYPEFORFIELDXY_SS, lNm2Str(name),
-                        multitypes[mt_get_type(ep->descr[pos].mt)]);
-      DRETURN(-1);
-   }
-
-#ifdef OBSERVE
-   lObserveChangeValue(ep, elem_hash_table(ep, pos) != nullptr, name);
-#endif
-
-   if (value != ocs_cull_value(ep, pos).ul) {
-      /* remove old hash entry */
-      if (elem_hash_table(ep, pos) != nullptr) {
-         cull_hash_remove(ep, pos);
-      }
-
-      ocs_cull_value(ep, pos).ul = value;
-
-      /* create entry in hash table */
-      if (elem_hash_table(ep, pos) != nullptr) {
-         cull_hash_insert(ep, (void *) &(ocs_cull_value(ep, pos).ul), elem_hash_table(ep, pos),
-                          mt_is_unique(ep->descr[pos].mt));
-      }
-   }
-
-   DRETURN(0);
+   DRETURN(lSetPosUlong(ep, pos, value));
 }
 
 /**
@@ -1223,23 +1197,8 @@ int lSetUlong(lListElem *ep, int name, lUlong value) {
 int lAddUlong(lListElem *ep, int name, lUlong offset) {
    DENTER(CULL_BASIS_LAYER);
 
-   int pos;
-
-   if (!ep) {
-      LERROR(LEELEMNULL);
-      DRETURN(-1);
-   }
-
-   pos = lGetPosViaElem(ep, name, SGE_NO_ABORT);
+   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::Uint32, LegacyMissing::Silent, MSG_CULL_SETULONG_WRONGTYPEFORFIELDXY_SS, nullptr, "lAddUlong");
    if (pos < 0) {
-      DPRINTF(("!!!!!!!!!! lSetUlong(): %s not found in element !!!!!!!!!!\n",
-              lNm2Str(name)));
-      DRETURN(-1);
-   }
-
-   if (mt_get_type(ep->descr[pos].mt) != lUlongT) {
-      incompatibleType2(MSG_CULL_SETULONG_WRONGTYPEFORFIELDXY_SS, lNm2Str(name),
-                        multitypes[mt_get_type(ep->descr[pos].mt)]);
       DRETURN(-1);
    }
 
@@ -1302,13 +1261,7 @@ int lAddUlong(lListElem *ep, int name, lUlong offset) {
 lUlong64 lGetUlong64Atomic(const lListElem *ep, int name) {
    DENTER(CULL_BASIS_LAYER);
 
-   int pos;
-   pos = lGetPosViaElem(ep, name, SGE_DO_ABORT);
-
-   if (mt_get_type(ep->descr[pos].mt) != lUlong64T) {
-      incompatibleType2(MSG_CULL_GETULONG64_WRONGTYPEFORFIELDXY_SS,
-                        lNm2Str(name), multitypes[mt_get_type(ep->descr[pos].mt)]);
-   }
+   const int pos = legacy_getter_pos(ep, name, ocs::tom::FieldType::Uint64, MSG_CULL_GETULONG64_WRONGTYPEFORFIELDXY_SS);
 
    // std::atomic_ref would be the idiomatic form, but it cannot be used here:
    // FreeBSD 14 ships libc++ 18, which does not implement it at all
@@ -1348,23 +1301,8 @@ lUlong64 lGetUlong64Atomic(const lListElem *ep, int name) {
 int lSetUlong64Atomic(lListElem *ep, int name, lUlong64 value) {
    DENTER(CULL_BASIS_LAYER);
 
-   int pos;
-
-   if (!ep) {
-      LERROR(LEELEMNULL);
-      DRETURN(-1);
-   }
-
-   pos = lGetPosViaElem(ep, name, SGE_NO_ABORT);
+   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::Uint64, LegacyMissing::Silent, MSG_CULL_SETULONG64_WRONGTYPEFORFIELDXY_SS, nullptr, "lSetUlong64Atomic");
    if (pos < 0) {
-      DPRINTF(("!!!!!!!!!! lSetUlong64Atomic(): %s not found in element !!!!!!!!!!\n",
-              lNm2Str(name)));
-      DRETURN(-1);
-   }
-
-   if (mt_get_type(ep->descr[pos].mt) != lUlong64T) {
-      incompatibleType2(MSG_CULL_SETULONG64_WRONGTYPEFORFIELDXY_SS, lNm2Str(name),
-                        multitypes[mt_get_type(ep->descr[pos].mt)]);
       DRETURN(-1);
    }
 
@@ -1386,46 +1324,12 @@ int lSetUlong64Atomic(lListElem *ep, int name, lUlong64 value) {
 int lSetUlong64(lListElem *ep, int name, lUlong64 value) {
    DENTER(CULL_BASIS_LAYER);
 
-   int pos;
-
-   if (!ep) {
-      LERROR(LEELEMNULL);
-      DRETURN(-1);
-   }
-
-   pos = lGetPosViaElem(ep, name, SGE_NO_ABORT);
+   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::Uint64, LegacyMissing::Silent, MSG_CULL_SETULONG64_WRONGTYPEFORFIELDXY_SS, nullptr, "lSetUlong64");
    if (pos < 0) {
-      DPRINTF(("!!!!!!!!!! lSetUlong64(): %s not found in element !!!!!!!!!!\n",
-              lNm2Str(name)));
       DRETURN(-1);
    }
 
-   if (mt_get_type(ep->descr[pos].mt) != lUlong64T) {
-      incompatibleType2(MSG_CULL_SETULONG64_WRONGTYPEFORFIELDXY_SS, lNm2Str(name),
-                        multitypes[mt_get_type(ep->descr[pos].mt)]);
-      DRETURN(-1);
-   }
-
-#ifdef OBSERVE
-   lObserveChangeValue(ep, elem_hash_table(ep, pos) != nullptr, name);
-#endif
-
-   if (value != ocs_cull_value(ep, pos).ul64) {
-      /* remove old hash entry */
-      if (elem_hash_table(ep, pos) != nullptr) {
-         cull_hash_remove(ep, pos);
-      }
-
-      ocs_cull_value(ep, pos).ul64 = value;
-
-      /* create entry in hash table */
-      if (elem_hash_table(ep, pos) != nullptr) {
-         cull_hash_insert(ep, (void *) &(ocs_cull_value(ep, pos).ul64), elem_hash_table(ep, pos),
-                          mt_is_unique(ep->descr[pos].mt));
-      }
-   }
-
-   DRETURN(0);
+   DRETURN(lSetPosUlong64(ep, pos, value));
 }
 
 /**
@@ -1445,23 +1349,8 @@ int lSetUlong64(lListElem *ep, int name, lUlong64 value) {
 int lAddUlong64(lListElem *ep, int name, lUlong64 offset) {
    DENTER(CULL_BASIS_LAYER);
 
-   int pos;
-
-   if (!ep) {
-      LERROR(LEELEMNULL);
-      DRETURN(-1);
-   }
-
-   pos = lGetPosViaElem(ep, name, SGE_NO_ABORT);
+   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::Uint64, LegacyMissing::Silent, MSG_CULL_SETULONG64_WRONGTYPEFORFIELDXY_SS, nullptr, "lAddUlong64");
    if (pos < 0) {
-      DPRINTF(("!!!!!!!!!! lSetUlong64(): %s not found in element !!!!!!!!!!\n",
-              lNm2Str(name)));
-      DRETURN(-1);
-   }
-
-   if (mt_get_type(ep->descr[pos].mt) != lUlong64T) {
-      incompatibleType2(MSG_CULL_SETULONG64_WRONGTYPEFORFIELDXY_SS, lNm2Str(name),
-                        multitypes[mt_get_type(ep->descr[pos].mt)]);
       DRETURN(-1);
    }
 
@@ -1515,22 +1404,12 @@ int lSetPosUlong64(lListElem *ep, int pos, lUlong64 value) {
       DRETURN(-1);
    }
 
-#ifdef OBSERVE
-   lObserveChangeValue(ep, elem_hash_table(ep, pos) != nullptr, lGetPosName(ep->descr, pos));
-#endif
-
+   ocs::tom::observe_value(ep, pos);
    if (value != ocs_cull_value(ep, pos).ul64) {
-      /* remove old hash entry */
       if (elem_hash_table(ep, pos) != nullptr) {
-         cull_hash_remove(ep, pos);
-      }
-
-      ocs_cull_value(ep, pos).ul64 = value;
-
-      /* create entry in hash table */
-      if (elem_hash_table(ep, pos) != nullptr) {
-         cull_hash_insert(ep, (void *) &(ocs_cull_value(ep, pos).ul64), elem_hash_table(ep, pos),
-                          mt_is_unique(ep->descr[pos].mt));
+         ocs::tom::store_hashed_number(ep, pos, value);
+      } else {
+         ocs_cull_value(ep, pos).ul64 = value;
       }
    }
 
@@ -1551,9 +1430,6 @@ int lSetPosUlong64(lListElem *ep, int pos, lUlong64 value) {
 int lSetPosString(lListElem *ep, int pos, const char *value) {
    DENTER(CULL_BASIS_LAYER);
 
-   char *str = nullptr;
-   int changed;
-
    if (!ep) {
       LERROR(LEELEMNULL);
       DRETURN(-1);
@@ -1569,51 +1445,9 @@ int lSetPosString(lListElem *ep, int pos, const char *value) {
       DRETURN(-1);
    }
 
-   /* has the string value changed?
-   ** if both new and old are nullptr, nothing changed,
-   ** if one of them is nullptr, it changed,
-   ** else do a string compare
-   */
-   str = ocs_cull_value(ep, pos).str;
-   if (value == nullptr && str == nullptr) {
-      changed = 0;
-   } else {
-      if (value == nullptr || str == nullptr) {
-         changed = 1;
-      } else {
-         changed = strcmp(value, str);
-      }
-   }
-
-#ifdef OBSERVE
-   lObserveChangeValue(ep, elem_hash_table(ep, pos) != nullptr, lGetPosName(ep->descr, pos));
-#endif
-
-   if (changed) {
-      /* remove old hash entry */
-      if (elem_hash_table(ep, pos) != nullptr) {
-         cull_hash_remove(ep, pos);
-      }
-
-      /* strdup new string value */
-      if (value) {
-         if (!(str = strdup(value))) {
-            LERROR(LESTRDUP);
-            DRETURN(-1);
-         }
-      }                            /* these brackets are required */
-      else
-         str = nullptr;               /* value is nullptr */
-
-      /* free old string value */
-      sge_free(&(ocs_cull_value(ep, pos).str));
-      ocs_cull_value(ep, pos).str = str;
-
-      /* create entry in hash table */
-      if (elem_hash_table(ep, pos) != nullptr) {
-         cull_hash_insert(ep, ocs_cull_value(ep, pos).str, elem_hash_table(ep, pos),
-                          mt_is_unique(ep->descr[pos].mt));
-      }
+   if (!ocs::tom::store_string(ep, pos, value)) {
+      LERROR(LESTRDUP);
+      DRETURN(-1);
    }
 
    DRETURN(0);
@@ -1633,9 +1467,6 @@ int lSetPosString(lListElem *ep, int pos, const char *value) {
 int lSetPosHost(lListElem *ep, int pos, const char *value) {
    DENTER(CULL_BASIS_LAYER);
 
-   char *str = nullptr;
-   int changed;
-
    if (!ep) {
       LERROR(LEELEMNULL);
       DRETURN(-1);
@@ -1651,53 +1482,9 @@ int lSetPosHost(lListElem *ep, int pos, const char *value) {
       DRETURN(-1);
    }
 
-   /* has the host value changed?
-   ** if both new and old are nullptr, nothing changed,
-   ** if one of them is nullptr, it changed,
-   ** else do a string compare (a hostcmp would be more accurate,
-   ** but most probably not neccessary and too expensive
-   */
-   str = ocs_cull_value(ep, pos).host;
-   if (value == nullptr && str == nullptr) {
-      changed = 0;
-   } else {
-      if (value == nullptr || str == nullptr) {
-         changed = 1;
-      } else {
-         changed = strcmp(value, str);
-      }
-   }
-
-#ifdef OBSERVE
-   lObserveChangeValue(ep, elem_hash_table(ep, pos) != nullptr, lGetPosName(ep->descr, pos));
-#endif
-
-   if (changed) {
-      /* remove old hash entry */
-      if (elem_hash_table(ep, pos) != nullptr) {
-         cull_hash_remove(ep, pos);
-      }
-
-      /* strdup new string value */
-      if (value) {
-         if (!(str = strdup(value))) {
-            LERROR(LESTRDUP);
-            DRETURN(-1);
-         }
-      }                            /* these brackets are required */
-      else
-         str = nullptr;               /* value is nullptr */
-
-      /* free old string value */
-      sge_free(&(ocs_cull_value(ep, pos).host));
-      ocs_cull_value(ep, pos).host = str;
-
-      /* create entry in hash table */
-      if (elem_hash_table(ep, pos) != nullptr) {
-         char host_key[CL_MAXHOSTNAMELEN + 1];
-         cull_hash_insert(ep, cull_hash_key(ep, pos, host_key),
-                          elem_hash_table(ep, pos), mt_is_unique(ep->descr[pos].mt));
-      }
+   if (!ocs::tom::store_string(ep, pos, value)) {
+      LERROR(LESTRDUP);
+      DRETURN(-1);
    }
 
    DRETURN(0);
@@ -1718,77 +1505,12 @@ int lSetPosHost(lListElem *ep, int pos, const char *value) {
 int lSetString(lListElem *ep, int name, const char *value) {
    DENTER(CULL_BASIS_LAYER);
 
-   char *str;
-   int pos;
-   int changed;
-
-   if (!ep) {
-      LERROR(LEELEMNULL);
-      DRETURN(-1);
-   }
-
-   pos = lGetPosViaElem(ep, name, SGE_NO_ABORT);
+   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::String, LegacyMissing::Abort, MSG_CULL_SETSTRING_WRONGTYPEFORFIELDXY_SS, MSG_CULL_SETSTRING_NOSUCHNAMEXYINDESCRIPTOR_IS, "lSetString");
    if (pos < 0) {
-      incompatibleType2(MSG_CULL_SETSTRING_NOSUCHNAMEXYINDESCRIPTOR_IS,
-                        name, lNm2Str(name));
       DRETURN(-1);
    }
 
-   if (mt_get_type(ep->descr[pos].mt) != lStringT) {
-      incompatibleType2(MSG_CULL_SETSTRING_WRONGTYPEFORFIELDXY_SS, lNm2Str(name),
-                        multitypes[mt_get_type(ep->descr[pos].mt)]);
-      DRETURN(-1);
-   }
-
-   /* has the string value changed?
-   ** if both new and old are nullptr, nothing changed,
-   ** if one of them is nullptr, it changed,
-   ** else do a string compare
-   */
-   str = ocs_cull_value(ep, pos).str;
-   if (value == nullptr && str == nullptr) {
-      changed = 0;
-   } else {
-      if (value == nullptr || str == nullptr) {
-         changed = 1;
-      } else {
-         changed = strcmp(value, str);
-      }
-   }
-
-#ifdef OBSERVE
-   lObserveChangeValue(ep, elem_hash_table(ep, pos) != nullptr, name);
-#endif
-
-   if (changed) {
-      /* remove old hash entry */
-      if (elem_hash_table(ep, pos) != nullptr) {
-         cull_hash_remove(ep, pos);
-      }
-
-      /* strdup new string value */
-      /* do so before freeing the old one - they could point to the same object! */
-      if (value) {
-         if (!(str = strdup(value))) {
-            LERROR(LESTRDUP);
-            DRETURN(-1);
-         }
-      } else {
-         str = nullptr;               /* value is nullptr */
-      }
-
-      /* free old string value */
-      sge_free(&(ocs_cull_value(ep, pos).str));
-      ocs_cull_value(ep, pos).str = str;
-
-      /* create entry in hash table */
-      if (elem_hash_table(ep, pos) != nullptr) {
-         cull_hash_insert(ep, ocs_cull_value(ep, pos).str, elem_hash_table(ep, pos),
-                          mt_is_unique(ep->descr[pos].mt));
-      }
-   }
-
-   DRETURN(0);
+   DRETURN(lSetPosString(ep, pos, value));
 }
 
 /**
@@ -1808,75 +1530,12 @@ int lSetString(lListElem *ep, int name, const char *value) {
 int lSetHost(lListElem *ep, int name, const char *value) {
    DENTER(CULL_BASIS_LAYER);
 
-   char *str;
-   int pos;
-   int changed;
-
-   if (!ep) {
-      LERROR(LEELEMNULL);
-      DRETURN(-1);
-   }
-
-   pos = lGetPosViaElem(ep, name, SGE_NO_ABORT);
+   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::Host, LegacyMissing::Abort, MSG_CULL_SETHOST_WRONGTYPEFORFIELDXY_SS, MSG_CULL_SETHOST_NOSUCHNAMEXYINDESCRIPTOR_IS, "lSetHost");
    if (pos < 0) {
-      incompatibleType2(MSG_CULL_SETHOST_NOSUCHNAMEXYINDESCRIPTOR_IS,
-                        name, lNm2Str(name));
       DRETURN(-1);
    }
 
-   if (mt_get_type(ep->descr[pos].mt) != lHostT) {
-      incompatibleType2(MSG_CULL_SETHOST_WRONGTYPEFORFIELDXY_SS,
-                        lNm2Str(name), multitypes[mt_get_type(ep->descr[pos].mt)]);
-      DRETURN(-1);
-   }
-
-   /* has the host value changed?
-   ** if both new and old are nullptr, nothing changed,
-   ** if one of them is nullptr, it changed,
-   ** else do a string compare (a hostcmp would be more accurate,
-   ** but most probably not neccessary and too expensive
-   */
-   str = ocs_cull_value(ep, pos).host;
-   if (value == nullptr && str == nullptr) {
-      changed = 0;
-   } else {
-      if (value == nullptr || str == nullptr) {
-         changed = 1;
-      } else {
-         changed = strcmp(value, str);
-      }
-   }
-
-#ifdef OBSERVE
-   lObserveChangeValue(ep, elem_hash_table(ep, pos) != nullptr, name);
-#endif
-
-   if (changed) {
-      /* remove old hash entry */
-      if (elem_hash_table(ep, pos) != nullptr) {
-         cull_hash_remove(ep, pos);
-      }
-      /* strdup new string value */
-      /* do so before freeing the old one - they could point to the same object! */
-      if (value) {
-         if (!(str = strdup(value))) {
-            LERROR(LESTRDUP);
-            DRETURN(-1);
-         }
-      } else {
-         str = nullptr;               /* value is nullptr */
-      }
-      sge_free(&(ocs_cull_value(ep, pos).host));
-      ocs_cull_value(ep, pos).host = str;
-
-      /* create entry in hash table */
-      if (elem_hash_table(ep, pos) != nullptr) {
-         char host_key[CL_MAXHOSTNAMELEN + 1];
-         cull_hash_insert(ep, cull_hash_key(ep, pos, host_key),
-                          elem_hash_table(ep, pos), mt_is_unique(ep->descr[pos].mt));
-      }
-   }
-   DRETURN(0);
+   DRETURN(lSetPosHost(ep, pos, value));
 }
 
 /**
@@ -1909,29 +1568,9 @@ int lSetPosObject(lListElem *ep, int pos, lListElem *value) {
       DRETURN(-1);
    }
 
-   if (value != nullptr && elem_kind(value) != FREE_ELEM && elem_kind(value) != TRANS_BOUND_ELEM) {
+   if (!ocs::tom::store_object(ep, pos, value)) {
       LERROR(LEBOUNDELEM);
       DRETURN(-1);
-   }
-
-#ifdef OBSERVE
-   lObserveChangeOwner(ocs_cull_value(ep, pos).obj, nullptr, ep, lGetPosName(ep->descr, pos));
-   lObserveChangeOwner(value, ep, nullptr, lGetPosName(ep->descr, pos));
-#endif
-
-   if (value != ocs_cull_value(ep, pos).obj) {
-      /* free old element */
-      if (ocs_cull_value(ep, pos).obj != nullptr) {
-         lFreeElem(&(ocs_cull_value(ep, pos).obj));
-      }
-
-      /* set new list */
-      ocs_cull_value(ep, pos).obj = value;
-
-      /* mark lListElem as bound */
-      if (value != nullptr) {
-         elem_set_object(value);
-      }
    }
 
    DRETURN(0);
@@ -1966,20 +1605,7 @@ int lSetPosList(lListElem *ep, int pos, lList *value) {
       DRETURN(-1);
    }
 
-#ifdef OBSERVE
-   lObserveChangeOwner(ocs_cull_value(ep, pos).glp, nullptr, ep, lGetPosName(ep->descr, pos));
-   lObserveChangeOwner(value, ep, nullptr, lGetPosName(ep->descr, pos));
-#endif
-
-   if (value != ocs_cull_value(ep, pos).glp) {
-      /* free old list */
-      if (ocs_cull_value(ep, pos).glp) {
-         lFreeList(&(ocs_cull_value(ep, pos).glp));
-      }
-
-      /* set new list */
-      ocs_cull_value(ep, pos).glp = value;
-   }
+   ocs::tom::store_list(ep, pos, value);
 
    DRETURN(0);
 }
@@ -1999,22 +1625,13 @@ int lSetPosList(lListElem *ep, int pos, lList *value) {
 int lXchgString(lListElem *ep, int name, char **str) {
    DENTER(CULL_BASIS_LAYER);
 
-   int pos;
    char *tmp;
-
-   if (ep == nullptr || str == nullptr) {
+   if (str == nullptr) {
       LERROR(LEELEMNULL);
       DRETURN(-1);
    }
-   pos = lGetPosViaElem(ep, name, SGE_NO_ABORT);
+   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::String, LegacyMissing::NegPos, MSG_CULL_XCHGLIST_WRONGTYPEFORFIELDXY_SS, nullptr, "lXchgString");
    if (pos < 0) {
-      LERROR(LENEGPOS);
-      DRETURN(-1);
-   }
-
-   if (mt_get_type(ep->descr[pos].mt) != lStringT) {
-      incompatibleType2(MSG_CULL_XCHGLIST_WRONGTYPEFORFIELDXY_SS,
-                        lNm2Str(name), multitypes[mt_get_type(ep->descr[pos].mt)]);
       DRETURN(-1);
    }
 
@@ -2047,22 +1664,13 @@ int lXchgString(lListElem *ep, int name, char **str) {
 int lXchgList(lListElem *ep, int name, lList **lpp) {
    DENTER(CULL_BASIS_LAYER);
 
-   int pos;
    lList *tmp;
-
-   if (ep == nullptr || lpp == nullptr) {
+   if (lpp == nullptr) {
       LERROR(LEELEMNULL);
       DRETURN(-1);
    }
-   pos = lGetPosViaElem(ep, name, SGE_NO_ABORT);
+   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::List, LegacyMissing::NegPos, MSG_CULL_XCHGLIST_WRONGTYPEFORFIELDXY_SS, nullptr, "lXchgList");
    if (pos < 0) {
-      LERROR(LENEGPOS);
-      DRETURN(-1);
-   }
-
-   if (mt_get_type(ep->descr[pos].mt) != lListT) {
-      incompatibleType2(MSG_CULL_XCHGLIST_WRONGTYPEFORFIELDXY_SS,
-                        lNm2Str(name), multitypes[mt_get_type(ep->descr[pos].mt)]);
       DRETURN(-1);
    }
 
@@ -2126,23 +1734,8 @@ int lSwapList(lListElem *to, int nm_to, lListElem *from, int nm_from) {
 int lSetObject(lListElem *ep, int name, lListElem *value) {
    DENTER(CULL_BASIS_LAYER);
 
-   int pos;
-
-   if (!ep) {
-      LERROR(LEELEMNULL);
-      DRETURN(-1);
-   }
-
-   pos = lGetPosViaElem(ep, name, SGE_NO_ABORT);
+   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::Object, LegacyMissing::Silent, MSG_CULL_SETLIST_WRONGTYPEFORFIELDXY_SS, nullptr, "lSetObject");
    if (pos < 0) {
-      DPRINTF(("!!!!!!!!!! lSetObject(): %s not found in element !!!!!!!!!!\n",
-              lNm2Str(name)));
-      DRETURN(-1);
-   }
-
-   if (mt_get_type(ep->descr[pos].mt) != lObjectT) {
-      incompatibleType2(MSG_CULL_SETLIST_WRONGTYPEFORFIELDXY_SS, lNm2Str(name),
-                        multitypes[mt_get_type(ep->descr[pos].mt)]);
       DRETURN(-1);
    }
 
@@ -2191,22 +1784,8 @@ int lSetObject(lListElem *ep, int name, lListElem *value) {
 int lSetList(lListElem *ep, int name, lList *value) {
    DENTER(CULL_BASIS_LAYER);
 
-   int pos;
-
-   if (!ep) {
-      LERROR(LEELEMNULL);
-      DRETURN(-1);
-   }
-   pos = lGetPosViaElem(ep, name, SGE_NO_ABORT);
+   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::List, LegacyMissing::Silent, MSG_CULL_SETLIST_WRONGTYPEFORFIELDXY_SS, nullptr, "lSetList");
    if (pos < 0) {
-      DPRINTF(("!!!!!!!!!! lSetList(): %s not found in element !!!!!!!!!!\n",
-              lNm2Str(name)));
-      DRETURN(-1);
-   }
-
-   if (mt_get_type(ep->descr[pos].mt) != lListT) {
-      incompatibleType2(MSG_CULL_SETLIST_WRONGTYPEFORFIELDXY_SS, lNm2Str(name),
-                        multitypes[mt_get_type(ep->descr[pos].mt)]);
       DRETURN(-1);
    }
 
@@ -2281,34 +1860,12 @@ int lSetPosDouble(lListElem *ep, int pos, lDouble value) {
 int lSetDouble(lListElem *ep, int name, lDouble value) {
    DENTER(CULL_BASIS_LAYER);
 
-   int pos;
-
-   if (!ep) {
-      LERROR(LEELEMNULL);
-      DRETURN(-1);
-   }
-
-   pos = lGetPosViaElem(ep, name, SGE_NO_ABORT);
+   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::Double, LegacyMissing::NegPos, MSG_CULL_SETDOUBLE_WRONGTYPEFORFIELDXY_SS, nullptr, "lSetDouble");
    if (pos < 0) {
-      LERROR(LENEGPOS);
       DRETURN(-1);
    }
 
-   if (mt_get_type(ep->descr[pos].mt) != lDoubleT) {
-      incompatibleType2(MSG_CULL_SETDOUBLE_WRONGTYPEFORFIELDXY_SS, lNm2Str(name),
-                        multitypes[mt_get_type(ep->descr[pos].mt)]);
-      DRETURN(-1);
-   }
-
-#ifdef OBSERVE
-   lObserveChangeValue(ep, false, name);
-#endif
-
-   if (value != ocs_cull_value(ep, pos).db) {
-      ocs_cull_value(ep, pos).db = value;
-   }
-
-   DRETURN(0);
+   DRETURN(lSetPosDouble(ep, pos, value));
 }
 
 /**
@@ -2326,22 +1883,8 @@ int lSetDouble(lListElem *ep, int name, lDouble value) {
 int lAddDouble(lListElem *ep, int name, lDouble value) {
    DENTER(CULL_BASIS_LAYER);
 
-   int pos;
-
-   if (!ep) {
-      LERROR(LEELEMNULL);
-      DRETURN(-1);
-   }
-
-   pos = lGetPosViaElem(ep, name, SGE_NO_ABORT);
+   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::Double, LegacyMissing::NegPos, MSG_CULL_SETDOUBLE_WRONGTYPEFORFIELDXY_SS, nullptr, "lAddDouble");
    if (pos < 0) {
-      LERROR(LENEGPOS);
-      DRETURN(-1);
-   }
-
-   if (mt_get_type(ep->descr[pos].mt) != lDoubleT) {
-      incompatibleType2(MSG_CULL_SETDOUBLE_WRONGTYPEFORFIELDXY_SS, lNm2Str(name),
-                        multitypes[mt_get_type(ep->descr[pos].mt)]);
       DRETURN(-1);
    }
 
@@ -2411,34 +1954,12 @@ int lSetPosLong(lListElem *ep, int pos, lLong value) {
 int lSetLong(lListElem *ep, int name, lLong value) {
    DENTER(CULL_BASIS_LAYER);
 
-   int pos;
-
-   if (!ep) {
-      LERROR(LEELEMNULL);
-      DRETURN(-1);
-   }
-
-   pos = lGetPosViaElem(ep, name, SGE_NO_ABORT);
+   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::Int64, LegacyMissing::NegPos, MSG_CULL_SETLONG_WRONGTYPEFORFIELDXY_SS, nullptr, "lSetLong");
    if (pos < 0) {
-      LERROR(LENEGPOS);
       DRETURN(-1);
    }
 
-   if (mt_get_type(ep->descr[pos].mt) != lLongT) {
-      incompatibleType2(MSG_CULL_SETLONG_WRONGTYPEFORFIELDXY_SS, lNm2Str(name),
-                        multitypes[mt_get_type(ep->descr[pos].mt)]);
-      DRETURN(-1);
-   }
-
-#ifdef OBSERVE
-   lObserveChangeValue(ep, false, name);
-#endif
-
-   if (value != ocs_cull_value(ep, pos).l) {
-      ocs_cull_value(ep, pos).l = value;
-   }
-
-   DRETURN(0);
+   DRETURN(lSetPosLong(ep, pos, value));
 }
 
 /**
@@ -2495,34 +2016,12 @@ int lSetPosBool(lListElem *ep, int pos, lBool value) {
 int lSetBool(lListElem *ep, int name, lBool value) {
    DENTER(CULL_BASIS_LAYER);
 
-   int pos;
-
-   if (!ep) {
-      LERROR(LEELEMNULL);
-      DRETURN(-1);
-   }
-
-   pos = lGetPosViaElem(ep, name, SGE_NO_ABORT);
+   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::Bool, LegacyMissing::NegPos, MSG_CULL_SETBOOL_WRONGTYPEFORFIELDXY_SS, nullptr, "lSetBool");
    if (pos < 0) {
-      LERROR(LENEGPOS);
       DRETURN(-1);
    }
 
-   if (mt_get_type(ep->descr[pos].mt) != lBoolT) {
-      incompatibleType2(MSG_CULL_SETBOOL_WRONGTYPEFORFIELDXY_SS, lNm2Str(name),
-                        multitypes[mt_get_type(ep->descr[pos].mt)]);
-      DRETURN(-1);
-   }
-
-#ifdef OBSERVE
-   lObserveChangeValue(ep, false, name);
-#endif
-
-   if (value != ocs_cull_value(ep, pos).b) {
-      ocs_cull_value(ep, pos).b = value;
-   }
-
-   DRETURN(0);
+   DRETURN(lSetPosBool(ep, pos, value));
 }
 
 /**
@@ -2579,34 +2078,12 @@ int lSetPosRef(lListElem *ep, int pos, lRef value) {
 int lSetRef(lListElem *ep, int name, lRef value) {
    DENTER(CULL_BASIS_LAYER);
 
-   int pos;
-
-   if (!ep) {
-      LERROR(LEELEMNULL);
-      DRETURN(-1);
-   }
-
-   pos = lGetPosViaElem(ep, name, SGE_NO_ABORT);
+   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::Ref, LegacyMissing::NegPos, MSG_CULL_SETREF_WRONGTYPEFORFIELDXY_SS, nullptr, "lSetRef");
    if (pos < 0) {
-      LERROR(LENEGPOS);
       DRETURN(-1);
    }
 
-   if (mt_get_type(ep->descr[pos].mt) != lRefT) {
-      incompatibleType2(MSG_CULL_SETREF_WRONGTYPEFORFIELDXY_SS, lNm2Str(name),
-                        multitypes[mt_get_type(ep->descr[pos].mt)]);
-      DRETURN(-1);
-   }
-
-#ifdef OBSERVE
-   lObserveChangeValue(ep, false, name);
-#endif
-
-   if (value != ocs_cull_value(ep, pos).ref) {
-      ocs_cull_value(ep, pos).ref = value;
-   }
-
-   DRETURN(0);
+   DRETURN(lSetPosRef(ep, pos, value));
 }
 
 /**
@@ -4397,11 +3874,7 @@ int lGetPosName(const lDescr *dp, int pos) {
 bool lMatchUlongBitMask(lListElem *ep, int nm, uint32_t bitmask) {
    DENTER(CULL_BASIS_LAYER);
 
-   int pos = lGetPosViaElem(ep, nm, SGE_DO_ABORT);
-
-   if (mt_get_type(ep->descr[pos].mt) != lUlongT)
-      incompatibleType2(MSG_CULL_GETULONG_WRONGTYPEFORFIELDXY_SS,
-                        lNm2Str(nm), multitypes[mt_get_type(ep->descr[pos].mt)]);
+   const int pos = legacy_getter_pos(ep, nm, ocs::tom::FieldType::Uint32, MSG_CULL_GETULONG_WRONGTYPEFORFIELDXY_SS);
 
    DRETURN((ocs_cull_value(ep, pos).ul & bitmask) > 0 ? true : false);
 }
@@ -4418,20 +3891,8 @@ bool lMatchUlongBitMask(lListElem *ep, int nm, uint32_t bitmask) {
 int lOrUlongBitMask(lListElem *ep, int nm, uint32_t bitmask) {
    DENTER(CULL_BASIS_LAYER);
 
-   if (ep == nullptr) {
-      LERROR(LEELEMNULL);
-      DRETURN(-1);
-   }
-
-   int pos = lGetPosViaElem(ep, nm, SGE_NO_ABORT);
+   const int pos = legacy_setter_pos(ep, nm, ocs::tom::FieldType::Uint32, LegacyMissing::Silent, MSG_CULL_SETULONG_WRONGTYPEFORFIELDXY_SS, nullptr, "lOrUlongBitMask");
    if (pos < 0) {
-      DPRINTF(("!!!!!!!!!! lSetUlongBit(): %s not found in element !!!!!!!!!!\n", lNm2Str(name)));
-      DRETURN(-1);
-   }
-
-   if (mt_get_type(ep->descr[pos].mt) != lUlongT) {
-      incompatibleType2(MSG_CULL_SETULONG_WRONGTYPEFORFIELDXY_SS, lNm2Str(nm),
-                        multitypes[mt_get_type(ep->descr[pos].mt)]);
       DRETURN(-1);
    }
 
@@ -4451,20 +3912,8 @@ int lOrUlongBitMask(lListElem *ep, int nm, uint32_t bitmask) {
 int lAndUlongBitMask(lListElem *ep, int nm, uint32_t bitmask) {
    DENTER(CULL_BASIS_LAYER);
 
-   if (ep == nullptr) {
-      LERROR(LEELEMNULL);
-      DRETURN(-1);
-   }
-
-   int pos = lGetPosViaElem(ep, nm, SGE_NO_ABORT);
+   const int pos = legacy_setter_pos(ep, nm, ocs::tom::FieldType::Uint32, LegacyMissing::Silent, MSG_CULL_SETULONG_WRONGTYPEFORFIELDXY_SS, nullptr, "lAndUlongBitMask");
    if (pos < 0) {
-      DPRINTF(("!!!!!!!!!! lSetUlongBit(): %s not found in element !!!!!!!!!!\n", lNm2Str(name)));
-      DRETURN(-1);
-   }
-
-   if (mt_get_type(ep->descr[pos].mt) != lUlongT) {
-      incompatibleType2(MSG_CULL_SETULONG_WRONGTYPEFORFIELDXY_SS, lNm2Str(nm),
-                        multitypes[mt_get_type(ep->descr[pos].mt)]);
       DRETURN(-1);
    }
 
@@ -4484,20 +3933,8 @@ int lAndUlongBitMask(lListElem *ep, int nm, uint32_t bitmask) {
 int lClearUlongBitMask(lListElem *ep, int nm, uint32_t bitmask) {
    DENTER(CULL_BASIS_LAYER);
 
-   if (ep == nullptr) {
-      LERROR(LEELEMNULL);
-      DRETURN(-1);
-   }
-
-   int pos = lGetPosViaElem(ep, nm, SGE_NO_ABORT);
+   const int pos = legacy_setter_pos(ep, nm, ocs::tom::FieldType::Uint32, LegacyMissing::Silent, MSG_CULL_SETULONG_WRONGTYPEFORFIELDXY_SS, nullptr, "lClearUlongBitMask");
    if (pos < 0) {
-      DPRINTF(("!!!!!!!!!! lSetUlongBit(): %s not found in element !!!!!!!!!!\n", lNm2Str(name)));
-      DRETURN(-1);
-   }
-
-   if (mt_get_type(ep->descr[pos].mt) != lUlongT) {
-      incompatibleType2(MSG_CULL_SETULONG_WRONGTYPEFORFIELDXY_SS, lNm2Str(nm),
-                        multitypes[mt_get_type(ep->descr[pos].mt)]);
       DRETURN(-1);
    }
 

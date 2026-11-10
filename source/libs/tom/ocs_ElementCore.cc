@@ -48,6 +48,23 @@ namespace ocs::tom {
       return pos;
    }
 
+   int checked_pos(const lListElem *ep, const int nm, const FieldType type) {
+      if (ep == nullptr) [[unlikely]] {
+         throw_field_exception(FieldException::Reason::NullElement, nm, nullptr);
+      }
+      const int pos = field_pos(ep->descr, nm);
+      if (pos < 0) [[unlikely]] {
+         throw_field_exception(FieldException::Reason::ForeignField, nm, ep->descr);
+      }
+      if (ep->descr[pos].off == OCS_CULL_ABSENT) [[unlikely]] {
+         throw_field_exception(FieldException::Reason::AbsentField, nm, ep->descr);
+      }
+      if (field_type_of(ep->descr[pos].mt) != type) [[unlikely]] {
+         throw_field_exception(FieldException::Reason::WrongType, nm, ep->descr, ep->descr);
+      }
+      return pos;
+   }
+
    bool store_string(lListElem *ep, const int pos, const char *value) {
       const bool is_host = mt_get_type(ep->descr[pos].mt) == lHostT;
       char *old_value = is_host ? ocs_cull_value(ep, pos).host : ocs_cull_value(ep, pos).str;
