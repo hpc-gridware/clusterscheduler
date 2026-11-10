@@ -44,6 +44,7 @@
 
 #include <cstdlib>
 #include <cstring>
+#include <limits>
 
 #include "uti/sge_htable.h"
 #include "uti/sge_rmon_macros.h"
@@ -174,7 +175,8 @@ static void sge_htable_resize(htable ht, int grow) {
  * @endcode
  *
  * @param size log2 of the initial number of slots, so the table starts with
- *             `2^size` of them and grows by itself as entries are added
+ *             `2^size` of them and grows by itself as entries are added;
+ *             from 0 to 30, a larger value cannot be shifted in an `int`
  * @param dup_func copies a key, see @ref uti_htable_dup
  * @param hash_func hashes a key, see @ref uti_htable_hash
  * @param compare_func compares two keys, see @ref uti_htable_compare
@@ -184,6 +186,8 @@ htable sge_htable_create(int size,
                          const void *(*dup_func)(const void *),
                          int (*hash_func)(const void *),
                          int (*compare_func)(const void *, const void *)) {
+   SGE_ASSERT(size >= 0 && size < std::numeric_limits<int>::digits);
+
    auto ht = (htable) sge_malloc(sizeof(htable_rec));
 
    SGE_ASSERT(ht != nullptr);

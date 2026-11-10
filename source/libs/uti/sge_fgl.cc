@@ -47,6 +47,8 @@
 #define LOCK_ALL_LISTS_FIRST 0 ///< 1 orders all list locks before any element lock; ~20% slower
 
 #define FGL_REQ_MAX 128        ///< requests a thread may register before #fgl_lock; exceeding it aborts
+#define FGL_TABLE_SIZE_LOG2 7  ///< log2 of the initial slots of the lock and statistics tables, 128 slots;
+                               ///< independent of #FGL_REQ_MAX, the tables grow by themselves
 
 /// What a lock request names, and therefore which member of fgl_t::u is valid
 typedef enum {
@@ -145,13 +147,13 @@ void fgl_mt_init() {
    pthread_once(&fgl_once, fgl_once_init);
    pthread_mutex_lock(&fgl_mtx);
    if (fgl_lcks == nullptr) {
-      fgl_lcks = sge_htable_create(FGL_REQ_MAX, dup_func_string, hash_func_string, hash_compare_string);
+      fgl_lcks = sge_htable_create(FGL_TABLE_SIZE_LOG2, dup_func_string, hash_func_string, hash_compare_string);
    }
    pthread_mutex_unlock(&fgl_mtx);
 #if COLLECT_STATS
    pthread_mutex_lock(&fgl_stats_mtx);
    if (fgl_stats == nullptr) {
-      fgl_stats = sge_htable_create(FGL_REQ_MAX, dup_func_string, hash_func_string, hash_compare_string);
+      fgl_stats = sge_htable_create(FGL_TABLE_SIZE_LOG2, dup_func_string, hash_func_string, hash_compare_string);
    }
    pthread_mutex_unlock(&fgl_stats_mtx);
 #endif
