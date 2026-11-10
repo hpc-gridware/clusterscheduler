@@ -1716,17 +1716,24 @@ range_parse_get_ids(const char *value, int step_allowed, u_long32 &start, u_long
    return ret;
 }
 
-/* 
-
-   converts a range string into a range cull list
-
-   an undefined range return nullptr
-
-   if answer_list is delivered no exit occurs instead the function fills the 
-   answer list and returns nullptr, *answer_list must be nullptr !
-
-   MT-NOTE: range_list_parse_from_string() is MT safe
-*/
+/**
+ * @brief Parse a comma separated list of ranges into a range list
+ *
+ * The literal `UNDEFINED` yields no list, and may not be followed by further
+ * ranges. On a syntax error the part parsed so far is freed.
+ *
+ * @param[out] this_list receives the parsed list, nullptr on a syntax error;
+ *                       pass nullptr to only check the syntax
+ * @param[out] answer_list receives the syntax error instead of the function
+ *                         exiting; must point at a nullptr list
+ * @param string the text to parse
+ * @param just_parse true to validate only, without building a list
+ * @param step_allowed whether a `:step` suffix may appear
+ * @param inf_allowed whether an open upper bound may appear
+ * @return true when the whole string was a valid range list
+ *
+ * @note MT-NOTE: range_list_parse_from_string() is MT safe
+ */
 bool
 range_list_parse_from_string(lList **this_list, lList **answer_list,
                              const char *string, bool just_parse,
@@ -1751,7 +1758,7 @@ range_list_parse_from_string(lList **this_list, lList **answer_list,
          sge_free_saved_vars(context);
          answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX,
                          ANSWER_QUALITY_ERROR);
-         *this_list = nullptr;
+         lFreeList(this_list);
          DRETURN(false);
       }
 
@@ -1767,7 +1774,7 @@ range_list_parse_from_string(lList **this_list, lList **answer_list,
             sge_free_saved_vars(context);
             answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX,
                             ANSWER_QUALITY_ERROR);
-            *this_list = nullptr;
+            lFreeList(this_list);
             DRETURN(false);
          }
       } else {
@@ -1783,5 +1790,7 @@ range_list_parse_from_string(lList **this_list, lList **answer_list,
 
    sge_free_saved_vars(context);
 
+   // a list built without a target is not handed out
+   lFreeList(&range_list);
    DRETURN(true);
 }
