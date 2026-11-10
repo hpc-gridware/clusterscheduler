@@ -40,6 +40,7 @@
 
 #include <cstdlib>
 #include <cstring>
+#include <limits>
 
 #include "uti/sge_htable.h"
 #include "uti/sge_rmon_macros.h"
@@ -201,34 +202,30 @@ static void sge_htable_resize(htable ht, int grow) {
    DRETURN_VOID_;
 }
 
-/****** uti/htable/sge_htable_create() ****************************************
-*  NAME
-*     sge_htable_create() -- Create a new hash table
-*
-*  SYNOPSIS
-*     htable sge_htable_create(int size, 
-*                    int (*hash_func)(const void *),
-*                    int (*compare_func)(const void *, const void *)
-*
-*  FUNCTION
-*     Creates an empty hash table and initializes its data structures.
-*
-*  INPUTS
-*     int size            - Initial table size will be 2^n 
-*     int (*hash_func)    - pointer to hash function 
-*     int (*compare_func) - pointer to compare function 
-*
-*  RESULT
-*     htable - the created hash table
-*
-*  EXAMPLE
-*     htable MyHashTable = sge_htable_create(5, hash_func_u_long32, 
-*                                             hash_compare_u_long32);
-******************************************************************************/
+/**
+ * @brief Create a new hash table
+ *
+ * Creates an empty hash table and initializes its data structures.
+ *
+ * @code
+ * htable ht = sge_htable_create(5, dup_func_u_long32, hash_func_u_long32,
+ *                               hash_compare_u_long32);
+ * @endcode
+ *
+ * @param size log2 of the initial number of slots, so the table starts with
+ *             `2^size` of them and grows by itself as entries are added;
+ *             from 0 to 30, a larger value cannot be shifted in an `int`
+ * @param dup_func copies a key
+ * @param hash_func hashes a key
+ * @param compare_func compares two keys
+ * @return the new hash table, to be released with sge_htable_destroy()
+ */
 htable sge_htable_create(int size,
                          const void *(*dup_func)(const void *),
                          int (*hash_func)(const void *),
                          int (*compare_func)(const void *, const void *)) {
+   SGE_ASSERT(size >= 0 && size < std::numeric_limits<int>::digits);
+
    auto ht = (htable) sge_malloc(sizeof(htable_rec));
 
    SGE_ASSERT(ht != nullptr);

@@ -38,6 +38,8 @@
 #define LOCK_ALL_LISTS_FIRST 0 // 20% slower if enabled
 
 #define FGL_REQ_MAX 128
+#define FGL_TABLE_SIZE_LOG2 7  ///< log2 of the initial slots of the lock and statistics tables, 128 slots;
+                               ///< independent of #FGL_REQ_MAX, the tables grow by themselves
 
 typedef enum {
    FGL_NONE,
@@ -122,17 +124,22 @@ static void fgl_state_set_pos(u_long32 new_pos) {
    fgl_state->pos = new_pos;
 }
 
+/**
+ * @brief Initialise the module's thread-local key and lock tables
+ *
+ * Safe to call more than once; only the first call does anything.
+ */
 void fgl_mt_init() {
    pthread_once(&fgl_once, fgl_once_init);
    pthread_mutex_lock(&fgl_mtx);
    if (fgl_lcks == nullptr) {
-      fgl_lcks = sge_htable_create(FGL_REQ_MAX, dup_func_string, hash_func_string, hash_compare_string);
+      fgl_lcks = sge_htable_create(FGL_TABLE_SIZE_LOG2, dup_func_string, hash_func_string, hash_compare_string);
    }
    pthread_mutex_unlock(&fgl_mtx);
 #if COLLECT_STATS
    pthread_mutex_lock(&fgl_stats_mtx);
    if (fgl_stats == nullptr) {
-      fgl_stats = sge_htable_create(FGL_REQ_MAX, dup_func_string, hash_func_string, hash_compare_string);
+      fgl_stats = sge_htable_create(FGL_TABLE_SIZE_LOG2, dup_func_string, hash_func_string, hash_compare_string);
    }
    pthread_mutex_unlock(&fgl_stats_mtx);
 #endif
