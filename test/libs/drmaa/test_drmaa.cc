@@ -95,6 +95,12 @@ enum {
          - submit jobs that won't run
          - wait for jobend */
 
+   ST_SUBMIT_SYNC_JOB_PS,
+      /**< - one thread
+         - submit jobs and a bulk job
+         - drmaa_synchronize() with each job or task, without dispose
+         - drmaa_job_ps() immediately afterwards must report DRMAA_PS_DONE */
+
    MT_SUBMIT_WAIT,        
       /**< - multiple submission threads
          - wait is done by main thread */
@@ -487,6 +493,7 @@ const struct test_name2number_map {
    { "ST_EMPTY_SESSION_CONTROL",                  ST_EMPTY_SESSION_CONTROL,                  1, "DRMAA_CONTROL_*" },
    { "ST_SUBMIT_WAIT",                            ST_SUBMIT_WAIT,                            1, "<sleeper_job>" },
    { "ST_SUBMIT_NO_RUN_WAIT",                     ST_SUBMIT_NO_RUN_WAIT,                     1, "<sleeper_job>" },
+   { "ST_SUBMIT_SYNC_JOB_PS",                     ST_SUBMIT_SYNC_JOB_PS,                     1, "<sleeper_job>" },
    { "ST_BULK_SUBMIT_WAIT",                       ST_BULK_SUBMIT_WAIT,                       1, "<sleeper_job>" },
    { "ST_BULK_SINGLESUBMIT_WAIT_INDIVIDUAL",      ST_BULK_SINGLESUBMIT_WAIT_INDIVIDUAL,      1, "<sleeper_job>" },
    { "ST_SUBMITMIXTURE_SYNC_ALL_DISPOSE",         ST_SUBMITMIXTURE_SYNC_ALL_DISPOSE,         1, "<sleeper_job>" },
@@ -561,6 +568,7 @@ static int submit_input_mirror(int n, const char *mirror_job,
                                const char *error_path, int join, char* hostname);
 static int do_submit(drmaa_job_template_t *jt, int n);
 static int wait_all_jobs(int n);
+static int sync_and_check_job_ps(const char *jobid);
 static int wait_n_jobs(int n);
 static drmaa_job_template_t *create_sleeper_job_template(int seconds,
                                                          int as_bulk_job,
@@ -911,6 +919,77 @@ static int test(int *argc, char **argv[], int parse_args) {
          if (wait_all_jobs(n) != DRMAA_ERRNO_SUCCESS) {
             return 1;
          }
+         if (drmaa_exit(diagnosis, sizeof(diagnosis)-1) != DRMAA_ERRNO_SUCCESS) {
+            fprintf(stderr, "drmaa_exit() failed: %s\n", diagnosis);
+            return 1;
+         }
+      }
+      break;
+
+   case ST_SUBMIT_SYNC_JOB_PS:
+      {
+         // drmaa_job_ps() right after drmaa_synchronize() must report the job as finished,
+         // drmaa_job_ps() must not ask qmaster which might not yet know about the job end
+         char jobid[1024];
+         char bulk_jobids[JOB_CHUNK][1024];
+         int n_jobs = 0;
+
+         if (parse_args)
+            sleeper_job = NEXT_ARGV(argc, argv);
+
+         if (drmaa_init(nullptr, diagnosis, sizeof(diagnosis)-1) != DRMAA_ERRNO_SUCCESS) {
+            fprintf(stderr, "drmaa_init() failed: %s\n", diagnosis);
+            return 1;
+         }
+         report_session_key();
+
+         // sequential jobs, one after the other
+         if (!(jt = create_sleeper_job_template(1, 0, 0))) {
+            fprintf(stderr, "create_sleeper_job_template() failed\n");
+            return 1;
+         }
+         for (i = 0; i < JOB_CHUNK; i++) {
+            if (drmaa_run_job(jobid, sizeof(jobid)-1, jt, diagnosis,
+                              sizeof(diagnosis)-1) != DRMAA_ERRNO_SUCCESS) {
+               fprintf(stderr, "drmaa_run_job() failed: %s\n", diagnosis);
+               return 1;
+            }
+            printf("submitted job \"%s\"\n", jobid);
+            if (sync_and_check_job_ps(jobid) != 0) {
+               return 1;
+            }
+         }
+         drmaa_delete_job_template(jt, nullptr, 0);
+
+         // the tasks of a bulk job, each one synchronized and checked on its own
+         if (!(jt = create_sleeper_job_template(1, 1, 0))) {
+            fprintf(stderr, "create_sleeper_job_template() failed\n");
+            return 1;
+         }
+         drmaa_job_ids_t *jobids = nullptr;
+         if ((drmaa_errno = drmaa_run_bulk_jobs(&jobids, jt, 1, JOB_CHUNK, 1, diagnosis,
+                                                sizeof(diagnosis)-1)) != DRMAA_ERRNO_SUCCESS) {
+            fprintf(stderr, "drmaa_run_bulk_jobs() failed: %s\n", diagnosis);
+            return 1;
+         }
+         while (n_jobs < JOB_CHUNK &&
+                drmaa_get_next_job_id(jobids, bulk_jobids[n_jobs],
+                                      sizeof(bulk_jobids[n_jobs])-1) == DRMAA_ERRNO_SUCCESS) {
+            printf("submitted bulk job task \"%s\"\n", bulk_jobids[n_jobs]);
+            n_jobs++;
+         }
+         drmaa_release_job_ids(jobids);
+         drmaa_delete_job_template(jt, nullptr, 0);
+         if (n_jobs != JOB_CHUNK) {
+            fprintf(stderr, "got %d job ids of the bulk job, expected %d\n", n_jobs, JOB_CHUNK);
+            return 1;
+         }
+         for (i = 0; i < n_jobs; i++) {
+            if (sync_and_check_job_ps(bulk_jobids[i]) != 0) {
+               return 1;
+            }
+         }
+
          if (drmaa_exit(diagnosis, sizeof(diagnosis)-1) != DRMAA_ERRNO_SUCCESS) {
             fprintf(stderr, "drmaa_exit() failed: %s\n", diagnosis);
             return 1;
@@ -1920,12 +1999,6 @@ static int test(int *argc, char **argv[], int parse_args) {
             return 1;
          }
          printf("synchronized with job finish (1)\n");
-         // @todo: CS-928 drmaa_job_ps below will give us old data until reader threads are updated.
-         //        need to wait for the reader data store to be updated
-         //        after the 2s the job is most probably already gone, in which case drmaa_job_ps will consult
-         //        the japi internal copy of the job which contains the job report from the JOB_FINISH event
-         //        and in the end gets the correct data
-         sleep(2);
 
          /* get job state */
          drmaa_errno = drmaa_job_ps(jobid, &remote_ps, diagnosis, sizeof(diagnosis)-1);
@@ -2224,8 +2297,6 @@ static int test(int *argc, char **argv[], int parse_args) {
             return 1;
          }
          printf("synchronized with job finish (2)\n");
-         // @todo: CS-928 drmaa_job_ps below will give us old data until reader threads are updated - see above
-         sleep(2);
 
          /* report job finish state */
          if (drmaa_job_ps(jobid, &job_state, diagnosis, sizeof(diagnosis)-1)!=DRMAA_ERRNO_SUCCESS) {
@@ -2358,8 +2429,6 @@ static int test(int *argc, char **argv[], int parse_args) {
             return 1;
          }
          printf("synchronized with job finish (3)\n");
-         // @todo: CS-928 drmaa_job_ps below will give us old data until reader threads are updated - see above
-         sleep(2);
 
          /* 
           * Verify job state of all jobs in the job id array 
@@ -4382,8 +4451,6 @@ static int test(int *argc, char **argv[], int parse_args) {
             return 1;
          }
          printf("synchronized with job finish (4)\n");
-         // @todo: CS-928 drmaa_job_ps below will give us old data until reader threads are updated - see above
-         sleep(2);
 
          /* get job state */
          drmaa_errno = drmaa_job_ps(jobid, &remote_ps, diagnosis, sizeof(diagnosis)-1);
@@ -5105,6 +5172,38 @@ static int do_submit(drmaa_job_template_t *jt, int n) {
    }
 
    return error;
+}
+
+/*!
+ * @brief Synchronize with a job and check that drmaa_job_ps() reports it as done.
+ *
+ * drmaa_synchronize() is called without dispose, so the job finish information is
+ * kept. drmaa_job_ps() is called immediately afterwards and must report DRMAA_PS_DONE.
+ *
+ * @param jobid The job id, for a task of a bulk job "<job_id>.<task_id>".
+ * @return 0 on success, 1 on error.
+ */
+static int sync_and_check_job_ps(const char *jobid) {
+   char diagnosis[DRMAA_ERROR_STRING_BUFFER];
+   const char *jobids[] = { jobid, nullptr };
+   int remote_ps = 0;
+
+   if (drmaa_synchronize(jobids, DRMAA_TIMEOUT_WAIT_FOREVER, 0, diagnosis,
+                         sizeof(diagnosis)-1) != DRMAA_ERRNO_SUCCESS) {
+      fprintf(stderr, "drmaa_synchronize(\"%s\") failed: %s\n", jobid, diagnosis);
+      return 1;
+   }
+   if (drmaa_job_ps(jobid, &remote_ps, diagnosis, sizeof(diagnosis)-1) != DRMAA_ERRNO_SUCCESS) {
+      fprintf(stderr, "drmaa_job_ps(\"%s\") failed: %s\n", jobid, diagnosis);
+      return 1;
+   }
+   if (remote_ps != DRMAA_PS_DONE) {
+      fprintf(stderr, "job \"%s\" is in state %s after drmaa_synchronize(), expected %s\n",
+              jobid, drmaa_state2str(remote_ps), drmaa_state2str(DRMAA_PS_DONE));
+      return 1;
+   }
+   printf("job \"%s\" is done after drmaa_synchronize()\n", jobid);
+   return 0;
 }
 
 static int wait_all_jobs(int n) {

@@ -2908,6 +2908,45 @@ japi_sge_state_to_drmaa_state(const lListElem *job, bool is_array_task, uint32_t
 }
 
 
+/*!
+ * @brief Get the DRMAA state of a task which the session already knows as finished.
+ *
+ * The event client thread records the end of a session task when it receives the
+ * JOB_FINISH event. drmaa_synchronize() and drmaa_wait() rely on this data, so
+ * drmaa_job_ps() uses it as well instead of asking qmaster, which might still report
+ * the task as running.
+ *
+ * The job id has to be given in the same form as for a job which is still known by
+ * qmaster: without a task id for a sequential job, with a task id for an array job.
+ *
+ * @param jobid The job id.
+ * @param taskid The array task id, 1 for a sequential job.
+ * @param is_array_task true if the job id string contained a task id.
+ * @param remote_ps Receives DRMAA_PS_FAILED if the task never ran, DRMAA_PS_DONE otherwise.
+ * @return true if the task is a finished task of the session, false otherwise.
+ */
+static bool
+japi_finished_task_state(uint32_t jobid, uint32_t taskid, bool is_array_task, int *remote_ps) {
+   DENTER(TOP_LAYER);
+
+   bool found = false;
+   JAPI_LOCK_JOB_LIST();
+   const lListElem *japi_job = lGetElemUlong(Master_japi_job_list, JJ_jobid, jobid);
+   // JOB_TYPE_IS_ARRAY() returns the bit, not a bool
+   bool is_array_job = japi_job != nullptr && JOB_TYPE_IS_ARRAY(lGetUlong(japi_job, JJ_type)) != 0;
+   if (japi_job != nullptr && is_array_task == is_array_job) {
+      const lListElem *japi_task = lGetSubUlong(japi_job, JJAT_task_id, taskid, JJ_finished_tasks);
+      if (japi_task != nullptr) {
+         bool never_ran = SGE_GET_NEVERRAN(lGetUlong(japi_task, JJAT_stat));
+         *remote_ps = never_ran ? DRMAA_PS_FAILED : DRMAA_PS_DONE;
+         found = true;
+      }
+   }
+   JAPI_UNLOCK_JOB_LIST();
+
+   DRETURN(found);
+}
+
 /**
  * @brief Get job and the queue via GDI for job status
  *
@@ -3122,6 +3161,12 @@ int japi_job_ps(const char *job_id_str, int *remote_ps, dstring *diag) {
    }
 
    DPRINTF("japi_job_ps2(" SFQ ")\n", job_id_str);
+
+   // a task the session already knows as finished is not looked up at qmaster
+   if (japi_finished_task_state(jobid, taskid, is_array_task, remote_ps)) {
+      japi_dec_threads(__func__);
+      DRETURN(DRMAA_ERRNO_SUCCESS);
+   }
 
    drmaa_errno = japi_get_job(jobid, &retrieved_job_list, diag);
    if (drmaa_errno != DRMAA_ERRNO_SUCCESS) {
