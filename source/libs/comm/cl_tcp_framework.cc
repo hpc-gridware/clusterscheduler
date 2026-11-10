@@ -27,7 +27,7 @@
  *
  *  All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -1081,6 +1081,16 @@ int cl_com_tcp_connection_request_handler_setup(cl_com_connection_t *connection,
       return CL_RETVAL_NO_FRAMEWORK_INIT;
    }
 
+#if defined(OCS_WITH_OPENSSL)
+   // The service connection only listens, it never has a TLS session of its own: each accepted
+   // connection gets one in cl_com_tcp_connection_request_handler(). The SSL object created with
+   // the connection would hold a reference to the client context until the handle is shut down.
+   if (private_com->ssl_connection != nullptr) {
+      delete private_com->ssl_connection;
+      private_com->ssl_connection = nullptr;
+   }
+#endif
+
    if (private_com->server_port < 0) {
       CL_LOG(CL_LOG_ERROR, cl_get_error_text(CL_RETVAL_NO_PORT_ERROR));
       return CL_RETVAL_NO_PORT_ERROR;
@@ -1189,7 +1199,7 @@ int cl_com_tcp_connection_request_handler_cleanup(cl_com_connection_t *connectio
       return CL_RETVAL_NO_FRAMEWORK_INIT;
    }
 
-   // @todo CS-1578 OpenSSL: here we should call SSL_shutdown() before shutdown()
+   // the listening socket has no TLS session, see cl_com_tcp_connection_request_handler_setup()
    shutdown(private_com->sockfd, 2);
    close(private_com->sockfd);
    private_com->sockfd = -1;

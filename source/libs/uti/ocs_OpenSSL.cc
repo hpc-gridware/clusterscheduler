@@ -87,6 +87,7 @@ namespace ocs::uti {
    SSL_ctrl_func_t OpenSSL::SSL_ctrl_func = nullptr;
    SSL_free_func_t OpenSSL::SSL_free_func = nullptr;
    SSL_get_error_func_t OpenSSL::SSL_get_error_func = nullptr;
+   SSL_is_init_finished_func_t OpenSSL::SSL_is_init_finished_func = nullptr;
    SSL_new_func_t OpenSSL::SSL_new_func = nullptr;
    SSL_read_func_t OpenSSL::SSL_read_func = nullptr;
 #if OPENSSL_VERSION_MAJOR >= 4
@@ -537,6 +538,15 @@ namespace ocs::uti {
          func = "SSL_get_error";
          SSL_get_error_func = reinterpret_cast<SSL_get_error_func_t>(dlsym(libssl_handle, func));
          if (SSL_get_error_func == nullptr) {
+            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
+            ret = false;
+         }
+      }
+      if (ret) {
+         func = "SSL_is_init_finished";
+         SSL_is_init_finished_func =
+            reinterpret_cast<SSL_is_init_finished_func_t>(dlsym(libssl_handle, func));
+         if (SSL_is_init_finished_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
          }
@@ -2025,7 +2035,8 @@ namespace ocs::uti {
     * @brief Destructor for OpenSSLConnection. Shuts down SSL connection and frees resources.
     *
     * The destructor performs proper cleanup:
-    * 1. Performs SSL shutdown handshake if ssl is not nullptr
+    * 1. Sends a close_notify via SSL_shutdown() if the TLS session is established and saw no
+    *    fatal error
     * 2. Frees the SSL object
     * 3. Decrements the associated context's connection reference count
     *
@@ -2040,11 +2051,31 @@ namespace ocs::uti {
    OpenSSL::OpenSSLConnection::~OpenSSLConnection() {
       DENTER(TOP_LAYER);
       if (ssl != nullptr) {
-         SSL_shutdown_func(ssl);
+         // SSL_shutdown() sends a close_notify; it is only valid on an established TLS session
+         // which did not see a fatal error, see the SSL_shutdown(3) man page
+         if (!fatal_error && SSL_is_init_finished_func(ssl) == 1) {
+            SSL_shutdown_func(ssl);
+         }
          SSL_free_func(ssl);
       }
       if (context != nullptr) {
          context->dec_connection_count();
+      }
+      DRETURN_VOID;
+   }
+
+   /**
+    * @brief Records an error of an SSL operation which ends the TLS session.
+    *
+    * After SSL_ERROR_SYSCALL or SSL_ERROR_SSL, SSL_shutdown() must not be called, see the
+    * SSL_shutdown(3) man page. The destructor checks the flag set here.
+    *
+    * @param err the result of SSL_get_error() for the failed operation
+    */
+   void OpenSSL::OpenSSLConnection::note_error(int err) {
+      DENTER(TOP_LAYER);
+      if (err == SSL_ERROR_SYSCALL || err == SSL_ERROR_SSL) {
+         fatal_error = true;
       }
       DRETURN_VOID;
    }
@@ -2108,7 +2139,7 @@ namespace ocs::uti {
     * @note On non-blocking sockets, returning 0 is normal and not an error.
     * @note SSL protocol data is handled transparently (does not appear in the buffer).
     */
-   int OpenSSL::OpenSSLConnection::read(char *buffer, size_t max_len, dstring *error_dstr) const {
+   int OpenSSL::OpenSSLConnection::read(char *buffer, size_t max_len, dstring *error_dstr) {
       DENTER(TOP_LAYER);
 
       DPRINTF("OpenSSLConnection::read()\n");
@@ -2133,6 +2164,7 @@ namespace ocs::uti {
             ret = 0;
          } else {
             sge_dstring_sprintf(error_dstr, MSG_CANNOT_READ_DS, err, get_error_message());
+            note_error(err);
             ret = -1;
          }
       }
@@ -2190,6 +2222,7 @@ namespace ocs::uti {
             ret = 0;
          } else {
             sge_dstring_sprintf(error_dstr, MSG_CANNOT_WRITE_DS, err, get_error_message());
+            note_error(err);
             ret = -1;
          }
       }
@@ -2225,7 +2258,7 @@ namespace ocs::uti {
 #define SGE_OPENSSL_RETRY_TIMEOUT_SERVER (1 * 1000000) // 1 second
 #define SGE_OPENSSL_RETRY_TIMEOUT_CLIENT (10 * 1000000) // 10 seconds
 
-   bool OpenSSL::OpenSSLConnection::accept(dstring *error_dstr) const {
+   bool OpenSSL::OpenSSLConnection::accept(dstring *error_dstr) {
       DENTER(TOP_LAYER);
 
       bool ret = ssl != nullptr;
@@ -2264,6 +2297,7 @@ namespace ocs::uti {
                   }
                } else {
                   sge_dstring_sprintf(error_dstr, MSG_CANNOT_ACCEPT_DS, err, get_error_message());
+                  note_error(err);
                   DPRINTF("  --> got error: %d: %s\n", err, sge_dstring_get_string(error_dstr));
                   ret = false;
                }
@@ -2350,7 +2384,7 @@ namespace ocs::uti {
     * @note Client timeout (10s) is longer than server timeout (1s) to accommodate network delays.
     * @todo CS-1679 Make timeout configurable.
     */
-   bool OpenSSL::OpenSSLConnection::connect(dstring *error_dstr) const {
+   bool OpenSSL::OpenSSLConnection::connect(dstring *error_dstr) {
       DENTER(TOP_LAYER);
 
       bool ret = ssl != nullptr;
@@ -2392,6 +2426,7 @@ namespace ocs::uti {
                   }
                } else {
                   sge_dstring_sprintf(error_dstr, MSG_CANNOT_CONNECT_DS, err, get_error_message());
+                  note_error(err);
                   DPRINTF("  --> got error: %d: %s\n", err, sge_dstring_get_string(error_dstr));
                   ret = false;
                }
