@@ -382,6 +382,8 @@ struct qmaster_params_t {
    bool enable_enforce_master_limit = false;
    /// `__TEST_SLEEP_AFTER_REQUEST` -- test hook that delays every request
    bool enable_test_sleep_after_request = false;
+   /// `__TEST_MIRROR_CALLBACK_ERROR` -- test hook that fails mirror callbacks (CS-3032)
+   int test_mirror_callback_error = 0;
    /// `ENABLE_FORCED_QDEL_IF_UNKNOWN` -- force deletion while the host is unknown
    bool enable_forced_qdel_if_unknown = false;
    /// `ALLOW_ANY_SUBMITHOSTS` -- allow any host to be submit host
@@ -1216,6 +1218,13 @@ int merge_configuration(lList **answer_list, uint32_t progid, const char *cell_r
             continue;
          }
          if (parse_bool_param(s, "__TEST_SLEEP_AFTER_REQUEST", &qmaster_conf.enable_test_sleep_after_request)) {
+            continue;
+         }
+         if (parse_int_param(s, "__TEST_MIRROR_CALLBACK_ERROR",
+                             &qmaster_conf.test_mirror_callback_error, ocs::CEntry::Type::INT)) {
+            if (qmaster_conf.test_mirror_callback_error < 0) {
+               qmaster_conf.test_mirror_callback_error = 0;
+            }
             continue;
          }
          if (parse_bool_param(s, "ENABLE_FORCED_QDEL_IF_UNKNOWN", &qmaster_conf.enable_forced_qdel_if_unknown)) {
@@ -4573,6 +4582,22 @@ bool mconf_get_enable_test_sleep_after_request() {
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
 
+}
+
+/**
+ * @brief Get the value of the test parameter `__TEST_MIRROR_CALLBACK_ERROR`.
+ *
+ * Whenever the value changes, each qmaster internal mirror thread fails that many of its
+ * following event callbacks on purpose, see mir_produce_callback_failure().
+ *
+ * @return The number of callbacks to fail, 0 if the parameter is not set.
+ */
+int mconf_get_test_mirror_callback_error() {
+   DENTER(BASIS_LAYER);
+   SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
+   int ret = qmaster_conf.test_mirror_callback_error;
+   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
+   DRETURN(ret);
 }
 
 /**

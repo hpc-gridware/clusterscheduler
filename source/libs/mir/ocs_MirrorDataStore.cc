@@ -196,11 +196,17 @@ ocs::MirrorDataStore::wait_for_event(lList **event_list) {
 
       // if we did not receive a signal about new events then we will wait for one
       if (!triggered) {
+         if (evc->ec_need_new_registration(evc)) {
+            // a client which still has to register again gets no events (CS-3032),
+            // return after a while so that the main loop retries the registration
+            ocs::uti::condition_timedwait(&cond_var, &mutex, REGISTRATION_RETRY_S);
+         } else {
 #if 0
-         DPRINTF("will wait for events now (without timeout)\n");
-         pthread_ret =
+            DPRINTF("will wait for events now (without timeout)\n");
+            pthread_ret =
 #endif
-            pthread_cond_wait(&cond_var, &mutex);
+               pthread_cond_wait(&cond_var, &mutex);
+         }
       }
 
 #if 0
@@ -452,7 +458,16 @@ ocs::MirrorDataStore::main([[maybe_unused]] void *arg) {
 
       // reset the busy state to get more events
       evc->ec_set_busy(evc, 0);
-      evc->ec_commit(evc, nullptr);
+      if (evc->ec_need_new_registration(evc)) {
+         // ec_commit() is refused while a registration is pending, the event master would keep
+         // the client busy and never send another event (CS-3032). Register again instead,
+         // the new registration is not busy and answers with a total update.
+         if (evc->ec_register(evc, false, nullptr)) {
+            DPRINTF("re-registered at event master!\n");
+         }
+      } else {
+         evc->ec_commit(evc, nullptr);
+      }
 
       // pthread cancellation point (functions are pushed in reverse order of execution)
       // As soon as we know that qmaster will shut down we will not reiterate the main loop

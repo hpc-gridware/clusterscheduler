@@ -51,6 +51,8 @@ namespace ocs {
     */
    class MirrorDataStore {
    private:
+      /// wait time before a failed registration is retried
+      static constexpr long REGISTRATION_RETRY_S = 1;
       pthread_cond_t cond_var;                     ///< used to wait for new events and to wake up this thread
       volatile bool triggered;                     ///< true if new events are pending that need to get processed
       lList *new_events;                           ///< new events that need to get processed
