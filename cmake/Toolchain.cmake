@@ -91,8 +91,8 @@ elseif (("${SGE_ARCH}" STREQUAL "lx-arm64") AND (${HOSTNAME} STREQUAL "h018"))
    gcs_use_tools_toolchain()
 elseif (("${SGE_ARCH}" STREQUAL "lx-riscv64") AND (${HOSTNAME} STREQUAL "su0-0-lx-riscv64"))
    # Default is gcc 15.2.1 => c++23 fully supported and stable
-elseif (("${SGE_ARCH}" STREQUAL "lx-riscv64") AND (${HOSTNAME} STREQUAL "v047-lx-riscv64"))
-   # Ubuntu 24.04, emulated on h047. Unlike su0-0 - which ships gcc 15.2 itself -
+elseif (("${SGE_ARCH}" STREQUAL "lx-riscv64") AND ((${HOSTNAME} STREQUAL "v047-lx-riscv64") OR (${HOSTNAME} STREQUAL "build-lx-riscv64")))
+   # Ubuntu 24.04, emulated (TCG). Unlike su0-0 - which ships gcc 15.2 itself -
    # the system compiler here is gcc 13, so the tool chain under /tools is used.
    gcs_use_tools_toolchain()
 elseif (("${SGE_ARCH}" STREQUAL "lx-loong64") AND (${HOSTNAME} STREQUAL "v047-lx-loong64"))
