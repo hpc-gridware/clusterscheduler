@@ -33,6 +33,7 @@
 #include "sgeobj/sge_qref.h"
 #include "sgeobj/sge_ulong.h"
 #include "sgeobj/sge_var.h"
+#include "tom/ocs_ElementCore.h"
 
 #include "ocs_module_test.h"
 
@@ -309,6 +310,9 @@ test_context_change() {
  */
 int main(int argc, char *argv[]) {
    lInit(nmv);
+   // the cases build lists with duplicate keys on purpose, as input for the checks and repairs under test; a debug
+   // build refuses them already at the append (N-H-18), so the checks are suspended
+   const ocs::tom::UniqueCheckSuspension suspension;
    return ocs::module_test::run(argc, argv, {
       {"UNQ-01", "flat lists",
        "the central check finds a repeated key in a unique attribute of a list",

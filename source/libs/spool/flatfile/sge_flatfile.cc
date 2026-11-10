@@ -89,6 +89,7 @@
 #include "spool/flatfile/msg_spoollib_flatfile.h"
 #include "spool/flatfile/sge_spooling_flatfile_scanner.h"
 #include "spool/flatfile/sge_flatfile.h"
+#include "tom/ocs_ElementCore.h"
 
 #include "msg_common.h"
 
@@ -1729,6 +1730,10 @@ namespace {
  *
  * @return on success the read object, else nullptr
  *
+ * The input may hold a key of a unique field twice, written by an earlier
+ * version or typed by a user. The debug checks for duplicate keys are
+ * suspended while it is read; the caller verifies the object (N-H-18).
+ *
  * @see #spool_flatfile_write_object, #spool_flatfile_read_list
  */
 lListElem *
@@ -1742,6 +1747,7 @@ spool_flatfile_read_object(lList **answer_list, const lDescr *descr,
                            const char *content) {
    DENTER(FLATFILE_LAYER);
 
+   const ocs::tom::UniqueCheckSuspension suspension;
    bool file_opened = false;
    int token;
    lListElem *object = nullptr;
@@ -2433,6 +2439,10 @@ FF_DEBUG("after parsing object");
  *
  * @return the list read on success, else nullptr
  *
+ * The input may hold a key of a unique field twice, written by an earlier
+ * version or typed by a user. The debug checks for duplicate keys are
+ * suspended while it is read; the caller verifies the list (N-H-18).
+ *
  * @see #spool_flatfile_write_list, #spool_flatfile_read_object
  */
 lList *
@@ -2445,6 +2455,7 @@ spool_flatfile_read_list(lList **answer_list, const lDescr *descr,
                          const char *content) {
    DENTER(FLATFILE_LAYER);
 
+   const ocs::tom::UniqueCheckSuspension suspension;
    bool file_opened = false;
    int token = 0;
    lList *list = nullptr;

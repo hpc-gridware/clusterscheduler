@@ -515,12 +515,15 @@ namespace ocs::tom {
        * @brief Append an element, which the list takes over
        * @param element the element, empty afterwards
        * @return the handle on the element, now in the list
-       * @throw FieldException if the handle is empty
+       * @throw FieldException if the handle is empty, or in a debug build with reason DuplicateKey when
+       *        the list holds a key of one of the element's unique fields; the element then stays with
+       *        @p element
        */
       Element<T> append(ElementPtr<T> &&element) const {
          if (this->lp_ == nullptr) [[unlikely]] {
             throw_field_exception(FieldException::Reason::EmptyHandle, NoName, T::descriptor.e);
          }
+         check_unique_on_add(this->lp_, element.get().raw());
          lListElem *ep = element.release();
          lAppendElem(this->lp_, ep);
          return Element<T>::from_typed(ep);

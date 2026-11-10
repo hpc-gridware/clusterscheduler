@@ -49,6 +49,7 @@
 
 #include "cull/cull.h"
 #include "cull/cull_listP.h"
+#include "tom/ocs_ElementCore.h"
 
 #include "uti/sge_stdlib.h"
 
@@ -213,9 +214,15 @@ static lList *pack_unpack(const lList *lp) {
 
 /**
  * @brief LAZY-01: no table without a lookup
+ *
+ * Laziness is the release behaviour. A debug build checks every append for
+ * a duplicate key and uses, and so builds, the table of a list at the
+ * threshold (N-H-18); the checks are suspended here.
+ *
  * @return nothing; CHECK records the results
  */
 static void test_no_table() {
+   const ocs::tom::UniqueCheckSuspension suspension;
    const int n = 2 * OCS_CULL_HASH_MIN_ELEMS;
    lList *lp = make_list(n);
    CHECK(1, "a created and filled list is hashable without a slot array or a table", slots_empty(lp));
@@ -349,9 +356,14 @@ static void test_threshold() {
 
 /**
  * @brief LAZY-05: a duplicate in a unique field is counted when the table is built
+ *
+ * The duplicate is created on purpose, which a debug build refuses at the
+ * append (N-H-18); the checks are suspended here.
+ *
  * @return nothing; CHECK records the results
  */
 static void test_duplicate() {
+   const ocs::tom::UniqueCheckSuspension suspension;
    lList *lp = make_list(OCS_CULL_HASH_MIN_ELEMS);
    lListElem *first = lAddElemStr(&lp, LZ_name, "dup", LZ_Type);
    lListElem *second = lAddElemStr(&lp, LZ_name, "dup", LZ_Type);

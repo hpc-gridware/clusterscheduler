@@ -50,7 +50,8 @@ namespace ocs::tom {
          AbsentField,   ///< the field belongs to the type, but the reduced element does not hold it
          WrongType,     ///< the element is of another type than the handle, or the field of another field type
          WrongSubType,  ///< a list or object field holds elements of another type than the model names
-         OutOfMemory    ///< a string could not be copied
+         OutOfMemory,   ///< a string could not be copied
+         DuplicateKey   ///< a key of a unique field would be held by two elements of a list
       };
 
       /**
@@ -98,5 +99,19 @@ namespace ocs::tom {
     */
    [[noreturn, gnu::cold]] void throw_field_exception(FieldException::Reason reason, int nm, const lDescr *descr,
                                                       const lDescr *expected = nullptr);
+
+   /**
+    * @brief Throw a FieldException for a key of a unique field that a list already holds
+    *
+    * The message names the type, the field, the key and the list, so that the
+    * code that creates the duplicate can be found from it (N-H-18).
+    *
+    * @param nm the field number of the unique field
+    * @param descr the descriptor of the list
+    * @param key the key, as text
+    * @param list_name the name of the list, or nullptr
+    */
+   [[noreturn, gnu::cold]] void throw_duplicate_key(int nm, const lDescr *descr, const std::string &key,
+                                                    const char *list_name);
 
 } // namespace ocs::tom

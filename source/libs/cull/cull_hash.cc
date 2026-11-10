@@ -724,16 +724,54 @@ void cull_hash_repair(lList *lp) {
 }
 
 /**
+ * @brief Insert an element into the table of one field after the element was added or its value changed
+ *
+ * The insertion of the modifying paths: appending, inserting and setting.
+ * When the field is unique and its table already holds the key for another
+ * element, the table is not trusted any more: it is freed and unpublished,
+ * so that the next lookup builds it again from the list (N-H-18). The
+ * modification itself goes on; a debug build has stopped it before with its
+ * own check. Runs under exclusive access to the list, like every
+ * modification.
+ *
+ * @param ep the element, bound to a list
+ * @param pos position of the field
+ */
+void ocs_cull_hash_insert_changed(const lListElem *ep, const int pos) {
+   const cull_htable ht = elem_hash_table(ep, pos);
+   if (ht == nullptr) {
+      return;
+   }
+   char host_key[CL_MAXHOSTNAMELEN + 1];
+   void *key = cull_hash_key(ep, pos, host_key);
+   if (key == nullptr) {
+      return;
+   }
+   const bool unique = mt_is_unique(ep->descr[pos].mt);
+   if (unique) {
+      const void *stored = nullptr;
+      if (sge_htable_lookup(ht->ht, key, &stored) == True && stored != ep) {
+         cull_hash_slot *slot = list_hash_slot(elem_list(ep), pos);
+         cull_htable dropped = slot->get();
+         slot->set(nullptr);
+         cull_hash_destroy(&dropped);
+         return;
+      }
+   }
+   cull_hash_insert(ep, key, ht, unique);
+}
+
+/**
  * @brief Insert cull object into associated hash tables
  *
  * Insert the cull element ep into all hash tables of the list it is bound
- * in. An element that is not bound is in no table.
+ * in. An element that is not bound is in no table. A unique table that
+ * already holds one of the element's keys is dropped instead
+ * (#ocs_cull_hash_insert_changed).
  *
  * @param ep the cull object to be hashed
  */
 void cull_hash_elem(const lListElem *ep) {
-   char host_key[CL_MAXHOSTNAMELEN];
-
    if (ep == nullptr) {
       return;
    }
@@ -748,12 +786,7 @@ void cull_hash_elem(const lListElem *ep) {
       return;
    }
    for (uint32_t i = 0; i < lp->nslots; i++) {
-      const cull_hash_slot &slot = slots[i];
-      const cull_htable ht = slot.get();
-      if (ht != nullptr) {
-         cull_hash_insert(ep, cull_hash_key(ep, slot.pos, host_key), ht,
-                          mt_is_unique(ep->descr[slot.pos].mt));
-      }
+      ocs_cull_hash_insert_changed(ep, slots[i].pos);
    }
 }
 

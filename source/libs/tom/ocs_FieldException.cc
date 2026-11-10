@@ -92,8 +92,17 @@ namespace ocs::tom {
          case FieldException::Reason::OutOfMemory:
             message = "out of memory copying field " + field_name(nm) + " of type " + type_name(descr);
             break;
+         case FieldException::Reason::DuplicateKey:
+            message = "duplicate key in unique field " + field_name(nm) + " of type " + type_name(descr);
+            break;
       }
       throw FieldException(reason, nm, message);
+   }
+
+   void throw_duplicate_key(const int nm, const lDescr *descr, const std::string &key, const char *list_name) {
+      throw FieldException(FieldException::Reason::DuplicateKey, nm,
+                           "duplicate key \"" + key + "\" in unique field " + field_name(nm) + " of type " +
+                           type_name(descr) + " in list \"" + (list_name != nullptr ? list_name : "unnamed") + "\"");
    }
 
 } // namespace ocs::tom

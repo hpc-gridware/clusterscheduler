@@ -141,9 +141,13 @@ test_owning_handles() {
 
    bool caught = false;
    try {
+      // the task number is a unique key, so the two tasks need distinct ones
       ListPtr<JAT> list = ListPtr<JAT>::create("scoped");
-      list.get().append(ElementPtr<JAT>::create());
-      list.get().append(ElementPtr<JAT>::create());
+      for (const std::uint32_t number : {1u, 2u}) {
+         ElementPtr<JAT> task = ElementPtr<JAT>::create();
+         task.get().set<JAT_task_number>(number);
+         list.get().append(std::move(task));
+      }
       throw std::runtime_error("leave the scope");
    } catch (const std::runtime_error &) {
       caught = true;

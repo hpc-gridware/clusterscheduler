@@ -55,6 +55,7 @@
 #include "cull/cull_listP.h"
 #include "cull/cull_whatP.h"
 #include "cull/cull_multitypeP.h"
+#include "tom/ocs_ElementCore.h"
 #include "cull/cull_lerrnoP.h"
 #include "cull/ocs_cull_descr.h"
 #include "cull/cull_hash.h"
@@ -403,6 +404,8 @@ lList *lSelectDPack(const char *name, const lList *slp, const lCondition *cp,
       iterate through the source list call lCompare and add
       depending on result of lCompare
     */
+   // a selection from a list that was checked for duplicate keys when it was filled cannot create one
+   const ocs::tom::UniqueCheckSuspension suspension;
    for (ep = slp->first; ep; ep = ep->next) {
       new_ep = lSelectElemDPack(ep, cp, descr, enp, isHash, pb, skip_no_transfer);
       if (new_ep != nullptr) {

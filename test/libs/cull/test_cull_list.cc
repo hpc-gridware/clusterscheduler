@@ -36,6 +36,7 @@
 #include "cull/cull.h"
 #include "cull/cull_list.h"
 #include "cull/cull_multitype.h"
+#include "tom/ocs_ElementCore.h"
 
 // ---------------------------------------------------------------------------
 // Local CULL type used by all tests
@@ -763,7 +764,16 @@ static lList *make_keyed_list(const char *name, const char *const *keys, int n) 
    return lp;
 }
 
+/**
+ * @brief T61-T70: lookups and removals keep a unique table consistent while a key is duplicated (CS-2755)
+ *
+ * The duplicates are created on purpose, which a debug build refuses at the
+ * append (N-H-18); the checks are suspended here.
+ *
+ * @return nothing; CHECK records the results
+ */
 static void test_unique_key_integrity() {
+   const ocs::tom::UniqueCheckSuspension suspension;
    printf("\n--- unique hashed key integrity (CS-2755) ---\n");
 
    static const char *const one_dup[] = {"h10", "h10"};

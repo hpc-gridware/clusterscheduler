@@ -1147,8 +1147,12 @@ int lSetPosUlong(lListElem *ep, int pos, lUlong value) {
 
    ocs::tom::observe_value(ep, pos);
    if (value != ocs_cull_value(ep, pos).ul) {
-      if (elem_hash_table(ep, pos) != nullptr) {
-         ocs::tom::store_hashed_number(ep, pos, value);
+      if (ocs::tom::needs_hashed_store(ep, pos)) {
+         try {
+            ocs::tom::store_hashed_number(ep, pos, value);
+         } catch (const ocs::tom::FieldException &e) {
+            ocs::tom::legacy_abort("lSetPosUlong", e);
+         }
       } else {
          ocs_cull_value(ep, pos).ul = value;
       }
@@ -1207,17 +1211,14 @@ int lAddUlong(lListElem *ep, int name, lUlong offset) {
 #endif
 
    if (offset != 0) {
-      /* remove old hash entry */
-      if (elem_hash_table(ep, pos) != nullptr) {
-         cull_hash_remove(ep, pos);
-      }
-
-      ocs_cull_value(ep, pos).ul += offset;
-
-      /* create entry in hash table */
-      if (elem_hash_table(ep, pos) != nullptr) {
-         cull_hash_insert(ep, (void *) &(ocs_cull_value(ep, pos).ul), elem_hash_table(ep, pos),
-                          mt_is_unique(ep->descr[pos].mt));
+      if (ocs::tom::needs_hashed_store(ep, pos)) {
+         try {
+            ocs::tom::store_hashed_number(ep, pos, ocs_cull_value(ep, pos).ul + offset);
+         } catch (const ocs::tom::FieldException &e) {
+            ocs::tom::legacy_abort("lAddUlong", e);
+         }
+      } else {
+         ocs_cull_value(ep, pos).ul += offset;
       }
    }
 
@@ -1359,17 +1360,14 @@ int lAddUlong64(lListElem *ep, int name, lUlong64 offset) {
 #endif
 
    if (offset != 0) {
-      /* remove old hash entry */
-      if (elem_hash_table(ep, pos) != nullptr) {
-         cull_hash_remove(ep, pos);
-      }
-
-      ocs_cull_value(ep, pos).ul64 += offset;
-
-      /* create entry in hash table */
-      if (elem_hash_table(ep, pos) != nullptr) {
-         cull_hash_insert(ep, (void *) &(ocs_cull_value(ep, pos).ul64), elem_hash_table(ep, pos),
-                          mt_is_unique(ep->descr[pos].mt));
+      if (ocs::tom::needs_hashed_store(ep, pos)) {
+         try {
+            ocs::tom::store_hashed_number(ep, pos, ocs_cull_value(ep, pos).ul64 + offset);
+         } catch (const ocs::tom::FieldException &e) {
+            ocs::tom::legacy_abort("lAddUlong64", e);
+         }
+      } else {
+         ocs_cull_value(ep, pos).ul64 += offset;
       }
    }
 
@@ -1406,8 +1404,12 @@ int lSetPosUlong64(lListElem *ep, int pos, lUlong64 value) {
 
    ocs::tom::observe_value(ep, pos);
    if (value != ocs_cull_value(ep, pos).ul64) {
-      if (elem_hash_table(ep, pos) != nullptr) {
-         ocs::tom::store_hashed_number(ep, pos, value);
+      if (ocs::tom::needs_hashed_store(ep, pos)) {
+         try {
+            ocs::tom::store_hashed_number(ep, pos, value);
+         } catch (const ocs::tom::FieldException &e) {
+            ocs::tom::legacy_abort("lSetPosUlong64", e);
+         }
       } else {
          ocs_cull_value(ep, pos).ul64 = value;
       }
@@ -1445,7 +1447,13 @@ int lSetPosString(lListElem *ep, int pos, const char *value) {
       DRETURN(-1);
    }
 
-   if (!ocs::tom::store_string(ep, pos, value)) {
+   bool stored = false;
+   try {
+      stored = ocs::tom::store_string(ep, pos, value);
+   } catch (const ocs::tom::FieldException &e) {
+      ocs::tom::legacy_abort("lSetPosString", e);
+   }
+   if (!stored) {
       LERROR(LESTRDUP);
       DRETURN(-1);
    }
@@ -1482,7 +1490,13 @@ int lSetPosHost(lListElem *ep, int pos, const char *value) {
       DRETURN(-1);
    }
 
-   if (!ocs::tom::store_string(ep, pos, value)) {
+   bool stored = false;
+   try {
+      stored = ocs::tom::store_string(ep, pos, value);
+   } catch (const ocs::tom::FieldException &e) {
+      ocs::tom::legacy_abort("lSetPosHost", e);
+   }
+   if (!stored) {
       LERROR(LESTRDUP);
       DRETURN(-1);
    }

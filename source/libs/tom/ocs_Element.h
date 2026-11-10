@@ -262,7 +262,7 @@ namespace ocs::tom {
          } else {
             observe_value(ep, pos);
             if constexpr (Tr::hashed && (Tr::type == FieldType::Uint32 || Tr::type == FieldType::Uint64)) {
-               if (elem_hash_table(ep, pos) != nullptr) {
+               if (needs_hashed_store(ep, pos)) {
                   store_hashed_number(ep, pos, static_cast<std::uint64_t>(value));
                   return true;
                }
@@ -595,7 +595,8 @@ namespace ocs::tom {
        * @param value the value; an owning handle is moved in
        * @throw FieldException if the handle is empty, the reduced element does not
        *        hold the field, a string cannot be copied or an element to store
-       *        is bound elsewhere
+       *        is bound elsewhere; in a debug build also with reason DuplicateKey
+       *        when another element of the list holds the value of a unique field
        */
       template <auto F>
          requires FieldOf<F, T>
@@ -616,7 +617,8 @@ namespace ocs::tom {
        * @param nm the field number
        * @param value the value
        * @throw FieldException if the handle is empty, or the field is foreign, of another type or absent,
-       *        or a string cannot be copied
+       *        or a string cannot be copied; in a debug build also with reason DuplicateKey when another
+       *        element of the list holds the value of a unique field
        */
       template <typename V>
       void set(const int nm, const V value) const {
@@ -633,7 +635,7 @@ namespace ocs::tom {
             }
          } else if constexpr (type == FieldType::Uint32 || type == FieldType::Uint64) {
             observe_value(this->ep_, pos);
-            if (elem_hash_table(this->ep_, pos) != nullptr) {
+            if (needs_hashed_store(this->ep_, pos)) {
                store_hashed_number(this->ep_, pos, value);
             } else if constexpr (type == FieldType::Uint32) {
                slot_value.ul = value;

@@ -48,6 +48,7 @@
 #include "sgeobj/ocs_MatchCache.h"
 #include "sgeobj/ocs_Matcher.h"
 #include "sgeobj/sge_utility.h"
+#include "tom/ocs_ElementCore.h"
 
 /*
  * CS-2438: admin and submit hosts become the members of the reserved host groups
@@ -669,8 +670,11 @@ test_member_classes() {
 
    // Two members denoting the same set are collapsed, and the collapse is
    // reported. Dropping one silently is what a security relevant object cannot
-   // afford; the report carries STATUS_OK so it cannot fail the client.
+   // afford; the report carries STATUS_OK so it cannot fail the client. A debug
+   // build refuses the duplicate already at the append (N-H-18), so the checks
+   // are suspended while the input is built.
    {
+      const ocs::tom::UniqueCheckSuspension suspension;
       lList *members = nullptr;
       lList *answer_list = nullptr;
 
@@ -999,7 +1003,10 @@ test_generated_trees() {
                   snprintf(buffer, sizeof(buffer), "outside%02d", next_random(5));
                   break;
             }
-            lAddElemHost(&members, HR_name, buffer, HR_Type);
+            // a host group holds a member once, as href_list_add() keeps it; a member drawn twice is skipped
+            if (lGetElemHost(members, HR_name, buffer) == nullptr) {
+               lAddElemHost(&members, HR_name, buffer, HR_Type);
+            }
          }
          snprintf(buffer, sizeof(buffer), "@g%d", g);
          lListElem *hgroup = lAddElemHost(&hgroup_list, HGRP_name, buffer, HGRP_Type);

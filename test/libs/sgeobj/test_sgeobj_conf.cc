@@ -29,6 +29,7 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "tom/ocs_ElementCore.h"
 
 #include "uti/sge.h"
 
@@ -161,8 +162,10 @@ main(int argc, char *argv[]) {
       lFreeElem(&conf);
    }
 
-   // a name appearing more than once keeps all its occurrences, next to each other
+   // a name appearing more than once keeps all its occurrences, next to each other; a debug build refuses the
+   // duplicate at the append (N-H-18), so the checks are suspended for this case
    {
+      const ocs::tom::UniqueCheckSuspension suspension;
       static const char *in[] = {"loglevel", "mailer", "loglevel", nullptr};
       static const char *out[] = {"mailer", "loglevel", "loglevel", nullptr};
       lListElem *conf = make_conf(in);

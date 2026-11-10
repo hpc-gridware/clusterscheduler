@@ -66,6 +66,7 @@
 #include "cull/cull_pack.h"
 #include "cull/ocs_cull_descr.h"
 #include "cull/cull_parse.h"
+#include "tom/ocs_ElementCore.h"
 
 #ifdef OBSERVE
 #  include "cull/cull_observe.h"
@@ -1330,6 +1331,11 @@ int cull_unpack_list(sge_pack_buffer *pb, lList **lpp) {
 /**
  * @brief Read a list written by #cull_pack_list_partial
  *
+ * A list from another process may hold a key of a unique field twice; the
+ * receiver verifies what it takes in, e.g. the qmaster every GDI request.
+ * The debug checks for duplicate keys are suspended while it is read
+ * (N-H-18).
+ *
  * @param pb the buffer to read from
  * @param[out] lpp receives the list, owned by the caller
  * @param flags unpacking options
@@ -1337,6 +1343,8 @@ int cull_unpack_list(sge_pack_buffer *pb, lList **lpp) {
  */
 int cull_unpack_list_partial(sge_pack_buffer *pb, lList **lpp, int flags) {
    DENTER(CULL_LAYER);
+
+   const ocs::tom::UniqueCheckSuspension suspension;
 
    int ret;
    lList *lp;

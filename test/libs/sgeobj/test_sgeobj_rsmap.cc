@@ -26,6 +26,7 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_centry_rsmap.h"
+#include "tom/ocs_ElementCore.h"
 
 #include "ocs_module_test.h"
 
@@ -321,8 +322,10 @@ test_check_characteristics() {
       lFreeList(&al);
    }
 
-   // T16: a characteristic given twice on one id is refused
+   // T16: a characteristic given twice on one id is refused; a debug build refuses the duplicate already at the
+   // append (N-H-18), so the checks are suspended while the input is built
    {
+      const ocs::tom::UniqueCheckSuspension suspension;
       const char *names[] = {"gpu_model", "gpu_model"};
       const char *values[] = {"A100", "H100"};
       lList *al = nullptr;

@@ -59,6 +59,8 @@ int cull_hash_new_check(lList *lp, int nm, bool unique);
 
 void cull_hash_insert(const lListElem *ep, void *key, cull_htable ht, bool unique);
 
+void ocs_cull_hash_insert_changed(const lListElem *ep, int pos);
+
 void cull_hash_remove(const lListElem *ep, const int pos);
 
 void cull_hash_rebuild_unique(lList *lp, const int pos);

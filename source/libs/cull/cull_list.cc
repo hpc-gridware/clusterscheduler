@@ -55,6 +55,7 @@
 #include "uti/sge_string.h"
 #include "uti/ocs_TerminationManager.h"
 #include "uti/sge_stdlib.h"
+#include "tom/ocs_ElementCore.h"
 
 #include "cull/msg_cull.h"
 #include "cull/cull_db.h"
@@ -1327,6 +1328,8 @@ lList *lCopyListHash(const char *name, const lList *src, bool hash, const bool s
       DRETURN(nullptr);
    }
 
+   // the source was checked for duplicate keys when it was filled; checking each copy again would be quadratic
+   const ocs::tom::UniqueCheckSuspension suspension;
    for (sep = src->first; sep; sep = sep->next) {
       if (lAppendElem(dst, lCopyElemHash(sep, true, skip_no_transfer)) == -1) {
          lFreeList(&dst);
@@ -1352,7 +1355,8 @@ lList *lCopyListHash(const char *name, const lList *src, bool hash, const bool s
  *   of @p lp (equivalent to inserting before `lFirst(lp)`).
  *
  * @p new_ep must not already belong to any list. Attempting to insert a
- * bound element aborts the process.
+ * bound element aborts the process. In a debug build, so does inserting an
+ * element whose key in a unique field the list already holds (N-H-18).
  *
  * @param lp      The list to insert into. Must not be nullptr.
  * @param ep      The element after which @p new_ep is inserted, or nullptr
@@ -1378,6 +1382,12 @@ int lInsertElem(lList *lp, lListElem *ep, lListElem *new_ep) {
       DPRINTF("WARNING: tried to insert chained element\n");
       lWriteElem(new_ep);
       ocs::TerminationManager::trigger_abort();
+   }
+
+   try {
+      ocs::tom::check_unique_on_add(lp, new_ep);
+   } catch (const ocs::tom::FieldException &e) {
+      ocs::tom::legacy_abort("lInsertElem", e);
    }
 
    if (ep) {
@@ -1419,7 +1429,9 @@ int lInsertElem(lList *lp, lListElem *ep, lListElem *new_ep) {
 /**
  * @brief Append element at the end of a list
  *
- * Append element 'ep' at the end of list 'lp'
+ * Append element 'ep' at the end of list 'lp'. In a debug build, appending
+ * an element whose key in a unique field the list already holds aborts the
+ * process (N-H-18).
  *
  * @param lp list
  * @param ep element
@@ -1444,6 +1456,12 @@ int lAppendElem(lList *lp, lListElem *ep) {
    if (elem_kind(ep) == BOUND_ELEM || elem_kind(ep) == OBJECT_ELEM) {
       DPRINTF("WARNING: tried to append chained element\n");
       ocs::TerminationManager::trigger_abort();
+   }
+
+   try {
+      ocs::tom::check_unique_on_add(lp, ep);
+   } catch (const ocs::tom::FieldException &e) {
+      ocs::tom::legacy_abort("lAppendElem", e);
    }
 
    if (lp->last) {

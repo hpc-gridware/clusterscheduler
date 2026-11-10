@@ -33,6 +33,7 @@
 #include <cstdint>
 
 #include "cull/cull_list.h"
+#include "cull/cull_listP.h"
 #include "tom/ocs_FieldException.h"
 #include "tom/ocs_FieldTraits.h"
 
@@ -77,6 +78,8 @@ namespace ocs::tom {
     * @param pos the field's position, of type String or Host
     * @param value the new value, or nullptr; copied
     * @return true if stored, false if the copy failed (the old value is kept)
+    * @throw FieldException with reason DuplicateKey in a debug build, when the field is unique and
+    *        another element of the list holds the value; the old value is kept
     */
    bool store_string(lListElem *ep, int pos, const char *value);
 
@@ -84,12 +87,13 @@ namespace ocs::tom {
     * @brief Store a number into a hashed field, maintaining the hash table
     *
     * Unhashed number fields are stored inline by the typed setters; a hashed
-    * one goes through here only when the value changes and the element's list
-    * has built its table.
+    * one goes through here when #needs_hashed_store says so.
     *
     * @param ep the element, which holds the field
     * @param pos the field's position, of type Uint32 or Uint64
     * @param value the new value
+    * @throw FieldException with reason DuplicateKey in a debug build, when the field is unique and
+    *        another element of the list holds the value; the old value is kept
     */
    void store_hashed_number(lListElem *ep, int pos, std::uint64_t value);
 
@@ -126,5 +130,115 @@ namespace ocs::tom {
     * @param code an LE* code of cull_lerrno.h
     */
    void set_lerrno(int code);
+
+   /**
+    * @brief Suspend the debug checks for duplicate keys in unique fields of the calling thread for a scope
+    *
+    * For the code that has to take a list as it is: reading a spool that
+    * may hold duplicates written by an earlier version, which the qmaster
+    * reports or repairs after reading, and copying or selecting from a list
+    * that was checked when it was filled, where checking again would only
+    * cost time. Nests; the checks resume when the outermost guard ends.
+    */
+   class UniqueCheckSuspension {
+   public:
+      /** @brief Suspend the checks */
+      UniqueCheckSuspension() noexcept;
+
+      /** @brief Resume the checks unless an outer guard still suspends them */
+      ~UniqueCheckSuspension();
+
+      UniqueCheckSuspension(const UniqueCheckSuspension &) = delete;
+      UniqueCheckSuspension &operator=(const UniqueCheckSuspension &) = delete;
+   };
+
+   /**
+    * @brief The check of #check_unique_on_add, out of line; called in a debug build only
+    * @param lp the list
+    * @param ep the element to add
+    * @throw FieldException with reason DuplicateKey
+    */
+   void check_unique_on_add_debug(const lList *lp, const lListElem *ep);
+
+   /**
+    * @brief The check of #check_unique_on_set, out of line; called in a debug build only
+    * @param ep the element
+    * @param pos the field's position
+    * @param value the new value, as for #check_unique_on_set
+    * @throw FieldException with reason DuplicateKey
+    */
+   void check_unique_on_set_debug(const lListElem *ep, int pos, const void *value);
+
+   /**
+    * @brief Check the keys of an element against a list before it is added to it (N-H-18)
+    *
+    * For every unique field it looks the element's key up in the list, through
+    * the field's hash table where the list has one or reaches the hash
+    * threshold, building the table if needed, and linearly otherwise. Nothing
+    * is changed, so a throw leaves list and element as they were. Does nothing
+    * in a release build or while the checks are suspended.
+    *
+    * @param lp the list
+    * @param ep the element to add, not yet in the list
+    * @throw FieldException with reason DuplicateKey, naming type, field, key and list
+    */
+   inline void check_unique_on_add([[maybe_unused]] const lList *lp, [[maybe_unused]] const lListElem *ep) {
+#ifdef ENABLE_DEBUG_CHECKS
+      check_unique_on_add_debug(lp, ep);
+#endif
+   }
+
+   /**
+    * @brief Check a new value of a unique field against the element's list before it is stored (N-H-18)
+    *
+    * Like #check_unique_on_add, for one field of an element that is in a
+    * list. Does nothing for an element in no list, for a field that is not
+    * unique, in a release build and while the checks are suspended.
+    *
+    * @param ep the element
+    * @param pos the field's position
+    * @param value the new value: a char pointer for a string or host field, a pointer to the
+    *        number for a Uint32 (lUlong) or Uint64 (lUlong64) field
+    * @throw FieldException with reason DuplicateKey, naming type, field, key and list
+    */
+   inline void check_unique_on_set([[maybe_unused]] const lListElem *ep, [[maybe_unused]] const int pos,
+                                   [[maybe_unused]] const void *value) {
+#ifdef ENABLE_DEBUG_CHECKS
+      check_unique_on_set_debug(ep, pos, value);
+#endif
+   }
+
+   /**
+    * @brief Whether a number field must be stored through #store_hashed_number
+    *
+    * When its list has built the field's table, and in a debug build also when
+    * the field is unique and the element is in a list, so that the new value
+    * is checked against the list.
+    *
+    * @param ep the element
+    * @param pos the field's position
+    * @return true if the store needs the hashed path
+    */
+   inline bool needs_hashed_store(const lListElem *ep, const int pos) {
+      if (elem_hash_table(ep, pos) != nullptr) {
+         return true;
+      }
+#ifdef ENABLE_DEBUG_CHECKS
+      return mt_do_hashing(ep->descr[pos].mt) && mt_is_unique(ep->descr[pos].mt) && elem_list(ep) != nullptr;
+#else
+      return false;
+#endif
+   }
+
+   /**
+    * @brief End the process for an exception of the core, the way the old interface ends on a programming error
+    *
+    * Logs the function and the message as CRITICAL and aborts with a stack
+    * trace (N-L-2).
+    *
+    * @param function the name of the old function
+    * @param e the exception
+    */
+   [[noreturn, gnu::cold]] void legacy_abort(const char *function, const FieldException &e);
 
 } // namespace ocs::tom
