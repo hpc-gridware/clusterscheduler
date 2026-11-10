@@ -45,6 +45,7 @@
 
 #include "cull/cull_list.h"
 
+#include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_event.h"
 #include "sgeobj/sge_schedd_conf.h"
 #include "sgeobj/ocs_DataStore.h"
@@ -201,6 +202,8 @@ typedef struct {
    u_long32 produce_callback_failures; /* CS-2859: callbacks still to be failed on purpose when
                                         * the SGE_PRODUCE_MIRROR_CALLBACK_ERROR environment
                                         * variable is set. */
+   int test_callback_error_seen;       /* CS-3032: last value of the qmaster_params test
+                                        * parameter __TEST_MIRROR_CALLBACK_ERROR */
 } mir_state_t;
 
 static pthread_key_t   mir_state_key;
@@ -246,6 +249,10 @@ static void mir_state_init(mir_state_t* state)
          state->produce_callback_failures = MIR_RESYNC_FAILURE_THRESHOLD * 2;
       }
    }
+
+   // CS-3032: a value which is already set when the thread starts does not fail any callbacks,
+   // otherwise a qmaster started with it could not even load its initial lists
+   state->test_callback_error_seen = mconf_get_test_mirror_callback_error();
 }
 
 static void mir_state_destroy(void* state)
@@ -268,6 +275,34 @@ static mirror_description *mir_get_mirror_base()
 {
    GET_SPECIFIC(mir_state_t, mir_state, mir_state_init, mir_state_key);
    return mir_state->mirror_base;
+}
+
+/*!
+ * @brief Fail callbacks on purpose when the test parameter __TEST_MIRROR_CALLBACK_ERROR changes.
+ *
+ * The qmaster_params test parameter __TEST_MIRROR_CALLBACK_ERROR=<n> is the runtime counterpart
+ * of the SGE_PRODUCE_MIRROR_CALLBACK_ERROR environment variable for the mirror threads inside
+ * qmaster. Whenever its value changes, the calling thread fails its next n callbacks, see
+ * mir_produce_callback_failure(). It is used to test that a qmaster internal mirror whose lists
+ * disagree with the qmaster's registers again (CS-3032).
+ *
+ * Outside of qmaster the parameter is never set, and the function does nothing.
+ */
+static void mir_arm_test_callback_failures()
+{
+   DENTER(TOP_LAYER);
+   GET_SPECIFIC(mir_state_t, mir_state, mir_state_init, mir_state_key);
+
+   int test_callback_error = mconf_get_test_mirror_callback_error();
+   if (test_callback_error != mir_state->test_callback_error_seen) {
+      mir_state->test_callback_error_seen = test_callback_error;
+      if (test_callback_error > 0) {
+         DPRINTF("__TEST_MIRROR_CALLBACK_ERROR: failing the next %d callbacks\n",
+                 test_callback_error);
+         mir_state->produce_callback_failures = test_callback_error;
+      }
+   }
+   DRETURN_VOID;
 }
 
 static bool mir_produce_callback_failure()
@@ -308,11 +343,12 @@ static bool mir_produce_callback_failure()
  * timeout: the client registers again and sge_add_event_client() answers with a total update of
  * every subscribed list.
  *
- * The flag is acted upon by the client's own loop and not here. The scheduler thread and the mirror
- * threads both ask ec_need_new_registration() before they process an event list, so the
- * registration happens on their next pass through it - one wait at worst. That order is deliberate
- * for the acknowledge timeout, which is marked while the list is being fetched and so is caught in
- * the same pass, and it is left as it is.
+ * The flag is acted upon by the client's own loop and not here. The scheduler thread asks
+ * ec_need_new_registration() before it processes an event list, and its wait for events has a
+ * timeout, so the registration happens on its next pass. The qmaster mirror threads register again
+ * at the end of the same pass instead (CS-3032): they are busy until they release that state with
+ * ec_commit(), which is refused while a registration is pending, so they would never receive
+ * another event to start a next pass with.
  *
  * A total update is expensive, so one is asked for at most every MIR_RESYNC_MIN_INTERVAL
  * seconds. That bound is what matters when the registration does not help: without it a client
@@ -1249,6 +1285,8 @@ sge_mirror_process_event_list_(sge_evc_class_t *evc, lList *event_list)
    PROF_START_MEASUREMENT(SGE_PROF_MIRROR);
 
    function_ret = SGE_EM_OK;
+
+   mir_arm_test_callback_failures();
 
    lListElem *event;
    for_each_rw(event, event_list) {

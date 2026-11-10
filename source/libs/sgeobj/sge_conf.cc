@@ -150,6 +150,7 @@ static bool enable_forced_qdel = false;
 static bool enable_sup_grp_eval = false;
 static bool enable_enforce_master_limit = false;
 static bool enable_test_sleep_after_request = false;
+static int test_mirror_callback_error = 0;
 static bool enable_forced_qdel_if_unknown = false;
 static bool allow_any_submithosts = false;
 static std::string auto_add_hosts;
@@ -767,6 +768,7 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
       enable_sup_grp_eval = false;
       enable_enforce_master_limit = false;
       enable_test_sleep_after_request = false;
+      test_mirror_callback_error = 0;
       enable_forced_qdel_if_unknown = false;
       allow_any_submithosts = false;
       auto_add_hosts.clear();
@@ -852,6 +854,13 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
             continue;
          }
          if (parse_bool_param(s, "__TEST_SLEEP_AFTER_REQUEST", &enable_test_sleep_after_request)) {
+            continue;
+         }
+         if (parse_int_param(s, "__TEST_MIRROR_CALLBACK_ERROR", &test_mirror_callback_error,
+                             TYPE_INT)) {
+            if (test_mirror_callback_error < 0) {
+               test_mirror_callback_error = 0;
+            }
             continue;
          }
          if (parse_bool_param(s, "ENABLE_FORCED_QDEL_IF_UNKNOWN", &enable_forced_qdel_if_unknown)) {
@@ -3107,6 +3116,22 @@ bool mconf_get_enable_test_sleep_after_request() {
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
 
+}
+
+/*!
+ * @brief Get the value of the test parameter __TEST_MIRROR_CALLBACK_ERROR.
+ *
+ * Whenever the value changes, each qmaster internal mirror thread fails that many of its
+ * following event callbacks on purpose, see mir_produce_callback_failure().
+ *
+ * @return The number of callbacks to fail, 0 if the parameter is not set.
+ */
+int mconf_get_test_mirror_callback_error() {
+   DENTER(BASIS_LAYER);
+   SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
+   int ret = test_mirror_callback_error;
+   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
+   DRETURN(ret);
 }
 
 bool mconf_get_enable_forced_qdel_if_unknown() {

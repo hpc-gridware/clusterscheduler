@@ -211,6 +211,7 @@ std::string mconf_get_auto_add_hosts();
 u_long32 mconf_get_auto_remove_hosts_after();
 bool mconf_get_enable_enforce_master_limit();
 bool mconf_get_enable_test_sleep_after_request();
+int mconf_get_test_mirror_callback_error();
 int mconf_get_max_job_deletion_time();
 bool mconf_get_enable_addgrp_kill();
 u_long64 mconf_get_pdc_interval();
