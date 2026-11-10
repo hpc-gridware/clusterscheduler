@@ -6174,6 +6174,21 @@ ri_time_by_slots(const sge_assignment_t *a, lListElem *rep, const lList *load_at
 
    /* we're done if there is no consumable capacity */
    if (!(capacitiy_el = lGetElemStr(config_attr, CE_name, attrname))) {
+      // The static match above satisfied the request from what this layer reports, e.g. a
+      // load value, there is just nothing to book against. That is how the early return above
+      // treats it when not scheduling based on time, and it has to be the same here: returning
+      // DISPATCH_MISSING_ATTR leaves the request untagged, and the queue layer then rejects it
+      // as an unknown resource (CS-2757). An exclusive complex is not affected, it takes this
+      // path in both modes.
+      if (lGetUlong(cplx_el, CE_relop) != CMPLXEXCL_OP) {
+         if (ready_time == DISPATCH_TIME_QUEUE_END) {
+            *start_time = now;
+         }
+         DPRINTF("%s: ri_time_by_slots(%s) <no capacity, matched statically>\n", object_name,
+                 attrname);
+         lFreeElem(&cplx_el);
+         DRETURN(DISPATCH_OK);
+      }
       DPRINTF("%s: ri_time_by_slots(%s) <does not exist>\n", object_name, attrname);
       lFreeElem(&cplx_el);
       DRETURN(DISPATCH_MISSING_ATTR); /* does not exist */
