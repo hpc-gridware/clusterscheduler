@@ -268,6 +268,7 @@
 #define MSG_EXECD_SYSTEMD_NO_ALLOWEDCPUS_I               _MESSAGE(29243, _("cgroup v%d does not support AllowedCPUs on job scopes, it needs cgroup v2 - sge_shepherd binds the processes of a job to their cores itself"))
 #define MSG_EXECD_SYSTEMD_NO_FREEZE_II                   _MESSAGE(29244, _("systemd %d with cgroup v%d does not support freezing job scopes, it needs systemd 250 and cgroup v2 - a job is suspended by sending SIGSTOP to its processes"))
 #define MSG_LS_UNKNOWNVARIABLE_SS                        _MESSAGE(29245, _("load sensor " SFQ " is not started, it contains the unknown variable " SFQ))
+#define MSG_EXECD_REAPWAKEUP_S                           _MESSAGE(29246, _("cannot set up the wakeup for finished jobs, they are reaped up to one second late: " SFN))
 
 // clang-format on
 
