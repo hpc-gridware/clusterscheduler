@@ -94,6 +94,7 @@ namespace ocs::uti {
    using SSL_ctrl_func_t = decltype(&::SSL_ctrl);
    using SSL_free_func_t = decltype(&::SSL_free);
    using SSL_get_error_func_t = decltype(&::SSL_get_error);
+   using SSL_is_init_finished_func_t = decltype(&::SSL_is_init_finished);
    using SSL_new_func_t = decltype(&::SSL_new);
    using SSL_read_func_t = decltype(&::SSL_read);
 #if OPENSSL_VERSION_MAJOR >= 4
@@ -179,6 +180,7 @@ namespace ocs::uti {
       static SSL_ctrl_func_t SSL_ctrl_func;
       static SSL_free_func_t SSL_free_func;
       static SSL_get_error_func_t SSL_get_error_func;
+      static SSL_is_init_finished_func_t SSL_is_init_finished_func;
       static SSL_new_func_t SSL_new_func;
       static SSL_read_func_t SSL_read_func;
 #if OPENSSL_VERSION_MAJOR >= 4
@@ -329,11 +331,16 @@ namespace ocs::uti {
          SSL *ssl;
          int fd;
          bool repeat_write;
+         bool fatal_error; // SSL_ERROR_SYSCALL or SSL_ERROR_SSL occurred, no SSL_shutdown() then
 
          // private constructor, use the create() method
          OpenSSLConnection(OpenSSLContext *context, bool is_server, SSL *ssl)
-         : context(context), is_server(is_server), ssl(ssl), fd(-1), repeat_write(false) { context->inc_connection_count(); }
+         : context(context), is_server(is_server), ssl(ssl), fd(-1), repeat_write(false),
+           fatal_error(false) {
+            context->inc_connection_count();
+         }
          bool wait_for_socket_ready(int reason, dstring *error_dstr) const;
+         void note_error(int err);
 
       public:
          static OpenSSLConnection *create(OpenSSLContext *context, dstring *error_dstr);
@@ -346,10 +353,10 @@ namespace ocs::uti {
           */
          SSL *get_ssl() { return ssl; }
          bool set_fd(int new_fd, dstring *error_dstr);
-         bool accept(dstring *error_dstr) const; // server side
+         bool accept(dstring *error_dstr); // server side
          bool set_server_name_for_sni(const char *server_name, dstring *error_dstr) const; // client side
-         bool connect(dstring *error_dstr) const;
-         int read(char *buffer, size_t max_len, dstring *error_dstr) const;
+         bool connect(dstring *error_dstr);
+         int read(char *buffer, size_t max_len, dstring *error_dstr);
          int write(char *buffer, size_t len, dstring *error_dstr);
          /**
           * @brief Must the last #write be retried?
