@@ -1190,7 +1190,7 @@ static int EH_test() {
    
    ep2 = lCreateElem(CE_Type);
    lSetString(ep2, CE_name, "Test_Name4");
-   lSetString(ep2, CE_shortcut, "shortcut");
+   lSetString(ep2, CE_shortcut, "tn4");
    lSetUlong(ep2, CE_valtype, 1);
    lSetUlong(ep2, CE_relop, 5);
    lSetUlong(ep2, CE_consumable, 1);
@@ -1202,7 +1202,7 @@ static int EH_test() {
    
    ep2 = lCreateElem(CE_Type);
    lSetString(ep2, CE_name, "Test_Name5");
-   lSetString(ep2, CE_shortcut, "shortcut");
+   lSetString(ep2, CE_shortcut, "tn5");
    lSetUlong(ep2, CE_valtype, 1);
    lSetUlong(ep2, CE_relop, 5);
    lSetUlong(ep2, CE_consumable, 0);
@@ -1218,7 +1218,7 @@ static int EH_test() {
 
    ep2 = lCreateElem(CE_Type);
    lSetString(ep2, CE_name, "Test_Name6");
-   lSetString(ep2, CE_shortcut, "shortcut");
+   lSetString(ep2, CE_shortcut, "tn6");
    lSetUlong(ep2, CE_valtype, 1);
    lSetUlong(ep2, CE_relop, 5);
    lSetUlong(ep2, CE_consumable, 1);
@@ -1230,7 +1230,7 @@ static int EH_test() {
    
    ep2 = lCreateElem(CE_Type);
    lSetString(ep2, CE_name, "Test_Name7");
-   lSetString(ep2, CE_shortcut, "shortcut");
+   lSetString(ep2, CE_shortcut, "tn7");
    lSetUlong(ep2, CE_valtype, 1);
    lSetUlong(ep2, CE_relop, 5);
    lSetUlong(ep2, CE_consumable, 0);
@@ -2227,7 +2227,7 @@ static int SC_test() {
 
    ep2 = lCreateElem(CE_Type);
    lSetString(ep2, CE_name, "Test_Name1");
-   lSetString(ep2, CE_shortcut, "shortcut");
+   lSetString(ep2, CE_shortcut, "tn1");
    lSetUlong(ep2, CE_valtype, 1);
    lSetUlong(ep2, CE_relop, 5);
    lSetUlong(ep2, CE_consumable, 1);
@@ -2239,7 +2239,7 @@ static int SC_test() {
    
    ep2 = lCreateElem(CE_Type);
    lSetString(ep2, CE_name, "Test_Name2");
-   lSetString(ep2, CE_shortcut, "shortcut");
+   lSetString(ep2, CE_shortcut, "tn2");
    lSetUlong(ep2, CE_valtype, 1);
    lSetUlong(ep2, CE_relop, 5);
    lSetUlong(ep2, CE_consumable, 0);
@@ -2457,7 +2457,7 @@ static int CONF_test() {
    lAppendElem(lp, ep2);
    
    ep2 = lCreateElem(CF_Type);
-   lSetString(ep2, CF_name, "gid_range");
+   lSetString(ep2, CF_name, "max_aj_tasks");
    lSetString(ep2, CF_value, "1001");
    lAppendElem(lp, ep2);
    
