@@ -39,6 +39,8 @@
  * @see sge_qref.cc
  */
 
+#include <string>
+
 #include "sgeobj/cull/sge_qref_QR_L.h"
 
 bool
@@ -63,6 +65,9 @@ qref_list_is_valid(const lList *this_list, lList **answer_list, const lList *mas
 
 void
 qref_resolve_hostname(lListElem *this_elem);
+
+std::string
+ocs_qref_resolved_name(const char *name);
 
 void
 qref_list_resolve_hostname(lList *this_list); 

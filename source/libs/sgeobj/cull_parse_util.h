@@ -61,7 +61,7 @@
  * What to do when the option already has a value in the target object.
  * @{
  */
-#define FLG_LIST_APPEND   1 ///< append the parsed entries to the existing ones
+#define FLG_LIST_APPEND   1 ///< append the parsed entries to the existing ones, a repeated key merged by #ocs_object_list_add_unique
 #define FLG_LIST_REPLACE  2 ///< replace the existing list with the parsed one
 #define FLG_LIST_MERGE    4 ///< merge by key; a parsed entry overrides one of the same name
 #define FLG_LIST_MERGE_DOUBLE_KEY    8 ///< like #FLG_LIST_MERGE, but the key is a name/value pair

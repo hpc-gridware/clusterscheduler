@@ -55,6 +55,9 @@ answer_contains(const lList *answer_list, const char *text) {
  */
 static void
 test_flat_lists() {
+   // builds lists with a repeated key on purpose, as input for the check; a debug build refuses them already at
+   // the append (N-H-18), so the check is suspended here
+   const ocs::tom::UniqueCheckSuspension suspension;
    lList *answer_list = nullptr;
 
    lList *vars = nullptr;
@@ -103,6 +106,9 @@ test_flat_lists() {
  */
 static void
 test_nested() {
+   // builds lists with a repeated key on purpose, as input for the check; a debug build refuses them already at
+   // the append (N-H-18), so the check is suspended here
+   const ocs::tom::UniqueCheckSuspension suspension;
    lList *answer_list = nullptr;
    lListElem *job = lCreateElem(JB_Type);
    lList *env = nullptr;
@@ -159,10 +165,14 @@ test_set_lists() {
    lFreeList(&qrefs);
 
    lList *acl = nullptr;
-   lAddElemStr(&acl, ARA_name, "u1", ARA_Type);
-   lAddElemStr(&acl, ARA_name, "u2", ARA_Type);
-   lAddElemStr(&acl, ARA_name, "u1", ARA_Type);
-   ocs_object_list_remove_repeated_keys(acl, ARA_name);
+   {
+      // a list with a repeated name on purpose, as input for the removal; suspended as above
+      const ocs::tom::UniqueCheckSuspension suspension;
+      lAddElemStr(&acl, ARA_name, "u1", ARA_Type);
+      lAddElemStr(&acl, ARA_name, "u2", ARA_Type);
+      lAddElemStr(&acl, ARA_name, "u1", ARA_Type);
+      ocs_object_list_remove_repeated_keys(acl, ARA_name);
+   }
    CHECK(13, "repeated names are removed, the first of each stays",
          lGetNumberOfElem(acl) == 2 && strcmp(lGetString(lLast(acl), ARA_name), "u2") == 0);
    lFreeList(&acl);
@@ -321,6 +331,9 @@ add_variable(lList **lpp, const char *name, const char *value) {
  */
 static void
 test_repair() {
+   // builds lists with a repeated key on purpose, as input for the check; a debug build refuses them already at
+   // the append (N-H-18), so the check is suspended here
+   const ocs::tom::UniqueCheckSuspension suspension;
    lListElem *job = lCreateElem(JB_Type);
    lSetUlong(job, JB_job_number, 7);
 
@@ -385,6 +398,85 @@ test_repair() {
 }
 
 /**
+ * @brief Build a list of one string attribute from names
+ * @param names the names, nullptr terminated
+ * @param nm the attribute
+ * @param descr the type of the list
+ * @return the list
+ */
+static lList *
+names_list(const char *const names[], const int nm, const lDescr *descr) {
+   lList *lp = nullptr;
+   for (int i = 0; names[i] != nullptr; i++) {
+      lAddElemStr(&lp, nm, names[i], descr);
+   }
+   return lp;
+}
+
+/**
+ * @brief The entries of several switches are merged without ever holding a key twice (N-H-18)
+ *
+ * Runs with the debug check armed: a merge that held a key twice for a moment aborts the test.
+ *
+ * @return nothing; CHECK records the results
+ */
+static void
+test_merge() {
+   const char *const first_queues[] = {"a.q", "b.q", nullptr};
+   const char *const more_queues[] = {"c.q", "a.q", nullptr};
+   const char *const last_queues[] = {"c.q", nullptr};
+   lList *queues = names_list(first_queues, QR_name, QR_Type);
+   lList *more = names_list(more_queues, QR_name, QR_Type);
+   lList *last = names_list(last_queues, QR_name, QR_Type);
+   ocs_object_list_add_unique(&queues, &more);
+   ocs_object_list_add_unique(&queues, &last);
+   CHECK(28, "-q a.q,b.q -q c.q,a.q -q c.q holds a.q, b.q and c.q once, in their first positions",
+         more == nullptr && last == nullptr && lGetNumberOfElem(queues) == 3 &&
+         strcmp(lGetString(lFirst(queues), QR_name), "a.q") == 0 &&
+         strcmp(lGetString(lLast(queues), QR_name), "c.q") == 0);
+   lFreeList(&queues);
+
+   lList *resources = nullptr;
+   lList *switch_1 = nullptr;
+   lSetString(lAddElemStr(&switch_1, CE_name, "h_vmem", CE_Type), CE_stringval, "1G");
+   lSetString(lAddElemStr(&switch_1, CE_name, "h_rt", CE_Type), CE_stringval, "60");
+   lList *switch_2 = nullptr;
+   lSetString(lAddElemStr(&switch_2, CE_name, "h_vmem", CE_Type), CE_stringval, "2G");
+   ocs_object_list_add_unique(&resources, &switch_1);
+   ocs_object_list_add_unique(&resources, &switch_2);
+   const lListElem *h_vmem = lGetElemStr(resources, CE_name, "h_vmem");
+   CHECK(29, "-l h_vmem=1G,h_rt=60 -l h_vmem=2G holds h_vmem once, with 2G",
+         lGetNumberOfElem(resources) == 2 && h_vmem != nullptr && strcmp(lGetString(h_vmem, CE_stringval), "2G") == 0);
+   lFreeList(&resources);
+
+   lList *env = nullptr;
+   lList *vars = nullptr;
+   add_variable(&vars, "A", "1");
+   ocs_object_list_add_unique(&env, &vars);
+   add_variable(&vars, "A", "2");
+   ocs_object_list_add_unique(&env, &vars);
+   CHECK(30, "a variable merged twice keeps its last value",
+         lGetNumberOfElem(env) == 1 && strcmp(lGetString(lFirst(env), VA_value), "2") == 0);
+   lFreeList(&env);
+
+   const char *const acl_names[] = {"u1", "u2", nullptr};
+   const char *const more_names[] = {"u1", nullptr};
+   lList *acl = names_list(acl_names, ARA_name, ARA_Type);
+   lList *more_acl = names_list(more_names, ARA_name, ARA_Type);
+   ocs_object_list_add_unique(&acl, &more_acl);
+   CHECK(31, "an access list merged with a name it holds keeps it once", lGetNumberOfElem(acl) == 2);
+   lFreeList(&acl);
+
+   lList *ids = nullptr;
+   lList *more_ids = nullptr;
+   lAddElemUlong(&ids, ULNG_value, 1, ULNG_Type);
+   lAddElemUlong(&more_ids, ULNG_value, 2, ULNG_Type);
+   ocs_object_list_add_unique(&ids, &more_ids);
+   CHECK(32, "a list without a unique string attribute is appended as it is", lGetNumberOfElem(ids) == 2);
+   lFreeList(&ids);
+}
+
+/**
  * @brief Run the scenarios of the duplicate keys in unique attributes
  * @param argc number of arguments
  * @param argv the arguments; the module test frame takes its own options from them
@@ -392,9 +484,8 @@ test_repair() {
  */
 int main(int argc, char *argv[]) {
    lInit(nmv);
-   // the cases build lists with duplicate keys on purpose, as input for the checks and repairs under test; a debug
-   // build refuses them already at the append (N-H-18), so the checks are suspended
-   const ocs::tom::UniqueCheckSuspension suspension;
+   // the parsers run with the debug check of N-H-18 armed: they must not hold a repeated key even for a moment; the
+   // cases that build such lists on purpose suspend the check themselves
    return ocs::module_test::run(argc, argv, {
       {"UNQ-01", "flat lists",
        "the central check finds a repeated key in a unique attribute of a list",
@@ -440,5 +531,12 @@ int main(int argc, char *argv[]) {
        "variables and resources keep their last value, a repeated queue or user is dropped, the repairs name "
        "the lists; a repaired object has nothing left; a repeated task is reported with the job and the list",
        {{"SPL-01", "covers"}}, {23, 24, 25, 26, 27}, test_repair},
+      {"UNQ-07", "merging switches",
+       "the entries of several switches are merged by the rule of their type, never holding a key twice",
+       {"merge -q a.q,b.q with c.q,a.q and c.q", "merge -l h_vmem=1G,h_rt=60 with h_vmem=2G",
+        "merge A=1 with A=2", "merge an access list with a name it holds", "merge two ulong lists"},
+       "queues and access lists keep the first entry, resources and variables the last value; a list without "
+       "a unique string attribute is appended; the debug check never fires",
+       {{"CLN-03", "covers"}}, {28, 29, 30, 31, 32}, test_merge},
    });
 }

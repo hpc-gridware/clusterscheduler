@@ -43,6 +43,8 @@
  */
 
 #include <cstring>
+#include <string>
+#include <unordered_set>
 
 #include "uti/ocs_Pattern.h"
 #include "uti/sge_hostname.h"
@@ -777,6 +779,9 @@ bool qref_list_is_valid(const lList *this_list, lList **answer_list, const lList
    bool ret = true;
 
    if (this_list != nullptr) {
+      // the host names are brought into their unique form first; "q@h" and "q@h.domain" may then be the same
+      // reference, which is kept once - like the resolution, this changes the list in place (CS-3053)
+      qref_list_resolve_hostname(const_cast<lList *>(this_list));
 
       /*
        * qname has to be requestable
@@ -793,7 +798,6 @@ bool qref_list_is_valid(const lList *this_list, lList **answer_list, const lList
             lList *resolved_qref_list = nullptr;
             lList *qref_list = nullptr;
             const lListElem *resolved_qref = nullptr;
-            qref_resolve_hostname(qref_elem);
             qref_pattern = lGetString(qref_elem, QR_name);
 
             lAddElemStr(&qref_list, QR_name, qref_pattern, QR_Type);
@@ -820,12 +824,6 @@ bool qref_list_is_valid(const lList *this_list, lList **answer_list, const lList
          answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          ret = false;
       }
-
-      // the host names are resolved above, so "q@h" and "q@h.domain" may now be the same
-      // reference; like the resolution, this changes the list in place (CS-3053)
-      if (ret) {
-         ocs_qref_list_remove_duplicates(const_cast<lList *>(this_list));
-      }
    }
    DRETURN(ret);
 }
@@ -833,12 +831,26 @@ bool qref_list_is_valid(const lList *this_list, lList **answer_list, const lList
 /**
  * @brief Resolve the host part of every queue reference in a list
  *
- * @param[in,out] this_list the references to rewrite
+ * A reference that resolves to one the list already holds, e.g. `q@h` next to
+ * `q@h.domain`, is removed instead of renamed, so the first one stays and the
+ * list never holds a reference twice, not even for a moment (CS-3053, N-H-18).
+ *
+ * @param[in,out] this_list the references to rewrite, nullptr is accepted
  */
 void qref_list_resolve_hostname(lList *this_list) {
    DENTER(TOP_LAYER);
-   for_each_rw_lv(qref, this_list) {
-      qref_resolve_hostname(qref);
+   lListElem *next = lFirstRW(this_list);
+   while (lListElem *qref = next) {
+      next = lNextRW(qref);
+      const std::string resolved = ocs_qref_resolved_name(lGetString(qref, QR_name));
+      if (resolved == lGetString(qref, QR_name)) {
+         continue;
+      }
+      if (const lListElem *held = lGetElemStr(this_list, QR_name, resolved.c_str()); held != nullptr && held != qref) {
+         lRemoveElem(this_list, &qref);
+      } else {
+         lSetString(qref, QR_name, resolved.c_str());
+      }
    }
    DRETURN_VOID;
 }
@@ -855,36 +867,48 @@ void qref_list_resolve_hostname(lList *this_list) {
 void
 qref_resolve_hostname(lListElem *this_elem) {
    DENTER(TOP_LAYER);
+   const char *name = lGetString(this_elem, QR_name);
+   if (name != nullptr) {
+      const std::string resolved = ocs_qref_resolved_name(name);
+      if (resolved != name) {
+         lSetString(this_elem, QR_name, resolved.c_str());
+      }
+   }
+   DRETURN_VOID;
+}
+
+/**
+ * @brief The name of a queue reference with its host part in its unique form
+ *
+ * A reference is written `cqueue@host`; the host is resolved unless it is an
+ * expression or a host group. Anything else is returned as it is.
+ *
+ * @param name the reference, nullptr is accepted
+ * @return the resolved reference; empty for nullptr
+ */
+std::string
+ocs_qref_resolved_name(const char *name) {
+   DENTER(TOP_LAYER);
+   std::string ret = name != nullptr ? name : "";
    dstring cqueue_name = DSTRING_INIT;
    dstring host_or_hgroup = DSTRING_INIT;
-   const char *name = lGetString(this_elem, QR_name);
    bool has_hostname;
    bool has_domain;
 
-   if (cqueue_name_split(name, &cqueue_name, &host_or_hgroup, &has_hostname, &has_domain)) {
+   if (name != nullptr && cqueue_name_split(name, &cqueue_name, &host_or_hgroup, &has_hostname, &has_domain)) {
       const char *unresolved_name = sge_dstring_get_string(&host_or_hgroup);
-      /* Find all CQ names which match 'cq_pattern' */
       if (has_hostname && !ocs::is_expression(unresolved_name)) {
          char resolved_name[CL_MAXHOSTNAMELEN+1];
-         int back = getuniquehostname(unresolved_name, resolved_name, 0);
-
-         if (back == CL_RETVAL_OK) {
-            dstring new_qref_pattern = DSTRING_INIT;
-            if (sge_dstring_strlen(&cqueue_name) == 0) {
-                sge_dstring_sprintf(&new_qref_pattern, "@%s", resolved_name);
-            } else {
-               sge_dstring_sprintf(&new_qref_pattern, "%s@%s", sge_dstring_get_string(&cqueue_name), resolved_name);
-            }
-            lSetString(this_elem, QR_name, sge_dstring_get_string(&new_qref_pattern));
-            sge_dstring_free(&new_qref_pattern);
+         if (getuniquehostname(unresolved_name, resolved_name, 0) == CL_RETVAL_OK) {
+            const char *cqueue = sge_dstring_get_string(&cqueue_name);
+            ret = std::string(sge_dstring_strlen(&cqueue_name) == 0 ? "" : cqueue) + "@" + resolved_name;
          }
       }
    }
 
    sge_dstring_free(&cqueue_name);
    sge_dstring_free(&host_or_hgroup);
-
-   DRETURN_VOID;
+   DRETURN(ret);
 }
 
 /**
@@ -925,13 +949,25 @@ int cull_parse_destination_identifier_list(lList **lpp, const char *dest_str) {
       DRETURN(2);
    }
 
+   // a reference given twice is kept once, in its first position; dropped before the list is built, so the list
+   // never holds it twice, not even for a moment (CS-3053, N-H-18)
+   {
+      std::unordered_set<std::string> seen;
+      char **kept = str_str;
+      for (char **token = str_str; *token != nullptr; token++) {
+         if (seen.insert(*token).second) {
+            *kept++ = *token;
+         }
+      }
+      *kept = nullptr;
+   }
+
    i_ret = cull_parse_string_list(str_str, "destin_ident_list", QR_Type, rule, lpp);
    if (i_ret) {
       sge_free(&s);
       sge_free(&str_str);
       DRETURN(3);
    }
-   ocs_qref_list_remove_duplicates(*lpp);
 
    sge_free(&s);
    sge_free(&str_str);

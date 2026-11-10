@@ -60,8 +60,8 @@
 #include "uti/sge_stdlib.h"
 
 #include "sgeobj/cull_parse_util.h"
-#include "sgeobj/sge_qref.h"
 #include "sgeobj/sge_job.h"
+#include "sgeobj/sge_object.h"
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_str.h"
 #include "sgeobj/cull/sge_parse_SPA_L.h"
@@ -1075,8 +1075,9 @@ FPRINTF_ERROR:
  *
  * `-l` and `-q` may be written before or after `-soft`, which decides whether
  * the request has to be satisfied or only should be. This sorts the parsed
- * entries into the two attributes accordingly. A queue reference given in
- * several switches is kept once.
+ * entries into the two attributes accordingly. An entry given in several
+ * switches is merged by the rule of its type (#ocs_object_list_add_unique): a
+ * queue reference is kept once, a resource request keeps its last value.
  *
  * @param cmdline the parsed option list to consume from
  * @param option the switch to look for
@@ -1110,32 +1111,16 @@ void parse_list_hardsoft(lList *cmdline, const char *option, lListElem *job, uin
          lList *lp = nullptr;
          lXchgList(ep, SPA_argval_lListT, &lp);
          if (lp != nullptr) {
+            // merged without ever holding a key twice (N-H-18)
             if (!soft_field || lGetInt(ep, SPA_argval_lIntT) < 2) {
-               if (hard_list == nullptr) {
-                  hard_list = lp;
-               } else {
-                  lAddList(hard_list, &lp);
-               }
+               ocs_object_list_add_unique(&hard_list, &lp);
             } else {
-               if (soft_list == nullptr) {
-                  soft_list = lp;
-               } else {
-                  lAddList(soft_list, &lp);
-               }
+               ocs_object_list_add_unique(&soft_list, &lp);
             }
          }
          lRemoveElem(cmdline, &ep);
          handled_option = true;
       }
-   }
-
-   // a queue reference given in several switches is kept once (CS-3053); resource requests keep
-   // their repeats here, job_request_set_remove_duplicates() lets the last value win later
-   if (hard_field == JRS_hard_queue_list) {
-      ocs_qref_list_remove_duplicates(hard_list);
-   }
-   if (soft_field == JRS_soft_queue_list) {
-      ocs_qref_list_remove_duplicates(soft_list);
    }
 
    // now store back the request lists to the job
@@ -1222,16 +1207,16 @@ int parse_list_simple(lList *cmdline, const char *option, lListElem *job, int fi
 int parse_list_simpler(lList *lp, lList **destlist, const char *option, lListElem *job, int field,
                        int nm_var, int nm_value, uint32_t flags) {
    if (lp != nullptr) {
-      if (flags & FLG_LIST_APPEND || flags & FLG_LIST_MERGE_DOUBLE_KEY) {
+      if (flags & FLG_LIST_APPEND) {
+         // merged without ever holding a key twice (N-H-18)
+         ocs_object_list_add_unique(destlist, &lp);
+      } else if (flags & FLG_LIST_MERGE_DOUBLE_KEY) {
          if (lp) {  
             if (!*destlist) {
                *destlist = lp;
             } else {
                lAddList(*destlist, &lp);
-               
-               if (flags & FLG_LIST_MERGE_DOUBLE_KEY) {
-                  cull_compress_definition_list(*destlist, nm_var, nm_value, 1);
-               }
+               cull_compress_definition_list(*destlist, nm_var, nm_value, 1);
             }
          }
       } else if (flags & FLG_LIST_MERGE) {

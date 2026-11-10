@@ -229,14 +229,13 @@ bool sge_parse_qrsub(lList *pcmdline, lList **alpp, lListElem **ar) {
    }
 
    /*  -l resource_list request the given resources  SGE_LIST */
+   /*  a resource given twice keeps its last value, merged by parse_list_simple (CS-3053) */
    parse_list_simple(pcmdline, "-l", *ar, AR_resource_list, 0, 0, FLG_LIST_APPEND);
-   centry_list_remove_duplicates(lGetListRW(*ar, AR_resource_list));
 
    /*  -u wc_user access list SGE_LIST */
    /*  -u ! wc_user TBD: Think about eval_expression support in compare allowed and excluded lists */
-   /*  an access list is a set: a name given twice is kept once (CS-3053) */
+   /*  an access list is a set: a name given twice is kept once, merged by parse_list_simple (CS-3053) */
    parse_list_simple(pcmdline, "-u", *ar, AR_acl_list, ARA_name, 0, FLG_LIST_APPEND);
-   ocs_object_list_remove_repeated_keys(lGetListRW(*ar, AR_acl_list), ARA_name);
    /*  -u ! list separation */
    lp = lGetListRW(*ar,  AR_acl_list);
    next_ep = lFirstRW(lp);
@@ -281,8 +280,8 @@ bool sge_parse_qrsub(lList *pcmdline, lList **alpp, lListElem **ar) {
    ocs_object_list_remove_repeated_keys(lGetListRW(*ar, AR_xacl_list), ARA_name);
 
    /*  -q wc_queue_list 	 reserve in queue(s) SGE_LIST */
+   /*  a queue given twice is kept once, merged by parse_list_simple (CS-3053) */
    parse_list_simple(pcmdline, "-q", *ar, AR_queue_list, 0, 0, FLG_LIST_APPEND);
-   ocs_qref_list_remove_duplicates(lGetListRW(*ar, AR_queue_list));
 
   /*    -pe pe_name slot_range reserve slot range for parallel jobs */
    while ((ep = lGetElemStrRW(pcmdline, SPA_switch_val, "-pe"))) {
@@ -300,7 +299,6 @@ bool sge_parse_qrsub(lList *pcmdline, lList **alpp, lListElem **ar) {
 
    /*   AR_master_queue_list  -masterq wc_queue_list, SGE_LIST bind master task to queue(s) */
    parse_list_simple(pcmdline, "-masterq", *ar, AR_master_queue_list, 0, 0, FLG_LIST_APPEND);
-   ocs_qref_list_remove_duplicates(lGetListRW(*ar, AR_master_queue_list));
 
    /*  -ckpt ckpt-name 	 reserve in queue with ckpt method SGE_STRING */
    while ((ep = lGetElemStrRW(pcmdline, SPA_switch_val, "-ckpt"))) {

@@ -276,6 +276,9 @@ void
 ocs_object_list_remove_repeated_keys(lList *lp, int nm);
 
 void
+ocs_object_list_add_unique(lList **lpp, lList **src);
+
+void
 ocs_object_find_repeated_keys(const lListElem *ep, std::vector<ocs::RepeatedKey> &found);
 
 bool

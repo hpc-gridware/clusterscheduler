@@ -2439,6 +2439,71 @@ ocs_object_repair_repeated_keys(lListElem *ep, std::string &repairs, lList **ans
 }
 
 /**
+ * @brief Move the elements of one list into another, without ever holding a key twice
+ *
+ * For the input paths that collect the entries of several switches into one list (CS-3053). The rule of the
+ * list's type decides about a repeated key: a variable (`VA_Type`) or a resource request (`CE_Type`) keeps its
+ * last value, so the earlier element is removed and the new one appended; in any other list with a unique string
+ * attribute the first element stays and the repeating one is dropped. A list without a unique string attribute
+ * is appended as it is. The decision is taken before an element is added, so the target never holds a key twice,
+ * not even for a moment, as the debug check of N-H-18 demands.
+ *
+ * @param[in,out] lpp the target list, created if nullptr
+ * @param[in,out] src the elements to move; the list is freed and set to nullptr
+ *
+ * @note MT-NOTE: ocs_object_list_add_unique() is MT safe
+ *
+ * @see #ocs_object_list_remove_repeated_keys
+ */
+void
+ocs_object_list_add_unique(lList **lpp, lList **src) {
+   if (lpp == nullptr || src == nullptr || *src == nullptr) {
+      return;
+   }
+
+   const lDescr *dp = lGetListDescr(*src);
+   int nm = NoName;
+   bool keep_last = false;
+   if (lGetPosInDescr(dp, VA_variable) >= 0) {
+      nm = VA_variable;
+      keep_last = true;
+   } else if (lGetPosInDescr(dp, CE_name) >= 0) {
+      nm = CE_name;
+      keep_last = true;
+   } else {
+      for (const auto f : ocs_cull_present_fields(dp)) {
+         if (mt_is_unique(dp[f.pos].mt) && mt_get_type(dp[f.pos].mt) == lStringT) {
+            nm = dp[f.pos].nm;
+            break;
+         }
+      }
+   }
+
+   if (*lpp == nullptr) {
+      *lpp = lCreateList(lGetListName(*src), dp);
+   }
+   if (nm == NoName) {
+      lAddList(*lpp, src);
+      return;
+   }
+
+   while (lListElem *ep = lFirstRW(*src)) {
+      ep = lDechainElem(*src, ep);
+      const char *key = lGetString(ep, nm);
+      lListElem *held = key != nullptr ? lGetElemStrRW(*lpp, nm, key) : nullptr;
+      if (held == nullptr) {
+         lAppendElem(*lpp, ep);
+      } else if (keep_last) {
+         lRemoveElem(*lpp, &held);
+         lAppendElem(*lpp, ep);
+      } else {
+         lFreeElem(&ep);
+      }
+   }
+   lFreeList(src);
+}
+
+/**
  * @brief Verify ulong attribute not null
  *
  * Verify that a certain ulong attribute in an object is not 0
