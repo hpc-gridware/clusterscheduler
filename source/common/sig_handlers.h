@@ -28,7 +28,7 @@
  * 
  *   All Rights Reserved.
  * 
- *  Portions of this software are Copyright (c) 2023-2024 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -37,6 +37,7 @@
 
 void sge_setup_sig_handlers(int me_who);
 void sge_reap(int dummy);
+void sge_sig_handler_set_reap_wakeup_fd(int fd);
 
 extern sigset_t default_mask;
 extern sigset_t omask;

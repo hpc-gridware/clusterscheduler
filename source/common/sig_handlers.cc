@@ -27,13 +27,15 @@
  * 
  *   All Rights Reserved.
  * 
- *  Portions of this software are Copyright (c) 2023-2024 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+#include <cerrno>
 #include <cstdio>
 #include <csignal>
 #include <cstdlib>
+#include <unistd.h>
 
 #include "uti/sge_rmon_macros.h"
 
@@ -60,6 +62,9 @@ volatile int shut_me_down                     = 0;
 volatile int sge_sig_handler_dead_children    = 0;
 volatile int sge_sig_handler_in_main_loop     = 1;
 volatile int sge_sig_handler_sigpipe_received = 0;
+
+// write end of the pipe sge_reap() wakes the main loop through, -1 while there is none
+static volatile sig_atomic_t sge_sig_handler_reap_wakeup_fd = -1;
 
 /********************************************************/
 void sge_setup_sig_handlers(
@@ -216,6 +221,31 @@ static void sge_terminate(int dummy)
 void sge_reap(int dummy)
 {
    sge_sig_handler_dead_children = 1;
+
+   int fd = sge_sig_handler_reap_wakeup_fd;
+   if (fd != -1) {
+      // write() is async-signal-safe; when the pipe is full, a wakeup is already pending
+      int saved_errno = errno;
+      char byte = 0;
+      ssize_t written = write(fd, &byte, 1);
+      (void) written;
+      errno = saved_errno;
+   }
+}
+
+/** @brief Sets the pipe through which a SIGCHLD wakes up the main loop
+ *
+ * sge_reap() only sets sge_sig_handler_dead_children. A main loop that sleeps
+ * until a timeout notices the finished child only after that timeout. When a
+ * wakeup fd is set, sge_reap() also writes one byte to it, so the main loop can
+ * wait on the read end of the pipe and reap the child right away.
+ *
+ * @param fd the non-blocking write end of the pipe, or -1 to stop the wakeups
+ */
+void sge_sig_handler_set_reap_wakeup_fd(int fd) {
+   DENTER(TOP_LAYER);
+   sge_sig_handler_reap_wakeup_fd = fd;
+   DRETURN_VOID;
 }
 
 /***************************************************************************/

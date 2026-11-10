@@ -32,9 +32,11 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+#include <cerrno>
 #include <cstdio>
 #include <unistd.h>
 #include <cstring>
+#include <fcntl.h>
 
 #include "uti/sge_log.h"
 #include "uti/sge_monitor.h"
@@ -66,6 +68,7 @@
 #include "execd_ck_to_do.h"
 #include "load_avg.h"
 #include "ocs_Bootstrap.h"
+#include "sig_handlers.h"
 
 #if defined(SOLARIS)
 #   include "sge_smf.h"
@@ -74,6 +77,76 @@
 #define SGE_EXECD_ALIVE_CHECK_MIN_INTERVAL 2*60
 #define SGE_EXECD_ALIVE_CHECK_DELAY 30
 #define DELAYED_FINISHED_JOB_REPORTING_INTERVAL 600
+
+/**
+ * @brief Drains the wakeup pipe of the SIGCHLD handler
+ *
+ * The commlib read thread calls this function when the read end of the pipe
+ * is readable. Returning from it is enough to wake up the dispatcher: the read
+ * thread then triggers the condition the dispatcher waits on, and the next
+ * do_ck_to_do() reaps the finished children.
+ *
+ * @param fd the read end of the pipe
+ * @param read_ready true if the pipe is readable
+ * @param write_ready unused, the pipe is registered for reading only
+ * @param user_data unused
+ * @param err_val poll() error events of the fd; commlib unregisters the fd after them
+ * @return CL_RETVAL_OK to keep the fd registered
+ */
+static int
+execd_reap_wakeup_callback(int fd, bool read_ready, bool write_ready, void *user_data,
+                           int err_val) {
+   DENTER(TOP_LAYER);
+   if (read_ready && err_val == 0) {
+      char buffer[64];
+      while (read(fd, buffer, sizeof(buffer)) > 0) {
+         ;
+      }
+   }
+   DRETURN(CL_RETVAL_OK);
+}
+
+/**
+ * @brief Lets a SIGCHLD wake up the dispatcher right away
+ *
+ * Without a wakeup, the dispatcher notices a finished job only when its wait in
+ * commlib times out, which happens about once a second. The wallclock of the job
+ * then includes that delay. The SIGCHLD handler writes to a pipe instead, whose
+ * read end is registered as an external fd with commlib.
+ *
+ * If the setup fails, the dispatcher keeps reaping on the timeout as before.
+ *
+ * @param handle the commlib handle of sge_execd
+ */
+static void
+execd_setup_reap_wakeup(cl_com_handle_t *handle) {
+   DENTER(TOP_LAYER);
+   int fds[2];
+   if (pipe(fds) != 0) {
+      WARNING(MSG_EXECD_REAPWAKEUP_S, strerror(errno));
+      DRETURN_VOID;
+   }
+   for (int fd : fds) {
+      int flags = fcntl(fd, F_GETFL);
+      if (flags == -1 || fcntl(fd, F_SETFL, flags | O_NONBLOCK) == -1 ||
+          fcntl(fd, F_SETFD, FD_CLOEXEC) == -1) {
+         WARNING(MSG_EXECD_REAPWAKEUP_S, strerror(errno));
+         close(fds[0]);
+         close(fds[1]);
+         DRETURN_VOID;
+      }
+   }
+   int cl_ret = cl_com_external_fd_register(handle, fds[0], execd_reap_wakeup_callback, CL_R_SELECT,
+                                            nullptr);
+   if (cl_ret != CL_RETVAL_OK) {
+      WARNING(MSG_EXECD_REAPWAKEUP_S, cl_get_error_text(cl_ret));
+      close(fds[0]);
+      close(fds[1]);
+      DRETURN_VOID;
+   }
+   sge_sig_handler_set_reap_wakeup_fd(fds[1]);
+   DRETURN_VOID;
+}
 
 int sge_execd_process_messages() {
    DENTER(TOP_LAYER);
@@ -98,6 +171,8 @@ int sge_execd_process_messages() {
    bool munge_security = ocs::Bootstrap::has_security_mode(ocs::Bootstrap::BS_SEC_MODE_MUNGE);
 
    sge_monitor_init(&monitor, "sge_execd_process_messages", NONE_EXT, EXECD_WARNING, EXECD_ERROR, nullptr);
+
+   execd_setup_reap_wakeup(cl_com_get_handle(component_get_component_name(), 0));
 
    /* If we just started the execd we skip alive check */
    last_alive_check = sge_get_gmt64();
