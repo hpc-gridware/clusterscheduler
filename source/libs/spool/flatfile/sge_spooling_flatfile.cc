@@ -64,6 +64,7 @@
 #include "uti/sge.h"
 
 /* includes for old job spooling */
+#include "spool/ocs_spool_duplicates.h"
 #include "spool/sge_dirent.h"
 #include "spool/sge_spooling_utilities.h"
 #include "spool/msg_spoollib.h"
@@ -417,10 +418,28 @@ bool spool_classic_default_shutdown_func(lList **answer_list,
    DRETURN(ret);
 }
 
+/**
+ * @brief Read one object from its file, validate it and append it to a list
+ *
+ * An object whose key in a unique attribute an object read before into the same list holds is not appended;
+ * the filter records it with both files (N-H-18).
+ *
+ * @param answer_list to return error messages
+ * @param type object type description
+ * @param rule rule to be used
+ * @param key the file name, relative to the object type's directory
+ * @param key_nm the attribute set from the file name, or NoName
+ * @param object_type object type
+ * @param master_list the list to append to
+ * @param filter the filter of the list read
+ * @param spool_key the file as the duplicate message names it, relative to the spool directory
+ * @return true if the object was read and validated, else false; a filtered duplicate counts as read
+ */
 static bool read_validate_object(lList **answer_list,
                                  const lListElem *type, const lListElem *rule,
                                  const char *key, int key_nm,
-                                 sge_object_type object_type, lList **master_list) {
+                                 sge_object_type object_type, lList **master_list,
+                                 ocs::spool::DuplicateFilter &filter, const char *spool_key) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
@@ -452,9 +471,13 @@ static bool read_validate_object(lList **answer_list,
          }
       }
 
-      /* object read correctly and validate succeeded */
+      /* object read correctly and validate succeeded; a second object with a taken key is recorded and dropped */
       if (ep != nullptr) {
-         lAppendElem(*master_list, ep);
+         if (filter.admit(ep, spool_key)) {
+            lAppendElem(*master_list, ep);
+         } else {
+            lFreeElem(&ep);
+         }
       }
    }
 
@@ -585,10 +608,12 @@ bool spool_classic_default_list_func(lList **answer_list,
 
       /* if all necessary data has been initialized */
       if (url != nullptr && list != nullptr && descr != nullptr) {
+         ocs::spool::DuplicateFilter filter(descr, object_type_get_name(object_type));
+
          /* single file to parse (SHARETREE, global config, schedd config */
          if (filename != nullptr) {
             ret = read_validate_object(answer_list, type, rule, filename, key_nm,
-                                     object_type, list);
+                                     object_type, list, filter, filename);
          }
 
          /* if we have a directory (= multiple files) to parse */
@@ -604,14 +629,17 @@ bool spool_classic_default_list_func(lList **answer_list,
 
             direntries = sge_get_dirents(abs_dir);
 
+            dstring spool_key = DSTRING_INIT;
             for_each_ep_lv(direntry, direntries) {
                const char *key = lGetString(direntry, ST_name);
 
                if (key[0] != '.') {
+                  sge_dstring_sprintf(&spool_key, "%s/%s", directory, key);
                   ret &= read_validate_object(answer_list, type, rule, key, key_nm,
-                                           object_type, list);
+                                           object_type, list, filter, sge_dstring_get_string(&spool_key));
                }
             }
+            sge_dstring_free(&spool_key);
             lFreeList(&direntries);
          }
       }
@@ -627,9 +655,11 @@ bool spool_classic_default_list_func(lList **answer_list,
                dstring key = DSTRING_INIT;
                dstring dir = DSTRING_INIT;
 
+               dstring spool_key = DSTRING_INIT;
                for_each_rw_lv(queue, *list) {
                   lList *direntries;
                   lList *qinstance_list = lCreateList("", QU_Type);
+                  ocs::spool::DuplicateFilter qinstance_filter(QU_Type, object_type_get_name(SGE_TYPE_QINSTANCE));
 
                   sge_dstring_sprintf(&dir, "%s/%s/%s", url, QINSTANCES_DIR, lGetString(queue, CQ_name));
                   direntries = sge_get_dirents(sge_dstring_get_string(&dir));
@@ -637,14 +667,17 @@ bool spool_classic_default_list_func(lList **answer_list,
                      const char *directory = lGetString(direntry, ST_name);
                      if (directory[0] != '.') {
                         sge_dstring_sprintf(&key, "%s/%s", lGetString(queue, CQ_name), directory);
+                        sge_dstring_sprintf(&spool_key, "%s/%s", QINSTANCES_DIR, sge_dstring_get_string(&key));
                         read_validate_object(answer_list, type, rule, sge_dstring_get_string(&key), NoName,
-                                           SGE_TYPE_QINSTANCE, &qinstance_list);
+                                           SGE_TYPE_QINSTANCE, &qinstance_list, qinstance_filter,
+                                           sge_dstring_get_string(&spool_key));
                      }
                   }
                   lFreeList(&direntries);
 
                   lSetList(queue, CQ_qinstances, qinstance_list);
                }
+               sge_dstring_free(&spool_key);
                sge_dstring_free(&dir);
                sge_dstring_free(&key);
             }

@@ -77,11 +77,12 @@ test_flat_lists() {
 
    lList *hosts = nullptr;
    lAddElemHost(&hosts, HR_name, "h1", HR_Type);
+   lAddElemHost(&hosts, HR_name, "h2", HR_Type);
+   const bool distinct_hosts = ocs_object_list_verify_unique_keys(hosts, &answer_list, "test");
    lAddElemHost(&hosts, HR_name, "H1", HR_Type);
-   const bool exact = ocs_object_list_verify_unique_keys(hosts, &answer_list, "test");
-   lAddElemHost(&hosts, HR_name, "h1", HR_Type);
-   CHECK(4, "host keys compare by exact string, like the hash table of the list",
-         exact && !ocs_object_list_verify_unique_keys(hosts, &answer_list, "test"));
+   CHECK(4, "host keys compare like the hash table of the list: H1 repeats h1, named as it is given",
+         distinct_hosts && !ocs_object_list_verify_unique_keys(hosts, &answer_list, "test") &&
+         answer_contains(answer_list, "\"H1\""));
    lFreeList(&answer_list);
    lFreeList(&hosts);
 
@@ -303,6 +304,87 @@ test_context_change() {
 }
 
 /**
+ * @brief Add a variable to a list of variables
+ * @param lpp the list, created if nullptr
+ * @param name the name
+ * @param value the value
+ */
+static void
+add_variable(lList **lpp, const char *name, const char *value) {
+   lListElem *var = lAddElemStr(lpp, VA_variable, name, VA_Type);
+   lSetString(var, VA_value, value);
+}
+
+/**
+ * @brief The repair of repeated keys in a spooled object, as an earlier version wrote it (N-H-18)
+ * @return nothing; CHECK records the results
+ */
+static void
+test_repair() {
+   lListElem *job = lCreateElem(JB_Type);
+   lSetUlong(job, JB_job_number, 7);
+
+   lList *env = nullptr;
+   add_variable(&env, "A", "1");
+   add_variable(&env, "B", "2");
+   add_variable(&env, "A", "3");
+   lSetList(job, JB_env_list, env);
+
+   lListElem *request_set = lAddSubUlong(job, JRS_scope, 0, JB_request_set_list, JRS_Type);
+   lList *queues = nullptr;
+   lAddElemStr(&queues, QR_name, "all.q", QR_Type);
+   lAddElemStr(&queues, QR_name, "b.q", QR_Type);
+   lAddElemStr(&queues, QR_name, "all.q", QR_Type);
+   lSetList(request_set, JRS_hard_queue_list, queues);
+   lList *resources = nullptr;
+   lSetString(lAddElemStr(&resources, CE_name, "h_vmem", CE_Type), CE_stringval, "1G");
+   lSetString(lAddElemStr(&resources, CE_name, "h_vmem", CE_Type), CE_stringval, "2G");
+   lSetList(request_set, JRS_hard_resource_list, resources);
+
+   std::string repairs;
+   lList *answer_list = nullptr;
+   const bool repaired = ocs_object_repair_repeated_keys(job, repairs, &answer_list, "job 7");
+   const lListElem *a = lGetElemStr(lGetList(job, JB_env_list), VA_variable, "A");
+   const lList *repaired_queues = lGetList(request_set, JRS_hard_queue_list);
+   const lList *repaired_resources = lGetList(request_set, JRS_hard_resource_list);
+   CHECK(23, "variables and resources keep the last value, a repeated queue is dropped, the first stays",
+         repaired && answer_list == nullptr && lGetNumberOfElem(lGetList(job, JB_env_list)) == 2 && a != nullptr &&
+         strcmp(lGetString(a, VA_value), "3") == 0 && lGetNumberOfElem(repaired_queues) == 2 &&
+         strcmp(lGetString(lFirst(repaired_queues), QR_name), "all.q") == 0 &&
+         lGetNumberOfElem(repaired_resources) == 1 &&
+         strcmp(lGetString(lFirst(repaired_resources), CE_stringval), "2G") == 0);
+   CHECK(24, "the repairs name the path of each list and the key",
+         repairs.find("JB_env_list \"A\"") != std::string::npos &&
+         repairs.find("JB_request_set_list/JRS_hard_queue_list \"all.q\"") != std::string::npos &&
+         repairs.find("JB_request_set_list/JRS_hard_resource_list \"h_vmem\"") != std::string::npos);
+
+   repairs.clear();
+   CHECK(25, "a repaired object has nothing left to repair",
+         ocs_object_repair_repeated_keys(job, repairs, &answer_list, "job 7") && repairs.empty());
+
+   lListElem *userset = lCreateElem(US_Type);
+   lSetString(userset, US_name, "staff");
+   lAddSubStr(userset, UE_name, "u1", US_entries, UE_Type);
+   lAddSubStr(userset, UE_name, "u2", US_entries, UE_Type);
+   lAddSubStr(userset, UE_name, "u1", US_entries, UE_Type);
+   CHECK(26, "a user set keeps a repeated user once",
+         ocs_object_repair_repeated_keys(userset, repairs, &answer_list, "userset staff") &&
+         lGetNumberOfElem(lGetList(userset, US_entries)) == 2 && repairs == "US_entries \"u1\"");
+
+   lAddSubUlong(job, JAT_task_number, 1, JB_ja_tasks, JAT_Type);
+   lAddSubUlong(job, JAT_task_number, 1, JB_ja_tasks, JAT_Type);
+   repairs.clear();
+   CHECK(27, "a repeated array task is not repaired; the error names the job, the list and the key",
+         !ocs_object_repair_repeated_keys(job, repairs, &answer_list, "job 7") && repairs.empty() &&
+         lGetNumberOfElem(lGetList(job, JB_ja_tasks)) == 2 && answer_contains(answer_list, "job 7, JB_ja_tasks") &&
+         answer_contains(answer_list, "JAT_task_number"));
+
+   lFreeList(&answer_list);
+   lFreeElem(&userset);
+   lFreeElem(&job);
+}
+
+/**
  * @brief Run the scenarios of the duplicate keys in unique attributes
  * @param argc number of arguments
  * @param argv the arguments; the module test frame takes its own options from them
@@ -349,5 +431,14 @@ int main(int argc, char *argv[]) {
        "the request passes the central check; the context is b=2,a=3, then c=1, then 21 variables, then d=4; "
        "PARENT survives the -dc; a reduced job without the request does not abort",
        {{"CLN-04", "covers"}}, {15, 16, 17, 18, 19, 20, 21, 22}, test_context_change},
+      {"UNQ-06", "spool repair",
+       "a spooled object with repeated keys is repaired as the input paths repair them",
+       {"repair a job with A=1,B=2,A=3, the queue all.q twice and h_vmem twice in a request set",
+        "repair it again",
+        "repair a user set naming a user twice",
+        "repair a job holding array task 1 twice"},
+       "variables and resources keep their last value, a repeated queue or user is dropped, the repairs name "
+       "the lists; a repaired object has nothing left; a repeated task is reported with the job and the list",
+       {{"SPL-01", "covers"}}, {23, 24, 25, 26, 27}, test_repair},
    });
 }

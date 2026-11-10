@@ -271,6 +271,31 @@ dump_object(const char *key) {
    DRETURN(ret);
 }
 
+/**
+ * @brief The key of an object without its type prefix, as the spooling write and delete functions take it
+ *
+ * The keys that `list` prints and `dump` reads carry the object type, e.g. `USERSET:arusers`; the write and
+ * delete functions of the Berkeley DB spooling add that prefix themselves. A job script key is passed on
+ * unchanged, its functions parse the whole key.
+ *
+ * @param key the key as given on the command line
+ * @return the key without the prefix up to and including the first ':'
+ */
+static const char *
+ocs_spooledit_object_key(const char *key) {
+   if (strncmp(key, "JOBSCRIPT:", 10) == 0) {
+      return key;
+   }
+   const char *colon = strchr(key, ':');
+   return colon != nullptr ? colon + 1 : key;
+}
+
+/**
+ * @brief Write an object from a dump file into the spool
+ * @param key the key the object is spooled under, with its type prefix, e.g. `USERSET:arusers`
+ * @param fname the file holding the object as `dump` prints it
+ * @return EXIT_SUCCESS or EXIT_FAILURE
+ */
 static int
 load_object(const char *key, const char *fname) {
    DENTER(TOP_LAYER);
@@ -310,11 +335,9 @@ load_object(const char *key, const char *fname) {
          answer_list_output(&answer_list);
          ret = EXIT_FAILURE;
       } else {
-         /* read object */
-         // @todo: what is key? Something like JATASK:123123.342342?
-         //        wouldn't we need to strip the JATASK: then?
-         dbret = spool_write_object(&answer_list, spool_get_default_context(), object, key,
-                                    object_name_get_type(key));
+         /* write the object; the type comes from the prefix, the spooling adds it to the key again */
+         dbret = spool_write_object(&answer_list, spool_get_default_context(), object,
+                                    ocs_spooledit_object_key(key), object_name_get_type(key));
          if (!dbret) {
             answer_list_output(&answer_list);
             ret = EXIT_FAILURE;
@@ -339,6 +362,11 @@ FCLOSE_ERROR:
    DRETURN(EXIT_FAILURE);
 }
 
+/**
+ * @brief Delete an object from the spool
+ * @param key the object's key, with its type prefix, e.g. `USERSET:arusers`
+ * @return EXIT_SUCCESS or EXIT_FAILURE
+ */
 static int
 delete_object(const char *key) {
    DENTER(TOP_LAYER);
@@ -355,7 +383,7 @@ delete_object(const char *key) {
    } else {
       /* delete object with given key */
       dbret = spool_delete_object(&answer_list, spool_get_default_context(),
-                                     object_name_get_type(key), key);
+                                     object_name_get_type(key), ocs_spooledit_object_key(key));
       if (!dbret) {
          answer_list_output(&answer_list);
          ret = EXIT_FAILURE;

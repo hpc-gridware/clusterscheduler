@@ -780,4 +780,9 @@
 #define MSG_AR_NOACCESS2PRJ4USER_SS                _MESSAGE(34017, _("advance reservation rejected: no access to project " SFQ " for user " SFQ))
 #define MSG_AR_PRJNOTALLOWED_S                     _MESSAGE(34018, _("advance reservation rejected: project " SFQ " is not allowed by the projects and xprojects of the global configuration"))
 
+// spool check at start, duplicate keys in unique attributes (N-H-18)
+#define MSG_QMASTER_REPAIREDREPEATEDKEYS_SS        _MESSAGE(34019, _(SFN " was spooled by an earlier version with repeated keys, kept once now: " SFN))
+#define MSG_QMASTER_DUPLICATEOBJECT_SSSSS          _MESSAGE(34020, _(SFN " with " SFN " " SFQ " is spooled twice, as " SFQ " and " SFQ))
+#define MSG_QMASTER_UNIQUEKEYSFAILED_S             _MESSAGE(34021, _("the spool holds duplicate keys in unique attributes; remove one object of each duplicate, or the repeated entry, and start the qmaster again: " SFN))
+
 // clang-format on

@@ -44,6 +44,8 @@
 
 #include <sys/resource.h>
 
+#include <string>
+
 #include "uti/ocs_Bootstrap.h"
 #include "uti/ocs_OpenSSL.h"
 #include "uti/ocs_TerminationManager.h"
@@ -63,6 +65,7 @@
 
 #include "evm/sge_event_master.h"
 
+#include "spool/ocs_spool_duplicates.h"
 #include "spool/sge_spooling.h"
 
 #include "sgeobj/parse.h"
@@ -89,6 +92,7 @@
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_schedd_conf.h"
+#include "sgeobj/sge_object.h"
 
 #include "gdi/ocs_gdi_ClientBase.h"
 
@@ -168,6 +172,9 @@ debit_all_jobs_from_qs();
 
 static void
 clear_deferred_starts(lListElem *jep);
+
+static bool
+ocs_qmaster_check_unique_keys(lList **answer_list);
 
 
 /**
@@ -721,7 +728,14 @@ qmaster_lock_and_shutdown(int anExitValue) {
    DRETURN_VOID;
 } /* qmaster_lock_and_shutdown() */
 
-
+/**
+ * @brief Read the spool into the master lists and bring them into a consistent state
+ *
+ * Reads every spooled object type, checks the lists for duplicate keys in unique attributes (N-H-18) and the
+ * role references, and builds the derived data such as the categories.
+ *
+ * @return 0 on success, -1 if the qmaster cannot start with the spool as it is
+ */
 static int
 setup_qmaster() {
    DENTER(TOP_LAYER);
@@ -1277,6 +1291,17 @@ setup_qmaster() {
                                                                    master_project_list, master_userset_list, master_rqs_list,
                                                                    master_cqueue_list, master_pe_list, master_host_list);
 
+   // duplicate keys in unique attributes, written by earlier versions: repair what the input paths repair, stop on
+   // the rest (N-H-18)
+   {
+      lList *unique_answers = nullptr;
+      const bool unique = ocs_qmaster_check_unique_keys(&unique_answers);
+      answer_list_output(&unique_answers);
+      if (!unique) {
+         DRETURN(-1);
+      }
+   }
+
    // post-load integrity scan: warn about dangling role references (does not abort startup)
    {
       lList *integrity_answers = nullptr;
@@ -1288,6 +1313,156 @@ setup_qmaster() {
    }
 
    DRETURN(0);
+}
+
+/**
+ * @brief The key of a spooled object as text
+ * @param ep the object
+ * @param type its object type
+ * @return the value of the type's key attribute; empty if the type has none
+ */
+static std::string
+ocs_qmaster_object_key(const lListElem *ep, const sge_object_type type) {
+   const int nm = object_type_get_key_nm(type);
+   if (nm < 0 || lGetPosInDescr(ep->descr, nm) < 0) {
+      return "";
+   }
+   switch (lGetType(ep->descr, nm)) {
+      case lStringT:
+         return lGetString(ep, nm) != nullptr ? lGetString(ep, nm) : "";
+      case lHostT:
+         return lGetHost(ep, nm) != nullptr ? lGetHost(ep, nm) : "";
+      case lUlongT:
+         return std::to_string(lGetUlong(ep, nm));
+      default:
+         return "";
+   }
+}
+
+/**
+ * @brief Append an entry to a list of entries separated by "; "
+ * @param[in,out] text the list
+ * @param entry the entry
+ */
+static void
+ocs_qmaster_append_entry(std::string &text, const char *entry) {
+   if (!text.empty()) {
+      text += "; ";
+   }
+   text += entry;
+}
+
+/**
+ * @brief Repair the repeated keys inside one spooled object, and collect those that are not repaired
+ *
+ * A repaired object is logged with one warning and spooled again.
+ *
+ * @param ep the object
+ * @param type its object type
+ * @param spool_key the key it is spooled with
+ * @param[in,out] unrepaired receives one entry per repeated key that is not repaired
+ * @param skip_nm a list attribute left out of the check, because its elements are spooled and checked on their
+ *        own; NoName for none
+ * @return true if no repeated key is left in the object
+ */
+static bool
+ocs_qmaster_repair_spooled_object(lListElem *ep, const sge_object_type type, const std::string &spool_key,
+                                  std::string &unrepaired, const int skip_nm = NoName) {
+   DENTER(TOP_LAYER);
+
+   const std::string name = std::string(object_type_get_name(type)) + " " + spool_key;
+   std::string repairs;
+   lList *errors = nullptr;
+   lList *skipped = nullptr;
+   if (skip_nm != NoName) {
+      lXchgList(ep, skip_nm, &skipped);
+   }
+   const bool repaired = ocs_object_repair_repeated_keys(ep, repairs, &errors, name.c_str());
+   if (skip_nm != NoName) {
+      lXchgList(ep, skip_nm, &skipped);
+   }
+   if (!repairs.empty()) {
+      WARNING(MSG_QMASTER_REPAIREDREPEATEDKEYS_SS, name.c_str(), repairs.c_str());
+      lList *spool_answers = nullptr;
+      spool_write_object(&spool_answers, spool_get_default_context(), ep, spool_key.c_str(), type);
+      answer_list_output(&spool_answers);
+   }
+   for_each_ep_lv(error, errors) {
+      ocs_qmaster_append_entry(unrepaired, lGetString(error, AN_text));
+   }
+   lFreeList(&errors);
+
+   DRETURN(repaired);
+}
+
+/**
+ * @brief Check the spooled master lists for duplicate keys in unique attributes (N-H-18)
+ *
+ * Runs after the spool is read and before a request is served. Objects that the spool holds twice were
+ * filtered out while reading and recorded with both spool keys. Inside each object, a repeated key of a kind
+ * that the input paths repair is repaired the same way, the object logged and spooled again; such repetitions
+ * were written by earlier versions, for example by `qalter -v A=1,A=2`. Every duplicate object and every other
+ * repeated key ends up in one message, so that one restart after the repair is enough.
+ *
+ * The array tasks and parallel tasks of a job are checked with the job; a repair inside them is spooled with
+ * the job only.
+ *
+ * @param answer_list receives the critical message listing what is not repaired
+ * @return true if the qmaster may continue, false if it has to stop
+ */
+static bool
+ocs_qmaster_check_unique_keys(lList **answer_list) {
+   DENTER(TOP_LAYER);
+
+   std::string unrepaired;
+   dstring entry = DSTRING_INIT;
+
+   for (const auto &duplicate : ocs::spool::duplicate_objects()) {
+      sge_dstring_sprintf(&entry, MSG_QMASTER_DUPLICATEOBJECT_SSSSS, duplicate.type.c_str(),
+                          duplicate.field.c_str(), duplicate.key.c_str(), duplicate.first_spool_key.c_str(),
+                          duplicate.second_spool_key.c_str());
+      ocs_qmaster_append_entry(unrepaired, sge_dstring_get_string(&entry));
+   }
+   ocs::spool::clear_duplicate_objects();
+
+   static constexpr sge_object_type spooled_types[] = {
+      SGE_TYPE_CONFIG, SGE_TYPE_SCHEDD_CONF, SGE_TYPE_CENTRY, SGE_TYPE_EXECHOST, SGE_TYPE_HGROUP,
+      SGE_TYPE_USERSET, SGE_TYPE_CALENDAR, SGE_TYPE_RQS, SGE_TYPE_CQUEUE, SGE_TYPE_PE, SGE_TYPE_RL,
+      SGE_TYPE_CKPT, SGE_TYPE_AR, SGE_TYPE_JOB, SGE_TYPE_USER, SGE_TYPE_PROJECT, SGE_TYPE_SHARETREE
+   };
+   for (const sge_object_type type : spooled_types) {
+      lList *master_list = *ocs::DataStore::get_master_list_rw(type);
+      for_each_rw_lv(ep, master_list) {
+         int skip_nm = NoName;
+         if (type == SGE_TYPE_CQUEUE) {
+            // the queue instances are spooled on their own, so they are repaired on their own, not with the queue
+            for_each_rw_lv(qinstance, lGetListRW(ep, CQ_qinstances)) {
+               const std::string key = std::string(lGetString(qinstance, QU_qname)) + "/" +
+                                       lGetHost(qinstance, QU_qhostname);
+               ocs_qmaster_repair_spooled_object(qinstance, SGE_TYPE_QINSTANCE, key, unrepaired);
+            }
+            skip_nm = CQ_qinstances;
+         }
+
+         std::string key;
+         if (type == SGE_TYPE_JOB) {
+            key = job_get_key(lGetUlong(ep, JB_job_number), 0, nullptr, &entry);
+         } else if (type == SGE_TYPE_SCHEDD_CONF) {
+            key = "schedd_conf";
+         } else {
+            key = ocs_qmaster_object_key(ep, type);
+         }
+         ocs_qmaster_repair_spooled_object(ep, type, key, unrepaired, skip_nm);
+      }
+   }
+   sge_dstring_free(&entry);
+
+   if (!unrepaired.empty()) {
+      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_CRITICAL, MSG_QMASTER_UNIQUEKEYSFAILED_S,
+                              unrepaired.c_str());
+      DRETURN(false);
+   }
+   DRETURN(true);
 }
 
 /**

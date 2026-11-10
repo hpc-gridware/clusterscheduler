@@ -20,7 +20,7 @@
 
 # source/libs/spool
 set(LIBRARY_NAME spool)
-set(LIBRARY_SOURCES sge_dirent.cc sge_spooling.cc sge_spooling_utilities.cc)
+set(LIBRARY_SOURCES sge_dirent.cc sge_spooling.cc sge_spooling_utilities.cc ocs_spool_duplicates.cc)
 set(LIBRARY_INCLUDES "./")
 
 # CS-199 makes use of readdir_r/readdir64_r which is deprecated for Linux only

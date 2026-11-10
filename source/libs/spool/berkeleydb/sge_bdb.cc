@@ -56,6 +56,7 @@
 
 #include <cerrno>
 #include <cstring>
+#include <string>
 
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_log.h"
@@ -71,6 +72,7 @@
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_str.h"
 
+#include "spool/ocs_spool_duplicates.h"
 #include "spool/berkeleydb/msg_spoollib_berkeleydb.h"
 #include "spool/berkeleydb/sge_bdb.h"
 
@@ -704,6 +706,10 @@ bool spool_berkeleydb_trigger(lList **answer_list, bdb_info info,
 }
 
 /** @brief Read every record whose key starts with a prefix
+ *
+ * A record whose object holds a key of a unique attribute that an object read before holds is not appended;
+ * it is recorded as a duplicate with both database keys (N-H-18).
+ *
  * @param answer_list to return error messages
  * @param info the handle
  * @param database which database to read from
@@ -739,6 +745,8 @@ bool spool_berkeleydb_read_list(lList **answer_list, bdb_info info,
       ret = false;
    } else {
       DEBUG("querying objects with keys %s*", key);
+      // the type is the key prefix up to its ':', e.g. USERSET of "USERSET:"
+      ocs::spool::DuplicateFilter filter(descr, std::string(key, strcspn(key, ":")));
 
       PROF_START_MEASUREMENT(SGE_PROF_SPOOLINGIO);
       dbret = db->cursor(db, txn, &dbc, 0);
@@ -820,7 +828,11 @@ bool spool_berkeleydb_read_list(lList **answer_list, bdb_info info,
                   if (*list == nullptr) {
                      *list = lCreateList(key, descr);
                   }
-                  lAppendElem(*list, object);
+                  if (filter.admit(object, static_cast<const char *>(key_dbt.data))) {
+                     lAppendElem(*list, object);
+                  } else {
+                     lFreeElem(&object);
+                  }
                }
 
                /* get next record */

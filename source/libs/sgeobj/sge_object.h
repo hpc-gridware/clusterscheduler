@@ -45,12 +45,25 @@
  * @see sge_object.cc
  */
 
+#include <string>
+#include <vector>
+
 #include "uti/sge_dstring.h"
 
 #include "cull/cull.h"
 #include "cull/cull_list.h"
 
 #include "sgeobj/cull/sge_all_listsL.h"
+
+namespace ocs {
+   /** @brief A key that a unique attribute of a list holds a second time */
+   struct RepeatedKey {
+      const lList *list;  ///< the list holding the key twice
+      int nm;             ///< the unique attribute
+      std::string key;    ///< the key as the repeating element holds it
+      std::string path;   ///< the attribute names from the object to the list, separated by '/'
+   };
+} // namespace ocs
 
 /**
  * @brief Replace the string "none" in a field with nullptr
@@ -261,6 +274,12 @@ ocs_object_list_verify_unique_keys(const lList *lp, lList **answer_list, const c
 
 void
 ocs_object_list_remove_repeated_keys(lList *lp, int nm);
+
+void
+ocs_object_find_repeated_keys(const lListElem *ep, std::vector<ocs::RepeatedKey> &found);
+
+bool
+ocs_object_repair_repeated_keys(lListElem *ep, std::string &repairs, lList **answer_list, const char *object_name);
 
 bool
 object_verify_ulong_not_null(const lListElem *ep, lList **answer_list, int nm);

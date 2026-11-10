@@ -47,6 +47,7 @@
 #include <cstring>
 #include <string>
 #include <unordered_set>
+#include <vector>
 
 #include "uti/sge_hostname.h"
 #include "uti/sge_log.h"
@@ -2105,13 +2106,153 @@ object_verify_cull(const lListElem *ep, const lDescr *descr) {
    return ret;
 }
 
+namespace {
+   /**
+    * @brief The key of a unique attribute in the form the hash table of the list compares
+    *
+    * Host names are normalised as `cull_hash_key()` does it (`sge_hostcpy()`, upper case), so two names that
+    * `sge_hostcmp()` takes for the same host give the same key; strings are taken as they are.
+    *
+    * @param value the attribute's value, not nullptr
+    * @param is_host whether the attribute is a host name
+    * @return the key
+    */
+   std::string
+   comparable_key(const char *value, const bool is_host) {
+      if (!is_host) {
+         return value;
+      }
+      char host_key[CL_MAXHOSTNAMELEN + 1];
+      sge_hostcpy(host_key, value);
+      sge_strtoupper(host_key, CL_MAXHOSTNAMELEN);
+      return host_key;
+   }
+
+   /**
+    * @brief The path of a sub-list, its parent's path and the attribute holding it
+    * @param path the parent's path, empty at the object itself
+    * @param nm the list attribute
+    * @return the path, attribute names separated by '/'
+    */
+   std::string
+   sub_path(const std::string &path, const int nm) {
+      const char *name = lNm2Str(nm);
+      return path.empty() ? std::string(name) : path + "/" + name;
+   }
+
+   void find_in_list(const lList *lp, const std::string &path, std::vector<ocs::RepeatedKey> &found);
+
+   /**
+    * @brief Collect the repeated keys in the sub-lists and sub-objects of an object
+    * @param ep the object, nullptr is accepted
+    * @param path the path of the list holding the object, empty for the object itself
+    * @param found receives every repeated key
+    */
+   void
+   find_in_object(const lListElem *ep, const std::string &path, std::vector<ocs::RepeatedKey> &found) {
+      if (ep == nullptr) {
+         return;
+      }
+      for (const auto f : ocs_cull_present_fields(ep->descr)) {
+         const int nm = ep->descr[f.pos].nm;
+         const int type = mt_get_type(ep->descr[f.pos].mt);
+         if (type == lListT) {
+            find_in_list(lGetList(ep, nm), sub_path(path, nm), found);
+         } else if (type == lObjectT) {
+            find_in_object(lGetObject(ep, nm), sub_path(path, nm), found);
+         }
+      }
+   }
+
+   /**
+    * @brief Collect the repeated keys of a list's unique attributes, then those of its elements
+    * @param lp the list, nullptr is accepted
+    * @param path the path of the list
+    * @param found receives every repeated key; each repetition of a key is one entry
+    */
+   void
+   find_in_list(const lList *lp, const std::string &path, std::vector<ocs::RepeatedKey> &found) {
+      if (lp == nullptr || lGetNumberOfElem(lp) == 0) {
+         return;
+      }
+
+      const lDescr *dp = lGetListDescr(lp);
+      for (const auto f : ocs_cull_present_fields(dp)) {
+         if (!mt_is_unique(dp[f.pos].mt)) {
+            continue;
+         }
+         const int nm = dp[f.pos].nm;
+         const int type = mt_get_type(dp[f.pos].mt);
+
+         if (type == lStringT || type == lHostT) {
+            std::unordered_set<std::string> seen;
+            for_each_ep_lv(ep, lp) {
+               const char *key = type == lStringT ? lGetString(ep, nm) : lGetHost(ep, nm);
+               if (key != nullptr && !seen.insert(comparable_key(key, type == lHostT)).second) {
+                  found.push_back({lp, nm, key, path});
+               }
+            }
+         } else if (type == lUlongT) {
+            std::unordered_set<uint32_t> seen;
+            for_each_ep_lv(ep, lp) {
+               if (const uint32_t key = lGetUlong(ep, nm); !seen.insert(key).second) {
+                  found.push_back({lp, nm, std::to_string(key), path});
+               }
+            }
+         } else if (type == lUlong64T) {
+            std::unordered_set<uint64_t> seen;
+            for_each_ep_lv(ep, lp) {
+               if (const uint64_t key = lGetUlong64(ep, nm); !seen.insert(key).second) {
+                  found.push_back({lp, nm, std::to_string(key), path});
+               }
+            }
+         }
+      }
+
+      for_each_ep_lv(ep, lp) {
+         find_in_object(ep, path, found);
+      }
+   }
+
+   /**
+    * @brief Add the error for a repeated key to an answer list
+    * @param answer_list the answer list
+    * @param repeated the repeated key
+    * @param object_name the object named in the error
+    */
+   void
+   add_repeated_key_error(lList **answer_list, const ocs::RepeatedKey &repeated, const char *object_name) {
+      answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_OBJ_DUPLICATEKEY_SSS,
+                              repeated.key.c_str(), lNm2Str(repeated.nm), object_name != nullptr ? object_name : "");
+   }
+} // namespace
+
+/**
+ * @brief Find every key that a unique attribute of an object's sub-lists holds twice
+ *
+ * Walks every sub-list and sub-object of the object. In each list, every attribute flagged #CULL_UNIQUE must
+ * hold a key at most once. String keys compare by exact string, host keys as the hash table of the list
+ * compares them, normalised as `sge_hostcmp()` does, and ulong keys by value. Elements without a key are
+ * skipped. The lists of a list are checked before the sub-lists of its elements.
+ *
+ * @param ep the object to check, nullptr is accepted
+ * @param found receives one entry for each repetition of a key, with the list, the attribute, the key as the
+ *        repeating element holds it and the path of attribute names from the object to the list
+ *
+ * @note MT-NOTE: ocs_object_find_repeated_keys() is MT safe
+ *
+ * @see #ocs_object_verify_unique_keys, #ocs_object_repair_repeated_keys
+ */
+void
+ocs_object_find_repeated_keys(const lListElem *ep, std::vector<ocs::RepeatedKey> &found) {
+   find_in_object(ep, "", found);
+}
+
 /**
  * @brief Check that no unique attribute of an object holds the same key twice
  *
- * Walks every sub-list and sub-object of the object. In each list, every
- * attribute flagged #CULL_UNIQUE must hold a key at most once. String and host
- * keys compare like the hash tables of the list do, by exact string; ulong keys
- * by value. Elements without a key are skipped.
+ * Walks every sub-list and sub-object of the object as #ocs_object_find_repeated_keys does and reports the
+ * first repeated key.
  *
  * Input from clients is checked with it after the normalisation that keeps the
  * last value of a repeated variable or request, so it rejects only what has no
@@ -2130,25 +2271,13 @@ object_verify_cull(const lListElem *ep, const lDescr *descr) {
  */
 bool
 ocs_object_verify_unique_keys(const lListElem *ep, lList **answer_list, const char *object_name) {
-   if (ep == nullptr) {
+   std::vector<ocs::RepeatedKey> found;
+   find_in_object(ep, "", found);
+   if (found.empty()) {
       return true;
    }
-
-   for (const auto f : ocs_cull_present_fields(ep->descr)) {
-      const int nm = ep->descr[f.pos].nm;
-      const int type = mt_get_type(ep->descr[f.pos].mt);
-
-      if (type == lListT) {
-         if (!ocs_object_list_verify_unique_keys(lGetList(ep, nm), answer_list, object_name)) {
-            return false;
-         }
-      } else if (type == lObjectT) {
-         if (!ocs_object_verify_unique_keys(lGetObject(ep, nm), answer_list, object_name)) {
-            return false;
-         }
-      }
-   }
-   return true;
+   add_repeated_key_error(answer_list, found.front(), object_name);
+   return false;
 }
 
 /**
@@ -2168,59 +2297,13 @@ ocs_object_verify_unique_keys(const lListElem *ep, lList **answer_list, const ch
  */
 bool
 ocs_object_list_verify_unique_keys(const lList *lp, lList **answer_list, const char *object_name) {
-   if (lp == nullptr || lGetNumberOfElem(lp) == 0) {
+   std::vector<ocs::RepeatedKey> found;
+   find_in_list(lp, "", found);
+   if (found.empty()) {
       return true;
    }
-
-   const lDescr *dp = lGetListDescr(lp);
-   for (const auto f : ocs_cull_present_fields(dp)) {
-      if (!mt_is_unique(dp[f.pos].mt)) {
-         continue;
-      }
-      const int nm = dp[f.pos].nm;
-      const int type = mt_get_type(dp[f.pos].mt);
-      std::string duplicate;
-
-      if (type == lStringT || type == lHostT) {
-         std::unordered_set<std::string> seen;
-         for_each_ep_lv(ep, lp) {
-            const char *key = type == lStringT ? lGetString(ep, nm) : lGetHost(ep, nm);
-            if (key != nullptr && !seen.insert(key).second) {
-               duplicate = key;
-               break;
-            }
-         }
-      } else if (type == lUlongT) {
-         std::unordered_set<uint32_t> seen;
-         for_each_ep_lv(ep, lp) {
-            if (const uint32_t key = lGetUlong(ep, nm); !seen.insert(key).second) {
-               duplicate = std::to_string(key);
-               break;
-            }
-         }
-      } else if (type == lUlong64T) {
-         std::unordered_set<uint64_t> seen;
-         for_each_ep_lv(ep, lp) {
-            if (const uint64_t key = lGetUlong64(ep, nm); !seen.insert(key).second) {
-               duplicate = std::to_string(key);
-               break;
-            }
-         }
-      }
-
-      if (!duplicate.empty()) {
-         answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_OBJ_DUPLICATEKEY_SSS,
-                                 duplicate.c_str(), lNm2Str(nm), object_name != nullptr ? object_name : "");
-         return false;
-      }
-   }
-
-   for_each_ep_lv(ep, lp) {
-      if (!ocs_object_verify_unique_keys(ep, answer_list, object_name)) {
-         return false;
-      }
-   }
-   return true;
+   add_repeated_key_error(answer_list, found.front(), object_name);
+   return false;
 }
 
 /**
@@ -2250,6 +2333,109 @@ ocs_object_list_remove_repeated_keys(lList *lp, const int nm) {
          lRemoveElem(lp, &ep);
       }
    }
+}
+
+namespace {
+   /** @brief How a list with a repeated key is repaired */
+   enum class Repair {
+      None,      ///< not repaired; the repetition is an error
+      KeepLast,  ///< a definition list: the last value of a name stays
+      KeepFirst  ///< a set: the first element of a name stays
+   };
+
+   /**
+    * @brief How the input paths of CS-3053 repair a repeated key in a list of this type
+    * @param lp the list
+    * @param[out] nm the key attribute the repair works on
+    * @param[out] value_nm the value attribute of a definition list, unchanged for a set
+    * @return the repair, Repair::None for a type that the input paths reject instead
+    */
+   Repair
+   repair_of(const lList *lp, int &nm, int &value_nm) {
+      const lDescr *dp = lGetListDescr(lp);
+      if (lGetPosInDescr(dp, VA_variable) >= 0) {
+         nm = VA_variable;
+         value_nm = VA_value;
+         return Repair::KeepLast;
+      }
+      if (lGetPosInDescr(dp, CE_name) >= 0) {
+         nm = CE_name;
+         value_nm = CE_stringval;
+         return Repair::KeepLast;
+      }
+      if (lGetPosInDescr(dp, QR_name) >= 0) {
+         nm = QR_name;
+         return Repair::KeepFirst;
+      }
+      if (lGetPosInDescr(dp, UE_name) >= 0) {
+         nm = UE_name;
+         return Repair::KeepFirst;
+      }
+      return Repair::None;
+   }
+} // namespace
+
+/**
+ * @brief Repair the repeated keys of an object as the input paths do, and report those that cannot be
+ *
+ * For spooled objects written by an earlier version (N-H-18). A repeated key is repaired as the input paths of
+ * CS-3053 repair it: a variable (`VA_Type`) and a complex value (`CE_Type`) keep their last value, a repeated
+ * queue reference (`QR_Type`) or user set entry (`UE_Type`) is dropped and the first one stays. A repeated key
+ * in any other list, or in another attribute of these types, is not repaired.
+ *
+ * @param ep the object, nullptr is accepted
+ * @param[out] repairs receives one line per repaired repetition, `<path> "<key>"`, separated by ", "
+ * @param[out] answer_list receives one error per repetition that is not repaired, naming the key, the
+ *             attribute and the object with the path of the list
+ * @param object_name the object named in the errors
+ *
+ * @return true if no repeated key is left, false otherwise
+ *
+ * @note MT-NOTE: ocs_object_repair_repeated_keys() is MT safe
+ *
+ * @see #ocs_object_find_repeated_keys
+ */
+bool
+ocs_object_repair_repeated_keys(lListElem *ep, std::string &repairs, lList **answer_list,
+                                const char *object_name) {
+   std::vector<ocs::RepeatedKey> found;
+   find_in_object(ep, "", found);
+
+   // the text first, while every list is intact
+   for (const auto &repeated : found) {
+      if (int nm, value_nm; repair_of(repeated.list, nm, value_nm) != Repair::None && repeated.nm == nm) {
+         if (!repairs.empty()) {
+            repairs += ", ";
+         }
+         repairs += repeated.path + " \"" + repeated.key + "\"";
+      }
+   }
+
+   // backwards, so a nested list is repaired before an element holding it may be removed; each list once
+   std::unordered_set<const lList *> repaired;
+   for (auto it = found.rbegin(); it != found.rend(); ++it) {
+      int nm;
+      int value_nm = NoName;
+      const Repair repair = repair_of(it->list, nm, value_nm);
+      if (repair == Repair::None || it->nm != nm || !repaired.insert(it->list).second) {
+         continue;
+      }
+      // the list belongs to ep, which the caller holds for writing
+      lList *lp = const_cast<lList *>(it->list);
+      if (repair == Repair::KeepLast) {
+         cull_compress_definition_list(lp, nm, value_nm, 0);
+      } else {
+         ocs_object_list_remove_repeated_keys(lp, nm);
+      }
+   }
+
+   found.clear();
+   find_in_object(ep, "", found);
+   for (const auto &repeated : found) {
+      const std::string where = std::string(object_name != nullptr ? object_name : "") + ", " + repeated.path;
+      add_repeated_key_error(answer_list, repeated, where.c_str());
+   }
+   return found.empty();
 }
 
 /**

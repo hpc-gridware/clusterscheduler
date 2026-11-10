@@ -1,0 +1,171 @@
+/*___INFO__MARK_BEGIN_NEW__*/
+/***************************************************************************
+ *
+ *  Copyright 2026 HPC-Gridware GmbH
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *
+ ***************************************************************************/
+/*___INFO__MARK_END_NEW__*/
+
+/** @file
+ * @brief Module test of the objects found twice while a list is read from the spool (N-H-18, SPL-01)
+ */
+
+#include <string>
+
+#include "cull/cull.h"
+#include "sgeobj/cull/sge_all_listsL.h"
+#include "spool/ocs_spool_duplicates.h"
+
+#include "ocs_module_test.h"
+
+/**
+ * @brief Read a list of objects through a filter as a spooling backend does
+ * @param filter the filter of the list
+ * @param lp the list
+ * @param ep the object read; freed if the filter refuses it
+ * @param spool_key where the object was read from
+ * @return true if the object was appended
+ */
+static bool
+read_into(ocs::spool::DuplicateFilter &filter, lList *lp, lListElem *ep, const char *spool_key) {
+   if (filter.admit(ep, spool_key)) {
+      lAppendElem(lp, ep);
+      return true;
+   }
+   lFreeElem(&ep);
+   return false;
+}
+
+/**
+ * @brief A user set read twice under different spool keys
+ * @return nothing; CHECK records the results
+ */
+static void
+test_string_key() {
+   ocs::spool::clear_duplicate_objects();
+   lList *usersets = lCreateList("usersets", US_Type);
+   ocs::spool::DuplicateFilter filter(US_Type, "USERSET");
+
+   lListElem *a = lCreateElem(US_Type);
+   lSetString(a, US_name, "arusers");
+   lListElem *b = lCreateElem(US_Type);
+   lSetString(b, US_name, "deadlineusers");
+   lListElem *copy = lCreateElem(US_Type);
+   lSetString(copy, US_name, "arusers");
+
+   const bool first = read_into(filter, usersets, a, "usersets/arusers");
+   const bool other = read_into(filter, usersets, b, "usersets/deadlineusers");
+   const bool second = read_into(filter, usersets, copy, "usersets/arusers.copy");
+   CHECK(1, "distinct names are admitted, the second arusers is not", first && other && !second);
+   CHECK(2, "the list holds two user sets", lGetNumberOfElem(usersets) == 2);
+
+   const auto &duplicates = ocs::spool::duplicate_objects();
+   CHECK(3, "one duplicate is recorded with type, attribute, key and both spool keys",
+         duplicates.size() == 1 && duplicates[0].type == "USERSET" && duplicates[0].field == "US_name" &&
+         duplicates[0].key == "arusers" && duplicates[0].first_spool_key == "usersets/arusers" &&
+         duplicates[0].second_spool_key == "usersets/arusers.copy");
+   lFreeList(&usersets);
+}
+
+/**
+ * @brief Host keys compare as the hash table of the list compares them
+ * @return nothing; CHECK records the results
+ */
+static void
+test_host_key() {
+   ocs::spool::clear_duplicate_objects();
+   lList *hosts = lCreateList("exec hosts", EH_Type);
+   ocs::spool::DuplicateFilter filter(EH_Type, "EXECHOST");
+
+   lListElem *lower = lCreateElem(EH_Type);
+   lSetHost(lower, EH_name, "host-1");
+   lListElem *upper = lCreateElem(EH_Type);
+   lSetHost(upper, EH_name, "HOST-1");
+
+   const bool first = read_into(filter, hosts, lower, "EXECHOST:host-1");
+   const bool second = read_into(filter, hosts, upper, "EXECHOST:HOST-1");
+   const auto &duplicates = ocs::spool::duplicate_objects();
+   CHECK(4, "a host name differing only in case is a duplicate, recorded as the second copy holds it",
+         first && !second && lGetNumberOfElem(hosts) == 1 && duplicates.size() == 1 &&
+         duplicates[0].key == "HOST-1" && duplicates[0].first_spool_key == "EXECHOST:host-1");
+   lFreeList(&hosts);
+}
+
+/**
+ * @brief Number keys, objects without a key, separate filters and clearing the record
+ * @return nothing; CHECK records the results
+ */
+static void
+test_number_key_and_clear() {
+   ocs::spool::clear_duplicate_objects();
+   lList *ars = lCreateList("advance reservations", AR_Type);
+   ocs::spool::DuplicateFilter filter(AR_Type, "AR");
+
+   lListElem *ar = lCreateElem(AR_Type);
+   lSetUlong(ar, AR_id, 17);
+   lListElem *again = lCreateElem(AR_Type);
+   lSetUlong(again, AR_id, 17);
+   const bool first = read_into(filter, ars, ar, "AR:17");
+   const bool second = read_into(filter, ars, again, "AR:17.copy");
+   CHECK(5, "an advance reservation id read twice is a duplicate", first && !second && lGetNumberOfElem(ars) == 1);
+
+   lList *usersets = lCreateList("usersets", US_Type);
+   ocs::spool::DuplicateFilter unnamed_filter(US_Type, "USERSET");
+   const bool unnamed_1 = read_into(unnamed_filter, usersets, lCreateElem(US_Type), "usersets/a");
+   const bool unnamed_2 = read_into(unnamed_filter, usersets, lCreateElem(US_Type), "usersets/b");
+   CHECK(6, "objects without a key are admitted", unnamed_1 && unnamed_2 && lGetNumberOfElem(usersets) == 2);
+
+   ocs::spool::DuplicateFilter other_filter(AR_Type, "AR");
+   lListElem *same_id = lCreateElem(AR_Type);
+   lSetUlong(same_id, AR_id, 17);
+   lList *other_ars = lCreateList("other advance reservations", AR_Type);
+   CHECK(7, "a filter knows only the keys of its own list",
+         read_into(other_filter, other_ars, same_id, "AR:17") && ocs::spool::duplicate_objects().size() == 1);
+
+   ocs::spool::clear_duplicate_objects();
+   CHECK(8, "clearing forgets the recorded duplicates", ocs::spool::duplicate_objects().empty());
+   lFreeList(&other_ars);
+   lFreeList(&usersets);
+   lFreeList(&ars);
+}
+
+/**
+ * @brief Run the scenarios of the duplicate objects read from a spool
+ * @param argc number of arguments
+ * @param argv the arguments; the module test frame takes its own options from them
+ * @return 0 if every check passed, 1 otherwise
+ */
+int main(int argc, char *argv[]) {
+   lInit(nmv);
+   return ocs::module_test::run(argc, argv, {
+      {"SPD-01", "string key",
+       "a spool holding two user sets of the same name",
+       {"read three user sets through one filter, the third named like the first"},
+       "the third is refused; one duplicate is recorded with type, attribute, key and both spool keys",
+       {{"SPL-01", "covers"}}, {1, 2, 3}, test_string_key},
+      {"SPD-02", "host key",
+       "a spool holding the same exec host twice, its name differing in case",
+       {"read host-1 and HOST-1 through one filter"},
+       "HOST-1 is refused and recorded under the key it holds",
+       {{"SPL-01", "covers"}}, {4}, test_host_key},
+      {"SPD-03", "number key, no key, clear",
+       "number keys, objects without a key, and the scope of a filter",
+       {"read advance reservation 17 twice", "read two user sets without a name",
+        "read advance reservation 17 into another list", "clear the record"},
+       "the second advance reservation 17 is refused; objects without a key and another list are not affected; "
+       "the record is empty after clearing",
+       {{"SPL-01", "covers"}}, {5, 6, 7, 8}, test_number_key_and_clear},
+   });
+}

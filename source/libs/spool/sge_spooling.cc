@@ -42,6 +42,8 @@
 
 #include "sgeobj/sge_answer.h"
 
+#include "tom/ocs_ElementCore.h"
+
 #include "spool/msg_spoollib.h"
 #include "spool/sge_spooling.h"
 
@@ -809,6 +811,11 @@ spool_type_add_rule(lList **answer_list, lListElem *spool_type,
  * The function will call the read_list callback from the default rule
  * for the given object type.
  *
+ * The debug check for duplicate keys in unique attributes is suspended while
+ * the list is read: a spool written by an earlier version may hold such
+ * duplicates, which the qmaster reports or repairs after reading (N-H-18).
+ * The backends drop a second object with a taken key and record it.
+ *
  * @param answer_list to return error messages
  * @param context the context to use for reading
  * @param list the target list
@@ -863,6 +870,7 @@ bool spool_read_list(lList **answer_list, const lListElem *context,
                                        lGetString(context, SPC_name),
                                        __func__);
             } else {
+               const ocs::tom::UniqueCheckSuspension suspension;
                ret = func(answer_list, type, rule, list, object_type);
             }
          }
