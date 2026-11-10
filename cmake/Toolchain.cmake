@@ -111,6 +111,9 @@ elseif (("${SGE_ARCH}" STREQUAL "fbsd-amd64") AND ((${HOSTNAME} STREQUAL "fr14-0
    # FreeBSD 14: default is clang 18.1.5 => c++23 fully supported and stable.
    # The system compiler stays: FreeBSD ships clang *and* libc++, so a gcc from
    # the ports would be a foreign body next to the system library. 
+elseif (("${SGE_ARCH}" STREQUAL "fbsd-amd64") AND (${HOSTNAME} STREQUAL "build-fbsd-amd64"))
+   # FreeBSD 15: default is clang 19.1.7 => c++23 fully supported and stable.
+   # The system compiler stays, as on FreeBSD 13 and 14.
 endif()
 
 if (LINK_CPP_STATICALLY) 
