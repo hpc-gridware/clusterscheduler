@@ -635,7 +635,7 @@ static void test_range_list_first_last_nullptr() {
 }
 
 // ---------------------------------------------------------------------------
-// range_list_parse_from_string — additional cases  [T59–T62]
+// range_list_parse_from_string — additional cases  [T59–T65]
 // ---------------------------------------------------------------------------
 
 static void test_range_list_parse_extended() {
@@ -669,8 +669,17 @@ static void test_range_list_parse_extended() {
    {
       lList *rl = nullptr;
       bool ok = range_list_parse_from_string(&rl, &al, "1,abc", false, true, false);
-      CHECK(64, "valid then invalid token → parse fails", ok == false);
+      // the list parsed before the error is freed, not left behind (CS-3066)
+      CHECK(64, "valid then invalid token → parse fails and leaves no list", ok == false && rl == nullptr);
       lFreeList(&rl);
+      lFreeList(&al);
+   }
+
+   // T65: a parse without a target list builds the list and frees it again (CS-3066)
+   {
+      bool ok = range_list_parse_from_string(nullptr, &al, "1-3,5", false, true, false);
+      CHECK(65, "parse without a target list succeeds; nothing is left behind under the address sanitizer",
+            ok == true && al == nullptr);
       lFreeList(&al);
    }
 }

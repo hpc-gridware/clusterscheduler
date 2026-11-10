@@ -1504,10 +1504,10 @@ range_parse_get_ids(const char *value, int step_allowed, uint32_t &start, uint32
  * @brief Parse a comma separated list of ranges into a range list
  *
  * The literal `UNDEFINED` yields no list, and may not be followed by further
- * ranges.
+ * ranges. On a syntax error the part parsed so far is freed.
  *
- * @param[out] this_list receives the parsed list; pass nullptr to only check
- *                       the syntax
+ * @param[out] this_list receives the parsed list, nullptr on a syntax error;
+ *                       pass nullptr to only check the syntax
  * @param[out] answer_list receives the syntax error instead of the function
  *                         exiting; must point at a nullptr list
  * @param string the text to parse
@@ -1542,7 +1542,7 @@ range_list_parse_from_string(lList **this_list, lList **answer_list,
          sge_free_saved_vars(context);
          answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX,
                          ANSWER_QUALITY_ERROR);
-         *this_list = nullptr;
+         lFreeList(this_list);
          DRETURN(false);
       }
 
@@ -1558,7 +1558,7 @@ range_list_parse_from_string(lList **this_list, lList **answer_list,
             sge_free_saved_vars(context);
             answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX,
                             ANSWER_QUALITY_ERROR);
-            *this_list = nullptr;
+            lFreeList(this_list);
             DRETURN(false);
          }
       } else {
@@ -1574,5 +1574,7 @@ range_list_parse_from_string(lList **this_list, lList **answer_list,
 
    sge_free_saved_vars(context);
 
+   // a list built without a target is not handed out
+   lFreeList(&range_list);
    DRETURN(true);
 }
