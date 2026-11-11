@@ -269,6 +269,7 @@
 #define MSG_EXECD_SYSTEMD_NO_FREEZE_II                   _MESSAGE(29244, _("systemd %d with cgroup v%d does not support freezing job scopes, it needs systemd 250 and cgroup v2 - a job is suspended by sending SIGSTOP to its processes"))
 #define MSG_LS_UNKNOWNVARIABLE_SS                        _MESSAGE(29245, _("load sensor " SFQ " is not started, it contains the unknown variable " SFQ))
 #define MSG_EXECD_REAPWAKEUP_S                           _MESSAGE(29246, _("cannot set up the wakeup for finished jobs, they are reaped up to one second late: " SFN))
+#define MSG_EXECD_JOBALREADYKNOWN_UU                     _MESSAGE(29247, _("ignoring the start of job " sge_u32 "." sge_u32 ", the job is still known from a previous delivery"))
 
 // clang-format on
 

@@ -550,17 +550,32 @@ void process_job_report(lListElem *report, lListElem *hep, char *rhost, char *co
                } else {
                   /* clear state with regards to slave controlled container
                    * we got a slave report, but GDIL doesn't contain an object for this host!
-                   * job got rescheduled while the reporting host was down (reschedule unknown)
+                   * The job got rescheduled, e.g. with qmod -r, or while the reporting host
+                   * was down (reschedule unknown).
+                   *
+                   * The reschedule unknown list entry of the host keeps the scheduler from
+                   * placing the job there again. It may only be removed when the slave
+                   * container is gone: pe tasks of the previous run can still be running in
+                   * it, and the execd drops a new delivery of the job as long as it knows the
+                   * job (CS-3067). So first make the execd kill the remaining pe tasks and send
+                   * the final slave report, as at the end of a job. Only the final report,
+                   * which contains an exit_status, releases the host.
                    */
-                  lListElem *host;
+                  if (lGetSubStr(jr, UA_name, "exit_status", JR_usage) != nullptr) {
+                     const lList *ehosts = *ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST);
+                     lListElem *host = host_list_locate(ehosts, rhost);
+                     update_reschedule_unknown_list_for_job(host, jobid, jataskid);
 
-                  host = host_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST), rhost);
-                  update_reschedule_unknown_list_for_job(host, jobid, jataskid);
+                     DPRINTF("RU: CLEANUP FOR SLAVE JOB " SFN " on host " SFN "\n", job_id_string,
+                             rhost);
 
-                  DPRINTF("RU: CLEANUP FOR SLAVE JOB " SFN " on host " SFN "\n", job_id_string, rhost);
-
-                  /* clean up */
-                  pack_ack(pb, ACK_JOB_EXIT, jobid, jataskid, pe_task_id_str);
+                     /* clean up */
+                     pack_ack(pb, ACK_JOB_EXIT, jobid, jataskid, pe_task_id_str);
+                  } else {
+                     DPRINTF("RU: TRIGGER EXIT OF SLAVE JOB " SFN " on host " SFN "\n",
+                             job_id_string, rhost);
+                     pack_ack(pb, ACK_SIGNAL_SLAVE, jobid, jataskid, pe_task_id_str);
+                  }
                }
             }
             break;
