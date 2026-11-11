@@ -180,9 +180,12 @@ function(architecture_specific_settings)
          # Linux RiscV
          add_compile_options(-fPIC)
 
-         # enabled jemalloc on RiscV beginning with OCS 9.1.0
-         # with earlier versions of jemalloc there are some issues with the RiscV architecture, see CS-162
-         # set(WITH_JEMALLOC OFF PARENT_SCOPE)
+         # jemalloc is built with --disable-initial-exec-tls (see OGE-53), so its TLS is reached
+         # via __tls_get_addr. The RISC-V linker does not relax that in the executable as on x86.
+         # When NSS dlopen()s a module with TLS (e.g. libnss_sss), the next access runs
+         # _dl_update_slotinfo -> free() -> jemalloc -> __tls_get_addr ... until the stack overflows.
+         # Earlier jemalloc issues on RiscV: CS-162
+         set(WITH_JEMALLOC OFF PARENT_SCOPE)
       endif()
 
       if (SGE_ARCH STREQUAL "lx-x86" OR SGE_ARCH STREQUAL "ulx-x86" OR SGE_ARCH STREQUAL "xlx-x86")
