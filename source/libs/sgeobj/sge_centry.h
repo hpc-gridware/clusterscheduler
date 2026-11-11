@@ -202,7 +202,7 @@ void
 centry_list_init_double(const lList *this_list);
 
 int
-centry_list_fill_request(const lList *centry_list, lList **answer_list, const lList *master_centry_list,
+centry_list_fill_request(lList *centry_list, lList **answer_list, const lList *master_centry_list,
                          bool allow_non_requestable, bool allow_empty_boolean,
                          bool allow_neg_consumable);
 

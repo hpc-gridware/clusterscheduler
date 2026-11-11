@@ -668,19 +668,18 @@ centry_list_init_double(const lList *this_list) {
  * @return true if @p entry was removed, false if it stays and gets the full name
  */
 static bool
-ocs_centry_list_drop_earlier_request(const lList *this_list, lListElem *entry, const char *full_name) {
-   lList *list = const_cast<lList *>(this_list); // the entries are filled in place, removing one is the same kind of change
+ocs_centry_list_drop_earlier_request(lList *this_list, lListElem *entry, const char *full_name) {
    bool entry_seen = false;
-   for (lListElem *other = lFirstRW(list); other != nullptr; other = lNextRW(other)) {
+   for (lListElem *other = lFirstRW(this_list); other != nullptr; other = lNextRW(other)) {
       if (other == entry) {
          entry_seen = true;
       } else if (const char *other_name = lGetString(other, CE_name);
                  other_name != nullptr && strcmp(other_name, full_name) == 0) {
          if (entry_seen) {
-            lRemoveElem(list, &entry);
+            lRemoveElem(this_list, &entry);
             return true;
          }
-         lRemoveElem(list, &other);
+         lRemoveElem(this_list, &other);
          return false;
       }
    }
@@ -700,7 +699,8 @@ ocs_centry_list_drop_earlier_request(const lList *this_list, lListElem *entry, c
  * not spooled and is 0 for an entry read back from the spool: without the marker an unfilled
  * entry would look like a request for nothing.
  *
- * @param this_list resources as complex list CE_Type
+ * @param[in,out] this_list resources as complex list CE_Type; the entries are filled in place, a shortcut is
+ *        replaced by the full name, and of a shortcut and its full name requested together only the later stays
  * @param answer_list answer list
  * @param master_centry_list the global complex list
  * @param allow_non_requestable needed for qstat -l or qmon customize dialog
@@ -712,7 +712,7 @@ ocs_centry_list_drop_earlier_request(const lList *this_list, lListElem *entry, c
  * @return error 0 on success -1 on error an error message will be written into SGE_EVENT
  */
 int
-centry_list_fill_request(const lList *this_list, lList **answer_list, const lList *master_centry_list,
+centry_list_fill_request(lList *this_list, lList **answer_list, const lList *master_centry_list,
                          bool allow_non_requestable, bool allow_empty_boolean,
                          bool allow_neg_consumable) {
    DENTER(TOP_LAYER);

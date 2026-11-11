@@ -83,6 +83,11 @@ namespace ocs {
        */
       [[nodiscard]] const lList *get_resource_match_list() const { return resource_match_list_; }
 
+      /** @brief The resource filter, to be filled in place before it is matched against the hosts
+       * @return the requested resources
+       */
+      [[nodiscard]] lList *get_resource_match_list_rw() { return resource_match_list_; }
+
       /** @brief The resources the output is to show
        * @return the selected resources
        */

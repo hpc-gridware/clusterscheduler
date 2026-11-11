@@ -124,7 +124,7 @@ namespace ocs {
 
       virtual bool fetch_data(lList **answer_list, const lList *hostname_list, const lList *user_name_list, uint32_t show);
 
-      virtual bool prepare_data(lList **answer_list, const lList *resource_match_list, uint32_t show) const;
+      virtual bool prepare_data(lList **answer_list, lList *resource_match_list, uint32_t show) const;
 
       virtual void filter_data(const lList *resource_match_list);
       virtual void sort_data();

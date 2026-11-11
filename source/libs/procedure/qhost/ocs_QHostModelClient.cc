@@ -223,8 +223,16 @@ ocs::QHostModelClient::fetch_data(lList **answer_list, const lList *hostname_lis
    DRETURN(true);
 }
 
+/**
+ * @brief Prepare the fetched lists in the client: the common steps, then the merged configuration
+ *
+ * @param answer_list receives error messages
+ * @param[in,out] resource_match_list the resource filter the user gave; its entries are filled in place
+ * @param show which of queues, jobs and resources were requested
+ * @return true when the lists could be prepared
+ */
 bool
-ocs::QHostModelClient::prepare_data(lList **answer_list, const lList *resource_match_list, const uint32_t show) const {
+ocs::QHostModelClient::prepare_data(lList **answer_list, lList *resource_match_list, const uint32_t show) const {
    DENTER(TOP_LAYER);
 
    // Common things that need to be done on client and server side

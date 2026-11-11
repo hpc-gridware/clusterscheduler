@@ -41,7 +41,7 @@ namespace ocs {
    class QHostModelClient : public QHostModelBase {
    protected:
       bool fetch_data(lList **answer_list, const lList *hostname_list, const lList *user_name_list, uint32_t show) override;
-      bool prepare_data(lList **answer_list, const lList *resource_match_list, uint32_t show) const override;
+      bool prepare_data(lList **answer_list, lList *resource_match_list, uint32_t show) const override;
 
    public:
       QHostModelClient() = default;

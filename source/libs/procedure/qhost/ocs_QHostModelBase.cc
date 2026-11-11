@@ -73,11 +73,12 @@ bool ocs::QHostModelBase::fetch_data(lList **answer_list, const lList *hostname_
 /** @brief Post-process fetched lists (e.g. resolve hostgroup references).
  *
  * @param answer_list receives error messages
- * @param resource_match_list the resource filter the user gave
+ * @param[in,out] resource_match_list the resource filter the user gave; its entries are filled in place for
+ *        filter_data()
  * @param show which of queues, jobs and resources were requested
  * @return true when the lists could be prepared
  */
-bool ocs::QHostModelBase::prepare_data(lList **answer_list, const lList *resource_match_list, uint32_t show) const {
+bool ocs::QHostModelBase::prepare_data(lList **answer_list, lList *resource_match_list, uint32_t show) const {
    DENTER(TOP_LAYER);
    // tag jobs for printing if they should be shown
    if ((show & QHOST_DISPLAY_JOBS) == QHOST_DISPLAY_JOBS) {
@@ -198,7 +199,7 @@ ocs::QHostModelBase::make_snapshot(lList **answer_list, QHostParameter &paramete
 
    const lList *hostname_list = parameter.get_hostname_list();
    const lList *user_name_list = parameter.get_user_name_list();
-   const lList *resource_match_list = parameter.get_resource_match_list();
+   lList *resource_match_list = parameter.get_resource_match_list_rw();
    const uint32_t show = parameter.get_show();
 
    // fetch data from qmaster
