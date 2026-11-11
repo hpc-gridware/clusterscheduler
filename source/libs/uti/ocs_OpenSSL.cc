@@ -1969,7 +1969,7 @@ namespace ocs::uti {
     * @note Timeout is currently hardcoded to 1 second.
     * @note Timeout is not treated as an error (returns true).
     * @note EWOULDBLOCK, EAGAIN, and EINTR from select() are not treated as errors.
-    * @todo CS-1559: Consider moving this functionality into commlib for better integration.
+    * @todo CS-3073: Consider moving this functionality into commlib for better integration.
     *                Which is tricky, e.g., when waiting for accept or connect to continue, we may not
     *               repeat the TCP accept() or connect() operation, just take up the interrupted connection again.
     */
@@ -2253,7 +2253,7 @@ namespace ocs::uti {
     * @note Can only be called on server-side connections (is_server must be true).
     * @note May block for up to 1 second waiting for handshake completion.
     * @note On non-blocking sockets, this function handles retries internally.
-    * @todo CS-1679 Make timeout configurable.
+    * @todo CS-1579 Make timeout configurable.
     */
 #define SGE_OPENSSL_RETRY_TIMEOUT_SERVER (1 * 1000000) // 1 second
 #define SGE_OPENSSL_RETRY_TIMEOUT_CLIENT (10 * 1000000) // 10 seconds
@@ -2382,7 +2382,7 @@ namespace ocs::uti {
     * @note May block for up to 10 seconds waiting for handshake completion.
     * @note On non-blocking sockets, this function handles retries internally.
     * @note Client timeout (10s) is longer than server timeout (1s) to accommodate network delays.
-    * @todo CS-1679 Make timeout configurable.
+    * @todo CS-1579 Make timeout configurable.
     */
    bool OpenSSL::OpenSSLConnection::connect(dstring *error_dstr) {
       DENTER(TOP_LAYER);
