@@ -58,6 +58,18 @@
          ],
          "type": "lUlongT",
          "flags": []
+      },
+      {
+         "name": "complete",
+         "summary": "Complete Job Report",
+         "description": [
+            "Only used in job reports (NUM_REP_REPORT_JOB): true if the report list contains",
+            "the reports of all jobs on the host, false if it contains only the reports",
+            "which were flushed after job events.",
+            "A job report of an older sge_execd does not have this attribute."
+         ],
+         "type": "lBoolT",
+         "flags": []
       }
    ]
 }

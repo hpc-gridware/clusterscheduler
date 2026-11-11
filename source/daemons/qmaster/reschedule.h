@@ -76,7 +76,7 @@ add_to_reschedule_unknown_list(lListElem *hostr, uint32_t job_number, uint32_t t
                                uint32_t state, uint64_t gdi_session);
 
 void
-delete_from_reschedule_unknown_list(lListElem *host, uint64_t gdi_session);
+delete_from_reschedule_unknown_list(lListElem *host, bool all_jobs_reported, uint64_t gdi_session);
 
 void
 update_reschedule_unknown_list(lListElem *host, uint64_t gdi_session);

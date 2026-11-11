@@ -174,6 +174,12 @@ sge_c_report(ocs::gdi::Packet *packet, ocs::gdi::Task *task, char *rhost, char *
       hear about in that job report */
    update_reschedule_unknown_list(hep, packet->gdi_session);
 
+   // Does this message contain the reports of all jobs on the host? Only then the reschedule
+   // unknown list entries of jobs without a report may be removed. An sge_execd of an older
+   // version does not tell, its reports are handled as before.
+   bool old_execd = lGetPosViaElem(lFirst(report_list), REP_complete, SGE_NO_ABORT) < 0;
+   bool all_jobs_reported = old_execd;
+
    /*
    ** process the reports one after the other
    ** usually there will be a load report
@@ -249,6 +255,9 @@ sge_c_report(ocs::gdi::Packet *packet, ocs::gdi::Task *task, char *rhost, char *
                init_packbuffer(&pb, 1024);
             }
             process_job_report(report, hep, rhost, commproc, &pb, monitor, packet->gdi_session);
+            if (!old_execd && lGetBool(report, REP_complete)) {
+               all_jobs_reported = true;
+            }
             break;
 
          default:
@@ -258,7 +267,7 @@ sge_c_report(ocs::gdi::Packet *packet, ocs::gdi::Task *task, char *rhost, char *
 
    /* RU: */
    /* delete reschedule unknown list entries we heard about */
-   delete_from_reschedule_unknown_list(hep, packet->gdi_session);
+   delete_from_reschedule_unknown_list(hep, all_jobs_reported, packet->gdi_session);
 
    if (is_pb_used) {
       if (pb_filled(&pb)) {

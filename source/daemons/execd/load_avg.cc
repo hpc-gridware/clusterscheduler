@@ -390,8 +390,9 @@ execd_add_job_report(lList *report_list, uint64_t now, uint64_t *next_send) {
    static uint64_t last_send = 0;
    const char* qualified_hostname = component_get_qualified_hostname();
 
-   /* return if no job reports are in the list */
-   if (lGetNumberOfElem(jr_list) == 0) {
+   /* without job reports, only the periodic report is sent: an empty complete job report tells
+    * sge_qmaster that no job runs on this host any more */
+   if (lGetNumberOfElem(jr_list) == 0 && *next_send > now) {
       DRETURN(0);
    }
 
@@ -433,14 +434,22 @@ execd_add_job_report(lList *report_list, uint64_t now, uint64_t *next_send) {
        * We keep job reports where the job is started via JAPI (qsub -sync or
        * DRMAA). This is done only when we reconnect after a qmaster failover
        */
+      bool complete = !only_flush;
       for_each_rw (jr, jr_list) {
-         if ((!only_flush || lGetBool(jr, JR_flush)) &&
-               !lGetBool(jr, JR_no_send) &&
-               !(sge_get_delay_job_reports_flag() && lGetBool(jr, JR_delay_report))) {
+         bool delayed = sge_get_delay_job_reports_flag() && lGetBool(jr, JR_delay_report);
+         if ((!only_flush || lGetBool(jr, JR_flush)) && !lGetBool(jr, JR_no_send) && !delayed) {
             lAppendElem(job_report_list, lCopyElem(jr));
             lSetBool(jr, JR_flush, false);
+         } else if (delayed) {
+            // the job is on this host, but it is missing in the report
+            complete = false;
          } /* else not sending report for this job */
       }
+
+      /* a complete job report contains all jobs on this host, sge_qmaster uses it to find out
+       * that a job does not run here any more (reschedule unknown list), see CS-3076
+       * JR_no_send is only set for pe tasks, the job report of the master task is still sent */
+      lSetBool(job_report, REP_complete, complete);
      
       /* append this new job report to the report list */
       lAppendElem(report_list, job_report);

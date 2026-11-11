@@ -665,20 +665,25 @@ get_from_reschedule_unknown_list(const lListElem *host, uint32_t job_number, uin
 }
 
 /**
- * @brief Delete a sublist entry
+ * @brief Remove the reschedule unknown list entries of a host which are done
  *
- * Removes an entry of the reschedule_unknown_list of a host.
+ * Called after a report message of the host was processed. Removes the entries in state
+ * - RESCHEDULE_HANDLE_JR_REMOVE: the final report of the slave task arrived
+ * - RESCHEDULE_SKIP_JR_REMOVE: no report of the job arrived. This proves that the job does not
+ *   run on the host any more only if the message contained the reports of all jobs on the host.
+ *   A message with only the reports which the execd flushed after job events does not, removing
+ *   the entry then would lose the kill of the old run of a rescheduled job (CS-3076).
  *
  * @param host host (EH_Type)
+ * @param all_jobs_reported true if the message contained a complete job report
  * @param gdi_session the session the change belongs to
  */
 void
-delete_from_reschedule_unknown_list(lListElem *host, uint64_t gdi_session) {
+delete_from_reschedule_unknown_list(lListElem *host, bool all_jobs_reported, uint64_t gdi_session) {
    DENTER(TOP_LAYER);
 
-   lList *rulp;
    bool changed = false;
-   rulp = lGetListRW(host, EH_reschedule_unknown_list);
+   lList *rulp = lGetListRW(host, EH_reschedule_unknown_list);
    if (rulp) {
       lListElem *thiz, *next;
 
@@ -688,7 +693,7 @@ delete_from_reschedule_unknown_list(lListElem *host, uint64_t gdi_session) {
 
          next = lNextRW(thiz);
 
-         if (state == RESCHEDULE_SKIP_JR_REMOVE
+         if ((state == RESCHEDULE_SKIP_JR_REMOVE && all_jobs_reported)
              || state == RESCHEDULE_HANDLE_JR_REMOVE) {
 
             DPRINTF("RU: REMOVED " sge_u32"." sge_u32" FROM RU LIST\n",
