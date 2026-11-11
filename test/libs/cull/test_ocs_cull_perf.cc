@@ -17,7 +17,7 @@
  ***************************************************************************/
 
 /** @file
- * @brief Performance test for the CULL attribute accessors and the lookup on short lists in `libs/cull`
+ * @brief Performance test for the CULL attribute accessors, the lookup on short lists and the template path in `libs/cull`
  */
 
 #include <atomic>
@@ -27,6 +27,8 @@
 
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_ja_task.h"
+#include "sgeobj/tom/ocs_tom_all.h"
+#include "tom/ocs_List.h"
 
 /// how often the accessor is called; keeps the test in the range of seconds
 static constexpr uint64_t num_lookups = 1000000000;
@@ -78,6 +80,71 @@ measure_short_lookups() {
    }
 }
 
+/// the jobs of the list the template path is measured on
+static constexpr lUlong num_jobs = 10000;
+
+/// how often the list is walked; 2000 walks of 10 000 jobs are 20 million rounds per variant
+static constexpr int num_walks = 2000;
+
+/**
+ * @brief PRF-02 (CS-3044): reads and writes over a list of jobs, through the template path and the old accessors
+ *
+ * Each round reads a number field (JB_job_number) and a string field
+ * (JB_owner) and writes a number field that is not hashed (JB_priority), once
+ * through lGetUlong(), lGetString() and lSetUlong(), once through the typed
+ * list and its element handles. The two variants alternate three times so that
+ * a warm-up or a frequency change shows as a spread, not as a difference. The
+ * ratio is recorded, not judged (PRF-02).
+ *
+ * The same compiler barrier as in main() ends every round, so the loop
+ * measures the accessors and not what the optimiser can prove about them.
+ */
+static void
+measure_template_path() {
+   lList *jobs = lCreateList("jobs", JB_Type);
+   for (lUlong i = 1; i <= num_jobs; i++) {
+      lListElem *job = lAddElemUlong(&jobs, JB_job_number, i, JB_Type);
+      lSetString(job, JB_owner, "user");
+   }
+   const ocs::tom::List<ocs::tom::JB> typed{jobs};
+
+   printf("PRF-02: %d walks over %u jobs, read 2 fields and write 1 per job, ms\n", num_walks,
+          static_cast<unsigned>(num_jobs));
+   printf("%8s %10s %10s %8s\n", "round", "old", "template", "ratio");
+   for (int round = 1; round <= 3; round++) {
+      uint64_t sum_old = 0;
+      auto start = std::chrono::high_resolution_clock::now();
+      for (int w = 0; w < num_walks; w++) {
+         lListElem *ep;
+         for_each_rw(ep, jobs) {
+            sum_old += lGetUlong(ep, JB_job_number);
+            sum_old += lGetString(ep, JB_owner) != nullptr ? 1 : 0;
+            lSetUlong(ep, JB_priority, static_cast<lUlong>(w));
+            std::atomic_signal_fence(std::memory_order_acq_rel);
+         }
+      }
+      const double ms_old = std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - start).count();
+
+      uint64_t sum_template = 0;
+      start = std::chrono::high_resolution_clock::now();
+      for (int w = 0; w < num_walks; w++) {
+         for (const ocs::tom::Element<ocs::tom::JB> job : typed) {
+            sum_template += job.get<JB_job_number>();
+            sum_template += job.get<JB_owner>() != nullptr ? 1 : 0;
+            job.set<JB_priority>(static_cast<std::uint32_t>(w));
+            std::atomic_signal_fence(std::memory_order_acq_rel);
+         }
+      }
+      const double ms_template = std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - start).count();
+
+      if (sum_old != sum_template) {
+         printf("the two variants read different values: %" PRIu64 " and %" PRIu64 "\n", sum_old, sum_template);
+      }
+      printf("%8d %10.1f %10.1f %8.2f\n", round, ms_old, ms_template, ms_old / ms_template);
+   }
+   lFreeList(&jobs);
+}
+
 /** @brief Measure num_lookups calls of lGetUlong() on one element
  *
  * Two details are what make this a measurement rather than a compiler quiz,
@@ -118,6 +185,7 @@ int main() {
    lFreeElem(&elem);
 
    measure_short_lookups();
+   measure_template_path();
 
    return 0;
 }
