@@ -152,7 +152,6 @@ void job_report_init_from_job_with_usage(lListElem *job_report,
                                          uint64_t time_stamp) {
    DENTER(TOP_LAYER);
 
-   lListElem *ep;
    lListElem *obj;
    int nm;
 
@@ -177,14 +176,12 @@ void job_report_init_from_job_with_usage(lListElem *job_report,
       lSetString(job_report, JR_pe_task_id_str, lGetString(pe_task, PET_id));
    }
 
-   ep = lAddSubStr(obj, UA_name, "submission_time", nm, UA_Type);
-   lSetDouble(ep, UA_value, lGetUlong64(job, JB_submission_time));
-   ep = lAddSubStr(obj, UA_name, "start_time", nm, UA_Type);
-   lSetDouble(ep, UA_value, lGetUlong64(ja_task, JAT_start_time));
-   ep = lAddSubStr(obj, UA_name, "end_time", nm, UA_Type);
-   lSetDouble(ep, UA_value, time_stamp);
-   ep = lAddSubStr(obj, UA_name, "ru_wallclock", nm, UA_Type);
-   lSetDouble(ep, UA_value, 0.0);
+   // the qmaster may enforce a limit on the same task more than once, so the usage can hold these entries already
+   lList *usage = lGetOrCreateList(obj, nm, "scaled", UA_Type);
+   usage_list_set_double_usage(usage, "submission_time", lGetUlong64(job, JB_submission_time));
+   usage_list_set_double_usage(usage, "start_time", lGetUlong64(ja_task, JAT_start_time));
+   usage_list_set_double_usage(usage, "end_time", time_stamp);
+   usage_list_set_double_usage(usage, "ru_wallclock", 0.0);
 
    lSetList(job_report, JR_usage, lCopyList("", lGetList(obj, nm)));
    DRETURN_VOID;

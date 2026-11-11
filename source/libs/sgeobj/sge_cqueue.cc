@@ -1105,12 +1105,57 @@ bool cqueue_list_find_all_matching_references(const lList *this_list,
 }
 
 /**
- * @brief This function makes sure that a cqueue elements has the necessary
+ * @brief Move the attribute values of one queue request into another of the same cluster queue
  *
- * @param this_list CQ_Type
+ * The values of each attribute are keyed by their host or domain reference; a value for a reference the target
+ * already holds is a repeat and is dropped.
+ *
+ * @param target the request that is kept, CQ_Type
+ * @param source the request whose values are moved; its attribute lists are left empty
+ */
+static void
+ocs_cqueue_xattr_merge(lListElem *target, lListElem *source) {
+   for (int index = 0; cqueue_attribute_array[index].cqueue_attr != NoName; index++) {
+      const int attr = cqueue_attribute_array[index].cqueue_attr;
+      const int href = cqueue_attribute_array[index].href_attr;
+      lList *src = lGetListRW(source, attr);
+      if (src == nullptr || lGetNumberOfElem(src) == 0) {
+         continue;
+      }
+      lList *dst = lGetListRW(target, attr);
+      if (dst == nullptr) {
+         lList *moved = nullptr;
+         lXchgList(source, attr, &moved);
+         lSetList(target, attr, moved);
+         continue;
+      }
+      while (lListElem *value = lFirstRW(src)) {
+         lDechainElem(src, value);
+         if (lGetElemHost(dst, href, lGetHost(value, href)) != nullptr) {
+            lFreeElem(&value);
+         } else {
+            lAppendElem(dst, value);
+         }
+      }
+   }
+}
+
+/**
+ * @brief Prepare the queue requests of `qconf -[admr]attr queue` for the GDI request
+ *
+ * Each named target is one request. A target that names a queue instance or a queue domain
+ * (`queue@host`, `queue@@hgroup`) gets the cluster queue name, and its attribute values, which must be default
+ * entries, get the host or domain as their reference. Targets of the same cluster queue are merged into one
+ * request, so that the cluster queue name, a unique key, is not repeated in the list; their values are told apart
+ * by their reference.
+ *
+ * Each request is taken out of the list while it is renamed and put back, or merged, afterwards, so that a
+ * rename never puts a name into the list a second time.
+ *
+ * @param this_list the requests, CQ_Type
  * @param answer_list AN_Type
  *
- * @return error state true  - success false - error ("answer_list" containes more information
+ * @return true on success, false on an error, described in @p answer_list
  *
  * @note MT-NOTE: cqueue_xattr_pre_gdi() is MT safe
  */
@@ -1122,7 +1167,9 @@ bool cqueue_xattr_pre_gdi(lList *this_list, lList **answer_list) {
    dstring host_domain = DSTRING_INIT;
 
    if (this_list != nullptr) {
-      for_each_rw_lv(cqueue, this_list) {
+      // the requests that are not yet prepared are at the front, the prepared ones are appended at the end
+      for (int remaining = lGetNumberOfElem(this_list); remaining > 0 && ret; remaining--) {
+         lListElem *cqueue = lDechainElem(this_list, lFirstRW(this_list));
          const char *name = lGetString(cqueue, CQ_name);
          bool has_hostname = false;
          bool has_domain = false;
@@ -1131,13 +1178,12 @@ bool cqueue_xattr_pre_gdi(lList *this_list, lList **answer_list) {
                            &has_hostname, &has_domain)) {
             answer_list_add_sprintf(answer_list, STATUS_ESYNTAX,
                ANSWER_QUALITY_ERROR, MSG_CQUEUE_NOQMATCHING_S, name);
+            lAppendElem(this_list, cqueue);
             ret = false;
             break;
          }
 
          if (has_domain || has_hostname) {
-            int index = 0;
-
             /*
              * Change QI/QD name to CQ name
              */
@@ -1147,7 +1193,7 @@ bool cqueue_xattr_pre_gdi(lList *this_list, lList **answer_list) {
              * Make sure that there is only a default entry
              * and change that default entry to be a QD/QI entry
              */
-            while (cqueue_attribute_array[index].cqueue_attr != NoName && ret) {
+            for (int index = 0; cqueue_attribute_array[index].cqueue_attr != NoName && ret; index++) {
                int pos = lGetPosViaElem(cqueue,
                                   cqueue_attribute_array[index].cqueue_attr, SGE_NO_ABORT);
 
@@ -1168,8 +1214,14 @@ bool cqueue_xattr_pre_gdi(lList *this_list, lList **answer_list) {
                      }
                   }
                }
-               index++;
             }
+         }
+
+         if (lListElem *target = lGetElemStrRW(this_list, CQ_name, lGetString(cqueue, CQ_name)); target != nullptr) {
+            ocs_cqueue_xattr_merge(target, cqueue);
+            lFreeElem(&cqueue);
+         } else {
+            lAppendElem(this_list, cqueue);
          }
       }
    }

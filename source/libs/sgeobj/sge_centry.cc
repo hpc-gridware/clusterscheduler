@@ -654,6 +654,40 @@ centry_list_init_double(const lList *this_list) {
 }
 
 /**
+ * @brief Keep one request of an attribute that is requested by its shortcut and by its full name
+ *
+ * A shortcut and the full name name the same attribute, but they are different keys until the shortcut is
+ * replaced; replacing it would then put the full name into the list twice. As for a name given twice, the later
+ * request wins: an earlier entry with the full name is removed, and if the entry with the full name comes later,
+ * the shortcut entry is removed instead. A name given twice under the same spelling does not reach this
+ * function: the input paths keep it once (CS-3053), so one entry is all there is to remove.
+ *
+ * @param this_list the request list, CE_Type
+ * @param entry the entry carrying the shortcut
+ * @param full_name the full name of the attribute
+ * @return true if @p entry was removed, false if it stays and gets the full name
+ */
+static bool
+ocs_centry_list_drop_earlier_request(const lList *this_list, lListElem *entry, const char *full_name) {
+   lList *list = const_cast<lList *>(this_list); // the entries are filled in place, removing one is the same kind of change
+   bool entry_seen = false;
+   for (lListElem *other = lFirstRW(list); other != nullptr; other = lNextRW(other)) {
+      if (other == entry) {
+         entry_seen = true;
+      } else if (const char *other_name = lGetString(other, CE_name);
+                 other_name != nullptr && strcmp(other_name, full_name) == 0) {
+         if (entry_seen) {
+            lRemoveElem(list, &entry);
+            return true;
+         }
+         lRemoveElem(list, &other);
+         return false;
+      }
+   }
+   return false;
+}
+
+/**
  * @brief Fills and checks list of complex entries
  *
  * This function fills a given list of complex entries with missing
@@ -696,7 +730,9 @@ centry_list_fill_request(const lList *this_list, lList **answer_list, const lLis
     * complete; entries behind the failing one would otherwise keep their spooled valtype and
     * be indistinguishable from filled ones. Callers see the same -1 as before.
     */
-   for_each_rw_lv(entry, this_list) {
+   lListElem *next = lFirstRW(this_list);
+   while (lListElem *entry = next) {
+      next = lNextRW(entry);
       const char *name = lGetString(entry, CE_name);
 
       cep = centry_list_locate(master_centry_list, name);
@@ -712,7 +748,12 @@ centry_list_fill_request(const lList *this_list, lList **answer_list, const lLis
 
          /* replace name in request/threshold/consumable list,
             it may have been a shortcut */
-         lSetString(entry, CE_name, lGetString(cep, CE_name));
+         const char *full_name = lGetString(cep, CE_name);
+         if (strcmp(name, full_name) != 0 && ocs_centry_list_drop_earlier_request(this_list, entry, full_name)) {
+            // a later request names the same attribute, by its full name or by its shortcut; it wins
+            continue;
+         }
+         lSetString(entry, CE_name, full_name);
 
          /* we found the right complex attrib */
          /* so we know the type of the requested data */

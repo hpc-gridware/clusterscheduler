@@ -28,9 +28,14 @@
 
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "sgeobj/ocs_CEntry.h"
+#include "sgeobj/sge_attr.h"
+#include "sgeobj/sge_centry.h"
+#include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_qref.h"
+#include "sgeobj/sge_report.h"
 #include "sgeobj/sge_ulong.h"
 #include "sgeobj/sge_var.h"
 #include "tom/ocs_ElementCore.h"
@@ -477,6 +482,106 @@ test_merge() {
 }
 
 /**
+ * @brief A resource request holding one value of the string attribute arch, by its full name or its shortcut
+ * @param lpp the request list, created if needed
+ * @param name arch or a
+ * @param value the requested value
+ */
+static void
+add_arch_request(lList **lpp, const char *name, const char *value) {
+   lSetString(lAddElemStr(lpp, CE_name, name, CE_Type), CE_stringval, value);
+}
+
+/**
+ * @brief The value of the only arch request of a list, if it holds exactly one request under its full name
+ * @param lp the request list
+ * @return the requested value, or nullptr if the list does not hold exactly one request named arch
+ */
+static const char *
+only_arch_value(const lList *lp) {
+   if (lGetNumberOfElem(lp) != 1 || strcmp(lGetString(lFirst(lp), CE_name), "arch") != 0) {
+      return nullptr;
+   }
+   return lGetString(lFirst(lp), CE_stringval);
+}
+
+/**
+ * @brief Code paths the inventory run of N-H-18 found holding a key twice, each run with the debug check armed
+ *
+ * A resource requested by its shortcut and by its full name, the targets of qconf -mattr naming two instances of
+ * one cluster queue, and a limit enforced twice on the same task.
+ *
+ * @return nothing; CHECK records the results
+ */
+static void
+test_inventory() {
+   lList *master_centry_list = nullptr;
+   lListElem *arch = lAddElemStr(&master_centry_list, CE_name, "arch", CE_Type);
+   lSetString(arch, CE_shortcut, "a");
+   lSetUlong(arch, CE_valtype, static_cast<uint32_t>(ocs::CEntry::Type::STR));
+   lSetUlong(arch, CE_relop, CMPLXEQ_OP);
+   lSetUlong(arch, CE_requestable, REQU_YES);
+   lSetUlong(arch, CE_consumable, CONSUMABLE_NO);
+
+   lList *request = nullptr;
+   add_arch_request(&request, "a", "lx-amd64");
+   add_arch_request(&request, "arch", "lx-arm64");
+   lList *answers = nullptr;
+   int ret = centry_list_fill_request(request, &answers, master_centry_list, false, true, false);
+   const char *value = only_arch_value(request);
+   CHECK(33, "-l a=lx-amd64,arch=lx-arm64 holds arch once, with the later value",
+         ret == 0 && value != nullptr && strcmp(value, "lx-arm64") == 0);
+   lFreeList(&request);
+   lFreeList(&answers);
+
+   add_arch_request(&request, "arch", "lx-amd64");
+   add_arch_request(&request, "a", "lx-arm64");
+   ret = centry_list_fill_request(request, &answers, master_centry_list, false, true, false);
+   value = only_arch_value(request);
+   CHECK(34, "-l arch=lx-amd64,a=lx-arm64 holds arch once, with the later value",
+         ret == 0 && value != nullptr && strcmp(value, "lx-arm64") == 0);
+   lFreeList(&request);
+   lFreeList(&answers);
+   lFreeList(&master_centry_list);
+
+   // qconf -mattr queue slots 4 all.q@h1 all.q@h2 all.q: one request per target, each with a default entry
+   lList *targets = nullptr;
+   for (const char *target : {"all.q@h1", "all.q@h2", "all.q"}) {
+      lListElem *cqueue = lAddElemStr(&targets, CQ_name, target, CQ_Type);
+      lListElem *slots = lAddSubHost(cqueue, AULNG_href, HOSTREF_DEFAULT, CQ_job_slots, AULNG_Type);
+      lSetUlong(slots, AULNG_value, 4);
+   }
+   bool ok = cqueue_xattr_pre_gdi(targets, &answers);
+   const lList *slots = lGetNumberOfElem(targets) == 1 ? lGetList(lFirst(targets), CQ_job_slots) : nullptr;
+   CHECK(35, "the targets all.q@h1, all.q@h2 and all.q become one request for all.q with h1, h2 and the default",
+         ok && slots != nullptr && strcmp(lGetString(lFirst(targets), CQ_name), "all.q") == 0 &&
+         lGetNumberOfElem(slots) == 3 && lGetElemHost(slots, AULNG_href, "h1") != nullptr &&
+         lGetElemHost(slots, AULNG_href, "h2") != nullptr &&
+         lGetElemHost(slots, AULNG_href, HOSTREF_DEFAULT) != nullptr);
+   lFreeList(&targets);
+   lFreeList(&answers);
+
+   // the qmaster enforces a limit on a task, and then again on the same task
+   lListElem *job = lCreateElem(JB_Type);
+   lSetUlong(job, JB_job_number, 1);
+   lSetUlong64(job, JB_submission_time, 1000);
+   lListElem *ja_task = lCreateElem(JAT_Type);
+   lSetUlong(ja_task, JAT_task_number, 1);
+   lSetUlong64(ja_task, JAT_start_time, 2000);
+   for (uint64_t now : {3000, 4000}) {
+      lListElem *report = lCreateElem(JR_Type);
+      job_report_init_from_job_with_usage(report, job, ja_task, nullptr, now);
+      lFreeElem(&report);
+   }
+   const lList *usage = lGetList(ja_task, JAT_scaled_usage_list);
+   const lListElem *end_time = lGetElemStr(usage, UA_name, "end_time");
+   CHECK(36, "a limit enforced twice leaves each usage entry once, end_time from the later enforcement",
+         lGetNumberOfElem(usage) == 4 && end_time != nullptr && lGetDouble(end_time, UA_value) == 4000.0);
+   lFreeElem(&ja_task);
+   lFreeElem(&job);
+}
+
+/**
  * @brief Run the scenarios of the duplicate keys in unique attributes
  * @param argc number of arguments
  * @param argv the arguments; the module test frame takes its own options from them
@@ -538,5 +643,13 @@ int main(int argc, char *argv[]) {
        "queues and access lists keep the first entry, resources and variables the last value; a list without "
        "a unique string attribute is appended; the debug check never fires",
        {{"CLN-03", "covers"}}, {28, 29, 30, 31, 32}, test_merge},
+      {"UNQ-08", "inventory findings",
+       "code paths the inventory run found holding a key twice keep it once",
+       {"fill -l a=lx-amd64,arch=lx-arm64 and -l arch=lx-amd64,a=lx-arm64, a being the shortcut of arch",
+        "prepare qconf -mattr queue slots 4 for all.q@h1, all.q@h2 and all.q",
+        "enforce a limit twice on the same task"},
+       "the later request of arch is kept; the targets become one request for all.q with three references; "
+       "each usage entry is held once with the values of the later enforcement; the debug check never fires",
+       {{"LEG-02", "prepares"}}, {33, 34, 35, 36}, test_inventory},
    });
 }
