@@ -99,7 +99,7 @@ elseif (("${SGE_ARCH}" STREQUAL "lx-loong64") AND (${HOSTNAME} STREQUAL "v047-lx
    # openEuler 24.03 LTS-SP4, emulated on h047. System compiler is gcc 12.3,
    # so the tool chain under /tools is used here as well.
    gcs_use_tools_toolchain()
-elseif (("${SGE_ARCH}" STREQUAL "lx-arm64") AND (${HOSTNAME} STREQUAL "ce8-3-lx-arm64"))
+elseif (("${SGE_ARCH}" STREQUAL "lx-arm64") AND (${HOSTNAME} STREQUAL "ce8-1-lx-arm64"))
    # Default is gcc 13.2.1 => c++23 fully supported and stable
 elseif (("${SGE_ARCH}" STREQUAL "lx-ppc64le") AND (${HOSTNAME} STREQUAL "al8-1-lx-ppc64le"))
    # Default is gcc 13.2.1 => c++23 fully supported and stable
