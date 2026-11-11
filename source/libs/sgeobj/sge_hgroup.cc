@@ -876,7 +876,8 @@ bool hgroup_list_exists(const lList *this_list, lList **answer_list,
  *
  * Selects all hostgroups of "this_list" which match the pattern
  * "hgroup_pattern". All hostnames which are directly or indirectly
- * referenced will be added to "used_hosts"
+ * referenced will be added to "used_hosts", each host once also when it is
+ * a member of several matching groups.
  *
  * @param this_list HGRP_Type
  * @param answer_list AN_Type
@@ -904,11 +905,10 @@ bool hgroup_list_find_matching_and_resolve(const lList *this_list,
             lList *tmp_used_hosts = nullptr;
             ret = hgroup_find_all_references(hgroup, nullptr, this_list,
                                              &tmp_used_hosts, nullptr);
+            // a host may belong to several of the matching groups; it is collected once
             for_each_ep_lv(tmp_href, tmp_used_hosts) {
                if (used_hosts != nullptr) {
-                  const char *hostname = lGetHost(tmp_href, HR_name);
-
-                  lAddElemHost(used_hosts, HR_name, hostname, HR_Type);
+                  href_list_add(used_hosts, answer_list, lGetHost(tmp_href, HR_name));
                }
             }
             lFreeList(&tmp_used_hosts);

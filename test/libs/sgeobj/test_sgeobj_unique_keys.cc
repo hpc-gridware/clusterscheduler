@@ -32,6 +32,7 @@
 #include "sgeobj/sge_attr.h"
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_cqueue.h"
+#include "sgeobj/sge_hgroup.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_qref.h"
@@ -579,6 +580,22 @@ test_inventory() {
          lGetNumberOfElem(usage) == 4 && end_time != nullptr && lGetDouble(end_time, UA_value) == 4000.0);
    lFreeElem(&ja_task);
    lFreeElem(&job);
+
+   // qsub -q '*@@*': a host that belongs to several matching host groups
+   lList *hgroups = nullptr;
+   const char *const members[][3] = {{"@a", "h1", "h2"}, {"@b", "h2", "h3"}};
+   for (const auto &m : members) {
+      lListElem *hgroup = lAddElemHost(&hgroups, HGRP_name, m[0], HGRP_Type);
+      lAddSubHost(hgroup, HR_name, m[1], HGRP_host_list, HR_Type);
+      lAddSubHost(hgroup, HR_name, m[2], HGRP_host_list, HR_Type);
+   }
+   lList *hosts = nullptr;
+   ok = hgroup_list_find_matching_and_resolve(hgroups, &answers, "@*", &hosts);
+   CHECK(37, "resolving @* over @a (h1, h2) and @b (h2, h3) collects h1, h2 and h3 once each",
+         ok && lGetNumberOfElem(hosts) == 3);
+   lFreeList(&hosts);
+   lFreeList(&hgroups);
+   lFreeList(&answers);
 }
 
 /**
@@ -647,9 +664,11 @@ int main(int argc, char *argv[]) {
        "code paths the inventory run found holding a key twice keep it once",
        {"fill -l a=lx-amd64,arch=lx-arm64 and -l arch=lx-amd64,a=lx-arm64, a being the shortcut of arch",
         "prepare qconf -mattr queue slots 4 for all.q@h1, all.q@h2 and all.q",
-        "enforce a limit twice on the same task"},
+        "enforce a limit twice on the same task",
+        "resolve the host group pattern @* over two groups sharing a host"},
        "the later request of arch is kept; the targets become one request for all.q with three references; "
-       "each usage entry is held once with the values of the later enforcement; the debug check never fires",
-       {{"LEG-02", "prepares"}}, {33, 34, 35, 36}, test_inventory},
+       "each usage entry is held once with the values of the later enforcement; a shared host is collected once; "
+       "the debug check never fires",
+       {{"LEG-02", "prepares"}}, {33, 34, 35, 36, 37}, test_inventory},
    });
 }
