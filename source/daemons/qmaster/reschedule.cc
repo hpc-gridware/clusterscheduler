@@ -690,26 +690,25 @@ get_from_reschedule_unknown_list(const lListElem *host, u_long32 job_number, u_l
    DRETURN(ruep);
 }
 
-/****** qmaster/reschedule/delete_from_reschedule_unknown_list() **************
-*  NAME
-*     delete_from_reschedule_unknown_list() -- delete a sublist entry
-*
-*  SYNOPSIS
-*     void delete_from_reschedule_unknown_list(lListElem *host)
-*
-*  FUNCTION
-*     Removes an entry of the reschedule_unknown_list of a host.
-*
-*  INPUTS
-*     lListElem *host - host (EH_Type)
-*******************************************************************************/
+/** @brief Remove the reschedule unknown list entries of a host which are done
+ *
+ * Called after a report message of the host was processed. Removes the entries in state
+ * - RESCHEDULE_HANDLE_JR_REMOVE: the final report of the slave task arrived
+ * - RESCHEDULE_SKIP_JR_REMOVE: no report of the job arrived. This proves that the job does not
+ *   run on the host any more only if the message contained the reports of all jobs on the host.
+ *   A message with only the reports which the execd flushed after job events does not, removing
+ *   the entry then would lose the kill of the old run of a rescheduled job (CS-3076).
+ *
+ * @param host the host (EH_Type)
+ * @param all_jobs_reported true if the message contained a complete job report
+ * @param gdi_session the GDI session
+ */
 void
-delete_from_reschedule_unknown_list(lListElem *host, u_long64 gdi_session) {
-   lList *rulp;
-   bool changed = false;
+delete_from_reschedule_unknown_list(lListElem *host, bool all_jobs_reported, u_long64 gdi_session) {
    DENTER(TOP_LAYER);
 
-   rulp = lGetListRW(host, EH_reschedule_unknown_list);
+   bool changed = false;
+   lList *rulp = lGetListRW(host, EH_reschedule_unknown_list);
    if (rulp) {
       lListElem *thiz, *next;
 
@@ -719,7 +718,7 @@ delete_from_reschedule_unknown_list(lListElem *host, u_long64 gdi_session) {
 
          next = lNextRW(thiz);
 
-         if (state == RESCHEDULE_SKIP_JR_REMOVE
+         if ((state == RESCHEDULE_SKIP_JR_REMOVE && all_jobs_reported)
              || state == RESCHEDULE_HANDLE_JR_REMOVE) {
 
             DPRINTF("RU: REMOVED " sge_u32"." sge_u32" FROM RU LIST\n",

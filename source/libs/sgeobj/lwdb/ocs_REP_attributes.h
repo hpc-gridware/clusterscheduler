@@ -33,7 +33,8 @@ enum {
    REP_host,
    REP_list,
    REP_version,
-   REP_seqno
+   REP_seqno,
+   REP_complete
 };
 
 constexpr const int REP_Type[] = {
@@ -42,6 +43,7 @@ constexpr const int REP_Type[] = {
    REP_list,
    REP_version,
    REP_seqno,
+   REP_complete,
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
@@ -50,7 +52,8 @@ constexpr const int REP_Type[] = {
    {REP_host, "REP_host", AttributeStatic::HOST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {REP_list, "REP_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {REP_version, "REP_version", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
-   {REP_seqno, "REP_seqno", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
+   {REP_seqno, "REP_seqno", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {REP_complete, "REP_complete", AttributeStatic::BOOL, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

@@ -53,6 +53,12 @@
 *    SGE_ULONG(REP_seqno) - Report Sequence Number
 *    Used to recognize old reports sent by execd.
 *
+*    SGE_BOOL(REP_complete) - Complete Job Report
+*    Only used in job reports (NUM_REP_REPORT_JOB): true if the report list contains
+*    the reports of all jobs on the host, false if it contains only the reports
+*    which were flushed after job events.
+*    A job report of an older sge_execd does not have this attribute.
+*
 */
 
 enum {
@@ -60,7 +66,8 @@ enum {
    REP_host,
    REP_list,
    REP_version,
-   REP_seqno
+   REP_seqno,
+   REP_complete
 };
 
 LISTDEF(REP_Type)
@@ -69,6 +76,7 @@ LISTDEF(REP_Type)
    SGE_LIST(REP_list, CULL_ANY_SUBTYPE, CULL_DEFAULT)
    SGE_ULONG(REP_version, CULL_DEFAULT)
    SGE_ULONG(REP_seqno, CULL_DEFAULT)
+   SGE_BOOL(REP_complete, CULL_DEFAULT)
 LISTEND
 
 NAMEDEF(REPN)
@@ -77,6 +85,7 @@ NAMEDEF(REPN)
    NAME("REP_list")
    NAME("REP_version")
    NAME("REP_seqno")
+   NAME("REP_complete")
 NAMEEND
 
 #define REP_SIZE sizeof(REPN)/sizeof(char *)
