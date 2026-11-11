@@ -61,24 +61,35 @@ namespace ocs::tom {
                             FieldTraits<F>::type == FieldType::String || FieldTraits<F>::type == FieldType::Host;
 
       /**
-       * @brief The first element of a list with a key in a field, through the old lookup
+       * @brief The first element of a list with a key in a field, through the lookup of the core
+       *
+       * A key held twice in a unique field throws, where the old lookup
+       * aborts (N-H-18). A list without the field, a reduced one, throws as
+       * every typed access to an absent field does.
+       *
        * @tparam F the field number
-       * @param lp the list
+       * @param lp the list, not nullptr
        * @param key the key
        * @param iterator the lookup's state, for lookup_next()
        * @return the element, or nullptr
+       * @throw FieldException with reason DuplicateKey, naming type, field, key and list, or AbsentField
        */
       template <auto F>
       inline lListElem *lookup_first(const lList *lp, const KeyOf<F> key, const void **iterator) {
+         *iterator = nullptr;
+         const int pos = field_pos(lp->descr, F);
+         if (pos < 0) [[unlikely]] {
+            throw_field_exception(FieldException::Reason::AbsentField, F, lp->descr);
+         }
          constexpr FieldType type = FieldTraits<F>::type;
          if constexpr (type == FieldType::Uint32) {
-            return lGetElemUlongFirstRW(lp, F, key, iterator);
+            return lookup_first_ulong(lp, pos, key, iterator);
          } else if constexpr (type == FieldType::Uint64) {
-            return lGetElemUlong64FirstRW(lp, F, key, iterator);
+            return lookup_first_ulong64(lp, pos, key, iterator);
          } else if constexpr (type == FieldType::String) {
-            return lGetElemStrFirstRW(lp, F, key, iterator);
+            return key != nullptr ? lookup_first_str(lp, pos, key, iterator) : nullptr;
          } else {
-            return lGetElemHostFirstRW(lp, F, key.c_str(), iterator);
+            return key.c_str() != nullptr ? lookup_first_host(lp, pos, key.c_str(), iterator) : nullptr;
          }
       }
 
@@ -240,6 +251,7 @@ namespace ocs::tom {
          /**
           * @brief The first match
           * @return the iterator
+          * @throw FieldException with reason DuplicateKey when a unique field holds the key twice (N-H-18)
           */
          [[nodiscard]] iterator begin() const {
             return iterator(lp_, key_);
@@ -392,6 +404,7 @@ namespace ocs::tom {
        * @tparam F the field number, of this object type, a number, string or host field
        * @param key the key
        * @return the element, or an empty handle if no element holds the key
+       * @throw FieldException with reason DuplicateKey when a unique field holds the key twice (N-H-18)
        */
       template <auto F>
          requires FieldOf<F, T> && detail::LookupField<F>
@@ -491,6 +504,7 @@ namespace ocs::tom {
        * @tparam F the field number, of this object type, a number, string or host field
        * @param key the key
        * @return the element, or an empty handle if no element holds the key
+       * @throw FieldException with reason DuplicateKey when a unique field holds the key twice (N-H-18)
        */
       template <auto F>
          requires FieldOf<F, T> && detail::LookupField<F>

@@ -17,7 +17,7 @@
  ***************************************************************************/
 
 /** @file
- * @brief Performance test for the CULL attribute accessors in `libs/cull`
+ * @brief Performance test for the CULL attribute accessors and the lookup on short lists in `libs/cull`
  */
 
 #include <atomic>
@@ -26,12 +26,57 @@
 #include <cstdio>
 
 #include "sgeobj/sge_job.h"
+#include "sgeobj/sge_ja_task.h"
 
 /// how often the accessor is called; keeps the test in the range of seconds
 static constexpr uint64_t num_lookups = 1000000000;
 
 /// the value the attribute is set to, so the printed sum is predictable
 static constexpr lUlong job_value = 42;
+
+/// how often each short-list lookup is repeated
+static constexpr uint64_t num_short_lookups = 20000000;
+
+/** @brief Measure lookups on a unique field of lists below the hash threshold
+ *
+ * Such a list has no table and is searched linearly. For a unique field the
+ * search used to stop at the first match; since stage 2 of N-H-18 (CS-3052) it
+ * goes on to the end to find a key held twice. This prints the cost of one
+ * lookup for a key at the front, in the middle, at the end and for a key that
+ * is not there, for lists of 4, 8 and 15 tasks; the miss always scanned the
+ * whole list, so it is the reference. Built against the code before and after
+ * the change it shows what the search to the end costs.
+ *
+ * The same compiler barrier as in main() keeps every lookup inside the loop.
+ */
+static void
+measure_short_lookups() {
+   printf("lookup of JAT_task_number (unique, linear search below the hash threshold), ns per lookup\n");
+   printf("%8s %8s %8s %8s %8s\n", "tasks", "front", "middle", "end", "miss");
+   for (const lUlong n : {4u, 8u, 15u}) {
+      lList *tasks = lCreateList("tasks", JAT_Type);
+      for (lUlong i = 1; i <= n; i++) {
+         lAddElemUlong(&tasks, JAT_task_number, i, JAT_Type);
+      }
+      double ns[4];
+      const lUlong keys[4] = {1, n / 2 + 1, n, n + 1};
+      for (int k = 0; k < 4; k++) {
+         uint64_t found = 0;
+         const auto start = std::chrono::high_resolution_clock::now();
+         for (uint64_t i = 0; i < num_short_lookups; ++i) {
+            found += lGetElemUlong(tasks, JAT_task_number, keys[k]) != nullptr ? 1 : 0;
+            std::atomic_signal_fence(std::memory_order_acq_rel);
+         }
+         const auto end = std::chrono::high_resolution_clock::now();
+         ns[k] = std::chrono::duration<double, std::nano>(end - start).count() / num_short_lookups;
+         if (found != (k < 3 ? num_short_lookups : 0)) {
+            printf("unexpected result for key " sge_u32 "\n", keys[k]);
+         }
+      }
+      printf("%8u %8.1f %8.1f %8.1f %8.1f\n", static_cast<unsigned>(n), ns[0], ns[1], ns[2], ns[3]);
+      lFreeList(&tasks);
+   }
+}
 
 /** @brief Measure num_lookups calls of lGetUlong() on one element
  *
@@ -71,6 +116,8 @@ int main() {
           num_lookups, millisecs.count() / 1000.0, sum, num_lookups * job_value);
 
    lFreeElem(&elem);
+
+   measure_short_lookups();
 
    return 0;
 }

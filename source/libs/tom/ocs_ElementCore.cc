@@ -85,23 +85,6 @@ namespace ocs::tom {
       }
 
       /**
-       * @brief A key as text, for the message
-       * @param mt the field's multitype
-       * @param key the key, not nullptr
-       * @return the text
-       */
-      std::string key_text(const int mt, const void *key) {
-         switch (mt_get_type(mt)) {
-            case lUlongT:
-               return std::to_string(*static_cast<const lUlong *>(key));
-            case lUlong64T:
-               return std::to_string(*static_cast<const lUlong64 *>(key));
-            default:
-               return static_cast<const char *>(key);
-         }
-      }
-
-      /**
        * @brief Another element of a list that holds a key in a unique field
        *
        * Through the field's table where the list has one or reaches the hash
@@ -135,6 +118,108 @@ namespace ocs::tom {
          return nullptr;
       }
    } // namespace
+
+   std::string key_text(const int mt, const void *key) {
+      switch (mt_get_type(mt)) {
+         case lUlongT:
+            return std::to_string(*static_cast<const lUlong *>(key));
+         case lUlong64T:
+            return std::to_string(*static_cast<const lUlong64 *>(key));
+         default:
+            return static_cast<const char *>(key);
+      }
+   }
+
+   namespace {
+      /**
+       * @brief The first element of a list that holds a value in a field, the lookup of the core
+       *
+       * Through the field's table where the list has one or reaches the hash
+       * threshold, building it if needed (#ocs_cull_hash_lookup_table, which
+       * throws on a repeated key of a unique field). Otherwise by a linear
+       * search; for a unique field it goes on to the end of the list and throws
+       * on a second match -- in every build on a list that may be hashed, in a
+       * debug build also on a list created without hashing (N-H-18). A non
+       * unique field stops at the first match, as before.
+       *
+       * @param lp the list, not nullptr
+       * @param pos the field's position
+       * @param hash_key the value as the table stores it (a normalised host name, a pointer to the number)
+       * @param match whether an element holds the value, for the linear search
+       * @param iterator the lookup's state, for the old ...Next functions
+       * @return the element, or nullptr
+       * @throw FieldException with reason DuplicateKey, naming type, field, key and list
+       */
+      template <typename Match>
+      lListElem *lookup_first(const lList *lp, const int pos, const void *hash_key, Match match,
+                              const void **iterator) {
+         *iterator = nullptr;
+         const int mt = lp->descr[pos].mt;
+         if (const cull_htable ht = ocs_cull_hash_lookup_table(lp, pos); ht != nullptr) {
+            return cull_hash_first(ht, hash_key, mt_is_unique(mt), iterator);
+         }
+#ifdef ENABLE_DEBUG_CHECKS
+         const bool to_end = mt_do_hashing(mt) && mt_is_unique(mt);
+#else
+         const bool to_end = mt_do_hashing(mt) && mt_is_unique(mt) && lp->nslots > 0;
+#endif
+         lListElem *found = nullptr;
+         for (lListElem *ep = lp->first; ep != nullptr; ep = ep->next) {
+            if (!match(ep)) {
+               continue;
+            }
+            if (found == nullptr) {
+               found = ep;
+               if (!to_end) {
+                  break;
+               }
+            } else {
+               char host_key[CL_MAXHOSTNAMELEN + 1];
+               const void *key = cull_hash_key(ep, pos, host_key);
+               throw_duplicate_key(lp->descr[pos].nm, lp->descr, key != nullptr ? key_text(mt, key) : "",
+                                   lp->listname);
+            }
+         }
+         *iterator = found;
+         return found;
+      }
+   } // namespace
+
+   lListElem *lookup_first_str(const lList *lp, const int pos, const char *value, const void **iterator) {
+      return lookup_first(lp, pos, value, [pos, value](const lListElem *ep) {
+         const char *s = lGetPosString(ep, pos);
+         return s != nullptr && strcmp(s, value) == 0;
+      }, iterator);
+   }
+
+   lListElem *lookup_first_ulong(const lList *lp, const int pos, const lUlong value, const void **iterator) {
+      return lookup_first(lp, pos, &value, [pos, value](const lListElem *ep) {
+         return lGetPosUlong(ep, pos) == value;
+      }, iterator);
+   }
+
+   lListElem *lookup_first_ulong64(const lList *lp, const int pos, const lUlong64 value, const void **iterator) {
+      return lookup_first(lp, pos, &value, [pos, value](const lListElem *ep) {
+         return lGetPosUlong64(ep, pos) == value;
+      }, iterator);
+   }
+
+   lListElem *lookup_first_host(const lList *lp, const int pos, const char *value, const void **iterator) {
+      char host_key[CL_MAXHOSTNAMELEN + 1];
+      sge_hostcpy(host_key, value);
+      sge_strtoupper(host_key, CL_MAXHOSTNAMELEN);
+      char wanted[CL_MAXHOSTNAMELEN + 1];
+      sge_hostcpy(wanted, value);
+      return lookup_first(lp, pos, host_key, [pos, &wanted](const lListElem *ep) {
+         const char *s = lGetPosHost(ep, pos);
+         if (s == nullptr) {
+            return false;
+         }
+         char stored[CL_MAXHOSTNAMELEN + 1];
+         sge_hostcpy(stored, s);
+         return SGE_STRCASECMP(stored, wanted) == 0;
+      }, iterator);
+   }
 
    UniqueCheckSuspension::UniqueCheckSuspension() noexcept {
       unique_check_suspended++;

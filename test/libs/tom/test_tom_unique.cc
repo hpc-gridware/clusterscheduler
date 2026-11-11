@@ -19,7 +19,7 @@
 /*___INFO__MARK_END_NEW__*/
 
 /** @file
- * @brief Module test of duplicate keys in unique fields, stage 1: the debug checks and the dropped table (CS-3052, HDL-07, HDL-08)
+ * @brief Module test of duplicate keys in unique fields: the debug checks, the dropped table and the logic error of the lookup (CS-3052, HDL-07, HDL-08)
  *
  * A list below the hash threshold is searched linearly, a list above it
  * through its table; every case runs on both. The old interface aborts on a
@@ -32,6 +32,8 @@
 #include <cstring>
 #include <functional>
 #include <string>
+#include <thread>
+#include <vector>
 
 #include <sys/wait.h>
 #include <unistd.h>
@@ -241,10 +243,12 @@ test_dropped_table() {
    lSetUlong(ep, JAT_task_number, 3);
    lAppendElem(tasks, ep);
    const bool dropped = !has_table(tasks, JAT_task_number);
-   static_cast<void>(lGetElemUlong(tasks, JAT_task_number, 3));
-   const bool rebuilt = has_table(tasks, JAT_task_number);
-   CHECK(7, "an append of a duplicate number does not throw, drops the table, and the next lookup builds it again",
-         built && dropped && rebuilt && lGetNumberOfElem(tasks) == LONG_LIST + 1);
+   // stage 2: the next lookup builds the table again, meets the duplicate and throws, publishing nothing
+   const bool lookup_throws = throws_duplicate([&] { static_cast<void>(List<JAT>{tasks}.find_first<JAT_task_number>(3u)); },
+                                               "JAT_task_number", "3", "tasks");
+   CHECK(7, "an append of a duplicate number does not throw and drops the table; the next lookup throws and publishes "
+            "no table", built && dropped && lookup_throws && !has_table(tasks, JAT_task_number) &&
+            lGetNumberOfElem(tasks) == LONG_LIST + 1);
    lFreeList(&tasks);
 
    lList *entries = make_entries(LONG_LIST);
@@ -267,6 +271,86 @@ test_dropped_table() {
          lGetElemUlong(unique, JAT_task_number, 1001) == more &&
          lGetElemUlong(unique, JAT_task_number, LONG_LIST) == nullptr && tasks_consistent(unique, LONG_LIST + 1));
    lFreeList(&unique);
+}
+
+/**
+ * @brief A list holding a key twice in a unique field, built with the debug check suspended
+ * @param n the number of tasks; task n gets the number 2
+ * @return the list, without a table
+ */
+static lList *
+make_tasks_with_duplicate(const std::uint32_t n) {
+   const UniqueCheckSuspension suspension;
+   lList *tasks = make_tasks(n);
+   lSetUlong(lLastRW(tasks), JAT_task_number, 2);
+   return tasks;
+}
+
+/**
+ * @brief HDL-07 steps 1 to 3: a lookup on a unique field that holds a key twice throws, in every build
+ *
+ * Above the hash threshold the lookup builds the table, meets the second
+ * element and publishes nothing; below it the linear search goes on to the end
+ * of the list. The old lookup aborts with the same message.
+ *
+ * @return nothing; CHECK records the results
+ */
+static void
+test_lookup() {
+   int check = 14;
+   for (const std::uint32_t n : {LONG_LIST, SHORT_LIST}) {
+      const char *size = n == SHORT_LIST ? "below the hash threshold" : "above the hash threshold";
+      lList *tasks = make_tasks_with_duplicate(n);
+      const List<JAT> typed{tasks};
+
+      // several threads look up at the same time, twice each; every lookup throws and none publishes a table
+      std::vector<int> threw(4, 0);
+      std::vector<std::thread> threads;
+      for (std::size_t t = 0; t < threw.size(); t++) {
+         threads.emplace_back([&, t] {
+            lInit(nmv); // the field names of the message are per thread
+            for (int i = 0; i < 2; i++) {
+               threw[t] += throws_duplicate([&] { static_cast<void>(typed.find_first<JAT_task_number>(2u)); },
+                                            "JAT_task_number", "2", "tasks") ? 1 : 0;
+            }
+         });
+      }
+      for (auto &thread : threads) {
+         thread.join();
+      }
+      bool all = true;
+      for (const int t : threw) {
+         all = all && t == 2;
+      }
+      CHECK(check++, (std::string{"every lookup of the repeated key throws, from four threads, and no table is "
+                                  "published, "} + size).c_str(), all && !has_table(tasks, JAT_task_number));
+
+      const bool old_aborts = aborts([&] { static_cast<void>(lGetElemUlong(tasks, JAT_task_number, 2)); });
+      CHECK(check++, (std::string{"the old lookup aborts, "} + size).c_str(), old_aborts);
+
+      // above the threshold every lookup builds the table and throws; below it only the repeated key is found twice
+      const bool other = n == LONG_LIST
+                            ? throws_duplicate([&] { static_cast<void>(typed.find_first<JAT_task_number>(1u)); },
+                                               "JAT_task_number", "2", "tasks")
+                            : lGetElemUlong(tasks, JAT_task_number, 1) == lFirst(tasks);
+      CHECK(check++, (std::string{"a lookup of another key "} +
+                      (n == LONG_LIST ? "throws as well, the table cannot be built, " : "finds its element, ") + size)
+                        .c_str(), other);
+      lFreeList(&tasks);
+   }
+
+   // a field hashed without CULL_UNIQUE holds a key several times by design: found first, then the next
+   lList *changes = lCreateList("changes", CX_Type);
+   for (std::uint32_t i = 0; i < LONG_LIST; i++) {
+      lAddElemStr(&changes, CX_variable, i % 2 == 0 ? "a" : "b", CX_Type);
+   }
+   const void *iterator = nullptr;
+   const lListElem *first = lGetElemStrFirst(changes, CX_variable, "a", &iterator);
+   const lListElem *second = lGetElemStrNext(changes, CX_variable, "a", &iterator);
+   CHECK(20, "a non unique hashed field holding a key many times is looked up and iterated as before",
+         first == lFirst(changes) && second != nullptr && second != first &&
+         std::strcmp(lGetString(second, CX_variable), "a") == 0);
+   lFreeList(&changes);
 }
 
 /**
@@ -345,8 +429,8 @@ int main(int argc, char *argv[]) {
        "an append or a set of a duplicate key drops the table it would corrupt",
        {"build the table of a list above the threshold with a lookup, then append a duplicate number",
         "the same with a set of a duplicate string", "set and append new keys"},
-       "no throw; the table is gone and the next lookup builds it again; new keys keep the table",
-       {{"HDL-07", "covers step 4, without the throw of the lookup, which follows in stage 2"}}, {7, 8, 9},
+       "no throw; the table is gone, the next lookup throws and publishes none; new keys keep the table",
+       {{"HDL-07", "covers step 4"}}, {7, 8, 9},
        test_dropped_table},
       {"UNIQUE-03", "valid after a throw",
        "an operation that throws leaves its list consistent",
@@ -355,5 +439,15 @@ int main(int argc, char *argv[]) {
         "check the number of elements and look every element up; then change one and look it up"},
        "every check holds; no leak or double free under the address sanitizer",
        {{"HDL-08", "covers"}}, {10, 11, 12, 13}, test_valid_after_throw},
+      {"UNIQUE-04", "lookup",
+       "a lookup on a unique field that holds a key twice is a logic error in every build",
+       {"fill a list above and one below the hash threshold with a task number twice, without a lookup",
+        "look the number up through the typed list, twice each from four threads",
+        "look it up through the old lookup, in a child process",
+        "look up another number",
+        "look up and iterate a key held many times in a non unique hashed field"},
+       "the typed lookups throw naming field, key and list, and no table is published; the old lookup aborts; above "
+       "the threshold every lookup throws, below it only the repeated key; the non unique field is unaffected",
+       {{"HDL-07", "covers steps 1 to 3"}}, {14, 15, 16, 17, 18, 19, 20}, test_lookup},
    });
 }

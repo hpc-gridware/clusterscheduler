@@ -765,7 +765,7 @@ static lList *make_keyed_list(const char *name, const char *const *keys, int n) 
 }
 
 /**
- * @brief T61-T70: lookups and removals keep a unique table consistent while a key is duplicated (CS-2755)
+ * @brief T61-T70: a key held twice is a logic error at the lookup, and removing one of the pair leaves the other findable (CS-2755, CS-3052)
  *
  * The duplicates are created on purpose, which a debug build refuses at the
  * append (N-H-18); the checks are suspended here.
@@ -788,10 +788,16 @@ static void test_unique_key_integrity() {
    CHECK(61, "lAddList: two entries under one key end up in the list",
          lGetNumberOfElem(a) == 2);
 
-   // T62: with both still there the key must resolve — to one of the two, and
-   // the test does not say which
-   CHECK(62, "duplicate present: the key still resolves to an element of the list",
-         all_keys_resolve(a, TEST_string_ukey));
+   // T62: with both still there a lookup of the key is a logic error (N-H-18, stage 2 of CS-3052); the old lookup
+   // would abort, so the core's lookup is asked, which throws
+   bool lookup_throws = false;
+   try {
+      const void *iterator = nullptr;
+      static_cast<void>(ocs::tom::lookup_first_str(a, lGetPosInDescr(TEST_Type, TEST_string_ukey), "h10", &iterator));
+   } catch (const ocs::tom::FieldException &e) {
+      lookup_throws = e.reason() == ocs::tom::FieldException::Reason::DuplicateKey;
+   }
+   CHECK(62, "duplicate present: a lookup of the key is a logic error", lookup_throws);
 
    // T63-T64: the repair. lUniqStr() drops one of the pair with lRemoveElem(),
    // which is where the hash entry is lost today: the survivor stays in the

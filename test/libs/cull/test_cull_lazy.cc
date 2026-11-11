@@ -355,10 +355,12 @@ static void test_threshold() {
 }
 
 /**
- * @brief LAZY-05: a duplicate in a unique field is counted when the table is built
+ * @brief LAZY-05: a duplicate in a unique field stops the build of its table
  *
  * The duplicate is created on purpose, which a debug build refuses at the
- * append (N-H-18); the checks are suspended here.
+ * append (N-H-18); the checks are suspended here. The lookup that would build
+ * the table is a logic error (CS-3052 stage 2): it throws, publishes no table,
+ * and after the duplicate is removed the next lookup builds the table.
  *
  * @return nothing; CHECK records the results
  */
@@ -367,13 +369,19 @@ static void test_duplicate() {
    lList *lp = make_list(OCS_CULL_HASH_MIN_ELEMS);
    lListElem *first = lAddElemStr(&lp, LZ_name, "dup", LZ_Type);
    lListElem *second = lAddElemStr(&lp, LZ_name, "dup", LZ_Type);
-   CHECK(13, "the lookup that builds the table returns the duplicate stored last",
-         slots_empty(lp) && lGetElemStr(lp, LZ_name, "dup") == second);
+   bool thrown = false;
+   try {
+      const void *iterator = nullptr;
+      static_cast<void>(ocs::tom::lookup_first_str(lp, POS_NAME, "dup", &iterator));
+   } catch (const ocs::tom::FieldException &e) {
+      thrown = e.reason() == ocs::tom::FieldException::Reason::DuplicateKey;
+   }
+   CHECK(13, "the lookup that would build the table throws and publishes no table",
+         thrown && list_hash_table(lp, POS_NAME) == nullptr);
 
-   // the build counted the duplicate, so the removal repairs the table
    lRemoveElem(lp, &second);
-   CHECK(14, "after removing that element the other one is found again",
-         lGetElemStr(lp, LZ_name, "dup") == first);
+   CHECK(14, "after removing one of the two the lookup builds the table and finds the other one",
+         lGetElemStr(lp, LZ_name, "dup") == first && list_hash_table(lp, POS_NAME) != nullptr);
    lFreeList(&lp);
 }
 
@@ -427,11 +435,11 @@ int main(int argc, char *argv[]) {
         "shrink it below the threshold and look it up"},
        "the short list has no table, the grown one has, the shrunk one keeps it",
        {{"LZY-04", "covers"}}, {10, 11, 12}, test_threshold},
-      {"LAZY-05", "unique duplicate counted at the build",
-       "a duplicate in a unique field is counted when the table is built",
+      {"LAZY-05", "unique duplicate stops the build",
+       "a duplicate in a unique field stops the build of the table",
        {"append two elements with the same unique key without a lookup", "look the key up",
-        "remove the element found and look the key up again"},
-       "the lookup returns the element stored last; after its removal the other one is found",
+        "remove one of them and look the key up again"},
+       "the lookup throws and no table is published; after the removal the table is built and finds the other one",
        {{"LZY-05", "covers"}}, {13, 14}, test_duplicate},
       {"LAZY-06", "sorting drops non unique tables",
        "after a sort the hits of a non unique key come in the new list order",

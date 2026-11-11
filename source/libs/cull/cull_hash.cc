@@ -40,6 +40,7 @@
 
 #include <cstdio>
 #include <new>
+#include <string>
 
 /* do not compile in monitoring code */
 #ifndef NO_SGE_COMPILE_DEBUG
@@ -61,6 +62,8 @@
 #include "cull/cull_stats.h"
 #include "cull/msg_cull.h"
 #include "cull/ocs_cull_descr.h"
+
+#include "tom/ocs_ElementCore.h"
 
 /**
  * @defgroup cull_hash Hash tables for cull lists
@@ -300,21 +303,34 @@ static cull_hash_slot *cull_hash_publish_slots(const lList *lp) {
  * @brief Build the hash table of one field of a list over all its elements
  *
  * The table is private to the caller until it is published in a slot. Building
- * only reads the list, so concurrent readers may each build one; a unique key
- * found twice is counted and reported as by every insert (#cull_hash_insert).
+ * only reads the list, so concurrent readers may each build one. A key of a
+ * unique field held by a second element is a logic error (N-H-18): the partial
+ * table is freed, nothing is published, and the exception names type, field,
+ * key and list; so every later lookup builds the table again and throws again.
  *
  * @param lp the list, not nullptr
  * @param pos position of the field in the list's descriptor
  * @return the table, or nullptr when it cannot be allocated
+ * @throw ocs::tom::FieldException with reason DuplicateKey
  */
 cull_htable ocs_cull_hash_build(const lList *lp, const int pos) {
-   char host_key[CL_MAXHOSTNAMELEN];
+   char host_key[CL_MAXHOSTNAMELEN + 1];
 
    cull_htable ht = cull_hash_create(lp->descr, pos, hash_compute_size(lGetNumberOfElem(lp)));
    if (ht != nullptr) {
-      const bool unique = mt_is_unique(lp->descr[pos].mt);
+      const int mt = lp->descr[pos].mt;
+      const bool unique = mt_is_unique(mt);
       for_each_ep_lv(ep, lp) {
-         cull_hash_insert(ep, cull_hash_key(ep, pos, host_key), ht, unique);
+         void *key = cull_hash_key(ep, pos, host_key);
+         if (unique && key != nullptr) {
+            // a unique key held twice: the table is not published, every later lookup builds it again and throws
+            if (const void *stored = nullptr; sge_htable_lookup(ht->ht, key, &stored) == True) {
+               const std::string text = ocs::tom::key_text(mt, key);
+               cull_hash_destroy(&ht);
+               ocs::tom::throw_duplicate_key(lp->descr[pos].nm, lp->descr, text, lp->listname);
+            }
+         }
+         cull_hash_insert(ep, key, ht, unique);
       }
    }
    return ht;
@@ -334,6 +350,8 @@ cull_htable ocs_cull_hash_build(const lList *lp, const int pos) {
  * @param lp the list, not nullptr
  * @param pos position of the field in the list's descriptor
  * @return the table, or nullptr when the list is to be searched linearly
+ * @throw ocs::tom::FieldException with reason DuplicateKey when a unique field holds a key twice, see
+ *        #ocs_cull_hash_build
  */
 cull_htable ocs_cull_hash_lookup_table(const lList *lp, const int pos) {
    // a list that is never hashed, or a field that is not hashed in it, is searched linearly

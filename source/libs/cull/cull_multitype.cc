@@ -2550,6 +2550,9 @@ const lListElem *lGetElemStr(const lList *lp, int nm, const char *str) {
  * possible to use 'iterator' with lGetElemStrNext() to get
  * the next element.
  *
+ * A key held twice in a field declared unique is a logic error: the
+ * process aborts with a message naming type, field, key and list (N-H-18).
+ *
  * @param lp list
  * @param nm field name id
  * @param str string to be compared
@@ -2592,26 +2595,13 @@ lListElem *lGetElemStrFirstRW(const lList *lp, int nm, const char *str, const vo
       DRETURN(nullptr);
    }
 
-   *iterator = nullptr;
-
-   // the first lookup on a long enough list builds the table
-   const cull_htable ht = ocs_cull_hash_lookup_table(lp, pos);
-   if (ht != nullptr) {
-      /* hash access */
-      lListElem *ep = cull_hash_first(ht, str, mt_is_unique(lp->descr[pos].mt), iterator);
-      DRETURN(ep);
-   } else {
-      /* seek for element */
-      for_each_rw_lv(ep, lp) {
-         const char *s = lGetPosString(ep, pos);
-         if (s && !strcmp(s, str)) {
-            *iterator = ep;
-            DRETURN(ep);
-         }
-      }
+   // the core searches; a repeated key of a unique field ends the process here, as every logic error of the old
+   // interface does (N-H-18, N-L-2)
+   try {
+      DRETURN(ocs::tom::lookup_first_str(lp, pos, str, iterator));
+   } catch (const ocs::tom::FieldException &e) {
+      ocs::tom::legacy_abort("lGetElemStrFirst", e);
    }
-
-   DRETURN(nullptr);
 }
 
 /**
@@ -3008,6 +2998,9 @@ const lListElem *lGetElemUlong(const lList *lp, int nm, lUlong val) {
  * information will be stored in 'iterator'. 'iterator' might
  * be used in lGetElemUlongNext() to get the next element.
  *
+ * A key held twice in a field declared unique is a logic error: the
+ * process aborts with a message naming type, field, key and list (N-H-18).
+ *
  * @param lp list
  * @param nm ulong field anme id
  * @param val ulong value
@@ -3034,26 +3027,12 @@ lListElem *lGetElemUlongFirstRW(const lList *lp, int nm, lUlong val, const void 
       DRETURN(nullptr);
    }
 
-   *iterator = nullptr;
-
-   // the first lookup on a long enough list builds the table
-   const cull_htable ht = ocs_cull_hash_lookup_table(lp, pos);
-   if (ht != nullptr) {
-      /* hash access */
-      lListElem *ep = cull_hash_first(ht, &val, mt_is_unique(lp->descr[pos].mt), iterator);
-      DRETURN(ep);
-   } else {
-      /* seek for element */
-      for_each_rw_lv(ep, lp) {
-         lUlong s = lGetPosUlong(ep, pos);
-         if (s == val) {
-            *iterator = ep;
-            DRETURN(ep);
-         }
-      }
+   // the core searches; a repeated key of a unique field ends the process here (N-H-18, N-L-2)
+   try {
+      DRETURN(ocs::tom::lookup_first_ulong(lp, pos, val, iterator));
+   } catch (const ocs::tom::FieldException &e) {
+      ocs::tom::legacy_abort("lGetElemUlongFirst", e);
    }
-
-   DRETURN(nullptr);
 }
 
 /**
@@ -3366,6 +3345,9 @@ const lListElem *lGetElemUlong64(const lList *lp, int nm, lUlong64 val) {
  * information will be stored in 'iterator'. 'iterator' might
  * be used in lGetElemUlong64Next() to get the next element.
  *
+ * A key held twice in a field declared unique is a logic error: the
+ * process aborts with a message naming type, field, key and list (N-H-18).
+ *
  * @param lp list
  * @param nm ulong64 field name id
  * @param val ulong64 value
@@ -3392,26 +3374,12 @@ lListElem *lGetElemUlong64FirstRW(const lList *lp, int nm, lUlong64 val, const v
       DRETURN(nullptr);
    }
 
-   *iterator = nullptr;
-
-   // the first lookup on a long enough list builds the table
-   const cull_htable ht = ocs_cull_hash_lookup_table(lp, pos);
-   if (ht != nullptr) {
-      /* hash access */
-      lListElem *ep = cull_hash_first(ht, &val, mt_is_unique(lp->descr[pos].mt), iterator);
-      DRETURN(ep);
-   } else {
-      /* seek for element */
-      for_each_rw_lv(ep, lp) {
-         lUlong64 s = lGetPosUlong64(ep, pos);
-         if (s == val) {
-            *iterator = ep;
-            DRETURN(ep);
-         }
-      }
+   // the core searches; a repeated key of a unique field ends the process here (N-H-18, N-L-2)
+   try {
+      DRETURN(ocs::tom::lookup_first_ulong64(lp, pos, val, iterator));
+   } catch (const ocs::tom::FieldException &e) {
+      ocs::tom::legacy_abort("lGetElemUlong64First", e);
    }
-
-   DRETURN(nullptr);
 }
 
 /**
@@ -3614,6 +3582,9 @@ const lListElem *lGetElemHost(const lList *lp, int nm, const char *str) {
  *
  * lGetElemHostFirst for hostnames
  *
+ * A key held twice in a field declared unique is a logic error: the
+ * process aborts with a message naming type, field, key and list (N-H-18).
+ *
  * @param lp list
  * @param nm hostname field id
  * @param str hostname
@@ -3627,9 +3598,6 @@ lListElem *lGetElemHostFirstRW(const lList *lp, int nm, const char *str, const v
    int pos;
    int data_type;
    const lDescr *listDescriptor = nullptr;
-   char uhost[CL_MAXHOSTNAMELEN + 1];
-   char cmphost[CL_MAXHOSTNAMELEN + 1];
-   const char *s = nullptr;
 
    /* check for null pointers */
    if ((str == nullptr) || (lp == nullptr)) {
@@ -3649,36 +3617,12 @@ lListElem *lGetElemHostFirstRW(const lList *lp, int nm, const char *str, const v
       DRETURN(nullptr);
    }
 
-   *iterator = nullptr;
-   // the first lookup on a long enough list builds the table
-   const cull_htable ht = ocs_cull_hash_lookup_table(lp, pos);
-   if (ht != nullptr) {
-      /* we have a hash table */
-      char host_key[CL_MAXHOSTNAMELEN + 1];
-      sge_hostcpy(host_key, str);
-      sge_strtoupper(host_key, CL_MAXHOSTNAMELEN);
-      lListElem *ep = cull_hash_first(ht, host_key, mt_is_unique(lp->descr[pos].mt), iterator);
-      DRETURN(ep);
-   } else {
-      /* expensive host search algorithm */
-
-      /* copy searched hostname */
-      sge_hostcpy(uhost, str);
-
-      /* sequence search */
-      for_each_rw_lv(ep, lp) {
-         s = lGetPosHost(ep, pos);
-         if (s != nullptr) {
-            sge_hostcpy(cmphost, s);
-            if (!SGE_STRCASECMP(cmphost, uhost)) {
-               *iterator = ep;
-               DRETURN(ep);
-            }
-         }
-      }
+   // the core searches; a repeated key of a unique field ends the process here (N-H-18, N-L-2)
+   try {
+      DRETURN(ocs::tom::lookup_first_host(lp, pos, str, iterator));
+   } catch (const ocs::tom::FieldException &e) {
+      ocs::tom::legacy_abort("lGetElemHostFirst", e);
    }
-
-   DRETURN(nullptr);
 }
 
 /**

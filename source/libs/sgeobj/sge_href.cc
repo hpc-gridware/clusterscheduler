@@ -41,6 +41,9 @@
  */
 
 
+#include <string>
+#include <unordered_set>
+
 #include "uti/ocs_Pattern.h"
 #include "uti/sge_dstring.h"
 #include "uti/sge_hostname.h"
@@ -893,32 +896,36 @@ void href_list_debug_print(const lList *this_list, const char *prefix) {
 }
 
 /**
- * @brief Remove duplicates
+ * @brief Remove repeated host and group names, keeping the first of each
  *
- * Remove duplicates from "this_list"
+ * Names are compared as host names are compared everywhere in the cluster,
+ * normalised like the hash key. The list may hold a name twice when this runs,
+ * which is why it does not look names up: a lookup of a key held twice in the
+ * unique field HR_name is a logic error (N-H-18).
  *
  * @param this_list HR_Type list
- * @param answer_list AN_Type list
+ * @param answer_list AN_Type list, receives one INFO per removed entry
  */
 void href_list_make_uniq(lList *this_list, lList **answer_list) {
    DENTER(TOP_LAYER);
 
-   lListElem *elem = nullptr;
-   lListElem *next_elem = nullptr;
-
-   next_elem = lFirstRW(this_list);
-   while((elem = next_elem) != nullptr) {
-      lListElem *elem2 = nullptr;
-      const void *iterator = nullptr;
-
+   std::unordered_set<std::string> seen;
+   lListElem *next_elem = lFirstRW(this_list);
+   while (lListElem *elem = next_elem) {
       next_elem = lNextRW(elem);
-      elem2 = lGetElemHostFirstRW(this_list, HR_name, lGetHost(elem, HR_name), &iterator);
-      if (elem2 != nullptr && elem != elem2) {
+      const char *name = lGetHost(elem, HR_name);
+      if (name == nullptr) {
+         continue;
+      }
+      char key[CL_MAXHOSTNAMELEN + 1];
+      sge_hostcpy(key, name);
+      sge_strtoupper(key, CL_MAXHOSTNAMELEN);
+      if (!seen.insert(key).second) {
          // The collapse is carried out and reported. Two entries denoting the
          // same set have no place in a security relevant object, but dropping
          // one silently is exactly the behaviour that object cannot afford.
          answer_list_add_sprintf(answer_list, STATUS_OK, ANSWER_QUALITY_INFO,
-                                 MSG_HGRP_DUPLICATE_COLLAPSED_S, lGetHost(elem, HR_name));
+                                 MSG_HGRP_DUPLICATE_COLLAPSED_S, name);
          lRemoveElem(this_list, &elem);
       }
    }

@@ -31,6 +31,7 @@
  */
 
 #include <cstdint>
+#include <string>
 
 #include "cull/cull_list.h"
 #include "cull/cull_listP.h"
@@ -240,5 +241,67 @@ namespace ocs::tom {
     * @param e the exception
     */
    [[noreturn, gnu::cold]] void legacy_abort(const char *function, const FieldException &e);
+
+   /**
+    * @brief A key of a hashed field as text, for a message
+    * @param mt the field's multitype
+    * @param key the key as the table stores it, not nullptr
+    * @return the text
+    */
+   std::string key_text(int mt, const void *key);
+
+   /**
+    * @brief The first element of a list whose string field holds a value, the lookup of the core
+    *
+    * The old lookup lGetElemStrFirstRW() and the typed lookups run on it. A
+    * repeated key of a unique field is a logic error (N-H-18): found while the
+    * field's table is built, or by the linear search, which for a unique field
+    * goes on to the end of the list.
+    *
+    * @param lp the list, not nullptr
+    * @param pos the field's position in the list's descriptor
+    * @param value the value, not nullptr
+    * @param iterator the lookup's state, for lGetElemStrNextRW()
+    * @return the element, or nullptr
+    * @throw FieldException with reason DuplicateKey, naming type, field, key and list
+    */
+   lListElem *lookup_first_str(const lList *lp, int pos, const char *value, const void **iterator);
+
+   /**
+    * @brief The first element of a list whose 32 bit field holds a value, the lookup of the core
+    * @param lp the list, not nullptr
+    * @param pos the field's position in the list's descriptor
+    * @param value the value
+    * @param iterator the lookup's state, for lGetElemUlongNextRW()
+    * @return the element, or nullptr
+    * @throw FieldException with reason DuplicateKey, see #lookup_first_str
+    */
+   lListElem *lookup_first_ulong(const lList *lp, int pos, lUlong value, const void **iterator);
+
+   /**
+    * @brief The first element of a list whose 64 bit field holds a value, the lookup of the core
+    * @param lp the list, not nullptr
+    * @param pos the field's position in the list's descriptor
+    * @param value the value
+    * @param iterator the lookup's state, for lGetElemUlong64NextRW()
+    * @return the element, or nullptr
+    * @throw FieldException with reason DuplicateKey, see #lookup_first_str
+    */
+   lListElem *lookup_first_ulong64(const lList *lp, int pos, lUlong64 value, const void **iterator);
+
+   /**
+    * @brief The first element of a list whose host field holds a host, the lookup of the core
+    *
+    * Host names are compared as everywhere in the cluster: the table by the
+    * normalised name, the linear search without regard to case.
+    *
+    * @param lp the list, not nullptr
+    * @param pos the field's position in the list's descriptor
+    * @param value the host name, not nullptr
+    * @param iterator the lookup's state, for lGetElemHostNextRW()
+    * @return the element, or nullptr
+    * @throw FieldException with reason DuplicateKey, see #lookup_first_str
+    */
+   lListElem *lookup_first_host(const lList *lp, int pos, const char *value, const void **iterator);
 
 } // namespace ocs::tom
