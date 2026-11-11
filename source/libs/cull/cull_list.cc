@@ -1541,13 +1541,7 @@ int lRemoveElem(lList *lp, lListElem **ep1) {
    lObserveChangeOwner(ep, nullptr, lp, NoName);
 #endif
 
-   /* lFreeElem() takes the element out of the hash tables, but it does not know
-    * the list and so cannot repair one that has seen a duplicate key. The
-    * element is already unchained and no longer counted, so the repair can run
-    * after it is gone -- it works from the list, not from the element.
-    * CS-2755. */
    lFreeElem(ep1);
-   cull_hash_repair(lp);
 
    DRETURN(0);
 }
@@ -1680,12 +1674,6 @@ lListElem *lDechainElem(lList *lp, lListElem *ep) {
 
    /* remove hash entries, while the element is still bound to the list */
    cull_hash_remove_elem(ep);
-
-   /* CS-2755: a table that has seen a duplicate key needs more than the removal
-    * of this element's own entry -- the element left behind may be the one it
-    * has no entry for. The element is already unchained, so the repair sees the
-    * list as it will be. */
-   cull_hash_repair(lp);
 
    /* nullptr the ep next and previous pointers */
    ep->prev = ep->next = (lListElem *) nullptr;

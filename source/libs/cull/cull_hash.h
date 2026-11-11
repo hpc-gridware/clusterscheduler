@@ -63,10 +63,6 @@ void ocs_cull_hash_insert_changed(const lListElem *ep, int pos);
 
 void cull_hash_remove(const lListElem *ep, const int pos);
 
-void cull_hash_rebuild_unique(lList *lp, const int pos);
-
-void cull_hash_repair(lList *lp);
-
 void cull_hash_elem(const lListElem *ep);
 
 void cull_hash_remove_elem(const lListElem *ep);

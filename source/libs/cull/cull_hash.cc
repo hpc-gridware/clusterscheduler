@@ -117,7 +117,6 @@ struct _non_unique_hash {
 struct _cull_htable {
    htable ht;   ///< maps a field value to an element, or to a @ref non_unique_header
    htable nuht; ///< maps an element back to its chain node, so removal need not search
-   uint32_t dup_count; ///< unique inserts that found the key already taken; see @ref cull_hash_insert
    int pos;            ///< descriptor position of the field the table is built on, for diagnostics
 #ifdef OCS_CULL_STATS
    int nm;             ///< the field the table is built on, for the statistics
@@ -206,7 +205,6 @@ cull_htable cull_hash_create(const lDescr *dp, const int pos, int size) {
       } else {
          ret->ht = ht;
          ret->nuht = nuht;
-         ret->dup_count = 0;
          ret->pos = pos;
          CULL_STATS_CODE(ret->nm = descr->nm; ret->looked_up = false;)
          CULL_STATS_FIELD(descr->nm, HASH_CREATE, 1);
@@ -420,66 +418,15 @@ void ocs_cull_hash_set_min_elems(const uint32_t n) {
 }
 
 /**
- * @brief Name of the field a hash table belongs to
- *
- * @param ep an element of the list the table belongs to
- * @param ht the table to name
- * @return the field's name
- */
-static const char *cull_hash_field_name(const lListElem *ep, const cull_htable ht) {
-   return lNm2Str(ep->descr[ht->pos].nm);
-}
-
-/**
- * @brief The value of the hashed field, for a diagnostic message
- *
- * CS-2782: naming the field alone says where the collision is, not which key
- * collided -- and that is the difference between "somewhere in the event
- * clients" and "twice under id 0". Whoever reads the message is looking for the
- * second thing.
- *
- * @param ep  the element being inserted
- * @param ht  the table it is inserted into, which names the field
- * @param buf buffer for the formatted value
- * @param len size of @p buf
- * @return buf, filled with the value, or "?" for a field type without a key
- */
-static const char *cull_hash_key_value(const lListElem *ep, const cull_htable ht, char *buf, size_t len) {
-   const int i = ht->pos;
-   const lMultiType &v = ocs_cull_value(ep, i);
-   switch (mt_get_type(ep->descr[i].mt)) {
-      case lUlongT:
-         snprintf(buf, len, sge_u32, v.ul);
-         return buf;
-      case lUlong64T:
-         snprintf(buf, len, sge_u64, v.ul64);
-         return buf;
-      case lStringT:
-         snprintf(buf, len, SFQ, v.str != nullptr ? v.str : "");
-         return buf;
-      case lHostT:
-         snprintf(buf, len, SFQ, v.host != nullptr ? v.host : "");
-         return buf;
-      default:
-         break;
-   }
-   snprintf(buf, len, "?");
-   return buf;
-}
-
-/**
  * @brief Insert a new element in a hash table
  *
  * Stores @p ep under @p key, honouring whether the table holds unique or non
  * unique keys.
  *
- * CS-2755: a unique table can only hold one element per key, so an insert that
- * finds the key taken makes the element already stored there unfindable. The
- * store still happens -- refusing it would only move the damage to the new
- * element, and the callers of lAppendElem() do not check its return value -- but
- * the collision is counted, which is what tells lRemoveElem() that this table
- * needs repairing rather than a plain delete, and what makes the state visible
- * at all.
+ * A unique table never meets a key it holds already for another element: the
+ * build refuses a list with a repeated key (#ocs_cull_hash_build) and an
+ * insert after a change drops the table instead (#ocs_cull_hash_insert_changed),
+ * both since N-H-18 (CS-3052). So a unique insert is a plain store.
  *
  * @param ep the cull object to be stored in a hash list
  * @param key the hash key, from #cull_hash_key
@@ -493,24 +440,6 @@ void cull_hash_insert(const lListElem *ep, void *key, cull_htable ht, bool uniqu
    CULL_STATS_FIELD(ht->nm, HASH_INSERT, 1);
 
    if (unique) {
-      const void *stored = nullptr;
-
-      if (sge_htable_lookup(ht->ht, key, &stored) == True && stored != ep) {
-         ht->dup_count++;
-
-         /* Only the first one per table is reported. A list that reaches this
-          * state usually does so for many keys at once -- a concatenation of two
-          * overlapping lists -- and the point of the message is that it happened
-          * at all, not how often. */
-         if (ht->dup_count == 1) {
-            char value[MAX_STRING_SIZE];
-
-            CRITICAL("CULL: two elements share the key " SFN " of field " SFN ", which is "
-                     "declared unique; the one stored first is no longer findable "
-                     "through it", cull_hash_key_value(ep, ht, value, sizeof(value)),
-                     cull_hash_field_name(ep, ht));
-         }
-      }
       sge_htable_store(ht->ht, key, ep);
    } else {
       union {
@@ -555,17 +484,9 @@ void cull_hash_insert(const lListElem *ep, void *key, cull_htable ht, bool uniqu
 /**
  * @brief Remove a cull object from a hash list
  *
- * Removes ep from a hash table for data field specified by pos.
- *
- * CS-2755: on a unique table that has seen a duplicate key, the entry is
- * removed only when it is this element's own. The table is keyed by value, so
- * deleting by key alone would take the entry belonging to the other element of
- * the pair and leave it in the list but unfindable. What is left behind after
- * that is put right by #cull_hash_repair, which the callers that know the list
- * run once the element is gone.
- *
- * A table that never saw a collision cannot be holding another element's entry
- * under this key, so it keeps the plain delete and pays nothing for any of this.
+ * Removes ep from a hash table for data field specified by pos. A unique
+ * table holds each key for one element only (N-H-18), so the entry under the
+ * element's key is its own and a plain delete removes it.
  *
  * @param ep the cull object to be removed
  * @param pos position of the data field
@@ -588,18 +509,7 @@ void cull_hash_remove(const lListElem *ep, const int pos) {
    key = cull_hash_key(ep, pos, host_key);
    if (key != nullptr) {
       if (mt_is_unique(ep->descr[pos].mt)) {
-         if (ht->dup_count == 0) {
-            /* No key was ever stored twice in this table, so whatever sits
-             * under this element's key is this element's own entry. This is the
-             * ordinary case and it stays a plain delete. */
-            sge_htable_delete(ht->ht, key);
-         } else {
-            const void *stored = nullptr;
-
-            if (sge_htable_lookup(ht->ht, key, &stored) == True && stored == ep) {
-               sge_htable_delete(ht->ht, key);
-            }
-         }
+         sge_htable_delete(ht->ht, key);
       } else {
          union {
             non_unique_header *l;
@@ -643,100 +553,6 @@ void cull_hash_remove(const lListElem *ep, const int pos) {
                sge_htable_delete(ht->ht, key);
             }
          }
-      }
-   }
-}
-
-/**
- * @brief Rebuild the unique hash table of one field from the list
- *
- * CS-2755. Only does anything when the table has seen a duplicate key: a
- * removal then cannot simply drop its own entry, because the element left
- * behind may be the one the table has no entry for. Which element that is
- * cannot be worked out from the removed one -- the table is keyed by value, and
- * the list is the only place that knows what is still in it.
- *
- * Rebuilding rather than searching for a single replacement is what
- * #cull_hash_recreate_after_sort already does for the non unique tables, and it
- * keeps the key comparison inside #cull_hash_insert instead of repeating it per
- * type here. The new table counts its own collisions, so the field reports
- * itself clean again as soon as the duplicates are gone.
- *
- * O(n), but only on a list that has actually seen a collision; on every other
- * list this is one comparison.
- *
- * @param lp the list holding the elements, with the removed one already unchained
- * @param pos position of the data field
- */
-void cull_hash_rebuild_unique(lList *lp, const int pos) {
-   char host_key[CL_MAXHOSTNAMELEN];
-
-   if (lp == nullptr || pos < 0) {
-      return;
-   }
-
-   cull_hash_slot *slot = list_hash_slot(lp, pos);
-   if (slot == nullptr) {
-      return;
-   }
-   cull_htable ht = slot->get();
-
-   if (ht == nullptr || !mt_is_unique(lp->descr[pos].mt) || ht->dup_count == 0) {
-      return;
-   }
-
-   cull_htable fresh = cull_hash_create(lp->descr, pos, hash_compute_size(lGetNumberOfElem(lp)));
-
-   /* Without a table the field falls back to the linear search in
-    * lGetElemStrFirstRW() and its kind: slower, but still correct. Keeping the
-    * old table, which is known to be wrong, would not be. */
-   cull_hash_count_free(ht);
-   sge_htable_destroy(ht->ht);
-   sge_free(&ht);
-   slot->set(fresh);
-
-   if (fresh == nullptr) {
-      return;
-   }
-
-   for_each_ep_lv(ep, lp) {
-      cull_hash_insert(ep, cull_hash_key(ep, pos, host_key), fresh, true);
-   }
-}
-
-/**
- * @brief Repair every unique hash table of a list that has seen duplicate keys
- *
- * CS-2755. Call it after removing an element, with the element already
- * unchained so that the rebuild sees the list as it will be. It needs nothing
- * of the removed element, which is why it can run after lFreeElem() has
- * disposed of it.
- *
- * On a list whose keys have always been unique -- every list, until something
- * concatenates two of them -- this is one comparison per hashed field and no
- * work at all.
- *
- * @param lp the list an element was just removed from
- */
-void cull_hash_repair(lList *lp) {
-   if (lp == nullptr || lp->descr == nullptr) {
-      return;
-   }
-
-   // a list without a slot array has no table to repair
-   cull_hash_slot *slots = list_slots(lp);
-   if (slots == nullptr) {
-      return;
-   }
-   for (uint32_t i = 0; i < lp->nslots; i++) {
-      const cull_htable ht = slots[i].get();
-
-      /* Tested here rather than left to cull_hash_rebuild_unique() so that the
-       * ordinary case costs a load and a branch per hashed field instead of a
-       * call. lFreeList() drops the tables before it removes the elements, so
-       * this runs once per element of every list being torn down. */
-      if (ht != nullptr && ht->dup_count > 0) {
-         cull_hash_rebuild_unique(lp, slots[i].pos);
       }
    }
 }
