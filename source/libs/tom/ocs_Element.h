@@ -45,6 +45,7 @@
 #include "cull/cull_multitypeP.h"
 #include "tom/ocs_ElementCore.h"
 #include "tom/ocs_FieldTraits.h"
+#include "tom/ocs_SoftPath.h"
 #include "uti/ocs_Exception.h"
 
 namespace ocs::tom {
@@ -807,7 +808,8 @@ namespace ocs::tom {
        *
        * The old setter of a string or host field aborted, so this throws; the
        * old setter of a number, list or object field returned -1 without an
-       * error number; the others returned -1 with LENEGPOS.
+       * error number; the others returned -1 with LENEGPOS. A debug build
+       * records the returns (#report_soft_path).
        *
        * @tparam F the field number
        * @param ep the element
@@ -819,9 +821,14 @@ namespace ocs::tom {
          constexpr FieldType type = FieldTraits<F>::type;
          if constexpr (type == FieldType::String || type == FieldType::Host) {
             throw_field_exception(reason, F, ep->descr);
-         } else if constexpr (type != FieldType::Uint32 && type != FieldType::Uint64 && type != FieldType::List &&
-                              type != FieldType::Object) {
-            set_lerrno(LENEGPOS);
+         } else {
+            report_soft_path("ocs::tom::set", static_cast<int>(F),
+                             reason == FieldException::Reason::ForeignField ? SoftPathReason::ForeignField
+                                                                            : SoftPathReason::MissingField);
+            if constexpr (type != FieldType::Uint32 && type != FieldType::Uint64 && type != FieldType::List &&
+                          type != FieldType::Object) {
+               set_lerrno(LENEGPOS);
+            }
          }
          return -1;
       }
@@ -847,6 +854,7 @@ namespace ocs::tom {
       using Tr = FieldTraits<F>;
       using Type = typename Tr::Type;
       if (ep == nullptr) [[unlikely]] {
+         report_soft_path("ocs::tom::set", static_cast<int>(F), SoftPathReason::NullElement);
          set_lerrno(LEELEMNULL);
          return -1;
       }
@@ -863,6 +871,7 @@ namespace ocs::tom {
          return 0;
       } else if constexpr (Tr::type == FieldType::Object) {
          if (!store_object(ep, Tr::pos, static_cast<lListElem *>(value))) {
+            report_soft_path("ocs::tom::set", static_cast<int>(F), SoftPathReason::BoundElement);
             set_lerrno(LEBOUNDELEM);
             return -1;
          }

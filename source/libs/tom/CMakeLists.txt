@@ -27,4 +27,5 @@ target_sources(cull PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/ocs_ElementCore.cc
         ${CMAKE_CURRENT_SOURCE_DIR}/ocs_FieldException.cc
         ${CMAKE_CURRENT_SOURCE_DIR}/ocs_Host.cc
+        ${CMAKE_CURRENT_SOURCE_DIR}/ocs_SoftPath.cc
 )

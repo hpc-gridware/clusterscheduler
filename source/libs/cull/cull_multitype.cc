@@ -66,6 +66,7 @@
 #include "cull/cull_hash.h"
 
 #include "tom/ocs_ElementCore.h"
+#include "tom/ocs_SoftPath.h"
 
 #ifdef OBSERVE
 #  include "cull/cull_observe.h"
@@ -213,18 +214,19 @@ namespace {
     * @param missing what the setter does with a field the element does not hold
     * @param wrong_type_fmt the setter's message for a field of another field type
     * @param no_such_name_fmt the setter's message for a missing field, if it aborts on one
-    * @param setter the setter's name, for the debug message of a silent miss
+    * @param setter the setter's name, for the debug message of a silent miss and the record of a soft path
     * @return the field's position, or -1 where the old setter returned -1
     */
    int legacy_setter_pos(const lListElem *ep, const int name, const ocs::tom::FieldType type,
                          const LegacyMissing missing, const char *wrong_type_fmt, const char *no_such_name_fmt,
-                         [[maybe_unused]] const char *setter) {
+                         const char *setter) {
       DENTER(CULL_BASIS_LAYER);
       try {
          DRETURN(ocs::tom::checked_pos(ep, name, type));
       } catch (const ocs::tom::FieldException &e) {
          switch (e.reason()) {
             case ocs::tom::FieldException::Reason::NullElement:
+               ocs::tom::report_soft_path(setter, name, ocs::tom::SoftPathReason::NullElement);
                LERROR(LEELEMNULL);
                break;
             case ocs::tom::FieldException::Reason::WrongType: {
@@ -233,6 +235,12 @@ namespace {
                break;
             }
             default:
+               if (missing != LegacyMissing::Abort) {
+                  ocs::tom::report_soft_path(setter, name,
+                                             e.reason() == ocs::tom::FieldException::Reason::ForeignField
+                                                ? ocs::tom::SoftPathReason::ForeignField
+                                                : ocs::tom::SoftPathReason::MissingField);
+               }
                if (missing == LegacyMissing::NegPos) {
                   LERROR(LENEGPOS);
                } else if (missing == LegacyMissing::Abort) {
@@ -1069,11 +1077,13 @@ int lSetPosInt(lListElem *ep, int pos, int value) {
    DENTER(CULL_BASIS_LAYER);
 
    if (!ep) {
+      ocs::tom::report_soft_path("lSetPosInt", ocs::tom::SoftPathNoName, ocs::tom::SoftPathReason::NullElement);
       LERROR(LEELEMNULL);
       DRETURN(-1);
    }
 
    if (pos < 0) {
+      ocs::tom::report_soft_path("lSetPosInt", ocs::tom::SoftPathNoName, ocs::tom::SoftPathReason::NegativePosition);
       LERROR(LENEGPOS);
       DRETURN(-1);
    }
@@ -1131,11 +1141,13 @@ int lSetInt(lListElem *ep, int name, int value) {
 int lSetPosUlong(lListElem *ep, int pos, lUlong value) {
    DENTER(CULL_BASIS_LAYER);
    if (!ep) {
+      ocs::tom::report_soft_path("lSetPosUlong", ocs::tom::SoftPathNoName, ocs::tom::SoftPathReason::NullElement);
       LERROR(LEELEMNULL);
       DRETURN(-1);
    }
 
    if (pos < 0) {
+      ocs::tom::report_soft_path("lSetPosUlong", ocs::tom::SoftPathNoName, ocs::tom::SoftPathReason::NegativePosition);
       LERROR(LENEGPOS);
       DRETURN(-1);
    }
@@ -1388,11 +1400,13 @@ int lAddUlong64(lListElem *ep, int name, lUlong64 offset) {
 int lSetPosUlong64(lListElem *ep, int pos, lUlong64 value) {
    DENTER(CULL_BASIS_LAYER);
    if (!ep) {
+      ocs::tom::report_soft_path("lSetPosUlong64", ocs::tom::SoftPathNoName, ocs::tom::SoftPathReason::NullElement);
       LERROR(LEELEMNULL);
       DRETURN(-1);
    }
 
    if (pos < 0) {
+      ocs::tom::report_soft_path("lSetPosUlong64", ocs::tom::SoftPathNoName, ocs::tom::SoftPathReason::NegativePosition);
       LERROR(LENEGPOS);
       DRETURN(-1);
    }
@@ -1433,11 +1447,13 @@ int lSetPosString(lListElem *ep, int pos, const char *value) {
    DENTER(CULL_BASIS_LAYER);
 
    if (!ep) {
+      ocs::tom::report_soft_path("lSetPosString", ocs::tom::SoftPathNoName, ocs::tom::SoftPathReason::NullElement);
       LERROR(LEELEMNULL);
       DRETURN(-1);
    }
 
    if (pos < 0) {
+      ocs::tom::report_soft_path("lSetPosString", ocs::tom::SoftPathNoName, ocs::tom::SoftPathReason::NegativePosition);
       LERROR(LENEGPOS);
       DRETURN(-1);
    }
@@ -1476,11 +1492,13 @@ int lSetPosHost(lListElem *ep, int pos, const char *value) {
    DENTER(CULL_BASIS_LAYER);
 
    if (!ep) {
+      ocs::tom::report_soft_path("lSetPosHost", ocs::tom::SoftPathNoName, ocs::tom::SoftPathReason::NullElement);
       LERROR(LEELEMNULL);
       DRETURN(-1);
    }
 
    if (pos < 0) {
+      ocs::tom::report_soft_path("lSetPosHost", ocs::tom::SoftPathNoName, ocs::tom::SoftPathReason::NegativePosition);
       LERROR(LENEGPOS);
       DRETURN(-1);
    }
@@ -1568,11 +1586,13 @@ int lSetPosObject(lListElem *ep, int pos, lListElem *value) {
    DENTER(CULL_BASIS_LAYER);
 
    if (!ep) {
+      ocs::tom::report_soft_path("lSetPosObject", ocs::tom::SoftPathNoName, ocs::tom::SoftPathReason::NullElement);
       LERROR(LEELEMNULL);
       DRETURN(-1);
    }
 
    if (pos < 0) {
+      ocs::tom::report_soft_path("lSetPosObject", ocs::tom::SoftPathNoName, ocs::tom::SoftPathReason::NegativePosition);
       LERROR(LENEGPOS);
       DRETURN(-1);
    }
@@ -1583,6 +1603,7 @@ int lSetPosObject(lListElem *ep, int pos, lListElem *value) {
    }
 
    if (!ocs::tom::store_object(ep, pos, value)) {
+      ocs::tom::report_soft_path("lSetPosObject", ep->descr[pos].nm, ocs::tom::SoftPathReason::BoundElement);
       LERROR(LEBOUNDELEM);
       DRETURN(-1);
    }
@@ -1606,10 +1627,12 @@ int lSetPosList(lListElem *ep, int pos, lList *value) {
    DENTER(CULL_BASIS_LAYER);
 
    if (!ep) {
+      ocs::tom::report_soft_path("lSetPosList", ocs::tom::SoftPathNoName, ocs::tom::SoftPathReason::NullElement);
       LERROR(LEELEMNULL);
       DRETURN(-1);
    }
    if (pos < 0) {
+      ocs::tom::report_soft_path("lSetPosList", ocs::tom::SoftPathNoName, ocs::tom::SoftPathReason::NegativePosition);
       LERROR(LENEGPOS);
       DRETURN(-1);
    }
@@ -1641,6 +1664,7 @@ int lXchgString(lListElem *ep, int name, char **str) {
 
    char *tmp;
    if (str == nullptr) {
+      ocs::tom::report_soft_path("lXchgString", name, ocs::tom::SoftPathReason::NullArgument);
       LERROR(LEELEMNULL);
       DRETURN(-1);
    }
@@ -1680,6 +1704,7 @@ int lXchgList(lListElem *ep, int name, lList **lpp) {
 
    lList *tmp;
    if (lpp == nullptr) {
+      ocs::tom::report_soft_path("lXchgList", name, ocs::tom::SoftPathReason::NullArgument);
       LERROR(LEELEMNULL);
       DRETURN(-1);
    }
@@ -1754,6 +1779,7 @@ int lSetObject(lListElem *ep, int name, lListElem *value) {
    }
 
    if (value != nullptr && elem_kind(value) != FREE_ELEM && elem_kind(value) != TRANS_BOUND_ELEM) {
+      ocs::tom::report_soft_path("lSetObject", name, ocs::tom::SoftPathReason::BoundElement);
       LERROR(LEBOUNDELEM);
       DRETURN(-1);
    }
@@ -1833,11 +1859,13 @@ int lSetList(lListElem *ep, int name, lList *value) {
 int lSetPosDouble(lListElem *ep, int pos, lDouble value) {
    DENTER(CULL_BASIS_LAYER);
    if (!ep) {
+      ocs::tom::report_soft_path("lSetPosDouble", ocs::tom::SoftPathNoName, ocs::tom::SoftPathReason::NullElement);
       LERROR(LEELEMNULL);
       DRETURN(-1);
    }
 
    if (pos < 0) {
+      ocs::tom::report_soft_path("lSetPosDouble", ocs::tom::SoftPathNoName, ocs::tom::SoftPathReason::NegativePosition);
       LERROR(LENEGPOS);
       DRETURN(-1);
    }
@@ -1928,11 +1956,13 @@ int lAddDouble(lListElem *ep, int name, lDouble value) {
 int lSetPosLong(lListElem *ep, int pos, lLong value) {
    DENTER(CULL_BASIS_LAYER);
    if (!ep) {
+      ocs::tom::report_soft_path("lSetPosLong", ocs::tom::SoftPathNoName, ocs::tom::SoftPathReason::NullElement);
       LERROR(LEELEMNULL);
       DRETURN(-1);
    }
 
    if (pos < 0) {
+      ocs::tom::report_soft_path("lSetPosLong", ocs::tom::SoftPathNoName, ocs::tom::SoftPathReason::NegativePosition);
       LERROR(LENEGPOS);
       DRETURN(-1);
    }
@@ -1990,11 +2020,13 @@ int lSetLong(lListElem *ep, int name, lLong value) {
 int lSetPosBool(lListElem *ep, int pos, lBool value) {
    DENTER(CULL_BASIS_LAYER);
    if (!ep) {
+      ocs::tom::report_soft_path("lSetPosBool", ocs::tom::SoftPathNoName, ocs::tom::SoftPathReason::NullElement);
       LERROR(LEELEMNULL);
       DRETURN(-1);
    }
 
    if (pos < 0) {
+      ocs::tom::report_soft_path("lSetPosBool", ocs::tom::SoftPathNoName, ocs::tom::SoftPathReason::NegativePosition);
       LERROR(LENEGPOS);
       DRETURN(-1);
    }
@@ -2052,11 +2084,13 @@ int lSetBool(lListElem *ep, int name, lBool value) {
 int lSetPosRef(lListElem *ep, int pos, lRef value) {
    DENTER(CULL_BASIS_LAYER);
    if (!ep) {
+      ocs::tom::report_soft_path("lSetPosRef", ocs::tom::SoftPathNoName, ocs::tom::SoftPathReason::NullElement);
       LERROR(LEELEMNULL);
       DRETURN(-1);
    }
 
    if (pos < 0) {
+      ocs::tom::report_soft_path("lSetPosRef", ocs::tom::SoftPathNoName, ocs::tom::SoftPathReason::NegativePosition);
       LERROR(LENEGPOS);
       DRETURN(-1);
    }

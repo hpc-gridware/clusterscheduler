@@ -91,10 +91,13 @@
  *    CS-966: Add support for Solaris where backtrace is also available
  *
  * @param demangle_names If true, demangle function names.
+ * @param skip_frames Number of frames left out at the top of the stack; frame 0 is
+ *        get_stacktrace() itself, so a caller passes the number of its own frames
+ *        plus one to start the output at the code that called it. 0 shows every frame.
  * @return A string containing the stacktrace.
  */
 std::string
-ocs::TerminationManager::get_stacktrace(bool demangle_names) {
+ocs::TerminationManager::get_stacktrace(bool demangle_names, int skip_frames) {
    std::stringstream ss;
 
 #if defined(LINUX) || defined(FREEBSD)
@@ -120,7 +123,7 @@ ocs::TerminationManager::get_stacktrace(bool demangle_names) {
       }
 
       // handle all function names
-      for (int i = 0; i < bt_size; i++) {
+      for (int i = std::max(skip_frames, 0); i < bt_size; i++) {
          char *begin_name = nullptr;
          char *begin_offset = nullptr;
          char *end_offset = nullptr;
@@ -175,7 +178,7 @@ ocs::TerminationManager::get_stacktrace(bool demangle_names) {
       sge_free(&fnc_name);
    } else {
       // unmodified stacktrace
-      for (int i = 0; i < bt_size; i++) {
+      for (int i = std::max(skip_frames, 0); i < bt_size; i++) {
          ss << bt_symbols[i] << std::endl;
       }
    }

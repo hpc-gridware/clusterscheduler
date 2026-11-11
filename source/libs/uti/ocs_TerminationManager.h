@@ -58,7 +58,7 @@ namespace ocs {
       allow_core_dumps();
 
       static std::string
-      get_stacktrace(bool demangle_names);
+      get_stacktrace(bool demangle_names, int skip_frames = 0);
 
       static void
       show_stacktrace(uint32_t level);
