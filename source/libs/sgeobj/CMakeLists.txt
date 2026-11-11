@@ -176,5 +176,11 @@ add_library(${LIBRARY_NAME} STATIC ${LIBRARY_SOURCES} ${OUTPUT_FILES})
 #endif ()
 target_include_directories(${LIBRARY_NAME} PUBLIC ${LIBRARY_INCLUDES})
 
+# The build id changes with every testsuite build. It goes into a generated header that only sge_feature.cc
+# includes, so a new id recompiles that one file; configure_file() rewrites the header only when the id changed.
+# The header lives in the build directory, never in the source tree (CS-3072).
+configure_file(ocs_build_id.h.in ${CMAKE_CURRENT_BINARY_DIR}/ocs_build_id.h @ONLY)
+target_include_directories(${LIBRARY_NAME} PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+
 #add_subdirectory(cpp)
 

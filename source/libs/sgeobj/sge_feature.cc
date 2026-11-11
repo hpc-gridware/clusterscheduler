@@ -38,14 +38,14 @@
  * @see sge_feature.h
  */
 
-#include <cstring>
-
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
 
 #include "sgeobj/ocs_Version.h"
 
-#include "sgeobj/sge_feature.h"         
+#include "sgeobj/sge_feature.h"
+
+#include "ocs_build_id.h"
 
 /**
  * @brief Get product name string
@@ -53,7 +53,8 @@
  * This function will return a text string containing the
  * product name. The return value depends on the style
  * parameter. An invalid style value will automatically be
- * interpreted as FS_SHORT.
+ * interpreted as FS_SHORT. A build id, if the build was given one,
+ * is appended in parentheses (see ocs_build_id.h).
  *
  * @param style FS_SHORT         = return short name FS_LONG          = return long name FS_VERSION       = return version FS_SHORT_VERSION = return short name and version FS_LONG_VERSION  = return long name and version
  * @param buffer buffer provided by caller the string returned by this function points to this buffer
@@ -95,11 +96,9 @@ const char *feature_get_product_name(featureset_product_name_id_t style, dstring
          ret = sge_dstring_copy_string(buffer, short_name.c_str());
          break;
    }
-#ifdef CMAKE_BUILD_ID
-   if (CMAKE_BUILD_ID != nullptr && strlen(CMAKE_BUILD_ID) > 0) {
+   if constexpr (sizeof(CMAKE_BUILD_ID) > 1) {
       ret = sge_dstring_sprintf_append(buffer, " (%s)", CMAKE_BUILD_ID);
    }
-#endif
 
    DRETURN(ret);
 }

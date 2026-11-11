@@ -67,7 +67,9 @@ function(architecture_specific_settings)
    set(PROJECT_AUTOMAKE_SRC "/usr/share/automake-*/config.*" PARENT_SCOPE)
 
    # defines for all architectures
-   add_compile_definitions(CMAKE_BUILD_ID="${CMAKE_BUILD_ID}" SGE_ARCH_STRING="${SGE_ARCH}" ${SGE_BUILDARCH} ${SGE_COMPILEARCH} ${SGE_TARGETBITS} COMPILE_DC)
+   # CMAKE_BUILD_ID is not among them: it changes with every testsuite build and would recompile every source
+   # file; only sge_feature.cc prints it and gets it through the generated ocs_build_id.h (CS-3072)
+   add_compile_definitions(SGE_ARCH_STRING="${SGE_ARCH}" ${SGE_BUILDARCH} ${SGE_COMPILEARCH} ${SGE_TARGETBITS} COMPILE_DC)
 
    # defines if extensions are enabled
    if (PROJECT_FEATURES MATCHES "gcs-extensions")
