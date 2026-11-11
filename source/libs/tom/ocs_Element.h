@@ -45,6 +45,9 @@
 #include "cull/cull_multitypeP.h"
 #include "tom/ocs_ElementCore.h"
 #include "tom/ocs_FieldTraits.h"
+#include "tom/ocs_ListCore.h"
+#include "tom/ocs_Select.h"
+#include "tom/ocs_SelectCore.h"
 #include "tom/ocs_SoftPath.h"
 #include "uti/ocs_Exception.h"
 
@@ -66,6 +69,46 @@ namespace ocs::tom {
    concept FieldOf = TypedField<decltype(F)> && std::is_same_v<typename TypeOf<decltype(F)>::type, T>;
 
    namespace detail {
+
+      /**
+       * @brief What operator-> of an owning handle returns: holds the non-owning handle for the full expression
+       *
+       * operator-> must end in a pointer; the owning handles have no
+       * non-owning handle stored that it could point to, so they return this
+       * object, whose own operator-> points to the handle it holds. The
+       * object lives until the end of the full expression, which covers the
+       * call made through it.
+       *
+       * @tparam H the non-owning handle, Element<T> or List<T>
+       */
+      template <typename H>
+      class Arrow {
+      public:
+         /**
+          * @brief Hold a handle
+          * @param handle the non-owning handle
+          */
+         explicit Arrow(const H handle) noexcept : handle_(handle) {}
+
+         /**
+          * @brief The handle the call goes to
+          * @return a pointer to the held handle, valid until the end of the full expression
+          */
+         const H *operator->() const noexcept {
+            return &handle_;
+         }
+
+      private:
+         H handle_;   ///< the non-owning handle
+      };
+
+      /**
+       * @brief A field an offset can be added to, as lAddUlong(), lAddUlong64() and lAddDouble() add: 32 bit, 64 bit, double
+       * @tparam F the field number
+       */
+      template <auto F>
+      concept Addable = FieldTraits<F>::type == FieldType::Uint32 || FieldTraits<F>::type == FieldType::Uint64 ||
+                        FieldTraits<F>::type == FieldType::Double;
 
       /**
        * @brief The value slot of a field that the element holds
@@ -428,7 +471,7 @@ namespace ocs::tom {
       }
 
       /**
-       * @brief Read a field
+       * @brief Read a field, as lGetUlong(), lGetString(), lGetList() and the other getters by name do
        * @tparam F the field number, of this object type
        * @return the value, as the type's field table declares it
        * @throw FieldException if the handle is empty or the reduced element does not hold the field
@@ -440,7 +483,7 @@ namespace ocs::tom {
       }
 
       /**
-       * @brief Read a field given only at run time, checked as the old interface checks it
+       * @brief Read a field given only at run time, checked as the old getters by name (lGetUlong(), ...) check it
        * @tparam V the value type, which must match the field's type
        * @param nm the field number
        * @return the value
@@ -487,6 +530,73 @@ namespace ocs::tom {
             throw_field_exception(FieldException::Reason::EmptyHandle, F, T::descriptor.e);
          }
          return ep_->descr[FieldTraits<F>::pos].off != OCS_CULL_ABSENT;
+      }
+
+      /**
+       * @brief The next element of the list, as lNext() gives it; std::next() does this for an iterator
+       * @return the element, or an empty handle at the end of the list or for an empty handle
+       */
+      [[nodiscard]] ConstElement next() const noexcept {
+         return from_typed(ep_ != nullptr ? ep_->next : nullptr);
+      }
+
+      /**
+       * @brief The previous element of the list, as lPrev() gives it; std::prev() does this for an iterator
+       * @return the element, or an empty handle at the front of the list or for an empty handle
+       */
+      [[nodiscard]] ConstElement prev() const noexcept {
+         return from_typed(ep_ != nullptr ? ep_->prev : nullptr);
+      }
+
+      /**
+       * @brief Whether the element fulfils a condition, as lCompare() decides it
+       * @param where the condition; an empty one is fulfilled by every element
+       * @return true if it is fulfilled
+       * @throw FieldException with reason EmptyHandle if the handle is empty
+       * @see Old form: lCompare(); core: ocs::tom::compare()
+       */
+      [[nodiscard]] bool matches(const Where<T> &where) const {
+         if (ep_ == nullptr) [[unlikely]] {
+            throw_field_exception(FieldException::Reason::EmptyHandle, NoName, T::descriptor.e);
+         }
+         return compare(ep_, where.get());
+      }
+
+      /**
+       * @brief The next element of the list that fulfils a condition, as lFindNextRW() finds it
+       * @param where the condition; an empty one takes the next element
+       * @return the element, or an empty handle if none follows, or for an empty handle
+       * @see Old form: lFindNextRW(); core: ocs::tom::find_next()
+       */
+      [[nodiscard]] ConstElement next_if(const Where<T> &where) const {
+         return from_typed(ep_ != nullptr ? find_next(ep_, where.get()) : nullptr);
+      }
+
+      /**
+       * @brief The previous element of the list that fulfils a condition, as lFindPrevRW() finds it
+       * @param where the condition; an empty one takes the previous element
+       * @return the element, or an empty handle if none precedes, or for an empty handle
+       * @see Old form: lFindPrevRW(); core: ocs::tom::find_prev()
+       */
+      [[nodiscard]] ConstElement prev_if(const Where<T> &where) const {
+         return from_typed(ep_ != nullptr ? find_prev(ep_, where.get()) : nullptr);
+      }
+
+      /**
+       * @brief A deep copy of the element, as lCopyElem() makes it
+       *
+       * Sub-lists and sub-objects are copied as well, and a reduced element
+       * stays reduced. The owning handles are move-only like std::unique_ptr,
+       * so a copy is always this explicit call.
+       *
+       * @return the owning handle on the copy, empty if this handle is empty, as lCopyElem(nullptr) gives nullptr
+       * @throw ocs::RuntimeException if there is no memory
+       */
+      [[nodiscard]] ElementPtr<T> clone() const {
+         if (ep_ == nullptr) {
+            return {};
+         }
+         return ElementPtr<T>::from_typed(copy_elem(ep_, true, false));
       }
 
    protected:
@@ -559,7 +669,7 @@ namespace ocs::tom {
       }
 
       /**
-       * @brief Read a field given only at run time, checked as the old interface checks it
+       * @brief Read a field given only at run time, checked as the old getters by name (lGetUlong(), ...) check it
        *
        * Declared here, because the template accessor below hides every get() of the base.
        *
@@ -574,7 +684,7 @@ namespace ocs::tom {
       }
 
       /**
-       * @brief Read a field; list and object fields give mutable handles
+       * @brief Read a field; list and object fields give mutable handles, as lGetListRW() and lGetObject() do
        * @tparam F the field number, of this object type
        * @return the value, as the type's field table declares it
        * @throw FieldException if the handle is empty or the reduced element does not hold the field
@@ -586,7 +696,7 @@ namespace ocs::tom {
       }
 
       /**
-       * @brief Set a field, as the old setter of its field type does
+       * @brief Set a field, as the old setter of its field type does: lSetUlong(), lSetString(), lSetList(), ...
        *
        * Strings are copied and the old value freed, the hash table of the
        * owning list is maintained, a list or an element is taken over and the
@@ -610,7 +720,7 @@ namespace ocs::tom {
       }
 
       /**
-       * @brief Set a field given only at run time, checked as the old interface checks it
+       * @brief Set a field given only at run time, checked as the old setters by name (lSetUlong(), ...) check it
        *
        * For plain values only: numbers, bool, strings, host names and references.
        *
@@ -658,6 +768,128 @@ namespace ocs::tom {
             }
          }
       }
+
+      /**
+       * @brief Add an offset to a number field and return the new value, as lAddUlong(), lAddUlong64() and lAddDouble() add
+       *
+       * An offset of 0 changes nothing. A 32 bit sum wraps around. The hash
+       * table of the owning list is maintained. Unlike the old functions,
+       * which return a status, it returns the new value, as operator+= does.
+       *
+       * @tparam F the field number, of this object type, a 32 bit, 64 bit or double field
+       * @param offset the amount to add
+       * @return the new value
+       * @throw FieldException if the handle is empty or the reduced element does not hold the field; in a
+       *        debug build also with reason DuplicateKey when another element of the list holds the new
+       *        value of a unique field, and the old value is kept
+       * @see Old form: lAddUlong(), lAddUlong64(), lAddDouble(); core: ocs::tom::add_number()
+       */
+      template <auto F>
+         requires FieldOf<F, T> && detail::Addable<F>
+      typename ValueOf<FieldTraits<F>::type>::type add(const typename ValueOf<FieldTraits<F>::type>::type offset) const {
+         const int s = this->template present_slot<F>();
+         return add_number(this->ep_, FieldTraits<F>::pos, this->ep_->cont[s], offset);
+      }
+
+      /**
+       * @brief The next element of the list, as lNextRW() gives it
+       * @return the element, or an empty handle at the end of the list or for an empty handle
+       */
+      [[nodiscard]] Element next() const noexcept {
+         return from_typed(this->ep_ != nullptr ? this->ep_->next : nullptr);
+      }
+
+      /**
+       * @brief The previous element of the list, as lPrevRW() gives it
+       * @return the element, or an empty handle at the front of the list or for an empty handle
+       */
+      [[nodiscard]] Element prev() const noexcept {
+         return from_typed(this->ep_ != nullptr ? this->ep_->prev : nullptr);
+      }
+
+      /**
+       * @brief The next element of the list that fulfils a condition, as lFindNextRW() finds it
+       * @param where the condition; an empty one takes the next element
+       * @return the element, or an empty handle if none follows, or for an empty handle
+       * @see Old form: lFindNextRW(); core: ocs::tom::find_next()
+       */
+      [[nodiscard]] Element next_if(const Where<T> &where) const {
+         return from_typed(this->ep_ != nullptr ? find_next(this->ep_, where.get()) : nullptr);
+      }
+
+      /**
+       * @brief The previous element of the list that fulfils a condition, as lFindPrevRW() finds it
+       * @param where the condition; an empty one takes the previous element
+       * @return the element, or an empty handle if none precedes, or for an empty handle
+       * @see Old form: lFindPrevRW(); core: ocs::tom::find_prev()
+       */
+      [[nodiscard]] Element prev_if(const Where<T> &where) const {
+         return from_typed(this->ep_ != nullptr ? find_prev(this->ep_, where.get()) : nullptr);
+      }
+
+      /**
+       * @brief Put a list into a list field and take out the one held, as std::exchange() and lXchgList() do
+       * @tparam F a list field of this object type whose sub-type the model names
+       * @param list the new list, which the element takes over; may be empty
+       * @return the list held before, now owned by the caller; empty if the field held none
+       * @throw FieldException if the handle is empty or the reduced element does not hold the field; nothing
+       *        is changed then
+       */
+      template <auto F>
+         requires FieldOf<F, T> && (FieldTraits<F>::type == FieldType::List) && FieldTraits<F>::has_sub
+      ListPtr<typename FieldTraits<F>::Sub> exchange(ListPtr<typename FieldTraits<F>::Sub> &&list) const {
+         static_cast<void>(this->template present_slot<F>());
+         lList *lp = list.release();
+         exchange_list(this->ep_, FieldTraits<F>::pos, lp);
+         return ListPtr<typename FieldTraits<F>::Sub>::from_typed(lp);
+      }
+
+      /**
+       * @brief The list of a list field, created if the field holds none, as lGetOrCreateList() does
+       *
+       * With it, adding to and deleting from a list field compose:
+       * `job.get_or_create<JB_env_list>().emplace_back<VA_variable>("X")` in
+       * place of lAddSubStr(), `job.get<JB_env_list>().erase<VA_variable>("X")`
+       * in place of lDelSubStr().
+       *
+       * @tparam F a list field of this object type whose sub-type the model names
+       * @param name the name of a list created here; nullptr names it after the field
+       * @return the list held in the field
+       * @throw FieldException if the handle is empty or the reduced element does not hold the field
+       * @throw ocs::RuntimeException if there is no memory
+       */
+      template <auto F>
+         requires FieldOf<F, T> && (FieldTraits<F>::type == FieldType::List) && FieldTraits<F>::has_sub
+      List<typename FieldTraits<F>::Sub> get_or_create(const char *name = nullptr) const {
+         using Sub = typename FieldTraits<F>::Sub;
+         static_cast<void>(this->template present_slot<F>());
+         return List<Sub>::from_typed(get_or_create_list(this->ep_, FieldTraits<F>::pos, name, Sub::descriptor.e));
+      }
+
+      /**
+       * @brief Swap the lists of a list field of this element and a list field of another, as lSwapList() does
+       * @tparam F a list field of this object type
+       * @tparam G a list field of the other element's type, holding the same sub-type as F
+       * @tparam U the struct of the other element's type
+       * @param other the other element
+       * @throw FieldException if a handle is empty or a reduced element does not hold its field; nothing is
+       *        changed then
+       */
+      template <auto F, auto G, ObjectType U>
+         requires FieldOf<F, T> && FieldOf<G, U> && (FieldTraits<F>::type == FieldType::List) &&
+                  (FieldTraits<G>::type == FieldType::List) && FieldTraits<F>::has_sub &&
+                  std::is_same_v<typename FieldTraits<F>::Sub, typename FieldTraits<G>::Sub>
+      void swap(const Element<U> other) const {
+         static_cast<void>(this->template present_slot<F>());
+         if (!other) [[unlikely]] {
+            throw_field_exception(FieldException::Reason::EmptyHandle, G, U::descriptor.e);
+         }
+         static_cast<void>(detail::present_slot<G>(other.raw()));
+         lList *lp = nullptr;
+         exchange_list(other.raw(), FieldTraits<G>::pos, lp);
+         exchange_list(this->ep_, FieldTraits<F>::pos, lp);
+         exchange_list(other.raw(), FieldTraits<G>::pos, lp);
+      }
    };
 
    /**
@@ -686,16 +918,24 @@ namespace ocs::tom {
       explicit ElementPtr(lListElem *ep) : ep_(Element<T>(ep).raw()) {}
 
       /**
-       * @brief Create an element of the type, with every field at its default
+       * @brief Take over an element from a source whose type is known, without a check
+       * @param ep the element, or nullptr; freed by the handle
+       * @return the owning handle
+       */
+      [[nodiscard]] static ElementPtr from_typed(lListElem *ep) noexcept {
+         ElementPtr handle;
+         handle.ep_ = ep;
+         return handle;
+      }
+
+      /**
+       * @brief Create an element of the type, with every field at its default, as lCreateElem() does
        * @return the owning handle
        * @throw ocs::RuntimeException if there is no memory
        */
       [[nodiscard]] static ElementPtr create() {
          ElementPtr handle;
-         handle.ep_ = lCreateElem(T::descriptor.e);
-         if (handle.ep_ == nullptr) [[unlikely]] {
-            throw ocs::RuntimeException("out of memory creating an element");
-         }
+         handle.ep_ = create_elem(T::descriptor.e);
          return handle;
       }
 
@@ -715,15 +955,15 @@ namespace ocs::tom {
        */
       ElementPtr &operator=(ElementPtr &&other) noexcept {
          if (this != &other) {
-            lFreeElem(&ep_);
+            free_elem(ep_);
             ep_ = std::exchange(other.ep_, nullptr);
          }
          return *this;
       }
 
-      /** @brief Free the element held */
+      /** @brief Free the element held, as lFreeElem() does */
       ~ElementPtr() {
-         lFreeElem(&ep_);
+         free_elem(ep_);
       }
 
       /**
@@ -732,6 +972,29 @@ namespace ocs::tom {
        */
       [[nodiscard]] Element<T> get() const noexcept {
          return Element<T>::from_typed(ep_);
+      }
+
+      /**
+       * @brief Call a member of the non-owning handle, as std::unique_ptr::operator-> does: `job->set<JB_owner>("alice")`
+       * @return an object that leads the call on to get()
+       */
+      detail::Arrow<Element<T>> operator->() const noexcept {
+         return detail::Arrow<Element<T>>(get());
+      }
+
+      /**
+       * @brief The non-owning handle, as std::unique_ptr::operator* gives the object: `Element<JB> job = *owned`
+       * @return the handle, empty if this one is; the same as get()
+       */
+      [[nodiscard]] Element<T> operator*() const noexcept {
+         return get();
+      }
+
+      /**
+       * @brief Free the element held now, as std::unique_ptr::reset() and lFreeElem() do
+       */
+      void reset() noexcept {
+         free_elem(ep_);
       }
 
       /**
@@ -755,7 +1018,7 @@ namespace ocs::tom {
    };
 
    /**
-    * @brief Read a field of an element whose type is known only at run time
+    * @brief Read a field of an element whose type is known only at run time; replaces lGetUlong(), lGetString(), ... in the rewrite of M3
     *
     * The free form for code that still holds a raw pointer: the field's type
     * comes from the field table, and one comparison checks at run time that
@@ -782,7 +1045,7 @@ namespace ocs::tom {
    }
 
    /**
-    * @brief Read a field of a mutable element whose type is known only at run time
+    * @brief Read a field of a mutable element whose type is known only at run time; replaces lGetListRW(), lGetObject(), ...
     * @tparam F the field number
     * @param ep the element
     * @return the value; list and object fields give mutable handles or pointers
@@ -814,15 +1077,17 @@ namespace ocs::tom {
        * @tparam F the field number
        * @param ep the element
        * @param reason why the element does not hold the field
+       * @param function the free function, for the record of the soft path
        * @return -1
        */
       template <auto F>
-      int missing_field_result(const lListElem *ep, const FieldException::Reason reason) {
+      int missing_field_result(const lListElem *ep, const FieldException::Reason reason,
+                               const char *function = "ocs::tom::set") {
          constexpr FieldType type = FieldTraits<F>::type;
          if constexpr (type == FieldType::String || type == FieldType::Host) {
             throw_field_exception(reason, F, ep->descr);
          } else {
-            report_soft_path("ocs::tom::set", static_cast<int>(F),
+            report_soft_path(function, static_cast<int>(F),
                              reason == FieldException::Reason::ForeignField ? SoftPathReason::ForeignField
                                                                             : SoftPathReason::MissingField);
             if constexpr (type != FieldType::Uint32 && type != FieldType::Uint64 && type != FieldType::List &&
@@ -836,7 +1101,7 @@ namespace ocs::tom {
    } // namespace detail
 
    /**
-    * @brief Set a field of an element whose type is known only at run time, with the error behaviour of the old setter
+    * @brief Set a field of an element whose type is known only at run time, with the error behaviour of the old setter it replaces (lSetUlong(), lSetString(), ...)
     *
     * The free form that replaces the old setter in the mechanical rewrite. It
     * returns -1 where the old setter of its field type returned -1, with the
@@ -883,6 +1148,43 @@ namespace ocs::tom {
          }
          return 0;
       }
+   }
+
+   /**
+    * @brief Add an offset to a number field of an element whose type is known only at run time, with the error behaviour of the old function it replaces (lAddUlong(), lAddUlong64(), lAddDouble())
+    *
+    * The free form for the mechanical rewrite, next to the free setter. It
+    * returns -1 where the old function returned -1, with the same error
+    * number: LEELEMNULL for a null element; for a field the element does not
+    * hold none for a 32 or 64 bit field and LENEGPOS for a double field. A
+    * field of another type does not compile.
+    *
+    * @tparam F the field number, a 32 bit, 64 bit or double field
+    * @param ep the element
+    * @param offset the amount to add
+    * @return 0 on success, -1 on an error the old function returned
+    * @throw FieldException with reason DuplicateKey in a debug build, where the old function aborted
+    * @see Typed form: Element<T>::add<F>(); core: ocs::tom::add_number()
+    */
+   template <auto F>
+      requires TypedField<decltype(F)> && detail::Addable<F>
+   int add(lListElem *ep, const typename ValueOf<FieldTraits<F>::type>::type offset) {
+      using Tr = FieldTraits<F>;
+      using Type = typename Tr::Type;
+      if (ep == nullptr) [[unlikely]] {
+         report_soft_path("ocs::tom::add", static_cast<int>(F), SoftPathReason::NullElement);
+         set_lerrno(LEELEMNULL);
+         return -1;
+      }
+      if (ep->descr[0].nm != Type::fields[0].nm) [[unlikely]] {
+         return detail::missing_field_result<F>(ep, FieldException::Reason::ForeignField, "ocs::tom::add");
+      }
+      const int off = ep->descr[Tr::pos].off;
+      if (off == OCS_CULL_ABSENT) [[unlikely]] {
+         return detail::missing_field_result<F>(ep, FieldException::Reason::AbsentField, "ocs::tom::add");
+      }
+      add_number(ep, Tr::pos, ep->cont[Tr::pos + off], offset);
+      return 0;
    }
 
 } // namespace ocs::tom

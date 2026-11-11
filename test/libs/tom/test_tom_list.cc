@@ -146,7 +146,7 @@ test_owning_handles() {
       for (const std::uint32_t number : {1u, 2u}) {
          ElementPtr<JAT> task = ElementPtr<JAT>::create();
          task.get().set<JAT_task_number>(number);
-         list.get().append(std::move(task));
+         list.get().push_back(std::move(task));
       }
       throw std::runtime_error("leave the scope");
    } catch (const std::runtime_error &) {
@@ -155,14 +155,14 @@ test_owning_handles() {
    CHECK(9, "an exception leaving the scope frees the list and its elements", caught);
 
    ListPtr<JAT> first = ListPtr<JAT>::create("first");
-   first.get().append(ElementPtr<JAT>::create());
+   first.get().push_back(ElementPtr<JAT>::create());
    ListPtr<JAT> second = ListPtr<JAT>::create("second");
    second = std::move(first);
    CHECK(10, "move assignment frees the list held before and takes the other", !first && second.get().size() == 1);
 
    lListElem *job = lCreateElem(JB_Type);
    ListPtr<JAT> tasks = ListPtr<JAT>::create("tasks");
-   tasks.get().append(ElementPtr<JAT>::create());
+   tasks.get().push_back(ElementPtr<JAT>::create());
    Element<JB>{job}.set<JB_ja_tasks>(std::move(tasks));
    CHECK(11, "a setter takes the owning handle over", !tasks && lGetNumberOfElem(lGetList(job, JB_ja_tasks)) == 1);
    lFreeElem(&job);

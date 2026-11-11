@@ -59,6 +59,9 @@
 #include "cull/cull_whereP.h"
 #include "cull/cull_parse.h"
 #include "cull/cull_lerrnoP.h"
+#include "tom/ocs_FieldException.h"
+#include "tom/ocs_ListCore.h"
+#include "tom/ocs_SelectCore.h"
 
 static lCondition *read_val(const lDescr *dp, cull_parse_state *state, va_list *app);
 
@@ -72,19 +75,37 @@ static lCondition *sum(const lDescr *dp, cull_parse_state *state, va_list *app);
 
 static lCondition *subscope(cull_parse_state *state, va_list *app);
 
-static lCondition *_read_val(const lDescr *dp, cull_parse_state *state, WhereArgList *wapp);
-
-static lCondition *_factor(const lDescr *dp, cull_parse_state *state, WhereArgList *wapp);
-
-static lCondition *_product(const lDescr *dp, cull_parse_state *state, WhereArgList *wapp);
-
-static lCondition *_negfactor(const lDescr *dp, cull_parse_state *state, WhereArgList *wapp);
-
-static lCondition *_sum(const lDescr *dp, cull_parse_state *state, WhereArgList *wapp);
-
-static lCondition *_subscope(cull_parse_state *state, WhereArgList *wapp);
-
 static void lWriteWhereTo_(const lCondition *cp, int depth, FILE *fp);
+
+/**
+ * @brief The comparison of the core for an operator token of lWhere()
+ * @param token the token, one of EQUAL to HOSTNAMECMP
+ * @return the comparison
+ */
+static ocs::tom::CompareOp compare_op_of(const int token) {
+   switch (token) {
+      case NOT_EQUAL:
+         return ocs::tom::CompareOp::NotEqual;
+      case LOWER_EQUAL:
+         return ocs::tom::CompareOp::LowerEqual;
+      case LOWER:
+         return ocs::tom::CompareOp::Lower;
+      case GREATER_EQUAL:
+         return ocs::tom::CompareOp::GreaterEqual;
+      case GREATER:
+         return ocs::tom::CompareOp::Greater;
+      case BITMASK:
+         return ocs::tom::CompareOp::Bitmask;
+      case STRCASECMP:
+         return ocs::tom::CompareOp::NoCase;
+      case PATTERNCMP:
+         return ocs::tom::CompareOp::Pattern;
+      case HOSTNAMECMP:
+         return ocs::tom::CompareOp::SameHost;
+      default:
+         return ocs::tom::CompareOp::Equal;
+   }
+}
 
 /**
  * @brief Combines two conditions with an OR
@@ -95,27 +116,22 @@ static void lWriteWhereTo_(const lCondition *cp, int depth, FILE *fp);
  * @param cp1 second condition
  *
  * @return cp0 OR cp1
+ *
+ * @note A thin wrapper over ocs::tom::make_logic(); the operands are taken over.
+ * @see Typed form: `std::move(a) || std::move(b)` on ocs::tom::Where<T>
  */
 lCondition *lOrWhere(const lCondition *cp0, const lCondition *cp1) {
-   DENTER(TOP_LAYER);
-
-   lCondition *newcp;
-
    if (!cp0 || !cp1) {
       LERROR(LECONDNULL);
-      DRETURN(nullptr);
+      return nullptr;
    }
-
-   if (!(newcp = (lCondition *) calloc(1, sizeof(lCondition)))) {
-      LERROR(LEMALLOC);
-      DRETURN(nullptr);
+   try {
+      // the combination takes both operands over
+      return ocs::tom::make_logic(ocs::tom::LogicOp::Or, const_cast<lCondition *>(cp0), const_cast<lCondition *>(cp1));
+   } catch (const ocs::tom::ListCoreError &e) {
+      LERROR(e.lerrno());
    }
-
-   newcp->op = OR;
-   newcp->operand.log.first = (lCondition *) cp0;
-   newcp->operand.log.second = (lCondition *) cp1;
-
-   DRETURN(newcp);
+   return nullptr;
 }
 
 /**
@@ -127,27 +143,22 @@ lCondition *lOrWhere(const lCondition *cp0, const lCondition *cp1) {
  * @param cp1 second condition
  *
  * @return 'cp0' AND 'cp1'
+ *
+ * @note A thin wrapper over ocs::tom::make_logic(); the operands are taken over.
+ * @see Typed form: `std::move(a) && std::move(b)` on ocs::tom::Where<T>
  */
 lCondition *lAndWhere(const lCondition *cp0, const lCondition *cp1) {
-   DENTER(TOP_LAYER);
-
-   lCondition *newcp;
-
    if (!cp0 || !cp1) {
       LERROR(LECONDNULL);
-      DRETURN(nullptr);
+      return nullptr;
    }
-
-   if (!(newcp = (lCondition *) calloc(1, sizeof(lCondition)))) {
-      LERROR(LEMALLOC);
-      DRETURN(nullptr);
+   try {
+      // the combination takes both operands over
+      return ocs::tom::make_logic(ocs::tom::LogicOp::And, const_cast<lCondition *>(cp0), const_cast<lCondition *>(cp1));
+   } catch (const ocs::tom::ListCoreError &e) {
+      LERROR(e.lerrno());
    }
-
-   newcp->op = AND;
-   newcp->operand.log.first = (lCondition *) cp0;
-   newcp->operand.log.second = (lCondition *) cp1;
-
-   DRETURN(newcp);
+   return nullptr;
 }
 
 /**
@@ -393,6 +404,10 @@ static void lWriteWhereTo_(const lCondition *cp, int depth, FILE *fp) {
  * @param fmt format string %I                         - JB_job_number (!= lList) %T                         - JB_Type (Descriptor) ==, <, >, <=, >=, !=, ==   - comp. operator %s                         - string %d                         - int %u                         - ulong ...             - additional Arguments
  *
  * @return new condition
+ *
+ * @note The format is parsed here; every node is built by ocs::tom::make_compare(), ocs::tom::make_subscope()
+ *       and ocs::tom::make_logic().
+ * @see Typed form: ocs::tom::field<F>() with its operators and named comparisons
  */
 lCondition *lWhere(const char *fmt, ...) {
    DENTER(CULL_LAYER);
@@ -462,74 +477,84 @@ static lCondition *subscope(cull_parse_state *state, va_list *app) {
    DRETURN(cp);
 }
 
+/**
+ * @brief Parse a sum of an lWhere() format: products joined by `||`
+ * @param dp the descriptor of the level
+ * @param state the scanner state
+ * @param app the variable arguments
+ * @return the condition, or nullptr with the error number set
+ */
 static lCondition *sum(const lDescr *dp, cull_parse_state *state, va_list *app) {
    DENTER(CULL_LAYER);
 
-   lCondition *cp, *newcp;
+   lCondition *cp = product(dp, state, app);
 
-   cp = product(dp, state, app);
-
-   while (scan(nullptr, state) == OR) {
+   while (cp != nullptr && scan(nullptr, state) == OR) {
       eat_token(state);              /* eat || */
-
-      if (!(newcp = (lCondition *) calloc(1, sizeof(lCondition)))) {
-         LERROR(LEMALLOC);
-         lFreeWhere(&cp);
+      try {
+         cp = ocs::tom::make_logic(ocs::tom::LogicOp::Or, cp, product(dp, state, app));
+      } catch (const ocs::tom::FieldException &) {
+         // an operand that did not parse; the core freed the other one
+         DRETURN(nullptr);
+      } catch (const ocs::tom::ListCoreError &e) {
+         LERROR(e.lerrno());
          DRETURN(nullptr);
       }
-      newcp->op = OR;
-      newcp->operand.log.first = cp;
-      newcp->operand.log.second = product(dp, state, app);
-      cp = newcp;
    }
 
    DRETURN(cp);
 }
 
+/**
+ * @brief Parse a product of an lWhere() format: factors joined by `&&`
+ * @param dp the descriptor of the level
+ * @param state the scanner state
+ * @param app the variable arguments
+ * @return the condition, or nullptr with the error number set
+ */
 static lCondition *product(const lDescr *dp, cull_parse_state *state, va_list *app) {
    DENTER(CULL_LAYER);
 
-   lCondition *cp, *newcp;
+   lCondition *cp = factor(dp, state, app);
 
-   cp = factor(dp, state, app);
-
-   while (scan(nullptr, state) == AND) {
-      eat_token(state);
-
-      if (!(newcp = (lCondition *) calloc(1, sizeof(lCondition)))) {
-         lFreeWhere(&cp);
-         LERROR(LEMALLOC);
+   while (cp != nullptr && scan(nullptr, state) == AND) {
+      eat_token(state);              /* eat && */
+      try {
+         cp = ocs::tom::make_logic(ocs::tom::LogicOp::And, cp, factor(dp, state, app));
+      } catch (const ocs::tom::FieldException &) {
+         DRETURN(nullptr);
+      } catch (const ocs::tom::ListCoreError &e) {
+         LERROR(e.lerrno());
          DRETURN(nullptr);
       }
-      newcp->op = AND;
-      newcp->operand.log.first = cp;
-      newcp->operand.log.second = factor(dp, state, app);
-      cp = newcp;
    }
 
    DRETURN(cp);
 }
 
+/**
+ * @brief Parse a factor of an lWhere() format: a negated or a plain bracketed sum or comparison
+ * @param dp the descriptor of the level
+ * @param state the scanner state
+ * @param app the variable arguments
+ * @return the condition, or nullptr with the error number set
+ */
 static lCondition *factor(const lDescr *dp, cull_parse_state *state, va_list *app) {
    DENTER(CULL_LAYER);
 
-   lCondition *cp;
-
    if (scan(nullptr, state) == NEG) {
       eat_token(state);
-
-      if (!(cp = (lCondition *) calloc(1, sizeof(lCondition)))) {
-         lFreeWhere(&cp);
-         LERROR(LEMALLOC);
+      try {
+         DRETURN(ocs::tom::make_logic(ocs::tom::LogicOp::Not, negfactor(dp, state, app), nullptr));
+      } catch (const ocs::tom::FieldException &) {
+         DRETURN(nullptr);
+      } catch (const ocs::tom::ListCoreError &e) {
+         LERROR(e.lerrno());
          DRETURN(nullptr);
       }
-      cp->operand.log.first = negfactor(dp, state, app);
-      cp->operand.log.second = nullptr;
-      cp->op = NEG;
-   } else
-      cp = negfactor(dp, state, app);
+   }
 
-   DRETURN(cp);
+   DRETURN(negfactor(dp, state, app));
 }
 
 static lCondition *negfactor(
@@ -560,44 +585,41 @@ static lCondition *negfactor(
 
 }
 
+/**
+ * @brief Parse one comparison of an lWhere() format and build it through the core
+ *
+ * Reads `%I`, the operator and the value, or `%I -> %T(...)` for a condition
+ * on the elements of a list field.
+ *
+ * @param dp the descriptor of the level
+ * @param state the scanner state
+ * @param app the variable arguments, at the field
+ * @return the condition, or nullptr with the error number set; a value of another type than the field aborts
+ */
 static lCondition *read_val(const lDescr *dp, cull_parse_state *state, va_list *app) {
    DENTER(CULL_LAYER);
-
-   /*       
-      without the usage of s insight throws
-      a READ_OVERFLOW 
-    */
-   volatile char *s;
-
-   lCondition *cp;
-   int token;
 
    if (!dp) {
       LERROR(LEDESCRNULL);
       DRETURN(nullptr);
    }
 
-   if (!(cp = (lCondition *) calloc(1, sizeof(lCondition)))) {
-      LERROR(LEMALLOC);
-      DRETURN(nullptr);
-   }
-
-   if ((token = scan(nullptr, state)) != FIELD) {
-      lFreeWhere(&cp);
+   if (scan(nullptr, state) != FIELD) {
       LERROR(LESYNTAX);
       DRETURN(nullptr);
    }
    eat_token(state);
 
-   cp->operand.cmp.nm = va_arg(*app, int);
-   if ((cp->operand.cmp.pos = lGetPosInDescr(dp, cp->operand.cmp.nm)) < 0) {
-      lFreeWhere(&cp);
+   const int nm = va_arg(*app, int);
+   const int pos = lGetPosInDescr(dp, nm);
+   if (pos < 0) {
       LERROR(LENAMENOT);
       DRETURN(nullptr);
    }
-   cp->operand.cmp.mt = dp[cp->operand.cmp.pos].mt;
+   const int type = mt_get_type(dp[pos].mt);
 
-   switch (token = scan(nullptr, state)) {
+   const int op = scan(nullptr, state);
+   switch (op) {
       case EQUAL:
       case NOT_EQUAL:
       case LOWER_EQUAL:
@@ -608,388 +630,106 @@ static lCondition *read_val(const lDescr *dp, cull_parse_state *state, va_list *
       case STRCASECMP:
       case PATTERNCMP:
       case HOSTNAMECMP:
-         cp->op = token;
          eat_token(state);
          break;
 
       case SUBSCOPE:
-         cp->op = token;
          eat_token(state);
-         if (mt_get_type(cp->operand.cmp.mt) != lListT) {
-            lFreeWhere(&cp);
+         if (type != lListT) {
             LERROR(LEINCTYPE);
             DRETURN(nullptr);
          }
-         cp->operand.cmp.val.cp = subscope(state, app);
-         DRETURN(cp);
+         try {
+            // a nested condition that did not parse is taken as none, as before
+            DRETURN(ocs::tom::make_subscope(dp, nm, subscope(state, app)));
+         } catch (const ocs::tom::FieldException &) {
+            LERROR(LEINCTYPE);
+         } catch (const ocs::tom::ListCoreError &e) {
+            LERROR(e.lerrno());
+         }
+         DRETURN(nullptr);
 
       default:
-         lFreeWhere(&cp);
          LERROR(LEOPUNKNOWN);
          DRETURN(nullptr);
    }
 
+   lMultiType value{};
+   int value_type;
    switch (scan(nullptr, state)) {
       case INT:
-         if (mt_get_type(cp->operand.cmp.mt) != lIntT)
+         if (type != lIntT)
             incompatibleType(MSG_CULL_WHERE_SHOULDBEINTT);
-         cp->operand.cmp.val.i = va_arg(*app, lInt);
+         value.i = va_arg(*app, lInt);
+         value_type = lIntT;
          break;
 
       case STRING:
-         if ((mt_get_type(cp->operand.cmp.mt) != lStringT) && (mt_get_type(cp->operand.cmp.mt) != lHostT))
+         if (type != lStringT && type != lHostT)
             incompatibleType(MSG_CULL_WHERE_SHOULDBESTRINGT);
-         if (mt_get_type(cp->operand.cmp.mt) == lStringT) {
-            s = va_arg(*app, char *);
-            cp->operand.cmp.val.str = strdup((char *) s);
-            /* cp->operand.cmp.val.str = strdup(va_arg(*app, char *)); */
-         }
-         if (mt_get_type(cp->operand.cmp.mt) == lHostT) {
-            s = va_arg(*app, char *);
-            cp->operand.cmp.val.host = strdup((char *) s);
-         }
+         value.str = va_arg(*app, char *);
+         value_type = lStringT;
          break;
 
       case ULONG:
-         if (mt_get_type(cp->operand.cmp.mt) != lUlongT)
+         if (type != lUlongT)
             incompatibleType(MSG_CULL_WHERE_SHOULDBEULONGT);
-         cp->operand.cmp.val.ul = va_arg(*app, lUlong);
+         value.ul = va_arg(*app, lUlong);
+         value_type = lUlongT;
          break;
 
       case ULONG64:
-         if (mt_get_type(cp->operand.cmp.mt) != lUlong64T)
+         if (type != lUlong64T)
             incompatibleType(MSG_CULL_WHERE_SHOULDBEULONG64T);
-         cp->operand.cmp.val.ul64 = va_arg(*app, lUlong64);
+         value.ul64 = va_arg(*app, lUlong64);
+         value_type = lUlong64T;
          break;
 
       case DOUBLE:
-         if (mt_get_type(cp->operand.cmp.mt) != lDoubleT)
+         if (type != lDoubleT)
             incompatibleType(MSG_CULL_WHERE_SHOULDBEDOUBLET);
-         cp->operand.cmp.val.db = va_arg(*app, lDouble);
+         value.db = va_arg(*app, lDouble);
+         value_type = lDoubleT;
          break;
 
       case LONG:
-         if (mt_get_type(cp->operand.cmp.mt) != lLongT)
+         if (type != lLongT)
             incompatibleType(MSG_CULL_WHERE_SHOULDBELONGT);
-         cp->operand.cmp.val.l = va_arg(*app, lLong);
+         value.l = va_arg(*app, lLong);
+         value_type = lLongT;
          break;
 
       case BOOL:
-         if (mt_get_type(cp->operand.cmp.mt) != lBoolT)
+         if (type != lBoolT)
             incompatibleType(MSG_CULL_WHERE_SHOULDBEBOOL);
-#if USING_GCC_2_96 || __GNUC__ >= 3 || __INSIGHT__
-         cp->operand.cmp.val.b = va_arg(*app, int);
-#else
-         cp->operand.cmp.val.b = va_arg(*app, lBool);
-#endif
+         // a bool is promoted to int in variable arguments
+         value.b = va_arg(*app, int);
+         value_type = lBoolT;
          break;
 
       case REF:
-         if (mt_get_type(cp->operand.cmp.mt) != lRefT)
+         if (type != lRefT)
             incompatibleType(MSG_CULL_WHERE_SHOULDBEREFT);
-         cp->operand.cmp.val.ref = va_arg(*app, lRef);
+         value.ref = va_arg(*app, lRef);
+         value_type = lRefT;
          break;
 
       default:
-         lFreeWhere(&cp);
          unknownType("lWhere");
          DRETURN(nullptr);
    }
    eat_token(state);
 
-   DRETURN(cp);
+   try {
+      DRETURN(ocs::tom::make_compare(dp, nm, compare_op_of(op), value_type, value));
+   } catch (const ocs::tom::FieldException &) {
+      LERROR(LEINCTYPE);
+   } catch (const ocs::tom::ListCoreError &e) {
+      LERROR(e.lerrno());
+   }
+   DRETURN(nullptr);
 }
 
-
-static lCondition *_subscope(cull_parse_state *state, WhereArgList *wapp) {
-   DENTER(CULL_LAYER);
-
-   const lDescr *dp = nullptr;
-   lCondition *cp = nullptr;
-
-   if (scan(nullptr, state) != TYPE) {
-      LERROR(LESYNTAX);
-      DRETURN(nullptr);
-   }
-   eat_token(state);                 /* eat %T */
-   /* 
-    * Deliver descriptor & increment the WhereArgList to 
-    * the next element 
-    */
-   /*    DPRINTF("(*wapp) = %p\n", *wapp); */
-   dp = (*wapp)++->descriptor;
-   if (!(dp)) {
-      LERROR(LEDESCRNULL);
-      DRETURN(nullptr);
-   }
-
-   if (scan(nullptr, state) != BRA) {
-      LERROR(LESYNTAX);
-      DRETURN(nullptr);
-   }
-   eat_token(state);                 /* eat ( */
-
-   if (!(cp = _sum(dp, state, wapp))) {
-      LERROR(LESUM);
-      DRETURN(nullptr);
-   }
-
-   if (scan(nullptr, state) != KET) {
-      LERROR(LESYNTAX);
-      lFreeWhere(&cp);
-      DRETURN(nullptr);
-   }
-   eat_token(state);                 /* eat ) */
-
-   DRETURN(cp);
-}
-
-static lCondition *_sum(const lDescr *dp, cull_parse_state *state, WhereArgList *wapp) {
-   DENTER(CULL_LAYER);
-
-   lCondition *cp, *newcp;
-
-   cp = _product(dp, state, wapp);
-
-   while (scan(nullptr, state) == OR) {
-      eat_token(state);              /* eat || */
-
-      if (!(newcp = (lCondition *) calloc(1, sizeof(lCondition)))) {
-         LERROR(LEMALLOC);
-         lFreeWhere(&cp);
-         DRETURN(nullptr);
-      }
-      newcp->op = OR;
-      newcp->operand.log.first = cp;
-      newcp->operand.log.second = _product(dp, state, wapp);
-      cp = newcp;
-   }
-
-   DRETURN(cp);
-}
-
-static lCondition *_product(const lDescr *dp, cull_parse_state *state, WhereArgList *wapp) {
-   DENTER(CULL_LAYER);
-
-   lCondition *cp, *newcp;
-
-   cp = _factor(dp, state, wapp);
-
-   while (scan(nullptr, state) == AND) {
-      eat_token(state);
-
-      if (!(newcp = (lCondition *) calloc(1, sizeof(lCondition)))) {
-         lFreeWhere(&cp);
-         LERROR(LEMALLOC);
-         DRETURN(nullptr);
-      }
-      newcp->op = AND;
-      newcp->operand.log.first = cp;
-      newcp->operand.log.second = _factor(dp, state, wapp);
-      cp = newcp;
-   }
-
-   DRETURN(cp);
-}
-
-static lCondition *_factor(const lDescr *dp, cull_parse_state *state, WhereArgList *wapp) {
-   DENTER(CULL_LAYER);
-
-   lCondition *cp;
-
-   if (scan(nullptr, state) == NEG) {
-      eat_token(state);
-
-      if (!(cp = (lCondition *) calloc(1, sizeof(lCondition)))) {
-         lFreeWhere(&cp);
-         LERROR(LEMALLOC);
-         DRETURN(nullptr);
-      }
-      cp->operand.log.first = _negfactor(dp, state, wapp);
-      cp->operand.log.second = nullptr;
-      cp->op = NEG;
-   } else
-      cp = _negfactor(dp, state, wapp);
-
-   DRETURN(cp);
-}
-
-static lCondition *_negfactor(const lDescr *dp, cull_parse_state *state, WhereArgList *wapp) {
-   DENTER(CULL_LAYER);
-
-   lCondition *cp;
-
-   if (scan(nullptr, state) == BRA) {
-      eat_token(state);
-
-      cp = _sum(dp, state, wapp);
-
-      if (scan(nullptr, state) != KET) {
-         LERROR(LESYNTAX);
-         DRETURN(nullptr);
-      }
-      eat_token(state);
-
-      DRETURN(cp);
-   }
-
-   DRETURN(_read_val(dp, state, wapp));
-
-}
-
-static lCondition *_read_val(const lDescr *dp, cull_parse_state *state, WhereArgList *wapp) {
-   DENTER(CULL_LAYER);
-
-   lCondition *cp;
-   int token;
-
-   if (!dp) {
-      LERROR(LEDESCRNULL);
-      DRETURN(nullptr);
-   }
-
-   if (!(cp = (lCondition *) calloc(1, sizeof(lCondition)))) {
-      LERROR(LEMALLOC);
-      DRETURN(nullptr);
-   }
-
-   if ((token = scan(nullptr, state)) != FIELD) {
-      lFreeWhere(&cp);
-      LERROR(LESYNTAX);
-      DRETURN(0);
-   }
-   eat_token(state);
-
-/*    DPRINTF("(*wapp) = %p\n", *wapp); */
-/*    DPRINTF("(*wapp)->field = %d\n", (*wapp)->field); */
-   cp->operand.cmp.nm = (*wapp)->field;
-   if ((cp->operand.cmp.pos = lGetPosInDescr(dp, cp->operand.cmp.nm)) < 0) {
-      lFreeWhere(&cp);
-      LERROR(LENAMENOT);
-      DRETURN(nullptr);
-   }
-   cp->operand.cmp.mt = dp[cp->operand.cmp.pos].mt;
-
-   switch (token = scan(nullptr, state)) {
-      case EQUAL:
-      case NOT_EQUAL:
-      case LOWER_EQUAL:
-      case LOWER:
-      case GREATER_EQUAL:
-      case GREATER:
-      case BITMASK:
-      case STRCASECMP:
-      case PATTERNCMP:
-      case HOSTNAMECMP:
-         cp->op = token;
-         eat_token(state);
-         break;
-
-      case SUBSCOPE:
-         cp->op = token;
-         eat_token(state);
-         if (mt_get_type(cp->operand.cmp.mt) != lListT) {
-            lFreeWhere(&cp);
-            LERROR(LEINCTYPE);
-            DRETURN(nullptr);
-         }
-         cp->operand.cmp.val.cp = _subscope(state, wapp);
-         DRETURN(cp);
-
-      default:
-         lFreeWhere(&cp);
-         LERROR(LEOPUNKNOWN);
-         DRETURN(nullptr);
-   }
-
-   switch (scan(nullptr, state)) {
-      case INT:
-         if (mt_get_type(cp->operand.cmp.mt) != lIntT)
-            incompatibleType(MSG_CULL_WHERE_SHOULDBEINTT);
-/*       DPRINTF("(*wapp)->value.i = %d\n", (*wapp)->value.i); */
-         cp->operand.cmp.val.i = (*wapp)++->value.i;
-         break;
-
-      case STRING:
-         if ((mt_get_type(cp->operand.cmp.mt) != lStringT) && (mt_get_type(cp->operand.cmp.mt) != lHostT))
-            incompatibleType(MSG_CULL_WHERE_SHOULDBESTRINGT);
-
-         if (mt_get_type(cp->operand.cmp.mt) == lStringT) {
-            /* DPRINTF("(*wapp)->value.str = %s\n", (*wapp)->value.str); */
-            cp->operand.cmp.val.str = (*wapp)++->value.str;
-         }
-         if (mt_get_type(cp->operand.cmp.mt) == lHostT) {
-            cp->operand.cmp.val.host = (*wapp)++->value.host;
-         }
-         break;
-
-      case ULONG:
-         if (mt_get_type(cp->operand.cmp.mt) != lUlongT)
-            incompatibleType(MSG_CULL_WHERE_SHOULDBEULONGT);
-/*       DPRINTF("(*wapp)->value.ul = %ul\n", (*wapp)->value.ul); */
-         cp->operand.cmp.val.ul = (*wapp)++->value.ul;
-         break;
-
-      case ULONG64:
-         if (mt_get_type(cp->operand.cmp.mt) != lUlong64T)
-            incompatibleType(MSG_CULL_WHERE_SHOULDBEULONG64T);
-/*       DPRINTF("(*wapp)->value.ul64 = %ul\n", (*wapp)->value.ul64); */
-         cp->operand.cmp.val.ul64 = (*wapp)++->value.ul64;
-         break;
-
-      case DOUBLE:
-         if (mt_get_type(cp->operand.cmp.mt) != lDoubleT)
-            incompatibleType(MSG_CULL_WHERE_SHOULDBEDOUBLET);
-/*       DPRINTF("(*wapp)->value.db = %f\n", (*wapp)->value.db); */
-         cp->operand.cmp.val.db = (*wapp)++->value.db;
-         break;
-
-      case LONG:
-         if (mt_get_type(cp->operand.cmp.mt) != lLongT)
-            incompatibleType(MSG_CULL_WHERE_SHOULDBELONGT);
-/*       DPRINTF("(*wapp)->value.l = %ld\n", (*wapp)->value.l); */
-         cp->operand.cmp.val.l = (*wapp)++->value.l;
-         break;
-
-      case BOOL:
-         if (mt_get_type(cp->operand.cmp.mt) != lBoolT)
-            incompatibleType(MSG_CULL_WHERE_SHOULDBEBOOL);
-/*       DPRINTF("(*wapp)->value.b = %c\n", (*wapp)->value.b); */
-         cp->operand.cmp.val.b = (*wapp)++->value.b;
-         break;
-
-      case REF:
-         if (mt_get_type(cp->operand.cmp.mt) != lRefT)
-            incompatibleType(MSG_CULL_WHERE_SHOULDBEREFT);
-/*       DPRINTF("(*wapp)->value.ref = %p\n", (*wapp)->value.ref); */
-         cp->operand.cmp.val.ref = (*wapp)++->value.ref;
-         break;
-
-      default:
-         unknownType("_lWhere");
-         DRETURN(nullptr);
-   }
-
-   /* 
-      "m=" as operator is not allowed with other types than lUlongT
-      "c=" as operator is not allowed with other types than lStringT
-      "p=" as operator is not allowed with other types than lStringT
-      "h=" as operator is not allowed with other types than lStringT
-    */
-   if ((cp->op == BITMASK && mt_get_type(cp->operand.cmp.mt) != lUlongT) ||
-       (cp->op == BITMASK && mt_get_type(cp->operand.cmp.mt) != lUlong64T) ||
-       ((cp->op == STRCASECMP && mt_get_type(cp->operand.cmp.mt) != lStringT) &&
-        (cp->op == STRCASECMP && mt_get_type(cp->operand.cmp.mt) != lHostT)) ||
-       ((cp->op == HOSTNAMECMP && mt_get_type(cp->operand.cmp.mt) != lStringT) &&
-        (cp->op == HOSTNAMECMP && mt_get_type(cp->operand.cmp.mt) != lHostT)) ||
-       ((cp->op == PATTERNCMP && mt_get_type(cp->operand.cmp.mt) != lStringT) &&
-        (cp->op == PATTERNCMP && mt_get_type(cp->operand.cmp.mt) != lHostT)))
-      incompatibleType(MSG_CULL_WHERE_OPERANDHITNOTOPERATORERROR);
-
-   eat_token(state);
-
-   DRETURN(cp);
-}
 
 /**
  * @brief Free a condition
@@ -999,57 +739,9 @@ static lCondition *_read_val(const lDescr *dp, cull_parse_state *state, WhereArg
  * @param cp condition, will be set to nullptr
  */
 void lFreeWhere(lCondition **cp) {
-   DENTER(CULL_LAYER);
-
-   if (cp == nullptr || *cp == nullptr) {
-      DRETURN_VOID;
+   if (cp != nullptr) {
+      ocs::tom::free_where(*cp);
    }
-
-   switch ((*cp)->op) {
-      case EQUAL:
-      case NOT_EQUAL:
-      case LOWER_EQUAL:
-      case LOWER:
-      case GREATER_EQUAL:
-      case GREATER:
-      case BITMASK:
-      case STRCASECMP:
-      case PATTERNCMP:
-      case HOSTNAMECMP:
-         if (mt_get_type((*cp)->operand.cmp.mt) == lStringT) {
-            if ((*cp)->operand.cmp.val.str) {
-               sge_free(&((*cp)->operand.cmp.val.str));
-            }
-         }
-         if (mt_get_type((*cp)->operand.cmp.mt) == lHostT) {
-            if ((*cp)->operand.cmp.val.host) {
-               sge_free(&((*cp)->operand.cmp.val.host));
-            }
-         }
-         if (mt_get_type((*cp)->operand.cmp.mt) == lListT) {
-            lFreeWhere(&((*cp)->operand.cmp.val.cp));
-         }
-         break;
-      case SUBSCOPE:
-         if (mt_get_type((*cp)->operand.cmp.mt) == lListT) {
-            lFreeWhere(&((*cp)->operand.cmp.val.cp));
-         }
-         break;
-      case AND:
-      case OR:
-         lFreeWhere(&((*cp)->operand.log.first));
-         lFreeWhere(&((*cp)->operand.log.second));
-         break;
-      case NEG:
-         lFreeWhere(&((*cp)->operand.log.first));
-         break;
-
-      default:
-         LERROR(LEOPUNKNOWN);
-   }
-
-   sge_free(cp);
-   DRETURN_VOID;
 }
 
 /**
@@ -1061,221 +753,17 @@ void lFreeWhere(lCondition **cp) {
  * @param cp condition
  *
  * @return result 0 - false 1 - true
+ *
+ * @note A thin wrapper over ocs::tom::compare().
+ * @see Typed form: ocs::tom::ConstElement<T>::matches()
  */
 int lCompare(const lListElem *ep, const lCondition *cp) {
-   DENTER(CULL_LAYER);
-
-   int result = 0;
-   const char *str1, *str2;
-
-   if (!ep) {
+   try {
+      return ocs::tom::compare(ep, cp) ? 1 : 0;
+   } catch (const ocs::tom::FieldException &) {
       LERROR(LEELEMNULL);
-      DRETURN(0);
    }
-
-   /* no conditions ok */
-   if (!cp) {
-      DRETURN(1);
-   }
-
-   switch (cp->op) {
-      case EQUAL:
-      case NOT_EQUAL:
-      case LOWER_EQUAL:
-      case LOWER:
-      case GREATER_EQUAL:
-      case GREATER:
-      case SUBSCOPE:
-
-         switch (mt_get_type(cp->operand.cmp.mt)) {
-            case lIntT:
-               result = intcmp(lGetPosInt(ep, cp->operand.cmp.pos), cp->operand.cmp.val.i);
-               break;
-            case lStringT:
-               if (!(str1 = lGetPosString(ep, cp->operand.cmp.pos))) {
-                  LERROR(LENULLSTRING);
-                  DPRINTF("lGetPosString in lCompare\n");
-                  DRETURN(0);
-               }
-               if (!(str2 = cp->operand.cmp.val.str)) {
-                  DPRINTF("cp->operand.cmp.val.str in lCompare\n");
-                  LERROR(LENULLSTRING);
-                  DRETURN(0);
-               }
-               result = strcmp(str1, str2);
-               DPRINTF("strcmp(%s, %s)(lStringT) = %d\n", str1, str2, result);
-               break;
-            case lHostT:
-               if (!(str1 = lGetPosHost(ep, cp->operand.cmp.pos))) {
-                  LERROR(LENULLSTRING);
-                  DPRINTF("lGetPosHost in lCompare\n");
-                  DRETURN(0);
-               }
-               if (!(str2 = cp->operand.cmp.val.host)) {
-                  DPRINTF("cp->operand.cmp.val.host in lCompare\n");
-                  LERROR(LENULLSTRING);
-                  DRETURN(0);
-               }
-               result = strcmp(str1, str2);
-               DPRINTF("strcmp(%s, %s)(lhostT) = %d\n", str1, str2, result);
-               break;
-
-            case lUlongT:
-               result = ulongcmp(lGetPosUlong(ep, cp->operand.cmp.pos),
-                                 cp->operand.cmp.val.ul);
-               break;
-            case lUlong64T:
-               result = ulong64cmp(lGetPosUlong64(ep, cp->operand.cmp.pos),
-                                   cp->operand.cmp.val.ul64);
-               break;
-            case lListT:
-               result = (lFindFirstRW(lGetPosList(ep, cp->operand.cmp.pos),
-                                      cp->operand.cmp.val.cp) != nullptr);
-               DRETURN(result);
-            case lDoubleT:
-               result = doublecmp(lGetPosDouble(ep, cp->operand.cmp.pos),
-                                  cp->operand.cmp.val.db);
-               break;
-            case lLongT:
-               result = longcmp(lGetPosLong(ep, cp->operand.cmp.pos),
-                                cp->operand.cmp.val.l);
-               break;
-            case lBoolT:
-               result = boolcmp(lGetPosBool(ep, cp->operand.cmp.pos),
-                                cp->operand.cmp.val.b);
-               break;
-            case lRefT:
-               result = refcmp(lGetPosRef(ep, cp->operand.cmp.pos),
-                               cp->operand.cmp.val.ref);
-               break;
-            default:
-               unknownType("lCompare");
-               DRETURN(0);
-         }
-
-         switch (cp->op) {
-            case EQUAL:
-               result = (result == 0);
-               break;
-            case NOT_EQUAL:
-               result = (result != 0);
-               break;
-            case LOWER_EQUAL:
-               result = (result == -1 || result == 0);
-               break;
-            case LOWER:
-               result = (result == -1);
-               break;
-            case GREATER_EQUAL:
-               result = (result == 1 || result == 0);
-               break;
-            case GREATER:
-               result = (result == 1);
-               break;
-            default:
-               LERROR(LEOPUNKNOWN);
-               DRETURN(0);
-         }
-         break;
-
-      case STRCASECMP:
-      case HOSTNAMECMP:
-         if ((mt_get_type(cp->operand.cmp.mt) != lStringT) && (mt_get_type(cp->operand.cmp.mt) != lHostT)) {
-            unknownType("lCompare");
-            DRETURN(0);
-         }
-
-         if (mt_get_type(cp->operand.cmp.mt) == lStringT) {
-            str1 = lGetPosString(ep, cp->operand.cmp.pos);
-         } else {
-            str1 = lGetPosHost(ep, cp->operand.cmp.pos);
-         }
-         if (str1 == nullptr) {
-            LERROR(LENULLSTRING);
-            DPRINTF("lGetPosString in lCompare\n");
-            DRETURN(0);
-         }
-
-         if (!(str2 = cp->operand.cmp.val.str)) {
-            DPRINTF("cp->operand.cmp.val.str in lCompare\n");
-            LERROR(LENULLSTRING);
-            DRETURN(0);
-         }
-
-         if (cp->op == STRCASECMP) {
-            result = SGE_STRCASECMP(str1, str2);
-         } else {
-            result = sge_hostcmp(str1, str2);
-         }
-         result = (result == 0);
-         break;
-
-      case PATTERNCMP:
-         if ((mt_get_type(cp->operand.cmp.mt) != lStringT) && (mt_get_type(cp->operand.cmp.mt) != lHostT)) {
-            unknownType("lCompare");
-            DRETURN(0);
-         }
-
-         if (mt_get_type(cp->operand.cmp.mt) == lStringT) {
-            if (!(str1 = lGetPosString(ep, cp->operand.cmp.pos))) {
-               str1 = "";
-            }
-
-            if (!(str2 = cp->operand.cmp.val.str)) {
-               DPRINTF("cp->operand.cmp.val.str in lCompare\n");
-               LERROR(LENULLSTRING);
-               DRETURN(0);
-            }
-         } else {
-            if (!(str1 = lGetPosHost(ep, cp->operand.cmp.pos))) {
-               str1 = "";
-            }
-
-            if (!(str2 = cp->operand.cmp.val.host)) {
-               DPRINTF("cp->operand.cmp.val.host in lCompare\n");
-               LERROR(LENULLSTRING);
-               DRETURN(0);
-            }
-         }
-
-         result = !fnmatch(str2, str1, 0);
-         break;
-
-
-      case BITMASK:
-         if (mt_get_type(cp->operand.cmp.mt) != lUlongT) {
-            unknownType("lCompare");
-            DRETURN(0);
-         }
-         result = bitmaskcmp(lGetPosUlong(ep, cp->operand.cmp.pos),
-                             cp->operand.cmp.val.ul);
-         break;
-
-      case AND:
-         if (!lCompare(ep, cp->operand.log.first)) {
-            result = 0;
-            break;
-         }
-         result = lCompare(ep, cp->operand.log.second);
-         break;
-
-      case OR:
-         if (lCompare(ep, cp->operand.log.first)) {
-            result = 1;
-            break;
-         }
-         result = lCompare(ep, cp->operand.log.second);
-         break;
-
-      case NEG:
-         result = !lCompare(ep, cp->operand.log.first);
-         break;
-
-      default:
-         DPRINTF("lCompare(): unknown operator %d\n", cp->op);
-         exit(-1);
-   }
-   DRETURN(result);
+   return 0;
 }
 
 /**
@@ -1288,92 +776,10 @@ int lCompare(const lListElem *ep, const lCondition *cp) {
  * @return Copy of 'cp'
  */
 lCondition *lCopyWhere(const lCondition *cp) {
-   DENTER(CULL_LAYER);
-
-   lCondition *new_cond = nullptr;
-
-   if (!cp) {
-      DRETURN(nullptr);
+   try {
+      return ocs::tom::copy_where(cp);
+   } catch (const ocs::tom::ListCoreError &e) {
+      LERROR(e.lerrno());
    }
-
-   if (!(new_cond = (lCondition *) calloc(1, sizeof(lCondition)))) {
-      LERROR(LEMALLOC);
-      DRETURN(nullptr);
-   }
-
-   new_cond->op = cp->op;
-
-   switch (cp->op) {
-      case EQUAL:
-      case NOT_EQUAL:
-      case LOWER_EQUAL:
-      case LOWER:
-      case GREATER_EQUAL:
-      case GREATER:
-      case BITMASK:
-      case STRCASECMP:
-      case HOSTNAMECMP:
-      case PATTERNCMP:
-         new_cond->operand.cmp.pos = cp->operand.cmp.pos;
-         new_cond->operand.cmp.mt = cp->operand.cmp.mt;
-         new_cond->operand.cmp.nm = cp->operand.cmp.nm;
-
-         switch (mt_get_type(cp->operand.cmp.mt)) {
-            case lIntT:
-               new_cond->operand.cmp.val.i = cp->operand.cmp.val.i;
-               break;
-            case lUlongT:
-               new_cond->operand.cmp.val.ul = cp->operand.cmp.val.ul;
-               break;
-            case lUlong64T:
-               new_cond->operand.cmp.val.ul64 = cp->operand.cmp.val.ul64;
-               break;
-            case lStringT:
-               new_cond->operand.cmp.val.str = strdup(cp->operand.cmp.val.str);
-               break;
-            case lHostT:
-               new_cond->operand.cmp.val.host = strdup(cp->operand.cmp.val.host);
-               break;
-            case lListT:
-               break;
-            case lObjectT:
-               break;
-            case lDoubleT:
-               new_cond->operand.cmp.val.db = cp->operand.cmp.val.db;
-               break;
-            case lLongT:
-               new_cond->operand.cmp.val.l = cp->operand.cmp.val.l;
-               break;
-            case lBoolT:
-               new_cond->operand.cmp.val.b = cp->operand.cmp.val.b;
-               break;
-            case lRefT:
-               break;
-            default:
-               unknownType("lCopyWhere");
-               lFreeWhere(&new_cond);
-               DRETURN(nullptr);
-         }
-      case SUBSCOPE:
-         if (mt_get_type(cp->operand.cmp.mt) == lListT) {
-            new_cond->operand.cmp.pos = cp->operand.cmp.pos;
-            new_cond->operand.cmp.mt = cp->operand.cmp.mt;
-            new_cond->operand.cmp.nm = cp->operand.cmp.nm;
-            new_cond->operand.cmp.val.cp = lCopyWhere(cp->operand.cmp.val.cp);
-         }
-         break;
-      case AND:
-      case OR:
-         new_cond->operand.log.second = lCopyWhere(cp->operand.log.second);
-      case NEG:
-         new_cond->operand.log.first = lCopyWhere(cp->operand.log.first);
-         break;
-
-      default:
-         LERROR(LEOPUNKNOWN);
-         lFreeWhere(&new_cond);
-         DRETURN(nullptr);
-   }
-
-   DRETURN(new_cond);
+   return nullptr;
 }

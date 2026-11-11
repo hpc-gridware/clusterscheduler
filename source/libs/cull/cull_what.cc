@@ -35,9 +35,9 @@
 /** @file
  * @brief Building and applying field selections (`lWhat`)
  */
-#include <algorithm>
 #include <cstdarg>
 #include <cstring>
+#include <vector>
 
 /* do not compile in monitoring code */
 #ifndef NO_SGE_COMPILE_DEBUG
@@ -54,6 +54,9 @@
 #include "cull/cull_whatP.h"
 #include "cull/cull_lerrnoP.h"
 #include "cull/ocs_cull_descr.h"
+#include "tom/ocs_FieldException.h"
+#include "tom/ocs_ListCore.h"
+#include "tom/ocs_SelectCore.h"
 
 static lEnumeration *subscope_lWhat(cull_parse_state *state, va_list *app);
 
@@ -209,54 +212,6 @@ bool ocs_cull_what_fits(const lEnumeration *enp, const lDescr *dp) {
 }
 
 /**
- * @brief Bring the fields of a selection into the order of the descriptor
- *
- * A selection is normalised to the field order of the descriptor it was built
- * against, so two selections of the same fields yield the same partial
- * descriptor, whatever order they were written in, and the descriptor
- * registry can share it. A field selected more than once is kept once, with
- * the first sub-selection given for it (N-B-5); the wire then lists every field
- * once and in type order (N-B-8). The special selections ALL and NONE are left
- * alone.
- *
- * @param ep the selection, terminated by #NoName; may be nullptr
- */
-static void ocs_what_sort_by_pos(lEnumeration *ep) {
-   if (ep == nullptr || ep[0].pos < 0) {
-      return;
-   }
-   int n = 0;
-   while (ep[n].nm != NoName) {
-      n++;
-   }
-   std::stable_sort(ep, ep + n, [](const lEnumeration &a, const lEnumeration &b) { return a.pos < b.pos; });
-   int m = 0;
-   for (int i = 0; i < n; i++) {
-      if (m > 0 && ep[i].pos == ep[m - 1].pos) {
-         if (ep[m - 1].ep == nullptr) {
-            ep[m - 1].ep = ep[i].ep;
-         } else {
-            lFreeWhat(&(ep[i].ep));
-         }
-         continue;
-      }
-      if (m != i) {
-         ep[m].pos = ep[i].pos;
-         ep[m].mt = ep[i].mt;
-         ep[m].nm = ep[i].nm;
-         ep[m].ep = ep[i].ep;
-      }
-      m++;
-   }
-   if (m != n) {
-      ep[m].pos = ep[n].pos;
-      ep[m].mt = ep[n].mt;
-      ep[m].nm = ep[n].nm;
-      ep[m].ep = ep[n].ep;
-   }
-}
-
-/**
  * @brief Build a field selection from a format and a field list
  *
  * The flat counterpart of #lWhat, behind lIntVector2What(): the format
@@ -268,14 +223,16 @@ static void ocs_what_sort_by_pos(lEnumeration *ep) {
  * @param nm_list the selected field names
  * @param nr_nm how many entries @p nm_list holds
  * @return the selection, to be released with #lFreeWhat, or nullptr on error
+ *
+ * @note A thin wrapper over ocs::tom::make_what(); the format is parsed here.
+ * @see Typed form: ocs::tom::what<T>(fields)
  */
 lEnumeration *_lWhat(const char *fmt, const lDescr *dp,
                      const int *nm_list, int nr_nm) {
    DENTER(CULL_LAYER);
 
-   int i, n;
+   int n;
    const char *s;
-   lEnumeration *ep = nullptr;
    int error_status;
    cull_parse_state state;
 
@@ -283,7 +240,7 @@ lEnumeration *_lWhat(const char *fmt, const lDescr *dp,
       error_status = LENOFORMATSTR;
       goto error;
    }
-   /* how many fields are selected (for malloc) */
+   /* how many fields are selected */
    for (n = 0, s = fmt; *s; s++)
       if (*s == '%')
          n++;
@@ -308,82 +265,59 @@ lEnumeration *_lWhat(const char *fmt, const lDescr *dp,
    }
    eat_token(&state);                 /* eat ( */
 
-   /* Nr of fields to malloc */
-   /* for CULL_ALL and NONE we need one lEnumeration struct */
-   if (n > 1)
-      n--;
-   if (!(ep = (lEnumeration *) calloc((n + 1), sizeof(lEnumeration)))) {
-      error_status = LEMALLOC;
-      goto error;
-   }
-
    /* Special cases CULL_ALL fields are selected or NONE is selected */
-   /* Normally the arguments nm_list and nr_nm should be nullptr(0)     */
    switch (scan(nullptr, &state)) {
-
       case CULL_ALL:
-         ep[0].pos = WHAT_ALL;
-         ep[0].nm = -99;
-         ep[0].mt = -99;
-         ep[0].ep = nullptr;
-         eat_token(&state);
-         ep[1].pos = 0;
-         ep[1].nm = NoName;
-         ep[1].mt = lEndT;
-         ep[1].ep = nullptr;
-         DRETURN(ep);
-
       case CULL_NONE:
-         ep[0].pos = WHAT_NONE;
-         ep[0].nm = -99;
-         ep[0].mt = -99;
-         ep[0].ep = nullptr;
-         eat_token(&state);
-         ep[1].pos = 0;
-         ep[1].nm = NoName;
-         ep[1].mt = lEndT;
-         ep[1].ep = nullptr;
-         DRETURN(ep);
+         try {
+            const int pos = scan(nullptr, &state) == CULL_ALL ? WHAT_ALL : WHAT_NONE;
+            eat_token(&state);
+            DRETURN(ocs::tom::make_what_special(pos));
+         } catch (const ocs::tom::ListCoreError &e) {
+            error_status = e.lerrno();
+            goto error;
+         }
 
       default:
          break;
    }
 
-   for (i = 0; i < n; i++) {
-
-      ep[i].nm = nm_list[i];
-      if ((ep[i].pos = lGetPosInDescr(dp, ep[i].nm)) < 0) {
-         error_status = LENAMENOT;
-         goto error;
+   {
+      /* for an empty field list "%T()" the one entry read is the NoName terminating it, as before */
+      if (n > 1) {
+         n--;
       }
-      ep[i].mt = dp[ep[i].pos].mt & ~CULL_DESCR_INTERNED;
-      ep[i].ep = nullptr;
-
-      if (scan(nullptr, &state) != FIELD) {
+      std::vector<ocs::tom::WhatEntry> entries;
+      entries.reserve(n);
+      for (int i = 0; i < n; i++) {
+         entries.push_back({nm_list[i], nullptr});
+         if (lGetPosInDescr(dp, nm_list[i]) < 0) {
+            error_status = LENAMENOT;
+            goto error;
+         }
+         if (scan(nullptr, &state) != FIELD) {
+            error_status = LESYNTAX;
+            goto error;
+         }
+         eat_token(&state);
+      }
+      if (scan(nullptr, &state) != KET) {
          error_status = LESYNTAX;
          goto error;
       }
-      eat_token(&state);
+      eat_token(&state);                 /* eat ) */
 
+      try {
+         DRETURN(ocs::tom::make_what(dp, entries));
+      } catch (const ocs::tom::FieldException &) {
+         error_status = dp == nullptr ? LEDESCRNULL : LENAMENOT;
+      } catch (const ocs::tom::ListCoreError &e) {
+         error_status = e.lerrno();
+      }
    }
-
-   ep[n].pos = 0;
-   ep[n].nm = NoName;
-   ep[n].mt = lEndT;
-   ep[n].ep = nullptr;
-
-   if (scan(nullptr, &state) != KET) {
-      error_status = LESYNTAX;
-      goto error;
-   }
-   eat_token(&state);                 /* eat ) */
-
-   ocs_what_sort_by_pos(ep);
-   DRETURN(ep);
 
    error:
    LERROR(error_status);
-   lFreeWhat(&ep);
    DPRINTF("error_status = %d\n", error_status);
    DRETURN(nullptr);
 }
@@ -399,6 +333,10 @@ lEnumeration *_lWhat(const char *fmt, const lDescr *dp,
  *
  * @note "%I" is equivalent with "%I->%T(ALL)"
  *       "" is NOT equivalent with "%I->%T(NONE)"
+ *
+ * @note A thin wrapper over ocs::tom::make_what() and ocs::tom::make_what_special(); the format is parsed here.
+ *       A field the type does not hold gives nullptr with LENAMENOT; before, it left an entry uninitialised.
+ * @see Typed form: ocs::tom::what<F...>(), What<T>::with<F>(), ocs::tom::what_all<T>()
  */
 lEnumeration *lWhat(const char *fmt, ...) {
    DENTER(CULL_LAYER);
@@ -432,15 +370,21 @@ lEnumeration *lWhat(const char *fmt, ...) {
    DRETURN(enumeration);
 }
 
+/**
+ * @brief Parse one level of an lWhat() format and build its selection through the core
+ *
+ * Reads `%T(` with the descriptor, then `ALL`, `NONE` or the fields, each
+ * optionally followed by `->` and a nested level, then `)`.
+ *
+ * @param state the scanner state, at `%T`
+ * @param app the variable arguments, at the descriptor of this level
+ * @return the selection, or nullptr with the error number set
+ */
 static lEnumeration *subscope_lWhat(cull_parse_state *state, va_list *app) {
    DENTER(CULL_LAYER);
 
    const lDescr *dp = nullptr;
-   lEnumeration *enumeration = nullptr;
    int token;
-   lEnumeration ep[1000];
-   int next_id = 0;
-   int i;
 
    if (scan(nullptr, state) != TYPE) {
       LERROR(LESYNTAX);
@@ -460,83 +404,61 @@ static lEnumeration *subscope_lWhat(cull_parse_state *state, va_list *app) {
 
    token = scan(nullptr, state);
 
-   if (token == CULL_ALL) {
-      ep[next_id].pos = WHAT_ALL;
-      ep[next_id].nm = -99;
-      ep[next_id].mt = -99;
-      ep[next_id].ep = nullptr;
-      next_id++;
+   if (token == CULL_ALL || token == CULL_NONE) {
       eat_token(state);
-   } else if (token == CULL_NONE) {
-      ep[next_id].pos = WHAT_NONE;
-      ep[next_id].nm = -99;
-      ep[next_id].mt = -99;
-      ep[next_id].ep = nullptr;
-      next_id++;
-      eat_token(state);
-   } else {
-      do {
-         int nm;
-
-         if (token != FIELD) {
-            LERROR(LESYNTAX);
-            DRETURN(nullptr);
-         }
-         eat_token(state);                 /* eat %I */
-
-         /* find field in current descriptor */
-         nm = va_arg(*app, int);
-         for (i = 0; dp[i].nm != NoName; i++) {
-            if (dp[i].nm == nm) {
-               ep[next_id].pos = i;
-               ep[next_id].nm = nm;
-               ep[next_id].mt = dp[i].mt & ~CULL_DESCR_INTERNED;
-               break;
-            }
-         }
-
-         token = scan(nullptr, state);
-         if (token == SUBSCOPE) {
-            eat_token(state);                 /* eat -> */
-            ep[next_id].ep = subscope_lWhat(state, app);
-            token = scan(nullptr, state);
-         } else {
-            ep[next_id].ep = nullptr;
-         }
-         next_id++;
-
-      } while (token == FIELD);
+      if (scan(nullptr, state) != KET) {
+         LERROR(LESYNTAX);
+         DRETURN(nullptr);
+      }
+      eat_token(state);                 /* eat ) */
+      try {
+         DRETURN(ocs::tom::make_what_special(token == CULL_ALL ? WHAT_ALL : WHAT_NONE));
+      } catch (const ocs::tom::ListCoreError &e) {
+         LERROR(e.lerrno());
+         DRETURN(nullptr);
+      }
    }
 
-   /* add last element */
-   ep[next_id].pos = 0;
-   ep[next_id].nm = NoName;
-   ep[next_id].mt = lEndT;
-   ep[next_id].ep = nullptr;
-   next_id++;
+   // the sub-selections are owned by the entries until the core takes them over
+   std::vector<ocs::tom::WhatEntry> entries;
+   const auto free_entries = [&entries]() {
+      for (ocs::tom::WhatEntry &entry : entries) {
+         lFreeWhat(&entry.sub);
+      }
+   };
+   do {
+      if (token != FIELD) {
+         free_entries();
+         LERROR(LESYNTAX);
+         DRETURN(nullptr);
+      }
+      eat_token(state);                 /* eat %I */
+      entries.push_back({va_arg(*app, int), nullptr});
+
+      token = scan(nullptr, state);
+      if (token == SUBSCOPE) {
+         eat_token(state);                 /* eat -> */
+         entries.back().sub = subscope_lWhat(state, app);
+         token = scan(nullptr, state);
+      }
+   } while (token == FIELD);
 
    if (scan(nullptr, state) != KET) {
+      free_entries();
       LERROR(LESYNTAX);
       DRETURN(nullptr);
    }
    eat_token(state);                 /* eat ) */
 
-   /* make copy of local data */
-   enumeration = (lEnumeration *) calloc(next_id, sizeof(lEnumeration));
-   if (enumeration == nullptr) {
-      LERROR(LEMALLOC);
-      DRETURN(nullptr);
+   try {
+      DRETURN(ocs::tom::make_what(dp, entries));
+   } catch (const ocs::tom::FieldException &) {
+      // a field the type does not hold; before, it left an entry of the selection uninitialised
+      LERROR(LENAMENOT);
+   } catch (const ocs::tom::ListCoreError &e) {
+      LERROR(e.lerrno());
    }
-
-   for (i = 0; i < next_id; i++) {
-      enumeration[i].pos = ep[i].pos;
-      enumeration[i].nm = ep[i].nm;
-      enumeration[i].mt = ep[i].mt;
-      enumeration[i].ep = ep[i].ep;
-   }
-   ocs_what_sort_by_pos(enumeration);
-
-   DRETURN(enumeration);
+   DRETURN(nullptr);
 }
 
 /**
@@ -548,33 +470,17 @@ static lEnumeration *subscope_lWhat(cull_parse_state *state, va_list *app) {
  * needed anyway, it is available from the list itself.
  *
  * @return enumeration
+ *
+ * @note A thin wrapper over ocs::tom::make_what_special().
+ * @see Typed form: ocs::tom::what_all<T>()
  */
 lEnumeration *lWhatAll() {
-   DENTER(CULL_LAYER);
-
-   lEnumeration *ep;
-   int error_status;
-
-   if (!(ep = (lEnumeration *) calloc(2, sizeof(lEnumeration)))) {
-      error_status = LEMALLOC;
-      goto error;
+   try {
+      return ocs::tom::make_what_special(WHAT_ALL);
+   } catch (const ocs::tom::ListCoreError &e) {
+      LERROR(e.lerrno());
    }
-
-   ep[0].pos = WHAT_ALL;
-   ep[0].nm = -99;
-   ep[0].mt = -99;
-   ep[0].ep = nullptr;
-   ep[1].pos = 0;
-   ep[1].nm = NoName;
-   ep[1].mt = lEndT;
-   ep[1].ep = nullptr;
-
-   DRETURN(ep);
-
-   error:
-   LERROR(error_status);
-   DPRINTF("error_status = %d\n", error_status);
-   DRETURN(nullptr);
+   return nullptr;
 }
 
 /**
@@ -585,22 +491,9 @@ lEnumeration *lWhatAll() {
  * @param ep enumeration, will be set to nullptr
  */
 void lFreeWhat(lEnumeration **ep) {
-   DENTER(CULL_LAYER);
-
-   int i;
-
-   if (ep == nullptr || *ep == nullptr) {
-      DRETURN_VOID;
+   if (ep != nullptr) {
+      ocs::tom::free_what(*ep);
    }
-   for (i = 0; mt_get_type((*ep)[i].mt) != lEndT; i++) {
-      if ((*ep)[i].ep != nullptr) {
-         lFreeWhat(&((*ep)[i].ep));
-      }
-   }
-   ocs_cull_descr_release(&((*ep)[0].cache_dp));
-   ocs_cull_descr_release(&((*ep)[0].cache_src));
-   sge_free(ep);
-   DRETURN_VOID;
 }
 
 /**
@@ -653,31 +546,14 @@ int lCountWhat(const lEnumeration *enp, const lDescr *dp) {
  * @return new copy of enumeration
  */
 lEnumeration *lCopyWhat(const lEnumeration *ep) {
-   DENTER(CULL_LAYER);
-
-   int i, n;
-   lEnumeration *copy = nullptr;
-
-   if (!ep) {
+   try {
+      return ocs::tom::copy_what(ep);
+   } catch (const ocs::tom::FieldException &) {
       LERROR(LEENUMNULL);
-      DRETURN(nullptr);
+   } catch (const ocs::tom::ListCoreError &e) {
+      LERROR(e.lerrno());
    }
-
-   for (n = 0; mt_get_type(ep[n].mt) != lEndT; n++);
-
-   if (!(copy = (lEnumeration *) calloc((n + 1), sizeof(lEnumeration)))) {
-      LERROR(LEMALLOC);
-      DRETURN(nullptr);
-   }
-
-   for (i = 0; i <= n; i++) {
-      copy[i].pos = ep[i].pos;
-      copy[i].nm = ep[i].nm;
-      copy[i].mt = ep[i].mt;
-      copy[i].ep = lCopyWhat(ep[i].ep);
-   }
-
-   DRETURN(copy);
+   return nullptr;
 }
 
 /**
@@ -689,6 +565,9 @@ lEnumeration *lCopyWhat(const lEnumeration *ep) {
  * @param intv the selected field names, terminated by #NoName
  *
  * @return enumeration
+ *
+ * @note Built through _lWhat() and so through ocs::tom::make_what().
+ * @see Typed form: ocs::tom::what<T>(fields)
  */
 lEnumeration *lIntVector2What(const lDescr *dp, const int intv[]) {
    DENTER(CULL_LAYER);
@@ -827,7 +706,7 @@ int lMergeWhat(lEnumeration **what1, lEnumeration **what2) {
             (*what1)[i].mt = tmp_result[i].mt;
             (*what1)[i].ep = tmp_result[i].ep;
          }
-         ocs_what_sort_by_pos(*what1);
+         ocs::tom::sort_what_by_pos(*what1);
       } else {
          LERROR(LEMALLOC);
          DTRACE;

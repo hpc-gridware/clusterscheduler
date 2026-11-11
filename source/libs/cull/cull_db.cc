@@ -56,6 +56,10 @@
 #include "cull/cull_whatP.h"
 #include "cull/cull_multitypeP.h"
 #include "tom/ocs_ElementCore.h"
+#include "tom/ocs_FieldException.h"
+#include "tom/ocs_ListCore.h"
+#include "tom/ocs_SelectCore.h"
+#include "tom/ocs_SoftPath.h"
 #include "cull/cull_lerrnoP.h"
 #include "cull/ocs_cull_descr.h"
 #include "cull/cull_hash.h"
@@ -132,6 +136,9 @@ int lSplit(lList **slp, lList **ulp, const char *ulp_name,
  * @param cp selects rows
  *
  * @return List with the remaining elements
+ *
+ * @note Evaluates the condition through lCompare() and so through ocs::tom::compare().
+ * @see Typed form: ocs::tom::List<T>::remove_if(), with the condition negated
  */
 lList *lSelectDestroy(lList *slp, const lCondition *cp) {
    DENTER(CULL_LAYER);
@@ -159,6 +166,8 @@ lList *lSelectDestroy(lList *slp, const lCondition *cp) {
  *                         #CULL_NO_TRANSFER fields must not be taken over
  *
  * @return list containing the extracted elements
+ *
+ * @note Without a pack buffer and with a selection a thin wrapper over ocs::tom::select_elem().
  */
 lListElem *
 lSelectElemPack(const lListElem *slp, const lCondition *cp,
@@ -171,14 +180,25 @@ lSelectElemPack(const lListElem *slp, const lCondition *cp,
    if (!slp) {
       DRETURN(nullptr);
    }
-   if (enp != nullptr) {
+   if (enp != nullptr && pb == nullptr) {
+      if (!lCompare(slp, cp)) {
+         DRETURN(nullptr);
+      }
+      try {
+         new_ep = ocs::tom::select_elem(slp, enp, isHash, skip_no_transfer);
+      } catch (const ocs::tom::FieldException &) {
+         LERROR(LEELEMNULL);
+      } catch (const ocs::tom::ListCoreError &e) {
+         LERROR(e.lerrno());
+      }
+   } else if (enp != nullptr) {
       /* the shared partial descriptor, cached in the selection */
       bool owned;
       const lDescr *dp = ocs_cull_what_descr(enp, slp->descr, &owned);
       if (dp == nullptr) {
          DRETURN(nullptr);
       }
-      /* create reduced element; it takes a reference of its own */
+      /* pack the reduced element */
       new_ep = lSelectElemDPack(slp, cp, dp, enp, isHash, pb, skip_no_transfer);
       if (owned) {
          ocs_cull_descr_release(&dp);
@@ -260,6 +280,9 @@ lSelectElemDPack(const lListElem *slp, const lCondition *cp, const lDescr *dp,
  * @param enp selects columns
  *
  * @return list containing the extracted elements
+ *
+ * @note Built on lSelectHashPack() and so on ocs::tom::select_list().
+ * @see Typed form: ocs::tom::ConstList<T>::select()
  */
 lList *lSelect(const char *name, const lList *slp, const lCondition *cp,
                const lEnumeration *enp) {
@@ -283,6 +306,9 @@ lList *lSelect(const char *name, const lList *slp, const lCondition *cp,
  *                         #CULL_NO_TRANSFER fields must not be taken over
  *
  * @return list containing the extracted elements
+ *
+ * @note Without a pack buffer a thin wrapper over ocs::tom::select_list().
+ * @see Typed form: ocs::tom::ConstList<T>::select()
  */
 lList *lSelectHashPack(const char *name, const lList *slp,
                        const lCondition *cp, const lEnumeration *enp,
@@ -292,21 +318,26 @@ lList *lSelectHashPack(const char *name, const lList *slp,
    lList *ret = nullptr;
 
    if (slp == nullptr && pb == nullptr) {
+      ocs::tom::report_soft_path("lSelect", ocs::tom::SoftPathNoName, ocs::tom::SoftPathReason::NullList);
       DRETURN(nullptr);
    }
 
    if (enp != nullptr) {
       if (pb == nullptr) {
-         /* the shared partial descriptor, cached in the selection */
-         bool owned;
-         const lDescr *dp = ocs_cull_what_descr(enp, slp->descr, &owned);
-         if (dp == nullptr) {
+         try {
+            ret = ocs::tom::select_list(name, slp, cp, enp, isHash, skip_no_transfer);
+         } catch (const ocs::tom::FieldException &) {
+            // a null list: nothing to select from
+            ocs::tom::report_soft_path("lSelect", ocs::tom::SoftPathNoName, ocs::tom::SoftPathReason::NullList);
+            DRETURN(nullptr);
+         } catch (const ocs::tom::ListCoreError &e) {
+            LERROR(e.lerrno());
             DRETURN(nullptr);
          }
-         /* the new list takes a reference of its own */
-         ret = lSelectDPack(name, slp, cp, dp, enp, isHash, nullptr, skip_no_transfer);
-         if (owned) {
-            ocs_cull_descr_release(&dp);
+         /* an empty result of a list that may be hashed is no list, as it always was */
+         if (isHash && lGetNumberOfElem(ret) == 0) {
+            LERROR(LEGETNROFELEM);
+            lFreeList(&ret);
          }
       } else {
          const char *pack_name = "";

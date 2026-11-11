@@ -42,7 +42,8 @@ namespace ocs::tom {
       ForeignField,      ///< the field does not belong to the element's type
       NegativePosition,  ///< a position setter got a negative position
       NullArgument,      ///< a pointer argument other than the element is nullptr
-      BoundElement       ///< an object field was to take an element that is bound elsewhere
+      BoundElement,      ///< an object field was to take an element that is bound elsewhere
+      NullList           ///< a list operation got a null list
    };
 
    /** @brief Field number passed when the soft path concerns no particular field */

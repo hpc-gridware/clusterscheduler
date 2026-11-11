@@ -50,12 +50,44 @@ target_include_directories(test_tom_soft_path PRIVATE "./")
 target_link_libraries(test_tom_soft_path PRIVATE sgeobj cull comm commlists uti ${SGE_LIBS})
 add_test(NAME test_tom_soft_path COMMAND test_tom_soft_path)
 
-# TRT-02: sources that must not compile. Each is compiled with the flags of
+add_executable(test_tom_ops_list test_tom_ops_list.cc)
+target_include_directories(test_tom_ops_list PRIVATE "./")
+target_link_libraries(test_tom_ops_list PRIVATE sgeobj cull comm commlists uti ${SGE_LIBS})
+add_test(NAME test_tom_ops_list COMMAND test_tom_ops_list)
+
+add_executable(test_tom_ops_own test_tom_ops_own.cc)
+target_include_directories(test_tom_ops_own PRIVATE "./")
+target_link_libraries(test_tom_ops_own PRIVATE sgeobj cull comm commlists uti ${SGE_LIBS})
+add_test(NAME test_tom_ops_own COMMAND test_tom_ops_own)
+
+add_executable(test_tom_ops_lookup test_tom_ops_lookup.cc)
+target_include_directories(test_tom_ops_lookup PRIVATE "./")
+target_link_libraries(test_tom_ops_lookup PRIVATE sgeobj cull comm commlists uti ${SGE_LIBS})
+add_test(NAME test_tom_ops_lookup COMMAND test_tom_ops_lookup)
+
+add_executable(test_tom_ops_keyed test_tom_ops_keyed.cc)
+target_include_directories(test_tom_ops_keyed PRIVATE "./")
+target_link_libraries(test_tom_ops_keyed PRIVATE sgeobj cull comm commlists uti ${SGE_LIBS})
+add_test(NAME test_tom_ops_keyed COMMAND test_tom_ops_keyed)
+
+add_executable(test_tom_ops_incr test_tom_ops_incr.cc)
+target_include_directories(test_tom_ops_incr PRIVATE "./")
+target_link_libraries(test_tom_ops_incr PRIVATE sgeobj cull comm commlists uti ${SGE_LIBS})
+add_test(NAME test_tom_ops_incr COMMAND test_tom_ops_incr)
+
+add_executable(test_tom_ops_select test_tom_ops_select.cc)
+target_include_directories(test_tom_ops_select PRIVATE "./")
+target_link_libraries(test_tom_ops_select PRIVATE sgeobj cull comm commlists uti ${SGE_LIBS})
+add_test(NAME test_tom_ops_select COMMAND test_tom_ops_select)
+
+# TRT-02 and WHT-01: sources that must not compile. Each is compiled with the flags of
 # test_tom_handles as part of the build, which fails if one compiles or fails
 # with another error than the one it names; test_tom_handles holds the correct
 # counterpart of each.
 string(TOUPPER "${CMAKE_BUILD_TYPE}" build_type_upper)
-foreach (name string_into_number job_field_on_queue raw_pointer_assigned setter_on_const const_to_mutable_pointer)
+foreach (name string_into_number job_field_on_queue raw_pointer_assigned setter_on_const const_to_mutable_pointer
+               what_two_types what_nested_not_a_list where_foreign_field where_number_with_string
+               where_nested_not_a_list)
    set(stamp ${CMAKE_CURRENT_BINARY_DIR}/compile_fail_${name}.stamp)
    add_custom_command(OUTPUT ${stamp}
            COMMAND ${CMAKE_COMMAND}
@@ -73,6 +105,17 @@ foreach (name string_into_number job_field_on_queue raw_pointer_assigned setter_
    add_custom_target(test_tom_compile_fail_${name} ALL DEPENDS ${stamp})
 endforeach ()
 
+# N-L-1: the core calls no function of the old interface; checked on every build
+file(GLOB tom_core_sources "${CMAKE_SOURCE_DIR}/source/libs/tom/*.h" "${CMAKE_SOURCE_DIR}/source/libs/tom/*.cc")
+set(core_calls_stamp ${CMAKE_CURRENT_BINARY_DIR}/check_core_calls.stamp)
+add_custom_command(OUTPUT ${core_calls_stamp}
+        COMMAND ${CMAKE_COMMAND} -DTOM_DIR=${CMAKE_SOURCE_DIR}/source/libs/tom -DSTAMP=${core_calls_stamp}
+                -P ${CMAKE_CURRENT_SOURCE_DIR}/check_core_calls.cmake
+        DEPENDS ${tom_core_sources} check_core_calls.cmake
+        COMMENT "Checking that the core of the typed object model calls no function of the old interface"
+        VERBATIM)
+add_custom_target(test_tom_core_calls ALL DEPENDS ${core_calls_stamp})
+
 if (INSTALL_SGE_TEST)
    install(TARGETS test_tom_traits DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_tom_handles DESTINATION testbin/${SGE_ARCH})
@@ -80,4 +123,10 @@ if (INSTALL_SGE_TEST)
    install(TARGETS test_tom_legacy DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_tom_unique DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_tom_soft_path DESTINATION testbin/${SGE_ARCH})
+   install(TARGETS test_tom_ops_list DESTINATION testbin/${SGE_ARCH})
+   install(TARGETS test_tom_ops_own DESTINATION testbin/${SGE_ARCH})
+   install(TARGETS test_tom_ops_lookup DESTINATION testbin/${SGE_ARCH})
+   install(TARGETS test_tom_ops_keyed DESTINATION testbin/${SGE_ARCH})
+   install(TARGETS test_tom_ops_incr DESTINATION testbin/${SGE_ARCH})
+   install(TARGETS test_tom_ops_select DESTINATION testbin/${SGE_ARCH})
 endif ()

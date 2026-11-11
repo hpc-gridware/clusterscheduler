@@ -95,6 +95,22 @@ namespace ocs::tom {
          case FieldException::Reason::DuplicateKey:
             message = "duplicate key in unique field " + field_name(nm) + " of type " + type_name(descr);
             break;
+         case FieldException::Reason::ForeignList:
+            message = "an element of type " + type_name(descr) + " is not in the list the operation was called on";
+            break;
+         case FieldException::Reason::NullList:
+            message = "a list operation got a null list";
+            break;
+         case FieldException::Reason::NullDescriptor:
+            message = "an element or a list is to be created without a descriptor";
+            break;
+         case FieldException::Reason::NullKey:
+            message = "an element of type " + type_name(descr) + " is to be added or removed by a null key in field " +
+                      field_name(nm);
+            break;
+         case FieldException::Reason::BoundElement:
+            message = "an element of type " + type_name(descr) + " to be added is bound in a list or an object already";
+            break;
       }
       throw FieldException(reason, nm, message);
    }

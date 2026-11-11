@@ -94,7 +94,11 @@ namespace ocs::tom {
       }
 
       /**
-       * @brief The next element of a list with a key in a field, through the old lookup
+       * @brief The next element of a list with a key in a field, through the lookup of the core
+       *
+       * Called only after lookup_first() found an element, which checked the
+       * field; a null iterator gives no element.
+       *
        * @tparam F the field number
        * @param lp the list
        * @param key the key
@@ -104,14 +108,15 @@ namespace ocs::tom {
       template <auto F>
       inline lListElem *lookup_next(const lList *lp, const KeyOf<F> key, const void **iterator) {
          constexpr FieldType type = FieldTraits<F>::type;
+         constexpr int pos = FieldTraits<F>::pos;
          if constexpr (type == FieldType::Uint32) {
-            return lGetElemUlongNextRW(lp, F, key, iterator);
+            return lookup_next_ulong(lp, pos, key, iterator);
          } else if constexpr (type == FieldType::Uint64) {
-            return lGetElemUlong64NextRW(lp, F, key, iterator);
+            return lookup_next_ulong64(lp, pos, key, iterator);
          } else if constexpr (type == FieldType::String) {
-            return lGetElemStrNextRW(lp, F, key, iterator);
+            return lookup_next_str(lp, pos, key, iterator);
          } else {
-            return lGetElemHostNextRW(lp, F, key.c_str(), iterator);
+            return lookup_next_host(lp, pos, key.c_str(), iterator);
          }
       }
 
@@ -368,7 +373,7 @@ namespace ocs::tom {
       }
 
       /**
-       * @brief The number of elements
+       * @brief The number of elements, as std::list::size() and lGetNumberOfElem() give it
        * @return the number, 0 for an empty handle
        */
       [[nodiscard]] std::size_t size() const noexcept {
@@ -384,7 +389,7 @@ namespace ocs::tom {
       }
 
       /**
-       * @brief The first element
+       * @brief The first element, for range-for; steps as lFirst() and lNext() do
        * @return the iterator
        */
       [[nodiscard]] const_iterator begin() const noexcept {
@@ -400,7 +405,54 @@ namespace ocs::tom {
       }
 
       /**
-       * @brief The first element with a key in a field
+       * @brief The first element, as std::list::front() and lFirst() give it
+       * @return the element, or an empty handle for an empty list or an empty handle
+       */
+      [[nodiscard]] ConstElement<T> front() const noexcept {
+         return ConstElement<T>::from_typed(lp_ != nullptr ? lp_->first : nullptr);
+      }
+
+      /**
+       * @brief The last element, as std::list::back() and lLast() give it
+       * @return the element, or an empty handle for an empty list or an empty handle
+       */
+      [[nodiscard]] ConstElement<T> back() const noexcept {
+         return ConstElement<T>::from_typed(lp_ != nullptr ? lp_->last : nullptr);
+      }
+
+      /**
+       * @brief The name of the list, as lGetListName() gives it
+       * @return the name, or nullptr for an empty handle
+       */
+      [[nodiscard]] const char *name() const noexcept {
+         return lp_ != nullptr ? list_name(lp_) : nullptr;
+      }
+
+      /**
+       * @brief A deep copy of the list with its hash tables, as lCopyList() makes it
+       *
+       * The elements, their sub-lists and sub-objects are copied. The owning
+       * handles are move-only like std::unique_ptr, so a copy is always this
+       * explicit call.
+       *
+       * @param name the name of the copy; nullptr keeps the name of this list, as lCopyList() does
+       * @return the owning handle on the copy, empty if this handle is empty, as lCopyList() gives nullptr
+       *         for nullptr
+       * @throw ocs::RuntimeException if there is no memory
+       */
+      [[nodiscard]] ListPtr<T> clone(const char *name = nullptr) const {
+         if (lp_ == nullptr) {
+            return {};
+         }
+         return ListPtr<T>::from_typed(copy_list(name, lp_, true, false));
+      }
+
+      /**
+       * @brief The first element with a key in a field, as lGetElemUlong(), lGetElemStr(), lGetElemHost() and their variants find it
+       *
+       * A lookup in a list field of an element, which lGetSubStr(), lGetSubUlong() and lGetSubHost() do, is
+       * the typed getter and this lookup: `job.get<JB_ja_tasks>().find_first<JAT_task_number>(n)`. An empty
+       * list field gives an empty list handle and so no match; an element without the field throws.
        * @tparam F the field number, of this object type, a number, string or host field
        * @param key the key
        * @return the element, or an empty handle if no element holds the key
@@ -414,7 +466,7 @@ namespace ocs::tom {
       }
 
       /**
-       * @brief Every element with a key in a field
+       * @brief Every element with a key in a field, as lGetElemStrFirst() and lGetElemStrNext() and their variants walk them
        * @tparam F the field number, of this object type, a number, string or host field
        * @param key the key; a string or host name must outlive the range
        * @return the matches, as a range
@@ -425,6 +477,100 @@ namespace ocs::tom {
          return {lp_, key};
       }
 
+      /**
+       * @brief The first element whose string field equals a value without regard to case, as lGetElemCaseStr() finds it
+       * @tparam F a string field of this object type
+       * @param value the value; nullptr finds nothing
+       * @return the element, or an empty handle
+       * @throw FieldException with reason AbsentField if the elements of a reduced list do not hold the field
+       */
+      template <auto F>
+         requires FieldOf<F, T> && (FieldTraits<F>::type == FieldType::String)
+      [[nodiscard]] ConstElement<T> find_first_nocase(const char *value) const {
+         return ConstElement<T>::from_typed(lookup_first_str_nocase(lp_, F, value));
+      }
+
+      /**
+       * @brief The first element whose string field equals a value, or starts with it if it ends in '*', as
+       *        lGetElemStrLike() finds it
+       * @tparam F a string field of this object type
+       * @param value the value or prefix pattern; nullptr finds nothing
+       * @return the element, or an empty handle
+       * @throw FieldException with reason AbsentField if the elements of a reduced list do not hold the field
+       */
+      template <auto F>
+         requires FieldOf<F, T> && (FieldTraits<F>::type == FieldType::String)
+      [[nodiscard]] ConstElement<T> find_first_like(const char *value) const {
+         return ConstElement<T>::from_typed(lookup_first_str_like(lp_, F, value));
+      }
+
+      /**
+       * @brief A copy of the elements that fulfil a condition, reduced to a selection of fields, as lSelect() makes it
+       *
+       * Unlike lSelect(), no match gives an empty list rather than none, and
+       * the result is named after this list unless a name is given.
+       *
+       * @param where the condition; an empty one selects every element
+       * @param what the selection of fields
+       * @param name the name of the result, or nullptr for the name of this list
+       * @return the owning handle on the result, empty if this handle is empty
+       * @throw FieldException with reason NullElement if @p what is empty
+       * @throw ocs::RuntimeException if there is no memory
+       * @see Old form: lSelect(); core: ocs::tom::select_list()
+       */
+      [[nodiscard]] ListPtr<T> select(const Where<T> &where, const What<T> &what, const char *name = nullptr) const {
+         if (lp_ == nullptr) {
+            return {};
+         }
+         return ListPtr<T>::from_typed(select_list(name != nullptr ? name : list_name(lp_), lp_, where.get(),
+                                                   what.get(), true, false));
+      }
+
+      /**
+       * @brief A copy of every element, reduced to a selection of fields, as lSelect() with no condition makes it
+       * @param what the selection of fields
+       * @param name the name of the result, or nullptr for the name of this list
+       * @return the owning handle on the result, empty if this handle is empty
+       * @throw FieldException with reason NullElement if @p what is empty
+       * @throw ocs::RuntimeException if there is no memory
+       * @see Old form: lSelect(); core: ocs::tom::select_list()
+       */
+      [[nodiscard]] ListPtr<T> select(const What<T> &what, const char *name = nullptr) const {
+         return select(Where<T>(), what, name);
+      }
+
+      /**
+       * @brief A copy of the elements that fulfil a condition, with every field
+       * @param where the condition
+       * @param name the name of the result, or nullptr for the name of this list
+       * @return the owning handle on the result, empty if this handle is empty
+       * @throw ocs::RuntimeException if there is no memory
+       * @see Old form: lSelect() with lWhat("%T(ALL)"); core: ocs::tom::select_list()
+       */
+      [[nodiscard]] ListPtr<T> select(const Where<T> &where, const char *name = nullptr) const {
+         return select(where, what_all<T>(), name);
+      }
+
+      /**
+       * @brief The first element that fulfils a condition, as std::find_if() and lFindFirstRW() find it
+       * @param where the condition; an empty one takes the first element
+       * @return the element, or an empty handle if none fulfils it, or for an empty handle
+       * @see Old form: lFindFirstRW(); core: ocs::tom::find_first()
+       */
+      [[nodiscard]] ConstElement<T> find_if(const Where<T> &where) const {
+         return ConstElement<T>::from_typed(lp_ != nullptr ? ocs::tom::find_first(lp_, where.get()) : nullptr);
+      }
+
+      /**
+       * @brief The last element that fulfils a condition, as lFindLastRW() finds it
+       * @param where the condition; an empty one takes the last element
+       * @return the element, or an empty handle if none fulfils it, or for an empty handle
+       * @see Old form: lFindLastRW(); core: ocs::tom::find_last()
+       */
+      [[nodiscard]] ConstElement<T> find_last_if(const Where<T> &where) const {
+         return ConstElement<T>::from_typed(lp_ != nullptr ? ocs::tom::find_last(lp_, where.get()) : nullptr);
+      }
+
    protected:
       lList *lp_ = nullptr;   ///< the list, or nullptr; const unless reached through List
    };
@@ -433,7 +579,8 @@ namespace ocs::tom {
     * @brief A typed handle on a list that may be changed
     *
     * Adds the conversion to `lList *`, iteration with mutable element handles
-    * and appending. Derives from ConstList, so it converts to its read-only
+    * and the operations that change the list, named after their counterparts
+    * in std::list. Derives from ConstList, so it converts to its read-only
     * counterpart, never the other way round.
     *
     * @tparam T the struct of the object type of the elements, e.g. ocs::tom::JB
@@ -484,7 +631,7 @@ namespace ocs::tom {
       }
 
       /**
-       * @brief The first element
+       * @brief The first element, for range-for; steps as lFirst() and lNext() do
        * @return the iterator
        */
       [[nodiscard]] iterator begin() const noexcept {
@@ -500,7 +647,27 @@ namespace ocs::tom {
       }
 
       /**
-       * @brief The first element with a key in a field
+       * @brief The first element, as std::list::front() and lFirstRW() give it
+       * @return the element, or an empty handle for an empty list or an empty handle
+       */
+      [[nodiscard]] Element<T> front() const noexcept {
+         return Element<T>::from_typed(this->lp_ != nullptr ? this->lp_->first : nullptr);
+      }
+
+      /**
+       * @brief The last element, as std::list::back() and lLastRW() give it
+       * @return the element, or an empty handle for an empty list or an empty handle
+       */
+      [[nodiscard]] Element<T> back() const noexcept {
+         return Element<T>::from_typed(this->lp_ != nullptr ? this->lp_->last : nullptr);
+      }
+
+      /**
+       * @brief The first element with a key in a field, as lGetElemUlong(), lGetElemStr(), lGetElemHost() and their variants find it
+       *
+       * A lookup in a list field of an element, which lGetSubStr(), lGetSubUlong() and lGetSubHost() do, is
+       * the typed getter and this lookup: `job.get<JB_ja_tasks>().find_first<JAT_task_number>(n)`. An empty
+       * list field gives an empty list handle and so no match; an element without the field throws.
        * @tparam F the field number, of this object type, a number, string or host field
        * @param key the key
        * @return the element, or an empty handle if no element holds the key
@@ -514,7 +681,7 @@ namespace ocs::tom {
       }
 
       /**
-       * @brief Every element with a key in a field
+       * @brief Every element with a key in a field, as lGetElemStrFirst() and lGetElemStrNext() and their variants walk them
        * @tparam F the field number, of this object type, a number, string or host field
        * @param key the key; a string or host name must outlive the range
        * @return the matches, as a range
@@ -526,22 +693,301 @@ namespace ocs::tom {
       }
 
       /**
-       * @brief Append an element, which the list takes over
+       * @brief The first element whose string field equals a value without regard to case, as lGetElemCaseStrRW() finds it
+       * @tparam F a string field of this object type
+       * @param value the value; nullptr finds nothing
+       * @return the element, or an empty handle
+       * @throw FieldException with reason AbsentField if the elements of a reduced list do not hold the field
+       */
+      template <auto F>
+         requires FieldOf<F, T> && (FieldTraits<F>::type == FieldType::String)
+      [[nodiscard]] Element<T> find_first_nocase(const char *value) const {
+         return Element<T>::from_typed(lookup_first_str_nocase(this->lp_, F, value));
+      }
+
+      /**
+       * @brief The first element whose string field equals a value, or starts with it if it ends in '*', as
+       *        lGetElemStrLikeRW() finds it
+       * @tparam F a string field of this object type
+       * @param value the value or prefix pattern; nullptr finds nothing
+       * @return the element, or an empty handle
+       * @throw FieldException with reason AbsentField if the elements of a reduced list do not hold the field
+       */
+      template <auto F>
+         requires FieldOf<F, T> && (FieldTraits<F>::type == FieldType::String)
+      [[nodiscard]] Element<T> find_first_like(const char *value) const {
+         return Element<T>::from_typed(lookup_first_str_like(this->lp_, F, value));
+      }
+
+      /**
+       * @brief The first element that fulfils a condition, as std::find_if() and lFindFirstRW() find it
+       * @param where the condition; an empty one takes the first element
+       * @return the element, or an empty handle if none fulfils it, or for an empty handle
+       * @see Old form: lFindFirstRW(); core: ocs::tom::find_first()
+       */
+      [[nodiscard]] Element<T> find_if(const Where<T> &where) const {
+         return Element<T>::from_typed(this->lp_ != nullptr ? ocs::tom::find_first(this->lp_, where.get()) : nullptr);
+      }
+
+      /**
+       * @brief The last element that fulfils a condition, as lFindLastRW() finds it
+       * @param where the condition; an empty one takes the last element
+       * @return the element, or an empty handle if none fulfils it, or for an empty handle
+       * @see Old form: lFindLastRW(); core: ocs::tom::find_last()
+       */
+      [[nodiscard]] Element<T> find_last_if(const Where<T> &where) const {
+         return Element<T>::from_typed(this->lp_ != nullptr ? ocs::tom::find_last(this->lp_, where.get()) : nullptr);
+      }
+
+      /**
+       * @brief Remove and free the elements that fulfil a condition, as std::list::remove_if() does
+       *
+       * lSelectDestroy() keeps the elements that fulfil its condition, so it
+       * is `remove_if(!std::move(where))`; unlike lSelectDestroy(), an emptied
+       * list stays, since a handle does not own the list it points to.
+       *
+       * @param where the condition; an empty one removes every element
+       * @return the number of elements removed
+       * @see Old form: lSelectDestroy(), lSplit(); core: ocs::tom::compare(), ocs::tom::remove_elem()
+       */
+      std::size_t remove_if(const Where<T> &where) const {
+         std::size_t removed = 0;
+         if (this->lp_ == nullptr) {
+            return removed;
+         }
+         lListElem *next;
+         for (lListElem *ep = this->lp_->first; ep != nullptr; ep = next) {
+            next = ep->next;
+            if (compare(ep, where.get())) {
+               remove_elem(this->lp_, ep);
+               removed++;
+            }
+         }
+         return removed;
+      }
+
+      /**
+       * @brief Append an element, which the list takes over, as std::list::push_back() and lAppendElem() do
        * @param element the element, empty afterwards
        * @return the handle on the element, now in the list
        * @throw FieldException if the handle is empty, or in a debug build with reason DuplicateKey when
        *        the list holds a key of one of the element's unique fields; the element then stays with
        *        @p element
        */
-      Element<T> append(ElementPtr<T> &&element) const {
+      Element<T> push_back(ElementPtr<T> &&element) const {
+         check_list();
+         if (!element) [[unlikely]] {
+            throw_field_exception(FieldException::Reason::EmptyHandle, NoName, T::descriptor.e);
+         }
+         // the core takes the element only if it throws nothing, so the owning handle releases it afterwards
+         append_elem(this->lp_, element.get().raw());
+         return Element<T>::from_typed(element.release());
+      }
+
+      /**
+       * @brief Insert an element at the front, as std::list::push_front() and lInsertElem() with no predecessor do
+       * @param element the element, which the list takes over; empty afterwards
+       * @return the handle on the element, now in the list
+       * @throw FieldException if this handle or @p element is empty, or in a debug build with reason
+       *        DuplicateKey when the list holds a key of one of the element's unique fields; the
+       *        element then stays with @p element
+       */
+      Element<T> push_front(ElementPtr<T> &&element) const {
+         return insert(nullptr, std::move(element));
+      }
+
+      /**
+       * @brief Insert an element after another one of this list, as std::forward_list::insert_after() and lInsertElem() do
+       * @param after the element to insert after
+       * @param element the element, which the list takes over; empty afterwards
+       * @return the handle on the element, now in the list
+       * @throw FieldException if a handle is empty, with reason ForeignList if @p after is not in this
+       *        list, or in a debug build with reason DuplicateKey; the element then stays with @p element
+       */
+      Element<T> insert_after(const ConstElement<T> after, ElementPtr<T> &&element) const {
+         check_member(after);
+         return insert(const_cast<lListElem *>(after.raw()), std::move(element));
+      }
+
+      /**
+       * @brief Remove an element of this list and free it, as std::list::erase() and lRemoveElem() do
+       * @param element the element; the handle dangles afterwards
+       * @throw FieldException if a handle is empty, or with reason ForeignList if the element is not in
+       *        this list; nothing is changed then
+       */
+      void erase(const Element<T> element) const {
+         check_member(element);
+         lListElem *ep = element.raw();
+         remove_elem(this->lp_, ep);
+      }
+
+      /**
+       * @brief Take an element out of this list without freeing it, as std::set::extract() and lDechainElem() do
+       * @param element the element
+       * @return the owning handle on the element, which is free now
+       * @throw FieldException if a handle is empty, or with reason ForeignList if the element is not in
+       *        this list; nothing is changed then
+       */
+      [[nodiscard]] ElementPtr<T> extract(const Element<T> element) const {
+         check_member(element);
+         dechain_elem(this->lp_, element.raw());
+         return ElementPtr<T>::from_typed(element.raw());
+      }
+
+      /**
+       * @brief Move every element of a list to the end of this one and free the other list, as std::list::splice() and lAddList() do
+       * @param other the list, empty afterwards; an empty owning handle adds nothing
+       * @throw FieldException if this handle is empty, or in a debug build with reason DuplicateKey when
+       *        an element of @p other holds a key of a unique field that this list holds; nothing is
+       *        changed then
+       */
+      void splice(ListPtr<T> &&other) const {
+         check_list();
+         if (!other) {
+            return;
+         }
+         check_unique_on_add_all(other.get());
+         append_list(this->lp_, other.get().raw());
+         other.reset();
+      }
+
+      /**
+       * @brief Move every element of another list to the end of this one, as std::list::splice() and lAppendList() do
+       * @param other the list, which stays and is empty afterwards; an empty handle or this list
+       *        itself moves nothing
+       * @throw FieldException if this handle is empty, or in a debug build with reason DuplicateKey when
+       *        an element of @p other holds a key of a unique field that this list holds; nothing is
+       *        changed then
+       */
+      void splice(const List<T> other) const {
+         check_list();
+         if (!other || other.raw() == this->lp_) {
+            return;
+         }
+         check_unique_on_add_all(other);
+         append_list(this->lp_, other.raw());
+      }
+
+      /**
+       * @brief Create an element with a key and append it, as std::list::emplace_back() and lAddElemStr(),
+       *        lAddElemUlong(), lAddElemUlong64() and lAddElemHost() do
+       * @tparam F the key field, of this object type, a number, string or host field
+       * @param key the key; a string or host name is copied
+       * @return the handle on the new element, now in the list
+       * @throw FieldException if this handle is empty, with reason NullKey for a null string or host
+       *        name, or in a debug build DuplicateKey when a unique field holds the key already; nothing
+       *        is changed then
+       */
+      template <auto F>
+         requires FieldOf<F, T> && detail::LookupField<F>
+      Element<T> emplace_back(const detail::KeyOf<F> key) const {
+         check_list();
+         lList *lp = this->lp_;
+         constexpr FieldType type = FieldTraits<F>::type;
+         if constexpr (type == FieldType::String) {
+            return Element<T>::from_typed(add_elem_str(lp, F, key, T::descriptor.e));
+         } else if constexpr (type == FieldType::Host) {
+            return Element<T>::from_typed(add_elem_host(lp, F, key.c_str(), T::descriptor.e));
+         } else if constexpr (type == FieldType::Uint32) {
+            return Element<T>::from_typed(add_elem_ulong(lp, F, key, T::descriptor.e));
+         } else {
+            return Element<T>::from_typed(add_elem_ulong64(lp, F, key, T::descriptor.e));
+         }
+      }
+
+      /**
+       * @brief Erase and free the first element with a key, as std::map::erase() by key and lDelElemStr(),
+       *        lDelElemUlong(), lDelElemUlong64() and lDelElemHost() do
+       *
+       * Unlike the old functions, the list stays when it becomes empty: a handle
+       * does not own the list it points to. Code that took a null list field
+       * for "no entries" asks empty() instead.
+       *
+       * @tparam F the key field, of this object type, a number, string or host field
+       * @param key the key
+       * @return the number of elements erased, 0 or 1
+       * @throw FieldException if this handle is empty, with reason NullKey for a null string or host name,
+       *        or DuplicateKey when a unique field holds the key twice (N-H-18)
+       */
+      template <auto F>
+         requires FieldOf<F, T> && detail::LookupField<F>
+      std::size_t erase(const detail::KeyOf<F> key) const {
+         check_list();
+         constexpr FieldType type = FieldTraits<F>::type;
+         bool erased;
+         if constexpr (type == FieldType::String) {
+            erased = remove_elem_str(this->lp_, F, key);
+         } else if constexpr (type == FieldType::Host) {
+            erased = remove_elem_host(this->lp_, F, key.c_str());
+         } else if constexpr (type == FieldType::Uint32) {
+            erased = remove_elem_ulong(this->lp_, F, key);
+         } else {
+            erased = remove_elem_ulong64(this->lp_, F, key);
+         }
+         return erased ? 1 : 0;
+      }
+
+   private:
+      /**
+       * @brief Check that this handle holds a list
+       * @throw FieldException with reason EmptyHandle if not
+       */
+      void check_list() const {
          if (this->lp_ == nullptr) [[unlikely]] {
             throw_field_exception(FieldException::Reason::EmptyHandle, NoName, T::descriptor.e);
          }
-         check_unique_on_add(this->lp_, element.get().raw());
-         lListElem *ep = element.release();
-         lAppendElem(this->lp_, ep);
-         return Element<T>::from_typed(ep);
       }
+
+      /**
+       * @brief Check that an element is in this list
+       * @param element the element
+       * @throw FieldException with reason EmptyHandle if a handle is empty, ForeignList if the element
+       *        is in another list or in none
+       */
+      void check_member(const ConstElement<T> element) const {
+         check_list();
+         if (!element) [[unlikely]] {
+            throw_field_exception(FieldException::Reason::EmptyHandle, NoName, T::descriptor.e);
+         }
+         if (elem_list(element.raw()) != this->lp_) [[unlikely]] {
+            throw_field_exception(FieldException::Reason::ForeignList, NoName, element.raw()->descr);
+         }
+      }
+
+      /**
+       * @brief In a debug build, check every element of another list against the unique fields of this one
+       * @param other the list whose elements are to be moved here
+       * @throw FieldException with reason DuplicateKey on the first key this list already holds
+       */
+      void check_unique_on_add_all([[maybe_unused]] const ConstList<T> other) const {
+#ifdef ENABLE_DEBUG_CHECKS
+         for (const ConstElement<T> element : other) {
+            check_unique_on_add(this->lp_, element.raw());
+         }
+#endif
+      }
+
+      /**
+       * @brief Insert an element after another one, or at the front
+       * @param after the predecessor in this list, or nullptr for the front
+       * @param element the element, which the list takes over
+       * @return the handle on the element, now in the list
+       */
+      Element<T> insert(lListElem *after, ElementPtr<T> &&element) const {
+         check_list();
+         if (!element) [[unlikely]] {
+            throw_field_exception(FieldException::Reason::EmptyHandle, NoName, T::descriptor.e);
+         }
+         // the core takes the element only if it throws nothing, so the owning handle releases it afterwards
+         insert_elem(this->lp_, after, element.get().raw());
+         return Element<T>::from_typed(element.release());
+      }
+   };
+
+   /** @brief Whether a new list keeps hash tables for its hashed fields */
+   enum class Hashing : bool {
+      Off,   ///< no hash tables, as lCreateListHash() with false; lookups search linearly
+      On     ///< hash tables, built when the list grows beyond the threshold, as lCreateList()
    };
 
    /**
@@ -570,17 +1016,26 @@ namespace ocs::tom {
       explicit ListPtr(lList *lp) : lp_(List<T>(lp).raw()) {}
 
       /**
-       * @brief Create an empty list of the type
+       * @brief Take over a list from a source whose type is known, without a check
+       * @param lp the list, or nullptr; freed by the handle
+       * @return the owning handle
+       */
+      [[nodiscard]] static ListPtr from_typed(lList *lp) noexcept {
+         ListPtr handle;
+         handle.lp_ = lp;
+         return handle;
+      }
+
+      /**
+       * @brief Create an empty list of the type, as lCreateList() and lCreateListHash() do
        * @param name the name of the list, for dumps and messages
+       * @param hashing whether the list keeps hash tables for its hashed fields
        * @return the owning handle
        * @throw ocs::RuntimeException if there is no memory
        */
-      [[nodiscard]] static ListPtr create(const char *name) {
+      [[nodiscard]] static ListPtr create(const char *name, const Hashing hashing = Hashing::On) {
          ListPtr handle;
-         handle.lp_ = lCreateList(name, T::descriptor.e);
-         if (handle.lp_ == nullptr) [[unlikely]] {
-            throw ocs::RuntimeException("out of memory creating a list");
-         }
+         handle.lp_ = create_list(name, T::descriptor.e, hashing == Hashing::On);
          return handle;
       }
 
@@ -600,15 +1055,15 @@ namespace ocs::tom {
        */
       ListPtr &operator=(ListPtr &&other) noexcept {
          if (this != &other) {
-            lFreeList(&lp_);
+            free_list(lp_);
             lp_ = std::exchange(other.lp_, nullptr);
          }
          return *this;
       }
 
-      /** @brief Free the list held, with its elements */
+      /** @brief Free the list held, with its elements, as lFreeList() does */
       ~ListPtr() {
-         lFreeList(&lp_);
+         free_list(lp_);
       }
 
       /**
@@ -617,6 +1072,29 @@ namespace ocs::tom {
        */
       [[nodiscard]] List<T> get() const noexcept {
          return List<T>::from_typed(lp_);
+      }
+
+      /**
+       * @brief Call a member of the non-owning handle, as std::unique_ptr::operator-> does: `jobs->push_back(...)`
+       * @return an object that leads the call on to get()
+       */
+      detail::Arrow<List<T>> operator->() const noexcept {
+         return detail::Arrow<List<T>>(get());
+      }
+
+      /**
+       * @brief The non-owning handle, as std::unique_ptr::operator* gives the object: `for (auto job : *jobs)`
+       * @return the handle, empty if this one is; the same as get()
+       */
+      [[nodiscard]] List<T> operator*() const noexcept {
+         return get();
+      }
+
+      /**
+       * @brief Free the list held now with its elements, as std::unique_ptr::reset() and lFreeList() do
+       */
+      void reset() noexcept {
+         free_list(lp_);
       }
 
       /**

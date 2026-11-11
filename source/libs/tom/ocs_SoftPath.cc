@@ -177,6 +177,8 @@ namespace ocs::tom {
                return "null-argument";
             case SoftPathReason::BoundElement:
                return "bound-element";
+            case SoftPathReason::NullList:
+               return "null-list";
          }
          return "unknown";
       }

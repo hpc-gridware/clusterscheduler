@@ -59,8 +59,6 @@ typedef struct _lCondition lCondition;     ///< a selection condition, built wit
 typedef struct _lEnumeration lEnumeration; ///< a field selection, built with `lWhat()`
 typedef union _lMultiType lMultiType;      ///< the value of one field, in any cull type
 typedef struct _lSortOrder lSortOrder;     ///< a sort specification, built with `lParseSortOrder()`
-/// Argument of a where condition
-typedef struct _WhereArg WhereArg, *WhereArgList; ///< a pointer to a @ref _WhereArg
 
 typedef float lFloat;        ///< cull single precision float field
 typedef double lDouble;      ///< cull double precision float field
@@ -348,8 +346,7 @@ lCopyElemPartialPack(lListElem *dst, const lListElem *src,
 
 int
 lCopySwitchPack(const lListElem *sep, lListElem *dep, int src_idx, int dst_idx,
-                bool isHash, lEnumeration *ep, sge_pack_buffer *pb,
-                bool skip_no_transfer = false);
+                bool isHash, lEnumeration *ep, bool skip_no_transfer = false);
 
 int lAppendElem(lList *lp, lListElem *ep);
 

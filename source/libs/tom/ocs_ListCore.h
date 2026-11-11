@@ -1,0 +1,321 @@
+#pragma once
+/*___INFO__MARK_BEGIN_NEW__*/
+/***************************************************************************
+ *
+ *  Copyright 2026 HPC-Gridware GmbH
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *
+ ***************************************************************************/
+/*___INFO__MARK_END_NEW__*/
+
+/** @file
+ * @brief The list structure and ownership in the core of the typed object model
+ *
+ * Creating, freeing, copying, appending, inserting, removing and dechaining
+ * elements and lists. The functions are untyped and throw on every error; the
+ * typed handles call them after their own checks, and the old functions of
+ * the list library (lCreateList(), lAppendElem(), ...) are thin wrappers that
+ * map the exceptions back to what they returned before (N-L-1, N-L-2).
+ *
+ * Errors:
+ * - a programming error throws FieldException: a null list (NullList), a null
+ *   element (NullElement), no descriptor (NullDescriptor), an element bound in
+ *   a list or an object (BoundElement), an element of another list
+ *   (ForeignList), lists of different types (WrongType), a duplicate key in a
+ *   unique field in a debug build (DuplicateKey);
+ * - a failure at run time throws ListCoreError, which carries the error number
+ *   the old function set, so that its wrapper can set it again.
+ */
+
+#include <string>
+
+#include "cull/cull_list.h"
+#include "uti/ocs_Exception.h"
+
+namespace ocs::tom {
+
+   /**
+    * @brief A run-time failure of the list core, such as no memory, with the error number of the old interface
+    */
+   class ListCoreError : public ocs::RuntimeException {
+   public:
+      /**
+       * @brief Describe the failure
+       * @param lerrno the error number the old function set for it, e.g. LEMALLOC
+       * @param message what failed
+       */
+      ListCoreError(int lerrno, const std::string &message);
+
+      /** @brief Destroy the exception; defined out of line as the key function */
+      ~ListCoreError() override;
+
+      /**
+       * @brief The error number the old function set for this failure
+       * @return the number, e.g. LEMALLOC
+       */
+      [[nodiscard]] int lerrno() const noexcept {
+         return lerrno_;
+      }
+
+   private:
+      int lerrno_;   ///< the error number of the old interface
+   };
+
+   /**
+    * @brief Create an element with every field at its default, as lCreateElem()
+    * @param descr the descriptor; a reduced one gives a reduced element
+    * @return the element, free, owned by the caller
+    * @throw FieldException with reason NullDescriptor if @p descr is null or empty
+    * @throw ListCoreError if there is no memory
+    */
+   lListElem *create_elem(const lDescr *descr);
+
+   /**
+    * @brief Create an empty list, as lCreateListHash()
+    * @param name the list name, nullptr for "No list name specified"
+    * @param descr the descriptor of its elements
+    * @param hash whether the list keeps hash tables for its hashed fields
+    * @return the list, owned by the caller
+    * @throw FieldException with reason NullDescriptor if @p descr is null or empty
+    * @throw ListCoreError if there is no memory
+    */
+   lList *create_list(const char *name, const lDescr *descr, bool hash);
+
+   /**
+    * @brief Free an element with its strings, sub-lists and sub-objects, as lFreeElem()
+    *
+    * A bound element is taken out of the hash tables of its list first; the
+    * caller unlinks it from the list.
+    *
+    * @param ep the element, nullptr afterwards; nullptr frees nothing
+    * @throw FieldException with reason NullDescriptor if the element has no descriptor
+    */
+   void free_elem(lListElem *&ep);
+
+   /**
+    * @brief Free a list with its elements, as lFreeList()
+    * @param lp the list, nullptr afterwards; nullptr frees nothing
+    */
+   void free_list(lList *&lp);
+
+   /**
+    * @brief Copy an element deeply, as lCopyElemHash()
+    * @param ep the element
+    * @param hash whether sub-lists of the copy keep hash tables
+    * @param skip_no_transfer whether fields marked as not to transfer are left out
+    * @return the copy, free, owned by the caller
+    * @throw FieldException with reason NullElement if @p ep is null
+    * @throw ListCoreError with LECREATEELEM or LECOPYSWITCH if the copy fails
+    */
+   lListElem *copy_elem(const lListElem *ep, bool hash, bool skip_no_transfer);
+
+   /**
+    * @brief Copy a list deeply, as lCopyListHash()
+    * @param name the name of the copy, nullptr for the name of @p src
+    * @param src the list
+    * @param hash whether the copy keeps hash tables
+    * @param skip_no_transfer whether fields marked as not to transfer are left out
+    * @return the copy, owned by the caller
+    * @throw FieldException with reason NullList if @p src is null
+    * @throw ListCoreError with LECREATELIST or LEAPPENDELEM if the copy fails
+    */
+   lList *copy_list(const char *name, const lList *src, bool hash, bool skip_no_transfer);
+
+   /**
+    * @brief Copy one field of an element into another, as lCopySwitchPack() copied it
+    *
+    * Numbers and references are copied, strings and host names duplicated,
+    * a sub-list or sub-object copied deeply, or reduced to a selection when
+    * one is given. A sub-list that a selection empties is no list when the
+    * copy may be hashed, as the old selection gave it. With skip_no_transfer a
+    * field marked CULL_NO_TRANSFER is left at its default.
+    *
+    * @param src the element copied from
+    * @param dst the element copied to; the field's old value is overwritten, not freed
+    * @param src_pos the field's position in @p src
+    * @param dst_pos the field's position in @p dst
+    * @param hash true to build the hash tables of copied sub-lists
+    * @param sub_what the selection for a sub-list or sub-object, or nullptr for a whole copy
+    * @param skip_no_transfer true if the copy is handed out
+    * @throw FieldException with reason NullElement if an element is null
+    * @throw ListCoreError if there is no memory or the field has an unknown type
+    */
+   void copy_field(const lListElem *src, lListElem *dst, int src_pos, int dst_pos, bool hash,
+                   const lEnumeration *sub_what, bool skip_no_transfer);
+
+   /**
+    * @brief The name of a list, as lGetListName() gives it for a list
+    * @param lp the list, or nullptr
+    * @return the name, or "No list name specified" for nullptr or a list without a name
+    */
+   const char *list_name(const lList *lp) noexcept;
+
+   /**
+    * @brief Insert a free element after another one or at the front, as lInsertElem()
+    * @param lp the list, which takes the element over
+    * @param after the predecessor in @p lp, nullptr for the front
+    * @param ep the element
+    * @throw FieldException with reason NullList, NullElement, BoundElement if @p ep is bound already, or
+    *        DuplicateKey in a debug build; nothing is changed then
+    */
+   void insert_elem(lList *lp, lListElem *after, lListElem *ep);
+
+   /**
+    * @brief Append a free element, as lAppendElem()
+    * @param lp the list, which takes the element over
+    * @param ep the element
+    * @throw FieldException with reason NullList, NullElement, BoundElement if @p ep is bound already, or
+    *        DuplicateKey in a debug build; nothing is changed then
+    */
+   void append_elem(lList *lp, lListElem *ep);
+
+   /**
+    * @brief Take an element out of its list without freeing it, as lDechainElem()
+    * @param lp the list
+    * @param ep the element, free afterwards and owned by the caller
+    * @throw FieldException with reason NullList, NullElement or ForeignList if @p ep is not in @p lp;
+    *        nothing is changed then
+    */
+   void dechain_elem(lList *lp, lListElem *ep);
+
+   /**
+    * @brief Take an element out of its list and free it, as lRemoveElem()
+    * @param lp the list
+    * @param ep the element, nullptr afterwards
+    * @throw FieldException with reason NullList, NullElement or ForeignList; nothing is changed then
+    */
+   void remove_elem(lList *lp, lListElem *&ep);
+
+   /**
+    * @brief Move every element of a list to the end of another, as lAppendList()
+    * @param dst the list taking the elements
+    * @param src the list giving them, empty afterwards
+    * @throw FieldException with reason NullList, WrongType if the lists are of different types, or
+    *        DuplicateKey in a debug build; in the last case the elements before the duplicate are moved and
+    *        the others stay in @p src
+    */
+   void append_list(lList *dst, lList *src);
+
+   /**
+    * @brief Put a list into a list field and take out the one held, as lXchgList() after its checks
+    * @param ep the element
+    * @param pos the position of the list field in the element's descriptor
+    * @param lp the list to put in; the list held before afterwards
+    */
+   void exchange_list(lListElem *ep, int pos, lList *&lp) noexcept;
+
+   /**
+    * @brief Add an element with a string key, as lAddElemStr()
+    *
+    * Creates the list if @p lp is nullptr, creates an element of @p descr,
+    * sets the key and appends the element.
+    *
+    * @param lp the list, created if nullptr
+    * @param nm the key field, a string field of @p descr
+    * @param key the key, copied
+    * @param descr the descriptor of the element
+    * @return the element, now in the list
+    * @throw FieldException with reason NullDescriptor, NullKey, AbsentField if @p descr does not hold
+    *        @p nm, WrongType if it is not a string field, or DuplicateKey in a debug build; a list
+    *        created here is freed again then
+    * @throw ListCoreError if there is no memory
+    */
+   lListElem *add_elem_str(lList *&lp, int nm, const char *key, const lDescr *descr);
+
+   /**
+    * @brief Add an element with a host key, as lAddElemHost(); see #add_elem_str
+    * @param lp the list, created if nullptr
+    * @param nm the key field, a host field of @p descr
+    * @param key the host name, copied
+    * @param descr the descriptor of the element
+    * @return the element, now in the list
+    * @throw FieldException and ListCoreError as #add_elem_str
+    */
+   lListElem *add_elem_host(lList *&lp, int nm, const char *key, const lDescr *descr);
+
+   /**
+    * @brief Add an element with a 32 bit key, as lAddElemUlong(); see #add_elem_str
+    * @param lp the list, created if nullptr
+    * @param nm the key field, a 32 bit field of @p descr
+    * @param key the key
+    * @param descr the descriptor of the element
+    * @return the element, now in the list
+    * @throw FieldException and ListCoreError as #add_elem_str, without NullKey
+    */
+   lListElem *add_elem_ulong(lList *&lp, int nm, lUlong key, const lDescr *descr);
+
+   /**
+    * @brief Add an element with a 64 bit key, as lAddElemUlong64(); see #add_elem_str
+    * @param lp the list, created if nullptr
+    * @param nm the key field, a 64 bit field of @p descr
+    * @param key the key
+    * @param descr the descriptor of the element
+    * @return the element, now in the list
+    * @throw FieldException and ListCoreError as #add_elem_str, without NullKey
+    */
+   lListElem *add_elem_ulong64(lList *&lp, int nm, lUlong64 key, const lDescr *descr);
+
+   /**
+    * @brief Remove and free the first element with a string key, as lDelElemStr() without freeing the list
+    * @param lp the list, nullptr for no element
+    * @param nm the key field, a string field of the list's type
+    * @param key the key
+    * @return true if an element was removed
+    * @throw FieldException with reason NullKey, AbsentField, WrongType, or DuplicateKey from the lookup
+    */
+   bool remove_elem_str(lList *lp, int nm, const char *key);
+
+   /**
+    * @brief Remove and free the first element with a host key, as lDelElemHost(); see #remove_elem_str
+    * @param lp the list, nullptr for no element
+    * @param nm the key field, a host field of the list's type
+    * @param key the host name
+    * @return true if an element was removed
+    * @throw FieldException as #remove_elem_str
+    */
+   bool remove_elem_host(lList *lp, int nm, const char *key);
+
+   /**
+    * @brief Remove and free the first element with a 32 bit key, as lDelElemUlong(); see #remove_elem_str
+    * @param lp the list, nullptr for no element
+    * @param nm the key field, a 32 bit field of the list's type
+    * @param key the key
+    * @return true if an element was removed
+    * @throw FieldException as #remove_elem_str, without NullKey
+    */
+   bool remove_elem_ulong(lList *lp, int nm, lUlong key);
+
+   /**
+    * @brief Remove and free the first element with a 64 bit key, as lDelElemUlong64(); see #remove_elem_str
+    * @param lp the list, nullptr for no element
+    * @param nm the key field, a 64 bit field of the list's type
+    * @param key the key
+    * @return true if an element was removed
+    * @throw FieldException as #remove_elem_str, without NullKey
+    */
+   bool remove_elem_ulong64(lList *lp, int nm, lUlong64 key);
+
+   /**
+    * @brief The list of a list field, created if the field holds none, as lGetOrCreateList()
+    * @param ep the element, not nullptr
+    * @param pos the position of the list field in the element's descriptor
+    * @param name the name of a list created here, nullptr for the field's name
+    * @param descr the descriptor of the elements of a list created here
+    * @return the list held in the field
+    * @throw FieldException with reason WrongType if the field is not a list field, NullDescriptor
+    * @throw ListCoreError if there is no memory
+    */
+   lList *get_or_create_list(lListElem *ep, int pos, const char *name, const lDescr *descr);
+
+} // namespace ocs::tom

@@ -115,7 +115,7 @@ static bool aborts(Call &&call) {
    const pid_t pid = fork();
    if (pid == 0) {
       // keep the expected abort quiet in the test output
-      std::freopen("/dev/null", "w", stderr);
+      [[maybe_unused]] FILE *quiet_stderr = std::freopen("/dev/null", "w", stderr);
       call();
       _exit(0);
    }
@@ -283,7 +283,7 @@ test_hash_tables() {
       auto element = ElementPtr<TEST>::create();
       element.get().set<TEST_uint32>(i);
       element.get().set<TEST_int>(static_cast<std::int32_t>(i));
-      list.get().append(std::move(element));
+      list.get().push_back(std::move(element));
    }
    // the first lookup builds the table
    const Element<TEST> five = list.get().find_first<TEST_uint32>(5u);

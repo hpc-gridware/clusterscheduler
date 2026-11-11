@@ -63,8 +63,8 @@ aborts(const std::function<void()> &call) {
    const pid_t pid = fork();
    if (pid == 0) {
       // keep the expected messages and the stack trace out of the test output
-      std::freopen("/dev/null", "w", stderr);
-      std::freopen("/dev/null", "w", stdout);
+      [[maybe_unused]] FILE *quiet_stderr = std::freopen("/dev/null", "w", stderr);
+      [[maybe_unused]] FILE *quiet_stdout = std::freopen("/dev/null", "w", stdout);
       call();
       _exit(0);
    }
@@ -126,7 +126,7 @@ make_entries(const std::uint32_t n) {
  * @param n the number of hosts
  * @return the list
  */
-static lList *
+[[maybe_unused]] static lList *
 make_hosts(const std::uint32_t n) {
    lList *hosts = lCreateList("hosts", EH_Type);
    for (std::uint32_t i = 1; i <= n; i++) {
@@ -181,7 +181,7 @@ test_debug_checks() {
       const List<JAT> typed{tasks};
       ElementPtr<JAT> task = ElementPtr<JAT>::create();
       task.get().set<JAT_task_number>(3u);
-      const bool typed_append = throws_duplicate([&] { typed.append(std::move(task)); }, "JAT_task_number", "3", "tasks") &&
+      const bool typed_append = throws_duplicate([&] { typed.push_back(std::move(task)); }, "JAT_task_number", "3", "tasks") &&
                                 task && lGetNumberOfElem(tasks) == n;
       const Element<JAT> last{lLastRW(tasks)};
       const bool typed_set = throws_duplicate([&] { last.set<JAT_task_number>(3u); }, "JAT_task_number", "3", "tasks") &&
@@ -371,7 +371,7 @@ test_valid_after_throw() {
    try {
       ElementPtr<JAT> task = ElementPtr<JAT>::create();
       task.get().set<JAT_task_number>(7u);
-      typed.append(std::move(task));
+      typed.push_back(std::move(task));
    } catch (const FieldException &) {
       thrown = true;
    }

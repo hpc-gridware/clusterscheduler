@@ -37,9 +37,13 @@
 
 #include "cull/cull_hash.h"
 #include "cull/cull_listP.h"
+#include "cull/cull_multitype.h"
 #include "cull/cull_multitypeP.h"
 #include "cull/cull_observe.h"
+#include "cull/cull_lerrno.h"
 #include "cull/cull_state.h"
+
+#include "tom/ocs_ListCore.h"
 
 namespace ocs::tom {
 
@@ -132,6 +136,27 @@ namespace ocs::tom {
 
    namespace {
       /**
+       * @brief The value of a number field an element holds, read from its slot, with the type check of before
+       *
+       * The number lookups do not check the field's type before they search;
+       * the old getter by position checked it on each element it read and
+       * aborted, so a lookup by a field of another type aborts on the first
+       * element it reads, as before (LEG-01).
+       *
+       * @param ep the element
+       * @param pos the field's position
+       * @param type the list library type the lookup expects
+       * @param getter the name of the old getter, for the abort message
+       * @return the value
+       */
+      const lMultiType &number_value(const lListElem *ep, const int pos, const int type, const char *getter) {
+         if (mt_get_type(ep->descr[pos].mt) != type) [[unlikely]] {
+            incompatibleType(getter);
+         }
+         return ocs_cull_value(ep, pos);
+      }
+
+      /**
        * @brief The first element of a list that holds a value in a field, the lookup of the core
        *
        * Through the field's table where the list has one or reaches the hash
@@ -187,20 +212,85 @@ namespace ocs::tom {
 
    lListElem *lookup_first_str(const lList *lp, const int pos, const char *value, const void **iterator) {
       return lookup_first(lp, pos, value, [pos, value](const lListElem *ep) {
-         const char *s = lGetPosString(ep, pos);
+         const char *s = ocs_cull_value(ep, pos).str;
          return s != nullptr && strcmp(s, value) == 0;
       }, iterator);
    }
 
    lListElem *lookup_first_ulong(const lList *lp, const int pos, const lUlong value, const void **iterator) {
       return lookup_first(lp, pos, &value, [pos, value](const lListElem *ep) {
-         return lGetPosUlong(ep, pos) == value;
+         return number_value(ep, pos, lUlongT, "lGetPosUlong").ul == value;
       }, iterator);
    }
 
    lListElem *lookup_first_ulong64(const lList *lp, const int pos, const lUlong64 value, const void **iterator) {
       return lookup_first(lp, pos, &value, [pos, value](const lListElem *ep) {
-         return lGetPosUlong64(ep, pos) == value;
+         return number_value(ep, pos, lUlong64T, "lGetPosUlong64").ul64 == value;
+      }, iterator);
+   }
+
+   namespace {
+      /**
+       * @brief The next element after the iterator's that holds a value, the linear part of the Next lookups
+       *
+       * Through the field's table where the list has one; the iterator is
+       * nullptr after the last match, as the old ...Next functions left it.
+       *
+       * @param lp the list, not nullptr
+       * @param pos the field's position
+       * @param match whether an element holds the value
+       * @param iterator the lookup's state; nullptr gives no element
+       * @return the element, or nullptr
+       */
+      template <typename Match>
+      lListElem *lookup_next(const lList *lp, const int pos, Match match, const void **iterator) {
+         if (*iterator == nullptr) {
+            return nullptr;
+         }
+         if (const cull_htable ht = list_hash_table(lp, pos); ht != nullptr) {
+            return cull_hash_next(ht, iterator);
+         }
+         for (lListElem *ep = static_cast<const lListElem *>(*iterator)->next; ep != nullptr; ep = ep->next) {
+            if (match(ep)) {
+               *iterator = ep;
+               return ep;
+            }
+         }
+         *iterator = nullptr;
+         return nullptr;
+      }
+   } // namespace
+
+   lListElem *lookup_next_str(const lList *lp, const int pos, const char *value, const void **iterator) {
+      return lookup_next(lp, pos, [pos, value](const lListElem *ep) {
+         const char *s = ocs_cull_value(ep, pos).str;
+         return s != nullptr && strcmp(s, value) == 0;
+      }, iterator);
+   }
+
+   lListElem *lookup_next_ulong(const lList *lp, const int pos, const lUlong value, const void **iterator) {
+      return lookup_next(lp, pos, [pos, value](const lListElem *ep) {
+         return ocs_cull_value(ep, pos).ul == value;
+      }, iterator);
+   }
+
+   lListElem *lookup_next_ulong64(const lList *lp, const int pos, const lUlong64 value, const void **iterator) {
+      return lookup_next(lp, pos, [pos, value](const lListElem *ep) {
+         return ocs_cull_value(ep, pos).ul64 == value;
+      }, iterator);
+   }
+
+   lListElem *lookup_next_host(const lList *lp, const int pos, const char *value, const void **iterator) {
+      char wanted[CL_MAXHOSTNAMELEN + 1];
+      sge_hostcpy(wanted, value);
+      return lookup_next(lp, pos, [pos, &wanted](const lListElem *ep) {
+         const char *s = ocs_cull_value(ep, pos).host;
+         if (s == nullptr) {
+            return false;
+         }
+         char stored[CL_MAXHOSTNAMELEN + 1];
+         sge_hostcpy(stored, s);
+         return SGE_STRCASECMP(stored, wanted) == 0;
       }, iterator);
    }
 
@@ -211,7 +301,7 @@ namespace ocs::tom {
       char wanted[CL_MAXHOSTNAMELEN + 1];
       sge_hostcpy(wanted, value);
       return lookup_first(lp, pos, host_key, [pos, &wanted](const lListElem *ep) {
-         const char *s = lGetPosHost(ep, pos);
+         const char *s = ocs_cull_value(ep, pos).host;
          if (s == nullptr) {
             return false;
          }
@@ -283,6 +373,47 @@ namespace ocs::tom {
          return -1;
       }
       return pos;
+   }
+
+   int present_pos(const lDescr *descr, const int nm) noexcept {
+      const int pos = field_pos(descr, nm);
+      if (pos < 0 || descr[pos].off == OCS_CULL_ABSENT) {
+         return -1;
+      }
+      return pos;
+   }
+
+   int descr_length(const lDescr *descr) noexcept {
+      if (descr == nullptr) {
+         return -1;
+      }
+      int n = 0;
+      while (mt_get_type(descr[n].mt) != lEndT) {
+         n++;
+      }
+      return n;
+   }
+
+   int layout_difference(const lDescr *a, const lDescr *b) noexcept {
+      if (a == nullptr || b == nullptr) {
+         return LELISTNULL;
+      }
+      const int n = descr_length(a);
+      const int m = descr_length(b);
+      if (n <= 0 || m <= 0) {
+         return LECOUNTDESCR;
+      }
+      if (n != m) {
+         return LEDIFFDESCR;
+      }
+      for (int i = 0; i < n; i++) {
+         // both full length: the same fields must be present (CS-439)
+         if (a[i].nm != b[i].nm || mt_get_type(a[i].mt) != mt_get_type(b[i].mt) ||
+             (a[i].off == OCS_CULL_ABSENT) != (b[i].off == OCS_CULL_ABSENT)) {
+            return LEDIFFDESCR;
+         }
+      }
+      return 0;
    }
 
    int checked_pos(const lListElem *ep, const int nm, const FieldType type) {
@@ -375,7 +506,7 @@ namespace ocs::tom {
       lObserveChangeOwner(value, ep, nullptr, ep->descr[pos].nm);
 #endif
       if (value != ocs_cull_value(ep, pos).glp) {
-         lFreeList(&(ocs_cull_value(ep, pos).glp));
+         free_list(ocs_cull_value(ep, pos).glp);
          ocs_cull_value(ep, pos).glp = value;
       }
    }
@@ -389,7 +520,7 @@ namespace ocs::tom {
       lObserveChangeOwner(value, ep, nullptr, ep->descr[pos].nm);
 #endif
       if (value != ocs_cull_value(ep, pos).obj) {
-         lFreeElem(&(ocs_cull_value(ep, pos).obj));
+         free_elem(ocs_cull_value(ep, pos).obj);
          ocs_cull_value(ep, pos).obj = value;
          if (value != nullptr) {
             elem_set_object(value);
@@ -400,6 +531,56 @@ namespace ocs::tom {
 
    void set_lerrno(const int code) {
       cull_state_set_lerrno(code);
+   }
+
+   namespace {
+      /**
+       * @brief The position of a string field in a list's descriptor, for the linear string lookups
+       * @param lp the list, not nullptr
+       * @param nm the field number
+       * @return the position
+       * @throw FieldException with reason AbsentField or WrongType
+       */
+      int string_lookup_pos(const lList *lp, const int nm) {
+         const int pos = present_pos(lp->descr, nm);
+         if (pos < 0) [[unlikely]] {
+            throw_field_exception(FieldException::Reason::AbsentField, nm, lp->descr);
+         }
+         if (mt_get_type(lp->descr[pos].mt) != lStringT) [[unlikely]] {
+            throw_field_exception(FieldException::Reason::WrongType, nm, lp->descr);
+         }
+         return pos;
+      }
+   } // namespace
+
+   lListElem *lookup_first_str_nocase(const lList *lp, const int nm, const char *value) {
+      if (lp == nullptr || value == nullptr) {
+         return nullptr;
+      }
+      const int pos = string_lookup_pos(lp, nm);
+      for (lListElem *ep = lp->first; ep != nullptr; ep = ep->next) {
+         const char *s = ocs_cull_value(ep, pos).str;
+         if (s != nullptr && SGE_STRCASECMP(s, value) == 0) {
+            return ep;
+         }
+      }
+      return nullptr;
+   }
+
+   lListElem *lookup_first_str_like(const lList *lp, const int nm, const char *value) {
+      if (lp == nullptr || value == nullptr) {
+         return nullptr;
+      }
+      const int pos = string_lookup_pos(lp, nm);
+      const std::size_t len = strlen(value);
+      const bool prefix = len > 0 && value[len - 1] == '*';
+      for (lListElem *ep = lp->first; ep != nullptr; ep = ep->next) {
+         const char *s = ocs_cull_value(ep, pos).str;
+         if (s != nullptr && (strcmp(s, value) == 0 || (prefix && strncmp(s, value, len - 1) == 0))) {
+            return ep;
+         }
+      }
+      return nullptr;
    }
 
 } // namespace ocs::tom

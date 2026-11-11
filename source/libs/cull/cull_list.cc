@@ -56,6 +56,9 @@
 #include "uti/ocs_TerminationManager.h"
 #include "uti/sge_stdlib.h"
 #include "tom/ocs_ElementCore.h"
+#include "tom/ocs_ListCore.h"
+#include "tom/ocs_SelectCore.h"
+#include "tom/ocs_SoftPath.h"
 
 #include "cull/msg_cull.h"
 #include "cull/cull_db.h"
@@ -114,6 +117,8 @@ static void lWriteElem_(const lListElem *lp, dstring *buffer, int nesting_level)
  * @param ep element
  *
  * @return copy of 'ep'
+ *
+ * @see Typed form: ocs::tom::ConstElement<T>::clone().
  */
 lListElem *lCopyElem(const lListElem *ep) {
    return lCopyElemHash(ep, true);
@@ -130,34 +135,22 @@ lListElem *lCopyElem(const lListElem *ep) {
  *                         #CULL_NO_TRANSFER fields must not be taken over
  *
  * @return copy of 'ep'
+ *
+ * @note A thin wrapper over ocs::tom::copy_elem() of the core, which maps its exceptions to the
+ *       result, error number and abort of before (CS-3077).
+ *
+ * @see Typed form: ocs::tom::ConstElement<T>::clone().
  */
 lListElem *lCopyElemHash(const lListElem *ep, bool isHash, const bool skip_no_transfer) {
-   DENTER(CULL_LAYER);
-
-   lListElem *new_ep;
-
-   if (!ep) {
+   try {
+      return ocs::tom::copy_elem(ep, isHash, skip_no_transfer);
+   } catch (const ocs::tom::FieldException &) {
+      ocs::tom::report_soft_path("lCopyElem", ocs::tom::SoftPathNoName, ocs::tom::SoftPathReason::NullElement);
       LERROR(LEELEMNULL);
-      DRETURN(nullptr);
+   } catch (const ocs::tom::ListCoreError &e) {
+      LERROR(e.lerrno());
    }
-
-   if (!(new_ep = lCreateElem(ep->descr))) {
-      LERROR(LECREATEELEM);
-      DRETURN(nullptr);
-   }
-
-   for (const auto f : ocs_cull_present_fields(ep->descr)) {
-      if (lCopySwitchPack(ep, new_ep, f.pos, f.pos, isHash, nullptr, nullptr, skip_no_transfer) != 0) {
-         lFreeElem(&new_ep);
-
-         LERROR(LECOPYSWITCH);
-         DRETURN(nullptr);
-      }
-   }
-
-   elem_set_free(new_ep);
-
-   DRETURN(new_ep);
+   return nullptr;
 }
 
 /**
@@ -178,6 +171,9 @@ lListElem *lCopyElemHash(const lListElem *ep, bool isHash, const bool skip_no_tr
  *                         #CULL_NO_TRANSFER fields must not be taken over
  *
  * @return error state 0 - OK -1 - Error
+ *
+ * @note Without a pack buffer a thin wrapper over ocs::tom::copy_elem_partial().
+ * @see Typed form: ocs::tom::ConstList<T>::select() reduces through it
  */
 int
 lCopyElemPartialPack(lListElem *dst, const lListElem *src,
@@ -190,43 +186,30 @@ lCopyElemPartialPack(lListElem *dst, const lListElem *src,
       DRETURN(-1);
    }
 
+   if (pb == nullptr) {
+      try {
+         ocs::tom::copy_elem_partial(dst, src, enp, isHash, skip_no_transfer);
+      } catch (const ocs::tom::FieldException &) {
+         LERROR(LEELEMNULL);
+         DRETURN(-1);
+      } catch (const ocs::tom::ListCoreError &e) {
+         LERROR(e.lerrno());
+         DRETURN(-1);
+      }
+      DRETURN(0);
+   }
+
+   // with a pack buffer the selected fields are packed instead of copied
    switch (enp[0].pos) {
-      case WHAT_ALL:               /* all fields of element src is copied */
-         if (pb == nullptr) {
-            for (const auto f : ocs_cull_present_fields(src->descr)) {
-               if (lCopySwitchPack(src, dst, f.pos, f.pos, isHash, enp[0].ep, nullptr, skip_no_transfer) != 0) {
-                  LERROR(LECOPYSWITCH);
-                  DRETURN(-1);
-               }
-            }
-         } else {
-            cull_pack_elem(pb, src);
-         }
+      case WHAT_ALL:               /* all fields of element src are packed */
+         cull_pack_elem(pb, src);
          break;
 
-      case WHAT_NONE:              /* no field of element src is copied */
+      case WHAT_NONE:              /* no field of element src is packed */
          break;
 
-      default:                     /* copy only the in enp enumerated elems */
-         if (pb == nullptr) {
-            const int maxpos = std::min(lCountDescr(src->descr), lCountDescr(dst->descr));
-
-            for (int i = 0; enp[i].nm != NoName; i++) {
-               const int pos = enp[i].pos;
-               if (pos >= maxpos || pos < 0 || src->descr[pos].off == OCS_CULL_ABSENT ||
-                   dst->descr[pos].off == OCS_CULL_ABSENT) {
-                  LERROR(LEENUMDESCR);
-                  DRETURN(-1);
-               }
-
-               if (lCopySwitchPack(src, dst, pos, pos, isHash, enp[i].ep, nullptr, skip_no_transfer) != 0) {
-                  LERROR(LECOPYSWITCH);
-                  DRETURN(-1);
-               }
-            }
-         } else {
-            cull_pack_elem_partial(pb, src, enp, 0);
-         }
+      default:                     /* only the enumerated fields are packed */
+         cull_pack_elem_partial(pb, src, enp, 0);
    }
    DRETURN(0);
 }
@@ -244,95 +227,25 @@ lCopyElemPartialPack(lListElem *dst, const lListElem *src,
  * @param dst_idx destination index
  * @param isHash create Hash or not
  * @param ep enumeration oiter to be used for sublists
- * @param pb pack buffer
  * @param skip_no_transfer true when the copy is one that will be handed out, so
  *                         #CULL_NO_TRANSFER fields must not be taken over
  *
  * @return error state 0 - OK -1 - Error
+ *
+ * @note A thin wrapper over ocs::tom::copy_field(); the pack buffer it took is gone, no caller passed one.
  */
 int
 lCopySwitchPack(const lListElem *sep, lListElem *dep, int src_idx, int dst_idx,
-                bool isHash, lEnumeration *ep, sge_pack_buffer *pb, const bool skip_no_transfer) {
-   DENTER(CULL_LAYER);
-
-   lList *tlp;
-   lListElem *tep;
-
-   if ((!dep && !pb) || !sep) {
-      DRETURN(-1);
+                bool isHash, lEnumeration *ep, const bool skip_no_transfer) {
+   try {
+      ocs::tom::copy_field(sep, dep, src_idx, dst_idx, isHash, ep, skip_no_transfer);
+   } catch (const ocs::tom::FieldException &) {
+      return -1;
+   } catch (const ocs::tom::ListCoreError &e) {
+      LERROR(e.lerrno());
+      return -1;
    }
-
-   lMultiType &dst = ocs_cull_value(dep, dst_idx);
-   const lMultiType &src = ocs_cull_value(sep, src_idx);
-
-   /* A field marked CULL_NO_TRANSFER holds state that is meaningful only in the
-    * process that built it. When this copy is one that will be handed out - an
-    * event payload - the destination keeps what lCreateElem() gave it, which is
-    * nullptr for the pointer valued types and 0 for the scalar ones. Deciding it
-    * here, in the walk that has to happen anyway, means a marked sub-list is not
-    * even descended into, let alone duplicated. */
-   if (skip_no_transfer && !mt_do_transfer(dep->descr[dst_idx].mt)) {
-      dst = lMultiType{};
-      DRETURN(0);
-   }
-
-   switch (mt_get_type(dep->descr[dst_idx].mt)) {
-      case lUlongT:
-         dst.ul = src.ul;
-         break;
-      case lUlong64T:
-         dst.ul64 = src.ul64;
-         break;
-      case lStringT:
-         if (!src.str)
-            dst.str = nullptr;
-         else
-            dst.str = strdup(src.str);
-         break;
-      case lHostT:
-         if (!src.host)
-            dst.host = nullptr;
-         else
-            dst.host = strdup(src.host);
-         break;
-
-      case lDoubleT:
-         dst.db = src.db;
-         break;
-      case lListT:
-         if ((tlp = src.glp) == nullptr)
-            dst.glp = nullptr;
-         else {
-            dst.glp = lSelectHashPack(tlp->listname, tlp, nullptr,
-                                      ep, isHash, pb, skip_no_transfer);
-         }
-         break;
-      case lObjectT:
-         if ((tep = src.obj) == nullptr) {
-            dst.obj = nullptr;
-         } else {
-            lListElem *new_ep = lSelectElemPack(tep, nullptr, ep, isHash, pb, skip_no_transfer);
-            elem_set_object(new_ep);
-            dst.obj = new_ep;
-         }
-         break;
-      case lIntT:
-         dst.i = src.i;
-         break;
-      case lLongT:
-         dst.l = src.l;
-         break;
-      case lBoolT:
-         dst.b = src.b;
-         break;
-      case lRefT:
-         dst.ref = src.ref;
-         break;
-      default:
-         DRETURN(-1);
-   }
-
-   DRETURN(0);
+   return 0;
 }
 
 /**
@@ -343,21 +256,20 @@ lCopySwitchPack(const lListElem *sep, lListElem *dep, int src_idx, int dst_idx,
  * @param lp list pointer
  *
  * @return list name
+ *
+ * @see Typed form: ocs::tom::ConstList<T>::name().
+ *
+ * @note A thin wrapper over ocs::tom::list_name().
  */
 const char *lGetListName(const lList *lp) {
-   DENTER(CULL_LAYER);
-
-   if (!lp) {
+   if (lp == nullptr) {
       LERROR(LELISTNULL);
-      DRETURN("No List specified");
+      return "No List specified";
    }
-
-   if (!lp->listname) {
+   if (lp->listname == nullptr) {
       LERROR(LENULLSTRING);
-      DRETURN("No list name specified");
    }
-
-   DRETURN(lp->listname);
+   return ocs::tom::list_name(lp);
 }
 
 /**
@@ -391,6 +303,8 @@ const lDescr *lGetListDescr(const lList *lp) {
  * @return number of elements
  *
  * @note MT-NOTE: lGetNumberOfElem() is MT safe
+ *
+ * @see Typed form: ocs::tom::ConstList<T>::size().
  */
 uint32_t lGetNumberOfElem(const lList *lp) {
    DENTER(CULL_LAYER);
@@ -728,72 +642,21 @@ static void lWriteList_(const lList *lp, dstring *buffer, int nesting_level) {
  * @param dp descriptor
  *
  * @return element pointer or nullptr
+ *
+ * @note A thin wrapper over ocs::tom::create_elem() of the core, which maps its exceptions to the
+ *       result, error number and abort of before (CS-3077).
+ *
+ * @see Typed form: ocs::tom::ElementPtr<T>::create().
  */
 lListElem *lCreateElem(const lDescr *dp) {
-   DENTER(CULL_LAYER);
-
-   int n, i;
-   lListElem *ep;
-
-   if ((n = lCountDescr(dp)) <= 0) {
+   try {
+      return ocs::tom::create_elem(dp);
+   } catch (const ocs::tom::FieldException &) {
       LERROR(LECOUNTDESCR);
-      DRETURN(nullptr);
+   } catch (const ocs::tom::ListCoreError &e) {
+      LERROR(e.lerrno());
    }
-
-   ep = (lListElem *) sge_malloc(sizeof(lListElem));
-
-   if (ep == nullptr) {
-      LERROR(LEMALLOC);
-      DRETURN(nullptr);
-   }
-
-   ep->next = nullptr;
-   ep->prev = nullptr;
-
-   /* every field inherits the reduced flag of the type; a descriptor that does
-    * not carry it in every field yet is normalised in a temporary copy */
-   lDescr *normalised = nullptr;
-   if ((dp->mt & CULL_IS_REDUCED) != 0) {
-      for (i = 0; i <= n; i++) {
-         if ((dp[i].mt & CULL_IS_REDUCED) == 0) {
-            normalised = (lDescr *) sge_malloc(sizeof(lDescr) * (n + 1));
-            if (normalised == nullptr) {
-               LERROR(LEMALLOC);
-               sge_free(&ep);
-               DRETURN(nullptr);
-            }
-            memcpy(normalised, dp, sizeof(lDescr) * (n + 1));
-            CULL_STATS_TYPE(dp[0].nm, DCOPY_ELEM, 1);
-            CULL_STATS_TYPE(dp[0].nm, DCOPY_ELEM_B, sizeof(lDescr) * (n + 1));
-            for (int j = 0; j <= n; j++) {
-               normalised[j].mt |= CULL_IS_REDUCED;
-            }
-            break;
-         }
-      }
-   }
-   ep->descr = ocs_cull_descr_acquire(normalised != nullptr ? normalised : dp);
-   sge_free(&normalised);
-   if (!ep->descr) {
-      LERROR(LEMALLOC);
-      sge_free(&ep);
-      DRETURN(nullptr);
-   }
-
-   elem_set_free(ep);
-   // the held descriptor is static or counted, so its header knows the number of values
-   if (!(ep->cont = (lMultiType *) calloc(1, sizeof(lMultiType) * ocs_cull_descr_header_of(ep->descr)->np))) {
-      LERROR(LEMALLOC);
-      ocs_cull_descr_release(&(ep->descr));
-      sge_free(&ep);
-      DRETURN(nullptr);
-   }
-
-#ifdef OBSERVE
-      lObserveAdd(ep, nullptr, false);
-#endif
-
-   DRETURN(ep);
+   return nullptr;
 }
 
 /**
@@ -806,6 +669,8 @@ lListElem *lCreateElem(const lDescr *dp) {
  * @param descr descriptor
  *
  * @return list pointer or nullptr
+ *
+ * @see Typed form: ocs::tom::ListPtr<T>::create().
  */
 lList *lCreateList(const char *listname, const lDescr *descr) {
    return lCreateListHash(listname, descr, true);
@@ -825,56 +690,21 @@ lList *lCreateList(const char *listname, const lDescr *descr) {
  * @param hash may the list be hashed? If false, it is always searched linearly
  *
  * @return list pointer or nullptr
+ *
+ * @note A thin wrapper over ocs::tom::create_list() of the core, which maps its exceptions to the
+ *       result, error number and abort of before (CS-3077).
+ *
+ * @see Typed form: ocs::tom::ListPtr<T>::create() with ocs::tom::Hashing.
  */
 lList *lCreateListHash(const char *listname, const lDescr *descr, bool hash) {
-   DENTER(CULL_LAYER);
-
-   lList *lp;
-
-   if (listname == nullptr) {
-      listname = "No list name specified";
-   }
-
-   if (!descr || mt_get_type(descr[0].mt) == lEndT) {
+   try {
+      return ocs::tom::create_list(listname, descr, hash);
+   } catch (const ocs::tom::FieldException &) {
       LERROR(LEDESCRNULL);
-      DRETURN(nullptr);
+   } catch (const ocs::tom::ListCoreError &e) {
+      LERROR(e.lerrno());
    }
-
-   if (!(lp = (lList *) sge_malloc(sizeof(lList)))) {
-      LERROR(LEMALLOC);
-      DRETURN(nullptr);
-   }
-   if (!(lp->listname = strdup(listname))) {
-      sge_free(&lp);
-      LERROR(LESTRDUP);
-      DRETURN(nullptr);
-   }
-
-   lp->nelem = 0;
-   lp->first = nullptr;
-   lp->last = nullptr;
-   /* the list holds a reference on the shared descriptor instead of a copy */
-   if (!(lp->descr = ocs_cull_descr_acquire(descr))) {
-      sge_free(&(lp->listname));
-      sge_free(&lp);
-      LERROR(LEMALLOC);
-      DRETURN(nullptr);
-   }
-
-   /* the hash tables belong to the list: one slot per hashed field if it may be hashed */
-   if (!cull_hash_init_slots(lp, hash)) {
-      ocs_cull_descr_release(&(lp->descr));
-      sge_free(&(lp->listname));
-      sge_free(&lp);
-      LERROR(LEMALLOC);
-      DRETURN(nullptr);
-   }
-
-#ifdef OBSERVE
-   lObserveAdd(lp, nullptr, true);
-#endif
-
-   DRETURN(lp);
+   return nullptr;
 }
 
 /**
@@ -921,85 +751,23 @@ lList *lCreateElemList(const char *listname, const lDescr *descr, int nr_elem) {
  * @param[in,out] ep1 element to remove; set to nullptr on return
  *
  * @note MT-NOTE: lRemoveElem() is MT safe
+ *
+ * @note A thin wrapper over ocs::tom::free_elem() of the core, which maps its exceptions to the
+ *       result, error number and abort of before (CS-3077).
+ *
+ * @see Typed form: ocs::tom::ElementPtr<T>::reset() and its destructor.
  */
 void lFreeElem(lListElem **ep1) {
-   DENTER(CULL_LAYER);
-
-   lListElem *ep = nullptr;
-
-   if (ep1 == nullptr || *ep1 == nullptr) {
-      DRETURN_VOID;
+   if (ep1 == nullptr) {
+      return;
    }
-
-   ep = *ep1;
-
-   if (ep->descr == nullptr) {
+   try {
+      ocs::tom::free_elem(*ep1);
+   } catch (const ocs::tom::FieldException &) {
       LERROR(LEDESCRNULL);
       DPRINTF("nullptr descriptor not allowed !!!\n");
       ocs::TerminationManager::trigger_abort();
    }
-
-   /* remove a bound element from the hash tables of its list */
-   cull_hash_remove_elem(ep);
-
-   for (const auto f : ocs_cull_present_fields(ep->descr)) {
-      lMultiType &value = ep->cont[f.slot];
-      switch (mt_get_type(ep->descr[f.pos].mt)) {
-
-         case lIntT:
-         case lUlongT:
-         case lUlong64T:
-         case lDoubleT:
-         case lLongT:
-         case lBoolT:
-         case lRefT:
-            break;
-
-         case lStringT:
-            if (value.str != nullptr) {
-               sge_free(&(value.str));
-            }
-            break;
-
-         case lHostT:
-            if (value.host != nullptr) {
-               sge_free(&(value.host));
-            }
-            break;
-
-         case lListT:
-            if (value.glp != nullptr) {
-               lFreeList(&(value.glp));
-            }
-            break;
-
-         case lObjectT:
-            if (value.obj != nullptr) {
-               lFreeElem(&(value.obj));
-            }
-            break;
-
-         default:
-            unknownType("lFreeElem");
-            break;
-      }
-   }
-
-   /* a bound element borrows the descriptor of its list; the others hold a reference */
-   if (elem_kind(ep) == FREE_ELEM || elem_kind(ep) == OBJECT_ELEM) {
-      ocs_cull_descr_release(&(ep->descr));
-   }
-
-   if (ep->cont != nullptr) {
-      sge_free(&(ep->cont));
-   }
-
-#ifdef OBSERVE
-   lObserveRemove(*ep1);
-#endif
-
-   sge_free(ep1);
-   DRETURN_VOID;
 }
 
 /**
@@ -1011,39 +779,23 @@ void lFreeElem(lListElem **ep1) {
  *
  *
  * @note MT-NOTE: lFreeList() is MT safe
+ *
+ * @note A thin wrapper over ocs::tom::free_list() of the core, which maps its exceptions to the
+ *       result, error number and abort of before (CS-3077).
+ *
+ * @see Typed form: ocs::tom::ListPtr<T>::reset() and its destructor.
  */
 void lFreeList(lList **lp) {
-   DENTER(CULL_LAYER);
-
-   if (lp == nullptr || *lp == nullptr) {
-      DRETURN_VOID;
+   if (lp == nullptr) {
+      return;
    }
-
-   /*
-    * remove all hash tables,
-    * it is more efficient than removing it at the end
-    */
-   cull_hash_free_tables(*lp);
-
-   while ((*lp)->first) {
-      lListElem *elem = (*lp)->first;
-      lRemoveElem(*lp, &elem);
+   try {
+      ocs::tom::free_list(*lp);
+   } catch (const ocs::tom::FieldException &) {
+      LERROR(LEDESCRNULL);
+      DPRINTF("nullptr descriptor not allowed !!!\n");
+      ocs::TerminationManager::trigger_abort();
    }
-
-   cull_hash_free_slots(*lp);
-
-   ocs_cull_descr_release(&((*lp)->descr));
-
-   if ((*lp)->listname) {
-      sge_free(&((*lp)->listname));
-   }
-
-#ifdef OBSERVE
-   lObserveRemove(*lp);
-#endif
-
-   sge_free(lp);
-   DRETURN_VOID;
 }
 
 
@@ -1084,6 +836,8 @@ lList *lAddSubList(lListElem *ep, int nm, lList *to_add) {
  * @return error state 0 - OK -1 - Error
  *
  * @note MT-NOTE: lAddList() is MT safe
+ *
+ * @see Typed form: ocs::tom::List<T>::splice() with an owning handle.
  */
 int lAddList(lList *lp0, lList **lp1) {
    DENTER(CULL_LAYER);
@@ -1107,38 +861,31 @@ int lAddList(lList *lp0, lList **lp1) {
  * @return error state 0 - OK -1 - Error
  *
  * @note MT-NOTE: lAppendList() is MT safe
+ *
+ * @note A thin wrapper over ocs::tom::append_list() of the core, which maps its exceptions to the
+ *       result, error number and abort of before (CS-3077).
+ *
+ * @see Typed form: ocs::tom::List<T>::splice() with a non-owning handle.
  */
 int lAppendList(lList *lp0, lList *lp1) {
-   DENTER(CULL_LAYER);
-
-   lListElem *ep;
-   const lDescr *dp0, *dp1;
-
-   if (!lp1 || !lp0) {
-      LERROR(LELISTNULL);
-      DRETURN(-1);
-   }
-
-   /* Check if the two lists are equal */
-   dp0 = lGetListDescr(lp0);
-   dp1 = lGetListDescr(lp1);
-   if (lCompListDescr(dp0, dp1)) {
-      LERROR(LEDIFFDESCR);
-      DRETURN(-1);
-   }
-
-   while (lp1->first) {
-      if (!(ep = lDechainElem(lp1, lp1->first))) {
-         LERROR(LEDECHAINELEM);
-         DRETURN(-1);
-      }
-      if (lAppendElem(lp0, ep) == -1) {
-         LERROR(LEAPPENDELEM);
-         DRETURN(-1);
+   try {
+      ocs::tom::append_list(lp0, lp1);
+      return 0;
+   } catch (const ocs::tom::FieldException &e) {
+      switch (e.reason()) {
+         case ocs::tom::FieldException::Reason::NullList:
+            ocs::tom::report_soft_path("lAppendList", ocs::tom::SoftPathNoName, ocs::tom::SoftPathReason::NullList);
+            LERROR(LELISTNULL);
+            break;
+         case ocs::tom::FieldException::Reason::WrongType:
+            LERROR(LEDIFFDESCR);
+            break;
+         default:
+            // a duplicate key aborted in the lAppendElem() the old loop called
+            ocs::tom::legacy_abort("lAppendElem", e);
       }
    }
-
-   DRETURN(0);
+   return -1;
 }
 
 /**
@@ -1227,52 +974,16 @@ int lOverrideStrList(lList *lp0, lList *lp1, int nm, const char *str) {
  * @return Result of compare operation 0 - equivalent -1 - not equivalent
  *
  * @note MT-NOTE: lCompListDescr() is MT safe
+ *
+ * @note A thin wrapper over ocs::tom::layout_difference().
  */
 int lCompListDescr(const lDescr *dp0, const lDescr *dp1) {
-   DENTER(CULL_LAYER);
-
-   int i, n, m;
-
-   if (!dp0 || !dp1) {
-      LERROR(LELISTNULL);
-      DRETURN(-1);
+   const int difference = ocs::tom::layout_difference(dp0, dp1);
+   if (difference != 0) {
+      LERROR(difference);
+      return -1;
    }
-
-   /* Check if the two lists are equal */
-   if ((n = lCountDescr(dp0)) <= 0) {
-      LERROR(LECOUNTDESCR);
-      DRETURN(-1);
-   }
-   if ((m = lCountDescr(dp1)) <= 0) {
-      LERROR(LECOUNTDESCR);
-      DRETURN(-1);
-   }
-   if (n == m) {
-      for (i = 0; i < n; i++) {
-#if 1
-         int type0 = mt_get_type(dp0[i].mt);
-         int type1 = mt_get_type(dp1[i].mt);
-         // both full length: the same fields must be present (CS-439)
-         if (dp0[i].nm != dp1[i].nm || type0 != type1 ||
-             (dp0[i].off == OCS_CULL_ABSENT) != (dp1[i].off == OCS_CULL_ABSENT)) {
-#else
-            /*
-             * comparing the mt field might be too restrictive
-             * former implementation mt only contained the type information
-             * now also the various flags
-             */
-            if (dp0[i].nm != dp1[i].nm || dp0[i].mt != dp1[i].mt) {
-#endif
-            LERROR(LEDIFFDESCR);
-            DRETURN(-1);
-         }
-      }
-   } else {
-      LERROR(LEDIFFDESCR);
-      DRETURN(-1);
-   }
-
-   DRETURN(0);
+   return 0;
 }
 
 /**
@@ -1285,6 +996,8 @@ int lCompListDescr(const lDescr *dp0, const lDescr *dp1) {
  * @param src source list
  *
  * @return Copy of 'src' or nullptr
+ *
+ * @see Typed form: ocs::tom::ConstList<T>::clone().
  */
 lList *lCopyList(const char *name, const lList *src) {
    return lCopyListHash(name, src, true);
@@ -1303,46 +1016,25 @@ lList *lCopyList(const char *name, const lList *src) {
  *                         #CULL_NO_TRANSFER fields must not be taken over
  *
  * @return Copy of 'src' or nullptr
+ *
+ * @note A thin wrapper over ocs::tom::copy_list() of the core, which maps its exceptions to the
+ *       result, error number and abort of before (CS-3077).
+ *
+ * @see Typed form: ocs::tom::ConstList<T>::clone().
  */
 lList *lCopyListHash(const char *name, const lList *src, bool hash, const bool skip_no_transfer) {
-   DENTER(CULL_LAYER);
-
-   lList *dst = nullptr;
-   lListElem *sep;
-
-   if (!src) {
-      LERROR(LELISTNULL);
-      DRETURN(nullptr);
-   }
-
-   if (!name)
-      name = src->listname;
-
-   if (!name)
-      name = "No list name specified";
-
-
-   /* create the new list without hash slots, so that filling it maintains no table */
-   if (!(dst = lCreateListHash(name, src->descr, false))) {
-      LERROR(LECREATELIST);
-      DRETURN(nullptr);
-   }
-
-   // the source was checked for duplicate keys when it was filled; checking each copy again would be quadratic
-   const ocs::tom::UniqueCheckSuspension suspension;
-   for (sep = src->first; sep; sep = sep->next) {
-      if (lAppendElem(dst, lCopyElemHash(sep, true, skip_no_transfer)) == -1) {
-         lFreeList(&dst);
-         LERROR(LEAPPENDELEM);
-         DRETURN(nullptr);
+   try {
+      return ocs::tom::copy_list(name, src, hash, skip_no_transfer);
+   } catch (const ocs::tom::FieldException &e) {
+      if (e.reason() != ocs::tom::FieldException::Reason::NullList) {
+         ocs::tom::legacy_abort("lCopyList", e);
       }
+      ocs::tom::report_soft_path("lCopyList", ocs::tom::SoftPathNoName, ocs::tom::SoftPathReason::NullList);
+      LERROR(LELISTNULL);
+   } catch (const ocs::tom::ListCoreError &e) {
+      LERROR(e.lerrno());
    }
-   if (hash) {
-      /* the list may be hashed from now on; its tables are built by the first lookups */
-      cull_hash_create_hashtables(dst);
-   }
-
-   DRETURN(dst);
+   return nullptr;
 }
 
 /**
@@ -1363,67 +1055,36 @@ lList *lCopyListHash(const char *name, const lList *src, bool hash, const bool s
  *                to insert at the front of the list.
  * @param new_ep  The element to insert. Must be unbound (not in any list).
  * @return        0 on success, -1 if @p lp or @p new_ep is nullptr.
+ *
+ * @note A thin wrapper over ocs::tom::insert_elem() of the core, which maps its exceptions to the
+ *       result, error number and abort of before (CS-3077).
+ *
+ * @see Typed form: ocs::tom::List<T>::push_front() and insert_after().
  */
 int lInsertElem(lList *lp, lListElem *ep, lListElem *new_ep) {
-   DENTER(CULL_LAYER);
-
-   if (!lp) {
-      LERROR(LELISTNULL);
-      DRETURN(-1);
-   }
-
-   if (!new_ep) {
-      LERROR(LEELEMNULL);
-      DRETURN(-1);
-   }
-
-   /* is the element new_ep still chained in an other list, this is not allowed ? */
-   if (elem_kind(new_ep) == BOUND_ELEM || elem_kind(new_ep) == OBJECT_ELEM) {
-      DPRINTF("WARNING: tried to insert chained element\n");
-      lWriteElem(new_ep);
-      ocs::TerminationManager::trigger_abort();
-   }
-
    try {
-      ocs::tom::check_unique_on_add(lp, new_ep);
+      ocs::tom::insert_elem(lp, ep, new_ep);
+      return 0;
    } catch (const ocs::tom::FieldException &e) {
-      ocs::tom::legacy_abort("lInsertElem", e);
+      switch (e.reason()) {
+         case ocs::tom::FieldException::Reason::NullList:
+            ocs::tom::report_soft_path("lInsertElem", ocs::tom::SoftPathNoName, ocs::tom::SoftPathReason::NullList);
+            LERROR(LELISTNULL);
+            break;
+         case ocs::tom::FieldException::Reason::NullElement:
+            ocs::tom::report_soft_path("lInsertElem", ocs::tom::SoftPathNoName, ocs::tom::SoftPathReason::NullElement);
+            LERROR(LEELEMNULL);
+            break;
+         case ocs::tom::FieldException::Reason::BoundElement:
+            DPRINTF("WARNING: tried to insert chained element\n");
+         lWriteElem(new_ep);
+            ocs::TerminationManager::trigger_abort();
+            break;
+         default:
+            ocs::tom::legacy_abort("lInsertElem", e);
+      }
    }
-
-   if (ep) {
-      new_ep->prev = ep;
-      new_ep->next = ep->next;
-      ep->next = new_ep;
-      if (new_ep->next)            /* the new element has successors */
-         new_ep->next->prev = new_ep;
-      else                      /* the new element is the last element */
-         lp->last = new_ep;
-   } else {                       /* insert as first element */
-      new_ep->prev = nullptr;
-      new_ep->next = lp->first;
-      if (!lp->first)           /* empty list ? */
-         lp->last = new_ep;
-      else
-         lp->first->prev = new_ep;
-      lp->first = new_ep;
-   }
-
-   /* the element gives its reference up and borrows the descriptor of the list */
-   if (elem_kind(new_ep) == FREE_ELEM) {
-      ocs_cull_descr_release(&(new_ep->descr));
-   }
-   elem_set_bound(new_ep, lp);
-   new_ep->descr = lp->descr;
-
-   cull_hash_elem(new_ep);
-
-   lp->nelem++;
-
-#ifdef OBSERVE
-   lObserveChangeOwner(ep, lp, nullptr, NoName);
-#endif
-
-   DRETURN(0);
+   return -1;
 }
 
 /**
@@ -1439,56 +1100,35 @@ int lInsertElem(lList *lp, lListElem *ep, lListElem *new_ep) {
  * @return error state 0 - OK -1 - Error
  *
  * @note MT-NOTE: lAppendElem() is MT safe
+ *
+ * @note A thin wrapper over ocs::tom::append_elem() of the core, which maps its exceptions to the
+ *       result, error number and abort of before (CS-3077).
+ *
+ * @see Typed form: ocs::tom::List<T>::push_back().
  */
 int lAppendElem(lList *lp, lListElem *ep) {
-   DENTER(CULL_LAYER);
-
-   if (!lp) {
-      LERROR(LELISTNULL);
-      DRETURN(-1);
-   }
-   if (!ep) {
-      LERROR(LEELEMNULL);
-      DRETURN(-1);
-   }
-
-   /* is the element ep still chained in an other list, this is not allowed ? */
-   if (elem_kind(ep) == BOUND_ELEM || elem_kind(ep) == OBJECT_ELEM) {
-      DPRINTF("WARNING: tried to append chained element\n");
-      ocs::TerminationManager::trigger_abort();
-   }
-
    try {
-      ocs::tom::check_unique_on_add(lp, ep);
+      ocs::tom::append_elem(lp, ep);
+      return 0;
    } catch (const ocs::tom::FieldException &e) {
-      ocs::tom::legacy_abort("lAppendElem", e);
+      switch (e.reason()) {
+         case ocs::tom::FieldException::Reason::NullList:
+            ocs::tom::report_soft_path("lAppendElem", ocs::tom::SoftPathNoName, ocs::tom::SoftPathReason::NullList);
+            LERROR(LELISTNULL);
+            break;
+         case ocs::tom::FieldException::Reason::NullElement:
+            ocs::tom::report_soft_path("lAppendElem", ocs::tom::SoftPathNoName, ocs::tom::SoftPathReason::NullElement);
+            LERROR(LEELEMNULL);
+            break;
+         case ocs::tom::FieldException::Reason::BoundElement:
+            DPRINTF("WARNING: tried to append chained element\n");
+            ocs::TerminationManager::trigger_abort();
+            break;
+         default:
+            ocs::tom::legacy_abort("lAppendElem", e);
+      }
    }
-
-   if (lp->last) {
-      lp->last->next = ep;
-      ep->prev = lp->last;
-      lp->last = ep;
-      ep->next = nullptr;
-   } else {
-      lp->last = lp->first = ep;
-      ep->prev = ep->next = nullptr;
-   }
-
-   /* the element gives its reference up and borrows the descriptor of the list */
-   if (elem_kind(ep) == FREE_ELEM) {
-      ocs_cull_descr_release(&(ep->descr));
-   }
-   elem_set_bound(ep, lp);
-   ep->descr = lp->descr;
-
-   cull_hash_elem(ep);
-   lp->nelem++;
-
-#ifdef OBSERVE
-   lObserveChangeOwner(ep, lp, nullptr, NoName);
-#endif
-
-   DRETURN(0);
+   return -1;
 }
 
 /**
@@ -1502,48 +1142,32 @@ int lAppendElem(lList *lp, lListElem *ep) {
  * @return error state 0 - OK -1 - Error
  *
  * @note MT-NOTE: lRemoveElem() is MT safe
+ *
+ * @note A thin wrapper over ocs::tom::remove_elem() of the core, which maps its exceptions to the
+ *       result, error number and abort of before (CS-3077).
+ *
+ * @see Typed form: ocs::tom::List<T>::erase().
  */
 int lRemoveElem(lList *lp, lListElem **ep1) {
-   DENTER(CULL_LAYER);
-
-   lListElem *ep = nullptr;
-
-   if (lp == nullptr || ep1 == nullptr || *ep1 == nullptr) {
-      DRETURN(-1);
+   if (ep1 == nullptr) {
+      ocs::tom::report_soft_path("lRemoveElem", ocs::tom::SoftPathNoName, ocs::tom::SoftPathReason::NullArgument);
+      return -1;
    }
-
-   ep = *ep1;
-
-   /* descriptors are shared between lists, so only the owner tells the list of an element */
-   if (elem_list(ep) != lp) {
-      CRITICAL("Removing element from other list !!!\n");
-      ocs::TerminationManager::trigger_abort();
+   try {
+      ocs::tom::remove_elem(lp, *ep1);
+      return 0;
+   } catch (const ocs::tom::FieldException &e) {
+      if (e.reason() == ocs::tom::FieldException::Reason::ForeignList) {
+         CRITICAL("Removing element from other list !!!\n");
+         ocs::TerminationManager::trigger_abort();
+      }
+      // a null list or element returns -1 without an error number, as before
+      ocs::tom::report_soft_path("lRemoveElem", ocs::tom::SoftPathNoName,
+                                 e.reason() == ocs::tom::FieldException::Reason::NullList
+                                    ? ocs::tom::SoftPathReason::NullList
+                                    : ocs::tom::SoftPathReason::NullElement);
    }
-
-   if (ep->prev) {
-      ep->prev->next = ep->next;
-   } else {
-      lp->first = ep->next;
-   }
-
-   if (ep->next) {
-      ep->next->prev = ep->prev;
-   } else {
-      lp->last = ep->prev;
-   }
-
-   /* nullptr the ep next and previous pointers */
-   ep->prev = ep->next = nullptr;
-
-   lp->nelem--;
-
-#ifdef OBSERVE
-   lObserveChangeOwner(ep, nullptr, lp, NoName);
-#endif
-
-   lFreeElem(ep1);
-
-   DRETURN(0);
+   return -1;
 }
 
 /**
@@ -1640,52 +1264,32 @@ lDechainList(lList *source, lList **target, lListElem *ep) {
  * @return dechained element or nullptr
  *
  * @note MT-NOTE: lDechainElem() is MT safe
+ *
+ * @note A thin wrapper over ocs::tom::dechain_elem() of the core, which maps its exceptions to the
+ *       result, error number and abort of before (CS-3077).
+ *
+ * @see Typed form: ocs::tom::List<T>::extract().
  */
 lListElem *lDechainElem(lList *lp, lListElem *ep) {
-   DENTER(CULL_LAYER);
-
-   if (!lp) {
-      LERROR(LELISTNULL);
-      DRETURN(nullptr);
+   try {
+      ocs::tom::dechain_elem(lp, ep);
+      return ep;
+   } catch (const ocs::tom::FieldException &e) {
+      switch (e.reason()) {
+         case ocs::tom::FieldException::Reason::NullList:
+            ocs::tom::report_soft_path("lDechainElem", ocs::tom::SoftPathNoName, ocs::tom::SoftPathReason::NullList);
+            LERROR(LELISTNULL);
+            break;
+         case ocs::tom::FieldException::Reason::NullElement:
+            ocs::tom::report_soft_path("lDechainElem", ocs::tom::SoftPathNoName, ocs::tom::SoftPathReason::NullElement);
+            LERROR(LEELEMNULL);
+            break;
+         default:
+            CRITICAL("Dechaining element from other list !!!");
+            ocs::TerminationManager::trigger_abort();
+      }
    }
-   if (!ep) {
-      LERROR(LEELEMNULL);
-      DRETURN(nullptr);
-   }
-   /* descriptors are shared between lists, so only the owner tells the list of an element */
-   if (elem_list(ep) != lp) {
-      CRITICAL("Dechaining element from other list !!!");
-      ocs::TerminationManager::trigger_abort();
-   }
-
-   if (ep->prev) {
-      ep->prev->next = ep->next;
-   } else {
-      lp->first = ep->next;
-   }
-
-   if (ep->next) {
-      ep->next->prev = ep->prev;
-   } else {
-      lp->last = ep->prev;
-   }
-
-   lp->nelem--;
-
-   /* remove hash entries, while the element is still bound to the list */
-   cull_hash_remove_elem(ep);
-
-   /* nullptr the ep next and previous pointers */
-   ep->prev = ep->next = (lListElem *) nullptr;
-   /* a free element holds a reference of its own */
-   ep->descr = ocs_cull_descr_ref(ep->descr);
-   elem_set_free(ep);
-
-#ifdef OBSERVE
-   lObserveChangeOwner(ep, nullptr, lp, NoName);
-#endif
-
-   DRETURN(ep);
+   return nullptr;
 }
 
 /**
@@ -1740,6 +1344,8 @@ lListElem *lDechainObject(lListElem *parent, int name) {
  * @param slp list
  *
  * @return first element or nullptr
+ *
+ * @see Typed form: ocs::tom::List<T>::front() and begin().
  */
 lListElem *lFirstRW(const lList *slp) {
    DENTER(CULL_LAYER);
@@ -1751,6 +1357,8 @@ lListElem *lFirstRW(const lList *slp) {
  *
  * @param slp list
  * @return first element or nullptr
+ *
+ * @see Typed form: ocs::tom::ConstList<T>::front() and begin().
  */
 const lListElem *lFirst(const lList *slp) {
    return lFirstRW(slp);
@@ -1764,6 +1372,8 @@ const lListElem *lFirst(const lList *slp) {
  * @param slp list
  *
  * @return last element or nullptr
+ *
+ * @see Typed form: ocs::tom::List<T>::back().
  */
 lListElem *lLastRW(const lList *slp) {
    DENTER(CULL_LAYER);
@@ -1775,6 +1385,8 @@ lListElem *lLastRW(const lList *slp) {
  *
  * @param slp list
  * @return last element or nullptr
+ *
+ * @see Typed form: ocs::tom::ConstList<T>::back().
  */
 const lListElem *lLast(const lList *slp) {
    return lLastRW(slp);
@@ -1788,6 +1400,8 @@ const lListElem *lLast(const lList *slp) {
  * @param sep element
  *
  * @return next element or nullptr
+ *
+ * @see Typed form: ocs::tom::Element<T>::next() and the list iterator.
  */
 lListElem *lNextRW(const lListElem *sep) {
    DENTER(CULL_LAYER);
@@ -1799,6 +1413,8 @@ lListElem *lNextRW(const lListElem *sep) {
  *
  * @param sep the current element
  * @return the next element, or nullptr at the end of the list
+ *
+ * @see Typed form: ocs::tom::ConstElement<T>::next() and the list iterator.
  */
 const lListElem *lNext(const lListElem *sep) {
    return lNextRW(sep);
@@ -1812,6 +1428,8 @@ const lListElem *lNext(const lListElem *sep) {
  * @param sep element
  *
  * @return previous element
+ *
+ * @see Typed form: ocs::tom::Element<T>::prev().
  */
 lListElem *lPrevRW(const lListElem *sep) {
    DENTER(CULL_LAYER);
@@ -1823,6 +1441,8 @@ lListElem *lPrevRW(const lListElem *sep) {
  *
  * @param sep the current element
  * @return the previous element, or nullptr at the head of the list
+ *
+ * @see Typed form: ocs::tom::ConstElement<T>::prev().
  */
 const lListElem *lPrev(const lListElem *sep) {
    return lPrevRW(sep);
@@ -1839,21 +1459,18 @@ const lListElem *lPrev(const lListElem *sep) {
  * @param cp condition
  *
  * @return element or nullptr
+ *
+ * @note A thin wrapper over ocs::tom::find_first().
+ * @see Typed form: ocs::tom::List<T>::find_if()
  */
 lListElem *lFindFirstRW(const lList *lp, const lCondition *cp) {
-   DENTER(CULL_LAYER);
-
-   lListElem *ep;
-
-   if (!lp) {
+   try {
+      return ocs::tom::find_first(lp, cp);
+   } catch (const ocs::tom::FieldException &) {
+      ocs::tom::report_soft_path("lFindFirstRW", ocs::tom::SoftPathNoName, ocs::tom::SoftPathReason::NullList);
       LERROR(LELISTNULL);
-      DRETURN(nullptr);
    }
-
-   /* ep->next=nullptr for the last element */
-   for (ep = lp->first; ep && !lCompare(ep, cp); ep = ep->next);
-
-   DRETURN(ep);
+   return nullptr;
 }
 
 /**
@@ -1867,21 +1484,18 @@ lListElem *lFindFirstRW(const lList *lp, const lCondition *cp) {
  * @param cp condition
  *
  * @return element or nullptr
+ *
+ * @note A thin wrapper over ocs::tom::find_last().
+ * @see Typed form: ocs::tom::List<T>::find_last_if()
  */
 lListElem *lFindLastRW(const lList *lp, const lCondition *cp) {
-   DENTER(CULL_LAYER);
-
-   lListElem *ep;
-
-   if (!lp) {
+   try {
+      return ocs::tom::find_last(lp, cp);
+   } catch (const ocs::tom::FieldException &) {
+      ocs::tom::report_soft_path("lFindLastRW", ocs::tom::SoftPathNoName, ocs::tom::SoftPathReason::NullList);
       LERROR(LELISTNULL);
-      DRETURN(nullptr);
    }
-
-   /* ep->prev=nullptr for the first element */
-   for (ep = lp->last; ep && !lCompare(ep, cp); ep = ep->prev);
-
-   DRETURN(ep);
+   return nullptr;
 }
 
 /**
@@ -1895,20 +1509,18 @@ lListElem *lFindLastRW(const lList *lp, const lCondition *cp) {
  * @param cp condition
  *
  * @return element or nullptr
+ *
+ * @note A thin wrapper over ocs::tom::find_next().
+ * @see Typed form: ocs::tom::Element<T>::next_if()
  */
 lListElem *lFindNextRW(const lListElem *ep, const lCondition *cp) {
-   DENTER(CULL_LAYER);
-
-   if (!ep) {
+   try {
+      return ocs::tom::find_next(ep, cp);
+   } catch (const ocs::tom::FieldException &) {
+      ocs::tom::report_soft_path("lFindNextRW", ocs::tom::SoftPathNoName, ocs::tom::SoftPathReason::NullElement);
       LERROR(LEELEMNULL);
-      DRETURN(nullptr);
    }
-
-   do {
-      ep = ep->next;
-   } while (ep && (lCompare(ep, cp) == 0));
-
-   DRETURN((lListElem *) ep);
+   return nullptr;
 }
 
 /**
@@ -1922,20 +1534,18 @@ lListElem *lFindNextRW(const lListElem *ep, const lCondition *cp) {
  * @param cp condition
  *
  * @return element or nullptr
+ *
+ * @note A thin wrapper over ocs::tom::find_prev().
+ * @see Typed form: ocs::tom::Element<T>::prev_if()
  */
 lListElem *lFindPrevRW(const lListElem *ep, const lCondition *cp) {
-   DENTER(CULL_LAYER);
-
-   if (!ep) {
+   try {
+      return ocs::tom::find_prev(ep, cp);
+   } catch (const ocs::tom::FieldException &) {
+      ocs::tom::report_soft_path("lFindPrevRW", ocs::tom::SoftPathNoName, ocs::tom::SoftPathReason::NullElement);
       LERROR(LEELEMNULL);
-      DRETURN(nullptr);
    }
-
-   do {
-      ep = ep->prev;
-   } while (ep && (lCompare(ep, cp) == 0));
-
-   DRETURN((lListElem *) ep);
+   return nullptr;
 }
 
 /**

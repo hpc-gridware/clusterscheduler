@@ -32,9 +32,11 @@
 
 #include <cstdint>
 #include <string>
+#include <type_traits>
 
 #include "cull/cull_list.h"
 #include "cull/cull_listP.h"
+#include "cull/cull_multitypeP.h"
 #include "tom/ocs_FieldException.h"
 #include "tom/ocs_FieldTraits.h"
 
@@ -51,6 +53,41 @@ namespace ocs::tom {
     * @return the position, or -1 if the field does not belong to the type
     */
    int field_pos(const lDescr *descr, int nm) noexcept;
+
+   /**
+    * @brief The position of a field a descriptor holds: a field of its type that a reduction did not leave out
+    *
+    * The lookup lGetPosInDescr() is a thin wrapper over.
+    *
+    * @param descr the descriptor, or nullptr
+    * @param nm the field number
+    * @return the position, or -1 if the descriptor is null, the field belongs to another type or is absent
+    */
+   int present_pos(const lDescr *descr, int nm) noexcept;
+
+   /**
+    * @brief The length of the type of a descriptor: the entries before the terminating one
+    *
+    * Counts the entries, so it also works for a descriptor that is not
+    * registered; lCountDescr() is a thin wrapper over it.
+    *
+    * @param descr the descriptor, or nullptr
+    * @return the length, or -1 for nullptr
+    */
+   int descr_length(const lDescr *descr) noexcept;
+
+   /**
+    * @brief How two descriptors differ: the same fields with the same types, holding the same of them
+    *
+    * Attributes other than the type are not compared, as lCompListDescr(),
+    * a thin wrapper over it, did not compare them.
+    *
+    * @param a the first descriptor
+    * @param b the second descriptor
+    * @return 0 if equivalent, otherwise the error number lCompListDescr() set: LELISTNULL for a null
+    *         descriptor, LECOUNTDESCR for an empty one, LEDIFFDESCR for different ones
+    */
+   int layout_difference(const lDescr *a, const lDescr *b) noexcept;
 
    /**
     * @brief The position of a field an element must hold, with the field type it must have
@@ -232,6 +269,57 @@ namespace ocs::tom {
    }
 
    /**
+    * @brief Add an offset to a number field, as lAddUlong(), lAddUlong64() and lAddDouble() do
+    *
+    * The implementation of the old increments and of Element<T>::add<F>(). An
+    * offset of 0 changes nothing, so the hash table of the list is not
+    * touched. A hashed or, in a debug build, unique 32 or 64 bit field is
+    * stored through #store_hashed_number, which keeps the hash table right;
+    * a 32 bit sum wraps around as the old function's did.
+    *
+    * @tparam V the value type of the field: std::uint32_t, std::uint64_t or double
+    * @param ep the element, which holds the field
+    * @param pos the field's position in the element's descriptor
+    * @param slot the field's value in the element
+    * @param offset the amount to add
+    * @return the new value
+    * @throw FieldException with reason DuplicateKey in a debug build, when the field is unique and
+    *        another element of the list holds the new value; the old value is kept
+    * @see lAddUlong(), lAddUlong64(), lAddDouble(), Element<T>::add<F>(), ocs::tom::add<F>()
+    */
+   template <typename V>
+      requires std::is_same_v<V, std::uint32_t> || std::is_same_v<V, std::uint64_t> || std::is_same_v<V, double>
+   V add_number(lListElem *ep, const int pos, lMultiType &slot, const V offset) {
+      observe_value(ep, pos);
+      if constexpr (std::is_same_v<V, double>) {
+         slot.db += offset;
+         return slot.db;
+      } else if constexpr (std::is_same_v<V, std::uint32_t>) {
+         if (offset == 0) {
+            return slot.ul;
+         }
+         const V sum = slot.ul + offset;
+         if (needs_hashed_store(ep, pos)) {
+            store_hashed_number(ep, pos, sum);
+         } else {
+            slot.ul = sum;
+         }
+         return sum;
+      } else {
+         if (offset == 0) {
+            return slot.ul64;
+         }
+         const V sum = slot.ul64 + offset;
+         if (needs_hashed_store(ep, pos)) {
+            store_hashed_number(ep, pos, sum);
+         } else {
+            slot.ul64 = sum;
+         }
+         return sum;
+      }
+   }
+
+   /**
     * @brief End the process for an exception of the core, the way the old interface ends on a programming error
     *
     * Logs the function and the message as CRITICAL and aborts with a stack
@@ -303,5 +391,81 @@ namespace ocs::tom {
     * @throw FieldException with reason DuplicateKey, see #lookup_first_str
     */
    lListElem *lookup_first_host(const lList *lp, int pos, const char *value, const void **iterator);
+
+   /**
+    * @brief The next element of a list whose string field holds a value, continuing #lookup_first_str
+    *
+    * Through the field's table where the list has one, otherwise by a linear
+    * search from the element the iterator holds; the iterator is nullptr after
+    * the last match. lGetElemStrNextRW() is a thin wrapper over it.
+    *
+    * @param lp the list, not nullptr
+    * @param pos the field's position in the list's descriptor
+    * @param value the value, not nullptr
+    * @param iterator the lookup's state; nullptr gives no element
+    * @return the element, or nullptr
+    */
+   lListElem *lookup_next_str(const lList *lp, int pos, const char *value, const void **iterator);
+
+   /**
+    * @brief The next element of a list whose 32 bit field holds a value, continuing #lookup_first_ulong
+    * @param lp the list, not nullptr
+    * @param pos the field's position in the list's descriptor
+    * @param value the value
+    * @param iterator the lookup's state; nullptr gives no element
+    * @return the element, or nullptr
+    */
+   lListElem *lookup_next_ulong(const lList *lp, int pos, lUlong value, const void **iterator);
+
+   /**
+    * @brief The next element of a list whose 64 bit field holds a value, continuing #lookup_first_ulong64
+    * @param lp the list, not nullptr
+    * @param pos the field's position in the list's descriptor
+    * @param value the value
+    * @param iterator the lookup's state; nullptr gives no element
+    * @return the element, or nullptr
+    */
+   lListElem *lookup_next_ulong64(const lList *lp, int pos, lUlong64 value, const void **iterator);
+
+   /**
+    * @brief The next element of a list whose host field holds a host, continuing #lookup_first_host
+    * @param lp the list, not nullptr
+    * @param pos the field's position in the list's descriptor
+    * @param value the host name, not nullptr; compared without regard to case
+    * @param iterator the lookup's state; nullptr gives no element
+    * @return the element, or nullptr
+    */
+   lListElem *lookup_next_host(const lList *lp, int pos, const char *value, const void **iterator);
+
+   /**
+    * @brief The first element of a list whose string field equals a value without regard to case
+    *
+    * A linear search, as lGetElemCaseStrRW() did; the old function is a thin
+    * wrapper over it and the typed find_first_nocase().
+    *
+    * @param lp the list, or nullptr for no match
+    * @param nm the field number
+    * @param value the value, or nullptr for no match
+    * @return the element, or nullptr
+    * @throw FieldException with reason AbsentField if the list's elements do not hold the field, or
+    *        WrongType if it is not a string field
+    */
+   lListElem *lookup_first_str_nocase(const lList *lp, int nm, const char *value);
+
+   /**
+    * @brief The first element of a list whose string field equals a value, or starts with it if it ends in '*'
+    *
+    * A linear search, as lGetElemStrLikeRW() did; the old function is a thin
+    * wrapper over it and the typed find_first_like(). Only a trailing '*' is a
+    * pattern; everything else compares exactly.
+    *
+    * @param lp the list, or nullptr for no match
+    * @param nm the field number
+    * @param value the value or prefix pattern, or nullptr for no match
+    * @return the element, or nullptr
+    * @throw FieldException with reason AbsentField if the list's elements do not hold the field, or
+    *        WrongType if it is not a string field
+    */
+   lListElem *lookup_first_str_like(const lList *lp, int nm, const char *value);
 
 } // namespace ocs::tom

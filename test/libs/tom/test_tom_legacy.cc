@@ -31,14 +31,19 @@
 
 #include <csignal>
 #include <cstdio>
+#include <cstring>
 #include <functional>
+#include <string>
 
 #include <sys/wait.h>
 #include <unistd.h>
 
 #include "cull/cull_lerrno.h"
 #include "cull/cull_state.h"
+#include "cull/cull_whatP.h"
+#include "cull/ocs_cull_descr.h"
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "sgeobj/sge_pack.h"
 
 #include "ocs_module_test.h"
 
@@ -59,8 +64,8 @@ run_in_child(const std::function<void()> &call) {
    const pid_t pid = fork();
    if (pid == 0) {
       // keep the expected messages and aborts out of the test output
-      std::freopen("/dev/null", "w", stderr);
-      std::freopen("/dev/null", "w", stdout);
+      [[maybe_unused]] FILE *quiet_stderr = std::freopen("/dev/null", "w", stderr);
+      [[maybe_unused]] FILE *quiet_stdout = std::freopen("/dev/null", "w", stdout);
       call();
       _exit(0);
    }
@@ -342,11 +347,671 @@ test_lookups() {
    lList *added = nullptr;
    CHECK(25, "lAddElemUlong with a field of another type returns nullptr and does not abort",
          finds_nothing([&] { return lAddElemUlong(&added, JB_job_number, 1, TEST_Type); }) && added == nullptr);
-   CHECK(26, "lAddSubUlong on a null element or a missing sub-list field returns nullptr",
+   // since CS-3077 a missing sub-list field aborts, as for every lookup in a sub-list; before it gave nullptr
+   CHECK(26, "lAddSubUlong returns nullptr on a null element and aborts on a missing sub-list field",
          finds_nothing([] { return lAddSubUlong(nullptr, JAT_task_number, 1, JB_ja_tasks, JAT_Type); }) &&
-         finds_nothing([&] { return lAddSubUlong(f.full, JAT_task_number, 1, JB_ja_tasks, JAT_Type); }));
+         aborts([&] { static_cast<void>(lAddSubUlong(f.full, JAT_task_number, 1, JB_ja_tasks, JAT_Type)); }));
    CHECK(27, "lGetSubUlong aborts on a missing sub-list field",
          aborts([&] { static_cast<void>(lGetSubUlong(f.full, JAT_task_number, 1, JB_ja_tasks)); }));
+}
+
+/**
+ * @brief Whether a call returns nullptr and sets an error number
+ * @param call the call
+ * @param lerrno the expected error number
+ * @return true if it returned nullptr with that error number
+ */
+static bool
+null_with(const std::function<const void *()> &call, const int lerrno) {
+   cull_state_set_lerrno(0);
+   const void *result = call();
+   return result == nullptr && cull_state_get_lerrno() == lerrno;
+}
+
+/**
+ * @brief The list structure and ownership functions report their errors as before
+ *
+ * Pins every soft error and every abort of the functions whose implementation
+ * moves into the core (CS-3077), so that the move is proven not to change them.
+ */
+static void
+test_list_structure() {
+   // creating
+   lList *unnamed = lCreateList(nullptr, TEST_Type);
+   const bool create = null_with([] { return lCreateElem(nullptr); }, LECOUNTDESCR) &&
+                       null_with([] { return lCreateListHash("x", nullptr, true); }, LEDESCRNULL) &&
+                       unnamed != nullptr && std::string(lGetListName(unnamed)) == "No list name specified";
+   lFreeList(&unnamed);
+   CHECK(31, "lCreateElem and lCreateListHash return nullptr with LECOUNTDESCR and LEDESCRNULL for no descriptor",
+         create);
+
+   // freeing nothing is a no-op
+   lListElem *no_elem = nullptr;
+   lList *no_list = nullptr;
+   const bool free_nothing = !aborts([&] {
+      lFreeElem(nullptr);
+      lFreeElem(&no_elem);
+      lFreeList(nullptr);
+      lFreeList(&no_list);
+   });
+   CHECK(32, "lFreeElem and lFreeList accept nullptr", free_nothing);
+
+   // copying
+   lList *src = lCreateList("source", TEST_Type);
+   lAppendElem(src, lCreateElem(TEST_Type));
+   lList *copy = lCopyList(nullptr, src);
+   const bool copy_errors = null_with([] { return lCopyElem(nullptr); }, LEELEMNULL) &&
+                            null_with([] { return lCopyList("x", nullptr); }, LELISTNULL) &&
+                            copy != nullptr && std::string(lGetListName(copy)) == "source";
+   lFreeList(&copy);
+   CHECK(33, "lCopyElem and lCopyList return nullptr with LEELEMNULL and LELISTNULL, a copy keeps the name",
+         copy_errors);
+
+   // appending and inserting
+   lListElem *ep = lCreateElem(TEST_Type);
+   const bool append_errors = fails_with([&] { return lAppendElem(nullptr, ep); }, LELISTNULL) &&
+                              fails_with([&] { return lAppendElem(src, nullptr); }, LEELEMNULL) &&
+                              fails_with([&] { return lInsertElem(nullptr, nullptr, ep); }, LELISTNULL) &&
+                              fails_with([&] { return lInsertElem(src, nullptr, nullptr); }, LEELEMNULL) &&
+                              aborts([&] { lAppendElem(src, lFirstRW(src)); }) &&
+                              aborts([&] { lInsertElem(src, nullptr, lFirstRW(src)); });
+   lFreeElem(&ep);
+   CHECK(34, "lAppendElem and lInsertElem return -1 with LELISTNULL and LEELEMNULL, and abort on a bound element",
+         append_errors);
+
+   // removing and dechaining
+   lList *other = lCreateList("other", TEST_Type);
+   lAppendElem(other, lCreateElem(TEST_Type));
+   lListElem *null_ep = nullptr;
+   lListElem *some = lFirstRW(src);
+   cull_state_set_lerrno(0);
+   const bool remove_soft = lRemoveElem(nullptr, &some) == -1 && lRemoveElem(src, nullptr) == -1 &&
+                            lRemoveElem(src, &null_ep) == -1 && cull_state_get_lerrno() == 0 && some != nullptr;
+   const bool remove_errors = remove_soft &&
+                              null_with([&] { return lDechainElem(nullptr, lFirstRW(src)); }, LELISTNULL) &&
+                              null_with([&] { return lDechainElem(src, nullptr); }, LEELEMNULL) &&
+                              aborts([&] {
+                                 lListElem *foreign = lFirstRW(other);
+                                 lRemoveElem(src, &foreign);
+                              }) &&
+                              aborts([&] { lDechainElem(src, lFirstRW(other)); }) && lGetNumberOfElem(src) == 1;
+   CHECK(35, "lRemoveElem returns -1 without an error number, lDechainElem nullptr with LELISTNULL and "
+             "LEELEMNULL, and both abort on an element of another list", remove_errors);
+
+   // appending lists
+   lList *jobs = lCreateList("jobs", JB_Type);
+   lList *moved = lCreateList("moved", TEST_Type);
+   const bool list_errors = fails_with([&] { return lAppendList(nullptr, src); }, LELISTNULL) &&
+                            fails_with([&] { return lAppendList(src, nullptr); }, LELISTNULL) &&
+                            fails_with([&] { return lAppendList(jobs, src); }, LEDIFFDESCR) &&
+                            lGetNumberOfElem(src) == 1 && lGetNumberOfElem(jobs) == 0 &&
+                            fails_with([&] { return lAddList(nullptr, &moved); }, LELISTNULL) && moved == nullptr &&
+                            lSwapList(nullptr, TEST_obj_any, nullptr, TEST_obj_any) == -1;
+   lFreeList(&jobs);
+   lFreeList(&other);
+   lFreeList(&src);
+   CHECK(36, "lAppendList returns -1 with LELISTNULL and LEDIFFDESCR, lAddList frees the second list even then",
+         list_errors);
+}
+
+/**
+ * @brief The case-insensitive, prefix and sub-list lookups report their errors as before
+ *
+ * Pins the soft errors and the aborts of the lookups whose implementation
+ * moves into the core (CS-3077).
+ */
+static void
+test_more_lookups() {
+   Fixture f;
+   lSetString(f.full, TEST_string, "Name");
+   // a null string, a null list, a foreign field, a field of another type and an absent field give nullptr
+   const auto soft = [&](const auto &lookup) {
+      return lookup(f.list, TEST_string, nullptr) == nullptr && lookup(nullptr, TEST_string, "x") == nullptr &&
+             !aborts([&] { static_cast<void>(lookup(f.list, QU_qname, "x")); }) &&
+             lookup(f.list, QU_qname, "x") == nullptr &&
+             !aborts([&] { static_cast<void>(lookup(f.list, TEST_uint32, "x")); }) &&
+             lookup(f.list, TEST_uint32, "x") == nullptr && lookup(f.reduced_list, TEST_string, "x") == nullptr;
+   };
+   const bool case_like =
+      soft([](const lList *lp, int nm, const char *str) { return lGetElemCaseStr(lp, nm, str); }) &&
+      soft([](const lList *lp, int nm, const char *str) { return lGetElemStrLike(lp, nm, str); }) &&
+      lGetElemCaseStr(f.list, TEST_string, "NAME") == f.full && lGetElemStrLike(f.list, TEST_string, "Na*") == f.full &&
+      lGetElemStrLike(f.list, TEST_string, "Name") == f.full && lGetElemStrLike(f.list, TEST_string, "name") == nullptr;
+   CHECK(37, "lGetElemCaseStr and lGetElemStrLike return nullptr on every error without aborting", case_like);
+
+   // a sub-list lookup on a null element gives nullptr, on an element without the sub-list field it aborts
+   lList *jobs = lCreateList("jobs", JB_Type);
+   lAppendElem(jobs, lCreateElem(JB_Type));
+   lEnumeration *what = lWhat("%T(%I)", JB_Type, JB_job_number);
+   lList *reduced = lSelect("reduced", jobs, nullptr, what);
+   // every sub-list lookup gives nullptr for a null element; before CS-3077 only lGetSubStr did, the others aborted
+   const bool sub = lGetSubStr(nullptr, ST_name, "x", JB_ja_tasks) == nullptr &&
+                    lGetSubUlong(nullptr, JAT_task_number, 1, JB_ja_tasks) == nullptr &&
+                    lGetSubUlong64(nullptr, JAT_task_number, 1, JB_ja_tasks) == nullptr &&
+                    lGetSubHost(nullptr, EH_name, "h", JB_ja_tasks) == nullptr &&
+                    lGetSubUlong(lFirst(jobs), JAT_task_number, 1, JB_ja_tasks) == nullptr &&
+                    aborts([&] { static_cast<void>(lGetSubUlong(lFirst(reduced), JAT_task_number, 1, JB_ja_tasks)); });
+   lFreeList(&reduced);
+   lFreeWhat(&what);
+   lFreeList(&jobs);
+   CHECK(38, "every sub-list lookup gives nullptr for a null element and an empty sub-list, and aborts without "
+             "the sub-list field",
+         sub);
+}
+
+/**
+ * @brief Adding and deleting by key report their errors as before
+ *
+ * Pins the results, the soft errors and the aborts of the functions whose
+ * implementation moves into the core (CS-3077), including where the variants
+ * for the different key types differ from each other.
+ */
+static void
+test_add_and_delete_by_key() {
+   // adding: a null list is created, null arguments and wrong fields give nullptr
+   lList *lp = nullptr;
+   lListElem *added = lAddElemStr(&lp, TEST_string, "a", TEST_Type);
+   const bool add_str = added != nullptr && lp != nullptr && std::string(lGetListName(lp)) == "" &&
+                        lGetNumberOfElem(lp) == 1 && std::string(lGetString(added, TEST_string)) == "a" &&
+                        lAddElemStr(nullptr, TEST_string, "a", TEST_Type) == nullptr &&
+                        lAddElemStr(&lp, TEST_string, nullptr, TEST_Type) == nullptr &&
+                        lAddElemStr(&lp, TEST_string, "a", nullptr) == nullptr &&
+                        !aborts([&] { static_cast<void>(lAddElemStr(&lp, QU_qname, "a", TEST_Type)); }) &&
+                        lAddElemStr(&lp, QU_qname, "a", TEST_Type) == nullptr &&
+                        lAddElemStr(&lp, TEST_uint32, "a", TEST_Type) == nullptr &&
+                        lAddElemHost(&lp, TEST_string, "h", TEST_Type) == nullptr && lGetNumberOfElem(lp) == 1;
+   lFreeList(&lp);
+   // the number variants name a list they create differently; since CS-3077 they give nullptr for a field of
+   // another type like the string variants, before they aborted
+   lList *numbers = nullptr;
+   const bool add_ulong = lAddElemUlong(&numbers, TEST_uint32, 7, TEST_Type) != nullptr &&
+                          std::string(lGetListName(numbers)) == "ulong_sublist" &&
+                          lAddElemUlong(&numbers, QU_qname, 7, TEST_Type) == nullptr &&
+                          !aborts([&] { static_cast<void>(lAddElemUlong(&numbers, TEST_string, 7, TEST_Type)); }) &&
+                          lAddElemUlong(&numbers, TEST_string, 7, TEST_Type) == nullptr && lGetNumberOfElem(numbers) == 1;
+   lFreeList(&numbers);
+   CHECK(39, "lAddElemStr/Host/Ulong create the list, give nullptr on null arguments and on a field that is not "
+             "of the key's type", add_str && add_ulong);
+
+   // deleting: found, not found, null list, null arguments; an emptied list is freed
+   lList *strings = nullptr;
+   lAddElemStr(&strings, TEST_string, "a", TEST_Type);
+   lAddElemStr(&strings, TEST_string, "b", TEST_Type);
+   lList *no_list = nullptr;
+   const bool del_str = lDelElemStr(&strings, TEST_string, "x") == 0 && lDelElemStr(&strings, TEST_string, "a") == 1 &&
+                        strings != nullptr && lDelElemStr(&strings, TEST_string, "b") == 1 && strings == nullptr &&
+                        lDelElemStr(&no_list, TEST_string, "a") == 1 && lDelElemStr(nullptr, TEST_string, "a") == 0 &&
+                        lDelElemStr(&no_list, TEST_string, nullptr) == 0;
+   lList *ulongs = nullptr;
+   lAddElemUlong(&ulongs, TEST_uint32, 1, TEST_Type);
+   // since CS-3077 lDelElemUlong returns 0 when nothing is found, like lDelElemStr; before it returned 1
+   const bool del_ulong = lDelElemUlong(&ulongs, TEST_uint32, 9) == 0 && ulongs != nullptr &&
+                          lDelElemUlong(&ulongs, TEST_uint32, 1) == 1 && ulongs == nullptr &&
+                          lDelElemUlong(nullptr, TEST_uint32, 1) == 0;
+   CHECK(40, "lDelElemStr and lDelElemUlong return 0 when nothing is found and free an emptied list",
+         del_str && del_ulong);
+
+   // in a list field: a null element and a missing field
+   lList *jobs = lCreateList("jobs", JB_Type);
+   lAppendElem(jobs, lCreateElem(JB_Type));
+   lListElem *job = lFirstRW(jobs);
+   lEnumeration *what = lWhat("%T(%I)", JB_Type, JB_job_number);
+   lList *reduced = lSelect("reduced", jobs, nullptr, what);
+   lListElem *rjob = lFirstRW(reduced);
+   const bool sub = lAddSubStr(job, VA_variable, "X", JB_env_list, VA_Type) != nullptr &&
+                    lGetNumberOfElem(lGetList(job, JB_env_list)) == 1 &&
+                    lAddSubStr(nullptr, VA_variable, "X", JB_env_list, VA_Type) == nullptr &&
+                    aborts([&] { static_cast<void>(lAddSubStr(rjob, VA_variable, "X", JB_env_list, VA_Type)); }) &&
+                    lDelSubStr(job, VA_variable, "X", JB_env_list) == 1 && lGetList(job, JB_env_list) == nullptr &&
+                    lDelSubStr(nullptr, VA_variable, "X", JB_env_list) == 0 &&
+                    aborts([&] { static_cast<void>(lDelSubStr(rjob, VA_variable, "X", JB_env_list)); });
+   lFreeList(&reduced);
+   lFreeWhat(&what);
+   lFreeList(&jobs);
+   CHECK(41, "lAddSubStr and lDelSubStr do nothing for a null element and abort without the list field",
+         sub);
+}
+
+/**
+ * @brief Increments keep their results, the hash table and the aborts of before
+ *
+ * Pins what the old increments do beyond the error paths of LEGACY-03: the sum,
+ * the 32 bit wrap-around, an offset of 0, the hash table of a hashed key field
+ * and the abort on a duplicate in a unique field (CS-3077).
+ *
+ * @return nothing; CHECK records the results
+ */
+static void
+test_increments() {
+   // a hashed unique key: the lookup follows the new value, a duplicate aborts in a debug build
+   lList *tasks = lCreateList("tasks", JAT_Type);
+   for (lUlong i = 1; i <= 40; i++) {
+      lAppendElem(tasks, lCreateElem(JAT_Type));
+      lSetUlong(lLastRW(tasks), JAT_task_number, i);
+   }
+   lListElem *task = lGetElemUlongRW(tasks, JAT_task_number, 7);
+   const bool hashed = lAddUlong(task, JAT_task_number, 100) == 0 && lGetUlong(task, JAT_task_number) == 107 &&
+                       lGetElemUlong(tasks, JAT_task_number, 7) == nullptr &&
+                       lGetElemUlong(tasks, JAT_task_number, 107) == task;
+#ifdef ENABLE_DEBUG_CHECKS
+   // task 9 plus 1 is the number task 10 holds
+   lListElem *nine = lGetElemUlongRW(tasks, JAT_task_number, 9);
+   const bool duplicate = aborts([&] { static_cast<void>(lAddUlong(nine, JAT_task_number, 1)); });
+#else
+   const bool duplicate = true;
+#endif
+   lFreeList(&tasks);
+   CHECK(42, "lAddUlong on a hashed key keeps the lookup right and aborts on a duplicate in a debug build",
+         hashed && duplicate);
+
+   // the sum of each field type, the 32 bit wrap-around and an offset of 0
+   lListElem *ep = lCreateElem(TEST_Type);
+   lSetUlong(ep, TEST_uint32, 0xFFFFFFFFU);
+   lSetUlong64(ep, TEST_uint64, 5);
+   lSetDouble(ep, TEST_double, 1.5);
+   const bool sums = lAddUlong(ep, TEST_uint32, 2) == 0 && lGetUlong(ep, TEST_uint32) == 1 &&
+                     lAddUlong(ep, TEST_uint32, 0) == 0 && lGetUlong(ep, TEST_uint32) == 1 &&
+                     lAddUlong64(ep, TEST_uint64, 0x100000000ULL) == 0 && lGetUlong64(ep, TEST_uint64) == 0x100000005ULL &&
+                     lAddDouble(ep, TEST_double, 2.25) == 0 && lGetDouble(ep, TEST_double) == 3.75;
+   lFreeElem(&ep);
+   CHECK(43, "lAddUlong, lAddUlong64 and lAddDouble add, a 32 bit sum wraps around, an offset of 0 changes nothing",
+         sums);
+}
+
+/**
+ * @brief The keys (TEST_uint32) of the elements of a list, in list order
+ * @param lp the list, or nullptr
+ * @return the keys joined by commas, "null" for no list
+ */
+static std::string
+test_keys(const lList *lp) {
+   if (lp == nullptr) {
+      return "null";
+   }
+   std::string keys;
+   for (const lListElem *ep = lFirst(lp); ep != nullptr; ep = lNext(ep)) {
+      keys += (keys.empty() ? "" : ",") + std::to_string(lGetUlong(ep, TEST_uint32));
+   }
+   return keys;
+}
+
+/**
+ * @brief The keys of the elements a condition selects from a list; frees the condition
+ * @param lp the list
+ * @param cp the condition, or nullptr; freed here
+ * @return the keys joined by commas, "null" if lSelect() returned no list
+ */
+static std::string
+selected_keys(const lList *lp, lCondition *cp) {
+   lEnumeration *all = lWhat("%T(ALL)", TEST_Type);
+   lList *selected = lSelect("selected", lp, cp, all);
+   std::string keys = test_keys(selected);
+   lFreeList(&selected);
+   lFreeWhat(&all);
+   lFreeWhere(&cp);
+   return keys;
+}
+
+/**
+ * @brief Build the list the selection pins work on
+ *
+ * Four TEST elements, keyed 1 to 4 in TEST_uint32; the fourth holds no string
+ * and no host.
+ *
+ * @return the list, owned by the caller
+ */
+static lList *
+selection_list() {
+   struct Row {
+      lUlong key;
+      lUlong64 u64;
+      int i;
+      lLong l;
+      double d;
+      bool b;
+      const char *s;
+      const char *h;
+   };
+   const Row rows[] = {{1, 10, -1, -10, 0.5, true, "alpha", "node1"},
+                       {2, 20, 0, 0, 1.5, false, "beta", "node2"},
+                       {3, 30, 1, 10, 2.5, true, "Gamma", "NODE3"},
+                       {4, 40, 2, 20, 3.5, false, nullptr, nullptr}};
+   lList *lp = lCreateList("selection", TEST_Type);
+   for (const Row &r : rows) {
+      lListElem *ep = lCreateElem(TEST_Type);
+      lSetUlong(ep, TEST_uint32, r.key);
+      lSetUlong64(ep, TEST_uint64, r.u64);
+      lSetInt(ep, TEST_int, r.i);
+      lSetLong(ep, TEST_long, r.l);
+      lSetDouble(ep, TEST_double, r.d);
+      lSetBool(ep, TEST_bool, r.b);
+      lSetString(ep, TEST_string, r.s);
+      lSetHost(ep, TEST_host, r.h);
+      lAppendElem(lp, ep);
+   }
+   return lp;
+}
+
+/**
+ * @brief Selections keep the results of before
+ *
+ * Pins what lWhat(), lWhere(), lSelect(), lSelectDestroy(), the lFind*RW()
+ * functions, lAndWhere(), lOrWhere(), lCompare() and the transfer of a
+ * condition do, before their bodies move into the core (CS-3077).
+ *
+ * @return nothing; CHECK records the results
+ */
+static void
+test_selections() {
+   // lWhat: nested, sorted by position, a field given twice kept once, ALL and NONE, the flat form
+   lEnumeration *nested = lWhat("%T(%I->%T(%I)%I)", US_Type, US_entries, UE_Type, UE_name, US_name);
+   const bool nested_ok = nested != nullptr && lCountWhat(nested, US_Type) == 2 && nested[0].nm == US_name &&
+                          nested[0].ep == nullptr && nested[1].nm == US_entries && nested[1].ep != nullptr &&
+                          nested[1].ep[0].nm == UE_name && nested[1].ep[1].nm == NoName;
+   lFreeWhat(&nested);
+   // a sub-selection on a field that is not a list is taken, one without its %T fails
+   lEnumeration *on_string = lWhat("%T(%I->%T(%I))", US_Type, US_name, UE_Type, UE_name);
+   const bool nesting_quirks = on_string != nullptr && on_string[0].ep != nullptr &&
+                               lWhat("%T(%I%I->(%I))", US_Type, US_name, US_entries, UE_name) == nullptr;
+   lFreeWhat(&on_string);
+   lEnumeration *twice = lWhat("%T(%I%I)", US_Type, US_name, US_name);
+   const bool twice_ok = twice != nullptr && lCountWhat(twice, US_Type) == 1;
+   lFreeWhat(&twice);
+   lEnumeration *all = lWhat("%T(ALL)", US_Type);
+   lEnumeration *none = lWhat("%T(NONE)", US_Type);
+   lEnumeration *all2 = lWhatAll();
+   const bool special = all != nullptr && all[0].pos == WHAT_ALL && none != nullptr && none[0].pos == WHAT_NONE &&
+                        all2 != nullptr && all2[0].pos == WHAT_ALL && lCountWhat(none, US_Type) == 0;
+   lFreeWhat(&all);
+   lFreeWhat(&none);
+   lFreeWhat(&all2);
+   const int fields[] = {US_type, US_name, NoName};
+   const int foreign[] = {US_name, JB_job_number, NoName};
+   const int empty[] = {NoName};
+   lEnumeration *flat = lIntVector2What(US_Type, fields);
+   const bool flat_ok = flat != nullptr && lCountWhat(flat, US_Type) == 2 && flat[0].nm == US_name;
+   lFreeWhat(&flat);
+   cull_state_set_lerrno(0);
+   const bool flat_foreign = lIntVector2What(US_Type, foreign) == nullptr && cull_state_get_lerrno() == LENAMENOT;
+   cull_state_set_lerrno(0);
+   const bool flat_empty = lIntVector2What(US_Type, empty) == nullptr && cull_state_get_lerrno() == LENAMENOT;
+   CHECK(44, "lWhat nests, sorts by position and keeps a repeated field once, takes a sub-selection on any field and fails "
+             "on one without %T; ALL, NONE and lIntVector2What as before",
+         nested_ok && nesting_quirks && twice_ok && special && flat_ok && flat_foreign && flat_empty);
+
+   // lWhere: the comparisons of every value type
+   lList *lp = selection_list();
+   const bool numbers =
+           selected_keys(lp, lWhere("%T(%I == %u)", TEST_Type, TEST_uint32, 2U)) == "2" &&
+           selected_keys(lp, lWhere("%T(%I != %u)", TEST_Type, TEST_uint32, 2U)) == "1,3,4" &&
+           selected_keys(lp, lWhere("%T(%I < %u)", TEST_Type, TEST_uint32, 2U)) == "1" &&
+           selected_keys(lp, lWhere("%T(%I <= %u)", TEST_Type, TEST_uint32, 2U)) == "1,2" &&
+           selected_keys(lp, lWhere("%T(%I > %u)", TEST_Type, TEST_uint32, 2U)) == "3,4" &&
+           selected_keys(lp, lWhere("%T(%I >= %u)", TEST_Type, TEST_uint32, 2U)) == "2,3,4" &&
+           selected_keys(lp, lWhere("%T(%I > %lu)", TEST_Type, TEST_uint64, static_cast<lUlong64>(15))) == "2,3,4" &&
+           selected_keys(lp, lWhere("%T(%I < %d)", TEST_Type, TEST_int, 0)) == "1" &&
+           selected_keys(lp, lWhere("%T(%I >= %o)", TEST_Type, TEST_long, static_cast<lLong>(10))) == "3,4" &&
+           selected_keys(lp, lWhere("%T(%I > %g)", TEST_Type, TEST_double, 1.0)) == "2,3,4" &&
+           selected_keys(lp, lWhere("%T(%I == %b)", TEST_Type, TEST_bool, true)) == "1,3";
+   // a null string is neither equal nor unequal; strcmp orders upper case first. "Gamma" < "beta" held only in a
+   // build whose strcmp() returns -1 and 1 (ASAN): the old lCompare() took no other result, fixed in CS-3077
+   const bool strings =
+           selected_keys(lp, lWhere("%T(%I == %s)", TEST_Type, TEST_string, "beta")) == "2" &&
+           selected_keys(lp, lWhere("%T(%I != %s)", TEST_Type, TEST_string, "beta")) == "1,3" &&
+           selected_keys(lp, lWhere("%T(%I < %s)", TEST_Type, TEST_string, "beta")) == "1,3" &&
+           selected_keys(lp, lWhere("%T(%I == %s)", TEST_Type, TEST_host, "node2")) == "2";
+   CHECK(45, "lWhere compares 32 and 64 bit, int, long, double, bool, string and host fields as before; "
+             "a null string matches neither == nor !=", numbers && strings);
+
+   // the named comparisons; %f is no double token, m= on a 64 bit field selects nothing
+   const bool named =
+           selected_keys(lp, lWhere("%T(%I c= %s)", TEST_Type, TEST_string, "GAMMA")) == "3" &&
+           selected_keys(lp, lWhere("%T(%I p= %s)", TEST_Type, TEST_string, "*a")) == "1,2,3" &&
+           selected_keys(lp, lWhere("%T(%I p= %s)", TEST_Type, TEST_string, "*")) == "1,2,3,4" &&
+           selected_keys(lp, lWhere("%T(%I h= %s)", TEST_Type, TEST_host, "node3")) == "3" &&
+           selected_keys(lp, lWhere("%T(%I m= %u)", TEST_Type, TEST_uint32, 3U)) == "3" &&
+           selected_keys(lp, lWhere("%T(%I m= %lu)", TEST_Type, TEST_uint64, static_cast<lUlong64>(8))) == "null";
+   cull_state_set_lerrno(0);
+   const bool float_token = lWhere("%T(%I > %f)", TEST_Type, TEST_double, 1.0) == nullptr &&
+                            cull_state_get_lerrno() == LEPARSECOND;
+   CHECK(46, "c=, p=, h= and m= as before: a pattern matches a null string as empty, m= on a 64 bit field "
+             "selects nothing, %f is no token of lWhere", named && float_token);
+
+   // combinations, a sub-list, and the combinations built by hand
+   const bool logic =
+           selected_keys(lp, lWhere("%T(%I < %u && %I == %b)", TEST_Type, TEST_uint32, 3U, TEST_bool, true)) == "1" &&
+           selected_keys(lp, lWhere("%T(%I == %u || %I == %u)", TEST_Type, TEST_uint32, 1U, TEST_uint32, 4U)) == "1,4" &&
+           selected_keys(lp, lWhere("%T(!(%I == %u || %I == %u))", TEST_Type, TEST_uint32, 1U, TEST_uint32, 4U)) == "2,3";
+   const bool by_hand =
+           selected_keys(lp, lOrWhere(lWhere("%T(%I == %u)", TEST_Type, TEST_uint32, 1U),
+                                      lWhere("%T(%I == %u)", TEST_Type, TEST_uint32, 3U))) == "1,3" &&
+           selected_keys(lp, lAndWhere(lWhere("%T(%I > %u)", TEST_Type, TEST_uint32, 1U),
+                                       lWhere("%T(%I < %u)", TEST_Type, TEST_uint32, 3U))) == "2";
+   cull_state_set_lerrno(0);
+   const bool null_operand = lOrWhere(nullptr, nullptr) == nullptr && cull_state_get_lerrno() == LECONDNULL;
+   lCondition *original = lWhere("%T(%I p= %s && %I != %u)", TEST_Type, TEST_string, "*a", TEST_uint32, 2U);
+   const bool copied = selected_keys(lp, lCopyWhere(original)) == "1,3";
+   lFreeWhere(&original);
+
+   lList *sets = lCreateList("sets", US_Type);
+   const char *const set_entries[][2] = {{"a", "x"}, {"b", "y"}, {"c", nullptr}};
+   for (const auto &entry : set_entries) {
+      lListElem *set = lAddElemStr(&sets, US_name, entry[0], US_Type);
+      if (entry[1] != nullptr) {
+         lAddSubStr(set, UE_name, entry[1], US_entries, UE_Type);
+      }
+   }
+   lCondition *sub = lWhere("%T(%I -> %T(%I == %s))", US_Type, US_entries, UE_Type, UE_name, "y");
+   lEnumeration *set_all = lWhat("%T(ALL)", US_Type);
+   lList *with_y = lSelect("y", sets, sub, set_all);
+   const bool sub_list = lGetNumberOfElem(with_y) == 1 && strcmp(lGetString(lFirst(with_y), US_name), "b") == 0;
+   lFreeList(&with_y);
+   lFreeWhat(&set_all);
+   lFreeWhere(&sub);
+   CHECK(47, "&&, || and ! as before, lAndWhere and lOrWhere take their operands, lCopyWhere copies, "
+             "-> matches an element of a sub-list", logic && by_hand && null_operand && copied && sub_list);
+
+   // lWhere errors: unknown field and nesting on a field that is not a list give nullptr, a wrong value aborts
+   cull_state_set_lerrno(0);
+   const bool foreign_field = lWhere("%T(%I == %u)", TEST_Type, JB_job_number, 1U) == nullptr &&
+                              cull_state_get_lerrno() == LEPARSECOND;
+   const bool not_a_list = lWhere("%T(%I -> %T(%I == %s))", US_Type, US_name, UE_Type, UE_name, "y") == nullptr;
+   const bool wrong_value = aborts([] {
+      lCondition *cp = lWhere("%T(%I == %s)", TEST_Type, TEST_uint32, "1");
+      lFreeWhere(&cp);
+   });
+   CHECK(48, "lWhere gives nullptr for a foreign field and for -> on a field that is not a list, "
+             "and aborts on a value of another type", foreign_field && not_a_list && wrong_value);
+
+   // lSelect: reduction, no condition, no enumeration (the condition is then ignored), an empty result
+   lEnumeration *keys_only = lWhat("%T(%I)", TEST_Type, TEST_uint32);
+   lList *reduced = lSelect("reduced", lp, nullptr, keys_only);
+   const bool reduction = test_keys(reduced) == "1,2,3,4" && strcmp(lGetListName(reduced), "reduced") == 0 &&
+                          lGetPosViaElem(lFirst(reduced), TEST_string, SGE_NO_ABORT) < 0;
+   lFreeList(&reduced);
+   lCondition *one = lWhere("%T(%I == %u)", TEST_Type, TEST_uint32, 1U);
+   lList *ignored = lSelect("ignored", lp, one, nullptr);
+   const bool without_what = test_keys(ignored) == "1,2,3,4" && strcmp(lGetListName(ignored), "selection") == 0;
+   lFreeList(&ignored);
+   lCondition *nothing = lWhere("%T(%I > %u)", TEST_Type, TEST_uint32, 10U);
+   cull_state_set_lerrno(0);
+   const bool empty_result = lSelect("empty", lp, nothing, keys_only) == nullptr &&
+                             cull_state_get_lerrno() == LEGETNROFELEM && lSelect("none", nullptr, one, keys_only) == nullptr;
+   lFreeWhere(&one);
+   lFreeWhere(&nothing);
+   lFreeWhat(&keys_only);
+   CHECK(49, "lSelect reduces and names the result; without a selection it copies the whole list under its own "
+             "name and ignores the condition; an empty result is nullptr", reduction && without_what && empty_result);
+
+   // the lFind*RW functions and lCompare
+   lCondition *odd = lWhere("%T(%I m= %u)", TEST_Type, TEST_uint32, 1U);
+   const lListElem *first = lFindFirstRW(lp, odd);
+   const lListElem *next = lFindNextRW(first, odd);
+   const lListElem *last = lFindLastRW(lp, odd);
+   const lListElem *prev = lFindPrevRW(last, odd);
+   const bool finds = first != nullptr && lGetUlong(first, TEST_uint32) == 1 && next != nullptr &&
+                      lGetUlong(next, TEST_uint32) == 3 && lFindNextRW(next, odd) == nullptr && last == next &&
+                      prev == first && lFindFirstRW(nullptr, odd) == nullptr && lFindFirstRW(lp, nullptr) == lFirst(lp);
+   cull_state_set_lerrno(0);
+   const bool compare = lCompare(first, odd) == 1 && lCompare(lNext(first), odd) == 0 && lCompare(first, nullptr) == 1 &&
+                        lCompare(nullptr, odd) == 0 && cull_state_get_lerrno() == LEELEMNULL;
+   CHECK(50, "lFindFirstRW, lFindNextRW, lFindLastRW and lFindPrevRW find as before; lCompare takes no condition "
+             "as true and a null element as false", finds && compare);
+
+   // lSelectDestroy keeps what matches and frees an emptied list
+   lList *kept = lSelectDestroy(lCopyList("copy", lp), odd);
+   const bool keeps = test_keys(kept) == "1,3";
+   lFreeList(&kept);
+   lCondition *none_match = lWhere("%T(%I > %u)", TEST_Type, TEST_uint32, 10U);
+   const bool emptied = lSelectDestroy(lCopyList("copy", lp), none_match) == nullptr;
+   lFreeWhere(&none_match);
+
+   // a condition survives the transfer
+   lListElem *packed = lWhereToElem(odd);
+   lCondition *unpacked = lWhereFromElem(packed);
+   const bool transfer = unpacked != nullptr && selected_keys(lp, unpacked) == "1,3";
+   lFreeElem(&packed);
+   lFreeWhere(&odd);
+   CHECK(51, "lSelectDestroy keeps the matching elements and frees an emptied list; "
+             "lWhereToElem and lWhereFromElem keep a condition", keeps && emptied && transfer);
+
+   lFreeList(&sets);
+   lFreeList(&lp);
+}
+
+/**
+ * @brief The functions the core used from the old interface keep their results
+ *
+ * Pins what lCopyElem() and lSelect() do with sub-lists and sub-objects through
+ * lCopySwitchPack(), what the iterating lookups lGetElem*First()/Next() find,
+ * and what lCompListDescr(), lCountDescr(), lGetListName() and lGetPosInDescr()
+ * report, before the core stops calling them (CS-3077).
+ *
+ * @return nothing; CHECK records the results
+ */
+static void
+test_core_helpers() {
+   // lCopyElem: a sub-list, an empty sub-list, no sub-list, a sub-object
+   lListElem *set = lCreateElem(US_Type);
+   lSetString(set, US_name, "set");
+   lAddSubStr(set, UE_name, "alice", US_entries, UE_Type);
+   lListElem *copy = lCopyElem(set);
+   const bool sub_list = lGetNumberOfElem(lGetList(copy, US_entries)) == 1 &&
+                         lGetList(copy, US_entries) != lGetList(set, US_entries) &&
+                         strcmp(lGetString(lFirst(lGetList(copy, US_entries)), UE_name), "alice") == 0;
+   lFreeElem(&copy);
+   lSetList(set, US_entries, lCreateList("empty", UE_Type));
+   copy = lCopyElem(set);
+   const bool empty_kept = lGetList(copy, US_entries) != nullptr && lGetNumberOfElem(lGetList(copy, US_entries)) == 0;
+   lFreeElem(&copy);
+   lSetList(set, US_entries, nullptr);
+   copy = lCopyElem(set);
+   const bool null_kept = lGetList(copy, US_entries) == nullptr;
+   lFreeElem(&copy);
+
+   lListElem *holder = lCreateElem(TEST_Type);
+   lListElem *job = lCreateElem(JB_Type);
+   lSetUlong(job, JB_job_number, 7);
+   lSetObject(holder, TEST_obj_jb, job);
+   copy = lCopyElem(holder);
+   const lListElem *copied_job = lGetObject(copy, TEST_obj_jb);
+   const bool sub_object = copied_job != nullptr && copied_job != job && lGetUlong(copied_job, JB_job_number) == 7;
+   lFreeElem(&copy);
+   lFreeElem(&holder);
+   CHECK(52, "lCopyElem copies a sub-list, keeps an empty one empty and a missing one missing, and copies a sub-object",
+         sub_list && empty_kept && null_kept && sub_object);
+
+   // a field marked CULL_NO_TRANSFER is left at its default in a copy that is handed out
+   lListElem *cct = lCreateElem(CCT_Type);
+   int marker = 0;
+   lSetRef(cct, CCT_pe_job_slots, &marker);
+   lListElem *kept = lCopyElemHash(cct, true, false);
+   lListElem *skipped = lCopyElemHash(cct, true, true);
+   const bool no_transfer = lGetRef(kept, CCT_pe_job_slots) == &marker && lGetRef(skipped, CCT_pe_job_slots) == nullptr;
+   lFreeElem(&kept);
+   lFreeElem(&skipped);
+   lFreeElem(&cct);
+
+   // lSelect with a nested selection: a sub-list that comes out empty is no list
+   lList *sets = lCreateList("sets", US_Type);
+   lListElem *with = lAddElemStr(&sets, US_name, "with", US_Type);
+   lAddSubStr(with, UE_name, "bob", US_entries, UE_Type);
+   lListElem *empty = lAddElemStr(&sets, US_name, "empty", US_Type);
+   lSetList(empty, US_entries, lCreateList("empty", UE_Type));
+   lEnumeration *nested = lWhat("%T(%I%I->%T(%I))", US_Type, US_name, US_entries, UE_Type, UE_name);
+   lList *selected = lSelect("selected", sets, nullptr, nested);
+   const lListElem *sel_with = lGetElemStr(selected, US_name, "with");
+   const lListElem *sel_empty = lGetElemStr(selected, US_name, "empty");
+   const bool nested_empty = sel_with != nullptr && lGetNumberOfElem(lGetList(sel_with, US_entries)) == 1 &&
+                             sel_empty != nullptr && lGetList(sel_empty, US_entries) == nullptr;
+   lFreeList(&selected);
+   lFreeWhat(&nested);
+   lFreeList(&sets);
+   lFreeElem(&set);
+   CHECK(53, "a CULL_NO_TRANSFER field is left out of a copy handed out; lSelect makes an emptied sub-list no list",
+         no_transfer && nested_empty);
+
+   // the iterating lookups, below and above the hash threshold
+   bool walks = true;
+   for (const int n : {5, 40}) {
+      lList *lp = lCreateList("rows", TEST_Type);
+      int expected = 0;
+      for (int i = 1; i <= n; i++) {
+         lListElem *ep = lCreateElem(TEST_Type);
+         lSetUlong(ep, TEST_uint32, i);
+         lSetUlong64(ep, TEST_uint64, i % 3);
+         const std::string text = "s" + std::to_string(i % 3);
+         lSetString(ep, TEST_string, text.c_str());
+         // the host names differ in case only, which the lookup ignores
+         lSetHost(ep, TEST_host, i % 2 == 0 ? (i % 3 == 1 ? "H1" : "h0") : (i % 3 == 1 ? "h1" : "h2"));
+         lAppendElem(lp, ep);
+         expected += i % 3 == 1 ? 1 : 0;
+      }
+      const auto count = [](auto first, auto next) {
+         const void *iterator = nullptr;
+         int found = 0;
+         for (const lListElem *ep = first(&iterator); ep != nullptr; ep = next(&iterator)) {
+            found++;
+         }
+         return found == 0 || iterator == nullptr ? found : -1;
+      };
+      const int by_u64 = count([&](const void **it) { return lGetElemUlong64First(lp, TEST_uint64, 1, it); },
+                               [&](const void **it) { return lGetElemUlong64Next(lp, TEST_uint64, 1, it); });
+      const int by_str = count([&](const void **it) { return lGetElemStrFirst(lp, TEST_string, "s1", it); },
+                               [&](const void **it) { return lGetElemStrNext(lp, TEST_string, "s1", it); });
+      const int by_host = count([&](const void **it) { return lGetElemHostFirst(lp, TEST_host, "h1", it); },
+                                [&](const void **it) { return lGetElemHostNext(lp, TEST_host, "h1", it); });
+      const int by_key = count([&](const void **it) { return lGetElemUlongFirst(lp, TEST_uint32, 4, it); },
+                               [&](const void **it) { return lGetElemUlongNext(lp, TEST_uint32, 4, it); });
+      walks = walks && by_u64 == expected && by_str == expected && by_host == expected && by_key == 1;
+      lFreeList(&lp);
+   }
+   CHECK(54, "lGetElemUlong64/Str/Host/UlongFirst and Next walk every match below and above the hash threshold "
+             "and end with a null iterator", walks);
+
+   // the descriptor helpers
+   lEnumeration *name_only = lWhat("%T(%I)", US_Type, US_name);
+   const lDescr *reduced = nullptr;
+   lReduceDescr(&reduced, US_Type, name_only);
+   cull_state_set_lerrno(0);
+   const bool comp = lCompListDescr(US_Type, US_Type) == 0 && lCompListDescr(US_Type, reduced) == -1 &&
+                     lCompListDescr(US_Type, JB_Type) == -1 && lCompListDescr(nullptr, US_Type) == -1 &&
+                     cull_state_get_lerrno() == LELISTNULL;
+   cull_state_set_lerrno(0);
+   const bool count_descr = lCountDescr(nullptr) == -1 && cull_state_get_lerrno() == LEDESCRNULL &&
+                            lCountDescr(US_Type) == lCountDescr(reduced) && lCountDescr(US_Type) > 0;
+   cull_state_set_lerrno(0);
+   const bool pos = lGetPosInDescr(reduced, US_type) == -1 && lGetPosInDescr(reduced, US_name) >= 0 &&
+                    lGetPosInDescr(US_Type, JB_job_number) == -1 && cull_state_get_lerrno() == 0;
+   ocs_cull_descr_release(&reduced);
+   lFreeWhat(&name_only);
+   lList *unnamed = lCreateList(nullptr, US_Type);
+   cull_state_set_lerrno(0);
+   const bool names = strcmp(lGetListName(unnamed), "No list name specified") == 0 &&
+                      strcmp(lGetListName(nullptr), "No List specified") == 0 && cull_state_get_lerrno() == LELISTNULL;
+   lFreeList(&unnamed);
+   CHECK(55, "lCompListDescr, lCountDescr, lGetPosInDescr and lGetListName report as before",
+         comp && count_descr && pos && names);
 }
 
 /**
@@ -403,12 +1068,57 @@ int main(int argc, char *argv[]) {
        {"look up in a null list, by a foreign field, by a field of another field type and by a missing key",
         "add an element by a foreign field, add to a missing sub-list, read a missing sub-list"},
        "nullptr without an abort and without an error number, except that a number lookup by a field of another "
-       "field type aborts reading the first element; reading a missing sub-list aborts",
+       "field type aborts reading the first element; reading or adding to a missing sub-list aborts",
        {{"LEG-01", "covers"}}, {21, 22, 23, 24, 25, 26, 27}, test_lookups},
       {"LEGACY-06", "positions",
        "the position lookups of the descriptor report misses as before",
        {"ask lGetPosViaElem with and without abort, and lGetPosInDescr with a null descriptor and a miss"},
        "-1 without an error number, an abort where asked for, LEDESCRNULL for a null descriptor",
        {{"LEG-01", "covers"}}, {28, 29, 30}, test_positions},
+      {"LEGACY-07", "list structure and ownership",
+       "creating, freeing, copying, appending, inserting, removing and dechaining report their errors as before",
+       {"call each with null lists, null elements, a missing descriptor, a bound element, an element of another "
+        "list and lists of different types"},
+       "nullptr or -1 with the error numbers of before, aborts where they aborted", {{"LEG-01", "covers"}},
+       {31, 32, 33, 34, 35, 36}, test_list_structure},
+      {"LEGACY-08", "case-insensitive, prefix and sub-list lookups",
+       "the lookups whose implementation moves into the core report their errors as before",
+       {"look up with a null string, a null list, a foreign field, a field of another type and an absent field",
+        "look up in the sub-list of a null element, of an element with an empty sub-list and without the field"},
+       "nullptr without an abort, except the abort of every sub-list lookup on a missing sub-list field", {{"LEG-01", "covers"}},
+       {37, 38}, test_more_lookups},
+      {"LEGACY-09", "add and delete by key",
+       "adding and deleting by key report their errors as before",
+       {"add with a null list, null arguments, a foreign field and fields of another type",
+        "delete found and missing keys, from a null list and with null arguments",
+        "add and delete in a list field of a null element and of an element without the field"},
+       "the results of before, made alike for every key type and for adding and deleting (CS-3077)",
+       {{"LEG-01", "covers"}}, {39, 40, 41},
+       test_add_and_delete_by_key},
+      {"LEGACY-10", "increments",
+       "the increments keep their sums, the hash table and the aborts of before",
+       {"add to a hashed unique key and look it up by the old and the new value, add a duplicate",
+        "add to a 32 bit field past its maximum, add 0, add to a 64 bit and a double field"},
+       "the lookup follows the new value, a duplicate aborts in a debug build, the 32 bit sum wraps around",
+       {{"LEG-01", "covers"}}, {42, 43}, test_increments},
+      {"LEGACY-11", "selections",
+       "lWhat, lWhere, lSelect, lSelectDestroy, the lFind functions and lCompare keep their results",
+       {"build selections nested, repeated, ALL, NONE and flat, with a foreign field and empty",
+        "select from four elements with every comparison of every value type, the named comparisons, "
+        "&&, || and !, a sub-list, conditions combined by hand and copied",
+        "build conditions with a foreign field, -> on a field that is not a list and a value of another type",
+        "select with a reduction, without a condition, without a selection and with an empty result",
+        "find forward and backward, compare, keep the matching elements, transfer a condition"},
+       "the results of before, including the quirks: a null string matches neither == nor !=, m= on a 64 bit "
+       "field selects nothing, %f is no token, lSelect without a selection ignores the condition",
+       {{"LEG-01", "covers"}}, {44, 45, 46, 47, 48, 49, 50, 51}, test_selections},
+      {"LEGACY-12", "copies, iterating lookups and descriptor helpers",
+       "the functions the core used from the old interface keep their results",
+       {"copy elements with a sub-list, an empty and a missing one, a sub-object and a field not to be transferred",
+        "select with a nested selection over an empty sub-list",
+        "walk the matches of a 64 bit, a string, a host and a unique key, below and above the hash threshold",
+        "compare, count and search descriptors, name a list without a name"},
+       "the results of before, including an emptied sub-list of a selection as no list",
+       {{"LEG-01", "covers"}}, {52, 53, 54, 55}, test_core_helpers},
    });
 }

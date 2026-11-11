@@ -51,7 +51,12 @@ namespace ocs::tom {
          WrongType,     ///< the element is of another type than the handle, or the field of another field type
          WrongSubType,  ///< a list or object field holds elements of another type than the model names
          OutOfMemory,   ///< a string could not be copied
-         DuplicateKey   ///< a key of a unique field would be held by two elements of a list
+         DuplicateKey,  ///< a key of a unique field would be held by two elements of a list
+         ForeignList,   ///< a list operation got an element that is not in the list
+         NullList,      ///< the list is nullptr
+         NullDescriptor,///< an element or a list was to be created without a descriptor
+         BoundElement,  ///< an element to be added is bound in a list or an object already
+         NullKey        ///< an element was to be added or found by a key that is nullptr
       };
 
       /**

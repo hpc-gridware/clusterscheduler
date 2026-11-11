@@ -818,7 +818,7 @@ lList *lUndumpList(FILE *fp, const char *name, const lDescr *dp) {
       for (i = 0; i < n; i++) {
          if (found[i] == -1) {
             continue;
-         } else if (lCopySwitchPack(fep, ep, found[i], i, true, nullptr, nullptr) == -1) {
+         } else if (lCopySwitchPack(fep, ep, found[i], i, true, nullptr) == -1) {
             lFreeList(&lp);
             lFreeElem(&ep);
             sge_free(&found);
