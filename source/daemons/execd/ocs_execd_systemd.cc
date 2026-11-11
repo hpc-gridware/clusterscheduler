@@ -734,9 +734,63 @@ namespace ocs::execd {
    }
 
    /*!
+    * @brief Wait until systemd has stopped a job scope
+    *
+    * When the OOM killer has killed a process of a job scope with OOMPolicy=kill, systemd stops
+    * the scope and only then sets its Result and its failed state. sge_execd reaps the job as soon
+    * as the shepherd has exited, which can be some milliseconds before systemd has done that.
+    *
+    * While the scope is deactivating, this waits for at most one second. A scope which is still
+    * active is given 100 ms: systemd starts to stop it right after the OOM kill, but the scope of a
+    * job whose processes outlive the job stays active, and the main loop of sge_execd must not wait
+    * long for it. A scope which is gone, or cannot be queried, is not waited for.
+    *
+    * A scope which is still deactivating after one second is logged at INFO level: its Result
+    * is read before it is final, and it is reset before it has failed.
+    *
+    * @param systemd A connected systemd object
+    * @param scope The name of the job scope, e.g. ocs8012.25.scope
+    */
+   static void
+   execd_wait_for_job_scope_stopped(const ocs::uti::Systemd &systemd, const char *scope) {
+      DENTER(TOP_LAYER);
+
+      constexpr uint64_t POLL_INTERVAL_US = 5000;
+      constexpr uint64_t MAX_WAIT_DEACTIVATING_US = 1000000;
+      constexpr uint64_t MAX_WAIT_ACTIVE_US = 100000;
+
+      const uint64_t start = sge_get_gmt64();
+      DSTRING_STATIC(err_dstr, MAX_STRING_SIZE);
+      std::string state;
+      while (systemd.sd_bus_get_property("Unit", scope, "ActiveState", state, &err_dstr)) {
+         uint64_t max_wait;
+         if (state == "deactivating") {
+            max_wait = MAX_WAIT_DEACTIVATING_US;
+         } else if (state == "active") {
+            max_wait = MAX_WAIT_ACTIVE_US;
+         } else {
+            break;
+         }
+         if (sge_get_gmt64() - start >= max_wait) {
+            // an active scope is expected for a job whose processes outlive it
+            if (state == "deactivating") {
+               INFO(MSG_EXECD_JOBSCOPENOTSTOPPED_SS, scope, state.c_str());
+            }
+            break;
+         }
+         sge_usleep(static_cast<int>(POLL_INTERVAL_US));
+      }
+      DPRINTF("job scope %s is %s after " sge_u64 " us\n", scope, state.c_str(),
+              sge_get_gmt64() - start);
+
+      DRETURN_VOID;
+   }
+
+   /*!
     * @brief Finish the job scope of a job or pe task which has ended.
     *
-    * Reads the Result of the job scope, then resets its failed state.
+    * Waits until systemd has stopped the job scope, see execd_wait_for_job_scope_stopped(),
+    * reads the Result of the job scope, then resets its failed state.
     *
     * With OOMPolicy=kill systemd stops the job scope when the OOM killer has killed one of its
     * processes, and keeps the scope loaded in the failed state with Result=oom-kill.
@@ -764,6 +818,9 @@ namespace ocs::execd {
          bool connected = systemd.connect(&err_dstr, systemd_call_timeout());
          sge_switch2admin_user();
          if (connected) {
+            // the Result is final only when systemd has stopped the scope
+            execd_wait_for_job_scope_stopped(systemd, scope);
+
             std::string result;
             if (systemd.sd_bus_get_property("Scope", scope, "Result", result, &err_dstr)) {
                DPRINTF("Result of job scope %s is %s\n", scope, result.c_str());
