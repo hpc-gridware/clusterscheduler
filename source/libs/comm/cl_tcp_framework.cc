@@ -1345,6 +1345,21 @@ int cl_com_tcp_connection_request_handler(cl_com_connection_t *connection, cl_co
          tmp_private->connect_in_port = ntohs(cli_addr.sin_port);
       }
 
+      // Set the socket to non-blocking before the SSL accept: on a blocking socket SSL_accept()
+      // waits in read() until the client sends its handshake, so a client which connects and
+      // sends nothing blocks the daemon. OpenSSLConnection::accept() expects a non-blocking
+      // socket and gives up after SGE_OPENSSL_RETRY_TIMEOUT_SERVER.
+      fcntl(new_sfd, F_SETFL, O_NONBLOCK);
+      sso = 1;
+#if defined(SOLARIS) && !defined(SOLARIS64)
+      if (setsockopt(new_sfd, IPPROTO_TCP, TCP_NODELAY, (const char *) &sso, sizeof(int)) == -1)
+#else
+      if (setsockopt(new_sfd, IPPROTO_TCP, TCP_NODELAY, &sso, sizeof(int)) == -1)
+#endif
+      {
+         CL_LOG(CL_LOG_ERROR, "could not set TCP_NODELAY");
+      }
+
 #if defined(OCS_WITH_OPENSSL)
       if (tmp_private->ssl_connection != nullptr) {
          bool ssl_ok = true;
@@ -1383,18 +1398,6 @@ int cl_com_tcp_connection_request_handler(cl_com_connection_t *connection, cl_co
          }
       }
 #endif
-
-      // set the socket to non-blocking
-      fcntl(new_sfd, F_SETFL, O_NONBLOCK);
-      sso = 1;
-#if defined(SOLARIS) && !defined(SOLARIS64)
-      if (setsockopt(new_sfd, IPPROTO_TCP, TCP_NODELAY, (const char *) &sso, sizeof(int)) == -1)
-#else
-      if (setsockopt(new_sfd, IPPROTO_TCP, TCP_NODELAY, &sso, sizeof(int)) == -1)
-#endif
-      {
-         CL_LOG(CL_LOG_ERROR, "could not set TCP_NODELAY");
-      }
 
       // everything ok
       *new_connection = tmp_connection;
