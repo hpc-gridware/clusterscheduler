@@ -37,6 +37,7 @@ target_sources(cull PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/ocs_ListCore.cc
         ${CMAKE_CURRENT_SOURCE_DIR}/ocs_SelectCore.cc
         ${CMAKE_CURRENT_SOURCE_DIR}/ocs_SoftPath.cc
+        ${CMAKE_CURRENT_SOURCE_DIR}/ocs_SortCore.cc
 )
 
 if (ENABLE_CULL_STATS)

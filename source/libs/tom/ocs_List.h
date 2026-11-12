@@ -29,12 +29,14 @@
  * do; a key that is not found gives an empty handle or an empty range.
  */
 
+#include <concepts>
 #include <cstddef>
 #include <iterator>
 #include <utility>
 
 #include "tom/cull_listP.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_Sort.h"
 
 namespace ocs::tom {
 
@@ -865,6 +867,105 @@ namespace ocs::tom {
          }
          check_unique_on_add_all(other);
          append_list(this->lp_, other.raw());
+      }
+
+      /**
+       * @brief Sort the list by fields known at compile time, as std::list::sort() sorts, and lPSortList() did
+       *
+       * `jobs.sort<desc<JB_priority>, asc<JB_job_number>>()` sorts by priority,
+       * the highest first, and jobs of one priority by their number. Elements
+       * with equal keys keep their order. The hash tables are rebuilt.
+       *
+       * @tparam K the first criterion, asc<F> or desc<F> on a field of this type
+       * @tparam Ks the further criteria
+       * @throw FieldException with reason AbsentField if the elements do not hold a field of the order
+       * @throw ocs::RuntimeException if there is no memory; the list is unchanged then
+       * @see Old form: lPSortList(); core: ocs::tom::sort_list()
+       */
+      template <typename K, typename... Ks>
+         requires detail::SortKeyOf<K, T> && (detail::SortKeyOf<Ks, T> && ...)
+      void sort() const {
+         if (this->lp_ == nullptr) {
+            return;
+         }
+         sort(sort_order<K, Ks...>());
+      }
+
+      /**
+       * @brief Sort the list by a sort order built before, as lSortList() did
+       * @param order the order
+       * @throw FieldException with reason NullElement if @p order is empty, AbsentField if the elements do not
+       *        hold a field of the order
+       * @throw ocs::RuntimeException if there is no memory; the list is unchanged then
+       * @see Old form: lSortList(); core: ocs::tom::sort_list()
+       */
+      void sort(const SortOrder<T> &order) const {
+         if (this->lp_ == nullptr) {
+            return;
+         }
+         check_sort_order(this->lp_->descr, order.get());
+         sort_list(this->lp_, order.get());
+      }
+
+      /**
+       * @brief Sort the list by a comparison, as std::list::sort(comp) does
+       *
+       * For orders the fields do not express, e.g. a key computed from
+       * several fields. Elements that compare equal keep their order.
+       *
+       * @param less true if the first element comes before the second; a strict weak ordering
+       * @throw ocs::RuntimeException if there is no memory; whatever @p less throws; the list is unchanged then
+       * @see Core: ocs::tom::sort_list_with()
+       */
+      template <typename Less>
+         requires std::predicate<const Less &, ConstElement<T>, ConstElement<T>>
+      void sort(const Less &less) const {
+         if (this->lp_ == nullptr) {
+            return;
+         }
+         sort_list_with(this->lp_, [&less](const lListElem *a, const lListElem *b) {
+            return less(ConstElement<T>::from_typed(a), ConstElement<T>::from_typed(b));
+         });
+      }
+
+      /**
+       * @brief Insert an element at the place a sort order gives it, as lInsertSorted() did
+       *
+       * The list must be sorted by @p order. The element goes in front of the
+       * first element that does not come before it, or to the end.
+       *
+       * @param order the order the list is sorted by
+       * @param element the element, which the list takes over; empty afterwards
+       * @return the handle on the element, now in the list
+       * @throw FieldException if this handle, @p order or @p element is empty, with reason AbsentField if
+       *        the elements do not hold a field of the order, or in a debug build DuplicateKey when the list
+       *        holds a key of one of the element's unique fields; the element then stays with @p element
+       * @see Old form: lInsertSorted(); core: ocs::tom::insert_sorted()
+       */
+      Element<T> insert_sorted(const SortOrder<T> &order, ElementPtr<T> &&element) const {
+         check_list();
+         if (!element) [[unlikely]] {
+            throw_field_exception(FieldException::Reason::EmptyHandle, NoName, T::descriptor.e);
+         }
+         check_sort_order(this->lp_->descr, order.get());
+         check_sort_order(element.get().raw()->descr, order.get());
+         // the core takes the element only if it throws nothing, so the owning handle releases it afterwards
+         ocs::tom::insert_sorted(this->lp_, element.get().raw(), order.get());
+         return Element<T>::from_typed(element.release());
+      }
+
+      /**
+       * @brief Move an element of this list to the place its changed key gives it, as lResortElem() did
+       * @param order the order the list is sorted by, apart from @p element
+       * @param element the element, in this list
+       * @throw FieldException if a handle or @p order is empty, with reason ForeignList if the element is not in
+       *        this list, AbsentField if the elements do not hold a field of the order; nothing is changed then
+       * @see Old form: lResortElem(); core: ocs::tom::resort_elem()
+       */
+      void resort(const SortOrder<T> &order, const Element<T> element) const {
+         check_member(element);
+         check_sort_order(this->lp_->descr, order.get());
+         resort_elem(this->lp_, element.raw(), order.get());
       }
 
       /**

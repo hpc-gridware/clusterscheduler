@@ -57,7 +57,6 @@
 typedef struct {
    int lerrno;                          ///< last cull error, one of the `LE*` codes
    char noinit[50];                     ///< buffer for the placeholder #lNm2Str returns for an unknown id
-   const lSortOrder *global_sort_order; ///< sort order for #lSortCompareUsingGlobal, since `qsort()` passes no argument
    const lNameSpace *name_space;        ///< the name space field numbers are resolved against
 } cull_state_t;
 
@@ -103,20 +102,6 @@ const char *cull_state_get_noinit() {
 }
 
 /**
- * @brief The sort order #lSortCompareUsingGlobal will apply
- * @return the order, or nullptr when none is set
- */
-const lSortOrder *cull_state_get_global_sort_order() {
-   cull_state_t *cull_state = nullptr;
-
-   pthread_once(&cull_once, cull_once_init);
-
-   cull_state = cull_state_getspecific(cull_state_key);
-
-   return cull_state->global_sort_order;
-}
-
-/**
  * @brief The name space field numbers are resolved against on this thread
  * @return the name space, or nullptr when none is bound
  */
@@ -159,22 +144,6 @@ void cull_state_set_noinit(char *s) {
    cull_state = cull_state_getspecific(cull_state_key);
 
    strcpy(cull_state->noinit, s);
-
-   return;
-}
-
-/**
- * @brief Set the sort order #lSortCompareUsingGlobal will apply
- * @param so the order to use
- */
-void cull_state_set_global_sort_order(const lSortOrder *so) {
-   cull_state_t *cull_state = nullptr;
-
-   pthread_once(&cull_once, cull_once_init);
-
-   cull_state = cull_state_getspecific(cull_state_key);
-
-   cull_state->global_sort_order = so;
 
    return;
 }
@@ -276,6 +245,5 @@ static cull_state_t *cull_state_getspecific(pthread_key_t aKey) {
 static void cull_state_init(cull_state_t *theState) {
    theState->lerrno = 0;
    theState->noinit[0] = '\0';
-   theState->global_sort_order = nullptr;
    theState->name_space = nullptr;
 }

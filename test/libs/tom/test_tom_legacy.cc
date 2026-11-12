@@ -39,11 +39,13 @@
 #include <unistd.h>
 
 #include "cull/cull_lerrno.h"
+#include "cull/cull_sort.h"
 #include "cull/cull_state.h"
 #include "cull/cull_whatP.h"
 #include "cull/ocs_cull_descr.h"
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/sge_pack.h"
+#include "uti/sge_string.h"
 
 #include "ocs_module_test.h"
 
@@ -1038,6 +1040,193 @@ test_positions() {
          null_descr && miss);
 }
 
+/**
+ * @brief Build a list of TEST elements with every value type, some values repeated, a string and a host missing
+ * @param n the number of elements
+ * @param hashed true for a list with hash tables
+ * @return the list, in insertion order
+ */
+static lList *
+sort_rows(const int n, const bool hashed) {
+   lList *lp = lCreateListHash("rows", TEST_Type, hashed);
+   for (int i = 0; i < n; i++) {
+      const int k = (i * 7) % n;  // a permutation of 0 .. n-1 for an n that 7 does not divide
+      lListElem *ep = lCreateElem(TEST_Type);
+      lSetUlong(ep, TEST_uint32, k + 1);
+      lSetUlong64(ep, TEST_uint64, (k % 4) * 10000000000ULL);
+      lSetInt(ep, TEST_int, (k % 5) - 2);
+      lSetLong(ep, TEST_long, (k % 3) - 1);
+      lSetDouble(ep, TEST_double, (k % 6) * 0.5 - 1.0);
+      lSetBool(ep, TEST_bool, k % 2 == 0);
+      if (k % 7 != 0) {
+         lSetString(ep, TEST_string, ("s" + std::to_string(k % 9)).c_str());
+         lSetHost(ep, TEST_host, ("h" + std::to_string(k % 4)).c_str());
+      }
+      lAppendElem(lp, ep);
+   }
+   return lp;
+}
+
+/**
+ * @brief Compare one field of two elements as the old sort did, independently of it
+ * @param a the first element
+ * @param b the second element
+ * @param nm the field
+ * @return negative, 0 or positive
+ */
+static int
+sort_field_cmp(const lListElem *a, const lListElem *b, const int nm) {
+   auto sign = [](auto x, auto y) { return x < y ? -1 : (x > y ? 1 : 0); };
+   switch (nm) {
+      case TEST_uint32: return sign(lGetUlong(a, nm), lGetUlong(b, nm));
+      case TEST_uint64: return sign(lGetUlong64(a, nm), lGetUlong64(b, nm));
+      case TEST_int: return sign(lGetInt(a, nm), lGetInt(b, nm));
+      case TEST_long: return sign(lGetLong(a, nm), lGetLong(b, nm));
+      case TEST_double: return sign(lGetDouble(a, nm), lGetDouble(b, nm));
+      case TEST_bool: return sign(lGetBool(a, nm), lGetBool(b, nm));
+      case TEST_string: return sge_strnullcmp(lGetString(a, nm), lGetString(b, nm));
+      case TEST_host: return sge_strnullcmp(lGetHost(a, nm), lGetHost(b, nm));
+      default: return 0;
+   }
+}
+
+/**
+ * @brief Whether a list is sorted by one or two keys
+ * @param lp the list
+ * @param nm1 the first key
+ * @param dir1 +1 ascending, -1 descending
+ * @param nm2 the second key, or NoName
+ * @param dir2 +1 ascending, -1 descending
+ * @return true if no two neighbours are out of order
+ */
+static bool
+is_sorted_by(const lList *lp, const int nm1, const int dir1, const int nm2 = NoName, const int dir2 = 1) {
+   const lListElem *prev = nullptr;
+   for_each_ep_lv(ep, lp) {
+      if (prev != nullptr) {
+         int c = sort_field_cmp(prev, ep, nm1) * dir1;
+         if (c == 0 && nm2 != NoName) {
+            c = sort_field_cmp(prev, ep, nm2) * dir2;
+         }
+         if (c > 0) {
+            return false;
+         }
+      }
+      prev = ep;
+   }
+   return true;
+}
+
+/**
+ * @brief Pin the sort functions of the old interface (CS-3077, sorting group)
+ *
+ * Only the order of the keys is pinned, not the order of elements with equal
+ * keys: qsort() makes no promise about it.
+ */
+static void
+test_sorting() {
+   // one key, every value type, both directions
+   bool one_key = true;
+   for (const int nm : {TEST_uint32, TEST_uint64, TEST_int, TEST_long, TEST_double, TEST_bool, TEST_string, TEST_host}) {
+      for (const int dir : {1, -1}) {
+         lList *lp = sort_rows(40, false);
+         const int rc = lPSortList(lp, dir > 0 ? "%I+" : "%I-", nm);
+         one_key = one_key && rc == 0 && lGetNumberOfElem(lp) == 40 && is_sorted_by(lp, nm, dir);
+         lFreeList(&lp);
+      }
+   }
+   // two keys, an empty and a one-element list, no list
+   lList *lp = sort_rows(40, false);
+   const bool two_keys = lPSortList(lp, "%I-%I+", TEST_uint64, TEST_uint32) == 0 &&
+                         is_sorted_by(lp, TEST_uint64, -1, TEST_uint32, 1) && lFirst(lp)->prev == nullptr &&
+                         lLast(lp)->next == nullptr;
+   lFreeList(&lp);
+   lList *empty = lCreateList("empty", TEST_Type);
+   lList *one = sort_rows(1, false);
+   const bool small = lPSortList(empty, "%I+", TEST_uint32) == 0 && lGetNumberOfElem(empty) == 0 &&
+                      lPSortList(one, "%I+", TEST_uint32) == 0 && lGetNumberOfElem(one) == 1;
+   lFreeList(&empty);
+   lFreeList(&one);
+   cull_state_set_lerrno(0);
+   const bool no_list = lPSortList(nullptr, "%I+", TEST_uint32) == -1 && cull_state_get_lerrno() == LELISTNULL &&
+                        lSortList(nullptr, nullptr) == 0;
+   CHECK(56, "lPSortList orders by one key of every value type in both directions and by two keys, and keeps "
+             "empty, one-element and null lists as before",
+         one_key && two_keys && small && no_list);
+
+   // a hashed list: every lookup still finds its element after sorting
+   lp = sort_rows(40, true);
+   bool found = lPSortList(lp, "%I-", TEST_uint32) == 0 && is_sorted_by(lp, TEST_uint32, -1);
+   for (lUlong k = 1; k <= 40; k++) {
+      const lListElem *ep = lGetElemUlong(lp, TEST_uint32, k);
+      found = found && ep != nullptr && lGetUlong(ep, TEST_uint32) == k;
+   }
+   const void *iterator = nullptr;
+   int zeros = 0;
+   for (const lListElem *ep = lGetElemUlong64First(lp, TEST_uint64, 0, &iterator); ep != nullptr;
+        ep = lGetElemUlong64Next(lp, TEST_uint64, 0, &iterator)) {
+      zeros++;
+   }
+   found = found && zeros == 10;
+   lFreeList(&lp);
+   CHECK(57, "sorting a hashed list keeps its unique and non-unique lookups working", found);
+
+   // inserting sorted, resorting
+   lSortOrder *so = lParseSortOrderVarArg(TEST_Type, "%I+", TEST_uint32);
+   lp = lCreateList("sorted", TEST_Type);
+   bool inserted = so != nullptr;
+   for (const lUlong k : {20u, 10u, 30u, 5u, 25u, 40u}) {
+      lListElem *ep = lCreateElem(TEST_Type);
+      lSetUlong(ep, TEST_uint32, k);
+      inserted = inserted && lInsertSorted(so, ep, lp) == 0;
+   }
+   inserted = inserted && lGetNumberOfElem(lp) == 6 && is_sorted_by(lp, TEST_uint32, 1) &&
+              lGetUlong(lFirst(lp), TEST_uint32) == 5 && lGetUlong(lLast(lp), TEST_uint32) == 40;
+   lListElem *dummy = lCreateElem(TEST_Type);
+   const bool null_args = lInsertSorted(nullptr, dummy, lp) == -1 && lInsertSorted(so, nullptr, lp) == -1 &&
+                          lInsertSorted(so, dummy, nullptr) == -1;
+   lFreeElem(&dummy);
+   lListElem *moved = lGetElemUlongRW(lp, TEST_uint32, 10);
+   lSetUlong(moved, TEST_uint32, 35);
+   const bool resorted = lResortElem(so, moved, lp) == 0 && lGetNumberOfElem(lp) == 6 &&
+                         is_sorted_by(lp, TEST_uint32, 1) && lNext(moved) != nullptr &&
+                         lGetUlong(lNext(moved), TEST_uint32) == 40;
+   // lSortCompare and lSortList with an order of their own
+   const lListElem *first = lFirst(lp);
+   const lListElem *second = lNext(first);
+   lSortOrder *desc = lParseSortOrderVarArg(TEST_Type, "%I-", TEST_uint32);
+   const bool compare = lSortCompare(first, second, so) < 0 && lSortCompare(second, first, so) > 0 &&
+                        lSortCompare(first, first, so) == 0 && lSortCompare(first, second, desc) > 0;
+   const bool sort_list = lSortList(lp, desc) == 0 && is_sorted_by(lp, TEST_uint32, -1);
+   lFreeSortOrder(&desc);
+   lFreeSortOrder(&so);
+   lFreeList(&lp);
+   CHECK(58, "lInsertSorted keeps a list sorted and returns -1 for a null argument, lResortElem moves a changed "
+             "element, lSortCompare and lSortList follow the order",
+         inserted && null_args && resorted && compare && sort_list && so == nullptr);
+
+   // building orders: unknown fields, a missing direction, by hand
+   cull_state_set_lerrno(0);
+   const bool unknown = lParseSortOrderVarArg(TEST_Type, "%I+", JB_job_number) == nullptr &&
+                        cull_state_get_lerrno() == LENAMENOT;
+   cull_state_set_lerrno(0);
+   const bool syntax = lParseSortOrderVarArg(TEST_Type, "%I", TEST_uint32) == nullptr &&
+                       cull_state_get_lerrno() == LESYNTAX;
+   lp = sort_rows(3, false);
+   cull_state_set_lerrno(0);
+   const bool psort_unknown = lPSortList(lp, "%I+", JB_job_number) == -1 &&
+                              cull_state_get_lerrno() == LEPARSESORTORD;
+   lSortOrder *hand = lCreateSortOrder(2);
+   const bool by_hand = hand != nullptr && lAddSortCriteria(TEST_Type, hand, TEST_bool, -1) == 0 &&
+                        lAddSortCriteria(TEST_Type, hand, TEST_uint32, 1) == 0 &&
+                        lAddSortCriteria(TEST_Type, hand, JB_job_number, 1) == -1 && lSortList(lp, hand) == 0 &&
+                        is_sorted_by(lp, TEST_bool, -1, TEST_uint32, 1);
+   lFreeSortOrder(&hand);
+   lFreeList(&lp);
+   CHECK(59, "building a sort order reports an unknown field and a missing direction as before",
+         unknown && syntax && psort_unknown && by_hand);
+}
+
 int main(int argc, char *argv[]) {
    lInit(nmv);
    return ocs::module_test::run(argc, argv, {
@@ -1120,5 +1309,12 @@ int main(int argc, char *argv[]) {
         "compare, count and search descriptors, name a list without a name"},
        "the results of before, including an emptied sub-list of a selection as no list",
        {{"LEG-01", "covers"}}, {52, 53, 54, 55}, test_core_helpers},
+      {"LEGACY-13", "sorting",
+       "the sort functions keep the order of the keys and their errors",
+       {"sort by one key of every value type in both directions, by two keys, an empty, a one-element and no list",
+        "sort a hashed list and look its elements up", "insert sorted, resort a changed element, compare",
+        "build orders with an unknown field, without a direction and by hand"},
+       "the keys in order, the lookups working, the error results of before; equal keys in any order",
+       {{"LEG-01", "covers"}}, {56, 57, 58, 59}, test_sorting},
    });
 }

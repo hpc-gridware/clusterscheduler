@@ -57,6 +57,7 @@
 #include "uti/sge_stdlib.h"
 #include "tom/ocs_ElementCore.h"
 #include "tom/ocs_ListCore.h"
+#include "tom/ocs_SortCore.h"
 #include "tom/ocs_SelectCore.h"
 #include "tom/ocs_SoftPath.h"
 
@@ -1582,80 +1583,20 @@ int lPSortList(lList *lp, const char *fmt, ...) {
  * @param sp sort order object
  *
  * @return error state 0 - OK -1 - Error
+ *
+ * @note A thin wrapper over ocs::tom::sort_list(), which sorts stably since CS-3077: elements with equal keys
+ *       keep their order, which qsort() did not promise.
+ * @see Typed form: ocs::tom::List::sort()
  */
 int lSortList(lList *lp, const lSortOrder *sp) {
-   DENTER(CULL_LAYER);
-
-   lListElem *ep;
-   lListElem **pointer;
-   int i, n;
-
-   if (!lp) {
-      DRETURN(0);                 /* ok list is sorted */
+   try {
+      ocs::tom::sort_list(lp, sp);
+   } catch (const ocs::tom::ListCoreError &) {
+      return -1;                  /* low memory */
+   } catch (const ocs::tom::FieldException &e) {
+      ocs::tom::legacy_abort("lSortList", e);
    }
-
-   /*
-    * step 1: build up a pointer array for use of qsort
-    */
-
-   n = lGetNumberOfElem(lp);
-   if (n < 2) {
-      DRETURN(0);                 /* ok list is sorted */
-   }
-
-   if (!(pointer = (lListElem **) sge_malloc(sizeof(lListElem *) * n))) {
-      DRETURN(-1);                /* low memory */
-   }
-
-#ifdef RANDOMIZE_QSORT_ELEMENTS
-
-   for (i = 0, ep = lFirstRW(lp); ep; i++, ep = lNextRW(ep)) {
-      int j = (int)((double)i*rand()/(RAND_MAX+1.0));
-      pointer[i] = pointer[j];
-      pointer[j] = ep;
-   }
-
-#else
-
-   for (i = 0, ep = lFirstRW(lp); ep; i++, ep = lNextRW(ep))
-      pointer[i] = ep;
-
-#endif
-
-   /*
-    * step 2: sort the pointer array using parsed sort order
-    */
-   cull_state_set_global_sort_order(sp);
-   /* this is done to pass the sort order */
-   /* to the lSortCompare function called */
-   /* by lSortCompareUsingGlobal          */
-   qsort((void *) pointer, n, sizeof(lListElem *), lSortCompareUsingGlobal);
-
-   /*
-    * step 3: relink elements in list according pointer array
-    */
-   lp->first = pointer[0];
-   lp->last = pointer[n - 1];
-
-   /* handle first element separatly */
-   pointer[0]->prev = nullptr;
-   pointer[n - 1]->next = nullptr;
-
-   if (n > 1) {
-      pointer[0]->next = pointer[1];
-      pointer[n - 1]->prev = pointer[n - 2];
-   }
-
-   for (i = 1; i < n - 1; i++) {
-      pointer[i]->prev = pointer[i - 1];
-      pointer[i]->next = pointer[i + 1];
-   }
-
-   sge_free(&pointer);
-
-   cull_hash_recreate_after_sort(lp);
-
-   DRETURN(0);
+   return 0;
 }
 
 /**

@@ -39,6 +39,7 @@
  */
 
 #include <cstring>
+#include <vector>
 
 /* do not compile in monitoring code */
 #ifndef NO_SGE_COMPILE_DEBUG
@@ -55,6 +56,12 @@
 #include "cull/cull_sortP.h"
 #include "cull/cull_lerrnoP.h"
 
+#include "tom/ocs_ElementCore.h"
+#include "tom/ocs_FieldException.h"
+#include "tom/ocs_ListCore.h"
+#include "tom/ocs_SoftPath.h"
+#include "tom/ocs_SortCore.h"
+
 /* ------------------------------------------------------------ 
 
    insert ep into sorted list lp using so as sort order
@@ -67,31 +74,21 @@
  * @param ep the element to insert
  * @param lp the list to insert into, already sorted by @p so
  * @return 0 on success, -1 when any argument is nullptr
+ *
+ * @note A thin wrapper over ocs::tom::insert_sorted().
+ * @see Typed form: ocs::tom::List::insert_sorted()
  */
 int lInsertSorted(const lSortOrder *so, lListElem *ep, lList *lp) {
-   DENTER(TOP_LAYER);
-
    if (!so || !ep || !lp) {
-      DRETURN(-1);
+      return -1;
    }
-
-   lListElem *tmp;
-   for_each_rw(tmp, lp) {
-      if (lSortCompare(ep, tmp, so) <= 0) {
-         break;                    /* insert before tmp */
-      }
+   try {
+      ocs::tom::insert_sorted(lp, ep, so);
+   } catch (const ocs::tom::FieldException &e) {
+      // a bound element or a duplicate key aborted in lInsertElem() and lAppendElem() before
+      ocs::tom::legacy_abort("lInsertSorted", e);
    }
-
-   if (tmp) {
-      /* insert before tmp */
-      tmp = lPrevRW(tmp);
-      lInsertElem(lp, tmp, ep);
-   } else {
-      /* append to list */
-      lAppendElem(lp, ep);
-   }
-
-   DRETURN(0);
+   return 0;
 }
 
 /**
@@ -104,10 +101,25 @@ int lInsertSorted(const lSortOrder *so, lListElem *ep, lList *lp) {
  * @param ep the element to move; must be in @p lp
  * @param lp the list holding @p ep
  * @return always 0
+ *
+ * @note A thin wrapper over ocs::tom::resort_elem().
+ * @see Typed form: ocs::tom::List::resort()
  */
 int lResortElem(const lSortOrder *so, lListElem *ep, lList *lp) {
-   lDechainElem(lp, ep);
-   lInsertSorted(so, ep, lp);
+   try {
+      ocs::tom::resort_elem(lp, ep, so);
+   } catch (const ocs::tom::FieldException &e) {
+      switch (e.reason()) {
+         case ocs::tom::FieldException::Reason::NullList:
+            LERROR(LELISTNULL);
+            break;
+         case ocs::tom::FieldException::Reason::NullElement:
+            LERROR(LEELEMNULL);
+            break;
+         default:
+            ocs::tom::legacy_abort("lResortElem", e);
+      }
+   }
    return 0;
 }
 
@@ -138,75 +150,18 @@ void lWriteSortOrder(
 }
 #endif
 
-/* ----------------------------------------
-
-   wrapper function adding global_sort_order
-   to the passed parameters and calls
-   lSortCompare()
-
+/**
+ * @brief Compare two elements by a sort order
+ *
+ * @param ep0 the first element
+ * @param ep1 the second element
+ * @param sp the sort order
+ * @return negative if @p ep0 comes first, positive if @p ep1 comes first, 0 if they are equal
+ *
+ * @note A thin wrapper over ocs::tom::sort_compare().
  */
-int lSortCompareUsingGlobal(const void *ep0, const void *ep1) {
-   return lSortCompare(*(lListElem **) ep0, *(lListElem **) ep1, cull_state_get_global_sort_order());
-}
-
-/* ------------------------------------------------------------ 
-
-   compares two elementes ep0 and ep1 due to a given sort
-   order sp 
-
-   returns compare values like strcmp:
-
-   <  -1 
-   == 0 
-   >  1 
-
- */
-int lSortCompare(
-        const lListElem *ep0,
-        const lListElem *ep1,
-        const lSortOrder *sp
-) {
-   DENTER(CULL_LAYER);
-
-   int i, result = 0;
-
-   for (i = 0; !result && sp[i].nm != NoName; i++) {
-
-      switch (mt_get_type(sp[i].mt)) {
-         case lIntT:
-            result = intcmp(lGetPosInt(ep0, sp[i].pos), lGetPosInt(ep1, sp[i].pos));
-            break;
-         case lStringT:
-            result = sge_strnullcmp(lGetPosString(ep0, sp[i].pos), lGetPosString(ep1, sp[i].pos));
-            break;
-         case lHostT:
-            result = sge_strnullcmp(lGetPosHost(ep0, sp[i].pos), lGetPosHost(ep1, sp[i].pos));
-            break;
-         case lUlongT:
-            result = ulongcmp(lGetPosUlong(ep0, sp[i].pos), lGetPosUlong(ep1, sp[i].pos));
-            break;
-         case lUlong64T:
-            result = ulong64cmp(lGetPosUlong64(ep0, sp[i].pos), lGetPosUlong64(ep1, sp[i].pos));
-            break;
-         case lDoubleT:
-            result = doublecmp(lGetPosDouble(ep0, sp[i].pos), lGetPosDouble(ep1, sp[i].pos));
-            break;
-         case lLongT:
-            result = longcmp(lGetPosLong(ep0, sp[i].pos), lGetPosLong(ep1, sp[i].pos));
-            break;
-         case lBoolT:
-            result = boolcmp(lGetPosBool(ep0, sp[i].pos), lGetPosBool(ep1, sp[i].pos));
-            break;
-         case lRefT:
-            result = refcmp(lGetPosRef(ep0, sp[i].pos), lGetPosRef(ep1, sp[i].pos));
-            break;
-         default:
-            unknownType("lSortCompare");
-      }
-      result *= sp[i].ad;
-   }
-
-   DRETURN(result);
+int lSortCompare(const lListElem *ep0, const lListElem *ep1, const lSortOrder *sp) {
+   return ocs::tom::sort_compare(ep0, ep1, sp);
 }
 
 /**
@@ -252,104 +207,76 @@ lSortOrder *lParseSortOrderVarArg(const lDescr *dp, const char *fmt, ...) {
  * @param ap Attributes within descriptor
  *
  * @return sort order array
+ *
+ * @note The format is parsed here; the order is built by ocs::tom::make_sort_order().
+ * @see Typed form: ocs::tom::sort_order()
  */
 lSortOrder *lParseSortOrder(const lDescr *dp, const char *fmt, va_list ap) {
    DENTER(CULL_LAYER);
-
-   const char *s = nullptr;
-   lSortOrder *sp = nullptr;
-   int i, n;
-   cull_parse_state state;
 
    if (!dp || !fmt) {
       DRETURN(nullptr);
    }
 
-   /* how many fields are selected (for malloc) */
-   for (n = 0, s = fmt; *s; s++) {
+   /* how many fields are selected */
+   int n = 0;
+   for (const char *s = fmt; *s; s++) {
       if (*s == '%') {
          n++;
       }
    }
 
-   if (!(sp = (lSortOrder *) sge_malloc(sizeof(lSortOrder) * (n + 1)))) {
-      LERROR(LEMALLOC);
-      DRETURN(nullptr);
-   }
-
+   std::vector<ocs::tom::SortKey> keys;
+   cull_parse_state state;
    memset(&state, 0, sizeof(state));
    scan(fmt, &state);                   /* Initialize scan */
-   for (i = 0; i < n; i++) {
-      sp[i].nm = va_arg(ap, int);
-      if ((sp[i].pos = lGetPosInDescr(dp, sp[i].nm)) < 0) {
-         sge_free(&sp);
+   for (int i = 0; i < n; i++) {
+      const int nm = va_arg(ap, int);
+      if (ocs::tom::present_pos(dp, nm) < 0) {
          LERROR(LENAMENOT);
          DRETURN(nullptr);
       }
-      sp[i].mt = dp[sp[i].pos].mt;
 
       /* next token */
       if (scan(nullptr, &state) != FIELD) {
-         sge_free(&sp);
          LERROR(LESYNTAX);
          DRETURN(nullptr);
       }
-      /* THIS IS FOR TYPE CHECKING */
-      /* COMMENTED OUT
-         switch( scan(nullptr, &state) ) {
-         case INT:
-         if (mt_get_type(sp[i].mt) != lIntT )
-         incompatibleType("lSortList (should be a lIntT)\n");
-         break;
-
-         case STRING:
-         if (mt_get_type(sp[i].mt) !=lStringT )
-         incompatibleType("lSortList (should be a lStringT)\n");
-         break;
-
-         case ULONG:
-         if (mt_get_type(sp[i].mt) !=lUlongT )
-         incompatibleType("lSortList (should be a lUlongT)\n");
-         break;
-
-         case DOUBLE:
-         if (mt_get_type(sp[i].mt) !=lDoubleT )
-         incompatibleType("lSortList (should be a lDoubleT)\n");
-         break;
-         default:
-         sge_free(&sp);
-         unknownType("lSortList");
-         } 
-       */
       eat_token(&state);              /* eat %I */
       switch (scan(nullptr, &state)) {
          case PLUS:
-            sp[i].ad = 1;
+            keys.push_back({nm, true});
             break;
          case MINUS:
-            sp[i].ad = -1;
+            keys.push_back({nm, false});
             break;
          default:
             /* +/- is missing */
-            sge_free(&sp);
             LERROR(LESYNTAX);
             DRETURN(nullptr);
       }
       eat_token(&state);
    }
-   sp[n].nm = NoName;
-   sp[n].mt = lEndT;
 
-   DRETURN(sp);
+   try {
+      DRETURN(ocs::tom::make_sort_order(dp, keys));
+   } catch (const ocs::tom::ListCoreError &e) {
+      LERROR(e.lerrno());
+   }
+   DRETURN(nullptr);
 }
 
 /**
  * @brief Release a sort order
  *
  * @param[in,out] so the order to free; set to nullptr on return
+ *
+ * @note A thin wrapper over ocs::tom::free_sort_order().
  */
 void lFreeSortOrder(lSortOrder **so) {
-   sge_free(so);
+   if (so != nullptr) {
+      ocs::tom::free_sort_order(*so);
+   }
 }
 
 
@@ -403,7 +330,7 @@ int lAddSortCriteria(
    /* use nm to get type and and pos of field in descr dp of list and append new sort criteria */
    so[i].nm = nm;
    so[i].ad = up_down_flag;
-   if ((so[i].pos = lGetPosInDescr(dp, so[i].nm)) < 0)
+   if ((so[i].pos = ocs::tom::present_pos(dp, so[i].nm)) < 0)
       return -1;
 
    so[i].mt = dp[so[i].pos].mt;

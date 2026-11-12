@@ -45,14 +45,10 @@ void cull_state_set_lerrno(int i);
 
 void cull_state_set_noinit(char *s);
 
-void cull_state_set_global_sort_order(const lSortOrder *so);
-
 void cull_state_set_name_space(const lNameSpace *ns);
 
 int cull_state_get_lerrno();
 
 const char *cull_state_get_noinit();
-
-const lSortOrder *cull_state_get_global_sort_order();
 
 const lNameSpace *cull_state_get_name_space();

@@ -80,14 +80,19 @@ target_include_directories(test_tom_ops_select PRIVATE "./")
 target_link_libraries(test_tom_ops_select PRIVATE sgeobj cull comm commlists uti ${SGE_LIBS})
 add_test(NAME test_tom_ops_select COMMAND test_tom_ops_select)
 
-# TRT-02 and WHT-01: sources that must not compile. Each is compiled with the flags of
+add_executable(test_tom_ops_sort test_tom_ops_sort.cc)
+target_include_directories(test_tom_ops_sort PRIVATE "./")
+target_link_libraries(test_tom_ops_sort PRIVATE sgeobj cull comm commlists uti ${SGE_LIBS})
+add_test(NAME test_tom_ops_sort COMMAND test_tom_ops_sort)
+
+# TRT-02, WHT-01 and OPS-01: sources that must not compile. Each is compiled with the flags of
 # test_tom_handles as part of the build, which fails if one compiles or fails
 # with another error than the one it names; test_tom_handles holds the correct
 # counterpart of each.
 string(TOUPPER "${CMAKE_BUILD_TYPE}" build_type_upper)
 foreach (name string_into_number job_field_on_queue raw_pointer_assigned setter_on_const const_to_mutable_pointer
                what_two_types what_nested_not_a_list where_foreign_field where_number_with_string
-               where_nested_not_a_list)
+               where_nested_not_a_list sort_foreign_field sort_order_foreign_field insert_sorted_wrong_type)
    set(stamp ${CMAKE_CURRENT_BINARY_DIR}/compile_fail_${name}.stamp)
    add_custom_command(OUTPUT ${stamp}
            COMMAND ${CMAKE_COMMAND}
@@ -129,4 +134,5 @@ if (INSTALL_SGE_TEST)
    install(TARGETS test_tom_ops_keyed DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_tom_ops_incr DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_tom_ops_select DESTINATION testbin/${SGE_ARCH})
+   install(TARGETS test_tom_ops_sort DESTINATION testbin/${SGE_ARCH})
 endif ()
