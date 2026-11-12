@@ -88,6 +88,10 @@ add_executable(test_tom_ops_pack test_tom_ops_pack.cc)
 target_include_directories(test_tom_ops_pack PRIVATE "./")
 target_link_libraries(test_tom_ops_pack PRIVATE sgeobj cull comm commlists uti ${SGE_LIBS})
 add_test(NAME test_tom_ops_pack COMMAND test_tom_ops_pack)
+add_executable(test_tom_ops_dump test_tom_ops_dump.cc)
+target_include_directories(test_tom_ops_dump PRIVATE "./")
+target_link_libraries(test_tom_ops_dump PRIVATE sgeobj cull comm commlists uti ${SGE_LIBS})
+add_test(NAME test_tom_ops_dump COMMAND test_tom_ops_dump)
 
 # TRT-02, WHT-01 and OPS-01: sources that must not compile. Each is compiled with the flags of
 # test_tom_handles as part of the build, which fails if one compiles or fails
@@ -97,7 +101,8 @@ string(TOUPPER "${CMAKE_BUILD_TYPE}" build_type_upper)
 foreach (name string_into_number job_field_on_queue raw_pointer_assigned setter_on_const const_to_mutable_pointer
                what_two_types what_nested_not_a_list where_foreign_field where_number_with_string
                where_nested_not_a_list sort_foreign_field sort_order_foreign_field insert_sorted_wrong_type
-               pack_what_of_other_type unpack_into_wrong_handle)
+               pack_what_of_other_type unpack_into_wrong_handle
+               undump_into_wrong_handle)
    set(stamp ${CMAKE_CURRENT_BINARY_DIR}/compile_fail_${name}.stamp)
    add_custom_command(OUTPUT ${stamp}
            COMMAND ${CMAKE_COMMAND}
@@ -141,4 +146,5 @@ if (INSTALL_SGE_TEST)
    install(TARGETS test_tom_ops_select DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_tom_ops_sort DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_tom_ops_pack DESTINATION testbin/${SGE_ARCH})
+   install(TARGETS test_tom_ops_dump DESTINATION testbin/${SGE_ARCH})
 endif ()

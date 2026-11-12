@@ -31,6 +31,8 @@
 
 #include <csignal>
 #include <cstdio>
+#include <cstdint>
+#include <cstdlib>
 #include <cstring>
 #include <functional>
 #include <string>
@@ -40,6 +42,8 @@
 #include <unistd.h>
 
 #include "cull/cull_lerrno.h"
+#include "cull/cull_dump_scan.h"
+#include "cull/cull_file.h"
 #include "cull/cull_pack.h"
 #include "cull/cull_sort.h"
 #include "cull/cull_state.h"
@@ -1449,6 +1453,202 @@ test_pack() {
          there_and_back && unset && bad < 0 && null_kept);
 }
 
+/// the hash of the dump text, recorded on the code before the move
+static constexpr std::uint64_t DumpTextHash = 0x77f15bc08feb7b97ULL;
+/// the hash of the error numbers of every cut of the dump text, recorded on the code before the move
+static constexpr std::uint64_t DumpCutHash = 0xc5f21f6804def9fbULL;
+
+/**
+ * @brief FNV-1a over bytes
+ * @param bytes the bytes
+ * @param n how many
+ * @param h the hash so far
+ * @return the hash
+ */
+static std::uint64_t
+fnv1a(const char *bytes, const std::size_t n, std::uint64_t h = 0xcbf29ce484222325ULL) {
+   for (std::size_t i = 0; i < n; i++) {
+      h ^= static_cast<unsigned char>(bytes[i]);
+      h *= 0x100000001b3ULL;
+   }
+   return h;
+}
+
+/**
+ * @brief What a dump function writes, as text
+ * @param dump writes to the stream
+ * @return the text
+ */
+static std::string
+dump_text(const std::function<void(FILE *)> &dump) {
+   char *buf = nullptr;
+   size_t size = 0;
+   FILE *fp = open_memstream(&buf, &size);
+   dump(fp);
+   fclose(fp);
+   std::string text(buf, size);
+   free(buf);
+   return text;
+}
+
+/**
+ * @brief Read from a text as from a file
+ * @param text the text
+ * @param read reads from the stream
+ */
+static void
+read_text(const std::string &text, const std::function<void(FILE *)> &read) {
+   FILE *fp = fmemopen(const_cast<char *>(text.data()), text.size(), "r");
+   read(fp);
+   fclose(fp);
+}
+
+/**
+ * @brief The elements the dump pins use: every value type, a quote in a string, a sub-object, a sub-list
+ * @param[out] list a list of user sets with entries
+ * @return a TEST element
+ */
+static lListElem *
+dump_fixture(lList **list) {
+   lListElem *ep = lCreateElem(TEST_Type);
+   lSetBool(ep, TEST_bool, true);
+   lSetUlong(ep, TEST_uint32, 42);
+   lSetUlong64(ep, TEST_uint64, 1ULL << 40);
+   lSetInt(ep, TEST_int, -7);
+   lSetLong(ep, TEST_long, -123456789L);
+   lSetDouble(ep, TEST_double, 2.5);
+   lSetHost(ep, TEST_host, "host1");
+   lSetString(ep, TEST_string, "say \"hi\" now");
+   lListElem *job = lCreateElem(JB_Type);
+   lSetUlong(job, JB_job_number, 7);
+   lSetString(job, JB_owner, "alice");
+   lSetObject(ep, TEST_obj_jb, job);
+   *list = lCreateList("sets", US_Type);
+   for (const char *name : {"one", "two"}) {
+      lListElem *set = lAddElemStr(list, US_name, name, US_Type);
+      lAddSubStr(set, UE_name, "bob", US_entries, UE_Type);
+   }
+   return ep;
+}
+
+/**
+ * @brief Pin dump, scan and the files of the old interface (CS-3077, dump group)
+ *
+ * The text is pinned by its hash, recorded on the code before the move; so are
+ * the error numbers of reading every cut of it.
+ */
+static void
+test_dump() {
+   lList *sets = nullptr;
+   lListElem *ep = dump_fixture(&sets);
+
+   // the text of an element, a list and a descriptor
+   const std::string elem_text = dump_text([&](FILE *fp) { lDumpElemFp(fp, ep, 1); });
+   const std::string list_text = dump_text([&](FILE *fp) { lDumpList(fp, sets, 0); });
+   const std::string object_text = dump_text([&](FILE *fp) { lDumpObject(fp, lGetObject(ep, TEST_obj_jb), 0); });
+   const std::string descr_text = dump_text([&](FILE *fp) { lDumpDescr(fp, US_Type, 2); });
+   std::uint64_t hash = fnv1a(elem_text.data(), elem_text.size());
+   hash = fnv1a(list_text.data(), list_text.size(), hash);
+   hash = fnv1a(object_text.data(), object_text.size(), hash);
+   hash = fnv1a(descr_text.data(), descr_text.size(), hash);
+   if (DumpTextHash == 0) {
+      printf("dump text hash: 0x%016llxULL\n", static_cast<unsigned long long>(hash));
+   }
+
+   // there and back
+   std::string elem_again;
+   std::string list_again;
+   read_text(elem_text, [&](FILE *fp) {
+      lListElem *back = lUndumpElemFp(fp, TEST_Type);
+      elem_again = dump_text([&](FILE *out) { lDumpElemFp(out, back, 1); });
+      lFreeElem(&back);
+   });
+   read_text(list_text, [&](FILE *fp) {
+      lList *back = lUndumpList(fp, nullptr, nullptr);
+      list_again = dump_text([&](FILE *out) { lDumpList(out, back, 0); });
+      lFreeList(&back);
+   });
+   std::string object_again;
+   read_text(object_text, [&](FILE *fp) {
+      lListElem *back = lUndumpObject(fp);
+      object_again = dump_text([&](FILE *out) { lDumpObject(out, back, 0); });
+      lFreeElem(&back);
+   });
+   CHECK(65, "dumping writes the text of before, and reading it back gives the same text",
+         (DumpTextHash == 0 || hash == DumpTextHash) && elem_again == elem_text && list_again == list_text &&
+         object_again == object_text);
+
+   // every cut of the text: nullptr and an error number, the same as before
+   std::uint64_t cuts = 0xcbf29ce484222325ULL;
+   bool all_null = true;
+   for (const std::string *text : {&elem_text, &list_text, &object_text}) {
+      for (std::size_t n = 0; n < text->size(); n++) {
+         if (n > 0 && (*text)[n - 1] != '\n') {
+            continue;   // cut after whole lines only
+         }
+         const std::string cut = text->substr(0, n);
+         int lerrno = 0;
+         bool null_result = false;
+         read_text(cut.empty() ? std::string(" ") : cut, [&](FILE *fp) {
+            cull_state_set_lerrno(0);
+            if (text == &elem_text) {
+               lListElem *back = lUndumpElemFp(fp, TEST_Type);
+               null_result = back == nullptr;
+               lFreeElem(&back);
+            } else if (text == &list_text) {
+               lList *back = lUndumpList(fp, nullptr, nullptr);
+               null_result = back == nullptr;
+               lFreeList(&back);
+            } else {
+               lListElem *back = lUndumpObject(fp);
+               null_result = back == nullptr;
+               lFreeElem(&back);
+            }
+            lerrno = cull_state_get_lerrno();
+         });
+         all_null = all_null && null_result;
+         cuts = fnv1a(reinterpret_cast<const char *>(&lerrno), sizeof(lerrno), cuts);
+      }
+   }
+   if (DumpCutHash == 0) {
+      printf("dump cut hash: 0x%016llxULL\n", static_cast<unsigned long long>(cuts));
+   }
+   cull_state_set_lerrno(0);
+   const bool null_file = lDumpElemFp(nullptr, ep, 0) == -1 && cull_state_get_lerrno() == LEFILENULL &&
+                          lUndumpElemFp(nullptr, TEST_Type) == nullptr && lUndumpList(nullptr, nullptr, nullptr) == nullptr;
+   cull_state_set_lerrno(0);
+   const bool no_file = lUndumpElem("/nonexistent/test_tom_legacy", TEST_Type) == nullptr &&
+                        cull_state_get_lerrno() == LEOPEN;
+   CHECK(66, "reading a cut text gives nullptr with the error numbers of before; a null file and a missing file "
+             "fail as before",
+         all_null && (DumpCutHash == 0 || cuts == DumpCutHash) && null_file && no_file);
+
+   // files of packed elements; a TEST element holds int and long fields, which are not packed, so a job is used
+   const lListElem *job = lGetObject(ep, TEST_obj_jb);
+   char dir[] = "/tmp/test_tom_legacy_XXXXXX";
+   bool files = mkdtemp(dir) != nullptr;
+   files = files && lWriteElemToDisk(job, dir, "elem", "test") == 0;
+   lListElem *read = files ? lReadElemFromDisk(dir, "elem", JB_Type, "test") : nullptr;
+   files = files && read != nullptr && lGetUlong(read, JB_job_number) == 7 &&
+           strcmp(lGetString(read, JB_owner), "alice") == 0;
+   lFreeElem(&read);
+   const bool not_packed = lWriteElemToDisk(ep, dir, "test", "test") == 1;
+   const bool no_name = lWriteElemToDisk(job, nullptr, nullptr, "test") == 1;
+   const bool missing = lReadElemFromDisk(dir, "missing", JB_Type, "test") == nullptr;
+   const std::string path = std::string(dir) + "/elem";
+   bool cut_file = truncate(path.c_str(), 20) == 0;
+   cut_file = cut_file && lReadElemFromDisk(dir, "elem", JB_Type, "test") == nullptr;
+   unlink(path.c_str());
+   unlink((std::string(dir) + "/test").c_str());
+   rmdir(dir);
+   CHECK(67, "lWriteElemToDisk and lReadElemFromDisk carry an element through a file and fail on fields that are "
+             "not packed, no name, a missing file and a cut file",
+         files && not_packed && no_name && missing && cut_file);
+
+   lFreeList(&sets);
+   lFreeElem(&ep);
+}
+
 int main(int argc, char *argv[]) {
    lInit(nmv);
    return ocs::module_test::run(argc, argv, {
@@ -1545,5 +1745,11 @@ int main(int argc, char *argv[]) {
         "count a pack", "carry bytes through a string field"},
        "the codes of before, null results and no leak on every cut; the bytes are pinned by test_cull_pack_format",
        {{"LEG-01", "covers"}}, {60, 61, 62, 63, 64}, test_pack},
+      {"LEGACY-15", "dump, scan and files",
+       "dumping writes the text of before, scanning reads it back, the files carry an element",
+       {"dump an element with every value type, a sub-object and a sub-list, a list, an object and a descriptor",
+        "read each back and dump it again", "read every cut of the text", "write an element to a file, read it"},
+       "the text and the error numbers of before, by hash; the same text after a round trip",
+       {{"LEG-01", "covers"}}, {65, 66, 67}, test_dump},
    });
 }

@@ -595,6 +595,22 @@ namespace ocs::tom {
          pack_list(&pb, lp_, what.get(), 0);
       }
 
+
+      /**
+       * @brief Write the list with its name, its descriptor and its elements as text, as lDumpList() does
+       * @param fp the stream
+       * @param indent the nesting level, three blanks each
+       * @throw FieldException with reason EmptyHandle if the handle is empty
+       * @throw ListCoreError if the stream is null or the last write failed
+       * @see Old form: lDumpList(); core: ocs::tom::dump_list()
+       */
+      void dump(FILE *fp, const int indent = 0) const {
+         if (lp_ == nullptr) [[unlikely]] {
+            throw_field_exception(FieldException::Reason::EmptyHandle, NoName, T::descriptor.e);
+         }
+         dump_list(fp, lp_, indent);
+      }
+
    protected:
       lList *lp_ = nullptr;   ///< the list, or nullptr; const unless reached through List
    };
@@ -1249,6 +1265,29 @@ namespace ocs::tom {
       [[nodiscard]] static ListPtr unpack(sge_pack_buffer &pb, const int flags = 0) {
          lList *lp = unpack_list(&pb, flags);
          if (lp != nullptr && lp->descr[0].nm != T::fields[0].nm) [[unlikely]] {
+            try {
+               detail::throw_wrong_type<T>(lp->descr);
+            } catch (...) {
+               free_list(lp);
+               throw;
+            }
+         }
+         return from_typed(lp);
+      }
+
+
+      /**
+       * @brief Read a list written as text by dump(), as lUndumpList() does
+       * @param fp the stream
+       * @param name the name of the list, or nullptr for the name in the text
+       * @return the owning handle on the list
+       * @throw FieldException with reason WrongType if the text holds a list of another type; it is freed
+       * @throw ListCoreError with the error number of before if the text cannot be read
+       * @see Old form: lUndumpList(); core: ocs::tom::undump_list()
+       */
+      [[nodiscard]] static ListPtr undump(FILE *fp, const char *name = nullptr) {
+         lList *lp = undump_list(fp, name, nullptr);
+         if (lp->descr[0].nm != T::fields[0].nm) [[unlikely]] {
             try {
                detail::throw_wrong_type<T>(lp->descr);
             } catch (...) {

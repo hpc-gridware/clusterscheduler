@@ -36,6 +36,7 @@
  */
 
 #include <cstddef>
+#include <cstdio>
 #include <cstdint>
 #include <type_traits>
 #include <utility>
@@ -44,6 +45,7 @@
 #include "tom/cull_listP.h"
 #include "tom/cull_multitypeP.h"
 #include "tom/ocs_ElementCore.h"
+#include "tom/ocs_DumpCore.h"
 #include "tom/ocs_FieldTraits.h"
 #include "tom/ocs_Pack.h"
 #include "tom/ocs_ListCore.h"
@@ -630,6 +632,39 @@ namespace ocs::tom {
          pack_elem(&pb, ep_, what.get(), 0);
       }
 
+
+      /**
+       * @brief Write the element as text, as lDumpElemFp() does
+       * @param fp the stream
+       * @param indent the nesting level, three blanks each
+       * @throw FieldException with reason EmptyHandle if the handle is empty
+       * @throw ListCoreError if the stream is null or the last write failed
+       * @see Old form: lDumpElemFp(); core: ocs::tom::dump_elem()
+       */
+      void dump(FILE *fp, const int indent = 0) const {
+         if (ep_ == nullptr) [[unlikely]] {
+            throw_field_exception(FieldException::Reason::EmptyHandle, NoName, T::descriptor.e);
+         }
+         dump_elem(fp, ep_, indent);
+      }
+
+      /**
+       * @brief Pack the element into a file, as lWriteElemToDisk() does
+       * @param prefix the directory, or nullptr
+       * @param name the file name, or nullptr
+       * @param obj_name the kind of object, for the messages logged on a failure
+       * @throw FieldException with reason EmptyHandle if the handle is empty
+       * @throw ocs::RuntimeException with the message logged if no file is named, the element cannot be packed
+       *        or the file cannot be written
+       * @see Old form: lWriteElemToDisk(); core: ocs::tom::write_elem_to_disk()
+       */
+      void write_to_disk(const char *prefix, const char *name, const char *obj_name) const {
+         if (ep_ == nullptr) [[unlikely]] {
+            throw_field_exception(FieldException::Reason::EmptyHandle, NoName, T::descriptor.e);
+         }
+         write_elem_to_disk(ep_, prefix, name, obj_name);
+      }
+
    protected:
       lListElem *ep_ = nullptr;   ///< the element, or nullptr; const unless reached through Element
 
@@ -1054,6 +1089,46 @@ namespace ocs::tom {
        */
       [[nodiscard]] static ElementPtr unpack(sge_pack_buffer &pb, const int flags = 0) {
          lListElem *ep = unpack_elem(&pb, T::descriptor.e, flags);
+         if (ep->descr[0].nm != T::fields[0].nm) [[unlikely]] {
+            try {
+               detail::throw_wrong_type<T>(ep->descr);
+            } catch (...) {
+               free_elem(ep);
+               throw;
+            }
+         }
+         return from_typed(ep);
+      }
+
+
+      /**
+       * @brief Read an element written as text by dump(), as lUndumpElemFp() does
+       *
+       * The text of an element does not name its type; it is read with the
+       * fields of @p T in their order.
+       *
+       * @param fp the stream
+       * @return the owning handle on the element
+       * @throw ListCoreError with the error number of before if the text cannot be read
+       * @see Old form: lUndumpElemFp(); core: ocs::tom::undump_elem()
+       */
+      [[nodiscard]] static ElementPtr undump(FILE *fp) {
+         return from_typed(undump_elem(fp, T::descriptor.e));
+      }
+
+      /**
+       * @brief Unpack an element from a file written by write_to_disk(), as lReadElemFromDisk() does
+       * @param prefix the directory, or nullptr
+       * @param name the file name, or nullptr
+       * @param obj_name the kind of object, for the messages logged on a failure
+       * @return the owning handle on the element
+       * @throw FieldException with reason WrongType if the file holds an element of another type; it is freed
+       * @throw ocs::RuntimeException with the message logged if no file is named, it cannot be read or does not
+       *        hold an element
+       * @see Old form: lReadElemFromDisk(); core: ocs::tom::read_elem_from_disk()
+       */
+      [[nodiscard]] static ElementPtr read_from_disk(const char *prefix, const char *name, const char *obj_name) {
+         lListElem *ep = read_elem_from_disk(prefix, name, T::descriptor.e, obj_name);
          if (ep->descr[0].nm != T::fields[0].nm) [[unlikely]] {
             try {
                detail::throw_wrong_type<T>(ep->descr);

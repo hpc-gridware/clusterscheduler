@@ -33,224 +33,58 @@
 /*___INFO__MARK_END__*/
 
 /** @file
- * @brief Reading and writing cull lists as files
+ * @brief Writing an element into a file and reading it back, packed
+ *
+ * Thin wrappers over ocs::tom::write_elem_to_disk() and
+ * ocs::tom::read_elem_from_disk(), which log every failure as before and
+ * throw; these functions give back 1 or nullptr as before (N-L-1, N-L-2).
  */
 
-#include <cstdio>
-#include <fcntl.h>
-#include <cstring>
-#include <cerrno>
-
-/* do not compile in monitoring code */
-#ifndef NO_SGE_COMPILE_DEBUG
-#define NO_SGE_COMPILE_DEBUG
-#endif
-
-#include "uti/sge_io.h"
-#include "uti/sge_log.h"
-#include "uti/sge_profiling.h"
-#include "uti/sge_rmon_macros.h"
-#include "uti/sge_string.h"
-#include "uti/sge_unistd.h"
-#include "uti/sge_stdlib.h"
-
-#include "cull/cull_list.h"
-#include "cull/cull_listP.h"
-#include "cull/cull_pack.h"
 #include "cull/cull_file.h"
-#include "cull/msg_cull.h"
+#include "tom/ocs_DumpCore.h"
+#include "uti/ocs_Exception.h"
 
 /**
- * @brief Writes a element to file
+ * @brief Write a packed element into a file
  *
- * Writes the Element 'ep' to the file named 'prefix'/'name'.
- * Either 'prefix' or 'name can be null.
+ * The file is prefix/name, or the one of the two given.
  *
- * @param ep CULL element
- * @param prefix Path
- * @param name Filename
- * @param obj_name
+ * @param ep the element
+ * @param prefix the directory, or nullptr
+ * @param name the file name, or nullptr
+ * @param obj_name the kind of object, for the messages
  *
- * @return error state 0 - OK 1 - Error
+ * @return 0 on success, 1 on an error, which is logged
+ *
+ * @note A thin wrapper over ocs::tom::write_elem_to_disk().
+ * @see Typed form: ocs::tom::ConstElement::write_to_disk()
  */
-int lWriteElemToDisk(const lListElem *ep, const char *prefix, const char *name,
-                     const char *obj_name) {
-   DENTER(TOP_LAYER);
-
-   stringT filename;
-   sge_pack_buffer pb;
-   int ret, fd;
-
-   if (!prefix && !name) {
-      ERROR(SFNMAX, MSG_CULL_NOPREFIXANDNOFILENAMEINWRITEELMTODISK);
-      DRETURN(1);
+int lWriteElemToDisk(const lListElem *ep, const char *prefix, const char *name, const char *obj_name) {
+   try {
+      ocs::tom::write_elem_to_disk(ep, prefix, name, obj_name);
+   } catch (const ocs::RuntimeException &) {
+      return 1;
    }
-
-   /* init packing buffer */
-   ret = init_packbuffer(&pb, 8192, false, false);
-
-   /* pack ListElement */
-   if (ret == PACK_SUCCESS) {
-      ret = cull_pack_elem(&pb, ep);
-   }
-
-   switch (ret) {
-      case PACK_SUCCESS:
-         break;
-
-      case PACK_ENOMEM:
-         ERROR(MSG_CULL_NOTENOUGHMEMORYFORPACKINGXY_SS, obj_name, name ? name : "null");
-         clear_packbuffer(&pb);
-         DRETURN(1);
-
-      case PACK_FORMAT:
-         ERROR(MSG_CULL_FORMATERRORWHILEPACKINGXY_SS, obj_name, name ? name : "null");
-         clear_packbuffer(&pb);
-         DRETURN(1);
-
-      default:
-         ERROR(MSG_CULL_UNEXPECTEDERRORWHILEPACKINGXY_SS, obj_name, name ? name : "null");
-         clear_packbuffer(&pb);
-         DRETURN(1);
-   }
-
-   /* create full file name */
-   if (prefix && name) {
-      snprintf(filename, sizeof(filename), "%s/%s", prefix, name);
-   } else if (prefix) {
-      snprintf(filename, sizeof(filename), "%s", prefix);
-   } else {
-      snprintf(filename, sizeof(filename), "%s", name);
-   }
-
-   PROF_START_MEASUREMENT(SGE_PROF_SPOOLINGIO);
-
-   /* open file */
-   if ((fd = SGE_OPEN3(filename, O_WRONLY | O_CREAT | O_TRUNC, 0666)) < 0) {
-      CRITICAL(MSG_CULL_CANTOPENXFORWRITINGOFYZ_SSS, filename, obj_name, strerror(errno));
-      clear_packbuffer(&pb);
-      PROF_STOP_MEASUREMENT(SGE_PROF_SPOOLINGIO);
-      DRETURN(1);
-   }
-
-   /* write packing buffer */
-   if (sge_writenbytes(fd, pb.head_ptr, pb_used(&pb)) != pb_used(&pb)) {
-      CRITICAL(MSG_CULL_CANTWRITEXTOFILEY_SS, obj_name, filename);
-      clear_packbuffer(&pb);
-      close(fd);
-      PROF_STOP_MEASUREMENT(SGE_PROF_SPOOLINGIO);
-      DRETURN(1);
-   }
-
-   /* close file and exit */
-   close(fd);
-   PROF_STOP_MEASUREMENT(SGE_PROF_SPOOLINGIO);
-   clear_packbuffer(&pb);
-
-   DRETURN(0);
+   return 0;
 }
 
 /**
- * @brief Reads a cull element from file
+ * @brief Read a packed element from a file written by #lWriteElemToDisk
  *
- * Reads a lListElem of the specified 'type' from the file
- * 'prefix'/'name'. Either 'prefix' or 'name' can be null.
- * Returns a pointer to the read element or nullptr in case
- * of an error
+ * @param prefix the directory, or nullptr
+ * @param name the file name, or nullptr
+ * @param type the descriptor of the element
+ * @param obj_name the kind of object, for the messages
  *
- * @param prefix Path
- * @param name Filename
- * @param type Type
- * @param obj_name
+ * @return the element, or nullptr on an error, which is logged
  *
- * @return Read CULL element
+ * @note A thin wrapper over ocs::tom::read_elem_from_disk().
+ * @see Typed form: ocs::tom::ElementPtr::read_from_disk()
  */
-lListElem *lReadElemFromDisk(const char *prefix, const char *name,
-                             const lDescr *type, const char *obj_name) {
-   DENTER(TOP_LAYER);
-
-   stringT filename;
-   sge_pack_buffer pb;
-   SGE_STRUCT_STAT statbuf;
-   lListElem *ep;
-   int ret, fd;
-   char *buf;
-   size_t size;
-
-   if (!prefix && !name) {
-      ERROR(SFNMAX, MSG_CULL_NOPREFIXANDNOFILENAMEINREADELEMFROMDISK);
-      DRETURN(nullptr);
+lListElem *lReadElemFromDisk(const char *prefix, const char *name, const lDescr *type, const char *obj_name) {
+   try {
+      return ocs::tom::read_elem_from_disk(prefix, name, type, obj_name);
+   } catch (const ocs::RuntimeException &) {
+      return nullptr;
    }
-
-   /* create full file name */
-   if (prefix && name)
-      snprintf(filename, sizeof(filename), "%s/%s", prefix, name);
-   else if (prefix)
-      snprintf(filename, sizeof(filename), "%s", prefix);
-   else
-      snprintf(filename, sizeof(filename), "%s", name);
-
-   /* get file size */
-   if (SGE_STAT(filename, &statbuf) == -1) {
-      CRITICAL(MSG_CULL_CANTGETFILESTATFORXFILEY_SS, obj_name, filename);
-      DRETURN(nullptr);
-   }
-
-   if (!statbuf.st_size) {
-      CRITICAL(MSG_CULL_XFILEYHASZEROSIYE_SS, obj_name, filename);
-      DRETURN(nullptr);
-   }
-
-   /* init packing buffer */
-   size = statbuf.st_size;
-   if (((SGE_OFF_T) size != statbuf.st_size)
-       || !(buf = sge_malloc(statbuf.st_size))) {
-      CRITICAL(SFNMAX, MSG_CULL_LEMALLOC);
-      clear_packbuffer(&pb);
-      DRETURN(nullptr);
-   }
-
-   /* open file */
-   if ((fd = SGE_OPEN2(filename, O_RDONLY)) < 0) {
-      CRITICAL(MSG_CULL_CANTREADXFROMFILEY_SS, obj_name, filename);
-      clear_packbuffer(&pb);    /* this one frees buf */
-      DRETURN(nullptr);
-   }
-
-   /* read packing buffer */
-   if (sge_readnbytes(fd, buf, statbuf.st_size) != statbuf.st_size) {
-      CRITICAL(MSG_CULL_ERRORREADINGXINFILEY_SS, obj_name, filename);
-      close(fd);
-      DRETURN(nullptr);
-   }
-
-   if ((ret = init_packbuffer_from_buffer(&pb, buf, statbuf.st_size, false)) != PACK_SUCCESS) {
-      ERROR(MSG_CULL_ERRORININITPACKBUFFER_S, cull_pack_strerror(ret));
-   }
-   ret = cull_unpack_elem(&pb, &ep, type);
-   close(fd);
-   clear_packbuffer(&pb);     /* this one frees buf */
-
-   switch (ret) {
-      case PACK_SUCCESS:
-         break;
-
-      case PACK_ENOMEM:
-         ERROR(MSG_CULL_NOTENOUGHMEMORYFORUNPACKINGXY_SS, obj_name, filename);
-         DRETURN(nullptr);
-
-      case PACK_FORMAT:
-         ERROR(MSG_CULL_FORMATERRORWHILEUNPACKINGXY_SS, obj_name, filename);
-         DRETURN(nullptr);
-
-      case PACK_BADARG:
-         ERROR(MSG_CULL_BADARGUMENTWHILEUNPACKINGXY_SS, obj_name, filename);
-         DRETURN(nullptr);
-
-      default:
-         ERROR(MSG_CULL_UNEXPECTEDERRORWHILEUNPACKINGXY_SS, obj_name, filename);
-         DRETURN(nullptr);
-   }
-
-   DRETURN(ep);
 }
