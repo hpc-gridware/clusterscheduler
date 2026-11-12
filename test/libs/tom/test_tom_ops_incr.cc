@@ -250,20 +250,19 @@ void test_result() {
  * @brief The free form for the rewrite against the old functions, on raw elements
  */
 void test_free_form() {
-   // old:     lAddUlong(ep, nm, 1), lAddDouble(ep, nm, 1) on a null element and on a reduced element
+   // old:     lAddUlong(ep, nm, 1), lAddDouble(ep, nm, 1) on a null element and on a full element
    // typed:   ocs::tom::add<JAT_status>(ep, 1), ocs::tom::add<JAT_tix>(ep, 1.0)
    // differs: nothing, by design: the free form replaces the old call in the mechanical rewrite of M3 and
-   //          keeps its return values and error numbers. It takes the raw element, so this scenario is a bridge
+   //          keeps its return values and error numbers. On a field the element does not hold the old form
+   //          aborts and the typed one throws (N-L-4, CS-3062); test_tom_legacy checks the abort, this test
+   //          the throw. It takes the raw element, so this scenario is a bridge
    //          between the interfaces: both blocks work on elements created by the list library.
    const auto run = [](auto add_status, auto add_tix) {
       std::vector<int> seen;
       lList *tasks = lCreateList("tasks", JAT_Type);
       lAppendElem(tasks, lCreateElem(JAT_Type));
-      lEnumeration *what = lWhat("%T(%I)", JAT_Type, JAT_task_number);
-      lList *reduced = lSelect("reduced", tasks, nullptr, what);
       lListElem *full = lFirstRW(tasks);
-      lListElem *part = lFirstRW(reduced);
-      for (lListElem *ep : {static_cast<lListElem *>(nullptr), part, full}) {
+      for (lListElem *ep : {static_cast<lListElem *>(nullptr), full}) {
          cull_state_set_lerrno(0);
          seen.push_back(add_status(ep));
          seen.push_back(cull_state_get_lerrno());
@@ -272,8 +271,6 @@ void test_free_form() {
          seen.push_back(cull_state_get_lerrno());
       }
       seen.push_back(static_cast<int>(lGetUlong(full, JAT_status)));
-      lFreeList(&reduced);
-      lFreeWhat(&what);
       lFreeList(&tasks);
       return seen;
    };
@@ -285,10 +282,29 @@ void test_free_form() {
    const std::vector<int> typed_seen = run([](lListElem *ep) { return ocs::tom::add<JAT_status>(ep, 1); },
                                            [](lListElem *ep) { return ocs::tom::add<JAT_tix>(ep, 1.0); });
 
-   // null element: -1 with LEELEMNULL; absent field: -1, silent for a 32 bit field, LENEGPOS for a double field
-   const std::vector<int> expected{-1, LEELEMNULL, -1, LEELEMNULL, -1, 0, -1, LENEGPOS, 0, 0, 0, 0, 1};
-   CHECK(4, "ocs::tom::add<F>(ep, offset) returns and sets the error numbers as lAddUlong and lAddDouble do",
-         old_seen == expected && typed_seen == expected);
+   // null element: -1 with LEELEMNULL; a full element: 0
+   const std::vector<int> expected{-1, LEELEMNULL, -1, LEELEMNULL, 0, 0, 0, 0, 1};
+
+   // a field the element does not hold: the free form throws AbsentField, where lAddUlong and lAddDouble abort
+   lList *tasks = lCreateList("tasks", JAT_Type);
+   lAppendElem(tasks, lCreateElem(JAT_Type));
+   lEnumeration *what = lWhat("%T(%I)", JAT_Type, JAT_task_number);
+   lList *reduced = lSelect("reduced", tasks, nullptr, what);
+   int absent_throws = 0;
+   for (int i = 0; i < 2; i++) {
+      try {
+         static_cast<void>(i == 0 ? ocs::tom::add<JAT_status>(lFirstRW(reduced), 1)
+                                  : ocs::tom::add<JAT_tix>(lFirstRW(reduced), 1.0));
+      } catch (const ocs::tom::FieldException &e) {
+         absent_throws += e.reason() == ocs::tom::FieldException::Reason::AbsentField ? 1 : 0;
+      }
+   }
+   lFreeList(&reduced);
+   lFreeWhat(&what);
+   lFreeList(&tasks);
+   CHECK(4, "ocs::tom::add<F>(ep, offset) returns and sets the error numbers as lAddUlong and lAddDouble do, and "
+            "throws on an absent field",
+         old_seen == expected && typed_seen == expected && absent_throws == 2);
 }
 
 /**
@@ -408,7 +424,8 @@ int main(int argc, char *argv[]) {
        {{"OPS-01", "covers"}}, {3}, test_result},
       {"OPS-INCR-04", "free form", "the free form for the rewrite keeps the old error behaviour",
        {"add with both forms to a null element, a reduced element without the field and a full element"},
-       "the same returns and error numbers", {{"OPS-01", "covers"}}, {4}, test_free_form},
+       "the same returns and error numbers; AbsentField thrown where the old form aborts", {{"OPS-01", "covers"}},
+       {4}, test_free_form},
       {"OPS-INCR-05", "errors", "the typed form throws on an empty handle and on a duplicate key",
        {"add to an empty handle; renumber a task to a number another task holds"},
        "EmptyHandle and, in a debug build, DuplicateKey thrown", {{"OPS-01", "covers"}}, {5, 6}, test_errors},

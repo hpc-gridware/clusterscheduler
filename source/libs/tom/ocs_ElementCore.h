@@ -151,6 +151,9 @@ namespace ocs::tom {
 
    /**
     * @brief Store a list into a list field, freeing the list it held before
+    *
+    * The list the field holds already is left as it is.
+    *
     * @param ep the element, which holds the field
     * @param pos the field's position, of type List
     * @param value the new list, or nullptr; the element takes it over
@@ -159,10 +162,14 @@ namespace ocs::tom {
 
    /**
     * @brief Store an element into an object field, freeing the element it held before
+    *
+    * The element the field holds already is left as it is and is no error
+    * (N-L-4, CS-3062); before, it was refused as bound.
+    *
     * @param ep the element, which holds the field
     * @param pos the field's position, of type Object
     * @param value the new element, or nullptr; the element takes it over and marks it as a sub-object
-    * @return true if stored, false if @p value is bound to a list or another element
+    * @return true if stored or held already, false if @p value is bound to a list or another element
     */
    bool store_object(lListElem *ep, int pos, lListElem *value);
 

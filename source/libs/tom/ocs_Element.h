@@ -1240,35 +1240,21 @@ namespace ocs::tom {
    namespace detail {
 
       /**
-       * @brief The result of the free setter when the element does not hold the field, as the old setter had it
+       * @brief The result of the free setter when the element does not hold the field: a logic error
        *
-       * The old setter of a string or host field aborted, so this throws; the
-       * old setter of a number, list or object field returned -1 without an
-       * error number; the others returned -1 with LENEGPOS. A debug build
-       * records the returns (#report_soft_path).
+       * The old setters abort on such a field since CS-3062 (N-L-4), so the
+       * free form throws for every field type. Before, only the string and
+       * host setters aborted; the others returned -1.
        *
        * @tparam F the field number
        * @param ep the element
        * @param reason why the element does not hold the field
-       * @param function the free function, for the record of the soft path
-       * @return -1
+       * @return does not return
+       * @throw FieldException with @p reason
        */
       template <auto F>
-      int missing_field_result(const lListElem *ep, const FieldException::Reason reason,
-                               const char *function = "ocs::tom::set") {
-         constexpr FieldType type = FieldTraits<F>::type;
-         if constexpr (type == FieldType::String || type == FieldType::Host) {
-            throw_field_exception(reason, F, ep->descr);
-         } else {
-            report_soft_path(function, static_cast<int>(F),
-                             reason == FieldException::Reason::ForeignField ? SoftPathReason::ForeignField
-                                                                            : SoftPathReason::MissingField);
-            if constexpr (type != FieldType::Uint32 && type != FieldType::Uint64 && type != FieldType::List &&
-                          type != FieldType::Object) {
-               set_lerrno(LENEGPOS);
-            }
-         }
-         return -1;
+      [[noreturn]] void missing_field_result(const lListElem *ep, const FieldException::Reason reason) {
+         throw_field_exception(reason, F, ep->descr);
       }
 
    } // namespace detail
@@ -1276,15 +1262,17 @@ namespace ocs::tom {
    /**
     * @brief Set a field of an element whose type is known only at run time, with the error behaviour of the old setter it replaces (lSetUlong(), lSetString(), ...)
     *
-    * The free form that replaces the old setter in the mechanical rewrite. It
-    * returns -1 where the old setter of its field type returned -1, with the
-    * same error number, and throws a logic error where that aborted.
+    * The free form that replaces the old setter in the mechanical rewrite,
+    * with the contract the old setters follow since CS-3062 (N-L-4): -1 with
+    * LEELEMNULL for a null element, a logic error for a field the element
+    * does not hold. The object or list a field holds already is set again
+    * without an error.
     *
     * @tparam F the field number
     * @param ep the element
     * @param value the value; a list or an element is taken over, as by the old setter
-    * @return 0 on success, -1 on an error the old setter returned
-    * @throw FieldException where the old setter aborted
+    * @return 0 on success, -1 for a null element, a string that cannot be copied or an element bound elsewhere
+    * @throw FieldException with reason ForeignField or AbsentField if the element does not hold the field
     */
    template <auto F, typename V>
       requires TypedField<decltype(F)>
@@ -1297,11 +1285,11 @@ namespace ocs::tom {
          return -1;
       }
       if (ep->descr[0].nm != Type::fields[0].nm) [[unlikely]] {
-         return detail::missing_field_result<F>(ep, FieldException::Reason::ForeignField);
+         detail::missing_field_result<F>(ep, FieldException::Reason::ForeignField);
       }
       const int off = ep->descr[Tr::pos].off;
       if (off == OCS_CULL_ABSENT) [[unlikely]] {
-         return detail::missing_field_result<F>(ep, FieldException::Reason::AbsentField);
+         detail::missing_field_result<F>(ep, FieldException::Reason::AbsentField);
       }
       // a typed list or object field takes the raw pointer here, as the old setter did
       if constexpr (Tr::type == FieldType::List) {
@@ -1326,17 +1314,17 @@ namespace ocs::tom {
    /**
     * @brief Add an offset to a number field of an element whose type is known only at run time, with the error behaviour of the old function it replaces (lAddUlong(), lAddUlong64(), lAddDouble())
     *
-    * The free form for the mechanical rewrite, next to the free setter. It
-    * returns -1 where the old function returned -1, with the same error
-    * number: LEELEMNULL for a null element; for a field the element does not
-    * hold none for a 32 or 64 bit field and LENEGPOS for a double field. A
-    * field of another type does not compile.
+    * The free form for the mechanical rewrite, next to the free setter, with
+    * the contract of the old setters since CS-3062 (N-L-4): -1 with
+    * LEELEMNULL for a null element, a logic error for a field the element
+    * does not hold. A field of another type does not compile.
     *
     * @tparam F the field number, a 32 bit, 64 bit or double field
     * @param ep the element
     * @param offset the amount to add
     * @return 0 on success, -1 on an error the old function returned
-    * @throw FieldException with reason DuplicateKey in a debug build, where the old function aborted
+    * @throw FieldException with reason ForeignField or AbsentField if the element does not hold the field, and
+    *        DuplicateKey in a debug build, where the old function aborted
     * @see Typed form: Element<T>::add<F>(); core: ocs::tom::add_number()
     */
    template <auto F>
@@ -1350,11 +1338,11 @@ namespace ocs::tom {
          return -1;
       }
       if (ep->descr[0].nm != Type::fields[0].nm) [[unlikely]] {
-         return detail::missing_field_result<F>(ep, FieldException::Reason::ForeignField, "ocs::tom::add");
+         detail::missing_field_result<F>(ep, FieldException::Reason::ForeignField);
       }
       const int off = ep->descr[Tr::pos].off;
       if (off == OCS_CULL_ABSENT) [[unlikely]] {
-         return detail::missing_field_result<F>(ep, FieldException::Reason::AbsentField, "ocs::tom::add");
+         detail::missing_field_result<F>(ep, FieldException::Reason::AbsentField);
       }
       add_number(ep, Tr::pos, ep->cont[Tr::pos + off], offset);
       return 0;

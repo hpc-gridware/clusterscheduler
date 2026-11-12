@@ -514,6 +514,10 @@ namespace ocs::tom {
    }
 
    bool store_object(lListElem *ep, const int pos, lListElem *value) {
+      // the object the field holds already: nothing to do (N-L-4, CS-3062)
+      if (value != nullptr && value == ocs_cull_value(ep, pos).obj) {
+         return true;
+      }
       if (value != nullptr && elem_kind(value) != FREE_ELEM && elem_kind(value) != TRANS_BOUND_ELEM) {
          return false;
       }

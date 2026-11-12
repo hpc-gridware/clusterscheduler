@@ -196,7 +196,7 @@ test_getters_by_name() {
 }
 
 /**
- * @brief Family B: getters by position check only the field type, and some of them the position
+ * @brief Family B: getters by position check the field type and the position
  * @return nothing; CHECK records the results
  */
 static void
@@ -212,17 +212,26 @@ test_getters_by_position() {
       aborts([&] { static_cast<void>(lGetPosString(f.full, pos_uint32)); }) &&
       aborts([&] { static_cast<void>(lGetPosHost(f.full, pos_uint32)); });
    CHECK(5, "the getters by position abort on a field of another field type", type_aborts);
-   CHECK(6, "lGetPosUlong, lGetPosUlong64, lGetPosObject and lGetPosList abort on a negative position",
+   // since CS-3062 (N-L-4) the getters of int, long, double, bool and ref fields abort as well; before, they read
+   // in front of the descriptor
+   CHECK(6, "the getters by position of numbers, references, lists and objects abort on a negative position",
          aborts([&] { static_cast<void>(lGetPosUlong(f.full, -1)); }) &&
          aborts([&] { static_cast<void>(lGetPosUlong64(f.full, -1)); }) &&
          aborts([&] { static_cast<void>(lGetPosObject(f.full, -1)); }) &&
-         aborts([&] { static_cast<void>(lGetPosList(f.full, -1)); }));
-   CHECK(7, "lGetPosString and lGetPosHost return nullptr on a negative position",
-         lGetPosString(f.full, -1) == nullptr && lGetPosHost(f.full, -1) == nullptr);
+         aborts([&] { static_cast<void>(lGetPosList(f.full, -1)); }) &&
+         aborts([&] { static_cast<void>(lGetPosInt(f.full, -1)); }) &&
+         aborts([&] { static_cast<void>(lGetPosLong(f.full, -1)); }) &&
+         aborts([&] { static_cast<void>(lGetPosDouble(f.full, -1)); }) &&
+         aborts([&] { static_cast<void>(lGetPosBool(f.full, -1)); }) &&
+         aborts([&] { static_cast<void>(lGetPosRef(f.full, -1)); }));
+   // since CS-3062 (N-L-4) as well; before, they returned nullptr
+   CHECK(7, "lGetPosString and lGetPosHost abort on a negative position",
+         aborts([&] { static_cast<void>(lGetPosString(f.full, -1)); }) &&
+         aborts([&] { static_cast<void>(lGetPosHost(f.full, -1)); }));
 }
 
 /**
- * @brief Family C: setters by name return -1 on a null element, and handle a missing field in three ways
+ * @brief Family C: setters by name return -1 on a null element, and abort on a field the element does not hold
  * @return nothing; CHECK records the results
  */
 static void
@@ -243,40 +252,34 @@ test_setters_by_name() {
          fails_with([] { return lAddUlong(nullptr, TEST_uint32, 1); }, LEELEMNULL) &&
          fails_with([] { return lAddDouble(nullptr, TEST_double, 1); }, LEELEMNULL));
 
-   // a field of another type and a field the reduced element does not hold behave alike
+   // a field of another type and a field the reduced element does not hold behave alike: every setter aborts
+   // since CS-3062 (N-L-4). Before, lSetUlong, lSetUlong64, lSetObject, lSetList and the lAdd functions of 32 and
+   // 64 bit fields returned -1 without an error number, lSetInt, lSetLong, lSetDouble, lAddDouble, lSetBool and
+   // lSetRef returned -1 with LENEGPOS, and only lSetString and lSetHost aborted.
    for (lListElem *ep : {f.full, f.reduced}) {
       const bool foreign = ep == f.full;
       const int nm_u32 = foreign ? static_cast<int>(QU_seq_no) : static_cast<int>(TEST_uint32);
       const int id = foreign ? 9 : 12;
       if (!foreign) {
          // the reduced element holds TEST_obj_any only, so every other field is absent
-         CHECK(id, "the silent setters return -1 without an error number on an absent field",
-               fails_with([&] { return lSetUlong(ep, TEST_uint32, 1); }, 0) &&
-               fails_with([&] { return lSetUlong64(ep, TEST_uint64, 1); }, 0) &&
-               fails_with([&] { return lSetObject(ep, TEST_obj_jb, nullptr); }, 0) &&
-               fails_with([&] { return lAddUlong64(ep, TEST_uint64, 1); }, 0));
-         CHECK(id + 1, "the other setters return -1 with LENEGPOS on an absent field",
-               fails_with([&] { return lSetInt(ep, TEST_int, 1); }, LENEGPOS) &&
-               fails_with([&] { return lSetLong(ep, TEST_long, 1); }, LENEGPOS) &&
-               fails_with([&] { return lSetDouble(ep, TEST_double, 1); }, LENEGPOS) &&
-               fails_with([&] { return lSetBool(ep, TEST_bool, true); }, LENEGPOS) &&
-               fails_with([&] { return lSetRef(ep, TEST_ref, nullptr); }, LENEGPOS) &&
-               fails_with([&] { return lAddDouble(ep, TEST_double, 1); }, LENEGPOS));
+         CHECK(id, "the setters of numbers and sub-objects abort on an absent field",
+               aborts([&] { lSetUlong(ep, TEST_uint32, 1); }) && aborts([&] { lSetUlong64(ep, TEST_uint64, 1); }) &&
+               aborts([&] { lSetObject(ep, TEST_obj_jb, nullptr); }) && aborts([&] { lAddUlong64(ep, TEST_uint64, 1); }));
+         CHECK(id + 1, "the other setters abort on an absent field",
+               aborts([&] { lSetInt(ep, TEST_int, 1); }) && aborts([&] { lSetLong(ep, TEST_long, 1); }) &&
+               aborts([&] { lSetDouble(ep, TEST_double, 1); }) && aborts([&] { lSetBool(ep, TEST_bool, true); }) &&
+               aborts([&] { lSetRef(ep, TEST_ref, nullptr); }) && aborts([&] { lAddDouble(ep, TEST_double, 1); }));
          CHECK(id + 2, "lSetString and lSetHost abort on an absent field",
                aborts([&] { lSetString(ep, TEST_string, "x"); }) && aborts([&] { lSetHost(ep, TEST_host, "x"); }));
       } else {
-         CHECK(id, "the silent setters return -1 without an error number on a field of another type",
-               fails_with([&] { return lSetUlong(ep, nm_u32, 1); }, 0) &&
-               fails_with([&] { return lSetUlong64(ep, JB_submission_time, 1); }, 0) &&
-               fails_with([&] { return lSetObject(ep, JB_checkpoint_object, nullptr); }, 0) &&
-               fails_with([&] { return lSetList(ep, JB_ja_tasks, nullptr); }, 0) &&
-               fails_with([&] { return lAddUlong(ep, nm_u32, 1); }, 0));
-         CHECK(id + 1, "the other setters return -1 with LENEGPOS on a field of another type",
-               fails_with([&] { return lSetInt(ep, RQL_result, 1); }, LENEGPOS) &&
-               fails_with([&] { return lSetLong(ep, JL_pri, 1); }, LENEGPOS) &&
-               fails_with([&] { return lSetDouble(ep, JB_urg, 1); }, LENEGPOS) &&
-               fails_with([&] { return lSetBool(ep, JB_notify, true); }, LENEGPOS) &&
-               fails_with([&] { return lSetRef(ep, JB_category, nullptr); }, LENEGPOS));
+         CHECK(id, "the setters of numbers, sub-objects and sub-lists abort on a field of another type",
+               aborts([&] { lSetUlong(ep, nm_u32, 1); }) && aborts([&] { lSetUlong64(ep, JB_submission_time, 1); }) &&
+               aborts([&] { lSetObject(ep, JB_checkpoint_object, nullptr); }) &&
+               aborts([&] { lSetList(ep, JB_ja_tasks, nullptr); }) && aborts([&] { lAddUlong(ep, nm_u32, 1); }));
+         CHECK(id + 1, "the other setters abort on a field of another type",
+               aborts([&] { lSetInt(ep, RQL_result, 1); }) && aborts([&] { lSetLong(ep, JL_pri, 1); }) &&
+               aborts([&] { lSetDouble(ep, JB_urg, 1); }) && aborts([&] { lSetBool(ep, JB_notify, true); }) &&
+               aborts([&] { lSetRef(ep, JB_category, nullptr); }));
          CHECK(id + 2, "lSetString and lSetHost abort on a field of another type",
                aborts([&] { lSetString(ep, JB_job_name, "x"); }) && aborts([&] { lSetHost(ep, JB_host, "x"); }));
       }
@@ -296,15 +299,29 @@ test_setters_by_name() {
          fails_with([&] { return lSetObject(f.full, TEST_obj_jb, bound); }, LEBOUNDELEM));
    lFreeList(&holder);
 
+   // setting the object or the list a field holds already is no error since CS-3062 (N-L-4); before, lSetObject
+   // and lSetPosObject refused the object as bound
+   lListElem *held = lCreateElem(JB_Type);
+   lList *tasks = lCreateList("tasks", JAT_Type);
+   lListElem *job = lCreateElem(JB_Type);
+   const int pos_obj = lGetPosViaElem(f.full, TEST_obj_jb, SGE_DO_ABORT);
+   bool same = lSetObject(f.full, TEST_obj_jb, held) == 0 && lSetObject(f.full, TEST_obj_jb, held) == 0 &&
+               lSetPosObject(f.full, pos_obj, held) == 0 && lGetObject(f.full, TEST_obj_jb) == held &&
+               lSetList(job, JB_ja_tasks, tasks) == 0 && lSetList(job, JB_ja_tasks, tasks) == 0 &&
+               lGetList(job, JB_ja_tasks) == tasks;
+   lFreeElem(&job);
+   CHECK(71, "the object or list a field holds already is set again without an error", same);
+
    char *str = nullptr;
-   CHECK(17, "lXchgString returns -1 with LEELEMNULL for a null element or pointer, LENEGPOS for a missing field",
+   // a missing field aborts since CS-3062 (N-L-4); before, -1 with LENEGPOS
+   CHECK(17, "lXchgString returns -1 with LEELEMNULL for a null element or pointer, and aborts for a missing field",
          fails_with([&] { return lXchgString(nullptr, TEST_string, &str); }, LEELEMNULL) &&
          fails_with([&] { return lXchgString(f.full, TEST_string, nullptr); }, LEELEMNULL) &&
-         fails_with([&] { return lXchgString(f.full, JB_job_name, &str); }, LENEGPOS));
+         aborts([&] { lXchgString(f.full, JB_job_name, &str); }));
 }
 
 /**
- * @brief Family D: setters by position return -1 on a null element and a negative position, and abort on a wrong type
+ * @brief Family D: setters by position return -1 on a null element, and abort on a negative position and a wrong type
  * @return nothing; CHECK records the results
  */
 static void
@@ -315,17 +332,13 @@ test_setters_by_position() {
    CHECK(18, "the setters by position return -1 with LEELEMNULL on a null element",
          fails_with([&] { return lSetPosUlong(nullptr, pos_uint32, 1); }, LEELEMNULL) &&
          fails_with([&] { return lSetPosString(nullptr, pos_string, "x"); }, LEELEMNULL));
-   CHECK(19, "the setters by position return -1 with LENEGPOS on a negative position",
-         fails_with([&] { return lSetPosUlong(f.full, -1, 1); }, LENEGPOS) &&
-         fails_with([&] { return lSetPosUlong64(f.full, -1, 1); }, LENEGPOS) &&
-         fails_with([&] { return lSetPosInt(f.full, -1, 1); }, LENEGPOS) &&
-         fails_with([&] { return lSetPosDouble(f.full, -1, 1); }, LENEGPOS) &&
-         fails_with([&] { return lSetPosBool(f.full, -1, true); }, LENEGPOS) &&
-         fails_with([&] { return lSetPosString(f.full, -1, "x"); }, LENEGPOS) &&
-         fails_with([&] { return lSetPosHost(f.full, -1, "x"); }, LENEGPOS) &&
-         fails_with([&] { return lSetPosRef(f.full, -1, nullptr); }, LENEGPOS) &&
-         fails_with([&] { return lSetPosObject(f.full, -1, nullptr); }, LENEGPOS) &&
-         fails_with([&] { return lSetPosList(f.full, -1, nullptr); }, LENEGPOS));
+   // a negative position aborts since CS-3062 (N-L-4); before, -1 with LENEGPOS
+   CHECK(19, "the setters by position abort on a negative position",
+         aborts([&] { lSetPosUlong(f.full, -1, 1); }) && aborts([&] { lSetPosUlong64(f.full, -1, 1); }) &&
+         aborts([&] { lSetPosInt(f.full, -1, 1); }) && aborts([&] { lSetPosDouble(f.full, -1, 1); }) &&
+         aborts([&] { lSetPosBool(f.full, -1, true); }) && aborts([&] { lSetPosString(f.full, -1, "x"); }) &&
+         aborts([&] { lSetPosHost(f.full, -1, "x"); }) && aborts([&] { lSetPosRef(f.full, -1, nullptr); }) &&
+         aborts([&] { lSetPosObject(f.full, -1, nullptr); }) && aborts([&] { lSetPosList(f.full, -1, nullptr); }));
    CHECK(20, "the setters by position abort on a field of another field type",
          aborts([&] { lSetPosUlong(f.full, pos_string, 1); }) && aborts([&] { lSetPosString(f.full, pos_uint32, "x"); }));
 }
@@ -1850,21 +1863,23 @@ int main(int argc, char *argv[]) {
         "another field type"},
        "each call aborts", {{"LEG-01", "covers"}}, {1, 2, 3, 4}, test_getters_by_name},
       {"LEGACY-02", "getters by position",
-       "the getters by position check the field type, and some of them the position",
+       "the getters by position check the field type and the position",
        {"call them with a field of another field type and with a negative position"},
-       "wrong types abort; a negative position aborts for numbers, lists and objects and gives nullptr for strings "
-       "and hosts", {{"LEG-01", "covers"}}, {5, 6, 7}, test_getters_by_position},
+       "wrong types abort; a negative position aborts for every field type", {{"LEG-01", "covers"}, {"LEG-03", "covers"}}, {5, 6, 7}, test_getters_by_position},
       {"LEGACY-03", "setters by name",
-       "the setters by name return -1 on a null element, handle a missing field in three ways, and abort on a "
-       "wrong field type",
+       "the setters by name return -1 on a null element and abort on a field the element does not hold or of "
+       "another field type",
        {"call every setter with a null element, a foreign field, an absent field and a field of another field type",
-        "set a bound element as object", "exchange a string with null arguments and a missing field"},
-       "as the inventory of CS-3043 lists it", {{"LEG-01", "covers"}},
-       {8, 9, 10, 11, 12, 13, 14, 15, 16, 17}, test_setters_by_name},
+        "set a bound element as object, set the object and the list a field holds again",
+        "exchange a string with null arguments and a missing field"},
+       "the contract of N-L-4 (CS-3062); before, a missing field was handled in the three ways CS-3043 lists",
+       {{"LEG-01", "covers"}, {"LEG-03", "covers"}}, {8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 71},
+       test_setters_by_name},
       {"LEGACY-04", "setters by position",
-       "the setters by position return -1 on a null element and a negative position, and abort on a wrong type",
+       "the setters by position return -1 on a null element, and abort on a negative position and a wrong type",
        {"call them with a null element, a negative position and a field of another field type"},
-       "-1 with LEELEMNULL and LENEGPOS; an abort for the wrong type", {{"LEG-01", "covers"}}, {18, 19, 20},
+       "-1 with LEELEMNULL; an abort otherwise (N-L-4, CS-3062)", {{"LEG-01", "covers"}, {"LEG-03", "covers"}},
+       {18, 19, 20},
        test_setters_by_position},
       {"LEGACY-05", "lookups",
        "lookups and the functions built on them return nullptr where they cannot search",

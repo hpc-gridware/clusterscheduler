@@ -22,8 +22,15 @@
  * @brief Unit tests for list in `libs/cull`
  */
 
+#include <csignal>
 #include <cstdio>
 #include <cstring>
+#include <functional>
+
+#include <fcntl.h>
+#include <sys/resource.h>
+#include <sys/wait.h>
+#include <unistd.h>
 
 /** @brief Make this translation unit the one that defines the CULL descriptors
  *
@@ -37,6 +44,40 @@
 #include "cull/cull_list.h"
 #include "cull/cull_multitype.h"
 #include "tom/ocs_ElementCore.h"
+
+/**
+ * @brief Run a callable in a child process and report whether it aborted
+ *
+ * The child sends its output to /dev/null and writes no core file.
+ *
+ * @param what the code that is expected to abort
+ * @return true when the child was terminated by SIGABRT
+ */
+static bool aborts(const std::function<void()> &what) {
+   fflush(stdout);
+   fflush(stderr);
+   const pid_t pid = fork();
+   if (pid < 0) {
+      return false;
+   }
+   if (pid == 0) {
+      const struct rlimit no_core = {0, 0};
+      setrlimit(RLIMIT_CORE, &no_core);
+      const int devnull = open("/dev/null", O_WRONLY);
+      if (devnull >= 0) {
+         dup2(devnull, STDERR_FILENO);
+         dup2(devnull, STDOUT_FILENO);
+         close(devnull);
+      }
+      what();
+      _exit(0);
+   }
+   int status = 0;
+   if (waitpid(pid, &status, 0) != pid) {
+      return false;
+   }
+   return WIFSIGNALED(status) && WTERMSIG(status) == SIGABRT;
+}
 
 // ---------------------------------------------------------------------------
 // Local CULL type used by all tests
@@ -685,11 +726,10 @@ static void test_atomic_ulong64() {
    CHECK(58, "a hashed field is refused rather than silently corrupting its table",
          lSetUlong64Atomic(ep, TEST_ulong64_hashed, 1) == -1);
 
-   // T59: a field that is not there. A field of the wrong type is not checked
-   // here, because that is a programming error the object layer terminates on,
-   // exactly as the ordinary setter does.
-   CHECK(59, "a field that is not in the element is refused",
-         lSetUlong64Atomic(ep, TEST_int + 10000, 1) == -1);
+   // T59: a field that is not there aborts, as in every setter since CS-3062
+   // (N-L-4); before, it returned -1.
+   CHECK(59, "a field that is not in the element aborts",
+         aborts([&] { lSetUlong64Atomic(ep, TEST_int + 10000, 1); }));
 
    // T60: no element at all
    CHECK(60, "a missing element is refused", lSetUlong64Atomic(nullptr, TEST_ulong64, 1) == -1);

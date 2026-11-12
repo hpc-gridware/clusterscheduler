@@ -21,11 +21,13 @@
 /** @file
  * @brief Debug builds record the soft error paths of the old accessors (CS-3062, LEG-03 step 1)
  *
- * Each soft path an old setter can take is called once with a sink directory
- * set; the test checks that the return value and the error number stay what
- * they were and that one line names the accessor, the field, the reason and
- * this test as the caller. A hot loop on one soft path writes a bounded number
- * of lines, and without the sink directory nothing is written.
+ * Each soft path an old accessor can still take under the contract of N-L-4
+ * (CS-3062) is called once with a sink directory set: a null element, a null
+ * argument, a bound element and a null list. A field the element does not hold
+ * and a negative position abort since then and are no soft paths any more. The test checks that the return value and the error
+ * number stay what they were and that one line names the accessor, the field,
+ * the reason and this test as the caller. A hot loop on one soft path writes a
+ * bounded number of lines, and without the sink directory nothing is written.
  */
 
 #include <cstdio>
@@ -68,11 +70,9 @@ namespace {
    int no_sink_child(const char *missing) {
       setenv("OCS_SOFT_PATH_DIR", missing, 1);
       lInit(nmv);
-      lListElem *ep = lCreateElem(TEST_Type);
       cull_state_set_lerrno(0);
-      const int result = lSetPosBool(ep, -1, true);
-      lFreeElem(&ep);
-      return result == -1 && cull_state_get_lerrno() == LENEGPOS && access(missing, F_OK) != 0 ? 0 : 1;
+      const int result = lSetPosBool(nullptr, 0, true);
+      return result == -1 && cull_state_get_lerrno() == LEELEMNULL && access(missing, F_OK) != 0 ? 0 : 1;
    }
 
    /**
@@ -182,17 +182,13 @@ namespace {
 #else
       Fixture f;
 
-      // lSetUlong on a field the reduced element does not hold: -1 without an error number
-      cull_state_set_lerrno(0);
-      const bool silent = lSetUlong(f.reduced, TEST_uint32, 1) == -1 && cull_state_get_lerrno() == 0;
-      CHECK(1, "a silent miss of lSetUlong is recorded with field and reason, the result is unchanged",
-            silent && lines_for("lSetUlong", "TEST_uint32", "missing-field") == 1);
+      // a null list to copy: nullptr
+      CHECK(1, "a null list of lCopyList is recorded, the result is unchanged",
+            lCopyList("copy", nullptr) == nullptr && lines_for("lCopyList", "-", "null-list") == 1);
 
-      // lSetInt on it: -1 with LENEGPOS
-      cull_state_set_lerrno(0);
-      const bool negpos = returned(lSetInt(f.reduced, TEST_int, 1), LENEGPOS);
-      CHECK(2, "a miss of lSetInt with LENEGPOS is recorded, the result is unchanged",
-            negpos && lines_for("lSetInt", "TEST_int", "missing-field") == 1);
+      // a null element to copy: nullptr
+      CHECK(2, "a null element of lCopyElem is recorded, the result is unchanged",
+            lCopyElem(nullptr) == nullptr && lines_for("lCopyElem", "-", "null-element") == 1);
 
       // a null element: -1 with LEELEMNULL
       cull_state_set_lerrno(0);
@@ -200,11 +196,11 @@ namespace {
       CHECK(3, "a null element is recorded, the result is unchanged",
             null_elem && lines_for("lSetDouble", "TEST_double", "null-element") == 1);
 
-      // a negative position: -1 with LENEGPOS
+      // a null element of a setter by position: -1 with LEELEMNULL
       cull_state_set_lerrno(0);
-      const bool neg = returned(lSetPosUlong(f.full, -1, 1), LENEGPOS);
-      CHECK(4, "a negative position is recorded, the result is unchanged",
-            neg && lines_for("lSetPosUlong", "-", "negative-position") == 1);
+      const bool null_pos = returned(lSetPosUlong(nullptr, 0, 1), LEELEMNULL);
+      CHECK(4, "a null element of a setter by position is recorded, the result is unchanged",
+            null_pos && lines_for("lSetPosUlong", "-", "null-element") == 1);
 
       // a null output pointer of lXchgList: -1 with LEELEMNULL
       cull_state_set_lerrno(0);
@@ -218,14 +214,14 @@ namespace {
       CHECK(6, "a bound element is recorded, the result is unchanged",
             bound && lines_for("lSetObject", "TEST_obj_any", "bound-element") == 1);
 
-      // the free setter on a field the reduced element does not hold, as the old lSetUlong
+      // the free setter on a null element, as the old lSetUlong
       cull_state_set_lerrno(0);
-      const bool free_setter = ocs::tom::set<TEST_uint32>(f.reduced, 1u) == -1 && cull_state_get_lerrno() == 0;
-      CHECK(7, "the free setter records its miss like the old setter",
-            free_setter && lines_for("ocs::tom::set", "TEST_uint32", "missing-field") == 1);
+      const bool free_setter = returned(ocs::tom::set<TEST_uint32>(nullptr, 1u), LEELEMNULL);
+      CHECK(7, "the free setter records a null element like the old setter",
+            free_setter && lines_for("ocs::tom::set", "TEST_uint32", "null-element") == 1);
 
       CHECK(8, "a recorded line names the calling function",
-            line_names_caller("lSetInt", "TEST_int", "missing-field", "test_each_soft_path"));
+            line_names_caller("lCopyList", "-", "null-list", "test_each_soft_path"));
 #endif
    }
 
@@ -239,9 +235,9 @@ namespace {
 #else
       Fixture f;
       for (int i = 0; i < 10000; i++) {
-         static_cast<void>(lSetLong(f.reduced, TEST_long, i));
+         static_cast<void>(lSetLong(nullptr, TEST_long, i));
       }
-      const int n = lines_for("lSetLong", "TEST_long", "missing-field");
+      const int n = lines_for("lSetLong", "TEST_long", "null-element");
       CHECK(9, "10 000 calls from one place write at least one and at most 8 lines", n >= 1 && n <= 8);
 #endif
    }
@@ -265,7 +261,7 @@ namespace {
       int status = 0;
       waitpid(pid, &status, 0);
       CHECK(10, "without the sink directory nothing is written and the result is unchanged",
-            WIFEXITED(status) && WEXITSTATUS(status) == 0 && lines_for("lSetPosBool", "-", "negative-position") == 0);
+            WIFEXITED(status) && WEXITSTATUS(status) == 0 && lines_for("lSetPosBool", "-", "null-element") == 0);
 #endif
    }
 
@@ -294,8 +290,8 @@ int main(int argc, char *argv[]) {
    setenv("OCS_SOFT_PATH_DIR", dir, 1);
    const int rc = ocs::module_test::run(argc, argv, {
       {"SOFT-01", "each soft path",
-       "every soft error path of the old setters and the free setter is recorded with accessor, field, reason "
-       "and caller, and the result stays as it was",
+       "every soft error path the contract of N-L-4 keeps in the old accessors and the free setter is recorded "
+       "with accessor, field, reason and caller, and the result stays as it was",
        {"call each soft path once with a sink directory"},
        "one line per call, return value and error number unchanged", {{"LEG-03", "covers"}},
        {1, 2, 3, 4, 5, 6, 7, 8}, test_each_soft_path},

@@ -243,21 +243,15 @@ test_errors() {
    const int new_null_str = ocs::tom::set<TEST_string>(nullptr, "x");
    CHECK(15, "a null element for a string field: -1 and LEELEMNULL", new_null_str == -1 && cull_state_get_lerrno() == LEELEMNULL);
 
-   // an absent number field: the old setter returns -1 and leaves the error number alone
-   cull_state_set_lerrno(0);
-   const int old_absent = lSetInt(r, TEST_int, 1);
-   const int old_absent_errno = cull_state_get_lerrno();
-   cull_state_set_lerrno(0);
-   const int new_absent = ocs::tom::set<TEST_int>(r, 1);
-   CHECK(16, "an absent int field: -1 with the old error number", old_absent == -1 && new_absent == -1 &&
-         cull_state_get_lerrno() == old_absent_errno);
-   cull_state_set_lerrno(0);
-   const int old_absent_u = lSetUlong64(r, TEST_uint64, 1);
-   const int old_absent_u_errno = cull_state_get_lerrno();
-   cull_state_set_lerrno(0);
-   const int new_absent_u = ocs::tom::set<TEST_uint64>(r, UINT64_C(1));
-   CHECK(17, "an absent uint64 field: -1 with the old error number", old_absent_u == -1 && new_absent_u == -1 &&
-         cull_state_get_lerrno() == old_absent_u_errno);
+   // an absent number field: the old setter aborts and the free setter throws, as for every field type since
+   // CS-3062 (N-L-4); before, both returned -1, with LENEGPOS for an int field and without one for a uint64 field
+   CHECK(16, "an absent int field: the old setter aborts, the free setter throws",
+         aborts([&] { lSetInt(r, TEST_int, 1); }) &&
+         throws_field_exception([&] { ocs::tom::set<TEST_int>(r, 1); }, FieldException::Reason::AbsentField, "TEST_int"));
+   CHECK(17, "an absent uint64 field: the old setter aborts, the free setter throws",
+         aborts([&] { lSetUlong64(r, TEST_uint64, 1); }) &&
+         throws_field_exception([&] { ocs::tom::set<TEST_uint64>(r, UINT64_C(1)); }, FieldException::Reason::AbsentField,
+                                "TEST_uint64"));
 
    // an absent string field: the old setter aborts, the free setter throws
    CHECK(18, "an absent string field: the old setter aborts", aborts([&] { lSetString(r, TEST_string, "x"); }));
@@ -265,6 +259,14 @@ test_errors() {
          throws_field_exception([&] { ocs::tom::set<TEST_string>(r, "x"); }, FieldException::Reason::AbsentField, "TEST_string"));
    CHECK(20, "the handle's setter throws on an absent number field",
          throws_field_exception([&] { Element<TEST>{r}.set<TEST_int>(1); }, FieldException::Reason::AbsentField, "TEST_int"));
+
+   // the object a field holds already is set again without an error since CS-3062 (N-L-4)
+   lListElem *full = lCreateElem(TEST_Type);
+   lListElem *held = lCreateElem(JB_Type);
+   const bool same = ocs::tom::set<TEST_obj_jb>(full, held) == 0 && ocs::tom::set<TEST_obj_jb>(full, held) == 0 &&
+                     lGetObject(full, TEST_obj_jb) == held;
+   lFreeElem(&full);
+   CHECK(24, "the free setter sets the object a field holds again without an error", same);
 
    lFreeElem(&queue);
    lFreeList(&reduced);
@@ -344,7 +346,7 @@ int main(int argc, char *argv[]) {
         "call the free and the old setter with a null element and with absent number and string fields"},
        "each error throws with field and type named; the free setter returns -1 with the same error number "
        "where the old one does, and throws where the old one aborts",
-       {{"HDL-03", "covers"}}, {10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20}, test_errors},
+       {{"HDL-03", "covers"}}, {10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 24}, test_errors},
       {"HANDLE-04", "hash tables",
        "the setters keep the hash table of the owning list",
        {"change a hashed field after the first lookup in a list above the hash threshold",

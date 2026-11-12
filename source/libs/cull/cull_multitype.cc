@@ -109,33 +109,26 @@ namespace {
       DRETURN(-1);
    }
 
-   /** @brief What an old setter by name does with a field the element does not hold */
-   enum class LegacyMissing {
-      Silent,   ///< return -1 without an error number
-      NegPos,   ///< return -1 with LENEGPOS
-      Abort     ///< log the "no such name" message and abort
-   };
-
    /**
     * @brief The position of a field for a setter by name, through the core of the typed object model
     *
-    * The core checks; this maps its exception back to what the old setter of
-    * the field type did: -1 with LEELEMNULL for a null element, the setter's
-    * own behaviour for a field the element does not hold, and an abort for a
-    * field of another field type.
+    * The core checks; this maps its exception to the contract of the old
+    * setters (N-L-4, CS-3062): -1 with LEELEMNULL for a null element, which
+    * a debug build records as a soft path, and an abort for a field the
+    * element does not hold or of another field type, as the getters do.
+    * Before CS-3062 a field the element did not hold gave -1, without an
+    * error number or with LENEGPOS, in most setters.
     *
     * @param ep the element
     * @param name the field number
     * @param type the field type the setter writes
-    * @param missing what the setter does with a field the element does not hold
     * @param wrong_type_fmt the setter's message for a field of another field type
-    * @param no_such_name_fmt the setter's message for a missing field, if it aborts on one
-    * @param setter the setter's name, for the debug message of a silent miss and the record of a soft path
-    * @return the field's position, or -1 where the old setter returned -1
+    * @param no_such_name_fmt the setter's message for a missing field, or nullptr for the message of the getters
+    * @param setter the setter's name, for the record of a soft path
+    * @return the field's position, or -1 for a null element
     */
    int legacy_setter_pos(const lListElem *ep, const int name, const ocs::tom::FieldType type,
-                         const LegacyMissing missing, const char *wrong_type_fmt, const char *no_such_name_fmt,
-                         const char *setter) {
+                         const char *wrong_type_fmt, const char *no_such_name_fmt, const char *setter) {
       DENTER(CULL_BASIS_LAYER);
       try {
          DRETURN(ocs::tom::checked_pos(ep, name, type));
@@ -151,23 +144,58 @@ namespace {
                break;
             }
             default:
-               if (missing != LegacyMissing::Abort) {
-                  ocs::tom::report_soft_path(setter, name,
-                                             e.reason() == ocs::tom::FieldException::Reason::ForeignField
-                                                ? ocs::tom::SoftPathReason::ForeignField
-                                                : ocs::tom::SoftPathReason::MissingField);
-               }
-               if (missing == LegacyMissing::NegPos) {
-                  LERROR(LENEGPOS);
-               } else if (missing == LegacyMissing::Abort) {
+               if (no_such_name_fmt != nullptr) {
                   incompatibleType2(no_such_name_fmt, name, lNm2Str(name));
                } else {
-                  DPRINTF("!!!!!!!!!! %s(): %s not found in element !!!!!!!!!!\n", setter, lNm2Str(name));
+                  CRITICAL(MSG_CULL_XNOTFOUNDINELEMENT_S, lNm2Str(name));
+                  ocs::TerminationManager::trigger_abort();
                }
                break;
          }
       }
       DRETURN(-1);
+   }
+
+   /**
+    * @brief End the process for a position an old accessor by position cannot use (N-L-4, CS-3062)
+    *
+    * A negative position is what lGetPosViaElem() gives for a field the
+    * element does not hold, so it ends the process as a missing field does in
+    * the accessors by name. Before CS-3062 the setters by position returned -1
+    * with LENEGPOS, and five getters read in front of the descriptor.
+    *
+    * @param function the accessor, for the message
+    * @param pos the position
+    */
+   [[gnu::cold]] void legacy_invalid_pos(const char *function, const int pos) {
+      CRITICAL(MSG_CULL_INVALIDPOSITION_SI, function, pos);
+      ocs::TerminationManager::trigger_abort();
+   }
+
+   /**
+    * @brief Check the element and the position given to an old getter by position (N-L-4, CS-3062)
+    *
+    * A negative position ends the process in every build; a debug build also
+    * ends it for a null element and a position beyond the descriptor, and
+    * ocs_cull_value() for a field the element does not hold.
+    *
+    * @param ep the element
+    * @param pos the position
+    * @param getter the getter, for the message
+    */
+   inline void legacy_check_getter_pos(const lListElem *ep, const int pos, const char *getter) {
+      if (pos < 0) [[unlikely]] {
+         legacy_invalid_pos(getter, pos);
+      }
+#if defined(ENABLE_DEBUG_CHECKS)
+      if (ep == nullptr) {
+         CRITICAL(MSG_CULL_NULLELEMENTATPOS_SI, getter, pos);
+         ocs::TerminationManager::trigger_abort();
+      }
+      if (pos >= ocs::tom::descr_length(ep->descr)) {
+         legacy_invalid_pos(getter, pos);
+      }
+#endif
    }
 
 } // namespace
@@ -391,10 +419,14 @@ char **lGetPosHostRef(const lListElem *ep, int pos) {
  * @return int
  *
  * @see Typed form: ocs::tom::get<F>(ep) and ocs::tom::ConstElement<T>::get<F>(), or get<V>(nm) for a field known only at run time.
+ *
+ * @note A negative position aborts in every build; a debug build also aborts for a null element, a
+ *       position beyond the type and a field the element does not hold (N-L-4, CS-3062).
  */
 lInt lGetPosInt(const lListElem *ep, int pos) {
    DENTER(CULL_BASIS_LAYER);
 
+   legacy_check_getter_pos(ep, pos, "lGetPosInt");
    if (mt_get_type(ep->descr[pos].mt) != lIntT)
       incompatibleType("lGetPosInt");
 
@@ -432,17 +464,14 @@ lInt lGetInt(const lListElem *ep, int name) {
  * @return ulong
  *
  * @see Typed form: ocs::tom::get<F>(ep) and ocs::tom::ConstElement<T>::get<F>(), or get<V>(nm) for a field known only at run time.
+ *
+ * @note A negative position aborts in every build; a debug build also aborts for a null element, a
+ *       position beyond the type and a field the element does not hold (N-L-4, CS-3062).
  */
 lUlong lGetPosUlong(const lListElem *ep, int pos) {
    DENTER(CULL_BASIS_LAYER);
 
-   if (pos < 0) {
-      /* someone has called lGetPosUlong() */
-      /* makro with an invalid nm        */
-      CRITICAL(SFNMAX, MSG_CULL_GETPOSULONG_GOTINVALIDPOSITION);
-      ocs::TerminationManager::trigger_abort();
-   }
-
+   legacy_check_getter_pos(ep, pos, "lGetPosUlong");
    if (mt_get_type(ep->descr[pos].mt) != lUlongT)
       incompatibleType("lGetPosUlong");
    DRETURN((lUlong) ocs_cull_value(ep, pos).ul);
@@ -481,17 +510,14 @@ lUlong lGetUlong(const lListElem *ep, int name) {
  * @return ulong64
  *
  * @see Typed form: ocs::tom::get<F>(ep) and ocs::tom::ConstElement<T>::get<F>(), or get<V>(nm) for a field known only at run time.
+ *
+ * @note A negative position aborts in every build; a debug build also aborts for a null element, a
+ *       position beyond the type and a field the element does not hold (N-L-4, CS-3062).
  */
 lUlong64 lGetPosUlong64(const lListElem *ep, int pos) {
    DENTER(CULL_BASIS_LAYER);
 
-   if (pos < 0) {
-      /* someone has called lGetPosUlong64() */
-      /* makro with an invalid nm        */
-      CRITICAL(SFNMAX, MSG_CULL_GETPOSULONG64_GOTINVALIDPOSITION);
-      ocs::TerminationManager::trigger_abort();
-   }
-
+   legacy_check_getter_pos(ep, pos, "lGetPosUlong64");
    if (mt_get_type(ep->descr[pos].mt) != lUlong64T)
       incompatibleType("lGetPosUlong64");
    DRETURN((lUlong64) ocs_cull_value(ep, pos).ul64);
@@ -527,16 +553,15 @@ lUlong64 lGetUlong64(const lListElem *ep, int name) {
  * @return the string, or nullptr when the field is unset
  *
  * @see Typed form: ocs::tom::get<F>(ep) and ocs::tom::ConstElement<T>::get<F>(), or get<V>(nm) for a field known only at run time.
+ *
+ * @note A negative position aborts in every build, as for the other field types; before, it gave nullptr.
+ *       A debug build also aborts for a null element, a position beyond the type and a field the element
+ *       does not hold (N-L-4, CS-3062).
  */
 const char *lGetPosString(const lListElem *ep, int pos) {
    DENTER(CULL_BASIS_LAYER);
 
-   if (pos < 0) {
-      /* someone has called lGetString() */
-      /* makro with an invalid nm        */
-      DPRINTF("!!!!!!!!!!!! lGetPosString() got an invalid pos !!!!!!!!!\n");
-      DRETURN(nullptr);
-   }
+   legacy_check_getter_pos(ep, pos, "lGetPosString");
 
    if (mt_get_type(ep->descr[pos].mt) != lStringT)
       incompatibleType("lGetPosString");
@@ -552,16 +577,15 @@ const char *lGetPosString(const lListElem *ep, int pos) {
  * @return the string, or nullptr when the field is unset
  *
  * @see Typed form: ocs::tom::get<F>(ep) and ocs::tom::ConstElement<T>::get<F>(), or get<V>(nm) for a field known only at run time.
+ *
+ * @note A negative position aborts in every build, as for the other field types; before, it gave nullptr.
+ *       A debug build also aborts for a null element, a position beyond the type and a field the element
+ *       does not hold (N-L-4, CS-3062).
  */
 const char *lGetPosHost(const lListElem *ep, int pos) {
    DENTER(CULL_BASIS_LAYER);
 
-   if (pos < 0) {
-      /* someone has called lGetString() */
-      /* makro with an invalid nm        */
-      DPRINTF("!!!!!!!!!!!!!! lGetPosHost() got an invalid pos !!!!!!!!!\n");
-      DRETURN(nullptr);
-   }
+   legacy_check_getter_pos(ep, pos, "lGetPosHost");
 
    if (mt_get_type(ep->descr[pos].mt) != lHostT)
       incompatibleType("lGetPosHost");
@@ -660,17 +684,14 @@ const char *lGetHost(const lListElem *ep, int name) {
  * @return the matching element, or nullptr when there is none
  *
  * @see Typed form: ocs::tom::get<F>(ep) and ocs::tom::ConstElement<T>::get<F>(), or get<V>(nm) for a field known only at run time.
+ *
+ * @note A negative position aborts in every build; a debug build also aborts for a null element, a
+ *       position beyond the type and a field the element does not hold (N-L-4, CS-3062).
  */
 lListElem *lGetPosObject(const lListElem *ep, int pos) {
    DENTER(CULL_BASIS_LAYER);
 
-   if (pos < 0) {
-      /* someone has called lGetPosUlong() */
-      /* makro with an invalid nm        */
-      CRITICAL(SFNMAX, MSG_CULL_GETPOSOBJECT_GOTANINVALIDPOS);
-      ocs::TerminationManager::trigger_abort();
-   }
-
+   legacy_check_getter_pos(ep, pos, "lGetPosObject");
    if (mt_get_type(ep->descr[pos].mt) != lObjectT)
       incompatibleType("lGetPosObject");
 
@@ -685,17 +706,14 @@ lListElem *lGetPosObject(const lListElem *ep, int pos) {
  * @return the sub-list, or nullptr when the field is unset
  *
  * @see Typed form: ocs::tom::get<F>(ep) and ocs::tom::ConstElement<T>::get<F>(), or get<V>(nm) for a field known only at run time.
+ *
+ * @note A negative position aborts in every build; a debug build also aborts for a null element, a
+ *       position beyond the type and a field the element does not hold (N-L-4, CS-3062).
  */
 lList *lGetPosList(const lListElem *ep, int pos) {
    DENTER(CULL_BASIS_LAYER);
 
-   if (pos < 0) {
-      /* someone has called lGetPosUlong() */
-      /* makro with an invalid nm        */
-      CRITICAL(SFNMAX, MSG_CULL_GETPOSLIST_GOTANINVALIDPOS);
-      ocs::TerminationManager::trigger_abort();
-   }
-
+   legacy_check_getter_pos(ep, pos, "lGetPosList");
    if (mt_get_type(ep->descr[pos].mt) != lListT)
       incompatibleType("lGetPosList");
 
@@ -787,9 +805,14 @@ lList *lGetOrCreateList(lListElem *ep, int name,
  * @return double value
  *
  * @see Typed form: ocs::tom::get<F>(ep) and ocs::tom::ConstElement<T>::get<F>(), or get<V>(nm) for a field known only at run time.
+ *
+ * @note A negative position aborts in every build; a debug build also aborts for a null element, a
+ *       position beyond the type and a field the element does not hold (N-L-4, CS-3062).
  */
 lDouble lGetPosDouble(const lListElem *ep, int pos) {
    DENTER(CULL_BASIS_LAYER);
+
+   legacy_check_getter_pos(ep, pos, "lGetPosDouble");
    if (mt_get_type(ep->descr[pos].mt) != lDoubleT)
       incompatibleType("lGetPosDouble");
    DRETURN(ocs_cull_value(ep, pos).db);
@@ -825,9 +848,14 @@ lDouble lGetDouble(const lListElem *ep, int name) {
  * @return long
  *
  * @see Typed form: ocs::tom::get<F>(ep) and ocs::tom::ConstElement<T>::get<F>(), or get<V>(nm) for a field known only at run time.
+ *
+ * @note A negative position aborts in every build; a debug build also aborts for a null element, a
+ *       position beyond the type and a field the element does not hold (N-L-4, CS-3062).
  */
 lLong lGetPosLong(const lListElem *ep, int pos) {
    DENTER(CULL_BASIS_LAYER);
+
+   legacy_check_getter_pos(ep, pos, "lGetPosLong");
    if (mt_get_type(ep->descr[pos].mt) != lLongT)
       incompatibleType("lGetPosLong");
    DRETURN(ocs_cull_value(ep, pos).l);
@@ -863,10 +891,14 @@ lLong lGetLong(const lListElem *ep, int name) {
  * @return boolean
  *
  * @see Typed form: ocs::tom::get<F>(ep) and ocs::tom::ConstElement<T>::get<F>(), or get<V>(nm) for a field known only at run time.
+ *
+ * @note A negative position aborts in every build; a debug build also aborts for a null element, a
+ *       position beyond the type and a field the element does not hold (N-L-4, CS-3062).
  */
 lBool lGetPosBool(const lListElem *ep, int pos) {
    DENTER(CULL_BASIS_LAYER);
 
+   legacy_check_getter_pos(ep, pos, "lGetPosBool");
    if (mt_get_type(ep->descr[pos].mt) != lBoolT)
       incompatibleType("lGetPosBool");
    DRETURN(ocs_cull_value(ep, pos).b);
@@ -902,9 +934,14 @@ lBool lGetBool(const lListElem *ep, int name) {
  * @return reference (pointer)
  *
  * @see Typed form: ocs::tom::get<F>(ep) and ocs::tom::ConstElement<T>::get<F>(), or get<V>(nm) for a field known only at run time.
+ *
+ * @note A negative position aborts in every build; a debug build also aborts for a null element, a
+ *       position beyond the type and a field the element does not hold (N-L-4, CS-3062).
  */
 lRef lGetPosRef(const lListElem *ep, int pos) {
    DENTER(CULL_BASIS_LAYER);
+
+   legacy_check_getter_pos(ep, pos, "lGetPosRef");
    if (mt_get_type(ep->descr[pos].mt) != lRefT) {
       incompatibleType("lGetPosRef");
    }
@@ -939,7 +976,9 @@ lRef lGetRef(const lListElem *ep, int name) {
  * @param pos position
  * @param value value
  *
- * @return error state 0 - OK -1 - Error
+ * @return 0 on success, -1 with LEELEMNULL for a null element.
+ *         A negative position or a field of another field type
+ *         is a programming error and aborts the process (N-L-4, CS-3062).
  *
  * @see Typed form: ocs::tom::set<F>(ep, value) and ocs::tom::Element<T>::set<F>(), or set(nm, value) for a field known only at run time.
  */
@@ -953,8 +992,7 @@ int lSetPosInt(lListElem *ep, int pos, int value) {
    }
 
    if (pos < 0) {
-      ocs::tom::report_soft_path("lSetPosInt", ocs::tom::SoftPathNoName, ocs::tom::SoftPathReason::NegativePosition);
-      LERROR(LENEGPOS);
+      legacy_invalid_pos("lSetPosInt", pos);
       DRETURN(-1);
    }
 
@@ -979,15 +1017,16 @@ int lSetPosInt(lListElem *ep, int pos, int value) {
  * @param name field name id
  * @param value new value
  *
- * @return 0 on success, -1 on error. A field of another type is a programming
- *         error and aborts the process (#incompatibleType2).
+ * @return 0 on success, -1 with LEELEMNULL for a null element.
+ *         A field the element does not hold or of another field
+ *         type is a programming error and aborts the process (N-L-4, CS-3062).
  *
  * @see Typed form: ocs::tom::set<F>(ep, value) and ocs::tom::Element<T>::set<F>(), or set(nm, value) for a field known only at run time.
  */
 int lSetInt(lListElem *ep, int name, int value) {
    DENTER(CULL_BASIS_LAYER);
 
-   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::Int32, LegacyMissing::NegPos, MSG_CULL_SETINT_WRONGTYPEFORFIELDXY_SS, nullptr, "lSetInt");
+   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::Int32, MSG_CULL_SETINT_WRONGTYPEFORFIELDXY_SS, nullptr, "lSetInt");
    if (pos < 0) {
       DRETURN(-1);
    }
@@ -1004,7 +1043,9 @@ int lSetInt(lListElem *ep, int name, int value) {
  * @param pos position
  * @param value new value
  *
- * @return error state 0 - OK -1 - Error
+ * @return 0 on success, -1 with LEELEMNULL for a null element.
+ *         A negative position or a field of another field type
+ *         is a programming error and aborts the process (N-L-4, CS-3062).
  *
  * @see Typed form: ocs::tom::set<F>(ep, value) and ocs::tom::Element<T>::set<F>(), or set(nm, value) for a field known only at run time.
  */
@@ -1017,8 +1058,7 @@ int lSetPosUlong(lListElem *ep, int pos, lUlong value) {
    }
 
    if (pos < 0) {
-      ocs::tom::report_soft_path("lSetPosUlong", ocs::tom::SoftPathNoName, ocs::tom::SoftPathReason::NegativePosition);
-      LERROR(LENEGPOS);
+      legacy_invalid_pos("lSetPosUlong", pos);
       DRETURN(-1);
    }
 
@@ -1051,15 +1091,16 @@ int lSetPosUlong(lListElem *ep, int pos, lUlong value) {
  * @param name field name id
  * @param value new value
  *
- * @return 0 on success, -1 on error. A field of another type is a programming
- *         error and aborts the process (#incompatibleType2).
+ * @return 0 on success, -1 with LEELEMNULL for a null element.
+ *         A field the element does not hold or of another field
+ *         type is a programming error and aborts the process (N-L-4, CS-3062).
  *
  * @see Typed form: ocs::tom::set<F>(ep, value) and ocs::tom::Element<T>::set<F>(), or set(nm, value) for a field known only at run time.
  */
 int lSetUlong(lListElem *ep, int name, lUlong value) {
    DENTER(CULL_BASIS_LAYER);
 
-   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::Uint32, LegacyMissing::Silent, MSG_CULL_SETULONG_WRONGTYPEFORFIELDXY_SS, nullptr, "lSetUlong");
+   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::Uint32, MSG_CULL_SETULONG_WRONGTYPEFORFIELDXY_SS, nullptr, "lSetUlong");
    if (pos < 0) {
       DRETURN(-1);
    }
@@ -1077,9 +1118,9 @@ int lSetUlong(lListElem *ep, int name, lUlong value) {
  * @param name field name id
  * @param offset the offset
  *
- * @return 0 on success, -1 when @p ep is nullptr or @p name is not one of its
- *         fields. A field of another type is a programming error and aborts the
- *         process (#incompatibleType2).
+ * @return 0 on success, -1 with LEELEMNULL for a null element.
+ *         A field the element does not hold or of another field
+ *         type is a programming error and aborts the process (N-L-4, CS-3062).
  *
  * @note A thin wrapper over ocs::tom::add_number().
  * @see Typed form: ocs::tom::Element<T>::add<F>(), which returns the new value, or ocs::tom::add<F>(ep, offset).
@@ -1087,7 +1128,7 @@ int lSetUlong(lListElem *ep, int name, lUlong value) {
 int lAddUlong(lListElem *ep, int name, lUlong offset) {
    DENTER(CULL_BASIS_LAYER);
 
-   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::Uint32, LegacyMissing::Silent, MSG_CULL_SETULONG_WRONGTYPEFORFIELDXY_SS, nullptr, "lAddUlong");
+   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::Uint32, MSG_CULL_SETULONG_WRONGTYPEFORFIELDXY_SS, nullptr, "lAddUlong");
    if (pos < 0) {
       DRETURN(-1);
    }
@@ -1170,15 +1211,16 @@ lUlong64 lGetUlong64Atomic(const lListElem *ep, int name) {
  * @param name field name id
  * @param value the value to store
  *
- * @return 0 on success, -1 on error. A field of another type is a programming
- *         error and aborts the process (#incompatibleType2).
+ * @return 0 on success, -1 with LEELEMNULL for a null element.
+ *         A field the element does not hold or of another field
+ *         type is a programming error and aborts the process (N-L-4, CS-3062).
  *
  * @see #lSetUlong64, #lGetUlong64Atomic
  */
 int lSetUlong64Atomic(lListElem *ep, int name, lUlong64 value) {
    DENTER(CULL_BASIS_LAYER);
 
-   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::Uint64, LegacyMissing::Silent, MSG_CULL_SETULONG64_WRONGTYPEFORFIELDXY_SS, nullptr, "lSetUlong64Atomic");
+   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::Uint64, MSG_CULL_SETULONG64_WRONGTYPEFORFIELDXY_SS, nullptr, "lSetUlong64Atomic");
    if (pos < 0) {
       DRETURN(-1);
    }
@@ -1198,10 +1240,23 @@ int lSetUlong64Atomic(lListElem *ep, int name, lUlong64 value) {
    DRETURN(0);
 }
 
+/**
+ * @brief Set a 64 bit field of an element, by name
+ *
+ * @param ep the element
+ * @param name the field
+ * @param value the value
+ *
+ * @return 0 on success, -1 with LEELEMNULL for a null element.
+ *         A field the element does not hold or of another field
+ *         type is a programming error and aborts the process (N-L-4, CS-3062).
+ *
+ * @see Typed form: ocs::tom::set<F>(ep, value) and ocs::tom::Element<T>::set<F>().
+ */
 int lSetUlong64(lListElem *ep, int name, lUlong64 value) {
    DENTER(CULL_BASIS_LAYER);
 
-   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::Uint64, LegacyMissing::Silent, MSG_CULL_SETULONG64_WRONGTYPEFORFIELDXY_SS, nullptr, "lSetUlong64");
+   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::Uint64, MSG_CULL_SETULONG64_WRONGTYPEFORFIELDXY_SS, nullptr, "lSetUlong64");
    if (pos < 0) {
       DRETURN(-1);
    }
@@ -1219,9 +1274,9 @@ int lSetUlong64(lListElem *ep, int name, lUlong64 value) {
  * @param name field name id
  * @param offset the offset
  *
- * @return 0 on success, -1 when @p ep is nullptr or @p name is not one of its
- *         fields. A field of another type is a programming error and aborts the
- *         process (#incompatibleType2).
+ * @return 0 on success, -1 with LEELEMNULL for a null element.
+ *         A field the element does not hold or of another field
+ *         type is a programming error and aborts the process (N-L-4, CS-3062).
  *
  * @note A thin wrapper over ocs::tom::add_number().
  * @see Typed form: ocs::tom::Element<T>::add<F>(), which returns the new value, or ocs::tom::add<F>(ep, offset).
@@ -1229,7 +1284,7 @@ int lSetUlong64(lListElem *ep, int name, lUlong64 value) {
 int lAddUlong64(lListElem *ep, int name, lUlong64 offset) {
    DENTER(CULL_BASIS_LAYER);
 
-   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::Uint64, LegacyMissing::Silent, MSG_CULL_SETULONG64_WRONGTYPEFORFIELDXY_SS, nullptr, "lAddUlong64");
+   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::Uint64, MSG_CULL_SETULONG64_WRONGTYPEFORFIELDXY_SS, nullptr, "lAddUlong64");
    if (pos < 0) {
       DRETURN(-1);
    }
@@ -1252,7 +1307,9 @@ int lAddUlong64(lListElem *ep, int name, lUlong64 offset) {
  * @param pos position
  * @param value new value
  *
- * @return error state 0 - OK -1 - Error
+ * @return 0 on success, -1 with LEELEMNULL for a null element.
+ *         A negative position or a field of another field type
+ *         is a programming error and aborts the process (N-L-4, CS-3062).
  *
  * @see Typed form: ocs::tom::set<F>(ep, value) and ocs::tom::Element<T>::set<F>(), or set(nm, value) for a field known only at run time.
  */
@@ -1265,8 +1322,7 @@ int lSetPosUlong64(lListElem *ep, int pos, lUlong64 value) {
    }
 
    if (pos < 0) {
-      ocs::tom::report_soft_path("lSetPosUlong64", ocs::tom::SoftPathNoName, ocs::tom::SoftPathReason::NegativePosition);
-      LERROR(LENEGPOS);
+      legacy_invalid_pos("lSetPosUlong64", pos);
       DRETURN(-1);
    }
 
@@ -1299,7 +1355,9 @@ int lSetPosUlong64(lListElem *ep, int pos, lUlong64 value) {
  * @param pos position
  * @param value string value
  *
- * @return error state 0 - OK -1 - Error
+ * @return 0 on success, -1 with LEELEMNULL for a null element, or if the string cannot be copied.
+ *         A negative position or a field of another field type
+ *         is a programming error and aborts the process (N-L-4, CS-3062).
  *
  * @see Typed form: ocs::tom::set<F>(ep, value) and ocs::tom::Element<T>::set<F>(), or set(nm, value) for a field known only at run time.
  */
@@ -1313,8 +1371,7 @@ int lSetPosString(lListElem *ep, int pos, const char *value) {
    }
 
    if (pos < 0) {
-      ocs::tom::report_soft_path("lSetPosString", ocs::tom::SoftPathNoName, ocs::tom::SoftPathReason::NegativePosition);
-      LERROR(LENEGPOS);
+      legacy_invalid_pos("lSetPosString", pos);
       DRETURN(-1);
    }
 
@@ -1346,7 +1403,9 @@ int lSetPosString(lListElem *ep, int pos, const char *value) {
  * @param pos position
  * @param value new hostname
  *
- * @return error state 0 - OK -1 - Error
+ * @return 0 on success, -1 with LEELEMNULL for a null element, or if the string cannot be copied.
+ *         A negative position or a field of another field type
+ *         is a programming error and aborts the process (N-L-4, CS-3062).
  *
  * @see Typed form: ocs::tom::set<F>(ep, value) and ocs::tom::Element<T>::set<F>(), or set(nm, value) for a field known only at run time.
  */
@@ -1360,8 +1419,7 @@ int lSetPosHost(lListElem *ep, int pos, const char *value) {
    }
 
    if (pos < 0) {
-      ocs::tom::report_soft_path("lSetPosHost", ocs::tom::SoftPathNoName, ocs::tom::SoftPathReason::NegativePosition);
-      LERROR(LENEGPOS);
+      legacy_invalid_pos("lSetPosHost", pos);
       DRETURN(-1);
    }
 
@@ -1393,15 +1451,16 @@ int lSetPosHost(lListElem *ep, int pos, const char *value) {
  * @param name field name id
  * @param value new string
  *
- * @return 0 on success, -1 on error. A field of another type is a programming
- *         error and aborts the process (#incompatibleType2).
+ * @return 0 on success, -1 with LEELEMNULL for a null element, or if the string cannot be copied.
+ *         A field the element does not hold or of another field
+ *         type is a programming error and aborts the process (N-L-4, CS-3062).
  *
  * @see Typed form: ocs::tom::set<F>(ep, value) and ocs::tom::Element<T>::set<F>(), or set(nm, value) for a field known only at run time.
  */
 int lSetString(lListElem *ep, int name, const char *value) {
    DENTER(CULL_BASIS_LAYER);
 
-   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::String, LegacyMissing::Abort, MSG_CULL_SETSTRING_WRONGTYPEFORFIELDXY_SS, MSG_CULL_SETSTRING_NOSUCHNAMEXYINDESCRIPTOR_IS, "lSetString");
+   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::String, MSG_CULL_SETSTRING_WRONGTYPEFORFIELDXY_SS, MSG_CULL_SETSTRING_NOSUCHNAMEXYINDESCRIPTOR_IS, "lSetString");
    if (pos < 0) {
       DRETURN(-1);
    }
@@ -1420,15 +1479,16 @@ int lSetString(lListElem *ep, int name, const char *value) {
  * @param name name of list element (e.g. EH_name)
  * @param value new value for list element
  *
- * @return 0 on success, -1 on error. A field of another type is a programming
- *         error and aborts the process (#incompatibleType2).
+ * @return 0 on success, -1 with LEELEMNULL for a null element, or if the string cannot be copied.
+ *         A field the element does not hold or of another field
+ *         type is a programming error and aborts the process (N-L-4, CS-3062).
  *
  * @see Typed form: ocs::tom::set<F>(ep, value) and ocs::tom::Element<T>::set<F>(), or set(nm, value) for a field known only at run time.
  */
 int lSetHost(lListElem *ep, int name, const char *value) {
    DENTER(CULL_BASIS_LAYER);
 
-   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::Host, LegacyMissing::Abort, MSG_CULL_SETHOST_WRONGTYPEFORFIELDXY_SS, MSG_CULL_SETHOST_NOSUCHNAMEXYINDESCRIPTOR_IS, "lSetHost");
+   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::Host, MSG_CULL_SETHOST_WRONGTYPEFORFIELDXY_SS, MSG_CULL_SETHOST_NOSUCHNAMEXYINDESCRIPTOR_IS, "lSetHost");
    if (pos < 0) {
       DRETURN(-1);
    }
@@ -1446,7 +1506,10 @@ int lSetHost(lListElem *ep, int name, const char *value) {
  * @param pos position
  * @param value value
  *
- * @return error state 0 - OK -1 - Error
+ * @return 0 on success, -1 with LEELEMNULL for a null element, or with LEBOUNDELEM if the object is bound elsewhere; the
+ *         object the field holds already is no error.
+ *         A negative position or a field of another field type
+ *         is a programming error and aborts the process (N-L-4, CS-3062).
  *
  * @see Typed form: ocs::tom::set<F>(ep, value) and ocs::tom::Element<T>::set<F>(), or set(nm, value) for a field known only at run time.
  */
@@ -1460,8 +1523,7 @@ int lSetPosObject(lListElem *ep, int pos, lListElem *value) {
    }
 
    if (pos < 0) {
-      ocs::tom::report_soft_path("lSetPosObject", ocs::tom::SoftPathNoName, ocs::tom::SoftPathReason::NegativePosition);
-      LERROR(LENEGPOS);
+      legacy_invalid_pos("lSetPosObject", pos);
       DRETURN(-1);
    }
 
@@ -1489,7 +1551,9 @@ int lSetPosObject(lListElem *ep, int pos, lListElem *value) {
  * @param pos position
  * @param value value
  *
- * @return error state 0 - OK -1 - Error
+ * @return 0 on success, -1 with LEELEMNULL for a null element.
+ *         A negative position or a field of another field type
+ *         is a programming error and aborts the process (N-L-4, CS-3062).
  *
  * @see Typed form: ocs::tom::set<F>(ep, value) and ocs::tom::Element<T>::set<F>(), or set(nm, value) for a field known only at run time.
  */
@@ -1502,8 +1566,7 @@ int lSetPosList(lListElem *ep, int pos, lList *value) {
       DRETURN(-1);
    }
    if (pos < 0) {
-      ocs::tom::report_soft_path("lSetPosList", ocs::tom::SoftPathNoName, ocs::tom::SoftPathReason::NegativePosition);
-      LERROR(LENEGPOS);
+      legacy_invalid_pos("lSetPosList", pos);
       DRETURN(-1);
    }
 
@@ -1526,8 +1589,9 @@ int lSetPosList(lListElem *ep, int pos, lList *value) {
  * @param name field name value
  * @param str pointer to a string
  *
- * @return 0 on success, -1 on error. A field of another type is a programming
- *         error and aborts the process (#incompatibleType2).
+ * @return 0 on success, -1 with LEELEMNULL for a null element, or if the string cannot be copied, or with LEELEMNULL for a null pointer to the value.
+ *         A field the element does not hold or of another field
+ *         type is a programming error and aborts the process (N-L-4, CS-3062).
  */
 int lXchgString(lListElem *ep, int name, char **str) {
    DENTER(CULL_BASIS_LAYER);
@@ -1538,7 +1602,7 @@ int lXchgString(lListElem *ep, int name, char **str) {
       LERROR(LEELEMNULL);
       DRETURN(-1);
    }
-   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::String, LegacyMissing::NegPos, MSG_CULL_XCHGLIST_WRONGTYPEFORFIELDXY_SS, nullptr, "lXchgString");
+   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::String, MSG_CULL_XCHGLIST_WRONGTYPEFORFIELDXY_SS, nullptr, "lXchgString");
    if (pos < 0) {
       DRETURN(-1);
    }
@@ -1562,8 +1626,9 @@ int lXchgString(lListElem *ep, int name, char **str) {
  * @param name field name value
  * @param lpp pointer to CULL list
  *
- * @return 0 on success, -1 on error. A field of another type is a programming
- *         error and aborts the process (#incompatibleType2).
+ * @return 0 on success, -1 with LEELEMNULL for a null element, or with LEELEMNULL for a null pointer to the list.
+ *         A field the element does not hold or of another field
+ *         type is a programming error and aborts the process (N-L-4, CS-3062).
  *
  * @see Typed form: ocs::tom::Element<T>::exchange().
  */
@@ -1575,7 +1640,7 @@ int lXchgList(lListElem *ep, int name, lList **lpp) {
       LERROR(LEELEMNULL);
       DRETURN(-1);
    }
-   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::List, LegacyMissing::NegPos, MSG_CULL_XCHGLIST_WRONGTYPEFORFIELDXY_SS, nullptr, "lXchgList");
+   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::List, MSG_CULL_XCHGLIST_WRONGTYPEFORFIELDXY_SS, nullptr, "lXchgList");
    if (pos < 0) {
       DRETURN(-1);
    }
@@ -1627,38 +1692,25 @@ int lSwapList(lListElem *to, int nm_to, lListElem *from, int nm_from) {
  * @param name field name id
  * @param value new list pointer
  *
- * @return 0 on success, -1 on error. A field of another type is a programming
- *         error and aborts the process (#incompatibleType2).
+ * @return 0 on success, -1 with LEELEMNULL for a null element, or with LEBOUNDELEM if the object is bound elsewhere; the
+ *         object the field holds already is no error.
+ *         A field the element does not hold or of another field
+ *         type is a programming error and aborts the process (N-L-4, CS-3062).
  *
  * @see Typed form: ocs::tom::set<F>(ep, value) and ocs::tom::Element<T>::set<F>(), or set(nm, value) for a field known only at run time.
  */
 int lSetObject(lListElem *ep, int name, lListElem *value) {
    DENTER(CULL_BASIS_LAYER);
 
-   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::Object, LegacyMissing::Silent, MSG_CULL_SETLIST_WRONGTYPEFORFIELDXY_SS, nullptr, "lSetObject");
+   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::Object, MSG_CULL_SETLIST_WRONGTYPEFORFIELDXY_SS, nullptr, "lSetObject");
    if (pos < 0) {
       DRETURN(-1);
    }
 
-   if (value != nullptr && elem_kind(value) != FREE_ELEM && elem_kind(value) != TRANS_BOUND_ELEM) {
+   if (!ocs::tom::store_object(ep, pos, value)) {
       ocs::tom::report_soft_path("lSetObject", name, ocs::tom::SoftPathReason::BoundElement);
       LERROR(LEBOUNDELEM);
       DRETURN(-1);
-   }
-
-   if (value != ocs_cull_value(ep, pos).obj) {
-      /* free old element */
-      if (ocs_cull_value(ep, pos).obj) {
-         lFreeElem(&(ocs_cull_value(ep, pos).obj));
-      }
-
-      /* set new list */
-      ocs_cull_value(ep, pos).obj = value;
-
-      /* mark lListElem as bound */
-      if (value != nullptr) {
-         elem_set_object(value);
-      }
    }
 
    DRETURN(0);
@@ -1673,8 +1725,9 @@ int lSetObject(lListElem *ep, int name, lListElem *value) {
  * @param name field name id
  * @param value new list pointer
  *
- * @return 0 on success, -1 on error. A field of another type is a programming
- *         error and aborts the process (#incompatibleType2).
+ * @return 0 on success, -1 with LEELEMNULL for a null element.
+ *         A field the element does not hold or of another field
+ *         type is a programming error and aborts the process (N-L-4, CS-3062).
  *
  * @note MT-NOTE: lAddSubList() is MT safe
  *
@@ -1683,7 +1736,7 @@ int lSetObject(lListElem *ep, int name, lListElem *value) {
 int lSetList(lListElem *ep, int name, lList *value) {
    DENTER(CULL_BASIS_LAYER);
 
-   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::List, LegacyMissing::Silent, MSG_CULL_SETLIST_WRONGTYPEFORFIELDXY_SS, nullptr, "lSetList");
+   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::List, MSG_CULL_SETLIST_WRONGTYPEFORFIELDXY_SS, nullptr, "lSetList");
    if (pos < 0) {
       DRETURN(-1);
    }
@@ -1708,7 +1761,9 @@ int lSetList(lListElem *ep, int name, lList *value) {
  * @param pos position
  * @param value new double value
  *
- * @return error state 0 - OK -1 - Error
+ * @return 0 on success, -1 with LEELEMNULL for a null element.
+ *         A negative position or a field of another field type
+ *         is a programming error and aborts the process (N-L-4, CS-3062).
  *
  * @see Typed form: ocs::tom::set<F>(ep, value) and ocs::tom::Element<T>::set<F>(), or set(nm, value) for a field known only at run time.
  */
@@ -1721,8 +1776,7 @@ int lSetPosDouble(lListElem *ep, int pos, lDouble value) {
    }
 
    if (pos < 0) {
-      ocs::tom::report_soft_path("lSetPosDouble", ocs::tom::SoftPathNoName, ocs::tom::SoftPathReason::NegativePosition);
-      LERROR(LENEGPOS);
+      legacy_invalid_pos("lSetPosDouble", pos);
       DRETURN(-1);
    }
 
@@ -1748,15 +1802,16 @@ int lSetPosDouble(lListElem *ep, int pos, lDouble value) {
  * @param name field name id
  * @param value new double value
  *
- * @return 0 on success, -1 on error. A field of another type is a programming
- *         error and aborts the process (#incompatibleType2).
+ * @return 0 on success, -1 with LEELEMNULL for a null element.
+ *         A field the element does not hold or of another field
+ *         type is a programming error and aborts the process (N-L-4, CS-3062).
  *
  * @see Typed form: ocs::tom::set<F>(ep, value) and ocs::tom::Element<T>::set<F>(), or set(nm, value) for a field known only at run time.
  */
 int lSetDouble(lListElem *ep, int name, lDouble value) {
    DENTER(CULL_BASIS_LAYER);
 
-   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::Double, LegacyMissing::NegPos, MSG_CULL_SETDOUBLE_WRONGTYPEFORFIELDXY_SS, nullptr, "lSetDouble");
+   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::Double, MSG_CULL_SETDOUBLE_WRONGTYPEFORFIELDXY_SS, nullptr, "lSetDouble");
    if (pos < 0) {
       DRETURN(-1);
    }
@@ -1773,9 +1828,9 @@ int lSetDouble(lListElem *ep, int name, lDouble value) {
  * @param name field name id
  * @param value the amount to add
  *
- * @return 0 on success, -1 with LEELEMNULL for a null element or LENEGPOS for a
- *         field the element does not hold. A field of another type is a
- *         programming error and aborts the process (#incompatibleType2).
+ * @return 0 on success, -1 with LEELEMNULL for a null element.
+ *         A field the element does not hold or of another field
+ *         type is a programming error and aborts the process (N-L-4, CS-3062).
  *
  * @note A thin wrapper over ocs::tom::add_number().
  * @see Typed form: ocs::tom::Element<T>::add<F>(), which returns the new value, or ocs::tom::add<F>(ep, offset).
@@ -1783,7 +1838,7 @@ int lSetDouble(lListElem *ep, int name, lDouble value) {
 int lAddDouble(lListElem *ep, int name, lDouble value) {
    DENTER(CULL_BASIS_LAYER);
 
-   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::Double, LegacyMissing::NegPos, MSG_CULL_SETDOUBLE_WRONGTYPEFORFIELDXY_SS, nullptr, "lAddDouble");
+   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::Double, MSG_CULL_SETDOUBLE_WRONGTYPEFORFIELDXY_SS, nullptr, "lAddDouble");
    if (pos < 0) {
       DRETURN(-1);
    }
@@ -1803,7 +1858,9 @@ int lAddDouble(lListElem *ep, int name, lDouble value) {
  * @param pos position
  * @param value new long value
  *
- * @return error state 0 - OK -1 - Error
+ * @return 0 on success, -1 with LEELEMNULL for a null element.
+ *         A negative position or a field of another field type
+ *         is a programming error and aborts the process (N-L-4, CS-3062).
  *
  * @see Typed form: ocs::tom::set<F>(ep, value) and ocs::tom::Element<T>::set<F>(), or set(nm, value) for a field known only at run time.
  */
@@ -1816,8 +1873,7 @@ int lSetPosLong(lListElem *ep, int pos, lLong value) {
    }
 
    if (pos < 0) {
-      ocs::tom::report_soft_path("lSetPosLong", ocs::tom::SoftPathNoName, ocs::tom::SoftPathReason::NegativePosition);
-      LERROR(LENEGPOS);
+      legacy_invalid_pos("lSetPosLong", pos);
       DRETURN(-1);
    }
 
@@ -1842,15 +1898,16 @@ int lSetPosLong(lListElem *ep, int pos, lLong value) {
  * @param name field name id
  * @param value value
  *
- * @return 0 on success, -1 on error. A field of another type is a programming
- *         error and aborts the process (#incompatibleType2).
+ * @return 0 on success, -1 with LEELEMNULL for a null element.
+ *         A field the element does not hold or of another field
+ *         type is a programming error and aborts the process (N-L-4, CS-3062).
  *
  * @see Typed form: ocs::tom::set<F>(ep, value) and ocs::tom::Element<T>::set<F>(), or set(nm, value) for a field known only at run time.
  */
 int lSetLong(lListElem *ep, int name, lLong value) {
    DENTER(CULL_BASIS_LAYER);
 
-   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::Int64, LegacyMissing::NegPos, MSG_CULL_SETLONG_WRONGTYPEFORFIELDXY_SS, nullptr, "lSetLong");
+   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::Int64, MSG_CULL_SETLONG_WRONGTYPEFORFIELDXY_SS, nullptr, "lSetLong");
    if (pos < 0) {
       DRETURN(-1);
    }
@@ -1867,7 +1924,9 @@ int lSetLong(lListElem *ep, int name, lLong value) {
  * @param pos position
  * @param value value
  *
- * @return error state 0 - OK -1 - Error
+ * @return 0 on success, -1 with LEELEMNULL for a null element.
+ *         A negative position or a field of another field type
+ *         is a programming error and aborts the process (N-L-4, CS-3062).
  *
  * @see Typed form: ocs::tom::set<F>(ep, value) and ocs::tom::Element<T>::set<F>(), or set(nm, value) for a field known only at run time.
  */
@@ -1880,8 +1939,7 @@ int lSetPosBool(lListElem *ep, int pos, lBool value) {
    }
 
    if (pos < 0) {
-      ocs::tom::report_soft_path("lSetPosBool", ocs::tom::SoftPathNoName, ocs::tom::SoftPathReason::NegativePosition);
-      LERROR(LENEGPOS);
+      legacy_invalid_pos("lSetPosBool", pos);
       DRETURN(-1);
    }
 
@@ -1906,15 +1964,16 @@ int lSetPosBool(lListElem *ep, int pos, lBool value) {
  * @param name field name id
  * @param value new character
  *
- * @return 0 on success, -1 on error. A field of another type is a programming
- *         error and aborts the process (#incompatibleType2).
+ * @return 0 on success, -1 with LEELEMNULL for a null element.
+ *         A field the element does not hold or of another field
+ *         type is a programming error and aborts the process (N-L-4, CS-3062).
  *
  * @see Typed form: ocs::tom::set<F>(ep, value) and ocs::tom::Element<T>::set<F>(), or set(nm, value) for a field known only at run time.
  */
 int lSetBool(lListElem *ep, int name, lBool value) {
    DENTER(CULL_BASIS_LAYER);
 
-   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::Bool, LegacyMissing::NegPos, MSG_CULL_SETBOOL_WRONGTYPEFORFIELDXY_SS, nullptr, "lSetBool");
+   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::Bool, MSG_CULL_SETBOOL_WRONGTYPEFORFIELDXY_SS, nullptr, "lSetBool");
    if (pos < 0) {
       DRETURN(-1);
    }
@@ -1931,7 +1990,9 @@ int lSetBool(lListElem *ep, int name, lBool value) {
  * @param pos position
  * @param value pointer
  *
- * @return error state 0 - OK -1 - Error
+ * @return 0 on success, -1 with LEELEMNULL for a null element.
+ *         A negative position or a field of another field type
+ *         is a programming error and aborts the process (N-L-4, CS-3062).
  *
  * @see Typed form: ocs::tom::set<F>(ep, value) and ocs::tom::Element<T>::set<F>(), or set(nm, value) for a field known only at run time.
  */
@@ -1944,8 +2005,7 @@ int lSetPosRef(lListElem *ep, int pos, lRef value) {
    }
 
    if (pos < 0) {
-      ocs::tom::report_soft_path("lSetPosRef", ocs::tom::SoftPathNoName, ocs::tom::SoftPathReason::NegativePosition);
-      LERROR(LENEGPOS);
+      legacy_invalid_pos("lSetPosRef", pos);
       DRETURN(-1);
    }
 
@@ -1970,15 +2030,16 @@ int lSetPosRef(lListElem *ep, int pos, lRef value) {
  * @param name field name id
  * @param value new pointer
  *
- * @return 0 on success, -1 on error. A field of another type is a programming
- *         error and aborts the process (#incompatibleType2).
+ * @return 0 on success, -1 with LEELEMNULL for a null element.
+ *         A field the element does not hold or of another field
+ *         type is a programming error and aborts the process (N-L-4, CS-3062).
  *
  * @see Typed form: ocs::tom::set<F>(ep, value) and ocs::tom::Element<T>::set<F>(), or set(nm, value) for a field known only at run time.
  */
 int lSetRef(lListElem *ep, int name, lRef value) {
    DENTER(CULL_BASIS_LAYER);
 
-   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::Ref, LegacyMissing::NegPos, MSG_CULL_SETREF_WRONGTYPEFORFIELDXY_SS, nullptr, "lSetRef");
+   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::Ref, MSG_CULL_SETREF_WRONGTYPEFORFIELDXY_SS, nullptr, "lSetRef");
    if (pos < 0) {
       DRETURN(-1);
    }
@@ -3374,13 +3435,14 @@ bool lMatchUlongBitMask(lListElem *ep, int nm, uint32_t bitmask) {
  * @param ep the element
  * @param nm the field
  * @param bitmask the bits to set
- * @return 0 on success, -1 when @p ep is nullptr. A field of another type is a
- *         programming error and aborts the process (#incompatibleType2).
+ * @return 0 on success, -1 with LEELEMNULL for a null element.
+ *         A field the element does not hold or of another field
+ *         type is a programming error and aborts the process (N-L-4, CS-3062).
  */
 int lOrUlongBitMask(lListElem *ep, int nm, uint32_t bitmask) {
    DENTER(CULL_BASIS_LAYER);
 
-   const int pos = legacy_setter_pos(ep, nm, ocs::tom::FieldType::Uint32, LegacyMissing::Silent, MSG_CULL_SETULONG_WRONGTYPEFORFIELDXY_SS, nullptr, "lOrUlongBitMask");
+   const int pos = legacy_setter_pos(ep, nm, ocs::tom::FieldType::Uint32, MSG_CULL_SETULONG_WRONGTYPEFORFIELDXY_SS, nullptr, "lOrUlongBitMask");
    if (pos < 0) {
       DRETURN(-1);
    }
@@ -3395,13 +3457,14 @@ int lOrUlongBitMask(lListElem *ep, int nm, uint32_t bitmask) {
  * @param ep the element
  * @param nm the field
  * @param bitmask the bits to keep
- * @return 0 on success, -1 when @p ep is nullptr. A field of another type is a
- *         programming error and aborts the process (#incompatibleType2).
+ * @return 0 on success, -1 with LEELEMNULL for a null element.
+ *         A field the element does not hold or of another field
+ *         type is a programming error and aborts the process (N-L-4, CS-3062).
  */
 int lAndUlongBitMask(lListElem *ep, int nm, uint32_t bitmask) {
    DENTER(CULL_BASIS_LAYER);
 
-   const int pos = legacy_setter_pos(ep, nm, ocs::tom::FieldType::Uint32, LegacyMissing::Silent, MSG_CULL_SETULONG_WRONGTYPEFORFIELDXY_SS, nullptr, "lAndUlongBitMask");
+   const int pos = legacy_setter_pos(ep, nm, ocs::tom::FieldType::Uint32, MSG_CULL_SETULONG_WRONGTYPEFORFIELDXY_SS, nullptr, "lAndUlongBitMask");
    if (pos < 0) {
       DRETURN(-1);
    }
@@ -3416,13 +3479,14 @@ int lAndUlongBitMask(lListElem *ep, int nm, uint32_t bitmask) {
  * @param ep the element
  * @param nm the field
  * @param bitmask the bits to clear
- * @return 0 on success, -1 when @p ep is nullptr. A field of another type is a
- *         programming error and aborts the process (#incompatibleType2).
+ * @return 0 on success, -1 with LEELEMNULL for a null element.
+ *         A field the element does not hold or of another field
+ *         type is a programming error and aborts the process (N-L-4, CS-3062).
  */
 int lClearUlongBitMask(lListElem *ep, int nm, uint32_t bitmask) {
    DENTER(CULL_BASIS_LAYER);
 
-   const int pos = legacy_setter_pos(ep, nm, ocs::tom::FieldType::Uint32, LegacyMissing::Silent, MSG_CULL_SETULONG_WRONGTYPEFORFIELDXY_SS, nullptr, "lClearUlongBitMask");
+   const int pos = legacy_setter_pos(ep, nm, ocs::tom::FieldType::Uint32, MSG_CULL_SETULONG_WRONGTYPEFORFIELDXY_SS, nullptr, "lClearUlongBitMask");
    if (pos < 0) {
       DRETURN(-1);
    }
