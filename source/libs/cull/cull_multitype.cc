@@ -69,10 +69,6 @@
 #include "tom/ocs_ListCore.h"
 #include "tom/ocs_SoftPath.h"
 
-#ifdef OBSERVE
-#  include "cull/cull_observe.h"
-#endif
-
 #define CULL_BASIS_LAYER CULL_LAYER ///< rmon layer this file logs under
 
 /* ---------- global variable --------------------------------- */
@@ -94,67 +90,6 @@ const char *multitypes[] =
                 "lHostT",
                 "lUlong64T"
         };
-
-/**
- * @brief Report a field accessed as the wrong type, and abort
- *
- * @param str name of the function that detected the mismatch
- * @return never returns; the process is aborted
- */
-int incompatibleType(const char *str) {
-   DENTER(TOP_LAYER);
-
-   int i;
-
-   for (i = 0; i < 5; i++)
-           DPRINTF("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
-   DPRINTF("incompatible type in function %s()\n", str);
-   for (i = 0; i < 5; i++)
-           DPRINTF("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
-
-   ocs::TerminationManager::trigger_abort();
-   DRETURN(-1);
-}
-
-/**
- * @brief Report a field accessed as the wrong type, with a formatted message, and abort
- *
- * @param fmt `printf` style format naming the field and the types involved
- * @param ... the format's arguments
- * @return never returns; the process is aborted
- */
-int incompatibleType2(const char *fmt, ...) {
-   DENTER(TOP_LAYER);
-
-   va_list ap;
-   char buf[MAX_STRING_SIZE];
-
-   va_start(ap, fmt);
-   vsnprintf(buf, sizeof(buf), fmt, ap);
-   va_end(ap);
-
-   CRITICAL(SFNMAX, buf);
-   fprintf(stderr, SFNMAX, buf);
-
-   ocs::TerminationManager::trigger_abort();
-   DRETURN(-1);
-}
-
-/**
- * @brief Report an unknown field type, and abort
- *
- * @param str name of the function that detected it
- * @return never returns; the process is aborted
- */
-int unknownType(const char *str) {
-   DENTER(CULL_LAYER);
-
-   /* abort is used, so we don't free any memory; if you change this
-      function please free your memory                      */
-   DPRINTF("Unknown Type in %s.\n", str);
-   LERROR(LEUNKTYPE);
-   DRETURN(-1);
-}
 
 namespace {
 
@@ -1135,10 +1070,6 @@ int lSetPosInt(lListElem *ep, int pos, int value) {
       DRETURN(-1);
    }
 
-#ifdef OBSERVE
-   lObserveChangeValue(ep, false, lGetPosName(ep->descr, pos));
-#endif
-
    if (ocs_cull_value(ep, pos).i != value) {
       ocs_cull_value(ep, pos).i = value;
    }
@@ -1203,7 +1134,6 @@ int lSetPosUlong(lListElem *ep, int pos, lUlong value) {
       DRETURN(-1);
    }
 
-   ocs::tom::observe_value(ep, pos);
    if (value != ocs_cull_value(ep, pos).ul) {
       if (ocs::tom::needs_hashed_store(ep, pos)) {
          try {
@@ -1452,7 +1382,6 @@ int lSetPosUlong64(lListElem *ep, int pos, lUlong64 value) {
       DRETURN(-1);
    }
 
-   ocs::tom::observe_value(ep, pos);
    if (value != ocs_cull_value(ep, pos).ul64) {
       if (ocs::tom::needs_hashed_store(ep, pos)) {
          try {
@@ -1721,10 +1650,6 @@ int lXchgString(lListElem *ep, int name, char **str) {
       DRETURN(-1);
    }
 
-#ifdef OBSERVE
-   lObserveChangeValue(ep, false, name);
-#endif
-
    if (*str != ocs_cull_value(ep, pos).str) {
       tmp = ocs_cull_value(ep, pos).str;
       ocs_cull_value(ep, pos).str = *str;
@@ -1828,11 +1753,6 @@ int lSetObject(lListElem *ep, int name, lListElem *value) {
       DRETURN(-1);
    }
 
-#ifdef OBSERVE
-   lObserveChangeOwner(ocs_cull_value(ep, pos).obj, nullptr, ep, name);
-   lObserveChangeOwner(value, ep, nullptr, name);
-#endif
-
    if (value != ocs_cull_value(ep, pos).obj) {
       /* free old element */
       if (ocs_cull_value(ep, pos).obj) {
@@ -1874,11 +1794,6 @@ int lSetList(lListElem *ep, int name, lList *value) {
    if (pos < 0) {
       DRETURN(-1);
    }
-
-#ifdef OBSERVE
-   lObserveChangeOwner(ocs_cull_value(ep, pos).glp, ep, nullptr, name);
-   lObserveChangeOwner(value, ep, nullptr, name);
-#endif
 
    if (value != ocs_cull_value(ep, pos).glp) {
       /* free old list */
@@ -1922,10 +1837,6 @@ int lSetPosDouble(lListElem *ep, int pos, lDouble value) {
       incompatibleType("lSetPosDouble");
       DRETURN(-1);
    }
-
-#ifdef OBSERVE
-   lObserveChangeValue(ep, false, lGetPosName(ep->descr, pos));
-#endif
 
    if (value != ocs_cull_value(ep, pos).db) {
       ocs_cull_value(ep, pos).db = value;
@@ -2022,10 +1933,6 @@ int lSetPosLong(lListElem *ep, int pos, lLong value) {
       DRETURN(-1);
    }
 
-#ifdef OBSERVE
-   lObserveChangeValue(ep, false, lGetPosName(ep->descr, pos));
-#endif
-
    if (value != ocs_cull_value(ep, pos).l) {
       ocs_cull_value(ep, pos).l = value;
    }
@@ -2090,10 +1997,6 @@ int lSetPosBool(lListElem *ep, int pos, lBool value) {
       DRETURN(-1);
    }
 
-#ifdef OBSERVE
-   lObserveChangeValue(ep, false, lGetPosName(ep->descr, pos));
-#endif
-
    if (value != ocs_cull_value(ep, pos).b) {
       ocs_cull_value(ep, pos).b = value;
    }
@@ -2157,10 +2060,6 @@ int lSetPosRef(lListElem *ep, int pos, lRef value) {
       incompatibleType("lSetPosRef");
       DRETURN(-1);
    }
-
-#ifdef OBSERVE
-   lObserveChangeValue(ep, false, lGetPosName(ep->descr, pos));
-#endif
 
    if (value != ocs_cull_value(ep, pos).ref) {
       ocs_cull_value(ep, pos).ref = value;

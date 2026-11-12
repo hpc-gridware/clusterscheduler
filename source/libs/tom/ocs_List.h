@@ -33,8 +33,7 @@
 #include <iterator>
 #include <utility>
 
-#include "cull/cull_listP.h"
-#include "cull/cull_multitype.h"
+#include "tom/cull_listP.h"
 #include "tom/ocs_Element.h"
 
 namespace ocs::tom {

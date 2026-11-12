@@ -39,15 +39,11 @@
 
 #include "uti/sge_rmon_macros.h"
 
-#include "cull/cull_list.h"
-#include "cull/cull_state.h"
-#include "cull/cull_hash.h"
-#include "cull/cull_lerrnoP.h"
-#include "cull/cull_name.h"
-
-#ifdef OBSERVE
-#  include "cull/cull_observe.h"
-#endif
+#include "tom/cull_types.h"
+#include "tom/cull_state.h"
+#include "tom/cull_hash.h"
+#include "tom/cull_lerrnoP.h"
+#include "tom/cull_name.h"
 
 #define CULL_BASIS_LAYER CULL_LAYER ///< rmon layer this file logs under
 
@@ -246,7 +242,4 @@ int lStr2Nm(const char *str) {
 void lInit(const lNameSpace *ns_vector, const uint32_t hash_min_elems) {
    cull_state_set_name_space(ns_vector);
    ocs_cull_hash_set_min_elems(hash_min_elems);
-#ifdef OBSERVE
-   lObserveInit();
-#endif
 }

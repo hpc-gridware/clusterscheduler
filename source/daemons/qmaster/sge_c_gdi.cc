@@ -372,54 +372,8 @@ sge_c_gdi_process_in_worker(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
    const std::string cmd_string = to_string(task->command);
    const char *operation_name = cmd_string.c_str();
 
-#ifdef OBSERVE
-   dstring target_dstr = DSTRING_INIT;
-   if (task->target == SGE_ORDER_LIST) {
-      sge_dstring_sprintf(&target_dstr, "%s", target_name);
-
-      for_each_ep_lv(order, task->data_list) {
-         switch (lGetUlong(order, OR_type)) {
-            case ORT_start_job:
-               sge_dstring_sprintf_append(&target_dstr, " %s", "ORT_start_job");
-               break;
-            case ORT_tickets:
-               sge_dstring_sprintf_append(&target_dstr, " %s", "ORT_tickets");
-               break;
-            case ORT_ptickets:
-               sge_dstring_sprintf_append(&target_dstr, " %s", "ORT_ptickets");
-               break;
-            case ORT_remove_immediate_job:
-               sge_dstring_sprintf_append(&target_dstr, " %s", "ORT_remove_immediate_job");
-               break;
-            case ORT_sched_conf:
-               sge_dstring_sprintf_append(&target_dstr, " %s", "ORT_sched_conf");
-               break;
-            case ORT_suspend_on_threshold:
-               sge_dstring_sprintf_append(&target_dstr, " %s", "ORT_suspend_on_threshold");
-               break;
-            case ORT_unsuspend_on_threshold:
-               sge_dstring_sprintf_append(&target_dstr, " %s", "ORT_unsuspend_on_threshold");
-               break;
-            case ORT_job_schedd_info:
-               sge_dstring_sprintf_append(&target_dstr, " %s", "ORT_job_schedd_info");
-               break;
-            case ORT_clear_pri_info:
-               sge_dstring_sprintf_append(&target_dstr, " %s", "ORT_clear_pri_info");
-               break;
-            default:
-               sge_dstring_sprintf_append(&target_dstr, " %s", "UNKNOWN");
-               break;
-         }
-      }
-   } else {
-      sge_dstring_sprintf(&target_dstr, "%s", target_name);
-   }
-   INFO("GDI %s %s (%s/%s/%d) (%s/%d/%s/%d)", operation_name, sge_dstring_get_string(&target_dstr), packet->host, packet->commproc, (int)task->id, packet->user, (int)packet->uid, packet->group, (int)packet->gid);
-   sge_dstring_free(&target_dstr);
-#else
    DPRINTF("GDI %s %s (%s/%s) (%s/%d/%s/%d)\n", operation_name, target_name, packet->host, packet->commproc,
            packet->user, (int) packet->uid, packet->group, (int) packet->gid);
-#endif
 
    sge_pack_buffer *pb = &(packet->pb);
    switch (command) {

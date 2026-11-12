@@ -73,12 +73,7 @@
 #include "cull/cull_state.h"
 #include "cull/pack.h"
 #include "cull/cull_pack.h"
-#include "cull/cull_observe.h"
 #include "cull/ocs_cull_descr.h"
-
-#ifdef OBSERVE
-#  include "cull/cull_observe.h"
-#endif
 
 #define CULL_BASIS_LAYER CULL_LAYER ///< rmon layer this file logs under
 
@@ -1244,12 +1239,6 @@ lDechainList(lList *source, lList **target, lListElem *ep) {
 
    /* the tables of both lists were dropped above; the next lookup on a field builds its table again */
 
-#ifdef OBSERVE
-   for_each_ep_lv(elem, *target) {
-      lObserveChangeOwner(elem, *target, source, NoName);
-   }
-#endif
-
    DRETURN_VOID;
 }
 
@@ -1328,10 +1317,6 @@ lListElem *lDechainObject(lListElem *parent, int name) {
       elem_set_free(dep);
       ocs_cull_value(parent, pos).obj = nullptr;
    }
-
-#ifdef OBSERVE
-      lObserveChangeOwner(dep, nullptr, parent, NoName);
-#endif
 
    DRETURN(dep);
 }

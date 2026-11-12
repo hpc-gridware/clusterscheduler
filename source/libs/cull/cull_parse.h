@@ -39,6 +39,8 @@
  * @brief The scanner used by the cull format strings
  */
 
+#include "tom/cull_whereP.h"
+
 
 /**
  * @brief Scanner state, held by the caller so parsing is reentrant
@@ -63,41 +65,5 @@ void eat_token(cull_parse_state *state);
 int scan(const char *s, cull_parse_state *state);
 
 
-/* -------------- values returned by scan() --------------------- */
+/* the values returned by scan() are the operator tokens of tom/cull_whereP.h */
 
-enum {
-   NO_TOKEN = 0, ///< end of input, or nothing recognised
-
-   TYPE, ///< `%T`, an object type
-   FIELD, ///< `%I`, a field name
-   SUBSCOPE, ///< a nested scope, for sub-lists and sub-objects
-   PLUS, ///< `+`, sort ascending
-   MINUS, ///< `-`, sort descending
-   INT, ///< `%d`, an int value
-   STRING, ///< `%s`, a string value
-   ULONG, ///< `%u`, a 32 bit value
-   ULONG64, ///< a 64 bit value
-   FLOAT, ///< a float value
-   DOUBLE, ///< `%f`, a double value
-   LONG, ///< a long value
-   CHAR, ///< `%c`, a character value
-   BOOL, ///< `%b`, a boolean value
-   REF, ///< an opaque reference value
-   CULL_ALL, ///< `ALL`, select every field
-   CULL_NONE, ///< `NONE`, select no field
-   EQUAL, ///< `==`
-   NOT_EQUAL, ///< `!=`
-   LOWER_EQUAL, ///< `<=`
-   LOWER, ///< `<`
-   GREATER_EQUAL, ///< `>=`
-   GREATER, ///< `>`
-   BITMASK, ///< `m`, all bits of the operand are set
-   STRCASECMP, ///< string comparison ignoring case
-   PATTERNCMP, ///< the value matches a shell style pattern
-   HOSTNAMECMP, ///< host name comparison, honouring aliases
-   AND, ///< `&&`
-   OR, ///< `||`
-   NEG, ///< `!`
-   BRA, ///< `(`
-   KET ///< `)`
-};

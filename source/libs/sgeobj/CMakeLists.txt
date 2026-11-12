@@ -171,6 +171,8 @@ set(LIBRARY_SOURCES
 set(LIBRARY_INCLUDES ${SGE_INCLUDES} "./")
 
 add_library(${LIBRARY_NAME} STATIC ${LIBRARY_SOURCES} ${OUTPUT_FILES})
+# the objects of this library call the list library, so it is linked after them (CS-3088)
+target_link_libraries(${LIBRARY_NAME} PUBLIC cull)
 #if (PROJECT_FEATURES MATCHES "gcs-extensions")
 #    add_dependencies(${LIBRARY_NAME} cull_header)
 #endif ()

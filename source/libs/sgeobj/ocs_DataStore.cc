@@ -245,12 +245,6 @@ namespace ocs {
 
       lList **ret;
       ret = &(obj_thread_shared.data_store[obj_state->ds_id].master_list[type]);
-#ifdef OBSERVE
-      DPRINTF("ds: %d, type: %d, list: %p\n", obj_state->ds_id, type, *ret);
-      if (*obj_state->object_base[type].list) {
-         lObserveChangeListType(*obj_state->object_base[type].list, true, obj_state->object_base[type].type_name);
-      }
-#endif
       DRETURN(ret);
    }
 

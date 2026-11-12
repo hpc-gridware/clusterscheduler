@@ -105,14 +105,14 @@ foreach (name string_into_number job_field_on_queue raw_pointer_assigned setter_
    add_custom_target(test_tom_compile_fail_${name} ALL DEPENDS ${stamp})
 endforeach ()
 
-# N-L-1: the core calls no function of the old interface; checked on every build
+# N-L-1, N-L-5: the core calls no function of the old interface and includes only tom/ and uti/; checked on every build
 file(GLOB tom_core_sources "${CMAKE_SOURCE_DIR}/source/libs/tom/*.h" "${CMAKE_SOURCE_DIR}/source/libs/tom/*.cc")
 set(core_calls_stamp ${CMAKE_CURRENT_BINARY_DIR}/check_core_calls.stamp)
 add_custom_command(OUTPUT ${core_calls_stamp}
         COMMAND ${CMAKE_COMMAND} -DTOM_DIR=${CMAKE_SOURCE_DIR}/source/libs/tom -DSTAMP=${core_calls_stamp}
                 -P ${CMAKE_CURRENT_SOURCE_DIR}/check_core_calls.cmake
         DEPENDS ${tom_core_sources} check_core_calls.cmake
-        COMMENT "Checking that the core of the typed object model calls no function of the old interface"
+        COMMENT "Checking that the core of the typed object model does not depend on the old interface"
         VERBATIM)
 add_custom_target(test_tom_core_calls ALL DEPENDS ${core_calls_stamp})
 

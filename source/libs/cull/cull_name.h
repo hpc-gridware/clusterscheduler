@@ -1,3 +1,4 @@
+#pragma once
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *
@@ -19,17 +20,14 @@
 /*___INFO__MARK_END_NEW__*/
 
 /** @file
- * @brief Resolving cull field numbers to their names
+ * @brief Moved to libs/tom/cull_name.h with the storage layer of the list library (CS-3088)
+ *
+ * This header only includes the moved one, so that code including it here
+ * keeps building; it goes with the list library.
  */
-#pragma once
 
 #include "cull/cull_list.h"
 #include "cull/cull_hashP.h"
+#include "tom/cull_name.h"
 
-void lInit(const lNameSpace *ns_vector, uint32_t hash_min_elems = OCS_CULL_HASH_MIN_ELEMS);
 
-const char *lNm2Str(int nm);
-
-int lStr2Nm(const char *str);
-
-int lStr2Nm(const char *str, const lNameSpace *ns);

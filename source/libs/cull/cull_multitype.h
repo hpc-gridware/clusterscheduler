@@ -43,6 +43,8 @@
 
 #include "cull/cull_list.h"
 #include "cull/cull_name.h"
+#include "tom/cull_lerrno.h"
+#include "tom/ocs_cull_descr.h"
 
 #define SGE_NO_ABORT    0 ///< a field lookup that misses returns an error
 #define SGE_DO_ABORT    1 ///< a field lookup that misses aborts the process
@@ -64,7 +66,6 @@ int lGetPosInDescr(const lDescr *dp, int name);
 int lGetPosType(const lDescr *dp, int pos);
 
 int lCountDescr(const lDescr *dp);
-int lCountPresent(const lDescr *dp);
 
 lDescr *lCopyDescr(const lDescr *dp);
 
@@ -208,12 +209,6 @@ int boolcmp(lBool u0, lBool u1);
 int longcmp(lLong u0, lLong u1);
 
 int refcmp(lRef u0, lRef u1);
-
-int incompatibleType(const char *str);
-
-int incompatibleType2(const char *fmt, ...);
-
-int unknownType(const char *str);
 
 
 /* - -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -

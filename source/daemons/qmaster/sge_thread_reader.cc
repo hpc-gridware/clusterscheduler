@@ -44,10 +44,6 @@
 
 #include "sge_thread_ctrl.h"
 
-#ifdef OBSERVE
-#  include "cull/cull_observe.h"
-#endif
-
 #include "sgeobj/sge_jsv.h"
 #include "sgeobj/sge_conf.h"
 
@@ -269,11 +265,6 @@ sge_reader_main(void *arg) {
 
 #endif
 
-#ifdef OBSERVE
-            lObserveStart();
-            INFO("======================");
-#endif
-
             // handle the request (GDI/Report/Ack ...
             if (packet->request_type == PACKET_GDI_REQUEST) {
                //sge_usleep(1000000);
@@ -293,22 +284,6 @@ sge_reader_main(void *arg) {
             } else {
                DPRINTF("unknown request type %d\n", packet->request_type);
             }
-
-#ifdef OBSERVE
-            dstring observ = DSTRING_INIT;
-            lObserveGetInfoString(&observ);
-            {
-               struct saved_vars_s *context = nullptr;
-               const char *line = sge_strtok_r(sge_dstring_get_string(&observ), "\n", &context);
-               while (line) {
-                  INFO("%s", line);
-                  line = sge_strtok_r(nullptr, "\n", &context);
-               }
-               sge_free_saved_vars(context);
-            }
-            sge_dstring_free(&observ);
-            lObserveEnd();
-#endif
 
 #ifdef WITH_PYTHON_IN_QMASTER
             // Here the Python GIL is released

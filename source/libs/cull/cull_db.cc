@@ -489,50 +489,11 @@ lList *lSelectDPack(const char *name, const lList *slp, const lCondition *cp,
  * @param indexp set to the number of entries written, without the terminating one
  *
  * @return error state 0 - OK -1 - Error
+ *
+ * @note A thin wrapper over ocs::tom::partial_descr().
  */
 int lPartialDescr(const lEnumeration *ep, const lDescr *sdp, lDescr *ddp, int *indexp) {
-   DENTER(CULL_LAYER);
-
-   if (!ep) {
-      LERROR(LEELEMNULL);
-      DRETURN(-1);
-   }
-   if (!sdp || !ddp) {
-      LERROR(LEDESCRNULL);
-      DRETURN(-1);
-   }
-   if (!indexp) {
-      LERROR(LENULLARGS);
-      DRETURN(-1);
-   }
-
-   const int n = lCountDescr(sdp);
-   std::vector<bool> keep(n, false);
-   switch (ep[0].pos) {
-      case WHAT_NONE:
-         DRETURN(0);
-      case WHAT_ALL:
-         for (int i = 0; i < n; i++) {
-            keep[i] = sdp[i].off != OCS_CULL_ABSENT;
-         }
-         break;
-      default:
-         for (int i = 0; mt_get_type(ep[i].mt) != lEndT; i++) {
-            const int pos = ep[i].pos;
-            if (pos < 0 || pos >= n || ep[i].nm != sdp[pos].nm || mt_get_type(ep[i].mt) != mt_get_type(sdp[pos].mt) ||
-                sdp[pos].off == OCS_CULL_ABSENT) {
-               LERROR(LEENUMDESCR);
-               DRETURN(-1);
-            }
-            keep[pos] = true;
-         }
-   }
-   if (ocs_cull_descr_layout(sdp, keep, ddp) < 0) {
-      LERROR(LEENUMDESCR);
-      DRETURN(-1);
-   }
-   *indexp = n;
-   DRETURN(0);
+   return ocs::tom::partial_descr(ep, sdp, ddp, indexp);
 }
 
 /**

@@ -54,14 +54,15 @@
 #include "uti/sge_string.h"
 #include "uti/sge_stdlib.h"
 
-#include "cull/cull_list.h"
-#include "cull/cull_hash.h"
-#include "cull/cull_listP.h"
-#include "cull/cull_multitypeP.h"
-#include "cull/cull_multitype.h"
-#include "cull/cull_stats.h"
-#include "cull/msg_cull.h"
-#include "cull/ocs_cull_descr.h"
+#include "tom/cull_types.h"
+#include "tom/cull_hash.h"
+#include "tom/cull_lerrno.h"
+#include "tom/cull_listP.h"
+#include "tom/cull_multitypeP.h"
+#include "tom/cull_name.h"
+#include "tom/cull_stats.h"
+#include "tom/msg_cull.h"
+#include "tom/ocs_cull_descr.h"
 
 #include "tom/ocs_ElementCore.h"
 
@@ -314,11 +315,11 @@ static cull_hash_slot *cull_hash_publish_slots(const lList *lp) {
 cull_htable ocs_cull_hash_build(const lList *lp, const int pos) {
    char host_key[CL_MAXHOSTNAMELEN + 1];
 
-   cull_htable ht = cull_hash_create(lp->descr, pos, hash_compute_size(lGetNumberOfElem(lp)));
+   cull_htable ht = cull_hash_create(lp->descr, pos, hash_compute_size(lp->nelem));
    if (ht != nullptr) {
       const int mt = lp->descr[pos].mt;
       const bool unique = mt_is_unique(mt);
-      for_each_ep_lv(ep, lp) {
+      for (const lListElem *ep = lp->first; ep != nullptr; ep = ep->next) {
          void *key = cull_hash_key(ep, pos, host_key);
          if (unique && key != nullptr) {
             // a unique key held twice: the table is not published, every later lookup builds it again and throws
@@ -904,8 +905,8 @@ void cull_hash_free_slots(lList *lp) {
  * @see #cull_hash_new
  */
 int cull_hash_new_check(lList *lp, int nm, bool unique) {
-   const lDescr *descr = lGetListDescr(lp);
-   int pos = lGetPosInDescr(descr, nm);
+   const lDescr *descr = lp != nullptr ? lp->descr : nullptr;
+   int pos = descr != nullptr ? ocs::tom::present_pos(descr, nm) : -1;
 
    if (descr != nullptr && pos >= 0) {
       if (list_hash_slot(lp, pos) == nullptr) {
@@ -954,7 +955,7 @@ int cull_hash_new(lList *lp, int nm, bool unique) {
 
    descr = lp->descr;
 
-   pos = lGetPosInDescr(descr, nm);
+   pos = ocs::tom::present_pos(descr, nm);
 
    if (pos < 0) {
       CRITICAL(MSG_CULL_XNOTFOUNDINELEMENT_S, lNm2Str(nm));

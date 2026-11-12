@@ -34,11 +34,14 @@
 /*___INFO__MARK_END__*/
 
 /** @file
- * @brief Internal error state of the cull library
+ * @brief Moved to libs/tom/cull_lerrnoP.h with the storage layer of the list library (CS-3088)
+ *
+ * This header only includes the moved one, so that code including it here
+ * keeps building; it goes with the list library.
  */
 
 #include "cull/cull_lerrno.h"
 #include "cull/cull_state.h"
+#include "tom/cull_lerrnoP.h"
 
-/// Record a cull error code as the calling thread's last error
-#define LERROR(x) cull_state_set_lerrno(x);
+

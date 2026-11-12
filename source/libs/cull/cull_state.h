@@ -35,41 +35,13 @@
 /*___INFO__MARK_END__*/
 
 /** @file
- * @brief Per-thread state of the cull library
+ * @brief Moved to libs/tom/cull_state.h with the storage layer of the list library (CS-3088)
+ *
+ * This header only includes the moved one, so that code including it here
+ * keeps building; it goes with the list library.
  */
 
 #include "cull/cull_list.h"
-#include "uti/sge_dstring.h"
+#include "tom/cull_state.h"
 
-void cull_state_set_lerrno(int i);
 
-void cull_state_set_noinit(char *s);
-
-void cull_state_set_global_sort_order(const lSortOrder *so);
-
-void cull_state_set_name_space(const lNameSpace *ns);
-
-/**
- * @brief Switch change tracing on or off for this thread
- *
- * @param started true to start tracing, false to stop
- *
- * @note Declared twice in this header — once here and once inside the
- *       `#ifdef OBSERVE` block below. The implementation exists only when
- *       `OBSERVE` is defined, so a caller compiled without it fails to link.
- */
-void cull_state_set_observe_started(bool started);
-
-int cull_state_get_lerrno();
-
-const char *cull_state_get_noinit();
-
-const lSortOrder *cull_state_get_global_sort_order();
-
-const lNameSpace *cull_state_get_name_space();
-
-#ifdef OBSERVE
-void cull_state_set_observe_started(bool started);
-dstring *cull_state_get_observe_dstring();
-bool cull_state_get_observe_started();
-#endif

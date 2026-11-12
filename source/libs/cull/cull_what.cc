@@ -123,95 +123,6 @@ int lReduceDescr(const lDescr **dst_dpp, const lDescr *src_dp, lEnumeration *enp
    to choose special fields of a list element.
  */
 /**
- * @brief The shared reduction of a descriptor that a field selection describes
- *
- * The selection caches the last reduction it built, keyed by the source
- * descriptor (N-A-20), so a selection applied again and again to lists of one
- * type, as for the sub-lists of every element of a list, builds and interns
- * its descriptor once. The cache holds a reference on the source as well, so
- * its address cannot be reused while it is cached. Only static and counted
- * sources are cached; any other source gets a fresh reduction each time. A
- * selection is never used by two threads at once, so the cache needs no
- * synchronisation.
- *
- * @param enp the selection, not NONE
- * @param src the descriptor it is applied to
- * @param[out] owned set to true if the caller has to release the result
- * @return the shared reduction borrowed from the cache, or with a reference
- *         for the caller if @p owned is set to true; nullptr on error
- */
-const lDescr *ocs_cull_what_descr(const lEnumeration *enp, const lDescr *src, bool *owned) {
-   DENTER(CULL_LAYER);
-
-   *owned = false;
-   auto *head = const_cast<lEnumeration *>(enp);
-   if (head->cache_dp != nullptr && head->cache_src == src) {
-      DRETURN(head->cache_dp);
-   }
-
-   if (lCountWhat(enp, src) <= 0) {
-      LERROR(LECOUNTWHAT);
-      DRETURN(nullptr);
-   }
-   // the reduction has the full length of the type (N-B-1)
-   auto *tmp = reinterpret_cast<lDescr *>(sge_malloc(sizeof(lDescr) * (lCountDescr(src) + 1)));
-   if (tmp == nullptr) {
-      LERROR(LEMALLOC);
-      DRETURN(nullptr);
-   }
-   int index = 0;
-   if (lPartialDescr(enp, src, tmp, &index) < 0) {
-      LERROR(LEPARTIALDESCR);
-      sge_free(&tmp);
-      DRETURN(nullptr);
-   }
-   const lDescr *dp = ocs_cull_descr_acquire(tmp);
-   sge_free(&tmp);
-   if (dp == nullptr) {
-      LERROR(LEMALLOC);
-      DRETURN(nullptr);
-   }
-
-   if (ocs_cull_descr_is_counted(src) || ocs_cull_descr_is_static(src)) {
-      ocs_cull_descr_release(&(head->cache_dp));
-      ocs_cull_descr_release(&(head->cache_src));
-      head->cache_src = ocs_cull_descr_ref(src);
-      head->cache_dp = dp;
-      DRETURN(dp);
-   }
-   *owned = true;
-   DRETURN(dp);
-}
-
-/**
- * @brief Whether a field selection can be applied to a descriptor (CS-439, N-B-11)
- *
- * Positions are those of the type in every descriptor, so a selection built on
- * the full type applies to any reduction of it that holds the selected fields.
- * #WHAT_ALL and #WHAT_NONE apply to every descriptor.
- *
- * @param enp the selection
- * @param dp the descriptor
- * @return true if every selected field is present in dp at its position
- */
-bool ocs_cull_what_fits(const lEnumeration *enp, const lDescr *dp) {
-   if (enp == nullptr || dp == nullptr) {
-      return false;
-   }
-   if (enp[0].pos == WHAT_ALL || enp[0].pos == WHAT_NONE) {
-      return true;
-   }
-   const int n = lCountDescr(dp);
-   for (int i = 0; enp[i].nm != NoName; i++) {
-      const int pos = enp[i].pos;
-      if (pos < 0 || pos >= n || dp[pos].nm != enp[i].nm || dp[pos].off == OCS_CULL_ABSENT) {
-         return false;
-      }
-   }
-   return true;
-}
-
-/**
  * @brief Build a field selection from a format and a field list
  *
  * The flat counterpart of #lWhat, behind lIntVector2What(): the format
@@ -505,35 +416,11 @@ void lFreeWhat(lEnumeration **ep) {
  * @param dp descriptor
  *
  * @return number of fields in enumeration
+ *
+ * @note A thin wrapper over ocs::tom::count_what().
  */
 int lCountWhat(const lEnumeration *enp, const lDescr *dp) {
-   DENTER(CULL_LAYER);
-
-   int n;
-
-   if (!enp) {
-      LERROR(LEENUMNULL);
-      DRETURN(-1);
-   }
-   if (!dp) {
-      LERROR(LEDESCRNULL);
-      DRETURN(-1);
-   }
-   switch (enp[0].pos) {
-      case WHAT_NONE:
-         n = 0;
-         break;
-      case WHAT_ALL:
-         if ((n = lCountPresent(dp)) == -1) {
-            LERROR(LECOUNTDESCR);
-            DRETURN(-1);
-         }
-         break;
-      default:
-         for (n = 0; enp[n].nm != NoName; n++);
-   }
-
-   DRETURN(n);
+   return ocs::tom::count_what(enp, dp);
 }
 
 /**

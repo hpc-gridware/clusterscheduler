@@ -36,7 +36,7 @@
  * @brief Per-thread state of the cull library
  */
 
-#include "cull_state.h"
+#include "tom/cull_state.h"
 
 #include <cstring>
 #include <cerrno>
@@ -45,7 +45,6 @@
 #include "uti/sge_stdlib.h"
 #include "uti/ocs_TerminationManager.h"
 
-#include "cull/pack.h"
 
 
 /**
@@ -60,10 +59,6 @@ typedef struct {
    char noinit[50];                     ///< buffer for the placeholder #lNm2Str returns for an unknown id
    const lSortOrder *global_sort_order; ///< sort order for #lSortCompareUsingGlobal, since `qsort()` passes no argument
    const lNameSpace *name_space;        ///< the name space field numbers are resolved against
-#ifdef OBSERVE
-   dstring observe_dstring;
-   bool observe_started;
-#endif
 } cull_state_t;
 
 static pthread_once_t cull_once = PTHREAD_ONCE_INIT;
@@ -200,40 +195,6 @@ void cull_state_set_name_space(const lNameSpace *ns) {
    return;
 }
 
-#ifdef OBSERVE
-void cull_state_set_observe_started(bool started) {
-   cull_state_t *cull_state = nullptr;
-
-   pthread_once(&cull_once, cull_once_init);
- 
-   cull_state = cull_state_getspecific(cull_state_key);
-
-   cull_state->observe_started = started;
-
-   return;
-}
-
-dstring *cull_state_get_observe_dstring() {
-   cull_state_t *cull_state = nullptr;
-
-   pthread_once(&cull_once, cull_once_init);
-
-   cull_state = cull_state_getspecific(cull_state_key);
-
-   return &cull_state->observe_dstring;
-}
-
-bool cull_state_get_observe_started() {
-   cull_state_t *cull_state = nullptr;
-
-   pthread_once(&cull_once, cull_once_init);
-
-   cull_state = cull_state_getspecific(cull_state_key);
-
-   return cull_state->observe_started;
-}
-#endif
-
 /**
  * @brief One-time CULL initialization
  *
@@ -317,8 +278,4 @@ static void cull_state_init(cull_state_t *theState) {
    theState->noinit[0] = '\0';
    theState->global_sort_order = nullptr;
    theState->name_space = nullptr;
-#ifdef OBSERVE
-   sge_dstring_init_dynamic(&theState->observe_dstring, 10000);
-   theState->observe_started = false;
-#endif
 }

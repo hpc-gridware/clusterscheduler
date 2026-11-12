@@ -38,7 +38,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-#include "cull/cull_name.h"
+#include "tom/cull_name.h"
 #include "uti/ocs_TerminationManager.h"
 #include "uti/sge_arch.h"
 #include "uti/sge_component.h"

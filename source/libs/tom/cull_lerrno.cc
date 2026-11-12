@@ -35,6 +35,8 @@
 /** @file
  * @brief Error codes and messages of the cull library
  */
+#include <cstdarg>
+#include <cstdio>
 #include <cstring>
 
 /* do not compile in monitoring code */
@@ -42,10 +44,13 @@
 #define NO_SGE_COMPILE_DEBUG
 #endif
 
+#include "uti/ocs_TerminationManager.h"
+#include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
+#include "uti/sge_string.h"
 
-#include "cull/cull_lerrnoP.h"
-#include "cull/msg_cull.h"
+#include "tom/cull_lerrnoP.h"
+#include "tom/msg_cull.h"
 
 #include <cinttypes>
 
@@ -194,4 +199,65 @@ int lerror() {
    DPRINTF("%s\n", errorText);
 
    DRETURN(0);
+}
+
+/**
+ * @brief Report a field accessed as the wrong type, and abort
+ *
+ * @param str name of the function that detected the mismatch
+ * @return never returns; the process is aborted
+ */
+int incompatibleType(const char *str) {
+   DENTER(TOP_LAYER);
+
+   int i;
+
+   for (i = 0; i < 5; i++)
+           DPRINTF("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+   DPRINTF("incompatible type in function %s()\n", str);
+   for (i = 0; i < 5; i++)
+           DPRINTF("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+
+   ocs::TerminationManager::trigger_abort();
+   DRETURN(-1);
+}
+
+/**
+ * @brief Report a field accessed as the wrong type, with a formatted message, and abort
+ *
+ * @param fmt `printf` style format naming the field and the types involved
+ * @param ... the format's arguments
+ * @return never returns; the process is aborted
+ */
+int incompatibleType2(const char *fmt, ...) {
+   DENTER(TOP_LAYER);
+
+   va_list ap;
+   char buf[MAX_STRING_SIZE];
+
+   va_start(ap, fmt);
+   vsnprintf(buf, sizeof(buf), fmt, ap);
+   va_end(ap);
+
+   CRITICAL(SFNMAX, buf);
+   fprintf(stderr, SFNMAX, buf);
+
+   ocs::TerminationManager::trigger_abort();
+   DRETURN(-1);
+}
+
+/**
+ * @brief Report an unknown field type, and abort
+ *
+ * @param str name of the function that detected it
+ * @return never returns; the process is aborted
+ */
+int unknownType(const char *str) {
+   DENTER(CULL_LAYER);
+
+   /* abort is used, so we don't free any memory; if you change this
+      function please free your memory                      */
+   DPRINTF("Unknown Type in %s.\n", str);
+   LERROR(LEUNKTYPE);
+   DRETURN(-1);
 }

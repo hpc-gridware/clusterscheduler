@@ -27,6 +27,8 @@ set(LIBRARY_INCLUDES "./")
 set_source_files_properties(sge_dirent.cc PROPERTIES COMPILE_FLAGS -Wno-deprecated-declarations)
 
 add_library(${LIBRARY_NAME} STATIC ${LIBRARY_SOURCES})
+# the objects of this library call the list library, so it is linked after them (CS-3088)
+target_link_libraries(${LIBRARY_NAME} PUBLIC cull)
 target_include_directories(${LIBRARY_NAME} PUBLIC ${SGE_INCLUDES}
       ${LIBRARY_INCLUDES})
 

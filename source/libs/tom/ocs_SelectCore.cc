@@ -24,22 +24,20 @@
 #include <cstdlib>
 #include <cstring>
 #include <fnmatch.h>
+#include <vector>
 
 #include "uti/sge_hostname.h"
 #include "uti/sge_stdlib.h"
 #include "uti/sge_string.h"
 
-#include "cull/cull_hash.h"
-#include "cull/cull_lerrnoP.h"
-#include "cull/cull_listP.h"
-#include "cull/cull_multitype.h"
-#include "cull/cull_multitypeP.h"
-#include "cull/cull_parse.h"
-#include "cull/cull_state.h"
-#include "cull/cull_what.h"
-#include "cull/cull_whatP.h"
-#include "cull/cull_whereP.h"
-#include "cull/ocs_cull_descr.h"
+#include "tom/cull_hash.h"
+#include "tom/cull_lerrnoP.h"
+#include "tom/cull_listP.h"
+#include "tom/cull_multitypeP.h"
+#include "tom/cull_state.h"
+#include "tom/cull_whatP.h"
+#include "tom/cull_whereP.h"
+#include "tom/ocs_cull_descr.h"
 
 #include "tom/ocs_ElementCore.h"
 #include "tom/ocs_FieldException.h"
@@ -818,4 +816,165 @@ namespace ocs::tom {
       return copy;
    }
 
+
+   int count_what(const lEnumeration *enp, const lDescr *dp) noexcept {
+      if (enp == nullptr) {
+         LERROR(LEENUMNULL);
+         return -1;
+      }
+      if (dp == nullptr) {
+         LERROR(LEDESCRNULL);
+         return -1;
+      }
+      switch (enp[0].pos) {
+         case WHAT_NONE:
+            return 0;
+         case WHAT_ALL: {
+            const int n = lCountPresent(dp);
+            if (n == -1) {
+               LERROR(LECOUNTDESCR);
+            }
+            return n;
+         }
+         default: {
+            int n = 0;
+            while (enp[n].nm != NoName) {
+               n++;
+            }
+            return n;
+         }
+      }
+   }
+
+   int partial_descr(const lEnumeration *enp, const lDescr *sdp, lDescr *ddp, int *indexp) noexcept {
+      if (enp == nullptr) {
+         LERROR(LEELEMNULL);
+         return -1;
+      }
+      if (sdp == nullptr || ddp == nullptr) {
+         LERROR(LEDESCRNULL);
+         return -1;
+      }
+      if (indexp == nullptr) {
+         LERROR(LENULLARGS);
+         return -1;
+      }
+
+      const int n = descr_length(sdp);
+      std::vector<bool> keep(n, false);
+      switch (enp[0].pos) {
+         case WHAT_NONE:
+            return 0;
+         case WHAT_ALL:
+            for (int i = 0; i < n; i++) {
+               keep[i] = sdp[i].off != OCS_CULL_ABSENT;
+            }
+            break;
+         default:
+            for (int i = 0; mt_get_type(enp[i].mt) != lEndT; i++) {
+               const int pos = enp[i].pos;
+               if (pos < 0 || pos >= n || enp[i].nm != sdp[pos].nm || mt_get_type(enp[i].mt) != mt_get_type(sdp[pos].mt) ||
+                   sdp[pos].off == OCS_CULL_ABSENT) {
+                  LERROR(LEENUMDESCR);
+                  return -1;
+               }
+               keep[pos] = true;
+            }
+      }
+      if (ocs_cull_descr_layout(sdp, keep, ddp) < 0) {
+         LERROR(LEENUMDESCR);
+         return -1;
+      }
+      *indexp = n;
+      return 0;
+   }
+
 } // namespace ocs::tom
+
+/**
+ * @brief The shared reduction of a descriptor that a field selection describes
+ *
+ * The selection caches the last reduction it built, keyed by the source
+ * descriptor (N-A-20), so a selection applied again and again to lists of one
+ * type, as for the sub-lists of every element of a list, builds and interns
+ * its descriptor once. The cache holds a reference on the source as well, so
+ * its address cannot be reused while it is cached. Only static and counted
+ * sources are cached; any other source gets a fresh reduction each time. A
+ * selection is never used by two threads at once, so the cache needs no
+ * synchronisation.
+ *
+ * @param enp the selection, not NONE
+ * @param src the descriptor it is applied to
+ * @param[out] owned set to true if the caller has to release the result
+ * @return the shared reduction borrowed from the cache, or with a reference
+ *         for the caller if @p owned is set to true; nullptr on error
+ */
+const lDescr *ocs_cull_what_descr(const lEnumeration *enp, const lDescr *src, bool *owned) {
+   *owned = false;
+   auto *head = const_cast<lEnumeration *>(enp);
+   if (head->cache_dp != nullptr && head->cache_src == src) {
+      return head->cache_dp;
+   }
+
+   if (ocs::tom::count_what(enp, src) <= 0) {
+      LERROR(LECOUNTWHAT);
+      return nullptr;
+   }
+   // the reduction has the full length of the type (N-B-1)
+   auto *tmp = reinterpret_cast<lDescr *>(sge_malloc(sizeof(lDescr) * (ocs::tom::descr_length(src) + 1)));
+   if (tmp == nullptr) {
+      LERROR(LEMALLOC);
+      return nullptr;
+   }
+   int index = 0;
+   if (ocs::tom::partial_descr(enp, src, tmp, &index) < 0) {
+      LERROR(LEPARTIALDESCR);
+      sge_free(&tmp);
+      return nullptr;
+   }
+   const lDescr *dp = ocs_cull_descr_acquire(tmp);
+   sge_free(&tmp);
+   if (dp == nullptr) {
+      LERROR(LEMALLOC);
+      return nullptr;
+   }
+
+   if (ocs_cull_descr_is_counted(src) || ocs_cull_descr_is_static(src)) {
+      ocs_cull_descr_release(&(head->cache_dp));
+      ocs_cull_descr_release(&(head->cache_src));
+      head->cache_src = ocs_cull_descr_ref(src);
+      head->cache_dp = dp;
+      return dp;
+   }
+   *owned = true;
+   return dp;
+}
+
+/**
+ * @brief Whether a field selection can be applied to a descriptor (CS-439, N-B-11)
+ *
+ * Positions are those of the type in every descriptor, so a selection built on
+ * the full type applies to any reduction of it that holds the selected fields.
+ * #WHAT_ALL and #WHAT_NONE apply to every descriptor.
+ *
+ * @param enp the selection
+ * @param dp the descriptor
+ * @return true if every selected field is present in dp at its position
+ */
+bool ocs_cull_what_fits(const lEnumeration *enp, const lDescr *dp) {
+   if (enp == nullptr || dp == nullptr) {
+      return false;
+   }
+   if (enp[0].pos == WHAT_ALL || enp[0].pos == WHAT_NONE) {
+      return true;
+   }
+   const int n = ocs::tom::descr_length(dp);
+   for (int i = 0; enp[i].nm != NoName; i++) {
+      const int pos = enp[i].pos;
+      if (pos < 0 || pos >= n || dp[pos].nm != enp[i].nm || dp[pos].off == OCS_CULL_ABSENT) {
+         return false;
+      }
+   }
+   return true;
+}
+

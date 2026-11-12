@@ -27,7 +27,6 @@
 #include <cstring>
 #include <string>
 
-#include "comm/cl_communication.h"
 #include "uti/ocs_TerminationManager.h"
 #include "uti/sge_hostname.h"
 #include "uti/sge_log.h"
@@ -35,13 +34,11 @@
 #include "uti/sge_stdlib.h"
 #include "uti/sge_string.h"
 
-#include "cull/cull_hash.h"
-#include "cull/cull_listP.h"
-#include "cull/cull_multitype.h"
-#include "cull/cull_multitypeP.h"
-#include "cull/cull_observe.h"
-#include "cull/cull_lerrno.h"
-#include "cull/cull_state.h"
+#include "tom/cull_hash.h"
+#include "tom/cull_listP.h"
+#include "tom/cull_multitypeP.h"
+#include "tom/cull_lerrno.h"
+#include "tom/cull_state.h"
 
 #include "tom/ocs_ListCore.h"
 
@@ -437,8 +434,6 @@ namespace ocs::tom {
       const bool is_host = mt_get_type(ep->descr[pos].mt) == lHostT;
       char *old_value = is_host ? ocs_cull_value(ep, pos).host : ocs_cull_value(ep, pos).str;
 
-      observe_value(ep, pos);
-
       // nothing to do if both are unset or both hold the same text
       if (value == old_value || (value != nullptr && old_value != nullptr && strcmp(value, old_value) == 0)) {
          return true;
@@ -494,17 +489,7 @@ namespace ocs::tom {
       ocs_cull_hash_insert_changed(ep, pos);
    }
 
-   void observe_value([[maybe_unused]] const lListElem *ep, [[maybe_unused]] const int pos) {
-#ifdef OBSERVE
-      lObserveChangeValue(ep, elem_hash_table(ep, pos) != nullptr, ep->descr[pos].nm);
-#endif
-   }
-
    void store_list(lListElem *ep, const int pos, lList *value) {
-#ifdef OBSERVE
-      lObserveChangeOwner(ocs_cull_value(ep, pos).glp, nullptr, ep, ep->descr[pos].nm);
-      lObserveChangeOwner(value, ep, nullptr, ep->descr[pos].nm);
-#endif
       if (value != ocs_cull_value(ep, pos).glp) {
          free_list(ocs_cull_value(ep, pos).glp);
          ocs_cull_value(ep, pos).glp = value;
@@ -515,10 +500,6 @@ namespace ocs::tom {
       if (value != nullptr && elem_kind(value) != FREE_ELEM && elem_kind(value) != TRANS_BOUND_ELEM) {
          return false;
       }
-#ifdef OBSERVE
-      lObserveChangeOwner(ocs_cull_value(ep, pos).obj, nullptr, ep, ep->descr[pos].nm);
-      lObserveChangeOwner(value, ep, nullptr, ep->descr[pos].nm);
-#endif
       if (value != ocs_cull_value(ep, pos).obj) {
          free_elem(ocs_cull_value(ep, pos).obj);
          ocs_cull_value(ep, pos).obj = value;

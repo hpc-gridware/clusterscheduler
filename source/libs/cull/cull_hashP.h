@@ -34,19 +34,12 @@
 /*___INFO__MARK_END__*/
 
 /** @file
- * @brief Internal handle of a cull hash table
- */
-
-#include <cstdint>
-
-/// Handle of a cull hash table; see @ref _cull_htable
-typedef struct _cull_htable *cull_htable;
-
-/**
- * @brief Default list length below which no hash table is built
+ * @brief Moved to libs/tom/cull_hashP.h with the storage layer of the list library (CS-3088)
  *
- * A list shorter than this is searched linearly. A table that exists stays when
- * its list shrinks below it. Each thread can choose its own value with lInit().
- * Provisional until fixed by measurement.
+ * This header only includes the moved one, so that code including it here
+ * keeps building; it goes with the list library.
  */
-constexpr uint32_t OCS_CULL_HASH_MIN_ELEMS = 16;
+
+#include "tom/cull_hashP.h"
+
+

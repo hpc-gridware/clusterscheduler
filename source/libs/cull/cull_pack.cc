@@ -68,10 +68,6 @@
 #include "cull/cull_parse.h"
 #include "tom/ocs_ElementCore.h"
 
-#ifdef OBSERVE
-#  include "cull/cull_observe.h"
-#endif
-
 /* =========== implementation ================================= */
 
 static int cull_unpack_switch(sge_pack_buffer *pb, lMultiType *dst, int type, int flags);
@@ -1167,10 +1163,6 @@ static int ocs_cull_unpack_elem(sge_pack_buffer *pb, lListElem **epp, const lDes
       DRETURN(ret);
    }
 
-#ifdef OBSERVE
-   lObserveAdd(ep, nullptr, false);
-#endif
-
    *epp = ep;
 
    PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
@@ -1393,10 +1385,6 @@ int cull_unpack_list_partial(sge_pack_buffer *pb, lList **lpp, int flags) {
       DRETURN(PACK_ENOMEM);
    }
 
-#ifdef OBSERVE
-   lObserveAdd(lp, nullptr, true);
-#endif
-
    /* unpack each list element */
    uint32_t has_more_elements = 0;
    // as long as we find a 1 we have to unpack an element
@@ -1484,10 +1472,6 @@ static int cull_unpack_object(
       ocs_cull_descr_release(&descr);
    }
    elem_set_object(ep);
-
-#ifdef OBSERVE
-   lObserveAdd(ep, nullptr, false);
-#endif
 
    *epp = ep;
 

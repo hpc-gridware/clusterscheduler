@@ -34,9 +34,9 @@
 #include <string>
 #include <type_traits>
 
-#include "cull/cull_list.h"
-#include "cull/cull_listP.h"
-#include "cull/cull_multitypeP.h"
+#include "tom/cull_types.h"
+#include "tom/cull_listP.h"
+#include "tom/cull_multitypeP.h"
 #include "tom/ocs_FieldException.h"
 #include "tom/ocs_FieldTraits.h"
 
@@ -109,8 +109,7 @@ namespace ocs::tom {
     *
     * Does what the old setter does after its checks: compares with the old
     * value, removes the element from the field's hash table, copies the new
-    * value, frees the old one and inserts the element again; the observe build
-    * is told about the change.
+    * value, frees the old one and inserts the element again.
     *
     * @param ep the element, which holds the field
     * @param pos the field's position, of type String or Host
@@ -134,13 +133,6 @@ namespace ocs::tom {
     *        another element of the list holds the value; the old value is kept
     */
    void store_hashed_number(lListElem *ep, int pos, std::uint64_t value);
-
-   /**
-    * @brief Tell the observe build about a changed value; does nothing in other builds
-    * @param ep the element
-    * @param pos the field's position
-    */
-   void observe_value(const lListElem *ep, int pos);
 
    /**
     * @brief Store a list into a list field, freeing the list it held before
@@ -290,7 +282,6 @@ namespace ocs::tom {
    template <typename V>
       requires std::is_same_v<V, std::uint32_t> || std::is_same_v<V, std::uint64_t> || std::is_same_v<V, double>
    V add_number(lListElem *ep, const int pos, lMultiType &slot, const V offset) {
-      observe_value(ep, pos);
       if constexpr (std::is_same_v<V, double>) {
          slot.db += offset;
          return slot.db;

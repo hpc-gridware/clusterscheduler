@@ -24,25 +24,16 @@ set(LIBRARY_SOURCES
         cull_db.cc
         cull_dump_scan.cc
         cull_file.cc
-        cull_hash.cc
-        cull_lerrno.cc
         cull_list.cc
         cull_multitype.cc
-        cull_name.cc
-        cull_observe.cc
         cull_pack.cc
         cull_parse.cc
         cull_sort.cc
-        cull_state.cc
         cull_tree.cc
         cull_what.cc
         cull_what_print.cc
         cull_where.cc
-        ocs_cull_descr.cc
         pack.cc)
-if (ENABLE_CULL_STATS)
-   list(APPEND LIBRARY_SOURCES cull_stats.cc)
-endif ()
 set(LIBRARY_INCLUDES "./")
 
 if (SGE_ARCH MATCHES "lx-arm.*")
@@ -54,4 +45,6 @@ endif()
 # set_source_files_properties(pack.cc PROPERTIES COMPILE_FLAGS "-Wno-changes-meaning -Wno-pedantic")
 
 add_library(${LIBRARY_NAME} STATIC ${LIBRARY_SOURCES})
+# the list library calls the utility library, so it is linked after it (CS-3088)
+target_link_libraries(${LIBRARY_NAME} PUBLIC uti)
 target_include_directories(${LIBRARY_NAME} PUBLIC ${SGE_INCLUDES} ${LIBRARY_INCLUDES})

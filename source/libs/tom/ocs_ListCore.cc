@@ -26,17 +26,13 @@
 
 #include "uti/sge_stdlib.h"
 
-#include "cull/cull_hash.h"
-#include "cull/cull_lerrnoP.h"
-#include "cull/cull_listP.h"
-#include "cull/cull_multitype.h"
-#include "cull/cull_multitypeP.h"
-#include "cull/cull_stats.h"
-#include "cull/ocs_cull_descr.h"
-
-#ifdef OBSERVE
-#  include "cull/cull_observe.h"
-#endif
+#include "tom/cull_hash.h"
+#include "tom/cull_lerrnoP.h"
+#include "tom/cull_listP.h"
+#include "tom/cull_name.h"
+#include "tom/cull_multitypeP.h"
+#include "tom/cull_stats.h"
+#include "tom/ocs_cull_descr.h"
 
 #include "tom/ocs_ElementCore.h"
 #include "tom/ocs_FieldException.h"
@@ -113,9 +109,6 @@ namespace ocs::tom {
          ep->descr = lp->descr;
          cull_hash_elem(ep);
          lp->nelem++;
-#ifdef OBSERVE
-         lObserveChangeOwner(ep, lp, nullptr, NoName);
-#endif
       }
 
       /**
@@ -190,9 +183,6 @@ namespace ocs::tom {
          throw ListCoreError(LEMALLOC, "out of memory creating an element");
       }
 
-#ifdef OBSERVE
-      lObserveAdd(ep, nullptr, false);
-#endif
       return ep;
    }
 
@@ -229,9 +219,6 @@ namespace ocs::tom {
          throw ListCoreError(LEMALLOC, "out of memory creating a list");
       }
 
-#ifdef OBSERVE
-      lObserveAdd(lp, nullptr, true);
-#endif
       return lp;
    }
 
@@ -291,9 +278,6 @@ namespace ocs::tom {
          sge_free(&(ep->cont));
       }
 
-#ifdef OBSERVE
-      lObserveRemove(ep);
-#endif
       sge_free(&ep);
    }
 
@@ -306,9 +290,6 @@ namespace ocs::tom {
       while (lp->first) {
          lListElem *ep = lp->first;
          unlink(lp, ep);
-#ifdef OBSERVE
-         lObserveChangeOwner(ep, nullptr, lp, NoName);
-#endif
          free_elem(ep);
       }
       cull_hash_free_slots(lp);
@@ -316,9 +297,6 @@ namespace ocs::tom {
       if (lp->listname) {
          sge_free(&(lp->listname));
       }
-#ifdef OBSERVE
-      lObserveRemove(lp);
-#endif
       sge_free(&lp);
    }
 
@@ -515,17 +493,11 @@ namespace ocs::tom {
       // a free element holds a reference of its own
       ep->descr = ocs_cull_descr_ref(ep->descr);
       elem_set_free(ep);
-#ifdef OBSERVE
-      lObserveChangeOwner(ep, nullptr, lp, NoName);
-#endif
    }
 
    void remove_elem(lList *lp, lListElem *&ep) {
       check_member(lp, ep);
       unlink(lp, ep);
-#ifdef OBSERVE
-      lObserveChangeOwner(ep, nullptr, lp, NoName);
-#endif
       free_elem(ep);
    }
 
@@ -551,9 +523,6 @@ namespace ocs::tom {
 
    void exchange_list(lListElem *ep, const int pos, lList *&lp) noexcept {
       lList *&held = ocs_cull_value(ep, pos).glp;
-#ifdef OBSERVE
-      lObserveSwitchOwner(held, lp, ep, nullptr, ep->descr[pos].nm);
-#endif
       if (lp != held) {
          std::swap(lp, held);
       }

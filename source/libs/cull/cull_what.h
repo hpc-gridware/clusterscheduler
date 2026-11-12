@@ -41,8 +41,6 @@
 
 #include "uti/sge_dstring.h"
 
-#define WHAT_ALL                        -1 ///< _lEnumeration::pos value meaning "every field of the type"
-#define WHAT_NONE                       -2 ///< _lEnumeration::pos value meaning "no field at all"
 
 lEnumeration *lWhat(const char *fmt, ...);
 
@@ -57,10 +55,6 @@ lEnumeration *lCopyWhat(const lEnumeration *ep);
 int lCountWhat(const lEnumeration *ep, const lDescr *dp);
 
 int lReduceDescr(const lDescr **dst_dpp, const lDescr *src_dp, lEnumeration *enp);
-
-const lDescr *ocs_cull_what_descr(const lEnumeration *enp, const lDescr *src, bool *owned);
-
-bool ocs_cull_what_fits(const lEnumeration *enp, const lDescr *dp);
 
 lEnumeration *lIntVector2What(const lDescr *dp, const int intv[]);
 

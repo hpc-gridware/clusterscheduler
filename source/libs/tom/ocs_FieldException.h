@@ -26,7 +26,7 @@
 #include <cstdint>
 #include <string>
 
-#include "cull/cull_list.h"
+#include "tom/cull_types.h"
 #include "uti/ocs_Exception.h"
 
 namespace ocs::tom {

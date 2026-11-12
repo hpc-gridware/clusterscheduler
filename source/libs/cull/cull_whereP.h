@@ -34,35 +34,14 @@
 /*___INFO__MARK_END__*/
 
 /** @file
- * @brief Internal representation of a selection condition
+ * @brief Moved to libs/tom/cull_whereP.h with the storage layer of the list library (CS-3088)
+ *
+ * This header only includes the moved one, so that code including it here
+ * keeps building; it goes with the list library.
  */
-
 
 #include "cull/cull_where.h"
 #include "cull/cull_multitypeP.h"
+#include "tom/cull_whereP.h"
 
-/**
- * @brief One node of a selection condition, as a binary expression tree
- *
- * A condition is either a *comparison* of a field against a value, or a
- * *logical* combination of one or two sub-conditions. _lCondition::op decides
- * which, and therefore which arm of the union is live — the same discipline
- * as @ref _lMultiType.
- */
-struct _lCondition {
-   int op;                      ///< the operator; decides which arm of #operand is live
-   union {
-      /// live when #op is a comparison
-      struct {
-         int pos;               ///< position of the field in the descriptor
-         int mt;                ///< type of the compare value
-         int nm;                ///< the field being compared
-         lMultiType val;        ///< the value to compare against
-      } cmp;
-      /// live when #op is a logical operator
-      struct {
-         lCondition *first;     ///< first operand
-         lCondition *second;    ///< second operand, or nullptr for a unary operator
-      } log;
-   } operand;                   ///< the comparison or the logical operands
-};
+

@@ -46,7 +46,7 @@
 #include <cstdint>
 #include <span>
 
-#include "cull/cull_list.h"
+#include "tom/cull_types.h"
 
 namespace ocs::tom {
 
@@ -281,5 +281,34 @@ namespace ocs::tom {
     * @throw ListCoreError if the reduction or a copy fails
     */
    lListElem *select_elem(const lListElem *ep, const lEnumeration *what, bool hash, bool skip_no_transfer);
+
+
+   /**
+    * @brief The number of fields a selection takes from a descriptor, as lCountWhat() counted them
+    *
+    * Sets the error number of the list library on error, as lCountWhat() did.
+    *
+    * @param enp the selection
+    * @param dp the descriptor
+    * @return the number of fields, every present one for WHAT_ALL, 0 for WHAT_NONE; -1 if an argument is null
+    *         or the descriptor cannot be counted
+    */
+   int count_what(const lEnumeration *enp, const lDescr *dp) noexcept;
+
+   /**
+    * @brief Lay out the descriptor a selection reduces another one to, as lPartialDescr() did
+    *
+    * The result has the full length of the type, with the selected fields in
+    * their slots and the others absent (see ocs_cull_descr_layout()). The source
+    * may itself be a reduction; every selected field must be present in it. Sets
+    * the error number of the list library on error.
+    *
+    * @param enp the selection
+    * @param sdp the source descriptor
+    * @param ddp receives the entries; room for descr_length(sdp) + 1 of them
+    * @param indexp set to the number of entries written, without the terminating one
+    * @return 0 on success, -1 on error
+    */
+   int partial_descr(const lEnumeration *enp, const lDescr *sdp, lDescr *ddp, int *indexp) noexcept;
 
 } // namespace ocs::tom

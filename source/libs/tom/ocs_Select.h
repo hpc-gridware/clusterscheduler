@@ -47,10 +47,8 @@
 #include <utility>
 #include <vector>
 
-#include "cull/cull_multitypeP.h"
-#include "cull/cull_what.h"
-#include "cull/cull_whatP.h"
-#include "cull/cull_where.h"
+#include "tom/cull_multitypeP.h"
+#include "tom/cull_whatP.h"
 #include "tom/ocs_FieldException.h"
 #include "tom/ocs_FieldTraits.h"
 #include "tom/ocs_SelectCore.h"

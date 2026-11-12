@@ -34,25 +34,13 @@
 /*___INFO__MARK_END__*/
 
 /** @file
- * @brief Internal representation of a field selection
+ * @brief Moved to libs/tom/cull_whatP.h with the storage layer of the list library (CS-3088)
+ *
+ * This header only includes the moved one, so that code including it here
+ * keeps building; it goes with the list library.
  */
 
 #include "cull/cull_what.h"
+#include "tom/cull_whatP.h"
 
-/**
- * @brief One entry of a field selection
- *
- * A selection is an array of these: the index is the field's position in the
- * *reduced* descriptor, and _lEnumeration::pos says where that field sits in
- * the original one. That is what lets a reduced object be expanded again.
- */
-struct _lEnumeration {
-   int pos;          ///< position of the field in the original descriptor, or #WHAT_ALL / #WHAT_NONE
-   int mt;           ///< the field's type and attributes
-   int nm;           ///< the selected field
-   lEnumeration *ep; ///< selection applied inside the field; only for sub-objects and sub-lists
-   /// entry 0 only: the descriptor the cached reduction was built from, holding a reference
-   const lDescr *cache_src;
-   /// entry 0 only: the shared reduction of cache_src, holding a reference (see ocs_cull_what_descr())
-   const lDescr *cache_dp;
-};
+

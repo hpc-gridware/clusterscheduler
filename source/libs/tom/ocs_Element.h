@@ -40,9 +40,9 @@
 #include <type_traits>
 #include <utility>
 
-#include "cull/cull_lerrno.h"
-#include "cull/cull_listP.h"
-#include "cull/cull_multitypeP.h"
+#include "tom/cull_lerrno.h"
+#include "tom/cull_listP.h"
+#include "tom/cull_multitypeP.h"
 #include "tom/ocs_ElementCore.h"
 #include "tom/ocs_FieldTraits.h"
 #include "tom/ocs_ListCore.h"
@@ -304,7 +304,6 @@ namespace ocs::tom {
                return store_object(ep, pos, value);
             }
          } else {
-            observe_value(ep, pos);
             if constexpr (Tr::hashed && (Tr::type == FieldType::Uint32 || Tr::type == FieldType::Uint64)) {
                if (needs_hashed_store(ep, pos)) {
                   store_hashed_number(ep, pos, static_cast<std::uint64_t>(value));
@@ -745,7 +744,6 @@ namespace ocs::tom {
                throw_field_exception(FieldException::Reason::OutOfMemory, nm, this->ep_->descr);
             }
          } else if constexpr (type == FieldType::Uint32 || type == FieldType::Uint64) {
-            observe_value(this->ep_, pos);
             if (needs_hashed_store(this->ep_, pos)) {
                store_hashed_number(this->ep_, pos, value);
             } else if constexpr (type == FieldType::Uint32) {
@@ -754,7 +752,6 @@ namespace ocs::tom {
                slot_value.ul64 = value;
             }
          } else {
-            observe_value(this->ep_, pos);
             if constexpr (type == FieldType::Int32) {
                slot_value.i = value;
             } else if constexpr (type == FieldType::Int64) {

@@ -38,14 +38,13 @@
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_stdlib.h"
 
-#include "cull/cull_lerrnoP.h"
-#include "cull/cull_list.h"
-#include "cull/cull_multitypeP.h"
-#include "cull/cull_multitype.h"
-#include "cull/cull_state.h"
-#include "cull/cull_stats.h"
-#include "cull/msg_cull.h"
-#include "cull/ocs_cull_descr.h"
+#include "tom/cull_lerrnoP.h"
+#include "tom/cull_types.h"
+#include "tom/cull_multitypeP.h"
+#include "tom/cull_state.h"
+#include "tom/cull_stats.h"
+#include "tom/msg_cull.h"
+#include "tom/ocs_cull_descr.h"
 
 static_assert(offsetof(cull_descr_block<2>, e) == sizeof(cull_descr_header),
               "the entries of a block must follow its header without a gap");

@@ -38,4 +38,6 @@ set(LIBRARY_SOURCES
 set(LIBRARY_INCLUDES ${SGE_INCLUDES} "./")
 
 add_library(${LIBRARY_NAME} STATIC ${LIBRARY_SOURCES})
+# the objects of this library call the list library, so it is linked after them (CS-3088)
+target_link_libraries(${LIBRARY_NAME} PUBLIC cull)
 target_include_directories(${LIBRARY_NAME} PUBLIC ${LIBRARY_INCLUDES})

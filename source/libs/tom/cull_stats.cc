@@ -53,10 +53,10 @@
 
 #include "uti/sge_component.h"
 
-#include "cull/cull_list.h"
-#include "cull/cull_state.h"
-#include "cull/cull_stats.h"
-#include "cull/ocs_cull_descr.h"
+#include "tom/cull_types.h"
+#include "tom/cull_state.h"
+#include "tom/cull_stats.h"
+#include "tom/ocs_cull_descr.h"
 
 namespace {
    using ocs::cull_stats::Counter;
