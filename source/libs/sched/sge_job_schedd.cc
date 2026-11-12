@@ -616,8 +616,10 @@ void split_jobs(lList **job_list, u_long32 max_aj_instances,
           * Check the state of the task
           * (ORDER IS IMPORTANT!)
           */
+         // sge_qmaster sets JDEFERRED_REQ in JAT_state after qmod -r until the old run is gone,
+         // only a pending task waits for it, e.g. a task deleted meanwhile is finished
          if (target == nullptr && result_list[SPLIT_DEFERRED] &&
-             (ja_task_status & JDEFERRED_REQ)) {
+             (ja_task_state & JDEFERRED_REQ) && ja_task_status == JIDLE) {
 #ifdef JOB_SPLIT_DEBUG
             DPRINTF("Task " sge_u32 " is in deferred state\n", ja_task_id);
 #endif
