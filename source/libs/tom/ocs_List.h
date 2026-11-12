@@ -36,6 +36,7 @@
 
 #include "tom/cull_listP.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_ListOpsCore.h"
 #include "tom/ocs_Sort.h"
 
 namespace ocs::tom {
@@ -611,6 +612,48 @@ namespace ocs::tom {
          dump_list(fp, lp_, indent);
       }
 
+      /**
+       * @brief The number of nodes of the trees under the elements of the list, as lGetNumberOfNodes() counts them
+       * @tparam F a list field of this type holding elements of this type, the children
+       * @return the number, 0 for an empty handle
+       * @see Old form: lGetNumberOfNodes(); core: ocs::tom::count_nodes()
+       */
+      template <auto F>
+         requires FieldOf<F, T> && (FieldTraits<F>::type == FieldType::List) &&
+                  std::is_same_v<typename FieldTraits<F>::Sub, T>
+      [[nodiscard]] int count_nodes() const noexcept {
+         return ocs::tom::count_nodes(nullptr, lp_, static_cast<int>(F));
+      }
+
+      /**
+       * @brief The number of leaves of the trees under the elements of the list, as lGetNumberOfLeafs() counts them
+       * @tparam F a list field of this type holding elements of this type, the children
+       * @return the number, 0 for an empty handle
+       * @see Old form: lGetNumberOfLeafs(); core: ocs::tom::count_leaves()
+       */
+      template <auto F>
+         requires FieldOf<F, T> && (FieldTraits<F>::type == FieldType::List) &&
+                  std::is_same_v<typename FieldTraits<F>::Sub, T>
+      [[nodiscard]] int count_leaves() const noexcept {
+         return ocs::tom::count_leaves(nullptr, lp_, static_cast<int>(F));
+      }
+
+      /**
+       * @brief Write the list with its name and its elements as text for debugging, as lWriteListTo() does
+       *
+       * The text is not read back; dump() writes the form that is.
+       *
+       * @param fp the stream
+       * @throw FieldException with reason EmptyHandle if the handle is empty
+       * @see Old form: lWriteListTo(); core: ocs::tom::print_list()
+       */
+      void print(FILE *fp) const {
+         if (lp_ == nullptr) [[unlikely]] {
+            throw_field_exception(FieldException::Reason::EmptyHandle, NoName, T::descriptor.e);
+         }
+         print_to(fp, [this](dstring *buffer) { print_list(buffer, lp_, 0); });
+      }
+
    protected:
       lList *lp_ = nullptr;   ///< the list, or nullptr; const unless reached through List
    };
@@ -921,6 +964,67 @@ namespace ocs::tom {
        * @throw ocs::RuntimeException if there is no memory; the list is unchanged then
        * @see Old form: lPSortList(); core: ocs::tom::sort_list()
        */
+      /**
+       * @brief Sort the list by a string or host field and keep the first element of each key, as std::list::unique()
+       *        after sort() and lUniqStr() or lUniqHost() do
+       *
+       * The keys compare exactly, as strcmp() does; two null keys are equal.
+       *
+       * @tparam F a string or host field of this type
+       * @throw FieldException with reason AbsentField if the elements do not hold @p F
+       * @throw ocs::RuntimeException if there is no memory
+       * @see Old form: lUniqStr(), lUniqHost(); core: ocs::tom::unique_by_key()
+       */
+      template <auto F>
+         requires FieldOf<F, T> && detail::Textual<F>
+      void unique() const {
+         if (this->lp_ == nullptr) {
+            return;
+         }
+         unique_by_key(this->lp_, static_cast<int>(F));
+      }
+
+      /**
+       * @brief Keep the elements that fulfil a condition and take the others out, as lSplit() does
+       *
+       * Unlike lSplit(), a list left empty stays, and the elements taken out
+       * are given back rather than freed; dropping the result frees them.
+       *
+       * @param where the condition
+       * @param name the name of the list taken out, or nullptr for the name of this list
+       * @return the owning handle on the elements taken out, in their order, empty if there are none or this
+       *         handle is empty
+       * @throw ocs::RuntimeException if there is no memory; nothing is taken out then
+       * @see Old form: lSplit(); core: ocs::tom::split_off()
+       */
+      [[nodiscard]] ListPtr<T> split_off(const Where<T> &where, const char *name = nullptr) const {
+         if (this->lp_ == nullptr) {
+            return {};
+         }
+         return ListPtr<T>::from_typed(
+                 ocs::tom::split_off(this->lp_, where.get(), name != nullptr ? name : list_name(this->lp_)));
+      }
+
+      /**
+       * @brief Remove the elements this list and another share by a string key from both, as lDiffListStr() does
+       *
+       * For each element of this list whose key the other holds, the first
+       * element with that key is removed from each list. Unlike lDiffListStr(),
+       * a list left empty stays.
+       *
+       * @tparam F a string field of this type
+       * @param other the other list; an empty handle removes nothing
+       * @throw FieldException with reason AbsentField if the elements do not hold @p F
+       * @see Old form: lDiffListStr(); core: ocs::tom::remove_common_str()
+       */
+      template <auto F>
+         requires FieldOf<F, T> && (FieldTraits<F>::type == FieldType::String)
+      void remove_common(const List<T> other) const {
+         lList *mine = this->lp_;
+         lList *theirs = other.raw();
+         remove_common_str(mine, theirs, static_cast<int>(F), false);
+      }
+
       template <typename K, typename... Ks>
          requires detail::SortKeyOf<K, T> && (detail::SortKeyOf<Ks, T> && ...)
       void sort() const {
@@ -1138,6 +1242,14 @@ namespace ocs::tom {
     *
     * @tparam T the struct of the object type of the elements, e.g. ocs::tom::JB
     */
+   /**
+    * @brief How ListPtr::from_string() reads the name "none"
+    */
+   enum class NoneName : bool {
+      Name,   ///< as a name like any other, as lString2List() does
+      Empty   ///< as no name, as lString2ListNone() does; beside other names it is an error
+   };
+
    template <ObjectType T>
    class ListPtr {
    public:
@@ -1163,6 +1275,34 @@ namespace ocs::tom {
          ListPtr handle;
          handle.lp_ = lp;
          return handle;
+      }
+
+      /**
+       * @brief A list of the names a string holds, one element per name, as lString2List() and lString2ListNone()
+       *        make it
+       *
+       * A name the list holds already is skipped.
+       *
+       * @tparam F the string or host field the names go into
+       * @param s the string; nullptr gives an empty handle
+       * @param delimiters the delimiters, or nullptr for white space
+       * @param none how the name "none" is read; with NoneName::Empty a string of only "none" gives an empty handle
+       * @return the owning handle on the list, empty if the string holds no name
+       * @throw ListCoreError if @p none is NoneName::Empty and "none" stands beside other names
+       * @throw ocs::RuntimeException if there is no memory
+       * @see Old form: lString2List(), lString2ListNone(); core: ocs::tom::string_to_list()
+       */
+      template <auto F>
+         requires FieldOf<F, T> && detail::Textual<F>
+      [[nodiscard]] static ListPtr from_string(const char *s, const char *delimiters = nullptr,
+                                               const NoneName none = NoneName::Name) {
+         lList *lp = nullptr;
+         if (none == NoneName::Empty) {
+            string_to_list_none(s, lp, T::descriptor.e, static_cast<int>(F), delimiters);
+         } else {
+            string_to_list(s, lp, T::descriptor.e, static_cast<int>(F), delimiters);
+         }
+         return from_typed(lp);
       }
 
       /**

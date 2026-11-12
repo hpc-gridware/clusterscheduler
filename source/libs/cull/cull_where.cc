@@ -61,6 +61,7 @@
 #include "cull/cull_lerrnoP.h"
 #include "tom/ocs_FieldException.h"
 #include "tom/ocs_ListCore.h"
+#include "tom/ocs_PrintCore.h"
 #include "tom/ocs_SelectCore.h"
 
 static lCondition *read_val(const lDescr *dp, cull_parse_state *state, va_list *app);
@@ -75,7 +76,6 @@ static lCondition *sum(const lDescr *dp, cull_parse_state *state, va_list *app);
 
 static lCondition *subscope(cull_parse_state *state, va_list *app);
 
-static void lWriteWhereTo_(const lCondition *cp, int depth, FILE *fp);
 
 /**
  * @brief The comparison of the core for an operator token of lWhere()
@@ -168,231 +168,24 @@ lCondition *lAndWhere(const lCondition *cp0, const lCondition *cp1) {
  *
  * @param cp condition
  * @param fp file stream
+ *
+ * @note A thin wrapper over ocs::tom::print_where() of the core (CS-3077). A null stream writes nothing, as
+ *       before, where the text went to the debug output, which this file does not compile in.
+ *
+ * @see Typed form: ocs::tom::Where<T>::print().
  */
 void lWriteWhereTo(const lCondition *cp, FILE *fp) {
-   lWriteWhereTo_(cp, 0, fp);
-}
-
-static void lWriteWhereTo_(const lCondition *cp, int depth, FILE *fp) {
-   DENTER(CULL_LAYER);
-
-   int i;
-   char space[80];
-   char out[256];
-
-   if (!cp) {
-      LERROR(LECONDNULL);
-      DRETURN_VOID;
+   dstring buffer = DSTRING_INIT;
+   try {
+      ocs::tom::print_where(&buffer, cp, 0);
+   } catch (const ocs::tom::ListCoreError &) {
+      // the core has set the error number
    }
-
-   out[0] = '\0';
-
-   space[0] = '\0';
-   for (i = 0; i < depth; i++)
-      strcat(space, "   ");
-
-   switch (cp->op) {
-
-      case EQUAL:
-      case NOT_EQUAL:
-      case LOWER_EQUAL:
-      case LOWER:
-      case GREATER_EQUAL:
-      case GREATER:
-      case BITMASK:
-      case STRCASECMP:
-      case PATTERNCMP:
-      case HOSTNAMECMP:
-      case SUBSCOPE:
-         snprintf(&out[strlen(out)], sizeof(out) - strlen(out),"%s %s(%d) ", space, lNm2Str(cp->operand.cmp.nm), cp->operand.cmp.nm);
-
-         switch (cp->op) {
-            case EQUAL:
-               snprintf(&out[strlen(out)], sizeof(out) - strlen(out), "==");
-               break;
-            case NOT_EQUAL:
-               snprintf(&out[strlen(out)], sizeof(out) - strlen(out), "!=");
-               break;
-            case LOWER_EQUAL:
-               snprintf(&out[strlen(out)], sizeof(out) - strlen(out), "<=");
-               break;
-            case LOWER:
-               snprintf(&out[strlen(out)], sizeof(out) - strlen(out), "<");
-               break;
-            case GREATER_EQUAL:
-               snprintf(&out[strlen(out)], sizeof(out) - strlen(out), ">=");
-               break;
-            case GREATER:
-               snprintf(&out[strlen(out)], sizeof(out) - strlen(out), ">");
-               break;
-
-            case BITMASK:
-               snprintf(&out[strlen(out)], sizeof(out) - strlen(out), "m=");
-               break;
-
-            case STRCASECMP:
-               snprintf(&out[strlen(out)], sizeof(out) - strlen(out), "c=");
-               break;
-
-            case PATTERNCMP:
-               snprintf(&out[strlen(out)], sizeof(out) - strlen(out), "p=");
-               break;
-
-            case HOSTNAMECMP:
-               snprintf(&out[strlen(out)], sizeof(out) - strlen(out), "h=");
-               break;
-
-            case SUBSCOPE:
-               if (!fp) {
-                  DPRINTF("%s ->\n", out);
-               } else {
-                  fprintf(fp, "%s ->\n", out);
-               }
-               lWriteWhereTo_(cp->operand.cmp.val.cp, depth + 1, fp);
-               break;
-
-            default:
-               LERROR(LEOPUNKNOWN);
-               DRETURN_VOID;
-         }
-
-         switch (mt_get_type(cp->operand.cmp.mt)) {
-            case lIntT:
-               if (!fp) {
-                  DPRINTF("%s %d\n", out, cp->operand.cmp.val.i);
-               } else {
-                  fprintf(fp, "%s %d\n", out, cp->operand.cmp.val.i);
-               }
-               break;
-            case lUlongT:
-               if (!fp) {
-                  DPRINTF("%s " sge_u32"\n", out, cp->operand.cmp.val.ul);
-               } else {
-                  fprintf(fp, "%s " sge_u32 "\n", out, cp->operand.cmp.val.ul);
-               }
-               break;
-            case lUlong64T:
-               if (!fp) {
-                  DPRINTF("%s " sge_u64 "\n", out, cp->operand.cmp.val.ul64);
-               } else {
-                  fprintf(fp, "%s " sge_u64 "\n", out, cp->operand.cmp.val.ul64);
-               }
-               break;
-            case lStringT:
-               if (!fp) {
-                  DPRINTF("%s \"%s\"\n", out, cp->operand.cmp.val.str);
-               } else {
-                  fprintf(fp, "%s \"%s\"\n", out, cp->operand.cmp.val.str);
-               }
-               break;
-
-            case lHostT:
-               if (!fp) {
-                  DPRINTF("%s \"%s\"\n", out, cp->operand.cmp.val.host);
-               } else {
-                  fprintf(fp, "%s \"%s\"\n", out, cp->operand.cmp.val.host);
-               }
-               break;
-
-            case lListT:
-/*          DPRINTF("lWriteWhere error\n"); */
-               break;
-            case lDoubleT:
-               if (!fp) {
-                  DPRINTF("%s %f\n", out, cp->operand.cmp.val.db);
-               } else {
-                  fprintf(fp, "%s %f\n", out, cp->operand.cmp.val.db);
-               }
-               break;
-            case lLongT:
-               if (!fp) {
-                  DPRINTF("%s %ld\n", out, cp->operand.cmp.val.l);
-               } else {
-                  fprintf(fp, "%s %ld\n", out, cp->operand.cmp.val.l);
-               }
-               break;
-            case lBoolT:
-               if (!fp) {
-                  DPRINTF("%s %s\n", out, cp->operand.cmp.val.b ? "true" : "false");
-               } else {
-                  fprintf(fp, "%s %s\n", out, cp->operand.cmp.val.b ? "true" : "false");
-               }
-               break;
-            case lRefT:
-               if (!fp) {
-                  DPRINTF("%s %p\n", out, cp->operand.cmp.val.ref);
-               } else {
-                  fprintf(fp, "%s %p\n", out, cp->operand.cmp.val.ref);
-               }
-               break;
-            default:
-               unknownType("lWriteWhere");
-               DRETURN_VOID;
-         }
-         break;
-
-      case AND:
-         if (!fp) {
-            DPRINTF("%s(\n", space);
-         } else {
-            fprintf(fp, "%s(\n", space);
-         }
-         lWriteWhereTo_(cp->operand.log.first, depth + 1, fp);
-         if (!fp) {
-            DPRINTF("%s&&\n", space);
-         } else {
-            fprintf(fp, "%s&&\n", space);
-         }
-         lWriteWhereTo_(cp->operand.log.second, depth + 1, fp);
-         if (!fp) {
-            DPRINTF("%s)\n", space);
-         } else {
-            fprintf(fp, "%s)\n", space);
-         }
-         break;
-
-      case OR:
-         if (!fp) {
-            DPRINTF("%s(\n", space);
-         } else {
-            fprintf(fp, "%s(\n", space);
-         }
-         lWriteWhereTo_(cp->operand.log.first, depth + 1, fp);
-         if (!fp) {
-            DPRINTF("%s||\n", space);
-         } else {
-            fprintf(fp, "%s||\n", space);
-         }
-         lWriteWhereTo_(cp->operand.log.second, depth + 1, fp);
-         if (!fp) {
-            DPRINTF("%s)\n", space);
-         } else {
-            fprintf(fp, "%s)\n", space);
-         }
-         break;
-
-      case NEG:
-         if (!fp) {
-            DPRINTF("%s!(\n", space);
-         } else {
-            fprintf(fp, "%s!(\n", space);
-         }
-         lWriteWhereTo_(cp->operand.log.first, depth + 1, fp);
-         if (!fp) {
-            DPRINTF("%s)\n", space);
-         } else {
-            fprintf(fp, "%s)\n", space);
-         }
-
-         break;
-
-      default:
-         LERROR(LEOPUNKNOWN);
-         DPRINTF("error: LEOPUNKNOWN\n");
-         DRETURN_VOID;
+   const char *str = sge_dstring_get_string(&buffer);
+   if (fp != nullptr && str != nullptr) {
+      fprintf(fp, "%s", str);
    }
-
-   DRETURN_VOID;
+   sge_dstring_free(&buffer);
 }
 
 /**

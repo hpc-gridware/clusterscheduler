@@ -77,6 +77,21 @@ namespace ocs::tom {
    int descr_length(const lDescr *descr) noexcept;
 
    /**
+    * @brief The name of a field type, as lMt2Str() gives it
+    * @param mt the field type, e.g. lUlongT
+    * @return the name, e.g. "lUlongT", or "unknown multitype"
+    */
+   const char *type_name(int mt) noexcept;
+
+   /**
+    * @brief The type of a field a descriptor holds, as lGetType() gives it
+    * @param descr the descriptor, or nullptr
+    * @param nm the field number
+    * @return the field type, or lEndT if the descriptor is null or does not hold the field
+    */
+   int field_type(const lDescr *descr, int nm) noexcept;
+
+   /**
     * @brief How two descriptors differ: the same fields with the same types, holding the same of them
     *
     * Attributes other than the type are not compared, as lCompListDescr(),

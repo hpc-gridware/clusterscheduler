@@ -37,6 +37,7 @@
  */
 #include <cstdarg>
 #include <cstring>
+#include <utility>
 #include <vector>
 
 /* do not compile in monitoring code */
@@ -489,118 +490,22 @@ lEnumeration *lIntVector2What(const lDescr *dp, const int intv[]) {
  * @param[in,out] what1 the selection to extend
  * @param[in,out] what2 the selection to merge in; consumed and set to nullptr
  * @return 0 on success, -1 on error
+ *
+ * @note A thin wrapper over ocs::tom::merge_what() of the core (CS-3077). A field both select keeps the
+ *       merge of both nested selections; before, the nested selection of @p what2 was lost, see merge_what().
+ *
+ * @see Typed form: ocs::tom::What<T>::merge().
  */
 int lMergeWhat(lEnumeration **what1, lEnumeration **what2) {
-   DENTER(CULL_LAYER);
-
-   int ret = 0;
-
-   if (*what1 == nullptr ||
-       (*what1)[0].pos == WHAT_NONE ||
-       (*what2)[0].pos == WHAT_ALL) {
-      /*
-       * what1 is empty or what2 containes all attributes
-       */
-      lFreeWhat(what1);
-      *what1 = *what2;
-      *what2 = nullptr;
-   } else if ((*what1)[0].pos == WHAT_ALL) {
-      /*
-       * what1 contailes already all elements
-       */
-      lFreeWhat(what2);
-   } else {
-      lEnumeration tmp_result[1000];
-      int next_id = 0;
-      int i, j;
-
-      /*
-       * Add all elements of what1 
-       */
-      for (i = 0; mt_get_type((*what1)[i].mt) != lEndT; i++) {
-         tmp_result[next_id].pos = (*what1)[i].pos;
-         tmp_result[next_id].mt = (*what1)[i].mt;
-         tmp_result[next_id].nm = (*what1)[i].nm;
-         tmp_result[next_id].ep = (*what1)[i].ep;
-         (*what1)[i].ep = nullptr;
-         next_id++;
-      }
-      tmp_result[next_id].pos = 0;
-      tmp_result[next_id].nm = NoName;
-      tmp_result[next_id].mt = lEndT;
-      tmp_result[next_id].ep = nullptr;
-
-      lFreeWhat(what1);
-
-      /*
-       * Add only those of what2 which are not already contained in what1
-       * honour subwhat's
-       */
-      for (i = 0; mt_get_type((*what2)[i].mt) != lEndT; i++) {
-         bool skip = false;
-
-         for (j = 0; mt_get_type(tmp_result[j].mt) != lEndT; j++) {
-            if (tmp_result[j].mt == (*what2)[i].mt &&
-                tmp_result[j].nm == (*what2)[i].nm &&
-                tmp_result[j].pos == (*what2)[i].pos) {
-               /*TODO: SG is this correct? what happens, if we have a new subfilter
-                 in what2 but none in temp? */
-               if (tmp_result[next_id].ep != nullptr && (*what2)[i].ep != nullptr) {
-                  lMergeWhat(&(tmp_result[next_id].ep), &((*what2)[i].ep));
-               } else {
-                  tmp_result[next_id].ep = nullptr;
-               }
-
-               skip = true;
-               break;
-            }
-         }
-         if (!skip) {
-            tmp_result[next_id].pos = (*what2)[i].pos;
-            tmp_result[next_id].mt = (*what2)[i].mt;
-            tmp_result[next_id].nm = (*what2)[i].nm;
-
-            /*TODO: SG is this correct? what happens, if we have a new subfilter
-              in what2 but none in temp? */
-            if (tmp_result[next_id].ep != nullptr && (*what2)[i].ep != nullptr) {
-               lMergeWhat(&(tmp_result[next_id].ep), &((*what2)[i].ep));
-            } else {
-               tmp_result[next_id].ep = nullptr;
-            }
-            /* add last element */
-            next_id++;
-            tmp_result[next_id].pos = 0;
-            tmp_result[next_id].nm = NoName;
-            tmp_result[next_id].mt = lEndT;
-            tmp_result[next_id].ep = nullptr;
-         }
-      }
-      tmp_result[next_id].pos = 0;
-      tmp_result[next_id].nm = NoName;
-      tmp_result[next_id].mt = lEndT;
-      tmp_result[next_id].ep = nullptr;
-      next_id++;
-      lFreeWhat(what2);
-
-      /*
-       * create result what 
-       */
-      *what1 = (lEnumeration *) calloc(next_id, sizeof(lEnumeration));
-      if (*what1 != nullptr) {
-         for (i = 0; i < next_id; i++) {
-            (*what1)[i].pos = tmp_result[i].pos;
-            (*what1)[i].nm = tmp_result[i].nm;
-            (*what1)[i].mt = tmp_result[i].mt;
-            (*what1)[i].ep = tmp_result[i].ep;
-         }
-         ocs::tom::sort_what_by_pos(*what1);
-      } else {
-         LERROR(LEMALLOC);
-         DTRACE;
-         ret = -1;
-      }
+   try {
+      *what1 = ocs::tom::merge_what(*what1, std::exchange(*what2, nullptr));
+   } catch (const ocs::tom::ListCoreError &e) {
+      // both are freed
+      *what1 = nullptr;
+      LERROR(e.lerrno());
+      return -1;
    }
-   DRETURN(ret);
+   return 0;
 }
 
 /**
@@ -612,28 +517,21 @@ int lMergeWhat(lEnumeration **what1, lEnumeration **what2) {
  * @param nm the sub-list or sub-object field the selection applies inside
  * @param[in,out] what2 the selection for that field; consumed and set to nullptr
  * @return 0 on success, -1 when @p nm is not part of @p what1
+ *
+ * @note A thin wrapper over ocs::tom::set_sub_what() of the core (CS-3077).
+ *
+ * @see Typed form: ocs::tom::What<T>::with() for a field not yet selected.
  */
 int lWhatSetSubWhat(lEnumeration *what1, int nm, lEnumeration **what2) {
-   DENTER(CULL_LAYER);
-
-   int ret = -1;
-   int i;
-
-   if (what1 != nullptr && what2 != nullptr) {
-      for (i = 0; mt_get_type(what1[i].mt) != lEndT; i++) {
-         if (what1[i].nm == nm) {
-            if (what1[i].ep != nullptr) {
-               lFreeWhat(&(what1[i].ep));
-            }
-            what1[i].ep = *what2;
-            *what2 = nullptr;
-            ret = 0;
-            break;
-         }
-      }
-      lFreeWhat(what2);
+   if (what1 == nullptr || what2 == nullptr) {
+      return -1;
    }
-   DRETURN(ret);
+   try {
+      ocs::tom::set_sub_what(what1, nm, std::exchange(*what2, nullptr));
+   } catch (const ocs::tom::FieldException &) {
+      return -1;
+   }
+   return 0;
 }
 
 

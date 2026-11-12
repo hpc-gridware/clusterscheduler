@@ -60,7 +60,7 @@ namespace ocs::cull_stats {
       POS_ITERS,        ///< descriptor entries visited by that search (type)
       DCOPY_ELEM,       ///< temporary copies made by lCreateElem() to mark every field reduced (type)
       DCOPY_ELEM_B,     ///< their bytes (type)
-      DCOPY_OTHER,      ///< descriptor copies made by lCopyDescr() (type)
+      DCOPY_OTHER,      ///< descriptor copies made by lCopyDescr() (type); no longer counted since lCopyDescr() was removed
       DCOPY_OTHER_B,    ///< their bytes (type)
       DCOPY_UNPACK,     ///< temporary descriptors built while unpacking, before the shared one is taken (type)
       DCOPY_UNPACK_B,   ///< their bytes (type)

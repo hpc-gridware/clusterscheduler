@@ -25,6 +25,7 @@
 #include "tom/ocs_ElementCore.h"
 
 #include <cstring>
+#include <iterator>
 #include <string>
 
 #include "uti/ocs_TerminationManager.h"
@@ -41,6 +42,10 @@
 #include "tom/cull_state.h"
 
 #include "tom/ocs_ListCore.h"
+
+// IF YOU CHANGE THIS TABLE, CHANGE _enum_lMultiType in cull_types.h
+const char *multitypes[] = {"lEndT", "lDoubleT", "lUlongT", "lLongT", "lBoolT",  "lIntT",
+                            "lStringT", "lListT", "lObjectT", "lRefT", "lHostT", "lUlong64T"};
 
 namespace ocs::tom {
 
@@ -378,6 +383,18 @@ namespace ocs::tom {
          return -1;
       }
       return pos;
+   }
+
+   const char *type_name(const int mt) noexcept {
+      if (mt >= 0 && mt < static_cast<int>(std::size(::multitypes))) {
+         return ::multitypes[mt];
+      }
+      return "unknown multitype";
+   }
+
+   int field_type(const lDescr *descr, const int nm) noexcept {
+      const int pos = present_pos(descr, nm);
+      return pos < 0 ? static_cast<int>(lEndT) : mt_get_type(descr[pos].mt);
    }
 
    int descr_length(const lDescr *descr) noexcept {

@@ -42,7 +42,10 @@
 #include <unistd.h>
 
 #include "cull/cull_lerrno.h"
+#include "cull/cull_db.h"
 #include "cull/cull_dump_scan.h"
+#include "cull/cull_tree.h"
+#include "cull/cull_what_print.h"
 #include "cull/cull_file.h"
 #include "cull/cull_pack.h"
 #include "cull/cull_sort.h"
@@ -1649,6 +1652,195 @@ test_dump() {
    lFreeElem(&ep);
 }
 
+/// the hash of the text the print functions write, recorded on the code before the move; 0 while recording
+static constexpr std::uint64_t RestTextHash = 0x6ba2bcf5a05b2a91ULL;
+
+/**
+ * @brief The names of the elements of a string list, in list order
+ * @param lp the list, or nullptr
+ * @param nm the string field
+ * @return the names, joined by blanks
+ */
+static std::string
+names_of(const lList *lp, const int nm) {
+   std::string names;
+   for_each_ep_lv(ep, lp) {
+      if (!names.empty()) {
+         names += ' ';
+      }
+      const char *name = mt_get_type(ep->descr[lGetPosViaElem(ep, nm, SGE_NO_ABORT)].mt) == lHostT ? lGetHost(ep, nm)
+                                                                                                   : lGetString(ep, nm);
+      names += name != nullptr ? name : "(null)";
+   }
+   return names;
+}
+
+/**
+ * @brief Pin the rest of the old interface: small queries, helpers and debug output (CS-3077, rest group)
+ */
+static void
+test_rest() {
+   // small queries
+   lList *sets = lCreateList("sets", US_Type);
+   for (const char *name : {"one", "two", "three"}) {
+      lAddElemStr(&sets, US_name, name, US_Type);
+   }
+   lListElem *free_elem = lCreateElem(US_Type);
+   cull_state_set_lerrno(0);
+   bool queries = lGetNumberOfElem(nullptr) == 0 && cull_state_get_lerrno() == LELISTNULL &&
+                  lGetNumberOfElem(sets) == 3;
+   cull_state_set_lerrno(0);
+   queries = queries && lGetElemDescr(nullptr) == nullptr && cull_state_get_lerrno() == LEELEMNULL &&
+             lGetElemDescr(lFirst(sets)) == lFirst(sets)->descr;
+   cull_state_set_lerrno(0);
+   queries = queries && !lIsFreeElem(nullptr) && cull_state_get_lerrno() == LEELEMNULL && lIsFreeElem(free_elem) &&
+             !lIsFreeElem(lFirst(sets));
+   queries = queries && lGetNumberOfRemainingElem(lFirst(sets)) == 2 && lGetNumberOfRemainingElem(nullptr) == 0 &&
+             lGetNumberOfRemainingElem(lLast(sets)) == 0;
+   queries = queries && lGetType(TEST_Type, TEST_string) == lStringT && lGetType(TEST_Type, JB_job_number) == lEndT;
+   cull_state_set_lerrno(0);
+   queries = queries && lGetPosType(nullptr, 0) == NoName && cull_state_get_lerrno() == LEDESCRNULL &&
+             lGetPosType(TEST_Type, -1) == NoName && lGetPosType(TEST_Type, lGetPosInDescr(TEST_Type, TEST_host)) == lHostT;
+   lListElem *with_list = lFirstRW(sets);
+   lAddSubStr(with_list, UE_name, "alice", US_entries, UE_Type);
+   lList **ref = lGetListRef(with_list, US_entries);
+   queries = queries && ref != nullptr && *ref == lGetList(with_list, US_entries) &&
+             strcmp(lMt2Str(-1), "unknown multitype") == 0 && strcmp(lMt2Str(lUlong64T), "lUlong64T") == 0;
+   const bool list_ref_aborts = aborts([] {
+      lListElem *ep = lCreateElem(US_Type);
+      static_cast<void>(lGetListRef(ep, US_name));
+   });
+   lFreeElem(&free_elem);
+   CHECK(68, "the small queries give their results and error numbers as before", queries && list_ref_aborts);
+
+   // strings to lists
+   lList *lp = nullptr;
+   bool to_list = lString2List("a b,a c", &lp, ST_Type, ST_name, ", ") == 0 && names_of(lp, ST_name) == "a b c";
+   lFreeList(&lp);
+   to_list = to_list && lString2List(nullptr, &lp, ST_Type, ST_name, " ") == 1 && lp == nullptr;
+   to_list = to_list && lString2List("h1 h2 h1", &lp, TEST_Type, TEST_host, " ") == 0 &&
+             names_of(lp, TEST_host) == "h1 h2";
+   lFreeList(&lp);
+   to_list = to_list && lString2ListNone("NONE", &lp, ST_Type, ST_name, " ") == 0 && lp == nullptr;
+   to_list = to_list && lString2ListNone("a none", &lp, ST_Type, ST_name, " ") == 1 && lp == nullptr;
+   to_list = to_list && lString2ListNone("a b", &lp, ST_Type, ST_name, " ") == 0 && names_of(lp, ST_name) == "a b";
+   lFreeList(&lp);
+
+   // differences, splits, unique hosts
+   lList *a = nullptr;
+   lList *b = nullptr;
+   lString2List("a b c", &a, ST_Type, ST_name, " ");
+   lString2List("b c d", &b, ST_Type, ST_name, " ");
+   bool diff = lDiffListStr(ST_name, &a, &b) == 0 && names_of(a, ST_name) == "a" && names_of(b, ST_name) == "d" &&
+               lDiffListStr(ST_name, nullptr, &b) == -1;
+   lList *none = nullptr;
+   diff = diff && lDiffListStr(ST_name, &a, &none) == 0 && names_of(a, ST_name) == "a";
+   lFreeList(&a);
+   lFreeList(&b);
+   lList *numbers = lCreateList("numbers", TEST_Type);
+   for (lUlong k = 1; k <= 10; k++) {
+      lListElem *ep = lCreateElem(TEST_Type);
+      lSetUlong(ep, TEST_uint32, k);
+      lAppendElem(numbers, ep);
+   }
+   lCondition *big = lWhere("%T(%I > %u)", TEST_Type, TEST_uint32, 5U);
+   lList *small = nullptr;
+   bool split = lSplit(&numbers, &small, "small", big) == 0 && lGetNumberOfElem(numbers) == 5 &&
+                lGetNumberOfElem(small) == 5 && strcmp(lGetListName(small), "small") == 0 &&
+                lGetUlong(lFirst(small), TEST_uint32) == 1;
+   lCondition *none_big = lWhere("%T(%I > %u)", TEST_Type, TEST_uint32, 100U);
+   split = split && lSplit(&numbers, nullptr, nullptr, none_big) == 0 && numbers == nullptr &&
+           lSplit(nullptr, nullptr, nullptr, big) == -1;
+   lFreeWhere(&none_big);
+   lFreeWhere(&big);
+   lFreeList(&small);
+   lList *hosts = nullptr;
+   for (const char *h : {"h2", "h1", "h2", "h1", "h3"}) {
+      lListElem *ep = lCreateElem(TEST_Type);
+      lSetHost(ep, TEST_host, h);
+      if (hosts == nullptr) {
+         hosts = lCreateList("hosts", TEST_Type);
+      }
+      lAppendElem(hosts, ep);
+   }
+   const bool uniq = lUniqHost(hosts, TEST_host) == 0 && names_of(hosts, TEST_host) == "h1 h2 h3";
+   lFreeList(&hosts);
+   CHECK(69, "lString2List, lString2ListNone, lDiffListStr, lSplit and lUniqHost give their results as before",
+         to_list && diff && split && uniq);
+
+   // trees, reduced descriptors, selections
+   lList *tree = lCreateList("tree", STN_Type);
+   lListElem *root = lAddElemStr(&tree, STN_name, "root", STN_Type);
+   lListElem *left = lAddSubStr(root, STN_name, "left", STN_children, STN_Type);
+   lAddSubStr(root, STN_name, "right", STN_children, STN_Type);
+   lAddSubStr(left, STN_name, "leaf", STN_children, STN_Type);
+   const bool counts = lGetNumberOfNodes(nullptr, tree, STN_children) == 4 &&
+                       lGetNumberOfLeafs(nullptr, tree, STN_children) == 2 &&
+                       lGetNumberOfNodes(root, nullptr, STN_children) == 4 && lGetNumberOfLeafs(root, nullptr, STN_children) == 2;
+   lFreeList(&tree);
+   lEnumeration *what_name = lWhat("%T(%I)", US_Type, US_name);
+   const lDescr *reduced = lGetReducedDescr(US_Type, what_name);
+   const bool reduction = reduced != nullptr && lGetPosInDescr(reduced, US_name) >= 0 &&
+                          lGetPosInDescr(reduced, US_type) < 0;
+   ocs_cull_descr_release(&reduced);
+   lEnumeration *none_what = lWhat("%T(NONE)", US_Type);
+   const bool no_reduction = lGetReducedDescr(US_Type, none_what) == nullptr;
+   lFreeWhat(&none_what);
+   lEnumeration *merged = lWhat("%T(%I%I->%T(%I))", JB_Type, JB_job_number, JB_ja_tasks, JAT_Type, JAT_task_number);
+   lEnumeration *other = lWhat("%T(%I%I->%T(%I))", JB_Type, JB_owner, JB_ja_tasks, JAT_Type, JAT_status);
+   bool merge = lMergeWhat(&merged, &other) == 0 && other == nullptr && merged != nullptr;
+   // the fields of both, in type order; for a field in both, the sub-selections of both (before CS-3077 the
+   // sub-selection of the second was lost, JAT_status here)
+   int merged_fields = 0;
+   const lEnumeration *tasks_sub = nullptr;
+   for (int i = 0; merged != nullptr && merged[i].nm != NoName; i++) {
+      merged_fields++;
+      if (merged[i].nm == JB_ja_tasks) {
+         tasks_sub = merged[i].ep;
+      }
+   }
+   bool sub_task_number = false;
+   bool sub_status = false;
+   for (int i = 0; tasks_sub != nullptr && tasks_sub[i].nm != NoName; i++) {
+      sub_task_number = sub_task_number || tasks_sub[i].nm == JAT_task_number;
+      sub_status = sub_status || tasks_sub[i].nm == JAT_status;
+   }
+   printf("merged: %d fields, sub-selection of JB_ja_tasks with JAT_task_number %d, JAT_status %d\n", merged_fields,
+          sub_task_number, sub_status);
+   merge = merge && merged_fields == 3 && sub_task_number && sub_status;
+   lEnumeration *sub = lWhat("%T(%I)", UE_Type, UE_name);
+   const bool set_sub = lWhatSetSubWhat(what_name, US_name, &sub) == 0 && sub == nullptr;
+   lEnumeration *sub2 = lWhat("%T(%I)", UE_Type, UE_name);
+   const bool set_missing = lWhatSetSubWhat(what_name, US_type, &sub2) == -1 && sub2 == nullptr;
+
+   // the text of the print functions
+   std::string text = dump_text([&](FILE *fp) { lWriteListTo(sets, fp); });
+   text += dump_text([&](FILE *fp) { lWriteElemTo(lFirst(sets), fp); });
+   dstring buffer = DSTRING_INIT;
+   lWriteElemToStr(lFirst(sets), &buffer);
+   text += sge_dstring_get_string(&buffer) != nullptr ? sge_dstring_get_string(&buffer) : "";
+   sge_dstring_free(&buffer);
+   text += dump_text([&](FILE *fp) { lWriteWhatTo(what_name, fp); });
+   lCondition *where = lWhere("%T(%I == %s && (%I > %u || !(%I p= %s)))", US_Type, US_name, "one", US_type, 3U,
+                              US_name, "t*");
+   text += dump_text([&](FILE *fp) { lWriteWhereTo(where, fp); });
+   for (int mt = -1; mt <= lUlong64T + 1; mt++) {
+      text += lMt2Str(mt);
+   }
+   const std::uint64_t hash = fnv1a(text.data(), text.size());
+   if (RestTextHash == 0) {
+      printf("rest text hash: 0x%016llxULL\n", static_cast<unsigned long long>(hash));
+   }
+   lFreeWhere(&where);
+   lFreeWhat(&merged);
+   lFreeWhat(&what_name);
+   lFreeList(&sets);
+   CHECK(70, "the tree counts, lGetReducedDescr, lMergeWhat and lWhatSetSubWhat, and the text of the print "
+             "functions are those of before",
+         counts && reduction && no_reduction && merge && set_sub && set_missing &&
+         (RestTextHash == 0 || hash == RestTextHash));
+}
+
 int main(int argc, char *argv[]) {
    lInit(nmv);
    return ocs::module_test::run(argc, argv, {
@@ -1751,5 +1943,10 @@ int main(int argc, char *argv[]) {
         "read each back and dump it again", "read every cut of the text", "write an element to a file, read it"},
        "the text and the error numbers of before, by hash; the same text after a round trip",
        {{"LEG-01", "covers"}}, {65, 66, 67}, test_dump},
+      {"LEGACY-16", "the rest",
+       "the small queries, the helpers and the debug output keep their results",
+       {"ask the small queries with and without arguments", "turn strings into lists, diff, split, keep hosts once",
+        "count a tree, reduce a descriptor, merge and nest selections", "print a list, an element, a selection and a condition"},
+       "the results and error numbers of before, the text by hash", {{"LEG-01", "covers"}}, {68, 69, 70}, test_rest},
    });
 }

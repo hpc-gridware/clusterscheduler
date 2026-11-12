@@ -58,6 +58,7 @@
 #include "tom/ocs_ElementCore.h"
 #include "tom/ocs_FieldException.h"
 #include "tom/ocs_ListCore.h"
+#include "tom/ocs_ListOpsCore.h"
 #include "tom/ocs_SelectCore.h"
 #include "tom/ocs_SoftPath.h"
 #include "cull/cull_lerrnoP.h"
@@ -65,6 +66,44 @@
 #include "cull/cull_hash.h"
 #include "cull/cull_pack.h"
 #include "cull/pack.h"
+
+namespace {
+
+   /**
+    * @brief Parse a string into a list through the core, as lString2List() and lString2ListNone() do
+    * @param function the old function's name, for the abort
+    * @param lpp the list reference
+    * @param dp the descriptor of the elements
+    * @param parse calls the core
+    * @return 0 on success, 1 on error, the list freed and nullptr then
+    */
+   template <typename Parse>
+   int ocs_parse_to_list(const char *function, lList **lpp, const lDescr *dp, Parse parse) {
+      if (lpp == nullptr) {
+         ocs::tom::report_soft_path(function, NoName, ocs::tom::SoftPathReason::NullArgument);
+         return 1;
+      }
+      if (dp == nullptr) {
+         LERROR(LEDESCRNULL);
+         return 0;
+      }
+      try {
+         parse(*lpp);
+      } catch (const ocs::tom::FieldException &e) {
+         if (e.reason() == ocs::tom::FieldException::Reason::DuplicateKey) {
+            ocs::tom::legacy_abort(function, e);
+         }
+         return 1;
+      } catch (const ocs::tom::ListCoreError &e) {
+         if (e.lerrno() != 0) {
+            LERROR(e.lerrno());
+         }
+         return 1;
+      }
+      return 0;
+   }
+
+} // namespace
 
 /**
  * @brief Splits a list into two list
@@ -79,51 +118,22 @@
  * @param cp selects rows within 'slp'
  *
  * @return error status 0 - OK -1 - Error
+ *
+ * @note A thin wrapper over ocs::tom::split_list() of the core (CS-3077).
+ *
+ * @see Typed form: ocs::tom::List<T>::split_off().
  */
-int lSplit(lList **slp, lList **ulp, const char *ulp_name,
-           const lCondition *cp) {
-   DENTER(TOP_LAYER);
-
-   lListElem *ep, *next;
-   int has_been_allocated = 0;
-
-   /*
-      iterate through the source list call lCompare and chain all elems
-      that don't fullfill the condition into a new list.
-    */
-   if (!slp) {
-      DRETURN(-1);
+int lSplit(lList **slp, lList **ulp, const char *ulp_name, const lCondition *cp) {
+   if (slp == nullptr) {
+      return -1;
    }
-
-   for (ep = lFirstRW(*slp); ep; ep = next) {
-      next = ep->next;          /* this is important, cause the elem is dechained */
-
-      if (!lCompare(ep, cp)) {
-         if (ulp && !*ulp) {
-            *ulp = lCreateList(ulp_name ? ulp_name : "ulp", (*slp)->descr);
-            if (!*ulp) {
-               DRETURN(-1);
-            }
-            has_been_allocated = 1;
-         }
-         if (ulp) {
-            ep = lDechainElem(*slp, ep);
-            lAppendElem(*ulp, ep);
-         } else {
-            lRemoveElem(*slp, &ep);
-         }
-      }
+   try {
+      ocs::tom::split_list(*slp, ulp, ulp_name, cp);
+   } catch (const ocs::tom::ListCoreError &e) {
+      LERROR(e.lerrno());
+      return -1;
    }
-
-   /* if no elements remain, free the list and return nullptr */
-   if (*slp && lGetNumberOfElem(*slp) == 0) {
-      lFreeList(slp);
-   }
-   if (has_been_allocated && *ulp && lGetNumberOfElem(*ulp) == 0) {
-      lFreeList(ulp);
-   }
-
-   DRETURN(0);
+   return 0;
 }
 
 /**
@@ -503,20 +513,11 @@ int lPartialDescr(const lEnumeration *ep, const lDescr *sdp, lDescr *ddp, int *i
  * @param what the fields to keep
  * @return the shared descriptor holding a reference for the caller, who gives it
  *         up with ocs_cull_descr_release(), or nullptr on error
+ *
+ * @note A thin wrapper over ocs::tom::reduced_descr() of the core (CS-3077).
  */
 const lDescr *lGetReducedDescr(const lDescr *type, const lEnumeration *what) {
-   DENTER(CULL_LAYER);
-
-   if (lCountWhat(what, type) <= 0) {
-      DRETURN(nullptr);
-   }
-
-   bool owned;
-   const lDescr *dp = ocs_cull_what_descr(what, type, &owned);
-   if (dp == nullptr) {
-      DRETURN(nullptr);
-   }
-   DRETURN(owned ? dp : ocs_cull_descr_ref(dp));
+   return ocs::tom::reduced_descr(type, what);
 }
 
 /**
@@ -532,62 +533,18 @@ const lDescr *lGetReducedDescr(const lDescr *type, const lEnumeration *what) {
  * @param nm list field
  * @param dlmt the separator between entries; nullptr means any whitespace
  *
- * @return error state 1 - OK 0 - On error
+ * @return 0 on success, 1 on error or for a null string; on an error the list is freed and nullptr
+ *
+ * @note A thin wrapper over ocs::tom::string_to_list() of the core (CS-3077).
+ *
+ * @see Typed form: ocs::tom::ListPtr<T>::from_string().
  */
-int lString2List(const char *s, lList **lpp, const lDescr *dp, int nm,
-                 const char *dlmt) {
-   DENTER(TOP_LAYER);
-
-   int pos;
-   int dataType;
-   struct saved_vars_s *context = nullptr;
-
-   if (!s) {
-      DRETURN(1);
+int lString2List(const char *s, lList **lpp, const lDescr *dp, int nm, const char *dlmt) {
+   if (s == nullptr) {
+      return 1;
    }
-
-   pos = lGetPosInDescr(dp, nm);
-   dataType = lGetPosType(dp, pos);
-   switch (dataType) {
-      case lStringT:
-         DPRINTF("lString2List: got lStringT data type\n");
-         for (s = sge_strtok_r(s, dlmt, &context); s; s = sge_strtok_r(nullptr, dlmt, &context)) {
-            if (lGetElemStr(*lpp, nm, s)) {
-               /* silently ignore multiple occurencies */
-               continue;
-            }
-            if (!lAddElemStr(lpp, nm, s, dp)) {
-               sge_free_saved_vars(context);
-               lFreeList(lpp);
-               DRETURN(1);
-            }
-         }
-
-         break;
-      case lHostT:
-         DPRINTF("lString2List: got lHostT data type\n");
-         for (s = sge_strtok_r(s, dlmt, &context); s; s = sge_strtok_r(nullptr, dlmt, &context)) {
-            if (lGetElemHost(*lpp, nm, s)) {
-               /* silently ignore multiple occurencies */
-               continue;
-            }
-            if (!lAddElemHost(lpp, nm, s, dp)) {
-               sge_free_saved_vars(context);
-               lFreeList(lpp);
-               DRETURN(1);
-            }
-         }
-
-         break;
-      default:
-         DPRINTF("lString2List: unexpected data type\n");
-         break;
-   }
-
-   if (context)
-      sge_free_saved_vars(context);
-
-   DRETURN(0);
+   return ocs_parse_to_list("lString2List", lpp, dp,
+                            [&](lList *&lp) { ocs::tom::string_to_list(s, lp, dp, nm, dlmt); });
 }
 
 /**
@@ -599,42 +556,17 @@ int lString2List(const char *s, lList **lpp, const lDescr *dp, int nm,
  * @param nm the field the parsed string is stored in
  * @param dlmt the separator between entries; nullptr means any whitespace
  * @return 1 on success, 0 on error
+ *
+ * @note A thin wrapper over ocs::tom::string_to_list_none() of the core (CS-3077).
+ *
+ * @see Typed form: ocs::tom::ListPtr<T>::from_string() with ocs::tom::NoneName::Empty.
  */
-int lString2ListNone(const char *s, lList **lpp, const lDescr *dp,
-                     int nm, const char *dlmt) {
-   int pos;
-   int dataType;
-   if (lString2List(s, lpp, dp, nm, dlmt))
+int lString2ListNone(const char *s, lList **lpp, const lDescr *dp, int nm, const char *dlmt) {
+   if (s == nullptr) {
       return 1;
-
-
-   pos = lGetPosInDescr(dp, nm);
-   dataType = lGetPosType(dp, pos);
-   switch (dataType) {
-      case lStringT:
-         if (lGetNumberOfElem(*lpp) > 1 && lGetElemCaseStr(*lpp, nm, "none")) {
-            lFreeList(lpp);
-            return 1;
-         }
-
-         if (lGetNumberOfElem(*lpp) == 1 && lGetElemCaseStr(*lpp, nm, "none"))
-            lFreeList(lpp);
-         break;
-      case lHostT:
-         if (lGetNumberOfElem(*lpp) > 1 && lGetElemHost(*lpp, nm, "none")) {
-            lFreeList(lpp);
-            return 1;
-         }
-
-         if (lGetNumberOfElem(*lpp) == 1 && lGetElemHost(*lpp, nm, "none"))
-            lFreeList(lpp);
-         break;
-
-      default:
-         break;
    }
-
-   return 0;
+   return ocs_parse_to_list("lString2ListNone", lpp, dp,
+                            [&](lList *&lp) { ocs::tom::string_to_list_none(s, lp, dp, nm, dlmt); });
 }
 
 /**
@@ -648,33 +580,19 @@ int lString2ListNone(const char *s, lList **lpp, const lDescr *dp,
  * @param lpp2 second list
  *
  * @return error status 0 - OK -1 - Error
+ *
+ * @note A thin wrapper over ocs::tom::remove_common_str() of the core (CS-3077).
+ *
+ * @see Typed form: ocs::tom::List<T>::remove_common().
  */
 int lDiffListStr(int nm, lList **lpp1, lList **lpp2) {
-   DENTER(CULL_LAYER);
-
-   const char *key;
-   const lListElem *ep, *to_check;
-
-   if (!lpp1 || !lpp2) {
-      DRETURN(-1);
+   if (lpp1 == nullptr || lpp2 == nullptr) {
+      return -1;
    }
-
-   if (!*lpp1 || !*lpp2) {
-      DRETURN(0);
+   try {
+      ocs::tom::remove_common_str(*lpp1, *lpp2, nm, true);
+   } catch (const ocs::tom::FieldException &e) {
+      ocs::tom::legacy_abort("lDiffListStr", e);
    }
-
-   ep = lFirst(*lpp1);
-   while (ep) {
-      to_check = ep;
-      key = lGetString(to_check, nm);
-
-      ep = lNext(ep);           /* point to next element before del */
-
-      if (lGetElemStr(*lpp2, nm, key) != nullptr) {
-         lDelElemStr(lpp2, nm, key);
-         lDelElemStr(lpp1, nm, key);
-      }
-   }
-
-   DRETURN(0);
+   return 0;
 }

@@ -24,6 +24,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <fnmatch.h>
+#include <utility>
 #include <vector>
 
 #include "uti/sge_hostname.h"
@@ -904,6 +905,90 @@ namespace ocs::tom {
             // a comparison, or the list field of a condition on its elements
             return field_pos(descr, cp->operand.cmp.nm) >= 0;
       }
+   }
+
+   lEnumeration *merge_what(lEnumeration *what1, lEnumeration *what2) {
+      if (what2 == nullptr) {
+         return what1;
+      }
+      if (what1 == nullptr || what1[0].pos == WHAT_NONE || what2[0].pos == WHAT_ALL) {
+         free_what(what1);
+         return what2;
+      }
+      if (what1[0].pos == WHAT_ALL || what2[0].pos == WHAT_NONE) {
+         free_what(what2);
+         return what1;
+      }
+      std::vector<lEnumeration> entries;
+      auto give_up = [&] {
+         for (lEnumeration &entry : entries) {
+            free_what(entry.ep);
+         }
+         free_what(what1);
+         free_what(what2);
+      };
+      try {
+         for (int i = 0; mt_get_type(what1[i].mt) != lEndT; i++) {
+            entries.push_back({what1[i].pos, what1[i].mt, what1[i].nm, std::exchange(what1[i].ep, nullptr), nullptr,
+                               nullptr});
+         }
+         for (int i = 0; mt_get_type(what2[i].mt) != lEndT; i++) {
+            auto same = std::ranges::find_if(entries, [&](const lEnumeration &entry) {
+               return entry.nm == what2[i].nm;
+            });
+            lEnumeration *sub = std::exchange(what2[i].ep, nullptr);
+            if (same == entries.end()) {
+               entries.push_back({what2[i].pos, what2[i].mt, what2[i].nm, sub, nullptr, nullptr});
+            } else if (same->ep != nullptr && sub != nullptr) {
+               same->ep = merge_what(std::exchange(same->ep, nullptr), sub);
+            } else {
+               // one of both selects the whole sub-list or sub-object, so the merge does
+               free_what(same->ep);
+               free_what(sub);
+            }
+         }
+      } catch (...) {
+         give_up();
+         throw;
+      }
+      auto *ep = static_cast<lEnumeration *>(calloc(entries.size() + 1, sizeof(lEnumeration)));
+      if (ep == nullptr) {
+         give_up();
+         throw ListCoreError(LEMALLOC, "out of memory merging two selections");
+      }
+      std::ranges::copy(entries, ep);
+      ep[entries.size()].pos = 0;
+      ep[entries.size()].nm = NoName;
+      ep[entries.size()].mt = lEndT;
+      ep[entries.size()].ep = nullptr;
+      free_what(what1);
+      free_what(what2);
+      sort_what_by_pos(ep);
+      return ep;
+   }
+
+   void set_sub_what(lEnumeration *what, const int nm, lEnumeration *sub) {
+      for (int i = 0; mt_get_type(what[i].mt) != lEndT; i++) {
+         if (what[i].nm == nm) {
+            free_what(what[i].ep);
+            what[i].ep = sub;
+            return;
+         }
+      }
+      free_what(sub);
+      throw_field_exception(FieldException::Reason::ForeignField, nm, nullptr);
+   }
+
+   const lDescr *reduced_descr(const lDescr *descr, const lEnumeration *what) noexcept {
+      if (count_what(what, descr) <= 0) {
+         return nullptr;
+      }
+      bool owned;
+      const lDescr *dp = ocs_cull_what_descr(what, descr, &owned);
+      if (dp == nullptr) {
+         return nullptr;
+      }
+      return owned ? dp : ocs_cull_descr_ref(dp);
    }
 
 } // namespace ocs::tom

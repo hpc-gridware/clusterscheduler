@@ -52,12 +52,8 @@
 /// Walk the fields of a descriptor, stopping at the #NoName terminator
 #define for_each_attr(ATTR, LDP) for (ATTR = LDP->nm; ATTR != NoName; LDP++, ATTR = LDP->nm)
 
-extern const char *multitypes[];
-
 /// Compares two elements on one field; returns a strcmp style result
 typedef int (*lCmpFunction)(lListElem *, lListElem *, int);
-
-void lWriteDescrTo(const lDescr *dp, FILE *fp);
 
 int _lGetPosInDescr(const lDescr *dp, int name);
 
@@ -66,8 +62,6 @@ int lGetPosInDescr(const lDescr *dp, int name);
 int lGetPosType(const lDescr *dp, int pos);
 
 int lCountDescr(const lDescr *dp);
-
-lDescr *lCopyDescr(const lDescr *dp);
 
 int lGetPosViaElem(const lListElem *element, int nm, int abort);
 
@@ -191,25 +185,6 @@ int lAddDouble(lListElem *ep, int name, lDouble offset);
 int lAddUlong(lListElem *ep, int name, lUlong offset);
 
 int lAddUlong64(lListElem *ep, int name, lUlong64 offset);
-
-int intcmp(lInt i0, lInt i1);
-
-int ulongcmp(lUlong u0, lUlong u1);
-
-int bitmaskcmp(lUlong bm0, lUlong bm1);
-
-int ulong64cmp(lUlong64 u0, lUlong64 u1);
-
-int doublecmp(lDouble u0, lDouble u1);
-
-int charcmp(lChar u0, lChar u1);
-
-int boolcmp(lBool u0, lBool u1);
-
-int longcmp(lLong u0, lLong u1);
-
-int refcmp(lRef u0, lRef u1);
-
 
 /* - -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -
 

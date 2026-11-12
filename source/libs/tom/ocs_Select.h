@@ -52,6 +52,7 @@
 #include "tom/ocs_FieldException.h"
 #include "tom/ocs_FieldTraits.h"
 #include "tom/ocs_PackCore.h"
+#include "tom/ocs_PrintCore.h"
 #include "tom/ocs_SelectCore.h"
 
 namespace ocs::tom {
@@ -228,6 +229,19 @@ namespace ocs::tom {
        */
       explicit operator bool() const noexcept {
          return cp_ != nullptr;
+      }
+
+      /**
+       * @brief Write the condition as text for debugging, as lWriteWhereTo() does
+       * @param fp the stream
+       * @throw FieldException with reason EmptyHandle if the handle is empty
+       * @see Old form: lWriteWhereTo(); core: ocs::tom::print_where()
+       */
+      void print(FILE *fp) const {
+         if (cp_ == nullptr) [[unlikely]] {
+            throw_field_exception(FieldException::Reason::EmptyHandle, NoName, T::descriptor.e);
+         }
+         print_to(fp, [this](dstring *buffer) { print_where(buffer, cp_, 0); });
       }
 
       /**
@@ -547,6 +561,35 @@ namespace ocs::tom {
        */
       void pack(sge_pack_buffer &pb) const {
          pack_what(&pb, ep_);
+      }
+
+      /**
+       * @brief Write the selection with its nested selections as text for debugging, as lWriteWhatTo() does
+       * @param fp the stream
+       * @throw FieldException with reason EmptyHandle if the handle is empty
+       * @see Old form: lWriteWhatTo(); core: ocs::tom::print_what()
+       */
+      void print(FILE *fp) const {
+         if (ep_ == nullptr) [[unlikely]] {
+            throw_field_exception(FieldException::Reason::EmptyHandle, NoName, T::descriptor.e);
+         }
+         print_to(fp, [this](dstring *buffer) { print_what(buffer, ep_, 0); });
+      }
+
+      /**
+       * @brief Merge another selection of this type into this one, as lMergeWhat() does
+       *
+       * The result selects the fields of both. A field both select keeps the
+       * merge of both nested selections; if either takes the whole sub-list or
+       * sub-object, the result does too.
+       *
+       * @param other the other selection, taken over
+       * @return the merged selection; this handle and @p other are empty afterwards
+       * @throw ocs::RuntimeException if there is no memory; both selections are freed then
+       * @see Old form: lMergeWhat(); core: ocs::tom::merge_what()
+       */
+      [[nodiscard]] What merge(What &&other) && {
+         return from_typed(merge_what(release(), other.release()));
       }
 
       /**

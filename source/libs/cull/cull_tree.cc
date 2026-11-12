@@ -44,6 +44,7 @@
 #include "uti/sge_rmon_macros.h"
 
 #include "cull/cull.h"
+#include "tom/ocs_ListOpsCore.h"
 
 /**
  * @brief Number of elements and subelements
@@ -57,28 +58,13 @@
  * @param nm field name id within element
  *
  * @return number of elements
+ *
+ * @note A thin wrapper over ocs::tom::count_nodes() of the core (CS-3077).
+ *
+ * @see Typed form: ocs::tom::ConstElement<T>::count_nodes().
  */
 int lGetNumberOfNodes(const lListElem *ep, const lList *lp, int nm) {
-   DENTER(CULL_LAYER);
-
-   int n = 0;
-
-   if (ep) {
-      int pos;
-
-      n = 1;
-
-      if ((pos = lGetPosViaElem(ep, nm, SGE_NO_ABORT)) >= 0 && mt_get_type(ep->descr[pos].mt) == lListT) {
-         if ((lp = lGetPosList(ep, pos)))
-            n += lGetNumberOfNodes(nullptr, lp, nm);
-      }
-      DRETURN(n);
-   } else {
-      for_each_ep_lv(lep, lp) {
-         n += lGetNumberOfNodes(lep, nullptr, nm);
-      }
-      DRETURN(n);
-   }
+   return ocs::tom::count_nodes(ep, lp, nm);
 }
 
 /**
@@ -91,26 +77,11 @@ int lGetNumberOfNodes(const lListElem *ep, const lList *lp, int nm) {
  * @param nm field name if within ep
  *
  * @return number of leaves
+ *
+ * @note A thin wrapper over ocs::tom::count_leaves() of the core (CS-3077).
+ *
+ * @see Typed form: ocs::tom::ConstElement<T>::count_leaves().
  */
 int lGetNumberOfLeafs(const lListElem *ep, const lList *lp, int nm) {
-   DENTER(CULL_LAYER);
-
-   int n = 0;
-
-   if (ep) {
-      int pos;
-
-      if ((pos = lGetPosViaElem(ep, nm, SGE_NO_ABORT)) >= 0 && mt_get_type(ep->descr[pos].mt) == lListT) {
-         if (!(lp = lGetPosList(ep, pos)))
-            n = 1;
-         else
-            n = lGetNumberOfLeafs(nullptr, lp, nm);
-      }
-      DRETURN(n);
-   } else {
-      for_each_ep_lv(lep, lp) {
-         n += lGetNumberOfLeafs(lep, nullptr, nm);
-      }
-      DRETURN(n);
-   }
+   return ocs::tom::count_leaves(ep, lp, nm);
 }

@@ -75,11 +75,10 @@ typedef char *lHost;         ///< cull host name field, owned by the element
 typedef lListElem *lObject;  ///< cull field holding a single sub-object
 typedef void *lRef;          ///< cull field holding an opaque pointer; never spooled
 
-/* IF YOU CHANGE THIS ENUM, CHANGE cull_multitype.c/multitypes[] */
 /**
  * @brief The data type of a cull field
  *
- * @note If you change this enum, change `multitypes[]` in cull_multitype.cc
+ * @note If you change this enum, change `multitypes[]` in ocs_ElementCore.cc
  *       to match — the array is indexed by these values.
  */
 enum _enum_lMultiType {
@@ -96,6 +95,9 @@ enum _enum_lMultiType {
    lHostT,     ///< @ref lHost
    lUlong64T   ///< @ref lUlong64
 };
+
+/// Name of each @ref _enum_lMultiType, indexed by the enumerator; used in error messages and dumps
+extern const char *multitypes[];
 
 /* flags for the field definition
  * reserve 8 bit for data types (currently only 4 bit in use) */

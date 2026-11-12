@@ -47,7 +47,9 @@
 #include "tom/ocs_ElementCore.h"
 #include "tom/ocs_DumpCore.h"
 #include "tom/ocs_FieldTraits.h"
+#include "tom/ocs_ListOpsCore.h"
 #include "tom/ocs_Pack.h"
+#include "tom/ocs_PrintCore.h"
 #include "tom/ocs_ListCore.h"
 #include "tom/ocs_Select.h"
 #include "tom/ocs_SelectCore.h"
@@ -646,6 +648,50 @@ namespace ocs::tom {
             throw_field_exception(FieldException::Reason::EmptyHandle, NoName, T::descriptor.e);
          }
          dump_elem(fp, ep_, indent);
+      }
+
+      /**
+       * @brief Write the element as text for debugging, as lWriteElemTo() does
+       *
+       * The text is not read back; dump() writes the form that is.
+       *
+       * @param fp the stream
+       * @throw FieldException with reason EmptyHandle if the handle is empty
+       * @see Old form: lWriteElemTo(); core: ocs::tom::print_elem()
+       */
+      void print(FILE *fp) const {
+         if (ep_ == nullptr) [[unlikely]] {
+            throw_field_exception(FieldException::Reason::EmptyHandle, NoName, T::descriptor.e);
+         }
+         print_to(fp, [this](dstring *buffer) { print_elem(buffer, ep_, 0); });
+      }
+
+      /**
+       * @brief The number of nodes of the tree under this element, the element itself included, as
+       *        lGetNumberOfNodes() counts them
+       * @tparam F a list field of this type holding elements of this type, the children
+       * @return the number, 0 for an empty handle
+       * @see Old form: lGetNumberOfNodes(); core: ocs::tom::count_nodes()
+       */
+      template <auto F>
+         requires FieldOf<F, T> && (FieldTraits<F>::type == FieldType::List) &&
+                  std::is_same_v<typename FieldTraits<F>::Sub, T>
+      [[nodiscard]] int count_nodes() const noexcept {
+         return ep_ != nullptr ? ocs::tom::count_nodes(ep_, nullptr, static_cast<int>(F)) : 0;
+      }
+
+      /**
+       * @brief The number of leaves of the tree under this element, the elements without children, as
+       *        lGetNumberOfLeafs() counts them
+       * @tparam F a list field of this type holding elements of this type, the children
+       * @return the number, 0 for an empty handle
+       * @see Old form: lGetNumberOfLeafs(); core: ocs::tom::count_leaves()
+       */
+      template <auto F>
+         requires FieldOf<F, T> && (FieldTraits<F>::type == FieldType::List) &&
+                  std::is_same_v<typename FieldTraits<F>::Sub, T>
+      [[nodiscard]] int count_leaves() const noexcept {
+         return ep_ != nullptr ? ocs::tom::count_leaves(ep_, nullptr, static_cast<int>(F)) : 0;
       }
 
       /**

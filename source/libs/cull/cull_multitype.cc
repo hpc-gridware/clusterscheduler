@@ -71,26 +71,6 @@
 
 #define CULL_BASIS_LAYER CULL_LAYER ///< rmon layer this file logs under
 
-/* ---------- global variable --------------------------------- */
-
-
-/// Name of each @ref _enum_lMultiType, indexed by the enumerator; used in error messages and dumps
-const char *multitypes[] =
-        {
-                "lEndT",
-                "lDoubleT",
-                "lUlongT",
-                "lLongT",
-                "lBoolT",
-                "lIntT",
-                "lStringT",
-                "lListT",
-                "lObjectT",
-                "lRefT",
-                "lHostT",
-                "lUlong64T"
-        };
-
 namespace {
 
    /**
@@ -229,15 +209,13 @@ int lGetPosViaElem(const lListElem *element, int name, int do_abort) {
 /**
  * @brief Returns the string representation of a type id
  *
- * @param mt see the read/write variant
- * @return the string, or nullptr when the field is unset
+ * @param mt the field type, e.g. lUlongT
+ * @return the name, e.g. "lUlongT", or "unknown multitype"
+ *
+ * @note A thin wrapper over ocs::tom::type_name() of the core (CS-3077).
  */
 const char *lMt2Str(int mt) {
-   if (mt >= 0 && mt < (int) (sizeof(multitypes) / sizeof(char *))) {
-      return multitypes[mt];
-   } else {
-      return "unknown multitype";
-   }
+   return ocs::tom::type_name(mt);
 }
 
 /**
@@ -260,89 +238,6 @@ int lCountDescr(const lDescr *dp) {
       return -1;
    }
    return ocs::tom::descr_length(dp);
-}
-
-/**
- * @brief Copys a descriptor
- *
- * Returns a pointer to a copied descriptor, has to be freed by
- * the user.
- *
- * @param dp descriptor
- *
- * @return descriptor pointer or nullptr in case of error
- */
-lDescr *lCopyDescr(const lDescr *dp) {
-   DENTER(CULL_BASIS_LAYER);
-
-   int i;
-   lDescr *new_descr = nullptr;
-
-   if (!dp) {
-      LERROR(LEDESCRNULL);
-      goto error;
-   }
-
-   if ((i = lCountDescr(dp)) == -1) {
-      LERROR(LEDESCRNULL);
-      goto error;
-   }
-
-   if (!(new_descr = (lDescr *) sge_malloc(sizeof(lDescr) * (i + 1)))) {
-      LERROR(LEMALLOC);
-      goto error;
-   }
-   memcpy(new_descr, dp, sizeof(lDescr) * (i + 1));
-   // a plain copy has no header, so it must not carry the reference count flag of a shared source
-   new_descr[0].mt &= ~CULL_DESCR_INTERNED;
-   CULL_STATS_TYPE(dp->nm, DCOPY_OTHER, 1);
-   CULL_STATS_TYPE(dp->nm, DCOPY_OTHER_B, sizeof(lDescr) * (i + 1));
-
-   DRETURN(new_descr);
-
-   error:
-   DPRINTF("lCopyDescr failed\n");
-   DRETURN(nullptr);
-}
-
-/**
- * @brief Writes a descriptor (for debugging purpose)
- *
- * Writes a descriptor (for debugging purpose)
- *
- * @param dp descriptor
- * @param fp output stream
- */
-void lWriteDescrTo(const lDescr *dp, FILE *fp) {
-   DENTER(CULL_LAYER);
-
-   int i;
-
-   if (!dp) {
-      LERROR(LEDESCRNULL);
-      DRETURN_VOID;
-   }
-
-   for (i = 0; mt_get_type(dp[i].mt) != lEndT; i++) {
-      // the tables live in the lists, a descriptor only says whether a field is hashed
-      const char *format = "nm: %d(%-20.20s) mt: %d %c\n";
-      int do_hash = ' ';
-      if (dp[i].mt & CULL_HASH) {
-         if (dp[i].mt & CULL_UNIQUE) {
-            do_hash = 'u';
-         } else {
-            do_hash = 'h';
-         }
-      }
-
-      if (!fp) {
-         DPRINTF(format, dp[i].nm, lNm2Str(dp[i].nm), dp[i].mt, do_hash);
-      } else {
-         fprintf(fp, format, dp[i].nm, lNm2Str(dp[i].nm), dp[i].mt, do_hash);
-      }
-   }
-
-   DRETURN_VOID;
 }
 
 /**
@@ -682,18 +577,16 @@ const char *lGetPosHost(const lListElem *ep, int pos) {
  * @param nm field name id
  *
  * @return Type id or lEndT
+ *
+ * @note A thin wrapper over ocs::tom::field_type() of the core (CS-3077).
  */
 int lGetType(const lDescr *dp, int nm) {
-   DENTER(CULL_BASIS_LAYER);
-
-   int pos;
-
-   pos = lGetPosInDescr(dp, nm);
-   if (pos < 0) {
-      DRETURN(lEndT);
+   if (dp == nullptr) {
+      LERROR(LEDESCRNULL);
+      return lEndT;
    }
-
-   DRETURN(mt_get_type(dp[pos].mt));
+   CULL_STATS_TYPE(dp->nm, POS_CALLS, 1);
+   return ocs::tom::field_type(dp, nm);
 }
 
 /**
@@ -2091,119 +1984,6 @@ int lSetRef(lListElem *ep, int name, lRef value) {
    }
 
    DRETURN(lSetPosRef(ep, pos, value));
-}
-
-/**
- * @brief Compare two ints
- *
- * @param i0 first value
- * @param i1 second value
- * @return 0 when equal, -1 when @p i0 is the smaller, 1 when it is the larger
- */
-int intcmp(int i0, int i1) {
-   return i0 == i1 ? 0 : (i0 < i1 ? -1 : 1);
-}
-
-/**
- * @brief Compare two 32 bit unsigned values
- *
- * @param u0 first value
- * @param u1 second value
- * @return 0 when equal, -1 when @p u0 is the smaller, 1 when it is the larger
- */
-int ulongcmp(lUlong u0, lUlong u1) {
-   return u0 == u1 ? 0 : (u0 < u1 ? -1 : 1);
-}
-
-/**
- * @brief Does a bit mask contain every bit of another?
- *
- * @param bm0 the mask to test
- * @param bm1 the bits required to be set in @p bm0
- * @return 1 when every bit of @p bm1 is set in @p bm0, 0 otherwise
- *
- * @note Despite its name and its neighbours, this is a containment test, not
- *       an ordering: it never returns -1 and its result is not strcmp-like.
- */
-int bitmaskcmp(lUlong bm0, lUlong bm1) {
-   return ((bm0 & bm1) == bm1) ? 1 : 0;
-}
-
-/**
- * @brief Compare two 64 bit unsigned values
- *
- * @param u0 first value
- * @param u1 second value
- * @return 0 when equal, -1 when @p u0 is the smaller, 1 when it is the larger
- */
-int ulong64cmp(lUlong64 u0, lUlong64 u1) {
-   return u0 == u1 ? 0 : (u0 < u1 ? -1 : 1);
-}
-
-/**
- * @brief Compare two floats
- *
- * @param f0 first value
- * @param f1 second value
- * @return 0 when equal, -1 when @p f0 is the smaller, 1 when it is the larger
- */
-int floatcmp(lFloat f0, lFloat f1) {
-   return f0 == f1 ? 0 : (f0 < f1 ? -1 : 1);
-}
-
-/**
- * @brief Compare two doubles
- *
- * @param d0 first value
- * @param d1 second value
- * @return 0 when equal, -1 when @p d0 is the smaller, 1 when it is the larger
- */
-int doublecmp(lDouble d0, lDouble d1) {
-   return d0 == d1 ? 0 : (d0 < d1 ? -1 : 1);
-}
-
-/**
- * @brief Compare two longs
- *
- * @param l0 first value
- * @param l1 second value
- * @return 0 when equal, -1 when @p l0 is the smaller, 1 when it is the larger
- */
-int longcmp(lLong l0, lLong l1) {
-   return l0 == l1 ? 0 : (l0 < l1 ? -1 : 1);
-}
-
-/**
- * @brief Compare two booleans
- *
- * @param b0 first value
- * @param b1 second value
- * @return 0 when equal, -1 when @p b0 is the smaller, 1 when it is the larger
- */
-int boolcmp(lBool b0, lBool b1) {
-   return b0 == b1 ? 0 : (b0 < b1 ? -1 : 1);
-}
-
-/**
- * @brief Compare two characters
- *
- * @param c0 first value
- * @param c1 second value
- * @return 0 when equal, -1 when @p c0 is the smaller, 1 when it is the larger
- */
-int charcmp(lChar c0, lChar c1) {
-   return c0 == c1 ? 0 : (c0 < c1 ? -1 : 1);
-}
-
-/**
- * @brief Compare two opaque references, by address
- *
- * @param c0 first value
- * @param c1 second value
- * @return 0 when equal, -1 when @p c0 is the smaller, 1 when it is the larger
- */
-int refcmp(lRef c0, lRef c1) {
-   return c0 == c1 ? 0 : (c0 < c1 ? -1 : 1);
 }
 
 /**

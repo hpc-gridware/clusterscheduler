@@ -70,11 +70,7 @@ void lWriteElemTo(const lListElem *ep, FILE *fp);
 
 void lWriteElemToStr(const lListElem *ep, dstring *buffer);
 
-void lWriteList(const lList *lp);
-
 void lWriteListTo(const lList *lp, FILE *fp);
-
-void lWriteListToStr(const lList *lp, dstring *buffer);
 
 lListElem *lCreateElem(const lDescr *dp);
 

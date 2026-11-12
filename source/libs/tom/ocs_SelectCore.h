@@ -323,4 +323,44 @@ namespace ocs::tom {
     */
    bool condition_fits(const lCondition *cp, const lDescr *descr) noexcept;
 
+   /**
+    * @brief Merge two selections into one selecting the fields of both, as lMergeWhat() does
+    *
+    * ALL with anything is ALL, NONE adds nothing. A field both select keeps
+    * the merge of both nested selections; if either selects the whole sub-list
+    * or sub-object, the merge does too. A field only @p what2 selects keeps its
+    * nested selection. The result is sorted by position.
+    *
+    * Before CS-3077, lMergeWhat() kept only the nested selection of @p what1
+    * for a field both select, dropped the nested selection of a field only
+    * @p what2 selects, and took the NONE of @p what2 for a field.
+    *
+    * @param what1 the first selection, or nullptr; taken over
+    * @param what2 the second selection, or nullptr; taken over
+    * @return the merged selection, owned by the caller; nullptr if both are nullptr
+    * @throw ListCoreError with LEMALLOC if there is no memory; both selections are freed then
+    */
+   lEnumeration *merge_what(lEnumeration *what1, lEnumeration *what2);
+
+   /**
+    * @brief Give a selected list or object field a nested selection, as lWhatSetSubWhat() does
+    *
+    * A nested selection held before is freed.
+    *
+    * @param what the selection, not nullptr
+    * @param nm the field
+    * @param sub the nested selection, or nullptr for the whole sub-list or sub-object; taken over
+    * @throw FieldException with reason ForeignField if @p what does not select @p nm; @p sub is freed then
+    */
+   void set_sub_what(lEnumeration *what, int nm, lEnumeration *sub);
+
+   /**
+    * @brief The shared reduced descriptor a selection makes of a type, as lGetReducedDescr() gives it
+    * @param descr the full descriptor of the type
+    * @param what the selection
+    * @return the descriptor, holding a reference for the caller, who gives it up with
+    *         ocs_cull_descr_release(); nullptr if the selection selects nothing of the type
+    */
+   const lDescr *reduced_descr(const lDescr *descr, const lEnumeration *what) noexcept;
+
 } // namespace ocs::tom

@@ -50,51 +50,8 @@
 #include "cull/cull_multitype.h"
 #include "cull/cull_whatP.h"
 #include "cull/cull_lerrnoP.h"
-
-static void _lWriteWhatTo(const lEnumeration *ep, dstring *buffer, int level);
-
-static void _lWriteWhatTo(const lEnumeration *ep, dstring *buffer, int level) {
-   DENTER(CULL_LAYER);
-
-   int i;
-
-   if (!ep) {
-      LERROR(LEENUMNULL);
-      DRETURN_VOID;
-   }
-   for (i = 0; mt_get_type(ep[i].mt) != lEndT; i++) {
-      int j;
-
-      for (j = 0; j < level; j++) {
-         sge_dstring_sprintf_append(buffer, "   ");
-      }
-
-      switch (ep[i].pos) {
-         case WHAT_NONE:
-            sge_dstring_sprintf_append(buffer, "nm: %6d %-20.20s mt: %7d "
-                                               "pos: %3d\n", ep[i].nm, "NONE",
-                                       ep[i].mt, ep[i].pos);
-            break;
-         case WHAT_ALL:
-            sge_dstring_sprintf_append(buffer, "nm: %6d %-20.20s mt: %7d "
-                                               "pos: %3d\n", ep[i].nm, "ALL",
-                                       ep[i].mt, ep[i].pos);
-            break;
-         default:
-            sge_dstring_sprintf_append(buffer, "nm: %6d %-20.20s mt: %7d "
-                                               "pos: %3d\n", ep[i].nm,
-                                       lNm2Str(ep[i].nm),
-                                       ep[i].mt, ep[i].pos);
-            break;
-      }
-
-      if (ep[i].ep != nullptr) {
-         _lWriteWhatTo(ep[i].ep, buffer, level + 1);
-      }
-   }
-
-   DRETURN_VOID;
-}
+#include "tom/ocs_ListCore.h"
+#include "tom/ocs_PrintCore.h"
 
 /**
  * @brief Writes a enumeration array to a file stream
@@ -103,13 +60,21 @@ static void _lWriteWhatTo(const lEnumeration *ep, dstring *buffer, int level) {
  *
  * @param ep enumeration
  * @param fp file stream
+ *
+ * @note A thin wrapper over ocs::tom::print_what() of the core (CS-3077).
+ *
+ * @see Typed form: ocs::tom::What<T>::print().
  */
 void lWriteWhatTo(const lEnumeration *ep, FILE *fp) {
    dstring buffer = DSTRING_INIT;
-
-   _lWriteWhatTo(ep, &buffer, 0);
-   if (fp) {
-      fprintf(fp, "%s", sge_dstring_get_string(&buffer));
+   try {
+      ocs::tom::print_what(&buffer, ep, 0);
+   } catch (const ocs::tom::ListCoreError &) {
+      // the core has set the error number
+   }
+   const char *str = sge_dstring_get_string(&buffer);
+   if (fp != nullptr && str != nullptr) {
+      fprintf(fp, "%s", str);
    }
    sge_dstring_free(&buffer);
 }
@@ -121,8 +86,14 @@ void lWriteWhatTo(const lEnumeration *ep, FILE *fp) {
  *
  * @param ep enumeration
  * @param[out] buffer the string to append to
+ *
+ * @note A thin wrapper over ocs::tom::print_what() of the core (CS-3077).
  */
 void lWriteWhatToDString(const lEnumeration *ep, dstring *buffer) {
-   _lWriteWhatTo(ep, buffer, 0);
+   try {
+      ocs::tom::print_what(buffer, ep, 0);
+   } catch (const ocs::tom::ListCoreError &) {
+      // the core has set the error number
+   }
 }
 

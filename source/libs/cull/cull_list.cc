@@ -57,6 +57,8 @@
 #include "uti/sge_stdlib.h"
 #include "tom/ocs_ElementCore.h"
 #include "tom/ocs_ListCore.h"
+#include "tom/ocs_ListOpsCore.h"
+#include "tom/ocs_PrintCore.h"
 #include "tom/ocs_SortCore.h"
 #include "tom/ocs_SelectCore.h"
 #include "tom/ocs_SoftPath.h"
@@ -79,9 +81,7 @@
 #define CULL_BASIS_LAYER CULL_LAYER ///< rmon layer this file logs under
 
 
-static void lWriteList_(const lList *lp, dstring *buffer, int nesting_level);
 
-static void lWriteElem_(const lListElem *lp, dstring *buffer, int nesting_level);
 
 /**
  * @defgroup cull_field_attributes Field attributes
@@ -350,18 +350,17 @@ int lGetElemIndex(const lListElem *ep, const lList *lp) {
  * @param ep  The reference element. May be nullptr.
  * @return    Number of elements that come after @p ep.
  *            0 if @p ep is the last element in its list or if @p ep is nullptr.
+ *
+ * @note Walks the chain of the storage layer, without the old interface (CS-3077).
  */
 uint32_t lGetNumberOfRemainingElem(const lListElem *ep) {
-   DENTER(CULL_LAYER);
-
    uint32_t i = 0;
    if (ep != nullptr) {
-      while ((ep = lNext(ep))) {
+      for (const lListElem *next = ep->next; next != nullptr; next = next->next) {
          i++;
       }
    }
-
-   DRETURN(i);
+   return i;
 }
 
 /**
@@ -414,19 +413,41 @@ bool lIsFreeElem(const lListElem *ep) {
  *
  * @param ep element
  */
-void lWriteElem(const lListElem *ep) {
-   DENTER(CULL_LAYER);
+namespace {
 
-   dstring buffer = DSTRING_INIT;
-   const char *str;
-
-   lWriteElem_(ep, &buffer, 0);
-   str = sge_dstring_get_string(&buffer);
-   if (str != nullptr) {
-      fprintf(stderr, "%s", str);
+   /**
+    * @brief Write the text the print core appends to a stream, as the old print functions did
+    * @param fp the stream, or nullptr to write nothing
+    * @param print appends the text to a string; a ListCoreError it throws leaves the text empty
+    */
+   template <typename Print>
+   void ocs_print_to(FILE *fp, Print print) {
+      dstring buffer = DSTRING_INIT;
+      try {
+         print(&buffer);
+      } catch (const ocs::tom::ListCoreError &) {
+         // the core has set the error number
+      }
+      const char *str = sge_dstring_get_string(&buffer);
+      if (fp != nullptr && str != nullptr) {
+         fprintf(fp, "%s", str);
+      }
+      sge_dstring_free(&buffer);
    }
-   sge_dstring_free(&buffer);
-   DRETURN_VOID;
+
+} // namespace
+
+/**
+ * @brief Write an element to stderr
+ *
+ * @param ep element
+ *
+ * @note A thin wrapper over ocs::tom::print_elem() of the core (CS-3077).
+ *
+ * @see Typed form: ocs::tom::ConstElement<T>::print().
+ */
+void lWriteElem(const lListElem *ep) {
+   ocs_print_to(stderr, [ep](dstring *buffer) { ocs::tom::print_elem(buffer, ep, 0); });
 }
 
 /**
@@ -435,21 +456,14 @@ void lWriteElem(const lListElem *ep) {
  * Write a element to file stream
  *
  * @param ep element
- * @param fp file stream ???/???
+ * @param fp file stream
+ *
+ * @note A thin wrapper over ocs::tom::print_elem() of the core (CS-3077).
+ *
+ * @see Typed form: ocs::tom::ConstElement<T>::print().
  */
 void lWriteElemTo(const lListElem *ep, FILE *fp) {
-   DENTER(CULL_LAYER);
-
-   dstring buffer = DSTRING_INIT;
-   const char *str;
-
-   lWriteElem_(ep, &buffer, 0);
-   str = sge_dstring_get_string(&buffer);
-   if (str != nullptr) {
-      fprintf(fp, "%s", str);
-   }
-   sge_dstring_free(&buffer);
-   DRETURN_VOID;
+   ocs_print_to(fp, [ep](dstring *buffer) { ocs::tom::print_elem(buffer, ep, 0); });
 }
 
 /**
@@ -457,118 +471,15 @@ void lWriteElemTo(const lListElem *ep, FILE *fp) {
  *
  * @param ep the element to render
  * @param[out] buffer receives the rendered element
+ *
+ * @note A thin wrapper over ocs::tom::print_elem() of the core (CS-3077).
  */
 void lWriteElemToStr(const lListElem *ep, dstring *buffer) {
-   DENTER(CULL_LAYER);
-   lWriteElem_(ep, buffer, 0);
-   DRETURN_VOID;
-}
-
-static void lWriteElem_(const lListElem *ep, dstring *buffer, int nesting_level) {
-   DENTER(TOP_LAYER);
-
-   int i;
-   char space[128];
-   lList *tlp;
-   lListElem *tep;
-   const char *str;
-
-   if (!ep) {
-      LERROR(LEELEMNULL);
-      DRETURN_VOID;
+   try {
+      ocs::tom::print_elem(buffer, ep, 0);
+   } catch (const ocs::tom::ListCoreError &) {
+      // the core has set the error number
    }
-
-   for (i = 0; i < nesting_level * 3; i++) {
-      space[i] = ' ';
-   }
-   space[i] = '\0';
-
-   sge_dstring_sprintf_append(buffer, "%s-------------------------------\n", space);
-
-   for (const auto f : ocs_cull_present_fields(ep->descr)) {
-      const char *name = ((lNm2Str(ep->descr[f.pos].nm) != nullptr) ? lNm2Str(ep->descr[f.pos].nm) : "(null)");
-
-      switch (mt_get_type(ep->descr[f.pos].mt)) {
-         case lIntT:
-            sge_dstring_sprintf_append(buffer, "%s%-20.20s (Integer) = %d\n", space, name, lGetPosInt(ep, f.pos));
-            break;
-         case lUlongT:
-            sge_dstring_sprintf_append(buffer, "%s%-20.20s (Ulong)   = " sge_u32 "\n", space, name, lGetPosUlong(ep, f.pos));
-            break;
-         case lUlong64T:
-            sge_dstring_sprintf_append(buffer, "%s%-20.20s (Ulong64) = " sge_u64"\n", space, name, lGetPosUlong64(ep, f.pos));
-            break;
-         case lStringT:
-            str = lGetPosString(ep, f.pos);
-            sge_dstring_sprintf_append(buffer, "%s%-20.20s (String)  = %s\n", space, name, str ? str : "(null)");
-            break;
-         case lHostT:
-            str = lGetPosHost(ep, f.pos);
-            sge_dstring_sprintf_append(buffer, "%s%-20.20s (Host)    = %s\n", space, name, str ? str : "(null)");
-            break;
-         case lListT:
-            tlp = lGetPosList(ep, f.pos);
-            sge_dstring_sprintf_append(buffer, "%s%-20.20s (List)    = %s\n", space, name, tlp ? "full {" : "empty");
-            if (tlp) {
-               lWriteList_(tlp, buffer, nesting_level + 1);
-               sge_dstring_sprintf_append(buffer, "%s}\n", space);
-            }
-            break;
-         case lObjectT:
-            tep = lGetPosObject(ep, f.pos);
-            sge_dstring_sprintf_append(buffer, "%s%-20.20s (Object)  = %s\n", space, name, tep ? "object {" : "none");
-            if (tep) {
-               lWriteElem_(tep, buffer, nesting_level + 1);
-               sge_dstring_sprintf_append(buffer, "%s}\n", space);
-            }
-            break;
-         case lDoubleT:
-            sge_dstring_sprintf_append(buffer, "%s%-20.20s (Double)  = %f\n", space, name, lGetPosDouble(ep, f.pos));
-            break;
-         case lLongT:
-            DTRACE;
-            sge_dstring_sprintf_append(buffer, "%s%-20.20s (Long)    = %ld\n", space, name, lGetPosLong(ep, f.pos));
-            break;
-         case lBoolT:
-            DTRACE;
-            sge_dstring_sprintf_append(buffer, "%s%-20.20s (Bool)    = %s\n", space, name, lGetPosBool(ep, f.pos) ? "true" : "false");
-            break;
-         case lRefT:
-            DTRACE;
-            sge_dstring_sprintf_append(buffer, "%s%-20.20s (Ref)     = %p\n", space, name, lGetPosRef(ep, f.pos));
-            break;
-         default:
-            DTRACE;
-            unknownType("lWriteElem");
-      }
-   }
-
-   DRETURN_VOID;
-}
-
-/**
- * @brief Write a list to monitoring level CULL_LAYER
- *
- * Write a list to monitoring level CULL_LAYER as info message.
- *
- * @param lp list
- */
-void lWriteList(const lList *lp) {
-   DENTER(CULL_LAYER);
-
-   dstring buffer = DSTRING_INIT;
-   const char *str;
-
-   if (!lp) {
-      DRETURN_VOID;
-   }
-   lWriteList_(lp, &buffer, 0);
-   str = sge_dstring_get_string(&buffer);
-   if (str != nullptr) {
-      fprintf(stderr, "%s", str);
-   }
-   sge_dstring_free(&buffer);
-   DRETURN_VOID;
 }
 
 /**
@@ -578,56 +489,13 @@ void lWriteList(const lList *lp) {
  *
  * @param lp list
  * @param fp file stream
+ *
+ * @note A thin wrapper over ocs::tom::print_list() of the core (CS-3077).
+ *
+ * @see Typed form: ocs::tom::ConstList<T>::print().
  */
 void lWriteListTo(const lList *lp, FILE *fp) {
-   DENTER(CULL_LAYER);
-
-   dstring buffer = DSTRING_INIT;
-   const char *str;
-
-   lWriteList_(lp, &buffer, 0);
-   str = sge_dstring_get_string(&buffer);
-   if (str != nullptr) {
-      fprintf(fp, "%s", str);
-   }
-   sge_dstring_free(&buffer);
-   DRETURN_VOID;
-}
-
-/**
- * @brief Render a list and all its elements into a string
- *
- * @param lp the list to render
- * @param[out] buffer receives the rendered list
- */
-void lWriteListToStr(const lList *lp, dstring *buffer) {
-   DENTER(CULL_LAYER);
-   lWriteList_(lp, buffer, 0);
-   DRETURN_VOID;
-}
-
-static void lWriteList_(const lList *lp, dstring *buffer, int nesting_level) {
-   DENTER(CULL_LAYER);
-
-   char indent[128];
-   int i;
-
-   if (!lp) {
-      LERROR(LELISTNULL);
-      DRETURN_VOID;
-   }
-   for (i = 0; i < nesting_level * 3; i++) {
-      indent[i] = ' ';
-   }
-   indent[i] = '\0';
-
-   sge_dstring_sprintf_append(buffer, "\n%sList: <%s> #Elements: %d\n",
-                              indent, (lGetListName(lp) != nullptr) ? lGetListName(lp) : "nullptr",
-                              lGetNumberOfElem(lp));
-   for_each_ep_lv(ep, lp) {
-      lWriteElem_(ep, buffer, nesting_level);
-   }
-   DRETURN_VOID;
+   ocs_print_to(fp, [lp](dstring *buffer) { ocs::tom::print_list(buffer, lp, 0); });
 }
 
 /**
@@ -1608,34 +1476,27 @@ int lSortList(lList *lp, const lSortOrder *sp) {
  * @param keyfield string field name id
  *
  * @return error state 0 - OK -1 - Error
+ *
+ * @note A thin wrapper over ocs::tom::unique_by_key() of the core (CS-3077). Two null keys are equal; before,
+ *       they ended the process.
+ *
+ * @see Typed form: ocs::tom::List<T>::unique().
  */
 int lUniqStr(lList *lp, int keyfield) {
-   DENTER(CULL_LAYER);
-
-   lListElem *ep;
-   lListElem *rep;
-
-   /*
-    * sort the list first to make our algorithm work
-    */
-   if (lPSortList(lp, "%I+", keyfield)) {
-      DRETURN(-1);
+   if (lp == nullptr) {
+      LERROR(LELISTNULL);
+      return -1;
    }
-
-   /*
-    * go over all elements and remove following elements
-    */
-   ep = lFirstRW(lp);
-   while (ep) {
-      rep = lNextRW(ep);
-      while (rep && !strcmp(lGetString(rep, keyfield), lGetString(ep, keyfield))) {
-         lRemoveElem(lp, &rep);
-         rep = lNextRW(ep);
-      }
-      ep = lNextRW(ep);
+   try {
+      ocs::tom::unique_by_key(lp, keyfield);
+   } catch (const ocs::tom::FieldException &) {
+      LERROR(LEPARSESORTORD);
+      return -1;
+   } catch (const ocs::tom::ListCoreError &e) {
+      LERROR(e.lerrno());
+      return -1;
    }
-
-   DRETURN(0);
+   return 0;
 }
 
 /**
@@ -1647,34 +1508,27 @@ int lUniqStr(lList *lp, int keyfield) {
  * @param keyfield host field
  *
  * @return error state 0 - OK -1 - Error
+ *
+ * @note A thin wrapper over ocs::tom::unique_by_key() of the core (CS-3077). Two null keys are equal; before,
+ *       they ended the process.
+ *
+ * @see Typed form: ocs::tom::List<T>::unique().
  */
 int lUniqHost(lList *lp, int keyfield) {
-   DENTER(CULL_LAYER);
-
-   lListElem *ep;
-   lListElem *rep;
-
-   /*
-    * sort the list first to make our algorithm work
-    */
-   if (lPSortList(lp, "%I+", keyfield)) {
-      DRETURN(-1);
+   if (lp == nullptr) {
+      LERROR(LELISTNULL);
+      return -1;
    }
-
-   /*
-    * go over all elements and remove following elements
-    */
-   ep = lFirstRW(lp);
-   while (ep) {
-      rep = lNextRW(ep);
-      while (rep && !strcmp(lGetHost(rep, keyfield), lGetHost(ep, keyfield))) {
-         lRemoveElem(lp, &rep);
-         rep = lNextRW(ep);
-      }
-      ep = lNextRW(ep);
+   try {
+      ocs::tom::unique_by_key(lp, keyfield);
+   } catch (const ocs::tom::FieldException &) {
+      LERROR(LEPARSESORTORD);
+      return -1;
+   } catch (const ocs::tom::ListCoreError &e) {
+      LERROR(e.lerrno());
+      return -1;
    }
-
-   DRETURN(0);
+   return 0;
 }
 
 /**
