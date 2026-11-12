@@ -3373,7 +3373,7 @@ dispatch_t cqueue_match_static(const char *cqname, sge_assignment_t *a) {
 /**
  * @brief The start time of a queue is always returned using the QU_available_at
  *
- * @param assignment job info structure
+ * @param a job info structure
  *
  * @return 0 ok got an assignment start time(s) and slots are tagged 1 no assignment at the specified time -1 assignment will never be possible for all jobs of that category -2 assignment will never be possible for that particular job
  *
@@ -3616,7 +3616,9 @@ sequential_tag_queues_suitable4job(sge_assignment_t *a) {
             if (!a->is_reservation) {
                /* check if this queue is better than our last best queue */
                if (this_violations < best_qep_violations) {
-                  lSetUlong(best_qep, QU_tag, 0);
+                  if (best_qep != nullptr) {
+                     lSetUlong(best_qep, QU_tag, 0);
+                  }
                   best_qep = qep;
                   best_qep_violations = this_violations;
                } else {

@@ -620,10 +620,12 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
             if (!consumables_ok) {
                ERROR(MSG_JOB_RESOURCESNOLONGERAVAILABLE_UU, job_number, task_number);
                if (enrolled_task) {
+                  // frees the task and sets jatp to nullptr
                   job_unenroll(jep, nullptr, &jatp);
+               } else {
+                  lSetString(jatp, JAT_granted_pe, nullptr);
                }
                lFreeList(&gdil);
-               lSetString(jatp, JAT_granted_pe, nullptr);
                DRETURN(0);
             }
          }

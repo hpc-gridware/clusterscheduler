@@ -370,9 +370,12 @@ ocs::Binding::binding_set_missing_defaults(lListElem *parent, lList **answer_lis
 
    // create implicit binding if no binding is given (implicit binding is enabled)
    if (binding_elem == nullptr) {
+      // binding_get_or_create_elem() attaches the new element to the parent already
       binding_elem = binding_get_or_create_elem(parent, answer_list, parent_binding_nm);
+      if (binding_elem == nullptr) {
+         DRETURN_VOID;
+      }
       lSetUlong(binding_elem, BN_amount, 1);
-      lSetObject(parent, parent_binding_nm, binding_elem);
    }
 
    // ensure that the binding element is set to nullptr if the amount is 0

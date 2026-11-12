@@ -3560,9 +3560,9 @@ static void calculate_pending_shared_override_tickets(sge_ref_t *job_ref, uint32
                   /* remove category */
                   if(lGetRef(max_current, FCAT_jobrelated_ticket_first) == nullptr){
                      lSetRef(max_current, FCAT_jobrelated_ticket_last,  nullptr);
-                     lSetRef(current, FCAT_user, nullptr);
-                     lSetRef(current, FCAT_dept, nullptr);
-                     lSetRef(current, FCAT_project, nullptr);
+                     lSetRef(max_current, FCAT_user, nullptr);
+                     lSetRef(max_current, FCAT_dept, nullptr);
+                     lSetRef(max_current, FCAT_project, nullptr);
 
                      lRemoveElem(fcategories, &max_current);
                   }

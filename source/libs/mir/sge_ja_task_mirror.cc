@@ -53,6 +53,24 @@
 #include "mir/sge_ja_task_mirror.h"
 
 /**
+ * @brief Exchange a list field of an array task if the task holds the field
+ *
+ * An event client may subscribe a reduced array task (qevent asks for
+ * JAT_status only); such a task has none of the lists kept across a
+ * modify event, and there is nothing to exchange.
+ *
+ * @param ja_task the array task
+ * @param nm the list field, e.g. JAT_task_list
+ * @param list the list to put in; the list held before afterwards
+ */
+static void
+ocs_ja_task_exchange_kept_list(lListElem *ja_task, const int nm, lList **list) {
+   if (lGetPosViaElem(ja_task, nm, SGE_NO_ABORT) >= 0) {
+      lXchgList(ja_task, nm, list);
+   }
+}
+
+/**
  * @brief Update an array tasks usage
  *
  * Updates the scaled usage of an array task (also task data structure
@@ -170,8 +188,8 @@ ja_task_update_master_list(sge_evc_class_t *evc, sge_object_type type,
          DRETURN(SGE_EMA_FAILURE);
       }
 
-      lXchgList(ja_task, JAT_task_list, &pe_tasks);
-      lXchgList(ja_task, JAT_scaled_usage_list, &usage);
+      ocs_ja_task_exchange_kept_list(ja_task, JAT_task_list, &pe_tasks);
+      ocs_ja_task_exchange_kept_list(ja_task, JAT_scaled_usage_list, &usage);
    }
 
    /* If an array job is deleted, a delete event is sent for
@@ -210,8 +228,8 @@ ja_task_update_master_list(sge_evc_class_t *evc, sge_object_type type,
          DRETURN(SGE_EMA_FAILURE);
       }
 
-      lXchgList(ja_task, JAT_task_list, &pe_tasks);
-      lXchgList(ja_task, JAT_scaled_usage_list, &usage);
+      ocs_ja_task_exchange_kept_list(ja_task, JAT_task_list, &pe_tasks);
+      ocs_ja_task_exchange_kept_list(ja_task, JAT_scaled_usage_list, &usage);
       lFreeList(&pe_tasks);
       lFreeList(&usage);
    }

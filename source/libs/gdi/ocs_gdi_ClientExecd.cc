@@ -121,11 +121,14 @@ int ocs::gdi::ClientExecd::gdi_wait_for_conf(lList **conf_list) {
     * the entries are freed
     */
    lSetList(global, CONF_entries, nullptr);
-   lSetList(local, CONF_entries, nullptr);
    lFreeList(conf_list);
    *conf_list = lCreateList("config list", CONF_Type);
    lAppendElem(*conf_list, global);
-   lAppendElem(*conf_list, local);
+   // a host without a local configuration gets none
+   if (local != nullptr) {
+      lSetList(local, CONF_entries, nullptr);
+      lAppendElem(*conf_list, local);
+   }
    DRETURN(0);
 }
 
