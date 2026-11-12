@@ -91,6 +91,15 @@ update_reschedule_unknown_timeout(lListElem *host);
 static lListElem *
 get_from_reschedule_unknown_list(const lListElem *host, uint32_t job_number, uint32_t task_number);
 
+static bool
+is_master_host_entry(const lListElem *ruep);
+
+static bool
+has_master_host_entry(const lList *rulp, uint32_t job_number, uint32_t task_number);
+
+static void
+clear_deferred_start_of_task(uint32_t job_number, uint32_t task_number, uint64_t gdi_session);
+
 /**
  * @brief Event handler to reschedule jobs
  *
@@ -553,10 +562,11 @@ int reschedule_job(lListElem *jep, lListElem *jatep, lListElem *ep,
 
          lSetUlong(this_jatep, JAT_job_restarted, 1);
 
-         if (is_manual) {
-            /*
-             * Indicate deferred startup processing required.
-             */
+         if (is_manual && host != nullptr && lGetUlong64(host, EH_lt_heard_from) != 0) {
+            // The new run must not start before the old run is gone. The old run is killed with
+            // the next report of the job from its host. A host which is unknown does not report,
+            // waiting for it would block the job, e.g. after qmod -r of the jobs of a host which
+            // went down.
             SETBIT(JDEFERRED_REQ, state);
          } else {
             /*
@@ -695,11 +705,18 @@ delete_from_reschedule_unknown_list(lListElem *host, bool all_jobs_reported, uin
 
          if ((state == RESCHEDULE_SKIP_JR_REMOVE && all_jobs_reported)
              || state == RESCHEDULE_HANDLE_JR_REMOVE) {
+            uint32_t job_number = lGetUlong(thiz, RU_job_number);
+            uint32_t task_number = lGetUlong(thiz, RU_task_number);
 
-            DPRINTF("RU: REMOVED " sge_u32"." sge_u32" FROM RU LIST\n",
-                    lGetUlong(thiz, RU_job_number), lGetUlong(thiz, RU_task_number));
+            DPRINTF("RU: REMOVED " sge_u32"." sge_u32" FROM RU LIST\n", job_number, task_number);
             lRemoveElem(rulp, &thiz);
             changed = true;
+
+            // the old run of the task is gone from this host, its new run may start
+            if (state == RESCHEDULE_SKIP_JR_REMOVE
+                && !has_master_host_entry(rulp, job_number, task_number)) {
+               clear_deferred_start_of_task(job_number, task_number, gdi_session);
+            }
          }
       }
       if (changed) {
@@ -711,6 +728,123 @@ delete_from_reschedule_unknown_list(lListElem *host, bool all_jobs_reported, uin
          answer_list_output(&answer_list);
       }
    }
+   DRETURN_VOID;
+}
+
+/** @brief Allow the new run of a task rescheduled with qmod -r to start
+ *
+ * qmod -r sets JDEFERRED_REQ in JAT_state of the task: the scheduler does not dispatch the new run
+ * before the old run is gone. The function clears the flag, spools the task and sends an event.
+ *
+ * @param jep the job (JB_Type)
+ * @param jatep the array task (JAT_Type)
+ * @param gdi_session the GDI session
+ */
+void
+reschedule_clear_deferred_start(lListElem *jep, lListElem *jatep, uint64_t gdi_session) {
+   DENTER(TOP_LAYER);
+
+   uint32_t state = lGetUlong(jatep, JAT_state);
+   if (state & JDEFERRED_REQ) {
+      uint32_t job_number = lGetUlong(jep, JB_job_number);
+      uint32_t task_number = lGetUlong(jatep, JAT_task_number);
+
+      DPRINTF("RU: deferred start of " sge_u32 "." sge_u32 " ends\n", job_number, task_number);
+      CLEARBIT(JDEFERRED_REQ, state);
+      lSetUlong(jatep, JAT_state, state);
+
+      lList *answer_list = nullptr;
+      sge_event_spool(&answer_list, 0, sgeE_JATASK_MOD, job_number, task_number, nullptr, nullptr,
+                      nullptr, jep, jatep, nullptr, true, true, gdi_session);
+      answer_list_output(&answer_list);
+   }
+
+   DRETURN_VOID;
+}
+
+/** @brief Allow the new runs of the tasks whose old run was on a host to start
+ *
+ * Called when a host becomes unknown or is deleted. An unknown host does not report, the kill of
+ * the old run of a task rescheduled with qmod -r is not sent before the host is back. Waiting for
+ * it would block the task.
+ *
+ * @param host the host (EH_Type)
+ * @param gdi_session the GDI session
+ */
+void
+reschedule_clear_deferred_starts_of_host(const lListElem *host, uint64_t gdi_session) {
+   DENTER(TOP_LAYER);
+
+   for_each_ep_lv(ruep, lGetList(host, EH_reschedule_unknown_list)) {
+      if (is_master_host_entry(ruep)) {
+         uint32_t job_number = lGetUlong(ruep, RU_job_number);
+         uint32_t task_number = lGetUlong(ruep, RU_task_number);
+         clear_deferred_start_of_task(job_number, task_number, gdi_session);
+      }
+   }
+
+   DRETURN_VOID;
+}
+
+/** @brief Was a reschedule unknown list entry added for the old run of the master task?
+ *
+ * The entries for the host of the master task (or of a sequential job) start in one of the
+ * RESCHEDULE_SKIP_JR* states, the entries for the slave hosts of a parallel job in one of the
+ * RESCHEDULE_HANDLE_JR* states.
+ *
+ * @param ruep the entry (RU_Type)
+ * @return true if the entry is one for the host of the master task
+ */
+static bool
+is_master_host_entry(const lListElem *ruep) {
+   DENTER(TOP_LAYER);
+   uint32_t state = lGetUlong(ruep, RU_state);
+   bool ret = state == RESCHEDULE_SKIP_JR_REMOVE || state == RESCHEDULE_SKIP_JR_SEND_ACK
+              || state == RESCHEDULE_SKIP_JR;
+   DRETURN(ret);
+}
+
+/** @brief Has a reschedule unknown list an entry for the old run of the master task of a task?
+ *
+ * A sequential job gets two entries on its host, one from the reschedule and one from the commit of
+ * the rescheduled task.
+ *
+ * @param rulp the reschedule unknown list of a host (RU_Type)
+ * @param job_number the job id
+ * @param task_number the array task id
+ * @return true if the list has such an entry
+ */
+static bool
+has_master_host_entry(const lList *rulp, uint32_t job_number, uint32_t task_number) {
+   DENTER(TOP_LAYER);
+   for_each_ep_lv(ruep, rulp) {
+      if (lGetUlong(ruep, RU_job_number) == job_number
+          && lGetUlong(ruep, RU_task_number) == task_number && is_master_host_entry(ruep)) {
+         DRETURN(true);
+      }
+   }
+   DRETURN(false);
+}
+
+/** @brief Allow the new run of a task rescheduled with qmod -r to start
+ *
+ * @param job_number the job id
+ * @param task_number the array task id
+ * @param gdi_session the GDI session
+ */
+static void
+clear_deferred_start_of_task(uint32_t job_number, uint32_t task_number, uint64_t gdi_session) {
+   DENTER(TOP_LAYER);
+
+   lListElem *jep = lGetElemUlongRW(*ocs::DataStore::get_master_list(SGE_TYPE_JOB), JB_job_number,
+                                    job_number);
+   if (jep != nullptr) {
+      lListElem *jatep = lGetElemUlongRW(lGetList(jep, JB_ja_tasks), JAT_task_number, task_number);
+      if (jatep != nullptr) {
+         reschedule_clear_deferred_start(jep, jatep, gdi_session);
+      }
+   }
+
    DRETURN_VOID;
 }
 

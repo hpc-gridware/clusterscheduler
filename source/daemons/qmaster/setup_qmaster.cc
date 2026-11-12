@@ -48,6 +48,7 @@
 #include "uti/ocs_OpenSSL.h"
 #include "uti/ocs_TerminationManager.h"
 #include "uti/config_file.h"
+#include "uti/sge_bitfield.h"
 #include "uti/sge_bootstrap_env.h"
 #include "uti/sge_bootstrap_files.h"
 #include "uti/sge_log.h"
@@ -164,6 +165,9 @@ remove_irrelevant_userprj_usage(bool user, const lList *usage_weight_list);
 
 static void
 debit_all_jobs_from_qs();
+
+static void
+clear_deferred_starts(lListElem *jep);
 
 
 /**
@@ -669,6 +673,29 @@ sge_propagate_queue_suspension(lListElem *jep, dstring *cqueue_name, dstring *ho
    }
 }
 
+/** @brief Allow the new runs of the tasks of a job rescheduled with qmod -r to start
+ *
+ * Called when sge_qmaster starts. JDEFERRED_REQ in JAT_state is spooled with the job, but with
+ * berkeleydb or postgres spooling the reschedule unknown lists of the hosts are not restored.
+ * Nothing would clear the flag any more.
+ *
+ * @param jep the job (JB_Type)
+ */
+static void
+clear_deferred_starts(lListElem *jep) {
+   DENTER(TOP_LAYER);
+
+   for_each_rw_lv(jatep, lGetList(jep, JB_ja_tasks)) {
+      uint32_t state = lGetUlong(jatep, JAT_state);
+      if (state & JDEFERRED_REQ) {
+         CLEARBIT(JDEFERRED_REQ, state);
+         lSetUlong(jatep, JAT_state, state);
+      }
+   }
+
+   DRETURN_VOID;
+}
+
 /**
  * @brief Acquire qmaster lock file and shutdown
  *
@@ -1158,6 +1185,8 @@ setup_qmaster() {
          /* need to update JSUSPENDED_ON_SUBORDINATE since task spooling is not
             triggered upon queue un/-suspension */
          sge_propagate_queue_suspension(jep, &cqueue_name, &host_domain);
+
+         clear_deferred_starts(jep);
       }
       sge_dstring_free(&cqueue_name);
       sge_dstring_free(&host_domain);

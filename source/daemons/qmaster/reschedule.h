@@ -79,6 +79,12 @@ void
 delete_from_reschedule_unknown_list(lListElem *host, bool all_jobs_reported, uint64_t gdi_session);
 
 void
+reschedule_clear_deferred_start(lListElem *jep, lListElem *jatep, uint64_t gdi_session);
+
+void
+reschedule_clear_deferred_starts_of_host(const lListElem *host, uint64_t gdi_session);
+
+void
 update_reschedule_unknown_list(lListElem *host, uint64_t gdi_session);
 
 void

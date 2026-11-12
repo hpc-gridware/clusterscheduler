@@ -263,24 +263,11 @@ void process_job_report(lListElem *report, lListElem *hep, char *rhost, char *co
          if (fret == 2) {
             pack_ack(pb, ACK_SIGNAL_JOB, jobid, jataskid, nullptr);
          } else if (fret == 3) {
-            lList *answer_list = nullptr;
-            uint32_t state = 0;
-
             pack_ack(pb, ACK_JOB_EXIT, jobid, jataskid, pe_task_id_str);
-            /*
-             * Check for deferred startup due to manual rescheduling.
-             * Reset JDEFERRED_REQ to allow rescheduled job to run.
-             * This is now OK since the initial job is going to die.
-             */
-            if (jep && jatep) {
-               state = lGetUlong(jatep, JAT_state);
-               if (state & JDEFERRED_REQ) {
-                  CLEARBIT(JDEFERRED_REQ, state);
-                  lSetUlong(jatep, JAT_state, state);
-                  sge_event_spool(&answer_list, 0, sgeE_JATASK_MOD,
-                                  jobid, jataskid, nullptr, nullptr, nullptr,
-                                  jep, jatep, nullptr, true, true, gdi_session);
-               }
+            // the old run of a task rescheduled with qmod -r has exited, the new run may start
+            // (the exit of a pe task on the master host does not end the old run)
+            if (jep && jatep && pe_task_id_str == nullptr) {
+               reschedule_clear_deferred_start(jep, jatep, gdi_session);
             }
          }
          continue;

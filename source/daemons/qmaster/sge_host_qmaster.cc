@@ -379,6 +379,9 @@ int sge_del_host(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *hep,
    /* remove host file and send event */
    switch (target) {
       case ocs::gdi::Target::EH_LIST: {
+         // a deleted host does not report, rescheduled jobs must not wait for their old runs
+         reschedule_clear_deferred_starts_of_host(ep, packet->gdi_session);
+
          lList *answer_list = nullptr;
          sge_event_spool(&answer_list, 0, sgeE_EXECHOST_DEL,
                          0, 0, lGetHost(ep, nm), nullptr, nullptr,
@@ -1075,6 +1078,9 @@ sge_mark_unheard(lListElem *hep, uint64_t gdi_session) {
 
       lSetUlong64(hep, EH_lt_heard_from, 0);
 
+      // the host does not report any more, rescheduled jobs must not wait for their old runs
+      reschedule_clear_deferred_starts_of_host(hep, gdi_session);
+
       /* add a trigger to enforce limits when they are exceeded */
       sge_host_add_enforce_limit_trigger(host);
 
@@ -1320,6 +1326,9 @@ sge_load_value_cleanup_handler(te_event_t anEvent, monitoring_t *monitor) {
       }
 
       lSetUlong64(hep, EH_lt_heard_from, 0);
+
+      // the host does not report any more, rescheduled jobs must not wait for their old runs
+      reschedule_clear_deferred_starts_of_host(hep, ocs::SessionManager::GDI_SESSION_NONE);
 
       /* take each load value */
       host_trash_nonstatic_load_values(hep);
