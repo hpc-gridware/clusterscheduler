@@ -45,6 +45,7 @@
 #include "tom/cull_multitypeP.h"
 #include "tom/ocs_ElementCore.h"
 #include "tom/ocs_FieldTraits.h"
+#include "tom/ocs_Pack.h"
 #include "tom/ocs_ListCore.h"
 #include "tom/ocs_Select.h"
 #include "tom/ocs_SelectCore.h"
@@ -598,6 +599,37 @@ namespace ocs::tom {
          return ElementPtr<T>::from_typed(copy_elem(ep_, true, false));
       }
 
+
+      /**
+       * @brief Pack the element, as cull_pack_elem() does
+       * @param pb the buffer to append to
+       * @throw FieldException with reason EmptyHandle if the handle is empty
+       * @throw PackException if the buffer cannot grow
+       * @see Old form: cull_pack_elem(); core: ocs::tom::pack_elem()
+       */
+      void pack(sge_pack_buffer &pb) const {
+         if (ep_ == nullptr) [[unlikely]] {
+            throw_field_exception(FieldException::Reason::EmptyHandle, NoName, T::descriptor.e);
+         }
+         pack_elem(&pb, ep_, nullptr, 0);
+      }
+
+      /**
+       * @brief Pack the fields of the element a selection names, as cull_pack_elem_partial() does
+       * @param pb the buffer to append to
+       * @param what the selection
+       * @throw FieldException with reason EmptyHandle if the handle is empty
+       * @throw PackException with PACK_BADARG if the element does not hold a selected field, or if the buffer
+       *        cannot grow
+       * @see Old form: cull_pack_elem_partial(); core: ocs::tom::pack_elem()
+       */
+      void pack(sge_pack_buffer &pb, const What<T> &what) const {
+         if (ep_ == nullptr) [[unlikely]] {
+            throw_field_exception(FieldException::Reason::EmptyHandle, NoName, T::descriptor.e);
+         }
+         pack_elem(&pb, ep_, what.get(), 0);
+      }
+
    protected:
       lListElem *ep_ = nullptr;   ///< the element, or nullptr; const unless reached through Element
 
@@ -1008,6 +1040,29 @@ namespace ocs::tom {
        */
       explicit operator bool() const noexcept {
          return ep_ != nullptr;
+      }
+
+
+      /**
+       * @brief Unpack an element packed by pack() or cull_pack_elem(), as cull_unpack_elem() does
+       * @param pb the buffer to read from
+       * @param flags read only the fields whose flags match, 0 for all
+       * @return the owning handle on the element
+       * @throw FieldException with reason WrongType if the buffer holds an element of another type; it is freed
+       * @throw PackException with PACK_FORMAT for bytes that are cut off, PACK_ENOMEM
+       * @see Old form: cull_unpack_elem(), cull_unpack_elem_partial(); core: ocs::tom::unpack_elem()
+       */
+      [[nodiscard]] static ElementPtr unpack(sge_pack_buffer &pb, const int flags = 0) {
+         lListElem *ep = unpack_elem(&pb, T::descriptor.e, flags);
+         if (ep->descr[0].nm != T::fields[0].nm) [[unlikely]] {
+            try {
+               detail::throw_wrong_type<T>(ep->descr);
+            } catch (...) {
+               free_elem(ep);
+               throw;
+            }
+         }
+         return from_typed(ep);
       }
 
    private:

@@ -572,6 +572,29 @@ namespace ocs::tom {
          return ConstElement<T>::from_typed(lp_ != nullptr ? ocs::tom::find_last(lp_, where.get()) : nullptr);
       }
 
+
+      /**
+       * @brief Pack the list, as cull_pack_list() does; an empty handle packs a null list
+       * @param pb the buffer to append to
+       * @throw PackException if the buffer cannot grow
+       * @see Old form: cull_pack_list(); core: ocs::tom::pack_list()
+       */
+      void pack(sge_pack_buffer &pb) const {
+         pack_list(&pb, lp_, nullptr, 0);
+      }
+
+      /**
+       * @brief Pack the fields of the elements a selection names, as cull_pack_list_partial() does
+       * @param pb the buffer to append to
+       * @param what the selection
+       * @throw PackException with PACK_BADARG if the elements do not hold a selected field, or if the buffer
+       *        cannot grow
+       * @see Old form: cull_pack_list_partial(); core: ocs::tom::pack_list()
+       */
+      void pack(sge_pack_buffer &pb, const What<T> &what) const {
+         pack_list(&pb, lp_, what.get(), 0);
+      }
+
    protected:
       lList *lp_ = nullptr;   ///< the list, or nullptr; const unless reached through List
    };
@@ -1211,6 +1234,29 @@ namespace ocs::tom {
        */
       explicit operator bool() const noexcept {
          return lp_ != nullptr;
+      }
+
+
+      /**
+       * @brief Unpack a list packed by pack() or cull_pack_list(), as cull_unpack_list() does
+       * @param pb the buffer to read from
+       * @param flags read only the fields whose flags match, 0 for all
+       * @return the owning handle on the list, empty for a list that was null
+       * @throw FieldException with reason WrongType if the buffer holds a list of another type; it is freed
+       * @throw PackException with PACK_FORMAT for bytes that are cut off, PACK_ENOMEM
+       * @see Old form: cull_unpack_list(), cull_unpack_list_partial(); core: ocs::tom::unpack_list()
+       */
+      [[nodiscard]] static ListPtr unpack(sge_pack_buffer &pb, const int flags = 0) {
+         lList *lp = unpack_list(&pb, flags);
+         if (lp != nullptr && lp->descr[0].nm != T::fields[0].nm) [[unlikely]] {
+            try {
+               detail::throw_wrong_type<T>(lp->descr);
+            } catch (...) {
+               free_list(lp);
+               throw;
+            }
+         }
+         return from_typed(lp);
       }
 
    private:

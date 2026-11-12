@@ -51,6 +51,7 @@
 #include "tom/cull_whatP.h"
 #include "tom/ocs_FieldException.h"
 #include "tom/ocs_FieldTraits.h"
+#include "tom/ocs_PackCore.h"
 #include "tom/ocs_SelectCore.h"
 
 namespace ocs::tom {
@@ -259,6 +260,35 @@ namespace ocs::tom {
        */
       friend Where operator!(Where &&a) {
          return from_typed(make_logic(LogicOp::Not, a.release(), nullptr));
+      }
+
+
+      /**
+       * @brief Pack the condition, as cull_pack_cond() does; an empty handle packs a null condition
+       * @param pb the buffer to append to
+       * @throw PackException if the buffer cannot grow
+       * @see Old form: cull_pack_cond(); core: ocs::tom::pack_where()
+       */
+      void pack(sge_pack_buffer &pb) const {
+         pack_where(&pb, cp_);
+      }
+
+      /**
+       * @brief Unpack a condition packed by pack() or cull_pack_cond(), as cull_unpack_cond() does
+       * @param pb the buffer to read from
+       * @return the owning handle on the condition, empty for a condition that was null
+       * @throw FieldException with reason ForeignField if the buffer holds a condition on fields this type does
+       *        not have; it is freed
+       * @throw PackException with PACK_FORMAT for bytes that are cut off or an unknown operator, PACK_ENOMEM
+       * @see Old form: cull_unpack_cond(); core: ocs::tom::unpack_where()
+       */
+      [[nodiscard]] static Where unpack(sge_pack_buffer &pb) {
+         lCondition *cp = unpack_where(&pb);
+         if (!condition_fits(cp, T::descriptor.e)) [[unlikely]] {
+            free_where(cp);
+            throw_field_exception(FieldException::Reason::ForeignField, NoName, T::descriptor.e);
+         }
+         return from_typed(cp);
       }
 
    private:
@@ -506,6 +536,35 @@ namespace ocs::tom {
          entries.push_back({static_cast<int>(F), sub.release()});
          free_what(ep_);
          return from_typed(make_what(T::descriptor.e, entries));
+      }
+
+
+      /**
+       * @brief Pack the selection, as cull_pack_enum() does; an empty handle packs a null selection
+       * @param pb the buffer to append to
+       * @throw PackException if the buffer cannot grow
+       * @see Old form: cull_pack_enum(); core: ocs::tom::pack_what()
+       */
+      void pack(sge_pack_buffer &pb) const {
+         pack_what(&pb, ep_);
+      }
+
+      /**
+       * @brief Unpack a selection packed by pack() or cull_pack_enum(), as cull_unpack_enum() does
+       * @param pb the buffer to read from
+       * @return the owning handle on the selection, empty for a selection that was null
+       * @throw FieldException with reason ForeignField if the buffer holds a selection of fields this type does
+       *        not have; it is freed
+       * @throw PackException with PACK_FORMAT for bytes that are cut off, PACK_ENOMEM
+       * @see Old form: cull_unpack_enum(); core: ocs::tom::unpack_what()
+       */
+      [[nodiscard]] static What unpack(sge_pack_buffer &pb) {
+         lEnumeration *ep = unpack_what(&pb);
+         if (ep != nullptr && !ocs_cull_what_fits(ep, T::descriptor.e)) [[unlikely]] {
+            free_what(ep);
+            throw_field_exception(FieldException::Reason::ForeignField, NoName, T::descriptor.e);
+         }
+         return from_typed(ep);
       }
 
    private:

@@ -34,17 +34,20 @@
 #include <cstring>
 #include <functional>
 #include <string>
+#include <vector>
 
 #include <sys/wait.h>
 #include <unistd.h>
 
 #include "cull/cull_lerrno.h"
+#include "cull/cull_pack.h"
 #include "cull/cull_sort.h"
 #include "cull/cull_state.h"
 #include "cull/cull_whatP.h"
 #include "cull/ocs_cull_descr.h"
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/sge_pack.h"
+#include "uti/sge_stdlib.h"
 #include "uti/sge_string.h"
 
 #include "ocs_module_test.h"
@@ -1227,6 +1230,225 @@ test_sorting() {
          unknown && syntax && psort_unknown && by_hand);
 }
 
+/**
+ * @brief The bytes a filled pack buffer holds, header included
+ * @param pb the buffer
+ * @return the bytes
+ */
+static std::vector<char>
+packed_bytes(const sge_pack_buffer &pb) {
+   return {pb.head_ptr, pb.head_ptr + pb.bytes_used};
+}
+
+/**
+ * @brief A buffer to read from, made of the first bytes of a packed buffer
+ * @param bytes the packed bytes
+ * @param n how many of them
+ * @param[out] pb the buffer, which owns a copy of the bytes afterwards
+ * @return the result of init_packbuffer_from_buffer()
+ */
+static int
+read_buffer(const std::vector<char> &bytes, const std::size_t n, sge_pack_buffer *pb) {
+   char *copy = static_cast<char *>(malloc(n > 0 ? n : 1));
+   memcpy(copy, bytes.data(), n);
+   return init_packbuffer_from_buffer(pb, copy, static_cast<uint32_t>(n), false);
+}
+
+/**
+ * @brief The size of the header a pack buffer starts with: padding, version and the empty sender information
+ * @return the size in bytes
+ */
+static std::size_t
+header_size() {
+   sge_pack_buffer pb;
+   init_packbuffer(&pb, 0, false, false);
+   const std::size_t n = pb.bytes_used;
+   clear_packbuffer(&pb);
+   return n;
+}
+
+/**
+ * @brief Whether unpacking from every cut of a packed object, after the header, fails with PACK_FORMAT
+ *
+ * @param bytes the packed object with its header
+ * @param unpack unpacks one object from a buffer, returning the code and whether its result is null
+ * @return true if every cut gives PACK_FORMAT and a null result, and the whole buffer PACK_SUCCESS
+ */
+static bool
+every_cut_fails(const std::vector<char> &bytes, const std::function<int(sge_pack_buffer *, bool *)> &unpack) {
+   const std::size_t header = header_size();
+   for (std::size_t n = header; n < bytes.size(); n++) {
+      sge_pack_buffer pb;
+      if (read_buffer(bytes, n, &pb) != PACK_SUCCESS) {
+         clear_packbuffer(&pb);
+         return false;
+      }
+      bool null_result = false;
+      const int ret = unpack(&pb, &null_result);
+      clear_packbuffer(&pb);
+      if (ret != PACK_FORMAT || !null_result) {
+         printf("cut at %zu of %zu: %d, %s result\n", n, bytes.size(), ret, null_result ? "null" : "a");
+         return false;
+      }
+   }
+   sge_pack_buffer pb;
+   read_buffer(bytes, bytes.size(), &pb);
+   bool null_result = true;
+   const int ret = unpack(&pb, &null_result);
+   clear_packbuffer(&pb);
+   return ret == PACK_SUCCESS && !null_result;
+}
+
+/**
+ * @brief Pin the pack buffer and the packing of objects of the old interface (CS-3077, pack group)
+ *
+ * The bytes themselves are pinned by test_cull_pack_format; this pins the
+ * error results and that a failed unpack leaves nothing behind (ASAN).
+ */
+static void
+test_pack() {
+   // the primitives there and back, then past the end
+   sge_pack_buffer pb;
+   bool primitives = init_packbuffer(&pb, 0, false, false) == PACK_SUCCESS && packint(&pb, 7) == PACK_SUCCESS &&
+                     packint64(&pb, 1ULL << 40) == PACK_SUCCESS && packdouble(&pb, 2.5) == PACK_SUCCESS &&
+                     packstr(&pb, "abc") == PACK_SUCCESS && packstr(&pb, nullptr) == PACK_SUCCESS &&
+                     packbuf(&pb, "xyz", 3) == PACK_SUCCESS;
+   const std::vector<char> bytes = packed_bytes(pb);
+   clear_packbuffer(&pb);
+   sge_pack_buffer rb;
+   primitives = primitives && read_buffer(bytes, bytes.size(), &rb) == PACK_SUCCESS;
+   uint32_t i = 0;
+   uint64_t i64 = 0;
+   double d = 0;
+   char *str = nullptr;
+   char *null_str = reinterpret_cast<char *>(1);
+   char *buf = nullptr;
+   primitives = primitives && unpackint(&rb, &i) == PACK_SUCCESS && i == 7 && unpackint64(&rb, &i64) == PACK_SUCCESS &&
+                i64 == (1ULL << 40) && unpackdouble(&rb, &d) == PACK_SUCCESS && d == 2.5 &&
+                unpackstr(&rb, &str) == PACK_SUCCESS && str != nullptr && strcmp(str, "abc") == 0 &&
+                unpackstr(&rb, &null_str) == PACK_SUCCESS && null_str == nullptr &&
+                unpackbuf(&rb, &buf, 3) == PACK_SUCCESS && buf != nullptr && memcmp(buf, "xyz", 3) == 0;
+   sge_free(&str);
+   sge_free(&buf);
+   char *past_str = nullptr;
+   char *past_buf = nullptr;
+   const bool past_end = unpackint(&rb, &i) == PACK_FORMAT && unpackint64(&rb, &i64) == PACK_FORMAT &&
+                         unpackdouble(&rb, &d) == PACK_FORMAT && unpackstr(&rb, &past_str) == PACK_FORMAT &&
+                         past_str == nullptr && unpackbuf(&rb, &past_buf, 3) == PACK_FORMAT && past_buf == nullptr;
+   clear_packbuffer(&rb);
+   CHECK(60, "the primitives pack and unpack their values and give PACK_FORMAT past the end", primitives && past_end);
+
+   // a wrong padding or version, no buffer at all
+   std::vector<char> header(bytes.begin(), bytes.begin() + header_size());
+   std::vector<char> wrong_version = header;
+   wrong_version[INTSIZE + 3] ^= 0x01;
+   std::vector<char> wrong_pad = header;
+   wrong_pad[3] = 0x01;
+   sge_pack_buffer vb;
+   const bool version = read_buffer(wrong_version, wrong_version.size(), &vb) == PACK_VERSION;
+   clear_packbuffer(&vb);
+   const bool pad = read_buffer(wrong_pad, wrong_pad.size(), &vb) == PACK_VERSION;
+   clear_packbuffer(&vb);
+   const bool no_buffer = init_packbuffer(nullptr, 0, false, false) == PACK_FORMAT;
+   bool strings = std::string(cull_pack_strerror(12345)).empty();
+   for (const int code : {PACK_SUCCESS, PACK_ENOMEM, PACK_FORMAT, PACK_BADARG, PACK_VERSION, PACK_AUTHINFO}) {
+      strings = strings && !std::string(cull_pack_strerror(code)).empty();
+   }
+   CHECK(61, "a wrong padding or version gives PACK_VERSION, no buffer PACK_FORMAT, every code has a message",
+         version && pad && no_buffer && strings);
+
+   // objects: every cut after the header fails with PACK_FORMAT and leaves no result
+   lList *sets = lCreateList("sets", US_Type);
+   for (const char *name : {"one", "two", "three"}) {
+      lListElem *set = lAddElemStr(&sets, US_name, name, US_Type);
+      lAddSubStr(set, UE_name, "alice", US_entries, UE_Type);
+      lAddSubStr(set, UE_name, "bob", US_entries, UE_Type);
+   }
+   init_packbuffer(&pb, 0, false, false);
+   cull_pack_list(&pb, sets);
+   const std::vector<char> list_bytes = packed_bytes(pb);
+   clear_packbuffer(&pb);
+   init_packbuffer(&pb, 0, false, false);
+   cull_pack_elem(&pb, lFirst(sets));
+   const std::vector<char> elem_bytes = packed_bytes(pb);
+   clear_packbuffer(&pb);
+   lEnumeration *what = lWhat("%T(%I%I->%T(%I))", US_Type, US_name, US_entries, UE_Type, UE_name);
+   init_packbuffer(&pb, 0, false, false);
+   cull_pack_enum(&pb, what);
+   const std::vector<char> what_bytes = packed_bytes(pb);
+   clear_packbuffer(&pb);
+   lCondition *where = lWhere("%T(%I p= %s || %I -> %T(%I == %s))", US_Type, US_name, "t*", US_entries, UE_Type,
+                              UE_name, "bob");
+   init_packbuffer(&pb, 0, false, false);
+   cull_pack_cond(&pb, where);
+   const std::vector<char> where_bytes = packed_bytes(pb);
+   clear_packbuffer(&pb);
+   lFreeWhere(&where);
+   lFreeWhat(&what);
+
+   const bool list_cuts = every_cut_fails(list_bytes, [](sge_pack_buffer *b, bool *null_result) {
+      lList *lp = reinterpret_cast<lList *>(1);
+      const int ret = cull_unpack_list(b, &lp);
+      *null_result = lp == nullptr;
+      lFreeList(&lp);
+      return ret;
+   });
+   const bool elem_cuts = every_cut_fails(elem_bytes, [](sge_pack_buffer *b, bool *null_result) {
+      lListElem *ep = reinterpret_cast<lListElem *>(1);
+      const int ret = cull_unpack_elem(b, &ep, US_Type);
+      *null_result = ep == nullptr;
+      lFreeElem(&ep);
+      return ret;
+   });
+   const bool what_cuts = every_cut_fails(what_bytes, [](sge_pack_buffer *b, bool *null_result) {
+      lEnumeration *ep = reinterpret_cast<lEnumeration *>(1);
+      const int ret = cull_unpack_enum(b, &ep);
+      *null_result = ep == nullptr;
+      lFreeWhat(&ep);
+      return ret;
+   });
+   const bool where_cuts = every_cut_fails(where_bytes, [](sge_pack_buffer *b, bool *null_result) {
+      lCondition *cp = reinterpret_cast<lCondition *>(1);
+      const int ret = cull_unpack_cond(b, &cp);
+      *null_result = cp == nullptr;
+      lFreeWhere(&cp);
+      return ret;
+   });
+   CHECK(62, "unpacking a list, an element, a selection and a condition cut at any byte gives PACK_FORMAT and "
+             "no result",
+         list_cuts && elem_cuts && what_cuts && where_cuts);
+
+   // the counting mode measures what packing writes
+   sge_pack_buffer cb;
+   const bool counted = init_packbuffer(&cb, 0, true, false) == PACK_SUCCESS && cull_pack_list(&cb, sets) == PACK_SUCCESS &&
+                        cb.bytes_used == list_bytes.size() - header_size() && cb.head_ptr == nullptr;
+   clear_packbuffer(&cb);
+   lFreeList(&sets);
+   CHECK(63, "the counting mode measures exactly the bytes packing writes, without writing", counted);
+
+   // byte arrays in a string field
+   lListElem *holder = lCreateElem(TEST_Type);
+   const char raw[] = {0x00, 0x1f, static_cast<char>(0xa5), 0x7f, static_cast<char>(0xff)};
+   setByteArray(raw, sizeof(raw), holder, TEST_string);
+   char *back = nullptr;
+   const int size = getByteArray(&back, holder, TEST_string);
+   const bool there_and_back = size == static_cast<int>(sizeof(raw)) && back != nullptr &&
+                               memcmp(back, raw, sizeof(raw)) == 0 &&
+                               strcmp(lGetString(holder, TEST_string), "00F15AF7FF") == 0;
+   sge_free(&back);
+   lSetString(holder, TEST_string, nullptr);
+   const bool unset = getByteArray(&back, holder, TEST_string) == 0 && back == nullptr;
+   lSetString(holder, TEST_string, "0G12");
+   const int bad = getByteArray(&back, holder, TEST_string);
+   sge_free(&back);
+   setByteArray(nullptr, 3, holder, TEST_string);
+   const bool null_kept = strcmp(lGetString(holder, TEST_string), "0G12") == 0;
+   lFreeElem(&holder);
+   CHECK(64, "setByteArray and getByteArray carry bytes through a string field and report a bad digit by a "
+             "negative size",
+         there_and_back && unset && bad < 0 && null_kept);
+}
+
 int main(int argc, char *argv[]) {
    lInit(nmv);
    return ocs::module_test::run(argc, argv, {
@@ -1316,5 +1538,12 @@ int main(int argc, char *argv[]) {
         "build orders with an unknown field, without a direction and by hand"},
        "the keys in order, the lookups working, the error results of before; equal keys in any order",
        {{"LEG-01", "covers"}}, {56, 57, 58, 59}, test_sorting},
+      {"LEGACY-14", "pack and unpack",
+       "the pack buffer and the packing of objects keep their codes and leave nothing behind on an error",
+       {"pack and unpack every primitive and read past the end", "read a wrong padding and version",
+        "unpack a list, an element, a selection and a condition from every cut of their bytes",
+        "count a pack", "carry bytes through a string field"},
+       "the codes of before, null results and no leak on every cut; the bytes are pinned by test_cull_pack_format",
+       {{"LEG-01", "covers"}}, {60, 61, 62, 63, 64}, test_pack},
    });
 }

@@ -889,6 +889,23 @@ namespace ocs::tom {
       return 0;
    }
 
+
+   bool condition_fits(const lCondition *cp, const lDescr *descr) noexcept {
+      if (cp == nullptr) {
+         return true;
+      }
+      switch (cp->op) {
+         case AND:
+         case OR:
+            return condition_fits(cp->operand.log.first, descr) && condition_fits(cp->operand.log.second, descr);
+         case NEG:
+            return condition_fits(cp->operand.log.first, descr);
+         default:
+            // a comparison, or the list field of a condition on its elements
+            return field_pos(descr, cp->operand.cmp.nm) >= 0;
+      }
+   }
+
 } // namespace ocs::tom
 
 /**

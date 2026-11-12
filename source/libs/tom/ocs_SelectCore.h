@@ -311,4 +311,16 @@ namespace ocs::tom {
     */
    int partial_descr(const lEnumeration *enp, const lDescr *sdp, lDescr *ddp, int *indexp) noexcept;
 
+   /**
+    * @brief Whether every field a condition compares belongs to a type
+    *
+    * The condition on the elements of a list field (`->` in lWhere(), any() in
+    * the typed form) is not looked into: its fields belong to the sub-type.
+    *
+    * @param cp the condition, or nullptr
+    * @param descr the descriptor of the type
+    * @return true if every field compared at the top belongs to @p descr, and for nullptr
+    */
+   bool condition_fits(const lCondition *cp, const lDescr *descr) noexcept;
+
 } // namespace ocs::tom

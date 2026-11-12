@@ -60,6 +60,7 @@
 #include "uti/sge_string.h"
 
 #include "cull/msg_cull.h"
+#include "tom/ocs_PackCore.h"
 
 #include <cinttypes>
 
@@ -125,63 +126,17 @@ int pack_get_chunk() {
  * @note MT-NOTE: init_packbuffer() is MT safe (assumptions)
  *
  * @see `pack_set_chunk()`, `sge_gdi_packet_get_pb_size()`
+ *
+ * @note A thin wrapper over ocs::tom::init_buffer().
  */
 int
 init_packbuffer(sge_pack_buffer *pb, size_t initial_size, bool just_count, bool with_auth_info) {
-   DENTER(PACK_LAYER);
-
-   if (pb == nullptr) {
-      ERROR(MSG_CULL_ERRORININITPACKBUFFER_S, MSG_CULL_PACK_FORMAT);
-      DRETURN(PACK_FORMAT);
+   try {
+      ocs::tom::init_buffer(pb, initial_size, just_count, with_auth_info);
+   } catch (const ocs::tom::PackException &e) {
+      return e.code();
    }
-
-   // clear all data
-   memset(pb, 0, sizeof(sge_pack_buffer));
-
-   if (!just_count) {
-      if (initial_size == 0) {
-         initial_size = CHUNK;
-      } else {
-         initial_size += 2 * INTSIZE;  /* space for version information */
-      }
-
-      // if auth_info is requested then get it from the component module
-      // and add its length to the initial_size
-      if (with_auth_info) {
-         pb->auth_info = component_get_auth_info();
-         if (pb->auth_info == nullptr) {
-            // ERROR printing has been done in component_get_auth_info()
-            DRETURN(PACK_AUTHINFO);
-         }
-      }
-      if (pb->auth_info != nullptr) {
-         initial_size += strlen(pb->auth_info) + 1;
-      } else {
-         initial_size += 1;
-      }
-
-      pb->head_ptr = sge_malloc(initial_size);
-      if (pb->head_ptr == nullptr) {
-         ERROR(MSG_CULL_NOTENOUGHMEMORY_D, (int)initial_size);
-         DRETURN(PACK_ENOMEM);
-      }
-      pb->cur_ptr = pb->head_ptr;
-      pb->mem_size = initial_size;
-
-      pb->cur_ptr = pb->head_ptr;
-      pb->mem_size = initial_size;
-
-      pb->bytes_used = 0;
-      pb->just_count = false;
-      pb->version = CULL_VERSION;
-      packint(pb, 0);              /* pad 0 byte -> error handing in former versions */
-      packint(pb, pb->version);      /* version information is included in buffer      */
-      packstr(pb, pb->auth_info);
-   } else {
-      pb->just_count = true;
-   }
-
-   DRETURN(PACK_SUCCESS);
+   return PACK_SUCCESS;
 }
 
 /**
@@ -197,63 +152,17 @@ init_packbuffer(sge_pack_buffer *pb, size_t initial_size, bool just_count, bool 
  * @return #PACK_SUCCESS, #PACK_VERSION on a version mismatch, or #PACK_AUTHINFO
  *
  * @note MT-NOTE: init_packbuffer_from_buffer() is MT safe (assumptions)
+ *
+ * @note A thin wrapper over ocs::tom::init_buffer_from().
  */
 int
 init_packbuffer_from_buffer(sge_pack_buffer *pb, char *buf, uint32_t buflen, bool with_auth_info) {
-   DENTER(PACK_LAYER);
-
-   if (!pb && !buf) {
-      DRETURN(PACK_FORMAT);
+   try {
+      ocs::tom::init_buffer_from(pb, buf, buflen, with_auth_info);
+   } catch (const ocs::tom::PackException &e) {
+      return e.code();
    }
-
-   memset(pb, 0, sizeof(sge_pack_buffer));
-
-   pb->head_ptr = buf;
-   pb->cur_ptr = buf;
-   pb->mem_size = buflen;
-   pb->bytes_used = 0;
-
-   /* check cull version (only if buffer contains any data) */
-   if (buflen > 0) {
-      int ret;
-
-      uint32_t pad;
-      if ((ret = unpackint(pb, &pad)) != PACK_SUCCESS) {
-         DRETURN(ret);
-      }
-
-      uint32_t version;
-      if ((ret = unpackint(pb, &version)) != PACK_SUCCESS) {
-         DRETURN(ret);
-      }
-
-      char *auth_info;
-      if ((ret = unpackstr(pb, &auth_info)) != PACK_SUCCESS) {
-         DRETURN(ret);
-      }
-      pb->auth_info = auth_info;
-
-      if (pad != 0 || version != CULL_VERSION) {
-         ERROR(MSG_CULL_PACK_WRONG_VERSION_XX, (unsigned int) version, CULL_VERSION);
-         DRETURN(PACK_VERSION);
-      }
-
-      pb->version = version;
-
-      // verify auth_info
-      if (with_auth_info) {
-         DSTRING_STATIC(error_dstr, MAX_STRING_SIZE);
-         if (!component_parse_auth_info(&error_dstr, pb->auth_info, &pb->uid, pb->username, MAX_USER_GROUP,
-            &pb->gid, pb->groupname, MAX_USER_GROUP, &pb->grp_amount, &pb->grp_array)) {
-            ERROR(SFNMAX, sge_dstring_get_string(&error_dstr));
-            DRETURN(PACK_AUTHINFO);
-         }
-      }
-   } else {
-      pb->version = CULL_VERSION;
-   }
-
-   DRETURN(PACK_SUCCESS);
+   return PACK_SUCCESS;
 }
 
 /**************************************************************/
@@ -262,14 +171,11 @@ init_packbuffer_from_buffer(sge_pack_buffer *pb, char *buf, uint32_t buflen, boo
  * @brief Release a packbuffer's memory and the identity it carries
  *
  * @param pb the buffer to clear; may be nullptr
+ *
+ * @note A thin wrapper over ocs::tom::clear_buffer().
  */
 void clear_packbuffer(sge_pack_buffer *pb) {
-   if (pb != nullptr) {
-      sge_free(&pb->head_ptr);
-      sge_free(&pb->auth_info);
-      sge_free(&pb->grp_array);
-      ocs_cull_pack_table_free(pb);
-   }
+   ocs::tom::clear_buffer(pb);
 }
 
 /**
@@ -321,31 +227,16 @@ int pb_used(
  * @param pb the buffer to append to
  * @param i the value to write
  * @return #PACK_SUCCESS, or #PACK_ENOMEM when the buffer could not grow
+ *
+ * @note A thin wrapper over ocs::tom::put_uint32().
  */
 int packint(sge_pack_buffer *pb, uint32_t i) {
-   DENTER(PACK_LAYER);
-
-   uint32_t J = 0;
-
-   if (!pb->just_count) {
-      if (pb->bytes_used + INTSIZE > pb->mem_size) {
-         DPRINTF("realloc(%d + %d)\n", pb->mem_size, CHUNK);
-         pb->mem_size += CHUNK;
-         pb->head_ptr = (char *) sge_realloc(pb->head_ptr, pb->mem_size, 0);
-         if (!pb->head_ptr) {
-            DRETURN(PACK_ENOMEM);
-         }
-         pb->cur_ptr = &(pb->head_ptr[pb->bytes_used]);
-      }
-
-      /* copy in packing buffer */
-      J = htonl(i);
-      memcpy(pb->cur_ptr, (((char *) &J) + INTOFF), INTSIZE);
-      pb->cur_ptr = &(pb->cur_ptr[INTSIZE]);
+   try {
+      ocs::tom::put_uint32(pb, i);
+   } catch (const ocs::tom::PackException &e) {
+      return e.code();
    }
-   pb->bytes_used += INTSIZE;
-
-   DRETURN(PACK_SUCCESS);
+   return PACK_SUCCESS;
 }
 
 /**
@@ -354,19 +245,16 @@ int packint(sge_pack_buffer *pb, uint32_t i) {
  * @param pb the buffer to write into
  * @param i the value to write
  * @return #PACK_SUCCESS, or #PACK_ENOMEM when the buffer could not grow
+ *
+ * @note A thin wrapper over ocs::tom::reput_uint32().
  */
 int repackint(sge_pack_buffer *pb, uint32_t i) {
-   DENTER(PACK_LAYER);
-
-   uint32_t J = 0;
-
-   if (!pb->just_count) {
-      J = htonl(i);
-      memcpy(pb->cur_ptr, (((char *) &J) + INTOFF), INTSIZE);
-      pb->cur_ptr = &(pb->cur_ptr[INTSIZE]);
+   try {
+      ocs::tom::reput_uint32(pb, i);
+   } catch (const ocs::tom::PackException &e) {
+      return e.code();
    }
-
-   DRETURN(PACK_SUCCESS);
+   return PACK_SUCCESS;
 }
 
 /**
@@ -375,33 +263,17 @@ int repackint(sge_pack_buffer *pb, uint32_t i) {
  * @param pb the buffer to append to
  * @param i the value to write
  * @return #PACK_SUCCESS, or #PACK_ENOMEM when the buffer could not grow
+ *
+ * @note A thin wrapper over ocs::tom::put_uint64().
  */
 int packint64(sge_pack_buffer *pb, uint64_t i) {
-   DENTER(PACK_LAYER);
-
-   if (!pb->just_count) {
-      if (pb->bytes_used + (INTSIZE * 2) > pb->mem_size) {
-         DPRINTF("realloc(%d + %d)\n", pb->mem_size, CHUNK);
-         pb->mem_size += CHUNK;
-         pb->head_ptr = (char *) sge_realloc(pb->head_ptr, pb->mem_size, 0);
-         if (!pb->head_ptr) {
-            DRETURN(PACK_ENOMEM);
-         }
-         pb->cur_ptr = &(pb->head_ptr[pb->bytes_used]);
-      }
-
-      /* copy in packing buffer */
-      uint64_t J = htobe64(i);
-      memcpy(pb->cur_ptr, (((char *) &J) + INTOFF), (INTSIZE * 2));
-      pb->cur_ptr = &(pb->cur_ptr[(INTSIZE * 2)]);
+   try {
+      ocs::tom::put_uint64(pb, i);
+   } catch (const ocs::tom::PackException &e) {
+      return e.code();
    }
-   pb->bytes_used += (INTSIZE * 2);
-
-   DRETURN(PACK_SUCCESS);
+   return PACK_SUCCESS;
 }
-
-/// Size of a packed double, in bytes
-#define DOUBLESIZE 8
 
 /**
  * @brief Append a double, in a platform independent representation
@@ -409,31 +281,16 @@ int packint64(sge_pack_buffer *pb, uint64_t i) {
  * @param pb the buffer to append to
  * @param d the value to write
  * @return #PACK_SUCCESS, or #PACK_ENOMEM when the buffer could not grow
+ *
+ * @note A thin wrapper over ocs::tom::put_double().
  */
 int packdouble(sge_pack_buffer *pb, double d) {
-   DENTER(PACK_LAYER);
-
-   if (!pb->just_count) {
-      if (pb->bytes_used + DOUBLESIZE > pb->mem_size) {
-         DPRINTF("realloc(%d + %d)\n", pb->mem_size, CHUNK);
-         pb->mem_size += CHUNK;
-         pb->head_ptr = (char *) sge_realloc(pb->head_ptr, pb->mem_size, 0);
-         if (!pb->head_ptr) {
-            DRETURN(PACK_ENOMEM);
-         }
-         pb->cur_ptr = &(pb->head_ptr[pb->bytes_used]);
-      }
-
-      /* copy in packing buffer */
-      uint64_t storage;
-      std::memcpy(&storage, &d, 2 * INTSIZE);
-      uint64_t network_storage = htobe64(storage);
-      std::memcpy(pb->cur_ptr, &network_storage, 2 * INTSIZE);
-      pb->cur_ptr = &(pb->cur_ptr[2 * INTSIZE]);
+   try {
+      ocs::tom::put_double(pb, d);
+   } catch (const ocs::tom::PackException &e) {
+      return e.code();
    }
-   pb->bytes_used += DOUBLESIZE;
-
-   DRETURN(PACK_SUCCESS);
+   return PACK_SUCCESS;
 }
 
 /**
@@ -442,58 +299,16 @@ int packdouble(sge_pack_buffer *pb, double d) {
  * @param pb the buffer to append to
  * @param str the string to write; nullptr is written as an empty string
  * @return #PACK_SUCCESS, or #PACK_ENOMEM when the buffer could not grow
+ *
+ * @note A thin wrapper over ocs::tom::put_str().
  */
 int packstr(sge_pack_buffer *pb, const char *str) {
-   DENTER(PACK_LAYER);
-
-   /* determine string length */
-   if (str == nullptr) {
-      if (!pb->just_count) {
-         /* is realloc necessary */
-         if ((pb->bytes_used + 1) > pb->mem_size) {
-
-            /* realloc */
-            DPRINTF("realloc(%d + %d)\n", pb->mem_size, CHUNK);
-            pb->mem_size += CHUNK;
-            pb->head_ptr = (char *) sge_realloc(pb->head_ptr, pb->mem_size, 0);
-            if (!pb->head_ptr) {
-               DRETURN(PACK_ENOMEM);
-            }
-
-            /* update cur_ptr */
-            pb->cur_ptr = &(pb->head_ptr[pb->bytes_used]);
-         }
-         pb->cur_ptr[0] = '\0';
-         /* update cur_ptr & bytes_packed */
-         pb->cur_ptr = &(pb->cur_ptr[1]);
-      }
-      pb->bytes_used++;
-   } else {
-      size_t n = strlen(str) + 1;
-
-      if (!pb->just_count) {
-         /* is realloc necessary */
-         if ((pb->bytes_used + n) > pb->mem_size) {
-            /* realloc */
-            DPRINTF("realloc(%d + %d)\n", pb->mem_size, CHUNK);
-            while ((pb->bytes_used + n) > pb->mem_size)
-               pb->mem_size += CHUNK;
-            pb->head_ptr = (char *) sge_realloc(pb->head_ptr, pb->mem_size, 0);
-            if (!pb->head_ptr) {
-               DRETURN(PACK_ENOMEM);
-            }
-
-            /* update cur_ptr */
-            pb->cur_ptr = &(pb->head_ptr[pb->bytes_used]);
-         }
-         memcpy(pb->cur_ptr, str, n);
-         /* update cur_ptr & bytes_packed */
-         pb->cur_ptr = &(pb->cur_ptr[n]);
-      }
-      pb->bytes_used += n;
+   try {
+      ocs::tom::put_str(pb, str);
+   } catch (const ocs::tom::PackException &e) {
+      return e.code();
    }
-
-   DRETURN(PACK_SUCCESS);
+   return PACK_SUCCESS;
 }
 
 /**
@@ -503,37 +318,16 @@ int packstr(sge_pack_buffer *pb, const char *str) {
  * @param buf_ptr the bytes to write
  * @param buf_size how many bytes to write
  * @return #PACK_SUCCESS, or #PACK_ENOMEM when the buffer could not grow
+ *
+ * @note A thin wrapper over ocs::tom::put_buf().
  */
-int packbuf(
-        sge_pack_buffer *pb,
-        const char *buf_ptr,
-        uint32_t buf_size
-) {
-   DENTER(PACK_LAYER);
-
-   if (!pb->just_count) {
-      /* is realloc necessary */
-      if (buf_size + (uint32_t) pb->bytes_used > (uint32_t) pb->mem_size) {
-         /* realloc */
-         DPRINTF("realloc(%d + %d)\n", pb->mem_size, CHUNK);
-         pb->mem_size += CHUNK;
-         pb->head_ptr = (char *) sge_realloc(pb->head_ptr, pb->mem_size, 0);
-         if (!(pb->head_ptr)) {
-            DRETURN(PACK_ENOMEM);
-         }
-
-         /* update cur_ptr */
-         pb->cur_ptr = &(pb->head_ptr[pb->bytes_used]);
-      }
-
-      /* copy in packing buffer */
-      memcpy(pb->cur_ptr, buf_ptr, buf_size);
-      /* update cur_ptr & bytes_packed */
-      pb->cur_ptr = &(pb->cur_ptr[buf_size]);
+int packbuf(sge_pack_buffer *pb, const char *buf_ptr, uint32_t buf_size) {
+   try {
+      ocs::tom::put_buf(pb, buf_ptr, buf_size);
+   } catch (const ocs::tom::PackException &e) {
+      return e.code();
    }
-   pb->bytes_used += buf_size;
-
-   DRETURN(PACK_SUCCESS);
+   return PACK_SUCCESS;
 }
 
 
@@ -549,26 +343,17 @@ int packbuf(
  * @param pb the buffer to read from
  * @param[out] ip receives the value
  * @return #PACK_SUCCESS, #PACK_FORMAT when the buffer is exhausted or malformed, or #PACK_ENOMEM
+ *
+ * @note A thin wrapper over ocs::tom::get_uint32().
  */
 int unpackint(sge_pack_buffer *pb, uint32_t *ip) {
-   DENTER(PACK_LAYER);
-
-   /* are there enough bytes ? */
-   if (pb->bytes_used + INTSIZE > pb->mem_size) {
+   try {
+      *ip = ocs::tom::get_uint32(pb);
+   } catch (const ocs::tom::PackException &e) {
       *ip = 0;
-      DRETURN(PACK_FORMAT);
+      return e.code();
    }
-
-   /* copy integer */
-   memset(ip, 0, sizeof(uint32_t));
-   memcpy(((char *) ip) + INTOFF, pb->cur_ptr, INTSIZE);
-   *ip = ntohl(*ip);
-
-   /* update cur_ptr & bytes_unpacked */
-   pb->cur_ptr = &(pb->cur_ptr[INTSIZE]);
-   pb->bytes_used += INTSIZE;
-
-   DRETURN(PACK_SUCCESS);
+   return PACK_SUCCESS;
 }
 
 /**
@@ -577,26 +362,17 @@ int unpackint(sge_pack_buffer *pb, uint32_t *ip) {
  * @param pb the buffer to read from
  * @param[out] ip receives the value
  * @return #PACK_SUCCESS, #PACK_FORMAT when the buffer is exhausted or malformed, or #PACK_ENOMEM
+ *
+ * @note A thin wrapper over ocs::tom::get_uint64().
  */
 int unpackint64(sge_pack_buffer *pb, uint64_t *ip) {
-   DENTER(PACK_LAYER);
-
-   /* are there enough bytes ? */
-   if (pb->bytes_used + (INTSIZE * 2) > pb->mem_size) {
+   try {
+      *ip = ocs::tom::get_uint64(pb);
+   } catch (const ocs::tom::PackException &e) {
       *ip = 0;
-      DRETURN(PACK_FORMAT);
+      return e.code();
    }
-
-   /* copy integer */
-   memset(ip, 0, sizeof(uint64_t));
-   memcpy(((char *) ip) + INTOFF, pb->cur_ptr, (INTSIZE * 2));
-   *ip = be64toh(*ip);
-
-   /* update cur_ptr & bytes_unpacked */
-   pb->cur_ptr = &(pb->cur_ptr[(INTSIZE * 2)]);
-   pb->bytes_used += (INTSIZE * 2);
-
-   DRETURN(PACK_SUCCESS);
+   return PACK_SUCCESS;
 }
 
 /**
@@ -605,27 +381,17 @@ int unpackint64(sge_pack_buffer *pb, uint64_t *ip) {
  * @param pb the buffer to read from
  * @param[out] dp receives the value
  * @return #PACK_SUCCESS, #PACK_FORMAT when the buffer is exhausted or malformed, or #PACK_ENOMEM
+ *
+ * @note A thin wrapper over ocs::tom::get_double().
  */
 int unpackdouble(sge_pack_buffer *pb, double *dp) {
-   DENTER(PACK_LAYER);
-
-   /* are there enough bytes ? */
-   if (pb->bytes_used + DOUBLESIZE > pb->mem_size) {
+   try {
+      *dp = ocs::tom::get_double(pb);
+   } catch (const ocs::tom::PackException &e) {
       *dp = 0;
-      DRETURN(PACK_FORMAT);
+      return e.code();
    }
-
-   /* copy double */
-   uint64_t network_storage;
-   std::memcpy(&network_storage, pb->cur_ptr, 2 * INTSIZE);
-   uint64_t storage = be64toh(network_storage);
-   std::memcpy(dp, &storage, 2 * INTSIZE);
-
-   /* update cur_ptr & bytes_unpacked */
-   pb->cur_ptr = &(pb->cur_ptr[DOUBLESIZE]);
-   pb->bytes_used += DOUBLESIZE;
-
-   DRETURN(PACK_SUCCESS);
+   return PACK_SUCCESS;
 }
 
 /** @brief Unpack a NUL-terminated string from the packbuffer.
@@ -642,41 +408,17 @@ int unpackdouble(sge_pack_buffer *pb, double *dp) {
  *             for an empty string
  * @return PACK_SUCCESS, PACK_FORMAT (truncated / no in-bounds terminator), or
  *         PACK_ENOMEM
+ *
+ * @note A thin wrapper over ocs::tom::get_str().
  */
 int unpackstr(sge_pack_buffer *pb, char **str) {
-   DENTER(PACK_LAYER);
-
-   /* at least the terminator byte must remain before we touch the buffer */
-   size_t remaining = pb->mem_size - pb->bytes_used;
-   if (remaining < 1) {
-      DRETURN(PACK_FORMAT);
+   try {
+      *str = ocs::tom::get_str(pb);
+   } catch (const ocs::tom::PackException &e) {
+      // *str stays as it was, as before
+      return e.code();
    }
-
-   /* empty string: a single NUL byte */
-   if (pb->cur_ptr[0] == '\0') {
-      *str = nullptr;
-      pb->cur_ptr = &(pb->cur_ptr[1]);
-      pb->bytes_used++;
-      DRETURN(PACK_SUCCESS);
-   }
-
-   /* find the terminator within the remaining bytes - never scan past the end */
-   const void *nul = memchr(pb->cur_ptr, '\0', remaining);
-   if (nul == nullptr) {
-      DRETURN(PACK_FORMAT);
-   }
-   size_t n = (static_cast<const char *>(nul) - pb->cur_ptr) + 1;
-
-   *str = strdup(pb->cur_ptr);
-   if (!*str) {
-      DRETURN(PACK_ENOMEM);
-   }
-
-   /* update cur_ptr & bytes_unpacked */
-   pb->bytes_used += n;
-   pb->cur_ptr = &(pb->cur_ptr[n]);
-
-   DRETURN(PACK_SUCCESS);
+   return PACK_SUCCESS;
 }
 
 /**
@@ -686,30 +428,20 @@ int unpackstr(sge_pack_buffer *pb, char **str) {
  * @param[out] buf_ptr receives the block, allocated by this function; the caller owns it
  * @param buf_size number of bytes to read
  * @return #PACK_SUCCESS, #PACK_FORMAT when the buffer is exhausted or malformed, or #PACK_ENOMEM
+ *
+ * @note A thin wrapper over ocs::tom::get_buf().
  */
 int unpackbuf(sge_pack_buffer *pb, char **buf_ptr, int buf_size) {
-   DENTER(PACK_LAYER);
-
    if (buf_size == 0) {
-      DRETURN(PACK_SUCCESS);
+      return PACK_SUCCESS;
    }
-
-   /* are there enough bytes ? */
-   if ((buf_size + pb->bytes_used) > pb->mem_size) {
-      DRETURN(PACK_FORMAT);
+   try {
+      *buf_ptr = ocs::tom::get_buf(pb, static_cast<uint32_t>(buf_size));
+   } catch (const ocs::tom::PackException &e) {
+      // *buf_ptr stays as it was, as before
+      return e.code();
    }
-
-   /* copy buffer */
-   *buf_ptr = sge_malloc(buf_size);
-   if (!*buf_ptr) {
-      DRETURN(PACK_ENOMEM);
-   }
-   memcpy(*buf_ptr, pb->cur_ptr, buf_size);
-   /* update cur_ptr & bytes_unpacked */
-   pb->cur_ptr = &(pb->cur_ptr[buf_size]);
-   pb->bytes_used += buf_size;
-
-   DRETURN(PACK_SUCCESS);
+   return PACK_SUCCESS;
 }
 
 /**
@@ -717,25 +449,11 @@ int unpackbuf(sge_pack_buffer *pb, char **buf_ptr, int buf_size) {
  *
  * @param errnum one of #PACK_SUCCESS and its neighbours
  * @return the message; static storage, do not free
+ *
+ * @note A thin wrapper over ocs::tom::pack_error_text().
  */
 const char *cull_pack_strerror(int errnum) {
-   switch (errnum) {
-      case PACK_SUCCESS:
-         return MSG_CULL_PACK_SUCCESS;
-      case PACK_ENOMEM:
-         return MSG_CULL_PACK_ENOMEM;
-      case PACK_FORMAT:
-         return MSG_CULL_PACK_FORMAT;
-      case PACK_BADARG:
-         return MSG_CULL_PACK_BADARG;
-      case PACK_VERSION:
-         return MSG_CULL_PACK_VERSION;
-      case PACK_AUTHINFO:
-         return MSG_CULL_PACK_AUTHINFO;
-      default:
-         /* JG: TODO: we should have some global error message for all strerror functions */
-         return "";
-   }
+   return ocs::tom::pack_error_text(errnum);
 }
 
 /**
@@ -747,16 +465,12 @@ const char *cull_pack_strerror(int errnum) {
  * @param pb2 packbuffer
  *
  * @return equivalent? true  - yes false - no
+ *
+ * @note A thin wrapper over ocs::tom::buffers_equal().
  */
 bool
 pb_are_equivalent(sge_pack_buffer *pb1, sge_pack_buffer *pb2) {
-   bool ret = true;
-
-   if (pb1 != nullptr && pb2 != nullptr) {
-      ret &= (pb1->bytes_used == pb2->bytes_used);
-      ret &= (memcmp(pb1->head_ptr, pb2->head_ptr, pb1->bytes_used) == 0);
-   }
-   return ret;
+   return ocs::tom::buffers_equal(pb1, pb2);
 }
 
 /**
@@ -807,58 +521,10 @@ pb_print_to(sge_pack_buffer *pb, bool only_header, FILE *file) {
  * @param reresolve_user  re-resolve and correct the user and group name?
  * @param reresolve_supp_grp  re-resolve the supplementary group ids?
  * @return true if all was ok, possibly names were corrected, false on errors
+ *
+ * @note A thin wrapper over ocs::tom::check_sender().
  */
 bool
 cull_reresolve_check_user(sge_pack_buffer *pb, dstring *error, bool local_uid_gid, bool reresolve_user, bool reresolve_supp_grp) {
-   DENTER(PACK_LAYER);
-   bool ret = true;
-
-   // check if the user (uid, gid) is the same as we are running with or root
-   // this is required for communication between components like sge_qmaster and sge_execd
-   if (local_uid_gid) {
-      if ((pb->uid != component_get_uid() && pb->uid != 0) ||
-          (pb->gid != component_get_gid() && pb->gid != 0)) {
-         sge_dstring_sprintf(error, MSG_CULL_AUTHINFO_UIDGIDMISMATCH_UUUU,
-            pb->uid, pb->gid, component_get_uid(), component_get_gid());
-         ret = false;
-      }
-   }
-
-   if (ret && reresolve_user) {
-      char buffer[MAX_USER_GROUP]{};
-      if (sge_uid2user(pb->uid, buffer, sizeof(buffer), MAX_NIS_RETRIES) != 0) {
-         // sge_uid2user() calls ERROR in case of errors
-         sge_dstring_sprintf(error, MSG_CULL_AUTHINFO_COULDNOTRESOLVEUSER_U, pb->uid);
-         ret = false;
-      } else {
-         if (strcmp(pb->username, buffer) != 0) {
-            sge_dstring_sprintf(error, MSG_CULL_AUTHINFO_CORRECTINGUSERNAME_SS, pb->username, buffer);
-            sge_strlcpy(pb->username, buffer, MAX_USER_GROUP);
-         }
-      }
-      if (sge_gid2group(pb->gid, buffer, sizeof(buffer), MAX_NIS_RETRIES) != 0) {
-         // sge_gid2user() calls ERROR in case of errors
-         sge_dstring_sprintf(error, MSG_CULL_AUTHINFO_COULDNOTRESOLVEGROUP_U, pb->gid);
-         ret = false;
-      } else {
-         if (strcmp(pb->groupname, buffer) != 0) {
-            sge_dstring_sprintf(error, MSG_CULL_AUTHINFO_CORRECTINGGROUPNAME_SS, pb->groupname, buffer);
-            sge_strlcpy(pb->groupname, buffer, MAX_USER_GROUP);
-         }
-      }
-   }
-
-   if (ret && reresolve_supp_grp) {
-      int amount;
-      ocs_grp_elem_t *grp_array;
-      if (ocs_get_groups(pb->username, pb->gid, &amount, &grp_array, error)) {
-         sge_free(&pb->grp_array);
-         pb->grp_amount = amount;
-         pb->grp_array = grp_array;
-      } else {
-         ret = false;
-      }
-   }
-
-   DRETURN(ret);
+   return ocs::tom::check_sender(pb, error, local_uid_gid, reresolve_user, reresolve_supp_grp);
 }
