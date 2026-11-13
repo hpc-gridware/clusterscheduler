@@ -27,6 +27,26 @@ static const int server_port = 4433;
 
 static volatile bool server_running = true;
 
+/**
+ * @brief Performs the TLS handshake on a blocking socket.
+ *
+ * On a blocking socket one handshake() call completes the handshake or fails. The loop
+ * only covers a handshake step that still asks to be repeated.
+ *
+ * @param connection the TLS connection, its socket is already set with set_fd()
+ * @param error_dstr receives the error message
+ *
+ * @return true if the handshake completed, false on error
+ */
+static bool do_handshake(ocs::uti::OpenSSL::OpenSSLConnection *connection, dstring *error_dstr) {
+    ocs::uti::OpenSSL::HandshakeResult result;
+    do {
+        result = connection->handshake(error_dstr);
+    } while (result == ocs::uti::OpenSSL::HandshakeResult::WANT_READ ||
+             result == ocs::uti::OpenSSL::HandshakeResult::WANT_WRITE);
+    return result == ocs::uti::OpenSSL::HandshakeResult::DONE;
+}
+
 static SOCKET create_socket(bool isServer) {
     SOCKET s = socket(AF_INET, SOCK_STREAM, 0);
     if (s < 0) {
@@ -181,7 +201,7 @@ int main(int argc, char **argv)
             }
 
             /* Wait for SSL connection from the client */
-            if (!openssl_connection->accept(&error_dstr)) {
+            if (!do_handshake(openssl_connection, &error_dstr)) {
                 fprintf(stderr, SFNMAX "\n", sge_dstring_get_string(&error_dstr));
                 server_running = false;
             } else {
@@ -278,7 +298,7 @@ int main(int argc, char **argv)
             goto exit;
         }
         /* Now do SSL connect with server */
-        if (openssl_connection->connect(&error_dstr)) {
+        if (do_handshake(openssl_connection, &error_dstr)) {
             printf("SSL connection to server successful\n\n");
 
             /* Loop to send input from keyboard */

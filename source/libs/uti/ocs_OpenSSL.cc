@@ -1949,88 +1949,6 @@ namespace ocs::uti {
    }
 
    /**
-    * @brief Waits for the underlying socket to become ready for the specified operation.
-    *
-    * This function uses select() to wait for the socket to become ready for reading
-    * or writing, depending on the reason parameter. This is necessary when SSL operations
-    * return SSL_ERROR_WANT_READ or SSL_ERROR_WANT_WRITE on non-blocking sockets.
-    *
-    * The function handles different SSL error reasons:
-    * - SSL_ERROR_WANT_ACCEPT: Waits for both read and write readiness
-    * - SSL_ERROR_WANT_CONNECT: Waits for both read and write readiness
-    * - SSL_ERROR_WANT_READ: Waits for read readiness
-    * - SSL_ERROR_WANT_WRITE: Waits for write readiness
-    *
-    * @param reason The SSL error code indicating what to wait for (SSL_ERROR_WANT_*)
-    * @param error_dstr Output parameter for error messages
-    *
-    * @return true if socket became ready or timeout occurred, false on select() error
-    *
-    * @note Timeout is currently hardcoded to 1 second.
-    * @note Timeout is not treated as an error (returns true).
-    * @note EWOULDBLOCK, EAGAIN, and EINTR from select() are not treated as errors.
-    * @note Only the blocking accept() and connect() wait here. commlib calls handshake() and
-    *       waits for the socket in its own poll loop.
-    */
-   bool OpenSSL::OpenSSLConnection::wait_for_socket_ready(int reason, dstring *error_dstr) const {
-      // wait until the socket is ready for read or write
-      DENTER(TOP_LAYER);
-
-      DPRINTF("waiting for socket %d to become ready for %s\n", fd, reason ? "read" : "write");
-
-      bool ret = true;
-      if (ret) {
-         fd_set fds;
-         FD_ZERO(&fds);
-         FD_SET(fd, &fds);
-         fd_set *read_fds = nullptr;
-         fd_set *write_fds = nullptr;
-         switch (reason) {
-            case SSL_ERROR_WANT_ACCEPT:
-               read_fds = &fds;
-               write_fds = &fds;
-               break;
-            case SSL_ERROR_WANT_CONNECT:
-               read_fds = &fds;
-               write_fds = &fds;
-               break;
-            case SSL_ERROR_WANT_READ:
-               read_fds = &fds;
-               break;
-            case SSL_ERROR_WANT_WRITE:
-               write_fds = &fds;
-               break;
-            default:
-               ret = false;
-               break;
-         }
-         if (ret) {
-            // @todo CS-1579 make timeout configurable
-            struct timeval tv{};
-            tv.tv_sec = 1;
-            tv.tv_usec = 0;
-            int select_ret = select(fd + 1, read_fds, write_fds, nullptr, &tv);
-            if (select_ret < 0) {
-               if (errno != EWOULDBLOCK && errno != EAGAIN && errno != EINTR) {
-                  sge_dstring_sprintf(error_dstr, MSG_SSL_SELECT_FAILED_DS, errno, strerror(errno));
-                  ret = false;
-               }
-            } else if (select_ret == 0) {
-               // select timeout is not an error
-               //sge_dstring_sprintf(error_dstr, MSG_SSL_SELECT_TIMEOUT);
-               //ret = false;
-            }
-         }
-      }
-
-      if (!ret) {
-         DPRINTF("  --> error: %s\n", sge_dstring_get_string(error_dstr));
-      }
-
-      DRETURN(ret);
-   }
-
-   /**
     * @brief Destructor for OpenSSLConnection. Shuts down SSL connection and frees resources.
     *
     * The destructor performs proper cleanup:
@@ -2291,95 +2209,6 @@ namespace ocs::uti {
    }
 
    /**
-    * @brief Performs the TLS handshake and waits for it to complete.
-    *
-    * Repeats handshake() until it completes or fails. Between the steps it waits for the
-    * socket to become ready, see wait_for_socket_ready().
-    *
-    * @param timeout Maximum time to wait for the handshake, in microseconds
-    * @param error_dstr Output parameter for error messages
-    *
-    * @return true if the handshake completed, false on error or timeout
-    */
-   bool OpenSSL::OpenSSLConnection::handshake_with_timeout(u_long64 timeout, dstring *error_dstr) {
-      DENTER(TOP_LAYER);
-
-      u_long64 end_time = sge_get_gmt64() + timeout;
-      int repetitions = 0;
-      bool ret = true;
-      bool done = false;
-      while (ret && !done) {
-         HandshakeResult result = handshake(error_dstr);
-         repetitions++;
-         if (result == HandshakeResult::DONE) {
-            done = true;
-         } else if (result == HandshakeResult::FAILED) {
-            ret = false;
-         } else {
-            int reason = result == HandshakeResult::WANT_WRITE ? SSL_ERROR_WANT_WRITE
-                                                               : SSL_ERROR_WANT_READ;
-            if (!wait_for_socket_ready(reason, error_dstr)) {
-               ret = false;
-            } else if (sge_get_gmt64() >= end_time) {
-               if (is_server) {
-                  sge_dstring_sprintf(error_dstr, MSG_OPENSSL_TIMEOUT_IN_ACCEPT_II,
-                                      static_cast<int>(timeout / 1000000), repetitions);
-               } else {
-                  sge_dstring_sprintf(error_dstr, MSG_OPENSSL_TIMEOUT_IN_CONNECT_II,
-                                      static_cast<int>(timeout / 1000000), repetitions);
-               }
-               DPRINTF("  --> %s\n", sge_dstring_get_string(error_dstr));
-               ret = false;
-            }
-         }
-      }
-
-      DRETURN(ret);
-   }
-
-   /**
-    * @brief Performs SSL handshake for server-side connection acceptance.
-    *
-    * This function performs the SSL/TLS handshake from the server's perspective and waits
-    * for it to complete, see handshake_with_timeout(). It times out after
-    * SGE_OPENSSL_RETRY_TIMEOUT_SERVER (1 second).
-    *
-    * commlib does not use this function, it calls handshake() from its poll loop.
-    *
-    * This function must be called after:
-    * - TCP accept() has completed
-    * - set_fd() has been called to associate the socket
-    *
-    * @param error_dstr Output parameter for error messages
-    *
-    * @return true if handshake completed successfully, false on error or timeout
-    *
-    * @note Can only be called on server-side connections (is_server must be true).
-    * @note May block for up to 1 second waiting for handshake completion.
-    * @todo CS-1579 Make timeout configurable.
-    */
-#define SGE_OPENSSL_RETRY_TIMEOUT_SERVER (1 * 1000000) // 1 second
-#define SGE_OPENSSL_RETRY_TIMEOUT_CLIENT (10 * 1000000) // 10 seconds
-
-   bool OpenSSL::OpenSSLConnection::accept(dstring *error_dstr) {
-      DENTER(TOP_LAYER);
-
-      bool ret = ssl != nullptr;
-
-      if (ret) {
-         if (!is_server) {
-            sge_dstring_copy_string(error_dstr, MSG_SSL_ACCEPT_CALLED_ON_CLIENT);
-            ret = false;
-         }
-      }
-      if (ret) {
-         ret = handshake_with_timeout(SGE_OPENSSL_RETRY_TIMEOUT_SERVER, error_dstr);
-      }
-
-      DRETURN(ret);
-   }
-
-   /**
     * @brief Configures Server Name Indication (SNI) for client-side connection.
     *
     * This function sets the server hostname for SNI extension in the TLS ClientHello.
@@ -2390,7 +2219,7 @@ namespace ocs::uti {
     * 1. Sets the TLS extension hostname (for SNI)
     * 2. Configures hostname verification (for certificate validation)
     *
-    * This function must be called before connect() to take effect.
+    * This function must be called before the client side handshake(), to take effect.
     *
     * @param server_name The hostname of the server to connect to (for SNI and verification)
     * @param error_dstr Output parameter for error messages
@@ -2398,7 +2227,7 @@ namespace ocs::uti {
     * @return true if SNI was successfully configured, false on error
     *
     * @note Can only be called on client-side connections (is_server must be false).
-    * @note Must be called before connect() to be included in the handshake.
+    * @note Must be called before the first handshake() call to be included in the handshake.
     * @note The hostname is used both for SNI and for certificate hostname verification.
     */
    bool OpenSSL::OpenSSLConnection::set_server_name_for_sni(const char *server_name, dstring *error_dstr) const {
@@ -2428,46 +2257,6 @@ namespace ocs::uti {
       DRETURN(ret);
    }
 
-   /**
-    * @brief Performs SSL handshake for client-side connection establishment.
-    *
-    * This function performs the SSL/TLS handshake from the client's perspective and waits
-    * for it to complete, see handshake_with_timeout(). It times out after
-    * SGE_OPENSSL_RETRY_TIMEOUT_CLIENT (10 seconds).
-    *
-    * commlib does not use this function, it calls handshake() from its poll loop.
-    *
-    * This function must be called after:
-    * - TCP connect() has completed
-    * - set_fd() has been called to associate the socket
-    * - (Optional) set_server_name_for_sni() has been called for SNI support
-    *
-    * @param error_dstr Output parameter for error messages
-    *
-    * @return true if handshake completed successfully, false on error or timeout
-    *
-    * @note Can only be called on client-side connections (is_server must be false).
-    * @note May block for up to 10 seconds waiting for handshake completion.
-    * @todo CS-1579 Make timeout configurable.
-    */
-   bool OpenSSL::OpenSSLConnection::connect(dstring *error_dstr) {
-      DENTER(TOP_LAYER);
-
-      bool ret = ssl != nullptr;
-
-      // we do this only on the client side
-      if (ret) {
-         if (is_server) {
-            sge_dstring_copy_string(error_dstr, MSG_SSL_CONNECT_CALLED_ON_SERVER);
-            ret = false;
-         }
-      }
-      if (ret) {
-         ret = handshake_with_timeout(SGE_OPENSSL_RETRY_TIMEOUT_CLIENT, error_dstr);
-      }
-
-      DRETURN(ret);
-   }
 } // namespace ocs::uti
 
 #endif
