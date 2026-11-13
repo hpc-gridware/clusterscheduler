@@ -85,6 +85,10 @@ int cl_com_tcp_connection_request_handler(cl_com_connection_t *connection, cl_co
 
 int cl_com_tcp_connection_request_handler_cleanup(cl_com_connection_t *connection); /* CR check */
 
+bool cl_com_tcp_uses_tls(cl_com_connection_t *connection);
+
+int cl_com_tcp_connection_complete_accept(cl_com_connection_t *connection);
+
 /* connection establish help functions */
 int cl_com_tcp_read_GMSH(cl_com_connection_t *connection, unsigned long *only_one_read);
 

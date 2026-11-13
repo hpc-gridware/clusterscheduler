@@ -317,6 +317,14 @@ namespace ocs::uti {
          bool is_cert_file_updated();
       };
 
+      /// result of one step of a non-blocking TLS handshake, see OpenSSLConnection::handshake()
+      enum class HandshakeResult {
+         DONE,       ///< the TLS session is established
+         WANT_READ,  ///< call handshake() again when the socket is readable
+         WANT_WRITE, ///< call handshake() again when the socket is writable
+         FAILED      ///< the handshake failed
+      };
+
       /**
        * @brief One TLS connection on an already connected socket
        *
@@ -341,6 +349,7 @@ namespace ocs::uti {
          }
          bool wait_for_socket_ready(int reason, dstring *error_dstr) const;
          void note_error(int err);
+         bool handshake_with_timeout(uint64_t timeout, dstring *error_dstr);
 
       public:
          static OpenSSLConnection *create(OpenSSLContext *context, dstring *error_dstr);
@@ -356,6 +365,7 @@ namespace ocs::uti {
          bool accept(dstring *error_dstr); // server side
          bool set_server_name_for_sni(const char *server_name, dstring *error_dstr) const; // client side
          bool connect(dstring *error_dstr);
+         HandshakeResult handshake(dstring *error_dstr);
          int read(char *buffer, size_t max_len, dstring *error_dstr);
          int write(char *buffer, size_t len, dstring *error_dstr);
          /**

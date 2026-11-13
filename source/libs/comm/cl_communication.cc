@@ -3318,8 +3318,14 @@ int cl_com_connection_request_handler(cl_com_connection_t *connection, cl_com_co
          switch (connection->framework_type) {
             case CL_CT_TCP:
             case CL_CT_SSL_TLS: {
-               (*new_connection)->connection_state = CL_CONNECTING;
-               (*new_connection)->connection_sub_state = CL_COM_READ_INIT;
+               if (cl_com_tcp_uses_tls(*new_connection)) {
+                  // the TLS handshake comes first, see cl_com_tcp_connection_complete_accept()
+                  (*new_connection)->connection_state = CL_ACCEPTING;
+                  (*new_connection)->connection_sub_state = CL_COM_ACCEPT_INIT;
+               } else {
+                  (*new_connection)->connection_state = CL_CONNECTING;
+                  (*new_connection)->connection_sub_state = CL_COM_READ_INIT;
+               }
                break;
             }
             case CL_CT_UNDEFINED: {
@@ -4814,8 +4820,7 @@ int cl_com_connection_complete_accept(cl_com_connection_t *connection, long time
    switch (connection->framework_type) {
       case CL_CT_TCP:
       case CL_CT_SSL_TLS: {
-         /* tcp framework does not support this state */
-         return CL_RETVAL_OK;
+         return cl_com_tcp_connection_complete_accept(connection);
       }
       case CL_CT_UNDEFINED: {
          break;
