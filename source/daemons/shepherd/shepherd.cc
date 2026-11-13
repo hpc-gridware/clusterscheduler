@@ -939,6 +939,8 @@ int main(int argc, char **argv)
                exit_status = 0; /* no error */
             } else {
                exit_status = start_child("job", script_file, nullptr, 0, ckpt_type, is_interactive_job);
+               // the Result of the job scope is final only when systemd has stopped it
+               ocs::shepherd_systemd_wait_for_job_scope_stopped();
 
                if (count_exit_status()>0) {
                   /*

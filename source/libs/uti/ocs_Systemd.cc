@@ -1884,7 +1884,7 @@ namespace ocs::uti {
                                       "StopUnit",                           // method name
                                       &error,                               // object to return error in
                                       nullptr,                              // return message on success (not needed)
-                                                                            // @todo Really? Would give us the job we could wait on.
+                                                                            // sge_shepherd waits for the stopped scope itself
                                       "ss",                                 // input signature
                                       unit.c_str(),                         // first argument (unit name)
                                       "replace");                           // second argument (mode)
