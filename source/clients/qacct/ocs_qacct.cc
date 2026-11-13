@@ -180,7 +180,7 @@ int main(int argc, char **argv)
 
    sge_qacct_options options;
 
-   sge_rusage_type dusage;
+   sge_rusage_type dusage{}; // zeroed here, the exit code frees its other_usage
    sge_rusage_type totals;
    int ii;
    lList *complex_options = nullptr;
@@ -718,8 +718,6 @@ int main(int argc, char **argv)
       }
    }
 
-   memset(&dusage, 0, sizeof(dusage));
-
    /* main loop */
    while (!shut_me_down) {
       int i_ret;
@@ -1122,6 +1120,7 @@ QACCT_EXIT:
    ret = 1;
 QACCT_EXIT_BUT_NO_ERROR:
    sge_prof_cleanup();
+   lFreeList(&(dusage.other_usage));
    lFreeList(&sorted_list);
    lFreeSortOrder(&sort_order);
    sge_free(&(options.group));
@@ -1644,6 +1643,9 @@ sge_read_rusage(std::ifstream &acct_file_stream, sge_rusage_type *d, sge_qacct_o
          acct_file_line[len] = '\0';
       }
    } while (len <= 1 || acct_file_line[0] == COMMENT_CHAR);
+
+   // the custom usage belongs to one record, don't show it for the following ones
+   lFreeList(&(d->other_usage));
 
    /*
     * qname
@@ -2283,9 +2285,9 @@ sge_read_rusage_json(const char *line, sge_rusage_type *d, sge_qacct_options *op
                   lListElem *ep = lGetElemStrRW(d->other_usage, UA_name, name);
                   if (ep == nullptr) {
                      ep = lAddElemStr(&(d->other_usage), UA_name, name, UA_Type);
-                     if (ep != nullptr) {
-                        lSetDouble(ep, UA_value, value);
-                     }
+                  }
+                  if (ep != nullptr) {
+                     lSetDouble(ep, UA_value, value);
                   }
                }
             }
