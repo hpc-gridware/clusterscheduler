@@ -329,9 +329,9 @@ namespace ocs::uti {
        * @brief One TLS connection on an already connected socket
        *
        * Created with #create from a context, then given a file descriptor with
-       * #set_fd. The server side calls #accept, the client side
-       * #set_server_name_for_sni and #connect. Every method reports failure
-       * through a `dstring` rather than a return code alone.
+       * #set_fd. The client side calls #set_server_name_for_sni, then both sides call
+       * #handshake until it is done. Every method reports failure through a `dstring`
+       * rather than a return code alone.
        */
       class OpenSSLConnection {
          OpenSSLContext *context;
@@ -347,9 +347,7 @@ namespace ocs::uti {
            fatal_error(false) {
             context->inc_connection_count();
          }
-         bool wait_for_socket_ready(int reason, dstring *error_dstr) const;
          void note_error(int err);
-         bool handshake_with_timeout(uint64_t timeout, dstring *error_dstr);
 
       public:
          static OpenSSLConnection *create(OpenSSLContext *context, dstring *error_dstr);
@@ -362,9 +360,7 @@ namespace ocs::uti {
           */
          SSL *get_ssl() { return ssl; }
          bool set_fd(int new_fd, dstring *error_dstr);
-         bool accept(dstring *error_dstr); // server side
          bool set_server_name_for_sni(const char *server_name, dstring *error_dstr) const; // client side
-         bool connect(dstring *error_dstr);
          HandshakeResult handshake(dstring *error_dstr);
          int read(char *buffer, size_t max_len, dstring *error_dstr);
          int write(char *buffer, size_t len, dstring *error_dstr);
