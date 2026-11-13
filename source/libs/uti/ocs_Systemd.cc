@@ -928,7 +928,8 @@ namespace ocs::uti {
             if (-r == EINTR && retries++ < NUM_SD_BUS_RETRIES) {
                retry_on_interrupt = true;
             } else {
-               sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_CALL_SSIS, method.c_str(), std::to_string(input), r, error.message);
+               sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_CALL_SSIS, method.c_str(), std::to_string(input).c_str(), r,
+                                   error.message);
                classify_error(r, error_dstr);
                if (retries > 0) {
                   sge_dstring_sprintf_append(error_dstr, MSG_SYSTEMD_AFTER_RETRIES_I, retries);
