@@ -496,6 +496,8 @@
 #define MSG_LOG_JNORESRESCHEDULE      _MESSAGE(33569, _("job didn't get resources -> schedule it again"))
 #define MSG_LOG_QERRORBYJOBHOST_SUS   _MESSAGE(33571, _("queue " SFN " marked QERROR as result of job " sge_u32 "'s failure at host " SFN))
 
+#define MSG_JOB_REPORTRUNOLDRUN_SUUSS   _MESSAGE(33572, _("execd@" SFN " reports running job " sge_u32 "." sge_u32 " in queue " SFQ " from an earlier run, the current run is on host " SFQ " - killing the earlier run"))
+#define MSG_JOB_REPORTEXITOLDRUN_SUUSS  _MESSAGE(33573, _("execd@" SFN " reports exiting job " sge_u32 "." sge_u32 " in queue " SFQ " from an earlier run, the current run is on host " SFQ " - ignoring the report"))
 #define MSG_JOB_REPORTEXITQ_SUUSSSSS   _MESSAGE(33574, _("execd " SFN " reports exiting job (" sge_u32 "." sge_u32 "/" SFN " in queue " SFQ " that was supposed to be in queue " SFQ " at " SFQ " (state = " SFN ")"))
 #define MSG_JOB_REPORTRUNQ_SUUSSU      _MESSAGE(33575, _("execd " SFN " reports running state for job (" sge_u32 "." sge_u32 "/" SFN ") in queue " SFQ " while job is in state " sge_u32 " "))
 #define MSG_JOB_REPORTRUNFALSE_SUUSS   _MESSAGE(33576, _("execd@" SFN " reports running job (" sge_u32 "." sge_u32 "/" SFN ") in queue " SFQ " that was not supposed to be there - killing"))
