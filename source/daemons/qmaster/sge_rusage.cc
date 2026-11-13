@@ -84,9 +84,6 @@ sge_u32 "%c" sge_u32 "%c" sge_u32 "%c" sge_u32 "%c" sge_u32 "%c" sge_u32 "%c%s%c
  * @param nm the field
  * @param s the default to use
  */
-#define SET_STR_DEFAULT(jr, nm, s) if (lGetString(jr, nm) == nullptr) \
-                                      lSetString(jr, nm, s)
-
 /**
  * @brief Return usage of a certain attribute
  *
@@ -432,11 +429,17 @@ sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *wr
       usage_list_set_ulong64_usage(reported_list, LAST_INTERMEDIATE, now);
    }
 
-   SET_STR_DEFAULT(jr, JR_queue_name, "UNKNOWN@UNKNOWN");
+   if (lGetString(jr, JR_queue_name) == nullptr) {
+      lSetString(jr, JR_queue_name, "UNKNOWN@UNKNOWN");
+   }
 
    /* job name and account get taken from local job structure */
-   SET_STR_DEFAULT(job, JB_job_name, "UNKNOWN");
-   SET_STR_DEFAULT(job, JB_account, "UNKNOWN");
+   if (lGetString(job, JB_job_name) == nullptr) {
+      lSetString(job, JB_job_name, "UNKNOWN");
+   }
+   if (lGetString(job, JB_account) == nullptr) {
+      lSetString(job, JB_account, "UNKNOWN");
+   }
 
    /* figure out queue name and host name */
    DSTRING_STATIC(cqueue, MAX_STRING_SIZE);

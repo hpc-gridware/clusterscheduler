@@ -137,26 +137,6 @@ namespace ocs::tom {
    }
 
    namespace {
-      /**
-       * @brief The value of a number field an element holds, read from its slot, with the type check of before
-       *
-       * The number lookups do not check the field's type before they search;
-       * the old getter by position checked it on each element it read and
-       * aborted, so a lookup by a field of another type aborts on the first
-       * element it reads, as before (LEG-01).
-       *
-       * @param ep the element
-       * @param pos the field's position
-       * @param type the list library type the lookup expects
-       * @param getter the name of the old getter, for the abort message
-       * @return the value
-       */
-      const lMultiType &number_value(const lListElem *ep, const int pos, const int type, const char *getter) {
-         if (mt_get_type(ep->descr[pos].mt) != type) [[unlikely]] {
-            incompatibleType(getter);
-         }
-         return ocs_cull_value(ep, pos);
-      }
 
       /**
        * @brief The first element of a list that holds a value in a field, the lookup of the core
@@ -178,7 +158,7 @@ namespace ocs::tom {
        * @throw FieldException with reason DuplicateKey, naming type, field, key and list
        */
       template <typename Match>
-      lListElem *lookup_first(const lList *lp, const int pos, const void *hash_key, Match match,
+      lListElem *search_first(const lList *lp, const int pos, const void *hash_key, Match match,
                               const void **iterator) {
          *iterator = nullptr;
          const int mt = lp->descr[pos].mt;
@@ -212,25 +192,6 @@ namespace ocs::tom {
       }
    } // namespace
 
-   lListElem *lookup_first_str(const lList *lp, const int pos, const char *value, const void **iterator) {
-      return lookup_first(lp, pos, value, [pos, value](const lListElem *ep) {
-         const char *s = ocs_cull_value(ep, pos).str;
-         return s != nullptr && strcmp(s, value) == 0;
-      }, iterator);
-   }
-
-   lListElem *lookup_first_ulong(const lList *lp, const int pos, const lUlong value, const void **iterator) {
-      return lookup_first(lp, pos, &value, [pos, value](const lListElem *ep) {
-         return number_value(ep, pos, lUlongT, "lGetPosUlong").ul == value;
-      }, iterator);
-   }
-
-   lListElem *lookup_first_ulong64(const lList *lp, const int pos, const lUlong64 value, const void **iterator) {
-      return lookup_first(lp, pos, &value, [pos, value](const lListElem *ep) {
-         return number_value(ep, pos, lUlong64T, "lGetPosUlong64").ul64 == value;
-      }, iterator);
-   }
-
    namespace {
       /**
        * @brief The next element after the iterator's that holds a value, the linear part of the Next lookups
@@ -245,7 +206,7 @@ namespace ocs::tom {
        * @return the element, or nullptr
        */
       template <typename Match>
-      lListElem *lookup_next(const lList *lp, const int pos, Match match, const void **iterator) {
+      lListElem *search_next(const lList *lp, const int pos, Match match, const void **iterator) {
          if (*iterator == nullptr) {
             return nullptr;
          }
@@ -263,54 +224,96 @@ namespace ocs::tom {
       }
    } // namespace
 
-   lListElem *lookup_next_str(const lList *lp, const int pos, const char *value, const void **iterator) {
-      return lookup_next(lp, pos, [pos, value](const lListElem *ep) {
-         const char *s = ocs_cull_value(ep, pos).str;
-         return s != nullptr && strcmp(s, value) == 0;
-      }, iterator);
-   }
+   namespace {
 
-   lListElem *lookup_next_ulong(const lList *lp, const int pos, const lUlong value, const void **iterator) {
-      return lookup_next(lp, pos, [pos, value](const lListElem *ep) {
-         return ocs_cull_value(ep, pos).ul == value;
-      }, iterator);
-   }
-
-   lListElem *lookup_next_ulong64(const lList *lp, const int pos, const lUlong64 value, const void **iterator) {
-      return lookup_next(lp, pos, [pos, value](const lListElem *ep) {
-         return ocs_cull_value(ep, pos).ul64 == value;
-      }, iterator);
-   }
-
-   lListElem *lookup_next_host(const lList *lp, const int pos, const char *value, const void **iterator) {
-      char wanted[CL_MAXHOSTNAMELEN + 1];
-      sge_hostcpy(wanted, value);
-      return lookup_next(lp, pos, [pos, &wanted](const lListElem *ep) {
-         const char *s = ocs_cull_value(ep, pos).host;
-         if (s == nullptr) {
+      /**
+       * @brief Whether a host name stored in an element equals a wanted one, as the cluster compares host names
+       * @param stored the stored host name, or nullptr
+       * @param wanted the wanted host name, already normalised by sge_hostcpy()
+       * @return true if both name the same host
+       */
+      bool same_host(const char *stored, const char *wanted) {
+         if (stored == nullptr) {
             return false;
          }
-         char stored[CL_MAXHOSTNAMELEN + 1];
-         sge_hostcpy(stored, s);
-         return SGE_STRCASECMP(stored, wanted) == 0;
-      }, iterator);
+         char normalised[CL_MAXHOSTNAMELEN + 1];
+         sge_hostcpy(normalised, stored);
+         return SGE_STRCASECMP(normalised, wanted) == 0;
+      }
+
+   } // namespace
+
+   template <FieldType T>
+      requires KeyFieldType<T>
+   lListElem *lookup_first(const lList *lp, const int pos, const KeyArgOf<T> value, const void **iterator) {
+      if constexpr (T == FieldType::Uint32) {
+         return search_first(lp, pos, &value, [pos, value](const lListElem *ep) {
+            return ocs_cull_value(ep, pos).ul == value;
+         }, iterator);
+      } else if constexpr (T == FieldType::Uint64) {
+         return search_first(lp, pos, &value, [pos, value](const lListElem *ep) {
+            return ocs_cull_value(ep, pos).ul64 == value;
+         }, iterator);
+      } else if constexpr (T == FieldType::String) {
+         return search_first(lp, pos, value, [pos, value](const lListElem *ep) {
+            const char *s = ocs_cull_value(ep, pos).str;
+            return s != nullptr && strcmp(s, value) == 0;
+         }, iterator);
+      } else {
+         char host_key[CL_MAXHOSTNAMELEN + 1];
+         sge_hostcpy(host_key, value);
+         sge_strtoupper(host_key, CL_MAXHOSTNAMELEN);
+         char wanted[CL_MAXHOSTNAMELEN + 1];
+         sge_hostcpy(wanted, value);
+         return search_first(lp, pos, host_key, [pos, &wanted](const lListElem *ep) {
+            return same_host(ocs_cull_value(ep, pos).host, wanted);
+         }, iterator);
+      }
    }
 
-   lListElem *lookup_first_host(const lList *lp, const int pos, const char *value, const void **iterator) {
-      char host_key[CL_MAXHOSTNAMELEN + 1];
-      sge_hostcpy(host_key, value);
-      sge_strtoupper(host_key, CL_MAXHOSTNAMELEN);
-      char wanted[CL_MAXHOSTNAMELEN + 1];
-      sge_hostcpy(wanted, value);
-      return lookup_first(lp, pos, host_key, [pos, &wanted](const lListElem *ep) {
-         const char *s = ocs_cull_value(ep, pos).host;
-         if (s == nullptr) {
-            return false;
-         }
-         char stored[CL_MAXHOSTNAMELEN + 1];
-         sge_hostcpy(stored, s);
-         return SGE_STRCASECMP(stored, wanted) == 0;
-      }, iterator);
+   template <FieldType T>
+      requires KeyFieldType<T>
+   lListElem *lookup_next(const lList *lp, const int pos, const KeyArgOf<T> value, const void **iterator) {
+      if constexpr (T == FieldType::Uint32) {
+         return search_next(lp, pos, [pos, value](const lListElem *ep) {
+            return ocs_cull_value(ep, pos).ul == value;
+         }, iterator);
+      } else if constexpr (T == FieldType::Uint64) {
+         return search_next(lp, pos, [pos, value](const lListElem *ep) {
+            return ocs_cull_value(ep, pos).ul64 == value;
+         }, iterator);
+      } else if constexpr (T == FieldType::String) {
+         return search_next(lp, pos, [pos, value](const lListElem *ep) {
+            const char *s = ocs_cull_value(ep, pos).str;
+            return s != nullptr && strcmp(s, value) == 0;
+         }, iterator);
+      } else {
+         char wanted[CL_MAXHOSTNAMELEN + 1];
+         sge_hostcpy(wanted, value);
+         return search_next(lp, pos, [pos, &wanted](const lListElem *ep) {
+            return same_host(ocs_cull_value(ep, pos).host, wanted);
+         }, iterator);
+      }
+   }
+
+   // the lookups exist for the four key field types; callers link against these instantiations
+   template lListElem *lookup_first<FieldType::Uint32>(const lList *, int, KeyArgOf<FieldType::Uint32>, const void **);
+   template lListElem *lookup_first<FieldType::Uint64>(const lList *, int, KeyArgOf<FieldType::Uint64>, const void **);
+   template lListElem *lookup_first<FieldType::String>(const lList *, int, KeyArgOf<FieldType::String>, const void **);
+   template lListElem *lookup_first<FieldType::Host>(const lList *, int, KeyArgOf<FieldType::Host>, const void **);
+   template lListElem *lookup_next<FieldType::Uint32>(const lList *, int, KeyArgOf<FieldType::Uint32>, const void **);
+   template lListElem *lookup_next<FieldType::Uint64>(const lList *, int, KeyArgOf<FieldType::Uint64>, const void **);
+   template lListElem *lookup_next<FieldType::String>(const lList *, int, KeyArgOf<FieldType::String>, const void **);
+   template lListElem *lookup_next<FieldType::Host>(const lList *, int, KeyArgOf<FieldType::Host>, const void **);
+
+   void throw_access_error(const lListElem *ep, const int nm, const int first_nm) {
+      if (ep == nullptr) {
+         throw_field_exception(FieldException::Reason::NullElement, nm, nullptr);
+      }
+      if (ep->descr[0].nm != first_nm) {
+         throw_field_exception(FieldException::Reason::ForeignField, nm, ep->descr);
+      }
+      throw_field_exception(FieldException::Reason::AbsentField, nm, ep->descr);
    }
 
    UniqueCheckSuspension::UniqueCheckSuspension() noexcept {
@@ -559,7 +562,13 @@ namespace ocs::tom {
       if (lp == nullptr || value == nullptr) {
          return nullptr;
       }
-      const int pos = string_lookup_pos(lp, nm);
+      return lookup_first_str_nocase_at(lp, string_lookup_pos(lp, nm), value);
+   }
+
+   lListElem *lookup_first_str_nocase_at(const lList *lp, const int pos, const char *value) {
+      if (lp == nullptr || value == nullptr) {
+         return nullptr;
+      }
       for (lListElem *ep = lp->first; ep != nullptr; ep = ep->next) {
          const char *s = ocs_cull_value(ep, pos).str;
          if (s != nullptr && SGE_STRCASECMP(s, value) == 0) {
@@ -573,7 +582,13 @@ namespace ocs::tom {
       if (lp == nullptr || value == nullptr) {
          return nullptr;
       }
-      const int pos = string_lookup_pos(lp, nm);
+      return lookup_first_str_like_at(lp, string_lookup_pos(lp, nm), value);
+   }
+
+   lListElem *lookup_first_str_like_at(const lList *lp, const int pos, const char *value) {
+      if (lp == nullptr || value == nullptr) {
+         return nullptr;
+      }
       const std::size_t len = strlen(value);
       const bool prefix = len > 0 && value[len - 1] == '*';
       for (lListElem *ep = lp->first; ep != nullptr; ep = ep->next) {

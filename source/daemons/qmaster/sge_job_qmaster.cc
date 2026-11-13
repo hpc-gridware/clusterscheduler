@@ -901,7 +901,7 @@ verify_job_list_filter(const ocs::gdi::Packet *packet, lList **alpp, int all_use
 static void get_rid_of_schedd_job_messages(uint32_t job_number) {
    DENTER(TOP_LAYER);
 
-   const lListElem *sme = nullptr;
+   lListElem *sme = nullptr;
    lListElem *mes = nullptr;
    lListElem *next = nullptr;
    lList *mes_list = nullptr;
@@ -909,7 +909,7 @@ static void get_rid_of_schedd_job_messages(uint32_t job_number) {
 
 
    if (master_job_schedd_info_list != nullptr) {
-      sme = lFirst(master_job_schedd_info_list);
+      sme = lFirstRW(master_job_schedd_info_list);
       mes_list = lGetListRW(sme, SME_message_list);
 
       /*
@@ -4478,7 +4478,7 @@ job_ja_task_debit(const lListElem *job, const lListElem *ja_task, lList **answer
    //uint32_t ja_task_id = lGetUlong(ja_task, JAT_task_number);
 
    lListElem *global_host_ep = host_list_locate(master_exechost_list, SGE_GLOBAL_NAME);
-   lListElem *pe = lGetObject(ja_task, JAT_pe_object);
+   const lListElem *pe = lGetObject(ja_task, JAT_pe_object);
    bool do_per_global_host_booking = true;
 
    uint32_t ar_id = lGetUlong(job, JB_ar);

@@ -41,6 +41,7 @@
 #include <string>
 
 #include "tom/cull_types.h"
+#include "tom/ocs_FieldTraits.h"
 #include "uti/ocs_Exception.h"
 
 namespace ocs::tom {
@@ -227,8 +228,8 @@ namespace ocs::tom {
     * @param descr the descriptor of the element
     * @return the element, now in the list
     * @throw FieldException with reason NullDescriptor, NullKey, AbsentField if @p descr does not hold
-    *        @p nm, WrongType if it is not a string field, or DuplicateKey in a debug build; a list
-    *        created here is freed again then
+    *        @p nm, WrongType if it is not a string field or if the list is of another type or reduced
+    *        without the field, or DuplicateKey in a debug build; a list created here is freed again then
     * @throw ListCoreError if there is no memory
     */
    lListElem *add_elem_str(lList *&lp, int nm, const char *key, const lDescr *descr);
@@ -265,6 +266,27 @@ namespace ocs::tom {
     * @throw FieldException and ListCoreError as #add_elem_str, without NullKey
     */
    lListElem *add_elem_ulong64(lList *&lp, int nm, lUlong64 key, const lDescr *descr);
+
+   /**
+    * @brief Add an element with a key at a known position, without the checks of #add_elem_str
+    *
+    * For callers that know the key field at compile time: the typed handles,
+    * the free forms, and the functions above after their checks. Instantiated
+    * in the core for the four key field types.
+    *
+    * @tparam T the key field's type: Uint32, Uint64, String or Host
+    * @param lp the list, created if nullptr
+    * @param pos the position of the key field in @p descr, a field of type @p T
+    * @param key the key; a string or host name not nullptr, copied
+    * @param descr the descriptor of the element, not nullptr
+    * @return the element, now in the list
+    * @throw FieldException with reason WrongType if the list is of another type or reduced without the key
+    *        field, or DuplicateKey in a debug build; a list created here is freed again then
+    * @throw ListCoreError if there is no memory
+    */
+   template <FieldType T>
+      requires KeyFieldType<T>
+   lListElem *add_elem_at(lList *&lp, int pos, KeyArgOf<T> key, const lDescr *descr);
 
    /**
     * @brief Remove and free the first element with a string key, as lDelElemStr() without freeing the list
@@ -305,6 +327,25 @@ namespace ocs::tom {
     * @throw FieldException as #remove_elem_str, without NullKey
     */
    bool remove_elem_ulong64(lList *lp, int nm, lUlong64 key);
+
+   /**
+    * @brief Remove and free the first element with a key at a known position, without the checks of
+    *        #remove_elem_str
+    *
+    * For callers that checked the list's type, the field and the key at
+    * compile time or before. Instantiated in the core for the four key field
+    * types.
+    *
+    * @tparam T the key field's type: Uint32, Uint64, String or Host
+    * @param lp the list, nullptr for no element
+    * @param pos the position of the key field, of type @p T and present in the list's descriptor
+    * @param key the key; a string or host name not nullptr
+    * @return true if an element was removed
+    * @throw FieldException with reason DuplicateKey from the lookup
+    */
+   template <FieldType T>
+      requires KeyFieldType<T>
+   bool remove_elem_at(lList *lp, int pos, KeyArgOf<T> key);
 
    /**
     * @brief The list of a list field, created if the field holds none, as lGetOrCreateList()

@@ -223,7 +223,7 @@ static void lWriteListXML_(const lList *lp, int nesting_level, std::ostream &os)
       }
       
       if (is_XML_elem && (lGetBool(ep, XMLE_Print)))  {
-         lListElem *elem = lGetObject(ep, XMLE_Element);
+         const lListElem *elem = lGetObject(ep, XMLE_Element);
          if (lGetString(elem, XMLA_Value) != nullptr){
             os << indent << "<" << lGetString(elem, XMLA_Name) << (is_attr ? sge_dstring_get_string(&attr) : "") << ">";
             os << lGetString(elem, XMLA_Value);
@@ -322,7 +322,7 @@ static void lWriteElemXML_(const lListElem *ep, int nesting_level, std::ostream 
    } else if (lGetPosViaElem(ep, XMLE_Attribute, SGE_NO_ABORT) !=-1 ) {
       if (lGetBool(ep, XMLE_Print)) {
          dstring attr = DSTRING_INIT;
-         lListElem *elem = lGetObject(ep, XMLE_Element);
+         const lListElem *elem = lGetObject(ep, XMLE_Element);
          bool is_attr = lAttributesToString_(lGetList(ep, XMLE_Attribute), &attr);
 
          os << space << "<" << lGetString(elem, XMLA_Name) << (is_attr ? sge_dstring_get_string(&attr) : "") << ">";

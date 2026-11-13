@@ -551,15 +551,26 @@ namespace ocs::tom {
 
       /**
        * @brief Create an element with a key and append it to a list, creating the list if needed
+       *
+       * A list that exists already must hold elements of the descriptor's
+       * type with the key field; before CS-3045 an element of another type
+       * was appended, and the list held two types.
+       *
        * @param lp the list, created if nullptr
+       * @param pos the position of the key field in @p descr
        * @param descr the descriptor of the element
        * @param list_name the name of a list created here
        * @param store sets the key into the new element
        * @return the element, now in the list
+       * @throw FieldException with reason WrongType if the list is of another type or reduced without the key
+       *        field, and as create_elem() and append_elem()
        */
       template <typename Store>
-      lListElem *add_with_key(lList *&lp, const lDescr *descr, const char *list_name, Store store) {
+      lListElem *add_with_key(lList *&lp, const int pos, const lDescr *descr, const char *list_name, Store store) {
          const bool created = lp == nullptr;
+         if (!created && (lp->descr[0].nm != descr[0].nm || lp->descr[pos].off == OCS_CULL_ABSENT)) [[unlikely]] {
+            throw_field_exception(FieldException::Reason::WrongType, descr[pos].nm, lp->descr);
+         }
          if (created) {
             lp = create_list(list_name, descr, true);
          }
@@ -588,11 +599,7 @@ namespace ocs::tom {
       if (key == nullptr) {
          throw_field_exception(FieldException::Reason::NullKey, nm, descr);
       }
-      return add_with_key(lp, descr, "", [pos, key](lListElem *ep) {
-         if (!store_string(ep, pos, key)) {
-            throw ListCoreError(LESTRDUP, "out of memory copying a key");
-         }
-      });
+      return add_elem_at<FieldType::String>(lp, pos, key, descr);
    }
 
    lListElem *add_elem_host(lList *&lp, const int nm, const char *key, const lDescr *descr) {
@@ -603,11 +610,7 @@ namespace ocs::tom {
       if (key == nullptr) {
          throw_field_exception(FieldException::Reason::NullKey, nm, descr);
       }
-      return add_with_key(lp, descr, "", [pos, key](lListElem *ep) {
-         if (!store_string(ep, pos, key)) {
-            throw ListCoreError(LESTRDUP, "out of memory copying a key");
-         }
-      });
+      return add_elem_at<FieldType::Host>(lp, pos, key, descr);
    }
 
    lListElem *add_elem_ulong(lList *&lp, const int nm, const lUlong key, const lDescr *descr) {
@@ -615,9 +618,7 @@ namespace ocs::tom {
          throw_field_exception(FieldException::Reason::NullDescriptor, nm, nullptr);
       }
       const int pos = key_pos(descr, nm, lUlongT);
-      return add_with_key(lp, descr, "ulong_sublist", [pos, key](lListElem *ep) {
-         ocs_cull_value(ep, pos).ul = key;
-      });
+      return add_elem_at<FieldType::Uint32>(lp, pos, key, descr);
    }
 
    lListElem *add_elem_ulong64(lList *&lp, const int nm, const lUlong64 key, const lDescr *descr) {
@@ -625,9 +626,7 @@ namespace ocs::tom {
          throw_field_exception(FieldException::Reason::NullDescriptor, nm, nullptr);
       }
       const int pos = key_pos(descr, nm, lUlong64T);
-      return add_with_key(lp, descr, "ulong64_sublist", [pos, key](lListElem *ep) {
-         ocs_cull_value(ep, pos).ul64 = key;
-      });
+      return add_elem_at<FieldType::Uint64>(lp, pos, key, descr);
    }
 
    namespace {
@@ -655,8 +654,7 @@ namespace ocs::tom {
       if (lp == nullptr) {
          return false;
       }
-      const void *iterator = nullptr;
-      return remove_found(lp, lookup_first_str(lp, key_pos(lp->descr, nm, lStringT), key, &iterator));
+      return remove_elem_at<FieldType::String>(lp, key_pos(lp->descr, nm, lStringT), key);
    }
 
    bool remove_elem_host(lList *lp, const int nm, const char *key) {
@@ -666,25 +664,62 @@ namespace ocs::tom {
       if (lp == nullptr) {
          return false;
       }
-      const void *iterator = nullptr;
-      return remove_found(lp, lookup_first_host(lp, key_pos(lp->descr, nm, lHostT), key, &iterator));
+      return remove_elem_at<FieldType::Host>(lp, key_pos(lp->descr, nm, lHostT), key);
    }
 
    bool remove_elem_ulong(lList *lp, const int nm, const lUlong key) {
       if (lp == nullptr) {
          return false;
       }
-      const void *iterator = nullptr;
-      return remove_found(lp, lookup_first_ulong(lp, key_pos(lp->descr, nm, lUlongT), key, &iterator));
+      return remove_elem_at<FieldType::Uint32>(lp, key_pos(lp->descr, nm, lUlongT), key);
    }
 
    bool remove_elem_ulong64(lList *lp, const int nm, const lUlong64 key) {
       if (lp == nullptr) {
          return false;
       }
-      const void *iterator = nullptr;
-      return remove_found(lp, lookup_first_ulong64(lp, key_pos(lp->descr, nm, lUlong64T), key, &iterator));
+      return remove_elem_at<FieldType::Uint64>(lp, key_pos(lp->descr, nm, lUlong64T), key);
    }
+
+   template <FieldType T>
+      requires KeyFieldType<T>
+   lListElem *add_elem_at(lList *&lp, const int pos, const KeyArgOf<T> key, const lDescr *descr) {
+      if constexpr (T == FieldType::Uint32) {
+         return add_with_key(lp, pos, descr, "ulong_sublist", [pos, key](lListElem *ep) {
+            ocs_cull_value(ep, pos).ul = key;
+         });
+      } else if constexpr (T == FieldType::Uint64) {
+         return add_with_key(lp, pos, descr, "ulong64_sublist", [pos, key](lListElem *ep) {
+            ocs_cull_value(ep, pos).ul64 = key;
+         });
+      } else {
+         return add_with_key(lp, pos, descr, "", [pos, key](lListElem *ep) {
+            if (!store_string(ep, pos, key)) {
+               throw ListCoreError(LESTRDUP, "out of memory copying a key");
+            }
+         });
+      }
+   }
+
+   template <FieldType T>
+      requires KeyFieldType<T>
+   bool remove_elem_at(lList *lp, const int pos, const KeyArgOf<T> key) {
+      if (lp == nullptr) {
+         return false;
+      }
+      const void *iterator = nullptr;
+      return remove_found(lp, lookup_first<T>(lp, pos, key, &iterator));
+   }
+
+   // adding and deleting by key exist for the four key field types; callers link against these instantiations
+   template lListElem *add_elem_at<FieldType::Uint32>(lList *&, int, KeyArgOf<FieldType::Uint32>, const lDescr *);
+   template lListElem *add_elem_at<FieldType::Uint64>(lList *&, int, KeyArgOf<FieldType::Uint64>, const lDescr *);
+   template lListElem *add_elem_at<FieldType::String>(lList *&, int, KeyArgOf<FieldType::String>, const lDescr *);
+   template lListElem *add_elem_at<FieldType::Host>(lList *&, int, KeyArgOf<FieldType::Host>, const lDescr *);
+   template bool remove_elem_at<FieldType::Uint32>(lList *, int, KeyArgOf<FieldType::Uint32>);
+   template bool remove_elem_at<FieldType::Uint64>(lList *, int, KeyArgOf<FieldType::Uint64>);
+   template bool remove_elem_at<FieldType::String>(lList *, int, KeyArgOf<FieldType::String>);
+   template bool remove_elem_at<FieldType::Host>(lList *, int, KeyArgOf<FieldType::Host>);
 
    lList *get_or_create_list(lListElem *ep, const int pos, const char *name, const lDescr *descr) {
       if (mt_get_type(ep->descr[pos].mt) != lListT) [[unlikely]] {

@@ -1100,11 +1100,13 @@ void ocs::QStatJobViewJSON::report_pending_tasks(std::ostream &os, const lListEl
 void ocs::QStatJobViewJSON::report_X_env_list(std::ostream &os, const lListElem *job, int nm, const char *name) {
    DENTER(TOP_LAYER);
 
-   lList *env_list = lGetListRW(job, nm);
-   if (env_list == nullptr) {
+   const lList *job_env_list = lGetList(job, nm);
+   if (job_env_list == nullptr) {
       DRETURN_VOID;
    }
 
+   // the variables with VAR_PREFIX are not shown: they are split off a copy, since the job is the caller's
+   lList *env_list = lCopyList(nullptr, job_env_list);
    lList *do_not_print = nullptr;
    var_list_split_prefix_vars(&env_list, &do_not_print, VAR_PREFIX);
 
@@ -1140,7 +1142,8 @@ void ocs::QStatJobViewJSON::report_X_env_list(std::ostream &os, const lListElem 
       os << std::string(indent * 3, ' ') << "}";
    }
 
-   lAddList(env_list, &do_not_print);
+   lFreeList(&do_not_print);
+   lFreeList(&env_list);
 
    indent--;
    os << "\n" << std::string(indent * 3, ' ') << "]";
@@ -1441,7 +1444,7 @@ void ocs::QStatJobViewJSON::report_task_exec_host_list(std::ostream &os, const l
       DRETURN_VOID;
    }
 
-   lList *gdil_org = lGetListRW(task, JAT_granted_destin_identifier_list);
+   const lList *gdil_org = lGetList(task, JAT_granted_destin_identifier_list);
    lList *gdil_unique = gdil_make_host_unique(gdil_org);
 
    if (first_task_attribute) {

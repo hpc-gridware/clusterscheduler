@@ -22,7 +22,9 @@
  * @brief Base view of `qstat -j`, and the interface the three output formats implement
  */
 
+#include <algorithm>
 #include <sstream>
+#include <vector>
 
 #include "uti/sge_bitfield.h"
 #include "uti/sge_rmon_macros.h"
@@ -159,11 +161,14 @@ void ocs::QStatJobViewBase::show_job(std::ostream &os, const lList *ilp, const l
    // start task specific output
    report_task_list_started(os, job);
    if (lGetPosViaElem(job, JB_ja_tasks, SGE_NO_ABORT) >= 0) {
-      if (lList *ja_tasks = lGetListRW(job, JB_ja_tasks); ja_tasks != nullptr) {
-         lPSortList(ja_tasks, "%I+", JAT_task_number);
+      // the tasks in the order of their numbers; the job is the caller's and is not sorted itself
+      std::vector<const lListElem *> ja_tasks;
+      for_each_ep_lv(ja_task, lGetList(job, JB_ja_tasks)) {
+         ja_tasks.push_back(ja_task);
       }
+      std::ranges::sort(ja_tasks, {}, [](const lListElem *ja_task) { return lGetUlong(ja_task, JAT_task_number); });
 
-      for_each_ep_lv(jatep, lGetList(job, JB_ja_tasks)) {
+      for (const lListElem *jatep : ja_tasks) {
          report_task_started(os, job, jatep);
 
          report_task_id(os, job, jatep);
@@ -222,28 +227,6 @@ uint32_t ocs::QStatJobViewBase::count_pending_tasks(const lListElem *job) {
    return pending;
 }
 
-/** @def SUM_UP_JATASK_USAGE
- * @brief Add one scaled usage attribute of an array task to a running total
- *
- * Defined inside accumulate_usage() and only used there; `uep` is the scratch
- * element the enclosing function declares.
- *
- * @param ja_task the array task to read from
- * @param dst the total to add to
- * @param attr the usage attribute's name
- */
-
-/** @def SUM_UP_PETASK_USAGE
- * @brief Add one scaled usage attribute of a PE task to a running total
- *
- * The same as #SUM_UP_JATASK_USAGE but reading `PET_scaled_usage`, because a
- * PE task keeps its usage in its own list.
- *
- * @param pe_task the PE task to read from
- * @param dst the total to add to
- * @param attr the usage attribute's name
- */
-
 /** @brief Add one task's usage to a running total
  * @param task the task whose usage is added
  * @param usage the total, updated in place
@@ -253,53 +236,50 @@ void ocs::QStatJobViewBase::accumulate_usage(const lListElem *task, Usage &usage
    usage.have_mem_details = lGetSubStr(task, UA_name, USAGE_ATTR_PSS, JAT_scaled_usage_list) != nullptr;
 
    /* display online job usage separately for each array job but summarized over all pe_tasks */
-#define SUM_UP_JATASK_USAGE(ja_task, dst, attr)                                                                        \
-   if ((uep = lGetSubStr(ja_task, UA_name, attr, JAT_scaled_usage_list))) {                                            \
-      (dst) += lGetDouble(uep, UA_value);                                                                              \
-   }
-
-#define SUM_UP_PETASK_USAGE(pe_task, dst, attr)                                                                        \
-   if ((uep = lGetSubStr(pe_task, UA_name, attr, PET_scaled_usage))) {                                                 \
-      (dst) += lGetDouble(uep, UA_value);                                                                              \
-   }
-
+   // adds one value of a scaled usage list to a total; an attribute the list does not hold adds nothing
+   const auto sum_up = [](const lList *usage_list, double &dst, const char *attr) {
+      if (const lListElem *uep = lGetElemStr(usage_list, UA_name, attr)) {
+         dst += lGetDouble(uep, UA_value);
+      }
+   };
 
    /* master task */
-   const lListElem *uep;
-   SUM_UP_JATASK_USAGE(task, usage.wallclock, USAGE_ATTR_WALLCLOCK);
-   SUM_UP_JATASK_USAGE(task, usage.cpu, USAGE_ATTR_CPU);
-   SUM_UP_JATASK_USAGE(task, usage.mem, USAGE_ATTR_MEM);
-   SUM_UP_JATASK_USAGE(task, usage.io, USAGE_ATTR_IO);
-   SUM_UP_JATASK_USAGE(task, usage.ioops, USAGE_ATTR_IOOPS);
-   SUM_UP_JATASK_USAGE(task, usage.iow, USAGE_ATTR_IOW);
-   SUM_UP_JATASK_USAGE(task, usage.vmem, USAGE_ATTR_VMEM);
-   SUM_UP_JATASK_USAGE(task, usage.maxvmem, USAGE_ATTR_MAXVMEM);
-   SUM_UP_JATASK_USAGE(task, usage.rss, USAGE_ATTR_RSS);
-   SUM_UP_JATASK_USAGE(task, usage.maxrss, USAGE_ATTR_MAXRSS);
+   const lList *ja_task_usage = lGetList(task, JAT_scaled_usage_list);
+   sum_up(ja_task_usage, usage.wallclock, USAGE_ATTR_WALLCLOCK);
+   sum_up(ja_task_usage, usage.cpu, USAGE_ATTR_CPU);
+   sum_up(ja_task_usage, usage.mem, USAGE_ATTR_MEM);
+   sum_up(ja_task_usage, usage.io, USAGE_ATTR_IO);
+   sum_up(ja_task_usage, usage.ioops, USAGE_ATTR_IOOPS);
+   sum_up(ja_task_usage, usage.iow, USAGE_ATTR_IOW);
+   sum_up(ja_task_usage, usage.vmem, USAGE_ATTR_VMEM);
+   sum_up(ja_task_usage, usage.maxvmem, USAGE_ATTR_MAXVMEM);
+   sum_up(ja_task_usage, usage.rss, USAGE_ATTR_RSS);
+   sum_up(ja_task_usage, usage.maxrss, USAGE_ATTR_MAXRSS);
    if (usage.have_mem_details) {
-      SUM_UP_JATASK_USAGE(task, usage.pss, USAGE_ATTR_PSS);
-      SUM_UP_JATASK_USAGE(task, usage.maxpss, USAGE_ATTR_MAXPSS);
-      SUM_UP_JATASK_USAGE(task, usage.pmem, USAGE_ATTR_PMEM);
-      SUM_UP_JATASK_USAGE(task, usage.smem, USAGE_ATTR_SMEM);
+      sum_up(ja_task_usage, usage.pss, USAGE_ATTR_PSS);
+      sum_up(ja_task_usage, usage.maxpss, USAGE_ATTR_MAXPSS);
+      sum_up(ja_task_usage, usage.pmem, USAGE_ATTR_PMEM);
+      sum_up(ja_task_usage, usage.smem, USAGE_ATTR_SMEM);
    }
 
    /* slave tasks */
    for_each_ep_lv(pe_task_ep, lGetList(task, JAT_task_list)) {
-      // we do not sum up wallclock usage per pe task
-      SUM_UP_PETASK_USAGE(pe_task_ep, usage.cpu, USAGE_ATTR_CPU);
-      SUM_UP_PETASK_USAGE(pe_task_ep, usage.mem, USAGE_ATTR_MEM);
-      SUM_UP_PETASK_USAGE(pe_task_ep, usage.io, USAGE_ATTR_IO);
-      SUM_UP_PETASK_USAGE(pe_task_ep, usage.ioops, USAGE_ATTR_IOOPS);
-      SUM_UP_PETASK_USAGE(pe_task_ep, usage.iow, USAGE_ATTR_IOW);
-      SUM_UP_PETASK_USAGE(pe_task_ep, usage.vmem, USAGE_ATTR_VMEM);
-      SUM_UP_PETASK_USAGE(pe_task_ep, usage.maxvmem, USAGE_ATTR_MAXVMEM);
-      SUM_UP_PETASK_USAGE(pe_task_ep, usage.rss, USAGE_ATTR_RSS);
-      SUM_UP_PETASK_USAGE(pe_task_ep, usage.maxrss, USAGE_ATTR_MAXRSS);
+      // we do not sum up wallclock usage per pe task; a PE task keeps its usage in its own list
+      const lList *pe_task_usage = lGetList(pe_task_ep, PET_scaled_usage);
+      sum_up(pe_task_usage, usage.cpu, USAGE_ATTR_CPU);
+      sum_up(pe_task_usage, usage.mem, USAGE_ATTR_MEM);
+      sum_up(pe_task_usage, usage.io, USAGE_ATTR_IO);
+      sum_up(pe_task_usage, usage.ioops, USAGE_ATTR_IOOPS);
+      sum_up(pe_task_usage, usage.iow, USAGE_ATTR_IOW);
+      sum_up(pe_task_usage, usage.vmem, USAGE_ATTR_VMEM);
+      sum_up(pe_task_usage, usage.maxvmem, USAGE_ATTR_MAXVMEM);
+      sum_up(pe_task_usage, usage.rss, USAGE_ATTR_RSS);
+      sum_up(pe_task_usage, usage.maxrss, USAGE_ATTR_MAXRSS);
       if (usage.have_mem_details) {
-         SUM_UP_PETASK_USAGE(pe_task_ep, usage.pss, USAGE_ATTR_PSS);
-         SUM_UP_PETASK_USAGE(pe_task_ep, usage.maxpss, USAGE_ATTR_MAXPSS);
-         SUM_UP_PETASK_USAGE(pe_task_ep, usage.pmem, USAGE_ATTR_PMEM);
-         SUM_UP_PETASK_USAGE(pe_task_ep, usage.smem, USAGE_ATTR_SMEM);
+         sum_up(pe_task_usage, usage.pss, USAGE_ATTR_PSS);
+         sum_up(pe_task_usage, usage.maxpss, USAGE_ATTR_MAXPSS);
+         sum_up(pe_task_usage, usage.pmem, USAGE_ATTR_PMEM);
+         sum_up(pe_task_usage, usage.smem, USAGE_ATTR_SMEM);
       }
    }
    DRETURN_VOID;

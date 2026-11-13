@@ -68,9 +68,6 @@ static int rcv_from_execd(int options, ocs::gdi::ClientServerBase::ClientServerB
 /// `rcv_from_execd()` option: block until a message arrives
 #define OPT_SYNCHRON 1
 
-/// Find a remote task in the module's task list by its id
-#define LOCATE_RTASK(tid) lGetElemStrRW(remote_task_list, RT_tid, tid)
-
 /**
  * @brief The reason the last qexec call failed
  * @return the message; static storage, do not free
@@ -281,7 +278,7 @@ int sge_qwaittid(sge_tid_t tid, int *status, int options) {
    if (!(options & WNOHANG))
       rcv_opt |= OPT_SYNCHRON;
 
-   if (tid != nullptr && !(rt = LOCATE_RTASK(tid))) {
+   if (tid != nullptr && !(rt = lGetElemStrRW(remote_task_list, RT_tid, tid))) {
       snprintf(lasterror, sizeof(lasterror), MSG_GDI_TASKNOTEXIST_S, tid);
       DRETURN(-1);
    }

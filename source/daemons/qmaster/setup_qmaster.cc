@@ -1535,28 +1535,32 @@ remove_invalid_job_references(int user) {
  * UU_usage/UU_long_term_usage (including the per-project UU_project
  * sub-lists) and PR_usage/PR_long_term_usage lists down to the attributes
  * relevant for share tree usage, and re-spools the objects that changed.
- * Once cleaned, later startups find nothing to do.
+ * Once cleaned, later startups find nothing to do. It changes the objects of
+ * the master list, so it walks the list for writing.
+ *
+ * @param user true for the user objects, false for the project objects
+ * @param usage_weight_list the usage weights that define the relevant attributes
  */
 static void
 remove_irrelevant_userprj_usage(bool user, const lList *usage_weight_list) {
    DENTER(TOP_LAYER);
 
-   const lListElem *up;
+   lListElem *up;
    int object_key;
-   const lList *object_list;
+   lList *object_list;
    sge_object_type object_type;
 
    if (user) {
       object_key = UU_name;
-      object_list = *ocs::DataStore::get_master_list(SGE_TYPE_USER);
+      object_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_USER);
       object_type = SGE_TYPE_USER;
    } else {
       object_key = PR_name;
-      object_list = *ocs::DataStore::get_master_list(SGE_TYPE_PROJECT);
+      object_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_PROJECT);
       object_type = SGE_TYPE_PROJECT;
    }
 
-   for_each_ep(up, object_list) {
+   for_each_rw(up, object_list) {
       bool changed = false;
 
       if (user) {

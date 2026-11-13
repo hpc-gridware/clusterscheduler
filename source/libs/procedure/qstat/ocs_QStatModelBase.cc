@@ -934,7 +934,7 @@ bool ocs::QStatModelBase::prepare_data(lList **answer_list, QStatParameter &para
       jbList. Then remove all entries (job_number_list, message_number and
       message) from the message_list that have no jobs in them.
    */
-   for_each_ep_lv(tmp_elem, ilp) {
+   for_each_rw_lv(tmp_elem, ilp) {
       lList *msg_list = lGetListRW(tmp_elem, SME_message_list);
 
       lListElem *msg_elem;

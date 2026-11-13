@@ -137,7 +137,8 @@ ocs::QStatJobViewPlain::show_reasons(std::ostream &os, QStatParameter &parameter
        */
       {
          lListElem *flt_msg;
-         const lListElem *ref_msg, *ref_jid;
+         lListElem *ref_msg;
+         const lListElem *ref_jid;
          lList *new_list = lCreateList("filtered message list", MES_Type);
          lListElem *flt_nxt_msg = lFirstRW(mlp);
 
@@ -146,7 +147,7 @@ ocs::QStatJobViewPlain::show_reasons(std::ostream &os, QStatParameter &parameter
 
             bool found_msg = false;
             flt_nxt_msg = lNextRW(flt_msg);
-            for_each_ep(ref_msg, new_list) {
+            for_each_rw(ref_msg, new_list) {
                if (lGetUlong(ref_msg, MES_message_number) == lGetUlong(flt_msg, MES_message_number)) {
                   lListElem *flt_nxt_jid = lFirstRW(lGetList(flt_msg, MES_job_number_list));
                   while ((flt_jid = flt_nxt_jid) != nullptr) {
@@ -183,7 +184,7 @@ ocs::QStatJobViewPlain::show_reasons(std::ostream &os, QStatParameter &parameter
       int ids_per_line = 0;
       int initialized = 0;
       first_run = true;
-      for_each_ep_lv(mes, mlp) {
+      for_each_rw_lv(mes, mlp) {
          lPSortList(lGetListRW(mes, MES_job_number_list), "I+", ULNG_value);
 
          for_each_ep(jid_ulng, lGetList(mes, MES_job_number_list)) {
@@ -739,7 +740,9 @@ void ocs::QStatJobViewPlain::report_shell_list(std::ostream &os, const lListElem
 void ocs::QStatJobViewPlain::report_env_list(std::ostream &os, const lListElem *job) {
    DENTER(TOP_LAYER);
    if (lGetPosViaElem(job, JB_env_list, SGE_NO_ABORT) >= 0) {
-      if (lList *list = lGetListRW(job, JB_env_list)) {
+      if (const lList *env_list = lGetList(job, JB_env_list)) {
+         // the variables with VAR_PREFIX are not shown: they are split off a copy, since the job is the caller's
+         lList *list = lCopyList(nullptr, env_list);
          lList *do_not_print = nullptr;
          var_list_split_prefix_vars(&list, &do_not_print, VAR_PREFIX);
 
@@ -752,7 +755,8 @@ void ocs::QStatJobViewPlain::report_env_list(std::ostream &os, const lListElem *
             uni_print_list(ss_list, list, fields, delis, FLG_NO_DELIS_STRINGS | FLG_NO_VALUE_AS_EMPTY);
             os << std::format("{:<{}} {}", ocs::ascii_width("env_list:"), left_width, ss_list.str()) << "\n";
          }
-         lAddList(list, &do_not_print);
+         lFreeList(&do_not_print);
+         lFreeList(&list);
       }
    }
    DRETURN_VOID;

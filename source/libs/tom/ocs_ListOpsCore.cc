@@ -70,8 +70,8 @@ namespace ocs::tom {
             return nullptr;
          }
          const void *iterator = nullptr;
-         return type == lStringT ? lookup_first_str(lp, pos, name, &iterator)
-                                 : lookup_first_host(lp, pos, name, &iterator);
+         return type == lStringT ? lookup_first<FieldType::String>(lp, pos, name, &iterator)
+                                 : lookup_first<FieldType::Host>(lp, pos, name, &iterator);
       }
 
    } // namespace

@@ -633,12 +633,9 @@ attr_mod_obj_binding(lList **alpp, lListElem *new_ar, const lListElem *ar) {
 
    if (lGetPosViaElem(ar, AR_binding, SGE_NO_ABORT) >= 0) {
       lListElem *old_binding_elem = lGetObject(new_ar, AR_binding);
-      lListElem *new_binding_elem = lGetObject(ar, AR_binding);
+      const lListElem *new_binding_elem = lGetObject(ar, AR_binding);
       if (old_binding_elem == nullptr) {
-         if (new_binding_elem != nullptr) {
-            new_binding_elem = lCopyElem(new_binding_elem);
-         }
-         lSetObject(new_ar, AR_binding, new_binding_elem);
+         lSetObject(new_ar, AR_binding, new_binding_elem != nullptr ? lCopyElem(new_binding_elem) : nullptr);
       } else {
          if (new_binding_elem != nullptr) {
             // copy new amount but only if it is not UNINITIALIZED and different from the old one

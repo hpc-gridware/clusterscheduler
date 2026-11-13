@@ -66,6 +66,36 @@ namespace ocs::tom {
    int present_pos(const lDescr *descr, int nm) noexcept;
 
    /**
+    * @brief Record that a list or an element does not hold a field, as a soft path
+    *
+    * The reason is MissingField for a reduced descriptor that has the field
+    * but not its value, and ForeignField for a descriptor of another type.
+    * The old lookups and adds call it next to their message, the free forms
+    * of ocs_FreeAccess.h through missing_key_field(); it is defined there.
+    *
+    * @param function the calling function, for the record
+    * @param nm the field
+    * @param descr the descriptor of the list or element, or nullptr
+    */
+   [[gnu::cold]] void report_missing_field(const char *function, int nm, const lDescr *descr) noexcept;
+
+   /**
+    * @brief The error of a field access the inline check refused: a null element, another type or an absent field
+    *
+    * The accessors with a field known at compile time test all three cases in
+    * one inline condition and call this function only when it fails, so each
+    * access site holds one call instead of a block per case. It determines
+    * which case it was and throws.
+    *
+    * @param ep the element, or nullptr
+    * @param nm the field
+    * @param first_nm the first field number of the field's type, which an element of that type starts with
+    * @throw FieldException with reason NullElement, ForeignField or AbsentField
+    */
+   [[noreturn, gnu::cold]] void throw_access_error(const lListElem *ep, int nm, int first_nm);
+
+
+   /**
     * @brief The length of the type of a descriptor: the entries before the terminating one
     *
     * Counts the entries, so it also works for a descriptor that is not
@@ -352,103 +382,50 @@ namespace ocs::tom {
    std::string key_text(int mt, const void *key);
 
    /**
-    * @brief The first element of a list whose string field holds a value, the lookup of the core
+    * @brief The first element of a list whose field holds a value, the lookup of the core
     *
-    * The old lookup lGetElemStrFirstRW() and the typed lookups run on it. A
-    * repeated key of a unique field is a logic error (N-H-18): found while the
-    * field's table is built, or by the linear search, which for a unique field
-    * goes on to the end of the list.
+    * The old lookups (lGetElemStrFirstRW() and its siblings), the typed
+    * lookups and the free forms run on it. Through the field's table where the
+    * list has one or reaches the hash threshold, otherwise by a linear search.
+    * Host names are compared as everywhere in the cluster: the table by the
+    * normalised name, the linear search without regard to case. A repeated key
+    * of a unique field is a logic error (N-H-18): found while the field's table
+    * is built, or by the linear search, which for a unique field goes on to
+    * the end of the list.
     *
+    * The caller has checked that the field at @p pos is of type @p T; the
+    * search reads the slots without checking each element. Instantiated in the
+    * core for the four key field types.
+    *
+    * @tparam T the field type: Uint32, Uint64, String or Host
     * @param lp the list, not nullptr
     * @param pos the field's position in the list's descriptor
-    * @param value the value, not nullptr
-    * @param iterator the lookup's state, for lGetElemStrNextRW()
+    * @param value the value; a string or host name not nullptr
+    * @param iterator the lookup's state, for #lookup_next
     * @return the element, or nullptr
     * @throw FieldException with reason DuplicateKey, naming type, field, key and list
     */
-   lListElem *lookup_first_str(const lList *lp, int pos, const char *value, const void **iterator);
+   template <FieldType T>
+      requires KeyFieldType<T>
+   lListElem *lookup_first(const lList *lp, int pos, KeyArgOf<T> value, const void **iterator);
 
    /**
-    * @brief The first element of a list whose 32 bit field holds a value, the lookup of the core
-    * @param lp the list, not nullptr
-    * @param pos the field's position in the list's descriptor
-    * @param value the value
-    * @param iterator the lookup's state, for lGetElemUlongNextRW()
-    * @return the element, or nullptr
-    * @throw FieldException with reason DuplicateKey, see #lookup_first_str
-    */
-   lListElem *lookup_first_ulong(const lList *lp, int pos, lUlong value, const void **iterator);
-
-   /**
-    * @brief The first element of a list whose 64 bit field holds a value, the lookup of the core
-    * @param lp the list, not nullptr
-    * @param pos the field's position in the list's descriptor
-    * @param value the value
-    * @param iterator the lookup's state, for lGetElemUlong64NextRW()
-    * @return the element, or nullptr
-    * @throw FieldException with reason DuplicateKey, see #lookup_first_str
-    */
-   lListElem *lookup_first_ulong64(const lList *lp, int pos, lUlong64 value, const void **iterator);
-
-   /**
-    * @brief The first element of a list whose host field holds a host, the lookup of the core
-    *
-    * Host names are compared as everywhere in the cluster: the table by the
-    * normalised name, the linear search without regard to case.
-    *
-    * @param lp the list, not nullptr
-    * @param pos the field's position in the list's descriptor
-    * @param value the host name, not nullptr
-    * @param iterator the lookup's state, for lGetElemHostNextRW()
-    * @return the element, or nullptr
-    * @throw FieldException with reason DuplicateKey, see #lookup_first_str
-    */
-   lListElem *lookup_first_host(const lList *lp, int pos, const char *value, const void **iterator);
-
-   /**
-    * @brief The next element of a list whose string field holds a value, continuing #lookup_first_str
+    * @brief The next element of a list whose field holds a value, continuing #lookup_first
     *
     * Through the field's table where the list has one, otherwise by a linear
     * search from the element the iterator holds; the iterator is nullptr after
-    * the last match. lGetElemStrNextRW() is a thin wrapper over it.
+    * the last match. The old ...Next functions are thin wrappers over it.
     *
+    * @tparam T the field type: Uint32, Uint64, String or Host
     * @param lp the list, not nullptr
     * @param pos the field's position in the list's descriptor
-    * @param value the value, not nullptr
+    * @param value the value; a string or host name not nullptr
     * @param iterator the lookup's state; nullptr gives no element
     * @return the element, or nullptr
     */
-   lListElem *lookup_next_str(const lList *lp, int pos, const char *value, const void **iterator);
-
-   /**
-    * @brief The next element of a list whose 32 bit field holds a value, continuing #lookup_first_ulong
-    * @param lp the list, not nullptr
-    * @param pos the field's position in the list's descriptor
-    * @param value the value
-    * @param iterator the lookup's state; nullptr gives no element
-    * @return the element, or nullptr
-    */
-   lListElem *lookup_next_ulong(const lList *lp, int pos, lUlong value, const void **iterator);
-
-   /**
-    * @brief The next element of a list whose 64 bit field holds a value, continuing #lookup_first_ulong64
-    * @param lp the list, not nullptr
-    * @param pos the field's position in the list's descriptor
-    * @param value the value
-    * @param iterator the lookup's state; nullptr gives no element
-    * @return the element, or nullptr
-    */
-   lListElem *lookup_next_ulong64(const lList *lp, int pos, lUlong64 value, const void **iterator);
-
-   /**
-    * @brief The next element of a list whose host field holds a host, continuing #lookup_first_host
-    * @param lp the list, not nullptr
-    * @param pos the field's position in the list's descriptor
-    * @param value the host name, not nullptr; compared without regard to case
-    * @param iterator the lookup's state; nullptr gives no element
-    * @return the element, or nullptr
-    */
-   lListElem *lookup_next_host(const lList *lp, int pos, const char *value, const void **iterator);
+   template <FieldType T>
+      requires KeyFieldType<T>
+   lListElem *lookup_next(const lList *lp, int pos, KeyArgOf<T> value, const void **iterator);
 
    /**
     * @brief The first element of a list whose string field equals a value without regard to case
@@ -466,6 +443,16 @@ namespace ocs::tom {
    lListElem *lookup_first_str_nocase(const lList *lp, int nm, const char *value);
 
    /**
+    * @brief The first element of a list whose string field at a known position equals a value without regard to
+    *        case, without the checks of #lookup_first_str_nocase
+    * @param lp the list, or nullptr for no match
+    * @param pos the position of a string field present in the list's descriptor
+    * @param value the value, or nullptr for no match
+    * @return the element, or nullptr
+    */
+   lListElem *lookup_first_str_nocase_at(const lList *lp, int pos, const char *value);
+
+   /**
     * @brief The first element of a list whose string field equals a value, or starts with it if it ends in '*'
     *
     * A linear search, as lGetElemStrLikeRW() did; the old function is a thin
@@ -480,5 +467,15 @@ namespace ocs::tom {
     *        WrongType if it is not a string field
     */
    lListElem *lookup_first_str_like(const lList *lp, int nm, const char *value);
+
+   /**
+    * @brief The first element of a list whose string field at a known position equals a value, or starts with it
+    *        if it ends in '*', without the checks of #lookup_first_str_like
+    * @param lp the list, or nullptr for no match
+    * @param pos the position of a string field present in the list's descriptor
+    * @param value the value or prefix pattern, or nullptr for no match
+    * @return the element, or nullptr
+    */
+   lListElem *lookup_first_str_like_at(const lList *lp, int pos, const char *value);
 
 } // namespace ocs::tom

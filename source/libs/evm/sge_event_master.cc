@@ -737,17 +737,16 @@ int sge_mod_event_client(lListElem *clio, lList **alpp, char *ruser, char *rhost
  * If the subscription is changed, and new sgeE*_LIST events are subscribed,
  * these lists are sent to the event client.
  *
- * @param clio object containing the data to change
- * @param alpp answer list pointer
- * @param ruser user that triggered the modify action
- * @param rhost host that triggered the modify action
+ * The event client of the request is changed on the way: its subscription is
+ * built and exchanged into the stored client, so the request is not const.
  *
- * @note int - AN_status code. STATUS_OK on success, else error code
+ * @param request the event master request (EVR_Type) holding the event client to change
+ * @param monitor the monitoring of the calling thread
  *
  * @note MT-NOTE: sge_mod_event_client() is NOT MT safe.
  */
 static void
-sge_event_master_process_mod_event_client(const lListElem *request, monitoring_t *monitor) {
+sge_event_master_process_mod_event_client(lListElem *request, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
    MONITOR_WAIT_TIME(SGE_LOCK(LOCK_GLOBAL, LOCK_READ), monitor);
@@ -1510,9 +1509,17 @@ add_list_event_for_client(const uint32_t event_client_id, uint64_t timestamp, co
    DRETURN(true);
 }
 
-/* add an event from the request list to the event clients which subscribed it */
+/**
+ * @brief Add the events of a request to the event clients which subscribed them
+ *
+ * The events are dechained from the request's event list on the way, so the
+ * request is not const.
+ *
+ * @param request the event master request (EVR_Type) holding the events
+ * @param monitor the monitoring of the calling thread
+ */
 static void
-sge_event_master_process_send(const lListElem *request, monitoring_t *monitor) {
+sge_event_master_process_send(lListElem *request, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
    ev_event type = sgeE_ALL_EVENTS;
    uint32_t ec_id = lGetUlong(request, EVR_event_client_id);

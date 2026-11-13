@@ -533,16 +533,16 @@ void schedd_mes_add_global(lList **monitor_alpp, bool monitor_next_run, uint32_t
  *
  * returns a list of all messages for the current job
  *
- * @return message list
+ * @return the message list of the current job, read only, or nullptr
  */
-lList *schedd_mes_get_tmp_list(){
+const lList *schedd_mes_get_tmp_list() {
    DENTER(TOP_LAYER);
 
-   lList *ret = nullptr;
+   const lList *ret = nullptr;
    const lListElem *tmp_sme = sconf_get_tmp_sme();
-   
+
    if (tmp_sme) {
-     ret = lGetListRW(tmp_sme, SME_message_list);  
+      ret = lGetList(tmp_sme, SME_message_list);
    }
    DRETURN(ret);
 }

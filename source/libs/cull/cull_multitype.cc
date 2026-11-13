@@ -210,6 +210,7 @@ namespace {
  * @param do_abort call do_abort if do_abort=1
  *
  * @return position or -1 in case of an error
+ * @see Free form: ocs::tom::has<F>(ep) for a presence check with a constant field, for a constant field (CS-3045).
  */
 int lGetPosViaElem(const lListElem *element, int name, int do_abort) {
    DENTER(CULL_BASIS_LAYER);
@@ -352,6 +353,7 @@ int lGetPosType(const lDescr *dp, int pos) {
  * @param ep the element
  * @param name the field
  * @return the sub-list, or nullptr when the field is unset
+ * @see Free form: ocs::tom::list_ref<F>(ep), for a constant field (CS-3045).
  */
 lList **lGetListRef(const lListElem *ep, int name) {
    DENTER(CULL_BASIS_LAYER);
@@ -646,6 +648,7 @@ const char *lGetString(const lListElem *ep, int name) {
  * @param ep the element
  * @param name the field
  * @return the string, or the empty string when the field is unset
+ * @see Free form: ocs::tom::get_or_empty<F>(ep), for a constant field (CS-3045).
  */
 const char *lGetStringNotNull(const lListElem *ep, int name) {
    const char *ret = lGetString(ep, name);
@@ -776,6 +779,7 @@ const lList *lGetList(const lListElem *ep, int nm) {
  * @return the sub-list, or nullptr when the field is unset
  *
  * @see Typed form: ocs::tom::Element<T>::get_or_create<F>(); a thin wrapper over ocs::tom::get_or_create_list() of the core.
+ * @see Free form: ocs::tom::get_or_create<F>(ep, list_name), for a constant field (CS-3045).
  */
 lList *lGetOrCreateList(lListElem *ep, int name,
                         const char *list_name, const lDescr *descr) {
@@ -1592,6 +1596,7 @@ int lSetPosList(lListElem *ep, int pos, lList *value) {
  * @return 0 on success, -1 with LEELEMNULL for a null element, or if the string cannot be copied, or with LEELEMNULL for a null pointer to the value.
  *         A field the element does not hold or of another field
  *         type is a programming error and aborts the process (N-L-4, CS-3062).
+ * @see Free form: ocs::tom::exchange<F>(ep, &str), for a constant field (CS-3045).
  */
 int lXchgString(lListElem *ep, int name, char **str) {
    DENTER(CULL_BASIS_LAYER);
@@ -1631,6 +1636,7 @@ int lXchgString(lListElem *ep, int name, char **str) {
  *         type is a programming error and aborts the process (N-L-4, CS-3062).
  *
  * @see Typed form: ocs::tom::Element<T>::exchange().
+ * @see Free form: ocs::tom::exchange<F>(ep, &lp), for a constant field (CS-3045).
  */
 int lXchgList(lListElem *ep, int name, lList **lpp) {
    DENTER(CULL_BASIS_LAYER);
@@ -1663,6 +1669,7 @@ int lXchgList(lListElem *ep, int name, lList **lpp) {
  * @return error state 0 - OK -1 - Error
  *
  * @see Typed form: ocs::tom::Element<T>::swap().
+ * @see Free form: ocs::tom::swap<F, G>(to, from), for a constant field (CS-3045).
  */
 int lSwapList(lListElem *to, int nm_to, lListElem *from, int nm_from) {
    DENTER(CULL_BASIS_LAYER);
@@ -2057,12 +2064,13 @@ int lSetRef(lListElem *ep, int name, lRef value) {
  * @param function the old function's name, for the record of a soft path and the abort
  * @param wrong_field_msg the old message for a field of another type, with the field name as argument
  * @param nm the key field
+ * @param descr the descriptor of the list, or of the new element if there is no list yet, for the record of a soft path
  * @param add calls the core
  * @return the element, or nullptr
  */
 template <typename Add>
 static lListElem *
-ocs_add_by_key(const char *function, const char *wrong_field_msg, const int nm, Add add) {
+ocs_add_by_key(const char *function, const char *wrong_field_msg, const int nm, const lDescr *descr, Add add) {
    try {
       return add();
    } catch (const ocs::tom::FieldException &e) {
@@ -2070,6 +2078,7 @@ ocs_add_by_key(const char *function, const char *wrong_field_msg, const int nm, 
          case ocs::tom::FieldException::Reason::AbsentField:
          case ocs::tom::FieldException::Reason::ForeignField:
          case ocs::tom::FieldException::Reason::WrongType:
+            ocs::tom::report_missing_field(function, nm, descr);
             CRITICAL(wrong_field_msg, lNm2Str(nm));
             break;
          default:
@@ -2162,6 +2171,7 @@ ocs_sub_list_ref(lListElem *ep, const int snm, const char *function) {
  * @note A null element does nothing; an element without the list field aborts, as every lookup in a
  *       sub-list does (#ocs_sub_list_ref; before CS-3077 the add functions gave nullptr, the delete
  *       functions aborted on a null element).
+ * @see Free form: ocs::tom::emplace_back_in<LF, F>(ep, key), for a constant field (CS-3045).
  */
 lListElem *lAddSubStr(lListElem *ep, int nm, const char *str, int snm, const lDescr *dp) {
    lList **lpp = ocs_sub_list_ref(ep, snm, "lAddSubStr");
@@ -2187,6 +2197,7 @@ lListElem *lAddSubStr(lListElem *ep, int nm, const char *str, int snm, const lDe
  * @note A null element does nothing; an element without the list field aborts, as every lookup in a
  *       sub-list does (#ocs_sub_list_ref; before CS-3077 the add functions gave nullptr, the delete
  *       functions aborted on a null element).
+ * @see Free form: ocs::tom::emplace_back_in<LF, F>(ep, key), for a constant field (CS-3045).
  */
 lListElem *lAddSubHost(lListElem *ep, int nm, const char *str, int snm, const lDescr *dp) {
    lList **lpp = ocs_sub_list_ref(ep, snm, "lAddSubHost");
@@ -2208,13 +2219,16 @@ lListElem *lAddSubHost(lListElem *ep, int nm, const char *str, int snm, const lD
  * @return lListElem* -
  *
  * @see Typed form: ocs::tom::List<T>::emplace_back<F>(); a thin wrapper over ocs::tom::add_elem_str() of the core.
+ * @see Free form: ocs::tom::emplace_back<F>(&lp, key), for a constant field (CS-3045).
+ * @note A list of another type, or reduced without the key field, gives the message for a field of another
+ *       type and nullptr; before CS-3045 the element was appended and the list held two types.
  */
 lListElem *lAddElemStr(lList **lpp, int nm, const char *str, const lDescr *dp) {
    if (!lpp || !str || !dp) {
       ocs::tom::report_soft_path("lAddElemStr", nm, ocs::tom::SoftPathReason::NullArgument);
       return nullptr;
    }
-   return ocs_add_by_key("lAddElemStr", MSG_CULL_ADDELEMSTRERRORXRUNTIMETYPE_S, nm, [&] { return ocs::tom::add_elem_str(*lpp, nm, str, dp); });
+   return ocs_add_by_key("lAddElemStr", MSG_CULL_ADDELEMSTRERRORXRUNTIMETYPE_S, nm, *lpp != nullptr ? (*lpp)->descr : dp, [&] { return ocs::tom::add_elem_str(*lpp, nm, str, dp); });
 }
 
 /**
@@ -2230,13 +2244,16 @@ lListElem *lAddElemStr(lList **lpp, int nm, const char *str, const lDescr *dp) {
  * @return new element or nullptr
  *
  * @see Typed form: ocs::tom::List<T>::emplace_back<F>(); a thin wrapper over ocs::tom::add_elem_host() of the core.
+ * @see Free form: ocs::tom::emplace_back<F>(&lp, key), for a constant field (CS-3045).
+ * @note A list of another type, or reduced without the key field, gives the message for a field of another
+ *       type and nullptr; before CS-3045 the element was appended and the list held two types.
  */
 lListElem *lAddElemHost(lList **lpp, int nm, const char *str, const lDescr *dp) {
    if (!lpp || !str || !dp) {
       ocs::tom::report_soft_path("lAddElemHost", nm, ocs::tom::SoftPathReason::NullArgument);
       return nullptr;
    }
-   return ocs_add_by_key("lAddElemHost", MSG_CULL_ADDELEMHOSTERRORXRUNTIMETYPE_S, nm, [&] { return ocs::tom::add_elem_host(*lpp, nm, str, dp); });
+   return ocs_add_by_key("lAddElemHost", MSG_CULL_ADDELEMHOSTERRORXRUNTIMETYPE_S, nm, *lpp != nullptr ? (*lpp)->descr : dp, [&] { return ocs::tom::add_elem_host(*lpp, nm, str, dp); });
 }
 
 /**
@@ -2257,6 +2274,7 @@ lListElem *lAddElemHost(lList **lpp, int nm, const char *str, const lDescr *dp) 
  * @note A null element does nothing; an element without the list field aborts, as every lookup in a
  *       sub-list does (#ocs_sub_list_ref; before CS-3077 the add functions gave nullptr, the delete
  *       functions aborted on a null element).
+ * @see Free form: ocs::tom::erase_in<LF, F>(ep, key), for a constant field (CS-3045).
  */
 int lDelSubStr(lListElem *ep, int nm, const char *str, int snm) {
    lList **lpp = ocs_sub_list_ref(ep, snm, "lDelSubStr");
@@ -2276,6 +2294,7 @@ int lDelSubStr(lListElem *ep, int nm, const char *str, int snm) {
  * @return 1 if the element was found and removed 0 in case of an error
  *
  * @see Typed form: ocs::tom::List<T>::erase<F>(key), which leaves an emptied list in place; a thin wrapper over ocs::tom::remove_elem_str() of the core.
+ * @see Free form: ocs::tom::erase<F>(&lp, key), for a constant field (CS-3045).
  */
 int lDelElemStr(lList **lpp, int nm, const char *str) {
    if (str == nullptr) {
@@ -2319,6 +2338,7 @@ ocs_sub_list(const lListElem *ep, const int snm, const char *function) {
  * @see Typed form: element.get<F>().find_first<G>().
  *
  * @note Every lookup in a sub-list treats a null element alike and finds nothing (#ocs_sub_list).
+ * @see Free form: ocs::tom::find_first_in_rw<LF, F>(ep, key), for a constant field (CS-3045).
  */
 lListElem *lGetSubStrRW(const lListElem *ep, int nm, const char *str, int snm) {
    return lGetElemStrRW(ocs_sub_list(ep, snm, "lGetSubStr"), nm, str);
@@ -2334,6 +2354,7 @@ lListElem *lGetSubStrRW(const lListElem *ep, int nm, const char *str, int snm) {
  * @return the matching element, or nullptr when there is none
  *
  * @see Typed form: element.get<F>().find_first<G>().
+ * @see Free form: ocs::tom::find_first_in<LF, F>(ep, key), for a constant field (CS-3045).
  */
 const lListElem *
 lGetSubStr(const lListElem *ep, int nm, const char *str, int snm) {
@@ -2349,6 +2370,7 @@ lGetSubStr(const lListElem *ep, int nm, const char *str, int snm) {
  * @return the matching element, or nullptr when there is none
  *
  * @see Typed form: ocs::tom::ConstList<T>::find_first() and ocs::tom::List<T>::find_first().
+ * @see Free form: ocs::tom::find_first_rw<F>(lp, key), for a constant field (CS-3045).
  */
 lListElem *lGetElemStrRW(const lList *lp, int nm, const char *str) {
    DENTER(CULL_LAYER);
@@ -2368,6 +2390,7 @@ lListElem *lGetElemStrRW(const lList *lp, int nm, const char *str) {
  * @return the matching element, or nullptr when there is none
  *
  * @see Typed form: ocs::tom::ConstList<T>::find_first() and ocs::tom::List<T>::find_first().
+ * @see Free form: ocs::tom::find_first<F>(lp, key), for a constant field (CS-3045).
  */
 const lListElem *lGetElemStr(const lList *lp, int nm, const char *str) {
    return lGetElemStrRW(lp, nm, str);
@@ -2394,6 +2417,7 @@ const lListElem *lGetElemStr(const lList *lp, int nm, const char *str) {
  * @return first element or nullptr
  *
  * @see Typed form: ocs::tom::ConstList<T>::find_all() and ocs::tom::List<T>::find_all().
+ * @see Free form: ocs::tom::find_first_rw<F>(lp, key, &iterator), for a constant field (CS-3045).
  */
 lListElem *lGetElemStrFirstRW(const lList *lp, int nm, const char *str, const void **iterator) {
    DENTER(CULL_LAYER);
@@ -2420,12 +2444,14 @@ lListElem *lGetElemStrFirstRW(const lList *lp, int nm, const char *str, const vo
 
    /* run time type checking */
    if (pos < 0) {
+      ocs::tom::report_missing_field("lGetElemStrFirst", nm, listDescriptor);
       CRITICAL(MSG_CULL_XNOTFOUNDINELEMENT_S, lNm2Str(nm));
       DRETURN(nullptr);
    }
 
    data_type = lGetPosType(listDescriptor, pos);
    if (data_type != lStringT) {
+      ocs::tom::report_missing_field("lGetElemStrFirst", nm, listDescriptor);
       CRITICAL(MSG_CULL_GETELEMSTRERRORXRUNTIMETYPE_S, lNm2Str(nm));
       DRETURN(nullptr);
    }
@@ -2433,7 +2459,7 @@ lListElem *lGetElemStrFirstRW(const lList *lp, int nm, const char *str, const vo
    // the core searches; a repeated key of a unique field ends the process here, as every logic error of the old
    // interface does (N-H-18, N-L-2)
    try {
-      DRETURN(ocs::tom::lookup_first_str(lp, pos, str, iterator));
+      DRETURN(ocs::tom::lookup_first<ocs::tom::FieldType::String>(lp, pos, str, iterator));
    } catch (const ocs::tom::FieldException &e) {
       ocs::tom::legacy_abort("lGetElemStrFirst", e);
    }
@@ -2449,6 +2475,7 @@ lListElem *lGetElemStrFirstRW(const lList *lp, int nm, const char *str, const vo
  * @return the matching element, or nullptr when there is none
  *
  * @see Typed form: ocs::tom::ConstList<T>::find_all() and ocs::tom::List<T>::find_all().
+ * @see Free form: ocs::tom::find_first<F>(lp, key, &iterator), for a constant field (CS-3045).
  */
 const lListElem *lGetElemStrFirst(const lList *lp, int nm, const char *str, const void **iterator) {
    return lGetElemStrFirstRW(lp, nm, str, iterator);
@@ -2472,7 +2499,8 @@ const lListElem *lGetElemStrFirst(const lList *lp, int nm, const char *str, cons
  *
  * @see Typed form: ocs::tom::ConstList<T>::find_all() and ocs::tom::List<T>::find_all().
  *
- * @note The checks are here; the lookup is a thin wrapper over ocs::tom::lookup_next_str().
+ * @note The checks are here; the lookup is a thin wrapper over ocs::tom::lookup_next<ocs::tom::FieldType::String>().
+ * @see Free form: ocs::tom::find_next_rw<F>(lp, key, &iterator), for a constant field (CS-3045).
  */
 lListElem *lGetElemStrNextRW(const lList *lp, int nm, const char *str, const void **iterator) {
    DENTER(CULL_LAYER);
@@ -2501,6 +2529,7 @@ lListElem *lGetElemStrNextRW(const lList *lp, int nm, const char *str, const voi
    pos = lGetPosInDescr(listDescriptor, nm);
    /* run time type checking */
    if (pos < 0) {
+      ocs::tom::report_missing_field("lGetElemStrNext", nm, listDescriptor);
       CRITICAL(MSG_CULL_XNOTFOUNDINELEMENT_S, lNm2Str(nm));
       DRETURN(nullptr);
    }
@@ -2510,7 +2539,7 @@ lListElem *lGetElemStrNextRW(const lList *lp, int nm, const char *str, const voi
       DRETURN(nullptr);
    }
 
-   DRETURN(ocs::tom::lookup_next_str(lp, pos, str, iterator));
+   DRETURN(ocs::tom::lookup_next<ocs::tom::FieldType::String>(lp, pos, str, iterator));
 }
 
 /**
@@ -2523,6 +2552,7 @@ lListElem *lGetElemStrNextRW(const lList *lp, int nm, const char *str, const voi
  * @return the matching element, or nullptr when there is none
  *
  * @see Typed form: ocs::tom::ConstList<T>::find_all() and ocs::tom::List<T>::find_all().
+ * @see Free form: ocs::tom::find_next<F>(lp, key, &iterator), for a constant field (CS-3045).
  */
 const lListElem *lGetElemStrNext(const lList *lp, int nm, const char *str, const void **iterator) {
    return lGetElemStrNextRW(lp, nm, str, iterator);
@@ -2537,12 +2567,14 @@ const lListElem *lGetElemStrNext(const lList *lp, int nm, const char *str, const
  * @return the matching element, or nullptr when there is none
  *
  * @see Typed form: ocs::tom::List<T>::find_first_like(); a thin wrapper over ocs::tom::lookup_first_str_like() of the core.
+ * @see Free form: ocs::tom::find_first_like_rw<F>(lp, value), for a constant field (CS-3045).
  */
 lListElem *lGetElemStrLikeRW(const lList *lp, int nm, const char *str) {
    DENTER(CULL_LAYER);
    try {
       DRETURN(ocs::tom::lookup_first_str_like(lp, nm, str));
    } catch (const ocs::tom::FieldException &e) {
+      ocs::tom::report_missing_field("lGetElemStrLike", nm, lp != nullptr ? lp->descr : nullptr);
       if (e.reason() == ocs::tom::FieldException::Reason::AbsentField) {
          CRITICAL(MSG_CULL_XNOTFOUNDINELEMENT_S, lNm2Str(nm));
       } else {
@@ -2561,6 +2593,7 @@ lListElem *lGetElemStrLikeRW(const lList *lp, int nm, const char *str) {
  * @return the matching element, or nullptr when there is none
  *
  * @see Typed form: ocs::tom::ConstList<T>::find_first_like().
+ * @see Free form: ocs::tom::find_first_like<F>(lp, value), for a constant field (CS-3045).
  */
 const lListElem *lGetElemStrLike(const lList *lp, int nm, const char *str) {
    return lGetElemStrLikeRW(lp, nm, str);
@@ -2585,6 +2618,7 @@ const lListElem *lGetElemStrLike(const lList *lp, int nm, const char *str) {
  * @note A null element does nothing; an element without the list field aborts, as every lookup in a
  *       sub-list does (#ocs_sub_list_ref; before CS-3077 the add functions gave nullptr, the delete
  *       functions aborted on a null element).
+ * @see Free form: ocs::tom::emplace_back_in<LF, F>(ep, key), for a constant field (CS-3045).
  */
 lListElem *lAddSubUlong(lListElem *ep, int nm, lUlong val, int snm, const lDescr *dp) {
    lList **lpp = ocs_sub_list_ref(ep, snm, "lAddSubUlong");
@@ -2605,13 +2639,16 @@ lListElem *lAddSubUlong(lListElem *ep, int nm, lUlong val, int snm, const lDescr
  * @return nullptr on error or pointer to the added element
  *
  * @see Typed form: ocs::tom::List<T>::emplace_back<F>(); a thin wrapper over ocs::tom::add_elem_ulong() of the core.
+ * @see Free form: ocs::tom::emplace_back<F>(&lp, key), for a constant field (CS-3045).
+ * @note A list of another type, or reduced without the key field, gives the message for a field of another
+ *       type and nullptr; before CS-3045 the element was appended and the list held two types.
  */
 lListElem *lAddElemUlong(lList **lpp, int nm, lUlong val, const lDescr *dp) {
    if (!lpp || !dp) {
       ocs::tom::report_soft_path("lAddElemUlong", nm, ocs::tom::SoftPathReason::NullArgument);
       return nullptr;
    }
-   return ocs_add_by_key("lAddElemUlong", MSG_CULL_ADDELEMULONGERRORXRUNTIMETYPE_S, nm, [&] { return ocs::tom::add_elem_ulong(*lpp, nm, val, dp); });
+   return ocs_add_by_key("lAddElemUlong", MSG_CULL_ADDELEMULONGERRORXRUNTIMETYPE_S, nm, *lpp != nullptr ? (*lpp)->descr : dp, [&] { return ocs::tom::add_elem_ulong(*lpp, nm, val, dp); });
 }
 
 /**
@@ -2632,6 +2669,7 @@ lListElem *lAddElemUlong(lList **lpp, int nm, lUlong val, const lDescr *dp) {
  * @note A null element does nothing; an element without the list field aborts, as every lookup in a
  *       sub-list does (#ocs_sub_list_ref; before CS-3077 the add functions gave nullptr, the delete
  *       functions aborted on a null element).
+ * @see Free form: ocs::tom::erase_in<LF, F>(ep, key), for a constant field (CS-3045).
  */
 int lDelSubUlong(lListElem *ep, int nm, lUlong val, int snm) {
    lList **lpp = ocs_sub_list_ref(ep, snm, "lDelSubUlong");
@@ -2653,6 +2691,7 @@ int lDelSubUlong(lListElem *ep, int nm, lUlong val, int snm) {
  *         removed or *lpp is nullptr (before CS-3077: 1 whether or not an element was found)
  *
  * @see Typed form: ocs::tom::List<T>::erase<F>(key), which leaves an emptied list in place; a thin wrapper over ocs::tom::remove_elem_ulong() of the core.
+ * @see Free form: ocs::tom::erase<F>(&lp, key), for a constant field (CS-3045).
  */
 int lDelElemUlong(lList **lpp, int nm, lUlong val) {
    return ocs_del_by_key(lpp, "lDelElemUlong", [&](lList *lp) { return ocs::tom::remove_elem_ulong(lp, nm, val); });
@@ -2674,6 +2713,7 @@ int lDelElemUlong(lList **lpp, int nm, lUlong val) {
  * @see Typed form: element.get<F>().find_first<G>().
  *
  * @note Every lookup in a sub-list treats a null element alike and finds nothing (#ocs_sub_list).
+ * @see Free form: ocs::tom::find_first_in_rw<LF, F>(ep, key), for a constant field (CS-3045).
  */
 lListElem *lGetSubUlongRW(const lListElem *ep, int nm, lUlong val, int snm) {
    return lGetElemUlongRW(ocs_sub_list(ep, snm, "lGetSubUlong"), nm, val);
@@ -2689,6 +2729,7 @@ lListElem *lGetSubUlongRW(const lListElem *ep, int nm, lUlong val, int snm) {
  * @return the matching element, or nullptr when there is none
  *
  * @see Typed form: element.get<F>().find_first<G>().
+ * @see Free form: ocs::tom::find_first_in<LF, F>(ep, key), for a constant field (CS-3045).
  */
 const lListElem *lGetSubUlong(const lListElem *ep, int nm, lUlong val, int snm) {
    return lGetSubUlongRW(ep, nm, val, snm);
@@ -2703,6 +2744,7 @@ const lListElem *lGetSubUlong(const lListElem *ep, int nm, lUlong val, int snm) 
  * @return the matching element, or nullptr when there is none
  *
  * @see Typed form: ocs::tom::ConstList<T>::find_first() and ocs::tom::List<T>::find_first().
+ * @see Free form: ocs::tom::find_first_rw<F>(lp, key), for a constant field (CS-3045).
  */
 lListElem *lGetElemUlongRW(const lList *lp, int nm, lUlong val) {
    const void *iterator = nullptr;
@@ -2718,6 +2760,7 @@ lListElem *lGetElemUlongRW(const lList *lp, int nm, lUlong val) {
  * @return the matching element, or nullptr when there is none
  *
  * @see Typed form: ocs::tom::ConstList<T>::find_first() and ocs::tom::List<T>::find_first().
+ * @see Free form: ocs::tom::find_first<F>(lp, key), for a constant field (CS-3045).
  */
 const lListElem *lGetElemUlong(const lList *lp, int nm, lUlong val) {
    return lGetElemUlongRW(lp, nm, val);
@@ -2742,6 +2785,7 @@ const lListElem *lGetElemUlong(const lList *lp, int nm, lUlong val) {
  * @return element or nullptr
  *
  * @see Typed form: ocs::tom::ConstList<T>::find_all() and ocs::tom::List<T>::find_all().
+ * @see Free form: ocs::tom::find_first_rw<F>(lp, key, &iterator), for a constant field (CS-3045).
  */
 lListElem *lGetElemUlongFirstRW(const lList *lp, int nm, lUlong val, const void **iterator) {
    DENTER(CULL_LAYER);
@@ -2758,13 +2802,18 @@ lListElem *lGetElemUlongFirstRW(const lList *lp, int nm, lUlong val, const void 
 
    /* run time type checking */
    if (pos < 0) {
+      ocs::tom::report_missing_field("lGetElemUlongFirst", nm, lGetListDescr(lp));
       CRITICAL(MSG_CULL_GETELEMULONGERRORXRUNTIMETYPE_S, lNm2Str(nm));
       DRETURN(nullptr);
    }
 
+   // the field's type, which the old linear search checked on reading each element; the core reads the slots
+   if (mt_get_type(lp->descr[pos].mt) != lUlongT) {
+      incompatibleType("lGetPosUlong");
+   }
    // the core searches; a repeated key of a unique field ends the process here (N-H-18, N-L-2)
    try {
-      DRETURN(ocs::tom::lookup_first_ulong(lp, pos, val, iterator));
+      DRETURN(ocs::tom::lookup_first<ocs::tom::FieldType::Uint32>(lp, pos, val, iterator));
    } catch (const ocs::tom::FieldException &e) {
       ocs::tom::legacy_abort("lGetElemUlongFirst", e);
    }
@@ -2780,6 +2829,7 @@ lListElem *lGetElemUlongFirstRW(const lList *lp, int nm, lUlong val, const void 
  * @return the matching element, or nullptr when there is none
  *
  * @see Typed form: ocs::tom::ConstList<T>::find_all() and ocs::tom::List<T>::find_all().
+ * @see Free form: ocs::tom::find_first<F>(lp, key, &iterator), for a constant field (CS-3045).
  */
 const lListElem *lGetElemUlongFirst(const lList *lp, int nm, lUlong val, const void **iterator) {
    return lGetElemUlongFirstRW(lp, nm, val, iterator);
@@ -2803,7 +2853,8 @@ const lListElem *lGetElemUlongFirst(const lList *lp, int nm, lUlong val, const v
  *
  * @see Typed form: ocs::tom::ConstList<T>::find_all() and ocs::tom::List<T>::find_all().
  *
- * @note The checks are here; the lookup is a thin wrapper over ocs::tom::lookup_next_ulong().
+ * @note The checks are here; the lookup is a thin wrapper over ocs::tom::lookup_next<ocs::tom::FieldType::Uint32>().
+ * @see Free form: ocs::tom::find_next_rw<F>(lp, key, &iterator), for a constant field (CS-3045).
  */
 lListElem *lGetElemUlongNextRW(const lList *lp, int nm, lUlong val, const void **iterator) {
    DENTER(CULL_LAYER);
@@ -2819,6 +2870,7 @@ lListElem *lGetElemUlongNextRW(const lList *lp, int nm, lUlong val, const void *
 
    /* run time type checking */
    if (pos < 0) {
+      ocs::tom::report_missing_field("lGetElemUlongNext", nm, lGetListDescr(lp));
       CRITICAL(MSG_CULL_GETELEMULONGERRORXRUNTIMETYPE_S, lNm2Str(nm));
       DRETURN(nullptr);
    }
@@ -2827,7 +2879,7 @@ lListElem *lGetElemUlongNextRW(const lList *lp, int nm, lUlong val, const void *
    if (mt_get_type(lp->descr[pos].mt) != lUlongT) {
       incompatibleType("lGetPosUlong");
    }
-   DRETURN(ocs::tom::lookup_next_ulong(lp, pos, val, iterator));
+   DRETURN(ocs::tom::lookup_next<ocs::tom::FieldType::Uint32>(lp, pos, val, iterator));
 }
 
 /**
@@ -2840,6 +2892,7 @@ lListElem *lGetElemUlongNextRW(const lList *lp, int nm, lUlong val, const void *
  * @return the matching element, or nullptr when there is none
  *
  * @see Typed form: ocs::tom::ConstList<T>::find_all() and ocs::tom::List<T>::find_all().
+ * @see Free form: ocs::tom::find_next<F>(lp, key, &iterator), for a constant field (CS-3045).
  */
 const lListElem *lGetElemUlongNext(const lList *lp, int nm, lUlong val, const void **iterator) {
    return lGetElemUlongNextRW(lp, nm, val, iterator);
@@ -2864,6 +2917,7 @@ const lListElem *lGetElemUlongNext(const lList *lp, int nm, lUlong val, const vo
  * @note A null element does nothing; an element without the list field aborts, as every lookup in a
  *       sub-list does (#ocs_sub_list_ref; before CS-3077 the add functions gave nullptr, the delete
  *       functions aborted on a null element).
+ * @see Free form: ocs::tom::emplace_back_in<LF, F>(ep, key), for a constant field (CS-3045).
  */
 lListElem *lAddSubUlong64(lListElem *ep, int nm, lUlong64 val, int snm, const lDescr *dp) {
    lList **lpp = ocs_sub_list_ref(ep, snm, "lAddSubUlong64");
@@ -2884,13 +2938,16 @@ lListElem *lAddSubUlong64(lListElem *ep, int nm, lUlong64 val, int snm, const lD
  * @return nullptr on error or pointer to the added element
  *
  * @see Typed form: ocs::tom::List<T>::emplace_back<F>(); a thin wrapper over ocs::tom::add_elem_ulong64() of the core.
+ * @see Free form: ocs::tom::emplace_back<F>(&lp, key), for a constant field (CS-3045).
+ * @note A list of another type, or reduced without the key field, gives the message for a field of another
+ *       type and nullptr; before CS-3045 the element was appended and the list held two types.
  */
 lListElem *lAddElemUlong64(lList **lpp, int nm, lUlong64 val, const lDescr *dp) {
    if (!lpp || !dp) {
       ocs::tom::report_soft_path("lAddElemUlong64", nm, ocs::tom::SoftPathReason::NullArgument);
       return nullptr;
    }
-   return ocs_add_by_key("lAddElemUlong64", MSG_CULL_ADDELEMULONG64ERRORXRUNTIMETYPE_S, nm, [&] { return ocs::tom::add_elem_ulong64(*lpp, nm, val, dp); });
+   return ocs_add_by_key("lAddElemUlong64", MSG_CULL_ADDELEMULONG64ERRORXRUNTIMETYPE_S, nm, *lpp != nullptr ? (*lpp)->descr : dp, [&] { return ocs::tom::add_elem_ulong64(*lpp, nm, val, dp); });
 }
 
 /**
@@ -2911,6 +2968,7 @@ lListElem *lAddElemUlong64(lList **lpp, int nm, lUlong64 val, const lDescr *dp) 
  * @note A null element does nothing; an element without the list field aborts, as every lookup in a
  *       sub-list does (#ocs_sub_list_ref; before CS-3077 the add functions gave nullptr, the delete
  *       functions aborted on a null element).
+ * @see Free form: ocs::tom::erase_in<LF, F>(ep, key), for a constant field (CS-3045).
  */
 int lDelSubUlong64(lListElem *ep, int nm, lUlong64 val, int snm) {
    lList **lpp = ocs_sub_list_ref(ep, snm, "lDelSubUlong64");
@@ -2932,6 +2990,7 @@ int lDelSubUlong64(lListElem *ep, int nm, lUlong64 val, int snm) {
  *         removed or *lpp is nullptr (before CS-3077: 1 whether or not an element was found)
  *
  * @see Typed form: ocs::tom::List<T>::erase<F>(key), which leaves an emptied list in place; a thin wrapper over ocs::tom::remove_elem_ulong64() of the core.
+ * @see Free form: ocs::tom::erase<F>(&lp, key), for a constant field (CS-3045).
  */
 int lDelElemUlong64(lList **lpp, int nm, lUlong64 val) {
    return ocs_del_by_key(lpp, "lDelElemUlong64", [&](lList *lp) { return ocs::tom::remove_elem_ulong64(lp, nm, val); });
@@ -2953,6 +3012,7 @@ int lDelElemUlong64(lList **lpp, int nm, lUlong64 val) {
  * @see Typed form: element.get<F>().find_first<G>().
  *
  * @note Every lookup in a sub-list treats a null element alike and finds nothing (#ocs_sub_list).
+ * @see Free form: ocs::tom::find_first_in_rw<LF, F>(ep, key), for a constant field (CS-3045).
  */
 lListElem *lGetSubUlong64RW(const lListElem *ep, int nm, lUlong64 val, int snm) {
    return lGetElemUlong64RW(ocs_sub_list(ep, snm, "lGetSubUlong64"), nm, val);
@@ -2968,6 +3028,7 @@ lListElem *lGetSubUlong64RW(const lListElem *ep, int nm, lUlong64 val, int snm) 
  * @return the matching element, or nullptr when there is none
  *
  * @see Typed form: element.get<F>().find_first<G>().
+ * @see Free form: ocs::tom::find_first_in<LF, F>(ep, key), for a constant field (CS-3045).
  */
 const lListElem *lGetSubUlong64(const lListElem *ep, int nm, lUlong64 val, int snm) {
    return lGetSubUlong64RW(ep, nm, val, snm);
@@ -2982,6 +3043,7 @@ const lListElem *lGetSubUlong64(const lListElem *ep, int nm, lUlong64 val, int s
  * @return the matching element, or nullptr when there is none
  *
  * @see Typed form: ocs::tom::ConstList<T>::find_first() and ocs::tom::List<T>::find_first().
+ * @see Free form: ocs::tom::find_first_rw<F>(lp, key), for a constant field (CS-3045).
  */
 lListElem *lGetElemUlong64RW(const lList *lp, int nm, lUlong64 val) {
    const void *iterator = nullptr;
@@ -2997,6 +3059,7 @@ lListElem *lGetElemUlong64RW(const lList *lp, int nm, lUlong64 val) {
  * @return the matching element, or nullptr when there is none
  *
  * @see Typed form: ocs::tom::ConstList<T>::find_first() and ocs::tom::List<T>::find_first().
+ * @see Free form: ocs::tom::find_first<F>(lp, key), for a constant field (CS-3045).
  */
 const lListElem *lGetElemUlong64(const lList *lp, int nm, lUlong64 val) {
    return lGetElemUlong64RW(lp, nm, val);
@@ -3021,6 +3084,7 @@ const lListElem *lGetElemUlong64(const lList *lp, int nm, lUlong64 val) {
  * @return element or nullptr
  *
  * @see Typed form: ocs::tom::ConstList<T>::find_all() and ocs::tom::List<T>::find_all().
+ * @see Free form: ocs::tom::find_first_rw<F>(lp, key, &iterator), for a constant field (CS-3045).
  */
 lListElem *lGetElemUlong64FirstRW(const lList *lp, int nm, lUlong64 val, const void **iterator) {
    DENTER(CULL_LAYER);
@@ -3037,13 +3101,18 @@ lListElem *lGetElemUlong64FirstRW(const lList *lp, int nm, lUlong64 val, const v
 
    /* run time type checking */
    if (pos < 0) {
+      ocs::tom::report_missing_field("lGetElemUlong64First", nm, lGetListDescr(lp));
       CRITICAL(MSG_CULL_GETELEMULONG64ERRORXRUNTIMETYPE_S, lNm2Str(nm));
       DRETURN(nullptr);
    }
 
+   // the field's type, which the old linear search checked on reading each element; the core reads the slots
+   if (mt_get_type(lp->descr[pos].mt) != lUlong64T) {
+      incompatibleType("lGetPosUlong64");
+   }
    // the core searches; a repeated key of a unique field ends the process here (N-H-18, N-L-2)
    try {
-      DRETURN(ocs::tom::lookup_first_ulong64(lp, pos, val, iterator));
+      DRETURN(ocs::tom::lookup_first<ocs::tom::FieldType::Uint64>(lp, pos, val, iterator));
    } catch (const ocs::tom::FieldException &e) {
       ocs::tom::legacy_abort("lGetElemUlong64First", e);
    }
@@ -3059,6 +3128,7 @@ lListElem *lGetElemUlong64FirstRW(const lList *lp, int nm, lUlong64 val, const v
  * @return the matching element, or nullptr when there is none
  *
  * @see Typed form: ocs::tom::ConstList<T>::find_all() and ocs::tom::List<T>::find_all().
+ * @see Free form: ocs::tom::find_first<F>(lp, key, &iterator), for a constant field (CS-3045).
  */
 const lListElem *lGetElemUlong64First(const lList *lp, int nm, lUlong64 val, const void **iterator) {
    return lGetElemUlong64FirstRW(lp, nm, val, iterator);
@@ -3082,7 +3152,8 @@ const lListElem *lGetElemUlong64First(const lList *lp, int nm, lUlong64 val, con
  *
  * @see Typed form: ocs::tom::ConstList<T>::find_all() and ocs::tom::List<T>::find_all().
  *
- * @note The checks are here; the lookup is a thin wrapper over ocs::tom::lookup_next_ulong64().
+ * @note The checks are here; the lookup is a thin wrapper over ocs::tom::lookup_next<ocs::tom::FieldType::Uint64>().
+ * @see Free form: ocs::tom::find_next_rw<F>(lp, key, &iterator), for a constant field (CS-3045).
  */
 lListElem *lGetElemUlong64NextRW(const lList *lp, int nm, lUlong64 val, const void **iterator) {
    DENTER(CULL_LAYER);
@@ -3098,6 +3169,7 @@ lListElem *lGetElemUlong64NextRW(const lList *lp, int nm, lUlong64 val, const vo
 
    /* run time type checking */
    if (pos < 0) {
+      ocs::tom::report_missing_field("lGetElemUlong64Next", nm, lGetListDescr(lp));
       CRITICAL(MSG_CULL_GETELEMULONG64ERRORXRUNTIMETYPE_S, lNm2Str(nm));
       DRETURN(nullptr);
    }
@@ -3106,7 +3178,7 @@ lListElem *lGetElemUlong64NextRW(const lList *lp, int nm, lUlong64 val, const vo
    if (mt_get_type(lp->descr[pos].mt) != lUlong64T) {
       incompatibleType("lGetPosUlong64");
    }
-   DRETURN(ocs::tom::lookup_next_ulong64(lp, pos, val, iterator));
+   DRETURN(ocs::tom::lookup_next<ocs::tom::FieldType::Uint64>(lp, pos, val, iterator));
 }
 
 /**
@@ -3119,6 +3191,7 @@ lListElem *lGetElemUlong64NextRW(const lList *lp, int nm, lUlong64 val, const vo
  * @return the matching element, or nullptr when there is none
  *
  * @see Typed form: ocs::tom::ConstList<T>::find_all() and ocs::tom::List<T>::find_all().
+ * @see Free form: ocs::tom::find_next<F>(lp, key, &iterator), for a constant field (CS-3045).
  */
 const lListElem *lGetElemUlong64Next(const lList *lp, int nm, lUlong64 val, const void **iterator) {
    return lGetElemUlong64NextRW(lp, nm, val, iterator);
@@ -3151,12 +3224,14 @@ lListElem *lGetSubCaseStr(const lListElem *ep, int nm, const char *str,
  * @return the matching element, or nullptr when there is none
  *
  * @see Typed form: ocs::tom::List<T>::find_first_nocase(); a thin wrapper over ocs::tom::lookup_first_str_nocase() of the core.
+ * @see Free form: ocs::tom::find_first_nocase_rw<F>(lp, value), for a constant field (CS-3045).
  */
 lListElem *lGetElemCaseStrRW(const lList *lp, int nm, const char *str) {
    DENTER(CULL_LAYER);
    try {
       DRETURN(ocs::tom::lookup_first_str_nocase(lp, nm, str));
    } catch (const ocs::tom::FieldException &) {
+      ocs::tom::report_missing_field("lGetElemCaseStr", nm, lp != nullptr ? lp->descr : nullptr);
       CRITICAL(MSG_CULL_GETELEMCASESTRERRORXRUNTIMETYPE_S, lNm2Str(nm));
    }
    DRETURN(nullptr);
@@ -3171,6 +3246,7 @@ lListElem *lGetElemCaseStrRW(const lList *lp, int nm, const char *str) {
  * @return the matching element, or nullptr when there is none
  *
  * @see Typed form: ocs::tom::ConstList<T>::find_first_nocase().
+ * @see Free form: ocs::tom::find_first_nocase<F>(lp, value), for a constant field (CS-3045).
  */
 const lListElem *lGetElemCaseStr(const lList *lp, int nm, const char *str) {
    return lGetElemCaseStrRW(lp, nm, str);
@@ -3185,6 +3261,7 @@ const lListElem *lGetElemCaseStr(const lList *lp, int nm, const char *str) {
  * @return the matching element, or nullptr when there is none
  *
  * @see Typed form: ocs::tom::ConstList<T>::find_first() and ocs::tom::List<T>::find_first().
+ * @see Free form: ocs::tom::find_first_rw<F>(lp, key), for a constant field (CS-3045).
  */
 lListElem *lGetElemHostRW(const lList *lp, int nm, const char *str) {
    const void *iterator = nullptr;
@@ -3200,6 +3277,7 @@ lListElem *lGetElemHostRW(const lList *lp, int nm, const char *str) {
  * @return the matching element, or nullptr when there is none
  *
  * @see Typed form: ocs::tom::ConstList<T>::find_first() and ocs::tom::List<T>::find_first().
+ * @see Free form: ocs::tom::find_first<F>(lp, key), for a constant field (CS-3045).
  */
 const lListElem *lGetElemHost(const lList *lp, int nm, const char *str) {
    return lGetElemHostRW(lp, nm, str);
@@ -3221,6 +3299,7 @@ const lListElem *lGetElemHost(const lList *lp, int nm, const char *str) {
  * @return element or nullptr
  *
  * @see Typed form: ocs::tom::ConstList<T>::find_all() and ocs::tom::List<T>::find_all().
+ * @see Free form: ocs::tom::find_first_rw<F>(lp, key, &iterator), for a constant field (CS-3045).
  */
 lListElem *lGetElemHostFirstRW(const lList *lp, int nm, const char *str, const void **iterator) {
    DENTER(TOP_LAYER);
@@ -3243,13 +3322,14 @@ lListElem *lGetElemHostFirstRW(const lList *lp, int nm, const char *str, const v
       if (data_type != lHostT) {
          DPRINTF(":::::::::::::::: lGetElemHostFirst - data type is not lHostT !!! :::::::\n");
       }
+      ocs::tom::report_missing_field("lGetElemHostFirst", nm, listDescriptor);
       CRITICAL(MSG_CULL_GETELEMHOSTERRORXRUNTIMETYPE_S, lNm2Str(nm));
       DRETURN(nullptr);
    }
 
    // the core searches; a repeated key of a unique field ends the process here (N-H-18, N-L-2)
    try {
-      DRETURN(ocs::tom::lookup_first_host(lp, pos, str, iterator));
+      DRETURN(ocs::tom::lookup_first<ocs::tom::FieldType::Host>(lp, pos, str, iterator));
    } catch (const ocs::tom::FieldException &e) {
       ocs::tom::legacy_abort("lGetElemHostFirst", e);
    }
@@ -3265,6 +3345,7 @@ lListElem *lGetElemHostFirstRW(const lList *lp, int nm, const char *str, const v
  * @return the matching element, or nullptr when there is none
  *
  * @see Typed form: ocs::tom::ConstList<T>::find_all() and ocs::tom::List<T>::find_all().
+ * @see Free form: ocs::tom::find_first<F>(lp, key, &iterator), for a constant field (CS-3045).
  */
 const lListElem *lGetElemHostFirst(const lList *lp, int nm, const char *str, const void **iterator) {
    return lGetElemHostFirstRW(lp, nm, str, iterator);
@@ -3284,7 +3365,8 @@ const lListElem *lGetElemHostFirst(const lList *lp, int nm, const char *str, con
  *
  * @see Typed form: ocs::tom::ConstList<T>::find_all() and ocs::tom::List<T>::find_all().
  *
- * @note The checks are here; the lookup is a thin wrapper over ocs::tom::lookup_next_host().
+ * @note The checks are here; the lookup is a thin wrapper over ocs::tom::lookup_next<ocs::tom::FieldType::Host>().
+ * @see Free form: ocs::tom::find_next_rw<F>(lp, key, &iterator), for a constant field (CS-3045).
  */
 lListElem *lGetElemHostNextRW(const lList *lp, int nm, const char *str, const void **iterator) {
    DENTER(TOP_LAYER);
@@ -3303,6 +3385,7 @@ lListElem *lGetElemHostNextRW(const lList *lp, int nm, const char *str, const vo
    listDescriptor = lGetListDescr(lp);
    pos = lGetPosInDescr(listDescriptor, nm);
    if (pos < 0) {
+      ocs::tom::report_missing_field("lGetElemHostNext", nm, listDescriptor);
       CRITICAL(MSG_CULL_GETELEMHOSTERRORXRUNTIMETYPE_S, lNm2Str(nm));
       DRETURN(nullptr);
    }
@@ -3311,7 +3394,7 @@ lListElem *lGetElemHostNextRW(const lList *lp, int nm, const char *str, const vo
    if (mt_get_type(lp->descr[pos].mt) != lHostT) {
       incompatibleType("lGetPosHost");
    }
-   DRETURN(ocs::tom::lookup_next_host(lp, pos, str, iterator));
+   DRETURN(ocs::tom::lookup_next<ocs::tom::FieldType::Host>(lp, pos, str, iterator));
 }
 
 /**
@@ -3324,6 +3407,7 @@ lListElem *lGetElemHostNextRW(const lList *lp, int nm, const char *str, const vo
  * @return the matching element, or nullptr when there is none
  *
  * @see Typed form: ocs::tom::ConstList<T>::find_all() and ocs::tom::List<T>::find_all().
+ * @see Free form: ocs::tom::find_next<F>(lp, key, &iterator), for a constant field (CS-3045).
  */
 const lListElem *lGetElemHostNext(const lList *lp, int nm, const char *str, const void **iterator) {
    return lGetElemHostNextRW(lp, nm, str, iterator);
@@ -3341,6 +3425,7 @@ const lListElem *lGetElemHostNext(const lList *lp, int nm, const char *str, cons
  * @see Typed form: element.get<F>().find_first<G>().
  *
  * @note Every lookup in a sub-list treats a null element alike and finds nothing (#ocs_sub_list).
+ * @see Free form: ocs::tom::find_first_in_rw<LF, F>(ep, key), for a constant field (CS-3045).
  */
 lListElem *lGetSubHostRW(const lListElem *ep, int nm, const char *str, int snm) {
    return lGetElemHostRW(ocs_sub_list(ep, snm, "lGetSubHost"), nm, str);
@@ -3356,6 +3441,7 @@ lListElem *lGetSubHostRW(const lListElem *ep, int nm, const char *str, int snm) 
  * @return the matching element, or nullptr when there is none
  *
  * @see Typed form: element.get<F>().find_first<G>().
+ * @see Free form: ocs::tom::find_first_in<LF, F>(ep, key), for a constant field (CS-3045).
  */
 const lListElem *lGetSubHost(const lListElem *ep, int nm, const char *str, int snm) {
    return lGetSubHostRW(ep, nm, str, snm);
@@ -3376,6 +3462,7 @@ const lListElem *lGetSubHost(const lListElem *ep, int nm, const char *str, int s
  * @return 1 if the host element was found and removed 0 in case of an error
  *
  * @see Typed form: ocs::tom::List<T>::erase<F>(key), which leaves an emptied list in place; a thin wrapper over ocs::tom::remove_elem_host() of the core.
+ * @see Free form: ocs::tom::erase<F>(&lp, key), for a constant field (CS-3045).
  */
 int lDelElemHost(lList **lpp, int nm, const char *str) {
    if (str == nullptr) {
@@ -3420,6 +3507,7 @@ int lGetPosName(const lDescr *dp, int pos) {
  * @return true when at least one bit of @p bitmask is set in the field. A field
  *         of another type is a programming error and aborts the process
  *         (#incompatibleType2).
+ * @see Free form: ocs::tom::has_bits<F>(ep, mask), for a constant field (CS-3045).
  */
 bool lMatchUlongBitMask(lListElem *ep, int nm, uint32_t bitmask) {
    DENTER(CULL_BASIS_LAYER);
@@ -3438,6 +3526,7 @@ bool lMatchUlongBitMask(lListElem *ep, int nm, uint32_t bitmask) {
  * @return 0 on success, -1 with LEELEMNULL for a null element.
  *         A field the element does not hold or of another field
  *         type is a programming error and aborts the process (N-L-4, CS-3062).
+ * @see Free form: ocs::tom::or_bits<F>(ep, mask), for a constant field (CS-3045).
  */
 int lOrUlongBitMask(lListElem *ep, int nm, uint32_t bitmask) {
    DENTER(CULL_BASIS_LAYER);
@@ -3460,6 +3549,7 @@ int lOrUlongBitMask(lListElem *ep, int nm, uint32_t bitmask) {
  * @return 0 on success, -1 with LEELEMNULL for a null element.
  *         A field the element does not hold or of another field
  *         type is a programming error and aborts the process (N-L-4, CS-3062).
+ * @see Free form: ocs::tom::and_bits<F>(ep, mask), for a constant field (CS-3045).
  */
 int lAndUlongBitMask(lListElem *ep, int nm, uint32_t bitmask) {
    DENTER(CULL_BASIS_LAYER);
@@ -3482,6 +3572,7 @@ int lAndUlongBitMask(lListElem *ep, int nm, uint32_t bitmask) {
  * @return 0 on success, -1 with LEELEMNULL for a null element.
  *         A field the element does not hold or of another field
  *         type is a programming error and aborts the process (N-L-4, CS-3062).
+ * @see Free form: ocs::tom::clear_bits<F>(ep, mask), for a constant field (CS-3045).
  */
 int lClearUlongBitMask(lListElem *ep, int nm, uint32_t bitmask) {
    DENTER(CULL_BASIS_LAYER);

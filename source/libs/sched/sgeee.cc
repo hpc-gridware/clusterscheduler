@@ -86,6 +86,7 @@
 #include "sge_urgency.h"
 #include "sgeee.h"
 #include "sgeobj/cull/sge_eejob_FCAT_L.h"
+#include "tom/ocs_Element.h"
 
 /*
  * Following fields are necessary for tasks which are not
@@ -426,93 +427,101 @@ static void task_ref_copy_to_ja_task(sge_task_ref_t *tref, lListElem *ja_task) {
  * @{
  */
 
-/** Sets one value, on the task element or in the task reference */
-#define __REF_SET_TYPE(ref, cull_attr, ref_attr, value, function) \
-{ \
-   if ((ref)->ja_task) { \
-      (function)((ref)->ja_task, cull_attr, (value)); \
-   } else { \
-      (ref_attr) = (value); \
-   } \
+/**
+ * @brief Read one ticket value of a job, from the task element or from the task reference
+ *
+ * The value in the task reference is named by a member pointer and read only
+ * when no array task is enrolled: then the job's task reference exists, and
+ * otherwise it may be nullptr, as the macro this replaces relied on.
+ *
+ * @tparam F the field of the array task (`JAT_Type`)
+ * @tparam T the type of the value in the task reference
+ * @param ref the job's entry
+ * @param ref_attr the member of the task reference that holds the value when no array task is enrolled
+ * @return the value
+ */
+template <auto F, typename T>
+static inline T ocs_ref_get(const sge_ref_t *ref, T sge_task_ref_t::*ref_attr) {
+   return ref->ja_task != nullptr ? static_cast<T>(ocs::tom::get<F>(ref->ja_task)) : ref->tref->*ref_attr;
 }
 
-/** Reads one value, from the task element or from the task reference */
-#define __REF_GET_TYPE(ref, cull_attr, ref_attr, function) \
-   ((ref)->ja_task ? (function)((ref)->ja_task, cull_attr) : (ref_attr))
-
-/** Sets an unsigned value, see #__REF_SET_TYPE */
-#define __REF_SET_ULONG(ref, cull_attr, ref_attr, value) \
-   __REF_SET_TYPE(ref, cull_attr, ref_attr, value, lSetUlong)
-
-/** Sets a floating point value, see #__REF_SET_TYPE */
-#define __REF_SET_DOUBLE(ref, cull_attr, ref_attr, value) \
-   __REF_SET_TYPE(ref, cull_attr, ref_attr, value, lSetDouble)
-
-/** Reads an unsigned value, see #__REF_GET_TYPE */
-#define __REF_GET_ULONG(ref, cull_attr, ref_attr) \
-   __REF_GET_TYPE(ref, cull_attr, ref_attr, lGetUlong)
-
-/** Reads a floating point value, see #__REF_GET_TYPE */
-#define __REF_GET_DOUBLE(ref, cull_attr, ref_attr) \
-   __REF_GET_TYPE(ref, cull_attr, ref_attr, lGetDouble)
+/**
+ * @brief Set one ticket value of a job, on the task element or in the task reference
+ *
+ * The task reference is touched only when no array task is enrolled, see
+ * #ocs_ref_get.
+ *
+ * @tparam F the field of the array task (`JAT_Type`)
+ * @tparam T the type of the value in the task reference
+ * @param ref the job's entry
+ * @param ref_attr the member of the task reference that holds the value when no array task is enrolled
+ * @param value the new value
+ */
+template <auto F, typename T>
+static inline void ocs_ref_set(const sge_ref_t *ref, T sge_task_ref_t::*ref_attr, const T value) {
+   if (ref->ja_task != nullptr) {
+      ocs::tom::set<F>(ref->ja_task, value);
+   } else {
+      ref->tref->*ref_attr = value;
+   }
+}
 
 /** Array task id of the job */
 #define REF_GET_JA_TASK_NUMBER(ref) \
-   __REF_GET_ULONG((ref), JAT_task_number, (ref)->tref->ja_task_number)
+   ocs_ref_get<JAT_task_number>((ref), &sge_task_ref_t::ja_task_number)
 
 /** Sets the array task id of the job */
 #define REF_SET_JA_TASK_NUMBER(ref, ja_task_id) \
-   __REF_SET_ULONG((ref), JAT_task_number, (ref)->tref->ja_task_number, \
-                   (ja_task_id))
+   ocs_ref_set<JAT_task_number>((ref), &sge_task_ref_t::ja_task_number, static_cast<uint32_t>(ja_task_id))
 
 /** Functional tickets of the job */
 #define REF_GET_FTICKET(ref) \
-   __REF_GET_DOUBLE((ref), JAT_fticket, (ref)->tref->ja_task_fticket)
+   ocs_ref_get<JAT_fticket>((ref), &sge_task_ref_t::ja_task_fticket)
 
 /** Share tree tickets of the job */
 #define REF_GET_STICKET(ref) \
-   __REF_GET_DOUBLE((ref), JAT_sticket, (ref)->tref->ja_task_sticket)
+   ocs_ref_get<JAT_sticket>((ref), &sge_task_ref_t::ja_task_sticket)
 
 /** Override tickets of the job */
 #define REF_GET_OTICKET(ref) \
-   __REF_GET_DOUBLE((ref), JAT_oticket, (ref)->tref->ja_task_oticket)
+   ocs_ref_get<JAT_oticket>((ref), &sge_task_ref_t::ja_task_oticket)
 
 /** Total tickets of the job */
 #define REF_GET_TICKET(ref) \
-   __REF_GET_DOUBLE((ref), JAT_tix, (ref)->tref->ja_task_ticket)
+   ocs_ref_get<JAT_tix>((ref), &sge_task_ref_t::ja_task_ticket)
 
 /** Share of the job */
 #define REF_GET_SHARE(ref) \
-   __REF_GET_DOUBLE((ref), JAT_share, (ref)->tref->ja_task_share)
+   ocs_ref_get<JAT_share>((ref), &sge_task_ref_t::ja_task_share)
 
 /** Functional share of the job */
 #define REF_GET_FSHARE(ref) \
-   __REF_GET_ULONG((ref), JAT_fshare, (ref)->tref->ja_task_fshare)
+   ocs_ref_get<JAT_fshare>((ref), &sge_task_ref_t::ja_task_fshare)
 
 
 /** Sets the functional tickets of the job */
 #define REF_SET_FTICKET(ref, ticket) \
-   __REF_SET_DOUBLE((ref), JAT_fticket, (ref)->tref->ja_task_fticket, (ticket))
+   ocs_ref_set<JAT_fticket>((ref), &sge_task_ref_t::ja_task_fticket, static_cast<double>(ticket))
 
 /** Sets the share tree tickets of the job */
 #define REF_SET_STICKET(ref, ticket) \
-   __REF_SET_DOUBLE((ref), JAT_sticket, (ref)->tref->ja_task_sticket, (ticket))
+   ocs_ref_set<JAT_sticket>((ref), &sge_task_ref_t::ja_task_sticket, static_cast<double>(ticket))
 
 /** Sets the override tickets of the job */
 #define REF_SET_OTICKET(ref, ticket) \
-   __REF_SET_DOUBLE((ref), JAT_oticket, (ref)->tref->ja_task_oticket, (ticket))
+   ocs_ref_set<JAT_oticket>((ref), &sge_task_ref_t::ja_task_oticket, static_cast<double>(ticket))
 
 /** Sets the total tickets of the job */
 #define REF_SET_TICKET(ref, ticket) \
-   __REF_SET_DOUBLE((ref), JAT_tix, (ref)->tref->ja_task_ticket, (ticket))
+   ocs_ref_set<JAT_tix>((ref), &sge_task_ref_t::ja_task_ticket, static_cast<double>(ticket))
 
 /** Sets the share of the job */
 #define REF_SET_SHARE(ref, share) \
-   __REF_SET_DOUBLE((ref), JAT_share, (ref)->tref->ja_task_share, (share))
+   ocs_ref_set<JAT_share>((ref), &sge_task_ref_t::ja_task_share, static_cast<double>(share))
 
 /** Sets the functional share of the job */
 #define REF_SET_FSHARE(ref, fshare) \
-   __REF_SET_ULONG((ref), JAT_fshare, (ref)->tref->ja_task_fshare, (fshare))
+   ocs_ref_set<JAT_fshare>((ref), &sge_task_ref_t::ja_task_fshare, static_cast<uint32_t>(fshare))
 /** @} */
 
 

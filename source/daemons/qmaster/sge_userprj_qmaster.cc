@@ -203,7 +203,7 @@ userprj_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListE
       if ((pos = lGetPosViaElem(ep, UU_default_project, SGE_NO_ABORT)) >= 0) {
          const char *dproj;
 
-         NULL_OUT_NONE(ep, UU_default_project);
+         ocs_null_out_none<UU_default_project>(ep);
          /* make sure default project exists */
          if ((dproj = lGetPosString(ep, pos))) {
             const lList *master_project_list = *ocs::DataStore::get_master_list(SGE_TYPE_PROJECT);

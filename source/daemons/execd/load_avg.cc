@@ -867,16 +867,17 @@ void update_job_usage(const char *qualified_hostname) {
    DRETURN_VOID;
 }
 
-// @brief calculate the reserved memory
-//
-// @param queue the queue element
-// @param nslots the number of slots
-// @param h_nm the name of the hard resource queue limit
-// @param s_nm the name of the soft resource queue limit
-//
-// @return the reserved memory
+/**
+ * @brief Calculate the reserved memory
+ *
+ * @param queue the queue element, read only
+ * @param nslots the number of slots
+ * @param h_nm the name of the hard resource queue limit
+ * @param s_nm the name of the soft resource queue limit
+ * @return the reserved memory
+ */
 static double
-calculate_reserved_memory(lListElem *queue, int nslots, int h_nm, int s_nm) {
+calculate_reserved_memory(const lListElem *queue, int nslots, int h_nm, int s_nm) {
    double mem = 0.0;
 
 
@@ -1100,13 +1101,27 @@ static void get_reserved_usage(const char *qualified_hostname, lList **job_usage
    DRETURN_VOID;
 }
 
+/**
+ * @brief Add the memory a job reserved in one queue to its usage
+ *
+ * Sums up the memory usage (the integral of the current memory over the
+ * wallclock time) and the maximum vmem and rss, assuming the job uses all
+ * memory its queue limits reserve.
+ *
+ * @param gdil_ep the granted destination identifier element of the queue
+ * @param slots the number of slots granted in the queue
+ * @param wallclock the wallclock time the job ran
+ * @param mem the memory usage to add to, in GB seconds
+ * @param maxvmem the maximum vmem to add to
+ * @param maxrss the maximum rss to add to
+ */
 static void build_reserved_mem_usage(const lListElem *gdil_ep, int slots, double wallclock, double *mem, double *maxvmem,
                                      double *maxrss) {
    /* 
     * sum up memory usage (integral current memory * wallclock time)
     * and maxvmem (assume it is vmem)
     */
-   lListElem *queue = lGetObject(gdil_ep, JG_queue);
+   const lListElem *queue = lGetObject(gdil_ep, JG_queue);
    double vmem = calculate_reserved_memory(queue, slots, QU_h_vmem, QU_s_vmem);
    *mem += vmem * wallclock / (1024*1024*1024);
    *maxvmem += vmem;

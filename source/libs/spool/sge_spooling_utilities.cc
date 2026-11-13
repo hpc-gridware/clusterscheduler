@@ -495,7 +495,7 @@ bool spool_default_validate_func(lList **answer_list,
          }
          break;
       case SGE_TYPE_USER:
-         NULL_OUT_NONE(object, UU_default_project);
+         ocs_null_out_none<UU_default_project>(object);
          break;
       case SGE_TYPE_HGROUP:
       case SGE_TYPE_CALENDAR:
@@ -590,69 +590,34 @@ spool_default_validate_list_func(lList **answer_list,
 }
 
 /**
- * @brief Move the dynamic load values aside before an exec host is spooled
+ * @brief A copy of an exec host to spool, without its dynamic load values
  *
- * Strips all dynamic (non-static) load values from the EH_load_list of an
- * exec host object before it is spooled. Only static load values shall be
- * persisted; dynamic load values are volatile and will be reported again by
- * the execution daemon once it (re)connects.
- *
- * The dynamic load values are moved (not copied) out of the object's load
- * list into a backup list which is returned to the caller. The caller has to
- * restore them after the object has been written by passing the backup to
- * #spool_exechost_restore_load_list.
+ * Only static load values shall be persisted (CS-1597); dynamic load values
+ * are volatile and will be reported again by the execution daemon once it
+ * (re)connects. The spooling backends write this copy instead of the object,
+ * which stays as it is: before, they moved the dynamic values out of the
+ * object and back in after the write, which changed the order of its
+ * EH_load_list and wrote through a const object.
  *
  * @param object the exec host object (`EH_Type`)
- *
- * @return the stripped dynamic load values, or nullptr if there were none
+ * @return the copy, owned by the caller
  */
-lList *
-spool_exechost_strip_dynamic_load(const lListElem *object) {
+lListElem *
+ocs_spool_exechost_static_copy(const lListElem *object) {
    DENTER(TOP_LAYER);
 
-   lList *load_list = lGetListRW(object, EH_load_list);
-   if (load_list == nullptr) {
-      DRETURN(nullptr);
-   }
-
-   // move the dynamic load values out of the object's load list into the backup list
-   lList *backup_load_list = nullptr;
-   lListElem *load_value, *next_load_value;
-   next_load_value = lFirstRW(load_list);
-   while ((load_value = next_load_value) != nullptr) {
-      next_load_value = lNextRW(load_value);
-      if (!lGetBool(load_value, HL_is_static)) {
-         lDechainElem(load_list, load_value);
-         if (backup_load_list == nullptr) {
-            backup_load_list = lCreateList(lGetListName(load_list), lGetListDescr(load_list));
+   lListElem *copy = lCopyElem(object);
+   if (lList *load_list = lGetListRW(copy, EH_load_list); load_list != nullptr) {
+      lListElem *load_value;
+      lListElem *next_load_value = lFirstRW(load_list);
+      while ((load_value = next_load_value) != nullptr) {
+         next_load_value = lNextRW(load_value);
+         if (!lGetBool(load_value, HL_is_static)) {
+            lRemoveElem(load_list, &load_value);
          }
-         lAppendElem(backup_load_list, load_value);
       }
    }
 
-   DRETURN(backup_load_list);
-}
-
-/**
- * @brief Put the dynamic load values back after the exec host was spooled
- *
- * Restores the dynamic load values of an exec host object that were
- * previously moved aside with #spool_exechost_strip_dynamic_load. The backup
- * list is appended back to the object's EH_load_list and freed; the
- * backup_load_list pointer is set to nullptr.
- *
- * @param object            the exec host object (`EH_Type`)
- * @param backup_load_list  the values returned by
- *                          #spool_exechost_strip_dynamic_load, set to nullptr
- */
-void
-spool_exechost_restore_load_list(const lListElem *object, lList **backup_load_list) {
-   DENTER(TOP_LAYER);
-
-   if (backup_load_list != nullptr && *backup_load_list != nullptr) {
-      lAddList(lGetListRW(object, EH_load_list), backup_load_list);
-   }
-
-   DRETURN_VOID;
+   DRETURN(copy);
 }
 

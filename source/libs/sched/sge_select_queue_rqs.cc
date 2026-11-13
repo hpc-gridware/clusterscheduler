@@ -825,7 +825,7 @@ dispatch_t rqs_by_slots(sge_assignment_t *a, const char *queue, const char *host
 void rqs_expand_cqueues(const lListElem *rule, sge_assignment_t *a) {
    DENTER(TOP_LAYER);
 
-   lListElem *qfilter = lGetObject(rule, RQR_filter_queues);
+   const lListElem *qfilter = lGetObject(rule, RQR_filter_queues);
 
    for_each_ep_lv(cq, *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE)) {
       const char *cqname = lGetString(cq, CQ_name);
@@ -850,7 +850,7 @@ void rqs_expand_cqueues(const lListElem *rule, sge_assignment_t *a) {
  * @note MT-NOTE: rqs_expand_hosts() is MT safe
  */
 void rqs_expand_hosts(const lListElem *rule, sge_assignment_t *a) {
-   lListElem *hfilter = lGetObject(rule, RQR_filter_hosts);
+   const lListElem *hfilter = lGetObject(rule, RQR_filter_hosts);
 
    for_each_ep_lv(eh, a->host_list) {
       const char *hname = lGetHost(eh, EH_name);

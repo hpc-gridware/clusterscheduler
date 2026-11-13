@@ -63,6 +63,44 @@ namespace ocs::tom {
                             FieldTraits<F>::type == FieldType::String || FieldTraits<F>::type == FieldType::Host;
 
       /**
+       * @brief The position of a field in a descriptor, known at compile time, or -1 if the descriptor does not hold it
+       *
+       * Inline, as the free accessors check: a descriptor of another type
+       * starts with another field number, and a reduced descriptor marks a
+       * field it does not hold as absent. Gives what present_pos() gives,
+       * without a call.
+       *
+       * @tparam F the field
+       * @param descr the descriptor, or nullptr
+       * @return the field's position, or -1
+       */
+      template <auto F>
+      [[nodiscard]] inline int typed_pos(const lDescr *descr) noexcept {
+         using Tr = FieldTraits<F>;
+         if (descr == nullptr || descr[0].nm != Tr::Type::fields[0].nm ||
+             descr[Tr::pos].off == OCS_CULL_ABSENT) [[unlikely]] {
+            return -1;
+         }
+         return Tr::pos;
+      }
+
+      /**
+       * @brief The position of a field in the descriptor of a list of the field's type, known at compile time
+       * @tparam F the field
+       * @param lp the list, not nullptr
+       * @return the field's position
+       * @throw FieldException with reason AbsentField if the list is reduced without the field
+       */
+      template <auto F>
+      [[nodiscard]] inline int present_pos_of(const lList *lp) {
+         const int pos = typed_pos<F>(lp->descr);
+         if (pos < 0) [[unlikely]] {
+            throw_field_exception(FieldException::Reason::AbsentField, F, lp->descr);
+         }
+         return pos;
+      }
+
+      /**
        * @brief The first element of a list with a key in a field, through the lookup of the core
        *
        * A key held twice in a unique field throws, where the old lookup
@@ -79,19 +117,14 @@ namespace ocs::tom {
       template <auto F>
       inline lListElem *lookup_first(const lList *lp, const KeyOf<F> key, const void **iterator) {
          *iterator = nullptr;
-         const int pos = field_pos(lp->descr, F);
-         if (pos < 0) [[unlikely]] {
-            throw_field_exception(FieldException::Reason::AbsentField, F, lp->descr);
-         }
+         const int pos = present_pos_of<F>(lp);
          constexpr FieldType type = FieldTraits<F>::type;
-         if constexpr (type == FieldType::Uint32) {
-            return lookup_first_ulong(lp, pos, key, iterator);
-         } else if constexpr (type == FieldType::Uint64) {
-            return lookup_first_ulong64(lp, pos, key, iterator);
-         } else if constexpr (type == FieldType::String) {
-            return key != nullptr ? lookup_first_str(lp, pos, key, iterator) : nullptr;
+         if constexpr (type == FieldType::String) {
+            return key != nullptr ? ocs::tom::lookup_first<type>(lp, pos, key, iterator) : nullptr;
+         } else if constexpr (type == FieldType::Host) {
+            return key.c_str() != nullptr ? ocs::tom::lookup_first<type>(lp, pos, key.c_str(), iterator) : nullptr;
          } else {
-            return key.c_str() != nullptr ? lookup_first_host(lp, pos, key.c_str(), iterator) : nullptr;
+            return ocs::tom::lookup_first<type>(lp, pos, key, iterator);
          }
       }
 
@@ -111,14 +144,10 @@ namespace ocs::tom {
       inline lListElem *lookup_next(const lList *lp, const KeyOf<F> key, const void **iterator) {
          constexpr FieldType type = FieldTraits<F>::type;
          constexpr int pos = FieldTraits<F>::pos;
-         if constexpr (type == FieldType::Uint32) {
-            return lookup_next_ulong(lp, pos, key, iterator);
-         } else if constexpr (type == FieldType::Uint64) {
-            return lookup_next_ulong64(lp, pos, key, iterator);
-         } else if constexpr (type == FieldType::String) {
-            return lookup_next_str(lp, pos, key, iterator);
+         if constexpr (type == FieldType::Host) {
+            return ocs::tom::lookup_next<type>(lp, pos, key.c_str(), iterator);
          } else {
-            return lookup_next_host(lp, pos, key.c_str(), iterator);
+            return ocs::tom::lookup_next<type>(lp, pos, key, iterator);
          }
       }
 
@@ -489,7 +518,10 @@ namespace ocs::tom {
       template <auto F>
          requires FieldOf<F, T> && (FieldTraits<F>::type == FieldType::String)
       [[nodiscard]] ConstElement<T> find_first_nocase(const char *value) const {
-         return ConstElement<T>::from_typed(lookup_first_str_nocase(lp_, F, value));
+         if (lp_ == nullptr || value == nullptr) {
+            return ConstElement<T>();
+         }
+         return ConstElement<T>::from_typed(lookup_first_str_nocase_at(lp_, detail::present_pos_of<F>(lp_), value));
       }
 
       /**
@@ -503,7 +535,10 @@ namespace ocs::tom {
       template <auto F>
          requires FieldOf<F, T> && (FieldTraits<F>::type == FieldType::String)
       [[nodiscard]] ConstElement<T> find_first_like(const char *value) const {
-         return ConstElement<T>::from_typed(lookup_first_str_like(lp_, F, value));
+         if (lp_ == nullptr || value == nullptr) {
+            return ConstElement<T>();
+         }
+         return ConstElement<T>::from_typed(lookup_first_str_like_at(lp_, detail::present_pos_of<F>(lp_), value));
       }
 
       /**
@@ -785,7 +820,10 @@ namespace ocs::tom {
       template <auto F>
          requires FieldOf<F, T> && (FieldTraits<F>::type == FieldType::String)
       [[nodiscard]] Element<T> find_first_nocase(const char *value) const {
-         return Element<T>::from_typed(lookup_first_str_nocase(this->lp_, F, value));
+         if (this->lp_ == nullptr || value == nullptr) {
+            return Element<T>();
+         }
+         return Element<T>::from_typed(lookup_first_str_nocase_at(this->lp_, detail::present_pos_of<F>(this->lp_), value));
       }
 
       /**
@@ -799,7 +837,10 @@ namespace ocs::tom {
       template <auto F>
          requires FieldOf<F, T> && (FieldTraits<F>::type == FieldType::String)
       [[nodiscard]] Element<T> find_first_like(const char *value) const {
-         return Element<T>::from_typed(lookup_first_str_like(this->lp_, F, value));
+         if (this->lp_ == nullptr || value == nullptr) {
+            return Element<T>();
+         }
+         return Element<T>::from_typed(lookup_first_str_like_at(this->lp_, detail::present_pos_of<F>(this->lp_), value));
       }
 
       /**
@@ -1118,8 +1159,8 @@ namespace ocs::tom {
        * @param key the key; a string or host name is copied
        * @return the handle on the new element, now in the list
        * @throw FieldException if this handle is empty, with reason NullKey for a null string or host
-       *        name, or in a debug build DuplicateKey when a unique field holds the key already; nothing
-       *        is changed then
+       *        name, WrongType for a list reduced without the key field, or in a debug build DuplicateKey
+       *        when a unique field holds the key already; nothing is changed then
        */
       template <auto F>
          requires FieldOf<F, T> && detail::LookupField<F>
@@ -1127,14 +1168,19 @@ namespace ocs::tom {
          check_list();
          lList *lp = this->lp_;
          constexpr FieldType type = FieldTraits<F>::type;
+         constexpr int pos = FieldTraits<F>::pos;
          if constexpr (type == FieldType::String) {
-            return Element<T>::from_typed(add_elem_str(lp, F, key, T::descriptor.e));
+            if (key == nullptr) [[unlikely]] {
+               throw_field_exception(FieldException::Reason::NullKey, F, T::descriptor.e);
+            }
+            return Element<T>::from_typed(add_elem_at<type>(lp, pos, key, T::descriptor.e));
          } else if constexpr (type == FieldType::Host) {
-            return Element<T>::from_typed(add_elem_host(lp, F, key.c_str(), T::descriptor.e));
-         } else if constexpr (type == FieldType::Uint32) {
-            return Element<T>::from_typed(add_elem_ulong(lp, F, key, T::descriptor.e));
+            if (key.c_str() == nullptr) [[unlikely]] {
+               throw_field_exception(FieldException::Reason::NullKey, F, T::descriptor.e);
+            }
+            return Element<T>::from_typed(add_elem_at<type>(lp, pos, key.c_str(), T::descriptor.e));
          } else {
-            return Element<T>::from_typed(add_elem_ulong64(lp, F, key, T::descriptor.e));
+            return Element<T>::from_typed(add_elem_at<type>(lp, pos, key, T::descriptor.e));
          }
       }
 
@@ -1159,13 +1205,17 @@ namespace ocs::tom {
          constexpr FieldType type = FieldTraits<F>::type;
          bool erased;
          if constexpr (type == FieldType::String) {
-            erased = remove_elem_str(this->lp_, F, key);
+            if (key == nullptr) [[unlikely]] {
+               throw_field_exception(FieldException::Reason::NullKey, F, this->lp_->descr);
+            }
+            erased = remove_elem_at<type>(this->lp_, detail::present_pos_of<F>(this->lp_), key);
          } else if constexpr (type == FieldType::Host) {
-            erased = remove_elem_host(this->lp_, F, key.c_str());
-         } else if constexpr (type == FieldType::Uint32) {
-            erased = remove_elem_ulong(this->lp_, F, key);
+            if (key.c_str() == nullptr) [[unlikely]] {
+               throw_field_exception(FieldException::Reason::NullKey, F, this->lp_->descr);
+            }
+            erased = remove_elem_at<type>(this->lp_, detail::present_pos_of<F>(this->lp_), key.c_str());
          } else {
-            erased = remove_elem_ulong64(this->lp_, F, key);
+            erased = remove_elem_at<type>(this->lp_, detail::present_pos_of<F>(this->lp_), key);
          }
          return erased ? 1 : 0;
       }
@@ -1443,3 +1493,5 @@ namespace ocs::tom {
    };
 
 } // namespace ocs::tom
+
+#include "tom/ocs_FreeAccess.h"

@@ -46,6 +46,7 @@
  */
 
 #include <string>
+#include <strings.h>
 #include <vector>
 
 #include "uti/sge_dstring.h"
@@ -54,6 +55,7 @@
 #include "cull/cull_list.h"
 
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "tom/ocs_Element.h"
 
 namespace ocs {
    /** @brief A key that a unique attribute of a list holds a second time */
@@ -66,16 +68,22 @@ namespace ocs {
 } // namespace ocs
 
 /**
- * @brief Replace the string "none" in a field with nullptr
+ * @brief Replace the string "none" in a string field with nullptr
  *
  * Users write `none` where the object model wants an unset field. The
  * comparison is case insensitive; a field that is already nullptr is left
- * alone.
+ * alone. The field is a template argument, so a field that is no string
+ * field of the element's type does not compile.
+ *
+ * @tparam F the string field
+ * @param ep the element
  */
-#define NULL_OUT_NONE(ep, nm) \
-   if (lGetString(ep, nm) != nullptr && strcasecmp(lGetString(ep, nm), "none") == 0) { \
-      lSetString(ep, nm, nullptr); \
+template <auto F>
+inline void ocs_null_out_none(lListElem *ep) {
+   if (const char *value = ocs::tom::get<F>(ep); value != nullptr && strcasecmp(value, "none") == 0) {
+      ocs::tom::set<F>(ep, nullptr);
    }
+}
 
 /**
  * @brief The object and message types the master keeps a list of

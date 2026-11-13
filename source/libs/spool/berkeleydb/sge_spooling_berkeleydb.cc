@@ -833,12 +833,11 @@ bool spool_berkeleydb_default_write_func(lList **answer_list,
          }
       }
 
-      /* CS-1597: for exec hosts only static load values shall be spooled;
-       * strip the dynamic load values before writing and restore them afterwards
-       */
-      lList *backup_load_list = nullptr;
+      // CS-1597: for exec hosts only static load values shall be spooled: a copy without the dynamic ones is written
+      lListElem *exechost_copy = nullptr;
       if (ret && object_type == SGE_TYPE_EXECHOST) {
-         backup_load_list = spool_exechost_strip_dynamic_load(object);
+         exechost_copy = ocs_spool_exechost_static_copy(object);
+         object = exechost_copy;
       }
 
       if (ret) {
@@ -908,10 +907,7 @@ bool spool_berkeleydb_default_write_func(lList **answer_list,
          }
       }
 
-      /* CS-1597: restore the dynamic load values that were stripped above */
-      if (object_type == SGE_TYPE_EXECHOST) {
-         spool_exechost_restore_load_list(object, &backup_load_list);
-      }
+      lFreeElem(&exechost_copy);
 
       /* spooling is done, now end the transaction, if we have an own one */
       if (local_transaction) {

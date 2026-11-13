@@ -291,7 +291,7 @@ static int handle_job(lListElem *jelem, lListElem *jatep, int slave) {
 
       if (pelem != nullptr && lGetBool(pelem, PE_control_slaves) && !lGetBool(pelem, PE_job_is_first_task)) {
          int slots;
-         lListElem *mq = lGetObject(lFirst(lGetList(jatep, JAT_granted_destin_identifier_list)),
+         lListElem *mq = lGetObject(lFirstRW(lGetListRW(jatep, JAT_granted_destin_identifier_list)),
                                     JG_queue);
          slots = lGetUlong(mq, QU_job_slots) + 1;
          DPRINTF("Increasing job slots in master queue \"%s\" to %d because job is not first task\n",

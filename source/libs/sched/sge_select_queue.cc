@@ -3656,7 +3656,7 @@ sequential_tag_queues_suitable4job(sge_assignment_t *a) {
 
    /* cache so far generated messages with the job category */
    if (use_category.use_category) {
-      lList *temp = schedd_mes_get_tmp_list();
+      const lList *temp = schedd_mes_get_tmp_list();
       if (temp){
          lSetList(use_category.cache, CCT_job_messages, lCopyList(nullptr, temp));
       }
@@ -4600,7 +4600,7 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
    }
 
    if (use_category->use_category) {
-      lList *temp = schedd_mes_get_tmp_list();
+      const lList *temp = schedd_mes_get_tmp_list();
       if (temp){
          lSetList(use_category->cache, CCT_job_messages, lCopyList(nullptr, temp));
        }

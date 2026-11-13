@@ -121,10 +121,7 @@ spool_default_validate_list_func(lList **answer_list,
                           const lListElem *type, const lListElem *rule,
                           const sge_object_type object_type);
 
-lList *
-spool_exechost_strip_dynamic_load(const lListElem *object);
-
-void
-spool_exechost_restore_load_list(const lListElem *object, lList **backup_load_list);
+lListElem *
+ocs_spool_exechost_static_copy(const lListElem *object);
 
 /** @} */

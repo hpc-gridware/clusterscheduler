@@ -155,6 +155,41 @@ namespace ocs::tom {
       }
 
       /**
+       * @brief Check that an element holds a field known at compile time
+       *
+       * One condition for every error and one out-of-line call for all of
+       * them, so the error path at each call site stays a single jump: a null
+       * element, an element of another type, a reduced element without the field.
+       *
+       * @tparam F the field number
+       * @param ep the element, or nullptr
+       * @throw FieldException with reason NullElement, ForeignField or AbsentField
+       */
+      template <auto F>
+      inline void check_holds(const lListElem *ep) {
+         using Tr = FieldTraits<F>;
+         if (ep == nullptr || ep->descr[0].nm != Tr::Type::fields[0].nm || ep->descr[Tr::pos].off == OCS_CULL_ABSENT)
+            [[unlikely]] {
+            throw_access_error(ep, F, Tr::Type::fields[0].nm);
+         }
+      }
+
+      /**
+       * @brief The position-plus-offset slot index of a field known at compile time, checked by check_holds()
+       *
+       * @tparam F the field number
+       * @param ep the element, or nullptr
+       * @return the index into the element's values
+       * @throw FieldException with reason NullElement, ForeignField or AbsentField
+       */
+      template <auto F>
+      [[nodiscard]] inline int checked_slot(const lListElem *ep) {
+         check_holds<F>(ep);
+         constexpr int pos = FieldTraits<F>::pos;
+         return pos + ep->descr[pos].off;
+      }
+
+      /**
        * @brief The position-plus-offset slot index of a field the element must hold
        *
        * Throws if the element does not hold the field: the only check left at
@@ -1207,14 +1242,7 @@ namespace ocs::tom {
    template <auto F>
       requires TypedField<decltype(F)>
    [[nodiscard]] auto get(const lListElem *ep) {
-      using Type = typename FieldTraits<F>::Type;
-      if (ep == nullptr) [[unlikely]] {
-         throw_field_exception(FieldException::Reason::NullElement, F, nullptr);
-      }
-      if (ep->descr[0].nm != Type::fields[0].nm) [[unlikely]] {
-         throw_field_exception(FieldException::Reason::ForeignField, F, ep->descr);
-      }
-      return detail::read<F, false>(ep, detail::present_slot<F>(ep));
+      return detail::read<F, false>(ep, detail::checked_slot<F>(ep));
    }
 
    /**
@@ -1227,35 +1255,10 @@ namespace ocs::tom {
    template <auto F>
       requires TypedField<decltype(F)>
    [[nodiscard]] auto get(lListElem *ep) {
-      using Type = typename FieldTraits<F>::Type;
-      if (ep == nullptr) [[unlikely]] {
-         throw_field_exception(FieldException::Reason::NullElement, F, nullptr);
-      }
-      if (ep->descr[0].nm != Type::fields[0].nm) [[unlikely]] {
-         throw_field_exception(FieldException::Reason::ForeignField, F, ep->descr);
-      }
-      return detail::read<F, true>(ep, detail::present_slot<F>(ep));
+      return detail::read<F, true>(ep, detail::checked_slot<F>(ep));
    }
 
    namespace detail {
-
-      /**
-       * @brief The result of the free setter when the element does not hold the field: a logic error
-       *
-       * The old setters abort on such a field since CS-3062 (N-L-4), so the
-       * free form throws for every field type. Before, only the string and
-       * host setters aborted; the others returned -1.
-       *
-       * @tparam F the field number
-       * @param ep the element
-       * @param reason why the element does not hold the field
-       * @return does not return
-       * @throw FieldException with @p reason
-       */
-      template <auto F>
-      [[noreturn]] void missing_field_result(const lListElem *ep, const FieldException::Reason reason) {
-         throw_field_exception(reason, F, ep->descr);
-      }
 
    } // namespace detail
 
@@ -1278,19 +1281,13 @@ namespace ocs::tom {
       requires TypedField<decltype(F)>
    int set(lListElem *ep, V &&value) {
       using Tr = FieldTraits<F>;
-      using Type = typename Tr::Type;
       if (ep == nullptr) [[unlikely]] {
          report_soft_path("ocs::tom::set", static_cast<int>(F), SoftPathReason::NullElement);
          set_lerrno(LEELEMNULL);
          return -1;
       }
-      if (ep->descr[0].nm != Type::fields[0].nm) [[unlikely]] {
-         detail::missing_field_result<F>(ep, FieldException::Reason::ForeignField);
-      }
+      detail::check_holds<F>(ep);
       const int off = ep->descr[Tr::pos].off;
-      if (off == OCS_CULL_ABSENT) [[unlikely]] {
-         detail::missing_field_result<F>(ep, FieldException::Reason::AbsentField);
-      }
       // a typed list or object field takes the raw pointer here, as the old setter did
       if constexpr (Tr::type == FieldType::List) {
          store_list(ep, Tr::pos, static_cast<lList *>(value));
@@ -1331,19 +1328,13 @@ namespace ocs::tom {
       requires TypedField<decltype(F)> && detail::Addable<F>
    int add(lListElem *ep, const typename ValueOf<FieldTraits<F>::type>::type offset) {
       using Tr = FieldTraits<F>;
-      using Type = typename Tr::Type;
       if (ep == nullptr) [[unlikely]] {
          report_soft_path("ocs::tom::add", static_cast<int>(F), SoftPathReason::NullElement);
          set_lerrno(LEELEMNULL);
          return -1;
       }
-      if (ep->descr[0].nm != Type::fields[0].nm) [[unlikely]] {
-         detail::missing_field_result<F>(ep, FieldException::Reason::ForeignField);
-      }
+      detail::check_holds<F>(ep);
       const int off = ep->descr[Tr::pos].off;
-      if (off == OCS_CULL_ABSENT) [[unlikely]] {
-         detail::missing_field_result<F>(ep, FieldException::Reason::AbsentField);
-      }
       add_number(ep, Tr::pos, ep->cont[Tr::pos + off], offset);
       return 0;
    }

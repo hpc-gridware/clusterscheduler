@@ -283,8 +283,8 @@ book_user_project_usage(lListElem *job, lListElem *ja_task, lListElem *user, lLi
       const lList *upu_list = lGetList(userprj, obj_debited_job_usage);
       if (upu_list) {
          if ((upu = lGetElemUlong(upu_list, UPU_job_number, lGetUlong(job, JB_job_number)))) {
-            if ((old_usage_list = lGetListRW(upu, UPU_old_usage_list))) {
-               old_usage_list = lCopyList("", old_usage_list);
+            if (const lList *debited_usage = lGetList(upu, UPU_old_usage_list)) {
+               old_usage_list = lCopyList("", debited_usage);
             }
          }
       }

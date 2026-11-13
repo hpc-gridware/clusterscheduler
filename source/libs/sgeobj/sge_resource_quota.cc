@@ -724,7 +724,7 @@ bool rqs_get_rue_string(dstring *name, const lListElem *rule, const char *user,
                         const char *pe) {
    DENTER(BASIS_LAYER);
 
-   lListElem *filter = nullptr;
+   const lListElem *filter = nullptr;
 
    if (rule == nullptr) {
       DRETURN(false);
@@ -1371,7 +1371,7 @@ rqs_match_host_scope(const lList *scope, const char *name, const lList *master_h
  * @note MT-NOTE: rqs_filter_match() is MT safe
  */
 bool 
-rqs_filter_match(lListElem *filter, int filter_type, const char *value, const lList *master_userset_list,
+rqs_filter_match(const lListElem *filter, int filter_type, const char *value, const lList *master_userset_list,
                  const lList *master_hgroup_list, const char *group, const lList *grp_list) {
    DENTER(BASIS_LAYER);
    bool ret = true;

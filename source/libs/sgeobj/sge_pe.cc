@@ -224,7 +224,7 @@ int pe_validate(lListElem *pep, lList **alpp, int startup, const lList *master_u
    config_errfunc = set_error;
 
    /* -------- start_proc_args */
-   NULL_OUT_NONE(pep, PE_start_proc_args);
+   ocs_null_out_none<PE_start_proc_args>(pep);
    s = lGetString(pep, PE_start_proc_args);
    if (s != nullptr && replace_params(s, nullptr, 0, pe_variables)) {
       if (alpp == nullptr) {
@@ -237,7 +237,7 @@ int pe_validate(lListElem *pep, lList **alpp, int startup, const lList *master_u
    }
 
    /* -------- stop_proc_args */
-   NULL_OUT_NONE(pep, PE_stop_proc_args);
+   ocs_null_out_none<PE_stop_proc_args>(pep);
    s = lGetString(pep, PE_stop_proc_args);
    if (s != nullptr && replace_params(s, nullptr, 0, pe_variables)) {
       if (alpp == nullptr) {

@@ -85,12 +85,6 @@ PREFIX##_create(lList **answer_list, const char *href, TYPE value)            \
                       DESCRIPTOR, HREF_NM, VALUE_NM);                         \
 }                                                                             \
                                                                               \
-lListElem *                                                                   \
-PREFIX##_list_find(const lList *this_list, const char *href)                  \
-{                                                                             \
-   return lGetElemHostRW(this_list, HREF_NM, href);                             \
-}                                                                             \
-                                                                              \
 bool                                                                          \
 PREFIX##_list_add(lList **this_list, lList **answer_list, lListElem **attr,   \
                   int flags, lList **ambiguous_href_list, const lList *master_hgroup_list) \

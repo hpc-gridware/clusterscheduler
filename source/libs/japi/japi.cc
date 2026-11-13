@@ -3738,7 +3738,7 @@ static void *japi_implementation_thread(void *a_user_data_pointer) {
 
          DTRACE;
 
-         for_each_ep_lv(event, event_list) {
+         for_each_rw_lv(event, event_list) {
             uint32_t type, intkey, intkey2;
             type = lGetUlong(event, ET_type);
             intkey = lGetUlong(event, ET_intkey);

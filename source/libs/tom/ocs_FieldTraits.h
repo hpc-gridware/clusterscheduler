@@ -323,6 +323,23 @@ namespace ocs::tom {
    /** @brief Ref holds an opaque pointer, as the old interface does */
    template <> struct ValueOf<FieldType::Ref> { using type = void *; };
 
+   /**
+    * @brief Whether a field type can be the key of a lookup, an add or a delete by key: a number, a string or a host
+    * @tparam T the field type
+    */
+   template <FieldType T>
+   concept KeyFieldType = T == FieldType::Uint32 || T == FieldType::Uint64 || T == FieldType::String ||
+                          T == FieldType::Host;
+
+   /**
+    * @brief The type the core takes a key of a field type as: the number, or a C string for a string or a host name
+    * @tparam T the field type, a key field type
+    */
+   template <FieldType T>
+      requires KeyFieldType<T>
+   using KeyArgOf = std::conditional_t<T == FieldType::Uint32, std::uint32_t,
+                                       std::conditional_t<T == FieldType::Uint64, std::uint64_t, const char *>>;
+
    // The value types are stored in the slots of the list library; they must be the same size.
    static_assert(sizeof(std::uint32_t) == sizeof(lUlong) && sizeof(std::uint64_t) == sizeof(lUlong64));
    static_assert(sizeof(std::int32_t) == sizeof(lInt), "Int32 is stored as an lInt");

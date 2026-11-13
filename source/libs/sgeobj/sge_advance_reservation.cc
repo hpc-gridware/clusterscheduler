@@ -164,12 +164,12 @@ bool ar_validate(lListElem *ar, lList **alpp, bool in_master, bool is_spool, con
    
    if (in_master) {
       /*    AR_name, SGE_STRING */
-      NULL_OUT_NONE(ar, AR_name);
+      ocs_null_out_none<AR_name>(ar);
       if (object_verify_name(ar, alpp, AR_name)) {
          goto ERROR;
       }
       /*   AR_account, SGE_STRING */
-      NULL_OUT_NONE(ar, AR_account);
+      ocs_null_out_none<AR_account>(ar);
       if (!lGetString(ar, AR_account)) {
          lSetString(ar, AR_account, DEFAULT_ACCOUNT);
       } else {
@@ -179,11 +179,11 @@ bool ar_validate(lListElem *ar, lList **alpp, bool in_master, bool is_spool, con
          }
       }
       /*   AR_project, SGE_STRING */
-      NULL_OUT_NONE(ar, AR_project);
+      ocs_null_out_none<AR_project>(ar);
       /*   AR_verify, SGE_ULONG              just verify the reservation or final case */
       /*   AR_error_handling, SGE_ULONG      how to deal with soft and hard exceptions */
       /*   AR_checkpoint_name, SGE_STRING    Named checkpoint */
-      NULL_OUT_NONE(ar, AR_checkpoint_name);
+      ocs_null_out_none<AR_checkpoint_name>(ar);
       {
          /* request for non existing ckpt object will be refused */
          const char *ckpt_name = nullptr;
@@ -226,7 +226,7 @@ bool ar_validate(lListElem *ar, lList **alpp, bool in_master, bool is_spool, con
        
       
       /*   AR_pe, SGE_STRING,  AR_pe_range, SGE_LIST */
-      NULL_OUT_NONE(ar, AR_pe);
+      ocs_null_out_none<AR_pe>(ar);
       {
          const char *pe_name = nullptr;
          lList *pe_range = nullptr;

@@ -833,7 +833,8 @@ static void test_unique_key_integrity() {
    bool lookup_throws = false;
    try {
       const void *iterator = nullptr;
-      static_cast<void>(ocs::tom::lookup_first_str(a, lGetPosInDescr(TEST_Type, TEST_string_ukey), "h10", &iterator));
+      static_cast<void>(ocs::tom::lookup_first<ocs::tom::FieldType::String>(
+         a, lGetPosInDescr(TEST_Type, TEST_string_ukey), "h10", &iterator));
    } catch (const ocs::tom::FieldException &e) {
       lookup_throws = e.reason() == ocs::tom::FieldException::Reason::DuplicateKey;
    }

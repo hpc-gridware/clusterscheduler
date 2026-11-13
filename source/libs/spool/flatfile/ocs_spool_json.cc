@@ -1544,7 +1544,7 @@ spool_json_value_to_bool(const rapidjson::Value &v) {
  * An unset value (JSON null or an empty string) maps to the "NONE" sentinel *string*,
  * exactly as the flatfile reader stores the "NONE" token from an ASCII file. Producing
  * the string (rather than a C-null) lets qmaster apply its own per-field handling: it
- * nulls the nullable fields (NULL_OUT_NONE) but keeps the required ones (e.g. a ckpt
+ * nulls the nullable fields (ocs_null_out_none) but keeps the required ones (e.g. a ckpt
  * interface's command fields, which reject null). This makes JSON input behave
  * identically to ASCII input and round-trip for both field kinds.
  *

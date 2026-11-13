@@ -309,7 +309,7 @@ int sge_execd_deliver_signal(uint32_t sig, const lListElem *jep, lListElem *jate
  * @param jep pointer to JB_Type  cull list element of job
  * @param jatep pointer to JAT_Type cull list element of job
  */
-void sge_send_suspend_mail(uint32_t signal, lListElem *master_q, lListElem *jep, lListElem *jatep) {
+void sge_send_suspend_mail(uint32_t signal, const lListElem *master_q, lListElem *jep, lListElem *jatep) {
    DENTER(TOP_LAYER);
 
    uint32_t mail_options;
@@ -646,7 +646,7 @@ RETURN
 
       lListElem *jep;
       uint32_t state;
-      lListElem *master_q;
+      const lListElem *master_q;
       lListElem *jatep = nullptr;
       int getridofjob = 0;
 

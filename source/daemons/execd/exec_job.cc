@@ -146,24 +146,63 @@ static long get_next_addgrpid(lList *, long);
    in case of tasks the queue is the appropriate entry in the gdil list of the slave job
 */
 
-/** @brief The queue instance a job, task or PE task is accounted against
- * @param jep the job (`JB_Type`)
+/**
+ * @brief The queue instance a job, task or PE task is accounted against, read only
+ *
+ * For a job or an array task it is the queue of the first entry of the array
+ * task's granted destination identifier list; for a PE task it is the entry
+ * of that list whose queue name is the PE task's queue.
+ *
+ * @param jep the job (`JB_Type`), unused
  * @param jatep the array task
  * @param petep the PE task, or nullptr
- * @return the queue instance
+ * @return the queue instance, or nullptr
  */
-lListElem *responsible_queue(const lListElem *jep, const lListElem *jatep, const lListElem *petep) {
+const lListElem *responsible_queue([[maybe_unused]] const lListElem *jep, const lListElem *jatep, const lListElem *petep) {
    DENTER(TOP_LAYER);
 
-   lListElem *master_q = nullptr;
-
+   const lListElem *gdil_ep;
    if (petep == nullptr) {
-      master_q = lGetObject(lFirst(lGetList(jatep, JAT_granted_destin_identifier_list)), JG_queue);
+      gdil_ep = lFirst(lGetList(jatep, JAT_granted_destin_identifier_list));
    } else {
       const lListElem *pe_queue = lFirst(lGetList(petep, PET_granted_destin_identifier_list));
-      master_q = lGetObject(lGetElemStr(lGetList(jatep, JAT_granted_destin_identifier_list),
-                                        JG_qname, lGetString(pe_queue, JG_qname)), JG_queue);
+      gdil_ep = lGetElemStr(lGetList(jatep, JAT_granted_destin_identifier_list), JG_qname,
+                            lGetString(pe_queue, JG_qname));
+   }
+   const lListElem *master_q = nullptr;
+   if (gdil_ep != nullptr) {
+      master_q = lGetObject(gdil_ep, JG_queue);
+   }
 
+   DRETURN(master_q);
+}
+
+/**
+ * @brief The queue instance a job, task or PE task is accounted against, to change it
+ *
+ * As the read-only form; the queue instance lives in the array task's
+ * granted destination identifier list, so a caller that changes it, such as
+ * its used slots, passes a mutable array task.
+ *
+ * @param jep the job (`JB_Type`), unused
+ * @param jatep the array task
+ * @param petep the PE task, or nullptr
+ * @return the queue instance, or nullptr
+ */
+lListElem *responsible_queue([[maybe_unused]] const lListElem *jep, lListElem *jatep, const lListElem *petep) {
+   DENTER(TOP_LAYER);
+
+   lListElem *gdil_ep;
+   if (petep == nullptr) {
+      gdil_ep = lFirstRW(lGetListRW(jatep, JAT_granted_destin_identifier_list));
+   } else {
+      const lListElem *pe_queue = lFirst(lGetList(petep, PET_granted_destin_identifier_list));
+      gdil_ep = lGetElemStrRW(lGetListRW(jatep, JAT_granted_destin_identifier_list), JG_qname,
+                              lGetString(pe_queue, JG_qname));
+   }
+   lListElem *master_q = nullptr;
+   if (gdil_ep != nullptr) {
+      master_q = lGetObject(gdil_ep, JG_queue);
    }
 
    DRETURN(master_q);

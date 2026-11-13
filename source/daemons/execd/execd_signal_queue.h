@@ -49,4 +49,4 @@ int sge_execd_deliver_signal(uint32_t sig, const lListElem *jep, lListElem *jate
 int sge_kill(int pid, uint32_t sge_signal, uint32_t jobid, uint32_t jataskid,
              const char *petask);
 
-void sge_send_suspend_mail(uint32_t signal,lListElem *master_q ,lListElem *jep, lListElem *jatep);
+void sge_send_suspend_mail(uint32_t signal, const lListElem *master_q, lListElem *jep, lListElem *jatep);

@@ -1381,7 +1381,7 @@ cqueue_list_locate_qinstance_msg(const lList *cqueue_list, const char *full_name
       const char *hostname = sge_dstring_get_string(&host_domain_buffer);
       const lListElem *cqueue = lGetElemStr(cqueue_list, CQ_name, cqueue_name);
       if (cqueue != nullptr) {
-         lList *qinstance_list = lGetListRW(cqueue, CQ_qinstances);
+         const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
 
          ret = lGetElemHostRW(qinstance_list, QU_qhostname, hostname);
       } else {

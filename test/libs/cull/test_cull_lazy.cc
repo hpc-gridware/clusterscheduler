@@ -372,7 +372,7 @@ static void test_duplicate() {
    bool thrown = false;
    try {
       const void *iterator = nullptr;
-      static_cast<void>(ocs::tom::lookup_first_str(lp, POS_NAME, "dup", &iterator));
+      static_cast<void>(ocs::tom::lookup_first<ocs::tom::FieldType::String>(lp, POS_NAME, "dup", &iterator));
    } catch (const ocs::tom::FieldException &e) {
       thrown = e.reason() == ocs::tom::FieldException::Reason::DuplicateKey;
    }
