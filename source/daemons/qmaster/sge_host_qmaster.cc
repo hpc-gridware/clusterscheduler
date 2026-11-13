@@ -1277,7 +1277,6 @@ sge_load_value_cleanup_handler(te_event_t anEvent, monitoring_t *monitor) {
    lListElem *global_host_elem = nullptr;
    lListElem *template_host_elem = nullptr;
    uint64_t now = sge_get_gmt64();
-   uint64_t max_unheard = sge_gmt32_to_gmt64(mconf_get_max_unheard());
    bool simulate_execds = mconf_get_simulate_execds();
 
    MONITOR_WAIT_TIME(SGE_LOCK(LOCK_GLOBAL, LOCK_WRITE), monitor);
@@ -1319,7 +1318,7 @@ sge_load_value_cleanup_handler(te_event_t anEvent, monitoring_t *monitor) {
                                        host, to_cstr(EXECD), 1, &last_heard);
 
 
-      timeout = std::max(static_cast<uint64_t>(load_report_interval(hep) * 3), max_unheard);
+      timeout = host_unheard_timeout(hep);
       if (now <= sge_gmt32_to_gmt64((uint32_t)last_heard) + timeout) {
          continue;
          /* host is known, nothing to trash */
@@ -1384,6 +1383,26 @@ load_report_interval(lListElem *hep) {
 
       lSetUlong(hep, EH_load_report_interval, timeout);
    }
+
+   DRETURN(timeout);
+}
+
+/**
+ * @brief How long may sge_qmaster not hear from the execd of a host?
+ *
+ * An idle sge_execd contacts sge_qmaster only once per load_report_time. A host is taken as
+ * unheard when sge_qmaster has not heard from it for 3 load report intervals, but not before
+ * max_unheard has passed.
+ *
+ * @param hep the execution host (EH_Type), its load report interval is cached in it
+ * @return the timeout in microseconds
+ */
+uint64_t
+host_unheard_timeout(lListElem *hep) {
+   DENTER(TOP_LAYER);
+
+   uint64_t timeout = sge_gmt32_to_gmt64(std::max(load_report_interval(hep) * 3,
+                                                  mconf_get_max_unheard()));
 
    DRETURN(timeout);
 }

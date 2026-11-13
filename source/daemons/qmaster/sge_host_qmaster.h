@@ -93,6 +93,9 @@ sge_execd_startedup(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *h
 uint32_t
 load_report_interval(lListElem *hep);
 
+uint64_t
+host_unheard_timeout(lListElem *hep);
+
 bool
 host_list_add_missing_href(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const lList *this_list, lList **answer_list,
                            const lList *href_list, monitoring_t *monitor);
