@@ -380,6 +380,9 @@
          "flags": [
             {
                "name": "JGDI_HIDDEN"
+            },
+            {
+               "name": "SPOOL"
             }
          ]
       },

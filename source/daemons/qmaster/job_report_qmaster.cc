@@ -38,6 +38,7 @@
 #include <cstring>
 
 #include "uti/sge_bitfield.h"
+#include "uti/sge_hostname.h"
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_signal.h"
@@ -79,6 +80,10 @@
 
 static const char *status2str(uint32_t status);
 
+static bool
+job_report_is_from_earlier_run(const lListElem *jatep, const char *rhost,
+                               const char **current_host);
+
 /** @brief Is a task in one of the states that mean it is on its way, or running?
  *
  * `JWRITTEN` and `JWAITING4OSJID` count as running because the job is already
@@ -111,6 +116,48 @@ status2str(uint32_t status) {
    }
 
    return s;
+}
+
+/**
+ * @brief Does a report of the master task come from an earlier run of the task?
+ *
+ * After qmod -r or the rescheduling of the jobs of an unknown host, the reschedule unknown list
+ * of the host of the earlier run makes sure that this run is killed and that its reports are not
+ * processed. If the entry is missing, the reports of the earlier run arrive like the reports of
+ * the current run. A report of the master task can only belong to the current run if the task
+ * runs, or is being delivered, with its master task on the reporting host.
+ *
+ * A report from the master host of the current run cannot be told apart from a report of an
+ * earlier run on the same host.
+ *
+ * @param jatep the array task (JAT_Type)
+ * @param rhost the host which sent the report
+ * @param current_host returns the master host of the current run, or MSG_OBJ_NOTRUNNING
+ * @return true if the task is pending, or runs with its master task on another host
+ */
+static bool
+job_report_is_from_earlier_run(const lListElem *jatep, const char *rhost,
+                               const char **current_host) {
+   DENTER(TOP_LAYER);
+
+   bool ret = false;
+   *current_host = MSG_OBJ_NOTRUNNING;
+   uint32_t status = lGetUlong(jatep, JAT_status);
+   if (status == JIDLE) {
+      ret = true;
+   } else if (status == JRUNNING || status == JTRANSFERING) {
+      const lListElem *master_gdil = lFirst(lGetList(jatep, JAT_granted_destin_identifier_list));
+      const char *master_host = nullptr;
+      if (master_gdil != nullptr) {
+         master_host = lGetHost(master_gdil, JG_qhostname);
+      }
+      if (master_host != nullptr) {
+         *current_host = master_host;
+         ret = sge_hostcmp(master_host, rhost) != 0;
+      }
+   }
+
+   DRETURN(ret);
 }
 
 /**
@@ -276,6 +323,28 @@ void process_job_report(lListElem *report, lListElem *hep, char *rhost, char *co
 
       if ((queue_name = lGetString(jr, JR_queue_name)) == nullptr) {
          queue_name = MSG_OBJ_UNKNOWNQ;
+      }
+
+      // the report of the master task of an earlier run must not be taken as a report of the
+      // current run, e.g. as its arrival, as its usage or as its end: kill the earlier run and
+      // acknowledge its exit, its exit lets the new run of a task rescheduled with qmod -r start
+      const char *current_host = nullptr;
+      if (jatep != nullptr && pe_task_id_str == nullptr
+          && (is_running(rstate) || rstate == JEXITING)
+          && job_report_is_from_earlier_run(jatep, rhost, &current_host)) {
+         if (rstate == JEXITING) {
+            WARNING(MSG_JOB_REPORTEXITOLDRUN_SUUSS, rhost, jobid, jataskid, queue_name,
+                    current_host);
+            pack_ack(pb, ACK_JOB_EXIT, jobid, jataskid, nullptr);
+            if (jep != nullptr) {
+               reschedule_clear_deferred_start(jep, jatep, gdi_session);
+            }
+         } else {
+            WARNING(MSG_JOB_REPORTRUNOLDRUN_SUUSS, rhost, jobid, jataskid, queue_name,
+                    current_host);
+            pack_ack(pb, ACK_SIGNAL_JOB, jobid, jataskid, nullptr);
+         }
+         continue;
       }
 
       switch (rstate) {

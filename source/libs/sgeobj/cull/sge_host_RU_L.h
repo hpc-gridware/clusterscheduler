@@ -60,9 +60,9 @@ enum {
 };
 
 LISTDEF(RU_Type)
-   SGE_ULONG(RU_job_number, CULL_DEFAULT)
-   SGE_ULONG(RU_task_number, CULL_DEFAULT)
-   SGE_ULONG(RU_state, CULL_DEFAULT)
+   SGE_ULONG(RU_job_number, CULL_SUBLIST)
+   SGE_ULONG(RU_task_number, CULL_SUBLIST)
+   SGE_ULONG(RU_state, CULL_SUBLIST)
 LISTEND(RU_Type)
 
 NAMEDEF(RUN)

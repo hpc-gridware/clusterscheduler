@@ -13,7 +13,11 @@
             "The job number (from JB_job_number)."
          ],
          "type": "lUlongT",
-         "flags": []
+         "flags": [
+            {
+               "name": "SPOOL_SUBLIST"
+            }
+         ]
       },
       {
          "name": "task_number",
@@ -22,7 +26,11 @@
             "The array task number (from JAT_task_number)."
          ],
          "type": "lUlongT",
-         "flags": []
+         "flags": [
+            {
+               "name": "SPOOL_SUBLIST"
+            }
+         ]
       },
       {
          "name": "state",
@@ -37,7 +45,11 @@
             "@todo add more information, esp. about the meaning of the states."
          ],
          "type": "lUlongT",
-         "flags": []
+         "flags": [
+            {
+               "name": "SPOOL_SUBLIST"
+            }
+         ]
       }
    ]
 }
