@@ -244,6 +244,68 @@ namespace ocs {
 #endif
 }
 
+   /**
+    * @brief Waits until systemd has stopped the job scope.
+    *
+    * Called when the job has ended. When the OOM killer has killed a process of the job scope, or
+    * the job has been killed via StopUnit, systemd stops the scope, and only then are its Result
+    * and its failed state final. sge_execd reads the Result and resets the failed state when the
+    * shepherd has exited. Waiting here instead of in sge_execd keeps sge_execd from being held up
+    * when many jobs end at the same time.
+    *
+    * While the scope is deactivating, this waits for at most five seconds. A scope which is still
+    * active is given 100 ms: systemd starts to stop it right after an OOM kill, but the scope of a
+    * job whose processes outlive the job stays active. A scope which is gone, or cannot be queried,
+    * is not waited for.
+    *
+    * @note This function is only applicable when systemd integration is enabled.
+    */
+   void
+   shepherd_systemd_wait_for_job_scope_stopped() {
+#if defined (OCS_WITH_SYSTEMD)
+      if (g_use_systemd) {
+         const char *scope = get_conf_val("systemd_scope");
+         if (scope == nullptr) {
+            return;
+         }
+         ocs::uti::Systemd systemd;
+         DSTRING_STATIC(error_dstr, MAX_STRING_SIZE);
+         sge_switch2start_user();
+         bool connected = systemd.connect(&error_dstr);
+         sge_switch2admin_user();
+         if (!connected) {
+            shepherd_trace("cannot wait for job scope '%s' to stop: %s", scope,
+                           sge_dstring_get_string(&error_dstr));
+            return;
+         }
+
+         constexpr uint64_t POLL_INTERVAL_US = 5000;
+         constexpr uint64_t MAX_WAIT_DEACTIVATING_US = 5000000;
+         constexpr uint64_t MAX_WAIT_ACTIVE_US = 100000;
+
+         const uint64_t start = sge_get_gmt64();
+         std::string state = "gone";
+         std::string value;
+         while (systemd.sd_bus_get_property("Unit", scope, "ActiveState", value, &error_dstr)) {
+            state = value;
+            uint64_t max_wait;
+            if (state == "deactivating") {
+               max_wait = MAX_WAIT_DEACTIVATING_US;
+            } else if (state == "active") {
+               max_wait = MAX_WAIT_ACTIVE_US;
+            } else {
+               break;
+            }
+            if (sge_get_gmt64() - start >= max_wait) {
+               break;
+            }
+            sge_usleep(static_cast<int>(POLL_INTERVAL_US));
+         }
+         shepherd_trace("job scope '%s' is %s after " sge_u64 " µs", scope, state.c_str(),
+                        sge_get_gmt64() - start);
+      }
+#endif
+   }
 
    /**
     * @brief Adds the CPU binding to the systemd properties.
