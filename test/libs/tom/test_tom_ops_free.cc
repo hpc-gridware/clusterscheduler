@@ -53,6 +53,7 @@
 #include <functional>
 #include <string>
 #include <type_traits>
+#include <utility>
 #include <vector>
 
 #include <sys/wait.h>
@@ -869,6 +870,226 @@ void test_handles() {
    lFreeElem(&job);
 }
 
+/**
+ * @brief The old walking names take a handle and keep its type (CS-3078)
+ *
+ * lFirst(), lNext() and their variants are overloaded for the handles: the
+ * walk over a list handle gives element handles of the list's type, and the
+ * old walking macros run unchanged over a handle, with a handle or a pointer
+ * as the running variable.
+ */
+void test_walk() {
+   // old:     for (const lListElem *ep = lFirst(lp); ep != nullptr; ep = lNext(ep))
+   // typed:   the same line with lp a ConstList<CE>: ep may be a ConstElement<CE>
+   // differs: nothing; a pointer argument still takes the old function
+   lList *lp = nullptr;
+   for (const char *name : {"a", "b", "c"}) {
+      ocs::tom::emplace_back<CE_name>(&lp, name);
+   }
+   const auto ces = ocs::tom::List<ocs::tom::CE>::from_typed(lp);
+   static_assert(std::is_same_v<decltype(lFirst(ces)), ocs::tom::ConstElement<ocs::tom::CE>>);
+   static_assert(std::is_same_v<decltype(lFirstRW(ces)), ocs::tom::Element<ocs::tom::CE>>);
+   static_assert(std::is_same_v<decltype(lLast(ces)), ocs::tom::ConstElement<ocs::tom::CE>>);
+   static_assert(std::is_same_v<decltype(lNext(lFirst(ces))), ocs::tom::ConstElement<ocs::tom::CE>>);
+   static_assert(std::is_same_v<decltype(lNextRW(lFirstRW(ces))), ocs::tom::Element<ocs::tom::CE>>);
+   static_assert(std::is_same_v<decltype(lPrev(lLast(ces))), ocs::tom::ConstElement<ocs::tom::CE>>);
+   static_assert(std::is_same_v<decltype(lFirst(static_cast<const lList *>(lp))), const lListElem *>);
+
+   std::vector<const lListElem *> old_walk;
+   for (const lListElem *ep = lFirst(lp); ep != nullptr; ep = lNext(ep)) {
+      old_walk.push_back(ep);
+   }
+   std::vector<const lListElem *> typed_walk;
+   for (ocs::tom::ConstElement<ocs::tom::CE> ep = lFirst(ces); ep; ep = lNext(ep)) {
+      typed_walk.push_back(ep.raw());
+   }
+   std::vector<const lListElem *> back_walk;
+   for (auto ep = lLast(ces); ep; ep = lPrev(ep)) {
+      back_walk.insert(back_walk.begin(), ep.raw());
+   }
+   CHECK(23, "lFirst() and lNext() on a handle walk the elements lFirst() and lNext() on the pointer walk",
+         old_walk.size() == 3 && typed_walk == old_walk && back_walk == old_walk);
+
+   std::vector<const lListElem *> macro_handle;
+   ocs::tom::ConstElement<ocs::tom::CE> handle;
+   for_each_ep(handle, ces) {
+      macro_handle.push_back(handle.raw());
+   }
+   std::vector<const lListElem *> macro_pointer;
+   const lListElem *pointer = nullptr;
+   for_each_ep(pointer, ces) {
+      macro_pointer.push_back(pointer);
+   }
+   std::vector<const lListElem *> macro_lv;
+   for_each_ep_lv(ep, ces) {
+      macro_lv.push_back(ep);
+   }
+   CHECK(24, "for_each_ep runs over a list handle with a handle or a pointer, for_each_ep_lv with its pointer",
+         macro_handle == old_walk && macro_pointer == old_walk && macro_lv == old_walk);
+
+   const ocs::tom::ConstList<ocs::tom::CE> empty;
+   CHECK(25, "an empty list handle and an empty element handle walk to nothing",
+         !lFirst(empty) && !lLast(empty) && !lNext(ocs::tom::ConstElement<ocs::tom::CE>()));
+   lFreeList(&lp);
+}
+
+/**
+ * @brief The free forms on an element handle behave as on the raw pointer, without the run-time type check (L2)
+ *
+ * A variable that became a handle keeps its free forms. The handle's type is
+ * known, so a field of another type does not compile (see
+ * compile_fail/free_handle_foreign_field.cc), and an empty handle and a
+ * reduced element are the only errors left at run time.
+ */
+void test_handle_forms() {
+   // old:     lSetUlong(job, JB_job_number, 7); lGetSubStr(job, VA_variable, "A", JB_env_list)
+   // free:    ocs::tom::set<JB_job_number>(job, 7); ocs::tom::find_first_in<JB_env_list, VA_variable>(job, "A")
+   // differs: with job an Element<JB>, the same lines take the overload for the handle
+   lListElem *job = make_job();
+   const auto handle = ocs::tom::Element<ocs::tom::JB>::from_typed(job);
+   const ocs::tom::ConstElement<ocs::tom::JB> const_handle = handle;
+   bool same = ocs::tom::set<JB_job_number>(handle, 7) == 0 && ocs::tom::add<JB_job_number>(handle, 3) == 0 &&
+               ocs::tom::get<JB_job_number>(const_handle) == 10 && ocs::tom::get<JB_job_number>(job) == 10;
+   same = same && ocs::tom::has<JB_env_list>(const_handle) &&
+          ocs::tom::find_first_in<JB_env_list, VA_variable>(const_handle, "A") ==
+             ocs::tom::find_first_in<JB_env_list, VA_variable>(job, "A") &&
+          ocs::tom::find_first_in_rw<JB_ja_tasks, JAT_task_number>(const_handle, 2) ==
+             ocs::tom::find_first_in_rw<JB_ja_tasks, JAT_task_number>(job, 2);
+   same = same && ocs::tom::emplace_back_in<JB_env_list, VA_variable>(handle, "C") != nullptr &&
+          ocs::tom::erase_in<JB_env_list, VA_variable>(handle, "C") == 1;
+   same = same && ocs::tom::get_or_create<JB_env_list>(handle, nullptr) == lGetList(job, JB_env_list) &&
+          ocs::tom::list_ref<JB_env_list>(const_handle) == lGetListRef(job, JB_env_list) &&
+          std::string(ocs::tom::get_or_empty<JB_owner>(const_handle)).empty();
+   char *owner = strdup("me");
+   same = same && ocs::tom::exchange<JB_owner>(handle, &owner) == 0 && owner == nullptr &&
+          std::string(ocs::tom::get_or_empty<JB_owner>(const_handle)) == "me";
+   lList *env = nullptr;
+   same = same && ocs::tom::exchange<JB_env_list>(handle, &env) == 0 && env != nullptr &&
+          ocs::tom::exchange<JB_env_list>(handle, &env) == 0 && env == nullptr;
+   lListElem *other = make_job();
+   const auto other_handle = ocs::tom::Element<ocs::tom::JB>::from_typed(other);
+   lList *before = lGetListRW(job, JB_env_list);
+   same = same && ocs::tom::swap<JB_env_list, JB_env_list>(handle, other_handle) == 0 &&
+          lGetList(other, JB_env_list) == before;
+   lFreeElem(&other);
+   const auto task = ocs::tom::Element<ocs::tom::JAT>::from_typed(lFirstRW(lGetList(job, JB_ja_tasks)));
+   same = same && ocs::tom::set<JAT_status>(task, 0x5) == 0 && ocs::tom::has_bits<JAT_status>(task, 0x4) &&
+          ocs::tom::or_bits<JAT_status>(task, 0x2) == 0 && ocs::tom::and_bits<JAT_status>(task, 0x6) == 0 &&
+          ocs::tom::clear_bits<JAT_status>(task, 0x2) == 0 && ocs::tom::get<JAT_status>(task) == 0x4;
+   CHECK(26, "the free forms on an element handle give what they give on the raw pointer", same);
+
+   const ocs::tom::Element<ocs::tom::JB> empty;
+   cull_state_set_lerrno(0);
+   bool null_reason = false;
+   try {
+      static_cast<void>(ocs::tom::get<JB_job_number>(empty));
+   } catch (const ocs::tom::FieldException &e) {
+      null_reason = e.reason() == ocs::tom::FieldException::Reason::NullElement;
+   }
+   CHECK(27, "an empty handle: get throws NullElement, set gives -1 with LEELEMNULL, has is false",
+         null_reason && ocs::tom::set<JB_job_number>(empty, 1) == -1 && cull_state_get_lerrno() == LEELEMNULL &&
+            !ocs::tom::has<JB_env_list>(empty));
+
+   lList *jobs = nullptr;
+   lList *reduced = nullptr;
+   const auto reduced_job = ocs::tom::Element<ocs::tom::JB>::from_typed(make_reduced_job(jobs, reduced));
+   bool absent_reason = false;
+   try {
+      static_cast<void>(ocs::tom::get<JB_owner>(reduced_job));
+   } catch (const ocs::tom::FieldException &e) {
+      absent_reason = e.reason() == ocs::tom::FieldException::Reason::AbsentField;
+   }
+   CHECK(28, "a reduced element without the field: get throws AbsentField, has is false, the held field reads",
+         absent_reason && !ocs::tom::has<JB_env_list>(reduced_job) && ocs::tom::get<JB_job_number>(reduced_job) == 0);
+   lFreeList(&reduced);
+   lFreeList(&jobs);
+   lFreeElem(&job);
+}
+
+/**
+ * @brief OPS-FREE-16: an owning element handle takes the free forms, and the old functions that take an element over
+ *        take it moved in (rule L3)
+ *
+ * A local variable that owns its element becomes an ElementPtr: its field
+ * accesses stay as they are, a call that takes the element over gets
+ * std::move, and the destructor frees what no call took over. The handle
+ * gives up its element only when the call took it.
+ */
+void test_owning() {
+   // old:     lListElem *job = lCreateElem(JB_Type); lSetUlong(job, JB_job_number, 7); lAppendElem(jobs, job);
+   // free:    auto job = ocs::tom::ElementPtr<ocs::tom::JB>::create(); ocs::tom::set<JB_job_number>(job, 7);
+   //          lAppendElem(jobs, std::move(job));
+   // differs: the transfer shows at the call, and an element no call takes over is freed
+   auto job = ocs::tom::ElementPtr<ocs::tom::JB>(make_job());
+   bool same = ocs::tom::set<JB_job_number>(job, 7) == 0 && ocs::tom::add<JB_job_number>(job, 3) == 0 &&
+               ocs::tom::get<JB_job_number>(job) == 10 && ocs::tom::has<JB_env_list>(job) &&
+               ocs::tom::find_first_in<JB_env_list, VA_variable>(job, "A") ==
+                  ocs::tom::find_first_in<JB_env_list, VA_variable>(job.get(), "A") &&
+               ocs::tom::find_first_in_rw<JB_ja_tasks, JAT_task_number>(job, 2) != nullptr &&
+               ocs::tom::emplace_back_in<JB_env_list, VA_variable>(job, "C") != nullptr &&
+               ocs::tom::erase_in<JB_env_list, VA_variable>(job, "C") == 1 &&
+               ocs::tom::get_or_create<JB_env_list>(job, nullptr) == lGetList(*job, JB_env_list) &&
+               ocs::tom::list_ref<JB_env_list>(job) == lGetListRef(*job, JB_env_list) &&
+               std::string(ocs::tom::get_or_empty<JB_owner>(job)).empty();
+   char *owner = strdup("me");
+   same = same && ocs::tom::exchange<JB_owner>(job, &owner) == 0 && owner == nullptr &&
+          std::string(ocs::tom::get_or_empty<JB_owner>(job)) == "me";
+   auto task = ocs::tom::ElementPtr<ocs::tom::JAT>::create();
+   same = same && ocs::tom::set<JAT_status>(task, 0x5) == 0 && ocs::tom::has_bits<JAT_status>(task, 0x4) &&
+          ocs::tom::or_bits<JAT_status>(task, 0x2) == 0 && ocs::tom::and_bits<JAT_status>(task, 0x6) == 0 &&
+          ocs::tom::clear_bits<JAT_status>(task, 0x2) == 0 && ocs::tom::get<JAT_status>(task) == 0x4;
+   CHECK(29, "the free forms on an owning element handle give what they give on the handle it owns", same);
+
+   lList *jobs = lCreateList("jobs", JB_Type);
+   lListElem *const held = job.get().raw();
+   const bool appended = lAppendElem(jobs, std::move(job)) == 0 && job == nullptr && lFirst(jobs) == held;
+   auto second = ocs::tom::ElementPtr<ocs::tom::JB>::create();
+   lListElem *const second_raw = second.get().raw();
+   const bool inserted = lInsertElem(jobs, nullptr, std::move(second)) == 0 && second == nullptr &&
+                         lFirst(jobs) == second_raw;
+   auto kept = ocs::tom::ElementPtr<ocs::tom::JB>::create();
+   const bool not_taken = lAppendElem(nullptr, std::move(kept)) == -1 && kept != nullptr;
+   CHECK(30, "lAppendElem and lInsertElem take a moved handle's element over and leave the handle empty; on an "
+             "error the handle keeps it", appended && inserted && not_taken);
+
+   auto pe = ocs::tom::ElementPtr<ocs::tom::PE>::create();
+   lListElem *const pe_raw = pe.get().raw();
+   auto env = ocs::tom::ListPtr<ocs::tom::VA>::create("env");
+   lList *const env_raw = env.get().raw();
+   bool stored = ocs::tom::set<JAT_pe_object>(task, std::move(pe)) == 0 && pe == nullptr &&
+                 lGetObject(*task, JAT_pe_object) == pe_raw;
+   lListElem *const first = lFirstRW(jobs);
+   stored = stored && ocs::tom::set<JB_env_list>(first, std::move(env)) == 0 && env == nullptr &&
+            lGetList(first, JB_env_list) == env_raw;
+   auto env2 = ocs::tom::ListPtr<ocs::tom::VA>::create("env2");
+   lList *const env2_raw = env2.get().raw();
+   auto pe2 = ocs::tom::ElementPtr<ocs::tom::PE>::create();
+   lListElem *const pe2_raw = pe2.get().raw();
+   stored = stored && lSetList(first, JB_env_list, std::move(env2)) == 0 && env2 == nullptr &&
+            lGetList(first, JB_env_list) == env2_raw && lSetObject(*task, JAT_pe_object, std::move(pe2)) == 0 &&
+            pe2 == nullptr && lGetObject(*task, JAT_pe_object) == pe2_raw;
+   CHECK(31, "set<F> and lSetList/lSetObject take a moved list or element over, by the field and by its number",
+         stored);
+
+   auto bound = ocs::tom::ElementPtr<ocs::tom::PE>(lCopyElem(lGetObject(*task, JAT_pe_object)));
+   lListElem *const bound_raw = bound.get().raw();
+   auto other_task = ocs::tom::ElementPtr<ocs::tom::JAT>::create();
+   const bool first_store = ocs::tom::set<JAT_pe_object>(other_task, std::move(bound)) == 0 && bound == nullptr;
+   // an element bound to a field is refused by a second one: the moved-in handle keeps it
+   auto rebound = ocs::tom::ElementPtr<ocs::tom::PE>::from_typed(bound_raw);
+   const bool refused = ocs::tom::set<JAT_pe_object>(task, std::move(rebound)) == -1 && rebound != nullptr;
+   static_cast<void>(rebound.release());   // still bound to other_task, which frees it
+   CHECK(32, "a field refusing the element leaves it with the moved-in handle", first_store && refused);
+
+   auto freed = ocs::tom::ElementPtr<ocs::tom::JB>::create();
+   const bool tests = static_cast<bool>(freed) && freed != nullptr;
+   freed.reset();
+   const ocs::tom::ListPtr<ocs::tom::VA> empty_list;
+   CHECK(33, "an owning handle compares with nullptr and tests as a condition, empty after reset()",
+         tests && freed == nullptr && !freed && empty_list == nullptr);
+   lFreeList(&jobs);
+}
+
 int main(int argc, char *argv[]) {
    lInit(nmv);
    return ocs::module_test::run(argc, argv, {
@@ -914,5 +1135,17 @@ int main(int argc, char *argv[]) {
       {"OPS-FREE-13", "handles", "the free forms that return an element or a list give a handle that stands in for the pointer",
        {"store a found and an added element in a raw pointer, compare with nullptr, test as a condition"},
        "the same pointers, an empty handle for nothing found", {{"OPS-02", "covers"}}, {17, 18, 19, 20, 21, 22}, test_handles},
+      {"OPS-FREE-14", "walk", "lFirst(), lNext() and their variants on a handle keep its type",
+       {"walk a list handle forwards and backwards, with the old macros and a handle or a pointer as variable"},
+       "the same elements as the walk over the pointer", {{"OPS-02", "covers"}}, {23, 24, 25}, test_walk},
+      {"OPS-FREE-15", "handle forms", "the free forms on an element handle behave as on the pointer, without the type check",
+       {"every form with an element argument on a job and a task handle, an empty handle, a reduced job"},
+       "the same results; NullElement and AbsentField as the only errors", {{"OPS-02", "covers"}}, {26, 27, 28},
+       test_handle_forms},
+      {"OPS-FREE-16", "owning", "an owning element handle takes the free forms and moves into the calls that take its element over",
+       {"field access on an owning job and task, append and insert moved in, set of an object and a list field moved in, "
+        "a refused store, nullptr comparison"},
+       "the same results as on the handle; a moved handle is empty, a refused one keeps its element",
+       {{"OPS-02", "covers"}}, {29, 30, 31, 32, 33}, test_owning},
    });
 }

@@ -1442,6 +1442,15 @@ namespace ocs::tom {
          return lp_ != nullptr;
       }
 
+      /**
+       * @brief Whether the handle is empty, as a raw pointer compared with nullptr
+       * @param a the handle
+       * @return true if it holds no list
+       */
+      friend bool operator==(const ListPtr &a, std::nullptr_t) noexcept {
+         return a.lp_ == nullptr;
+      }
+
 
       /**
        * @brief Unpack a list packed by pack() or cull_pack_list(), as cull_unpack_list() does

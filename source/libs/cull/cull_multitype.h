@@ -180,6 +180,94 @@ int lSetObject(lListElem *ep, int name, lListElem *value);
 
 int lSetRef(lListElem *ep, int name, lRef value);
 
+/**
+ * @brief Store the list of an owning handle in a list field named at run time; the element takes it over
+ *
+ * As lSetList() on the raw pointer. The handle gives up its list only when
+ * it was stored; on an error it keeps and later frees it.
+ *
+ * @tparam P the owning handle's type
+ * @param ep the element
+ * @param name the list field
+ * @param value the owning handle, moved in
+ * @return 0 on success, -1 on an error, as lSetList()
+ */
+template <typename P>
+   requires ocs::cull::MovedList<P>
+int lSetList(lListElem *ep, const int name, P &&value) {
+   const int ret = lSetList(ep, name, static_cast<lList *>(value.get()));
+   if (ret == 0) {
+      static_cast<void>(value.release());
+   }
+   return ret;
+}
+
+/**
+ * @brief Store the element of an owning handle in an object field named at run time; the element takes it over
+ *
+ * As lSetObject() on the raw pointer. The handle gives up its element only
+ * when it was stored; on an error it keeps and later frees it.
+ *
+ * @tparam P the owning handle's type
+ * @param ep the element
+ * @param name the object field
+ * @param value the owning handle, moved in
+ * @return 0 on success, -1 on an error, as lSetObject()
+ */
+template <typename P>
+   requires ocs::cull::MovedElement<P>
+int lSetObject(lListElem *ep, const int name, P &&value) {
+   const int ret = lSetObject(ep, name, static_cast<lListElem *>(value.get()));
+   if (ret == 0) {
+      static_cast<void>(value.release());
+   }
+   return ret;
+}
+
+/**
+ * @brief Store the list of an owning handle in the list field at a position; the element takes it over
+ *
+ * As lSetPosList() on the raw pointer. The handle gives up its list only
+ * when it was stored; on an error it keeps and later frees it.
+ *
+ * @tparam P the owning handle's type
+ * @param ep the element
+ * @param pos the position of the list field
+ * @param value the owning handle, moved in
+ * @return 0 on success, -1 on an error, as lSetPosList()
+ */
+template <typename P>
+   requires ocs::cull::MovedList<P>
+int lSetPosList(lListElem *ep, const int pos, P &&value) {
+   const int ret = lSetPosList(ep, pos, static_cast<lList *>(value.get()));
+   if (ret == 0) {
+      static_cast<void>(value.release());
+   }
+   return ret;
+}
+
+/**
+ * @brief Store the element of an owning handle in the object field at a position; the element takes it over
+ *
+ * As lSetPosObject() on the raw pointer. The handle gives up its element
+ * only when it was stored; on an error it keeps and later frees it.
+ *
+ * @tparam P the owning handle's type
+ * @param ep the element
+ * @param pos the position of the object field
+ * @param value the owning handle, moved in
+ * @return 0 on success, -1 on an error, as lSetPosObject()
+ */
+template <typename P>
+   requires ocs::cull::MovedElement<P>
+int lSetPosObject(lListElem *ep, const int pos, P &&value) {
+   const int ret = lSetPosObject(ep, pos, static_cast<lListElem *>(value.get()));
+   if (ret == 0) {
+      static_cast<void>(value.release());
+   }
+   return ret;
+}
+
 int lAddDouble(lListElem *ep, int name, lDouble offset);
 
 int lAddUlong(lListElem *ep, int name, lUlong offset);

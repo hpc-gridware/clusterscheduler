@@ -112,7 +112,7 @@ foreach (name string_into_number job_field_on_queue raw_pointer_assigned setter_
                where_nested_not_a_list sort_foreign_field sort_order_foreign_field insert_sorted_wrong_type
                pack_what_of_other_type unpack_into_wrong_handle
                undump_into_wrong_handle unique_by_number_field free_key_of_other_type
-               free_key_not_of_sub_type free_bits_on_64_bit_field)
+               free_key_not_of_sub_type free_bits_on_64_bit_field free_handle_foreign_field)
    set(stamp ${CMAKE_CURRENT_BINARY_DIR}/compile_fail_${name}.stamp)
    add_custom_command(OUTPUT ${stamp}
            COMMAND ${CMAKE_COMMAND}

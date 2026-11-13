@@ -468,8 +468,8 @@ enum QU_Field {
 
 namespace ocs::tom {
 
-   struct CCT;
    struct CE;
+   struct CQU;
    struct PR;
    struct QIM;
    struct RUE;
@@ -649,10 +649,10 @@ namespace ocs::tom {
       using type = QIM;   ///< the sub-type
    };
 
-   /** @brief QU_state_changes holds elements of CCT */
+   /** @brief QU_state_changes holds elements of CQU */
    template <>
    struct SubType<QU_state_changes> {
-      using type = CCT;   ///< the sub-type
+      using type = CQU;   ///< the sub-type
    };
 
    /** @brief QU_joker holds elements of VA */

@@ -40,8 +40,10 @@
  */
 
 #include <atomic>
+#include <concepts>
 #include <cstddef>
 #include <cstdio>
+#include <type_traits>
 #include <utility>
 
 #include <cinttypes>
@@ -123,6 +125,77 @@ int lRemoveElem(lList *lp, lListElem **ep);
 
 int lInsertElem(lList *lp, lListElem *ep, lListElem *new_elem);
 
+namespace ocs::cull {
+
+   /**
+    * @brief An owning element handle moved into a call that takes its element over, such as ocs::tom::ElementPtr
+    *
+    * The overloads of the old functions that take an element over accept it
+    * only as an rvalue, so the transfer shows at the call: `lAppendElem(lp, std::move(ep))`.
+    *
+    * @tparam P the handle's type, as deduced for a forwarding reference
+    */
+   template <typename P>
+   concept MovedElement = !std::is_lvalue_reference_v<P> && requires(P &p) {
+      { p.release() } -> std::same_as<lListElem *>;
+      static_cast<lListElem *>(p.get());
+   };
+
+   /**
+    * @brief An owning list handle moved into a call that takes its list over, such as ocs::tom::ListPtr
+    * @tparam P the handle's type, as deduced for a forwarding reference
+    */
+   template <typename P>
+   concept MovedList = !std::is_lvalue_reference_v<P> && requires(P &p) {
+      { p.release() } -> std::same_as<lList *>;
+      static_cast<lList *>(p.get());
+   };
+
+} // namespace ocs::cull
+
+/**
+ * @brief Append the element of an owning handle to a list, which takes it over
+ *
+ * As lAppendElem() on the raw pointer. The handle gives up its element only
+ * when it was appended; on an error it keeps and later frees it.
+ *
+ * @tparam P the owning handle's type
+ * @param lp the list
+ * @param ep the owning handle, moved in
+ * @return 0 on success, -1 on an error, as lAppendElem()
+ */
+template <typename P>
+   requires ocs::cull::MovedElement<P>
+int lAppendElem(lList *lp, P &&ep) {
+   const int ret = lAppendElem(lp, static_cast<lListElem *>(ep.get()));
+   if (ret == 0) {
+      static_cast<void>(ep.release());
+   }
+   return ret;
+}
+
+/**
+ * @brief Insert the element of an owning handle into a list after another element; the list takes it over
+ *
+ * As lInsertElem() on the raw pointer. The handle gives up its element only
+ * when it was inserted; on an error it keeps and later frees it.
+ *
+ * @tparam P the owning handle's type
+ * @param lp the list
+ * @param ep the element to insert after, nullptr for the head
+ * @param new_elem the owning handle, moved in
+ * @return 0 on success, -1 on an error, as lInsertElem()
+ */
+template <typename P>
+   requires ocs::cull::MovedElement<P>
+int lInsertElem(lList *lp, lListElem *ep, P &&new_elem) {
+   const int ret = lInsertElem(lp, ep, static_cast<lListElem *>(new_elem.get()));
+   if (ret == 0) {
+      static_cast<void>(new_elem.release());
+   }
+   return ret;
+}
+
 int lPSortList(lList *lp, const char *fmt, ...);
 
 int lSortList(lList *lp, const lSortOrder *sp);
@@ -162,6 +235,9 @@ lListElem *lFindLastRW(const lList *lp, const lCondition *cp);
 #define for_each_rev_rw(ep, lp) for (ep=lLastRW(lp);ep;ep=lPrevRW(ep))                   ///< walk a list back to front, elements modifiable
 // same macros as the ones without _lv (local variable) suffix with the difference that the
 // object variable does not have to be declared before the loop, but is declared in
-// the for loop itself. This allows to use the same variable name in code after the loop
-#define for_each_ep_lv(ep, lp) for (const lListElem *ep=lFirst(lp);ep;ep=lNext(ep))      ///< like #for_each_ep, declaring @p ep in the loop itself
-#define for_each_rw_lv(ep, lp) for (lListElem *ep=lFirstRW(lp);ep;ep=lNextRW(ep))        ///< like #for_each_rw, declaring @p ep in the loop itself
+// the for loop itself. This allows to use the same variable name in code after the loop.
+// The variable takes the type lFirst() and lFirstRW() return: over a list pointer it is the
+// element pointer it always was, over a list handle of ocs::tom it is an element handle of the
+// list's type, so a field of another object type does not compile in the loop body.
+#define for_each_ep_lv(ep, lp) for (auto ep=lFirst(lp);ep;ep=lNext(ep))                   ///< like #for_each_ep, declaring @p ep in the loop itself
+#define for_each_rw_lv(ep, lp) for (auto ep=lFirstRW(lp);ep;ep=lNextRW(ep))               ///< like #for_each_rw, declaring @p ep in the loop itself

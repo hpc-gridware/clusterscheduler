@@ -1107,8 +1107,8 @@
             "new state variables, these are needed for the scheduler, to dispach jobs into suitable queues"
          ],
          "type": "lListT",
-         "subClassName": "CCT",
-         "subCullPrefix": "CCT",
+         "subClassName": "CQU",
+         "subCullPrefix": "CQU",
          "flags": [
             {
                "name": "JGDI_RO"

@@ -347,7 +347,7 @@ namespace ocs::tom {
       {QU_subordinate_list, SO::descriptor.e},
       {QU_resource_utilization, RUE::descriptor.e},
       {QU_message_list, QIM::descriptor.e},
-      {QU_state_changes, CCT::descriptor.e},
+      {QU_state_changes, CQU::descriptor.e},
       {QU_joker, VA::descriptor.e},
       {EH_scaling_list, HS::descriptor.e},
       {EH_consumable_config_list, CE::descriptor.e},

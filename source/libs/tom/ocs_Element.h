@@ -161,30 +161,50 @@ namespace ocs::tom {
        * them, so the error path at each call site stays a single jump: a null
        * element, an element of another type, a reduced element without the field.
        *
+       * For an element of a handle the type is known at compile time, so the
+       * comparison with the field's type is left out (@p Typed).
+       *
        * @tparam F the field number
+       * @tparam Typed true if the element comes from a handle of the field's type
        * @param ep the element, or nullptr
        * @throw FieldException with reason NullElement, ForeignField or AbsentField
        */
-      template <auto F>
+      template <auto F, bool Typed = false>
       inline void check_holds(const lListElem *ep) {
          using Tr = FieldTraits<F>;
-         if (ep == nullptr || ep->descr[0].nm != Tr::Type::fields[0].nm || ep->descr[Tr::pos].off == OCS_CULL_ABSENT)
-            [[unlikely]] {
+         const bool foreign = !Typed && ep != nullptr && ep->descr[0].nm != Tr::Type::fields[0].nm;
+         if (ep == nullptr || foreign || ep->descr[Tr::pos].off == OCS_CULL_ABSENT) [[unlikely]] {
             throw_access_error(ep, F, Tr::Type::fields[0].nm);
          }
+      }
+
+      /**
+       * @brief Stop the compilation if a field does not belong to the type of a handle
+       *
+       * The free forms taking a handle have no run-time check of the type:
+       * a field of another type is a compile error instead (L2).
+       *
+       * @tparam F the field number
+       * @tparam T the object type of the handle
+       */
+      template <auto F, typename T>
+      constexpr void assert_field_of() {
+         static_assert(std::is_same_v<T, typename FieldTraits<F>::Type>,
+                       "the field does not belong to the object type of the handle");
       }
 
       /**
        * @brief The position-plus-offset slot index of a field known at compile time, checked by check_holds()
        *
        * @tparam F the field number
+       * @tparam Typed true if the element comes from a handle of the field's type, see check_holds()
        * @param ep the element, or nullptr
        * @return the index into the element's values
        * @throw FieldException with reason NullElement, ForeignField or AbsentField
        */
-      template <auto F>
+      template <auto F, bool Typed = false>
       [[nodiscard]] inline int checked_slot(const lListElem *ep) {
-         check_holds<F>(ep);
+         check_holds<F, Typed>(ep);
          constexpr int pos = FieldTraits<F>::pos;
          return pos + ep->descr[pos].off;
       }
@@ -1158,6 +1178,15 @@ namespace ocs::tom {
          return ep_ != nullptr;
       }
 
+      /**
+       * @brief Whether the handle is empty, as a raw pointer compared with nullptr
+       * @param a the handle
+       * @return true if it holds no element
+       */
+      friend bool operator==(const ElementPtr &a, std::nullptr_t) noexcept {
+         return a.ep_ == nullptr;
+      }
+
 
       /**
        * @brief Unpack an element packed by pack() or cull_pack_elem(), as cull_unpack_elem() does
@@ -1258,7 +1287,144 @@ namespace ocs::tom {
       return detail::read<F, true>(ep, detail::checked_slot<F>(ep));
    }
 
+   /**
+    * @brief Read a field of an element handle (L2); the free form of a variable that became a handle
+    *
+    * As get() on a raw pointer, but the type of the element is known: a field
+    * of another type does not compile, and only an empty handle and a reduced
+    * element without the field are checked at run time.
+    *
+    * @tparam F the field number, of the handle's type
+    * @tparam T the object type, deduced from the handle
+    * @param ep the element
+    * @return the value, as the field table declares it
+    * @throw FieldException with reason NullElement for an empty handle, AbsentField for a reduced element
+    */
+   template <auto F, ObjectType T>
+      requires TypedField<decltype(F)>
+   [[nodiscard]] auto get(const ConstElement<T> &ep) {
+      detail::assert_field_of<F, T>();
+      return detail::read<F, false>(ep.raw(), detail::checked_slot<F, true>(ep.raw()));
+   }
+
+   /**
+    * @brief Read a field of a mutable element handle (L2); list and object fields give mutable handles
+    * @tparam F the field number, of the handle's type
+    * @tparam T the object type, deduced from the handle
+    * @param ep the element
+    * @return the value, as the field table declares it
+    * @throw FieldException with reason NullElement for an empty handle, AbsentField for a reduced element
+    */
+   template <auto F, ObjectType T>
+      requires TypedField<decltype(F)>
+   [[nodiscard]] auto get(const Element<T> &ep) {
+      detail::assert_field_of<F, T>();
+      return detail::read<F, true>(ep.raw(), detail::checked_slot<F, true>(ep.raw()));
+   }
+
    namespace detail {
+
+      /** @brief Whether a type is an owning element handle, which a setter of an object field takes over */
+      template <typename V>
+      inline constexpr bool is_element_ptr = false;
+
+      /** @brief An owning element handle */
+      template <ObjectType T>
+      inline constexpr bool is_element_ptr<ElementPtr<T>> = true;
+
+      /** @brief Whether a type is an owning list handle, which a setter of a list field takes over */
+      template <typename V>
+      inline constexpr bool is_list_ptr = false;
+
+      /** @brief An owning list handle */
+      template <ObjectType T>
+      inline constexpr bool is_list_ptr<ListPtr<T>> = true;
+
+      /**
+       * @brief The free setter on an element that may be nullptr, for the raw pointer and the handle (L2)
+       * @tparam F the field number
+       * @tparam Typed true if the element comes from a handle of the field's type, see check_holds()
+       * @tparam V the value's type
+       * @param ep the element, or nullptr
+       * @param value the value; a list or an element is taken over, as by the old setter; an owning handle
+       *        (std::move) gives up its list or element once it is stored, and keeps it on an error
+       * @return 0 on success, -1 for a null element, a string that cannot be copied or an element bound elsewhere
+       * @throw FieldException with reason ForeignField or AbsentField if the element does not hold the field
+       */
+      template <auto F, bool Typed, typename V>
+      int free_set(lListElem *ep, V &&value) {
+         using Tr = FieldTraits<F>;
+         using Value = std::remove_cvref_t<V>;
+         if constexpr (is_element_ptr<Value> || is_list_ptr<Value>) {
+            static_assert(!std::is_lvalue_reference_v<V>, "an owning handle is handed over with std::move");
+            if constexpr (!std::is_void_v<typename Tr::Sub>) {
+               static_assert(std::is_same_v<Value, ElementPtr<typename Tr::Sub>> ||
+                                std::is_same_v<Value, ListPtr<typename Tr::Sub>>,
+                             "the owning handle holds another type than the field's sub-type");
+            }
+         }
+         if (ep == nullptr) [[unlikely]] {
+            report_soft_path("ocs::tom::set", static_cast<int>(F), SoftPathReason::NullElement);
+            set_lerrno(LEELEMNULL);
+            return -1;
+         }
+         check_holds<F, Typed>(ep);
+         const int off = ep->descr[Tr::pos].off;
+         // a typed list or object field takes the raw pointer here, as the old setter did
+         if constexpr (Tr::type == FieldType::List) {
+            if constexpr (is_list_ptr<Value>) {
+               store_list(ep, Tr::pos, value.release());
+            } else {
+               store_list(ep, Tr::pos, static_cast<lList *>(value));
+            }
+            return 0;
+         } else if constexpr (Tr::type == FieldType::Object) {
+            lListElem *object = nullptr;
+            if constexpr (is_element_ptr<Value>) {
+               object = value.get().raw();
+            } else {
+               object = static_cast<lListElem *>(value);
+            }
+            if (!store_object(ep, Tr::pos, object)) {
+               report_soft_path("ocs::tom::set", static_cast<int>(F), SoftPathReason::BoundElement);
+               set_lerrno(LEBOUNDELEM);
+               return -1;
+            }
+            if constexpr (is_element_ptr<Value>) {
+               static_cast<void>(value.release());   // the element now belongs to the field
+            }
+            return 0;
+         } else {
+            if (!write<F>(ep, Tr::pos + off, static_cast<typename ValueOf<Tr::type>::type>(value))) {
+               set_lerrno(LESTRDUP);
+               return -1;
+            }
+            return 0;
+         }
+      }
+
+      /**
+       * @brief The free add on an element that may be nullptr, for the raw pointer and the handle (L2)
+       * @tparam F the field number, a 32 bit, 64 bit or double field
+       * @tparam Typed true if the element comes from a handle of the field's type, see check_holds()
+       * @param ep the element, or nullptr
+       * @param offset the amount to add
+       * @return 0 on success, -1 with LEELEMNULL for a null element
+       * @throw FieldException with reason ForeignField or AbsentField if the element does not hold the field
+       */
+      template <auto F, bool Typed>
+      int free_add(lListElem *ep, const typename ValueOf<FieldTraits<F>::type>::type offset) {
+         using Tr = FieldTraits<F>;
+         if (ep == nullptr) [[unlikely]] {
+            report_soft_path("ocs::tom::add", static_cast<int>(F), SoftPathReason::NullElement);
+            set_lerrno(LEELEMNULL);
+            return -1;
+         }
+         check_holds<F, Typed>(ep);
+         const int off = ep->descr[Tr::pos].off;
+         add_number(ep, Tr::pos, ep->cont[Tr::pos + off], offset);
+         return 0;
+      }
 
    } // namespace detail
 
@@ -1280,32 +1446,29 @@ namespace ocs::tom {
    template <auto F, typename V>
       requires TypedField<decltype(F)>
    int set(lListElem *ep, V &&value) {
-      using Tr = FieldTraits<F>;
-      if (ep == nullptr) [[unlikely]] {
-         report_soft_path("ocs::tom::set", static_cast<int>(F), SoftPathReason::NullElement);
-         set_lerrno(LEELEMNULL);
-         return -1;
-      }
-      detail::check_holds<F>(ep);
-      const int off = ep->descr[Tr::pos].off;
-      // a typed list or object field takes the raw pointer here, as the old setter did
-      if constexpr (Tr::type == FieldType::List) {
-         store_list(ep, Tr::pos, static_cast<lList *>(value));
-         return 0;
-      } else if constexpr (Tr::type == FieldType::Object) {
-         if (!store_object(ep, Tr::pos, static_cast<lListElem *>(value))) {
-            report_soft_path("ocs::tom::set", static_cast<int>(F), SoftPathReason::BoundElement);
-            set_lerrno(LEBOUNDELEM);
-            return -1;
-         }
-         return 0;
-      } else {
-         if (!detail::write<F>(ep, Tr::pos + off, static_cast<typename ValueOf<Tr::type>::type>(value))) {
-            set_lerrno(LESTRDUP);
-            return -1;
-         }
-         return 0;
-      }
+      return detail::free_set<F, false>(ep, std::forward<V>(value));
+   }
+
+   /**
+    * @brief Set a field of a mutable element handle (L2), with the error behaviour of the free setter
+    *
+    * A field of another type than the handle's does not compile; an empty
+    * handle gives -1 with LEELEMNULL, a reduced element without the field
+    * throws, as for the raw pointer.
+    *
+    * @tparam F the field number, of the handle's type
+    * @tparam T the object type, deduced from the handle
+    * @tparam V the value's type
+    * @param ep the element
+    * @param value the value; a list or an element is taken over, as by the old setter
+    * @return 0 on success, -1 for an empty handle, a string that cannot be copied or an element bound elsewhere
+    * @throw FieldException with reason AbsentField if the element does not hold the field
+    */
+   template <auto F, ObjectType T, typename V>
+      requires TypedField<decltype(F)>
+   int set(const Element<T> &ep, V &&value) {
+      detail::assert_field_of<F, T>();
+      return detail::free_set<F, true>(ep.raw(), std::forward<V>(value));
    }
 
    /**
@@ -1327,16 +1490,75 @@ namespace ocs::tom {
    template <auto F>
       requires TypedField<decltype(F)> && detail::Addable<F>
    int add(lListElem *ep, const typename ValueOf<FieldTraits<F>::type>::type offset) {
-      using Tr = FieldTraits<F>;
-      if (ep == nullptr) [[unlikely]] {
-         report_soft_path("ocs::tom::add", static_cast<int>(F), SoftPathReason::NullElement);
-         set_lerrno(LEELEMNULL);
-         return -1;
-      }
-      detail::check_holds<F>(ep);
-      const int off = ep->descr[Tr::pos].off;
-      add_number(ep, Tr::pos, ep->cont[Tr::pos + off], offset);
-      return 0;
+      return detail::free_add<F, false>(ep, offset);
+   }
+
+   /**
+    * @brief Add an offset to a number field of a mutable element handle (L2)
+    *
+    * A field of another type than the handle's does not compile; otherwise
+    * as add() on the raw pointer.
+    *
+    * @tparam F the field number, of the handle's type, a 32 bit, 64 bit or double field
+    * @tparam T the object type, deduced from the handle
+    * @param ep the element
+    * @param offset the amount to add
+    * @return 0 on success, -1 with LEELEMNULL for an empty handle
+    * @throw FieldException with reason AbsentField if the element does not hold the field
+    */
+   template <auto F, ObjectType T>
+      requires TypedField<decltype(F)> && detail::Addable<F>
+   int add(const Element<T> &ep, const typename ValueOf<FieldTraits<F>::type>::type offset) {
+      detail::assert_field_of<F, T>();
+      return detail::free_add<F, true>(ep.raw(), offset);
+   }
+
+   // The owning element handle takes the free forms of the handle it owns: a local variable that owns its element
+   // (rule L3) keeps its field access lines. Template deduction does not see conversions, hence one overload each.
+
+   /**
+    * @brief Read a field of an owning element handle (L3), as get() on the handle it owns
+    * @tparam F the field number, of the handle's type
+    * @tparam T the object type, deduced from the handle
+    * @param ep the element
+    * @return the value, as the field table declares it; list and object fields give mutable handles
+    * @throw FieldException with reason NullElement for an empty handle, AbsentField for a reduced element
+    */
+   template <auto F, ObjectType T>
+      requires TypedField<decltype(F)>
+   [[nodiscard]] auto get(const ElementPtr<T> &ep) {
+      return get<F>(ep.get());
+   }
+
+   /**
+    * @brief Set a field of an owning element handle (L3), as set() on the handle it owns
+    * @tparam F the field number, of the handle's type
+    * @tparam T the object type, deduced from the handle
+    * @tparam V the value's type
+    * @param ep the element
+    * @param value the value; a list or an element is taken over, as by the old setter
+    * @return 0 on success, -1 for an empty handle, a string that cannot be copied or an element bound elsewhere
+    * @throw FieldException with reason AbsentField if the element does not hold the field
+    */
+   template <auto F, ObjectType T, typename V>
+      requires TypedField<decltype(F)>
+   int set(const ElementPtr<T> &ep, V &&value) {
+      return set<F>(ep.get(), std::forward<V>(value));
+   }
+
+   /**
+    * @brief Add an offset to a number field of an owning element handle (L3), as add() on the handle it owns
+    * @tparam F the field number, of the handle's type, a 32 bit, 64 bit or double field
+    * @tparam T the object type, deduced from the handle
+    * @param ep the element
+    * @param offset the amount to add
+    * @return 0 on success, -1 with LEELEMNULL for an empty handle
+    * @throw FieldException with reason AbsentField if the element does not hold the field
+    */
+   template <auto F, ObjectType T>
+      requires TypedField<decltype(F)> && detail::Addable<F>
+   int add(const ElementPtr<T> &ep, const typename ValueOf<FieldTraits<F>::type>::type offset) {
+      return add<F>(ep.get(), offset);
    }
 
 } // namespace ocs::tom

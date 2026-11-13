@@ -173,7 +173,7 @@ object_get_subtype(int nm)
          ret = QIM_Type;
          break;
       case QU_state_changes:
-         ret = CCT_Type;
+         ret = CQU_Type;
          break;
       case QU_joker:
          ret = VA_Type;

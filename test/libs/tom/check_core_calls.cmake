@@ -67,6 +67,12 @@ foreach (source IN LISTS sources)
          list(APPEND defined "${CMAKE_MATCH_1}")
       endif ()
    endforeach ()
+   # a template definition in a header, such as the old walking names overloaded for the handles, is no call
+   string(REGEX MATCHALL "template[ \t]*<[^>]*>[^;{}()]*[ *&]l[A-Z][A-Za-z0-9_]*[ \t]*\\(" template_heads "${text}")
+   foreach (head IN LISTS template_heads)
+      string(REGEX REPLACE ".*[ *&](l[A-Z][A-Za-z0-9_]*)[ \t]*\\(.*" "\\1" name "${head}")
+      list(APPEND defined "${name}")
+   endforeach ()
    if (file_name MATCHES "\\.cc$")
       # a definition starts in the first column and reaches its body before a semicolon
       string(REGEX MATCHALL "\n[A-Za-z_][^\n;{}()]*[ *&]l[A-Z][A-Za-z0-9_]*[ \t]*\\([^;{]*{" heads "${text}")
