@@ -167,6 +167,28 @@ static void cl_dump_tcp_private(cl_com_connection_t* connection) {
 }
 #endif
 
+#if defined(OCS_WITH_OPENSSL)
+/**
+ * @brief Closes the socket of a connection whose TLS connect failed and reports the error.
+ *
+ * @param private_com the private data of the connection
+ * @param retval the commlib error code to report
+ * @param error_text additional error text, may be nullptr
+ *
+ * @return retval
+ */
+static int cl_com_tcp_ssl_connect_failed(cl_com_tcp_private_t *private_com, int retval,
+                                         const char *error_text) {
+   DSTRING_STATIC(dstr_error, MAX_STRING_SIZE);
+   private_com->ssl_connection->set_fd(-1, &dstr_error);
+   shutdown(private_com->sockfd, 2);
+   close(private_com->sockfd);
+   private_com->sockfd = -1;
+   cl_commlib_push_application_error(CL_LOG_ERROR, retval, error_text);
+   return retval;
+}
+#endif
+
 /****** cl_tcp_framework/cl_com_tcp_open_connection() **************************
 *  NAME
 *     cl_com_tcp_open_connection() -- open a tcp/ip connection
@@ -418,6 +440,15 @@ int cl_com_tcp_open_connection(cl_com_connection_t *connection, int timeout) {
 
       CL_LOG(CL_LOG_DEBUG, "connection_sub_state is CL_COM_OPEN_CONNECTED");
 
+      // set TCP_NODELAY socket option
+#if defined(SOLARIS) && !defined(SOLARIS64)
+      if (setsockopt(private_com->sockfd, IPPROTO_TCP, TCP_NODELAY, (const char *) &on, sizeof(int)) != 0)
+#else
+      if (setsockopt(private_com->sockfd, IPPROTO_TCP, TCP_NODELAY, &on, sizeof(int)) != 0)
+#endif
+      {
+         CL_LOG(CL_LOG_ERROR, "could not set TCP_NODELAY");
+      }
 
 #if defined(OCS_WITH_OPENSSL)
       if (private_com->ssl_connection != nullptr) {
@@ -440,39 +471,62 @@ int cl_com_tcp_open_connection(cl_com_connection_t *connection, int timeout) {
             }
          }
 
-         /* Now do SSL connect with server */
-         if (ssl_ok) {
-            if (!private_com->ssl_connection->connect(&dstr_error)) {
-               CL_LOG_STR(CL_LOG_ERROR, "could not ssl connect", sge_dstring_get_string(&dstr_error));
-               ssl_ok = false;
-            }
-         }
-
          // if there was an error, report it and return error
          if (!ssl_ok) {
-            private_com->ssl_connection->set_fd(-1, &dstr_error);
-            shutdown(private_com->sockfd, 2);
-            close(private_com->sockfd);
-            private_com->sockfd = -1;
-            cl_commlib_push_application_error(CL_LOG_ERROR, CL_RETVAL_SSL_CONNECT_ERROR,
-                                              sge_dstring_get_string(&dstr_error));
-            return CL_RETVAL_SSL_CONNECT_ERROR;
+            return cl_com_tcp_ssl_connect_failed(private_com, CL_RETVAL_SSL_CONNECT_ERROR,
+                                                 sge_dstring_get_string(&dstr_error));
          }
-      }
-#endif
 
-      // set TCP_NODELAY socket option
-#if defined(SOLARIS) && !defined(SOLARIS64)
-      if (setsockopt(private_com->sockfd, IPPROTO_TCP, TCP_NODELAY, (const char *) &on, sizeof(int)) != 0)
+         // the TLS handshake runs step by step from the poll loop, like the TCP connect above
+         struct timeval now;
+         gettimeofday(&now, nullptr);
+         connection->write_buffer_timeout_time = now.tv_sec + timeout;
+         connection->connection_sub_state = CL_COM_OPEN_SSL_CONNECT;
+      } else {
+         return CL_RETVAL_OK;
+      }
 #else
-      if (setsockopt(private_com->sockfd, IPPROTO_TCP, TCP_NODELAY, &on, sizeof(int)) != 0)
-#endif
-      {
-         CL_LOG(CL_LOG_ERROR, "could not set TCP_NODELAY");
-      }
-
       return CL_RETVAL_OK;
+#endif
    }
+
+#if defined(OCS_WITH_OPENSSL)
+   if (connection->connection_sub_state == CL_COM_OPEN_SSL_CONNECT) {
+      CL_LOG(CL_LOG_DEBUG, "connection_sub_state is CL_COM_OPEN_SSL_CONNECT");
+
+      DSTRING_STATIC(dstr_error, MAX_STRING_SIZE);
+      auto result = private_com->ssl_connection->handshake(&dstr_error);
+      switch (result) {
+         case ocs::uti::OpenSSL::HandshakeResult::DONE:
+            CL_LOG(CL_LOG_INFO, "ssl connect done");
+            connection->write_buffer_timeout_time = 0;
+            return CL_RETVAL_OK;
+         case ocs::uti::OpenSSL::HandshakeResult::WANT_READ:
+         case ocs::uti::OpenSSL::HandshakeResult::WANT_WRITE: {
+            struct timeval now;
+            gettimeofday(&now, nullptr);
+            if (connection->write_buffer_timeout_time <= now.tv_sec ||
+                cl_com_get_ignore_timeouts_flag()) {
+               CL_LOG(CL_LOG_ERROR, "ssl connect timeout");
+               connection->write_buffer_timeout_time = 0;
+               int retval = CL_RETVAL_SSL_CONNECT_HANDSHAKE_TIMEOUT;
+               return cl_com_tcp_ssl_connect_failed(private_com, retval, nullptr);
+            }
+            // the poll loop waits for a writable socket only when data_write_flag is set
+            if (result == ocs::uti::OpenSSL::HandshakeResult::WANT_WRITE) {
+               connection->data_write_flag = CL_COM_DATA_READY;
+            } else {
+               connection->data_write_flag = CL_COM_DATA_NOT_READY;
+            }
+            return CL_RETVAL_UNCOMPLETE_WRITE;
+         }
+         case ocs::uti::OpenSSL::HandshakeResult::FAILED:
+            CL_LOG_STR(CL_LOG_ERROR, "could not ssl connect", sge_dstring_get_string(&dstr_error));
+            return cl_com_tcp_ssl_connect_failed(private_com, CL_RETVAL_SSL_CONNECT_ERROR,
+                                                 sge_dstring_get_string(&dstr_error));
+      }
+   }
+#endif
 
    return CL_RETVAL_UNKNOWN;
 }
@@ -1338,10 +1392,9 @@ int cl_com_tcp_connection_request_handler(cl_com_connection_t *connection, cl_co
          tmp_private->connect_in_port = ntohs(cli_addr.sin_port);
       }
 
-      // Set the socket to non-blocking before the SSL accept: on a blocking socket SSL_accept()
-      // waits in read() until the client sends its handshake, so a client which connects and
-      // sends nothing blocks the daemon. OpenSSLConnection::accept() expects a non-blocking
-      // socket and gives up after SGE_OPENSSL_RETRY_TIMEOUT_SERVER.
+      // Set the socket to non-blocking before the TLS handshake: the handshake runs step by step
+      // from the poll loop, see cl_com_tcp_connection_complete_accept(). On a blocking socket
+      // SSL_accept() would wait in read() until the client sends its handshake.
       fcntl(new_sfd, F_SETFL, O_NONBLOCK);
       sso = 1;
 #if defined(SOLARIS) && !defined(SOLARIS64)
@@ -1358,27 +1411,16 @@ int cl_com_tcp_connection_request_handler(cl_com_connection_t *connection, cl_co
          bool ssl_ok = true;
          DSTRING_STATIC(dstr_error, MAX_STRING_SIZE);
 
-         // register the client socket with the OpenSSL object
+         // register the client socket with the OpenSSL object, the TLS handshake follows in
+         // the CL_ACCEPTING state, see cl_com_tcp_connection_complete_accept()
          if (ssl_ok) {
             if (!tmp_private->ssl_connection->set_fd(new_sfd, &dstr_error)) {
                CL_LOG_STR(CL_LOG_ERROR, "could not set ssl fd", sge_dstring_get_string(&dstr_error));
                ssl_ok = false;
             }
          }
-         // do the SSL accept
-         if (ssl_ok) {
-            if (!tmp_private->ssl_connection->accept(&dstr_error)) {
-               CL_LOG_STR(CL_LOG_ERROR, "ssl accept error:", sge_dstring_get_string(&dstr_error));
-               ssl_ok = false;
-            }
-         }
 
          // in case of errors: cleanup and return
-         //
-         // A connection whose TLS handshake never completed must not be handed to the caller.
-         // Falling through here used to store it in *new_connection and return CL_RETVAL_OK, so the
-         // caller added a half-open connection to its list, the socket stayed open and the peer was
-         // never told. The connect path does the opposite and is the behaviour mirrored here.
          //
          // cl_com_close_connection() is the complete teardown: it frees the SSL object *before*
          // closing the socket (see CS-1858), releases client_host_name - which already owns
@@ -1395,6 +1437,91 @@ int cl_com_tcp_connection_request_handler(cl_com_connection_t *connection, cl_co
       // everything ok
       *new_connection = tmp_connection;
    }
+
+   return CL_RETVAL_OK;
+}
+
+/**
+ * @brief Checks whether a connection is encrypted with TLS.
+ *
+ * @param connection the connection to check
+ *
+ * @return true if the connection has an SSL object, i.e. it does a TLS handshake before the
+ *         commlib protocol starts, false otherwise
+ */
+bool cl_com_tcp_uses_tls(cl_com_connection_t *connection) {
+#if defined(OCS_WITH_OPENSSL)
+   cl_com_tcp_private_t *private_com = cl_com_tcp_get_private(connection);
+   return private_com != nullptr && private_com->ssl_connection != nullptr;
+#else
+   return false;
+#endif
+}
+
+/**
+ * @brief Continues the TLS handshake of an accepted connection.
+ *
+ * An accepted TLS connection stays in the CL_ACCEPTING state until its TLS handshake is
+ * complete. The poll loop calls this function whenever the socket is ready. It performs one
+ * handshake step and does not wait for the client, so a client which does not proceed with
+ * the handshake does not block the daemon.
+ *
+ * When the handshake needs to send data and the socket is not writable, the function sets
+ * data_write_flag, so that the poll loop also waits for the socket to become writable.
+ *
+ * The caller arms read_buffer_timeout_time when it adds the accepted connection to its
+ * connection list. The function fails when the handshake has not completed by then.
+ *
+ * @param connection the accepted connection in the CL_ACCEPTING state
+ *
+ * @return CL_RETVAL_OK when the handshake is complete,
+ *         CL_RETVAL_UNCOMPLETE_READ or CL_RETVAL_UNCOMPLETE_WRITE when the handshake has to
+ *         be continued once the socket is ready,
+ *         CL_RETVAL_SSL_ACCEPT_HANDSHAKE_TIMEOUT or CL_RETVAL_SSL_ACCEPT_ERROR on error
+ */
+int cl_com_tcp_connection_complete_accept(cl_com_connection_t *connection) {
+   if (connection == nullptr) {
+      return CL_RETVAL_PARAMS;
+   }
+
+   cl_com_tcp_private_t *private_com = cl_com_tcp_get_private(connection);
+   if (private_com == nullptr) {
+      return CL_RETVAL_NO_FRAMEWORK_INIT;
+   }
+
+#if defined(OCS_WITH_OPENSSL)
+   if (private_com->ssl_connection != nullptr) {
+      connection->connection_sub_state = CL_COM_ACCEPT;
+
+      DSTRING_STATIC(dstr_error, MAX_STRING_SIZE);
+      auto result = private_com->ssl_connection->handshake(&dstr_error);
+      switch (result) {
+         case ocs::uti::OpenSSL::HandshakeResult::DONE:
+            CL_LOG(CL_LOG_INFO, "ssl accept done");
+            connection->data_write_flag = CL_COM_DATA_NOT_READY;
+            break;
+         case ocs::uti::OpenSSL::HandshakeResult::WANT_READ:
+         case ocs::uti::OpenSSL::HandshakeResult::WANT_WRITE: {
+            struct timeval now;
+            gettimeofday(&now, nullptr);
+            if (connection->read_buffer_timeout_time != 0 &&
+                now.tv_sec >= connection->read_buffer_timeout_time) {
+               CL_LOG(CL_LOG_ERROR, "ssl accept timeout");
+               return CL_RETVAL_SSL_ACCEPT_HANDSHAKE_TIMEOUT;
+            }
+            if (result == ocs::uti::OpenSSL::HandshakeResult::WANT_WRITE) {
+               connection->data_write_flag = CL_COM_DATA_READY;
+               return CL_RETVAL_UNCOMPLETE_WRITE;
+            }
+            connection->data_write_flag = CL_COM_DATA_NOT_READY;
+            return CL_RETVAL_UNCOMPLETE_READ;
+         }
+         case ocs::uti::OpenSSL::HandshakeResult::FAILED:
+            CL_LOG_STR(CL_LOG_ERROR, "ssl accept error:", sge_dstring_get_string(&dstr_error));
+            return CL_RETVAL_SSL_ACCEPT_ERROR;
+      }
+   }
+#endif
 
    return CL_RETVAL_OK;
 }
@@ -1687,6 +1814,10 @@ int cl_com_tcp_open_connection_request_handler(cl_com_poll_t *poll_handle, cl_co
                         }
                      }
                      break;
+                  case CL_ACCEPTING:
+                     // TLS handshake, see cl_com_tcp_connection_complete_accept(): wait for data
+                     // from the client, and for a writable socket only when the handshake has
+                     // data to send - the same as for the commlib protocol in CL_CONNECTING
                   case CL_CONNECTING:
                      if (do_read_select != 0) {
                         ufds[ufds_index].fd = con_private->sockfd;
@@ -1750,12 +1881,40 @@ int cl_com_tcp_open_connection_request_handler(cl_com_poll_t *poll_handle, cl_co
                            }
                            break;
                         }
+                        case CL_COM_OPEN_SSL_CONNECT: {
+                           // TLS handshake, see cl_com_tcp_open_connection(): wait for data from
+                           // the server, and for a writable socket only when the handshake has
+                           // data to send
+                           if (do_read_select != 0) {
+                              ufds[ufds_index].fd = con_private->sockfd;
+                              ufds[ufds_index].events = POLLIN | POLLPRI;
+                              ufds_con[ufds_index] = connection;
+                              connection->is_read_selected = true;
+                              max_fd = MAX(max_fd, con_private->sockfd);
+                              nr_of_descriptors++;
+                              connection->data_read_flag = CL_COM_DATA_NOT_READY;
+                           }
+                           if (connection->data_write_flag == CL_COM_DATA_READY &&
+                               do_write_select != 0) {
+                              ufds[ufds_index].fd = con_private->sockfd;
+                              ufds[ufds_index].events |= POLLOUT;
+                              ufds_con[ufds_index] = connection;
+                              connection->is_write_selected = true;
+                              max_fd = MAX(max_fd, con_private->sockfd);
+                              connection->fd_ready_for_write = CL_COM_DATA_NOT_READY;
+                           }
+                           if (ufds[ufds_index].events) {
+                              ufds_index++;
+                              ufds_con[ufds_index] = nullptr;
+                              memset(&(ufds[ufds_index]), 0, sizeof(struct pollfd));
+                           }
+                           break;
+                        }
                         default:
                            break;
                      }
                      break;
                   case CL_DISCONNECTED:
-                  case CL_ACCEPTING:
                      break;
                }
                break;

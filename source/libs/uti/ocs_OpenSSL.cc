@@ -1969,9 +1969,8 @@ namespace ocs::uti {
     * @note Timeout is currently hardcoded to 1 second.
     * @note Timeout is not treated as an error (returns true).
     * @note EWOULDBLOCK, EAGAIN, and EINTR from select() are not treated as errors.
-    * @todo CS-3073: Consider moving this functionality into commlib for better integration.
-    *                Which is tricky, e.g., when waiting for accept or connect to continue, we may not
-    *               repeat the TCP accept() or connect() operation, just take up the interrupted connection again.
+    * @note Only the blocking accept() and connect() wait here. commlib calls handshake() and
+    *       waits for the socket in its own poll loop.
     */
    bool OpenSSL::OpenSSLConnection::wait_for_socket_ready(int reason, dstring *error_dstr) const {
       // wait until the socket is ready for read or write
@@ -2232,15 +2231,120 @@ namespace ocs::uti {
    }
 
    /**
+    * @brief Performs one step of the TLS handshake on a non-blocking socket.
+    *
+    * Calls SSL_accept() on a server-side connection, SSL_connect() on a client-side connection.
+    * The function does not wait: when the handshake needs more data from the peer, or cannot
+    * send its data yet, it returns and the caller calls it again when the socket is ready.
+    * commlib drives the handshake this way from its poll loop, so a peer which does not
+    * proceed with the handshake does not block the daemon.
+    *
+    * This function must be called after:
+    * - TCP accept() or connect() has completed
+    * - set_fd() has been called to associate the socket
+    * - (client side, optional) set_server_name_for_sni() has been called for SNI support
+    *
+    * @param error_dstr Output parameter for error messages
+    *
+    * @return HandshakeResult::DONE when the TLS session is established,
+    *         HandshakeResult::WANT_READ or HandshakeResult::WANT_WRITE when the function
+    *         must be called again once the socket is readable or writable,
+    *         HandshakeResult::FAILED on error, the reason is in error_dstr
+    */
+   OpenSSL::HandshakeResult OpenSSL::OpenSSLConnection::handshake(dstring *error_dstr) {
+      DENTER(TOP_LAYER);
+
+      if (ssl == nullptr) {
+         DRETURN(HandshakeResult::FAILED);
+      }
+
+      // clear previously occurred but not yet fetched errors
+      ERR_clear_error_func();
+
+      HandshakeResult ret = HandshakeResult::DONE;
+      int handshake_ret = is_server ? SSL_accept_func(ssl) : SSL_connect_func(ssl);
+      if (handshake_ret <= 0) {
+         int err = SSL_get_error_func(ssl, handshake_ret);
+         switch (err) {
+            case SSL_ERROR_WANT_READ:
+            case SSL_ERROR_WANT_ACCEPT:
+            case SSL_ERROR_WANT_CONNECT:
+               ret = HandshakeResult::WANT_READ;
+               break;
+            case SSL_ERROR_WANT_WRITE:
+               ret = HandshakeResult::WANT_WRITE;
+               break;
+            default:
+               if (is_server) {
+                  sge_dstring_sprintf(error_dstr, MSG_CANNOT_ACCEPT_DS, err, get_error_message());
+               } else {
+                  sge_dstring_sprintf(error_dstr, MSG_CANNOT_CONNECT_DS, err, get_error_message());
+               }
+               note_error(err);
+               ret = HandshakeResult::FAILED;
+               break;
+         }
+         DPRINTF("  --> handshake step returned SSL error %d\n", err);
+      }
+
+      DRETURN(ret);
+   }
+
+   /**
+    * @brief Performs the TLS handshake and waits for it to complete.
+    *
+    * Repeats handshake() until it completes or fails. Between the steps it waits for the
+    * socket to become ready, see wait_for_socket_ready().
+    *
+    * @param timeout Maximum time to wait for the handshake, in microseconds
+    * @param error_dstr Output parameter for error messages
+    *
+    * @return true if the handshake completed, false on error or timeout
+    */
+   bool OpenSSL::OpenSSLConnection::handshake_with_timeout(u_long64 timeout, dstring *error_dstr) {
+      DENTER(TOP_LAYER);
+
+      u_long64 end_time = sge_get_gmt64() + timeout;
+      int repetitions = 0;
+      bool ret = true;
+      bool done = false;
+      while (ret && !done) {
+         HandshakeResult result = handshake(error_dstr);
+         repetitions++;
+         if (result == HandshakeResult::DONE) {
+            done = true;
+         } else if (result == HandshakeResult::FAILED) {
+            ret = false;
+         } else {
+            int reason = result == HandshakeResult::WANT_WRITE ? SSL_ERROR_WANT_WRITE
+                                                               : SSL_ERROR_WANT_READ;
+            if (!wait_for_socket_ready(reason, error_dstr)) {
+               ret = false;
+            } else if (sge_get_gmt64() >= end_time) {
+               if (is_server) {
+                  sge_dstring_sprintf(error_dstr, MSG_OPENSSL_TIMEOUT_IN_ACCEPT_II,
+                                      static_cast<int>(timeout / 1000000), repetitions);
+               } else {
+                  sge_dstring_sprintf(error_dstr, MSG_OPENSSL_TIMEOUT_IN_CONNECT_II,
+                                      static_cast<int>(timeout / 1000000), repetitions);
+               }
+               DPRINTF("  --> %s\n", sge_dstring_get_string(error_dstr));
+               ret = false;
+            }
+         }
+      }
+
+      DRETURN(ret);
+   }
+
+   /**
     * @brief Performs SSL handshake for server-side connection acceptance.
     *
-    * This function performs the SSL/TLS handshake from the server's perspective.
-    * It repeatedly calls SSL_accept() until the handshake completes or an error occurs.
+    * This function performs the SSL/TLS handshake from the server's perspective and waits
+    * for it to complete, see handshake_with_timeout(). It times out after
+    * SGE_OPENSSL_RETRY_TIMEOUT_SERVER (1 second).
     *
-    * The function handles SSL_ERROR_WANT_* conditions by:
-    * 1. Waiting for the socket to become ready (using select)
-    * 2. Retrying the SSL_accept() operation
-    * 3. Timing out after SGE_OPENSSL_RETRY_TIMEOUT_SERVER (1 second)
+    * commlib does not use this function, it calls handshake() from its poll loop.
     *
     * This function must be called after:
     * - TCP accept() has completed
@@ -2252,7 +2356,6 @@ namespace ocs::uti {
     *
     * @note Can only be called on server-side connections (is_server must be true).
     * @note May block for up to 1 second waiting for handshake completion.
-    * @note On non-blocking sockets, this function handles retries internally.
     * @todo CS-1579 Make timeout configurable.
     */
 #define SGE_OPENSSL_RETRY_TIMEOUT_SERVER (1 * 1000000) // 1 second
@@ -2270,40 +2373,7 @@ namespace ocs::uti {
          }
       }
       if (ret) {
-         // clear previously occurred but not yet fetched errors
-         ERR_clear_error_func();
-
-         bool done = false;
-         u_long64 timeout = sge_get_gmt64() + SGE_OPENSSL_RETRY_TIMEOUT_SERVER;
-         int repetitions = 0;
-         do {
-            // expect one call to be enough
-            done = true;
-            int accept_ret = SSL_accept_func(ssl);
-            if (accept_ret <= 0) {
-               int err = SSL_get_error_func(ssl, accept_ret);
-               if (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE || err == SSL_ERROR_WANT_ACCEPT) {
-                  DPRINTF("  --> got connect SSL_ERROR_WANT_* %d\n", err);
-                  if (wait_for_socket_ready(err, error_dstr)) {
-                     if (sge_get_gmt64() >= timeout) {
-                        sge_dstring_sprintf(error_dstr, MSG_OPENSSL_TIMEOUT_IN_ACCEPT_II,
-                                            SGE_OPENSSL_RETRY_TIMEOUT_SERVER / 1000000, repetitions);
-                        DPRINTF("  --> %s\n", sge_dstring_get_string(error_dstr));
-                        ret = false;
-                     } else {
-                        done = false; // try again
-                        DPRINTF("  --> repeat accept\n");
-                     }
-                  }
-               } else {
-                  sge_dstring_sprintf(error_dstr, MSG_CANNOT_ACCEPT_DS, err, get_error_message());
-                  note_error(err);
-                  DPRINTF("  --> got error: %d: %s\n", err, sge_dstring_get_string(error_dstr));
-                  ret = false;
-               }
-            }
-            repetitions++;
-         } while (!done);
+         ret = handshake_with_timeout(SGE_OPENSSL_RETRY_TIMEOUT_SERVER, error_dstr);
       }
 
       DRETURN(ret);
@@ -2361,13 +2431,11 @@ namespace ocs::uti {
    /**
     * @brief Performs SSL handshake for client-side connection establishment.
     *
-    * This function performs the SSL/TLS handshake from the client's perspective.
-    * It repeatedly calls SSL_connect() until the handshake completes or an error occurs.
+    * This function performs the SSL/TLS handshake from the client's perspective and waits
+    * for it to complete, see handshake_with_timeout(). It times out after
+    * SGE_OPENSSL_RETRY_TIMEOUT_CLIENT (10 seconds).
     *
-    * The function handles SSL_ERROR_WANT_* conditions by:
-    * 1. Waiting for the socket to become ready (using select)
-    * 2. Retrying the SSL_connect() operation
-    * 3. Timing out after SGE_OPENSSL_RETRY_TIMEOUT_CLIENT (10 seconds)
+    * commlib does not use this function, it calls handshake() from its poll loop.
     *
     * This function must be called after:
     * - TCP connect() has completed
@@ -2380,8 +2448,6 @@ namespace ocs::uti {
     *
     * @note Can only be called on client-side connections (is_server must be false).
     * @note May block for up to 10 seconds waiting for handshake completion.
-    * @note On non-blocking sockets, this function handles retries internally.
-    * @note Client timeout (10s) is longer than server timeout (1s) to accommodate network delays.
     * @todo CS-1579 Make timeout configurable.
     */
    bool OpenSSL::OpenSSLConnection::connect(dstring *error_dstr) {
@@ -2396,43 +2462,8 @@ namespace ocs::uti {
             ret = false;
          }
       }
-
       if (ret) {
-         // clear previously occurred but not yet fetched errors
-         ERR_clear_error_func();
-
-         bool done = false;
-         u_long64 timeout = sge_get_gmt64() + SGE_OPENSSL_RETRY_TIMEOUT_CLIENT;
-         int repetitions = 0;
-         do {
-            // expect one call to be enough
-            done = true;
-
-            int connect_ret = SSL_connect_func(ssl);
-            if (connect_ret <= 0) {
-               int err = SSL_get_error_func(ssl, connect_ret);
-               if (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE || err == SSL_ERROR_WANT_CONNECT) {
-                  DPRINTF("  --> got connect SSL_ERROR_WANT_* %d\n", err);
-                  if (wait_for_socket_ready(err, error_dstr)) {
-                     if (sge_get_gmt64() >= timeout) {
-                        sge_dstring_sprintf(error_dstr, MSG_OPENSSL_TIMEOUT_IN_CONNECT_II,
-                                            SGE_OPENSSL_RETRY_TIMEOUT_CLIENT / 1000000, repetitions);
-                        DPRINTF("  --> %s\n", sge_dstring_get_string(error_dstr));
-                        ret = false;
-                     } else {
-                        done = false; // try again
-                        DPRINTF("  --> repeat connect\n");
-                     }
-                  }
-               } else {
-                  sge_dstring_sprintf(error_dstr, MSG_CANNOT_CONNECT_DS, err, get_error_message());
-                  note_error(err);
-                  DPRINTF("  --> got error: %d: %s\n", err, sge_dstring_get_string(error_dstr));
-                  ret = false;
-               }
-            }
-            repetitions++;
-         } while (!done);
+         ret = handshake_with_timeout(SGE_OPENSSL_RETRY_TIMEOUT_CLIENT, error_dstr);
       }
 
       DRETURN(ret);
