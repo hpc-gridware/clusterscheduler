@@ -665,8 +665,7 @@ communication_setup() {
       log_state_set_log_level(old_ll);
    }
 
-   cl_commlib_set_connection_param(cl_com_get_handle(prognames[QMASTER], 1),
-                                   HEARD_FROM_TIMEOUT, mconf_get_max_unheard());
+   sge_update_heard_from_timeout();
 
    /* fetching qmaster_params and begin to parse */
    qmaster_params = mconf_get_qmaster_params();

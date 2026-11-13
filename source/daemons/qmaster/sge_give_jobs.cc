@@ -416,7 +416,7 @@ send_slave_jobs_wc(lListElem *jep, monitoring_t *monitor, u_long64 gdi_session) 
          /* do ask_commproc() only if we are missing load reports */
          cl_commlib_get_last_message_time(cl_com_get_handle(prognames[QMASTER], 0),
                                           hostname, prognames[EXECD], 1, &last_heard_from);
-         if (sge_gmt32_to_gmt64(last_heard_from + mconf_get_max_unheard()) <= sge_get_gmt64()) {
+         if (sge_gmt32_to_gmt64(last_heard_from) + host_unheard_timeout(hep) <= sge_get_gmt64()) {
 
             ERROR(MSG_COM_CANT_DELIVER_UNHEARD_SSU, prognames[EXECD], hostname,  lGetUlong(jep, JB_job_number));
             sge_mark_unheard(hep, gdi_session);
@@ -497,7 +497,7 @@ send_job(const char *rhost, lListElem *jep, lListElem *jatep, lListElem *hep, in
       cl_commlib_get_last_message_time(cl_com_get_handle(myprogname, 0), (char *) rhost, prognames[EXECD], 1,
                                        &last_heard_from);
       u_long64 now = sge_get_gmt64();
-      if (sge_gmt32_to_gmt64(last_heard_from + mconf_get_max_unheard()) <= now) {
+      if (sge_gmt32_to_gmt64(last_heard_from) + host_unheard_timeout(hep) <= now) {
          ERROR(MSG_COM_CANT_DELIVER_UNHEARD_SSU, prognames[EXECD], rhost,  lGetUlong(jep, JB_job_number));
          sge_mark_unheard(hep, gdi_session);
          DRETURN(-1);

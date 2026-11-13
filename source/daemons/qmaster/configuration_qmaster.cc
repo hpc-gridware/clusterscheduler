@@ -282,6 +282,9 @@ sge_del_configuration(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem 
    /* invalidate cached configuration values */
    mconf_set_new_config(true);
 
+   // the deleted configuration may have had the longest load_report_time
+   sge_update_heard_from_timeout();
+
    DRETURN(STATUS_OK);
 }
 
@@ -398,9 +401,6 @@ sge_mod_configuration(lListElem *aConf, lList **anAnswer, const char *aUser, con
 
       sge_show_conf();
 
-      /* 'max_unheard' may have changed */
-      cl_commlib_set_connection_param(cl_com_get_handle(prognames[QMASTER], 1), HEARD_FROM_TIMEOUT, mconf_get_max_unheard());
-
       /* updating the commlib parameter list and gdi_timeout with new or changed parameters */
       qmaster_params = mconf_get_qmaster_params();
       cl_com_update_parameter_list(qmaster_params);
@@ -416,7 +416,48 @@ sge_mod_configuration(lListElem *aConf, lList **anAnswer, const char *aUser, con
    /* invalidate configuration cache */
    mconf_set_new_config(true);
 
+   // max_unheard or the load_report_time of any host may have changed
+   sge_update_heard_from_timeout();
+
    DRETURN(STATUS_OK);
+}
+
+/**
+ * @brief Tell commlib how long it has to remember the last message of an execd
+ *
+ * sge_qmaster gets the time of the last message of an sge_execd from the endpoint list of
+ * commlib. Commlib removes the entry of an sge_execd which did not send anything for the
+ * HEARD_FROM_TIMEOUT, the time of its last message is then 0. An idle sge_execd sends a
+ * message only once per load_report_time, and sge_qmaster takes its host as unheard after
+ * 3 load report intervals, but not before max_unheard (see host_unheard_timeout()).
+ * The HEARD_FROM_TIMEOUT is therefore the maximum of max_unheard and 3 times the longest
+ * load_report_time of the global and the local configurations.
+ */
+void
+sge_update_heard_from_timeout() {
+   DENTER(TOP_LAYER);
+
+   const lList *config_list = *ocs::DataStore::get_master_list(SGE_TYPE_CONFIG);
+   u_long32 max_load_report_time = 0;
+
+   SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
+   const lListElem *conf;
+   for_each_ep(conf, config_list) {
+      const lListElem *entry = lGetSubStr(conf, CF_name, "load_report_time", CONF_entries);
+      u_long32 load_report_time = 0;
+      if (entry != nullptr && parse_ulong_val(nullptr, &load_report_time, TYPE_TIM,
+                                              lGetString(entry, CF_value), nullptr, 0) != 0) {
+         max_load_report_time = MAX(max_load_report_time, load_report_time);
+      }
+   }
+   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
+
+   u_long32 timeout = MAX(mconf_get_max_unheard(), 3 * max_load_report_time);
+   DPRINTF("%s: HEARD_FROM_TIMEOUT is " sge_u32 "\n", __func__, timeout);
+   cl_commlib_set_connection_param(cl_com_get_handle(prognames[QMASTER], 1), HEARD_FROM_TIMEOUT,
+                                   timeout);
+
+   DRETURN_VOID;
 }
 
 /*!
