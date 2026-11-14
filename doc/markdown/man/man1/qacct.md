@@ -74,6 +74,11 @@ For a job that was deleted, killed for exceeding a resource limit, or whose run 
 rescheduled by qmaster or by `qmod -r`, the output additionally contains a `deleted_by`
 line identifying the actor (see the *deleted_by* attribute in xxqs_name_sxx_accounting(5)).
 
+Custom usage values selected by *usage_patterns* in the *reporting_params* (see xxqs_name_sxx_conf(5))
+follow the standard attributes, one line per value. A value is printed with the digits needed to
+reproduce the value stored in the accounting file, e.g. *0.42*, *1e-7* or *123456789012345*. A custom
+usage value having the name of a standard attribute is not printed again.
+
 ## -l *attr=val,...*  
 A resource requirement specification which must be met by the queues in which the jobs being accounted were 
 executing. The resource request is very similar to the one described in qsub(1).
