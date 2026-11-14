@@ -269,8 +269,9 @@ struct reporting_params_t {
    int sharelog_time = 0;
    /// `log_consumables` -- include consumable values in the reporting records
    bool log_consumables = false;
-   /// `usage_patterns` -- patterns that map job usage to accounting fields
-   std::string usage_patterns;
+   /// `usage_patterns` -- custom usage groups (group name, expression) for the accounting
+   /// record, see parse_usage_patterns_value()
+   std::vector<std::pair<std::string, std::string>> usage_patterns;
    /// `online_usage` -- usage values reported while a job is still running
    std::vector<std::string> online_usage_vars;
 };
@@ -1663,7 +1664,13 @@ int merge_configuration(lList **answer_list, uint32_t progid, const char *cell_r
          if (parse_bool_param(s, "log_consumables", &reporting_conf.log_consumables)) {
             continue;
          }
-         if (parse_string_param(s, "usage_patterns", reporting_conf.usage_patterns)) {
+         std::string usage_patterns_str;
+         if (parse_string_param(s, "usage_patterns", usage_patterns_str)) {
+            // check_config() in qmaster rejects invalid groups before they reach us.
+            // A configuration spooled before that check existed can still contain
+            // them: use the valid groups, the invalid ones are reported and left out.
+            parse_usage_patterns_value(answer_list, usage_patterns_str.c_str(),
+                                       reporting_conf.usage_patterns);
             continue;
          }
          std::string online_usage_str;
@@ -4380,23 +4387,106 @@ int mconf_get_log_consumables() {
 }
 
 /**
- * @brief The `usage_patterns` setting of the master configuration
+ * @brief Return the custom usage groups configured in reporting_params usage_patterns.
  *
- * Takes the master configuration read lock, so the value is a consistent
- * snapshot even while a new configuration is being applied.
- *
- * @return the configured value
+ * @return the groups as pairs of group name and expression, in configuration order;
+ *         empty if no custom usage is configured
+ * @see parse_usage_patterns_value()
  */
-std::string mconf_get_usage_patterns() {
+std::vector<std::pair<std::string, std::string>> mconf_get_usage_patterns() {
    DENTER(BASIS_LAYER);
-
-   std::string ret;
+   std::vector<std::pair<std::string, std::string>> ret;
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    ret = reporting_conf.usage_patterns;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
+   DRETURN(ret);
+}
+
+/**
+ * @brief Parse and validate a usage_patterns value (the text after `usage_patterns=`).
+ *
+ * The value is a `;`-separated list of groups of the form `<name>:<expression>`.
+ * The group name becomes a key of the `usage` object of an accounting record, next to
+ * the built-in `rusage` and `eusage` objects. A group is invalid if
+ *   - its name or its expression is empty, or the `:` is missing,
+ *   - its name is one of the reserved names `rusage`, `eusage` or `usage` (compared
+ *     case-insensitively, as some JSON readers match keys that way; `usage` is the
+ *     name of the built-in usage object in records of older versions),
+ *   - its name was already given for an earlier group (compared case-insensitively).
+ * Empty entries (e.g. a trailing `;`) are skipped.
+ *
+ * Used by check_config() in qmaster to reject an invalid configuration from
+ * qconf -mconf / -Mconf, and by merge_configuration(), which uses the valid groups
+ * of a configuration spooled before the check existed.
+ *
+ * @param[out] answer_list gets one error per invalid group
+ * @param[in] value the usage_patterns value, may be nullptr
+ * @param[out] out_patterns the valid groups as pairs of group name and expression
+ * @return true if all groups are valid, false if at least one was left out
+ */
+bool
+parse_usage_patterns_value(lList **answer_list, const char *value,
+                           std::vector<std::pair<std::string, std::string>> &out_patterns) {
+   DENTER(BASIS_LAYER);
+   out_patterns.clear();
+   if (value == nullptr) {
+      DRETURN(true);
+   }
+
+   static const char *const reserved_names[] = {"rusage", "eusage", "usage"};
+   bool ret = true;
+   const std::string value_str(value);
+   size_t start = 0;
+   while (start <= value_str.length()) {
+      size_t end = value_str.find(';', start);
+      if (end == std::string::npos) {
+         end = value_str.length();
+      }
+      const std::string entry = value_str.substr(start, end - start);
+      start = end + 1;
+      if (entry.empty()) {
+         continue;
+      }
+
+      const size_t colon = entry.find(':');
+      if (colon == std::string::npos || colon == 0 || colon == entry.length() - 1) {
+         answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
+                                 MSG_CONF_USAGEPATTERNS_SYNTAX_S, entry.c_str());
+         ret = false;
+         continue;
+      }
+
+      std::string name = entry.substr(0, colon);
+      bool is_valid = true;
+      for (const char *reserved : reserved_names) {
+         if (strcasecmp(name.c_str(), reserved) == 0) {
+            answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
+                                    MSG_CONF_USAGEPATTERNS_RESERVED_S, name.c_str());
+            is_valid = false;
+            break;
+         }
+      }
+      if (is_valid) {
+         for (const std::pair<std::string, std::string> &group : out_patterns) {
+            if (strcasecmp(name.c_str(), group.first.c_str()) == 0) {
+               answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
+                                       MSG_CONF_USAGEPATTERNS_DUPLICATE_S, name.c_str());
+               is_valid = false;
+               break;
+            }
+         }
+      }
+      if (!is_valid) {
+         ret = false;
+         continue;
+      }
+
+      out_patterns.emplace_back(std::move(name), entry.substr(colon + 1));
+   }
+
    DRETURN(ret);
 }
 

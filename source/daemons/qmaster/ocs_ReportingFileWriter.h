@@ -75,7 +75,6 @@ namespace ocs {
       static pthread_mutex_t writer_mutex;      ///< Guards #writers
       static std::string writer_mutex_name;     ///< Its name, for the lock monitoring
       static std::string reporting_params;      ///< The `reporting_params` configuration, as last read
-      static std::string usage_patterns;        ///< The `usage_patterns` configuration, as last read
 
    protected:
       std::string filename;            ///< The file this writer appends to
