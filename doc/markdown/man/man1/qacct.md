@@ -70,6 +70,11 @@ printed. If neither a name nor an ID is given all jobs are enlisted. This option
 `qacct`. If activated, CPU times are no longer accumulated but the "raw" accounting information is printed in a 
 formatted form instead. Seexxqs_name_sxx_accounting(5) for an explanation of the displayed information.
 
+Custom usage values selected by *usage_patterns* in the *reporting_params* (see xxqs_name_sxx_conf(5))
+follow the standard attributes, one line per value. A value is printed with the digits needed to
+reproduce the value stored in the accounting file, e.g. *0.42*, *1e-7* or *123456789012345*. A custom
+usage value having the name of a standard attribute is not printed again.
+
 ## -l *attr=val,...*  
 A resource requirement specification which must be met by the queues in which the jobs being accounted were 
 executing. The resource request is very similar to the one described in qsub(1).

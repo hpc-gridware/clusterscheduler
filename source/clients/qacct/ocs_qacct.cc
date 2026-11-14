@@ -38,10 +38,12 @@
 #include <ctime>
 #include <fnmatch.h>
 #include <cerrno>
+#include <cmath>
 #include <filesystem>
 #include <fstream>
 
 #include "rapidjson/document.h"
+#include "rapidjson/internal/dtoa.h"
 
 #include "uti/sge_bootstrap.h"
 #include "uti/sge_bootstrap_files.h"
@@ -1370,6 +1372,76 @@ static void qacct_usage(FILE *err_fp)
 #define SHOWJOB_FLOAT_3        "%-35.34s%-13.3f\n"
 #define SHOWJOB_FLOAT_18_0     "%-35.34s%-18.0f\n"
 #define SHOWJOB_FLOAT_18_3     "%-35.34s%-18.3f\n"
+#define SHOWJOB_CUSTOM_USAGE   "%-34s %s\n"
+
+/**
+ * @brief Check if a name is printed as a standard attribute by showjob().
+ *
+ * A custom usage value (reporting_params usage_patterns) can have the name of a standard
+ * attribute, e.g. with a pattern like io* or *. Such a value is already shown as standard
+ * attribute and must not be printed a second time.
+ *
+ * @param[in] name the name of a custom usage value
+ * @return true if showjob() prints an attribute of this name
+ */
+static bool
+is_showjob_standard_name(const char *name) {
+   DENTER(TOP_LAYER);
+   static const char *const standard_names[] = {
+      MSG_HISTORY_SHOWJOB_QNAME, MSG_HISTORY_SHOWJOB_HOSTNAME, MSG_HISTORY_SHOWJOB_GROUP,
+      MSG_HISTORY_SHOWJOB_OWNER, MSG_HISTORY_SHOWJOB_PROJECT, MSG_HISTORY_SHOWJOB_DEPARTMENT,
+      MSG_HISTORY_SHOWJOB_JOBNAME, MSG_HISTORY_SHOWJOB_JOBNUMBER, MSG_HISTORY_SHOWJOB_TASKID,
+      MSG_HISTORY_SHOWJOB_PE_TASKID, MSG_HISTORY_SHOWJOB_ARID, MSG_HISTORY_SHOWJOB_ACCOUNT,
+      MSG_HISTORY_SHOWJOB_PRIORITY, MSG_HISTORY_SHOWJOB_QSUBTIME, MSG_HISTORY_SHOWJOB_SUBMITCMDLINE,
+      MSG_HISTORY_SHOWJOB_STARTTIME, MSG_HISTORY_SHOWJOB_ENDTIME, MSG_HISTORY_SHOWJOB_GRANTEDPE,
+      MSG_HISTORY_SHOWJOB_SLOTS, MSG_HISTORY_SHOWJOB_FAILED, MSG_HISTORY_SHOWJOB_EXITSTATUS,
+      MSG_HISTORY_SHOWJOB_RUWALLCLOCK, MSG_HISTORY_SHOWJOB_RUUTIME,
+      MSG_HISTORY_SHOWJOB_RUSTIME, MSG_HISTORY_SHOWJOB_RUMAXRSS, MSG_HISTORY_SHOWJOB_RUIXRSS,
+      MSG_HISTORY_SHOWJOB_RUISMRSS, MSG_HISTORY_SHOWJOB_RUIDRSS, MSG_HISTORY_SHOWJOB_RUISRSS,
+      MSG_HISTORY_SHOWJOB_RUMINFLT, MSG_HISTORY_SHOWJOB_RUMAJFLT, MSG_HISTORY_SHOWJOB_RUNSWAP,
+      MSG_HISTORY_SHOWJOB_RUINBLOCK, MSG_HISTORY_SHOWJOB_RUOUBLOCK, MSG_HISTORY_SHOWJOB_RUMSGSND,
+      MSG_HISTORY_SHOWJOB_RUMSGRCV, MSG_HISTORY_SHOWJOB_RUNSIGNALS, MSG_HISTORY_SHOWJOB_RUNVCSW,
+      MSG_HISTORY_SHOWJOB_RUNIVCSW, MSG_HISTORY_SHOWJOB_WALLCLOCK, MSG_HISTORY_SHOWJOB_CPU,
+      MSG_HISTORY_SHOWJOB_MEM, MSG_HISTORY_SHOWJOB_IO, MSG_HISTORY_SHOWJOB_IOW,
+      MSG_HISTORY_SHOWJOB_MAXVMEM, MSG_HISTORY_SHOWJOB_MAXRSS
+   };
+
+   for (const char *standard_name : standard_names) {
+      if (strcmp(name, standard_name) == 0) {
+         DRETURN(true);
+      }
+   }
+   DRETURN(false);
+}
+
+/**
+ * @brief Format a custom usage value the way it is written to the accounting file.
+ *
+ * Uses the shortest representation which reads back as the same double, as the JSON writer
+ * of the accounting file does (e.g. 0.42, 1e-7, 123456789012345), so small values do not
+ * show as 0 and integral values get no decimals. The ".0" the JSON writer appends to an
+ * integral value is left out.
+ *
+ * @param[in] value the custom usage value
+ * @param[out] buffer receives the formatted value
+ * @return the formatted value, pointing into buffer
+ */
+static const char *
+format_custom_usage(double value, char (&buffer)[64]) {
+   DENTER(TOP_LAYER);
+   if (!std::isfinite(value)) {
+      snprintf(buffer, sizeof(buffer), "%g", value);
+      DRETURN(buffer);
+   }
+
+   char *end = rapidjson::internal::dtoa(value, buffer);
+   *end = '\0';
+   const size_t len = static_cast<size_t>(end - buffer);
+   if (len > 2 && strcmp(end - 2, ".0") == 0) {
+      end[-2] = '\0';
+   }
+   DRETURN(buffer);
+}
 static void showjob(sge_rusage_type *dusage) {
    DSTRING_STATIC(dstr_buffer, 100);
    dstring *pdstr_buffer = &dstr_buffer;
@@ -1459,11 +1531,14 @@ static void showjob(sge_rusage_type *dusage) {
       printf(SHOWJOB_STRING,MSG_HISTORY_SHOWJOB_ARID, "undefined");
    }
 
-   // print further usage values
-   if (dusage->other_usage != nullptr) {
-      const lListElem *ep;
-      for_each_ep(ep, dusage->other_usage) {
-         printf(SHOWJOB_FLOAT_18_3, lGetString(ep, UA_name), lGetDouble(ep, UA_value));
+   // print the custom usage values (reporting_params usage_patterns) which are not
+   // already printed as standard attribute
+   const lListElem *ep;
+   for_each_ep(ep, dusage->other_usage) {
+      const char *name = lGetString(ep, UA_name);
+      if (!is_showjob_standard_name(name)) {
+         char buffer[64];
+         printf(SHOWJOB_CUSTOM_USAGE, name, format_custom_usage(lGetDouble(ep, UA_value), buffer));
       }
    }
 
