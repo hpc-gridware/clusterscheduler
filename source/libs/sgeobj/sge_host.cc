@@ -56,6 +56,12 @@
 #include "sgeobj/sge_resource_utilization.h"
 #include "sgeobj/sge_str.h"
 #include "sgeobj/sge_userset.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_CE.h"
+#include "sgeobj/tom/ocs_tom_HL.h"
+#include "sgeobj/tom/ocs_tom_RUE.h"
+#include "sgeobj/tom/ocs_tom_STU.h"
+#include "sgeobj/tom/ocs_tom_US.h"
 
 #include "uti/ocs_Pattern.h"
 #include "uti/sge.h"
@@ -292,17 +298,17 @@ cqueue_reaches_host_without_exec_hosts(const lListElem *cqueue, const char *host
    bool reaches = false;
 
    for_each_ep(href, cq_hostlist) {
-      const char *entry = lGetHost(href, HR_name);
+      const char *entry = ocs::tom::get<HR_name>(href);
 
       if (entry == nullptr || strcmp(entry, EXEC_HOSTGROUP) == 0) {
          continue;
       }
-      lAddElemHost(&filtered, HR_name, entry, HR_Type);
+      ocs::tom::emplace_back<HR_name>(&filtered, entry);
    }
 
    if (filtered != nullptr &&
        href_list_find_all_references(filtered, nullptr, hgrp_list, &resolved, nullptr)) {
-      reaches = (lGetElemHost(resolved, HR_name, hostname) != nullptr);
+      reaches = (static_cast<const lListElem *>(ocs::tom::find_first<HR_name>(resolved, hostname)) != nullptr);
    }
 
    lFreeList(&resolved);
@@ -345,10 +351,10 @@ bool host_is_referenced(const lListElem *host,
       /* look at all the queue instances and figure out, if one still references
          the host we are looking for */
       for_each_ep_lv(cqueue, queue_list) {
-         queue = lGetSubHost(cqueue, QU_qhostname, hostname, CQ_qinstances);
+         queue = ocs::tom::find_first_in<CQ_qinstances, QU_qhostname>(cqueue, hostname);
 
          if (queue != nullptr) {
-            const char *queuename = lGetString(cqueue, CQ_name);
+            const char *queuename = ocs::tom::get<CQ_name>(cqueue);
 
             /*
              * CS-2438: a queue instance that exists only because the queue names
@@ -374,7 +380,7 @@ bool host_is_referenced(const lListElem *host,
          lList *host_list = nullptr;
 
          for_each_ep_lv(hgrp_elem, hgrp_list) {
-            const char *hgrp_name = lGetHost(hgrp_elem, HGRP_name);
+            const char *hgrp_name = ocs::tom::get<HGRP_name>(hgrp_elem);
 
             /*
              * CS-2438: the reserved host groups do not count as a reference.
@@ -430,7 +436,7 @@ bool host_is_referenced(const lListElem *host,
              */
             hgroup_find_all_references(hgrp_elem, nullptr, hgrp_list, &host_list, nullptr, nullptr, false);
             if (host_list != nullptr) {
-               if (lGetElemHost(host_list, HR_name, hostname) != nullptr) {
+               if (static_cast<const lListElem *>(ocs::tom::find_first<HR_name>(host_list, hostname)) != nullptr) {
                   snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_HOSTREFINHGRP_SS, hostname, hgrp_name);
                   answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
 
@@ -467,9 +473,9 @@ const char *host_get_load_value(lListElem *host, const char *name) {
    const char *value = nullptr;
 
    if (host != nullptr) {
-      load = lGetSubStr(host, HL_name, name, EH_load_list);
+      load = ocs::tom::find_first_in<EH_load_list, HL_name>(host, name);
       if (load != nullptr) {
-         value = lGetString(load, HL_value);
+         value = ocs::tom::get<HL_value>(load);
       }
    }
    return value;
@@ -615,10 +621,10 @@ host_is_centry_referenced(const lListElem *this_elem, const lListElem *centry) {
    bool ret = false;
 
    if (this_elem != nullptr) {
-      const char *name = lGetString(centry, CE_name);
-      const lList *ce_values = lGetList(this_elem, EH_consumable_config_list);
-      const lList *load_list = lGetList(this_elem, EH_load_list);
-      const lList *rep_vars = lGetList(this_elem, EH_report_variables);
+      const char *name = ocs::tom::get<CE_name>(centry);
+      const lList *ce_values = ocs::tom::get<EH_consumable_config_list>(this_elem);
+      const lList *load_list = ocs::tom::get<EH_load_list>(this_elem);
+      const lList *rep_vars = ocs::tom::get<EH_report_variables>(this_elem);
 
       /* 
        * centry may be referenced in 
@@ -626,9 +632,9 @@ host_is_centry_referenced(const lListElem *this_elem, const lListElem *centry) {
        *    - load_list
        *    - report_variables
        */
-      if (lGetElemStr(ce_values, CE_name, name) != nullptr ||
-          lGetElemStr(load_list, HL_name, name) != nullptr ||
-          lGetElemStr(rep_vars, STU_name, name) != nullptr) {
+      if (static_cast<const lListElem *>(ocs::tom::find_first<CE_name>(ce_values, name)) != nullptr ||
+          static_cast<const lListElem *>(ocs::tom::find_first<HL_name>(load_list, name)) != nullptr ||
+          static_cast<const lListElem *>(ocs::tom::find_first<STU_name>(rep_vars, name)) != nullptr) {
          ret = true;
       }
    }
@@ -654,17 +660,17 @@ host_is_centry_a_complex_value(const lListElem *this_elem,
    bool ret = false;
 
    if (this_elem != nullptr) {
-      const char *name = lGetString(centry, CE_name);
-      const lList *ce_values = lGetList(this_elem, EH_consumable_config_list);
-      const lList *load_list = lGetList(this_elem, EH_load_list);
+      const char *name = ocs::tom::get<CE_name>(centry);
+      const lList *ce_values = ocs::tom::get<EH_consumable_config_list>(this_elem);
+      const lList *load_list = ocs::tom::get<EH_load_list>(this_elem);
 
       /* 
        * centry may be referenced in 
        *    - complex_values
        *    - load_list
        */
-      if (lGetElemStr(ce_values, CE_name, name) != nullptr ||
-          lGetElemStr(load_list, HL_name, name) != nullptr) {
+      if (static_cast<const lListElem *>(ocs::tom::find_first<CE_name>(ce_values, name)) != nullptr ||
+          static_cast<const lListElem *>(ocs::tom::find_first<HL_name>(load_list, name)) != nullptr) {
          ret = true;
       }
    }
@@ -692,12 +698,12 @@ host_list_merge(lList *this_list) {
    bool ret = true;
 
    if (this_list != nullptr) {
-      lListElem *global_host = lGetElemHostRW(this_list, EH_name, SGE_GLOBAL_NAME);
+      lListElem *global_host = ocs::tom::find_first_rw<EH_name>(this_list, SGE_GLOBAL_NAME);
 
       /* we merge global settings into host settings */
       if (global_host != nullptr) {
          /* for the global host, merged_report_variables == report_variables */
-         lSetList(global_host, EH_merged_report_variables, lCopyList("", lGetList(global_host, EH_report_variables)));
+         ocs::tom::set<EH_merged_report_variables>(global_host, lCopyList("", ocs::tom::get<EH_report_variables>(global_host)));
 
          /* do merge for all hosts except global */
          for_each_rw_lv(host, this_list) {
@@ -737,23 +743,23 @@ host_merge(lListElem *host, const lListElem *global_host) {
    bool ret = true;
 
    if (host != nullptr && global_host != nullptr) {
-      const lList *local_list = lGetList(host, EH_report_variables);
+      const lList *local_list = ocs::tom::get<EH_report_variables>(host);
 
       /* if we have a local list: use this one */
       if (local_list != nullptr && lGetNumberOfElem(local_list) != 0) {
-         lSetList(host, EH_merged_report_variables, lCopyList("", local_list));
+         ocs::tom::set<EH_merged_report_variables>(host, lCopyList("", local_list));
       } else {
          const lList *global_list;
 
-         global_list = lGetList(global_host, EH_report_variables);
+         global_list = ocs::tom::get<EH_report_variables>(global_host);
          /* if we have no local list, but a global one, use this one */
          if (global_list != nullptr && lGetNumberOfElem(global_list) != 0) {
-            lSetList(host, EH_merged_report_variables, lCopyList("", global_list));
+            ocs::tom::set<EH_merged_report_variables>(host, lCopyList("", global_list));
          } else {
             /* if no report variables are configured in local and global object,
              * delete the merged list.
              */
-            lSetList(host, EH_merged_report_variables, nullptr);
+            ocs::tom::set<EH_merged_report_variables>(host, nullptr);
          }
       }
    }
@@ -775,24 +781,24 @@ int
 host_debit_rsmap(lListElem *host, const char *ce_name, const lListElem *resl, int slots, bool *just_check) {
    int mods = 0;
 
-   lList *resource_utilization = lGetListRW(host, EH_resource_utilization);
-   lListElem *resource = lGetElemStrRW(resource_utilization, RUE_name, ce_name);
+   lList *resource_utilization = ocs::tom::get<EH_resource_utilization>(host);
+   lListElem *resource = ocs::tom::find_first_rw<RUE_name>(resource_utilization, ce_name);
 
-   const char *id = lGetString(resl, RESL_value);
-   uint32_t amount = lGetUlong(resl, RESL_amount);
+   const char *id = ocs::tom::get<RESL_value>(resl);
+   uint32_t amount = ocs::tom::get<RESL_amount>(resl);
 
-   lListElem *utilized_id = lGetSubStrRW(resource, RESL_value, id, RUE_utilized_now_resource_map_list);
+   lListElem *utilized_id = ocs::tom::find_first_in_rw<RUE_utilized_now_resource_map_list, RESL_value>(resource, id);
    if (utilized_id == nullptr) {
-      utilized_id = lAddSubStr(resource, RESL_value, id, RUE_utilized_now_resource_map_list, RESL_Type);
+      utilized_id = ocs::tom::emplace_back_in<RUE_utilized_now_resource_map_list, RESL_value>(resource, id);
    }
    if (utilized_id != nullptr) {
       if (just_check != nullptr) {
          // only check if there is enough resources free, no booking
          // only when slots > 0? It is never called with slots < 0 and just_check
-         const lListElem *complex_value = lGetSubStr(host, CE_name, ce_name, EH_consumable_config_list);
-         const lListElem *configured_id = lGetSubStr(complex_value, RESL_value, id, CE_resource_map_list);
-         uint32_t configured_amount = lGetUlong(configured_id, RESL_amount);
-         uint32_t utilized_amount = lGetUlong(utilized_id, RESL_amount);
+         const lListElem *complex_value = ocs::tom::find_first_in<EH_consumable_config_list, CE_name>(host, ce_name);
+         const lListElem *configured_id = ocs::tom::find_first_in<CE_resource_map_list, RESL_value>(complex_value, id);
+         uint32_t configured_amount = ocs::tom::get<RESL_amount>(configured_id);
+         uint32_t utilized_amount = ocs::tom::get<RESL_amount>(utilized_id);
          if (configured_amount - utilized_amount - amount < 0) {
             // not enough available of this id
             *just_check = false;
@@ -800,10 +806,10 @@ host_debit_rsmap(lListElem *host, const char *ce_name, const lListElem *resl, in
       } else {
          if (slots < 0) {
             // undebit
-            lAddUlong(utilized_id, RESL_amount, -amount);
+            ocs::tom::add<RESL_amount>(utilized_id, -amount);
          } else {
             // debit
-            lAddUlong(utilized_id, RESL_amount, amount);
+            ocs::tom::add<RESL_amount>(utilized_id, amount);
          }
       }
       mods++;
@@ -831,18 +837,18 @@ host_debit_binding(lListElem *host, const char *ce_name, const lListElem *resl, 
    DENTER(TOP_LAYER);
 
    // we book cores/threads in the resource utilization of slots
-   lList *resource_utilization = lGetListRW(host, EH_resource_utilization);
-   lListElem *resource = lGetElemStrRW(resource_utilization, RUE_name, ce_name);
+   lList *resource_utilization = ocs::tom::get<EH_resource_utilization>(host);
+   lListElem *resource = ocs::tom::find_first_rw<RUE_name>(resource_utilization, ce_name);
 
    // add resource utilization entry if it does not exist yet
    if (resource == nullptr) {
-      resource = lAddSubStr(host, RUE_name, ce_name, EH_resource_utilization, RUE_Type);
-      lSetString(resource, RUE_utilized_now_binding_inuse, nullptr);
+      resource = ocs::tom::emplace_back_in<EH_resource_utilization, RUE_name>(host, ce_name);
+      ocs::tom::set<RUE_utilized_now_binding_inuse>(resource, nullptr);
    }
 
    // what is currently booked and what should be booked additionally
-   const char *binding_to_use = lGetString(resl, ST_name);
-   const char *binding_in_use = lGetString(resource, RUE_utilized_now_binding_inuse);
+   const char *binding_to_use = ocs::tom::get<ST_name>(resl);
+   const char *binding_in_use = ocs::tom::get<RUE_utilized_now_binding_inuse>(resource);
 
 #if 1
    const char *action = slots > 0 ? "add" : "del";
@@ -872,7 +878,7 @@ host_debit_binding(lListElem *host, const char *ce_name, const lListElem *resl, 
 
    // add/remove all cores/threads that are set in binding_to_use to binding_in_use
    ocs::TopologyString topo_now;
-   const char *now_str = lGetString(resource, RUE_utilized_now_binding_inuse);
+   const char *now_str = ocs::tom::get<RUE_utilized_now_binding_inuse>(resource);
    if (now_str) {
       topo_now = ocs::TopologyString(now_str);
       ocs::TopologyString topo_to_use(binding_to_use);
@@ -940,7 +946,7 @@ host_is_visible(const lListElem *hep, bool is_manager, bool dept_view, const lLi
       component_get_supplementray_groups(&amount, &grp_array);
       lList *grp_list = grp_list_array2list(amount, grp_array);
 
-      host_visible = sge_has_access_(username, groupname, grp_list, lGetList(hep, EH_acl), lGetList(hep, EH_xacl), acl_list);
+      host_visible = sge_has_access_(username, groupname, grp_list, ocs::tom::get<EH_acl>(hep), ocs::tom::get<EH_xacl>(hep), acl_list);
       lFreeList(&grp_list);
    }
    return host_visible;
@@ -964,19 +970,19 @@ host_get_topology_in_use(const lListElem *host) {
    }
 
    // get the resource utilization of the host, if there is none, return empty string
-   const lList *resource_utilization = lGetList(host, EH_resource_utilization);
+   const lList *resource_utilization = ocs::tom::get<EH_resource_utilization>(host);
    if (resource_utilization == nullptr) {
       DRETURN({});
    }
 
    // get the slots resource utilization of the host, if there is none, return empty string
-   const lListElem *slots_utilization = lGetElemStr(resource_utilization, RUE_name, SGE_ATTR_SLOTS);
+   const lListElem *slots_utilization = ocs::tom::find_first<RUE_name>(resource_utilization, SGE_ATTR_SLOTS);
    if (slots_utilization == nullptr) {
       DRETURN({});
    }
 
    // get the currently in use binding for slots, if there is none, return empty string
-   const char *binding_inuse = lGetString(slots_utilization, RUE_utilized_now_binding_inuse);
+   const char *binding_inuse = ocs::tom::get<RUE_utilized_now_binding_inuse>(slots_utilization);
    if (binding_inuse == nullptr) {
       DRETURN({});
    }

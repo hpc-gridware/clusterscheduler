@@ -30,6 +30,7 @@
 #include "sgeobj/sge_attr.h"
 #include "sgeobj/sge_hgroup.h"
 #include "sgeobj/sge_href.h"
+#include "tom/ocs_Element.h"
 
 // ---------------------------------------------------------------------------
 // Test infrastructure
@@ -69,8 +70,8 @@ static int s_fail = 0;
 // to a string value. Use lAppendElem() to add it to an attr list.
 static lListElem *make_astr(const char *href, const char *value) {
    lListElem *ep = lCreateElem(ASTR_Type);
-   lSetHost(ep, ASTR_href, href);
-   lSetString(ep, ASTR_value, value);
+   ocs::tom::set<ASTR_href>(ep, href);
+   ocs::tom::set<ASTR_value>(ep, value);
    return ep;
 }
 

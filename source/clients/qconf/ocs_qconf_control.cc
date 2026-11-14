@@ -32,6 +32,7 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_qinstance_state.h"
 #include "sgeobj/sge_utility.h"
+#include "tom/ocs_Element.h"
 #include "gdi/ocs_gdi_Client.h"
 #include "msg_common.h"
 #include "msg_qconf.h"
@@ -98,7 +99,7 @@ qconf_control_thread(const qconf_op &op, const uint32_t trigger, lList **alpp) {
    lList *lp = nullptr;
    lString2List(op.args[0].c_str(), &lp, ID_Type, ID_str, ", ");
    for_each_rw_lv(ep, lp) {
-      lSetUlong(ep, ID_action, trigger);
+      ocs::tom::set<ID_action>(ep, trigger);
    }
    const int ret = qconf_control_kill(lp, THREAD_START, alpp);
    lFreeList(&lp);
@@ -168,7 +169,7 @@ qconf_control_clean_queues(const qconf_op &op, lList **alpp) {
    lList *lp = nullptr;
    lString2List(op.args[0].c_str(), &lp, ID_Type, ID_str, ", ");
    for_each_rw_lv(ep, lp) {
-      lSetUlong(ep, ID_action, QI_DO_CLEAN);
+      ocs::tom::set<ID_action>(ep, QI_DO_CLEAN);
    }
    lList *alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::CQ_LIST, ocs::gdi::Command::TRIGGER,
                                           ocs::gdi::SubCommand::NONE, &lp, nullptr, nullptr);

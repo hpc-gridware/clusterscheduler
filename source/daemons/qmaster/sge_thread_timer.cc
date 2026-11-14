@@ -59,6 +59,8 @@
 #include "sgeobj/sge_schedd_conf.h"
 #include "sgeobj/sge_userprj.h"
 #include "sgeobj/ocs_Session.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_JAT.h"
 
 #include "evm/sge_event_master.h"
 
@@ -240,7 +242,7 @@ sge_sharetree_tick_handler(te_event_t /* anEvent */, monitoring_t *monitor) {
    if (user_list != nullptr) {
       for_each_rw_lv(user, *user_list) {
          ocs::UserProject::decay_userprj_usage(user, true, decay_list, tet_decay_run, curr_time);
-         ocs::SharetreeUsage::mark_user_event_dirty(lGetString(user, UU_name));
+         ocs::SharetreeUsage::mark_user_event_dirty(ocs::tom::get<UU_name>(user));
          any_object = true;
       }
    }
@@ -248,7 +250,7 @@ sge_sharetree_tick_handler(te_event_t /* anEvent */, monitoring_t *monitor) {
    if (project_list != nullptr) {
       for_each_rw_lv(project, *project_list) {
          ocs::UserProject::decay_userprj_usage(project, false, decay_list, tet_decay_run, curr_time);
-         ocs::SharetreeUsage::mark_project_event_dirty(lGetString(project, PR_name));
+         ocs::SharetreeUsage::mark_project_event_dirty(ocs::tom::get<PR_name>(project));
          any_object = true;
       }
    }
@@ -280,16 +282,16 @@ sge_sharetree_tick_handler(te_event_t /* anEvent */, monitoring_t *monitor) {
 
          /* Active-ja_task predicate matches scheduler's job_is_active. */
          for_each_ep_lv(job, master_job_list) {
-            for_each_rw_lv(ja_task, lGetList(job, JB_ja_tasks)) {
-               const u_long status = lGetUlong(ja_task, JAT_status);
-               const u_long state = lGetUlong(ja_task, JAT_state);
+            for_each_rw_lv(ja_task, ocs::tom::get<JB_ja_tasks>(job)) {
+               const u_long status = ocs::tom::get<JAT_status>(ja_task);
+               const u_long state = ocs::tom::get<JAT_state>(ja_task);
                const bool active = (status & (JRUNNING | JMIGRATING | JTRANSFERING))
                                 && !(state & (JSUSPENDED | JSUSPENDED_ON_THRESHOLD));
                if (!active) {
                   continue;
                }
-               const char *owner = lGetString(job, JB_owner);
-               const char *project = lGetString(job, JB_project);
+               const char *owner = ocs::tom::get<JB_owner>(job);
+               const char *project = ocs::tom::get<JB_project>(job);
                if (owner == nullptr && project == nullptr) {
                   continue;
                }
@@ -297,17 +299,17 @@ sge_sharetree_tick_handler(te_event_t /* anEvent */, monitoring_t *monitor) {
                lListElem *leaf = ocs::ShareTree::search_user_project_node(root, owner, project,
                                                                          &parent, root);
                if (leaf != nullptr) {
-                  lSetUlong(leaf, STN_job_ref_count,
-                            lGetUlong(leaf, STN_job_ref_count) + 1);
-                  lSetUlong(leaf, STN_active_job_ref_count,
-                            lGetUlong(leaf, STN_active_job_ref_count) + 1);
+                  ocs::tom::set<STN_job_ref_count>(leaf,
+                            ocs::tom::get<STN_job_ref_count>(leaf) + 1);
+                  ocs::tom::set<STN_active_job_ref_count>(leaf,
+                            ocs::tom::get<STN_active_job_ref_count>(leaf) + 1);
                }
             }
          }
 
          update_job_ref_count(root);
          update_active_job_ref_count(root);
-         lSetDouble(root, STN_m_share, 1.0);
+         ocs::tom::set<STN_m_share>(root, 1.0);
          calculate_m_shares(root);
 
          /* Seqno (u_long)-1 tells calc_node_usage to recurse + recompute
@@ -317,7 +319,7 @@ sge_sharetree_tick_handler(te_event_t /* anEvent */, monitoring_t *monitor) {
                                          decay_list, curr_time, nullptr, (u_long)-1);
          sge_calc_node_targets(root, root);
 
-         lAddUlong(root, STN_version, 1);
+         ocs::tom::add<STN_version>(root, 1);
 
          sge_add_event(curr_time, sgeE_NEW_SHARETREE, 0, 0, nullptr, nullptr,
                        nullptr, root, ocs::SessionManager::GDI_SESSION_NONE);
@@ -409,9 +411,9 @@ sge_finished_jobs_sweep_handler(te_event_t anEvent, monitoring_t *monitor) {
    std::vector<PruneCandidate> finished;
    lList *master_job_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB);
    for_each_rw_lv(job, master_job_list) {
-      for_each_rw_lv(ja_task, lGetListRW(job, JB_ja_tasks)) {
-         if (lGetUlong(ja_task, JAT_status) == JFINISHED) {
-            finished.push_back({job, ja_task, lGetUlong64(ja_task, JAT_end_time)});
+      for_each_rw_lv(ja_task, ocs::tom::get<JB_ja_tasks>(job)) {
+         if (ocs::tom::get<JAT_status>(ja_task) == JFINISHED) {
+            finished.push_back({job, ja_task, ocs::tom::get<JAT_end_time>(ja_task)});
          }
       }
    }
@@ -453,7 +455,7 @@ sge_finished_jobs_sweep_handler(te_event_t anEvent, monitoring_t *monitor) {
     * still-held LOCK_GLOBAL write (see PruneCandidate comment above). */
    const char *sge_root = bootstrap_get_sge_root();
    for (const PruneCandidate &c : eligible) {
-      sge_bury_ja_task(sge_root, c.job, lGetUlong(c.job, JB_job_number),
+      sge_bury_ja_task(sge_root, c.job, ocs::tom::get<JB_job_number>(c.job),
                        c.ja_task, 1 /* spool_job */, 0 /* no_events */,
                        ocs::SessionManager::GDI_SESSION_NONE);
    }

@@ -76,6 +76,7 @@
 #include "sgeobj/sge_object.h"
 #include "sgeobj/cull_parse_util.h"
 #include "sgeobj/msg_sgeobjlib.h"
+#include "tom/ocs_Element.h"
 
 #include "msg_common.h"
 #include "uti/sge.h"
@@ -211,16 +212,16 @@ centry_fill_and_check(lListElem *this_elem, lList **answer_list, bool allow_empt
    double dval;
    int ret, allow_infinity;
 
-   name = lGetString(this_elem, CE_name);
-   s = lGetString(this_elem, CE_stringval);
+   name = ocs::tom::get<CE_name>(this_elem);
+   s = ocs::tom::get<CE_stringval>(this_elem);
    DPRINTF("   ===> centry_fill_and_check(%s, %s)\n", name, s);
    /* allow infinity for non-consumables only */
-   allow_infinity = (lGetUlong(this_elem, CE_consumable) != CONSUMABLE_NO) ? 0 : 1;
+   allow_infinity = (ocs::tom::get<CE_consumable>(this_elem) != CONSUMABLE_NO) ? 0 : 1;
 
    if (s == nullptr) {
-      if (allow_empty_boolean && static_cast<ocs::CEntry::Type>(lGetUlong(this_elem, CE_valtype)) == ocs::CEntry::Type::BOOL) {
-         lSetString(this_elem, CE_stringval, "TRUE");
-         s = lGetString(this_elem, CE_stringval);
+      if (allow_empty_boolean && static_cast<ocs::CEntry::Type>(ocs::tom::get<CE_valtype>(this_elem)) == ocs::CEntry::Type::BOOL) {
+         ocs::tom::set<CE_stringval>(this_elem, "TRUE");
+         s = ocs::tom::get<CE_stringval>(this_elem);
       } else {
 /*          ERROR(MSG_CPLX_VALUEMISSING_S, name); */
          answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_CPLX_VALUEMISSING_S, name);
@@ -228,7 +229,7 @@ centry_fill_and_check(lListElem *this_elem, lList **answer_list, bool allow_empt
       }
    }
 
-   switch (type = static_cast<ocs::CEntry::Type>(lGetUlong(this_elem, CE_valtype))) {
+   switch (type = static_cast<ocs::CEntry::Type>(ocs::tom::get<CE_valtype>(this_elem))) {
       case ocs::CEntry::Type::RSMAP:
       case ocs::CEntry::Type::INT:
       case ocs::CEntry::Type::TIME:
@@ -257,7 +258,7 @@ centry_fill_and_check(lListElem *this_elem, lList **answer_list, bool allow_empt
             DRETURN(-1);
          }
          DPRINTF("   ===> centry_fill_and_check(%s, %s), dval = %f\n", name, s, dval);
-         lSetDouble(this_elem, CE_doubleval, dval);
+         ocs::tom::set<CE_doubleval>(this_elem, dval);
 
          /* Neither MEM nor TIME values are normalized here.
           *
@@ -279,15 +280,15 @@ centry_fill_and_check(lListElem *this_elem, lList **answer_list, bool allow_empt
           */
 
          /* also the CE_defaultval must be parsable for numeric types */
-         if ((s=lGetString(this_elem, CE_defaultval))
+         if ((s=ocs::tom::get<CE_defaultval>(this_elem))
             && !parse_ulong_val(&dval, nullptr, type, s, tmp, sizeof(tmp)-1)) {
             answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_CPLX_WRONGTYPE_SSS, name, s, tmp);
             DRETURN(-1);
          }
 
          /* negative values are not allowed for consumable attributes */
-         if (!allow_neg_consumable && (lGetUlong(this_elem, CE_consumable) != CONSUMABLE_NO)
-             && lGetDouble(this_elem, CE_doubleval) < (double)0.0) {
+         if (!allow_neg_consumable && (ocs::tom::get<CE_consumable>(this_elem) != CONSUMABLE_NO)
+             && ocs::tom::get<CE_doubleval>(this_elem) < (double)0.0) {
             answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_CPLX_ATTRIBISNEG_S, name);
 
             DRETURN(-1);
@@ -442,14 +443,14 @@ centry_create(lList **answer_list, const char *name) {
    if (name != nullptr) {
       ret = lCreateElem(CE_Type);
       if (ret != nullptr) {
-         lSetString(ret, CE_name, name);
-         lSetString(ret, CE_shortcut, name);
-         lSetUlong(ret, CE_valtype, static_cast<uint32_t>(ocs::CEntry::Type::INT));
-         lSetUlong(ret, CE_relop, CMPLXLE_OP);
-         lSetUlong(ret, CE_requestable, REQU_NO);
-         lSetUlong(ret, CE_consumable, CONSUMABLE_NO);
-         lSetString(ret, CE_defaultval, "0");
-         lSetString(ret, CE_urgency_weight, "0");
+         ocs::tom::set<CE_name>(ret, name);
+         ocs::tom::set<CE_shortcut>(ret, name);
+         ocs::tom::set<CE_valtype>(ret, static_cast<uint32_t>(ocs::CEntry::Type::INT));
+         ocs::tom::set<CE_relop>(ret, CMPLXLE_OP);
+         ocs::tom::set<CE_requestable>(ret, REQU_NO);
+         ocs::tom::set<CE_consumable>(ret, CONSUMABLE_NO);
+         ocs::tom::set<CE_defaultval>(ret, "0");
+         ocs::tom::set<CE_urgency_weight>(ret, "0");
       } else {
          answer_list_add_sprintf(answer_list, STATUS_EMALLOC,
                                  ANSWER_QUALITY_ERROR,
@@ -485,7 +486,7 @@ centry_is_referenced(const lListElem *centry, lList **answer_list,
    DENTER(CENTRY_LAYER);
 
    bool ret = false;
-   const char *centry_name = lGetString(centry, CE_name);
+   const char *centry_name = ocs::tom::get<CE_name>(centry);
 
    if (sconf_is_centry_referenced(centry)) {
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
@@ -500,13 +501,13 @@ centry_is_referenced(const lListElem *centry, lList **answer_list,
        * check the cq configuration for centry references instead of qinstances
        */
       for_each_ep(cqueue, master_cqueue_list) {
-         for_each_ep(cel, lGetList(cqueue, CQ_consumable_config_list)) {
-            if (lGetSubStr(cel, CE_name, centry_name, ACELIST_value)) {
+         for_each_ep(cel, ocs::tom::get<CQ_consumable_config_list>(cqueue)) {
+            if (ocs::tom::find_first_in<ACELIST_value, CE_name>(cel, centry_name)) {
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
                                        ANSWER_QUALITY_INFO,
                                        MSG_CENTRYREFINQUEUE_SS,
                                        centry_name,
-                                       lGetString(cqueue, CQ_name));
+                                       ocs::tom::get<CQ_name>(cqueue));
                ret = true;
                break;
             }
@@ -521,7 +522,7 @@ centry_is_referenced(const lListElem *centry, lList **answer_list,
 
       for_each_ep(host, master_exechost_list) {
          if (host_is_centry_referenced(host, centry)) {
-            const char *host_name = lGetHost(host, EH_name);
+            const char *host_name = ocs::tom::get<EH_name>(host);
 
             answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
                                     ANSWER_QUALITY_INFO,
@@ -539,7 +540,7 @@ centry_is_referenced(const lListElem *centry, lList **answer_list,
             answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
                                     ANSWER_QUALITY_INFO,
                                     MSG_CENTRYREFINRQS_SS,
-                                    centry_name, lGetString(rqs, RQS_name));
+                                    centry_name, ocs::tom::get<RQS_name>(rqs));
             ret = true;
             break;
          }
@@ -566,8 +567,8 @@ centry_print_resource_to_dstring(const lListElem *this_elem, dstring *string) {
    DENTER(CENTRY_LAYER);
 
    if (this_elem != nullptr && string != nullptr) {
-      const auto type = static_cast<ocs::CEntry::Type>(lGetUlong(this_elem, CE_valtype));
-      const double val = lGetDouble(this_elem, CE_doubleval);
+      const auto type = static_cast<ocs::CEntry::Type>(ocs::tom::get<CE_valtype>(this_elem));
+      const double val = ocs::tom::get<CE_doubleval>(this_elem);
 
       switch (type) {
          case ocs::CEntry::Type::TIME:
@@ -601,9 +602,9 @@ centry_list_locate(const lList *this_list, const char *name) {
    lListElem *ret = nullptr;   /* CE_Type */
 
    if (this_list != nullptr && name != nullptr) {
-      ret = lGetElemStrRW(this_list, CE_name, name);
+      ret = ocs::tom::find_first_rw<CE_name>(this_list, name);
       if (ret == nullptr) {
-         ret = lGetElemStrRW(this_list, CE_shortcut, name);
+         ret = ocs::tom::find_first_rw<CE_shortcut>(this_list, name);
       }
    }
    DRETURN(ret);
@@ -646,9 +647,9 @@ centry_list_init_double(const lList *this_list) {
    DENTER(CENTRY_LAYER);
    for_each_rw_lv (centry, this_list) {
       double new_val = 0.0; // parse_ulong_val will not set it for all data types!
-      parse_ulong_val(&new_val, nullptr, static_cast<ocs::CEntry::Type>(lGetUlong(centry, CE_valtype)),
-                      lGetString(centry, CE_stringval), nullptr, 0);
-      lSetDouble(centry, CE_doubleval, new_val);
+      parse_ulong_val(&new_val, nullptr, static_cast<ocs::CEntry::Type>(ocs::tom::get<CE_valtype>(centry)),
+                      ocs::tom::get<CE_stringval>(centry), nullptr, 0);
+      ocs::tom::set<CE_doubleval>(centry, new_val);
    }
    DRETURN_VOID;
 }
@@ -673,7 +674,7 @@ ocs_centry_list_drop_earlier_request(lList *this_list, lListElem *entry, const c
    for (lListElem *other = lFirstRW(this_list); other != nullptr; other = lNextRW(other)) {
       if (other == entry) {
          entry_seen = true;
-      } else if (const char *other_name = lGetString(other, CE_name);
+      } else if (const char *other_name = ocs::tom::get<CE_name>(other);
                  other_name != nullptr && strcmp(other_name, full_name) == 0) {
          if (entry_seen) {
             lRemoveElem(this_list, &entry);
@@ -733,38 +734,38 @@ centry_list_fill_request(lList *this_list, lList **answer_list, const lList *mas
    lListElem *next = lFirstRW(this_list);
    while (lListElem *entry = next) {
       next = lNextRW(entry);
-      const char *name = lGetString(entry, CE_name);
+      const char *name = ocs::tom::get<CE_name>(entry);
 
       cep = centry_list_locate(master_centry_list, name);
       if (cep != nullptr) {
-         uint32_t requestable = lGetUlong(cep, CE_requestable);
+         uint32_t requestable = ocs::tom::get<CE_requestable>(cep);
          if (!allow_non_requestable && requestable == REQU_NO) {
 /*             ERROR(MSG_SGETEXT_RESOURCE_NOT_REQUESTABLE_S, name); */
             answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_SGETEXT_RESOURCE_NOT_REQUESTABLE_S, name);
-            lSetUlong(entry, CE_valtype, 0);
+            ocs::tom::set<CE_valtype>(entry, 0);
             ret = -1;
             continue;
          }
 
          /* replace name in request/threshold/consumable list,
             it may have been a shortcut */
-         const char *full_name = lGetString(cep, CE_name);
+         const char *full_name = ocs::tom::get<CE_name>(cep);
          if (strcmp(name, full_name) != 0 && ocs_centry_list_drop_earlier_request(this_list, entry, full_name)) {
             // a later request names the same attribute, by its full name or by its shortcut; it wins
             continue;
          }
-         lSetString(entry, CE_name, full_name);
+         ocs::tom::set<CE_name>(entry, full_name);
 
          /* we found the right complex attrib */
          /* so we know the type of the requested data */
-         lSetUlong(entry, CE_valtype, lGetUlong(cep, CE_valtype));
+         ocs::tom::set<CE_valtype>(entry, ocs::tom::get<CE_valtype>(cep));
 
          /* we also know whether it is a consumable attribute */
-         lSetUlong(entry, CE_consumable, lGetUlong(cep, CE_consumable));
+         ocs::tom::set<CE_consumable>(entry, ocs::tom::get<CE_consumable>(cep));
 
          if (centry_fill_and_check(entry, answer_list, allow_empty_boolean, allow_neg_consumable)) {
             /* no error msg here - centry_fill_and_check() makes it */
-            lSetUlong(entry, CE_valtype, 0);
+            ocs::tom::set<CE_valtype>(entry, 0);
             ret = -1;
             continue;
          }
@@ -772,9 +773,9 @@ centry_list_fill_request(lList *this_list, lList **answer_list, const lList *mas
          /* RSMAP entries may carry per-instance characteristics on
             RESL_properties. Resolve them against the master centry list,
             populate valtype, and type-check each value. */
-         if (static_cast<ocs::CEntry::Type>(lGetUlong(entry, CE_valtype)) == ocs::CEntry::Type::RSMAP) {
+         if (static_cast<ocs::CEntry::Type>(ocs::tom::get<CE_valtype>(entry)) == ocs::CEntry::Type::RSMAP) {
             if (!centry_check_rsmap_characteristics(answer_list, entry, master_centry_list)) {
-               lSetUlong(entry, CE_valtype, 0);
+               ocs::tom::set<CE_valtype>(entry, 0);
                ret = -1;
                continue;
             }
@@ -784,13 +785,13 @@ centry_list_fill_request(lList *this_list, lList **answer_list, const lList *mas
             which is the choke point every request passes: submit, AR submit, the spool read,
             and the -l filters of the clients. */
          if (!centry_rsmap_check_request_params(answer_list, entry, master_centry_list)) {
-            lSetUlong(entry, CE_valtype, 0);
+            ocs::tom::set<CE_valtype>(entry, 0);
             ret = -1;
             continue;
          }
       } else {
          answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_SGETEXT_UNKNOWN_RESOURCE_S, name);
-         lSetUlong(entry, CE_valtype, 0);
+         ocs::tom::set<CE_valtype>(entry, 0);
          ret = -1;
          continue;
       }
@@ -812,16 +813,16 @@ centry_list_fill_request(lList *this_list, lList **answer_list, const lList *mas
 void
 centry_list_fill_config(lList *centry_list, const lList *master_centry_list) {
    for_each_rw_lv(centry, centry_list) {
-      const lListElem *master_centry = centry_list_locate(master_centry_list, lGetString(centry, CE_name));
+      const lListElem *master_centry = centry_list_locate(master_centry_list, ocs::tom::get<CE_name>(centry));
       if (master_centry != nullptr) {
-         lSetString(centry, CE_name, lGetString(master_centry, CE_name));
-         lSetString(centry, CE_shortcut, lGetString(master_centry, CE_shortcut));
-         lSetUlong(centry, CE_valtype, lGetUlong(master_centry, CE_valtype));
-         lSetUlong(centry, CE_relop, lGetUlong(master_centry, CE_relop));
-         lSetUlong(centry, CE_requestable, lGetUlong(master_centry, CE_requestable));
-         lSetUlong(centry, CE_consumable, lGetUlong(master_centry, CE_consumable));
-         lSetString(centry, CE_defaultval, lGetString(master_centry, CE_defaultval));
-         lSetString(centry, CE_urgency_weight, lGetString(master_centry, CE_urgency_weight));
+         ocs::tom::set<CE_name>(centry, ocs::tom::get<CE_name>(master_centry));
+         ocs::tom::set<CE_shortcut>(centry, ocs::tom::get<CE_shortcut>(master_centry));
+         ocs::tom::set<CE_valtype>(centry, ocs::tom::get<CE_valtype>(master_centry));
+         ocs::tom::set<CE_relop>(centry, ocs::tom::get<CE_relop>(master_centry));
+         ocs::tom::set<CE_requestable>(centry, ocs::tom::get<CE_requestable>(master_centry));
+         ocs::tom::set<CE_consumable>(centry, ocs::tom::get<CE_consumable>(master_centry));
+         ocs::tom::set<CE_defaultval>(centry, ocs::tom::get<CE_defaultval>(master_centry));
+         ocs::tom::set<CE_urgency_weight>(centry, ocs::tom::get<CE_urgency_weight>(master_centry));
       }
    }
 }
@@ -845,7 +846,7 @@ centry_list_are_queues_requestable(const lList *this_list) {
       lListElem *centry = centry_list_locate(this_list, "qname");
 
       if (centry != nullptr) {
-         ret = (lGetUlong(centry, CE_requestable) != REQU_NO) ? true : false;
+         ret = (ocs::tom::get<CE_requestable>(centry) != REQU_NO) ? true : false;
       }
    }
    DRETURN(ret);
@@ -872,9 +873,9 @@ centry_list_append_to_dstring(const lList *this_list, dstring *string) {
          if (printed) {
             sge_dstring_append(string, ",");
          }
-         sge_dstring_sprintf_append(string, "%s=", lGetString(elem, CE_name));
-         if (lGetString(elem, CE_stringval) != nullptr) {
-            sge_dstring_append(string, lGetString(elem, CE_stringval));
+         sge_dstring_sprintf_append(string, "%s=", ocs::tom::get<CE_name>(elem));
+         if (ocs::tom::get<CE_stringval>(elem) != nullptr) {
+            sge_dstring_append(string, ocs::tom::get<CE_stringval>(elem));
          }
          printed = true;
       }
@@ -1043,14 +1044,14 @@ centry_list_parse_from_string(lList *complex_attributes,
       }
 
       /* create new element, fill in the values and append it */
-      complex_attribute = lGetElemStrRW(complex_attributes, CE_name, attr);
+      complex_attribute = ocs::tom::find_first_rw<CE_name>(complex_attributes, attr);
       if (complex_attribute == nullptr) {
          complex_attribute = lCreateElem(CE_Type);
-         lSetString(complex_attribute, CE_name, attr);
+         ocs::tom::set<CE_name>(complex_attribute, attr);
          lAppendElem(complex_attributes, complex_attribute);
       }
 
-      lSetString(complex_attribute, CE_stringval, value);
+      ocs::tom::set<CE_stringval>(complex_attribute, value);
    }
 
    FREE(buffer);
@@ -1106,9 +1107,9 @@ centry_list_remove_duplicates(lList *this_list) {
 bool centry_elem_validate(lListElem *centry, const lList *centry_list,
                           lList **answer_list, bool from_spool_read) {
    DENTER(TOP_LAYER);
-   uint32_t relop = lGetUlong(centry, CE_relop);
-   auto type = static_cast<ocs::CEntry::Type>(lGetUlong(centry, CE_valtype));
-   const char *attrname = lGetString(centry, CE_name);
+   uint32_t relop = ocs::tom::get<CE_relop>(centry);
+   auto type = static_cast<ocs::CEntry::Type>(ocs::tom::get<CE_valtype>(centry));
+   const char *attrname = ocs::tom::get<CE_name>(centry);
    const char *temp;
    bool ret = true;
 
@@ -1134,7 +1135,7 @@ bool centry_elem_validate(lListElem *centry, const lList *centry_list,
                                     MSG_INVALID_CENTRY_TYPE_RELOP_S, attrname);
             ret = false;
          }
-         if (lGetUlong(centry, CE_consumable)) {
+         if (ocs::tom::get<CE_consumable>(centry)) {
             answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                                     MSG_INVALID_CENTRY_CONSUMABLE_TYPE_SS, attrname,
                                     map_type2str(type));
@@ -1148,13 +1149,13 @@ bool centry_elem_validate(lListElem *centry, const lList *centry_list,
                                     MSG_INVALID_CENTRY_TYPE_RELOP_S, attrname);
             ret = false;
          }
-         if (lGetUlong(centry, CE_consumable) && relop != CMPLXEXCL_OP) {
+         if (ocs::tom::get<CE_consumable>(centry) && relop != CMPLXEXCL_OP) {
             answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                                     MSG_INVALID_CENTRY_EXCL_S, attrname,
                                     map_type2str(type));
             ret = false;
          }
-         if (relop == CMPLXEXCL_OP && !lGetUlong(centry, CE_consumable)) {
+         if (relop == CMPLXEXCL_OP && !ocs::tom::get<CE_consumable>(centry)) {
             answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                                     MSG_EXCL_MUST_BE_CONSUMABLE_S, attrname,
                                     map_type2str(type));
@@ -1179,8 +1180,8 @@ bool centry_elem_validate(lListElem *centry, const lList *centry_list,
       only run for a consumable which is requestable NO or FORCED, and for a non consumable -
       and a resource map is always consumable, so the ordinary configuration, requestable YES,
       reaches none of them. */
-   if (static_cast<ocs::CEntry::Type>(lGetUlong(centry, CE_valtype)) == ocs::CEntry::Type::RSMAP) {
-      const char *defaultval = lGetString(centry, CE_defaultval);
+   if (static_cast<ocs::CEntry::Type>(ocs::tom::get<CE_valtype>(centry)) == ocs::CEntry::Type::RSMAP) {
+      const char *defaultval = ocs::tom::get<CE_defaultval>(centry);
       if (defaultval != nullptr && strchr(defaultval, '[') != nullptr) {
          answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                                  MSG_RSMAP_DEFAULT_HAS_PARAMS_SS, attrname, defaultval);
@@ -1197,7 +1198,7 @@ bool centry_elem_validate(lListElem *centry, const lList *centry_list,
       which has one from starting. It keeps working as an ordinary resource, and is reported once
       at startup so that somebody knows to rename it. */
    {
-      const char *shortcut = lGetString(centry, CE_shortcut);
+      const char *shortcut = ocs::tom::get<CE_shortcut>(centry);
       const char *reserved = nullptr;
       const char *which = nullptr;
 
@@ -1227,14 +1228,14 @@ bool centry_elem_validate(lListElem *centry, const lList *centry_list,
       error_msg[0] = '\0';
 
       /* donot allow REQUESTABLE for "tmpdir" attribute, refer CR6650497 */
-      if (!strcmp(attrname, "tmpdir") && lGetUlong(centry, CE_requestable) != REQU_NO) {
+      if (!strcmp(attrname, "tmpdir") && ocs::tom::get<CE_requestable>(centry) != REQU_NO) {
          answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                                  MSG_CENTRY_NOTREQUESTABLE_S, attrname);
          ret = false;
 
       }
 
-      if (lGetUlong(centry, CE_consumable)) {
+      if (ocs::tom::get<CE_consumable>(centry)) {
 
          if (relop != CMPLXEXCL_OP && relop != CMPLXLE_OP) {
             answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
@@ -1242,8 +1243,8 @@ bool centry_elem_validate(lListElem *centry, const lList *centry_list,
             ret = false;
          }
 
-         if (lGetUlong(centry, CE_requestable) == REQU_NO) {
-            if (!parse_ulong_val(&dval, nullptr, type, lGetString(centry, CE_defaultval), error_msg, 199)) {
+         if (ocs::tom::get<CE_requestable>(centry) == REQU_NO) {
+            if (!parse_ulong_val(&dval, nullptr, type, ocs::tom::get<CE_defaultval>(centry), error_msg, 199)) {
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                                        MSG_INVALID_CENTRY_PARSE_DEFAULT_SS, attrname, error_msg);
                ret = false;
@@ -1253,8 +1254,8 @@ bool centry_elem_validate(lListElem *centry, const lList *centry_list,
                                        MSG_INVALID_CENTRY_CONSUMABLE_REQ1_S, attrname);
                ret = false;
             }
-         } else if (lGetUlong(centry, CE_requestable) == REQU_FORCED) {
-            if (!parse_ulong_val(&dval, nullptr, type, lGetString(centry, CE_defaultval), error_msg, 199)) {
+         } else if (ocs::tom::get<CE_requestable>(centry) == REQU_FORCED) {
+            if (!parse_ulong_val(&dval, nullptr, type, ocs::tom::get<CE_defaultval>(centry), error_msg, 199)) {
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                                        MSG_INVALID_CENTRY_PARSE_DEFAULT_SS, attrname, error_msg);
                ret = false;
@@ -1265,7 +1266,7 @@ bool centry_elem_validate(lListElem *centry, const lList *centry_list,
                ret = false;
             }
          }
-      } else if ((temp = lGetString(centry, CE_defaultval))) {
+      } else if ((temp = ocs::tom::get<CE_defaultval>(centry))) {
 
          switch (type) {
             case ocs::CEntry::Type::RSMAP:
@@ -1307,7 +1308,7 @@ bool centry_elem_validate(lListElem *centry, const lList *centry_list,
       }
 
       /* verify urgency always */
-      if ((temp = lGetString(centry, CE_urgency_weight))) {
+      if ((temp = ocs::tom::get<CE_urgency_weight>(centry))) {
          switch (type) {
             case ocs::CEntry::Type::RSMAP:
             case ocs::CEntry::Type::INT:
@@ -1338,7 +1339,7 @@ bool centry_elem_validate(lListElem *centry, const lList *centry_list,
       // accumulate: this used to assign, which discarded every earlier failure in this
       // function for a resource map - an invalid relation operator, for instance, was
       // reported into the answer list and the complex was accepted anyway
-      if (!centry_check_rsmap(answer_list, lGetUlong(centry, CE_consumable), attrname)) {
+      if (!centry_check_rsmap(answer_list, ocs::tom::get<CE_consumable>(centry), attrname)) {
          ret = false;
       }
    }
@@ -1347,7 +1348,7 @@ bool centry_elem_validate(lListElem *centry, const lList *centry_list,
    /* check if it's a built-in value and if the type is correct */
    {
       int i;
-      auto type = static_cast<ocs::CEntry::Type>(lGetUlong(centry, CE_valtype));
+      auto type = static_cast<ocs::CEntry::Type>(ocs::tom::get<CE_valtype>(centry));
       for (i = 0; i < max_queue_resources; i++) {
          if (strcmp(queue_resource[i].name, attrname) == 0 &&
              queue_resource[i].type != type) {
@@ -1384,7 +1385,7 @@ bool centry_elem_validate(lListElem *centry, const lList *centry_list,
 
    /* check for duplicates */
    if (centry_list) {
-      const char *shortcut = lGetString(centry, CE_shortcut);
+      const char *shortcut = ocs::tom::get<CE_shortcut>(centry);
       const lListElem *ce1 = centry_list_locate(centry_list, attrname);
       const lListElem *ce2 = centry_list_locate(centry_list, shortcut);
 
@@ -1429,13 +1430,13 @@ centry_urgency_contribution(int slots, const char *name, double value,
    const char *strval;
 
    if (!centry ||
-       !(strval = lGetString(centry, CE_urgency_weight)) ||
+       !(strval = ocs::tom::get<CE_urgency_weight>(centry)) ||
        !(parse_ulong_val(&weight, nullptr, ocs::CEntry::Type::INT, strval, nullptr, 0))) {
       DPRINTF("no contribution for attribute\n");
       DRETURN(0);
    }
 
-   switch (const auto complex_type = static_cast<ocs::CEntry::Type>(lGetUlong(centry, CE_valtype))) {
+   switch (const auto complex_type = static_cast<ocs::CEntry::Type>(ocs::tom::get<CE_valtype>(centry))) {
       case ocs::CEntry::Type::RSMAP:
       case ocs::CEntry::Type::INT:
       case ocs::CEntry::Type::TIME:
@@ -1480,7 +1481,7 @@ centry_list_do_all_exists(const lList *this_list, lList **answer_list,
    const lListElem *centry = nullptr;
 
    for_each_ep(centry, centry_list) {
-      const char *name = lGetString(centry, CE_name);
+      const char *name = ocs::tom::get<CE_name>(centry);
 
       if (centry_list_locate(this_list, name) == nullptr) {
          answer_list_add_sprintf(answer_list, STATUS_EEXIST,
@@ -1508,10 +1509,10 @@ centry_list_is_correct(lList *this_list, lList **answer_list) {
    bool ret = true;
 
    if (this_list != nullptr) {
-      const lListElem *centry = lGetElemStr(this_list, CE_name, "qname");
+      const lListElem *centry = ocs::tom::find_first<CE_name>(this_list, "qname");
 
       if (centry != nullptr) {
-         const char *value = lGetString(centry, CE_stringval);
+         const char *value = ocs::tom::get<CE_stringval>(centry);
 
          if (strchr(value, (int) '@')) {
             answer_list_add_sprintf(answer_list, STATUS_EEXIST,
@@ -1547,7 +1548,7 @@ int ensure_attrib_available(lList **alpp, lListElem *ep, int nm, const lList *ma
    int ret = 0;
    if (ep != nullptr) {
       for_each_rw_lv (attr, lGetList(ep, nm)) {
-         const char *name = lGetString(attr, CE_name);
+         const char *name = ocs::tom::get<CE_name>(attr);
          lListElem *centry = centry_list_locate(master_centry_list, name);
 
          if (centry == nullptr) {
@@ -1556,13 +1557,13 @@ int ensure_attrib_available(lList **alpp, lListElem *ep, int nm, const lList *ma
             ret = STATUS_EUNKNOWN;
             break;
          } else {
-            const char *fullname = lGetString(centry, CE_name);
+            const char *fullname = ocs::tom::get<CE_name>(centry);
 
             /*
              * Replace shortcuts by the fullname silently
              */
             if (strcmp(fullname, name) != 0) {
-               lSetString(attr, CE_name, fullname);
+               ocs::tom::set<CE_name>(attr, fullname);
             }
          }
       }
@@ -1589,13 +1590,13 @@ int host_ensure_slots_are_defined(lListElem *ehost, uint32_t processors) {
    }
 
    // No need to add slots to global host
-   const char *name = lGetHost(ehost, EH_name);
+   const char *name = ocs::tom::get<EH_name>(ehost);
    if (strcmp(name, SGE_GLOBAL_NAME) == 0 || strcmp(name, SGE_TEMPLATE_NAME) == 0) {
       DRETURN(0);
    }
 
    // Complex is already there.
-   const lListElem *slots_complex = lGetSubStr(ehost, CE_name, SGE_ATTR_SLOTS, EH_consumable_config_list);
+   const lListElem *slots_complex = ocs::tom::find_first_in<EH_consumable_config_list, CE_name>(ehost, SGE_ATTR_SLOTS);
    if (slots_complex != nullptr) {
       DPRINTF("slots complex is already there\n");
       return 0;
@@ -1606,9 +1607,9 @@ int host_ensure_slots_are_defined(lListElem *ehost, uint32_t processors) {
    }
 
    // Add the slot complex and use the given processors as value
-   lListElem *new_entry = lAddSubStr(ehost, CE_name, SGE_ATTR_SLOTS, EH_consumable_config_list, CE_Type);
-   lSetString(new_entry, CE_stringval, std::to_string(processors).c_str());
-   lSetDouble(new_entry, CE_doubleval, processors);
+   lListElem *new_entry = ocs::tom::emplace_back_in<EH_consumable_config_list, CE_name>(ehost, SGE_ATTR_SLOTS);
+   ocs::tom::set<CE_stringval>(new_entry, std::to_string(processors).c_str());
+   ocs::tom::set<CE_doubleval>(new_entry, processors);
 
    DRETURN(0);
 }
@@ -1669,7 +1670,7 @@ bool validate_load_formula(const char *load_formula, lList **answer_list, const 
                const lListElem *cmplx_attr = centry_list_locate(centry_list, fact);
 
                if (cmplx_attr != nullptr) {
-                  auto type = static_cast<ocs::CEntry::Type>(lGetUlong(cmplx_attr, CE_valtype));
+                  auto type = static_cast<ocs::CEntry::Type>(ocs::tom::get<CE_valtype>(cmplx_attr));
 
                   if (type == ocs::CEntry::Type::STR || type == ocs::CEntry::Type::CSTR || type == ocs::CEntry::Type::HOST || type == ocs::CEntry::Type::RESTR) {
                      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_WRONGTYPE_ATTRIBUTE_SS, name, fact);
@@ -1727,7 +1728,7 @@ bool load_formula_is_centry_referenced(const char *load_formula, const lListElem
    const char *term_delim = "+-";
    const char *term, *next_term;
    struct saved_vars_s *term_context = nullptr;
-   const char *centry_name = lGetString(centry, CE_name);
+   const char *centry_name = ocs::tom::get<CE_name>(centry);
 
    if (load_formula == nullptr) {
       DRETURN(ret);
@@ -1776,69 +1777,69 @@ const char *sge_get_dominant_stringval(const lListElem *rep, uint32_t *dominant_
 
    const char *s = nullptr;
    double val = 0;
-   switch (static_cast<ocs::CEntry::Type>(lGetUlong(rep, CE_valtype))) {
+   switch (static_cast<ocs::CEntry::Type>(ocs::tom::get<CE_valtype>(rep))) {
       case ocs::CEntry::Type::HOST:
       case ocs::CEntry::Type::STR:
       case ocs::CEntry::Type::CSTR:
       case ocs::CEntry::Type::RESTR:
-         if (!(lGetUlong(rep, CE_pj_dominant) & DOMINANT_TYPE_VALUE)) {
-            *dominant_p = lGetUlong(rep, CE_pj_dominant);
-            s = lGetString(rep, CE_pj_stringval);
+         if (!(ocs::tom::get<CE_pj_dominant>(rep) & DOMINANT_TYPE_VALUE)) {
+            *dominant_p = ocs::tom::get<CE_pj_dominant>(rep);
+            s = ocs::tom::get<CE_pj_stringval>(rep);
          } else {
-            *dominant_p = lGetUlong(rep, CE_dominant);
-            s = lGetString(rep, CE_stringval);
+            *dominant_p = ocs::tom::get<CE_dominant>(rep);
+            s = ocs::tom::get<CE_stringval>(rep);
          }
          break;
       case ocs::CEntry::Type::TIME:
-         if (!(lGetUlong(rep, CE_pj_dominant) & DOMINANT_TYPE_VALUE)) {
-            val = lGetDouble(rep, CE_pj_doubleval);
-            *dominant_p = lGetUlong(rep, CE_pj_dominant);
+         if (!(ocs::tom::get<CE_pj_dominant>(rep) & DOMINANT_TYPE_VALUE)) {
+            val = ocs::tom::get<CE_pj_doubleval>(rep);
+            *dominant_p = ocs::tom::get<CE_pj_dominant>(rep);
             double_print_time_to_dstring(val, resource_string_p);
             s = sge_dstring_get_string(resource_string_p);
          } else {
-            val = lGetDouble(rep, CE_doubleval);
-            *dominant_p = lGetUlong(rep, CE_dominant);
+            val = ocs::tom::get<CE_doubleval>(rep);
+            *dominant_p = ocs::tom::get<CE_dominant>(rep);
             double_print_time_to_dstring(val, resource_string_p);
             s = sge_dstring_get_string(resource_string_p);
          }
          break;
       case ocs::CEntry::Type::MEM:
-         if (!(lGetUlong(rep, CE_pj_dominant) & DOMINANT_TYPE_VALUE)) {
-            val = lGetDouble(rep, CE_pj_doubleval);
-            *dominant_p = lGetUlong(rep, CE_pj_dominant);
+         if (!(ocs::tom::get<CE_pj_dominant>(rep) & DOMINANT_TYPE_VALUE)) {
+            val = ocs::tom::get<CE_pj_doubleval>(rep);
+            *dominant_p = ocs::tom::get<CE_pj_dominant>(rep);
             double_print_memory_to_dstring(val, resource_string_p);
             s = sge_dstring_get_string(resource_string_p);
          } else {
-            val = lGetDouble(rep, CE_doubleval);
-            *dominant_p = lGetUlong(rep, CE_dominant);
+            val = ocs::tom::get<CE_doubleval>(rep);
+            *dominant_p = ocs::tom::get<CE_dominant>(rep);
             double_print_memory_to_dstring(val, resource_string_p);
             s = sge_dstring_get_string(resource_string_p);
          }
          break;
       case ocs::CEntry::Type::INT:
       case ocs::CEntry::Type::RSMAP:
-         if (!(lGetUlong(rep, CE_pj_dominant) & DOMINANT_TYPE_VALUE)) {
-            val = lGetDouble(rep, CE_pj_doubleval);
-            *dominant_p = lGetUlong(rep, CE_pj_dominant);
+         if (!(ocs::tom::get<CE_pj_dominant>(rep) & DOMINANT_TYPE_VALUE)) {
+            val = ocs::tom::get<CE_pj_doubleval>(rep);
+            *dominant_p = ocs::tom::get<CE_pj_dominant>(rep);
             double_print_int_to_dstring(val, resource_string_p);
             s = sge_dstring_get_string(resource_string_p);
          } else {
-            val = lGetDouble(rep, CE_doubleval);
+            val = ocs::tom::get<CE_doubleval>(rep);
 
-            *dominant_p = lGetUlong(rep, CE_dominant);
+            *dominant_p = ocs::tom::get<CE_dominant>(rep);
             double_print_int_to_dstring(val, resource_string_p);
             s = sge_dstring_get_string(resource_string_p);
          }
          break;
       default:
-         if (!(lGetUlong(rep, CE_pj_dominant) & DOMINANT_TYPE_VALUE)) {
-            val = lGetDouble(rep, CE_pj_doubleval);
-            *dominant_p = lGetUlong(rep, CE_pj_dominant);
+         if (!(ocs::tom::get<CE_pj_dominant>(rep) & DOMINANT_TYPE_VALUE)) {
+            val = ocs::tom::get<CE_pj_doubleval>(rep);
+            *dominant_p = ocs::tom::get<CE_pj_dominant>(rep);
             double_print_to_dstring(val, resource_string_p);
             s = sge_dstring_get_string(resource_string_p);
          } else {
-            val = lGetDouble(rep, CE_doubleval);
-            *dominant_p = lGetUlong(rep, CE_dominant);
+            val = ocs::tom::get<CE_doubleval>(rep);
+            *dominant_p = ocs::tom::get<CE_dominant>(rep);
             double_print_to_dstring(val, resource_string_p);
             s = sge_dstring_get_string(resource_string_p);
          }

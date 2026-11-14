@@ -34,6 +34,7 @@
 
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/sge_job.h"
+#include "tom/ocs_Element.h"
 
 #include <sge_log.h>
 
@@ -168,12 +169,12 @@ create_jobs() {
 
    auto time_start = std::chrono::high_resolution_clock::now();
    for (int i = 0; i < num_jobs; i++) {
-      lListElem *ep = lAddElemUlong(&master_job_list, JB_job_number, i + 1, JB_Type);
+      lListElem *ep = ocs::tom::emplace_back<JB_job_number>(&master_job_list, i + 1);
       int idx = i % num_users;
-      lSetString(ep, JB_owner, users[idx].user);
-      lSetString(ep, JB_group, users[idx].group);
-      lSetUlong(ep, JB_uid, users[idx].uid);
-      lSetUlong(ep, JB_gid, users[idx].gid);
+      ocs::tom::set<JB_owner>(ep, users[idx].user);
+      ocs::tom::set<JB_group>(ep, users[idx].group);
+      ocs::tom::set<JB_uid>(ep, users[idx].uid);
+      ocs::tom::set<JB_gid>(ep, users[idx].gid);
    }
    auto time_end = std::chrono::high_resolution_clock::now();
    auto millisecs = std::chrono::duration_cast<std::chrono::milliseconds>(time_end - time_start);
@@ -190,16 +191,16 @@ update_jobs() {
    auto time_start = std::chrono::high_resolution_clock::now();
    for (i = 0; i < num_jobs; i++) {
       uint32_t job_id = random_array[i];
-      lListElem *job = lGetElemUlongRW(master_job_list, JB_job_number, job_id);
+      lListElem *job = ocs::tom::find_first_rw<JB_job_number>(master_job_list, job_id);
       if (job == nullptr) {
          fprintf(stderr, "didn't find job " sge_u32 " in job list\n", job_id);
          ret = false;
          break;
       } else {
-         lAddUlong(job, JB_version, 1);
-         lSetString(job, JB_script_file, "/bin/sleep");
-         lSetUlong(job, JB_jobshare, i);
-         lSetDouble(job, JB_urg, job_id % 100);
+         ocs::tom::add<JB_version>(job, 1);
+         ocs::tom::set<JB_script_file>(job, "/bin/sleep");
+         ocs::tom::set<JB_jobshare>(job, i);
+         ocs::tom::set<JB_urg>(job, job_id % 100);
          // add some sub objects, e.g. a gdil
       }
    }
@@ -218,7 +219,7 @@ delete_jobs() {
    auto time_start = std::chrono::high_resolution_clock::now();
    for (i = 0; i < num_jobs; i++) {
       uint32_t job_id = random_array[i];
-      lListElem *job = lGetElemUlongRW(master_job_list, JB_job_number, job_id);
+      lListElem *job = ocs::tom::find_first_rw<JB_job_number>(master_job_list, job_id);
       if (job == nullptr) {
          fprintf(stderr, "didn't find job " sge_u32 " in job list\n", job_id);
          ret = false;

@@ -50,6 +50,7 @@
 #include "sgeobj/sge_userprj.h"
 #include "sgeobj/sge_object.h"
 #include "sgeobj/msg_sgeobjlib.h"
+#include "tom/ocs_Element.h"
 
 /**
  * @brief Find project in list
@@ -66,7 +67,7 @@ lListElem *prj_list_locate(const lList *lp, const char *name) {
 
    lListElem *ep = nullptr;
 
-   ep = lGetElemStrRW(lp, PR_name, name);
+   ep = ocs::tom::find_first_rw<PR_name>(lp, name);
 
    DRETURN(ep);
 }
@@ -86,7 +87,7 @@ lListElem *user_list_locate(const lList *lp, const char *name) {
 
    lListElem *ep = nullptr;
 
-   ep = lGetElemStrRW(lp, UU_name, name);
+   ep = ocs::tom::find_first_rw<UU_name>(lp, name);
 
    DRETURN(ep);
 }
@@ -111,7 +112,7 @@ const char *prj_list_append_to_dstring(const lList *this_list, dstring *string) 
       bool printed = false;
 
       for_each_ep_lv(elem, this_list) {
-         sge_dstring_append(string, lGetString(elem, PR_name));
+         sge_dstring_append(string, ocs::tom::get<PR_name>(elem));
          if (lNext(elem)) {
             sge_dstring_append(string, " ");
          }
@@ -138,7 +139,7 @@ bool prj_list_do_all_exist(const lList *this_list, lList **answer_list,
    DENTER(TOP_LAYER);
    bool ret = true;
    for_each_ep_lv(prj, prj_list) {
-      const char *name = lGetString(prj, PR_name);
+      const char *name = ocs::tom::get<PR_name>(prj);
 
       if (prj_list_locate(this_list, name) == nullptr) {
          answer_list_add_sprintf(answer_list, STATUS_EEXIST,
@@ -166,14 +167,14 @@ lListElem *getUserTemplate() {
    lListElem *ep;
 
    ep = lCreateElem(UU_Type);
-   lSetString(ep, UU_name, "template");
-   lSetString(ep, UU_default_project, nullptr);
-   lSetUlong(ep, UU_oticket, 0);
-   lSetUlong(ep, UU_fshare, 0);
-   lSetUlong(ep, UU_job_cnt, 0);
-   lSetList(ep, UU_project, nullptr);
-   lSetList(ep, UU_usage, nullptr);
-   lSetList(ep, UU_long_term_usage, nullptr);
+   ocs::tom::set<UU_name>(ep, "template");
+   ocs::tom::set<UU_default_project>(ep, nullptr);
+   ocs::tom::set<UU_oticket>(ep, 0);
+   ocs::tom::set<UU_fshare>(ep, 0);
+   ocs::tom::set<UU_job_cnt>(ep, 0);
+   ocs::tom::set<UU_project>(ep, nullptr);
+   ocs::tom::set<UU_usage>(ep, nullptr);
+   ocs::tom::set<UU_long_term_usage>(ep, nullptr);
 
    DRETURN(ep);
 }
@@ -192,15 +193,15 @@ lListElem *getPrjTemplate() {
    lListElem *ep;
 
    ep = lCreateElem(PR_Type);
-   lSetString(ep, PR_name, "template");
-   lSetUlong(ep, PR_oticket, 0);
-   lSetUlong(ep, PR_fshare, 0);
-   lSetUlong(ep, PR_job_cnt, 0);
-   lSetList(ep, PR_project, nullptr);
-   lSetList(ep, PR_usage, nullptr);
-   lSetList(ep, PR_long_term_usage, nullptr);
-   lSetList(ep, PR_acl, nullptr);
-   lSetList(ep, PR_xacl, nullptr);
+   ocs::tom::set<PR_name>(ep, "template");
+   ocs::tom::set<PR_oticket>(ep, 0);
+   ocs::tom::set<PR_fshare>(ep, 0);
+   ocs::tom::set<PR_job_cnt>(ep, 0);
+   ocs::tom::set<PR_project>(ep, nullptr);
+   ocs::tom::set<PR_usage>(ep, nullptr);
+   ocs::tom::set<PR_long_term_usage>(ep, nullptr);
+   ocs::tom::set<PR_acl>(ep, nullptr);
+   ocs::tom::set<PR_xacl>(ep, nullptr);
 
    DRETURN(ep);
 }

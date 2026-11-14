@@ -55,6 +55,7 @@
 #include "sgeobj/sge_range.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/msg_sgeobjlib.h"
+#include "tom/ocs_Element.h"
 
 /// Characters separating two ranges in a textual range list
 #define RANGE_SEPARATOR_CHARS ","
@@ -74,9 +75,9 @@ static void expand_range_list(lListElem *r, lList **rl) {
    lListElem *ep;
    lListElem *rr;
 
-   rmin = lGetUlong(r, RN_min);
-   rmax = lGetUlong(r, RN_max);
-   rstep = lGetUlong(r, RN_step);
+   rmin = ocs::tom::get<RN_min>(r);
+   rmax = ocs::tom::get<RN_max>(r);
+   rstep = ocs::tom::get<RN_step>(r);
 
    /* create list */
    if (!*rl) {
@@ -87,10 +88,10 @@ static void expand_range_list(lListElem *r, lList **rl) {
       ep = lFirstRW(*rl);
       while (ep) {
 
-         if (rstep != lGetUlong(ep, RN_step) || rstep > 1 || lGetUlong(ep, RN_step) > 1) {
+         if (rstep != ocs::tom::get<RN_step>(ep) || rstep > 1 || ocs::tom::get<RN_step>(ep) > 1) {
             lInsertElem(*rl, nullptr, r);
             break;
-         } else if (rmin > lGetUlong(ep, RN_max)) {
+         } else if (rmin > ocs::tom::get<RN_max>(ep)) {
 
             /* 
              ** r and ep are non-overlapping and r is to be
@@ -99,7 +100,7 @@ static void expand_range_list(lListElem *r, lList **rl) {
             lInsertElem(*rl, nullptr, r);
             break;
 
-         } else if (rmax < lGetUlong(ep, RN_min)) {
+         } else if (rmax < ocs::tom::get<RN_min>(ep)) {
             /* 
              ** r and ep are non-overlapping and r is to be
              ** sorted after ep ==> go for the next iteration
@@ -112,8 +113,8 @@ static void expand_range_list(lListElem *r, lList **rl) {
 
             continue;
 
-         } else if ((rmax <= lGetUlong(ep, RN_max)) &&
-                    (rmin >= lGetUlong(ep, RN_min))) {
+         } else if ((rmax <= ocs::tom::get<RN_max>(ep)) &&
+                    (rmin >= ocs::tom::get<RN_min>(ep))) {
 
             /* 
              ** r is fully contained within ep ==> delete it 
@@ -121,7 +122,7 @@ static void expand_range_list(lListElem *r, lList **rl) {
             lFreeElem(&r);
             break;
 
-         } else if (rmin < lGetUlong(ep, RN_min)) {
+         } else if (rmin < ocs::tom::get<RN_min>(ep)) {
 
             /* 
              ** ep is either fully contained within r
@@ -129,28 +130,28 @@ static void expand_range_list(lListElem *r, lList **rl) {
              ** overwrite ep and see if further list elements
              ** are covered also;
              */
-            if (rmax > lGetUlong(ep, RN_max)) {
+            if (rmax > ocs::tom::get<RN_max>(ep)) {
                /* r contains ep */
-               lSetUlong(ep, RN_max, rmax);
+               ocs::tom::set<RN_max>(ep, rmax);
             }
-            lSetUlong(ep, RN_min, rmin);
+            ocs::tom::set<RN_min>(ep, rmin);
 
             /* we're already sure we can free r */
             lFreeElem(&r);
             rr = ep;
             ep = lNextRW(ep);
             while (ep) {
-               if (rmin < lGetUlong(ep, RN_min)) {
+               if (rmin < ocs::tom::get<RN_min>(ep)) {
 
                   /* it also contains this one */
                   r = ep;
                   ep = lNextRW(ep);
                   lRemoveElem(*rl, &r);
 
-               } else if (rmin <= lGetUlong(ep, RN_max)) {
+               } else if (rmin <= ocs::tom::get<RN_max>(ep)) {
 
                   /* these overlap ==> glue them */
-                  lSetUlong(rr, RN_min, lGetUlong(ep, RN_min));
+                  ocs::tom::set<RN_min>(rr, ocs::tom::get<RN_min>(ep));
 
                   r = ep;
                   ep = lNextRW(ep);
@@ -166,12 +167,12 @@ static void expand_range_list(lListElem *r, lList **rl) {
 
             /* we're now sure we inserted it */
             break;
-         } else if (rmax > lGetUlong(ep, RN_max)) {
+         } else if (rmax > ocs::tom::get<RN_max>(ep)) {
             /*
              ** r and ep overlap and r starts above ep
              ** ==> glue them
              */
-            lSetUlong(ep, RN_max, rmax);
+            ocs::tom::set<RN_max>(ep, rmax);
             lFreeElem(&r);
             break;
          }
@@ -853,9 +854,9 @@ void range_list_move_first_n_ids(lList **range_list, lList **answer_list,
       uint32_t id;
 
       for_each_ep(range, *range_list) {
-         for (id = lGetUlong(range, RN_min);
-              id <= lGetUlong(range, RN_max);
-              id += lGetUlong(range, RN_step)) {
+         for (id = ocs::tom::get<RN_min>(range);
+              id <= ocs::tom::get<RN_max>(range);
+              id += ocs::tom::get<RN_step>(range)) {
             range_list_insert_id(range_list2, answer_list, id);
             range_list_compress(*range_list2);
             n--;
@@ -865,9 +866,9 @@ void range_list_move_first_n_ids(lList **range_list, lList **answer_list,
          }
       }
       for_each_ep(range, *range_list2) {
-         for (id = lGetUlong(range, RN_min);
-              id <= lGetUlong(range, RN_max);
-              id += lGetUlong(range, RN_step)) {
+         for (id = ocs::tom::get<RN_min>(range);
+              id <= ocs::tom::get<RN_max>(range);
+              id += ocs::tom::get<RN_step>(range)) {
             range_list_remove_id(range_list, answer_list, id);
          }
       }
@@ -1018,9 +1019,9 @@ void range_get_all_ids(const lListElem *range, uint32_t *min, uint32_t *max,
    DENTER(RANGE_LAYER);
    if (min != nullptr && max != nullptr && step != nullptr) {
       if (range != nullptr) {
-         *min = lGetUlong(range, RN_min);
-         *max = lGetUlong(range, RN_max);
-         *step = lGetUlong(range, RN_step);
+         *min = ocs::tom::get<RN_min>(range);
+         *max = ocs::tom::get<RN_max>(range);
+         *step = ocs::tom::get<RN_step>(range);
       } else {
          *min = *max = *step = 0;
       }
@@ -1050,12 +1051,12 @@ void range_set_all_ids(lListElem *range, uint32_t min, uint32_t max,
                        uint32_t step) {
    DENTER(RANGE_LAYER);
    if (range != nullptr) {
-      lSetUlong(range, RN_min, min);
-      lSetUlong(range, RN_max, max);
+      ocs::tom::set<RN_min>(range, min);
+      ocs::tom::set<RN_max>(range, max);
       if (min != max) {
-         lSetUlong(range, RN_step, step);
+         ocs::tom::set<RN_step>(range, step);
       } else {
-         lSetUlong(range, RN_step, 1);
+         ocs::tom::set<RN_step>(range, 1);
       }
    }
    DRETURN_VOID;
@@ -1317,8 +1318,8 @@ void range_parse_from_string(lListElem **range,
       if (*rstr == '\0') {
          if (inf_allowed) {
             /* rstr is just "-" <==> "1-inf" */
-            lSetUlong(r, RN_min, rmin);
-            lSetUlong(r, RN_max, RANGE_INFINITY);
+            ocs::tom::set<RN_min>(r, rmin);
+            ocs::tom::set<RN_max>(r, RANGE_INFINITY);
             *range = r;
             DRETURN_VOID;
          } else {
@@ -1461,9 +1462,9 @@ void range_parse_from_string(lListElem **range,
       rmin = ldummy;
    }
 
-   lSetUlong(r, RN_min, rmin);
-   lSetUlong(r, RN_max, rmax);
-   lSetUlong(r, RN_step, step);
+   ocs::tom::set<RN_min>(r, rmin);
+   ocs::tom::set<RN_max>(r, rmax);
+   ocs::tom::set<RN_step>(r, step);
 
    /* Ughhhh! Done ... */
 
@@ -1491,9 +1492,9 @@ range_parse_get_ids(const char *value, int step_allowed, uint32_t &start, uint32
       // string didn't contain a valid range
       ret = false;
    } else {
-      start = lGetUlong(range, RN_min);
-      end = lGetUlong(range, RN_max);
-      step = lGetUlong(range, RN_step);
+      start = ocs::tom::get<RN_min>(range);
+      end = ocs::tom::get<RN_max>(range);
+      step = ocs::tom::get<RN_step>(range);
    }
 
    lFreeElem(&range);

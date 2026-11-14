@@ -29,6 +29,7 @@
 #include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/sge_advance_reservation.h"
 #include "sgeobj/sge_answer.h"
+#include "tom/ocs_Element.h"
 
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge.h"
@@ -65,7 +66,7 @@ namespace ocs::spool::classic {
       bool ret = ar != nullptr;
 
       if (ret) {
-         std::string filename = std::to_string(lGetUlong(ar, AR_id));
+         std::string filename = std::to_string(ocs::tom::get<AR_id>(ar));
          if (lWriteElemToDisk(ar, AR_DIR, filename.c_str(), SGE_OBJ_AR) != 0) {
             ret = false;
          }

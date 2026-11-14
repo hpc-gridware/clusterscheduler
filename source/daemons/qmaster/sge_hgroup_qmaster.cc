@@ -55,6 +55,10 @@
 #include "sgeobj/msg_sgeobjlib.h"
 #include "sgeobj/sge_href.h"
 #include "sgeobj/ocs_DataStore.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_CQ.h"
+#include "sgeobj/tom/ocs_tom_HR.h"
+#include "sgeobj/tom/ocs_tom_QU.h"
 
 #include "spool/sge_spooling.h"
 
@@ -99,7 +103,7 @@ hgroup_nesting_that_contains(const lList *current, const char *hostname,
    bool found = false;
 
    for_each_ep(href, current) {
-      const char *entry = lGetHost(href, HR_name);
+      const char *entry = ocs::tom::get<HR_name>(href);
 
       if (entry == nullptr || !ocs::is_hgroup_name(entry)) {
          continue;
@@ -165,7 +169,7 @@ hgroup_reserved_delta_is_strict(const lListElem *hgroup, lList **answer_list,
    const char *del_name;   /* as sge_del_host() named it */
    bool ret = true;
 
-   const char *group = lGetHost(hgroup, HGRP_name);
+   const char *group = ocs::tom::get<HGRP_name>(hgroup);
    if (group == nullptr) {
       DRETURN(true);
    }
@@ -188,11 +192,11 @@ hgroup_reserved_delta_is_strict(const lListElem *hgroup, lList **answer_list,
       DRETURN(true);
    }
 
-   const lList *current = lGetList(hgroup, HGRP_host_list);
+   const lList *current = ocs::tom::get<HGRP_host_list>(hgroup);
    const lListElem *href;
 
    for_each_ep(href, delta_list) {
-      const char *name = lGetHost(href, HR_name);
+      const char *name = ocs::tom::get<HR_name>(href);
 
       if (name == nullptr) {
          continue;
@@ -242,7 +246,7 @@ hgroup_mod_hostlist(lListElem *hgroup, lList **answer_list, lListElem *reduced_e
 
       if (pos >= 0) {
          lList *list = lGetPosList(reduced_elem, pos);
-         lList *old_href_list = lCopyList("", lGetList(hgroup, HGRP_host_list));
+         lList *old_href_list = lCopyList("", ocs::tom::get<HGRP_host_list>(hgroup));
          const lList *href_list = nullptr;
          lList *add_groups = nullptr;
          lList *rem_groups = nullptr;
@@ -279,8 +283,8 @@ hgroup_mod_hostlist(lListElem *hgroup, lList **answer_list, lListElem *reduced_e
              * well as against the existing one - the attribute-wise path
              * already drops the latter, the whole-list path dropped neither.
              */
-            href_list_make_uniq(lGetListRW(hgroup, HGRP_host_list), answer_list);
-            href_list = lGetList(hgroup, HGRP_host_list);
+            href_list_make_uniq(ocs::tom::get<HGRP_host_list>(hgroup), answer_list);
+            href_list = ocs::tom::get<HGRP_host_list>(hgroup);
          }
          if (ret) {
             /*
@@ -291,7 +295,7 @@ hgroup_mod_hostlist(lListElem *hgroup, lList **answer_list, lListElem *reduced_e
             const lListElem *member;
 
             for_each_ep(member, href_list) {
-               const char *member_name = lGetHost(member, HR_name);
+               const char *member_name = ocs::tom::get<HR_name>(member);
 
                if (hgroup_is_queue_group(member_name)) {
                   ERROR(MSG_HGRP_QUEUEGROUP_NOREF_S, member_name);
@@ -327,13 +331,13 @@ hgroup_mod_hostlist(lListElem *hgroup, lList **answer_list, lListElem *reduced_e
             ret &= hgroup_find_all_referencees(hgroup, answer_list,
                                                master_hgroup_list, occupant_groups);
             ret &= href_list_add(occupant_groups, answer_list,
-                                 lGetHost(hgroup, HGRP_name));
+                                 ocs::tom::get<HGRP_name>(hgroup));
             if (ret) {
                if (*occupant_groups != nullptr && add_groups != nullptr) {
                   const lListElem *add_group = nullptr;
 
                   for_each_ep(add_group, add_groups) {
-                     const char *name = lGetHost(add_group, HR_name);
+                     const char *name = ocs::tom::get<HR_name>(add_group);
 
                      if (href_list_has_member(*occupant_groups, name)) {
                         break;
@@ -345,7 +349,7 @@ hgroup_mod_hostlist(lListElem *hgroup, lList **answer_list, lListElem *reduced_e
                       */
                      ;
                   } else {
-                     snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_HGROUP_CYCLEINDEF_SS, lGetHost(add_group, HR_name), lGetHost(hgroup, HGRP_name));
+                     snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_HGROUP_CYCLEINDEF_SS, static_cast<const char *>(ocs::tom::get<HR_name>(add_group)), static_cast<const char *>(ocs::tom::get<HGRP_name>(hgroup)));
                      answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
                      ret = false;
                   }
@@ -400,14 +404,14 @@ hgroup_commit(lListElem *hgroup, uint64_t gdi_session) {
    DENTER(TOP_LAYER);
 
    lList *master_cqueue_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE);
-   lList *cqueue_list = lGetListRW(hgroup, HGRP_cqueue_list);
+   lList *cqueue_list = ocs::tom::get<HGRP_cqueue_list>(hgroup);
    lListElem *next_cqueue = nullptr;
    lListElem *cqueue = nullptr;
 
    next_cqueue = lFirstRW(cqueue_list);
    while ((cqueue = next_cqueue)) {
-      const char *name = lGetString(cqueue, CQ_name);
-      lListElem *org_queue = lGetElemStrRW(master_cqueue_list, CQ_name, name);
+      const char *name = ocs::tom::get<CQ_name>(cqueue);
+      lListElem *org_queue = ocs::tom::find_first_rw<CQ_name>(master_cqueue_list, name);
 
       next_cqueue = lNextRW(cqueue);
       cqueue_commit(cqueue, gdi_session);
@@ -415,7 +419,7 @@ hgroup_commit(lListElem *hgroup, uint64_t gdi_session) {
       lRemoveElem(master_cqueue_list, &org_queue);
       lAppendElem(master_cqueue_list, cqueue);
    }
-   lSetList(hgroup, HGRP_cqueue_list, nullptr);
+   ocs::tom::set<HGRP_cqueue_list>(hgroup, nullptr);
    DRETURN_VOID;
 }
 
@@ -426,7 +430,7 @@ hgroup_commit(lListElem *hgroup, uint64_t gdi_session) {
 static void
 hgroup_rollback(lListElem *this_elem) {
    DENTER(TOP_LAYER);
-   lSetList(this_elem, HGRP_cqueue_list, nullptr);
+   ocs::tom::set<HGRP_cqueue_list>(this_elem, nullptr);
    DRETURN_VOID;
 }
 
@@ -504,7 +508,7 @@ hgroup_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, 
        * renaming something else onto it.
        */
       {
-         const char *existing_name = add ? nullptr : lGetHost(hgroup, HGRP_name);
+         const char *existing_name = add ? nullptr : static_cast<const char *>(ocs::tom::get<HGRP_name>(hgroup));
          const char *reserved = nullptr;
 
          if (hgroup_is_system_maintained(name)) {
@@ -534,17 +538,17 @@ hgroup_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, 
 
          /* Check groupname for new hostgroups */
          if (hgroup_check_name(answer_list, name)) {
-            lSetHost(hgroup, HGRP_name, name);
+            ocs::tom::set<HGRP_name>(hgroup, name);
          } else {
             const lListElem *aep;
             for_each_ep(aep, *answer_list) {
-               ERROR(SFNMAX, lGetString(aep, AN_text));
+               ERROR(SFNMAX, ocs::tom::get<AN_text>(aep));
             }
             ret = false;
          }
 
       } else {
-         const char *old_name = lGetHost(hgroup, HGRP_name);
+         const char *old_name = ocs::tom::get<HGRP_name>(hgroup);
 
          /* Reject modify requests which try to change the groupname */
          if (sge_hostcmp(old_name, name)) {
@@ -579,7 +583,7 @@ hgroup_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, 
           * this point it still is the one of the stored group: the driver hands
           * the modifier a copy of the old object.
           */
-         lList *members_before = lCopyList("", lGetList(hgroup, HGRP_host_list));
+         lList *members_before = lCopyList("", ocs::tom::get<HGRP_host_list>(hgroup));
 
          if (ret) {
             ret &= hgroup_mod_hostlist(hgroup, answer_list, reduced_elem, cmd, sub_command, &add_hosts, &rem_hosts, &occupant_groups);
@@ -602,9 +606,9 @@ hgroup_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, 
           * gave was about the entry itself, and chunk 4 makes nested removal an
           * error of its own.
           */
-         if (ret && strcmp(lGetHost(hgroup, HGRP_name), ADMIN_HOSTGROUP) == 0) {
+         if (ret && strcmp(ocs::tom::get<HGRP_name>(hgroup), ADMIN_HOSTGROUP) == 0) {
             const char *qualified_hostname = component_get_qualified_hostname();
-            const lList *host_list = lGetList(hgroup, HGRP_host_list);
+            const lList *host_list = ocs::tom::get<HGRP_host_list>(hgroup);
 
             if (href_list_locate(host_list, qualified_hostname) == nullptr) {
                ERROR(MSG_HGRP_RESERVED_NOQMASTER_SS, qualified_hostname, ADMIN_HOSTGROUP);
@@ -635,7 +639,7 @@ hgroup_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, 
                   if (sge_dstring_strlen(&referencing_queues) > 0) {
                      sge_dstring_append(&referencing_queues, ", ");
                   }
-                  sge_dstring_append(&referencing_queues, lGetString(cqueue, CQ_name));
+                  sge_dstring_append(&referencing_queues, ocs::tom::get<CQ_name>(cqueue));
 
                   /*
                    * Find CQs lists of referenced hosts before and after
@@ -653,8 +657,8 @@ hgroup_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, 
                    * instances. See the NOTES at href_list_find_all_references().
                    */
 
-                  name = lGetHost(hgroup, HGRP_name);
-                  org_hgroup = lGetElemHostRW(master_hgroup_list, HGRP_name, name);
+                  name = ocs::tom::get<HGRP_name>(hgroup);
+                  org_hgroup = ocs::tom::find_first_rw<HGRP_name>(master_hgroup_list, name);
 
                   /*
                    * CS-2677: the host list is fetched again after the swap, not
@@ -706,11 +710,11 @@ hgroup_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, 
                    * Make a copy of CQ
                    */
                   if (ret) {
-                     lList *cqueue_list = lGetListRW(hgroup, HGRP_cqueue_list);
+                     lList *cqueue_list = ocs::tom::get<HGRP_cqueue_list>(hgroup);
 
                      if (cqueue_list == nullptr) {
                         cqueue_list = lCreateList("", CQ_Type);
-                        lSetList(hgroup, HGRP_cqueue_list, cqueue_list);
+                        ocs::tom::set<HGRP_cqueue_list>(hgroup, cqueue_list);
                      }
                      new_cqueue = lCopyElem(cqueue);
                      if (new_cqueue != nullptr && cqueue_list != nullptr) {
@@ -812,14 +816,14 @@ hgroup_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, 
           * away, and one naming the path would be noise when it does not.
           */
          if (ret) {
-            const char *group_name = lGetHost(hgroup, HGRP_name);
+            const char *group_name = ocs::tom::get<HGRP_name>(hgroup);
             const bool is_admin  = group_name != nullptr && strcmp(group_name, ADMIN_HOSTGROUP) == 0;
             const bool is_submit = group_name != nullptr && strcmp(group_name, SUBMIT_HOSTGROUP) == 0;
             const bool via_admin  = !is_admin  && href_list_has_member(occupant_groups, ADMIN_HOSTGROUP);
             const bool via_submit = !is_submit && href_list_has_member(occupant_groups, SUBMIT_HOSTGROUP);
 
-            for_each_ep_lv(member, lGetList(hgroup, HGRP_host_list)) {
-               const char *member_name = lGetHost(member, HR_name);
+            for_each_ep_lv(member, ocs::tom::get<HGRP_host_list>(hgroup)) {
+               const char *member_name = ocs::tom::get<HR_name>(member);
 
                if (!ocs::is_matcher(member_name) ||
                    href_list_locate(members_before, member_name) != nullptr) {
@@ -895,7 +899,7 @@ hgroup_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *this_elem,
     * Check all incoming parameter
     */
    if (this_elem != nullptr && remote_user != nullptr && remote_host != nullptr) {
-      const char *name = lGetHost(this_elem, HGRP_name);
+      const char *name = ocs::tom::get<HGRP_name>(this_elem);
 
       /*
        * What is the name ob the hostgroup which should be removed?
@@ -993,7 +997,7 @@ hgroup_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *this_elem,
                 * removing "C", whatever happened to be left at that address.
                 */
                dstring stored_name_dstring = DSTRING_INIT;
-               sge_dstring_copy_string(&stored_name_dstring, lGetHost(hgroup, HGRP_name));
+               sge_dstring_copy_string(&stored_name_dstring, ocs::tom::get<HGRP_name>(hgroup));
                const char *stored_name = sge_dstring_get_string(&stored_name_dstring);
 
                if (sge_event_spool(answer_list, 0, sgeE_HGROUP_DEL,
@@ -1068,7 +1072,7 @@ void hgroup_refresh_caches(lListElem *hgroup, lList *master_hgroup_list, lList *
       lUniqHost(*referencees, HR_name);
 
       for_each_ep(href, *referencees) {
-         lListElem *referencee = hgroup_list_locate(master_hgroup_list, lGetHost(href, HR_name));
+         lListElem *referencee = hgroup_list_locate(master_hgroup_list, ocs::tom::get<HR_name>(href));
 
          if (referencee != nullptr) {
             hgroup_update_cache(referencee, &cache_answer_list, master_hgroup_list);
@@ -1113,11 +1117,11 @@ void hgroup_refresh_matcher_caches(lList *master_hgroup_list, lList **refreshed)
    lList *answer_list = nullptr;
 
    for_each_rw_lv(hgroup, master_hgroup_list) {
-      const char *group_name = lGetHost(hgroup, HGRP_name);
+      const char *group_name = ocs::tom::get<HGRP_name>(hgroup);
       bool carries_matcher = false;
 
-      for_each_ep_lv(member, lGetList(hgroup, HGRP_host_list)) {
-         if (ocs::is_matcher(lGetHost(member, HR_name))) {
+      for_each_ep_lv(member, ocs::tom::get<HGRP_host_list>(hgroup)) {
+         if (ocs::is_matcher(ocs::tom::get<HR_name>(member))) {
             carries_matcher = true;
             break;
          }
@@ -1134,7 +1138,7 @@ void hgroup_refresh_matcher_caches(lList *master_hgroup_list, lList **refreshed)
       href_list_add(refreshed, &answer_list, group_name);
 
       for_each_ep_lv(href, referencees) {
-         href_list_add(refreshed, &answer_list, lGetHost(href, HR_name));
+         href_list_add(refreshed, &answer_list, ocs::tom::get<HR_name>(href));
       }
       lFreeList(&referencees);
    }
@@ -1160,7 +1164,7 @@ void hgroup_send_referencee_events(const lList *referencees, lList *master_hgrou
    const lListElem *href;
 
    for_each_ep(href, referencees) {
-      const char *ref_name = lGetHost(href, HR_name);
+      const char *ref_name = ocs::tom::get<HR_name>(href);
       lListElem *referencee = hgroup_list_locate(master_hgroup_list, ref_name);
 
       if (referencee != nullptr) {
@@ -1186,7 +1190,7 @@ int
 hgroup_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *hgroup, lListElem *old_hgroup, gdi_object_t *object, lList **ppList, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
-   const char *name = lGetHost(hgroup, HGRP_name);
+   const char *name = ocs::tom::get<HGRP_name>(hgroup);
    lList *cqueue_list = nullptr;
    lList *master_hgroup_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_HGROUP);
    lList *referencees = nullptr;   /* HR_Type */
@@ -1194,13 +1198,13 @@ hgroup_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *hgroup
    hgroup_refresh_caches(hgroup, master_hgroup_list, &referencees);
 
    /* we will have the cqueue_list in the final event */
-   lXchgList(hgroup, HGRP_cqueue_list, &cqueue_list);
+   ocs::tom::exchange<HGRP_cqueue_list>(hgroup, &cqueue_list);
    /*
     * HGRP modify or add event
     */
    sge_add_event(0, old_hgroup ? sgeE_HGROUP_MOD : sgeE_HGROUP_ADD, 0, 0, name, nullptr, nullptr, hgroup, packet->gdi_session);
 
-   lXchgList(hgroup, HGRP_cqueue_list, &cqueue_list);
+   ocs::tom::exchange<HGRP_cqueue_list>(hgroup, &cqueue_list);
 
    hgroup_send_referencee_events(referencees, master_hgroup_list, packet->gdi_session);
    lFreeList(&referencees);
@@ -1231,8 +1235,8 @@ hgroup_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list
 
    bool tmp_ret = true;
    bool dbret;
-   const char *name = lGetHost(this_elem, HGRP_name);
-   const lList *cqueue_list = lGetList(this_elem, HGRP_cqueue_list);
+   const char *name = ocs::tom::get<HGRP_name>(this_elem);
+   const lList *cqueue_list = ocs::tom::get<HGRP_cqueue_list>(this_elem);
    const lListElem *cqueue = nullptr;
    dstring key_dstring = DSTRING_INIT;
    lList *spool_answer_list = nullptr;
@@ -1250,15 +1254,15 @@ hgroup_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list
 
    if (tmp_ret) {
       for_each_ep(cqueue, cqueue_list) {
-         const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
+         const lList *qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
          const lListElem *qinstance = nullptr;
-         const char *cqname = lGetString(cqueue, CQ_name);
+         const char *cqname = ocs::tom::get<CQ_name>(cqueue);
 
          for_each_ep(qinstance, qinstance_list) {
-            uint32_t tag = lGetUlong(qinstance, QU_tag);
+            uint32_t tag = ocs::tom::get<QU_tag>(qinstance);
 
             if (tag == SGE_QI_TAG_ADD || tag == SGE_QI_TAG_MOD) {
-               const char *key = sge_dstring_sprintf(&key_dstring, "%s/%s", cqname, lGetHost(qinstance, QU_qhostname));
+               const char *key = sge_dstring_sprintf(&key_dstring, "%s/%s", cqname, static_cast<const char *>(ocs::tom::get<QU_qhostname>(qinstance)));
                dbret = spool_write_object(&spool_answer_list, spool_get_default_context(),
                                           qinstance, key, SGE_TYPE_QINSTANCE);
                answer_list_output(&spool_answer_list);

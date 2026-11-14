@@ -31,6 +31,9 @@
 #include "sgeobj/sge_userset.h"
 #include "sgeobj/sge_utility.h"
 #include "sgeobj/ocs_DataStore.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_ST.h"
+#include "sgeobj/tom/ocs_tom_US.h"
 
 #include "spool/sge_spooling.h"
 
@@ -74,7 +77,7 @@ role_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem
          DRETURN(STATUS_EUNKNOWN);
       }
    }
-   const char *role_name = lGetString(new_ep, RL_name);
+   const char *role_name = ocs::tom::get<RL_name>(new_ep);
 
    if (add && verify_obj_name(alpp, role_name, MAX_VERIFY_STRING, MSG_OBJ_ROLE) != STATUS_OK) {
       // answer list already filled by verify_obj_name()
@@ -85,10 +88,10 @@ role_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem
    attr_mod_bool(ep, new_ep, RL_enabled, "enabled");
 
    // ---- RL_user_list: verify all referenced usersets exist, then apply
-   if (lGetPosViaElem(ep, RL_user_list, SGE_NO_ABORT) >= 0) {
+   if (ocs::tom::has<RL_user_list>(ep)) {
       normalize_sublist(ep, RL_user_list);
       const lList *master_userset_list = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
-      if (userset_list_validate_acl_list(lGetList(ep, RL_user_list), alpp, master_userset_list) != STATUS_OK) {
+      if (userset_list_validate_acl_list(ocs::tom::get<RL_user_list>(ep), alpp, master_userset_list) != STATUS_OK) {
          // answer list already filled by userset_list_validate_acl_list()
          DRETURN(STATUS_EUNKNOWN);
       }
@@ -97,17 +100,17 @@ role_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem
    }
 
    // ---- RL_parent_role_list: reject self-reference and unknown parents, then apply
-   if (lGetPosViaElem(ep, RL_parent_role_list, SGE_NO_ABORT) >= 0) {
+   if (ocs::tom::has<RL_parent_role_list>(ep)) {
       normalize_sublist(ep, RL_parent_role_list);
       const lList *master_role_list = *ocs::DataStore::get_master_list(SGE_TYPE_RL);
-      for_each_ep_lv(parent_ep, lGetList(ep, RL_parent_role_list)) {
-         const char *parent_name = lGetString(parent_ep, ST_name);
+      for_each_ep_lv(parent_ep, ocs::tom::get<RL_parent_role_list>(ep)) {
+         const char *parent_name = ocs::tom::get<ST_name>(parent_ep);
          if (strcmp(parent_name, role_name) == 0) {
             ERROR(MSG_ROLE_SELF_REFERENCE_S, role_name);
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             DRETURN(STATUS_EUNKNOWN);
          }
-         if (!lGetElemStr(master_role_list, RL_name, parent_name)) {
+         if (!ocs::tom::find_first<RL_name>(master_role_list, parent_name)) {
             ERROR(MSG_ROLE_PARENT_DOESNOTEXIST_SS, parent_name, role_name);
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             DRETURN(STATUS_EUNKNOWN);
@@ -123,8 +126,8 @@ role_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem
    }
 
    // ---- RL_perm_list: validate syntax before applying
-   if (lGetPosViaElem(ep, RL_perm_list, SGE_NO_ABORT) >= 0) {
-      const char *perm_str = lGetString(ep, RL_perm_list);
+   if (ocs::tom::has<RL_perm_list>(ep)) {
+      const char *perm_str = ocs::tom::get<RL_perm_list>(ep);
       if (perm_str != nullptr && strcmp(perm_str, "NONE") != 0) {
          if (ocs::Role::PermRuleList rules; !ocs::Role::parse_perm_list(perm_str, rules, alpp)) {
             // answer list already filled by parse_perm_list()
@@ -155,12 +158,12 @@ role_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListEl
    lList *answer_list = nullptr;
 
    bool dbret = spool_write_object(&answer_list, spool_get_default_context(), ep,
-                                   lGetString(ep, RL_name), SGE_TYPE_RL);
+                                   ocs::tom::get<RL_name>(ep), SGE_TYPE_RL);
    answer_list_output(&answer_list);
 
    if (!dbret) {
       answer_list_add_sprintf(alpp, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
-                              MSG_PERSISTENCE_WRITE_FAILED_S, lGetString(ep, RL_name));
+                              MSG_PERSISTENCE_WRITE_FAILED_S, ocs::tom::get<RL_name>(ep));
    }
 
    DRETURN(dbret ? 0 : 1);
@@ -184,7 +187,7 @@ role_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lLis
              lList **ppList, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
-   const char *role_name = lGetString(ep, RL_name);
+   const char *role_name = ocs::tom::get<RL_name>(ep);
    sge_add_event(0, old_ep ? sgeE_RL_MOD : sgeE_RL_ADD, 0, 0, role_name, nullptr, nullptr, ep, packet->gdi_session);
 
    DRETURN(0);
@@ -213,14 +216,14 @@ sge_del_role(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lLis
       DRETURN(STATUS_EUNKNOWN);
    }
 
-   if (lGetPosViaElem(ep, RL_name, SGE_NO_ABORT) < 0) {
+   if (!ocs::tom::has<RL_name>(ep)) {
       CRITICAL(MSG_SGETEXT_MISSINGCULLFIELD_SS, lNm2Str(RL_name), __func__);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
 
-   const char *role_name = lGetString(ep, RL_name);
-   if (!lGetElemStrRW(*master_role_list, RL_name, role_name)) {
+   const char *role_name = ocs::tom::get<RL_name>(ep);
+   if (!ocs::tom::find_first_rw<RL_name>(*master_role_list, role_name)) {
       ERROR(MSG_SGETEXT_DOESNOTEXIST_SS, MSG_OBJ_ROLE, role_name);
       answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EEXIST);
@@ -228,8 +231,8 @@ sge_del_role(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lLis
 
    // refuse deletion if this role is still a parent of another role
    for_each_ep_lv(other_role, *master_role_list) {
-      if (lGetSubStr(other_role, ST_name, role_name, RL_parent_role_list)) {
-         ERROR(MSG_ROLE_STILL_REFERENCED_INPARENT_SS, role_name, lGetString(other_role, RL_name));
+      if (ocs::tom::find_first_in<RL_parent_role_list, ST_name>(other_role, role_name)) {
+         ERROR(MSG_ROLE_STILL_REFERENCED_INPARENT_SS, role_name, ocs::tom::get<RL_name>(other_role));
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EUNKNOWN);
       }
@@ -237,7 +240,7 @@ sge_del_role(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lLis
 
    sge_event_spool(alpp, 0, sgeE_RL_DEL, 0, 0, role_name, nullptr, nullptr,
                    nullptr, nullptr, nullptr, true, true, packet->gdi_session);
-   lDelElemStr(master_role_list, RL_name, role_name);
+   ocs::tom::erase<RL_name>(master_role_list, role_name);
 
    INFO(MSG_SGETEXT_REMOVEDFROMLIST_SSSS, ruser, rhost, role_name, MSG_OBJ_ROLE);
    answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);

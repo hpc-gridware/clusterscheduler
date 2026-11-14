@@ -26,6 +26,8 @@
 
 #include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/sge_schedd_conf.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_CE.h"
 
 #include "ocs_QQuotaModelServer.h"
 
@@ -70,7 +72,7 @@ bool ocs::QQuotaModelServer::fetch_data(lList **answer_list, const lList *host_n
 
    const lListElem *sc = lFirst(*DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
    if (sc != nullptr) {
-      job_load_adjustments_ = lCopyList("load_adj_copy", lGetList(sc, SC_job_load_adjustments));
+      job_load_adjustments_ = lCopyList("load_adj_copy", ocs::tom::get<SC_job_load_adjustments>(sc));
    }
    // An empty list, not nullptr, when none are configured: the sched helpers read nullptr as "fetch them
    // from the data store of the calling thread" (LOAD_ADJUSTMENTS_LATE_FETCH in get_attribute()), which

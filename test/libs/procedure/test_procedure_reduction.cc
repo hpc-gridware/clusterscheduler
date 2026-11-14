@@ -43,6 +43,7 @@
 #include "sgeobj/cull/sge_param_SPP_L.h"
 #include "sgeobj/cull/sge_ulong_ULNG_L.h"
 #include "sgeobj/cull/sge_str_ST_L.h"
+#include "tom/ocs_Element.h"
 
 #include "ocs_ProcedureModel.h"
 #include "ocs_ProcedureParameter.h"
@@ -101,13 +102,13 @@ namespace {
 
       if (text != nullptr) {
          lList *output_list = nullptr;
-         lAddElemStr(&output_list, ST_name, text, ST_Type);
+         ocs::tom::emplace_back<ST_name>(&output_list, text);
          ocs::ProcedureParameter::add_parameter_bundle(bundle, ocs::ProcedureParameter::RESPONSE,
                                                        output_list);
       }
       if (with_reduction) {
          lList *reduction_list = nullptr;
-         lAddElemUlong(&reduction_list, ULNG_value, reduction, ULNG_Type);
+         ocs::tom::emplace_back<ULNG_value>(&reduction_list, reduction);
          ocs::ProcedureParameter::add_parameter_bundle(bundle, ocs::ProcedureParameter::REDUCTION,
                                                        reduction_list);
       }

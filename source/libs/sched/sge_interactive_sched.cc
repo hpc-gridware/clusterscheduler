@@ -47,6 +47,9 @@
 #include "sgeobj/sge_order.h"
 #include "sgeobj/sge_range.h"
 #include "sgeobj/sge_job.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_JAT.h"
+#include "sgeobj/tom/ocs_tom_RN.h"
 
 #include "sge_orders.h"
 #include "sge_interactive_sched.h"
@@ -86,17 +89,17 @@ int remove_immediate_jobs(lList *pending_job_list, lList *running_job_list, orde
       next_job = lNextRW(job);
       
       /* skip non immediate .. */
-      if (!JOB_TYPE_IS_IMMEDIATE(lGetUlong(job, JB_type))) {
+      if (!JOB_TYPE_IS_IMMEDIATE(ocs::tom::get<JB_type>(job))) {
          continue;
       }
 
       /* .. and non idle jobs */
-      if ((lp = lGetList(job, JB_ja_tasks)) && (ep = lFirst(lp)) && lGetUlong(ep, JAT_status)==JIDLE) {
+      if ((lp = ocs::tom::get<JB_ja_tasks>(job)) && (ep = lFirst(lp)) && ocs::tom::get<JAT_status>(ep)==JIDLE) {
          continue;    
       }
 
       /* Prepare search condition for running list */
-      where = lWhere("%T(%I==%u)", JB_Type, JB_job_number, lGetUlong(job, JB_job_number));
+      where = lWhere("%T(%I==%u)", JB_Type, JB_job_number, ocs::tom::get<JB_job_number>(job));
       
       /* Remove the job from the pending list */
       remove_immediate_job(pending_job_list, job, orders, 0);
@@ -134,7 +137,7 @@ void remove_immediate_job(lList *job_list, lListElem *job, order_t *orders, int 
    const lList *range_list = nullptr;
    uint32_t ja_task_id;
 
-   for_each_ep_lv(ja_task, lGetList(job, JB_ja_tasks)) {
+   for_each_ep_lv(ja_task, ocs::tom::get<JB_ja_tasks>(job)) {
       if (remove_orders) {
          order_remove_order_and_immediate(job, ja_task, orders);
       }
@@ -143,12 +146,12 @@ void remove_immediate_job(lList *job_list, lListElem *job, order_t *orders, int 
       }
    }
    
-   range_list = lGetList(job, JB_ja_n_h_ids);
+   range_list = ocs::tom::get<JB_ja_n_h_ids>(job);
    
    for_each_ep_lv(range, range_list) {
-      for(ja_task_id = lGetUlong(range, RN_min);
-          ja_task_id <= lGetUlong(range, RN_max);
-          ja_task_id += lGetUlong(range, RN_step)) {  
+      for(ja_task_id = ocs::tom::get<RN_min>(range);
+          ja_task_id <= ocs::tom::get<RN_max>(range);
+          ja_task_id += ocs::tom::get<RN_step>(range)) {  
          lListElem *ja_task = job_get_ja_task_template_pending(job, ja_task_id);
          
          /* No need to remove the orders here because tasks in JB_ja_n_h_ids
@@ -195,12 +198,12 @@ order_remove_order_and_immediate(const lListElem *job, const lListElem *ja_task,
    lList *orderList = orders->jobStartOrderList;
    lCondition *where = lWhere("%T(%I==%u && %I==%u && %I==%u)", OR_Type,
                       OR_type, ORT_start_job,
-                      OR_job_number, lGetUlong(job, JB_job_number),
-                      OR_ja_task_number, lGetUlong(ja_task, JAT_task_number));
+                      OR_job_number, ocs::tom::get<JB_job_number>(job),
+                      OR_ja_task_number, ocs::tom::get<JAT_task_number>(ja_task));
    lListElem *ep = lFindFirstRW(orderList, where);
    
    if (ep != nullptr) {
-      DPRINTF("Removing job start order for job task %u.%u\n", lGetUlong(job, JB_job_number), lGetUlong(ja_task, JAT_task_number));
+      DPRINTF("Removing job start order for job task %u.%u\n", ocs::tom::get<JB_job_number>(job), ocs::tom::get<JAT_task_number>(ja_task));
       lRemoveElem(orderList, &ep);
    }
    
@@ -228,7 +231,7 @@ int order_remove_immediate(const lListElem *job, const lListElem *ja_task, order
    DENTER(TOP_LAYER);
 
    DPRINTF("JOB " sge_u32 "." sge_u32 " can't get dispatched - removing\n",
-           lGetUlong(job, JB_job_number), lGetUlong(ja_task, JAT_task_number));
+           ocs::tom::get<JB_job_number>(job), ocs::tom::get<JAT_task_number>(ja_task));
    
    orders->jobStartOrderList = sge_create_orders(orders->jobStartOrderList, ORT_remove_immediate_job,
                                                  job, ja_task, nullptr, true);

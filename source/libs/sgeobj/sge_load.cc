@@ -44,6 +44,7 @@
 
 #include "sgeobj/sge_host.h"
 #include "sgeobj/sge_load.h"
+#include "tom/ocs_Element.h"
 
 /**
  * @brief Is this a load value that never changes while the host runs?
@@ -82,9 +83,9 @@ int
 load_list_get_nproc(const lList *load_list) {
    int nproc = 1;
 
-   const lListElem *ep_nproc = lGetElemStr(load_list, HL_name, LOAD_ATTR_NUM_PROC);
+   const lListElem *ep_nproc = ocs::tom::find_first<HL_name>(load_list, LOAD_ATTR_NUM_PROC);
    if (ep_nproc != nullptr) {
-      const char *cp = lGetString(ep_nproc, HL_value);
+      const char *cp = ocs::tom::get<HL_value>(ep_nproc);
       if (cp != nullptr) {
          nproc = std::max(1, atoi(cp));
       }

@@ -48,6 +48,7 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_str.h"
 #include "sgeobj/msg_sgeobjlib.h"
+#include "tom/ocs_Element.h"
 
 /// Debug layer the string list traces are written to
 #define STR_LAYER BASIS_LAYER
@@ -79,7 +80,7 @@ str_list_append_to_dstring(const lList *this_list, dstring *string,
       bool printed = false;
 
       for_each_ep_lv(elem, this_list) {
-         sge_dstring_append(string, lGetString(elem, ST_name));
+         sge_dstring_append(string, ocs::tom::get<ST_name>(elem));
          if (lNext(elem) != nullptr) {
             sge_dstring_sprintf_append(string, "%c", delimiter);
          }
@@ -122,7 +123,7 @@ bool str_list_parse_from_string(lList **this_list,
 
       token = sge_strtok_r(string, delimitor, &context);
       while (token != nullptr) {
-         lAddElemStr(this_list, ST_name, token, ST_Type);
+         ocs::tom::emplace_back<ST_name>(this_list, token);
          token = sge_strtok_r(nullptr, delimitor, &context);
       }
       sge_free_saved_vars(context);
@@ -146,7 +147,7 @@ bool str_list_is_valid(const lList *this_list, lList **answer_list) {
 
    if (this_list != nullptr) {
       for_each_ep_lv(elem, this_list) {
-         if (lGetString(elem, ST_name) == nullptr) {
+         if (ocs::tom::get<ST_name>(elem) == nullptr) {
             answer_list_add(answer_list, MSG_STR_INVALIDSTR, 
                             STATUS_ENOKEY, ANSWER_QUALITY_ERROR);
             break;
@@ -173,7 +174,7 @@ bool str_list_transform_user_list(lList **this_list, lList **answer_list, const 
 
    if (this_list != nullptr && *this_list != nullptr) {
       for_each_rw_lv (elem, *this_list) {
-         const char *string = lGetString(elem, ST_name);
+         const char *string = ocs::tom::get<ST_name>(elem);
 
          if (string != nullptr) {
             /*
@@ -181,7 +182,7 @@ bool str_list_transform_user_list(lList **this_list, lList **answer_list, const 
              * '*'     empty the remove the list 
              */
             if (strcasecmp(string, "$user") == 0) {
-               lSetString(elem, ST_name, username);
+               ocs::tom::set<ST_name>(elem, username);
             } else if (strcmp(string, "*") == 0) {
                lFreeList(this_list);
                break;
@@ -189,7 +190,7 @@ bool str_list_transform_user_list(lList **this_list, lList **answer_list, const 
          }
       }
    } else {
-      lAddElemStr(this_list, ST_name, username, ST_Type);
+      ocs::tom::emplace_back<ST_name>(this_list, username);
    }
    DRETURN(ret);
 }
@@ -207,9 +208,9 @@ grp_list_array2list(int amount, ocs_grp_elem_t *grp_array) {
    lList *grp_list = nullptr;
 
    for(int i = 0; i < amount; i++) {
-      lListElem *new_grp = lAddElemStr(&grp_list, ST_name, grp_array[i].name, ST_Type);
+      lListElem *new_grp = ocs::tom::emplace_back<ST_name>(&grp_list, grp_array[i].name);
 
-      lSetUlong(new_grp, ST_id, grp_array[i].id);
+      ocs::tom::set<ST_id>(new_grp, grp_array[i].id);
    }
    DRETURN(grp_list);
 }

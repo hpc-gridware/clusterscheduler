@@ -92,6 +92,19 @@
 #include "sgeobj/sge_str.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/msg_sgeobjlib.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_BN.h"
+#include "sgeobj/tom/ocs_tom_CE.h"
+#include "sgeobj/tom/ocs_tom_CX.h"
+#include "sgeobj/tom/ocs_tom_JAT.h"
+#include "sgeobj/tom/ocs_tom_JRE.h"
+#include "sgeobj/tom/ocs_tom_JRS.h"
+#include "sgeobj/tom/ocs_tom_MR.h"
+#include "sgeobj/tom/ocs_tom_PA.h"
+#include "sgeobj/tom/ocs_tom_QR.h"
+#include "sgeobj/tom/ocs_tom_RN.h"
+#include "sgeobj/tom/ocs_tom_ST.h"
+#include "sgeobj/tom/ocs_tom_VA.h"
 
 #include "symbols.h"
 #include "msg_common.h"
@@ -122,13 +135,13 @@ lListElem *job_get_ja_task_template_pending(const lListElem *job,
 
    lListElem *template_task = nullptr;    /* JAT_Type */
 
-   template_task = lFirstRW(lGetList(job, JB_ja_template));
+   template_task = lFirstRW(static_cast<const lList *>(ocs::tom::get<JB_ja_template>(job)));
 
    if (!template_task) {
       ERROR("unable to retrieve template task");
    } else {
-      lSetUlong(template_task, JAT_state, JQUEUED | JWAITING);
-      lSetUlong(template_task, JAT_task_number, ja_task_id);
+      ocs::tom::set<JAT_state>(template_task, JQUEUED | JWAITING);
+      ocs::tom::set<JAT_task_number>(template_task, ja_task_id);
    }
    DRETURN(template_task);
 }
@@ -165,14 +178,14 @@ lListElem *job_get_ja_task_template_hold(const lListElem *job,
    if (template_task) {
       uint32_t state;
 
-      lSetUlong(template_task, JAT_task_number, ja_task_id);
-      lSetUlong(template_task, JAT_hold, hold_state);
-      lSetUlong(template_task, JAT_status, JIDLE);
+      ocs::tom::set<JAT_task_number>(template_task, ja_task_id);
+      ocs::tom::set<JAT_hold>(template_task, hold_state);
+      ocs::tom::set<JAT_status>(template_task, JIDLE);
       state = JQUEUED | JWAITING;
-      if (lGetUlong(template_task, JAT_hold)) {
+      if (ocs::tom::get<JAT_hold>(template_task)) {
          state |= JHELD;
       }
-      lSetUlong(template_task, JAT_state, state);
+      ocs::tom::set<JAT_state>(template_task, state);
    }
    DRETURN(template_task);
 }
@@ -288,17 +301,17 @@ void job_create_hold_id_lists(const lListElem *job, lList *id_list[16],
 
    /* uo, us, ua, os, oa, sa, uos, uoa, usa, osa */
    range_list_calculate_intersection_set(&list[0], nullptr,
-                  lGetList(job, JB_ja_u_h_ids), lGetList(job, JB_ja_o_h_ids));
+                  ocs::tom::get<JB_ja_u_h_ids>(job), ocs::tom::get<JB_ja_o_h_ids>(job));
    range_list_calculate_intersection_set(&list[1], nullptr,
-                  lGetList(job, JB_ja_u_h_ids), lGetList(job, JB_ja_s_h_ids));
+                  ocs::tom::get<JB_ja_u_h_ids>(job), ocs::tom::get<JB_ja_s_h_ids>(job));
    range_list_calculate_intersection_set(&list[2], nullptr,
-                  lGetList(job, JB_ja_u_h_ids), lGetList(job, JB_ja_a_h_ids));
+                  ocs::tom::get<JB_ja_u_h_ids>(job), ocs::tom::get<JB_ja_a_h_ids>(job));
    range_list_calculate_intersection_set(&list[3], nullptr,
-                  lGetList(job, JB_ja_o_h_ids), lGetList(job, JB_ja_s_h_ids));
+                  ocs::tom::get<JB_ja_o_h_ids>(job), ocs::tom::get<JB_ja_s_h_ids>(job));
    range_list_calculate_intersection_set(&list[4], nullptr,
-                  lGetList(job, JB_ja_o_h_ids), lGetList(job, JB_ja_a_h_ids));
+                  ocs::tom::get<JB_ja_o_h_ids>(job), ocs::tom::get<JB_ja_a_h_ids>(job));
    range_list_calculate_intersection_set(&list[5], nullptr,
-                  lGetList(job, JB_ja_s_h_ids), lGetList(job, JB_ja_a_h_ids));
+                  ocs::tom::get<JB_ja_s_h_ids>(job), ocs::tom::get<JB_ja_a_h_ids>(job));
    range_list_calculate_intersection_set(&list[6], nullptr, list[0], list[3]);
    range_list_calculate_intersection_set(&list[7], nullptr, list[0], list[4]);
    range_list_calculate_intersection_set(&list[8], nullptr, list[1], list[5]);
@@ -345,30 +358,30 @@ void job_create_hold_id_lists(const lListElem *job, lList *id_list[16],
 
    /* aUOS -> 4 */
    range_list_calculate_difference_set(&list[16], nullptr,
-      lGetList(job, JB_ja_a_h_ids), list[2]);
+      ocs::tom::get<JB_ja_a_h_ids>(job), list[2]);
    range_list_calculate_difference_set(&list[17], nullptr, list[16], list[11]);
    range_list_calculate_difference_set(&id_list[4], nullptr, list[17], id_list[10]);
 
    /* sUOA -> 3 */
    range_list_calculate_difference_set(&list[18], nullptr,
-      lGetList(job, JB_ja_s_h_ids), list[1]);
+      ocs::tom::get<JB_ja_s_h_ids>(job), list[1]);
    range_list_calculate_difference_set(&list[19], nullptr, list[18], list[12]);
    range_list_calculate_difference_set(&id_list[3], nullptr, list[19], id_list[10]);
 
    /* oUSA -> 2 */
    range_list_calculate_difference_set(&list[20], nullptr,
-      lGetList(job, JB_ja_o_h_ids), list[0]);
+      ocs::tom::get<JB_ja_o_h_ids>(job), list[0]);
    range_list_calculate_difference_set(&list[21], nullptr, list[20], list[12]);
    range_list_calculate_difference_set(&id_list[2], nullptr, list[21], id_list[9]);
 
    /* uOSA -> 1 */
    range_list_calculate_difference_set(&list[22], nullptr,
-      lGetList(job, JB_ja_u_h_ids), list[0]);
+      ocs::tom::get<JB_ja_u_h_ids>(job), list[0]);
    range_list_calculate_difference_set(&list[23], nullptr, list[22], list[14]);
    range_list_calculate_difference_set(&id_list[1], nullptr, list[23], id_list[7]);
 
    /* UOSA -> 0 */
-   id_list[0] = lCopyList("task_id_range", lGetList(job, JB_ja_n_h_ids));
+   id_list[0] = lCopyList("task_id_range", ocs::tom::get<JB_ja_n_h_ids>(job));
 
    for (i = 0; i < 24; i++) {
       lFreeList(&(list[i]));
@@ -414,11 +427,11 @@ bool job_is_enrolled(const lListElem *job, uint32_t task_number) {
 
    bool ret = true;
 
-   if (range_list_is_id_within(lGetList(job, JB_ja_n_h_ids), task_number) ||
-       range_list_is_id_within(lGetList(job, JB_ja_u_h_ids), task_number) ||
-       range_list_is_id_within(lGetList(job, JB_ja_o_h_ids), task_number) ||
-       range_list_is_id_within(lGetList(job, JB_ja_s_h_ids), task_number) ||
-       range_list_is_id_within(lGetList(job, JB_ja_a_h_ids), task_number)) {
+   if (range_list_is_id_within(ocs::tom::get<JB_ja_n_h_ids>(job), task_number) ||
+       range_list_is_id_within(ocs::tom::get<JB_ja_u_h_ids>(job), task_number) ||
+       range_list_is_id_within(ocs::tom::get<JB_ja_o_h_ids>(job), task_number) ||
+       range_list_is_id_within(ocs::tom::get<JB_ja_s_h_ids>(job), task_number) ||
+       range_list_is_id_within(ocs::tom::get<JB_ja_a_h_ids>(job), task_number)) {
       ret = false;
    }
    DRETURN(ret);
@@ -440,7 +453,7 @@ bool job_is_enrolled(const lListElem *job, uint32_t task_number) {
  * @note MT-NOTE: job_is_ja_task_defined() is MT safe
  */
 bool job_is_ja_task_defined(const lListElem *job, uint32_t ja_task_number) {
-   const lList *range_list = lGetList(job, JB_ja_structure);
+   const lList *range_list = ocs::tom::get<JB_ja_structure>(job);
 
    return range_list_is_id_within(range_list, ja_task_number);
 }
@@ -493,14 +506,14 @@ uint32_t job_get_not_enrolled_ja_tasks(const lListElem *job) {
    uint32_t ret = 0;
 
    range_list_calculate_union_set(&uo_ids, &answer_list,
-                                  lGetList(job, JB_ja_u_h_ids),
-                                  lGetList(job, JB_ja_o_h_ids));
+                                  ocs::tom::get<JB_ja_u_h_ids>(job),
+                                  ocs::tom::get<JB_ja_o_h_ids>(job));
    range_list_calculate_union_set(&uos_ids, &answer_list, uo_ids,
-                                  lGetList(job, JB_ja_s_h_ids));
+                                  ocs::tom::get<JB_ja_s_h_ids>(job));
    range_list_calculate_union_set(&uosa_ids, &answer_list, uos_ids,
-                                  lGetList(job, JB_ja_a_h_ids));
+                                  ocs::tom::get<JB_ja_a_h_ids>(job));
 
-   ret += range_list_get_number_of_ids(lGetList(job, JB_ja_n_h_ids));
+   ret += range_list_get_number_of_ids(ocs::tom::get<JB_ja_n_h_ids>(job));
    ret += range_list_get_number_of_ids(uosa_ids);
 
    lFreeList(&uosa_ids);
@@ -523,7 +536,7 @@ uint32_t job_get_not_enrolled_ja_tasks(const lListElem *job) {
  * @see #job_get_ja_tasks, #job_get_enrolled_ja_tasks, #job_get_not_enrolled_ja_tasks, #job_get_submit_ja_tasks
  */
 uint32_t job_get_enrolled_ja_tasks(const lListElem *job) {
-   return lGetNumberOfElem(lGetList(job, JB_ja_tasks));
+   return lGetNumberOfElem(ocs::tom::get<JB_ja_tasks>(job));
 }
 
 /**
@@ -558,14 +571,14 @@ job_enroll(lListElem *job, lList **answer_list, uint32_t ja_task_number) {
    DENTER(TOP_LAYER);
 
    object_delete_range_id(job, answer_list, JB_ja_n_h_ids, ja_task_number);
-   lListElem *ja_task = lGetSubUlongRW(job, JAT_task_number, ja_task_number, JB_ja_tasks);
+   lListElem *ja_task = ocs::tom::find_first_in_rw<JB_ja_tasks, JAT_task_number>(job, ja_task_number);
    if (ja_task == nullptr) {
-      lList *ja_task_list = lGetListRW(job, JB_ja_tasks);
+      lList *ja_task_list = ocs::tom::get<JB_ja_tasks>(job);
       lListElem *template_task = job_get_ja_task_template_pending(job, ja_task_number);
 
       if (ja_task_list == nullptr) {
          ja_task_list = lCreateList("ulong_sublist", lGetElemDescr(template_task) );
-         lSetList(job, JB_ja_tasks, ja_task_list);
+         ocs::tom::set<JB_ja_tasks>(job, ja_task_list);
       }
       ja_task = lCopyElem(template_task);
       lAppendElem(ja_task_list, ja_task);
@@ -590,20 +603,20 @@ job_unenroll(lListElem *job, lList **answer_list, lListElem **ja_task) {
       DRETURN_VOID;
    }
 
-   lList *ja_task_list = lGetListRW(job, JB_ja_tasks);
+   lList *ja_task_list = ocs::tom::get<JB_ja_tasks>(job);
    if (ja_task_list == nullptr) {
       // no enrolled task - should never happen
       DRETURN_VOID;
    }
 
    // add the task id to the list of unenrolled tasks
-   uint32_t ja_task_id = lGetUlong(*ja_task, JAT_task_number);
-   lList *ids = lGetListRW(job, JB_ja_n_h_ids);
+   uint32_t ja_task_id = ocs::tom::get<JAT_task_number>(*ja_task);
+   lList *ids = ocs::tom::get<JB_ja_n_h_ids>(job);
    const lList *before_ids = ids;
    range_list_insert_id(&ids, answer_list, ja_task_id);
    range_list_compress(ids);
    if (before_ids == nullptr) {
-      lSetList(job, JB_ja_n_h_ids, ids);
+      ocs::tom::set<JB_ja_n_h_ids>(job, ids);
    }
 
    // remove the enrolled task
@@ -611,7 +624,7 @@ job_unenroll(lListElem *job, lList **answer_list, lListElem **ja_task) {
 
    // trash the list if it was the last task
    if (lGetNumberOfElem(ja_task_list) == 0) {
-      lSetList(job, JB_ja_tasks, nullptr);
+      ocs::tom::set<JB_ja_tasks>(job, nullptr);
    }
    DRETURN_VOID;
 }
@@ -634,9 +647,9 @@ static int job_count_rescheduled_ja_tasks(const lListElem *job, bool count_all) 
    uint32_t state;
    int n = 0;
 
-   for_each_ep_lv(ja_task, lGetList(job, JB_ja_tasks)) {
-      state = lGetUlong(ja_task, JAT_state);
-      if ((lGetUlong(ja_task, JAT_status) == JIDLE) && ((state & JQUEUED) != 0) && ((state & JWAITING) != 0)) {
+   for_each_ep_lv(ja_task, ocs::tom::get<JB_ja_tasks>(job)) {
+      state = ocs::tom::get<JAT_state>(ja_task);
+      if ((ocs::tom::get<JAT_status>(ja_task) == JIDLE) && ((state & JQUEUED) != 0) && ((state & JWAITING) != 0)) {
          n++;
          if (!count_all)
             break;
@@ -660,12 +673,12 @@ uint32_t job_count_pending_tasks(const lListElem *job, bool count_all) {
    DENTER(TOP_LAYER);
 
    if (count_all) {
-      uint32_t n = range_list_get_number_of_ids(lGetList(job, JB_ja_n_h_ids));
+      uint32_t n = range_list_get_number_of_ids(ocs::tom::get<JB_ja_n_h_ids>(job));
       n += job_count_rescheduled_ja_tasks(job, true);
       DRETURN(n);
    }
 
-   if (lGetList(job, JB_ja_n_h_ids) || job_count_rescheduled_ja_tasks(job, false)) {
+   if (ocs::tom::get<JB_ja_n_h_ids>(job) || job_count_rescheduled_ja_tasks(job, false)) {
       DRETURN(1);
    }
 
@@ -711,9 +724,9 @@ void job_delete_not_enrolled_ja_task(lListElem *job, lList **answer_list,
 bool job_has_soft_requests(lListElem *job) {
    bool ret = false;
    const lListElem *jrs;
-   for_each_ep(jrs, lGetList(job, JB_request_set_list)) {
-      if (lGetList(jrs, JRS_soft_resource_list) != nullptr ||
-          lGetList(jrs, JRS_soft_queue_list) != nullptr) {
+   for_each_ep(jrs, static_cast<const lList *>(ocs::tom::get<JB_request_set_list>(job))) {
+      if (static_cast<const lList *>(ocs::tom::get<JRS_soft_resource_list>(jrs)) != nullptr ||
+          static_cast<const lList *>(ocs::tom::get<JRS_soft_queue_list>(jrs)) != nullptr) {
          ret = true;
          break;
       }
@@ -773,11 +786,11 @@ void job_set_hold_state(lListElem *job, lList **answer_list,
       lListElem *ja_task = job_search_task(job, nullptr, ja_task_id);
 
       if (ja_task != nullptr) {
-         lSetUlong(ja_task, JAT_hold, new_hold_state);
+         ocs::tom::set<JAT_hold>(ja_task, new_hold_state);
          if (new_hold_state) {
-            lSetUlong(ja_task, JAT_state, lGetUlong(ja_task, JAT_state) | JHELD);
+            ocs::tom::set<JAT_state>(ja_task, ocs::tom::get<JAT_state>(ja_task) | JHELD);
          } else {
-            lSetUlong(ja_task, JAT_state, lGetUlong(ja_task, JAT_state) & ~JHELD);
+            ocs::tom::set<JAT_state>(ja_task, ocs::tom::get<JAT_state>(ja_task) & ~JHELD);
          }
       }
    }
@@ -802,7 +815,7 @@ uint32_t job_get_hold_state(lListElem *job, uint32_t ja_task_id) {
       lListElem *ja_task = job_search_task(job, nullptr, ja_task_id);
 
       if (ja_task != nullptr) {
-         ret = lGetUlong(ja_task, JAT_hold) & MINUS_H_TGT_ALL;
+         ret = ocs::tom::get<JAT_hold>(ja_task) & MINUS_H_TGT_ALL;
       } else {
          ret = 0;
       }
@@ -836,7 +849,7 @@ lListElem *job_search_task(const lListElem *job, lList **answer_list,
    lListElem *ja_task = nullptr;
 
    if (job != nullptr) {
-      ja_task = lGetSubUlongRW(job, JAT_task_number, ja_task_id, JB_ja_tasks);
+      ja_task = ocs::tom::find_first_in_rw<JB_ja_tasks, JAT_task_number>(job, ja_task_id);
    }
    DRETURN(ja_task);
 }
@@ -883,7 +896,7 @@ lListElem *job_create_task(lListElem *job, lList **answer_list, uint32_t ja_task
  */
 const char *job_get_shell_start_mode(const lListElem *queue, const char *conf_shell_start_mode) {
    DENTER(TOP_LAYER);
-   if (const char *queue_start_mode = lGetString(queue, QU_shell_start_mode);
+   if (const char *queue_start_mode = ocs::tom::get<QU_shell_start_mode>(queue);
        queue_start_mode && strcasecmp(queue_start_mode, "none") != 0) {
       DRETURN(queue_start_mode);
    }
@@ -925,9 +938,9 @@ int job_list_add_job(lList **job_list, const char *name, lListElem *job,
       *job_list = lCreateList(name, JB_Type);
    }
 
-   if (check && *job_list && lGetElemUlong(*job_list, JB_job_number, lGetUlong(job, JB_job_number))) {
+   if (check && *job_list && ocs::tom::find_first<JB_job_number>(*job_list, ocs::tom::get<JB_job_number>(job))) {
       dstring id_dstring = DSTRING_INIT;
-      ERROR(MSG_JOB_JOBALREADYEXISTS_S, job_get_id_string(lGetUlong(job, JB_job_number), 0, nullptr, &id_dstring));
+      ERROR(MSG_JOB_JOBALREADYEXISTS_S, job_get_id_string(ocs::tom::get<JB_job_number>(job), 0, nullptr, &id_dstring));
       sge_dstring_free(&id_dstring);
       DRETURN(-1);
    }
@@ -950,7 +963,7 @@ int job_list_add_job(lList **job_list, const char *name, lListElem *job,
  * @see #job_is_parallel, #job_is_tight_parallel
  */
 bool job_is_array(const lListElem *job) {
-   uint32_t job_type = lGetUlong(job, JB_type);
+   uint32_t job_type = ocs::tom::get<JB_type>(job);
 
    return JOB_TYPE_IS_ARRAY(job_type) ? true : false;
 }
@@ -968,7 +981,7 @@ bool job_is_array(const lListElem *job) {
  * @see #job_is_array, #job_is_tight_parallel
  */
 bool job_is_parallel(const lListElem *job) {
-   return (lGetString(job, JB_pe) != nullptr ? true : false);
+   return (ocs::tom::get<JB_pe>(job) != nullptr ? true : false);
 }
 
 /**
@@ -990,7 +1003,7 @@ bool job_is_tight_parallel(const lListElem *job, const lList *pe_list) {
    bool ret = false;
    const char *pe_name = nullptr;
 
-   pe_name = lGetString(job, JB_pe);
+   pe_name = ocs::tom::get<JB_pe>(job);
    if (pe_name != nullptr) {
       int found_pe = 0;
       int all_are_tight = 1;
@@ -999,7 +1012,7 @@ bool job_is_tight_parallel(const lListElem *job, const lList *pe_list) {
       for_each_ep(pe, pe_list) {
          if (pe_is_matching(pe, pe_name)) {
             found_pe = 1;
-            all_are_tight &= lGetBool(pe, PE_control_slaves);
+            all_are_tight &= ocs::tom::get<PE_control_slaves>(pe);
          }
       }
 
@@ -1031,12 +1044,12 @@ bool job_might_be_tight_parallel(const lListElem *job, const lList *pe_list) {
    bool ret = false;
    const char *pe_name = nullptr;
 
-   pe_name = lGetString(job, JB_pe);
+   pe_name = ocs::tom::get<JB_pe>(job);
    if (pe_name != nullptr) {
       const lListElem *pe;
 
       for_each_ep(pe, pe_list) {
-         if (pe_is_matching(pe, pe_name) && lGetBool(pe, PE_control_slaves)) {
+         if (pe_is_matching(pe, pe_name) && ocs::tom::get<PE_control_slaves>(pe)) {
             ret = true;
             break;
          }
@@ -1058,13 +1071,13 @@ bool job_might_be_tight_parallel(const lListElem *job, const lList *pe_list) {
  */
 void job_get_submit_task_ids(const lListElem *job, uint32_t *start,
                              uint32_t *end, uint32_t *step) {
-   const lListElem *range_elem = lFirst(lGetList(job, JB_ja_structure));
+   const lListElem *range_elem = lFirst(static_cast<const lList *>(ocs::tom::get<JB_ja_structure>(job)));
    if (range_elem) {
       uint32_t tmp_step;
 
-      *start = lGetUlong(range_elem, RN_min);
-      *end = lGetUlong(range_elem, RN_max);
-      tmp_step = lGetUlong(range_elem, RN_step);
+      *start = ocs::tom::get<RN_min>(range_elem);
+      *end = ocs::tom::get<RN_max>(range_elem);
+      tmp_step = ocs::tom::get<RN_step>(range_elem);
       *step = tmp_step ? tmp_step : 1;
    } else {
       *start = *end = *step = 1;
@@ -1161,10 +1174,10 @@ uint32_t job_get_smallest_enrolled_task_id(const lListElem *job) {
    /*
     * initialize ret
     */
-   ja_task = lFirst(lGetList(job, JB_ja_tasks));
+   ja_task = lFirst(static_cast<const lList *>(ocs::tom::get<JB_ja_tasks>(job)));
    nxt_ja_task = lNext(ja_task);
    if (ja_task != nullptr) {
-      ret = lGetUlong(ja_task, JAT_task_number);
+      ret = ocs::tom::get<JAT_task_number>(ja_task);
    }
 
    /*
@@ -1173,7 +1186,7 @@ uint32_t job_get_smallest_enrolled_task_id(const lListElem *job) {
    while ((ja_task = nxt_ja_task)) {
       nxt_ja_task = lNext(ja_task);
 
-      ret = std::min(ret, lGetUlong(ja_task, JAT_task_number));
+      ret = std::min(ret, ocs::tom::get<JAT_task_number>(ja_task));
    }
    return ret;
 }
@@ -1212,10 +1225,10 @@ uint32_t job_get_biggest_enrolled_task_id(const lListElem *job) {
    /*
     * initialize ret
     */
-   ja_task = lLast(lGetList(job, JB_ja_tasks));
+   ja_task = lLast(static_cast<const lList *>(ocs::tom::get<JB_ja_tasks>(job)));
    nxt_ja_task = lPrev(ja_task);
    if (ja_task != nullptr) {
-      ret = lGetUlong(ja_task, JAT_task_number);
+      ret = ocs::tom::get<JAT_task_number>(ja_task);
    }
 
    /*
@@ -1224,7 +1237,7 @@ uint32_t job_get_biggest_enrolled_task_id(const lListElem *job) {
    while ((ja_task = nxt_ja_task)) {
       nxt_ja_task = lPrev(ja_task);
 
-      ret = std::max(ret, lGetUlong(ja_task, JAT_task_number));
+      ret = std::max(ret, ocs::tom::get<JAT_task_number>(ja_task));
    }
    return ret;
 }
@@ -1281,17 +1294,17 @@ int job_initialize_id_lists(lListElem *job, lList **answer_list) {
 
    lList *n_h_list = nullptr;    /* RN_Type */
 
-   n_h_list = lCopyList("task_id_range", lGetList(job, JB_ja_structure));
+   n_h_list = lCopyList("task_id_range", ocs::tom::get<JB_ja_structure>(job));
    if (n_h_list == nullptr) {
       answer_list_add_sprintf(answer_list, STATUS_EMALLOC, ANSWER_QUALITY_ERROR,
                               MSG_MEM_MEMORYALLOCFAILED_S, __func__);
       DRETURN(-1);
    } else {
-      lSetList(job, JB_ja_n_h_ids, n_h_list);
-      lSetList(job, JB_ja_u_h_ids, nullptr);
-      lSetList(job, JB_ja_o_h_ids, nullptr);
-      lSetList(job, JB_ja_s_h_ids, nullptr);
-      lSetList(job, JB_ja_a_h_ids, nullptr);
+      ocs::tom::set<JB_ja_n_h_ids>(job, n_h_list);
+      ocs::tom::set<JB_ja_u_h_ids>(job, nullptr);
+      ocs::tom::set<JB_ja_o_h_ids>(job, nullptr);
+      ocs::tom::set<JB_ja_s_h_ids>(job, nullptr);
+      ocs::tom::set<JB_ja_a_h_ids>(job, nullptr);
    }
    DRETURN(0);
 }
@@ -1332,7 +1345,7 @@ void job_initialize_env(lListElem *job, lList **answer_list,
    dstring buffer = DSTRING_INIT;
 
    lList *env_list = nullptr;
-   lXchgList(job, JB_env_list, &env_list);
+   ocs::tom::exchange<JB_env_list>(job, &env_list);
 
    // Copy specific environment variables into the job environment
    // as SGE_O_* variables.
@@ -1348,7 +1361,7 @@ void job_initialize_env(lListElem *job, lList **answer_list,
 
    // Add TERM to the job environment.
    // If TERM is not set, it will be inherited from sge_execd's environment (unless execd_param INHERIT_ENV=FALSE).
-   uint32_t job_type = lGetUlong(job, JB_type);
+   uint32_t job_type = ocs::tom::get<JB_type>(job);
    if (JOB_TYPE_IS_QLOGIN(job_type) || JOB_TYPE_IS_QRLOGIN(job_type) || JOB_TYPE_IS_QRSH(job_type)) {
       const char *term = sge_getenv("TERM");
       if (term != nullptr) {
@@ -1374,7 +1387,7 @@ void job_initialize_env(lListElem *job, lList **answer_list,
    }
 
    sge_dstring_free(&buffer);
-   lXchgList(job, JB_env_list, &env_list);
+   ocs::tom::exchange<JB_env_list>(job, &env_list);
 
    DRETURN_VOID;
 }
@@ -1399,7 +1412,7 @@ const char *job_get_env_string(const lListElem *job, const char *variable) {
    DENTER(TOP_LAYER);
 
    const char *ret = nullptr;
-   ret = var_list_get_string(lGetList(job, JB_env_list), variable);
+   ret = var_list_get_string(ocs::tom::get<JB_env_list>(job), variable);
    DRETURN(ret);
 }
 
@@ -1422,9 +1435,9 @@ void job_set_env_string(lListElem *job, const char *variable, const char *value)
    DENTER(TOP_LAYER);
 
    lList *env_list = nullptr;
-   lXchgList(job, JB_env_list, &env_list);
+   ocs::tom::exchange<JB_env_list>(job, &env_list);
    var_list_set_string(&env_list, variable, value);
-   lXchgList(job, JB_env_list, &env_list);
+   ocs::tom::exchange<JB_env_list>(job, &env_list);
    DRETURN_VOID;
 }
 
@@ -1496,7 +1509,7 @@ void job_check_correct_id_sublists(lListElem *job, lList **answer_list) {
             has_x_ids = 1;
          }
       }
-      has_structure = !range_list_is_empty(lGetList(job, JB_ja_structure));
+      has_structure = !range_list_is_empty(ocs::tom::get<JB_ja_structure>(job));
       if (!has_structure) {
          ERROR(SFNMAX, MSG_JOB_NOIDNOTALLOWED);
          answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN,
@@ -1561,7 +1574,7 @@ const char *job_get_id_string(uint32_t job_id, uint32_t ja_task_id,
  * @return true or false
  */
 bool job_is_pe_referenced(const lListElem *job, const lListElem *pe) {
-   const char *ref_pe_name = lGetString(job, JB_pe);
+   const char *ref_pe_name = ocs::tom::get<JB_pe>(job);
    bool ret = false;
 
    if(ref_pe_name != nullptr) {
@@ -1584,8 +1597,8 @@ bool job_is_pe_referenced(const lListElem *job, const lListElem *pe) {
  * @return true or false
  */
 bool job_is_ckpt_referenced(const lListElem *job, const lListElem *ckpt) {
-   const char *ckpt_name = lGetString(ckpt, CK_name);
-   const char *ref_ckpt_name = lGetString(job, JB_checkpoint_name);
+   const char *ckpt_name = ocs::tom::get<CK_name>(ckpt);
+   const char *ref_ckpt_name = ocs::tom::get<JB_checkpoint_name>(job);
    bool ret = false;
 
    if(ckpt_name != nullptr && ref_ckpt_name != nullptr) {
@@ -1689,14 +1702,14 @@ void job_get_state_string(char *str, uint32_t op) {
  */
 void job_add_parent_id_to_context(lListElem *job) {
    const char *job_id_string = sge_getenv("JOB_ID");
-   if (job_id_string != nullptr && lGetSubStr(job, CX_variable, CONTEXT_PARENT, JB_context_change) == nullptr) {
-      lList *change = lGetListRW(job, JB_context_change);
+   if (job_id_string != nullptr && static_cast<const lListElem *>(ocs::tom::find_first_in<JB_context_change, CX_variable>(job, CONTEXT_PARENT)) == nullptr) {
+      lList *change = ocs::tom::get<JB_context_change>(job);
       bool created = change == nullptr;
-      lAddElemStr(&change, CX_variable, "+", CX_Type);
-      lListElem *parent = lAddElemStr(&change, CX_variable, CONTEXT_PARENT, CX_Type);
-      lSetString(parent, CX_value, job_id_string);
+      ocs::tom::emplace_back<CX_variable>(&change, "+");
+      lListElem *parent = ocs::tom::emplace_back<CX_variable>(&change, CONTEXT_PARENT);
+      ocs::tom::set<CX_value>(parent, job_id_string);
       if (created) {
-         lSetList(job, JB_context_change, change);
+         ocs::tom::set<JB_context_change>(job, change);
       }
    }
 }
@@ -1727,11 +1740,11 @@ int job_check_qsh_display(const lListElem *job, lList **answer_list,
    DENTER(TOP_LAYER);
 
    dstring id_dstring = DSTRING_INIT;
-   const char *id_str = job_get_id_string(lGetUlong(job, JB_job_number), 0, nullptr, &id_dstring);
+   const char *id_str = job_get_id_string(ocs::tom::get<JB_job_number>(job), 0, nullptr, &id_dstring);
    int ret = STATUS_OK;
 
    /* check for existence of DISPLAY */
-   if (const lListElem *display_ep = lGetElemStr(lGetList(job, JB_env_list), VA_variable, "DISPLAY"); display_ep == nullptr) {
+   if (const lListElem *display_ep = ocs::tom::find_first<VA_variable>(ocs::tom::get<JB_env_list>(job), "DISPLAY"); display_ep == nullptr) {
       if (output_warning) {
          WARNING(MSG_JOB_NODISPLAY_S, id_str);
       } else {
@@ -1743,7 +1756,7 @@ int job_check_qsh_display(const lListElem *job, lList **answer_list,
       /* check value of display variable, if it is an empty string,
        * it is useless in a grid environment.
        */
-      if (const char *display = lGetString(display_ep, VA_value); display == nullptr || strlen(display) == 0) {
+      if (const char *display = ocs::tom::get<VA_value>(display_ep); display == nullptr || strlen(display) == 0) {
          if (output_warning) {
             WARNING(MSG_JOB_EMPTYDISPLAY_S, id_str);
          } else {
@@ -1790,12 +1803,12 @@ int job_check_owner(const ocs::gdi::Packet *packet, uint32_t job_id, lList *mast
       DRETURN(0);
    }
 
-   job = lGetElemUlong(master_job_list, JB_job_number, job_id);
+   job = ocs::tom::find_first<JB_job_number>(master_job_list, job_id);
    if (job == nullptr) {
       DRETURN(-1);
    }
 
-   if (strcmp(packet->user, lGetString(job, JB_owner)) != 0) {
+   if (strcmp(packet->user, ocs::tom::get<JB_owner>(job)) != 0) {
       DRETURN(1);
    }
 
@@ -1936,7 +1949,7 @@ const char *jobscript_get_key(const lListElem *jep, dstring *buffer) {
    if (buffer != nullptr) {
       ret = sge_dstring_sprintf(buffer, "%s:" sge_u32 ".%s",
                                 object_type_get_name(SGE_TYPE_JOBSCRIPT),
-                                lGetUlong(jep, JB_job_number), lGetString(jep, JB_exec_file));
+                                ocs::tom::get<JB_job_number>(jep), ocs::tom::get<JB_exec_file>(jep));
    }
    DRETURN(ret);
 }
@@ -1986,7 +1999,7 @@ int job_resolve_host_for_path_list(const lListElem *job, lList **answer_list,
       int res = sge_resolve_host(ep, PN_host);
       DPRINTF("after sge_resolve_host() which returned %s\n", cl_get_error_text(res));
       if (res != CL_RETVAL_OK) {
-         const char *hostname = lGetHost(ep, PN_host);
+         const char *hostname = ocs::tom::get<PN_host>(ep);
          if (hostname != nullptr) {
             ERROR(MSG_SGETEXT_CANTRESOLVEHOST_S, hostname);
             answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
@@ -2001,11 +2014,11 @@ int job_resolve_host_for_path_list(const lListElem *job, lList **answer_list,
 
       /* ensure, that each hostname is only specified once */
       if( !ret_error ){
-         const char *hostname = lGetHost(ep, PN_host);
+         const char *hostname = ocs::tom::get<PN_host>(ep);
          const lListElem *temp;
 
          for (temp= lPrev(ep); temp; temp =lPrev(temp)){
-            const char *temp_hostname = lGetHost(temp, PN_host);
+            const char *temp_hostname = ocs::tom::get<PN_host>(temp);
 
             if(hostname == nullptr){
                if(temp_hostname == nullptr){
@@ -2056,10 +2069,10 @@ job_get_request(const lListElem *job, const char *centry_name) {
    const lListElem *ret;
 
    const lList *hard_centry_list = job_get_hard_resource_list(job);
-   ret = lGetElemStr(hard_centry_list, CE_name, centry_name);
+   ret = ocs::tom::find_first<CE_name>(hard_centry_list, centry_name);
    if (ret == nullptr) {
       const lList *soft_centry_list = job_get_soft_resource_list(job);
-      ret = lGetElemStr(soft_centry_list, CE_name, centry_name);
+      ret = ocs::tom::find_first<CE_name>(soft_centry_list, centry_name);
    }
    DRETURN(ret);
 }
@@ -2084,7 +2097,7 @@ job_get_hard_request(const lListElem *job, const char *name, bool is_master_task
    // a request can be either global
    const lList *request_list = job_get_hard_resource_list(job, JRS_SCOPE_GLOBAL);
    if (request_list != nullptr) {
-      ret = lGetElemStr(request_list, CE_name, name);
+      ret = ocs::tom::find_first<CE_name>(request_list, name);
    }
 
    // or (only for pe-jobs) a master or slave request
@@ -2092,7 +2105,7 @@ job_get_hard_request(const lListElem *job, const char *name, bool is_master_task
       request_list = job_get_hard_resource_list(job, is_master_task ? JRS_SCOPE_MASTER : JRS_SCOPE_SLAVE);
       if (request_list != nullptr) {
          // @todo can we rely on CE_name or can it be the shortcut? Use centry_list_locate?
-         ret = lGetElemStr(request_list, CE_name, name);
+         ret = ocs::tom::find_first<CE_name>(request_list, name);
       }
    }
 
@@ -2120,7 +2133,7 @@ job_get_hard_request(const lListElem *job, const char *name, uint32_t scope) {
    const lList *request_list = job_get_hard_resource_list(job, scope);
    if (request_list != nullptr) {
       // @todo can we rely on CE_name or can it be the shortcut? Use centry_list_locate?
-      ret = lGetElemStr(request_list, CE_name, name);
+      ret = ocs::tom::find_first<CE_name>(request_list, name);
    }
 
    DRETURN(ret);
@@ -2157,12 +2170,12 @@ job_get_contribution(const lListElem *job, lList **answer_list, const char *name
       // CS-537: the amount was parsed when the request was built and is kept in CE_doubleval.
       // Parsing CE_stringval again would also be wrong for a resource map, whose string carries
       // a bracketed parameter list after the amount.
-      *value = lGetDouble(centry, CE_doubleval);
+      *value = ocs::tom::get<CE_doubleval>(centry);
    } else {
       // if the job did not request the consumable, there might still be a default request
       // @todo CE-459 if there was a CE_default_doubleval we wouldn't have to parse the string
-      value_string = lGetString(complex_definition, CE_defaultval);
-      if (!(parse_ulong_val(value, nullptr, static_cast<ocs::CEntry::Type>(lGetUlong(complex_definition, CE_valtype)), value_string,
+      value_string = ocs::tom::get<CE_defaultval>(complex_definition);
+      if (!(parse_ulong_val(value, nullptr, static_cast<ocs::CEntry::Type>(ocs::tom::get<CE_valtype>(complex_definition)), value_string,
                             error_str, sizeof(error_str)-1))) {
          answer_list_add_sprintf(answer_list, STATUS_EEXIST, ANSWER_QUALITY_ERROR,
                                  MSG_ATTRIB_PARSATTRFAILED_SS, name, error_str);
@@ -2204,13 +2217,13 @@ job_get_contribution_by_scope(const lListElem *job, lList **answer_list, const c
    centry = job_get_hard_request(job, name, scope);
    if (centry != nullptr) {
       // CS-537: see job_get_contribution()
-      *value = lGetDouble(centry, CE_doubleval);
+      *value = ocs::tom::get<CE_doubleval>(centry);
    } else {
       // if the job did not request the consumable, there might still be a default request
       // @todo CE-459 if there was a CE_default_doubleval we wouldn't have to parse the string
-      value_string = lGetString(complex_definition, CE_defaultval);
+      value_string = ocs::tom::get<CE_defaultval>(complex_definition);
       is_default_request = true;
-      if (!(parse_ulong_val(value, nullptr, static_cast<ocs::CEntry::Type>(lGetUlong(complex_definition, CE_valtype)), value_string,
+      if (!(parse_ulong_val(value, nullptr, static_cast<ocs::CEntry::Type>(ocs::tom::get<CE_valtype>(complex_definition)), value_string,
                             error_str, sizeof(error_str)-1))) {
          answer_list_add_sprintf(answer_list, STATUS_EEXIST, ANSWER_QUALITY_ERROR,
                                  MSG_ATTRIB_PARSATTRFAILED_SS, name, error_str);
@@ -2255,7 +2268,7 @@ void
 adjust_slave_task_debit_slots(const lListElem *pe, int &slave_debit_slots) {
    bool job_is_first_task = true;
    if (pe != nullptr) {
-      job_is_first_task = lGetBool(pe, PE_job_is_first_task);
+      job_is_first_task = ocs::tom::get<PE_job_is_first_task>(pe);
    }
 
    if (job_is_first_task /* || abs(slave_debit_slots) == 1 */) {
@@ -2289,7 +2302,7 @@ bool sge_unparse_acl_dstring(dstring *category_str, const char *owner, const cha
    const lListElem *elem = nullptr;
 
    for_each_ep(elem, acl_list) {
-      if (lGetBool(elem, US_consider_with_categories) &&
+      if (ocs::tom::get<US_consider_with_categories>(elem) &&
           sge_contained_in_access_list(owner, group, grp_list, elem)) {
          if (first) {
             sge_dstring_append(category_str, option);
@@ -2298,7 +2311,7 @@ bool sge_unparse_acl_dstring(dstring *category_str, const char *owner, const cha
          } else {
             sge_dstring_append_char(category_str, ',');
          }
-         sge_dstring_append(category_str, lGetString(elem, US_name));
+         sge_dstring_append(category_str, ocs::tom::get<US_name>(elem));
       }
    }
    if (!first) {
@@ -2339,7 +2352,7 @@ bool sge_unparse_queue_list_dstring(dstring *category_str, lList *queue_list, co
          } else {
             sge_dstring_append_char(category_str, ',');
          }
-         sge_dstring_append(category_str, lGetString(sub_elem, QR_name));
+         sge_dstring_append(category_str, ocs::tom::get<QR_name>(sub_elem));
       }
       sge_dstring_append_char(category_str, ' ');
    }
@@ -2384,17 +2397,17 @@ bool sge_unparse_resource_list_dstring(dstring *category_str, lList *resource_li
           * CE_stringval, the stored value, and plain client output has to show
           * the value as the user wrote it.
           */
-         switch (static_cast<ocs::CEntry::Type>(lGetUlong(sub_elem, CE_valtype))) {
+         switch (static_cast<ocs::CEntry::Type>(ocs::tom::get<CE_valtype>(sub_elem))) {
             case ocs::CEntry::Type::MEM:
             case ocs::CEntry::Type::TIME:
                sge_dstring_sprintf_append(category_str, "%s=%.0f",
-                                          lGetString(sub_elem, CE_name),
-                                          lGetDouble(sub_elem, CE_doubleval));
+                                          ocs::tom::get<CE_name>(sub_elem),
+                                          ocs::tom::get<CE_doubleval>(sub_elem));
                break;
             default:
-               sge_dstring_append(category_str, lGetString(sub_elem, CE_name));
+               sge_dstring_append(category_str, ocs::tom::get<CE_name>(sub_elem));
                sge_dstring_append(category_str, "=");
-               sge_dstring_append(category_str, lGetString(sub_elem, CE_stringval));
+               sge_dstring_append(category_str, ocs::tom::get<CE_stringval>(sub_elem));
                break;
          }
       }
@@ -2433,7 +2446,7 @@ bool sge_unparse_pe_dstring(dstring *category_str, const lListElem *job_elem, in
          range_list_print_to_string(range_list, &range_string, true, false, false);
          sge_dstring_append(category_str, option);
          sge_dstring_append_char(category_str, ' ');
-         sge_dstring_append(category_str, lGetString(job_elem, JB_pe));
+         sge_dstring_append(category_str, ocs::tom::get<JB_pe>(job_elem));
          sge_dstring_append_char(category_str, ' ');
          sge_dstring_append_dstring(category_str, &range_string);
          sge_dstring_append_char(category_str, ' ');
@@ -2563,7 +2576,7 @@ job_verify(const lListElem *job, lList **answer_list, bool do_cull_verify) {
       DRETURN(false);
    }
 
-   if (const char *name = lGetString(job, JB_job_name); name != nullptr) {
+   if (const char *name = ocs::tom::get<JB_job_name>(job); name != nullptr) {
       if (strlen(name) >= MAX_VERIFY_STRING) {
          answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_JOB_NAMETOOLONG_I, MAX_VERIFY_STRING);
          DRETURN(false);
@@ -2573,7 +2586,7 @@ job_verify(const lListElem *job, lList **answer_list, bool do_cull_verify) {
       DRETURN(false);
    }
 
-   if (const char *cwd = lGetString(job, JB_cwd); cwd != nullptr) {
+   if (const char *cwd = ocs::tom::get<JB_cwd>(job); cwd != nullptr) {
       /*
        * cwd needn't be an absolute path, we also accept
        * relative paths, e.g. via -wd switch,
@@ -2585,21 +2598,21 @@ job_verify(const lListElem *job, lList **answer_list, bool do_cull_verify) {
       }
    }
 
-   if (const lList *path_aliases = lGetList(job, JB_path_aliases); path_aliases != nullptr) {
+   if (const lList *path_aliases = ocs::tom::get<JB_path_aliases>(job); path_aliases != nullptr) {
       ret = path_alias_verify(path_aliases, answer_list);
       if (!ret) {
          DRETURN(false);
       }
    }
 
-   if (const lList *env_list = lGetList(job, JB_env_list); env_list != nullptr) {
+   if (const lList *env_list = ocs::tom::get<JB_env_list>(job); env_list != nullptr) {
       ret = var_list_verify(env_list, answer_list);
       if (!ret) {
          DRETURN(false);
       }
    }
 
-   if (const lList *context_list = lGetList(job, JB_context); context_list != nullptr) {
+   if (const lList *context_list = ocs::tom::get<JB_context>(job); context_list != nullptr) {
       ret = var_list_verify(context_list, answer_list);
       if (!ret) {
          DRETURN(false);
@@ -2608,7 +2621,7 @@ job_verify(const lListElem *job, lList **answer_list, bool do_cull_verify) {
 
    // the names of the context instructions, markers included, must not be empty either
    for_each_ep_lv(change_ep, job_get_context_change(job)) {
-      const char *variable = lGetString(change_ep, CX_variable);
+      const char *variable = ocs::tom::get<CX_variable>(change_ep);
       if (variable == nullptr || variable[0] == '\0') {
          answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, SFNMAX,
                                  MSG_OBJECT_VARIABLENAME_NOT_EMPTY);
@@ -2674,7 +2687,7 @@ bool job_verify_submitted_job(lListElem *job, lList **answer_list) {
 
    /* JB_session must be a valid string */
    if (ret) {
-      const char *name = lGetString(job, JB_session);
+      const char *name = ocs::tom::get<JB_session>(job);
       if (name != nullptr) {
          if (verify_str_key(
                answer_list, name, MAX_VERIFY_STRING,
@@ -2686,7 +2699,7 @@ bool job_verify_submitted_job(lListElem *job, lList **answer_list) {
 
    /* JB_project must be a valid string */
    if (ret) {
-      const char *name = lGetString(job, JB_project);
+      const char *name = ocs::tom::get<JB_project>(job);
       if (name != nullptr) {
          if (verify_str_key(
             answer_list, name, MAX_VERIFY_STRING,
@@ -2698,7 +2711,7 @@ bool job_verify_submitted_job(lListElem *job, lList **answer_list) {
 
    /* JB_department must be a valid string */
    if (ret) {
-      const char *name = lGetString(job, JB_department);
+      const char *name = ocs::tom::get<JB_department>(job);
       if (name != nullptr) {
          if (verify_str_key(
             answer_list, name, MAX_VERIFY_STRING,
@@ -2712,7 +2725,7 @@ bool job_verify_submitted_job(lListElem *job, lList **answer_list) {
 
    /* JB_exec_file must be a valid directory string */
    if (ret) {
-      const char *name = lGetString(job, JB_exec_file);
+      const char *name = ocs::tom::get<JB_exec_file>(job);
       if (name != nullptr) {
          ret = path_verify(name, answer_list, "exec_file", false);
       }
@@ -2720,7 +2733,7 @@ bool job_verify_submitted_job(lListElem *job, lList **answer_list) {
 
    /* JB_script_file must be a string and a valid directory string */
    if (ret) {
-      const char *name = lGetString(job, JB_script_file);
+      const char *name = ocs::tom::get<JB_script_file>(job);
       if (name != nullptr) {
          ret = path_verify(name, answer_list, "script_file", false);
       }
@@ -2728,14 +2741,14 @@ bool job_verify_submitted_job(lListElem *job, lList **answer_list) {
 
    /* JB_script_ptr must be any string */
    if (ret) {
-      const char *name = lGetString(job, JB_script_ptr);
+      const char *name = ocs::tom::get<JB_script_ptr>(job);
       if (name == nullptr) {
          /* JB_script_size must not 0 */
          ret = object_verify_ulong_null(job, answer_list, JB_script_size);
       } else {
          /* JB_script_size must be size of JB_script_ptr */
          /* TODO: define a max script size */
-         if (strlen(name) != lGetUlong(job, JB_script_size)) {
+         if (strlen(name) != ocs::tom::get<JB_script_size>(job)) {
             answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                                     MSG_JOB_SCRIPTLENGTHDOESNOTMATCH);
             ret = false;
@@ -2759,7 +2772,7 @@ bool job_verify_submitted_job(lListElem *job, lList **answer_list) {
 
    /* JB_account must be a valid string */
    if (ret) {
-      const char *name = lGetString(job, JB_account);
+      const char *name = ocs::tom::get<JB_account>(job);
       if (name != nullptr) {
          if(verify_str_key(
                answer_list, name, MAX_VERIFY_STRING,
@@ -2780,7 +2793,7 @@ bool job_verify_submitted_job(lListElem *job, lList **answer_list) {
     * Therefore a valid range is from 1 to 2 * BASE_PRIORITY.
     */
    if (ret) {
-      uint32_t priority = lGetUlong(job, JB_priority);
+      uint32_t priority = ocs::tom::get<JB_priority>(job);
       if (priority < 1 || priority > 2 * BASE_PRIORITY) {
          answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                                  MSG_PARSE_INVALIDPRIORITYMUSTBEINNEG1023TO1024);
@@ -2798,7 +2811,7 @@ bool job_verify_submitted_job(lListElem *job, lList **answer_list) {
 
    /* JB_checkpoint_name */
    if (ret) {
-      const char *name = lGetString(job, JB_checkpoint_name);
+      const char *name = ocs::tom::get<JB_checkpoint_name>(job);
       if (name != nullptr) {
          if (verify_str_key(
                answer_list, name, MAX_VERIFY_STRING,
@@ -2810,7 +2823,7 @@ bool job_verify_submitted_job(lListElem *job, lList **answer_list) {
 
    /* JB_checkpoint_object */
    if (ret) {
-      if (lGetObject(job, JB_checkpoint_object) != nullptr) {
+      if (ocs::tom::get<JB_checkpoint_object>(job) != nullptr) {
             answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                               MSG_INVALIDJOB_REQUEST_S, "checkpoint object");
             ret = false;
@@ -2821,7 +2834,7 @@ bool job_verify_submitted_job(lListElem *job, lList **answer_list) {
 
    /* JB_restart can be 0, 1 or 2 */
    if (ret) {
-      uint32_t value = lGetUlong(job, JB_restart);
+      uint32_t value = ocs::tom::get<JB_restart>(job);
       if (value != 0 && value != 1 && value != 2) {
             answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                               MSG_INVALIDJOB_REQUEST_S, "restart");
@@ -2842,7 +2855,7 @@ bool job_verify_submitted_job(lListElem *job, lList **answer_list) {
 
    /* JB_pe must be a valid string */
    if (ret) {
-      const char *name = lGetString(job,JB_pe );
+      const char *name = ocs::tom::get<JB_pe>(job );
       if (name != nullptr) {
          if (verify_str_key(
                answer_list, name, MAX_VERIFY_STRING,
@@ -2870,7 +2883,7 @@ bool job_verify_submitted_job(lListElem *job, lList **answer_list) {
 
    /* JB_host must be nullptr */
    if (ret) {
-      if (lGetHost(job, JB_host) != nullptr) {
+      if (static_cast<const char *>(ocs::tom::get<JB_host>(job)) != nullptr) {
             answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                               MSG_INVALIDJOB_REQUEST_S, "host");
             ret = false;
@@ -2883,7 +2896,7 @@ bool job_verify_submitted_job(lListElem *job, lList **answer_list) {
 
    /* JB_verify_suitable_queues must be in range of OPTION_VERIFY_STR */
    if (ret) {
-      if (lGetUlong(job, JB_verify_suitable_queues) >= (sizeof(OPTION_VERIFY_STR)/sizeof(char)-1)) {
+      if (ocs::tom::get<JB_verify_suitable_queues>(job) >= (sizeof(OPTION_VERIFY_STR)/sizeof(char)-1)) {
             answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                               MSG_INVALIDJOB_REQUEST_S, "verify");
             ret = false;
@@ -2934,7 +2947,7 @@ bool job_verify_submitted_job(lListElem *job, lList **answer_list) {
     }
    // JB_ja_task_concurrency may only be given for array jobs
    if (ret) {
-      uint32_t task_concurrency = lGetUlong(job, JB_ja_task_concurrency);
+      uint32_t task_concurrency = ocs::tom::get<JB_ja_task_concurrency>(job);
       if (task_concurrency > 0 && !job_is_array(job)) {
          answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                               MSG_INVALIDJOB_REQUEST_S, "task concurrency");
@@ -2975,8 +2988,8 @@ bool job_get_wallclock_limit(uint64_t *limit, const lListElem *jep) {
    char error_str[1024];
 
    const lList *hard_resource_list = job_get_hard_resource_list(jep);
-   if ((ep=lGetElemStr(hard_resource_list, CE_name, SGE_ATTR_H_RT))) {
-      if (parse_ulong_val(&d_tmp, nullptr, ocs::CEntry::Type::TIME, (s=lGetString(ep, CE_stringval)), error_str, sizeof(error_str)-1)==0) {
+   if ((ep=ocs::tom::find_first<CE_name>(hard_resource_list, SGE_ATTR_H_RT))) {
+      if (parse_ulong_val(&d_tmp, nullptr, ocs::CEntry::Type::TIME, (s=ocs::tom::get<CE_stringval>(ep)), error_str, sizeof(error_str)-1)==0) {
          ERROR(MSG_CPLX_WRONGTYPE_SSS, SGE_ATTR_H_RT, s, error_str);
          DRETURN(false);
       }
@@ -2984,8 +2997,8 @@ bool job_get_wallclock_limit(uint64_t *limit, const lListElem *jep) {
       got_duration = true;
    }
 
-   if ((ep=lGetElemStr(hard_resource_list, CE_name, SGE_ATTR_S_RT))) {
-      if (parse_ulong_val(&d_tmp, nullptr, ocs::CEntry::Type::TIME, (s=lGetString(ep, CE_stringval)), error_str, sizeof(error_str)-1)==0) {
+   if ((ep=ocs::tom::find_first<CE_name>(hard_resource_list, SGE_ATTR_S_RT))) {
+      if (parse_ulong_val(&d_tmp, nullptr, ocs::CEntry::Type::TIME, (s=ocs::tom::get<CE_stringval>(ep)), error_str, sizeof(error_str)-1)==0) {
          ERROR(MSG_CPLX_WRONGTYPE_SSS, SGE_ATTR_H_RT, s, error_str);
          DRETURN(false);
       }
@@ -3025,7 +3038,7 @@ bool job_get_wallclock_limit(uint64_t *limit, const lListElem *jep) {
  */
 bool
 job_is_binary(const lListElem *job) {
-   return (JOB_TYPE_IS_BINARY(lGetUlong(job, JB_type)) ? true : false);
+   return (JOB_TYPE_IS_BINARY(ocs::tom::get<JB_type>(job)) ? true : false);
 }
 
 /**
@@ -3038,14 +3051,14 @@ job_is_binary(const lListElem *job) {
 bool
 job_set_binary(lListElem *job, bool is_binary) {
    bool ret = true;
-   uint32_t type = lGetUlong(job, JB_type);
+   uint32_t type = ocs::tom::get<JB_type>(job);
 
    if (is_binary) {
       JOB_TYPE_SET_BINARY(type);
    } else {
       JOB_TYPE_CLEAR_BINARY(type);
    }
-   lSetUlong(job, JB_type, type);
+   ocs::tom::set<JB_type>(job, type);
    return ret;
 }
 
@@ -3057,7 +3070,7 @@ job_set_binary(lListElem *job, bool is_binary) {
  */
 bool
 job_is_no_shell(const lListElem *job) {
-   return (JOB_TYPE_IS_NO_SHELL(lGetUlong(job, JB_type)) ? true : false);
+   return (JOB_TYPE_IS_NO_SHELL(ocs::tom::get<JB_type>(job)) ? true : false);
 }
 
 /**
@@ -3073,14 +3086,14 @@ job_is_no_shell(const lListElem *job) {
 bool
 job_set_no_shell(lListElem *job, bool is_binary) {
    bool ret = true;
-   uint32_t type = lGetUlong(job, JB_type);
+   uint32_t type = ocs::tom::get<JB_type>(job);
 
    if (is_binary) {
       JOB_TYPE_SET_NO_SHELL(type);
    } else {
       JOB_TYPE_CLEAR_NO_SHELL(type);
    }
-   lSetUlong(job, JB_type, type);
+   ocs::tom::set<JB_type>(job, type);
    return ret;
 }
 
@@ -3104,11 +3117,11 @@ job_set_owner_and_group(lListElem *job, uint32_t uid, uint32_t gid,
 
    bool ret = true;
 
-   lSetString(job, JB_owner, user);
-   lSetUlong(job, JB_uid, uid);
-   lSetString(job, JB_group, group);
-   lSetUlong(job, JB_gid, gid);
-   lSetList(job, JB_grp_list, grp_list_array2list(amount, grp_array));
+   ocs::tom::set<JB_owner>(job, user);
+   ocs::tom::set<JB_uid>(job, uid);
+   ocs::tom::set<JB_group>(job, group);
+   ocs::tom::set<JB_gid>(job, gid);
+   ocs::tom::set<JB_grp_list>(job, grp_list_array2list(amount, grp_array));
 
    DRETURN(ret);
 }
@@ -3136,17 +3149,17 @@ job_set_owner_and_group(lListElem *job, uint32_t uid, uint32_t gid,
 void set_context(const lList *change, lListElem *job) {
    // if the incoming list is empty, or it starts without a marker, the context is replaced
    if (change == nullptr || lGetNumberOfElem(change) == 0) {
-      lSetList(job, JB_context, nullptr);
+      ocs::tom::set<JB_context>(job, nullptr);
       return;
    }
-   const char *first = lGetString(lFirst(change), CX_variable);
+   const char *first = ocs::tom::get<CX_variable>(lFirst(change));
    if (first == nullptr || (*first != '+' && *first != '-' && *first != '=')) {
-      lSetList(job, JB_context, nullptr);
+      ocs::tom::set<JB_context>(job, nullptr);
    }
 
    char mode = '+';
    for_each_ep_lv(change_ep, change) {
-      const char *name = lGetString(change_ep, CX_variable);
+      const char *name = ocs::tom::get<CX_variable>(change_ep);
       if (name == nullptr) {
          continue;
       }
@@ -3158,24 +3171,24 @@ void set_context(const lList *change, lListElem *job) {
             mode = '-';
             break;
          case '=':
-            lSetList(job, JB_context, nullptr);
+            ocs::tom::set<JB_context>(job, nullptr);
             mode = '+';
             break;
          default:
             if (mode == '+') {
-               lList *context = lGetListRW(job, JB_context);
+               lList *context = ocs::tom::get<JB_context>(job);
                if (context == nullptr) {
                   context = lCreateList("context_list", VA_Type);
-                  lSetList(job, JB_context, context);
+                  ocs::tom::set<JB_context>(job, context);
                }
-               lListElem *var = lGetElemStrRW(context, VA_variable, name);
+               lListElem *var = ocs::tom::find_first_rw<VA_variable>(context, name);
                if (var == nullptr) {
-                  var = lAddElemStr(&context, VA_variable, name, VA_Type);
+                  var = ocs::tom::emplace_back<VA_variable>(&context, name);
                }
-               lSetString(var, VA_value, lGetString(change_ep, CX_value));
+               ocs::tom::set<VA_value>(var, ocs::tom::get<CX_value>(change_ep));
             } else {
                // frees JB_context when its last variable goes, so the list is looked up again above
-               lDelSubStr(job, VA_variable, name, JB_context);
+               ocs::tom::erase_in<JB_context, VA_variable>(job, name);
             }
             break;
       }
@@ -3194,8 +3207,8 @@ void set_context(const lList *change, lListElem *job) {
  */
 void ocs_context_change_add(lList **change, const lList *option_list) {
    for_each_ep_lv(var, option_list) {
-      lListElem *ep = lAddElemStr(change, CX_variable, lGetString(var, VA_variable), CX_Type);
-      lSetString(ep, CX_value, lGetString(var, VA_value));
+      lListElem *ep = ocs::tom::emplace_back<CX_variable>(change, ocs::tom::get<VA_variable>(var));
+      ocs::tom::set<CX_value>(ep, ocs::tom::get<VA_value>(var));
    }
 }
 
@@ -3210,10 +3223,10 @@ void ocs_context_change_add(lList **change, const lList *option_list) {
  */
 static const lList *
 job_get_context_change(const lListElem *job) {
-   if (lGetPosViaElem(job, JB_context_change, SGE_NO_ABORT) < 0) {
+   if (!ocs::tom::has<JB_context_change>(job)) {
       return nullptr;
    }
-   return lGetList(job, JB_context_change);
+   return ocs::tom::get<JB_context_change>(job);
 }
 
 /**
@@ -3229,14 +3242,14 @@ job_get_context_change(const lListElem *job) {
  */
 lList *ocs_context_get_effective(const lListElem *job) {
    lListElem *tmp_job = lCreateElem(JB_Type);
-   if (lGetPosViaElem(job, JB_context, SGE_NO_ABORT) >= 0 && lGetList(job, JB_context) != nullptr) {
-      lSetList(tmp_job, JB_context, lCopyList("context_list", lGetList(job, JB_context)));
+   if (ocs::tom::has<JB_context>(job) && static_cast<const lList *>(ocs::tom::get<JB_context>(job)) != nullptr) {
+      ocs::tom::set<JB_context>(tmp_job, lCopyList("context_list", ocs::tom::get<JB_context>(job)));
    }
    if (const lList *change = job_get_context_change(job); change != nullptr) {
       set_context(change, tmp_job);
    }
    lList *ret = nullptr;
-   lXchgList(tmp_job, JB_context, &ret);
+   ocs::tom::exchange<JB_context>(tmp_job, &ret);
    lFreeElem(&tmp_job);
    return ret;
 }
@@ -3387,7 +3400,7 @@ bool job_is_requesting_consumable(const lListElem *jep, const char *resource_nam
    if (request_list != nullptr) {
       cep = centry_list_locate(request_list, resource_name);
       if (cep != nullptr) {
-         consumable = lGetUlong(cep, CE_consumable);
+         consumable = ocs::tom::get<CE_consumable>(cep);
          if (consumable == CONSUMABLE_JOB) {
             return true;
          }
@@ -3435,7 +3448,7 @@ const lListElem *job_get_request_set(const lListElem *job, uint32_t scope) {
    if (const int pos = lGetPosViaElem(job, JB_request_set_list, false); pos == NoName) {
       return nullptr;
    } else {
-      return lGetSubUlong(job, JRS_scope, scope, JB_request_set_list);
+      return ocs::tom::find_first_in<JB_request_set_list, JRS_scope>(job, scope);
    }
 }
 
@@ -3451,7 +3464,7 @@ lListElem *job_get_request_setRW(lListElem *job, uint32_t scope) {
    if (const int pos = lGetPosViaElem(job, JB_request_set_list, false); pos == NoName) {
       return nullptr;
    } else {
-      return lGetSubUlongRW(job, JRS_scope, scope, JB_request_set_list);
+      return ocs::tom::find_first_in_rw<JB_request_set_list, JRS_scope>(job, scope);
    }
 }
 
@@ -3463,9 +3476,9 @@ lListElem *job_get_request_setRW(lListElem *job, uint32_t scope) {
  * @return the request set, never nullptr
  */
 lListElem *job_get_or_create_request_setRW(lListElem *job, uint32_t scope) {
-   lListElem *jrs = lGetSubUlongRW(job, JRS_scope, scope, JB_request_set_list);
+   lListElem *jrs = ocs::tom::find_first_in_rw<JB_request_set_list, JRS_scope>(job, scope);
    if (jrs == nullptr) {
-      jrs = lAddSubUlong(job, JRS_scope, scope, JB_request_set_list, JRS_Type);
+      jrs = ocs::tom::emplace_back_in<JB_request_set_list, JRS_scope>(job, scope);
    }
 
    return jrs;
@@ -3480,13 +3493,13 @@ lListElem *job_get_or_create_request_setRW(lListElem *job, uint32_t scope) {
 bool job_request_set_remove_duplicates(lListElem *job) {
    bool requests_found = false;
 
-   for_each_rw_lv (jrs, lGetListRW(job, JB_request_set_list)) {
-      lList *lp = lGetListRW(jrs, JRS_hard_resource_list);
+   for_each_rw_lv (jrs, ocs::tom::get<JB_request_set_list>(job)) {
+      lList *lp = ocs::tom::get<JRS_hard_resource_list>(jrs);
       if (lp != nullptr) {
          requests_found = true;
          centry_list_remove_duplicates(lp);
       }
-      lp = lGetListRW(jrs, JRS_soft_resource_list);
+      lp = ocs::tom::get<JRS_soft_resource_list>(jrs);
       if (lp != nullptr) {
          requests_found = true;
          centry_list_remove_duplicates(lp);
@@ -3504,8 +3517,8 @@ bool job_request_set_remove_duplicates(lListElem *job) {
  */
 bool job_request_set_has_queue_requests(const lListElem *job) {
    bool ret = false;
-   for_each_rw_lv (jrs, lGetListRW(job, JB_request_set_list)) {
-      if (lGetList(jrs, JRS_hard_queue_list) != nullptr || lGetList(jrs, JRS_soft_queue_list) != nullptr) {
+   for_each_rw_lv (jrs, ocs::tom::get<JB_request_set_list>(job)) {
+      if (static_cast<const lList *>(ocs::tom::get<JRS_hard_queue_list>(jrs)) != nullptr || static_cast<const lList *>(ocs::tom::get<JRS_soft_queue_list>(jrs)) != nullptr) {
          ret = true;
          break;
       }
@@ -3526,10 +3539,10 @@ const lListElem *job_get_highest_hard_request(const lListElem *job, const char *
    double max_request = 0.0;
 
    const lListElem *jrs;
-   for_each_ep (jrs, lGetList(job, JB_request_set_list)) {
-      const lListElem *request = lGetSubStr(jrs, CE_name, request_name, JRS_hard_resource_list);
+   for_each_ep (jrs, static_cast<const lList *>(ocs::tom::get<JB_request_set_list>(job))) {
+      const lListElem *request = ocs::tom::find_first_in<JRS_hard_resource_list, CE_name>(jrs, request_name);
       if (request != nullptr) {
-         double request_value = lGetDouble(request, CE_doubleval);
+         double request_value = ocs::tom::get<CE_doubleval>(request);
          if (request_value > max_request) {
             ret = request;
             max_request = request_value;
@@ -4000,7 +4013,7 @@ void job_set_master_hard_queue_list(lListElem *job, lList *queue_list) {
 void job_set_allocation_rule(lListElem *job, const char *allocation_rule, uint32_t scope) {
    lListElem *jrs = job_get_or_create_request_setRW(job, scope);
    if (jrs != nullptr) {
-      lSetString(jrs, JRS_allocation_rule, allocation_rule);
+      ocs::tom::set<JRS_allocation_rule>(jrs, allocation_rule);
    }
 }
 
@@ -4015,7 +4028,7 @@ const char *job_get_allocation_rule(const lListElem *job, uint32_t scope) {
    const char *ret = nullptr;
    const lListElem *jrs = job_get_request_set(job, scope);
    if (jrs != nullptr) {
-      ret = lGetString(jrs, JRS_allocation_rule);
+      ret = ocs::tom::get<JRS_allocation_rule>(jrs);
    }
    return ret;
 }
@@ -4316,7 +4329,7 @@ job_scope_name(const lListElem *scope_ep) {
    const char *ret = "unknown";
 
    if (scope_ep != nullptr) {
-      ret = job_scope_name(lGetUlong(scope_ep, JRS_scope));
+      ret = job_scope_name(ocs::tom::get<JRS_scope>(scope_ep));
    }
 
    return ret;
@@ -4324,12 +4337,12 @@ job_scope_name(const lListElem *scope_ep) {
 
 static void
 job_add_resource_set_list_to_command_line(const lListElem *job, dstring *dstr) {
-   const lList *request_set_list = lGetList(job, JB_request_set_list);
+   const lList *request_set_list = ocs::tom::get<JB_request_set_list>(job);
    if (request_set_list != nullptr) {
       const lListElem *scope_ep;
       for_each_ep (scope_ep, request_set_list) {
          job_add_opt_to_comand_line(dstr, "-scope", job_scope_name(scope_ep));
-         const char *allocation_rule = lGetString(scope_ep, JRS_allocation_rule);
+         const char *allocation_rule = ocs::tom::get<JRS_allocation_rule>(scope_ep);
          if (allocation_rule != nullptr) {
             job_add_opt_to_comand_line(dstr, "-par", allocation_rule);
          }
@@ -4360,12 +4373,12 @@ job_get_effective_command_line(const lListElem *job, dstring *dstr, const char *
    job_add_time_opt_to_command_line(job, dstr, "-a", JB_execution_time);
    // -ac is covered by -sc
    job_add_ulong_opt_to_command_line(job, dstr, "-ar", JB_ar, 0);
-   if (JOB_TYPE_IS_BINARY(lGetUlong(job, JB_type))) {
+   if (JOB_TYPE_IS_BINARY(ocs::tom::get<JB_type>(job))) {
       job_add_opt_to_comand_line(dstr, "-b", "yes");
    }
 
    // -btype, -bunit, -bstrategy, -bstart, -bstop, -bamount ...
-   const lListElem *binding = lGetObject(job, JB_binding);
+   const lListElem *binding = ocs::tom::get<JB_binding>(job);
    if (binding != nullptr) {
       std::string binding_str;
       ocs::BindingIo::binding_print_to_string(binding, binding_str, true);
@@ -4377,8 +4390,8 @@ job_get_effective_command_line(const lListElem *job, dstring *dstr, const char *
 
    // checkpointing
    if (job_add_str_opt_to_command_line(job, dstr, "-ckpt", JB_checkpoint_name)) {
-      u_long ckpt_attr = lGetUlong(job, JB_checkpoint_attr);
-      u_long ckpt_interval = lGetUlong(job, JB_checkpoint_interval);
+      u_long ckpt_attr = ocs::tom::get<JB_checkpoint_attr>(job);
+      u_long ckpt_interval = ocs::tom::get<JB_checkpoint_interval>(job);
       if (ckpt_attr != 0 || ckpt_interval != 0) {
          sge_dstring_append(dstr, " -c ");
          if (ckpt_attr != 0) {
@@ -4403,12 +4416,12 @@ job_get_effective_command_line(const lListElem *job, dstring *dstr, const char *
    job_add_ulong_opt_to_command_line(job, dstr, "-js", JB_jobshare, 0);
    // -jsv is not reflected in the job object
 
-   uint32_t mailopt = lGetUlong(job, JB_mail_options);
+   uint32_t mailopt = ocs::tom::get<JB_mail_options>(job);
    if (mailopt > 0) {
       sge_dstring_sprintf_append(dstr, " -m ");
       sge_dstring_append_mailopt(dstr, mailopt);
    }
-   const lList *mail_list = lGetList(job, JB_mail_list);
+   const lList *mail_list = ocs::tom::get<JB_mail_list>(job);
    if (mail_list != nullptr) {
       sge_dstring_append_char(dstr, ' ');
       sge_dstring_append(dstr, "-M");
@@ -4421,14 +4434,14 @@ job_get_effective_command_line(const lListElem *job, dstring *dstr, const char *
          } else {
             sge_dstring_append_char(dstr, ',');
          }
-         sge_dstring_sprintf_append(dstr, "%s@%s", lGetString(ep, MR_user), lGetHost(ep, MR_host));
+         sge_dstring_sprintf_append(dstr, "%s@%s", ocs::tom::get<MR_user>(ep), static_cast<const char *>(ocs::tom::get<MR_host>(ep)));
       }
    }
 
-   if (lGetBool(job, JB_notify)) {
+   if (ocs::tom::get<JB_notify>(job)) {
       job_add_opt_to_comand_line(dstr, "-notify", nullptr);
    }
-   if (JOB_TYPE_IS_IMMEDIATE(lGetUlong(job, JB_type))) {
+   if (JOB_TYPE_IS_IMMEDIATE(ocs::tom::get<JB_type>(job))) {
       job_add_opt_to_comand_line(dstr, "-now", "yes");
    }
    job_add_str_opt_to_command_line(job, dstr, "-N", JB_job_name);
@@ -4437,24 +4450,24 @@ job_get_effective_command_line(const lListElem *job, dstring *dstr, const char *
    if (job_add_str_opt_to_command_line(job, dstr, "-pe", JB_pe)) {
       sge_dstring_append_char(dstr, ' ');
       DSTRING_STATIC(dstr_pe, 64);
-      range_list_print_to_string(lGetList(job, JB_pe_range), &dstr_pe, true, false, false);
+      range_list_print_to_string(ocs::tom::get<JB_pe_range>(job), &dstr_pe, true, false, false);
       sge_dstring_append_dstring(dstr, &dstr_pe);
    }
-   uint32_t pty = lGetUlong(job, JB_pty);
+   uint32_t pty = ocs::tom::get<JB_pty>(job);
    if (pty < 2) { // 2 means: do not specify it but use the default for the client
       job_add_opt_to_comand_line(dstr, "-pty", pty == 0 ? "no" : "yes");
    }
 
    // -sync <options_flags>
    // -sync n which is the default will be silently ignored
-   uint32_t sync_options = lGetUlong(job, JB_sync_options);
+   uint32_t sync_options = ocs::tom::get<JB_sync_options>(job);
    if (sync_options != SYNC_NO) {
       std::string sync_flags = job_get_sync_options_string(job);
       job_add_opt_to_comand_line(dstr, "-sync", sync_flags.c_str());
    }
 
    job_add_bool_opt_to_command_line(job, dstr, "-R", JB_reserve, true);
-   if (lGetUlong(job, JB_restart) == 2) {
+   if (ocs::tom::get<JB_restart>(job) == 2) {
       job_add_opt_to_comand_line(dstr, "-r", "no");
    } else {
       job_add_opt_to_comand_line(dstr, "-r", "yes");
@@ -4464,7 +4477,7 @@ job_get_effective_command_line(const lListElem *job, dstring *dstr, const char *
       job_add_name_value_list_opt_to_command_line(job, dstr, "-sc", JB_context, VA_variable, VA_value);
    } else {
       lListElem *context_job = lCreateElem(JB_Type);
-      lSetList(context_job, JB_context, ocs_context_get_effective(job));
+      ocs::tom::set<JB_context>(context_job, ocs_context_get_effective(job));
       job_add_name_value_list_opt_to_command_line(context_job, dstr, "-sc", JB_context, VA_variable, VA_value);
       lFreeElem(&context_job);
    }
@@ -4488,9 +4501,9 @@ job_get_effective_command_line(const lListElem *job, dstring *dstr, const char *
    // command line to execute
    job_add_str_opt_to_command_line(job, dstr, nullptr, JB_script_file);
    const lListElem *ep;
-   for_each_ep (ep, lGetList(job, JB_job_args)) {
+   for_each_ep (ep, static_cast<const lList *>(ocs::tom::get<JB_job_args>(job))) {
       sge_dstring_append_char(dstr, ' ');
-      job_add_str_to_command_line(dstr, lGetString(ep, ST_name));
+      job_add_str_to_command_line(dstr, ocs::tom::get<ST_name>(ep));
    }
 
    return sge_dstring_get_string(dstr);
@@ -4505,7 +4518,7 @@ job_get_effective_command_line(const lListElem *job, dstring *dstr, const char *
  */
 void job_set_command_line(lListElem *job, const char *client) {
    dstring dstr = DSTRING_INIT;
-   lSetString(job, JB_submission_command_line, job_get_effective_command_line(job, &dstr, client));
+   ocs::tom::set<JB_submission_command_line>(job, job_get_effective_command_line(job, &dstr, client));
    sge_dstring_free(&dstr);
 }
 
@@ -4520,7 +4533,7 @@ void job_set_command_line(lListElem *job, const char *client) {
 void
 job_set_command_line(lListElem *job, int argc, const char *argv[]) {
    dstring dstr = DSTRING_INIT;
-   lSetString(job, JB_submission_command_line, sge_dstring_from_argv(&dstr, argc, argv, true, true));
+   ocs::tom::set<JB_submission_command_line>(job, sge_dstring_from_argv(&dstr, argc, argv, true, true));
    sge_dstring_free(&dstr);
 }
 
@@ -4531,7 +4544,7 @@ job_set_command_line(lListElem *job, int argc, const char *argv[]) {
  */
 void
 job_set_sync_options(lListElem *job, uint32_t sync_options) {
-   lSetUlong(job, JB_sync_options, sync_options);
+   ocs::tom::set<JB_sync_options>(job, sync_options);
 }
 
 /** @brief get the letter combination that represents the sync options
@@ -4543,7 +4556,7 @@ std::string
 job_get_sync_options_string(const lListElem *job) {
    DENTER(TOP_LAYER);
 
-   uint32_t sync_options = lGetUlong(job, JB_sync_options);
+   uint32_t sync_options = ocs::tom::get<JB_sync_options>(job);
    if (sync_options == SYNC_NO) {
       DRETURN("n");
    }
@@ -4607,8 +4620,8 @@ void job_normalize_priority(lListElem *jep, uint32_t priority) {
    constexpr double min_priority = 0.0;
    constexpr double max_priority = 2048.0;
 
-   lSetUlong(jep, JB_priority, priority);
-   lSetDouble(jep, JB_nppri, sge_normalize_value(priority, min_priority, max_priority));
+   ocs::tom::set<JB_priority>(jep, priority);
+   ocs::tom::set<JB_nppri>(jep, sge_normalize_value(priority, min_priority, max_priority));
 }
 
 /** @brief Summarizes the slots of the given gdil list.
@@ -4643,7 +4656,7 @@ gdil_make_host_unique(const lList *gdil_in) {
 
    // first gdil that we will use to summarize the slots and the hostname
    lListElem *first_gdil = lFirstRW(gdil_out);
-   const char *first_hostname = lGetHost(first_gdil, JG_qhostname);
+   const char *first_hostname = ocs::tom::get<JG_qhostname>(first_gdil);
 
    // iterate over the rest of the list and summarize the slots for entries with the same hostname
    lListElem *next_gdil = lNextRW(first_gdil);
@@ -4653,11 +4666,11 @@ gdil_make_host_unique(const lList *gdil_in) {
 
       // if the next gdil has a different hostname then it is the first gdil for this new hostname
       // otherwise we summarize the slots of the current gdil into the first gdil
-      if (const char *next_gdil_hostname = lGetHost(gdil, JG_qhostname); sge_hostcmp(first_hostname, next_gdil_hostname) != 0) {
+      if (const char *next_gdil_hostname = ocs::tom::get<JG_qhostname>(gdil); sge_hostcmp(first_hostname, next_gdil_hostname) != 0) {
          first_gdil = gdil;
          first_hostname = next_gdil_hostname;
       } else {
-         lAddUlong(first_gdil, JG_slots, lGetUlong(gdil, JG_slots));
+         ocs::tom::add<JG_slots>(first_gdil, ocs::tom::get<JG_slots>(gdil));
          lRemoveElem(gdil_out, &gdil);
       }
    }
@@ -4682,8 +4695,8 @@ uint32_t
 jatask_combine_state_and_status_for_output(const lListElem *job, const lListElem *jatep) {
    DENTER(TOP_LAYER);
 
-   uint32_t status = lGetUlong(jatep, JAT_status);
-   uint32_t state = lGetUlong(jatep, JAT_state);
+   uint32_t status = ocs::tom::get<JAT_status>(jatep);
+   uint32_t state = ocs::tom::get<JAT_state>(jatep);
    if (status == JRUNNING) {
       state |= JRUNNING;
       state &= ~JTRANSFERING;
@@ -4713,13 +4726,13 @@ jatask_combine_state_and_status_for_output(const lListElem *job, const lListElem
    }
 
    // show hold state if the job is held or has predecessors
-   if (lGetList(job, JB_jid_predecessor_list) ||
-       lGetUlong(jatep, JAT_hold)) {
+   if (ocs::tom::get<JB_jid_predecessor_list>(job) ||
+       ocs::tom::get<JAT_hold>(jatep)) {
       state |= JHELD;
    }
 
    // show 'R' state if the job is restarted
-   if (lGetUlong(jatep, JAT_job_restarted)) {
+   if (ocs::tom::get<JAT_job_restarted>(jatep)) {
       state &= ~JWAITING;
       state |= JMIGRATING;
    }

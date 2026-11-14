@@ -52,6 +52,8 @@
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_qinstance_state.h"
 #include "sgeobj/ocs_DataStore.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_QU.h"
 
 #include "mir/msg_mirlib.h"
 #include "mir/sge_mirror.h"
@@ -81,9 +83,9 @@ cqueue_update_master_list(sge_evc_class_t *evc, sge_object_type type,
    lList **list = nullptr;
    const lDescr *list_descr = nullptr;
 
-   name = lGetString(event, ET_strkey);
+   name = ocs::tom::get<ET_strkey>(event);
    list = ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE);
-   list_descr = lGetListDescr(lGetList(event, ET_new_version));
+   list_descr = lGetListDescr(ocs::tom::get<ET_new_version>(event));
    cqueue = cqueue_list_locate(*list, name);
 
    if ((action == SGE_EMA_MOD || action == SGE_EMA_ADD) 
@@ -92,7 +94,7 @@ cqueue_update_master_list(sge_evc_class_t *evc, sge_object_type type,
        * modify events for CQ_Type objects; we may not update
        * - CQ_qinstances - it is maintained by QINSTANCE events
        */         
-      lXchgList(cqueue, CQ_qinstances, &qinstance_list);
+      ocs::tom::exchange<CQ_qinstances>(cqueue, &qinstance_list);
    }
    
    if (sge_mirror_update_master_list(list, list_descr, cqueue, name, action, event) == SGE_EM_OK) {
@@ -108,7 +110,7 @@ cqueue_update_master_list(sge_evc_class_t *evc, sge_object_type type,
       /*
        * Replace CQ_qinstances list
        */         
-      lXchgList(cqueue, CQ_qinstances, &qinstance_list);
+      ocs::tom::exchange<CQ_qinstances>(cqueue, &qinstance_list);
       lFreeList(&qinstance_list);
    }
 
@@ -141,15 +143,15 @@ qinstance_update_cqueue_list(sge_evc_class_t *evc, sge_object_type type,
    const char *hostname = nullptr;
    lListElem *cqueue = nullptr;
 
-   name = lGetString(event, ET_strkey);
-   hostname = lGetString(event, ET_strkey2);
+   name = ocs::tom::get<ET_strkey>(event);
+   hostname = ocs::tom::get<ET_strkey2>(event);
 
    cqueue = cqueue_list_locate(*ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE), name);
                         
    if (cqueue != nullptr) {
       dstring key_buffer = DSTRING_INIT;
-      lList *list = lGetListRW(cqueue, CQ_qinstances);
-      const lDescr *list_descr = lGetListDescr(lGetList(event, ET_new_version));
+      lList *list = ocs::tom::get<CQ_qinstances>(cqueue);
+      const lDescr *list_descr = lGetListDescr(ocs::tom::get<ET_new_version>(event));
       
       lListElem *qinstance = qinstance_list_locate(list, hostname, nullptr);
       const char *key = nullptr;
@@ -159,7 +161,7 @@ qinstance_update_cqueue_list(sge_evc_class_t *evc, sge_object_type type,
       key = sge_dstring_get_string(&key_buffer);
 
       if (action == SGE_EMA_MOD) {
-         uint32_t type = lGetUlong(event, ET_type);
+         uint32_t type = ocs::tom::get<ET_type>(event);
 
          if (type == sgeE_QINSTANCE_SOS || 
              type == sgeE_QINSTANCE_USOS) {
@@ -184,7 +186,7 @@ qinstance_update_cqueue_list(sge_evc_class_t *evc, sge_object_type type,
       }
       sge_dstring_free(&key_buffer);
       if (!is_list) {
-         lSetList(cqueue, CQ_qinstances, list);
+         ocs::tom::set<CQ_qinstances>(cqueue, list);
       }
    } else {
       ERROR(MSG_CQUEUE_CANTFINDFORUPDATEIN_SS, name, __func__);

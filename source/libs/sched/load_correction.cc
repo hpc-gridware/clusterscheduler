@@ -51,6 +51,10 @@
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_ja_task.h"
 #include "sgeobj/cull/sge_resource_utilization_RUE_L.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_HL.h"
+#include "sgeobj/tom/ocs_tom_JAT.h"
+#include "sgeobj/tom/ocs_tom_JG.h"
 
 #include "schedd_monitor.h"
 #include "load_correction.h"
@@ -96,23 +100,23 @@ int correct_load(lList *running_jobs, lList *queue_list, lList *host_list,
    uint64_t now = sge_get_gmt64();
 
    for_each_rw_lv(job, running_jobs) {
-      uint32_t job_id = lGetUlong(job, JB_job_number);
+      uint32_t job_id = ocs::tom::get<JB_job_number>(job);
       double global_lcf = 0.0;
 
-      for_each_rw_lv(ja_task, lGetList(job, JB_ja_tasks)) {
-         uint32_t ja_task_id = lGetUlong(ja_task, JAT_task_number);
-         uint64_t running_time = now - lGetUlong64(ja_task, JAT_start_time);
+      for_each_rw_lv(ja_task, ocs::tom::get<JB_ja_tasks>(job)) {
+         uint32_t ja_task_id = ocs::tom::get<JAT_task_number>(ja_task);
+         uint64_t running_time = now - ocs::tom::get<JAT_start_time>(ja_task);
          const lList *granted_list = nullptr;
          double host_lcf = 0.0;
 
 #if 1
          DPRINTF("JOB " sge_u32 "." sge_u32 " start_time = " sge_u64" running_time " sge_u64 " decay_time = " sge_u64"\n",
-                 job_id, ja_task_id, lGetUlong64(ja_task, JAT_start_time), running_time, decay_time);
+                 job_id, ja_task_id, ocs::tom::get<JAT_start_time>(ja_task), running_time, decay_time);
 #endif
          if (running_time > decay_time) {
             continue;
          }
-         granted_list = lGetList(ja_task, JAT_granted_destin_identifier_list);
+         granted_list = ocs::tom::get<JAT_granted_destin_identifier_list>(ja_task);
          for_each_ep_lv(granted_queue, granted_list) {
             const char *qnm = nullptr;
             const char *hnm = nullptr;
@@ -120,15 +124,15 @@ int correct_load(lList *running_jobs, lList *queue_list, lList *host_list,
             lListElem *hep = nullptr;
             uint32_t slots;
             
-            qnm = lGetString(granted_queue, JG_qname);
+            qnm = ocs::tom::get<JG_qname>(granted_queue);
             qep = qinstance_list_locate2(queue_list, qnm);
             if (qep == nullptr) {
                DPRINTF("Unable to find queue \"%s\" from gdil " "list of job " sge_u32 "." sge_u32"\n", qnm, job_id, ja_task_id);
                continue;
             }
            
-            hnm=lGetHost(granted_queue, JG_qhostname); 
-            hep = lGetElemHostRW(host_list, EH_name, hnm);
+            hnm=ocs::tom::get<JG_qhostname>(granted_queue); 
+            hep = ocs::tom::find_first_rw<EH_name>(host_list, hnm);
             if (hep == nullptr) {
                DPRINTF("Unable to find host \"%s\" from gdil " "list of job " sge_u32 "." sge_u32"\n", hnm, job_id, ja_task_id);
                continue;
@@ -151,33 +155,33 @@ int correct_load(lList *running_jobs, lList *queue_list, lList *host_list,
             global_lcf += host_lcf;
 
             /* multiply it for each slot on this host */
-            slots = lGetUlong(granted_queue, JG_slots);
+            slots = ocs::tom::get<JG_slots>(granted_queue);
             host_lcf *= slots;
             
             /* add this factor (multiplied with 100 for being able to use 
                uint32_t) */
-            lSetUlong(hep, EH_load_correction_factor, 
+            ocs::tom::set<EH_load_correction_factor>(hep, 
                       host_lcf * 100 + 
-                      lGetUlong(hep, EH_load_correction_factor));
+                      ocs::tom::get<EH_load_correction_factor>(hep));
 
 #if 1
             DPRINTF("JOB " sge_u32 "." sge_u32 " [" sge_u32" slots] in queue %s increased lc of host "
                     "%s by " sge_u32" to " sge_u32"\n", job_id, ja_task_id, slots, qnm, hnm,
-                    (uint32_t)(100*host_lcf), lGetUlong(hep, EH_load_correction_factor));
+                    (uint32_t)(100*host_lcf), ocs::tom::get<EH_load_correction_factor>(hep));
 #endif
             if (monitor_next_run) {
                char log_string[2048 + 1];
                snprintf(log_string, sizeof(log_string), "JOB " sge_u32"." sge_u32" [" sge_u32"] in queue " SFN
                           " increased absolute lc of host " SFN " by " sge_u32" to "
                           sge_u32"", job_id, ja_task_id, slots, qnm, hnm,
-                          (uint32_t)(host_lcf*100), lGetUlong(hep, EH_load_correction_factor));
+                          (uint32_t)(host_lcf*100), ocs::tom::get<EH_load_correction_factor>(hep));
                schedd_log(log_string, nullptr, true);
             }
          }
       }
-      lSetUlong(global_host, EH_load_correction_factor, 
+      ocs::tom::set<EH_load_correction_factor>(global_host, 
                 global_lcf * 100 + 
-                lGetUlong(global_host, EH_load_correction_factor));
+                ocs::tom::get<EH_load_correction_factor>(global_host));
    }
 
    DRETURN(0);
@@ -219,16 +223,16 @@ int correct_capacities(lList *host_list, const lList *centry_list, const lList *
    }
  
    for_each_rw_lv(hep, host_list) {
-      const char *host_name = lGetHost(hep, EH_name);
+      const char *host_name = ocs::tom::get<EH_name>(hep);
 
-      for_each_rw_lv(ep, lGetList(hep, EH_load_list)) {
-         const char *attr_name = lGetString(ep, HL_name);
+      for_each_rw_lv(ep, ocs::tom::get<EH_load_list>(hep)) {
+         const char *attr_name = ocs::tom::get<HL_name>(ep);
  
          /* seach for appropriate complex attribute */
          if (!(cep=centry_list_locate(centry_list, attr_name)))
             continue;
 
-         type = static_cast<ocs::CEntry::Type>(lGetUlong(cep, CE_valtype));
+         type = static_cast<ocs::CEntry::Type>(ocs::tom::get<CE_valtype>(cep));
          if (type != ocs::CEntry::Type::INT &&
              type != ocs::CEntry::Type::TIME &&
              type != ocs::CEntry::Type::MEM &&
@@ -237,26 +241,26 @@ int correct_capacities(lList *host_list, const lList *centry_list, const lList *
             continue;
          }
         
-         if (!parse_ulong_val(&dval, nullptr, type, lGetString(ep, HL_value), nullptr, 0))
+         if (!parse_ulong_val(&dval, nullptr, type, ocs::tom::get<HL_value>(ep), nullptr, 0))
             continue;
 
          /* do load scaling */
-         if ((scaling=lGetSubStr(hep, HS_name, attr_name, EH_scaling_list))) {
+         if ((scaling=ocs::tom::find_first_in<EH_scaling_list, HS_name>(hep, attr_name))) {
             char sval[20];
-            sc_factor = lGetDouble(scaling, HS_value);
+            sc_factor = ocs::tom::get<HS_value>(scaling);
             dval *= sc_factor;
             snprintf(sval, sizeof(sval), "%8.3f", dval);
-            lSetString(ep, HL_value, sval);
+            ocs::tom::set<HL_value>(ep, sval);
          }
 
-         if (lGetUlong(cep, CE_consumable) == CONSUMABLE_NO)
+         if (ocs::tom::get<CE_consumable>(cep) == CONSUMABLE_NO)
             continue;
-         if (!(total=lGetSubStrRW(hep, CE_name, attr_name, EH_consumable_config_list)))
+         if (!(total=ocs::tom::find_first_in_rw<EH_consumable_config_list, CE_name>(hep, attr_name)))
             continue;
-         if (!(inuse_rms=lGetSubStr(hep, RUE_name, attr_name, EH_resource_utilization)))
+         if (!(inuse_rms=ocs::tom::find_first_in<EH_resource_utilization, RUE_name>(hep, attr_name)))
             continue;
 
-         relop = lGetUlong(cep, CE_relop);
+         relop = ocs::tom::get<CE_relop>(cep);
          if (relop != CMPLXEQ_OP &&
              relop != CMPLXLT_OP &&
              relop != CMPLXLE_OP &&
@@ -265,12 +269,12 @@ int correct_capacities(lList *host_list, const lList *centry_list, const lList *
 
          /* do load correction */
          load_correction = 0;
-         if ((job_load=lGetElemStr(job_load_adj_list, CE_name, attr_name))) {
+         if ((job_load=ocs::tom::find_first<CE_name>(job_load_adj_list, attr_name))) {
             double lc_factor;
-            const char *s = lGetString(job_load, CE_stringval);
+            const char *s = ocs::tom::get<CE_stringval>(job_load);
 
             if (parse_ulong_val(&load_correction, nullptr, type, s, nullptr, 0)) {
-               lc_factor = ((double)lGetUlong(hep, EH_load_correction_factor))/100.0;
+               lc_factor = ((double)ocs::tom::get<EH_load_correction_factor>(hep))/100.0;
                load_correction *= lc_factor;
                DPRINTF("%s:%s %s %8.3f %8.3f\n", host_name, attr_name, s, load_correction, lc_factor);
                dval -= load_correction;
@@ -278,15 +282,15 @@ int correct_capacities(lList *host_list, const lList *centry_list, const lList *
          }
 
          /* use scaled load value to deduce the amount */
-         full_capacity = lGetDouble(total, CE_doubleval);
-         inuse_ext = full_capacity - lGetDouble(inuse_rms, RUE_utilized_now) - dval;
+         full_capacity = ocs::tom::get<CE_doubleval>(total);
+         inuse_ext = full_capacity - ocs::tom::get<RUE_utilized_now>(inuse_rms) - dval;
 
          if (inuse_ext > 0.0) {
-            lSetDouble(total, CE_doubleval, full_capacity - inuse_ext);
+            ocs::tom::set<CE_doubleval>(total, full_capacity - inuse_ext);
 
             DPRINTF("%s:%s %8.3f --> %8.3f (ext: %8.3f = all %8.3f - ubC %8.3f - load %8.3f) lc = %8.3f\n",
-                    host_name, attr_name, full_capacity, lGetDouble(total, CE_doubleval),
-                    inuse_ext, full_capacity, lGetDouble(inuse_rms, RUE_utilized_now), dval, load_correction);
+                    host_name, attr_name, full_capacity, ocs::tom::get<CE_doubleval>(total),
+                    inuse_ext, full_capacity, ocs::tom::get<RUE_utilized_now>(inuse_rms), dval, load_correction);
          } else {
             DPRINTF("ext: %8.3f <= 0\n", inuse_ext);
          }

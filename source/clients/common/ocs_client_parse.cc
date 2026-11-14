@@ -50,6 +50,7 @@
 #include "sgeobj/parse.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_job.h"
+#include "tom/ocs_Element.h"
 
 #include "msg_clients_common.h"
 #include "msg_common.h"
@@ -241,11 +242,11 @@ static void append_opts_from_default_files(uint32_t prog_number, lList **pcmdlin
          uint32_t status;
          answer_quality_t quality;
 
-         status = lGetUlong(aep, AN_status);
-         quality = (answer_quality_t)lGetUlong(aep, AN_quality);
+         status = ocs::tom::get<AN_status>(aep);
+         quality = (answer_quality_t)ocs::tom::get<AN_quality>(aep);
 
          if (quality == ANSWER_QUALITY_ERROR) {
-            DPRINTF("%s", lGetString(aep, AN_text));
+            DPRINTF("%s", ocs::tom::get<AN_text>(aep));
             if (status == STATUS_EDISK) {
                /*
                ** we turn this error into a warning here
@@ -255,9 +256,9 @@ static void append_opts_from_default_files(uint32_t prog_number, lList **pcmdlin
                do_exit = 1;
             }
          } else {
-            DPRINTF("Warning: Error: %s\n", lGetString(aep, AN_text));
+            DPRINTF("Warning: Error: %s\n", ocs::tom::get<AN_text>(aep));
          }
-         answer_list_add(answer_list, lGetString(aep, AN_text), status, quality);
+         answer_list_add(answer_list, ocs::tom::get<AN_text>(aep), status, quality);
       }
       lFreeList(&alp);
 
@@ -335,14 +336,14 @@ void opt_list_append_opts_from_qalter_cmdline(uint32_t prog_number, lList **opts
 void opt_list_append_opts_from_script(uint32_t prog_number, lList **opts_scriptfile, lList **answer_list,
                                       const lList *opts_cmdline, char **envp) {
    const char *scriptfile = nullptr;
-   const lListElem *script_option = lGetElemStr(opts_cmdline, SPA_switch_val, STR_PSEUDO_SCRIPT);
+   const lListElem *script_option = ocs::tom::find_first<SPA_switch_val>(opts_cmdline, STR_PSEUDO_SCRIPT);
    if (script_option != nullptr) {
-      scriptfile = lGetString(script_option, SPA_argval_lStringT);
+      scriptfile = ocs::tom::get<SPA_argval_lStringT>(script_option);
    }
-   const lListElem *c_option = lGetElemStr(opts_cmdline, SPA_switch_val, "-C");
+   const lListElem *c_option = ocs::tom::find_first<SPA_switch_val>(opts_cmdline, "-C");
    const char *prefix = nullptr;
    if (c_option != nullptr) {
-      prefix = lGetString(c_option, SPA_argval_lStringT);
+      prefix = ocs::tom::get<SPA_argval_lStringT>(c_option);
    } else {
       prefix = default_prefix;
    }
@@ -373,9 +374,9 @@ void opt_list_append_opts_from_script_path(uint32_t prog_number, lList **opts_sc
                                            lList **answer_list, const lList *opts_cmdline, char **envp) {
    char *scriptpath = nullptr;
 
-   const lListElem *script_option = lGetElemStr(opts_cmdline, SPA_switch_val, STR_PSEUDO_SCRIPT);
+   const lListElem *script_option = ocs::tom::find_first<SPA_switch_val>(opts_cmdline, STR_PSEUDO_SCRIPT);
    if (script_option != nullptr) {
-      const char *scriptfile = lGetString(script_option, SPA_argval_lStringT);
+      const char *scriptfile = ocs::tom::get<SPA_argval_lStringT>(script_option);
 
       /* If the scriptfile path isn't absolute (which includes starting with
          $HOME), make it absolute relative to the given path.
@@ -393,8 +394,8 @@ void opt_list_append_opts_from_script_path(uint32_t prog_number, lList **opts_sc
    }
 
    const char *prefix = nullptr;
-   if (const lListElem *c_option = lGetElemStr(opts_cmdline, SPA_switch_val, "-C"); c_option != nullptr) {
-      prefix = lGetString(c_option, SPA_argval_lStringT);
+   if (const lListElem *c_option = ocs::tom::find_first<SPA_switch_val>(opts_cmdline, "-C"); c_option != nullptr) {
+      prefix = ocs::tom::get<SPA_argval_lStringT>(c_option);
    } else {
       prefix = default_prefix;
    }
@@ -453,10 +454,10 @@ void opt_list_merge_command_lines(lList **opts_all, lList **opts_defaults, lList
    }
 
    /* If -ar was requested add -w if it was not explicitly set */
-   if (lGetElemStr(*opts_all, SPA_switch_val, "-ar") != nullptr) {
-      if (lGetElemStr(*opts_all, SPA_switch_val, "-w") == nullptr) {
+   if (static_cast<const lListElem *>(ocs::tom::find_first<SPA_switch_val>(*opts_all, "-ar")) != nullptr) {
+      if (static_cast<const lListElem *>(ocs::tom::find_first<SPA_switch_val>(*opts_all, "-w")) == nullptr) {
          lListElem *ep_opt = sge_add_arg(opts_all, r_OPT, lIntT, "-w", "e");
-         lSetInt(ep_opt, SPA_argval_lIntT, ERROR_VERIFY);
+         ocs::tom::set<SPA_argval_lIntT>(ep_opt, ERROR_VERIFY);
       }
    }
 }
@@ -477,7 +478,7 @@ void opt_list_merge_command_lines(lList **opts_all, lList **opts_defaults, lList
 bool opt_list_has_X(lList *opts, const char *option) {
    bool ret = false;
 
-   const lListElem *opt = lGetElemStr(opts, SPA_switch_val, option);
+   const lListElem *opt = ocs::tom::find_first<SPA_switch_val>(opts, option);
    if (opt != nullptr) {
       ret = true;
    }
@@ -502,9 +503,9 @@ bool opt_list_has_X(lList *opts, const char *option) {
 bool opt_list_is_X_true(lList *opts, const char *option) {
    bool ret = false;
 
-   const lListElem *opt = lGetElemStr(opts, SPA_switch_val, option);
+   const lListElem *opt = ocs::tom::find_first<SPA_switch_val>(opts, option);
    if (opt != nullptr) {
-      ret = (lGetInt(opt, SPA_argval_lIntT) == 1) ? true : false;
+      ret = (ocs::tom::get<SPA_argval_lIntT>(opt) == 1) ? true : false;
    }
    return ret;
 }
@@ -518,8 +519,8 @@ bool opt_list_is_X_true(lList *opts, const char *option) {
  * @param alpp receives `STATUS_ESEMANTIC` when both were given
  */
 void opt_list_verify_scope(lList *opts, lList **alpp) {
-   if (lGetElemStr(opts, SPA_switch_val, "-masterq") != nullptr &&
-       lGetElemStr(opts, SPA_switch_val, "-scope") != nullptr) {
+   if (static_cast<const lListElem *>(ocs::tom::find_first<SPA_switch_val>(opts, "-masterq")) != nullptr &&
+       static_cast<const lListElem *>(ocs::tom::find_first<SPA_switch_val>(opts, "-scope")) != nullptr) {
       answer_list_add_sprintf(alpp, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR, MSG_EITHERSCOPEORMASTERX);
    }
 }

@@ -43,6 +43,7 @@
 
 #include "sgeobj/sge_schedd_conf.h"
 #include "sgeobj/sge_answer.h"
+#include "tom/ocs_Element.h"
 
 #include "mir/sge_mirror.h"
 #include "mir/sge_sched_conf_mirror.h"
@@ -80,7 +81,7 @@ schedd_conf_update_master_list(sge_evc_class_t *evc, sge_object_type type,
 
    list_descr = SC_Type;
 
-   if ((data_list = lGetListRW(event, ET_new_version)) != nullptr) {
+   if ((data_list = ocs::tom::get<ET_new_version>(event)) != nullptr) {
       if ((ep = lFirstRW(data_list)) != nullptr) {
          ep = lDechainElem(data_list, ep);
       }

@@ -46,6 +46,8 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_userset.h"
 #include "sgeobj/sge_advance_reservation.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_ARA.h"
 
 #include "valid_queue_user.h"
 #include "msg_qmaster.h"
@@ -77,12 +79,12 @@ bool sge_ar_have_users_access(lList **alpp, lListElem *ar, const char *name, con
    bool ret = true;
    const char *user= nullptr;
 
-   for_each_ep_lv(acl_entry, lGetList(ar, AR_acl_list)) {
-      user = lGetString(acl_entry, ARA_name);
+   for_each_ep_lv(acl_entry, ocs::tom::get<AR_acl_list>(ar)) {
+      user = ocs::tom::get<ARA_name>(acl_entry);
 
       DPRINTF("check permissions for user %s\n", user);
       if (!ocs::is_hgroup_name(user)) {
-         if (sge_has_access_(user, lGetString(acl_entry, ARA_group), nullptr,
+         if (sge_has_access_(user, ocs::tom::get<ARA_group>(acl_entry), nullptr,
                              acl_list, xacl_list,master_userset_list) == 0) {
              answer_list_add_sprintf(alpp, STATUS_OK, ANSWER_QUALITY_INFO, MSG_AR_QUEUEDNOPERMISSIONS, name); 
             ret = false;
@@ -95,13 +97,13 @@ bool sge_ar_have_users_access(lList **alpp, lListElem *ar, const char *name, con
          DPRINTF("acl :%s", acl_name);
 
          /* at first xacl */
-         if (xacl_list && lGetElemStr(xacl_list, US_name, acl_name) != nullptr) {
+         if (xacl_list && static_cast<const lListElem *>(ocs::tom::find_first<US_name>(xacl_list, acl_name)) != nullptr) {
             ret = false;
             break;
          }
 
          /* at second acl */
-         if (acl_list && (lGetElemStr(acl_list, US_name, acl_name) == nullptr)) {
+         if (acl_list && (static_cast<const lListElem *>(ocs::tom::find_first<US_name>(acl_list, acl_name)) == nullptr)) {
             answer_list_add_sprintf(alpp, STATUS_OK, ANSWER_QUALITY_INFO, MSG_AR_QUEUEDNOPERMISSIONS, name); 
             ret = false;
             break;

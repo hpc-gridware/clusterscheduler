@@ -36,6 +36,8 @@
 #include "sgeobj/parse.h"
 #include "sgeobj/sge_cull_xml.h"
 #include "sgeobj/sge_job.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_XMLA.h"
 
 #include "qstat/default/ocs_QStatDefaultViewXML.h"
 
@@ -68,14 +70,14 @@ void ocs::QStatDefaultViewXML::qstat_xml_finish_job_list(const char* state, lLis
    lList *l_job_list = nullptr;
 
    for_each_rw_lv(l_job_elem, job_list) {
-      attributes = lGetListRW(l_job_elem, XMLE_Attribute);
+      attributes = ocs::tom::get<XMLE_Attribute>(l_job_elem);
       if (!attributes){
          attributes = lCreateList("attributes", XMLA_Type);
-         lSetList(l_job_elem, XMLE_Attribute, attributes);
+         ocs::tom::set<XMLE_Attribute>(l_job_elem, attributes);
       }
       state_elem = lCreateElem(XMLA_Type);
-      lSetString(state_elem, XMLA_Name, "state");
-      lSetString(state_elem, XMLA_Value, state);
+      ocs::tom::set<XMLA_Name>(state_elem, "state");
+      ocs::tom::set<XMLA_Value>(state_elem, state);
       lAppendElem(attributes, state_elem);
 
       lAppendElem(l_job_list, l_job_elem);
@@ -91,16 +93,16 @@ void ocs::QStatDefaultViewXML::report_started(std::ostream &os, QStatParameter &
 
    queue_list_elem = lCreateElem(XMLE_Type);
    lListElem *attr_elem = lCreateElem(XMLA_Type);
-   lSetString(attr_elem, XMLA_Name, "queue_info");
-   lSetObject(queue_list_elem, XMLE_Element, attr_elem);
-   lSetBool(queue_list_elem, XMLE_Print, true);
+   ocs::tom::set<XMLA_Name>(attr_elem, "queue_info");
+   ocs::tom::set<XMLE_Element>(queue_list_elem, attr_elem);
+   ocs::tom::set<XMLE_Print>(queue_list_elem, true);
 
    job_list_elem = lCreateElem(XMLE_Type);
    attr_elem = lCreateElem(XMLA_Type);
-   lSetString(attr_elem, XMLA_Name, "job_info");
-   lSetObject(job_list_elem, XMLE_Element, attr_elem);
-   lSetBool(job_list_elem, XMLE_Print, true);
-   lSetList(job_list_elem, XMLE_List, lCreateList("job_list", XMLE_Type));
+   ocs::tom::set<XMLA_Name>(attr_elem, "job_info");
+   ocs::tom::set<XMLE_Element>(job_list_elem, attr_elem);
+   ocs::tom::set<XMLE_Print>(job_list_elem, true);
+   ocs::tom::set<XMLE_List>(job_list_elem, lCreateList("job_list", XMLE_Type));
 
    DRETURN_VOID;
 }
@@ -143,11 +145,11 @@ void ocs::QStatDefaultViewXML::report_queue_finished(std::ostream &os, const cha
       }
       DPRINTF("add queue_info for queue %s to queue_list\n", qname );
 
-      lList* queue_list = lGetListRW(queue_list_elem, XMLE_List);
+      lList* queue_list = ocs::tom::get<XMLE_List>(queue_list_elem);
       if (queue_list == nullptr) {
          DPRINTF("Had empty queue list, create new one\n");
          queue_list = lCreateList("Queue-List", XMLE_Type);
-         lSetList(queue_list_elem, XMLE_List, queue_list);
+         ocs::tom::set<XMLE_List>(queue_list_elem, queue_list);
       }
       lAppendElem(queue_list, queue_elem);
       queue_elem = nullptr;
@@ -174,11 +176,11 @@ void ocs::QStatDefaultViewXML::report_queue_started(std::ostream &os, const char
       DPRINTF("Create ctx->queue_elem for queue %s\n", qname);
 
       temp = lCreateElem(XMLE_Type);
-      lSetBool(temp, XMLE_Print, false);
+      ocs::tom::set<XMLE_Print>(temp, false);
       queue_elem = lCreateElem(XMLE_Type);
       attribute_list = lCreateList("attributes", XMLE_Type);
-      lSetList(temp, XMLE_List, attribute_list);
-      lSetObject(queue_elem, XMLE_Element, temp);
+      ocs::tom::set<XMLE_List>(temp, attribute_list);
+      ocs::tom::set<XMLE_Element>(queue_elem, temp);
    }
 
    DRETURN_VOID;
@@ -193,8 +195,8 @@ void ocs::QStatDefaultViewXML::report_queue_summary(std::ostream &os, const char
       DPRINTF("Ilegal state: ctx->queue_elem must not be nullptr");
       TerminationManager::trigger_abort();
    }
-   xml_elem = lGetObject(queue_elem, XMLE_Element);
-   attribute_list = lGetListRW(xml_elem, XMLE_List);
+   xml_elem = ocs::tom::get<XMLE_Element>(queue_elem);
+   attribute_list = ocs::tom::get<XMLE_List>(xml_elem);
 
    xml_append_Attr_S(attribute_list, "name", qname);
    xml_append_Attr_S(attribute_list, "qtype", summary->queue_type.c_str());
@@ -222,8 +224,8 @@ void ocs::QStatDefaultViewXML::report_queue_summary(std::ostream &os, const char
 void ocs::QStatDefaultViewXML::report_queue_load_alarm(std::ostream &os, const char* qname, const char* reason) {
    DENTER(TOP_LAYER);
 
-   lListElem *xml_elem = lGetObject(queue_elem, XMLE_Element);
-   lList *attribute_list = lGetListRW(xml_elem, XMLE_List);
+   lListElem *xml_elem = ocs::tom::get<XMLE_Element>(queue_elem);
+   lList *attribute_list = ocs::tom::get<XMLE_List>(xml_elem);
    xml_append_Attr_S(attribute_list, "load-alarm-reason", reason);
 
    DRETURN_VOID;
@@ -232,8 +234,8 @@ void ocs::QStatDefaultViewXML::report_queue_load_alarm(std::ostream &os, const c
 void ocs::QStatDefaultViewXML::report_queue_suspend_alarm(std::ostream &os, const char* qname, const char* reason) {
    DENTER(TOP_LAYER);
 
-   lListElem *xml_elem = lGetObject(queue_elem, XMLE_Element);
-   lList *attribute_list = lGetListRW(xml_elem, XMLE_List);
+   lListElem *xml_elem = ocs::tom::get<XMLE_Element>(queue_elem);
+   lList *attribute_list = ocs::tom::get<XMLE_List>(xml_elem);
    xml_append_Attr_S(attribute_list, "suspend-alarm-reason", reason);
 
    DRETURN_VOID;
@@ -242,8 +244,8 @@ void ocs::QStatDefaultViewXML::report_queue_suspend_alarm(std::ostream &os, cons
 void ocs::QStatDefaultViewXML::report_queue_message(std::ostream &os, const char* qname, const char *message) {
    DENTER(TOP_LAYER);
 
-   lListElem *xml_elem = lGetObject(queue_elem, XMLE_Element);
-   lList *attribute_list = lGetListRW(xml_elem, XMLE_List);
+   lListElem *xml_elem = ocs::tom::get<XMLE_Element>(queue_elem);
+   lList *attribute_list = ocs::tom::get<XMLE_List>(xml_elem);
 
    xml_append_Attr_S(attribute_list, "message", message);
 
@@ -263,8 +265,8 @@ void ocs::QStatDefaultViewXML::report_queue_resource_finished(std::ostream &os, 
 void ocs::QStatDefaultViewXML::report_queue_resource(std::ostream &os, const lListElem *resource, const char* dom, const char* name, const char* value, const char *details) {
    DENTER(TOP_LAYER);
 
-   lListElem *xml_elem = lGetObject(queue_elem, XMLE_Element);
-   lList *attribute_list = lGetListRW(xml_elem, XMLE_List);
+   lListElem *xml_elem = ocs::tom::get<XMLE_Element>(queue_elem);
+   lList *attribute_list = ocs::tom::get<XMLE_List>(xml_elem);
 
    DPRINTF("queue resource: %s, %s, %s, %s\n", dom, name, value, details);
    xml_elem = xml_append_Attr_S(attribute_list, "resource", value);
@@ -286,16 +288,16 @@ void ocs::QStatDefaultViewXML::report_queue_jobs_finished(std::ostream &os, cons
    if (lFirst(job_list)) {
       lList *l_job_list = nullptr;
       if (parameter.show_ & QSTAT_DISPLAY_FULL ) {
-         l_job_list = lGetListRW(queue_elem, XMLE_List);
+         l_job_list = ocs::tom::get<XMLE_List>(queue_elem);
          if(l_job_list == nullptr) {
             l_job_list = lCreateList("job_list", XMLE_Type);
-            lSetList(queue_elem, XMLE_List, l_job_list);
+            ocs::tom::set<XMLE_List>(queue_elem, l_job_list);
          }
       } else {
-        l_job_list = lGetListRW(queue_list_elem, XMLE_List);
+        l_job_list = ocs::tom::get<XMLE_List>(queue_list_elem);
          if(l_job_list == nullptr) {
             l_job_list = lCreateList("job_list", XMLE_Type);
-            lSetList(queue_list_elem, XMLE_List, l_job_list);
+            ocs::tom::set<XMLE_List>(queue_list_elem, l_job_list);
          }
       }
       qstat_xml_finish_job_list("running", l_job_list);
@@ -315,7 +317,7 @@ void ocs::QStatDefaultViewXML::report_pending_jobs_started(std::ostream &os, QSt
 
 void ocs::QStatDefaultViewXML::report_pending_jobs_finished(std::ostream &os) {
    DENTER(TOP_LAYER);
-   lList *target_list = lGetListRW(job_list_elem, XMLE_List);
+   lList *target_list = ocs::tom::get<XMLE_List>(job_list_elem);
    qstat_xml_finish_job_list("pending", target_list);
 
    DRETURN_VOID;
@@ -331,7 +333,7 @@ void ocs::QStatDefaultViewXML::report_finished_jobs_started(std::ostream &os, QS
 
 void ocs::QStatDefaultViewXML::report_finished_jobs_finished(std::ostream &os) {
    DENTER(TOP_LAYER);
-   lList *target_list = lGetListRW(job_list_elem, XMLE_List);
+   lList *target_list = ocs::tom::get<XMLE_List>(job_list_elem);
    /* CS-1908 U7: renamed from "finished" — under retention this tag holds the
     * ja_tasks currently retained in the finished-history window (not the
     * transient JOBS-WAITING-FOR-ACCOUNTING queue it modeled before). */
@@ -350,7 +352,7 @@ void ocs::QStatDefaultViewXML::report_error_jobs_started(std::ostream &os, QStat
 
 void ocs::QStatDefaultViewXML::report_error_jobs_finished(std::ostream &os) {
    DENTER(TOP_LAYER);
-   lList *target_list = lGetListRW(job_list_elem, XMLE_List);
+   lList *target_list = ocs::tom::get<XMLE_List>(job_list_elem);
    qstat_xml_finish_job_list("error", target_list);
 
    DRETURN_VOID;
@@ -379,7 +381,7 @@ void ocs::QStatDefaultViewXML::report_job(std::ostream &os, uint32_t jid, job_su
 
    job_elem = lCreateElem(XMLE_Type);
    attribute_list = lCreateList("attributes", XMLE_Type);
-   lSetList(job_elem, XMLE_List, attribute_list);
+   ocs::tom::set<XMLE_List>(job_elem, attribute_list);
 
    sge_ext = (parameter.show_ & QSTAT_DISPLAY_EXTENDED) ? true : false;
    tsk_ext = (parameter.show_ & QSTAT_DISPLAY_TASKS) ? true : false;
@@ -492,7 +494,7 @@ void ocs::QStatDefaultViewXML::report_job_finished(std::ostream &os, uint32_t ji
 void ocs::QStatDefaultViewXML::report_sub_task(std::ostream &os, task_summary_t *summary) {
    DENTER(TOP_LAYER);
 
-   lList *attribute_list = lGetListRW(job_elem, XMLE_List);
+   lList *attribute_list = ocs::tom::get<XMLE_List>(job_elem);
 
    if (summary->task_id) {
       xml_append_Attr_S(attribute_list, "task-id", summary->task_id);
@@ -526,7 +528,7 @@ void ocs::QStatDefaultViewXML::report_additional_info(std::ostream &os, const jo
       default:
          {
             /*lListElem *xml_elem = nullptr;*/
-            lList *attribute_list = lGetListRW(job_elem, XMLE_List);
+            lList *attribute_list = ocs::tom::get<XMLE_List>(job_elem);
 
             DPRINTF("Add additional info %s(%d) = %s\n", ADDITIONAL_TAG_NAMES[name], name, value);
             xml_append_Attr_S(attribute_list, ADDITIONAL_TAG_NAMES[name], value);
@@ -539,7 +541,7 @@ void ocs::QStatDefaultViewXML::report_requested_pe(std::ostream &os, const char*
    DENTER(TOP_LAYER);
 
    lListElem *xml_elem = nullptr;
-   lList *attribute_list = lGetListRW(job_elem, XMLE_List);
+   lList *attribute_list = ocs::tom::get<XMLE_List>(job_elem);
 
    xml_elem = xml_append_Attr_S(attribute_list, "requested_pe", pe_range);
    xml_addAttribute(xml_elem, "name", pe_name);
@@ -551,7 +553,7 @@ void ocs::QStatDefaultViewXML::report_granted_pe(std::ostream &os, const char* p
    DENTER(TOP_LAYER);
 
    lListElem *xml_elem = nullptr;
-   lList *attribute_list = lGetListRW(job_elem, XMLE_List);
+   lList *attribute_list = ocs::tom::get<XMLE_List>(job_elem);
 
    xml_elem = xml_append_Attr_I(attribute_list, "granted_pe", pe_slots);
    xml_addAttribute(xml_elem, "name", pe_name);
@@ -573,7 +575,7 @@ void ocs::QStatDefaultViewXML::report_default_request(std::ostream &os, const ch
    DENTER(TOP_LAYER);
 
    lListElem *xml_elem = nullptr;
-   lList *attribute_list = lGetListRW(job_elem, XMLE_List);
+   lList *attribute_list = ocs::tom::get<XMLE_List>(job_elem);
 
    xml_elem = xml_append_Attr_S(attribute_list, "def_hard_request", value);
    xml_addAttribute(xml_elem, "name", name);
@@ -599,7 +601,7 @@ void ocs::QStatDefaultViewXML::report_hard_resource(std::ostream &os, int scope,
    }
 
    lListElem *xml_elem = nullptr;
-   lList *attribute_list = lGetListRW(job_elem, XMLE_List);
+   lList *attribute_list = ocs::tom::get<XMLE_List>(job_elem);
 
    xml_elem = xml_append_Attr_S(attribute_list, attrib_name, value);
    xml_addAttribute(xml_elem, "name", name);
@@ -626,7 +628,7 @@ void ocs::QStatDefaultViewXML::report_soft_resource(std::ostream &os, int scope,
    }
 
    lListElem *xml_elem = nullptr;
-   lList *attribute_list = lGetListRW(job_elem, XMLE_List);
+   lList *attribute_list = ocs::tom::get<XMLE_List>(job_elem);
 
    xml_elem = xml_append_Attr_S(attribute_list, attrib_name, value);
    xml_addAttribute(xml_elem, "name", name);
@@ -637,7 +639,7 @@ void ocs::QStatDefaultViewXML::report_soft_resource(std::ostream &os, int scope,
 void ocs::QStatDefaultViewXML::report_hard_requested_queue(std::ostream &os, int scope, const char* name) {
    DENTER(TOP_LAYER);
 
-   lList *attribute_list = lGetListRW(job_elem, XMLE_List);
+   lList *attribute_list = ocs::tom::get<XMLE_List>(job_elem);
 
    const char *attrib_name;
    switch(scope) {
@@ -660,7 +662,7 @@ void ocs::QStatDefaultViewXML::report_hard_requested_queue(std::ostream &os, int
 void ocs::QStatDefaultViewXML::report_soft_requested_queue(std::ostream &os, int scope, const char* name) {
    DENTER(TOP_LAYER);
 
-   lList *attribute_list = lGetListRW(job_elem, XMLE_List);
+   lList *attribute_list = ocs::tom::get<XMLE_List>(job_elem);
 
    const char *attrib_name;
    switch(scope) {
@@ -683,7 +685,7 @@ void ocs::QStatDefaultViewXML::report_soft_requested_queue(std::ostream &os, int
 void ocs::QStatDefaultViewXML::report_predecessor_requested(std::ostream &os, const char* name) {
    DENTER(TOP_LAYER);
 
-   lList *attribute_list = lGetListRW(job_elem, XMLE_List);
+   lList *attribute_list = ocs::tom::get<XMLE_List>(job_elem);
 
    xml_append_Attr_S(attribute_list, "predecessor_jobs_req", name);
 
@@ -693,7 +695,7 @@ void ocs::QStatDefaultViewXML::report_predecessor_requested(std::ostream &os, co
 void ocs::QStatDefaultViewXML::report_predecessor(std::ostream &os, uint32_t jid) {
    DENTER(TOP_LAYER);
 
-   lList *attribute_list = lGetListRW(job_elem, XMLE_List);
+   lList *attribute_list = ocs::tom::get<XMLE_List>(job_elem);
 
    xml_append_Attr_U(attribute_list, "predecessor_jobs", jid);
 
@@ -703,7 +705,7 @@ void ocs::QStatDefaultViewXML::report_predecessor(std::ostream &os, uint32_t jid
 void ocs::QStatDefaultViewXML::report_ad_predecessor_requested(std::ostream &os, const char* name) {
    DENTER(TOP_LAYER);
 
-   lList *attribute_list = lGetListRW(job_elem, XMLE_List);
+   lList *attribute_list = ocs::tom::get<XMLE_List>(job_elem);
 
    xml_append_Attr_S(attribute_list, "ad_predecessor_jobs_req", name);
 
@@ -713,7 +715,7 @@ void ocs::QStatDefaultViewXML::report_ad_predecessor_requested(std::ostream &os,
 void ocs::QStatDefaultViewXML::report_ad_predecessor(std::ostream &os, uint32_t jid) {
    DENTER(TOP_LAYER);
 
-   lList *attribute_list = lGetListRW(job_elem, XMLE_List);
+   lList *attribute_list = ocs::tom::get<XMLE_List>(job_elem);
 
    xml_append_Attr_U(attribute_list, "ad_predecessor_jobs", jid);
 
@@ -774,7 +776,7 @@ void ocs::QStatDefaultViewXML::report_binding_finished(std::ostream &os) {
 
 void ocs::QStatDefaultViewXML::report_binding(std::ostream &os, const char *binding) {
    DENTER(TOP_LAYER);
-   lList *attribute_list = lGetListRW(job_elem, XMLE_List);
+   lList *attribute_list = ocs::tom::get<XMLE_List>(job_elem);
 
    xml_append_Attr_S(attribute_list, "binding", binding);
    DRETURN_VOID;

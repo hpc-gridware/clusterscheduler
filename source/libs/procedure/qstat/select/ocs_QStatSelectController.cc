@@ -30,6 +30,8 @@
 #include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_str.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_QU.h"
 
 #include "qstat/select/ocs_QStatSelectController.h"
 
@@ -44,9 +46,9 @@ void ocs::QStatSelectController::process_request(QStatParameter &parameter, QSta
    view.report_started(out_);
 
    for_each_ep_lv(cqueue, model.get_queue_list()) {
-      for_each_ep_lv(qep, lGetList(cqueue, CQ_qinstances)) {
-         if ((lGetUlong(qep, QU_tag) & TAG_SHOW_IT) == TAG_SHOW_IT) {
-            if (const char *qname = lGetString(qep, QU_full_name); qname != nullptr) {
+      for_each_ep_lv(qep, ocs::tom::get<CQ_qinstances>(cqueue)) {
+         if ((ocs::tom::get<QU_tag>(qep) & TAG_SHOW_IT) == TAG_SHOW_IT) {
+            if (const char *qname = ocs::tom::get<QU_full_name>(qep); qname != nullptr) {
                view.report_queue(out_, qname);
             }
          }

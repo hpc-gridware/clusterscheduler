@@ -66,6 +66,9 @@
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_qref.h"
 #include "sgeobj/msg_sgeobjlib.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_HR.h"
+#include "sgeobj/tom/ocs_tom_QU.h"
 
 #include <cinttypes>
 #include "msg_common.h"
@@ -112,20 +115,20 @@ qref_list_resolve_cqueue_names(const lList *cq_qref_list,
    bool ret = true;
 
    for_each_ep_lv(cq_qref, cq_qref_list) {
-      const char *cq_name = lGetString(cq_qref, QR_name);
+      const char *cq_name = ocs::tom::get<QR_name>(cq_qref);
 
       if (resolve_cqueue) {
          const lListElem *cqueue = nullptr;
          const lList *qinstance_list = nullptr;
 
-         cqueue = lGetElemStr(cqueue_list, CQ_name, cq_name); 
-         qinstance_list = lGetList(cqueue, CQ_qinstances);
+         cqueue = ocs::tom::find_first<CQ_name>(cqueue_list, cq_name); 
+         qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
          for_each_ep_lv(qinstance, qinstance_list) {
-            lAddElemStr(qref_list, QR_name, lGetString(qinstance, QU_full_name), QR_Type);
+            ocs::tom::emplace_back<QR_name>(qref_list, ocs::tom::get<QU_full_name>(qinstance));
             *found_something = true;
          }
       } else {
-         lAddElemStr(qref_list, QR_name, cq_name, QR_Type);
+         ocs::tom::emplace_back<QR_name>(qref_list, cq_name);
       }
    }
    DRETURN(ret);
@@ -148,17 +151,17 @@ qref_list_resolve_qinstance_names(const lList *cq_qref_list,
       const lList *qinstance_list = nullptr;
       lList *qi_ref_list = nullptr;
 
-      cqueue_name = lGetString(cq_qref, QR_name);
-      cqueue = lGetElemStr(cqueue_list, CQ_name, cqueue_name);
+      cqueue_name = ocs::tom::get<QR_name>(cq_qref);
+      cqueue = ocs::tom::find_first<CQ_name>(cqueue_list, cqueue_name);
       hostname_pattern = sge_dstring_get_string(host_or_hgroup);
-      qinstance_list = lGetList(cqueue, CQ_qinstances);
+      qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
       qinstance_list_find_matching(qinstance_list, answer_list,
                                    hostname_pattern, &qi_ref_list);
 
       for_each_ep_lv(qi_qref, qi_ref_list) {
-         const char *qi_name = lGetString(qi_qref, QR_name);
+         const char *qi_name = ocs::tom::get<QR_name>(qi_qref);
 
-         lAddElemStr(qref_list, QR_name, qi_name, QR_Type);
+         ocs::tom::emplace_back<QR_name>(qref_list, qi_name);
          *found_something = true;
       }
       lFreeList(&qi_ref_list);
@@ -195,36 +198,35 @@ qref_list_resolve_qdomain_names(const lList *cq_qref_list,
                                 hgroup_pattern, &href_list);
    }
    for_each_ep_lv(cq_qref, cq_qref_list) {
-      const char *cqueue_name = lGetString(cq_qref, QR_name);
+      const char *cqueue_name = ocs::tom::get<QR_name>(cq_qref);
       const lListElem *cqueue = nullptr;
       const lList *qinstance_list = nullptr;
 
-      cqueue = lGetElemStr(cqueue_list, CQ_name, cqueue_name);
-      qinstance_list = lGetList(cqueue, CQ_qinstances);
+      cqueue = ocs::tom::find_first<CQ_name>(cqueue_list, cqueue_name);
+      qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
       for_each_ep_lv(href, href_list) {
          if (resolve_qdomain) {
-            const char *hostname = lGetHost(href, HR_name);
+            const char *hostname = ocs::tom::get<HR_name>(href);
             const lListElem *qinstance = nullptr;
 
-            qinstance = lGetElemHost(qinstance_list, 
-                                     QU_qhostname, hostname);
+            qinstance = ocs::tom::find_first<QU_qhostname>(qinstance_list, hostname);
             if (qinstance != nullptr) {
                const char *qinstance_name = nullptr;
 
                qinstance_name = qinstance_get_name(qinstance, 
                                                    &buffer);
-               lAddElemStr(qref_list, QR_name, 
-                           qinstance_name, QR_Type);
+               ocs::tom::emplace_back<QR_name>(qref_list, 
+                           qinstance_name);
                *found_something = true;
             }
          } else {
-            const char *hgroup_name = lGetHost(href, HR_name);
+            const char *hgroup_name = ocs::tom::get<HR_name>(href);
             const char *qinstance_name = nullptr;
 
             qinstance_name = sge_dstring_sprintf(&buffer, SFN "@" SFN,
                                                  cqueue_name, hgroup_name);
-            lAddElemStr(qref_list, QR_name,
-                        qinstance_name, QR_Type);
+            ocs::tom::emplace_back<QR_name>(qref_list,
+                        qinstance_name);
             *found_something = true;
          }
       }
@@ -266,11 +268,11 @@ bool qref_list_add(lList **this_list, lList **answer_list, const char *qref_stri
    bool ret = true;
 
    if (this_list != nullptr && qref_string != nullptr) {
-      if (lGetElemStr(*this_list, QR_name, qref_string) != nullptr) {
+      if (static_cast<const lListElem *>(ocs::tom::find_first<QR_name>(*this_list, qref_string)) != nullptr) {
          DRETURN(ret);
       }
 
-      lListElem *new_elem = lAddElemStr(this_list, QR_name, qref_string, QR_Type);
+      lListElem *new_elem = ocs::tom::emplace_back<QR_name>(this_list, qref_string);
       if (new_elem == nullptr) {
          answer_list_add(answer_list, MSG_GDI_OUTOFMEMORY,
                          STATUS_EMALLOC, ANSWER_QUALITY_ERROR);
@@ -346,7 +348,7 @@ bool qref_list_resolve(const lList *src_qref_list, lList **answer_list,
          /*
           * Find all existing parts of the qref-pattern
           */ 
-         name = lGetString(qref_pattern, QR_name); 
+         name = ocs::tom::get<QR_name>(qref_pattern); 
          if (!cqueue_name_split(name, &cqueue_name, &host_or_hgroup,
                            &has_hostname, &has_domain)) {
             /* we've got an syntax error */ 
@@ -496,7 +498,7 @@ bool qref_list_eh_rejected(const lList *qref_list, const char *hostname, const l
    }
 
    for_each_ep_lv(qref_pattern, qref_list) {
-      const char *name = lGetString(qref_pattern, QR_name);
+      const char *name = ocs::tom::get<QR_name>(qref_pattern);
       if (!qref_eh_rejected(name, hostname, hgroup_list)) {
          DRETURN(false);
       }
@@ -528,7 +530,7 @@ bool qref_list_cq_rejected(const lList *qref_list, const char *cqname,
    }
 
    for_each_ep_lv(qref_pattern, qref_list) {
-      const char *name = lGetString(qref_pattern, QR_name);
+      const char *name = ocs::tom::get<QR_name>(qref_pattern);
       if (!qref_cq_rejected(name, cqname, hostname, hgroup_list)) {
          DRETURN(false);
       }
@@ -589,8 +591,8 @@ qref_hgroup_rejected(const lListElem *hgroup, const char *hostname, const lList 
       DRETURN(!hgroup_cache_contains_host(hgroup, hostname));
    }
 
-   for_each_ep_lv(href, lGetList(hgroup, HGRP_host_list)) {
-      const char *member = lGetHost(href, HR_name);
+   for_each_ep_lv(href, ocs::tom::get<HGRP_host_list>(hgroup)) {
+      const char *member = ocs::tom::get<HR_name>(href);
 
       if (ocs::is_hgroup_name(member)) {
          /* nested hostgroup - look it up by name, do not match it as a pattern */
@@ -642,7 +644,7 @@ bool qref_list_host_rejected(const char *href, const char *hostname, const lList
       if (ocs::is_expression(wc_hostgroup)) {
          /* the reference is an expression - evaluate it against every hostgroup name */
          for_each_ep_lv(hgroup, hgroup_list) {
-            const char *hgroup_name = lGetHost(hgroup, HGRP_name);
+            const char *hgroup_name = ocs::tom::get<HGRP_name>(hgroup);
 
             DPRINTF("found hostgroup \"%s\" wc_hostgroup: \"%s\"\n", hgroup_name, wc_hostgroup);
 
@@ -716,7 +718,7 @@ bool qref_list_trash_some_elemts(lList **this_list, const char *full_name) {
 
             next_qref = lNextRW(qref);
 
-            name = lGetString(qref, QR_name);
+            name = ocs::tom::get<QR_name>(qref);
             if (!cqueue_name_split(name, &cqueue_buffer, &host_or_hgroup_buffer, nullptr,
                               nullptr)) {
                sge_dstring_clear(&cqueue_buffer);
@@ -798,14 +800,14 @@ bool qref_list_is_valid(const lList *this_list, lList **answer_list, const lList
             lList *resolved_qref_list = nullptr;
             lList *qref_list = nullptr;
             const lListElem *resolved_qref = nullptr;
-            qref_pattern = lGetString(qref_elem, QR_name);
+            qref_pattern = ocs::tom::get<QR_name>(qref_elem);
 
-            lAddElemStr(&qref_list, QR_name, qref_pattern, QR_Type);
+            ocs::tom::emplace_back<QR_name>(&qref_list, qref_pattern);
             /* queue name expression support */
             qref_list_resolve(qref_list, answer_list, &resolved_qref_list,
                               &found_something, master_cqueue_list, master_hgroup_list, true, true);
             for_each_ep(resolved_qref, resolved_qref_list) {
-               const char *resolved_qref_name = lGetString(resolved_qref, QR_name);
+               const char *resolved_qref_name = ocs::tom::get<QR_name>(resolved_qref);
 
                if (cqueue_list_locate_qinstance(master_cqueue_list, resolved_qref_name) != nullptr) {
                   found_matching_qinstance = true;
@@ -842,14 +844,14 @@ void qref_list_resolve_hostname(lList *this_list) {
    lListElem *next = lFirstRW(this_list);
    while (lListElem *qref = next) {
       next = lNextRW(qref);
-      const std::string resolved = ocs_qref_resolved_name(lGetString(qref, QR_name));
-      if (resolved == lGetString(qref, QR_name)) {
+      const std::string resolved = ocs_qref_resolved_name(ocs::tom::get<QR_name>(qref));
+      if (resolved == ocs::tom::get<QR_name>(qref)) {
          continue;
       }
-      if (const lListElem *held = lGetElemStr(this_list, QR_name, resolved.c_str()); held != nullptr && held != qref) {
+      if (const lListElem *held = ocs::tom::find_first<QR_name>(this_list, resolved.c_str()); held != nullptr && held != qref) {
          lRemoveElem(this_list, &qref);
       } else {
-         lSetString(qref, QR_name, resolved.c_str());
+         ocs::tom::set<QR_name>(qref, resolved.c_str());
       }
    }
    DRETURN_VOID;
@@ -867,11 +869,11 @@ void qref_list_resolve_hostname(lList *this_list) {
 void
 qref_resolve_hostname(lListElem *this_elem) {
    DENTER(TOP_LAYER);
-   const char *name = lGetString(this_elem, QR_name);
+   const char *name = ocs::tom::get<QR_name>(this_elem);
    if (name != nullptr) {
       const std::string resolved = ocs_qref_resolved_name(name);
       if (resolved != name) {
-         lSetString(this_elem, QR_name, resolved.c_str());
+         ocs::tom::set<QR_name>(this_elem, resolved.c_str());
       }
    }
    DRETURN_VOID;

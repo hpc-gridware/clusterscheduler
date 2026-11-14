@@ -44,6 +44,7 @@
 
 #include "sgeobj/sge_mesobj.h"
 #include "sgeobj/msg_sgeobjlib.h"
+#include "tom/ocs_Element.h"
 
 static bool
 qim_list_add(lList **this_list, uint32_t type, const char *message);
@@ -58,9 +59,9 @@ qim_list_add(lList **this_list, uint32_t type, const char *message) {
    bool ret = true;
 
    if (this_list != nullptr && message != nullptr) {
-      lListElem *new_elem = lAddElemUlong(this_list, QIM_type, type, QIM_Type);
+      lListElem *new_elem = ocs::tom::emplace_back<QIM_type>(this_list, type);
 
-      lSetString(new_elem, QIM_message, message);
+      ocs::tom::set<QIM_message>(new_elem, message);
    }
    DRETURN(ret);
 }
@@ -77,7 +78,7 @@ qim_list_trash_all_of_type_X(lList **this_list, uint32_t type) {
 
       next_elem = lFirstRW(*this_list);
       while ((elem = next_elem) != nullptr) {
-         uint32_t elem_type = lGetUlong(elem, QIM_type);
+         uint32_t elem_type = ocs::tom::get<QIM_type>(elem);
 
          next_elem = lNextRW(elem);
          if ((elem_type & type) != 0) {

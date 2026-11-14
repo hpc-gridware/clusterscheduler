@@ -34,6 +34,7 @@
 
 #include "sgeobj/ocs_CEntry.h"
 #include "sgeobj/cull/sge_centry_CE_L.h"
+#include "tom/ocs_Element.h"
 
 /** @brief Escape a raw string for safe embedding in a JSON value.
  *
@@ -255,22 +256,22 @@ void ocs::ProcedureView::show_ISO_8601_timestamp(std::ostream &os, uint64_t time
 void ocs::ProcedureView::show_resource_as_JSON_type(std::ostream &os, const lListElem *resource) {
    DENTER(TOP_LAYER);
    // get the dominant value of the resource for this host
-   const auto type = static_cast<CEntry::Type>(lGetUlong(resource, CE_valtype));
+   const auto type = static_cast<CEntry::Type>(ocs::tom::get<CE_valtype>(resource));
    const bool as_string = type == CEntry::Type::STR || type == CEntry::Type::CSTR
                           || type == CEntry::Type::HOST || type == CEntry::Type::RESTR;
    const bool as_double = type == CEntry::Type::DOUBLE;
    const bool as_bool = type == CEntry::Type::BOOL;
    if (as_string) {
-      const char *strval = lGetString(resource, CE_stringval);
+      const char *strval = ocs::tom::get<CE_stringval>(resource);
       os << "\"" << raw2JSON(strval != nullptr ? strval : "") << "\"";
    } else if (as_bool) {
-      os << (lGetDouble(resource, CE_doubleval) > 0.0 ? "true" : "false");
+      os << (ocs::tom::get<CE_doubleval>(resource) > 0.0 ? "true" : "false");
    } else {
       // Numeric resource (DOUBLE, or INT/TIME/MEM/RSMAP). An unlimited value is stored
       // as DBL_MAX; emit it as the string INFINITY_STR (the same token qconf -fmt json
       // uses, see spool_json_write_ce_value()) instead of letting it overflow the
       // uint64_t cast (undefined behaviour) or print 1.79769e+308 (CS-2318).
-      const double dval = lGetDouble(resource, CE_doubleval);
+      const double dval = ocs::tom::get<CE_doubleval>(resource);
       if (dval == DBL_MAX) {
          os << '"' << INFINITY_STR << '"';
       } else if (as_double) {

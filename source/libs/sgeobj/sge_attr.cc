@@ -60,6 +60,7 @@
 #include "sgeobj/sge_href.h"
 #include "sgeobj/sge_object.h"
 #include "sgeobj/msg_sgeobjlib.h"
+#include "tom/ocs_Element.h"
 
 #include <cinttypes>
 #include "msg_common.h"
@@ -346,7 +347,7 @@ attr_list_add(lList **this_list, lList **answer_list, lListElem **attr,
              */
             if (lret) {
                for_each_rw(attr_elem, *this_list) {
-                  const char *href = lGetHost(attr_elem, ASTR_href); 
+                  const char *href = ocs::tom::get<ASTR_href>(attr_elem); 
 
                   if (strcmp(href, HOSTREF_DEFAULT) && ocs::is_hgroup_name(href)) {
                      lret &= href_list_add(&href_list, nullptr, href);

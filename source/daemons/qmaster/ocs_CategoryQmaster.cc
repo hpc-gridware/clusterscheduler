@@ -30,6 +30,8 @@
 
 #include "sgeobj/ocs_Category.h"
 #include "sgeobj/ocs_Session.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_CCT.h"
 
 #include "ocs_CategoryQmaster.h"
 #include "ocs_DataStore.h"
@@ -127,16 +129,16 @@ ocs::CategoryQmaster::initialize_prj_and_uset_for_categories(lList *master_proje
     * now set categories flag with usersets/projects used as ACL
     */
    for_each_ep_lv(ep, p_list) {
-      lListElem *prj = lGetElemStrRW(master_project_list, PR_name, lGetString(ep, PR_name));
+      lListElem *prj = ocs::tom::find_first_rw<PR_name>(master_project_list, ocs::tom::get<PR_name>(ep));
       if (prj != nullptr) {
-         lSetBool(prj, PR_consider_with_categories, true);
+         ocs::tom::set<PR_consider_with_categories>(prj, true);
       }
    }
 
    for_each_ep_lv(ep, u_list) {
-      lListElem *acl = lGetElemStrRW(master_userset_list, US_name, lGetString(ep, US_name));
+      lListElem *acl = ocs::tom::find_first_rw<US_name>(master_userset_list, ocs::tom::get<US_name>(ep));
       if (acl != nullptr) {
-         lSetBool(acl, US_consider_with_categories, true);
+         ocs::tom::set<US_consider_with_categories>(acl, true);
       }
    }
 
@@ -207,20 +209,20 @@ ocs::CategoryQmaster::attach_job(lList **master_category_list, lListElem *job,
 
    // get the category or create a new one
    bool is_new = false;
-   lListElem *category = lGetElemStrRW(*master_category_list, CT_str, cat_str);
+   lListElem *category = ocs::tom::find_first_rw<CT_str>(*master_category_list, cat_str);
    if (category == nullptr) {
-      category = lAddElemStr(master_category_list, CT_str, cat_str, CT_Type);
-      lSetUlong(category, CT_id, Category::get_next_id(*master_category_list));
+      category = ocs::tom::emplace_back<CT_str>(master_category_list, cat_str);
+      ocs::tom::set<CT_id>(category, Category::get_next_id(*master_category_list));
       is_new = true;
    }
    sge_dstring_free(&category_str);
 
    // Increase the reference count
-   lSetUlong(category, CT_refcount, lGetUlong(category, CT_refcount) + 1);
+   ocs::tom::set<CT_refcount>(category, ocs::tom::get<CT_refcount>(category) + 1);
 
    // Point to the category in the job
-   const uint32_t category_id = lGetUlong(category, CT_id);
-   lSetUlong(job, JB_category_id, category_id);
+   const uint32_t category_id = ocs::tom::get<CT_id>(category);
+   ocs::tom::set<JB_category_id>(job, category_id);
 
    // Send events if required
    if (send_events) {
@@ -248,19 +250,19 @@ ocs::CategoryQmaster::detach_job(lList **master_category_list, lListElem *job, b
    if (master_category_list == nullptr && job == nullptr) {
       DRETURN(false);
    }
-   lListElem *category = lGetElemUlongRW(*master_category_list, CT_id, lGetUlong(job, JB_category_id));
+   lListElem *category = ocs::tom::find_first_rw<CT_id>(*master_category_list, ocs::tom::get<JB_category_id>(job));
 
    // each category that is referenced in a job should also exist
    SGE_ASSERT(category != nullptr);
 
-   lSetUlong(job, JB_category_id, 0);
+   ocs::tom::set<JB_category_id>(job, 0);
 
    // decrease the reference count or remove the category
    bool is_del = false;
-   uint32_t refcount = lGetUlong(category, CT_refcount);
-   uint32_t category_id = lGetUlong(category, CT_id);
+   uint32_t refcount = ocs::tom::get<CT_refcount>(category);
+   uint32_t category_id = ocs::tom::get<CT_id>(category);
    if (refcount > 1) {
-      lSetUlong(category, CT_refcount, refcount - 1);
+      ocs::tom::set<CT_refcount>(category, refcount - 1);
    } else {
       lRemoveElem(*master_category_list, &category);
       is_del = true;
@@ -298,7 +300,7 @@ ocs::CategoryQmaster::reattach_job(lList **master_category_list, lListElem *job,
    // add the job to the new category
    attach_job(master_category_list, job, master_userset_list, master_project_list, master_rqs_list, send_events, gdi_session);
 
-   const uint32_t job_number = lGetUlong(job, JB_job_number);
+   const uint32_t job_number = ocs::tom::get<JB_job_number>(job);
    sge_add_event(now, sgeE_JOB_MOD, job_number, 0, nullptr, nullptr, nullptr, job, gdi_session);
    DRETURN_VOID;
 }
@@ -374,23 +376,23 @@ ocs::CategoryQmaster::reset_tmp_data(lList *master_category_list) {
    for_each_rw_lv (cat, master_category_list) {
 
       // deallocate memory stored in the cache itself
-      for_each_rw_lv (cache, lGetList(cat, CT_cache)) {
-         auto *range = static_cast<int *>(lGetRef(cache, CCT_pe_job_slots));
+      for_each_rw_lv (cache, ocs::tom::get<CT_cache>(cat)) {
+         auto *range = static_cast<int *>(ocs::tom::get<CCT_pe_job_slots>(cache));
          sge_free(&range);
-         lSetRef(cache, CCT_pe_job_slots, nullptr);
+         ocs::tom::set<CCT_pe_job_slots>(cache, nullptr);
       }
 
       // reset the cache and the messages added flag
-      lSetList(cat, CT_cache, nullptr);
-      lSetBool(cat, CT_messages_added, false);
+      ocs::tom::set<CT_cache>(cat, nullptr);
+      ocs::tom::set<CT_messages_added>(cat, false);
 
       // reset information if category was rejected
-      lSetBool(cat, CT_rejected, false);
-      lSetBool(cat, CT_reservation_rejected, false);
+      ocs::tom::set<CT_rejected>(cat, false);
+      ocs::tom::set<CT_reservation_rejected>(cat, false);
 
       // reset cached resource contribution
-      lSetBool(cat, CT_rc_valid, false);
-      lSetDouble(cat, CT_resource_contribution, 0.0);
+      ocs::tom::set<CT_rc_valid>(cat, false);
+      ocs::tom::set<CT_resource_contribution>(cat, 0.0);
    }
 
    DRETURN_VOID;
@@ -404,12 +406,12 @@ ocs::CategoryQmaster::reset_tmp_data(lList *master_category_list) {
 void
 ocs::CategoryQmaster::refresh_cat_data_in_job(lList *master_category_list, lListElem *job) {
    DENTER(TOP_LAYER);
-   uint32_t category_id = lGetUlong(job, JB_category_id);
-   lListElem *category = lGetElemUlongRW(master_category_list, CT_id, category_id);
+   uint32_t category_id = ocs::tom::get<JB_category_id>(job);
+   lListElem *category = ocs::tom::find_first_rw<CT_id>(master_category_list, category_id);
 
    SGE_ASSERT(category != nullptr);
 
-   lSetRef(job, JB_category, category);
+   ocs::tom::set<JB_category>(job, category);
    DRETURN_VOID;
 }
 

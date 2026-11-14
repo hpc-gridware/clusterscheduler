@@ -52,6 +52,7 @@
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_qinstance_state.h"
 #include "sgeobj/ocs_DataStore.h"
+#include "tom/ocs_Element.h"
 
 #include "sched/msg_schedd.h"
 
@@ -493,8 +494,8 @@ sge_process_job_event_after(sge_evc_class_t *evc, sge_object_type type, sge_even
    if (action == SGE_EMA_ADD || action == SGE_EMA_MOD) {
 
       // Find the job for which we received an event (ADD and MOD)
-      job_id = lGetUlong(event, ET_intkey);
-      job = lGetElemUlongRW(*ocs::DataStore::get_master_list(SGE_TYPE_JOB), JB_job_number, job_id);
+      job_id = ocs::tom::get<ET_intkey>(event);
+      job = ocs::tom::find_first_rw<JB_job_number>(*ocs::DataStore::get_master_list(SGE_TYPE_JOB), job_id);
       if (job == nullptr) {
          DSTRING_STATIC(id_dstring, 64);
          ERROR(MSG_CANTFINDJOBINMASTERLIST_S, job_get_id_string(job_id, 0, nullptr, &id_dstring));
@@ -504,13 +505,13 @@ sge_process_job_event_after(sge_evc_class_t *evc, sge_object_type type, sge_even
 
    switch (action) {
       case SGE_EMA_MOD:
-         switch (lGetUlong(event, ET_type)) {
+         switch (ocs::tom::get<ET_type>(event)) {
             case sgeE_JOB_FINAL_USAGE: {
-               const char *pe_task_id = lGetString(event, ET_strkey);
+               const char *pe_task_id = ocs::tom::get<ET_strkey>(event);
 
                if (pe_task_id == nullptr) {
                   // ignore FINAL_USAGE for a pe task here
-                  uint32_t ja_task_id = lGetUlong(event, ET_intkey2);
+                  uint32_t ja_task_id = ocs::tom::get<ET_intkey2>(event);
                   lListElem *ja_task = job_search_task(job, nullptr, ja_task_id);
 
                   if (ja_task == nullptr) {
@@ -518,7 +519,7 @@ sge_process_job_event_after(sge_evc_class_t *evc, sge_object_type type, sge_even
                      DRETURN(SGE_EMA_FAILURE);
                   }
 
-                  lSetUlong(ja_task, JAT_status, JFINISHED);
+                  ocs::tom::set<JAT_status>(ja_task, JFINISHED);
                }
                break;
             }

@@ -49,6 +49,9 @@
 
 #include "sgeobj/cull/sge_message_SME_L.h"
 #include "sgeobj/cull/sge_message_MES_L.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_MES.h"
+#include "sgeobj/tom/ocs_tom_ULNG.h"
 
 #include "schedd_message.h"
 #include "schedd_monitor.h"
@@ -65,7 +68,7 @@ static void schedd_mes_find_others(lListElem *tmp_sme, lList *job_list, int igno
    if (tmp_sme && job_list) {
       lRef category = nullptr;            /* Category pointer (void*) */
       lList *jid_cat_list = nullptr;      /* ULNG */
-      const lList *message_list = lGetList(tmp_sme, SME_message_list);
+      const lList *message_list = ocs::tom::get<SME_message_list>(tmp_sme);
 
       /*
        * Here we have a list of message elements where each 
@@ -73,10 +76,10 @@ static void schedd_mes_find_others(lListElem *tmp_sme, lList *job_list, int igno
        * We have to find the other jobs (jids) which have the same category.
        */
       for_each_rw_lv(message_elem, message_list) {
-         const lList *jid_list = lGetList(message_elem, MES_job_number_list);
+         const lList *jid_list = ocs::tom::get<MES_job_number_list>(message_elem);
          uint32_t jid;
          lRef jid_category; 
-         jid = lGetUlong(lFirst(jid_list), ULNG_value);
+         jid = ocs::tom::get<ULNG_value>(lFirst(jid_list));
          jid_category = schedd_mes_get_category(jid, job_list);
 
          /*
@@ -88,9 +91,9 @@ static void schedd_mes_find_others(lListElem *tmp_sme, lList *job_list, int igno
                                                              job_list,
                                                              ignore_category);
             category = jid_category;
-            lSetList(message_elem, MES_job_number_list, jid_cat_list);
+            ocs::tom::set<MES_job_number_list>(message_elem, jid_cat_list);
          } else {
-            lSetList(message_elem, MES_job_number_list,
+            ocs::tom::set<MES_job_number_list>(message_elem,
                      lCopyList("", jid_cat_list));
          }
       }
@@ -103,9 +106,9 @@ static lRef schedd_mes_get_category(uint32_t job_id, lList *job_list) {
    const lListElem *job = nullptr;  /* JB_Type */
    lRef ret = nullptr;        /* Category pointer (void*) */
 
-   job = lGetElemUlong(job_list, JB_job_number, job_id);
+   job = ocs::tom::find_first<JB_job_number>(job_list, job_id);
    if (job) {
-      ret = lGetRef(job, JB_category);
+      ret = ocs::tom::get<JB_category>(job);
    }
    DRETURN(ret);
 }
@@ -118,8 +121,8 @@ static lList *schedd_mes_get_same_category_jids(lRef category,
 
    if (job_list != nullptr && category != nullptr) {
       for_each_ep_lv(job, job_list) {
-         if (ignore_category || lGetRef(job, JB_category) == category) {
-            lAddElemUlong(&ret, ULNG_value, lGetUlong(job, JB_job_number), ULNG_Type);
+         if (ignore_category || ocs::tom::get<JB_category>(job) == category) {
+            ocs::tom::emplace_back<ULNG_value>(&ret, ocs::tom::get<JB_job_number>(job));
          }
       }
    }
@@ -140,9 +143,9 @@ void schedd_mes_initialize() {
 
       sme = lCreateElem(SME_Type);
       tmp_list = lCreateList("", MES_Type);
-      lSetList(sme, SME_message_list, tmp_list);
+      ocs::tom::set<SME_message_list>(sme, tmp_list);
       tmp_list = lCreateList("", MES_Type);
-      lSetList(sme, SME_global_message_list, tmp_list);
+      ocs::tom::set<SME_global_message_list>(sme, tmp_list);
       sconf_set_sme(sme);
    }
 
@@ -152,7 +155,7 @@ void schedd_mes_initialize() {
 
       tmp_sme = lCreateElem(SME_Type);
       tmp_list = lCreateList("", MES_Type);
-      lSetList(tmp_sme, SME_message_list, tmp_list);
+      ocs::tom::set<SME_message_list>(tmp_sme, tmp_list);
       sconf_set_tmp_sme(tmp_sme);
    }
 
@@ -189,10 +192,10 @@ void schedd_mes_commit(lList *job_list, int ignore_category, lRef jid_category) 
       lList *tmp_sme_list = nullptr;
       
       if (jid_category != nullptr) {
-         if (lGetBool((lListElem *)jid_category, CT_messages_added) ) {
+         if (ocs::tom::get<CT_messages_added>((lListElem *)jid_category) ) {
             return;
          }
-         lSetBool((lListElem *)jid_category, CT_messages_added, true);
+         ocs::tom::set<CT_messages_added>((lListElem *)jid_category, true);
       }
 
       /*
@@ -205,11 +208,11 @@ void schedd_mes_commit(lList *job_list, int ignore_category, lRef jid_category) 
       /*
        * Tranfer all messages from tmp_sme to sme
        */
-      sme_mes_list = lGetListRW(sme, SME_message_list);
-      lXchgList(tmp_sme, SME_message_list, &tmp_sme_list);
+      sme_mes_list = ocs::tom::get<SME_message_list>(sme);
+      ocs::tom::exchange<SME_message_list>(tmp_sme, &tmp_sme_list);
       lAddList(sme_mes_list, &tmp_sme_list);
       tmp_sme_list = lCreateList("job info messages", MES_Type);
-      lSetList(tmp_sme, SME_message_list, tmp_sme_list);
+      ocs::tom::set<SME_message_list>(tmp_sme, tmp_sme_list);
    }
 }
 
@@ -225,7 +228,7 @@ void schedd_mes_rollback() {
       lList *tmp_sme_list = nullptr;
 
       tmp_sme_list = lCreateList("job info messages", MES_Type);
-      lSetList(tmp_sme, SME_message_list, tmp_sme_list);
+      ocs::tom::set<SME_message_list>(tmp_sme, tmp_sme_list);
    }
 }
 
@@ -260,17 +263,17 @@ lListElem *schedd_mes_obtain_package(int *global_mes_count, int *job_mes_count) 
       sconf_disable_schedd_job_info();
    } else if (schedd_job_info == SCHEDD_JOB_INFO_JOB_LIST) {
       schedd_mes_add_global(nullptr, false, SCHEDD_INFO_JOBLIST);
-   } else if (lGetNumberOfElem(lGetList(sme, SME_message_list))<1 &&
-            lGetNumberOfElem(lGetList(sme, SME_global_message_list))<1) {
+   } else if (lGetNumberOfElem(ocs::tom::get<SME_message_list>(sme))<1 &&
+            lGetNumberOfElem(ocs::tom::get<SME_global_message_list>(sme))<1) {
       schedd_mes_add_global(nullptr, false, SCHEDD_INFO_NOMESSAGE);
    }
 
    if (global_mes_count != nullptr) {
-      *global_mes_count = lGetNumberOfElem(lGetList(sme, SME_global_message_list));
+      *global_mes_count = lGetNumberOfElem(ocs::tom::get<SME_global_message_list>(sme));
    }
 
    if (job_mes_count != nullptr) {
-      *job_mes_count = lGetNumberOfElem(lGetList(sme, SME_message_list));
+      *job_mes_count = lGetNumberOfElem(ocs::tom::get<SME_message_list>(sme));
    }
 
    ret = sme; /* calling function is responsible to free messages! */
@@ -362,13 +365,13 @@ void schedd_mes_add(lList **monitor_alpp, bool monitor_next_run, uint32_t job_id
 
                mes = lCreateElem(MES_Type);
                jobs_ulng = lCreateList("job ids", ULNG_Type);
-               lSetList(mes, MES_job_number_list, jobs_ulng);
-               lSetUlong(mes, MES_message_number, message_number);
-               lSetString(mes, MES_message, msg_str);
-               lAppendElem(lGetListRW(tmp_sme, SME_message_list), mes);
+               ocs::tom::set<MES_job_number_list>(mes, jobs_ulng);
+               ocs::tom::set<MES_message_number>(mes, message_number);
+               ocs::tom::set<MES_message>(mes, msg_str);
+               lAppendElem(ocs::tom::get<SME_message_list>(tmp_sme), mes);
 
                jid_ulng = lCreateElem(ULNG_Type);
-               lSetUlong(jid_ulng, ULNG_value, job_id);
+               ocs::tom::set<ULNG_value>(jid_ulng, job_id);
                lAppendElem(jobs_ulng, jid_ulng);
             }
          }
@@ -437,21 +440,21 @@ void schedd_mes_add_join(bool monitor_next_run, uint32_t job_number, uint32_t me
                }
             }
 
-            mes = lGetElemUlongRW(lGetList(tmp_sme, SME_message_list), MES_message_number, message_number);
+            mes = ocs::tom::find_first_rw<MES_message_number>(ocs::tom::get<SME_message_list>(tmp_sme), message_number);
             if (mes == nullptr) {
                mes = lCreateElem(MES_Type);
                jobs_ulng = lCreateList("job ids", ULNG_Type);
-               lSetList(mes, MES_job_number_list, jobs_ulng);
-               lSetUlong(mes, MES_message_number, message_number);
-               lSetString(mes, MES_message, msg_str);
+               ocs::tom::set<MES_job_number_list>(mes, jobs_ulng);
+               ocs::tom::set<MES_message_number>(mes, message_number);
+               ocs::tom::set<MES_message>(mes, msg_str);
 
-               lAppendElem(lGetListRW(tmp_sme, SME_message_list), mes);
+               lAppendElem(ocs::tom::get<SME_message_list>(tmp_sme), mes);
             } else {
-               jobs_ulng = lGetListRW(mes, MES_job_number_list);
+               jobs_ulng = ocs::tom::get<MES_job_number_list>(mes);
             }
 
             jid_ulng = lCreateElem(ULNG_Type);
-            lSetUlong(jid_ulng, ULNG_value, job_number);
+            ocs::tom::set<ULNG_value>(jid_ulng, job_number);
             lAppendElem(jobs_ulng, jid_ulng);
          }
 
@@ -514,9 +517,9 @@ void schedd_mes_add_global(lList **monitor_alpp, bool monitor_next_run, uint32_t
 
          if (sme != nullptr) {
             lListElem *mes = lCreateElem(MES_Type);
-            lSetUlong(mes, MES_message_number, message_number);
-            lSetString(mes, MES_message, msg_str);
-            lAppendElem(lGetListRW(sme, SME_global_message_list), mes);
+            ocs::tom::set<MES_message_number>(mes, message_number);
+            ocs::tom::set<MES_message>(mes, msg_str);
+            lAppendElem(ocs::tom::get<SME_global_message_list>(sme), mes);
          }
       }
 
@@ -542,7 +545,7 @@ const lList *schedd_mes_get_tmp_list() {
    const lListElem *tmp_sme = sconf_get_tmp_sme();
 
    if (tmp_sme) {
-      ret = lGetList(tmp_sme, SME_message_list);
+      ret = ocs::tom::get<SME_message_list>(tmp_sme);
    }
    DRETURN(ret);
 }
@@ -565,13 +568,13 @@ void schedd_mes_set_tmp_list(lListElem *category, int name, uint32_t job_number)
    lXchgList(category, name, &tmp_list);
 
    for_each_rw_lv(tmp_elem, tmp_list)
-      lAddSubUlong(tmp_elem, ULNG_value, job_number, MES_job_number_list, ULNG_Type);
+      ocs::tom::emplace_back_in<MES_job_number_list, ULNG_value>(tmp_elem, job_number);
 
    if (tmp_sme && tmp_list) {
       lList *prev = nullptr;
-      lXchgList(tmp_sme, SME_message_list, &prev);
+      ocs::tom::exchange<SME_message_list>(tmp_sme, &prev);
       lAddList(tmp_list, &prev);
-      lSetList(tmp_sme, SME_message_list, tmp_list);
+      ocs::tom::set<SME_message_list>(tmp_sme, tmp_list);
    }
 
    DRETURN_VOID;

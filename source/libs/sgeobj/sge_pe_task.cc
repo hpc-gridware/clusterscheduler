@@ -54,6 +54,10 @@
 #include "sgeobj/sge_utility.h"
 #include "sgeobj/sge_usage.h"
 #include "sgeobj/msg_sgeobjlib.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_PA.h"
+#include "sgeobj/tom/ocs_tom_UA.h"
+#include "sgeobj/tom/ocs_tom_VA.h"
 
 #include "msg_common.h"
 
@@ -92,8 +96,8 @@ pe_task_sum_past_usage(lListElem *container, const lListElem *pe_task) {
    }
 
    /* we sum up the scaled_usage */
-   container_usage = lGetOrCreateList(container, PET_scaled_usage, "reported_usage", UA_Type);
-   pe_task_usage = lGetList(pe_task, PET_scaled_usage);
+   container_usage = ocs::tom::get_or_create<PET_scaled_usage>(container, "reported_usage");
+   pe_task_usage = ocs::tom::get<PET_scaled_usage>(pe_task);
    if (pe_task_usage != nullptr) {
       usage_list_sum(container_usage, pe_task_usage);
    }
@@ -102,8 +106,8 @@ pe_task_sum_past_usage(lListElem *container, const lListElem *pe_task) {
     * and we sum up the already reported usage
     * (for long running jobs having intermediate usage records) 
     */
-   container_reported_usage = lGetOrCreateList(container, PET_reported_usage, "reported_usage", UA_Type);
-   pe_task_reported_usage = lGetList(pe_task, PET_reported_usage);
+   container_reported_usage = ocs::tom::get_or_create<PET_reported_usage>(container, "reported_usage");
+   pe_task_reported_usage = ocs::tom::get<PET_reported_usage>(pe_task);
    if (pe_task_reported_usage != nullptr) {
       usage_list_sum(container_reported_usage, pe_task_reported_usage);
    }
@@ -172,11 +176,11 @@ pe_task_sum_past_usage_list(lList *pe_task_list, const lListElem *pe_task) {
    }
 
    /* get container - if it does not yet exist, create it as first element in pe task list */
-   container = lGetElemStrRW(pe_task_list, PET_id, PE_TASK_PAST_USAGE_CONTAINER);
+   container = ocs::tom::find_first_rw<PET_id>(pe_task_list, PE_TASK_PAST_USAGE_CONTAINER);
    if (container == nullptr) {
       container = lCreateElem(PET_Type);
-      lSetString(container, PET_id, PE_TASK_PAST_USAGE_CONTAINER);
-      lSetBool(container, PET_do_contact, true);
+      ocs::tom::set<PET_id>(container, PE_TASK_PAST_USAGE_CONTAINER);
+      ocs::tom::set<PET_do_contact>(container, true);
       lInsertElem(pe_task_list, nullptr, container);
    }
 
@@ -241,7 +245,7 @@ pe_task_verify_request(const lListElem *petr, lList **answer_list) {
    }
 
    if (ret) {
-      const char *queue_name = lGetString(petr, PETR_queuename);
+      const char *queue_name = ocs::tom::get<PETR_queuename>(petr);
 
       if (queue_name != nullptr) {
          if (verify_str_key(
@@ -253,7 +257,7 @@ pe_task_verify_request(const lListElem *petr, lList **answer_list) {
    }
 
    if (ret) {
-      const char *cwd = lGetString(petr, PETR_cwd);
+      const char *cwd = ocs::tom::get<PETR_cwd>(petr);
 
       if (cwd != nullptr) {
          ret = path_verify(cwd, answer_list, "cwd", true);
@@ -261,7 +265,7 @@ pe_task_verify_request(const lListElem *petr, lList **answer_list) {
    }
 
    if (ret) {
-      const lList *path_aliases = lGetList(petr, PETR_path_aliases);
+      const lList *path_aliases = ocs::tom::get<PETR_path_aliases>(petr);
 
       if (path_aliases != nullptr) {
          ret = path_alias_verify(path_aliases, answer_list);
@@ -269,7 +273,7 @@ pe_task_verify_request(const lListElem *petr, lList **answer_list) {
    } 
 
    if (ret) {
-      const lList *env_list = lGetList(petr, PETR_environment);
+      const lList *env_list = ocs::tom::get<PETR_environment>(petr);
 
       if (env_list != nullptr) {
          ret = var_list_verify(env_list, answer_list);

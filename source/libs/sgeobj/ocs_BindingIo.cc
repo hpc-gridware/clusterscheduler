@@ -43,6 +43,7 @@
 
 #include "sgeobj/ocs_BindingIo.h"
 #include "sgeobj/cull/sge_binding_BN_L.h"
+#include "tom/ocs_Element.h"
 
 #include "ocs_BindingType.h"
 #include "ocs_BindingUnit.h"
@@ -77,7 +78,7 @@ ocs::BindingIo::binding_print_to_string(const lListElem *binding_elem, std::stri
    }
 
    // no amount or strategy also causes to hide all other binding parameters because binding will not be done
-   auto amount = lGetUlong(binding_elem, BN_amount);
+   auto amount = ocs::tom::get<BN_amount>(binding_elem);
    if (amount == 0) {
       if (!as_switches) {
          binding_string = NONE_STR;;
@@ -96,7 +97,7 @@ ocs::BindingIo::binding_print_to_string(const lListElem *binding_elem, std::stri
    }
 
    // -bstop s|c|...
-   auto bstop = static_cast<BindingStop::Stop>(lGetUlong(binding_elem, BN_stop));
+   auto bstop = static_cast<BindingStop::Stop>(ocs::tom::get<BN_stop>(binding_elem));
    if (bstop != BindingStop::Stop::UNINITIALIZED && bstop != BindingStop::Stop::NONE) {
       if (as_switches) {
          binding_string += " -bstop ";
@@ -107,7 +108,7 @@ ocs::BindingIo::binding_print_to_string(const lListElem *binding_elem, std::stri
    }
 
    // -binstance set|pe|env
-   auto instance_type = static_cast<BindingInstance::Instance>(lGetUlong(binding_elem, BN_instance));
+   auto instance_type = static_cast<BindingInstance::Instance>(ocs::tom::get<BN_instance>(binding_elem));
    if (instance_type != BindingInstance::Instance::UNINITIALIZED && instance_type != BindingInstance::Instance::NONE) {
       if (as_switches) {
          binding_string += " -binstance ";
@@ -118,7 +119,7 @@ ocs::BindingIo::binding_print_to_string(const lListElem *binding_elem, std::stri
    }
 
    // -bsort S|C|...
-   const char *sort = lGetString(binding_elem, BN_sort);
+   const char *sort = ocs::tom::get<BN_sort>(binding_elem);
    if (sort != nullptr && strcmp(sort, NONE_STR) != 0) {
       if (as_switches) {
          binding_string += " -bsort ";
@@ -130,7 +131,7 @@ ocs::BindingIo::binding_print_to_string(const lListElem *binding_elem, std::stri
    }
 
    // -bstart S|C|...
-   auto start = static_cast<BindingStart::Start>(lGetUlong(binding_elem, BN_start));
+   auto start = static_cast<BindingStart::Start>(ocs::tom::get<BN_start>(binding_elem));
    if (start != BindingStart::Start::UNINITIALIZED && start != BindingStart::Start::NONE) {
       if (as_switches) {
          binding_string += " -bstart ";
@@ -141,7 +142,7 @@ ocs::BindingIo::binding_print_to_string(const lListElem *binding_elem, std::stri
    }
 
    // -bstrategy pack|linear
-   auto strategy = static_cast<BindingStrategy::Strategy>(lGetUlong(binding_elem, BN_strategy));
+   auto strategy = static_cast<BindingStrategy::Strategy>(ocs::tom::get<BN_strategy>(binding_elem));
    if (strategy != BindingStrategy::Strategy::UNINITIALIZED && strategy != BindingStrategy::Strategy::NONE) {
       if (as_switches) {
          binding_string += " -bstrategy ";
@@ -152,7 +153,7 @@ ocs::BindingIo::binding_print_to_string(const lListElem *binding_elem, std::stri
    }
 
    // -btype host|slot
-   auto type = static_cast<BindingType::Type>(lGetUlong(binding_elem, BN_new_type));
+   auto type = static_cast<BindingType::Type>(ocs::tom::get<BN_new_type>(binding_elem));
    if (type != BindingType::Type::UNINITIALIZED && type != BindingType::Type::NONE) {
       if (as_switches) {
          binding_string += " -btype ";
@@ -163,7 +164,7 @@ ocs::BindingIo::binding_print_to_string(const lListElem *binding_elem, std::stri
    }
 
    // -bunit S|C|T|...
-   auto unit = static_cast<BindingUnit::Unit>(lGetUlong(binding_elem, BN_unit));
+   auto unit = static_cast<BindingUnit::Unit>(ocs::tom::get<BN_unit>(binding_elem));
    if (unit != BindingUnit::Unit::UNINITIALIZED && unit != BindingUnit::Unit::NONE) {
       if (as_switches) {
          binding_string += " -bunit ";
@@ -174,7 +175,7 @@ ocs::BindingIo::binding_print_to_string(const lListElem *binding_elem, std::stri
    }
 
    // -bfilter <topo_string>
-   auto filter = lGetString(binding_elem, BN_filter);
+   auto filter = ocs::tom::get<BN_filter>(binding_elem);
    if (filter != nullptr && strcasecmp(filter, NONE_STR) != 0) {
       if (as_switches) {
          binding_string += " -bfilter ";

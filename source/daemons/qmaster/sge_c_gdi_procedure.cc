@@ -33,6 +33,7 @@
 #include "uti/sge_lock.h"
 
 #include "sgeobj/sge_answer.h"
+#include "tom/ocs_Element.h"
 
 #include "gdi/ocs_gdi_Target.h"
 
@@ -860,7 +861,7 @@ namespace {
 
       // Add the procedures output to the bundle
       lList *output_list = nullptr;
-      lAddElemStr(&output_list, ST_name, os.str().c_str(), ST_Type);
+      ocs::tom::emplace_back<ST_name>(&output_list, os.str().c_str());
       ocs::ProcedureParameter::add_parameter_bundle(bundle, ocs::ProcedureParameter::RESPONSE, output_list);
 
       /* CS-2821: and what RBAC removed from it. A separate entry rather than a
@@ -868,7 +869,7 @@ namespace {
        * the text. The bundle's sublist is CULL_ANY_SUBTYPE, so a ULNG entry
        * round-trips without a wire format change. */
       lList *reduction_list = nullptr;
-      lAddElemUlong(&reduction_list, ULNG_value, outcome.reduction, ULNG_Type);
+      ocs::tom::emplace_back<ULNG_value>(&reduction_list, outcome.reduction);
       ocs::ProcedureParameter::add_parameter_bundle(bundle, ocs::ProcedureParameter::REDUCTION, reduction_list);
 
       /* CS-2822: and what a write did, when this was one. Sent only then, so a
@@ -876,17 +877,17 @@ namespace {
        * write happened here" from "a write applied nothing". */
       if (outcome.has_write_result) {
          lList *applied_list = nullptr;
-         lAddElemUlong(&applied_list, ULNG_value, outcome.write.applied, ULNG_Type);
+         ocs::tom::emplace_back<ULNG_value>(&applied_list, outcome.write.applied);
          ocs::ProcedureParameter::add_parameter_bundle(bundle, ocs::ProcedureParameter::WRITE_APPLIED,
                                                        applied_list);
 
          lList *failed_list = nullptr;
-         lAddElemUlong(&failed_list, ULNG_value, outcome.write.parse_failed, ULNG_Type);
+         ocs::tom::emplace_back<ULNG_value>(&failed_list, outcome.write.parse_failed);
          ocs::ProcedureParameter::add_parameter_bundle(bundle, ocs::ProcedureParameter::WRITE_PARSE_FAILED,
                                                        failed_list);
 
          lList *elements_list = nullptr;
-         lAddElemUlong(&elements_list, ULNG_value, outcome.write.elements, ULNG_Type);
+         ocs::tom::emplace_back<ULNG_value>(&elements_list, outcome.write.elements);
          ocs::ProcedureParameter::add_parameter_bundle(bundle, ocs::ProcedureParameter::WRITE_ELEMENTS,
                                                        elements_list);
       }

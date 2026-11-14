@@ -53,6 +53,7 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/ocs_DataStore.h"
+#include "tom/ocs_Element.h"
 
 #include "spool/sge_spooling.h"
 #include "spool/loader/sge_spooling_loader.h"
@@ -88,7 +89,7 @@ static bool add_job(int job_id) {
 
    sge_dstring_init(&key_dstring, key_buffer, sizeof(key_buffer));
 
-   job = lAddElemUlong(&master_job_list, JB_job_number, job_id, JB_Type);
+   job = ocs::tom::emplace_back<JB_job_number>(&master_job_list, job_id);
    key = job_get_key(job_id, 0, nullptr, &key_dstring);
 #if LOCAL_TRANSACTION
    spool_transaction(&answer_list, spool_get_default_context(),
@@ -133,7 +134,7 @@ static bool del_job(int job_id) {
                                SGE_TYPE_JOB, key);
    answer_list_output(&answer_list);
 
-   lDelElemUlong(&master_job_list, JB_job_number, job_id);
+   ocs::tom::erase<JB_job_number>(&master_job_list, job_id);
 
    if (delay > 0) {
       usleep(delay * 1000);

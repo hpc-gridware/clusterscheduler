@@ -55,6 +55,9 @@
 #include "sgeobj/sge_ack.h"
 #include "sgeobj/sge_usage.h"
 #include "sgeobj/sge_qinstance.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_JAT.h"
+#include "sgeobj/tom/ocs_tom_JG.h"
 
 #include "job_report_execd.h"
 #include "ocs_execd_systemd.h"
@@ -99,7 +102,7 @@ bool sge_get_flush_jr_flag() {
  */
 void flush_job_report(lListElem *jr) {
    if (jr != nullptr) {
-      lSetBool(jr, JR_flush, true);
+      ocs::tom::set<JR_flush>(jr, true);
       sge_set_flush_jr_flag(true);
    }
 }
@@ -143,10 +146,10 @@ lListElem *add_job_report(uint32_t jobid, uint32_t jataskid, const char *petaski
       DRETURN(nullptr);
    }
 
-   lSetUlong(jr, JR_job_number, jobid);
-   lSetUlong(jr, JR_ja_task_number, jataskid);
+   ocs::tom::set<JR_job_number>(jr, jobid);
+   ocs::tom::set<JR_ja_task_number>(jr, jataskid);
    if (petaskid != nullptr) {
-      lSetString(jr, JR_pe_task_id_str, petaskid);
+      ocs::tom::set<JR_pe_task_id_str>(jr, petaskid);
    }
 
    lAppendElem(jr_list, jr);
@@ -179,19 +182,19 @@ get_job_report(uint32_t job_id, uint32_t ja_task_id, const char *pe_task_id) {
    lListElem *jr;
    const void *iterator = nullptr;
 
-   jr = lGetElemUlongFirstRW(jr_list, JR_job_number, job_id, &iterator);
+   jr = ocs::tom::find_first_rw<JR_job_number>(jr_list, job_id, &iterator);
    while (jr != nullptr) {
-      if (lGetUlong(jr, JR_ja_task_number) == ja_task_id) {
+      if (ocs::tom::get<JR_ja_task_number>(jr) == ja_task_id) {
          if (pe_task_id == nullptr) {
             break;
          } else {
-            if (sge_strnullcmp(pe_task_id, lGetString(jr, JR_pe_task_id_str))
+            if (sge_strnullcmp(pe_task_id, ocs::tom::get<JR_pe_task_id_str>(jr))
                 == 0) {
                 break;
             }
          }
       }
-      jr = lGetElemUlongNextRW(jr_list, JR_job_number, job_id, &iterator);
+      jr = ocs::tom::find_next_rw<JR_job_number>(jr_list, job_id, &iterator);
    }
 
    DRETURN(jr);
@@ -215,11 +218,11 @@ void cleanup_job_report(uint32_t jobid, uint32_t jataskid) {
    const void *iterator = nullptr;
 
    /* get rid of job reports for all slave tasks */
-   jr_next = lGetElemUlongFirstRW(jr_list, JR_job_number, jobid, &iterator);
+   jr_next = ocs::tom::find_first_rw<JR_job_number>(jr_list, jobid, &iterator);
    while ((jr = jr_next)) {
-      jr_next = lGetElemUlongNextRW(jr_list, JR_job_number, jobid, &iterator);
-      if (lGetUlong(jr, JR_ja_task_number) == jataskid) {
-         const char *s = lGetString(jr, JR_pe_task_id_str);
+      jr_next = ocs::tom::find_next_rw<JR_job_number>(jr_list, jobid, &iterator);
+      if (ocs::tom::get<JR_ja_task_number>(jr) == jataskid) {
+         const char *s = ocs::tom::get<JR_pe_task_id_str>(jr);
 
          DPRINTF("!!!! removing jobreport for " sge_u32 "." sge_u32 " task %s !!!!\n", jobid, jataskid, s?s:"master");
          lRemoveElem(jr_list, &jr);
@@ -263,9 +266,9 @@ int add_usage(lListElem *jr, const char *name, const char *val_as_str, double va
    }
 
    /* check if we already have a usage value with this name */
-   usage = lGetSubStrRW(jr, UA_name, name, JR_usage);
+   usage = ocs::tom::find_first_in_rw<JR_usage, UA_name>(jr, name);
    if (!usage) {
-      if (!(usage = lAddSubStr(jr, UA_name, name, JR_usage, UA_Type))) {
+      if (!(usage = ocs::tom::emplace_back_in<JR_usage, UA_name>(jr, name))) {
          DRETURN(-1);
       }
    }
@@ -274,14 +277,14 @@ int add_usage(lListElem *jr, const char *name, const char *val_as_str, double va
       char *p;
       double parsed = strtod(val_as_str, &p);
       if (p==val_as_str) {
-         ERROR(MSG_PARSE_USAGEATTR_SSU, val_as_str, name, lGetUlong(jr, JR_job_number)); /* use default value */
-         lSetDouble(usage, UA_value, val);
+         ERROR(MSG_PARSE_USAGEATTR_SSU, val_as_str, name, ocs::tom::get<JR_job_number>(jr)); /* use default value */
+         ocs::tom::set<UA_value>(usage, val);
          DRETURN(-1);
       }
       val = parsed;
    }
 
-   lSetDouble(usage, UA_value, val);
+   ocs::tom::set<UA_value>(usage, val);
 
    DRETURN(0);
 }
@@ -297,9 +300,9 @@ int add_usage(lListElem *jr, const char *name, const char *val_as_str, double va
  */
 static void
 job_report_update_value_from_usage_list(lListElem *jr, const lList *usage_list, const char *name) {
-   const lListElem *usage = lGetElemStr(usage_list, UA_name, name);
+   const lListElem *usage = ocs::tom::find_first<UA_name>(usage_list, name);
    if (usage != nullptr) {
-      add_usage(jr, name, nullptr, lGetDouble(usage, UA_value));
+      add_usage(jr, name, nullptr, ocs::tom::get<UA_value>(usage));
    }
 }
 
@@ -374,7 +377,7 @@ int do_ack(ocs::gdi::ClientServerBase::struct_msg_t *aMsg) {
          DRETURN(0);
       }
 
-      switch (lGetUlong(ack, ACK_type)) {
+      switch (ocs::tom::get<ACK_type>(ack)) {
 
          case ACK_JOB_EXIT:
 /*
@@ -384,9 +387,9 @@ int do_ack(ocs::gdi::ClientServerBase::struct_msg_t *aMsg) {
 **          - retry is triggered by next job report sent to qmaster
 **            containing this job as "exiting"
 */
-            jobid = lGetUlong(ack, ACK_id);
-            jataskid = lGetUlong(ack, ACK_id2);
-            pe_task_id_str = lGetString(ack, ACK_str);
+            jobid = ocs::tom::get<ACK_id>(ack);
+            jataskid = ocs::tom::get<ACK_id2>(ack);
+            pe_task_id_str = ocs::tom::get<ACK_str>(ack);
 
             DPRINTF("remove exiting job " sge_u32 "." sge_u32 " %s\n",
                     jobid, jataskid, pe_task_id_str?pe_task_id_str:"");
@@ -411,9 +414,9 @@ int do_ack(ocs::gdi::ClientServerBase::struct_msg_t *aMsg) {
 **          sent by qmaster instead of ACK_JOB_EXIT to make execd
 **          resend the job report
 */
-            jobid = lGetUlong(ack, ACK_id);
-            jataskid = lGetUlong(ack, ACK_id2);
-            pe_task_id_str = lGetString(ack, ACK_str);
+            jobid = ocs::tom::get<ACK_id>(ack);
+            jataskid = ocs::tom::get<ACK_id2>(ack);
+            pe_task_id_str = ocs::tom::get<ACK_str>(ack);
 
             DPRINTF("resending report for exiting job " sge_u32 "/" sge_u32"/%s\n", jobid, jataskid, pe_task_id_str?pe_task_id_str:"");
 
@@ -441,8 +444,8 @@ int do_ack(ocs::gdi::ClientServerBase::struct_msg_t *aMsg) {
             {
                uint32_t signo  = SGE_SIGKILL;
 
-               jobid = lGetUlong(ack, ACK_id);
-               jataskid = lGetUlong(ack, ACK_id2);
+               jobid = ocs::tom::get<ACK_id>(ack);
+               jataskid = ocs::tom::get<ACK_id2>(ack);
 
                if (signal_job(jobid, jataskid, signo)) {
                   lListElem *jr = get_job_report(jobid, jataskid, nullptr);
@@ -458,7 +461,7 @@ int do_ack(ocs::gdi::ClientServerBase::struct_msg_t *aMsg) {
             break;
 
          case ACK_LOAD_REPORT:
-            execd_merge_load_report(lGetUlong(ack, ACK_id));
+            execd_merge_load_report(ocs::tom::get<ACK_id>(ack));
             break;
 
 /*
@@ -470,8 +473,8 @@ int do_ack(ocs::gdi::ClientServerBase::struct_msg_t *aMsg) {
  * once all pe_tasks have finished.
  */
          case ACK_SIGNAL_SLAVE:
-            jobid = lGetUlong(ack, ACK_id);
-            jataskid = lGetUlong(ack, ACK_id2);
+            jobid = ocs::tom::get<ACK_id>(ack);
+            jataskid = ocs::tom::get<ACK_id2>(ack);
 
             execd_slave_job_exit(jobid, jataskid);
             break;
@@ -542,14 +545,14 @@ count_queue_limits(const lListElem *queue, ocs::CEntry::Type type, int limit_nm,
 void modify_queue_limits_flag_for_job(const char *qualified_hostname, lListElem *jep, bool increase) {
    const lListElem *gdil_ep;
 
-   for_each_ep_lv(jatep, lGetList(jep, JB_ja_tasks)) {
-      const lList *gdil = lGetList(jatep, JAT_granted_destin_identifier_list);
+   for_each_ep_lv(jatep, ocs::tom::get<JB_ja_tasks>(jep)) {
+      const lList *gdil = ocs::tom::get<JAT_granted_destin_identifier_list>(jatep);
       const void *iterator = nullptr;
-      const lListElem *next_gdil_ep = lGetElemHostFirst(gdil, JG_qhostname, qualified_hostname, &iterator);
+      const lListElem *next_gdil_ep = ocs::tom::find_first<JG_qhostname>(gdil, qualified_hostname, &iterator);
       while ((gdil_ep = next_gdil_ep) != nullptr) {
-         next_gdil_ep = lGetElemHostNext(gdil, JG_qhostname, qualified_hostname, &iterator);
+         next_gdil_ep = ocs::tom::find_next<JG_qhostname>(gdil, qualified_hostname, &iterator);
 
-         const lListElem *q = lGetObject(gdil_ep, JG_queue);
+         const lListElem *q = ocs::tom::get<JG_queue>(gdil_ep);
          if (q == nullptr) {
             // this should never happen, but if it does, we have to skip this gdil_ep
             CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, "gdil_ep->JG_queue");

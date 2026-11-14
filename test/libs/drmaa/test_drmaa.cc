@@ -64,6 +64,7 @@
 
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_answer.h"
+#include "tom/ocs_Element.h"
 
 #include "gdi/ocs_gdi_Client.h"
 
@@ -3051,9 +3052,9 @@ static int test(int *argc, char **argv[], int parse_args) {
                
                failed_test = 1;
             }
-            else if ((job_ep != nullptr) && (strcmp (lGetString (job_ep, JB_job_name), "ExitTest") != 0)) {
+            else if ((job_ep != nullptr) && (strcmp (ocs::tom::get<JB_job_name> (job_ep), "ExitTest") != 0)) {
                fprintf(stderr, "Job \"%s\" name was \"%s\" instead of \"ExitTest\"\n", 
-                                 jobid, lGetString (job_ep, JB_job_name));
+                                 jobid, ocs::tom::get<JB_job_name> (job_ep));
                failed_test = 1;
             }
 
@@ -3534,9 +3535,9 @@ static int test(int *argc, char **argv[], int parse_args) {
                
                failed_test = 1;
             }
-            else if ((job_ep != nullptr) && (strcmp (lGetString (job_ep, JB_job_name), "ExitTest") != 0)) {
+            else if ((job_ep != nullptr) && (strcmp (ocs::tom::get<JB_job_name> (job_ep), "ExitTest") != 0)) {
                fprintf(stderr, "Job \"%s\" name was \"%s\" instead of \"ExitTest\"\n", 
-                                 jobid, lGetString (job_ep, JB_job_name));
+                                 jobid, ocs::tom::get<JB_job_name> (job_ep));
                failed_test = 1;
             }
 
@@ -3638,9 +3639,9 @@ static int test(int *argc, char **argv[], int parse_args) {
                
                failed_test = 1;
             }
-            else if ((job_ep != nullptr) && (strcmp (lGetString (job_ep, JB_job_name), "DRMAAExitTest") != 0)) {
+            else if ((job_ep != nullptr) && (strcmp (ocs::tom::get<JB_job_name> (job_ep), "DRMAAExitTest") != 0)) {
                fprintf(stderr, "Job \"%s\" name was \"%s\" instead of \"DRMAAExitTest\"\n", 
-                                 jobid, lGetString (job_ep, JB_job_name));
+                                 jobid, ocs::tom::get<JB_job_name> (job_ep));
                failed_test = 1;
             }
 
@@ -3760,9 +3761,9 @@ static int test(int *argc, char **argv[], int parse_args) {
                
                failed_test = 1;
             }
-            else if ((job_ep != nullptr) && (strcmp (lGetString (job_ep, JB_job_name), "ExitTest") != 0)) {
+            else if ((job_ep != nullptr) && (strcmp (ocs::tom::get<JB_job_name> (job_ep), "ExitTest") != 0)) {
                fprintf(stderr, "Job \"%s\" name was \"%s\" instead of \"ExitTest\"\n", 
-                                 jobid, lGetString (job_ep, JB_job_name));
+                                 jobid, ocs::tom::get<JB_job_name> (job_ep));
                failed_test = 1;
             }
 
@@ -3864,9 +3865,9 @@ static int test(int *argc, char **argv[], int parse_args) {
                
                failed_test = 1;
             }
-            else if ((job_ep != nullptr) && (strcmp (lGetString (job_ep, JB_job_name), "DRMAAExitTest") != 0)) {
+            else if ((job_ep != nullptr) && (strcmp (ocs::tom::get<JB_job_name> (job_ep), "DRMAAExitTest") != 0)) {
                fprintf(stderr, "Job \"%s\" name was \"%s\" instead of \"DRMAAExitTest\"\n", 
-                                 jobid, lGetString (job_ep, JB_job_name));
+                                 jobid, ocs::tom::get<JB_job_name> (job_ep));
                failed_test = 1;
             }
 

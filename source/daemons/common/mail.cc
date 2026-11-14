@@ -52,6 +52,7 @@
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_mailrec.h"
+#include "tom/ocs_Element.h"
 
 #include "mail.h"
 #include "sig_handlers.h"
@@ -97,8 +98,8 @@ void cull_mail(uint32_t progid, const lList *user_list, const char *subj, const 
 
    if (user_list) {
       for_each_ep(ep, user_list) {
-         user = lGetString(ep, MR_user);
-         host = lGetHost(ep, MR_host);
+         user = ocs::tom::get<MR_user>(ep);
+         host = ocs::tom::get<MR_host>(ep);
          if (!user && !host) {
             ERROR(SFNMAX, MSG_MAIL_EMPTYUSERHOST);
             sge_free(&mailer);

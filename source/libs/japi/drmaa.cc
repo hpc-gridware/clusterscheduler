@@ -107,6 +107,8 @@
 #include "sgeobj/sge_str.h"
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/config.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_ST.h"
 
 /** The environment of the process, read when a job template inherits it */
 #if defined(DARWIN10)
@@ -237,7 +239,7 @@ static int init_qtask_config(lList **alpp, print_func_t ostream) {
    nxt = lFirstRW(clp_cluster);
    while ((cep=nxt)) {
       nxt = lNextRW(cep);
-      if (strrchr(lGetString(cep, CF_name), '/'))
+      if (strrchr(ocs::tom::get<CF_name>(cep), '/'))
          lRemoveElem(clp_cluster, &cep);
 
    }
@@ -282,7 +284,7 @@ static int init_qtask_config(lList **alpp, print_func_t ostream) {
    nxt = lFirstRW(clp_user);
    while ((cep=nxt)) {
       nxt = lNextRW(cep);
-      if (strrchr(lGetString(cep, CF_name), '/'))
+      if (strrchr(ocs::tom::get<CF_name>(cep), '/'))
          lRemoveElem(clp_user, &cep);
    }
 
@@ -291,7 +293,7 @@ static int init_qtask_config(lList **alpp, print_func_t ostream) {
    while ((cep=next)) {
       char *ro_task_name;
       next = lNextRW(cep);
-      task_name = lGetString(cep, CF_name);
+      task_name = ocs::tom::get<CF_name>(cep);
 
       /* build task name with leading '!' for search operation */
       ro_task_name = sge_malloc(strlen(task_name) + 2);
@@ -299,12 +301,12 @@ static int init_qtask_config(lList **alpp, print_func_t ostream) {
       ro_task_name[0] = '!';
       strcpy(&ro_task_name[1], task_name);
 
-      if ((cep_dest=lGetElemStrRW(clp_cluster, CF_name, ro_task_name))) {
+      if ((cep_dest=ocs::tom::find_first_rw<CF_name>(clp_cluster, ro_task_name))) {
          /* do not override cluster global task entry */
          lRemoveElem(clp_user, &cep);
-      } else if ((cep_dest=lGetElemStrRW(clp_cluster, CF_name, task_name))) {
+      } else if ((cep_dest=ocs::tom::find_first_rw<CF_name>(clp_cluster, task_name))) {
          /* override cluster global task entry */
-         lSetString(cep_dest, CF_value, lGetString(cep, CF_value));
+         ocs::tom::set<CF_value>(cep_dest, ocs::tom::get<CF_value>(cep));
          lRemoveElem(clp_user, &cep);
       } else {
          /* no entry in cluster global task list
@@ -325,12 +327,12 @@ static int init_qtask_config(lList **alpp, print_func_t ostream) {
 
    /* remove leading '!' from command names */
    for_each_rw(cep, clp_cluster) {
-      task_name = lGetString(cep, CF_name);
+      task_name = ocs::tom::get<CF_name>(cep);
       if (task_name[0] == '!') {
          char *t = sge_malloc(strlen(task_name));
          SGE_ASSERT(t != nullptr);
          strcpy(t, &task_name[1]);
-         lSetString(cep, CF_name, t);
+         ocs::tom::set<CF_name>(cep, t);
          sge_free(&t);
       }
    }
@@ -392,12 +394,12 @@ static char **sge_get_qtask_args(char *taskname, lList **answer_list) {
 
    sge_mutex_unlock("qtask_mutex", __func__, __LINE__, &qtask_mutex);
 
-   const lListElem *task = lGetElemStr(task_config, CF_name, taskname);
+   const lListElem *task = ocs::tom::find_first<CF_name>(task_config, taskname);
    if (task == nullptr) {
       DRETURN(nullptr);
    }
 
-   const char *value = lGetString(task, CF_value);
+   const char *value = ocs::tom::get<CF_value>(task);
    if (value != nullptr) {
       num_args = sge_quick_count_num_args(value);
    }
@@ -672,7 +674,7 @@ static drmaa_attr_names_t *drmaa_fill_string_vector(const char *name[]) {
 
    for (i=0; name[i]; i++) {
       DPRINTF("adding \"%s\"\n", name[i]);
-      if (!lAddElemStr(&(vector->it.si.strings), ST_name, name[i], ST_Type)) {
+      if (!ocs::tom::emplace_back<ST_name>(&(vector->it.si.strings), name[i])) {
          japi_delete_string_vector((drmaa_attr_values_t *)vector);
          DRETURN(nullptr);
       }
@@ -709,7 +711,7 @@ static int drmaa_is_attribute_supported(const char *name, bool vector, dstring *
       p_attr = drmaa_fill_supported_nonvector_attributes(diag);
    }
 
-   if (lGetElemStr( p_attr->it.si.strings, ST_name, name ) != nullptr) {
+   if (static_cast<const lListElem *>(ocs::tom::find_first<ST_name>( p_attr->it.si.strings, name )) != nullptr) {
       DPRINTF("Attribute %s is supported\n", name);
       ret = DRMAA_ERRNO_SUCCESS;
    } else {
@@ -803,11 +805,11 @@ int drmaa_set_attribute(drmaa_job_template_t *jt, const char *name, const char *
       }
 
       /* add or replace attribute */
-      if ((ep = lGetElemStrRW(jt->strings, VA_variable, name))) {
-         lSetString(ep, VA_value, value);
+      if ((ep = ocs::tom::find_first_rw<VA_variable>(jt->strings, name))) {
+         ocs::tom::set<VA_value>(ep, value);
       } else {
-         ep = lAddElemStr(&(jt->strings), VA_variable, name, VA_Type);
-         lSetString(ep, VA_value, value);
+         ep = ocs::tom::emplace_back<VA_variable>(&(jt->strings), name);
+         ocs::tom::set<VA_value>(ep, value);
       }
    }
 
@@ -860,12 +862,12 @@ int drmaa_get_attribute(drmaa_job_template_t *jt, const char *name, char *value,
    sge_dstring_init(&val, value, value_len+1);
 
    /* search name in string_vectors */
-   if (!(va = lGetElemStr(jt->strings, VA_variable, name))) {
+   if (!(va = ocs::tom::find_first<VA_variable>(jt->strings, name))) {
       japi_standard_error(DRMAA_ERRNO_INVALID_ATTRIBUTE_VALUE, diagp);
       DRETURN(DRMAA_ERRNO_INVALID_ATTRIBUTE_VALUE);
    }
 
-   sge_dstring_copy_string(&val, lGetString(va, VA_value));
+   sge_dstring_copy_string(&val, ocs::tom::get<VA_value>(va));
    DRETURN(DRMAA_ERRNO_SUCCESS);
 }
 
@@ -918,20 +920,20 @@ int drmaa_set_vector_attribute(drmaa_job_template_t *jt, const char *name,
       DRETURN(DRMAA_ERRNO_INVALID_ARGUMENT);
    }
 
-   if ((ep = lGetElemStrRW(jt->string_vectors, NSV_name, name)) != nullptr) {
-      lSetList(ep, NSV_strings, nullptr);
+   if ((ep = ocs::tom::find_first_rw<NSV_name>(jt->string_vectors, name)) != nullptr) {
+      ocs::tom::set<NSV_strings>(ep, nullptr);
    }
    else {
-      ep = lAddElemStr(&(jt->string_vectors), NSV_name, name, NSV_Type);
+      ep = ocs::tom::emplace_back<NSV_name>(&(jt->string_vectors), name);
    }
 
    lp = lCreateList(nullptr, ST_Type);
    for (i=0; value[i] != nullptr; i++) {
       sep = lCreateElem(ST_Type);
-      lSetString(sep, ST_name, value[i]);
+      ocs::tom::set<ST_name>(sep, value[i]);
       lAppendElem(lp, sep);
    }
-   lSetList(ep, NSV_strings, lp);
+   ocs::tom::set<NSV_strings>(ep, lp);
 
    DRETURN(DRMAA_ERRNO_SUCCESS);
 }
@@ -980,7 +982,7 @@ int drmaa_get_vector_attribute(drmaa_job_template_t *jt, const char *name,
    }
 
    /* search name in string_vectors */
-   if (!(nsv = lGetElemStr(jt->string_vectors, NSV_name, name))) {
+   if (!(nsv = ocs::tom::find_first<NSV_name>(jt->string_vectors, name))) {
       japi_standard_error(DRMAA_ERRNO_INVALID_ATTRIBUTE_VALUE, diagp);
       DRETURN(DRMAA_ERRNO_INVALID_ATTRIBUTE_VALUE);
    }
@@ -992,7 +994,7 @@ int drmaa_get_vector_attribute(drmaa_job_template_t *jt, const char *name,
    }
 
    /* copy job template attributes into iterator */
-   iter->it.si.strings = lCopyList(nullptr, lGetList(nsv, NSV_strings));
+   iter->it.si.strings = lCopyList(nullptr, ocs::tom::get<NSV_strings>(nsv));
    if (!iter->it.si.strings) {
       japi_delete_string_vector(iter);
       japi_standard_error(DRMAA_ERRNO_NO_MEMORY, diagp);
@@ -1974,13 +1976,13 @@ static int drmaa_path2wd_opt(const lList *attrs, lList **args, int is_bulk,
                                            DRMAA_WD, 0, &new_path,
                                            diag)) == DRMAA_ERRNO_SUCCESS) {
       if (new_path != nullptr) {
-         lListElem *ep = lGetElemStrRW(attrs, VA_variable, DRMAA_WD);
-         const char *value = lGetString(ep, VA_value);
+         lListElem *ep = ocs::tom::find_first_rw<VA_variable>(attrs, DRMAA_WD);
+         const char *value = ocs::tom::get<VA_value>(ep);
 
          DPRINTF("-wd = \"%s\"\n", new_path);
 
          ep = sge_add_arg(args, wd_OPT, lStringT, "-wd", value);
-         lSetString(ep, SPA_argval_lStringT, new_path);
+         ocs::tom::set<SPA_argval_lStringT>(ep, new_path);
          sge_free(&new_path);
       }
       else {
@@ -2033,8 +2035,8 @@ static int drmaa_path2path_opt(const lList *attrs, lList **args, int is_bulk,
                                            attribute_key, 1, &new_path,
                                            diag)) == DRMAA_ERRNO_SUCCESS) {
       if (new_path) {
-         lListElem *ep = lGetElemStrRW(attrs, VA_variable, attribute_key);
-         const char *value = lGetString(ep, VA_value);
+         lListElem *ep = ocs::tom::find_first_rw<VA_variable>(attrs, attribute_key);
+         const char *value = ocs::tom::get<VA_value>(ep);
          char *cell = nullptr;
          char *path = nullptr;
 
@@ -2062,7 +2064,7 @@ static int drmaa_path2path_opt(const lList *attrs, lList **args, int is_bulk,
          lAppendElem(path_list, ep);
          DPRINTF("PN_path = \"%s\"\n", path);
          if( strlen( path )>0 ) {
-            lSetString(ep, PN_path, path);
+            ocs::tom::set<PN_path>(ep, path);
          } else if( !strcmp( sw, "-i" ) && bFileStaging) {
             /* No default stdin_path for file staging! */
             sge_dstring_sprintf(diag, MSG_DRMAA_NEEDS_INPUT_PATH);
@@ -2071,21 +2073,21 @@ static int drmaa_path2path_opt(const lList *attrs, lList **args, int is_bulk,
 
          if( cell ) {
             DPRINTF( "PN_file_host = \"%s\"\n", cell );
-            lSetHost( ep, PN_file_host, cell );
+            ocs::tom::set<PN_file_host>( ep, cell );
             sge_free(&cell);
          } else {
             /* No host was given, so we use this host we are running on.*/
-            lSetHost( ep, PN_file_host, unqualified_hostname);
+            ocs::tom::set<PN_file_host>( ep, unqualified_hostname);
          }
 
 
          DPRINTF("FileStaging = %d\n", bFileStaging);
-         lSetBool(ep, PN_file_staging, bFileStaging);
+         ocs::tom::set<PN_file_staging>(ep, bFileStaging);
 
          DPRINTF("Adding args\n");
          ep = sge_add_arg(args, opt, lListT, sw, value);
          DPRINTF("Setting List\n");
-         lSetList(ep, SPA_argval_lListT, path_list);
+         ocs::tom::set<SPA_argval_lListT>(ep, path_list);
          path_list = nullptr; /* must not free it later */
          DPRINTF("Freeing Path\n");
          sge_free(&new_path);
@@ -2128,10 +2130,10 @@ static int drmaa_path2sge_path(const lList *attrs, int is_bulk,
 
    const lListElem *ep = nullptr;
 
-   if ((ep=lGetElemStr(attrs, VA_variable, attribute_key ))) {
+   if ((ep=ocs::tom::find_first<VA_variable>(attrs, attribute_key ))) {
       dstring ds = DSTRING_INIT;
       const char *p = nullptr;
-      const char *value = lGetString(ep, VA_value);
+      const char *value = ocs::tom::get<VA_value>(ep);
 
       /* Only look for a hostname if the WD placeholder is being processed, i.e.
        * if we're processing a working directory path. */
@@ -2258,7 +2260,7 @@ static int drmaa_job2sge_job(lListElem **jtp, const drmaa_job_template_t *drmaa_
       DRETURN(DRMAA_ERRNO_NO_MEMORY);
    }
 
-   jb_now = lGetUlong(jt, JB_type);
+   jb_now = ocs::tom::get<JB_type>(jt);
 
    /*
     * An error state does not exist with DRMAA jobs.
@@ -2274,7 +2276,7 @@ static int drmaa_job2sge_job(lListElem **jtp, const drmaa_job_template_t *drmaa_
       JOB_TYPE_SET_ARRAY(jb_now);
    }
 
-   lSetUlong(jt, JB_type, jb_now);
+   ocs::tom::set<JB_type>(jt, jb_now);
 
    /*
     * read switches from the various defaults files
@@ -2293,10 +2295,10 @@ static int drmaa_job2sge_job(lListElem **jtp, const drmaa_job_template_t *drmaa_
    /*
     * append the native spec switches to the list if they exist
     */
-   if ((ep=lGetElemStr(drmaa_jt->strings, VA_variable, DRMAA_NATIVE_SPECIFICATION))) {
+   if ((ep=ocs::tom::find_first<VA_variable>(drmaa_jt->strings, DRMAA_NATIVE_SPECIFICATION))) {
       int num_args;
       char **args;
-      const char *value = lGetString(ep, VA_value);
+      const char *value = ocs::tom::get<VA_value>(ep);
 
       /* fix for IZ 2325: skip leading whitespace */
       while (isspace(*value)) {
@@ -2372,8 +2374,8 @@ static int drmaa_job2sge_job(lListElem **jtp, const drmaa_job_template_t *drmaa_
       const char *path = nullptr;
 
       if (opt_list_has_X(opts_drmaa, "-wd")) {
-         ep = lGetElemStr(opts_drmaa, SPA_switch_val, "-wd");
-         path = lGetString(ep, SPA_argval_lStringT);
+         ep = ocs::tom::find_first<SPA_switch_val>(opts_drmaa, "-wd");
+         path = ocs::tom::get<SPA_argval_lStringT>(ep);
          path = drmaa_expand_wd_path(username, path, &alp);
 
          if (path == nullptr) {
@@ -2445,20 +2447,20 @@ static int drmaa_job2sge_job(lListElem **jtp, const drmaa_job_template_t *drmaa_
        * only one that can contain -cat.  However, I expect that at some point
        * -cat will be added as a normal switch to qsub et al, at which point
        * this long series of ifs becomes necessary. */
-      if ((ep = lGetElemStrRW(opts_drmaa, SPA_switch_val, "-cat")) != nullptr) {
-         job_cat = strdup(lGetString(ep, SPA_argval_lStringT));
+      if ((ep = ocs::tom::find_first_rw<SPA_switch_val>(opts_drmaa, "-cat")) != nullptr) {
+         job_cat = strdup(ocs::tom::get<SPA_argval_lStringT>(ep));
          lRemoveElem(opts_drmaa, &ep);
-      } else if ((ep = lGetElemStrRW(opts_scriptfile, SPA_switch_val, "-cat")) != nullptr) {
-         job_cat = strdup(lGetString(ep, SPA_argval_lStringT));
+      } else if ((ep = ocs::tom::find_first_rw<SPA_switch_val>(opts_scriptfile, "-cat")) != nullptr) {
+         job_cat = strdup(ocs::tom::get<SPA_argval_lStringT>(ep));
          lRemoveElem(opts_scriptfile, &ep);
-      } else if ((ep = lGetElemStrRW(opts_native, SPA_switch_val, "-cat")) != nullptr) {
-         job_cat = strdup(lGetString(ep, SPA_argval_lStringT));
+      } else if ((ep = ocs::tom::find_first_rw<SPA_switch_val>(opts_native, "-cat")) != nullptr) {
+         job_cat = strdup(ocs::tom::get<SPA_argval_lStringT>(ep));
          lRemoveElem(opts_native, &ep);
-      } else if ((ep = lGetElemStrRW(opts_defaults, SPA_switch_val, "-cat")) != nullptr) {
-         job_cat = strdup(lGetString(ep, SPA_argval_lStringT));
+      } else if ((ep = ocs::tom::find_first_rw<SPA_switch_val>(opts_defaults, "-cat")) != nullptr) {
+         job_cat = strdup(ocs::tom::get<SPA_argval_lStringT>(ep));
          lRemoveElem(opts_defaults, &ep);
-      } else if ((ep = lGetElemStrRW(opts_default, SPA_switch_val, "-cat")) != nullptr) {
-         job_cat = strdup(lGetString(ep, SPA_argval_lStringT));
+      } else if ((ep = ocs::tom::find_first_rw<SPA_switch_val>(opts_default, "-cat")) != nullptr) {
+         job_cat = strdup(ocs::tom::get<SPA_argval_lStringT>(ep));
          lRemoveElem(opts_default, &ep);
       } else {
          /* This theoretically can't happen. */
@@ -2641,38 +2643,38 @@ static int opt_list_append_opts_from_drmaa_attr(lList **args, const lList *attrs
    DPRINTF("%d DRMAA vector attributes\n", lGetNumberOfElem(vattrs));
 
    /* job name -- -N <name>*/
-   if ((ep=lGetElemStr(attrs, VA_variable, DRMAA_JOB_NAME))) {
-      DPRINTF("processing %s = \"%s\"\n", DRMAA_JOB_NAME, lGetString(ep, VA_value));
+   if ((ep=ocs::tom::find_first<VA_variable>(attrs, DRMAA_JOB_NAME))) {
+      DPRINTF("processing %s = \"%s\"\n", DRMAA_JOB_NAME, ocs::tom::get<VA_value>(ep));
 
-      ep_opt = sge_add_arg(args, N_OPT, lStringT, "-N", lGetString(ep, VA_value));
-      lSetString(ep_opt, SPA_argval_lStringT, lGetString(ep, VA_value));
+      ep_opt = sge_add_arg(args, N_OPT, lStringT, "-N", ocs::tom::get<VA_value>(ep));
+      ocs::tom::set<SPA_argval_lStringT>(ep_opt, ocs::tom::get<VA_value>(ep));
    }
 
    /* job category -- -cat (not exposed in qsub) */
-   if ((ep=lGetElemStr(attrs, VA_variable, DRMAA_JOB_CATEGORY))) {
-      const char *value = lGetString(ep, VA_value);
+   if ((ep=ocs::tom::find_first<VA_variable>(attrs, DRMAA_JOB_CATEGORY))) {
+      const char *value = ocs::tom::get<VA_value>(ep);
 
       DPRINTF("processing %s = \"%s\"\n", DRMAA_JOB_CATEGORY, value);
 
       DPRINTF("%d args before adding job cat\n", lGetNumberOfElem(*args));
       ep_opt = sge_add_arg(args, cat_OPT, lStringT, "-cat", value);
-      lSetString(ep_opt, SPA_argval_lStringT, value);
+      ocs::tom::set<SPA_argval_lStringT>(ep_opt, value);
       DPRINTF("%d args after adding job cat\n", lGetNumberOfElem(*args));
    }
 
    /* join files -- -j "y|n" */
-   if ((ep=lGetElemStr(attrs, VA_variable, DRMAA_JOIN_FILES))) {
-      const char *value = lGetString(ep, VA_value);
+   if ((ep=ocs::tom::find_first<VA_variable>(attrs, DRMAA_JOIN_FILES))) {
+      const char *value = ocs::tom::get<VA_value>(ep);
 
       DPRINTF("processing %s = \"%s\"\n", DRMAA_JOIN_FILES, value);
 
       if (value[0] == 'y') {
          ep_opt = sge_add_arg(args, j_OPT, lIntT, "-j", "y");
-         lSetInt(ep_opt, SPA_argval_lIntT, true);
+         ocs::tom::set<SPA_argval_lIntT>(ep_opt, true);
       }
       else {
          ep_opt = sge_add_arg(args, j_OPT, lIntT, "-j", "n");
-         lSetInt(ep_opt, SPA_argval_lIntT, false);
+         ocs::tom::set<SPA_argval_lIntT>(ep_opt, false);
       }
    }
 
@@ -2685,8 +2687,8 @@ static int opt_list_append_opts_from_drmaa_attr(lList **args, const lList *attrs
    /* jobs input/output/error stream -- -i/o/e */
    {
       const char* strvalue="";
-      if( (ep=lGetElemStr( attrs, VA_variable, DRMAA_TRANSFER_FILES ))) {
-         strvalue = lGetString( ep, VA_value );
+      if( (ep=ocs::tom::find_first<VA_variable>( attrs, DRMAA_TRANSFER_FILES ))) {
+         strvalue = ocs::tom::get<VA_value>( ep );
       }
 
       if((drmaa_errno = drmaa_path2path_opt(attrs, args, is_bulk,
@@ -2708,23 +2710,23 @@ static int opt_list_append_opts_from_drmaa_attr(lList **args, const lList *attrs
    }
 
    /* user hold state -- -h */
-   if ((ep=lGetElemStr(attrs, VA_variable, DRMAA_JS_STATE))) {
-      const char *value = lGetString(ep, VA_value);
+   if ((ep=ocs::tom::find_first<VA_variable>(attrs, DRMAA_JS_STATE))) {
+      const char *value = ocs::tom::get<VA_value>(ep);
 
       DPRINTF("processing %s = \"%s\"\n", DRMAA_JS_STATE, value);
 
       if (!strcmp(value, DRMAA_SUBMISSION_STATE_HOLD)) {
          ep_opt = sge_add_arg(args, h_OPT, lIntT, "-h", "");
-         lSetInt(ep_opt, SPA_argval_lIntT, MINUS_H_TGT_USER);
+         ocs::tom::set<SPA_argval_lIntT>(ep_opt, MINUS_H_TGT_USER);
       }
    }
 
    /* job environment -- -v */
-   if ((ep=lGetElemStr(vattrs, NSV_name, DRMAA_V_ENV))) {
+   if ((ep=ocs::tom::find_first<NSV_name>(vattrs, DRMAA_V_ENV))) {
       dstring env = DSTRING_INIT;
       char *variable = nullptr;
       char *value = nullptr;
-      const lList *olp = lGetList(ep, NSV_strings);
+      const lList *olp = ocs::tom::get<NSV_strings>(ep);
       lListElem *nep = nullptr;
       lList *nlp = lCreateList("variable list", VA_Type);
       int first_time = 1;
@@ -2733,7 +2735,7 @@ static int opt_list_append_opts_from_drmaa_attr(lList **args, const lList *attrs
 
       for_each_ep_lv(oep, olp) {
          struct saved_vars_s *context = nullptr;
-         const char *str = lGetString(oep, ST_name);
+         const char *str = ocs::tom::get<ST_name>(oep);
 
          if (first_time) {
             first_time = 0;
@@ -2750,14 +2752,14 @@ static int opt_list_append_opts_from_drmaa_attr(lList **args, const lList *attrs
          }
 
          // a variable given twice keeps the last value (CS-3053)
-         nep = lGetElemStrRW(nlp, VA_variable, variable);
+         nep = ocs::tom::find_first_rw<VA_variable>(nlp, variable);
          if (nep == nullptr) {
-            nep = lAddElemStr(&nlp, VA_variable, variable, VA_Type);
+            nep = ocs::tom::emplace_back<VA_variable>(&nlp, variable);
          }
 
          // the value is the rest of the entry, it may contain '=' itself
          value = sge_strtok_r((char *)nullptr, "\0", &context);
-         lSetString(nep, VA_value, value);
+         ocs::tom::set<VA_value>(nep, value);
 
          sge_free_saved_vars(context);
       }
@@ -2766,15 +2768,15 @@ static int opt_list_append_opts_from_drmaa_attr(lList **args, const lList *attrs
 
       ep_opt = sge_add_arg(args, v_OPT, lListT, "-v", sge_dstring_get_string(&env));
       sge_dstring_free(&env);
-      lSetList(ep_opt, SPA_argval_lListT, nlp);
+      ocs::tom::set<SPA_argval_lListT>(ep_opt, nlp);
    }
 
    /* email address -- -M */
-   if ((ep=lGetElemStr(vattrs, NSV_name, DRMAA_V_EMAIL))) {
+   if ((ep=ocs::tom::find_first<NSV_name>(vattrs, DRMAA_V_EMAIL))) {
       dstring email = DSTRING_INIT;
       char *user = nullptr;
       char *host = nullptr;
-      const lList *olp = lGetList(ep, NSV_strings);
+      const lList *olp = ocs::tom::get<NSV_strings>(ep);
       lListElem *nep = nullptr;
       lList *nlp = lCreateList("mail list", MR_Type);
       const lListElem *tmp = nullptr;
@@ -2784,7 +2786,7 @@ static int opt_list_append_opts_from_drmaa_attr(lList **args, const lList *attrs
 
       for_each_ep_lv(oep, olp) {
          struct saved_vars_s *context = nullptr;
-         const char *str = lGetString(oep, ST_name);
+         const char *str = ocs::tom::get<ST_name>(oep);
 
          if (first_time) {
             first_time = 0;
@@ -2797,8 +2799,8 @@ static int opt_list_append_opts_from_drmaa_attr(lList **args, const lList *attrs
          user = sge_strtok_r(str, "@", &context);
          host = sge_strtok_r(nullptr, "@", &context);
 
-         if ((tmp=lGetElemStr(nlp, MR_user, user))) {
-            if (!sge_strnullcmp(host, lGetHost(tmp, MR_host))) {
+         if ((tmp=ocs::tom::find_first<MR_user>(nlp, user))) {
+            if (!sge_strnullcmp(host, ocs::tom::get<MR_host>(tmp))) {
                /* got this mail adress twice */
                sge_free_saved_vars(context);
                continue;
@@ -2807,9 +2809,9 @@ static int opt_list_append_opts_from_drmaa_attr(lList **args, const lList *attrs
 
          /* got a new adress - add it */
          nep = lCreateElem(MR_Type);
-         lSetString(nep, MR_user, user);
+         ocs::tom::set<MR_user>(nep, user);
          if (host)
-            lSetHost(nep, MR_host, host);
+            ocs::tom::set<MR_host>(nep, host);
          lAppendElem(nlp, nep);
 
          sge_free_saved_vars(context);
@@ -2820,18 +2822,18 @@ static int opt_list_append_opts_from_drmaa_attr(lList **args, const lList *attrs
 
       ep_opt = sge_add_arg(args, M_OPT, lListT, "-M", sge_dstring_get_string(&email));
       sge_dstring_free(&email);
-      lSetList(ep_opt, SPA_argval_lListT, nlp);
+      ocs::tom::set<SPA_argval_lListT>(ep_opt, nlp);
    }
 
    /* email supression -- -m */
-   if ((ep=lGetElemStr(attrs, VA_variable, DRMAA_BLOCK_EMAIL))) {
-      const char *value = lGetString(ep, VA_value);
+   if ((ep=ocs::tom::find_first<VA_variable>(attrs, DRMAA_BLOCK_EMAIL))) {
+      const char *value = ocs::tom::get<VA_value>(ep);
 
       DPRINTF("processing %s = \"%s\"\n", DRMAA_BLOCK_EMAIL, value);
 
       if (value[0] == '1') {
          ep_opt = sge_add_arg(args, m_OPT, lIntT, "-m", "n");
-         lSetInt(ep_opt, SPA_argval_lIntT, NO_MAIL);
+         ocs::tom::set<SPA_argval_lIntT>(ep_opt, NO_MAIL);
       }
       else if (value[0] == '0') {
          /* This needs to be implemented so that DRMAA can reenable email that
@@ -2840,7 +2842,7 @@ static int opt_list_append_opts_from_drmaa_attr(lList **args, const lList *attrs
           * we just assume an innocuous default, i.e. email when the job is
           * done.  This should definitely be documented somewhere. */
          ep_opt = sge_add_arg(args, m_OPT, lIntT, "-m", "e");
-         lSetInt(ep_opt, SPA_argval_lIntT, MAIL_AT_EXIT);
+         ocs::tom::set<SPA_argval_lIntT>(ep_opt, MAIL_AT_EXIT);
       }
       else {
          DRETURN(DRMAA_ERRNO_DENIED_BY_DRM);
@@ -2848,9 +2850,9 @@ static int opt_list_append_opts_from_drmaa_attr(lList **args, const lList *attrs
    }
 
    /* job start time -- -a */
-   if ((ep=lGetElemStr(attrs, VA_variable, DRMAA_START_TIME))) {
+   if ((ep=ocs::tom::find_first<VA_variable>(attrs, DRMAA_START_TIME))) {
       uint32_t timeval;
-      const char *value = (const char*)drmaa_time2sge_time(lGetString(ep, VA_value), diag);
+      const char *value = (const char*)drmaa_time2sge_time(ocs::tom::get<VA_value>(ep), diag);
 
       if (value == nullptr) {
          /* diag is set by drmma_time2sge_time */
@@ -2865,11 +2867,11 @@ static int opt_list_append_opts_from_drmaa_attr(lList **args, const lList *attrs
       }
 
       ep_opt = sge_add_arg(args, a_OPT, lUlongT, "-a", value);
-      lSetUlong64(ep_opt, SPA_argval_lUlong64T, sge_gmt32_to_gmt64(timeval));
+      ocs::tom::set<SPA_argval_lUlong64T>(ep_opt, sge_gmt32_to_gmt64(timeval));
    }
 
    /* remote command -- last thing on the command line before the job args */
-   if (!(ep=lGetElemStr(attrs, VA_variable, DRMAA_REMOTE_COMMAND))) {
+   if (!(ep=ocs::tom::find_first<VA_variable>(attrs, DRMAA_REMOTE_COMMAND))) {
       DPRINTF("no remote command given\n");
 
       sge_dstring_copy_string(diag, "job template must have \"" DRMAA_REMOTE_COMMAND "\" attribute set");
@@ -2877,21 +2879,21 @@ static int opt_list_append_opts_from_drmaa_attr(lList **args, const lList *attrs
       DRETURN(DRMAA_ERRNO_DENIED_BY_DRM);
    }
 
-   if ((scriptname = lGetString(ep, VA_value)) != nullptr) {
+   if ((scriptname = ocs::tom::get<VA_value>(ep)) != nullptr) {
       DPRINTF("remote command is \"%s\"\n", scriptname);
       ep_opt = sge_add_arg(args, 0, lStringT, STR_PSEUDO_SCRIPT, nullptr);
-      lSetString(ep_opt, SPA_argval_lStringT, scriptname);
+      ocs::tom::set<SPA_argval_lStringT>(ep_opt, scriptname);
 
       /* job arguments -- last thing on the command line */
-      if ((ep=lGetElemStr(vattrs, NSV_name, DRMAA_V_ARGV))) {
-         const lList *lp = lGetList(ep, NSV_strings);
+      if ((ep=ocs::tom::find_first<NSV_name>(vattrs, DRMAA_V_ARGV))) {
+         const lList *lp = ocs::tom::get<NSV_strings>(ep);
 
          DPRINTF("processing %s\n", DRMAA_V_ARGV);
 
          for_each_ep_lv(aep, lp) {
-            DPRINTF("arg: \"%s\"\n", lGetString(aep, ST_name));
+            DPRINTF("arg: \"%s\"\n", ocs::tom::get<ST_name>(aep));
             ep_opt = sge_add_arg(args, 0, lStringT, STR_PSEUDO_JOBARG, nullptr);
-            lSetString(ep_opt, SPA_argval_lStringT, lGetString(aep, ST_name));
+            ocs::tom::set<SPA_argval_lStringT>(ep_opt, ocs::tom::get<ST_name>(aep));
          }
       }
    }
@@ -2920,7 +2922,7 @@ static void opt_list_append_default_drmaa_opts(lList **opts) {
    /* average priority of 0 -- -p 0 */
    DPRINTF("setting default priority to 0\n");
    ep_opt = sge_add_arg(opts, p_OPT, lIntT, "-p", "0");
-   lSetInt(ep_opt, SPA_argval_lIntT, 0);
+   ocs::tom::set<SPA_argval_lIntT>(ep_opt, 0);
 
    /* We always use binary submission mode by default. A native spec, job
     * category, or default file attribute can use -b n to reenable script
@@ -2928,7 +2930,7 @@ static void opt_list_append_default_drmaa_opts(lList **opts) {
     */
    DPRINTF("enabling binary mode\n");
    ep_opt = sge_add_arg(opts, b_OPT, lIntT, "-b", "y");
-   lSetInt(ep_opt, SPA_argval_lIntT, 1);
+   ocs::tom::set<SPA_argval_lIntT>(ep_opt, 1);
 
    /* Bugfix: Issuezilla #658
     * In order to work around Bug #476, I set DRMAA to not spawn an exec
@@ -2951,7 +2953,7 @@ static void opt_list_append_default_drmaa_opts(lList **opts) {
     * category. */
    DPRINTF("disabling submission of unschedulable jobs\n");
    ep_opt = sge_add_arg(opts, w_OPT, lIntT, "-w", "e");
-   lSetInt(ep_opt, SPA_argval_lIntT, ERROR_VERIFY);
+   ocs::tom::set<SPA_argval_lIntT>(ep_opt, ERROR_VERIFY);
 
    DRETURN_VOID;
 }
@@ -3125,22 +3127,22 @@ o   -V                                     export all environment variables
    const void *i = nullptr;
 
    /* skip arguments that aren't supported */
-   while ((element = lGetElemStrRW(args, SPA_switch_val, "-help"))) {
+   while ((element = ocs::tom::find_first_rw<SPA_switch_val>(args, "-help"))) {
       lRemoveElem(args, &element);
    }
 
    /* This one isn't supported because bulk jobs are handled through the
     * drmaa_run_bulk_jobs() method. */
-   while ((element = lGetElemStrRW(args, SPA_switch_val, "-t"))) {
+   while ((element = ocs::tom::find_first_rw<SPA_switch_val>(args, "-t"))) {
       lRemoveElem(args, &element);
    }
 
-   while ((element = lGetElemStrRW(args, SPA_switch_val, "-verify"))) {
+   while ((element = ocs::tom::find_first_rw<SPA_switch_val>(args, "-verify"))) {
       lRemoveElem(args, &element);
    }
 
-   while ((element = lGetElemStrNextRW(args, SPA_switch_val, "-w", &i))) {
-      int argval = lGetInt(element, SPA_argval_lIntT);
+   while ((element = ocs::tom::find_next_rw<SPA_switch_val>(args, "-w", &i))) {
+      int argval = ocs::tom::get<SPA_argval_lIntT>(element);
 
       if ((argval == JUST_VERIFY) || (argval == POKE_VERIFY) || (argval == WARNING_VERIFY)) {
          lRemoveElem(args, &element);
@@ -3148,12 +3150,12 @@ o   -V                                     export all environment variables
    }
 
    if (sge_getenv(ENABLE_CWD_ENV) == nullptr) {
-      while ((element = lGetElemStrRW(args, SPA_switch_val, "-cwd"))) {
+      while ((element = ocs::tom::find_first_rw<SPA_switch_val>(args, "-cwd"))) {
          lRemoveElem(args, &element);
       }
    }
 
-   while ((element = lGetElemStrRW(args, SPA_switch_val, "-sync"))) {
+   while ((element = ocs::tom::find_first_rw<SPA_switch_val>(args, "-sync"))) {
       lRemoveElem(args, &element);
    }
 
@@ -3595,7 +3597,7 @@ static int drmaa_set_bulk_range(lList **opts, int start, int end, int step,
 
    if (task_id_range_list) {
       ep_opt = sge_add_arg(opts, t_OPT, lStringT, "-t", str);
-      lSetList(ep_opt, SPA_argval_lListT, task_id_range_list);
+      ocs::tom::set<SPA_argval_lListT>(ep_opt, task_id_range_list);
 
       DRETURN(0);
    }
@@ -3617,8 +3619,7 @@ static drmaa_attr_names_t *drmaa_fill_supported_nonvector_attributes(dstring *di
 
    if (japi_is_delegated_file_staging_enabled(diag)) {
       DPRINTF("adding \"%s\"\n", DRMAA_TRANSFER_FILES);
-      if (!lAddElemStr(&(p->it.si.strings),
-                       ST_name, DRMAA_TRANSFER_FILES, ST_Type)) {
+      if (!ocs::tom::emplace_back<ST_name>(&(p->it.si.strings), DRMAA_TRANSFER_FILES)) {
          japi_delete_string_vector((drmaa_attr_values_t *)p);
          DRETURN(nullptr);
       }

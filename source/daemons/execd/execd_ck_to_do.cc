@@ -64,6 +64,12 @@
 #include "sgeobj/sge_report.h"
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_str.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_JAT.h"
+#include "sgeobj/tom/ocs_tom_JG.h"
+#include "sgeobj/tom/ocs_tom_PE.h"
+#include "sgeobj/tom/ocs_tom_PET.h"
+#include "sgeobj/tom/ocs_tom_ST.h"
 
 #include "spool/classic/read_write_job.h"
 
@@ -110,7 +116,7 @@ job_report_set_deleted_by_execd(uint32_t jobid, uint32_t jataskid) {
    if (jr != nullptr) {
       DSTRING_STATIC(dstr, MAX_STRING_SIZE);
       sge_dstring_sprintf(&dstr, "execd@%s", component_get_qualified_hostname());
-      lSetString(jr, JR_deleted_by, sge_dstring_get_string(&dstr));
+      ocs::tom::set<JR_deleted_by>(jr, sge_dstring_get_string(&dstr));
    }
 }
 
@@ -146,13 +152,13 @@ static void notify_ptf() {
       waiting4osjid = 0;
 
       for_each_rw_lv(jep, *ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB)) {
-         for_each_rw_lv (jatep, lGetList(jep, JB_ja_tasks)) {
+         for_each_rw_lv (jatep, ocs::tom::get<JB_ja_tasks>(jep)) {
             write_job = 0;
-            if (lGetUlong(jatep, JAT_status) == JWAITING4OSJID) {
+            if (ocs::tom::get<JAT_status>(jatep) == JWAITING4OSJID) {
                switch (register_at_ptf(jep, jatep, nullptr)) {
                   case 0:   
                      /* succeeded */
-                     lSetUlong(jatep, JAT_status, JRUNNING);
+                     ocs::tom::set<JAT_status>(jatep, JRUNNING);
                   
                      /* spool state transition */ 
                      write_job = 1;
@@ -168,12 +174,12 @@ static void notify_ptf() {
                }
             }
 
-            for_each_rw_lv (petep, lGetList(jatep, JAT_task_list)) {
-               if (lGetUlong(petep, PET_status) == JWAITING4OSJID) {
+            for_each_rw_lv (petep, ocs::tom::get<JAT_task_list>(jatep)) {
+               if (ocs::tom::get<PET_status>(petep) == JWAITING4OSJID) {
                   switch (register_at_ptf(jep, jatep, petep)) {
                      case 0:   
                         /* succeeded */
-                        lSetUlong(petep, PET_status, JRUNNING);
+                        ocs::tom::set<PET_status>(petep, JRUNNING);
 
                         /* spool state transition */ 
                         write_job = 1;
@@ -191,7 +197,7 @@ static void notify_ptf() {
                }
             }
             if (write_job && !mconf_get_simulate_jobs())
-               job_write_spool_file(jep, lGetUlong(jatep, JAT_task_number), 
+               job_write_spool_file(jep, ocs::tom::get<JAT_task_number>(jatep), 
                                     nullptr, SPOOL_WITHIN_EXECD);
          }
       }
@@ -230,12 +236,12 @@ force_job_rlimit_apply_limit(double usage, double limit, const char *limit_name,
    if (limit < usage) {
       if (is_hard_limit) {
          WARNING(MSG_JOB_EXCEEDHLIM_USSFF, jobid, limit_name,
-                 lGetString(queue, QU_full_name), usage, limit);
+                 ocs::tom::get<QU_full_name>(queue), usage, limit);
          signal_job(jobid, jataskid, SGE_SIGKILL);
          job_report_set_deleted_by_execd(jobid, jataskid);
       } else {
          WARNING(MSG_JOB_EXCEEDSLIM_USSFF, jobid, limit_name,
-                 lGetString(queue, QU_full_name), usage, limit);
+                 ocs::tom::get<QU_full_name>(queue), usage, limit);
          signal_job(jobid, jataskid, SGE_SIGXCPU);
       }
       signaled = true;
@@ -263,11 +269,11 @@ force_job_rlimit_task(const lListElem *jep, const lListElem *jatep, const lListE
                       const char *qualified_hostname) {
    DENTER(TOP_LAYER);
 
-   uint32_t jobid = lGetUlong(jep, JB_job_number);
-   uint32_t jataskid = lGetUlong(jatep, JAT_task_number);
+   uint32_t jobid = ocs::tom::get<JB_job_number>(jep);
+   uint32_t jataskid = ocs::tom::get<JAT_task_number>(jatep);
 
    // the usage of this task only - nullptr if the task does not run on this host
-   const char *task_id = petep != nullptr ? lGetString(petep, PET_id) : nullptr;
+   const char *task_id = petep != nullptr ? ocs::tom::get<PET_id>(petep) : nullptr;
    lList *usage_list = ptf_get_job_usage(jobid, jataskid, task_id);
    if (usage_list == nullptr) {
       DRETURN(false);
@@ -340,12 +346,12 @@ static void force_job_rlimit(const char *qualified_hostname) {
    DENTER(TOP_LAYER);
 
    for_each_ep_lv(jep, *ocs::DataStore::get_master_list(SGE_TYPE_JOB)) {
-      for_each_ep_lv(jatep, lGetList(jep, JB_ja_tasks)) {
+      for_each_ep_lv(jatep, ocs::tom::get<JB_ja_tasks>(jep)) {
          // a signaled job is not checked further
          if (force_job_rlimit_task(jep, jatep, nullptr, qualified_hostname)) {
             continue;
          }
-         for_each_ep_lv(petep, lGetList(jatep, JAT_task_list)) {
+         for_each_ep_lv(petep, ocs::tom::get<JAT_task_list>(jatep)) {
             if (force_job_rlimit_task(jep, jatep, petep, qualified_hostname)) {
                break;
             }
@@ -363,13 +369,13 @@ execd_get_wallclock_limit(const char *qualified_hostname, const lList *gdil_list
    const lListElem *gdil;
    const void *iterator;
 
-   gdil = lGetElemHostFirst(gdil_list, JG_qhostname, qualified_hostname, &iterator);
+   gdil = ocs::tom::find_first<JG_qhostname>(gdil_list, qualified_hostname, &iterator);
    while (gdil != nullptr) {
       const lListElem *queue;
       const char *limit;
       uint64_t clock_val;
 
-      queue = lGetObject(gdil, JG_queue);
+      queue = ocs::tom::get<JG_queue>(gdil);
       if (queue != nullptr) {
          limit = lGetString(queue, limit_nm);
 
@@ -384,7 +390,7 @@ execd_get_wallclock_limit(const char *qualified_hostname, const lList *gdil_list
          ret = std::min(ret, clock_val);
       }
 
-      gdil = lGetElemHostNext(gdil_list, JG_qhostname, qualified_hostname, &iterator);
+      gdil = ocs::tom::find_next<JG_qhostname>(gdil_list, qualified_hostname, &iterator);
    }
 
    if (ret != std::numeric_limits<uint64_t>::max()) {
@@ -413,46 +419,46 @@ execd_set_wallclock_limits(lListElem *jep, const lListElem *jatep, const char *q
                            uint64_t start_time) {
    DENTER(TOP_LAYER);
 
-   const lList *gdil_list = lGetList(jatep, JAT_granted_destin_identifier_list);
-   lSetUlong64(jep, JB_soft_wallclock_gmt,
+   const lList *gdil_list = ocs::tom::get<JAT_granted_destin_identifier_list>(jatep);
+   ocs::tom::set<JB_soft_wallclock_gmt>(jep,
                execd_get_wallclock_limit(qualified_hostname, gdil_list, QU_s_rt, start_time));
-   lSetUlong64(jep, JB_hard_wallclock_gmt,
+   ocs::tom::set<JB_hard_wallclock_gmt>(jep,
                execd_get_wallclock_limit(qualified_hostname, gdil_list, QU_h_rt, start_time));
 
-   uint64_t task_wallclock_limit = lGetUlong64(jatep, JAT_wallclock_limit);
+   uint64_t task_wallclock_limit = ocs::tom::get<JAT_wallclock_limit>(jatep);
    if (task_wallclock_limit != 0) {
-      lSetUlong64(jep, JB_hard_wallclock_gmt,
-                  std::min(lGetUlong64(jep, JB_hard_wallclock_gmt),
+      ocs::tom::set<JB_hard_wallclock_gmt>(jep,
+                  std::min(ocs::tom::get<JB_hard_wallclock_gmt>(jep),
                            duration_add_offset(start_time, task_wallclock_limit)));
    }
 
    DPRINTF("job " sge_u32 "." sge_u32 " started at " sge_u64 ": soft wallclock " sge_u64
-           ", hard wallclock " sge_u64 "\n", lGetUlong(jep, JB_job_number),
-           lGetUlong(jatep, JAT_task_number), start_time,
-           lGetUlong64(jep, JB_soft_wallclock_gmt), lGetUlong64(jep, JB_hard_wallclock_gmt));
+           ", hard wallclock " sge_u64 "\n", ocs::tom::get<JB_job_number>(jep),
+           ocs::tom::get<JAT_task_number>(jatep), start_time,
+           ocs::tom::get<JB_soft_wallclock_gmt>(jep), ocs::tom::get<JB_hard_wallclock_gmt>(jep));
 
    DRETURN_VOID;
 }
 
 static void
 update_wallclock_usage(uint64_t now, const lListElem *job, const lListElem *ja_task) {
-   uint32_t job_id = lGetUlong(job, JB_job_number);
-   uint32_t ja_task_id = lGetUlong(ja_task, JAT_task_number);
-   uint64_t wallclock = now - lGetUlong64(ja_task, JAT_start_time);
+   uint32_t job_id = ocs::tom::get<JB_job_number>(job);
+   uint32_t ja_task_id = ocs::tom::get<JAT_task_number>(ja_task);
+   uint64_t wallclock = now - ocs::tom::get<JAT_start_time>(ja_task);
 
    lListElem *jr = get_job_report(job_id, ja_task_id, nullptr);
    if (jr != nullptr) {
       add_usage(jr, USAGE_ATTR_WALLCLOCK, nullptr, sge_gmt64_to_gmt32_double(wallclock));
    }
 
-   for_each_ep_lv (pe_task, lGetList(ja_task, JAT_task_list)) {
+   for_each_ep_lv (pe_task, ocs::tom::get<JAT_task_list>(ja_task)) {
       // don't update wallclock before job actually started or after it ended */
-      uint32_t status = lGetUlong(pe_task, PET_status);
+      uint32_t status = ocs::tom::get<PET_status>(pe_task);
       if (status == JWAITING4OSJID || status == JEXITING) {
          continue;
       }
-      wallclock = now - lGetUlong64(pe_task, PET_start_time);
-      const char *pe_task_id = lGetString(pe_task, PET_id);
+      wallclock = now - ocs::tom::get<PET_start_time>(pe_task);
+      const char *pe_task_id = ocs::tom::get<PET_id>(pe_task);
       jr = get_job_report(job_id, ja_task_id, pe_task_id);
       if (jr != nullptr) {
          add_usage(jr, USAGE_ATTR_WALLCLOCK, nullptr, sge_gmt64_to_gmt32_double(wallclock));
@@ -579,10 +585,10 @@ int do_ck_to_do(bool is_qmaster_down) {
       next_signal = now + sge_gmt32_to_gmt64(SIGNAL_RESEND_INTERVAL);
       /* resend signals to shepherds */
       for_each_rw_lv (jep, *ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB)) {
-         for_each_rw_lv (jatep, lGetList(jep, JB_ja_tasks)) {
+         for_each_rw_lv (jatep, ocs::tom::get<JB_ja_tasks>(jep)) {
 
             // don't update wallclock before a job actually started or after it ended */
-            uint32_t status = lGetUlong(jatep, JAT_status);
+            uint32_t status = ocs::tom::get<JAT_status>(jatep);
             if (status == JWAITING4OSJID || status == JEXITING) {
                continue;
             }
@@ -598,52 +604,52 @@ int do_ck_to_do(bool is_qmaster_down) {
             // here. A task of a simulated job never went through the start, and a task started by
             // an older version of the daemon may have been spooled without them, so fall back to
             // the start time of the task, which is spooled.
-            if (lGetUlong64(jep, JB_hard_wallclock_gmt) == 0) {
-               uint64_t start_time = lGetUlong64(jatep, JAT_start_time);
+            if (ocs::tom::get<JB_hard_wallclock_gmt>(jep) == 0) {
+               uint64_t start_time = ocs::tom::get<JAT_start_time>(jatep);
                if (start_time == 0) {
                   start_time = now;
                }
                execd_set_wallclock_limits(jep, jatep, qualified_hostname, start_time);
                if (!mconf_get_simulate_jobs()) {
-                  job_write_spool_file(jep, lGetUlong(jatep, JAT_task_number),
+                  job_write_spool_file(jep, ocs::tom::get<JAT_task_number>(jatep),
                                        nullptr, SPOOL_WITHIN_EXECD);
                }
             }
             
-            if (now >= lGetUlong64(jep, JB_hard_wallclock_gmt)) {
-               if (lGetUlong64(jatep, JAT_pending_signal_delivery_time) == 0 ||
-                   now > lGetUlong64(jatep, JAT_pending_signal_delivery_time)) {
-                  WARNING(MSG_EXECD_EXCEEDHWALLCLOCK_UU, lGetUlong(jep, JB_job_number), lGetUlong(jatep, JAT_task_number));
+            if (now >= ocs::tom::get<JB_hard_wallclock_gmt>(jep)) {
+               if (ocs::tom::get<JAT_pending_signal_delivery_time>(jatep) == 0 ||
+                   now > ocs::tom::get<JAT_pending_signal_delivery_time>(jatep)) {
+                  WARNING(MSG_EXECD_EXCEEDHWALLCLOCK_UU, ocs::tom::get<JB_job_number>(jep), ocs::tom::get<JAT_task_number>(jatep));
                   if (sge_execd_ja_task_is_tightly_integrated(jatep)) {
                      sge_kill_petasks(jep, jatep);
                   }
-                  if (lGetUlong(jatep, JAT_pid) != 0) {
-                     sge_kill(lGetUlong(jatep, JAT_pid), SGE_SIGKILL,
-                              lGetUlong(jep, JB_job_number),
-                              lGetUlong(jatep, JAT_task_number),
+                  if (ocs::tom::get<JAT_pid>(jatep) != 0) {
+                     sge_kill(ocs::tom::get<JAT_pid>(jatep), SGE_SIGKILL,
+                              ocs::tom::get<JB_job_number>(jep),
+                              ocs::tom::get<JAT_task_number>(jatep),
                               nullptr);
                   }
-                  job_report_set_deleted_by_execd(lGetUlong(jep, JB_job_number),
-                                                  lGetUlong(jatep, JAT_task_number));
-                  lSetUlong64(jatep, JAT_pending_signal_delivery_time, now + sge_gmt32_to_gmt64(90));
+                  job_report_set_deleted_by_execd(ocs::tom::get<JB_job_number>(jep),
+                                                  ocs::tom::get<JAT_task_number>(jatep));
+                  ocs::tom::set<JAT_pending_signal_delivery_time>(jatep, now + sge_gmt32_to_gmt64(90));
                }    
                continue;
             }
 
-            if (now >= lGetUlong64(jep, JB_soft_wallclock_gmt)) {
-               if (lGetUlong64(jatep, JAT_pending_signal_delivery_time) == 0 ||
-                   now > lGetUlong64(jatep, JAT_pending_signal_delivery_time)) {
-                  WARNING(MSG_EXECD_EXCEEDSWALLCLOCK_UU, lGetUlong(jep, JB_job_number), lGetUlong(jatep, JAT_task_number));
+            if (now >= ocs::tom::get<JB_soft_wallclock_gmt>(jep)) {
+               if (ocs::tom::get<JAT_pending_signal_delivery_time>(jatep) == 0 ||
+                   now > ocs::tom::get<JAT_pending_signal_delivery_time>(jatep)) {
+                  WARNING(MSG_EXECD_EXCEEDSWALLCLOCK_UU, ocs::tom::get<JB_job_number>(jep), ocs::tom::get<JAT_task_number>(jatep));
                   if (sge_execd_ja_task_is_tightly_integrated(jatep)) {
                      sge_kill_petasks(jep, jatep);
                   }
-                  if (lGetUlong(jatep, JAT_pid) != 0) {
-                     sge_kill(lGetUlong(jatep, JAT_pid), SGE_SIGUSR1, 
-                              lGetUlong(jep, JB_job_number),
-                              lGetUlong(jatep, JAT_task_number),
+                  if (ocs::tom::get<JAT_pid>(jatep) != 0) {
+                     sge_kill(ocs::tom::get<JAT_pid>(jatep), SGE_SIGUSR1, 
+                              ocs::tom::get<JB_job_number>(jep),
+                              ocs::tom::get<JAT_task_number>(jatep),
                               nullptr);
                   }
-                  lSetUlong64(jatep, JAT_pending_signal_delivery_time, now + sge_gmt32_to_gmt64(90));
+                  ocs::tom::set<JAT_pending_signal_delivery_time>(jatep, now + sge_gmt32_to_gmt64(90));
                }
                continue;
             }
@@ -659,8 +665,8 @@ int do_ck_to_do(bool is_qmaster_down) {
    /* check for end of simulated jobs */
    if (mconf_get_simulate_jobs()) {
       for_each_rw_lv(jep, *ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB)) {
-         for_each_rw_lv(jatep, lGetList(jep, JB_ja_tasks)) {
-            if (lGetUlong64(jatep, JAT_end_time) <= now) {
+         for_each_rw_lv(jatep, ocs::tom::get<JB_ja_tasks>(jep)) {
+            if (ocs::tom::get<JAT_end_time>(jatep) <= now) {
                simulated_job_exit(jep, jatep);
             }
          }
@@ -721,8 +727,8 @@ sge_execd_ja_task_is_tightly_integrated(const lListElem *ja_task) {
    bool ret = false;
 
    if (ja_task != nullptr) {
-      const lListElem *pe = lGetObject(ja_task, JAT_pe_object);
-      if (pe != nullptr && lGetBool(pe, PE_control_slaves)) {
+      const lListElem *pe = ocs::tom::get<JAT_pe_object>(ja_task);
+      if (pe != nullptr && ocs::tom::get<PE_control_slaves>(pe)) {
          ret = true;
       }
    }
@@ -745,11 +751,11 @@ sge_kill_petasks(const lListElem *job, const lListElem *ja_task) {
    bool ret = false;
 
    if (job != nullptr && ja_task != nullptr) {
-      for_each_ep_lv(pe_task, lGetList(ja_task, JAT_task_list)) {
-         if (sge_kill(lGetUlong(pe_task, PET_pid), SGE_SIGKILL,
-                      lGetUlong(job, JB_job_number),
-                      lGetUlong(ja_task, JAT_task_number),
-                      lGetString(pe_task, PET_id)) == 0) {
+      for_each_ep_lv(pe_task, ocs::tom::get<JAT_task_list>(ja_task)) {
+         if (sge_kill(ocs::tom::get<PET_pid>(pe_task), SGE_SIGKILL,
+                      ocs::tom::get<JB_job_number>(job),
+                      ocs::tom::get<JAT_task_number>(ja_task),
+                      ocs::tom::get<PET_id>(pe_task)) == 0) {
             ret = true;
          }
       }
@@ -771,18 +777,18 @@ static int sge_start_jobs() {
    }
 
    for_each_rw_lv(jep, *ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB)) {
-      for_each_rw_lv(jatep, lGetList(jep, JB_ja_tasks)) {
+      for_each_rw_lv(jatep, ocs::tom::get<JB_ja_tasks>(jep)) {
          state_changed = exec_job_or_task(jep, jatep, nullptr);
 
          /* visit all tasks */
-         for_each_rw_lv(petep, lGetList(jatep, JAT_task_list)) {
+         for_each_rw_lv(petep, ocs::tom::get<JAT_task_list>(jatep)) {
             state_changed |= exec_job_or_task(jep, jatep, petep);
          }
 
          /* now save this job so we are up to date on restart */
          if (state_changed) {
             if (!mconf_get_simulate_jobs()) {
-               job_write_spool_file(jep, lGetUlong(jatep, JAT_task_number), nullptr, SPOOL_WITHIN_EXECD);
+               job_write_spool_file(jep, ocs::tom::get<JAT_task_number>(jatep), nullptr, SPOOL_WITHIN_EXECD);
             }
             jobs_started++;
          }
@@ -805,10 +811,10 @@ static int exec_job_or_task(lListElem *jep, lListElem *jatep, lListElem *petep) 
    const char *qualified_hostname = component_get_qualified_hostname();
 
    /* retrieve ids - we need them later on */
-   job_id = lGetUlong(jep, JB_job_number);
-   ja_task_id = lGetUlong(jatep, JAT_task_number);
+   job_id = ocs::tom::get<JB_job_number>(jep);
+   ja_task_id = ocs::tom::get<JAT_task_number>(jatep);
    if (petep != nullptr) {
-      pe_task_id = lGetString(petep, PET_id);
+      pe_task_id = ocs::tom::get<PET_id>(petep);
    }
 
    /* we only handle idle jobs or tasks */
@@ -817,9 +823,9 @@ static int exec_job_or_task(lListElem *jep, lListElem *jatep, lListElem *petep) 
       uint32_t status;
 
       if (petep != nullptr) {
-         status = lGetUlong(petep, PET_status);
+         status = ocs::tom::get<PET_status>(petep);
       } else {
-         status = lGetUlong(jatep, JAT_status);
+         status = ocs::tom::get<JAT_status>(jatep);
       }
 
       if (status != JIDLE) {
@@ -835,17 +841,17 @@ static int exec_job_or_task(lListElem *jep, lListElem *jatep, lListElem *petep) 
       uint32_t duration = 60;
 
       DPRINTF("Simulating job " sge_u32 "." sge_u32 "\n", job_id, ja_task_id);
-      lSetUlong64(jatep, JAT_start_time, now);
-      lSetUlong(jatep, JAT_status, JRUNNING);
+      ocs::tom::set<JAT_start_time>(jatep, now);
+      ocs::tom::set<JAT_status>(jatep, JRUNNING);
 
       /* set time when job shall be reported as finished */
-      job_args = lGetList(jep, JB_job_args);
+      job_args = ocs::tom::get<JB_job_args>(jep);
       if (lGetNumberOfElem(job_args) == 1) {
          const char *arg = nullptr;
          char *endptr = nullptr;
          uint32_t duration_in;
 
-         arg = lGetString(lFirst(job_args), ST_name);
+         arg = ocs::tom::get<ST_name>(lFirst(job_args));
          if (arg != nullptr) {
             DPRINTF("Trying to use first argument (" SFQ ") as duration for simulated job\n", arg);
             
@@ -856,22 +862,22 @@ static int exec_job_or_task(lListElem *jep, lListElem *jatep, lListElem *petep) 
          }   
       }
 
-      lSetUlong64(jatep, JAT_end_time, now + sge_gmt32_to_gmt64(duration));
+      ocs::tom::set<JAT_end_time>(jatep, now + sge_gmt32_to_gmt64(duration));
       DRETURN(1);
    }
 
    if (petep != nullptr) {
-      lSetUlong64(petep, PET_start_time, now);
+      ocs::tom::set<PET_start_time>(petep, now);
 #ifdef COMPILE_DC
-      lSetUlong(petep, PET_status, JWAITING4OSJID);
+      ocs::tom::set<PET_status>(petep, JWAITING4OSJID);
       waiting4osjid = 1;
 #else
       lSetUlong(petep, PET_status, JRUNNING);
 #endif
    } else {
-      lSetUlong64(jatep, JAT_start_time, now);
+      ocs::tom::set<JAT_start_time>(jatep, now);
 #ifdef COMPILE_DC
-      lSetUlong(jatep, JAT_status, JWAITING4OSJID);
+      ocs::tom::set<JAT_status>(jatep, JWAITING4OSJID);
       waiting4osjid = 1;
 #else
       lSetUlong(jatep, JAT_status, JRUNNING);
@@ -905,9 +911,9 @@ static int exec_job_or_task(lListElem *jep, lListElem *jatep, lListElem *petep) 
    DPRINTF("TIME IN EXECD FOR STARTING THE JOB: " sge_u64 "\n", sge_get_gmt64() - now);
    
    if (petep != nullptr) {
-      lSetUlong(petep, PET_pid, pid);
+      ocs::tom::set<PET_pid>(petep, pid);
    } else {
-      lSetUlong(jatep, JAT_pid, pid);
+      ocs::tom::set<JAT_pid>(jatep, pid);
 
       // the wallclock limits have to be measured from the start of the task. sge_start_jobs()
       // spools the job as soon as this function returns, so a restart of the daemon finds them.
@@ -947,10 +953,10 @@ int register_at_ptf(const lListElem *job, const lListElem *ja_task, const lListE
 
    DSTRING_STATIC(id_dstring, MAX_STRING_SIZE);
 
-   job_id = lGetUlong(job, JB_job_number);
-   ja_task_id = lGetUlong(ja_task, JAT_task_number);
+   job_id = ocs::tom::get<JB_job_number>(job);
+   ja_task_id = ocs::tom::get<JAT_task_number>(ja_task);
    if (pe_task != nullptr) {
-      pe_task_id = lGetString(pe_task, PET_id);
+      pe_task_id = ocs::tom::get<PET_id>(pe_task);
    }
 
 #if defined(SOLARIS) || defined(LINUX) || defined(FREEBSD) || defined(DARWIN)
@@ -972,9 +978,9 @@ int register_at_ptf(const lListElem *job, const lListElem *ja_task, const lListE
    // so we can use it here, even when sge_execd gets restarted.
    const char *addgrpid_str;
    if (pe_task != nullptr) {
-      addgrpid_str = lGetString(pe_task, PET_osjobid);
+      addgrpid_str = ocs::tom::get<PET_osjobid>(pe_task);
    } else {
-      addgrpid_str = lGetString(ja_task, JAT_osjobid);
+      addgrpid_str = ocs::tom::get<JAT_osjobid>(ja_task);
    }
    addgrpid = static_cast<gid_t>(std::stoul(addgrpid_str));
 #else
@@ -1004,9 +1010,9 @@ int register_at_ptf(const lListElem *job, const lListElem *ja_task, const lListE
       const char *scope_str = nullptr;
 #if defined(OCS_WITH_SYSTEMD)
       if (pe_task != nullptr) {
-         scope_str = lGetString(pe_task, PET_systemd_scope);
+         scope_str = ocs::tom::get<PET_systemd_scope>(pe_task);
       } else {
-         scope_str = lGetString(ja_task, JAT_systemd_scope);
+         scope_str = ocs::tom::get<JAT_systemd_scope>(ja_task);
       }
 #endif
 
@@ -1014,9 +1020,9 @@ int register_at_ptf(const lListElem *job, const lListElem *ja_task, const lListE
       // and we stored it in the ja_task/pe_task when starting the job.
       usage_collection_t usage_collection;
       if (pe_task != nullptr) {
-         usage_collection = static_cast<usage_collection_t>(lGetUlong(pe_task, PET_usage_collection));
+         usage_collection = static_cast<usage_collection_t>(ocs::tom::get<PET_usage_collection>(pe_task));
       } else {
-         usage_collection = static_cast<usage_collection_t>(lGetUlong(ja_task, JAT_usage_collection));
+         usage_collection = static_cast<usage_collection_t>(ocs::tom::get<JAT_usage_collection>(ja_task));
       }
 
       // If we do not want to get usage via Systemd, then pass nullptr as scope_str
@@ -1049,7 +1055,7 @@ int register_at_ptf(const lListElem *job, const lListElem *ja_task, const lListE
    // @todo CS-1409 - JR_osjobid is probably not needed at all
    lListElem *jr;
    if ((jr=get_job_report(job_id, ja_task_id, pe_task_id))) {
-      lSetString(jr, JR_osjobid, addgrpid_str);
+      ocs::tom::set<JR_osjobid>(jr, addgrpid_str);
    }
    DPRINTF("job %s: addgrpid = %s\n", job_get_id_string(job_id, ja_task_id, pe_task_id, &id_dstring), addgrpid_str);
 }

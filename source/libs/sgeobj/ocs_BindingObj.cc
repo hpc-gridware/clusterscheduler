@@ -50,6 +50,7 @@
 #include "sgeobj/ocs_BindingStop.h"
 #include "sgeobj/ocs_BindingStrategy.h"
 #include "sgeobj/ocs_BindingInstance.h"
+#include "tom/ocs_Element.h"
 #include "ocs_Binding.h"
 #include "ocs_BindingType.h"
 #include "ocs_AdvanceReservation.h"
@@ -100,15 +101,15 @@ ocs::Binding::binding_get_or_create_elem(lListElem *parent, lList **answer_list,
    }
 
    // Set defaults. If not changed job-modify (qalter)  will be able to detect what was not set.
-   lSetUlong(binding_elem, BN_new_type, BindingType::UNINITIALIZED);
-   lSetUlong(binding_elem, BN_instance, BindingInstance::UNINITIALIZED);
-   lSetUlong(binding_elem, BN_amount, 0);
-   lSetUlong(binding_elem, BN_unit, BindingUnit::UNINITIALIZED);
-   lSetString(binding_elem, BN_filter, nullptr);
-   lSetString(binding_elem, BN_sort, nullptr);
-   lSetUlong(binding_elem, BN_start, BindingStart::UNINITIALIZED);
-   lSetUlong(binding_elem, BN_stop, BindingStop::UNINITIALIZED);
-   lSetUlong(binding_elem, BN_strategy, BindingStrategy::UNINITIALIZED);
+   ocs::tom::set<BN_new_type>(binding_elem, BindingType::UNINITIALIZED);
+   ocs::tom::set<BN_instance>(binding_elem, BindingInstance::UNINITIALIZED);
+   ocs::tom::set<BN_amount>(binding_elem, 0);
+   ocs::tom::set<BN_unit>(binding_elem, BindingUnit::UNINITIALIZED);
+   ocs::tom::set<BN_filter>(binding_elem, nullptr);
+   ocs::tom::set<BN_sort>(binding_elem, nullptr);
+   ocs::tom::set<BN_start>(binding_elem, BindingStart::UNINITIALIZED);
+   ocs::tom::set<BN_stop>(binding_elem, BindingStop::UNINITIALIZED);
+   ocs::tom::set<BN_strategy>(binding_elem, BindingStrategy::UNINITIALIZED);
 
    lSetObject(parent, nm, binding_elem);
    DRETURN(binding_elem);
@@ -149,7 +150,7 @@ ocs::Binding::binding_get_type(const lListElem *parent, const int nm) {
       DRETURN(default_type);
    }
 
-   const auto binding_type = static_cast<BindingType::Type>(lGetUlong(binding_elem, BN_new_type));
+   const auto binding_type = static_cast<BindingType::Type>(ocs::tom::get<BN_new_type>(binding_elem));
    if (binding_type == BindingType::NONE || binding_type == BindingType::UNINITIALIZED) {
       DRETURN(default_type);
    }
@@ -174,7 +175,7 @@ ocs::Binding::binding_get_unit(const lListElem *parent, const int nm) {
       DRETURN(default_binding_unit);
    }
 
-   const auto binding_unit = static_cast<BindingUnit::Unit>(lGetUlong(binding_elem, BN_unit));
+   const auto binding_unit = static_cast<BindingUnit::Unit>(ocs::tom::get<BN_unit>(binding_elem));
    if (binding_unit == BindingUnit::NONE || binding_unit == BindingUnit::UNINITIALIZED) {
       DRETURN(default_binding_unit);
    }
@@ -198,7 +199,7 @@ ocs::Binding::binding_get_sort(const lListElem *parent, const int nm) {
       DRETURN(NONE_STR);
    }
 
-   const char *binding_sort = lGetString(binding_elem, BN_sort);
+   const char *binding_sort = ocs::tom::get<BN_sort>(binding_elem);
    if (binding_sort == nullptr) {
       DRETURN(NONE_STR);
    }
@@ -223,7 +224,7 @@ ocs::Binding::binding_get_start(const lListElem *parent, const int nm) {
       DRETURN(default_start);
    }
 
-   const auto binding_start = static_cast<BindingStart::Start>(lGetUlong(binding_elem, BN_start));
+   const auto binding_start = static_cast<BindingStart::Start>(ocs::tom::get<BN_start>(binding_elem));
    if (binding_start == BindingStart::NONE || binding_start == BindingStart::UNINITIALIZED) {
       DRETURN(default_start);
    }
@@ -247,7 +248,7 @@ ocs::Binding::binding_get_end(const lListElem *parent, const int nm) {
       DRETURN(default_end);
    }
 
-   const auto binding_end = static_cast<BindingStop::Stop>(lGetUlong(binding_elem, BN_stop));
+   const auto binding_end = static_cast<BindingStop::Stop>(ocs::tom::get<BN_stop>(binding_elem));
    if (binding_end == BindingStop::NONE || binding_end == BindingStop::UNINITIALIZED) {
       DRETURN(default_end);
    }
@@ -271,7 +272,7 @@ ocs::Binding::binding_get_strategy(const lListElem *parent, const int nm) {
       DRETURN(default_strategy);
    }
 
-   const auto binding_strategy = static_cast<BindingStrategy::Strategy>(lGetUlong(binding_elem, BN_strategy));
+   const auto binding_strategy = static_cast<BindingStrategy::Strategy>(ocs::tom::get<BN_strategy>(binding_elem));
    if (binding_strategy == BindingStrategy::NONE || binding_strategy == BindingStrategy::UNINITIALIZED) {
       DRETURN(default_strategy);
    }
@@ -295,7 +296,7 @@ ocs::Binding::binding_get_instance(const lListElem *parent, const int nm) {
       DRETURN(default_instance);
    }
 
-   const auto binding_instance = static_cast<BindingInstance::Instance>(lGetUlong(binding_elem, BN_instance));
+   const auto binding_instance = static_cast<BindingInstance::Instance>(ocs::tom::get<BN_instance>(binding_elem));
    if (binding_instance == BindingInstance::NONE || binding_instance == BindingInstance::UNINITIALIZED) {
       DRETURN(default_instance);
    }
@@ -317,7 +318,7 @@ ocs::Binding::binding_get_filter(const lListElem *parent, int nm) {
    if (binding_elem == nullptr) {
       DRETURN(NONE_STR);
    }
-   DRETURN(lGetString(binding_elem, BN_filter));
+   DRETURN(ocs::tom::get<BN_filter>(binding_elem));
 }
 
 /**
@@ -332,7 +333,7 @@ ocs::Binding::binding_get_amount(const lListElem *parent, const int nm) {
    DENTER(TOP_LAYER);
 
    const lListElem *binding_elem = lGetObject(parent, nm);
-   uint32_t amount = lGetUlong(binding_elem, BN_amount);
+   uint32_t amount = ocs::tom::get<BN_amount>(binding_elem);
    if (amount == static_cast<uint32_t>(-1)) {
       amount = 0;
    }
@@ -362,7 +363,7 @@ ocs::Binding::binding_set_missing_defaults(lListElem *parent, lList **answer_lis
 
    // determine correct binding field (Job or AR)
    int parent_binding_nm = NoName;
-   if (lGetPosViaElem(parent, JB_binding, SGE_NO_ABORT) >= 0) {
+   if (ocs::tom::has<JB_binding>(parent)) {
       parent_binding_nm = JB_binding;
    } else {
       parent_binding_nm = AR_binding;
@@ -375,51 +376,51 @@ ocs::Binding::binding_set_missing_defaults(lListElem *parent, lList **answer_lis
       if (binding_elem == nullptr) {
          DRETURN_VOID;
       }
-      lSetUlong(binding_elem, BN_amount, 1);
+      ocs::tom::set<BN_amount>(binding_elem, 1);
    }
 
    // ensure that the binding element is set to nullptr if the amount is 0
-   if (lGetUlong(binding_elem, BN_amount) == 0) {
+   if (ocs::tom::get<BN_amount>(binding_elem) == 0) {
       lSetObject(parent, parent_binding_nm, nullptr);
       DRETURN_VOID;
    }
 
    // ensure that the binding element is initialized with default values
-   auto instance = static_cast<BindingInstance::Instance>(lGetUlong(binding_elem, BN_instance));
+   auto instance = static_cast<BindingInstance::Instance>(ocs::tom::get<BN_instance>(binding_elem));
    if (instance == BindingInstance::Instance::UNINITIALIZED ||
        instance == BindingInstance::Instance::NONE) {
-      lSetUlong(binding_elem, BN_instance, BindingInstance::Instance::SET);
+      ocs::tom::set<BN_instance>(binding_elem, BindingInstance::Instance::SET);
    }
-   auto unit = static_cast<BindingUnit::Unit>(lGetUlong(binding_elem, BN_unit));
+   auto unit = static_cast<BindingUnit::Unit>(ocs::tom::get<BN_unit>(binding_elem));
    if (unit == BindingUnit::Unit::UNINITIALIZED ||
        unit == BindingUnit::Unit::NONE) {
       const BindingUnit::Unit default_binding_unit = mconf_get_default_binding_unit();
-      lSetUlong(binding_elem, BN_unit, default_binding_unit);
+      ocs::tom::set<BN_unit>(binding_elem, default_binding_unit);
    }
-   auto type = static_cast<BindingType::Type>(lGetUlong(binding_elem, BN_new_type));
+   auto type = static_cast<BindingType::Type>(ocs::tom::get<BN_new_type>(binding_elem));
    if (type == BindingType::Type::UNINITIALIZED ||
        type == BindingType::Type::NONE) {
-      lSetUlong(binding_elem, BN_new_type, BindingType::Type::SLOT);
+      ocs::tom::set<BN_new_type>(binding_elem, BindingType::Type::SLOT);
    }
-   const char *filter = lGetString(binding_elem, BN_filter);
+   const char *filter = ocs::tom::get<BN_filter>(binding_elem);
    if (filter == nullptr) {
-      lSetString(binding_elem, BN_filter, NONE_STR);
+      ocs::tom::set<BN_filter>(binding_elem, NONE_STR);
    }
-   const char *sort = lGetString(binding_elem, BN_sort);
+   const char *sort = ocs::tom::get<BN_sort>(binding_elem);
    if (sort == nullptr) {
-      lSetString(binding_elem, BN_sort, NONE_STR);
+      ocs::tom::set<BN_sort>(binding_elem, NONE_STR);
    }
-   auto start = static_cast<BindingStart::Start>(lGetUlong(binding_elem, BN_start));
+   auto start = static_cast<BindingStart::Start>(ocs::tom::get<BN_start>(binding_elem));
    if (start == BindingStart::Start::UNINITIALIZED) {
-      lSetUlong(binding_elem, BN_start, BindingStart::Start::NONE);
+      ocs::tom::set<BN_start>(binding_elem, BindingStart::Start::NONE);
    }
-   auto end = static_cast<BindingStop::Stop>(lGetUlong(binding_elem, BN_stop));
+   auto end = static_cast<BindingStop::Stop>(ocs::tom::get<BN_stop>(binding_elem));
    if (end == BindingStop::Stop::UNINITIALIZED) {
-      lSetUlong(binding_elem, BN_stop, BindingStop::Stop::NONE);
+      ocs::tom::set<BN_stop>(binding_elem, BindingStop::Stop::NONE);
    }
-   auto strategy = static_cast<BindingStrategy::Strategy>(lGetUlong(binding_elem, BN_strategy));
+   auto strategy = static_cast<BindingStrategy::Strategy>(ocs::tom::get<BN_strategy>(binding_elem));
    if (strategy == BindingStrategy::Strategy::UNINITIALIZED ||
        strategy == BindingStrategy::Strategy::NONE) {
-      lSetUlong(binding_elem, BN_strategy, BindingStrategy::Strategy::PACKED);
+      ocs::tom::set<BN_strategy>(binding_elem, BindingStrategy::Strategy::PACKED);
    }
 }

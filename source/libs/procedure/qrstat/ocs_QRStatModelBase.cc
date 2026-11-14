@@ -29,6 +29,7 @@
 #include "sgeobj/sge_advance_reservation.h"
 #include "sgeobj/sge_ulong.h"
 #include "sgeobj/sge_str.h"
+#include "tom/ocs_Element.h"
 
 #include "gdi/ocs_gdi_Client.h"
 
@@ -155,7 +156,7 @@ lCondition *ocs::QRStatModelBase::get_ar_where(QRStatParameter& parameter) {
 
       for_each_ep_lv(elem, parameter.get_ar_id_list()) {
          lCondition *tmp_where = nullptr;
-         uint32_t value = lGetUlong(elem, ULNG_value);
+         uint32_t value = ocs::tom::get<ULNG_value>(elem);
 
          tmp_where = lWhere("%T(%I == %u)", AR_Type, AR_id, value);
          if (tmp_where != nullptr) {
@@ -173,7 +174,7 @@ lCondition *ocs::QRStatModelBase::get_ar_where(QRStatParameter& parameter) {
 
       lCondition *where = nullptr;
       for_each_ep_lv(elem, parameter.get_user_list()) {
-         const char *name = lGetString(elem, ST_name);
+         const char *name = ocs::tom::get<ST_name>(elem);
 
          lCondition *tmp_where = lWhere("%T(%I p= %s)", AR_Type, AR_owner, name);
          if (tmp_where != nullptr) {

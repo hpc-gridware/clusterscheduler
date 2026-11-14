@@ -34,6 +34,9 @@
 #include "sge_job.h"
 #include "sge_resource_quota_service.h"
 #include "sge_userprj.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_JRS.h"
+#include "sgeobj/tom/ocs_tom_ST.h"
 
 uint32_t ocs::Category::next_id = 0;
 
@@ -57,9 +60,9 @@ ocs::Category::build_string(dstring *category_str, lListElem *job,
    DENTER(TOP_LAYER);
 
    // owner (user, UNIX group, and ACLs)
-   const char *owner = lGetString(job, JB_owner);
-   const char *group = lGetString(job, JB_group);
-   const lList *grp_list = lGetList(job, JB_grp_list);
+   const char *owner = ocs::tom::get<JB_owner>(job);
+   const char *group = ocs::tom::get<JB_group>(job);
+   const lList *grp_list = ocs::tom::get<JB_grp_list>(job);
    sge_unparse_acl_dstring(category_str, owner, group, grp_list, acl_list, "-U");
 
    // -u if referenced in resource quota sets
@@ -93,13 +96,13 @@ ocs::Category::build_string(dstring *category_str, lListElem *job,
 
    // -scope global|master|slave -hard -par <allocation_rule>
    int par_pos = -1;
-   for_each_ep_lv(request_set, lGetList(job, JB_request_set_list)) {
+   for_each_ep_lv(request_set, ocs::tom::get<JB_request_set_list>(job)) {
       // Get the position of JRS_allocation_rule only once.
       if (par_pos == -1) {
          par_pos = lGetPosViaElem(request_set, JRS_allocation_rule, SGE_NO_ABORT);
       }
       // Add the -par switch(es) to the category string.
-      switch (lGetUlong(request_set, JRS_scope)) {
+      switch (ocs::tom::get<JRS_scope>(request_set)) {
          case JRS_SCOPE_GLOBAL:
             sge_unparse_string_option_dstring(category_str, request_set, par_pos, "-scope global -par");
             break;
@@ -140,9 +143,9 @@ ocs::Category::build_string(dstring *category_str, lListElem *job,
    const char *project = lGetPosString(job, project_nm);
 
    if (project != nullptr) {
-      const lListElem *prj = lGetElemStr(prj_list, PR_name, project);
+      const lListElem *prj = ocs::tom::find_first<PR_name>(prj_list, project);
 
-      if (prj != nullptr && lGetBool(prj, PR_consider_with_categories)) {
+      if (prj != nullptr && ocs::tom::get<PR_consider_with_categories>(prj)) {
          sge_unparse_string_option_dstring(category_str, job, project_nm, "-P");
       }
    }

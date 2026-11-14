@@ -42,6 +42,7 @@
 #include "uti/sge_rmon_macros.h"
 
 #include "sgeobj/ocs_DataStore.h"
+#include "tom/ocs_Element.h"
 
 #include "mir/sge_mirror.h"
 #include "mir/sge_sharetree_mirror.h"
@@ -78,10 +79,10 @@ sharetree_update_master_list(sge_evc_class_t *evc, sge_object_type type, sge_eve
    lFreeList(list);
    
 
-   if ((src = lGetListRW(event, ET_new_version))) {
+   if ((src = ocs::tom::get<ET_new_version>(event))) {
       
       /* install new one */
-      *list = lCreateList("share tree", lGetElemDescr(lFirst(lGetList(event, ET_new_version))));
+      *list = lCreateList("share tree", lGetElemDescr(lFirst(ocs::tom::get<ET_new_version>(event))));
       lAppendElem(*list, lDechainElem(src, lFirstRW(src)));
    }
 

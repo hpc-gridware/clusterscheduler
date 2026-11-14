@@ -48,6 +48,8 @@
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_qinstance.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_JAT.h"
 
 #include "msg_common.h"
 #include "msg_qmaster.h"
@@ -154,7 +156,7 @@ int qmaster_handle_reconnect_request(uint32_t job_id,
    const lList *master_job_list = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
    INFO("qmaster_handle_reconnect_request: looking up job " sge_u32 " in master_job_list with %d entries",
         job_id, lGetNumberOfElem(master_job_list));
-   lListElem *jep = lGetElemUlongRW(master_job_list, JB_job_number, job_id);
+   lListElem *jep = ocs::tom::find_first_rw<JB_job_number>(master_job_list, job_id);
    if (jep == nullptr) {
       answer_list_add_sprintf(answer_list, STATUS_EEXIST, ANSWER_QUALITY_ERROR,
                               "job " sge_u32 " does not exist (master_job_list has %d entries)",
@@ -165,7 +167,7 @@ int qmaster_handle_reconnect_request(uint32_t job_id,
    // Ownership check: only the job owner may reconnect.  Managers/operators are
    // intentionally NOT allowed here — reconnect attaches a new interactive client,
    // which is a privilege specific to the job owner.
-   const char *owner = lGetString(jep, JB_owner);
+   const char *owner = ocs::tom::get<JB_owner>(jep);
    if (owner == nullptr || sge_strnullcmp(requester_user, owner) != 0) {
       answer_list_add_sprintf(answer_list, STATUS_ENOTOWNER, ANSWER_QUALITY_ERROR,
                               MSG_JOB_NOMODJOBPERMS_SU, requester_user, job_id);
@@ -174,8 +176,8 @@ int qmaster_handle_reconnect_request(uint32_t job_id,
 
    // Find the running ja_task and its exec host.  Reconnect only applies to a job
    // that has been dispatched; the master queue gives us the exec host.
-   const lListElem *jatep = lFirst(lGetList(jep, JB_ja_tasks));
-   if (jatep == nullptr || lGetString(jatep, JAT_master_queue) == nullptr) {
+   const lListElem *jatep = lFirst(static_cast<const lList *>(ocs::tom::get<JB_ja_tasks>(jep)));
+   if (jatep == nullptr || ocs::tom::get<JAT_master_queue>(jatep) == nullptr) {
       answer_list_add_sprintf(answer_list, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
                               "job " sge_u32 " is not currently dispatched", job_id);
       DRETURN(-1);
@@ -183,13 +185,13 @@ int qmaster_handle_reconnect_request(uint32_t job_id,
 
    const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
    const lListElem *qinstance = cqueue_list_locate_qinstance(master_cqueue_list,
-                                                             lGetString(jatep, JAT_master_queue));
+                                                             ocs::tom::get<JAT_master_queue>(jatep));
    if (qinstance == nullptr) {
       answer_list_add_sprintf(answer_list, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
                               "could not locate master queue for job " sge_u32, job_id);
       DRETURN(-1);
    }
-   const char *exec_host = lGetHost(qinstance, QU_qhostname);
+   const char *exec_host = ocs::tom::get<QU_qhostname>(qinstance);
    if (exec_host == nullptr) {
       answer_list_add_sprintf(answer_list, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
                               "could not determine exec host for job " sge_u32, job_id);
@@ -221,7 +223,7 @@ int qmaster_handle_reconnect_request(uint32_t job_id,
    // the master_cqueue_list pointer can be invalidated by subsequent mutations.
    snprintf(out_exec_host, out_exec_host_size, "%s", exec_host);
 
-   uint32_t ja_task_id = lGetUlong(jatep, JAT_task_number);
+   uint32_t ja_task_id = ocs::tom::get<JAT_task_number>(jatep);
 
    int rc = sge_qmaster_send_reconnect_prepare(job_id, ja_task_id, out_exec_host,
                                                client_host, client_port,

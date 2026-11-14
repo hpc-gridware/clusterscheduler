@@ -46,6 +46,7 @@
 #include "cull/cull_pack.h"
 
 #include "sgeobj/sge_pack.h"
+#include "tom/ocs_Element.h"
 
 #include "msg_common.h"
 
@@ -57,7 +58,7 @@ lListElem *lWhereToElem(const lCondition *where){
    if (init_packbuffer(&pb, 1024, false, false) == PACK_SUCCESS) {
       if (cull_pack_cond(&pb, where) == PACK_SUCCESS) {
          whereElem = lCreateElem(PACK_Type);
-         lSetUlong(whereElem, PACK_id, SGE_WHERE);
+         ocs::tom::set<PACK_id>(whereElem, SGE_WHERE);
          setByteArray( (char*)pb.head_ptr, pb.bytes_used, whereElem, PACK_string);
       }
    }
@@ -71,7 +72,7 @@ lCondition *lWhereFromElem(const lListElem *where){
 
    lCondition *cond = nullptr;
 
-   if (lGetUlong(where, PACK_id) == SGE_WHERE) {
+   if (ocs::tom::get<PACK_id>(where) == SGE_WHERE) {
       sge_pack_buffer pb;
       char *buffer;
       int ret = 0;
@@ -86,7 +87,7 @@ lCondition *lWhereFromElem(const lListElem *where){
          ERROR(MSG_PACK_ERRORUNPACKING_S, cull_pack_strerror(ret));
       }
    } else {
-      ERROR(MSG_PACK_WRONGPACKTYPE_UI, lGetUlong(where, PACK_id), SGE_WHERE);
+      ERROR(MSG_PACK_WRONGPACKTYPE_UI, ocs::tom::get<PACK_id>(where), SGE_WHERE);
    }
 
    DRETURN(cond);
@@ -101,7 +102,7 @@ lListElem *lWhatToElem(const lEnumeration *what) {
    if (init_packbuffer(&pb, 1024, false, false) == PACK_SUCCESS) {
       if (cull_pack_enum(&pb, what) == PACK_SUCCESS) {
          whatElem = lCreateElem(PACK_Type);
-         lSetUlong(whatElem, PACK_id, SGE_WHAT);
+         ocs::tom::set<PACK_id>(whatElem, SGE_WHAT);
 
          setByteArray((char*)pb.head_ptr, pb.bytes_used, whatElem, PACK_string);
       }
@@ -119,7 +120,7 @@ lEnumeration *lWhatFromElem(const lListElem *what){
    char *buffer;
    int ret=0;
 
-   if (lGetUlong(what, PACK_id) == SGE_WHAT) {
+   if (ocs::tom::get<PACK_id>(what) == SGE_WHAT) {
       size = getByteArray(&buffer, what, PACK_string);
       if (size <= 0){
          ERROR(SFNMAX, MSG_PACK_INVALIDPACKDATA);
@@ -131,7 +132,7 @@ lEnumeration *lWhatFromElem(const lListElem *what){
          ERROR(MSG_PACK_ERRORUNPACKING_S, cull_pack_strerror(ret));
       }
    } else {
-      ERROR(MSG_PACK_WRONGPACKTYPE_UI, lGetUlong(what, PACK_id), SGE_WHAT);
+      ERROR(MSG_PACK_WRONGPACKTYPE_UI, ocs::tom::get<PACK_id>(what), SGE_WHAT);
    }
    DRETURN(cond);
 }

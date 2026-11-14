@@ -33,6 +33,8 @@
 #include "sgeobj/sge_schedd_conf.h"
 #include "sgeobj/sge_usage.h"
 #include "sgeobj/sge_userprj.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_UA.h"
 
 #include "ocs_SharetreeUsage.h"
 #include "ocs_FinishedJob.h"
@@ -51,7 +53,7 @@ namespace {
       if (upu_list == nullptr) {
          return;
       }
-      lListElem *upu = lGetElemUlongRW(upu_list, UPU_job_number, job_number);
+      lListElem *upu = ocs::tom::find_first_rw<UPU_job_number>(upu_list, job_number);
       if (upu != nullptr) {
          lRemoveElem(upu_list, &upu);
       }
@@ -122,7 +124,7 @@ sge_book_finished_job_usage(lListElem *jep, lListElem *jatep, monitoring_t * /* 
     * COMMIT_ST_RESCHEDULED / COMMIT_ST_USER_RESCHEDULED so the next exit
     * re-seeds. The guard is defensive coverage for future paths that may
     * re-invoke this helper (e.g. CS-1908 finished-job retention). */
-   if (lGetSubStr(jatep, UA_name, "finished_jobs", JAT_scaled_usage_list) != nullptr) {
+   if (static_cast<const lListElem *>(ocs::tom::find_first_in<JAT_scaled_usage_list, UA_name>(jatep, "finished_jobs")) != nullptr) {
       return 0;
    }
 
@@ -142,9 +144,9 @@ sge_book_finished_job_usage(lListElem *jep, lListElem *jatep, monitoring_t * /* 
    const lList *master_user_list = *ocs::DataStore::get_master_list(SGE_TYPE_USER);
    const lList *master_project_list = *ocs::DataStore::get_master_list(SGE_TYPE_PROJECT);
 
-   lListElem *user = user_list_locate(master_user_list, lGetString(jep, JB_owner));
+   lListElem *user = user_list_locate(master_user_list, ocs::tom::get<JB_owner>(jep));
    lListElem *project = nullptr;
-   const char *project_name = lGetString(jep, JB_project);
+   const char *project_name = ocs::tom::get<JB_project>(jep);
    if (project_name != nullptr && *project_name != '\0') {
       project = prj_list_locate(master_project_list, project_name);
    }
@@ -172,10 +174,10 @@ sge_book_finished_job_usage(lListElem *jep, lListElem *jatep, monitoring_t * /* 
     * leaf with the fewest pending jobs wins by per-job dilution alone,
     * starving leaves with many pending (project3 in the sharetree
     * test). */
-   lList *scaled = lGetListRW(jatep, JAT_scaled_usage_list);
+   lList *scaled = ocs::tom::get<JAT_scaled_usage_list>(jatep);
    if (scaled == nullptr) {
-      lSetList(jatep, JAT_scaled_usage_list, lCreateList("scaled_usage", UA_Type));
-      scaled = lGetListRW(jatep, JAT_scaled_usage_list);
+      ocs::tom::set<JAT_scaled_usage_list>(jatep, lCreateList("scaled_usage", UA_Type));
+      scaled = ocs::tom::get<JAT_scaled_usage_list>(jatep);
    }
    usage_list_set_double_usage(scaled, "finished_jobs", 1.0);
 
@@ -196,7 +198,7 @@ sge_book_finished_job_usage(lListElem *jep, lListElem *jatep, monitoring_t * /* 
                                    static_cast<u_long>(-1), curr_time);
    lFreeList(&usage_weight_list);
 
-   const uint32_t job_number = lGetUlong(jep, JB_job_number);
+   const uint32_t job_number = ocs::tom::get<JB_job_number>(jep);
 
    /* 2. drop the per-job debited entry the sum step just appended (the job
     *    is gone; no further deltas to compute), and bump change markers so
@@ -219,12 +221,12 @@ sge_book_finished_job_usage(lListElem *jep, lListElem *jatep, monitoring_t * /* 
     *    Spool is deferred to the share-tree spool handler at its own
     *    cadence. */
    if (user != nullptr) {
-      const char *uname = lGetString(user, UU_name);
+      const char *uname = ocs::tom::get<UU_name>(user);
       ocs::SharetreeUsage::mark_user_event_dirty(uname);
       ocs::SharetreeUsage::mark_user_spool_dirty(uname);
    }
    if (project != nullptr) {
-      const char *pname = lGetString(project, PR_name);
+      const char *pname = ocs::tom::get<PR_name>(project);
       ocs::SharetreeUsage::mark_project_event_dirty(pname);
       ocs::SharetreeUsage::mark_project_spool_dirty(pname);
    }

@@ -54,6 +54,7 @@
 #include "sgeobj/sge_answer.h"           /* answer_list_add_sprintf */
 #include "sgeobj/config.h"               /* add_nm_to_set */
 #include "sgeobj/sge_utility.h"          /* SGE_CHECK_POINTER_FALSE */
+#include "tom/ocs_Element.h"
 
 #include "spool/sge_spooling_utilities.h"
 
@@ -258,8 +259,8 @@ spool_json_write_typed_number(rapidjson::PrettyWriter<rapidjson::StringBuffer> &
 static void
 spool_json_write_ce_value(rapidjson::PrettyWriter<rapidjson::StringBuffer> &writer,
                           const lListElem *ce) {
-   const double dval = lGetDouble(ce, CE_doubleval);
-   const auto type = static_cast<ocs::CEntry::Type>(lGetUlong(ce, CE_valtype));
+   const double dval = ocs::tom::get<CE_doubleval>(ce);
+   const auto type = static_cast<ocs::CEntry::Type>(ocs::tom::get<CE_valtype>(ce));
    switch (type) {
       case ocs::CEntry::Type::DOUBLE:
       case ocs::CEntry::Type::INT:
@@ -272,7 +273,7 @@ spool_json_write_ce_value(rapidjson::PrettyWriter<rapidjson::StringBuffer> &writ
          break;
       default: {
          /* STR/CSTR/HOST/RESTR/RSMAP and NONE (unfilled config): raw string value */
-         const char *s = lGetString(ce, CE_stringval);
+         const char *s = ocs::tom::get<CE_stringval>(ce);
          s != nullptr ? writer.String(s) : writer.Null();
          break;
       }
@@ -294,7 +295,7 @@ spool_json_write_ce_array(rapidjson::PrettyWriter<rapidjson::StringBuffer> &writ
    const lListElem *ce;
    for_each_ep(ce, list) {
       writer.StartObject();
-      const char *cname = lGetString(ce, CE_name);
+      const char *cname = ocs::tom::get<CE_name>(ce);
       writer.Key("name");
       cname != nullptr ? writer.String(cname) : writer.Null();
       writer.Key("value");

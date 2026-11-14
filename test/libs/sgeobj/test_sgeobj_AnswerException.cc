@@ -29,6 +29,7 @@
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/ocs_AnswerException.h"
 #include "sgeobj/sge_answer.h"
+#include "tom/ocs_Element.h"
 
 #include "ocs_module_test.h"
 
@@ -99,8 +100,8 @@ test_copies() {
    CHECK(5, "the rethrown copy keeps the message", rethrown_what == error_text);
    CHECK(6, "the first take returns the whole list with both entries",
          taken != nullptr && lGetNumberOfElem(taken) == 2
-         && lGetString(lFirst(taken), AN_text) == error_text
-         && lGetString(lLast(taken), AN_text) == warning_text);
+         && ocs::tom::get<AN_text>(lFirst(taken)) == error_text
+         && ocs::tom::get<AN_text>(lLast(taken)) == warning_text);
    CHECK(7, "a later take on another copy returns nullptr, and the message stays",
          copy.take_answer_list() == nullptr && copy.what() == error_text);
    lFreeList(&taken);

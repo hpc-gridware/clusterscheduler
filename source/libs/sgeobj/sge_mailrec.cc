@@ -46,6 +46,7 @@
 
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_mailrec.h"
+#include "tom/ocs_Element.h"
 
 #include "symbols.h"
 #include "get_path.h"
@@ -108,8 +109,8 @@ int mailrec_parse(lList **lpp, const char *mail_str) {
       context = nullptr;
       user = sge_strtok_r(*pstr, "@", &context);
       host = sge_strtok_r(nullptr, "@", &context);
-      if ((tmp=lGetElemStr(*lpp, MR_user, user))) {
-         if (!sge_strnullcmp(host, lGetHost(tmp, MR_host))) {
+      if ((tmp=ocs::tom::find_first<MR_user>(*lpp, user))) {
+         if (!sge_strnullcmp(host, ocs::tom::get<MR_host>(tmp))) {
             /* got this mail adress twice */
             sge_free_saved_vars(context);
             continue;
@@ -118,9 +119,9 @@ int mailrec_parse(lList **lpp, const char *mail_str) {
 
       /* got a new adress - add it */
       ep = lCreateElem(MR_Type);
-      lSetString(ep, MR_user, user);
+      ocs::tom::set<MR_user>(ep, user);
       if (host) 
-         lSetHost(ep, MR_host, host);
+         ocs::tom::set<MR_host>(ep, host);
       lAppendElem(*lpp, ep);
 
       sge_free_saved_vars(context);
@@ -159,10 +160,10 @@ int mailrec_unparse(const lList *head, char *mail_str, unsigned int mail_str_len
    *mail_str = '\0';
 
    for_each_ep_lv(elem,head) {
-      if (!(u = lGetString(elem, MR_user)))
+      if (!(u = ocs::tom::get<MR_user>(elem)))
          u = MSG_SMALLNULL;
 
-      if (!(h = lGetHost(elem, MR_host)))
+      if (!(h = ocs::tom::get<MR_host>(elem)))
          snprintf(tmpstr, sizeof(tmpstr), "%s", u);
       else
          snprintf(tmpstr, sizeof(tmpstr), "%s@%s", u, h);

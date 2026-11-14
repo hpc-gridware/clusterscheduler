@@ -51,6 +51,8 @@
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/ocs_DataStore.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_JAT.h"
 
 #include "mir/sge_mirror.h"
 
@@ -89,24 +91,24 @@ static bool generate_jobs(int num) {
       lListElem *job;
 
       job = lCreateElem(JB_Type); num_total++;
-      lSetUlong(job, JB_job_number, i + 1);
-      lSetString(job, JB_job_name, random_string(15));
-      lSetString(job, JB_project, random_string(20));
-      lSetString(job, JB_department, random_string(20));
-      lSetString(job, JB_directive_prefix, random_string(100));
-      lSetString(job, JB_exec_file, random_string(500));
-      lSetString(job, JB_script_file, random_string(500));
-      lSetString(job, JB_owner, random_string(10));
-      lSetString(job, JB_group, random_string(10));
-      lSetString(job, JB_account, random_string(20));
-      lSetString(job, JB_cwd, random_string(100));
+      ocs::tom::set<JB_job_number>(job, i + 1);
+      ocs::tom::set<JB_job_name>(job, random_string(15));
+      ocs::tom::set<JB_project>(job, random_string(20));
+      ocs::tom::set<JB_department>(job, random_string(20));
+      ocs::tom::set<JB_directive_prefix>(job, random_string(100));
+      ocs::tom::set<JB_exec_file>(job, random_string(500));
+      ocs::tom::set<JB_script_file>(job, random_string(500));
+      ocs::tom::set<JB_owner>(job, random_string(10));
+      ocs::tom::set<JB_group>(job, random_string(10));
+      ocs::tom::set<JB_account>(job, random_string(20));
+      ocs::tom::set<JB_cwd>(job, random_string(100));
       lAppendElem(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB), job);
 
       if ((i % 10) == 0) {
          int j;
          num_array = (num_array + 1) % 100;
          for (j = 0; j < num_array; j++) {
-            lAddSubUlong(job, JAT_task_number, j + 1, JB_ja_tasks, JAT_Type); num_total++;
+            ocs::tom::emplace_back_in<JB_ja_tasks, JAT_task_number>(job, j + 1); num_total++;
          }
       }
    }
@@ -121,7 +123,7 @@ static bool update_jobs() {
    int num_total = 0;
 
    for_each_rw(job, *ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB)) {
-      lSetString(job, JB_project, random_string(20));
+      ocs::tom::set<JB_project>(job, random_string(20));
       num_total++;
    }
 
@@ -143,15 +145,15 @@ static bool spool_data() {
    fprintf(stdout, "spooling " sge_u32 " jobs\n", lGetNumberOfElem(*ocs::DataStore::get_master_list(SGE_TYPE_JOB)));
 
    for_each_rw(job, *ocs::DataStore::get_master_list(SGE_TYPE_JOB)) {
-      const lList *ja_tasks = lGetList(job, JB_ja_tasks);
+      const lList *ja_tasks = ocs::tom::get<JB_ja_tasks>(job);
       if (ja_tasks == nullptr || lGetNumberOfElem(ja_tasks) == 0) {
-         key = job_get_key(lGetUlong(job, JB_job_number), 0, nullptr, &key_ds);
+         key = job_get_key(ocs::tom::get<JB_job_number>(job), 0, nullptr, &key_ds);
          spool_write_object(&answer_list, context, job, key, SGE_TYPE_JOB);
          num_total++;
       } else {
          const lListElem *ja_task;
          for_each_rw(ja_task, ja_tasks) {
-            key = job_get_key(lGetUlong(job, JB_job_number), lGetUlong(ja_task, JAT_task_number), nullptr, &key_ds);
+            key = job_get_key(ocs::tom::get<JB_job_number>(job), ocs::tom::get<JAT_task_number>(ja_task), nullptr, &key_ds);
             spool_write_object(&answer_list, context, ja_task, key, SGE_TYPE_JATASK);
             num_total++;
          }
@@ -190,7 +192,7 @@ static bool delete_spooled_data() {
 
    /* jobs */
    for_each_rw(job, *ocs::DataStore::get_master_list(SGE_TYPE_JOB)) {
-      snprintf(key, sizeof(key),  sge_u32 ".0", lGetUlong(job, JB_job_number));
+      snprintf(key, sizeof(key),  sge_u32 ".0", ocs::tom::get<JB_job_number>(job));
       spool_delete_object(&answer_list, context, SGE_TYPE_JOB, key);
       answer_list_output(&answer_list);
       num_total++;

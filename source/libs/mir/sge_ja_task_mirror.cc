@@ -47,6 +47,8 @@
 
 #include "sgeobj/sge_job.h"
 #include "sgeobj/ocs_DataStore.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_JAT.h"
 
 #include "mir/sge_mirror.h"
 #include "mir/msg_mirlib.h"
@@ -91,10 +93,10 @@ ja_task_update_master_list_usage(lList *job_list, lListElem *event) {
    uint32_t job_id, ja_task_id;
    lListElem *job, *ja_task;
 
-   job_id = lGetUlong(event, ET_intkey);
-   ja_task_id = lGetUlong(event, ET_intkey2);
+   job_id = ocs::tom::get<ET_intkey>(event);
+   ja_task_id = ocs::tom::get<ET_intkey2>(event);
 
-   job = lGetElemUlongRW(job_list, JB_job_number, job_id);
+   job = ocs::tom::find_first_rw<JB_job_number>(job_list, job_id);
 
    if (job == nullptr) {
       dstring id_dstring = DSTRING_INIT;
@@ -111,9 +113,9 @@ ja_task_update_master_list_usage(lList *job_list, lListElem *event) {
       DRETURN(SGE_EMA_FAILURE);
    }
 
-   lXchgList(event, ET_new_version, &tmp);
-   lXchgList(ja_task, JAT_scaled_usage_list, &tmp);
-   lXchgList(event, ET_new_version, &tmp);
+   ocs::tom::exchange<ET_new_version>(event, &tmp);
+   ocs::tom::exchange<JAT_scaled_usage_list>(ja_task, &tmp);
+   ocs::tom::exchange<ET_new_version>(event, &tmp);
 
    DRETURN(SGE_EMA_OK);
 }
@@ -164,18 +166,18 @@ ja_task_update_master_list(sge_evc_class_t *evc, sge_object_type type,
 
    list = ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB);
    
-   job_id = lGetUlong(event, ET_intkey);
-   ja_task_id = lGetUlong(event, ET_intkey2);
+   job_id = ocs::tom::get<ET_intkey>(event);
+   ja_task_id = ocs::tom::get<ET_intkey2>(event);
 
-   job = lGetElemUlongRW(*list, JB_job_number, job_id);
+   job = ocs::tom::find_first_rw<JB_job_number>(*list, job_id);
    if (job == nullptr) {
       ERROR(MSG_JOB_CANTFINDJOBFORUPDATEIN_SS, job_get_id_string(job_id, 0, nullptr, &id_dstring), __func__);
       DRETURN(SGE_EMA_FAILURE);
    }
 
    ja_task = job_search_task(job, nullptr, ja_task_id);
-   ja_task_list = lGetListRW(job, JB_ja_tasks);
-   ja_task_descr = lGetListDescr(lGetList(event, ET_new_version));
+   ja_task_list = ocs::tom::get<JB_ja_tasks>(job);
+   ja_task_descr = lGetListDescr(ocs::tom::get<ET_new_version>(event));
 
    if (action == SGE_EMA_MOD) {
       /* modify event for ja_task.
@@ -236,8 +238,8 @@ ja_task_update_master_list(sge_evc_class_t *evc, sge_object_type type,
 
    if (action == SGE_EMA_ADD) {
       /* first jatask add event could have created new ja_task list for job */
-      if (lGetList(job, JB_ja_tasks) == nullptr && ja_task_list != nullptr) {
-         lSetList(job, JB_ja_tasks, ja_task_list);
+      if (static_cast<const lList *>(ocs::tom::get<JB_ja_tasks>(job)) == nullptr && ja_task_list != nullptr) {
+         ocs::tom::set<JB_ja_tasks>(job, ja_task_list);
       }
       /* we must enroll the task to have it removed in the pending range list */
       job_enroll(job, nullptr, ja_task_id);

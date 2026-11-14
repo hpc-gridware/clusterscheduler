@@ -110,6 +110,10 @@
 #include "sgeobj/cull_parse_util.h"
 #include "sgeobj/sge_feature.h"
 #include "sgeobj/sge_jsv.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_JAT.h"
+#include "sgeobj/tom/ocs_tom_PA.h"
+#include "sgeobj/tom/ocs_tom_VA.h"
 
 /* module variables */
 static bool g_new_interactive_job_support = false;
@@ -338,9 +342,9 @@ static int open_qrsh_socket(int *port, const lList *port_range) {
       // run; without it, rapid test repetition or back-to-back jobs can exhaust
       // the configured range.
       for (const lListElem *rep = lFirst(port_range); rep && sock == -1; rep = lNext(rep)) {
-         uint32_t min  = lGetUlong(rep, RN_min);
-         uint32_t max  = lGetUlong(rep, RN_max);
-         uint32_t step = lGetUlong(rep, RN_step);
+         uint32_t min  = ocs::tom::get<RN_min>(rep);
+         uint32_t max  = ocs::tom::get<RN_max>(rep);
+         uint32_t step = ocs::tom::get<RN_step>(rep);
          if (step == 0) { step = 1; }
          for (uint32_t candidate = min; candidate <= max && sock == -1; candidate += step) {
             int try_sock = socket(AF_INET, SOCK_STREAM, 0);
@@ -569,10 +573,10 @@ static int parse_result_list(lList *alp, int *alp_error) {
    *alp_error = 0;
 
    for_each_ep_lv(aep, alp) {
-      uint32_t status  = lGetUlong(aep, AN_status);
-      uint32_t quality = lGetUlong(aep, AN_quality);
+      uint32_t status  = ocs::tom::get<AN_status>(aep);
+      uint32_t quality = ocs::tom::get<AN_quality>(aep);
       if (quality == ANSWER_QUALITY_ERROR) {
-         ERROR("%s", lGetString(aep, AN_text));
+         ERROR("%s", ocs::tom::get<AN_text>(aep));
          *alp_error = 1;
 
          switch(status) {
@@ -586,7 +590,7 @@ static int parse_result_list(lList *alp, int *alp_error) {
                break;
          }
       } else if (quality == ANSWER_QUALITY_WARNING) {
-         WARNING(SFN SFN, MSG_WARNING, lGetString(aep, AN_text));
+         WARNING(SFN SFN, MSG_WARNING, ocs::tom::get<AN_text>(aep));
       }
    }
 
@@ -914,7 +918,7 @@ get_client_name(int is_rsh, int is_rlogin, int inherit_job) {
    }
 
    /* search for config entry */
-   qlogin_cmd_elem = lGetElemStr(conf_list, CF_name, config_name);
+   qlogin_cmd_elem = ocs::tom::find_first<CF_name>(conf_list, config_name);
    if (qlogin_cmd_elem == nullptr) {
       ERROR(SFNMAX, MSG_CONFIG_CANTGETCONFIGURATIONFROMQMASTER);
       lFreeList(&conf_list);
@@ -924,7 +928,7 @@ get_client_name(int is_rsh, int is_rlogin, int inherit_job) {
    }
 
    /* use config entry, if found */
-   client_name = lGetString(qlogin_cmd_elem, CF_value);
+   client_name = ocs::tom::get<CF_value>(qlogin_cmd_elem);
 
    /*
     * If no command is configured, or none is configured as command,
@@ -978,8 +982,8 @@ get_client_name(int is_rsh, int is_rlogin, int inherit_job) {
 static void set_job_info(lListElem *job, const char *name, int is_qlogin,
                          int is_rsh, int is_rlogin) {
    lList *stdout_stderr_path = nullptr;
-   uint32_t jb_now = lGetUlong(job, JB_type);
-   const char *job_name  = lGetString(job, JB_job_name);
+   uint32_t jb_now = ocs::tom::get<JB_type>(job);
+   const char *job_name  = ocs::tom::get<JB_job_name>(job);
 
    if (is_rlogin) {
       JOB_TYPE_SET_QRLOGIN(jb_now);
@@ -1007,12 +1011,12 @@ static void set_job_info(lListElem *job, const char *name, int is_qlogin,
       }
    }
 
-   lSetUlong(job, JB_type, jb_now);
-   lSetString(job, JB_job_name, job_name);
+   ocs::tom::set<JB_type>(job, jb_now);
+   ocs::tom::set<JB_job_name>(job, job_name);
 
    cull_parse_path_list(&stdout_stderr_path, "/dev/null");
-   lSetList(job, JB_stdout_path_list, lCopyList("stdout_path_list", stdout_stderr_path));
-   lSetList(job, JB_stderr_path_list, lCopyList("stderr_path_list", stdout_stderr_path));
+   ocs::tom::set<JB_stdout_path_list>(job, lCopyList("stdout_path_list", stdout_stderr_path));
+   ocs::tom::set<JB_stderr_path_list>(job, lCopyList("stderr_path_list", stdout_stderr_path));
    lFreeList(&stdout_stderr_path);
 }
 
@@ -1048,12 +1052,12 @@ static void set_command_to_env(lList *envlp, lList *opts_qrsh) {
          char delimiter[2];
          const char *help = nullptr;
          snprintf(delimiter, sizeof(delimiter), "%c", 0xff);
-         help = lGetString(ep, SPA_argval_lStringT);
+         help = ocs::tom::get<SPA_argval_lStringT>(ep);
          if (help != nullptr) {
             sge_dstring_copy_string(&buffer, help);
          }
          while((ep = lNext(ep)) != nullptr) {
-            const char *arg = lGetString(ep, SPA_argval_lStringT);
+            const char *arg = ocs::tom::get<SPA_argval_lStringT>(ep);
             sge_dstring_append(&buffer, delimiter);
             if (arg != nullptr) {
                sge_dstring_append(&buffer, arg);
@@ -1120,10 +1124,10 @@ static void write_builtin_ijs_connection_data_to_job_object(
     * Get environment from job object. If there is no environment yet,
     * create one.
     */
-   envlp = lGetListRW(job, JB_env_list);
+   envlp = ocs::tom::get<JB_env_list>(job);
    if (envlp == nullptr) {
       envlp = lCreateList("environment list", VA_Type);
-      lSetList(job, JB_env_list, envlp);
+      ocs::tom::set<JB_env_list>(job, envlp);
    }
 
    /* TODO: Instead of using env, use job field to transfer infos
@@ -1143,7 +1147,7 @@ static void write_builtin_ijs_connection_data_to_job_object(
    if (com_handle->ssl_server_context != nullptr) {
       const char *cred = com_handle->ssl_server_context->get_cert();
       if (cred != nullptr) {
-         lSetString(job, JB_cred, cred);
+         ocs::tom::set<JB_cred>(job, cred);
          sge_free(&cred);
       }
    }
@@ -1257,9 +1261,9 @@ static int do_qrsh_reconnect(const char *job_id_str,
    snprintf(spec, sizeof(spec), "%s:%s:%d", job_id_str, qualified_hostname, my_port);
 
    lList *ref_list = nullptr;
-   lListElem *idep = lAddElemStr(&ref_list, ID_str, spec, ID_Type);
-   lSetUlong(idep, ID_action, QI_DO_RECONNECT | JOB_DO_ACTION);
-   lSetUlong(idep, ID_force, 0);
+   lListElem *idep = ocs::tom::emplace_back<ID_str>(&ref_list, spec);
+   ocs::tom::set<ID_action>(idep, QI_DO_RECONNECT | JOB_DO_ACTION);
+   ocs::tom::set<ID_force>(idep, 0);
 
    // CS-2206: under TLS the shepherd authenticates the reconnecting client's
    // commlib server with the certificate execd wrote to cert.pem at job start —
@@ -1274,9 +1278,9 @@ static int do_qrsh_reconnect(const char *job_id_str,
       if (cred != nullptr) {
          lList *cred_list = lCreateList("reconnect cred", ST_Type);
          lListElem *cred_ep = lCreateElem(ST_Type);
-         lSetString(cred_ep, ST_name, cred);
+         ocs::tom::set<ST_name>(cred_ep, cred);
          lAppendElem(cred_list, cred_ep);
-         lSetList(idep, ID_user_list, cred_list);
+         ocs::tom::set<ID_user_list>(idep, cred_list);
          sge_free(&cred);
       }
    }
@@ -1290,8 +1294,8 @@ static int do_qrsh_reconnect(const char *job_id_str,
    char exec_host[256] = {0};
    bool ok = false;
    for_each_ep_lv(aep, alp) {
-      const char *text = lGetString(aep, AN_text);
-      uint32_t status = lGetUlong(aep, AN_status);
+      const char *text = ocs::tom::get<AN_text>(aep);
+      uint32_t status = ocs::tom::get<AN_status>(aep);
       if (status == STATUS_OK && text != nullptr && strncmp(text, "RECONNECT_OK ", 13) == 0) {
          if (sscanf(text + 13, "%127s %255s", token, exec_host) == 2) {
             ok = true;
@@ -1495,19 +1499,19 @@ int main(int argc, const char **argv) {
    }
 
    /* set verbosity */
-   while ((ep = lGetElemStrRW(opts_cmdline, SPA_switch_val, "-verbose"))) {
+   while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(opts_cmdline, "-verbose"))) {
       lRemoveElem(opts_cmdline, &ep);
       log_state_set_log_verbose(1);
    }
 
    /* parse -noshell */
-   while ((ep = lGetElemStrRW(opts_cmdline, SPA_switch_val, "-noshell"))) {
+   while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(opts_cmdline, "-noshell"))) {
       lRemoveElem(opts_cmdline, &ep);
       noshell = 1;
    }
 
    /* parse -X (X11 forwarding, builtin IJS only) — mode check happens after get_client_name() */
-   while ((ep = lGetElemStrRW(opts_cmdline, SPA_switch_val, "-X"))) {
+   while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(opts_cmdline, "-X"))) {
       lRemoveElem(opts_cmdline, &ep);
       forward_x11 = true;
    }
@@ -1517,7 +1521,7 @@ int main(int argc, const char **argv) {
       suspend_remote_option = static_cast<ocs::Ternary>(opt_list_is_X_true(opts_cmdline, "-suspend_remote"));
    }
    /* remove the suspend_remote option from commandline before proceeding */
-   while ((ep = lGetElemStrRW(opts_cmdline, SPA_switch_val, "-suspend_remote"))) {
+   while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(opts_cmdline, "-suspend_remote"))) {
       lRemoveElem(opts_cmdline, &ep);
    }
 
@@ -1525,9 +1529,9 @@ int main(int argc, const char **argv) {
    if (opt_list_has_X(opts_cmdline, "-pty")) {
       pty_option = static_cast<ocs::Ternary>(opt_list_is_X_true(opts_cmdline, "-pty"));
    }
-   lSetUlong(job, JB_pty, static_cast<lUlong>(pty_option));
+   ocs::tom::set<JB_pty>(job, static_cast<lUlong>(pty_option));
    /* remove the pty option from commandline before proceeding */
-   while ((ep = lGetElemStrRW(opts_cmdline, SPA_switch_val, "-pty"))) {
+   while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(opts_cmdline, "-pty"))) {
       lRemoveElem(opts_cmdline, &ep);
    }
 
@@ -1535,12 +1539,12 @@ int main(int argc, const char **argv) {
    ** if qrsh, parse command to call
    */
    if (is_rsh) {
-      while ((ep = lGetElemStrRW(opts_cmdline, SPA_switch_val, "-nostdin"))) {
+      while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(opts_cmdline, "-nostdin"))) {
          lRemoveElem(opts_cmdline, &ep);
          nostdin = 1;
       }
 
-      while ((ep = lGetElemStrRW(opts_cmdline, SPA_switch_val, "-inherit"))) {
+      while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(opts_cmdline, "-inherit"))) {
          lRemoveElem(opts_cmdline, &ep);
          inherit_job = 1;
       }
@@ -1563,26 +1567,26 @@ int main(int argc, const char **argv) {
 
       opts_qrsh = lCreateList("opts_qrsh", lGetListDescr(opts_cmdline));
 
-      if ((ep = lGetElemStrRW(opts_cmdline, SPA_switch_val, "script"))) {
+      if ((ep = ocs::tom::find_first_rw<SPA_switch_val>(opts_cmdline, "script"))) {
          if (existing_job) {
-            host = strdup(lGetString(ep, SPA_argval_lStringT));
+            host = strdup(ocs::tom::get<SPA_argval_lStringT>(ep));
             lRemoveElem(opts_cmdline, &ep);
-            ep = lGetElemStrRW(opts_cmdline, SPA_switch_val, "jobarg");
+            ep = ocs::tom::find_first_rw<SPA_switch_val>(opts_cmdline, "jobarg");
          }
 
          if (ep != nullptr) {
             const char *new_name = nullptr;
 
-            lSetString(job, JB_script_file, lGetString(ep, SPA_argval_lStringT));
+            ocs::tom::set<JB_script_file>(job, ocs::tom::get<SPA_argval_lStringT>(ep));
             lDechainElem(opts_cmdline, ep);
             lAppendElem(opts_qrsh, ep);
 
-            new_name = sge_jobname(lGetString(ep, SPA_argval_lStringT));
+            new_name = sge_jobname(ocs::tom::get<SPA_argval_lStringT>(ep));
             if (new_name != nullptr) {
                sge_strlcpy(name, new_name, MAX_JOB_NAME);
             }
 
-            while ((ep = lGetElemStrRW(opts_cmdline, SPA_switch_val, "jobarg"))) {
+            while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(opts_cmdline, "jobarg"))) {
                lDechainElem(opts_cmdline, ep);
                lAppendElem(opts_qrsh, ep);
             }
@@ -1614,19 +1618,19 @@ int main(int argc, const char **argv) {
       }
 
       /* remove the binary option from commandline before proceeding */
-      while ((ep = lGetElemStrRW(opts_defaults, SPA_switch_val, "-b"))) {
+      while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(opts_defaults, "-b"))) {
          lRemoveElem(opts_defaults, &ep);
       }
-      while ((ep = lGetElemStrRW(opts_cmdline, SPA_switch_val, "-b"))) {
+      while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(opts_cmdline, "-b"))) {
          lRemoveElem(opts_cmdline, &ep);
       }
 
       /* set binary bit or handle script submission */
       if (binary) {
-         uint32_t jb_type = lGetUlong(job, JB_type);
+         uint32_t jb_type = ocs::tom::get<JB_type>(job);
 
          JOB_TYPE_SET_BINARY(jb_type);
-         lSetUlong(job, JB_type, jb_type);
+         ocs::tom::set<JB_type>(job, jb_type);
 
          /* CS-2153 / Bug 1255: qrsh_starter's join_command() decides quoting
           * heuristically — single-arg invocations (`qrsh 'echo $VAR'`) are
@@ -1641,11 +1645,11 @@ int main(int argc, const char **argv) {
          /* move -C directives into opts_qrsh - we need them for parsing
           * the script
           */
-         while ((ep = lGetElemStrRW(opts_defaults, SPA_switch_val, "-C"))) {
+         while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(opts_defaults, "-C"))) {
             lDechainElem(opts_defaults, ep);
             lAppendElem(opts_qrsh, ep);
          }
-         while ((ep = lGetElemStrRW(opts_cmdline, SPA_switch_val, "-C"))) {
+         while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(opts_cmdline, "-C"))) {
             lDechainElem(opts_cmdline, ep);
             lAppendElem(opts_qrsh, ep);
          }
@@ -1660,12 +1664,12 @@ int main(int argc, const char **argv) {
          }
 
          /* set length and script contents in job */
-         if ((ep = lGetElemStrRW(opts_scriptfile, SPA_switch_val, STR_PSEUDO_SCRIPTLEN))) {
-            lSetUlong(job, JB_script_size, lGetUlong(ep, SPA_argval_lUlongT));
+         if ((ep = ocs::tom::find_first_rw<SPA_switch_val>(opts_scriptfile, STR_PSEUDO_SCRIPTLEN))) {
+            ocs::tom::set<JB_script_size>(job, ocs::tom::get<SPA_argval_lUlongT>(ep));
             lRemoveElem(opts_scriptfile, &ep);
          }
-         if ((ep = lGetElemStrRW(opts_scriptfile, SPA_switch_val, STR_PSEUDO_SCRIPTPTR))) {
-            lSetString(job, JB_script_ptr, lGetString(ep, SPA_argval_lStringT));
+         if ((ep = ocs::tom::find_first_rw<SPA_switch_val>(opts_scriptfile, STR_PSEUDO_SCRIPTPTR))) {
+            ocs::tom::set<JB_script_ptr>(job, ocs::tom::get<SPA_argval_lStringT>(ep));
             lRemoveElem(opts_scriptfile, &ep);
          }
       }
@@ -1688,9 +1692,9 @@ int main(int argc, const char **argv) {
       sge_exit(EXIT_FAILURE);
    }
 
-   remove_unknown_opts(opts_cmdline, lGetUlong(job, JB_type), existing_job, true, is_qlogin, is_rsh, is_qsh);
-   remove_unknown_opts(opts_defaults, lGetUlong(job, JB_type), existing_job, false, is_qlogin, is_rsh, is_qsh);
-   remove_unknown_opts(opts_scriptfile, lGetUlong(job, JB_type), existing_job, false, is_qlogin, is_rsh, is_qsh);
+   remove_unknown_opts(opts_cmdline, ocs::tom::get<JB_type>(job), existing_job, true, is_qlogin, is_rsh, is_qsh);
+   remove_unknown_opts(opts_defaults, ocs::tom::get<JB_type>(job), existing_job, false, is_qlogin, is_rsh, is_qsh);
+   remove_unknown_opts(opts_scriptfile, ocs::tom::get<JB_type>(job), existing_job, false, is_qlogin, is_rsh, is_qsh);
 
    opt_list_merge_command_lines(&opts_all, &opts_defaults, &opts_scriptfile,
                                 &opts_cmdline);
@@ -1713,8 +1717,8 @@ int main(int argc, const char **argv) {
    // from the user's DISPLAY env var) and inject SGE_X11_FORWARD=1 instead. The shepherd will
    // create a local proxy display and inject the real DISPLAY into the job's environment.
    if (forward_x11) {
-      lList *envlp = lGetListRW(job, JB_env_list);
-      lDelSubStr(job, VA_variable, "DISPLAY", JB_env_list);
+      lList *envlp = ocs::tom::get<JB_env_list>(job);
+      ocs::tom::erase_in<JB_env_list, VA_variable>(job, "DISPLAY");
       var_list_set_string(&envlp, "SGE_X11_FORWARD", "1");
    }
 
@@ -1727,7 +1731,7 @@ int main(int argc, const char **argv) {
    if (!existing_job) {
       DPRINTF("Everything ok\n");
 
-      if (lGetUlong(job, JB_verify)) {
+      if (ocs::tom::get<JB_verify>(job)) {
          std::stringstream ss;
          ocs::QStatJobViewPlain::cull_show_job(ss, nullptr, job, 0);
          printf("%s", ss.str().c_str());
@@ -1743,8 +1747,8 @@ int main(int argc, const char **argv) {
          sge_exit(1);
       }
 
-      just_verify = (lGetUlong(job, JB_verify_suitable_queues) == JUST_VERIFY ||
-                     lGetUlong(job, JB_verify_suitable_queues) == POKE_VERIFY);
+      just_verify = (ocs::tom::get<JB_verify_suitable_queues>(job) == JUST_VERIFY ||
+                     ocs::tom::get<JB_verify_suitable_queues>(job) == POKE_VERIFY);
    }
 
    /*
@@ -1778,9 +1782,9 @@ int main(int argc, const char **argv) {
       sock = open_qrsh_socket(&my_port, port_range_list);
       snprintf(buffer, sizeof(buffer), "%s:%d", qualified_hostname, my_port);
 
-      if ((envlp = lGetListRW(job, JB_env_list)) == nullptr) {
+      if ((envlp = ocs::tom::get<JB_env_list>(job)) == nullptr) {
          envlp = lCreateList("environment list", VA_Type);
-         lSetList(job, JB_env_list, envlp);
+         ocs::tom::set<JB_env_list>(job, envlp);
       }
 
       var_list_set_string(&envlp, "QRSH_PORT", buffer);
@@ -1819,7 +1823,7 @@ int main(int argc, const char **argv) {
       char  *wrapper = getenv("QRSH_WRAPPER");
 
       if (wrapper != nullptr) {
-         lList *envlp = lGetListRW(job, JB_env_list);
+         lList *envlp = ocs::tom::get<JB_env_list>(job);
          var_list_set_string(&envlp, "QRSH_WRAPPER", wrapper);
       }
    }
@@ -1848,9 +1852,9 @@ int main(int argc, const char **argv) {
       /* start task in tightly integrated job */
       /* directly connect to commlib of exec daemon and submit task */
       tid = sge_qexecve(host, nullptr,
-                        lGetString(job, JB_cwd),
-                        lGetList(job, JB_env_list),
-                        lGetList(job, JB_path_aliases), lGetString(job, JB_cred));
+                        ocs::tom::get<JB_cwd>(job),
+                        ocs::tom::get<JB_env_list>(job),
+                        ocs::tom::get<JB_path_aliases>(job), ocs::tom::get<JB_cred>(job));
       if (tid == nullptr) {
          const char *qexec_lasterror = qexec_last_err();
 
@@ -1935,7 +1939,7 @@ int main(int argc, const char **argv) {
       srand(getpid());
 
       /* initialize first polling interval, batch jobs have longer polling interval */
-      if (JOB_TYPE_IS_IMMEDIATE(lGetUlong(job, JB_type))) {
+      if (JOB_TYPE_IS_IMMEDIATE(ocs::tom::get<JB_type>(job))) {
          polling_interval = QSH_INTERACTIVE_POLLING_MIN;
       } else {
          polling_interval = QSH_BATCH_POLLING_MIN;
@@ -1971,7 +1975,7 @@ int main(int argc, const char **argv) {
       /* reinitialize 'job' with pointer to new version from qmaster */
       job = lFirstRW(lp_jobs);
       if (job) {
-        job_id = lGetUlong(job, JB_job_number );
+        job_id = ocs::tom::get<JB_job_number>(job );
       } else {
         job_id = 0;
       }
@@ -1980,21 +1984,21 @@ int main(int argc, const char **argv) {
       status = 0;
 
       for_each_ep_lv(aep, alp) {
-         quality = lGetUlong(aep, AN_quality);
+         quality = ocs::tom::get<AN_quality>(aep);
          if (quality == ANSWER_QUALITY_ERROR) {
-            fprintf(stderr, "%s\n", lGetString(aep, AN_text));
+            fprintf(stderr, "%s\n", ocs::tom::get<AN_text>(aep));
             do_exit = 1;
-            if (lGetUlong(aep, AN_status)==STATUS_NOTOK_DOAGAIN) {
+            if (ocs::tom::get<AN_status>(aep)==STATUS_NOTOK_DOAGAIN) {
                status = STATUS_NOTOK_DOAGAIN;
             } else {
                /* set return value to error when doing verification */
                status = 1;
             }
          } else if (quality == ANSWER_QUALITY_WARNING) {
-            fprintf(stderr, "%s\n", lGetString(aep, AN_text));
+            fprintf(stderr, "%s\n", ocs::tom::get<AN_text>(aep));
          } else {
             if (log_state_get_log_verbose() || just_verify) {
-               fprintf(stdout, "%s\n", lGetString(aep, AN_text));
+               fprintf(stdout, "%s\n", ocs::tom::get<AN_text>(aep));
             }
          }
       }
@@ -2240,9 +2244,9 @@ int main(int argc, const char **argv) {
             continue;
          }
 
-         ja_task = lFirstRW(lGetList(jep, JB_ja_tasks));
+         ja_task = lFirstRW(ocs::tom::get<JB_ja_tasks>(jep));
          if (ja_task) {
-            job_status = lGetUlong(ja_task, JAT_status);
+            job_status = ocs::tom::get<JAT_status>(ja_task);
             DPRINTF("Job Status is: %lx\n", job_status);
          } else {
             job_status = JIDLE;
@@ -2339,7 +2343,7 @@ static void delete_job(uint32_t job_id, lList *jlp) {
    }
 
    snprintf(job_str, sizeof(job_str), sge_u32, job_id);
-   lAddElemStr(&idlp, ID_str, job_str, ID_Type);
+   ocs::tom::emplace_back<ID_str>(&idlp, job_str);
 
    alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::JB_LIST, ocs::gdi::Command::DEL, ocs::gdi::SubCommand::NONE, &idlp, nullptr, nullptr);
 
@@ -2365,7 +2369,7 @@ static void remove_unknown_opts(lList *lp, uint32_t jb_now, int tightly_integrat
       const char *cp;
 
       next = lNextRW(ep);
-      cp = lGetString(ep, SPA_switch_val);
+      cp = ocs::tom::get<SPA_switch_val>(ep);
 
       if (cp != nullptr) {
          /* these are the options allowed for all flavors of interactive jobs

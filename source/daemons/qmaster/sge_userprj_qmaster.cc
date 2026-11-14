@@ -62,6 +62,9 @@
 #include "sgeobj/sge_utility.h"
 #include "sgeobj/sge_suser.h"
 #include "sgeobj/ocs_DataStore.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_PR.h"
+#include "sgeobj/tom/ocs_tom_US.h"
 
 #include "ocs_CategoryQmaster.h"
 #include "sge_utility_qmaster.h"
@@ -180,7 +183,7 @@ userprj_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListE
    if (user_flag) {
       /* ---- UU_delete_time */
       if ((pos = lGetPosViaElem(ep, UU_delete_time, SGE_NO_ABORT)) >= 0) {
-         lSetUlong64(modp, UU_delete_time, lGetPosUlong64(ep, pos));
+         ocs::tom::set<UU_delete_time>(modp, lGetPosUlong64(ep, pos));
       }
    }
 
@@ -214,15 +217,15 @@ userprj_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListE
             }
          }
 
-         lSetString(modp, UU_default_project, dproj);
+         ocs::tom::set<UU_default_project>(modp, dproj);
       }
    } else {
       /* ---- PR_acl */
       if ((pos = lGetPosViaElem(ep, PR_acl, SGE_NO_ABORT)) >= 0) {
          lp = lGetPosList(ep, pos);
-         lSetList(modp, PR_acl, lCopyList("acl", lp));
+         ocs::tom::set<PR_acl>(modp, lCopyList("acl", lp));
 
-         if (userset_list_validate_acl_list(lGetList(ep, PR_acl), alpp, master_userset_list) != STATUS_OK) {
+         if (userset_list_validate_acl_list(ocs::tom::get<PR_acl>(ep), alpp, master_userset_list) != STATUS_OK) {
             /* answerlist gets filled by userset_list_validate_acl_list() in case of errors */
             goto Error;
          }
@@ -231,18 +234,18 @@ userprj_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListE
       /* ---- PR_xacl */
       if ((pos = lGetPosViaElem(ep, PR_xacl, SGE_NO_ABORT)) >= 0) {
          lp = lGetPosList(ep, pos);
-         lSetList(modp, PR_xacl, lCopyList("xacl", lp));
-         if (userset_list_validate_acl_list(lGetList(ep, PR_xacl), alpp, master_userset_list) != STATUS_OK) {
+         ocs::tom::set<PR_xacl>(modp, lCopyList("xacl", lp));
+         if (userset_list_validate_acl_list(ocs::tom::get<PR_xacl>(ep), alpp, master_userset_list) != STATUS_OK) {
             /* answerlist gets filled by userset_list_validate_acl_list() in case of errors */
             goto Error;
          }
       }
 
-      if (lGetPosViaElem(modp, PR_xacl, SGE_NO_ABORT) >= 0 ||
-          lGetPosViaElem(modp, PR_acl, SGE_NO_ABORT) >= 0) {
+      if (ocs::tom::has<PR_xacl>(modp) ||
+          ocs::tom::has<PR_acl>(modp)) {
          if (multiple_occurances(alpp,
-                                 lGetList(modp, PR_acl),
-                                 lGetList(modp, PR_xacl),
+                                 ocs::tom::get<PR_acl>(modp),
+                                 ocs::tom::get<PR_xacl>(modp),
                                  US_name, userprj,
                                  "project")) {
             goto Error;
@@ -377,14 +380,14 @@ sge_del_userprj(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *up_ep
    }
 
    if (user) {
-      name = lGetString(up_ep, UU_name);
+      name = ocs::tom::get<UU_name>(up_ep);
       if (!(ep = user_list_locate(*upl, name))) {
          ERROR(MSG_SGETEXT_DOESNOTEXIST_SS, MSG_OBJ_USER, name);
          answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EEXIST);
       }
    } else {
-      name = lGetString(up_ep, PR_name);
+      name = ocs::tom::get<PR_name>(up_ep);
       if (!(ep = prj_list_locate(*upl, name))) {
          ERROR(MSG_SGETEXT_DOESNOTEXIST_SS, MSG_OBJ_PRJ, name);
          answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
@@ -405,16 +408,16 @@ sge_del_userprj(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *up_ep
        * check the cq configuration for project references instead of qinstances
        */
       for_each_ep_lv(cqueue, *(ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE))) {
-         for_each_ep_lv(prj, lGetList(cqueue, CQ_projects)) {
-            if (lGetSubStr(prj, PR_name, name, APRJLIST_value)) {
-               ERROR(MSG_SGETEXT_PROJECTSTILLREFERENCED_SSSS, name, MSG_OBJ_PRJS, MSG_OBJ_QUEUE, lGetString( cqueue, CQ_name));
+         for_each_ep_lv(prj, ocs::tom::get<CQ_projects>(cqueue)) {
+            if (ocs::tom::find_first_in<APRJLIST_value, PR_name>(prj, name)) {
+               ERROR(MSG_SGETEXT_PROJECTSTILLREFERENCED_SSSS, name, MSG_OBJ_PRJS, MSG_OBJ_QUEUE, ocs::tom::get<CQ_name>( cqueue));
                answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
                DRETURN(STATUS_EEXIST);
             }
          }
-         for_each_ep_lv(prj, lGetList(cqueue, CQ_xprojects)) {
-            if (lGetSubStr(prj, PR_name, name, APRJLIST_value)) {
-               ERROR(MSG_SGETEXT_PROJECTSTILLREFERENCED_SSSS, name, MSG_OBJ_XPRJS, MSG_OBJ_QUEUE, lGetString( cqueue, CQ_name));
+         for_each_ep_lv(prj, ocs::tom::get<CQ_xprojects>(cqueue)) {
+            if (ocs::tom::find_first_in<APRJLIST_value, PR_name>(prj, name)) {
+               ERROR(MSG_SGETEXT_PROJECTSTILLREFERENCED_SSSS, name, MSG_OBJ_XPRJS, MSG_OBJ_QUEUE, ocs::tom::get<CQ_name>( cqueue));
                answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
                DRETURN(STATUS_EEXIST);
             }
@@ -423,13 +426,13 @@ sge_del_userprj(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *up_ep
 
       /* check hosts */
       for_each_ep_lv(host, *ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST)) {
-         if (prj_list_locate(lGetList(host, EH_prj), name)) {
-            ERROR(MSG_SGETEXT_PROJECTSTILLREFERENCED_SSSS, name, MSG_OBJ_PRJS, MSG_OBJ_EH, lGetHost(host, EH_name));
+         if (prj_list_locate(ocs::tom::get<EH_prj>(host), name)) {
+            ERROR(MSG_SGETEXT_PROJECTSTILLREFERENCED_SSSS, name, MSG_OBJ_PRJS, MSG_OBJ_EH, static_cast<const char *>(ocs::tom::get<EH_name>(host)));
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             DRETURN(STATUS_EEXIST);
          }
-         if (prj_list_locate(lGetList(host, EH_xprj), name)) {
-            ERROR(MSG_SGETEXT_PROJECTSTILLREFERENCED_SSSS, name, MSG_OBJ_XPRJS, MSG_OBJ_EH, lGetHost(host, EH_name));
+         if (prj_list_locate(ocs::tom::get<EH_xprj>(host), name)) {
+            ERROR(MSG_SGETEXT_PROJECTSTILLREFERENCED_SSSS, name, MSG_OBJ_XPRJS, MSG_OBJ_EH, static_cast<const char *>(ocs::tom::get<EH_name>(host)));
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             DRETURN(STATUS_EEXIST);
          }
@@ -454,8 +457,8 @@ sge_del_userprj(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *up_ep
       lFreeList(&projects);
 
       /* check user list for reference */
-      if (const lListElem *prj = lGetElemStr(*ocs::DataStore::get_master_list(SGE_TYPE_USER), UU_default_project, name); prj != nullptr) {
-         ERROR(MSG_USERPRJ_PRJXSTILLREFERENCEDINENTRYX_SS, name, lGetString(prj, UU_name));
+      if (const lListElem *prj = ocs::tom::find_first<UU_default_project>(*ocs::DataStore::get_master_list(SGE_TYPE_USER), name); prj != nullptr) {
+         ERROR(MSG_USERPRJ_PRJXSTILLREFERENCEDINENTRYX_SS, name, ocs::tom::get<UU_name>(prj));
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EEXIST);
       }
@@ -493,8 +496,8 @@ verify_project_list(lList **alpp, const lList *name_list, const lList *prj_list,
    const lListElem *up;
 
    for_each_ep(up, name_list) {
-      if (!lGetElemStr(prj_list, PR_name, lGetString(up, PR_name))) {
-         ERROR(MSG_SGETEXT_UNKNOWNPROJECT_SSSS, lGetString(up, PR_name), attr_name, obj_descr, obj_name);
+      if (!ocs::tom::find_first<PR_name>(prj_list, ocs::tom::get<PR_name>(up))) {
+         ERROR(MSG_SGETEXT_UNKNOWNPROJECT_SSSS, ocs::tom::get<PR_name>(up), attr_name, obj_descr, obj_name);
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EUNKNOWN);
       }
@@ -534,7 +537,7 @@ sge_automatic_user_cleanup_handler(te_event_t anEvent, monitoring_t *monitor) {
        * because we are deleting entries.
        */
       for (user = lFirstRW(*master_user_list); user; user = next) {
-         uint64_t delete_time = lGetUlong64(user, UU_delete_time);
+         uint64_t delete_time = ocs::tom::get<UU_delete_time>(user);
          next = lNextRW(user);
 
          /* 
@@ -542,11 +545,11 @@ sge_automatic_user_cleanup_handler(te_event_t anEvent, monitoring_t *monitor) {
           * Never delete them automatically 
           */
          if (delete_time > 0) {
-            const char *name = lGetString(user, UU_name);
+            const char *name = ocs::tom::get<UU_name>(user);
 
             /* if the user has jobs, we increment the delete time */
             if (suser_get_job_counter(suser_list_find(*ocs::DataStore::get_master_list(SGE_TYPE_SUSER), name)) > 0) {
-               lSetUlong64(user, UU_delete_time, next_delete);
+               ocs::tom::set<UU_delete_time>(user, next_delete);
             } else {
                /* if the delete time has expired, delete user */
                if (delete_time <= now) {
@@ -561,7 +564,7 @@ sge_automatic_user_cleanup_handler(te_event_t anEvent, monitoring_t *monitor) {
                       * if deleting the user failes (due to user being referenced
                       * in other objects, e.g. queue), regard him as non auto user
                       */
-                     lSetUlong64(user, UU_delete_time, 0);
+                     ocs::tom::set<UU_delete_time>(user, 0);
                   }
                   /* output low level error messages */
                   answer_list_output(&answer_list);
@@ -601,10 +604,10 @@ sge_add_auto_user(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const char *us
    /* if the user already exists */
    if (uep != nullptr) {
       /* and is an auto user */
-      if (lGetUlong64(uep, UU_delete_time) != 0) {
+      if (ocs::tom::get<UU_delete_time>(uep) != 0) {
          /* and we shall not keep auto users forever */
          if (auto_user_delete_time > 0) {
-            lSetUlong64(uep, UU_delete_time, sge_get_gmt64() + auto_user_delete_time);
+            ocs::tom::set<UU_delete_time>(uep, sge_get_gmt64() + auto_user_delete_time);
          }
       }
       /* and we are done */
@@ -619,22 +622,22 @@ sge_add_auto_user(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const char *us
       char *auto_user_default_project = nullptr;
 
       /* set user object attributes */
-      lSetString(uep, UU_name, user);
+      ocs::tom::set<UU_name>(uep, user);
 
       if (auto_user_delete_time > 0) {
-         lSetUlong64(uep, UU_delete_time, sge_get_gmt64() + auto_user_delete_time);
+         ocs::tom::set<UU_delete_time>(uep, sge_get_gmt64() + auto_user_delete_time);
       } else {
-         lSetUlong64(uep, UU_delete_time, 0);
+         ocs::tom::set<UU_delete_time>(uep, 0);
       }
 
-      lSetUlong(uep, UU_oticket, mconf_get_auto_user_oticket());
-      lSetUlong(uep, UU_fshare, mconf_get_auto_user_fshare());
+      ocs::tom::set<UU_oticket>(uep, mconf_get_auto_user_oticket());
+      ocs::tom::set<UU_fshare>(uep, mconf_get_auto_user_fshare());
 
       auto_user_default_project = mconf_get_auto_user_default_project();
       if (auto_user_default_project == nullptr || strcasecmp(auto_user_default_project, "none") == 0) {
-         lSetString(uep, UU_default_project, nullptr);
+         ocs::tom::set<UU_default_project>(uep, nullptr);
       } else {
-         lSetString(uep, UU_default_project, auto_user_default_project);
+         ocs::tom::set<UU_default_project>(uep, auto_user_default_project);
       }
 
       /* add the auto user via GDI request */
@@ -672,9 +675,9 @@ static int do_add_auto_user(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lLis
    lFreeList(&ppList);
    if ((STATUS_OK != res) && (nullptr != tmpAnswer)) {
       const lListElem *err = lFirst(tmpAnswer);
-      const char *text = lGetString(err, AN_text);
-      uint32_t status = lGetUlong(err, AN_status);
-      answer_quality_t quality = (answer_quality_t) lGetUlong(err, AN_quality);
+      const char *text = ocs::tom::get<AN_text>(err);
+      uint32_t status = ocs::tom::get<AN_status>(err);
+      answer_quality_t quality = (answer_quality_t) ocs::tom::get<AN_quality>(err);
 
       answer_list_add(anAnswer, text, status, quality);
    }
@@ -708,12 +711,12 @@ void sge_userprj_spool(uint64_t gdi_session) {
    SGE_LOCK(LOCK_GLOBAL, LOCK_READ);
 
    for_each_rw_lv(elem, *ocs::DataStore::get_master_list(SGE_TYPE_USER)) {
-      name = lGetString(elem, UU_name);
+      name = ocs::tom::get<UU_name>(elem);
       sge_event_spool(&answer_list, now, sgeE_USER_MOD, 0, 0, name, nullptr, nullptr, elem, nullptr, nullptr, false, true, gdi_session);
    }
 
    for_each_rw_lv(elem, *ocs::DataStore::get_master_list(SGE_TYPE_PROJECT)) {
-      name = lGetString(elem, PR_name);
+      name = ocs::tom::get<PR_name>(elem);
       sge_event_spool(&answer_list, now, sgeE_PROJECT_MOD, 0, 0, name, nullptr, nullptr, elem, nullptr, nullptr, false, true, gdi_session);
    }
 
@@ -749,19 +752,19 @@ static bool project_still_used(const char *p) {
    }
 
    for_each_ep(hep, *ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST)) {
-      if (lGetSubStr(hep, PR_name, p, EH_prj) || lGetSubStr(hep, PR_name, p, EH_xprj)) {
+      if (ocs::tom::find_first_in<EH_prj, PR_name>(hep, p) || ocs::tom::find_first_in<EH_xprj, PR_name>(hep, p)) {
          return true;
       }
    }
 
    for_each_ep(cq, *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE)) {
-      for_each_ep(qc, lGetList(cq, CQ_projects)) {
-         if (lGetSubStr(qc, PR_name, p, APRJLIST_value)) {
+      for_each_ep(qc, ocs::tom::get<CQ_projects>(cq)) {
+         if (ocs::tom::find_first_in<APRJLIST_value, PR_name>(qc, p)) {
             return true;
          }
       }
-      for_each_ep(qc, lGetList(cq, CQ_xprojects)) {
-         if (lGetSubStr(qc, PR_name, p, APRJLIST_value)) {
+      for_each_ep(qc, ocs::tom::get<CQ_xprojects>(cq)) {
+         if (ocs::tom::find_first_in<APRJLIST_value, PR_name>(qc, p)) {
             return true;
          }
       }
@@ -792,23 +795,23 @@ void project_update_categories(const lList *added, const lList *removed, uint64_
    bool reattach_categories = false;
 
    for_each_ep(ep, added) {
-      p = lGetString(ep, PR_name);
+      p = ocs::tom::get<PR_name>(ep);
       DPRINTF("added project: \"%s\"\n", p);
-      prj = lGetElemStrRW(*ocs::DataStore::get_master_list(SGE_TYPE_PROJECT), PR_name, p);
-      if (prj && !lGetBool(prj, PR_consider_with_categories)) {
-         lSetBool(prj, PR_consider_with_categories, true);
+      prj = ocs::tom::find_first_rw<PR_name>(*ocs::DataStore::get_master_list(SGE_TYPE_PROJECT), p);
+      if (prj && !ocs::tom::get<PR_consider_with_categories>(prj)) {
+         ocs::tom::set<PR_consider_with_categories>(prj, true);
          reattach_categories = true;
          sge_add_event(0, sgeE_PROJECT_MOD, 0, 0, p, nullptr, nullptr, prj, gdi_session);
       }
    }
 
    for_each_ep(ep, removed) {
-      p = lGetString(ep, PR_name);
+      p = ocs::tom::get<PR_name>(ep);
       DPRINTF("removed project: \"%s\"\n", p);
-      prj = lGetElemStrRW(*ocs::DataStore::get_master_list(SGE_TYPE_PROJECT), PR_name, p);
+      prj = ocs::tom::find_first_rw<PR_name>(*ocs::DataStore::get_master_list(SGE_TYPE_PROJECT), p);
 
       if (prj && !project_still_used(p)) {
-         lSetBool(prj, PR_consider_with_categories, false);
+         ocs::tom::set<PR_consider_with_categories>(prj, false);
          reattach_categories = true;
          sge_add_event(0, sgeE_PROJECT_MOD, 0, 0, p, nullptr, nullptr, prj, gdi_session);
       }

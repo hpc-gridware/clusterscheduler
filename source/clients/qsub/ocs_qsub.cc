@@ -51,6 +51,7 @@
 
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_job.h"
+#include "tom/ocs_Element.h"
 
 #include "japi/japi.h"
 #include "japi/japiP.h"
@@ -232,12 +233,12 @@ int main(int argc, const char **argv) {
    }
 
    /* Check if job is immediate */
-   is_immediate = (int)JOB_TYPE_IS_IMMEDIATE(lGetUlong(job, JB_type));
+   is_immediate = (int)JOB_TYPE_IS_IMMEDIATE(ocs::tom::get<JB_type>(job));
    DPRINTF("Job is%s immediate\n", is_immediate ? "" : " not");
 
    DPRINTF("Everything ok\n");
 
-   if (lGetUlong(job, JB_verify)) {
+   if (ocs::tom::get<JB_verify>(job)) {
       std::stringstream ss;
       ocs::QStatJobViewPlain::cull_show_job(ss, nullptr, job, 0);
       printf("%s", ss.str().c_str());
@@ -348,8 +349,8 @@ int main(int argc, const char **argv) {
 
    /* only success message is printed to stdout */
 
-   just_verify = (lGetUlong(job, JB_verify_suitable_queues)==JUST_VERIFY ||
-                  lGetUlong(job, JB_verify_suitable_queues)==POKE_VERIFY);
+   just_verify = (ocs::tom::get<JB_verify_suitable_queues>(job)==JUST_VERIFY ||
+                  ocs::tom::get<JB_verify_suitable_queues>(job)==POKE_VERIFY);
    DPRINTF("Just verifying job\n");
 
    if (!just_verify) {
@@ -361,7 +362,7 @@ int main(int argc, const char **argv) {
       } else if (output != nullptr) {
         printf("%s", output);
       } else {
-        printf(MSG_QSUB_YOURJOBHASBEENSUBMITTED_SS, jobid_string, lGetString(job, JB_job_name));
+        printf(MSG_QSUB_YOURJOBHASBEENSUBMITTED_SS, jobid_string, ocs::tom::get<JB_job_name>(job));
       }
       printf("\n");
    } else {

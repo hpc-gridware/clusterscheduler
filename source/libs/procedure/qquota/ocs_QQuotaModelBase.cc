@@ -31,6 +31,7 @@
 #include "sgeobj/sge_hgroup.h"
 #include "sgeobj/sge_host.h"
 #include "sgeobj/sge_str.h"
+#include "tom/ocs_Element.h"
 
 #include "ocs_QQuotaModelBase.h"
 #include "ocs_QQuotaParameterClient.h"
@@ -118,7 +119,7 @@ lCondition *ocs::QQuotaModelBase::get_host_where(const lList *host_list) {
    lCondition *where = nullptr;
 
    for_each_ep_lv(ep, host_list) {
-      lCondition *nw = lWhere("%T(%I h= %s)", EH_Type, EH_name, lGetString(ep, ST_name));
+      lCondition *nw = lWhere("%T(%I h= %s)", EH_Type, EH_name, ocs::tom::get<ST_name>(ep));
       if (!where) {
          where = nw;
       } else {

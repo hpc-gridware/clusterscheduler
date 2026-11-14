@@ -60,6 +60,11 @@
 #include "sgeobj/sge_host.h"
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_centry.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_CE.h"
+#include "sgeobj/tom/ocs_tom_JRS.h"
+#include "sgeobj/tom/ocs_tom_RDE.h"
+#include "sgeobj/tom/ocs_tom_RUE.h"
 
 #include "sge_qeti.h"
 #include "sge_resource_utilization.h"
@@ -134,7 +139,7 @@ static int sge_qeti_list_add(lList **lpp, const char *name, const lList *rue_lp,
    lListElem *tmp_cr_ref;
    lListElem *ep;
 
-   if (!(tmp_cr_ref = lGetElemStrRW(rue_lp, RUE_name, name))) {
+   if (!(tmp_cr_ref = ocs::tom::find_first_rw<RUE_name>(rue_lp, name))) {
       DRETURN(must_exist?-1:0);
    }
 
@@ -147,8 +152,8 @@ static int sge_qeti_list_add(lList **lpp, const char *name, const lList *rue_lp,
       DRETURN(-1);
    }
 
-   lSetRef(ep, QETI_resource_instance, tmp_cr_ref);
-   lSetDouble(ep, QETI_total, total);
+   ocs::tom::set<QETI_resource_instance>(ep, tmp_cr_ref);
+   ocs::tom::set<QETI_total>(ep, total);
    lAppendElem(*lpp, ep);
 
    DRETURN(0);
@@ -160,22 +165,22 @@ sge_add_qeti_resource_container(lList **qeti_to_add, const lList *rue_list,
    DENTER(TOP_LAYER);
 
    // implicit slots request
-   const lListElem *tep = lGetElemStr(total_list, CE_name, SGE_ATTR_SLOTS);
+   const lListElem *tep = ocs::tom::find_first<CE_name>(total_list, SGE_ATTR_SLOTS);
    if (tep != nullptr) {
-      if (sge_qeti_list_add(qeti_to_add, SGE_ATTR_SLOTS, rue_list, lGetDouble(tep, CE_doubleval), true)) {
+      if (sge_qeti_list_add(qeti_to_add, SGE_ATTR_SLOTS, rue_list, ocs::tom::get<CE_doubleval>(tep), true)) {
          DRETURN(-1);
       }
    }
 
    /* explicit requests */
-   for_each_ep_lv(jrs, lGetList(job, JB_request_set_list)) {
-      for_each_ep_lv(req, lGetList(jrs, JRS_hard_resource_list)) {
-         const char *name = lGetString(req, CE_name);
-         const lListElem *centry_config = lGetElemStr(centry_list, CE_name, name);
+   for_each_ep_lv(jrs, ocs::tom::get<JB_request_set_list>(job)) {
+      for_each_ep_lv(req, ocs::tom::get<JRS_hard_resource_list>(jrs)) {
+         const char *name = ocs::tom::get<CE_name>(req);
+         const lListElem *centry_config = ocs::tom::find_first<CE_name>(centry_list, name);
 
-         if ((centry_config && lGetUlong(centry_config, CE_consumable) != CONSUMABLE_NO) &&
-             (tep = lGetElemStr(total_list, CE_name, name))) {
-            if (sge_qeti_list_add(qeti_to_add, name, rue_list, lGetDouble(tep, CE_doubleval), false)) {
+         if ((centry_config && ocs::tom::get<CE_consumable>(centry_config) != CONSUMABLE_NO) &&
+             (tep = ocs::tom::find_first<CE_name>(total_list, name))) {
+            if (sge_qeti_list_add(qeti_to_add, name, rue_list, ocs::tom::get<CE_doubleval>(tep), false)) {
                DRETURN(-1);
             }
          }
@@ -228,7 +233,7 @@ sge_qeti_t *sge_qeti_allocate(sge_assignment_t *a) {
       // add "slot" resource utilization entry of parallel environment
       // when running within an AR, slots are limited on the queue level, no need to add them here
       if (sge_qeti_list_add(&iter->cr_refs_pe, SGE_ATTR_SLOTS,
-                     lGetList(a->pe, PE_resource_utilization), lGetUlong(a->pe, PE_slots), true)) {
+                     ocs::tom::get<PE_resource_utilization>(a->pe), ocs::tom::get<PE_slots>(a->pe), true)) {
          sge_qeti_release(&iter);
          DRETURN(nullptr);
       }
@@ -237,8 +242,8 @@ sge_qeti_t *sge_qeti_allocate(sge_assignment_t *a) {
    // add references to global resource utilization entries that might affect jobs queue end time
    if (a->gep != nullptr) {
       if (sge_add_qeti_resource_container(&iter->cr_refs_global,
-               lGetList(a->gep, EH_resource_utilization),
-               lGetList(a->gep, EH_consumable_config_list),
+               ocs::tom::get<EH_resource_utilization>(a->gep),
+               ocs::tom::get<EH_consumable_config_list>(a->gep),
                a->centry_list, a->job)!=0) {
          sge_qeti_release(&iter);
          DRETURN(nullptr);
@@ -247,7 +252,7 @@ sge_qeti_t *sge_qeti_allocate(sge_assignment_t *a) {
 
    // add references to per host resource utilization entries that might affect jobs queue end time
    for_each_ep_lv(hep, a->host_list) {
-      const char *eh_name = lGetHost(hep, EH_name);
+      const char *eh_name = ocs::tom::get<EH_name>(hep);
       // we already handled the global host above
       if (hep == a->gep) {
          continue;
@@ -263,9 +268,9 @@ sge_qeti_t *sge_qeti_allocate(sge_assignment_t *a) {
       int is_relevant = false;
       const void *queue_iterator = nullptr;
       lListElem *next_queue, *qep;
-      for (next_queue = lGetElemHostFirstRW(a->queue_list, QU_qhostname, eh_name, &queue_iterator);
+      for (next_queue = ocs::tom::find_first_rw<QU_qhostname>(a->queue_list, eh_name, &queue_iterator);
           (qep = next_queue);
-           next_queue = lGetElemHostNextRW(a->queue_list, QU_qhostname, eh_name, &queue_iterator)) {
+           next_queue = ocs::tom::find_next_rw<QU_qhostname>(a->queue_list, eh_name, &queue_iterator)) {
 
          if (!qinstance_is_pe_referenced(qep, a->pe)) {
             continue;
@@ -277,7 +282,7 @@ sge_qeti_t *sge_qeti_allocate(sge_assignment_t *a) {
          }
 
          if (sge_add_qeti_resource_container(&iter->cr_refs_queue,
-                  lGetList(qep, QU_resource_utilization), lGetList(qep, QU_consumable_config_list),
+                  ocs::tom::get<QU_resource_utilization>(qep), ocs::tom::get<QU_consumable_config_list>(qep),
                         a->centry_list, a->job)!=0) {
             sge_qeti_release(&iter);
             DRETURN(nullptr);
@@ -286,8 +291,8 @@ sge_qeti_t *sge_qeti_allocate(sge_assignment_t *a) {
          is_relevant = true;
       }
       if (is_relevant) {
-         if (sge_add_qeti_resource_container(&iter->cr_refs_host, lGetList(hep, EH_resource_utilization),
-                                             lGetList(hep, EH_consumable_config_list), a->centry_list, a->job)!=0) {
+         if (sge_add_qeti_resource_container(&iter->cr_refs_host, ocs::tom::get<EH_resource_utilization>(hep),
+                                             ocs::tom::get<EH_consumable_config_list>(hep), a->centry_list, a->job)!=0) {
             sge_qeti_release(&iter);
             DRETURN(nullptr);
          }
@@ -307,12 +312,12 @@ static void sge_qeti_init_refs(lList *cref_lp) {
    const lListElem *rue_ep;
 
    for_each_rw_lv(cr_ep, cref_lp) {
-      rue_ep = (const lListElem *)lGetRef(cr_ep, QETI_resource_instance);
-      utilization_diagram = lGetList((lListElem *)lGetRef(cr_ep, QETI_resource_instance), RUE_utilized);
-      DPRINTF("   QETI INIT: %s %p\n", lGetString(rue_ep, RUE_name), utilization_diagram);
+      rue_ep = (const lListElem *)ocs::tom::get<QETI_resource_instance>(cr_ep);
+      utilization_diagram = ocs::tom::get<RUE_utilized>((lListElem *)ocs::tom::get<QETI_resource_instance>(cr_ep));
+      DPRINTF("   QETI INIT: %s %p\n", ocs::tom::get<RUE_name>(rue_ep), utilization_diagram);
       /* lLast() correctly returns a nullptr reference
          in case of an empty resource utilization diagram */
-      lSetRef(cr_ep, QETI_queue_end_next, lLastRW(utilization_diagram));
+      ocs::tom::set<QETI_queue_end_next>(cr_ep, lLastRW(utilization_diagram));
    }
 
    DRETURN_VOID;
@@ -329,16 +334,16 @@ static void sge_qeti_max_end_time(const char *layer, uint64_t *max_time, const l
    DSTRING_STATIC(time_str2, 64);
 
    for_each_ep_lv(cr_ep, cref_lp) {
-      rue_ep = (lListElem *)lGetRef(cr_ep, QETI_resource_instance);
-      if (!(ref = (lListElem *)lGetRef(cr_ep, QETI_queue_end_next))) {
-         DPRINTF("   QETI END %s: %s\n", layer, lGetString(rue_ep, RUE_name));
+      rue_ep = (lListElem *)ocs::tom::get<QETI_resource_instance>(cr_ep);
+      if (!(ref = (lListElem *)ocs::tom::get<QETI_queue_end_next>(cr_ep))) {
+         DPRINTF("   QETI END %s: %s\n", layer, ocs::tom::get<RUE_name>(rue_ep));
          continue;
       }
       DPRINTF("   QETI END %s: %s %s (%s)\n",
-              layer, lGetString(rue_ep, RUE_name),
-              sge_ctime64(lGetUlong64(ref, RDE_time), &time_str1),
+              layer, ocs::tom::get<RUE_name>(rue_ep),
+              sge_ctime64(ocs::tom::get<RDE_time>(ref), &time_str1),
               sge_ctime64(tmp_time, &time_str2));
-      tmp_time = std::max(tmp_time, lGetUlong64(ref, RDE_time));
+      tmp_time = std::max(tmp_time, ocs::tom::get<RDE_time>(ref));
    }
    *max_time = tmp_time;
 
@@ -355,19 +360,19 @@ static void sge_qeti_switch_to_next(const char *layer, uint64_t time, lList *cre
 
    time--;
    for_each_rw_lv(cr_ep, cref_lp) {
-      rue_ep = (lListElem *)lGetRef(cr_ep, QETI_resource_instance);
-      if (!(ref = (lListElem *)lGetRef(cr_ep, QETI_queue_end_next))) {
-         DPRINTF("   QETI NEXT %s: %s (finished)\n", layer, lGetString(rue_ep, RUE_name));
+      rue_ep = (lListElem *)ocs::tom::get<QETI_resource_instance>(cr_ep);
+      if (!(ref = (lListElem *)ocs::tom::get<QETI_queue_end_next>(cr_ep))) {
+         DPRINTF("   QETI NEXT %s: %s (finished)\n", layer, ocs::tom::get<RUE_name>(rue_ep));
          continue;
       }
 
-      while (ref && time < lGetUlong64(ref, RDE_time)) {
+      while (ref && time < ocs::tom::get<RDE_time>(ref)) {
          ref = lPrevRW(ref);
       }
 
-      DPRINTF("   QETI NEXT %s: %s set to %s (%p)\n", layer, lGetString(rue_ep, RUE_name),
-              sge_ctime64(ref != nullptr ? lGetUlong64(ref, RDE_time) : 0, &time_str), ref);
-      lSetRef(cr_ep, QETI_queue_end_next, ref);
+      DPRINTF("   QETI NEXT %s: %s set to %s (%p)\n", layer, ocs::tom::get<RUE_name>(rue_ep),
+              sge_ctime64(ref != nullptr ? ocs::tom::get<RDE_time>(ref) : 0, &time_str), ref);
+      ocs::tom::set<QETI_queue_end_next>(cr_ep, ref);
    }
 
    DRETURN_VOID;

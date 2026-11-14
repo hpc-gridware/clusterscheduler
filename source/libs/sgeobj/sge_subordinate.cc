@@ -54,6 +54,7 @@
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_subordinate.h"
 #include "sgeobj/msg_sgeobjlib.h"
+#include "tom/ocs_Element.h"
 
 #include "uti/sge.h"
 
@@ -103,7 +104,7 @@ bool tst_sos(int used, int total, const lListElem *so) {
     * then check if B's usage meets the threshold
     * for suspension of the subordinated queue C
     */
-   if ((threshold=lGetUlong(so, SO_threshold)) == 0) {
+   if ((threshold=ocs::tom::get<SO_threshold>(so)) == 0) {
       /* queue must be full for suspend of queue C */
       DPRINTF("TSTSOS: %sfull -> %ssuspended\n", (used>=total)?"":"not ",
               (used>=total)?"":"not ");
@@ -135,7 +136,7 @@ so_list_append_to_dstring(const lList *this_list, dstring *string) {
       uint32_t slots_sum = 0;
 
       if (this_list != nullptr && (so = lFirst(this_list)) != nullptr) {
-         slots_sum = lGetUlong(so, SO_slots_sum);
+         slots_sum = ocs::tom::get<SO_slots_sum>(so);
 
          if (slots_sum > 0) {
             /*
@@ -146,13 +147,13 @@ so_list_append_to_dstring(const lList *this_list, dstring *string) {
             for_each_ep_lv(elem, this_list) {
                const char *action_str = "sr";
 
-               if (lGetUlong(elem, SO_action) == SO_ACTION_LR) {
+               if (ocs::tom::get<SO_action>(elem) == SO_ACTION_LR) {
                   action_str = "lr";
                }
 
                sge_dstring_sprintf_append(string, "%s:" sge_u32":%s%s",
-                  lGetString(elem, SO_name),
-                  lGetUlong(elem, SO_seq_no),
+                  ocs::tom::get<SO_name>(elem),
+                  ocs::tom::get<SO_seq_no>(elem),
                   action_str,
                   lNext(elem) ? ", " : "");
             }
@@ -167,10 +168,10 @@ so_list_append_to_dstring(const lList *this_list, dstring *string) {
                   sge_dstring_append (string, " ");
                }
                
-               sge_dstring_append(string, lGetString(elem, SO_name));
-               if (lGetUlong(elem, SO_threshold)) {
+               sge_dstring_append(string, ocs::tom::get<SO_name>(elem));
+               if (ocs::tom::get<SO_threshold>(elem)) {
                   sge_dstring_sprintf_append(string, "=" sge_u32"%s",
-                                             lGetUlong(elem, SO_threshold),
+                                             ocs::tom::get<SO_threshold>(elem),
                                              lNext(elem) ? "," : "");
                }
                printed = true;
@@ -208,37 +209,37 @@ bool so_list_add(lList **this_list, lList **answer_list, const char *so_name,
    DENTER(TOP_LAYER);
 
    if (this_list != nullptr && so_name != nullptr) {
-      lListElem *elem = lGetElemStrRW(*this_list, SO_name, so_name);
+      lListElem *elem = ocs::tom::find_first_rw<SO_name>(*this_list, so_name);
    
       if (elem != nullptr) {
-         uint32_t current_threshold = lGetUlong(elem, SO_threshold);
-         uint32_t current_slots_sum = lGetUlong(elem, SO_slots_sum);
-         uint32_t current_seq_no    = lGetUlong(elem, SO_seq_no);
-         uint32_t current_action    = lGetUlong(elem, SO_action);
+         uint32_t current_threshold = ocs::tom::get<SO_threshold>(elem);
+         uint32_t current_slots_sum = ocs::tom::get<SO_slots_sum>(elem);
+         uint32_t current_seq_no    = ocs::tom::get<SO_seq_no>(elem);
+         uint32_t current_action    = ocs::tom::get<SO_action>(elem);
 
          if (threshold != 0 && threshold < current_threshold) {
             DPRINTF("Replacing entry with higher threshold: %d => %d\n", current_threshold, threshold);
-            lSetUlong(elem, SO_threshold, threshold);
+            ocs::tom::set<SO_threshold>(elem, threshold);
          }
          if (slots_sum != 0 && slots_sum < current_slots_sum) {
             DPRINTF("Replacing entry with higher slots_sum: %d => %d\n", current_slots_sum, slots_sum);
-            lSetUlong(elem, SO_slots_sum, slots_sum);
+            ocs::tom::set<SO_slots_sum>(elem, slots_sum);
          }
          if (seq_no != 0 && seq_no > current_seq_no) {
             DPRINTF("Replacing entry with lower seq_no: %d => %d\n", current_seq_no, seq_no);
-            lSetUlong(elem, SO_seq_no, seq_no);
+            ocs::tom::set<SO_seq_no>(elem, seq_no);
          }
          if (action != current_action) {
             DPRINTF("Replacing entry with different action: %d => %d\n", current_action, action);
-            lSetUlong(elem, SO_action, action);
+            ocs::tom::set<SO_action>(elem, action);
          }
       } else {
          DPRINTF("Adding new entry with threshold: %d, slots_sum: %d, seq_no: %d\n", threshold, slots_sum, seq_no);
-         elem = lAddElemStr(this_list, SO_name, so_name, SO_Type);
-         lSetUlong(elem, SO_threshold, threshold);
-         lSetUlong(elem, SO_slots_sum, slots_sum);
-         lSetUlong(elem, SO_seq_no,    seq_no);
-         lSetUlong(elem, SO_action, action);
+         elem = ocs::tom::emplace_back<SO_name>(this_list, so_name);
+         ocs::tom::set<SO_threshold>(elem, threshold);
+         ocs::tom::set<SO_slots_sum>(elem, slots_sum);
+         ocs::tom::set<SO_seq_no>(elem,    seq_no);
+         ocs::tom::set<SO_action>(elem, action);
       }
    }
    
@@ -280,7 +281,7 @@ bool so_list_resolve(const lList *so_list, lList **answer_list,
       /* Get the list of resolved qinstances for each subordinate. */
       for_each_ep_lv(so, so_list) {
          const char *qinstance_name = nullptr;
-         const char *cq_name_str = lGetString (so, SO_name);
+         const char *cq_name_str = ocs::tom::get<SO_name> (so);
 
          lListElem *cqueue = cqueue_list_locate(master_cqueue_list, cq_name_str);
 
@@ -290,11 +291,11 @@ bool so_list_resolve(const lList *so_list, lList **answer_list,
             /* If this cqueue doesn't have a qinstance on this host,
              * just skip it. */
             if (qinstance != nullptr) {
-               lUlong threshold   = lGetUlong(so, SO_threshold);
-               lUlong slots_sum   = lGetUlong(so, SO_slots_sum);
-               lUlong seq_no      = lGetUlong(so, SO_seq_no);
-               lUlong action      = lGetUlong(so, SO_action);
-               qinstance_name     = lGetString(qinstance, QU_full_name);
+               lUlong threshold   = ocs::tom::get<SO_threshold>(so);
+               lUlong slots_sum   = ocs::tom::get<SO_slots_sum>(so);
+               lUlong seq_no      = ocs::tom::get<SO_seq_no>(so);
+               lUlong action      = ocs::tom::get<SO_action>(so);
+               qinstance_name     = ocs::tom::get<QU_full_name>(qinstance);
 
                so_list_add(resolved_so_list, answer_list, qinstance_name,
                            threshold, slots_sum, seq_no, action);
@@ -303,10 +304,10 @@ bool so_list_resolve(const lList *so_list, lList **answer_list,
          }
          if (cq_name && strcmp(cq_name, cq_name_str) == 0){
             dstring buffer = DSTRING_INIT;
-            lUlong threshold     = lGetUlong(so, SO_threshold);
-            lUlong slots_sum     = lGetUlong(so, SO_slots_sum);
-            lUlong seq_no        = lGetUlong(so, SO_seq_no);
-            lUlong action        = lGetUlong(so, SO_action);
+            lUlong threshold     = ocs::tom::get<SO_threshold>(so);
+            lUlong slots_sum     = ocs::tom::get<SO_slots_sum>(so);
+            lUlong seq_no        = ocs::tom::get<SO_seq_no>(so);
+            lUlong action        = ocs::tom::get<SO_action>(so);
             
             qinstance_name = sge_dstring_sprintf(&buffer, "%s@%s", cq_name, hostname);
             so_list_add(resolved_so_list, answer_list, qinstance_name, threshold,

@@ -67,6 +67,12 @@
 #include "sgeobj/sge_cqueue_verify.h"
 #include "sgeobj/sge_path_alias.h"
 #include "sgeobj/msg_sgeobjlib.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_CE.h"
+#include "sgeobj/tom/ocs_tom_PR.h"
+#include "sgeobj/tom/ocs_tom_SO.h"
+#include "sgeobj/tom/ocs_tom_ST.h"
+#include "sgeobj/tom/ocs_tom_US.h"
 
 
 /// Debug layer the cluster queue verification traces are written to
@@ -91,10 +97,10 @@ cqueue_verify_calendar(lListElem *cqueue, lList **answer_list, lListElem *attr_e
    bool ret = true;
 
    if (cqueue != nullptr && attr_elem != nullptr) {
-      const char *name = lGetString(attr_elem, ASTR_value);
+      const char *name = ocs::tom::get<ASTR_value>(attr_elem);
 
       if (name != nullptr && strcasecmp("none", name)) {
-         const lListElem *calendar = lGetElemStr(master_calendar_list, CAL_name, name);
+         const lListElem *calendar = ocs::tom::find_first<CAL_name>(master_calendar_list, name);
          if (calendar == nullptr) {
             snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_CQUEUE_UNKNOWNCALENDAR_S, name);
             answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
@@ -124,7 +130,7 @@ cqueue_verify_ckpt_list(lListElem *cqueue, lList **answer_list, lListElem *attr_
    bool ret = true;
 
    if (cqueue != nullptr && attr_elem != nullptr) {
-      const lList *ckpt_list = lGetList(attr_elem, ASTRLIST_value);
+      const lList *ckpt_list = ocs::tom::get<ASTRLIST_value>(attr_elem);
 
       if (ckpt_list != nullptr) {
          if (!ckpt_list_do_all_exist(master_ckpt_list, answer_list, ckpt_list)) {
@@ -157,7 +163,7 @@ cqueue_verify_consumable_config_list(lListElem *cqueue, lList **answer_list, lLi
    }
 
    // consumable list empty, then all is fine
-   const lList *centry_list = lGetList(attr_elem, ACELIST_value);
+   const lList *centry_list = ocs::tom::get<ACELIST_value>(attr_elem);
    if (centry_list == nullptr) {
       DRETURN(true);
    }
@@ -194,7 +200,7 @@ cqueue_verify_initial_state(lListElem *cqueue, lList **answer_list, lListElem *a
 
    if (cqueue != nullptr && attr_elem != nullptr) {
       const char *names[] = {"default", "enabled", "disabled", nullptr};
-      const char *name = lGetString(attr_elem, ASTR_value);
+      const char *name = ocs::tom::get<ASTR_value>(attr_elem);
       bool found = false;
       int i = 0;
 
@@ -233,7 +239,7 @@ cqueue_verify_pe_list(lListElem *cqueue, lList **answer_list, lListElem *attr_el
    bool ret = true;
 
    if (cqueue != nullptr && attr_elem != nullptr) {
-      const lList *pe_list = lGetList(attr_elem, ASTRLIST_value);
+      const lList *pe_list = ocs::tom::get<ASTRLIST_value>(attr_elem);
 
       if (pe_list != nullptr) {
          if (!pe_list_do_all_exist(master_pe_list, answer_list, pe_list, true)) {
@@ -263,7 +269,7 @@ cqueue_verify_priority(lListElem *cqueue, lList **answer_list, lListElem *attr_e
    bool ret = true;
 
    if (cqueue != nullptr && attr_elem != nullptr) {
-      const char *priority_string = lGetString(attr_elem, ASTR_value);
+      const char *priority_string = ocs::tom::get<ASTR_value>(attr_elem);
 
       if (priority_string != nullptr) {
          const int priority = atoi(priority_string);
@@ -299,7 +305,7 @@ cqueue_verify_processors(lListElem *cqueue, lList **answer_list, lListElem *attr
    bool ret = true;
 
    if (cqueue != nullptr && attr_elem != nullptr) {
-      const char *processors_string = lGetString(attr_elem, ASTR_value);
+      const char *processors_string = ocs::tom::get<ASTR_value>(attr_elem);
 
       if (processors_string != nullptr) {
          lList *range_list = nullptr;
@@ -332,7 +338,7 @@ cqueue_verify_project_list(lListElem *cqueue, lList **answer_list, lListElem *at
    bool ret = true;
 
    if (cqueue != nullptr && attr_elem != nullptr) {
-      const lList *project_list = lGetList(attr_elem, APRJLIST_value);
+      const lList *project_list = ocs::tom::get<APRJLIST_value>(attr_elem);
 
       if (project_list != nullptr) {
          if (!prj_list_do_all_exist(master_project_list, answer_list, project_list)) {
@@ -366,7 +372,7 @@ cqueue_verify_shell_start_mode(lListElem *cqueue, lList **answer_list, lListElem
          "unix_behavior", "posix_compliant", "script_from_stdin",
          nullptr
       };
-      const char *name = lGetString(attr_elem, ASTR_value);
+      const char *name = ocs::tom::get<ASTR_value>(attr_elem);
       bool found = false;
       int i = 0;
 
@@ -404,7 +410,7 @@ cqueue_verify_shell(lListElem *cqueue, lList **answer_list, lListElem *attr_elem
    bool ret = true;
    bool path_found = true;
 
-   const char *name = lGetString(attr_elem, ASTR_value);
+   const char *name = ocs::tom::get<ASTR_value>(attr_elem);
 
    /* Check also if it is an absolute valid path */
    path_found = path_verify(name, answer_list, "shell", true);
@@ -438,11 +444,11 @@ cqueue_verify_subordinate_list(lListElem *cqueue, lList **answer_list, lListElem
    bool ret = true;
 
    if (cqueue != nullptr && attr_elem != nullptr) {
-      const char *cqueue_name = lGetString(cqueue, CQ_name);
-      const lList *so_list = lGetList(attr_elem, ASOLIST_value);
+      const char *cqueue_name = ocs::tom::get<CQ_name>(cqueue);
+      const lList *so_list = ocs::tom::get<ASOLIST_value>(attr_elem);
 
       for_each_ep_lv(so, so_list) {
-         const char *so_name = lGetString(so, SO_name);
+         const char *so_name = ocs::tom::get<SO_name>(so);
  
          /*
           * Check for recursions to ourself
@@ -493,7 +499,7 @@ cqueue_verify_user_list(lListElem *cqueue, lList **answer_list, lListElem *attr_
    bool ret = true;
 
    if (cqueue != nullptr && attr_elem != nullptr) {
-      const lList *user_list = lGetList(attr_elem, AUSRLIST_value);
+      const lList *user_list = ocs::tom::get<AUSRLIST_value>(attr_elem);
 
       if (user_list != nullptr) {
          if (userset_list_validate_acl_list(user_list, answer_list, master_userset_list) == STATUS_EUNKNOWN) {
@@ -526,7 +532,7 @@ bool cqueue_verify_job_slots(lListElem *cqueue, lList **answer_list, lListElem *
    bool ret = true;
 
    if (cqueue != nullptr && attr_elem != nullptr) {
-      uint32_t slots = lGetUlong(attr_elem, AULNG_value);
+      uint32_t slots = ocs::tom::get<AULNG_value>(attr_elem);
 
       if (slots > std::numeric_limits<uint32_t>::max()) {
          answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
@@ -560,7 +566,7 @@ bool cqueue_verify_memory_value(lListElem *cqueue, lList **answer_list, lListEle
    bool ret = true;
 
    if (cqueue != nullptr && attr_elem != nullptr) {
-      const char *memory_string = lGetString(attr_elem, AMEM_value);
+      const char *memory_string = ocs::tom::get<AMEM_value>(attr_elem);
 
 #if 1
       lListElem *copy = lCopyElem(attr_elem);
@@ -600,7 +606,7 @@ bool cqueue_verify_time_value(lListElem *cqueue, lList **answer_list, lListElem 
    bool ret = true;
 
    if (cqueue != nullptr && attr_elem != nullptr) {
-      const char *time_string = lGetString(attr_elem, ATIME_value);
+      const char *time_string = ocs::tom::get<ATIME_value>(attr_elem);
 
       if (time_string == nullptr || !strcasecmp(time_string, "none")) {
          answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,

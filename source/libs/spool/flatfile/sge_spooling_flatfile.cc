@@ -60,6 +60,7 @@
 #include "sgeobj/sge_str.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/ocs_DataStore.h"
+#include "tom/ocs_Element.h"
 
 #include "uti/sge.h"
 
@@ -263,7 +264,7 @@ spool_classic_create_context(lList **answer_list, const char *args) {
                                           spool_classic_default_delete_func,
                                           spool_default_validate_func,
                                           spool_default_validate_list_func);
-         lSetRef(rule, SPR_clientdata, field_info);
+         ocs::tom::set<SPR_clientdata>(rule, field_info);
          type = spool_context_create_type(answer_list, context, SGE_TYPE_ALL);
          spool_type_add_rule(answer_list, type, rule, true);
 
@@ -314,7 +315,7 @@ bool spool_classic_default_startup_func(lList **answer_list,
    const char *url;
 
    /* check spool directory */
-   url = lGetString(rule, SPR_url);
+   url = ocs::tom::get<SPR_url>(rule);
    if (!sge_is_directory(url)) {
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
                               ANSWER_QUALITY_ERROR,
@@ -380,7 +381,7 @@ bool spool_classic_default_shutdown_func(lList **answer_list,
 
    bool ret = true;
 
-   auto field_info = static_cast<flatfile_info *>(lGetRef(rule, SPR_clientdata));
+   auto field_info = static_cast<flatfile_info *>(ocs::tom::get<SPR_clientdata>(rule));
    for (auto i = static_cast<int>(SGE_TYPE_FIRST); i < static_cast<int>(SGE_TYPE_ALL); i++) {
       // for most type we use static fields but for some we need to free the dynamic fields
       // @see spool_classic_create_context
@@ -462,7 +463,7 @@ static bool read_validate_object(lList **answer_list,
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"
       /* validate object */
-      validate_func = (spooling_validate_func)lGetRef(rule, SPR_validate_func);
+      validate_func = (spooling_validate_func)ocs::tom::get<SPR_validate_func>(rule);
 #pragma GCC diagnostic pop
       if (validate_func != nullptr) {
          if (!validate_func(answer_list, type, rule, ep, object_type)) {
@@ -526,7 +527,7 @@ bool spool_classic_default_list_func(lList **answer_list,
                      "Cannot read in list because target list is missing\n");
       ret = false;
    } else {
-      url = lGetString(rule, SPR_url);
+      url = ocs::tom::get<SPR_url>(rule);
       descr = object_type_get_descr(object_type);
 
       if (*list == nullptr && descr != nullptr) {
@@ -631,7 +632,7 @@ bool spool_classic_default_list_func(lList **answer_list,
 
             dstring spool_key = DSTRING_INIT;
             for_each_ep_lv(direntry, direntries) {
-               const char *key = lGetString(direntry, ST_name);
+               const char *key = ocs::tom::get<ST_name>(direntry);
 
                if (key[0] != '.') {
                   sge_dstring_sprintf(&spool_key, "%s/%s", directory, key);
@@ -650,7 +651,7 @@ bool spool_classic_default_list_func(lList **answer_list,
                const lListElem *context = spool_get_default_context();
                lListElem *type = spool_context_search_type(context, SGE_TYPE_QINSTANCE);
                lListElem *rule = spool_type_search_default_rule(type);
-               const char *url = lGetString(rule, SPR_url);
+               const char *url = ocs::tom::get<SPR_url>(rule);
 
                dstring key = DSTRING_INIT;
                dstring dir = DSTRING_INIT;
@@ -661,12 +662,12 @@ bool spool_classic_default_list_func(lList **answer_list,
                   lList *qinstance_list = lCreateList("", QU_Type);
                   ocs::spool::DuplicateFilter qinstance_filter(QU_Type, object_type_get_name(SGE_TYPE_QINSTANCE));
 
-                  sge_dstring_sprintf(&dir, "%s/%s/%s", url, QINSTANCES_DIR, lGetString(queue, CQ_name));
+                  sge_dstring_sprintf(&dir, "%s/%s/%s", url, QINSTANCES_DIR, ocs::tom::get<CQ_name>(queue));
                   direntries = sge_get_dirents(sge_dstring_get_string(&dir));
                   for_each_rw_lv(direntry, direntries) {
-                     const char *directory = lGetString(direntry, ST_name);
+                     const char *directory = ocs::tom::get<ST_name>(direntry);
                      if (directory[0] != '.') {
-                        sge_dstring_sprintf(&key, "%s/%s", lGetString(queue, CQ_name), directory);
+                        sge_dstring_sprintf(&key, "%s/%s", ocs::tom::get<CQ_name>(queue), directory);
                         sge_dstring_sprintf(&spool_key, "%s/%s", QINSTANCES_DIR, sge_dstring_get_string(&key));
                         read_validate_object(answer_list, type, rule, sge_dstring_get_string(&key), NoName,
                                            SGE_TYPE_QINSTANCE, &qinstance_list, qinstance_filter,
@@ -675,7 +676,7 @@ bool spool_classic_default_list_func(lList **answer_list,
                   }
                   lFreeList(&direntries);
 
-                  lSetList(queue, CQ_qinstances, qinstance_list);
+                  ocs::tom::set<CQ_qinstances>(queue, qinstance_list);
                }
                sge_dstring_free(&spool_key);
                sge_dstring_free(&dir);
@@ -698,7 +699,7 @@ bool spool_classic_default_list_func(lList **answer_list,
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"
          spooling_validate_list_func validate_list =
-            (spooling_validate_list_func)lGetRef(rule, SPR_validate_list_func);
+            (spooling_validate_list_func)ocs::tom::get<SPR_validate_list_func>(rule);
 #pragma GCC diagnostic pop
 
          ret = validate_list(answer_list, type, rule, object_type);
@@ -743,9 +744,9 @@ spool_classic_default_read_func(lList **answer_list,
    lListElem *ep = nullptr;
    bool parse_values = true;
 
-   rule_clientdata = (flatfile_info *)lGetRef(rule, SPR_clientdata);
+   rule_clientdata = (flatfile_info *)ocs::tom::get<SPR_clientdata>(rule);
    field_info = &(rule_clientdata[object_type]);
-   url = lGetString(rule, SPR_url);
+   url = ocs::tom::get<SPR_url>(rule);
    descr = object_type_get_descr(object_type);
 
    /* prepare filenames */
@@ -830,7 +831,7 @@ spool_classic_default_read_func(lList **answer_list,
                char *str = sge_file2string(exec_file, &len);
                if (str != nullptr) {
                   ep = lCreateElem(STU_Type);
-                  lXchgString(ep, STU_name, &str);
+                  ocs::tom::exchange<STU_name>(ep, &str);
                }
             }
             sge_free(&dup);
@@ -938,9 +939,9 @@ bool spool_classic_default_write_func(lList **answer_list,
    dstring tmp = DSTRING_INIT;
    bool ret = true;
 
-   rule_clientdata = (flatfile_info *)lGetRef(rule, SPR_clientdata);
+   rule_clientdata = (flatfile_info *)ocs::tom::get<SPR_clientdata>(rule);
    field_info = &(rule_clientdata[object_type]);
-   url = lGetString(rule, SPR_url);
+   url = ocs::tom::get<SPR_url>(rule);
 
    /* prepare filenames */
    switch(object_type) {
@@ -984,8 +985,8 @@ bool spool_classic_default_write_func(lList **answer_list,
          break;
       case SGE_TYPE_QINSTANCE:
          sge_free(&directory);
-         directory = sge_dstring_sprintf(&tmp, "%s/%s", QINSTANCES_DIR, lGetString(object, QU_qname));
-         filename = lGetHost(object, QU_qhostname);
+         directory = sge_dstring_sprintf(&tmp, "%s/%s", QINSTANCES_DIR, ocs::tom::get<QU_qname>(object));
+         filename = ocs::tom::get<QU_qhostname>(object);
          break;
       case SGE_TYPE_USERSET:
          directory = USERSET_DIR;
@@ -1038,7 +1039,7 @@ bool spool_classic_default_write_func(lList **answer_list,
                /* job_write_spool_file takes a job, even if we only want
                 * to spool a ja_task or pe_task
                 */
-               job = lGetElemUlong(*ocs::DataStore::get_master_list(SGE_TYPE_JOB), JB_job_number, job_id);
+               job = ocs::tom::find_first<JB_job_number>(*ocs::DataStore::get_master_list(SGE_TYPE_JOB), job_id);
 
                /* additional flags for job_write_spool_file
                 * to avoid spooling too many files
@@ -1058,9 +1059,9 @@ bool spool_classic_default_write_func(lList **answer_list,
          }
          break;
       case SGE_TYPE_JOBSCRIPT:
-         ret = sge_string2file(lGetString(object, JB_script_ptr),
-                               lGetUlong(object, JB_script_size),
-                               lGetString(object, JB_exec_file)) ? false : true;
+         ret = sge_string2file(ocs::tom::get<JB_script_ptr>(object),
+                               ocs::tom::get<JB_script_size>(object),
+                               ocs::tom::get<JB_exec_file>(object)) ? false : true;
          break;
       case SGE_TYPE_RQS:
          directory = RESOURCEQUOTAS_DIR;
@@ -1204,7 +1205,7 @@ bool spool_classic_default_delete_func(lList **answer_list,
             const char *dir_name;
 
             dir_name = sge_dstring_sprintf(&dir_name_dstring, "%s/%s",
-                                           lGetString(rule, SPR_url),
+                                           ocs::tom::get<SPR_url>(rule),
                                            CONFIG_DIR);
             ret = sge_unlink(dir_name, key);
             sge_dstring_free(&dir_name_dstring);

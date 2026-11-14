@@ -62,6 +62,9 @@
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/ocs_EscapedString.h"
 #include "sgeobj/sge_cull_xml.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_XMLA.h"
+#include "sgeobj/tom/ocs_tom_XMLS.h"
 
 static void lWriteElemXML_(const lListElem *ep, int nesting_level, std::ostream &os);
 
@@ -88,10 +91,10 @@ lListElem* xml_getHead(const char *name, lList *list, lList *attributes) {
 
    if (xml_head) {
       
-      lSetString(xml_head, XMLH_Version, "<?xml version='1.0'?>");
-      lSetString(xml_head, XMLH_Name, name);
-      lSetList(xml_head, XMLH_Attribute, attributes);
-      lSetList(xml_head, XMLH_Element, list);
+      ocs::tom::set<XMLH_Version>(xml_head, "<?xml version='1.0'?>");
+      ocs::tom::set<XMLH_Name>(xml_head, name);
+      ocs::tom::set<XMLH_Attribute>(xml_head, attributes);
+      ocs::tom::set<XMLH_Element>(xml_head, list);
       xml_addAttribute(xml_head, "xmlns:xsd", "https://github.com/hpc-gridware/clusterscheduler/raw/master/source/dist/util/resources/schemas/qstat/qstat.xsd");
 
 /* we do not support stylesheets yet */
@@ -114,12 +117,12 @@ void xml_addStylesheet(lListElem *xml_head, const char* name, const char *url, c
    lList *stylesheet_list = nullptr;
    
    if (stylesheet_elem) {
-      lSetString(stylesheet_elem, XMLS_Name, name);
-      lSetString(stylesheet_elem, XMLS_Value, url);
-      lSetString(stylesheet_elem, XMLS_Version, version);
-      stylesheet_list = lGetListRW(xml_head, XMLH_Stylesheet);
+      ocs::tom::set<XMLS_Name>(stylesheet_elem, name);
+      ocs::tom::set<XMLS_Value>(stylesheet_elem, url);
+      ocs::tom::set<XMLS_Version>(stylesheet_elem, version);
+      stylesheet_list = ocs::tom::get<XMLH_Stylesheet>(xml_head);
       if (!stylesheet_list) {
-         lSetList(xml_head, XMLH_Stylesheet, (stylesheet_list = lCreateList("Stylesheet", XMLS_Type)));
+         ocs::tom::set<XMLH_Stylesheet>(xml_head, (stylesheet_list = lCreateList("Stylesheet", XMLS_Type)));
       }
       
       lAppendElem(stylesheet_list, stylesheet_elem);
@@ -157,17 +160,17 @@ void xml_addAttribute(lListElem *xml_elem, const char *name, const char *value){
    is_mod_value = escape_string(value, &mod_value); 
    
    if (attr_elem) {
-      lSetString(attr_elem, XMLA_Name, name);
-      lSetString(attr_elem, XMLA_Value, (is_mod_value?sge_dstring_get_string(&mod_value):""));
-      if (lGetPosViaElem(xml_elem, XMLH_Attribute, SGE_NO_ABORT) != -1) {   
-         attr_list = lGetListRW(xml_elem, XMLH_Attribute);
+      ocs::tom::set<XMLA_Name>(attr_elem, name);
+      ocs::tom::set<XMLA_Value>(attr_elem, (is_mod_value?sge_dstring_get_string(&mod_value):""));
+      if (ocs::tom::has<XMLH_Attribute>(xml_elem)) {   
+         attr_list = ocs::tom::get<XMLH_Attribute>(xml_elem);
          if (!attr_list)
-            lSetList(xml_elem, XMLH_Attribute, (attr_list = lCreateList("Attributes", XMLA_Type)));
+            ocs::tom::set<XMLH_Attribute>(xml_elem, (attr_list = lCreateList("Attributes", XMLA_Type)));
       }
-      else if (lGetPosViaElem(xml_elem, XMLE_Attribute, SGE_NO_ABORT) != -1) {
-         attr_list = lGetListRW(xml_elem, XMLE_Attribute);
+      else if (ocs::tom::has<XMLE_Attribute>(xml_elem)) {
+         attr_list = ocs::tom::get<XMLE_Attribute>(xml_elem);
          if (!attr_list)
-            lSetList(xml_elem, XMLE_Attribute, (attr_list = lCreateList("Attributes", XMLA_Type)));
+            ocs::tom::set<XMLE_Attribute>(xml_elem, (attr_list = lCreateList("Attributes", XMLA_Type)));
       }
       else {
          sge_dstring_free(&mod_value);
@@ -216,23 +219,23 @@ static void lWriteListXML_(const lList *lp, int nesting_level, std::ostream &os)
       is_XML_elem = false;
       is_attr = false;
 
-      if (lGetPosViaElem(ep, XMLE_Attribute, SGE_NO_ABORT) != -1) {
+      if (ocs::tom::has<XMLE_Attribute>(ep)) {
          sge_dstring_clear(&attr);
-         is_attr = lAttributesToString_(lGetList(ep, XMLE_Attribute), &attr);  
+         is_attr = lAttributesToString_(ocs::tom::get<XMLE_Attribute>(ep), &attr);  
          is_XML_elem = true;
       }
       
-      if (is_XML_elem && (lGetBool(ep, XMLE_Print)))  {
-         const lListElem *elem = lGetObject(ep, XMLE_Element);
-         if (lGetString(elem, XMLA_Value) != nullptr){
-            os << indent << "<" << lGetString(elem, XMLA_Name) << (is_attr ? sge_dstring_get_string(&attr) : "") << ">";
-            os << lGetString(elem, XMLA_Value);
-            lWriteListXML_(lGetList(ep, XMLE_List), nesting_level + 1, os);
-            os << "</" << lGetString(elem, XMLA_Name) << ">\n";
+      if (is_XML_elem && (ocs::tom::get<XMLE_Print>(ep)))  {
+         const lListElem *elem = ocs::tom::get<XMLE_Element>(ep);
+         if (ocs::tom::get<XMLA_Value>(elem) != nullptr){
+            os << indent << "<" << ocs::tom::get<XMLA_Name>(elem) << (is_attr ? sge_dstring_get_string(&attr) : "") << ">";
+            os << ocs::tom::get<XMLA_Value>(elem);
+            lWriteListXML_(ocs::tom::get<XMLE_List>(ep), nesting_level + 1, os);
+            os << "</" << ocs::tom::get<XMLA_Name>(elem) << ">\n";
          } else {
-            os << indent << "<" << lGetString(elem, XMLA_Name) << (is_attr ? sge_dstring_get_string(&attr) : "") << ">\n";
-            lWriteListXML_(lGetList(ep, XMLE_List), nesting_level + 1, os);
-            os << indent << "</" << lGetString(elem, XMLA_Name) << ">\n";
+            os << indent << "<" << ocs::tom::get<XMLA_Name>(elem) << (is_attr ? sge_dstring_get_string(&attr) : "") << ">\n";
+            lWriteListXML_(ocs::tom::get<XMLE_List>(ep), nesting_level + 1, os);
+            os << indent << "</" << ocs::tom::get<XMLA_Name>(elem) << ">\n";
          }
       }
       else {
@@ -317,23 +320,23 @@ static void lWriteElemXML_(const lListElem *ep, int nesting_level, std::ostream 
    }
    space[i] = '\0';
 
-   if (lGetPosViaElem(ep, XMLH_Version, SGE_NO_ABORT) != -1) {   
+   if (ocs::tom::has<XMLH_Version>(ep)) {   
       lWriteXMLHead_(ep, nesting_level, os);
-   } else if (lGetPosViaElem(ep, XMLE_Attribute, SGE_NO_ABORT) !=-1 ) {
-      if (lGetBool(ep, XMLE_Print)) {
+   } else if (ocs::tom::has<XMLE_Attribute>(ep) ) {
+      if (ocs::tom::get<XMLE_Print>(ep)) {
          dstring attr = DSTRING_INIT;
-         const lListElem *elem = lGetObject(ep, XMLE_Element);
-         bool is_attr = lAttributesToString_(lGetList(ep, XMLE_Attribute), &attr);
+         const lListElem *elem = ocs::tom::get<XMLE_Element>(ep);
+         bool is_attr = lAttributesToString_(ocs::tom::get<XMLE_Attribute>(ep), &attr);
 
-         os << space << "<" << lGetString(elem, XMLA_Name) << (is_attr ? sge_dstring_get_string(&attr) : "") << ">";
-         os << lGetString(elem, XMLA_Value);
-         lWriteListXML_(lGetList(ep, XMLE_List), nesting_level + 1, os);
-         os << "</" << lGetString(elem, XMLA_Name) << ">\n";
+         os << space << "<" << ocs::tom::get<XMLA_Name>(elem) << (is_attr ? sge_dstring_get_string(&attr) : "") << ">";
+         os << ocs::tom::get<XMLA_Value>(elem);
+         lWriteListXML_(ocs::tom::get<XMLE_List>(ep), nesting_level + 1, os);
+         os << "</" << ocs::tom::get<XMLA_Name>(elem) << ">\n";
 
          sge_dstring_free(&attr);
       } else{
-         lWriteElemXML_(lGetObject(ep, XMLE_Element), nesting_level, os);
-         lWriteListXML_(lGetList(ep, XMLE_List), nesting_level, os);
+         lWriteElemXML_(ocs::tom::get<XMLE_Element>(ep), nesting_level, os);
+         lWriteListXML_(ocs::tom::get<XMLE_List>(ep), nesting_level, os);
       }
    } else {  
       for (const auto f : ocs_cull_present_fields(ep->descr)) {
@@ -533,8 +536,8 @@ static bool lAttributesToString_(const lList *attr_list, dstring *attr){
       return false;
    } else {
       for_each_ep_lv(attr_elem, attr_list) {
-         const char *name = lGetString(attr_elem, XMLA_Name);
-         const char *value = lGetString(attr_elem, XMLA_Value);
+         const char *name = ocs::tom::get<XMLA_Name>(attr_elem);
+         const char *value = ocs::tom::get<XMLA_Value>(attr_elem);
 
          sge_dstring_sprintf_append(attr, " %s=\"%s\"", name, value);
       }
@@ -550,17 +553,17 @@ static void lWriteXMLHead_(const lListElem *ep, int nesting_level, std::ostream 
    }
 
    dstring attr = DSTRING_INIT;
-   bool is_attr = lAttributesToString_(lGetList(ep, XMLH_Attribute), &attr);
+   bool is_attr = lAttributesToString_(ocs::tom::get<XMLH_Attribute>(ep), &attr);
 
-   os << lGetString(ep, XMLH_Version) << "\n";
+   os << ocs::tom::get<XMLH_Version>(ep) << "\n";
 
-   for_each_ep_lv(elem, lGetList(ep, XMLH_Stylesheet)) {
-      os << "<xsl:stylesheet " << lGetString(elem, XMLS_Name) << "=\"" << lGetString(elem, XMLS_Value) << "\" version=\"" << lGetString(elem, XMLS_Version) << "\">\n";
+   for_each_ep_lv(elem, ocs::tom::get<XMLH_Stylesheet>(ep)) {
+      os << "<xsl:stylesheet " << ocs::tom::get<XMLS_Name>(elem) << "=\"" << ocs::tom::get<XMLS_Value>(elem) << "\" version=\"" << ocs::tom::get<XMLS_Version>(elem) << "\">\n";
    }
 
-   const char *name = lGetString(ep, XMLH_Name);
+   const char *name = ocs::tom::get<XMLH_Name>(ep);
    os << "<" << name << " " << (is_attr ? sge_dstring_get_string(&attr) : "") << ">\n";
-   lWriteListXML_(lGetList(ep, XMLH_Element), nesting_level +1, os);
+   lWriteListXML_(ocs::tom::get<XMLH_Element>(ep), nesting_level +1, os);
    os << "</" << name << ">\n";
 
    sge_dstring_free(&attr);
@@ -576,11 +579,11 @@ static lListElem *append_Attr_S(lList *attributeList, const char *name, const ch
    if (parent) {
       elem = lCreateElem(XMLA_Type);
       if (elem){
-         lSetString(elem, XMLA_Name, name);
-         lSetString(elem, XMLA_Value, value);
-         lSetObject(parent, XMLE_Element, elem);
+         ocs::tom::set<XMLA_Name>(elem, name);
+         ocs::tom::set<XMLA_Value>(elem, value);
+         ocs::tom::set<XMLE_Element>(parent, elem);
       }
-      lSetBool(parent, XMLE_Print, true);
+      ocs::tom::set<XMLE_Print>(parent, true);
       lAppendElem(attributeList, parent);
    }
    return parent;

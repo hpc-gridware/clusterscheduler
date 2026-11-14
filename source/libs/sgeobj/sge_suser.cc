@@ -44,6 +44,7 @@
 #include "sgeobj/sge_suser.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_object.h"
+#include "tom/ocs_Element.h"
 
 #include <cinttypes>
 #include "msg_qmaster.h"
@@ -69,7 +70,7 @@ lListElem *suser_list_add(lList **suser_list, lList **answer_list,
    if (suser_list != nullptr) {
       ret = suser_list_find(*suser_list, suser_name);
       if (ret == nullptr) {
-         ret = lAddElemStr(suser_list, SU_name, suser_name, SU_Type);
+         ret = ocs::tom::emplace_back<SU_name>(suser_list, suser_name);
       }
    }
    return ret;
@@ -90,7 +91,7 @@ lListElem *suser_list_find(const lList *suser_list, const char *suser_name) {
    lListElem *ret = nullptr;
 
    if (suser_list != nullptr && suser_name != nullptr) {
-      ret = lGetElemStrRW(suser_list, SU_name, suser_name);
+      ret = ocs::tom::find_first_rw<SU_name>(suser_list, suser_name);
    }
    return ret;
 }
@@ -104,7 +105,7 @@ lListElem *suser_list_find(const lList *suser_list, const char *suser_name) {
  */
 void suser_increase_job_counter(lListElem *suser) {
    if (suser != nullptr) {
-      lAddUlong(suser, SU_jobs, 1);
+      ocs::tom::add<SU_jobs>(suser, 1);
    }
 }
 
@@ -119,12 +120,12 @@ void suser_decrease_job_counter(lListElem *suser) {
    DENTER(TOP_LAYER);
 
    if (suser != nullptr) {
-      uint32_t jobs = lGetUlong(suser, SU_jobs);
+      uint32_t jobs = ocs::tom::get<SU_jobs>(suser);
     
       if (jobs == 0) {
-         ERROR(MSG_SUSERCNTISALREADYZERO_S, lGetString(suser, SU_name));
+         ERROR(MSG_SUSERCNTISALREADYZERO_S, ocs::tom::get<SU_name>(suser));
       } else {
-         lAddUlong(suser, SU_jobs, -1);
+         ocs::tom::add<SU_jobs>(suser, -1);
       }
    }
    DRETURN_VOID;
@@ -143,7 +144,7 @@ uint32_t suser_get_job_counter(lListElem *suser) {
    uint32_t ret = 0;
 
    if (suser != nullptr) {
-      ret = lGetUlong(suser, SU_jobs);
+      ret = ocs::tom::get<SU_jobs>(suser);
    }
    return ret;
 }
@@ -170,7 +171,7 @@ int suser_check_new_job(const lListElem *job, uint32_t max_u_jobs, lList *master
    lListElem *suser = nullptr;
    int ret = 1;
 
-   submit_user = lGetString(job, JB_owner);
+   submit_user = ocs::tom::get<JB_owner>(job);
    suser = suser_list_add(&master_suser_list, nullptr, submit_user);
    if (suser != nullptr) {
       if (max_u_jobs == 0 || max_u_jobs > suser_get_job_counter(suser))
@@ -215,7 +216,7 @@ int suser_register_new_job(const lListElem *job, uint32_t max_u_jobs,
       ret = suser_check_new_job(job, max_u_jobs, master_suser_list);
    }
    if (ret == 0) {
-      submit_user = lGetString(job, JB_owner);
+      submit_user = ocs::tom::get<JB_owner>(job);
       suser = suser_list_add(&master_suser_list, nullptr, submit_user);
       suser_increase_job_counter(suser);
    }
@@ -240,7 +241,7 @@ uint32_t suser_job_count(const lListElem *job, const lList *master_suser_list) {
    lListElem *suser = nullptr;
    uint32_t ret = 0;
 
-   submit_user = lGetString(job, JB_owner);  
+   submit_user = ocs::tom::get<JB_owner>(job);  
    suser = suser_list_find(master_suser_list, submit_user);
    if (suser != nullptr) {
       ret = suser_get_job_counter(suser);
@@ -262,7 +263,7 @@ void suser_unregister_job(const lListElem *job, const lList *master_suser_list) 
    const char *submit_user = nullptr;
    lListElem *suser = nullptr;
 
-   submit_user = lGetString(job, JB_owner);  
+   submit_user = ocs::tom::get<JB_owner>(job);  
    suser = suser_list_find(master_suser_list, submit_user);
    if (suser != nullptr) {
       suser_decrease_job_counter(suser);

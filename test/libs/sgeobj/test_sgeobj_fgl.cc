@@ -35,6 +35,7 @@
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_object.h"
 #include "sgeobj/ocs_DataStore.h"
+#include "tom/ocs_Element.h"
 
 /** @name The size of the fine-grained-locking benchmark
  *
@@ -308,7 +309,7 @@ int main(int argc, char *argv[]) {
    // create some CULL objects that simulation functions can access
    lList **job_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB);
    for (int j = 0; j < JOBS; j++) {
-      lAddElemUlong(job_list, JB_job_number, j, JB_Type);
+      ocs::tom::emplace_back<JB_job_number>(job_list, j);
    }
 
    lList **host_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST);
@@ -316,7 +317,7 @@ int main(int argc, char *argv[]) {
       dstring host_name = DSTRING_INIT;
 
       sge_dstring_sprintf(&host_name, "host%d", h);
-      lAddElemHost(host_list, EH_name, sge_dstring_get_string(&host_name), EH_Type);
+      ocs::tom::emplace_back<EH_name>(host_list, sge_dstring_get_string(&host_name));
       sge_dstring_free(&host_name);
    }
 
@@ -325,7 +326,7 @@ int main(int argc, char *argv[]) {
       dstring cqueue_name = DSTRING_INIT;
 
       sge_dstring_sprintf(&cqueue_name, "cqueue%d", q);
-      lAddElemStr(cqueue_list, CQ_name, sge_dstring_get_string(&cqueue_name), CQ_Type);
+      ocs::tom::emplace_back<CQ_name>(cqueue_list, sge_dstring_get_string(&cqueue_name));
       sge_dstring_free(&cqueue_name);
    }
 
@@ -334,7 +335,7 @@ int main(int argc, char *argv[]) {
       dstring project_name = DSTRING_INIT;
 
       sge_dstring_sprintf(&project_name, "prj%d", p);
-      lAddElemStr(project_list, PR_name, sge_dstring_get_string(&project_name), PR_Type);
+      ocs::tom::emplace_back<PR_name>(project_list, sge_dstring_get_string(&project_name));
       sge_dstring_free(&project_name);
    }
 

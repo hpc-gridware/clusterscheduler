@@ -55,6 +55,8 @@
 #include "sgeobj/ocs_AdvanceReservation.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_object.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_BN.h"
 
 #include "msg_common.h"
 #include "msg_qmaster.h"
@@ -631,98 +633,98 @@ attr_mod_obj_binding(lList **alpp, lListElem *new_ar, const lListElem *ar) {
    DENTER(TOP_LAYER);
    bool ret = true;
 
-   if (lGetPosViaElem(ar, AR_binding, SGE_NO_ABORT) >= 0) {
-      lListElem *old_binding_elem = lGetObject(new_ar, AR_binding);
-      const lListElem *new_binding_elem = lGetObject(ar, AR_binding);
+   if (ocs::tom::has<AR_binding>(ar)) {
+      lListElem *old_binding_elem = ocs::tom::get<AR_binding>(new_ar);
+      const lListElem *new_binding_elem = ocs::tom::get<AR_binding>(ar);
       if (old_binding_elem == nullptr) {
-         lSetObject(new_ar, AR_binding, new_binding_elem != nullptr ? lCopyElem(new_binding_elem) : nullptr);
+         ocs::tom::set<AR_binding>(new_ar, new_binding_elem != nullptr ? lCopyElem(new_binding_elem) : nullptr);
       } else {
          if (new_binding_elem != nullptr) {
             // copy new amount but only if it is not UNINITIALIZED and different from the old one
-            uint32_t new_amount = lGetUlong(new_binding_elem, BN_amount);
+            uint32_t new_amount = ocs::tom::get<BN_amount>(new_binding_elem);
             if (new_amount != static_cast<uint32_t>(-1)) {
                uint32_t old_amount = ocs::AdvanceReservation::binding_get_amount(new_ar);
                if (old_amount != new_amount) {
-                  lSetUlong(old_binding_elem, BN_amount, new_amount);
+                  ocs::tom::set<BN_amount>(old_binding_elem, new_amount);
                }
             }
 
             // copy new instance but only if it is not UNINITIALIZED and different from the old one
-            auto new_instance = static_cast<ocs::BindingInstance::Instance>(lGetUlong(new_binding_elem, BN_instance));
+            auto new_instance = static_cast<ocs::BindingInstance::Instance>(ocs::tom::get<BN_instance>(new_binding_elem));
             if (new_instance != ocs::BindingInstance::Instance::UNINITIALIZED) {
                ocs::BindingInstance::Instance old_instance = ocs::AdvanceReservation::binding_get_instance(new_ar);
                if (old_instance != new_instance) {
-                  lSetUlong(old_binding_elem, BN_instance, new_instance);
+                  ocs::tom::set<BN_instance>(old_binding_elem, new_instance);
                }
             }
 
             // copy new unit but only if it is not UNINITIALIZED and different from the old one
-            auto new_unit = static_cast<ocs::BindingUnit::Unit>(lGetUlong(new_binding_elem, BN_unit));
+            auto new_unit = static_cast<ocs::BindingUnit::Unit>(ocs::tom::get<BN_unit>(new_binding_elem));
             if (new_unit != ocs::BindingUnit::Unit::UNINITIALIZED) {
                ocs::BindingUnit::Unit old_unit = ocs::AdvanceReservation::binding_get_unit(new_ar);
                if (old_unit != new_unit) {
-                  lSetUlong(old_binding_elem, BN_unit, new_unit);
+                  ocs::tom::set<BN_unit>(old_binding_elem, new_unit);
                }
             }
 
             // copy new type but only if it is not UNINITIALIZED and different from the old one
-            auto new_type = static_cast<ocs::BindingType::Type>(lGetUlong(new_binding_elem, BN_new_type));
+            auto new_type = static_cast<ocs::BindingType::Type>(ocs::tom::get<BN_new_type>(new_binding_elem));
             if (new_type != ocs::BindingType::Type::UNINITIALIZED) {
                ocs::BindingType::Type old_type = ocs::AdvanceReservation::binding_get_type(new_ar);
                if (old_type != new_type) {
-                  lSetUlong(old_binding_elem, BN_new_type, new_type);
+                  ocs::tom::set<BN_new_type>(old_binding_elem, new_type);
                }
             }
 
             // copy new filter but only if it is not UNINITIALIZED and different from the old one
-            const char *new_filter = lGetString(new_binding_elem, BN_filter);
+            const char *new_filter = ocs::tom::get<BN_filter>(new_binding_elem);
             if (new_filter != nullptr) {
                std::string old_filter = ocs::AdvanceReservation::binding_get_filter(new_ar);
                if (strcmp(old_filter.c_str(), new_filter) != 0) {
-                  lSetString(old_binding_elem, BN_filter, new_filter);
+                  ocs::tom::set<BN_filter>(old_binding_elem, new_filter);
                }
             }
 
             // copy new sort but only if it is not UNINITIALIZED and different from the old one
-            const char *new_sort = lGetString(new_binding_elem, BN_sort);
+            const char *new_sort = ocs::tom::get<BN_sort>(new_binding_elem);
             if (new_sort != nullptr) {
                std::string old_sort = ocs::AdvanceReservation::binding_get_sort(new_ar);
                if (old_sort != new_sort) {
-                  lSetString(old_binding_elem, BN_sort, new_sort);
+                  ocs::tom::set<BN_sort>(old_binding_elem, new_sort);
                }
             }
 
             // copy new start but only if it is not UNINITIALIZED and different from the old one
-            auto new_start = static_cast<ocs::BindingStart::Start>(lGetUlong(new_binding_elem, BN_start));
+            auto new_start = static_cast<ocs::BindingStart::Start>(ocs::tom::get<BN_start>(new_binding_elem));
             if (new_start != ocs::BindingStart::Start::UNINITIALIZED) {
                ocs::BindingStart::Start old_start = ocs::AdvanceReservation::binding_get_start(new_ar);
                if (old_start != new_start) {
-                  lSetUlong(old_binding_elem, BN_start, new_start);
+                  ocs::tom::set<BN_start>(old_binding_elem, new_start);
                }
             }
 
             // copy new end but only if it is not UNINITIALIZED and different from the old one
-            auto new_stop = static_cast<ocs::BindingStop::Stop>(lGetUlong(new_binding_elem, BN_stop));
+            auto new_stop = static_cast<ocs::BindingStop::Stop>(ocs::tom::get<BN_stop>(new_binding_elem));
             if (new_stop != ocs::BindingStop::Stop::UNINITIALIZED) {
                ocs::BindingStop::Stop old_stop = ocs::AdvanceReservation::binding_get_stop(new_ar);
                if (old_stop != new_stop) {
-                  lSetUlong(old_binding_elem, BN_stop, new_stop);
+                  ocs::tom::set<BN_stop>(old_binding_elem, new_stop);
                }
             }
 
             // copy new strategy but only if it is not UNINITIALIZED and different from the old one
-            auto new_strategy = static_cast<ocs::BindingStrategy::Strategy>(lGetUlong(new_binding_elem, BN_strategy));
+            auto new_strategy = static_cast<ocs::BindingStrategy::Strategy>(ocs::tom::get<BN_strategy>(new_binding_elem));
             if (new_strategy != ocs::BindingStrategy::Strategy::UNINITIALIZED) {
                ocs::BindingStrategy::Strategy old_strategy = ocs::AdvanceReservation::binding_get_strategy(new_ar);
                if (old_strategy != new_strategy) {
-                  lSetUlong(old_binding_elem, BN_strategy, new_strategy);
+                  ocs::tom::set<BN_strategy>(old_binding_elem, new_strategy);
                }
             }
          }
 
          // if the new binding has no amount, we remove binding completely
          if (ocs::AdvanceReservation::binding_get_amount(new_ar) == 0) {
-            lSetObject(new_ar, AR_binding, nullptr);
+            ocs::tom::set<AR_binding>(new_ar, nullptr);
          }
       }
 

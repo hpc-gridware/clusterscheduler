@@ -30,6 +30,7 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "tom/ocs_Element.h"
 
 #include "sort_hosts.h"
 
@@ -200,16 +201,16 @@ int main(int /*argc*/, char * /*argv*/[]) {
    // build a single-entry complex with num_proc = 4
    lList *centry_list = lCreateList("", CE_Type);
    lListElem *centry = lCreateElem(CE_Type);
-   lSetString(centry, CE_name, "num_proc");
-   lSetString(centry, CE_stringval, "4");
-   lSetDouble(centry, CE_doubleval, 4);
+   ocs::tom::set<CE_name>(centry, "num_proc");
+   ocs::tom::set<CE_stringval>(centry, "4");
+   ocs::tom::set<CE_doubleval>(centry, 4);
    lAppendElem(centry_list, centry);
 
    // build a host element carrying the complex values
    lList *host_centry_list = lCreateList("", CE_Type);
    lAppendElem(host_centry_list, lCopyElem(centry));
    lListElem *host = lCreateElem(EH_Type);
-   lSetList(host, EH_consumable_config_list, host_centry_list);
+   ocs::tom::set<EH_consumable_config_list>(host, host_centry_list);
 
    lList *answer_list = nullptr;
 

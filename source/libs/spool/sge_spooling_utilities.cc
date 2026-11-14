@@ -74,6 +74,11 @@
 
 #include "sgeobj/sge_resource_quota.h"
 #include "sgeobj/sge_advance_reservation.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_CE.h"
+#include "sgeobj/tom/ocs_tom_HL.h"
+#include "sgeobj/tom/ocs_tom_JRS.h"
+#include "sgeobj/tom/ocs_tom_QU.h"
 
 #include "msg_common.h"
 
@@ -385,8 +390,8 @@ bool spool_default_validate_func(lList **answer_list,
                const char *new_name;
                new_name = lGetHost(object, key_nm);
                if (strcmp(old_name, new_name) != 0) {
-                  spooling_write_func write_func = (spooling_write_func) lGetRef(rule, SPR_write_func);
-                  spooling_delete_func delete_func = (spooling_delete_func) lGetRef(rule, SPR_delete_func);
+                  spooling_write_func write_func = (spooling_write_func) ocs::tom::get<SPR_write_func>(rule);
+                  spooling_delete_func delete_func = (spooling_delete_func) ocs::tom::get<SPR_delete_func>(rule);
                   write_func(answer_list, type, rule, object, new_name, object_type);
                   delete_func(answer_list, type, rule, old_name, object_type);
                }
@@ -397,17 +402,17 @@ bool spool_default_validate_func(lList **answer_list,
 
          if (object_type == SGE_TYPE_EXECHOST && ret) {
             /* all spooled load values are static, therefore we tag them here */
-            for_each_rw_lv(load_value, lGetList(object, EH_load_list)) {
-               lSetBool(load_value, HL_is_static, true);
+            for_each_rw_lv(load_value, ocs::tom::get<EH_load_list>(object)) {
+               ocs::tom::set<HL_is_static>(load_value, true);
             }
 
             /* necessary to init double values of consumable configuration */
-            centry_list_fill_request(lGetListRW(object, EH_consumable_config_list), nullptr, master_centry_list, true,
+            centry_list_fill_request(ocs::tom::get<EH_consumable_config_list>(object), nullptr, master_centry_list, true,
                                      false, true);
             /* an RSMAP that was spooled as a bare amount gets the ids 0 to amount-1 here, which
                repairs a host that was configured before the ids were created implicitly. Has to
                happen before debit_host_consumable() below, which sets up the per id booking. */
-            lList *rsmap_centries = lGetListRW(object, EH_consumable_config_list);
+            lList *rsmap_centries = ocs::tom::get<EH_consumable_config_list>(object);
             if (!centry_list_rsmap_expand_implicit_ids(answer_list, rsmap_centries)) {
                ret = false;
             }
@@ -424,12 +429,12 @@ bool spool_default_validate_func(lList **answer_list,
          ret = qinstance_validate(object, answer_list, master_ehost_list, master_centry_list);
          break;
       case SGE_TYPE_CQUEUE:
-         ret = qinstance_list_validate(lGetListRW(object, CQ_qinstances), answer_list, master_ehost_list,
+         ret = qinstance_list_validate(ocs::tom::get<CQ_qinstances>(object), answer_list, master_ehost_list,
                                        master_centry_list);
          break;
       case SGE_TYPE_CONFIG: {
          int cl_ret;
-         char *old_name = strdup(lGetHost(object, CONF_name));
+         char *old_name = strdup(ocs::tom::get<CONF_name>(object));
 
          /* try hostname resolving */
          if (strcmp(old_name, SGE_GLOBAL_NAME) != 0) {
@@ -450,10 +455,10 @@ bool spool_default_validate_func(lList **answer_list,
                }
             } else {
                /* if hostname resolving changed hostname: spool */
-               const char *new_name = lGetHost(object, CONF_name);
+               const char *new_name = ocs::tom::get<CONF_name>(object);
                if (strcmp(old_name, new_name) != 0) {
-                  spooling_write_func write_func = (spooling_write_func) lGetRef(rule, SPR_write_func);
-                  spooling_delete_func delete_func = (spooling_delete_func) lGetRef(rule, SPR_delete_func);
+                  spooling_write_func write_func = (spooling_write_func) ocs::tom::get<SPR_write_func>(rule);
+                  spooling_delete_func delete_func = (spooling_delete_func) ocs::tom::get<SPR_delete_func>(rule);
                   write_func(answer_list, type, rule, object, new_name, object_type);
                   delete_func(answer_list, type, rule, old_name, object_type);
                }
@@ -509,16 +514,16 @@ bool spool_default_validate_func(lList **answer_list,
          // spooled. The scheduler reads it directly and no longer re-parses the string, so a
          // failure here would otherwise leave the amount at 0 and the job would be dispatched
          // while booking nothing. Report it rather than discarding the answer list.
-         for_each_rw_lv (jrs, lGetList(object, JB_request_set_list)) {
+         for_each_rw_lv (jrs, ocs::tom::get<JB_request_set_list>(object)) {
             lList *fill_answer_list = nullptr;
             // both calls must run; do not let the first failure skip the soft list
-            int hard_ret = centry_list_fill_request(lGetListRW(jrs, JRS_hard_resource_list), &fill_answer_list,
+            int hard_ret = centry_list_fill_request(ocs::tom::get<JRS_hard_resource_list>(jrs), &fill_answer_list,
                                                     master_centry_list, true, false, true);
-            int soft_ret = centry_list_fill_request(lGetListRW(jrs, JRS_soft_resource_list), &fill_answer_list,
+            int soft_ret = centry_list_fill_request(ocs::tom::get<JRS_soft_resource_list>(jrs), &fill_answer_list,
                                                     master_centry_list, true, false, true);
             if (hard_ret != 0 || soft_ret != 0) {
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
-                                       MSG_SPOOL_JOBREQUESTNOTPARSABLE_U, lGetUlong(object, JB_job_number));
+                                       MSG_SPOOL_JOBREQUESTNOTPARSABLE_U, ocs::tom::get<JB_job_number>(object));
                answer_list_append_list(answer_list, &fill_answer_list);
             }
             lFreeList(&fill_answer_list);
@@ -607,12 +612,12 @@ ocs_spool_exechost_static_copy(const lListElem *object) {
    DENTER(TOP_LAYER);
 
    lListElem *copy = lCopyElem(object);
-   if (lList *load_list = lGetListRW(copy, EH_load_list); load_list != nullptr) {
+   if (lList *load_list = ocs::tom::get<EH_load_list>(copy); load_list != nullptr) {
       lListElem *load_value;
       lListElem *next_load_value = lFirstRW(load_list);
       while ((load_value = next_load_value) != nullptr) {
          next_load_value = lNextRW(load_value);
-         if (!lGetBool(load_value, HL_is_static)) {
+         if (!ocs::tom::get<HL_is_static>(load_value)) {
             lRemoveElem(load_list, &load_value);
          }
       }

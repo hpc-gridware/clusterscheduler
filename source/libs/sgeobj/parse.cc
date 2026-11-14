@@ -57,6 +57,7 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_ja_task.h"
 #include "sgeobj/msg_sgeobjlib.h"
+#include "tom/ocs_Element.h"
 
 #include "sge_options.h"
 #include "parse_qsub.h"
@@ -124,10 +125,10 @@ const char *opt_switch_arg
    if (!ep) {
       return nullptr;
    }
-   lSetUlong(ep, SPA_number, opt_number);
-   lSetString(ep, SPA_switch_val, opt_switch);
-   lSetString(ep, SPA_switch_arg, opt_switch_arg);
-   lSetUlong(ep, SPA_occurrence, BIT_SPA_OCC_NOARG);
+   ocs::tom::set<SPA_number>(ep, opt_number);
+   ocs::tom::set<SPA_switch_val>(ep, opt_switch);
+   ocs::tom::set<SPA_switch_arg>(ep, opt_switch_arg);
+   ocs::tom::set<SPA_occurrence>(ep, BIT_SPA_OCC_NOARG);
    lAppendElem(*popt_list, ep);
    return ep;
 }
@@ -162,13 +163,13 @@ const char *opt_switch_arg
        DRETURN(nullptr);
    }
 
-   ep = lAddElemStr(popt_list, SPA_switch_val, opt_switch, SPA_Type);
+   ep = ocs::tom::emplace_back<SPA_switch_val>(popt_list, opt_switch);
 
    if (ep != nullptr) {
-      lSetUlong(ep, SPA_number, opt_number);
-      lSetUlong(ep, SPA_argtype, opt_type);
-      lSetString(ep, SPA_switch_arg, opt_switch_arg);
-      lSetUlong(ep, SPA_occurrence, BIT_SPA_OCC_ARG);
+      ocs::tom::set<SPA_number>(ep, opt_number);
+      ocs::tom::set<SPA_argtype>(ep, opt_type);
+      ocs::tom::set<SPA_switch_arg>(ep, opt_switch_arg);
+      ocs::tom::set<SPA_occurrence>(ep, BIT_SPA_OCC_ARG);
    }
 
    DRETURN(ep);
@@ -206,7 +207,7 @@ lList **alpp
    DENTER(TOP_LAYER);
 
    if ( (!strcmp(shortopt, *sp)) || (longopt && !strcmp(longopt, *sp)) ) {
-      if(!lGetElemStr(*ppcmdline, SPA_switch_val, shortopt)) {
+      if(!ocs::tom::find_first<SPA_switch_val>(*ppcmdline, shortopt)) {
          sge_add_noarg(ppcmdline, 0, shortopt, nullptr);
       }
       sp++;
@@ -358,7 +359,7 @@ lListElem *ep = nullptr; /* SPA_Type */
       /* string under rp is parameter, no option! */
       if(!ep)
          ep = sge_add_arg(ppcmdline, 0, lListT, opt, nullptr);
-      lAddElemStr(lGetListRef(ep, SPA_argval_lListT), ST_name, *rp, ST_Type);
+      ocs::tom::emplace_back<ST_name>(ocs::tom::list_ref<SPA_argval_lListT>(ep), *rp);
       rp++;
    }
    DRETURN(rp);
@@ -400,12 +401,12 @@ uint32_t *pflag
 lListElem *ep;
 char* actual_opt;
 
-   if((ep = lGetElemStrLikeRW(*ppcmdline, SPA_switch_val, opt))) {
-      actual_opt = sge_strdup(nullptr, lGetString(ep, SPA_switch_val));
+   if((ep = ocs::tom::find_first_like_rw<SPA_switch_val>(*ppcmdline, opt))) {
+      actual_opt = sge_strdup(nullptr, ocs::tom::get<SPA_switch_val>(ep));
       while(ep) {
          /* remove _all_ flags of same type */
          lRemoveElem(*ppcmdline, &ep);
-         ep = lGetElemStrLikeRW(*ppcmdline, SPA_switch_val, actual_opt);
+         ep = ocs::tom::find_first_like_rw<SPA_switch_val>(*ppcmdline, actual_opt);
       }
       sge_free(&actual_opt);
       *pflag = 1;
@@ -453,14 +454,14 @@ int field
    lListElem *ep;
 
 
-   if((ep = lGetElemStrRW(*ppcmdline, SPA_switch_val, opt))) {
+   if((ep = ocs::tom::find_first_rw<SPA_switch_val>(*ppcmdline, opt))) {
       while(ep) {
          /* collect all opts of same type, this is what 'multi' means in funcname!  */
-         for_each_ep_lv(sep, lGetList(ep, SPA_argval_lListT)) {
-            sge_parse_string_list(ppdestlist, lGetString(sep, ST_name), field, type);
+         for_each_ep_lv(sep, ocs::tom::get<SPA_argval_lListT>(ep)) {
+            sge_parse_string_list(ppdestlist, ocs::tom::get<ST_name>(sep), field, type);
          }
          lRemoveElem(*ppcmdline, &ep);
-         ep = lGetElemStrRW(*ppcmdline, SPA_switch_val, opt);
+         ep = ocs::tom::find_first_rw<SPA_switch_val>(*ppcmdline, opt);
       }
       DRETURN(true);
    } else {
@@ -495,30 +496,30 @@ uint32_t action
    bool ret = false;
    bool is_run_once = false;
 
-   while ((ep = lGetElemStrRW(*ppcmdline, SPA_switch_val, opt))) {
+   while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(*ppcmdline, opt))) {
       lListElem *arrayDef = lNextRW(ep);
       const lList *arrayDefList = nullptr;
 
       ret = true;
       is_run_once = true;
-      if ((arrayDef != nullptr) && lGetUlong(arrayDef, SPA_number) ==  t_OPT) {
-         arrayDefList = lGetList(arrayDef, SPA_argval_lListT);
+      if ((arrayDef != nullptr) && ocs::tom::get<SPA_number>(arrayDef) ==  t_OPT) {
+         arrayDefList = ocs::tom::get<SPA_argval_lListT>(arrayDef);
       }
-      for_each_rw_lv(sep, lGetList(ep, SPA_argval_lListT)) {
+      for_each_rw_lv(sep, ocs::tom::get<SPA_argval_lListT>(ep)) {
          const lList *tempArrayList = nullptr;
      
          if ((arrayDefList != nullptr) && (lNext(sep) == nullptr)) {
             tempArrayList = arrayDefList;
          }   
-         if (sge_parse_jobtasks(ppdestlist, &idp, lGetString(sep, ST_name), nullptr,
+         if (sge_parse_jobtasks(ppdestlist, &idp, ocs::tom::get<ST_name>(sep), nullptr,
              include_names, tempArrayList) == -1) {
             answer_list_add_sprintf(alpp, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
-                                    MSG_JOB_XISINVALIDJOBTASKID_S, lGetString(sep, ST_name));
+                                    MSG_JOB_XISINVALIDJOBTASKID_S, ocs::tom::get<ST_name>(sep));
 
             lRemoveElem(*ppcmdline, &ep);
             DRETURN(false);
          }
-         lSetUlong(idp, ID_action, action);
+         ocs::tom::set<ID_action>(idp, action);
       }
       if (arrayDefList != nullptr) {
          lRemoveElem(*ppcmdline, &arrayDef);
@@ -528,10 +529,10 @@ uint32_t action
       lRemoveElem(*ppcmdline, &ep);
    }
    
-   if (is_run_once && (ep = lGetElemUlongRW(*ppcmdline, SPA_number, t_OPT )) != nullptr) {
+   if (is_run_once && (ep = ocs::tom::find_first_rw<SPA_number>(*ppcmdline, t_OPT )) != nullptr) {
       answer_list_add_sprintf(alpp, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
-                              MSG_JOB_LONELY_TOPTION_S, lGetString(ep, SPA_switch_arg));
-      while ((ep = lGetElemUlongRW(*ppcmdline, SPA_number, t_OPT )) != nullptr) {
+                              MSG_JOB_LONELY_TOPTION_S, ocs::tom::get<SPA_switch_arg>(ep));
+      while ((ep = ocs::tom::find_first_rw<SPA_number>(*ppcmdline, t_OPT )) != nullptr) {
          lRemoveElem(*ppcmdline, &ep);
       }  
       
@@ -560,15 +561,15 @@ char **str
 
    lListElem *ep, *ep2;
 
-   if((ep = lGetElemStrRW(*ppcmdline, SPA_switch_val, opt))) {
-      ep2 = lFirstRW(lGetList(ep, SPA_argval_lListT));
+   if((ep = ocs::tom::find_first_rw<SPA_switch_val>(*ppcmdline, opt))) {
+      ep2 = lFirstRW(ocs::tom::get<SPA_argval_lListT>(ep));
       if (ep2)
-         *str = sge_strdup(nullptr, lGetString(ep2, ST_name));
+         *str = sge_strdup(nullptr, ocs::tom::get<ST_name>(ep2));
       else
          *str = nullptr;
       
-      if (lGetNumberOfElem(lGetList(ep, SPA_argval_lListT)) > 1) {
-         lRemoveElem(lGetListRW(ep, SPA_argval_lListT), &ep2);
+      if (lGetNumberOfElem(ocs::tom::get<SPA_argval_lListT>(ep)) > 1) {
+         lRemoveElem(ocs::tom::get<SPA_argval_lListT>(ep), &ep2);
       } else {
          lRemoveElem(*ppcmdline, &ep);
       }
@@ -593,9 +594,9 @@ int parse_string_arg(lList **ppcmdline, const char *opt, lList **ppal, char **va
    bool ret = false;
    lListElem *ep = nullptr;
 
-   ep = lGetElemStrRW(*ppcmdline, SPA_switch_val, opt);
+   ep = ocs::tom::find_first_rw<SPA_switch_val>(*ppcmdline, opt);
    if(ep != nullptr) {
-      *value = sge_strdup(nullptr, lGetString(ep, SPA_argval_lStringT));
+      *value = sge_strdup(nullptr, ocs::tom::get<SPA_argval_lStringT>(ep));
 
       lRemoveElem(*ppcmdline, &ep);
       ret = true;
@@ -618,9 +619,9 @@ int parse_uint32_t(lList **ppcmdline, const char *opt, lList **ppal, uint32_t *v
    bool ret = false;
    lListElem *ep = nullptr;
 
-   ep = lGetElemStrRW(*ppcmdline, SPA_switch_val, opt);
+   ep = ocs::tom::find_first_rw<SPA_switch_val>(*ppcmdline, opt);
    if(ep != nullptr) {
-      *value = lGetUlong(ep, SPA_argval_lUlongT); 
+      *value = ocs::tom::get<SPA_argval_lUlongT>(ep); 
 
       lRemoveElem(*ppcmdline, &ep);
       ret = true;
@@ -643,10 +644,10 @@ int parse_u_longlist(lList **ppcmdline, const char *opt, lList **ppal, lList **v
    bool ret = false;
    lListElem *ep = nullptr;
 
-   ep = lGetElemStrRW(*ppcmdline, SPA_switch_val, opt);
+   ep = ocs::tom::find_first_rw<SPA_switch_val>(*ppcmdline, opt);
    if(ep != nullptr) {
       *value = nullptr;
-      lXchgList(ep, SPA_argval_lListT, value);
+      ocs::tom::exchange<SPA_argval_lListT>(ep, value);
 
       lRemoveElem(*ppcmdline, &ep);
       ret = true;
@@ -668,7 +669,7 @@ parse_group_options(lList *string_list, lList **answer_list) {
    uint32_t group_opt = GROUP_DEFAULT;
 
    for_each_ep_lv(str_elem, string_list) {
-      const char *letter_string = lGetString(str_elem, ST_name);
+      const char *letter_string = ocs::tom::get<ST_name>(str_elem);
       size_t i, len;
       len = strlen(letter_string);
 

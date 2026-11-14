@@ -29,6 +29,7 @@
 #include "cull/cull_multitype.h"
 
 #include "sgeobj/sge_str.h"
+#include "tom/ocs_Element.h"
 
 #include "sge_thread_utility.h"
 
@@ -50,8 +51,8 @@ add_active_threads(cl_raw_list_t *threads, lList *active_thread_list) {
    }
 
    // one entry per thread pool with the number of threads
-   lListElem *st_elem = lAddElemStr(&active_thread_list, ST_name, name, ST_Type);
-   lSetUlong(st_elem, ST_id, nthreads);
+   lListElem *st_elem = ocs::tom::emplace_back<ST_name>(&active_thread_list, name);
+   ocs::tom::set<ST_id>(st_elem, nthreads);
 }
 
 
@@ -88,8 +89,8 @@ get_active_thread_list() {
 
    // Scheduler thread if it is running
    if (sge_scheduler_is_running()) {
-      lListElem *st_elem = lAddElemStr(&active_thread_list, ST_name, to_cstr(SCHEDD_THREAD), ST_Type);
-      lSetUlong(st_elem, ST_id, 1);
+      lListElem *st_elem = ocs::tom::emplace_back<ST_name>(&active_thread_list, to_cstr(SCHEDD_THREAD));
+      ocs::tom::set<ST_id>(st_elem, 1);
    }
 
    // Thread pools with dynamic number of threads

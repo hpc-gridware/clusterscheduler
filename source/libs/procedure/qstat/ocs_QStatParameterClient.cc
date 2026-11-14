@@ -35,6 +35,7 @@
 #include "sgeobj/sge_feature.h"
 #include "sgeobj/sge_str.h"
 #include "sgeobj/cull/sge_qref_QR_L.h"
+#include "tom/ocs_Element.h"
 
 #include "msg_clients_common.h"
 #include "msg_common.h"
@@ -557,7 +558,7 @@ bool ocs::QStatParameterClient::parse_parameters(lList **answer_list, char **arg
           */
          more = false;
          for_each_rw(ep_2, pfile) {
-            if (strcmp(lGetString(ep_1, SPA_switch_val), lGetString(ep_2, SPA_switch_val)) == 0) {
+            if (strcmp(ocs::tom::get<SPA_switch_val>(ep_1), ocs::tom::get<SPA_switch_val>(ep_2)) == 0) {
                // remove duplicate options
                lRemoveElem(pfile, &ep_2);
                more = true;
@@ -580,7 +581,7 @@ bool ocs::QStatParameterClient::parse_parameters(lList **answer_list, char **arg
    // parsing error => show error and exit
    if (alp != nullptr) {
       for_each_ep_lv(aep, alp) {
-         fprintf(stderr, "%s\n", lGetString(aep, AN_text));
+         fprintf(stderr, "%s\n", ocs::tom::get<AN_text>(aep));
       }
       lFreeList(&alp);
       lFreeList(&pcmdline);
@@ -594,7 +595,7 @@ bool ocs::QStatParameterClient::parse_parameters(lList **answer_list, char **arg
       ** low level parsing error! show answer list
       */
       for_each_ep_lv(aep, alp) {
-         fprintf(stderr, "%s\n", lGetString(aep, AN_text));
+         fprintf(stderr, "%s\n", ocs::tom::get<AN_text>(aep));
       }
       lFreeList(&alp);
       lFreeList(&pcmdline);

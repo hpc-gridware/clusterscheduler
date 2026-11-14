@@ -56,6 +56,9 @@
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_object.h"
 #include "sgeobj/ocs_DataStore.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_JAT.h"
+#include "sgeobj/tom/ocs_tom_PET.h"
 
 #include "spool/sge_dirent.h"
 
@@ -123,11 +126,11 @@ static lListElem *job_create_from_file(uint32_t job_id, uint32_t ja_task_id,
       if (job) {
          ja_tasks = ja_task_list_create_from_file(job_id, ja_task_id, flags); 
          if (ja_tasks) {
-            lList *ja_task_list = lGetListRW(job, JB_ja_tasks);
+            lList *ja_task_list = ocs::tom::get<JB_ja_tasks>(job);
             if (ja_task_list) {
                lAddList(ja_task_list, &ja_tasks);
             } else {
-               lSetList(job, JB_ja_tasks, ja_tasks);
+               ocs::tom::set<JB_ja_tasks>(job, ja_tasks);
             }
             ja_tasks = nullptr;
             lPSortList(ja_tasks, "%I+", JAT_task_number); 
@@ -162,7 +165,7 @@ static lList *ja_task_list_create_from_file(uint32_t job_id,
    sge_get_file_path(spool_dir_job, sizeof(spool_dir_job), JOB_SPOOL_DIR, FORMAT_DEFAULT, flags, job_id, ja_task_id, nullptr);
    dir_entries = sge_get_dirents(spool_dir_job);
    for_each_ep_lv(dir_entry, dir_entries) {
-      const char *entry = lGetString(dir_entry, ST_name);
+      const char *entry = ocs::tom::get<ST_name>(dir_entry);
       if (strcmp(entry, ".") && strcmp(entry, "..") && strcmp(entry, "common")) {
          char spool_dir_tasks[SGE_PATH_MAX];
 
@@ -171,7 +174,7 @@ static lList *ja_task_list_create_from_file(uint32_t job_id,
          for_each_ep_lv(ja_task_entry, ja_task_entries) {
             const char *ja_task_string;
 
-            ja_task_string = lGetString(ja_task_entry, ST_name);
+            ja_task_string = ocs::tom::get<ST_name>(ja_task_entry);
             if (strcmp(ja_task_string, ".") && strcmp(ja_task_string, "..")) {
                char spool_dir_pe_tasks[SGE_PATH_MAX];
                uint32_t ja_task_id;
@@ -195,7 +198,7 @@ static lList *ja_task_list_create_from_file(uint32_t job_id,
                   for_each_ep_lv(pe_task_entry, pe_task_entries) {
                      const char *pe_task_string;
 
-                     pe_task_string = lGetString(pe_task_entry, ST_name);
+                     pe_task_string = ocs::tom::get<ST_name>(pe_task_entry);
                      if (strcmp(pe_task_string, ".") && 
                          strcmp(pe_task_string, "..") &&
                          strcmp(pe_task_string, "common")) {
@@ -214,7 +217,7 @@ static lList *ja_task_list_create_from_file(uint32_t job_id,
                      }
                   }
                   lFreeList(&pe_task_entries);
-                  lSetList(ja_task, JAT_task_list, pe_tasks);
+                  ocs::tom::set<JAT_task_list>(ja_task, pe_tasks);
                } else {
                   ja_task = ja_task_create_from_file(job_id, ja_task_id, nullptr, flags);
                }
@@ -333,7 +336,7 @@ int job_write_spool_file(lListElem *job, uint32_t ja_taskid,
       uint64_t duration = sge_get_gmt64() - start;
       if (duration > sge_gmt32_to_gmt64(30)) {
          /* administrators need to be aware of suspicious spooling delays */
-         WARNING(MSG_CONFIG_JOBSPOOLINGLONGDELAY_UUF, lGetUlong(job, JB_job_number), ja_taskid,
+         WARNING(MSG_CONFIG_JOBSPOOLINGLONGDELAY_UUF, ocs::tom::get<JB_job_number>(job), ja_taskid,
                  sge_gmt64_to_gmt32_double(duration));
       }
    }
@@ -367,7 +370,7 @@ static int job_write_as_single_file(const lListElem *job, uint32_t ja_task_id,
    char spool_file[SGE_PATH_MAX] = "";
    char tmp_spool_file[SGE_PATH_MAX] = "";
 
-   job_id = lGetUlong(job, JB_job_number);
+   job_id = ocs::tom::get<JB_job_number>(job);
 
    sge_get_file_path(job_dir_third, sizeof(job_dir_third), JOB_SPOOL_DIR, FORMAT_THIRD_PART, flags, job_id, ja_task_id, nullptr);
    sge_mkdir(job_dir_third, 0755, false, false);
@@ -388,11 +391,11 @@ static int job_write_ja_task_part(lListElem *job, uint32_t ja_task_id,
    lListElem *ja_task, *next_ja_task;
    uint32_t job_id;
    int ret = 0;
-   job_id = lGetUlong(job, JB_job_number);
+   job_id = ocs::tom::get<JB_job_number>(job);
    if (ja_task_id != 0) {
-      next_ja_task = lGetElemUlongRW(lGetList(job, JB_ja_tasks), JAT_task_number, ja_task_id);
+      next_ja_task = ocs::tom::find_first_rw<JAT_task_number>(ocs::tom::get<JB_ja_tasks>(job), ja_task_id);
    } else {
-      next_ja_task = lFirstRW(lGetList(job, JB_ja_tasks));
+      next_ja_task = lFirstRW(static_cast<const lList *>(ocs::tom::get<JB_ja_tasks>(job)));
    }
    while ((ja_task = next_ja_task)) {
       if (ja_task_id != 0) {
@@ -402,7 +405,7 @@ static int job_write_ja_task_part(lListElem *job, uint32_t ja_task_id,
       }
 
       if ((flags & SPOOL_WITHIN_EXECD) ||
-         job_is_enrolled(job, lGetUlong(ja_task, JAT_task_number))) {
+         job_is_enrolled(job, ocs::tom::get<JAT_task_number>(ja_task))) {
          if (job_might_be_tight_parallel(job, *ocs::DataStore::get_master_list(SGE_TYPE_PE))) {
             flags = (sge_spool_flags_t)((int)flags | SPOOL_HANDLE_PARALLEL_TASKS);
          }
@@ -436,16 +439,16 @@ int job_write_common_part(lListElem *job, uint32_t ja_task_id,
    char spoolpath_common[SGE_PATH_MAX], tmp_spoolpath_common[SGE_PATH_MAX];
    lList *ja_tasks;
 
-   job_id = lGetUlong(job, JB_job_number);
+   job_id = ocs::tom::get<JB_job_number>(job);
    sge_get_file_path(spool_dir, sizeof(spool_dir), JOB_SPOOL_DIR, FORMAT_DEFAULT, flags, job_id, ja_task_id, nullptr);
    sge_mkdir(spool_dir, 0755, false, false);
    sge_get_file_path(spoolpath_common, sizeof(spoolpath_common), JOB_SPOOL_FILE, FORMAT_DEFAULT, flags, job_id, ja_task_id, nullptr);
    sge_get_file_path(tmp_spoolpath_common, sizeof(tmp_spoolpath_common), JOB_SPOOL_FILE, FORMAT_DOT_FILENAME, flags, job_id, ja_task_id, nullptr);
 
    ja_tasks = nullptr;
-   lXchgList(job, JB_ja_tasks, &ja_tasks);
+   ocs::tom::exchange<JB_ja_tasks>(job, &ja_tasks);
    ret = lWriteElemToDisk(job, tmp_spoolpath_common, nullptr, "job");
-   lXchgList(job, JB_ja_tasks, &ja_tasks);
+   ocs::tom::exchange<JB_ja_tasks>(job, &ja_tasks);
 
    if (!ret && (rename(tmp_spoolpath_common, spoolpath_common) == -1)) {
       DTRACE;
@@ -470,8 +473,8 @@ static int ja_task_write_to_disk(lListElem *ja_task, uint32_t job_id,
       char tmp_task_spool_file[SGE_PATH_MAX];
       lListElem *pe_task = nullptr;
       lListElem *next_pe_task = nullptr;
-      uint32_t ja_task_id = lGetUlong(ja_task, JAT_task_number);
-      const lList *pe_task_list = lGetList(ja_task, JAT_task_list);
+      uint32_t ja_task_id = ocs::tom::get<JAT_task_number>(ja_task);
+      const lList *pe_task_list = ocs::tom::get<JAT_task_list>(ja_task);
 
       sge_get_file_path(task_spool_dir, sizeof(task_spool_dir), TASK_SPOOL_DIR, FORMAT_DEFAULT, flags, job_id, ja_task_id, nullptr);
       sge_get_file_path(task_spool_file, sizeof(task_spool_file), TASK_SPOOL_FILE, FORMAT_DEFAULT, flags, job_id, ja_task_id, nullptr);
@@ -489,10 +492,10 @@ static int ja_task_write_to_disk(lListElem *ja_task, uint32_t job_id,
          lList *tmp_task_list = nullptr;
 
          /* we do *not* want to spool the pe_tasks together with the ja_task */
-         lXchgList(ja_task, JAT_task_list, &tmp_task_list);
+         ocs::tom::exchange<JAT_task_list>(ja_task, &tmp_task_list);
          /* spool ja_task to temporary file */
          ret = lWriteElemToDisk(ja_task, tmp_task_spool_file, nullptr, "ja_task");
-         lXchgList(ja_task, JAT_task_list, &tmp_task_list);
+         ocs::tom::exchange<JAT_task_list>(ja_task, &tmp_task_list);
          /* make spooling permanent = COMMIT */
          if (!ret && (rename(tmp_task_spool_file, task_spool_file) == -1)) {
             DTRACE;
@@ -503,14 +506,14 @@ static int ja_task_write_to_disk(lListElem *ja_task, uint32_t job_id,
       /* spool pe_task(s) */
       if (!(flags & SPOOL_ONLY_JATASK)) {
          if (pe_task_id != 0) {
-            next_pe_task = lGetElemStrRW(pe_task_list, PET_id, pe_task_id);
+            next_pe_task = ocs::tom::find_first_rw<PET_id>(pe_task_list, pe_task_id);
          } else {
             next_pe_task = lFirstRW(pe_task_list);
          }
          while ((pe_task = next_pe_task)) {
             char pe_task_spool_file[SGE_PATH_MAX];
             char tmp_pe_task_spool_file[SGE_PATH_MAX];
-            const char* pe_task_id_string = lGetString(pe_task, PET_id);
+            const char* pe_task_id_string = ocs::tom::get<PET_id>(pe_task);
 
             if (pe_task_id != 0) {
                next_pe_task = nullptr;
@@ -541,11 +544,11 @@ static int ja_task_write_to_disk(lListElem *ja_task, uint32_t job_id,
       char tmp_task_spool_file[SGE_PATH_MAX];
 
       sge_get_file_path(task_spool_dir, sizeof(task_spool_dir), TASKS_SPOOL_DIR, FORMAT_DEFAULT, flags,
-                        job_id, lGetUlong(ja_task, JAT_task_number), nullptr);
+                        job_id, ocs::tom::get<JAT_task_number>(ja_task), nullptr);
       sge_get_file_path(task_spool_file, sizeof(task_spool_file), TASK_SPOOL_DIR_AS_FILE,
-                        FORMAT_DEFAULT, flags, job_id, lGetUlong(ja_task, JAT_task_number), nullptr);
+                        FORMAT_DEFAULT, flags, job_id, ocs::tom::get<JAT_task_number>(ja_task), nullptr);
       sge_get_file_path(tmp_task_spool_file, sizeof(tmp_task_spool_file), TASK_SPOOL_DIR_AS_FILE,
-                        FORMAT_DOT_FILENAME, flags, job_id, lGetUlong(ja_task, JAT_task_number), nullptr);
+                        FORMAT_DOT_FILENAME, flags, job_id, ocs::tom::get<JAT_task_number>(ja_task), nullptr);
 
       /* create task spool directory if necessary */
       if ((flags & SPOOL_WITHIN_EXECD) || strcmp(old_task_spool_dir, task_spool_dir)) {
@@ -592,7 +595,7 @@ int job_remove_spool_file(uint32_t jobid, uint32_t ja_taskid,
    int within_execd = flags & SPOOL_WITHIN_EXECD;
    int one_file;
    const lList *master_list = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
-   lListElem *job = lGetElemUlongRW(master_list, JB_job_number, jobid);
+   lListElem *job = ocs::tom::find_first_rw<JB_job_number>(master_list, jobid);
    int try_to_remove_sub_dirs = 0;
    dstring error_msg;
    char error_msg_buffer[SGE_PATH_MAX];
@@ -762,7 +765,7 @@ int job_list_read_from_disk(lList **job_list, const char *list_name, int check,
       const char *first_entry_string;
 
 
-      first_entry_string = lGetString(first_direntry, ST_name);
+      first_entry_string = ocs::tom::get<ST_name>(first_direntry);
       str_path = sge_dstring_sprintf(&dstr_path, "%s/%s", first_dir, first_entry_string);
       if (!sge_is_directory(str_path)) {
          ERROR(MSG_CONFIG_NODIRECTORY_S, str_path);
@@ -777,7 +780,7 @@ int job_list_read_from_disk(lList **job_list, const char *list_name, int check,
          lListElem *third_direntry;
          const char *second_entry_string;
 
-         second_entry_string = lGetString(second_direntry, ST_name);
+         second_entry_string = ocs::tom::get<ST_name>(second_direntry);
          str_path = sge_dstring_sprintf(&dstr_path, "%s/%s/%s", first_dir, first_entry_string,
                  second_entry_string);
          if (!sge_is_directory(str_path)) {
@@ -799,11 +802,11 @@ int job_list_read_from_disk(lList **job_list, const char *list_name, int check,
 
             sge_status_next_turn();
             snprintf(fourth_dir, sizeof(fourth_dir), SFN "/" SFN, third_dir,
-                    lGetString(third_direntry, ST_name));
+                    ocs::tom::get<ST_name>(third_direntry));
             snprintf(job_id_string, sizeof(job_id_string), SFN SFN SFN, 
-                    lGetString(first_direntry, ST_name),
-                    lGetString(second_direntry, ST_name),
-                    lGetString(third_direntry, ST_name)); 
+                    ocs::tom::get<ST_name>(first_direntry),
+                    ocs::tom::get<ST_name>(second_direntry),
+                    ocs::tom::get<ST_name>(third_direntry)); 
             job_id = (uint32_t) strtol(job_id_string, nullptr, 10);
             strtok_r(job_id_string, ".", &lasts);
             ja_task_id_string = strtok_r(nullptr, ".", &lasts);
@@ -830,19 +833,19 @@ int job_list_read_from_disk(lList **job_list, const char *list_name, int check,
 
             /* check for scriptfile before adding job */
             all_finished = 1;
-            for_each_ep_lv(ja_task, lGetList(job, JB_ja_tasks)) {
-               if (lGetUlong(ja_task, JAT_status) != JFINISHED) {
+            for_each_ep_lv(ja_task, ocs::tom::get<JB_ja_tasks>(job)) {
+               if (ocs::tom::get<JAT_status>(ja_task) != JFINISHED) {
                   all_finished = 0;
                   break;
                }
             }
-            if (check && !all_finished && lGetString(job, JB_script_file)) {
+            if (check && !all_finished && ocs::tom::get<JB_script_file>(job)) {
                char script_file[SGE_PATH_MAX];
                SGE_STRUCT_STAT stat_buffer;
 
                sge_get_file_path(script_file, sizeof(script_file), JOB_SCRIPT_FILE, FORMAT_DEFAULT, flags, job_id, 0, nullptr);
                if (SGE_STAT(script_file, &stat_buffer)) {
-                  ERROR(MSG_CONFIG_CANTFINDSCRIPTFILE_U, lGetUlong(job, JB_job_number));
+                  ERROR(MSG_CONFIG_CANTFINDSCRIPTFILE_U, ocs::tom::get<JB_job_number>(job));
                   job_list_add_job(ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB), "job list", job, 0);
                   job_remove_spool_file(job_id, 0, nullptr, SPOOL_DEFAULT);
                   lRemoveElem(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB), &job);
@@ -851,7 +854,7 @@ int job_list_read_from_disk(lList **job_list, const char *list_name, int check,
             }  
  
             /* check if filename has same name which is stored job id */
-            if (lGetUlong(job, JB_job_number) != job_id) {
+            if (ocs::tom::get<JB_job_number>(job) != job_id) {
                ERROR(MSG_CONFIG_JOBFILEXHASWRONGFILENAMEDELETING_U, job_id);
                job_remove_spool_file(job_id, 0, nullptr, flags);
                /* 
@@ -864,7 +867,7 @@ int job_list_read_from_disk(lList **job_list, const char *list_name, int check,
                init_function(job);
             }
 
-            lSetList(job, JB_jid_successor_list, nullptr);
+            ocs::tom::set<JB_jid_successor_list>(job, nullptr);
             job_list_add_job(job_list, list_name, job, 0);
 
             bool in_execd = (flags & SPOOL_WITHIN_EXECD) > 0;

@@ -52,6 +52,7 @@
 
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/sge_answer.h"
+#include "tom/ocs_Element.h"
 
 #include "spool/sge_spooling.h"
 #include "spool/loader/sge_spooling_loader.h"
@@ -188,7 +189,7 @@ list_objects(const char *key) {
        */
       const lListElem *stu_elem = nullptr;
       for_each_ep(stu_elem, stu_list) {
-         fprintf(stdout, "%s\n", lGetString(stu_elem, STU_name));
+         fprintf(stdout, "%s\n", ocs::tom::get<STU_name>(stu_elem));
       }
    } else {
       answer_list_output(&answer_list);
@@ -234,7 +235,7 @@ dump_object(const char *key) {
          job_script_ep = spool_read_object(&answer_list, spool_get_default_context(),
                                            SGE_TYPE_JOBSCRIPT, key);
          if (job_script_ep != nullptr) {
-            job_script = lGetString(job_script_ep, STU_name);
+            job_script = ocs::tom::get<STU_name>(job_script_ep);
          }
 
          if (job_script == nullptr) {

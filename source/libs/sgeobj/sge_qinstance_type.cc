@@ -51,6 +51,7 @@
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_qinstance_type.h"
 #include "sgeobj/sge_utility.h"
+#include "tom/ocs_Element.h"
 
 #include "msg_common.h"
 
@@ -79,7 +80,7 @@ static bool
 qinstance_has_type(const lListElem *this_elem, uint32_t type) {
    bool ret = false;
 
-   if (lGetUlong(this_elem, QU_qtype) & type) {
+   if (ocs::tom::get<QU_qtype>(this_elem) & type) {
       ret = true;
    }
    return ret;
@@ -153,7 +154,7 @@ bool qinstance_print_qtype_to_dstring(const lListElem *this_elem,
       bool qtype_defined = false;
 
       for (ptr = queue_types; *ptr != nullptr; ptr++) {
-         if (bitmask & lGetUlong(this_elem, QU_qtype)) {
+         if (bitmask & ocs::tom::get<QU_qtype>(this_elem)) {
             qtype_defined = true;
             if (only_first_char) {
                sge_dstring_sprintf_append(string, "%c", (*ptr)[0]);
@@ -209,7 +210,7 @@ bool qinstance_parse_qtype_from_string(lListElem *this_elem, lList **answer_list
       }
    }
 
-   lSetUlong(this_elem, QU_qtype, type);
+   ocs::tom::set<QU_qtype>(this_elem, type);
    DRETURN(ret);
 }
 

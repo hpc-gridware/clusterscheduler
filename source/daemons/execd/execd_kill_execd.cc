@@ -44,6 +44,8 @@
 #include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_object.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_JAT.h"
 
 #include "gdi/ocs_gdi_ClientServerBase.h"
 
@@ -71,13 +73,13 @@ int do_kill_execd(ocs::gdi::ClientServerBase::struct_msg_t *aMsg) {
    DPRINTF("===>KILL EXECD%s\n", kill_jobs?" and jobs":"");
    if (kill_jobs) {
       for_each_ep_lv(jep, *ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB)) {
-         for_each_rw_lv (jatep, lGetList(jep, JB_ja_tasks)) {
+         for_each_rw_lv (jatep, ocs::tom::get<JB_ja_tasks>(jep)) {
             uint32_t sge_signal;
-            if (lGetUlong(jep, JB_checkpoint_attr) & CHECKPOINT_AT_SHUTDOWN) {
-               WARNING(MSG_JOB_INITCKPTSHUTDOWN_U, lGetUlong(jep, JB_job_number));
+            if (ocs::tom::get<JB_checkpoint_attr>(jep) & CHECKPOINT_AT_SHUTDOWN) {
+               WARNING(MSG_JOB_INITCKPTSHUTDOWN_U, ocs::tom::get<JB_job_number>(jep));
                sge_signal = SGE_MIGRATE;
             } else {
-               WARNING(MSG_JOB_KILLSHUTDOWN_U, lGetUlong(jep, JB_job_number));
+               WARNING(MSG_JOB_KILLSHUTDOWN_U, ocs::tom::get<JB_job_number>(jep));
                sge_signal = SGE_SIGKILL;
             }
             sge_execd_deliver_signal(sge_signal, jep, jatep);

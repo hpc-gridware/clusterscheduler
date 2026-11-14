@@ -22,6 +22,7 @@
 
 #include "cull/cull.h"
 #include "sgeobj/sge_var.h"
+#include "tom/ocs_Element.h"
 #include "uti/sge_rmon_macros.h"
 
 #include "ocs_QConfExportController.h"
@@ -72,8 +73,8 @@ ocs::QConfExportController::process_request([[maybe_unused]] QConfParameter &par
       }
 
       const char *name = (name_nm != NoName) ? qconf_get_name(ep, name_nm) : nullptr;
-      lListElem *pair = lAddElemStr(&objects_, VA_variable, (name != nullptr) ? name : "", VA_Type);
-      lSetString(pair, VA_value, text.str().c_str());
+      lListElem *pair = ocs::tom::emplace_back<VA_variable>(&objects_, (name != nullptr) ? name : "");
+      ocs::tom::set<VA_value>(pair, text.str().c_str());
    }
 
    DPRINTF("rendered %d object(s) for export\n", lGetNumberOfElem(objects_));

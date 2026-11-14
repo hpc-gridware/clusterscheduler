@@ -59,6 +59,7 @@
 #include "sgeobj/sge_id.h"
 #include "sgeobj/sge_qinstance_state.h"
 #include "sgeobj/cull/sge_id_ID_L.h"
+#include "tom/ocs_Element.h"
 
 #include "gdi/ocs_gdi_Client.h"
 #include "gdi/ocs_gdi_ClientBase.h"
@@ -101,17 +102,17 @@ int main(int argc, char **argv) {
    snprintf(spec, sizeof(spec), "%s:%s:%s", job_id_str, client_host, client_port_str);
 
    lList *ref_list = nullptr;
-   lListElem *idep = lAddElemStr(&ref_list, ID_str, spec, ID_Type);
-   lSetUlong(idep, ID_action, QI_DO_RECONNECT | JOB_DO_ACTION);
-   lSetUlong(idep, ID_force, 0);
+   lListElem *idep = ocs::tom::emplace_back<ID_str>(&ref_list, spec);
+   ocs::tom::set<ID_action>(idep, QI_DO_RECONNECT | JOB_DO_ACTION);
+   ocs::tom::set<ID_force>(idep, 0);
 
    alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::JB_LIST, ocs::gdi::Command::TRIGGER,
                                    ocs::gdi::SubCommand::NONE, &ref_list, nullptr, nullptr);
 
    bool ok = false;
    for_each_ep_lv(aep, alp) {
-      const char *text = lGetString(aep, AN_text);
-      uint32_t status = lGetUlong(aep, AN_status);
+      const char *text = ocs::tom::get<AN_text>(aep);
+      uint32_t status = ocs::tom::get<AN_status>(aep);
       printf("[%u] %s\n", status, text != nullptr ? text : "(null)");
       if (status == STATUS_OK && text != nullptr && strncmp(text, "RECONNECT_OK ", 13) == 0) {
          ok = true;

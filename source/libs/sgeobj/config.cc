@@ -65,6 +65,7 @@
 #include "sgeobj/sge_ulong.h"
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/msg_sgeobjlib.h"
+#include "tom/ocs_Element.h"
 
 /* 
 **
@@ -368,7 +369,7 @@ int name_nm
          DPRINTF("!!!!!!!!!set_conf_string: unexpected data type !!!!!!!!!!!!!!!!!\n");
          break;
    } 
-   lDelElemStr(clpp, CF_name, key);
+   ocs::tom::erase<CF_name>(clpp, key);
    add_nm_to_set(fields, name_nm);
 
    DRETURN(true);
@@ -424,7 +425,7 @@ int name_nm
       DRETURN(false);
    }
       
-   lDelElemStr(clpp, CF_name, key);
+   ocs::tom::erase<CF_name>(clpp, key);
    add_nm_to_set(fields, name_nm);
 
    DRETURN(true);
@@ -468,7 +469,7 @@ int name_nm
       lSetUlong(ep, name_nm, type);
    }
 
-   lDelElemStr(clpp, CF_name, key);
+   ocs::tom::erase<CF_name>(clpp, key);
    add_nm_to_set(fields, name_nm);
 
    DRETURN(true);
@@ -512,7 +513,7 @@ int name_nm
       lSetUlong(ep, name_nm, type);
    }
 
-   lDelElemStr(clpp, CF_name, key);
+   ocs::tom::erase<CF_name>(clpp, key);
    add_nm_to_set(fields, name_nm);
 
    DRETURN(true);
@@ -563,7 +564,7 @@ int name_nm
    }
    lSetUlong(ep, name_nm, flag);
 
-   lDelElemStr(clpp, CF_name, key);
+   ocs::tom::erase<CF_name>(clpp, key);
    add_nm_to_set(fields, name_nm);
 
    DRETURN(true);
@@ -616,7 +617,7 @@ int name_nm
    if (!object_parse_ulong32_from_string(ep, alpp, name_nm, str)) {
       DRETURN(false);
    }
-   lDelElemStr(clpp, CF_name, key);
+   ocs::tom::erase<CF_name>(clpp, key);
    add_nm_to_set(fields, name_nm);
 
    DRETURN(true);
@@ -702,7 +703,7 @@ int operation_nm
    }
 
    lSetDouble(ep, name_nm, dval);
-   lDelElemStr(clpp, CF_name, key);
+   ocs::tom::erase<CF_name>(clpp, key);
    add_nm_to_set(fields, name_nm);
 
    DRETURN(true);
@@ -768,7 +769,7 @@ int *interpretation_rule
    }
 
    lSetList(ep, name_nm, tmplp);
-   lDelElemStr(clpp, CF_name, key);
+   ocs::tom::erase<CF_name>(clpp, key);
    add_nm_to_set(fields, name_nm);
 
    DRETURN(true);
@@ -829,7 +830,7 @@ int name_nm
    }
 
    lSetString(ep, name_nm, str);
-   lDelElemStr(clpp, CF_name, key);
+   ocs::tom::erase<CF_name>(clpp, key);
    add_nm_to_set(fields, name_nm);
 
    DRETURN(true);
@@ -886,7 +887,7 @@ int name_nm
    }
 
    lSetString(ep, name_nm, str);
-   lDelElemStr(clpp, CF_name, key);
+   ocs::tom::erase<CF_name>(clpp, key);
    add_nm_to_set(fields, name_nm);
 
    DRETURN(true);
@@ -943,7 +944,7 @@ bool set_conf_enum(lList **alpp, lList **clpp, int fields[], const char *key,
    }
 
    lSetUlong(ep, name_nm, uval);
-   lDelElemStr(clpp, CF_name, key);
+   ocs::tom::erase<CF_name>(clpp, key);
    add_nm_to_set(fields, name_nm);
 
 
@@ -982,7 +983,7 @@ bool set_conf_enum_none(lList **alpp, lList **clpp, int fields[], const char *ke
    }
    
    lSetUlong(ep, name_nm, uval);
-   lDelElemStr(clpp, CF_name, key);
+   ocs::tom::erase<CF_name>(clpp, key);
    add_nm_to_set(fields, name_nm);
 
 
@@ -1036,7 +1037,7 @@ bool set_conf_list(lList **alpp, lList **clpp, int fields[], const char *key,
    }
    lString2List(str, &tmplp, descr, sub_name_nm, delims); 
 
-   lDelElemStr(clpp, CF_name, key);
+   ocs::tom::erase<CF_name>(clpp, key);
    add_nm_to_set(fields, name_nm);
 
    
@@ -1106,13 +1107,13 @@ bool set_conf_str_attr_list(lList **alpp, lList **clpp, int fields[],
    ret = str_attr_list_parse_from_string(&tmplp, &lanswer_list, str,
                                          HOSTATTR_ALLOW_AMBIGUITY, master_hgroup_list);
    if (!ret) {
-      const char *text = lGetString(lFirst(lanswer_list), AN_text);
+      const char *text = ocs::tom::get<AN_text>(lFirst(lanswer_list));
 
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, "%s - %s", key, text);
       answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
       return ret;
    }
-   lDelElemStr(clpp, CF_name, key);
+   ocs::tom::erase<CF_name>(clpp, key);
    add_nm_to_set(fields, name_nm);
 
    if (tmplp != nullptr) {
@@ -1159,13 +1160,13 @@ bool set_conf_strlist_attr_list(lList **alpp, lList **clpp, int fields[],
    ret = strlist_attr_list_parse_from_string(&tmplp, &lanswer_list, str,
                                              HOSTATTR_ALLOW_AMBIGUITY, master_hgroup_list);
    if (!ret) {
-      const char *text = lGetString(lFirst(lanswer_list), AN_text);
+      const char *text = ocs::tom::get<AN_text>(lFirst(lanswer_list));
 
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, "%s - %s", key, text);
       answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
       return ret;
    }
-   lDelElemStr(clpp, CF_name, key);
+   ocs::tom::erase<CF_name>(clpp, key);
    add_nm_to_set(fields, name_nm);
 
    if (tmplp != nullptr) {
@@ -1212,13 +1213,13 @@ bool set_conf_usrlist_attr_list(lList **alpp, lList **clpp, int fields[],
    ret = usrlist_attr_list_parse_from_string(&tmplp, &lanswer_list, str,
                                              HOSTATTR_ALLOW_AMBIGUITY, master_hgroup_list);
    if (!ret) {
-      const char *text = lGetString(lFirst(lanswer_list), AN_text);
+      const char *text = ocs::tom::get<AN_text>(lFirst(lanswer_list));
 
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, "%s - %s", key, text);
       answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
       return ret;
    }
-   lDelElemStr(clpp, CF_name, key);
+   ocs::tom::erase<CF_name>(clpp, key);
    add_nm_to_set(fields, name_nm);
 
    if (tmplp != nullptr) {
@@ -1265,13 +1266,13 @@ bool set_conf_prjlist_attr_list(lList **alpp, lList **clpp, int fields[],
    ret = prjlist_attr_list_parse_from_string(&tmplp, &lanswer_list, str,
                                              HOSTATTR_ALLOW_AMBIGUITY, master_hgroup_list);
    if (!ret) {
-      const char *text = lGetString(lFirst(lanswer_list), AN_text);
+      const char *text = ocs::tom::get<AN_text>(lFirst(lanswer_list));
 
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, "%s - %s", key, text);
       answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
       return ret;
    }
-   lDelElemStr(clpp, CF_name, key);
+   ocs::tom::erase<CF_name>(clpp, key);
    add_nm_to_set(fields, name_nm);
 
    if (tmplp != nullptr) {
@@ -1318,13 +1319,13 @@ bool set_conf_celist_attr_list(lList **alpp, lList **clpp, int fields[],
    ret = celist_attr_list_parse_from_string(&tmplp, &lanswer_list, str,
                                             HOSTATTR_ALLOW_AMBIGUITY, master_hgroup_list);
    if (!ret) {
-      const char *text = lGetString(lFirst(lanswer_list), AN_text);
+      const char *text = ocs::tom::get<AN_text>(lFirst(lanswer_list));
 
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, "%s - %s", key, text);
       answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
       return ret;
    }
-   lDelElemStr(clpp, CF_name, key);
+   ocs::tom::erase<CF_name>(clpp, key);
    add_nm_to_set(fields, name_nm);
 
    if (tmplp != nullptr) {
@@ -1371,13 +1372,13 @@ bool set_conf_solist_attr_list(lList **alpp, lList **clpp, int fields[],
    ret = solist_attr_list_parse_from_string(&tmplp, &lanswer_list, str,
                                             HOSTATTR_ALLOW_AMBIGUITY, master_hgroup_list);
    if (!ret) {
-      const char *text = lGetString(lFirst(lanswer_list), AN_text);
+      const char *text = ocs::tom::get<AN_text>(lFirst(lanswer_list));
 
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, "%s - %s", key, text);
       answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
       return ret;
    }
-   lDelElemStr(clpp, CF_name, key);
+   ocs::tom::erase<CF_name>(clpp, key);
    add_nm_to_set(fields, name_nm);
 
    if (tmplp != nullptr) {
@@ -1424,13 +1425,13 @@ bool set_conf_qtlist_attr_list(lList **alpp, lList **clpp, int fields[],
    ret = qtlist_attr_list_parse_from_string(&tmplp, &lanswer_list, str,
                                             HOSTATTR_ALLOW_AMBIGUITY, master_hgroup_list);
    if (!ret) {
-      const char *text = lGetString(lFirst(lanswer_list), AN_text);
+      const char *text = ocs::tom::get<AN_text>(lFirst(lanswer_list));
 
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, "%s - %s", key, text);
       answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
       return ret;
    }
-   lDelElemStr(clpp, CF_name, key);
+   ocs::tom::erase<CF_name>(clpp, key);
    add_nm_to_set(fields, name_nm);
 
    if (tmplp != nullptr) {
@@ -1476,13 +1477,13 @@ bool set_conf_ulng_attr_list(lList **alpp, lList **clpp, int fields[],
    ret = ulng_attr_list_parse_from_string(&tmplp, &lanswer_list, str,
                                           HOSTATTR_ALLOW_AMBIGUITY, master_hgroup_list);
    if (!ret) {
-      const char *text = lGetString(lFirst(lanswer_list), AN_text);
+      const char *text = ocs::tom::get<AN_text>(lFirst(lanswer_list));
 
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, "%s - %s", key, text);
       answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
       return ret;
    }
-   lDelElemStr(clpp, CF_name, key);
+   ocs::tom::erase<CF_name>(clpp, key);
    add_nm_to_set(fields, name_nm);
 
    if (tmplp != nullptr) {
@@ -1528,13 +1529,13 @@ bool set_conf_bool_attr_list(lList **alpp, lList **clpp, int fields[],
    ret = bool_attr_list_parse_from_string(&tmplp, &lanswer_list, str,
                                           HOSTATTR_ALLOW_AMBIGUITY, master_hgroup_list);
    if (!ret) {
-      const char *text = lGetString(lFirst(lanswer_list), AN_text);
+      const char *text = ocs::tom::get<AN_text>(lFirst(lanswer_list));
 
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, "%s - %s", key, text);
       answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
       return ret;
    }
-   lDelElemStr(clpp, CF_name, key);
+   ocs::tom::erase<CF_name>(clpp, key);
    add_nm_to_set(fields, name_nm);
 
    if (tmplp != nullptr) {
@@ -1580,13 +1581,13 @@ bool set_conf_time_attr_list(lList **alpp, lList **clpp, int fields[],
    ret = time_attr_list_parse_from_string(&tmplp, &lanswer_list, str,
                                           HOSTATTR_ALLOW_AMBIGUITY, master_hgroup_list);
    if (!ret) {
-      const char *text = lGetString(lFirst(lanswer_list), AN_text);
+      const char *text = ocs::tom::get<AN_text>(lFirst(lanswer_list));
 
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, "%s - %s", key, text);
       answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
       return ret;
    }
-   lDelElemStr(clpp, CF_name, key);
+   ocs::tom::erase<CF_name>(clpp, key);
    add_nm_to_set(fields, name_nm);
 
    if (tmplp != nullptr) {
@@ -1632,13 +1633,13 @@ bool set_conf_mem_attr_list(lList **alpp, lList **clpp, int fields[],
    ret = mem_attr_list_parse_from_string(&tmplp, &lanswer_list, str,
                                           HOSTATTR_ALLOW_AMBIGUITY, master_hgroup_list);
    if (!ret) {
-      const char *text = lGetString(lFirst(lanswer_list), AN_text);
+      const char *text = ocs::tom::get<AN_text>(lFirst(lanswer_list));
 
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, "%s - %s", key, text);
       answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
       return ret;
    }
-   lDelElemStr(clpp, CF_name, key);
+   ocs::tom::erase<CF_name>(clpp, key);
    add_nm_to_set(fields, name_nm);
 
    if (tmplp != nullptr) {
@@ -1685,13 +1686,13 @@ bool set_conf_inter_attr_list(lList **alpp, lList **clpp, int fields[],
                                            HOSTATTR_ALLOW_AMBIGUITY, master_hgroup_list);
 
    if (!ret) {
-      const char *text = lGetString(lFirst(lanswer_list), AN_text);
+      const char *text = ocs::tom::get<AN_text>(lFirst(lanswer_list));
 
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, "%s - %s", key, text);
       answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
       return ret;
    }
-   lDelElemStr(clpp, CF_name, key);
+   ocs::tom::erase<CF_name>(clpp, key);
    add_nm_to_set(fields, name_nm);
 
    if (tmplp != nullptr) {
@@ -1780,7 +1781,7 @@ int subval_nm
    }   
 
    lSetList(ep, name_nm, tmplp);
-   lDelElemStr(clpp, CF_name, key);
+   ocs::tom::erase<CF_name>(clpp, key);
    add_nm_to_set(fields, name_nm);
 
    DRETURN(true);

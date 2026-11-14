@@ -60,6 +60,12 @@
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_cqueue.h"
 #include "sgeobj/msg_sgeobjlib.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_ARA.h"
+#include "sgeobj/tom/ocs_tom_CE.h"
+#include "sgeobj/tom/ocs_tom_JG.h"
+#include "sgeobj/tom/ocs_tom_QR.h"
+#include "sgeobj/tom/ocs_tom_RN.h"
 
 #include "msg_qmaster.h"
 #include "uti/sge.h"
@@ -82,7 +88,7 @@ lListElem *ar_list_locate(const lList *ar_list, uint32_t ar_id) {
 
    lListElem *ep = nullptr;
 
-   ep = lGetElemUlongRW(ar_list, AR_id, ar_id);
+   ep = ocs::tom::find_first_rw<AR_id>(ar_list, ar_id);
 
    DRETURN(ep);
 }
@@ -118,14 +124,14 @@ bool ar_validate(lListElem *ar, lList **alpp, bool in_master, bool is_spool, con
    uint64_t now64 = sge_get_gmt64();
 
    /*   AR_start_time, SGE_ULONG        */
-   if ((start_time = lGetUlong64(ar, AR_start_time)) == 0) {
+   if ((start_time = ocs::tom::get<AR_start_time>(ar)) == 0) {
       start_time = now64;
-      lSetUlong64(ar, AR_start_time, start_time);
+      ocs::tom::set<AR_start_time>(ar, start_time);
    }
 
    /*   AR_end_time, SGE_ULONG        */
-   end_time = lGetUlong64(ar, AR_end_time);
-   duration = lGetUlong64(ar, AR_duration);
+   end_time = ocs::tom::get<AR_end_time>(ar);
+   duration = ocs::tom::get<AR_duration>(ar);
    
    if (end_time == 0 && duration == 0) {
       answer_list_add_sprintf(alpp, STATUS_EEXIST, ANSWER_QUALITY_ERROR,
@@ -134,11 +140,11 @@ bool ar_validate(lListElem *ar, lList **alpp, bool in_master, bool is_spool, con
    } else if (end_time == 0) {
       end_time = duration_add_offset(start_time, duration);
       duration = end_time  - start_time;
-      lSetUlong64(ar, AR_end_time, end_time);
-      lSetUlong64(ar, AR_duration, duration);
+      ocs::tom::set<AR_end_time>(ar, end_time);
+      ocs::tom::set<AR_duration>(ar, duration);
    } else if (duration == 0) {
       duration = end_time - start_time;
-      lSetUlong64(ar, AR_duration, duration);
+      ocs::tom::set<AR_duration>(ar, duration);
    }
 
    if ((end_time - start_time) != duration) {
@@ -170,10 +176,10 @@ bool ar_validate(lListElem *ar, lList **alpp, bool in_master, bool is_spool, con
       }
       /*   AR_account, SGE_STRING */
       ocs_null_out_none<AR_account>(ar);
-      if (!lGetString(ar, AR_account)) {
-         lSetString(ar, AR_account, DEFAULT_ACCOUNT);
+      if (!ocs::tom::get<AR_account>(ar)) {
+         ocs::tom::set<AR_account>(ar, DEFAULT_ACCOUNT);
       } else {
-         if (verify_str_key(alpp, lGetString(ar, AR_account), MAX_VERIFY_STRING,
+         if (verify_str_key(alpp, ocs::tom::get<AR_account>(ar), MAX_VERIFY_STRING,
          "account string", QSUB_TABLE) != STATUS_OK) {
             goto ERROR;
          }
@@ -188,7 +194,7 @@ bool ar_validate(lListElem *ar, lList **alpp, bool in_master, bool is_spool, con
          /* request for non existing ckpt object will be refused */
          const char *ckpt_name = nullptr;
 
-         ckpt_name = lGetString(ar, AR_checkpoint_name);
+         ckpt_name = ocs::tom::get<AR_checkpoint_name>(ar);
          if (ckpt_name != nullptr) {
             lListElem *ckpt_ep = ckpt_list_locate(master_ckpt_list, ckpt_name);
             if (!ckpt_ep) {
@@ -200,27 +206,27 @@ bool ar_validate(lListElem *ar, lList **alpp, bool in_master, bool is_spool, con
       }
       /*   AR_resource_list, SGE_LIST */
       {
-         if (centry_list_fill_request(lGetListRW(ar, AR_resource_list),
+         if (centry_list_fill_request(ocs::tom::get<AR_resource_list>(ar),
                                       alpp, master_centry_list, false, true, false)) {
             goto ERROR;
          }
-         if (compress_ressources(alpp, lGetListRW(ar, AR_resource_list), SGE_OBJ_AR)) {
+         if (compress_ressources(alpp, ocs::tom::get<AR_resource_list>(ar), SGE_OBJ_AR)) {
             goto ERROR;
          }
          
-         if (!centry_list_is_correct(lGetListRW(ar, AR_resource_list), alpp)) {
+         if (!centry_list_is_correct(ocs::tom::get<AR_resource_list>(ar), alpp)) {
             goto ERROR;
          }
       }
       /*   AR_queue_list, SGE_LIST */
-      if (!qref_list_is_valid(lGetList(ar, AR_queue_list), alpp, master_cqueue_list, master_hgroup_list, master_centry_list)) {
+      if (!qref_list_is_valid(ocs::tom::get<AR_queue_list>(ar), alpp, master_cqueue_list, master_hgroup_list, master_centry_list)) {
          goto ERROR;
       }
       /*   AR_mail_options, SGE_ULONG   */
       /*   AR_mail_list, SGE_LIST */
       
       /*   AR_master_queue_list  -masterq wc_queue_list, SGE_LIST bind master task to queue(s) */
-      if (!qref_list_is_valid(lGetList(ar, AR_master_queue_list), alpp, master_cqueue_list, master_hgroup_list, master_centry_list)) {
+      if (!qref_list_is_valid(ocs::tom::get<AR_master_queue_list>(ar), alpp, master_cqueue_list, master_hgroup_list, master_centry_list)) {
          goto ERROR;
       }
        
@@ -231,7 +237,7 @@ bool ar_validate(lListElem *ar, lList **alpp, bool in_master, bool is_spool, con
          const char *pe_name = nullptr;
          lList *pe_range = nullptr;
          
-         pe_name = lGetString(ar, AR_pe);
+         pe_name = ocs::tom::get<AR_pe>(ar);
          if (pe_name) {
             const lListElem *pep = pe_list_find_matching(master_pe_list, pe_name);
             if (!pep) {
@@ -240,7 +246,7 @@ bool ar_validate(lListElem *ar, lList **alpp, bool in_master, bool is_spool, con
                goto ERROR;
             }
             /* check pe_range */
-            pe_range = lGetListRW(ar, AR_pe_range);
+            pe_range = ocs::tom::get<AR_pe_range>(ar);
             if (object_verify_pe_range(alpp, pe_name, pe_range, SGE_OBJ_AR)!=STATUS_OK) {
                goto ERROR;
             }
@@ -249,13 +255,13 @@ bool ar_validate(lListElem *ar, lList **alpp, bool in_master, bool is_spool, con
 
       /*   AR_allocation_rule, SGE_STRING - from qrsub -par */
       {
-         const char *allocation_rule = lGetString(ar, AR_allocation_rule);
+         const char *allocation_rule = ocs::tom::get<AR_allocation_rule>(ar);
          if (allocation_rule != nullptr) {
             /* The rule overrides the allocation_rule of the requested PE, so there has to be one.
              * Unlike a job, which can still be given a PE with qalter -pe, an AR keeps the PE it was
              * submitted with, and a rule which can never apply would only mislead the reader of
              * qrstat output. */
-            if (lGetString(ar, AR_pe) == nullptr) {
+            if (ocs::tom::get<AR_pe>(ar) == nullptr) {
                answer_list_add_sprintf(alpp, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, SFNMAX,
                                        MSG_AR_PAR_WITHOUT_PE);
                goto ERROR;
@@ -268,36 +274,36 @@ bool ar_validate(lListElem *ar, lList **alpp, bool in_master, bool is_spool, con
       }
 
       /*   AR_acl_list, SGE_LIST */
-      if (userset_list_validate_access(lGetList(ar, AR_acl_list), ARA_name, alpp, master_userset_list) != STATUS_OK) {
+      if (userset_list_validate_access(ocs::tom::get<AR_acl_list>(ar), ARA_name, alpp, master_userset_list) != STATUS_OK) {
          goto ERROR;
       }
       
       /*   AR_xacl_list, SGE_LIST */
-      if (userset_list_validate_access(lGetList(ar, AR_xacl_list), ARA_name, alpp, master_userset_list) != STATUS_OK) {
+      if (userset_list_validate_access(ocs::tom::get<AR_xacl_list>(ar), ARA_name, alpp, master_userset_list) != STATUS_OK) {
          goto ERROR;
       }
 
       if (is_spool) {
          dstring cqueue_buffer = DSTRING_INIT;
          dstring hostname_buffer = DSTRING_INIT;
-         for_each_rw_lv(jg, lGetList(ar, AR_granted_slots)){
+         for_each_rw_lv(jg, ocs::tom::get<AR_granted_slots>(ar)){
             const char *hostname = nullptr;
-            const char *qname = lGetString(jg, JG_qname);
+            const char *qname = ocs::tom::get<JG_qname>(jg);
             bool has_hostname = false;
             bool has_domain = false;
 
             cqueue_name_split(qname, &cqueue_buffer, &hostname_buffer,
                               &has_hostname, &has_domain);
             hostname = sge_dstring_get_string(&hostname_buffer);
-            lSetHost(jg, JG_qhostname, hostname);
+            ocs::tom::set<JG_qhostname>(jg, hostname);
          }
          sge_dstring_free(&cqueue_buffer);
          sge_dstring_free(&hostname_buffer);
       }
       /*   AR_type,  SGE_ULONG     */
       /*   AR_state, SGE_ULONG               state of the AR */
-      if(lGetUlong(ar, AR_state) == ARL_UNKNOWN){
-         lSetUlong(ar, AR_state, ARL_CREATION);  
+      if(ocs::tom::get<AR_state>(ar) == ARL_UNKNOWN){
+         ocs::tom::set<AR_state>(ar, ARL_CREATION);  
       }
    }
    DRETURN(true);
@@ -448,7 +454,7 @@ bool sge_ar_has_errors(lListElem *ar) {
 
    bool ret = false;
 
-   if (lGetUlong(ar, AR_qi_errors) != 0) {
+   if (ocs::tom::get<AR_qi_errors>(ar) != 0) {
       ret = true;
    }
 

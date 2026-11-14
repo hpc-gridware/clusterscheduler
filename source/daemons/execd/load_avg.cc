@@ -69,6 +69,12 @@
 #include "sgeobj/sge_object.h"
 
 #include "sgeobj/ocs_Version.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_JAT.h"
+#include "sgeobj/tom/ocs_tom_JG.h"
+#include "sgeobj/tom/ocs_tom_PE.h"
+#include "sgeobj/tom/ocs_tom_PET.h"
+#include "sgeobj/tom/ocs_tom_UA.h"
 
 #include "job_report_execd.h"
 #include "sge_load_sensor.h"
@@ -178,28 +184,28 @@ void sge_set_flush_lr_flag(bool new_val) {
  * @param seqno the report's sequence number
  */
 void execd_merge_load_report(uint32_t seqno) {
-   if (last_lr == nullptr || seqno != lGetUlong(last_lr, REP_seqno)) {
+   if (last_lr == nullptr || seqno != ocs::tom::get<REP_seqno>(last_lr)) {
       return;
    } else {
       const lListElem *old_lr;
 
-      for_each_ep(old_lr, lGetList(last_lr, REP_list)) {
+      for_each_ep(old_lr, ocs::tom::get<REP_list>(last_lr)) {
          const void *iterator = nullptr;
-         const char *hostname = lGetHost(old_lr, LR_host);
-         const char *name = lGetString(old_lr, LR_name);
+         const char *hostname = ocs::tom::get<LR_host>(old_lr);
+         const char *name = ocs::tom::get<LR_name>(old_lr);
          lListElem *lr, *lr_next;
          bool found = false;
 
-         lr_next = lGetElemStrFirstRW(lr_list, LR_name, name, &iterator);
+         lr_next = ocs::tom::find_first_rw<LR_name>(lr_list, name, &iterator);
          while ((lr = lr_next)) {
-            lr_next = lGetElemStrNextRW(lr_list, LR_name, name, &iterator);
+            lr_next = ocs::tom::find_next_rw<LR_name>(lr_list, name, &iterator);
 
-            if (sge_hostcmp(lGetHost(lr, LR_host), hostname) == 0) {
+            if (sge_hostcmp(ocs::tom::get<LR_host>(lr), hostname) == 0) {
                found = true;
-               if (lGetUlong(old_lr, LR_is_static) == 2) {
+               if (ocs::tom::get<LR_is_static>(old_lr) == 2) {
                   lRemoveElem(lr_list, &lr); 
                } else {
-                  lSetString(lr, LR_value, lGetString(old_lr, LR_value));
+                  ocs::tom::set<LR_value>(lr, ocs::tom::get<LR_value>(old_lr));
                }
                break;
             }
@@ -244,13 +250,13 @@ execd_add_load_report(lList *report_list, uint64_t now, uint64_t *next_send) {
       */
       report = lCreateElem(REP_Type);
       if (send_all) {
-         lSetUlong(report, REP_type, NUM_REP_FULL_REPORT_LOAD);
+         ocs::tom::set<REP_type>(report, NUM_REP_FULL_REPORT_LOAD);
       } else {
-         lSetUlong(report, REP_type, NUM_REP_REPORT_LOAD);
+         ocs::tom::set<REP_type>(report, NUM_REP_REPORT_LOAD);
       }
-      lSetUlong(report, REP_version, ocs::Version::get_version());
-      lSetUlong(report, REP_seqno, sge_execd_report_seqno);
-      lSetHost(report, REP_host, qualified_hostname);
+      ocs::tom::set<REP_version>(report, ocs::Version::get_version());
+      ocs::tom::set<REP_seqno>(report, sge_execd_report_seqno);
+      ocs::tom::set<REP_host>(report, qualified_hostname);
 
       tmp_lr_list = sge_build_load_report(qualified_hostname, binary_path);
 
@@ -258,34 +264,34 @@ execd_add_load_report(lList *report_list, uint64_t now, uint64_t *next_send) {
          lr_list = lCopyList("", tmp_lr_list);
          lFreeElem(&last_lr);
          lSortList(tmp_lr_list, order);
-         lSetList(report, REP_list, tmp_lr_list);
+         ocs::tom::set<REP_list>(report, tmp_lr_list);
       } else {
          lListElem *lr;
 
          for_each_rw(lr, lr_list) {
             const void *iterator = nullptr;
-            const char *hostname = lGetHost(lr, LR_host);
-            const char *name = lGetString(lr, LR_name);
-            const char *value = lGetString(lr, LR_value);
+            const char *hostname = ocs::tom::get<LR_host>(lr);
+            const char *name = ocs::tom::get<LR_name>(lr);
+            const char *value = ocs::tom::get<LR_value>(lr);
             lListElem *ep, *next_ep;
             bool found = false;
          
-            next_ep = lGetElemStrFirstRW(tmp_lr_list, LR_name, name, &iterator);
+            next_ep = ocs::tom::find_first_rw<LR_name>(tmp_lr_list, name, &iterator);
             while ((ep = next_ep)) {
-               next_ep = lGetElemStrNextRW(tmp_lr_list, LR_name, name, &iterator);
+               next_ep = ocs::tom::find_next_rw<LR_name>(tmp_lr_list, name, &iterator);
 
                DPRINTF("handling %s in execd_add_load_report\n", name);
-               if (sge_hostcmp(lGetHost(ep, LR_host), hostname) == 0) {
+               if (sge_hostcmp(ocs::tom::get<LR_host>(ep), hostname) == 0) {
                   /* we found the same load value in the temp list */
                   found = true;
 
-                  if (!send_all && sge_strnullcmp(lGetString(ep, LR_value), value) == 0) {
+                  if (!send_all && sge_strnullcmp(ocs::tom::get<LR_value>(ep), value) == 0) {
                      /* value hasn't changed, remove it from list */ 
                      lRemoveElem(tmp_lr_list, &ep);
                   } else {
-                     DPRINTF("value %s has changed from %s to %s\n", name, value ? value:"nullptr", lGetString(ep, LR_value));
+                     DPRINTF("value %s has changed from %s to %s\n", name, value ? value:"nullptr", ocs::tom::get<LR_value>(ep));
                      /* Old value is no longer valid */
-                     lSetString(lr, LR_value, nullptr);
+                     ocs::tom::set<LR_value>(lr, nullptr);
                   }
                   break;
                }
@@ -295,13 +301,13 @@ execd_add_load_report(lList *report_list, uint64_t now, uint64_t *next_send) {
                /* the load value is no longer reported, tag is as deleted and
                   add it to the report list */
                lListElem *del_report = lCopyElem(lr);     
-               lSetUlong(del_report, LR_is_static, 2); 
+               ocs::tom::set<LR_is_static>(del_report, 2); 
                lAppendElem(tmp_lr_list, del_report);
             }
          }
 
          lSortList(tmp_lr_list, order);
-         lSetList(report, REP_list, tmp_lr_list);
+         ocs::tom::set<REP_list>(report, tmp_lr_list);
          lFreeElem(&last_lr);
          last_lr = lCopyElem(report);
       }
@@ -332,11 +338,11 @@ execd_add_conf_report(lList *report_list, uint64_t now, uint64_t *next_send) {
       ** order of the reports is irrelevant
       */
       report = lCreateElem(REP_Type);
-      lSetUlong(report, REP_type, NUM_REP_REPORT_CONF);
-      lSetUlong(report, REP_version, ocs::Version::get_version());
-      lSetUlong(report, REP_seqno, sge_execd_report_seqno);
-      lSetHost(report, REP_host, qualified_hostname);
-      lSetList(report, REP_list, 
+      ocs::tom::set<REP_type>(report, NUM_REP_REPORT_CONF);
+      ocs::tom::set<REP_version>(report, ocs::Version::get_version());
+      ocs::tom::set<REP_seqno>(report, sge_execd_report_seqno);
+      ocs::tom::set<REP_host>(report, qualified_hostname);
+      ocs::tom::set<REP_list>(report, 
          lCopyList("execd config list copy", Execd_Config_List));
       lAppendElem(report_list, report);
       DPRINTF("handling conf report in execd_add_conf_report\n");
@@ -357,10 +363,10 @@ execd_add_license_report(lList *report_list, uint64_t now, uint64_t *next_send) 
       ** 3. license report
       */
       report = lCreateElem(REP_Type);
-      lSetUlong(report, REP_type, NUM_REP_REPORT_PROCESSORS);
-      lSetUlong(report, REP_version, ocs::Version::get_version());
-      lSetUlong(report, REP_seqno, sge_execd_report_seqno);
-      lSetHost(report, REP_host, qualified_hostname);
+      ocs::tom::set<REP_type>(report, NUM_REP_REPORT_PROCESSORS);
+      ocs::tom::set<REP_version>(report, ocs::Version::get_version());
+      ocs::tom::set<REP_seqno>(report, sge_execd_report_seqno);
+      ocs::tom::set<REP_host>(report, qualified_hostname);
       {
          lList *lp_lic;
          lListElem *ep_lic;
@@ -370,10 +376,10 @@ execd_add_license_report(lList *report_list, uint64_t now, uint64_t *next_send) 
          /*
          ** no error handling here cause we can just send 1 as #processors
          */
-         lSetUlong(ep_lic, LIC_processors,  sge_nprocs());
-         lSetString(ep_lic, LIC_arch, sge_get_arch());
+         ocs::tom::set<LIC_processors>(ep_lic,  sge_nprocs());
+         ocs::tom::set<LIC_arch>(ep_lic, sge_get_arch());
          lAppendElem(lp_lic, ep_lic);
-         lSetList(report, REP_list, lp_lic);
+         ocs::tom::set<REP_list>(report, lp_lic);
       }
       lAppendElem(report_list, report);
       DPRINTF("handling license report in execd_add_license_report\n");
@@ -421,14 +427,14 @@ execd_add_job_report(lList *report_list, uint64_t now, uint64_t *next_send) {
 
       /* create job report */
       job_report = lCreateElem(REP_Type);
-      lSetUlong(job_report, REP_type, NUM_REP_REPORT_JOB);
-      lSetUlong(job_report, REP_version, ocs::Version::get_version());
-      lSetUlong(job_report, REP_seqno, sge_execd_report_seqno);
-      lSetHost(job_report, REP_host, qualified_hostname);
+      ocs::tom::set<REP_type>(job_report, NUM_REP_REPORT_JOB);
+      ocs::tom::set<REP_version>(job_report, ocs::Version::get_version());
+      ocs::tom::set<REP_seqno>(job_report, sge_execd_report_seqno);
+      ocs::tom::set<REP_host>(job_report, qualified_hostname);
 
       /* create job report list */
       job_report_list = lCreateList("jr", JR_Type);
-      lSetList(job_report, REP_list, job_report_list);
+      ocs::tom::set<REP_list>(job_report, job_report_list);
 
       /* copy reports (all or only to flush) 
        * We keep job reports where the job is started via JAPI (qsub -sync or
@@ -436,10 +442,10 @@ execd_add_job_report(lList *report_list, uint64_t now, uint64_t *next_send) {
        */
       bool complete = !only_flush;
       for_each_rw (jr, jr_list) {
-         bool delayed = sge_get_delay_job_reports_flag() && lGetBool(jr, JR_delay_report);
-         if ((!only_flush || lGetBool(jr, JR_flush)) && !lGetBool(jr, JR_no_send) && !delayed) {
+         bool delayed = sge_get_delay_job_reports_flag() && ocs::tom::get<JR_delay_report>(jr);
+         if ((!only_flush || ocs::tom::get<JR_flush>(jr)) && !ocs::tom::get<JR_no_send>(jr) && !delayed) {
             lAppendElem(job_report_list, lCopyElem(jr));
-            lSetBool(jr, JR_flush, false);
+            ocs::tom::set<JR_flush>(jr, false);
          } else if (delayed) {
             // the job is on this host, but it is missing in the report
             complete = false;
@@ -449,7 +455,7 @@ execd_add_job_report(lList *report_list, uint64_t now, uint64_t *next_send) {
       /* a complete job report contains all jobs on this host, sge_qmaster uses it to find out
        * that a job does not run here any more (reschedule unknown list), see CS-3076
        * JR_no_send is only set for pe tasks, the job report of the master task is still sent */
-      lSetBool(job_report, REP_complete, complete);
+      ocs::tom::set<REP_complete>(job_report, complete);
      
       /* append this new job report to the report list */
       lAppendElem(report_list, job_report);
@@ -503,24 +509,24 @@ lList *sge_build_load_report(const char *qualified_hostname, const char *binary_
 
    /* make derived load values */
    /* retrieve num procs first - we need it for all other derived load values */
-   ep = lGetElemStrFirst(lp, LR_name, LOAD_ATTR_NUM_PROC, &iterator);
+   ep = ocs::tom::find_first<LR_name>(lp, LOAD_ATTR_NUM_PROC, &iterator);
    while (ep != nullptr) {
-      const char *value = lGetString(ep, LR_value);
+      const char *value = ocs::tom::get<LR_value>(ep);
 
-      if (sge_hostcmp(lGetHost(ep, LR_host), qualified_hostname) == 0) {
+      if (sge_hostcmp(ocs::tom::get<LR_host>(ep), qualified_hostname) == 0) {
          if (value) {
             nprocs = std::max(1, atoi(value));
          }
          break;
       }   
-      ep = lGetElemStrNext(lp, LR_name, LOAD_ATTR_NUM_PROC, &iterator);
+      ep = ocs::tom::find_next<LR_name>(lp, LOAD_ATTR_NUM_PROC, &iterator);
    }
 
    /* now make the derived load values */
-   ep = lGetElemHostFirst(lp, LR_host, qualified_hostname, &iterator);
+   ep = ocs::tom::find_first<LR_host>(lp, qualified_hostname, &iterator);
    while (ep != nullptr) {
-      const char *name = lGetString(ep, LR_name);
-      const char *value = lGetString(ep, LR_value);
+      const char *name = ocs::tom::get<LR_name>(ep);
+      const char *value = ocs::tom::get<LR_value>(ep);
 
       if (strcmp(name, LOAD_ATTR_LOAD_AVG) == 0) {
          if (value != nullptr) {
@@ -547,7 +553,7 @@ lList *sge_build_load_report(const char *qualified_hostname, const char *binary_
          }
       }
 
-      ep = lGetElemHostNext(lp, LR_host, qualified_hostname, &iterator);
+      ep = ocs::tom::find_next<LR_host>(lp, qualified_hostname, &iterator);
    }
 
    /* qmaster expects a list sorted by host */
@@ -818,10 +824,10 @@ void update_job_usage(const char *qualified_hostname) {
       uint32_t job_id;
       const lListElem *ja_task;
 
-      job_id = lGetUlong(usage, JB_job_number);
+      job_id = ocs::tom::get<JB_job_number>(usage);
 
-      for_each_ep(ja_task, lGetList(usage, JB_ja_tasks)) {
-         uint32_t ja_task_id = lGetUlong(ja_task, JAT_task_number);
+      for_each_ep(ja_task, static_cast<const lList *>(ocs::tom::get<JB_ja_tasks>(usage))) {
+         uint32_t ja_task_id = ocs::tom::get<JAT_task_number>(ja_task);
          /* search matching job report */
          lListElem * jr = get_job_report(job_id, ja_task_id, nullptr);
          if (jr == nullptr) {
@@ -835,11 +841,11 @@ void update_job_usage(const char *qualified_hostname) {
 
          /* replace cpu/mem/io/... with newer values */
          DPRINTF("---> updating job report usage for job " sge_u32 "." sge_u32 "\n", job_id, ja_task_id);
-         job_report_update_from_usage_list(jr, lGetList(ja_task, JAT_usage_list));
+         job_report_update_from_usage_list(jr, ocs::tom::get<JAT_usage_list>(ja_task));
 
          const lListElem *pe_task;
-         for_each_ep(pe_task, lGetList(ja_task, JAT_task_list)) {
-            const char *pe_task_id = lGetString(pe_task, PET_id);
+         for_each_ep(pe_task, static_cast<const lList *>(ocs::tom::get<JAT_task_list>(ja_task))) {
+            const char *pe_task_id = ocs::tom::get<PET_id>(pe_task);
 
             /* search matching job report */
             jr = get_job_report(job_id, ja_task_id, pe_task_id);
@@ -857,7 +863,7 @@ void update_job_usage(const char *qualified_hostname) {
             /* replace cpu/mem/io/... with newer values */
             DPRINTF("---> updating job report usage for job " sge_u32 "." sge_u32" task \"%s\"\n",
                 job_id, ja_task_id, pe_task_id);
-            job_report_update_from_usage_list(jr, lGetList(pe_task, PET_usage));
+            job_report_update_from_usage_list(jr, ocs::tom::get<PET_usage>(pe_task));
          }
       }
    }
@@ -919,7 +925,7 @@ calculate_reserved_usage(const char *qualified_hostname, const lListElem *ja_tas
     * Otherwise, online usage might get higher than final usage!
     */
    jr = get_job_report(job_id, ja_task_id, pe_task_id);
-   if (lGetSubStr(jr, UA_name, USAGE_ATTR_CPU_ACCT, JR_usage) == nullptr) {
+   if (static_cast<const lListElem *>(ocs::tom::find_first_in<JR_usage, UA_name>(jr, USAGE_ATTR_CPU_ACCT)) == nullptr) {
       double cpu{}, mem{}, maxvmem{}, maxrss{};
       double wall_clock_time;
       build_reserved_usage(now, ja_task, pe_task, &wall_clock_time, &cpu, &mem, &maxvmem, &maxrss);
@@ -976,17 +982,16 @@ calculate_reserved_usage_ja_task(const char *qualified_hostname, const lListElem
    /* create data structures */
    if (new_job == nullptr) {
       new_job = lCreateElem(JB_Type);
-      lSetUlong(new_job, JB_job_number, job_id);
+      ocs::tom::set<JB_job_number>(new_job, job_id);
    }
 
-   new_ja_task = lAddSubUlong(new_job, JAT_task_number, ja_task_id, 
-                              JB_ja_tasks, JAT_Type); 
+   new_ja_task = ocs::tom::emplace_back_in<JB_ja_tasks, JAT_task_number>(new_job, ja_task_id); 
 
    usage_list = calculate_reserved_usage(qualified_hostname, ja_task, nullptr,
                                          job_id, ja_task_id, nullptr,
                                          pe, now);
   
-   lSetList(new_ja_task, JAT_usage_list, usage_list);
+   ocs::tom::set<JAT_usage_list>(new_ja_task, usage_list);
 
    return new_job;
 }
@@ -1005,21 +1010,21 @@ calculate_reserved_usage_pe_task(const char *qualified_hostname,
    /* create data structures */
    if (new_job == nullptr) {
       new_job = lCreateElem(JB_Type);
-      lSetUlong(new_job, JB_job_number, job_id);
+      ocs::tom::set<JB_job_number>(new_job, job_id);
    }
 
-   new_ja_task = lGetElemUlongRW(lGetList(new_job, JB_ja_tasks), JAT_task_number, ja_task_id);
+   new_ja_task = ocs::tom::find_first_rw<JAT_task_number>(ocs::tom::get<JB_ja_tasks>(new_job), ja_task_id);
    
    if (new_ja_task == nullptr) {
-      new_ja_task = lAddSubUlong(new_job, JAT_task_number, ja_task_id, JB_ja_tasks, JAT_Type); 
+      new_ja_task = ocs::tom::emplace_back_in<JB_ja_tasks, JAT_task_number>(new_job, ja_task_id); 
    }
 
-   new_pe_task = lAddSubStr(new_ja_task, PET_id, pe_task_id, JAT_task_list, PET_Type);
+   new_pe_task = ocs::tom::emplace_back_in<JAT_task_list, PET_id>(new_ja_task, pe_task_id);
    
    usage_list = calculate_reserved_usage(qualified_hostname, ja_task, pe_task, 
                                          job_id, ja_task_id, pe_task_id, pe, now);
   
-   lSetList(new_pe_task, PET_usage, usage_list);
+   ocs::tom::set<PET_usage>(new_pe_task, usage_list);
 
    return new_job;
 }
@@ -1046,24 +1051,24 @@ static void get_reserved_usage(const char *qualified_hostname, lList **job_usage
       const lListElem *pe, *ja_task;
       lListElem *new_job = nullptr;
 
-      job_id = lGetUlong(job, JB_job_number);
+      job_id = ocs::tom::get<JB_job_number>(job);
 
-      for_each_ep(ja_task, lGetList(job, JB_ja_tasks)) {
+      for_each_ep(ja_task, static_cast<const lList *>(ocs::tom::get<JB_ja_tasks>(job))) {
          uint32_t ja_task_id;
          const lListElem *pe_task;
 
-         ja_task_id = lGetUlong(ja_task, JAT_task_number);
+         ja_task_id = ocs::tom::get<JAT_task_number>(ja_task);
 
          /* we need the pe to be able to calculate the number of slots used
           * as multiplication factor for usage
           */
-         pe = lGetObject(ja_task, JAT_pe_object);
+         pe = ocs::tom::get<JAT_pe_object>(ja_task);
 
          /* If we have a pid for the ja_task: it's either a non-parallel job
           * or the master task of a parallel job.
           * Produce a usage record for it.
           */
-         if (lGetUlong(ja_task, JAT_pid) != 0) { 
+         if (ocs::tom::get<JAT_pid>(ja_task) != 0) { 
             new_job = calculate_reserved_usage_ja_task(qualified_hostname, ja_task,
                                                        job_id, ja_task_id,
                                                        pe, now, new_job);
@@ -1073,11 +1078,11 @@ static void get_reserved_usage(const char *qualified_hostname, lList **job_usage
           * for each of them.
           * Do not report reserved usage, if accounting_summary is activated!
           */
-         if (!(pe != nullptr && lGetBool(pe, PE_accounting_summary))) {
-            for_each_ep(pe_task, lGetList(ja_task, JAT_task_list)) {
+         if (!(pe != nullptr && ocs::tom::get<PE_accounting_summary>(pe))) {
+            for_each_ep(pe_task, static_cast<const lList *>(ocs::tom::get<JAT_task_list>(ja_task))) {
                const char *pe_task_id;
 
-               pe_task_id = lGetString(pe_task, PET_id);
+               pe_task_id = ocs::tom::get<PET_id>(pe_task);
                new_job = calculate_reserved_usage_pe_task(qualified_hostname, 
                                                           ja_task, pe_task, 
                                                           job_id, ja_task_id, 
@@ -1121,7 +1126,7 @@ static void build_reserved_mem_usage(const lListElem *gdil_ep, int slots, double
     * sum up memory usage (integral current memory * wallclock time)
     * and maxvmem (assume it is vmem)
     */
-   const lListElem *queue = lGetObject(gdil_ep, JG_queue);
+   const lListElem *queue = ocs::tom::get<JG_queue>(gdil_ep);
    double vmem = calculate_reserved_memory(queue, slots, QU_h_vmem, QU_s_vmem);
    *mem += vmem * wallclock / (1024*1024*1024);
    *maxvmem += vmem;
@@ -1162,9 +1167,9 @@ void build_reserved_usage(const uint64_t now, const lListElem *ja_task, const lL
 
    /* calculate wallclock time */ 
    if (pe_task == nullptr) {
-      start_time = lGetUlong64(ja_task, JAT_start_time);
+      start_time = ocs::tom::get<JAT_start_time>(ja_task);
    } else {
-      start_time = lGetUlong64(pe_task, PET_start_time);
+      start_time = ocs::tom::get<PET_start_time>(pe_task);
    }
    if (start_time > 0 && start_time < now) {
       *wallclock = sge_gmt64_to_gmt32_double(now - start_time); // reported wallclock is in seconds as double
@@ -1207,26 +1212,26 @@ void build_reserved_usage(const uint64_t now, const lListElem *ja_task, const lL
          const lListElem *gdil_ep;
 
          *cpu = *wallclock;
-         queue_name = lGetString(lFirst(lGetList(pe_task, PET_granted_destin_identifier_list)), JG_qname);
-         gdil_ep = lGetElemStr(lGetList(ja_task, JAT_granted_destin_identifier_list), JG_qname, queue_name);
+         queue_name = ocs::tom::get<JG_qname>(lFirst(static_cast<const lList *>(ocs::tom::get<PET_granted_destin_identifier_list>(pe_task))));
+         gdil_ep = ocs::tom::find_first<JG_qname>(ocs::tom::get<JAT_granted_destin_identifier_list>(ja_task), queue_name);
          build_reserved_mem_usage(gdil_ep, 1, *wallclock, mem, maxvmem, maxrss);
       } else {
          /* compute cpu */
          int slots = 0;
          int slots_total = 0;
-         const lList *gdil = lGetList(ja_task, JAT_granted_destin_identifier_list);
+         const lList *gdil = ocs::tom::get<JAT_granted_destin_identifier_list>(ja_task);
          const lListElem *gdil_ep;
-         const lListElem *pe = lGetObject(ja_task, JAT_pe_object);
+         const lListElem *pe = ocs::tom::get<JAT_pe_object>(ja_task);
 
          /* sequential job, or loose integration, or tight integration with accounting_summary */
-         if (pe == nullptr || !lGetBool(pe, PE_control_slaves) || lGetBool(pe, PE_accounting_summary)) {
+         if (pe == nullptr || !ocs::tom::get<PE_control_slaves>(pe) || ocs::tom::get<PE_accounting_summary>(pe)) {
             /* account for all gdil */
             const lListElem *master_gdil_ep = lFirst(gdil);
             for_each_ep(gdil_ep, gdil) {
-               slots = lGetUlong(gdil_ep, JG_slots);
+               slots = ocs::tom::get<JG_slots>(gdil_ep);
                /* respect job_is_first_task, only once (for the master task gdil) */
                // @todo CS-547 we cannot differentiate master task only and master task + 1 slave task
-               if (pe != nullptr && gdil_ep == master_gdil_ep && !lGetBool(pe, PE_job_is_first_task)) {
+               if (pe != nullptr && gdil_ep == master_gdil_ep && !ocs::tom::get<PE_job_is_first_task>(pe)) {
                   slots++;
                }
                slots_total += slots;

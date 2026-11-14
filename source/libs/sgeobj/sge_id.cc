@@ -48,6 +48,7 @@
 #include "sgeobj/sge_qinstance_state.h"
 #include "sgeobj/sge_ja_task.h"
 #include "sgeobj/msg_sgeobjlib.h"
+#include "tom/ocs_Element.h"
 
 /// Debug layer the id list traces are written to
 #define ID_LAYER BASIS_LAYER
@@ -76,7 +77,7 @@ bool id_list_build_from_str_list(lList **id_list,
        transition_option_is_valid_for_qinstance(option, answer_list) &&
        str_list_is_valid(str_list, answer_list)) {
       for_each_ep_lv(elem, str_list) {
-         const char *string = lGetString(elem, ST_name);
+         const char *string = ocs::tom::get<ST_name>(elem);
          lListElem *new_id = nullptr;
 
          /*
@@ -89,11 +90,11 @@ bool id_list_build_from_str_list(lList **id_list,
          }   
 
          if (new_id == nullptr) {
-            new_id = lAddElemStr(id_list, ID_str, string, ID_Type);
+            new_id = ocs::tom::emplace_back<ID_str>(id_list, string);
          }
          if (new_id != nullptr) {
-            lSetUlong(new_id, ID_action, transition);
-            lSetUlong(new_id, ID_force, option);
+            ocs::tom::set<ID_action>(new_id, transition);
+            ocs::tom::set<ID_force>(new_id, option);
          } else {
             answer_list_add(answer_list, MSG_ID_UNABLETOCREATE, 
                             STATUS_EMALLOC, ANSWER_QUALITY_ERROR);

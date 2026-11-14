@@ -25,6 +25,7 @@
 #include "ocs_AnswerException.h"
 
 #include "sgeobj/sge_answer.h"
+#include "tom/ocs_Element.h"
 
 ocs::AnswerException::Holder::~Holder() {
    lList *list = answer_list.exchange(nullptr);
@@ -35,7 +36,7 @@ std::string
 ocs::AnswerException::get_last_error_message(const lList *answer_list) {
    for (const lListElem *answer = lLast(answer_list); answer != nullptr; answer = lPrev(answer)) {
       if (answer_has_quality(answer, ANSWER_QUALITY_ERROR) || answer_has_quality(answer, ANSWER_QUALITY_CRITICAL)) {
-         const char *message = lGetString(answer, AN_text);
+         const char *message = ocs::tom::get<AN_text>(answer);
          if (message != nullptr) {
             return message;
          }

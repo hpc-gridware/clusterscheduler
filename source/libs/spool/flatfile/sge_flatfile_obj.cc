@@ -57,6 +57,7 @@
 #include "sgeobj/sge_range.h"
 #include "sgeobj/sge_schedd_conf.h"
 #include "sgeobj/ocs_Role.h"
+#include "tom/ocs_Element.h"
 
 #include "spool/flatfile/sge_flatfile.h"
 #include "spool/flatfile/sge_flatfile_obj_rsmap.h"
@@ -826,7 +827,7 @@ read_SC_load_formula(lListElem *ep, int nm, const char *load_formula, lList **al
          if (!validate_load_formula(load_formula, alp, nullptr, SGE_ATTR_LOAD_FORMULA)) {
             DRETURN(0);
          }
-         lSetString(ep, SC_load_formula, copy);
+         ocs::tom::set<SC_load_formula>(ep, copy);
          sge_free(&copy);
       }
    }
@@ -848,7 +849,7 @@ static int read_CF_value(lListElem *ep, int nm, const char *buf,
                          lList **alp) {
    DENTER(TOP_LAYER);
 
-   const char *name = lGetString(ep, CF_name);
+   const char *name = ocs::tom::get<CF_name>(ep);
    char *value = nullptr;
    char *buffer = strdup(buf);
    struct saved_vars_s *context = nullptr;
@@ -856,7 +857,7 @@ static int read_CF_value(lListElem *ep, int nm, const char *buf,
    if (!strcmp(name, "gid_range")) {
       if ((value = sge_strtok_r(buffer, " \t\n", &context))) {
          if (!strcasecmp(value, NONE_STR)) {
-            lSetString(ep, CF_value, value);
+            ocs::tom::set<CF_value>(ep, value);
          } else {
             lList *rlp = nullptr;
             
@@ -872,7 +873,7 @@ static int read_CF_value(lListElem *ep, int nm, const char *buf,
                for_each_ep_lv(rep, rlp) {
                   uint32_t min;
 
-                  min = lGetUlong(rep, RN_min);
+                  min = ocs::tom::get<RN_min>(rep);
                   if (min < GID_RANGE_NOT_ALLOWED_ID) {
                      WARNING(MSG_CONFIG_CONF_GIDRANGELESSTHANNOTALLOWED_I, GID_RANGE_NOT_ALLOWED_ID);
    
@@ -883,7 +884,7 @@ static int read_CF_value(lListElem *ep, int nm, const char *buf,
                   }                  
                }
                lFreeList(&rlp);
-               lSetString(ep, CF_value, value);
+               ocs::tom::set<CF_value>(ep, value);
             }
          }
       }
@@ -892,7 +893,7 @@ static int read_CF_value(lListElem *ep, int nm, const char *buf,
       while (value[0] && isspace((int)value[0]))
          value++;
       if (value) {
-         lSetString(ep, CF_value, value);
+         ocs::tom::set<CF_value>(ep, value);
       } else {
          WARNING(MSG_CONFIG_CONF_NOVALUEFORCONFIGATTRIB_S, name);
    
@@ -935,7 +936,7 @@ static int read_CF_value(lListElem *ep, int nm, const char *buf,
       while (value[0] && isspace((int)value[0]))
          value++;
 
-      lSetString(ep, CF_value, value);
+      ocs::tom::set<CF_value>(ep, value);
    } else {
       if (!(value = sge_strtok_r(buffer, " \t\n", &context))) {
          WARNING(MSG_CONFIG_CONF_NOVALUEFORCONFIGATTRIB_S, name);
@@ -958,7 +959,7 @@ static int read_CF_value(lListElem *ep, int nm, const char *buf,
             DRETURN(0);
          }            
       } 
-      lSetString(ep, CF_value, value);
+      ocs::tom::set<CF_value>(ep, value);
 
       if (sge_strtok_r(nullptr, " \t\n", &context)) {
          /* Allow only one value per line */
@@ -1434,8 +1435,8 @@ static int read_CQ_hostlist(lListElem *ep, int nm, const char *buffer,
    lString2List(buffer, &lp, HR_Type, HR_name, delims); 
 
    if (lp != nullptr) {
-      if (strcasecmp(NONE_STR, lGetHost(lFirst(lp), HR_name)) != 0) {
-         lSetList(ep, CQ_hostlist, lp);
+      if (strcasecmp(NONE_STR, ocs::tom::get<HR_name>(lFirst(lp))) != 0) {
+         ocs::tom::set<CQ_hostlist>(ep, lp);
       } else {
          lFreeList(&lp);
       }
@@ -1485,10 +1486,10 @@ static int write_CE_stringval(const lListElem *ep, int nm, dstring *buffer,
                               lList **alp) {
    const char *s;
 
-   if ((s=lGetString(ep, CE_stringval)) != nullptr) {
+   if ((s=ocs::tom::get<CE_stringval>(ep)) != nullptr) {
       sge_dstring_append(buffer, s);
    } else {
-      sge_dstring_sprintf_append(buffer, "%f", lGetDouble(ep, CE_doubleval));
+      sge_dstring_sprintf_append(buffer, "%f", ocs::tom::get<CE_doubleval>(ep));
    }
    
    return 1;

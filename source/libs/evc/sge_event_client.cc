@@ -56,6 +56,8 @@
 #include "sgeobj/sge_report.h"
 #include "sgeobj/sge_ack.h"
 #include "sgeobj/sge_event.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_EVS.h"
 
 #include "evc/sge_event_client.h"
 #include "evc/msg_evclib.h"
@@ -661,16 +663,16 @@ sge_evc_setup(sge_evc_class_t *thiz, ev_registration_id id, const char *ec_name)
          sge_evc->ec_reg_id = id;
 
          /* initialize event client object */
-         lSetString(sge_evc->ec, EV_name, name);
+         ocs::tom::set<EV_name>(sge_evc->ec, name);
          if (gethostname(tmp_string, CL_MAXHOSTNAMELEN) == 0) {
-            lSetHost(sge_evc->ec, EV_host, tmp_string);
+            ocs::tom::set<EV_host>(sge_evc->ec, tmp_string);
          }
          /*
          ** for internal clients we reuse the data of the gdi context
          */
-         lSetString(sge_evc->ec, EV_commproc, component_get_component_name());
-         lSetUlong(sge_evc->ec, EV_commid, 0);
-         lSetUlong(sge_evc->ec, EV_d_time, DEFAULT_EVENT_DELIVERY_INTERVAL);
+         ocs::tom::set<EV_commproc>(sge_evc->ec, component_get_component_name());
+         ocs::tom::set<EV_commid>(sge_evc->ec, 0);
+         ocs::tom::set<EV_d_time>(sge_evc->ec, DEFAULT_EVENT_DELIVERY_INTERVAL);
 
          /* always subscribe this three events */
          ec2_subscribe_flush(thiz, sgeE_QMASTER_GOES_DOWN, 0);
@@ -678,7 +680,7 @@ sge_evc_setup(sge_evc_class_t *thiz, ev_registration_id id, const char *ec_name)
          ec2_subscribe_flush(thiz, sgeE_ACK_TIMEOUT, 0);
 
          ec2_set_busy_handling(thiz, EV_BUSY_UNTIL_ACK);
-         lSetUlong(sge_evc->ec, EV_busy, 0);
+         ocs::tom::set<EV_busy>(sge_evc->ec, 0);
          ec2_config_changed(thiz);
          ret = true;
       }
@@ -755,7 +757,7 @@ ec2_mark4registration(sge_evc_class_t *thiz) {
 
    sge_evc->need_register = true;
    DPRINTF("*** Need new registration at qmaster ***\n");
-   lSetBool(sge_evc->ec, EV_changed, true);
+   ocs::tom::set<EV_changed>(sge_evc->ec, true);
    DRETURN_VOID;
 }
 
@@ -804,9 +806,9 @@ ec2_set_edtime(sge_evc_class_t *thiz, uint32_t interval) {
    if (sge_evc->ec == nullptr) {
       ERROR(SFNMAX, MSG_EVENT_UNINITIALIZED_EC);
    } else {
-      ret = (lGetUlong(sge_evc->ec, EV_d_time) != interval);
+      ret = (ocs::tom::get<EV_d_time>(sge_evc->ec) != interval);
       if (ret) {
-         lSetUlong(sge_evc->ec, EV_d_time, std::min(interval, static_cast<uint32_t>(CL_DEFINE_CLIENT_CONNECTION_LIFETIME-5)));
+         ocs::tom::set<EV_d_time>(sge_evc->ec, std::min(interval, static_cast<uint32_t>(CL_DEFINE_CLIENT_CONNECTION_LIFETIME-5)));
          ec2_config_changed(thiz);
       }
    }
@@ -833,7 +835,7 @@ ec2_get_edtime(sge_evc_class_t *thiz) {
    if (sge_evc->ec == nullptr) {
       ERROR(SFNMAX, MSG_EVENT_UNINITIALIZED_EC);
    } else {
-      interval = lGetUlong(sge_evc->ec, EV_d_time);
+      interval = ocs::tom::get<EV_d_time>(sge_evc->ec);
    }
 
    DRETURN(interval);
@@ -867,10 +869,10 @@ ec2_set_busy_handling(sge_evc_class_t *thiz, ev_busy_handling handling) {
    } else {
       DPRINTF("EVC: change event client to " sge_u32 "\n", static_cast<uint32_t>(handling));
 
-      ret = (lGetUlong(sge_evc->ec, EV_busy_handling) != handling) ? true : false;
+      ret = (ocs::tom::get<EV_busy_handling>(sge_evc->ec) != handling) ? true : false;
 
       if (ret) {
-         lSetUlong(sge_evc->ec, EV_busy_handling, handling);
+         ocs::tom::set<EV_busy_handling>(sge_evc->ec, handling);
          ec2_config_changed(thiz);
       }
    }
@@ -897,7 +899,7 @@ ec2_get_busy_handling(sge_evc_class_t *thiz) {
    if (sge_evc->ec == nullptr) {
       ERROR(SFNMAX, MSG_EVENT_UNINITIALIZED_EC);
    } else {
-      handling = (ev_busy_handling)lGetUlong(sge_evc->ec, EV_busy_handling);
+      handling = (ev_busy_handling)ocs::tom::get<EV_busy_handling>(sge_evc->ec);
    }
 
    DRETURN(handling);
@@ -1011,13 +1013,13 @@ ec2_register_local(sge_evc_class_t *thiz, [[maybe_unused]] bool exit_on_qmaster_
       lList *alp = nullptr;
       local_t *evc_local = &(thiz->ec_local);
 
-      lSetUlong(sge_evc->ec, EV_id, sge_evc->ec_reg_id);
+      ocs::tom::set<EV_id>(sge_evc->ec, sge_evc->ec_reg_id);
 
       /* initialize, we could do a re-registration */
-      lSetUlong64(sge_evc->ec, EV_last_heard_from, 0);
-      lSetUlong64(sge_evc->ec, EV_last_send_time, 0);
-      lSetUlong64(sge_evc->ec, EV_next_send_time, 0);
-      lSetUlong(sge_evc->ec, EV_next_number, 0);
+      ocs::tom::set<EV_last_heard_from>(sge_evc->ec, 0);
+      ocs::tom::set<EV_last_send_time>(sge_evc->ec, 0);
+      ocs::tom::set<EV_next_send_time>(sge_evc->ec, 0);
+      ocs::tom::set<EV_next_number>(sge_evc->ec, 0);
 
       /*
        *  to add may also mean to modify
@@ -1039,7 +1041,7 @@ ec2_register_local(sge_evc_class_t *thiz, [[maybe_unused]] bool exit_on_qmaster_
          thiz->ec_set_busy_handling(thiz, EV_BUSY_UNTIL_RELEASED);
          evc_local->add_func(&pseudo_packet, sge_evc->ec, &alp, &eclp, evc_local->update_func, evc_local->update_func_arg);
          if (eclp) {
-            sge_evc->ec_reg_id = lGetUlong(lFirst(eclp), EV_id);
+            sge_evc->ec_reg_id = ocs::tom::get<EV_id>(lFirst(eclp));
             lFreeList(&eclp);
          }
       }
@@ -1047,19 +1049,19 @@ ec2_register_local(sge_evc_class_t *thiz, [[maybe_unused]] bool exit_on_qmaster_
       const lListElem *aep;
       if (alp != nullptr) {
          aep = lFirst(alp);
-         ret = ((lGetUlong(aep, AN_status) == STATUS_OK) ? true : false);
+         ret = ((ocs::tom::get<AN_status>(aep) == STATUS_OK) ? true : false);
       }
 
       if (!ret) {
-         if (lGetUlong(aep, AN_quality) == ANSWER_QUALITY_ERROR) {
-            ERROR("%s", lGetString(aep, AN_text));
-            answer_list_add(alpp, lGetString(aep, AN_text),
-                  lGetUlong(aep, AN_status), (answer_quality_t)lGetUlong(aep, AN_quality));
+         if (ocs::tom::get<AN_quality>(aep) == ANSWER_QUALITY_ERROR) {
+            ERROR("%s", ocs::tom::get<AN_text>(aep));
+            answer_list_add(alpp, ocs::tom::get<AN_text>(aep),
+                  ocs::tom::get<AN_status>(aep), (answer_quality_t)ocs::tom::get<AN_quality>(aep));
 
             ret = false;
          }
       } else {
-         lSetBool(sge_evc->ec, EV_changed, false);
+         ocs::tom::set<EV_changed>(sge_evc->ec, false);
          sge_evc->need_register = false;
          DPRINTF("registered local event client with id " sge_u32 "\n", sge_evc->ec_reg_id);
       }
@@ -1111,13 +1113,13 @@ ec2_register(sge_evc_class_t *thiz, bool exit_on_qmaster_down, lList** alpp) {
        *  informations
        */
 
-      lSetUlong(sge_evc->ec, EV_id, sge_evc->ec_reg_id);
+      ocs::tom::set<EV_id>(sge_evc->ec, sge_evc->ec_reg_id);
 
       /* initialize, we could do a re-registration */
-      lSetUlong64(sge_evc->ec, EV_last_heard_from, 0);
-      lSetUlong64(sge_evc->ec, EV_last_send_time, 0);
-      lSetUlong64(sge_evc->ec, EV_next_send_time, 0);
-      lSetUlong(sge_evc->ec, EV_next_number, 0);
+      ocs::tom::set<EV_last_heard_from>(sge_evc->ec, 0);
+      ocs::tom::set<EV_last_send_time>(sge_evc->ec, 0);
+      ocs::tom::set<EV_next_send_time>(sge_evc->ec, 0);
+      ocs::tom::set<EV_next_number>(sge_evc->ec, 0);
 
       lp = lCreateList("registration", EV_Type);
       lAppendElem(lp, lCopyElem(sge_evc->ec));
@@ -1161,7 +1163,7 @@ ec2_register(sge_evc_class_t *thiz, bool exit_on_qmaster_down, lList** alpp) {
 
       aep = lFirst(alp);
 
-      ret = (lGetUlong(aep, AN_status) == STATUS_OK) ? true : false;
+      ret = (ocs::tom::get<AN_status>(aep) == STATUS_OK) ? true : false;
 
       if (ret) {
          const lListElem *new_ec;
@@ -1169,22 +1171,22 @@ ec2_register(sge_evc_class_t *thiz, bool exit_on_qmaster_down, lList** alpp) {
 
          new_ec = lFirst(lp);
          if(new_ec != nullptr) {
-            new_id = lGetUlong(new_ec, EV_id);
+            new_id = ocs::tom::get<EV_id>(new_ec);
          }
 
          if (new_id != 0) {
-            lSetUlong(sge_evc->ec, EV_id, new_id);
+            ocs::tom::set<EV_id>(sge_evc->ec, new_id);
             DPRINTF("REGISTERED with id " sge_u32 "\n", new_id);
-            lSetBool(sge_evc->ec, EV_changed, false);
+            ocs::tom::set<EV_changed>(sge_evc->ec, false);
             sge_evc->need_register = false;
 
          }
       } else {
-         if (lGetUlong(aep, AN_quality) == ANSWER_QUALITY_ERROR) {
-            ERROR("%s", lGetString(aep, AN_text));
-            answer_list_add(alpp, lGetString(aep, AN_text),
-                  lGetUlong(aep, AN_status),
-                  (answer_quality_t)lGetUlong(aep, AN_quality));
+         if (ocs::tom::get<AN_quality>(aep) == ANSWER_QUALITY_ERROR) {
+            ERROR("%s", ocs::tom::get<AN_text>(aep));
+            answer_list_add(alpp, ocs::tom::get<AN_text>(aep),
+                  ocs::tom::get<AN_status>(aep),
+                  (answer_quality_t)ocs::tom::get<AN_quality>(aep));
             lFreeList(&lp);
             lFreeList(&alp);
             /* TODO: remove exit_on_qmaster_down and move to calling code by delivering
@@ -1256,7 +1258,7 @@ static bool ec2_deregister(sge_evc_class_t *thiz) {
          const int commid   = 1;
 
 
-         packint(&pb, lGetUlong(sge_evc->ec, EV_id));
+         packint(&pb, ocs::tom::get<EV_id>(sge_evc->ec));
 
          send_ret = ocs::gdi::ClientServerBase::sge_gdi_send_any_request(0, nullptr, rhost, commproc, commid, &pb, ocs::gdi::ClientServerBase::TAG_EVENT_CLIENT_EXIT, 0, &alp);
 
@@ -1319,7 +1321,7 @@ ec2_subscribe(sge_evc_class_t *thiz, ev_event event) {
          ec2_add_subscriptionElement(thiz, event, EV_NOT_FLUSHED, -1);
       }
 
-      if (lGetBool(sge_evc->ec, EV_changed)) {
+      if (ocs::tom::get<EV_changed>(sge_evc->ec)) {
          ret = true;
       }
    }
@@ -1353,24 +1355,24 @@ ec2_add_subscriptionElement(sge_evc_class_t *thiz, ev_event event, bool flush, i
       WARNING(MSG_EVENT_ILLEGALEVENTID_I, event);
    } else {
       lListElem *sub_el = nullptr;
-      lList *subscribed = lGetListRW(sge_evc->ec, EV_subscribed);
+      lList *subscribed = ocs::tom::get<EV_subscribed>(sge_evc->ec);
       if (event != sgeE_ALL_EVENTS){
          if (!subscribed) {
             subscribed = lCreateList("subscription list", EVS_Type);
-            lSetList(sge_evc->ec, EV_subscribed, subscribed);
+            ocs::tom::set<EV_subscribed>(sge_evc->ec, subscribed);
          } else {
-            sub_el = lGetElemUlongRW(subscribed, EVS_id, event);
+            sub_el = ocs::tom::find_first_rw<EVS_id>(subscribed, event);
          }
 
          if (!sub_el) {
             sub_el =  lCreateElem(EVS_Type);
             lAppendElem(subscribed, sub_el);
 
-            lSetUlong(sub_el, EVS_id, event);
-            lSetBool(sub_el, EVS_flush, flush);
-            lSetUlong(sub_el, EVS_interval, interval);
+            ocs::tom::set<EVS_id>(sub_el, event);
+            ocs::tom::set<EVS_flush>(sub_el, flush);
+            ocs::tom::set<EVS_interval>(sub_el, interval);
 
-            lSetBool(sge_evc->ec, EV_changed, true);
+            ocs::tom::set<EV_changed>(sge_evc->ec, true);
          }
       }
    }
@@ -1400,20 +1402,20 @@ ec2_mod_subscription_flush(sge_evc_class_t *thiz, ev_event event, bool flush, in
    } else if (event < sgeE_ALL_EVENTS || event >= sgeE_EVENTSIZE) {
       WARNING(MSG_EVENT_ILLEGALEVENTID_I, event);
    } else {
-      if (const lList *subscribed = lGetList(sge_evc->ec, EV_subscribed)) {
+      if (const lList *subscribed = ocs::tom::get<EV_subscribed>(sge_evc->ec)) {
          if (event == sgeE_ALL_EVENTS) {
             for (int e = sgeE_ALL_EVENTS + 1; e < static_cast<int>(sgeE_EVENTSIZE); e++) {
-               if (lListElem *sub_el = lGetElemUlongRW(subscribed, EVS_id, e)) {
-                  lSetBool(sub_el, EVS_flush, flush);
-                  lSetUlong(sub_el, EVS_interval, intervall);
-                  lSetBool(sge_evc->ec, EV_changed, true);
+               if (lListElem *sub_el = ocs::tom::find_first_rw<EVS_id>(subscribed, e)) {
+                  ocs::tom::set<EVS_flush>(sub_el, flush);
+                  ocs::tom::set<EVS_interval>(sub_el, intervall);
+                  ocs::tom::set<EV_changed>(sge_evc->ec, true);
                }
             }
          } else {
-            if (lListElem *sub_el = lGetElemUlongRW(subscribed, EVS_id, event)) {
-               lSetBool(sub_el, EVS_flush, flush);
-               lSetUlong(sub_el, EVS_interval, intervall);
-               lSetBool(sge_evc->ec, EV_changed, true);
+            if (lListElem *sub_el = ocs::tom::find_first_rw<EVS_id>(subscribed, event)) {
+               ocs::tom::set<EVS_flush>(sub_el, flush);
+               ocs::tom::set<EVS_interval>(sub_el, intervall);
+               ocs::tom::set<EV_changed>(sge_evc->ec, true);
             }
          }
       }
@@ -1447,14 +1449,14 @@ static bool ec2_mod_subscription_where(sge_evc_class_t *thiz, ev_event event, co
    } else if (event <= sgeE_ALL_EVENTS || event >= sgeE_EVENTSIZE) {
       WARNING(MSG_EVENT_ILLEGALEVENTID_I, event);
    } else {
-      const lList *subscribed = lGetList(sge_evc->ec, EV_subscribed);
+      const lList *subscribed = ocs::tom::get<EV_subscribed>(sge_evc->ec);
       if (event != sgeE_ALL_EVENTS){
          if (subscribed) {
-            lListElem *sub_el = lGetElemUlongRW(subscribed, EVS_id, event);
+            lListElem *sub_el = ocs::tom::find_first_rw<EVS_id>(subscribed, event);
             if (sub_el) {
-               lSetObject(sub_el, EVS_what, lCopyElem(what));
-               lSetObject(sub_el, EVS_where, lCopyElem(where));
-               lSetBool(sge_evc->ec, EV_changed, true);
+               ocs::tom::set<EVS_what>(sub_el, lCopyElem(what));
+               ocs::tom::set<EVS_where>(sub_el, lCopyElem(where));
+               ocs::tom::set<EV_changed>(sge_evc->ec, true);
                ret = true;
             }
          }
@@ -1482,13 +1484,13 @@ ec2_remove_subscriptionElement(sge_evc_class_t *thiz, ev_event event) {
    } else if (event < sgeE_ALL_EVENTS || event >= sgeE_EVENTSIZE) {
       WARNING(MSG_EVENT_ILLEGALEVENTID_I, event);
    } else {
-      lList *subscribed = lGetListRW(sge_evc->ec, EV_subscribed);
+      lList *subscribed = ocs::tom::get<EV_subscribed>(sge_evc->ec);
       if (event != sgeE_ALL_EVENTS) {
          if (subscribed) {
-            lListElem *sub_el = lGetElemUlongRW(subscribed, EVS_id, event);
+            lListElem *sub_el = ocs::tom::find_first_rw<EVS_id>(subscribed, event);
             if (sub_el) {
                if (lRemoveElem(subscribed, &sub_el) == 0) {
-                  lSetBool(sge_evc->ec, EV_changed, true);
+                  ocs::tom::set<EV_changed>(sge_evc->ec, true);
                }
             }
          }
@@ -1564,7 +1566,7 @@ ec2_unsubscribe(sge_evc_class_t *thiz, ev_event event) {
          }
       }
 
-      if (lGetBool(sge_evc->ec, EV_changed)) {
+      if (ocs::tom::get<EV_changed>(sge_evc->ec)) {
          ret = true;
       }
    }
@@ -1620,12 +1622,12 @@ ec2_get_flush(sge_evc_class_t *thiz, ev_event event) {
    } else if (event < sgeE_ALL_EVENTS || event >= sgeE_EVENTSIZE) {
       WARNING(MSG_EVENT_ILLEGALEVENTID_I, event );
    } else {
-      const lListElem *sub_event = lGetElemUlong(lGetList(sge_evc->ec, EV_subscribed), EVS_id, event);
+      const lListElem *sub_event = ocs::tom::find_first<EVS_id>(ocs::tom::get<EV_subscribed>(sge_evc->ec), event);
 
       if (sub_event == nullptr) {
          WARNING(MSG_EVENT_NOTSUBSCRIBED_I, event);
-      } else if (lGetBool(sub_event, EVS_flush)) {
-         ret = lGetUlong(sub_event, EVS_interval);
+      } else if (ocs::tom::get<EVS_flush>(sub_event)) {
+         ret = ocs::tom::get<EVS_interval>(sub_event);
       }
    }
 
@@ -1680,18 +1682,18 @@ ec2_set_flush(sge_evc_class_t *thiz, ev_event event, bool flush, int interval) {
             // logged an error for each id the client had not subscribed, which is
             // the normal case for a client that does not subscribe everything.
             ec2_mod_subscription_flush(thiz, event, EV_FLUSHED, interval);
-            if (lGetBool(sge_evc->ec, EV_changed)) {
+            if (ocs::tom::get<EV_changed>(sge_evc->ec)) {
                ret = true;
             }
          } else {
-            const lListElem *sub_event = lGetElemUlong(lGetList(sge_evc->ec, EV_subscribed), EVS_id, event);
+            const lListElem *sub_event = ocs::tom::find_first<EVS_id>(ocs::tom::get<EV_subscribed>(sge_evc->ec), event);
 
             if (sub_event == nullptr) {
                WARNING(MSG_EVENT_NOTSUBSCRIBED_I, event);
             } else {
                ec2_mod_subscription_flush(thiz, event, EV_FLUSHED, interval);
             }
-            if (lGetBool(sge_evc->ec, EV_changed)) {
+            if (ocs::tom::get<EV_changed>(sge_evc->ec)) {
                ret = true;
             }
          }
@@ -1728,7 +1730,7 @@ ec2_unset_flush(sge_evc_class_t *thiz, ev_event event) {
    } else if (event < sgeE_ALL_EVENTS || event >= sgeE_EVENTSIZE) {
       WARNING(MSG_EVENT_ILLEGALEVENTID_I, event);
    } else {
-      const lListElem *sub_event = lGetElemUlong(lGetList(sge_evc->ec, EV_subscribed), EVS_id, event);
+      const lListElem *sub_event = ocs::tom::find_first<EVS_id>(ocs::tom::get<EV_subscribed>(sge_evc->ec), event);
 
       if (sub_event == nullptr) {
          WARNING(MSG_EVENT_NOTSUBSCRIBED_I, event);
@@ -1736,7 +1738,7 @@ ec2_unset_flush(sge_evc_class_t *thiz, ev_event event) {
          ec2_mod_subscription_flush(thiz, event, EV_NOT_FLUSHED, EV_NO_FLUSH);
       }
 
-      if (lGetBool(sge_evc->ec, EV_changed)) {
+      if (ocs::tom::get<EV_changed>(sge_evc->ec)) {
          ret = true;
       }
    }
@@ -1800,7 +1802,7 @@ ec2_set_busy(sge_evc_class_t *thiz, int busy) {
    if (sge_evc->ec == nullptr) {
       ERROR(SFNMAX, MSG_EVENT_UNINITIALIZED_EC);
    } else {
-      lSetUlong(sge_evc->ec, EV_busy, busy);
+      ocs::tom::set<EV_busy>(sge_evc->ec, busy);
       ret = true;
    }
 
@@ -1831,7 +1833,7 @@ static bool ec2_get_busy(sge_evc_class_t *thiz) {
       ERROR(SFNMAX, MSG_EVENT_UNINITIALIZED_EC);
    } else {
       /* JG: TODO: EV_busy should be boolean datatype */
-      ret = (lGetUlong(sge_evc->ec, EV_busy) > 0) ? true : false;
+      ret = (ocs::tom::get<EV_busy>(sge_evc->ec) > 0) ? true : false;
    }
 
    DRETURN(ret);
@@ -1858,7 +1860,7 @@ static bool ec2_set_session(sge_evc_class_t *thiz, const char *session) {
    if (sge_evc->ec == nullptr) {
       ERROR(SFNMAX, MSG_EVENT_UNINITIALIZED_EC);
    } else {
-      lSetString(sge_evc->ec, EV_session, session);
+      ocs::tom::set<EV_session>(sge_evc->ec, session);
 
       /* force communication to qmaster - we may be out of sync */
       ec2_config_changed(thiz);
@@ -1887,7 +1889,7 @@ static const char *ec2_get_session(sge_evc_class_t *thiz) {
    if (sge_evc->ec == nullptr) {
       ERROR(SFNMAX, MSG_EVENT_UNINITIALIZED_EC);
    } else {
-      ret = lGetString(sge_evc->ec, EV_session);
+      ret = ocs::tom::get<EV_session>(sge_evc->ec);
    }
 
    DRETURN(ret);
@@ -1912,7 +1914,7 @@ ec2_get_id(sge_evc_class_t *thiz) {
       DRETURN(EV_ID_INVALID);
    }
 
-   DRETURN((ev_registration_id)lGetUlong(sge_evc->ec, EV_id));
+   DRETURN((ev_registration_id)ocs::tom::get<EV_id>(sge_evc->ec));
 }
 
 /**
@@ -1930,7 +1932,7 @@ ec2_config_changed(sge_evc_class_t *thiz) {
    auto *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
 
    if (sge_evc != nullptr && sge_evc->ec != nullptr) {
-      lSetBool(sge_evc->ec, EV_changed, true);
+      ocs::tom::set<EV_changed>(sge_evc->ec, true);
    }
 }
 
@@ -1964,8 +1966,8 @@ ec2_commit_local(sge_evc_class_t *thiz, lList **alpp) {
       local_t *evc_local = &(thiz->ec_local);
       const char *ruser = ocs::Bootstrap::get_admin_user();
       const char *rhost = ocs::gdi::ClientBase::gdi_get_act_master_host(false);
-      lSetRef(sge_evc->ec, EV_update_function, (void *)evc_local->update_func);
-      lSetRef(sge_evc->ec, EV_update_function_arg, (void *)evc_local->update_func_arg);
+      ocs::tom::set<EV_update_function>(sge_evc->ec, (void *)evc_local->update_func);
+      ocs::tom::set<EV_update_function_arg>(sge_evc->ec, (void *)evc_local->update_func_arg);
 
       /*
        *  to add may also means to modify
@@ -1974,7 +1976,7 @@ ec2_commit_local(sge_evc_class_t *thiz, lList **alpp) {
       ret = ((evc_local->mod_func(sge_evc->ec, alpp, (char*)ruser, (char*)rhost) == STATUS_OK) ? true : false);
 
       if (ret) {
-         lSetBool(sge_evc->ec, EV_changed, false);
+         ocs::tom::set<EV_changed>(sge_evc->ec, false);
       }
    }
 
@@ -2051,8 +2053,8 @@ ec2_commit(sge_evc_class_t *thiz, lList **alpp) {
 
       lp = lCreateList("change configuration", EV_Type);
       lAppendElem(lp, lCopyElem(sge_evc->ec));
-      if (!lGetBool(sge_evc->ec, EV_changed)) {
-         lSetList(lFirstRW(lp), EV_subscribed, nullptr);
+      if (!ocs::tom::get<EV_changed>(sge_evc->ec)) {
+         ocs::tom::set<EV_subscribed>(lFirstRW(lp), nullptr);
       }
 
       /*
@@ -2063,7 +2065,7 @@ ec2_commit(sge_evc_class_t *thiz, lList **alpp) {
                                       &lp, nullptr, nullptr);
       lFreeList(&lp);
 
-      if (lGetUlong(lFirst(alp), AN_status) == STATUS_OK) {
+      if (ocs::tom::get<AN_status>(lFirst(alp)) == STATUS_OK) {
          lFreeList(&alp);
          ret = true;
       } else {
@@ -2076,7 +2078,7 @@ ec2_commit(sge_evc_class_t *thiz, lList **alpp) {
       }
 
       if (ret) {
-         lSetBool(sge_evc->ec, EV_changed, false);
+         ocs::tom::set<EV_changed>(sge_evc->ec, false);
       }
    }
 
@@ -2127,8 +2129,8 @@ ec2_commit_multi(sge_evc_class_t *thiz, lList **malpp, ocs::gdi::Request *gdi_mu
        */
       lp = lCreateList("change configuration", EV_Type);
       lAppendElem(lp, lCopyElem(sge_evc->ec));
-      if (!lGetBool(sge_evc->ec, EV_changed)) {
-         lSetList(lFirstRW(lp), EV_subscribed, nullptr);
+      if (!ocs::tom::get<EV_changed>(sge_evc->ec)) {
+         ocs::tom::set<EV_subscribed>(lFirstRW(lp), nullptr);
       }
 
       /*
@@ -2153,7 +2155,7 @@ ec2_commit_multi(sge_evc_class_t *thiz, lList **malpp, ocs::gdi::Request *gdi_mu
          gdi_ret = answer_list_handle_request_answer_list(&alp, stderr);
 
          if (gdi_ret == STATUS_OK) {
-            lSetBool(sge_evc->ec, EV_changed, false);  /* TODO: call changed method */
+            ocs::tom::set<EV_changed>(sge_evc->ec, false);  /* TODO: call changed method */
             ret = true;
          }
       }
@@ -2207,7 +2209,7 @@ ec2_get(sge_evc_class_t *thiz, lList **event_list, bool exit_on_qmaster_down) {
    }
 
    if (ret) {
-      if (lGetBool(sge_evc->ec, EV_changed)) {
+      if (ocs::tom::get<EV_changed>(sge_evc->ec)) {
          ret = thiz->ec_commit(thiz, nullptr);
       }
    }
@@ -2271,7 +2273,7 @@ ec2_get(sge_evc_class_t *thiz, lList **event_list, bool exit_on_qmaster_down) {
          }
          if ((fetch_ok = get_event_list(thiz, sync, &report_list, &commlib_error))) {
             lList *new_events = nullptr;
-            lXchgList(lFirstRW(report_list), REP_list, &new_events);
+            ocs::tom::exchange<REP_list>(lFirstRW(report_list), &new_events);
             lFreeList(&report_list);
             if (!ck_event_number(new_events, &(sge_evc->next_event), &wrong_number)) {
                /*
@@ -2345,7 +2347,7 @@ ec2_get(sge_evc_class_t *thiz, lList **event_list, bool exit_on_qmaster_down) {
 
          /* send an ack to the qmaster for all received events */
          if (sge_send_ack_to_qmaster(ACK_EVENT_DELIVERY, sge_evc->next_event - 1,
-                                     lGetUlong(sge_evc->ec, EV_id), nullptr, &alp)
+                                     ocs::tom::get<EV_id>(sge_evc->ec), nullptr, &alp)
                                     != CL_RETVAL_OK) {
             answer_list_output(&alp);
             WARNING(SFNMAX, MSG_COMMD_FAILEDTOSENDACKEVENTDELIVERY);
@@ -2365,7 +2367,7 @@ ec2_get(sge_evc_class_t *thiz, lList **event_list, bool exit_on_qmaster_down) {
    if (lGetNumberOfElem(*event_list) > 0) {
 
       for_each_ep_lv(event, *event_list) {
-         lUlong tmp_type = lGetUlong(event, ET_type);
+         lUlong tmp_type = ocs::tom::get<ET_type>(event);
          if (tmp_type == sgeE_QMASTER_GOES_DOWN || tmp_type == sgeE_ACK_TIMEOUT) {
             ec2_mark4registration(thiz);
             break;
@@ -2419,10 +2421,10 @@ ck_event_number(lList *lp, uint32_t *waiting_for, uint32_t *wrong_number) {
       DPRINTF("received empty event list\n");
    } else {
       DPRINTF("Checking %d events (" sge_u32 "-" sge_u32 ") while waiting for #" sge_u32 "\n",
-              lGetNumberOfElem(lp), lGetUlong(lFirst(lp), ET_number), lGetUlong(lLast(lp), ET_number), i);
+              lGetNumberOfElem(lp), ocs::tom::get<ET_number>(lFirst(lp)), ocs::tom::get<ET_number>(lLast(lp)), i);
 
       /* ensure number of last event is "waiting_for"-1 or higher */
-      if ((j=lGetUlong(lLast(lp), ET_number)) < i-1) {
+      if ((j=ocs::tom::get<ET_number>(lLast(lp))) < i-1) {
          /* error in event numbers */
          /* could happen if the order of two event messages was exchanged */
          if (wrong_number)
@@ -2432,7 +2434,7 @@ ck_event_number(lList *lp, uint32_t *waiting_for, uint32_t *wrong_number) {
       }
 
       /* ensure number of first event is lower or equal "waiting_for" */
-      if ((j=lGetUlong(lFirst(lp), ET_number)) > i) {
+      if ((j=ocs::tom::get<ET_number>(lFirst(lp))) > i) {
          /* error in event numbers */
          if (wrong_number) {
             *wrong_number = j;
@@ -2445,7 +2447,7 @@ ck_event_number(lList *lp, uint32_t *waiting_for, uint32_t *wrong_number) {
             or there are no more events */
          skipped = 0;
          lListElem *ep = lFirstRW(lp);
-         while (ep && lGetUlong(ep, ET_number) < i) {
+         while (ep && ocs::tom::get<ET_number>(ep) < i) {
             tmp = lNextRW(ep);
             lRemoveElem(lp, &ep);
             ep = tmp;
@@ -2458,7 +2460,7 @@ ck_event_number(lList *lp, uint32_t *waiting_for, uint32_t *wrong_number) {
 
          /* ensure number of events increase */
          for_each_rw_lv(lep, lp) {
-            if ((j=lGetUlong(lep, ET_number)) != i++) {
+            if ((j=ocs::tom::get<ET_number>(lep)) != i++) {
                /*
                   do not change waiting_for because
                   we still wait for this number
@@ -2659,7 +2661,7 @@ printf("EVENT_CLIENT %d ends to wait at %s\n", thiz->ec_get_id(thiz), sge_ctime6
 
    *elist = event_list;
 
-   if (lGetElemUlong(event_list, ET_type, sgeE_ACK_TIMEOUT) != nullptr) {
+   if (static_cast<const lListElem *>(ocs::tom::find_first<ET_type>(event_list, sgeE_ACK_TIMEOUT)) != nullptr) {
       ec2_mark4registration(thiz);
    }
    DRETURN(true);
@@ -2714,16 +2716,16 @@ ec2_signal_local(sge_evc_class_t *thiz, lList **alpp, lList *event_list) {
       DRETURN(-1);
    }
 
-   int num_events = lGetNumberOfElem(lGetList(lFirst(event_list), REP_list));
+   int num_events = lGetNumberOfElem(ocs::tom::get<REP_list>(lFirst(event_list)));
    if (num_events > 0) {
       sge_mutex_lock("event_control_mutex", __func__, __LINE__, &(evco->mutex));
       if (evco->new_events != nullptr) {
          lList *events = nullptr;
-         lXchgList(lFirstRW(event_list), REP_list, &(events));
+         ocs::tom::exchange<REP_list>(lFirstRW(event_list), &(events));
          lAddList(evco->new_events, &events);
          events = nullptr;
       } else {
-         lXchgList(lFirstRW(event_list), REP_list, &(evco->new_events));
+         ocs::tom::exchange<REP_list>(lFirstRW(event_list), &(evco->new_events));
       }
 
       evco->triggered = true;

@@ -51,6 +51,7 @@
 #include "sgeobj/sge_str.h"
 #include "sgeobj/sge_range.h"
 #include "sgeobj/msg_sgeobjlib.h"
+#include "tom/ocs_Element.h"
 
 #include "gdi/ocs_gdi_Client.h"
 
@@ -114,11 +115,11 @@ int main(int argc, char **argv) {
    
    if (user_list) {
       if (lGetNumberOfElem(ref_list) == 0){
-         lListElem *id = lAddElemStr(&ref_list, ID_str, "0", ID_Type);
-         lSetList(id, ID_user_list, user_list);
+         lListElem *id = ocs::tom::emplace_back<ID_str>(&ref_list, "0");
+         ocs::tom::set<ID_user_list>(id, user_list);
       } else {
          for_each_rw_lv(id, ref_list){
-            lSetList(id, ID_user_list, user_list);
+            ocs::tom::set<ID_user_list>(id, user_list);
          }
       }
    }
@@ -175,7 +176,7 @@ int main(int argc, char **argv) {
          lList *cp_ref_list = lCopyList("", ref_list);
 
          for_each_rw_lv(idep, cp_ref_list) {
-            lSetUlong(idep, ID_force, !no_forced_deletion);
+            ocs::tom::set<ID_force>(idep, !no_forced_deletion);
          } 
 
          /*
@@ -199,7 +200,7 @@ int main(int argc, char **argv) {
                for (i = 0; i < max; i++){
                   const char* job = nullptr;
                   temp_ref = lFirstRW(cp_ref_list);
-                  job = lGetString(temp_ref, ID_str);
+                  job = ocs::tom::get<ID_str>(temp_ref);
                   /* break if we got job ids first and hit a job name now */
                   if (!isdigit(job[0]) && (i > 0)) {
                      break;
@@ -216,9 +217,9 @@ int main(int argc, char **argv) {
                           ocs::gdi::SubCommand::NONE, &part_ref_list, nullptr, nullptr);
 
             for_each_ep_lv(aep, alp) {
-               status = lGetUlong(aep, AN_status);
+               status = ocs::tom::get<AN_status>(aep);
 
-               if (lGetUlong(aep, AN_quality) == ANSWER_QUALITY_ERROR) {
+               if (ocs::tom::get<AN_quality>(aep) == ANSWER_QUALITY_ERROR) {
                   ret = 1;
                }
 
@@ -226,7 +227,7 @@ int main(int argc, char **argv) {
                    ((first_try  && status != STATUS_OK_DOAGAIN) ||
                     (!first_try && status == STATUS_OK))) {
                   
-                  printf("%s\n", lGetString(aep, AN_text));
+                  printf("%s\n", ocs::tom::get<AN_text>(aep));
                   
                }
                /* but a job name might have extended to more than MAX_DELETE_JOBS */
@@ -318,7 +319,7 @@ lList **alpp
             str_list_parse_from_string(&user_list, *sp, ",");
 
             ep_opt = sge_add_arg(ppcmdline, 0, lListT, *(sp - 1), *sp);
-            lSetList(ep_opt, SPA_argval_lListT, user_list);
+            ocs::tom::set<SPA_argval_lListT>(ep_opt, user_list);
             sp++;
          }
          rp = sp;
@@ -352,7 +353,7 @@ lList **alpp
          }
 
          ep_opt = sge_add_arg(ppcmdline, t_OPT, lListT, *(sp - 1), *sp);
-         lSetList(ep_opt, SPA_argval_lListT, task_id_range_list);
+         ocs::tom::set<SPA_argval_lListT>(ep_opt, task_id_range_list);
 
          sp++;
          rp = sp;
@@ -367,11 +368,11 @@ lList **alpp
         
          for_each_ep_lv(job, del_list) {
             const char *job_name;
-            job_name = lGetString(job, ST_name);
+            job_name = ocs::tom::get<ST_name>(job);
             if(ep == nullptr) {
                ep = sge_add_arg(ppcmdline, 0, lListT, "jobs", nullptr);
             }
-            lAddElemStr(lGetListRef(ep, SPA_argval_lListT), ST_name, job_name, ST_Type);
+            ocs::tom::emplace_back<ST_name>(ocs::tom::list_ref<SPA_argval_lListT>(ep), job_name);
          }  
          sp ++;
          rp = sp;
@@ -425,8 +426,8 @@ lList **alpp
       if(parse_flag(ppcmdline, "-f", alpp, pforce)) 
          continue;
 
-      while ((ep = lGetElemStrRW(*ppcmdline, SPA_switch_val, "-u"))) {
-         lXchgList(ep, SPA_argval_lListT, ppuserlist);
+      while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(*ppcmdline, "-u"))) {
+         ocs::tom::exchange<SPA_argval_lListT>(ep, ppuserlist);
          lRemoveElem(*ppcmdline, &ep);
       } 
 
@@ -439,8 +440,8 @@ lList **alpp
       }
 
        /* we get to this point, than there are -t options without job names. We have to write an error message */
-      if ((ep = lGetElemStrRW(*ppcmdline, SPA_switch_val, "-t")) != nullptr) {
-         answer_list_add_sprintf(alpp, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR, MSG_JOB_LONELY_TOPTION_S, lGetString(ep, SPA_switch_arg));
+      if ((ep = ocs::tom::find_first_rw<SPA_switch_val>(*ppcmdline, "-t")) != nullptr) {
+         answer_list_add_sprintf(alpp, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR, MSG_JOB_LONELY_TOPTION_S, ocs::tom::get<SPA_switch_arg>(ep));
          break;
       }
    }

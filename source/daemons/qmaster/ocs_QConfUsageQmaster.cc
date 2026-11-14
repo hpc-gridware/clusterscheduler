@@ -31,6 +31,7 @@
 #include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_object.h"
+#include "tom/ocs_Element.h"
 #include "uti/sge_rmon_macros.h"
 
 #include "msg_common.h"
@@ -102,8 +103,8 @@ namespace {
             all_ok = false;
             const lListElem *aep;
             for_each_ep(aep, alp) {
-               if (lGetUlong(aep, AN_status) != STATUS_OK) {
-                  answer_list_add(answer_list, lGetString(aep, AN_text), lGetUlong(aep, AN_status),
+               if (ocs::tom::get<AN_status>(aep) != STATUS_OK) {
+                  answer_list_add(answer_list, ocs::tom::get<AN_text>(aep), ocs::tom::get<AN_status>(aep),
                                   ANSWER_QUALITY_ERROR);
                }
             }

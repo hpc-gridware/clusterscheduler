@@ -68,6 +68,10 @@
 #include "sgeobj/sge_load.h"
 #include "sgeobj/sge_str.h"
 #include "sgeobj/ocs_CEntry.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_CE.h"
+#include "sgeobj/tom/ocs_tom_HL.h"
+#include "sgeobj/tom/ocs_tom_RUE.h"
 
 #include "sge_complex_schedd.h"
 #include "sge_resource_utilization.h"
@@ -195,34 +199,34 @@ get_attribute(const char *attrname, const lList *config_attr, const lList *actua
 
    /* resource_attr is a complex_entry (CE_Type) */
    if (config_attr != nullptr) {
-      const lListElem *temp = lGetElemStr(config_attr, CE_name, attrname);
+      const lListElem *temp = ocs::tom::find_first<CE_name>(config_attr, attrname);
       if (temp != nullptr) {
-         cplx_el = lCopyElem(lGetElemStr(centry_list, CE_name, attrname));
+         cplx_el = lCopyElem(ocs::tom::find_first<CE_name>(centry_list, attrname));
          if(cplx_el == nullptr) {
             /* error */
             DPRINTF("==> ERROR in get_attribute(): didn't find centry for %s\n", attrname);
             DRETURN(nullptr);
          }
-         lSetUlong(cplx_el, CE_dominant, layer | DOMINANT_TYPE_FIXED);
-         lSetUlong(cplx_el, CE_pj_dominant, DOMINANT_TYPE_VALUE);  /* default, no value set */ 
-         lSetDouble(cplx_el, CE_doubleval, lGetDouble(temp, CE_doubleval));
-         lSetString(cplx_el, CE_stringval, lGetString(temp, CE_stringval));
+         ocs::tom::set<CE_dominant>(cplx_el, layer | DOMINANT_TYPE_FIXED);
+         ocs::tom::set<CE_pj_dominant>(cplx_el, DOMINANT_TYPE_VALUE);  /* default, no value set */ 
+         ocs::tom::set<CE_doubleval>(cplx_el, ocs::tom::get<CE_doubleval>(temp));
+         ocs::tom::set<CE_stringval>(cplx_el, ocs::tom::get<CE_stringval>(temp));
       }
    }
 
-   if (cplx_el != nullptr && lGetUlong(cplx_el, CE_consumable) != CONSUMABLE_NO) {
-      lSetUlong(cplx_el, CE_pj_dominant, layer | DOMINANT_TYPE_CONSUMABLE);
-      lSetUlong(cplx_el, CE_dominant, DOMINANT_TYPE_VALUE);
+   if (cplx_el != nullptr && ocs::tom::get<CE_consumable>(cplx_el) != CONSUMABLE_NO) {
+      ocs::tom::set<CE_pj_dominant>(cplx_el, layer | DOMINANT_TYPE_CONSUMABLE);
+      ocs::tom::set<CE_dominant>(cplx_el, DOMINANT_TYPE_VALUE);
       /* treat also consumables as fixed attributes when assuming an empty queuing system */
       if (sconf_get_qs_state() == QS_STATE_FULL) {
          const lListElem *actual_el;
-         if (actual_attr != nullptr && (actual_el = lGetElemStr(actual_attr, RUE_name, attrname))) {
+         if (actual_attr != nullptr && (actual_el = ocs::tom::find_first<RUE_name>(actual_attr, attrname))) {
             DSTRING_STATIC(ds, 20);
             ocs::TopologyString binding_inuse;
             double utilized = zero_utilization ? 0 : utilization_max(nullptr, nullptr, actual_el, start_time, duration, 0.0, 0.0, 0.0, false, binding_inuse);
             double pj_doubleval;
 
-            switch (lGetUlong(cplx_el, CE_relop)) {
+            switch (ocs::tom::get<CE_relop>(cplx_el)) {
                case CMPLXGE_OP:
                case CMPLXGT_OP:
                      pj_doubleval = utilized;
@@ -233,46 +237,46 @@ get_attribute(const char *attrname, const lList *config_attr, const lList *actua
                case CMPLXLE_OP:
                case CMPLXNE_OP:
                default:
-                  pj_doubleval = lGetDouble(cplx_el, CE_doubleval) - utilized;
+                  pj_doubleval = ocs::tom::get<CE_doubleval>(cplx_el) - utilized;
                   break;
             }
-            lSetDouble(cplx_el, CE_pj_doubleval, pj_doubleval);
-            lSetString(cplx_el, CE_pj_stringval, sge_dstring_sprintf(&ds, "%8.3f", pj_doubleval));
+            ocs::tom::set<CE_pj_doubleval>(cplx_el, pj_doubleval);
+            ocs::tom::set<CE_pj_stringval>(cplx_el, sge_dstring_sprintf(&ds, "%8.3f", pj_doubleval));
          } else {
             sge_dstring_sprintf(reason, MSG_ATTRIB_ACTUALELEMENTTOATTRIBXMISSING_S, attrname);
             lFreeElem(&cplx_el);
             DRETURN(nullptr);
          }
       } else {
-         lSetDouble(cplx_el, CE_pj_doubleval, lGetDouble(cplx_el, CE_doubleval)); 
-         lSetString(cplx_el, CE_pj_stringval, lGetString(cplx_el, CE_stringval));
+         ocs::tom::set<CE_pj_doubleval>(cplx_el, ocs::tom::get<CE_doubleval>(cplx_el)); 
+         ocs::tom::set<CE_pj_stringval>(cplx_el, ocs::tom::get<CE_stringval>(cplx_el));
       }
    }
 
    /** check for a load value */
    const lListElem *load_el;
-   if (load_attr != nullptr && (load_el = lGetElemStr(load_attr, HL_name, attrname)) &&
-       (sconf_get_qs_state()==QS_STATE_FULL || lGetBool(load_el, HL_is_static)) && (!is_attr_prior(cplx_el, cplx_el))) {
+   if (load_attr != nullptr && (load_el = ocs::tom::find_first<HL_name>(load_attr, attrname)) &&
+       (sconf_get_qs_state()==QS_STATE_FULL || ocs::tom::get<HL_is_static>(load_el)) && (!is_attr_prior(cplx_el, cplx_el))) {
          if (cplx_el == nullptr) {
-            cplx_el = lCopyElem(lGetElemStr(centry_list, CE_name, attrname));
+            cplx_el = lCopyElem(ocs::tom::find_first<CE_name>(centry_list, attrname));
                if (cplx_el == nullptr) {
                   /* error */
                   DRETURN(nullptr);
                }         
-            lSetUlong(cplx_el, CE_dominant, DOMINANT_TYPE_VALUE);
-            lSetUlong(cplx_el, CE_pj_dominant, DOMINANT_TYPE_VALUE);
+            ocs::tom::set<CE_dominant>(cplx_el, DOMINANT_TYPE_VALUE);
+            ocs::tom::set<CE_pj_dominant>(cplx_el, DOMINANT_TYPE_VALUE);
          }
 
          {
             double dval;
-            const char *load_value = lGetString(load_el, HL_value);
+            const char *load_value = ocs::tom::get<HL_value>(load_el);
 
             /* are we working on string values? if though, then it is easy */
-            auto type = static_cast<ocs::CEntry::Type>(lGetUlong(cplx_el, CE_valtype));
+            auto type = static_cast<ocs::CEntry::Type>(ocs::tom::get<CE_valtype>(cplx_el));
             if (type == ocs::CEntry::Type::STR || type == ocs::CEntry::Type::CSTR
                 || type == ocs::CEntry::Type::HOST || type == ocs::CEntry::Type::RESTR) {
-               lSetString(cplx_el, CE_stringval, load_value);
-               lSetUlong(cplx_el, CE_dominant, layer | DOMINANT_TYPE_LOAD);
+               ocs::tom::set<CE_stringval>(cplx_el, load_value);
+               ocs::tom::set<CE_dominant>(cplx_el, layer | DOMINANT_TYPE_LOAD);
             } else { /* working on numerical values */
                char err_str[256];
                uint32_t dom_type = DOMINANT_TYPE_LOAD;
@@ -294,12 +298,12 @@ get_attribute(const char *attrname, const lList *config_attr, const lList *actua
                }
 #endif
                // look for 'name' in our load_adjustments list
-               const lListElem *job_load = lGetElemStr(load_adjustments, CE_name, attrname);
+               const lListElem *job_load = ocs::tom::find_first<CE_name>(load_adjustments, attrname);
                if (job_load != nullptr) {
                   const char *s;
                   double load_correction;
 
-                  s = lGetString(job_load, CE_stringval);
+                  s = ocs::tom::get<CE_stringval>(job_load);
                   if (!parse_ulong_val(&load_correction, nullptr, type, s, err_str, 255)) {
                      ERROR(MSG_SCHEDD_LOADADJUSTMENTSVALUEXNOTNUMERIC_S , attrname);
                   } else if (lc_factor) {
@@ -315,7 +319,7 @@ get_attribute(const char *attrname, const lList *config_attr, const lList *actua
                      load_correction *= lc_factor;
 
                      /* it depends on relop in complex config whether load_correction is pos/neg */
-                     if ( (relop = lGetUlong(cplx_el, CE_relop)) == CMPLXGE_OP || relop == CMPLXGT_OP){
+                     if ( (relop = ocs::tom::get<CE_relop>(cplx_el)) == CMPLXGE_OP || relop == CMPLXGT_OP){
                         old_dval = dval;
                         dval += load_correction;
                      } else {
@@ -338,18 +342,18 @@ get_attribute(const char *attrname, const lList *config_attr, const lList *actua
    
                   This code changes a fixed custom value from a per slot to a per job value!!
                */
-               if ( !(lGetUlong(cplx_el, CE_dominant) == DOMINANT_TYPE_VALUE) &&
-                     (lGetUlong(cplx_el, CE_pj_dominant) == DOMINANT_TYPE_VALUE)){
-                  lSetDouble(cplx_el, CE_pj_doubleval, lGetDouble(cplx_el, CE_doubleval));
-                  lSetString(cplx_el, CE_pj_stringval, lGetString(cplx_el, CE_stringval));
-                  lSetUlong(cplx_el, CE_dominant, DOMINANT_TYPE_VALUE);
-                  lSetUlong(cplx_el, CE_pj_dominant, layer | DOMINANT_TYPE_FIXED);
+               if ( !(ocs::tom::get<CE_dominant>(cplx_el) == DOMINANT_TYPE_VALUE) &&
+                     (ocs::tom::get<CE_pj_dominant>(cplx_el) == DOMINANT_TYPE_VALUE)){
+                  ocs::tom::set<CE_pj_doubleval>(cplx_el, ocs::tom::get<CE_doubleval>(cplx_el));
+                  ocs::tom::set<CE_pj_stringval>(cplx_el, ocs::tom::get<CE_stringval>(cplx_el));
+                  ocs::tom::set<CE_dominant>(cplx_el, DOMINANT_TYPE_VALUE);
+                  ocs::tom::set<CE_pj_dominant>(cplx_el, layer | DOMINANT_TYPE_FIXED);
                } 
  
                if (!is_attr_prior2(cplx_el, dval, CE_pj_doubleval, CE_pj_dominant)){
-                  lSetString(cplx_el, CE_pj_stringval, load_value);
-                  lSetUlong(cplx_el, CE_pj_dominant, layer | dom_type);
-                  lSetDouble(cplx_el, CE_pj_doubleval, dval );
+                  ocs::tom::set<CE_pj_stringval>(cplx_el, load_value);
+                  ocs::tom::set<CE_pj_dominant>(cplx_el, layer | dom_type);
+                  ocs::tom::set<CE_pj_doubleval>(cplx_el, dval );
                }
             } /* end numerical load value */
          }/* end block */
@@ -360,13 +364,13 @@ get_attribute(const char *attrname, const lList *config_attr, const lList *actua
    if (queue != nullptr) {
       bool created=false;
       if (cplx_el == nullptr) {
-         cplx_el = lCopyElem(lGetElemStr(centry_list, CE_name, attrname));
+         cplx_el = lCopyElem(ocs::tom::find_first<CE_name>(centry_list, attrname));
          if(cplx_el == nullptr){
             /* error */
             DRETURN(nullptr);
          }         
-         lSetUlong(cplx_el, CE_dominant, DOMINANT_TYPE_VALUE);
-         lSetUlong(cplx_el, CE_pj_dominant, DOMINANT_TYPE_VALUE);
+         ocs::tom::set<CE_dominant>(cplx_el, DOMINANT_TYPE_VALUE);
+         ocs::tom::set<CE_pj_dominant>(cplx_el, DOMINANT_TYPE_VALUE);
          created = true;
       }
       if (!get_queue_resource(cplx_el, queue, attrname) && created) {
@@ -446,14 +450,14 @@ bool get_queue_resource(lListElem *queue_elem, const lListElem *queue, const cha
   
 
    if (!is_attr_prior2(queue_elem, dval, CE_doubleval, CE_dominant)){
-      lSetUlong(queue_elem,CE_dominant , DOMINANT_LAYER_QUEUE|DOMINANT_TYPE_FIXED);
-      lSetDouble(queue_elem,CE_doubleval , dval);
+      ocs::tom::set<CE_dominant>(queue_elem , DOMINANT_LAYER_QUEUE|DOMINANT_TYPE_FIXED);
+      ocs::tom::set<CE_doubleval>(queue_elem , dval);
 
       if(value){
-         lSetString(queue_elem, CE_stringval, value);
+         ocs::tom::set<CE_stringval>(queue_elem, value);
       } 
       else{
-         lSetString(queue_elem,CE_stringval , as_str);
+         ocs::tom::set<CE_stringval>(queue_elem , as_str);
       }
    }
 
@@ -501,7 +505,7 @@ bool is_attr_prior(lListElem *upper_el, lListElem *lower_el){
       DRETURN(true);
    }
 
-   relop = lGetUlong(upper_el, CE_relop);
+   relop = ocs::tom::get<CE_relop>(upper_el);
    if ((relop == CMPLXEQ_OP || relop == CMPLXNE_OP)) {
       DRETURN(true);
   }
@@ -511,7 +515,7 @@ bool is_attr_prior(lListElem *upper_el, lListElem *lower_el){
       DRETURN(false);
    }   
 
-   if ((dom = lGetUlong(upper_el, CE_pj_dominant)) == 0 || (dom & DOMINANT_TYPE_VALUE) ){
+   if ((dom = ocs::tom::get<CE_pj_dominant>(upper_el)) == 0 || (dom & DOMINANT_TYPE_VALUE) ){
       used_dom_val = CE_doubleval;
       used_dom_str = CE_stringval;      
       used_dom = CE_dominant;
@@ -580,7 +584,7 @@ static bool is_attr_prior2(lListElem *upper_el, double lower_value, int t_value,
       DRETURN(false);
    }
 
-   relop = lGetUlong(upper_el, CE_relop);
+   relop = ocs::tom::get<CE_relop>(upper_el);
    if ((relop == CMPLXEQ_OP || relop == CMPLXNE_OP)) {
       DRETURN(true);
    }
@@ -657,7 +661,7 @@ int queue_complexes2scheduler(lList **new_centry_list, lListElem *queue, const l
 
    lFreeList(new_centry_list);
    *new_centry_list = get_attribute_list(host_list_locate(exechost_list, "global"), 
-                                         queue ? host_list_locate(exechost_list, lGetHost(queue, QU_qhostname)) : nullptr,
+                                         queue ? host_list_locate(exechost_list, ocs::tom::get<QU_qhostname>(queue)) : nullptr,
                                          queue, centry_list, load_adjustments);
    DRETURN(0);
 }
@@ -686,7 +690,7 @@ static lList *get_attribute_list_by_names(lListElem *global, lListElem *host,
    lList *list = nullptr;
 
    for_each_ep_lv(elem, attrnames) {
-      attr = get_attribute_by_name(global, host, queue, lGetString(elem, ST_name), centry_list, load_adjustments,
+      attr = get_attribute_by_name(global, host, queue, ocs::tom::get<ST_name>(elem), centry_list, load_adjustments,
                                    DISPATCH_TIME_NOW, 0);
       if (attr != nullptr) {
          if (list == nullptr) {
@@ -723,22 +727,22 @@ static lList *get_attribute_list(lListElem *global, lListElem *host, lListElem *
    filter = lCreateList("", ST_Type);
 
    if (global != nullptr) {
-      build_name_filter(filter, lGetList(global, EH_load_list), HL_name);
-      build_name_filter(filter, lGetList(global, EH_consumable_config_list), CE_name);
+      build_name_filter(filter, ocs::tom::get<EH_load_list>(global), HL_name);
+      build_name_filter(filter, ocs::tom::get<EH_consumable_config_list>(global), CE_name);
    }    
    if (host != nullptr) {
-      build_name_filter(filter, lGetList(host, EH_load_list), HL_name);
-      build_name_filter(filter, lGetList(host, EH_consumable_config_list), CE_name);
+      build_name_filter(filter, ocs::tom::get<EH_load_list>(host), HL_name);
+      build_name_filter(filter, ocs::tom::get<EH_consumable_config_list>(host), CE_name);
    } 
 
    if (queue != nullptr) {
       int x = 0;  
       for (; x < max_queue_resources; x++){
-         if (lGetElemStr(filter, ST_name, queue_resource[x].name) == nullptr) {
-            lAddElemStr(&filter, ST_name, queue_resource[x].name, ST_Type);
+         if (static_cast<const lListElem *>(ocs::tom::find_first<ST_name>(filter, queue_resource[x].name)) == nullptr) {
+            ocs::tom::emplace_back<ST_name>(&filter, queue_resource[x].name);
          }
       }
-      build_name_filter(filter, lGetList(queue, QU_consumable_config_list), CE_name);
+      build_name_filter(filter, ocs::tom::get<QU_consumable_config_list>(queue), CE_name);
    }
 
 
@@ -768,8 +772,8 @@ static void build_name_filter(lList *filter, const lList *list, int t_name){
    for_each_ep_lv(current,list){
       const char* name = lGetString(current, t_name);
 
-      if (lGetElemStr(filter, ST_name, name) == nullptr) {
-         lAddElemStr(&filter, ST_name, name, ST_Type);
+      if (static_cast<const lListElem *>(ocs::tom::find_first<ST_name>(filter, name)) == nullptr) {
+         ocs::tom::emplace_back<ST_name>(&filter, name);
       }
    }
 }
@@ -928,9 +932,9 @@ int compare_complexes(int slots, lListElem *req_cplx, lListElem *src_cplx, char 
    char availability_text2[STR_LEN_AVAIL_TEXT]; 
    dstring resource_string = DSTRING_INIT;
 
-   const char *name = lGetString(src_cplx, CE_name);
-   auto type = static_cast<ocs::CEntry::Type>(lGetUlong(src_cplx, CE_valtype));
-   uint32_t relop = lGetUlong(src_cplx, CE_relop);
+   const char *name = ocs::tom::get<CE_name>(src_cplx);
+   auto type = static_cast<ocs::CEntry::Type>(ocs::tom::get<CE_valtype>(src_cplx));
+   uint32_t relop = ocs::tom::get<CE_relop>(src_cplx);
 
    if (is_threshold) {
       switch (relop) {
@@ -963,10 +967,10 @@ int compare_complexes(int slots, lListElem *req_cplx, lListElem *src_cplx, char 
    case ocs::CEntry::Type::CSTR:
    case ocs::CEntry::Type::HOST:
    case ocs::CEntry::Type::RESTR:
-      request = lGetString(req_cplx, CE_stringval);
+      request = ocs::tom::get<CE_stringval>(req_cplx);
 
-      offer = lGetString(src_cplx, CE_stringval);
-      monitor_dominance(dom_str, lGetUlong(src_cplx, CE_dominant));
+      offer = ocs::tom::get<CE_stringval>(src_cplx);
+      monitor_dominance(dom_str, ocs::tom::get<CE_dominant>(src_cplx));
 #if 0
       DPRINTF("%s(\"%s\", \"%s\")\n", type==ocs::CEntry::Type::STR?"strcmp":"strcasecmp", request, offer);
 #endif
@@ -986,7 +990,7 @@ int compare_complexes(int slots, lListElem *req_cplx, lListElem *src_cplx, char 
       // CE_doubleval carries the parsed amount; see the comment in ri_time_by_slots().
       // The previous code re-parsed CE_stringval here and silently substituted 0 when the
       // parse failed, which turned a malformed request into a request for nothing.
-      req_dl = lGetDouble(req_cplx, CE_doubleval);
+      req_dl = ocs::tom::get<CE_doubleval>(req_cplx);
 
       if (is_threshold) {
          m1 = m2 = 0; /* nothing exceeded per default */
@@ -995,7 +999,7 @@ int compare_complexes(int slots, lListElem *req_cplx, lListElem *src_cplx, char 
       }
 
       /* is there a per job limit */
-      if (!(lGetUlong(src_cplx, CE_pj_dominant) & (DOMINANT_TYPE_VALUE))) {
+      if (!(ocs::tom::get<CE_pj_dominant>(src_cplx) & (DOMINANT_TYPE_VALUE))) {
          /* Actually request matching for utilization attributes 
             fails if request is higher than what we get as per job 
             limit also for attributes marked as consumable.
@@ -1004,13 +1008,13 @@ int compare_complexes(int slots, lListElem *req_cplx, lListElem *src_cplx, char 
             value or a consumable resource value) plus the jobs request 
             may not exceed the maximal utilization from (global) host 
             or queue - but only if the attributes marked as consumable. */
-         src_dl = lGetDouble(src_cplx, CE_pj_doubleval);
+         src_dl = ocs::tom::get<CE_pj_doubleval>(src_cplx);
          
          req_all_slots = req_dl*slots;
 
          m1 = resource_cmp(used_relop, req_all_slots, src_dl);
 
-         monitor_dominance(dom_str, lGetUlong(src_cplx, CE_pj_dominant));
+         monitor_dominance(dom_str, ocs::tom::get<CE_pj_dominant>(src_cplx));
 
          switch (type) {
          case ocs::CEntry::Type::BOOL:
@@ -1062,16 +1066,16 @@ int compare_complexes(int slots, lListElem *req_cplx, lListElem *src_cplx, char 
       }
 
       /* is there a per slot limit */
-      if (!(lGetUlong(src_cplx, CE_dominant) & (DOMINANT_TYPE_VALUE)) ||     /* per slot set || */
-              ((lGetUlong(src_cplx, CE_dominant) & (DOMINANT_TYPE_VALUE)) && /* (per slot not set && */
-           (lGetUlong(src_cplx, CE_pj_dominant) & (DOMINANT_TYPE_VALUE)) &&  /* and per job not set) */
+      if (!(ocs::tom::get<CE_dominant>(src_cplx) & (DOMINANT_TYPE_VALUE)) ||     /* per slot set || */
+              ((ocs::tom::get<CE_dominant>(src_cplx) & (DOMINANT_TYPE_VALUE)) && /* (per slot not set && */
+           (ocs::tom::get<CE_pj_dominant>(src_cplx) & (DOMINANT_TYPE_VALUE)) &&  /* and per job not set) */
             force_existence)) {
 
-         src_dl = lGetDouble(src_cplx, CE_doubleval);
+         src_dl = ocs::tom::get<CE_doubleval>(src_cplx);
          req_all_slots = req_dl;
          m2 = resource_cmp(used_relop, req_all_slots, src_dl);
 
-         monitor_dominance(dom_str, lGetUlong(src_cplx, CE_dominant));
+         monitor_dominance(dom_str, ocs::tom::get<CE_dominant>(src_cplx));
 
          switch (type) {
          case ocs::CEntry::Type::BOOL:
@@ -1177,13 +1181,13 @@ get_attribute_by_name(const lListElem *global, const lListElem *host, const lLis
 
    if (global != nullptr) {
       double lc_factor = 0;
-      load_attr = lGetList(global, EH_load_list);  
-      config_attr = lGetList(global, EH_consumable_config_list);
-      actual_attr = lGetList(global, EH_resource_utilization);
+      load_attr = ocs::tom::get<EH_load_list>(global);  
+      config_attr = ocs::tom::get<EH_consumable_config_list>(global);
+      actual_attr = ocs::tom::get<EH_resource_utilization>(global);
 
       /* is there a multiplier for load correction (may be not in qstat, qmon etc) */
-      if (lGetPosViaElem(global, EH_load_correction_factor, SGE_NO_ABORT) >= 0) {
-         if ((lc_factor=lGetUlong(global, EH_load_correction_factor)) != 0) {
+      if (ocs::tom::has<EH_load_correction_factor>(global)) {
+         if ((lc_factor=ocs::tom::get<EH_load_correction_factor>(global)) != 0) {
             lc_factor = ((double)lc_factor)/100;
          }   
       }
@@ -1194,13 +1198,13 @@ get_attribute_by_name(const lListElem *global, const lListElem *host, const lLis
 
    if (host != nullptr) {   
       double lc_factor = 0;
-      load_attr = lGetList(host, EH_load_list); 
-      config_attr = lGetList(host, EH_consumable_config_list);
-      actual_attr = lGetList(host, EH_resource_utilization);
+      load_attr = ocs::tom::get<EH_load_list>(host); 
+      config_attr = ocs::tom::get<EH_consumable_config_list>(host);
+      actual_attr = ocs::tom::get<EH_resource_utilization>(host);
 
       /* is there a multiplier for load correction (may be not in qstat, qmon etc) */
-      if (lGetPosViaElem(host, EH_load_correction_factor, SGE_NO_ABORT) >= 0) {
-         if ((lc_factor=lGetUlong(host, EH_load_correction_factor)) != 0) {
+      if (ocs::tom::has<EH_load_correction_factor>(host)) {
+         if ((lc_factor=ocs::tom::get<EH_load_correction_factor>(host)) != 0) {
             lc_factor = ((double)lc_factor)/100;
          }
       }
@@ -1219,8 +1223,8 @@ get_attribute_by_name(const lListElem *global, const lListElem *host, const lLis
    }
 
    if (queue != nullptr) {
-      config_attr = lGetList(queue, QU_consumable_config_list);
-      actual_attr = lGetList(queue, QU_resource_utilization);
+      config_attr = ocs::tom::get<QU_consumable_config_list>(queue);
+      actual_attr = ocs::tom::get<QU_resource_utilization>(queue);
       
       queue_el = get_attribute(attrname, config_attr, actual_attr, nullptr, centry_list, load_adjustments,
                                queue, DOMINANT_LAYER_QUEUE, 0.0, nullptr, false, start_time, duration);
@@ -1317,22 +1321,22 @@ bool request_cq_rejected(const lList *hard_resource_list, const lListElem *cq,
 
    for_each_ep_lv(req, hard_resource_list) {
       int cqfld, valfld;
-      name = lGetString(req, CE_name);
+      name = ocs::tom::get<CE_name>(req);
 
-      if (!(ce = lGetElemStr(centry_list, CE_name, name))) {
+      if (!(ce = ocs::tom::find_first<CE_name>(centry_list, name))) {
          sge_dstring_sprintf(unsatisfied, "unknown: " SFN, name);
          DRETURN(true);
       }
 
-      request = lGetString(req, CE_stringval);
-      relop = lGetUlong(ce, CE_relop);
+      request = ocs::tom::get<CE_stringval>(req);
+      relop = ocs::tom::get<CE_relop>(ce);
 
       if (get_rsrc(name, true, nullptr, &cqfld, &valfld, &type)==0) {
          if (cqfld == 0) {
             continue;
          } 
       } else {
-         type = static_cast<ocs::CEntry::Type>(lGetUlong(ce, CE_valtype));
+         type = static_cast<ocs::CEntry::Type>(ocs::tom::get<CE_valtype>(ce));
          cqfld = CQ_consumable_config_list;
          valfld = ACELIST_value;
       }
@@ -1351,7 +1355,7 @@ bool request_cq_rejected(const lList *hard_resource_list, const lListElem *cq,
                rejected = false;
                break;
             }
-            offer = lGetString(val_ce, CE_stringval);
+            offer = ocs::tom::get<CE_stringval>(val_ce);
          } else {
             /* queue resource upper limit */ 
             offer = lGetString(alist, valfld);
@@ -1373,7 +1377,7 @@ bool request_cq_rejected(const lList *hard_resource_list, const lListElem *cq,
             {
                // the request side is already parsed (CE_doubleval); only the offer, which
                // comes from a queue or host configuration value, still needs parsing
-               double req_dl = lGetDouble(req, CE_doubleval);
+               double req_dl = ocs::tom::get<CE_doubleval>(req);
                double off_dl;
                if (!parse_ulong_val(&off_dl, nullptr, type, offer, nullptr, 0)) {
                   DPRINTF("%s is not of type %s\n", offer, map_type2str(type));
@@ -1395,12 +1399,12 @@ bool request_cq_rejected(const lList *hard_resource_list, const lListElem *cq,
       }
 
       if (rejected) {
-         DPRINTF("cluster queue \"%s\" will never match due to -l %s=%s\n", lGetString(cq, CQ_name), name, request);
+         DPRINTF("cluster queue \"%s\" will never match due to -l %s=%s\n", ocs::tom::get<CQ_name>(cq), name, request);
          sge_dstring_sprintf(unsatisfied, SFN "=" SFN, name, request);
          DRETURN(true);
       }
 
-      DPRINTF("cluster queue \"%s\" might be suited according -l %s=%s\n", lGetString(cq, CQ_name), name, request);
+      DPRINTF("cluster queue \"%s\" might be suited according -l %s=%s\n", ocs::tom::get<CQ_name>(cq), name, request);
    }
 
    DRETURN(false);

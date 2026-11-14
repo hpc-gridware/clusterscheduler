@@ -62,6 +62,8 @@
 #include "sgeobj/sge_href.h"
 #include "sgeobj/sge_utility.h"
 #include "sgeobj/msg_sgeobjlib.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_HR.h"
 
 #include <cinttypes>
 #include "msg_common.h"
@@ -106,17 +108,17 @@ bool hgroup_update_cache(lListElem *hgroup, lList **answer_list, const lList *ma
    ret = hgroup_find_all_references(hgroup, answer_list, master_hgroup_list, &used_hosts, nullptr);
 
    if (ret) {
-      lSetList(hgroup, HGRP_cached_hosts, used_hosts);   // takes ownership
+      ocs::tom::set<HGRP_cached_hosts>(hgroup, used_hosts);   // takes ownership
       if (++next_version == 0) {
          next_version = 1;                               // 0 means "not computed"
       }
-      lSetUlong(hgroup, HGRP_cache_version, next_version);
+      ocs::tom::set<HGRP_cache_version>(hgroup, next_version);
    } else {
       // Leave no half-resolved cache behind: an invalid cache must look
       // uncomputed, never plausible-but-wrong.
       lFreeList(&used_hosts);
-      lSetList(hgroup, HGRP_cached_hosts, nullptr);
-      lSetUlong(hgroup, HGRP_cache_version, 0);
+      ocs::tom::set<HGRP_cached_hosts>(hgroup, nullptr);
+      ocs::tom::set<HGRP_cache_version>(hgroup, 0);
    }
 
    DRETURN(ret);
@@ -174,7 +176,7 @@ bool hgroup_list_update_caches(lList *master_hgroup_list, lList **answer_list) {
  *       it must take both fields or neither.
  */
 bool hgroup_has_host_cache(const lListElem *hgroup) {
-   return hgroup != nullptr && lGetUlong(hgroup, HGRP_cache_version) != 0;
+   return hgroup != nullptr && ocs::tom::get<HGRP_cache_version>(hgroup) != 0;
 }
 
 /**
@@ -206,7 +208,7 @@ bool hgroup_cache_contains_host(const lListElem *hgroup, const char *hostname) {
    if (hgroup == nullptr || hostname == nullptr) {
       return false;
    }
-   return lGetElemHost(lGetList(hgroup, HGRP_cached_hosts), HR_name, hostname) != nullptr;
+   return static_cast<const lListElem *>(ocs::tom::find_first<HR_name>(ocs::tom::get<HGRP_cached_hosts>(hgroup), hostname)) != nullptr;
 }
 
 /**
@@ -252,7 +254,7 @@ bool hgroup_contains_host(const lListElem *hgroup, const char *hostname, const l
    bool ret = false;
 
    if (hgroup_find_all_references(hgroup, &answer_list, master_hgroup_list, &used_hosts, nullptr)) {
-      ret = lGetElemHost(used_hosts, HR_name, hostname) != nullptr;
+      ret = static_cast<const lListElem *>(ocs::tom::find_first<HR_name>(used_hosts, hostname)) != nullptr;
    }
    lFreeList(&used_hosts);
    lFreeList(&answer_list);
@@ -283,23 +285,23 @@ hgroup_why_named(const lListElem *hgroup, const char *hostname, const lList *mas
       return false;
    }
 
-   const lList *member_list = lGetList(hgroup, HGRP_host_list);
+   const lList *member_list = ocs::tom::get<HGRP_host_list>(hgroup);
    const lListElem *member;
 
    // the names of this group before those of the groups it references, so that
    // the nearest explanation is the one reported
    for_each_ep(member, member_list) {
-      const char *name = lGetHost(member, HR_name);
+      const char *name = ocs::tom::get<HR_name>(member);
 
       if (ocs::classify_member(name) == ocs::MemberClass::LITERAL_HOST &&
           sge_hostcmp(name, hostname) == 0) {
-         sge_dstring_copy_string(group, lGetHost(hgroup, HGRP_name));
+         sge_dstring_copy_string(group, ocs::tom::get<HGRP_name>(hgroup));
          return true;
       }
    }
 
    for_each_ep(member, member_list) {
-      const char *name = lGetHost(member, HR_name);
+      const char *name = ocs::tom::get<HR_name>(member);
 
       if (ocs::classify_member(name) == ocs::MemberClass::GROUP_REFERENCE &&
           hgroup_why_named(hgroup_list_locate(master_hgroup_list, name), hostname,
@@ -339,7 +341,7 @@ hgroup_why(const lListElem *hgroup, const char *hostname, const lList *master_hg
 
    if (hgroup_why_named(hgroup, hostname, master_hgroup_list, 0, group)) {
       const char *found_in = sge_dstring_get_string(group);
-      const char *asked = lGetHost(hgroup, HGRP_name);
+      const char *asked = ocs::tom::get<HGRP_name>(hgroup);
 
       // the group is reported only when it is not the one that was asked
       if (found_in != nullptr && asked != nullptr && strcmp(found_in, asked) == 0) {
@@ -357,7 +359,7 @@ hgroup_why(const lListElem *hgroup, const char *hostname, const lList *master_hg
 
    if (route == ocs::Matcher::Route::MATCHER) {
       const char *found_in = sge_dstring_get_string(group);
-      const char *asked = lGetHost(hgroup, HGRP_name);
+      const char *asked = ocs::tom::get<HGRP_name>(hgroup);
 
       if (found_in != nullptr && asked != nullptr && strcmp(found_in, asked) == 0) {
          sge_dstring_clear(group);
@@ -390,18 +392,18 @@ hgroup_split_members(const lListElem *hgroup, lList **hosts, lList **groups, lLi
    bool has_matcher = false;
    const lListElem *member;
 
-   for_each_ep(member, lGetList(hgroup, HGRP_host_list)) {
-      const char *name = lGetHost(member, HR_name);
+   for_each_ep(member, ocs::tom::get<HGRP_host_list>(hgroup)) {
+      const char *name = ocs::tom::get<HR_name>(member);
 
       switch (ocs::classify_member(name)) {
          case ocs::MemberClass::LITERAL_HOST:
-            lAddElemHost(hosts, HR_name, name, HR_Type);
+            ocs::tom::emplace_back<HR_name>(hosts, name);
             break;
          case ocs::MemberClass::GROUP_REFERENCE:
-            lAddElemHost(groups, HR_name, name, HR_Type);
+            ocs::tom::emplace_back<HR_name>(groups, name);
             break;
          case ocs::MemberClass::MATCHER:
-            lAddElemHost(matchers, HR_name, name, HR_Type);
+            ocs::tom::emplace_back<HR_name>(matchers, name);
             has_matcher = true;
             break;
       }
@@ -587,7 +589,7 @@ hgroup_list_locate(const lList *this_list, const char *group) {
 
    lListElem *ret = nullptr;
    
-   ret = lGetElemHostRW(this_list, HGRP_name, group);
+   ret = ocs::tom::find_first_rw<HGRP_name>(this_list, group);
    DRETURN(ret);
 }
 
@@ -614,8 +616,8 @@ hgroup_create(lList **answer_list, const char *name, lList *href_or_groupref, bo
       if(!is_name_validate || hgroup_check_name(answer_list, name) ) {
          ret = lCreateElem(HGRP_Type);
          if (ret != nullptr) {
-            lSetHost(ret, HGRP_name, name);
-            lSetList(ret, HGRP_host_list, href_or_groupref);
+            ocs::tom::set<HGRP_name>(ret, name);
+            ocs::tom::set<HGRP_host_list>(ret, href_or_groupref);
          } else {
             snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_MEM_MEMORYALLOCFAILED_S, __func__);
             answer_list_add(answer_list, SGE_EVENT, STATUS_EMALLOC, ANSWER_QUALITY_ERROR);
@@ -648,16 +650,16 @@ bool hgroup_add_references(lListElem *this_elem, lList **answer_list,
    if (this_elem != nullptr && href_or_groupref != nullptr) {
       lList *href_list = nullptr;   /* HR_Type */
 
-      lXchgList(this_elem, HGRP_host_list, &href_list);
+      ocs::tom::exchange<HGRP_host_list>(this_elem, &href_list);
       for_each_ep_lv(href, href_or_groupref) {
-         const char *name = lGetHost(href, HR_name);
+         const char *name = ocs::tom::get<HR_name>(href);
    
          ret &= href_list_add(&href_list, answer_list, name);
          if (!ret) {
             break;
          }
       } 
-      lXchgList(this_elem, HGRP_host_list, &href_list);
+      ocs::tom::exchange<HGRP_host_list>(this_elem, &href_list);
    } else {
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_INAVLID_PARAMETER_IN_S, __func__);
       answer_list_add(answer_list, SGE_EVENT, STATUS_ERROR1, ANSWER_QUALITY_ERROR);
@@ -693,7 +695,7 @@ bool hgroup_find_all_references(const lListElem *this_elem, lList **answer_list,
    if (this_elem != nullptr && master_list != nullptr) {
       lList *href_list = nullptr;   /* HR_Type */
 
-      const char *name = lGetHost(this_elem, HGRP_name);
+      const char *name = ocs::tom::get<HGRP_name>(this_elem);
       ret &= href_list_add(&href_list, answer_list, name);
 
       if (ret) {
@@ -729,7 +731,7 @@ bool hgroup_find_references(const lListElem *this_elem, lList **answer_list,
    bool ret = true;
 
    if (this_elem != nullptr && master_list != nullptr) {
-      const char *name = lGetHost(this_elem, HGRP_name);
+      const char *name = ocs::tom::get<HGRP_name>(this_elem);
       lList *href_list = nullptr;   /* HR_Type */
 
       ret &= href_list_add(&href_list, answer_list, name);
@@ -770,7 +772,7 @@ bool hgroup_find_all_referencees(const lListElem *this_elem,
       lList *href_list = nullptr;
       const char *name;
 
-      name = lGetHost(this_elem, HGRP_name);
+      name = ocs::tom::get<HGRP_name>(this_elem);
       ret &= href_list_add(&href_list, answer_list, name);
 
       if (ret) {
@@ -812,7 +814,7 @@ bool hgroup_find_referencees(const lListElem *this_elem,
 
    if (this_elem != nullptr) {
       if (occupants_groups != nullptr) {
-         const char *name = lGetHost(this_elem, HGRP_name);
+         const char *name = ocs::tom::get<HGRP_name>(this_elem);
          lList *href_list = nullptr;
 
          ret &= href_list_add(&href_list, answer_list, name);
@@ -854,7 +856,7 @@ bool hgroup_list_exists(const lList *this_list, lList **answer_list,
 
    if (href_list != nullptr && this_list != nullptr) {
       for_each_ep_lv(href, href_list) {
-         const char *name = lGetHost(href, HR_name);
+         const char *name = ocs::tom::get<HR_name>(href);
 
          if (ocs::is_hgroup_name(name)) {
             lListElem *hgroup = hgroup_list_locate(this_list, name);
@@ -898,7 +900,7 @@ bool hgroup_list_find_matching_and_resolve(const lList *this_list,
       const bool hgroup_pattern_is_expression = ocs::is_expression(hgroup_pattern);
 
       for_each_ep_lv(hgroup, this_list) {
-         const char *hgroup_name = lGetHost(hgroup, HGRP_name);
+         const char *hgroup_name = ocs::tom::get<HGRP_name>(hgroup);
          
          /* use hostgroup expression */
          if (!sge_eval_expression(ocs::CEntry::Type::HOST,hgroup_pattern, hgroup_name, nullptr, true, hgroup_pattern_is_expression)) {
@@ -908,7 +910,7 @@ bool hgroup_list_find_matching_and_resolve(const lList *this_list,
             // a host may belong to several of the matching groups; it is collected once
             for_each_ep_lv(tmp_href, tmp_used_hosts) {
                if (used_hosts != nullptr) {
-                  href_list_add(used_hosts, answer_list, lGetHost(tmp_href, HR_name));
+                  href_list_add(used_hosts, answer_list, ocs::tom::get<HR_name>(tmp_href));
                }
             }
             lFreeList(&tmp_used_hosts);
@@ -941,12 +943,12 @@ bool hgroup_list_find_matching(const lList *this_list, lList **answer_list,
       const bool hgroup_pattern_is_expression = ocs::is_expression(hgroup_pattern);
 
       for_each_ep_lv(hgroup, this_list) {
-         const char *hgroup_name = lGetHost(hgroup, HGRP_name);
+         const char *hgroup_name = ocs::tom::get<HGRP_name>(hgroup);
 
    /* use hostgroup expression */
          if (!sge_eval_expression(ocs::CEntry::Type::HOST, hgroup_pattern, hgroup_name, nullptr, true, hgroup_pattern_is_expression)) {
             if (href_list != nullptr) {
-               lAddElemHost(href_list, HR_name, hgroup_name, HR_Type);
+               ocs::tom::emplace_back<HR_name>(href_list, hgroup_name);
             }
          }
       }

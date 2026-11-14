@@ -24,6 +24,7 @@
 
 #include "sgeobj/ocs_Category.h"
 #include "sgeobj/ocs_DataStore.h"
+#include "tom/ocs_Element.h"
 
 #include "uti/sge_log.h"
 #include "uti/sge_mtutil.h"
@@ -43,9 +44,9 @@ namespace ocs {
       if (!intermediate) {
          // get the job category string
          const lList *master_category_list = *ocs::DataStore::get_master_list(SGE_TYPE_CATEGORY);
-         uint32_t category_id = lGetUlong(job, JB_category_id);
-         lListElem *category = lGetElemUlongRW(master_category_list, CT_id, category_id);
-         const char *category_string = lGetString(category, CT_str);
+         uint32_t category_id = ocs::tom::get<JB_category_id>(job);
+         lListElem *category = ocs::tom::find_first_rw<CT_id>(master_category_list, category_id);
+         const char *category_string = ocs::tom::get<CT_str>(category);
 
          // get accounting data
          rapidjson::StringBuffer json_buffer;

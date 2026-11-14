@@ -30,6 +30,7 @@
 #include "ocs_QQuotaParameter.h"
 
 #include "sgeobj/cull/sge_param_SPP_L.h"
+#include "tom/ocs_Element.h"
 
 ocs::QQuotaParameter::~QQuotaParameter() {
    DENTER(TOP_LAYER);
@@ -59,34 +60,34 @@ void ocs::QQuotaParameter::set_bundle(const lList *bundle) {
    ProcedureParameter::set_bundle(bundle);
 
    // -q
-   lListElem *queue_name_param = lGetElemStrRW(bundle, SPP_name, QUEUE_NAME_LIST);
+   lListElem *queue_name_param = ocs::tom::find_first_rw<SPP_name>(bundle, QUEUE_NAME_LIST);
    queue_name_list_ = nullptr;
-   lXchgList(queue_name_param, SPP_value_list, &queue_name_list_);
+   ocs::tom::exchange<SPP_value_list>(queue_name_param, &queue_name_list_);
 
    // -h
-   lListElem *host_name_param = lGetElemStrRW(bundle, SPP_name, HOSTNAME_LIST);
+   lListElem *host_name_param = ocs::tom::find_first_rw<SPP_name>(bundle, HOSTNAME_LIST);
    host_name_list_ = nullptr;
-   lXchgList(host_name_param, SPP_value_list, &host_name_list_);
+   ocs::tom::exchange<SPP_value_list>(host_name_param, &host_name_list_);
 
    // -pe
-   lListElem *pe_name_param = lGetElemStrRW(bundle, SPP_name, PE_NAME_LIST);
+   lListElem *pe_name_param = ocs::tom::find_first_rw<SPP_name>(bundle, PE_NAME_LIST);
    pe_name_list_ = nullptr;
-   lXchgList(pe_name_param, SPP_value_list, &pe_name_list_);
+   ocs::tom::exchange<SPP_value_list>(pe_name_param, &pe_name_list_);
 
    // -P
-   lListElem *prj_name_param = lGetElemStrRW(bundle, SPP_name, PROJECT_NAME_LIST);
+   lListElem *prj_name_param = ocs::tom::find_first_rw<SPP_name>(bundle, PROJECT_NAME_LIST);
    project_name_list_ = nullptr;
-   lXchgList(prj_name_param, SPP_value_list, &project_name_list_);
+   ocs::tom::exchange<SPP_value_list>(prj_name_param, &project_name_list_);
 
    // -l
-   lListElem *resource_match_param = lGetElemStrRW(bundle, SPP_name, RESOURCE_MATCH_LIST);
+   lListElem *resource_match_param = ocs::tom::find_first_rw<SPP_name>(bundle, RESOURCE_MATCH_LIST);
    resource_match_list_ = nullptr;
-   lXchgList(resource_match_param, SPP_value_list, &resource_match_list_);
+   ocs::tom::exchange<SPP_value_list>(resource_match_param, &resource_match_list_);
 
    // -u
-   lListElem *user_match_param = lGetElemStrRW(bundle, SPP_name, USER_NAME_LIST);
+   lListElem *user_match_param = ocs::tom::find_first_rw<SPP_name>(bundle, USER_NAME_LIST);
    user_name_list = nullptr;
-   lXchgList(user_match_param, SPP_value_list, &user_name_list);
+   ocs::tom::exchange<SPP_value_list>(user_match_param, &user_name_list);
 }
 
 lList *ocs::QQuotaParameter::get_bundle() {
@@ -97,28 +98,28 @@ lList *ocs::QQuotaParameter::get_bundle() {
    lList *bundle =  ProcedureParameter::get_bundle();
 
    // -q
-   ep = lAddElemStr(&bundle, SPP_name, QUEUE_NAME_LIST, SPP_Type);
-   lSetList(ep, SPP_value_list, lCopyList(nullptr, queue_name_list_));
+   ep = ocs::tom::emplace_back<SPP_name>(&bundle, QUEUE_NAME_LIST);
+   ocs::tom::set<SPP_value_list>(ep, lCopyList(nullptr, queue_name_list_));
 
    // -h
-   ep = lAddElemStr(&bundle, SPP_name, HOSTNAME_LIST, SPP_Type);
-   lSetList(ep, SPP_value_list, lCopyList(nullptr, host_name_list_));
+   ep = ocs::tom::emplace_back<SPP_name>(&bundle, HOSTNAME_LIST);
+   ocs::tom::set<SPP_value_list>(ep, lCopyList(nullptr, host_name_list_));
 
    // -pe
-   ep = lAddElemStr(&bundle, SPP_name, PE_NAME_LIST, SPP_Type);
-   lSetList(ep, SPP_value_list, lCopyList(nullptr, pe_name_list_));
+   ep = ocs::tom::emplace_back<SPP_name>(&bundle, PE_NAME_LIST);
+   ocs::tom::set<SPP_value_list>(ep, lCopyList(nullptr, pe_name_list_));
 
    // -P
-   ep = lAddElemStr(&bundle, SPP_name, PROJECT_NAME_LIST, SPP_Type);
-   lSetList(ep, SPP_value_list, lCopyList(nullptr, project_name_list_));
+   ep = ocs::tom::emplace_back<SPP_name>(&bundle, PROJECT_NAME_LIST);
+   ocs::tom::set<SPP_value_list>(ep, lCopyList(nullptr, project_name_list_));
 
    // -l
-   ep = lAddElemStr(&bundle, SPP_name, RESOURCE_MATCH_LIST, SPP_Type);
-   lSetList(ep, SPP_value_list, lCopyList(nullptr, resource_match_list_));
+   ep = ocs::tom::emplace_back<SPP_name>(&bundle, RESOURCE_MATCH_LIST);
+   ocs::tom::set<SPP_value_list>(ep, lCopyList(nullptr, resource_match_list_));
 
    // -u
-   ep = lAddElemStr(&bundle, SPP_name, USER_NAME_LIST, SPP_Type);
-   lSetList(ep, SPP_value_list, lCopyList(nullptr, user_name_list));
+   ep = ocs::tom::emplace_back<SPP_name>(&bundle, USER_NAME_LIST);
+   ocs::tom::set<SPP_value_list>(ep, lCopyList(nullptr, user_name_list));
 
    DRETURN(bundle);
 }

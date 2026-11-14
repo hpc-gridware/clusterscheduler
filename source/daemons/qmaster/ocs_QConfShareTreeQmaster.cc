@@ -33,6 +33,8 @@
 #include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_sharetree.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_STN.h"
 #include "uti/sge_dstring.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_string.h"
@@ -83,7 +85,7 @@ namespace {
    ancestors_path(const ancestors_t &ancestors, dstring *buffer) {
       sge_dstring_clear(buffer);
       for (int i = 0; i < ancestors.depth; i++) {
-         sge_dstring_sprintf_append(buffer, "/%s", lGetString(ancestors.nodes[i], STN_name));
+         sge_dstring_sprintf_append(buffer, "/%s", ocs::tom::get<STN_name>(ancestors.nodes[i]));
       }
       return sge_dstring_get_string(buffer);
    }
@@ -127,7 +129,7 @@ namespace {
       for_each_ep(arg, nodes) {
          std::string path;
          int shares = 0;
-         if (!parse_node_shares(lGetString(arg, STN_name), path, shares)) {
+         if (!parse_node_shares(ocs::tom::get<STN_name>(arg), path, shares)) {
             report.problem(sge_dstring_sprintf(&buffer, MSG_ANSWER_XISNOTVALIDSEENODESHARESLIST_S, typed));
             continue;
          }
@@ -149,10 +151,10 @@ namespace {
                   free_ancestors(&parent_ancestors);
                }
                if (parent != nullptr) {
-                  lList *children = lGetListRW(parent, STN_children);
-                  lListElem *added = lAddElemStr(&children, STN_name, path.substr(last + 1).c_str(), STN_Type);
-                  if (added != nullptr && lGetList(parent, STN_children) == nullptr) {
-                     lSetList(parent, STN_children, children);
+                  lList *children = ocs::tom::get<STN_children>(parent);
+                  lListElem *added = ocs::tom::emplace_back<STN_name>(&children, path.substr(last + 1).c_str());
+                  if (added != nullptr && static_cast<const lList *>(ocs::tom::get<STN_children>(parent)) == nullptr) {
+                     ocs::tom::set<STN_children>(parent, children);
                   }
                   free_ancestors(&ancestors);
                   memset(&ancestors, 0, sizeof(ancestors));
@@ -169,7 +171,7 @@ namespace {
 
          if (node != nullptr) {
             modified++;
-            lSetUlong(node, STN_shares, shares);
+            ocs::tom::set<STN_shares>(node, shares);
             report.info(MSG_TREE_SETTING);
             std::string line = ancestors_path(ancestors, &buffer);
             line += "=" + std::to_string(shares);
@@ -202,7 +204,7 @@ namespace {
       dstring buffer = DSTRING_INIT;
       const lListElem *arg;
       for_each_ep(arg, nodes) {
-         const char *path = lGetString(arg, STN_name);
+         const char *path = ocs::tom::get<STN_name>(arg);
          if (path == nullptr) {
             continue;
          }
@@ -211,7 +213,7 @@ namespace {
          lListElem *node = search_named_node_path(root, path, &ancestors);
          if (node == nullptr) {
             report.problem(sge_dstring_sprintf(&buffer, MSG_TREE_UNABLETOLACATEXINSHARETREE_S, path));
-         } else if (lGetList(node, STN_children) != nullptr) {
+         } else if (static_cast<const lList *>(ocs::tom::get<STN_children>(node)) != nullptr) {
             report.problem(MSG_TREE_CANTDELNODESWITHCHILD);
          } else if (ancestors.depth <= 0) {
             report.problem(MSG_TREE_CANTDELROOTNODE);
@@ -220,10 +222,10 @@ namespace {
             lListElem *parent = (ancestors.depth == 1) ? root : ancestors.nodes[ancestors.depth - 2];
             report.info(MSG_TREE_REMOVING);
             report.info(ancestors_path(ancestors, &buffer));
-            lList *siblings = lGetListRW(parent, STN_children);
+            lList *siblings = ocs::tom::get<STN_children>(parent);
             lRemoveElem(siblings, &node);
             if (lGetNumberOfElem(siblings) == 0) {
-               lSetList(parent, STN_children, nullptr);
+               ocs::tom::set<STN_children>(parent, nullptr);
             }
          }
          free_ancestors(&ancestors);
@@ -280,7 +282,7 @@ qconf_sharetree_nodes_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *t
       for_each_ep(arg, nodes) {
          std::string path;
          int shares = 0;
-         if (parse_node_shares(lGetString(arg, STN_name), path, shares) && shares < 0) {
+         if (parse_node_shares(ocs::tom::get<STN_name>(arg), path, shares) && shares < 0) {
             answer_list_add(answer_list, MSG_QCONF_POSITIVE_SHARE_VALUE, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
             lFreeList(&nodes);
             DRETURN(false);
@@ -296,8 +298,8 @@ qconf_sharetree_nodes_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *t
    } else if (add) {
       /* "-astnode" on a cluster without a tree starts one, as it did */
       root = lCreateElem(STN_Type);
-      lSetString(root, STN_name, "Root");
-      lSetUlong(root, STN_shares, 1);
+      ocs::tom::set<STN_name>(root, "Root");
+      ocs::tom::set<STN_shares>(root, 1);
    } else {
       answer_list_add(answer_list, MSG_TREE_NOSHARETREE, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
       lFreeList(&nodes);
@@ -329,8 +331,8 @@ qconf_sharetree_nodes_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *t
          const lListElem *aep;
          bool reported = false;
          for_each_ep(aep, alp) {
-            if (lGetUlong(aep, AN_status) != STATUS_OK) {
-               answer_list_add(answer_list, lGetString(aep, AN_text), lGetUlong(aep, AN_status),
+            if (ocs::tom::get<AN_status>(aep) != STATUS_OK) {
+               answer_list_add(answer_list, ocs::tom::get<AN_text>(aep), ocs::tom::get<AN_status>(aep),
                                ANSWER_QUALITY_ERROR);
                reported = true;
                break;

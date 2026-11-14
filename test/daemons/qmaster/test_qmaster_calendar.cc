@@ -33,6 +33,7 @@
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/sge_calendar.h"
 #include "sgeobj/sge_qinstance_state.h"
+#include "tom/ocs_Element.h"
 
 #include "sge_c_gdi.h"
 #include "sge_calendar_qmaster.h"
@@ -307,9 +308,9 @@ static lListElem *createCalObject(cal_entry_t *calendar) {
    sge_monitor_init(&monitor, "cal_test", NONE_EXT, NO_WARNING, NO_ERROR, nullptr);
 
    sourceCal = lCreateElem(CAL_Type);
-   lSetString(sourceCal, CAL_name, "test");
-   lSetString(sourceCal, CAL_year_calendar, calendar->year_cal);
-   lSetString(sourceCal, CAL_week_calendar, calendar->week_cal);
+   ocs::tom::set<CAL_name>(sourceCal, "test");
+   ocs::tom::set<CAL_year_calendar>(sourceCal, calendar->year_cal);
+   ocs::tom::set<CAL_week_calendar>(sourceCal, calendar->week_cal);
 
    destCal = lCreateElem(CAL_Type);
 
@@ -327,13 +328,13 @@ static lListElem *createCalObject(cal_entry_t *calendar) {
 
 // returns true when stateObject matches expected state and time
 static bool check_state_change(lListElem *stateObject, uint32_t state, struct tm *time, int elem_nr) {
-   if (lGetUlong(stateObject, CQU_state) != state) {
+   if (ocs::tom::get<CQU_state>(stateObject) != state) {
       printf("wrong state in state list (elem %d): expected %d, got %d\n",
-             elem_nr, (int)state, (int)lGetUlong(stateObject, CQU_state));
+             elem_nr, (int)state, (int)ocs::tom::get<CQU_state>(stateObject));
       return false;
    }
    time_t expected = mktime(time);
-   time_t result = sge_gmt64_to_time_t(lGetUlong64(stateObject, CQU_till));
+   time_t result = sge_gmt64_to_time_t(ocs::tom::get<CQU_till>(stateObject));
    if (result != expected) {
       printf("state list elem %d: ", elem_nr);
       printDateError(&result, time);

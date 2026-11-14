@@ -46,6 +46,16 @@
 #include "sgeobj/sge_range.h"
 #include "sgeobj/sge_usage.h"
 #include "sgeobj/ocs_BindingInstance.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_BN.h"
+#include "sgeobj/tom/ocs_tom_CE.h"
+#include "sgeobj/tom/ocs_tom_JAT.h"
+#include "sgeobj/tom/ocs_tom_JG.h"
+#include "sgeobj/tom/ocs_tom_JRE.h"
+#include "sgeobj/tom/ocs_tom_PET.h"
+#include "sgeobj/tom/ocs_tom_QIM.h"
+#include "sgeobj/tom/ocs_tom_RN.h"
+#include "sgeobj/tom/ocs_tom_UA.h"
 
 #include "sched/load_correction.h"
 #include "sched/sge_complex_schedd.h"
@@ -66,11 +76,11 @@ void ocs::QStatDefaultController::remove_tagged_jobs(lList *job_list) {
       lListElem *jatep, *tmp_jatep;
 
       tmp = lNextRW(jep);
-      task_list = lGetListRW(jep, JB_ja_tasks);
+      task_list = ocs::tom::get<JB_ja_tasks>(jep);
       jatep = lFirstRW(task_list);
       while (jatep) {
          tmp_jatep = lNextRW(jatep);
-         if ((lGetUlong(jatep, JAT_suitable) & TAG_FOUND_IT)) {
+         if ((ocs::tom::get<JAT_suitable>(jatep) & TAG_FOUND_IT)) {
             lRemoveElem(task_list, &jatep);
          }
          jatep = tmp_jatep;
@@ -93,10 +103,10 @@ ocs::QStatDefaultController::process_queues_with_its_jobs(std::ostream &os, QSta
    // handle running jobs of a queue
    for_each_rw_lv(qep, model.get_queue_list()) {
 
-      const char* queue_name = lGetString(qep, QU_full_name);
+      const char* queue_name = ocs::tom::get<QU_full_name>(qep);
 
       // here we have the queue
-      if (lGetUlong(qep, QU_tag) & TAG_SHOW_IT) {
+      if (ocs::tom::get<QU_tag>(qep) & TAG_SHOW_IT) {
          if ((parameter.show_ & QSTAT_DISPLAY_NOEMPTYQ) && !qinstance_slots_used(qep)) {
             continue;
          }
@@ -131,12 +141,12 @@ ocs::QStatDefaultController::process_resources(std::ostream &os, const lList* ce
    /* walk through complex entries */
    for_each_ep_lv(ce, cel) {
       double uc{0.0};
-      const char *name = lGetString(ce, CE_name);
+      const char *name = ocs::tom::get<CE_name>(ce);
       if (const lListElem *centry = centry_list_locate(centry_list, name); centry != nullptr) {
-         uc = centry_urgency_contribution(slots, name, lGetDouble(ce, CE_doubleval), centry);
+         uc = centry_urgency_contribution(slots, name, ocs::tom::get<CE_doubleval>(ce), centry);
       }
 
-      const char *s = lGetString(ce, CE_stringval);
+      const char *s = ocs::tom::get<CE_stringval>(ce);
       if (is_hard_resource) {
          view.report_hard_resource(os, scope, ce, name, s, uc);
       } else {
@@ -156,49 +166,49 @@ ocs::QStatDefaultController::process_jobs_in_queue(std::ostream &os, lListElem *
    DENTER(TOP_LAYER);
    uint32_t jid = 0, old_jid;
    uint32_t jataskid = 0, old_jataskid;
-   const char *qnm = queue ? lGetString(queue, QU_full_name) : nullptr;
+   const char *qnm = queue ? ocs::tom::get<QU_full_name>(queue) : nullptr;
    dstring dyn_task_str = DSTRING_INIT;
    bool started = false;
 
    for_each_rw_lv(jlep, model.get_job_list()) {
       int master, i;
 
-      for_each_rw_lv(jatep, lGetList(jlep, JB_ja_tasks)) {
-         uint32_t jstate = lGetUlong(jatep, JAT_state);
+      for_each_rw_lv(jatep, ocs::tom::get<JB_ja_tasks>(jlep)) {
+         uint32_t jstate = ocs::tom::get<JAT_state>(jatep);
 
          if (ISSET(jstate, JSUSPENDED_ON_SUBORDINATE) ||
              ISSET(jstate, JSUSPENDED_ON_SLOTWISE_SUBORDINATE)) {
-            lSetUlong(jatep, JAT_state, jstate & ~JRUNNING);
+            ocs::tom::set<JAT_state>(jatep, jstate & ~JRUNNING);
          }
 
          lListElem *old_gdilep = nullptr;
-         for_each_rw_lv(gdilep, lGetList(jatep, JAT_granted_destin_identifier_list)) {
+         for_each_rw_lv(gdilep, ocs::tom::get<JAT_granted_destin_identifier_list>(jatep)) {
 
-            if (!queue || !strcmp(lGetString(gdilep, JG_qname), qnm)) {
+            if (!queue || !strcmp(ocs::tom::get<JG_qname>(gdilep), qnm)) {
                int slot_adjust = 0;
                int lines_to_print;
                int slots_per_line = 0;
-               const u_long raw_slots = lGetUlong(gdilep, JG_slots);
+               const u_long raw_slots = ocs::tom::get<JG_slots>(gdilep);
                int slots_in_queue = raw_slots > static_cast<u_long>(std::numeric_limits<int>::max())
                                     ? std::numeric_limits<int>::max()
                                     : static_cast<int>(raw_slots);
 
                if (!queue)
-                  qnm = lGetString(gdilep, JG_qname);
+                  qnm = ocs::tom::get<JG_qname>(gdilep);
 
-               uint32_t job_tag = lGetUlong(jatep, JAT_suitable);
+               uint32_t job_tag = ocs::tom::get<JAT_suitable>(jatep);
                job_tag |= TAG_FOUND_IT;
-               lSetUlong(jatep, JAT_suitable, job_tag);
+               ocs::tom::set<JAT_suitable>(jatep, job_tag);
 
                master = !strcmp(qnm,
-                     lGetString(lFirst(lGetList(jatep, JAT_granted_destin_identifier_list)), JG_qname));
+                     ocs::tom::get<JG_qname>(lFirst(static_cast<const lList *>(ocs::tom::get<JAT_granted_destin_identifier_list>(jatep)))));
 
                if (master) {
                   const char *pe_name;
                   lListElem *pe;
-                  if (((pe_name=lGetString(jatep, JAT_granted_pe))) &&
+                  if (((pe_name=ocs::tom::get<JAT_granted_pe>(jatep))) &&
                       ((pe=pe_list_locate(model.get_pe_list(), pe_name))) &&
-                      !lGetBool(pe, PE_job_is_first_task))
+                      !ocs::tom::get<PE_job_is_first_task>(pe))
 
                       slot_adjust = 1;
                }
@@ -218,7 +228,7 @@ ocs::QStatDefaultController::process_jobs_in_queue(std::ostream &os, lListElem *
                   if ((parameter.show_ & QSTAT_DISPLAY_FULL)) {
                      slots_per_line = slots_in_queue;
                   } else {
-                     slots_per_line = sge_granted_slots(lGetList(jatep, JAT_granted_destin_identifier_list));
+                     slots_per_line = sge_granted_slots(ocs::tom::get<JAT_granted_destin_identifier_list>(jatep));
                   }
 
                } else {
@@ -235,9 +245,9 @@ ocs::QStatDefaultController::process_jobs_in_queue(std::ostream &os, lListElem *
                   int different;
 
                   old_jid = jid;
-                  jid = lGetUlong(jlep, JB_job_number);
+                  jid = ocs::tom::get<JB_job_number>(jlep);
                   old_jataskid = jataskid;
-                  jataskid = lGetUlong(jatep, JAT_task_number);
+                  jataskid = ocs::tom::get<JAT_task_number>(jatep);
 
                   different = (jid != old_jid) || (jataskid != old_jataskid) || (gdilep != old_gdilep);
                   old_gdilep = gdilep;
@@ -253,21 +263,21 @@ ocs::QStatDefaultController::process_jobs_in_queue(std::ostream &os, lListElem *
                   }
 
                   if (!lGetNumberOfElem(parameter.get_user_list()) ||
-                     (lGetNumberOfElem(parameter.get_user_list()) && (lGetUlong(jatep, JAT_suitable)&TAG_SELECT_IT))) {
+                     (lGetNumberOfElem(parameter.get_user_list()) && (ocs::tom::get<JAT_suitable>(jatep)&TAG_SELECT_IT))) {
                      if (print_jobs_of_queue && (job_tag & TAG_SHOW_IT)) {
-                        if ((parameter.show_ & QSTAT_DISPLAY_RUNNING) && (lGetUlong(jatep, JAT_state) & JRUNNING) ) {
+                        if ((parameter.show_ & QSTAT_DISPLAY_RUNNING) && (ocs::tom::get<JAT_state>(jatep) & JRUNNING) ) {
                            print_it = true;
                         } else if ((parameter.show_ & QSTAT_DISPLAY_SUSPENDED) &&
-                           ((lGetUlong(jatep, JAT_state)&JSUSPENDED) || (lGetUlong(jatep, JAT_state)&JSUSPENDED_ON_THRESHOLD) ||
-                           (lGetUlong(jatep, JAT_state)&JSUSPENDED_ON_SUBORDINATE) || (lGetUlong(jatep, JAT_state)&JSUSPENDED_ON_SLOTWISE_SUBORDINATE))) {
+                           ((ocs::tom::get<JAT_state>(jatep)&JSUSPENDED) || (ocs::tom::get<JAT_state>(jatep)&JSUSPENDED_ON_THRESHOLD) ||
+                           (ocs::tom::get<JAT_state>(jatep)&JSUSPENDED_ON_SUBORDINATE) || (ocs::tom::get<JAT_state>(jatep)&JSUSPENDED_ON_SLOTWISE_SUBORDINATE))) {
                            print_it = true;
-                        } else if ((parameter.show_ & QSTAT_DISPLAY_USERHOLD) && (lGetUlong(jatep, JAT_hold)&MINUS_H_TGT_USER)) {
+                        } else if ((parameter.show_ & QSTAT_DISPLAY_USERHOLD) && (ocs::tom::get<JAT_hold>(jatep)&MINUS_H_TGT_USER)) {
                            print_it = true;
-                        } else if ((parameter.show_ & QSTAT_DISPLAY_OPERATORHOLD) && (lGetUlong(jatep, JAT_hold)&MINUS_H_TGT_OPERATOR))  {
+                        } else if ((parameter.show_ & QSTAT_DISPLAY_OPERATORHOLD) && (ocs::tom::get<JAT_hold>(jatep)&MINUS_H_TGT_OPERATOR))  {
                            print_it = true;
-                        } else if ((parameter.show_ & QSTAT_DISPLAY_SYSTEMHOLD) && (lGetUlong(jatep, JAT_hold)&MINUS_H_TGT_SYSTEM)) {
+                        } else if ((parameter.show_ & QSTAT_DISPLAY_SYSTEMHOLD) && (ocs::tom::get<JAT_hold>(jatep)&MINUS_H_TGT_SYSTEM)) {
                            print_it = true;
-                        } else if ((parameter.show_ & QSTAT_DISPLAY_JOBARRAYHOLD) && (lGetUlong(jatep, JAT_hold)&MINUS_H_TGT_JA_AD)) {
+                        } else if ((parameter.show_ & QSTAT_DISPLAY_JOBARRAYHOLD) && (ocs::tom::get<JAT_hold>(jatep)&MINUS_H_TGT_JA_AD)) {
                            print_it = true;
                         } else {
                            print_it = false;
@@ -314,7 +324,7 @@ void ocs::QStatDefaultController::process_job(std::ostream &os, lListElem *job, 
    summary.print_jobid = print_jobid;
 
    if (gdil_ep) {
-      summary.queue = lGetString(gdil_ep, JG_qname);
+      summary.queue = ocs::tom::get<JG_qname>(gdil_ep);
    }
 
    const bool sge_ext = (parameter.show_ & QSTAT_DISPLAY_EXTENDED) ? true : false;
@@ -323,30 +333,30 @@ void ocs::QStatDefaultController::process_job(std::ostream &os, lListElem *job, 
    const bool sge_pri = (parameter.show_ & QSTAT_DISPLAY_PRIORITY) ? true : false;
    const bool sge_time = !sge_ext | tsk_ext | sge_urg | sge_pri;
 
-   summary.nprior = lGetDouble(jatep, JAT_prio);
+   summary.nprior = ocs::tom::get<JAT_prio>(jatep);
    if (sge_pri || sge_urg) {
-      summary.nurg = lGetDouble(job, JB_nurg);
+      summary.nurg = ocs::tom::get<JB_nurg>(job);
    }
    if (sge_pri) {
-      summary.nppri = lGetDouble(job, JB_nppri);
+      summary.nppri = ocs::tom::get<JB_nppri>(job);
    }
    if (sge_pri || sge_ext) {
-      summary.ntckts =  lGetDouble(jatep, JAT_ntix);
+      summary.ntckts =  ocs::tom::get<JAT_ntix>(jatep);
    }
    if (sge_urg) {
-      summary.urg = lGetDouble(job, JB_urg);
-      summary.rrcontr = lGetDouble(job, JB_rrcontr);
-      summary.wtcontr = lGetDouble(job, JB_wtcontr);
-      summary.dlcontr = lGetDouble(job, JB_dlcontr);
+      summary.urg = ocs::tom::get<JB_urg>(job);
+      summary.rrcontr = ocs::tom::get<JB_rrcontr>(job);
+      summary.wtcontr = ocs::tom::get<JB_wtcontr>(job);
+      summary.dlcontr = ocs::tom::get<JB_dlcontr>(job);
    }
    if (sge_pri) {
-      summary.priority = static_cast<int>(lGetUlong(job, JB_priority)) - BASE_PRIORITY;
+      summary.priority = static_cast<int>(ocs::tom::get<JB_priority>(job)) - BASE_PRIORITY;
    }
-   summary.name = lGetString(job, JB_job_name);
-   summary.user = lGetString(job, JB_owner);
+   summary.name = ocs::tom::get<JB_job_name>(job);
+   summary.user = ocs::tom::get<JB_owner>(job);
    if (sge_ext) {
-      summary.project = lGetString(job, JB_project);
-      summary.department = lGetString(job, JB_department);
+      summary.project = ocs::tom::get<JB_project>(job);
+      summary.department = ocs::tom::get<JB_department>(job);
    }
 
    /* CS-1908: reuse the shared status-into-state combiner so the state
@@ -360,18 +370,18 @@ void ocs::QStatDefaultController::process_job(std::ostream &os, lListElem *job, 
 
    job_get_state_string(summary.state, jstate);
    if (sge_time) {
-      summary.submit_time = lGetUlong64(job, JB_submission_time);
-      summary.start_time = lGetUlong64(jatep, JAT_start_time);
+      summary.submit_time = ocs::tom::get<JB_submission_time>(job);
+      summary.start_time = ocs::tom::get<JAT_start_time>(jatep);
    }
 
-   if (lGetUlong(jatep, JAT_status)==JRUNNING || lGetUlong(jatep, JAT_status)==JTRANSFERING) {
+   if (ocs::tom::get<JAT_status>(jatep)==JRUNNING || ocs::tom::get<JAT_status>(jatep)==JTRANSFERING) {
       summary.is_running = true;
    } else {
       summary.is_running = false;
    }
 
    if (sge_urg) {
-      summary.deadline = lGetUlong64(job, JB_deadline);
+      summary.deadline = ocs::tom::get<JB_deadline>(job);
    }
 
    if (sge_ext) {
@@ -384,7 +394,7 @@ void ocs::QStatDefaultController::process_job(std::ostream &os, lListElem *job, 
          if (!(parameter.group_opt_ & GROUP_NO_PETASK_GROUPS)) {
             sum_pe_tasks = true;
          }
-         job_usage_list = lCopyList(nullptr, lGetList(jatep, JAT_scaled_usage_list));
+         job_usage_list = lCopyList(nullptr, ocs::tom::get<JAT_scaled_usage_list>(jatep));
       } else {
          job_usage_list = lCreateList("", UA_Type);
       }
@@ -392,19 +402,19 @@ void ocs::QStatDefaultController::process_job(std::ostream &os, lListElem *job, 
       /* sum pe-task usage based on queue slots */
       if (job_usage_list) {
          int subtask_ndx=1;
-         for_each_ep_lv(task, lGetList(jatep, JAT_task_list)) {
+         for_each_ep_lv(task, ocs::tom::get<JAT_task_list>(jatep)) {
             lListElem *dst;
             const lListElem *ep;
             const char *qname;
 
             if (sum_pe_tasks ||
                 (summary.queue &&
-                 ((ep=lFirst(lGetList(task, PET_granted_destin_identifier_list)))) &&
-                 ((qname=lGetString(ep, JG_qname))) &&
+                 ((ep=lFirst(static_cast<const lList *>(ocs::tom::get<PET_granted_destin_identifier_list>(task))))) &&
+                 ((qname=ocs::tom::get<JG_qname>(ep))) &&
                  !strcmp(qname, summary.queue) && ((subtask_ndx++%slots)==slot))) {
-               for_each_ep_lv(src, lGetList(task, PET_scaled_usage)) {
-                  if ((dst=lGetElemStrRW(job_usage_list, UA_name, lGetString(src, UA_name))))
-                     lSetDouble(dst, UA_value, lGetDouble(dst, UA_value) + lGetDouble(src, UA_value));
+               for_each_ep_lv(src, ocs::tom::get<PET_scaled_usage>(task)) {
+                  if ((dst=ocs::tom::find_first_rw<UA_name>(job_usage_list, ocs::tom::get<UA_name>(src))))
+                     ocs::tom::set<UA_value>(dst, ocs::tom::get<UA_value>(dst) + ocs::tom::get<UA_value>(src));
                   else
                      lAppendElem(job_usage_list, lCopyElem(src));
                }
@@ -414,36 +424,36 @@ void ocs::QStatDefaultController::process_job(std::ostream &os, lListElem *job, 
 
 
       /* scaled cpu usage */
-      if (!(up = lGetElemStr(job_usage_list, UA_name, USAGE_ATTR_CPU))) {
+      if (!(up = ocs::tom::find_first<UA_name>(job_usage_list, USAGE_ATTR_CPU))) {
          summary.has_cpu_usage = false;
       } else {
          summary.has_cpu_usage = true;
-         summary.cpu_usage = lGetDouble(up, UA_value);
+         summary.cpu_usage = ocs::tom::get<UA_value>(up);
       }
       /* scaled mem usage */
-      if (!(up = lGetElemStr(job_usage_list, UA_name, USAGE_ATTR_MEM))) {
+      if (!(up = ocs::tom::find_first<UA_name>(job_usage_list, USAGE_ATTR_MEM))) {
          summary.has_mem_usage = false;
       } else {
          summary.has_mem_usage = true;
-         summary.mem_usage = lGetDouble(up, UA_value);
+         summary.mem_usage = ocs::tom::get<UA_value>(up);
       }
       /* scaled io usage */
-      if (!(up = lGetElemStr(job_usage_list, UA_name, USAGE_ATTR_IO))) {
+      if (!(up = ocs::tom::find_first<UA_name>(job_usage_list, USAGE_ATTR_IO))) {
          summary.has_io_usage = false;
       } else {
          summary.has_io_usage = true;
-         summary.io_usage = lGetDouble(up, UA_value);
+         summary.io_usage = ocs::tom::get<UA_value>(up);
       }
       lFreeList(&job_usage_list);
 
       /* get tickets for job/slot */
 
-      summary.override_tickets = lGetUlong(job, JB_override_tickets);
-      summary.share = lGetDouble(jatep, JAT_share);
+      summary.override_tickets = ocs::tom::get<JB_override_tickets>(job);
+      summary.share = ocs::tom::get<JAT_share>(jatep);
       if (sge_ext) {
          summary.is_queue_assigned = false;
       } else {
-         if (lGetList(jatep, JAT_granted_destin_identifier_list) != nullptr) {
+         if (static_cast<const lList *>(ocs::tom::get<JAT_granted_destin_identifier_list>(jatep)) != nullptr) {
             summary.is_queue_assigned = true;
          } else {
             summary.is_queue_assigned = false;
@@ -451,21 +461,21 @@ void ocs::QStatDefaultController::process_job(std::ostream &os, lListElem *job, 
       }
 
       /* braces needed to suppress compiler warnings */
-      if ((pe_name=lGetString(jatep, JAT_granted_pe)) &&
+      if ((pe_name=ocs::tom::get<JAT_granted_pe>(jatep)) &&
            (pe=pe_list_locate(model.get_pe_list(), pe_name)) &&
-           lGetBool(pe, PE_control_slaves) && slots) {
+           ocs::tom::get<PE_control_slaves>(pe) && slots) {
          if (slot == 0) {
-            summary.tickets = (u_long)lGetDouble(gdil_ep, JG_ticket);
-            summary.otickets = (u_long)lGetDouble(gdil_ep, JG_oticket);
-            summary.ftickets = (u_long)lGetDouble(gdil_ep, JG_fticket);
-            summary.stickets = (u_long)lGetDouble(gdil_ep, JG_sticket);
+            summary.tickets = (u_long)ocs::tom::get<JG_ticket>(gdil_ep);
+            summary.otickets = (u_long)ocs::tom::get<JG_oticket>(gdil_ep);
+            summary.ftickets = (u_long)ocs::tom::get<JG_fticket>(gdil_ep);
+            summary.stickets = (u_long)ocs::tom::get<JG_sticket>(gdil_ep);
          }
          else {
             if (slots) {
-               summary.tickets = (u_long)(lGetDouble(gdil_ep, JG_ticket) / slots);
-               summary.otickets = (u_long)(lGetDouble(gdil_ep, JG_oticket) / slots);
-               summary.ftickets = (u_long)(lGetDouble(gdil_ep, JG_fticket) / slots);
-               summary.stickets = (u_long)(lGetDouble(gdil_ep, JG_sticket) / slots);
+               summary.tickets = (u_long)(ocs::tom::get<JG_ticket>(gdil_ep) / slots);
+               summary.otickets = (u_long)(ocs::tom::get<JG_oticket>(gdil_ep) / slots);
+               summary.ftickets = (u_long)(ocs::tom::get<JG_fticket>(gdil_ep) / slots);
+               summary.stickets = (u_long)(ocs::tom::get<JG_sticket>(gdil_ep) / slots);
             }
             else {
                summary.tickets = summary.otickets = summary.ftickets = summary.stickets = 0;
@@ -473,10 +483,10 @@ void ocs::QStatDefaultController::process_job(std::ostream &os, lListElem *job, 
          }
       }
       else {
-         summary.tickets = (u_long)lGetDouble(jatep, JAT_tix);
-         summary.otickets = (u_long)lGetDouble(jatep, JAT_oticket);
-         summary.ftickets = (u_long)lGetDouble(jatep, JAT_fticket);
-         summary.stickets = (u_long)lGetDouble(jatep, JAT_sticket);
+         summary.tickets = (u_long)ocs::tom::get<JAT_tix>(jatep);
+         summary.otickets = (u_long)ocs::tom::get<JAT_oticket>(jatep);
+         summary.ftickets = (u_long)ocs::tom::get<JAT_fticket>(jatep);
+         summary.stickets = (u_long)ocs::tom::get<JAT_sticket>(jatep);
       }
 
    }
@@ -496,10 +506,10 @@ void ocs::QStatDefaultController::process_job(std::ostream &os, lListElem *job, 
       summary.task_id = nullptr;
    }
 
-   view.report_job(os, lGetUlong(job, JB_job_number), &summary, parameter, model);
+   view.report_job(os, ocs::tom::get<JB_job_number>(job), &summary, parameter, model);
 
    if (tsk_ext) {
-      const lList *task_list = lGetList(jatep, JAT_task_list);
+      const lList *task_list = ocs::tom::get<JAT_task_list>(jatep);
       const lListElem *ep;
       const char *qname;
       int subtask_ndx=1;
@@ -507,8 +517,8 @@ void ocs::QStatDefaultController::process_job(std::ostream &os, lListElem *job, 
 
       /* print master sub-task belonging to this queue */
       if (!slot && task_list && summary.queue &&
-          ((ep=lFirst(lGetList(jatep, JAT_granted_destin_identifier_list)))) &&
-          ((qname=lGetString(ep, JG_qname))) &&
+          ((ep=lFirst(static_cast<const lList *>(ocs::tom::get<JAT_granted_destin_identifier_list>(jatep))))) &&
+          ((qname=ocs::tom::get<JG_qname>(ep))) &&
           !strcmp(qname, summary.queue)) {
 
          if (!close_tasks) {
@@ -522,8 +532,8 @@ void ocs::QStatDefaultController::process_job(std::ostream &os, lListElem *job, 
       /* print sub-tasks belonging to this queue */
       for_each_rw_lv(task, task_list) {
          if (!slots || (summary.queue &&
-              ((ep=lFirst(lGetList(task, PET_granted_destin_identifier_list)))) &&
-              ((qname=lGetString(ep, JG_qname))) &&
+              ((ep=lFirst(static_cast<const lList *>(ocs::tom::get<PET_granted_destin_identifier_list>(task))))) &&
+              ((qname=ocs::tom::get<JG_qname>(ep))) &&
               !strcmp(qname, summary.queue) && ((subtask_ndx++%slots)==slot))) {
             if (!close_tasks) {
                view.report_sub_tasks_started(os);
@@ -541,32 +551,32 @@ void ocs::QStatDefaultController::process_job(std::ostream &os, lListElem *job, 
    /* print additional job info if requested */
    if ((parameter.show_ & QSTAT_DISPLAY_RESOURCES)) {
 
-      view.report_additional_info(os, QStatDefaultViewBase::FULL_JOB_NAME, lGetString(job, JB_job_name));
+      view.report_additional_info(os, QStatDefaultViewBase::FULL_JOB_NAME, ocs::tom::get<JB_job_name>(job));
       if (summary.queue) {
          view.report_additional_info(os, QStatDefaultViewBase::MASTER_QUEUE, summary.queue);
       }
 
-      if (lGetString(job, JB_pe)) {
+      if (ocs::tom::get<JB_pe>(job)) {
          dstring range_string = DSTRING_INIT;
 
-         range_list_print_to_string(lGetList(job, JB_pe_range),
+         range_list_print_to_string(ocs::tom::get<JB_pe_range>(job),
                                     &range_string, true, false, false);
 
-         view.report_requested_pe(os, lGetString(job, JB_pe), sge_dstring_get_string(&range_string));
+         view.report_requested_pe(os, ocs::tom::get<JB_pe>(job), sge_dstring_get_string(&range_string));
 
          sge_dstring_free(&range_string);
       }
 
-      if (lGetString(jatep, JAT_granted_pe)) {
+      if (ocs::tom::get<JAT_granted_pe>(jatep)) {
          uint32_t pe_slots = 0;
-         for_each_ep_lv(l_gdil_ep, lGetList(jatep, JAT_granted_destin_identifier_list)) {
-            pe_slots += lGetUlong(l_gdil_ep, JG_slots);
+         for_each_ep_lv(l_gdil_ep, ocs::tom::get<JAT_granted_destin_identifier_list>(jatep)) {
+            pe_slots += ocs::tom::get<JG_slots>(l_gdil_ep);
          }
 
-         view.report_granted_pe(os, lGetString(jatep, JAT_granted_pe), pe_slots);
+         view.report_granted_pe(os, ocs::tom::get<JAT_granted_pe>(jatep), pe_slots);
       }
-      if (lGetString(job, JB_checkpoint_name)) {
-         view.report_additional_info(os, QStatDefaultViewBase::CHECKPOINT_ENV, lGetString(job, JB_checkpoint_name));
+      if (ocs::tom::get<JB_checkpoint_name>(job)) {
+         view.report_additional_info(os, QStatDefaultViewBase::CHECKPOINT_ENV, ocs::tom::get<JB_checkpoint_name>(job));
       }
 
       /* Handle the Hard Resources (global, master, slave) */
@@ -592,13 +602,13 @@ void ocs::QStatDefaultController::process_job(std::ostream &os, lListElem *job, 
          for_each_ep_lv(ce, attributes) {
             double dval;
 
-            name = lGetString(ce, CE_name);
-            if (!lGetUlong(ce, CE_consumable) || !strcmp(name, "slots") ||
+            name = ocs::tom::get<CE_name>(ce);
+            if (!ocs::tom::get<CE_consumable>(ce) || !strcmp(name, "slots") ||
                 job_get_request(job, name)) {
                continue;
             }
 
-            parse_ulong_val(&dval, nullptr, static_cast<CEntry::Type>(lGetUlong(ce, CE_valtype)), lGetString(ce, CE_defaultval), nullptr, 0);
+            parse_ulong_val(&dval, nullptr, static_cast<CEntry::Type>(ocs::tom::get<CE_valtype>(ce)), ocs::tom::get<CE_defaultval>(ce), nullptr, 0);
             if (dval == 0.0) {
                continue;
             }
@@ -606,16 +616,16 @@ void ocs::QStatDefaultController::process_job(std::ostream &os, lListElem *job, 
             /* For pending jobs (no queue/no exec host) we may print default request only
                if the consumable is specified in the global host. For running we print it
                if the resource is managed at this node/queue */
-            if ((qep && lGetSubStr(qep, CE_name, name, QU_consumable_config_list)) ||
-                (qep && (hep=host_list_locate(model.get_exechost_list(), lGetHost(qep, QU_qhostname))) &&
-                 lGetSubStr(hep, CE_name, name, EH_consumable_config_list)) ||
+            if ((qep && ocs::tom::find_first_in<QU_consumable_config_list, CE_name>(qep, name)) ||
+                (qep && (hep=host_list_locate(model.get_exechost_list(), ocs::tom::get<QU_qhostname>(qep))) &&
+                 ocs::tom::find_first_in<EH_consumable_config_list, CE_name>(hep, name)) ||
                   ((hep=host_list_locate(model.get_exechost_list(), SGE_GLOBAL_NAME)) &&
-                  lGetSubStr(hep, CE_name, name, EH_consumable_config_list))) {
+                  ocs::tom::find_first_in<EH_consumable_config_list, CE_name>(hep, name))) {
                if (first_default_request) {
                   view.report_default_request_started(os);
                   first_default_request = false;
                }
-               view.report_default_request(os, name, lGetString(ce, CE_defaultval));
+               view.report_default_request(os, name, ocs::tom::get<CE_defaultval>(ce));
             }
          }
          if (!first_default_request) {
@@ -633,7 +643,7 @@ void ocs::QStatDefaultController::process_job(std::ostream &os, lListElem *job, 
          if (ql != nullptr && lGetNumberOfElem(ql) != 0) {
             view.report_hard_requested_queues_started(os, JRS_SCOPE_GLOBAL);
             for_each_ep_lv(qrep, ql) {
-               view.report_hard_requested_queue(os, JRS_SCOPE_GLOBAL, lGetString(qrep, QR_name));
+               view.report_hard_requested_queue(os, JRS_SCOPE_GLOBAL, ocs::tom::get<QR_name>(qrep));
             }
             view.report_hard_requested_queues_finished(os);
          }
@@ -641,7 +651,7 @@ void ocs::QStatDefaultController::process_job(std::ostream &os, lListElem *job, 
          if (ql != nullptr && lGetNumberOfElem(ql) != 0) {
             view.report_hard_requested_queues_started(os, JRS_SCOPE_MASTER);
             for_each_ep_lv(qrep, ql) {
-               view.report_hard_requested_queue(os, JRS_SCOPE_MASTER, lGetString(qrep, QR_name));
+               view.report_hard_requested_queue(os, JRS_SCOPE_MASTER, ocs::tom::get<QR_name>(qrep));
             }
             view.report_hard_requested_queues_finished(os);
          }
@@ -649,7 +659,7 @@ void ocs::QStatDefaultController::process_job(std::ostream &os, lListElem *job, 
          if (ql != nullptr && lGetNumberOfElem(ql) != 0) {
             view.report_hard_requested_queues_started(os, JRS_SCOPE_SLAVE);
             for_each_ep_lv(qrep, ql) {
-               view.report_hard_requested_queue(os, JRS_SCOPE_SLAVE, lGetString(qrep, QR_name));
+               view.report_hard_requested_queue(os, JRS_SCOPE_SLAVE, ocs::tom::get<QR_name>(qrep));
             }
             view.report_hard_requested_queues_finished(os);
          }
@@ -660,7 +670,7 @@ void ocs::QStatDefaultController::process_job(std::ostream &os, lListElem *job, 
          if (ql != nullptr && lGetNumberOfElem(ql) != 0) {
             view.report_soft_requested_queues_started(os,JRS_SCOPE_GLOBAL);
             for_each_ep_lv(qrep, ql) {
-               view.report_soft_requested_queue(os, JRS_SCOPE_GLOBAL, lGetString(qrep, QR_name));
+               view.report_soft_requested_queue(os, JRS_SCOPE_GLOBAL, ocs::tom::get<QR_name>(qrep));
             }
             view.report_soft_requested_queues_finished(os);
          }
@@ -668,7 +678,7 @@ void ocs::QStatDefaultController::process_job(std::ostream &os, lListElem *job, 
          if (ql != nullptr && lGetNumberOfElem(ql) != 0) {
             view.report_soft_requested_queues_started(os, JRS_SCOPE_MASTER);
             for_each_ep_lv(qrep, ql) {
-               view.report_soft_requested_queue(os, JRS_SCOPE_MASTER, lGetString(qrep, QR_name));
+               view.report_soft_requested_queue(os, JRS_SCOPE_MASTER, ocs::tom::get<QR_name>(qrep));
             }
             view.report_soft_requested_queues_finished(os);
          }
@@ -676,55 +686,55 @@ void ocs::QStatDefaultController::process_job(std::ostream &os, lListElem *job, 
          if (ql != nullptr && lGetNumberOfElem(ql) != 0) {
             view.report_soft_requested_queues_started(os, JRS_SCOPE_SLAVE);
             for_each_ep_lv(qrep, ql) {
-               view.report_soft_requested_queue(os, JRS_SCOPE_SLAVE, lGetString(qrep, QR_name));
+               view.report_soft_requested_queue(os, JRS_SCOPE_SLAVE, ocs::tom::get<QR_name>(qrep));
             }
             view.report_soft_requested_queues_finished(os);
          }
       }
 
       {
-         ql = lGetList(job, JB_jid_request_list );
+         ql = ocs::tom::get<JB_jid_request_list>(job );
          if (ql) {
             view.report_predecessors_requested_started(os);
             for_each_ep_lv(qrep, ql) {
-               view.report_predecessor_requested(os, lGetString(qrep, JRE_job_name));
+               view.report_predecessor_requested(os, ocs::tom::get<JRE_job_name>(qrep));
             }
             view.report_predecessors_requested_finished(os);
          }
       }
       {
-         ql = lGetList(job, JB_jid_predecessor_list);
+         ql = ocs::tom::get<JB_jid_predecessor_list>(job);
          if (ql) {
             view.report_predecessors_started(os);
             for_each_ep_lv(qrep, ql) {
-               view.report_predecessor(os, lGetUlong(qrep, JRE_job_number));
+               view.report_predecessor(os, ocs::tom::get<JRE_job_number>(qrep));
             }
             view.report_predecessors_finished(os);
          }
       }
 
       {
-         ql = lGetList(job, JB_ja_ad_request_list );
+         ql = ocs::tom::get<JB_ja_ad_request_list>(job );
          if (ql) {
             view.report_ad_predecessors_requested_started(os);
             for_each_ep_lv(qrep, ql) {
-               view.report_ad_predecessor_requested(os, lGetString(qrep, JRE_job_name));
+               view.report_ad_predecessor_requested(os, ocs::tom::get<JRE_job_name>(qrep));
             }
             view.report_ad_predecessors_requested_finished(os);
          }
       }
       {
-         ql = lGetList(job, JB_ja_ad_predecessor_list);
+         ql = ocs::tom::get<JB_ja_ad_predecessor_list>(job);
          if (ql) {
             view.report_ad_predecessors_started(os);
             for_each_ep_lv(qrep, ql) {
-               view.report_ad_predecessor(os, lGetUlong(qrep, JRE_job_number));
+               view.report_ad_predecessor(os, ocs::tom::get<JRE_job_number>(qrep));
             }
             view.report_ad_predecessors_finished(os);
          }
       }
 
-      if (const lListElem *binding_elem = lGetObject(job, JB_binding); binding_elem != nullptr) {
+      if (const lListElem *binding_elem = ocs::tom::get<JB_binding>(job); binding_elem != nullptr) {
          dstring binding_param = DSTRING_INIT;
 
          // all binding specific parameter as one string
@@ -734,21 +744,21 @@ void ocs::QStatDefaultController::process_job(std::ostream &os, lListElem *job, 
 
          view.report_binding_started(os);
          view.report_binding(os, sge_dstring_get_string(&binding_param));
-         view.report_binding_attribute(os, "bamount", lGetUlong(binding_elem, BN_amount));
-         view.report_binding_attribute(os, "binstance", BindingInstance::to_string(static_cast<BindingInstance::Instance>(lGetUlong(binding_elem, BN_instance))).c_str());
-         view.report_binding_attribute(os, "bstrategy", BindingStrategy::to_string(static_cast<BindingStrategy::Strategy>(lGetUlong(binding_elem, BN_strategy))).c_str());
-         view.report_binding_attribute(os, "btype", BindingType::to_string(static_cast<BindingType::Type>(lGetUlong(binding_elem, BN_new_type))).c_str());
-         view.report_binding_attribute(os, "bunit", BindingUnit::to_string(static_cast<BindingUnit::Unit>(lGetUlong(binding_elem, BN_unit))).c_str());
-         view.report_binding_attribute(os, "bfilter", lGetString(binding_elem, BN_filter));
-         view.report_binding_attribute(os, "bsort", lGetString(binding_elem, BN_sort));
-         view.report_binding_attribute(os, "bstart", BindingStart::to_string(static_cast<BindingStart::Start>(lGetUlong(binding_elem, BN_start))).c_str());
-         view.report_binding_attribute(os, "bstop", BindingStop::to_string(static_cast<BindingStop::Stop>(lGetUlong(binding_elem, BN_stop))).c_str());
+         view.report_binding_attribute(os, "bamount", ocs::tom::get<BN_amount>(binding_elem));
+         view.report_binding_attribute(os, "binstance", BindingInstance::to_string(static_cast<BindingInstance::Instance>(ocs::tom::get<BN_instance>(binding_elem))).c_str());
+         view.report_binding_attribute(os, "bstrategy", BindingStrategy::to_string(static_cast<BindingStrategy::Strategy>(ocs::tom::get<BN_strategy>(binding_elem))).c_str());
+         view.report_binding_attribute(os, "btype", BindingType::to_string(static_cast<BindingType::Type>(ocs::tom::get<BN_new_type>(binding_elem))).c_str());
+         view.report_binding_attribute(os, "bunit", BindingUnit::to_string(static_cast<BindingUnit::Unit>(ocs::tom::get<BN_unit>(binding_elem))).c_str());
+         view.report_binding_attribute(os, "bfilter", ocs::tom::get<BN_filter>(binding_elem));
+         view.report_binding_attribute(os, "bsort", ocs::tom::get<BN_sort>(binding_elem));
+         view.report_binding_attribute(os, "bstart", BindingStart::to_string(static_cast<BindingStart::Start>(ocs::tom::get<BN_start>(binding_elem))).c_str());
+         view.report_binding_attribute(os, "bstop", BindingStop::to_string(static_cast<BindingStop::Stop>(ocs::tom::get<BN_stop>(binding_elem))).c_str());
          view.report_binding_finished(os);
          sge_dstring_free(&binding_param);
       }
    }
 
-   view.report_job_finished(os, lGetUlong(job, JB_job_number));
+   view.report_job_finished(os, ocs::tom::get<JB_job_number>(job));
 
    DRETURN_VOID;
 }
@@ -766,23 +776,23 @@ ocs::QStatDefaultController::process_subtask(std::ostream &os, lListElem *job, l
 
    /* is sub-task logically running */
    if (pe_task == nullptr) {
-      tstatus = lGetUlong(ja_task, JAT_status);
-      usage_list = lGetList(ja_task, JAT_usage_list);
-      scaled_usage_list = lGetList(ja_task, JAT_scaled_usage_list);
+      tstatus = ocs::tom::get<JAT_status>(ja_task);
+      usage_list = ocs::tom::get<JAT_usage_list>(ja_task);
+      scaled_usage_list = ocs::tom::get<JAT_scaled_usage_list>(ja_task);
    } else {
-      tstatus = lGetUlong(pe_task, PET_status);
-      usage_list = lGetList(pe_task, PET_usage);
-      scaled_usage_list = lGetList(pe_task, PET_scaled_usage);
+      tstatus = ocs::tom::get<PET_status>(pe_task);
+      usage_list = ocs::tom::get<PET_usage>(pe_task);
+      scaled_usage_list = ocs::tom::get<PET_scaled_usage>(pe_task);
    }
 
    if (pe_task == nullptr) {
       summary.task_id = "";
    } else {
-      summary.task_id = lGetString(pe_task, PET_id);
+      summary.task_id = ocs::tom::get<PET_id>(pe_task);
    }
 
    /* move status info into state info */
-   tstate = lGetUlong(ja_task, JAT_state);
+   tstate = ocs::tom::get<JAT_state>(ja_task);
    if (tstatus==JRUNNING) {
       tstate |= JRUNNING;
       tstate &= ~JTRANSFERING;
@@ -798,11 +808,11 @@ ocs::QStatDefaultController::process_subtask(std::ostream &os, lListElem *job, l
       tstate &= ~(JRUNNING|JTRANSFERING|JEXITING);
    }
 
-   if (lGetList(job, JB_jid_predecessor_list) || lGetUlong(ja_task, JAT_hold)) {
+   if (ocs::tom::get<JB_jid_predecessor_list>(job) || ocs::tom::get<JAT_hold>(ja_task)) {
       tstate |= JHELD;
    }
 
-   if (lGetUlong(ja_task, JAT_job_restarted)) {
+   if (ocs::tom::get<JAT_job_restarted>(ja_task)) {
       tstate &= ~JWAITING;
       tstate |= JMIGRATING;
    }
@@ -815,35 +825,35 @@ ocs::QStatDefaultController::process_subtask(std::ostream &os, lListElem *job, l
       const lListElem *up;
 
       /* scaled cpu usage */
-      if (!(up = lGetElemStr(scaled_usage_list, UA_name, USAGE_ATTR_CPU))) {
+      if (!(up = ocs::tom::find_first<UA_name>(scaled_usage_list, USAGE_ATTR_CPU))) {
          summary.has_cpu_usage = false;
       } else {
          summary.has_cpu_usage = true;
-         summary.cpu_usage = lGetDouble(up, UA_value);
+         summary.cpu_usage = ocs::tom::get<UA_value>(up);
       }
 
       /* scaled mem usage */
-      if (!(up = lGetElemStr(scaled_usage_list, UA_name, USAGE_ATTR_MEM))) {
+      if (!(up = ocs::tom::find_first<UA_name>(scaled_usage_list, USAGE_ATTR_MEM))) {
          summary.has_mem_usage = false;
       } else {
          summary.has_mem_usage = true;
-         summary.mem_usage = lGetDouble(up, UA_value);
+         summary.mem_usage = ocs::tom::get<UA_value>(up);
       }
 
       /* scaled io usage */
-      if (!(up = lGetElemStr(scaled_usage_list, UA_name, USAGE_ATTR_IO))) {
+      if (!(up = ocs::tom::find_first<UA_name>(scaled_usage_list, USAGE_ATTR_IO))) {
          summary.has_io_usage = false;
       } else {
          summary.has_io_usage = true;
-         summary.io_usage = lGetDouble(up, UA_value);
+         summary.io_usage = ocs::tom::get<UA_value>(up);
       }
    }
 
    if (tstatus==JFINISHED) {
-      ep=lGetElemStr(usage_list, UA_name, "exit_status");
+      ep=ocs::tom::find_first<UA_name>(usage_list, "exit_status");
       if (ep) {
          summary.has_exit_status = true;
-         summary.exit_status = lGetDouble(ep, UA_value);
+         summary.exit_status = ocs::tom::get<UA_value>(ep);
       } else {
          summary.has_exit_status = false;
       }
@@ -868,10 +878,10 @@ void ocs::QStatDefaultController::process_jobs_pending_state(std::ostream &os, Q
    nxt = lFirstRW(model.get_job_list());
    while ((jep=nxt)) {
       nxt = lNextRW(jep);
-      nxt_jatep = lFirstRW(lGetList(jep, JB_ja_tasks));
+      nxt_jatep = lFirstRW(static_cast<const lList *>(ocs::tom::get<JB_ja_tasks>(jep)));
       FoundTasks = 0;
 
-      bool hide_data = !job_is_visible(parameter.get_packet(), lGetString(jep, JB_owner), model.is_manager());
+      bool hide_data = !job_is_visible(parameter.get_packet(), ocs::tom::get<JB_owner>(jep), model.is_manager());
       if (hide_data) {
          continue;
       }
@@ -879,36 +889,36 @@ void ocs::QStatDefaultController::process_jobs_pending_state(std::ostream &os, Q
       while ((jatep = nxt_jatep)) {
          nxt_jatep = lNextRW(jatep);
 
-         if (!(((parameter.show_ & QSTAT_DISPLAY_OPERATORHOLD) && (lGetUlong(jatep, JAT_hold)&MINUS_H_TGT_OPERATOR))
+         if (!(((parameter.show_ & QSTAT_DISPLAY_OPERATORHOLD) && (ocs::tom::get<JAT_hold>(jatep)&MINUS_H_TGT_OPERATOR))
                ||
-             ((parameter.show_ & QSTAT_DISPLAY_USERHOLD) && (lGetUlong(jatep, JAT_hold)&MINUS_H_TGT_USER))
+             ((parameter.show_ & QSTAT_DISPLAY_USERHOLD) && (ocs::tom::get<JAT_hold>(jatep)&MINUS_H_TGT_USER))
                ||
-             ((parameter.show_ & QSTAT_DISPLAY_SYSTEMHOLD) && (lGetUlong(jatep, JAT_hold)&MINUS_H_TGT_SYSTEM))
+             ((parameter.show_ & QSTAT_DISPLAY_SYSTEMHOLD) && (ocs::tom::get<JAT_hold>(jatep)&MINUS_H_TGT_SYSTEM))
                ||
-             ((parameter.show_ & QSTAT_DISPLAY_JOBARRAYHOLD) && (lGetUlong(jatep, JAT_hold)&MINUS_H_TGT_JA_AD))
+             ((parameter.show_ & QSTAT_DISPLAY_JOBARRAYHOLD) && (ocs::tom::get<JAT_hold>(jatep)&MINUS_H_TGT_JA_AD))
                ||
-             ((parameter.show_ & QSTAT_DISPLAY_JOBHOLD) && lGetList(jep, JB_jid_predecessor_list))
+             ((parameter.show_ & QSTAT_DISPLAY_JOBHOLD) && ocs::tom::get<JB_jid_predecessor_list>(jep))
                ||
-             ((parameter.show_ & QSTAT_DISPLAY_STARTTIMEHOLD) && lGetUlong64(jep, JB_execution_time))
+             ((parameter.show_ & QSTAT_DISPLAY_STARTTIMEHOLD) && ocs::tom::get<JB_execution_time>(jep))
                ||
              !(parameter.show_ & QSTAT_DISPLAY_HOLD))
             ) {
             break;
          }
 
-         if (!(lGetUlong(jatep, JAT_suitable) & TAG_FOUND_IT) &&
-            VALID(JQUEUED, lGetUlong(jatep, JAT_state)) &&
-            !VALID(JFINISHED, lGetUlong(jatep, JAT_status))) {
-            lSetUlong(jatep, JAT_suitable,
-            lGetUlong(jatep, JAT_suitable)|TAG_FOUND_IT);
+         if (!(ocs::tom::get<JAT_suitable>(jatep) & TAG_FOUND_IT) &&
+            VALID(JQUEUED, ocs::tom::get<JAT_state>(jatep)) &&
+            !VALID(JFINISHED, ocs::tom::get<JAT_status>(jatep))) {
+            ocs::tom::set<JAT_suitable>(jatep,
+            ocs::tom::get<JAT_suitable>(jatep)|TAG_FOUND_IT);
 
-            if ((!lGetNumberOfElem(parameter.get_user_list()) || (lGetNumberOfElem(parameter.get_user_list()) && (lGetUlong(jatep, JAT_suitable)&TAG_SELECT_IT))) &&
-                (lGetUlong(jatep, JAT_suitable)&TAG_SHOW_IT)) {
+            if ((!lGetNumberOfElem(parameter.get_user_list()) || (lGetNumberOfElem(parameter.get_user_list()) && (ocs::tom::get<JAT_suitable>(jatep)&TAG_SELECT_IT))) &&
+                (ocs::tom::get<JAT_suitable>(jatep)&TAG_SHOW_IT)) {
 
                if ((parameter.show_ & QSTAT_DISPLAY_PENDING) &&
                    (parameter.group_opt_ & GROUP_NO_TASK_GROUPS) > 0) {
 
-                  sge_dstring_sprintf(&dyn_task_str, sge_u32, lGetUlong(jatep, JAT_task_number));
+                  sge_dstring_sprintf(&dyn_task_str, sge_u32, ocs::tom::get<JAT_task_number>(jatep));
 
                   if (count == 0) {
                      view.report_pending_jobs_started(os, parameter);
@@ -979,14 +989,14 @@ void ocs::QStatDefaultController::process_jobs_finished_state(std::ostream &os, 
       lList *ja_task_list = nullptr;
       bool FoundTasks = false;
 
-      for_each_rw_lv(jatep, lGetList(jep, JB_ja_tasks)) {
-         if (lGetUlong(jatep, JAT_status) != JFINISHED) {
+      for_each_rw_lv(jatep, ocs::tom::get<JB_ja_tasks>(jep)) {
+         if (ocs::tom::get<JAT_status>(jatep) != JFINISHED) {
             continue;
          }
-         lSetUlong(jatep, JAT_suitable, lGetUlong(jatep, JAT_suitable) | TAG_FOUND_IT);
+         ocs::tom::set<JAT_suitable>(jatep, ocs::tom::get<JAT_suitable>(jatep) | TAG_FOUND_IT);
 
          if (lGetNumberOfElem(parameter.get_user_list()) &&
-             !(lGetUlong(jatep, JAT_suitable) & TAG_SELECT_IT)) {
+             !(ocs::tom::get<JAT_suitable>(jatep) & TAG_SELECT_IT)) {
             continue;
          }
 
@@ -995,7 +1005,7 @@ void ocs::QStatDefaultController::process_jobs_finished_state(std::ostream &os, 
           * `f`, JAT-id-range in the ja-task-ID column). Mirrors the pending
           * path's summary-vs-detail fork. */
          if ((parameter.group_opt_ & GROUP_NO_TASK_GROUPS) > 0) {
-            sge_dstring_sprintf(&dyn_task_str, sge_u32, lGetUlong(jatep, JAT_task_number));
+            sge_dstring_sprintf(&dyn_task_str, sge_u32, ocs::tom::get<JAT_task_number>(jatep));
 
             if (count == 0) {
                view.report_finished_jobs_started(os, parameter);
@@ -1047,12 +1057,12 @@ void ocs::QStatDefaultController::process_jobs_error_state(std::ostream &os, QSt
    dstring dyn_task_str = DSTRING_INIT;
 
    for_each_rw_lv(jep, model.get_job_list()) {
-      for_each_rw_lv(jatep, lGetList(jep, JB_ja_tasks)) {
-         if (!(lGetUlong(jatep, JAT_suitable) & TAG_FOUND_IT) && lGetUlong(jatep, JAT_status) == JERROR) {
-            lSetUlong(jatep, JAT_suitable, lGetUlong(jatep, JAT_suitable)|TAG_FOUND_IT);
+      for_each_rw_lv(jatep, ocs::tom::get<JB_ja_tasks>(jep)) {
+         if (!(ocs::tom::get<JAT_suitable>(jatep) & TAG_FOUND_IT) && ocs::tom::get<JAT_status>(jatep) == JERROR) {
+            ocs::tom::set<JAT_suitable>(jatep, ocs::tom::get<JAT_suitable>(jatep)|TAG_FOUND_IT);
 
-            if (!lGetNumberOfElem(parameter.get_user_list()) || (lGetNumberOfElem(parameter.get_user_list()) && (lGetUlong(jatep, JAT_suitable)&TAG_SELECT_IT))) {
-               sge_dstring_sprintf(&dyn_task_str, sge_u32, lGetUlong(jatep, JAT_task_number));
+            if (!lGetNumberOfElem(parameter.get_user_list()) || (lGetNumberOfElem(parameter.get_user_list()) && (ocs::tom::get<JAT_suitable>(jatep)&TAG_SELECT_IT))) {
+               sge_dstring_sprintf(&dyn_task_str, sge_u32, ocs::tom::get<JAT_task_number>(jatep));
 
                if (count == 0) {
                    view.report_error_jobs_started(os, parameter);
@@ -1092,8 +1102,8 @@ void ocs::QStatDefaultController::process_jobs_not_enrolled(std::ostream &os, lL
           ((parameter.show_ & QSTAT_DISPLAY_OPERATORHOLD) && (hold_state[i] & MINUS_H_TGT_OPERATOR)) ||
           ((parameter.show_ & QSTAT_DISPLAY_SYSTEMHOLD) && (hold_state[i] & MINUS_H_TGT_SYSTEM)) ||
           ((parameter.show_ & QSTAT_DISPLAY_JOBARRAYHOLD) && (hold_state[i] & MINUS_H_TGT_JA_AD)) ||
-          ((parameter.show_ & QSTAT_DISPLAY_STARTTIMEHOLD) && (lGetUlong64(job, JB_execution_time) > 0)) ||
-          ((parameter.show_ & QSTAT_DISPLAY_JOBHOLD) && (lGetList(job, JB_jid_predecessor_list) != 0)) ||
+          ((parameter.show_ & QSTAT_DISPLAY_STARTTIMEHOLD) && (ocs::tom::get<JB_execution_time>(job) > 0)) ||
+          ((parameter.show_ & QSTAT_DISPLAY_JOBHOLD) && (static_cast<const lList *>(ocs::tom::get<JB_jid_predecessor_list>(job)) != 0)) ||
           (!(parameter.show_ & QSTAT_DISPLAY_HOLD))
          ) {
          show = 1;
@@ -1112,21 +1122,21 @@ void ocs::QStatDefaultController::process_jobs_not_enrolled(std::ostream &os, lL
                lList *s_h_ids = nullptr;
                lList *a_h_ids = nullptr;
 
-               lXchgList(job, JB_ja_n_h_ids, &n_h_ids);
-               lXchgList(job, JB_ja_u_h_ids, &u_h_ids);
-               lXchgList(job, JB_ja_o_h_ids, &o_h_ids);
-               lXchgList(job, JB_ja_s_h_ids, &s_h_ids);
-               lXchgList(job, JB_ja_a_h_ids, &a_h_ids);
+               ocs::tom::exchange<JB_ja_n_h_ids>(job, &n_h_ids);
+               ocs::tom::exchange<JB_ja_u_h_ids>(job, &u_h_ids);
+               ocs::tom::exchange<JB_ja_o_h_ids>(job, &o_h_ids);
+               ocs::tom::exchange<JB_ja_s_h_ids>(job, &s_h_ids);
+               ocs::tom::exchange<JB_ja_a_h_ids>(job, &a_h_ids);
 
                if (*count == 0) {
                   view.report_pending_jobs_started(os, parameter);
                }
                process_job(os, job, ja_task, nullptr, nullptr, print_jobid, master, &ja_task_id_string, slots, slot, 0, parameter, model, view);
-               lXchgList(job, JB_ja_n_h_ids, &n_h_ids);
-               lXchgList(job, JB_ja_u_h_ids, &u_h_ids);
-               lXchgList(job, JB_ja_o_h_ids, &o_h_ids);
-               lXchgList(job, JB_ja_s_h_ids, &s_h_ids);
-               lXchgList(job, JB_ja_a_h_ids, &a_h_ids);
+               ocs::tom::exchange<JB_ja_n_h_ids>(job, &n_h_ids);
+               ocs::tom::exchange<JB_ja_u_h_ids>(job, &u_h_ids);
+               ocs::tom::exchange<JB_ja_o_h_ids>(job, &o_h_ids);
+               ocs::tom::exchange<JB_ja_s_h_ids>(job, &s_h_ids);
+               ocs::tom::exchange<JB_ja_a_h_ids>(job, &a_h_ids);
                (*count)++;
             }
          } else {
@@ -1181,22 +1191,22 @@ ocs::QStatDefaultController::process_queue(std::ostream &os, lListElem *queue, Q
                                                  model.get_job_load_adjustments(), &summary.has_load_value_from_object) ? true : false;
 
    char load_alarm_reason[MAX_STRING_SIZE] {};
-   if (sge_load_alarm(nullptr, 0, queue, lGetList(queue, QU_load_thresholds), model.get_exechost_list(), model.get_centry_list(),
+   if (sge_load_alarm(nullptr, 0, queue, ocs::tom::get<QU_load_thresholds>(queue), model.get_exechost_list(), model.get_centry_list(),
                       nullptr, model.get_job_load_adjustments(), true)) {
       qinstance_state_set_alarm(queue, true);
 
-      sge_load_alarm_reason(queue, lGetListRW(queue, QU_load_thresholds), model.get_exechost_list(), model.get_centry_list(),
+      sge_load_alarm_reason(queue, ocs::tom::get<QU_load_thresholds>(queue), model.get_exechost_list(), model.get_centry_list(),
                             model.get_job_load_adjustments(), load_alarm_reason, MAX_STRING_SIZE - 1, "load");
    }
 
    char suspend_alarm_reason[MAX_STRING_SIZE] {};
    uint32_t interval;
-   parse_ulong_val(nullptr, &interval, CEntry::Type::TIME, lGetString(queue, QU_suspend_interval), nullptr, 0);
-   if (lGetUlong(queue, QU_nsuspend) != 0 && interval != 0 &&
-       sge_load_alarm(nullptr, 0, queue, lGetList(queue, QU_suspend_thresholds), model.get_exechost_list(),
+   parse_ulong_val(nullptr, &interval, CEntry::Type::TIME, ocs::tom::get<QU_suspend_interval>(queue), nullptr, 0);
+   if (ocs::tom::get<QU_nsuspend>(queue) != 0 && interval != 0 &&
+       sge_load_alarm(nullptr, 0, queue, ocs::tom::get<QU_suspend_thresholds>(queue), model.get_exechost_list(),
                       model.get_centry_list(), nullptr, model.get_job_load_adjustments(), false)) {
       qinstance_state_set_suspend_alarm(queue, true);
-      sge_load_alarm_reason(queue, lGetListRW(queue, QU_suspend_thresholds), model.get_exechost_list(), model.get_centry_list(),
+      sge_load_alarm_reason(queue, ocs::tom::get<QU_suspend_thresholds>(queue), model.get_exechost_list(), model.get_centry_list(),
                             model.get_job_load_adjustments(), suspend_alarm_reason, MAX_STRING_SIZE - 1, "suspend");
    }
 
@@ -1205,7 +1215,7 @@ ocs::QStatDefaultController::process_queue(std::ostream &os, lListElem *queue, Q
    summary.queue_type = sge_dstring_get_string(&type_string);
    summary.resv_slots = qinstance_slots_reserved_now(queue);
    summary.used_slots = qinstance_slots_used(queue);
-   summary.total_slots = (int)lGetUlong(queue, QU_job_slots);
+   summary.total_slots = (int)ocs::tom::get<QU_job_slots>(queue);
 
    /* arch */
    char arch_string[80];
@@ -1221,7 +1231,7 @@ ocs::QStatDefaultController::process_queue(std::ostream &os, lListElem *queue, Q
    summary.state = sge_dstring_get_string(&state_string);
 
    // does the executing qstat user have access to this queue?
-   const char *queue_name = lGetString(queue, QU_full_name);
+   const char *queue_name = ocs::tom::get<QU_full_name>(queue);
    view.report_queue_summary(os, queue_name, &summary, parameter);
 
    if ((parameter.show_ & QSTAT_DISPLAY_ALARMREASON)) {
@@ -1244,11 +1254,11 @@ ocs::QStatDefaultController::process_queue(std::ostream &os, lListElem *queue, Q
       }
    }
    if (parameter.explain_bits_ != QI_DEFAULT) {
-      for_each_ep_lv(qim, lGetList(queue, QU_message_list)) {
-         uint32_t type = lGetUlong(qim, QIM_type);
+      for_each_ep_lv(qim, ocs::tom::get<QU_message_list>(queue)) {
+         uint32_t type = ocs::tom::get<QIM_type>(qim);
 
          if ((parameter.explain_bits_ & QI_AMBIGUOUS) == type || (parameter.explain_bits_ & QI_ERROR) == type) {
-            const char *message = lGetString(qim, QIM_message);
+            const char *message = ocs::tom::get<QIM_message>(qim);
 
             view.report_queue_message(os, queue_name, message);
          }
@@ -1266,9 +1276,9 @@ ocs::QStatDefaultController::process_queue(std::ostream &os, lListElem *queue, Q
       for_each_rw_lv(rep , rlp) {
          /* we had a -F request */
          if (parameter.get_q_resource_list()) {
-            const lListElem *qres = lGetElemStr(parameter.get_q_resource_list(), CE_name, lGetString(rep, CE_name));
+            const lListElem *qres = ocs::tom::find_first<CE_name>(parameter.get_q_resource_list(), ocs::tom::get<CE_name>(rep));
             if (qres == nullptr) {
-               qres = lGetElemStr(parameter.get_q_resource_list(), CE_name, lGetString(rep, CE_shortcut));
+               qres = ocs::tom::find_first<CE_name>(parameter.get_q_resource_list(), ocs::tom::get<CE_shortcut>(rep));
             }
 
             /* if this complex variable wasn't requested with -F, skip it */
@@ -1284,9 +1294,9 @@ ocs::QStatDefaultController::process_queue(std::ostream &os, lListElem *queue, Q
          monitor_dominance(dom, dominant);
 
          std::string details;
-         if (strcmp(lGetString(rep, CE_name), LOAD_ATTR_TOPOLOGY) == 0) {
-            const char *hostname = lGetHost(queue, QU_qhostname);
-            const lListElem *host = lGetElemHost(model.get_exechost_list(), EH_name, hostname);
+         if (strcmp(ocs::tom::get<CE_name>(rep), LOAD_ATTR_TOPOLOGY) == 0) {
+            const char *hostname = ocs::tom::get<QU_qhostname>(queue);
+            const lListElem *host = ocs::tom::find_first<EH_name>(model.get_exechost_list(), hostname);
             details = host_get_topology_in_use(host);
          }
 
@@ -1294,7 +1304,7 @@ ocs::QStatDefaultController::process_queue(std::ostream &os, lListElem *queue, Q
             view.report_queue_resource_started(os, "");
             in_resource_list = true;
          }
-         view.report_queue_resource(os, rep, dom, lGetString(rep, CE_name), s, details.c_str());
+         view.report_queue_resource(os, rep, dom, ocs::tom::get<CE_name>(rep), s, details.c_str());
       }
 
       if (in_resource_list) {

@@ -34,6 +34,9 @@
 #include "sgeobj/cull/sge_matchcache_HM_L.h"
 #include "sgeobj/ocs_MatchCache.h"
 #include "sgeobj/sge_conf.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_HM.h"
+#include "sgeobj/tom/ocs_tom_HR.h"
 
 /**
  * @brief The one lock that guards every structural change of a matching cache
@@ -141,7 +144,7 @@ ocs::MatchCache::lookup(lListElem *hgroup, const char *hostname) {
       DRETURN(false);
    }
 
-   lListElem *entry = lGetElemHostRW(lGetList(hgroup, HGRP_match_cache), HM_name, hostname);
+   lListElem *entry = ocs::tom::find_first_rw<HM_name>(ocs::tom::get<HGRP_match_cache>(hgroup), hostname);
 
    if (entry == nullptr) {
       DRETURN(false);
@@ -177,7 +180,7 @@ ocs::MatchCache::insert(lListElem *hgroup, const char *hostname) {
    const uint64_t now = sge_get_gmt64();
 
    std::lock_guard<std::mutex> guard(match_cache_mutex);
-   lList *cache = lGetListRW(hgroup, HGRP_match_cache);
+   lList *cache = ocs::tom::get<HGRP_match_cache>(hgroup);
    const bool created = (cache == nullptr);
 
    if (created) {
@@ -189,15 +192,15 @@ ocs::MatchCache::insert(lListElem *hgroup, const char *hostname) {
    // unique and hashed, and a list that ever holds two entries under one key
    // cannot be repaired: removing either drops the key from the hash and leaves
    // the other present but unfindable.
-   if (lGetElemHost(cache, HM_name, hostname) == nullptr) {
-      lListElem *fresh = lAddElemHost(&cache, HM_name, hostname, HM_Type);
+   if (static_cast<const lListElem *>(ocs::tom::find_first<HM_name>(cache, hostname)) == nullptr) {
+      lListElem *fresh = ocs::tom::emplace_back<HM_name>(&cache, hostname);
 
       if (fresh != nullptr) {
-         lSetUlong64(fresh, HM_last_used, now);
+         ocs::tom::set<HM_last_used>(fresh, now);
       }
    }
    if (created) {
-      lSetList(hgroup, HGRP_match_cache, cache);
+      ocs::tom::set<HGRP_match_cache>(hgroup, cache);
    }
 
    DRETURN_VOID;
@@ -232,7 +235,7 @@ ocs::MatchCache::detach(lListElem *hgroup) {
    lList *cache = nullptr;
 
    std::lock_guard<std::mutex> guard(match_cache_mutex);
-   lXchgList(hgroup, HGRP_match_cache, &cache);
+   ocs::tom::exchange<HGRP_match_cache>(hgroup, &cache);
 
    DRETURN(cache);
 }
@@ -277,13 +280,13 @@ ocs::MatchCache::adopt(lListElem *hgroup, lList **cache) {
    }
 
    std::lock_guard<std::mutex> guard(match_cache_mutex);
-   const lList *resolved = lGetList(hgroup, HGRP_cached_hosts);
+   const lList *resolved = ocs::tom::get<HGRP_cached_hosts>(hgroup);
    lListElem *entry = lFirstRW(*cache);
 
    for (int examined = 0; entry != nullptr && examined < MATCH_CACHE_PRUNE_BOUND; examined++) {
       lListElem *next = lNextRW(entry);
 
-      if (lGetElemHost(resolved, HR_name, lGetHost(entry, HM_name)) != nullptr) {
+      if (static_cast<const lListElem *>(ocs::tom::find_first<HR_name>(resolved, ocs::tom::get<HM_name>(entry))) != nullptr) {
          lRemoveElem(*cache, &entry);
       }
       entry = next;
@@ -292,7 +295,7 @@ ocs::MatchCache::adopt(lListElem *hgroup, lList **cache) {
    // Exchange rather than set: the new element carries an empty cache of its own,
    // because the field does not travel in an event payload, and that one is freed
    // with the list below.
-   lXchgList(hgroup, HGRP_match_cache, cache);
+   ocs::tom::exchange<HGRP_match_cache>(hgroup, cache);
    lFreeList(cache);
 
    DRETURN_VOID;
@@ -332,7 +335,7 @@ ocs::MatchCache::discard_all(lList *master_hgroup_list) {
    for_each_rw_lv(hgroup, master_hgroup_list) {
       lList *cache = nullptr;
 
-      lXchgList(hgroup, HGRP_match_cache, &cache);
+      ocs::tom::exchange<HGRP_match_cache>(hgroup, &cache);
       lFreeList(&cache);
    }
 

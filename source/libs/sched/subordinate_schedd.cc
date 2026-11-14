@@ -44,6 +44,7 @@
 
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_qinstance_state.h"
+#include "tom/ocs_Element.h"
 
 #include "subordinate_schedd.h"
 
@@ -82,8 +83,8 @@ int sos_schedd(const char *qname, lList *qlist) {
    }
 
    /* increment sos counter */
-   sos = lGetUlong(q, QU_suspended_on_subordinate);
-   lSetUlong(q, QU_suspended_on_subordinate, ++sos);
+   sos = ocs::tom::get<QU_suspended_on_subordinate>(q);
+   ocs::tom::set<QU_suspended_on_subordinate>(q, ++sos);
 
    /* first sos ? */
    if (sos==1) {

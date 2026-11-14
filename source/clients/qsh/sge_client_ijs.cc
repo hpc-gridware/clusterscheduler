@@ -70,6 +70,7 @@
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_range.h"
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "tom/ocs_Element.h"
 
 /* module variables */
 static char *g_hostname  = nullptr;
@@ -1548,9 +1549,9 @@ int start_ijs_server(cl_framework_t communication_framework, const char *hostnam
       bool found = false;
       comm_set_suppress_bind_errors(true);
       for (const lListElem *rep = lFirst(port_range); rep && !found; rep = lNext(rep)) {
-         const uint32_t min  = lGetUlong(rep, RN_min);
-         const uint32_t max  = lGetUlong(rep, RN_max);
-         uint32_t step = lGetUlong(rep, RN_step);
+         const uint32_t min  = ocs::tom::get<RN_min>(rep);
+         const uint32_t max  = ocs::tom::get<RN_max>(rep);
+         uint32_t step = ocs::tom::get<RN_step>(rep);
          if (step == 0) {
             step = 1;
          }

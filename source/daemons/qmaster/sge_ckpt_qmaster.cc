@@ -47,6 +47,7 @@
 #include "sgeobj/sge_ckpt.h"
 #include "sgeobj/sge_utility.h"
 #include "sgeobj/ocs_DataStore.h"
+#include "tom/ocs_Element.h"
 
 #include "spool/sge_spooling.h"
 
@@ -95,13 +96,13 @@ ckpt_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem
    const char *ckpt_name;
 
    /* ---- CK_name */
-   if (lGetPosViaElem(ckpt, CK_name, SGE_NO_ABORT) >= 0) {
+   if (ocs::tom::has<CK_name>(ckpt)) {
       if (add) {
          if (attr_mod_str(alpp, ckpt, new_ckpt, CK_name, SGE_ATTR_CKPT_NAME)) {
             goto ERROR;
          }
       }
-      ckpt_name = lGetString(new_ckpt, CK_name);
+      ckpt_name = ocs::tom::get<CK_name>(new_ckpt);
       if (add && verify_obj_name(
               alpp, ckpt_name, MAX_VERIFY_STRING, SGE_ATTR_CKPT_NAME) != STATUS_OK) {
          DRETURN(STATUS_EUNKNOWN);
@@ -129,11 +130,11 @@ ckpt_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem
    attr_mod_str(alpp, ckpt, new_ckpt, CK_ckpt_dir, SGE_ATTR_CKPT_DIR);
 
    /* ---- CK_when */
-   if (lGetPosViaElem(ckpt, CK_when, SGE_NO_ABORT) >= 0) {
+   if (ocs::tom::has<CK_when>(ckpt)) {
       int new_flags, flags;
 
-      new_flags = sge_parse_checkpoint_attr(lGetString(new_ckpt, CK_when));
-      flags = sge_parse_checkpoint_attr(lGetString(ckpt, CK_when));
+      new_flags = sge_parse_checkpoint_attr(ocs::tom::get<CK_when>(new_ckpt));
+      flags = sge_parse_checkpoint_attr(ocs::tom::get<CK_when>(ckpt));
 
       if ((sub_command & ocs::gdi::SubCommand::APPEND) == ocs::gdi::SubCommand::APPEND || (sub_command & ocs::gdi::SubCommand::CHANGE) == ocs::gdi::SubCommand::CHANGE) {
          new_flags |= flags;
@@ -143,7 +144,7 @@ ckpt_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem
          new_flags = flags;
       }
       if (is_checkpoint_when_valid(new_flags)) {
-         lSetString(new_ckpt, CK_when, get_checkpoint_when(new_flags));
+         ocs::tom::set<CK_when>(new_ckpt, get_checkpoint_when(new_flags));
       } else {
          ERROR(MSG_CKPT_INVALIDWHENATTRIBUTE_S, ckpt_name);
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
@@ -193,12 +194,12 @@ int ckpt_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lLi
    lList *answer_list = nullptr;
 
    bool dbret = spool_write_object(&answer_list, spool_get_default_context(), ep,
-                                   lGetString(ep, CK_name), SGE_TYPE_CKPT);
+                                   ocs::tom::get<CK_name>(ep), SGE_TYPE_CKPT);
    answer_list_output(&answer_list);
 
    if (!dbret) {
       answer_list_add_sprintf(alpp, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
-                              MSG_PERSISTENCE_WRITE_FAILED_S, lGetString(ep, CK_name));
+                              MSG_PERSISTENCE_WRITE_FAILED_S, ocs::tom::get<CK_name>(ep));
    }
 
    DRETURN(dbret ? 0 : 1);
@@ -230,7 +231,7 @@ ckpt_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lLis
 
    const char *ckpt_name;
 
-   ckpt_name = lGetString(ep, CK_name);
+   ckpt_name = ocs::tom::get<CK_name>(ep);
 
    sge_add_event(0, old_ep ? sgeE_CKPT_MOD : sgeE_CKPT_ADD, 0, 0,
                  ckpt_name, nullptr, nullptr, ep, packet->gdi_session);
@@ -300,7 +301,7 @@ sge_del_ckpt(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lLis
                              *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE))) {
          const lListElem *answer = lFirst(local_answer_list);
 
-         ERROR("denied: %s", lGetString(answer, AN_text));
+         ERROR("denied: %s", ocs::tom::get<AN_text>(answer));
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN,
                          ANSWER_QUALITY_ERROR);
          lFreeList(&local_answer_list);

@@ -31,6 +31,7 @@
 
 #include "qhost/ocs_QHostParameter.h"
 #include "sgeobj/cull/sge_param_SPP_L.h"
+#include "tom/ocs_Element.h"
 
 /** @brief Build the parameters on the server, from a received bundle
  * @param bundle the marshalled parameters
@@ -67,29 +68,29 @@ void ocs::QRStatParameter::set_bundle(const lList *bundle) {
    ProcedureParameter::set_bundle(bundle);
 
    // -explain
-   const lListElem *explain_param = lGetElemStr(bundle, SPP_name, EXPLAIN);
-   const lList *explain_list = lGetList(explain_param, SPP_value_list);
-   is_explain_ = lGetUlong(lFirst(explain_list), ULNG_value);
+   const lListElem *explain_param = ocs::tom::find_first<SPP_name>(bundle, EXPLAIN);
+   const lList *explain_list = ocs::tom::get<SPP_value_list>(explain_param);
+   is_explain_ = ocs::tom::get<ULNG_value>(lFirst(explain_list));
 
    // show summary or individual AR
-   const lListElem *summary_param = lGetElemStr(bundle, SPP_name, SUMMARY);
-   const lList *summary_list = lGetList(summary_param, SPP_value_list);
-   is_summary_ = lGetUlong(lFirst(summary_list), ULNG_value);
+   const lListElem *summary_param = ocs::tom::find_first<SPP_name>(bundle, SUMMARY);
+   const lList *summary_list = ocs::tom::get<SPP_value_list>(summary_param);
+   is_summary_ = ocs::tom::get<ULNG_value>(lFirst(summary_list));
 
    // clients username
-   const lListElem *username_param = lGetElemStr(bundle, SPP_name, USERNAME);
-   const lList *username_list = lGetList(username_param, SPP_value_list);
-   strncpy(user_, lGetString(lFirst(username_list), ST_name), sizeof(user_) - 1);
+   const lListElem *username_param = ocs::tom::find_first<SPP_name>(bundle, USERNAME);
+   const lList *username_list = ocs::tom::get<SPP_value_list>(username_param);
+   strncpy(user_, ocs::tom::get<ST_name>(lFirst(username_list)), sizeof(user_) - 1);
 
    // -u
-   lListElem *user_name_param = lGetElemStrRW(bundle, SPP_name, QRStatParameter::USER_NAME_LIST);
+   lListElem *user_name_param = ocs::tom::find_first_rw<SPP_name>(bundle, QRStatParameter::USER_NAME_LIST);
    user_list_ = nullptr;
-   lXchgList(user_name_param, SPP_value_list, &user_list_);
+   ocs::tom::exchange<SPP_value_list>(user_name_param, &user_list_);
 
    // -ar
-   lListElem *ar_id_param = lGetElemStrRW(bundle, SPP_name, AR_ID_LIST);
+   lListElem *ar_id_param = ocs::tom::find_first_rw<SPP_name>(bundle, AR_ID_LIST);
    ar_id_list_ = nullptr;
-   lXchgList(ar_id_param, SPP_value_list, &ar_id_list_);
+   ocs::tom::exchange<SPP_value_list>(ar_id_param, &ar_id_list_);
 }
 
 lList * ocs::QRStatParameter::get_bundle() {
@@ -99,30 +100,30 @@ lList * ocs::QRStatParameter::get_bundle() {
    lList *bundle = ProcedureParameter::get_bundle();
 
    // -ar
-   lListElem *ep = lAddElemStr(&bundle, SPP_name, AR_ID_LIST, SPP_Type);
-   lSetList(ep, SPP_value_list, lCopyList(nullptr, ar_id_list_));
+   lListElem *ep = ocs::tom::emplace_back<SPP_name>(&bundle, AR_ID_LIST);
+   ocs::tom::set<SPP_value_list>(ep, lCopyList(nullptr, ar_id_list_));
 
    // -u
-   ep = lAddElemStr(&bundle, SPP_name, USER_NAME_LIST, SPP_Type);
-   lSetList(ep, SPP_value_list, lCopyList(nullptr, user_list_));
+   ep = ocs::tom::emplace_back<SPP_name>(&bundle, USER_NAME_LIST);
+   ocs::tom::set<SPP_value_list>(ep, lCopyList(nullptr, user_list_));
 
    // show summary or individual AR
    lList *username_list = nullptr;
-   lAddElemStr(&username_list, ST_name, user_, ST_Type);
-   ep = lAddElemStr(&bundle, SPP_name, USERNAME, SPP_Type);
-   lSetList(ep, SPP_value_list, username_list);
+   ocs::tom::emplace_back<ST_name>(&username_list, user_);
+   ep = ocs::tom::emplace_back<SPP_name>(&bundle, USERNAME);
+   ocs::tom::set<SPP_value_list>(ep, username_list);
 
    // show summary or individual AR
    lList *show_list = nullptr;
-   lAddElemUlong(&show_list, ULNG_value, is_summary_, ULNG_Type);
-   ep = lAddElemStr(&bundle, SPP_name, SUMMARY, SPP_Type);
-   lSetList(ep, SPP_value_list, show_list);
+   ocs::tom::emplace_back<ULNG_value>(&show_list, is_summary_);
+   ep = ocs::tom::emplace_back<SPP_name>(&bundle, SUMMARY);
+   ocs::tom::set<SPP_value_list>(ep, show_list);
 
    // -explain
    lList *explain_list = nullptr;
-   lAddElemUlong(&explain_list, ULNG_value, is_explain(), ULNG_Type);
-   ep = lAddElemStr(&bundle, SPP_name, EXPLAIN, SPP_Type);
-   lSetList(ep, SPP_value_list, explain_list);
+   ocs::tom::emplace_back<ULNG_value>(&explain_list, is_explain());
+   ep = ocs::tom::emplace_back<SPP_name>(&bundle, EXPLAIN);
+   ocs::tom::set<SPP_value_list>(ep, explain_list);
 
    DRETURN(bundle);
 }

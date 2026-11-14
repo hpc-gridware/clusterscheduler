@@ -75,6 +75,9 @@
 #include "sgeobj/sge_range.h"
 #include "sgeobj/sge_schedd_conf.h"
 #include "sgeobj/cull_parse_util.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_CE.h"
+#include "sgeobj/tom/ocs_tom_UA.h"
 
 #include "msg_common.h"
 #include "uti/sge.h"
@@ -463,7 +466,7 @@ bool sconf_is_valid_load_formula(lList **answer_list, const lList *centry_list) 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
    const lListElem *schedd_conf = lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
-   const char *load_formula = lGetString(schedd_conf, SC_load_formula);
+   const char *load_formula = ocs::tom::get<SC_load_formula>(schedd_conf);
    sge_strip_blanks((char *)load_formula);
    bool is_valid = validate_load_formula(load_formula, answer_list, centry_list, SGE_ATTR_LOAD_FORMULA);
 
@@ -489,56 +492,56 @@ lListElem *sconf_create_default() {
 
    ep = lCreateElem(SC_Type);
 
-   lSetString(ep, SC_algorithm, "default");
-   lSetString(ep, SC_schedule_interval, SCHEDULE_TIME);
-   lSetUlong(ep, SC_maxujobs, MAXUJOBS);
+   ocs::tom::set<SC_algorithm>(ep, "default");
+   ocs::tom::set<SC_schedule_interval>(ep, SCHEDULE_TIME);
+   ocs::tom::set<SC_maxujobs>(ep, MAXUJOBS);
 
-   lSetUlong(ep, SC_queue_sort_method, QSM_LOAD);
+   ocs::tom::set<SC_queue_sort_method>(ep, QSM_LOAD);
 
-   added = lAddSubStr(ep, CE_name, "np_load_avg", SC_job_load_adjustments, CE_Type);
-   lSetString(added, CE_stringval, "0.50");
+   added = ocs::tom::emplace_back_in<SC_job_load_adjustments, CE_name>(ep, "np_load_avg");
+   ocs::tom::set<CE_stringval>(added, "0.50");
 
-   lSetString(ep, SC_load_adjustment_decay_time,
+   ocs::tom::set<SC_load_adjustment_decay_time>(ep,
                      DEFAULT_LOAD_ADJUSTMENTS_DECAY_TIME);
-   lSetString(ep, SC_load_formula, DEFAULT_LOAD_FORMULA);
-   lSetString(ep, SC_schedd_job_info, SCHEDD_JOB_INFO);
-   lSetUlong(ep, SC_flush_submit_sec, 0);
-   lSetUlong(ep, SC_flush_finish_sec, 0);
-   lSetString(ep, SC_params, "none");
+   ocs::tom::set<SC_load_formula>(ep, DEFAULT_LOAD_FORMULA);
+   ocs::tom::set<SC_schedd_job_info>(ep, SCHEDD_JOB_INFO);
+   ocs::tom::set<SC_flush_submit_sec>(ep, 0);
+   ocs::tom::set<SC_flush_finish_sec>(ep, 0);
+   ocs::tom::set<SC_params>(ep, "none");
 
-   lSetString(ep, SC_reprioritize_interval, REPRIORITIZE_INTERVAL);
-   lSetUlong(ep, SC_halftime, 168);
+   ocs::tom::set<SC_reprioritize_interval>(ep, REPRIORITIZE_INTERVAL);
+   ocs::tom::set<SC_halftime>(ep, 168);
 
-   added = lAddSubStr(ep, UA_name, USAGE_ATTR_CPU, SC_usage_weight_list, UA_Type);
-   lSetDouble(added, UA_value, 1.00);
-   added = lAddSubStr(ep, UA_name, USAGE_ATTR_MEM, SC_usage_weight_list, UA_Type);
-   lSetDouble(added, UA_value, 0.0);
-   added = lAddSubStr(ep, UA_name, USAGE_ATTR_IO, SC_usage_weight_list, UA_Type);
-   lSetDouble(added, UA_value, 0.0);
+   added = ocs::tom::emplace_back_in<SC_usage_weight_list, UA_name>(ep, USAGE_ATTR_CPU);
+   ocs::tom::set<UA_value>(added, 1.00);
+   added = ocs::tom::emplace_back_in<SC_usage_weight_list, UA_name>(ep, USAGE_ATTR_MEM);
+   ocs::tom::set<UA_value>(added, 0.0);
+   added = ocs::tom::emplace_back_in<SC_usage_weight_list, UA_name>(ep, USAGE_ATTR_IO);
+   ocs::tom::set<UA_value>(added, 0.0);
 
-   lSetDouble(ep, SC_compensation_factor, 5);
-   lSetDouble(ep, SC_weight_user, 0.25);
-   lSetDouble(ep, SC_weight_project, 0.25);
-   lSetDouble(ep, SC_weight_department, 0.25);
-   lSetDouble(ep, SC_weight_job, 0.25);
-   lSetUlong(ep, SC_weight_tickets_functional, 0);
-   lSetUlong(ep, SC_weight_tickets_share, 0);
+   ocs::tom::set<SC_compensation_factor>(ep, 5);
+   ocs::tom::set<SC_weight_user>(ep, 0.25);
+   ocs::tom::set<SC_weight_project>(ep, 0.25);
+   ocs::tom::set<SC_weight_department>(ep, 0.25);
+   ocs::tom::set<SC_weight_job>(ep, 0.25);
+   ocs::tom::set<SC_weight_tickets_functional>(ep, 0);
+   ocs::tom::set<SC_weight_tickets_share>(ep, 0);
 
-   lSetBool(ep, SC_share_override_tickets, true);
-   lSetBool(ep, SC_share_functional_shares, true);
-   lSetUlong(ep, SC_max_functional_jobs_to_schedule, 200);
-   lSetBool(ep, SC_report_pjob_tickets, true);
-   lSetUlong(ep, SC_max_pending_tasks_per_job, 50);
-   lSetString(ep, SC_halflife_decay_list, "none");
-   lSetString(ep, SC_policy_hierarchy, policy_hierarchy_chars );
+   ocs::tom::set<SC_share_override_tickets>(ep, true);
+   ocs::tom::set<SC_share_functional_shares>(ep, true);
+   ocs::tom::set<SC_max_functional_jobs_to_schedule>(ep, 200);
+   ocs::tom::set<SC_report_pjob_tickets>(ep, true);
+   ocs::tom::set<SC_max_pending_tasks_per_job>(ep, 50);
+   ocs::tom::set<SC_halflife_decay_list>(ep, "none");
+   ocs::tom::set<SC_policy_hierarchy>(ep, policy_hierarchy_chars );
 
-   lSetDouble(ep, SC_weight_ticket, 0.5);
-   lSetDouble(ep, SC_weight_waiting_time, 0.278);
-   lSetDouble(ep, SC_weight_deadline, 3600000 );
-   lSetDouble(ep, SC_weight_urgency, 0.5 );
-   lSetUlong(ep, SC_max_reservation, 0);
-   lSetDouble(ep, SC_weight_priority, 0.0 );
-   lSetString(ep, SC_default_duration, DEFAULT_DURATION);
+   ocs::tom::set<SC_weight_ticket>(ep, 0.5);
+   ocs::tom::set<SC_weight_waiting_time>(ep, 0.278);
+   ocs::tom::set<SC_weight_deadline>(ep, 3600000 );
+   ocs::tom::set<SC_weight_urgency>(ep, 0.5 );
+   ocs::tom::set<SC_max_reservation>(ep, 0);
+   ocs::tom::set<SC_weight_priority>(ep, 0.0 );
+   ocs::tom::set<SC_default_duration>(ep, DEFAULT_DURATION);
 
    DRETURN(ep);
 }
@@ -561,14 +564,14 @@ bool sconf_is_centry_referenced(const lListElem *centry) {
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
    if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
-      const char *name = lGetString(centry, CE_name);
-      const lList *centry_list = lGetList(sc_ep, SC_job_load_adjustments);
-      const lListElem *centry_ref = lGetElemStr(centry_list, CE_name, name);
+      const char *name = ocs::tom::get<CE_name>(centry);
+      const lList *centry_list = ocs::tom::get<SC_job_load_adjustments>(sc_ep);
+      const lListElem *centry_ref = ocs::tom::find_first<CE_name>(centry_list, name);
 
       ret = ((centry_ref != nullptr)? true : false);
 
       if (!ret) {
-         if (load_formula_is_centry_referenced(lGetString(sc_ep, SC_load_formula), centry)) {
+         if (load_formula_is_centry_referenced(ocs::tom::get<SC_load_formula>(sc_ep), centry)) {
             ret = true;
          }
       }
@@ -591,7 +594,7 @@ static const char *get_load_adjustment_decay_time_str() {
    const lListElem *sc_ep = ocs_sconf_elem();
 
    if (sc_ep != nullptr) {
-      return lGetString(sc_ep, SC_load_adjustment_decay_time);
+      return ocs::tom::get<SC_load_adjustment_decay_time>(sc_ep);
    }
    else {
       return DEFAULT_LOAD_ADJUSTMENTS_DECAY_TIME;
@@ -656,7 +659,7 @@ static const lList *get_job_load_adjustments() {
    const lListElem *sc_ep = ocs_sconf_elem();
 
    if (sc_ep != nullptr) {
-      return lGetList(sc_ep, SC_job_load_adjustments);
+      return ocs::tom::get<SC_job_load_adjustments>(sc_ep);
    } else {
       return nullptr;
    }
@@ -696,7 +699,7 @@ static const char *get_load_formula() {
    const lListElem *sc_ep = ocs_sconf_elem();
 
    if (sc_ep != nullptr) {
-      return lGetString(sc_ep, SC_load_formula);
+      return ocs::tom::get<SC_load_formula>(sc_ep);
    }
    else {
       return DEFAULT_LOAD_FORMULA;
@@ -718,7 +721,7 @@ uint32_t sconf_get_queue_sort_method() {
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
    if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
-      sort_method = lGetUlong(sc_ep, SC_queue_sort_method);
+      sort_method = ocs::tom::get<SC_queue_sort_method>(sc_ep);
    }
 
    sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -740,7 +743,7 @@ uint32_t sconf_get_maxujobs() {
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
    if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
-      jobs = lGetUlong(sc_ep, SC_maxujobs);
+      jobs = ocs::tom::get<SC_maxujobs>(sc_ep);
    }
 
    sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -758,7 +761,7 @@ uint32_t sconf_get_maxujobs() {
  */
 static const char *get_schedule_interval_str() {
    if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
-      return lGetString(sc_ep, SC_schedule_interval);
+      return ocs::tom::get<SC_schedule_interval>(sc_ep);
    }
    else {
       return SCHEDULE_TIME;
@@ -801,7 +804,7 @@ uint32_t sconf_get_schedule_interval() {
  */
 static const char *reprioritize_interval_str() {
    if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
-      return lGetString(sc_ep, SC_reprioritize_interval);
+      return ocs::tom::get<SC_reprioritize_interval>(sc_ep);
    }
    else {
       return REPRIORITIZE_INTERVAL;
@@ -1079,7 +1082,7 @@ bool sconf_is_id_in_schedd_job_info_range(uint32_t job_number) {
  */
 static const char *get_algorithm() {
    if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
-      return lGetString(sc_ep, SC_algorithm);
+      return ocs::tom::get<SC_algorithm>(sc_ep);
    }
    else {
       return "default";
@@ -1121,7 +1124,7 @@ static const lList *get_usage_weight_list() {
    const lListElem *sc_ep = ocs_sconf_elem();
 
    if (sc_ep != nullptr) {
-      return lGetList(sc_ep, SC_usage_weight_list);
+      return ocs::tom::get<SC_usage_weight_list>(sc_ep);
    }
    else {
       return nullptr;
@@ -1144,7 +1147,7 @@ double sconf_get_weight_user() {
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
    if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
-      weight = lGetDouble(sc_ep, SC_weight_user);
+      weight = ocs::tom::get<SC_weight_user>(sc_ep);
    }
 
    sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -1166,7 +1169,7 @@ double sconf_get_weight_department() {
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
    if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
-      weight = lGetDouble(sc_ep, SC_weight_department);
+      weight = ocs::tom::get<SC_weight_department>(sc_ep);
    }
 
    sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -1188,7 +1191,7 @@ double sconf_get_weight_project() {
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
    if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
-      weight = lGetDouble(sc_ep, SC_weight_project);
+      weight = ocs::tom::get<SC_weight_project>(sc_ep);
    }
 
    sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -1210,7 +1213,7 @@ double sconf_get_weight_job() {
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
    if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
-      weight = lGetDouble(sc_ep, SC_weight_job);
+      weight = ocs::tom::get<SC_weight_job>(sc_ep);
    }
 
    sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -1232,7 +1235,7 @@ uint32_t sconf_get_weight_tickets_share() {
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
    if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
-      weight = lGetUlong(sc_ep, SC_weight_tickets_share);
+      weight = ocs::tom::get<SC_weight_tickets_share>(sc_ep);
    }
 
    sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -1254,7 +1257,7 @@ uint32_t sconf_get_weight_tickets_functional() {
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
    if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
-      weight = lGetUlong(sc_ep, SC_weight_tickets_functional);
+      weight = ocs::tom::get<SC_weight_tickets_functional>(sc_ep);
    }
 
    sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -1276,7 +1279,7 @@ uint32_t sconf_get_halftime() {
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
    if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
-      halftime = lGetUlong(sc_ep, SC_halftime);
+      halftime = ocs::tom::get<SC_halftime>(sc_ep);
    }
 
    sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -1301,7 +1304,7 @@ void sconf_set_weight_tickets_override(uint32_t active) {
    sc_ep = lFirstRW(*ocs::DataStore::get_master_list_rw(SGE_TYPE_SCHEDD_CONF));
 
    if (sc_ep != nullptr) {
-      lSetUlong(sc_ep, SC_weight_tickets_override, active);
+      ocs::tom::set<SC_weight_tickets_override>(sc_ep, active);
    }
 
    sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -1323,7 +1326,7 @@ uint32_t sconf_get_weight_tickets_override() {
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
    if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
-      tickets = lGetUlong(sc_ep, SC_weight_tickets_override);
+      tickets = ocs::tom::get<SC_weight_tickets_override>(sc_ep);
    }
 
    sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -1345,7 +1348,7 @@ double sconf_get_compensation_factor() {
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
    if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
-      factor = lGetDouble(sc_ep, SC_compensation_factor);
+      factor = ocs::tom::get<SC_compensation_factor>(sc_ep);
    }
 
    sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -1367,7 +1370,7 @@ double sconf_get_weight_ticket() {
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
    if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
-      weight = lGetDouble(sc_ep, SC_weight_ticket);
+      weight = ocs::tom::get<SC_weight_ticket>(sc_ep);
    }
 
    sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -1393,9 +1396,9 @@ void sconf_get_weight_ticket_urgency_priority(double *ticket, double *urgency, d
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
    if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
-      *ticket = lGetDouble(sc_ep, SC_weight_ticket);
-      *urgency = lGetDouble(sc_ep, SC_weight_urgency);
-      *priority = lGetDouble(sc_ep, SC_weight_priority);
+      *ticket = ocs::tom::get<SC_weight_ticket>(sc_ep);
+      *urgency = ocs::tom::get<SC_weight_urgency>(sc_ep);
+      *priority = ocs::tom::get<SC_weight_priority>(sc_ep);
    }
 
    sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -1416,7 +1419,7 @@ double sconf_get_weight_waiting_time() {
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
    if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
-      weight = lGetDouble(sc_ep, SC_weight_waiting_time);
+      weight = ocs::tom::get<SC_weight_waiting_time>(sc_ep);
    }
 
    sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -1438,7 +1441,7 @@ double sconf_get_weight_deadline() {
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
    if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
-      weight = lGetDouble(sc_ep, SC_weight_deadline);
+      weight = ocs::tom::get<SC_weight_deadline>(sc_ep);
    }
 
    sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -1460,7 +1463,7 @@ double sconf_get_weight_urgency() {
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
    if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
-      weight = lGetDouble(sc_ep, SC_weight_urgency);
+      weight = ocs::tom::get<SC_weight_urgency>(sc_ep);
    }
 
    sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -1485,7 +1488,7 @@ uint32_t sconf_get_max_reservations() {
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
    if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
-      max_res = lGetUlong(sc_ep, SC_max_reservation);
+      max_res = ocs::tom::get<SC_max_reservation>(sc_ep);
    }
 
    sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -1505,7 +1508,7 @@ static const char *get_default_duration_str() {
    const lListElem *sc_ep = ocs_sconf_elem();
 
    if (sc_ep != nullptr) {
-      return lGetString(sc_ep, SC_default_duration);
+      return ocs::tom::get<SC_default_duration>(sc_ep);
    }
    else {
       return DEFAULT_DURATION;
@@ -1526,7 +1529,7 @@ double sconf_get_weight_priority() {
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
    if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
-      weight = lGetDouble(sc_ep, SC_weight_priority);
+      weight = ocs::tom::get<SC_weight_priority>(sc_ep);
    }
 
    sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -1549,7 +1552,7 @@ bool sconf_get_share_override_tickets() {
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
    if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
-      is_share = lGetBool(sc_ep, SC_share_override_tickets) ? true : false;
+      is_share = ocs::tom::get<SC_share_override_tickets>(sc_ep) ? true : false;
    }
 
    sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -1568,7 +1571,7 @@ bool sconf_get_share_functional_shares() {
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
    if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
-      is_share = lGetBool(sc_ep, SC_share_functional_shares) ? true : false;
+      is_share = ocs::tom::get<SC_share_functional_shares>(sc_ep) ? true : false;
    }
 
    sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -1590,7 +1593,7 @@ bool sconf_get_report_pjob_tickets() {
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
    if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
-      is_report = lGetBool(sc_ep, SC_report_pjob_tickets) ? true : false;
+      is_report = ocs::tom::get<SC_report_pjob_tickets>(sc_ep) ? true : false;
    }
 
    sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -1612,7 +1615,7 @@ uint32_t sconf_get_flush_submit_sec() {
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
    if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
-      flush_sec = lGetUlong(sc_ep, SC_flush_submit_sec);
+      flush_sec = ocs::tom::get<SC_flush_submit_sec>(sc_ep);
    }
 
    sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -1634,7 +1637,7 @@ uint32_t sconf_get_flush_finish_sec() {
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
    if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
-      flush_sec = lGetUlong(sc_ep, SC_flush_finish_sec);
+      flush_sec = ocs::tom::get<SC_flush_finish_sec>(sc_ep);
    }
 
    sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -1657,7 +1660,7 @@ uint32_t sconf_get_max_functional_jobs_to_schedule() {
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
    if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
-      amount = lGetUlong(sc_ep, SC_max_functional_jobs_to_schedule);
+      amount = ocs::tom::get<SC_max_functional_jobs_to_schedule>(sc_ep);
    }
 
    sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -1679,7 +1682,7 @@ uint32_t sconf_get_max_pending_tasks_per_job() {
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
    if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
-      max_pending = lGetUlong(sc_ep, SC_max_pending_tasks_per_job);
+      max_pending = ocs::tom::get<SC_max_pending_tasks_per_job>(sc_ep);
    }
 
    sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -1699,7 +1702,7 @@ static const char *get_halflife_decay_list_str() {
    const lListElem *sc_ep = ocs_sconf_elem();
 
    if (sc_ep != nullptr) {
-      return lGetString(sc_ep, SC_halflife_decay_list);
+      return ocs::tom::get<SC_halflife_decay_list>(sc_ep);
    }
    else {
       return "none";
@@ -1831,10 +1834,10 @@ void sconf_print_config(){
    INFO(MSG_ATTRIB_USINGXFORY_SS, get_load_formula(), "load_formula");
 
    /* --- SC_schedd_job_info */
-   INFO(MSG_ATTRIB_USINGXFORY_SS, lGetString(lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF)), SC_schedd_job_info), "schedd_job_info");
+   INFO(MSG_ATTRIB_USINGXFORY_SS, ocs::tom::get<SC_schedd_job_info>(lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF))), "schedd_job_info");
 
    /* --- SC_params */
-   s=lGetString(lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF)), SC_params);
+   s=ocs::tom::get<SC_params>(lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF)));
    INFO(MSG_READ_PARAM_S, s);
 
    /* --- SC_reprioritize_interval */
@@ -1850,7 +1853,7 @@ void sconf_print_config(){
    INFO(MSG_ATTRIB_USINGXFORY_SS, s, "halflife_decay_list");
 
    /* --- SC_policy_hierarchy */
-   s = lGetString(lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF)), SC_policy_hierarchy);
+   s = ocs::tom::get<SC_policy_hierarchy>(lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF)));
    INFO(MSG_ATTRIB_USINGXFORY_SS, s, "policy_hierarchy");
 
    /* --- SC_job_load_adjustments */
@@ -2017,7 +2020,7 @@ bool sconf_validate_config_(lList **answer_list) {
 
  /* --- SC_params */
    {
-      const char *sparams = lGetString(lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF)), SC_params);
+      const char *sparams = ocs::tom::get<SC_params>(lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF)));
       char *s = nullptr;
 
       /* the implementation has a problem. If an entry is removed, its setting is not
@@ -2053,7 +2056,7 @@ bool sconf_validate_config_(lList **answer_list) {
          }
          sge_free_saved_vars(context);
       } else {
-         lSetString(lFirstRW(*ocs::DataStore::get_master_list_rw(SGE_TYPE_SCHEDD_CONF)), SC_params, "none");
+         ocs::tom::set<SC_params>(lFirstRW(*ocs::DataStore::get_master_list_rw(SGE_TYPE_SCHEDD_CONF)), "none");
       }
    }
 
@@ -2103,7 +2106,7 @@ bool sconf_validate_config_(lList **answer_list) {
       char* key = nullptr;
       int ikey = 0;
       lList *rlp=nullptr, *alp=nullptr;
-      const char *schedd_info = lGetString(lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF)), SC_schedd_job_info);
+      const char *schedd_info = ocs::tom::get<SC_schedd_job_info>(lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF)));
 
       if (schedd_info == nullptr){
          snprintf(SGE_EVENT, SGE_EVENT_SIZE, SFNMAX, MSG_ATTRIB_SCHEDDJOBINFONOVALIDPARAM );
@@ -2182,8 +2185,8 @@ bool sconf_validate_config_(lList **answer_list) {
             if (((s2=sge_strtok_r(s1, "=", &sv2)) != nullptr) &&
                 ((s3=sge_strtok_r(nullptr, "=", &sv2)) != nullptr) &&
                 (sscanf(s3, "%lf", &value) == 1)) {
-               ep = lAddElemStr(&halflife_decay_list, UA_name, s2, UA_Type);
-               lSetDouble(ep, UA_value, value);
+               ep = ocs::tom::emplace_back<UA_name>(&halflife_decay_list, s2);
+               ocs::tom::set<UA_value>(ep, value);
             }
             sge_free_saved_vars(sv2);
          }
@@ -2201,14 +2204,13 @@ bool sconf_validate_config_(lList **answer_list) {
 
    /* --- SC_policy_hierarchy */
    {
-      const char *value_string = lGetString(lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF)),
-                                            SC_policy_hierarchy);
+      const char *value_string = ocs::tom::get<SC_policy_hierarchy>(lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF)));
       if (value_string) {
          if (policy_hierarchy_verify_value(value_string) != 0) {
             answer_list_add(answer_list, MSG_GDI_INVALIDPOLICYSTRING, STATUS_ESYNTAX,
                             ANSWER_QUALITY_ERROR);
             ret = false;
-            lSetString(lFirstRW(*ocs::DataStore::get_master_list_rw(SGE_TYPE_SCHEDD_CONF)), SC_policy_hierarchy, policy_hierarchy_chars);
+            ocs::tom::set<SC_policy_hierarchy>(lFirstRW(*ocs::DataStore::get_master_list_rw(SGE_TYPE_SCHEDD_CONF)), policy_hierarchy_chars);
          }
       }
       else {
@@ -2423,7 +2425,7 @@ void sconf_ph_fill_array(policy_hierarchy_t array[]) {
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
    if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
-      policy_hierarchy_string = lGetString(sc_ep, SC_policy_hierarchy);
+      policy_hierarchy_string = ocs::tom::get<SC_policy_hierarchy>(sc_ep);
    }
 
    for (i = 0; i < POLICY_VALUES; i++) {
@@ -2541,14 +2543,14 @@ static bool sconf_eval_set_profiling(lList *param_list, lList **answer_list, con
        !strncasecmp(param, "PROFILE=TRUE", sizeof("PROFILE=TRUE")-1) ) {
       schedd_profiling = true;
       elem = lCreateElem(PARA_Type);
-      lSetString(elem, PARA_name, "profile");
-      lSetString(elem, PARA_value, "true");
+      ocs::tom::set<PARA_name>(elem, "profile");
+      ocs::tom::set<PARA_value>(elem, "true");
    }
    else if (!strncasecmp(param, "PROFILE=0", sizeof("PROFILE=0")-1) ||
             !strncasecmp(param, "PROFILE=FALSE", sizeof("PROFILE=FALSE")-1) ) {
       elem = lCreateElem(PARA_Type);
-      lSetString(elem, PARA_name, "profile");
-      lSetString(elem, PARA_value, "false");
+      ocs::tom::set<PARA_name>(elem, "profile");
+      ocs::tom::set<PARA_value>(elem, "false");
    }
    else {
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_INVALID_PARAM_SETTING_S, param);
@@ -2589,14 +2591,14 @@ static bool sconf_eval_set_monitoring(lList *param_list, lList **answer_list, co
        !strncasecmp(param, mon_true, sizeof(mon_true)-1) ) {
       do_monitoring = true;
       elem = lCreateElem(PARA_Type);
-      lSetString(elem, PARA_name, "monitor");
-      lSetString(elem, PARA_value, "true");
+      ocs::tom::set<PARA_name>(elem, "monitor");
+      ocs::tom::set<PARA_value>(elem, "true");
    }
    else if (!strncasecmp(param, mon_zero, sizeof(mon_zero)-1) ||
             !strncasecmp(param, mon_false, sizeof(mon_false)-1) ) {
       elem = lCreateElem(PARA_Type);
-      lSetString(elem, PARA_name, "monitor");
-      lSetString(elem, PARA_value, "false");
+      ocs::tom::set<PARA_name>(elem, "monitor");
+      ocs::tom::set<PARA_value>(elem, "false");
    }
    else {
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_INVALID_PARAM_SETTING_S, param);

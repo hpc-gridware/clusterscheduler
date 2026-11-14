@@ -44,6 +44,7 @@
 
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_conf.h"
+#include "tom/ocs_Element.h"
 
 #include "ocs_gdi_ClientExecd.h"
 #include "msg_common.h"
@@ -120,13 +121,13 @@ int ocs::gdi::ClientExecd::gdi_wait_for_conf(lList **conf_list) {
     * we don't keep all information, just the name and the version
     * the entries are freed
     */
-   lSetList(global, CONF_entries, nullptr);
+   ocs::tom::set<CONF_entries>(global, nullptr);
    lFreeList(conf_list);
    *conf_list = lCreateList("config list", CONF_Type);
    lAppendElem(*conf_list, global);
    // a host without a local configuration gets none
    if (local != nullptr) {
-      lSetList(local, CONF_entries, nullptr);
+      ocs::tom::set<CONF_entries>(local, nullptr);
       lAppendElem(*conf_list, local);
    }
    DRETURN(0);
@@ -180,8 +181,8 @@ int ocs::gdi::ClientExecd::gdi_get_merged_configuration(lList **conf_list) {
     * we don't keep all information, just the name and the version
     * the entries are freed
     */
-   lSetList(global, CONF_entries, nullptr);
-   lSetList(local, CONF_entries, nullptr);
+   ocs::tom::set<CONF_entries>(global, nullptr);
+   ocs::tom::set<CONF_entries>(local, nullptr);
 
    lFreeList(conf_list);
    *conf_list = lCreateList("config list", CONF_Type);

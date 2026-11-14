@@ -67,6 +67,7 @@
 
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/sge_answer.h"
+#include "tom/ocs_Element.h"
 
 #include "gdi/ocs_gdi_Client.h"
 #include "gdi/ocs_gdi_ClientBase.h"
@@ -180,8 +181,8 @@ public:
 static bool
 add_calendar(const char *name, const char *week) {
    lList *lp = nullptr;
-   lListElem *ep = lAddElemStr(&lp, CAL_name, name, CAL_Type);
-   lSetString(ep, CAL_week_calendar, week);
+   lListElem *ep = ocs::tom::emplace_back<CAL_name>(&lp, name);
+   ocs::tom::set<CAL_week_calendar>(ep, week);
 
    lList *alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::CAL_LIST, ocs::gdi::Command::ADD,
                                           ocs::gdi::SubCommand::NONE, &lp, nullptr, nullptr);
@@ -198,7 +199,7 @@ add_calendar(const char *name, const char *week) {
 static bool
 del_calendar(const char *name) {
    lList *lp = nullptr;
-   lAddElemStr(&lp, CAL_name, name, CAL_Type);
+   ocs::tom::emplace_back<CAL_name>(&lp, name);
 
    lList *alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::CAL_LIST, ocs::gdi::Command::DEL,
                                           ocs::gdi::SubCommand::NONE, &lp, nullptr, nullptr);
@@ -225,8 +226,8 @@ get_week_calendar(const char *name) {
    lFreeList(&alp);
 
    /* select by name rather than lFirst(): a GET may return more than asked for */
-   const lListElem *found = lGetElemStr(lp, CAL_name, name);
-   const char *value = (found != nullptr) ? lGetString(found, CAL_week_calendar) : nullptr;
+   const lListElem *found = ocs::tom::find_first<CAL_name>(lp, name);
+   const char *value = (found != nullptr) ? ocs::tom::get<CAL_week_calendar>(found) : nullptr;
    std::string result = (value != nullptr) ? value : "";
    lFreeList(&lp);
    return result;

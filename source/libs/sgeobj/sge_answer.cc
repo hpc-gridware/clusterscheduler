@@ -77,6 +77,7 @@
 
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/msg_sgeobjlib.h"
+#include "tom/ocs_Element.h"
 
 /// Debug layer the answer list traces are written to
 #define ANSWER_LAYER CULL_LAYER
@@ -100,7 +101,7 @@ bool answer_has_quality(const lListElem *answer, answer_quality_t quality) {
 
    bool ret;
 
-   ret = (lGetUlong(answer, AN_quality) ==  quality) ? true : false;
+   ret = (ocs::tom::get<AN_quality>(answer) ==  quality) ? true : false;
    DRETURN(ret);
 }
 
@@ -135,7 +136,7 @@ bool answer_is_recoverable(const lListElem *answer) {
          STATUS_ENOKEY,
          STATUS_NOCONFIG
       };
-      uint32_t status = lGetUlong(answer, AN_status);
+      uint32_t status = ocs::tom::get<AN_status>(answer);
       int i;
 
       for (i = 0; i < max_non_recoverable; i++) {
@@ -166,7 +167,7 @@ void answer_exit_if_not_recoverable(const lListElem *answer) {
    DENTER(ANSWER_LAYER);
    if (!answer_is_recoverable(answer)) {
       fprintf(stderr, "%s: %s\n", answer_get_quality_text(answer),
-              lGetString(answer, AN_text));
+              ocs::tom::get<AN_text>(answer));
       sge_exit(1);
    }
    DRETURN_VOID;
@@ -194,7 +195,7 @@ const char *answer_get_quality_text(const lListElem *answer) {
    };
    uint32_t quality;
 
-   quality = lGetUlong(answer, AN_quality);
+   quality = ocs::tom::get<AN_quality>(answer);
    if (quality >= ANSWER_QUALITY_END) {
       quality = ANSWER_QUALITY_CRITICAL;
    }
@@ -217,7 +218,7 @@ uint32_t answer_get_status(const lListElem *answer) {
 
    uint32_t ret;
 
-   ret = lGetUlong(answer, AN_status);
+   ret = ocs::tom::get<AN_status>(answer);
    DRETURN(ret);
 }
 
@@ -242,7 +243,7 @@ void answer_print_text(const lListElem *answer,
 
    const char *text = nullptr;
 
-   text = lGetString(answer, AN_text);
+   text = ocs::tom::get<AN_text>(answer);
 
    if (prefix != nullptr) {
       fprintf(stream, "%s", prefix);
@@ -273,7 +274,7 @@ void answer_to_dstring(const lListElem *answer, dstring *diag) {
          sge_dstring_copy_string(diag, MSG_ANSWERWITHOUTDIAG);
       } else {
          const char *s, *t;
-         s = lGetString(answer, AN_text);
+         s = ocs::tom::get<AN_text>(answer);
          if ((t=strchr(s, '\n'))) {
             sge_dstring_sprintf_append(diag, "%.*s", t-s, s); 
          }
@@ -303,7 +304,7 @@ void answer_list_to_dstring(const lList *alp, dstring *diag) {
          sge_dstring_clear(diag);
          
          for_each_ep_lv(aep, alp) {
-            const char *s = lGetString(aep, AN_text);
+            const char *s = ocs::tom::get<AN_text>(aep);
             sge_dstring_append(diag, s);
 
             if (strchr(s, '\n') == nullptr) {
@@ -411,7 +412,7 @@ void answer_list_remove_quality(lList *answer_list, answer_quality_t quality) {
 
    while ((aep=nxt)) {
       nxt=lNextRW(aep);
-      if (lGetUlong(aep, AN_quality) == quality) {
+      if (ocs::tom::get<AN_quality>(aep) == quality) {
          lRemoveElem(answer_list, &aep);
       }
    }
@@ -582,7 +583,7 @@ int answer_list_handle_request_answer_list(lList **answer_list, FILE *stream) {
             answer_has_quality(answer, ANSWER_QUALITY_WARNING)) {
             answer_print_text(answer, stream, nullptr, nullptr);
             if(ret == STATUS_OK) {
-               ret = lGetUlong(answer, AN_status);
+               ret = ocs::tom::get<AN_status>(answer);
             }
          }
       }
@@ -627,9 +628,9 @@ bool answer_list_add(lList **answer_list, const char *text,
       lListElem *answer = lCreateElem(AN_Type);
 
       if (answer != nullptr) {
-         lSetString(answer, AN_text, text);
-         lSetUlong(answer, AN_status, status);
-         lSetUlong(answer, AN_quality, quality);
+         ocs::tom::set<AN_text>(answer, text);
+         ocs::tom::set<AN_status>(answer, status);
+         ocs::tom::set<AN_quality>(answer, quality);
 
          if (*answer_list == nullptr) {
             *answer_list = lCreateList("", AN_Type);
@@ -783,21 +784,21 @@ static bool answer_log(const lListElem *answer, bool show_info) {
       DRETURN(ret);
    }
 
-   switch (lGetUlong(answer, AN_quality)) {
+   switch (ocs::tom::get<AN_quality>(answer)) {
       case ANSWER_QUALITY_CRITICAL:
-         CRITICAL(SFNMAX, lGetString(answer, AN_text));
+         CRITICAL(SFNMAX, ocs::tom::get<AN_text>(answer));
          ret = true;
          break;
       case ANSWER_QUALITY_ERROR:
-         ERROR(SFNMAX, lGetString(answer, AN_text));
+         ERROR(SFNMAX, ocs::tom::get<AN_text>(answer));
          ret = true;
          break;
       case ANSWER_QUALITY_WARNING:
-         WARNING(SFNMAX, lGetString(answer, AN_text));
+         WARNING(SFNMAX, ocs::tom::get<AN_text>(answer));
          break;
       case ANSWER_QUALITY_INFO:
          if (show_info) {
-            INFO(SFNMAX, lGetString(answer, AN_text));
+            INFO(SFNMAX, ocs::tom::get<AN_text>(answer));
          }
          break;
       default:
@@ -849,13 +850,13 @@ int show_answer(lList *alp) {
     
       for_each_ep(aep,alp) {
          answer_exit_if_not_recoverable(aep);
-         if (lGetUlong(aep, AN_status) != STATUS_OK) {
+         if (ocs::tom::get<AN_status>(aep) != STATUS_OK) {
             ret = 1;
          }
       }
       aep = lLast(alp);
-      if (lGetUlong(aep, AN_quality) != ANSWER_QUALITY_END) {
-         fprintf(stderr, "%s\n", lGetString(aep, AN_text));
+      if (ocs::tom::get<AN_quality>(aep) != ANSWER_QUALITY_END) {
+         fprintf(stderr, "%s\n", ocs::tom::get<AN_text>(aep));
       }
    }
    
@@ -878,15 +879,15 @@ int show_answer_list(lList *alp) {
    
    if (alp != nullptr) {
       for_each_ep(aep,alp) {
-         if (lGetUlong(aep, AN_quality) == ANSWER_QUALITY_END) {
+         if (ocs::tom::get<AN_quality>(aep) == ANSWER_QUALITY_END) {
             continue;
          }
 
          answer_exit_if_not_recoverable(aep);
-         if (lGetUlong (aep, AN_status) != STATUS_OK) {
+         if (ocs::tom::get<AN_status> (aep) != STATUS_OK) {
             ret = 1;
          }
-         fprintf(stderr, "%s\n", lGetString(aep, AN_text));
+         fprintf(stderr, "%s\n", ocs::tom::get<AN_text>(aep));
       }
    }
    

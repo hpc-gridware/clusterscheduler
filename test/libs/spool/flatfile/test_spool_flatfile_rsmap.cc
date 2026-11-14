@@ -37,6 +37,9 @@
 
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/sge_centry.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_CE.h"
+#include "sgeobj/tom/ocs_tom_RESL.h"
 #include "spool/flatfile/sge_flatfile_obj_rsmap.h"
 
 #include "uti/sge_rmon_macros.h"
@@ -72,8 +75,8 @@ static const char *g_current = "?";
 static lListElem *
 make_rsmap_ce(const char *name) {
    lListElem *ce = lCreateElem(CE_Type);
-   lSetString(ce, CE_name, name);
-   lSetUlong(ce, CE_valtype, static_cast<uint32_t>(ocs::CEntry::Type::RSMAP));
+   ocs::tom::set<CE_name>(ce, name);
+   ocs::tom::set<CE_valtype>(ce, static_cast<uint32_t>(ocs::CEntry::Type::RSMAP));
    return ce;
 }
 
@@ -122,9 +125,9 @@ round_trip(const char *input) {
 #if defined(WITH_EXTENSIONS)
 static const lListElem *
 find_prop(const lListElem *resl, const char *name) {
-   const lList *props = lGetList(resl, RESL_properties);
+   const lList *props = ocs::tom::get<RESL_properties>(resl);
    if (props == nullptr) return nullptr;
-   return lGetElemStr(props, CE_name, name);
+   return ocs::tom::find_first<CE_name>(props, name);
 }
 #endif /* WITH_EXTENSIONS */
 
@@ -170,16 +173,16 @@ test_bare_ids() {
    T_ASSERT(run_reader(ce, "2(A B)", &alp) == 1);
    T_ASSERT(alp == nullptr);
 
-   const lList *rm = lGetList(ce, CE_resource_map_list);
+   const lList *rm = ocs::tom::get<CE_resource_map_list>(ce);
    T_ASSERT(rm != nullptr);
    T_ASSERT(lGetNumberOfElem(rm) == 2);
 
-   const lListElem *r_a = lGetElemStr(rm, RESL_value, "A");
-   const lListElem *r_b = lGetElemStr(rm, RESL_value, "B");
-   T_ASSERT(r_a != nullptr && lGetUlong(r_a, RESL_amount) == 1);
-   T_ASSERT(r_b != nullptr && lGetUlong(r_b, RESL_amount) == 1);
-   T_ASSERT(lGetList(r_a, RESL_properties) == nullptr);
-   T_ASSERT(lGetList(r_b, RESL_properties) == nullptr);
+   const lListElem *r_a = ocs::tom::find_first<RESL_value>(rm, "A");
+   const lListElem *r_b = ocs::tom::find_first<RESL_value>(rm, "B");
+   T_ASSERT(r_a != nullptr && ocs::tom::get<RESL_amount>(r_a) == 1);
+   T_ASSERT(r_b != nullptr && ocs::tom::get<RESL_amount>(r_b) == 1);
+   T_ASSERT(static_cast<const lList *>(ocs::tom::get<RESL_properties>(r_a)) == nullptr);
+   T_ASSERT(static_cast<const lList *>(ocs::tom::get<RESL_properties>(r_b)) == nullptr);
 
    lFreeElem(&ce);
    lFreeList(&alp);
@@ -195,12 +198,12 @@ test_range_only() {
    T_ASSERT(run_reader(ce, "3(1-3)", &alp) == 1);
    T_ASSERT(alp == nullptr);
 
-   const lList *rm = lGetList(ce, CE_resource_map_list);
+   const lList *rm = ocs::tom::get<CE_resource_map_list>(ce);
    T_ASSERT(rm != nullptr);
    T_ASSERT(lGetNumberOfElem(rm) == 3);
-   T_ASSERT(lGetElemStr(rm, RESL_value, "1") != nullptr);
-   T_ASSERT(lGetElemStr(rm, RESL_value, "2") != nullptr);
-   T_ASSERT(lGetElemStr(rm, RESL_value, "3") != nullptr);
+   T_ASSERT(static_cast<const lListElem *>(ocs::tom::find_first<RESL_value>(rm, "1")) != nullptr);
+   T_ASSERT(static_cast<const lListElem *>(ocs::tom::find_first<RESL_value>(rm, "2")) != nullptr);
+   T_ASSERT(static_cast<const lListElem *>(ocs::tom::find_first<RESL_value>(rm, "3")) != nullptr);
 
    lFreeElem(&ce);
    lFreeList(&alp);
@@ -216,13 +219,13 @@ test_mixed_range_and_names() {
    T_ASSERT(run_reader(ce, "4(A B 1-2)", &alp) == 1);
    T_ASSERT(alp == nullptr);
 
-   const lList *rm = lGetList(ce, CE_resource_map_list);
+   const lList *rm = ocs::tom::get<CE_resource_map_list>(ce);
    T_ASSERT(rm != nullptr);
    T_ASSERT(lGetNumberOfElem(rm) == 4);
-   T_ASSERT(lGetElemStr(rm, RESL_value, "A") != nullptr);
-   T_ASSERT(lGetElemStr(rm, RESL_value, "B") != nullptr);
-   T_ASSERT(lGetElemStr(rm, RESL_value, "1") != nullptr);
-   T_ASSERT(lGetElemStr(rm, RESL_value, "2") != nullptr);
+   T_ASSERT(static_cast<const lListElem *>(ocs::tom::find_first<RESL_value>(rm, "A")) != nullptr);
+   T_ASSERT(static_cast<const lListElem *>(ocs::tom::find_first<RESL_value>(rm, "B")) != nullptr);
+   T_ASSERT(static_cast<const lListElem *>(ocs::tom::find_first<RESL_value>(rm, "1")) != nullptr);
+   T_ASSERT(static_cast<const lListElem *>(ocs::tom::find_first<RESL_value>(rm, "2")) != nullptr);
 
    lFreeElem(&ce);
    lFreeList(&alp);
@@ -248,16 +251,16 @@ test_single_characteristic() {
    T_ASSERT(run_reader(ce, "1(gpu0[device=/dev/nvidia0])", &alp) == 1);
    T_ASSERT(alp == nullptr);
 
-   const lList *rm = lGetList(ce, CE_resource_map_list);
+   const lList *rm = ocs::tom::get<CE_resource_map_list>(ce);
    T_ASSERT(rm != nullptr && lGetNumberOfElem(rm) == 1);
 
-   const lListElem *r = lGetElemStr(rm, RESL_value, "gpu0");
+   const lListElem *r = ocs::tom::find_first<RESL_value>(rm, "gpu0");
    T_ASSERT(r != nullptr);
    const lListElem *dev = find_prop(r, "device");
    T_ASSERT(dev != nullptr);
-   T_ASSERT(strcmp(lGetString(dev, CE_stringval), "/dev/nvidia0") == 0);
+   T_ASSERT(strcmp(ocs::tom::get<CE_stringval>(dev), "/dev/nvidia0") == 0);
    /* reader stores only name+stringval verbatim; valtype must remain unset */
-   T_ASSERT(lGetUlong(dev, CE_valtype) == 0);
+   T_ASSERT(ocs::tom::get<CE_valtype>(dev) == 0);
 
    lFreeElem(&ce);
    lFreeList(&alp);
@@ -275,20 +278,19 @@ test_multiple_characteristics() {
                        &alp) == 1);
    T_ASSERT(alp == nullptr);
 
-   const lListElem *r = lGetElemStr(lGetList(ce, CE_resource_map_list),
-                                    RESL_value, "gpu0");
+   const lListElem *r = ocs::tom::find_first<RESL_value>(ocs::tom::get<CE_resource_map_list>(ce), "gpu0");
    T_ASSERT(r != nullptr);
 
    const lListElem *dev = find_prop(r, "device");
    const lListElem *mem = find_prop(r, "memory");
    const lListElem *aff = find_prop(r, "affinity_mask");
-   T_ASSERT(dev != nullptr && strcmp(lGetString(dev, CE_stringval), "/dev/nvidia0") == 0);
-   T_ASSERT(mem != nullptr && strcmp(lGetString(mem, CE_stringval), "80G") == 0);
-   T_ASSERT(aff != nullptr && strcmp(lGetString(aff, CE_stringval), "SCCCCCCCCScccccccc") == 0);
+   T_ASSERT(dev != nullptr && strcmp(ocs::tom::get<CE_stringval>(dev), "/dev/nvidia0") == 0);
+   T_ASSERT(mem != nullptr && strcmp(ocs::tom::get<CE_stringval>(mem), "80G") == 0);
+   T_ASSERT(aff != nullptr && strcmp(ocs::tom::get<CE_stringval>(aff), "SCCCCCCCCScccccccc") == 0);
 
    /* reader stores properties in file order; the writer sorts them at emit
     * time. Verify the count so the properties list length is exact. */
-   T_ASSERT(lGetNumberOfElem(lGetList(r, RESL_properties)) == 3);
+   T_ASSERT(lGetNumberOfElem(ocs::tom::get<RESL_properties>(r)) == 3);
 
    lFreeElem(&ce);
    lFreeList(&alp);
@@ -306,17 +308,17 @@ test_mixed_with_and_without_characteristics() {
                        &alp) == 1);
    T_ASSERT(alp == nullptr);
 
-   const lList *rm = lGetList(ce, CE_resource_map_list);
+   const lList *rm = ocs::tom::get<CE_resource_map_list>(ce);
    T_ASSERT(rm != nullptr && lGetNumberOfElem(rm) == 3);
 
-   const lListElem *r0 = lGetElemStr(rm, RESL_value, "gpu0");
-   const lListElem *r1 = lGetElemStr(rm, RESL_value, "gpu1");
-   const lListElem *r2 = lGetElemStr(rm, RESL_value, "gpu2");
+   const lListElem *r0 = ocs::tom::find_first<RESL_value>(rm, "gpu0");
+   const lListElem *r1 = ocs::tom::find_first<RESL_value>(rm, "gpu1");
+   const lListElem *r2 = ocs::tom::find_first<RESL_value>(rm, "gpu2");
    T_ASSERT(r0 != nullptr && r1 != nullptr && r2 != nullptr);
 
-   T_ASSERT(lGetNumberOfElem(lGetList(r0, RESL_properties)) == 1);
-   T_ASSERT(lGetList(r1, RESL_properties) == nullptr);
-   T_ASSERT(lGetNumberOfElem(lGetList(r2, RESL_properties)) == 2);
+   T_ASSERT(lGetNumberOfElem(ocs::tom::get<RESL_properties>(r0)) == 1);
+   T_ASSERT(static_cast<const lList *>(ocs::tom::get<RESL_properties>(r1)) == nullptr);
+   T_ASSERT(lGetNumberOfElem(ocs::tom::get<RESL_properties>(r2)) == 2);
 
    lFreeElem(&ce);
    lFreeList(&alp);
@@ -337,7 +339,7 @@ test_reject_unclosed_bracket() {
    T_ASSERT(alp != nullptr);
    /* reader must clear the partial resource_map_list on failure so callers
     * don't observe half-parsed state */
-   T_ASSERT(lGetList(ce, CE_resource_map_list) == nullptr);
+   T_ASSERT(static_cast<const lList *>(ocs::tom::get<CE_resource_map_list>(ce)) == nullptr);
 
    lFreeElem(&ce);
    lFreeList(&alp);
@@ -352,7 +354,7 @@ test_reject_missing_eq() {
 
    T_ASSERT(run_reader(ce, "1(gpu0[device])", &alp) == 0);
    T_ASSERT(alp != nullptr);
-   T_ASSERT(lGetList(ce, CE_resource_map_list) == nullptr);
+   T_ASSERT(static_cast<const lList *>(ocs::tom::get<CE_resource_map_list>(ce)) == nullptr);
 
    lFreeElem(&ce);
    lFreeList(&alp);
@@ -367,7 +369,7 @@ test_reject_characteristics_on_range() {
 
    T_ASSERT(run_reader(ce, "2(1-2[device=/dev/nvidia0])", &alp) == 0);
    T_ASSERT(alp != nullptr);
-   T_ASSERT(lGetList(ce, CE_resource_map_list) == nullptr);
+   T_ASSERT(static_cast<const lList *>(ocs::tom::get<CE_resource_map_list>(ce)) == nullptr);
 
    lFreeElem(&ce);
    lFreeList(&alp);
@@ -385,12 +387,12 @@ test_characteristics_on_numeric_id() {
    lList *alp = nullptr;
 
    T_ASSERT(run_reader(ce, "2(0[device=/dev/nvidia0] 1[device=/dev/nvidia1])", &alp) == 1);
-   T_ASSERT(lGetNumberOfElem(lGetList(ce, CE_resource_map_list)) == 2);
+   T_ASSERT(lGetNumberOfElem(ocs::tom::get<CE_resource_map_list>(ce)) == 2);
 
-   const lListElem *resl = lGetSubStr(ce, RESL_value, "0", CE_resource_map_list);
+   const lListElem *resl = ocs::tom::find_first_in<CE_resource_map_list, RESL_value>(ce, "0");
    T_ASSERT(resl != nullptr);
-   T_ASSERT(lGetNumberOfElem(lGetList(resl, RESL_properties)) == 1);
-   T_ASSERT(strcmp(lGetString(lFirst(lGetList(resl, RESL_properties)), CE_stringval),
+   T_ASSERT(lGetNumberOfElem(ocs::tom::get<RESL_properties>(resl)) == 1);
+   T_ASSERT(strcmp(ocs::tom::get<CE_stringval>(lFirst(ocs::tom::get<RESL_properties>(resl))),
                    "/dev/nvidia0") == 0);
 
    lFreeElem(&ce);
@@ -399,7 +401,7 @@ test_characteristics_on_numeric_id() {
    /* a range of one written as a range is still a single instance */
    ce = make_rsmap_ce("gpu");
    T_ASSERT(run_reader(ce, "1(3-3[device=/dev/nvidia3])", &alp) == 1);
-   T_ASSERT(lGetSubStr(ce, RESL_value, "3", CE_resource_map_list) != nullptr);
+   T_ASSERT((static_cast<const lListElem *>(ocs::tom::find_first_in<CE_resource_map_list, RESL_value>(ce, "3"))) != nullptr);
 
    lFreeElem(&ce);
    lFreeList(&alp);
@@ -422,12 +424,12 @@ test_duplicate_bare() {
    T_ASSERT(run_reader(ce, "2(gpu0 gpu0)", &alp) == 1);
    T_ASSERT(alp == nullptr);
 
-   const lList *rm = lGetList(ce, CE_resource_map_list);
+   const lList *rm = ocs::tom::get<CE_resource_map_list>(ce);
    T_ASSERT(rm != nullptr && lGetNumberOfElem(rm) == 1);
-   const lListElem *r = lGetElemStr(rm, RESL_value, "gpu0");
+   const lListElem *r = ocs::tom::find_first<RESL_value>(rm, "gpu0");
    T_ASSERT(r != nullptr);
-   T_ASSERT(lGetUlong(r, RESL_amount) == 2);
-   T_ASSERT(lGetList(r, RESL_properties) == nullptr);
+   T_ASSERT(ocs::tom::get<RESL_amount>(r) == 2);
+   T_ASSERT(static_cast<const lList *>(ocs::tom::get<RESL_properties>(r)) == nullptr);
 
    lFreeElem(&ce);
    lFreeList(&alp);
@@ -448,15 +450,15 @@ test_duplicate_matching_characteristics() {
    T_ASSERT(run_reader(ce, "2(gpu0[memory=80G] gpu0[memory=80G])", &alp) == 1);
    T_ASSERT(alp == nullptr);
 
-   const lList *rm = lGetList(ce, CE_resource_map_list);
+   const lList *rm = ocs::tom::get<CE_resource_map_list>(ce);
    T_ASSERT(rm != nullptr && lGetNumberOfElem(rm) == 1);
-   const lListElem *r = lGetElemStr(rm, RESL_value, "gpu0");
+   const lListElem *r = ocs::tom::find_first<RESL_value>(rm, "gpu0");
    T_ASSERT(r != nullptr);
-   T_ASSERT(lGetUlong(r, RESL_amount) == 2);
-   const lList *props = lGetList(r, RESL_properties);
+   T_ASSERT(ocs::tom::get<RESL_amount>(r) == 2);
+   const lList *props = ocs::tom::get<RESL_properties>(r);
    T_ASSERT(props != nullptr && lGetNumberOfElem(props) == 1);
-   const lListElem *mem = lGetElemStr(props, CE_name, "memory");
-   T_ASSERT(mem != nullptr && strcmp(lGetString(mem, CE_stringval), "80G") == 0);
+   const lListElem *mem = ocs::tom::find_first<CE_name>(props, "memory");
+   T_ASSERT(mem != nullptr && strcmp(ocs::tom::get<CE_stringval>(mem), "80G") == 0);
 
    lFreeElem(&ce);
    lFreeList(&alp);
@@ -474,10 +476,9 @@ test_duplicate_matching_reordered() {
    T_ASSERT(run_reader(ce, "2(gpu0[a=1,b=2] gpu0[b=2,a=1])", &alp) == 1);
    T_ASSERT(alp == nullptr);
 
-   const lListElem *r = lGetElemStr(lGetList(ce, CE_resource_map_list),
-                                    RESL_value, "gpu0");
-   T_ASSERT(r != nullptr && lGetUlong(r, RESL_amount) == 2);
-   T_ASSERT(lGetNumberOfElem(lGetList(r, RESL_properties)) == 2);
+   const lListElem *r = ocs::tom::find_first<RESL_value>(ocs::tom::get<CE_resource_map_list>(ce), "gpu0");
+   T_ASSERT(r != nullptr && ocs::tom::get<RESL_amount>(r) == 2);
+   T_ASSERT(lGetNumberOfElem(ocs::tom::get<RESL_properties>(r)) == 2);
 
    lFreeElem(&ce);
    lFreeList(&alp);
@@ -493,7 +494,7 @@ test_reject_duplicate_conflict() {
 
    T_ASSERT(run_reader(ce, "2(gpu0[memory=80G] gpu0[memory=40G])", &alp) == 0);
    T_ASSERT(alp != nullptr);
-   T_ASSERT(lGetList(ce, CE_resource_map_list) == nullptr);
+   T_ASSERT(static_cast<const lList *>(ocs::tom::get<CE_resource_map_list>(ce)) == nullptr);
 
    lFreeElem(&ce);
    lFreeList(&alp);
@@ -517,17 +518,16 @@ test_whitespace_inside_brackets() {
    T_ASSERT(run_reader(ce, "1(gpu0[device=/dev/nvidia0, memory=80G])", &alp) == 1);
    T_ASSERT(alp == nullptr);
 
-   const lListElem *r = lGetElemStr(lGetList(ce, CE_resource_map_list),
-                                    RESL_value, "gpu0");
-   T_ASSERT(r != nullptr && lGetUlong(r, RESL_amount) == 1);
-   const lList *props = lGetList(r, RESL_properties);
+   const lListElem *r = ocs::tom::find_first<RESL_value>(ocs::tom::get<CE_resource_map_list>(ce), "gpu0");
+   T_ASSERT(r != nullptr && ocs::tom::get<RESL_amount>(r) == 1);
+   const lList *props = ocs::tom::get<RESL_properties>(r);
    T_ASSERT(props != nullptr && lGetNumberOfElem(props) == 2);
 
-   const lListElem *dev = lGetElemStr(props, CE_name, "device");
-   const lListElem *mem = lGetElemStr(props, CE_name, "memory");
-   T_ASSERT(dev != nullptr && strcmp(lGetString(dev, CE_stringval), "/dev/nvidia0") == 0);
+   const lListElem *dev = ocs::tom::find_first<CE_name>(props, "device");
+   const lListElem *mem = ocs::tom::find_first<CE_name>(props, "memory");
+   T_ASSERT(dev != nullptr && strcmp(ocs::tom::get<CE_stringval>(dev), "/dev/nvidia0") == 0);
    // whitespace must NOT leak into the characteristic name — 'memory', not ' memory'
-   T_ASSERT(mem != nullptr && strcmp(lGetString(mem, CE_stringval), "80G") == 0);
+   T_ASSERT(mem != nullptr && strcmp(ocs::tom::get<CE_stringval>(mem), "80G") == 0);
 
    lFreeElem(&ce);
    lFreeList(&alp);
@@ -543,7 +543,7 @@ test_reject_duplicate_bare_vs_annotated() {
 
    T_ASSERT(run_reader(ce, "2(gpu0[memory=80G] gpu0)", &alp) == 0);
    T_ASSERT(alp != nullptr);
-   T_ASSERT(lGetList(ce, CE_resource_map_list) == nullptr);
+   T_ASSERT(static_cast<const lList *>(ocs::tom::get<CE_resource_map_list>(ce)) == nullptr);
 
    lFreeElem(&ce);
    lFreeList(&alp);

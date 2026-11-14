@@ -29,6 +29,7 @@
 #include "../ocs_QConfViewBase.h"
 
 #include "sgeobj/cull/sge_event_EV_L.h"
+#include "tom/ocs_Element.h"
 #include "spool/flatfile/ocs_spool_json.h"
 #include "uti/sge_dstring.h"
 
@@ -91,10 +92,10 @@ namespace ocs {
 
          const lListElem *ep;
          for_each_ep(ep, list) {
-            const char *name = lGetString(ep, EV_name);
-            const char *host = lGetHost(ep, EV_host);
+            const char *name = ocs::tom::get<EV_name>(ep);
+            const char *host = ocs::tom::get<EV_host>(ep);
 
-            os << std::format("{:>8} ", static_cast<int>(lGetUlong(ep, EV_id)));
+            os << std::format("{:>8} ", static_cast<int>(ocs::tom::get<EV_id>(ep)));
             os << std::format("{:<15} ", (name != nullptr) ? name : "(null)");
             os << std::format("{:<25}\n", (host != nullptr) ? host : "-");
          }

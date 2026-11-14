@@ -53,12 +53,15 @@
 #include "sge_resource_quota.h"
 #include "sge_resource_quota_service.h"
 #include "sge_object.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_RQR.h"
+#include "sgeobj/tom/ocs_tom_ST.h"
 
 static bool is_global(const lListElem *rule, int nm) {
    lListElem *filter = lGetObject(rule, nm);
    if (!filter)
       return true;
-   if (lGetSubStr(filter, ST_name, "*", RQRF_scope) && lGetNumberOfElem(lGetList(filter, RQRF_xscope))==0)
+   if (ocs::tom::find_first_in<RQRF_scope, ST_name>(filter, "*") && lGetNumberOfElem(ocs::tom::get<RQRF_xscope>(filter))==0)
       return true;
    return false;
 }
@@ -94,7 +97,7 @@ bool is_host_global(const lListElem *rule) {
 
 static bool is_expand(const lListElem *rule, int nm) {
    lListElem *filter = lGetObject(rule, nm);
-   if (filter && lGetBool(filter, RQRF_expand))
+   if (filter && ocs::tom::get<RQRF_expand>(filter))
       return true;
    else
       return false;
@@ -161,12 +164,12 @@ bool sge_user_is_referenced_in_rqs(const lList *rqs, const char *user, const cha
    bool ret = false;
 
    for_each_ep_lv(ep, rqs) {
-      const lList *rule_list = lGetList(ep, RQS_rule);
+      const lList *rule_list = ocs::tom::get<RQS_rule>(ep);
 
       for_each_ep_lv(rule, rule_list) {
          /* there may be no per-user limitation and also not limitation that is special for this user */
          if ((is_expand(rule, RQR_filter_users) || !is_global(rule, RQR_filter_users)) &&
-             rqs_filter_match(lGetObject(rule, RQR_filter_users), FILTER_USERS, user, acl_list, nullptr, group, grp_list)) {
+             rqs_filter_match(ocs::tom::get<RQR_filter_users>(rule), FILTER_USERS, user, acl_list, nullptr, group, grp_list)) {
             ret = true;
             break;
          }

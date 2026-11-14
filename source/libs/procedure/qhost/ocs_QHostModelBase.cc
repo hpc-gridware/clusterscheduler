@@ -35,6 +35,8 @@
 #include "sgeobj/sge_str.h"
 #include "sgeobj/sge_pe.h"
 #include "sgeobj/sge_userset.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_JAT.h"
 
 #include "sched/sge_select_queue.h"
 
@@ -83,8 +85,8 @@ bool ocs::QHostModelBase::prepare_data(lList **answer_list, lList *resource_matc
    // tag jobs for printing if they should be shown
    if ((show & QHOST_DISPLAY_JOBS) == QHOST_DISPLAY_JOBS) {
       for_each_ep_lv (job, job_list_) {
-         for_each_rw_lv(ja_task, lGetList(job, JB_ja_tasks)) {
-            lSetUlong(ja_task, JAT_suitable, TAG_SHOW_IT);
+         for_each_rw_lv(ja_task, ocs::tom::get<JB_ja_tasks>(job)) {
+            ocs::tom::set<JAT_suitable>(ja_task, TAG_SHOW_IT);
          }
       }
    }
@@ -100,7 +102,7 @@ bool ocs::QHostModelBase::prepare_data(lList **answer_list, lList *resource_matc
 
       // initialize tag field for hosts
       for_each_rw_lv(host, exec_host_list_) {
-         lSetUlong(host, EH_tagged, 0);
+         ocs::tom::set<EH_tagged>(host, 0);
       }
    }
    DRETURN(true);
@@ -120,38 +122,38 @@ void ocs::QHostModelBase::filter_data(const lList *resource_match_list) {
 
    // we will modify the resource_match_list, so we need to work on a copy of it
    lList *tmp_resource_list = lCopyList(nullptr, resource_match_list);
-   lListElem *global = lGetElemHostRW(exec_host_list_, EH_name, SGE_GLOBAL_NAME);
+   lListElem *global = ocs::tom::find_first_rw<EH_name>(exec_host_list_, SGE_GLOBAL_NAME);
    bool is_selected = sge_select_queue(tmp_resource_list, nullptr, global, exec_host_list_,
                                        centry_list_, true, -1, nullptr,
                                        nullptr, nullptr);
    if (is_selected) {
       for_each_rw_lv(host, exec_host_list_) {
-         lSetUlong(host, EH_tagged, 1);
+         ocs::tom::set<EH_tagged>(host, 1);
       }
    } else {
       // If there is hostname request, remove it as we cannot match hostname in sge_select_queue()
       // We will process this tmp_resource_list separately!
-      lListElem *host_match_elem = lGetElemStrRW(tmp_resource_list, CE_name, "hostname");
+      lListElem *host_match_elem = ocs::tom::find_first_rw<CE_name>(tmp_resource_list, "hostname");
       if (host_match_elem != nullptr) {
          lDechainElem(tmp_resource_list, host_match_elem);
       }
 
       for_each_rw_lv(host, exec_host_list_) {
-         const char *hostname = lGetHost(host, EH_name);
+         const char *hostname = ocs::tom::get<EH_name>(host);
 
          // try to find a matching attribute
          is_selected = sge_select_queue(tmp_resource_list, nullptr, host, exec_host_list_, centry_list_,
                                      true, -1, nullptr, nullptr, nullptr);
          if (is_selected) {
             // this host is selected, tag it for output
-            lSetUlong(host, EH_tagged, 1);
+            ocs::tom::set<EH_tagged>(host, 1);
 
             // if there is hostname request, check it here as sge_select_queue cannot handle it
-            if (host_match_elem != nullptr && sge_hostcmp(lGetString(host_match_elem, CE_stringval), hostname) != 0 ) {
-               lSetUlong(host, EH_tagged, 0);
+            if (host_match_elem != nullptr && sge_hostcmp(ocs::tom::get<CE_stringval>(host_match_elem), hostname) != 0 ) {
+               ocs::tom::set<EH_tagged>(host, 0);
             }
          } else {
-            lSetUlong(host, EH_tagged, 0);
+            ocs::tom::set<EH_tagged>(host, 0);
          }
       }
       lFreeList(&tmp_resource_list);
@@ -173,7 +175,7 @@ void ocs::QHostModelBase::sort_data() {
    DENTER(TOP_LAYER);
 
    // Find and de-chain the global host
-   lListElem *global_host = lGetElemHostRW(exec_host_list_, EH_name, SGE_GLOBAL_NAME);
+   lListElem *global_host = ocs::tom::find_first_rw<EH_name>(exec_host_list_, SGE_GLOBAL_NAME);
    lDechainElem(exec_host_list_, global_host);
 
    // Sort remaining elements alphabetically
@@ -230,7 +232,7 @@ ocs::QHostModelBase::get_host_where(const lList *hostname_list) {
    lCondition *where= nullptr;
 
    for_each_ep_lv(host, hostname_list) {
-      lCondition *new_where = lWhere("%T(%I h= %s)", EH_Type, EH_name, lGetString(host, ST_name));
+      lCondition *new_where = lWhere("%T(%I h= %s)", EH_Type, EH_name, ocs::tom::get<ST_name>(host));
       if (!where) {
          where = new_where;
       } else {
@@ -280,7 +282,7 @@ lCondition * ocs::QHostModelBase::get_job_where(const lList *user_name_list, con
 
    for_each_rw_lv(user, user_name_list) {
       lCondition *new_where = nullptr;
-      if (const char *user_name = lGetString(user, ST_name); is_pattern(user_name)) {
+      if (const char *user_name = ocs::tom::get<ST_name>(user); is_pattern(user_name)) {
          new_where = lWhere("%T(%I p= %s)", JB_Type, JB_owner, user_name);
       } else {
          new_where = lWhere("%T(%I == %s)", JB_Type, JB_owner, user_name);

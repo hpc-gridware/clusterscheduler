@@ -58,6 +58,14 @@
 #include "sgeobj/sge_qinstance_state.h"
 #include "sgeobj/sge_report.h"
 #include "sgeobj/sge_str.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_CE.h"
+#include "sgeobj/tom/ocs_tom_HL.h"
+#include "sgeobj/tom/ocs_tom_JG.h"
+#include "sgeobj/tom/ocs_tom_PET.h"
+#include "sgeobj/tom/ocs_tom_RUE.h"
+#include "sgeobj/tom/ocs_tom_STU.h"
+#include "sgeobj/tom/ocs_tom_UA.h"
 
 #include "sched/sge_resource_utilization.h"
 #include "sched/sge_sharetree_printing.h"
@@ -208,15 +216,14 @@ intermediate_usage_written(const lListElem *job_report, const lListElem *ja_task
    const lList *reported_usage = nullptr;
 
    /* do we have a tightly integrated parallel task? */
-   pe_task_id = lGetString(job_report, JR_pe_task_id_str);
+   pe_task_id = ocs::tom::get<JR_pe_task_id_str>(job_report);
    if (pe_task_id != nullptr) {
-      const lListElem *pe_task = lGetElemStr(lGetList(ja_task, JAT_task_list),
-                                             PET_id, pe_task_id);
+      const lListElem *pe_task = ocs::tom::find_first<PET_id>(ocs::tom::get<JAT_task_list>(ja_task), pe_task_id);
       if (pe_task != nullptr) {
-         reported_usage = lGetList(pe_task, PET_reported_usage);
+         reported_usage = ocs::tom::get<PET_reported_usage>(pe_task);
       }
    } else {
-      reported_usage = lGetList(ja_task, JAT_reported_usage_list);
+      reported_usage = ocs::tom::get<JAT_reported_usage_list>(ja_task);
    }
 
    /* the reported usage list will be created when the first intermediate
@@ -243,9 +250,9 @@ ocs::ClassicAccountingFileWriter::create_acct_record(lList **answer_list, lListE
    if (!intermediate) {
       // get the job category string
       const lList *master_category_list = *ocs::DataStore::get_master_list(SGE_TYPE_CATEGORY);
-      uint32_t category_id = lGetUlong(job, JB_category_id);
-      lListElem *category = lGetElemUlongRW(master_category_list, CT_id, category_id);
-      const char *category_string = lGetString(category, CT_str);
+      uint32_t category_id = ocs::tom::get<JB_category_id>(job);
+      lListElem *category = ocs::tom::find_first_rw<CT_id>(master_category_list, category_id);
+      const char *category_string = ocs::tom::get<CT_str>(category);
 
       dstring job_dstring = DSTRING_INIT;
       ret = sge_write_rusage(&job_dstring, nullptr, job_report, job, ja_task,
@@ -320,9 +327,9 @@ ocs::ClassicReportingFileWriter::create_acct_record(lList **answer_list, lListEl
 
    // get the job category string
    const lList *master_category_list = *ocs::DataStore::get_master_list(SGE_TYPE_CATEGORY);
-   uint32_t category_id = lGetUlong(job, JB_category_id);
-   lListElem *category = lGetElemUlongRW(master_category_list, CT_id, category_id);
-   const char *category_string = lGetString(category, CT_str);
+   uint32_t category_id = ocs::tom::get<JB_category_id>(job);
+   lListElem *category = ocs::tom::find_first_rw<CT_id>(master_category_list, category_id);
+   const char *category_string = ocs::tom::get<CT_str>(category);
 
    // reporting records will be written both for intermediate and final job reports
    /* job_dstring might have been filled with accounting record - this one
@@ -362,15 +369,15 @@ ocs::ClassicReportingFileWriter::create_new_job_record(lList **answer_list, cons
       uint64_t submission_time;
       const char *job_name, *owner, *group, *project, *department, *account;
 
-      job_number = lGetUlong(job, JB_job_number);
-      priority = lGetUlong(job, JB_priority);
-      submission_time = sge_gmt64_to_time_t(lGetUlong64(job, JB_submission_time));
-      job_name = lGetStringNotNull(job, JB_job_name);
-      owner = lGetStringNotNull(job, JB_owner);
-      group = lGetStringNotNull(job, JB_group);
-      project = lGetStringNotNull(job, JB_project);
-      department = lGetStringNotNull(job, JB_department);
-      account = lGetStringNotNull(job, JB_account);
+      job_number = ocs::tom::get<JB_job_number>(job);
+      priority = ocs::tom::get<JB_priority>(job);
+      submission_time = sge_gmt64_to_time_t(ocs::tom::get<JB_submission_time>(job));
+      job_name = ocs::tom::get_or_empty<JB_job_name>(job);
+      owner = ocs::tom::get_or_empty<JB_owner>(job);
+      group = ocs::tom::get_or_empty<JB_group>(job);
+      project = ocs::tom::get_or_empty<JB_project>(job);
+      department = ocs::tom::get_or_empty<JB_department>(job);
+      account = ocs::tom::get_or_empty<JB_account>(job);
 
       sge_dstring_sprintf(&job_dstring,
                           sge_u64"%c"
@@ -426,7 +433,7 @@ ocs::ClassicReportingFileWriter::create_job_log(lList **answer_list, uint64_t ev
       uint64_t submission_time;
       const char *job_name, *owner, *group, *project, *department, *account;
 
-      job_id = lGetUlong(job, JB_job_number);
+      job_id = ocs::tom::get<JB_job_number>(job);
 
       /* set ja_task_id:
        * -1, if we don't have a ja_task
@@ -435,20 +442,20 @@ ocs::ClassicReportingFileWriter::create_job_log(lList **answer_list, uint64_t ev
        */
       if (ja_task != nullptr) {
          if (job_is_array(job)) {
-            ja_task_id = (int) lGetUlong(ja_task, JAT_task_number);
+            ja_task_id = (int) ocs::tom::get<JAT_task_number>(ja_task);
          } else {
             ja_task_id = 0;
          }
       }
       if (pe_task != nullptr) {
-         pe_task_id = lGetStringNotNull(pe_task, PET_id);
+         pe_task_id = ocs::tom::get_or_empty<PET_id>(pe_task);
       }
 
       /* JG: TODO: implement the whole job/task state mess */
       if (pe_task != nullptr) {
-         jstate = lGetUlong(pe_task, PET_status);
+         jstate = ocs::tom::get<PET_status>(pe_task);
       } else if (ja_task != nullptr) {
-         jstate = lGetUlong(ja_task, JAT_status);
+         jstate = ocs::tom::get<JAT_status>(ja_task);
       } else {
          jstate = 0;
       }
@@ -461,14 +468,14 @@ ocs::ClassicReportingFileWriter::create_job_log(lList **answer_list, uint64_t ev
          message = "";
       }
 
-      priority = lGetUlong(job, JB_priority);
-      submission_time = sge_gmt64_to_time_t(lGetUlong64(job, JB_submission_time));
-      job_name = lGetStringNotNull(job, JB_job_name);
-      owner = lGetStringNotNull(job, JB_owner);
-      group = lGetStringNotNull(job, JB_group);
-      project = lGetStringNotNull(job, JB_project);
-      department = lGetStringNotNull(job, JB_department);
-      account = lGetStringNotNull(job, JB_account);
+      priority = ocs::tom::get<JB_priority>(job);
+      submission_time = sge_gmt64_to_time_t(ocs::tom::get<JB_submission_time>(job));
+      job_name = ocs::tom::get_or_empty<JB_job_name>(job);
+      owner = ocs::tom::get_or_empty<JB_owner>(job);
+      group = ocs::tom::get_or_empty<JB_group>(job);
+      project = ocs::tom::get_or_empty<JB_project>(job);
+      department = ocs::tom::get_or_empty<JB_department>(job);
+      account = ocs::tom::get_or_empty<JB_account>(job);
 
       sge_dstring_sprintf(&job_dstring,
                           sge_u64 "%c%s%c" sge_u32 "%c%d%c%s%c%s%c%s%c%s%c" sge_u32 "%c" sge_u32 "%c" sge_u64 "%c%s%c%s%c%s%c%s%c%s%c%s%c%s\n",
@@ -519,7 +526,7 @@ ocs::ClassicReportingFileWriter::reporting_write_consumables(lList **answer_list
    DENTER(TOP_LAYER);
 
    for_each_ep_lv(cep, actual) {
-      const char *name = lGetString(cep, RUE_name);
+      const char *name = ocs::tom::get<RUE_name>(cep);
       bool log_variable = true;
 
       /*
@@ -527,8 +534,8 @@ ocs::ClassicReportingFileWriter::reporting_write_consumables(lList **answer_list
        * due to reporting_variables in global/local host
        */
       if (!log_consumables) {
-         const lList *report_variables = lGetList(host, EH_merged_report_variables);
-         if (lGetElemStr(report_variables, STU_name, name) == nullptr) {
+         const lList *report_variables = ocs::tom::get<EH_merged_report_variables>(host);
+         if (static_cast<const lListElem *>(ocs::tom::find_first<STU_name>(report_variables, name)) == nullptr) {
             log_variable = false;
          } else {
             /*
@@ -546,7 +553,7 @@ ocs::ClassicReportingFileWriter::reporting_write_consumables(lList **answer_list
 
       /* now do the logging, if requested */
       if (log_variable) {
-         const lListElem *tep = lGetElemStr(total, CE_name, name);
+         const lListElem *tep = ocs::tom::find_first<CE_name>(total, name);
          if (tep != nullptr) {
             sge_dstring_append(buffer, name);
             sge_dstring_append_char(buffer, '=');
@@ -587,9 +594,9 @@ ocs::ClassicReportingFileWriter::create_queue_record(lList **answer_list,
       dstring queue_dstring = DSTRING_INIT;
 
       sge_dstring_sprintf(&queue_dstring, "%s%c%s%c" sge_u64 "%c",
-                          lGetString(queue, QU_qname),
+                          ocs::tom::get<QU_qname>(queue),
                           REPORTING_DELIMITER,
-                          lGetHost(queue, QU_qhostname),
+                          static_cast<const char *>(ocs::tom::get<QU_qhostname>(queue)),
                           REPORTING_DELIMITER,
                           (uint64_t)sge_gmt64_to_time_t(report_time),
                           REPORTING_DELIMITER);
@@ -633,16 +640,16 @@ ocs::ClassicReportingFileWriter::create_queue_consumable_record(lList **answer_l
 
       /* dump consumables */
       reporting_write_consumables(answer_list, &consumable_dstring,
-                                  lGetList(queue, QU_resource_utilization),
-                                  lGetList(queue, QU_consumable_config_list),
+                                  ocs::tom::get<QU_resource_utilization>(queue),
+                                  ocs::tom::get<QU_consumable_config_list>(queue),
                                   host, job);
 
       if (sge_dstring_strlen(&consumable_dstring) > 0) {
          dstring queue_dstring = DSTRING_INIT;
          sge_dstring_sprintf(&queue_dstring, "%s%c%s%c" sge_u64 "%c",
-                             lGetString(queue, QU_qname),
+                             ocs::tom::get<QU_qname>(queue),
                              REPORTING_DELIMITER,
-                             lGetHost(queue, QU_qhostname),
+                             static_cast<const char *>(ocs::tom::get<QU_qhostname>(queue)),
                              REPORTING_DELIMITER,
                              (uint64_t)sge_gmt64_to_time_t(report_time),
                              REPORTING_DELIMITER);
@@ -685,8 +692,8 @@ ocs::ClassicReportingFileWriter::create_host_record(lList **answer_list,
    if (host != nullptr) {
       dstring load_dstring = DSTRING_INIT;
 
-      write_load_values(answer_list, &load_dstring, lGetList(host, EH_load_list),
-                        lGetList(host, EH_merged_report_variables));
+      write_load_values(answer_list, &load_dstring, ocs::tom::get<EH_load_list>(host),
+                        ocs::tom::get<EH_merged_report_variables>(host));
 
       /* As long as we have no host status information, dump host data only if we have
        * load values to report.
@@ -694,7 +701,7 @@ ocs::ClassicReportingFileWriter::create_host_record(lList **answer_list,
       if (sge_dstring_strlen(&load_dstring) > 0) {
          dstring host_dstring = DSTRING_INIT;
          sge_dstring_sprintf(&host_dstring, "%s%c" sge_u64 "%c%s%c%s\n",
-                             lGetHost(host, EH_name), REPORTING_DELIMITER,
+                             static_cast<const char *>(ocs::tom::get<EH_name>(host)), REPORTING_DELIMITER,
                              (uint64_t)sge_gmt64_to_time_t(report_time), REPORTING_DELIMITER,
                              "X", REPORTING_DELIMITER,
                              sge_dstring_get_string(&load_dstring));
@@ -736,15 +743,15 @@ ocs::ClassicReportingFileWriter::create_host_consumable_record(lList **answer_li
 
       /* dump consumables */
       reporting_write_consumables(answer_list, &consumable_dstring,
-                                  lGetList(host, EH_resource_utilization),
-                                  lGetList(host, EH_consumable_config_list),
+                                  ocs::tom::get<EH_resource_utilization>(host),
+                                  ocs::tom::get<EH_consumable_config_list>(host),
                                   host, job);
 
       if (sge_dstring_strlen(&consumable_dstring) > 0) {
          dstring host_dstring = DSTRING_INIT;
 
          sge_dstring_sprintf(&host_dstring, "%s%c" sge_u64 "%c%s%c%s\n",
-                             lGetHost(host, EH_name), REPORTING_DELIMITER,
+                             static_cast<const char *>(ocs::tom::get<EH_name>(host)), REPORTING_DELIMITER,
                              (uint64_t)sge_gmt64_to_time_t(report_time), REPORTING_DELIMITER,
                              "X", REPORTING_DELIMITER,
                              sge_dstring_get_string(&consumable_dstring));
@@ -854,8 +861,8 @@ ocs::ClassicReportingFileWriter::write_load_values(lList **answer_list, dstring 
       const char *name;
       const lListElem *load;
 
-      name = lGetString(variable, STU_name);
-      load = lGetElemStr(load_list, HL_name, name);
+      name = ocs::tom::get<STU_name>(variable);
+      load = ocs::tom::find_first<HL_name>(load_list, name);
       if (load != nullptr) {
          if (first) {
             first = false;
@@ -863,7 +870,7 @@ ocs::ClassicReportingFileWriter::write_load_values(lList **answer_list, dstring 
             sge_dstring_append_char(buffer, ',');
          }
          sge_dstring_sprintf_append(buffer, "%s=%s",
-                                    name, lGetString(load, HL_value));
+                                    name, ocs::tom::get<HL_value>(load));
       }
 
    }
@@ -892,7 +899,7 @@ ocs::ClassicReportingFileWriter::create_new_ar_record(lList **answer_list,
    DENTER(TOP_LAYER);
 
    bool ret = true;
-   const char *owner = lGetString(ar, AR_owner);
+   const char *owner = ocs::tom::get<AR_owner>(ar);
 
    dstring dstr = DSTRING_INIT;
    sge_dstring_sprintf_append(&dstr,
@@ -903,8 +910,8 @@ ocs::ClassicReportingFileWriter::create_new_ar_record(lList **answer_list,
                               "%s\n",
                               (uint64_t)sge_gmt64_to_time_t(report_time), REPORTING_DELIMITER,
                               "new_ar", REPORTING_DELIMITER,
-                              (uint64_t)sge_gmt64_to_time_t(lGetUlong64(ar, AR_submission_time)), REPORTING_DELIMITER,
-                              lGetUlong(ar, AR_id), REPORTING_DELIMITER,
+                              (uint64_t)sge_gmt64_to_time_t(ocs::tom::get<AR_submission_time>(ar)), REPORTING_DELIMITER,
+                              ocs::tom::get<AR_id>(ar), REPORTING_DELIMITER,
                               (owner != nullptr) ? owner : "");
    // @todo use create_record
    sge_mutex_lock(typeid(*this).name(), __func__, __LINE__, &buffer_mutex);
@@ -944,10 +951,10 @@ ocs::ClassicReportingFileWriter::create_ar_attribute_record(lList **answer_list,
    dstring ar_granted_resources = DSTRING_INIT;
    dstring dstr = DSTRING_INIT;
 
-   pe_name = lGetString(ar, AR_pe);
-   ar_name = lGetString(ar, AR_name);
-   ar_account = lGetString(ar, AR_account);
-   centry_list_append_to_dstring(lGetList(ar, AR_resource_list), &ar_granted_resources);
+   pe_name = ocs::tom::get<AR_pe>(ar);
+   ar_name = ocs::tom::get<AR_name>(ar);
+   ar_account = ocs::tom::get<AR_account>(ar);
+   centry_list_append_to_dstring(ocs::tom::get<AR_resource_list>(ar), &ar_granted_resources);
    sge_dstring_sprintf_append(&dstr,
                               sge_u64 "%c"
                               SFN "%c"
@@ -963,12 +970,12 @@ ocs::ClassicReportingFileWriter::create_ar_attribute_record(lList **answer_list,
                               (uint64_t)sge_gmt64_to_time_t(report_time), REPORTING_DELIMITER,
                               "ar_attr", REPORTING_DELIMITER,
                               (uint64_t)sge_gmt64_to_time_t(report_time), REPORTING_DELIMITER,
-                              (uint64_t)sge_gmt64_to_time_t(lGetUlong64(ar, AR_submission_time)), REPORTING_DELIMITER,
-                              lGetUlong(ar, AR_id), REPORTING_DELIMITER,
+                              (uint64_t)sge_gmt64_to_time_t(ocs::tom::get<AR_submission_time>(ar)), REPORTING_DELIMITER,
+                              ocs::tom::get<AR_id>(ar), REPORTING_DELIMITER,
                               (ar_name != nullptr) ? ar_name : "", REPORTING_DELIMITER,
                               (ar_account != nullptr) ? ar_account : "", REPORTING_DELIMITER,
-                              (uint64_t)sge_gmt64_to_time_t(lGetUlong64(ar, AR_start_time)), REPORTING_DELIMITER,
-                              (uint64_t)sge_gmt64_to_time_t(lGetUlong64(ar, AR_end_time)), REPORTING_DELIMITER,
+                              (uint64_t)sge_gmt64_to_time_t(ocs::tom::get<AR_start_time>(ar)), REPORTING_DELIMITER,
+                              (uint64_t)sge_gmt64_to_time_t(ocs::tom::get<AR_end_time>(ar)), REPORTING_DELIMITER,
                               (pe_name != nullptr) ? pe_name : "", REPORTING_DELIMITER,
                               sge_dstring_get_string(&ar_granted_resources));
 
@@ -1011,7 +1018,7 @@ ocs::ClassicReportingFileWriter::create_ar_log_record(lList **answer_list,
    dstring state_string = DSTRING_INIT;
    dstring dstr = DSTRING_INIT;
 
-   ar_state2dstring((ar_state_t) lGetUlong(ar, AR_state), &state_string);
+   ar_state2dstring((ar_state_t) ocs::tom::get<AR_state>(ar), &state_string);
    sge_dstring_sprintf_append(&dstr,
                               sge_u64 "%c"
                               SFN "%c"
@@ -1024,8 +1031,8 @@ ocs::ClassicReportingFileWriter::create_ar_log_record(lList **answer_list,
                               (uint64_t)sge_gmt64_to_time_t(report_time), REPORTING_DELIMITER,
                               "ar_log", REPORTING_DELIMITER,
                               (uint64_t)sge_gmt64_to_time_t(report_time), REPORTING_DELIMITER,
-                              (uint64_t)sge_gmt64_to_time_t(lGetUlong64(ar, AR_submission_time)), REPORTING_DELIMITER,
-                              lGetUlong(ar, AR_id), REPORTING_DELIMITER,
+                              (uint64_t)sge_gmt64_to_time_t(ocs::tom::get<AR_submission_time>(ar)), REPORTING_DELIMITER,
+                              ocs::tom::get<AR_id>(ar), REPORTING_DELIMITER,
                               sge_dstring_get_string(&state_string), REPORTING_DELIMITER,
                               ar_get_string_from_event(event), REPORTING_DELIMITER,
                               (ar_description != nullptr) ? ar_description : "");
@@ -1061,9 +1068,9 @@ bool ocs::ClassicReportingFileWriter::create_ar_acct_record(lList **answer_list,
    bool ret = true;
    dstring dstr = DSTRING_INIT;
 
-   for_each_ep_lv(elem, lGetList(ar, AR_granted_slots)) {
-      const char *queue_name = lGetString(elem, JG_qname);
-      uint32_t slots = lGetUlong(elem, JG_slots);
+   for_each_ep_lv(elem, ocs::tom::get<AR_granted_slots>(ar)) {
+      const char *queue_name = ocs::tom::get<JG_qname>(elem);
+      uint32_t slots = ocs::tom::get<JG_slots>(elem);
       dstring cqueue_name = DSTRING_INIT;
       dstring host_or_hgroup = DSTRING_INIT;
 
@@ -1125,8 +1132,8 @@ ocs::ClassicReportingFileWriter::create_single_ar_acct_record(dstring *dstr,
                               (uint64_t)sge_gmt64_to_time_t(report_time), REPORTING_DELIMITER,
                               "ar_acct", REPORTING_DELIMITER,
                               (uint64_t)sge_gmt64_to_time_t(report_time), REPORTING_DELIMITER,
-                              (uint64_t)sge_gmt64_to_time_t(lGetUlong64(ar, AR_submission_time)), REPORTING_DELIMITER,
-                              lGetUlong(ar, AR_id), REPORTING_DELIMITER,
+                              (uint64_t)sge_gmt64_to_time_t(ocs::tom::get<AR_submission_time>(ar)), REPORTING_DELIMITER,
+                              ocs::tom::get<AR_id>(ar), REPORTING_DELIMITER,
                               cqueue_name, REPORTING_DELIMITER,
                               hostname, REPORTING_DELIMITER,
                               slots);

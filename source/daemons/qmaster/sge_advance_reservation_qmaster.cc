@@ -84,6 +84,22 @@
 #include "sgeobj/sge_ulong.h"
 #include "sgeobj/sge_qref.h"
 #include "sgeobj/ocs_DataStore.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_ARA.h"
+#include "sgeobj/tom/ocs_tom_BN.h"
+#include "sgeobj/tom/ocs_tom_CE.h"
+#include "sgeobj/tom/ocs_tom_GRU.h"
+#include "sgeobj/tom/ocs_tom_JG.h"
+#include "sgeobj/tom/ocs_tom_MR.h"
+#include "sgeobj/tom/ocs_tom_PE.h"
+#include "sgeobj/tom/ocs_tom_QR.h"
+#include "sgeobj/tom/ocs_tom_QU.h"
+#include "sgeobj/tom/ocs_tom_RDE.h"
+#include "sgeobj/tom/ocs_tom_RESL.h"
+#include "sgeobj/tom/ocs_tom_RN.h"
+#include "sgeobj/tom/ocs_tom_RUE.h"
+#include "sgeobj/tom/ocs_tom_ST.h"
+#include "sgeobj/tom/ocs_tom_US.h"
 
 #include "sched/debit.h"
 #include "sched/sge_resource_utilization.h"
@@ -162,25 +178,25 @@ ar_initialize_timer(lList **answer_list, monitoring_t *monitor, uint64_t gdi_ses
 
       next_ar = lNextRW(ar);
 
-      if (now < lGetUlong64(ar, AR_start_time)) {
+      if (now < ocs::tom::get<AR_start_time>(ar)) {
          sge_ar_state_set_waiting(ar);
 
-         ev = te_new_event(lGetUlong64(ar, AR_start_time), TYPE_AR_EVENT,
-                           ONE_TIME_EVENT, lGetUlong(ar, AR_id), AR_RUNNING, nullptr);
+         ev = te_new_event(ocs::tom::get<AR_start_time>(ar), TYPE_AR_EVENT,
+                           ONE_TIME_EVENT, ocs::tom::get<AR_id>(ar), AR_RUNNING, nullptr);
          te_add_event(ev);
          te_add_event(ev);
          te_free_event(&ev);
 
-      } else if (now < lGetUlong64(ar, AR_end_time)) {
+      } else if (now < ocs::tom::get<AR_end_time>(ar)) {
          sge_ar_state_set_running(ar);
 
-         ev = te_new_event(lGetUlong64(ar, AR_end_time), TYPE_AR_EVENT,
-                           ONE_TIME_EVENT, lGetUlong(ar, AR_id), AR_EXITED, nullptr);
+         ev = te_new_event(ocs::tom::get<AR_end_time>(ar), TYPE_AR_EVENT,
+                           ONE_TIME_EVENT, ocs::tom::get<AR_id>(ar), AR_EXITED, nullptr);
          te_add_event(ev);
          te_free_event(&ev);
       } else {
          dstring buffer = DSTRING_INIT;
-         uint32_t ar_id = lGetUlong(ar, AR_id);
+         uint32_t ar_id = ocs::tom::get<AR_id>(ar);
 
          sge_ar_state_set_running(ar);
 
@@ -222,7 +238,7 @@ static bool
 ar_verify_project(const lListElem *ar, const ocs::gdi::Packet *packet, lList **alpp) {
    DENTER(TOP_LAYER);
 
-   const char *project = lGetString(ar, AR_project);
+   const char *project = ocs::tom::get<AR_project>(ar);
    if (project == nullptr) {
       DRETURN(true);
    }
@@ -239,8 +255,8 @@ ar_verify_project(const lListElem *ar, const ocs::gdi::Packet *packet, lList **a
    // the user has to have access to the project
    const lList *master_userset_list = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
    lList *grp_list = grp_list_array2list(packet->amount, packet->grp_array);
-   bool has_access = sge_has_access_(packet->user, packet->group, grp_list, lGetList(pep, PR_acl),
-                                     lGetList(pep, PR_xacl), master_userset_list) != 0;
+   bool has_access = sge_has_access_(packet->user, packet->group, grp_list, ocs::tom::get<PR_acl>(pep),
+                                     ocs::tom::get<PR_xacl>(pep), master_userset_list) != 0;
    lFreeList(&grp_list);
    if (!has_access) {
       ERROR(MSG_AR_NOACCESS2PRJ4USER_SS, project, packet->user);
@@ -314,13 +330,13 @@ int ar_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListEl
       do {
          ar_id = sge_get_ar_id(monitor);
       } while (ar_list_locate(master_ar_list, ar_id));
-      lSetUlong(new_ar, AR_id, ar_id);
+      ocs::tom::set<AR_id>(new_ar, ar_id);
       /*
       ** set the owner of new_ar, don't overwrite it with
       ** attr_mod_str(alpp, ar, new_ar, AR_owner, object->object_name);
       */
-      lSetString(new_ar, AR_owner, ruser);
-      lSetString(new_ar, AR_group, component_get_groupname());
+      ocs::tom::set<AR_owner>(new_ar, ruser);
+      ocs::tom::set<AR_group>(new_ar, component_get_groupname());
    } else {
       ERROR(MSG_NOTYETIMPLEMENTED_S, "advance reservation modification");
       answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
@@ -344,7 +360,7 @@ int ar_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListEl
       goto AR_MOD_ERROR;
    }
    /*   AR_submission_time, SGE_ULONG */
-   lSetUlong64(new_ar, AR_submission_time, sge_get_gmt64());
+   ocs::tom::set<AR_submission_time>(new_ar, sge_get_gmt64());
    /*   AR_start_time, SGE_ULONG          required */
    attr_mod_ulong64(ar, new_ar, AR_start_time, object->object_name);
    /*   AR_end_time, SGE_ULONG            required */
@@ -356,7 +372,7 @@ int ar_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListEl
    /*   AR_error_handling, SGE_ULONG      how to deal with soft and hard exceptions */
    attr_mod_ulong(ar, new_ar, AR_error_handling, object->object_name);
    /*   AR_state, SGE_ULONG               state of the AR */
-   lSetUlong(new_ar, AR_state, AR_WAITING);
+   ocs::tom::set<AR_state>(new_ar, AR_WAITING);
    /*   AR_checkpoint_name, SGE_STRING    Named checkpoint */
    attr_mod_zerostr(ar, new_ar, AR_checkpoint_name, object->object_name);
    /*   AR_resource_list, SGE_LIST */
@@ -423,7 +439,7 @@ int ar_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lList
    lList *answer_list = nullptr;
    dstring buffer = DSTRING_INIT;
 
-   sge_dstring_sprintf(&buffer, sge_u32, lGetUlong(ep, AR_id));
+   sge_dstring_sprintf(&buffer, sge_u32, ocs::tom::get<AR_id>(ep));
    bool dbret = spool_write_object(&answer_list, spool_get_default_context(), ep,
                                    sge_dstring_get_string(&buffer), SGE_TYPE_AR);
    answer_list_output(&answer_list);
@@ -488,13 +504,13 @@ ar_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListE
    /*
    ** send sgeE_AR_MOD/sgeE_AR_ADD event
    */
-   sge_add_event(0, old_ep ? sgeE_AR_MOD : sgeE_AR_ADD, lGetUlong(ep, AR_id), 0,
+   sge_add_event(0, old_ep ? sgeE_AR_MOD : sgeE_AR_ADD, ocs::tom::get<AR_id>(ep), 0,
                  nullptr, nullptr, nullptr, ep, packet->gdi_session);
 
    /*
    ** add the timer to trigger the state change
     */
-   ev = te_new_event(lGetUlong64(ep, AR_start_time), TYPE_AR_EVENT, ONE_TIME_EVENT, lGetUlong(ep, AR_id),
+   ev = te_new_event(ocs::tom::get<AR_start_time>(ep), TYPE_AR_EVENT, ONE_TIME_EVENT, ocs::tom::get<AR_id>(ep),
                      AR_RUNNING, nullptr);
    te_add_event(ev);
    te_free_event(&ev);
@@ -537,18 +553,18 @@ ar_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **al
    }
 
    /* ep is no ar_del element, if ep has no ID_str */
-   if (lGetPosViaElem(ep, ID_str, SGE_NO_ABORT) < 0) {
+   if (!ocs::tom::has<ID_str>(ep)) {
       CRITICAL(MSG_SGETEXT_MISSINGCULLFIELD_SS, lNm2Str(ID_str), __func__);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       sge_dstring_free(&buffer);
       DRETURN(STATUS_EUNKNOWN);
    }
 
-   const char *id_str = lGetString(ep, ID_str);
-   const lList *user_list = lGetList(ep, ID_user_list);
+   const char *id_str = ocs::tom::get<ID_str>(ep);
+   const lList *user_list = ocs::tom::get<ID_user_list>(ep);
    if (user_list != nullptr) {
       for_each_ep_lv(user, user_list) {
-         const char *user_name = lGetString(user, ST_name);
+         const char *user_name = ocs::tom::get<ST_name>(user);
          bool is_pattern = ocs::is_pattern(user_name);
 
          if (is_pattern && !manop_is_manager(packet)) {
@@ -641,7 +657,7 @@ ar_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **al
    uint64_t now = sge_get_gmt64();
    nxt = lFirstRW(*master_ar_list);
    while ((ar = nxt)) {
-      uint32_t ar_id = lGetUlong(ar, AR_id);
+      uint32_t ar_id = ocs::tom::get<AR_id>(ar);
 
       nxt = lNextRW(ar);
 
@@ -651,7 +667,7 @@ ar_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **al
 
       removed_one = true;
 
-      if (!has_manager_privileges && strcmp(packet->user, lGetString(ar, AR_owner))) {
+      if (!has_manager_privileges && strcmp(packet->user, ocs::tom::get<AR_owner>(ar))) {
          ERROR(MSG_DELETEPERMS_SSU, packet->user, SGE_OBJ_AR, ar_id);
          answer_list_add(alpp, SGE_EVENT, STATUS_ENOTOWNER, ANSWER_QUALITY_ERROR);
          continue;
@@ -666,7 +682,7 @@ ar_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **al
       sge_ar_send_mail(ar, MAIL_AT_EXIT);
 
       /* remove all jobs refering to the AR */
-      if (sge_ar_remove_all_jobs(ar_id, lGetUlong(ep, ID_force), monitor, packet->gdi_session)) {
+      if (sge_ar_remove_all_jobs(ar_id, ocs::tom::get<ID_force>(ep), monitor, packet->gdi_session)) {
          /* either all jobs were successfull removed or we had no jobs */
 
          /* unblock reserved queues */
@@ -677,7 +693,7 @@ ar_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **al
                                         now);
          ocs::ReportingFileWriter::create_ar_acct_records(nullptr, ar, now);
 
-         gdil_del_all_orphaned(lGetList(ar, AR_granted_slots), alpp, packet->gdi_session);
+         gdil_del_all_orphaned(ocs::tom::get<AR_granted_slots>(ar), alpp, packet->gdi_session);
 
          lRemoveElem(*master_ar_list, &ar);
 
@@ -717,7 +733,7 @@ ar_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **al
                sge_dstring_append(&buffer, "...");
                break;
             }
-            sge_dstring_append(&buffer, lGetString(user, ST_name));
+            sge_dstring_append(&buffer, ocs::tom::get<ST_name>(user));
             umax--;
          }
          ERROR(MSG_SGETEXT_THEREARENOXFORUSERS_SS, SGE_OBJ_AR, sge_dstring_get_string(&buffer));
@@ -956,7 +972,7 @@ sge_ar_event_handler(te_event_t anEvent, monitoring_t *monitor) {
       sge_ar_send_mail(ar, MAIL_AT_EXIT);
 
       /* remove all orphaned queue intances, which are empty. */
-      gdil_del_all_orphaned(lGetList(ar, AR_granted_slots), nullptr, ocs::SessionManager::GDI_SESSION_NONE);
+      gdil_del_all_orphaned(ocs::tom::get<AR_granted_slots>(ar), nullptr, ocs::SessionManager::GDI_SESSION_NONE);
 
       /* remove the AR itself */
       DPRINTF("AR: exited, removing AR " sge_u32 "\n", ar_id);
@@ -971,7 +987,7 @@ sge_ar_event_handler(te_event_t anEvent, monitoring_t *monitor) {
 
       sge_ar_state_set_running(ar);
 
-      ev = te_new_event(lGetUlong64(ar, AR_end_time), TYPE_AR_EVENT, ONE_TIME_EVENT, ar_id, AR_EXITED, nullptr);
+      ev = te_new_event(ocs::tom::get<AR_end_time>(ar), TYPE_AR_EVENT, ONE_TIME_EVENT, ar_id, AR_EXITED, nullptr);
       te_add_event(ev);
       te_free_event(&ev);
 
@@ -1012,11 +1028,11 @@ ar_reserve_queues(lList **alpp, lListElem *ar, uint64_t gdi_session) {
    lList *suspended_list = nullptr;                   /* JB_Type */
    lList *running_list = nullptr;                     /* JB_Type */
 
-   int verify_mode = lGetUlong(ar, AR_verify);
+   int verify_mode = ocs::tom::get<AR_verify>(ar);
    lList *talp = nullptr;
-   const lList *ar_queue_request = lGetList(ar, AR_queue_list);
-   const char *ar_pe_request = lGetString(ar, AR_pe);
-   const char *ar_ckpt_request = lGetString(ar, AR_checkpoint_name);
+   const lList *ar_queue_request = ocs::tom::get<AR_queue_list>(ar);
+   const char *ar_pe_request = ocs::tom::get<AR_pe>(ar);
+   const char *ar_ckpt_request = ocs::tom::get<AR_checkpoint_name>(ar);
 
    const lListElem *cqueue = nullptr;
    bool ret = true;
@@ -1037,15 +1053,15 @@ ar_reserve_queues(lList **alpp, lListElem *ar, uint64_t gdi_session) {
 
 
    lListElem *dummy_job = lCreateElem(JB_Type);
-   if (lGetList(ar, AR_acl_list) != nullptr) {
-      lSetString(dummy_job, JB_owner, "*");
-      lSetString(dummy_job, JB_group, "*");
+   if (static_cast<const lList *>(ocs::tom::get<AR_acl_list>(ar)) != nullptr) {
+      ocs::tom::set<JB_owner>(dummy_job, "*");
+      ocs::tom::set<JB_group>(dummy_job, "*");
    } else {
-      lSetString(dummy_job, JB_owner, lGetString(ar, AR_owner));
-      lSetString(dummy_job, JB_group, lGetString(ar, AR_group));
+      ocs::tom::set<JB_owner>(dummy_job, ocs::tom::get<AR_owner>(ar));
+      ocs::tom::set<JB_group>(dummy_job, ocs::tom::get<AR_group>(ar));
    }
    // the queues and hosts are selected for the project of the AR, see their projects and xprojects
-   lSetString(dummy_job, JB_project, lGetString(ar, AR_project));
+   ocs::tom::set<JB_project>(dummy_job, ocs::tom::get<AR_project>(ar));
 
    assignment_init(&a, dummy_job, nullptr, nullptr);
    a.host_list = master_exechost_list;
@@ -1053,8 +1069,8 @@ ar_reserve_queues(lList **alpp, lListElem *ar, uint64_t gdi_session) {
    a.acl_list = master_userset_list;
    a.hgrp_list = master_hgroup_list;
    a.gep = host_list_locate(master_exechost_list, SGE_GLOBAL_NAME);
-   a.start = lGetUlong64(ar, AR_start_time);
-   a.duration = lGetUlong64(ar, AR_duration);
+   a.start = ocs::tom::get<AR_start_time>(ar);
+   a.duration = ocs::tom::get<AR_duration>(ar);
    a.is_reservation = true;
    a.is_advance_reservation = true;
    a.now = sge_get_gmt64();
@@ -1077,8 +1093,8 @@ ar_reserve_queues(lList **alpp, lListElem *ar, uint64_t gdi_session) {
    }
 
    for_each_ep(cqueue, master_cqueue_list) {
-      const char *cqname = lGetString(cqueue, CQ_name);
-      const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
+      const char *cqname = ocs::tom::get<CQ_name>(cqueue);
+      const lList *qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
       const lListElem *qinstance;
 
       if (cqueue_match_static(cqname, &a) != DISPATCH_OK) {
@@ -1097,7 +1113,7 @@ ar_reserve_queues(lList **alpp, lListElem *ar, uint64_t gdi_session) {
          /* we only have to consider requested queues */
          if (ar_queue_request != nullptr) {
             if (qref_list_cq_rejected(ar_queue_request, cqname,
-                                      lGetHost(qinstance, QU_qhostname), master_hgroup_list)) {
+                                      ocs::tom::get<QU_qhostname>(qinstance), master_hgroup_list)) {
                continue;
             }
          }
@@ -1107,8 +1123,8 @@ ar_reserve_queues(lList **alpp, lListElem *ar, uint64_t gdi_session) {
             bool found = false;
             const lListElem *pe_ref;
 
-            for_each_ep(pe_ref, lGetList(qinstance, QU_pe_list)) {
-               if (pe_name_is_matching(lGetString(pe_ref, ST_name), ar_pe_request)) {
+            for_each_ep(pe_ref, static_cast<const lList *>(ocs::tom::get<QU_pe_list>(qinstance))) {
+               if (pe_name_is_matching(ocs::tom::get<ST_name>(pe_ref), ar_pe_request)) {
                   found = true;
                   break;
                }
@@ -1121,27 +1137,27 @@ ar_reserve_queues(lList **alpp, lListElem *ar, uint64_t gdi_session) {
 
          /* we only have to consider queues containing the requested checkpoint object */
          if (ar_ckpt_request != nullptr) {
-            if (lGetSubStr(qinstance, ST_name, ar_ckpt_request, QU_ckpt_list) == nullptr) {
+            if (static_cast<const lListElem *>(ocs::tom::find_first_in<QU_ckpt_list, ST_name>(qinstance, ar_ckpt_request)) == nullptr) {
                continue;
             }
          }
 
          /* sort out queue that are calendar disabled in requested time frame */
-         if ((cal_name = lGetString(qinstance, QU_calendar)) != nullptr) {
-            const lListElem *cal_ep = lGetElemStrRW(master_cal_list, CAL_name, cal_name);
+         if ((cal_name = ocs::tom::get<QU_calendar>(qinstance)) != nullptr) {
+            const lListElem *cal_ep = ocs::tom::find_first_rw<CAL_name>(master_cal_list, cal_name);
 
-            if (!calendar_open_in_time_frame(cal_ep, lGetUlong64(ar, AR_start_time), lGetUlong64(ar, AR_duration))) {
+            if (!calendar_open_in_time_frame(cal_ep, ocs::tom::get<AR_start_time>(ar), ocs::tom::get<AR_duration>(ar))) {
                /* skip queue */
                answer_list_add_sprintf(alpp, STATUS_OK, ANSWER_QUALITY_INFO, MSG_AR_QUEUEDISABLEDINTIMEFRAME,
-                                       lGetString(qinstance, QU_full_name));
+                                       ocs::tom::get<QU_full_name>(qinstance));
                continue;
             }
          }
          /* sort out queues where not all users have access */
-         if (lGetList(ar, AR_acl_list) != nullptr) {
-            if (!sge_ar_have_users_access(alpp, ar, lGetString(qinstance, QU_full_name),
-                                          lGetList(qinstance, QU_acl),
-                                          lGetList(qinstance, QU_xacl),
+         if (static_cast<const lList *>(ocs::tom::get<AR_acl_list>(ar)) != nullptr) {
+            if (!sge_ar_have_users_access(alpp, ar, ocs::tom::get<QU_full_name>(qinstance),
+                                          ocs::tom::get<QU_acl>(qinstance),
+                                          ocs::tom::get<QU_xacl>(qinstance),
                                           master_userset_list)) {
                continue;
             }
@@ -1179,33 +1195,33 @@ ar_reserve_queues(lList **alpp, lListElem *ar, uint64_t gdi_session) {
    lFreeList(splitted_job_lists[SPLIT_RUNNING]);
    lFreeList(splitted_job_lists[SPLIT_SUSPENDED]);
 
-   lSetUlong64(dummy_job, JB_execution_time, lGetUlong64(ar, AR_start_time));
-   lSetUlong64(dummy_job, JB_deadline, lGetUlong64(ar, AR_end_time));
-   job_set_hard_resource_list(dummy_job, lCopyList(nullptr, lGetList(ar, AR_resource_list)));
-   job_set_hard_queue_list(dummy_job, lCopyList(nullptr, lGetList(ar, AR_queue_list)));
-   job_set_master_hard_queue_list(dummy_job, lCopyList(nullptr, lGetList(ar, AR_master_queue_list)));
-   lSetUlong(dummy_job, JB_type, lGetUlong(ar, AR_type));
-   lSetString(dummy_job, JB_checkpoint_name, lGetString(ar, AR_checkpoint_name));
-   lSetObject(dummy_job, JB_binding, lCopyElem(lGetObject(ar, AR_binding)));
+   ocs::tom::set<JB_execution_time>(dummy_job, ocs::tom::get<AR_start_time>(ar));
+   ocs::tom::set<JB_deadline>(dummy_job, ocs::tom::get<AR_end_time>(ar));
+   job_set_hard_resource_list(dummy_job, lCopyList(nullptr, ocs::tom::get<AR_resource_list>(ar)));
+   job_set_hard_queue_list(dummy_job, lCopyList(nullptr, ocs::tom::get<AR_queue_list>(ar)));
+   job_set_master_hard_queue_list(dummy_job, lCopyList(nullptr, ocs::tom::get<AR_master_queue_list>(ar)));
+   ocs::tom::set<JB_type>(dummy_job, ocs::tom::get<AR_type>(ar));
+   ocs::tom::set<JB_checkpoint_name>(dummy_job, ocs::tom::get<AR_checkpoint_name>(ar));
+   ocs::tom::set<JB_binding>(dummy_job, lCopyElem(ocs::tom::get<AR_binding>(ar)));
 
-   if (lGetString(ar, AR_pe)) {
-      lSetString(dummy_job, JB_pe, lGetString(ar, AR_pe));
-      lSetList(dummy_job, JB_pe_range, lCopyList("", lGetList(ar, AR_pe_range)));
+   if (ocs::tom::get<AR_pe>(ar)) {
+      ocs::tom::set<JB_pe>(dummy_job, ocs::tom::get<AR_pe>(ar));
+      ocs::tom::set<JB_pe_range>(dummy_job, lCopyList("", ocs::tom::get<AR_pe_range>(ar)));
 
       // CS-2864: qrsub -par overrides the allocation_rule of the requested PE, exactly as qsub -par
       // does for a job. The dummy job carries the rule in its global request set, which is where
       // assignment_init_pe() already looks for it, so the scheduler needs no knowledge of ARs here.
-      const char *allocation_rule = lGetString(ar, AR_allocation_rule);
+      const char *allocation_rule = ocs::tom::get<AR_allocation_rule>(ar);
       if (allocation_rule != nullptr) {
          job_set_allocation_rule(dummy_job, allocation_rule, JRS_SCOPE_GLOBAL);
       }
 
       result = sge_select_parallel_environment(&a, master_pe_list);
       if (result == DISPATCH_OK) {
-         lSetString(ar, AR_granted_pe, lGetString(a.pe, PE_name));
+         ocs::tom::set<AR_granted_pe>(ar, ocs::tom::get<PE_name>(a.pe));
          // We keep a copy of the granted pe, as we need to use exactly this pe with all its settings
          // for debiting and undebiting - the original PE from the master pe list might change!
-         lSetObject(ar, AR_pe_object, lCopyElem(a.pe));
+         ocs::tom::set<AR_pe_object>(ar, lCopyElem(a.pe));
       }
    } else {
       result = sge_sequential_assignment(&a);
@@ -1234,7 +1250,7 @@ ar_reserve_queues(lList **alpp, lListElem *ar, uint64_t gdi_session) {
          answer_list_add_sprintf(alpp, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR, MSG_JOB_NOSUITABLEQ_S, SGE_OBJ_AR);
          ret = false;
       } else {
-         lSetList(ar, AR_granted_slots, a.gdil);
+         ocs::tom::set<AR_granted_slots>(ar, a.gdil);
          ar_initialize_resource_booking(ar);
          a.gdil = nullptr;
 
@@ -1276,31 +1292,31 @@ int
 ar_do_reservation(lListElem *ar, bool incslots, uint64_t gdi_session) {
    DENTER(TOP_LAYER);
 
-   uint64_t start_time = lGetUlong64(ar, AR_start_time);
-   uint64_t duration = lGetUlong64(ar, AR_duration);
+   uint64_t start_time = ocs::tom::get<AR_start_time>(ar);
+   uint64_t duration = ocs::tom::get<AR_duration>(ar);
    const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
    const lList *master_centry_list = *ocs::DataStore::get_master_list(SGE_TYPE_CENTRY);
    const lList *master_exechost_list = *ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST);
 
    lListElem *dummy_job = lCreateElem(JB_Type);
-   job_set_hard_resource_list(dummy_job, lCopyList(nullptr, lGetList(ar, AR_resource_list)));
-   job_set_hard_queue_list(dummy_job, lCopyList(nullptr, lGetList(ar, AR_queue_list)));
+   job_set_hard_resource_list(dummy_job, lCopyList(nullptr, ocs::tom::get<AR_resource_list>(ar)));
+   job_set_hard_queue_list(dummy_job, lCopyList(nullptr, ocs::tom::get<AR_queue_list>(ar)));
 
    lListElem *global_host_ep = host_list_locate(master_exechost_list, SGE_GLOBAL_NAME);
 
    // the instances the reservation holds, so that they are taken on the real hosts for the
    // reservation's window and a job scheduled outside the reservation does not take them too
-   const lList *granted_resources = lGetList(ar, AR_granted_resources_list);
+   const lList *granted_resources = ocs::tom::get<AR_granted_resources_list>(ar);
 
-   const char *granted_pe = lGetString(ar, AR_granted_pe);
+   const char *granted_pe = ocs::tom::get<AR_granted_pe>(ar);
    lListElem *pe = nullptr;
    if (granted_pe != nullptr) {
       // for debiting / undebiting we need to use the granted PE with the settings it had at the time of scheduling
       // esp. for undebiting use the same settings as for debiting;
       // therefore, we keep a copy of the PE in AR_pe_object
-      pe = lGetObject(ar, AR_pe_object);
+      pe = ocs::tom::get<AR_pe_object>(ar);
       if (pe == nullptr) {
-         CRITICAL(MSG_AR_HAS_NO_PEOBJECT_US, lGetUlong(ar, AR_id), granted_pe);
+         CRITICAL(MSG_AR_HAS_NO_PEOBJECT_US, ocs::tom::get<AR_id>(ar), granted_pe);
 #if defined(ENABLE_DEBUG_CHECKS)
          ocs::TerminationManager::trigger_abort();
 #endif
@@ -1312,8 +1328,8 @@ ar_do_reservation(lListElem *ar, bool incslots, uint64_t gdi_session) {
    bool is_master_task = true;
    const char *last_hostname = nullptr;
    const lListElem *gdil_ep;
-   for_each_ep(gdil_ep, lGetList(ar, AR_granted_slots)) {
-      const char *queue_name = lGetString(gdil_ep, JG_qname);
+   for_each_ep(gdil_ep, static_cast<const lList *>(ocs::tom::get<AR_granted_slots>(ar))) {
+      const char *queue_name = ocs::tom::get<JG_qname>(gdil_ep);
       lListElem *queue = cqueue_list_locate_qinstance(master_cqueue_list, queue_name);
 
       if (queue == nullptr) {
@@ -1322,14 +1338,14 @@ ar_do_reservation(lListElem *ar, bool incslots, uint64_t gdi_session) {
          continue;
       }
 
-      const char *queue_hostname = lGetHost(queue, QU_qhostname);
+      const char *queue_hostname = ocs::tom::get<QU_qhostname>(queue);
       bool do_per_host_booking = host_do_per_host_booking(&last_hostname, queue_hostname);
 
       int tmp_slots;
       if (incslots) {
-         tmp_slots = lGetUlong(gdil_ep, JG_slots);
+         tmp_slots = ocs::tom::get<JG_slots>(gdil_ep);
       } else {
-         tmp_slots = -lGetUlong(gdil_ep, JG_slots);
+         tmp_slots = -ocs::tom::get<JG_slots>(gdil_ep);
       }
       pe_slots += tmp_slots;
 
@@ -1380,7 +1396,7 @@ ar_do_reservation(lListElem *ar, bool incslots, uint64_t gdi_session) {
          ocs::TerminationManager::trigger_abort();
 #endif
       } else {
-         utilization_add(lFirstRW(lGetList(master_pe, PE_resource_utilization)), start_time,
+         utilization_add(lFirstRW(static_cast<const lList *>(ocs::tom::get<PE_resource_utilization>(master_pe))), start_time,
                          duration, pe_slots, 0, 0, PE_TAG, granted_pe,
                          SCHEDULING_RECORD_ENTRY_TYPE_RESERVING, false, false, nullptr, nullptr);
          // the event has to carry the master PE, which holds the booking, not the AR's copy
@@ -1422,11 +1438,11 @@ ar_list_has_reservation_due_to_ckpt(const lList *ar_master_list, lList **answer_
    const lListElem *ar;
 
    for_each_ep(ar, ar_master_list) {
-      const char *ckpt_string = lGetString(ar, AR_checkpoint_name);
+      const char *ckpt_string = ocs::tom::get<AR_checkpoint_name>(ar);
 
-      if (ckpt_string != nullptr && lGetElemStr(lGetList(ar, AR_granted_slots), JG_qname, qinstance_name)) {
-         if (lGetElemStr(ckpt_string_list, ST_name, ckpt_string) == nullptr) {
-            ERROR(MSG_PARSE_MOD_REJECTED_DUE_TO_AR_SSU, ckpt_string, SGE_ATTR_CKPT_LIST, lGetUlong(ar, AR_id));
+      if (ckpt_string != nullptr && ocs::tom::find_first<JG_qname>(ocs::tom::get<AR_granted_slots>(ar), qinstance_name)) {
+         if (static_cast<const lListElem *>(ocs::tom::find_first<ST_name>(ckpt_string_list, ckpt_string)) == nullptr) {
+            ERROR(MSG_PARSE_MOD_REJECTED_DUE_TO_AR_SSU, ckpt_string, SGE_ATTR_CKPT_LIST, ocs::tom::get<AR_id>(ar));
             answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
             DRETURN(true);
          }
@@ -1464,11 +1480,11 @@ ar_list_has_reservation_due_to_pe(const lList *ar_master_list, lList **answer_li
    const lListElem *ar;
 
    for_each_ep(ar, ar_master_list) {
-      const char *pe_string = lGetString(ar, AR_pe);
+      const char *pe_string = ocs::tom::get<AR_pe>(ar);
 
-      if (pe_string != nullptr && lGetElemStr(lGetList(ar, AR_granted_slots), JG_qname, qinstance_name)) {
-         if (lGetElemStr(pe_string_list, ST_name, pe_string) == nullptr) {
-            ERROR(MSG_PARSE_MOD_REJECTED_DUE_TO_AR_SSU, pe_string, SGE_ATTR_PE_LIST, lGetUlong(ar, AR_id));
+      if (pe_string != nullptr && ocs::tom::find_first<JG_qname>(ocs::tom::get<AR_granted_slots>(ar), qinstance_name)) {
+         if (static_cast<const lListElem *>(ocs::tom::find_first<ST_name>(pe_string_list, pe_string)) == nullptr) {
+            ERROR(MSG_PARSE_MOD_REJECTED_DUE_TO_AR_SSU, pe_string, SGE_ATTR_PE_LIST, ocs::tom::get<AR_id>(ar));
             answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
             DRETURN(true);
          }
@@ -1510,11 +1526,11 @@ ar_list_has_reservation_for_pe_with_slots(const lList *ar_master_list, lList **a
    uint32_t max_res_slots = 0;
 
    for_each_ep(ar, ar_master_list) {
-      const char *pe_string = lGetString(ar, AR_pe);
+      const char *pe_string = ocs::tom::get<AR_pe>(ar);
 
       if (pe_name != nullptr && pe_string != nullptr && strcmp(pe_string, pe_name) == 0) {
-         for_each_ep(gs, lGetList(ar, AR_granted_slots)) {
-            uint32_t slots = lGetUlong(gs, JG_slots);
+         for_each_ep(gs, static_cast<const lList *>(ocs::tom::get<AR_granted_slots>(ar))) {
+            uint32_t slots = ocs::tom::get<JG_slots>(gs);
 
             max_res_slots += slots;
          }
@@ -1553,20 +1569,20 @@ ar_add_consumable(lListElem *target, const lListElem *source, int nm, const lLis
          lSetList(target, nm, cclist);
       } else {
          // we might already have the consumable in the list (for hosts having multiple qinstances / the global host)
-         ccobj = lGetElemStrRW(cclist, CE_name, name);
+         ccobj = ocs::tom::find_first_rw<CE_name>(cclist, name);
       }
       if (ccobj == nullptr) {
          // if it did not exist, create it
          ccobj = lCopyElem(cr);
-         lSetDouble(ccobj, CE_doubleval, doubleval);
-         lSetString(ccobj, CE_stringval, stringval);
+         ocs::tom::set<CE_doubleval>(ccobj, doubleval);
+         ocs::tom::set<CE_stringval>(ccobj, stringval);
          lAppendElem(cclist, ccobj);
       } else {
          // if it already existed, add the doubleval to the existing value and re-create the stringval
-         lAddDouble(ccobj, CE_doubleval, doubleval);
-         double sum = lGetDouble(ccobj, CE_doubleval);
+         ocs::tom::add<CE_doubleval>(ccobj, doubleval);
+         double sum = ocs::tom::get<CE_doubleval>(ccobj);
          DSTRING_STATIC(dstr, 512);
-         lSetString(ccobj, CE_stringval, sge_dstring_sprintf(&dstr, "%f", sum));
+         ocs::tom::set<CE_stringval>(ccobj, sge_dstring_sprintf(&dstr, "%f", sum));
       }
    }
    DRETURN_VOID;
@@ -1584,9 +1600,9 @@ ar_add_consumable(lListElem *target, const lListElem *source, int nm, const lLis
  */
 static void
 ar_set_reserved_rsmap(lListElem *ar_host, const char *name, const lList *taken) {
-   lListElem *ar_cr = lGetSubStrRW(ar_host, CE_name, name, EH_consumable_config_list);
+   lListElem *ar_cr = ocs::tom::find_first_in_rw<EH_consumable_config_list, CE_name>(ar_host, name);
    if (ar_cr != nullptr) {
-      lSetList(ar_cr, CE_resource_map_list, lCopyList("reserved_rsmap", taken));
+      ocs::tom::set<CE_resource_map_list>(ar_cr, lCopyList("reserved_rsmap", taken));
    }
 }
 
@@ -1622,7 +1638,7 @@ ar_add_rsmap_ids(const lListElem *ar, const lList *previous, lList **granted_res
                  const char *host_name, double amount) {
    DENTER(TOP_LAYER);
 
-   const lListElem *definition = lGetSubStr(master_host, CE_name, name, EH_consumable_config_list);
+   const lListElem *definition = ocs::tom::find_first_in<EH_consumable_config_list, CE_name>(master_host, name);
    if (definition == nullptr || amount <= 0) {
       // the map is not configured on this host, so there is nothing to name
       DRETURN_VOID;
@@ -1631,40 +1647,39 @@ ar_add_rsmap_ids(const lListElem *ar, const lList *previous, lList **granted_res
    // reservations hold and the ones jobs hold, both of which the exec host's resource diagram
    // records for the time they are held. A reservation starting long after a job ends is
    // therefore not blocked by what that job holds now.
-   lList *held = utilization_rsmap_max(lGetSubStr(master_host, RUE_name, name,
-                                                  EH_resource_utilization),
-                                       sge_get_gmt64(), lGetUlong64(ar, AR_start_time),
-                                       lGetUlong64(ar, AR_duration));
+   lList *held = utilization_rsmap_max(ocs::tom::find_first_in<EH_resource_utilization, RUE_name>(master_host, name),
+                                       sge_get_gmt64(), ocs::tom::get<AR_start_time>(ar),
+                                       ocs::tom::get<AR_duration>(ar));
 
    lListElem *gru = gru_list_search(*granted_resources_list, name, host_name);
    if (gru == nullptr) {
-      gru = lAddElemStr(granted_resources_list, GRU_name, name, GRU_Type);
+      gru = ocs::tom::emplace_back<GRU_name>(granted_resources_list, name);
       if (gru == nullptr) {
          lFreeList(&held);
          DRETURN_VOID;
       }
-      lSetHost(gru, GRU_host, host_name);
-      lSetUlong(gru, GRU_type, static_cast<uint32_t>(ocs::GrantedResources::Type::GRU_RESOURCE_MAP_TYPE));
+      ocs::tom::set<GRU_host>(gru, host_name);
+      ocs::tom::set<GRU_type>(gru, static_cast<uint32_t>(ocs::GrantedResources::Type::GRU_RESOURCE_MAP_TYPE));
 
       // The instances a reservation holds are spooled with it, and this function runs again for
       // every reservation when qmaster starts up. Take the ones it already held rather than
       // choosing afresh - a job running inside the reservation was granted from that set, and
       // a restart must not move the reservation to a different one underneath it.
       const lListElem *prev_gru = gru_list_search(const_cast<lList *>(previous), name, host_name);
-      if (prev_gru != nullptr && static_cast<ocs::GrantedResources::Type>(lGetUlong(prev_gru, GRU_type)) == ocs::GrantedResources::Type::GRU_RESOURCE_MAP_TYPE) {
+      if (prev_gru != nullptr && static_cast<ocs::GrantedResources::Type>(ocs::tom::get<GRU_type>(prev_gru)) == ocs::GrantedResources::Type::GRU_RESOURCE_MAP_TYPE) {
          const lListElem *prev_ep;
-         for_each_ep (prev_ep, lGetList(prev_gru, GRU_resource_map_list)) {
-            const char *id = lGetString(prev_ep, RESL_value);
+         for_each_ep (prev_ep, static_cast<const lList *>(ocs::tom::get<GRU_resource_map_list>(prev_gru))) {
+            const char *id = ocs::tom::get<RESL_value>(prev_ep);
             // an instance the map no longer defines is dropped, and made up for below
-            if (lGetSubStr(definition, RESL_value, id, CE_resource_map_list) == nullptr) {
+            if (static_cast<const lListElem *>(ocs::tom::find_first_in<CE_resource_map_list, RESL_value>(definition, id)) == nullptr) {
                continue;
             }
-            lListElem *resl = lAddSubStr(gru, RESL_value, id, GRU_resource_map_list, RESL_Type);
+            lListElem *resl = ocs::tom::emplace_back_in<GRU_resource_map_list, RESL_value>(gru, id);
             if (resl != nullptr) {
-               lSetUlong(resl, RESL_amount, lGetUlong(prev_ep, RESL_amount));
-               const lList *props = lGetList(prev_ep, RESL_properties);
+               ocs::tom::set<RESL_amount>(resl, ocs::tom::get<RESL_amount>(prev_ep));
+               const lList *props = ocs::tom::get<RESL_properties>(prev_ep);
                if (props != nullptr) {
-                  lSetList(resl, RESL_properties, lCopyList("granted_properties", props));
+                  ocs::tom::set<RESL_properties>(resl, lCopyList("granted_properties", props));
                }
             }
          }
@@ -1672,15 +1687,15 @@ ar_add_rsmap_ids(const lListElem *ar, const lList *previous, lList **granted_res
    }
    // a host appears in the granted slots once per queue instance, and the amounts of those
    // entries add up, so what is taken here is whatever the total is still short of
-   lSetDouble(gru, GRU_amount, lGetDouble(gru, GRU_amount) + amount);
+   ocs::tom::set<GRU_amount>(gru, ocs::tom::get<GRU_amount>(gru) + amount);
 
-   const lList *taken = lGetList(gru, GRU_resource_map_list);
+   const lList *taken = ocs::tom::get<GRU_resource_map_list>(gru);
    uint32_t have = 0;
    const lListElem *have_ep;
    for_each_ep (have_ep, taken) {
-      have += lGetUlong(have_ep, RESL_amount);
+      have += ocs::tom::get<RESL_amount>(have_ep);
    }
-   const auto want = static_cast<uint32_t>(lGetDouble(gru, GRU_amount));
+   const auto want = static_cast<uint32_t>(ocs::tom::get<GRU_amount>(gru));
    if (have >= want) {
       // nothing more to name, which is the normal case once the instances have been reused
       lFreeList(&held);
@@ -1701,24 +1716,23 @@ ar_add_rsmap_ids(const lListElem *ar, const lList *previous, lList **granted_res
 
    const lListElem *sel_ep;
    for_each_ep (sel_ep, selected) {
-      const char *id = lGetString(sel_ep, RESL_value);
+      const char *id = ocs::tom::get<RESL_value>(sel_ep);
 
       // the AR's granted resources, for qrstat and for a job running inside the reservation
-      lListElem *resl = lGetSubStrRW(gru, RESL_value, id, GRU_resource_map_list);
+      lListElem *resl = ocs::tom::find_first_in_rw<GRU_resource_map_list, RESL_value>(gru, id);
       if (resl == nullptr) {
-         resl = lAddSubStr(gru, RESL_value, id, GRU_resource_map_list, RESL_Type);
-         const lListElem *defined_ep = lGetSubStr(definition, RESL_value, id,
-                                                  CE_resource_map_list);
+         resl = ocs::tom::emplace_back_in<GRU_resource_map_list, RESL_value>(gru, id);
+         const lListElem *defined_ep = ocs::tom::find_first_in<CE_resource_map_list, RESL_value>(definition, id);
          const lList *src_props = (defined_ep != nullptr)
-                                  ? lGetList(defined_ep, RESL_properties) : nullptr;
+                                  ? static_cast<const lList *>(ocs::tom::get<RESL_properties>(defined_ep)) : nullptr;
          if (src_props != nullptr) {
-            lSetList(resl, RESL_properties, lCopyList("granted_properties", src_props));
+            ocs::tom::set<RESL_properties>(resl, lCopyList("granted_properties", src_props));
          }
       }
-      lAddUlong(resl, RESL_amount, lGetUlong(sel_ep, RESL_amount));
+      ocs::tom::add<RESL_amount>(resl, ocs::tom::get<RESL_amount>(sel_ep));
    }
 
-   ar_set_reserved_rsmap(ar_host, name, lGetList(gru, GRU_resource_map_list));
+   ar_set_reserved_rsmap(ar_host, name, ocs::tom::get<GRU_resource_map_list>(gru));
 
    lFreeList(&selected);
    DRETURN_VOID;
@@ -1744,7 +1758,7 @@ ar_add_non_consumable(lListElem *target, const lListElem *source, int nm, const 
          lSetList(target, nm, cclist);
       } else {
          // we might already have the complex entry in the list (for hosts having multiple qinstances / the global host)
-         ccobj = lGetElemStrRW(cclist, CE_name, name);
+         ccobj = ocs::tom::find_first_rw<CE_name>(cclist, name);
       }
       if (ccobj == nullptr) {
          // if it does not yet exist, add it
@@ -1764,16 +1778,16 @@ static bool
 ar_get_request_or_default(const lListElem *ar, const lListElem *cr, const char *cr_name, double &request_value) {
    double ret = false;
 
-   const lListElem *request = lGetSubStr(ar, CE_name, cr_name, AR_resource_list);
+   const lListElem *request = ocs::tom::find_first_in<AR_resource_list, CE_name>(ar, cr_name);
    if (request != nullptr) {
       // resource was explicitly requested
-      request_value = lGetDouble(request, CE_doubleval);
+      request_value = ocs::tom::get<CE_doubleval>(request);
       ret = true;
    } else {
       // resource was not requested but there might be a default request
-      const char *default_string = lGetString(cr, CE_defaultval);
+      const char *default_string = ocs::tom::get<CE_defaultval>(cr);
       double default_double;
-      if (default_string != nullptr && parse_ulong_val(&default_double, NULL, static_cast<ocs::CEntry::Type>(lGetUlong(cr, CE_valtype)), default_string, NULL, 0) != 0) {
+      if (default_string != nullptr && parse_ulong_val(&default_double, NULL, static_cast<ocs::CEntry::Type>(ocs::tom::get<CE_valtype>(cr)), default_string, NULL, 0) != 0) {
          request_value = default_double;
          ret = true;
       }
@@ -1799,7 +1813,7 @@ ar_initialize_resource_booking(lListElem *ar) {
    DENTER(TOP_LAYER);
 
    const lListElem *gep;
-   const lList *gdil = lGetList(ar, AR_granted_slots);
+   const lList *gdil = ocs::tom::get<AR_granted_slots>(ar);
    const lList *master_centry_list = *ocs::DataStore::get_master_list(SGE_TYPE_CENTRY);
    const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
    const lList *master_exechost_list = *ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST);
@@ -1839,29 +1853,29 @@ ar_initialize_resource_booking(lListElem *ar) {
    lList *queue_list = nullptr;
    lList *host_list = nullptr;
    lListElem *global_host = lAddElemHost(&host_list, EH_name, SGE_GLOBAL_NAME, host_descr);
-   const lListElem *master_global_host = lGetElemHost(master_exechost_list, EH_name, SGE_GLOBAL_NAME);
+   const lListElem *master_global_host = ocs::tom::find_first<EH_name>(master_exechost_list, SGE_GLOBAL_NAME);
 
    // what the reservation held before this rebuild, see ar_add_rsmap_ids()
-   const lList *previous_granted_resources = lGetList(ar, AR_granted_resources_list);
+   const lList *previous_granted_resources = ocs::tom::get<AR_granted_resources_list>(ar);
 
    lList *granted_resources_list = nullptr;
    bool is_master_queue = true;
    const char *last_hostname = nullptr;
    for_each_ep(gep, gdil) {
-      const char *queue_name = lGetString(gep, JG_qname);
+      const char *queue_name = ocs::tom::get<JG_qname>(gep);
       char *cqueue_name = cqueue_get_name_from_qinstance(queue_name);
-      const char *host_name = lGetHost(gep, JG_qhostname);
+      const char *host_name = ocs::tom::get<JG_qhostname>(gep);
 
       // add the binding_touse information (copy from JG to GRU)
-      const lList *binding_to_use_list = lGetList(gep, JG_binding_to_use);
+      const lList *binding_to_use_list = ocs::tom::get<JG_binding_to_use>(gep);
       ocs::GrantedResources::add_binding_to_use(&granted_resources_list, host_name, binding_to_use_list);
 
       // create queue with slot booking
       lListElem *queue = lAddElemStr(&queue_list, QU_full_name, queue_name, queue_descr);
-      lSetString(queue, QU_qname, cqueue_name);
-      lSetHost(queue, QU_qhostname, host_name);
-      uint32_t slots = lGetUlong(gep, JG_slots);
-      lSetUlong(queue, QU_job_slots, slots);
+      ocs::tom::set<QU_qname>(queue, cqueue_name);
+      ocs::tom::set<QU_qhostname>(queue, host_name);
+      uint32_t slots = ocs::tom::get<JG_slots>(gep);
+      ocs::tom::set<QU_job_slots>(queue, slots);
 
       const lListElem *master_cqueue = cqueue_list_locate(master_cqueue_list, cqueue_name);
       const lListElem *master_queue = cqueue_locate_qinstance(master_cqueue, host_name);
@@ -1869,11 +1883,11 @@ ar_initialize_resource_booking(lListElem *ar) {
       bool do_per_host_booking = host_do_per_host_booking(&last_hostname, host_name);
 
       // get or create host (one host can appear multiple times in gdil)
-      lListElem *host = lGetElemHostRW(host_list, EH_name, host_name);
+      lListElem *host = ocs::tom::find_first_rw<EH_name>(host_list, host_name);
       if (host == nullptr) {
          host = lAddElemHost(&host_list, EH_name, host_name, host_descr);
       }
-      const lListElem *master_host = lGetElemHost(master_exechost_list, EH_name, host_name);
+      const lListElem *master_host = ocs::tom::find_first<EH_name>(master_exechost_list, host_name);
 
       // now we have queue, host and global host objects, fill in the granted complex_values
 
@@ -1884,8 +1898,8 @@ ar_initialize_resource_booking(lListElem *ar) {
       // - non-requested exclusive? no. they will have effect in the booking of the AR itself
       const lListElem *cr;
       for_each_ep (cr, master_centry_list) {
-         const char *cr_name = lGetString(cr, CE_name);
-         uint32_t consumable = lGetUlong(cr, CE_consumable);
+         const char *cr_name = ocs::tom::get<CE_name>(cr);
+         uint32_t consumable = ocs::tom::get<CE_consumable>(cr);
          if (consumable == CONSUMABLE_NO) {
             // non-consumable, add the definition from the master object (if defined on the layer)
             ar_add_non_consumable(global_host, master_global_host, EH_consumable_config_list, cr_name);
@@ -1926,7 +1940,7 @@ ar_initialize_resource_booking(lListElem *ar) {
                // and a job takes it from the exec host when it is there and from the global
                // host when it is not (see gru_list_add_request()). Each call does nothing when
                // the map is not configured on the layer it is given.
-               if (static_cast<ocs::CEntry::Type>(lGetUlong(cr, CE_valtype)) == ocs::CEntry::Type::RSMAP) {
+               if (static_cast<ocs::CEntry::Type>(ocs::tom::get<CE_valtype>(cr)) == ocs::CEntry::Type::RSMAP) {
                   ar_add_rsmap_ids(ar, previous_granted_resources, &granted_resources_list,
                                    global_host, master_global_host, cr_name, SGE_GLOBAL_NAME,
                                    doubleval);
@@ -1939,37 +1953,37 @@ ar_initialize_resource_booking(lListElem *ar) {
 
       /* initialize QU_state */
       if (qinstance_state_is_ambiguous(master_queue)) {
-         lAddUlong(ar, AR_qi_errors, 1);
+         ocs::tom::add<AR_qi_errors>(ar, 1);
          sge_dstring_sprintf(&buffer, "reserved queue %s is %s", queue_name,
                              qinstance_state_as_string(QI_AMBIGUOUS));
          qinstance_set_error(queue, QI_AMBIGUOUS, sge_dstring_get_string(&buffer), true);
       }
       if (qinstance_state_is_alarm(master_queue)) {
-         lAddUlong(ar, AR_qi_errors, 1);
+         ocs::tom::add<AR_qi_errors>(ar, 1);
          sge_dstring_sprintf(&buffer, "reserved queue %s is %s", queue_name,
                              qinstance_state_as_string(QI_ALARM));
          qinstance_set_error(queue, QI_ALARM, sge_dstring_get_string(&buffer), true);
       }
       if (qinstance_state_is_suspend_alarm(master_queue)) {
-         lAddUlong(ar, AR_qi_errors, 1);
+         ocs::tom::add<AR_qi_errors>(ar, 1);
          sge_dstring_sprintf(&buffer, "reserved queue %s is %s", queue_name,
                              qinstance_state_as_string(QI_SUSPEND_ALARM));
          qinstance_set_error(queue, QI_SUSPEND_ALARM, sge_dstring_get_string(&buffer), true);
       }
       if (qinstance_state_is_manual_disabled(master_queue)) {
-         lAddUlong(ar, AR_qi_errors, 1);
+         ocs::tom::add<AR_qi_errors>(ar, 1);
          sge_dstring_sprintf(&buffer, "reserved queue %s is %s", queue_name,
                              qinstance_state_as_string(QI_DISABLED));
          qinstance_set_error(queue, QI_DISABLED, sge_dstring_get_string(&buffer), true);
       }
       if (qinstance_state_is_unknown(master_queue)) {
-         lAddUlong(ar, AR_qi_errors, 1);
+         ocs::tom::add<AR_qi_errors>(ar, 1);
          sge_dstring_sprintf(&buffer, "reserved queue %s is %s", queue_name,
                              qinstance_state_as_string(QI_UNKNOWN));
          qinstance_set_error(queue, QI_UNKNOWN, sge_dstring_get_string(&buffer), true);
       }
       if (qinstance_state_is_error(master_queue)) {
-         lAddUlong(ar, AR_qi_errors, 1);
+         ocs::tom::add<AR_qi_errors>(ar, 1);
          sge_dstring_sprintf(&buffer, "reserved queue %s is %s", queue_name,
                              qinstance_state_as_string(QI_ERROR));
          qinstance_set_error(queue, QI_ERROR, sge_dstring_get_string(&buffer), true);
@@ -1982,7 +1996,7 @@ ar_initialize_resource_booking(lListElem *ar) {
    lListElem *queue;
    for_each_rw(queue, queue_list) {
       // make sure all complex attributes are properly filled in
-      centry_list_fill_config(lGetListRW(queue, QU_consumable_config_list), master_centry_list);
+      centry_list_fill_config(ocs::tom::get<QU_consumable_config_list>(queue), master_centry_list);
       // ensure availability of implicit slot request
       qinstance_set_conf_slots_used(queue);
       // initialize QU_resource_utilization
@@ -1991,13 +2005,13 @@ ar_initialize_resource_booking(lListElem *ar) {
    lListElem *host;
    for_each_rw(host, host_list) {
       // make sure all complex attributes are properly filled in
-      centry_list_fill_config(lGetListRW(host, EH_consumable_config_list), master_centry_list);
+      centry_list_fill_config(ocs::tom::get<EH_consumable_config_list>(host), master_centry_list);
       debit_host_consumable(nullptr, nullptr, granted_resources_list, nullptr, host, master_centry_list, 0, true, true, nullptr);
    }
 
-   lSetList(ar, AR_granted_resources_list, granted_resources_list);
-   lSetList(ar, AR_reserved_queues, queue_list);
-   lSetList(ar, AR_reserved_hosts, host_list);
+   ocs::tom::set<AR_granted_resources_list>(ar, granted_resources_list);
+   ocs::tom::set<AR_reserved_queues>(ar, queue_list);
+   ocs::tom::set<AR_reserved_hosts>(ar, host_list);
 
    ocs_cull_descr_release(&queue_descr);
    ocs_cull_descr_release(&host_descr);
@@ -2036,11 +2050,11 @@ sge_ar_remove_all_jobs(uint32_t ar_id, int forced, monitoring_t *monitor, uint64
       uint32_t end = MAX(job_get_biggest_unenrolled_task_id(jep), job_get_biggest_enrolled_task_id(jep));
 
       nextjep = lNextRW(jep);
-      if (lGetUlong(jep, JB_ar) != ar_id) {
+      if (ocs::tom::get<JB_ar>(jep) != ar_id) {
          continue;
       }
 
-      DPRINTF("removing job %d\n", lGetUlong(jep, JB_job_number));
+      DPRINTF("removing job %d\n", ocs::tom::get<JB_job_number>(jep));
       DPRINTF(" ----> task_start = %d, task_end = %d\n", start, end);
 
       for (task_number = start;
@@ -2051,14 +2065,14 @@ sge_ar_remove_all_jobs(uint32_t ar_id, int forced, monitoring_t *monitor, uint64
 
             if (job_is_enrolled(jep, task_number)) {
                /* delete all enrolled pending tasks */
-               DPRINTF("removing enrolled task %d.%d\n", lGetUlong(jep, JB_job_number), task_number);
-               tmp_task = lGetSubUlongRW(jep, JAT_task_number, task_number, JB_ja_tasks);
+               DPRINTF("removing enrolled task %d.%d\n", ocs::tom::get<JB_job_number>(jep), task_number);
+               tmp_task = ocs::tom::find_first_in_rw<JB_ja_tasks, JAT_task_number>(jep, task_number);
 
                /* 
                 * if task is already in status deleted and was signaled
                 * only recently and deletion is not forced, do nothing
                 */
-               if (ISSET(lGetUlong(tmp_task, JAT_status), JFINISHED)) {
+               if (ISSET(ocs::tom::get<JAT_status>(tmp_task), JFINISHED)) {
                   continue;
                }
 
@@ -2066,7 +2080,7 @@ sge_ar_remove_all_jobs(uint32_t ar_id, int forced, monitoring_t *monitor, uint64
                   sge_commit_job(jep, tmp_task, nullptr, COMMIT_ST_FINISHED_FAILED_EE,
                                  COMMIT_DEFAULT | COMMIT_NEVER_RAN, monitor, gdi_session);
                } else {
-                  if (!ISSET(lGetUlong(tmp_task, JAT_state), JDELETED)) {
+                  if (!ISSET(ocs::tom::get<JAT_state>(tmp_task), JDELETED)) {
                      // @todo CS-1093 we simply mark the job as deleted. When the next job report comes in for it
                      //       this will trigger a "... reports running job ... that was not supposed to be there..."
                      //       message (MSG_JOB_REPORTRUNFALSE_SUUSS) and the job will be signalled then.
@@ -2077,7 +2091,7 @@ sge_ar_remove_all_jobs(uint32_t ar_id, int forced, monitoring_t *monitor, uint64
                }
             } else {
                /* delete all unenrolled running tasks */
-               DPRINTF("removing unenrolled task %d.%d\n", lGetUlong(jep, JB_job_number), task_number);
+               DPRINTF("removing unenrolled task %d.%d\n", ocs::tom::get<JB_job_number>(jep), task_number);
                tmp_task = job_get_ja_task_template_pending(jep, task_number);
 
                sge_commit_job(jep, tmp_task, nullptr, COMMIT_ST_FINISHED_FAILED,
@@ -2114,12 +2128,12 @@ sge_ar_list_conflicts_with_calendar(lList **answer_list, const char *qinstance_n
    const lListElem *ar;
 
    for_each_ep(ar, master_ar_list) {
-      if (lGetElemStr(lGetList(ar, AR_granted_slots), JG_qname, qinstance_name)) {
-         uint64_t start_time = lGetUlong64(ar, AR_start_time);
-         uint64_t duration = lGetUlong64(ar, AR_duration);
+      if (ocs::tom::find_first<JG_qname>(ocs::tom::get<AR_granted_slots>(ar), qinstance_name)) {
+         uint64_t start_time = ocs::tom::get<AR_start_time>(ar);
+         uint64_t duration = ocs::tom::get<AR_duration>(ar);
 
          if (!calendar_open_in_time_frame(cal_ep, start_time, duration)) {
-            ERROR(MSG_PARSE_MOD2_REJECTED_DUE_TO_AR_SSU, lGetString(cal_ep, CAL_name), SGE_ATTR_CALENDAR, lGetUlong(ar, AR_id));
+            ERROR(MSG_PARSE_MOD2_REJECTED_DUE_TO_AR_SSU, ocs::tom::get<CAL_name>(cal_ep), SGE_ATTR_CALENDAR, ocs::tom::get<AR_id>(ar));
             answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
             DRETURN(true);
          }
@@ -2143,25 +2157,25 @@ sge_ar_list_conflicts_with_calendar(lList **answer_list, const char *qinstance_n
  */
 void
 sge_ar_state_set_running(lListElem *ar) {
-   uint32_t old_state = lGetUlong(ar, AR_state);
+   uint32_t old_state = ocs::tom::get<AR_state>(ar);
 
    if (old_state == AR_DELETED || old_state == AR_EXITED) {
       return;
    }
 
    if (sge_ar_has_errors(ar)) {
-      lSetUlong(ar, AR_state, AR_ERROR);
-      if (old_state != AR_WARNING && old_state != lGetUlong(ar, AR_state)) {
+      ocs::tom::set<AR_state>(ar, AR_ERROR);
+      if (old_state != AR_WARNING && old_state != ocs::tom::get<AR_state>(ar)) {
          /* state change from "running" to "error" */
          ocs::ReportingFileWriter::create_ar_log_records(nullptr, ar, ARL_UNSATISFIED, "AR resources unsatisfied", sge_get_gmt64());
          sge_ar_send_mail(ar, MAIL_AT_ABORT);
-      } else if (old_state != lGetUlong(ar, AR_state)) {
+      } else if (old_state != ocs::tom::get<AR_state>(ar)) {
          /* state change from "warning" to "error" */
          sge_ar_send_mail(ar, MAIL_AT_ABORT);
       }
    } else {
-      lSetUlong(ar, AR_state, AR_RUNNING);
-      if (old_state != AR_WAITING && old_state != lGetUlong(ar, AR_state)) {
+      ocs::tom::set<AR_state>(ar, AR_RUNNING);
+      if (old_state != AR_WAITING && old_state != ocs::tom::get<AR_state>(ar)) {
          /* state change from "error" to "running" */
          ocs::ReportingFileWriter::create_ar_log_records(nullptr, ar, ARL_OK, "AR resources satisfied", sge_get_gmt64());
          sge_ar_send_mail(ar, MAIL_AT_ABORT);
@@ -2184,20 +2198,20 @@ sge_ar_state_set_running(lListElem *ar) {
  */
 void
 sge_ar_state_set_waiting(lListElem *ar) {
-   uint32_t old_state = lGetUlong(ar, AR_state);
+   uint32_t old_state = ocs::tom::get<AR_state>(ar);
 
    if (old_state == AR_DELETED || old_state == AR_EXITED) {
       return;
    }
 
    if (sge_ar_has_errors(ar)) {
-      lSetUlong(ar, AR_state, AR_WARNING);
-      if (old_state != lGetUlong(ar, AR_state)) {
+      ocs::tom::set<AR_state>(ar, AR_WARNING);
+      if (old_state != ocs::tom::get<AR_state>(ar)) {
          ocs::ReportingFileWriter::create_ar_log_records(nullptr, ar, ARL_UNSATISFIED, "AR resources unsatisfied", sge_get_gmt64());
       }
    } else {
-      lSetUlong(ar, AR_state, AR_WAITING);
-      if (old_state != lGetUlong(ar, AR_state)) {
+      ocs::tom::set<AR_state>(ar, AR_WAITING);
+      if (old_state != ocs::tom::get<AR_state>(ar)) {
          ocs::ReportingFileWriter::create_ar_log_records(nullptr, ar, ARL_OK, "AR resources satisfied", sge_get_gmt64());
       }
    }
@@ -2216,7 +2230,7 @@ sge_ar_state_set_waiting(lListElem *ar) {
  */
 void
 sge_ar_state_set_deleted(lListElem *ar) {
-   lSetUlong(ar, AR_state, AR_DELETED);
+   ocs::tom::set<AR_state>(ar, AR_DELETED);
 }
 
 /**
@@ -2232,7 +2246,7 @@ sge_ar_state_set_deleted(lListElem *ar) {
  */
 void
 sge_ar_state_set_exited(lListElem *ar) {
-   lSetUlong(ar, AR_state, AR_EXITED);
+   ocs::tom::set<AR_state>(ar, AR_EXITED);
 }
 
 /**
@@ -2258,10 +2272,10 @@ sge_ar_list_set_error_state(lList *ar_list, const char *qname, uint32_t error_ty
 
    for_each_rw(ar, ar_list) {
       lListElem *qinstance;
-      const lList *granted_slots = lGetList(ar, AR_reserved_queues);
+      const lList *granted_slots = ocs::tom::get<AR_reserved_queues>(ar);
 
-      if ((qinstance = lGetElemStrRW(granted_slots, QU_full_name, qname)) != nullptr) {
-         uint32_t old_errors = lGetUlong(ar, AR_qi_errors);
+      if ((qinstance = ocs::tom::find_first_rw<QU_full_name>(granted_slots, qname)) != nullptr) {
+         uint32_t old_errors = ocs::tom::get<AR_qi_errors>(ar);
          uint32_t new_errors;
 
          if (set_error) {
@@ -2271,19 +2285,19 @@ sge_ar_list_set_error_state(lList *ar_list, const char *qname, uint32_t error_ty
          } else {
             new_errors = old_errors - 1;
          }
-         lSetUlong(ar, AR_qi_errors, new_errors);
+         ocs::tom::set<AR_qi_errors>(ar, new_errors);
 
          qinstance_set_error(qinstance, error_type, sge_dstring_get_string(&buffer), set_error);
 
          /* update states */
          if (old_errors == 0 || new_errors == 0) {
-            if ((lGetUlong(ar, AR_state) == AR_RUNNING || lGetUlong(ar, AR_state) == AR_ERROR)) {
+            if ((ocs::tom::get<AR_state>(ar) == AR_RUNNING || ocs::tom::get<AR_state>(ar) == AR_ERROR)) {
                sge_ar_state_set_running(ar);
             } else {
                sge_ar_state_set_waiting(ar);
             }
             /* this info is not spooled */
-            sge_add_event(0, sgeE_AR_MOD, lGetUlong(ar, AR_id), 0,
+            sge_add_event(0, sgeE_AR_MOD, ocs::tom::get<AR_id>(ar), 0,
                           nullptr, nullptr, nullptr, ar, gdi_session);
          }
       }
@@ -2314,7 +2328,7 @@ sge_ar_send_mail(lListElem *ar, int type) {
    const char *ar_name;
    const char *mail_type = nullptr;
 
-   if (!VALID(type, lGetUlong(ar, AR_mail_options))) {
+   if (!VALID(type, ocs::tom::get<AR_mail_options>(ar))) {
       sge_dstring_append_mailopt(&buffer, type);
       DPRINTF("mailopt %s was not requested\n", sge_dstring_get_string(&buffer));
       sge_dstring_free(&subject);
@@ -2323,45 +2337,45 @@ sge_ar_send_mail(lListElem *ar, int type) {
       DRETURN_VOID;
    }
 
-   ar_id = lGetUlong(ar, AR_id);
-   ar_name = lGetString(ar, AR_name);
+   ar_id = ocs::tom::get<AR_id>(ar);
+   ar_name = ocs::tom::get<AR_name>(ar);
 
    switch (type) {
       case MAIL_AT_BEGINNING:
-         sge_ctime64(lGetUlong64(ar, AR_start_time), &buffer);
+         sge_ctime64(ocs::tom::get<AR_start_time>(ar), &buffer);
          sge_dstring_sprintf(&subject, MSG_MAIL_ARSTARTEDSUBJ_US,
                              ar_id, ar_name ? ar_name : "none");
          sge_dstring_sprintf(&body, MSG_MAIL_ARSTARTBODY_USSS,
-                             ar_id, ar_name ? ar_name : "none", lGetString(ar, AR_owner),
+                             ar_id, ar_name ? ar_name : "none", ocs::tom::get<AR_owner>(ar),
                              sge_dstring_get_string(&buffer));
          mail_type = MSG_MAIL_TYPE_ARSTART;
          break;
       case MAIL_AT_EXIT:
-         if (lGetUlong(ar, AR_state) == AR_DELETED) {
+         if (ocs::tom::get<AR_state>(ar) == AR_DELETED) {
             sge_ctime64(sge_get_gmt64(), &buffer);
             sge_dstring_sprintf(&subject, MSG_MAIL_ARDELETEDSUBJ_US,
                                 ar_id, ar_name ? ar_name : "none");
             sge_dstring_sprintf(&body, MSG_MAIL_ARDELETETBODY_USSS,
-                                ar_id, ar_name ? ar_name : "none", lGetString(ar, AR_owner),
+                                ar_id, ar_name ? ar_name : "none", ocs::tom::get<AR_owner>(ar),
                                 sge_dstring_get_string(&buffer));
             mail_type = MSG_MAIL_TYPE_ARDELETE;
          } else {
-            sge_ctime64(lGetUlong64(ar, AR_end_time), &buffer);
+            sge_ctime64(ocs::tom::get<AR_end_time>(ar), &buffer);
             sge_dstring_sprintf(&subject, MSG_MAIL_AREXITEDSUBJ_US,
                                 ar_id, ar_name ? ar_name : "none");
             sge_dstring_sprintf(&body, MSG_MAIL_AREXITBODY_USSS,
-                                ar_id, ar_name ? ar_name : "none", lGetString(ar, AR_owner),
+                                ar_id, ar_name ? ar_name : "none", ocs::tom::get<AR_owner>(ar),
                                 sge_dstring_get_string(&buffer));
             mail_type = MSG_MAIL_TYPE_AREND;
          }
          break;
       case MAIL_AT_ABORT:
-         if (lGetUlong(ar, AR_state) == AR_ERROR) {
+         if (ocs::tom::get<AR_state>(ar) == AR_ERROR) {
             sge_ctime64(sge_get_gmt64(), &buffer);
             sge_dstring_sprintf(&subject, MSG_MAIL_ARERRORSUBJ_US,
                                 ar_id, ar_name ? ar_name : "none");
             sge_dstring_sprintf(&body, MSG_MAIL_ARERRORBODY_USSS,
-                                ar_id, ar_name ? ar_name : "none", lGetString(ar, AR_owner),
+                                ar_id, ar_name ? ar_name : "none", ocs::tom::get<AR_owner>(ar),
                                 sge_dstring_get_string(&buffer));
             mail_type = MSG_MAIL_TYPE_ARERROR;
          } else {
@@ -2369,7 +2383,7 @@ sge_ar_send_mail(lListElem *ar, int type) {
             sge_dstring_sprintf(&subject, MSG_MAIL_AROKSUBJ_US,
                                 ar_id, ar_name ? ar_name : "none");
             sge_dstring_sprintf(&body, MSG_MAIL_AROKBODY_USSS,
-                                ar_id, ar_name ? ar_name : "none", lGetString(ar, AR_owner),
+                                ar_id, ar_name ? ar_name : "none", ocs::tom::get<AR_owner>(ar),
                                 sge_dstring_get_string(&buffer));
             mail_type = MSG_MAIL_TYPE_AROK;
          }
@@ -2379,7 +2393,7 @@ sge_ar_send_mail(lListElem *ar, int type) {
          break;
    }
 
-   cull_mail(QMASTER, lGetList(ar, AR_mail_list), sge_dstring_get_string(&subject), sge_dstring_get_string(&body),
+   cull_mail(QMASTER, ocs::tom::get<AR_mail_list>(ar), sge_dstring_get_string(&subject), sge_dstring_get_string(&body),
              mail_type);
 
    sge_dstring_free(&buffer);
@@ -2414,28 +2428,28 @@ ar_list_has_reservation_due_to_qinstance_complex_attr(const lList *ar_master_lis
    const lListElem *gs;
 
    for_each_ep(ar, ar_master_list) {
-      const char *qinstance_name = lGetString(qinstance, QU_full_name);
+      const char *qinstance_name = ocs::tom::get<QU_full_name>(qinstance);
 
-      if ((gs = lGetElemStr(lGetList(ar, AR_granted_slots), JG_qname, qinstance_name))) {
+      if ((gs = ocs::tom::find_first<JG_qname>(ocs::tom::get<AR_granted_slots>(ar), qinstance_name))) {
 
          const lListElem *rue = nullptr;
          lListElem *request;
          const lList *rue_list;
 
-         for_each_rw(request, lGetList(ar, AR_resource_list)) {
-            const char *ce_name = lGetString(request, CE_name);
-            const lListElem *ce = lGetElemStr(ce_master_list, CE_name, ce_name);
-            bool is_consumable = (lGetUlong(ce, CE_consumable) > 0) ? true : false;
+         for_each_rw(request, static_cast<const lList *>(ocs::tom::get<AR_resource_list>(ar))) {
+            const char *ce_name = ocs::tom::get<CE_name>(request);
+            const lListElem *ce = ocs::tom::find_first<CE_name>(ce_master_list, ce_name);
+            bool is_consumable = (ocs::tom::get<CE_consumable>(ce) > 0) ? true : false;
 
             if (!is_consumable) {
                char text[2048];
-               uint32_t slots = lGetUlong(gs, JG_slots);
-               lListElem *current = lGetSubStrRW(qinstance, CE_name, ce_name, QU_consumable_config_list);
+               uint32_t slots = ocs::tom::get<JG_slots>(gs);
+               lListElem *current = ocs::tom::find_first_in_rw<QU_consumable_config_list, CE_name>(qinstance, ce_name);
                if (current != nullptr) {
                   current = lCopyElem(current);
-                  lSetUlong(current, CE_relop, lGetUlong(ce, CE_relop));
-                  lSetDouble(current, CE_pj_doubleval, lGetDouble(current, CE_doubleval));
-                  lSetString(current, CE_pj_stringval, lGetString(current, CE_stringval));
+                  ocs::tom::set<CE_relop>(current, ocs::tom::get<CE_relop>(ce));
+                  ocs::tom::set<CE_pj_doubleval>(current, ocs::tom::get<CE_doubleval>(current));
+                  ocs::tom::set<CE_pj_stringval>(current, ocs::tom::get<CE_stringval>(current));
 
                   if (compare_complexes(slots, request, current, text, false, true) == 0) {
                      ERROR(MSG_QUEUE_MODCMPLXDENYDUETOAR_SS, ce_name, SGE_ATTR_COMPLEX_VALUES);
@@ -2451,27 +2465,27 @@ ar_list_has_reservation_due_to_qinstance_complex_attr(const lList *ar_master_lis
          /* now it gets expensive. Before we can start the check at first we have to build the
             consumable config list. */
          qinstance_reinit_consumable_actual_list(qinstance, answer_list);
-         rue_list = lGetList(qinstance, QU_resource_utilization);
+         rue_list = ocs::tom::get<QU_resource_utilization>(qinstance);
 
          for_each_ep(rue, rue_list) {
-            const char *ce_name = lGetString(rue, RUE_name);
-            const lListElem *ce = lGetElemStr(ce_master_list, CE_name, ce_name);
-            bool is_consumable = (lGetUlong(ce, CE_consumable) > 0) ? true : false;
+            const char *ce_name = ocs::tom::get<RUE_name>(rue);
+            const lListElem *ce = ocs::tom::find_first<CE_name>(ce_master_list, ce_name);
+            bool is_consumable = (ocs::tom::get<CE_consumable>(ce) > 0) ? true : false;
 
             if (is_consumable) {
                const lListElem *rde = nullptr;
-               const lList *rde_list = lGetList(rue, RUE_utilized);
-               const lListElem *cv = lGetSubStr(qinstance, CE_name, ce_name, QU_consumable_config_list);
+               const lList *rde_list = ocs::tom::get<RUE_utilized>(rue);
+               const lListElem *cv = ocs::tom::find_first_in<QU_consumable_config_list, CE_name>(qinstance, ce_name);
 
                if (cv == nullptr) {
                   ERROR(MSG_QUEUE_MODNOCMPLXDENYDUETOAR_SS, ce_name, SGE_ATTR_COMPLEX_VALUES);
                   answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
                   DRETURN(true);
                } else {
-                  double configured = lGetDouble(cv, CE_doubleval);
+                  double configured = ocs::tom::get<CE_doubleval>(cv);
 
                   for_each_ep(rde, rde_list) {
-                     double amount = lGetDouble(rde, RDE_amount);
+                     double amount = ocs::tom::get<RDE_amount>(rde);
 
                      if (amount > configured) {
                         ERROR(MSG_QUEUE_MODCMPLXDENYDUETOAR_SS, ce_name, SGE_ATTR_COMPLEX_VALUES);
@@ -2509,33 +2523,33 @@ ar_list_has_reservation_due_to_host_complex_attr(const lList *ar_master_list, lL
    DENTER(TOP_LAYER);
 
    const lListElem *ar = nullptr;
-   const char *hostname = lGetHost(host, EH_name);
+   const char *hostname = ocs::tom::get<EH_name>(host);
 
    for_each_ep(ar, ar_master_list) {
       const lListElem *gs = nullptr;
 
-      for_each_ep(gs, lGetList(ar, AR_granted_slots)) {
-         const char *gh = lGetHost(gs, JG_qhostname);
+      for_each_ep(gs, static_cast<const lList *>(ocs::tom::get<AR_granted_slots>(ar))) {
+         const char *gh = ocs::tom::get<JG_qhostname>(gs);
 
          if (!sge_hostcmp(gh, hostname)) {
             const lListElem *rue;
             lListElem *request;
-            const lList *rue_list = lGetList(host, EH_resource_utilization);
+            const lList *rue_list = ocs::tom::get<EH_resource_utilization>(host);
 
-            for_each_rw(request, lGetList(ar, AR_resource_list)) {
-               const char *ce_name = lGetString(request, CE_name);
-               const lListElem *ce = lGetElemStr(ce_master_list, CE_name, ce_name);
-               bool is_consumable = (lGetUlong(ce, CE_consumable) > 0) ? true : false;
+            for_each_rw(request, static_cast<const lList *>(ocs::tom::get<AR_resource_list>(ar))) {
+               const char *ce_name = ocs::tom::get<CE_name>(request);
+               const lListElem *ce = ocs::tom::find_first<CE_name>(ce_master_list, ce_name);
+               bool is_consumable = (ocs::tom::get<CE_consumable>(ce) > 0) ? true : false;
 
                if (!is_consumable) {
                   char text[2048];
-                  uint32_t slots = lGetUlong(gs, JG_slots);
-                  const lListElem *old_current = lGetSubStr(host, CE_name, ce_name, EH_consumable_config_list);
+                  uint32_t slots = ocs::tom::get<JG_slots>(gs);
+                  const lListElem *old_current = ocs::tom::find_first_in<EH_consumable_config_list, CE_name>(host, ce_name);
                   if (old_current != nullptr) {
                      lListElem *current = lCopyElem(old_current);
-                     lSetUlong(current, CE_relop, lGetUlong(ce, CE_relop));
-                     lSetDouble(current, CE_pj_doubleval, lGetDouble(current, CE_doubleval));
-                     lSetString(current, CE_pj_stringval, lGetString(current, CE_stringval));
+                     ocs::tom::set<CE_relop>(current, ocs::tom::get<CE_relop>(ce));
+                     ocs::tom::set<CE_pj_doubleval>(current, ocs::tom::get<CE_doubleval>(current));
+                     ocs::tom::set<CE_pj_stringval>(current, ocs::tom::get<CE_stringval>(current));
 
                      if (compare_complexes(slots, request, current, text, false, true) == 0) {
                         ERROR(MSG_QUEUE_MODCMPLXDENYDUETOAR_SS, ce_name, SGE_ATTR_COMPLEX_VALUES);
@@ -2548,24 +2562,24 @@ ar_list_has_reservation_due_to_host_complex_attr(const lList *ar_master_list, lL
                }
             }
             for_each_ep(rue, rue_list) {
-               const char *ce_name = lGetString(rue, RUE_name);
-               const lListElem *ce = lGetElemStr(ce_master_list, CE_name, ce_name);
-               bool is_consumable = (lGetUlong(ce, CE_consumable) > 0) ? true : false;
+               const char *ce_name = ocs::tom::get<RUE_name>(rue);
+               const lListElem *ce = ocs::tom::find_first<CE_name>(ce_master_list, ce_name);
+               bool is_consumable = (ocs::tom::get<CE_consumable>(ce) > 0) ? true : false;
 
                if (is_consumable) {
                   const lListElem *rde = nullptr;
-                  const lList *rde_list = lGetList(rue, RUE_utilized);
-                  const lListElem *cv = lGetSubStr(host, CE_name, ce_name, EH_consumable_config_list);
+                  const lList *rde_list = ocs::tom::get<RUE_utilized>(rue);
+                  const lListElem *cv = ocs::tom::find_first_in<EH_consumable_config_list, CE_name>(host, ce_name);
 
                   if (cv == nullptr) {
                      ERROR(MSG_QUEUE_MODNOCMPLXDENYDUETOAR_SS, ce_name, SGE_ATTR_COMPLEX_VALUES);
                      answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
                      DRETURN(true);
                   } else {
-                     double configured = lGetDouble(cv, CE_doubleval);
+                     double configured = ocs::tom::get<CE_doubleval>(cv);
 
                      for_each_ep(rde, rde_list) {
-                        double amount = lGetDouble(rde, RDE_amount);
+                        double amount = ocs::tom::get<RDE_amount>(rde);
 
                         if (amount > configured) {
                            ERROR(MSG_QUEUE_MODCMPLXDENYDUETOAR_SS, ce_name, SGE_ATTR_COMPLEX_VALUES);

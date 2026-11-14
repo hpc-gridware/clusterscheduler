@@ -29,6 +29,7 @@
 #include "sgeobj/cull/sge_param_SPP_L.h"
 #include "sgeobj/sge_str.h"
 #include "sgeobj/sge_ulong.h"
+#include "tom/ocs_Element.h"
 
 #include "qhost/ocs_QHostParameter.h"
 
@@ -64,29 +65,29 @@ void ocs::QHostParameter::set_bundle(const lList *bundle) {
    ProcedureParameter::set_bundle(bundle);
 
    // flags for used switches: -F -q -j -u
-   const lListElem *show_param = lGetElemStr(bundle, SPP_name, SHOW);
-   const lList *show_list = lGetList(show_param, SPP_value_list);
-   show_ = lGetUlong(lFirst(show_list), ULNG_value);
+   const lListElem *show_param = ocs::tom::find_first<SPP_name>(bundle, SHOW);
+   const lList *show_list = ocs::tom::get<SPP_value_list>(show_param);
+   show_ = ocs::tom::get<ULNG_value>(lFirst(show_list));
 
    // -F
-   lListElem *resource_visible_param = lGetElemStrRW(bundle, SPP_name, RESOURCE_VISIBLE_LIST);
+   lListElem *resource_visible_param = ocs::tom::find_first_rw<SPP_name>(bundle, RESOURCE_VISIBLE_LIST);
    resource_visible_list_ = nullptr;
-   lXchgList(resource_visible_param, SPP_value_list, &resource_visible_list_);
+   ocs::tom::exchange<SPP_value_list>(resource_visible_param, &resource_visible_list_);
 
    // -l
-   lListElem *resource_match_param = lGetElemStrRW(bundle, SPP_name, RESOURCE_LIST);
+   lListElem *resource_match_param = ocs::tom::find_first_rw<SPP_name>(bundle, RESOURCE_LIST);
    resource_match_list_ = nullptr;
-   lXchgList(resource_match_param, SPP_value_list, &resource_match_list_);
+   ocs::tom::exchange<SPP_value_list>(resource_match_param, &resource_match_list_);
 
    // -u
-   lListElem *user_name_param = lGetElemStrRW(bundle, SPP_name, USER_NAME_LIST);
+   lListElem *user_name_param = ocs::tom::find_first_rw<SPP_name>(bundle, USER_NAME_LIST);
    user_name_list_ = nullptr;
-   lXchgList(user_name_param, SPP_value_list, &user_name_list_);
+   ocs::tom::exchange<SPP_value_list>(user_name_param, &user_name_list_);
 
    // -h
-   lListElem *host_name_param = lGetElemStrRW(bundle, SPP_name, HOSTNAME_LIST);
+   lListElem *host_name_param = ocs::tom::find_first_rw<SPP_name>(bundle, HOSTNAME_LIST);
    hostname_list_ = nullptr;
-   lXchgList(host_name_param, SPP_value_list, &hostname_list_);
+   ocs::tom::exchange<SPP_value_list>(host_name_param, &hostname_list_);
 
    DRETURN_VOID;
 }
@@ -100,26 +101,26 @@ lList *ocs::QHostParameter::get_bundle() {
    //lList *name_value_list = lGetListRW(lGetElemStrRW(bundle, SPP_name, NAME_VALUE_LIST), SPP_value_list);
 
    // -h
-   ep = lAddElemStr(&bundle, SPP_name, HOSTNAME_LIST, SPP_Type);
-   lSetList(ep, SPP_value_list, lCopyList(nullptr, hostname_list_));
+   ep = ocs::tom::emplace_back<SPP_name>(&bundle, HOSTNAME_LIST);
+   ocs::tom::set<SPP_value_list>(ep, lCopyList(nullptr, hostname_list_));
 
    // -u
-   ep = lAddElemStr(&bundle, SPP_name, USER_NAME_LIST, SPP_Type);
-   lSetList(ep, SPP_value_list, lCopyList(nullptr, user_name_list_));
+   ep = ocs::tom::emplace_back<SPP_name>(&bundle, USER_NAME_LIST);
+   ocs::tom::set<SPP_value_list>(ep, lCopyList(nullptr, user_name_list_));
 
    // -l
-   ep = lAddElemStr(&bundle, SPP_name, RESOURCE_LIST, SPP_Type);
-   lSetList(ep, SPP_value_list, lCopyList(nullptr, resource_match_list_));
+   ep = ocs::tom::emplace_back<SPP_name>(&bundle, RESOURCE_LIST);
+   ocs::tom::set<SPP_value_list>(ep, lCopyList(nullptr, resource_match_list_));
 
    // -F
-   ep = lAddElemStr(&bundle, SPP_name, RESOURCE_VISIBLE_LIST, SPP_Type);
-   lSetList(ep, SPP_value_list, lCopyList(nullptr, resource_visible_list_));
+   ep = ocs::tom::emplace_back<SPP_name>(&bundle, RESOURCE_VISIBLE_LIST);
+   ocs::tom::set<SPP_value_list>(ep, lCopyList(nullptr, resource_visible_list_));
 
    // flags for used switches: -F -q -j -u
    lList *show_list = nullptr;
-   lAddElemUlong(&show_list, ULNG_value, show_, ULNG_Type);
-   ep = lAddElemStr(&bundle, SPP_name, SHOW, SPP_Type);
-   lSetList(ep, SPP_value_list, show_list);
+   ocs::tom::emplace_back<ULNG_value>(&show_list, show_);
+   ep = ocs::tom::emplace_back<SPP_name>(&bundle, SHOW);
+   ocs::tom::set<SPP_value_list>(ep, show_list);
 
    DRETURN(bundle);
 }

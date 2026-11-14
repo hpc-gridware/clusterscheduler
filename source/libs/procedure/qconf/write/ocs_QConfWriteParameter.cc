@@ -23,6 +23,7 @@
  */
 
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "tom/ocs_Element.h"
 #include "uti/sge_rmon_macros.h"
 
 #include "ocs_QConfWriteParameter.h"
@@ -35,8 +36,8 @@ void
 ocs::QConfWriteParameter::add_item(const char *label, const std::string &text) {
    DENTER(TOP_LAYER);
 
-   lListElem *item = lAddElemStr(&items_, VA_variable, label != nullptr ? label : "", VA_Type);
-   lSetString(item, VA_value, text.c_str());
+   lListElem *item = ocs::tom::emplace_back<VA_variable>(&items_, label != nullptr ? label : "");
+   ocs::tom::set<VA_value>(item, text.c_str());
 
    DRETURN_VOID;
 }
@@ -58,14 +59,14 @@ ocs::QConfWriteParameter::get_bundle() {
    add_parameter_bundle(bundle, OBJECT_SET, lCopyList("", items_));
 
    lList *mode_list = nullptr;
-   lAddElemUlong(&mode_list, ULNG_value, mode_, ULNG_Type);
+   ocs::tom::emplace_back<ULNG_value>(&mode_list, mode_);
    add_parameter_bundle(bundle, WRITE_MODE, mode_list);
 
    /* sent only when there is a selection, so a request that writes everything
     * looks exactly as it did before this existed */
    if (!select_.empty()) {
       lList *select_list = nullptr;
-      lAddElemStr(&select_list, ST_name, select_.c_str(), ST_Type);
+      ocs::tom::emplace_back<ST_name>(&select_list, select_.c_str());
       add_parameter_bundle(bundle, OBJECT_SELECT, select_list);
    }
 
@@ -73,7 +74,7 @@ ocs::QConfWriteParameter::get_bundle() {
     * type whose text does not - see set_name() */
    if (!name_.empty()) {
       lList *name_list = nullptr;
-      lAddElemStr(&name_list, ST_name, name_.c_str(), ST_Type);
+      ocs::tom::emplace_back<ST_name>(&name_list, name_.c_str());
       add_parameter_bundle(bundle, OBJECT_NAME, name_list);
    }
 
@@ -98,28 +99,28 @@ ocs::QConfWriteParameter::set_bundle(const lList *bundle) {
 
    ProcedureParameter::set_bundle(bundle);
 
-   lListElem *set_param = lGetElemStrRW(const_cast<lList *>(bundle), SPP_name, OBJECT_SET);
+   lListElem *set_param = ocs::tom::find_first_rw<SPP_name>(const_cast<lList *>(bundle), OBJECT_SET);
    if (set_param != nullptr) {
       lFreeList(&items_);
-      lXchgList(set_param, SPP_value_list, &items_);
+      ocs::tom::exchange<SPP_value_list>(set_param, &items_);
    }
 
-   const lListElem *mode_param = lGetElemStr(bundle, SPP_name, WRITE_MODE);
+   const lListElem *mode_param = ocs::tom::find_first<SPP_name>(bundle, WRITE_MODE);
    if (mode_param != nullptr) {
-      mode_ = static_cast<uint32_t>(lGetUlong(lFirst(lGetList(mode_param, SPP_value_list)), ULNG_value));
+      mode_ = static_cast<uint32_t>(ocs::tom::get<ULNG_value>(lFirst(ocs::tom::get<SPP_value_list>(mode_param))));
    }
 
-   const lListElem *select_param = lGetElemStr(bundle, SPP_name, OBJECT_SELECT);
+   const lListElem *select_param = ocs::tom::find_first<SPP_name>(bundle, OBJECT_SELECT);
    if (select_param != nullptr) {
-      const lListElem *value = lFirst(lGetList(select_param, SPP_value_list));
-      const char *names = (value != nullptr) ? lGetString(value, ST_name) : nullptr;
+      const lListElem *value = lFirst(ocs::tom::get<SPP_value_list>(select_param));
+      const char *names = (value != nullptr) ? ocs::tom::get<ST_name>(value) : nullptr;
       select_ = (names != nullptr) ? names : "";
    }
 
-   const lListElem *name_param = lGetElemStr(bundle, SPP_name, OBJECT_NAME);
+   const lListElem *name_param = ocs::tom::find_first<SPP_name>(bundle, OBJECT_NAME);
    if (name_param != nullptr) {
-      const lListElem *value = lFirst(lGetList(name_param, SPP_value_list));
-      const char *name = (value != nullptr) ? lGetString(value, ST_name) : nullptr;
+      const lListElem *value = lFirst(ocs::tom::get<SPP_value_list>(name_param));
+      const char *name = (value != nullptr) ? ocs::tom::get<ST_name>(value) : nullptr;
       name_ = (name != nullptr) ? name : "";
    }
 

@@ -23,6 +23,7 @@
  */
 
 #include "sgeobj/sge_cull_xml.h"
+#include "tom/ocs_Element.h"
 
 #include "qstat/group/ocs_QStatGroupViewXML.h"
 
@@ -44,7 +45,7 @@ void ocs::QStatGroupViewXML::report_cqueue(std::ostream &os, const char* cq_name
       return;
    }
    lList *attributes = lCreateList("attributes", XMLE_Type);
-   lSetList(elem, XMLE_List, attributes);
+   ocs::tom::set<XMLE_List>(elem, attributes);
 
    xml_append_Attr_S(attributes, "name", cq_name);
    if (summary->is_load_available) {

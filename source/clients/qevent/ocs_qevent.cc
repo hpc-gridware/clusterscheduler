@@ -68,6 +68,7 @@
 #include "sgeobj/sge_feature.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/ocs_DataStore.h"
+#include "tom/ocs_Element.h"
 
 #include "mir/sge_mirror.h"
 
@@ -134,11 +135,11 @@ static u_long
 get_current_jatask_status(u_long job_id, u_long ja_task_id) {
    uint32_t ret = JIDLE;
    const lList *master_job_list = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
-   const lListElem *job = lGetElemUlong(master_job_list, JB_job_number, job_id);
+   const lListElem *job = ocs::tom::find_first<JB_job_number>(master_job_list, job_id);
    if (job != nullptr) {
-      const lListElem *ja_task = lGetSubUlong(job, JAT_task_number, ja_task_id, JB_ja_tasks);
+      const lListElem *ja_task = ocs::tom::find_first_in<JB_ja_tasks, JAT_task_number>(job, ja_task_id);
       if (ja_task != nullptr) {
-         ret = lGetUlong(ja_task, JAT_status);
+         ret = ocs::tom::get<JAT_status>(ja_task);
       }
    }
    return ret;
@@ -155,20 +156,20 @@ print_jatask_event([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type,
    sge_dstring_init(&buffer_wrapper, buffer, sizeof(buffer));
 
    DPRINTF("%s\n", event_text(event, &buffer_wrapper));
-   if (lGetPosViaElem(event, ET_type, SGE_NO_ABORT) >= 0) {
-      uint32_t event_type = lGetUlong(event, ET_type);
-      uint64_t timestamp = lGetUlong64(event, ET_timestamp);
+   if (ocs::tom::has<ET_type>(event)) {
+      uint32_t event_type = ocs::tom::get<ET_type>(event);
+      uint64_t timestamp = ocs::tom::get<ET_timestamp>(event);
 
       if (event_type == sgeE_JATASK_MOD) {
-         lList *jat = lGetListRW(event, ET_new_version);
-         u_long job_id  = lGetUlong(event, ET_intkey);
-         u_long task_id = lGetUlong(event, ET_intkey2);
+         lList *jat = ocs::tom::get<ET_new_version>(event);
+         u_long job_id  = ocs::tom::get<ET_intkey>(event);
+         u_long task_id = ocs::tom::get<ET_intkey2>(event);
          // we might get a JATASK_MOD event for a task that is already in transfer or running == already counted
          // then ignore the event
          uint32_t current_status = get_current_jatask_status(job_id, task_id);
          if (current_status != JRUNNING && current_status != JTRANSFERING) {
             const lListElem *ep = lFirst(jat);
-            u_long job_status = lGetUlong(ep, JAT_status);
+            u_long job_status = ocs::tom::get<JAT_status>(ep);
             int task_running = (job_status==JRUNNING || job_status==JTRANSFERING);
 
             if (task_running) {
@@ -179,18 +180,18 @@ print_jatask_event([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type,
          }
       }
       if (event_type == sgeE_JOB_FINISH) {
-         u_long job_id = lGetUlong(event, ET_intkey);
-         u_long task_id = lGetUlong(event, ET_intkey2);
+         u_long job_id = ocs::tom::get<ET_intkey>(event);
+         u_long task_id = ocs::tom::get<ET_intkey2>(event);
          fprintf(stdout,"JOB_FINISH (%ld.%ld:ECL_TIME=" sge_u64 ")\n", job_id, task_id, timestamp);
          Global_jobs_running--;
          fflush(stdout);
       }
       if (event_type == sgeE_JOB_ADD) {
-         const lList *jat = lGetListRW(event,ET_new_version);
-         u_long job_id  = lGetUlong(event, ET_intkey);
-         u_long task_id = lGetUlong(event, ET_intkey2);
+         const lList *jat = ocs::tom::get<ET_new_version>(event);
+         u_long job_id  = ocs::tom::get<ET_intkey>(event);
+         u_long task_id = ocs::tom::get<ET_intkey2>(event);
          const lListElem *ep = lFirst(jat);
-         const char* job_project = lGetString(ep, JB_project);
+         const char* job_project = ocs::tom::get<JB_project>(ep);
          if (job_project == nullptr) {
             job_project = "NONE";
          }
@@ -199,8 +200,8 @@ print_jatask_event([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type,
          fflush(stdout);
       }
       if (event_type == sgeE_JOB_DEL) {
-         u_long job_id  = lGetUlong(event, ET_intkey);
-         u_long task_id = lGetUlong(event, ET_intkey2);
+         u_long job_id  = ocs::tom::get<ET_intkey>(event);
+         u_long task_id = ocs::tom::get<ET_intkey2>(event);
          fprintf(stdout,"JOB_DEL (%ld.%ld:ECL_TIME=" sge_u64 ")\n", job_id, task_id, timestamp);
          Global_jobs_registered--;
          fflush(stdout);
@@ -218,13 +219,13 @@ analyze_jatask_event([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type
 
    sge_dstring_init(&buffer_wrapper, buffer, sizeof(buffer));
 
-   if (lGetPosViaElem(event, ET_type, SGE_NO_ABORT) >= 0) {
-      uint32_t event_type = lGetUlong(event, ET_type);
+   if (ocs::tom::has<ET_type>(event)) {
+      uint32_t event_type = ocs::tom::get<ET_type>(event);
 
       if (event_type == sgeE_JATASK_MOD) {
-         const lList *jat = lGetList(event,ET_new_version);
+         const lList *jat = ocs::tom::get<ET_new_version>(event);
          const lListElem *ep = lFirst(jat);
-         u_long job_status = lGetUlong(ep, JAT_status);
+         u_long job_status = ocs::tom::get<JAT_status>(ep);
          int task_running = (job_status==JRUNNING || job_status==JTRANSFERING);
          if (task_running) {
          }
@@ -275,8 +276,8 @@ static void qevent_start_trigger_script(int qevent_event, const char* script_fil
    char buffer[MAX_STRING_SIZE];
    char buffer2[MAX_STRING_SIZE];
 
-   jobid  = lGetUlong(event, ET_intkey);
-   taskid = lGetUlong(event, ET_intkey2);
+   jobid  = ocs::tom::get<ET_intkey>(event);
+   taskid = ocs::tom::get<ET_intkey2>(event);
    event_name = qevent_get_event_name(qevent_event);
 
 

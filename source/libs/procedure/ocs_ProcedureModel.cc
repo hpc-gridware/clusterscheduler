@@ -37,6 +37,7 @@
 
 #include "ocs_ProcedureParameter.h"
 #include "sgeobj/sge_answer.h"
+#include "tom/ocs_Element.h"
 
 /** @brief Send the procedure request to qmaster and store the response.
  *
@@ -83,18 +84,18 @@ ocs::ProcedureModel::get_reduction() const {
     * zero, so a reading of zero alone cannot tell "qmaster said nothing was
     * reduced" from "the entry never arrived" - and the second would mean the
     * channel is broken while looking exactly like the healthy case. */
-   const lListElem *entry = lGetElemStr(procedure_response, SPP_name, ProcedureParameter::REDUCTION);
+   const lListElem *entry = ocs::tom::find_first<SPP_name>(procedure_response, ProcedureParameter::REDUCTION);
    if (entry == nullptr) {
       DPRINTF("no reduction entry in the response\n");
       DRETURN(ProcedureParameter::REDUCTION_NONE);
    }
-   const lListElem *value = lFirst(lGetList(entry, SPP_value_list));
+   const lListElem *value = lFirst(ocs::tom::get<SPP_value_list>(entry));
    if (value == nullptr) {
       DPRINTF("reduction entry present but empty\n");
       DRETURN(ProcedureParameter::REDUCTION_NONE);
    }
 
-   DRETURN(static_cast<uint32_t>(lGetUlong(value, ULNG_value)));
+   DRETURN(static_cast<uint32_t>(ocs::tom::get<ULNG_value>(value)));
 }
 
 /** @brief What a write procedure did, see the header
@@ -108,37 +109,37 @@ ocs::ProcedureModel::get_write_result(uint32_t &applied, uint32_t &parse_failed,
                                       uint32_t *elements) const {
    DENTER(TOP_LAYER);
 
-   const lListElem *applied_entry = lGetElemStr(procedure_response, SPP_name,
+   const lListElem *applied_entry = ocs::tom::find_first<SPP_name>(procedure_response,
                                                 ProcedureParameter::WRITE_APPLIED);
-   const lListElem *failed_entry = lGetElemStr(procedure_response, SPP_name,
+   const lListElem *failed_entry = ocs::tom::find_first<SPP_name>(procedure_response,
                                                ProcedureParameter::WRITE_PARSE_FAILED);
    if (applied_entry == nullptr || failed_entry == nullptr) {
       DPRINTF("no write result in the response\n");
       DRETURN(false);
    }
 
-   const lListElem *applied_value = lFirst(lGetList(applied_entry, SPP_value_list));
-   const lListElem *failed_value = lFirst(lGetList(failed_entry, SPP_value_list));
+   const lListElem *applied_value = lFirst(ocs::tom::get<SPP_value_list>(applied_entry));
+   const lListElem *failed_value = lFirst(ocs::tom::get<SPP_value_list>(failed_entry));
    if (applied_value == nullptr || failed_value == nullptr) {
       DPRINTF("write result present but empty\n");
       DRETURN(false);
    }
 
-   applied = static_cast<uint32_t>(lGetUlong(applied_value, ULNG_value));
-   parse_failed = static_cast<uint32_t>(lGetUlong(failed_value, ULNG_value));
+   applied = static_cast<uint32_t>(ocs::tom::get<ULNG_value>(applied_value));
+   parse_failed = static_cast<uint32_t>(ocs::tom::get<ULNG_value>(failed_value));
 
    /* The element count is reported next to the two above and asked for by the
     * one caller that prints a count of objects. It is read on its own, so a
     * response that carries only the two older entries is still a complete
     * write result - the counts a caller must have are those two. */
    if (elements != nullptr) {
-      const lListElem *elements_entry = lGetElemStr(procedure_response, SPP_name,
+      const lListElem *elements_entry = ocs::tom::find_first<SPP_name>(procedure_response,
                                                     ProcedureParameter::WRITE_ELEMENTS);
       const lListElem *elements_value = (elements_entry != nullptr)
-                                        ? lFirst(lGetList(elements_entry, SPP_value_list))
+                                        ? lFirst(ocs::tom::get<SPP_value_list>(elements_entry))
                                         : nullptr;
       if (elements_value != nullptr) {
-         *elements = static_cast<uint32_t>(lGetUlong(elements_value, ULNG_value));
+         *elements = static_cast<uint32_t>(ocs::tom::get<ULNG_value>(elements_value));
       }
    }
 
@@ -153,7 +154,7 @@ bool
 ocs::ProcedureModel::get_export_objects(const lList **objects) const {
    DENTER(TOP_LAYER);
 
-   const lListElem *entry = lGetElemStr(procedure_response, SPP_name,
+   const lListElem *entry = ocs::tom::find_first<SPP_name>(procedure_response,
                                         ProcedureParameter::EXPORT_OBJECTS);
    if (entry == nullptr) {
       DPRINTF("no export entry in the response\n");
@@ -163,7 +164,7 @@ ocs::ProcedureModel::get_export_objects(const lList **objects) const {
    /* An empty export is stored by CULL as no list at all, so the null check
     * comes before the count - lGetNumberOfElem() flags a null list as an error
     * of its own. */
-   *objects = lGetList(entry, SPP_value_list);
+   *objects = ocs::tom::get<SPP_value_list>(entry);
    DPRINTF("export entry holds %d object(s)\n",
            (*objects != nullptr) ? lGetNumberOfElem(*objects) : 0);
    DRETURN(true);
@@ -182,14 +183,14 @@ ocs::ProcedureModel::get_export_objects(const lList **objects) const {
 const char *
 ocs::ProcedureModel::get_output_text() const {
    DENTER(TOP_LAYER);
-   const lListElem *response_elem = lGetElemStr(procedure_response, SPP_name, ProcedureParameter::RESPONSE);
+   const lListElem *response_elem = ocs::tom::find_first<SPP_name>(procedure_response, ProcedureParameter::RESPONSE);
    if (!response_elem) {
       DRETURN("");
    }
-   const lListElem *output_elem = lFirst(lGetList(response_elem, SPP_value_list));
+   const lListElem *output_elem = lFirst(ocs::tom::get<SPP_value_list>(response_elem));
    if (!output_elem) {
       DRETURN("");
    }
-   const char *output = lGetString(output_elem, ST_name);
+   const char *output = ocs::tom::get<ST_name>(output_elem);
    DRETURN(output != nullptr ? output : "");
 }

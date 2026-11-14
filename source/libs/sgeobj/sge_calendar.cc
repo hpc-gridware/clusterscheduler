@@ -62,6 +62,10 @@
 #include "sgeobj/sge_qinstance_state.h"
 #include "sgeobj/sge_calendar.h"
 #include "sgeobj/msg_sgeobjlib.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_CA.h"
+#include "sgeobj/tom/ocs_tom_TM.h"
+#include "sgeobj/tom/ocs_tom_TMR.h"
 
 #include "msg_qmaster.h"
 
@@ -436,24 +440,24 @@ static uint32_t is_week_entry_active(lListElem *tm, lListElem *week_entry, time_
 
 
    /* compute state */
-   if ((in_wday_range=in_range_list(tm, lGetList(week_entry, CA_wday_range_list), tm_wday_cmp))
-     && (in_daytime_range=in_range_list(tm, lGetList(week_entry, CA_daytime_range_list), tm_daytime_cmp))) {
+   if ((in_wday_range=in_range_list(tm, ocs::tom::get<CA_wday_range_list>(week_entry), tm_wday_cmp))
+     && (in_daytime_range=in_range_list(tm, ocs::tom::get<CA_daytime_range_list>(week_entry), tm_daytime_cmp))) {
        /* DPRINTF(("in_range_list(wday) = %d in_range_list(daytime) = %d state = %d\n",
                     in_wday_range, in_daytime_range, lGetUlong(week_entry, CA_state))); */
-      state = lGetUlong(week_entry, CA_state);
+      state = ocs::tom::get<CA_state>(week_entry);
       *next_state = 0;
    } else {
       /* DPRINTF("in_range_list(wday) = %d in_range_list(daytime) = %d\n", in_wday_range, in_daytime_range); */
       state = 0;
-      *next_state = lGetUlong(week_entry, CA_state);
+      *next_state = ocs::tom::get<CA_state>(week_entry);
 
    }
 
    if (limit != nullptr) {
       bool is_end_of_the_day_reached = false;
 
-      *limit = compute_limit(in_wday_range, in_daytime_range,nullptr, lGetList(week_entry, CA_wday_range_list),
-            lGetList(week_entry, CA_daytime_range_list), tm, &is_end_of_the_day_reached);
+      *limit = compute_limit(in_wday_range, in_daytime_range,nullptr, ocs::tom::get<CA_wday_range_list>(week_entry),
+            ocs::tom::get<CA_daytime_range_list>(week_entry), tm, &is_end_of_the_day_reached);
 
       if (is_end_of_the_day_reached) {
          struct tm *tm_now;
@@ -527,11 +531,11 @@ static uint32_t is_year_entry_active(lListElem *tm, lListElem *year_entry, time_
    bool in_yday_range, in_daytime_range = false;
 
    /* compute state */
-   if ((in_yday_range=in_range_list(tm, lGetList(year_entry, CA_yday_range_list), tm_yday_cmp))
-     && (in_daytime_range=in_range_list(tm, lGetList(year_entry, CA_daytime_range_list), tm_daytime_cmp))) {
+   if ((in_yday_range=in_range_list(tm, ocs::tom::get<CA_yday_range_list>(year_entry), tm_yday_cmp))
+     && (in_daytime_range=in_range_list(tm, ocs::tom::get<CA_daytime_range_list>(year_entry), tm_daytime_cmp))) {
       DPRINTF("in_range_list(yday) = %d in_range_list(daytime) = %d state = %d\n",
-            in_yday_range, in_daytime_range, lGetUlong(year_entry, CA_state));
-      state = lGetUlong(year_entry, CA_state);
+            in_yday_range, in_daytime_range, ocs::tom::get<CA_state>(year_entry));
+      state = ocs::tom::get<CA_state>(year_entry);
    } else {
       DPRINTF("in_range_list(yday) = %d in_range_list(daytime) = %d\n", in_yday_range, in_daytime_range);
       state = in_daytime_range?QI_DO_ENABLE:0;
@@ -540,8 +544,8 @@ static uint32_t is_year_entry_active(lListElem *tm, lListElem *year_entry, time_
    if (limit) {
       bool is_end_of_the_day_reached = false;
 
-      *limit = compute_limit(in_yday_range, in_daytime_range, lGetList(year_entry, CA_yday_range_list), nullptr,
-            lGetList(year_entry, CA_daytime_range_list), tm, &is_end_of_the_day_reached);
+      *limit = compute_limit(in_yday_range, in_daytime_range, ocs::tom::get<CA_yday_range_list>(year_entry), nullptr,
+            ocs::tom::get<CA_daytime_range_list>(year_entry), tm, &is_end_of_the_day_reached);
 
       if (is_end_of_the_day_reached) {
          struct tm *tm_now;
@@ -669,15 +673,15 @@ uint32_t calender_state_changes(const lListElem *cep, lList **state_changes_list
    *state_changes_list = lCreateList("state_changes", CQU_Type);
    state_change = lCreateElem(CQU_Type);
 
-   lSetUlong(state_change, CQU_state, state0);
-   lSetUlong64(state_change,  CQU_till, *when64);
+   ocs::tom::set<CQU_state>(state_change, state0);
+   ocs::tom::set<CQU_till>(state_change, *when64);
    lAppendElem(*state_changes_list, state_change);
 
    /* extend queue state change list */
    if (*when64 != 0) {
       state_change = lCreateElem(CQU_Type);
-      lSetUlong(state_change,  CQU_state,state1);
-      lSetUlong64(state_change,  CQU_till, sge_time_t_to_gmt64(when1));
+      ocs::tom::set<CQU_state>(state_change,state1);
+      ocs::tom::set<CQU_till>(state_change, sge_time_t_to_gmt64(when1));
       lAppendElem(*state_changes_list, state_change);
    }
 
@@ -751,15 +755,15 @@ static time_t compute_limit(bool today, bool active, const lList *year_time, con
    time = lFirst(day_time);
 
    { /* should only be one entry in case that the calendar is valid for whole days*/
-      const lListElem *end = lFirst(lGetList(time, TMR_end));
-      const lListElem *begin = lFirst(lGetList(time, TMR_begin));
+      const lListElem *end = lFirst(ocs::tom::get<TMR_end>(time));
+      const lListElem *begin = lFirst(ocs::tom::get<TMR_begin>(time));
 
-      if ( (lGetUlong(end, TM_sec) == 0)   &&
-           (lGetUlong(end, TM_min) == 0)   &&
-           (lGetUlong(end, TM_hour) == 24) &&
-           (lGetUlong(begin, TM_sec) == 0) &&
-           (lGetUlong(begin, TM_min) == 0) &&
-           (lGetUlong(begin, TM_hour) == 0)) {
+      if ( (ocs::tom::get<TM_sec>(end) == 0)   &&
+           (ocs::tom::get<TM_min>(end) == 0)   &&
+           (ocs::tom::get<TM_hour>(end) == 24) &&
+           (ocs::tom::get<TM_sec>(begin) == 0) &&
+           (ocs::tom::get<TM_min>(begin) == 0) &&
+           (ocs::tom::get<TM_hour>(begin) == 0)) {
          is_full_day = true;
       }
    }
@@ -771,9 +775,9 @@ static time_t compute_limit(bool today, bool active, const lList *year_time, con
          if (year_time != nullptr) {
             for_each_ep(time, year_time) {
                if (in_range(now, time, tm_yday_cmp)) {
-                  lep = lCopyElem(lFirst(lGetList(time, TMR_end)));
+                  lep = lCopyElem(lFirst(ocs::tom::get<TMR_end>(time)));
                   if (lep == nullptr) {
-                      lep = lCopyElem(lFirst(lGetList(time, TMR_begin)));
+                      lep = lCopyElem(lFirst(ocs::tom::get<TMR_begin>(time)));
                   }
                   break;
                }
@@ -783,10 +787,10 @@ static time_t compute_limit(bool today, bool active, const lList *year_time, con
             bool is_allways_inactive = true;
 
             for_each_ep(time, week_time) {
-               const lList *endList = lGetList(time, TMR_end);
-               const lList *beginList = lGetList(time, TMR_begin);
+               const lList *endList = ocs::tom::get<TMR_end>(time);
+               const lList *beginList = ocs::tom::get<TMR_begin>(time);
                if (is_full_day && (endList != nullptr) && (beginList != nullptr)
-                   && (lGetUlong(lFirst(endList), TM_wday) - lGetUlong(lFirst(beginList), TM_wday) == 6)) {
+                   && (ocs::tom::get<TM_wday>(lFirst(endList)) - ocs::tom::get<TM_wday>(lFirst(beginList)) == 6)) {
                    is_allways_inactive &= true; /* the calendar is disabled for the whole week. */
                }
                else {
@@ -801,11 +805,11 @@ static time_t compute_limit(bool today, bool active, const lList *year_time, con
                      end = lFirst(beginList);
                   }
 
-                  day = lGetUlong(now, TM_mday);
+                  day = ocs::tom::get<TM_mday>(now);
 
-                  day += (lGetUlong(end, TM_wday) - lGetUlong(now, TM_wday));
+                  day += (ocs::tom::get<TM_wday>(end) - ocs::tom::get<TM_wday>(now));
                   lep = lCopyElem(now);
-                  lSetUlong(lep, TM_mday, day);
+                  ocs::tom::set<TM_mday>(lep, day);
                   break;
                }
             }
@@ -818,9 +822,9 @@ static time_t compute_limit(bool today, bool active, const lList *year_time, con
          else {
             DPRINTF("year_time and week_time calendar are set, this should not be. ");
          }
-         lSetUlong(lep, TM_sec, 59); /* we cannot have 24:0:0. That would be equal to 0:0:0 and therefor be the */
-         lSetUlong(lep, TM_min, 59); /* beginning of the day and not its end */
-         lSetUlong(lep, TM_hour, 23);
+         ocs::tom::set<TM_sec>(lep, 59); /* we cannot have 24:0:0. That would be equal to 0:0:0 and therefor be the */
+         ocs::tom::set<TM_min>(lep, 59); /* beginning of the day and not its end */
+         ocs::tom::set<TM_hour>(lep, 23);
          end_of_day=true;
       }
       else { /* a calendar is inactive */
@@ -828,7 +832,7 @@ static time_t compute_limit(bool today, bool active, const lList *year_time, con
 
          if (year_time != nullptr) {   /* year calenar */
             for_each_ep(time, year_time) {
-               begin = lFirst(lGetList(time, TMR_begin));
+               begin = lFirst(ocs::tom::get<TMR_begin>(time));
                if (tm_yday_cmp(now, begin) < 0 &&
                   (!lep || tm_yday_cmp(lep, begin) > 0)) {
                   lFreeElem(&lep);
@@ -842,7 +846,7 @@ static time_t compute_limit(bool today, bool active, const lList *year_time, con
          else if (week_time != nullptr) { /* week calendar */
             bool is_next_week = false;
             for_each_ep(time, week_time) {
-               begin = lFirst(lGetList(time, TMR_begin));
+               begin = lFirst(ocs::tom::get<TMR_begin>(time));
                if (tm_wday_cmp(now, begin) < 0 &&
                   (!lep || tm_wday_cmp(lep, begin) > 0)) {
                   lFreeElem(&lep);
@@ -852,7 +856,7 @@ static time_t compute_limit(bool today, bool active, const lList *year_time, con
             if (lep == nullptr) {
                is_next_week = true;
                for_each_ep(time, week_time) {
-                  begin = lFirst(lGetList(time, TMR_begin));
+                  begin = lFirst(ocs::tom::get<TMR_begin>(time));
                   if (!lep || tm_wday_cmp(lep, begin) > 0) {
                      lFreeElem(&lep);
                      lep = lCopyElem(begin);
@@ -860,15 +864,15 @@ static time_t compute_limit(bool today, bool active, const lList *year_time, con
                }
             }
             if (is_next_week) {
-               int days = lGetUlong(now, TM_mday);
-               days += (7 - lGetUlong(now, TM_wday)) + lGetUlong(lep, TM_wday);
-               lSetUlong(lep, TM_mday, days);
+               int days = ocs::tom::get<TM_mday>(now);
+               days += (7 - ocs::tom::get<TM_wday>(now)) + ocs::tom::get<TM_wday>(lep);
+               ocs::tom::set<TM_mday>(lep, days);
             }
             else {
-               lSetUlong(lep, TM_mday, lGetUlong(now, TM_mday) + (lGetUlong(lep, TM_wday) - lGetUlong(now, TM_wday)));
+               ocs::tom::set<TM_mday>(lep, ocs::tom::get<TM_mday>(now) + (ocs::tom::get<TM_wday>(lep) - ocs::tom::get<TM_wday>(now)));
             }
-            lSetUlong(lep, TM_mon, lGetUlong(now, TM_mon));
-            lSetUlong(lep, TM_year, lGetUlong(now, TM_year));
+            ocs::tom::set<TM_mon>(lep, ocs::tom::get<TM_mon>(now));
+            ocs::tom::set<TM_year>(lep, ocs::tom::get<TM_year>(now));
          }
          else {      /* error in the data structure. should not happen */
             DPRINTF("year_time and week_time calendar are not set");
@@ -876,7 +880,7 @@ static time_t compute_limit(bool today, bool active, const lList *year_time, con
       }
 
       if (lep != nullptr) { /* we do not know about summer or winter time, let the system choose */
-         lSetUlong(lep, TM_isdst, -1);
+         ocs::tom::set<TM_isdst>(lep, -1);
       }
 
       if (is_new_cal_entry) {
@@ -903,7 +907,7 @@ static time_t compute_limit(bool today, bool active, const lList *year_time, con
          /* seek end of active daytime range */
          for_each_ep(time, day_time) {
             if (in_range(new_now, time, tm_daytime_cmp)) {
-               lep = lCopyElem(lFirst(lGetList(time, TMR_end)));
+               lep = lCopyElem(lFirst(ocs::tom::get<TMR_end>(time)));
                break;
             }
          }
@@ -919,7 +923,7 @@ static time_t compute_limit(bool today, bool active, const lList *year_time, con
             in_range() includes both ends of a range - we would be inside of it and "active" would
             be set. */
          for_each_ep(time, day_time) {
-            begin = lFirst(lGetList(time, TMR_begin));
+            begin = lFirst(ocs::tom::get<TMR_begin>(time));
             if (tm_daytime_cmp(new_now, begin) <= 0 &&
                (!lep || tm_daytime_cmp(lep, begin) > 0)) {
                lFreeElem(&lep);
@@ -936,22 +940,22 @@ static time_t compute_limit(bool today, bool active, const lList *year_time, con
          DPRINTF("reached end of the day\n");
          *is_end_of_day_reached=true;
          lep = lCopyElem(new_now);
-         lSetUlong(lep, TM_hour, 24);
-         lSetUlong(lep, TM_min, 0);
-         lSetUlong(lep, TM_sec, 0);
+         ocs::tom::set<TM_hour>(lep, 24);
+         ocs::tom::set<TM_min>(lep, 0);
+         ocs::tom::set<TM_sec>(lep, 0);
       }
 
       /* convert from cull struct tm into time_t */
-      end_of_day = (lGetUlong(lep, TM_hour)==24) ? true : false;
+      end_of_day = (ocs::tom::get<TM_hour>(lep)==24) ? true : false;
       if (end_of_day) {
-         lSetUlong(lep, TM_hour, 23);
-         lSetUlong(lep, TM_min, 59);
-         lSetUlong(lep, TM_sec, 59);
+         ocs::tom::set<TM_hour>(lep, 23);
+         ocs::tom::set<TM_min>(lep, 59);
+         ocs::tom::set<TM_sec>(lep, 59);
       }
       uncullify_tm(new_now, &tm_limit);
-      tm_limit.tm_hour = lGetUlong(lep, TM_hour);
-      tm_limit.tm_min = lGetUlong(lep, TM_min);
-      tm_limit.tm_sec = lGetUlong(lep, TM_sec);
+      tm_limit.tm_hour = ocs::tom::get<TM_hour>(lep);
+      tm_limit.tm_min = ocs::tom::get<TM_min>(lep);
+      tm_limit.tm_sec = ocs::tom::get<TM_sec>(lep);
       lFreeElem(&lep);
       is_new_cal_entry = true;
    }
@@ -1002,13 +1006,13 @@ static int normalize_range_list(lList *rl, cmp_func_t cmp_func) {
 
    for_each_rw_lv(r, rl) {
 
-      r1 = lFirst(lGetList(r, TMR_begin));
-      r2 = lFirst(lGetList(r, TMR_end));
+      r1 = lFirst(ocs::tom::get<TMR_begin>(r));
+      r2 = lFirst(ocs::tom::get<TMR_end>(r));
 
       for (q = lNextRW(r); q; q = lNextRW(q)) {
 
-         q1 = lFirst(lGetList(q, TMR_begin));
-         q2 = lFirst(lGetList(q, TMR_end));
+         q1 = lFirst(ocs::tom::get<TMR_begin>(q));
+         q2 = lFirst(ocs::tom::get<TMR_end>(q));
 
          /* overlapping ranges ? */
          if (in_range(r1, q, cmp_func)         || /* r1 in q */
@@ -1042,12 +1046,12 @@ static int normalize_range_list(lList *rl, cmp_func_t cmp_func) {
             /* combine both overlapping ranges */
             /* r1 = min(r1, q1) */
             if (cmp_func(r1, q1) > 0) {
-               lSwapList(r, TMR_begin, q, TMR_begin);
+               ocs::tom::swap<TMR_begin, TMR_begin>(r, q);
             }
 
             /* r2 = max(r2, q2) */
             if ( (q2 && !r2) || cmp_func(r2, q2)<0) {
-               lSwapList(r, TMR_end, q, TMR_end);
+               ocs::tom::swap<TMR_end, TMR_end>(r, q);
             }
 
 /*             t1=lFirst(lGetList(r, TMR_begin)); */
@@ -1069,8 +1073,8 @@ static int normalize_range_list(lList *rl, cmp_func_t cmp_func) {
             q = r;
 
             /* r1, r2 are no longer valid after swapping */
-            r1 = lFirst(lGetList(r, TMR_begin));
-            r2 = lFirst(lGetList(r, TMR_end));
+            r1 = lFirst(ocs::tom::get<TMR_begin>(r));
+            r2 = lFirst(ocs::tom::get<TMR_end>(r));
          }
       }
    }
@@ -1107,8 +1111,8 @@ static int in_range(const lListElem *tm, const lListElem *r, cmp_func_t cmp_func
 
    const lListElem *t1, *t2;
 
-   t1 = lFirst(lGetList(r, TMR_begin));
-   t2 = lFirst(lGetList(r, TMR_end));
+   t1 = lFirst(ocs::tom::get<TMR_begin>(r));
+   t2 = lFirst(ocs::tom::get<TMR_end>(r));
 
    if (t2) {
       if (cmp_func(t1, tm)<=0 && cmp_func(tm, t2) <= 0) { /* mon-fri */
@@ -1241,12 +1245,12 @@ static int disabled_year_entry(lListElem **cal) {
 SUCCESS:
    if (cal) {
       *cal = lCreateElem(CA_Type);
-      lSetList(*cal, CA_yday_range_list, ydrl);
+      ocs::tom::set<CA_yday_range_list>(*cal, ydrl);
       if (!dtrl)
          full_daytime_range(&dtrl);
-      lSetList(*cal, CA_daytime_range_list, dtrl);
+      ocs::tom::set<CA_daytime_range_list>(*cal, dtrl);
       DPRINTF("state = %d\n", state);
-      lSetUlong(*cal, CA_state, state);
+      ocs::tom::set<CA_state>(*cal, state);
    }
 
    DRETURN(0);
@@ -1268,8 +1272,8 @@ static void full_daytime_range(lList **dtrl) {
 /*    DPRINTF("FULL_DAYTIME_RANGE\n"); */
 
    tmr = lCreateElem(TMR_Type);
-   lAddSubUlong(tmr, TM_hour, 0,  TMR_begin, TM_Type);
-   lAddSubUlong(tmr, TM_hour, 24, TMR_end,   TM_Type);
+   ocs::tom::emplace_back_in<TMR_begin, TM_hour>(tmr, 0);
+   ocs::tom::emplace_back_in<TMR_end, TM_hour>(tmr, 24);
 
    lAppendElem(*dtrl, tmr);
 
@@ -1287,8 +1291,8 @@ static void full_weekday_range(lList **dtrl) {
 /*    DPRINTF("FULL_WEEKDAY_RANGE\n"); */
 
    tmr = lCreateElem(TMR_Type);
-   lAddSubUlong(tmr, TM_wday, 0,  TMR_begin, TM_Type);
-   lAddSubUlong(tmr, TM_wday, 6, TMR_end,   TM_Type);
+   ocs::tom::emplace_back_in<TMR_begin, TM_wday>(tmr, 0);
+   ocs::tom::emplace_back_in<TMR_end, TM_wday>(tmr, 6);
 
    lAppendElem(*dtrl, tmr);
 
@@ -1356,13 +1360,13 @@ static int year_day_range(lListElem **tmr) {
       tmlp = lCreateList("tm_list", TM_Type);
       lAppendElem(tmlp, t1);
       t1 = nullptr;
-      lSetList(*tmr, TMR_begin, tmlp);
+      ocs::tom::set<TMR_begin>(*tmr, tmlp);
 
       if (t2) {
          tmlp = lCreateList("tm_list", TM_Type);
          lAppendElem(tmlp, t2);
          t2 = nullptr;
-         lSetList(*tmr, TMR_end, tmlp);
+         ocs::tom::set<TMR_end>(*tmr, tmlp);
       }
    }
 
@@ -1404,9 +1408,9 @@ static int year_day(lListElem **tm) {
 
    if (tm) {
       *tm = lCreateElem(TM_Type);
-      lSetUlong(*tm, TM_year, y - 1900);
-      lSetUlong(*tm, TM_mon, m);
-      lSetUlong(*tm, TM_mday, d);
+      ocs::tom::set<TM_year>(*tm, y - 1900);
+      ocs::tom::set<TM_mon>(*tm, m);
+      ocs::tom::set<TM_mday>(*tm, d);
    }
 
    DRETURN(0);
@@ -1517,46 +1521,46 @@ static void split_daytime_range(lList *dtrl, lListElem *tmr) {
    const lListElem *t2, *t1, *t3, *t4;
    lListElem *tmr2;
 
-   if ((t2=lFirst(lGetList(tmr, TMR_end)))) {
-      t1=lFirst(lGetList(tmr, TMR_begin));
+   if ((t2=lFirst(ocs::tom::get<TMR_end>(tmr)))) {
+      t1=lFirst(ocs::tom::get<TMR_begin>(tmr));
 
       if (tm_daytime_cmp(t1, t2)>0) {
          /* split it into two ranges */
          tmr2 = lCreateElem(TMR_Type);
-         lAddSubUlong(tmr2, TM_hour, 0, TMR_begin, TM_Type);
-         lAddSubUlong(tmr2, TM_hour, 24, TMR_end, TM_Type);
-         lSwapList(tmr, TMR_end, tmr2, TMR_end);
+         ocs::tom::emplace_back_in<TMR_begin, TM_hour>(tmr2, 0);
+         ocs::tom::emplace_back_in<TMR_end, TM_hour>(tmr2, 24);
+         ocs::tom::swap<TMR_end, TMR_end>(tmr, tmr2);
          lAppendElem(dtrl, tmr2);
 
-         t1=lFirst(lGetList(tmr, TMR_begin));
-         t2=lFirst(lGetList(tmr, TMR_end));
-         t3=lFirst(lGetList(tmr2, TMR_begin));
-         t4=lFirst(lGetList(tmr2, TMR_end));
+         t1=lFirst(ocs::tom::get<TMR_begin>(tmr));
+         t2=lFirst(ocs::tom::get<TMR_end>(tmr));
+         t3=lFirst(ocs::tom::get<TMR_begin>(tmr2));
+         t4=lFirst(ocs::tom::get<TMR_end>(tmr2));
 
          DPRINTF("splitted %d:%d:%d-%d:%d:%d into %d:%d:%d-%d:%d:%d and %d:%d:%d-%d:%d:%d\n",
-            lGetUlong(t1, TM_hour),
-            lGetUlong(t1, TM_min),
-            lGetUlong(t1, TM_sec),
+            ocs::tom::get<TM_hour>(t1),
+            ocs::tom::get<TM_min>(t1),
+            ocs::tom::get<TM_sec>(t1),
 
-            lGetUlong(t4, TM_hour),
-            lGetUlong(t4, TM_min),
-            lGetUlong(t4, TM_sec),
+            ocs::tom::get<TM_hour>(t4),
+            ocs::tom::get<TM_min>(t4),
+            ocs::tom::get<TM_sec>(t4),
 
-            lGetUlong(t1, TM_hour),
-            lGetUlong(t1, TM_min),
-            lGetUlong(t1, TM_sec),
+            ocs::tom::get<TM_hour>(t1),
+            ocs::tom::get<TM_min>(t1),
+            ocs::tom::get<TM_sec>(t1),
 
-            lGetUlong(t2, TM_hour),
-            lGetUlong(t2, TM_min),
-            lGetUlong(t2, TM_sec),
+            ocs::tom::get<TM_hour>(t2),
+            ocs::tom::get<TM_min>(t2),
+            ocs::tom::get<TM_sec>(t2),
 
-            lGetUlong(t3, TM_hour),
-            lGetUlong(t3, TM_min),
-            lGetUlong(t3, TM_sec),
+            ocs::tom::get<TM_hour>(t3),
+            ocs::tom::get<TM_min>(t3),
+            ocs::tom::get<TM_sec>(t3),
 
-            lGetUlong(t4, TM_hour),
-            lGetUlong(t4, TM_min),
-            lGetUlong(t4, TM_sec));
+            ocs::tom::get<TM_hour>(t4),
+            ocs::tom::get<TM_min>(t4),
+            ocs::tom::get<TM_sec>(t4));
       }
    }
 
@@ -1593,12 +1597,12 @@ static int daytime_range(lListElem **tmr) {
       tmlp = lCreateList("tm_list", TM_Type);
       lAppendElem(tmlp, t1);
       t1 = nullptr;
-      lSetList(*tmr, TMR_begin, tmlp);
+      ocs::tom::set<TMR_begin>(*tmr, tmlp);
 
       tmlp = lCreateList("tm_list", TM_Type);
       lAppendElem(tmlp, t2);
       t2 = nullptr;
-      lSetList(*tmr, TMR_end, tmlp);
+      ocs::tom::set<TMR_end>(*tmr, tmlp);
    }
 
    lFreeElem(&t1);
@@ -1649,9 +1653,9 @@ SUCCESS:
 
    if (tm) {
       *tm = lCreateElem(TM_Type);
-      lSetUlong(*tm, TM_hour, h);
-      lSetUlong(*tm, TM_min, m);
-      lSetUlong(*tm, TM_sec, s);
+      ocs::tom::set<TM_hour>(*tm, h);
+      ocs::tom::set<TM_min>(*tm, m);
+      ocs::tom::set<TM_sec>(*tm, s);
    }
 
    DRETURN(0);
@@ -1807,13 +1811,13 @@ SUCCESS:
          full_weekday_range(&wdrl);
       }
 
-      lSetList(*cal, CA_wday_range_list, wdrl);
+      ocs::tom::set<CA_wday_range_list>(*cal, wdrl);
 
       if (!dtrl) {
          full_daytime_range(&dtrl);
       }
-      lSetList(*cal, CA_daytime_range_list, dtrl);
-      lSetUlong(*cal, CA_state, state);
+      ocs::tom::set<CA_daytime_range_list>(*cal, dtrl);
+      ocs::tom::set<CA_state>(*cal, state);
    }
 
    DRETURN(0);
@@ -1886,12 +1890,12 @@ static void join_wday_range(lList *week_day) {
 
       next1 = lNextRW(next1);
 
-      beginList1 = lGetList(day_range1, TMR_begin);
-      endList1 = lGetList(day_range1, TMR_end);
+      beginList1 = ocs::tom::get<TMR_begin>(day_range1);
+      endList1 = ocs::tom::get<TMR_end>(day_range1);
 
-      begin1 = lGetUlong(lFirst(beginList1), TM_wday);
+      begin1 = ocs::tom::get<TM_wday>(lFirst(beginList1));
       if (endList1 != nullptr) {
-         end1 = lGetUlong(lFirst(endList1), TM_wday);
+         end1 = ocs::tom::get<TM_wday>(lFirst(endList1));
       }
       else {
          end1 = begin1;
@@ -1909,12 +1913,12 @@ static void join_wday_range(lList *week_day) {
             continue;
          }
 
-         beginList2 = lGetList(day_range2, TMR_begin);
-         endList2 = lGetList(day_range2, TMR_end);
+         beginList2 = ocs::tom::get<TMR_begin>(day_range2);
+         endList2 = ocs::tom::get<TMR_end>(day_range2);
 
-         begin2 = lGetUlong(lFirst(beginList2), TM_wday);
+         begin2 = ocs::tom::get<TM_wday>(lFirst(beginList2));
          if (endList2 != nullptr) {
-            end2 = lGetUlong(lFirst(endList2), TM_wday);
+            end2 = ocs::tom::get<TM_wday>(lFirst(endList2));
          }
          else {
             end2 = begin2;
@@ -1923,10 +1927,10 @@ static void join_wday_range(lList *week_day) {
          if (begin2 <= (end1 +1) && (begin1 <= begin2)) {
             if (end1 < end2) {
                if (endList1) {
-                  lSetUlong(lFirstRW(endList1), TM_wday, end2);
+                  ocs::tom::set<TM_wday>(lFirstRW(endList1), end2);
                }
                else {
-                  lSetList(day_range1, TMR_end, lCopyList("", endList2));
+                  ocs::tom::set<TMR_end>(day_range1, lCopyList("", endList2));
                }
             }
 
@@ -1967,12 +1971,12 @@ static void extend_wday_range(lList *week_day) {
 
       next1 = lNextRW(next1);
 
-      beginList1 = lGetList(day_range1, TMR_begin);
-      endList1 = lGetListRW(day_range1, TMR_end);
+      beginList1 = ocs::tom::get<TMR_begin>(day_range1);
+      endList1 = ocs::tom::get<TMR_end>(day_range1);
 
-      begin1 = lGetUlong(lFirst(beginList1), TM_wday);
+      begin1 = ocs::tom::get<TM_wday>(lFirst(beginList1));
       if (endList1 != nullptr) {
-         end1 = lGetUlong(lFirst(endList1), TM_wday);
+         end1 = ocs::tom::get<TM_wday>(lFirst(endList1));
       }
       else {
          end1 = begin1;
@@ -1991,12 +1995,12 @@ static void extend_wday_range(lList *week_day) {
             continue;
          }
 
-         beginList2 = lGetList(day_range2, TMR_begin);
-         endList2 = lGetList(day_range2, TMR_end);
+         beginList2 = ocs::tom::get<TMR_begin>(day_range2);
+         endList2 = ocs::tom::get<TMR_end>(day_range2);
 
-         begin2 = lGetUlong(lFirst(beginList2), TM_wday);
+         begin2 = ocs::tom::get<TM_wday>(lFirst(beginList2));
          if (endList2 != nullptr) {
-            end2 = lGetUlong(lFirst(endList2), TM_wday);
+            end2 = ocs::tom::get<TM_wday>(lFirst(endList2));
          }
          else {
             end2 = begin2;
@@ -2006,9 +2010,9 @@ static void extend_wday_range(lList *week_day) {
             int tempEnd = end1 + 1 + end2;
             if (endList1 == 0) {
                endList1 = lCopyList("",beginList1);
-               lSetList(day_range1, TMR_end, endList1);
+               ocs::tom::set<TMR_end>(day_range1, endList1);
             }
-            lSetUlong(lFirstRW(endList1), TM_wday, tempEnd);
+            ocs::tom::set<TM_wday>(lFirstRW(endList1), tempEnd);
          }
       }
    }
@@ -2021,19 +2025,19 @@ static void split_wday_range(lList *wdrl, lListElem *tmr) {
    const lListElem *t2, *t1; /* *t3, *t4, */
    lListElem *tmr2;
 
-   if ((t2=lFirst(lGetList(tmr, TMR_end)))) {
-      t1=lFirst(lGetList(tmr, TMR_begin));
+   if ((t2=lFirst(ocs::tom::get<TMR_end>(tmr)))) {
+      t1=lFirst(ocs::tom::get<TMR_begin>(tmr));
 
       if (tm_wday_cmp(t1, t2) > 0) {
          /* split it into two ranges */
          tmr2 = lCreateElem(TMR_Type);
-         lAddSubUlong(tmr2, TM_wday, 0, TMR_begin, TM_Type);
-         lAddSubUlong(tmr2, TM_wday, 6, TMR_end, TM_Type);
-         lSwapList(tmr, TMR_end, tmr2, TMR_end);
+         ocs::tom::emplace_back_in<TMR_begin, TM_wday>(tmr2, 0);
+         ocs::tom::emplace_back_in<TMR_end, TM_wday>(tmr2, 6);
+         ocs::tom::swap<TMR_end, TMR_end>(tmr, tmr2);
          lAppendElem(wdrl, tmr2);
 
-         t1=lFirst(lGetList(tmr, TMR_begin));
-         t2=lFirst(lGetList(tmr, TMR_end));
+         t1=lFirst(ocs::tom::get<TMR_begin>(tmr));
+         t2=lFirst(ocs::tom::get<TMR_end>(tmr));
 /*          t3=lFirst(lGetList(tmr2, TMR_begin)); */
 /*          t4=lFirst(lGetList(tmr2, TMR_end)); */
 
@@ -2084,13 +2088,13 @@ static int week_day_range(lListElem **tmr) {
       tmlp = lCreateList("tm_list", TM_Type);
       lAppendElem(tmlp, t1);
       t1 = nullptr;
-      lSetList(*tmr, TMR_begin, tmlp);
+      ocs::tom::set<TMR_begin>(*tmr, tmlp);
 
       if (t2) {
          tmlp = lCreateList("tm_list", TM_Type);
          lAppendElem(tmlp, t2);
          t2 = nullptr;
-         lSetList(*tmr, TMR_end, tmlp);
+         ocs::tom::set<TMR_end>(*tmr, tmlp);
       }
    }
    lFreeElem(&t1);
@@ -2134,7 +2138,7 @@ static int week_day(lListElem **tm) {
 
    if (tm) {
       *tm = lCreateElem(TM_Type);
-      lSetUlong(*tm, TM_wday, wday);
+      ocs::tom::set<TM_wday>(*tm, wday);
    }
 
    DRETURN(0);
@@ -2295,27 +2299,27 @@ static int tm_yday_cmp(const lListElem *t1, const lListElem *t2) {
       lGetUlong(t2, TM_mon),
       lGetUlong(t2, TM_mday))); */
 
-   if ((t=(lGetUlong(t1, TM_year) - lGetUlong(t2, TM_year))))
+   if ((t=(ocs::tom::get<TM_year>(t1) - ocs::tom::get<TM_year>(t2))))
       return t;
-   if ((t=(lGetUlong(t1, TM_mon) - lGetUlong(t2, TM_mon))))
+   if ((t=(ocs::tom::get<TM_mon>(t1) - ocs::tom::get<TM_mon>(t2))))
       return t;
-   return lGetUlong(t1, TM_mday) - lGetUlong(t2, TM_mday);
+   return ocs::tom::get<TM_mday>(t1) - ocs::tom::get<TM_mday>(t2);
 }
 
 static int tm_wday_cmp(const lListElem *t1, const lListElem *t2) {
-   return lGetUlong(t1, TM_wday) - lGetUlong(t2, TM_wday);
+   return ocs::tom::get<TM_wday>(t1) - ocs::tom::get<TM_wday>(t2);
 }
 
 static int tm_daytime_cmp(const lListElem *t1, const lListElem *t2) {
    int t;
 
-   if ((t=(lGetUlong(t1, TM_hour) - lGetUlong(t2, TM_hour)))) {
+   if ((t=(ocs::tom::get<TM_hour>(t1) - ocs::tom::get<TM_hour>(t2)))) {
       return t;
    }
-   if ((t=(lGetUlong(t1, TM_min) - lGetUlong(t2, TM_min)))) {
+   if ((t=(ocs::tom::get<TM_min>(t1) - ocs::tom::get<TM_min>(t2)))) {
       return t;
    }
-   return lGetUlong(t1, TM_sec) - lGetUlong(t2, TM_sec);
+   return ocs::tom::get<TM_sec>(t1) - ocs::tom::get<TM_sec>(t2);
 }
 
 /**
@@ -2328,15 +2332,15 @@ static int tm_daytime_cmp(const lListElem *t1, const lListElem *t2) {
  * @param tm_now the time to copy
  */
 void cullify_tm(lListElem *tm_ep, struct tm *tm_now) {
-   lSetUlong(tm_ep, TM_mday,  tm_now->tm_mday);
-   lSetUlong(tm_ep, TM_mon,   tm_now->tm_mon);
-   lSetUlong(tm_ep, TM_year,  tm_now->tm_year);
-   lSetUlong(tm_ep, TM_sec,   tm_now->tm_sec);
-   lSetUlong(tm_ep, TM_min,   tm_now->tm_min);
-   lSetUlong(tm_ep, TM_hour,  tm_now->tm_hour);
-   lSetUlong(tm_ep, TM_wday,  tm_now->tm_wday);
-   lSetUlong(tm_ep, TM_yday,  tm_now->tm_yday);
-   lSetUlong(tm_ep, TM_isdst, tm_now->tm_isdst);
+   ocs::tom::set<TM_mday>(tm_ep,  tm_now->tm_mday);
+   ocs::tom::set<TM_mon>(tm_ep,   tm_now->tm_mon);
+   ocs::tom::set<TM_year>(tm_ep,  tm_now->tm_year);
+   ocs::tom::set<TM_sec>(tm_ep,   tm_now->tm_sec);
+   ocs::tom::set<TM_min>(tm_ep,   tm_now->tm_min);
+   ocs::tom::set<TM_hour>(tm_ep,  tm_now->tm_hour);
+   ocs::tom::set<TM_wday>(tm_ep,  tm_now->tm_wday);
+   ocs::tom::set<TM_yday>(tm_ep,  tm_now->tm_yday);
+   ocs::tom::set<TM_isdst>(tm_ep, tm_now->tm_isdst);
 }
 
 /**
@@ -2346,15 +2350,15 @@ void cullify_tm(lListElem *tm_ep, struct tm *tm_now) {
  * @param[out] tm_now the structure to fill
  */
 void uncullify_tm(const lListElem *tm_ep, struct tm *tm_now) {
-   tm_now->tm_mday =  lGetUlong(tm_ep, TM_mday);
-   tm_now->tm_mon  =  lGetUlong(tm_ep, TM_mon);
-   tm_now->tm_year =  lGetUlong(tm_ep, TM_year);
-   tm_now->tm_sec  =  lGetUlong(tm_ep, TM_sec);
-   tm_now->tm_min  =  lGetUlong(tm_ep, TM_min);
-   tm_now->tm_hour =  lGetUlong(tm_ep, TM_hour);
-   tm_now->tm_wday =  lGetUlong(tm_ep, TM_wday);
-   tm_now->tm_yday =  lGetUlong(tm_ep, TM_yday);
-   tm_now->tm_isdst = lGetUlong(tm_ep, TM_isdst);
+   tm_now->tm_mday =  ocs::tom::get<TM_mday>(tm_ep);
+   tm_now->tm_mon  =  ocs::tom::get<TM_mon>(tm_ep);
+   tm_now->tm_year =  ocs::tom::get<TM_year>(tm_ep);
+   tm_now->tm_sec  =  ocs::tom::get<TM_sec>(tm_ep);
+   tm_now->tm_min  =  ocs::tom::get<TM_min>(tm_ep);
+   tm_now->tm_hour =  ocs::tom::get<TM_hour>(tm_ep);
+   tm_now->tm_wday =  ocs::tom::get<TM_wday>(tm_ep);
+   tm_now->tm_yday =  ocs::tom::get<TM_yday>(tm_ep);
+   tm_now->tm_isdst = ocs::tom::get<TM_isdst>(tm_ep);
 }
 
 /**
@@ -2370,11 +2374,11 @@ bool calendar_parse_year(lListElem *cal, lList **answer_list) {
    bool ret = true;
    lList *yc = nullptr;
 
-   if (disabled_year_list(answer_list, lGetString(cal, CAL_year_calendar),
-                          &yc, lGetString(cal, CAL_name))) {
+   if (disabled_year_list(answer_list, ocs::tom::get<CAL_year_calendar>(cal),
+                          &yc, ocs::tom::get<CAL_name>(cal))) {
       ret = false;
    } else {
-      lXchgList(cal, CAL_parsed_year_calendar, &yc);
+      ocs::tom::exchange<CAL_parsed_year_calendar>(cal, &yc);
       lFreeList(&yc);
    }
 
@@ -2394,11 +2398,11 @@ bool calendar_parse_week(lListElem *cal, lList **answer_list) {
    bool ret = true;
    lList *wc = nullptr;
 
-   if (disabled_week_list(answer_list, lGetString(cal, CAL_week_calendar),
-            &wc, lGetString(cal, CAL_name))) {
+   if (disabled_week_list(answer_list, ocs::tom::get<CAL_week_calendar>(cal),
+            &wc, ocs::tom::get<CAL_name>(cal))) {
       ret = false;
    } else {
-      lXchgList(cal, CAL_parsed_week_calendar, &wc);
+      ocs::tom::exchange<CAL_parsed_week_calendar>(cal, &wc);
       lFreeList(&wc);
    }
    DRETURN(ret);
@@ -2425,11 +2429,11 @@ static uint32_t calendar_get_current_state_and_end(const lListElem *cep, time_t 
    const lList *year_list = nullptr;
    const lList *week_list = nullptr;
 
-   DPRINTF("cal: %s\n", lGetString(cep, CAL_name));
+   DPRINTF("cal: %s\n", ocs::tom::get<CAL_name>(cep));
 
    if (cep != nullptr) {
-      year_list = lGetList(cep, CAL_parsed_year_calendar);
-      week_list = lGetList(cep, CAL_parsed_week_calendar);
+      year_list = ocs::tom::get<CAL_parsed_year_calendar>(cep);
+      week_list = ocs::tom::get<CAL_parsed_week_calendar>(cep);
    }
 
    if (now == nullptr) {
@@ -2472,17 +2476,17 @@ bool calendar_is_referenced(const lListElem *calendar, lList **answer_list,
     * fix for bug 6422335
     * check the cq configuration for calendar references instead of qinstances
     */
-   const char *calendar_name = lGetString(calendar, CAL_name);
+   const char *calendar_name = ocs::tom::get<CAL_name>(calendar);
    if (calendar_name != nullptr) {
       for_each_ep(cqueue, master_cqueue_list) {
-         for_each_ep(cal, lGetList(cqueue, CQ_calendar)) {
-            const char *qcal_name = lGetString(cal, ASTR_value);
+         for_each_ep(cal, ocs::tom::get<CQ_calendar>(cqueue)) {
+            const char *qcal_name = ocs::tom::get<ASTR_value>(cal);
             if (qcal_name && !strcmp(qcal_name, calendar_name)) {
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
                                        ANSWER_QUALITY_INFO,
                                        MSG_CALENDAR_REFINQUEUE_SS,
                                        calendar_name,
-                                       lGetString(cqueue, CQ_name));
+                                       ocs::tom::get<CQ_name>(cqueue));
                ret = true;
                break;
             }
@@ -2513,7 +2517,7 @@ lListElem* sge_generic_cal(char *cal_name) {
 
    calp = lCreateElem(CAL_Type);
 
-   lSetString(calp, CAL_name, cal_name?cal_name:"template");
+   ocs::tom::set<CAL_name>(calp, cal_name?cal_name:"template");
 
    DRETURN(calp);
 }
@@ -2544,8 +2548,8 @@ bool calendar_open_in_time_frame(const lListElem *cep, uint64_t start_time, uint
    time_t end = sge_gmt64_to_time_t(duration_add_offset(start_time, duration));
 
    if (cep != nullptr) {
-      year_list = lGetList(cep, CAL_parsed_year_calendar);
-      week_list = lGetList(cep, CAL_parsed_week_calendar);
+      year_list = ocs::tom::get<CAL_parsed_year_calendar>(cep);
+      week_list = ocs::tom::get<CAL_parsed_week_calendar>(cep);
    }
 
    state = state_at(start, year_list, week_list, &next_change);

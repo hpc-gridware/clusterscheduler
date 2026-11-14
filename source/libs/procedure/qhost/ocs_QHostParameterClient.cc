@@ -38,6 +38,7 @@
 #include "sgeobj/sge_host.h"
 #include "sgeobj/sge_str.h"
 #include "sgeobj/parse.h"
+#include "tom/ocs_Element.h"
 
 
 #include "ocs_client_parse.h"
@@ -191,7 +192,7 @@ ocs::QHostParameterClient::parse_switch_list(lList **ppcmdline, lList **alpp) {
          for_each_rw_lv(ep, hostname_list_) {
             if (sge_resolve_host(ep, ST_name) != CL_RETVAL_OK) {
                char buf[BUFSIZ];
-               snprintf(buf, sizeof(buf), MSG_SGETEXT_CANTRESOLVEHOST_S, lGetString(ep,ST_name) );
+               snprintf(buf, sizeof(buf), MSG_SGETEXT_CANTRESOLVEHOST_S, ocs::tom::get<ST_name>(ep) );
                answer_list_add(alpp, buf, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
                goto error;
             }
@@ -319,7 +320,7 @@ bool ocs::QHostParameterClient::parse_parameters(lList **alpp, char **argv, char
    for_each_ep_lv(switch_cmd, switches_cmd_line) {
       lListElem *switch_default = nullptr;
 
-      while ((switch_default = lGetElemStrRW(switches_default_files, SPA_switch_val, lGetString(switch_cmd, SPA_switch_val))) != nullptr) {
+      while ((switch_default = ocs::tom::find_first_rw<SPA_switch_val>(switches_default_files, ocs::tom::get<SPA_switch_val>(switch_cmd))) != nullptr) {
          lRemoveElem(switches_default_files, &switch_default);
       }
    }

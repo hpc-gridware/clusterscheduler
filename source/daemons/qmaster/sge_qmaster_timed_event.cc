@@ -51,6 +51,7 @@
 #include "cull/cull.h"
 
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "tom/ocs_Element.h"
 
 #include "sge_qmaster_timed_event.h"
 
@@ -392,20 +393,20 @@ te_add_event(te_event_t anEvent) {
    uint64_t when = (ONE_TIME_EVENT == anEvent->mode) ? anEvent->when : (sge_get_gmt64() + anEvent->interval);
 
    le = lCreateElem(TE_Type);
-   lSetUlong64(le, TE_when, when);
-   lSetUlong(le, TE_type, anEvent->type);
-   lSetUlong(le, TE_mode, anEvent->mode);
-   lSetUlong64(le, TE_interval, anEvent->interval);
-   lSetUlong(le, TE_uval0, anEvent->ulong_key_1);
-   lSetUlong(le, TE_uval1, anEvent->ulong_key_2);
-   lSetString(le, TE_sval, anEvent->str_key);
+   ocs::tom::set<TE_when>(le, when);
+   ocs::tom::set<TE_type>(le, anEvent->type);
+   ocs::tom::set<TE_mode>(le, anEvent->mode);
+   ocs::tom::set<TE_interval>(le, anEvent->interval);
+   ocs::tom::set<TE_uval0>(le, anEvent->ulong_key_1);
+   ocs::tom::set<TE_uval1>(le, anEvent->ulong_key_2);
+   ocs::tom::set<TE_sval>(le, anEvent->str_key);
 
    DPRINTF("%s: (t:" sge_u32" w:" sge_u64" m:" sge_u32" s:%s)\n", __func__, static_cast<uint32_t>(anEvent->type),
            when, static_cast<uint32_t>(anEvent->mode), anEvent->str_key ? anEvent->str_key : MSG_SMALLNULL);
 
    sge_mutex_lock("event_control_mutex", __func__, __LINE__, &Event_Control.mutex);
 
-   lSetUlong(le, TE_seqno, Event_Control.seq_no++);
+   ocs::tom::set<TE_seqno>(le, Event_Control.seq_no++);
 
    if (lInsertSorted(Event_Control.sort_order, le, Event_Control.list) != 0) {
       // the event is lost here - without this message nothing would ever tell that the timer
@@ -672,7 +673,7 @@ void te_check_time(uint64_t aTime) {
       WARNING(MSG_SYSTEM_SYSTEMHASBEENMODIFIEDXSECONDS_I, (int) sge_gmt64_to_gmt32(delta));
 
       for_each_rw (le, Event_Control.list) {
-         lSetUlong64(le, TE_when, (lGetUlong64(le, TE_when) - delta));
+         ocs::tom::set<TE_when>(le, (ocs::tom::get<TE_when>(le) - delta));
       }
 
       Event_Control.last = aTime;
@@ -704,15 +705,15 @@ te_event_t te_event_from_list_elem(const lListElem *aListElem) {
 
    ev = (te_event_t) sge_malloc(sizeof(struct te_event));
 
-   ev->when = lGetUlong64(aListElem, TE_when);
-   ev->interval = lGetUlong64(aListElem, TE_interval);
-   ev->type = (te_type_t) lGetUlong(aListElem, TE_type);
-   ev->mode = (te_mode_t) lGetUlong(aListElem, TE_mode);
-   ev->ulong_key_1 = lGetUlong(aListElem, TE_uval0);
-   ev->ulong_key_2 = lGetUlong(aListElem, TE_uval1);
-   ev->seq_no = lGetUlong(aListElem, TE_seqno);
+   ev->when = ocs::tom::get<TE_when>(aListElem);
+   ev->interval = ocs::tom::get<TE_interval>(aListElem);
+   ev->type = (te_type_t) ocs::tom::get<TE_type>(aListElem);
+   ev->mode = (te_mode_t) ocs::tom::get<TE_mode>(aListElem);
+   ev->ulong_key_1 = ocs::tom::get<TE_uval0>(aListElem);
+   ev->ulong_key_2 = ocs::tom::get<TE_uval1>(aListElem);
+   ev->seq_no = ocs::tom::get<TE_seqno>(aListElem);
 
-   str = lGetString(aListElem, TE_sval);
+   str = ocs::tom::get<TE_sval>(aListElem);
    ev->str_key = ((str != nullptr) ? strdup(str) : nullptr);
 
    DRETURN(ev);

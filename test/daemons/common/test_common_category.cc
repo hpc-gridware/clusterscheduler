@@ -42,6 +42,7 @@
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_range.h"
+#include "tom/ocs_Element.h"
 
 /** @brief One row of the category test table
  *
@@ -136,14 +137,14 @@ static lList *test_create_access() {
             lListElem *acc_elem = lCreateElem(US_Type);
             if (acc_elem != nullptr) {
                lList *users = lCreateList("user", UE_Type);
-               lSetString(acc_elem, US_name, access_str);
-               lSetList(acc_elem, US_entries, users);
-               lSetBool(acc_elem, US_consider_with_categories, true);
+               ocs::tom::set<US_name>(acc_elem, access_str);
+               ocs::tom::set<US_entries>(acc_elem, users);
+               ocs::tom::set<US_consider_with_categories>(acc_elem, true);
                lAppendElem(access_list, acc_elem);
 
                for (access_str = strtok_r(nullptr, " ", &iter_dash); access_str; access_str = strtok_r(nullptr, " ", &iter_dash)) {
                   lListElem *user = lCreateElem(UE_Type);
-                  lSetString(user, UE_name, access_str);
+                  ocs::tom::set<UE_name>(user, access_str);
                   lAppendElem(users, user);
                }
             }
@@ -157,30 +158,30 @@ static lList *test_create_access() {
 
 static lList *test_create_project(const char *project) {
    lList *project_list = nullptr;
-   lListElem *prj = lAddElemStr(&project_list, PR_name, project, PR_Type);
-   lSetBool(prj, PR_consider_with_categories, true);
+   lListElem *prj = ocs::tom::emplace_back<PR_name>(&project_list, project);
+   ocs::tom::set<PR_consider_with_categories>(prj, true);
    return project_list;
 }
 
 static lList *test_create_rqs() {
    lList *rqs_list = lCreateList("my_rqs", RQS_Type);
    lListElem *rqs = lCreateElem(RQS_Type);
-   lSetString(rqs, RQS_name, "Test_Name1");
-   lSetBool(rqs, RQS_enabled, true);
+   ocs::tom::set<RQS_name>(rqs, "Test_Name1");
+   ocs::tom::set<RQS_enabled>(rqs, true);
    lList *rule_list = lCreateList("Rule_List", RQR_Type);
    lListElem *rule = lCreateElem(RQR_Type);
    lListElem *filter = lCreateElem(RQRF_Type);
-   lSetBool(filter, RQRF_expand, true);
-   lAddSubStr(filter, ST_name, "rqs_user", RQRF_scope, ST_Type);
-   lSetObject(rule, RQR_filter_users, filter);
+   ocs::tom::set<RQRF_expand>(filter, true);
+   ocs::tom::emplace_back_in<RQRF_scope, ST_name>(filter, "rqs_user");
+   ocs::tom::set<RQR_filter_users>(rule, filter);
    lList *limit_list = lCreateList("limit_list", RQRL_Type);
    lListElem *limit = lCreateElem(RQRL_Type);
-   lSetString(limit, RQRL_name, "slots");
-   lSetString(limit, RQRL_value, "2*$num_proc");
+   ocs::tom::set<RQRL_name>(limit, "slots");
+   ocs::tom::set<RQRL_value>(limit, "2*$num_proc");
    lAppendElem(limit_list, limit);
-   lSetList(rule, RQR_limit, limit_list);
+   ocs::tom::set<RQR_limit>(rule, limit_list);
    lAppendElem(rule_list, rule);
-   lSetList(rqs, RQS_rule, rule_list);
+   ocs::tom::set<RQS_rule>(rqs, rule_list);
    lAppendElem(rqs_list, rqs);
    return rqs_list;
 }
@@ -195,8 +196,8 @@ static lList *test_create_request(const char *requestStr, const int count) {
          for (const char *request_str = strtok_r(request_cp, " ", &iter_dash); request_str; request_str = strtok_r(nullptr, " ", &iter_dash)) {
             lListElem *request = lCreateElem(CE_Type);
             if (request != nullptr) {
-               lSetString(request, CE_name, request_str);
-               lSetString(request, CE_stringval, strtok_r(nullptr, " ", &iter_dash));
+               ocs::tom::set<CE_name>(request, request_str);
+               ocs::tom::set<CE_stringval>(request, strtok_r(nullptr, " ", &iter_dash));
             } else {
                lFreeList(&requests);
                goto end;
@@ -222,7 +223,7 @@ static lList *test_create_queue(const char *queueStr, const int count) {
          for (const char *queues_str = strtok_r(queue_cp, " ", &iter_dash); queues_str; queues_str = strtok_r(nullptr, " ", &iter_dash)) {
             lListElem *queue = lCreateElem(QR_Type);
             if (queue != nullptr) {
-               lSetString(queue, QR_name, queues_str);
+               ocs::tom::set<QR_name>(queue, queues_str);
             } else {
                lFreeList(&queues);
                goto end;
@@ -243,14 +244,14 @@ static void test_create_pe(const char *peStr, lListElem *job_elem) {
    char *iter_dash = nullptr;
 
    for (const char *pe_str = strtok_r(pe_cp, " ", &iter_dash); pe_str; pe_str = strtok_r(nullptr, " ", &iter_dash)) {
-      lSetString(job_elem, JB_pe, pe_str);
+      ocs::tom::set<JB_pe>(job_elem, pe_str);
       pe_str = strtok_r(nullptr, " ", &iter_dash);
       lList *range = nullptr;
       range_list_parse_from_string(&range, nullptr, pe_str, false, false, INF_ALLOWED);
       if (range != nullptr) {
-         lSetList(job_elem, JB_pe_range, range);
+         ocs::tom::set<JB_pe_range>(job_elem, range);
       } else {
-         lSetString(job_elem, JB_pe, nullptr);
+         ocs::tom::set<JB_pe>(job_elem, nullptr);
          printf("error generating pe object: %s\n", peStr);
       }
    }
@@ -261,7 +262,7 @@ static void test_create_groups(const char *groupStr, lListElem *job_elem) {
    char *cp = strdup(groupStr);
    char *iter_dash = nullptr;
    for (const char *s = strtok_r(cp, " ", &iter_dash); s; s = strtok_r(nullptr, " ", &iter_dash)) {
-      lAddSubStr(job_elem, ST_name, s, JB_grp_list, ST_Type);
+      ocs::tom::emplace_back_in<JB_grp_list, ST_name>(job_elem, s);
    }
    sge_free(&cp);
 }
@@ -270,19 +271,19 @@ static lListElem *test_create_job(const data_entry_t *test, const int count) {
    lListElem *job = lCreateElem(JB_Type);
 
    if (job != nullptr) {
-      lSetUlong(job, JB_type, test->type);
+      ocs::tom::set<JB_type>(job, test->type);
 
       if (test->project != nullptr) {
-         lSetString(job, JB_project, test->project);
+         ocs::tom::set<JB_project>(job, test->project);
       }
       if (test->owner != nullptr) {
-         lSetString(job, JB_owner, test->owner);
+         ocs::tom::set<JB_owner>(job, test->owner);
       }
       if (test->group != nullptr) {
-         lSetString(job, JB_group, test->group);
+         ocs::tom::set<JB_group>(job, test->group);
       }
       if (test->ckpt != nullptr) {
-         lSetString(job, JB_checkpoint_name, test->ckpt);
+         ocs::tom::set<JB_checkpoint_name>(job, test->ckpt);
       }
       if (test->g_h_r != nullptr) {
          if (lList *requests = test_create_request(test->g_h_r, count); requests != nullptr) {
@@ -387,10 +388,10 @@ static bool run_test(const data_entry_t *t, const char *expected) {
 static std::string build_mem_cat(const char *val) {
    lList *req = lCreateList("r", CE_Type);
    lListElem *e = lCreateElem(CE_Type);
-   lSetString(e, CE_name, "mem_free");
-   lSetString(e, CE_stringval, val);
-   lSetUlong(e, CE_valtype, static_cast<uint32_t>(ocs::CEntry::Type::MEM));
-   lSetUlong(e, CE_consumable, CONSUMABLE_NO);
+   ocs::tom::set<CE_name>(e, "mem_free");
+   ocs::tom::set<CE_stringval>(e, val);
+   ocs::tom::set<CE_valtype>(e, static_cast<uint32_t>(ocs::CEntry::Type::MEM));
+   ocs::tom::set<CE_consumable>(e, CONSUMABLE_NO);
    lAppendElem(req, e);
    lList *al = nullptr;
    centry_fill_and_check(e, &al, false, false);

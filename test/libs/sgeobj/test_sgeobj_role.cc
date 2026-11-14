@@ -29,6 +29,7 @@
 
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/ocs_Role.h"
+#include "tom/ocs_Element.h"
 
 // ---------------------------------------------------------------------------
 // Test infrastructure
@@ -77,9 +78,9 @@ static void restore_stderr(int saved) {
 
 static lListElem *make_userset(const char *name, std::initializer_list<const char *> members) {
    lListElem *us = lCreateElem(US_Type);
-   lSetString(us, US_name, name);
+   ocs::tom::set<US_name>(us, name);
    for (const char *m : members) {
-      lAddSubStr(us, UE_name, m, US_entries, UE_Type);
+      ocs::tom::emplace_back_in<US_entries, UE_name>(us, m);
    }
    return us;
 }
@@ -88,14 +89,14 @@ static lListElem *make_role(const char *name, bool enabled, const char *perm_lis
                              std::initializer_list<const char *> parents,
                              std::initializer_list<const char *> usersets) {
    lListElem *role = lCreateElem(RL_Type);
-   lSetString(role, RL_name, name);
-   lSetBool(role, RL_enabled, enabled);
-   lSetString(role, RL_perm_list, perm_list);
+   ocs::tom::set<RL_name>(role, name);
+   ocs::tom::set<RL_enabled>(role, enabled);
+   ocs::tom::set<RL_perm_list>(role, perm_list);
    for (const char *p : parents) {
-      lAddSubStr(role, ST_name, p, RL_parent_role_list, ST_Type);
+      ocs::tom::emplace_back_in<RL_parent_role_list, ST_name>(role, p);
    }
    for (const char *u : usersets) {
-      lAddSubStr(role, US_name, u, RL_user_list, US_Type);
+      ocs::tom::emplace_back_in<RL_user_list, US_name>(role, u);
    }
    return role;
 }

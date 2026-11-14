@@ -39,6 +39,14 @@
 #include "sgeobj/sge_report.h"
 #include "sgeobj/sge_ulong.h"
 #include "sgeobj/sge_var.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_CE.h"
+#include "sgeobj/tom/ocs_tom_CX.h"
+#include "sgeobj/tom/ocs_tom_JAT.h"
+#include "sgeobj/tom/ocs_tom_QR.h"
+#include "sgeobj/tom/ocs_tom_UA.h"
+#include "sgeobj/tom/ocs_tom_UE.h"
+#include "sgeobj/tom/ocs_tom_VA.h"
 #include "tom/ocs_ElementCore.h"
 
 #include "ocs_module_test.h"
@@ -51,7 +59,7 @@
  */
 static bool
 answer_contains(const lList *answer_list, const char *text) {
-   const char *answer = lGetString(lFirst(answer_list), AN_text);
+   const char *answer = ocs::tom::get<AN_text>(lFirst(answer_list));
    return answer != nullptr && strstr(answer, text) != nullptr;
 }
 
@@ -67,11 +75,11 @@ test_flat_lists() {
    lList *answer_list = nullptr;
 
    lList *vars = nullptr;
-   lAddElemStr(&vars, VA_variable, "A", VA_Type);
-   lAddElemStr(&vars, VA_variable, "B", VA_Type);
+   ocs::tom::emplace_back<VA_variable>(&vars, "A");
+   ocs::tom::emplace_back<VA_variable>(&vars, "B");
    CHECK(1, "distinct string keys pass", ocs_object_list_verify_unique_keys(vars, &answer_list, "test"));
 
-   lAddElemStr(&vars, VA_variable, "A", VA_Type);
+   ocs::tom::emplace_back<VA_variable>(&vars, "A");
    const bool rejected = !ocs_object_list_verify_unique_keys(vars, &answer_list, "test");
    CHECK(2, "a repeated string key is rejected, naming the key and the attribute",
          rejected && answer_contains(answer_list, "\"A\"") && answer_contains(answer_list, "VA_variable"));
@@ -85,10 +93,10 @@ test_flat_lists() {
    lFreeList(&no_keys);
 
    lList *hosts = nullptr;
-   lAddElemHost(&hosts, HR_name, "h1", HR_Type);
-   lAddElemHost(&hosts, HR_name, "h2", HR_Type);
+   ocs::tom::emplace_back<HR_name>(&hosts, "h1");
+   ocs::tom::emplace_back<HR_name>(&hosts, "h2");
    const bool distinct_hosts = ocs_object_list_verify_unique_keys(hosts, &answer_list, "test");
-   lAddElemHost(&hosts, HR_name, "H1", HR_Type);
+   ocs::tom::emplace_back<HR_name>(&hosts, "H1");
    CHECK(4, "host keys compare like the hash table of the list: H1 repeats h1, named as it is given",
          distinct_hosts && !ocs_object_list_verify_unique_keys(hosts, &answer_list, "test") &&
          answer_contains(answer_list, "\"H1\""));
@@ -96,10 +104,10 @@ test_flat_lists() {
    lFreeList(&hosts);
 
    lList *ulongs = nullptr;
-   lAddElemUlong(&ulongs, ULNG_value, 1, ULNG_Type);
-   lAddElemUlong(&ulongs, ULNG_value, 2, ULNG_Type);
+   ocs::tom::emplace_back<ULNG_value>(&ulongs, 1);
+   ocs::tom::emplace_back<ULNG_value>(&ulongs, 2);
    const bool distinct = ocs_object_list_verify_unique_keys(ulongs, &answer_list, "test");
-   lAddElemUlong(&ulongs, ULNG_value, 1, ULNG_Type);
+   ocs::tom::emplace_back<ULNG_value>(&ulongs, 1);
    CHECK(5, "a repeated ulong key is rejected",
          distinct && !ocs_object_list_verify_unique_keys(ulongs, &answer_list, "test"));
    lFreeList(&answer_list);
@@ -118,13 +126,13 @@ test_nested() {
    lList *answer_list = nullptr;
    lListElem *job = lCreateElem(JB_Type);
    lList *env = nullptr;
-   lAddElemStr(&env, VA_variable, "A", VA_Type);
-   lAddElemStr(&env, VA_variable, "B", VA_Type);
-   lSetList(job, JB_env_list, env);
+   ocs::tom::emplace_back<VA_variable>(&env, "A");
+   ocs::tom::emplace_back<VA_variable>(&env, "B");
+   ocs::tom::set<JB_env_list>(job, env);
    CHECK(6, "a job with distinct variables passes", ocs_object_verify_unique_keys(job, &answer_list, "job 1"));
 
-   lList *job_env = lGetListRW(job, JB_env_list);
-   lAddElemStr(&job_env, VA_variable, "B", VA_Type);
+   lList *job_env = ocs::tom::get<JB_env_list>(job);
+   ocs::tom::emplace_back<VA_variable>(&job_env, "B");
    const bool rejected = !ocs_object_verify_unique_keys(job, &answer_list, "job 1");
    CHECK(7, "a repeated variable in the job's environment is rejected, naming the job",
          rejected && answer_contains(answer_list, "job 1"));
@@ -140,19 +148,19 @@ static void
 test_variable_parser() {
    lList *vars = nullptr;
    const int ret = var_list_parse_from_string(&vars, "A=1,B=2,A=3", 0);
-   const lListElem *a = lGetElemStr(vars, VA_variable, "A");
+   const lListElem *a = ocs::tom::find_first<VA_variable>(vars, "A");
    CHECK(8, "-v A=1,B=2,A=3 holds A once, with the value 3",
-         ret == 0 && lGetNumberOfElem(vars) == 2 && a != nullptr && strcmp(lGetString(a, VA_value), "3") == 0);
+         ret == 0 && lGetNumberOfElem(vars) == 2 && a != nullptr && strcmp(ocs::tom::get<VA_value>(a), "3") == 0);
 
    const int ret2 = var_list_parse_from_string(&vars, "A=4", 0);
-   a = lGetElemStr(vars, VA_variable, "A");
+   a = ocs::tom::find_first<VA_variable>(vars, "A");
    CHECK(9, "a later -v adds to the same list by name",
-         ret2 == 0 && lGetNumberOfElem(vars) == 2 && strcmp(lGetString(a, VA_value), "4") == 0);
+         ret2 == 0 && lGetNumberOfElem(vars) == 2 && strcmp(ocs::tom::get<VA_value>(a), "4") == 0);
    lFreeList(&vars);
 
    const int ret3 = var_list_parse_from_string(&vars, "A,A", 0);
    CHECK(10, "a name without a value, given twice, is kept once without a value",
-         ret3 == 0 && lGetNumberOfElem(vars) == 1 && lGetString(lFirst(vars), VA_value) == nullptr);
+         ret3 == 0 && lGetNumberOfElem(vars) == 1 && ocs::tom::get<VA_value>(lFirst(vars)) == nullptr);
    lFreeList(&vars);
 }
 
@@ -165,7 +173,7 @@ test_set_lists() {
    lList *qrefs = nullptr;
    const int ret = cull_parse_destination_identifier_list(&qrefs, "a.q,b.q,a.q");
    CHECK(11, "-q a.q,b.q,a.q holds a.q once, in its first position",
-         ret == 0 && lGetNumberOfElem(qrefs) == 2 && strcmp(lGetString(lFirst(qrefs), QR_name), "a.q") == 0);
+         ret == 0 && lGetNumberOfElem(qrefs) == 2 && strcmp(ocs::tom::get<QR_name>(lFirst(qrefs)), "a.q") == 0);
    qref_list_add(&qrefs, nullptr, "b.q");
    CHECK(12, "adding a reference the list holds changes nothing", lGetNumberOfElem(qrefs) == 2);
    lFreeList(&qrefs);
@@ -174,13 +182,13 @@ test_set_lists() {
    {
       // a list with a repeated name on purpose, as input for the removal; suspended as above
       const ocs::tom::UniqueCheckSuspension suspension;
-      lAddElemStr(&acl, ARA_name, "u1", ARA_Type);
-      lAddElemStr(&acl, ARA_name, "u2", ARA_Type);
-      lAddElemStr(&acl, ARA_name, "u1", ARA_Type);
+      ocs::tom::emplace_back<ARA_name>(&acl, "u1");
+      ocs::tom::emplace_back<ARA_name>(&acl, "u2");
+      ocs::tom::emplace_back<ARA_name>(&acl, "u1");
       ocs_object_list_remove_repeated_keys(acl, ARA_name);
    }
    CHECK(13, "repeated names are removed, the first of each stays",
-         lGetNumberOfElem(acl) == 2 && strcmp(lGetString(lLast(acl), ARA_name), "u2") == 0);
+         lGetNumberOfElem(acl) == 2 && strcmp(ocs::tom::get<ARA_name>(lLast(acl)), "u2") == 0);
    lFreeList(&acl);
 
    lList *ulongs = nullptr;
@@ -203,7 +211,7 @@ add_context_switch(lList **change, const char *marker, const char *vars) {
    lList *option = nullptr;
    var_list_parse_from_string(&option, vars, 0);
    lListElem *ep = lCreateElem(VA_Type);
-   lSetString(ep, VA_variable, marker);
+   ocs::tom::set<VA_variable>(ep, marker);
    lInsertElem(option, nullptr, ep);
    ocs_context_change_add(change, option);
    lFreeList(&option);
@@ -218,8 +226,8 @@ add_context_switch(lList **change, const char *marker, const char *vars) {
  */
 static bool
 context_has(const lListElem *job, const char *name, const char *value) {
-   const lListElem *var = lGetSubStr(job, VA_variable, name, JB_context);
-   return var != nullptr && lGetString(var, VA_value) != nullptr && strcmp(lGetString(var, VA_value), value) == 0;
+   const lListElem *var = ocs::tom::find_first_in<JB_context, VA_variable>(job, name);
+   return var != nullptr && ocs::tom::get<VA_value>(var) != nullptr && strcmp(ocs::tom::get<VA_value>(var), value) == 0;
 }
 
 /**
@@ -234,20 +242,20 @@ test_context_change() {
    add_context_switch(&change, "+", "b=2");
    add_context_switch(&change, "-", "a");
    add_context_switch(&change, "+", "a=3");
-   const lListElem *a = lGetElemStr(change, CX_variable, "a");
+   const lListElem *a = ocs::tom::find_first<CX_variable>(change, "a");
    CHECK(15, "the request holds four markers and a three times; a lookup of a finds an element",
          lGetNumberOfElem(change) == 8 && a != nullptr);
 
    lListElem *job = lCreateElem(JB_Type);
-   lSetList(job, JB_context_change, change);
+   ocs::tom::set<JB_context_change>(job, change);
    lList *answer_list = nullptr;
    CHECK(16, "the central check accepts a job holding the request",
          ocs_object_verify_unique_keys(job, &answer_list, "job 1"));
    lFreeList(&answer_list);
 
-   set_context(lGetList(job, JB_context_change), job);
+   set_context(ocs::tom::get<JB_context_change>(job), job);
    CHECK(17, "the request yields the context b=2,a=3",
-         lGetNumberOfElem(lGetList(job, JB_context)) == 2 && context_has(job, "b", "2") && context_has(job, "a", "3"));
+         lGetNumberOfElem(ocs::tom::get<JB_context>(job)) == 2 && context_has(job, "b", "2") && context_has(job, "a", "3"));
 
    // the context loses its last variable and gets a new one
    lList *readd = nullptr;
@@ -256,7 +264,7 @@ test_context_change() {
    add_context_switch(&readd, "+", "c=1");
    set_context(readd, job);
    CHECK(18, "a variable added after the context became empty is kept",
-         lGetNumberOfElem(lGetList(job, JB_context)) == 1 && context_has(job, "c", "1"));
+         lGetNumberOfElem(ocs::tom::get<JB_context>(job)) == 1 && context_has(job, "c", "1"));
    lFreeList(&readd);
 
    // above the hash threshold the markers and a repeated name are hashed without a unique key
@@ -267,11 +275,11 @@ test_context_change() {
    }
    add_context_switch(&big, "-", "x0");
    add_context_switch(&big, "+", "x0=new");
-   const bool found = lGetElemStr(big, CX_variable, "+") != nullptr && lGetElemStr(big, CX_variable, "x0") != nullptr;
+   const bool found = static_cast<const lListElem *>(ocs::tom::find_first<CX_variable>(big, "+")) != nullptr && static_cast<const lListElem *>(ocs::tom::find_first<CX_variable>(big, "x0")) != nullptr;
    set_context(big, job);
    CHECK(19, "above the hash threshold the lookups work; c and the 20 added variables remain, x0 with its new value",
          lGetNumberOfElem(big) > OCS_CULL_HASH_MIN_ELEMS && found &&
-         lGetNumberOfElem(lGetList(job, JB_context)) == 21 && context_has(job, "x0", "new"));
+         lGetNumberOfElem(ocs::tom::get<JB_context>(job)) == 21 && context_has(job, "x0", "new"));
    lFreeList(&big);
 
    // a request without a marker replaces the context
@@ -282,7 +290,7 @@ test_context_change() {
    lFreeList(&vars);
    set_context(plain, job);
    CHECK(20, "a request without a marker replaces the context",
-         lGetNumberOfElem(lGetList(job, JB_context)) == 1 && context_has(job, "d", "4"));
+         lGetNumberOfElem(ocs::tom::get<JB_context>(job)) == 1 && context_has(job, "d", "4"));
    lFreeList(&plain);
    lFreeElem(&job);
 
@@ -291,28 +299,28 @@ test_context_change() {
    lList *child_change = nullptr;
    add_context_switch(&child_change, "+", "e=5");
    add_context_switch(&child_change, "-", "e");
-   lSetList(child, JB_context_change, child_change);
+   ocs::tom::set<JB_context_change>(child, child_change);
    setenv("JOB_ID", "42", 1);
    job_add_parent_id_to_context(child);
    unsetenv("JOB_ID");
    lList *effective = ocs_context_get_effective(child);
-   const lListElem *parent = lGetElemStr(effective, VA_variable, CONTEXT_PARENT);
+   const lListElem *parent = ocs::tom::find_first<VA_variable>(effective, CONTEXT_PARENT);
    CHECK(21, "PARENT given after a trailing -dc is in the effective context",
-         lGetNumberOfElem(effective) == 1 && parent != nullptr && strcmp(lGetString(parent, VA_value), "42") == 0);
+         lGetNumberOfElem(effective) == 1 && parent != nullptr && strcmp(ocs::tom::get<VA_value>(parent), "42") == 0);
    lFreeList(&effective);
    lFreeElem(&child);
 
    // qstat -j works on a reduced job that does not contain JB_context_change
    lList *jobs = lCreateList("jobs", JB_Type);
-   lListElem *full = lAddElemUlong(&jobs, JB_job_number, 1, JB_Type);
+   lListElem *full = ocs::tom::emplace_back<JB_job_number>(&jobs, 1);
    lList *context = nullptr;
-   lAddElemStr(&context, VA_variable, "f", VA_Type);
-   lSetList(full, JB_context, context);
+   ocs::tom::emplace_back<VA_variable>(&context, "f");
+   ocs::tom::set<JB_context>(full, context);
    lEnumeration *what = lWhat("%T(%I %I)", JB_Type, JB_job_number, JB_context);
    lList *reduced = lSelect("reduced", jobs, nullptr, what);
    lList *reduced_effective = ocs_context_get_effective(lFirst(reduced));
    CHECK(22, "the effective context of a reduced job without the change request is its context",
-         lGetNumberOfElem(reduced_effective) == 1 && lGetElemStr(reduced_effective, VA_variable, "f") != nullptr);
+         lGetNumberOfElem(reduced_effective) == 1 && static_cast<const lListElem *>(ocs::tom::find_first<VA_variable>(reduced_effective, "f")) != nullptr);
    lFreeList(&reduced_effective);
    lFreeList(&reduced);
    lFreeWhat(&what);
@@ -327,8 +335,8 @@ test_context_change() {
  */
 static void
 add_variable(lList **lpp, const char *name, const char *value) {
-   lListElem *var = lAddElemStr(lpp, VA_variable, name, VA_Type);
-   lSetString(var, VA_value, value);
+   lListElem *var = ocs::tom::emplace_back<VA_variable>(lpp, name);
+   ocs::tom::set<VA_value>(var, value);
 }
 
 /**
@@ -341,37 +349,37 @@ test_repair() {
    // the append (N-H-18), so the check is suspended here
    const ocs::tom::UniqueCheckSuspension suspension;
    lListElem *job = lCreateElem(JB_Type);
-   lSetUlong(job, JB_job_number, 7);
+   ocs::tom::set<JB_job_number>(job, 7);
 
    lList *env = nullptr;
    add_variable(&env, "A", "1");
    add_variable(&env, "B", "2");
    add_variable(&env, "A", "3");
-   lSetList(job, JB_env_list, env);
+   ocs::tom::set<JB_env_list>(job, env);
 
-   lListElem *request_set = lAddSubUlong(job, JRS_scope, 0, JB_request_set_list, JRS_Type);
+   lListElem *request_set = ocs::tom::emplace_back_in<JB_request_set_list, JRS_scope>(job, 0);
    lList *queues = nullptr;
-   lAddElemStr(&queues, QR_name, "all.q", QR_Type);
-   lAddElemStr(&queues, QR_name, "b.q", QR_Type);
-   lAddElemStr(&queues, QR_name, "all.q", QR_Type);
-   lSetList(request_set, JRS_hard_queue_list, queues);
+   ocs::tom::emplace_back<QR_name>(&queues, "all.q");
+   ocs::tom::emplace_back<QR_name>(&queues, "b.q");
+   ocs::tom::emplace_back<QR_name>(&queues, "all.q");
+   ocs::tom::set<JRS_hard_queue_list>(request_set, queues);
    lList *resources = nullptr;
-   lSetString(lAddElemStr(&resources, CE_name, "h_vmem", CE_Type), CE_stringval, "1G");
-   lSetString(lAddElemStr(&resources, CE_name, "h_vmem", CE_Type), CE_stringval, "2G");
-   lSetList(request_set, JRS_hard_resource_list, resources);
+   ocs::tom::set<CE_stringval>(ocs::tom::emplace_back<CE_name>(&resources, "h_vmem"), "1G");
+   ocs::tom::set<CE_stringval>(ocs::tom::emplace_back<CE_name>(&resources, "h_vmem"), "2G");
+   ocs::tom::set<JRS_hard_resource_list>(request_set, resources);
 
    std::string repairs;
    lList *answer_list = nullptr;
    const bool repaired = ocs_object_repair_repeated_keys(job, repairs, &answer_list, "job 7");
-   const lListElem *a = lGetElemStr(lGetList(job, JB_env_list), VA_variable, "A");
-   const lList *repaired_queues = lGetList(request_set, JRS_hard_queue_list);
-   const lList *repaired_resources = lGetList(request_set, JRS_hard_resource_list);
+   const lListElem *a = ocs::tom::find_first<VA_variable>(ocs::tom::get<JB_env_list>(job), "A");
+   const lList *repaired_queues = ocs::tom::get<JRS_hard_queue_list>(request_set);
+   const lList *repaired_resources = ocs::tom::get<JRS_hard_resource_list>(request_set);
    CHECK(23, "variables and resources keep the last value, a repeated queue is dropped, the first stays",
-         repaired && answer_list == nullptr && lGetNumberOfElem(lGetList(job, JB_env_list)) == 2 && a != nullptr &&
-         strcmp(lGetString(a, VA_value), "3") == 0 && lGetNumberOfElem(repaired_queues) == 2 &&
-         strcmp(lGetString(lFirst(repaired_queues), QR_name), "all.q") == 0 &&
+         repaired && answer_list == nullptr && lGetNumberOfElem(ocs::tom::get<JB_env_list>(job)) == 2 && a != nullptr &&
+         strcmp(ocs::tom::get<VA_value>(a), "3") == 0 && lGetNumberOfElem(repaired_queues) == 2 &&
+         strcmp(ocs::tom::get<QR_name>(lFirst(repaired_queues)), "all.q") == 0 &&
          lGetNumberOfElem(repaired_resources) == 1 &&
-         strcmp(lGetString(lFirst(repaired_resources), CE_stringval), "2G") == 0);
+         strcmp(ocs::tom::get<CE_stringval>(lFirst(repaired_resources)), "2G") == 0);
    CHECK(24, "the repairs name the path of each list and the key",
          repairs.find("JB_env_list \"A\"") != std::string::npos &&
          repairs.find("JB_request_set_list/JRS_hard_queue_list \"all.q\"") != std::string::npos &&
@@ -382,20 +390,20 @@ test_repair() {
          ocs_object_repair_repeated_keys(job, repairs, &answer_list, "job 7") && repairs.empty());
 
    lListElem *userset = lCreateElem(US_Type);
-   lSetString(userset, US_name, "staff");
-   lAddSubStr(userset, UE_name, "u1", US_entries, UE_Type);
-   lAddSubStr(userset, UE_name, "u2", US_entries, UE_Type);
-   lAddSubStr(userset, UE_name, "u1", US_entries, UE_Type);
+   ocs::tom::set<US_name>(userset, "staff");
+   ocs::tom::emplace_back_in<US_entries, UE_name>(userset, "u1");
+   ocs::tom::emplace_back_in<US_entries, UE_name>(userset, "u2");
+   ocs::tom::emplace_back_in<US_entries, UE_name>(userset, "u1");
    CHECK(26, "a user set keeps a repeated user once",
          ocs_object_repair_repeated_keys(userset, repairs, &answer_list, "userset staff") &&
-         lGetNumberOfElem(lGetList(userset, US_entries)) == 2 && repairs == "US_entries \"u1\"");
+         lGetNumberOfElem(ocs::tom::get<US_entries>(userset)) == 2 && repairs == "US_entries \"u1\"");
 
-   lAddSubUlong(job, JAT_task_number, 1, JB_ja_tasks, JAT_Type);
-   lAddSubUlong(job, JAT_task_number, 1, JB_ja_tasks, JAT_Type);
+   ocs::tom::emplace_back_in<JB_ja_tasks, JAT_task_number>(job, 1);
+   ocs::tom::emplace_back_in<JB_ja_tasks, JAT_task_number>(job, 1);
    repairs.clear();
    CHECK(27, "a repeated array task is not repaired; the error names the job, the list and the key",
          !ocs_object_repair_repeated_keys(job, repairs, &answer_list, "job 7") && repairs.empty() &&
-         lGetNumberOfElem(lGetList(job, JB_ja_tasks)) == 2 && answer_contains(answer_list, "job 7, JB_ja_tasks") &&
+         lGetNumberOfElem(ocs::tom::get<JB_ja_tasks>(job)) == 2 && answer_contains(answer_list, "job 7, JB_ja_tasks") &&
          answer_contains(answer_list, "JAT_task_number"));
 
    lFreeList(&answer_list);
@@ -438,21 +446,21 @@ test_merge() {
    ocs_object_list_add_unique(&queues, &last);
    CHECK(28, "-q a.q,b.q -q c.q,a.q -q c.q holds a.q, b.q and c.q once, in their first positions",
          more == nullptr && last == nullptr && lGetNumberOfElem(queues) == 3 &&
-         strcmp(lGetString(lFirst(queues), QR_name), "a.q") == 0 &&
-         strcmp(lGetString(lLast(queues), QR_name), "c.q") == 0);
+         strcmp(ocs::tom::get<QR_name>(lFirst(queues)), "a.q") == 0 &&
+         strcmp(ocs::tom::get<QR_name>(lLast(queues)), "c.q") == 0);
    lFreeList(&queues);
 
    lList *resources = nullptr;
    lList *switch_1 = nullptr;
-   lSetString(lAddElemStr(&switch_1, CE_name, "h_vmem", CE_Type), CE_stringval, "1G");
-   lSetString(lAddElemStr(&switch_1, CE_name, "h_rt", CE_Type), CE_stringval, "60");
+   ocs::tom::set<CE_stringval>(ocs::tom::emplace_back<CE_name>(&switch_1, "h_vmem"), "1G");
+   ocs::tom::set<CE_stringval>(ocs::tom::emplace_back<CE_name>(&switch_1, "h_rt"), "60");
    lList *switch_2 = nullptr;
-   lSetString(lAddElemStr(&switch_2, CE_name, "h_vmem", CE_Type), CE_stringval, "2G");
+   ocs::tom::set<CE_stringval>(ocs::tom::emplace_back<CE_name>(&switch_2, "h_vmem"), "2G");
    ocs_object_list_add_unique(&resources, &switch_1);
    ocs_object_list_add_unique(&resources, &switch_2);
-   const lListElem *h_vmem = lGetElemStr(resources, CE_name, "h_vmem");
+   const lListElem *h_vmem = ocs::tom::find_first<CE_name>(resources, "h_vmem");
    CHECK(29, "-l h_vmem=1G,h_rt=60 -l h_vmem=2G holds h_vmem once, with 2G",
-         lGetNumberOfElem(resources) == 2 && h_vmem != nullptr && strcmp(lGetString(h_vmem, CE_stringval), "2G") == 0);
+         lGetNumberOfElem(resources) == 2 && h_vmem != nullptr && strcmp(ocs::tom::get<CE_stringval>(h_vmem), "2G") == 0);
    lFreeList(&resources);
 
    lList *env = nullptr;
@@ -462,7 +470,7 @@ test_merge() {
    add_variable(&vars, "A", "2");
    ocs_object_list_add_unique(&env, &vars);
    CHECK(30, "a variable merged twice keeps its last value",
-         lGetNumberOfElem(env) == 1 && strcmp(lGetString(lFirst(env), VA_value), "2") == 0);
+         lGetNumberOfElem(env) == 1 && strcmp(ocs::tom::get<VA_value>(lFirst(env)), "2") == 0);
    lFreeList(&env);
 
    const char *const acl_names[] = {"u1", "u2", nullptr};
@@ -475,8 +483,8 @@ test_merge() {
 
    lList *ids = nullptr;
    lList *more_ids = nullptr;
-   lAddElemUlong(&ids, ULNG_value, 1, ULNG_Type);
-   lAddElemUlong(&more_ids, ULNG_value, 2, ULNG_Type);
+   ocs::tom::emplace_back<ULNG_value>(&ids, 1);
+   ocs::tom::emplace_back<ULNG_value>(&more_ids, 2);
    ocs_object_list_add_unique(&ids, &more_ids);
    CHECK(32, "a list without a unique string attribute is appended as it is", lGetNumberOfElem(ids) == 2);
    lFreeList(&ids);
@@ -490,7 +498,7 @@ test_merge() {
  */
 static void
 add_arch_request(lList **lpp, const char *name, const char *value) {
-   lSetString(lAddElemStr(lpp, CE_name, name, CE_Type), CE_stringval, value);
+   ocs::tom::set<CE_stringval>(ocs::tom::emplace_back<CE_name>(lpp, name), value);
 }
 
 /**
@@ -500,10 +508,10 @@ add_arch_request(lList **lpp, const char *name, const char *value) {
  */
 static const char *
 only_arch_value(const lList *lp) {
-   if (lGetNumberOfElem(lp) != 1 || strcmp(lGetString(lFirst(lp), CE_name), "arch") != 0) {
+   if (lGetNumberOfElem(lp) != 1 || strcmp(ocs::tom::get<CE_name>(lFirst(lp)), "arch") != 0) {
       return nullptr;
    }
-   return lGetString(lFirst(lp), CE_stringval);
+   return ocs::tom::get<CE_stringval>(lFirst(lp));
 }
 
 /**
@@ -517,12 +525,12 @@ only_arch_value(const lList *lp) {
 static void
 test_inventory() {
    lList *master_centry_list = nullptr;
-   lListElem *arch = lAddElemStr(&master_centry_list, CE_name, "arch", CE_Type);
-   lSetString(arch, CE_shortcut, "a");
-   lSetUlong(arch, CE_valtype, static_cast<uint32_t>(ocs::CEntry::Type::STR));
-   lSetUlong(arch, CE_relop, CMPLXEQ_OP);
-   lSetUlong(arch, CE_requestable, REQU_YES);
-   lSetUlong(arch, CE_consumable, CONSUMABLE_NO);
+   lListElem *arch = ocs::tom::emplace_back<CE_name>(&master_centry_list, "arch");
+   ocs::tom::set<CE_shortcut>(arch, "a");
+   ocs::tom::set<CE_valtype>(arch, static_cast<uint32_t>(ocs::CEntry::Type::STR));
+   ocs::tom::set<CE_relop>(arch, CMPLXEQ_OP);
+   ocs::tom::set<CE_requestable>(arch, REQU_YES);
+   ocs::tom::set<CE_consumable>(arch, CONSUMABLE_NO);
 
    lList *request = nullptr;
    add_arch_request(&request, "a", "lx-amd64");
@@ -548,36 +556,36 @@ test_inventory() {
    // qconf -mattr queue slots 4 all.q@h1 all.q@h2 all.q: one request per target, each with a default entry
    lList *targets = nullptr;
    for (const char *target : {"all.q@h1", "all.q@h2", "all.q"}) {
-      lListElem *cqueue = lAddElemStr(&targets, CQ_name, target, CQ_Type);
+      lListElem *cqueue = ocs::tom::emplace_back<CQ_name>(&targets, target);
       lListElem *slots = lAddSubHost(cqueue, AULNG_href, HOSTREF_DEFAULT, CQ_job_slots, AULNG_Type);
-      lSetUlong(slots, AULNG_value, 4);
+      ocs::tom::set<AULNG_value>(slots, 4);
    }
    bool ok = cqueue_xattr_pre_gdi(targets, &answers);
-   const lList *slots = lGetNumberOfElem(targets) == 1 ? lGetList(lFirst(targets), CQ_job_slots) : nullptr;
+   const lList *slots = lGetNumberOfElem(targets) == 1 ? ocs::tom::get<CQ_job_slots>(lFirst(targets)) : nullptr;
    CHECK(35, "the targets all.q@h1, all.q@h2 and all.q become one request for all.q with h1, h2 and the default",
-         ok && slots != nullptr && strcmp(lGetString(lFirst(targets), CQ_name), "all.q") == 0 &&
-         lGetNumberOfElem(slots) == 3 && lGetElemHost(slots, AULNG_href, "h1") != nullptr &&
-         lGetElemHost(slots, AULNG_href, "h2") != nullptr &&
-         lGetElemHost(slots, AULNG_href, HOSTREF_DEFAULT) != nullptr);
+         ok && slots != nullptr && strcmp(ocs::tom::get<CQ_name>(lFirst(targets)), "all.q") == 0 &&
+         lGetNumberOfElem(slots) == 3 && static_cast<const lListElem *>(ocs::tom::find_first<AULNG_href>(slots, "h1")) != nullptr &&
+         static_cast<const lListElem *>(ocs::tom::find_first<AULNG_href>(slots, "h2")) != nullptr &&
+         static_cast<const lListElem *>(ocs::tom::find_first<AULNG_href>(slots, HOSTREF_DEFAULT)) != nullptr);
    lFreeList(&targets);
    lFreeList(&answers);
 
    // the qmaster enforces a limit on a task, and then again on the same task
    lListElem *job = lCreateElem(JB_Type);
-   lSetUlong(job, JB_job_number, 1);
-   lSetUlong64(job, JB_submission_time, 1000);
+   ocs::tom::set<JB_job_number>(job, 1);
+   ocs::tom::set<JB_submission_time>(job, 1000);
    lListElem *ja_task = lCreateElem(JAT_Type);
-   lSetUlong(ja_task, JAT_task_number, 1);
-   lSetUlong64(ja_task, JAT_start_time, 2000);
+   ocs::tom::set<JAT_task_number>(ja_task, 1);
+   ocs::tom::set<JAT_start_time>(ja_task, 2000);
    for (uint64_t now : {3000, 4000}) {
       lListElem *report = lCreateElem(JR_Type);
       job_report_init_from_job_with_usage(report, job, ja_task, nullptr, now);
       lFreeElem(&report);
    }
-   const lList *usage = lGetList(ja_task, JAT_scaled_usage_list);
-   const lListElem *end_time = lGetElemStr(usage, UA_name, "end_time");
+   const lList *usage = ocs::tom::get<JAT_scaled_usage_list>(ja_task);
+   const lListElem *end_time = ocs::tom::find_first<UA_name>(usage, "end_time");
    CHECK(36, "a limit enforced twice leaves each usage entry once, end_time from the later enforcement",
-         lGetNumberOfElem(usage) == 4 && end_time != nullptr && lGetDouble(end_time, UA_value) == 4000.0);
+         lGetNumberOfElem(usage) == 4 && end_time != nullptr && ocs::tom::get<UA_value>(end_time) == 4000.0);
    lFreeElem(&ja_task);
    lFreeElem(&job);
 
@@ -585,9 +593,9 @@ test_inventory() {
    lList *hgroups = nullptr;
    const char *const members[][3] = {{"@a", "h1", "h2"}, {"@b", "h2", "h3"}};
    for (const auto &m : members) {
-      lListElem *hgroup = lAddElemHost(&hgroups, HGRP_name, m[0], HGRP_Type);
-      lAddSubHost(hgroup, HR_name, m[1], HGRP_host_list, HR_Type);
-      lAddSubHost(hgroup, HR_name, m[2], HGRP_host_list, HR_Type);
+      lListElem *hgroup = ocs::tom::emplace_back<HGRP_name>(&hgroups, m[0]);
+      ocs::tom::emplace_back_in<HGRP_host_list, HR_name>(hgroup, m[1]);
+      ocs::tom::emplace_back_in<HGRP_host_list, HR_name>(hgroup, m[2]);
    }
    lList *hosts = nullptr;
    ok = hgroup_list_find_matching_and_resolve(hgroups, &answers, "@*", &hosts);

@@ -28,6 +28,7 @@
 #include "sgeobj/sge_job.h"
 #include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/ocs_Category.h"
+#include "tom/ocs_Element.h"
 
 #include "ocs_CategorySchedd.h"
 
@@ -42,9 +43,9 @@
 int
 ocs::CategorySchedd::job_is_category_rejected(const lListElem *job) {
    DENTER(TOP_LAYER);
-   auto *cat = static_cast<lListElem *>(lGetRef(job, JB_category));
+   auto *cat = static_cast<lListElem *>(ocs::tom::get<JB_category>(job));
    SGE_ASSERT(cat != nullptr);
-   const int ret = lGetBool(cat, CT_rejected);
+   const int ret = ocs::tom::get<CT_rejected>(cat);
    DRETURN(ret);
 }
 
@@ -59,9 +60,9 @@ ocs::CategorySchedd::job_is_category_rejected(const lListElem *job) {
 int
 ocs::CategorySchedd::job_is_category_reservation_rejected(const lListElem *job) {
    DENTER(TOP_LAYER);
-   auto *cat = static_cast<lListElem *>(lGetRef(job, JB_category));
+   auto *cat = static_cast<lListElem *>(ocs::tom::get<JB_category>(job));
    SGE_ASSERT(cat != nullptr);
-   const int ret = lGetBool(cat, CT_reservation_rejected);
+   const int ret = ocs::tom::get<CT_reservation_rejected>(cat);
    DRETURN(ret);
 }
 
@@ -75,11 +76,11 @@ ocs::CategorySchedd::job_is_category_reservation_rejected(const lListElem *job) 
 void
 ocs::CategorySchedd::job_reject_category(const lListElem *job, bool with_reservation) {
    DENTER(TOP_LAYER);
-   auto *cat = static_cast<lListElem *>(lGetRef(job, JB_category));
+   auto *cat = static_cast<lListElem *>(ocs::tom::get<JB_category>(job));
    SGE_ASSERT(cat != nullptr);
-   lSetBool(cat, CT_rejected, true);
+   ocs::tom::set<CT_rejected>(cat, true);
    if (with_reservation) {
-      lSetBool(cat, CT_reservation_rejected, true);
+      ocs::tom::set<CT_reservation_rejected>(cat, true);
    }
    DRETURN_VOID;
 }

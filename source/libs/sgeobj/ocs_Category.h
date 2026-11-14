@@ -26,6 +26,7 @@
 #include "cull/cull.h"
 
 #include "sgeobj/cull/sge_ct_CT_L.h"
+#include "tom/ocs_Element.h"
 
 namespace ocs {
    /// Job categories: jobs with identical scheduling relevant requests share one category
@@ -44,7 +45,7 @@ namespace ocs {
          // do not use 0 as ID or IDs that already have been used
          do {
             id = next_id++;
-         } while (id == 0 || lGetElemUlong(master_category_list, CT_id, id) != nullptr);
+         } while (id == 0 || static_cast<const lListElem *>(ocs::tom::find_first<CT_id>(master_category_list, id)) != nullptr);
          return id;
       }
       static void build_string(dstring *category_str, lListElem *job, const lList *acl_list, const lList *prj_list, const lList *rqs_list);

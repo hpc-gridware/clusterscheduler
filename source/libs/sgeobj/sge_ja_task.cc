@@ -66,6 +66,12 @@
 
 #include "msg_common.h"
 #include "sgeobj/msg_sgeobjlib.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_FPET.h"
+#include "sgeobj/tom/ocs_tom_JG.h"
+#include "sgeobj/tom/ocs_tom_PET.h"
+#include "sgeobj/tom/ocs_tom_RESL.h"
+#include "sgeobj/tom/ocs_tom_ST.h"
 
 #include "sge_ja_task.h"
 
@@ -84,10 +90,10 @@
 lListElem *ja_task_search_pe_task(const lListElem *ja_task,
                                   const char *pe_task_id) {
    if (ja_task != nullptr) {
-      const lList *pe_tasks = lGetList(ja_task, JAT_task_list);
+      const lList *pe_tasks = ocs::tom::get<JAT_task_list>(ja_task);
 
       if (pe_tasks != nullptr) {
-         return lGetElemStrRW(pe_tasks, PET_id, pe_task_id);
+         return ocs::tom::find_first_rw<PET_id>(pe_tasks, pe_task_id);
       }
    }
 
@@ -110,7 +116,7 @@ void ja_task_list_print_to_string(const lList *ja_task_list,
    lList *range_list = nullptr;     /* RN_Type */
 
    for_each_ep_lv(ja_task, ja_task_list) {
-      uint32_t tid = lGetUlong(ja_task, JAT_task_number);
+      uint32_t tid = ocs::tom::get<JAT_task_number>(ja_task);
 
       range_list_insert_id(&range_list, nullptr, tid);
    }
@@ -138,9 +144,9 @@ lList *ja_task_list_split_group(lList **ja_task_list) {
       lListElem *first_task = lFirstRW(*ja_task_list);
 
       if (first_task) {
-         uint32_t status = lGetUlong(first_task, JAT_status);
-         uint32_t state = lGetUlong(first_task, JAT_state);
-         uint32_t hold = lGetUlong(first_task, JAT_hold);
+         uint32_t status = ocs::tom::get<JAT_status>(first_task);
+         uint32_t state = ocs::tom::get<JAT_state>(first_task);
+         uint32_t hold = ocs::tom::get<JAT_hold>(first_task);
          const lDescr *descr = lGetElemDescr(first_task);
          lCondition *where = nullptr;
 
@@ -176,13 +182,13 @@ lList *ja_task_list_split_group(lList **ja_task_list) {
 bool ja_task_add_finished_pe_task(lListElem *ja_task, const char *pe_task_id) {
    DENTER(TOP_LAYER);
 
-   const lListElem *pe_task = lGetSubStr(ja_task, FPET_id, pe_task_id, JAT_finished_task_list);
+   const lListElem *pe_task = ocs::tom::find_first_in<JAT_finished_task_list, FPET_id>(ja_task, pe_task_id);
    if (pe_task != nullptr) {
-      INFO("already handled exit of pe task " SFQ " in ja_task " sge_u32"\n", pe_task_id, lGetUlong(ja_task, JAT_task_number));
+      INFO("already handled exit of pe task " SFQ " in ja_task " sge_u32"\n", pe_task_id, ocs::tom::get<JAT_task_number>(ja_task));
       DRETURN(false);
    }
 
-   pe_task = lAddSubStr(ja_task, FPET_id, pe_task_id, JAT_finished_task_list, FPET_Type);
+   pe_task = ocs::tom::emplace_back_in<JAT_finished_task_list, FPET_id>(ja_task, pe_task_id);
 
    DRETURN(true);
 }
@@ -209,16 +215,16 @@ bool ja_task_clear_finished_pe_tasks(lListElem *ja_task) {
    const lList *pe_task_list;
 
    /* get list of finished pe tasks */
-   pe_task_list = lGetList(ja_task, JAT_finished_task_list);
+   pe_task_list = ocs::tom::get<JAT_finished_task_list>(ja_task);
    if (pe_task_list == nullptr) {
-      DPRINTF("no finished pe task list to clear in ja_task " sge_u32 "\n", lGetUlong(ja_task, JAT_task_number));
+      DPRINTF("no finished pe task list to clear in ja_task " sge_u32 "\n", ocs::tom::get<JAT_task_number>(ja_task));
       DRETURN(false);
    }
 
    /* if we have such a list, delete it (lSetList will free the list) */
-   lSetList(ja_task, JAT_finished_task_list, nullptr);
+   ocs::tom::set<JAT_finished_task_list>(ja_task, nullptr);
 
-   DPRINTF("cleared finished pe task list in ja_task " sge_u32 "\n", lGetUlong(ja_task, JAT_task_number));
+   DPRINTF("cleared finished pe task list in ja_task " sge_u32 "\n", ocs::tom::get<JAT_task_number>(ja_task));
 
    DRETURN(true);
 }
@@ -301,11 +307,11 @@ int sge_parse_jobtasks(lList **ipp, lListElem **idp, const char *str_jobtask,
       if (!include_names && !isdigit(job_str[0]) && (strcmp(job_str, "\"*\"") != 0)) {
          ret = -1;
       } else {
-         *idp = lAddElemStr(ipp, ID_str, job_str, ID_Type);
+         *idp = ocs::tom::emplace_back<ID_str>(ipp, job_str);
 
          if (*idp) {
             range_list_sort_uniq_compress(task_id_range_list, alpp, true);
-            lSetList(*idp, ID_ja_structure, task_id_range_list);
+            ocs::tom::set<ID_ja_structure>(*idp, task_id_range_list);
          }
       }
    }
@@ -455,7 +461,7 @@ ja_task_verify_execd_job(const lListElem *ja_task, lList **answer_list) {
    ret = ja_task_verify(ja_task, answer_list);
 
    if (ret) {
-      ret = ja_task_verify_granted_destin_identifier_list(lGetList(ja_task, JAT_granted_destin_identifier_list),
+      ret = ja_task_verify_granted_destin_identifier_list(ocs::tom::get<JAT_granted_destin_identifier_list>(ja_task),
                                                           answer_list);
    }
 
@@ -529,11 +535,11 @@ ja_task_verify_granted_destin_identifier(const lListElem *ep, lList **answer_lis
    }
 
    if (ret) {
-      ret = qinstance_verify_full_name(answer_list, lGetString(ep, JG_qname));
+      ret = qinstance_verify_full_name(answer_list, ocs::tom::get<JG_qname>(ep));
    }
 
    if (ret) {
-      ret = verify_host_name(answer_list, lGetHost(ep, JG_qhostname));
+      ret = verify_host_name(answer_list, ocs::tom::get<JG_qhostname>(ep));
    }
 
    if (ret) {
@@ -541,7 +547,7 @@ ja_task_verify_granted_destin_identifier(const lListElem *ep, lList **answer_lis
    }
 
    if (ret) {
-      const lListElem *queue = lGetObject(ep, JG_queue);
+      const lListElem *queue = ocs::tom::get<JG_queue>(ep);
 
       if (queue != nullptr) {
          ret = qinstance_verify(queue, answer_list);
@@ -569,11 +575,11 @@ bool ja_task_is_tightly_integrated(const lListElem *ja_task, const lList *master
    bool ret = false;
 
    if (ja_task != nullptr) {
-      const char *pe_name = lGetString(ja_task, JAT_granted_pe);
+      const char *pe_name = ocs::tom::get<JAT_granted_pe>(ja_task);
       if (pe_name != nullptr) {
          const lListElem *pe = pe_list_locate(master_pe_list, pe_name);
          if (pe != nullptr) {
-            if (lGetBool(pe, PE_control_slaves)) {
+            if (ocs::tom::get<PE_control_slaves>(pe)) {
                ret = true;
             }
          }
@@ -586,8 +592,8 @@ bool ja_task_is_tightly_integrated(const lListElem *ja_task, const lList *master
 static int
 ja_task_debit_host_rsmap(const lListElem *granted_resource, lListElem *host, int slots, bool *just_check) {
    int mods = 0;
-   const char *ce_name = lGetString(granted_resource, GRU_name);
-   for_each_ep_lv (resl, lGetList(granted_resource, GRU_resource_map_list)) {
+   const char *ce_name = ocs::tom::get<GRU_name>(granted_resource);
+   for_each_ep_lv (resl, ocs::tom::get<GRU_resource_map_list>(granted_resource)) {
       mods += host_debit_rsmap(host, ce_name, resl, slots, just_check);
       if (just_check != nullptr && !*just_check) {
          break;
@@ -608,15 +614,15 @@ ja_task_debit_host_rsmap(const lListElem *granted_resource, lListElem *host, int
  */
 int ja_task_debit_host_rsmaps(const lList *granted_resources_list, lListElem *host, int slots, bool *just_check) {
    int mods = 0;
-   const char *host_name = lGetHost(host, EH_name);
+   const char *host_name = ocs::tom::get<EH_name>(host);
    const void *iterator;
 
-   for (auto granted_resource = lGetElemHostFirst(granted_resources_list, GRU_host, host_name, &iterator);
+   for (auto granted_resource = static_cast<const lListElem *>(ocs::tom::find_first<GRU_host>(granted_resources_list, host_name, &iterator));
         granted_resource != nullptr;
-        granted_resource = lGetElemHostNext(granted_resources_list, GRU_host, host_name, &iterator)) {
+        granted_resource = ocs::tom::find_next<GRU_host>(granted_resources_list, host_name, &iterator)) {
 
       // only debit RSMAPs here
-      if (static_cast<ocs::GrantedResources::Type>(lGetUlong(granted_resource, GRU_type)) != ocs::GrantedResources::Type::GRU_RESOURCE_MAP_TYPE) {
+      if (static_cast<ocs::GrantedResources::Type>(ocs::tom::get<GRU_type>(granted_resource)) != ocs::GrantedResources::Type::GRU_RESOURCE_MAP_TYPE) {
          continue;
       }
 
@@ -633,9 +639,9 @@ static int
 ja_task_debit_host_binding(const lListElem *granted_resource, lListElem *host, int slots, bool *just_check) {
    DENTER(TOP_LAYER);
    int mods = 0;
-   const char *ce_name = lGetString(granted_resource, GRU_name);
+   const char *ce_name = ocs::tom::get<GRU_name>(granted_resource);
    const lListElem *binding_st_elem;
-   for_each_ep (binding_st_elem, lGetList(granted_resource, GRU_binding_inuse)) {
+   for_each_ep (binding_st_elem, static_cast<const lList *>(ocs::tom::get<GRU_binding_inuse>(granted_resource))) {
       mods += host_debit_binding(host, ce_name, binding_st_elem, slots, just_check);
       if (just_check != nullptr && !*just_check) {
          break;
@@ -658,14 +664,14 @@ ja_task_debit_host_binding(const lListElem *granted_resource, lListElem *host, i
  */
 int ja_task_debit_host_bindings(const lList *granted_resources_list, lListElem *host, int slots, bool *just_check) {
    int mods = 0;
-   const char *host_name = lGetHost(host, EH_name);
+   const char *host_name = ocs::tom::get<EH_name>(host);
    const void *iterator;
-   for (auto granted_resource = lGetElemHostFirst(granted_resources_list, GRU_host, host_name, &iterator);
+   for (auto granted_resource = static_cast<const lListElem *>(ocs::tom::find_first<GRU_host>(granted_resources_list, host_name, &iterator));
         granted_resource != nullptr;
-        granted_resource = lGetElemHostNext(granted_resources_list, GRU_host, host_name, &iterator)) {
+        granted_resource = ocs::tom::find_next<GRU_host>(granted_resources_list, host_name, &iterator)) {
 
       // only debit binding information here
-      if (static_cast<ocs::GrantedResources::Type>(lGetUlong(granted_resource, GRU_type)) != ocs::GrantedResources::Type::GRU_BINDING_TYPE) {
+      if (static_cast<ocs::GrantedResources::Type>(ocs::tom::get<GRU_type>(granted_resource)) != ocs::GrantedResources::Type::GRU_BINDING_TYPE) {
          continue;
       }
 
@@ -698,8 +704,8 @@ int ja_task_debit_host_bindings(const lList *granted_resources_list, lListElem *
 bool
 ja_task_is_running(const lListElem *ja_task) {
    bool is_running = false;
-   if (lGetUlong(ja_task, JAT_status) & JTRANSFERING ||
-       lGetUlong(ja_task, JAT_status) & JRUNNING) {
+   if (ocs::tom::get<JAT_status>(ja_task) & JTRANSFERING ||
+       ocs::tom::get<JAT_status>(ja_task) & JRUNNING) {
       is_running = true;
    }
    return is_running;
@@ -716,7 +722,7 @@ ja_task_is_running(const lListElem *ja_task) {
  */
 void
 ja_task_set_deleted_by(lListElem *ja_task, const char *deleted_by) {
-   lSetString(ja_task, JAT_deleted_by, deleted_by);
+   ocs::tom::set<JAT_deleted_by>(ja_task, deleted_by);
 }
 
 /**
@@ -728,5 +734,5 @@ ja_task_set_deleted_by(lListElem *ja_task, const char *deleted_by) {
  */
 const char *
 ja_task_get_deleted_by(const lListElem *ja_task) {
-   return lGetString(ja_task, JAT_deleted_by);
+   return ocs::tom::get<JAT_deleted_by>(ja_task);
 }

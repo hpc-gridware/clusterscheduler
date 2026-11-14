@@ -42,6 +42,7 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_resource_quota.h"
+#include "tom/ocs_Element.h"
 #include "spool/flatfile/sge_flatfile.h"
 #include "spool/flatfile/sge_flatfile_obj.h"
 #include "gdi/ocs_gdi_Client.h"
@@ -182,7 +183,7 @@ qconf_modify_attribute(lList **alpp, const qconf_op &op, const bool from_file, c
          for_each_rw_lv(aep, *alpp) {
             if (answer_has_quality(aep, ANSWER_QUALITY_ERROR) && (answer_get_status(aep) == STATUS_ESYNTAX)) {
                snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_QCONF_BAD_ATTR_ARGS_SS, name, value);
-               lSetString(aep, AN_text, SGE_EVENT);
+               ocs::tom::set<AN_text>(aep, SGE_EVENT);
             }
          }
          sge_dstring_free(&delim);

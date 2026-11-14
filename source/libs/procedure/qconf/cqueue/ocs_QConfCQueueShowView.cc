@@ -30,6 +30,7 @@
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_qinstance.h"
+#include "tom/ocs_Element.h"
 
 #include "spool/flatfile/ocs_spool_json.h"
 #include "spool/flatfile/sge_flatfile.h"
@@ -80,7 +81,7 @@ write_QU_consumable_config_list(const lListElem *ep, int nm, dstring *buffer,
    bool has_elems = false;
 
    for_each_ep_lv(vep, lp) {
-      const char *name = lGetString(vep, CE_name);
+      const char *name = ocs::tom::get<CE_name>(vep);
 
       if (strcmp(name, "slots") != 0) {
          /* whether any element of the list was printed decides the NONE below */
@@ -96,11 +97,11 @@ write_QU_consumable_config_list(const lListElem *ep, int nm, dstring *buffer,
          sge_dstring_append(buffer, name);
          sge_dstring_append(buffer, "=");
 
-         const char *strval = lGetString(vep, CE_stringval);
+         const char *strval = ocs::tom::get<CE_stringval>(vep);
          if (strval != nullptr) {
             sge_dstring_append(buffer, strval);
          } else {
-            sge_dstring_sprintf_append(buffer, "%f", lGetDouble(vep, CE_doubleval));
+            sge_dstring_sprintf_append(buffer, "%f", ocs::tom::get<CE_doubleval>(vep));
          }
       }
    }

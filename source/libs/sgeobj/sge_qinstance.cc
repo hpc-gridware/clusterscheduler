@@ -78,6 +78,11 @@
 #include "sgeobj/cull/sge_resource_utilization_RDE_L.h"
 #include "sgeobj/cull/sge_resource_utilization_RUE_L.h"
 #include "sgeobj/msg_sgeobjlib.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_CE.h"
+#include "sgeobj/tom/ocs_tom_RDE.h"
+#include "sgeobj/tom/ocs_tom_ST.h"
+#include "sgeobj/tom/ocs_tom_US.h"
 
 #include "msg_common.h"
 #include "ocs_TopologyString.h"
@@ -110,11 +115,11 @@ qinstance_list_locate(const lList *this_list, const char *hostname,
    lListElem *ret = nullptr;
 
    if (cqueue_name == nullptr) {
-      ret = lGetElemHostRW(this_list, QU_qhostname, hostname);
+      ret = ocs::tom::find_first_rw<QU_qhostname>(this_list, hostname);
    } else {
       for_each_rw(ret, this_list) {
-         const char *qname = lGetString(ret, QU_qname);
-         const char *hname = lGetHost(ret, QU_qhostname);
+         const char *qname = ocs::tom::get<QU_qname>(ret);
+         const char *hname = ocs::tom::get<QU_qhostname>(ret);
 
          /* use qinstance expression */
          if (!sge_eval_expression(ocs::CEntry::Type::CSTR, cqueue_name, qname, nullptr)) {
@@ -141,7 +146,7 @@ qinstance_list_locate(const lList *this_list, const char *hostname,
  */
 lListElem *
 qinstance_list_locate2(const lList *queue_list, const char *full_name) {
-   return lGetElemStrRW(queue_list, QU_full_name, full_name);
+   return ocs::tom::find_first_rw<QU_full_name>(queue_list, full_name);
 }
 
 /**
@@ -160,8 +165,8 @@ qinstance_get_name(const lListElem *this_elem, dstring *string_buffer) {
 
    if (this_elem != nullptr && string_buffer != nullptr) {
       ret = sge_dstring_sprintf(string_buffer, SFN "@" SFN,
-                                lGetString(this_elem, QU_qname),
-                                lGetHost(this_elem, QU_qhostname));
+                                ocs::tom::get<QU_qname>(this_elem),
+                                static_cast<const char *>(ocs::tom::get<QU_qhostname>(this_elem)));
    }
    return ret;
 }
@@ -198,7 +203,7 @@ void qinstance_list_set_tag(lList *queue_list, uint32_t tag_value, int tag_nm) {
 void
 qinstance_increase_qversion(lListElem *this_elem) {
    DENTER(TOP_LAYER);
-   lAddUlong(this_elem, QU_version, 1);
+   ocs::tom::add<QU_version>(this_elem, 1);
    DRETURN_VOID;
 }
 
@@ -224,8 +229,8 @@ qinstance_is_owner(const ocs::gdi::Packet *packet, const lListElem *this_elem) {
    if (this_elem == nullptr) {
       ret = false;
    } else {
-      const lList *owner_list = lGetList(this_elem, QU_owner_list);
-      if (lGetElemStr(owner_list, US_name, packet->user) != nullptr) {
+      const lList *owner_list = ocs::tom::get<QU_owner_list>(this_elem);
+      if (static_cast<const lListElem *>(ocs::tom::find_first<US_name>(owner_list, packet->user)) != nullptr) {
          ret = true;
       }
    }
@@ -248,8 +253,8 @@ qinstance_is_owner(const ocs::gdi::Packet *packet, const lListElem *this_elem) {
 bool
 qinstance_is_pe_referenced(const lListElem *this_elem, const lListElem *pe) {
    DENTER(TOP_LAYER);
-   for_each_ep_lv(pe_name_elem, lGetList(this_elem, QU_pe_list)) {
-      if (strcmp(lGetString(pe, PE_name), lGetString(pe_name_elem, ST_name)) == 0) {
+   for_each_ep_lv(pe_name_elem, ocs::tom::get<QU_pe_list>(this_elem)) {
+      if (strcmp(ocs::tom::get<PE_name>(pe), ocs::tom::get<ST_name>(pe_name_elem)) == 0) {
          DRETURN(true);
       }
    }
@@ -276,9 +281,9 @@ qinstance_is_calendar_referenced(const lListElem *this_elem,
    bool ret = false;
    const char *queue_calendar = nullptr;
 
-   queue_calendar = lGetString(this_elem, QU_calendar);
+   queue_calendar = ocs::tom::get<QU_calendar>(this_elem);
    if (queue_calendar != nullptr) {
-      const char *calendar_name = lGetString(calendar, CAL_name);
+      const char *calendar_name = ocs::tom::get<CAL_name>(calendar);
 
       if (calendar_name && !strcmp(queue_calendar, calendar_name)) {
          ret = true;
@@ -304,7 +309,7 @@ qinstance_is_a_pe_referenced(const lListElem *this_elem) {
 
    bool ret = false;
 
-   if (lGetNumberOfElem(lGetList(this_elem, QU_pe_list))) {
+   if (lGetNumberOfElem(ocs::tom::get<QU_pe_list>(this_elem))) {
       ret = true;
    }
    DRETURN(ret);
@@ -328,9 +333,9 @@ qinstance_is_ckpt_referenced(const lListElem *this_elem, const lListElem *ckpt) 
    DENTER(TOP_LAYER);
 
    bool ret = false;
-   const lList *ckpt_list = lGetList(this_elem, QU_ckpt_list);
+   const lList *ckpt_list = ocs::tom::get<QU_ckpt_list>(this_elem);
 
-   if (lGetElemStr(ckpt_list, ST_name, lGetString(ckpt, CK_name)) != nullptr) {
+   if (static_cast<const lListElem *>(ocs::tom::find_first<ST_name>(ckpt_list, ocs::tom::get<CK_name>(ckpt))) != nullptr) {
       ret = true;
    }
    DRETURN(ret);
@@ -353,7 +358,7 @@ qinstance_is_a_ckpt_referenced(const lListElem *this_elem) {
 
    bool ret = false;
 
-   if (lGetNumberOfElem(lGetList(this_elem, QU_ckpt_list))) {
+   if (lGetNumberOfElem(ocs::tom::get<QU_ckpt_list>(this_elem))) {
       ret = true;
    }
    DRETURN(ret);
@@ -379,9 +384,9 @@ qinstance_is_centry_a_complex_value(const lListElem *this_elem,
    bool ret = false;
 
    if (this_elem != nullptr) {
-      const char *name = lGetString(centry, CE_name);
-      const lList *centry_list = lGetList(this_elem, QU_consumable_config_list);
-      const lListElem *centry_ref = lGetElemStr(centry_list, CE_name, name);
+      const char *name = ocs::tom::get<CE_name>(centry);
+      const lList *centry_list = ocs::tom::get<QU_consumable_config_list>(this_elem);
+      const lListElem *centry_ref = ocs::tom::find_first<CE_name>(centry_list, name);
 
       if (centry_ref != nullptr || get_rsrc(name, true, nullptr, nullptr, nullptr, nullptr) == 0) {
          ret = true;
@@ -427,10 +432,10 @@ qinstance_list_find_matching(const lList *this_list, lList **answer_list,
 
       const bool hostname_pattern_is_expression = ocs::is_expression(hostname_pattern);
       for_each_ep_lv(qinstance, this_list) {
-         const char *hostname = lGetHost(qinstance, QU_qhostname);
+         const char *hostname = ocs::tom::get<QU_qhostname>(qinstance);
          /* use qinstance expression */
          if (!sge_eval_expression(ocs::CEntry::Type::HOST, hostname_pattern, hostname, answer_list, true, hostname_pattern_is_expression)) {
-            lAddElemStr(qref_list, QR_name, lGetString(qinstance, QU_full_name), QR_Type);
+            ocs::tom::emplace_back<QR_name>(qref_list, ocs::tom::get<QU_full_name>(qinstance));
          }
       }
    }
@@ -450,16 +455,16 @@ qinstance_list_find_matching(const lList *this_list, lList **answer_list,
  */
 int qinstance_slots_used(const lListElem *this_elem) {
    DENTER(QINSTANCE_LAYER);
-   const lListElem *slots = lGetSubStr(this_elem, RUE_name, SGE_ATTR_SLOTS, QU_resource_utilization);
+   const lListElem *slots = ocs::tom::find_first_in<QU_resource_utilization, RUE_name>(this_elem, SGE_ATTR_SLOTS);
    int ret = 1000000; /* when slots is unknown */
 
    if (slots != nullptr) {
-      ret = lGetDouble(slots, RUE_utilized_now);
+      ret = ocs::tom::get<RUE_utilized_now>(slots);
    } else {
       /* this happens on qinstance_create when a queue instance is created 
          before others queue instances in the subordinate lists  
          are created */
-      CRITICAL(MSG_QINSTANCE_MISSLOTS_S, lGetString(this_elem, QU_full_name));
+      CRITICAL(MSG_QINSTANCE_MISSLOTS_S, ocs::tom::get<QU_full_name>(this_elem));
    }
    DRETURN(ret);
 }
@@ -479,10 +484,10 @@ uint32_t
 qinstance_slots_reserved(const lListElem *this_elem) {
    DENTER(QINSTANCE_LAYER);
    uint32_t ret = 0;
-   const lListElem *slots = lGetSubStr(this_elem, RUE_name, SGE_ATTR_SLOTS, QU_resource_utilization);
+   const lListElem *slots = ocs::tom::find_first_in<QU_resource_utilization, RUE_name>(this_elem, SGE_ATTR_SLOTS);
    if (slots != nullptr) {
-      for_each_ep_lv(utilized, lGetList(slots, RUE_utilized)) {
-         ret = std::max(static_cast<double>(ret), lGetDouble(utilized, RDE_amount));
+      for_each_ep_lv(utilized, ocs::tom::get<RUE_utilized>(slots)) {
+         ret = std::max(static_cast<double>(ret), ocs::tom::get<RDE_amount>(utilized));
       }
    }
 
@@ -500,12 +505,12 @@ qinstance_slots_reserved(const lListElem *this_elem) {
 void
 qinstance_set_slots_used(lListElem *this_elem, int new_slots) {
    DENTER(QINSTANCE_LAYER);
-   lListElem *slots = lGetSubStrRW(this_elem, RUE_name, "slots", QU_resource_utilization);
+   lListElem *slots = ocs::tom::find_first_in_rw<QU_resource_utilization, RUE_name>(this_elem, "slots");
    if (slots != nullptr) {
-      lSetDouble(slots, RUE_utilized_now, new_slots);
+      ocs::tom::set<RUE_utilized_now>(slots, new_slots);
    } else {
       /* because this should never happen and an critical error */
-      CRITICAL(MSG_QINSTANCE_MISSLOTS_S, lGetString(this_elem, QU_full_name));
+      CRITICAL(MSG_QINSTANCE_MISSLOTS_S, ocs::tom::get<QU_full_name>(this_elem));
    }
    DRETURN_VOID;
 }
@@ -536,7 +541,7 @@ qinstance_debit_consumable(lListElem *qep, const lListElem *jep, const lListElem
    return rc_debit_consumable(jep, pe, qep, centry_list, slots,
                               QU_consumable_config_list,
                               QU_resource_utilization,
-                              lGetString(qep, QU_qname), is_master_task, do_per_host_booking, just_check);
+                              ocs::tom::get<QU_qname>(qep), is_master_task, do_per_host_booking, just_check);
 }
 
 /**
@@ -596,11 +601,11 @@ qinstance_message_trash_all_of_type_X(lListElem *this_elem, uint32_t type) {
 void
 qinstance_set_full_name(lListElem *this_elem) {
    dstring buffer = DSTRING_INIT;
-   const char *cqueue_name = lGetString(this_elem, QU_qname);
-   const char *hostname = lGetHost(this_elem, QU_qhostname);
+   const char *cqueue_name = ocs::tom::get<QU_qname>(this_elem);
+   const char *hostname = ocs::tom::get<QU_qhostname>(this_elem);
 
    sge_dstring_sprintf(&buffer, "%s@%s", cqueue_name, hostname);
-   lSetString(this_elem, QU_full_name,
+   ocs::tom::set<QU_full_name>(this_elem,
               sge_dstring_get_string(&buffer));
    sge_dstring_free(&buffer);
 }
@@ -627,7 +632,7 @@ qinstance_validate(lListElem *this_elem, lList **answer_list, const lList *maste
    bool ret = true;
 
    /* QU_full_name isn't spooled, if it is not set, create it */
-   if (lGetString(this_elem, QU_full_name) == nullptr) {
+   if (ocs::tom::get<QU_full_name>(this_elem) == nullptr) {
       qinstance_set_full_name(this_elem);
    }
 
@@ -642,7 +647,7 @@ qinstance_validate(lListElem *this_elem, lList **answer_list, const lList *maste
    qinstance_debit_consumable(this_elem, nullptr, nullptr, master_centry_list, 0, true, true, nullptr);
 
    /* init double values of consumable configuration */
-   if (centry_list_fill_request(lGetListRW(this_elem, QU_consumable_config_list), answer_list, master_centry_list, true,
+   if (centry_list_fill_request(ocs::tom::get<QU_consumable_config_list>(this_elem), answer_list, master_centry_list, true,
                                 false, true) != 0) {
       ret = false;
    }
@@ -663,12 +668,12 @@ qinstance_validate(lListElem *this_elem, lList **answer_list, const lList *maste
       qinstance_set_slots_used(this_elem, 0);
 
       if (host_list_locate(master_exechost_list,
-                           lGetHost(this_elem, QU_qhostname)) == nullptr) {
+                           ocs::tom::get<QU_qhostname>(this_elem)) == nullptr) {
          answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
                                  ANSWER_QUALITY_ERROR,
                                  MSG_QINSTANCE_HOSTFORQUEUEDOESNOTEXIST_SS,
-                                 lGetString(this_elem, QU_qname),
-                                 lGetHost(this_elem, QU_qhostname));
+                                 ocs::tom::get<QU_qname>(this_elem),
+                                 static_cast<const char *>(ocs::tom::get<QU_qhostname>(this_elem)));
          ret = false;
       }
    }
@@ -727,9 +732,9 @@ rc_debit_consumable_implicit_exclusive(const char *name, const char *obj_type, c
    if (just_check == nullptr) {
       DPRINTF("debiting (implicit exclusive) %f of %s on %s %s for %d slots\n", request, name,
               obj_type, obj_name, slots);
-      lAddDouble(booking_ep, RUE_utilized_now_nonexclusive, slots * request);
+      ocs::tom::add<RUE_utilized_now_nonexclusive>(booking_ep, slots * request);
    } else {
-      double actual_value = booking_ep == nullptr ? 0 : lGetDouble(booking_ep, RUE_utilized_now);
+      double actual_value = booking_ep == nullptr ? 0 : ocs::tom::get<RUE_utilized_now>(booking_ep);
       if (actual_value > 0) {
          ERROR(MSG_EXCLCAPACITYEXCEEDED_FSSSI, request, name, obj_type, obj_name, slots);
          *just_check = false;
@@ -749,11 +754,11 @@ rc_debit_consumable_explicit_request(const char *name, const char *obj_type, con
 
    if (just_check == nullptr) {
       DPRINTF("debiting %f of %s on %s %s for %d slots\n", request, name, obj_type, obj_name, slots);
-      lAddDouble(booking_ep, RUE_utilized_now, slots * request);
+      ocs::tom::add<RUE_utilized_now>(booking_ep, slots * request);
    } else {
       DPRINTF("verifying %f of %s on %s %s for %d slots + %f\n", request, name, obj_type, obj_name, slots, additional_request);
-      double actual_value = booking_ep == nullptr ? 0 : lGetDouble(booking_ep, RUE_utilized_now);
-      double config_value = lGetDouble(capacity_ep, CE_doubleval);
+      double actual_value = booking_ep == nullptr ? 0 : ocs::tom::get<RUE_utilized_now>(booking_ep);
+      double config_value = ocs::tom::get<CE_doubleval>(capacity_ep);
       /* for exclusive consumables ignore the number of slots */
       if (is_exclusive) {
          slots = 1;
@@ -809,7 +814,7 @@ rc_debit_consumable(const lListElem *jep, const lListElem *pe, lListElem *ep, co
    const lListElem *cr_config;
    for_each_ep(cr_config, lGetList(ep, config_nm)) {
       lListElem *cr = nullptr, *dcep;
-      const char *name = lGetString(cr_config, CE_name);
+      const char *name = ocs::tom::get<CE_name>(cr_config);
 
       // search complex definition (with default request)
       if (!(dcep = centry_list_locate(centry_list, name))) {
@@ -817,7 +822,7 @@ rc_debit_consumable(const lListElem *jep, const lListElem *pe, lListElem *ep, co
          DRETURN(-1);
       }
 
-      uint32_t consumable = lGetUlong(dcep, CE_consumable);
+      uint32_t consumable = ocs::tom::get<CE_consumable>(dcep);
 
       // ensure attribute is in actual list
       // @todo we could do this only if jep == nullptr - this is the call to initialize booking
@@ -835,7 +840,7 @@ rc_debit_consumable(const lListElem *jep, const lListElem *pe, lListElem *ep, co
          }
 
          bool did_booking = false;
-         bool is_exclusive = lGetUlong(dcep, CE_relop) == CMPLXEXCL_OP;
+         bool is_exclusive = ocs::tom::get<CE_relop>(dcep) == CMPLXEXCL_OP;
          const char *obj_type = config_nm == QU_consumable_config_list ? "queue" : "host";
 
          int debit_slots = consumable_get_debit_slots(consumable, slots);
@@ -888,7 +893,7 @@ rc_debit_consumable(const lListElem *jep, const lListElem *pe, lListElem *ep, co
             if (slave_debit_slots != 0) {
                double slave_dval = 0.0;
                // if we are on the master host, and we shall ignore slave requests to booking only for slots
-               if (is_master_task && lGetBool(pe, PE_ignore_slave_requests_on_master_host)) {
+               if (is_master_task && ocs::tom::get<PE_ignore_slave_requests_on_master_host>(pe)) {
                   tmp_ret = true;
                   if (sge_strnullcmp(name, SGE_ATTR_SLOTS) == 0) {
                      slave_dval = 1.0;
@@ -947,16 +952,16 @@ rc_debit_consumable(const lListElem *jep, const lListElem *pe, lListElem *ep, co
 void 
 qinstance_set_conf_slots_used(lListElem *this_elem) {
    DENTER(QINSTANCE_LAYER);
-   lListElem *slots = lGetSubStrRW(this_elem, CE_name, "slots", QU_consumable_config_list);
+   lListElem *slots = ocs::tom::find_first_in_rw<QU_consumable_config_list, CE_name>(this_elem, "slots");
    if (slots == nullptr) {
-      slots = lAddSubStr(this_elem, CE_name, "slots", QU_consumable_config_list, CE_Type);
+      slots = ocs::tom::emplace_back_in<QU_consumable_config_list, CE_name>(this_elem, "slots");
    }
    if (slots != nullptr) {
       DSTRING_STATIC(buffer, 32);
-      uint32_t slots_value = lGetUlong(this_elem, QU_job_slots);
+      uint32_t slots_value = ocs::tom::get<QU_job_slots>(this_elem);
 
-      lSetDouble(slots, CE_doubleval, slots_value);
-      lSetString(slots, CE_stringval, sge_dstring_sprintf(&buffer, sge_u32, slots_value));
+      ocs::tom::set<CE_doubleval>(slots, slots_value);
+      ocs::tom::set<CE_stringval>(slots, sge_dstring_sprintf(&buffer, sge_u32, slots_value));
    }
    DRETURN_VOID;
 }
@@ -1023,22 +1028,22 @@ qinstance_verify(const lListElem *qep, lList **answer_list) {
    }
 
    if (ret) {
-      ret = verify_host_name(answer_list, lGetHost(qep, QU_qhostname));
+      ret = verify_host_name(answer_list, ocs::tom::get<QU_qhostname>(qep));
    }
 
    if (ret) {
-      if (verify_obj_name(answer_list, lGetString(qep, QU_qname),
+      if (verify_obj_name(answer_list, ocs::tom::get<QU_qname>(qep),
                           MAX_VERIFY_STRING, lNm2Str(QU_qname)) != STATUS_OK) {
          ret = false;
       }
    }
 
    if (ret) {
-      ret = qinstance_verify_full_name(answer_list, lGetString(qep, QU_full_name));
+      ret = qinstance_verify_full_name(answer_list, ocs::tom::get<QU_full_name>(qep));
    }
 
    if (ret) {
-      ret = path_verify(lGetString(qep, QU_shell), answer_list, "shell", true);
+      ret = path_verify(ocs::tom::get<QU_shell>(qep), answer_list, "shell", true);
    }
 
    DRETURN(ret);

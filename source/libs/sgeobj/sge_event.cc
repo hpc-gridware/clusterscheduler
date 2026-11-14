@@ -52,6 +52,8 @@
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_utility.h"
 #include "sgeobj/msg_sgeobjlib.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_EVS.h"
 
 #include "msg_common.h"
 
@@ -71,13 +73,13 @@ const char *event_text(const lListElem *event, dstring *buffer) {
    const lList *lp;
    dstring id_dstring = DSTRING_INIT;
 
-   number = lGetUlong(event, ET_number);
-   type = lGetUlong(event, ET_type);
-   intkey = lGetUlong(event, ET_intkey);
-   intkey2 = lGetUlong(event, ET_intkey2);
-   strkey = lGetString(event, ET_strkey);
-   strkey2 = lGetString(event, ET_strkey2);
-   if ((lp=lGetList(event, ET_new_version))) {
+   number = ocs::tom::get<ET_number>(event);
+   type = ocs::tom::get<ET_type>(event);
+   intkey = ocs::tom::get<ET_intkey>(event);
+   intkey2 = ocs::tom::get<ET_intkey2>(event);
+   strkey = ocs::tom::get<ET_strkey>(event);
+   strkey2 = ocs::tom::get<ET_strkey2>(event);
+   if ((lp=ocs::tom::get<ET_new_version>(event))) {
       n = lGetNumberOfElem(lp);
    }
 
@@ -418,7 +420,7 @@ const char *event_text(const lListElem *event, dstring *buffer) {
       break;
    }
 
-   uint64_t unique_id = lGetUlong64(event, ET_unique_id);
+   uint64_t unique_id = ocs::tom::get<ET_unique_id>(event);
    sge_dstring_sprintf_append(buffer, " (# " sge_u64 ")", unique_id);
 
    sge_dstring_free(&id_dstring);
@@ -430,8 +432,8 @@ static bool event_client_verify_subscription(const lListElem *event_client, lLis
    DENTER(TOP_LAYER);
    bool ret = true;
 
-   for_each_ep_lv(ep, lGetList(event_client, EV_subscribed)) {
-      uint32_t id = lGetUlong(ep, EVS_id);
+   for_each_ep_lv(ep, ocs::tom::get<EV_subscribed>(event_client)) {
+      uint32_t id = ocs::tom::get<EVS_id>(ep);
       if (id <= sgeE_ALL_EVENTS || id >= sgeE_EVENTSIZE) {
          answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, 
                                  MSG_EVENT_INVALIDEVENT);
@@ -509,13 +511,13 @@ bool event_client_verify(const lListElem *event_client, lList **answer_list, boo
 
    if (ret) {
       /* get the event delivery time - we'll need it in later checks */
-      d_time = lGetUlong(event_client, EV_d_time);
+      d_time = ocs::tom::get<EV_d_time>(event_client);
 
       /* 
        * EV_name has to be a valid string.
        * TODO: Is verify_str_key too restrictive? Does drmaa allow to set the name?
        */
-      str = lGetString(event_client, EV_name);
+      str = ocs::tom::get<EV_name>(event_client);
       if (str == nullptr ||
          verify_str_key(
             answer_list, str, MAX_VERIFY_STRING,
@@ -536,7 +538,7 @@ bool event_client_verify(const lListElem *event_client, lList **answer_list, boo
    if (ret) {
 #if 1      
       /* TODO: jgdi does not work with the check fix needed */
-      uint32_t id = lGetUlong(event_client, EV_id);
+      uint32_t id = ocs::tom::get<EV_id>(event_client);
       if (add && id >= EV_ID_FIRST_DYNAMIC) {
          answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, 
                                  MSG_EVENT_INVALIDID);
@@ -565,7 +567,7 @@ bool event_client_verify(const lListElem *event_client, lList **answer_list, boo
 
    /* busy handling comes from an enum with defined set of values */
    if (ret) {
-      uint32_t busy = lGetUlong(event_client, EV_busy_handling);
+      uint32_t busy = ocs::tom::get<EV_busy_handling>(event_client);
       if (busy != EV_BUSY_NO_HANDLING && busy != EV_BUSY_UNTIL_ACK &&
           busy != EV_BUSY_UNTIL_RELEASED) {
          answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, 
@@ -576,7 +578,7 @@ bool event_client_verify(const lListElem *event_client, lList **answer_list, boo
 
    /* verify session key. TODO: verify_str_key too restrictive? */
    if (ret) {
-      const char *session = lGetString(event_client, EV_session);
+      const char *session = ocs::tom::get<EV_session>(event_client);
       if (session != nullptr) {
          if (verify_str_key(
          answer_list, session, MAX_VERIFY_STRING,
@@ -589,7 +591,7 @@ bool event_client_verify(const lListElem *event_client, lList **answer_list, boo
 
    /* disallow an EV_update_function from event_client request */
    if (ret) {
-      if (lGetRef(event_client, EV_update_function) != nullptr) {
+      if (ocs::tom::get<EV_update_function>(event_client) != nullptr) {
          answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_EVENT_INVALIDUPDATEFUNCTION);
          ret = false;
       }

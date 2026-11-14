@@ -41,6 +41,8 @@
 #include "sgeobj/sge_userprj.h"
 #include "sgeobj/sge_userset.h"
 #include "sgeobj/ocs_Role.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_STN.h"
 
 #include "spool/flatfile/sge_flatfile.h"
 #include "spool/flatfile/sge_flatfile_obj.h"
@@ -135,7 +137,7 @@ static int
 qconf_eh_resolve(lListElem *ep, lList **alpp) {
    if (sge_resolve_host(ep, EH_name) != CL_RETVAL_OK) {
       answer_list_add_sprintf(alpp, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
-                              MSG_SGETEXT_CANTRESOLVEHOST_S, lGetHost(ep, EH_name));
+                              MSG_SGETEXT_CANTRESOLVEHOST_S, static_cast<const char *>(ocs::tom::get<EH_name>(ep)));
       return STATUS_ESEMANTIC;
    }
    return STATUS_OK;
@@ -250,7 +252,7 @@ static lListElem *
 qconf_template_RL([[maybe_unused]] lList **answer_list, const char *name) {
    lListElem *ep = ocs::Role::create_template();
    if (ep != nullptr) {
-      lSetString(ep, RL_name, name);
+      ocs::tom::set<RL_name>(ep, name);
    }
    return ep;
 }
@@ -264,7 +266,7 @@ static lListElem *
 qconf_template_UU([[maybe_unused]] lList **answer_list, const char *name) {
    lListElem *ep = getUserTemplate();
    if (ep != nullptr) {
-      lSetString(ep, UU_name, name);
+      ocs::tom::set<UU_name>(ep, name);
    }
    return ep;
 }
@@ -278,7 +280,7 @@ static lListElem *
 qconf_template_PR([[maybe_unused]] lList **answer_list, const char *name) {
    lListElem *ep = getPrjTemplate();
    if (ep != nullptr) {
-      lSetString(ep, PR_name, name);
+      ocs::tom::set<PR_name>(ep, name);
    }
    return ep;
 }
@@ -297,7 +299,7 @@ static lListElem *
 qconf_template_RQS([[maybe_unused]] lList **answer_list, const char *name) {
    lListElem *ep = lCreateElem(RQS_Type);
    if (ep != nullptr) {
-      lSetString(ep, RQS_name, name);
+      ocs::tom::set<RQS_name>(ep, name);
       ep = rqs_set_defaults(ep);
    }
    return ep;
@@ -415,7 +417,7 @@ static lListElem *
 qconf_template_CONF([[maybe_unused]] lList **answer_list, const char *name) {
    lListElem *ep = lCreateElem(CONF_Type);
    if (ep != nullptr && name != nullptr) {
-      lSetHost(ep, CONF_name, name);
+      ocs::tom::set<CONF_name>(ep, name);
    }
    return ep;
 }
@@ -435,12 +437,12 @@ qconf_template_CONF([[maybe_unused]] lList **answer_list, const char *name) {
 static int
 qconf_rqs_verify_list(const lList *lp, lList **alpp) {
    for (const lListElem *a = lFirst(lp); a != nullptr; a = lNext(a)) {
-      const char *name_a = lGetString(a, RQS_name);
+      const char *name_a = ocs::tom::get<RQS_name>(a);
       if (name_a == nullptr) {
          continue;         // a nameless rule set is qconf_rqs_validate()'s to refuse
       }
       for (const lListElem *b = lNext(a); b != nullptr; b = lNext(b)) {
-         const char *name_b = lGetString(b, RQS_name);
+         const char *name_b = ocs::tom::get<RQS_name>(b);
          if (name_b != nullptr && strcmp(name_a, name_b) == 0) {
             answer_list_add_sprintf(alpp, STATUS_ERROR1, ANSWER_QUALITY_ERROR,
                                     MSG_RQS_REQUEST_DUPLICATE_NAME_S, name_a);
@@ -479,8 +481,8 @@ qconf_rqs_verify_list(const lList *lp, lList **alpp) {
 static int
 qconf_ce_verify_list(const lList *lp, lList **alpp) {
    for (const lListElem *a = lFirst(lp); a != nullptr; a = lNext(a)) {
-      const char *name_a = lGetString(a, CE_name);
-      const char *shortcut_a = lGetString(a, CE_shortcut);
+      const char *name_a = ocs::tom::get<CE_name>(a);
+      const char *shortcut_a = ocs::tom::get<CE_shortcut>(a);
 
       if (name_a == nullptr) {
          answer_list_add_sprintf(alpp, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, SFNMAX,
@@ -492,15 +494,15 @@ qconf_ce_verify_list(const lList *lp, lList **alpp) {
                                  MSG_CENTRY_NULL_SHORTCUT_S, name_a);
          return STATUS_EUNKNOWN;
       }
-      if (lGetString(a, CE_urgency_weight) == nullptr) {
+      if (ocs::tom::get<CE_urgency_weight>(a) == nullptr) {
          answer_list_add_sprintf(alpp, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, SFNMAX,
                                  MSG_CENTRY_NULL_URGENCY);
          return STATUS_EUNKNOWN;
       }
 
       for (const lListElem *b = lNext(a); b != nullptr; b = lNext(b)) {
-         const char *name_b = lGetString(b, CE_name);
-         const char *shortcut_b = lGetString(b, CE_shortcut);
+         const char *name_b = ocs::tom::get<CE_name>(b);
+         const char *shortcut_b = ocs::tom::get<CE_shortcut>(b);
          if (name_b == nullptr || shortcut_b == nullptr) {
             continue;      // reported when the loop above reaches that element
          }
@@ -533,7 +535,7 @@ qconf_ce_verify_list(const lList *lp, lList **alpp) {
  */
 static bool
 qconf_ce_retain_builtin(const lListElem *ep) {
-   const char *name = lGetString(ep, CE_name);
+   const char *name = ocs::tom::get<CE_name>(ep);
    if (name == nullptr) {
       return false;
    }
@@ -555,8 +557,8 @@ qconf_ce_retain_builtin(const lListElem *ep) {
 static bool
 qconf_stn_has_ids(const lListElem *ep) {
    const lListElem *child;
-   for_each_ep(child, lGetList(ep, STN_children)) {
-      if (lGetUlong(child, STN_id) != 0 || qconf_stn_has_ids(child)) {
+   for_each_ep(child, static_cast<const lList *>(ocs::tom::get<STN_children>(ep))) {
+      if (ocs::tom::get<STN_id>(child) != 0 || qconf_stn_has_ids(child)) {
          return true;
       }
    }
@@ -1117,8 +1119,8 @@ qconf_json_type_load_values(lListElem *host, int load_list_nm, const lList *mast
    const lListElem *hlep;
    for_each_ep(hlep, hl) {
       lListElem *ce = lCreateElem(CE_Type);
-      lSetString(ce, CE_name, lGetString(hlep, HL_name));
-      lSetString(ce, CE_stringval, lGetString(hlep, HL_value));
+      ocs::tom::set<CE_name>(ce, ocs::tom::get<HL_name>(hlep));
+      ocs::tom::set<CE_stringval>(ce, ocs::tom::get<HL_value>(hlep));
       lAppendElem(ce_list, ce);
    }
 
@@ -1127,8 +1129,8 @@ qconf_json_type_load_values(lListElem *host, int load_list_nm, const lList *mast
 
    /* parse numeric values into CE_doubleval so the writer emits native numbers */
    for (lListElem *ce = lFirstRW(ce_list); ce != nullptr; ce = lNextRW(ce)) {
-      const auto type = static_cast<ocs::CEntry::Type>(lGetUlong(ce, CE_valtype));
-      const char *s = lGetString(ce, CE_stringval);
+      const auto type = static_cast<ocs::CEntry::Type>(ocs::tom::get<CE_valtype>(ce));
+      const char *s = ocs::tom::get<CE_stringval>(ce);
       double dval = 0.0;
       switch (type) {
          case ocs::CEntry::Type::INT:
@@ -1137,7 +1139,7 @@ qconf_json_type_load_values(lListElem *host, int load_list_nm, const lList *mast
          case ocs::CEntry::Type::DOUBLE:
          case ocs::CEntry::Type::BOOL:
             if (s != nullptr && parse_ulong_val(&dval, nullptr, type, s, nullptr, 0)) {
-               lSetDouble(ce, CE_doubleval, dval);
+               ocs::tom::set<CE_doubleval>(ce, dval);
             }
             break;
          default:

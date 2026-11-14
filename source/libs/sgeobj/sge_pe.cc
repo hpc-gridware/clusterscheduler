@@ -63,6 +63,8 @@
 #include "sgeobj/sge_str.h"
 #include "sgeobj/cull/sge_resource_utilization_RUE_L.h"
 #include "sgeobj/msg_sgeobjlib.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_US.h"
 
 #include "msg_common.h"
 #include "msg_qmaster.h"
@@ -92,7 +94,7 @@ bool pe_name_is_matching(const char *pe_name, const char *wildcard) {
  * @return true or false
  */
 bool pe_is_matching(const lListElem *pe, const char *wildcard) {
-   return pe_name_is_matching(lGetString(pe, PE_name), wildcard);
+   return pe_name_is_matching(ocs::tom::get<PE_name>(pe), wildcard);
 }
 
 /**
@@ -127,7 +129,7 @@ lListElem *pe_list_find_matching(const lList *pe_list, const char *wildcard) {
  * @note MT-NOTE: pe_list_locate() is MT safe
  */
 lListElem *pe_list_locate(const lList *pe_list, const char *pe_name) {
-   return lGetElemStrRW(pe_list, PE_name, pe_name);
+   return ocs::tom::find_first_rw<PE_name>(pe_list, pe_name);
 }
 
 /**
@@ -152,8 +154,8 @@ bool pe_is_referenced(const lListElem *pe, lList **answer_list,
 
    for_each_ep_lv(job, master_job_list) {
       if (job_is_pe_referenced(job, pe)) {
-         const char *pe_name = lGetString(pe, PE_name);
-         uint32_t job_id = lGetUlong(job, JB_job_number);
+         const char *pe_name = ocs::tom::get<PE_name>(pe);
+         uint32_t job_id = ocs::tom::get<JB_job_number>(job);
 
          answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
                                  ANSWER_QUALITY_INFO, MSG_PEREFINJOB_SU,
@@ -166,15 +168,15 @@ bool pe_is_referenced(const lListElem *pe, lList **answer_list,
       /* fix for bug 6422335
        * check cq configuration for pe references instead of qinstances
        */
-      const char *pe_name = lGetString(pe, PE_name);
+      const char *pe_name = ocs::tom::get<PE_name>(pe);
 
       for_each_ep_lv(cqueue, master_cqueue_list) {
-         for_each_ep_lv(cpl, lGetList(cqueue, CQ_pe_list)){
-            if (lGetSubStr(cpl, ST_name, pe_name, ASTRLIST_value))  {
+         for_each_ep_lv(cpl, ocs::tom::get<CQ_pe_list>(cqueue)){
+            if (ocs::tom::find_first_in<ASTRLIST_value, ST_name>(cpl, pe_name))  {
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
                                        ANSWER_QUALITY_INFO,
                                        MSG_PEREFINQUEUE_SS,
-                                       pe_name, lGetString(cqueue, CQ_name));
+                                       pe_name, ocs::tom::get<CQ_name>(cqueue));
                ret = true;
                break;
             }
@@ -209,7 +211,7 @@ int pe_validate(lListElem *pep, lList **alpp, int startup, const lList *master_u
    const char *pe_name;
    int ret;
 
-   pe_name = lGetString(pep, PE_name);
+   pe_name = ocs::tom::get<PE_name>(pep);
    if (pe_name != nullptr && verify_obj_name(alpp, pe_name, MAX_VERIFY_STRING, MSG_OBJ_PE) != STATUS_OK) {
       if (alpp == nullptr) {
          ERROR(MSG_PE_INVALIDCHARACTERINPE_S, pe_name);
@@ -225,7 +227,7 @@ int pe_validate(lListElem *pep, lList **alpp, int startup, const lList *master_u
 
    /* -------- start_proc_args */
    ocs_null_out_none<PE_start_proc_args>(pep);
-   s = lGetString(pep, PE_start_proc_args);
+   s = ocs::tom::get<PE_start_proc_args>(pep);
    if (s != nullptr && replace_params(s, nullptr, 0, pe_variables)) {
       if (alpp == nullptr) {
          ERROR(MSG_PE_STARTPROCARGS_SS, pe_name, err_msg);
@@ -238,7 +240,7 @@ int pe_validate(lListElem *pep, lList **alpp, int startup, const lList *master_u
 
    /* -------- stop_proc_args */
    ocs_null_out_none<PE_stop_proc_args>(pep);
-   s = lGetString(pep, PE_stop_proc_args);
+   s = ocs::tom::get<PE_stop_proc_args>(pep);
    if (s != nullptr && replace_params(s, nullptr, 0, pe_variables)) {
       if (alpp == nullptr) {
          ERROR(MSG_PE_STOPPROCARGS_SS, pe_name, err_msg);
@@ -250,12 +252,12 @@ int pe_validate(lListElem *pep, lList **alpp, int startup, const lList *master_u
    }
 
    /* -------- slots */
-   if ((ret=pe_validate_slots(alpp, lGetUlong(pep, PE_slots))) != STATUS_OK) {
+   if ((ret=pe_validate_slots(alpp, ocs::tom::get<PE_slots>(pep))) != STATUS_OK) {
       DRETURN(ret);
    }
 
    /* -------- allocation_rule */
-   s = lGetString(pep, PE_allocation_rule);
+   s = ocs::tom::get<PE_allocation_rule>(pep);
    if (!pe_validate_allocation_rule(alpp, s, alpp == nullptr)) {
       DRETURN(STATUS_EEXIST);
    }
@@ -263,18 +265,18 @@ int pe_validate(lListElem *pep, lList **alpp, int startup, const lList *master_u
    /* do this only in qmaster. we don't have the usersets in qconf */
    if (startup) {
       /* -------- PE_user_list */
-      if ((ret=userset_list_validate_acl_list(lGetList(pep, PE_user_list), alpp, master_userset_list))!=STATUS_OK) {
+      if ((ret=userset_list_validate_acl_list(ocs::tom::get<PE_user_list>(pep), alpp, master_userset_list))!=STATUS_OK) {
          DRETURN(ret);
       }
 
       /* -------- PE_xuser_list */
-      if ((ret=userset_list_validate_acl_list(lGetList(pep, PE_xuser_list), alpp, master_userset_list))!=STATUS_OK) {
+      if ((ret=userset_list_validate_acl_list(ocs::tom::get<PE_xuser_list>(pep), alpp, master_userset_list))!=STATUS_OK) {
          DRETURN(ret);
       }
    }
 
    /* -------- PE_urgency_slots */
-   if ((ret=pe_validate_urgency_slots(alpp, lGetString(pep, PE_urgency_slots)))!=STATUS_OK) {
+   if ((ret=pe_validate_urgency_slots(alpp, ocs::tom::get<PE_urgency_slots>(pep)))!=STATUS_OK) {
       DRETURN(ret);
    }
 
@@ -421,7 +423,7 @@ bool pe_list_do_all_exist(const lList *pe_list, lList **answer_list,
    bool ret = true;
 
    for_each_ep_lv(pe_ref_elem, pe_ref_list) {
-      const char *pe_ref_string = lGetString(pe_ref_elem, ST_name);
+      const char *pe_ref_string = ocs::tom::get<ST_name>(pe_ref_elem);
 
       if (ignore_make_pe && !strcmp(pe_ref_string, "make")) {
          continue;
@@ -467,18 +469,18 @@ int pe_urgency_slots(const lListElem *pe, const char *urgency_slot_setting,
        */
       n = range_list_get_last_id(range_list, nullptr);
       if (n == RANGE_INFINITY) {
-         n = lGetUlong(pe, PE_slots);
+         n = ocs::tom::get<PE_slots>(pe);
       }
    } else if (!strcasecmp(urgency_slot_setting, SGE_ATTRVAL_AVG)) {
       /*
        * to handle infinity slot ranges we use the maximum PE
        * slot number as upper bound when determining the average
        */
-      n = range_list_get_average(range_list, lGetUlong(pe, PE_slots));
+      n = range_list_get_average(range_list, ocs::tom::get<PE_slots>(pe));
    } else if (isdigit(urgency_slot_setting[0])) {
       n = atoi(urgency_slot_setting);
    } else {
-      CRITICAL(MSG_PE_UNKNOWN_URGENCY_SLOT_SS, urgency_slot_setting, lGetString(pe, PE_name));
+      CRITICAL(MSG_PE_UNKNOWN_URGENCY_SLOT_SS, urgency_slot_setting, ocs::tom::get<PE_name>(pe));
       n = 1;
    }
    DRETURN(n);
@@ -503,19 +505,19 @@ lListElem *pe_create_template(char *pe_name) {
    pep = lCreateElem(PE_Type);
 
    if (pe_name) {
-      lSetString(pep, PE_name, pe_name);
+      ocs::tom::set<PE_name>(pep, pe_name);
    } else {
-      lSetString(pep, PE_name, "template");
+      ocs::tom::set<PE_name>(pep, "template");
    }
 
-   lSetString(pep, PE_allocation_rule, "$pe_slots");
-   lSetString(pep, PE_start_proc_args, "NONE");
-   lSetString(pep, PE_stop_proc_args, "NONE");
+   ocs::tom::set<PE_allocation_rule>(pep, "$pe_slots");
+   ocs::tom::set<PE_start_proc_args>(pep, "NONE");
+   ocs::tom::set<PE_stop_proc_args>(pep, "NONE");
 
    /* PE_control_slaves initialized implicitly to false */
-   lSetBool(pep, PE_job_is_first_task, true);
+   ocs::tom::set<PE_job_is_first_task>(pep, true);
 
-   lSetString(pep, PE_urgency_slots, SGE_ATTRVAL_MIN);
+   ocs::tom::set<PE_urgency_slots>(pep, SGE_ATTRVAL_MIN);
 
    DRETURN(pep);
 }
@@ -533,11 +535,10 @@ lListElem *pe_create_template(char *pe_name) {
  */
 int pe_get_slots_used(const lListElem *pe) {
    int ret = -1;
-   const lListElem *actual = lGetSubStr(pe, RUE_name, SGE_ATTR_SLOTS,
-                                        PE_resource_utilization);
+   const lListElem *actual = ocs::tom::find_first_in<PE_resource_utilization, RUE_name>(pe, SGE_ATTR_SLOTS);
 
    if (actual) {
-      ret = lGetDouble(actual, RUE_utilized_now);
+      ret = ocs::tom::get<RUE_utilized_now>(actual);
    }
    return ret;
 }
@@ -555,10 +556,10 @@ int pe_get_slots_used(const lListElem *pe) {
  * @note MT-NOTE: pe_set_slots_used() is MT safe
  */
 int pe_set_slots_used(lListElem *pe, int slots) {
-   lListElem *actual = lGetSubStrRW(pe, RUE_name, SGE_ATTR_SLOTS, PE_resource_utilization);
-   if (!actual && (!(actual = lAddSubStr(pe, RUE_name, SGE_ATTR_SLOTS, PE_resource_utilization, RUE_Type))))
+   lListElem *actual = ocs::tom::find_first_in_rw<PE_resource_utilization, RUE_name>(pe, SGE_ATTR_SLOTS);
+   if (!actual && (!(actual = ocs::tom::emplace_back_in<PE_resource_utilization, RUE_name>(pe, SGE_ATTR_SLOTS))))
       return -1;
-   lSetDouble(actual, RUE_utilized_now, slots);
+   ocs::tom::set<RUE_utilized_now>(actual, slots);
    return 0;
 }
 
@@ -583,7 +584,7 @@ void pe_debit_slots(lListElem *pep, int slots, uint32_t job_id) {
       n = pe_get_slots_used(pep);
       n += slots;
       if (n < 0) {
-         ERROR(MSG_PE_USEDSLOTSTOOBIG_S, lGetString(pep, PE_name));
+         ERROR(MSG_PE_USEDSLOTSTOOBIG_S, ocs::tom::get<PE_name>(pep));
       }
       pe_set_slots_used(pep, n);
    }
@@ -611,8 +612,8 @@ bool pe_do_accounting_summary(const lListElem *pe) {
     * the accounting_summary attribute has only a meaning
     * for tightly integrated jobs
     */
-   if (pe != nullptr && lGetBool(pe, PE_control_slaves)) {
-      ret = lGetBool(pe, PE_accounting_summary) ? true : false;
+   if (pe != nullptr && ocs::tom::get<PE_control_slaves>(pe)) {
+      ret = ocs::tom::get<PE_accounting_summary>(pe) ? true : false;
    }
 
    return ret;

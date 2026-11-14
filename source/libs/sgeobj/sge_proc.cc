@@ -39,6 +39,7 @@
  */
 
 #include "sgeobj/sge_proc.h"
+#include "tom/ocs_Element.h"
 
 static lList *procList;
 
@@ -58,7 +59,7 @@ lListElem *get_pr(int pid) {
       return nullptr;
    }
 
-   return lGetElemUlongRW(procList, PRO_pid, pid);
+   return ocs::tom::find_first_rw<PRO_pid>(procList, pid);
 }
 
 /**
@@ -116,6 +117,6 @@ void clean_procList() {
    /* mark all jobs to finished */
 
    for_each_rw (next, procList) {
-      lSetBool(next, PRO_run, false);
+      ocs::tom::set<PRO_run>(next, false);
    }
 }

@@ -32,6 +32,7 @@
 #include "uti/sge_unistd.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_host.h"
+#include "tom/ocs_Element.h"
 #include "spool/flatfile/sge_flatfile.h"
 #include "spool/flatfile/sge_flatfile_obj.h"
 #include "procedure/qconf/action/ocs_QConfActionParameter.h"
@@ -215,7 +216,7 @@ qconf_rqs_collect(const char *filepath, void *vctx) {
       return 1;
    }
    for_each_ep_lv(e, l) {
-      ctx->names->emplace_back(lGetString(e, RQS_name));
+      ctx->names->emplace_back(ocs::tom::get<RQS_name>(e));
       ctx->sources->emplace_back(filepath);
    }
    lFreeList(&l);
@@ -334,12 +335,12 @@ qconf_delete_conf_hosts([[maybe_unused]] std::ostream &os, const qconf_op &op, l
    std::vector<std::string> names;
    for (const char *cp = sge_strtok(list.data(), ","); cp != nullptr && *cp != '\0';
         cp = sge_strtok(nullptr, ",")) {
-      lSetHost(host_ep, EH_name, cp);
+      ocs::tom::set<EH_name>(host_ep, cp);
       if (sge_resolve_host(host_ep, EH_name) != CL_RETVAL_OK) {
          qconf_answer(alpp, ANSWER_QUALITY_ERROR, MSG_SGETEXT_CANTRESOLVEHOST_S, cp);
          ret = 1;
       }
-      names.emplace_back(lGetHost(host_ep, EH_name));
+      names.emplace_back(static_cast<const char *>(ocs::tom::get<EH_name>(host_ep)));
    }
    lFreeElem(&host_ep);
    if (!names.empty() && qconf_delete_send(QConfObj::CONF, names, {}, alpp) != 0) {

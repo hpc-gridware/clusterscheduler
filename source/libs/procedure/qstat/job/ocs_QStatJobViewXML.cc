@@ -30,6 +30,9 @@
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_mesobj.h"
 #include "sgeobj/sge_ulong.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_MES.h"
+#include "sgeobj/tom/ocs_tom_ULNG.h"
 
 #include "sched/sge_schedd_text.h"
 
@@ -47,20 +50,20 @@ ocs::QStatJobViewXML::show_jobs_and_reasons(std::ostream &os, QStatParameter &pa
    /* add job infos */
    lListElem *xmlElem = lCreateElem(XMLE_Type);
    lListElem *attrElem = lCreateElem(XMLA_Type);
-   lSetString(attrElem, XMLA_Name, "djob_info");
-   lSetObject(xmlElem, XMLE_Element, attrElem);
-   lSetBool(xmlElem, XMLE_Print, true);
-   lSetList(xmlElem, XMLE_List, model.jlp);
+   ocs::tom::set<XMLA_Name>(attrElem, "djob_info");
+   ocs::tom::set<XMLE_Element>(xmlElem, attrElem);
+   ocs::tom::set<XMLE_Print>(xmlElem, true);
+   ocs::tom::set<XMLE_List>(xmlElem, model.jlp);
    model.jlp = nullptr;
    lAppendElem(XML_out, xmlElem);
 
    /* add messages */
    xmlElem = lCreateElem(XMLE_Type);
    attrElem = lCreateElem(XMLA_Type);
-   lSetString(attrElem, XMLA_Name, "messages");
-   lSetObject(xmlElem, XMLE_Element, attrElem);
-   lSetBool(xmlElem, XMLE_Print, true);
-   lSetList(xmlElem, XMLE_List, model.ilp);
+   ocs::tom::set<XMLA_Name>(attrElem, "messages");
+   ocs::tom::set<XMLE_Element>(xmlElem, attrElem);
+   ocs::tom::set<XMLE_Print>(xmlElem, true);
+   ocs::tom::set<XMLE_List>(xmlElem, model.ilp);
    model.ilp = nullptr;
    lAppendElem(XML_out, xmlElem);
 
@@ -86,10 +89,10 @@ void ocs::QStatJobViewXML::show_reasons(std::ostream &os, QStatParameter &parame
 
    // each message gets the text that summarizes its jobs, as the plain view prints it above their ids
    if (const lListElem *sme = lFirst(model.ilp); sme != nullptr) {
-      for_each_rw_lv(mes, lGetListRW(sme, SME_message_list)) {
-         lPSortList(lGetListRW(mes, MES_job_number_list), "I+", ULNG_value);
-         const uint32_t mid = lGetUlong(mes, MES_message_number);
-         lSetString(mes, MES_message, sge_schedd_text(mid + SCHEDD_INFO_OFFSET));
+      for_each_rw_lv(mes, ocs::tom::get<SME_message_list>(sme)) {
+         lPSortList(ocs::tom::get<MES_job_number_list>(mes), "I+", ULNG_value);
+         const uint32_t mid = ocs::tom::get<MES_message_number>(mes);
+         ocs::tom::set<MES_message>(mes, sge_schedd_text(mid + SCHEDD_INFO_OFFSET));
       }
    }
 

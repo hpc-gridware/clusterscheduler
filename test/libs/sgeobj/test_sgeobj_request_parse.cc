@@ -39,6 +39,7 @@
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_centry_rsmap.h"
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "tom/ocs_Element.h"
 
 /*
  * A request which carries a parameter list is refused outright on a build without the
@@ -91,8 +92,8 @@ parse(const char *request) {
 
 static const char *
 value_of(const lList *lp, const char *name) {
-   const lListElem *ep = lGetElemStr(lp, CE_name, name);
-   return ep == nullptr ? nullptr : lGetString(ep, CE_stringval);
+   const lListElem *ep = ocs::tom::find_first<CE_name>(lp, name);
+   return ep == nullptr ? nullptr : ocs::tom::get<CE_stringval>(ep);
 }
 
 static void
@@ -177,45 +178,45 @@ make_centry_list() {
    lList *lp = lCreateList("complexes", CE_Type);
 
    lListElem *ep = lCreateElem(CE_Type);
-   lSetString(ep, CE_name, "gpu");
-   lSetUlong(ep, CE_valtype, static_cast<uint32_t>(ocs::CEntry::Type::RSMAP));
-   lSetUlong(ep, CE_relop, CMPLXLE_OP);
-   lSetUlong(ep, CE_consumable, CONSUMABLE_HOST);
-   lSetUlong(ep, CE_requestable, REQU_YES);
+   ocs::tom::set<CE_name>(ep, "gpu");
+   ocs::tom::set<CE_valtype>(ep, static_cast<uint32_t>(ocs::CEntry::Type::RSMAP));
+   ocs::tom::set<CE_relop>(ep, CMPLXLE_OP);
+   ocs::tom::set<CE_consumable>(ep, CONSUMABLE_HOST);
+   ocs::tom::set<CE_requestable>(ep, REQU_YES);
    lAppendElem(lp, ep);
 
    ep = lCreateElem(CE_Type);
-   lSetString(ep, CE_name, "gpu_memory");
-   lSetUlong(ep, CE_valtype, static_cast<uint32_t>(ocs::CEntry::Type::MEM));
-   lSetUlong(ep, CE_relop, CMPLXLE_OP);
-   lSetUlong(ep, CE_consumable, CONSUMABLE_NO);
-   lSetUlong(ep, CE_requestable, REQU_YES);
+   ocs::tom::set<CE_name>(ep, "gpu_memory");
+   ocs::tom::set<CE_valtype>(ep, static_cast<uint32_t>(ocs::CEntry::Type::MEM));
+   ocs::tom::set<CE_relop>(ep, CMPLXLE_OP);
+   ocs::tom::set<CE_consumable>(ep, CONSUMABLE_NO);
+   ocs::tom::set<CE_requestable>(ep, REQU_YES);
    lAppendElem(lp, ep);
 
    // a string characteristic, so that a parameter value may be a pattern
    ep = lCreateElem(CE_Type);
-   lSetString(ep, CE_name, "gpu_model");
-   lSetUlong(ep, CE_valtype, static_cast<uint32_t>(ocs::CEntry::Type::STR));
-   lSetUlong(ep, CE_relop, CMPLXEQ_OP);
-   lSetUlong(ep, CE_consumable, CONSUMABLE_NO);
-   lSetUlong(ep, CE_requestable, REQU_YES);
+   ocs::tom::set<CE_name>(ep, "gpu_model");
+   ocs::tom::set<CE_valtype>(ep, static_cast<uint32_t>(ocs::CEntry::Type::STR));
+   ocs::tom::set<CE_relop>(ep, CMPLXEQ_OP);
+   ocs::tom::set<CE_consumable>(ep, CONSUMABLE_NO);
+   ocs::tom::set<CE_requestable>(ep, REQU_YES);
    lAppendElem(lp, ep);
 
    // may not be requested, so it may not be matched against either
    ep = lCreateElem(CE_Type);
-   lSetString(ep, CE_name, "gpu_serial");
-   lSetUlong(ep, CE_valtype, static_cast<uint32_t>(ocs::CEntry::Type::STR));
-   lSetUlong(ep, CE_relop, CMPLXEQ_OP);
-   lSetUlong(ep, CE_consumable, CONSUMABLE_NO);
-   lSetUlong(ep, CE_requestable, REQU_NO);
+   ocs::tom::set<CE_name>(ep, "gpu_serial");
+   ocs::tom::set<CE_valtype>(ep, static_cast<uint32_t>(ocs::CEntry::Type::STR));
+   ocs::tom::set<CE_relop>(ep, CMPLXEQ_OP);
+   ocs::tom::set<CE_consumable>(ep, CONSUMABLE_NO);
+   ocs::tom::set<CE_requestable>(ep, REQU_NO);
    lAppendElem(lp, ep);
 
    ep = lCreateElem(CE_Type);
-   lSetString(ep, CE_name, "mem");
-   lSetUlong(ep, CE_valtype, static_cast<uint32_t>(ocs::CEntry::Type::MEM));
-   lSetUlong(ep, CE_relop, CMPLXLE_OP);
-   lSetUlong(ep, CE_consumable, CONSUMABLE_YES);
-   lSetUlong(ep, CE_requestable, REQU_YES);
+   ocs::tom::set<CE_name>(ep, "mem");
+   ocs::tom::set<CE_valtype>(ep, static_cast<uint32_t>(ocs::CEntry::Type::MEM));
+   ocs::tom::set<CE_relop>(ep, CMPLXLE_OP);
+   ocs::tom::set<CE_consumable>(ep, CONSUMABLE_YES);
+   ocs::tom::set<CE_requestable>(ep, REQU_YES);
    lAppendElem(lp, ep);
 
    return lp;
@@ -234,10 +235,10 @@ test_amount_split() {
    check_int("T20", "a request with a parameter list is accepted" PARAM_LIST_NOTE,
              centry_list_fill_request(lp, &answer_list, centries, true, false, true),
              PARAM_LIST_RC);
-   ep = lGetElemStr(lp, CE_name, "gpu");
-   check_int("T20b", "CE_doubleval is the amount", (int)lGetDouble(ep, CE_doubleval), 4);
+   ep = ocs::tom::find_first<CE_name>(lp, "gpu");
+   check_int("T20b", "CE_doubleval is the amount", (int)ocs::tom::get<CE_doubleval>(ep), 4);
    check_str("T20c", "CE_stringval still carries the parameters",
-             lGetString(ep, CE_stringval), "4[same=id]");
+             ocs::tom::get<CE_stringval>(ep), "4[same=id]");
    lFreeList(&answer_list);
    lFreeList(&lp);
 
@@ -246,8 +247,8 @@ test_amount_split() {
    answer_list = nullptr;
    check_int("T21", "a plain amount is accepted",
              centry_list_fill_request(lp, &answer_list, centries, true, false, true), 0);
-   ep = lGetElemStr(lp, CE_name, "gpu");
-   check_int("T21b", "CE_doubleval is the amount", (int)lGetDouble(ep, CE_doubleval), 4);
+   ep = ocs::tom::find_first<CE_name>(lp, "gpu");
+   check_int("T21b", "CE_doubleval is the amount", (int)ocs::tom::get<CE_doubleval>(ep), 4);
    lFreeList(&answer_list);
    lFreeList(&lp);
 
@@ -290,9 +291,9 @@ test_amount_split() {
    answer_list = nullptr;
    check_int("T24", "a memory request is accepted",
              centry_list_fill_request(lp, &answer_list, centries, true, false, true), 0);
-   ep = lGetElemStr(lp, CE_name, "mem");
+   ep = ocs::tom::find_first<CE_name>(lp, "mem");
    check_int("T24b", "the multiplier is applied",
-             (int)(lGetDouble(ep, CE_doubleval) / (1024 * 1024)), 2048);
+             (int)(ocs::tom::get<CE_doubleval>(ep) / (1024 * 1024)), 2048);
    lFreeList(&answer_list);
    lFreeList(&lp);
 
@@ -432,12 +433,12 @@ test_parameter_validation() {
 static lListElem *
 make_complex(const char *name, const char *shortcut) {
    lListElem *ep = lCreateElem(CE_Type);
-   lSetString(ep, CE_name, name);
-   lSetString(ep, CE_shortcut, shortcut);
-   lSetUlong(ep, CE_valtype, static_cast<uint32_t>(ocs::CEntry::Type::INT));
-   lSetUlong(ep, CE_relop, CMPLXLE_OP);
-   lSetUlong(ep, CE_consumable, CONSUMABLE_NO);
-   lSetUlong(ep, CE_requestable, REQU_YES);
+   ocs::tom::set<CE_name>(ep, name);
+   ocs::tom::set<CE_shortcut>(ep, shortcut);
+   ocs::tom::set<CE_valtype>(ep, static_cast<uint32_t>(ocs::CEntry::Type::INT));
+   ocs::tom::set<CE_relop>(ep, CMPLXLE_OP);
+   ocs::tom::set<CE_consumable>(ep, CONSUMABLE_NO);
+   ocs::tom::set<CE_requestable>(ep, REQU_YES);
    return ep;
 }
 
@@ -504,10 +505,10 @@ test_parameter_values_and_defaults() {
    /* a default value must be an amount. requestable YES is the case with no other validation,
       so it is the one worth pinning */
    ep = make_complex("gpu2", "g2");
-   lSetUlong(ep, CE_valtype, static_cast<uint32_t>(ocs::CEntry::Type::RSMAP));
-   lSetUlong(ep, CE_consumable, CONSUMABLE_HOST);
-   lSetUlong(ep, CE_requestable, REQU_YES);
-   lSetString(ep, CE_defaultval, "4");
+   ocs::tom::set<CE_valtype>(ep, static_cast<uint32_t>(ocs::CEntry::Type::RSMAP));
+   ocs::tom::set<CE_consumable>(ep, CONSUMABLE_HOST);
+   ocs::tom::set<CE_requestable>(ep, REQU_YES);
+   ocs::tom::set<CE_defaultval>(ep, "4");
    answer_list = nullptr;
    check_int("T64", "a numeric default is accepted",
              centry_elem_validate(ep, nullptr, &answer_list, false) ? 1 : 0, 1);
@@ -515,10 +516,10 @@ test_parameter_values_and_defaults() {
    lFreeElem(&ep);
 
    ep = make_complex("gpu2", "g2");
-   lSetUlong(ep, CE_valtype, static_cast<uint32_t>(ocs::CEntry::Type::RSMAP));
-   lSetUlong(ep, CE_consumable, CONSUMABLE_HOST);
-   lSetUlong(ep, CE_requestable, REQU_YES);
-   lSetString(ep, CE_defaultval, "4[same=id]");
+   ocs::tom::set<CE_valtype>(ep, static_cast<uint32_t>(ocs::CEntry::Type::RSMAP));
+   ocs::tom::set<CE_consumable>(ep, CONSUMABLE_HOST);
+   ocs::tom::set<CE_requestable>(ep, REQU_YES);
+   ocs::tom::set<CE_defaultval>(ep, "4[same=id]");
    answer_list = nullptr;
    check_int("T65", "a default carrying a parameter list is refused",
              centry_elem_validate(ep, nullptr, &answer_list, false) ? 1 : 0, 0);
@@ -535,14 +536,14 @@ test_parameter_values_and_defaults() {
 static lListElem *
 make_resource_definition() {
    lListElem *ep = lCreateElem(CE_Type);
-   lSetString(ep, CE_name, "gpu");
-   lSetUlong(ep, CE_valtype, static_cast<uint32_t>(ocs::CEntry::Type::RSMAP));
-   lSetDouble(ep, CE_doubleval, 8);
+   ocs::tom::set<CE_name>(ep, "gpu");
+   ocs::tom::set<CE_valtype>(ep, static_cast<uint32_t>(ocs::CEntry::Type::RSMAP));
+   ocs::tom::set<CE_doubleval>(ep, 8);
 
-   lListElem *resl = lAddSubStr(ep, RESL_value, "0", CE_resource_map_list, RESL_Type);
-   lSetUlong(resl, RESL_amount, 4);
-   resl = lAddSubStr(ep, RESL_value, "1", CE_resource_map_list, RESL_Type);
-   lSetUlong(resl, RESL_amount, 4);
+   lListElem *resl = ocs::tom::emplace_back_in<CE_resource_map_list, RESL_value>(ep, "0");
+   ocs::tom::set<RESL_amount>(resl, 4);
+   resl = ocs::tom::emplace_back_in<CE_resource_map_list, RESL_value>(ep, "1");
+   ocs::tom::set<RESL_amount>(resl, 4);
 
    return ep;
 }
@@ -559,18 +560,18 @@ make_resource_definition() {
 static lListElem *
 make_resource_definition_numa() {
    lListElem *ep = lCreateElem(CE_Type);
-   lSetString(ep, CE_name, "gpu");
-   lSetUlong(ep, CE_valtype, static_cast<uint32_t>(ocs::CEntry::Type::RSMAP));
-   lSetDouble(ep, CE_doubleval, 8);
+   ocs::tom::set<CE_name>(ep, "gpu");
+   ocs::tom::set<CE_valtype>(ep, static_cast<uint32_t>(ocs::CEntry::Type::RSMAP));
+   ocs::tom::set<CE_doubleval>(ep, 8);
 
    static const char *const node_of[] = {"0", "0", "1", "1"};
    for (int i = 0; i < 4; i++) {
       char id[2] = {static_cast<char>('0' + i), '\0'};
-      lListElem *resl = lAddSubStr(ep, RESL_value, id, CE_resource_map_list, RESL_Type);
-      lSetUlong(resl, RESL_amount, 2);
+      lListElem *resl = ocs::tom::emplace_back_in<CE_resource_map_list, RESL_value>(ep, id);
+      ocs::tom::set<RESL_amount>(resl, 2);
 
-      lListElem *property = lAddSubStr(resl, CE_name, "numa_node", RESL_properties, CE_Type);
-      lSetString(property, CE_stringval, node_of[i]);
+      lListElem *property = ocs::tom::emplace_back_in<RESL_properties, CE_name>(resl, "numa_node");
+      ocs::tom::set<CE_stringval>(property, node_of[i]);
    }
 
    return ep;
@@ -583,8 +584,8 @@ static lList *
 make_utilization(const char *id, uint32_t used) {
    lList *taken = nullptr;
    if (id != nullptr) {
-      lListElem *resl = lAddElemStr(&taken, RESL_value, id, RESL_Type);
-      lSetUlong(resl, RESL_amount, used);
+      lListElem *resl = ocs::tom::emplace_back<RESL_value>(&taken, id);
+      ocs::tom::set<RESL_amount>(resl, used);
    }
    return taken;
 }
@@ -606,16 +607,16 @@ test_best_free_id() {
 
    /* both cards half used: four free in the map, two on the best id */
    use = make_utilization("0", 2);
-   lListElem *resl = lAddElemStr(&use, RESL_value, "1", RESL_Type);
-   lSetUlong(resl, RESL_amount, 2);
+   lListElem *resl = ocs::tom::emplace_back<RESL_value>(&use, "1");
+   ocs::tom::set<RESL_amount>(resl, 2);
    check_int("T92", "the count is of one id, not of the map", (int)(centry_rsmap_best_free_id(def, use, &free), free), 2);
    lFreeList(&use);
 
    /* a full map reports zero rather than nothing, so a caller can tell "no room" from
       "no such resource map" */
    use = make_utilization("0", 4);
-   resl = lAddElemStr(&use, RESL_value, "1", RESL_Type);
-   lSetUlong(resl, RESL_amount, 4);
+   resl = ocs::tom::emplace_back<RESL_value>(&use, "1");
+   ocs::tom::set<RESL_amount>(resl, 4);
    check_int("T93", "a full map reports an id", centry_rsmap_best_free_id(def, use, &free) != nullptr, 1);
    check_int("T93b", "with a free count of zero", (int)free, 0);
    lFreeList(&use);
@@ -659,8 +660,8 @@ test_best_free_group() {
    /* an instance which does not carry the characteristic cannot agree with anything, so it is
     * left out rather than forming a group of its own */
    lListElem *def_partial = make_resource_definition_numa();
-   lListElem *stray = lAddSubStr(def_partial, RESL_value, "9", CE_resource_map_list, RESL_Type);
-   lSetUlong(stray, RESL_amount, 99);
+   lListElem *stray = ocs::tom::emplace_back_in<CE_resource_map_list, RESL_value>(def_partial, "9");
+   ocs::tom::set<RESL_amount>(stray, 99);
    key = centry_rsmap_best_free_group(def_partial, nullptr, "numa_node", &free);
    check_int("T98", "an instance without the characteristic is left out", (int)free, 4);
    check_int("T98b", "so the group is still a node", key != nullptr && strcmp(key, "9") != 0, 1);
@@ -687,7 +688,7 @@ test_select_group_instances() {
              centry_rsmap_select_group_instances(def, nullptr, nullptr, "id", 4, &selected), 1);
    check_int("T100b", "come from a single id", (int)lGetNumberOfElem(selected), 1);
    check_int("T100c", "with the whole amount on it",
-             (int)lGetUlong(lFirst(selected), RESL_amount), 4);
+             (int)ocs::tom::get<RESL_amount>(lFirst(selected)), 4);
    lFreeList(&selected);
 
    check_int("T101", "more than any id holds is refused",
@@ -702,9 +703,9 @@ test_select_group_instances() {
                                                  &selected), 1);
    check_int("T102b", "spread over the two cards of it", (int)lGetNumberOfElem(selected), 2);
    check_int("T102c", "filling the first before touching the second",
-             (int)lGetUlong(lFirst(selected), RESL_amount), 2);
+             (int)ocs::tom::get<RESL_amount>(lFirst(selected)), 2);
    check_int("T102d", "and taking the remainder from the second",
-             (int)lGetUlong(lLast(selected), RESL_amount), 1);
+             (int)ocs::tom::get<RESL_amount>(lLast(selected)), 1);
    lFreeList(&selected);
 
    check_int("T103", "the same three are refused by the identifier keying",
@@ -719,16 +720,16 @@ test_select_group_instances() {
    /* a second request scope: the group is read back from what was granted already, and what
     * this job holds is subtracted along with what other jobs hold */
    lList *already = nullptr;
-   lListElem *held = lAddElemStr(&already, RESL_value, "0", RESL_Type);
-   lSetUlong(held, RESL_amount, 2);
+   lListElem *held = ocs::tom::emplace_back<RESL_value>(&already, "0");
+   ocs::tom::set<RESL_amount>(held, 2);
 
    check_int("T105", "a later scope takes from the group the first one took from",
              centry_rsmap_select_group_instances(numa, nullptr, already, "numa_node", 2,
                                                  &selected), 1);
    check_str("T105b", "from the other card of that node, the first being spent",
-             lGetString(lFirst(selected), RESL_value), "1");
+             ocs::tom::get<RESL_value>(lFirst(selected)), "1");
    check_int("T105c", "and only what is left of it",
-             (int)lGetUlong(lFirst(selected), RESL_amount), 2);
+             (int)ocs::tom::get<RESL_amount>(lFirst(selected)), 2);
    lFreeList(&selected);
 
    check_int("T106", "what this job already holds is not free for it again",
@@ -743,7 +744,7 @@ test_select_group_instances() {
              centry_rsmap_select_group_instances(numa, use, nullptr, "numa_node", 3,
                                                  &selected), 1);
    check_str("T107b", "it moves to the node which can",
-             lGetString(lFirst(selected), RESL_value), "2");
+             ocs::tom::get<RESL_value>(lFirst(selected)), "2");
    lFreeList(&selected);
    lFreeList(&use);
 
@@ -753,8 +754,8 @@ test_select_group_instances() {
              centry_rsmap_select_group_instances(numa, nullptr, nullptr, "numa_node", 3,
                                                  &selected, nullptr, nullptr, "1"), 1);
    check_str("T108b", "so the cards of that node are used",
-             lGetString(lFirst(selected), RESL_value), "2");
-   check_str("T108c", "both of them", lGetString(lLast(selected), RESL_value), "3");
+             ocs::tom::get<RESL_value>(lFirst(selected)), "2");
+   check_str("T108c", "both of them", ocs::tom::get<RESL_value>(lLast(selected)), "3");
    lFreeList(&selected);
 
    check_int("T109", "more than the required group holds is refused, not moved elsewhere",
@@ -770,14 +771,14 @@ test_select_group_instances() {
    /* what an earlier request scope was granted on this host comes first: it has already been
     * handed out and cannot be exchanged for the group the rest of the job uses */
    lList *granted = nullptr;
-   lListElem *granted_ep = lAddElemStr(&granted, RESL_value, "0", RESL_Type);
-   lSetUlong(granted_ep, RESL_amount, 2);
+   lListElem *granted_ep = ocs::tom::emplace_back<RESL_value>(&granted, "0");
+   ocs::tom::set<RESL_amount>(granted_ep, 2);
 
    check_int("T109c", "a group already granted here wins over the required one",
              centry_rsmap_select_group_instances(numa, nullptr, granted, "numa_node", 2,
                                                  &selected, nullptr, nullptr, "1"), 1);
    check_str("T109d", "so the rest comes from the node that scope used",
-             lGetString(lFirst(selected), RESL_value), "1");
+             ocs::tom::get<RESL_value>(lFirst(selected)), "1");
    lFreeList(&selected);
    lFreeList(&granted);
 
@@ -801,9 +802,9 @@ test_select_instances() {
              centry_rsmap_select_instances(def, nullptr, nullptr, 6, &selected), 1);
    check_int("T111b", "two entries", (int)lGetNumberOfElem(selected), 2);
    check_int("T111c", "the first id filled before the second is touched",
-             (int)lGetUlong(lFirst(selected), RESL_amount), 4);
+             (int)ocs::tom::get<RESL_amount>(lFirst(selected)), 4);
    check_int("T111d", "and the remainder from the second",
-             (int)lGetUlong(lLast(selected), RESL_amount), 2);
+             (int)ocs::tom::get<RESL_amount>(lLast(selected)), 2);
    lFreeList(&selected);
 
    check_int("T112", "more than the map holds is refused",
@@ -814,12 +815,12 @@ test_select_instances() {
     * than one request scope reaches the selection twice, and the first grant is not in the
     * utilization yet - nothing is debited until the assignment is complete. */
    lList *already = nullptr;
-   lListElem *held = lAddElemStr(&already, RESL_value, "0", RESL_Type);
-   lSetUlong(held, RESL_amount, 4);
+   lListElem *held = ocs::tom::emplace_back<RESL_value>(&already, "0");
+   ocs::tom::set<RESL_amount>(held, 4);
 
    check_int("T113", "a later scope skips the id the first one used up",
              centry_rsmap_select_instances(def, nullptr, already, 4, &selected), 1);
-   check_str("T113b", "and takes from the other", lGetString(lFirst(selected), RESL_value), "1");
+   check_str("T113b", "and takes from the other", ocs::tom::get<RESL_value>(lFirst(selected)), "1");
    check_int("T113c", "in one entry", (int)lGetNumberOfElem(selected), 1);
    lFreeList(&selected);
 
@@ -832,7 +833,7 @@ test_select_instances() {
    lList *use = make_utilization("0", 4);
    check_int("T115", "an id used up by other jobs is skipped",
              centry_rsmap_select_instances(def, use, nullptr, 4, &selected), 1);
-   check_str("T115b", "so the free one is taken", lGetString(lFirst(selected), RESL_value), "1");
+   check_str("T115b", "so the free one is taken", ocs::tom::get<RESL_value>(lFirst(selected)), "1");
    lFreeList(&selected);
    lFreeList(&use);
 
@@ -907,12 +908,12 @@ make_named_map() {
    static const char *ids[] = {"gpu1a", "gpu1b", "gpu2a", "gpu2b"};
 
    lListElem *ep = lCreateElem(CE_Type);
-   lSetString(ep, CE_name, "gpu");
-   lSetUlong(ep, CE_valtype, static_cast<uint32_t>(ocs::CEntry::Type::RSMAP));
+   ocs::tom::set<CE_name>(ep, "gpu");
+   ocs::tom::set<CE_valtype>(ep, static_cast<uint32_t>(ocs::CEntry::Type::RSMAP));
 
    for (const char *id : ids) {
-      lListElem *resl = lAddSubStr(ep, RESL_value, id, CE_resource_map_list, RESL_Type);
-      lSetUlong(resl, RESL_amount, 1);
+      lListElem *resl = ocs::tom::emplace_back_in<CE_resource_map_list, RESL_value>(ep, id);
+      ocs::tom::set<RESL_amount>(resl, 1);
    }
 
    return ep;
@@ -955,14 +956,14 @@ test_id_expression() {
    check_int("T130", "one instance is taken from those the expression accepts",
              centry_rsmap_select_instances(def, nullptr, nullptr, 1, &selected, "gpu1*"), 1);
    check_str("T130b", "and it is one of them",
-             lGetString(lFirst(selected), RESL_value), "gpu1a");
+             ocs::tom::get<RESL_value>(lFirst(selected)), "gpu1a");
    lFreeList(&selected);
 
    check_int("T131", "more matches than are asked for is not a problem",
              centry_rsmap_select_instances(def, nullptr, nullptr, 2, &selected, "!gpu1a"), 1);
    check_int("T131b", "the amount is taken", (int)lGetNumberOfElem(selected), 2);
    check_str("T131c", "from the accepted set only",
-             lGetString(lFirst(selected), RESL_value), "gpu1b");
+             ocs::tom::get<RESL_value>(lFirst(selected)), "gpu1b");
    lFreeList(&selected);
 
    check_int("T132", "more than the expression leaves is refused",
@@ -983,18 +984,18 @@ test_id_expression() {
 
    /* id= and same= together: the instances agree in the identifier and match the expression */
    lListElem *shared = lCreateElem(CE_Type);
-   lSetString(shared, CE_name, "gpu");
-   lSetUlong(shared, CE_valtype, static_cast<uint32_t>(ocs::CEntry::Type::RSMAP));
+   ocs::tom::set<CE_name>(shared, "gpu");
+   ocs::tom::set<CE_valtype>(shared, static_cast<uint32_t>(ocs::CEntry::Type::RSMAP));
    for (const char *id : {"gpu1", "gpu2"}) {
-      lListElem *resl = lAddSubStr(shared, RESL_value, id, CE_resource_map_list, RESL_Type);
-      lSetUlong(resl, RESL_amount, 4);          /* four shares of each card */
+      lListElem *resl = ocs::tom::emplace_back_in<CE_resource_map_list, RESL_value>(shared, id);
+      ocs::tom::set<RESL_amount>(resl, 4);          /* four shares of each card */
    }
 
    check_int("T136", "a whole card is taken from the one the expression names",
              centry_rsmap_select_group_instances(shared, nullptr, nullptr, "id", 4, &selected,
                                                  "gpu2*"), 1);
    check_str("T136b", "and it is that card",
-             lGetString(lFirst(selected), RESL_value), "gpu2");
+             ocs::tom::get<RESL_value>(lFirst(selected)), "gpu2");
    check_int("T136c", "in one entry", (int)lGetNumberOfElem(selected), 1);
    lFreeList(&selected);
 
@@ -1013,11 +1014,11 @@ test_id_expression() {
 static lListElem *
 make_characteristic(const char *name, ocs::CEntry::Type type, uint32_t relop) {
    lListElem *ep = lCreateElem(CE_Type);
-   lSetString(ep, CE_name, name);
-   lSetUlong(ep, CE_valtype, static_cast<uint32_t>(type));
-   lSetUlong(ep, CE_relop, relop);
-   lSetUlong(ep, CE_consumable, CONSUMABLE_NO);
-   lSetUlong(ep, CE_requestable, REQU_YES);
+   ocs::tom::set<CE_name>(ep, name);
+   ocs::tom::set<CE_valtype>(ep, static_cast<uint32_t>(type));
+   ocs::tom::set<CE_relop>(ep, relop);
+   ocs::tom::set<CE_consumable>(ep, CONSUMABLE_NO);
+   ocs::tom::set<CE_requestable>(ep, REQU_YES);
    return ep;
 }
 
@@ -1025,10 +1026,10 @@ make_characteristic(const char *name, ocs::CEntry::Type type, uint32_t relop) {
 static void
 set_characteristic(lListElem *def, const char *id, const char *pname, ocs::CEntry::Type type,
                    const char *value) {
-   lListElem *resl = lGetSubStrRW(def, RESL_value, id, CE_resource_map_list);
-   lListElem *prop = lAddSubStr(resl, CE_name, pname, RESL_properties, CE_Type);
-   lSetUlong(prop, CE_valtype, static_cast<uint32_t>(type));
-   lSetString(prop, CE_stringval, value);
+   lListElem *resl = ocs::tom::find_first_in_rw<CE_resource_map_list, RESL_value>(def, id);
+   lListElem *prop = ocs::tom::emplace_back_in<RESL_properties, CE_name>(resl, pname);
+   ocs::tom::set<CE_valtype>(prop, static_cast<uint32_t>(type));
+   ocs::tom::set<CE_stringval>(prop, value);
    lList *answers = nullptr;
    centry_fill_and_check(prop, &answers, false, false);
    lFreeList(&answers);
@@ -1038,12 +1039,12 @@ set_characteristic(lListElem *def, const char *id, const char *pname, ocs::CEntr
 static lListElem *
 make_map_with_characteristics() {
    lListElem *ep = lCreateElem(CE_Type);
-   lSetString(ep, CE_name, "gpu");
-   lSetUlong(ep, CE_valtype, static_cast<uint32_t>(ocs::CEntry::Type::RSMAP));
+   ocs::tom::set<CE_name>(ep, "gpu");
+   ocs::tom::set<CE_valtype>(ep, static_cast<uint32_t>(ocs::CEntry::Type::RSMAP));
 
    for (const char *id : {"gpu0", "gpu1"}) {
-      lListElem *resl = lAddSubStr(ep, RESL_value, id, CE_resource_map_list, RESL_Type);
-      lSetUlong(resl, RESL_amount, 1);
+      lListElem *resl = ocs::tom::emplace_back_in<CE_resource_map_list, RESL_value>(ep, id);
+      ocs::tom::set<RESL_amount>(resl, 1);
    }
 
    /* gpu0 is the cool, small, A100; gpu1 the hot, large, H100 */
@@ -1071,10 +1072,10 @@ test_characteristic_matching() {
    lList *centries = lCreateList("complexes", CE_Type);
 
    lListElem *gpu = lCreateElem(CE_Type);
-   lSetString(gpu, CE_name, "gpu");
-   lSetUlong(gpu, CE_valtype, static_cast<uint32_t>(ocs::CEntry::Type::RSMAP));
-   lSetUlong(gpu, CE_consumable, CONSUMABLE_HOST);
-   lSetUlong(gpu, CE_requestable, REQU_YES);
+   ocs::tom::set<CE_name>(gpu, "gpu");
+   ocs::tom::set<CE_valtype>(gpu, static_cast<uint32_t>(ocs::CEntry::Type::RSMAP));
+   ocs::tom::set<CE_consumable>(gpu, CONSUMABLE_HOST);
+   ocs::tom::set<CE_requestable>(gpu, REQU_YES);
    lAppendElem(centries, gpu);
 
    /* >= : the request is an upper bound, "no hotter than" */
@@ -1140,7 +1141,7 @@ test_characteristic_matching() {
    for (int i = 0; cases[i].id != nullptr; i++) {
       lList *request = centry_list_parse_from_string(nullptr, cases[i].request, false);
       lListElem *req = lFirstRW(request);
-      lSetUlong(req, CE_valtype, static_cast<uint32_t>(ocs::CEntry::Type::RSMAP));
+      ocs::tom::set<CE_valtype>(req, static_cast<uint32_t>(ocs::CEntry::Type::RSMAP));
 
       lList *required = nullptr;
       centry_rsmap_resolve_request_properties(req, centries, &required);
@@ -1155,14 +1156,14 @@ test_characteristic_matching() {
    /* an instance which does not carry the characteristic at all never matches, even when the
       operator would let anything through */
    lListElem *bare = lCreateElem(CE_Type);
-   lSetString(bare, CE_name, "gpu");
-   lSetUlong(bare, CE_valtype, static_cast<uint32_t>(ocs::CEntry::Type::RSMAP));
-   lListElem *resl = lAddSubStr(bare, RESL_value, "gpu9", CE_resource_map_list, RESL_Type);
-   lSetUlong(resl, RESL_amount, 1);
+   ocs::tom::set<CE_name>(bare, "gpu");
+   ocs::tom::set<CE_valtype>(bare, static_cast<uint32_t>(ocs::CEntry::Type::RSMAP));
+   lListElem *resl = ocs::tom::emplace_back_in<CE_resource_map_list, RESL_value>(bare, "gpu9");
+   ocs::tom::set<RESL_amount>(resl, 1);
 
    lList *request = centry_list_parse_from_string(nullptr, "gpu=1[gpu_temp=99]", false);
    lListElem *req = lFirstRW(request);
-   lSetUlong(req, CE_valtype, static_cast<uint32_t>(ocs::CEntry::Type::RSMAP));
+   ocs::tom::set<CE_valtype>(req, static_cast<uint32_t>(ocs::CEntry::Type::RSMAP));
    lList *required = nullptr;
    centry_rsmap_resolve_request_properties(req, centries, &required);
    check_int("T151", "an instance carrying no characteristics matches none of them",

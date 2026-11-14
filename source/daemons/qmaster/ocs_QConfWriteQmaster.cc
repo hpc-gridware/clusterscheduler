@@ -32,6 +32,7 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_object.h"
+#include "tom/ocs_Element.h"
 #include "spool/flatfile/sge_flatfile.h"
 #include "uti/sge_dstring.h"
 #include "uti/sge_log.h"
@@ -93,7 +94,7 @@ qconf_delete_one(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::gdi:
    switch (target) {
       case ocs::gdi::Target::CE_LIST:
          ep = lCreateElem(CE_Type);
-         lSetString(ep, CE_name, name);
+         ocs::tom::set<CE_name>(ep, name);
          ret = sge_del_centry(packet, task, ep, answer_list, packet->user, packet->host);
          lFreeElem(&ep);
          break;
@@ -376,8 +377,8 @@ qconf_write_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monit
     * them for every mode keeps one code path instead of two. */
    std::vector<ParsedItem> parsed;
    for (const lListElem *item = lFirst(parameter.get_items()); item != nullptr; item = lNext(item)) {
-      const char *label = lGetString(item, VA_variable);
-      const char *text = lGetString(item, VA_value);
+      const char *label = ocs::tom::get<VA_variable>(item);
+      const char *text = ocs::tom::get<VA_value>(item);
 
       if (text == nullptr) {
          /* unpackstr() maps an empty string to a null pointer, so this is also
@@ -449,7 +450,7 @@ qconf_write_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monit
             lString2List(parameter.get_select().c_str(), &wanted, ST_Type, ST_name, ", ");
             bool all_found = true;
             for_each_ep_lv(name_elem, wanted) {
-               const char *name = lGetString(name_elem, ST_name);
+               const char *name = ocs::tom::get<ST_name>(name_elem);
                lListElem *found = (name != nullptr)
                                   ? lGetElemStrRW(lp, key_nm, name) : nullptr;
                if (found == nullptr) {
@@ -708,7 +709,7 @@ qconf_write_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monit
             num_kept++;
             continue;
          }
-         lAddElemStr(&to_delete, ST_name, name, ST_Type);
+         ocs::tom::emplace_back<ST_name>(&to_delete, name);
       }
 
       /* Say what was kept. Staying silent would hide an edit that was not
@@ -721,7 +722,7 @@ qconf_write_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monit
       sge_dstring_free(&kept);
 
       for_each_ep_lv(name_elem, to_delete) {
-         const char *name = lGetString(name_elem, ST_name);
+         const char *name = ocs::tom::get<ST_name>(name_elem);
          if (parameter.is_dry()) {
             answer_list_add_sprintf(answer_list, STATUS_OK, ANSWER_QUALITY_INFO,
                                     MSG_QCONF_WRITEWOULDDELETE_S, name);
@@ -751,14 +752,14 @@ qconf_write_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monit
       if (parameter.get_select().empty()) {
          for (const lListElem *ep = lFirst(*ocs::DataStore::get_master_list(list_type));
               ep != nullptr; ep = lNext(ep)) {
-            lAddElemStr(&in_scope, ST_name, qconf_key_of(ep, key_nm), ST_Type);
+            ocs::tom::emplace_back<ST_name>(&in_scope, qconf_key_of(ep, key_nm));
          }
       } else {
          lString2List(parameter.get_select().c_str(), &in_scope, ST_Type, ST_name, ", ");
       }
 
       for_each_ep_lv(name_elem, in_scope) {
-         const char *name = lGetString(name_elem, ST_name);
+         const char *name = ocs::tom::get<ST_name>(name_elem);
          if (name == nullptr) {
             continue;
          }

@@ -51,6 +51,9 @@
 #include "sgeobj/sge_job.h"
 #include "sgeobj/ocs_Binding.h"
 #include "sgeobj/sge_utility.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_JAT.h"
+#include "sgeobj/tom/ocs_tom_PET.h"
 
 #include "gdi/ocs_gdi_ClientBase.h"
 #include "gdi/ocs_gdi_ClientExecd.h"
@@ -186,16 +189,16 @@ int job_initialize_job(lListElem *job) {
    uint32_t job_id;
    lListElem *ja_task;
 
-   job_id = lGetUlong(job, JB_job_number); 
-   for_each_rw (ja_task, lGetList(job, JB_ja_tasks)) {
+   job_id = ocs::tom::get<JB_job_number>(job); 
+   for_each_rw (ja_task, static_cast<const lList *>(ocs::tom::get<JB_ja_tasks>(job))) {
       uint32_t ja_task_id;
 
-      ja_task_id = lGetUlong(ja_task, JAT_task_number);
+      ja_task_id = ocs::tom::get<JAT_task_number>(ja_task);
 
       add_job_report(job_id, ja_task_id, nullptr, job);
                                                                                       /* add also job reports for tasks */
-      for_each_ep_lv(pe_task, lGetList(ja_task, JAT_task_list)) {
-         add_job_report(job_id, ja_task_id, lGetString(pe_task, PET_id), job);
+      for_each_ep_lv(pe_task, ocs::tom::get<JAT_task_list>(ja_task)) {
+         add_job_report(job_id, ja_task_id, ocs::tom::get<PET_id>(pe_task), job);
       }
 
       if (mconf_get_simulate_jobs()) {
@@ -204,8 +207,8 @@ int job_initialize_job(lListElem *job) {
       }
 
       /* does active dir exist ? */
-      if (lGetUlong(ja_task, JAT_status) == JRUNNING ||
-          lGetUlong(ja_task, JAT_status) == JWAITING4OSJID) {
+      if (ocs::tom::get<JAT_status>(ja_task) == JRUNNING ||
+          ocs::tom::get<JAT_status>(ja_task) == JWAITING4OSJID) {
          SGE_STRUCT_STAT stat_buffer;
          stringT active_dir = "";
 
@@ -221,17 +224,17 @@ int job_initialize_job(lListElem *job) {
       {
          int ret;
          /* register still running jobs at ptf */
-         if (lGetUlong(ja_task, JAT_status) == JRUNNING) {
+         if (ocs::tom::get<JAT_status>(ja_task) == JRUNNING) {
             ret = register_at_ptf(job, ja_task, nullptr);
             if (ret) {
                ERROR(MSG_JOB_XREGISTERINGJOBYATPTFDURINGSTARTUP_SU, (ret == 1 ? MSG_DELAYED : MSG_FAILED), job_id);
             }
          }
-         for_each_ep_lv(pe_task, lGetList(ja_task, JAT_task_list)) {
-            if (lGetUlong(pe_task, PET_status) == JRUNNING) {
+         for_each_ep_lv(pe_task, ocs::tom::get<JAT_task_list>(ja_task)) {
+            if (ocs::tom::get<PET_status>(pe_task) == JRUNNING) {
                ret=register_at_ptf(job, ja_task, pe_task);
                if (ret) {
-                  ERROR(MSG_JOB_XREGISTERINGJOBYTASKZATPTFDURINGSTARTUP_SUS, (ret == 1 ? MSG_DELAYED : MSG_FAILED), job_id, lGetString(pe_task, PET_id));
+                  ERROR(MSG_JOB_XREGISTERINGJOBYTASKZATPTFDURINGSTARTUP_SUS, (ret == 1 ? MSG_DELAYED : MSG_FAILED), job_id, ocs::tom::get<PET_id>(pe_task));
                }
             }
          }

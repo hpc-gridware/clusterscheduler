@@ -51,6 +51,7 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_id.h"
 #include "sgeobj/sge_qinstance_state.h"
+#include "tom/ocs_Element.h"
 
 #include "gdi/ocs_gdi_Client.h"
 
@@ -103,7 +104,7 @@ int main(int argc, char **argv) {
       ** high level parsing error! show answer list
       */
       for_each_ep_lv(aep, alp) {
-         fprintf(stderr, "%s\n", lGetString(aep, AN_text));
+         fprintf(stderr, "%s\n", ocs::tom::get<AN_text>(aep));
       }
       lFreeList(&alp);
       lFreeList(&pcmdline);
@@ -117,7 +118,7 @@ int main(int argc, char **argv) {
       ** low level parsing error! show answer list
       */
       for_each_ep_lv(aep, alp) {
-         fprintf(stderr, "%s\n", lGetString(aep, AN_text));
+         fprintf(stderr, "%s\n", ocs::tom::get<AN_text>(aep));
       }
       lFreeList(&alp);
       lFreeList(&pcmdline);
@@ -126,7 +127,7 @@ int main(int argc, char **argv) {
    }
 
    for_each_rw_lv(idep, ref_list) {
-      lSetUlong(idep, ID_force, force);
+      ocs::tom::set<ID_force>(idep, force);
    }
 
    if (ref_list) {
@@ -140,7 +141,7 @@ int main(int argc, char **argv) {
    ** show answer list
    */
    for_each_ep_lv(aep, alp) {
-      fprintf(stdout, "%s\n", lGetString(aep, AN_text));
+      fprintf(stdout, "%s\n", ocs::tom::get<AN_text>(aep));
    }
 
    lFreeList(&alp);
@@ -310,7 +311,7 @@ lList *alp = nullptr;
          }
 
          ep_opt = sge_add_arg(ppcmdline, t_OPT, lListT, *(sp - 1), *sp);
-         lSetList(ep_opt, SPA_argval_lListT, task_id_range_list);
+         ocs::tom::set<SPA_argval_lListT>(ep_opt, task_id_range_list);
 
          sp++;
          rp = sp;
@@ -440,9 +441,9 @@ static lList *sge_parse_qmod(lList **ppcmdline, lList **ppreflist, uint32_t *pfo
       }
 
       /* we get to this point, than there are -t options without job names. We have to write an error message */
-      if ((ep = lGetElemStrRW(*ppcmdline, SPA_switch_val, "-t")) != nullptr) {
+      if ((ep = ocs::tom::find_first_rw<SPA_switch_val>(*ppcmdline, "-t")) != nullptr) {
          answer_list_add_sprintf(&alp, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
-                                 MSG_JOB_LONELY_TOPTION_S, lGetString(ep, SPA_switch_arg));
+                                 MSG_JOB_LONELY_TOPTION_S, ocs::tom::get<SPA_switch_arg>(ep));
 
          break;
       }

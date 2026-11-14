@@ -61,6 +61,8 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_schedd_conf.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_QU.h"
 
 #include "gdi/ocs_gdi_Packet.h"
 
@@ -232,7 +234,7 @@ static void sge_scheduler_wait_for_event(sge_evc_class_t *evc, lList **event_lis
    sge_mutex_unlock("event_control_mutex", __func__, __LINE__, &Scheduler_Control.mutex);
 
    if (do_ack) {
-      if (lGetElemUlong(*event_list, ET_type, sgeE_ACK_TIMEOUT) != nullptr) {
+      if (static_cast<const lListElem *>(ocs::tom::find_first<ET_type>(*event_list, sgeE_ACK_TIMEOUT)) != nullptr) {
          evc->ec_mark4registration(evc);
       }
       evc->ec_ack(evc);
@@ -575,7 +577,7 @@ sge_scheduler_main(void *arg) {
 
       if (event_list != nullptr) {
          /* check for shutdown */
-         do_shutdown = (lGetElemUlong(event_list, ET_type, sgeE_SHUTDOWN) != nullptr);
+         do_shutdown = (static_cast<const lListElem *>(ocs::tom::find_first<ET_type>(event_list, sgeE_SHUTDOWN)) != nullptr);
 
          /* update mirror and free data */
          if (!do_shutdown && sge_mirror_process_event_list(evc, event_list) == SGE_EM_OK) {
@@ -674,8 +676,8 @@ sge_scheduler_main(void *arg) {
             uint32_t progid = component_get_component_id();
 
             const lListElem *global = nullptr, *local = nullptr;
-            global = lGetElemHost(master_config_list, CONF_name, SGE_GLOBAL_NAME);
-            local = lGetElemHost(master_config_list, CONF_name, hostname);
+            global = ocs::tom::find_first<CONF_name>(master_config_list, SGE_GLOBAL_NAME);
+            local = ocs::tom::find_first<CONF_name>(master_config_list, hostname);
             merge_configuration(nullptr, progid, cell_root, global, local, nullptr);
 
             // reset the flag
@@ -701,7 +703,7 @@ sge_scheduler_main(void *arg) {
             lEnumeration *what_queue3 = nullptr;
 
             for_each_ep(cqueue, master_cqueue_list) {
-               const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
+               const lList *qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
                lList *t;
 
                if (qinstance_list == nullptr) {

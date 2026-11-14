@@ -47,6 +47,7 @@
 
 #include "sgeobj/sge_job.h"
 #include "sgeobj/ocs_DataStore.h"
+#include "tom/ocs_Element.h"
 
 #include "mir/msg_mirlib.h"
 #include "mir/sge_mirror.h"
@@ -80,9 +81,9 @@ static bool job_update_master_list_usage(lList *job_list, lListElem *event) {
    uint32_t job_id, ja_task_id;
    const char *pe_task_id;
 
-   job_id = lGetUlong(event, ET_intkey);
-   ja_task_id = lGetUlong(event, ET_intkey2);
-   pe_task_id = lGetString(event, ET_strkey);
+   job_id = ocs::tom::get<ET_intkey>(event);
+   ja_task_id = ocs::tom::get<ET_intkey2>(event);
+   pe_task_id = ocs::tom::get<ET_strkey>(event);
 
    if(ja_task_id == 0) {
       dstring id_dstring = DSTRING_INIT;
@@ -134,12 +135,12 @@ job_update_master_list(sge_evc_class_t *evc, sge_object_type type,
    sge_dstring_init(&id_dstring, id_buffer, MAX_STRING_SIZE);
 
    lList **list = ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB);
-   const lDescr *list_descr = lGetListDescr(lGetList(event, ET_new_version));
-   uint32_t job_id = lGetUlong(event, ET_intkey);
-   lListElem *job = lGetElemUlongRW(*list, JB_job_number, job_id);
+   const lDescr *list_descr = lGetListDescr(ocs::tom::get<ET_new_version>(event));
+   uint32_t job_id = ocs::tom::get<ET_intkey>(event);
+   lListElem *job = ocs::tom::find_first_rw<JB_job_number>(*list, job_id);
 
    if (action == SGE_EMA_MOD) {
-      uint32_t event_type = lGetUlong(event, ET_type);
+      uint32_t event_type = ocs::tom::get<ET_type>(event);
 
       if (job == nullptr) {
          ERROR(MSG_JOB_CANTFINDJOBFORUPDATEIN_SS, job_get_id_string(job_id, 0, nullptr, &id_dstring), "job_update_master_list");
@@ -168,31 +169,31 @@ job_update_master_list(sge_evc_class_t *evc, sge_object_type type,
           *   object.
           */
 
-          lListElem *event_job = lFirstRW(lGetList(event, ET_new_version));
+          lListElem *event_job = lFirstRW(ocs::tom::get<ET_new_version>(event));
           if (event_job != nullptr) {
              // Preserve old ja_tasks list. Job update events will not contain them
-             lXchgList(job, JB_ja_tasks, &ja_tasks);
+             ocs::tom::exchange<JB_ja_tasks>(job, &ja_tasks);
 
              // @todo Why is that needed?
-             const bool has_host = lGetPosViaElem(event_job, JB_host, SGE_NO_ABORT) != NoName;
+             const bool has_host = ocs::tom::has<JB_host>(event_job);
              if (has_host) {
-                lSetHost(event_job, JB_host, lGetHost(job, JB_host));
+                ocs::tom::set<JB_host>(event_job, ocs::tom::get<JB_host>(job));
              }
 
              // find category ID
              uint32_t category_id = 0;
-             const bool has_category_id = lGetPosViaElem(event_job, JB_category_id, SGE_NO_ABORT) != NoName;
+             const bool has_category_id = ocs::tom::has<JB_category_id>(event_job);
              if (has_category_id) {
-                category_id = lGetUlong(event_job, JB_category_id);
+                category_id = ocs::tom::get<JB_category_id>(event_job);
              }
 
              // convert category id to category ref for the modified job within the current client (scheduler, reader, ...)
-             const bool has_category = lGetPosViaElem(event_job, JB_category, SGE_NO_ABORT) != NoName;
+             const bool has_category = ocs::tom::has<JB_category>(event_job);
              if (has_category && has_category_id) {
                 const lList *master_category_list = *ocs::DataStore::get_master_list(SGE_TYPE_CATEGORY);
-                lListElem *category = lGetElemUlongRW(master_category_list, CT_id, category_id);
+                lListElem *category = ocs::tom::find_first_rw<CT_id>(master_category_list, category_id);
 
-                lSetRef(event_job, JB_category, category);
+                ocs::tom::set<JB_category>(event_job, category);
              }
           }
       }
@@ -206,14 +207,14 @@ job_update_master_list(sge_evc_class_t *evc, sge_object_type type,
    /* restore ja_task list after modify event */
    if (action == SGE_EMA_MOD && ja_tasks != nullptr) {
       /* we have to search the replaced job */
-      job = lGetElemUlongRW(*list, JB_job_number, job_id);
+      job = ocs::tom::find_first_rw<JB_job_number>(*list, job_id);
       if (job == nullptr) {
          ERROR(MSG_JOB_CANTFINDJOBFORUPDATEIN_SS, job_get_id_string(job_id, 0, nullptr, &id_dstring), "job_update_master_list");
          lFreeList(&ja_tasks);
          DRETURN(SGE_EMA_FAILURE);
       }
 
-      lXchgList(job, JB_ja_tasks, &ja_tasks);
+      ocs::tom::exchange<JB_ja_tasks>(job, &ja_tasks);
       lFreeList(&ja_tasks);
    }
 
@@ -247,12 +248,12 @@ job_schedd_info_update_master_list(sge_evc_class_t *evc, sge_object_type type,
    lListElem *ep = nullptr;
    
    list = ocs::DataStore::get_master_list_rw(type);
-   list_descr = lGetListDescr(lGetList(event, ET_new_version));
+   list_descr = lGetListDescr(ocs::tom::get<ET_new_version>(event));
 
    /* We always update the whole list (consisting of one list element) */
    lFreeList(list);
 
-   if((data_list = lGetListRW(event, ET_new_version)) != nullptr) {
+   if((data_list = ocs::tom::get<ET_new_version>(event)) != nullptr) {
       if((ep = lFirstRW(data_list)) != nullptr) {
          ep = lDechainElem(data_list, ep);
       }

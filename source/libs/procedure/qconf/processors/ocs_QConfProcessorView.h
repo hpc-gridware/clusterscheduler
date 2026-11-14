@@ -31,6 +31,7 @@
 
 #include "sgeobj/cull/sge_host_EH_L.h"
 #include "sgeobj/cull/sge_host_HL_L.h"
+#include "tom/ocs_Element.h"
 
 #include "../msg_qconf.h"
 
@@ -88,22 +89,22 @@ namespace ocs {
          write_rule(os, binding);
 
          for_each_ep_lv(host, list) {
-            const lListElem *arch_elem = lGetSubStr(host, HL_name, "arch", EH_load_list);
-            const char *hostname = lGetHost(host, EH_name);
+            const lListElem *arch_elem = ocs::tom::find_first_in<EH_load_list, HL_name>(host, "arch");
+            const char *hostname = ocs::tom::get<EH_name>(host);
 
             os << std::format("{:<25.24}", (hostname != nullptr) ? hostname : "");
-            os << std::format("{:>10}", static_cast<int32_t>(lGetUlong(host, EH_processors)));
+            os << std::format("{:>10}", static_cast<int32_t>(ocs::tom::get<EH_processors>(host)));
 
             if (binding) {
                socket_sum += write_load_value(os, host, "m_socket");
                core_sum += write_load_value(os, host, "m_core");
             }
             if (arch_elem != nullptr) {
-               const char *arch = lGetString(arch_elem, HL_value);
+               const char *arch = ocs::tom::get<HL_value>(arch_elem);
                os << std::format("{:>12.11}", (arch != nullptr) ? arch : "");
             }
             os << "\n";
-            sum += lGetUlong(host, EH_processors);
+            sum += ocs::tom::get<EH_processors>(host);
          }
 
          write_rule(os, binding);
@@ -140,12 +141,12 @@ namespace ocs {
        * @return the value as a number, or 0 when it is missing
        */
       static uint32_t write_load_value(std::ostream &os, const lListElem *host, const char *name) {
-         const lListElem *elem = lGetSubStr(host, HL_name, name, EH_load_list);
+         const lListElem *elem = ocs::tom::find_first_in<EH_load_list, HL_name>(host, name);
          if (elem == nullptr) {
             os << std::format("{:>6.5}", "-");
             return 0;
          }
-         const char *value = lGetString(elem, HL_value);
+         const char *value = ocs::tom::get<HL_value>(elem);
          os << std::format("{:>6.5}", (value != nullptr) ? value : "");
          return (value != nullptr) ? static_cast<uint32_t>(atol(value)) : 0;
       }

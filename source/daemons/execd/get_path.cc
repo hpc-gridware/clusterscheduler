@@ -52,6 +52,7 @@
 #include "sgeobj/sge_ja_task.h"
 #include "sgeobj/sge_pe_task.h"
 #include "sgeobj/sge_job.h"
+#include "tom/ocs_Element.h"
 
 #include "get_path.h"
 #include "msg_execd.h"
@@ -120,17 +121,17 @@ int sge_get_path(const char *qualified_hostname, const lList *lp, const char *cw
    /*
     * check if there's a path for this host
     */
-   ep = lGetElemHost(lp, PN_host, qualified_hostname);
+   ep = ocs::tom::find_first<PN_host>(lp, qualified_hostname);
    if (ep != nullptr) {
-      path = expand_path(&dstr_exp_path, lGetString(ep, PN_path), job_number, ja_task_number, job_name, owner, qualified_hostname);
-      host = lGetHost(ep, PN_host);
+      path = expand_path(&dstr_exp_path, ocs::tom::get<PN_path>(ep), job_number, ja_task_number, job_name, owner, qualified_hostname);
+      host = ocs::tom::get<PN_host>(ep);
    } else {
       /* 
        * hostname: wasn't set, look for a default 
        */
       for_each_ep(ep, lp) {
-         path = expand_path(&dstr_exp_path, lGetString(ep, PN_path), job_number, ja_task_number, job_name, owner, qualified_hostname);
-         host = lGetHost(ep, PN_host);
+         path = expand_path(&dstr_exp_path, ocs::tom::get<PN_path>(ep), job_number, ja_task_number, job_name, owner, qualified_hostname);
+         host = ocs::tom::get<PN_host>(ep);
          if (host == nullptr) {
             break;
          }
@@ -177,14 +178,14 @@ bool sge_get_fs_path(const lList *lp, char *fs_host, size_t fs_host_len, char *f
    bool       bFileStaging=false;
 
    if(lp && (ep=lFirst(lp))) {
-      bFileStaging = (bool)lGetBool(ep, PN_file_staging);
+      bFileStaging = (bool)ocs::tom::get<PN_file_staging>(ep);
  
       if( bFileStaging ) {
-         if(lGetHost(ep, PN_file_host)) {
-            sge_strlcpy(fs_host, lGetHost(ep, PN_file_host), fs_host_len);
+         if(ocs::tom::get<PN_file_host>(ep)) {
+            sge_strlcpy(fs_host, ocs::tom::get<PN_file_host>(ep), fs_host_len);
          }
-         if(lGetString(ep, PN_path)) {
-            sge_strlcpy(fs_path, lGetString(ep, PN_path), fs_path_len);
+         if(ocs::tom::get<PN_path>(ep)) {
+            sge_strlcpy(fs_path, ocs::tom::get<PN_path>(ep), fs_path_len);
          }
       }
    }
@@ -313,15 +314,15 @@ const char *sge_make_ja_task_active_dir(const lListElem *job, const lListElem *j
 
    /* build path to active dir */
    path = sge_get_active_job_file_path(&path_buffer,
-                                       lGetUlong(job, JB_job_number), 
-                                       lGetUlong(ja_task, JAT_task_number), 
+                                       ocs::tom::get<JB_job_number>(job), 
+                                       ocs::tom::get<JAT_task_number>(ja_task), 
                                        nullptr, nullptr);
 
    /* try to create it */
    result = sge_mkdir(path, 0755, false, false);
    if (result == -1) {
       /* if it already exists and keep_active: try to rename it */
-      if (errno == EEXIST && mconf_get_keep_active() != KEEP_ACTIVE_FALSE && lGetUlong(ja_task, JAT_job_restarted) > 0) {
+      if (errno == EEXIST && mconf_get_keep_active() != KEEP_ACTIVE_FALSE && ocs::tom::get<JAT_job_restarted>(ja_task) > 0) {
          dstring new_path = DSTRING_INIT;
          int success = 0;
 
@@ -401,9 +402,9 @@ const char *sge_make_pe_task_active_dir(const lListElem *job, const lListElem *j
 
    /* build path to active dir */
    path = sge_get_active_job_file_path(&path_buffer,
-                                       lGetUlong(job, JB_job_number), 
-                                       lGetUlong(ja_task, JAT_task_number), 
-                                       lGetString(pe_task, PET_id), 
+                                       ocs::tom::get<JB_job_number>(job), 
+                                       ocs::tom::get<JAT_task_number>(ja_task), 
+                                       ocs::tom::get<PET_id>(pe_task), 
                                        nullptr);
 
    /* try to create it */

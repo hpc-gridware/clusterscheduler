@@ -95,6 +95,11 @@
 #include "sgeobj/sge_pe_task.h"
 #include "sgeobj/sge_ja_task.h"
 #include "sgeobj/sge_usage.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_JAT.h"
+#include "sgeobj/tom/ocs_tom_JO.h"
+#include "sgeobj/tom/ocs_tom_JP.h"
+#include "sgeobj/tom/ocs_tom_UA.h"
 
 #include "ocs_common_systemd.h"
 #include "ptf.h"
@@ -245,7 +250,7 @@ static osjobid_t ptf_get_osjobid(lListElem *osjob) {
 
 #else
 
-   osjobid = lGetUlong(osjob, JO_OS_job_ID);
+   osjobid = ocs::tom::get<JO_OS_job_ID>(osjob);
 
 #endif
 
@@ -268,7 +273,7 @@ static void ptf_set_osjobid(lListElem *osjob, osjobid_t osjobid) {
 
 #else
 
-   lSetUlong(osjob, JO_OS_job_ID, osjobid);
+   ocs::tom::set<JO_OS_job_ID>(osjob, osjobid);
 
 #endif
 }
@@ -290,28 +295,28 @@ lList *ptf_build_usage_list(const char *name, usage_collection_t usage_collectio
 
    lList* usage_list = lCreateList(name, UA_Type);
 
-   lAddElemStr(&usage_list, UA_name, USAGE_ATTR_WALLCLOCK, UA_Type);
+   ocs::tom::emplace_back<UA_name>(&usage_list, USAGE_ATTR_WALLCLOCK);
 
    if (usage_collection != USAGE_COLLECTION_NONE) {
-      lAddElemStr(&usage_list, UA_name, USAGE_ATTR_IO, UA_Type);
-      lAddElemStr(&usage_list, UA_name, USAGE_ATTR_IOOPS, UA_Type);
-      lAddElemStr(&usage_list, UA_name, USAGE_ATTR_IOW, UA_Type);
-      lAddElemStr(&usage_list, UA_name, USAGE_ATTR_MEM, UA_Type);
-      lAddElemStr(&usage_list, UA_name, USAGE_ATTR_CPU, UA_Type);
+      ocs::tom::emplace_back<UA_name>(&usage_list, USAGE_ATTR_IO);
+      ocs::tom::emplace_back<UA_name>(&usage_list, USAGE_ATTR_IOOPS);
+      ocs::tom::emplace_back<UA_name>(&usage_list, USAGE_ATTR_IOW);
+      ocs::tom::emplace_back<UA_name>(&usage_list, USAGE_ATTR_MEM);
+      ocs::tom::emplace_back<UA_name>(&usage_list, USAGE_ATTR_CPU);
 
 #if defined(LINUX) || defined(SOLARIS) || defined(FREEBSD) || defined(DARWIN)
-      lAddElemStr(&usage_list, UA_name, USAGE_ATTR_VMEM, UA_Type);
-      lAddElemStr(&usage_list, UA_name, USAGE_ATTR_MAXVMEM, UA_Type);
-      lAddElemStr(&usage_list, UA_name, USAGE_ATTR_RSS, UA_Type);
-      lAddElemStr(&usage_list, UA_name, USAGE_ATTR_MAXRSS, UA_Type);
+      ocs::tom::emplace_back<UA_name>(&usage_list, USAGE_ATTR_VMEM);
+      ocs::tom::emplace_back<UA_name>(&usage_list, USAGE_ATTR_MAXVMEM);
+      ocs::tom::emplace_back<UA_name>(&usage_list, USAGE_ATTR_RSS);
+      ocs::tom::emplace_back<UA_name>(&usage_list, USAGE_ATTR_MAXRSS);
 #endif
 
 #if defined(LINUX)
    if (mconf_get_enable_mem_details()) {
-      lAddElemStr(&usage_list, UA_name, USAGE_ATTR_PSS, UA_Type);
-      lAddElemStr(&usage_list, UA_name, USAGE_ATTR_MAXPSS, UA_Type);
-      lAddElemStr(&usage_list, UA_name, USAGE_ATTR_PMEM, UA_Type);
-      lAddElemStr(&usage_list, UA_name, USAGE_ATTR_SMEM, UA_Type);
+      ocs::tom::emplace_back<UA_name>(&usage_list, USAGE_ATTR_PSS);
+      ocs::tom::emplace_back<UA_name>(&usage_list, USAGE_ATTR_MAXPSS);
+      ocs::tom::emplace_back<UA_name>(&usage_list, USAGE_ATTR_PMEM);
+      ocs::tom::emplace_back<UA_name>(&usage_list, USAGE_ATTR_SMEM);
    }
 #endif
    }
@@ -341,18 +346,18 @@ void ptf_reinit_queue_priority(uint32_t job_id, uint32_t ja_task_id,
    for_each_rw_lv(job_elem, ptf_jobs) {
       const lList *os_job_list;
 
-      if (lGetUlong(job_elem, JL_job_ID) == job_id) {
-         DPRINTF("\tjob id: " sge_u32 "\n", lGetUlong(job_elem, JL_job_ID));
-         os_job_list = lGetList(job_elem, JL_OS_job_list);
+      if (ocs::tom::get<JL_job_ID>(job_elem) == job_id) {
+         DPRINTF("\tjob id: " sge_u32 "\n", ocs::tom::get<JL_job_ID>(job_elem));
+         os_job_list = ocs::tom::get<JL_OS_job_list>(job_elem);
          for_each_rw_lv(os_job, os_job_list) {
-            if (lGetUlong(os_job, JO_ja_task_ID) == ja_task_id &&
-                ((!pe_task_id_str && !lGetString(os_job, JO_task_id_str))
-                 || (pe_task_id_str && lGetString(os_job, JO_task_id_str) &&
+            if (ocs::tom::get<JO_ja_task_ID>(os_job) == ja_task_id &&
+                ((!pe_task_id_str && !ocs::tom::get<JO_task_id_str>(os_job))
+                 || (pe_task_id_str && ocs::tom::get<JO_task_id_str>(os_job) &&
                      !strcmp(pe_task_id_str,
-                             lGetString(os_job, JO_task_id_str))))) {
+                             ocs::tom::get<JO_task_id_str>(os_job))))) {
 
                DPRINTF("\t\tChanging priority for osjobid: " sge_u32 " jatask " sge_u32 " petask %s\n",
-                       lGetUlong(os_job, JO_OS_job_ID), lGetUlong(os_job, JO_ja_task_ID), pe_task_id_str ? pe_task_id_str : "");
+                       ocs::tom::get<JO_OS_job_ID>(os_job), ocs::tom::get<JO_ja_task_ID>(os_job), pe_task_id_str ? pe_task_id_str : "");
 
                ptf_set_native_job_priority(job_elem, os_job, PTF_PRIORITY_TO_NATIVE_PRIORITY (priority));
             }
@@ -372,9 +377,9 @@ void ptf_reinit_queue_priority(uint32_t job_id, uint32_t ja_task_id,
  */
 static void ptf_set_job_priority(lListElem *job) {
    DENTER(TOP_LAYER);
-   long pri = lGetLong(job, JL_pri);
+   long pri = ocs::tom::get<JL_pri>(job);
 
-   for_each_ep_lv(osjob, lGetList(job, JL_OS_job_list)) {
+   for_each_ep_lv(osjob, ocs::tom::get<JL_OS_job_list>(job)) {
       ptf_set_native_job_priority(job, osjob, pri);
    }
    DRETURN_VOID;
@@ -419,12 +424,12 @@ static void ptf_setpriority_addgrpid(const lListElem *job, const lListElem *osjo
    /*
     * set the priority for each active process
     */
-   for_each_ep_lv(pid, lGetList(osjob, JO_pid_list)) {
-      if (setpriority(PRIO_PROCESS, lGetUlong(pid, JP_pid), pri) < 0 &&
+   for_each_ep_lv(pid, ocs::tom::get<JO_pid_list>(osjob)) {
+      if (setpriority(PRIO_PROCESS, ocs::tom::get<JP_pid>(pid), pri) < 0 &&
           errno != ESRCH) {
-         ERROR(MSG_PRIO_JOBXPIDYSETPRIORITYFAILURE_UUS, lGetUlong(job, JL_job_ID), lGetUlong(pid, JP_pid), strerror(errno));
+         ERROR(MSG_PRIO_JOBXPIDYSETPRIORITYFAILURE_UUS, ocs::tom::get<JL_job_ID>(job), ocs::tom::get<JP_pid>(pid), strerror(errno));
       } else {
-         DPRINTF("Changing Priority of process " sge_u32 " to %ld\n", lGetUlong(pid, JP_pid), pri);
+         DPRINTF("Changing Priority of process " sge_u32 " to %ld\n", ocs::tom::get<JP_pid>(pid), pri);
       }
    }
    DRETURN_VOID;
@@ -442,7 +447,7 @@ static void ptf_setpriority_addgrpid(const lListElem *job, const lListElem *osjo
  * @return JL_Type
  */
 static lListElem *ptf_get_job(u_long job_id) {
-   lListElem *job = lGetElemUlongRW(ptf_jobs, JL_job_ID, job_id);
+   lListElem *job = ocs::tom::find_first_rw<JL_job_ID>(ptf_jobs, job_id);
    return job;
 }
 
@@ -484,10 +489,10 @@ static lListElem *ptf_get_job_osjob_by_osjobid(const lList *job_list, osjobid_t 
    }
 
    if (job_elem && (*job_elem)) {
-      osjob = lFindFirstRW(lGetList(*job_elem, JL_OS_job_list), where);
+      osjob = lFindFirstRW(ocs::tom::get<JL_OS_job_list>(*job_elem), where);
    } else {
       for_each_rw(job, job_list) {
-         osjob = lFindFirstRW(lGetList(job, JL_OS_job_list), where);
+         osjob = lFindFirstRW(ocs::tom::get<JL_OS_job_list>(job), where);
          if (osjob) {
             break;
          }
@@ -505,8 +510,8 @@ static lListElem *ptf_get_osjob_by_ids(lList *osjoblist, uint32_t ja_task_id, co
    lListElem *osjob;
 
    for_each_rw(osjob, osjoblist) {
-      if (lGetUlong(osjob, JO_ja_task_ID) == ja_task_id) {
-         const char *osjob_pe_task_id = lGetString(osjob, JO_task_id_str);
+      if (ocs::tom::get<JO_ja_task_ID>(osjob) == ja_task_id) {
+         const char *osjob_pe_task_id = ocs::tom::get<JO_task_id_str>(osjob);
          if (pe_task_id == nullptr) {
             if (osjob_pe_task_id == nullptr) {
                // we found the array task element (and not a possible pe task element with the same job/ja_task_id)
@@ -537,9 +542,9 @@ static lListElem *ptf_process_job(osjobid_t os_job_id, const char *task_id_str,
                                   const lListElem *new_job, uint32_t jataskid, const char *systemd_scope, usage_collection_t usage_collection) {
    DENTER(TOP_LAYER);
 
-   u_long job_id = lGetUlong(new_job, JB_job_number);
-   double job_tickets = lGetDouble(lFirst(lGetList(new_job, JB_ja_tasks)), JAT_tix);
-   bool interactive = lGetString(new_job, JB_script_file) == nullptr;
+   u_long job_id = ocs::tom::get<JB_job_number>(new_job);
+   double job_tickets = ocs::tom::get<JAT_tix>(lFirst(ocs::tom::get<JB_ja_tasks>(new_job)));
+   bool interactive = ocs::tom::get<JB_script_file>(new_job) == nullptr;
 
    /*
     * Add the job to the job list, if it does not already exist
@@ -558,40 +563,40 @@ static lListElem *ptf_process_job(osjobid_t os_job_id, const char *task_id_str,
  */
    lListElem *job = ptf_get_job(job_id);
    if (job == nullptr) {
-      job = lAddElemUlong(&ptf_jobs, JL_job_ID, job_id, JL_Type);
+      job = ocs::tom::emplace_back<JL_job_ID>(&ptf_jobs, job_id);
    }
    if (job != nullptr) {
-      lList *osjoblist = lGetListRW(job, JL_OS_job_list);
+      lList *osjoblist = ocs::tom::get<JL_OS_job_list>(job);
       lListElem *osjob = ptf_get_osjob_by_ids(osjoblist, jataskid, task_id_str);
       if (osjob == nullptr) {
-         osjob = lAddSubUlong(job, JO_ja_task_ID, jataskid, JL_OS_job_list, JO_Type);
+         osjob = ocs::tom::emplace_back_in<JL_OS_job_list, JO_ja_task_ID>(job, jataskid);
          if (osjob != nullptr) {
             if (task_id_str != nullptr) {
-               lSetString(osjob, JO_task_id_str, task_id_str);
+               ocs::tom::set<JO_task_id_str>(osjob, task_id_str);
             }
-            lSetList(osjob, JO_usage_list, ptf_build_usage_list("usagelist", usage_collection));
+            ocs::tom::set<JO_usage_list>(osjob, ptf_build_usage_list("usagelist", usage_collection));
          }
       }
       // this function might get called first before we have the osjobid
       // in later calls then make sure to update osjobid and systemd_scope
       if (osjob != nullptr) {
          ptf_set_osjobid(osjob, os_job_id);
-         lSetUlong(osjob, JO_usage_collection, usage_collection);
+         ocs::tom::set<JO_usage_collection>(osjob, usage_collection);
          if (systemd_scope != nullptr) {
-            lSetString(osjob, JO_systemd_scope, systemd_scope);
+            ocs::tom::set<JO_systemd_scope>(osjob, systemd_scope);
          }
       }
 
       /*
        * set number of tickets in job entry
        */
-      lSetUlong(job, JL_tickets, static_cast<uint32_t>(std::max(job_tickets, 1.0)));
+      ocs::tom::set<JL_tickets>(job, static_cast<uint32_t>(std::max(job_tickets, 1.0)));
 
       /*
        * set interactive job flag
        */
       if (interactive) {
-         lSetUlong(job, JL_interactive, 1);
+         ocs::tom::set<JL_interactive>(job, 1);
       }
    }
 
@@ -643,21 +648,21 @@ static void ptf_get_usage_from_data_collector() {
          osjob = ptf_get_job_osjob_by_osjobid(ptf_jobs, jobs->jd_jid, &job);
          if (osjob != nullptr) {
             // If the osjobid / addgrp == 0, we do not want to get usage from PDC.
-            if (lGetUlong(osjob, JO_OS_job_ID) != 0) {
-               u_long job_state = lGetUlong(osjob, JO_state);
+            if (ocs::tom::get<JO_OS_job_ID>(osjob) != 0) {
+               u_long job_state = ocs::tom::get<JO_state>(osjob);
 
                tmp_jobs = jobs;
 
                /* fill in job completion state */
-               lSetUlong(osjob, JO_state, jobs->jd_refcnt ?
+               ocs::tom::set<JO_state>(osjob, jobs->jd_refcnt ?
                          (job_state & ~JL_JOB_COMPLETE) : (job_state | JL_JOB_COMPLETE));
 
                /* fill in usage for job */
-               usage_collection_t usage_collection = static_cast<usage_collection_t>(lGetUlong(osjob, JO_usage_collection));
-               usage_list = lGetListRW(osjob, JO_usage_list);
+               usage_collection_t usage_collection = static_cast<usage_collection_t>(ocs::tom::get<JO_usage_collection>(osjob));
+               usage_list = ocs::tom::get<JO_usage_list>(osjob);
                if (usage_list == nullptr) {
                   usage_list = ptf_build_usage_list("usagelist", usage_collection);
-                  lSetList(osjob, JO_usage_list, usage_list);
+                  ocs::tom::set<JO_usage_list>(osjob, usage_list);
                }
 
                /* set CPU usage */
@@ -698,7 +703,7 @@ static void ptf_get_usage_from_data_collector() {
                INCJOBPTR(jobs, jobs->jd_length);
 
                if (proccount > 0) {
-                  oldpidlist = lGetListRW(osjob, JO_pid_list);
+                  oldpidlist = ocs::tom::get<JO_pid_list>(osjob);
                   pidlist = lCreateList("pidlist", JP_Type);
 
                   procs = (struct psProc_s *) jobs;
@@ -706,12 +711,12 @@ static void ptf_get_usage_from_data_collector() {
                      lListElem *pid;
 
                      if (procs->pd_state == 1) {
-                        if ((pid = lGetElemUlongRW(oldpidlist, JP_pid, procs->pd_pid))) {
+                        if ((pid = ocs::tom::find_first_rw<JP_pid>(oldpidlist, procs->pd_pid))) {
                            lAppendElem(pidlist, lCopyElem(pid));
                         } else {
                            pid = lCreateElem(JP_Type);
 
-                           lSetUlong(pid, JP_pid, procs->pd_pid);
+                           ocs::tom::set<JP_pid>(pid, procs->pd_pid);
                            lAppendElem(pidlist, pid);
                         }
                      }
@@ -719,17 +724,17 @@ static void ptf_get_usage_from_data_collector() {
                   }
 
                   jobs = (struct psJob_s *)procs;
-                  lSetList(osjob, JO_pid_list, pidlist);
+                  ocs::tom::set<JO_pid_list>(osjob, pidlist);
                } else {
-                  lSetList(osjob, JO_pid_list, nullptr);
+                  ocs::tom::set<JO_pid_list>(osjob, nullptr);
                }
 
-               tid = lGetString(osjob, JO_task_id_str);
+               tid = ocs::tom::get<JO_task_id_str>(osjob);
                DPRINTF("JOB " sge_u32 "." sge_u32 ": %s: (cpu = %8.3lf / mem = "
                        UINT64_FMT " / io = " UINT64_FMT " / vmem = "
                        UINT64_FMT " / himem = " UINT64_FMT ")\n",
-                       lGetUlong(job, JL_job_ID),
-                       lGetUlong(osjob, JO_ja_task_ID), tid ? tid : "",
+                       ocs::tom::get<JL_job_ID>(job),
+                       ocs::tom::get<JO_ja_task_ID>(osjob), tid ? tid : "",
                        tmp_jobs->jd_utime_c + tmp_jobs->jd_utime_a +
                        tmp_jobs->jd_stime_c + tmp_jobs->jd_stime_a,
                        tmp_jobs->jd_mem, tmp_jobs->jd_chars,
@@ -758,29 +763,29 @@ static void ptf_get_usage_from_data_collector() {
          double cpu_usage_value = 0;
          int active_jobs = 0;
 
-         for_each_rw(osjob, lGetList(job, JL_OS_job_list)) {
+         for_each_rw(osjob, ocs::tom::get<JL_OS_job_list>(job)) {
             lListElem *usage;
 
-            if ((usage = lGetElemStrRW(lGetList(osjob, JO_usage_list), UA_name, USAGE_ATTR_CPU))) {
-               cpu_usage_value += lGetDouble(usage, UA_value);
+            if ((usage = ocs::tom::find_first_rw<UA_name>(ocs::tom::get<JO_usage_list>(osjob), USAGE_ATTR_CPU))) {
+               cpu_usage_value += ocs::tom::get<UA_value>(usage);
             }
-            if (!(lGetUlong(osjob, JO_state) & JL_JOB_COMPLETE)) {
+            if (!(ocs::tom::get<JO_state>(osjob) & JL_JOB_COMPLETE)) {
                active_jobs = 1;
             }
          }
 
          /* calculate JL_usage */
          usage_value = cpu_usage_value;
-         old_usage_value = lGetDouble(job, JL_old_usage_value);
-         lSetDouble(job, JL_old_usage_value, usage_value);
-         lSetDouble(job, JL_usage, 
-                    std::max(PTF_MIN_JOB_USAGE, lGetDouble(job, JL_usage) *
+         old_usage_value = ocs::tom::get<JL_old_usage_value>(job);
+         ocs::tom::set<JL_old_usage_value>(job, usage_value);
+         ocs::tom::set<JL_usage>(job, 
+                    std::max(PTF_MIN_JOB_USAGE, ocs::tom::get<JL_usage>(job) *
                     PTF_USAGE_DECAY_FACTOR + (usage_value - old_usage_value)));
-         lSetDouble(job, JL_last_usage, usage_value - old_usage_value);
+         ocs::tom::set<JL_last_usage>(job, usage_value - old_usage_value);
 
          /* set job state */
          if (!active_jobs) {
-            lSetUlong(job, JL_state, lGetUlong(job, JL_state) & JL_JOB_COMPLETE);
+            ocs::tom::set<JL_state>(job, ocs::tom::get<JL_state>(job) & JL_JOB_COMPLETE);
          }
       }
    }
@@ -882,8 +887,8 @@ static void ptf_get_usage_from_data_collector() {
 static void ptf_calc_job_proportion_pass0(lListElem *job,
                                           u_long *sum_of_job_tickets,
                                           double *sum_of_last_usage) {
-   *sum_of_job_tickets += lGetUlong(job, JL_tickets);
-   *sum_of_last_usage += lGetDouble(job, JL_last_usage);
+   *sum_of_job_tickets += ocs::tom::get<JL_tickets>(job);
+   *sum_of_last_usage += ocs::tom::get<JL_last_usage>(job);
 }
 
 
@@ -898,20 +903,20 @@ static void ptf_calc_job_proportion_pass1(lListElem *job,
    double share, job_proportion;
    double u;
 
-   share = ((double) lGetUlong(job, JL_tickets) / sum_of_job_tickets) *
+   share = ((double) ocs::tom::get<JL_tickets>(job) / sum_of_job_tickets) *
       1000.0 + 1.0;
-   lSetDouble(job, JL_share, share);
-   lSetDouble(job, JL_ticket_share, (double) lGetUlong(job, JL_tickets) / sum_of_job_tickets);
+   ocs::tom::set<JL_share>(job, share);
+   ocs::tom::set<JL_ticket_share>(job, (double) ocs::tom::get<JL_tickets>(job) / sum_of_job_tickets);
 
    /*
     * Calculate each jobs proportion value based on the job's tickets
     * and recent usage:
     * job.proportion = (job.tickets/sum_of_job_tickets)^2 / job.usage
     */
-   u = std::max(lGetDouble(job, JL_usage), PTF_MIN_JOB_USAGE);
+   u = std::max(ocs::tom::get<JL_usage>(job), PTF_MIN_JOB_USAGE);
    job_proportion = share * share / u;
    *sum_proportion += job_proportion;
-   lSetDouble(job, JL_proportion, job_proportion);
+   ocs::tom::set<JL_proportion>(job, job_proportion);
 }
 
 /*--------------------------------------------------------------------
@@ -928,30 +933,30 @@ static void ptf_calc_job_proportion_pass2(lListElem *job,
    double compensate_proportion;
    double job_targetted_proportion, job_adjusted_usage, job_adjusted_proportion, share;
 
-   job_targetted_proportion = (double) lGetUlong(job, JL_tickets) /
+   job_targetted_proportion = (double) ocs::tom::get<JL_tickets>(job) /
                                sum_of_job_tickets;
 
    if (sum_proportion > 0) {
-      job_current_proportion = lGetDouble(job, JL_proportion) / sum_proportion;
+      job_current_proportion = ocs::tom::get<JL_proportion>(job) / sum_proportion;
    }
 
    compensate_proportion = PTF_COMPENSATION_FACTOR * job_targetted_proportion;
    if (job_current_proportion > compensate_proportion) {
-      job_adjusted_usage = lGetDouble(job, JL_usage) * 
+      job_adjusted_usage = ocs::tom::get<JL_usage>(job) * 
           (job_current_proportion / compensate_proportion);
    } else {
-      job_adjusted_usage = lGetDouble(job, JL_usage);
+      job_adjusted_usage = ocs::tom::get<JL_usage>(job);
    }
-   lSetDouble(job, JL_adjusted_usage, job_adjusted_usage);
+   ocs::tom::set<JL_adjusted_usage>(job, job_adjusted_usage);
 
    /*
     * Recalculate proportions based on adjusted job usage
     */
-   share = lGetDouble(job, JL_share);
+   share = ocs::tom::get<JL_share>(job);
    job_adjusted_usage = std::max(job_adjusted_usage, PTF_MIN_JOB_USAGE);
    job_adjusted_proportion = share * share / job_adjusted_usage;
    *sum_adjusted_proportion += job_adjusted_proportion;
-   lSetDouble(job, JL_adjusted_proportion, job_adjusted_proportion);
+   ocs::tom::set<JL_adjusted_proportion>(job, job_adjusted_proportion);
 }
 
 /*--------------------------------------------------------------------
@@ -967,17 +972,17 @@ static void ptf_calc_job_proportion_pass3(lListElem *job,
 
    if (sum_adjusted_proportion > 0)
       job_adjusted_current_proportion =
-         lGetDouble(job, JL_adjusted_proportion) / sum_adjusted_proportion;
+         ocs::tom::get<JL_adjusted_proportion>(job) / sum_adjusted_proportion;
 
-   lSetDouble(job, JL_last_proportion,
-              lGetDouble(job, JL_adjusted_current_proportion));
+   ocs::tom::set<JL_last_proportion>(job,
+              ocs::tom::get<JL_adjusted_current_proportion>(job));
 
-   lSetDouble(job, JL_adjusted_current_proportion,
+   ocs::tom::set<JL_adjusted_current_proportion>(job,
               job_adjusted_current_proportion);
 
    *max_share = std::max(*max_share, job_adjusted_current_proportion);
    *min_share = std::min(*min_share, job_adjusted_current_proportion);
-   *max_ticket_share = std::max(*max_ticket_share, lGetDouble(job, JL_ticket_share));
+   *max_ticket_share = std::max(*max_ticket_share, ocs::tom::get<JL_ticket_share>(job));
 
 #if 0
     DPRINTF(("XXXXXXX  minshare: %f, max_share: %f XXXXXXX\n", *min_share, 
@@ -1047,7 +1052,7 @@ static void ptf_set_OS_scheduling_parameters(lList *job_list, double min_share,
    for_each_rw(job, job_list) {
 
       pri = pri_max + (long)(pri_range * (1.0 -
-                       lGetDouble(job, JL_adjusted_current_proportion)));
+                       ocs::tom::get<JL_adjusted_current_proportion>(job)));
 
       /*
        * Note: Should calculate targetted proportion and if it is below
@@ -1061,7 +1066,7 @@ static void ptf_set_OS_scheduling_parameters(lList *job_list, double min_share,
 #endif
 
       if (max_share > 0) {
-         pri = pri_max + (long)(pri_range * ((lGetDouble(job, JL_curr_pri) 
+         pri = pri_max + (long)(pri_range * ((ocs::tom::get<JL_curr_pri>(job) 
                                               - min_share) / max_share));
       } else {
          pri = pri_min;
@@ -1069,13 +1074,13 @@ static void ptf_set_OS_scheduling_parameters(lList *job_list, double min_share,
 
       if (pri_min > 50 && pri_max > 50) {
          if (max_ticket_share > 0) {
-  	         lSetDouble(job, JL_timeslice, 
-                       std::max(static_cast<double>(pri_max), lGetDouble(job, JL_ticket_share) * pri_min / max_ticket_share));
+  	         ocs::tom::set<JL_timeslice>(job, 
+                       std::max(static_cast<double>(pri_max), ocs::tom::get<JL_ticket_share>(job) * pri_min / max_ticket_share));
          } else {
-            lSetDouble(job, JL_timeslice, pri_min);
+            ocs::tom::set<JL_timeslice>(job, pri_min);
          }
       }
-      lSetLong(job, JL_pri, pri);
+      ocs::tom::set<JL_pri>(job, pri);
       ptf_set_job_priority(job);
    }
 
@@ -1161,7 +1166,7 @@ int ptf_job_complete(uint32_t job_id, uint32_t ja_task_id, const char *pe_task_i
    /*
     * if job is not complete, go get latest job usage info
     */
-   if (!(lGetUlong(ptf_job, JL_state) & JL_JOB_COMPLETE)) {
+   if (!(ocs::tom::get<JL_state>(ptf_job) & JL_JOB_COMPLETE)) {
       // @todo This will get usage for all jobs, not just the one, might be expensive when many jobs finish,
       //       e.g. with short jobs on a big machine.
       //       And does it make sense at all? We get here when a job finished - all its processes / its systemd scope
@@ -1184,7 +1189,7 @@ int ptf_job_complete(uint32_t job_id, uint32_t ja_task_id, const char *pe_task_i
    *usage = _ptf_get_job_usage(ptf_job, ja_task_id, pe_task_id); 
 
    // search ptf osjob
-   lList *osjobs = lGetListRW(ptf_job, JL_OS_job_list);
+   lList *osjobs = ocs::tom::get<JL_OS_job_list>(ptf_job);
    lListElem *osjob = ptf_get_osjob_by_ids(osjobs, ja_task_id, pe_task_id);
 
    if (osjob == nullptr) {
@@ -1195,7 +1200,7 @@ int ptf_job_complete(uint32_t job_id, uint32_t ja_task_id, const char *pe_task_i
     * Mark osjob as complete and see if all tracked osjobs are done
     * Tell data collector to stop collecting data for this job
     */
-   lSetUlong(osjob, JO_state, lGetUlong(osjob, JO_state) | JL_JOB_DELETED);
+   ocs::tom::set<JO_state>(osjob, ocs::tom::get<JO_state>(osjob) | JL_JOB_DELETED);
 #ifdef USE_DC
    psIgnoreJob(ptf_get_osjobid(osjob));
 #endif
@@ -1256,30 +1261,30 @@ int ptf_process_job_ticket_list(lList *job_ticket_list) {
        * an interactive job 
        */
       // @todo required?
-      lSetString(jte, JB_script_file, "dummy");
+      ocs::tom::set<JB_script_file>(jte, "dummy");
 
       // The job and os job should already exist.
       // If not it would not get created in ptf_process_job(), but probably later on
       // once the job is started.
       // @todo what about tightly integrated PE tasks? The ja_task then only is a SLAVE container,
       //       it doesn't have osjobid, systemd_scope, usage_collection.
-      uint32_t job_id = lGetUlong(jte, JB_job_number);
-      const lListElem *jte_ja_task = lFirst(lGetList(jte, JB_ja_tasks));
-      uint32_t ja_task_id = lGetUlong(jte_ja_task, JAT_task_number);
+      uint32_t job_id = ocs::tom::get<JB_job_number>(jte);
+      const lListElem *jte_ja_task = lFirst(ocs::tom::get<JB_ja_tasks>(jte));
+      uint32_t ja_task_id = ocs::tom::get<JAT_task_number>(jte_ja_task);
       lListElem *job, *ja_task;
       if (execd_get_job_ja_task(job_id, ja_task_id, &job, &ja_task, false)) {
          osjobid_t osjobid{};
-         const char *osjobid_str = lGetString(ja_task, JAT_osjobid);
+         const char *osjobid_str = ocs::tom::get<JAT_osjobid>(ja_task);
          if (osjobid_str != nullptr) {
             osjobid = static_cast<osjobid_t>(std::stoi(osjobid_str));
          }
          lListElem *ptf_job = ptf_process_job(osjobid, nullptr,
-            jte, ja_task_id, lGetString(ja_task, JAT_systemd_scope),
-            static_cast<usage_collection_t>(lGetUlong(ja_task, JAT_usage_collection)));
+            jte, ja_task_id, ocs::tom::get<JAT_systemd_scope>(ja_task),
+            static_cast<usage_collection_t>(ocs::tom::get<JAT_usage_collection>(ja_task)));
          if (ptf_job != nullptr) {
             /* reset temporary usage and priority */
-            lSetDouble(ptf_job, JL_usage, std::max(PTF_MIN_JOB_USAGE, lGetDouble(ptf_job, JL_usage) * 0.1));
-            lSetDouble(ptf_job, JL_curr_pri, 0);
+            ocs::tom::set<JL_usage>(ptf_job, std::max(PTF_MIN_JOB_USAGE, ocs::tom::get<JL_usage>(ptf_job) * 0.1));
+            ocs::tom::set<JL_curr_pri>(ptf_job, 0);
          }
       } else {
          // this might be a valid situation, e.g., immediately after job start
@@ -1405,11 +1410,11 @@ int ptf_adjust_job_priorities() {
       /*
        * calculate share based on tickets only
        */
-      shr = lGetDouble(job, JL_share);
+      shr = ocs::tom::get<JL_share>(job);
 
       num_procs = 0;
-      for_each_rw_lv(osjob, lGetList(job, JL_OS_job_list)) {
-         if ((pid_list = lGetList(osjob, JO_pid_list))) {
+      for_each_rw_lv(osjob, ocs::tom::get<JL_OS_job_list>(job)) {
+         if ((pid_list = ocs::tom::get<JO_pid_list>(osjob))) {
             num_procs += lGetNumberOfElem(pid_list);
          }
       }
@@ -1418,15 +1423,15 @@ int ptf_adjust_job_priorities() {
       /* 
        * NOTE: share algo only adjusts priority when a process runs 
        */
-      lSetDouble(job, JL_curr_pri, lGetDouble(job, JL_curr_pri) 
-                 + ((lGetDouble(job, JL_adjusted_usage) * num_procs) 
+      ocs::tom::set<JL_curr_pri>(job, ocs::tom::get<JL_curr_pri>(job) 
+                 + ((ocs::tom::get<JL_adjusted_usage>(job) * num_procs) 
                     / (shr * shr)));
 
-      max_share = std::max(max_share, lGetDouble(job, JL_curr_pri));
+      max_share = std::max(max_share, ocs::tom::get<JL_curr_pri>(job));
       if (min_share < 0) {
-         min_share = lGetDouble(job, JL_curr_pri);
+         min_share = ocs::tom::get<JL_curr_pri>(job);
       } else {
-         min_share = std::min(min_share, lGetDouble(job, JL_curr_pri));
+         min_share = std::min(min_share, ocs::tom::get<JL_curr_pri>(job));
       } 
    }
 
@@ -1466,24 +1471,24 @@ static lList *_ptf_get_job_usage(lListElem *job, u_long ja_task_id,
       return nullptr;
    }
 
-   for_each_rw(osjob, lGetList(job, JL_OS_job_list)) {
-      task_id_str = lGetString(osjob, JO_task_id_str);
+   for_each_rw(osjob, ocs::tom::get<JL_OS_job_list>(job)) {
+      task_id_str = ocs::tom::get<JO_task_id_str>(osjob);
 
       if ((((!task_id || !task_id[0]) && !task_id_str) 
            || (task_id && !strcmp(task_id, "*")) 
            || (task_id && task_id_str && !strcmp(task_id, task_id_str)))
-          && (lGetUlong(osjob, JO_ja_task_ID) == ja_task_id)) {
+          && (ocs::tom::get<JO_ja_task_ID>(osjob) == ja_task_id)) {
 
          if (job_usage) {
-            for_each_rw(usrc, lGetList(osjob, JO_usage_list)) {
-               if ((udst = lGetElemStrRW(job_usage, UA_name, lGetString(usrc, UA_name)))) {
-                  lSetDouble(udst, UA_value, lGetDouble(udst, UA_value) + lGetDouble(usrc, UA_value));
+            for_each_rw(usrc, ocs::tom::get<JO_usage_list>(osjob)) {
+               if ((udst = ocs::tom::find_first_rw<UA_name>(job_usage, ocs::tom::get<UA_name>(usrc)))) {
+                  ocs::tom::set<UA_value>(udst, ocs::tom::get<UA_value>(udst) + ocs::tom::get<UA_value>(usrc));
                } else {
                   lAppendElem(job_usage, lCopyElem(usrc));
                }
             }
          } else {
-            job_usage = lCopyList(nullptr, lGetList(osjob, JO_usage_list));
+            job_usage = lCopyList(nullptr, ocs::tom::get<JO_usage_list>(osjob));
          }
       }
    }
@@ -1514,37 +1519,37 @@ int ptf_get_usage(lList **job_usage_list) {
    job_list = ptf_jobs;
    for_each_ep(job, job_list) {
       lListElem *tmp_job = nullptr;
-      uint32_t job_id = lGetUlong(job, JL_job_ID);
-      for_each_ep(osjob, lGetList(job, JL_OS_job_list)) {
+      uint32_t job_id = ocs::tom::get<JL_job_ID>(job);
+      for_each_ep(osjob, ocs::tom::get<JL_OS_job_list>(job)) {
          lListElem *tmp_ja_task;
          lListElem *tmp_pe_task;
-         uint32_t ja_task_id = lGetUlong(osjob, JO_ja_task_ID);
-         const char *pe_task_id = lGetString(osjob, JO_task_id_str);
+         uint32_t ja_task_id = ocs::tom::get<JO_ja_task_ID>(osjob);
+         const char *pe_task_id = ocs::tom::get<JO_task_id_str>(osjob);
 
-         if (lGetUlong(osjob, JO_state) & JL_JOB_DELETED) {
+         if (ocs::tom::get<JO_state>(osjob) & JL_JOB_DELETED) {
             continue;
          }
 
-         tmp_job = lGetElemUlongRW(temp_usage_list, JB_job_number, job_id);
+         tmp_job = ocs::tom::find_first_rw<JB_job_number>(temp_usage_list, job_id);
          if (tmp_job == nullptr) {
             tmp_job = lCreateElem(JB_Type);
-            lSetUlong(tmp_job, JB_job_number, job_id);
+            ocs::tom::set<JB_job_number>(tmp_job, job_id);
             lAppendElem(temp_usage_list, tmp_job);
          }
 
          tmp_ja_task = job_search_task(tmp_job, nullptr, ja_task_id);
          if (tmp_ja_task == nullptr) {
-            tmp_ja_task = lAddSubUlong(tmp_job, JAT_task_number, ja_task_id, JB_ja_tasks, JAT_Type);
+            tmp_ja_task = ocs::tom::emplace_back_in<JB_ja_tasks, JAT_task_number>(tmp_job, ja_task_id);
          }
 
          if (pe_task_id != nullptr) {
             tmp_pe_task = ja_task_search_pe_task(tmp_ja_task, pe_task_id);
             if (tmp_pe_task == nullptr) {
-               tmp_pe_task = lAddSubStr(tmp_ja_task, PET_id, pe_task_id, JAT_task_list, PET_Type);
+               tmp_pe_task = ocs::tom::emplace_back_in<JAT_task_list, PET_id>(tmp_ja_task, pe_task_id);
             }
-            lSetList(tmp_pe_task, PET_usage, lCopyList(nullptr, lGetList(osjob, JO_usage_list)));
+            ocs::tom::set<PET_usage>(tmp_pe_task, lCopyList(nullptr, ocs::tom::get<JO_usage_list>(osjob)));
          } else {
-            lSetList(tmp_ja_task, JAT_usage_list, lCopyList(nullptr, lGetList(osjob, JO_usage_list)));
+            ocs::tom::set<JAT_usage_list>(tmp_ja_task, lCopyList(nullptr, ocs::tom::get<JO_usage_list>(osjob)));
          }
       } /* for each osjob */
    } /* for each ptf job */
@@ -1628,23 +1633,23 @@ void ptf_show_registered_jobs() {
       const lList *os_job_list;
       const lListElem *os_job;
 
-      DPRINTF("\tjob id: " sge_u32 "\n", lGetUlong(job_elem, JL_job_ID));
-      os_job_list = lGetList(job_elem, JL_OS_job_list);
+      DPRINTF("\tjob id: " sge_u32 "\n", ocs::tom::get<JL_job_ID>(job_elem));
+      os_job_list = ocs::tom::get<JL_OS_job_list>(job_elem);
       for_each_ep(os_job, os_job_list) {
          const lList *process_list;
          const lListElem *process;
          const char *pe_task_id_str;
          uint32_t ja_task_id;
 
-         pe_task_id_str = lGetString(os_job, JO_task_id_str);
+         pe_task_id_str = ocs::tom::get<JO_task_id_str>(os_job);
          pe_task_id_str = pe_task_id_str ? pe_task_id_str : "<null>";
-         ja_task_id = lGetUlong(os_job, JO_ja_task_ID);
+         ja_task_id = ocs::tom::get<JO_ja_task_ID>(os_job);
 
          DPRINTF("\t\tosjobid: " sge_u32 " ja_task_id: " sge_u32 " petaskid: %s\n",
-                 lGetUlong(os_job, JO_OS_job_ID), ja_task_id, pe_task_id_str);
-         process_list = lGetList(os_job, JO_pid_list);
+                 ocs::tom::get<JO_OS_job_ID>(os_job), ja_task_id, pe_task_id_str);
+         process_list = ocs::tom::get<JO_pid_list>(os_job);
          for_each_ep(process, process_list) {
-            uint32_t pid = lGetUlong(process, JP_pid);
+            uint32_t pid = ocs::tom::get<JP_pid>(process);
             DPRINTF("\t\t\tpid: " sge_u32 "\n", pid);
          }
       }
@@ -1670,23 +1675,23 @@ void ptf_unregister_registered_job(uint32_t job_id, uint32_t ja_task_id ) {
 
       next_job = lNextRW(job);
 
-      if (lGetUlong(job, JL_job_ID) == job_id) {
+      if (ocs::tom::get<JL_job_ID>(job) == job_id) {
          DPRINTF("PTF: found job id " sge_u32 "\n", job_id);
-         os_job_list = lGetListRW(job, JL_OS_job_list);
+         os_job_list = ocs::tom::get<JL_OS_job_list>(job);
          next_os_job = lFirstRW(os_job_list);
          while ((os_job = next_os_job)) {
             next_os_job = lNextRW(os_job);
-            if (lGetUlong(os_job, JO_ja_task_ID ) == ja_task_id) {
+            if (ocs::tom::get<JO_ja_task_ID>(os_job ) == ja_task_id) {
                DPRINTF("PTF: found job task id " sge_u32 "\n", ja_task_id);
                psIgnoreJob(ptf_get_osjobid(os_job));
-               DPRINTF("PTF: Notify PDC to remove data for osjobid " sge_u32 "\n", lGetUlong(os_job, JO_OS_job_ID));
+               DPRINTF("PTF: Notify PDC to remove data for osjobid " sge_u32 "\n", ocs::tom::get<JO_OS_job_ID>(os_job));
                lRemoveElem(os_job_list, &os_job);
             }
          }
 
          if (lFirst(os_job_list) == nullptr) {
             DPRINTF("PTF: No more os_job_list entries, removing job\n");
-            DPRINTF("PTF: Removing job " sge_u32 "\n", lGetUlong(job, JL_job_ID));
+            DPRINTF("PTF: Removing job " sge_u32 "\n", ocs::tom::get<JL_job_ID>(job));
             lRemoveElem(ptf_jobs, &job);
          }
       }
@@ -1702,9 +1707,9 @@ void ptf_unregister_registered_jobs() {
 
    for_each_ep(job, ptf_jobs) {
       lListElem *os_job;
-      for_each_rw(os_job, lGetList(job, JL_OS_job_list)) {
+      for_each_rw(os_job, ocs::tom::get<JL_OS_job_list>(job)) {
          psIgnoreJob(ptf_get_osjobid(os_job));
-         DPRINTF("PTF: Notify PDC to remove data for osjobid " sge_u32 "\n", lGetUlong(os_job, JO_OS_job_ID));
+         DPRINTF("PTF: Notify PDC to remove data for osjobid " sge_u32 "\n", ocs::tom::get<JO_OS_job_ID>(os_job));
       }
    }
 

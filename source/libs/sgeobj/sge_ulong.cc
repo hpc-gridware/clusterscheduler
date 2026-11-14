@@ -60,6 +60,7 @@
 #include "sgeobj/sge_ulong.h"
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/msg_sgeobjlib.h"
+#include "tom/ocs_Element.h"
 
 #include <cinttypes>
 
@@ -640,8 +641,8 @@ bool ulong_list_parse_from_string(lList **this_list, lList **answer_list,
          ret = ulong_parse_from_string(&value, answer_list, token);
          if (ret) {
             // ULNG_value is unique: a value given twice is kept once (CS-3053)
-            if (lGetElemUlong(*this_list, ULNG_value, value) == nullptr) {
-               lAddElemUlong(this_list, ULNG_value, value, ULNG_Type);
+            if (static_cast<const lListElem *>(ocs::tom::find_first<ULNG_value>(*this_list, value)) == nullptr) {
+               ocs::tom::emplace_back<ULNG_value>(this_list, value);
             }
          } else {
             break;

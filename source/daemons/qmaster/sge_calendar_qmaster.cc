@@ -54,6 +54,8 @@
 #include "sgeobj/sge_calendar.h"
 #include "sgeobj/sge_utility.h"
 #include "sgeobj/ocs_DataStore.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_QU.h"
 
 #include "spool/sge_spooling.h"
 
@@ -128,34 +130,34 @@ calendar_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lList
 
    /* ---- CAL_name cannot get changed - we just ignore it */
    if (add == 1) {
-      cal_name = lGetString(cep, CAL_name);
+      cal_name = ocs::tom::get<CAL_name>(cep);
       if (verify_obj_name(alpp, cal_name, MAX_VERIFY_STRING, "calendar") != STATUS_OK)
          goto ERROR;
-      lSetString(new_cal, CAL_name, cal_name);
+      ocs::tom::set<CAL_name>(new_cal, cal_name);
    } else {
-      cal_name = lGetString(new_cal, CAL_name);
+      cal_name = ocs::tom::get<CAL_name>(new_cal);
    }
 
    /* ---- CAL_year_calendar */
    attr_mod_zerostr(cep, new_cal, CAL_year_calendar, "year calendar");
-   if (lGetPosViaElem(cep, CAL_year_calendar, SGE_NO_ABORT) >= 0) {
+   if (ocs::tom::has<CAL_year_calendar>(cep)) {
       if (!calendar_parse_year(new_cal, alpp))
          goto ERROR;
    }
 
    /* ---- CAL_week_calendar */
    attr_mod_zerostr(cep, new_cal, CAL_week_calendar, "week calendar");
-   if (lGetPosViaElem(cep, CAL_week_calendar, SGE_NO_ABORT) >= 0) {
+   if (ocs::tom::has<CAL_week_calendar>(cep)) {
       if (!calendar_parse_week(new_cal, alpp))
          goto ERROR;
    }
 
    if (add != 1) {
       for_each_ep_lv(cqueue, master_cqueue_list) {
-         for_each_ep_lv(queue, lGetList(cqueue, CQ_qinstances)) {
-            const char *q_cal = lGetString(queue, QU_calendar);
+         for_each_ep_lv(queue, ocs::tom::get<CQ_qinstances>(cqueue)) {
+            const char *q_cal = ocs::tom::get<QU_calendar>(queue);
             if ((q_cal != nullptr) && (strcmp(cal_name, q_cal) == 0)) {
-               if (sge_ar_list_conflicts_with_calendar(alpp, lGetString(queue, QU_full_name), new_cal, master_ar_list)) {
+               if (sge_ar_list_conflicts_with_calendar(alpp, ocs::tom::get<QU_full_name>(queue), new_cal, master_ar_list)) {
                   goto ERROR;
                }
             }
@@ -187,12 +189,12 @@ calendar_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lLi
    lList *answer_list = nullptr;
 
    bool dbret = spool_write_object(&answer_list, spool_get_default_context(), cep,
-                                   lGetString(cep, CAL_name), SGE_TYPE_CALENDAR);
+                                   ocs::tom::get<CAL_name>(cep), SGE_TYPE_CALENDAR);
    answer_list_output(&answer_list);
 
    if (!dbret) {
       answer_list_add_sprintf(alpp, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
-                              MSG_PERSISTENCE_WRITE_FAILED_S, lGetString(cep, CAL_name));
+                              MSG_PERSISTENCE_WRITE_FAILED_S, ocs::tom::get<CAL_name>(cep));
    }
 
    DRETURN(dbret ? 0 : 1);
@@ -223,14 +225,14 @@ sge_del_calendar(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *cep,
    }
 
    /* ep is no calendar element, if cep has no CAL_name */
-   if (lGetPosViaElem(cep, CAL_name, SGE_NO_ABORT) < 0) {
+   if (!ocs::tom::has<CAL_name>(cep)) {
       CRITICAL(MSG_SGETEXT_MISSINGCULLFIELD_SS, lNm2Str(QU_qname), __func__);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
-   cal_name = lGetString(cep, CAL_name);
+   cal_name = ocs::tom::get<CAL_name>(cep);
 
-   if (!lGetElemStrRW(*master_calendar_list, CAL_name, cal_name)) {
+   if (!ocs::tom::find_first_rw<CAL_name>(*master_calendar_list, cal_name)) {
       ERROR(MSG_SGETEXT_DOESNOTEXIST_SS, MSG_OBJ_CALENDAR, cal_name);
       answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EEXIST);
@@ -243,7 +245,7 @@ sge_del_calendar(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *cep,
       if (calendar_is_referenced(cep, &local_answer_list, master_cqueue_list)) {
          const lListElem *answer = lFirst(local_answer_list);
 
-         ERROR("denied: %s", lGetString(answer, AN_text));
+         ERROR("denied: %s", ocs::tom::get<AN_text>(answer));
          answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC,
                          ANSWER_QUALITY_ERROR);
          lFreeList(&local_answer_list);
@@ -256,7 +258,7 @@ sge_del_calendar(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *cep,
 
    sge_event_spool(alpp, 0, sgeE_CALENDAR_DEL, 0, 0, cal_name, nullptr, nullptr,
                    nullptr, nullptr, nullptr, true, true,packet->gdi_session);
-   lDelElemStr(master_calendar_list, CAL_name, cal_name);
+   ocs::tom::erase<CAL_name>(master_calendar_list, cal_name);
 
    INFO(MSG_SGETEXT_REMOVEDFROMLIST_SSSS, ruser, rhost, cal_name, MSG_OBJ_CALENDAR);
    answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
@@ -284,7 +286,7 @@ void sge_calendar_event_handler(te_event_t anEvent, monitoring_t *monitor) {
 
    const lList *master_calendar_list = *ocs::DataStore::get_master_list(SGE_TYPE_CALENDAR);
 
-   if (!(cep = lGetElemStrRW(master_calendar_list, CAL_name, cal_name))) {
+   if (!(cep = ocs::tom::find_first_rw<CAL_name>(master_calendar_list, cal_name))) {
       ERROR(MSG_EVE_TE4CAL_S, cal_name);
       SGE_UNLOCK(LOCK_GLOBAL, LOCK_WRITE);
       DRETURN_VOID;
@@ -362,7 +364,7 @@ int calendar_update_queue_states(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
                                  lList **ppList, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
-   const char *cal_name = lGetString(cep, CAL_name);
+   const char *cal_name = ocs::tom::get<CAL_name>(cep);
    lList *state_changes_list = nullptr;
    uint32_t state;
    uint64_t when = 0;

@@ -56,6 +56,7 @@
 #include "sgeobj/sge_schedd_conf.h"
 #include "sgeobj/sge_utility.h"
 #include "sgeobj/ocs_DataStore.h"
+#include "tom/ocs_Element.h"
 
 #include "gdi/ocs_gdi_Client.h"
 
@@ -86,7 +87,7 @@ static lListElem *sge_get_configuration_for_host(const char *aName) {
       strcpy(unique_name, aName);
    }
 
-   lListElem *conf = lCopyElem(lGetElemHost(cluster_config, CONF_name, unique_name));
+   lListElem *conf = lCopyElem(ocs::tom::find_first<CONF_name>(cluster_config, unique_name));
 
    DRETURN(conf);
 }
@@ -275,7 +276,7 @@ sge_callback_result spool_event_before([[maybe_unused]] sge_evc_class_t *evc, sg
    
    master_list = ocs::DataStore::get_master_list(type);
    key_nm      = object_type_get_key_nm(type);
-   new_list    = lGetList(event, ET_new_version);
+   new_list    = ocs::tom::get<ET_new_version>(event);
 
    if(action == SGE_EMA_LIST) {
       switch(type) {
@@ -394,9 +395,9 @@ sge_callback_result spool_event_before([[maybe_unused]] sge_evc_class_t *evc, sg
                   const char *pe_task_id;
                   const char *job_key;
 
-                  job_id = lGetUlong(event, ET_intkey);
-                  ja_task_id = lGetUlong(event, ET_intkey2);
-                  pe_task_id = lGetString(event, ET_strkey);
+                  job_id = ocs::tom::get<ET_intkey>(event);
+                  ja_task_id = ocs::tom::get<ET_intkey2>(event);
+                  pe_task_id = ocs::tom::get<ET_strkey>(event);
 
                   job_key = job_get_key(job_id, ja_task_id, pe_task_id, &buffer);
                   spool_delete_object(&answer_list, context, type, job_key);
@@ -408,7 +409,7 @@ sge_callback_result spool_event_before([[maybe_unused]] sge_evc_class_t *evc, sg
                   uint32_t job_id;
                   const char *job_key;
 
-                  job_id = lGetUlong(event, ET_intkey);
+                  job_id = ocs::tom::get<ET_intkey>(event);
 
                   job_key = job_get_key(job_id, 0, nullptr, &buffer);
                   spool_delete_object(&answer_list, context, type, job_key);
@@ -482,7 +483,7 @@ spool_event_after([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type, s
             case SGE_TYPE_USER:
             case SGE_TYPE_USERSET:
             case SGE_TYPE_HGROUP:
-               key = lGetString(event, ET_strkey);
+               key = ocs::tom::get<ET_strkey>(event);
                spool_delete_object(&answer_list, context, type, key);
                answer_list_output(&answer_list);
 
@@ -496,8 +497,8 @@ spool_event_after([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type, s
          switch(type) {
             case SGE_TYPE_EXECHOST:
             case SGE_TYPE_CONFIG:
-               key = lGetString(event, ET_strkey);
-               ep = lGetElemHost(*master_list, key_nm, lGetString(event, ET_strkey));
+               key = ocs::tom::get<ET_strkey>(event);
+               ep = lGetElemHost(*master_list, key_nm, ocs::tom::get<ET_strkey>(event));
                if(ep == nullptr) {
                   ERROR("%s element with id " SFQ " not found\n", object_type_get_name(type), key);
                   ret = SGE_EMA_FAILURE;
@@ -516,8 +517,8 @@ spool_event_after([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type, s
             case SGE_TYPE_USER:
             case SGE_TYPE_USERSET:
             case SGE_TYPE_HGROUP:
-               key = lGetString(event, ET_strkey);
-               ep = lGetElemStr(*master_list, key_nm, lGetString(event, ET_strkey));
+               key = ocs::tom::get<ET_strkey>(event);
+               ep = lGetElemStr(*master_list, key_nm, ocs::tom::get<ET_strkey>(event));
                if(ep == nullptr) {
                   ERROR("%s element with id " SFQ " not found\n", object_type_get_name(type), key);
                   ret = SGE_EMA_FAILURE;
@@ -548,11 +549,11 @@ spool_event_after([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type, s
                   const char *pe_task_id;
                   const char *job_key;
 
-                  job_id = lGetUlong(event, ET_intkey);
-                  ja_task_id = lGetUlong(event, ET_intkey2);
-                  pe_task_id = lGetString(event, ET_strkey);
+                  job_id = ocs::tom::get<ET_intkey>(event);
+                  ja_task_id = ocs::tom::get<ET_intkey2>(event);
+                  pe_task_id = ocs::tom::get<ET_strkey>(event);
 
-                  ep = lGetElemUlong(master_job_list, JB_job_number, job_id);
+                  ep = ocs::tom::find_first<JB_job_number>(master_job_list, job_id);
                   job_key = job_get_key(job_id, ja_task_id, pe_task_id, &buffer);
                   spool_write_object(&answer_list, context, ep, job_key, type);
                   answer_list_output(&answer_list);

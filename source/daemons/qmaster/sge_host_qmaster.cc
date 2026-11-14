@@ -75,6 +75,21 @@
 #include "sgeobj/sge_pe.h"
 #include "sgeobj/sge_utility.h"
 #include "sgeobj/msg_sgeobjlib.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_CE.h"
+#include "sgeobj/tom/ocs_tom_CQ.h"
+#include "sgeobj/tom/ocs_tom_GRU.h"
+#include "sgeobj/tom/ocs_tom_HL.h"
+#include "sgeobj/tom/ocs_tom_HR.h"
+#include "sgeobj/tom/ocs_tom_HS.h"
+#include "sgeobj/tom/ocs_tom_JAT.h"
+#include "sgeobj/tom/ocs_tom_JG.h"
+#include "sgeobj/tom/ocs_tom_MR.h"
+#include "sgeobj/tom/ocs_tom_PE.h"
+#include "sgeobj/tom/ocs_tom_PR.h"
+#include "sgeobj/tom/ocs_tom_QU.h"
+#include "sgeobj/tom/ocs_tom_STU.h"
+#include "sgeobj/tom/ocs_tom_US.h"
 
 #include "comm/commlib.h"
 
@@ -176,11 +191,11 @@ static void
 host_trash_nonstatic_load_values(lListElem *host) {
    lListElem *load_attr;
 
-   lList *load_attr_list = lGetListRW(host, EH_load_list);
+   lList *load_attr_list = ocs::tom::get<EH_load_list>(host);
    lListElem *next_load_attr = lFirstRW(load_attr_list);
    while ((load_attr = next_load_attr)) {
       next_load_attr = lNextRW(load_attr);
-      if (!lGetBool(load_attr, HL_is_static)) {
+      if (!ocs::tom::get<HL_is_static>(load_attr)) {
          lRemoveElem(load_attr_list, &load_attr);
       }
    }
@@ -264,7 +279,7 @@ host_list_add_missing_href(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const
    DENTER(TOP_LAYER);
    bool ret = true;
    for_each_ep_lv(href, href_list) {
-      const char *hostname = lGetHost(href, HR_name);
+      const char *hostname = ocs::tom::get<HR_name>(href);
       lListElem *host = host_list_locate(this_list, hostname);
 
       if (host == nullptr) {
@@ -526,7 +541,7 @@ host_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem
       bool acl_changed = false;
 
       /* ---- EH_scaling_list */
-      if (lGetPosViaElem(ep, EH_scaling_list, SGE_NO_ABORT) >= 0) {
+      if (ocs::tom::has<EH_scaling_list>(ep)) {
          attr_mod_sub_list(alpp, new_host, EH_scaling_list, HS_name, ep, cmd,
                            sub_command, SGE_ATTR_LOAD_SCALING, SGE_OBJ_EXECHOST, 0, &changed);
          if (verify_scaling_list(alpp, new_host) != STATUS_OK) {
@@ -538,7 +553,7 @@ host_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem
       }
 
       /* ---- EH_consumable_config_list */
-      if (lGetPosViaElem(ep, EH_consumable_config_list, SGE_NO_ABORT) >= 0) {
+      if (ocs::tom::has<EH_consumable_config_list>(ep)) {
          if (attr_mod_threshold(alpp, ep, new_host, cmd, sub_command, SGE_ATTR_COMPLEX_VALUES, SGE_OBJ_EXECHOST)) {
             goto ERROR;
          }
@@ -548,10 +563,10 @@ host_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem
       }
 
       /* ---- EH_acl */
-      if (lGetPosViaElem(ep, EH_acl, SGE_NO_ABORT) >= 0) {
+      if (ocs::tom::has<EH_acl>(ep)) {
          DPRINTF("got new EH_acl\n");
          /* check acl list */
-         if (userset_list_validate_acl_list(lGetList(ep, EH_acl), alpp, master_userset_list) != STATUS_OK) {
+         if (userset_list_validate_acl_list(ocs::tom::get<EH_acl>(ep), alpp, master_userset_list) != STATUS_OK) {
             goto ERROR;
          }
          attr_mod_sub_list(alpp, new_host, EH_acl, US_name, ep, cmd,
@@ -563,10 +578,10 @@ host_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem
       }
 
       /* ---- EH_xacl */
-      if (lGetPosViaElem(ep, EH_xacl, SGE_NO_ABORT) >= 0) {
+      if (ocs::tom::has<EH_xacl>(ep)) {
          DPRINTF("got new EH_xacl\n");
          /* check xacl list */
-         if (userset_list_validate_acl_list(lGetList(ep, EH_xacl), alpp, master_userset_list) != STATUS_OK) {
+         if (userset_list_validate_acl_list(ocs::tom::get<EH_xacl>(ep), alpp, master_userset_list) != STATUS_OK) {
             goto ERROR;
          }
          attr_mod_sub_list(alpp, new_host, EH_xacl, US_name, ep, cmd,
@@ -580,10 +595,10 @@ host_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem
 
 
       /* ---- EH_prj */
-      if (lGetPosViaElem(ep, EH_prj, SGE_NO_ABORT) >= 0) {
+      if (ocs::tom::has<EH_prj>(ep)) {
          DPRINTF("got new EH_prj\n");
          /* check prj list */
-         if (verify_project_list(alpp, lGetList(ep, EH_prj), master_project_list, "projects", object->object_name,
+         if (verify_project_list(alpp, ocs::tom::get<EH_prj>(ep), master_project_list, "projects", object->object_name,
                                  host) != STATUS_OK) {
             goto ERROR;
          }
@@ -596,10 +611,10 @@ host_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem
       }
 
       /* ---- EH_xprj */
-      if (lGetPosViaElem(ep, EH_xprj, SGE_NO_ABORT) >= 0) {
+      if (ocs::tom::has<EH_xprj>(ep)) {
          DPRINTF("got new EH_xprj\n");
          /* check xprj list */
-         if (verify_project_list(alpp, lGetList(ep, EH_xprj), master_project_list, "xprojects", object->object_name,
+         if (verify_project_list(alpp, ocs::tom::get<EH_xprj>(ep), master_project_list, "xprojects", object->object_name,
                                  host) != STATUS_OK) {
             goto ERROR;
          }
@@ -612,7 +627,7 @@ host_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem
       }
 
       /* ---- EH_usage_scaling_list */
-      if (lGetPosViaElem(ep, EH_usage_scaling_list, SGE_NO_ABORT) >= 0) {
+      if (ocs::tom::has<EH_usage_scaling_list>(ep)) {
          attr_mod_sub_list(alpp, new_host, EH_usage_scaling_list, HS_name, ep, cmd,
                            sub_command, SGE_ATTR_USAGE_SCALING, SGE_OBJ_EXECHOST, 0, &changed);
          if (changed) {
@@ -620,15 +635,15 @@ host_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem
          }
       }
 
-      if (lGetPosViaElem(ep, EH_report_variables, SGE_NO_ABORT) >= 0) {
+      if (ocs::tom::has<EH_report_variables>(ep)) {
          attr_mod_sub_list(alpp, new_host, EH_report_variables, STU_name, ep, cmd,
                            sub_command, "report_variables",
                            SGE_OBJ_EXECHOST, 0, nullptr);
 
 
          /* check if all report_variables are valid complex variables */
-         for_each_ep_lv(var, lGetList(ep, EH_report_variables)) {
-            const char *name = lGetString(var, STU_name);
+         for_each_ep_lv(var, ocs::tom::get<EH_report_variables>(ep)) {
+            const char *name = ocs::tom::get<STU_name>(var);
             if (centry_list_locate(master_centry_list, name) == nullptr) {
                ERROR(MSG_SGETEXT_UNKNOWN_RESOURCE_S, name);
                answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
@@ -641,10 +656,10 @@ host_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem
          lListElem *ar;
 
          for_each_rw(ar, master_ar_list) {
-            if (lGetElemHost(lGetList(ar, AR_granted_slots), JG_qhostname, host)) {
-               if (!sge_ar_have_users_access(nullptr, ar, host, lGetList(new_host, EH_acl),
-                                             lGetList(new_host, EH_xacl), master_userset_list)) {
-                  ERROR(MSG_PARSE_MOD3_REJECTED_DUE_TO_AR_SU, SGE_ATTR_USER_LISTS, lGetUlong(ar, AR_id));
+            if (ocs::tom::find_first<JG_qhostname>(ocs::tom::get<AR_granted_slots>(ar), host)) {
+               if (!sge_ar_have_users_access(nullptr, ar, host, ocs::tom::get<EH_acl>(new_host),
+                                             ocs::tom::get<EH_xacl>(new_host), master_userset_list)) {
+                  ERROR(MSG_PARSE_MOD3_REJECTED_DUE_TO_AR_SU, SGE_ATTR_USER_LISTS, ocs::tom::get<AR_id>(ar));
                   answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
                   goto ERROR;
                }
@@ -755,12 +770,12 @@ host_sync_exec_hostgroup(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitor
    lList *wanted = nullptr;
 
    for_each_ep(ehost, master_ehost_list) {
-      const char *name = lGetHost(ehost, EH_name);
+      const char *name = ocs::tom::get<EH_name>(ehost);
 
       if (name == nullptr || strcmp(name, SGE_GLOBAL_NAME) == 0 || strcmp(name, SGE_TEMPLATE_NAME) == 0) {
          continue;
       }
-      lAddElemHost(&wanted, HR_name, name, HR_Type);
+      ocs::tom::emplace_back<HR_name>(&wanted, name);
    }
 
    /*
@@ -769,14 +784,14 @@ host_sync_exec_hostgroup(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitor
     * HGROUP_MOD event -- and a cache recomputation for every referencing group
     * -- on each "qconf -Me", for a membership that did not move.
     */
-   const lList *current = lGetList(hgrp, HGRP_host_list);
+   const lList *current = ocs::tom::get<HGRP_host_list>(hgrp);
    bool changed = (lGetNumberOfElem(current) != lGetNumberOfElem(wanted));
 
    if (!changed) {
       const lListElem *href;
 
       for_each_ep(href, wanted) {
-         if (href_list_locate(current, lGetHost(href, HR_name)) == nullptr) {
+         if (href_list_locate(current, ocs::tom::get<HR_name>(href)) == nullptr) {
             changed = true;
             break;
          }
@@ -845,10 +860,10 @@ host_sync_exec_hostgroup(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitor
                                            &before_mod_list, nullptr);
 
       /* swap the new membership in just long enough to resolve the "after" view */
-      lXchgList(hgrp, HGRP_host_list, &wanted);
+      ocs::tom::exchange<HGRP_host_list>(hgrp, &wanted);
       ret &= href_list_find_all_references(cq_hostlist, &answer_list, master_hgroup_list,
                                            &after_mod_list, nullptr);
-      lXchgList(hgrp, HGRP_host_list, &wanted);
+      ocs::tom::exchange<HGRP_host_list>(hgrp, &wanted);
 
       if (ret) {
          /* a host this queue keeps reaching by another route is not really lost,
@@ -860,11 +875,11 @@ host_sync_exec_hostgroup(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitor
       }
 
       if (ret) {
-         lList *pending = lGetListRW(hgrp, HGRP_cqueue_list);
+         lList *pending = ocs::tom::get<HGRP_cqueue_list>(hgrp);
 
          if (pending == nullptr) {
             pending = lCreateList("", CQ_Type);
-            lSetList(hgrp, HGRP_cqueue_list, pending);
+            ocs::tom::set<HGRP_cqueue_list>(hgrp, pending);
          }
 
          lListElem *new_cqueue = lCopyElem(cqueue);
@@ -907,7 +922,7 @@ host_sync_exec_hostgroup(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitor
       DRETURN(false);
    }
 
-   lSetList(hgrp, HGRP_host_list, wanted);   /* takes ownership */
+   ocs::tom::set<HGRP_host_list>(hgrp, wanted);   /* takes ownership */
 
    lList *referencees = nullptr;
    hgroup_refresh_caches(hgrp, master_hgroup_list, &referencees);
@@ -926,9 +941,9 @@ host_sync_exec_hostgroup(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitor
       lList *pending = nullptr;
 
       /* the pending queue copies are not part of the group's own event */
-      lXchgList(hgrp, HGRP_cqueue_list, &pending);
+      ocs::tom::exchange<HGRP_cqueue_list>(hgrp, &pending);
       sge_add_event(0, sgeE_HGROUP_MOD, 0, 0, EXEC_HOSTGROUP, nullptr, nullptr, hgrp, gdi_session);
-      lXchgList(hgrp, HGRP_cqueue_list, &pending);
+      ocs::tom::exchange<HGRP_cqueue_list>(hgrp, &pending);
 
       hgroup_send_referencee_events(referencees, master_hgroup_list, gdi_session);
    }
@@ -946,7 +961,7 @@ host_sync_exec_hostgroup(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitor
     * derived from the execution host list and rebuilt at every startup.
     */
    {
-      const lList *pending_queues = lGetList(hgrp, HGRP_cqueue_list);
+      const lList *pending_queues = ocs::tom::get<HGRP_cqueue_list>(hgrp);
       const lListElem *cq;
       dstring key_dstring = DSTRING_INIT;
       lList *spool_answer_list = nullptr;
@@ -955,18 +970,18 @@ host_sync_exec_hostgroup(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitor
       answer_list_output(&spool_answer_list);
 
       for_each_ep(cq, pending_queues) {
-         const char *cqname = lGetString(cq, CQ_name);
+         const char *cqname = ocs::tom::get<CQ_name>(cq);
          const lListElem *qinstance;
 
          if (!spool_ok) {
             break;
          }
-         for_each_ep(qinstance, lGetList(cq, CQ_qinstances)) {
-            const uint32_t tag = lGetUlong(qinstance, QU_tag);
+         for_each_ep(qinstance, static_cast<const lList *>(ocs::tom::get<CQ_qinstances>(cq))) {
+            const uint32_t tag = ocs::tom::get<QU_tag>(qinstance);
 
             if (tag == SGE_QI_TAG_ADD || tag == SGE_QI_TAG_MOD) {
                const char *key = sge_dstring_sprintf(&key_dstring, "%s/%s", cqname,
-                                                     lGetHost(qinstance, QU_qhostname));
+                                                     static_cast<const char *>(ocs::tom::get<QU_qhostname>(qinstance)));
 
                if (!spool_write_object(&spool_answer_list, spool_get_default_context(),
                                        qinstance, key, SGE_TYPE_QINSTANCE)) {
@@ -1016,13 +1031,13 @@ host_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lLis
 
    switch (object->key_nm) {
       case EH_name: {
-         const char *host = lGetHost(ep, EH_name);
+         const char *host = ocs::tom::get<EH_name>(ep);
          int global_host = !strcmp(SGE_GLOBAL_NAME, host);
 
          if (global_host) {
             host_list_merge(master_ehost_list);
          } else {
-            const lListElem *global_ep = lGetElemHost(master_ehost_list, EH_name, SGE_GLOBAL_NAME);
+            const lListElem *global_ep = ocs::tom::find_first<EH_name>(master_ehost_list, SGE_GLOBAL_NAME);
             host_merge(ep, global_ep);
          }
 
@@ -1066,17 +1081,17 @@ sge_mark_unheard(lListElem *hep, uint64_t gdi_session) {
    const char *host;
    lList *master_cqueue_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE);
 
-   host = lGetHost(hep, EH_name);
+   host = ocs::tom::get<EH_name>(hep);
 
    if (cl_com_remove_known_endpoint_from_name(host, to_cstr(EXECD), 1) == CL_RETVAL_OK) {
       DEBUG("set %s/%s/%d to unheard\n", host, to_cstr(EXECD), 1);
    }
 
-   if (lGetUlong64(hep, EH_lt_heard_from) != 0) {
+   if (ocs::tom::get<EH_lt_heard_from>(hep) != 0) {
       host_trash_nonstatic_load_values(hep);
       cqueue_list_set_unknown_state(master_cqueue_list, host, true, true, gdi_session);
 
-      lSetUlong64(hep, EH_lt_heard_from, 0);
+      ocs::tom::set<EH_lt_heard_from>(hep, 0);
 
       // the host does not report any more, rescheduled jobs must not wait for their old runs
       reschedule_clear_deferred_starts_of_host(hep, gdi_session);
@@ -1121,7 +1136,7 @@ sge_update_load_values(const char *rhost, const char* real_host, lList *lp, uint
     */
    uint64_t now = sge_get_gmt64();
 
-   host_ep = lGetElemHostRW(master_ehost_list, EH_name, rhost);
+   host_ep = ocs::tom::find_first_rw<EH_name>(master_ehost_list, rhost);
    if (host_ep == nullptr) {
       /* report from unknown host arrived, ignore it */
       DRETURN_VOID;
@@ -1129,30 +1144,30 @@ sge_update_load_values(const char *rhost, const char* real_host, lList *lp, uint
 
    // get real host element if we handle a simulated host
    if (real_host != nullptr) {
-      real_ep = lGetElemHostRW(master_ehost_list, EH_name, real_host);
+      real_ep = ocs::tom::find_first_rw<EH_name>(master_ehost_list, real_host);
    }
 
    /* 
     * if rhost is unknown set him to known
     */
-   if (lGetUlong64(host_ep, EH_lt_heard_from) == 0) {
+   if (ocs::tom::get<EH_lt_heard_from>(host_ep) == 0) {
       cqueue_list_set_unknown_state(master_cqueue_list, rhost, true, false, gdi_session);
 
       /* remove a trigger to enforce limits when they are exceeded */
       sge_host_remove_enforce_limit_trigger(rhost);
 
-      lSetUlong64(host_ep, EH_lt_heard_from, sge_get_gmt64());
+      ocs::tom::set<EH_lt_heard_from>(host_ep, sge_get_gmt64());
    }
 
    host_ep = nullptr;
    /* loop over all received load values */
    for_each_rw(ep, lp) {
       /* get name, value and other info */
-      const char *name = lGetString(ep, LR_name);
-      const char *value = lGetString(ep, LR_value);
-      const char *host = lGetHost(ep, LR_host);
-      uint32_t global = lGetUlong(ep, LR_global);
-      uint32_t is_static = lGetUlong(ep, LR_is_static);
+      const char *name = ocs::tom::get<LR_name>(ep);
+      const char *value = ocs::tom::get<LR_value>(ep);
+      const char *host = ocs::tom::get<LR_host>(ep);
+      uint32_t global = ocs::tom::get<LR_global>(ep);
+      uint32_t is_static = ocs::tom::get<LR_is_static>(ep);
 
       /* erroneous load report */
       if (!name || !value || !host) {
@@ -1172,29 +1187,29 @@ sge_update_load_values(const char *rhost, const char* real_host, lList *lp, uint
       if (strcmp(LOAD_ATTR_TOPOLOGY, name) == 0) {
          // If we have a real host (simulated host case), get the topology from the internally stored full string
          if (real_ep != nullptr) {
-            value = lGetString(real_ep, EH_internal_topology);
+            value = ocs::tom::get<EH_internal_topology>(real_ep);
          }
 
          // Keep the original value in the host element and a product-specific version as load value
          ocs::TopologyString topology(value);
-         lSetString(*hepp, EH_internal_topology, topology.to_string(true, true, true, false, false, false).c_str());
-         lSetString(ep, LR_value, topology.to_product_topology_string().c_str());
-         value = lGetString(ep, LR_value);
+         ocs::tom::set<EH_internal_topology>(*hepp, topology.to_string(true, true, true, false, false, false).c_str());
+         ocs::tom::set<LR_value>(ep, topology.to_product_topology_string().c_str());
+         value = ocs::tom::get<LR_value>(ep);
       }
 
       /* update load value list of reported host */
-      if (*hepp == nullptr || sge_hostcmp(host, lGetHost(*hepp, EH_name)) != 0) {
+      if (*hepp == nullptr || sge_hostcmp(host, ocs::tom::get<EH_name>(*hepp)) != 0) {
          if (*hepp != nullptr) {
             /* we have a host change, send events for the previous one */
             sge_event_spool(&answer_list, 0, sgeE_EXECHOST_MOD,
-                            0, 0, lGetHost(*hepp, EH_name), nullptr, nullptr,
+                            0, 0, ocs::tom::get<EH_name>(*hepp), nullptr, nullptr,
                             host_ep, nullptr, nullptr, true, statics_changed, gdi_session);
             ocs::ReportingFileWriter::create_host_records(&answer_list, *hepp, now);
             statics_changed = false;
          }
 
          /* get the new host */
-         *hepp = lGetElemHostRW(master_ehost_list, EH_name, host);
+         *hepp = ocs::tom::find_first_rw<EH_name>(master_ehost_list, host);
          if (*hepp == nullptr) {
             INFO(MSG_CANT_ASSOCIATE_LOAD_SS, rhost, host);
             continue;
@@ -1203,14 +1218,14 @@ sge_update_load_values(const char *rhost, const char* real_host, lList *lp, uint
 
       if (is_static == 2) {
          /* remove old load value */
-         lep = lGetSubStrRW(*hepp, HL_name, name, EH_load_list);
+         lep = ocs::tom::find_first_in_rw<EH_load_list, HL_name>(*hepp, name);
 
-         lRemoveElem(lGetListRW(*hepp, EH_load_list), &lep);
+         lRemoveElem(ocs::tom::get<EH_load_list>(*hepp), &lep);
       } else {
          /* add a new load value */
-         lep = lGetSubStrRW(*hepp, HL_name, name, EH_load_list);
+         lep = ocs::tom::find_first_in_rw<EH_load_list, HL_name>(*hepp, name);
          if (lep == nullptr) {
-            lep = lAddSubStr(*hepp, HL_name, name, EH_load_list, HL_Type);
+            lep = ocs::tom::emplace_back_in<EH_load_list, HL_name>(*hepp, name);
             DPRINTF("%s: adding load value: " SFQ " = " SFQ "\n", host, name, value);
             if (is_static == 1) {
                statics_changed = true;
@@ -1218,16 +1233,16 @@ sge_update_load_values(const char *rhost, const char* real_host, lList *lp, uint
          } else {
             /* replace an existing load value */
             if (is_static == 1) {
-               if (sge_strnullcmp(value, lGetString(lep, HL_value)) != 0) {
+               if (sge_strnullcmp(value, ocs::tom::get<HL_value>(lep)) != 0) {
                   statics_changed = true;
                }
             }
          }
 
          /* copy value */
-         lSetString(lep, HL_value, value);
-         lSetUlong64(lep, HL_last_update, now);
-         lSetBool(lep, HL_is_static, is_static);
+         ocs::tom::set<HL_value>(lep, value);
+         ocs::tom::set<HL_last_update>(lep, now);
+         ocs::tom::set<HL_is_static>(lep, is_static);
       }
    }
 
@@ -1237,7 +1252,7 @@ sge_update_load_values(const char *rhost, const char* real_host, lList *lp, uint
    */
    if (hepp != nullptr && *hepp != nullptr) {
       sge_event_spool(&answer_list, 0, sgeE_EXECHOST_MOD,
-                      0, 0, lGetHost(*hepp, EH_name), nullptr, nullptr,
+                      0, 0, ocs::tom::get<EH_name>(*hepp), nullptr, nullptr,
                       *hepp, nullptr, nullptr, true, statics_changed, gdi_session);
 
       ocs::ReportingFileWriter::create_host_records(&answer_list, *hepp, now);
@@ -1295,13 +1310,13 @@ sge_load_value_cleanup_handler(te_event_t anEvent, monitoring_t *monitor) {
          continue;
       }
 
-      host = lGetHost(hep, EH_name);
+      host = ocs::tom::get<EH_name>(hep);
 
       /* do not trash load values of simulated hosts */
       if (simulate_execds) {
-         const lListElem *load_report_host = lGetSubStr(hep, CE_name, "load_report_host", EH_consumable_config_list);
+         const lListElem *load_report_host = ocs::tom::find_first_in<EH_consumable_config_list, CE_name>(hep, "load_report_host");
          if (load_report_host != nullptr) {
-            const char *real_host = lGetString(load_report_host, CE_stringval);
+            const char *real_host = ocs::tom::get<CE_stringval>(load_report_host);
             if (real_host != nullptr && sge_hostcmp(real_host, host) != 0) {
                DPRINTF("skip trashing load values for host %s simulated by %s\n", host, real_host);
                continue;
@@ -1309,7 +1324,7 @@ sge_load_value_cleanup_handler(te_event_t anEvent, monitoring_t *monitor) {
          }
       }
 
-      if (lGetUlong64(hep, EH_lt_heard_from) == 0) {
+      if (ocs::tom::get<EH_lt_heard_from>(hep) == 0) {
          /* host is already unknown, nothing to trash */
          continue;
       }
@@ -1324,7 +1339,7 @@ sge_load_value_cleanup_handler(te_event_t anEvent, monitoring_t *monitor) {
          /* host is known, nothing to trash */
       }
 
-      lSetUlong64(hep, EH_lt_heard_from, 0);
+      ocs::tom::set<EH_lt_heard_from>(hep, 0);
 
       // the host does not report any more, rescheduled jobs must not wait for their old runs
       reschedule_clear_deferred_starts_of_host(hep, ocs::SessionManager::GDI_SESSION_NONE);
@@ -1363,16 +1378,16 @@ load_report_interval(lListElem *hep) {
    uint32_t timeout;
    const char *host;
 
-   host = lGetHost(hep, EH_name);
+   host = ocs::tom::get<EH_name>(hep);
 
    /* cache load report interval in exec host to prevent host name resolving each epoch */
-   timeout = lGetUlong(hep, EH_load_report_interval);
+   timeout = ocs::tom::get<EH_load_report_interval>(hep);
    if (mconf_is_new_config() || timeout == 0) {
       lListElem *conf_entry = nullptr;
 
       if ((conf_entry = sge_get_configuration_entry_by_name(host, "load_report_time")) != nullptr) {
-         if (parse_ulong_val(nullptr, &timeout, ocs::CEntry::Type::TIME, lGetString(conf_entry, CF_value), nullptr, 0) == 0) {
-            ERROR(MSG_OBJ_LOADREPORTIVAL_SS, host, lGetString(conf_entry, CF_value));
+         if (parse_ulong_val(nullptr, &timeout, ocs::CEntry::Type::TIME, ocs::tom::get<CF_value>(conf_entry), nullptr, 0) == 0) {
+            ERROR(MSG_OBJ_LOADREPORTIVAL_SS, host, ocs::tom::get<CF_value>(conf_entry));
             timeout = 120;
          }
 
@@ -1381,7 +1396,7 @@ load_report_interval(lListElem *hep) {
 
       DPRINTF("%s: load value timeout for host %s is " sge_u32 "\n", __func__, host, timeout);
 
-      lSetUlong(hep, EH_load_report_interval, timeout);
+      ocs::tom::set<EH_load_report_interval>(hep, timeout);
    }
 
    DRETURN(timeout);
@@ -1416,7 +1431,7 @@ exec_host_change_queue_version(const char *exechost_name, uint64_t gdi_session) 
    lList *master_cqueue_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE);
 
    for_each_ep(cqueue, master_cqueue_list) {
-      const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
+      const lList *qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
       lListElem *qinstance = nullptr;
       lListElem *next_qinstance = nullptr;
       const void *iterator = nullptr;
@@ -1424,7 +1439,7 @@ exec_host_change_queue_version(const char *exechost_name, uint64_t gdi_session) 
       if (change_all) {
          next_qinstance = lFirstRW(qinstance_list);
       } else {
-         next_qinstance = lGetElemHostFirstRW(qinstance_list, QU_qhostname, exechost_name, &iterator);
+         next_qinstance = ocs::tom::find_first_rw<QU_qhostname>(qinstance_list, exechost_name, &iterator);
       }
       while ((qinstance = next_qinstance)) {
          const char *name;
@@ -1434,14 +1449,14 @@ exec_host_change_queue_version(const char *exechost_name, uint64_t gdi_session) 
             next_qinstance = lNextRW(qinstance);
             name = SGE_GLOBAL_NAME;
          } else {
-            next_qinstance = lGetElemHostNextRW(qinstance_list, QU_qhostname, exechost_name, &iterator);
+            next_qinstance = ocs::tom::find_next_rw<QU_qhostname>(qinstance_list, exechost_name, &iterator);
             name = exechost_name;
          }
-         DPRINTF(SFQ " has changed. Increasing qversion of" SFQ "\n", name, lGetString(qinstance, QU_full_name));
+         DPRINTF(SFQ " has changed. Increasing qversion of" SFQ "\n", name, ocs::tom::get<QU_full_name>(qinstance));
          qinstance_increase_qversion(qinstance);
          sge_event_spool(&answer_list, 0, sgeE_QINSTANCE_MOD,
-                         0, 0, lGetString(qinstance, QU_qname),
-                         lGetHost(qinstance, QU_qhostname), nullptr,
+                         0, 0, ocs::tom::get<QU_qname>(qinstance),
+                         ocs::tom::get<QU_qhostname>(qinstance), nullptr,
                          qinstance, nullptr, nullptr, true, false, gdi_session);
          answer_list_output(&answer_list);
       }
@@ -1495,14 +1510,14 @@ master_kill_execds(ocs::gdi::Packet *packet, ocs::gdi::Task *task) {
    const char *hostname;
    lList *master_ehost_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST);
 
-   if (lGetString(lFirst(task->data_list), ID_str) == nullptr) {
+   if (ocs::tom::get<ID_str>(lFirst(task->data_list)) == nullptr) {
       /* this means, we have to kill every execd. */
 
-      kill_jobs = lGetUlong(lFirst(task->data_list), ID_force) ? 1 : 0;
+      kill_jobs = ocs::tom::get<ID_force>(lFirst(task->data_list)) ? 1 : 0;
       /* walk over exechost list and send every exechosts execd a
          notification */
       for_each_rw(lel, master_ehost_list) {
-         hostname = lGetHost(lel, EH_name);
+         hostname = ocs::tom::get<EH_name>(lel);
          if (strcmp(hostname, SGE_TEMPLATE_NAME) && strcmp(hostname, SGE_GLOBAL_NAME)) {
             notify(lel, packet, task, kill_jobs, 0);
 
@@ -1522,12 +1537,12 @@ master_kill_execds(ocs::gdi::Packet *packet, ocs::gdi::Task *task) {
 
       /* walk over list with execd's to kill */
       for_each_ep(rep, task->data_list) {
-         if ((getuniquehostname(lGetString(rep, ID_str), host, 0)) != CL_RETVAL_OK) {
-            WARNING(MSG_SGETEXT_CANTRESOLVEHOST_S, lGetString(rep, ID_str));
+         if ((getuniquehostname(ocs::tom::get<ID_str>(rep), host, 0)) != CL_RETVAL_OK) {
+            WARNING(MSG_SGETEXT_CANTRESOLVEHOST_S, ocs::tom::get<ID_str>(rep));
             answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_WARNING);
          } else {
             if ((lel = host_list_locate(master_ehost_list, host))) {
-               kill_jobs = lGetUlong(rep, ID_force) ? 1 : 0;
+               kill_jobs = ocs::tom::get<ID_force>(rep) ? 1 : 0;
                /*
                ** if a host name is given, then a kill is forced
                ** this means that even if the host is unheard we try
@@ -1556,7 +1571,7 @@ notify(lListElem *lel, ocs::gdi::Packet *packet, ocs::gdi::Task *task, int kill_
    DENTER(TOP_LAYER);
 
    const char *action_str = kill_jobs ? MSG_NOTIFY_SHUTDOWNANDKILL : MSG_NOTIFY_SHUTDOWN;
-   const char *hostname = lGetHost(lel, EH_name);
+   const char *hostname = ocs::tom::get<EH_name>(lel);
 
    unsigned long last_heard_from;
    cl_commlib_get_last_message_time((cl_com_get_handle(to_cstr(QMASTER), 0)),
@@ -1587,20 +1602,20 @@ notify(lListElem *lel, ocs::gdi::Packet *packet, ocs::gdi::Task *task, int kill_
       lListElem *jep;
       for_each_rw(jep, master_job_list) {
          lListElem *jatep;
-         const lList *mail_users = lGetList(jep, JB_mail_list);
-         uint32_t mail_options = lGetUlong(jep, JB_mail_options);
+         const lList *mail_users = ocs::tom::get<JB_mail_list>(jep);
+         uint32_t mail_options = ocs::tom::get<JB_mail_options>(jep);
 
-         for_each_rw(jatep, lGetList(jep, JB_ja_tasks)) {
-            const lList *gdil = lGetList(jatep, JAT_granted_destin_identifier_list);
+         for_each_rw(jatep, static_cast<const lList *>(ocs::tom::get<JB_ja_tasks>(jep))) {
+            const lList *gdil = ocs::tom::get<JAT_granted_destin_identifier_list>(jatep);
             if (gdil != nullptr) {
-               if (sge_hostcmp(lGetHost(lFirst(gdil), JG_qhostname), hostname) == 0) {
+               if (sge_hostcmp(ocs::tom::get<JG_qhostname>(lFirst(gdil)), hostname) == 0) {
                   /*   send mail to users if requested                  */
-                  if (VALID(MAIL_AT_ABORT, mail_options) && !(lGetUlong(jatep, JAT_state) & JDELETED)) {
+                  if (VALID(MAIL_AT_ABORT, mail_options) && !(ocs::tom::get<JAT_state>(jatep) & JDELETED)) {
                      lUlong jep_JB_job_number;
                      const char *jep_JB_job_name;
 
-                     jep_JB_job_number = lGetUlong(jep, JB_job_number);
-                     jep_JB_job_name = lGetString(jep, JB_job_name);
+                     jep_JB_job_number = ocs::tom::get<JB_job_number>(jep);
+                     jep_JB_job_name = ocs::tom::get<JB_job_name>(jep);
 
                      snprintf(sge_mail_subj, sizeof(sge_mail_subj), MSG_MAIL_JOBKILLEDSUBJ_US,
                               jep_JB_job_number, jep_JB_job_name);
@@ -1610,14 +1625,14 @@ notify(lListElem *lel, ocs::gdi::Packet *packet, ocs::gdi::Task *task, int kill_
                   }
 
                   /* this job has the killed exechost as master host */
-                  uint32_t state = lGetUlong(jatep, JAT_state);
+                  uint32_t state = ocs::tom::get<JAT_state>(jatep);
                   SETBIT(JDELETED, state);
-                  lSetUlong(jatep, JAT_state, state);
+                  ocs::tom::set<JAT_state>(jatep, state);
 
                   /* spool job and propagate state change to event clients */
                   lList *answer_list = nullptr;
-                  sge_event_spool(&answer_list, 0, sgeE_JATASK_MOD, lGetUlong(jep, JB_job_number),
-                                  lGetUlong(jatep, JAT_task_number), nullptr, nullptr, nullptr,
+                  sge_event_spool(&answer_list, 0, sgeE_JATASK_MOD, ocs::tom::get<JB_job_number>(jep),
+                                  ocs::tom::get<JAT_task_number>(jatep), nullptr, nullptr, nullptr,
                                   jep, jatep, nullptr, true, true, 0);
                   answer_list_output(&answer_list);
                }
@@ -1645,10 +1660,10 @@ static void
 host_mark_as_auto_added(lListElem *hep, uint64_t gdi_session) {
    DENTER(TOP_LAYER);
 
-   lSetUlong64(hep, EH_auto_added_time, sge_get_gmt64());
+   ocs::tom::set<EH_auto_added_time>(hep, sge_get_gmt64());
 
    lList *answer_list = nullptr;
-   sge_event_spool(&answer_list, 0, sgeE_EXECHOST_MOD, 0, 0, lGetHost(hep, EH_name),
+   sge_event_spool(&answer_list, 0, sgeE_EXECHOST_MOD, 0, 0, ocs::tom::get<EH_name>(hep),
                    nullptr, nullptr, hep, nullptr, nullptr, true, true, gdi_session);
    answer_list_output(&answer_list);
 
@@ -1681,13 +1696,13 @@ host_add_to_hgroup(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const char *h
    if (add == 0) {
       // the host can already be part of the host group, e.g. when it was removed from the exec host
       // list but not from the host group
-      if (lGetElemHost(lGetList(old_hgroup, HGRP_host_list), HR_name, hostname) != nullptr) {
+      if (static_cast<const lListElem *>(ocs::tom::find_first<HR_name>(ocs::tom::get<HGRP_host_list>(old_hgroup), hostname)) != nullptr) {
          DPRINTF("host " SFQ " is already part of host group " SFQ "\n", hostname, hgroup_name);
          DRETURN(true);
       }
-      href_list = lCopyList(nullptr, lGetList(old_hgroup, HGRP_host_list));
+      href_list = lCopyList(nullptr, ocs::tom::get<HGRP_host_list>(old_hgroup));
    }
-   lAddElemHost(&href_list, HR_name, hostname, HR_Type);
+   ocs::tom::emplace_back<HR_name>(&href_list, hostname);
 
    bool ret = true;
    lList *answer_list = nullptr;
@@ -1739,12 +1754,12 @@ host_remove_from_hgroups(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const c
    // the host groups to change are collected first: the list is modified while we work on it
    std::vector<std::string> hgroup_names;
    for_each_ep_lv(hgroup, *master_hgroup_list) {
-      const char *hgroup_name = lGetHost(hgroup, HGRP_name);
+      const char *hgroup_name = ocs::tom::get<HGRP_name>(hgroup);
 
       if (hgroup_is_reserved(hgroup_name)) {
          continue;
       }
-      if (lGetElemHost(lGetList(hgroup, HGRP_host_list), HR_name, hostname) != nullptr) {
+      if (static_cast<const lListElem *>(ocs::tom::find_first<HR_name>(ocs::tom::get<HGRP_host_list>(hgroup), hostname)) != nullptr) {
          hgroup_names.emplace_back(hgroup_name);
       }
    }
@@ -1756,8 +1771,8 @@ host_remove_from_hgroups(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const c
       }
 
       // the new host list is the old one without this host
-      lList *href_list = lCopyList(nullptr, lGetList(old_hgroup, HGRP_host_list));
-      lListElem *href = lGetElemHostRW(href_list, HR_name, hostname);
+      lList *href_list = lCopyList(nullptr, ocs::tom::get<HGRP_host_list>(old_hgroup));
+      lListElem *href = ocs::tom::find_first_rw<HR_name>(href_list, hostname);
       lRemoveElem(href_list, &href);
 
       lList *answer_list = nullptr;
@@ -1796,7 +1811,7 @@ host_has_running_jobs(const char *hostname) {
    const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
 
    for_each_ep_lv(cqueue, master_cqueue_list) {
-      const lListElem *qinstance = lGetSubHost(cqueue, QU_qhostname, hostname, CQ_qinstances);
+      const lListElem *qinstance = ocs::tom::find_first_in<CQ_qinstances, QU_qhostname>(cqueue, hostname);
 
       if (qinstance != nullptr && qinstance_slots_used(qinstance) > 0) {
          DRETURN(true);
@@ -1857,16 +1872,16 @@ sge_automatic_host_cleanup_handler(te_event_t anEvent, monitoring_t *monitor) {
       lListElem *hep = next;
       next = lNextRW(hep);
 
-      const char *hostname = lGetHost(hep, EH_name);
+      const char *hostname = ocs::tom::get<EH_name>(hep);
 
       // a host which an administrator added carries no time and is never removed
-      if (lGetUlong64(hep, EH_auto_added_time) == 0) {
+      if (ocs::tom::get<EH_auto_added_time>(hep) == 0) {
          unknown_since.erase(hostname);
          continue;
       }
 
       // a host we have heard from is alive, whenever that was
-      if (lGetUlong64(hep, EH_lt_heard_from) != 0) {
+      if (ocs::tom::get<EH_lt_heard_from>(hep) != 0) {
          unknown_since.erase(hostname);
          continue;
       }
@@ -1913,7 +1928,7 @@ sge_automatic_host_cleanup_handler(te_event_t anEvent, monitoring_t *monitor) {
       } else {
          // do not try again on every tick, treat the host as one an administrator added
          ERROR(MSG_AUTOREMOVEHOSTS_FAILED_S, hostname);
-         lSetUlong64(hep, EH_auto_added_time, 0);
+         ocs::tom::set<EH_auto_added_time>(hep, 0);
          unknown_since.erase(hostname);
       }
    }
@@ -1981,7 +1996,7 @@ sge_execd_startedup(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *h
       host_was_added = true;
    }
 
-   lSetUlong(hep, EH_report_seqno, 0);
+   ocs::tom::set<EH_report_seqno>(hep, 0);
 
    // a host which was not known before and which matches one of the rules of the qmaster_params
    // AUTO_ADD_HOSTS added itself to the cluster - mark it as automatically added and put it into
@@ -2009,15 +2024,15 @@ sge_execd_startedup(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *h
     */
    if (!is_restart) {
       for_each_rw (cqueue, master_cqueue_list) {
-         const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
-         lListElem *qinstance = lGetElemHostRW(qinstance_list, QU_qhostname, rhost);
+         const lList *qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
+         lListElem *qinstance = ocs::tom::find_first_rw<QU_qhostname>(qinstance_list, rhost);
 
          if (qinstance != nullptr) {
             if (sge_qmaster_qinstance_set_initial_state(qinstance, packet->gdi_session)) {
                lList *answer_list = nullptr;
 
                qinstance_increase_qversion(qinstance);
-               sge_event_spool(&answer_list, 0, sgeE_QINSTANCE_MOD, 0, 0, lGetString(qinstance, QU_qname),
+               sge_event_spool(&answer_list, 0, sgeE_QINSTANCE_MOD, 0, 0, ocs::tom::get<QU_qname>(qinstance),
                                rhost, nullptr, qinstance, nullptr, nullptr, true, true, packet->gdi_session);
                answer_list_output(&answer_list);
             }
@@ -2042,12 +2057,12 @@ verify_scaling_list(lList **answer_list, lListElem *host) {
    const lListElem *hs_elem;
    const lList *master_centry_list = *ocs::DataStore::get_master_list(SGE_TYPE_CENTRY);
 
-   for_each_ep(hs_elem, lGetList(host, EH_scaling_list)) {
-      const char *name = lGetString(hs_elem, HS_name);
+   for_each_ep(hs_elem, static_cast<const lList *>(ocs::tom::get<EH_scaling_list>(host))) {
+      const char *name = ocs::tom::get<HS_name>(hs_elem);
       lListElem *centry = centry_list_locate(master_centry_list, name);
 
       if (centry == nullptr) {
-         ERROR(MSG_OBJ_NOSCALING4HOST_SS, name, lGetHost(host, EH_name));
+         ERROR(MSG_OBJ_NOSCALING4HOST_SS, name, static_cast<const char *>(ocs::tom::get<EH_name>(host)));
          answer_list_add(answer_list, SGE_EVENT,
                          STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          ret = false;
@@ -2203,13 +2218,13 @@ attr_mod_threshold(lList **alpp, lListElem *ep, lListElem *new_ep, ocs::gdi::Com
    const lList *master_pe_list = *ocs::DataStore::get_master_list(SGE_TYPE_PE);
 
    /* ---- attribute EH_consumable_config_list */
-   if (lGetPosViaElem(ep, EH_consumable_config_list, SGE_NO_ABORT) >= 0) {
+   if (ocs::tom::has<EH_consumable_config_list>(ep)) {
       lListElem *tmp_elem = nullptr;
 
       DPRINTF("got new %s\n", attr_name);
 
       // reject duplicate entries
-      if (ocs::CEntry::has_duplicates(lGetList(ep, EH_consumable_config_list), alpp, "complex_values")) {
+      if (ocs::CEntry::has_duplicates(ocs::tom::get<EH_consumable_config_list>(ep), alpp, "complex_values")) {
          DRETURN(STATUS_EUNKNOWN);
       }
 
@@ -2229,12 +2244,12 @@ attr_mod_threshold(lList **alpp, lListElem *ep, lListElem *new_ep, ocs::gdi::Com
       }
 
       // ensure that slots-attribute is part of the list
-      if (host_ensure_slots_are_defined(tmp_elem, lGetUlong(new_ep, EH_processors))) {
+      if (host_ensure_slots_are_defined(tmp_elem, ocs::tom::get<EH_processors>(new_ep))) {
          DRETURN(STATUS_EUNKNOWN);
       }
 
       // fill missing attributes in EH_consumable_config_list
-      if (centry_list_fill_request(lGetListRW(tmp_elem, EH_consumable_config_list), alpp, master_centry_list, true,
+      if (centry_list_fill_request(ocs::tom::get<EH_consumable_config_list>(tmp_elem), alpp, master_centry_list, true,
                                    false, false)) {
          lFreeElem(&tmp_elem);
          DRETURN(STATUS_EUNKNOWN);
@@ -2243,7 +2258,7 @@ attr_mod_threshold(lList **alpp, lListElem *ep, lListElem *new_ep, ocs::gdi::Com
       // an RSMAP written as a bare amount gets the ids 0 to amount-1 here - has to happen before
       // the resources are debited below, which books the utilization per id
       if (!centry_list_rsmap_expand_implicit_ids(alpp,
-                                                 lGetListRW(tmp_elem, EH_consumable_config_list))) {
+                                                 ocs::tom::get<EH_consumable_config_list>(tmp_elem))) {
          lFreeElem(&tmp_elem);
          DRETURN(STATUS_EUNKNOWN);
       }
@@ -2252,26 +2267,26 @@ attr_mod_threshold(lList **alpp, lListElem *ep, lListElem *new_ep, ocs::gdi::Com
       {
          lListElem *jep = nullptr;
          const lListElem *ar_ep;
-         const char *host = lGetHost(tmp_elem, EH_name);
+         const char *host = ocs::tom::get<EH_name>(tmp_elem);
          int global_host = !strcmp(SGE_GLOBAL_NAME, host);
 
          // initialize booking
-         lSetList(tmp_elem, EH_resource_utilization, nullptr);
+         ocs::tom::set<EH_resource_utilization>(tmp_elem, nullptr);
          debit_host_consumable(nullptr, nullptr, nullptr, nullptr, tmp_elem, master_centry_list, 0, true, true, nullptr);
 
          // do the resource booking
          for_each_rw (jep, master_job_list) {
             const lListElem *jatep = nullptr;
 
-            for_each_ep(jatep, lGetList(jep, JB_ja_tasks)) {
-               const lList *gdil = lGetList(jatep, JAT_granted_destin_identifier_list);
+            for_each_ep(jatep, static_cast<const lList *>(ocs::tom::get<JB_ja_tasks>(jep))) {
+               const lList *gdil = ocs::tom::get<JAT_granted_destin_identifier_list>(jatep);
                int slots;
                bool is_master_task = false;
                const void *iterator = nullptr;
-               const lListElem *pe = lGetObject(jatep, JAT_pe_object);
-               const lList *granted_resources_list = lGetList(jatep, JAT_granted_resources_list);
+               const lListElem *pe = ocs::tom::get<JAT_pe_object>(jatep);
+               const lList *granted_resources_list = ocs::tom::get<JAT_granted_resources_list>(jatep);
 
-               if (global_host || (lFirst(gdil) == lGetElemHostFirst(gdil, JG_qhostname, host, &iterator))) {
+               if (global_host || (lFirst(gdil) == static_cast<const lListElem *>(ocs::tom::find_first<JG_qhostname>(gdil, host, &iterator)))) {
                   is_master_task = true;
                }
 
@@ -2285,9 +2300,9 @@ attr_mod_threshold(lList **alpp, lListElem *ep, lListElem *new_ep, ocs::gdi::Com
          }
 
          for_each_ep(ar_ep, master_ar_list) {
-            const lList *gdil = lGetList(ar_ep, AR_granted_slots);
+            const lList *gdil = ocs::tom::get<AR_granted_slots>(ar_ep);
             const void *iterator = nullptr;
-            const lListElem *gdil_ep = lGetElemHostFirst(gdil, JG_qhostname, host, &iterator);
+            const lListElem *gdil_ep = ocs::tom::find_first<JG_qhostname>(gdil, host, &iterator);
 
             // in case the master task is running on this host, need to book per JOB consumables
             bool is_master_task = false;
@@ -2298,7 +2313,7 @@ attr_mod_threshold(lList **alpp, lListElem *ep, lListElem *new_ep, ocs::gdi::Com
             // we book per host consumables once
             bool do_per_host_booking = true;
 
-            const char *pe_name = lGetString(ar_ep, AR_granted_pe);
+            const char *pe_name = ocs::tom::get<AR_granted_pe>(ar_ep);
             const lListElem *pe = nullptr;
             if (pe_name != nullptr) {
                pe = pe_list_locate(master_pe_list, pe_name);
@@ -2306,18 +2321,18 @@ attr_mod_threshold(lList **alpp, lListElem *ep, lListElem *new_ep, ocs::gdi::Com
 
             if (gdil_ep != nullptr) {
                lListElem *dummy_job = lCreateElem(JB_Type);
-               job_set_hard_resource_list(dummy_job, lCopyList(nullptr, lGetList(ar_ep, AR_resource_list)));
+               job_set_hard_resource_list(dummy_job, lCopyList(nullptr, ocs::tom::get<AR_resource_list>(ar_ep)));
 
                while (gdil_ep != nullptr) {
                   rc_add_job_utilization(gdil_ep, dummy_job, pe, 0, SCHEDULING_RECORD_ENTRY_TYPE_RESERVING,
-                                         tmp_elem, master_centry_list, lGetUlong(gdil_ep, JG_slots),
+                                         tmp_elem, master_centry_list, ocs::tom::get<JG_slots>(gdil_ep),
                                          EH_consumable_config_list, EH_resource_utilization, host,
-                                         lGetUlong64(ar_ep, AR_start_time), lGetUlong64(ar_ep, AR_duration),
+                                         ocs::tom::get<AR_start_time>(ar_ep), ocs::tom::get<AR_duration>(ar_ep),
                                          HOST_TAG, false, is_master_task, do_per_host_booking,
-                                         lGetList(ar_ep, AR_granted_resources_list));
+                                         ocs::tom::get<AR_granted_resources_list>(ar_ep));
                   is_master_task = false;
                   do_per_host_booking = false;
-                  gdil_ep = lGetElemHostNext(gdil, JG_qhostname, host, &iterator);
+                  gdil_ep = ocs::tom::find_next<JG_qhostname>(gdil, host, &iterator);
                }
                lFreeElem(&dummy_job);
             }
@@ -2333,14 +2348,14 @@ attr_mod_threshold(lList **alpp, lListElem *ep, lListElem *new_ep, ocs::gdi::Com
       /* copy back the consumable config and resource utilization lists to new exec host object */
       {
          lList *t = nullptr;
-         lXchgList(tmp_elem, EH_consumable_config_list, &t);
-         lXchgList(new_ep, EH_consumable_config_list, &t);
-         lXchgList(tmp_elem, EH_consumable_config_list, &t);
+         ocs::tom::exchange<EH_consumable_config_list>(tmp_elem, &t);
+         ocs::tom::exchange<EH_consumable_config_list>(new_ep, &t);
+         ocs::tom::exchange<EH_consumable_config_list>(tmp_elem, &t);
 
          t = nullptr;
-         lXchgList(tmp_elem, EH_resource_utilization, &t);
-         lXchgList(new_ep, EH_resource_utilization, &t);
-         lXchgList(tmp_elem, EH_resource_utilization, &t);
+         ocs::tom::exchange<EH_resource_utilization>(tmp_elem, &t);
+         ocs::tom::exchange<EH_resource_utilization>(new_ep, &t);
+         ocs::tom::exchange<EH_resource_utilization>(tmp_elem, &t);
       }
 
       lFreeElem(&tmp_elem);

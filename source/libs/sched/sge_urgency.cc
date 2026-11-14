@@ -58,6 +58,8 @@
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_range.h"
 #include "sgeobj/sge_pe.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_RN.h"
 
 #include "sge_urgency.h"
 
@@ -136,10 +138,10 @@ static void sge_urgency(uint64_t now, double *min_urgency, double *max_urgency,
       rrc = dtc = 0.0;
 
       /* waiting time dependent contribution */
-      wtc = weight_waiting_time * sge_gmt64_to_gmt32(now - lGetUlong64(jep, JB_submission_time));
+      wtc = weight_waiting_time * sge_gmt64_to_gmt32(now - ocs::tom::get<JB_submission_time>(jep));
 
       /* job deadline dependent contribution */
-      deadline = lGetUlong64(jep, JB_deadline);
+      deadline = ocs::tom::get<JB_deadline>(jep);
       if (deadline > 0) {
          if (deadline >= now) {
             dtc = weight_deadline / std::max(sge_gmt64_to_gmt32_double(deadline - now), 1.0);
@@ -151,8 +153,8 @@ static void sge_urgency(uint64_t now, double *min_urgency, double *max_urgency,
       }
 
       /* we do category based caching when determining the resource request dependent contribution */
-      if ((cat = (lListElem *)lGetRef(jep, JB_category)) && lGetBool(cat, CT_rc_valid)) {
-         rrc = lGetDouble(cat, CT_resource_contribution);
+      if ((cat = (lListElem *)ocs::tom::get<JB_category>(jep)) && ocs::tom::get<CT_rc_valid>(cat)) {
+         rrc = ocs::tom::get<CT_resource_contribution>(cat);
 /*         DPRINTF("  resource contribution from category cache ---> %7f\n", rrc); */
       } else {
          const lListElem *centry;
@@ -169,27 +171,27 @@ static void sge_urgency(uint64_t now, double *min_urgency, double *max_urgency,
 
          /* contribution for all explicit requests */
          for_each_ep_lv(rr, job_get_hard_resource_list(jep)) {
-            if (!(centry = centry_list_locate(centry_list, lGetString(rr, CE_name)))) {
+            if (!(centry = centry_list_locate(centry_list, ocs::tom::get<CE_name>(rr)))) {
                continue;
             } 
-            contribution = centry_urgency_contribution(slots, lGetString(rr, CE_name), 
-                  lGetDouble(rr, CE_doubleval), centry);
+            contribution = centry_urgency_contribution(slots, ocs::tom::get<CE_name>(rr), 
+                  ocs::tom::get<CE_doubleval>(rr), centry);
             rrc += contribution;
          }
 
          /* cache in category */
          if (cat) {
-            lSetBool(cat, CT_rc_valid,              true);
-            lSetDouble(cat, CT_resource_contribution, rrc);
+            ocs::tom::set<CT_rc_valid>(cat,              true);
+            ocs::tom::set<CT_resource_contribution>(cat, rrc);
          }
       }
       absolute_urgency = wtc + dtc + rrc; 
 
       /* store these values with the job */
-      lSetDouble(jep, JB_dlcontr, dtc);
-      lSetDouble(jep, JB_rrcontr, rrc);
-      lSetDouble(jep, JB_wtcontr, wtc);
-      lSetDouble(jep, JB_urg, absolute_urgency);
+      ocs::tom::set<JB_dlcontr>(jep, dtc);
+      ocs::tom::set<JB_rrcontr>(jep, rrc);
+      ocs::tom::set<JB_wtcontr>(jep, wtc);
+      ocs::tom::set<JB_urg>(jep, absolute_urgency);
 
 /*      DPRINTF("--- job " sge_u32 " (dtc %7f + wtc %7f + rrc %7f) = asu %7f\n",
             lGetUlong(jep, JB_job_number), dtc, wtc, rrc, absolute_urgency);
@@ -224,9 +226,9 @@ static void sge_normalize_urgency(lList *job_list, double min_urgency, double ma
 
    DPRINTF("ASU min = %13.11f, ASU max = %13.11f\n", min_urgency, max_urgency);
    for_each_rw_lv (jep, job_list) {
-      double asu = lGetDouble(jep, JB_urg);
+      double asu = ocs::tom::get<JB_urg>(jep);
       double nsu = sge_normalize_value(asu, min_urgency, max_urgency);
-      lSetDouble(jep, JB_nurg, nsu);
+      ocs::tom::set<JB_nurg>(jep, nsu);
 /*    DPRINTF("NSU(job " sge_u32 ") = %f from %f\n", lGetUlong(jep, JB_job_number), nsu, asu); */
    }
    DRETURN_VOID;
@@ -259,12 +261,12 @@ int sge_job_slot_request(const lListElem *job, const lList *pe_list) {
    int n;
   
    /* sequential job */
-   if (!(pe_name=lGetString(job, JB_pe))) {
+   if (!(pe_name=ocs::tom::get<JB_pe>(job))) {
       DRETURN(1);
    } 
 
    /* parallel job with fixed slot request */
-   range_list = lGetList(job, JB_pe_range);
+   range_list = ocs::tom::get<JB_pe_range>(job);
    if (range_list_get_number_of_ids(range_list)==1) { 
       DRETURN(range_list_get_first_id(range_list, nullptr));
    } 
@@ -275,7 +277,7 @@ int sge_job_slot_request(const lListElem *job, const lList *pe_list) {
    else {
       /* use the first matching pe */
       if ((pep=pe_list_find_matching(pe_list, pe_name))) {
-         DPRINTF("use %s as first matching pe for %s to verify schedulability\n", lGetString(pep, PE_name), pe_name);
+         DPRINTF("use %s as first matching pe for %s to verify schedulability\n", ocs::tom::get<PE_name>(pep), pe_name);
       }
    }
    if (!pep) {
@@ -283,7 +285,7 @@ int sge_job_slot_request(const lListElem *job, const lList *pe_list) {
       DRETURN(1);
    }
 
-   urgency_slot_setting = lGetString(pep, PE_urgency_slots);
+   urgency_slot_setting = ocs::tom::get<PE_urgency_slots>(pep);
 
    n = pe_urgency_slots(pep, urgency_slot_setting, range_list); 
 
@@ -293,7 +295,7 @@ int sge_job_slot_request(const lListElem *job, const lList *pe_list) {
       sge_dstring_init(&pe_range, pe_range_str, sizeof(pe_range_str));
       range_list_print_to_string(range_list, &pe_range, true, false, false);
       DPRINTF("slot request assumed for static urgency is %d for %s PE range due to "
-          "PE's \"%s\" setting \"%s\"\n", n, pe_range_str, lGetString(pep, PE_name), 
+          "PE's \"%s\" setting \"%s\"\n", n, pe_range_str, ocs::tom::get<PE_name>(pep), 
           urgency_slot_setting);
    }
 

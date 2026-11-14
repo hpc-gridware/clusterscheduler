@@ -50,6 +50,8 @@
 #include "sgeobj/sge_pe_task.h"
 #include "sgeobj/sge_report.h"
 #include "sgeobj/msg_sgeobjlib.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_JG.h"
 
 #include "execution_states.h"
 
@@ -102,32 +104,32 @@ void job_report_init_from_job(lListElem *job_report,
                               const lListElem *pe_task) {
    DENTER(TOP_LAYER);
 
-   uint32_t job_id = lGetUlong(job, JB_job_number);
-   uint32_t ja_task_id = lGetUlong(ja_task, JAT_task_number);
+   uint32_t job_id = ocs::tom::get<JB_job_number>(job);
+   uint32_t ja_task_id = ocs::tom::get<JAT_task_number>(ja_task);
    const lListElem *queue;
 
-   lSetUlong(job_report, JR_job_number, job_id);
-   lSetUlong(job_report, JR_ja_task_number, ja_task_id);
+   ocs::tom::set<JR_job_number>(job_report, job_id);
+   ocs::tom::set<JR_ja_task_number>(job_report, ja_task_id);
 
    if (pe_task != nullptr) {
-      lSetString(job_report, JR_pe_task_id_str, lGetString(pe_task, PET_id));
-      queue = lFirst(lGetList(pe_task, PET_granted_destin_identifier_list));
+      ocs::tom::set<JR_pe_task_id_str>(job_report, ocs::tom::get<PET_id>(pe_task));
+      queue = lFirst(ocs::tom::get<PET_granted_destin_identifier_list>(pe_task));
    } else {
-      queue = lFirst(lGetList(ja_task, JAT_granted_destin_identifier_list));
+      queue = lFirst(ocs::tom::get<JAT_granted_destin_identifier_list>(ja_task));
    }
 
-   if (lGetUlong(ja_task, JAT_status) == JSLAVE){
+   if (ocs::tom::get<JAT_status>(ja_task) == JSLAVE){
       if (pe_task == nullptr) {
-         lSetUlong(job_report, JR_state, JSLAVE);
+         ocs::tom::set<JR_state>(job_report, JSLAVE);
       } else {
-         lSetUlong(job_report, JR_state, JWRITTEN);
+         ocs::tom::set<JR_state>(job_report, JWRITTEN);
       }
    } else {
-      lSetUlong(job_report, JR_state, JWRITTEN);
+      ocs::tom::set<JR_state>(job_report, JWRITTEN);
    }
 
    if (queue != nullptr) {
-      lSetString(job_report, JR_queue_name, lGetString(queue, JG_qname));
+      ocs::tom::set<JR_queue_name>(job_report, ocs::tom::get<JG_qname>(queue));
    }
 
    DRETURN_VOID;
@@ -163,8 +165,8 @@ void job_report_init_from_job_with_usage(lListElem *job_report,
    /*
     * ... and now add the online usage plus some fileds which are needed for the accounting
     */
-   lSetUlong(job_report, JR_wait_status, SGE_SET_WEXITSTATUS(SGE_WEXITED_BIT, 0));
-   lSetUlong(job_report, JR_failed, SSTATE_QMASTER_ENFORCED_LIMIT);
+   ocs::tom::set<JR_wait_status>(job_report, SGE_SET_WEXITSTATUS(SGE_WEXITED_BIT, 0));
+   ocs::tom::set<JR_failed>(job_report, SSTATE_QMASTER_ENFORCED_LIMIT);
 
    if (pe_task == nullptr) {
       nm = JAT_scaled_usage_list;
@@ -173,16 +175,16 @@ void job_report_init_from_job_with_usage(lListElem *job_report,
       nm = PET_scaled_usage;
       obj = pe_task;
 
-      lSetString(job_report, JR_pe_task_id_str, lGetString(pe_task, PET_id));
+      ocs::tom::set<JR_pe_task_id_str>(job_report, ocs::tom::get<PET_id>(pe_task));
    }
 
    // the qmaster may enforce a limit on the same task more than once, so the usage can hold these entries already
    lList *usage = lGetOrCreateList(obj, nm, "scaled", UA_Type);
-   usage_list_set_double_usage(usage, "submission_time", lGetUlong64(job, JB_submission_time));
-   usage_list_set_double_usage(usage, "start_time", lGetUlong64(ja_task, JAT_start_time));
+   usage_list_set_double_usage(usage, "submission_time", ocs::tom::get<JB_submission_time>(job));
+   usage_list_set_double_usage(usage, "start_time", ocs::tom::get<JAT_start_time>(ja_task));
    usage_list_set_double_usage(usage, "end_time", time_stamp);
    usage_list_set_double_usage(usage, "ru_wallclock", 0.0);
 
-   lSetList(job_report, JR_usage, lCopyList("", lGetList(obj, nm)));
+   ocs::tom::set<JR_usage>(job_report, lCopyList("", lGetList(obj, nm)));
    DRETURN_VOID;
 }

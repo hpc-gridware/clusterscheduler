@@ -30,6 +30,8 @@
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_str.h"
 #include "sgeobj/sge_host.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_QU.h"
 
 #include "sched/load_correction.h"
 #include "sched/sge_resource_utilization.h"
@@ -80,7 +82,7 @@ bool ocs::QStatGroupController::cqueue_calculate_summary(const lListElem *cqueue
    bool ret = true;
 
    if (cqueue != nullptr) {
-      const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
+      const lList *qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
       double host_load_avg = 0.0;
       uint32_t load_slots = 0;
       uint32_t used_available = 0;
@@ -96,7 +98,7 @@ bool ocs::QStatGroupController::cqueue_calculate_summary(const lListElem *cqueue
       *disabled_manual = *disabled_calendar = *ambiguous = 0;
       *orphaned = *error = 0;
       for_each_ep_lv(qinstance, qinstance_list) {
-         uint32_t slots = lGetUlong(qinstance, QU_job_slots);
+         uint32_t slots = ocs::tom::get<QU_job_slots>(qinstance);
          bool has_value_from_object;
 
          used_slots = qinstance_slots_used(qinstance);
@@ -189,7 +191,7 @@ void ocs::QStatGroupController::process_request(QStatParameter &parameter, QStat
    view.report_started(out_, parameter);
 
    for_each_ep_lv(cqueue, model.get_queue_list()) {
-      if (lGetUlong(cqueue, CQ_tag) != TAG_DEFAULT) {
+      if (ocs::tom::get<CQ_tag>(cqueue) != TAG_DEFAULT) {
          QStatGroupViewBase::Summary summary{};
 
          cqueue_calculate_summary(cqueue,
@@ -216,7 +218,7 @@ void ocs::QStatGroupController::process_request(QStatParameter &parameter, QStat
                                   &(summary.temp_disabled),
                                   &(summary.manual_intervention));
 
-         const char *cq_name = lGetString(cqueue, CQ_name);
+         const char *cq_name = ocs::tom::get<CQ_name>(cqueue);
          if (cq_name != nullptr) {
             view.report_cqueue(out_, cq_name, &summary, parameter);
          }

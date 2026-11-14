@@ -55,6 +55,14 @@
 #include "sgeobj/sge_mailrec.h"
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_qref.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_ID.h"
+#include "sgeobj/tom/ocs_tom_JAT.h"
+#include "sgeobj/tom/ocs_tom_JRE.h"
+#include "sgeobj/tom/ocs_tom_MR.h"
+#include "sgeobj/tom/ocs_tom_RN.h"
+#include "sgeobj/tom/ocs_tom_ST.h"
+#include "sgeobj/tom/ocs_tom_VA.h"
 
 #include "msg_daemons_common.h"
 #include "parse_qsub.h"
@@ -130,7 +138,7 @@ lList *cull_unparse_job_parameter(lList **pcmdline, lListElem *job, int flags) {
    /*
    ** -cwd
    */
-   if (lGetString(job, JB_cwd)) {
+   if (ocs::tom::get<JB_cwd>(job)) {
       ep_opt = sge_add_noarg(pcmdline, cwd_OPT, "-cwd", nullptr);
    }
 
@@ -163,14 +171,14 @@ lList *cull_unparse_job_parameter(lList **pcmdline, lListElem *job, int flags) {
    /*
    ** -h, here only user hold supported at the moment
    */
-   if  ((ul = lGetUlong(lFirst(lGetList(job, JB_ja_tasks)), JAT_hold))) {
+   if  ((ul = ocs::tom::get<JAT_hold>(lFirst(ocs::tom::get<JB_ja_tasks>(job))))) {
       ep_opt = sge_add_noarg(pcmdline, h_OPT, "-h", nullptr);
    }
 
    /*
    ** -hold_jid
    */
-   if ((lp = lGetList(job, JB_jid_request_list))) {
+   if ((lp = ocs::tom::get<JB_jid_request_list>(job))) {
       int fields[] = { JRE_job_name, 0 };
       const char *delis[] = {nullptr, ",", nullptr};
 
@@ -182,13 +190,13 @@ lList *cull_unparse_job_parameter(lList **pcmdline, lListElem *job, int flags) {
          return answer;
       }
       ep_opt = sge_add_arg(pcmdline, hold_jid_OPT, lListT, "-hold_jid", str);
-      lSetList(ep_opt, SPA_argval_lListT, lCopyList("hold_jid list", lp));      
+      ocs::tom::set<SPA_argval_lListT>(ep_opt, lCopyList("hold_jid list", lp));      
    }
 
    /*
    ** -hold_jid_ad
    */
-   if ((lp = lGetList(job, JB_ja_ad_request_list))) {
+   if ((lp = ocs::tom::get<JB_ja_ad_request_list>(job))) {
       int fields[] = { JRE_job_name, 0 };
       const char *delis[] = {nullptr, ",", nullptr};
 
@@ -200,7 +208,7 @@ lList *cull_unparse_job_parameter(lList **pcmdline, lListElem *job, int flags) {
          return answer;
       }
       ep_opt = sge_add_arg(pcmdline, hold_jid_ad_OPT, lListT, "-hold_jid_ad", str);
-      lSetList(ep_opt, SPA_argval_lListT, lCopyList("hold_jid_ad list", lp));      
+      ocs::tom::set<SPA_argval_lListT>(ep_opt, lCopyList("hold_jid_ad list", lp));      
    }
 
    /*
@@ -214,15 +222,15 @@ lList *cull_unparse_job_parameter(lList **pcmdline, lListElem *job, int flags) {
    /*
    ** -j
    */
-   if ((ul = lGetBool(job, JB_merge_stderr))) {
+   if ((ul = ocs::tom::get<JB_merge_stderr>(job))) {
       ep_opt = sge_add_arg(pcmdline, j_OPT, lIntT, "-j", "y");
-      lSetInt(ep_opt, SPA_argval_lIntT, true);
+      ocs::tom::set<SPA_argval_lIntT>(ep_opt, true);
    }
    
    /*
    ** -jid
    */
-   if ((lp = lGetList(job, JB_job_identifier_list))) {
+   if ((lp = ocs::tom::get<JB_job_identifier_list>(job))) {
       int fields[] = { JRE_job_number, 0};
       const char *delis[] = {"", ",", nullptr};
 
@@ -235,16 +243,16 @@ lList *cull_unparse_job_parameter(lList **pcmdline, lListElem *job, int flags) {
          DRETURN(answer);
       }
       ep_opt = sge_add_arg(pcmdline, jid_OPT, lListT, "-jid", str);
-      lSetList(ep_opt, SPA_argval_lListT, lCopyList("jid list", lp));      
+      ocs::tom::set<SPA_argval_lListT>(ep_opt, lCopyList("jid list", lp));      
    }
 
    /*
    ** -js
    */
-   if ((ul = lGetUlong(job, JB_jobshare)) != 0)  {
+   if ((ul = ocs::tom::get<JB_jobshare>(job)) != 0)  {
       snprintf(str, sizeof(str), sge_u32, ul);
       ep_opt = sge_add_arg(pcmdline, js_OPT, lUlongT, "-js", str);
-      lSetUlong(ep_opt, SPA_argval_lUlongT, ul);
+      ocs::tom::set<SPA_argval_lUlongT>(ep_opt, ul);
    }
 
    /*
@@ -269,7 +277,7 @@ lList *cull_unparse_job_parameter(lList **pcmdline, lListElem *job, int flags) {
    /*
    ** -m
    */
-   if ((ul = lGetUlong(job, JB_mail_options))) {
+   if ((ul = ocs::tom::get<JB_mail_options>(job))) {
       cp = sge_unparse_mail_options(ul);
       if (!cp) {
          DPRINTF("Error unparsing mail options\n");
@@ -278,7 +286,7 @@ lList *cull_unparse_job_parameter(lList **pcmdline, lListElem *job, int flags) {
          return answer;
       }
       ep_opt = sge_add_arg(pcmdline, m_OPT, lIntT, "-m", cp);
-      lSetInt(ep_opt, SPA_argval_lIntT, ul);
+      ocs::tom::set<SPA_argval_lIntT>(ep_opt, ul);
    }
 
    /*
@@ -286,7 +294,7 @@ lList *cull_unparse_job_parameter(lList **pcmdline, lListElem *job, int flags) {
    ** not unparsed at the moment
    ** does it make sense as a default, after all?
    */
-   if ((lp = lGetList(job, JB_mail_list))) {
+   if ((lp = ocs::tom::get<JB_mail_list>(job))) {
       lList *lp_new = nullptr;
       lListElem *ep_new = nullptr;
       const char *host;
@@ -296,13 +304,13 @@ lList *cull_unparse_job_parameter(lList **pcmdline, lListElem *job, int flags) {
       ** or rather take all if there are more than one elements?
       */
       for_each_ep_lv(ep, lp) {
-         user = lGetString(ep, MR_user);
-         host = lGetHost(ep, MR_host);
+         user = ocs::tom::get<MR_user>(ep);
+         host = ocs::tom::get<MR_host>(ep);
          if (sge_strnullcmp(user, username) || 
              sge_hostcmp(host, qualified_hostname)) {
             lp_new = lCreateList("mail list", MR_Type);
-            ep_new = lAddElemStr(&lp_new, MR_user, user, MR_Type);
-            lSetHost(ep_new, MR_host, host);
+            ep_new = ocs::tom::emplace_back<MR_user>(&lp_new, user);
+            ocs::tom::set<MR_host>(ep_new, host);
          }
       }
       if (lp_new) {
@@ -317,7 +325,7 @@ lList *cull_unparse_job_parameter(lList **pcmdline, lListElem *job, int flags) {
             return answer;
          }
          ep_opt = sge_add_arg(pcmdline, M_OPT, lListT, "-M", str);
-         lSetList(ep_opt, SPA_argval_lListT, lp_new);
+         ocs::tom::set<SPA_argval_lListT>(ep_opt, lp_new);
  
       }
    }
@@ -336,7 +344,7 @@ lList *cull_unparse_job_parameter(lList **pcmdline, lListElem *job, int flags) {
    /*
    ** -notify
    */
-   if  ((ul = lGetBool(job, JB_notify))) {
+   if  ((ul = ocs::tom::get<JB_notify>(job))) {
       ep_opt = sge_add_noarg(pcmdline, notify_OPT, "-notify", nullptr);
    }
 
@@ -351,7 +359,7 @@ lList *cull_unparse_job_parameter(lList **pcmdline, lListElem *job, int flags) {
    /*
    ** -p
    */
-   if ((ul = lGetUlong(job, JB_priority)) != BASE_PRIORITY)  {
+   if ((ul = ocs::tom::get<JB_priority>(job)) != BASE_PRIORITY)  {
       int prty;
 
       prty = ul - BASE_PRIORITY;
@@ -367,7 +375,7 @@ lList *cull_unparse_job_parameter(lList **pcmdline, lListElem *job, int flags) {
       }
       snprintf(str, sizeof(str), "%d", prty);
       ep_opt = sge_add_arg(pcmdline, p_OPT, lIntT, "-p", str);
-      lSetInt(ep_opt, SPA_argval_lIntT, prty);
+      ocs::tom::set<SPA_argval_lIntT>(ep_opt, prty);
    }
 
    /*
@@ -398,8 +406,8 @@ lList *cull_unparse_job_parameter(lList **pcmdline, lListElem *job, int flags) {
          return answer;
       }
       ep_opt = sge_add_arg(pcmdline, q_OPT, lListT, "-q", str);
-      lSetList(ep_opt, SPA_argval_lListT, lCopyList("hard queue list", lp));      
-      lSetInt(ep_opt, SPA_argval_lIntT, 1); /* means hard */
+      ocs::tom::set<SPA_argval_lListT>(ep_opt, lCopyList("hard queue list", lp));      
+      ocs::tom::set<SPA_argval_lIntT>(ep_opt, 1); /* means hard */
    }
    if ((lp = job_get_soft_queue_list(job)) != nullptr) {
       int fields[] = { QR_name, 0 };
@@ -415,28 +423,28 @@ lList *cull_unparse_job_parameter(lList **pcmdline, lListElem *job, int flags) {
          return answer;
       }
       ep_opt = sge_add_arg(pcmdline, q_OPT, lListT, "-q", str);
-      lSetList(ep_opt, SPA_argval_lListT, lCopyList("soft queue list", lp));      
-      lSetInt(ep_opt, SPA_argval_lIntT, 2); /* means soft */
+      ocs::tom::set<SPA_argval_lListT>(ep_opt, lCopyList("soft queue list", lp));      
+      ocs::tom::set<SPA_argval_lIntT>(ep_opt, 2); /* means soft */
    }
 #endif
    
    /*
    ** -R
    */
-   if ((ul = lGetBool(job, JB_reserve))) {
+   if ((ul = ocs::tom::get<JB_reserve>(job))) {
       ep_opt = sge_add_arg(pcmdline, R_OPT, lIntT, "-R", "y");
-      lSetInt(ep_opt, SPA_argval_lIntT, true);
+      ocs::tom::set<SPA_argval_lIntT>(ep_opt, true);
    }
 
    /*
    ** -r
    */
-   if ((lGetUlong(job, JB_restart) == 1)) {
+   if ((ocs::tom::get<JB_restart>(job) == 1)) {
       ep_opt = sge_add_arg(pcmdline, r_OPT, lIntT, "-r", "y");
-      lSetInt(ep_opt, SPA_argval_lIntT, 1);
-   } else if ((lGetUlong(job, JB_restart) == 2)) {
+      ocs::tom::set<SPA_argval_lIntT>(ep_opt, 1);
+   } else if ((ocs::tom::get<JB_restart>(job) == 2)) {
       ep_opt = sge_add_arg(pcmdline, r_OPT, lIntT, "-r", "n");
-      lSetInt(ep_opt, SPA_argval_lIntT, 2);
+      ocs::tom::set<SPA_argval_lIntT>(ep_opt, 2);
    }
 
    /*
@@ -469,7 +477,7 @@ lList *cull_unparse_job_parameter(lList **pcmdline, lListElem *job, int flags) {
    ** we always generate a -v statement, which means the user should not
    ** declare a job generated with -V as default
    */
-   if ((lp = lGetList(job, JB_env_list))) {
+   if ((lp = ocs::tom::get<JB_env_list>(job))) {
       int fields[] = { VA_variable, VA_value, 0};
       const char *delis[] = {"=", ",", nullptr};
 
@@ -482,7 +490,7 @@ lList *cull_unparse_job_parameter(lList **pcmdline, lListElem *job, int flags) {
          return answer;
       }
       ep_opt = sge_add_arg(pcmdline, v_OPT, lListT, "-v", str);
-      lSetList(ep_opt, SPA_argval_lListT, lCopyList("env list", lp));      
+      ocs::tom::set<SPA_argval_lListT>(ep_opt, lCopyList("env list", lp));      
    }
 
    /*
@@ -493,11 +501,11 @@ lList *cull_unparse_job_parameter(lList **pcmdline, lListElem *job, int flags) {
    ** for full cmdline, script is needed
    */
    if ((flags & FLG_FULL_CMDLINE) &&
-      (cp = lGetString(job, JB_script_file))) {
+      (cp = ocs::tom::get<JB_script_file>(job))) {
       if (!strcmp(cp, "STDIN")) {
-         if (lGetList(job, JB_job_args)) {
+         if (ocs::tom::get<JB_job_args>(job)) {
          ep_opt = sge_add_arg(pcmdline, 0, lStringT, STR_PSEUDO_SCRIPT, "--");
-         lSetString(ep_opt, SPA_argval_lStringT, "--");
+         ocs::tom::set<SPA_argval_lStringT>(ep_opt, "--");
          }
       }
       else {
@@ -508,7 +516,7 @@ lList *cull_unparse_job_parameter(lList **pcmdline, lListElem *job, int flags) {
    ** for full cmdline, job args are also needed
    */
    if ((flags & FLG_FULL_CMDLINE) &&
-      (lp = lGetList(job, JB_job_args))) {
+      (lp = ocs::tom::get<JB_job_args>(job))) {
       int fields[] = { ST_name, 0};
       const char *delis[] = {nullptr, " ", nullptr};
 
@@ -521,7 +529,7 @@ lList *cull_unparse_job_parameter(lList **pcmdline, lListElem *job, int flags) {
          return answer;
       }
       ep_opt = sge_add_arg(pcmdline, 0, lListT, STR_PSEUDO_JOBARG, str);
-      lSetList(ep_opt, SPA_argval_lListT, lCopyList("job arguments", lp));      
+      ocs::tom::set<SPA_argval_lListT>(ep_opt, lCopyList("job arguments", lp));      
    }
 
 
@@ -593,10 +601,10 @@ lList **alpp
    const char *cp;
    lListElem *ep_opt;
 
-   if ((cp = lGetString(job, JB_account))) {
+   if ((cp = ocs::tom::get<JB_account>(job))) {
       if (strcmp(cp, DEFAULT_ACCOUNT)) {
          ep_opt = sge_add_arg(pcmdline, A_OPT, lStringT, "-A", cp);
-         lSetString(ep_opt, SPA_argval_lStringT, cp);
+         ocs::tom::set<SPA_argval_lStringT>(ep_opt, cp);
       }
    }
    DRETURN(0);
@@ -613,22 +621,22 @@ static int sge_unparse_checkpoint_option(lListElem *job, lList **pcmdline, lList
    uint32_t ul;
    char str[256];
 
-   if ((i = lGetUlong(job, JB_checkpoint_attr))) {
+   if ((i = ocs::tom::get<JB_checkpoint_attr>(job))) {
       if ((cp = sge_unparse_checkpoint_attr(i, str))) {
          ep_opt = sge_add_arg(pcmdline, 0, lIntT, "-c", cp);
-         lSetInt(ep_opt, SPA_argval_lIntT, i);
+         ocs::tom::set<SPA_argval_lIntT>(ep_opt, i);
       } else {
          answer_list_add_sprintf(alpp, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                                  MSG_JOB_INVALIDVALUEFORCHECKPOINTATTRIBINJOB_U,
-                                 lGetUlong(job, JB_job_number));
+                                 ocs::tom::get<JB_job_number>(job));
          DRETURN(-1);
       }
    }
 
-   if ((ul = lGetUlong(job, JB_checkpoint_interval))) {
+   if ((ul = ocs::tom::get<JB_checkpoint_interval>(job))) {
       snprintf(str, sizeof(str), sge_u32, ul);
       ep_opt = sge_add_arg(pcmdline, c_OPT, lLongT, "-c", str);
-      lSetLong(ep_opt, SPA_argval_lLongT, (long) ul);
+      ocs::tom::set<SPA_argval_lLongT>(ep_opt, (long) ul);
    }
 
    DRETURN(0);
@@ -650,7 +658,7 @@ lList **alpp
 
    if ((cp = lGetString(job, nm))) {
       ep_opt = sge_add_arg(pcmdline, 0, lStringT, option, cp);
-      lSetString(ep_opt, SPA_argval_lStringT, cp);
+      ocs::tom::set<SPA_argval_lStringT>(ep_opt, cp);
    }
    DRETURN(0);
 }
@@ -683,14 +691,14 @@ static int sge_unparse_resource_list(lList *resource_list, bool hard, lList **pc
       lListElem *ep_opt = sge_add_arg(pcmdline, l_OPT, lListT, "-l", str);
 
       if (hard)
-         lSetList(ep_opt, SPA_argval_lListT, lCopyList(nullptr, resource_list));
+         ocs::tom::set<SPA_argval_lListT>(ep_opt, lCopyList(nullptr, resource_list));
       else
-         lSetList(ep_opt, SPA_argval_lListT, lCopyList(nullptr, resource_list));
+         ocs::tom::set<SPA_argval_lListT>(ep_opt, lCopyList(nullptr, resource_list));
 
       if (hard) 
-         lSetInt(ep_opt, SPA_argval_lIntT, 1); /* means hard */
+         ocs::tom::set<SPA_argval_lIntT>(ep_opt, 1); /* means hard */
       else
-         lSetInt(ep_opt, SPA_argval_lIntT, 2); /* means soft */
+         ocs::tom::set<SPA_argval_lIntT>(ep_opt, 2); /* means soft */
    }
    DRETURN(ret);
 }
@@ -709,10 +717,10 @@ lList **alpp
    dstring string_buffer = DSTRING_INIT;
    int ret = 0;
 
-   if ((cp = lGetString(job, JB_pe))) {
+   if ((cp = ocs::tom::get<JB_pe>(job))) {
       sge_dstring_append(&string_buffer, cp);
       sge_dstring_append(&string_buffer, " ");
-      if (!(lp = lGetList(job, JB_pe_range))) {
+      if (!(lp = ocs::tom::get<JB_pe_range>(job))) {
          DPRINTF("Job has parallel environment with no ranges\n");
          answer_list_add_sprintf(alpp, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                                  MSG_JOB_JOBHASPEWITHNORANGES);
@@ -735,8 +743,8 @@ lList **alpp
       }
       ep_opt = sge_add_arg(pcmdline, pe_OPT, lStringT, "-pe", 
                            sge_dstring_get_string(&string_buffer));
-      lSetString(ep_opt, SPA_argval_lStringT, cp);
-      lSetList(ep_opt, SPA_argval_lListT, lCopyList("pe ranges", lp));
+      ocs::tom::set<SPA_argval_lStringT>(ep_opt, cp);
+      ocs::tom::set<SPA_argval_lListT>(ep_opt, lCopyList("pe ranges", lp));
    }
    sge_dstring_free(&string_buffer);
    DRETURN(ret);
@@ -763,7 +771,7 @@ static int sge_unparse_path_list(lListElem *job, int nm, const char *option, lLi
          return ret;
       }
       ep_opt = sge_add_arg(pcmdline, e_OPT, lListT, option, str);
-      lSetList(ep_opt, SPA_argval_lListT, lCopyList(option, lp));
+      ocs::tom::set<SPA_argval_lListT>(ep_opt, lCopyList(option, lp));
    }
    DRETURN(ret);
 }

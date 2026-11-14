@@ -66,6 +66,7 @@
 #include "sgeobj/sge_str.h"
 #include "sgeobj/cull/sge_parse_SPA_L.h"
 #include "sgeobj/cull/sge_resource_utilization_RUE_L.h"
+#include "tom/ocs_Element.h"
 
 static int fprint_name_value_list(FILE *fp, char *name, lList *thresholds, int print_slots,
      int nm_name, int nm_strval, int nm_doubleval);
@@ -1103,16 +1104,16 @@ void parse_list_hardsoft(lList *cmdline, const char *option, lListElem *job, uin
 
    lListElem *ep, *next_ep;
    const void *iterator = nullptr;
-   next_ep = lGetElemStrFirstRW(cmdline, SPA_switch_val, option, &iterator);
+   next_ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, option, &iterator);
    while ((ep = next_ep) != nullptr) {
-      next_ep = lGetElemStrNextRW(cmdline, SPA_switch_val, option, &iterator);
+      next_ep = ocs::tom::find_next_rw<SPA_switch_val>(cmdline, option, &iterator);
 
-      if (int(lGetLong(ep, SPA_argval_lLongT)) == int(scope)) {
+      if (int(ocs::tom::get<SPA_argval_lLongT>(ep)) == int(scope)) {
          lList *lp = nullptr;
-         lXchgList(ep, SPA_argval_lListT, &lp);
+         ocs::tom::exchange<SPA_argval_lListT>(ep, &lp);
          if (lp != nullptr) {
             // merged without ever holding a key twice (N-H-18)
-            if (!soft_field || lGetInt(ep, SPA_argval_lIntT) < 2) {
+            if (!soft_field || ocs::tom::get<SPA_argval_lIntT>(ep) < 2) {
                ocs_object_list_add_unique(&hard_list, &lp);
             } else {
                ocs_object_list_add_unique(&soft_list, &lp);
@@ -1137,15 +1138,15 @@ void parse_list_hardsoft(lList *cmdline, const char *option, lListElem *job, uin
 
    // in case of masterq: the global -q requests become the slave -q requests
    if (handled_option && sge_strnullcmp(option, "-masterq") == 0) {
-      lListElem *global = lGetSubUlongRW(job, JRS_scope, JRS_SCOPE_GLOBAL, JB_request_set_list);
+      lListElem *global = ocs::tom::find_first_in_rw<JB_request_set_list, JRS_scope>(job, JRS_SCOPE_GLOBAL);
       if (global != nullptr) {
          lList *global_queue_requests = nullptr;
-         lXchgList(global, JRS_hard_queue_list, &global_queue_requests);
+         ocs::tom::exchange<JRS_hard_queue_list>(global, &global_queue_requests);
          job_set_hard_queue_list(job, global_queue_requests, JRS_SCOPE_SLAVE);
          // also swap the soft requests, should there be any
          // this will then trigger an error as we do not support soft slave queue requests
          global_queue_requests = nullptr;
-         lXchgList(global, JRS_soft_queue_list, &global_queue_requests);
+         ocs::tom::exchange<JRS_soft_queue_list>(global, &global_queue_requests);
          job_set_soft_queue_list(job, global_queue_requests, JRS_SCOPE_SLAVE);
       }
    }
@@ -1176,10 +1177,10 @@ int parse_list_simple(lList *cmdline, const char *option, lListElem *job, int fi
 
    destlist = lCopyList("job_sublist", lGetList(job, field));
 
-   while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, option))) {
+   while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, option))) {
       DPRINTF("OPTION: %s\n", option);
       lp = nullptr;
-      lXchgList(ep, SPA_argval_lListT, &lp);
+      ocs::tom::exchange<SPA_argval_lListT>(ep, &lp);
 
       parse_list_simpler(lp, &destlist, option, job, field, nm_var, nm_value, flags);
 
@@ -1295,9 +1296,9 @@ int cull_parse_path_list(lList **lpp, const char *path_str) {
          ep = lCreateElem(PN_Type);
          lAppendElem(*lpp, ep);
 
-         lSetString(ep, PN_path, path);
+         ocs::tom::set<PN_path>(ep, path);
         if (cell) {
-            lSetHost(ep, PN_host, cell);
+            ocs::tom::set<PN_host>(ep, cell);
             sge_free(&cell);
          }
       }

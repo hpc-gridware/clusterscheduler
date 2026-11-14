@@ -54,6 +54,12 @@
 #include "sgeobj/sge_str.h"
 #include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/msg_sgeobjlib.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_GRU.h"
+#include "sgeobj/tom/ocs_tom_JAT.h"
+#include "sgeobj/tom/ocs_tom_JG.h"
+#include "sgeobj/tom/ocs_tom_PE.h"
+#include "sgeobj/tom/ocs_tom_QU.h"
 
 #include "sched/debit.h"
 
@@ -110,7 +116,7 @@ centry_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, 
          const char *name = lGetPosString(reduced_elem, pos);
 
          DPRINTF("Got CE_name: " SFQ "\n", name);
-         lSetString(centry, CE_name, name);
+         ocs::tom::set<CE_name>(centry, name);
          if (!strcmp(SGE_ATTR_SLOTS, name)) {
             is_slots_attr = true;
          }
@@ -127,7 +133,7 @@ centry_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, 
          const char *shortcut = lGetPosString(reduced_elem, pos);
 
          DPRINTF("Got CE_shortcut: " SFQ "\n", shortcut ? shortcut : "-NA-");
-         lSetString(centry, CE_shortcut, shortcut);
+         ocs::tom::set<CE_shortcut>(centry, shortcut);
       }
    }
 
@@ -144,7 +150,7 @@ centry_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, 
             type = static_cast<uint32_t>(ocs::CEntry::Type::INT);
          }
          DPRINTF("Got CE_valtype: " sge_u32 "\n", type);
-         lSetUlong(centry, CE_valtype, type);
+         ocs::tom::set<CE_valtype>(centry, type);
       }
    }
 
@@ -161,7 +167,7 @@ centry_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, 
             relop = CMPLXLE_OP;
          }
          DPRINTF("Got CE_relop: " sge_u32 "\n", relop);
-         lSetUlong(centry, CE_relop, relop);
+         ocs::tom::set<CE_relop>(centry, relop);
       }
    }
 
@@ -178,7 +184,7 @@ centry_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, 
             request = REQU_YES;
          }
          DPRINTF("Got CE_requestable: " sge_u32 "\n", request);
-         lSetUlong(centry, CE_requestable, request);
+         ocs::tom::set<CE_requestable>(centry, request);
       }
    }
 
@@ -195,7 +201,7 @@ centry_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, 
             consumable = CONSUMABLE_YES;
          }
          DPRINTF("Got CE_consumable: " sge_u32 "\n", consumable);
-         lSetUlong(centry, CE_consumable, consumable);
+         ocs::tom::set<CE_consumable>(centry, consumable);
       }
    }
 
@@ -212,7 +218,7 @@ centry_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, 
             defaultval = "1";
          }
          DPRINTF("Got CE_defaultval: " SFQ "\n", defaultval ? defaultval : "-NA-");
-         lSetString(centry, CE_defaultval, defaultval);
+         ocs::tom::set<CE_defaultval>(centry, defaultval);
       }
    }
 
@@ -234,15 +240,15 @@ centry_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, 
          }
          /* Check then that the entry is valid   */
 
-         attrname = lGetString(reduced_elem, CE_name);
-         temp = lGetString(reduced_elem, CE_urgency_weight);
+         attrname = ocs::tom::get<CE_name>(reduced_elem);
+         temp = ocs::tom::get<CE_urgency_weight>(reduced_elem);
          if (!parse_ulong_val(&dval, nullptr, ocs::CEntry::Type::DOUBLE, temp, error_msg, 199)) {
             answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                                     MSG_INVALID_CENTRY_PARSE_URGENCY_SS, attrname, error_msg);
             ret = false;
          }
 
-         lSetString(centry, CE_urgency_weight, urgency_weight);
+         ocs::tom::set<CE_urgency_weight>(centry, urgency_weight);
       }
    }
 
@@ -257,8 +263,8 @@ centry_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, 
     * otherwise make every "qconf -Mc" report the entry as modified.
     */
    if (ret) {
-      lSetString(centry, CE_stringval, nullptr);
-      lSetDouble(centry, CE_doubleval, 0);
+      ocs::tom::set<CE_stringval>(centry, nullptr);
+      ocs::tom::set<CE_doubleval>(centry, 0);
    }
 
    if (ret) {
@@ -285,12 +291,12 @@ centry_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lList
    bool dbret;
 
    dbret = spool_write_object(&answer_list, spool_get_default_context(), cep,
-                              lGetString(cep, CE_name), SGE_TYPE_CENTRY);
+                              ocs::tom::get<CE_name>(cep), SGE_TYPE_CENTRY);
    answer_list_output(&answer_list);
 
    if (!dbret) {
       answer_list_add_sprintf(alpp, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
-                              MSG_PERSISTENCE_WRITE_FAILED_S, lGetString(cep, CE_name));
+                              MSG_PERSISTENCE_WRITE_FAILED_S, ocs::tom::get<CE_name>(cep));
    }
 
    DRETURN(dbret ? 0 : 1);
@@ -353,7 +359,7 @@ centry_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lL
    bool rebuild_consumables = false;
 
    sge_add_event(0, old_ep ? sgeE_CENTRY_MOD : sgeE_CENTRY_ADD, 0, 0,
-                 lGetString(ep, CE_name), nullptr, nullptr, ep, packet->gdi_session);
+                 ocs::tom::get<CE_name>(ep), nullptr, nullptr, ep, packet->gdi_session);
 
    if (old_ep != nullptr) {
       /*
@@ -362,13 +368,13 @@ centry_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lL
        * it is a consumable and the default value has changed,
        * queue / host values for these consumables have to be rebuilt.
        */
-      uint32_t consumable = lGetUlong(ep, CE_consumable);
-      uint32_t old_consumable = lGetUlong(old_ep, CE_consumable);
+      uint32_t consumable = ocs::tom::get<CE_consumable>(ep);
+      uint32_t old_consumable = ocs::tom::get<CE_consumable>(old_ep);
       if (consumable != old_consumable) {
          rebuild_consumables = true;
       } else if (consumable) {
-         const char *default_request = lGetString(ep, CE_defaultval);
-         const char *old_default_request = lGetString(old_ep, CE_defaultval);
+         const char *default_request = ocs::tom::get<CE_defaultval>(ep);
+         const char *old_default_request = ocs::tom::get<CE_defaultval>(old_ep);
          if (sge_strnullcmp(default_request, old_default_request) != 0) {
             rebuild_consumables = true;
          }
@@ -376,7 +382,7 @@ centry_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lL
    }
 
    if (rebuild_consumables) {
-      lAddElemStr(ppList, STU_name, lGetString(ep, CE_name), STU_Type);
+      ocs::tom::emplace_back<STU_name>(ppList, ocs::tom::get<CE_name>(ep));
    }
 
    DRETURN(0);
@@ -403,7 +409,7 @@ sge_del_centry(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *centry
    const lList *master_rqs_list = *ocs::DataStore::get_master_list(SGE_TYPE_RQS);
 
    if (centry != nullptr || remote_user != nullptr || remote_host != nullptr) {
-      const char *name = lGetString(centry, CE_name);
+      const char *name = ocs::tom::get<CE_name>(centry);
 
       if (name != nullptr) {
          lList *local_answer_list = nullptr;
@@ -437,7 +443,7 @@ sge_del_centry(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *centry
                } else {
                   const lListElem *answer = lFirst(local_answer_list);
 
-                  ERROR("denied: %s", lGetString(answer, AN_text));
+                  ERROR("denied: %s", ocs::tom::get<AN_text>(answer));
                   answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
                   lFreeList(&local_answer_list);
                   ret = false;
@@ -474,20 +480,20 @@ sge_change_queue_version_centry(uint64_t gdi_version) {
    const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
 
    for_each_ep_lv(cqueue, master_cqueue_list) {
-      const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
+      const lList *qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
 
       for_each_rw_lv(qinstance, qinstance_list) {
          qinstance_increase_qversion(qinstance);
 
          sge_event_spool(&answer_list, 0, sgeE_QINSTANCE_MOD,
-                         0, 0, lGetString(qinstance, QU_qname),
-                         lGetHost(qinstance, QU_qhostname), nullptr,
+                         0, 0, ocs::tom::get<QU_qname>(qinstance),
+                         ocs::tom::get<QU_qhostname>(qinstance), nullptr,
                          qinstance, nullptr, nullptr, true, false, gdi_version);
       }
    }
    for_each_rw_lv(ep, master_ehost_list) {
       sge_event_spool(&answer_list, 0, sgeE_EXECHOST_MOD,
-                      0, 0, lGetHost(ep, EH_name), nullptr, nullptr,
+                      0, 0, ocs::tom::get<EH_name>(ep), nullptr, nullptr,
                       ep, nullptr, nullptr, true, false, gdi_version);
    }
    answer_list_output(&answer_list);
@@ -522,15 +528,15 @@ void centry_redebit_consumables(const lList *centries, uint64_t gdi_version) {
 
    /* throw away all old actual values lists and rebuild them from scratch */
    for_each_ep_lv(cqueue, master_cqueue_list) {
-      const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
+      const lList *qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
 
       for_each_rw_lv(qinstance, qinstance_list) {
-         lSetList(qinstance, QU_resource_utilization, nullptr);
+         ocs::tom::set<QU_resource_utilization>(qinstance, nullptr);
          qinstance_debit_consumable(qinstance, nullptr, nullptr, master_centry_list, 0, true, true, nullptr);
       }
    }
    for_each_rw_lv (hep, master_ehost_list) {
-      lSetList(hep, EH_resource_utilization, nullptr);
+      ocs::tom::set<EH_resource_utilization>(hep, nullptr);
       debit_host_consumable(nullptr, nullptr, nullptr, nullptr, hep, master_centry_list, 0, true, true, nullptr);
    }
 
@@ -540,29 +546,29 @@ void centry_redebit_consumables(const lList *centries, uint64_t gdi_version) {
     * change versions of corresponding queues
     */
    for_each_rw_lv (jep, master_job_list) {
-      for_each_rw_lv (jatep, lGetList(jep, JB_ja_tasks)) {
+      for_each_rw_lv (jatep, ocs::tom::get<JB_ja_tasks>(jep)) {
          bool master_task = true;
          lListElem *qep = nullptr;
          const char *last_hostname = nullptr;
-         const lListElem *pe = lGetObject(jatep, JAT_pe_object);
-         const lList *granted_resources_list = lGetList(jatep, JAT_granted_resources_list);
+         const lListElem *pe = ocs::tom::get<JAT_pe_object>(jatep);
+         const lList *granted_resources_list = ocs::tom::get<JAT_granted_resources_list>(jatep);
 
          bool do_per_global_host_booking = true;
          lListElem *global_host = host_list_locate(master_ehost_list, SGE_GLOBAL_NAME);
-         for_each_ep_lv(gdil, lGetList(jatep, JAT_granted_destin_identifier_list)) {
-            if (!(qep = cqueue_list_locate_qinstance(master_cqueue_list, lGetString(gdil, JG_qname)))) {
+         for_each_ep_lv(gdil, ocs::tom::get<JAT_granted_destin_identifier_list>(jatep)) {
+            if (!(qep = cqueue_list_locate_qinstance(master_cqueue_list, ocs::tom::get<JG_qname>(gdil)))) {
                /* should never happen */
                master_task = false;
                continue;
             }
 
-            int qslots = lGetUlong(gdil, JG_slots);
+            int qslots = ocs::tom::get<JG_slots>(gdil);
             debit_host_consumable(jep, jatep, granted_resources_list, pe, global_host, master_centry_list, qslots,
                                   master_task, do_per_global_host_booking, nullptr);
 
-            bool do_per_host_booking = host_do_per_host_booking(&last_hostname, lGetHost(gdil, JG_qhostname));
+            bool do_per_host_booking = host_do_per_host_booking(&last_hostname, ocs::tom::get<JG_qhostname>(gdil));
             debit_host_consumable(jep, jatep, granted_resources_list, pe, host_list_locate(master_ehost_list,
-                        lGetHost(qep, QU_qhostname)), master_centry_list, qslots,
+                        ocs::tom::get<QU_qhostname>(qep)), master_centry_list, qslots,
                                   master_task, do_per_host_booking, nullptr);
             qinstance_debit_consumable(qep, jep, pe, master_centry_list, qslots, master_task, do_per_host_booking,
                                        nullptr);
@@ -583,11 +589,11 @@ void centry_redebit_consumables(const lList *centries, uint64_t gdi_version) {
 
       /* dump all queue consumables */
       for_each_ep_lv(cqueue, master_cqueue_list) {
-         const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
+         const lList *qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
 
          for_each_ep_lv(qinstance, qinstance_list) {
-            const char *hostname = lGetHost(qinstance, QU_qhostname);
-            const lListElem *host = lGetElemHost(master_ehost_list, EH_name, hostname);
+            const char *hostname = ocs::tom::get<QU_qhostname>(qinstance);
+            const lListElem *host = ocs::tom::find_first<EH_name>(master_ehost_list, hostname);
             ocs::ReportingFileWriter::create_queue_consumable_records(&answer_list, host, qinstance, nullptr, now);
          }
       }

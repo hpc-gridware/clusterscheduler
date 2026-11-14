@@ -29,6 +29,7 @@
 #include "../ocs_QConfViewBase.h"
 
 #include "sgeobj/cull/sge_str_ST_L.h"
+#include "tom/ocs_Element.h"
 #include "spool/flatfile/ocs_spool_json.h"
 #include "uti/sge_dstring.h"
 
@@ -87,8 +88,8 @@ namespace ocs {
          os << std::format("{:<15} {}\n", MSG_TABLE_EV_POOL, MSG_TABLE_SIZE);
          os << "--------------------\n";
          for_each_ep_lv(pool, list) {
-            const char *name = lGetString(pool, ST_name);
-            os << std::format("{:<15} {}\n", (name != nullptr) ? name : "", lGetUlong(pool, ST_id));
+            const char *name = ocs::tom::get<ST_name>(pool);
+            os << std::format("{:<15} {}\n", (name != nullptr) ? name : "", ocs::tom::get<ST_id>(pool));
          }
       }
    };

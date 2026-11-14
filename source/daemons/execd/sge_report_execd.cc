@@ -43,6 +43,7 @@
 
 #include "sgeobj/sge_report.h"
 #include "sgeobj/sge_load.h"
+#include "tom/ocs_Element.h"
 
 #include "gdi/ocs_gdi_ClientBase.h"
 #include "gdi/ocs_gdi_ClientExecd.h"
@@ -194,27 +195,27 @@ int sge_add_str2load_report(lList **lpp, const char *name, const char *value, co
    }
 
    if (*lpp != nullptr) {
-      lListElem *search_ep = lGetElemHostFirstRW(*lpp, LR_host, host, &iterator);
+      lListElem *search_ep = ocs::tom::find_first_rw<LR_host>(*lpp, host, &iterator);
 
       while (search_ep != nullptr) {
-         DPRINTF("---> %s\n", lGetString(search_ep, LR_name));
-         if (strcmp(lGetString(search_ep, LR_name), name) == 0) {
+         DPRINTF("---> %s\n", ocs::tom::get<LR_name>(search_ep));
+         if (strcmp(ocs::tom::get<LR_name>(search_ep), name) == 0) {
             ep = search_ep;
             break;
          }
-         search_ep = lGetElemHostNextRW(*lpp, LR_host, host, &iterator);
+         search_ep = ocs::tom::find_next_rw<LR_host>(*lpp, host, &iterator);
       }
    }
    
    if (ep == nullptr) {
       DPRINTF("adding new load variable %s for host %s\n", name, host);
-      ep = lAddElemStr(lpp, LR_name, name, LR_Type);
-      lSetHost(ep, LR_host, host);
-      lSetUlong(ep, LR_global, (uint32_t)(strcmp(host, SGE_GLOBAL_NAME) == 0 ? 1 : 0));
-      lSetUlong(ep, LR_is_static, sge_is_static_load_value(name));
+      ep = ocs::tom::emplace_back<LR_name>(lpp, name);
+      ocs::tom::set<LR_host>(ep, host);
+      ocs::tom::set<LR_global>(ep, (uint32_t)(strcmp(host, SGE_GLOBAL_NAME) == 0 ? 1 : 0));
+      ocs::tom::set<LR_is_static>(ep, sge_is_static_load_value(name));
    }
 
-   lSetString(ep, LR_value, value);
+   ocs::tom::set<LR_value>(ep, value);
 
    DPRINTF("load value %s for host %s: %s\n", name, host, value);
 

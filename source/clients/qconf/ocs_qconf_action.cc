@@ -34,6 +34,7 @@
 #include "sgeobj/sge_hgroup.h"
 #include "sgeobj/sge_host.h"
 #include "sgeobj/sge_userset.h"
+#include "tom/ocs_Element.h"
 #include "sge.h"
 #include "usage.h"
 #include "procedure/qconf/action/ocs_QConfActionParameter.h"
@@ -163,7 +164,7 @@ qconf_action_stnode_failed(const qconf_op &op) {
    lList *args = nullptr;
    lString2List(op.args[0].c_str(), &args, ST_Type, ST_name, ", ");
    for_each_ep_lv(arg, args) {
-      const char *text = lGetString(arg, ST_name);
+      const char *text = ocs::tom::get<ST_name>(arg);
       const char *eq = (text != nullptr) ? strchr(text, '=') : nullptr;
       int shares;
       if (eq == nullptr || eq == text || sscanf(eq + 1, "%d", &shares) != 1) {
@@ -287,7 +288,7 @@ qconf_run_reserved_hgroup(std::ostream &os, const ocs::QConfParameterClient &par
    bool ok = true;
    std::vector<std::string> members;
    for_each_rw_lv(name_ep, names) {
-      const char *name = lGetHost(name_ep, HR_name);
+      const char *name = ocs::tom::get<HR_name>(name_ep);
       if (name == nullptr) {
          ok = false;
          continue;
@@ -298,7 +299,7 @@ qconf_run_reserved_hgroup(std::ostream &os, const ocs::QConfParameterClient &par
             ok = false;
             continue;
          }
-         name = lGetHost(name_ep, HR_name);
+         name = ocs::tom::get<HR_name>(name_ep);
       }
       members.emplace_back(name);
    }

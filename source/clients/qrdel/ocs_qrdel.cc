@@ -48,6 +48,7 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/parse.h"
 #include "sgeobj/sge_str.h"
+#include "tom/ocs_Element.h"
 
 #include "gdi/ocs_gdi_Client.h"
 
@@ -159,7 +160,7 @@ static bool sge_parse_cmdline_qrdel(char **argv, char **envp, lList **ppcmdline,
             str_list_parse_from_string(&user_list, *sp, ",");
 
             ep_opt = sge_add_arg(ppcmdline, 0, lListT, *(sp - 1), *sp);
-            lSetList(ep_opt, SPA_argval_lListT, user_list);
+            ocs::tom::set<SPA_argval_lListT>(ep_opt, user_list);
             sp++;
          }
          rp = sp;
@@ -204,8 +205,8 @@ static bool sge_parse_qrdel(lList **ppcmdline, lList **ppid_list, lList **alpp) 
 
       if (parse_multi_stringlist(ppcmdline, "ars", alpp, &plist, ST_Type, ST_name)) {
          for_each_ep_lv(ep, plist) {
-            const char *id = lGetString(ep, ST_name);
-            lAddElemStr(ppid_list, ID_str, id, ID_Type);
+            const char *id = ocs::tom::get<ST_name>(ep);
+            ocs::tom::emplace_back<ID_str>(ppid_list, id);
          }
          lFreeList(&plist);
          continue;
@@ -214,7 +215,7 @@ static bool sge_parse_qrdel(lList **ppcmdline, lList **ppid_list, lList **alpp) 
       for_each_ep_lv(ep, *ppcmdline) {
          answer_list_add_sprintf(alpp, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
                                  MSG_PARSE_INVALIDOPTIONARGUMENTX_S,
-                                 lGetString(ep,SPA_switch_val));
+                                 ocs::tom::get<SPA_switch_val>(ep));
 
       }
       break;
@@ -228,11 +229,11 @@ static bool sge_parse_qrdel(lList **ppcmdline, lList **ppid_list, lList **alpp) 
       /* fill up ID list */
       if (user_list != nullptr) {
          if (lGetNumberOfElem(*ppid_list) == 0){
-            lListElem *id = lAddElemStr(ppid_list, ID_str, "0", ID_Type);
-            lSetList(id, ID_user_list, lCopyList("", user_list));
+            lListElem *id = ocs::tom::emplace_back<ID_str>(ppid_list, "0");
+            ocs::tom::set<ID_user_list>(id, lCopyList("", user_list));
          } else {
             for_each_rw_lv (id, *ppid_list){
-               lSetList(id, ID_user_list, lCopyList("", user_list));
+               ocs::tom::set<ID_user_list>(id, lCopyList("", user_list));
             }
          }
          lFreeList(&user_list);
@@ -240,7 +241,7 @@ static bool sge_parse_qrdel(lList **ppcmdline, lList **ppid_list, lList **alpp) 
 
       if (pforce != 0) {
          for_each_rw_lv (id, *ppid_list){
-            lSetUlong(id, ID_force, pforce);
+            ocs::tom::set<ID_force>(id, pforce);
          }
       }
    }

@@ -53,6 +53,12 @@
 #include "sgeobj/sge_pe.h"
 #include "sgeobj/sge_str.h"
 #include "sgeobj/ocs_DataStore.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_JAT.h"
+#include "sgeobj/tom/ocs_tom_JG.h"
+#include "sgeobj/tom/ocs_tom_RQR.h"
+#include "sgeobj/tom/ocs_tom_RQRL.h"
+#include "sgeobj/tom/ocs_tom_ST.h"
 
 #include "spool/sge_spooling.h"
 
@@ -114,7 +120,7 @@ rqs_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem 
 
    const char *rqs_name = nullptr;
    bool rules_changed = false;
-   bool previous_enabled = (bool) lGetBool(new_rqs, RQS_enabled);
+   bool previous_enabled = (bool) ocs::tom::get<RQS_enabled>(new_rqs);
    const lList *master_centry_list = *ocs::DataStore::get_master_list(SGE_TYPE_CENTRY);
 
    /* ---- RQS_name */
@@ -122,7 +128,7 @@ rqs_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem 
       if (attr_mod_str(alpp, rqs, new_rqs, RQS_name, object->object_name))
          goto ERROR;
    }
-   rqs_name = lGetString(new_rqs, RQS_name);
+   rqs_name = ocs::tom::get<RQS_name>(new_rqs);
 
    /* Name has to be a valid name */
    if (add && verify_obj_name(alpp, rqs_name, MAX_VERIFY_STRING,
@@ -137,7 +143,7 @@ rqs_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem 
    attr_mod_bool(rqs, new_rqs, RQS_enabled, "enabled");
 
    /* ---- RQS_rule */
-   if (lGetPosViaElem(rqs, RQS_rule, SGE_NO_ABORT) >= 0) {
+   if (ocs::tom::has<RQS_rule>(rqs)) {
       rules_changed = true;
       if ((sub_command & ocs::gdi::SubCommand::SET_ALL) == ocs::gdi::SubCommand::SET_ALL) {
          normalize_sublist(rqs, RQS_rule);
@@ -145,12 +151,12 @@ rqs_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem 
                            SGE_ATTR_RQSRULES, SGE_OBJ_RQS, 0, nullptr);
       } else {
          /* *attr cases */
-         const lList *rule_list = lGetList(rqs, RQS_rule);
+         const lList *rule_list = ocs::tom::get<RQS_rule>(rqs);
          const lListElem *rule;
 
          for_each_ep(rule, rule_list) {
-            lList *new_rule_list = lGetListRW(new_rqs, RQS_rule);
-            lListElem *new_rule = rqs_rule_locate(new_rule_list, lGetString(rule, RQR_name));
+            lList *new_rule_list = ocs::tom::get<RQS_rule>(new_rqs);
+            lListElem *new_rule = rqs_rule_locate(new_rule_list, ocs::tom::get<RQR_name>(rule));
             if (new_rule != nullptr) {
                /* ---- RQR_limit */
                attr_mod_sub_list(alpp, new_rule, RQR_limit, RQRL_name, rule, cmd,
@@ -168,7 +174,7 @@ rqs_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem 
    if (!rqs_verify_attributes(new_rqs, alpp, true, master_centry_list)) {
       goto ERROR;
    }
-   if (rules_changed || (lGetBool(new_rqs, RQS_enabled) != previous_enabled)) {
+   if (rules_changed || (ocs::tom::get<RQS_enabled>(new_rqs) != previous_enabled)) {
       rqs_reinit_consumable_actual_list(new_rqs, alpp);
    }
 
@@ -204,12 +210,12 @@ rqs_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListEle
    bool dbret;
 
    dbret = spool_write_object(&answer_list, spool_get_default_context(), ep,
-                              lGetString(ep, RQS_name), SGE_TYPE_RQS);
+                              ocs::tom::get<RQS_name>(ep), SGE_TYPE_RQS);
    answer_list_output(&answer_list);
 
    if (!dbret) {
       answer_list_add_sprintf(alpp, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
-                              MSG_PERSISTENCE_WRITE_FAILED_S, lGetString(ep, RQS_name));
+                              MSG_PERSISTENCE_WRITE_FAILED_S, ocs::tom::get<RQS_name>(ep));
    }
 
    DRETURN(dbret ? 0 : 1);
@@ -240,7 +246,7 @@ rqs_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListEle
 int
 rqs_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
-   const char *rqs_name = lGetString(ep, RQS_name);
+   const char *rqs_name = ocs::tom::get<RQS_name>(ep);
    rqs_update_categories(ep, old_ep, packet->gdi_session);
    sge_add_event(0, old_ep ? sgeE_RQS_MOD : sgeE_RQS_ADD, 0, 0, rqs_name, nullptr, nullptr, ep, packet->gdi_session);
    DRETURN(0);
@@ -342,27 +348,27 @@ rqs_reinit_consumable_actual_list(lListElem *rqs, lList **answer_list) {
    if (rqs != nullptr) {
       const lListElem *rule = nullptr;
 
-      for_each_ep(rule, lGetList(rqs, RQS_rule)) {
-         for_each_rw_lv(limit, lGetList(rule, RQR_limit)) {
+      for_each_ep(rule, static_cast<const lList *>(ocs::tom::get<RQS_rule>(rqs))) {
+         for_each_rw_lv(limit, ocs::tom::get<RQR_limit>(rule)) {
             lList *usage = nullptr;
-            lXchgList(limit, RQRL_usage, &usage);
+            ocs::tom::exchange<RQRL_usage>(limit, &usage);
             lFreeList(&usage);
          }
       }
 
-      if (!lGetBool(rqs, RQS_enabled)) {
+      if (!ocs::tom::get<RQS_enabled>(rqs)) {
          DRETURN(ret);
       }
 
       for_each_rw_lv(job, master_job_list) {
-         const lList *ja_task_list = lGetList(job, JB_ja_tasks);
+         const lList *ja_task_list = ocs::tom::get<JB_ja_tasks>(job);
          const lListElem *ja_task = nullptr;
 
          for_each_ep(ja_task, ja_task_list) {
-            const lList *gdi_list = lGetList(ja_task, JAT_granted_destin_identifier_list);
+            const lList *gdi_list = ocs::tom::get<JAT_granted_destin_identifier_list>(ja_task);
             bool is_master_task = true;
 
-            const char *pe_name = lGetString(ja_task, JAT_granted_pe);
+            const char *pe_name = ocs::tom::get<JAT_granted_pe>(ja_task);
             const lListElem *pe = nullptr;
             if (pe_name != nullptr) {
                pe = pe_list_locate(master_pe_list, pe_name);
@@ -371,8 +377,8 @@ rqs_reinit_consumable_actual_list(lListElem *rqs, lList **answer_list) {
             const lListElem *gdil_ep;
             const char *last_hostname = nullptr;
             for_each_ep(gdil_ep, gdi_list) {
-               bool do_per_host_booking = host_do_per_host_booking(&last_hostname, lGetHost(gdil_ep, JG_qhostname));
-               int tmp_slot = lGetUlong(gdil_ep, JG_slots);
+               bool do_per_host_booking = host_do_per_host_booking(&last_hostname, ocs::tom::get<JG_qhostname>(gdil_ep));
+               int tmp_slot = ocs::tom::get<JG_slots>(gdil_ep);
                rqs_debit_consumable(rqs, job, gdil_ep, pe, master_centry_list,
                                     master_userset_list, master_hgroup_list, tmp_slot, is_master_task, do_per_host_booking);
                is_master_task = false;
@@ -415,7 +421,7 @@ filter_diff_usersets_or_projects_scope(lList *filter_scope, int filter_nm, lList
    bool ret = true;
 
    for_each_ep(scope_ep, filter_scope) {
-      scope = lGetString(scope_ep, ST_name);
+      scope = ocs::tom::get<ST_name>(scope_ep);
       if (filter_nm == RQR_filter_users) {
          if (!ocs::is_hgroup_name(scope)) {
             continue;
@@ -498,9 +504,9 @@ filter_diff_usersets_or_projects(const lListElem *rule, int filter_nm, lList **s
       DRETURN(ret);
    }
 
-   if ((ret = filter_diff_usersets_or_projects_scope(lGetListRW(filter, RQRF_scope), filter_nm, scope_l, nm, dp,
+   if ((ret = filter_diff_usersets_or_projects_scope(ocs::tom::get<RQRF_scope>(filter), filter_nm, scope_l, nm, dp,
                                                      master_list))) {
-      ret = filter_diff_usersets_or_projects_scope(lGetListRW(filter, RQRF_xscope), filter_nm, scope_l, nm, dp,
+      ret = filter_diff_usersets_or_projects_scope(ocs::tom::get<RQRF_xscope>(filter), filter_nm, scope_l, nm, dp,
                                                    master_list);
    }
 
@@ -535,7 +541,7 @@ rqs_diff_usersets(const lListElem *new_rqs, const lListElem *old_rqs, lList **ne
    bool ret = true;
 
    if (old_rqs && old_list) {
-      for_each_ep(rule, lGetList(old_rqs, RQS_rule)) {
+      for_each_ep(rule, static_cast<const lList *>(ocs::tom::get<RQS_rule>(old_rqs))) {
          if (!filter_diff_usersets_or_projects(rule, RQR_filter_users, old_list, US_name, US_Type,
                                                master_userset_list)) {
             break;
@@ -544,7 +550,7 @@ rqs_diff_usersets(const lListElem *new_rqs, const lListElem *old_rqs, lList **ne
    }
 
    if (new_rqs && new_list) {
-      for_each_ep(rule, lGetList(new_rqs, RQS_rule)) {
+      for_each_ep(rule, static_cast<const lList *>(ocs::tom::get<RQS_rule>(new_rqs))) {
          if (!filter_diff_usersets_or_projects(rule, RQR_filter_users, new_list, US_name, US_Type,
                                                master_userset_list)) {
             if (!old_rqs || lGetNumberOfElem(*old_list) == 0) {
@@ -587,7 +593,7 @@ rqs_diff_projects(const lListElem *new_rqs, const lListElem *old_rqs, lList **ne
 
    if (old_rqs && old_list) {
       const lListElem *rule;
-      for_each_ep(rule, lGetList(old_rqs, RQS_rule)) {
+      for_each_ep(rule, static_cast<const lList *>(ocs::tom::get<RQS_rule>(old_rqs))) {
          if (!filter_diff_usersets_or_projects(rule, RQR_filter_projects, old_list, PR_name, PR_Type,
                                                master_project_list)) {
             break;
@@ -597,7 +603,7 @@ rqs_diff_projects(const lListElem *new_rqs, const lListElem *old_rqs, lList **ne
 
    if (new_rqs && new_list) {
       const lListElem *rule;
-      for_each_ep(rule, lGetList(new_rqs, RQS_rule)) {
+      for_each_ep(rule, static_cast<const lList *>(ocs::tom::get<RQS_rule>(new_rqs))) {
          if (!filter_diff_usersets_or_projects(rule, RQR_filter_projects, new_list, PR_name, PR_Type,
                                                master_project_list)) {
             if (!old_rqs || lGetNumberOfElem(*old_list) == 0) {
@@ -676,12 +682,12 @@ scope_is_referenced_rqs(const lListElem *rqs, int nm, const char *name) {
       DRETURN(ret);
    }
 
-   for_each_ep(rule, lGetList(rqs, RQS_rule)) {
+   for_each_ep(rule, static_cast<const lList *>(ocs::tom::get<RQS_rule>(rqs))) {
       lListElem *filter = lGetObject(rule, nm);
       if (filter != nullptr) {
          const lListElem *scope_ep;
-         for_each_ep(scope_ep, lGetList(filter, RQRF_scope)) {
-            const char *scope = lGetString(scope_ep, ST_name);
+         for_each_ep(scope_ep, static_cast<const lList *>(ocs::tom::get<RQRF_scope>(filter))) {
+            const char *scope = ocs::tom::get<ST_name>(scope_ep);
             if (fnmatch(scope, name, 0) == 0) {
                ret = true;
                break;
@@ -690,8 +696,8 @@ scope_is_referenced_rqs(const lListElem *rqs, int nm, const char *name) {
          if (ret) {
             break;
          }
-         for_each_ep(scope_ep, lGetList(filter, RQRF_xscope)) {
-            const char *scope = lGetString(scope_ep, ST_name);
+         for_each_ep(scope_ep, static_cast<const lList *>(ocs::tom::get<RQRF_xscope>(filter))) {
+            const char *scope = ocs::tom::get<ST_name>(scope_ep);
             if (fnmatch(scope, name, 0) == 0) {
                ret = true;
                break;

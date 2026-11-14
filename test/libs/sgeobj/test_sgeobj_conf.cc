@@ -29,6 +29,8 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_CF.h"
 #include "tom/ocs_ElementCore.h"
 
 #include "uti/sge.h"
@@ -42,10 +44,10 @@ static lListElem *
 make_conf(const char *names[]) {
    lListElem *conf = lCreateElem(CONF_Type);
 
-   lSetHost(conf, CONF_name, SGE_GLOBAL_NAME);
+   ocs::tom::set<CONF_name>(conf, SGE_GLOBAL_NAME);
    for (int i = 0; names[i] != nullptr; i++) {
-      lListElem *ep = lAddSubStr(conf, CF_name, names[i], CONF_entries, CF_Type);
-      lSetString(ep, CF_value, "value");
+      lListElem *ep = ocs::tom::emplace_back_in<CONF_entries, CF_name>(conf, names[i]);
+      ocs::tom::set<CF_value>(ep, "value");
    }
 
    return conf;
@@ -57,16 +59,16 @@ make_conf(const char *names[]) {
  */
 static int
 check_conf(const char *test, lListElem *conf, const char *expected[]) {
-   const lList *entries = lGetList(conf, CONF_entries);
+   const lList *entries = ocs::tom::get<CONF_entries>(conf);
    const lListElem *ep;
    int i = 0;
 
    for_each_ep(ep, entries) {
-      if (expected[i] == nullptr || strcmp(lGetString(ep, CF_name), expected[i]) != 0) {
+      if (expected[i] == nullptr || strcmp(ocs::tom::get<CF_name>(ep), expected[i]) != 0) {
          printf("FAILED: %s\n", test);
          printf("   got:     ");
          for_each_ep(ep, entries) {
-            printf("%s ", lGetString(ep, CF_name));
+            printf("%s ", ocs::tom::get<CF_name>(ep));
          }
          printf("\n   expected:");
          for (int j = 0; expected[j] != nullptr; j++) {
@@ -192,7 +194,7 @@ main(int argc, char *argv[]) {
       lListElem *conf = make_conf(in);
 
       conf_sort_entries(conf);
-      if (lGetList(conf, CONF_entries) != nullptr) {
+      if (static_cast<const lList *>(ocs::tom::get<CONF_entries>(conf)) != nullptr) {
          printf("FAILED: empty configuration - entry list should still be empty\n");
          ret++;
       }

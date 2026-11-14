@@ -26,6 +26,7 @@
 
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "tom/ocs_Element.h"
 #include "spool/ocs_spool_duplicates.h"
 
 #include "ocs_module_test.h"
@@ -59,11 +60,11 @@ test_string_key() {
    ocs::spool::DuplicateFilter filter(US_Type, "USERSET");
 
    lListElem *a = lCreateElem(US_Type);
-   lSetString(a, US_name, "arusers");
+   ocs::tom::set<US_name>(a, "arusers");
    lListElem *b = lCreateElem(US_Type);
-   lSetString(b, US_name, "deadlineusers");
+   ocs::tom::set<US_name>(b, "deadlineusers");
    lListElem *copy = lCreateElem(US_Type);
-   lSetString(copy, US_name, "arusers");
+   ocs::tom::set<US_name>(copy, "arusers");
 
    const bool first = read_into(filter, usersets, a, "usersets/arusers");
    const bool other = read_into(filter, usersets, b, "usersets/deadlineusers");
@@ -90,9 +91,9 @@ test_host_key() {
    ocs::spool::DuplicateFilter filter(EH_Type, "EXECHOST");
 
    lListElem *lower = lCreateElem(EH_Type);
-   lSetHost(lower, EH_name, "host-1");
+   ocs::tom::set<EH_name>(lower, "host-1");
    lListElem *upper = lCreateElem(EH_Type);
-   lSetHost(upper, EH_name, "HOST-1");
+   ocs::tom::set<EH_name>(upper, "HOST-1");
 
    const bool first = read_into(filter, hosts, lower, "EXECHOST:host-1");
    const bool second = read_into(filter, hosts, upper, "EXECHOST:HOST-1");
@@ -114,9 +115,9 @@ test_number_key_and_clear() {
    ocs::spool::DuplicateFilter filter(AR_Type, "AR");
 
    lListElem *ar = lCreateElem(AR_Type);
-   lSetUlong(ar, AR_id, 17);
+   ocs::tom::set<AR_id>(ar, 17);
    lListElem *again = lCreateElem(AR_Type);
-   lSetUlong(again, AR_id, 17);
+   ocs::tom::set<AR_id>(again, 17);
    const bool first = read_into(filter, ars, ar, "AR:17");
    const bool second = read_into(filter, ars, again, "AR:17.copy");
    CHECK(5, "an advance reservation id read twice is a duplicate", first && !second && lGetNumberOfElem(ars) == 1);
@@ -129,7 +130,7 @@ test_number_key_and_clear() {
 
    ocs::spool::DuplicateFilter other_filter(AR_Type, "AR");
    lListElem *same_id = lCreateElem(AR_Type);
-   lSetUlong(same_id, AR_id, 17);
+   ocs::tom::set<AR_id>(same_id, 17);
    lList *other_ars = lCreateList("other advance reservations", AR_Type);
    CHECK(7, "a filter knows only the keys of its own list",
          read_into(other_filter, other_ars, same_id, "AR:17") && ocs::spool::duplicate_objects().size() == 1);

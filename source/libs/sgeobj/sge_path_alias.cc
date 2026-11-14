@@ -75,6 +75,7 @@
 #include "sgeobj/sge_utility.h"
 #include "sgeobj/sge_path_alias.h"
 #include "sgeobj/msg_sgeobjlib.h"
+#include "tom/ocs_Element.h"
 
 #include "msg_common.h"
 #include "msg_daemons_common.h"
@@ -177,7 +178,7 @@ static int path_alias_read_from_file(lList **path_alias_list, lList **alpp,
       sge_compress_slashes(translation);
             
       
-      pal = lAddElemStr(path_alias_list, PA_origin, origin, PA_Type);
+      pal = ocs::tom::emplace_back<PA_origin>(path_alias_list, origin);
       
       if (!pal) {
          answer_list_add(alpp, MSG_SGETEXT_NOMEM, STATUS_EMALLOC, ANSWER_QUALITY_ERROR);
@@ -188,15 +189,15 @@ static int path_alias_read_from_file(lList **path_alias_list, lList **alpp,
       /*
        * set the values of the element
        */
-      lSetHost(pal, PA_submit_host, submit_host);
+      ocs::tom::set<PA_submit_host>(pal, submit_host);
       if ( strcmp(submit_host, "*") && (sge_resolve_host(pal, PA_submit_host) != CL_RETVAL_OK)) {
          snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_CANTRESOLVEHOST_S, submit_host);
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          ret = -1;
          break;
       }
-      lSetHost(pal, PA_exec_host, exec_host);
-      lSetString(pal, PA_translation, translation);
+      ocs::tom::set<PA_exec_host>(pal, exec_host);
+      ocs::tom::set<PA_translation>(pal, translation);
 
    } /* while (fgets) */
 
@@ -341,10 +342,10 @@ int path_alias_list_get_path(const lList *path_aliases, lList **alpp,
    if (path_aliases && lGetNumberOfElem(path_aliases) > 0) { 
       for_each_rw_lv (pap, path_aliases) {
          size_t orign_str_len = 0; 
-         origin = lGetString(pap, PA_origin);
+         origin = ocs::tom::get<PA_origin>(pap);
          orign_str_len = strlen(origin);
-         exec_host = lGetHost(pap, PA_exec_host);
-         translation = lGetString(pap, PA_translation);
+         exec_host = ocs::tom::get<PA_exec_host>(pap);
+         translation = ocs::tom::get<PA_translation>(pap);
 
          if (strncmp(origin, sge_dstring_get_string(&the_path), 
              orign_str_len )) {
@@ -361,7 +362,7 @@ int path_alias_list_get_path(const lList *path_aliases, lList **alpp,
                ERROR(MSG_SGETEXT_CANTRESOLVEHOST_S, exec_host);
                continue;
             }
-            exec_host = lGetHost(pap, PA_exec_host);
+            exec_host = ocs::tom::get<PA_exec_host>(pap);
 
             /* and compare it to the executing host */
             if (sge_hostcmp(exec_host, myhost))
@@ -467,10 +468,10 @@ bool path_alias_verify(const lList *path_aliases, lList **answer_list) {
        * they have to be valid paths.
        */
       if (ret) {
-         ret = path_verify(lGetString(ep, PA_origin), answer_list, "path_alias: origin", false);
+         ret = path_verify(ocs::tom::get<PA_origin>(ep), answer_list, "path_alias: origin", false);
       }
       if (ret) {
-         ret = path_verify(lGetString(ep, PA_translation), answer_list, "path_alias: translation", false);
+         ret = path_verify(ocs::tom::get<PA_translation>(ep), answer_list, "path_alias: translation", false);
       }
 
        /*
@@ -478,10 +479,10 @@ bool path_alias_verify(const lList *path_aliases, lList **answer_list) {
        * hostname (no need to resolve them).
        */
       if (ret) {
-         ret = verify_host_name(answer_list, lGetHost(ep, PA_submit_host));
+         ret = verify_host_name(answer_list, ocs::tom::get<PA_submit_host>(ep));
       }
       if (ret) {
-         ret = verify_host_name(answer_list, lGetHost(ep, PA_exec_host));
+         ret = verify_host_name(answer_list, ocs::tom::get<PA_exec_host>(ep));
       }
 
       if (!ret) {
@@ -512,12 +513,12 @@ bool path_list_verify(const lList *path_list, lList **answer_list, const char *n
    for_each_ep_lv(ep, path_list) {
       const char *host;
 
-      ret = path_verify(lGetString(ep, PN_path), answer_list, name, false);
+      ret = path_verify(ocs::tom::get<PN_path>(ep), answer_list, name, false);
       if (!ret) {
          break;
       }
 
-      host = lGetHost(ep, PN_host);
+      host = ocs::tom::get<PN_host>(ep);
       if (host != nullptr) {
          ret = verify_host_name(answer_list, host);
          if (!ret) {
@@ -525,7 +526,7 @@ bool path_list_verify(const lList *path_list, lList **answer_list, const char *n
          }
       }
 
-      host = lGetHost(ep, PN_file_host);
+      host = ocs::tom::get<PN_file_host>(ep);
       if (host != nullptr) {
          ret = verify_host_name(answer_list, host);
          if (!ret) {

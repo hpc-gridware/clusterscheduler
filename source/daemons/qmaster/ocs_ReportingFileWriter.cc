@@ -38,6 +38,8 @@
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_qinstance_state.h"
 #include "sgeobj/sge_usage.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_UA.h"
 
 #include "ocs_ReportingFileWriter.h"
 #include "ocs_JsonAccountingFileWriter.h"
@@ -680,9 +682,9 @@ namespace ocs {
        // Optimization: Do not write intermediate usage for jobs that just
        // "started a short time before".
       if (pe_task != nullptr) {
-         start_time = sge_gmt64_to_time_t(lGetUlong64(pe_task, PET_start_time));
+         start_time = sge_gmt64_to_time_t(ocs::tom::get<PET_start_time>(pe_task));
       } else {
-         start_time = sge_gmt64_to_time_t(lGetUlong64(ja_task, JAT_start_time));
+         start_time = sge_gmt64_to_time_t(ocs::tom::get<JAT_start_time>(ja_task));
       }
 
       if ((now - start_time) < (INTERMEDIATE_MIN_RUNTIME + tm_now.tm_min * 60 + tm_now.tm_sec)) {
@@ -692,10 +694,10 @@ namespace ocs {
        // Try to read time of an earlier intermediate report.
        // If no intermediate report has been written so far, use the job's / pe task's start time.
       if (pe_task != nullptr) {
-         last_intermediate = sge_gmt64_to_time_t(usage_list_get_ulong64_usage(lGetList(pe_task, PET_reported_usage),
+         last_intermediate = sge_gmt64_to_time_t(usage_list_get_ulong64_usage(ocs::tom::get<PET_reported_usage>(pe_task),
                                                                  LAST_INTERMEDIATE, 0));
       } else {
-         last_intermediate = sge_gmt64_to_time_t(usage_list_get_ulong64_usage(lGetList(ja_task, JAT_reported_usage_list),
+         last_intermediate = sge_gmt64_to_time_t(usage_list_get_ulong64_usage(ocs::tom::get<JAT_reported_usage_list>(ja_task),
                                                                  LAST_INTERMEDIATE, 0));
       }
       if (last_intermediate == 0) {
@@ -714,8 +716,8 @@ namespace ocs {
          char timebuffer[100];
          DSTRING_STATIC(buffer_dstring, 100);
          INFO(MSG_REPORTING_INTERMEDIATE_SS,
-              job_get_key(lGetUlong(job, JB_job_number), lGetUlong(ja_task, JAT_task_number),
-                          pe_task != nullptr ? lGetString(pe_task, PET_id) : nullptr, &buffer_dstring),
+              job_get_key(ocs::tom::get<JB_job_number>(job), ocs::tom::get<JAT_task_number>(ja_task),
+                          pe_task != nullptr ? ocs::tom::get<PET_id>(pe_task) : nullptr, &buffer_dstring),
               asctime_r(&tm_now, timebuffer));
          ret = true;
       }

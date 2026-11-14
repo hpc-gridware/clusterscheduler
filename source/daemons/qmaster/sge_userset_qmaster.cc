@@ -51,6 +51,12 @@
 #include "sgeobj/sge_utility.h"
 #include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/msg_sgeobjlib.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_JG.h"
+#include "sgeobj/tom/ocs_tom_QU.h"
+#include "sgeobj/tom/ocs_tom_ST.h"
+#include "sgeobj/tom/ocs_tom_UE.h"
+#include "sgeobj/tom/ocs_tom_US.h"
 
 #include "spool/sge_spooling.h"
 
@@ -133,7 +139,7 @@ sge_del_userset(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, l
    }
 
    /* search for userset with this name and remove it from the list */
-   if (!(found = lGetElemStrRW(*userset_list, US_name, userset_name))) {
+   if (!(found = ocs::tom::find_first_rw<US_name>(*userset_list, userset_name))) {
       ERROR(MSG_SGETEXT_DOESNOTEXIST_SS, MSG_OBJ_USERSET, userset_name);
       answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EEXIST);
@@ -170,23 +176,23 @@ sge_change_queue_version_acl(ocs::gdi::Packet *packet, ocs::gdi::Task *task, con
    const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
 
    for_each_ep_lv(cqueue, master_cqueue_list) {
-      const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
+      const lList *qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
 
       for_each_rw_lv(qinstance, qinstance_list) {
-         const lList *acl_list = lGetList(qinstance, QU_acl);
-         const lList *xacl_list = lGetList(qinstance, QU_xacl);
-         const lListElem *acl = lGetElemStr(acl_list, US_name, acl_name);
-         const lListElem *xacl = lGetElemStr(xacl_list, US_name, acl_name);
+         const lList *acl_list = ocs::tom::get<QU_acl>(qinstance);
+         const lList *xacl_list = ocs::tom::get<QU_xacl>(qinstance);
+         const lListElem *acl = ocs::tom::find_first<US_name>(acl_list, acl_name);
+         const lListElem *xacl = ocs::tom::find_first<US_name>(xacl_list, acl_name);
          bool is_used = ((acl != nullptr) || (xacl != nullptr)) ? true : false;
 
          if (is_used) {
             lList *answer_list = nullptr;
 
             DPRINTF("increasing version of queue " SFQ " because acl " SFQ
-                    " changed\n", lGetString(qinstance, QU_full_name), acl_name);
+                    " changed\n", ocs::tom::get<QU_full_name>(qinstance), acl_name);
             qinstance_increase_qversion(qinstance);
-            sge_event_spool(&answer_list, 0, sgeE_QINSTANCE_MOD, 0, 0, lGetString(qinstance, QU_qname),
-                            lGetHost(qinstance, QU_qhostname), nullptr, qinstance, nullptr, nullptr, true, false, packet->gdi_session);
+            sge_event_spool(&answer_list, 0, sgeE_QINSTANCE_MOD, 0, 0, ocs::tom::get<QU_qname>(qinstance),
+                            ocs::tom::get<QU_qhostname>(qinstance), nullptr, qinstance, nullptr, nullptr, true, false, packet->gdi_session);
             answer_list_output(&answer_list);
          }
       }
@@ -226,13 +232,13 @@ int
 sge_verify_department_entries(const lList *userset_list, lListElem *new_userset, lList **alpp) {
    DENTER(TOP_LAYER);
 
-   if (!strcmp(lGetString(new_userset, US_name), DEFAULT_DEPARTMENT)) {
+   if (!strcmp(ocs::tom::get<US_name>(new_userset), DEFAULT_DEPARTMENT)) {
       if (!dept_is_valid_defaultdepartment(new_userset, alpp)) {
          DRETURN(STATUS_ESEMANTIC);
       }
    }
 
-   if (!(lGetUlong(new_userset, US_type) & US_DEPT)) {
+   if (!(ocs::tom::get<US_type>(new_userset) & US_DEPT)) {
       DRETURN(STATUS_OK);
    }
 
@@ -256,13 +262,13 @@ dept_is_valid_defaultdepartment(lListElem *dept, lList **answer_list) {
    int ret = 1;
    if (dept != nullptr) {
       /* test 'type' */
-      if (!(lGetUlong(dept, US_type) & US_DEPT)) {
+      if (!(ocs::tom::get<US_type>(dept) & US_DEPT)) {
          ERROR(SFNMAX, MSG_QMASTER_DEPTFORDEFDEPARTMENT);
          answer_list_add(answer_list, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
          ret = 0;
       }
       /* test user list */
-      if (lGetNumberOfElem(lGetList(dept, US_entries)) > 0) {
+      if (lGetNumberOfElem(ocs::tom::get<US_entries>(dept)) > 0) {
          ERROR(SFNMAX, MSG_QMASTER_AUTODEFDEPARTMENT);
          answer_list_add(answer_list, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
          ret = 0;
@@ -287,13 +293,13 @@ acl_is_valid_acl(lListElem *acl, lList **answer_list) {
 
    int ret = 1;
    if (acl != nullptr) {
-      if (!(lGetUlong(acl, US_type) & US_DEPT)) {
-         if (lGetUlong(acl, US_fshare) > 0) {
+      if (!(ocs::tom::get<US_type>(acl) & US_DEPT)) {
+         if (ocs::tom::get<US_fshare>(acl) > 0) {
             ERROR(SFNMAX, MSG_QMASTER_ACLNOSHARE);
             answer_list_add(answer_list, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
             ret = 0;
          }
-         if (lGetUlong(acl, US_oticket) > 0) {
+         if (ocs::tom::get<US_oticket>(acl) > 0) {
             ERROR(SFNMAX, MSG_QMASTER_ACLNOTICKET);
             answer_list_add(answer_list, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
             ret = 0;
@@ -324,8 +330,8 @@ job_is_valid_department(lListElem *job, lList **alpp, const char *dept_name, con
    }
 
    // Does the department exist?
-   const lListElem *dept = lGetElemStr(userset_list, US_name, dept_name);
-   if (!dept || !(lGetUlong(dept, US_type) & US_DEPT)) {
+   const lListElem *dept = ocs::tom::find_first<US_name>(userset_list, dept_name);
+   if (!dept || !(ocs::tom::get<US_type>(dept) & US_DEPT)) {
       if (alpp) {
          ERROR(MSG_JOB_DEPTNOEXIST_S, dept_name);
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
@@ -340,14 +346,14 @@ job_is_valid_department(lListElem *job, lList **alpp, const char *dept_name, con
    }
 
    // Does the user belong to the department?
-   const char *owner = lGetString(job, JB_owner);
+   const char *owner = ocs::tom::get<JB_owner>(job);
    if (sge_contained_in_access_list(owner, nullptr, nullptr, dept)) {
       DRETURN(true);
    }
 
    // Does the group or a supplementary group belong to the department?
-   const char *group = lGetString(job, JB_group);
-   const lList *grp_list = lGetList(job, JB_grp_list);
+   const char *group = ocs::tom::get<JB_group>(job);
+   const lList *grp_list = ocs::tom::get<JB_grp_list>(job);
    if (sge_contained_in_access_list(nullptr, group, grp_list, dept)) {
       DRETURN(true);
    }
@@ -378,19 +384,19 @@ job_set_department(lListElem *job, lList **alpp, const lList *userset_list) {
 
    // Find the first department where the user is a member of
    for_each_ep_lv(dept, userset_list) {
-      const char *dept_name = lGetString(dept, US_name);
+      const char *dept_name = ocs::tom::get<US_name>(dept);
       if (strcmp(dept_name, DEFAULT_DEPARTMENT) == 0) {
          continue;
       }
       if (job_is_valid_department(job, nullptr, dept_name, userset_list)) {
-         lSetString(job, JB_department, lGetString(dept, US_name));
+         ocs::tom::set<JB_department>(job, ocs::tom::get<US_name>(dept));
          DRETURN(true);
       }
    }
 
    // No department found => set default department
-   if (lGetElemStr(userset_list, US_name, DEFAULT_DEPARTMENT)) {
-      lSetString(job, JB_department, DEFAULT_DEPARTMENT);
+   if (ocs::tom::find_first<US_name>(userset_list, DEFAULT_DEPARTMENT)) {
+      ocs::tom::set<JB_department>(job, DEFAULT_DEPARTMENT);
       DRETURN(true);
    }
 
@@ -419,16 +425,16 @@ verify_userset_deletion(lList **alpp, const char *userset_name) {
     * check the cq configuration for userset references instead of qinstances
     */
    for_each_ep_lv(cqueue, master_cqueue_list) {
-      for_each_ep(cl, lGetList(cqueue, CQ_acl)) {
-         if (lGetSubStr(cl, US_name, userset_name, AUSRLIST_value)) {
-            ERROR(MSG_SGETEXT_USERSETSTILLREFERENCED_SSSS, userset_name, MSG_OBJ_USERLIST, MSG_OBJ_QUEUE, lGetString(cqueue, CQ_name));
+      for_each_ep(cl, ocs::tom::get<CQ_acl>(cqueue)) {
+         if (ocs::tom::find_first_in<AUSRLIST_value, US_name>(cl, userset_name)) {
+            ERROR(MSG_SGETEXT_USERSETSTILLREFERENCED_SSSS, userset_name, MSG_OBJ_USERLIST, MSG_OBJ_QUEUE, ocs::tom::get<CQ_name>(cqueue));
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             ret = STATUS_EUNKNOWN;
          }
       }
-      for_each_ep(cl, lGetList(cqueue, CQ_xacl)) {
-         if (lGetSubStr(cl, US_name, userset_name, AUSRLIST_value)) {
-            ERROR(MSG_SGETEXT_USERSETSTILLREFERENCED_SSSS, userset_name, MSG_OBJ_XUSERLIST, MSG_OBJ_QUEUE, lGetString(cqueue, CQ_name));
+      for_each_ep(cl, ocs::tom::get<CQ_xacl>(cqueue)) {
+         if (ocs::tom::find_first_in<AUSRLIST_value, US_name>(cl, userset_name)) {
+            ERROR(MSG_SGETEXT_USERSETSTILLREFERENCED_SSSS, userset_name, MSG_OBJ_XUSERLIST, MSG_OBJ_QUEUE, ocs::tom::get<CQ_name>(cqueue));
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             ret = STATUS_EUNKNOWN;
          }
@@ -436,26 +442,26 @@ verify_userset_deletion(lList **alpp, const char *userset_name) {
    }
 
    for_each_ep(ep, master_pe_list) {
-      if (lGetElemStr(lGetList(ep, PE_user_list), US_name, userset_name)) {
-         ERROR(MSG_SGETEXT_USERSETSTILLREFERENCED_SSSS, userset_name, MSG_OBJ_USERLIST, MSG_OBJ_PE, lGetString(ep, PE_name));
+      if (ocs::tom::find_first<US_name>(ocs::tom::get<PE_user_list>(ep), userset_name)) {
+         ERROR(MSG_SGETEXT_USERSETSTILLREFERENCED_SSSS, userset_name, MSG_OBJ_USERLIST, MSG_OBJ_PE, ocs::tom::get<PE_name>(ep));
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          ret = STATUS_EUNKNOWN;
       }
-      if (lGetElemStr(lGetList(ep, PE_xuser_list), US_name, userset_name)) {
-         ERROR(MSG_SGETEXT_USERSETSTILLREFERENCED_SSSS, userset_name, MSG_OBJ_XUSERLIST, MSG_OBJ_PE, lGetString(ep, PE_name));
+      if (ocs::tom::find_first<US_name>(ocs::tom::get<PE_xuser_list>(ep), userset_name)) {
+         ERROR(MSG_SGETEXT_USERSETSTILLREFERENCED_SSSS, userset_name, MSG_OBJ_XUSERLIST, MSG_OBJ_PE, ocs::tom::get<PE_name>(ep));
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          ret = STATUS_EUNKNOWN;
       }
    }
 
    for_each_ep(ep, master_project_list) {
-      if (lGetElemStr(lGetList(ep, PR_acl), US_name, userset_name)) {
-         ERROR(MSG_SGETEXT_USERSETSTILLREFERENCED_SSSS, userset_name, MSG_OBJ_USERLIST, MSG_OBJ_PRJ, lGetString(ep, PR_name));
+      if (ocs::tom::find_first<US_name>(ocs::tom::get<PR_acl>(ep), userset_name)) {
+         ERROR(MSG_SGETEXT_USERSETSTILLREFERENCED_SSSS, userset_name, MSG_OBJ_USERLIST, MSG_OBJ_PRJ, ocs::tom::get<PR_name>(ep));
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          ret = STATUS_EUNKNOWN;
       }
-      if (lGetElemStr(lGetList(ep, PR_xacl), US_name, userset_name)) {
-         ERROR(MSG_SGETEXT_USERSETSTILLREFERENCED_SSSS, userset_name, MSG_OBJ_XUSERLIST, MSG_OBJ_PRJ, lGetString(ep, PR_name));
+      if (ocs::tom::find_first<US_name>(ocs::tom::get<PR_xacl>(ep), userset_name)) {
+         ERROR(MSG_SGETEXT_USERSETSTILLREFERENCED_SSSS, userset_name, MSG_OBJ_XUSERLIST, MSG_OBJ_PRJ, ocs::tom::get<PR_name>(ep));
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          ret = STATUS_EUNKNOWN;
       }
@@ -463,13 +469,13 @@ verify_userset_deletion(lList **alpp, const char *userset_name) {
 
    /* hosts */
    for_each_ep(ep, master_ehost_list) {
-      if (lGetElemStr(lGetList(ep, EH_acl), US_name, userset_name)) {
-         ERROR(MSG_SGETEXT_USERSETSTILLREFERENCED_SSSS, userset_name, MSG_OBJ_USERLIST, MSG_OBJ_EH, lGetHost(ep, EH_name));
+      if (ocs::tom::find_first<US_name>(ocs::tom::get<EH_acl>(ep), userset_name)) {
+         ERROR(MSG_SGETEXT_USERSETSTILLREFERENCED_SSSS, userset_name, MSG_OBJ_USERLIST, MSG_OBJ_EH, static_cast<const char *>(ocs::tom::get<EH_name>(ep)));
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EEXIST);
       }
-      if (lGetElemStr(lGetList(ep, EH_xacl), US_name, userset_name)) {
-         ERROR(MSG_SGETEXT_USERSETSTILLREFERENCED_SSSS, userset_name, MSG_OBJ_XUSERLIST, MSG_OBJ_EH, lGetHost(ep, EH_name));
+      if (ocs::tom::find_first<US_name>(ocs::tom::get<EH_xacl>(ep), userset_name)) {
+         ERROR(MSG_SGETEXT_USERSETSTILLREFERENCED_SSSS, userset_name, MSG_OBJ_XUSERLIST, MSG_OBJ_EH, static_cast<const char *>(ocs::tom::get<EH_name>(ep)));
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EEXIST);
       }
@@ -477,8 +483,8 @@ verify_userset_deletion(lList **alpp, const char *userset_name) {
 
    // refuse deletion if any role still references this userset in its user_list
    for_each_ep_lv(role_ep, master_role_list) {
-      if (lGetElemStr(lGetList(role_ep, RL_user_list), US_name, userset_name)) {
-         ERROR(MSG_SGETEXT_USERSETSTILLREFERENCED_SSSS, userset_name, MSG_OBJ_USERLIST, MSG_OBJ_ROLE, lGetString(role_ep, RL_name));
+      if (ocs::tom::find_first<US_name>(ocs::tom::get<RL_user_list>(role_ep), userset_name)) {
+         ERROR(MSG_SGETEXT_USERSETSTILLREFERENCED_SSSS, userset_name, MSG_OBJ_USERLIST, MSG_OBJ_ROLE, ocs::tom::get<RL_name>(role_ep));
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          ret = STATUS_EUNKNOWN;
       }
@@ -486,7 +492,7 @@ verify_userset_deletion(lList **alpp, const char *userset_name) {
 
    /* global configuration */
    user_lists = mconf_get_user_lists();
-   if (lGetElemStr(user_lists, US_name, userset_name)) {
+   if (ocs::tom::find_first<US_name>(user_lists, userset_name)) {
       ERROR(MSG_SGETEXT_USERSETSTILLREFERENCED_SSSS, userset_name, MSG_OBJ_USERLIST, MSG_OBJ_CONF, MSG_OBJ_GLOBAL);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       ret = STATUS_EUNKNOWN;
@@ -494,7 +500,7 @@ verify_userset_deletion(lList **alpp, const char *userset_name) {
    lFreeList(&user_lists);
 
    user_lists = mconf_get_xuser_lists();
-   if (lGetElemStr(user_lists, US_name, userset_name)) {
+   if (ocs::tom::find_first<US_name>(user_lists, userset_name)) {
       ERROR(MSG_SGETEXT_USERSETSTILLREFERENCED_SSSS, userset_name, MSG_OBJ_XUSERLIST, MSG_OBJ_CONF, MSG_OBJ_GLOBAL);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       ret = STATUS_EUNKNOWN;
@@ -537,17 +543,17 @@ static bool userset_still_used(const char *u) {
    }
    sge_dstring_free(&ds);
 
-   for_each_ep(hep, master_pe_list)if (lGetSubStr(hep, US_name, u, PE_user_list) ||
-                                       lGetSubStr(hep, US_name, u, PE_xuser_list))
+   for_each_ep(hep, master_pe_list)if (ocs::tom::find_first_in<PE_user_list, US_name>(hep, u) ||
+                                       ocs::tom::find_first_in<PE_xuser_list, US_name>(hep, u))
          return true;
 
-   for_each_ep(hep, master_ehost_list)if (lGetSubStr(hep, US_name, u, EH_acl) || lGetSubStr(hep, US_name, u, EH_xacl))
+   for_each_ep(hep, master_ehost_list)if (ocs::tom::find_first_in<EH_acl, US_name>(hep, u) || ocs::tom::find_first_in<EH_xacl, US_name>(hep, u))
          return true;
 
    for_each_ep(cq, master_cqueue_list) {
-      for_each_ep(qc, lGetList(cq, CQ_acl))if (lGetSubStr(qc, US_name, u, AUSRLIST_value))
+      for_each_ep(qc, ocs::tom::get<CQ_acl>(cq))if (ocs::tom::find_first_in<AUSRLIST_value, US_name>(qc, u))
             return true;
-      for_each_ep(qc, lGetList(cq, CQ_xacl))if (lGetSubStr(qc, US_name, u, AUSRLIST_value))
+      for_each_ep(qc, ocs::tom::get<CQ_xacl>(cq))if (ocs::tom::find_first_in<AUSRLIST_value, US_name>(qc, u))
             return true;
    }
 
@@ -577,23 +583,23 @@ void userset_update_categories(const lList *added, const lList *removed, uint64_
    bool reattach_categories = false;
 
    for_each_ep(ep, added) {
-      u = lGetString(ep, US_name);
+      u = ocs::tom::get<US_name>(ep);
       DPRINTF("added userset: \"%s\"\n", u);
-      acl = lGetElemStrRW(master_userset_list, US_name, u);
-      if (acl && !lGetBool(acl, US_consider_with_categories)) {
-         lSetBool(acl, US_consider_with_categories, true);
+      acl = ocs::tom::find_first_rw<US_name>(master_userset_list, u);
+      if (acl && !ocs::tom::get<US_consider_with_categories>(acl)) {
+         ocs::tom::set<US_consider_with_categories>(acl, true);
          reattach_categories = true;
          sge_add_event(0, sgeE_USERSET_MOD, 0, 0, u, nullptr, nullptr, acl, gdi_session);
       }
    }
 
    for_each_ep(ep, removed) {
-      u = lGetString(ep, US_name);
+      u = ocs::tom::get<US_name>(ep);
       DPRINTF("removed userset: \"%s\"\n", u);
-      acl = lGetElemStrRW(master_userset_list, US_name, u);
+      acl = ocs::tom::find_first_rw<US_name>(master_userset_list, u);
 
       if (acl && !userset_still_used(u)) {
-         lSetBool(acl, US_consider_with_categories, false);
+         ocs::tom::set<US_consider_with_categories>(acl, false);
          reattach_categories = true;
          sge_add_event(0, sgeE_USERSET_MOD, 0, 0, u, nullptr, nullptr, acl, gdi_session);
       }
@@ -652,7 +658,7 @@ int userset_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lL
          goto ERROR;
       }
    }
-   userset_name = lGetString(new_userset, US_name);
+   userset_name = ocs::tom::get<US_name>(new_userset);
 
    if (add && verify_obj_name(
            alpp, userset_name, MAX_VERIFY_STRING, object->object_name) != STATUS_OK) {
@@ -669,8 +675,8 @@ int userset_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lL
    attr_mod_ulong(userset, new_userset, US_type, object->object_name);
 
    /* ensure userset is at least an ACL (qconf -au ) */
-   if (lGetUlong(new_userset, US_type) == 0) {
-      lSetUlong(new_userset, US_type, US_ACL);
+   if (ocs::tom::get<US_type>(new_userset) == 0) {
+      ocs::tom::set<US_type>(new_userset, US_ACL);
    }
    /* make sure acl is valid */
    if (!add) {
@@ -705,7 +711,7 @@ int userset_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lL
       /* NOTE: these rejections must not use STATUS_EEXIST: sge_client_del_user()
        * (qconf -du) maps STATUS_EEXIST to "access list does not exist" and drops
        * our message. STATUS_ESEMANTIC makes the client print the text below. */
-      if ((lGetUlong(new_userset, US_type) & US_ACL) == 0) {
+      if ((ocs::tom::get<US_type>(new_userset) & US_ACL) == 0) {
          ERROR(MSG_USERSET_RESERVED_MUSTBEACL_S, userset_name);
          answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
          goto ERROR;
@@ -713,13 +719,13 @@ int userset_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lL
 
       /* admin_user "none" is the sentinel for "no admin user", it is not seeded either */
       const char *admin_user = ocs::Bootstrap::get_admin_user();
-      if (lGetSubStr(new_userset, UE_name, "root", US_entries) == nullptr) {
+      if (static_cast<const lListElem *>(ocs::tom::find_first_in<US_entries, UE_name>(new_userset, "root")) == nullptr) {
          ERROR(MSG_SGETEXT_MAY_NOT_REMOVE_USER_FROM_LIST_SS, "root", manop_name);
          answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
          goto ERROR;
       }
       if (admin_user != nullptr && sge_strnullcasecmp(admin_user, NONE_STR) != 0 &&
-          lGetSubStr(new_userset, UE_name, admin_user, US_entries) == nullptr) {
+          static_cast<const lListElem *>(ocs::tom::find_first_in<US_entries, UE_name>(new_userset, admin_user)) == nullptr) {
          ERROR(MSG_SGETEXT_MAY_NOT_REMOVE_USER_FROM_LIST_SS, admin_user, manop_name);
          answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
          goto ERROR;
@@ -742,42 +748,42 @@ int userset_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lL
       lList *new_master_userset_list = nullptr;
 
       for_each_ep(cqueue, master_cqueue_list) {
-         const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
+         const lList *qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
          const lListElem *qinstance;
 
          for_each_ep(qinstance, qinstance_list) {
-            const char *queue_name = lGetString(qinstance, QU_full_name);
+            const char *queue_name = ocs::tom::get<QU_full_name>(qinstance);
 
             if (qinstance_slots_reserved(qinstance) == 0) {
                /* queue not reserved, can not conflict with AR */
                continue;
             }
 
-            if (lGetElemStr(lGetList(qinstance, QU_acl), US_name, userset_name) == nullptr &&
-                lGetElemStr(lGetList(qinstance, QU_xacl), US_name, userset_name) == nullptr) {
+            if (static_cast<const lListElem *>(ocs::tom::find_first<US_name>(ocs::tom::get<QU_acl>(qinstance), userset_name)) == nullptr &&
+                static_cast<const lListElem *>(ocs::tom::find_first<US_name>(ocs::tom::get<QU_xacl>(qinstance), userset_name)) == nullptr) {
                /* userset not referenced by queue instance */
                continue;
             }
 
             for_each_rw_lv(ar, master_ar_list) {
-               if (lGetElemStr(lGetList(ar, AR_granted_slots), JG_qname, queue_name)) {
+               if (ocs::tom::find_first<JG_qname>(ocs::tom::get<AR_granted_slots>(ar), queue_name)) {
                   if (new_master_userset_list == nullptr) {
                      lListElem *old_userset;
                      new_master_userset_list = lCopyList("", master_userset_list);
-                     old_userset = lGetElemStrRW(new_master_userset_list, US_name, userset_name);
+                     old_userset = ocs::tom::find_first_rw<US_name>(new_master_userset_list, userset_name);
                      lRemoveElem(new_master_userset_list, &old_userset);
                      lAppendElem(new_master_userset_list, lCopyElem(new_userset));
                   }
 
-                  if (!sge_ar_have_users_access(nullptr, ar, lGetString(qinstance, QU_full_name),
-                                                lGetList(qinstance, QU_acl),
-                                                lGetList(qinstance, QU_xacl),
+                  if (!sge_ar_have_users_access(nullptr, ar, ocs::tom::get<QU_full_name>(qinstance),
+                                                ocs::tom::get<QU_acl>(qinstance),
+                                                ocs::tom::get<QU_xacl>(qinstance),
                                                 new_master_userset_list)) {
                      answer_list_add_sprintf(alpp, STATUS_ESYNTAX,
                                              ANSWER_QUALITY_ERROR,
                                              MSG_PARSE_MOD3_REJECTED_DUE_TO_AR_SU,
                                              "entries",
-                                             lGetUlong(ar, AR_id));
+                                             ocs::tom::get<AR_id>(ar));
                      lFreeList(&new_master_userset_list);
                      goto ERROR;
                   }
@@ -817,12 +823,12 @@ int userset_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, 
    bool dbret;
 
    dbret = spool_write_object(&answer_list, spool_get_default_context(), userset,
-                              lGetString(userset, US_name), SGE_TYPE_USERSET);
+                              ocs::tom::get<US_name>(userset), SGE_TYPE_USERSET);
    answer_list_output(&answer_list);
 
    if (!dbret) {
       answer_list_add_sprintf(alpp, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
-                              MSG_PERSISTENCE_WRITE_FAILED_S, lGetString(userset, US_name));
+                              MSG_PERSISTENCE_WRITE_FAILED_S, ocs::tom::get<US_name>(userset));
    }
 
    DRETURN(dbret ? 0 : 1);
@@ -853,14 +859,14 @@ int userset_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *e
    dstring ds = DSTRING_INIT;
    const lListElem *rqs;
    const lList *master_rqs_list = *ocs::DataStore::get_master_list(SGE_TYPE_RQS);
-   const char *userset_name = lGetString(ep, US_name);
+   const char *userset_name = ocs::tom::get<US_name>(ep);
 
    /* set consider with categories */
    bool reattach_categories = false;
    sge_dstring_sprintf(&ds, "@%s", userset_name);
    for_each_ep(rqs, master_rqs_list) {
       if (scope_is_referenced_rqs(rqs, RQR_filter_users, sge_dstring_get_string(&ds))) {
-         lSetBool(ep, US_consider_with_categories, true);
+         ocs::tom::set<US_consider_with_categories>(ep, true);
          reattach_categories = true;
          break;
       }

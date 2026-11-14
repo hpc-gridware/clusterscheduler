@@ -48,6 +48,8 @@
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_ja_task.h"
 #include "sgeobj/ocs_DataStore.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_PET.h"
 
 #include "mir/sge_mirror.h"
 #include "mir/msg_mirlib.h"
@@ -74,11 +76,11 @@ pe_task_update_master_list_usage(lList *job_list, lListElem *event) {
    const char *pe_task_id;
    lListElem *job, *ja_task, *pe_task;
 
-   job_id = lGetUlong(event, ET_intkey);
-   ja_task_id = lGetUlong(event, ET_intkey2);
-   pe_task_id = lGetString(event, ET_strkey);
+   job_id = ocs::tom::get<ET_intkey>(event);
+   ja_task_id = ocs::tom::get<ET_intkey2>(event);
+   pe_task_id = ocs::tom::get<ET_strkey>(event);
    
-   job = lGetElemUlongRW(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB), JB_job_number, job_id);
+   job = ocs::tom::find_first_rw<JB_job_number>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB), job_id);
    if (job == nullptr) {
       dstring id_dstring = DSTRING_INIT;
       ERROR(MSG_JOB_CANTFINDJOBFORUPDATEIN_SS, job_get_id_string(job_id, 0, nullptr, &id_dstring), __func__);
@@ -102,9 +104,9 @@ pe_task_update_master_list_usage(lList *job_list, lListElem *event) {
       DRETURN(SGE_EMA_FAILURE);
    }
 
-   lXchgList(event, ET_new_version, &tmp);
-   lXchgList(pe_task, PET_scaled_usage, &tmp);
-   lXchgList(event, ET_new_version, &tmp);
+   ocs::tom::exchange<ET_new_version>(event, &tmp);
+   ocs::tom::exchange<PET_scaled_usage>(pe_task, &tmp);
+   ocs::tom::exchange<ET_new_version>(event, &tmp);
    
    DRETURN(SGE_EMA_OK);
 }
@@ -154,11 +156,11 @@ pe_task_update_master_list(sge_evc_class_t *evc, sge_object_type type,
 
    sge_dstring_init(&id_dstring, id_buffer, MAX_STRING_SIZE);
 
-   job_id = lGetUlong(event, ET_intkey);
-   ja_task_id = lGetUlong(event, ET_intkey2);
-   pe_task_id = lGetString(event, ET_strkey);
+   job_id = ocs::tom::get<ET_intkey>(event);
+   ja_task_id = ocs::tom::get<ET_intkey2>(event);
+   pe_task_id = ocs::tom::get<ET_strkey>(event);
    
-   job = lGetElemUlongRW(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB), JB_job_number, job_id);
+   job = ocs::tom::find_first_rw<JB_job_number>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB), job_id);
    if (job == nullptr) {
       ERROR(MSG_JOB_CANTFINDJOBFORUPDATEIN_SS, job_get_id_string(job_id, 0, nullptr, &id_dstring), __func__);
       DRETURN(SGE_EMA_FAILURE);
@@ -172,8 +174,8 @@ pe_task_update_master_list(sge_evc_class_t *evc, sge_object_type type,
    
    pe_task = ja_task_search_pe_task(ja_task, pe_task_id);
 
-   pe_task_list = lGetListRW(ja_task, JAT_task_list);
-   pe_task_descr = lGetListDescr(lGetList(event, ET_new_version)); 
+   pe_task_list = ocs::tom::get<JAT_task_list>(ja_task);
+   pe_task_descr = lGetListDescr(ocs::tom::get<ET_new_version>(event)); 
   
    if (action == SGE_EMA_MOD) {
       /* modify event for pe_task.
@@ -184,7 +186,7 @@ pe_task_update_master_list(sge_evc_class_t *evc, sge_object_type type,
          ERROR(MSG_JOB_CANTFINDPETASKFORUPDATEIN_SS, job_get_id_string(job_id, ja_task_id, pe_task_id, &id_dstring), __func__);
          DRETURN(SGE_EMA_FAILURE);
       }
-      lXchgList(pe_task, PET_scaled_usage, &usage);
+      ocs::tom::exchange<PET_scaled_usage>(pe_task, &usage);
    }
  
    if (sge_mirror_update_master_list(&pe_task_list, pe_task_descr, pe_task, 
@@ -204,13 +206,13 @@ pe_task_update_master_list(sge_evc_class_t *evc, sge_object_type type,
          DRETURN(SGE_EMA_FAILURE);
       }
 
-      lXchgList(pe_task, PET_scaled_usage, &usage);
+      ocs::tom::exchange<PET_scaled_usage>(pe_task, &usage);
       lFreeList(&usage);
    }
 
    /* first petask add event could have created new pe_task list for job */
-   if (lGetList(ja_task, JAT_task_list) == nullptr && pe_task_list != nullptr) {
-      lSetList(ja_task, JAT_task_list, pe_task_list);
+   if (static_cast<const lList *>(ocs::tom::get<JAT_task_list>(ja_task)) == nullptr && pe_task_list != nullptr) {
+      ocs::tom::set<JAT_task_list>(ja_task, pe_task_list);
    }
 
    DRETURN(SGE_EMA_OK);

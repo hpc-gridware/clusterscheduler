@@ -72,6 +72,7 @@
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_qref.h"
+#include "tom/ocs_Element.h"
 
 #include "comm/commlib.h"
 
@@ -289,7 +290,7 @@ int main(int argc, char **argv) {
          if (argv[ii+1]) {
             if (*(argv[ii+1]) != '-') {
                options.hostflag = 1;
-               lAddElemStr(&queueref_list, QR_name, argv[++ii], QR_Type);
+               ocs::tom::emplace_back<QR_name>(&queueref_list, argv[++ii]);
             }
          }
       }
@@ -356,9 +357,9 @@ int main(int argc, char **argv) {
                qacct_usage(stderr);
                DRETURN(1);
             }
-            options.taskstart = lGetUlong(lFirst(task_id_range_list), RN_min);
-            options.taskend = lGetUlong(lFirst(task_id_range_list), RN_max);
-            options.taskstep = lGetUlong(lFirst(task_id_range_list), RN_step);
+            options.taskstart = ocs::tom::get<RN_min>(lFirst(task_id_range_list));
+            options.taskend = ocs::tom::get<RN_max>(lFirst(task_id_range_list));
+            options.taskstep = ocs::tom::get<RN_step>(lFirst(task_id_range_list));
             if (options.taskstep == 0) {
                options.taskstep = 1;
             }
@@ -605,7 +606,7 @@ int main(int argc, char **argv) {
       bool has_domain = true;
 
       for_each_ep_lv(qref_pattern, queueref_list) {
-         name = lGetString(qref_pattern, QR_name);
+         name = ocs::tom::get<QR_name>(qref_pattern);
          cqueue_name_split(name, &cqueue_name, &host_or_hgroup,
                            &has_hostname, &has_domain);
          if (has_domain) {
@@ -622,7 +623,7 @@ int main(int argc, char **argv) {
          for_each_ep_lv(qref_pattern, queueref_list) {
             dstring qi_name = DSTRING_INIT;
             const char *tmp_str = nullptr;
-            name = lGetString(qref_pattern, QR_name);
+            name = ocs::tom::get<QR_name>(qref_pattern);
 
             sge_dstring_copy_string(&qi_name, name);
 
@@ -632,7 +633,7 @@ int main(int argc, char **argv) {
                sge_dstring_append(&qi_name, "*");
             }
 
-            lAddElemStr(&options.queue_name_list, QR_name, sge_dstring_get_string(&qi_name), QR_Type);
+            ocs::tom::emplace_back<QR_name>(&options.queue_name_list, sge_dstring_get_string(&qi_name));
 
             sge_dstring_free(&qi_name);
          }
@@ -803,15 +804,15 @@ int main(int argc, char **argv) {
          ** or the existing element to increase
          */
 
-         while (ep && ((options.slotsflag && (lGetUlong(ep, QAJ_slots) != dusage.slots)) ||
-                (options.granted_peflag && (sge_strnullcmp(lGetString(ep, QAJ_granted_pe), dusage.granted_pe))) ||
-                (options.departmentflag && (sge_strnullcmp(lGetString(ep, QAJ_department), dusage.department))) ||
-                (options.projectflag && (sge_strnullcmp(lGetString(ep, QAJ_project), dusage.project))) ||
-                (options.ownerflag && (sge_strnullcmp(lGetString(ep, QAJ_owner), dusage.owner))) ||
-                (options.hostflag && (sge_hostcmp(lGetHost(ep, QAJ_host), dusage.hostname))) ||
-                (options.queueflag && (sge_strnullcmp(lGetString(ep, QAJ_queue), dusage.qname))) ||
-                (options.groupflag && (sge_strnullcmp(lGetString(ep, QAJ_group) , dusage.group))) ||
-                (options.arflag && (lGetUlong(ep, QAJ_arid) != dusage.ar))
+         while (ep && ((options.slotsflag && (ocs::tom::get<QAJ_slots>(ep) != dusage.slots)) ||
+                (options.granted_peflag && (sge_strnullcmp(ocs::tom::get<QAJ_granted_pe>(ep), dusage.granted_pe))) ||
+                (options.departmentflag && (sge_strnullcmp(ocs::tom::get<QAJ_department>(ep), dusage.department))) ||
+                (options.projectflag && (sge_strnullcmp(ocs::tom::get<QAJ_project>(ep), dusage.project))) ||
+                (options.ownerflag && (sge_strnullcmp(ocs::tom::get<QAJ_owner>(ep), dusage.owner))) ||
+                (options.hostflag && (sge_hostcmp(ocs::tom::get<QAJ_host>(ep), dusage.hostname))) ||
+                (options.queueflag && (sge_strnullcmp(ocs::tom::get<QAJ_queue>(ep), dusage.qname))) ||
+                (options.groupflag && (sge_strnullcmp(ocs::tom::get<QAJ_group>(ep) , dusage.group))) ||
+                (options.arflag && (ocs::tom::get<QAJ_arid>(ep) != dusage.ar))
                 )){
              ep = lNextRW(ep);
          }
@@ -832,45 +833,45 @@ int main(int argc, char **argv) {
                     (int) dusage.slots, \
                     (int) dusage.ar);
 
-            lAddDouble(ep, QAJ_ru_wallclock, dusage.ru_wallclock);
+            ocs::tom::add<QAJ_ru_wallclock>(ep, dusage.ru_wallclock);
 
-            lAddDouble(ep, QAJ_ru_utime, dusage.ru_utime);
-            lAddDouble(ep, QAJ_ru_stime, dusage.ru_stime);
-            lAddDouble(ep, QAJ_cpu, dusage.cpu);
-            lAddDouble(ep, QAJ_mem, dusage.mem);
-            lAddDouble(ep, QAJ_io, dusage.io);
-            lAddDouble(ep, QAJ_iow, dusage.iow);
+            ocs::tom::add<QAJ_ru_utime>(ep, dusage.ru_utime);
+            ocs::tom::add<QAJ_ru_stime>(ep, dusage.ru_stime);
+            ocs::tom::add<QAJ_cpu>(ep, dusage.cpu);
+            ocs::tom::add<QAJ_mem>(ep, dusage.mem);
+            ocs::tom::add<QAJ_io>(ep, dusage.io);
+            ocs::tom::add<QAJ_iow>(ep, dusage.iow);
          } else {
             lListElem *new_ep;
 
             new_ep = lCreateElem(QAJ_Type);
 
             if (options.hostflag && dusage.hostname)
-               lSetHost(new_ep, QAJ_host, dusage.hostname);
+               ocs::tom::set<QAJ_host>(new_ep, dusage.hostname);
             if (options.queueflag && dusage.qname)
-               lSetString(new_ep, QAJ_queue, dusage.qname);
+               ocs::tom::set<QAJ_queue>(new_ep, dusage.qname);
             if (options.groupflag && dusage.group)
-               lSetString(new_ep, QAJ_group, dusage.group);
+               ocs::tom::set<QAJ_group>(new_ep, dusage.group);
             if (options.ownerflag && dusage.owner)
-               lSetString(new_ep, QAJ_owner, dusage.owner);
+               ocs::tom::set<QAJ_owner>(new_ep, dusage.owner);
             if (options.projectflag && dusage.project)
-               lSetString(new_ep, QAJ_project, dusage.project);
+               ocs::tom::set<QAJ_project>(new_ep, dusage.project);
             if (options.departmentflag && dusage.department)
-               lSetString(new_ep, QAJ_department, dusage.department);
+               ocs::tom::set<QAJ_department>(new_ep, dusage.department);
             if (options.granted_peflag && dusage.granted_pe)
-               lSetString(new_ep, QAJ_granted_pe, dusage.granted_pe);
+               ocs::tom::set<QAJ_granted_pe>(new_ep, dusage.granted_pe);
             if (options.slotsflag)
-               lSetUlong(new_ep, QAJ_slots, dusage.slots);
+               ocs::tom::set<QAJ_slots>(new_ep, dusage.slots);
             if (options.arflag)
-               lSetUlong(new_ep, QAJ_arid, dusage.ar);
+               ocs::tom::set<QAJ_arid>(new_ep, dusage.ar);
 
-            lSetDouble(new_ep, QAJ_ru_wallclock, dusage.ru_wallclock);
-            lSetDouble(new_ep, QAJ_ru_utime, dusage.ru_utime);
-            lSetDouble(new_ep, QAJ_ru_stime, dusage.ru_stime);
-            lSetDouble(new_ep, QAJ_cpu, dusage.cpu);
-            lSetDouble(new_ep, QAJ_mem, dusage.mem);
-            lSetDouble(new_ep, QAJ_io,  dusage.io);
-            lSetDouble(new_ep, QAJ_iow, dusage.iow);
+            ocs::tom::set<QAJ_ru_wallclock>(new_ep, dusage.ru_wallclock);
+            ocs::tom::set<QAJ_ru_utime>(new_ep, dusage.ru_utime);
+            ocs::tom::set<QAJ_ru_stime>(new_ep, dusage.ru_stime);
+            ocs::tom::set<QAJ_cpu>(new_ep, dusage.cpu);
+            ocs::tom::set<QAJ_mem>(new_ep, dusage.mem);
+            ocs::tom::set<QAJ_io>(new_ep,  dusage.io);
+            ocs::tom::set<QAJ_iow>(new_ep, dusage.iow);
 
             lInsertSorted(sort_order, new_ep, sorted_list);
          }
@@ -1020,13 +1021,13 @@ int main(int argc, char **argv) {
             ** we can't ignore it because it was a line in the
             ** accounting file
             */
-            print_full(column_sizes.host, ((cp = lGetHost(ep, QAJ_host)) ? cp : ""));
+            print_full(column_sizes.host, ((cp = ocs::tom::get<QAJ_host>(ep)) ? cp : ""));
          }
          if (options.queueflag) {
             if (ep == nullptr) {
                break;
             }
-            print_full(column_sizes.queue, ((cp = lGetString(ep, QAJ_queue)) ? cp : ""));
+            print_full(column_sizes.queue, ((cp = ocs::tom::get<QAJ_queue>(ep)) ? cp : ""));
          }
          if (options.group != nullptr) {
             print_full(column_sizes.group, options.group);
@@ -1034,7 +1035,7 @@ int main(int argc, char **argv) {
             if (ep == nullptr) {
                break;
             }
-            print_full(column_sizes.group, ((cp = lGetString(ep, QAJ_group)) ? cp : ""));
+            print_full(column_sizes.group, ((cp = ocs::tom::get<QAJ_group>(ep)) ? cp : ""));
          }
          if (options.owner != nullptr) {
             print_full(column_sizes.owner, options.owner);
@@ -1043,7 +1044,7 @@ int main(int argc, char **argv) {
             if (ep == nullptr) {
                break;
             }
-            print_full(column_sizes.owner, ((cp = lGetString(ep, QAJ_owner)) ? cp : "") );
+            print_full(column_sizes.owner, ((cp = ocs::tom::get<QAJ_owner>(ep)) ? cp : "") );
          }
          if (options.project != nullptr) {
               print_full(column_sizes.project, options.project);
@@ -1052,7 +1053,7 @@ int main(int argc, char **argv) {
             if (ep == nullptr) {
                break;
             }
-            print_full(column_sizes.project ,((cp = lGetString(ep, QAJ_project)) ? cp : ""));
+            print_full(column_sizes.project ,((cp = ocs::tom::get<QAJ_project>(ep)) ? cp : ""));
          }
          if (options.department != nullptr) {
             print_full(column_sizes.department, options.department);
@@ -1060,7 +1061,7 @@ int main(int argc, char **argv) {
             if (ep == nullptr) {
                break;
             }
-            print_full(column_sizes.department, ((cp = lGetString(ep, QAJ_department)) ? cp : ""));
+            print_full(column_sizes.department, ((cp = ocs::tom::get<QAJ_department>(ep)) ? cp : ""));
          }
          if (options.granted_pe != nullptr) {
             print_full(column_sizes.granted_pe, options.granted_pe);
@@ -1068,7 +1069,7 @@ int main(int argc, char **argv) {
             if (ep == nullptr) {
                break;
             }
-            print_full(column_sizes.granted_pe, ((cp = lGetString(ep, QAJ_granted_pe)) ? cp : ""));
+            print_full(column_sizes.granted_pe, ((cp = ocs::tom::get<QAJ_granted_pe>(ep)) ? cp : ""));
          }
          if (options.slots > 0) {
             print_full_ulong(column_sizes.slots, options.slots);
@@ -1076,7 +1077,7 @@ int main(int argc, char **argv) {
             if (ep == nullptr) {
                break;
             }
-            print_full_ulong(column_sizes.slots, lGetUlong(ep, QAJ_slots));
+            print_full_ulong(column_sizes.slots, ocs::tom::get<QAJ_slots>(ep));
          }
 
          if (options.ar_number > 0) {
@@ -1085,18 +1086,18 @@ int main(int argc, char **argv) {
             if (ep == nullptr) {
                break;
             }
-            print_full_ulong(column_sizes.arid, lGetUlong(ep, QAJ_arid));
+            print_full_ulong(column_sizes.arid, ocs::tom::get<QAJ_arid>(ep));
          }
 
          if (summary_view) {
              printf("%13.0f %13.3f %13.3f %13.3f %18.3f %18.3f %18.3f\n",
-                   lGetDouble(ep, QAJ_ru_wallclock),
-                   lGetDouble(ep, QAJ_ru_utime),
-                   lGetDouble(ep, QAJ_ru_stime),
-                   lGetDouble(ep, QAJ_cpu),
-                   lGetDouble(ep, QAJ_mem),
-                   lGetDouble(ep, QAJ_io),
-                   lGetDouble(ep, QAJ_iow));
+                   ocs::tom::get<QAJ_ru_wallclock>(ep),
+                   ocs::tom::get<QAJ_ru_utime>(ep),
+                   ocs::tom::get<QAJ_ru_stime>(ep),
+                   ocs::tom::get<QAJ_cpu>(ep),
+                   ocs::tom::get<QAJ_mem>(ep),
+                   ocs::tom::get<QAJ_io>(ep),
+                   ocs::tom::get<QAJ_iow>(ep));
 
             ep = lNext(ep);
             if (ep == nullptr) {
@@ -1220,7 +1221,7 @@ static void calc_column_sizes(const lListElem* ep, sge_qacct_columns* column_siz
       lep = ep;
       while (lep) {
          /* host  */
-         tmp_string = lGetHost(lep, QAJ_host);
+         tmp_string = ocs::tom::get<QAJ_host>(lep);
          if (tmp_string != nullptr) {
             tmp_length = strlen(tmp_string);
             if (column_size_data->host <= tmp_length) {
@@ -1228,7 +1229,7 @@ static void calc_column_sizes(const lListElem* ep, sge_qacct_columns* column_siz
             }
          }
          /* queue */
-         tmp_string = lGetString(lep, QAJ_queue);
+         tmp_string = ocs::tom::get<QAJ_queue>(lep);
          if (tmp_string != nullptr) {
             tmp_length = strlen(tmp_string);
             if (column_size_data->queue <= tmp_length) {
@@ -1236,7 +1237,7 @@ static void calc_column_sizes(const lListElem* ep, sge_qacct_columns* column_siz
             }
          }
          /* group */
-         tmp_string = lGetString(lep, QAJ_group) ;
+         tmp_string = ocs::tom::get<QAJ_group>(lep) ;
          if (tmp_string != nullptr) {
             tmp_length = strlen(tmp_string);
             if (column_size_data->group <= tmp_length) {
@@ -1244,7 +1245,7 @@ static void calc_column_sizes(const lListElem* ep, sge_qacct_columns* column_siz
             }
          }
          /* owner */
-         tmp_string = lGetString(lep, QAJ_owner);
+         tmp_string = ocs::tom::get<QAJ_owner>(lep);
          if (tmp_string != nullptr) {
             tmp_length = strlen(tmp_string);
             if (column_size_data->owner <= tmp_length) {
@@ -1252,7 +1253,7 @@ static void calc_column_sizes(const lListElem* ep, sge_qacct_columns* column_siz
             }
          }
          /* project */
-         tmp_string = lGetString(lep, QAJ_project);
+         tmp_string = ocs::tom::get<QAJ_project>(lep);
          if (tmp_string != nullptr) {
             tmp_length = strlen(tmp_string);
             if (column_size_data->project <= tmp_length) {
@@ -1261,7 +1262,7 @@ static void calc_column_sizes(const lListElem* ep, sge_qacct_columns* column_siz
          }
 
          /* department  */
-         tmp_string = lGetString(lep, QAJ_department);
+         tmp_string = ocs::tom::get<QAJ_department>(lep);
          if ( tmp_string != nullptr ) {
             tmp_length = strlen(tmp_string);
             if (column_size_data->department <= tmp_length) {
@@ -1269,7 +1270,7 @@ static void calc_column_sizes(const lListElem* ep, sge_qacct_columns* column_siz
             }
          }
          /* granted_pe */
-         tmp_string = lGetString(lep, QAJ_granted_pe) ;
+         tmp_string = ocs::tom::get<QAJ_granted_pe>(lep) ;
          if ( tmp_string != nullptr ) {
             tmp_length = strlen(tmp_string);
             if (column_size_data->granted_pe <= tmp_length) {
@@ -1278,14 +1279,14 @@ static void calc_column_sizes(const lListElem* ep, sge_qacct_columns* column_siz
          }
 
          /* slots */
-         snprintf(tmp_buf, sizeof(tmp_buf), "%5" sge_fu32, lGetUlong(lep, QAJ_slots));
+         snprintf(tmp_buf, sizeof(tmp_buf), "%5" sge_fu32, ocs::tom::get<QAJ_slots>(lep));
          tmp_length = strlen(tmp_buf);
          if (column_size_data->slots <= tmp_length) {
             column_size_data->slots  = tmp_length + 1;
          }
 
          /* advance reservations */
-         snprintf(tmp_buf, sizeof(tmp_buf), "%5" sge_fu32, lGetUlong(lep, QAJ_arid));
+         snprintf(tmp_buf, sizeof(tmp_buf), "%5" sge_fu32, ocs::tom::get<QAJ_arid>(lep));
          tmp_length = strlen(tmp_buf);
          if (column_size_data->arid <= tmp_length) {
             column_size_data->arid = tmp_length + 1;
@@ -1551,12 +1552,12 @@ static void showjob(sge_rusage_type *dusage) {
       // print the custom usage values (reporting_params usage_patterns) which are not
       // already printed as standard attribute. CS-849: a string value is printed as it is.
       for_each_ep_lv(ep, dusage->other_usage) {
-         const char *name = lGetString(ep, UA_name);
+         const char *name = ocs::tom::get<UA_name>(ep);
          if (!is_showjob_standard_name(name)) {
-            const char *svalue = lGetString(ep, UA_svalue);
+            const char *svalue = ocs::tom::get<UA_svalue>(ep);
             char buffer[64];
             printf(SHOWJOB_CUSTOM_USAGE, name,
-                   svalue != nullptr ? svalue : format_custom_usage(lGetDouble(ep, UA_value), buffer));
+                   svalue != nullptr ? svalue : format_custom_usage(ocs::tom::get<UA_value>(ep), buffer));
          }
       }
    }
@@ -1751,7 +1752,7 @@ static bool matches_queue_name_list(sge_rusage_type *d, const lList *queue_name_
    qinstance = sge_dstring_sprintf(&dstr, "%s@%s", d->qname, d->hostname);
 
    for_each_ep_lv(ep, queue_name_list) {
-      if (fnmatch(lGetString(ep, QR_name), qinstance, 0) == 0) {
+      if (fnmatch(ocs::tom::get<QR_name>(ep), qinstance, 0) == 0) {
          ret = true;
          break;
       }
@@ -2383,18 +2384,18 @@ sge_read_rusage_json(const char *line, sge_rusage_type *d, sge_qacct_options *op
                const rapidjson::Value &json_usage = itr->value;
                for (rapidjson::Value::ConstMemberIterator usage_itr = json_usage.MemberBegin(); usage_itr != json_usage.MemberEnd(); ++usage_itr) {
                   const char *name = usage_itr->name.GetString();
-                  lListElem *ep = lGetElemStrRW(d->other_usage, UA_name, name);
+                  lListElem *ep = ocs::tom::find_first_rw<UA_name>(d->other_usage, name);
                   if (ep != nullptr) {
                      continue;   // first-wins per pre-CS-849 semantics
                   }
-                  ep = lAddElemStr(&(d->other_usage), UA_name, name, UA_Type);
+                  ep = ocs::tom::emplace_back<UA_name>(&(d->other_usage), name);
                   if (ep == nullptr) {
                      continue;
                   }
                   if (usage_itr->value.IsString()) {
-                     lSetString(ep, UA_svalue, usage_itr->value.GetString());
+                     ocs::tom::set<UA_svalue>(ep, usage_itr->value.GetString());
                   } else if (usage_itr->value.IsNumber()) {
-                     lSetDouble(ep, UA_value, usage_itr->value.GetDouble());
+                     ocs::tom::set<UA_value>(ep, usage_itr->value.GetDouble());
                   }
                   // other types (bool, array, object, null): entry created
                   // with a name but no value — matches the shepherd-side

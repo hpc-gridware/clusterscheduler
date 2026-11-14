@@ -48,6 +48,7 @@
 #include "uti/msg_utilib.h"
 
 #include "sgeobj/sge_str.h"
+#include "tom/ocs_Element.h"
 
 #include "spool/sge_dirent.h"
 
@@ -90,7 +91,7 @@ lList *sge_get_dirents(const char *path) {
          continue;             
       if (strcmp(dent->d_name, "..") == 0 || strcmp(dent->d_name, ".") == 0)
          continue;
-      lAddElemStr(&entries, ST_name, dent->d_name, ST_Type);
+      ocs::tom::emplace_back<ST_name>(&entries, dent->d_name);
    }
    closedir(cwd);
 
@@ -112,7 +113,7 @@ uint32_t sge_count_dirents(char *directory_name) {
    uint32_t entries = 0;
    lList *dir_entries = sge_get_dirents(directory_name);
    for_each_ep_lv(dir_entry, dir_entries) {
-      const char *entry = lGetString(dir_entry, ST_name);
+      const char *entry = ocs::tom::get<ST_name>(dir_entry);
       if (strcmp(entry, ".") && strcmp(entry, "..")) {
          entries++;
       }
@@ -142,7 +143,7 @@ int has_more_dirents(char *directory_name, uint32_t number_of_entries) {
  
    lList *dir_entries = sge_get_dirents(directory_name);
    for_each_ep_lv(dir_entry, dir_entries) {
-      const char *entry = lGetString(dir_entry, ST_name);
+      const char *entry = ocs::tom::get<ST_name>(dir_entry);
       if (strcmp(entry, ".") && strcmp(entry, "..")) {
          entries++;
          if (entries > number_of_entries) {

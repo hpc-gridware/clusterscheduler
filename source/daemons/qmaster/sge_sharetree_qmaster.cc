@@ -51,6 +51,8 @@
 #include "sgeobj/cull_parse_util.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_userprj.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_STN.h"
 
 #include "sge_persistence_qmaster.h"
 #include "sge_sharetree_qmaster.h"
@@ -136,12 +138,12 @@ sge_mod_sharetree(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep,
          We simply replace the old element with the new one. If there is no
          old we simle add the new. */
 
-      prev_version = lGetUlong(lFirst(*lpp), STN_version);
+      prev_version = ocs::tom::get<STN_version>(lFirst(*lpp));
       lRemoveElem(*lpp, &first);
       adding = 0;
    }
 
-   lSetUlong(ep, STN_version, prev_version + 1);
+   ocs::tom::set<STN_version>(ep, prev_version + 1);
 
    id_sharetree(alpp, ep, 0, nullptr);
 
@@ -232,17 +234,17 @@ check_sharetree(lList **alpp, lListElem *node, const lList *user_list, const lLi
    const lList *children;
    const lListElem *remaining;
    lList *save_found = nullptr;
-   const char *name = lGetString(node, STN_name);
+   const char *name = ocs::tom::get<STN_name>(node);
    lListElem *pep;
 
    /* Check for dangling or circular references. */
    if (name == nullptr) {
-      ERROR(MSG_STREE_NOVALIDNODEREF_U, lGetUlong(node, STN_id));
+      ERROR(MSG_STREE_NOVALIDNODEREF_U, ocs::tom::get<STN_id>(node));
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(-1);
    }
 
-   if ((children = lGetList(node, STN_children))) {
+   if ((children = ocs::tom::get<STN_children>(node))) {
 
       /* not a leaf node */
 
@@ -251,20 +253,20 @@ check_sharetree(lList **alpp, lListElem *node, const lList *user_list, const lLi
 
          /* check for sub-projects (not allowed) */
          if (project) {
-            ERROR(MSG_STREE_PRJINPTJSUBTREE_SS, name, lGetString(project, PR_name));
+            ERROR(MSG_STREE_PRJINPTJSUBTREE_SS, name, ocs::tom::get<PR_name>(project));
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             DRETURN(-1);
          }
 
          /* check for projects appearing more than once */
-         if (lGetElemStr(*found, STN_name, name)) {
+         if (ocs::tom::find_first<STN_name>(*found, name)) {
             ERROR(MSG_STREE_PRJTWICE_S, name);
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             DRETURN(-1);
          }
 
          /* register that this project was found */
-         lAddElemStr(found, STN_name, name, STN_Type);
+         ocs::tom::emplace_back<STN_name>(found, name);
 
          /* set up for project sub-tree recursion */
          project = pep;
@@ -281,8 +283,8 @@ check_sharetree(lList **alpp, lListElem *node, const lList *user_list, const lLi
       for_each_rw_lv(child, children) {
          /* ensure pathes are identically inside share tree */
          for (remaining = lNext(child); remaining; remaining = lNext(remaining)) {
-            const char *cn = lGetString(child, STN_name);
-            const char *rn = lGetString(remaining, STN_name);
+            const char *cn = ocs::tom::get<STN_name>(child);
+            const char *rn = ocs::tom::get<STN_name>(remaining);
             if (cn == nullptr || rn == nullptr) {
                ERROR(MSG_GDI_KEYSTR_NULL_S, "STN_name");
                answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
@@ -294,7 +296,7 @@ check_sharetree(lList **alpp, lListElem *node, const lList *user_list, const lLi
                DRETURN(-1);
             }
             if (!strcmp(cn, rn)) {
-               ERROR(MSG_SGETEXT_FOUND_UP_TWICE_SS, cn, lGetString(node, STN_name));
+               ERROR(MSG_SGETEXT_FOUND_UP_TWICE_SS, cn, ocs::tom::get<STN_name>(node));
                answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
                /* restore old found list */
                if (save_found) {
@@ -326,7 +328,7 @@ check_sharetree(lList **alpp, lListElem *node, const lList *user_list, const lLi
 
       /* check if this is a project node */
       if (prj_list_locate(project_list, name)) {
-         lSetUlong(node, STN_type, STT_PROJECT);
+         ocs::tom::set<STN_type>(node, STT_PROJECT);
       }
 
       if (project) {
@@ -335,7 +337,7 @@ check_sharetree(lList **alpp, lListElem *node, const lList *user_list, const lLi
 
          /* check for sub-projects */
          if (prj_list_locate(project_list, name)) {
-            ERROR(MSG_STREE_PRJINPTJSUBTREE_SS, name, lGetString(project, PR_name));
+            ERROR(MSG_STREE_PRJINPTJSUBTREE_SS, name, ocs::tom::get<PR_name>(project));
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             DRETURN(-1);
          }
@@ -349,8 +351,8 @@ check_sharetree(lList **alpp, lListElem *node, const lList *user_list, const lLi
          }
 
          /* make sure this user is in the project sub-tree once */
-         if (lGetElemStr(*found, STN_name, name)) {
-            ERROR(MSG_STREE_USERTWICEINPRJSUBTREE_SS, name, lGetString(project, PR_name));
+         if (ocs::tom::find_first<STN_name>(*found, name)) {
+            ERROR(MSG_STREE_USERTWICEINPRJSUBTREE_SS, name, ocs::tom::get<PR_name>(project));
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             DRETURN(-1);
          }
@@ -372,7 +374,7 @@ check_sharetree(lList **alpp, lListElem *node, const lList *user_list, const lLi
 
          /* make sure this user or project is in the non-project sub-tree 
             portion of the share tree only once */
-         if (lGetElemStr(*found, STN_name, name)) {
+         if (ocs::tom::find_first<STN_name>(*found, name)) {
             ERROR(MSG_STREE_USERPRJTWICE_SS, objname, name);
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             DRETURN(-1);
@@ -381,7 +383,7 @@ check_sharetree(lList **alpp, lListElem *node, const lList *user_list, const lLi
       }
 
       /* register that this was found */
-      lAddElemStr(found, STN_name, name, STN_Type);
+      ocs::tom::emplace_back<STN_name>(found, name);
    }
 
    DRETURN(0);
@@ -428,7 +430,7 @@ update_sharetree(lList *dst, const lList *src) {
 
       /* ensure STN_version of both root nodes are identically */
 
-      if (dnode && (dv = lGetUlong(dnode, STN_version)) != (sv = lGetUlong(snode, STN_version))) {
+      if (dnode && (dv = ocs::tom::get<STN_version>(dnode)) != (sv = ocs::tom::get<STN_version>(snode))) {
          ERROR(MSG_STREE_VERSIONMISMATCH_II, dv, sv);
          depth = 0;
          DRETURN(-1);
@@ -442,21 +444,21 @@ update_sharetree(lList *dst, const lList *src) {
          if (!(snode = lGetElemStr(src, STN_name, d_name))) {
 #endif
    for_each_ep(snode, src) {
-      s_name = lGetString(snode, STN_name);
-      if (!(dnode = lGetElemStrRW(dst, STN_name, s_name))) {
+      s_name = ocs::tom::get<STN_name>(snode);
+      if (!(dnode = ocs::tom::find_first_rw<STN_name>(dst, s_name))) {
          ERROR(MSG_STREE_MISSINGNODE_S, s_name);
          depth = 0;
          DRETURN(-1);
       }
 
       /* update fields */
-      lSetDouble(dnode, STN_m_share, lGetDouble(snode, STN_m_share));
-      lSetDouble(dnode, STN_last_actual_proportion, lGetDouble(snode, STN_last_actual_proportion));
-      lSetDouble(dnode, STN_adjusted_current_proportion, lGetDouble(snode, STN_adjusted_current_proportion));
-      lSetUlong(dnode, STN_job_ref_count, lGetUlong(snode, STN_job_ref_count));
+      ocs::tom::set<STN_m_share>(dnode, ocs::tom::get<STN_m_share>(snode));
+      ocs::tom::set<STN_last_actual_proportion>(dnode, ocs::tom::get<STN_last_actual_proportion>(snode));
+      ocs::tom::set<STN_adjusted_current_proportion>(dnode, ocs::tom::get<STN_adjusted_current_proportion>(snode));
+      ocs::tom::set<STN_job_ref_count>(dnode, ocs::tom::get<STN_job_ref_count>(snode));
 
       /* enter recursion */
-      if (update_sharetree(lGetListRW(dnode, STN_children), lGetList(snode, STN_children)) != 0) {
+      if (update_sharetree(ocs::tom::get<STN_children>(dnode), ocs::tom::get<STN_children>(snode)) != 0) {
          DRETURN(-1);
       }
    }
@@ -483,10 +485,10 @@ getNode(const lList *share_tree, const char *name, int node_type, int recurse) {
    }
 
    for_each_rw_lv (node, share_tree) {
-      if (!strcmp(name, lGetString(node, STN_name))) {
+      if (!strcmp(name, ocs::tom::get<STN_name>(node))) {
          DRETURN(node);
       }
-      if ((tmp = getNode(lGetList(node, STN_children), name, node_type, 1))) {
+      if ((tmp = getNode(ocs::tom::get<STN_children>(node), name, node_type, 1))) {
          DRETURN(tmp);
       }
    }

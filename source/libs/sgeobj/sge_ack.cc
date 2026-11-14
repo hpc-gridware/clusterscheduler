@@ -46,6 +46,7 @@
 
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_ack.h"
+#include "tom/ocs_Element.h"
 
 #include "gdi/ocs_gdi_ClientBase.h"
 #include "gdi/ocs_gdi_ClientServerBase.h"
@@ -66,10 +67,10 @@ int pack_ack(sge_pack_buffer *pb, uint32_t type, uint32_t id, uint32_t id2, cons
    int ret;
    lListElem *ack = lCreateElem(ACK_Type);
 
-   lSetUlong(ack, ACK_type, type);
-   lSetUlong(ack, ACK_id, id);
-   lSetUlong(ack, ACK_id2, id2);
-   lSetString(ack, ACK_str, str);
+   ocs::tom::set<ACK_type>(ack, type);
+   ocs::tom::set<ACK_id>(ack, id);
+   ocs::tom::set<ACK_id2>(ack, id2);
+   ocs::tom::set<ACK_str>(ack, str);
 
    ret = cull_pack_elem(pb, ack);
    lFreeElem(&ack);

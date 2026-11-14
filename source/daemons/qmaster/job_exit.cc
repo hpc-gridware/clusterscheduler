@@ -50,6 +50,9 @@
 #include "sgeobj/sge_report.h"
 #include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_answer.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_JG.h"
+#include "sgeobj/tom/ocs_tom_QU.h"
 
 #include "ocs_ReportingFileWriter.h"
 #include "sge_give_jobs.h"
@@ -100,30 +103,30 @@ sge_job_exit(lListElem *jr, lListElem *jep, lListElem *jatep, monitoring_t *moni
    /* JG: TODO: we'd prefer some more precise timestamp, e.g. from jr */
    uint64_t timestamp = sge_get_gmt64();
 
-   qname = lGetString(jr, JR_queue_name);
+   qname = ocs::tom::get<JR_queue_name>(jr);
    if (qname == nullptr) {
       qname = (char *) MSG_OBJ_UNKNOWNQ;
    }
 
-   err_str = lGetString(jr, JR_err_str);
+   err_str = ocs::tom::get<JR_err_str>(jr);
    if (err_str == nullptr) {
       err_str = MSG_UNKNOWNREASON;
    }
 
-   jobid = lGetUlong(jr, JR_job_number);
-   jataskid = lGetUlong(jr, JR_ja_task_number);
-   failed = lGetUlong(jr, JR_failed);
-   general_failure = lGetUlong(jr, JR_general_failure);
+   jobid = ocs::tom::get<JR_job_number>(jr);
+   jataskid = ocs::tom::get<JR_ja_task_number>(jr);
+   failed = ocs::tom::get<JR_failed>(jr);
+   general_failure = ocs::tom::get<JR_general_failure>(jr);
 
    cancel_job_resend(jobid, jataskid);
 
    /* This only has a meaning for Hibernator jobs. The job pid must
     * be saved accross restarts, since jobs get their old pid
     */
-   lSetUlong(jatep, JAT_pvm_ckpt_pid, lGetUlong(jr, JR_job_pid));
+   ocs::tom::set<JAT_pvm_ckpt_pid>(jatep, ocs::tom::get<JR_job_pid>(jr));
 
    DPRINTF("reaping job " sge_u32 "." sge_u32 " in queue >%s< job_pid " sge_u32 "\n",
-           jobid, jataskid, qname, lGetUlong(jatep, JAT_pvm_ckpt_pid));
+           jobid, jataskid, qname, ocs::tom::get<JAT_pvm_ckpt_pid>(jatep));
 
    queueep = cqueue_list_locate_qinstance(master_cqueue_list, qname);
    if (queueep == nullptr) {
@@ -134,7 +137,7 @@ sge_job_exit(lListElem *jr, lListElem *jep, lListElem *jatep, monitoring_t *moni
 
    /* retrieve hostname for later use */
    if (queueep != nullptr) {
-      hostname = lGetHost(queueep, QU_qhostname);
+      hostname = ocs::tom::get<QU_qhostname>(queueep);
    }
 
    if (failed) {        /* a problem occurred */
@@ -146,13 +149,13 @@ sge_job_exit(lListElem *jr, lListElem *jep, lListElem *jatep, monitoring_t *moni
    /*-------------------------------------------------*/
 
    /* test if this job is in state JRUNNING or JTRANSFERING */
-   if (lGetUlong(jatep, JAT_status) != JRUNNING &&
-       lGetUlong(jatep, JAT_status) != JTRANSFERING) {
-      ERROR(MSG_JOB_JEXITNOTRUN_UU, lGetUlong(jep, JB_job_number), jataskid);
+   if (ocs::tom::get<JAT_status>(jatep) != JRUNNING &&
+       ocs::tom::get<JAT_status>(jatep) != JTRANSFERING) {
+      ERROR(MSG_JOB_JEXITNOTRUN_UU, ocs::tom::get<JB_job_number>(jep), jataskid);
       DRETURN_VOID;
    }
 
-   saved_gdil = lCopyList("cpy", lGetList(jatep, JAT_granted_destin_identifier_list));
+   saved_gdil = lCopyList("cpy", ocs::tom::get<JAT_granted_destin_identifier_list>(jatep));
 
    /*
     * case 1: job being trashed because 
@@ -160,8 +163,8 @@ sge_job_exit(lListElem *jr, lListElem *jep, lListElem *jatep, monitoring_t *moni
     *    --> job was deleted
     *    --> a failed batch job that explicitely shall not enter error state
     */
-   if (((lGetUlong(jatep, JAT_state) & JDELETED) == JDELETED) || (failed && !lGetString(jep, JB_exec_file)) ||
-       (failed && general_failure == GFSTATE_JOB && JOB_TYPE_IS_NO_ERROR(lGetUlong(jep, JB_type)))) {
+   if (((ocs::tom::get<JAT_state>(jatep) & JDELETED) == JDELETED) || (failed && !ocs::tom::get<JB_exec_file>(jep)) ||
+       (failed && general_failure == GFSTATE_JOB && JOB_TYPE_IS_NO_ERROR(ocs::tom::get<JB_type>(jep)))) {
       ocs::ReportingFileWriter::create_acct_records(nullptr, jr, jep, jatep, false);
       /* JG: TODO: we need more information in the log message */
       ocs::ReportingFileWriter::create_job_logs(nullptr, timestamp, JL_DELETED, MSG_EXECD, hostname, jr, jep, jatep, nullptr,
@@ -172,8 +175,8 @@ sge_job_exit(lListElem *jr, lListElem *jep, lListElem *jatep, monitoring_t *moni
        * removal check must run AFTER the commit because qinstance_slots_used() on
        * the AR's reserved queues only drops once sge_clear_granted_resources()
        * inside sge_commit_job() has released this job's bookings. */
-      uint32_t job_ar_id = lGetUlong(jep, JB_ar);
-      bool job_was_deleted = (lGetUlong(jatep, JAT_state) & JDELETED) == JDELETED;
+      uint32_t job_ar_id = ocs::tom::get<JB_ar>(jep);
+      bool job_was_deleted = (ocs::tom::get<JAT_state>(jatep) & JDELETED) == JDELETED;
 
       sge_commit_job(jep, jatep, jr, COMMIT_ST_FINISHED_FAILED_EE, COMMIT_DEFAULT | COMMIT_NEVER_RAN, monitor, gdi_session);
 
@@ -181,11 +184,11 @@ sge_job_exit(lListElem *jr, lListElem *jep, lListElem *jatep, monitoring_t *moni
          /* get AR and remove it if no other jobs are debited */
          lListElem *ar = ar_list_locate(master_ar_list, job_ar_id);
 
-         if (ar != nullptr && lGetUlong(ar, AR_state) == AR_DELETED) {
+         if (ar != nullptr && ocs::tom::get<AR_state>(ar) == AR_DELETED) {
             const lListElem *ar_queue;
-            uint32_t ar_id = lGetUlong(ar, AR_id);
+            uint32_t ar_id = ocs::tom::get<AR_id>(ar);
 
-            for_each_ep(ar_queue, lGetList(ar, AR_reserved_queues)) {
+            for_each_ep(ar_queue, static_cast<const lList *>(ocs::tom::get<AR_reserved_queues>(ar))) {
                if (qinstance_slots_used(ar_queue) != 0) {
                   break;
                }
@@ -213,12 +216,12 @@ sge_job_exit(lListElem *jr, lListElem *jep, lListElem *jatep, monitoring_t *moni
        *    --> application controlled job error
        */
    else if ((failed && general_failure == GFSTATE_JOB)) {
-      DPRINTF("set job " sge_u32 "." sge_u32 " in ERROR state\n", lGetUlong(jep, JB_job_number), jataskid);
+      DPRINTF("set job " sge_u32 "." sge_u32 " in ERROR state\n", ocs::tom::get<JB_job_number>(jep), jataskid);
       ocs::ReportingFileWriter::create_acct_records(nullptr, jr, jep, jatep, false);
       /* JG: TODO: we need more information in the log message */
       ocs::ReportingFileWriter::create_job_logs(nullptr, timestamp, JL_ERROR, MSG_EXECD, hostname, jr, jep, jatep, nullptr,
                                MSG_LOG_JERRORSET);
-      lSetUlong64(jatep, JAT_start_time, 0);
+      ocs::tom::set<JAT_start_time>(jatep, 0);
       ja_task_message_add(jatep, 1, err_str);
       sge_commit_job(jep, jatep, jr, COMMIT_ST_FAILED_AND_ERROR, COMMIT_DEFAULT, monitor, gdi_session);
    }
@@ -234,21 +237,21 @@ sge_job_exit(lListElem *jr, lListElem *jep, lListElem *jatep, monitoring_t *moni
       ja_task_message_add(jatep, 1, err_str);
       sge_commit_job(jep, jatep, jr, COMMIT_ST_RESCHEDULED, COMMIT_DEFAULT, monitor, gdi_session);
       ocs::ReportingFileWriter::create_acct_records(nullptr, jr, jep, jatep, false);
-      lSetUlong64(jatep, JAT_start_time, 0);
+      ocs::tom::set<JAT_start_time>(jatep, 0);
    }
       /*
        * case 4: job being rescheduled because rerun specified or ckpt job
        */
    else if (((failed == ESSTATE_NO_EXITSTATUS) || failed == ESSTATE_DIED_THRU_SIGNAL) &&
-            ((lGetUlong(jep, JB_restart) == 1 || (lGetUlong(jep, JB_checkpoint_attr) & ~NO_CHECKPOINT)) ||
-             (!lGetUlong(jep, JB_restart) && (queueep != nullptr && lGetBool(queueep, QU_rerun))))) {
-      lSetUlong(jatep, JAT_job_restarted, MAX(lGetUlong(jatep, JAT_job_restarted), lGetUlong(jr, JR_ckpt_arena)));
-      lSetString(jatep, JAT_osjobid, lGetString(jr, JR_osjobid));
+            ((ocs::tom::get<JB_restart>(jep) == 1 || (ocs::tom::get<JB_checkpoint_attr>(jep) & ~NO_CHECKPOINT)) ||
+             (!ocs::tom::get<JB_restart>(jep) && (queueep != nullptr && ocs::tom::get<QU_rerun>(queueep))))) {
+      ocs::tom::set<JAT_job_restarted>(jatep, MAX(ocs::tom::get<JAT_job_restarted>(jatep), ocs::tom::get<JR_ckpt_arena>(jr)));
+      ocs::tom::set<JAT_osjobid>(jatep, ocs::tom::get<JR_osjobid>(jr));
       ocs::ReportingFileWriter::create_acct_records(nullptr, jr, jep, jatep, false);
       /* JG: TODO: we need more information in the log message */
       ocs::ReportingFileWriter::create_job_logs(nullptr, timestamp, JL_RESTART, MSG_EXECD, hostname, jr, jep, jatep, nullptr,
                                MSG_LOG_JRERUNRESCHEDULE);
-      lSetUlong64(jatep, JAT_start_time, 0);
+      ocs::tom::set<JAT_start_time>(jatep, 0);
       sge_commit_job(jep, jatep, jr, COMMIT_ST_RESCHEDULED, COMMIT_DEFAULT, monitor, gdi_session);
    }
       /*
@@ -257,12 +260,12 @@ sge_job_exit(lListElem *jr, lListElem *jep, lListElem *jatep, monitoring_t *moni
    else if (failed == SSTATE_MIGRATE) {
       DTRACE;
       /* job_restarted == 2 means a checkpoint in the ckpt arena */
-      lSetUlong(jatep, JAT_job_restarted, MAX(lGetUlong(jatep, JAT_job_restarted), lGetUlong(jr, JR_ckpt_arena)));
-      lSetString(jatep, JAT_osjobid, lGetString(jr, JR_osjobid));
+      ocs::tom::set<JAT_job_restarted>(jatep, MAX(ocs::tom::get<JAT_job_restarted>(jatep), ocs::tom::get<JR_ckpt_arena>(jr)));
+      ocs::tom::set<JAT_osjobid>(jatep, ocs::tom::get<JR_osjobid>(jr));
       ocs::ReportingFileWriter::create_acct_records(nullptr, jr, jep, jatep, false);
       ocs::ReportingFileWriter::create_job_logs(nullptr, timestamp, JL_MIGRATE, MSG_EXECD, hostname, jr, jep, jatep, nullptr,
                                MSG_LOG_JCKPTRESCHEDULE);
-      lSetUlong64(jatep, JAT_start_time, 0);
+      ocs::tom::set<JAT_start_time>(jatep, 0);
       sge_commit_job(jep, jatep, jr, COMMIT_ST_RESCHEDULED, COMMIT_DEFAULT, monitor, gdi_session);
    }
       /*
@@ -270,12 +273,12 @@ sge_job_exit(lListElem *jr, lListElem *jep, lListElem *jatep, monitoring_t *moni
        *                            or because of a rerun e.g. triggered by qmod -r <jobid>
        */
    else if (failed == SSTATE_AGAIN) {
-      lSetUlong(jatep, JAT_job_restarted, MAX(lGetUlong(jatep, JAT_job_restarted), lGetUlong(jr, JR_ckpt_arena)));
-      lSetString(jatep, JAT_osjobid, lGetString(jr, JR_osjobid));
+      ocs::tom::set<JAT_job_restarted>(jatep, MAX(ocs::tom::get<JAT_job_restarted>(jatep), ocs::tom::get<JR_ckpt_arena>(jr)));
+      ocs::tom::set<JAT_osjobid>(jatep, ocs::tom::get<JR_osjobid>(jr));
       ocs::ReportingFileWriter::create_acct_records(nullptr, jr, jep, jatep, false);
       ocs::ReportingFileWriter::create_job_logs(nullptr, timestamp, JL_RESTART, MSG_EXECD, hostname, jr, jep, jatep, nullptr,
                                MSG_LOG_JNORESRESCHEDULE);
-      lSetUlong64(jatep, JAT_start_time, 0);
+      ocs::tom::set<JAT_start_time>(jatep, 0);
       sge_commit_job(jep, jatep, jr, COMMIT_ST_USER_RESCHEDULED, COMMIT_DEFAULT, monitor, gdi_session);
    }
       /*
@@ -295,27 +298,27 @@ sge_job_exit(lListElem *jr, lListElem *jep, lListElem *jatep, monitoring_t *moni
       ** in this case we have to halt all queues on this host
       */
       if (general_failure && general_failure == GFSTATE_HOST) {
-         hep = host_list_locate(master_ehost_list, lGetHost(queueep, QU_qhostname));
+         hep = host_list_locate(master_ehost_list, ocs::tom::get<QU_qhostname>(queueep));
          if (hep != nullptr) {
             const lListElem *cqueue = nullptr;
-            const char *host = lGetHost(hep, EH_name);
+            const char *host = ocs::tom::get<EH_name>(hep);
             dstring error = DSTRING_INIT;
 
             found_host = true;
 
             for_each_ep(cqueue, *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE)) {
-               const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
-               lListElem *qinstance = lGetElemHostRW(qinstance_list, QU_qhostname, host);
+               const lList *qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
+               lListElem *qinstance = ocs::tom::find_first_rw<QU_qhostname>(qinstance_list, host);
 
                if (qinstance != nullptr) {
 
                   sge_qmaster_qinstance_state_set_error(qinstance, true, gdi_session);
 
-                  sge_dstring_sprintf(&error, MSG_LOG_QERRORBYJOBHOST_SUS, lGetString(qinstance, QU_qname), jobid, host);
+                  sge_dstring_sprintf(&error, MSG_LOG_QERRORBYJOBHOST_SUS, ocs::tom::get<QU_qname>(qinstance), jobid, host);
                   qinstance_message_add(qinstance, QI_ERROR, sge_dstring_get_string(&error)); 
                   ERROR(SFNMAX, sge_dstring_get_string(&error));
-                  sge_event_spool(&answer_list, 0, sgeE_QINSTANCE_MOD, 0, 0, lGetString(qinstance, QU_qname),
-                                  lGetHost(qinstance, QU_qhostname), nullptr, qinstance, nullptr, nullptr, true, true, gdi_session);
+                  sge_event_spool(&answer_list, 0, sgeE_QINSTANCE_MOD, 0, 0, ocs::tom::get<QU_qname>(qinstance),
+                                  ocs::tom::get<QU_qhostname>(qinstance), nullptr, qinstance, nullptr, nullptr, true, true, gdi_session);
                }
             }
             sge_dstring_free(&error);
@@ -329,14 +332,14 @@ sge_job_exit(lListElem *jr, lListElem *jep, lListElem *jatep, monitoring_t *moni
          dstring error = DSTRING_INIT;
 
          sge_dstring_sprintf(&error, MSG_LOG_QERRORBYJOBHOST_SUS,
-                             lGetString(queueep, QU_qname), jobid, hostname);
+                             ocs::tom::get<QU_qname>(queueep), jobid, hostname);
 
          /* general error -> this queue cant run any job */
          sge_qmaster_qinstance_state_set_error(queueep, true, gdi_session);
          qinstance_message_add(queueep, QI_ERROR, sge_dstring_get_string(&error));
          ERROR(SFNMAX, sge_dstring_get_string(&error));
-         sge_event_spool(&answer_list, 0, sgeE_QINSTANCE_MOD, 0, 0, lGetString(queueep, QU_qname),
-                         lGetHost(queueep, QU_qhostname), nullptr, queueep, nullptr, nullptr, true, true, gdi_session);
+         sge_event_spool(&answer_list, 0, sgeE_QINSTANCE_MOD, 0, 0, ocs::tom::get<QU_qname>(queueep),
+                         ocs::tom::get<QU_qhostname>(queueep), nullptr, queueep, nullptr, nullptr, true, true, gdi_session);
          sge_dstring_free(&error);
       }
 

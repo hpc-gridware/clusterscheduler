@@ -57,6 +57,7 @@
 #include "sgeobj/sge_ckpt.h"
 #include "sgeobj/sge_str.h"
 #include "sgeobj/msg_sgeobjlib.h"
+#include "tom/ocs_Element.h"
 
 #include "symbols.h"
 #include "msg_common.h"
@@ -83,8 +84,8 @@ bool ckpt_is_referenced(const lListElem *ckpt, lList **answer_list,
 
    for_each_ep_lv(job, master_job_list) {
       if (job_is_ckpt_referenced(job, ckpt)) {
-         const char *ckpt_name = lGetString(ckpt, CK_name);
-         uint32_t job_id = lGetUlong(job, JB_job_number);
+         const char *ckpt_name = ocs::tom::get<CK_name>(ckpt);
+         uint32_t job_id = ocs::tom::get<JB_job_number>(job);
 
          answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
                                  ANSWER_QUALITY_INFO, MSG_CKPTREFINJOB_SU,
@@ -97,15 +98,15 @@ bool ckpt_is_referenced(const lListElem *ckpt, lList **answer_list,
       /* fix for bug 6422335
        * check the cq configuration for ckpt references instead of qinstances
        */
-      const char *ckpt_name = lGetString(ckpt, CK_name);
+      const char *ckpt_name = ocs::tom::get<CK_name>(ckpt);
 
       for_each_ep_lv(queue, master_cqueue_list) {
-         for_each_ep_lv(ckl, lGetList(queue, CQ_ckpt_list)){
-            if (lGetSubStr(ckl, ST_name, ckpt_name, ASTRLIST_value))  {
+         for_each_ep_lv(ckl, ocs::tom::get<CQ_ckpt_list>(queue)){
+            if (ocs::tom::find_first_in<ASTRLIST_value, ST_name>(ckl, ckpt_name))  {
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
                                        ANSWER_QUALITY_INFO, 
                                        MSG_CKPTREFINQUEUE_SS,
-                                       ckpt_name, lGetString(queue, CQ_name));
+                                       ckpt_name, ocs::tom::get<CQ_name>(queue));
                ret = true;
                break;
             }
@@ -126,7 +127,7 @@ bool ckpt_is_referenced(const lListElem *ckpt, lList **answer_list,
  * @return ckpt object with name "ckpt_name" does not exist !nullptr - pointer to the cull element (CK_Type)
  */
 lListElem *ckpt_list_locate(const lList *ckpt_list, const char *ckpt_name) {
-   return lGetElemStrRW(ckpt_list, CK_name, ckpt_name);
+   return ocs::tom::find_first_rw<CK_name>(ckpt_list, ckpt_name);
 }
 
 /**
@@ -220,7 +221,7 @@ int ckpt_validate(const lListElem *this_elem, lList **alpp) {
 
    /* -------- CK_name */
    if (verify_obj_name(
-         alpp, lGetString(this_elem, CK_name),
+         alpp, ocs::tom::get<CK_name>(this_elem),
          MAX_VERIFY_STRING, "checkpoint interface") != STATUS_OK) {
       DRETURN(STATUS_EUNKNOWN);
    }
@@ -229,7 +230,7 @@ int ckpt_validate(const lListElem *this_elem, lList **alpp) {
     * check if ckpt obj can be added
     * check allowed interfaces and license
     */
-   interface = lGetString(this_elem, CK_interface);
+   interface = ocs::tom::get<CK_interface>(this_elem);
    found = 0;
    /* handle nullptr pointer for interface name */
    if (interface == nullptr) {
@@ -254,14 +255,14 @@ int ckpt_validate(const lListElem *this_elem, lList **alpp) {
    for (i = 0; ckpt_commands[i].nm != NoName; i++) {
       if (replace_params(lGetString(this_elem, ckpt_commands[i].nm),
                nullptr, 0, ckpt_variables)) {
-         ERROR(MSG_OBJ_CKPTENV_SSS, ckpt_commands[i].text, lGetString(this_elem, CK_name), err_msg);
+         ERROR(MSG_OBJ_CKPTENV_SSS, ckpt_commands[i].text, ocs::tom::get<CK_name>(this_elem), err_msg);
          answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EEXIST);
       }
    }
 
    /* -------- CK_signal */
-   if ((s=lGetString(this_elem, CK_signal)) &&
+   if ((s=ocs::tom::get<CK_signal>(this_elem)) &&
          strcasecmp(s, "none") &&
          sge_sys_str2signal(s)==SIGUNKNOWN) {
       ERROR(MSG_CKPT_XISNOTASIGNALSTRING_S , s);
@@ -290,7 +291,7 @@ bool ckpt_list_do_all_exist(const lList *ckpt_list, lList **answer_list,
    bool ret = true;
 
    for_each_ep_lv(ckpt_ref_elem, ckpt_ref_list) {
-      const char *ckpt_ref_string = lGetString(ckpt_ref_elem, ST_name);
+      const char *ckpt_ref_string = ocs::tom::get<ST_name>(ckpt_ref_elem);
 
       if (ckpt_list_locate(ckpt_list, ckpt_ref_string) == nullptr) {
          answer_list_add_sprintf(answer_list, STATUS_EEXIST,
@@ -321,19 +322,19 @@ lListElem *sge_generic_ckpt(char *ckpt_name) {
    ep = lCreateElem(CK_Type);
 
    if (ckpt_name)
-      lSetString(ep, CK_name, ckpt_name);
+      ocs::tom::set<CK_name>(ep, ckpt_name);
    else
-      lSetString(ep, CK_name, "template");
+      ocs::tom::set<CK_name>(ep, "template");
 
-   lSetString(ep, CK_interface, "userdefined");
-   lSetString(ep, CK_ckpt_command, NONE_STR);
-   lSetString(ep, CK_migr_command, NONE_STR);
-   lSetString(ep, CK_rest_command, NONE_STR);
-   lSetString(ep, CK_clean_command, NONE_STR);
-   lSetString(ep, CK_ckpt_dir, "/tmp");
-   lSetString(ep, CK_when, "sx");
-   lSetString(ep, CK_signal, NONE_STR);
-   lSetUlong(ep, CK_job_pid, 0);
+   ocs::tom::set<CK_interface>(ep, "userdefined");
+   ocs::tom::set<CK_ckpt_command>(ep, NONE_STR);
+   ocs::tom::set<CK_migr_command>(ep, NONE_STR);
+   ocs::tom::set<CK_rest_command>(ep, NONE_STR);
+   ocs::tom::set<CK_clean_command>(ep, NONE_STR);
+   ocs::tom::set<CK_ckpt_dir>(ep, "/tmp");
+   ocs::tom::set<CK_when>(ep, "sx");
+   ocs::tom::set<CK_signal>(ep, NONE_STR);
+   ocs::tom::set<CK_job_pid>(ep, 0);
 
    DRETURN(ep);
 }

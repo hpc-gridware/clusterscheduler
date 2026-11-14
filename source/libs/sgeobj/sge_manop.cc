@@ -46,6 +46,8 @@
 #include "sgeobj/sge_userset.h"
 #include "sgeobj/sge_object.h"
 #include "sgeobj/ocs_DataStore.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_UE.h"
 
 #include <sge_conf.h>
 #include <cull/sge_userset_UE_L.h>
@@ -119,13 +121,13 @@ user_is_X_user(const ocs::gdi::Packet *packet, const lList *master_userset_list,
    DENTER(TOP_LAYER);
 
    // find the userset
-   const lListElem *userset = lGetElemStr(master_userset_list, US_name, userset_name);
+   const lListElem *userset = ocs::tom::find_first<US_name>(master_userset_list, userset_name);
    if (userset == nullptr) {
       DRETURN(false);
    }
 
    // text if it has enntries
-   const lList *user_entries_list = lGetList(userset, US_entries);
+   const lList *user_entries_list = ocs::tom::get<US_entries>(userset);
    if (user_entries_list == nullptr) {
       DRETURN(false);
    }

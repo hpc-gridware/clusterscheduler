@@ -55,6 +55,7 @@
 #include "gdi/msg_gdilib.h"
 
 #include "sgeobj/sge_pe_task.h"
+#include "tom/ocs_Element.h"
 
 #include "msg_common.h"
 
@@ -155,31 +156,31 @@ sge_qexecve(const char *hostname, const char *queuename, const char *cwd, const 
    /* ---- build up pe task request structure (see gdilib/sge_petaskL.h) */
    petrep = lCreateElem(PETR_Type);
 
-   lSetUlong(petrep, PETR_jobid, jobid);
-   lSetUlong(petrep, PETR_jataskid, jataskid);
-   lSetString(petrep, PETR_owner, myname);
-   lSetUlong64(petrep, PETR_submission_time, sge_get_gmt64());
+   ocs::tom::set<PETR_jobid>(petrep, jobid);
+   ocs::tom::set<PETR_jataskid>(petrep, jataskid);
+   ocs::tom::set<PETR_owner>(petrep, myname);
+   ocs::tom::set<PETR_submission_time>(petrep, sge_get_gmt64());
 
    if (cwd != nullptr) {
-      lSetString(petrep, PETR_cwd, cwd);
+      ocs::tom::set<PETR_cwd>(petrep, cwd);
    }
 
    if (environment != nullptr) {
-      lSetList(petrep, PETR_environment, lCopyList("environment", environment));
+      ocs::tom::set<PETR_environment>(petrep, lCopyList("environment", environment));
    }
 
    if (path_aliases != nullptr) {
-      lSetList(petrep, PETR_path_aliases, lCopyList("path_aliases", path_aliases));
+      ocs::tom::set<PETR_path_aliases>(petrep, lCopyList("path_aliases", path_aliases));
    }
 
 #if defined(OCS_WITH_OPENSSL)
    if (cert != nullptr) {
-      lSetString(petrep, PETR_cred, cert);
+      ocs::tom::set<PETR_cred>(petrep, cert);
    }
 #endif
 
    if (queuename != nullptr) {
-      lSetString(petrep, PETR_queuename, queuename);
+      ocs::tom::set<PETR_queuename>(petrep, queuename);
    }
 
    /* CS-2375: the qrsh -inherit task delivery to the execd is a single
@@ -236,13 +237,13 @@ sge_qexecve(const char *hostname, const char *queuename, const char *cwd, const 
    }
 
    /* add list into our remote task list */
-   rt = lAddElemStr(&remote_task_list, RT_tid, "none", RT_Type);
-   lSetHost(rt, RT_hostname, hostname);
-   lSetUlong(rt, RT_state, RT_STATE_WAIT4ACK);
+   rt = ocs::tom::emplace_back<RT_tid>(&remote_task_list, "none");
+   ocs::tom::set<RT_hostname>(rt, hostname);
+   ocs::tom::set<RT_state>(rt, RT_STATE_WAIT4ACK);
 
    rcv_from_execd(OPT_SYNCHRON, ocs::gdi::ClientServerBase::TAG_JOB_EXECUTION);
 
-   auto tid = (sge_tid_t) lGetString(rt, RT_tid);
+   auto tid = (sge_tid_t) ocs::tom::get<RT_tid>(rt);
 
    if (strcmp(tid, "none") == 0) {
       tid = nullptr;
@@ -278,17 +279,17 @@ int sge_qwaittid(sge_tid_t tid, int *status, int options) {
    if (!(options & WNOHANG))
       rcv_opt |= OPT_SYNCHRON;
 
-   if (tid != nullptr && !(rt = lGetElemStrRW(remote_task_list, RT_tid, tid))) {
+   if (tid != nullptr && !(rt = ocs::tom::find_first_rw<RT_tid>(remote_task_list, tid))) {
       snprintf(lasterror, sizeof(lasterror), MSG_GDI_TASKNOTEXIST_S, tid);
       DRETURN(-1);
    }
 
    while ((rt && /* definite one searched */
-           lGetUlong(rt, RT_state) != RT_STATE_EXITED && /* not exited */
-           lGetUlong(rt, RT_state) == RT_STATE_WAIT4ACK) /* waiting for ack */
+           ocs::tom::get<RT_state>(rt) != RT_STATE_EXITED && /* not exited */
+           ocs::tom::get<RT_state>(rt) == RT_STATE_WAIT4ACK) /* waiting for ack */
           || (!rt && /* anybody searched */
-              !lGetElemUlong(remote_task_list, RT_state, RT_STATE_EXITED) && /* none exited */
-              lGetElemUlong(remote_task_list, RT_state, RT_STATE_WAIT4ACK))) /* but one is waiting for ack */ {
+              !ocs::tom::find_first<RT_state>(remote_task_list, RT_STATE_EXITED) && /* none exited */
+              ocs::tom::find_first<RT_state>(remote_task_list, RT_STATE_WAIT4ACK))) /* but one is waiting for ack */ {
       /* wait for incoming messeges about exited tasks */
       if ((ret = rcv_from_execd(rcv_opt, ocs::gdi::ClientServerBase::TAG_TASK_EXIT))) {
          DRETURN((ret < 0) ? -1 : 0);
@@ -296,8 +297,8 @@ int sge_qwaittid(sge_tid_t tid, int *status, int options) {
    }
 
    if (status)
-      *status = (int)lGetUlong(rt, RT_status);
-   lSetUlong(rt, RT_state, RT_STATE_WAITED);
+      *status = (int)ocs::tom::get<RT_status>(rt);
+   ocs::tom::set<RT_state>(rt, RT_STATE_WAITED);
 
    DRETURN(0);
 }
@@ -367,23 +368,23 @@ static int rcv_from_execd(int options, ocs::gdi::ClientServerBase::ClientServerB
    switch (tag) {
       case ocs::gdi::ClientServerBase::TAG_TASK_EXIT:
          /* change state in exited task */
-         if (!(rt_rcv = lGetElemStrRW(remote_task_list, RT_tid, tid))) {
+         if (!(rt_rcv = ocs::tom::find_first_rw<RT_tid>(remote_task_list, tid))) {
             snprintf(lasterror, sizeof(lasterror), MSG_GDI_TASKNOTFOUND_S, tid);
             sge_free(&tid);
             DRETURN(-1);
          }
 
-         lSetUlong(rt_rcv, RT_status, exit_status);
-         lSetUlong(rt_rcv, RT_state, RT_STATE_EXITED);
+         ocs::tom::set<RT_status>(rt_rcv, exit_status);
+         ocs::tom::set<RT_state>(rt_rcv, RT_STATE_EXITED);
          break;
 
       case ocs::gdi::ClientServerBase::TAG_JOB_EXECUTION:
          /* search task without taskid */
-         if (!(rt_rcv = lGetElemStrRW(remote_task_list, RT_tid, "none"))) {
+         if (!(rt_rcv = ocs::tom::find_first_rw<RT_tid>(remote_task_list, "none"))) {
             snprintf(lasterror, sizeof(lasterror), MSG_GDI_TASKNOTFOUNDNOIDGIVEN_S, tid);
             DRETURN(-1);
          }
-         lSetString(rt_rcv, RT_tid, tid);
+         ocs::tom::set<RT_tid>(rt_rcv, tid);
          break;
 
       default:

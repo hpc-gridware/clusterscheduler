@@ -36,6 +36,8 @@
 #include "sgeobj/sge_hgroup.h"
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_str.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_HR.h"
 #include "uti/sge.h"
 #include "uti/sge_dstring.h"
 #include "uti/sge_rmon_macros.h"
@@ -114,7 +116,7 @@ qconf_purge_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monit
     * see the function comment. */
    bool hostlist_wanted = false;
    for_each_ep_lv(attr, attr_list) {
-      if (sge_eval_expression(ocs::CEntry::Type::HOST, lGetString(attr, US_name), SGE_ATTR_HOSTLIST, nullptr) == 0) {
+      if (sge_eval_expression(ocs::CEntry::Type::HOST, ocs::tom::get<US_name>(attr), SGE_ATTR_HOSTLIST, nullptr) == 0) {
          hostlist_wanted = true;
          break;
       }
@@ -126,9 +128,9 @@ qconf_purge_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monit
                                                   hgroup_queue_group_name(queue_name, &group_name));
       sge_dstring_free(&group_name);
       if (group != nullptr) {
-         lSetList(copy, CQ_hostlist, lCopyList("", lGetList(group, HGRP_host_list)));
+         ocs::tom::set<CQ_hostlist>(copy, lCopyList("", ocs::tom::get<HGRP_host_list>(group)));
       }
-      hostlist_before = lGetNumberOfElem(lGetList(copy, CQ_hostlist));
+      hostlist_before = lGetNumberOfElem(ocs::tom::get<CQ_hostlist>(copy));
    }
 
    if (!cqueue_purge_host(copy, answer_list, attr_list, domain)) {
@@ -149,7 +151,7 @@ qconf_purge_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monit
          fields.push_back(nm);
       }
    }
-   if (hostlist_wanted && lGetNumberOfElem(lGetList(copy, CQ_hostlist)) != hostlist_before) {
+   if (hostlist_wanted && lGetNumberOfElem(ocs::tom::get<CQ_hostlist>(copy)) != hostlist_before) {
       fields.push_back(CQ_hostlist);
    }
    fields.push_back(NoName);

@@ -54,6 +54,14 @@
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_qref.h"
 #include "sgeobj/sge_ulong.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_CE.h"
+#include "sgeobj/tom/ocs_tom_JAT.h"
+#include "sgeobj/tom/ocs_tom_MES.h"
+#include "sgeobj/tom/ocs_tom_PR.h"
+#include "sgeobj/tom/ocs_tom_QU.h"
+#include "sgeobj/tom/ocs_tom_ULNG.h"
+#include "sgeobj/tom/ocs_tom_US.h"
 
 #include "sched/sge_select_queue.h"
 
@@ -427,7 +435,7 @@ ocs::QStatModelBase::get_job_owner_where(const lList *user_list) {
    for_each_ep_lv(ep, user_list) {
       lCondition *nw = nullptr;
 
-      if (const char *user = lGetString(ep, ST_name); is_pattern(user)) {
+      if (const char *user = ocs::tom::get<ST_name>(ep); is_pattern(user)) {
          nw = lWhere("%T(%I p= %s)", JB_Type, JB_owner, user);
       } else {
          nw = lWhere("%T(%I == %s)", JB_Type, JB_owner, user);
@@ -761,7 +769,7 @@ lCondition *ocs::QStatModelBase::get_job_view_where(const lList *job_view_list, 
    lCondition *where = nullptr;
 
    for_each_ep_lv(j_elem, job_view_list) {
-      const char *job_name = lGetString(j_elem, ST_name);
+      const char *job_name = ocs::tom::get<ST_name>(j_elem);
       lCondition *new_where;
 
       if (job_name != nullptr && isdigit(static_cast<unsigned char>(job_name[0]))) {
@@ -901,7 +909,7 @@ bool ocs::QStatModelBase::prepare_data(lList **answer_list, QStatParameter &para
       while ((elem1 = elem2) != nullptr) {
          elem2 = lNextRW(elem1);
 
-         if (is_pattern(lGetString(elem1, ST_name))) {
+         if (is_pattern(ocs::tom::get<ST_name>(elem1))) {
             lDechainElem(parameter.get_jid_list(), elem1);
             removed_pattern = true;
          }
@@ -917,7 +925,7 @@ bool ocs::QStatModelBase::prepare_data(lList **answer_list, QStatParameter &para
                ss << ", ";
             }
             first_time = false;
-            ss << lGetString(elem1, ST_name);
+            ss << ocs::tom::get<ST_name>(elem1);
          }
       } else {
          if (removed_pattern) {
@@ -939,23 +947,23 @@ bool ocs::QStatModelBase::prepare_data(lList **answer_list, QStatParameter &para
       message) from the message_list that have no jobs in them.
    */
    for_each_rw_lv(tmp_elem, ilp) {
-      lList *msg_list = lGetListRW(tmp_elem, SME_message_list);
+      lList *msg_list = ocs::tom::get<SME_message_list>(tmp_elem);
 
       lListElem *msg_elem;
       lListElem *tmp_msg_elem = lFirstRW(msg_list);
       while ((msg_elem = tmp_msg_elem) != nullptr) {
          tmp_msg_elem = lNextRW(msg_elem);
 
-         lList *jbList = lGetListRW(msg_elem, MES_job_number_list);
+         lList *jbList = ocs::tom::get<MES_job_number_list>(msg_elem);
          lListElem *jbElem = lFirstRW(jbList);
          while (jbElem) {
             lListElem *tmp_jbElem = lNextRW(jbElem);
-            if (lGetElemUlong(jlp, JB_job_number, lGetUlong(jbElem, ULNG_value)) == nullptr) {
+            if (static_cast<const lListElem *>(ocs::tom::find_first<JB_job_number>(jlp, ocs::tom::get<ULNG_value>(jbElem))) == nullptr) {
                lRemoveElem(jbList, &jbElem);
             }
             jbElem = tmp_jbElem;
          }
-         if (lGetNumberOfElem(lGetList(msg_elem, MES_job_number_list)) == 0) {
+         if (lGetNumberOfElem(ocs::tom::get<MES_job_number_list>(msg_elem)) == 0) {
             lRemoveElem(msg_list, &msg_elem);
          }
       }
@@ -1003,7 +1011,7 @@ int ocs::QStatModelBase::select_by_queue_state(uint32_t queue_states, lList *exe
    }
 
    for_each_ep_lv(cqueue, queue_list) {
-      for_each_rw_lv(qep, lGetList(cqueue, CQ_qinstances)) {
+      for_each_rw_lv(qep, ocs::tom::get<CQ_qinstances>(cqueue)) {
          bool has_value_from_object;
          double load_avg;
          uint32_t interval;
@@ -1011,19 +1019,19 @@ int ocs::QStatModelBase::select_by_queue_state(uint32_t queue_states, lList *exe
          /* compute the load and suspend alarm */
          sge_get_double_qattr(&load_avg, load_avg_str, qep, exechost_list, centry_list, load_adjustments,
                               &has_value_from_object);
-         if (sge_load_alarm(nullptr, 0, qep, lGetList(qep, QU_load_thresholds), exechost_list, centry_list, nullptr,
+         if (sge_load_alarm(nullptr, 0, qep, ocs::tom::get<QU_load_thresholds>(qep), exechost_list, centry_list, nullptr,
                             load_adjustments, true)) {
             qinstance_state_set_alarm(qep, true);
          }
-         parse_ulong_val(nullptr, &interval, ocs::CEntry::Type::TIME, lGetString(qep, QU_suspend_interval), nullptr, 0);
-         if (lGetUlong(qep, QU_nsuspend) != 0 && interval != 0 &&
-             sge_load_alarm(nullptr, 0, qep, lGetList(qep, QU_suspend_thresholds), exechost_list, centry_list, nullptr,
+         parse_ulong_val(nullptr, &interval, ocs::CEntry::Type::TIME, ocs::tom::get<QU_suspend_interval>(qep), nullptr, 0);
+         if (ocs::tom::get<QU_nsuspend>(qep) != 0 && interval != 0 &&
+             sge_load_alarm(nullptr, 0, qep, ocs::tom::get<QU_suspend_thresholds>(qep), exechost_list, centry_list, nullptr,
                             load_adjustments, false)) {
             qinstance_state_set_suspend_alarm(qep, true);
              }
 
          if (!qinstance_has_state(qep, queue_states)) {
-            lSetUlong(qep, QU_tag, 0);
+            ocs::tom::set<QU_tag>(qep, 0);
          }
       }
    }
@@ -1059,16 +1067,16 @@ int ocs::QStatModelBase::select_by_qref_list(lList *cqueue_list, const lList *hg
          dstring cqueue_buffer = DSTRING_INIT;
          dstring hostname_buffer = DSTRING_INIT;
 
-         if (const char *full_name = lGetString(qref, QR_name);
+         if (const char *full_name = ocs::tom::get<QR_name>(qref);
              cqueue_name_split(full_name, &cqueue_buffer, &hostname_buffer, nullptr, nullptr)) {
             const char *cqueue_name = sge_dstring_get_string(&cqueue_buffer);
             const char *hostname = sge_dstring_get_string(&hostname_buffer);
 
-            if (const lListElem *cqueue = lGetElemStr(cqueue_list, CQ_name, cqueue_name); cqueue != nullptr) {
-               const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
-               if (lListElem *qinstance = lGetElemHostRW(qinstance_list, QU_qhostname, hostname); qinstance != nullptr) {
-                  const uint32_t tag = lGetUlong(qinstance, QU_tag);
-                  lSetUlong(qinstance, QU_tag, tag | TAG_SELECT_IT);
+            if (const lListElem *cqueue = ocs::tom::find_first<CQ_name>(cqueue_list, cqueue_name); cqueue != nullptr) {
+               const lList *qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
+               if (lListElem *qinstance = ocs::tom::find_first_rw<QU_qhostname>(qinstance_list, hostname); qinstance != nullptr) {
+                  const uint32_t tag = ocs::tom::get<QU_tag>(qinstance);
+                  ocs::tom::set<QU_tag>(qinstance, tag | TAG_SELECT_IT);
                }
             }
          }
@@ -1078,13 +1086,13 @@ int ocs::QStatModelBase::select_by_qref_list(lList *cqueue_list, const lList *hg
       }
 
       for_each_ep_lv(cqueue, cqueue_list) {
-         const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
+         const lList *qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
          for_each_rw_lv(qinstance, qinstance_list) {
-            uint32_t tag = lGetUlong(qinstance, QU_tag);
+            uint32_t tag = ocs::tom::get<QU_tag>(qinstance);
 
             if (const bool selected = (tag & TAG_SELECT_IT) != 0; !selected) {
                tag &= ~(TAG_SELECT_IT | TAG_SHOW_IT);
-               lSetUlong(qinstance, QU_tag, tag);
+               ocs::tom::set<QU_tag>(qinstance, tag);
             } else {
                ret++;
             }
@@ -1104,23 +1112,23 @@ void ocs::QStatModelBase::filter_jobs(const QStatParameter &parameter) {
 
    // select all jobs which are not finished
    for_each_rw_lv(jep, job_list_) {
-      for_each_rw_lv(jatep, lGetList(jep, JB_ja_tasks)) {
-         if (!(lGetUlong(jatep, JAT_status) & JFINISHED))
-            lSetUlong(jatep, JAT_suitable, TAG_SHOW_IT);
+      for_each_rw_lv(jatep, ocs::tom::get<JB_ja_tasks>(jep)) {
+         if (!(ocs::tom::get<JAT_status>(jatep) & JFINISHED))
+            ocs::tom::set<JAT_suitable>(jatep, TAG_SHOW_IT);
       }
    }
 
    // untag all jobs which do not fit to the user list (-u)
    if (lGetNumberOfElem(parameter.get_user_list())) {
       for_each_rw_lv(up, parameter.get_user_list()) {
-         const char *user = lGetString(up, ST_name);
+         const char *user = ocs::tom::get<ST_name>(up);
          if (user == nullptr) {
             break;
          }
 
          const bool is_pattern = ocs::is_pattern(user);
          for_each_rw_lv(jep, job_list_) {
-            const char *owner = lGetString(jep, JB_owner);
+            const char *owner = ocs::tom::get<JB_owner>(jep);
 
             int match;
             if (is_pattern) {
@@ -1129,8 +1137,8 @@ void ocs::QStatModelBase::filter_jobs(const QStatParameter &parameter) {
                match = sge_strnullcmp(user, owner);
             }
             if (match == 0) {
-               for_each_rw_lv(jatep, lGetList(jep, JB_ja_tasks)) {
-                  lSetUlong(jatep, JAT_suitable, lGetUlong(jatep, JAT_suitable) | TAG_SHOW_IT | TAG_SELECT_IT);
+               for_each_rw_lv(jatep, ocs::tom::get<JB_ja_tasks>(jep)) {
+                  ocs::tom::set<JAT_suitable>(jatep, ocs::tom::get<JAT_suitable>(jatep) | TAG_SHOW_IT | TAG_SELECT_IT);
                }
             }
          }
@@ -1149,14 +1157,14 @@ void ocs::QStatModelBase::filter_jobs(const QStatParameter &parameter) {
       for_each_rw_lv(jep, job_list_) {
          bool show_job = false;
          for_each_ep_lv(cqueue, queue_list_) {
-            for_each_rw_lv(qep, lGetList(cqueue, CQ_qinstances)) {
+            for_each_rw_lv(qep, ocs::tom::get<CQ_qinstances>(cqueue)) {
 
-               if (!(lGetUlong(qep, QU_tag) & TAG_SHOW_IT)) {
+               if (!(ocs::tom::get<QU_tag>(qep) & TAG_SHOW_IT)) {
                   continue;
                }
 
                // find if the queue instance is in the list of selected queues and if the job fits into this queue instance
-               if (lListElem *host = host_list_locate(exechost_list_, lGetHost(qep, QU_qhostname)); host != nullptr) {
+               if (lListElem *host = host_list_locate(exechost_list_, ocs::tom::get<QU_qhostname>(qep)); host != nullptr) {
                   const int ret = sge_select_queue(job_get_hard_resource_listRW(jep), qep,
                                                    host, exechost_list_, centry_list_,true, 1,
                                                    parameter.get_queue_user_list(), acl_list_, jep);
@@ -1169,17 +1177,17 @@ void ocs::QStatModelBase::filter_jobs(const QStatParameter &parameter) {
             }
          }
 
-         for_each_rw_lv(jatep, lGetList(jep, JB_ja_tasks)) {
-            if (!show_job && !(lGetUlong(jatep, JAT_status) == JRUNNING || (lGetUlong(jatep, JAT_status) == JTRANSFERING))) {
-               DPRINTF("show task " sge_u32"." sge_u32"\n", lGetUlong(jep, JB_job_number), lGetUlong(jatep, JAT_task_number));
-               lSetUlong(jatep, JAT_suitable, lGetUlong(jatep, JAT_suitable) & ~TAG_SHOW_IT);
+         for_each_rw_lv(jatep, ocs::tom::get<JB_ja_tasks>(jep)) {
+            if (!show_job && !(ocs::tom::get<JAT_status>(jatep) == JRUNNING || (ocs::tom::get<JAT_status>(jatep) == JTRANSFERING))) {
+               DPRINTF("show task " sge_u32"." sge_u32"\n", ocs::tom::get<JB_job_number>(jep), ocs::tom::get<JAT_task_number>(jatep));
+               ocs::tom::set<JAT_suitable>(jatep, ocs::tom::get<JAT_suitable>(jatep) & ~TAG_SHOW_IT);
             }
          }
          if (!show_job) {
-            lSetList(jep, JB_ja_n_h_ids, nullptr);
-            lSetList(jep, JB_ja_u_h_ids, nullptr);
-            lSetList(jep, JB_ja_o_h_ids, nullptr);
-            lSetList(jep, JB_ja_s_h_ids, nullptr);
+            ocs::tom::set<JB_ja_n_h_ids>(jep, nullptr);
+            ocs::tom::set<JB_ja_u_h_ids>(jep, nullptr);
+            ocs::tom::set<JB_ja_o_h_ids>(jep, nullptr);
+            ocs::tom::set<JB_ja_s_h_ids>(jep, nullptr);
          }
       }
 
@@ -1199,7 +1207,7 @@ void ocs::QStatModelBase::filter_jobs(const QStatParameter &parameter) {
       lList *tmp_queue_list = lCreateList("", QU_Type);
       for_each_rw_lv(cqueue, queue_list_) {
          lList *qinstances = nullptr;
-         lXchgList(cqueue, CQ_qinstances, &qinstances);
+         ocs::tom::exchange<CQ_qinstances>(cqueue, &qinstances);
          lAddList(tmp_queue_list, &qinstances);
       }
       lFreeList(&queue_list_);
@@ -1295,18 +1303,18 @@ bool ocs::QStatModelBase::is_cqueue_selected(lList *queue_list) {
 
    //bool a_qinstance_is_selected = false;
    for_each_rw_lv(cqueue, queue_list) {
-      const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
+      const lList *qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
       bool tmp_a_qinstance_is_selected = false;
 
       for_each_ep_lv(qep, qinstance_list) {
-         if (lGetUlong(qep, QU_tag) & TAG_SHOW_IT) {
+         if (ocs::tom::get<QU_tag>(qep) & TAG_SHOW_IT) {
             tmp_a_qinstance_is_selected = true;
             break;
          }
       }
       //a_qinstance_is_selected |= tmp_a_qinstance_is_selected;
-      if (!tmp_a_qinstance_is_selected && (lGetNumberOfElem(lGetList(cqueue, CQ_qinstances)) > 0)) {
-         lSetUlong(cqueue, CQ_tag, TAG_DEFAULT);
+      if (!tmp_a_qinstance_is_selected && (lGetNumberOfElem(ocs::tom::get<CQ_qinstances>(cqueue)) > 0)) {
+         ocs::tom::set<CQ_tag>(cqueue, TAG_DEFAULT);
       } else {
          a_cqueue_is_selected |= true;
       }
@@ -1344,7 +1352,7 @@ int ocs::QStatModelBase::select_by_resource_list(lList *resource_list, lList *ex
 
    /* prepare request */
    for_each_ep_lv(cqueue, queue_list) {
-      const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
+      const lList *qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
 
       for_each_rw_lv(qep, qinstance_list) {
          if (empty_qs) {
@@ -1359,8 +1367,8 @@ int ocs::QStatModelBase::select_by_resource_list(lList *resource_list, lList *ex
          }
 
          if (!selected) {
-            DPRINTF("unselecting queue " SFQ "\n", lGetString(qep, QU_full_name));
-            lSetUlong(qep, QU_tag, 0);
+            DPRINTF("unselecting queue " SFQ "\n", ocs::tom::get<QU_full_name>(qep));
+            ocs::tom::set<QU_tag>(qep, 0);
          }
       }
    }
@@ -1395,7 +1403,7 @@ int ocs::QStatModelBase::select_by_pe_list(lList *queue_list, lList *peref_list,
       lListElem *ref_pe;  /* PE_Type */
       lListElem *copy_pe; /* PE_Type */
 
-      ref_pe = pe_list_locate(pe_list, lGetString(pe, ST_name));
+      ref_pe = pe_list_locate(pe_list, ocs::tom::get<ST_name>(pe));
       copy_pe = lCopyElem(ref_pe);
       if (pe_selected == nullptr) {
          const lDescr *descriptor = lGetElemDescr(ref_pe);
@@ -1414,25 +1422,25 @@ int ocs::QStatModelBase::select_by_pe_list(lList *queue_list, lList *peref_list,
     * by a pe in the selected pe list entry of a queue
     */
    for_each_ep_lv(cqueue, queue_list) {
-      const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
+      const lList *qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
 
       for_each_rw_lv(qep, qinstance_list) {
          const lListElem *found = nullptr;
 
          if (!qinstance_is_parallel_queue(qep)) {
-            lSetUlong(qep, QU_tag, 0);
+            ocs::tom::set<QU_tag>(qep, 0);
             continue;
          }
          for_each_ep_lv(pe, pe_selected) {
-            const char *pe_name = lGetString(pe, PE_name);
+            const char *pe_name = ocs::tom::get<PE_name>(pe);
 
-            found = lGetSubStr(qep, ST_name, pe_name, QU_pe_list);
+            found = ocs::tom::find_first_in<QU_pe_list, ST_name>(qep, pe_name);
             if (found != nullptr) {
                break;
             }
          }
          if (found == nullptr) {
-            lSetUlong(qep, QU_tag, 0);
+            ocs::tom::set<QU_tag>(qep, 0);
          } else {
             nqueues++;
          }
@@ -1484,31 +1492,31 @@ int ocs::QStatModelBase::select_by_queue_user_list(lList *exechost_list, lList *
 
    ehep = host_list_locate(exechost_list, "global");
    if (ehep != nullptr) {
-      global_acl  = lGetList(ehep, EH_acl);
-      global_xacl = lGetList(ehep, EH_xacl);
-      global_prj  = lGetList(ehep, EH_prj);
-      global_xprj = lGetList(ehep, EH_xprj);
+      global_acl  = ocs::tom::get<EH_acl>(ehep);
+      global_xacl = ocs::tom::get<EH_xacl>(ehep);
+      global_prj  = ocs::tom::get<EH_prj>(ehep);
+      global_xprj = ocs::tom::get<EH_xprj>(ehep);
    }
 
    for_each_ep_lv(cqueue, cqueue_list) {
-      const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
+      const lList *qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
 
       for_each_rw_lv(qep, qinstance_list) {
          int access = 0;
          const char *host_name = nullptr;
 
-         prj = lGetList(qep, QU_projects);
-         xprj = lGetList(qep, QU_xprojects);
+         prj = ocs::tom::get<QU_projects>(qep);
+         xprj = ocs::tom::get<QU_xprojects>(qep);
 
          /* get exec host list element for current queue
             and its access lists */
-         host_name = lGetHost(qep, QU_qhostname);
+         host_name = ocs::tom::get<QU_qhostname>(qep);
          ehep = host_list_locate(exechost_list, host_name);
          if (ehep != nullptr) {
-            h_acl = lGetList(ehep, EH_acl);
-            h_xacl = lGetList(ehep, EH_xacl);
-            h_prj = lGetList(ehep, EH_prj);
-            h_xprj = lGetList(ehep, EH_xprj);
+            h_acl = ocs::tom::get<EH_acl>(ehep);
+            h_xacl = ocs::tom::get<EH_xacl>(ehep);
+            h_prj = ocs::tom::get<EH_prj>(ehep);
+            h_xprj = ocs::tom::get<EH_xprj>(ehep);
          }
 
          for_each_ep_lv(qu, queue_user_list) {
@@ -1517,7 +1525,7 @@ int ocs::QStatModelBase::select_by_queue_user_list(lList *exechost_list, lList *
             int gh_access = 0;
             int conf_access = 0;
 
-            const char *name = lGetString(qu, ST_name);
+            const char *name = ocs::tom::get<ST_name>(qu);
             if (name == nullptr)
                continue;
 
@@ -1536,24 +1544,24 @@ int ocs::QStatModelBase::select_by_queue_user_list(lList *exechost_list, lList *
                for_each_ep_lv(pep, prj) {
                   const char *prj_name;
                   lListElem *prj_elem;
-                  if ((prj_name = lGetString(pep, PR_name)) != nullptr) {
+                  if ((prj_name = ocs::tom::get<PR_name>(pep)) != nullptr) {
                      if ((prj_elem = prj_list_locate(project_list, prj_name)) != nullptr) {
-                        q_access &= (name[0] == '@') ? sge_has_access_(nullptr, &name[1], nullptr, lGetList(prj_elem, PR_acl),
-                                                                       lGetList(prj_elem, PR_xacl), acl_list)
-                                                     : sge_has_access_(name, nullptr, nullptr, lGetList(prj_elem, PR_acl),
-                                                                       lGetList(prj_elem, PR_xacl), acl_list);
+                        q_access &= (name[0] == '@') ? sge_has_access_(nullptr, &name[1], nullptr, ocs::tom::get<PR_acl>(prj_elem),
+                                                                       ocs::tom::get<PR_xacl>(prj_elem), acl_list)
+                                                     : sge_has_access_(name, nullptr, nullptr, ocs::tom::get<PR_acl>(prj_elem),
+                                                                       ocs::tom::get<PR_xacl>(prj_elem), acl_list);
                      } else {
                         DPRINTF("no reference object for project %s\n", prj_name);
                      }
                   }
                }
                for_each_ep_lv(pep, xprj) {
-                  if (const char *prj_name = lGetString(pep, PR_name); prj_name != nullptr) {
+                  if (const char *prj_name = ocs::tom::get<PR_name>(pep); prj_name != nullptr) {
                      if (lListElem *prj_elem = prj_list_locate(project_list, prj_name); prj_elem != nullptr) {
-                        q_access &= (name[0] == '@') ? !sge_has_access_(nullptr, &name[1], nullptr, lGetList(prj_elem, PR_acl),
-                                                                        lGetList(prj_elem, PR_xacl), acl_list)
-                                                     : !sge_has_access_(name, nullptr, nullptr, lGetList(prj_elem, PR_acl),
-                                                                        lGetList(prj_elem, PR_xacl), acl_list);
+                        q_access &= (name[0] == '@') ? !sge_has_access_(nullptr, &name[1], nullptr, ocs::tom::get<PR_acl>(prj_elem),
+                                                                        ocs::tom::get<PR_xacl>(prj_elem), acl_list)
+                                                     : !sge_has_access_(name, nullptr, nullptr, ocs::tom::get<PR_acl>(prj_elem),
+                                                                        ocs::tom::get<PR_xacl>(prj_elem), acl_list);
                      } else {
                         DPRINTF("no reference object for project %s\n", prj_name);
                      }
@@ -1579,24 +1587,24 @@ int ocs::QStatModelBase::select_by_queue_user_list(lList *exechost_list, lList *
                for_each_ep_lv(pep, h_prj) {
                   const char *prj_name;
                   lListElem *prj_elem;
-                  if ((prj_name = lGetString(pep, PR_name)) != nullptr) {
+                  if ((prj_name = ocs::tom::get<PR_name>(pep)) != nullptr) {
                      if ((prj_elem = prj_list_locate(project_list, prj_name)) != nullptr) {
-                        q_access &= (name[0] == '@') ? sge_has_access_(nullptr, &name[1], nullptr, lGetList(prj_elem, PR_acl),
-                                                                       lGetList(prj_elem, PR_xacl), acl_list)
-                                                     : sge_has_access_(name, nullptr, nullptr, lGetList(prj_elem, PR_acl),
-                                                                       lGetList(prj_elem, PR_xacl), acl_list);
+                        q_access &= (name[0] == '@') ? sge_has_access_(nullptr, &name[1], nullptr, ocs::tom::get<PR_acl>(prj_elem),
+                                                                       ocs::tom::get<PR_xacl>(prj_elem), acl_list)
+                                                     : sge_has_access_(name, nullptr, nullptr, ocs::tom::get<PR_acl>(prj_elem),
+                                                                       ocs::tom::get<PR_xacl>(prj_elem), acl_list);
                      } else {
                         DPRINTF("no reference object for project %s\n", prj_name);
                      }
                   }
                }
                for_each_ep_lv(pep, h_xprj) {
-                  if (const char *prj_name = lGetString(pep, PR_name); prj_name != nullptr) {
+                  if (const char *prj_name = ocs::tom::get<PR_name>(pep); prj_name != nullptr) {
                      if (lListElem *prj_elem = prj_list_locate(project_list, prj_name); prj_elem != nullptr) {
-                        q_access &= (name[0] == '@') ? !sge_has_access_(nullptr, &name[1], nullptr, lGetList(prj_elem, PR_acl),
-                                                                        lGetList(prj_elem, PR_xacl), acl_list)
-                                                     : !sge_has_access_(name, nullptr, nullptr, lGetList(prj_elem, PR_acl),
-                                                                        lGetList(prj_elem, PR_xacl), acl_list);
+                        q_access &= (name[0] == '@') ? !sge_has_access_(nullptr, &name[1], nullptr, ocs::tom::get<PR_acl>(prj_elem),
+                                                                        ocs::tom::get<PR_xacl>(prj_elem), acl_list)
+                                                     : !sge_has_access_(name, nullptr, nullptr, ocs::tom::get<PR_acl>(prj_elem),
+                                                                        ocs::tom::get<PR_xacl>(prj_elem), acl_list);
                      } else {
                         DPRINTF("no reference object for project %s\n", prj_name);
                      }
@@ -1620,12 +1628,12 @@ int ocs::QStatModelBase::select_by_queue_user_list(lList *exechost_list, lList *
             if (project_list != nullptr) {
                DPRINTF("testing host projects lists\n");
                for_each_ep_lv(pep, global_prj) {
-                  if (const char *prj_name = lGetString(pep, PR_name); prj_name != nullptr) {
+                  if (const char *prj_name = ocs::tom::get<PR_name>(pep); prj_name != nullptr) {
                      if (lListElem *prj_elem = prj_list_locate(project_list, prj_name); prj_elem != nullptr) {
-                        q_access &= (name[0] == '@') ? sge_has_access_(nullptr, &name[1], nullptr, lGetList(prj_elem, PR_acl),
-                                                                       lGetList(prj_elem, PR_xacl), acl_list)
-                                                     : sge_has_access_(name, nullptr, nullptr, lGetList(prj_elem, PR_acl),
-                                                                       lGetList(prj_elem, PR_xacl), acl_list);
+                        q_access &= (name[0] == '@') ? sge_has_access_(nullptr, &name[1], nullptr, ocs::tom::get<PR_acl>(prj_elem),
+                                                                       ocs::tom::get<PR_xacl>(prj_elem), acl_list)
+                                                     : sge_has_access_(name, nullptr, nullptr, ocs::tom::get<PR_acl>(prj_elem),
+                                                                       ocs::tom::get<PR_xacl>(prj_elem), acl_list);
                      } else {
                         DPRINTF("no reference object for project %s\n", prj_name);
                      }
@@ -1634,12 +1642,12 @@ int ocs::QStatModelBase::select_by_queue_user_list(lList *exechost_list, lList *
                for_each_ep_lv(pep, global_xprj) {
                   const char *prj_name;
                   lListElem *prj_elem;
-                  if ((prj_name = lGetString(pep, PR_name)) != nullptr) {
+                  if ((prj_name = ocs::tom::get<PR_name>(pep)) != nullptr) {
                      if ((prj_elem = prj_list_locate(project_list, prj_name)) != nullptr) {
-                        q_access &= (name[0] == '@') ? !sge_has_access_(nullptr, &name[1], nullptr, lGetList(prj_elem, PR_acl),
-                                                                        lGetList(prj_elem, PR_xacl), acl_list)
-                                                     : !sge_has_access_(name, nullptr, nullptr, lGetList(prj_elem, PR_acl),
-                                                                        lGetList(prj_elem, PR_xacl), acl_list);
+                        q_access &= (name[0] == '@') ? !sge_has_access_(nullptr, &name[1], nullptr, ocs::tom::get<PR_acl>(prj_elem),
+                                                                        ocs::tom::get<PR_xacl>(prj_elem), acl_list)
+                                                     : !sge_has_access_(name, nullptr, nullptr, ocs::tom::get<PR_acl>(prj_elem),
+                                                                        ocs::tom::get<PR_xacl>(prj_elem), acl_list);
                      } else {
                         DPRINTF("no reference object for project %s\n", prj_name);
                      }
@@ -1670,10 +1678,10 @@ int ocs::QStatModelBase::select_by_queue_user_list(lList *exechost_list, lList *
             }
          }
          if (!access) {
-            DPRINTF("no access for queue %s\n", lGetString(qep, QU_qname));
-            lSetUlong(qep, QU_tag, 0);
+            DPRINTF("no access for queue %s\n", ocs::tom::get<QU_qname>(qep));
+            ocs::tom::set<QU_tag>(qep, 0);
          } else {
-            DPRINTF("access for queue %s\n", lGetString(qep, QU_qname));
+            DPRINTF("access for queue %s\n", ocs::tom::get<QU_qname>(qep));
             nqueues++;
          }
       }

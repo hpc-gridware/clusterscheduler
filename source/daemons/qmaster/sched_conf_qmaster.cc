@@ -43,6 +43,7 @@
 #include "sgeobj/sge_schedd_conf.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_object.h"
+#include "tom/ocs_Element.h"
 
 #include "sched/msg_schedd.h"
 
@@ -128,7 +129,7 @@ sge_mod_sched_configuration(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lLis
    }
    temp_conf_list = lCreateList("sched config", SC_Type);
 
-   lSetUlong(confp, SC_weight_tickets_override,
+   ocs::tom::set<SC_weight_tickets_override>(confp,
              sconf_get_weight_tickets_override());
 
    confp = lCopyElem(confp);

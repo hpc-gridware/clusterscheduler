@@ -33,6 +33,8 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_hgroup.h"
 #include "sgeobj/sge_href.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_HR.h"
 
 #include "gdi/ocs_gdi_Client.h"
 #include "gdi/ocs_gdi_ClientBase.h"
@@ -98,7 +100,7 @@ fetch_hgroup(const char *name) {
    lFreeList(&alp);
 
    /* select by name rather than lFirst(): a GET may return more than asked for */
-   lListElem *found = lGetElemHostRW(lp, HGRP_name, name);
+   lListElem *found = ocs::tom::find_first_rw<HGRP_name>(lp, name);
    lListElem *copy = (found != nullptr) ? lCopyElem(found) : nullptr;
    lFreeList(&lp);
    return copy;
@@ -108,7 +110,7 @@ fetch_hgroup(const char *name) {
 static bool
 delete_refused(const char *name) {
    lList *lp = lCreateList("del", HGRP_Type);
-   lListElem *ep = lAddElemHost(&lp, HGRP_name, name, HGRP_Type);
+   lListElem *ep = ocs::tom::emplace_back<HGRP_name>(&lp, name);
    (void) ep;
 
    lList *alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::HGRP_LIST, ocs::gdi::Command::DEL,
@@ -123,8 +125,8 @@ delete_refused(const char *name) {
 static bool
 modify_refused(const char *name, lList *new_host_list) {
    lList *lp = lCreateList("mod", HGRP_Type);
-   lListElem *ep = lAddElemHost(&lp, HGRP_name, name, HGRP_Type);
-   lSetList(ep, HGRP_host_list, new_host_list);
+   lListElem *ep = ocs::tom::emplace_back<HGRP_name>(&lp, name);
+   ocs::tom::set<HGRP_host_list>(ep, new_host_list);
 
    lList *alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::HGRP_LIST, ocs::gdi::Command::MOD,
                                           ocs::gdi::SubCommand::NONE, &lp, nullptr, nullptr);
@@ -141,7 +143,7 @@ member_count(const char *name) {
    if (hgrp == nullptr) {
       return -1;
    }
-   int n = lGetNumberOfElem(lGetList(hgrp, HGRP_host_list));
+   int n = lGetNumberOfElem(ocs::tom::get<HGRP_host_list>(hgrp));
    lFreeElem(&hgrp);
    return n;
 }
@@ -173,7 +175,7 @@ main(int /*argc*/, char * /*argv*/[]) {
       const char *qmaster_host = component_get_qualified_hostname();
       CHECK(4, "qmaster host is a direct member of @admin_hosts",
             hgrp != nullptr &&
-            href_list_locate(lGetList(hgrp, HGRP_host_list), qmaster_host) != nullptr);
+            href_list_locate(ocs::tom::get<HGRP_host_list>(hgrp), qmaster_host) != nullptr);
       lFreeElem(&hgrp);
    }
 
@@ -197,7 +199,7 @@ main(int /*argc*/, char * /*argv*/[]) {
    {
       const int before = member_count(EXEC_HOSTGROUP);
       lList *hosts = lCreateList("hosts", HR_Type);
-      lAddElemHost(&hosts, HR_name, component_get_qualified_hostname(), HR_Type);
+      ocs::tom::emplace_back<HR_name>(&hosts, component_get_qualified_hostname());
 
       CHECK(11, "modify of @exec_hosts refused", modify_refused(EXEC_HOSTGROUP, hosts));
       CHECK(12, "@exec_hosts unchanged after the modify attempt", member_count(EXEC_HOSTGROUP) == before);
@@ -215,7 +217,7 @@ main(int /*argc*/, char * /*argv*/[]) {
       /* a list of other hosts, still without the qmaster host, must fail too --
        * the guard is about the end state, not about the list being empty */
       lList *others = lCreateList("hosts", HR_Type);
-      lAddElemHost(&others, HR_name, "an-unrelated-host", HR_Type);
+      ocs::tom::emplace_back<HR_name>(&others, "an-unrelated-host");
       CHECK(14, "@admin_hosts without the qmaster host refused", modify_refused(ADMIN_HOSTGROUP, others));
 
       CHECK(15, "@admin_hosts unchanged after both attempts", member_count(ADMIN_HOSTGROUP) == before);
@@ -223,7 +225,7 @@ main(int /*argc*/, char * /*argv*/[]) {
       lListElem *hgrp = fetch_hgroup(ADMIN_HOSTGROUP);
       CHECK(16, "qmaster host still a member",
             hgrp != nullptr &&
-            href_list_locate(lGetList(hgrp, HGRP_host_list), qmaster_host) != nullptr);
+            href_list_locate(ocs::tom::get<HGRP_host_list>(hgrp), qmaster_host) != nullptr);
       lFreeElem(&hgrp);
    }
 

@@ -40,6 +40,7 @@
 #include "uti/sge_log.h"
 
 #include "sgeobj/sge_conf.h"
+#include "tom/ocs_Element.h"
 
 #include "mir/sge_mirror.h"
 
@@ -140,10 +141,10 @@ ocs::MirrorDataStore::event_mirror_update_func([[maybe_unused]] uint32_t ec_id, 
    lListElem *new_event_obj = lFirstRW(event_list);
    if (mirror_thread->new_events != nullptr) {
       lList *events = nullptr;
-      lXchgList(new_event_obj, REP_list, &events);
+      ocs::tom::exchange<REP_list>(new_event_obj, &events);
       lAddList(mirror_thread->new_events, &events);
    } else {
-      lXchgList(new_event_obj, REP_list, &mirror_thread->new_events);
+      ocs::tom::exchange<REP_list>(new_event_obj, &mirror_thread->new_events);
    }
 
    // wakeup the mirror
@@ -227,7 +228,7 @@ ocs::MirrorDataStore::wait_for_event(lList **event_list) {
 
    // acknowledge events
    if (do_ack) {
-      if (lGetElemUlong(*event_list, ET_type, sgeE_ACK_TIMEOUT) != nullptr) {
+      if (static_cast<const lListElem *>(ocs::tom::find_first<ET_type>(*event_list, sgeE_ACK_TIMEOUT)) != nullptr) {
          evc->ec_mark4registration(evc);
       }
       evc->ec_ack(evc);
@@ -377,10 +378,10 @@ ocs::MirrorDataStore::main([[maybe_unused]] void *arg) {
       bool do_shutdown = false;
       if (event_list != nullptr) {
          // if we receive a shutdown event for the event client we will re-register with the next iteration of the main loop
-         bool do_event_client_shutdown = (lGetElemUlong(event_list, ET_type, sgeE_SHUTDOWN) != nullptr);
+         bool do_event_client_shutdown = (static_cast<const lListElem *>(ocs::tom::find_first<ET_type>(event_list, sgeE_SHUTDOWN)) != nullptr);
 
          // if we receive a qmaster shutdown event we will terminate this qmaster thread
-         do_qmaster_shutdown = (lGetElemUlong(event_list, ET_type, sgeE_QMASTER_GOES_DOWN) != nullptr);
+         do_qmaster_shutdown = (static_cast<const lListElem *>(ocs::tom::find_first<ET_type>(event_list, sgeE_QMASTER_GOES_DOWN)) != nullptr);
          do_shutdown = do_event_client_shutdown || do_qmaster_shutdown;
 
          if (do_shutdown) {
@@ -411,7 +412,7 @@ ocs::MirrorDataStore::main([[maybe_unused]] void *arg) {
                const lListElem *last_event = lLast(event_list);
                uint64_t last_unique_id;
                if (last_event != nullptr) {
-                  last_unique_id = lGetUlong64(last_event, ET_unique_id);
+                  last_unique_id = ocs::tom::get<ET_unique_id>(last_event);
                   found_last_event = true;
                }
 

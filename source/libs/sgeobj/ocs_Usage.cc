@@ -56,6 +56,10 @@
 #include "sge_userprj.h"
 
 #include "cull/sge_eejob_SGEJ_L.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_PET.h"
+#include "sgeobj/tom/ocs_tom_UA.h"
+#include "sgeobj/tom/ocs_tom_UPP.h"
 
 /** @brief Calculate decay rate and constant based on half-life
  *
@@ -118,8 +122,8 @@ ocs::Usage::calculate_default_decay_constant(const int halftime) {
 void ocs::Usage::add_decay_element(lList **decay_list, double value, const char *name) {
    double decay_rate, decay_constant;
    calculate_decay_constant(value, &decay_rate, &decay_constant);
-   lListElem *u = lAddElemStr(decay_list, UA_name, name, UA_Type);
-   lSetDouble(u, UA_value, decay_constant);
+   lListElem *u = ocs::tom::emplace_back<UA_name>(decay_list, name);
+   ocs::tom::set<UA_value>(u, decay_constant);
 }
 
 /** @brief Calculate decay constants for half-life decay list
@@ -136,7 +140,7 @@ ocs::Usage::get_decay_list() {
 
    if (halflife_decay_list != nullptr) {
       for_each_rw_lv(ep, halflife_decay_list) {
-         add_decay_element(&decay_list, lGetDouble(ep, UA_value), lGetString(ep, UA_name));
+         add_decay_element(&decay_list, ocs::tom::get<UA_value>(ep), ocs::tom::get<UA_name>(ep));
       }
    } else {
       /* The "finished_jobs" counter is summed into UU_/PR_/UPP_ from each
@@ -173,7 +177,7 @@ ocs::Usage::decay_usage(const lList *usage_list, const lList *decay_list, const 
          double decay;
 
          if (const lListElem *decay_elem;
-             decay_list != nullptr && (decay_elem = lGetElemStr(decay_list, UA_name, lGetPosString(usage, UA_name_POS))) != nullptr) {
+             decay_list != nullptr && (decay_elem = ocs::tom::find_first<UA_name>(decay_list, lGetPosString(usage, UA_name_POS))) != nullptr) {
             decay = pow(lGetPosDouble(decay_elem, UA_value_POS), interval / sge_usage_interval);
          } else {
             decay = pow(sconf_get_decay_constant(), interval / sge_usage_interval);
@@ -203,7 +207,7 @@ usage_relevant_for_sharetree(const char *name, const lList *usage_weight_list) {
        strcmp(name, "finished_jobs") == 0) {
       return true;
    }
-   return usage_weight_list != nullptr && lGetElemStr(usage_weight_list, UA_name, name) != nullptr;
+   return usage_weight_list != nullptr && static_cast<const lListElem *>(ocs::tom::find_first<UA_name>(usage_weight_list, name)) != nullptr;
 }
 
 /*--------------------------------------------------------------------
@@ -261,15 +265,15 @@ book_user_project_usage(lListElem *job, lListElem *ja_task, lListElem *user, lLi
     *-------------------------------------------------------------*/
 
    if (ja_task != nullptr) {
-      job_usage_list = lCopyList("", lGetList(ja_task, JAT_scaled_usage_list));
+      job_usage_list = lCopyList("", ocs::tom::get<JAT_scaled_usage_list>(ja_task));
 
       /* sum sub-task usage into job_usage_list */
       if (job_usage_list) {
-         for_each_rw_lv(petask, lGetList(ja_task, JAT_task_list)) {
+         for_each_rw_lv(petask, ocs::tom::get<JAT_task_list>(ja_task)) {
             lListElem *dst;
-            for_each_rw_lv(src, lGetList(petask, PET_scaled_usage)) {
-               if ((dst=lGetElemStrRW(job_usage_list, UA_name, lGetString(src, UA_name)))) {
-                  lSetDouble(dst, UA_value, lGetDouble(dst, UA_value) + lGetDouble(src, UA_value));
+            for_each_rw_lv(src, ocs::tom::get<PET_scaled_usage>(petask)) {
+               if ((dst=ocs::tom::find_first_rw<UA_name>(job_usage_list, ocs::tom::get<UA_name>(src)))) {
+                  ocs::tom::set<UA_value>(dst, ocs::tom::get<UA_value>(dst) + ocs::tom::get<UA_value>(src));
                } else {
                   lAppendElem(job_usage_list, lCopyElem(src));
                }
@@ -282,8 +286,8 @@ book_user_project_usage(lListElem *job, lListElem *ja_task, lListElem *user, lLi
       const lListElem *upu;
       const lList *upu_list = lGetList(userprj, obj_debited_job_usage);
       if (upu_list) {
-         if ((upu = lGetElemUlong(upu_list, UPU_job_number, lGetUlong(job, JB_job_number)))) {
-            if (const lList *debited_usage = lGetList(upu, UPU_old_usage_list)) {
+         if ((upu = ocs::tom::find_first<UPU_job_number>(upu_list, ocs::tom::get<JB_job_number>(job)))) {
+            if (const lList *debited_usage = ocs::tom::get<UPU_old_usage_list>(upu)) {
                old_usage_list = lCopyList("", debited_usage);
             }
          }
@@ -299,51 +303,51 @@ book_user_project_usage(lListElem *job, lListElem *ja_task, lListElem *user, lLi
       /* if there is a user & project, usage is kept in the project sub-list */
 
       if (project) {
-         lList *upp_list = lGetListRW(user, UU_project);
+         lList *upp_list = ocs::tom::get<UU_project>(user);
          lListElem *upp;
-         const char *project_name = lGetString(project, PR_name);
+         const char *project_name = ocs::tom::get<PR_name>(project);
 
          if (!upp_list) {
             upp_list = lCreateList("", UPP_Type);
-            lSetList(user, UU_project, upp_list);
+            ocs::tom::set<UU_project>(user, upp_list);
          }
-         if (!((upp = lGetElemStrRW(upp_list, UPP_name, project_name))))
-            upp = lAddElemStr(&upp_list, UPP_name, project_name, UPP_Type);
-         user_long_term_usage_list = lGetListRW(upp, UPP_long_term_usage);
+         if (!((upp = ocs::tom::find_first_rw<UPP_name>(upp_list, project_name))))
+            upp = ocs::tom::emplace_back<UPP_name>(&upp_list, project_name);
+         user_long_term_usage_list = ocs::tom::get<UPP_long_term_usage>(upp);
          if (!user_long_term_usage_list) {
             user_long_term_usage_list = ocs::Usage::build_usage_list("upp_long_term_usage_list", nullptr);
-            lSetList(upp, UPP_long_term_usage, user_long_term_usage_list);
+            ocs::tom::set<UPP_long_term_usage>(upp, user_long_term_usage_list);
          }
-         user_usage_list = lGetListRW(upp, UPP_usage);
+         user_usage_list = ocs::tom::get<UPP_usage>(upp);
          if (!user_usage_list) {
             user_usage_list = ocs::Usage::build_usage_list("upp_usage_list", nullptr);
-            lSetList(upp, UPP_usage, user_usage_list);
+            ocs::tom::set<UPP_usage>(upp, user_usage_list);
          }
 
       } else {
-         user_long_term_usage_list = lGetListRW(user, UU_long_term_usage);
+         user_long_term_usage_list = ocs::tom::get<UU_long_term_usage>(user);
          if (!user_long_term_usage_list) {
             user_long_term_usage_list = ocs::Usage::build_usage_list("user_long_term_usage_list", nullptr);
-            lSetList(user, UU_long_term_usage, user_long_term_usage_list);
+            ocs::tom::set<UU_long_term_usage>(user, user_long_term_usage_list);
          }
-         user_usage_list = lGetListRW(user, UU_usage);
+         user_usage_list = ocs::tom::get<UU_usage>(user);
          if (!user_usage_list) {
             user_usage_list = ocs::Usage::build_usage_list("user_usage_list", nullptr);
-            lSetList(user, UU_usage, user_usage_list);
+            ocs::tom::set<UU_usage>(user, user_usage_list);
          }
       }
    }
 
    if (project) {
-      project_long_term_usage_list = lGetListRW(project, PR_long_term_usage);
+      project_long_term_usage_list = ocs::tom::get<PR_long_term_usage>(project);
       if (!project_long_term_usage_list) {
          project_long_term_usage_list = ocs::Usage::build_usage_list("project_long_term_usage_list", nullptr);
-         lSetList(project, PR_long_term_usage, project_long_term_usage_list);
+         ocs::tom::set<PR_long_term_usage>(project, project_long_term_usage_list);
       }
-      project_usage_list = lGetListRW(project, PR_usage);
+      project_usage_list = ocs::tom::get<PR_usage>(project);
       if (!project_usage_list) {
          project_usage_list = ocs::Usage::build_usage_list("project_usage_list", nullptr);
-         lSetList(project, PR_usage, project_usage_list);
+         ocs::tom::set<PR_usage>(project, project_usage_list);
       }
    }
 
@@ -357,7 +361,7 @@ book_user_project_usage(lListElem *job, lListElem *ja_task, lListElem *user, lLi
                    *user_usage=nullptr, *project_usage=nullptr,
                    *user_long_term_usage=nullptr,
                    *project_long_term_usage=nullptr;
-         const char *usage_name = lGetString(job_usage, UA_name);
+         const char *usage_name = ocs::tom::get<UA_name>(job_usage);
 
          /*---------------------------------------------------------
           * Only attributes relevant for share tree usage may be
@@ -423,15 +427,15 @@ book_user_project_usage(lListElem *job, lListElem *ja_task, lListElem *user, lLi
 
             double usage_value;
 
-            usage_value = std::max(lGetDouble(job_usage, UA_value) - lGetDouble(old_usage, UA_value), 0.0);
+            usage_value = std::max(ocs::tom::get<UA_value>(job_usage) - ocs::tom::get<UA_value>(old_usage), 0.0);
 
             /*---------------------------------------------------
              * Add usage to decayed user usage
              *---------------------------------------------------*/
 
             if (user_usage)
-                lSetDouble(user_usage, UA_value,
-                      lGetDouble(user_usage, UA_value) +
+                ocs::tom::set<UA_value>(user_usage,
+                      ocs::tom::get<UA_value>(user_usage) +
                       usage_value);
 
             /*---------------------------------------------------
@@ -439,8 +443,8 @@ book_user_project_usage(lListElem *job, lListElem *ja_task, lListElem *user, lLi
              *---------------------------------------------------*/
 
             if (user_long_term_usage)
-                lSetDouble(user_long_term_usage, UA_value,
-                      lGetDouble(user_long_term_usage, UA_value) +
+                ocs::tom::set<UA_value>(user_long_term_usage,
+                      ocs::tom::get<UA_value>(user_long_term_usage) +
                       usage_value);
 
             /*---------------------------------------------------
@@ -448,8 +452,8 @@ book_user_project_usage(lListElem *job, lListElem *ja_task, lListElem *user, lLi
              *---------------------------------------------------*/
 
             if (project_usage)
-                lSetDouble(project_usage, UA_value,
-                      lGetDouble(project_usage, UA_value) +
+                ocs::tom::set<UA_value>(project_usage,
+                      ocs::tom::get<UA_value>(project_usage) +
                       usage_value);
 
             /*---------------------------------------------------
@@ -457,8 +461,8 @@ book_user_project_usage(lListElem *job, lListElem *ja_task, lListElem *user, lLi
              *---------------------------------------------------*/
 
             if (project_long_term_usage)
-                lSetDouble(project_long_term_usage, UA_value,
-                      lGetDouble(project_long_term_usage, UA_value) +
+                ocs::tom::set<UA_value>(project_long_term_usage,
+                      ocs::tom::get<UA_value>(project_long_term_usage) +
                       usage_value);
 
 
@@ -477,18 +481,18 @@ book_user_project_usage(lListElem *job, lListElem *ja_task, lListElem *user, lLi
    if (job_usage_list) {
       if (userprj) {
          lListElem *upu;
-         u_long jobnum = lGetUlong(job, JB_job_number);
+         u_long jobnum = ocs::tom::get<JB_job_number>(job);
          lList *upu_list = lGetListRW(userprj, obj_debited_job_usage);
          if (!upu_list) {
             upu_list = lCreateList("", UPU_Type);
             lSetList(userprj, obj_debited_job_usage, upu_list);
          }
-         if ((upu = lGetElemUlongRW(upu_list, UPU_job_number, jobnum))) {
-            lSetList(upu, UPU_old_usage_list, lCopyList(lGetListName(job_usage_list), job_usage_list));
+         if ((upu = ocs::tom::find_first_rw<UPU_job_number>(upu_list, jobnum))) {
+            ocs::tom::set<UPU_old_usage_list>(upu, lCopyList(lGetListName(job_usage_list), job_usage_list));
          } else {
             upu = lCreateElem(UPU_Type);
-            lSetUlong(upu, UPU_job_number, jobnum);
-            lSetList(upu, UPU_old_usage_list, lCopyList(lGetListName(job_usage_list), job_usage_list));
+            ocs::tom::set<UPU_job_number>(upu, jobnum);
+            ocs::tom::set<UPU_old_usage_list>(upu, lCopyList(lGetListName(job_usage_list), job_usage_list));
             lAppendElem(upu_list, upu);
          }
       }
@@ -564,7 +568,7 @@ ocs::Usage::strip_irrelevant_usage(lList *usage_list, const lList *usage_weight_
    lListElem *usage;
    while ((usage = next_usage) != nullptr) {
       next_usage = lNextRW(usage);
-      if (!usage_relevant_for_sharetree(lGetString(usage, UA_name), usage_weight_list)) {
+      if (!usage_relevant_for_sharetree(ocs::tom::get<UA_name>(usage), usage_weight_list)) {
          lRemoveElem(usage_list, &usage);
          removed = true;
       }
@@ -593,7 +597,7 @@ ocs::Usage::build_usage_list(const char *name, lList *old_usage_list) {
 
       usage_list = lCopyList(name, old_usage_list);
       for_each_rw_lv(usage, usage_list)
-         lSetDouble(usage, UA_value, 0);
+         ocs::tom::set<UA_value>(usage, 0);
 
    } else {
 
@@ -602,9 +606,9 @@ ocs::Usage::build_usage_list(const char *name, lList *old_usage_list) {
        * time of a new element with lCreateElem or lAddElemStr
        */
 
-      lAddElemStr(&usage_list, UA_name, USAGE_ATTR_CPU, UA_Type);
-      lAddElemStr(&usage_list, UA_name, USAGE_ATTR_MEM, UA_Type);
-      lAddElemStr(&usage_list, UA_name, USAGE_ATTR_IO, UA_Type);
+      ocs::tom::emplace_back<UA_name>(&usage_list, USAGE_ATTR_CPU);
+      ocs::tom::emplace_back<UA_name>(&usage_list, USAGE_ATTR_MEM);
+      ocs::tom::emplace_back<UA_name>(&usage_list, USAGE_ATTR_IO);
    }
 
    return usage_list;
@@ -620,7 +624,7 @@ ocs::Usage::build_usage_list(const char *name, lList *old_usage_list) {
  */
 lListElem *
 ocs::Usage::get_usage(lList *usage_list, const char *name) {
-   return lGetElemStrRW(usage_list, UA_name, name);
+   return ocs::tom::find_first_rw<UA_name>(usage_list, name);
 }
 
 
@@ -634,8 +638,8 @@ ocs::Usage::get_usage(lList *usage_list, const char *name) {
 lListElem *
 ocs::Usage::create_usage_elem( const char *name ) {
    lListElem *usage = lCreateElem(UA_Type);
-   lSetString(usage, UA_name, name);
-   lSetDouble(usage, UA_value, 0);
+   ocs::tom::set<UA_name>(usage, name);
+   ocs::tom::set<UA_value>(usage, 0);
    return usage;
 }
 

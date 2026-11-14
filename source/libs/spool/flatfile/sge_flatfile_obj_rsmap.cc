@@ -40,6 +40,9 @@
 #include "sgeobj/sge_host.h"
 #include "sgeobj/sge_range.h"
 #include "sgeobj/ocs_CEntry.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_CE.h"
+#include "sgeobj/tom/ocs_tom_RESL.h"
 
 #include "msg_spoollib_flatfile.h"
 #include "sge_flatfile_obj_rsmap.h"
@@ -58,11 +61,11 @@ properties_equal(const lList *a, const lList *b) {
 
    const lListElem *ep;
    for_each_ep (ep, a) {
-      const char *name = lGetString(ep, CE_name);
-      const lListElem *match = lGetElemStr(b, CE_name, name);
+      const char *name = ocs::tom::get<CE_name>(ep);
+      const lListElem *match = ocs::tom::find_first<CE_name>(b, name);
       if (match == nullptr) return false;
-      const char *va = lGetString(ep, CE_stringval);
-      const char *vb = lGetString(match, CE_stringval);
+      const char *va = ocs::tom::get<CE_stringval>(ep);
+      const char *vb = ocs::tom::get<CE_stringval>(match);
       if (va == nullptr || vb == nullptr) {
          if (va != vb) return false;  // one nullptr, one not
       } else if (strcmp(va, vb) != 0) {
@@ -103,23 +106,23 @@ static bool
 store_resl(lListElem *centry, const char *id, lList **properties,
            lList **alpp, const char *rsmap_name) {
    lList *incoming = (properties != nullptr) ? *properties : nullptr;
-   lListElem *resl = lGetSubStrRW(centry, RESL_value, id, CE_resource_map_list);
+   lListElem *resl = ocs::tom::find_first_in_rw<CE_resource_map_list, RESL_value>(centry, id);
    if (resl == nullptr) {
-      resl = lAddSubStr(centry, RESL_value, id, CE_resource_map_list, RESL_Type);
+      resl = ocs::tom::emplace_back_in<CE_resource_map_list, RESL_value>(centry, id);
       if (resl == nullptr) {
          if (properties != nullptr) lFreeList(properties);
          return true;  // allocation failure is not this function's error to report
       }
-      lAddUlong(resl, RESL_amount, 1);
+      ocs::tom::add<RESL_amount>(resl, 1);
       if (incoming != nullptr) {
-         lSetList(resl, RESL_properties, incoming);
+         ocs::tom::set<RESL_properties>(resl, incoming);
          *properties = nullptr;
       }
       return true;
    }
 
    // duplicate id: incoming characteristics (if any) must match stored ones
-   const lList *stored = lGetList(resl, RESL_properties);
+   const lList *stored = ocs::tom::get<RESL_properties>(resl);
    if (!properties_equal(stored, incoming)) {
       answer_list_add_sprintf(alpp, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                               MSG_RSMAP_CHARACTERISTIC_CONFLICT_SS,
@@ -128,7 +131,7 @@ store_resl(lListElem *centry, const char *id, lList **properties,
       return false;
    }
 
-   lAddUlong(resl, RESL_amount, 1);
+   ocs::tom::add<RESL_amount>(resl, 1);
    if (properties != nullptr) lFreeList(properties);  // stored copy wins
    return true;
 }
@@ -213,8 +216,8 @@ parse_id_characteristics(const char *token, std::string &id_out,
          props = lCreateList("properties", CE_Type);
       }
       lListElem *cep = lCreateElem(CE_Type);
-      lSetString(cep, CE_name, name);
-      lSetString(cep, CE_stringval, value);
+      ocs::tom::set<CE_name>(cep, name);
+      ocs::tom::set<CE_stringval>(cep, value);
       lAppendElem(props, cep);
    }
    sge_free_saved_vars(ctx);
@@ -261,7 +264,7 @@ read_CE_stringval_host(lListElem *ep, int nm, const char *buf, lList **alpp) {
     * between id-specs (outside brackets) and removes the line-continuation
     * residue (inside brackets) before the strtok-based tokenizer runs.
     */
-   const char *rsmap_name = lGetString(ep, CE_name);
+   const char *rsmap_name = ocs::tom::get<CE_name>(ep);
    std::string cleaned;
    cleaned.reserve(strlen(buf));
    {
@@ -358,7 +361,7 @@ read_CE_stringval_host(lListElem *ep, int nm, const char *buf, lList **alpp) {
             ret = 0;
          }
          if (ret == 0) {
-            lSetList(ep, CE_resource_map_list, nullptr);
+            ocs::tom::set<CE_resource_map_list>(ep, nullptr);
          }
       }
    }
@@ -412,18 +415,18 @@ write_CE_stringval_host(const lListElem *ep, int nm, dstring *buffer, lList **al
    std::string str_out{};
 
    // add the value of the complex_value to the output buffer
-   const char *str_value = lGetString(ep, CE_stringval);
+   const char *str_value = ocs::tom::get<CE_stringval>(ep);
    if (str_value != nullptr) {
       str_out += str_value;
    } else {
       // should never happen - but you never know...
-      double dbl_value = lGetDouble(ep, CE_doubleval);
+      double dbl_value = ocs::tom::get<CE_doubleval>(ep);
       str_out += std::to_string(dbl_value);
    }
    sge_dstring_append(buffer, str_out.c_str());
    str_out.clear();
 
-   if (static_cast<ocs::CEntry::Type>(lGetUlong(ep, CE_valtype)) == ocs::CEntry::Type::RSMAP) {
+   if (static_cast<ocs::CEntry::Type>(ocs::tom::get<CE_valtype>(ep)) == ocs::CEntry::Type::RSMAP) {
       /*
        * fill in the IDs from the CE_resource_map_list
        * we can have individual ids or a range or a combination of both
@@ -443,7 +446,7 @@ write_CE_stringval_host(const lListElem *ep, int nm, dstring *buffer, lList **al
        * by CE_name (same convention as centry_list_sort) before emission; the
        * stored CULL order is not modified.
        */
-      const lList *resource_map = lGetList(ep, CE_resource_map_list);
+      const lList *resource_map = ocs::tom::get<CE_resource_map_list>(ep);
       if (resource_map != nullptr && lGetNumberOfElem(resource_map) > 0) {
          long range_start = -1, range_last = -1, range_current;
          // How often the identifiers of the range being built occur. A range is written once
@@ -451,9 +454,9 @@ write_CE_stringval_host(const lListElem *ep, int nm, dstring *buffer, lList **al
          uint32_t range_amount = 0;
 
          for_each_ep_lv (resource, resource_map) {
-            str_value = lGetString(resource, RESL_value);
-            const uint32_t amount = lGetUlong(resource, RESL_amount);
-            const lList *props = lGetList(resource, RESL_properties);
+            str_value = ocs::tom::get<RESL_value>(resource);
+            const uint32_t amount = ocs::tom::get<RESL_amount>(resource);
+            const lList *props = ocs::tom::get<RESL_properties>(resource);
             const bool has_props = (props != nullptr && lGetNumberOfElem(props) > 0);
 
             if (has_props) {
@@ -467,8 +470,8 @@ write_CE_stringval_host(const lListElem *ep, int nm, dstring *buffer, lList **al
                pairs.reserve(lGetNumberOfElem(props));
                const lListElem *prop;
                for_each_ep (prop, props) {
-                  const char *pname = lGetString(prop, CE_name);
-                  const char *pval = lGetString(prop, CE_stringval);
+                  const char *pname = ocs::tom::get<CE_name>(prop);
+                  const char *pval = ocs::tom::get<CE_stringval>(prop);
                   pairs.emplace_back(pname != nullptr ? pname : "",
                                      pval != nullptr ? pval : "");
                }

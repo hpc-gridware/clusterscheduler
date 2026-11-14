@@ -49,6 +49,7 @@
 #include "sgeobj/cull/sge_permission_PERM_L.h"
 
 #include "cull/cull.h"
+#include "tom/ocs_Element.h"
 
 #include "ocs_gdi_Client.h"
 #include "ocs_gdi_Mode.h"
@@ -152,7 +153,7 @@ lList *ocs::gdi::Client::gdi_kill(lList *id_list, uint32_t action_flag) {
       snprintf(buffer, sizeof(buffer), "%d", EV_ID_SCHEDD);
       id_list = lCreateList("kill scheduler", ID_Type);
       id_list_created = true;
-      lAddElemStr(&id_list, ID_str, buffer, ID_Type);
+      ocs::tom::emplace_back<ID_str>(&id_list, buffer);
       lList *tmpalp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::EV_LIST, ocs::gdi::Command::TRIGGER,
                               ocs::gdi::SubCommand::NONE, &id_list, nullptr, nullptr);
       lAddList(alp, &tmpalp);
@@ -170,7 +171,7 @@ lList *ocs::gdi::Client::gdi_kill(lList *id_list, uint32_t action_flag) {
          snprintf(buffer, sizeof(buffer), "%d", EV_ID_ANY);
          id_list = lCreateList("kill all event clients", ID_Type);
          id_list_created = true;
-         lAddElemStr(&id_list, ID_str, buffer, ID_Type);
+         ocs::tom::emplace_back<ID_str>(&id_list, buffer);
       }
       lList *tmpalp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::EV_LIST, ocs::gdi::Command::TRIGGER,
                               ocs::gdi::SubCommand::NONE, &id_list, nullptr, nullptr);
@@ -186,14 +187,14 @@ lList *ocs::gdi::Client::gdi_kill(lList *id_list, uint32_t action_flag) {
          ** It would be better to change the call to use ID_Type!
          */
          for_each_ep_lv(hep, id_list) {
-            hlep = lAddElemStr(&hlp, ID_str, lGetHost(hep, EH_name), ID_Type);
-            lSetUlong(hlep, ID_force, (action_flag & JOB_KILL) ? 1 : 0);
+            hlep = ocs::tom::emplace_back<ID_str>(&hlp, ocs::tom::get<EH_name>(hep));
+            ocs::tom::set<ID_force>(hlep, (action_flag & JOB_KILL) ? 1 : 0);
          }
       } else {
          hlp = lCreateList("kill all hosts", ID_Type);
          hlep = lCreateElem(ID_Type);
-         lSetString(hlep, ID_str, nullptr);
-         lSetUlong(hlep, ID_force, (action_flag & JOB_KILL) ? 1 : 0);
+         ocs::tom::set<ID_str>(hlep, nullptr);
+         ocs::tom::set<ID_force>(hlep, (action_flag & JOB_KILL) ? 1 : 0);
          lAppendElem(hlp, hlep);
       }
       lList *tmpalp = sge_gdi(Target::EH_LIST, Command::TRIGGER, SubCommand::NONE, &hlp, nullptr, nullptr);
@@ -236,19 +237,19 @@ ocs::gdi::Client::sge_gdi_get_permission(lList **alpp, bool *is_manager, bool *i
    // prepare return values
    const lListElem *perm = lFirst(permission_list);
    if (is_manager != nullptr) {
-      *is_manager = lGetBool(perm, PERM_is_manager);
+      *is_manager = ocs::tom::get<PERM_is_manager>(perm);
       DPRINTF("is_manager: %s\n", *is_manager ? "true" : "false");
    }
    if (is_operator != nullptr) {
-      *is_operator = lGetBool(perm, PERM_is_operator);
+      *is_operator = ocs::tom::get<PERM_is_operator>(perm);
       DPRINTF("is_operator: %s\n", *is_manager ? "true" : "false");
    }
    if (is_admin_host != nullptr) {
-      *is_admin_host = lGetBool(perm, PERM_is_admin_host);
+      *is_admin_host = ocs::tom::get<PERM_is_admin_host>(perm);
       DPRINTF("is_admin_host: %s\n", *is_admin_host ? "true" : "false");
    }
    if (is_submit_host != nullptr) {
-      *is_submit_host = lGetBool(perm, PERM_is_submit_host);
+      *is_submit_host = ocs::tom::get<PERM_is_submit_host>(perm);
       DPRINTF("is_submit_host: %s\n", *is_submit_host ? "true" : "false");
    }
 
@@ -324,7 +325,7 @@ ocs::gdi::Client::gdi_get_configuration(const char *config_name, lListElem **gep
       is_global_requested = 1;
    } else {
       hep = lCreateElem(EH_Type);
-      lSetHost(hep, EH_name, config_name);
+      ocs::tom::set<EH_name>(hep, config_name);
 
       if (const int ret = sge_resolve_host(hep, EH_name); ret != CL_RETVAL_OK) {
          DPRINTF("get_configuration: error %d resolving host %s: %s\n", ret, config_name, cl_get_error_text(ret));
@@ -332,7 +333,7 @@ ocs::gdi::Client::gdi_get_configuration(const char *config_name, lListElem **gep
          ERROR(MSG_SGETEXT_CANTRESOLVEHOST_S, config_name);
          DRETURN(-2);
       }
-      DPRINTF("get_configuration: unique for %s: %s\n", config_name, lGetHost(hep, EH_name));
+      DPRINTF("get_configuration: unique for %s: %s\n", config_name, static_cast<const char *>(ocs::tom::get<EH_name>(hep)));
 
       const uint32_t me = component_get_component_id();
       if (sge_get_com_error_flag(me, ocs::gdi::SGE_COM_ACCESS_DENIED, false)) {
@@ -357,8 +358,8 @@ ocs::gdi::Client::gdi_get_configuration(const char *config_name, lListElem **gep
       where = lWhere("%T(%I c= %s)", CONF_Type, CONF_name, SGE_GLOBAL_NAME);
       DPRINTF("requesting global\n");
    } else {
-      where = lWhere("%T(%I c= %s || %I h= %s)", CONF_Type, CONF_name, SGE_GLOBAL_NAME, CONF_name, lGetHost(hep, EH_name));
-      DPRINTF("requesting global and %s\n", lGetHost(hep, EH_name));
+      where = lWhere("%T(%I c= %s || %I h= %s)", CONF_Type, CONF_name, SGE_GLOBAL_NAME, CONF_name, static_cast<const char *>(ocs::tom::get<EH_name>(hep)));
+      DPRINTF("requesting global and %s\n", static_cast<const char *>(ocs::tom::get<EH_name>(hep)));
    }
    lEnumeration *what = lWhat("%T(ALL)", CONF_Type);
    lList *lp = nullptr;
@@ -367,9 +368,9 @@ ocs::gdi::Client::gdi_get_configuration(const char *config_name, lListElem **gep
    lFreeWhere(&where);
 
    /* in case the gdi request failed: error handling & return */
-   if (const uint32_t status = lGetUlong(lFirst(alp), AN_status); status != STATUS_OK) {
+   if (const uint32_t status = ocs::tom::get<AN_status>(lFirst(alp)); status != STATUS_OK) {
       if (!already_logged) {
-         ERROR(SFN, lGetString(lFirst(alp), AN_text));
+         ERROR(SFN, ocs::tom::get<AN_text>(lFirst(alp)));
          already_logged = 1;
       }
 
@@ -386,7 +387,7 @@ ocs::gdi::Client::gdi_get_configuration(const char *config_name, lListElem **gep
    }
 
    /* we did not get the global configuration? */
-   *gepp = lGetElemHostRW(lp, CONF_name, SGE_GLOBAL_NAME);
+   *gepp = ocs::tom::find_first_rw<CONF_name>(lp, SGE_GLOBAL_NAME);
    if (*gepp == nullptr) {
       ERROR(SFNMAX, MSG_CONF_NOGLOBAL);
       lFreeList(&lp);
@@ -399,10 +400,10 @@ ocs::gdi::Client::gdi_get_configuration(const char *config_name, lListElem **gep
     * print a warning
     */
    if (is_global_requested == 0) {
-      *lepp = lGetElemHostRW(lp, CONF_name, lGetHost(hep, EH_name));
+      *lepp = ocs::tom::find_first_rw<CONF_name>(lp, ocs::tom::get<EH_name>(hep));
       if (*lepp == nullptr) {
          if (*gepp) {
-            INFO(MSG_CONF_NOLOCAL_S, lGetHost(hep, EH_name));
+            INFO(MSG_CONF_NOLOCAL_S, static_cast<const char *>(ocs::tom::get<EH_name>(hep)));
          }
          lFreeList(&lp);
          lFreeElem(&hep);

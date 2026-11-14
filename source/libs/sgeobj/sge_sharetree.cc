@@ -55,6 +55,8 @@
 
 #include "sgeobj/sge_sharetree.h"
 #include "sgeobj/sge_answer.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_STN.h"
 
 #include "msg_common.h"
 
@@ -83,10 +85,10 @@ bool id_sharetree(lList **alpp, lListElem *ep, int id, int *ret_id) {
       DRETURN(false);
    }
    
-   lSetUlong(ep, STN_id, my_id++);
+   ocs::tom::set<STN_id>(ep, my_id++);
 
    /* handle the children */
-   for_each_rw_lv(cep, lGetList(ep, STN_children)) {
+   for_each_rw_lv(cep, ocs::tom::get<STN_children>(ep)) {
       if (false == id_sharetree(nullptr, cep, my_id, &my_id)) {
          DRETURN(false);
       }
@@ -144,8 +146,8 @@ int level
    for (int i = 0; i < level; i++) {
       os << (indent != nullptr ? indent : "");
    }
-   os << std::format("{}={}\n", stn_cstr(lGetString(ep, STN_name)), lGetUlong(ep, STN_shares));
-   for_each_ep_lv(cep, lGetList(ep, STN_children)) {
+   os << std::format("{}={}\n", stn_cstr(ocs::tom::get<STN_name>(ep)), ocs::tom::get<STN_shares>(ep));
+   for_each_ep_lv(cep, ocs::tom::get<STN_children>(ep)) {
       show_sharetree(os, cep, "   ", level + 1);
    }
 
@@ -193,19 +195,19 @@ const char *path
  
    if (node) {
       for(i=0; i<ancestors.depth; i++)
-         os << "/" << stn_cstr(lGetString(ancestors.nodes[i], STN_name));
+         os << "/" << stn_cstr(ocs::tom::get<STN_name>(ancestors.nodes[i]));
       if (!strcmp(path, "/") || !strcasecmp(path, "Root") )
-         os << std::format("/={}\n", lGetUlong(node, STN_shares));
+         os << std::format("/={}\n", ocs::tom::get<STN_shares>(node));
       else
-         os << std::format("={}\n", lGetUlong(node, STN_shares));
+         os << std::format("={}\n", ocs::tom::get<STN_shares>(node));
       free_ancestors(&ancestors);
-      for_each_ep_lv(cep, lGetList(node, STN_children)) {
+      for_each_ep_lv(cep, ocs::tom::get<STN_children>(node)) {
 
          if (!strcmp(path, "/") || !strcasecmp(path, "Root") )
-            sge_dstring_sprintf(&sb, "/%s", lGetString(cep, STN_name));
+            sge_dstring_sprintf(&sb, "/%s", ocs::tom::get<STN_name>(cep));
          else
             sge_dstring_sprintf(&sb, "%s/%s", path,
-                                 lGetString(cep, STN_name));
+                                 ocs::tom::get<STN_name>(cep));
          show_sharetree_path(os, root, sge_dstring_get_string(&sb));
       }
    }
@@ -240,11 +242,11 @@ lListElem *getSNTemplate() {
     * acceptable sharetree as-is: a single leaf named "template" would be rejected
     * (it is not a known user/project), whereas "default" matches all users. */
    ep = lCreateElem(STN_Type);
-   lSetString(ep, STN_name, "default");
-   lSetUlong(ep, STN_type, 0);
-   lSetUlong(ep, STN_id, 0);
-   lSetUlong(ep, STN_shares, 0);
-   lSetList(ep, STN_children, nullptr);
+   ocs::tom::set<STN_name>(ep, "default");
+   ocs::tom::set<STN_type>(ep, 0);
+   ocs::tom::set<STN_id>(ep, 0);
+   ocs::tom::set<STN_shares>(ep, 0);
+   ocs::tom::set<STN_children>(ep, nullptr);
 
    DRETURN(ep);
 }
@@ -273,11 +275,11 @@ lListElem *search_named_node(lListElem *ep, /* root of the tree */
       DRETURN(nullptr);
    }
 
-   if (strcmp(lGetString(ep, STN_name), name) == 0) {
+   if (strcmp(ocs::tom::get<STN_name>(ep), name) == 0) {
       DRETURN(ep);
    }
 
-   for_each_rw_lv(cep, lGetListRW(ep, STN_children)) {
+   for_each_rw_lv(cep, ocs::tom::get<STN_children>(ep)) {
       if ((fep = search_named_node(cep, name))) {
          DRETURN(fep);
       }
@@ -326,7 +328,7 @@ search_by_path(lListElem *ep, /* root of the [sub]tree */
       delim = '.';
 
    if (name == nullptr || !strcmp(name, "*") ||
-       !strcmp(name, lGetString(ep, STN_name))) {
+       !strcmp(name, ocs::tom::get<STN_name>(ep))) {
       if (*path == 0) {
          if (name) {
             ret = ep;
@@ -352,7 +354,7 @@ search_by_path(lListElem *ep, /* root of the [sub]tree */
    } else if (delim == '/')
       return nullptr;
 
-   if ((children = lGetListRW(ep, STN_children)))
+   if ((children = ocs::tom::get<STN_children>(ep)))
       for (child=lFirstRW(children); child && !ret; child = child->next)
          ret = search_by_path(child, name, path, delim, ancestors, depth+1);
 
@@ -438,14 +440,14 @@ search_ancestors(lListElem *ep,
       DRETURN(nullptr);
    }
 
-   if (strcmp(lGetString(ep, STN_name), name) == 0) {
+   if (strcmp(ocs::tom::get<STN_name>(ep), name) == 0) {
       ancestors->depth = depth;
       ancestors->nodes = (lListElem **)sge_malloc(depth * sizeof(lListElem *));
       ancestors->nodes[depth-1] = ep;
       DRETURN(ep);
    }
 
-   for_each_rw_lv(cep, lGetListRW(ep, STN_children)) {
+   for_each_rw_lv(cep, ocs::tom::get<STN_children>(ep)) {
       if ((fep = search_ancestors(cep, name, ancestors, depth+1))) {
          ancestors->nodes[depth-1] = ep;
          DRETURN(fep);
@@ -474,13 +476,13 @@ lListElem *sge_search_unspecified_node(lListElem *ep) {
       DRETURN(nullptr);
    }
 
-   for_each_rw_lv(cep, lGetList(ep, STN_children)) {
+   for_each_rw_lv(cep, ocs::tom::get<STN_children>(ep)) {
       if ((ret = sge_search_unspecified_node(cep))) {
          DRETURN(ret);
       }   
    }
 
-   if (lGetString(ep, STN_name) == nullptr) {
+   if (ocs::tom::get<STN_name>(ep) == nullptr) {
       DRETURN(ep);         /* no name filled in -> unspecified */
    }
    

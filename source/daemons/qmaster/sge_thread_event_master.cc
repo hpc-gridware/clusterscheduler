@@ -45,6 +45,7 @@
 
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_report.h"
+#include "tom/ocs_Element.h"
 
 #include "comm/cl_commlib.h"
 
@@ -164,8 +165,8 @@ sge_event_master_main(void *arg) {
 
    lList *report_list = lCreateListHash("report list", REP_Type, false);
    lListElem *report = lCreateElem(REP_Type);
-   lSetUlong(report, REP_type, NUM_REP_REPORT_EVENTS);
-   lSetHost(report, REP_host, component_get_qualified_hostname());
+   ocs::tom::set<REP_type>(report, NUM_REP_REPORT_EVENTS);
+   ocs::tom::set<REP_host>(report, component_get_qualified_hostname());
    lAppendElem(report_list, report);
 
    while (true) {

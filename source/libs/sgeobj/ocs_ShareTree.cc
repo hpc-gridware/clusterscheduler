@@ -39,6 +39,11 @@
 #include <cstring>
 
 #include "sgeobj/sge_userset.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_STN.h"
+#include "sgeobj/tom/ocs_tom_UA.h"
+#include "sgeobj/tom/ocs_tom_UPP.h"
+#include "sgeobj/tom/ocs_tom_US.h"
 
 #ifndef NO_SGE_COMPILE_DEBUG   
 #   define NO_SGE_COMPILE_DEBUG
@@ -153,13 +158,13 @@ ocs::ShareTree::calc_node_usage(lListElem *node, const lList *user_list, const l
       if (project_name) {
          // Get usage from project usage sub-list in user object
          if ((userprj = user_list_locate(user_list, lGetPosString(node, STN_name_POS)))) {
-            const lList *projects = lGetList(userprj, UU_project);
+            const lList *projects = ocs::tom::get<UU_project>(userprj);
             const lListElem *upp;
 
             is_user = true;
             if (projects) {
-               if ((upp=lGetElemStr(projects, UPP_name, project_name))) {
-                  usage_list = lGetList(upp, UPP_usage);
+               if ((upp=ocs::tom::find_first<UPP_name>(projects, project_name))) {
+                  usage_list = ocs::tom::get<UPP_usage>(upp);
                }
             }   
          }
@@ -167,10 +172,10 @@ ocs::ShareTree::calc_node_usage(lListElem *node, const lList *user_list, const l
          // Get usage directly from corresponding user or project object
          if ((userprj = user_list_locate(user_list, lGetPosString(node, STN_name_POS)))) {
             is_user = true;
-            usage_list = lGetList(userprj, UU_usage);
+            usage_list = ocs::tom::get<UU_usage>(userprj);
          } else if ((userprj = prj_list_locate(project_list, lGetPosString(node, STN_name_POS)))) {
             is_user = false;
-            usage_list = lGetList(userprj, PR_usage);
+            usage_list = ocs::tom::get<PR_usage>(userprj);
          }
       }
    } else {
@@ -179,8 +184,8 @@ ocs::ShareTree::calc_node_usage(lListElem *node, const lList *user_list, const l
          if ((userprj = prj_list_locate(project_list, lGetPosString(node, STN_name_POS)))) {
             is_project = true;
             is_user = false;
-            usage_list = lGetList(userprj, PR_usage);
-            project_name = lGetString(userprj, PR_name);
+            usage_list = ocs::tom::get<PR_usage>(userprj);
+            project_name = ocs::tom::get<PR_name>(userprj);
          }
       }
    }
@@ -209,7 +214,7 @@ ocs::ShareTree::calc_node_usage(lListElem *node, const lList *user_list, const l
       if (usage_weight_list) {
          for_each_ep_lv(usage_elem, usage_list) {
             const char *usage_name = lGetPosString(usage_elem, UA_name_POS);
-            const lListElem *usage_weight = lGetElemStr(usage_weight_list, UA_name, usage_name);
+            const lListElem *usage_weight = ocs::tom::find_first<UA_name>(usage_weight_list, usage_name);
             if (usage_weight && sum_of_usage_weights>0) {
                usage_value += lGetPosDouble(usage_elem, UA_value_POS) * (lGetPosDouble(usage_weight, UA_value_POS) / sum_of_usage_weights);
             }
@@ -222,8 +227,8 @@ ocs::ShareTree::calc_node_usage(lListElem *node, const lList *user_list, const l
       for_each_ep_lv(usage_elem, usage_list) {
          const char *nm = lGetPosString(usage_elem, UA_name_POS);
          if (strcmp(nm, USAGE_ATTR_CPU) != 0 && strcmp(nm, USAGE_ATTR_MEM) != 0 && strcmp(nm, USAGE_ATTR_IO) != 0) {
-            if (lListElem *u = lGetElemStrRW(lGetPosList(node, STN_usage_list_POS), UA_name, nm);
-                u != nullptr || (u = lAddSubStr(node, UA_name, nm, STN_usage_list, UA_Type)) != nullptr) {
+            if (lListElem *u = ocs::tom::find_first_rw<UA_name>(lGetPosList(node, STN_usage_list_POS), nm);
+                u != nullptr || (u = ocs::tom::emplace_back_in<STN_usage_list, UA_name>(node, nm)) != nullptr) {
                lSetPosDouble(u, UA_value_POS, lGetPosDouble(u, UA_value_POS) + lGetPosDouble(usage_elem, UA_value_POS));
             }
          }
@@ -241,8 +246,8 @@ ocs::ShareTree::calc_node_usage(lListElem *node, const lList *user_list, const l
          if (!is_project) {
             for_each_rw_lv(nu, lGetPosList(child_node, STN_usage_list_POS)) {
                const char *nm = lGetPosString(nu, UA_name_POS);
-               if (lListElem *u = lGetElemStrRW(lGetPosList(node, STN_usage_list_POS), UA_name, nm);
-                   u != nullptr || (u = lAddSubStr(node, UA_name, nm, STN_usage_list, UA_Type)) !=  nullptr) {
+               if (lListElem *u = ocs::tom::find_first_rw<UA_name>(lGetPosList(node, STN_usage_list_POS), nm);
+                   u != nullptr || (u = ocs::tom::emplace_back_in<STN_usage_list, UA_name>(node, nm)) !=  nullptr) {
                   lSetPosDouble(u, UA_value_POS, lGetPosDouble(u, UA_value_POS) + lGetPosDouble(nu, UA_value_POS));
                }
             }
@@ -344,12 +349,12 @@ ocs::ShareTree::set_node_project_flag(lListElem *node, const lList *project_list
       return;
    }
 
-   if (prj_list_locate(project_list, lGetString(node, STN_name))) {
-      lSetUlong(node, STN_project, 1);
+   if (prj_list_locate(project_list, ocs::tom::get<STN_name>(node))) {
+      ocs::tom::set<STN_project>(node, 1);
    } else {
-      lSetUlong(node, STN_project, 0);
+      ocs::tom::set<STN_project>(node, 0);
    }
-   if (const lList *children = lGetList(node, STN_children)) {
+   if (const lList *children = ocs::tom::get<STN_children>(node)) {
       lListElem *child;
       for_each_rw(child, children) {
          set_node_project_flag(child, project_list);
@@ -366,19 +371,19 @@ ocs::ShareTree::set_node_project_flag(lListElem *node, const lList *project_list
 void
 ocs::ShareTree::add_auto_user(lListElem *node, const char *user_name, const char *proj_name) {
    if (lListElem *default_node = search_user_project_node(node, user_name, proj_name, nullptr, node);
-       default_node != nullptr && !strcmp(DEFAULT_NODE_NAME, lGetString(default_node, STN_name))) {
+       default_node != nullptr && !strcmp(DEFAULT_NODE_NAME, ocs::tom::get<STN_name>(default_node))) {
 
       // Create a new node for the user
       lListElem *tmp_node = lCopyElem(default_node);
-      lSetString(tmp_node, STN_name, user_name);
-      lSetList(tmp_node, STN_children, nullptr);
-      lSetUlong(tmp_node, STN_temp, 1);
+      ocs::tom::set<STN_name>(tmp_node, user_name);
+      ocs::tom::set<STN_children>(tmp_node, nullptr);
+      ocs::tom::set<STN_temp>(tmp_node, 1);
 
       // Add the new node as a child of the parent
-      lList *children = lGetListRW(default_node,STN_children);
+      lList *children = ocs::tom::get<STN_children>(default_node);
       if (children == nullptr) {
          children = lCreateList("display", STN_Type);
-         lSetList(default_node, STN_children, children);
+         ocs::tom::set<STN_children>(default_node, children);
       }
       lAppendElem(children, tmp_node);
    }
@@ -400,13 +405,13 @@ ocs::ShareTree::add_all_auto_users(lListElem *node, const lList *user_list, cons
 
    for_each_ep_lv(project, project_list) {
       // check projects acl/xacl if the users are allowed
-      if (const char *proj_name = lGetString(project, PR_name);
+      if (const char *proj_name = ocs::tom::get<PR_name>(project);
           search_user_project_node(node, DEFAULT_NODE_NAME, proj_name, nullptr, node)) {
-         const lList *xacl = lGetList(project, PR_xacl);
-         const lList *acl = lGetList(project, PR_acl);
+         const lList *xacl = ocs::tom::get<PR_xacl>(project);
+         const lList *acl = ocs::tom::get<PR_acl>(project);
 
          for_each_ep_lv(user, user_list) {
-            if (const char *user_name = lGetString(user, UU_name);
+            if (const char *user_name = ocs::tom::get<UU_name>(user);
                 sge_has_access_(user_name, nullptr, nullptr, acl, xacl, acl_list)) {
 
                add_auto_user(node, user_name, proj_name);
@@ -417,7 +422,7 @@ ocs::ShareTree::add_all_auto_users(lListElem *node, const lList *user_list, cons
 
    if (search_user_project_node(node, DEFAULT_NODE_NAME, nullptr, nullptr, node)) {
       for_each_ep_lv(user, user_list) {
-         const char *user_name = lGetString(user, UU_name);
+         const char *user_name = ocs::tom::get<UU_name>(user);
 
          add_auto_user(node, user_name, nullptr);
       }

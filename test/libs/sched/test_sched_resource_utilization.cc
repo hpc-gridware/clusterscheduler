@@ -44,6 +44,8 @@
 
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_RDE.h"
 
 #include "sge_resource_utilization.h"
 #include "sge_qeti.h"
@@ -149,7 +151,7 @@ static void test_normal_utilization(int *id) {
    };
 
    lListElem *cr = lCreateElem(RUE_Type);
-   lSetString(cr, RUE_name, "slots");
+   ocs::tom::set<RUE_name>(cr, "slots");
 
    printf("\n--- normal utilization ---\n");
 
@@ -165,7 +167,7 @@ static void test_normal_utilization(int *id) {
 
 static void test_extensive_utilization(int *id) {
    lListElem *cr = lCreateElem(RUE_Type);
-   lSetString(cr, RUE_name, "slots");
+   ocs::tom::set<RUE_name>(cr, "slots");
 
    // --- extensive: add unlimited reservations ---
    printf("\n--- extensive: add unlimited reservations ---\n");
@@ -302,7 +304,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
    printf("\n--- baseline ---\n");
    {
       lListElem *cr = lCreateElem(RUE_Type);
-      lSetString(cr, RUE_name, "slots");
+      ocs::tom::set<RUE_name>(cr, "slots");
 
       ocs::TopologyString binding_inuse;
       double uti = utilization_max(nullptr, nullptr, cr, 1000, 100, 0.0, 0.0, 0.0, false, binding_inuse);
@@ -321,7 +323,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
    printf("\n--- concurrent accumulation ---\n");
    {
       lListElem *cr = lCreateElem(RUE_Type);
-      lSetString(cr, RUE_name, "slots");
+      ocs::tom::set<RUE_name>(cr, "slots");
 
       utilization_add(cr, 1500, 100, 4, 200, 1, PE_TAG, "pe_slots", "STARTING", false, false, nullptr, nullptr);
       utilization_add(cr, 1500, 100, 4, 201, 1, PE_TAG, "pe_slots", "STARTING", false, false, nullptr, nullptr);
@@ -355,8 +357,8 @@ make_rsmap(const char *id, uint32_t amount, ...) {
 
    va_start(ap, amount);
    while (id != nullptr) {
-      lListElem *ep = lAddElemStr(&ids, RESL_value, id, RESL_Type);
-      lSetUlong(ep, RESL_amount, amount);
+      lListElem *ep = ocs::tom::emplace_back<RESL_value>(&ids, id);
+      ocs::tom::set<RESL_amount>(ep, amount);
       id = va_arg(ap, const char *);
       if (id != nullptr) {
          amount = va_arg(ap, uint32_t);
@@ -372,8 +374,8 @@ make_rsmap(const char *id, uint32_t amount, ...) {
  */
 static uint32_t
 rsmap_at(const lListElem *rde, const char *id) {
-   const lListElem *ep = lGetSubStr(rde, RESL_value, id, RDE_resource_map_list);
-   return (ep != nullptr) ? lGetUlong(ep, RESL_amount) : 0;
+   const lListElem *ep = ocs::tom::find_first_in<RDE_resource_map_list, RESL_value>(rde, id);
+   return (ep != nullptr) ? ocs::tom::get<RESL_amount>(ep) : 0;
 }
 
 /**
@@ -384,8 +386,8 @@ rde_at_time(const lListElem *cr, uint64_t time) {
    const lListElem *hit = nullptr;
    const lListElem *ep;
 
-   for_each_ep (ep, lGetList(cr, RUE_utilized)) {
-      if (lGetUlong64(ep, RDE_time) > time) {
+   for_each_ep (ep, ocs::tom::get<RUE_utilized>(cr)) {
+      if (ocs::tom::get<RDE_time>(ep) > time) {
          break;
       }
       hit = ep;
@@ -422,7 +424,7 @@ static int test_rsmap_utilization() {
    printf("\n - test resource map instances in the diagram - \n\n");
 
    lListElem *cr = lCreateElem(RUE_Type);
-   lSetString(cr, RUE_name, "gpu");
+   ocs::tom::set<RUE_name>(cr, "gpu");
 
    // a reservation takes two instances of gpu0 from 1000 for 200 seconds
    lList *two_of_gpu0 = make_rsmap("gpu0", 2, nullptr);
@@ -491,8 +493,8 @@ static int test_rsmap_utilization() {
    printf("reading back what is taken over a window\n");
    for (int i = 0; windows[i].id != nullptr; i++) {
       lList *taken = utilization_rsmap_max(cr, 1000, windows[i].start, windows[i].duration);
-      const lListElem *ep = lGetElemStr(taken, RESL_value, windows[i].id);
-      uint32_t got = (ep != nullptr) ? lGetUlong(ep, RESL_amount) : 0;
+      const lListElem *ep = ocs::tom::find_first<RESL_value>(taken, windows[i].id);
+      uint32_t got = (ep != nullptr) ? ocs::tom::get<RESL_amount>(ep) : 0;
 
       if (got != windows[i].expected) {
          printf("   FAIL: %s: expected " sge_u32 " of %s over [" sge_u64 "," sge_u64 "),"
@@ -509,13 +511,13 @@ static int test_rsmap_utilization() {
    // What a job holds right now is in the utilization of the moment as well as in the diagram,
    // so the two are combined by taking the larger and not by adding them up. gpu0 is held twice
    // over [1000,1200) in the diagram; saying the same in the now list must not make it four.
-   lSetList(cr, RUE_utilized_now_resource_map_list, make_rsmap("gpu0", 2, "gpu2", 1, nullptr));
+   ocs::tom::set<RUE_utilized_now_resource_map_list>(cr, make_rsmap("gpu0", 2, "gpu2", 1, nullptr));
 
    printf("with the same instances also recorded as held right now\n");
    {
       lList *taken = utilization_rsmap_max(cr, 1000, 1000, 200);
-      const lListElem *ep = lGetElemStr(taken, RESL_value, "gpu0");
-      uint32_t got = (ep != nullptr) ? lGetUlong(ep, RESL_amount) : 0;
+      const lListElem *ep = ocs::tom::find_first<RESL_value>(taken, "gpu0");
+      uint32_t got = (ep != nullptr) ? ocs::tom::get<RESL_amount>(ep) : 0;
       if (got != 2) {
          printf("   FAIL: gpu0 is held twice, in both places, expected 2 got " sge_u32 "\n", got);
          ret++;
@@ -524,8 +526,8 @@ static int test_rsmap_utilization() {
       }
 
       // an instance only the now list knows about still counts
-      ep = lGetElemStr(taken, RESL_value, "gpu2");
-      got = (ep != nullptr) ? lGetUlong(ep, RESL_amount) : 0;
+      ep = ocs::tom::find_first<RESL_value>(taken, "gpu2");
+      got = (ep != nullptr) ? ocs::tom::get<RESL_amount>(ep) : 0;
       if (got != 1) {
          printf("   FAIL: gpu2 is held right now, expected 1 got " sge_u32 "\n", got);
          ret++;
@@ -553,8 +555,8 @@ static int test_rsmap_utilization() {
    {
       // gpu2 is held now and nothing says it still is at 1200, so it does not count there
       lList *taken = utilization_rsmap_max(cr, 1000, 1200, 100);
-      const lListElem *ep = lGetElemStr(taken, RESL_value, "gpu2");
-      uint32_t got = (ep != nullptr) ? lGetUlong(ep, RESL_amount) : 0;
+      const lListElem *ep = ocs::tom::find_first<RESL_value>(taken, "gpu2");
+      uint32_t got = (ep != nullptr) ? ocs::tom::get<RESL_amount>(ep) : 0;
       if (got != 0) {
          printf("   FAIL: gpu2 is held now but the window is later, expected 0 got "
                 sge_u32 "\n", got);
@@ -570,13 +572,13 @@ static int test_rsmap_utilization() {
    // and must not record any.
    {
       lListElem *global_cr = lCreateElem(RUE_Type);
-      lSetString(global_cr, RUE_name, "gpu");
+      ocs::tom::set<RUE_name>(global_cr, "gpu");
       utilization_add(global_cr, 1000, 100, 1, 200, 1, GLOBAL_TAG, "global", "STARTING", false,
                       false, nullptr, one_of_gpu1);
 
       lList *taken = utilization_rsmap_max(global_cr, 1000, 1000, 100);
-      const lListElem *ep = lGetElemStr(taken, RESL_value, "gpu1");
-      if (ep == nullptr || lGetUlong(ep, RESL_amount) != 1) {
+      const lListElem *ep = ocs::tom::find_first<RESL_value>(taken, "gpu1");
+      if (ep == nullptr || ocs::tom::get<RESL_amount>(ep) != 1) {
          printf("   FAIL: a map on the global host records nothing\n");
          ret++;
       } else {
@@ -586,7 +588,7 @@ static int test_rsmap_utilization() {
       lFreeElem(&global_cr);
 
       lListElem *queue_cr = lCreateElem(RUE_Type);
-      lSetString(queue_cr, RUE_name, "gpu");
+      ocs::tom::set<RUE_name>(queue_cr, "gpu");
       utilization_add(queue_cr, 1000, 100, 1, 201, 1, QUEUE_TAG, "a.q", "STARTING", false,
                       false, nullptr, one_of_gpu1);
 
@@ -621,14 +623,14 @@ static int test_rsmap_utilization() {
 static lListElem *
 make_two_cards() {
    lListElem *def = lCreateElem(CE_Type);
-   lSetString(def, CE_name, "gpu");
-   lSetUlong(def, CE_valtype, static_cast<uint32_t>(ocs::CEntry::Type::RSMAP));
+   ocs::tom::set<CE_name>(def, "gpu");
+   ocs::tom::set<CE_valtype>(def, static_cast<uint32_t>(ocs::CEntry::Type::RSMAP));
 
    for (const char *id : {"gpu0", "gpu1"}) {
-      lListElem *resl = lAddSubStr(def, RESL_value, id, CE_resource_map_list, RESL_Type);
-      lSetUlong(resl, RESL_amount, 2);
-      lListElem *prop = lAddSubStr(resl, CE_name, "rack", RESL_properties, CE_Type);
-      lSetString(prop, CE_stringval, "r1");
+      lListElem *resl = ocs::tom::emplace_back_in<CE_resource_map_list, RESL_value>(def, id);
+      ocs::tom::set<RESL_amount>(resl, 2);
+      lListElem *prop = ocs::tom::emplace_back_in<RESL_properties, CE_name>(resl, "rack");
+      ocs::tom::set<CE_stringval>(prop, "r1");
    }
 
    return def;
@@ -661,7 +663,7 @@ static int test_rsmap_below() {
 
    lListElem *def = make_two_cards();
    lListElem *cr = lCreateElem(RUE_Type);
-   lSetString(cr, RUE_name, "gpu");
+   ocs::tom::set<RUE_name>(cr, "gpu");
 
    // nothing booked at all: any group can serve the request straight away
    ret += check_below(def, cr, "id", 2, DISPATCH_TIME_NOW, "an empty diagram answers now");
@@ -693,7 +695,7 @@ static int test_rsmap_below() {
    // taken again from 1500 to 2500 and free for good after that, while gpu1 is held to 3000.
    // The gap at 1000 fits a whole card but does not last, so the answer is gpu0 at 2500.
    lListElem *gap = lCreateElem(RUE_Type);
-   lSetString(gap, RUE_name, "gpu");
+   ocs::tom::set<RUE_name>(gap, "gpu");
    lList *two_of_gpu0 = make_rsmap("gpu0", 2, nullptr);
    utilization_add(gap, 0, 1000, 1, 102, 1, HOST_TAG, "node01", "STARTING", false, false,
                    nullptr, one_of_gpu0);
@@ -708,7 +710,7 @@ static int test_rsmap_below() {
    // a group still taken at the end of the diagram never comes free, but another group which
    // is free throughout still answers
    lListElem *full = lCreateElem(RUE_Type);
-   lSetString(full, RUE_name, "gpu");
+   ocs::tom::set<RUE_name>(full, "gpu");
    lList *both_of_gpu0 = make_rsmap("gpu0", 2, nullptr);
    utilization_add(full, 0, std::numeric_limits<uint64_t>::max(), 2, 105, 1, HOST_TAG, "node01", "STARTING", false,
                    false, nullptr, both_of_gpu0);
@@ -718,7 +720,7 @@ static int test_rsmap_below() {
 
    lList *both_cards = make_rsmap("gpu0", 2, "gpu1", 2, nullptr);
    lListElem *all_full = lCreateElem(RUE_Type);
-   lSetString(all_full, RUE_name, "gpu");
+   ocs::tom::set<RUE_name>(all_full, "gpu");
    utilization_add(all_full, 0, std::numeric_limits<uint64_t>::max(), 4, 104, 1, HOST_TAG, "node01", "STARTING", false,
                    false, nullptr, both_cards);
 
@@ -772,7 +774,7 @@ static int test_below_window_before_closed_period() {
    printf("\n - test a reservation in front of a calendar closed period - \n\n");
 
    lListElem *cr = lCreateElem(RUE_Type);
-   lSetString(cr, RUE_name, "slots");
+   ocs::tom::set<RUE_name>(cr, "slots");
 
    // the running job, and the stretch the calendar blocks off later on
    utilization_add(cr, 100, 100, 1, 1, 1, PE_TAG, "slots", "STARTING", false, false, nullptr, nullptr);

@@ -71,6 +71,8 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_str.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_JAT.h"
 
 #include "spool/ocs_spool_duplicates.h"
 #include "spool/berkeleydb/msg_spoollib_berkeleydb.h"
@@ -1072,10 +1074,10 @@ bool spool_berkeleydb_write_ja_task(lList **answer_list, bdb_info info,
                                object_type_get_name(SGE_TYPE_JATASK),
                                job_id, ja_task_id);
 
-   lXchgList((lListElem *)object, JAT_task_list, &tmp_list);
+   ocs::tom::exchange<JAT_task_list>((lListElem *)object, &tmp_list);
    ret = spool_berkeleydb_write_object(answer_list, info, BDB_JOB_DB,
                                        object, dbkey);
-   lXchgList((lListElem *)object, JAT_task_list, &tmp_list);
+   ocs::tom::exchange<JAT_task_list>((lListElem *)object, &tmp_list);
 
    return ret;
 }
@@ -1112,15 +1114,15 @@ bool spool_berkeleydb_write_job(lList **answer_list, bdb_info info,
                                object_type_get_name(SGE_TYPE_JOB), 
                                job_id);
 
-   lXchgList((lListElem *)object, JB_ja_tasks, &tmp_list);
+   ocs::tom::exchange<JB_ja_tasks>((lListElem *)object, &tmp_list);
    
    ret = spool_berkeleydb_write_object(answer_list, info, BDB_JOB_DB,
                                        object, dbkey);
 
-   lXchgList((lListElem *)object, JB_ja_tasks, &tmp_list);
+   ocs::tom::exchange<JB_ja_tasks>((lListElem *)object, &tmp_list);
 
    if (ret && !only_job) {
-      const lListElem *ja_task = lGetElemUlong(lGetList(object, JB_ja_tasks), JAT_task_number, ja_task_id);
+      const lListElem *ja_task = ocs::tom::find_first<JAT_task_number>(ocs::tom::get<JB_ja_tasks>(object), ja_task_id);
       if (ja_task != nullptr) {
          ret = spool_berkeleydb_write_ja_task(answer_list, info, ja_task, job_id, ja_task_id);
       }
@@ -1156,12 +1158,12 @@ bool spool_berkeleydb_write_cqueue(lList **answer_list, bdb_info info,
                                object_type_get_name(SGE_TYPE_CQUEUE), 
                                key);
 
-   lXchgList((lListElem *)object, CQ_qinstances, &tmp_list);
+   ocs::tom::exchange<CQ_qinstances>((lListElem *)object, &tmp_list);
    
    ret = spool_berkeleydb_write_object(answer_list, info, BDB_CONFIG_DB,
                                        object, dbkey);
 
-   lXchgList((lListElem *)object, CQ_qinstances, &tmp_list);
+   ocs::tom::exchange<CQ_qinstances>((lListElem *)object, &tmp_list);
 
    return ret;
 }
@@ -1637,7 +1639,7 @@ bool spool_berkeleydb_read_keys(lList **answer_list, bdb_info info,
             } else {
                DPRINTF(("read object with key " SFQ ", size %d\n",
                         key_dbt.data, data_dbt.size));
-               lAddElemStr(list, STU_name, (const char *)key_dbt.data, STU_Type);
+               ocs::tom::emplace_back<STU_name>(list, (const char *)key_dbt.data);
 
                PROF_START_MEASUREMENT(SGE_PROF_SPOOLINGIO);
                dbret = dbc->c_get(dbc, &key_dbt, &data_dbt, DB_NEXT);

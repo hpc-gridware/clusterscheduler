@@ -35,6 +35,7 @@
 #include "uti/sge_string.h"
 #include "uti/sge_unistd.h"
 #include "sgeobj/sge_answer.h"
+#include "tom/ocs_Element.h"
 #include "spool/flatfile/sge_flatfile.h"
 #include "procedure/ocs_ProcedureController.h"
 #include "procedure/ocs_ProcedureModel.h"
@@ -361,7 +362,7 @@ qconf_export_path(std::ostream &os, ocs::QConfParameterClient &param,
       const int n_total = (objects != nullptr) ? lGetNumberOfElem(objects) : 0;
 
       for_each_ep_lv(pair, objects) {
-         const char *name = lGetString(pair, VA_variable);
+         const char *name = ocs::tom::get<VA_variable>(pair);
          if (!qconf_name_is_fs_safe(name)) {
             qconf_answer(alpp, ANSWER_QUALITY_ERROR, MSG_QCONF_EXPORTUNSAFENAME_S, name != nullptr ? name : "");
             failures++;
@@ -370,14 +371,14 @@ qconf_export_path(std::ostream &os, ocs::QConfParameterClient &param,
          char lcbuf[1024];
          sge_strlcpy(lcbuf, name, sizeof(lcbuf));
          sge_strtolower(lcbuf, sizeof(lcbuf));
-         if (lGetElemStr(seen, ST_name, lcbuf) != nullptr) {
+         if (static_cast<const lListElem *>(ocs::tom::find_first<ST_name>(seen, lcbuf)) != nullptr) {
             qconf_answer(alpp, ANSWER_QUALITY_ERROR, MSG_QCONF_EXPORTCOLLISION_SS, name, lcbuf);
             failures++;
             continue;
          }
-         lAddElemStr(&seen, ST_name, lcbuf, ST_Type);
+         ocs::tom::emplace_back<ST_name>(&seen, lcbuf);
 
-         failures += qconf_export_write_one(os, lGetString(pair, VA_value),
+         failures += qconf_export_write_one(os, ocs::tom::get<VA_value>(pair),
                                             qconf_export_dest(dir, name, suffix).c_str(), alpp);
       }
       lFreeList(&seen);
@@ -392,7 +393,7 @@ qconf_export_path(std::ostream &os, ocs::QConfParameterClient &param,
          qconf_answer(alpp, ANSWER_QUALITY_ERROR, MSG_QCONF_EXPORTNOOBJECT_S, path);
          failures++;
       } else {
-         failures += qconf_export_write_one(os, lGetString(pair, VA_value),
+         failures += qconf_export_write_one(os, ocs::tom::get<VA_value>(pair),
                                             qconf_export_dest(nullptr, path, suffix).c_str(), alpp);
       }
    }
@@ -436,7 +437,7 @@ qconf_export_singleton(std::ostream &os, ocs::QConfParameterClient &param,
       return 1;
    }
 
-   return qconf_export_write_one(os, lGetString(pair, VA_value), path, alpp);
+   return qconf_export_write_one(os, ocs::tom::get<VA_value>(pair), path, alpp);
 }
 
 bool

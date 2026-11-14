@@ -25,6 +25,7 @@
  */
 
 #include "sgeobj/sge_host.h"
+#include "tom/ocs_Element.h"
 
 #include "uti/sge_string.h"
 #include "uti/sge_hostname.h"
@@ -40,8 +41,8 @@
 const char *
 granted_res_get_id_string(std::string &buffer, const lList *resource_map_list) {
    for_each_ep_lv (resl, resource_map_list) {
-      const char *value = lGetString(resl, RESL_value);
-      uint32_t amount = lGetUlong(resl, RESL_amount);
+      const char *value = ocs::tom::get<RESL_value>(resl);
+      uint32_t amount = ocs::tom::get<RESL_amount>(resl);
       for (uint32_t i = 0; i < amount; ++i) {
          if (!buffer.empty()) {
             buffer += ' ';
@@ -69,8 +70,8 @@ granted_res_get_id_string(std::string &buffer, const lList *resource_map_list) {
 lListElem *
 gru_list_search(lList *granted_resources_list, const char *name, const char *host_name) {
    for_each_rw_lv(gru, granted_resources_list) {
-      if (sge_strnullcmp(lGetString(gru, GRU_name), name) == 0 &&
-          sge_hostcmp(lGetHost(gru, GRU_host), host_name) == 0) {
+      if (sge_strnullcmp(ocs::tom::get<GRU_name>(gru), name) == 0 &&
+          sge_hostcmp(ocs::tom::get<GRU_host>(gru), host_name) == 0) {
          return gru;
       }
    }

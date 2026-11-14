@@ -58,6 +58,9 @@
 #include "sge_answer.h"
 
 #include "cull/sge_eejob_SGEJ_L.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_JAT.h"
+#include "sgeobj/tom/ocs_tom_PE.h"
 
 #include "msg_common.h"
 #include "ocs_BindingInstance.h"
@@ -87,17 +90,17 @@ void ocs::Job::sgeee_sort_jobs(lList *job_list) {
 
       // First try to find an enrolled task. Those will have the highest priority
       // If there is no enrolled task then take the template element
-      const lListElem *tmp_task = lFirst(lGetList(job, JB_ja_tasks));
+      const lListElem *tmp_task = lFirst(static_cast<const lList *>(ocs::tom::get<JB_ja_tasks>(job)));
       if (tmp_task == nullptr) {
-         tmp_task = lFirst(lGetList(job, JB_ja_template));
+         tmp_task = lFirst(static_cast<const lList *>(ocs::tom::get<JB_ja_template>(job)));
       }
 
       // Store sort-criteria and job reference in the temporary list
       lListElem *tmp_sge_job = lCreateElem(SGEJ_Type);
-      lSetDouble(tmp_sge_job, SGEJ_priority, lGetDouble(tmp_task, JAT_prio));
-      lSetUlong64(tmp_sge_job, SGEJ_submission_time, lGetUlong64(job, JB_submission_time));
-      lSetUlong(tmp_sge_job, SGEJ_job_number, lGetUlong(job, JB_job_number));
-      lSetRef(tmp_sge_job, SGEJ_job_reference, job);
+      ocs::tom::set<SGEJ_priority>(tmp_sge_job, ocs::tom::get<JAT_prio>(tmp_task));
+      ocs::tom::set<SGEJ_submission_time>(tmp_sge_job, ocs::tom::get<JB_submission_time>(job));
+      ocs::tom::set<SGEJ_job_number>(tmp_sge_job, ocs::tom::get<JB_job_number>(job));
+      ocs::tom::set<SGEJ_job_reference>(tmp_sge_job, job);
       lAppendElem(tmp_list, tmp_sge_job);
 
       // Remove the job from the original list
@@ -109,7 +112,7 @@ void ocs::Job::sgeee_sort_jobs(lList *job_list) {
 
    // The job list is empty at this point, so we can just append the sorted jobs
    for_each_rw(job, tmp_list) {
-      lAppendElem(job_list, static_cast<lListElem *>(lGetRef(job, SGEJ_job_reference)));
+      lAppendElem(job_list, static_cast<lListElem *>(ocs::tom::get<SGEJ_job_reference>(job)));
    }
 
    // we need to free the tmp list, but not the job references
@@ -150,9 +153,9 @@ ocs::Job::job_get_systemd_slice_and_scope(const lListElem *job, const lListElem 
       bool is_array = job_is_array(job);
       bool is_tightly_integrated = false;
       if (ja_task != nullptr) {
-         const lListElem *pe = lGetObject(ja_task, JAT_pe_object);
+         const lListElem *pe = ocs::tom::get<JAT_pe_object>(ja_task);
          if (pe != nullptr) {
-            is_tightly_integrated = lGetBool(pe, PE_control_slaves);
+            is_tightly_integrated = ocs::tom::get<PE_control_slaves>(pe);
          }
       }
 
@@ -160,7 +163,7 @@ ocs::Job::job_get_systemd_slice_and_scope(const lListElem *job, const lListElem 
       slice = toplevel_slice + "-jobs";
       scope = toplevel_slice + ".";
       if (is_array) {
-         std::string jobtask_id = std::to_string(lGetUlong(job, JB_job_number)) + "." + std::to_string(lGetUlong(ja_task, JAT_task_number));
+         std::string jobtask_id = std::to_string(ocs::tom::get<JB_job_number>(job)) + "." + std::to_string(ocs::tom::get<JAT_task_number>(ja_task));
          // array job
          if (is_tightly_integrated) {
             // array PE job, we have master and slave tasks
@@ -169,7 +172,7 @@ ocs::Job::job_get_systemd_slice_and_scope(const lListElem *job, const lListElem 
             if (pe_task == nullptr) {
                scope += jobtask_id + ".master";
             } else {
-               scope += jobtask_id + '.' + lGetString(pe_task, PET_id);
+               scope += jobtask_id + '.' + ocs::tom::get<PET_id>(pe_task);
             }
          } else {
             // just an array job
@@ -177,7 +180,7 @@ ocs::Job::job_get_systemd_slice_and_scope(const lListElem *job, const lListElem 
             scope += jobtask_id;
          }
       } else {
-         std::string job_id = std::to_string(lGetUlong(job, JB_job_number));
+         std::string job_id = std::to_string(ocs::tom::get<JB_job_number>(job));
          if (is_tightly_integrated) {
             // sequential PE job, we have master and slave tasks
             // ocs8012-jobs-1234.slice, ocs8012.master.scope or ocs8012.<num>.<hostname>.scope
@@ -185,7 +188,7 @@ ocs::Job::job_get_systemd_slice_and_scope(const lListElem *job, const lListElem 
             if (pe_task == nullptr) {
                scope += job_id + ".master";
             } else {
-               scope += job_id + '-' + lGetString(pe_task, PET_id);
+               scope += job_id + '-' + ocs::tom::get<PET_id>(pe_task);
             }
          } else {
             // just a sequential job

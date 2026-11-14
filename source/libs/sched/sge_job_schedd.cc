@@ -56,6 +56,12 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_ja_task.h"
 #include "sgeobj/sge_pe_task.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_JAT.h"
+#include "sgeobj/tom/ocs_tom_JG.h"
+#include "sgeobj/tom/ocs_tom_JRE.h"
+#include "sgeobj/tom/ocs_tom_PET.h"
+#include "sgeobj/tom/ocs_tom_RN.h"
 
 #include "sge_job_schedd.h"
 #include "schedd_monitor.h"
@@ -108,7 +114,7 @@ bool task_get_duration(uint64_t *duration, const lListElem *ja_task) {
    DENTER(TOP_LAYER);
 
    if (ja_task != nullptr) {
-      *duration = lGetUlong64(ja_task, JAT_wallclock_limit);
+      *duration = ocs::tom::get<JAT_wallclock_limit>(ja_task);
       if (*duration == std::numeric_limits<uint64_t>::max()) {
          *duration = sge_gmt32_to_gmt64(sconf_get_default_duration());
       }
@@ -197,8 +203,8 @@ bool job_move_first_pending_to_running(lListElem **pending_job, lList **splitted
    uint32_t job_id;
    uint32_t ja_task_id;
 
-   job_id = lGetUlong(*pending_job, JB_job_number);
-   ja_task_list = lGetListRW(*pending_job, JB_ja_tasks);
+   job_id = ocs::tom::get<JB_job_number>(*pending_job);
+   ja_task_list = ocs::tom::get<JB_ja_tasks>(*pending_job);
    ja_task = lFirstRW(ja_task_list);
    
    /*
@@ -208,7 +214,7 @@ bool job_move_first_pending_to_running(lListElem **pending_job, lList **splitted
       const lDescr *descriptor = lGetElemDescr(*pending_job);
       *(splitted_jobs[SPLIT_RUNNING]) = lCreateList("", descriptor);
    } else {
-      running_job = lGetElemUlongRW(*(splitted_jobs[SPLIT_RUNNING]), JB_job_number, job_id);
+      running_job = ocs::tom::find_first_rw<JB_job_number>(*(splitted_jobs[SPLIT_RUNNING]), job_id);
    }
    /*
     * Create a running job if it does not exist aleady 
@@ -221,19 +227,19 @@ bool job_move_first_pending_to_running(lListElem **pending_job, lList **splitted
       lList *a_h_ids = nullptr;
       lList *r_tasks = nullptr;
       
-      lXchgList(*pending_job, JB_ja_n_h_ids, &n_h_ids);
-      lXchgList(*pending_job, JB_ja_u_h_ids, &u_h_ids);
-      lXchgList(*pending_job, JB_ja_o_h_ids, &o_h_ids);
-      lXchgList(*pending_job, JB_ja_s_h_ids, &s_h_ids);
-      lXchgList(*pending_job, JB_ja_a_h_ids, &a_h_ids);
-      lXchgList(*pending_job, JB_ja_tasks, &r_tasks);
+      ocs::tom::exchange<JB_ja_n_h_ids>(*pending_job, &n_h_ids);
+      ocs::tom::exchange<JB_ja_u_h_ids>(*pending_job, &u_h_ids);
+      ocs::tom::exchange<JB_ja_o_h_ids>(*pending_job, &o_h_ids);
+      ocs::tom::exchange<JB_ja_s_h_ids>(*pending_job, &s_h_ids);
+      ocs::tom::exchange<JB_ja_a_h_ids>(*pending_job, &a_h_ids);
+      ocs::tom::exchange<JB_ja_tasks>(*pending_job, &r_tasks);
       running_job = lCopyElem(*pending_job);
-      lXchgList(*pending_job, JB_ja_n_h_ids, &n_h_ids);
-      lXchgList(*pending_job, JB_ja_u_h_ids, &u_h_ids);
-      lXchgList(*pending_job, JB_ja_o_h_ids, &o_h_ids);
-      lXchgList(*pending_job, JB_ja_s_h_ids, &s_h_ids);
-      lXchgList(*pending_job, JB_ja_a_h_ids, &a_h_ids);
-      lXchgList(*pending_job, JB_ja_tasks, &r_tasks);
+      ocs::tom::exchange<JB_ja_n_h_ids>(*pending_job, &n_h_ids);
+      ocs::tom::exchange<JB_ja_u_h_ids>(*pending_job, &u_h_ids);
+      ocs::tom::exchange<JB_ja_o_h_ids>(*pending_job, &o_h_ids);
+      ocs::tom::exchange<JB_ja_s_h_ids>(*pending_job, &s_h_ids);
+      ocs::tom::exchange<JB_ja_a_h_ids>(*pending_job, &a_h_ids);
+      ocs::tom::exchange<JB_ja_tasks>(*pending_job, &r_tasks);
       lAppendElem(*(splitted_jobs[SPLIT_RUNNING]), running_job); 
    } 
 
@@ -242,7 +248,7 @@ bool job_move_first_pending_to_running(lListElem **pending_job, lList **splitted
     * or move the existing array task into the running job 
     */
    if (ja_task == nullptr) {
-      const lList *n_h_ids = lGetList(*pending_job, JB_ja_n_h_ids);
+      const lList *n_h_ids = ocs::tom::get<JB_ja_n_h_ids>(*pending_job);
 
       ja_task_id = range_list_get_first_id(n_h_ids, nullptr);
       ja_task = job_search_task(*pending_job, nullptr, ja_task_id);
@@ -255,16 +261,16 @@ bool job_move_first_pending_to_running(lListElem **pending_job, lList **splitted
       if (ja_task == nullptr) {
          ja_task = job_create_task(*pending_job, nullptr, ja_task_id);
       }
-      ja_task_list = lGetListRW(*pending_job, JB_ja_tasks);
+      ja_task_list = ocs::tom::get<JB_ja_tasks>(*pending_job);
    }
   
    /*
     * Create an array task list if necessary
     */
-   r_ja_task_list = lGetListRW(running_job, JB_ja_tasks); 
+   r_ja_task_list = ocs::tom::get<JB_ja_tasks>(running_job); 
    if (r_ja_task_list == nullptr) {
       r_ja_task_list = lCreateList("", lGetElemDescr(ja_task));
-      lSetList(running_job, JB_ja_tasks, r_ja_task_list);
+      ocs::tom::set<JB_ja_tasks>(running_job, r_ja_task_list);
    }
   
    lDechainElem(ja_task_list, ja_task);
@@ -304,18 +310,18 @@ int job_get_next_task(lListElem *job, lListElem **task_ret, uint32_t *id_ret) {
    lListElem *ja_task;
    uint32_t ja_task_id;
 
-   ja_task = lFirstRW(lGetList(job, JB_ja_tasks));
+   ja_task = lFirstRW(ocs::tom::get<JB_ja_tasks>(job));
    if (ja_task == nullptr) {
       lList *answer_list = nullptr;
 
-      ja_task_id = range_list_get_first_id(lGetList(job, JB_ja_n_h_ids), &answer_list);
+      ja_task_id = range_list_get_first_id(ocs::tom::get<JB_ja_n_h_ids>(job), &answer_list);
       if (answer_list_has_error(&answer_list)) {
          lFreeList(&answer_list);
          DRETURN(-1);
       }
       ja_task = job_get_ja_task_template_pending(job, ja_task_id);
    } else {
-      ja_task_id = lGetUlong(ja_task, JAT_task_number);
+      ja_task_id = ocs::tom::get<JAT_task_number>(ja_task);
    }
 
    *task_ret = ja_task;
@@ -340,12 +346,12 @@ void user_list_init_jc(lList **user_list, lList **splitted_job_lists[]) {
    if (splitted_job_lists[SPLIT_RUNNING] != nullptr) {
       for_each_ep_lv(job, *(splitted_job_lists[SPLIT_RUNNING])) {
          // @todo (CS-451) the 3rd argument to sge_inc_jc is "slots", but we pass the number of array tasks. Correct?
-         sge_inc_jc(user_list, lGetString(job, JB_owner), job_get_ja_tasks(job));
+         sge_inc_jc(user_list, ocs::tom::get<JB_owner>(job), job_get_ja_tasks(job));
       }
    }
    if (splitted_job_lists[SPLIT_SUSPENDED] != nullptr) {
       for_each_ep_lv(job, *(splitted_job_lists[SPLIT_SUSPENDED])) {
-         sge_inc_jc(user_list, lGetString(job, JB_owner), job_get_ja_tasks(job));
+         sge_inc_jc(user_list, ocs::tom::get<JB_owner>(job), job_get_ja_tasks(job));
       }
    }
 }
@@ -393,11 +399,11 @@ void job_lists_split_with_reference_to_max_running(bool monitor_next_run, lList 
       if (user_name == nullptr) {
          next_user = lFirstRW(*user_list);
       } else {
-         next_user = lGetElemStrRW(*user_list, JC_name, user_name);
+         next_user = ocs::tom::find_first_rw<JC_name>(*user_list, user_name);
       }
       while ((user = next_user) != nullptr) {
-         uint32_t jobs_for_user = lGetUlong(user, JC_jobs);
-         const char *jc_user_name = lGetString(user, JC_name);
+         uint32_t jobs_for_user = ocs::tom::get<JC_jobs>(user);
+         const char *jc_user_name = ocs::tom::get<JC_name>(user);
 
          if (user_name == nullptr) {
             next_user = lNextRW(user);
@@ -410,15 +416,13 @@ void job_lists_split_with_reference_to_max_running(bool monitor_next_run, lList 
             lListElem *next_user_job = nullptr;    /* JB_Type */
 
             DPRINTF("USER %s reached limit of %d jobs\n", jc_user_name, max_jobs_per_user);
-            next_user_job = lGetElemStrFirstRW(*(job_lists[SPLIT_PENDING]), 
-                                             JB_owner, jc_user_name, 
+            next_user_job = ocs::tom::find_first_rw<JB_owner>(*(job_lists[SPLIT_PENDING]), jc_user_name, 
                                              &user_iterator);
             while ((user_job = next_user_job)) {
-               next_user_job = lGetElemStrNextRW(*(job_lists[SPLIT_PENDING]), 
-                                               JB_owner, jc_user_name, 
+               next_user_job = ocs::tom::find_next_rw<JB_owner>(*(job_lists[SPLIT_PENDING]), jc_user_name, 
                                                &user_iterator);
                schedd_mes_add(nullptr, monitor_next_run,
-                              lGetUlong(user_job, JB_job_number),
+                              ocs::tom::get<JB_job_number>(user_job),
                               SCHEDD_INFO_USRGRPLIMIT_);
 
                lDechainElem(*(job_lists[SPLIT_PENDING]), user_job);
@@ -517,17 +521,17 @@ void split_jobs(lList **job_list, uint32_t max_aj_instances,
          target_job[i] = nullptr;
          target_tasks[i] = nullptr;
       }
-      task_instances = lGetNumberOfElem(lGetList(job, JB_ja_tasks)); 
+      task_instances = lGetNumberOfElem(ocs::tom::get<JB_ja_tasks>(job)); 
 
       /*
        * Remove all ballast for a minimal copy operation of the job
        */
-      lXchgList(job, JB_ja_tasks, &ja_task_list);
-      lXchgList(job, JB_ja_n_h_ids, &n_h_ids);
-      lXchgList(job, JB_ja_u_h_ids, &u_h_ids);
-      lXchgList(job, JB_ja_o_h_ids, &o_h_ids);
-      lXchgList(job, JB_ja_s_h_ids, &s_h_ids);
-      lXchgList(job, JB_ja_a_h_ids, &a_h_ids);
+      ocs::tom::exchange<JB_ja_tasks>(job, &ja_task_list);
+      ocs::tom::exchange<JB_ja_n_h_ids>(job, &n_h_ids);
+      ocs::tom::exchange<JB_ja_u_h_ids>(job, &u_h_ids);
+      ocs::tom::exchange<JB_ja_o_h_ids>(job, &o_h_ids);
+      ocs::tom::exchange<JB_ja_s_h_ids>(job, &s_h_ids);
+      ocs::tom::exchange<JB_ja_a_h_ids>(job, &a_h_ids);
 
       /*
        * Split enrolled tasks
@@ -537,9 +541,9 @@ void split_jobs(lList **job_list, uint32_t max_aj_instances,
 #endif
       next_ja_task = lFirstRW(ja_task_list);
       while ((ja_task = next_ja_task)) {
-         uint32_t ja_task_status = lGetUlong(ja_task, JAT_status);
-         uint32_t ja_task_state = lGetUlong(ja_task, JAT_state);
-         uint32_t ja_task_hold = lGetUlong(ja_task, JAT_hold);
+         uint32_t ja_task_status = ocs::tom::get<JAT_status>(ja_task);
+         uint32_t ja_task_state = ocs::tom::get<JAT_state>(ja_task);
+         uint32_t ja_task_hold = ocs::tom::get<JAT_hold>(ja_task);
          lList **target = nullptr;
 #ifdef JOB_SPLIT_DEBUG
          uint32_t ja_task_id = lGetUlong(ja_task, JAT_task_number);
@@ -580,7 +584,7 @@ void split_jobs(lList **job_list, uint32_t max_aj_instances,
             target = &(target_tasks[SPLIT_ERROR]);
          } 
          if (target == nullptr && result_list[SPLIT_WAITING_DUE_TO_TIME] &&
-             (lGetUlong64(job, JB_execution_time) > sge_get_gmt64()) &&
+             (ocs::tom::get<JB_execution_time>(job) > sge_get_gmt64()) &&
              (ja_task_status == JIDLE)) {
 #ifdef JOB_SPLIT_DEBUG
             DPRINTF("Task " sge_u32 " is waiting due to time.\n", ja_task_id);
@@ -588,7 +592,7 @@ void split_jobs(lList **job_list, uint32_t max_aj_instances,
             target = &(target_tasks[SPLIT_WAITING_DUE_TO_TIME]);
          }
          if (target == nullptr && result_list[SPLIT_WAITING_DUE_TO_PREDECESSOR] &&
-             (lGetList(job, JB_jid_predecessor_list) != nullptr) &&
+             (static_cast<const lList *>(ocs::tom::get<JB_jid_predecessor_list>(job)) != nullptr) &&
              (ja_task_status == JIDLE)) {
 #ifdef JOB_SPLIT_DEBUG
             DPRINTF("Task " sge_u32 " is waiting due to pred.\n", ja_task_id);
@@ -611,8 +615,8 @@ void split_jobs(lList **job_list, uint32_t max_aj_instances,
 #endif
                target = &(target_tasks[SPLIT_SUSPENDED]);
             } else {
-               if ((lGetUlong(ja_task, JAT_state) & JSUSPENDED_ON_SUBORDINATE) ||
-                   (lGetUlong(ja_task, JAT_state) & JSUSPENDED_ON_SLOTWISE_SUBORDINATE)) {
+               if ((ocs::tom::get<JAT_state>(ja_task) & JSUSPENDED_ON_SUBORDINATE) ||
+                   (ocs::tom::get<JAT_state>(ja_task) & JSUSPENDED_ON_SLOTWISE_SUBORDINATE)) {
 #ifdef JOB_SPLIT_DEBUG
                   DPRINTF("Task " sge_u32 " is in suspended state\n",ja_task_id);
 #endif
@@ -658,7 +662,7 @@ void split_jobs(lList **job_list, uint32_t max_aj_instances,
 
       if (target_for_ids == SPLIT_LAST &&
           result_list[SPLIT_WAITING_DUE_TO_PREDECESSOR] &&
-          lGetList(job, JB_jid_predecessor_list) != nullptr) {
+          static_cast<const lList *>(ocs::tom::get<JB_jid_predecessor_list>(job)) != nullptr) {
 #ifdef JOB_SPLIT_DEBUG
          DPRINTF("Unenrolled tasks are waiting for pred. jobs\n");
 #endif
@@ -668,7 +672,7 @@ void split_jobs(lList **job_list, uint32_t max_aj_instances,
       }
       if (target_for_ids == SPLIT_LAST &&
           result_list[SPLIT_WAITING_DUE_TO_TIME] &&
-          lGetUlong64(job, JB_execution_time) > sge_get_gmt64()) {
+          ocs::tom::get<JB_execution_time>(job) > sge_get_gmt64()) {
 #ifdef JOB_SPLIT_DEBUG
          DPRINTF("Unenrolled tasks are waiting due to time\n");
 #endif
@@ -679,7 +683,7 @@ void split_jobs(lList **job_list, uint32_t max_aj_instances,
       if (target_for_ids == SPLIT_LAST &&
           result_list[SPLIT_PENDING_EXCLUDED_INSTANCES] &&
           max_aj_instances > 0) {
-         uint32_t task_concurrency = lGetUlong(job, JB_ja_task_concurrency);
+         uint32_t task_concurrency = ocs::tom::get<JB_ja_task_concurrency>(job);
          uint32_t max_aj_conc_instances = max_aj_instances;
          if (task_concurrency > 0 && task_concurrency < max_aj_instances) {
             max_aj_conc_instances = task_concurrency;
@@ -772,13 +776,13 @@ void split_jobs(lList **job_list, uint32_t max_aj_instances,
          DPRINTF(("Move not enrolled %s tasks\n",
                   get_name_of_split_value(target_for_ids)));
 #endif
-         lXchgList(target_job[target_for_ids], JB_ja_n_h_ids, &target_ids);
+         ocs::tom::exchange<JB_ja_n_h_ids>(target_job[target_for_ids], &target_ids);
       }
       if (result_list[SPLIT_PENDING] != nullptr && n_h_ids != nullptr) {
 #ifdef JOB_SPLIT_DEBUG 
          DPRINTF("Move not enrolled pending tasks\n");
 #endif
-         lXchgList(target_job[SPLIT_PENDING], JB_ja_n_h_ids, &n_h_ids);
+         ocs::tom::exchange<JB_ja_n_h_ids>(target_job[SPLIT_PENDING], &n_h_ids);
       }
       if (result_list[SPLIT_HOLD] != nullptr &&
           (u_h_ids != nullptr || o_h_ids != nullptr ||
@@ -786,17 +790,17 @@ void split_jobs(lList **job_list, uint32_t max_aj_instances,
 #ifdef JOB_SPLIT_DEBUG
          DPRINTF("Move not enrolled hold tasks\n");
 #endif
-         lXchgList(target_job[SPLIT_HOLD], JB_ja_u_h_ids, &u_h_ids);
-         lXchgList(target_job[SPLIT_HOLD], JB_ja_o_h_ids, &o_h_ids);
-         lXchgList(target_job[SPLIT_HOLD], JB_ja_s_h_ids, &s_h_ids);
-         lXchgList(target_job[SPLIT_HOLD], JB_ja_a_h_ids, &a_h_ids);
+         ocs::tom::exchange<JB_ja_u_h_ids>(target_job[SPLIT_HOLD], &u_h_ids);
+         ocs::tom::exchange<JB_ja_o_h_ids>(target_job[SPLIT_HOLD], &o_h_ids);
+         ocs::tom::exchange<JB_ja_s_h_ids>(target_job[SPLIT_HOLD], &s_h_ids);
+         ocs::tom::exchange<JB_ja_a_h_ids>(target_job[SPLIT_HOLD], &a_h_ids);
       }
       for (i = SPLIT_FIRST; i < SPLIT_LAST; i++) {
          if (target_tasks[i] != nullptr) {
 #ifdef JOB_SPLIT_DEBUG 
             DPRINTF("Put " SFQ "-tasks into job\n", get_name_of_split_value(i));
 #endif
-            lSetList(target_job[i], JB_ja_tasks, target_tasks[i]);
+            ocs::tom::set<JB_ja_tasks>(target_job[i], target_tasks[i]);
          }
       }
       
@@ -807,12 +811,12 @@ void split_jobs(lList **job_list, uint32_t max_aj_instances,
 #ifdef JOB_SPLIT_DEBUG
          DPRINTF("Put unenrolled tasks back into initial container\n");
 #endif
-         lXchgList(job, JB_ja_tasks, &ja_task_list);
-         lXchgList(job, JB_ja_n_h_ids, &n_h_ids);
-         lXchgList(job, JB_ja_u_h_ids, &u_h_ids);
-         lXchgList(job, JB_ja_o_h_ids, &o_h_ids);
-         lXchgList(job, JB_ja_s_h_ids, &s_h_ids);
-         lXchgList(job, JB_ja_a_h_ids, &a_h_ids);
+         ocs::tom::exchange<JB_ja_tasks>(job, &ja_task_list);
+         ocs::tom::exchange<JB_ja_n_h_ids>(job, &n_h_ids);
+         ocs::tom::exchange<JB_ja_u_h_ids>(job, &u_h_ids);
+         ocs::tom::exchange<JB_ja_o_h_ids>(job, &o_h_ids);
+         ocs::tom::exchange<JB_ja_s_h_ids>(job, &s_h_ids);
+         ocs::tom::exchange<JB_ja_a_h_ids>(job, &a_h_ids);
       } else {
          if (!do_copy) {
             lFreeList(&ja_task_list);
@@ -862,7 +866,7 @@ void trash_splitted_jobs(bool monitor_next_run, lList **splitted_job_lists[]) {
       int is_first_of_category = 1;
 
       for_each_ep_lv(job, *job_list) {
-         uint32_t job_id = lGetUlong(job, JB_job_number);
+         uint32_t job_id = ocs::tom::get<JB_job_number>(job);
 
          switch (split_id_a[i]) {
          case SPLIT_ERROR:
@@ -967,13 +971,13 @@ void sge_dec_jc(lList **jcpp, const char *name, int slots) {
    int n = 0;
    lListElem *ep;
 
-   ep = lGetElemStrRW(*jcpp, JC_name, name);
+   ep = ocs::tom::find_first_rw<JC_name>(*jcpp, name);
    if (ep) {
-      n = lGetUlong(ep, JC_jobs) - slots;
+      n = ocs::tom::get<JC_jobs>(ep) - slots;
       if (n <= 0)
-         lDelElemStr(jcpp, JC_name, name);
+         ocs::tom::erase<JC_name>(jcpp, name);
       else
-         lSetUlong(ep, JC_jobs, n);
+         ocs::tom::set<JC_jobs>(ep, n);
    }
 
    DRETURN_VOID;
@@ -992,15 +996,15 @@ void sge_inc_jc(lList **jcpp, const char *name, int slots) {
    int n = 0;
    lListElem *ep;
 
-   ep = lGetElemStrRW(*jcpp, JC_name, name);
+   ep = ocs::tom::find_first_rw<JC_name>(*jcpp, name);
    if (ep) 
-      n = lGetUlong(ep, JC_jobs);
+      n = ocs::tom::get<JC_jobs>(ep);
    else 
-      ep = lAddElemStr(jcpp, JC_name, name, JC_Type);
+      ep = ocs::tom::emplace_back<JC_name>(jcpp, name);
 
    n += slots;
 
-   lSetUlong(ep, JC_jobs, n);
+   ocs::tom::set<JC_jobs>(ep, n);
 
    DRETURN_VOID;
 }
@@ -1019,15 +1023,15 @@ int nslots_granted(const lList *granted, const char *qhostname) {
 
    if (qhostname == nullptr) {
       for_each_ep_lv(gdil_ep, granted) {
-         nslots += lGetUlong(gdil_ep, JG_slots);
+         nslots += ocs::tom::get<JG_slots>(gdil_ep);
       }
    } else {
       const void *iterator = nullptr;
 
-      const lListElem *gdil_ep = lGetElemHostFirst(granted, JG_qhostname, qhostname, &iterator);
+      const lListElem *gdil_ep = ocs::tom::find_first<JG_qhostname>(granted, qhostname, &iterator);
       while (gdil_ep != nullptr) {
-         nslots += lGetUlong(gdil_ep, JG_slots);
-         gdil_ep = lGetElemHostNext(granted, JG_qhostname , qhostname, &iterator);
+         nslots += ocs::tom::get<JG_slots>(gdil_ep);
+         gdil_ep = ocs::tom::find_next<JG_qhostname>(granted , qhostname, &iterator);
       }
    }
 
@@ -1052,19 +1056,19 @@ const char *qname
    const lListElem *ep;
    const char *task_qname;
 
-   for_each_ep_lv(jatask, lGetList(job, JB_ja_tasks)) {
-      const char *master_qname = lGetString(jatask, JAT_master_queue);
+   for_each_ep_lv(jatask, ocs::tom::get<JB_ja_tasks>(job)) {
+      const char *master_qname = ocs::tom::get<JAT_master_queue>(jatask);
 
       /* always consider the master queue to have active sub-tasks */
       if (master_qname && !strcmp(qname, master_qname)) {
          return 1;
       }
 
-      for_each_ep_lv(petask, lGetList(jatask, JAT_task_list)) {
+      for_each_ep_lv(petask, ocs::tom::get<JAT_task_list>(jatask)) {
          if (qname &&
-             lGetUlong(petask, PET_status) != JFINISHED &&
-             ((ep=lFirst(lGetList(petask, PET_granted_destin_identifier_list)))) &&
-             ((task_qname=lGetString(ep, JG_qname))) &&
+             ocs::tom::get<PET_status>(petask) != JFINISHED &&
+             ((ep=lFirst(ocs::tom::get<PET_granted_destin_identifier_list>(petask)))) &&
+             ((task_qname=ocs::tom::get<JG_qname>(ep))) &&
              !strcmp(qname, task_qname)) {
             return 1;
          }   
@@ -1093,24 +1097,24 @@ active_nslots_granted(lListElem *job, const lList *granted, const char *qhostnam
 
    if (qhostname == nullptr) {
       for_each_ep_lv(gdil_ep, granted) {   /* for all hosts */
-         for_each_ep_lv(jatask, lGetList(job, JB_ja_tasks)) {
-            const lList *task_list = lGetList(jatask, JAT_task_list);
-            if (task_list == nullptr || active_subtasks(job, lGetString(gdil_ep, JG_qname)))
-               nslots += lGetUlong(gdil_ep, JG_slots);
+         for_each_ep_lv(jatask, ocs::tom::get<JB_ja_tasks>(job)) {
+            const lList *task_list = ocs::tom::get<JAT_task_list>(jatask);
+            if (task_list == nullptr || active_subtasks(job, ocs::tom::get<JG_qname>(gdil_ep)))
+               nslots += ocs::tom::get<JG_slots>(gdil_ep);
          }
       }
    } else {
       const void *iterator = nullptr;
 
       /* only for qhostname */
-      lListElem *gdil_ep = lGetElemHostFirstRW(granted, JG_qhostname, qhostname, &iterator);
+      lListElem *gdil_ep = ocs::tom::find_first_rw<JG_qhostname>(granted, qhostname, &iterator);
       while (gdil_ep != nullptr) {
-         for_each_ep_lv(jatask, lGetList(job, JB_ja_tasks)) {
-            const lList *task_list = lGetList(jatask, JAT_task_list);
-            if (task_list == nullptr || active_subtasks(job, lGetString(gdil_ep, JG_qname)))
-               nslots += lGetUlong(gdil_ep, JG_slots);
+         for_each_ep_lv(jatask, ocs::tom::get<JB_ja_tasks>(job)) {
+            const lList *task_list = ocs::tom::get<JAT_task_list>(jatask);
+            if (task_list == nullptr || active_subtasks(job, ocs::tom::get<JG_qname>(gdil_ep)))
+               nslots += ocs::tom::get<JG_slots>(gdil_ep);
          }
-         gdil_ep = lGetElemHostNextRW(granted, JG_qhostname , qhostname, &iterator); 
+         gdil_ep = ocs::tom::find_next_rw<JG_qhostname>(granted , qhostname, &iterator); 
       }
    }
 
@@ -1129,7 +1133,7 @@ int sge_granted_slots(const lList *gdil) {
    int slots = 0;
 
    for_each_ep_lv(ep, gdil)
-      slots += lGetUlong(ep, JG_slots);
+      slots += ocs::tom::get<JG_slots>(ep);
 
    return slots;
 }

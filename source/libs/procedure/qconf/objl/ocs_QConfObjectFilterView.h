@@ -28,6 +28,7 @@
 
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/cull/sge_str_ST_L.h"
+#include "tom/ocs_Element.h"
 #include "spool/flatfile/ocs_spool_json.h"
 #include "uti/sge_dstring.h"
 
@@ -77,7 +78,7 @@ namespace ocs {
           * matched nothing, which is what keeps an empty answer valid JSON */
          lList *name_list = lCreateList("objectfilter", ST_Type);
          for (const auto &name : names) {
-            lAddElemStr(&name_list, ST_name, name.c_str(), ST_Type);
+            ocs::tom::emplace_back<ST_name>(&name_list, name.c_str());
          }
 
          lList *alp = nullptr;

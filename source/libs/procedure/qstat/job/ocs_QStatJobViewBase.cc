@@ -37,6 +37,10 @@
 #include "sgeobj/sge_pe_task.h"
 #include "sgeobj/sge_range.h"
 #include "sgeobj/sge_usage.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_JAT.h"
+#include "sgeobj/tom/ocs_tom_PET.h"
+#include "sgeobj/tom/ocs_tom_UA.h"
 
 #include "qstat/job/ocs_QStatJobViewBase.h"
 
@@ -160,13 +164,13 @@ void ocs::QStatJobViewBase::show_job(std::ostream &os, const lList *ilp, const l
 
    // start task specific output
    report_task_list_started(os, job);
-   if (lGetPosViaElem(job, JB_ja_tasks, SGE_NO_ABORT) >= 0) {
+   if (ocs::tom::has<JB_ja_tasks>(job)) {
       // the tasks in the order of their numbers; the job is the caller's and is not sorted itself
       std::vector<const lListElem *> ja_tasks;
-      for_each_ep_lv(ja_task, lGetList(job, JB_ja_tasks)) {
+      for_each_ep_lv(ja_task, ocs::tom::get<JB_ja_tasks>(job)) {
          ja_tasks.push_back(ja_task);
       }
-      std::ranges::sort(ja_tasks, {}, [](const lListElem *ja_task) { return lGetUlong(ja_task, JAT_task_number); });
+      std::ranges::sort(ja_tasks, {}, [](const lListElem *ja_task) { return ocs::tom::get<JAT_task_number>(ja_task); });
 
       for (const lListElem *jatep : ja_tasks) {
          report_task_started(os, job, jatep);
@@ -216,9 +220,9 @@ uint32_t ocs::QStatJobViewBase::count_pending_tasks(const lListElem *job) {
       }
    }
 
-   if (lGetPosViaElem(job, JB_ja_tasks, SGE_NO_ABORT) >= 0) {
-      for_each_ep_lv(ja_task, lGetList(job, JB_ja_tasks)) {
-         if (lGetUlong(ja_task, JAT_status) == JIDLE && !ISSET(lGetUlong(ja_task, JAT_state), JERROR)) {
+   if (ocs::tom::has<JB_ja_tasks>(job)) {
+      for_each_ep_lv(ja_task, ocs::tom::get<JB_ja_tasks>(job)) {
+         if (ocs::tom::get<JAT_status>(ja_task) == JIDLE && !ISSET(ocs::tom::get<JAT_state>(ja_task), JERROR)) {
             pending++;
          }
       }
@@ -233,18 +237,18 @@ uint32_t ocs::QStatJobViewBase::count_pending_tasks(const lListElem *job) {
  */
 void ocs::QStatJobViewBase::accumulate_usage(const lListElem *task, Usage &usage) {
    DENTER(TOP_LAYER);
-   usage.have_mem_details = lGetSubStr(task, UA_name, USAGE_ATTR_PSS, JAT_scaled_usage_list) != nullptr;
+   usage.have_mem_details = static_cast<const lListElem *>(ocs::tom::find_first_in<JAT_scaled_usage_list, UA_name>(task, USAGE_ATTR_PSS)) != nullptr;
 
    /* display online job usage separately for each array job but summarized over all pe_tasks */
    // adds one value of a scaled usage list to a total; an attribute the list does not hold adds nothing
    const auto sum_up = [](const lList *usage_list, double &dst, const char *attr) {
-      if (const lListElem *uep = lGetElemStr(usage_list, UA_name, attr)) {
-         dst += lGetDouble(uep, UA_value);
+      if (const lListElem *uep = ocs::tom::find_first<UA_name>(usage_list, attr)) {
+         dst += ocs::tom::get<UA_value>(uep);
       }
    };
 
    /* master task */
-   const lList *ja_task_usage = lGetList(task, JAT_scaled_usage_list);
+   const lList *ja_task_usage = ocs::tom::get<JAT_scaled_usage_list>(task);
    sum_up(ja_task_usage, usage.wallclock, USAGE_ATTR_WALLCLOCK);
    sum_up(ja_task_usage, usage.cpu, USAGE_ATTR_CPU);
    sum_up(ja_task_usage, usage.mem, USAGE_ATTR_MEM);
@@ -263,9 +267,9 @@ void ocs::QStatJobViewBase::accumulate_usage(const lListElem *task, Usage &usage
    }
 
    /* slave tasks */
-   for_each_ep_lv(pe_task_ep, lGetList(task, JAT_task_list)) {
+   for_each_ep_lv(pe_task_ep, ocs::tom::get<JAT_task_list>(task)) {
       // we do not sum up wallclock usage per pe task; a PE task keeps its usage in its own list
-      const lList *pe_task_usage = lGetList(pe_task_ep, PET_scaled_usage);
+      const lList *pe_task_usage = ocs::tom::get<PET_scaled_usage>(pe_task_ep);
       sum_up(pe_task_usage, usage.cpu, USAGE_ATTR_CPU);
       sum_up(pe_task_usage, usage.mem, USAGE_ATTR_MEM);
       sum_up(pe_task_usage, usage.io, USAGE_ATTR_IO);

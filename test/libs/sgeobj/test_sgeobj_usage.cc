@@ -36,6 +36,11 @@
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/ocs_Usage.h"
 #include "sgeobj/ocs_UserProject.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_JAT.h"
+#include "sgeobj/tom/ocs_tom_UA.h"
+#include "sgeobj/tom/ocs_tom_UPP.h"
+#include "sgeobj/tom/ocs_tom_UPU.h"
 
 /* CS-1239 step 10: pure-function unit tests for the usage primitives the
  * worker-thread booking helper (sge_book_finished_job_usage) and the TET
@@ -100,22 +105,22 @@ static int s_fail = 0;
 static lList *
 make_usage_list(const char *list_name, const char *attr, double value) {
    lList *l = lCreateList(list_name, UA_Type);
-   lListElem *e = lAddElemStr(&l, UA_name, attr, UA_Type);
-   lSetDouble(e, UA_value, value);
+   lListElem *e = ocs::tom::emplace_back<UA_name>(&l, attr);
+   ocs::tom::set<UA_value>(e, value);
    return l;
 }
 
 static lListElem *
 make_user(const char *name) {
    lListElem *u = lCreateElem(UU_Type);
-   lSetString(u, UU_name, name);
+   ocs::tom::set<UU_name>(u, name);
    return u;
 }
 
 static lListElem *
 make_project(const char *name) {
    lListElem *p = lCreateElem(PR_Type);
-   lSetString(p, PR_name, name);
+   ocs::tom::set<PR_name>(p, name);
    return p;
 }
 
@@ -126,18 +131,18 @@ static lListElem *
 make_job(uint32_t job_number, const char *owner, const char *project,
          double cpu) {
    lListElem *job = lCreateElem(JB_Type);
-   lSetUlong(job, JB_job_number, job_number);
-   lSetString(job, JB_owner, owner);
+   ocs::tom::set<JB_job_number>(job, job_number);
+   ocs::tom::set<JB_owner>(job, owner);
    if (project != nullptr) {
-      lSetString(job, JB_project, project);
+      ocs::tom::set<JB_project>(job, project);
    }
 
    lList *ja_tasks = lCreateList("ja_tasks", JAT_Type);
    lListElem *ja_task = lCreateElem(JAT_Type);
-   lSetUlong(ja_task, JAT_task_number, 1);
-   lSetList(ja_task, JAT_scaled_usage_list, make_usage_list("scaled", "cpu", cpu));
+   ocs::tom::set<JAT_task_number>(ja_task, 1);
+   ocs::tom::set<JAT_scaled_usage_list>(ja_task, make_usage_list("scaled", "cpu", cpu));
    lAppendElem(ja_tasks, ja_task);
-   lSetList(job, JB_ja_tasks, ja_tasks);
+   ocs::tom::set<JB_ja_tasks>(job, ja_tasks);
 
    return job;
 }
@@ -148,11 +153,11 @@ get_usage_value(const lListElem *parent, int list_field, const char *attr) {
    if (l == nullptr) {
       return -1.0;
    }
-   const lListElem *e = lGetElemStr(l, UA_name, attr);
+   const lListElem *e = ocs::tom::find_first<UA_name>(l, attr);
    if (e == nullptr) {
       return -1.0;
    }
-   return lGetDouble(e, UA_value);
+   return ocs::tom::get<UA_value>(e);
 }
 
 /* Test 1-4: sum_usage for a user-only job -------------------------------- */
@@ -164,7 +169,7 @@ test_sum_usage_user_only(int *id) {
    lListElem *user = make_user("u1");
    lListElem *job = make_job(/*job_number=*/1, /*owner=*/"u1",
                              /*project=*/nullptr, /*cpu=*/10.0);
-   lListElem *ja_task = lFirstRW(lGetListRW(job, JB_ja_tasks));
+   lListElem *ja_task = lFirstRW(ocs::tom::get<JB_ja_tasks>(job));
 
    ocs::Usage::sum_usage(job, ja_task, user, /*project=*/nullptr,
                          /*usage_weight_list=*/nullptr);
@@ -177,14 +182,14 @@ test_sum_usage_user_only(int *id) {
    /* CS-1239 sharetree routing invariant: user-only job does NOT populate
     * UU_project[*].UPP_usage. */
    CHECK((*id)++, "UU_project remains empty for user-only job",
-         lGetList(user, UU_project) == nullptr ||
-         lGetNumberOfElem(lGetList(user, UU_project)) == 0);
+         static_cast<const lList *>(ocs::tom::get<UU_project>(user)) == nullptr ||
+         lGetNumberOfElem(ocs::tom::get<UU_project>(user)) == 0);
 
    /* Debited-job entry for the finished job should be present so the
     * worker thread's drop_debited_job step has something to remove. */
-   const lList *debited = lGetList(user, UU_debited_job_usage);
+   const lList *debited = ocs::tom::get<UU_debited_job_usage>(user);
    const lListElem *upu = (debited != nullptr) ?
-                          lGetElemUlong(debited, UPU_job_number, 1) : nullptr;
+                          static_cast<const lListElem *>(ocs::tom::find_first<UPU_job_number>(debited, 1)) : nullptr;
    CHECK((*id)++, "UU_debited_job_usage contains job 1", upu != nullptr);
 
    lFreeElem(&user);
@@ -201,7 +206,7 @@ test_sum_usage_user_and_project(int *id) {
    lListElem *project = make_project("p1");
    lListElem *job = make_job(/*job_number=*/2, /*owner=*/"u1",
                              /*project=*/"p1", /*cpu=*/7.0);
-   lListElem *ja_task = lFirstRW(lGetListRW(job, JB_ja_tasks));
+   lListElem *ja_task = lFirstRW(ocs::tom::get<JB_ja_tasks>(job));
 
    ocs::Usage::sum_usage(job, ja_task, user, project,
                          /*usage_weight_list=*/nullptr);
@@ -214,9 +219,9 @@ test_sum_usage_user_and_project(int *id) {
 
    /* CS-1239 sharetree routing: project-bound finish populates
     * UU_project[p1].UPP_usage, NOT UU_usage. */
-   const lList *upp_list = lGetList(user, UU_project);
+   const lList *upp_list = ocs::tom::get<UU_project>(user);
    const lListElem *upp = (upp_list != nullptr) ?
-                          lGetElemStr(upp_list, UPP_name, "p1") : nullptr;
+                          static_cast<const lListElem *>(ocs::tom::find_first<UPP_name>(upp_list, "p1")) : nullptr;
    CHECK((*id)++, "UU_project[p1] entry created", upp != nullptr);
    if (upp != nullptr) {
       CHECK_NEAR((*id)++, "UU_project[p1].UPP_usage cpu == 7",
@@ -225,14 +230,14 @@ test_sum_usage_user_and_project(int *id) {
       ++(*id);
    }
    CHECK((*id)++, "UU_usage stays empty for project-bound finish",
-         lGetList(user, UU_usage) == nullptr ||
+         static_cast<const lList *>(ocs::tom::get<UU_usage>(user)) == nullptr ||
          get_usage_value(user, UU_usage, "cpu") <= 0.0);
 
    /* Debited entry recorded on the user object (sum_usage routes debited
     * to UU_ when user is non-null). */
-   const lList *debited = lGetList(user, UU_debited_job_usage);
+   const lList *debited = ocs::tom::get<UU_debited_job_usage>(user);
    const lListElem *upu = (debited != nullptr) ?
-                          lGetElemUlong(debited, UPU_job_number, 2) : nullptr;
+                          static_cast<const lListElem *>(ocs::tom::find_first<UPU_job_number>(debited, 2)) : nullptr;
    CHECK((*id)++, "UU_debited_job_usage contains job 2", upu != nullptr);
 
    lFreeElem(&user);
@@ -248,10 +253,10 @@ test_decay_over_interval(int *id) {
 
    /* Seed a user with cpu=100 stamped at t0. */
    lListElem *user = make_user("u1");
-   lSetList(user, UU_usage, make_usage_list("usage", "cpu", 100.0));
+   ocs::tom::set<UU_usage>(user, make_usage_list("usage", "cpu", 100.0));
 
    const uint64_t t0 = sge_get_gmt64();
-   lSetUlong64(user, UU_usage_time_stamp, t0);
+   ocs::tom::set<UU_usage_time_stamp>(user, t0);
 
    /* 1-hour halftime via the default decay constant; nullptr decay_list
     * routes through the same default. */

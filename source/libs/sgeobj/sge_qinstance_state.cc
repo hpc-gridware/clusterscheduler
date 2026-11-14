@@ -97,6 +97,7 @@
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_qinstance_state.h"
 #include "sgeobj/msg_sgeobjlib.h"
+#include "tom/ocs_Element.h"
 
 #include "uti/sge.h"
 
@@ -148,7 +149,7 @@ static const char letters[] = {
  */
 bool qinstance_set_state(lListElem *this_elem, bool set_state, uint32_t bit) {
    bool ret = false;
-   uint32_t old_state = lGetUlong(this_elem, QU_state);
+   uint32_t old_state = ocs::tom::get<QU_state>(this_elem);
    uint32_t new_state = old_state;
 
    if (set_state) {   
@@ -158,7 +159,7 @@ bool qinstance_set_state(lListElem *this_elem, bool set_state, uint32_t bit) {
    }
 
    if (old_state != new_state) {
-      lSetUlong(this_elem, QU_state, new_state);
+      ocs::tom::set<QU_state>(this_elem, new_state);
       ret = true;
    }
 
@@ -183,7 +184,7 @@ bool qinstance_has_state(const lListElem *this_elem, uint32_t bit) {
    bool ret = true;
 
    if (bit != std::numeric_limits<uint32_t>::max()) {
-      ret = (lGetUlong(this_elem, QU_state) & bit) ? true : false;
+      ret = (ocs::tom::get<QU_state>(this_elem) & bit) ? true : false;
    }
    return ret;
 }

@@ -82,6 +82,8 @@ int verydummyprocfs;
 #include "uti/sge_stdlib.h"
 
 #include "cull/cull.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_GR.h"
 
 #include <cinttypes>
 #include "sgedefs.h"
@@ -523,8 +525,8 @@ int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_ti
       // check only processes that belong to a job
       if ((pr = get_pr(atoi(pidname))) != nullptr) {
          /* set process as still running */
-         lSetBool(pr, PRO_run, true);
-         if (lGetBool(pr, PRO_rel) != true) {
+         ocs::tom::set<PRO_run>(pr, true);
+         if (ocs::tom::get<PRO_rel>(pr) != true) {
             continue;
          }
       }
@@ -610,21 +612,21 @@ int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_ti
 
          if (pr == nullptr) {
             pr = lCreateElem(PRO_Type);
-            lSetUlong(pr, PRO_pid, pid);
-            lSetBool(pr, PRO_rel, false);
+            ocs::tom::set<PRO_pid>(pr, pid);
+            ocs::tom::set<PRO_rel>(pr, false);
             append_pr(pr);
          }
 
-         lSetUlong(pr, PRO_utime, utime);
-         lSetUlong(pr, PRO_stime, stime);
-         lSetUlong64(pr, PRO_vsize, vsize);
-         lSetUlong64(pr, PRO_rss, rss * pagesize);
-         lSetUlong64(pr, PRO_iow, static_cast<uint64_t>(iow));
+         ocs::tom::set<PRO_utime>(pr, utime);
+         ocs::tom::set<PRO_stime>(pr, stime);
+         ocs::tom::set<PRO_vsize>(pr, vsize);
+         ocs::tom::set<PRO_rss>(pr, rss * pagesize);
+         ocs::tom::set<PRO_iow>(pr, static_cast<uint64_t>(iow));
 
          pt_close_fd(fd);
       }
       /* mark this proc as running */
-      lSetBool(pr, PRO_run, true);
+      ocs::tom::set<PRO_run>(pr, true);
 
       /* 
        * get number of groups; 
@@ -632,7 +634,7 @@ int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_ti
        */
       {
          char procnam[1024];
-         lList *groupTable = lGetListRW(pr, PRO_groups);
+         lList *groupTable = ocs::tom::get<PRO_groups>(pr);
 
          sprintf(procnam, PROC_DIR "/%s/status", dent->d_name);
          if (SGE_STAT(procnam, &fst) != 0) {
@@ -648,7 +650,7 @@ int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_ti
          groups = 0;
          if (fst.st_mtime < last_time && groupTable != nullptr) {
             for_each_ep_lv(group, groupTable) {
-               list[groups] = lGetUlong(group, GR_group);
+               list[groups] = ocs::tom::get<GR_group>(group);
                groups++;
             }
          } else {
@@ -668,14 +670,14 @@ int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_ti
                      lListElem *gr = lCreateElem(GR_Type);
                      long group = atol(token);
                      list[groups] = group;
-                     lSetUlong(gr, GR_group, group);
+                     ocs::tom::set<GR_group>(gr, group);
                      lAppendElem(groupTable, gr);
                      groups++;
                   }
                   break;
                }
             }
-            lSetList(pr, PRO_groups, groupTable);
+            ocs::tom::set<PRO_groups>(pr, groupTable);
             fclose(f);
          }
       } 
@@ -734,7 +736,7 @@ int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_ti
             if ((gid_t)job_elem->job.jd_jid == list[group]) {  // @todo: is this correct? jd_jid is a pid_t, list[group] gid_t
 #if defined(LINUX)
                // mark this process as relevant
-               lSetBool(pr, PRO_rel, true);
+               ocs::tom::set<PRO_rel>(pr, true);
 #endif
                found_it = 1;
             }
@@ -766,7 +768,7 @@ int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_ti
     */
 
 #if defined(LINUX)
-   pid_tmp = lGetUlong(pr, PRO_pid);
+   pid_tmp = ocs::tom::get<PRO_pid>(pr);
 #else
    pid_tmp = pr.pr_pid;
 #endif
@@ -816,15 +818,15 @@ int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_ti
    proc_elem->proc.pd_tstamp = time_stamp;
 
 #if defined(LINUX)
-   proc_elem->proc.pd_pid = lGetUlong(pr, PRO_pid);
-   proc_elem->proc.pd_utime  = static_cast<double>(lGetUlong(pr, PRO_utime)) / HZ;
-   proc_elem->proc.pd_stime  = static_cast<double>(lGetUlong(pr, PRO_stime)) / HZ;
+   proc_elem->proc.pd_pid = ocs::tom::get<PRO_pid>(pr);
+   proc_elem->proc.pd_utime  = static_cast<double>(ocs::tom::get<PRO_utime>(pr)) / HZ;
+   proc_elem->proc.pd_stime  = static_cast<double>(ocs::tom::get<PRO_stime>(pr)) / HZ;
    /* could retrieve uid/gid using stat() on stat file */
-   proc_elem->vmem           = lGetUlong64(pr, PRO_vsize);
-   proc_elem->rss            = lGetUlong64(pr, PRO_rss);
+   proc_elem->vmem           = ocs::tom::get<PRO_vsize>(pr);
+   proc_elem->rss            = ocs::tom::get<PRO_rss>(pr);
 
    // iow can go to 0 at job end, so we calculate a delta which we will add to iow reached so far
-   double new_iow = static_cast<double>(lGetUlong64(pr, PRO_iow)) / HZ;
+   double new_iow = static_cast<double>(ocs::tom::get<PRO_iow>(pr)) / HZ;
    if (new_iow > 0 && new_iow > proc_elem->iow) {
       proc_elem->delta_iow = new_iow - proc_elem->iow;
       proc_elem->iow = new_iow;
@@ -878,13 +880,13 @@ int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_ti
                } /* while */
 
                fclose(f);
-               lSetUlong(pr, PRO_io, new_iochars);
-               lSetUlong(pr, PRO_ioops, new_ioops);
+               ocs::tom::set<PRO_io>(pr, new_iochars);
+               ocs::tom::set<PRO_ioops>(pr, new_ioops);
             }
          }
       } else {
-         new_iochars = lGetUlong(pr, PRO_io);
-         new_ioops = lGetUlong(pr, PRO_ioops);
+         new_iochars = ocs::tom::get<PRO_io>(pr);
+         new_ioops = ocs::tom::get<PRO_ioops>(pr);
       }
       /*
        *  Update process I/O info

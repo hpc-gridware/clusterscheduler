@@ -55,6 +55,7 @@
 #include "sgeobj/sge_host.h"
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_schedd_conf.h"
+#include "tom/ocs_Element.h"
 
 #include "sched/sge_select_queue.h"
 #include "sched/sge_complex_schedd.h"
@@ -120,8 +121,8 @@ int sort_host_list(lList *hl, const lList *centry_list) {
 
       /* build complexes for that host */
       double load = scaled_mixed_load(load_formula, global, hlp, centry_list, nullptr);
-      lSetDouble(hlp, EH_sort_value, load);
-      DPRINTF("%s: %f\n", lGetHost(hlp, EH_name), load);
+      ocs::tom::set<EH_sort_value>(hlp, load);
+      DPRINTF("%s: %f\n", static_cast<const char *>(ocs::tom::get<EH_name>(hlp)), load);
    }
    sge_free(&load_formula);
 
@@ -322,10 +323,10 @@ static int get_load_value(double *dvalp, lListElem *global, lListElem *host, con
       DRETURN(1);
    }
 
-   if (lGetUlong(cep, CE_pj_dominant) & DOMINANT_TYPE_VALUE) {
-      *dvalp = lGetDouble(cep, CE_doubleval);
+   if (ocs::tom::get<CE_pj_dominant>(cep) & DOMINANT_TYPE_VALUE) {
+      *dvalp = ocs::tom::get<CE_doubleval>(cep);
    } else {
-      *dvalp = lGetDouble(cep, CE_pj_doubleval);
+      *dvalp = ocs::tom::get<CE_pj_doubleval>(cep);
    }
 
    lFreeElem(&cep);

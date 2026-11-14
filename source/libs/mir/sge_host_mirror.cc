@@ -51,6 +51,8 @@
 #include "sgeobj/sge_hgroup.h"
 #include "sgeobj/ocs_MatchCache.h"
 #include "sgeobj/ocs_Matcher.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_HM.h"
 
 #include "mir/sge_mirror.h"
 #include "mir/sge_host_mirror.h"
@@ -88,10 +90,10 @@ host_update_master_list(sge_evc_class_t *evc, sge_object_type type,
    const char *key;
 
    list = ocs::DataStore::get_master_list_rw(type);
-   list_descr = lGetListDescr(lGetList(event, ET_new_version));
+   list_descr = lGetListDescr(ocs::tom::get<ET_new_version>(event));
    key_nm = object_type_get_key_nm(type); 
 
-   key = lGetString(event, ET_strkey);
+   key = ocs::tom::get<ET_strkey>(event);
 
    if (sge_mirror_update_master_list_host_key(list, list_descr, key_nm, key, 
                                               action, event) != SGE_EM_OK) {
@@ -152,9 +154,9 @@ hgroup_update_master_list(sge_evc_class_t *evc, sge_object_type type,
    DENTER(TOP_LAYER);
 
    lList **list = ocs::DataStore::get_master_list_rw(type);
-   const lDescr *list_descr = lGetListDescr(lGetList(event, ET_new_version));
+   const lDescr *list_descr = lGetListDescr(ocs::tom::get<ET_new_version>(event));
    const int key_nm = object_type_get_key_nm(type);
-   const char *key = lGetString(event, ET_strkey);
+   const char *key = ocs::tom::get<ET_strkey>(event);
 
    // Both versions are in hand before the merge, which is what lets the decision
    // be made without a version field. On every other action either the old or
@@ -168,9 +170,9 @@ hgroup_update_master_list(sge_evc_class_t *evc, sge_object_type type,
                        ? lGetElemHostRW(*list, key_nm, key) : nullptr;
    const bool matchers_changed =
            action == SGE_EMA_MOD && before != nullptr &&
-           !ocs::Matcher::cache_carries_over(before, lFirst(lGetList(event, ET_new_version)));
+           !ocs::Matcher::cache_carries_over(before, lFirst(ocs::tom::get<ET_new_version>(event)));
    const bool carry = action == SGE_EMA_MOD && before != nullptr && !matchers_changed &&
-                      lGetList(before, HGRP_match_cache) != nullptr;
+                      static_cast<const lList *>(ocs::tom::get<HGRP_match_cache>(before)) != nullptr;
    lList *cache = nullptr;
 
    /*

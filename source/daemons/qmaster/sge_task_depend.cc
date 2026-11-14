@@ -45,6 +45,10 @@
 #include "sgeobj/sge_range.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_answer.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_JAT.h"
+#include "sgeobj/tom/ocs_tom_JRE.h"
+#include "sgeobj/tom/ocs_tom_RN.h"
 
 #include "sge_task_depend.h"
 #include "sge_job_qmaster.h"
@@ -164,7 +168,7 @@ task_depend_is_finished(const lListElem *job, uint32_t task_id) {
    }
 
    const lListElem *ja_task = job_search_task(job, nullptr, task_id);
-   DRETURN(ja_task == nullptr || lGetUlong(ja_task, JAT_status) == JFINISHED);
+   DRETURN(ja_task == nullptr || ocs::tom::get<JAT_status>(ja_task) == JFINISHED);
 }
 
 
@@ -218,13 +222,13 @@ sge_task_depend_update(lListElem *jep, lList **alpp, uint32_t task_id, uint64_t 
    }
 
    /* process the resolved predecessor list */
-   for_each_ep_lv(pre, lGetList(jep, JB_ja_ad_predecessor_list)) {
+   for_each_ep_lv(pre, ocs::tom::get<JB_ja_ad_predecessor_list>(jep)) {
       uint32_t sa, sa_task_id, amin, amax;
       const lListElem *pred_jep = nullptr; /* JB_Type */
       lListElem *dep_range = nullptr;      /* RN_Type */
 
       /* locate the job id in the master list, if not found we can't do much */
-      pred_jep = lGetElemUlong(master_job_list, JB_job_number, lGetUlong(pre, JRE_job_number));
+      pred_jep = ocs::tom::find_first<JB_job_number>(master_job_list, ocs::tom::get<JRE_job_number>(pre));
       if (!pred_jep) continue;
 
       /* use the RSP functions to determine dependent predecessor task range */
@@ -310,8 +314,8 @@ sge_task_depend_init(lListElem *jep, lList **alpp, uint64_t gdi_session) {
       DRETURN(false);
    }
 
-   if (lGetNumberOfElem(lGetList(jep, JB_ja_ad_request_list)) > 0) {
-      if (lGetNumberOfElem(lGetList(jep, JB_ja_ad_predecessor_list)) == 0) {
+   if (lGetNumberOfElem(ocs::tom::get<JB_ja_ad_request_list>(jep)) > 0) {
+      if (lGetNumberOfElem(ocs::tom::get<JB_ja_ad_predecessor_list>(jep)) == 0) {
          /* fast case where all predecessors are "gone" */
          if (sge_task_depend_flush(jep, alpp, gdi_session))
             ret = true;
@@ -368,10 +372,10 @@ sge_task_depend_flush(lListElem *jep, lList **alpp, uint64_t gdi_session) {
 
    /* ensure empty hold states are consistent. if the request list is empty
       then we don't want to modify array predecessors cache */
-   if (lGetNumberOfElem(lGetList(jep, JB_ja_ad_request_list)) > 0 &&
-       lGetNumberOfElem(lGetList(jep, JB_ja_ad_predecessor_list)) == 0) {
-      if (lGetList(jep, JB_ja_a_h_ids)) {
-         lList *a_h_ids = lCopyList("", lGetList(jep, JB_ja_a_h_ids));
+   if (lGetNumberOfElem(ocs::tom::get<JB_ja_ad_request_list>(jep)) > 0 &&
+       lGetNumberOfElem(ocs::tom::get<JB_ja_ad_predecessor_list>(jep)) == 0) {
+      if (ocs::tom::get<JB_ja_a_h_ids>(jep)) {
+         lList *a_h_ids = lCopyList("", ocs::tom::get<JB_ja_a_h_ids>(jep));
          for_each_ep_lv(range, a_h_ids) {
             uint32_t rmin, rmax, rstep, hold_state;
             range_get_all_ids(range, &rmin, &rmax, &rstep);
@@ -383,16 +387,16 @@ sge_task_depend_flush(lListElem *jep, lList **alpp, uint64_t gdi_session) {
          }
          lFreeList(&a_h_ids);
          /* just make sure it is null */
-         if (lGetList(jep, JB_ja_a_h_ids)) {
+         if (ocs::tom::get<JB_ja_a_h_ids>(jep)) {
             a_h_ids = nullptr;
-            lXchgList(jep, JB_ja_a_h_ids, &a_h_ids);
+            ocs::tom::exchange<JB_ja_a_h_ids>(jep, &a_h_ids);
             lFreeList(&a_h_ids);
          }
          ret = true;
       }
       /* unhold any arary held tasks that are enrolled */
-      for_each_rw_lv(ja_task, lGetList(jep, JB_ja_tasks)) {
-         uint32_t task_id = lGetUlong(ja_task, JAT_task_number);
+      for_each_rw_lv(ja_task, ocs::tom::get<JB_ja_tasks>(jep)) {
+         uint32_t task_id = ocs::tom::get<JAT_task_number>(ja_task);
          uint32_t hold_state = job_get_hold_state(jep, task_id);
          if ((hold_state & MINUS_H_TGT_JA_AD) != 0) {
             hold_state &= ~MINUS_H_TGT_JA_AD;

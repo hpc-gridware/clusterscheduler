@@ -62,6 +62,7 @@
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_userset.h"
 #include "sgeobj/sge_manop.h"
+#include "tom/ocs_Element.h"
 
 #include "gdi/ocs_gdi_Packet.h"
 #include "gdi/ocs_gdi_Task.h"
@@ -605,12 +606,12 @@ sge_c_gdi_add(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
          next = lNextRW(ep);
 
          /* fill address infos from request into event client that must be added */
-         lSetHost(ep, EV_host, packet->host);
-         lSetString(ep, EV_commproc, packet->commproc);
-         lSetUlong(ep, EV_commid, packet->commproc_id);
+         ocs::tom::set<EV_host>(ep, packet->host);
+         ocs::tom::set<EV_commproc>(ep, packet->commproc);
+         ocs::tom::set<EV_commid>(ep, packet->commproc_id);
 
          /* fill in authentication infos from request */
-         lSetUlong(ep, EV_uid, packet->uid);
+         ocs::tom::set<EV_uid>(ep, packet->uid);
          if (!event_client_verify(ep, &(task->answer_list), true)) {
             ERROR(MSG_QMASTER_INVALIDEVENTCLIENT_SSS, packet->user, packet->commproc, packet->host);
          } else {
@@ -916,14 +917,14 @@ sge_gdi_do_permcheck(ocs::gdi::Packet *packet, ocs::gdi::Task *task) {
    const char *username = packet->user;
 
    // create list with element and fill in username, hostname and corresponding permission
-   lListElem *ep = lAddElemStr(&task->data_list, PERM_username, username, PERM_Type);
-   lSetHost(ep, PERM_host, hostname);
+   lListElem *ep = ocs::tom::emplace_back<PERM_username>(&task->data_list, username);
+   ocs::tom::set<PERM_host>(ep, hostname);
 
    // add user roles
    bool is_manager = manop_is_manager(packet);
    bool is_operator = manop_is_operator(packet);
-   lSetBool(ep, PERM_is_manager, is_manager);
-   lSetBool(ep, PERM_is_operator, is_operator);
+   ocs::tom::set<PERM_is_manager>(ep, is_manager);
+   ocs::tom::set<PERM_is_operator>(ep, is_operator);
 
    // add host roles -- through the same helpers as the checks above, so that
    // what permcheck REPORTS and what the permission checks ENFORCE cannot drift
@@ -931,8 +932,8 @@ sge_gdi_do_permcheck(ocs::gdi::Packet *packet, ocs::gdi::Task *task) {
    // host lists, which host_list_locate() resolved to for those list types.
    bool is_admin_host = host_is_admin_host(hostname);
    bool is_submit_host = host_is_submit_host(hostname);
-   lSetBool(ep, PERM_is_admin_host, is_admin_host);
-   lSetBool(ep, PERM_is_submit_host, is_submit_host);
+   ocs::tom::set<PERM_is_admin_host>(ep, is_admin_host);
+   ocs::tom::set<PERM_is_submit_host>(ep, is_submit_host);
 
    // show the results
    DPRINTF("manager/operator/admin_host/submit_host: %s/%s/%s/%s\n",
@@ -1033,8 +1034,8 @@ sge_gdi_tigger_thread_state_transition(ocs::gdi::Packet *packet,
    DENTER(TOP_LAYER);
    lList **answer_list = &(task->answer_list);
    for_each_rw_lv(elem, task->data_list) {
-      const char *name = lGetString(elem, ID_str);
-      sge_thread_state_transitions_t action = (sge_thread_state_transitions_t) lGetUlong(elem, ID_action);
+      const char *name = ocs::tom::get<ID_str>(elem);
+      sge_thread_state_transitions_t action = (sge_thread_state_transitions_t) ocs::tom::get<ID_action>(elem);
 
       if (name != nullptr) {
          if (strcasecmp(name, to_cstr(SCHEDD_THREAD)) == 0) {
@@ -1147,7 +1148,7 @@ static int get_client_id(lListElem *anElem, int *anID) {
 
    const char *id = nullptr;
 
-   if ((id = lGetString(anElem, ID_str)) == nullptr) {
+   if ((id = ocs::tom::get<ID_str>(anElem)) == nullptr) {
       DRETURN(EINVAL);
    }
 
@@ -1206,12 +1207,12 @@ static void sge_c_gdi_mod(gdi_object_t *ao, ocs::gdi::Packet *packet, ocs::gdi::
          sge_mod_configuration(ep, &(task->answer_list), packet->user, packet->host, packet->gdi_session);
       } else if (task->target == ocs::gdi::Target::EV_LIST) {
          /* fill address infos from request into event client that must be added */
-         lSetHost(ep, EV_host, packet->host);
-         lSetString(ep, EV_commproc, packet->commproc);
-         lSetUlong(ep, EV_commid, packet->commproc_id);
+         ocs::tom::set<EV_host>(ep, packet->host);
+         ocs::tom::set<EV_commproc>(ep, packet->commproc);
+         ocs::tom::set<EV_commid>(ep, packet->commproc_id);
 
          /* fill in authentication infos from request */
-         lSetUlong(ep, EV_uid, packet->uid);
+         ocs::tom::set<EV_uid>(ep, packet->uid);
          if (!event_client_verify(ep, &(task->answer_list), false)) {
             ERROR(MSG_QMASTER_INVALIDEVENTCLIENT_SSS, packet->user, packet->commproc, packet->host);
          } else {

@@ -55,6 +55,7 @@
 #include "sgeobj/sge_userset.h"
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/ocs_DataStore.h"
+#include "tom/ocs_Element.h"
 
 #include "spool/sge_spooling.h"
 #include "spool/loader/sge_spooling_loader.h"
@@ -148,7 +149,7 @@ static int spool_configuration(int argc, char *argv[]) {
       ret = EXIT_FAILURE;
    } else {
       /* put config into a list - we can't spool free objects */
-      lSetHost(conf, CONF_name, SGE_GLOBAL_NAME);
+      ocs::tom::set<CONF_name>(conf, SGE_GLOBAL_NAME);
       if (!spool_write_object(&answer_list, spool_get_default_context(), conf, SGE_GLOBAL_NAME, SGE_TYPE_CONFIG)) {
          /* error output has been done in spooling function */
          ret = EXIT_FAILURE;
@@ -187,7 +188,7 @@ static int spool_local_conf(int argc, char *argv[]) {
          lListElem *le = spool_read_object(nullptr, spool_get_default_context(), SGE_TYPE_CONFIG, argv[3]);
          if (le == nullptr) {
             /* put config into a list - we can't spool free objects */
-            lSetHost(conf, CONF_name, argv[3]);
+            ocs::tom::set<CONF_name>(conf, argv[3]);
             if (!spool_write_object(&answer_list, spool_get_default_context(), 
                                  conf, argv[3], SGE_TYPE_CONFIG)) {
                /* error output has been done in spooling function */
@@ -297,7 +298,7 @@ static int spool_object_list(const char *directory,
 
    direntries = sge_get_dirents(directory);
    for_each_ep(direntry, direntries) {
-      name = lGetString(direntry, ST_name);
+      name = ocs::tom::get<ST_name>(direntry);
       if (name[0] != '.') {
          sge_dstring_sprintf(&file, "%s/%s", directory, name);
          ep = spool_flatfile_read_object(&answer_list, descr, nullptr,

@@ -58,6 +58,7 @@
 #include "sgeobj/sge_var.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_answer.h"
+#include "tom/ocs_Element.h"
 
 #include "ocs_gdi_security.h"
 #include "msg_gdilib.h"
@@ -119,7 +120,7 @@ int set_sec_cred(const char *sge_root, const char *mastername, lListElem *job, l
       
       ret = sge_peclose(command_pid, fp_in, fp_out, fp_err, nullptr);
       
-      lSetString(job, JB_tgt, str);
+      ocs::tom::set<JB_tgt>(job, str);
    }
       
    DRETURN(ret);

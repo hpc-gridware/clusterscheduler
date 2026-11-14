@@ -50,6 +50,7 @@
 #include "uti/sge_bootstrap_files.h"
 
 #include "sgeobj/sge_schedd_conf.h"
+#include "tom/ocs_Element.h"
 
 #include "mir/sge_mirror.h"
 #include "evc/sge_event_client.h"
@@ -82,10 +83,10 @@ void event_update_func(uint32_t ec_id, lList **alpp, lList *event_list, void *ar
    
    if (Scheduler_Control.new_events != nullptr) {
       lList *events = nullptr;
-      lXchgList(lFirstRW(event_list), REP_list, &(events));
+      ocs::tom::exchange<REP_list>(lFirstRW(event_list), &(events));
       lAddList(Scheduler_Control.new_events, &events);
    } else {
-      lXchgList(lFirstRW(event_list), REP_list, &(Scheduler_Control.new_events));
+      ocs::tom::exchange<REP_list>(lFirstRW(event_list), &(Scheduler_Control.new_events));
    }   
    
    Scheduler_Control.triggered = true;

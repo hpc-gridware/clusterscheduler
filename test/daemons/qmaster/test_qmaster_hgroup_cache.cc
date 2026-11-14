@@ -34,6 +34,8 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_hgroup.h"
 #include "sgeobj/sge_href.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_HR.h"
 
 #include "gdi/ocs_gdi_Client.h"
 #include "gdi/ocs_gdi_ClientBase.h"
@@ -98,13 +100,13 @@ fetch_hgroup_list() {
 static bool
 write_hgroup(ocs::gdi::Command cmd, const char *name, const char *const members[], int num_members) {
    lList *lp = lCreateList("req", HGRP_Type);
-   lListElem *ep = lAddElemHost(&lp, HGRP_name, name, HGRP_Type);
+   lListElem *ep = ocs::tom::emplace_back<HGRP_name>(&lp, name);
    lList *hosts = lCreateList("hosts", HR_Type);
 
    for (int i = 0; i < num_members; i++) {
-      lAddElemHost(&hosts, HR_name, members[i], HR_Type);
+      ocs::tom::emplace_back<HR_name>(&hosts, members[i]);
    }
-   lSetList(ep, HGRP_host_list, hosts);
+   ocs::tom::set<HGRP_host_list>(ep, hosts);
 
    lList *alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::HGRP_LIST, cmd,
                                           ocs::gdi::SubCommand::NONE, &lp, nullptr, nullptr);
@@ -121,7 +123,7 @@ write_hgroup(ocs::gdi::Command cmd, const char *name, const char *const members[
 static void
 drop_hgroup(const char *name) {
    lList *lp = lCreateList("del", HGRP_Type);
-   lAddElemHost(&lp, HGRP_name, name, HGRP_Type);
+   ocs::tom::emplace_back<HGRP_name>(&lp, name);
 
    lList *alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::HGRP_LIST, ocs::gdi::Command::DEL,
                                           ocs::gdi::SubCommand::NONE, &lp, nullptr, nullptr);
@@ -156,7 +158,7 @@ cache_matches_walk(const lListElem *hgroup, const lList *master_hgroup_list) {
    }
    lFreeList(&answer_list);
 
-   const lList *cached = lGetList(hgroup, HGRP_cached_hosts);
+   const lList *cached = ocs::tom::get<HGRP_cached_hosts>(hgroup);
    bool ok = lGetNumberOfElem(cached) == lGetNumberOfElem(walked);
 
    if (ok) {
@@ -164,7 +166,7 @@ cache_matches_walk(const lListElem *hgroup, const lList *master_hgroup_list) {
       const lListElem *w = lFirst(walked);
 
       while (c != nullptr && w != nullptr) {
-         if (sge_hostcmp(lGetHost(c, HR_name), lGetHost(w, HR_name)) != 0) {
+         if (sge_hostcmp(ocs::tom::get<HR_name>(c), ocs::tom::get<HR_name>(w)) != 0) {
             ok = false;
             break;
          }
@@ -174,7 +176,7 @@ cache_matches_walk(const lListElem *hgroup, const lList *master_hgroup_list) {
    }
    if (!ok) {
       printf("      cache/walk mismatch for %s: %d cached, %d walked\n",
-             lGetHost(hgroup, HGRP_name), lGetNumberOfElem(cached), lGetNumberOfElem(walked));
+             static_cast<const char *>(ocs::tom::get<HGRP_name>(hgroup)), lGetNumberOfElem(cached), lGetNumberOfElem(walked));
    }
    lFreeList(&walked);
    return ok;
@@ -183,8 +185,8 @@ cache_matches_walk(const lListElem *hgroup, const lList *master_hgroup_list) {
 /** @brief Is host a member of the group's cache? */
 static bool
 cache_contains(const lList *master_hgroup_list, const char *name, const char *host) {
-   const lListElem *hgroup = lGetElemHost(master_hgroup_list, HGRP_name, name);
-   return hgroup != nullptr && href_list_locate(lGetList(hgroup, HGRP_cached_hosts), host) != nullptr;
+   const lListElem *hgroup = ocs::tom::find_first<HGRP_name>(master_hgroup_list, name);
+   return hgroup != nullptr && href_list_locate(ocs::tom::get<HGRP_cached_hosts>(hgroup), host) != nullptr;
 }
 
 // ---------------------------------------------------------------------------
@@ -217,12 +219,12 @@ test_cache_content_and_invalidation() {
       for_each_ep(hgroup, hgroup_list) {
          const lListElem *href;
 
-         all_versioned &= (lGetUlong(hgroup, HGRP_cache_version) != 0);
+         all_versioned &= (ocs::tom::get<HGRP_cache_version>(hgroup) != 0);
          all_match &= cache_matches_walk(hgroup, hgroup_list);
          checked++;
 
-         for_each_ep(href, lGetList(hgroup, HGRP_host_list)) {
-            const char *h = lGetHost(href, HR_name);
+         for_each_ep(href, ocs::tom::get<HGRP_host_list>(hgroup)) {
+            const char *h = ocs::tom::get<HR_name>(href);
 
             if (host_b[0] == '\0' && h[0] != '@' && strcmp(h, host_a) != 0) {
                snprintf(host_b, sizeof(host_b), "%s", h);
@@ -245,10 +247,10 @@ test_cache_content_and_invalidation() {
       CHECK(4, "created " GRP_LEAF, write_hgroup(ocs::gdi::Command::ADD, GRP_LEAF, leaf_members, 1));
 
       lList *hgroup_list = fetch_hgroup_list();
-      const lListElem *leaf = lGetElemHost(hgroup_list, HGRP_name, GRP_LEAF);
+      const lListElem *leaf = ocs::tom::find_first<HGRP_name>(hgroup_list, GRP_LEAF);
 
       CHECK(5, GRP_LEAF " has a cache version after ADD",
-            leaf != nullptr && lGetUlong(leaf, HGRP_cache_version) != 0);
+            leaf != nullptr && ocs::tom::get<HGRP_cache_version>(leaf) != 0);
       CHECK(6, GRP_LEAF " caches its member",
             cache_contains(hgroup_list, GRP_LEAF, host_a));
       lFreeList(&hgroup_list);
@@ -267,7 +269,7 @@ test_cache_content_and_invalidation() {
       CHECK(9, GRP_TOP " resolves two levels down to the leaf host",
             cache_contains(hgroup_list, GRP_TOP, host_a));
 
-      const lListElem *top = lGetElemHost(hgroup_list, HGRP_name, GRP_TOP);
+      const lListElem *top = ocs::tom::find_first<HGRP_name>(hgroup_list, GRP_TOP);
       CHECK(10, GRP_TOP " caches no group references, only hosts",
             top != nullptr && cache_matches_walk(top, hgroup_list));
       lFreeList(&hgroup_list);
@@ -312,9 +314,9 @@ test_cache_content_and_invalidation() {
    {
       lList *hgroup_list = fetch_hgroup_list();
       CHECK(15, "test host groups removed again",
-            lGetElemHost(hgroup_list, HGRP_name, GRP_LEAF) == nullptr &&
-            lGetElemHost(hgroup_list, HGRP_name, GRP_MID) == nullptr &&
-            lGetElemHost(hgroup_list, HGRP_name, GRP_TOP) == nullptr);
+            static_cast<const lListElem *>(ocs::tom::find_first<HGRP_name>(hgroup_list, GRP_LEAF)) == nullptr &&
+            static_cast<const lListElem *>(ocs::tom::find_first<HGRP_name>(hgroup_list, GRP_MID)) == nullptr &&
+            static_cast<const lListElem *>(ocs::tom::find_first<HGRP_name>(hgroup_list, GRP_TOP)) == nullptr);
       lFreeList(&hgroup_list);
    }
 }

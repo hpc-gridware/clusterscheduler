@@ -31,6 +31,7 @@
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_ulong.h"
+#include "tom/ocs_Element.h"
 
 #include "ocs_module_test.h"
 
@@ -42,7 +43,7 @@
 static const char *
 first_answer_text(lList *answer_list) {
    const lListElem *aep = lFirst(answer_list);
-   const char *text = (aep != nullptr) ? lGetString(aep, AN_text) : nullptr;
+   const char *text = (aep != nullptr) ? ocs::tom::get<AN_text>(aep) : nullptr;
    return (text != nullptr) ? text : "";
 }
 

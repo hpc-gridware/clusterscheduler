@@ -54,6 +54,7 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_cqueue.h"
+#include "tom/ocs_Element.h"
 
 #include "spool/flatfile/sge_flatfile.h"
 #include "spool/flatfile/sge_flatfile_obj.h"
@@ -131,14 +132,14 @@ int main(int /*argc*/, char * /*argv*/[]) {
    cqueue_set_template_attributes(cqueue, &alp);
    lFreeList(&alp);
 
-   lSetString(cqueue, CQ_name, "foobar");
+   ocs::tom::set<CQ_name>(cqueue, "foobar");
 
    lList *lp = lCreateList("Shell Terminate Methods", ASTR_Type);
    lListElem *ep = lCreateElem(ASTR_Type);
-   lSetHost(ep, ASTR_href, "global");
-   lSetString(ep, ASTR_value, "/tmp/myterminate_method.sh");
+   ocs::tom::set<ASTR_href>(ep, "global");
+   ocs::tom::set<ASTR_value>(ep, "/tmp/myterminate_method.sh");
    lAppendElem(lp, ep);
-   lSetList(cqueue, CQ_terminate_method, lp);
+   ocs::tom::set<CQ_terminate_method>(cqueue, lp);
 
    lList *cqueue_list = lCreateList("CQ List", CQ_Type);
    lAppendElem(cqueue_list, cqueue);
@@ -183,13 +184,13 @@ int main(int /*argc*/, char * /*argv*/[]) {
 
       lList *ce_list = lCreateList("CE List", CE_Type);
       lListElem *ce = lCreateElem(CE_Type);
-      lSetString(ce, CE_name, "test_ce");
-      lSetString(ce, CE_shortcut, "tc");
-      lSetUlong(ce, CE_valtype, 1);
-      lSetUlong(ce, CE_relop, CMPLXEQ_OP);
-      lSetUlong(ce, CE_requestable, REQU_YES);
-      lSetString(ce, CE_defaultval, "0");
-      lSetString(ce, CE_urgency_weight, "1");
+      ocs::tom::set<CE_name>(ce, "test_ce");
+      ocs::tom::set<CE_shortcut>(ce, "tc");
+      ocs::tom::set<CE_valtype>(ce, 1);
+      ocs::tom::set<CE_relop>(ce, CMPLXEQ_OP);
+      ocs::tom::set<CE_requestable>(ce, REQU_YES);
+      ocs::tom::set<CE_defaultval>(ce, "0");
+      ocs::tom::set<CE_urgency_weight>(ce, "1");
       lAppendElem(ce_list, ce);
       spool_flatfile_align_list(&alp, (const lList *)ce_list, CE_fields, 0);
       lFreeList(&alp);

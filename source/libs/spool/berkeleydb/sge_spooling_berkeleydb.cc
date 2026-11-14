@@ -71,6 +71,7 @@
 #include "sgeobj/sge_suser.h"
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/ocs_DataStore.h"
+#include "tom/ocs_Element.h"
 
 #include "spool/sge_spooling_utilities.h"
 #include "spool/msg_spoollib.h"
@@ -149,7 +150,7 @@ spool_berkeleydb_create_context(lList **answer_list, const char *args) {
       DPRINTF("using database path %s\n", path);
 
       info = bdb_create(path);
-      lSetRef(rule, SPR_clientdata, info);
+      ocs::tom::set<SPR_clientdata>(rule, info);
       type = spool_context_create_type(answer_list, context, SGE_TYPE_ALL);
       spool_type_add_rule(answer_list, type, rule, true);
    }
@@ -180,7 +181,7 @@ bool spool_berkeleydb_default_startup_func(lList **answer_list,
    bool ret = true;
    bdb_info info;
 
-   info = (bdb_info)lGetRef(rule, SPR_clientdata);
+   info = (bdb_info)ocs::tom::get<SPR_clientdata>(rule);
 
    ret = spool_berkeleydb_check_version(answer_list);
 
@@ -221,7 +222,7 @@ bool spool_berkeleydb_default_shutdown_func(lList **answer_list,
 
    bdb_info info;
 
-   info = (bdb_info)lGetRef(rule, SPR_clientdata);
+   info = (bdb_info)ocs::tom::get<SPR_clientdata>(rule);
 
    if (info == nullptr) {
       /* Already shut down (e.g., spool_free_context after an explicit
@@ -232,7 +233,7 @@ bool spool_berkeleydb_default_shutdown_func(lList **answer_list,
 
    ret = spool_berkeleydb_close_database(answer_list, info);
    bdb_destroy(&info);
-   lSetRef((lListElem *)rule, SPR_clientdata, nullptr);
+   ocs::tom::set<SPR_clientdata>((lListElem *)rule, nullptr);
 
    DRETURN(ret);
 }
@@ -268,7 +269,7 @@ bool spool_berkeleydb_default_maintenance_func(lList **answer_list,
 
    bdb_info info;
 
-   info = (bdb_info)lGetRef(rule, SPR_clientdata);
+   info = (bdb_info)ocs::tom::get<SPR_clientdata>(rule);
 
    switch (cmd) {
       case SPM_init:
@@ -310,12 +311,12 @@ bool spool_berkeleydb_trigger_func(lList **answer_list, const lListElem *rule,
    bool ret = true;
    bdb_info info;
 
-   info = (bdb_info)lGetRef(rule, SPR_clientdata);
+   info = (bdb_info)ocs::tom::get<SPR_clientdata>(rule);
    if (info == nullptr) {
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
                               ANSWER_QUALITY_WARNING,
                               MSG_BERKELEY_NOCONNECTIONOPEN_S,
-                              lGetString(rule, SPR_url));
+                              ocs::tom::get<SPR_url>(rule));
       ret = false;
 
       /* nothing can be done - but set new trigger!! */
@@ -355,12 +356,12 @@ bool spool_berkeleydb_transaction_func(lList **answer_list, const lListElem *rul
 
    bdb_info info;
 
-   info = (bdb_info)lGetRef(rule, SPR_clientdata);
+   info = (bdb_info)ocs::tom::get<SPR_clientdata>(rule);
    if (info == nullptr) {
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
                               ANSWER_QUALITY_ERROR,
                               MSG_BERKELEY_NOCONNECTIONOPEN_S,
-                              lGetString(rule, SPR_url));
+                              ocs::tom::get<SPR_url>(rule));
       ret = false;
    }
 
@@ -428,7 +429,7 @@ bool spool_berkeleydb_default_list_func(lList **answer_list,
    bdb_info info;
    lList *master_suser_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_SUSER);
 
-   info = (bdb_info)lGetRef(rule, SPR_clientdata);
+   info = (bdb_info)ocs::tom::get<SPR_clientdata>(rule);
    descr = object_type_get_descr(object_type);
    table_name = object_type_get_name(object_type);
 
@@ -436,7 +437,7 @@ bool spool_berkeleydb_default_list_func(lList **answer_list,
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
                               ANSWER_QUALITY_WARNING,
                               MSG_BERKELEY_NOCONNECTIONOPEN_S,
-                              lGetString(rule, SPR_url));
+                              ocs::tom::get<SPR_url>(rule));
       ret = false;
    }
 
@@ -489,7 +490,7 @@ bool spool_berkeleydb_default_list_func(lList **answer_list,
                   qinstance_table = object_type_get_name(SGE_TYPE_QINSTANCE);
                   for_each_rw_lv(queue, *list) {
                      lList *qinstance_list = nullptr;
-                     const char *qname = lGetString(queue, CQ_name);
+                     const char *qname = ocs::tom::get<CQ_name>(queue);
 
                      key = sge_dstring_sprintf(&key_dstring, "%s:%s/",
                                                qinstance_table,
@@ -499,7 +500,7 @@ bool spool_berkeleydb_default_list_func(lList **answer_list,
                                                       &qinstance_list, QU_Type,
                                                       key);
                      if (ret && qinstance_list != nullptr) {
-                        lSetList(queue, CQ_qinstances, qinstance_list);
+                        ocs::tom::set<CQ_qinstances>(queue, qinstance_list);
                      }
                   }
                }
@@ -516,7 +517,7 @@ bool spool_berkeleydb_default_list_func(lList **answer_list,
                   ja_task_table = object_type_get_name(SGE_TYPE_JATASK);
                   for_each_rw_lv(job, *list) {
                      lList *task_list = nullptr;
-                     uint32_t job_id = lGetUlong(job, JB_job_number);
+                     uint32_t job_id = ocs::tom::get<JB_job_number>(job);
 
                      key = sge_dstring_sprintf(&key_dstring, "%s:%10" sge_fuu32 ".", ja_task_table, job_id);
                      ret = spool_berkeleydb_read_list(answer_list, info, BDB_JOB_DB, &task_list, JAT_Type, key);
@@ -526,18 +527,18 @@ bool spool_berkeleydb_default_list_func(lList **answer_list,
                         if (task_list != nullptr) {
                            const char *pe_task_table;
 
-                           lSetList(job, JB_ja_tasks, task_list);
+                           ocs::tom::set<JB_ja_tasks>(job, task_list);
                            pe_task_table = object_type_get_name(SGE_TYPE_PETASK);
 
                            for_each_rw_lv(ja_task, task_list) {
                               lList *pe_task_list = nullptr;
-                              uint32_t ja_task_id = lGetUlong(ja_task, JAT_task_number);
+                              uint32_t ja_task_id = ocs::tom::get<JAT_task_number>(ja_task);
                               key = sge_dstring_sprintf(&key_dstring, "%s:%10" sge_fuu32 ".%10" sge_fuu32 ".", pe_task_table, job_id, ja_task_id);
 
                               ret = spool_berkeleydb_read_list(answer_list, info, BDB_JOB_DB, &pe_task_list, PET_Type, key);
                               if (ret) {
                                  if (pe_task_list != nullptr) {
-                                    lSetList(ja_task, JAT_task_list, pe_task_list);
+                                    ocs::tom::set<JAT_task_list>(ja_task, pe_task_list);
                                  }
                               } else {
                                  break;
@@ -570,9 +571,9 @@ bool spool_berkeleydb_default_list_func(lList **answer_list,
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"
       spooling_validate_func validate =
-         (spooling_validate_func)lGetRef(rule, SPR_validate_func);
+         (spooling_validate_func)ocs::tom::get<SPR_validate_func>(rule);
       spooling_validate_list_func validate_list =
-         (spooling_validate_list_func)lGetRef(rule, SPR_validate_list_func);
+         (spooling_validate_list_func)ocs::tom::get<SPR_validate_list_func>(rule);
 #pragma GCC diagnostic pop
 
       /* validate each individual object */
@@ -626,12 +627,12 @@ spool_berkeleydb_default_read_func(lList **answer_list,
 
    bdb_info info;
 
-   info = (bdb_info)lGetRef(rule, SPR_clientdata);
+   info = (bdb_info)ocs::tom::get<SPR_clientdata>(rule);
    if (info == nullptr) {
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
                               ANSWER_QUALITY_WARNING,
                               MSG_BERKELEY_NOCONNECTIONOPEN_S,
-                              lGetString(rule, SPR_url));
+                              ocs::tom::get<SPR_url>(rule));
       ret = false;
    }
 
@@ -654,7 +655,7 @@ spool_berkeleydb_default_read_func(lList **answer_list,
 
                if (str != nullptr) {
                   ep = lCreateElem(STU_Type);
-                  lXchgString(ep, STU_name, &str);
+                  ocs::tom::exchange<STU_name>(ep, &str);
                } else {
                   ret = false;
                }
@@ -720,13 +721,13 @@ bool spool_berkeleydb_default_read_keys_func(lList **answer_list,
 
    bdb_info info;
 
-   info = (bdb_info)lGetRef(rule, SPR_clientdata);
+   info = (bdb_info)ocs::tom::get<SPR_clientdata>(rule);
 
    if (info == nullptr) {
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
                               ANSWER_QUALITY_WARNING,
                               MSG_BERKELEY_NOCONNECTIONOPEN_S,
-                              lGetString(rule, SPR_url));
+                              ocs::tom::get<SPR_url>(rule));
       ret = false;
    }
 
@@ -802,12 +803,12 @@ bool spool_berkeleydb_default_write_func(lList **answer_list,
    DPRINTF("spool_berkeleydb_default_write_func called for %s with key %s\n",
            object_type_get_name(object_type), key != nullptr ? key : "<null>");
 
-   info = (bdb_info)lGetRef(rule, SPR_clientdata);
+   info = (bdb_info)ocs::tom::get<SPR_clientdata>(rule);
    if (info == nullptr) {
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
                               ANSWER_QUALITY_WARNING,
                               MSG_BERKELEY_NOCONNECTIONOPEN_S,
-                              lGetString(rule, SPR_url));
+                              ocs::tom::get<SPR_url>(rule));
       ret = false;
    }
 
@@ -815,7 +816,7 @@ bool spool_berkeleydb_default_write_func(lList **answer_list,
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
                               ANSWER_QUALITY_WARNING,
                               MSG_BERKELEY_NULLVALUEASKEY,
-                              lGetString(rule, SPR_url));
+                              ocs::tom::get<SPR_url>(rule));
       ret = false;
    }
 
@@ -874,7 +875,7 @@ bool spool_berkeleydb_default_write_func(lList **answer_list,
                   const char *exec_file;
                   char *dup = strdup(key);
                   const char *db_key = jobscript_parse_key(dup, &exec_file);
-                  const char *script = lGetString(object, JB_script_ptr);
+                  const char *script = ocs::tom::get<JB_script_ptr>(object);
                   /* switch script */
                   ret = spool_berkeleydb_write_string(answer_list, info,
                                                       BDB_JOB_DB,
@@ -955,12 +956,12 @@ bool spool_berkeleydb_default_delete_func(lList **answer_list,
    const char *dbkey;
 
    sge_dstring_init(&dbkey_dstring, dbkey_buffer, sizeof(dbkey_buffer));
-   info = (bdb_info)lGetRef(rule, SPR_clientdata);
+   info = (bdb_info)ocs::tom::get<SPR_clientdata>(rule);
    if (info == nullptr) {
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
                               ANSWER_QUALITY_WARNING,
                               MSG_BERKELEY_NOCONNECTIONOPEN_S,
-                              lGetString(rule, SPR_url));
+                              ocs::tom::get<SPR_url>(rule));
       ret = false;
    }
 
@@ -1056,7 +1057,7 @@ spool_berkeleydb_option_func(lList **answer_list, lListElem *rule,
    const char *delimiter = ",; ";
    bdb_info info;
 
-   info = (bdb_info)lGetRef(rule, SPR_clientdata);
+   info = (bdb_info)ocs::tom::get<SPR_clientdata>(rule);
 
    if (info != nullptr && option != nullptr && strlen(option) != 0) {
       struct saved_vars_s *context = nullptr;

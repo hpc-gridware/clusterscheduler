@@ -35,6 +35,7 @@
 #include "sgeobj/sge_href.h"
 #include "sgeobj/sge_userset.h"
 #include "sgeobj/sge_resource_quota.h"
+#include "tom/ocs_Element.h"
 
 /** @brief The six filter parts of a resource quota rule, as written in the configuration
  *
@@ -92,19 +93,19 @@ static lListElem *build_rule(const filter_t &f) {
    lListElem *filter = nullptr;
    lListElem *rule = lCreateElem(RQR_Type);
    if (rqs_parse_filter_from_string(&filter, f.users, nullptr)) {
-      lSetObject(rule, RQR_filter_users, filter);
+      ocs::tom::set<RQR_filter_users>(rule, filter);
    }
    if (rqs_parse_filter_from_string(&filter, f.projects, nullptr)) {
-      lSetObject(rule, RQR_filter_projects, filter);
+      ocs::tom::set<RQR_filter_projects>(rule, filter);
    }
    if (rqs_parse_filter_from_string(&filter, f.pes, nullptr)) {
-      lSetObject(rule, RQR_filter_pes, filter);
+      ocs::tom::set<RQR_filter_pes>(rule, filter);
    }
    if (rqs_parse_filter_from_string(&filter, f.hosts, nullptr)) {
-      lSetObject(rule, RQR_filter_hosts, filter);
+      ocs::tom::set<RQR_filter_hosts>(rule, filter);
    }
    if (rqs_parse_filter_from_string(&filter, f.queues, nullptr)) {
-      lSetObject(rule, RQR_filter_queues, filter);
+      ocs::tom::set<RQR_filter_queues>(rule, filter);
    }
    return rule;
 }
@@ -118,22 +119,22 @@ int main(int /*argc*/, char * /*argv*/[]) {
    // test fixtures: @hgrp1→{host1}, @hgrp2→{host2}; userset1→{user1}, userset2→{@staff}
    lList *hgroup_list = lCreateList("", HGRP_Type);
    lListElem *hgroup = lCreateElem(HGRP_Type);
-   lSetHost(hgroup, HGRP_name, "@hgrp1");
-   lAddSubHost(hgroup, HR_name, "host1", HGRP_host_list, HR_Type);
+   ocs::tom::set<HGRP_name>(hgroup, "@hgrp1");
+   ocs::tom::emplace_back_in<HGRP_host_list, HR_name>(hgroup, "host1");
    lAppendElem(hgroup_list, hgroup);
    hgroup = lCreateElem(HGRP_Type);
-   lSetHost(hgroup, HGRP_name, "@hgrp2");
-   lAddSubHost(hgroup, HR_name, "host2", HGRP_host_list, HR_Type);
+   ocs::tom::set<HGRP_name>(hgroup, "@hgrp2");
+   ocs::tom::emplace_back_in<HGRP_host_list, HR_name>(hgroup, "host2");
    lAppendElem(hgroup_list, hgroup);
 
    lList *userset_list = lCreateList("", US_Type);
    lListElem *userset = lCreateElem(US_Type);
-   lSetString(userset, US_name, "userset1");
-   lAddSubStr(userset, UE_name, "user1", US_entries, UE_Type);
+   ocs::tom::set<US_name>(userset, "userset1");
+   ocs::tom::emplace_back_in<US_entries, UE_name>(userset, "user1");
    lAppendElem(userset_list, userset);
    userset = lCreateElem(US_Type);
-   lSetString(userset, US_name, "userset2");
-   lAddSubStr(userset, UE_name, "@staff", US_entries, UE_Type);
+   ocs::tom::set<US_name>(userset, "userset2");
+   ocs::tom::emplace_back_in<US_entries, UE_name>(userset, "@staff");
    lAppendElem(userset_list, userset);
 
    // positive filter matching — T01–T48
@@ -457,10 +458,10 @@ int main(int /*argc*/, char * /*argv*/[]) {
       filter_t userset2_rule = {"@userset2", nullptr, nullptr, nullptr, nullptr, nullptr};
 
       lList *sup_staff = lCreateList("", ST_Type);
-      lAddElemStr(&sup_staff, ST_name, "staff", ST_Type);
+      ocs::tom::emplace_back<ST_name>(&sup_staff, "staff");
 
       lList *sup_other = lCreateList("", ST_Type);
-      lAddElemStr(&sup_other, ST_name, "other", ST_Type);
+      ocs::tom::emplace_back<ST_name>(&sup_other, "other");
 
       // T81: match via supplementary group
       lListElem *rule = build_rule(userset2_rule);
@@ -544,13 +545,13 @@ int main(int /*argc*/, char * /*argv*/[]) {
          lListElem *filter = nullptr;
          lList *alp = nullptr;
 
-         lSetString(rqs, RQS_name, "cs2687");
+         ocs::tom::set<RQS_name>(rqs, "cs2687");
          lListElem *rule = lCreateElem(RQR_Type);
          if (rqs_parse_filter_from_string(&filter, t.hosts, nullptr)) {
-            lSetObject(rule, RQR_filter_hosts, filter);
+            ocs::tom::set<RQR_filter_hosts>(rule, filter);
          }
          lAppendElem(rules, rule);
-         lSetList(rqs, RQS_rule, rules);
+         ocs::tom::set<RQS_rule>(rqs, rules);
 
          const bool ret = rqs_verify_attributes(rqs, &alp, true, nullptr);
 

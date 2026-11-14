@@ -72,6 +72,8 @@
 #include "sgeobj/ocs_AutoAddHosts.h"
 #include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/ocs_RequestLimits.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_CF.h"
 
 #include "evm/sge_event_master.h"
 
@@ -145,44 +147,44 @@ sge_read_configuration(const lListElem *aSpoolContext, lList **config_list, lLis
    spool_read_list(answer_list, aSpoolContext, config_list, SGE_TYPE_CONFIG);
 
    // add potentially missing attributes
-   lListElem *global = lGetElemHostRW(*config_list, CONF_name, "global");
+   lListElem *global = ocs::tom::find_first_rw<CONF_name>(*config_list, "global");
    if (global != nullptr) {
-      const lList *entries = lGetList(global, CONF_entries);
+      const lList *entries = ocs::tom::get<CONF_entries>(global);
 
       // add jsv_url
-      if (lListElem *jsv_url = lGetElemStrRW(entries, CF_name, "jsv_url"); jsv_url == nullptr) {
-         jsv_url = lAddSubStr(global, CF_name, "jsv_url", CONF_entries, CF_Type);
-         lSetString(jsv_url, CF_value, NONE_STR);
+      if (lListElem *jsv_url = ocs::tom::find_first_rw<CF_name>(entries, "jsv_url"); jsv_url == nullptr) {
+         jsv_url = ocs::tom::emplace_back_in<CONF_entries, CF_name>(global, "jsv_url");
+         ocs::tom::set<CF_value>(jsv_url, NONE_STR);
       }
 
       // add jsv_allowed_mod
-      if (lListElem *jsv_allowed_mod = lGetElemStrRW(entries, CF_name, "jsv_allowed_mod"); jsv_allowed_mod == nullptr) {
-         jsv_allowed_mod = lAddSubStr(global, CF_name, "jsv_allowed_mod", CONF_entries, CF_Type);
-         lSetString(jsv_allowed_mod, CF_value, JSV_ALLOWED_MOD_DEFAULT);
+      if (lListElem *jsv_allowed_mod = ocs::tom::find_first_rw<CF_name>(entries, "jsv_allowed_mod"); jsv_allowed_mod == nullptr) {
+         jsv_allowed_mod = ocs::tom::emplace_back_in<CONF_entries, CF_name>(global, "jsv_allowed_mod");
+         ocs::tom::set<CF_value>(jsv_allowed_mod, JSV_ALLOWED_MOD_DEFAULT);
       }
 
       // add gdi_request_limits
-      if (lListElem *gdi_request_limits = lGetElemStrRW(entries, CF_name, "gdi_request_limits"); gdi_request_limits == nullptr) {
-         gdi_request_limits = lAddSubStr(global, CF_name, "gdi_request_limits", CONF_entries, CF_Type);
-         lSetString(gdi_request_limits, CF_value, NONE_STR);
+      if (lListElem *gdi_request_limits = ocs::tom::find_first_rw<CF_name>(entries, "gdi_request_limits"); gdi_request_limits == nullptr) {
+         gdi_request_limits = ocs::tom::emplace_back_in<CONF_entries, CF_name>(global, "gdi_request_limits");
+         ocs::tom::set<CF_value>(gdi_request_limits, NONE_STR);
       }
 
       // add binding_params
-      if (lListElem *binding_params = lGetElemStrRW(entries, CF_name, "binding_params"); binding_params == nullptr) {
-         binding_params = lAddSubStr(global, CF_name, "binding_params", CONF_entries, CF_Type);
-         lSetString(binding_params, CF_value, BINDING_PARAMS_DEFAULT);
+      if (lListElem *binding_params = ocs::tom::find_first_rw<CF_name>(entries, "binding_params"); binding_params == nullptr) {
+         binding_params = ocs::tom::emplace_back_in<CONF_entries, CF_name>(global, "binding_params");
+         ocs::tom::set<CF_value>(binding_params, BINDING_PARAMS_DEFAULT);
       }
 
       // add jsv_params
-      if (lListElem *jsv_params = lGetElemStrRW(entries, CF_name, "jsv_params"); jsv_params == nullptr) {
-         jsv_params = lAddSubStr(global, CF_name, "jsv_params", CONF_entries, CF_Type);
-         lSetString(jsv_params, CF_value, JSV_PARAMS_DEFAULT);
+      if (lListElem *jsv_params = ocs::tom::find_first_rw<CF_name>(entries, "jsv_params"); jsv_params == nullptr) {
+         jsv_params = ocs::tom::emplace_back_in<CONF_entries, CF_name>(global, "jsv_params");
+         ocs::tom::set<CF_value>(jsv_params, JSV_PARAMS_DEFAULT);
       }
 
       // add topology_string
-      if (lListElem *topology_file = lGetElemStrRW(entries, CF_name, "topology_file"); topology_file == nullptr) {
-         topology_file = lAddSubStr(global, CF_name, "topology_file", CONF_entries, CF_Type);
-         lSetString(topology_file, CF_value, NONE_STR);
+      if (lListElem *topology_file = ocs::tom::find_first_rw<CF_name>(entries, "topology_file"); topology_file == nullptr) {
+         topology_file = ocs::tom::emplace_back_in<CONF_entries, CF_name>(global, "topology_file");
+         ocs::tom::set<CF_value>(topology_file, NONE_STR);
       }
    }
 
@@ -255,7 +257,7 @@ sge_del_configuration(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem 
       DRETURN(STATUS_EUNKNOWN);
    }
 
-   if ((tmp_name = lGetHost(aConf, CONF_name)) == nullptr) {
+   if ((tmp_name = ocs::tom::get<CONF_name>(aConf)) == nullptr) {
       CRITICAL(MSG_SGETEXT_MISSINGCULLFIELD_SS, lNm2Str(CONF_name), __func__);
       answer_list_add(anAnswer, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
@@ -277,7 +279,7 @@ sge_del_configuration(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem 
       conf_obj = sge_get_configuration_for_host(tmp_name);
       if (conf_obj != nullptr) {
          DPRINTF("using hostname stored in configuration object\n");
-         strcpy(unique_name, lGetHost(conf_obj, CONF_name));
+         strcpy(unique_name, ocs::tom::get<CONF_name>(conf_obj));
          lFreeElem(&conf_obj);
       } else {
          ERROR(MSG_SGETEXT_CANT_DEL_CONFIG2_S, tmp_name);
@@ -362,7 +364,7 @@ sge_mod_configuration(lListElem *aConf, lList **anAnswer, const char *aUser, con
       DRETURN(STATUS_EUNKNOWN);
    }
 
-   if ((tmp_name = lGetHost(aConf, CONF_name)) == nullptr) {
+   if ((tmp_name = ocs::tom::get<CONF_name>(aConf)) == nullptr) {
       CRITICAL(MSG_SGETEXT_MISSINGCULLFIELD_SS, lNm2Str(CONF_name), __func__);
       answer_list_add(anAnswer, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
@@ -493,10 +495,10 @@ sge_update_heard_from_timeout() {
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
    for_each_ep_lv(conf, config_list) {
-      const lListElem *entry = lGetSubStr(conf, CF_name, "load_report_time", CONF_entries);
+      const lListElem *entry = ocs::tom::find_first_in<CONF_entries, CF_name>(conf, "load_report_time");
       uint32_t load_report_time = 0;
       if (entry != nullptr && parse_ulong_val(nullptr, &load_report_time, ocs::CEntry::Type::TIME,
-                                              lGetString(entry, CF_value), nullptr, 0) != 0) {
+                                              ocs::tom::get<CF_value>(entry), nullptr, 0) != 0) {
          max_load_report_time = std::max(max_load_report_time, load_report_time);
       }
    }
@@ -561,7 +563,7 @@ check_config(lList **alpp, lListElem *conf) {
    const char *conf_name;
    const lList *master_userset_list = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
 
-   conf_name = lGetHost(conf, CONF_name);
+   conf_name = ocs::tom::get<CONF_name>(conf);
 
    // an attribute given twice has no defined value (CS-3053)
    const std::string object_name = std::string("configuration ") + (conf_name != nullptr ? conf_name : "");
@@ -569,9 +571,9 @@ check_config(lList **alpp, lListElem *conf) {
       DRETURN(STATUS_ESYNTAX);
    }
 
-   for_each_ep_lv(ep, lGetList(conf, CONF_entries)) {
-      name = lGetString(ep, CF_name);
-      value = lGetString(ep, CF_value);
+   for_each_ep_lv(ep, ocs::tom::get<CONF_entries>(conf)) {
+      name = ocs::tom::get<CF_name>(ep);
+      value = ocs::tom::get<CF_value>(ep);
 
       if (name == nullptr) {
          ERROR(MSG_CONF_NAMEISNULLINCONFIGURATIONLISTOFX_S, conf_name);
@@ -856,7 +858,7 @@ sge_compare_configuration(const lListElem *aHost, const lList *aConf) {
    DENTER(TOP_LAYER);
 
    if (lGetNumberOfElem(aConf) == 0) {
-      DPRINTF("%s: configuration for %s is empty\n", __func__, lGetHost(aHost, EH_name));
+      DPRINTF("%s: configuration for %s is empty\n", __func__, static_cast<const char *>(ocs::tom::get<EH_name>(aHost)));
       DRETURN(1);
    }
 
@@ -865,10 +867,10 @@ sge_compare_configuration(const lListElem *aHost, const lList *aConf) {
       uint32_t conf_version;
       uint32_t master_version;
 
-      host_name = lGetHost(conf_entry, CONF_name);
+      host_name = ocs::tom::get<CONF_name>(conf_entry);
       master_version = sge_get_config_version_for_host(host_name);
 
-      conf_version = lGetUlong(conf_entry, CONF_version);
+      conf_version = ocs::tom::get<CONF_version>(conf_entry);
 
       if (master_version != conf_version) {
          DPRINTF("%s: configuration for %s changed from version %ld to %ld\n", __func__, host_name, master_version, conf_version);
@@ -916,8 +918,8 @@ sge_get_configuration_entry_by_name(const char *aHost, const char *anEntryName) 
 
 static lListElem *
 get_entry_from_conf(lListElem *aConf, const char *anEntryName) {
-   const lList *entries = lGetList(aConf, CONF_entries);
-   const lListElem *elem = lGetElemStr(entries, CF_name, anEntryName);
+   const lList *entries = ocs::tom::get<CONF_entries>(aConf);
+   const lListElem *elem = ocs::tom::find_first<CF_name>(entries, anEntryName);
    return lCopyElem(elem);
 }
 
@@ -959,7 +961,7 @@ sge_get_config_version_for_host(const char *aName) {
 
    const lList *config_list = *ocs::DataStore::get_master_list(SGE_TYPE_CONFIG);
 
-   conf = lGetElemHost(config_list, CONF_name, aName);
+   conf = ocs::tom::find_first<CONF_name>(config_list, aName);
    if (conf == nullptr) {
       /*
        * Due to CR 6319231 IZ 1760:
@@ -971,13 +973,13 @@ sge_get_config_version_for_host(const char *aName) {
       if (CL_RETVAL_OK != ret) {
          DPRINTF("%s: error %s resolving host %s\n", __func__, cl_get_error_text(ret), aName);
       }
-      conf = lGetElemHost(config_list, CONF_name, unique_name);
+      conf = ocs::tom::find_first<CONF_name>(config_list, unique_name);
    }
 
    if (conf == nullptr) {
       DPRINTF("%s: no master configuration for %s found\n", __func__, aName);
    } else {
-      version = lGetUlong(conf, CONF_version);
+      version = ocs::tom::get<CONF_version>(conf);
    }
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
@@ -1020,7 +1022,7 @@ sge_get_configuration_for_host(const char *aName) {
 
    const lList *config_list = *ocs::DataStore::get_master_list(SGE_TYPE_CONFIG);
 
-   conf = lCopyElem(lGetElemHost(config_list, CONF_name, unique_name));
+   conf = lCopyElem(ocs::tom::find_first<CONF_name>(config_list, unique_name));
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
 
@@ -1037,15 +1039,15 @@ sge_get_configuration_for_host(const char *aName) {
 static int
 do_mod_config(char *aConfName, lListElem *anOldConf, lListElem *aNewConf, lList **anAnswer, uint64_t gdi_session) {
    DENTER(TOP_LAYER);
-   const lList *old_entries = lGetList(anOldConf, CONF_entries);
-   lList *new_entries = lGetListRW(aNewConf, CONF_entries);
+   const lList *old_entries = ocs::tom::get<CONF_entries>(anOldConf);
+   lList *new_entries = ocs::tom::get<CONF_entries>(aNewConf);
 
    // VALIDATION AND ADJUSTMENTS
 
    // check if gdi_request_limits are correct
-   const lListElem *gdi_request_limits_cfg = lGetElemStr(new_entries, CF_name, "gdi_request_limits");
+   const lListElem *gdi_request_limits_cfg = ocs::tom::find_first<CF_name>(new_entries, "gdi_request_limits");
    if (gdi_request_limits_cfg != nullptr) {
-      const char *gdi_request_limit_str = lGetString(gdi_request_limits_cfg, CF_value);
+      const char *gdi_request_limit_str = ocs::tom::get<CF_value>(gdi_request_limits_cfg);
       ocs::RequestLimits& limits_instance = ocs::RequestLimits::get_instance();
       if (!limits_instance.parse(gdi_request_limit_str, anAnswer)) {
          DRETURN(STATUS_EUNKNOWN);
@@ -1085,12 +1087,12 @@ check_static_conf_entries(const lList *theOldConfEntries, const lList *theNewCon
       const char *old_value, *new_value = nullptr;
       const char *entry_name = Static_Conf_Entries[entry_idx];
 
-      old_entry = lGetElemStr(theOldConfEntries, CF_name, entry_name);
-      new_entry = lGetElemStr(theNewConfEntries, CF_name, entry_name);
+      old_entry = ocs::tom::find_first<CF_name>(theOldConfEntries, entry_name);
+      new_entry = ocs::tom::find_first<CF_name>(theNewConfEntries, entry_name);
 
       if ((nullptr != old_entry) && (nullptr != new_entry)) {
-         old_value = lGetString(old_entry, CF_value);
-         new_value = lGetString(new_entry, CF_value);
+         old_value = ocs::tom::get<CF_value>(old_entry);
+         new_value = ocs::tom::get<CF_value>(new_entry);
 
          if (((nullptr != old_value) && (nullptr != new_value)) && (strcmp(old_value, new_value) != 0)) {
             /* log in qmaster messages file */
@@ -1122,22 +1124,22 @@ exchange_conf_by_name(char *aConfName, lListElem *anOldConf, lListElem *aNewConf
 
    lListElem *elem = nullptr;
    uint32_t old_version, new_version = 0;
-   const char *old_conf_name = lGetHost(anOldConf, CONF_name);
+   const char *old_conf_name = ocs::tom::get<CONF_name>(anOldConf);
 
-   old_version = lGetUlong(anOldConf, CONF_version);
+   old_version = ocs::tom::get<CONF_version>(anOldConf);
 
    new_version = (old_version + 1);
 
-   lSetUlong(aNewConf, CONF_version, new_version);
+   ocs::tom::set<CONF_version>(aNewConf, new_version);
 
    /* Make sure, 'aNewConf' does have a unique name */
-   lSetHost(aNewConf, CONF_name, old_conf_name);
+   ocs::tom::set<CONF_name>(aNewConf, old_conf_name);
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_WRITE);
 
    lList *config_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_CONFIG);
 
-   elem = lGetElemHostRW(config_list, CONF_name, old_conf_name);
+   elem = ocs::tom::find_first_rw<CONF_name>(config_list, old_conf_name);
 
    lRemoveElem(config_list, &elem);
 
@@ -1162,11 +1164,11 @@ has_reschedule_unknown_change(const lList *theOldConfEntries, const lList *theNe
    const char *new_value = nullptr;
    bool res = false;
 
-   old_elem = lGetElemStr(theOldConfEntries, CF_name, "reschedule_unknown");
-   new_elem = lGetElemStr(theNewConfEntries, CF_name, "reschedule_unknown");
+   old_elem = ocs::tom::find_first<CF_name>(theOldConfEntries, "reschedule_unknown");
+   new_elem = ocs::tom::find_first<CF_name>(theNewConfEntries, "reschedule_unknown");
 
-   old_value = (nullptr != old_elem) ? lGetString(old_elem, CF_value) : nullptr;
-   new_value = (nullptr != new_elem) ? lGetString(new_elem, CF_value) : nullptr;
+   old_value = (nullptr != old_elem) ? ocs::tom::get<CF_value>(old_elem) : nullptr;
+   new_value = (nullptr != new_elem) ? ocs::tom::get<CF_value>(new_elem) : nullptr;
 
    if ((nullptr == old_value) || (nullptr == new_value)) {
       res = true;  /* change by omission in one configuration */
@@ -1212,7 +1214,7 @@ remove_conf_by_name(char *aConfName) {
 
    lList *config_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_CONFIG);
 
-   elem = lGetElemHostRW(config_list, CONF_name, aConfName);
+   elem = ocs::tom::find_first_rw<CONF_name>(config_list, aConfName);
 
    lRemoveElem(config_list, &elem);
 
@@ -1239,7 +1241,7 @@ conf_exists_by_name(const char *aConfName) {
 
    const lList *config_list = *ocs::DataStore::get_master_list(SGE_TYPE_CONFIG);
 
-   bool exists = (lGetElemHost(config_list, CONF_name, aConfName) != nullptr);
+   bool exists = (static_cast<const lListElem *>(ocs::tom::find_first<CONF_name>(config_list, aConfName)) != nullptr);
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
 

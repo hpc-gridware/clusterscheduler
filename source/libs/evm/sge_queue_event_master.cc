@@ -46,6 +46,7 @@
 #include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_event.h"
 #include "sgeobj/sge_qinstance.h"
+#include "tom/ocs_Element.h"
 
 #include "evm/sge_event_master.h"
 #include "evm/sge_queue_event_master.h"
@@ -59,7 +60,7 @@
  */
 void qinstance_add_event(lListElem *this_elem, ev_event type, uint64_t gdi_session) {
    DENTER(TOP_LAYER);
-   sge_add_event(0, type, 0, 0, lGetString(this_elem, QU_qname), lGetHost(this_elem, QU_qhostname), nullptr, this_elem, gdi_session);
+   sge_add_event(0, type, 0, 0, ocs::tom::get<QU_qname>(this_elem), ocs::tom::get<QU_qhostname>(this_elem), nullptr, this_elem, gdi_session);
    DRETURN_VOID;
 }
 
@@ -72,6 +73,6 @@ void qinstance_add_event(lListElem *this_elem, ev_event type, uint64_t gdi_sessi
  */
 void cqueue_add_event(lListElem *this_elem, ev_event type, uint64_t gdi_session) {
    DENTER(TOP_LAYER);
-   sge_add_event(0, type, 0, 0, lGetString(this_elem, CQ_name), nullptr, nullptr, this_elem, gdi_session);
+   sge_add_event(0, type, 0, 0, ocs::tom::get<CQ_name>(this_elem), nullptr, nullptr, this_elem, gdi_session);
    DRETURN_VOID;
 }

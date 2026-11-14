@@ -76,6 +76,7 @@
 #include "sgeobj/parse.h"
 #include "sgeobj/sge_eval_expression.h"
 #include "sgeobj/msg_sgeobjlib.h"
+#include "tom/ocs_Element.h"
 
 #include "msg_common.h"
 
@@ -855,9 +856,9 @@ object_set_range_id(lListElem *object, int rnm, uint32_t start, uint32_t end,
       }
    }
    if (range_elem != nullptr) {
-      lSetUlong(range_elem, RN_min, start);
-      lSetUlong(range_elem, RN_max, end);
-      lSetUlong(range_elem, RN_step, step);
+      ocs::tom::set<RN_min>(range_elem, start);
+      ocs::tom::set<RN_max>(range_elem, end);
+      ocs::tom::set<RN_step>(range_elem, step);
    }
    return ret;
 }
@@ -1251,7 +1252,7 @@ object_parse_solist_from_string(lListElem *this_elem, lList **answer_list, int n
             /* split up the original string from the first subordinated queue on */
             lString2List(sub_queues_text, &tmp_list, SO_Type, SO_name, ",) \t");
             for_each_rw_lv (tmp_elem, tmp_list) {
-               const char *queue_value = lGetString(tmp_elem, SO_name);
+               const char *queue_value = ocs::tom::get<SO_name>(tmp_elem);
                char *queuename = sge_strtok(queue_value, ":");
                char *value_str = sge_strtok(nullptr, ":");
                char *action_str = sge_strtok(nullptr, ":");
@@ -1261,7 +1262,7 @@ object_parse_solist_from_string(lListElem *this_elem, lList **answer_list, int n
                sge_strip_blanks(action_str);
 
                if (queuename != nullptr) {
-                  lSetString(tmp_elem, SO_name, queuename);
+                  ocs::tom::set<SO_name>(tmp_elem, queuename);
                } else {
                   answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                                           MSG_ERRORPARSINGVALUEFORNM_S, string);
@@ -1271,7 +1272,7 @@ object_parse_solist_from_string(lListElem *this_elem, lList **answer_list, int n
                }
 
                if (slots_sum_value > 0) {
-                  lSetUlong(tmp_elem, SO_slots_sum, slots_sum_value);
+                  ocs::tom::set<SO_slots_sum>(tmp_elem, slots_sum_value);
                } else {
                   answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                                           MSG_ERRORPARSINGVALUEFORNM_S, string);
@@ -1285,7 +1286,7 @@ object_parse_solist_from_string(lListElem *this_elem, lList **answer_list, int n
                   uint32_t value = strtol(value_str, &value_end, 10);
 
                   if (value_end != nullptr && *value_end == '\0') {
-                     lSetUlong(tmp_elem, SO_seq_no, value);
+                     ocs::tom::set<SO_seq_no>(tmp_elem, value);
                   } else {
                      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                                              MSG_ERRORPARSINGVALUEFORNM_S, string);
@@ -1294,14 +1295,14 @@ object_parse_solist_from_string(lListElem *this_elem, lList **answer_list, int n
                      break;
                   }
                } else {
-                  lSetUlong(tmp_elem, SO_seq_no, 0);
+                  ocs::tom::set<SO_seq_no>(tmp_elem, 0);
                }
 
                if (action_str != nullptr) {
                   if (strcmp(action_str, "lr") == 0) {
-                     lSetUlong(tmp_elem, SO_action, SO_ACTION_LR);
+                     ocs::tom::set<SO_action>(tmp_elem, SO_ACTION_LR);
                   } else if (strcmp(action_str, "sr") == 0) {
-                     lSetUlong(tmp_elem, SO_action, SO_ACTION_SR);
+                     ocs::tom::set<SO_action>(tmp_elem, SO_ACTION_SR);
                   } else {
                      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                                              MSG_ERRORPARSINGVALUEFORNM_S, string);
@@ -1311,7 +1312,7 @@ object_parse_solist_from_string(lListElem *this_elem, lList **answer_list, int n
                   }
                } else {
                   /* default is "sr" */
-                  lSetUlong(tmp_elem, SO_action, SO_ACTION_SR);
+                  ocs::tom::set<SO_action>(tmp_elem, SO_ACTION_SR);
                }
             }
             lSetPosList(this_elem, pos, tmp_list);
@@ -1319,24 +1320,24 @@ object_parse_solist_from_string(lListElem *this_elem, lList **answer_list, int n
       } else {
          lString2List(string, &tmp_list, SO_Type, SO_name, ", \t");
          if (tmp_list != nullptr) {
-            if (!strcasecmp("NONE", lGetString(lFirst(tmp_list), SO_name))) {
+            if (!strcasecmp("NONE", ocs::tom::get<SO_name>(lFirst(tmp_list)))) {
                lFreeList(&tmp_list);
             } else {
                /* 
                 * queue instance-wise suspend on subordinate
                 */
                for_each_rw_lv (tmp_elem, tmp_list) {
-                  const char *queue_value = lGetString(tmp_elem, SO_name);
+                  const char *queue_value = ocs::tom::get<SO_name>(tmp_elem);
                   const char *queuename = sge_strtok(queue_value, ":=");
                   const char *value_str = sge_strtok(nullptr, ":=");
 
-                  lSetString(tmp_elem, SO_name, queuename);
+                  ocs::tom::set<SO_name>(tmp_elem, queuename);
                   if (value_str != nullptr) {
                      char *endptr = nullptr;
                      uint32_t value = strtol(value_str, &endptr, 10);
 
                      if (endptr != nullptr && *endptr == '\0') {
-                        lSetUlong(tmp_elem, SO_threshold, value);
+                        ocs::tom::set<SO_threshold>(tmp_elem, value);
                      } else {
                         answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                                                 MSG_ERRORPARSINGVALUEFORNM_S, string);
@@ -2679,12 +2680,12 @@ bool
 object_verify_expression_syntax(const lListElem *elem, lList **answer_list) {
    bool ret = true;
    const char *expr;
-   switch (const auto type = static_cast<ocs::CEntry::Type>(lGetUlong(elem, CE_valtype))) {
+   switch (const auto type = static_cast<ocs::CEntry::Type>(ocs::tom::get<CE_valtype>(elem))) {
       case ocs::CEntry::Type::STR:
       case ocs::CEntry::Type::CSTR:
       case ocs::CEntry::Type::RESTR:
       case ocs::CEntry::Type::HOST:
-         expr = lGetString(elem, CE_stringval);
+         expr = ocs::tom::get<CE_stringval>(elem);
          if (sge_eval_expression(type, expr, "*", answer_list) == -1) {
             ret = false;
          }
@@ -2761,8 +2762,8 @@ object_verify_pe_range(lList **alpp, const char *pe_name, lList *pe_range, const
    range_list_sort_uniq_compress(pe_range, nullptr, true);
 
    for_each_ep(range_elem, pe_range) {
-      unsigned long pe_range_min = lGetUlong(range_elem, RN_min);
-      unsigned long pe_range_max = lGetUlong(range_elem, RN_max);
+      unsigned long pe_range_min = ocs::tom::get<RN_min>(range_elem);
+      unsigned long pe_range_max = ocs::tom::get<RN_max>(range_elem);
       DPRINTF("pe max = %ld, pe min = %ld\n", pe_range_max, pe_range_min);
       if (pe_range_max == 0 || pe_range_min == 0) {
          ERROR(MSG_OBJECT_PERANGEMUSTBEGRZERO_S, object_descr);
@@ -2778,10 +2779,10 @@ object_verify_pe_range(lList **alpp, const char *pe_name, lList *pe_range, const
       const lList *master_pe_list = *ocs::DataStore::get_master_list(SGE_TYPE_PE);
       const lListElem *reference_pe = pe_list_find_matching(master_pe_list, pe_name);
       const lListElem *pe;
-      int nslots = pe_urgency_slots(reference_pe, lGetString(reference_pe, PE_urgency_slots), pe_range);
+      int nslots = pe_urgency_slots(reference_pe, ocs::tom::get<PE_urgency_slots>(reference_pe), pe_range);
       for_each_ep(pe, master_pe_list) {
          if (pe_is_matching(pe, pe_name) &&
-             nslots != pe_urgency_slots(pe, lGetString(pe, PE_urgency_slots), pe_range)) {
+             nslots != pe_urgency_slots(pe, ocs::tom::get<PE_urgency_slots>(pe), pe_range)) {
             ERROR(MSG_OBJECT_WILD_RANGE_AMBIGUOUS_S, object_descr);
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             DRETURN(STATUS_EUNKNOWN);
@@ -2813,7 +2814,7 @@ int compress_ressources(lList **alpp, lList *rl, const char *object_descr) {
    const char *attr_name;
 
    for_each_rev (ep, rl) {
-      attr_name = lGetString(ep, CE_name);
+      attr_name = ocs::tom::get<CE_name>(ep);
 
       /* ensure 'slots' is not requested explicitly */
       if (!strcmp(attr_name, "slots")) {
@@ -2826,9 +2827,9 @@ int compress_ressources(lList **alpp, lList *rl, const char *object_descr) {
       prev = lPrevRW(ep);
       while ((rm_ep = prev)) {
          prev = lPrevRW(rm_ep);
-         if (!strcmp(lGetString(rm_ep, CE_name), attr_name)) {
+         if (!strcmp(ocs::tom::get<CE_name>(rm_ep), attr_name)) {
             DPRINTF("resource request -l " SFN "=" SFN " overrides previous -l " SFN "=" SFN "\n",
-                    attr_name, lGetString(ep, CE_stringval), attr_name, lGetString(rm_ep, CE_stringval));
+                    attr_name, ocs::tom::get<CE_stringval>(ep), attr_name, ocs::tom::get<CE_stringval>(rm_ep));
             lRemoveElem(rl, &rm_ep);
          }
       }

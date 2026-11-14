@@ -57,6 +57,8 @@
 #include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/ocs_RequestLimits.h"
 #include "sgeobj/sge_manop.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_QU.h"
 
 #include "gdi/ocs_gdi_ClientServerBase.h"
 #include "gdi/ocs_gdi_security.h"
@@ -155,7 +157,7 @@ do_c_ack_request(ocs::gdi::ClientServerBase::struct_msg_t *message, monitoring_t
       }
 
       // check the tag and the sender
-      uint32_t ack_tag = lGetUlong(ack, ACK_type);
+      uint32_t ack_tag = ocs::tom::get<ACK_type>(ack);
       if (ack_tag == ACK_SIGJOB || ack_tag == ACK_SIGQUEUE) {
          if (ocs::Bootstrap::has_security_mode(ocs::Bootstrap::BS_SEC_MODE_MUNGE)) {
             // messages needs to come from execd running as same admin user or root
@@ -177,8 +179,8 @@ do_c_ack_request(ocs::gdi::ClientServerBase::struct_msg_t *message, monitoring_t
       if (ack_tag == ACK_EVENT_DELIVERY) {
          // event ACKs are handled in the event master thread
          // sge_handle_event_ack stores them into the event master message queue
-         uint32_t ack_ulong = lGetUlong(ack, ACK_id);
-         const uint32_t ack_ulong2 = lGetUlong(ack, ACK_id2);
+         uint32_t ack_ulong = ocs::tom::get<ACK_id>(ack);
+         const uint32_t ack_ulong2 = ocs::tom::get<ACK_id2>(ack);
          sge_handle_event_ack(ack_ulong2, (ev_event) ack_ulong);
          lFreeElem(&ack);
       } else {
@@ -680,10 +682,10 @@ sge_c_ack(const ocs::gdi::Packet *packet, const ocs::gdi::Task *task, monitoring
    // extract information from the task about the ACK
    const lList *ack_list = task->data_list;
    const lListElem *ack = lFirst(ack_list);
-   const uint32_t ack_tag = lGetUlong(ack, ACK_type);
-   uint32_t ack_ulong = lGetUlong(ack, ACK_id);
-   const uint32_t ack_ulong2 = lGetUlong(ack, ACK_id2);
-   const char *ack_str = lGetString(ack, ACK_str);
+   const uint32_t ack_tag = ocs::tom::get<ACK_type>(ack);
+   uint32_t ack_ulong = ocs::tom::get<ACK_id>(ack);
+   const uint32_t ack_ulong2 = ocs::tom::get<ACK_id2>(ack);
+   const char *ack_str = ocs::tom::get<ACK_str>(ack);
    DPRINTF("ack_ulong=%ld, ack_ulong2=%ld, ack_str=%s\n", ack_ulong, ack_ulong2, ack_str);
 
    switch (ack_tag) {
@@ -721,7 +723,7 @@ sge_c_job_ack(const char *host, const char *commproc, const uint32_t ack_tag,
 
          DPRINTF("TAG_SIGJOB\n");
          /* ack_ulong is the jobid */
-         lListElem *jep = lGetElemUlongRW(master_job_list, JB_job_number, ack_ulong);
+         lListElem *jep = ocs::tom::find_first_rw<JB_job_number>(master_job_list, ack_ulong);
          if (jep == nullptr) {
             ERROR(MSG_COM_ACKEVENTFORUNKNOWNJOB_SU, host, ack_ulong);
             DRETURN_VOID;
@@ -733,11 +735,11 @@ sge_c_job_ack(const char *host, const char *commproc, const uint32_t ack_tag,
          }
 
          DPRINTF("JOB " sge_u32 ": SIGNAL ACK\n", ack_ulong);
-         lSetUlong(jatep, JAT_pending_signal, 0);
+         ocs::tom::set<JAT_pending_signal>(jatep, 0);
          te_delete_one_time_event(TYPE_SIGNAL_RESEND_EVENT, ack_ulong, ack_ulong2, nullptr);
          dstring buffer = DSTRING_INIT;
          spool_write_object(&answer_list, spool_get_default_context(), jep,
-                            job_get_key(lGetUlong(jep, JB_job_number), ack_ulong2, nullptr, &buffer),
+                            job_get_key(ocs::tom::get<JB_job_number>(jep), ack_ulong2, nullptr, &buffer),
                             SGE_TYPE_JOB);
          sge_dstring_free(&buffer);
          answer_list_output(&answer_list);
@@ -751,14 +753,14 @@ sge_c_job_ack(const char *host, const char *commproc, const uint32_t ack_tag,
          dstring cqueue_name = DSTRING_INIT;
          cqueue_name_split(ack_str, &cqueue_name, &host_domain, nullptr, nullptr);
 
-         const lListElem *cqueue = lGetElemStr(master_cqueue_list, CQ_name, sge_dstring_get_string(&cqueue_name));
+         const lListElem *cqueue = ocs::tom::find_first<CQ_name>(master_cqueue_list, sge_dstring_get_string(&cqueue_name));
          sge_dstring_free(&cqueue_name);
 
          lListElem *qinstance = nullptr;
          if (cqueue != nullptr) {
-            const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
+            const lList *qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
 
-            qinstance = lGetElemHostRW(qinstance_list, QU_qhostname, sge_dstring_get_string(&host_domain));
+            qinstance = ocs::tom::find_first_rw<QU_qhostname>(qinstance_list, sge_dstring_get_string(&host_domain));
          }
          sge_dstring_free(&host_domain);
 
@@ -767,13 +769,13 @@ sge_c_job_ack(const char *host, const char *commproc, const uint32_t ack_tag,
             DRETURN_VOID;
          }
 
-         DPRINTF("QUEUE %s: SIGNAL ACK\n", lGetString(qinstance, QU_full_name));
+         DPRINTF("QUEUE %s: SIGNAL ACK\n", ocs::tom::get<QU_full_name>(qinstance));
 
-         lSetUlong(qinstance, QU_pending_signal, 0);
-         te_delete_one_time_event(TYPE_SIGNAL_RESEND_EVENT, 0, 0, lGetString(qinstance, QU_full_name));
+         ocs::tom::set<QU_pending_signal>(qinstance, 0);
+         te_delete_one_time_event(TYPE_SIGNAL_RESEND_EVENT, 0, 0, ocs::tom::get<QU_full_name>(qinstance));
          DSTRING_STATIC(dstr, MAX_STRING_SIZE);
-         const char *key = sge_dstring_sprintf(&dstr, "%s/%s", lGetString(qinstance, QU_qname),
-                                               lGetHost(qinstance, QU_qhostname));
+         const char *key = sge_dstring_sprintf(&dstr, "%s/%s", ocs::tom::get<QU_qname>(qinstance),
+                                               static_cast<const char *>(ocs::tom::get<QU_qhostname>(qinstance)));
          spool_write_object(&answer_list, spool_get_default_context(), qinstance,
                             key, SGE_TYPE_QINSTANCE);
          answer_list_output(&answer_list);

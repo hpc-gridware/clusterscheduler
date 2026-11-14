@@ -30,6 +30,8 @@
 #include "sgeobj/sge_manop.h"
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_schedd_conf.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_CE.h"
 
 bool
 ocs::QStatModelServer::fetch_data(lList **answer_list, QStatParameter &parameter) {
@@ -102,7 +104,7 @@ ocs::QStatModelServer::fetch_data(lList **answer_list, QStatParameter &parameter
    schedd_config_ = lSelect("", master_sconf_list, nullptr, sconf_what);
    lFreeWhat(&sconf_what);
    if (const lListElem *sc = lFirst(schedd_config_); sc != nullptr) {
-      job_load_adjustments_ = lCopyList("load_adj_copy", lGetList(sc, SC_job_load_adjustments));
+      job_load_adjustments_ = lCopyList("load_adj_copy", ocs::tom::get<SC_job_load_adjustments>(sc));
    }
    // An empty list, not nullptr, when none are configured: the sched helpers read nullptr as "fetch them
    // from the data store of the calling thread" (LOAD_ADJUSTMENTS_LATE_FETCH in get_attribute()), which

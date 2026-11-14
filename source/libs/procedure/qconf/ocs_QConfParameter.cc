@@ -30,6 +30,7 @@
 #include "ocs_QConfParameter.h"
 
 #include "sgeobj/cull/sge_param_SPP_L.h"
+#include "tom/ocs_Element.h"
 
 /**
  * @brief The operation as its own argument vector
@@ -91,13 +92,13 @@ ocs::QConfParameter::get_bundle() {
    // the switch that was typed, which for the prefix matched ones carries its
    // suffix (-ke, -kej) and is therefore not the same as the table's name
    lList *operation_list = nullptr;
-   lAddElemStr(&operation_list, ST_name, operation_.token.c_str(), ST_Type);
+   ocs::tom::emplace_back<ST_name>(&operation_list, operation_.token.c_str());
    add_parameter_bundle(bundle, OPERATION, operation_list);
 
    // its arguments, in order
    lList *args_list = nullptr;
    for (const std::string &arg : operation_.args) {
-      lAddElemStr(&args_list, ST_name, arg.c_str(), ST_Type);
+      ocs::tom::emplace_back<ST_name>(&args_list, arg.c_str());
    }
    add_parameter_bundle(bundle, OPERATION_ARGS, args_list);
 
@@ -112,12 +113,12 @@ ocs::QConfParameter::get_bundle() {
    flags |= for_edit_ ? FLAG_FOR_EDIT : 0;
    flags |= for_export_ ? FLAG_FOR_EXPORT : 0;
    lList *flags_list = nullptr;
-   lAddElemUlong(&flags_list, ULNG_value, flags, ULNG_Type);
+   ocs::tom::emplace_back<ULNG_value>(&flags_list, flags);
    add_parameter_bundle(bundle, INVOCATION_FLAGS, flags_list);
 
    // -fmtval
    lList *value_format_list = nullptr;
-   lAddElemUlong(&value_format_list, ULNG_value, static_cast<uint32_t>(value_format_), ULNG_Type);
+   ocs::tom::emplace_back<ULNG_value>(&value_format_list, static_cast<uint32_t>(value_format_));
    add_parameter_bundle(bundle, VALUE_FORMAT, value_format_list);
 
    DRETURN(bundle);
@@ -138,29 +139,29 @@ ocs::QConfParameter::set_bundle(const lList *bundle) {
 
    operation_ = qconf_op{};
 
-   const lListElem *operation_param = lGetElemStr(bundle, SPP_name, OPERATION);
+   const lListElem *operation_param = ocs::tom::find_first<SPP_name>(bundle, OPERATION);
    if (operation_param != nullptr) {
-      const lListElem *token = lFirst(lGetList(operation_param, SPP_value_list));
+      const lListElem *token = lFirst(ocs::tom::get<SPP_value_list>(operation_param));
       if (token != nullptr) {
-         operation_.token = bundle_string(lGetString(token, ST_name));
+         operation_.token = bundle_string(ocs::tom::get<ST_name>(token));
       }
    }
 
-   const lListElem *args_param = lGetElemStr(bundle, SPP_name, OPERATION_ARGS);
+   const lListElem *args_param = ocs::tom::find_first<SPP_name>(bundle, OPERATION_ARGS);
    if (args_param != nullptr) {
       const lListElem *arg;
-      for_each_ep(arg, lGetList(args_param, SPP_value_list)) {
+      for_each_ep(arg, ocs::tom::get<SPP_value_list>(args_param)) {
          /* an argument that was empty in the client arrives as a null pointer,
           * see bundle_string() - this is the spot that took qmaster down (CS-2840) */
-         operation_.args.emplace_back(bundle_string(lGetString(arg, ST_name)));
+         operation_.args.emplace_back(bundle_string(ocs::tom::get<ST_name>(arg)));
       }
    }
 
-   const lListElem *flags_param = lGetElemStr(bundle, SPP_name, INVOCATION_FLAGS);
+   const lListElem *flags_param = ocs::tom::find_first<SPP_name>(bundle, INVOCATION_FLAGS);
    if (flags_param != nullptr) {
-      const lListElem *value = lFirst(lGetList(flags_param, SPP_value_list));
+      const lListElem *value = lFirst(ocs::tom::get<SPP_value_list>(flags_param));
       if (value != nullptr) {
-         const uint32_t flags = lGetUlong(value, ULNG_value);
+         const uint32_t flags = ocs::tom::get<ULNG_value>(value);
          binding_ = (flags & FLAG_BINDING) != 0;
          dry_run_ = (flags & FLAG_DRY_RUN) != 0;
          force_ = (flags & FLAG_FORCE) != 0;
@@ -172,11 +173,11 @@ ocs::QConfParameter::set_bundle(const lList *bundle) {
       }
    }
 
-   const lListElem *value_format_param = lGetElemStr(bundle, SPP_name, VALUE_FORMAT);
+   const lListElem *value_format_param = ocs::tom::find_first<SPP_name>(bundle, VALUE_FORMAT);
    if (value_format_param != nullptr) {
-      const lListElem *value = lFirst(lGetList(value_format_param, SPP_value_list));
+      const lListElem *value = lFirst(ocs::tom::get<SPP_value_list>(value_format_param));
       if (value != nullptr) {
-         value_format_ = static_cast<ValueFormat>(lGetUlong(value, ULNG_value));
+         value_format_ = static_cast<ValueFormat>(ocs::tom::get<ULNG_value>(value));
       }
    }
 

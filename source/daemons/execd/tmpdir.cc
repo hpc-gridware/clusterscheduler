@@ -45,6 +45,7 @@
 #include "uti/sge_unistd.h"
 
 #include "sgeobj/sge_qinstance.h"
+#include "tom/ocs_Element.h"
 
 #include "tmpdir.h"
 #include "msg_common.h"
@@ -71,14 +72,14 @@ sge_make_tmpdir(lListElem *qep, uint32_t jobid, uint32_t jataskid, uid_t uid, gi
 
    const char *t;
 
-   t = lGetString(qep, QU_tmpdir);
+   t = ocs::tom::get<QU_tmpdir>(qep);
    if (t == nullptr) {
       DRETURN(nullptr);
    }
 
    /* Note could have multiple instantiations of same job, */
    /* on same machine, under same queue */
-   snprintf(tmpdir, tmpdir_size, "%s/" sge_u32"." sge_u32".%s", t, jobid, jataskid, lGetString(qep, QU_qname));
+   snprintf(tmpdir, tmpdir_size, "%s/" sge_u32"." sge_u32".%s", t, jobid, jataskid, ocs::tom::get<QU_qname>(qep));
 
    DPRINTF("making TMPDIR=%s\n", tmpdir);
 
@@ -155,11 +156,11 @@ char *sge_get_tmpdir(lListElem *qep, uint32_t jobid, uint32_t jataskid, char *tm
    DENTER(TOP_LAYER);
    const char *t;
 
-   if (!(t=lGetString(qep, QU_tmpdir))) {
+   if (!(t=ocs::tom::get<QU_tmpdir>(qep))) {
       DRETURN(nullptr);
    }
 
-   snprintf(tmpdir, tmpdir_size, "%s/" sge_u32"." sge_u32".%s", t, jobid, jataskid, lGetString(qep, QU_qname));
+   snprintf(tmpdir, tmpdir_size, "%s/" sge_u32"." sge_u32".%s", t, jobid, jataskid, ocs::tom::get<QU_qname>(qep));
    DPRINTF("TMPDIR=%s\n", tmpdir);
    DRETURN(tmpdir);
 }

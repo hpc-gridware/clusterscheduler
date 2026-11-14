@@ -59,6 +59,8 @@
 #include "sgeobj/sge_hgroup.h"
 #include "sgeobj/ocs_Matcher.h"
 #include "sgeobj/msg_sgeobjlib.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_HR.h"
 
 #include <cinttypes>
 #include "msg_common.h"
@@ -90,7 +92,7 @@ bool href_list_add(lList **this_list, lList **answer_list, const char *host_or_g
       if (!href_list_has_member(*this_list, host_or_group)) {
          lListElem *h_or_g;   /* HR_Type */
 
-         h_or_g = lAddElemHost(this_list, HR_name, host_or_group, HR_Type);
+         h_or_g = ocs::tom::emplace_back<HR_name>(this_list, host_or_group);
          if (h_or_g == nullptr) {
             answer_list_add(answer_list, MSG_GDI_OUTOFMEMORY,
                             STATUS_EMALLOC, ANSWER_QUALITY_ERROR);
@@ -129,7 +131,7 @@ href_list_merge(lList **this_list, lList **answer_list, const lList *other) {
       return ret;
    }
    for_each_ep_lv(href, other) {
-      ret = href_list_add(this_list, answer_list, lGetHost(href, HR_name));
+      ret = href_list_add(this_list, answer_list, ocs::tom::get<HR_name>(href));
       if (!ret) {
          break;
       }
@@ -204,7 +206,7 @@ bool href_list_compare(const lList *this_list, lList **answer_list,
    bool ret = true;
 
    for_each_rw_lv(this_elem, this_list) {
-      const char *host_or_group = lGetHost(this_elem, HR_name);
+      const char *host_or_group = ocs::tom::get<HR_name>(this_elem);
 
       // Three classes, not two. A matcher belongs in neither output: the host
       // side of this difference is what missing execution host objects are
@@ -351,7 +353,7 @@ href_list_locate(const lList *this_list, const char *name) {
    lListElem *ret = nullptr;  /* HR_Type */
 
    if (this_list != nullptr && name != nullptr) {
-      ret = lGetElemHostRW(this_list, HR_name, name);
+      ret = ocs::tom::find_first_rw<HR_name>(this_list, name);
    }
    DRETURN(ret);
 }
@@ -392,13 +394,13 @@ bool href_list_find_references(const lList *this_list, lList **answer_list,
        * (N-B-2), so expanding it can never lead back here.
        */
       const lListElem *exec_hgroup = hgroup_list_locate(master_list, EXEC_HOSTGROUP);
-      const lList *candidates = (exec_hgroup != nullptr) ? lGetList(exec_hgroup, HGRP_host_list) : nullptr;
+      const lList *candidates = (exec_hgroup != nullptr) ? static_cast<const lList *>(ocs::tom::get<HGRP_host_list>(exec_hgroup)) : nullptr;
 
       /*
        * Handle each reference which was given by the calling context
        */
       for_each_ep_lv(href, this_list) {
-         const char *name = lGetHost(href, HR_name);
+         const char *name = ocs::tom::get<HR_name>(href);
          lListElem *hgroup = nullptr;  /* HGRP_name */
 
          /*
@@ -424,14 +426,14 @@ bool href_list_find_references(const lList *this_list, lList **answer_list,
          }
 
          if (hgroup != nullptr) {
-            const lList *href_list2 = lGetList(hgroup, HGRP_host_list);
+            const lList *href_list2 = ocs::tom::get<HGRP_host_list>(hgroup);
 
             /*
              * Add each element contained in the sublist of the hostgroup
              * we found previously to one of the result lists.
              */
             for_each_ep_lv(href2, href_list2) {
-               const char *name2 = lGetHost(href2, HR_name);
+               const char *name2 = ocs::tom::get<HR_name>(href2);
 
                switch (ocs::classify_member(name2)) {
                   case ocs::MemberClass::GROUP_REFERENCE:
@@ -611,17 +613,17 @@ bool href_list_find_referencees(const lList *this_list, lList **answer_list,
       const lListElem *href;  /* HR_Type */
 
       for_each_ep(href, this_list) {
-         const char *name = lGetHost(href, HR_name);
+         const char *name = ocs::tom::get<HR_name>(href);
 
          if (ocs::is_hgroup_name(name)) {
             const lListElem *hgroup;   /* HGRP_Type */
 
             for_each_ep(hgroup, master_list) {
-               const lList *href_list = lGetList(hgroup, HGRP_host_list);
+               const lList *href_list = ocs::tom::get<HGRP_host_list>(hgroup);
                lListElem *href = href_list_locate(href_list, name);
 
                if (href != nullptr) {
-                  const char *name = lGetHost(hgroup, HGRP_name);
+                  const char *name = ocs::tom::get<HGRP_name>(hgroup);
 
                   href_list_add(occupant_groups, answer_list, name);
                }
@@ -746,7 +748,7 @@ bool href_list_resolve_hostnames(lList *this_list, lList **answer_list,
 
    if (this_list != nullptr) {
       for_each_rw_lv (href, this_list) {
-         const char *name = lGetHost(href, HR_name);
+         const char *name = ocs::tom::get<HR_name>(href);
 
          switch (ocs::classify_member(name)) {
             case ocs::MemberClass::GROUP_REFERENCE:
@@ -759,7 +761,7 @@ bool href_list_resolve_hostnames(lList *this_list, lList **answer_list,
                   const char *stored = sge_dstring_get_string(&prepared);
 
                   if (stored != nullptr) {
-                     lSetHost(href, HR_name, stored);
+                     ocs::tom::set<HR_name>(href, stored);
                   }
                } else {
                   ret = false;
@@ -773,7 +775,7 @@ bool href_list_resolve_hostnames(lList *this_list, lList **answer_list,
                int back = getuniquehostname(name, resolved_name, 0);
 
                if (back == CL_RETVAL_OK) {
-                  lSetHost(href, HR_name, resolved_name);
+                  ocs::tom::set<HR_name>(href, resolved_name);
                } else {
                   if (!ignore_errors) {
                      INFO(MSG_HGRP_UNKNOWNHOST, name);
@@ -811,7 +813,7 @@ bool href_list_append_to_dstring(const lList *this_list, dstring *string) {
       bool is_first = true;
 
       for_each_ep(href, this_list) {
-         const char *name = lGetHost(href, HR_name);
+         const char *name = ocs::tom::get<HR_name>(href);
 
          if (!is_first) {
             sge_dstring_append(string, delim);
@@ -847,8 +849,8 @@ bool href_list_remove_existing(lList **this_list, lList **answer_list,
       const lListElem * href = nullptr;
 
       for_each_ep(href, list) {
-         const char *hostname = lGetHost(href, HR_name);
-         lListElem *existing_href = lGetElemHostRW(*this_list, HR_name, hostname);
+         const char *hostname = ocs::tom::get<HR_name>(href);
+         lListElem *existing_href = ocs::tom::find_first_rw<HR_name>(*this_list, hostname);
 
          if (existing_href != nullptr) {
             lRemoveElem(*this_list, &existing_href);
@@ -877,7 +879,7 @@ void href_list_debug_print(const lList *this_list, const char *prefix) {
    dstring message = DSTRING_INIT;
    bool is_first_hostname = true;
    for_each_ep(href, this_list) {
-      const char *hostname = lGetHost(href, HR_name);
+      const char *hostname = ocs::tom::get<HR_name>(href);
 
       if (is_first_hostname) {
          sge_dstring_copy_string(&message, prefix);
@@ -913,7 +915,7 @@ void href_list_make_uniq(lList *this_list, lList **answer_list) {
    lListElem *next_elem = lFirstRW(this_list);
    while (lListElem *elem = next_elem) {
       next_elem = lNextRW(elem);
-      const char *name = lGetHost(elem, HR_name);
+      const char *name = ocs::tom::get<HR_name>(elem);
       if (name == nullptr) {
          continue;
       }

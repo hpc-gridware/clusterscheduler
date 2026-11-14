@@ -54,6 +54,7 @@
 
 #include "sgeobj/sge_usage.h"
 #include "sgeobj/sge_host.h"
+#include "tom/ocs_Element.h"
 
 /**
  * @brief Return ulong usage value
@@ -73,9 +74,9 @@
  */
 int
 usage_list_get_int_usage(const lList *usage_list, const char *name, int def) {
-   const lListElem *ep = lGetElemStr(usage_list, UA_name, name);
+   const lListElem *ep = ocs::tom::find_first<UA_name>(usage_list, name);
    if (ep != nullptr) {
-      return static_cast<int>(lGetDouble(ep, UA_value));
+      return static_cast<int>(ocs::tom::get<UA_value>(ep));
    } else {
       return def;
    }
@@ -95,9 +96,9 @@ usage_list_get_int_usage(const lList *usage_list, const char *name, int def) {
  */
 uint32_t
 usage_list_get_ulong_usage(const lList *usage_list, const char *name, uint32_t def) {
-   const lListElem *ep = lGetElemStr(usage_list, UA_name, name);
+   const lListElem *ep = ocs::tom::find_first<UA_name>(usage_list, name);
    if (ep != nullptr) {
-      return static_cast<uint32_t>(lGetDouble(ep, UA_value));
+      return static_cast<uint32_t>(ocs::tom::get<UA_value>(ep));
    } else {
       return def;
    }
@@ -115,9 +116,9 @@ usage_list_get_ulong_usage(const lList *usage_list, const char *name, uint32_t d
  */
 uint64_t
 usage_list_get_ulong64_usage(const lList *usage_list, const char *name, uint64_t def) {
-   const lListElem *ep = lGetElemStr(usage_list, UA_name, name);
+   const lListElem *ep = ocs::tom::find_first<UA_name>(usage_list, name);
    if (ep != nullptr) {
-      return static_cast<uint64_t>(lGetDouble(ep, UA_value));
+      return static_cast<uint64_t>(ocs::tom::get<UA_value>(ep));
    } else {
       return def;
    }
@@ -142,9 +143,9 @@ usage_list_get_ulong64_usage(const lList *usage_list, const char *name, uint64_t
 double
 usage_list_get_double_usage(const lList *usage_list, const char *name,
                             double def) {
-   const lListElem *ep = lGetElemStr(usage_list, UA_name, name);
+   const lListElem *ep = ocs::tom::find_first<UA_name>(usage_list, name);
    if(ep != nullptr) {
-      return lGetDouble(ep, UA_value);
+      return ocs::tom::get<UA_value>(ep);
    } else {
       return def;
    }
@@ -197,13 +198,13 @@ void usage_list_set_ulong64_usage(lList *usage_list, const char *name, uint64_t 
  * @see #usage_list_set_ulong_usage, #usage_list_get_ulong_usage, #usage_list_get_double_usage
  */
 void usage_list_set_double_usage(lList *usage_list, const char *name, double value, bool create_usage) {
-   lListElem *ep = lGetElemStrRW(usage_list, UA_name, name);
+   lListElem *ep = ocs::tom::find_first_rw<UA_name>(usage_list, name);
    if (ep == nullptr && create_usage) {
-      ep = lAddElemStr(&usage_list, UA_name, name, UA_Type);
+      ep = ocs::tom::emplace_back<UA_name>(&usage_list, name);
    }
 
    if (ep != nullptr) {
-      lSetDouble(ep, UA_value, value);
+      ocs::tom::set<UA_value>(ep, value);
    }
 }
 
@@ -221,13 +222,13 @@ void usage_list_set_double_usage(lList *usage_list, const char *name, double val
  * @param create_usage  - if true, create the usage element if it does not exist; default is true.
  */
 void usage_list_max_double_usage(lList *usage_list, const char *name, double value, bool create_usage) {
-   lListElem *ep = lGetElemStrRW(usage_list, UA_name, name);
+   lListElem *ep = ocs::tom::find_first_rw<UA_name>(usage_list, name);
    if (ep == nullptr && create_usage) {
-      ep = lAddElemStr(&usage_list, UA_name, name, UA_Type);
+      ep = ocs::tom::emplace_back<UA_name>(&usage_list, name);
    }
 
    if (ep != nullptr) {
-      lSetDouble(ep, UA_value, std::max(value, lGetDouble(ep, UA_value)));
+      ocs::tom::set<UA_value>(ep, std::max(value, ocs::tom::get<UA_value>(ep)));
    }
 }
 
@@ -251,7 +252,7 @@ void usage_list_max_double_usage(lList *usage_list, const char *name, double val
  */
 void usage_list_sum(lList *usage_list, const lList *add_usage_list) {
    for_each_ep_lv(usage, add_usage_list) {
-      const char *name = lGetString(usage, UA_name);
+      const char *name = ocs::tom::get<UA_name>(usage);
       /* Sum up all usage attributes. */
       if (strcmp(name, USAGE_ATTR_CPU) == 0 ||
           strcmp(name, USAGE_ATTR_IO) == 0 ||
@@ -264,11 +265,11 @@ void usage_list_sum(lList *usage_list, const lList *add_usage_list) {
           strcmp(name, USAGE_ATTR_SMEM) == 0 ||
           strncmp(name, "acct_", 5) == 0 ||
           strncmp(name, "ru_", 3) == 0) {
-         lListElem *sum = lGetElemStrRW(usage_list, UA_name, name);
+         lListElem *sum = ocs::tom::find_first_rw<UA_name>(usage_list, name);
          if (sum == nullptr) {
             lAppendElem(usage_list, lCopyElem(usage));
          } else {
-            lAddDouble(sum, UA_value, lGetDouble(usage, UA_value));
+            ocs::tom::add<UA_value>(sum, ocs::tom::get<UA_value>(usage));
          }
       }
    }
@@ -305,92 +306,92 @@ lList *scaled_usage /* UA_Type */
    }
 
    for_each_rw (ep, scaled_usage) {
-      if ((sep=lGetElemStr(scaling, HS_name, lGetString(ep, UA_name)))) {
-         lSetDouble(ep, UA_value, lGetDouble(ep, UA_value) * lGetDouble(sep, HS_value));
+      if ((sep=ocs::tom::find_first<HS_name>(scaling, ocs::tom::get<UA_name>(ep)))) {
+         ocs::tom::set<UA_value>(ep, ocs::tom::get<UA_value>(ep) * ocs::tom::get<HS_value>(sep));
       }
    }
 
-   if ((prev = lGetElemStr(prev_usage, UA_name, USAGE_ATTR_CPU)) != nullptr) {
-      if ((ep=lGetElemStrRW(scaled_usage, UA_name, USAGE_ATTR_CPU))) {
-         lAddDouble(ep, UA_value, lGetDouble(prev, UA_value));
+   if ((prev = ocs::tom::find_first<UA_name>(prev_usage, USAGE_ATTR_CPU)) != nullptr) {
+      if ((ep=ocs::tom::find_first_rw<UA_name>(scaled_usage, USAGE_ATTR_CPU))) {
+         ocs::tom::add<UA_value>(ep, ocs::tom::get<UA_value>(prev));
       } else {
          lAppendElem(scaled_usage, lCopyElem(prev));
       }
    }
-   if ((prev = lGetElemStr(prev_usage, UA_name, USAGE_ATTR_IO)) != nullptr) {
-      if ((ep=lGetElemStrRW(scaled_usage, UA_name, USAGE_ATTR_IO))) {
-         lAddDouble(ep, UA_value, lGetDouble(prev, UA_value));
+   if ((prev = ocs::tom::find_first<UA_name>(prev_usage, USAGE_ATTR_IO)) != nullptr) {
+      if ((ep=ocs::tom::find_first_rw<UA_name>(scaled_usage, USAGE_ATTR_IO))) {
+         ocs::tom::add<UA_value>(ep, ocs::tom::get<UA_value>(prev));
       } else {
          lAppendElem(scaled_usage, lCopyElem(prev));
       }
    }
-   if ((prev = lGetElemStr(prev_usage, UA_name, USAGE_ATTR_IOW)) != nullptr) {
-      if ((ep=lGetElemStrRW(scaled_usage, UA_name, USAGE_ATTR_IOW))) {
-         lAddDouble(ep, UA_value, lGetDouble(prev, UA_value));
+   if ((prev = ocs::tom::find_first<UA_name>(prev_usage, USAGE_ATTR_IOW)) != nullptr) {
+      if ((ep=ocs::tom::find_first_rw<UA_name>(scaled_usage, USAGE_ATTR_IOW))) {
+         ocs::tom::add<UA_value>(ep, ocs::tom::get<UA_value>(prev));
       } else {
          lAppendElem(scaled_usage, lCopyElem(prev));
       }
    }
-   if ((prev = lGetElemStr(prev_usage, UA_name, USAGE_ATTR_VMEM)) != nullptr) {
-      if ((ep=lGetElemStrRW(scaled_usage, UA_name, USAGE_ATTR_VMEM))) {
-         lAddDouble(ep, UA_value, lGetDouble(prev, UA_value));
+   if ((prev = ocs::tom::find_first<UA_name>(prev_usage, USAGE_ATTR_VMEM)) != nullptr) {
+      if ((ep=ocs::tom::find_first_rw<UA_name>(scaled_usage, USAGE_ATTR_VMEM))) {
+         ocs::tom::add<UA_value>(ep, ocs::tom::get<UA_value>(prev));
       } else {
          lAppendElem(scaled_usage, lCopyElem(prev));
       }
    }
-   if ((prev = lGetElemStr(prev_usage, UA_name, USAGE_ATTR_MAXVMEM)) != nullptr) {
-      if ((ep=lGetElemStrRW(scaled_usage, UA_name, USAGE_ATTR_MAXVMEM))) {
-         lAddDouble(ep, UA_value, lGetDouble(prev, UA_value));
+   if ((prev = ocs::tom::find_first<UA_name>(prev_usage, USAGE_ATTR_MAXVMEM)) != nullptr) {
+      if ((ep=ocs::tom::find_first_rw<UA_name>(scaled_usage, USAGE_ATTR_MAXVMEM))) {
+         ocs::tom::add<UA_value>(ep, ocs::tom::get<UA_value>(prev));
       } else {
          lAppendElem(scaled_usage, lCopyElem(prev));
       }
    }
-   if ((prev = lGetElemStr(prev_usage, UA_name, USAGE_ATTR_RSS)) != nullptr) {
-      if ((ep=lGetElemStrRW(scaled_usage, UA_name, USAGE_ATTR_RSS))) {
-         lAddDouble(ep, UA_value, lGetDouble(prev, UA_value));
+   if ((prev = ocs::tom::find_first<UA_name>(prev_usage, USAGE_ATTR_RSS)) != nullptr) {
+      if ((ep=ocs::tom::find_first_rw<UA_name>(scaled_usage, USAGE_ATTR_RSS))) {
+         ocs::tom::add<UA_value>(ep, ocs::tom::get<UA_value>(prev));
       } else {
          lAppendElem(scaled_usage, lCopyElem(prev));
       }
    }
-   if ((prev = lGetElemStr(prev_usage, UA_name, USAGE_ATTR_MAXRSS)) != nullptr) {
-      if ((ep=lGetElemStrRW(scaled_usage, UA_name, USAGE_ATTR_MAXRSS))) {
-         lAddDouble(ep, UA_value, lGetDouble(prev, UA_value));
+   if ((prev = ocs::tom::find_first<UA_name>(prev_usage, USAGE_ATTR_MAXRSS)) != nullptr) {
+      if ((ep=ocs::tom::find_first_rw<UA_name>(scaled_usage, USAGE_ATTR_MAXRSS))) {
+         ocs::tom::add<UA_value>(ep, ocs::tom::get<UA_value>(prev));
       } else {
          lAppendElem(scaled_usage, lCopyElem(prev));
       }
    }
-   if ((prev = lGetElemStr(prev_usage, UA_name, USAGE_ATTR_MEM)) != nullptr) {
-      if ((ep=lGetElemStrRW(scaled_usage, UA_name, USAGE_ATTR_MEM))) {
-         lAddDouble(ep, UA_value, lGetDouble(prev, UA_value));
+   if ((prev = ocs::tom::find_first<UA_name>(prev_usage, USAGE_ATTR_MEM)) != nullptr) {
+      if ((ep=ocs::tom::find_first_rw<UA_name>(scaled_usage, USAGE_ATTR_MEM))) {
+         ocs::tom::add<UA_value>(ep, ocs::tom::get<UA_value>(prev));
       } else {
          lAppendElem(scaled_usage, lCopyElem(prev));
       }
    }
 
-   if ((prev = lGetElemStr(prev_usage, UA_name, USAGE_ATTR_PSS)) != nullptr) {
-      if ((ep=lGetElemStrRW(scaled_usage, UA_name, USAGE_ATTR_PSS))) {
-         lAddDouble(ep, UA_value, lGetDouble(prev, UA_value));
+   if ((prev = ocs::tom::find_first<UA_name>(prev_usage, USAGE_ATTR_PSS)) != nullptr) {
+      if ((ep=ocs::tom::find_first_rw<UA_name>(scaled_usage, USAGE_ATTR_PSS))) {
+         ocs::tom::add<UA_value>(ep, ocs::tom::get<UA_value>(prev));
       } else {
          lAppendElem(scaled_usage, lCopyElem(prev));
       }
    }
-   if ((prev = lGetElemStr(prev_usage, UA_name, USAGE_ATTR_MAXPSS)) != nullptr) {
-      if ((ep=lGetElemStrRW(scaled_usage, UA_name, USAGE_ATTR_MAXPSS))) {
-         lAddDouble(ep, UA_value, lGetDouble(prev, UA_value));
+   if ((prev = ocs::tom::find_first<UA_name>(prev_usage, USAGE_ATTR_MAXPSS)) != nullptr) {
+      if ((ep=ocs::tom::find_first_rw<UA_name>(scaled_usage, USAGE_ATTR_MAXPSS))) {
+         ocs::tom::add<UA_value>(ep, ocs::tom::get<UA_value>(prev));
       } else {
          lAppendElem(scaled_usage, lCopyElem(prev));
       }
    }
-   if ((prev = lGetElemStr(prev_usage, UA_name, USAGE_ATTR_PMEM)) != nullptr) {
-      if ((ep=lGetElemStrRW(scaled_usage, UA_name, USAGE_ATTR_PMEM))) {
-         lAddDouble(ep, UA_value, lGetDouble(prev, UA_value));
+   if ((prev = ocs::tom::find_first<UA_name>(prev_usage, USAGE_ATTR_PMEM)) != nullptr) {
+      if ((ep=ocs::tom::find_first_rw<UA_name>(scaled_usage, USAGE_ATTR_PMEM))) {
+         ocs::tom::add<UA_value>(ep, ocs::tom::get<UA_value>(prev));
       } else {
          lAppendElem(scaled_usage, lCopyElem(prev));
       }
    }
-   if ((prev = lGetElemStr(prev_usage, UA_name, USAGE_ATTR_SMEM)) != nullptr) {
-      if ((ep=lGetElemStrRW(scaled_usage, UA_name, USAGE_ATTR_SMEM))) {
-         lAddDouble(ep, UA_value, lGetDouble(prev, UA_value));
+   if ((prev = ocs::tom::find_first<UA_name>(prev_usage, USAGE_ATTR_SMEM)) != nullptr) {
+      if ((ep=ocs::tom::find_first_rw<UA_name>(scaled_usage, USAGE_ATTR_SMEM))) {
+         ocs::tom::add<UA_value>(ep, ocs::tom::get<UA_value>(prev));
       } else {
          lAppendElem(scaled_usage, lCopyElem(prev));
       }
@@ -477,7 +478,7 @@ usage_parse_value(const char *name, const char *value) {
    }
 
    lListElem *ep = lCreateElem(UA_Type);
-   lSetString(ep, UA_name, name);
+   ocs::tom::set<UA_name>(ep, name);
 
    // (1) quote-prefix rule — matched pair strips.
    // Empty quoted pair ("" or '') is a special case: CULL's wire format
@@ -496,28 +497,28 @@ usage_parse_value(const char *name, const char *value) {
          return nullptr;
       }
       std::string interior(value + 1, len - 2);
-      lSetString(ep, UA_svalue, interior.c_str());
+      ocs::tom::set<UA_svalue>(ep, interior.c_str());
       return ep;
    }
 
    // (2) full-double parse.
    double d = 0.0;
    if (parse_full_double(value, d)) {
-      lSetDouble(ep, UA_value, d);
+      ocs::tom::set<UA_value>(ep, d);
       return ep;
    }
 
    // (3) case-insensitive bool coercion.
    if (str_iequal(value, "true")) {
-      lSetDouble(ep, UA_value, 1.0);
+      ocs::tom::set<UA_value>(ep, 1.0);
       return ep;
    }
    if (str_iequal(value, "false")) {
-      lSetDouble(ep, UA_value, 0.0);
+      ocs::tom::set<UA_value>(ep, 0.0);
       return ep;
    }
 
    // (4) raw string.
-   lSetString(ep, UA_svalue, value);
+   ocs::tom::set<UA_svalue>(ep, value);
    return ep;
 }

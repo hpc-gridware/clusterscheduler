@@ -61,6 +61,7 @@
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_conf.h"
+#include "tom/ocs_Element.h"
 
 #include "spool/classic/read_write_job.h"
 
@@ -505,9 +506,9 @@ int sge_execd_register_at_qmaster(bool is_restart) {
       return_value = 1;
    } else {
       const lListElem *aep = lFirst(alp);
-      if (lGetUlong(aep, AN_status) != STATUS_OK) {
+      if (ocs::tom::get<AN_status>(aep) != STATUS_OK) {
          if (sge_last_register_error_flag == 0) {
-            WARNING(MSG_COM_CANTREGISTER_SS, master_host?master_host:"", lGetString(aep, AN_text));
+            WARNING(MSG_COM_CANTREGISTER_SS, master_host?master_host:"", ocs::tom::get<AN_text>(aep));
             sge_last_register_error_flag = 1;
          }
          return_value = 1;
@@ -538,7 +539,7 @@ static void parse_cmdline_execd(char **argv) {
       ** high level parsing error! show answer list
       */
       for_each_ep_lv(aep, alp) {
-         fprintf(stderr, "%s", lGetString(aep, AN_text));
+         fprintf(stderr, "%s", ocs::tom::get<AN_text>(aep));
       }
       lFreeList(&alp);
       lFreeList(&pcmdline);
@@ -555,7 +556,7 @@ static void parse_cmdline_execd(char **argv) {
       ** low level parsing error! show answer list
       */
       for_each_ep_lv(aep, alp) {
-         fprintf(stderr, "%s", lGetString(aep, AN_text));
+         fprintf(stderr, "%s", ocs::tom::get<AN_text>(aep));
       }
       lFreeList(&alp);
       /* TODO: replace with alpp and DRETURN */
@@ -666,7 +667,7 @@ bool execd_get_job_ja_task(uint32_t job_id, uint32_t ja_task_id, lListElem **job
 
    const void *iterator = nullptr;
 
-   *job = lGetElemUlongFirstRW(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB), JB_job_number, job_id, &iterator);
+   *job = ocs::tom::find_first_rw<JB_job_number>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB), job_id, &iterator);
    while (*job != nullptr) {
       *ja_task = job_search_task(*job, nullptr, ja_task_id);
       if (*ja_task != nullptr) {
@@ -676,7 +677,7 @@ bool execd_get_job_ja_task(uint32_t job_id, uint32_t ja_task_id, lListElem **job
       /* in execd, we have exactly one ja_task per job,
        * therefore we can have multiple jobs with the same job_id
        */
-      *job = lGetElemUlongNextRW(*ocs::DataStore::get_master_list(SGE_TYPE_JOB), JB_job_number, job_id, &iterator);
+      *job = ocs::tom::find_next_rw<JB_job_number>(*ocs::DataStore::get_master_list(SGE_TYPE_JOB), job_id, &iterator);
    }
 
    // check if we should report an error in the message file

@@ -64,6 +64,7 @@
 #include "sgeobj/sge_schedd_conf.h"
 #include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "tom/ocs_Element.h"
 
 #include "evc/msg_evclib.h"
 #include "mir/msg_mirlib.h"
@@ -1189,7 +1190,7 @@ sge_mirror_process_event_list_(sge_evc_class_t *evc, lList *event_list) {
       INFO("<-- %s", event_text(event, &dstr));
 #endif
 
-      switch (lGetUlong(event, ET_type)) {
+      switch (ocs::tom::get<ET_type>(event)) {
 
          case sgeE_CALENDAR_LIST:
             ret = sge_mirror_process_event(evc, mirror_base, SGE_TYPE_CALENDAR, SGE_EMA_LIST, event);
@@ -1567,8 +1568,8 @@ mir_event_root_unmirrored(sge_object_type type, sge_event_action action, lListEl
    }
 
    const lListElem *root = key_is_string
-       ? lGetElemStr(rlist, root_key_nm, lGetString(event, ET_strkey))
-       : lGetElemUlong(rlist, root_key_nm, lGetUlong(event, ET_intkey));
+       ? lGetElemStr(rlist, root_key_nm, ocs::tom::get<ET_strkey>(event))
+       : lGetElemUlong(rlist, root_key_nm, ocs::tom::get<ET_intkey>(event));
    return root == nullptr;
 }
 
@@ -1678,9 +1679,9 @@ generic_update_master_list([[maybe_unused]] sge_evc_class_t *evc, sge_object_typ
                            sge_event_action action, lListElem *event, [[maybe_unused]] void *client_data) {
    DENTER(TOP_LAYER);
    lList **list = ocs::DataStore::get_master_list_rw(type);
-   const lDescr *list_descr = lGetListDescr(lGetList(event, ET_new_version));
+   const lDescr *list_descr = lGetListDescr(ocs::tom::get<ET_new_version>(event));
    int key_nm = object_type_get_key_nm(type);
-   const char *key = lGetString(event, ET_strkey);
+   const char *key = ocs::tom::get<ET_strkey>(event);
 
    if (sge_mirror_update_master_list_str_key(list, list_descr, key_nm, key, action, event) != SGE_EM_OK) {
       DRETURN(SGE_EMA_FAILURE);
@@ -1790,7 +1791,7 @@ sge_mirror_update_master_list(lList **list, const lDescr *list_descr, lListElem 
    switch (action) {
       case SGE_EMA_LIST:
          /* switch to new list */
-         lXchgList(event, ET_new_version, list);
+         ocs::tom::exchange<ET_new_version>(event, list);
          break;
 
       case SGE_EMA_ADD:
@@ -1806,7 +1807,7 @@ sge_mirror_update_master_list(lList **list, const lDescr *list_descr, lListElem 
          }
 
          /* insert element */
-         data_list = lGetListRW(event, ET_new_version);
+         data_list = ocs::tom::get<ET_new_version>(event);
          lAppendElem(*list, lDechainElem(data_list, lFirstRW(data_list)));
          break;
 
@@ -1828,7 +1829,7 @@ sge_mirror_update_master_list(lList **list, const lDescr *list_descr, lListElem 
             DRETURN(SGE_EM_KEY_NOT_FOUND);
          }
          lRemoveElem(*list, &ep);
-         data_list = lGetListRW(event, ET_new_version);
+         data_list = ocs::tom::get<ET_new_version>(event);
          lAppendElem(*list, lDechainElem(data_list, lFirstRW(data_list)));
          break;
       default:
@@ -1860,9 +1861,9 @@ ar_update_master_list([[maybe_unused]] sge_evc_class_t *evc, sge_object_type typ
                       sge_event_action action, lListElem *event, [[maybe_unused]] void *client_data) {
    DENTER(TOP_LAYER);
    lList **list = ocs::DataStore::get_master_list_rw(type);
-   const lDescr *list_descr = lGetListDescr(lGetList(event, ET_new_version));
+   const lDescr *list_descr = lGetListDescr(ocs::tom::get<ET_new_version>(event));
    int key_nm = object_type_get_key_nm(type);
-   uint32_t key = lGetUlong(event, ET_intkey);
+   uint32_t key = ocs::tom::get<ET_intkey>(event);
 
    if (sge_mirror_update_master_list_ar_key(list, list_descr, key_nm, key, action, event) != SGE_EM_OK) {
       DRETURN(SGE_EMA_FAILURE);
@@ -1914,9 +1915,9 @@ cat_update_master_list([[maybe_unused]] sge_evc_class_t *evc, sge_object_type ty
                        sge_event_action action, lListElem *event, [[maybe_unused]] void *client_data) {
    DENTER(TOP_LAYER);
    lList **list = ocs::DataStore::get_master_list_rw(type);
-   const lDescr *list_descr = lGetListDescr(lGetList(event, ET_new_version));
+   const lDescr *list_descr = lGetListDescr(ocs::tom::get<ET_new_version>(event));
    int key_nm = object_type_get_key_nm(type);
-   uint32_t key = lGetUlong(event, ET_intkey);
+   uint32_t key = ocs::tom::get<ET_intkey>(event);
 
    if (sge_mirror_update_master_list_cat_key(list, list_descr, key_nm, key, action, event) != SGE_EM_OK) {
       DRETURN(SGE_EMA_FAILURE);

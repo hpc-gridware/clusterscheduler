@@ -27,6 +27,7 @@
 #include "uti/sge_rmon_macros.h"
 
 #include "sgeobj/sge_host.h"
+#include "tom/ocs_Element.h"
 
 #include "qhost/ocs_QHostContoller.h"
 #include "qhost/ocs_QHostModelBase.h"
@@ -53,7 +54,7 @@ ocs::QHostController::process_request(QHostParameter &parameter, QHostModelBase 
       //}
 
       // start host entry
-      view.host_start(oss, lGetHost(ep, EH_name));
+      view.host_start(oss, ocs::tom::get<EH_name>(ep));
 
       // print host section
       view.show_host(oss, ep, parameter, model, view);

@@ -50,6 +50,10 @@
 #include "sgeobj/sge_userset.h"
 #include "sgeobj/sge_utility.h"
 #include "sgeobj/ocs_DataStore.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_JAT.h"
+#include "sgeobj/tom/ocs_tom_JG.h"
+#include "sgeobj/tom/ocs_tom_US.h"
 
 #include "sched/sge_job_schedd.h"
 
@@ -106,7 +110,7 @@ pe_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *
          goto ERROR;
       }
    }
-   pe_name = lGetString(new_pe, PE_name);
+   pe_name = ocs::tom::get<PE_name>(new_pe);
 
    /* Name has to be a valid filename without pathchanges */
    if (add && verify_obj_name(alpp, pe_name, MAX_VERIFY_STRING, MSG_OBJ_PE) != STATUS_OK) {
@@ -114,8 +118,8 @@ pe_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *
    }
 
    /* ---- PE_slots */
-   if (lGetPosViaElem(pe, PE_slots, SGE_NO_ABORT) >= 0) {
-      uint32_t pe_slots = lGetUlong(pe, PE_slots);
+   if (ocs::tom::has<PE_slots>(pe)) {
+      uint32_t pe_slots = ocs::tom::get<PE_slots>(pe);
 
       if (pe_validate_slots(alpp, pe_slots) != STATUS_OK) {
          goto ERROR;
@@ -134,11 +138,11 @@ pe_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *
    attr_mod_bool(pe, new_pe, PE_job_is_first_task, "job_is_first_task");
 
    /* ---- PE_user_list */
-   if (lGetPosViaElem(pe, PE_user_list, SGE_NO_ABORT) >= 0) {
+   if (ocs::tom::has<PE_user_list>(pe)) {
       DPRINTF("got new PE_user_list\n");
       /* check user_lists */
       normalize_sublist(pe, PE_user_list);
-      if (userset_list_validate_acl_list(lGetList(pe, PE_user_list), alpp, master_userset_list) != STATUS_OK) {
+      if (userset_list_validate_acl_list(ocs::tom::get<PE_user_list>(pe), alpp, master_userset_list) != STATUS_OK) {
          goto ERROR;
       }
 
@@ -147,20 +151,20 @@ pe_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *
    }
 
    /* ---- PE_xuser_list */
-   if (lGetPosViaElem(pe, PE_xuser_list, SGE_NO_ABORT) >= 0) {
+   if (ocs::tom::has<PE_xuser_list>(pe)) {
       DPRINTF("got new QU_axcl\n");
       /* check xuser_lists */
       normalize_sublist(pe, PE_xuser_list);
-      if (userset_list_validate_acl_list(lGetList(pe, PE_xuser_list), alpp, master_userset_list) != STATUS_OK) {
+      if (userset_list_validate_acl_list(ocs::tom::get<PE_xuser_list>(pe), alpp, master_userset_list) != STATUS_OK) {
          goto ERROR;
       }
       attr_mod_sub_list(alpp, new_pe, PE_xuser_list, US_name, pe, cmd, sub_command,
                         SGE_ATTR_XUSER_LISTS, SGE_OBJ_PE, 0, nullptr);
    }
 
-   if (lGetPosViaElem(pe, PE_xuser_list, SGE_NO_ABORT) >= 0 ||
-       lGetPosViaElem(pe, PE_user_list, SGE_NO_ABORT) >= 0) {
-      if (multiple_occurances(alpp, lGetList(new_pe, PE_user_list), lGetList(new_pe, PE_xuser_list), US_name, pe_name,
+   if (ocs::tom::has<PE_xuser_list>(pe) ||
+       ocs::tom::has<PE_user_list>(pe)) {
+      if (multiple_occurances(alpp, ocs::tom::get<PE_user_list>(new_pe), ocs::tom::get<PE_xuser_list>(new_pe), US_name, pe_name,
                               object_name)) {
          goto ERROR;
       }
@@ -174,17 +178,17 @@ pe_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *
    }
 
    /* -------- PE_allocation_rule */
-   if (lGetPosViaElem(pe, PE_allocation_rule, SGE_NO_ABORT) >= 0) {
-      s = lGetString(pe, PE_allocation_rule);
+   if (ocs::tom::has<PE_allocation_rule>(pe)) {
+      s = ocs::tom::get<PE_allocation_rule>(pe);
       if (!pe_validate_allocation_rule(alpp, s, true)) {
          DRETURN(STATUS_EEXIST);
       }
-      lSetString(new_pe, PE_allocation_rule, s);
+      ocs::tom::set<PE_allocation_rule>(new_pe, s);
    }
 
    /* -------- PE_urgency_slots */
-   if (lGetPosViaElem(pe, PE_urgency_slots, SGE_NO_ABORT) >= 0) {
-      s = lGetString(pe, PE_urgency_slots);
+   if (ocs::tom::has<PE_urgency_slots>(pe)) {
+      s = ocs::tom::get<PE_urgency_slots>(pe);
       if (s == nullptr) {
          ERROR(MSG_SGETEXT_MISSINGCULLFIELD_SS, lNm2Str(PE_urgency_slots), "validate_pe");
          answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
@@ -194,7 +198,7 @@ pe_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *
       if ((ret = pe_validate_urgency_slots(alpp, s)) != STATUS_OK) {
          DRETURN(ret);
       }
-      lSetString(new_pe, PE_urgency_slots, s);
+      ocs::tom::set<PE_urgency_slots>(new_pe, s);
    }
 
    /* ---- PE_accounting_summary */
@@ -240,12 +244,12 @@ pe_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem
    bool dbret;
 
    dbret = spool_write_object(&answer_list, spool_get_default_context(), pep,
-                              lGetString(pep, PE_name), SGE_TYPE_PE);
+                              ocs::tom::get<PE_name>(pep), SGE_TYPE_PE);
    answer_list_output(&answer_list);
 
    if (!dbret) {
       answer_list_add_sprintf(alpp, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
-                              MSG_PERSISTENCE_WRITE_FAILED_S, lGetString(pep, PE_name));
+                              MSG_PERSISTENCE_WRITE_FAILED_S, ocs::tom::get<PE_name>(pep));
    }
 
    DRETURN(dbret ? 0 : 1);
@@ -270,7 +274,7 @@ int pe_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lL
 
    const char *pe_name;
 
-   pe_name = lGetString(ep, PE_name);
+   pe_name = ocs::tom::get<PE_name>(ep);
 
    pe_update_categories(ep, old_ep, packet->gdi_session);
 
@@ -334,7 +338,7 @@ sge_del_pe(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *pep, lList
       if (pe_is_referenced(ep, &local_answer_list, master_job_list, master_cqueue_list)) {
          const lListElem *answer = lFirst(local_answer_list);
 
-         ERROR("denied: %s", lGetString(answer, AN_text));
+         ERROR("denied: %s", ocs::tom::get<AN_text>(answer));
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN,
                          ANSWER_QUALITY_ERROR);
          lFreeList(&local_answer_list);
@@ -373,20 +377,20 @@ debit_all_jobs_from_pes(lList *pe_list) {
 
    for_each_rw_lv(pep, pe_list) {
       pe_set_slots_used(pep, 0);
-      pe_name = lGetString(pep, PE_name);
+      pe_name = ocs::tom::get<PE_name>(pep);
       DPRINTF("debiting from pe %s:\n", pe_name);
 
       for_each_ep_lv(jep, master_job_list) {
-         if (lGetString(jep, JB_pe) != nullptr) { /* is job  parallel */
+         if (ocs::tom::get<JB_pe>(jep) != nullptr) { /* is job  parallel */
             slots = 0;
-            for_each_ep_lv(jatep, lGetList(jep, JB_ja_tasks)) {
-               if ((ISSET(lGetUlong(jatep, JAT_status), JRUNNING) ||      /* is job running  */
-                    ISSET(lGetUlong(jatep, JAT_status), JTRANSFERING)) && /* or transfering  */
-                   !sge_strnullcmp(pe_name, lGetString(jatep, JAT_granted_pe))) {/* this pe         */
-                  slots += sge_granted_slots(lGetList(jatep, JAT_granted_destin_identifier_list));
+            for_each_ep_lv(jatep, ocs::tom::get<JB_ja_tasks>(jep)) {
+               if ((ISSET(ocs::tom::get<JAT_status>(jatep), JRUNNING) ||      /* is job running  */
+                    ISSET(ocs::tom::get<JAT_status>(jatep), JTRANSFERING)) && /* or transfering  */
+                   !sge_strnullcmp(pe_name, ocs::tom::get<JAT_granted_pe>(jatep))) {/* this pe         */
+                  slots += sge_granted_slots(ocs::tom::get<JAT_granted_destin_identifier_list>(jatep));
                }
             }
-            pe_debit_slots(pep, slots, lGetUlong(jep, JB_job_number));
+            pe_debit_slots(pep, slots, ocs::tom::get<JB_job_number>(jep));
          }
       }
    }
@@ -411,28 +415,28 @@ pe_diff_usersets(const lListElem *new_pe, const lListElem *old_pe, lList **new_a
    const char *u;
 
    if (old_pe && old_acl) {
-      for_each_ep_lv(ep, lGetList(old_pe, PE_user_list)) {
-         u = lGetString(ep, US_name);
-         if (!lGetElemStr(*old_acl, US_name, u))
-            lAddElemStr(old_acl, US_name, u, US_Type);
+      for_each_ep_lv(ep, ocs::tom::get<PE_user_list>(old_pe)) {
+         u = ocs::tom::get<US_name>(ep);
+         if (!ocs::tom::find_first<US_name>(*old_acl, u))
+            ocs::tom::emplace_back<US_name>(old_acl, u);
       }
-      for_each_ep_lv(ep, lGetList(old_pe, PE_xuser_list)) {
-         u = lGetString(ep, US_name);
-         if (!lGetElemStr(*old_acl, US_name, u))
-            lAddElemStr(old_acl, US_name, u, US_Type);
+      for_each_ep_lv(ep, ocs::tom::get<PE_xuser_list>(old_pe)) {
+         u = ocs::tom::get<US_name>(ep);
+         if (!ocs::tom::find_first<US_name>(*old_acl, u))
+            ocs::tom::emplace_back<US_name>(old_acl, u);
       }
    }
 
    if (new_pe && new_acl) {
-      for_each_ep_lv(ep, lGetList(new_pe, PE_user_list)) {
-         u = lGetString(ep, US_name);
-         if (!lGetElemStr(*new_acl, US_name, u))
-            lAddElemStr(new_acl, US_name, u, US_Type);
+      for_each_ep_lv(ep, ocs::tom::get<PE_user_list>(new_pe)) {
+         u = ocs::tom::get<US_name>(ep);
+         if (!ocs::tom::find_first<US_name>(*new_acl, u))
+            ocs::tom::emplace_back<US_name>(new_acl, u);
       }
-      for_each_ep_lv(ep, lGetList(new_pe, PE_xuser_list)) {
-         u = lGetString(ep, US_name);
-         if (!lGetElemStr(*new_acl, US_name, u))
-            lAddElemStr(new_acl, US_name, u, US_Type);
+      for_each_ep_lv(ep, ocs::tom::get<PE_xuser_list>(new_pe)) {
+         u = ocs::tom::get<US_name>(ep);
+         if (!ocs::tom::find_first<US_name>(*new_acl, u))
+            ocs::tom::emplace_back<US_name>(new_acl, u);
       }
    }
 

@@ -40,6 +40,12 @@
 #include "sgeobj/config.h"
 #include "sgeobj/sge_attr.h"
 #include "sgeobj/sge_userset.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_CE.h"
+#include "sgeobj/tom/ocs_tom_HL.h"
+#include "sgeobj/tom/ocs_tom_HR.h"
+#include "sgeobj/tom/ocs_tom_HS.h"
+#include "sgeobj/tom/ocs_tom_QU.h"
 #include "uti/sge.h"
 #include <array>
 #include <cstring>
@@ -287,7 +293,7 @@ ocs::QConfModelBase::get_names_where(const lDescr *descr, int key_nm, const qcon
 
    lCondition *where = nullptr;
    for_each_ep_lv(name_elem, name_list) {
-      lCondition *one = get_object_where(descr, key_nm, lGetString(name_elem, ST_name));
+      lCondition *one = get_object_where(descr, key_nm, ocs::tom::get<ST_name>(name_elem));
       where = (where == nullptr) ? one : lOrWhere(where, one);
    }
    lFreeList(&name_list);
@@ -446,14 +452,14 @@ ocs::QConfModelBase::make_hgroup_snapshot(lList **answer_list, QConfParameter &p
        * product - but it is a change, and the -ectx comparison of a short name
        * is what shows whether the two agree. */
       lListElem *probe = lCreateElem(HR_Type);
-      lSetHost(probe, HR_name, parameter.get_operation().arg(1));
+      ocs::tom::set<HR_name>(probe, parameter.get_operation().arg(1));
       sge_resolve_host(probe, HR_name);
 
       dstring found_in = DSTRING_INIT;
       dstring matcher = DSTRING_INIT;
-      hgroup_why_.route = hgroup_why(hgroup, lGetHost(probe, HR_name), object_list_,
+      hgroup_why_.route = hgroup_why(hgroup, ocs::tom::get<HR_name>(probe), object_list_,
                                      &found_in, &matcher);
-      hgroup_why_.host = lGetHost(probe, HR_name);
+      hgroup_why_.host = static_cast<const char *>(ocs::tom::get<HR_name>(probe));
 
       /* a cleared dstring hands back an empty string rather than nothing once it
        * has held a value, so "no group to report" is emptiness and not nullptr */
@@ -507,7 +513,7 @@ cqueue_json_type_complex_overrides(lListElem *cqueue, const lList *centry_list) 
    for (const int field : override_fields) {
       lList *override_list = lGetListRW(cqueue, field);
       for (lListElem *entry = lFirstRW(override_list); entry != nullptr; entry = lNextRW(entry)) {
-         lList *ce_list = lGetListRW(entry, ACELIST_value);
+         lList *ce_list = ocs::tom::get<ACELIST_value>(entry);
          if (ce_list != nullptr && lGetNumberOfElem(ce_list) > 0) {
             lList *fill_alp = nullptr;
             centry_list_fill_request(ce_list, &fill_alp, centry_list, true, true, true);
@@ -568,7 +574,7 @@ ocs::QConfModelBase::collect_exechost_matches(lList **answer_list, const char *a
    }
 
    for_each_ep_lv(elem, object_list_) {
-      const char *hostname = lGetHost(elem, EH_name);
+      const char *hostname = ocs::tom::get<EH_name>(elem);
       bool already_handled = false;
 
       if (fnmatch(attr, SGE_ATTR_HOSTNAME, 0) == 0 && fnmatch(val, hostname, 0) == 0) {
@@ -578,8 +584,8 @@ ocs::QConfModelBase::collect_exechost_matches(lList **answer_list, const char *a
 
       if (!already_handled && fnmatch(attr, SGE_ATTR_LOAD_SCALING, 0) == 0) {
          dstring value = DSTRING_INIT;
-         for (const lListElem *ep = lFirst(lGetList(elem, EH_scaling_list)); ep != nullptr; ep = lNext(ep)) {
-            sge_dstring_sprintf_append(&value, "%s=%.10g", lGetString(ep, HS_name), lGetDouble(ep, HS_value));
+         for (const lListElem *ep = lFirst(static_cast<const lList *>(ocs::tom::get<EH_scaling_list>(elem))); ep != nullptr; ep = lNext(ep)) {
+            sge_dstring_sprintf_append(&value, "%s=%.10g", ocs::tom::get<HS_name>(ep), ocs::tom::get<HS_value>(ep));
             if (lNext(ep) != nullptr) {
                sge_dstring_append(&value, ",");
             }
@@ -593,16 +599,16 @@ ocs::QConfModelBase::collect_exechost_matches(lList **answer_list, const char *a
 
       if (!already_handled && fnmatch(attr, SGE_ATTR_COMPLEX_VALUES, 0) == 0) {
          dstring value = DSTRING_INIT;
-         for (const lListElem *ep = lFirst(lGetList(elem, EH_consumable_config_list)); ep != nullptr; ep = lNext(ep)) {
-            sge_dstring_sprintf_append(&value, "%s=", lGetString(ep, CE_name));
-            if (lGetString(ep, CE_stringval) != nullptr) {
-               sge_dstring_append(&value, lGetString(ep, CE_stringval));
+         for (const lListElem *ep = lFirst(static_cast<const lList *>(ocs::tom::get<EH_consumable_config_list>(elem))); ep != nullptr; ep = lNext(ep)) {
+            sge_dstring_sprintf_append(&value, "%s=", ocs::tom::get<CE_name>(ep));
+            if (ocs::tom::get<CE_stringval>(ep) != nullptr) {
+               sge_dstring_append(&value, ocs::tom::get<CE_stringval>(ep));
             } else {
                /* the hand written switch read this double field with lGetString
                 * and printed it as %f, which is a CULL type error and undefined
                 * behaviour; the branch is only reached when a complex value has
                 * no string form, which is why it survived (CS-2819) */
-               sge_dstring_sprintf_append(&value, "%f", lGetDouble(ep, CE_doubleval));
+               sge_dstring_sprintf_append(&value, "%f", ocs::tom::get<CE_doubleval>(ep));
             }
             if (lNext(ep) != nullptr) {
                sge_dstring_append(&value, ",");
@@ -617,8 +623,8 @@ ocs::QConfModelBase::collect_exechost_matches(lList **answer_list, const char *a
 
       if (!already_handled && fnmatch(attr, SGE_ATTR_LOAD_VALUES, 0) == 0) {
          dstring value = DSTRING_INIT;
-         for (const lListElem *ep = lFirst(lGetList(elem, EH_load_list)); ep != nullptr; ep = lNext(ep)) {
-            sge_dstring_sprintf_append(&value, "%s=%s", lGetString(ep, HL_name), lGetString(ep, HL_value));
+         for (const lListElem *ep = lFirst(static_cast<const lList *>(ocs::tom::get<EH_load_list>(elem))); ep != nullptr; ep = lNext(ep)) {
+            sge_dstring_sprintf_append(&value, "%s=%s", ocs::tom::get<HL_name>(ep), ocs::tom::get<HL_value>(ep));
             if (lNext(ep) != nullptr) {
                sge_dstring_append(&value, ",");
             }
@@ -632,7 +638,7 @@ ocs::QConfModelBase::collect_exechost_matches(lList **answer_list, const char *a
 
       if (!already_handled && fnmatch(attr, SGE_ATTR_PROCESSORS, 0) == 0) {
          dstring value = DSTRING_INIT;
-         sge_dstring_sprintf(&value, "%d", static_cast<int>(lGetUlong(elem, EH_processors)));
+         sge_dstring_sprintf(&value, "%d", static_cast<int>(ocs::tom::get<EH_processors>(elem)));
          if (fnmatch(val, sge_dstring_get_string(&value), 0) == 0) {
             filtered_names_.emplace_back(hostname);
             already_handled = true;
@@ -647,7 +653,7 @@ ocs::QConfModelBase::collect_exechost_matches(lList **answer_list, const char *a
          }
          dstring value = DSTRING_INIT;
          for (const lListElem *ep = lFirst(lGetList(elem, field)); ep != nullptr; ep = lNext(ep)) {
-            sge_dstring_append(&value, lGetString(ep, US_name));
+            sge_dstring_append(&value, ocs::tom::get<US_name>(ep));
             if (lNext(ep) != nullptr) {
                sge_dstring_append(&value, " ");
             }
@@ -713,7 +719,7 @@ ocs::QConfModelBase::collect_cqueue_matches(lList **answer_list, const char *spe
    cqueue_list_fill_hostlist(object_list_, hgroup_list_);
 
    for_each_ep_lv(cqueue, object_list_) {
-      const char *cqueue_name = lGetString(cqueue, CQ_name);
+      const char *cqueue_name = ocs::tom::get<CQ_name>(cqueue);
       bool already_handled = false;
 
       if (fnmatch(attr, SGE_ATTR_QNAME, 0) == 0 && handle_cqueue &&
@@ -724,7 +730,7 @@ ocs::QConfModelBase::collect_cqueue_matches(lList **answer_list, const char *spe
 
       if (!already_handled && fnmatch(attr, SGE_ATTR_HOST_LIST, 0) == 0) {
          dstring value = DSTRING_INIT;
-         if (const lList *hostref_list = lGetList(cqueue, CQ_hostlist); hostref_list != nullptr) {
+         if (const lList *hostref_list = ocs::tom::get<CQ_hostlist>(cqueue); hostref_list != nullptr) {
             href_list_append_to_dstring(hostref_list, &value);
          } else {
             sge_dstring_copy_string(&value, "NONE");
@@ -927,7 +933,7 @@ ocs::QConfModelBase::make_sharetree_snapshot(lList **answer_list, QConfParameter
    lList *path_list = nullptr;
    lString2List(paths, &path_list, STN_Type, STN_name, ", ");
    for_each_ep_lv(path_elem, path_list) {
-      const char *path = lGetString(path_elem, STN_name);
+      const char *path = ocs::tom::get<STN_name>(path_elem);
       if (path == nullptr) {
          continue;
       }
@@ -1190,7 +1196,7 @@ ocs::QConfModelBase::make_cqueue_snapshot(lList **answer_list, QConfParameter &p
       dstring host_domain = DSTRING_INIT;
       bool has_hostname;
       bool has_domain;
-      const char *name = lGetString(qref_pattern, QR_name);
+      const char *name = ocs::tom::get<QR_name>(qref_pattern);
 
       if (!cqueue_name_split(name, &cqueue_name, &host_domain, &has_hostname, &has_domain)) {
          answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
@@ -1264,7 +1270,7 @@ ocs::QConfModelBase::make_cqueue_snapshot(lList **answer_list, QConfParameter &p
       dstring host_domain = DSTRING_INIT;
       bool has_hostname;
       bool has_domain;
-      const char *name = lGetString(qref_pattern, QR_name);
+      const char *name = ocs::tom::get<QR_name>(qref_pattern);
 
       /* split again rather than remember: the filter loop above threw the parts
        * away, and splitting is pure string work on a handful of references */
@@ -1286,14 +1292,14 @@ ocs::QConfModelBase::make_cqueue_snapshot(lList **answer_list, QConfParameter &p
          hgroup_list_find_matching_and_resolve(hgroup_list_, nullptr,
                                                sge_dstring_get_string(&host_domain), &href_list);
          for_each_ep_lv(qref, qref_list) {
-            const lListElem *cqueue = lGetElemStr(object_list_, CQ_name, lGetString(qref, QR_name));
+            const lListElem *cqueue = ocs::tom::find_first<CQ_name>(object_list_, ocs::tom::get<QR_name>(qref));
             if (cqueue == nullptr) {
                continue;
             }
-            const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
+            const lList *qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
             for_each_ep_lv(href, href_list) {
                const lListElem *qinstance =
-                  lGetElemHost(qinstance_list, QU_qhostname, lGetHost(href, HR_name));
+                  ocs::tom::find_first<QU_qhostname>(qinstance_list, ocs::tom::get<HR_name>(href));
                if (qinstance != nullptr) {
                   lListElem *qi_copy = lCopyElem(qinstance);
                   qconf_json_fill_complex(qi_copy, qu_ce, 3, centry_list_);
@@ -1306,14 +1312,14 @@ ocs::QConfModelBase::make_cqueue_snapshot(lList **answer_list, QConfParameter &p
          const char *h_pattern = sge_dstring_get_string(&host_domain);
          const bool is_expr = is_expression(h_pattern);
          for_each_ep_lv(qref, qref_list) {
-            const lListElem *cqueue = lGetElemStr(object_list_, CQ_name, lGetString(qref, QR_name));
+            const lListElem *cqueue = ocs::tom::find_first<CQ_name>(object_list_, ocs::tom::get<QR_name>(qref));
             if (cqueue == nullptr) {
                continue;
             }
-            for_each_ep_lv(qinstance, lGetList(cqueue, CQ_qinstances)) {
+            for_each_ep_lv(qinstance, ocs::tom::get<CQ_qinstances>(cqueue)) {
                /* sge_eval_expression() returns 0 on a match, as strcmp does */
                if (sge_eval_expression(CEntry::Type::HOST, h_pattern,
-                                       lGetHost(qinstance, QU_qhostname), nullptr,
+                                       ocs::tom::get<QU_qhostname>(qinstance), nullptr,
                                        true, is_expr) == 0) {
                   lListElem *qi_copy = lCopyElem(qinstance);
                   qconf_json_fill_complex(qi_copy, qu_ce, 3, centry_list_);
@@ -1323,7 +1329,7 @@ ocs::QConfModelBase::make_cqueue_snapshot(lList **answer_list, QConfParameter &p
          }
       } else {
          for_each_ep_lv(qref, qref_list) {
-            const lListElem *cqueue = lGetElemStr(object_list_, CQ_name, lGetString(qref, QR_name));
+            const lListElem *cqueue = ocs::tom::find_first<CQ_name>(object_list_, ocs::tom::get<QR_name>(qref));
             if (cqueue != nullptr) {
                lAppendElem(group.cqueues, lCopyElem(cqueue));
             }
@@ -1647,7 +1653,7 @@ ocs::QConfModelBase::make_snapshot(lList **answer_list, QConfParameter &paramete
          bool all_found = true;
          bool template_refused = false;
          for_each_ep_lv(name_elem, wanted) {
-            const char *name = lGetString(name_elem, ST_name);
+            const char *name = ocs::tom::get<ST_name>(name_elem);
             if (lGetElemStr(object_list_, key_nm_, name) != nullptr) {
                continue;
             }

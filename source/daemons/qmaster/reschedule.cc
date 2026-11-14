@@ -62,6 +62,12 @@
 #include "sgeobj/sge_qinstance_state.h"
 #include "sgeobj/sge_ckpt.h"
 #include "sgeobj/sge_cqueue.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_JAT.h"
+#include "sgeobj/tom/ocs_tom_JG.h"
+#include "sgeobj/tom/ocs_tom_MR.h"
+#include "sgeobj/tom/ocs_tom_QU.h"
+#include "sgeobj/tom/ocs_tom_RU.h"
 
 #include "sge.h"
 #include <cinttypes>
@@ -176,7 +182,7 @@ void reschedule_unknown_event(te_event_t anEvent, monitoring_t *monitor) {
     * Check if host is still in unknown state
     */
    for_each_ep(qep, master_list) {
-      const lListElem *qinstance = lGetElemHost(lGetList(qep, CQ_qinstances), QU_qhostname, hostname);
+      const lListElem *qinstance = ocs::tom::find_first<QU_qhostname>(ocs::tom::get<CQ_qinstances>(qep), hostname);
 
       if (qinstance != nullptr) {
          if (!qinstance_state_is_unknown(qinstance)) {
@@ -305,7 +311,7 @@ int reschedule_job(lListElem *jep, lListElem *jatep, lListElem *ep,
    const char *hostname;
    int ret = 0;
 
-   job_number = lGetUlong(jep, JB_job_number);
+   job_number = ocs::tom::get<JB_job_number>(jep);
 
    /*
     * if jatep is nullptr then reschedule all tasks of this job
@@ -313,7 +319,7 @@ int reschedule_job(lListElem *jep, lListElem *jatep, lListElem *ep,
    if (jatep) {
       next_jatep = jatep;
    } else {
-      next_jatep = lFirstRW(lGetList(jep, JB_ja_tasks));
+      next_jatep = lFirstRW(static_cast<const lList *>(ocs::tom::get<JB_ja_tasks>(jep)));
    }
 
    while ((this_jatep = next_jatep)) {
@@ -329,7 +335,7 @@ int reschedule_job(lListElem *jep, lListElem *jatep, lListElem *ep,
          next_jatep = lNextRW(this_jatep);
       }
 
-      granted_qs = lGetList(this_jatep, JAT_granted_destin_identifier_list);
+      granted_qs = ocs::tom::get<JAT_granted_destin_identifier_list>(this_jatep);
       first_granted_queue = lFirst(granted_qs);
 
       /*
@@ -339,7 +345,7 @@ int reschedule_job(lListElem *jep, lListElem *jatep, lListElem *ep,
          continue;
       }
 
-      task_number = lGetUlong(this_jatep, JAT_task_number);
+      task_number = ocs::tom::get<JAT_task_number>(this_jatep);
 
       if (job_is_array(jep)) {
          snprintf(mail_ids, sizeof(mail_ids), sge_u32"." sge_u32, job_number, task_number);
@@ -358,10 +364,10 @@ int reschedule_job(lListElem *jep, lListElem *jatep, lListElem *ep,
       if (ep && object_has_type(ep, EH_Type)) {
          hep = ep;
          qep = nullptr;
-         hostname = lGetHost(ep, EH_name);
+         hostname = ocs::tom::get<EH_name>(ep);
       } else if (ep && object_has_type(ep, QU_Type)) {
          qep = ep;
-         hostname = lGetHost(qep, QU_qhostname);
+         hostname = ocs::tom::get<QU_qhostname>(qep);
          hep = host_list_locate(*ocs::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST), hostname);
       } else {
          qep = nullptr;
@@ -376,8 +382,8 @@ int reschedule_job(lListElem *jep, lListElem *jatep, lListElem *ep,
        *    - PE job where none of the tasks is running in queue/host (RESCHEDULE_SLAVE is true)
        */
       {
-         const char *the_queuename = (qep != nullptr ? lGetString(qep, QU_full_name) : nullptr);
-         const char *the_hostname = (hep != nullptr ? lGetHost(hep, EH_name) : nullptr);
+         const char *the_queuename = (qep != nullptr ? ocs::tom::get<QU_full_name>(qep) : nullptr);
+         const char *the_hostname = (hep != nullptr ? static_cast<const char *>(ocs::tom::get<EH_name>(hep)) : nullptr);
 
          /*
           * If RESCHEDULE_SLAVE is set then
@@ -391,8 +397,8 @@ int reschedule_job(lListElem *jep, lListElem *jatep, lListElem *ep,
             bool one_matched = false;
 
             for_each_ep(granted_q, granted_qs) {
-               if ((qep != nullptr && strcmp(lGetString(granted_q, JG_qname), the_queuename) == 0) ||
-                   (hep != nullptr && sge_hostcmp(lGetHost(granted_q, JG_qhostname), the_hostname) == 0)) {
+               if ((qep != nullptr && strcmp(ocs::tom::get<JG_qname>(granted_q), the_queuename) == 0) ||
+                   (hep != nullptr && sge_hostcmp(ocs::tom::get<JG_qhostname>(granted_q), the_hostname) == 0)) {
                   one_matched = true;
                   break;
                }
@@ -401,8 +407,8 @@ int reschedule_job(lListElem *jep, lListElem *jatep, lListElem *ep,
                continue;
             }
          } else {
-            if ((qep != nullptr && strcmp(lGetString(first_granted_queue, JG_qname), the_queuename)) ||
-                (hep != nullptr && sge_hostcmp(lGetHost(first_granted_queue, JG_qhostname), the_hostname))) {
+            if ((qep != nullptr && strcmp(ocs::tom::get<JG_qname>(first_granted_queue), the_queuename)) ||
+                (hep != nullptr && sge_hostcmp(ocs::tom::get<JG_qhostname>(first_granted_queue), the_hostname))) {
                continue;
             }
          }
@@ -412,7 +418,7 @@ int reschedule_job(lListElem *jep, lListElem *jatep, lListElem *ep,
        * Is this job tagged as restartable?
        * If the forced flag is set we will also reschedule this job!
        */
-      if (!force && lGetUlong(jep, JB_restart) == 2) {
+      if (!force && ocs::tom::get<JB_restart>(jep) == 2) {
          if (mconf_get_enable_reschedule_kill()) {
             INFO(MSG_RU_REAPING_NOT_RESTARTABLE_SS, mail_type, mail_ids);
             sge_commit_job(jep, this_jatep, nullptr, COMMIT_ST_FINISHED_FAILED_EE,
@@ -429,7 +435,7 @@ int reschedule_job(lListElem *jep, lListElem *jatep, lListElem *ep,
        * qsh, qlogin, qrsh, qrlogin-jobs won't be rescheduled automatically
        * (immediate jobs (qsub -now y ...) will be rescheduled)
        */
-      job_now = lGetUlong(jep, JB_type);
+      job_now = ocs::tom::get<JB_type>(jep);
       if (JOB_TYPE_IS_QSH(job_now) || JOB_TYPE_IS_QLOGIN(job_now)
           || JOB_TYPE_IS_QRSH(job_now) || JOB_TYPE_IS_QRLOGIN(job_now)) {
          INFO(MSG_RU_INTERACTIVEJOB_SSS, mail_ids, mail_type, mail_type);
@@ -441,23 +447,23 @@ int reschedule_job(lListElem *jep, lListElem *jatep, lListElem *ep,
        * ckpt-jobs will only be rescheduled when the "when" attribute
        * contains an appropriate flag or when the forced flag is set
        */
-      if (!force && lGetString(jep, JB_checkpoint_name)) {
+      if (!force && ocs::tom::get<JB_checkpoint_name>(jep)) {
          const lListElem *ckpt_ep = ckpt_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_CKPT),
-                                                     lGetString(jep, JB_checkpoint_name));
+                                                     ocs::tom::get<JB_checkpoint_name>(jep));
          if (ckpt_ep) {
             uint32_t flags;
 
-            flags = lGetUlong(jep, JB_checkpoint_attr);
+            flags = ocs::tom::get<JB_checkpoint_attr>(jep);
             if (!flags) {
-               flags = sge_parse_checkpoint_attr(lGetString(ckpt_ep, CK_when));
+               flags = sge_parse_checkpoint_attr(ocs::tom::get<CK_when>(ckpt_ep));
             }
             if (!(flags & CHECKPOINT_AT_AUTO_RES)) {
-               INFO(MSG_RU_CKPTNOTVALID_SSS, mail_ids, lGetString(ckpt_ep, CK_name), mail_type);
+               INFO(MSG_RU_CKPTNOTVALID_SSS, mail_ids, ocs::tom::get<CK_name>(ckpt_ep), mail_type);
                answer_list_add(answer, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_WARNING);
                continue;
             }
          } else {
-            INFO(MSG_RU_CKPTEXIST_SS, mail_ids, lGetString(ckpt_ep, CK_name));
+            INFO(MSG_RU_CKPTEXIST_SS, mail_ids, ocs::tom::get<CK_name>(ckpt_ep));
             answer_list_add(answer, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_WARNING);
             continue;
          }
@@ -467,7 +473,7 @@ int reschedule_job(lListElem *jep, lListElem *jatep, lListElem *ep,
        * Jobs which were registered for deletion will
        * not be automatically rescheduled (exception: forced flag)
        */
-      if (!force && (lGetUlong(this_jatep, JAT_state) & JDELETED)) {
+      if (!force && (ocs::tom::get<JAT_state>(this_jatep) & JDELETED)) {
          INFO(MSG_RU_INDELETEDSTATE_SS, mail_type, mail_ids);
          answer_list_add(answer, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_WARNING);
          continue;
@@ -477,17 +483,17 @@ int reschedule_job(lListElem *jep, lListElem *jatep, lListElem *ep,
        * If the user did not use the -r flag during submit
        * we have to check the queue default (exception: forced flag)
        */
-      if (!force && lGetUlong(jep, JB_restart) == 0) {
+      if (!force && ocs::tom::get<JB_restart>(jep) == 0) {
          const lListElem *queue; /* QU_Type */
 
-         if (qep && !strcmp(lGetString(first_granted_queue, JG_qname), lGetString(qep, QU_full_name))) {
+         if (qep && !strcmp(ocs::tom::get<JG_qname>(first_granted_queue), ocs::tom::get<QU_full_name>(qep))) {
             queue = qep;
          } else {
             queue = cqueue_list_locate_qinstance(
                     *(ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE)),
-                    lGetString(first_granted_queue, JG_qname));
+                    ocs::tom::get<JG_qname>(first_granted_queue));
          }
-         if (queue == nullptr || !lGetBool(queue, QU_rerun)) {
+         if (queue == nullptr || !ocs::tom::get<QU_rerun>(queue)) {
             if (mconf_get_enable_reschedule_kill()) {
                INFO(MSG_RU_REAPING_NOT_RESTARTABLE_SS, mail_type, mail_ids);
                sge_commit_job(jep, this_jatep, nullptr, COMMIT_ST_FINISHED_FAILED_EE,
@@ -495,7 +501,7 @@ int reschedule_job(lListElem *jep, lListElem *jatep, lListElem *ep,
                continue;
 
             } else {
-               INFO(MSG_RU_NORERUNQUEUE_SSS, mail_type, mail_ids, queue ? "none" : lGetString(queue, QU_full_name));
+               INFO(MSG_RU_NORERUNQUEUE_SSS, mail_type, mail_ids, queue ? "none" : ocs::tom::get<QU_full_name>(queue));
                answer_list_add(answer, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_WARNING);
                continue;
             }
@@ -506,12 +512,12 @@ int reschedule_job(lListElem *jep, lListElem *jatep, lListElem *ep,
        * Is this task already contained in the list?
        * Append it if necessary
        */
-      if (hep && !sge_hostcmp(lGetHost(first_granted_queue, JG_qhostname), lGetHost(hep, EH_name))) {
+      if (hep && !sge_hostcmp(ocs::tom::get<JG_qhostname>(first_granted_queue), ocs::tom::get<EH_name>(hep))) {
          host = hep;
       } else {
          host = host_list_locate(*ocs::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST),
-                                 lGetHost(first_granted_queue, JG_qhostname));
-         hostname = lGetHost(first_granted_queue, JG_qhostname);
+                                 ocs::tom::get<JG_qhostname>(first_granted_queue));
+         hostname = ocs::tom::get<JG_qhostname>(first_granted_queue);
       }
       if (get_from_reschedule_unknown_list(host, job_number, task_number)) {
          found = 1;
@@ -531,7 +537,7 @@ int reschedule_job(lListElem *jep, lListElem *jatep, lListElem *ep,
          uint32_t mail_options;
          char mail_action[256];
 
-         mail_options = lGetUlong(jep, JB_mail_options);
+         mail_options = ocs::tom::get<JB_mail_options>(jep);
          if (force) {
             sge_strlcpy(mail_action, MSG_RU_FORCEDR, sizeof(mail_action));
          } else {
@@ -542,7 +548,7 @@ int reschedule_job(lListElem *jep, lListElem *jatep, lListElem *ep,
             char mail_subject[1024];
             char mail_body[1024];
 
-            mail_users = lGetList(jep, JB_mail_list);
+            mail_users = ocs::tom::get<JB_mail_list>(jep);
             snprintf(mail_subject, sizeof(mail_subject), MSG_RU_MAILSUB_SS, mail_type, mail_ids);
             snprintf(mail_body, sizeof(mail_body), MSG_RU_MAILBODY_SSSS, mail_type, mail_ids, hostname, mail_action, mail_type);
             cull_mail(QMASTER, mail_users, mail_subject, mail_body, MSG_RU_MAILTYPE);
@@ -558,11 +564,11 @@ int reschedule_job(lListElem *jep, lListElem *jatep, lListElem *ep,
        */
       if (!found) {
          lListElem *pseudo_jr; /* JR_Type */
-         uint32_t state = lGetUlong(this_jatep, JAT_state);
+         uint32_t state = ocs::tom::get<JAT_state>(this_jatep);
 
-         lSetUlong(this_jatep, JAT_job_restarted, 1);
+         ocs::tom::set<JAT_job_restarted>(this_jatep, 1);
 
-         if (is_manual && host != nullptr && lGetUlong64(host, EH_lt_heard_from) != 0) {
+         if (is_manual && host != nullptr && ocs::tom::get<EH_lt_heard_from>(host) != 0) {
             // The new run must not start before the old run is gone. The old run is killed with
             // the next report of the job from its host. A host which is unknown does not report,
             // waiting for it would block the job, e.g. after qmod -r of the jobs of a host which
@@ -574,15 +580,15 @@ int reschedule_job(lListElem *jep, lListElem *jatep, lListElem *ep,
              */
             CLEARBIT(JDEFERRED_REQ, state);
          }
-         lSetUlong(this_jatep, JAT_state, state);
+         ocs::tom::set<JAT_state>(this_jatep, state);
 
          pseudo_jr = lCreateElem(JR_Type);
          if (pseudo_jr != nullptr) {
-            lSetUlong(pseudo_jr, JR_job_number, job_number);
-            lSetUlong(pseudo_jr, JR_ja_task_number, task_number);
-            lSetUlong(pseudo_jr, JR_failed, SSTATE_AGAIN);
-            lSetString(pseudo_jr, JR_err_str, (char *) MSG_RU_JR_ERRSTR);
-            lSetString(pseudo_jr, JR_queue_name, lGetString(first_granted_queue, JG_qname));
+            ocs::tom::set<JR_job_number>(pseudo_jr, job_number);
+            ocs::tom::set<JR_ja_task_number>(pseudo_jr, task_number);
+            ocs::tom::set<JR_failed>(pseudo_jr, SSTATE_AGAIN);
+            ocs::tom::set<JR_err_str>(pseudo_jr, (char *) MSG_RU_JR_ERRSTR);
+            ocs::tom::set<JR_queue_name>(pseudo_jr, ocs::tom::get<JG_qname>(first_granted_queue));
 
             // Identify who terminated this run for the accounting record:
             //   - manual qmod -r: <caller_user>@<caller_host>
@@ -596,7 +602,7 @@ int reschedule_job(lListElem *jep, lListElem *jatep, lListElem *ep,
                } else {
                   sge_dstring_sprintf(&dstr_deleted_by, "qmaster@%s", component_get_qualified_hostname());
                }
-               lSetString(pseudo_jr, JR_deleted_by, sge_dstring_get_string(&dstr_deleted_by));
+               ocs::tom::set<JR_deleted_by>(pseudo_jr, sge_dstring_get_string(&dstr_deleted_by));
             }
 
             sge_job_exit(pseudo_jr, jep, this_jatep, monitor, gdi_session);
@@ -632,17 +638,17 @@ add_to_reschedule_unknown_list(lListElem *host, uint32_t job_number, uint32_t ta
 
    lListElem *ruep = nullptr;
    if (host) {
-      ruep = lAddSubUlong(host, RU_job_number, job_number, EH_reschedule_unknown_list, RU_Type);
+      ruep = ocs::tom::emplace_back_in<EH_reschedule_unknown_list, RU_job_number>(host, job_number);
 
       DPRINTF("RU: ADDED " sge_u32"." sge_u32" to EH_reschedule_unknown_list of host " SFN "\n",
-              job_number, task_number, lGetHost(host, EH_name));
+              job_number, task_number, static_cast<const char *>(ocs::tom::get<EH_name>(host)));
 
-      lSetUlong(ruep, RU_task_number, task_number);
-      lSetUlong(ruep, RU_state, state);
+      ocs::tom::set<RU_task_number>(ruep, task_number);
+      ocs::tom::set<RU_state>(ruep, state);
       {
          lList *answer_list = nullptr;
          sge_event_spool(&answer_list, 0, sgeE_EXECHOST_MOD,
-                         0, 0, lGetHost(host, EH_name), nullptr, nullptr, host, nullptr, nullptr, true, true, gdi_session);
+                         0, 0, ocs::tom::get<EH_name>(host), nullptr, nullptr, host, nullptr, nullptr, true, true, gdi_session);
          answer_list_output(&answer_list);
       }
    }
@@ -665,9 +671,9 @@ add_to_reschedule_unknown_list(lListElem *host, uint32_t job_number, uint32_t ta
 static lListElem *
 get_from_reschedule_unknown_list(const lListElem *host, uint32_t job_number, uint32_t task_number) {
    DENTER(TOP_LAYER);
-   for_each_rw_lv(ruep, lGetList(host, EH_reschedule_unknown_list)) {
-      if (job_number == lGetUlong(ruep, RU_job_number)
-          && task_number == lGetUlong(ruep, RU_task_number)) {
+   for_each_rw_lv(ruep, ocs::tom::get<EH_reschedule_unknown_list>(host)) {
+      if (job_number == ocs::tom::get<RU_job_number>(ruep)
+          && task_number == ocs::tom::get<RU_task_number>(ruep)) {
          DRETURN(ruep);
       }
    }
@@ -693,20 +699,20 @@ delete_from_reschedule_unknown_list(lListElem *host, bool all_jobs_reported, uin
    DENTER(TOP_LAYER);
 
    bool changed = false;
-   lList *rulp = lGetListRW(host, EH_reschedule_unknown_list);
+   lList *rulp = ocs::tom::get<EH_reschedule_unknown_list>(host);
    if (rulp) {
       lListElem *thiz, *next;
 
       next = lFirstRW(rulp);
       while ((thiz = next)) {
-         uint32_t state = lGetUlong(thiz, RU_state);
+         uint32_t state = ocs::tom::get<RU_state>(thiz);
 
          next = lNextRW(thiz);
 
          if ((state == RESCHEDULE_SKIP_JR_REMOVE && all_jobs_reported)
              || state == RESCHEDULE_HANDLE_JR_REMOVE) {
-            uint32_t job_number = lGetUlong(thiz, RU_job_number);
-            uint32_t task_number = lGetUlong(thiz, RU_task_number);
+            uint32_t job_number = ocs::tom::get<RU_job_number>(thiz);
+            uint32_t task_number = ocs::tom::get<RU_task_number>(thiz);
 
             DPRINTF("RU: REMOVED " sge_u32"." sge_u32" FROM RU LIST\n", job_number, task_number);
             lRemoveElem(rulp, &thiz);
@@ -723,7 +729,7 @@ delete_from_reschedule_unknown_list(lListElem *host, bool all_jobs_reported, uin
          lList *answer_list = nullptr;
 
          sge_event_spool(&answer_list, 0, sgeE_EXECHOST_MOD,
-                         0, 0, lGetHost(host, EH_name), nullptr, nullptr,
+                         0, 0, ocs::tom::get<EH_name>(host), nullptr, nullptr,
                          host, nullptr, nullptr, true, true, gdi_session);
          answer_list_output(&answer_list);
       }
@@ -744,14 +750,14 @@ void
 reschedule_clear_deferred_start(lListElem *jep, lListElem *jatep, uint64_t gdi_session) {
    DENTER(TOP_LAYER);
 
-   uint32_t state = lGetUlong(jatep, JAT_state);
+   uint32_t state = ocs::tom::get<JAT_state>(jatep);
    if (state & JDEFERRED_REQ) {
-      uint32_t job_number = lGetUlong(jep, JB_job_number);
-      uint32_t task_number = lGetUlong(jatep, JAT_task_number);
+      uint32_t job_number = ocs::tom::get<JB_job_number>(jep);
+      uint32_t task_number = ocs::tom::get<JAT_task_number>(jatep);
 
       DPRINTF("RU: deferred start of " sge_u32 "." sge_u32 " ends\n", job_number, task_number);
       CLEARBIT(JDEFERRED_REQ, state);
-      lSetUlong(jatep, JAT_state, state);
+      ocs::tom::set<JAT_state>(jatep, state);
 
       lList *answer_list = nullptr;
       sge_event_spool(&answer_list, 0, sgeE_JATASK_MOD, job_number, task_number, nullptr, nullptr,
@@ -775,10 +781,10 @@ void
 reschedule_clear_deferred_starts_of_host(const lListElem *host, uint64_t gdi_session) {
    DENTER(TOP_LAYER);
 
-   for_each_ep_lv(ruep, lGetList(host, EH_reschedule_unknown_list)) {
+   for_each_ep_lv(ruep, ocs::tom::get<EH_reschedule_unknown_list>(host)) {
       if (is_master_host_entry(ruep)) {
-         uint32_t job_number = lGetUlong(ruep, RU_job_number);
-         uint32_t task_number = lGetUlong(ruep, RU_task_number);
+         uint32_t job_number = ocs::tom::get<RU_job_number>(ruep);
+         uint32_t task_number = ocs::tom::get<RU_task_number>(ruep);
          clear_deferred_start_of_task(job_number, task_number, gdi_session);
       }
    }
@@ -798,7 +804,7 @@ reschedule_clear_deferred_starts_of_host(const lListElem *host, uint64_t gdi_ses
 static bool
 is_master_host_entry(const lListElem *ruep) {
    DENTER(TOP_LAYER);
-   uint32_t state = lGetUlong(ruep, RU_state);
+   uint32_t state = ocs::tom::get<RU_state>(ruep);
    bool ret = state == RESCHEDULE_SKIP_JR_REMOVE || state == RESCHEDULE_SKIP_JR_SEND_ACK
               || state == RESCHEDULE_SKIP_JR;
    DRETURN(ret);
@@ -818,8 +824,8 @@ static bool
 has_master_host_entry(const lList *rulp, uint32_t job_number, uint32_t task_number) {
    DENTER(TOP_LAYER);
    for_each_ep_lv(ruep, rulp) {
-      if (lGetUlong(ruep, RU_job_number) == job_number
-          && lGetUlong(ruep, RU_task_number) == task_number && is_master_host_entry(ruep)) {
+      if (ocs::tom::get<RU_job_number>(ruep) == job_number
+          && ocs::tom::get<RU_task_number>(ruep) == task_number && is_master_host_entry(ruep)) {
          DRETURN(true);
       }
    }
@@ -836,10 +842,10 @@ static void
 clear_deferred_start_of_task(uint32_t job_number, uint32_t task_number, uint64_t gdi_session) {
    DENTER(TOP_LAYER);
 
-   lListElem *jep = lGetElemUlongRW(*ocs::DataStore::get_master_list(SGE_TYPE_JOB), JB_job_number,
+   lListElem *jep = ocs::tom::find_first_rw<JB_job_number>(*ocs::DataStore::get_master_list(SGE_TYPE_JOB),
                                     job_number);
    if (jep != nullptr) {
-      lListElem *jatep = lGetElemUlongRW(lGetList(jep, JB_ja_tasks), JAT_task_number, task_number);
+      lListElem *jatep = ocs::tom::find_first_rw<JAT_task_number>(ocs::tom::get<JB_ja_tasks>(jep), task_number);
       if (jatep != nullptr) {
          reschedule_clear_deferred_start(jep, jatep, gdi_session);
       }
@@ -864,21 +870,21 @@ update_reschedule_unknown_list(lListElem *host, uint64_t gdi_session) {
    DENTER(TOP_LAYER);
    if (host) {
       bool changed = false;
-      for_each_rw_lv(ruep, lGetList(host, EH_reschedule_unknown_list)) {
-         uint32_t state = lGetUlong(ruep, RU_state);
+      for_each_rw_lv(ruep, ocs::tom::get<EH_reschedule_unknown_list>(host)) {
+         uint32_t state = ocs::tom::get<RU_state>(ruep);
 
          if (state == RESCHEDULE_SKIP_JR_SEND_ACK) {
-            lSetUlong(ruep, RU_state, RESCHEDULE_SKIP_JR_REMOVE);
+            ocs::tom::set<RU_state>(ruep, RESCHEDULE_SKIP_JR_REMOVE);
             changed = true;
          } else if (state == RESCHEDULE_SKIP_JR) {
-            lSetUlong(ruep, RU_state, RESCHEDULE_SKIP_JR_SEND_ACK);
+            ocs::tom::set<RU_state>(ruep, RESCHEDULE_SKIP_JR_SEND_ACK);
             changed = true;
          }
       }
 
       if (changed) {
          lList *answer_list = nullptr;
-         sge_event_spool(nullptr, 0, sgeE_EXECHOST_MOD, 0, 0, lGetHost(host, EH_name), nullptr, nullptr,
+         sge_event_spool(nullptr, 0, sgeE_EXECHOST_MOD, 0, 0, ocs::tom::get<EH_name>(host), nullptr, nullptr,
                          host, nullptr, nullptr, true, true, gdi_session);
          answer_list_output(&answer_list);
       }
@@ -918,17 +924,17 @@ skip_restarted_job(lListElem *host, lListElem *job_report, uint32_t job_number, 
 
    lListElem *ruep;
    uint32_t ret = 0;
-   for_each_rw(ruep, lGetList(host, EH_reschedule_unknown_list)) {
-      if (lGetUlong(ruep, RU_job_number) == job_number
-          && lGetUlong(ruep, RU_task_number) == task_number) {
-         uint32_t state = lGetUlong(ruep, RU_state);
+   for_each_rw(ruep, static_cast<const lList *>(ocs::tom::get<EH_reschedule_unknown_list>(host))) {
+      if (ocs::tom::get<RU_job_number>(ruep) == job_number
+          && ocs::tom::get<RU_task_number>(ruep) == task_number) {
+         uint32_t state = ocs::tom::get<RU_state>(ruep);
 
          if (state == RESCHEDULE_SKIP_JR_REMOVE) {
-            lSetUlong(ruep, RU_state, RESCHEDULE_SKIP_JR);
+            ocs::tom::set<RU_state>(ruep, RESCHEDULE_SKIP_JR);
             ret = 2;
          } else if (state == RESCHEDULE_SKIP_JR_SEND_ACK
                     || state == RESCHEDULE_SKIP_JR) {
-            if (lGetUlong(job_report, JR_state) == JEXITING) {
+            if (ocs::tom::get<JR_state>(job_report) == JEXITING) {
                ret = 3;
             } else {
                ret = 1;
@@ -960,12 +966,12 @@ update_reschedule_unknown_list_for_job(lListElem *host, uint32_t job_number, uin
    lListElem *ruep;
 
    if (host) {
-      for_each_rw(ruep, lGetList(host, EH_reschedule_unknown_list)) {
-         if (lGetUlong(ruep, RU_job_number) == job_number
-             && lGetUlong(ruep, RU_task_number) == task_number) {
-            if (lGetUlong(ruep, RU_state) == RESCHEDULE_HANDLE_JR_WAIT) {
+      for_each_rw(ruep, static_cast<const lList *>(ocs::tom::get<EH_reschedule_unknown_list>(host))) {
+         if (ocs::tom::get<RU_job_number>(ruep) == job_number
+             && ocs::tom::get<RU_task_number>(ruep) == task_number) {
+            if (ocs::tom::get<RU_state>(ruep) == RESCHEDULE_HANDLE_JR_WAIT) {
 
-               lSetUlong(ruep, RU_state, RESCHEDULE_HANDLE_JR_REMOVE);
+               ocs::tom::set<RU_state>(ruep, RESCHEDULE_HANDLE_JR_REMOVE);
                DPRINTF("RU: DECREMENTED PE-TAG OF " sge_u32 "." sge_u32"\n", job_number, task_number);
             }
             break;
@@ -1025,12 +1031,12 @@ update_reschedule_unknown_timeout(lListElem *host) {
 
    if (host != nullptr) {
       lListElem *conf_entry = nullptr; /* CF_Type */
-      const char *hostname = lGetHost(host, EH_name);
-      uint32_t timeout = lGetUlong(host, EH_reschedule_unknown);
+      const char *hostname = ocs::tom::get<EH_name>(host);
+      uint32_t timeout = ocs::tom::get<EH_reschedule_unknown>(host);
 
       conf_entry = sge_get_configuration_entry_by_name(hostname, "reschedule_unknown");
       if (conf_entry != nullptr) {
-         const char *value = lGetString(conf_entry, CF_value);
+         const char *value = ocs::tom::get<CF_value>(conf_entry);
 
          if (parse_ulong_val(nullptr, &timeout, ocs::CEntry::Type::TIME, value, nullptr, 0) == 0) {
             ERROR(MSG_OBJ_RESCHEDULEUNKN_SS, hostname, value);
@@ -1044,7 +1050,7 @@ update_reschedule_unknown_timeout(lListElem *host) {
 
       DPRINTF("%s: reschedule_unknown timeout for host " SFN " is " sge_u32 "\n", __func__, hostname, timeout);
 
-      lSetUlong(host, EH_reschedule_unknown, timeout);
+      ocs::tom::set<EH_reschedule_unknown>(host, timeout);
    } else {
       DPRINTF("%s: host == nullptr\n", __func__);
    }
@@ -1070,16 +1076,16 @@ reschedule_unknown_timeout(lListElem *hep) {
    uint32_t timeout = 0;
    const char *host = nullptr;
 
-   host = lGetHost(hep, EH_name);
-   timeout = lGetUlong(hep, EH_reschedule_unknown);
+   host = ocs::tom::get<EH_name>(hep);
+   timeout = ocs::tom::get<EH_reschedule_unknown>(hep);
 
    /* cache reschedule_unknown parameter in execd host to prevent host name resolving */
    if (mconf_is_new_config() || not_init) {
       lListElem *conf_entry = nullptr;
 
       if ((conf_entry = sge_get_configuration_entry_by_name(host, "reschedule_unknown")) != nullptr) {
-         if (parse_ulong_val(nullptr, &timeout, ocs::CEntry::Type::TIME, lGetString(conf_entry, CF_value), nullptr, 0) == 0) {
-            ERROR(MSG_OBJ_RESCHEDULEUNKN_SS, host, lGetString(conf_entry, CF_value));
+         if (parse_ulong_val(nullptr, &timeout, ocs::CEntry::Type::TIME, ocs::tom::get<CF_value>(conf_entry), nullptr, 0) == 0) {
+            ERROR(MSG_OBJ_RESCHEDULEUNKN_SS, host, ocs::tom::get<CF_value>(conf_entry));
             timeout = 0;
          }
 
@@ -1088,7 +1094,7 @@ reschedule_unknown_timeout(lListElem *hep) {
 
       DPRINTF("%s: reschedule_unknown timeout for host %s is " sge_u32"\n", __func__, host, timeout);
 
-      lSetUlong(hep, EH_reschedule_unknown, timeout);
+      ocs::tom::set<EH_reschedule_unknown>(hep, timeout);
 
       not_init = 0;
    }
@@ -1116,7 +1122,7 @@ reschedule_unknown_trigger(lListElem *hep) {
    timeout = sge_gmt32_to_gmt64(reschedule_unknown_timeout(hep));
 
    if (timeout) {
-      const char *host = lGetHost(hep, EH_name);
+      const char *host = ocs::tom::get<EH_name>(hep);
       uint64_t when = sge_get_gmt64() + timeout + add_time;
       te_event_t ev = nullptr;
 
@@ -1155,12 +1161,12 @@ void
 remove_from_reschedule_unknown_list(lListElem *host, uint32_t job_number, uint32_t task_number, uint64_t gdi_session) {
    DENTER(TOP_LAYER);
    if (host) {
-      lList *unknown_list = lGetListRW(host, EH_reschedule_unknown_list);
+      lList *unknown_list = ocs::tom::get<EH_reschedule_unknown_list>(host);
       lListElem *elem;
 
       for_each_rw(elem, unknown_list) {
-         if (lGetUlong(elem, RU_job_number) == job_number &&
-             lGetUlong(elem, RU_task_number) == task_number) {
+         if (ocs::tom::get<RU_job_number>(elem) == job_number &&
+             ocs::tom::get<RU_task_number>(elem) == task_number) {
             break;
          }
       }
@@ -1168,7 +1174,7 @@ remove_from_reschedule_unknown_list(lListElem *host, uint32_t job_number, uint32
       if (elem != nullptr) {
          lRemoveElem(unknown_list, &elem);
          sge_event_spool(nullptr, 0, sgeE_EXECHOST_MOD,
-                         0, 0, lGetHost(host, EH_name), nullptr, nullptr,
+                         0, 0, ocs::tom::get<EH_name>(host), nullptr, nullptr,
                          host, nullptr, nullptr, true, true, gdi_session);
       }
    }

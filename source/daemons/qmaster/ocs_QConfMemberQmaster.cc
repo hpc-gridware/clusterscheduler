@@ -31,6 +31,8 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_hgroup.h"
 #include "sgeobj/sge_object.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_UE.h"
 #include "uti/sge_dstring.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_string.h"
@@ -65,8 +67,8 @@ namespace {
       DENTER(TOP_LAYER);
 
       lListElem *elem = lCreateElem(US_Type);
-      lSetString(elem, US_name, name);
-      lSetList(elem, US_entries, entries);
+      ocs::tom::set<US_name>(elem, name);
+      ocs::tom::set<US_entries>(elem, entries);
 
       lList *alp = nullptr;
       lList *post_list = nullptr;
@@ -76,8 +78,8 @@ namespace {
       why.clear();
       if (ret != STATUS_OK) {
          for_each_ep_lv(aep, alp) {
-            if (lGetUlong(aep, AN_status) != STATUS_OK && lGetString(aep, AN_text) != nullptr) {
-               why = lGetString(aep, AN_text);
+            if (ocs::tom::get<AN_status>(aep) != STATUS_OK && ocs::tom::get<AN_text>(aep) != nullptr) {
+               why = ocs::tom::get<AN_text>(aep);
                break;
             }
          }
@@ -155,8 +157,8 @@ qconf_member_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, moni
    dstring buffer = DSTRING_INIT;
 
    for_each_ep_lv(list_arg, lists) {
-      const char *list_name = lGetString(list_arg, US_name);
-      const lListElem *stored = lGetElemStr(*ocs::DataStore::get_master_list(SGE_TYPE_USERSET), US_name, list_name);
+      const char *list_name = ocs::tom::get<US_name>(list_arg);
+      const lListElem *stored = ocs::tom::find_first<US_name>(*ocs::DataStore::get_master_list(SGE_TYPE_USERSET), list_name);
 
       if (stored == nullptr && !add) {
          add_answer(answer_list, STATUS_EEXIST, sge_dstring_sprintf(&buffer, MSG_ACL_ACLDOESNOTEXIST_S, list_name));
@@ -167,17 +169,17 @@ qconf_member_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, moni
       /* Decide who has to change. "changed" is also what tells the report below
        * which users the write carried, so a user named twice is reported once as
        * changed and once as already in (or not in) the list. */
-      lList *entries = (stored != nullptr) ? lCopyList("", lGetList(stored, US_entries)) : nullptr;
+      lList *entries = (stored != nullptr) ? lCopyList("", ocs::tom::get<US_entries>(stored)) : nullptr;
       lList *changed = nullptr;
       for_each_ep_lv(user_arg, users) {
-         const char *user_name = lGetString(user_arg, UE_name);
-         const bool present = lGetElemStr(entries, UE_name, user_name) != nullptr;
+         const char *user_name = ocs::tom::get<UE_name>(user_arg);
+         const bool present = static_cast<const lListElem *>(ocs::tom::find_first<UE_name>(entries, user_name)) != nullptr;
          if (add && !present) {
-            lAddElemStr(&entries, UE_name, user_name, UE_Type);
-            lAddElemStr(&changed, UE_name, user_name, UE_Type);
+            ocs::tom::emplace_back<UE_name>(&entries, user_name);
+            ocs::tom::emplace_back<UE_name>(&changed, user_name);
          } else if (!add && present) {
-            lDelElemStr(&entries, UE_name, user_name);
-            lAddElemStr(&changed, UE_name, user_name, UE_Type);
+            ocs::tom::erase<UE_name>(&entries, user_name);
+            ocs::tom::emplace_back<UE_name>(&changed, user_name);
          }
       }
 
@@ -191,8 +193,8 @@ qconf_member_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, moni
 
       // report in the order the users were named
       for_each_ep_lv(user_arg, users) {
-         const char *user_name = lGetString(user_arg, UE_name);
-         lListElem *carried = lGetElemStrRW(changed, UE_name, user_name);
+         const char *user_name = ocs::tom::get<UE_name>(user_arg);
+         lListElem *carried = ocs::tom::find_first_rw<UE_name>(changed, user_name);
          uint32_t status;
          const char *text;
          if (carried == nullptr) {
@@ -292,7 +294,7 @@ qconf_hgroup_member_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *tas
       const std::string::size_type end = hosts_arg.find(ocs::QConfActionParameter::LINE_SEPARATOR, begin);
       const std::string host = hosts_arg.substr(begin, end == std::string::npos ? std::string::npos : end - begin);
       if (!host.empty()) {
-         lAddElemHost(&hosts, HR_name, host.c_str(), HR_Type);
+         ocs::tom::emplace_back<HR_name>(&hosts, host.c_str());
       }
       if (end == std::string::npos) {
          break;
@@ -300,8 +302,8 @@ qconf_hgroup_member_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *tas
       begin = end + 1;
    }
    lListElem *delta = lCreateElem(HGRP_Type);
-   lSetHost(delta, HGRP_name, group.c_str());
-   lSetList(delta, HGRP_host_list, hosts);
+   ocs::tom::set<HGRP_name>(delta, group.c_str());
+   ocs::tom::set<HGRP_host_list>(delta, hosts);
 
    const bool add = (parameter.get_arg(ocs::QConfActionParameter::ARG_ADD) == ocs::QConfActionParameter::ARG_TRUE);
    lList *alp = nullptr;

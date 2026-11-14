@@ -28,6 +28,7 @@
 #include "basis_types.h"
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/sge_var.h"
+#include "tom/ocs_Element.h"
 
 #include "ocs_module_test.h"
 
@@ -43,7 +44,7 @@ nth_var(lList *lp, int n) {
    for (int i = 0; i < n && ep != nullptr; ++i) {
       ep = lNext(ep);
    }
-   const char *s = (ep != nullptr) ? lGetString(ep, VA_variable) : nullptr;
+   const char *s = (ep != nullptr) ? ocs::tom::get<VA_variable>(ep) : nullptr;
    return (s != nullptr) ? s : "";
 }
 

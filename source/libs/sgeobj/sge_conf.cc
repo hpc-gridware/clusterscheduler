@@ -86,6 +86,8 @@
 #include "sgeobj/sge_userprj.h"
 #include "sgeobj/sge_userset.h"
 #include "sgeobj/sge_utility.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_CF.h"
 
 #include <cinttypes>
 
@@ -819,9 +821,9 @@ static void sge_set_defined_defaults(const char *cell_root, lList **lpCfg) {
 
    while (conf_entries[i].name) {
 
-      ep = lAddElemStr(lpCfg, CF_name, conf_entries[i].name, CF_Type);
-      lSetString(ep, CF_value, conf_entries[i].value);
-      lSetUlong(ep, CF_local, conf_entries[i].local);
+      ep = ocs::tom::emplace_back<CF_name>(lpCfg, conf_entries[i].name);
+      ocs::tom::set<CF_value>(ep, conf_entries[i].value);
+      ocs::tom::set<CF_local>(ep, conf_entries[i].local);
 
       i++;
    }
@@ -846,7 +848,7 @@ void
 conf_sort_entries(lListElem *conf) {
    DENTER(BASIS_LAYER);
 
-   lList *entries = lGetListRW(conf, CONF_entries);
+   lList *entries = ocs::tom::get<CONF_entries>(conf);
    if (entries == nullptr) {
       DRETURN_VOID;
    }
@@ -857,7 +859,7 @@ conf_sort_entries(lListElem *conf) {
 
       // a well formed configuration holds every name at most once, but a hand written
       // one might repeat a name - keep all occurrences, next to each other
-      while ((ep = lGetElemCaseStrRW(entries, CF_name, conf_entries[i].name)) != nullptr) {
+      while ((ep = ocs::tom::find_first_nocase_rw<CF_name>(entries, conf_entries[i].name)) != nullptr) {
          lAppendElem(sorted, lDechainElem(entries, ep));
       }
    }
@@ -867,7 +869,7 @@ conf_sort_entries(lListElem *conf) {
       lAppendElem(sorted, lDechainElem(entries, ep));
    }
 
-   lSetList(conf, CONF_entries, sorted);
+   ocs::tom::set<CONF_entries>(conf, sorted);
 
    DRETURN_VOID;
 }
@@ -890,8 +892,8 @@ chg_conf_val(lList *lp_cfg, const char *name, char **cpp, uint32_t *val, ocs::CE
    const lListElem *ep;
    const char *s;
 
-   if ((ep = lGetElemStr(lp_cfg, CF_name, name))) {
-      s = lGetString(ep, CF_value);
+   if ((ep = ocs::tom::find_first<CF_name>(lp_cfg, name))) {
+      s = ocs::tom::get<CF_value>(ep);
 #if 0
       if (s) {
          int old_verbose = log_state_get_log_verbose();
@@ -945,33 +947,33 @@ setConfFromCull(lList *lpCfg) {
    chg_conf_val(lpCfg, "gid_range", &Master_Config.gid_range, nullptr, ocs::CEntry::Type::NONE);
    chg_conf_val(lpCfg, "port_range", &Master_Config.port_range, nullptr, ocs::CEntry::Type::NONE);
 
-   if ((ep = lGetElemStr(lpCfg, CF_name, "user_lists"))) {
+   if ((ep = ocs::tom::find_first<CF_name>(lpCfg, "user_lists"))) {
       lList *lp = nullptr;
-      if (!lString2ListNone(lGetString(ep, CF_value), &lp, US_Type, US_name, " \t,")) {
+      if (!lString2ListNone(ocs::tom::get<CF_value>(ep), &lp, US_Type, US_name, " \t,")) {
          lFreeList(&(Master_Config.user_lists));
          Master_Config.user_lists = lp;
       }
    }
 
-   if ((ep = lGetElemStr(lpCfg, CF_name, "xuser_lists"))) {
+   if ((ep = ocs::tom::find_first<CF_name>(lpCfg, "xuser_lists"))) {
       lList *lp = nullptr;
-      if (!lString2ListNone(lGetString(ep, CF_value), &lp, US_Type, US_name, " \t,")) {
+      if (!lString2ListNone(ocs::tom::get<CF_value>(ep), &lp, US_Type, US_name, " \t,")) {
          lFreeList(&(Master_Config.xuser_lists));
          Master_Config.xuser_lists = lp;
       }
    }
 
-   if ((ep = lGetElemStr(lpCfg, CF_name, "projects"))) {
+   if ((ep = ocs::tom::find_first<CF_name>(lpCfg, "projects"))) {
       lList *lp = nullptr;
-      if (!lString2ListNone(lGetString(ep, CF_value), &lp, PR_Type, PR_name, " \t,")) {
+      if (!lString2ListNone(ocs::tom::get<CF_value>(ep), &lp, PR_Type, PR_name, " \t,")) {
          lFreeList(&(Master_Config.projects));
          Master_Config.projects = lp;
       }
    }
 
-   if ((ep = lGetElemStr(lpCfg, CF_name, "xprojects"))) {
+   if ((ep = ocs::tom::find_first<CF_name>(lpCfg, "xprojects"))) {
       lList *lp = nullptr;
-      if (!lString2ListNone(lGetString(ep, CF_value), &lp, PR_Type, PR_name, " \t,")) {
+      if (!lString2ListNone(ocs::tom::get<CF_value>(ep), &lp, PR_Type, PR_name, " \t,")) {
          lFreeList(&(Master_Config.xprojects));
          Master_Config.xprojects = lp;
       }
@@ -1079,11 +1081,11 @@ int merge_configuration(lList **answer_list, uint32_t progid, const char *cell_r
    ** handled later
    */
    if (global) {
-      cl = lGetList(global, CONF_entries);
+      cl = ocs::tom::get<CONF_entries>(global);
       for_each_ep(elem, cl) {
-         ep2 = lGetElemCaseStrRW(*lpp, CF_name, lGetString(elem, CF_name));
+         ep2 = ocs::tom::find_first_nocase_rw<CF_name>(*lpp, ocs::tom::get<CF_name>(elem));
          if (ep2) {
-            lSetString(ep2, CF_value, lGetString(elem, CF_value));
+            ocs::tom::set<CF_value>(ep2, ocs::tom::get<CF_value>(elem));
          }
       }
    }
@@ -1091,11 +1093,11 @@ int merge_configuration(lList **answer_list, uint32_t progid, const char *cell_r
 
    /* Merge in local configuration */
    if (local) {
-      cl = lGetList(local, CONF_entries);
+      cl = ocs::tom::get<CONF_entries>(local);
       for_each_ep(elem, cl) {
-         ep2 = lGetElemCaseStrRW(*lpp, CF_name, lGetString(elem, CF_name));
-         if (ep2 && lGetUlong(ep2, CF_local)) {
-            lSetString(ep2, CF_value, lGetString(elem, CF_value));
+         ep2 = ocs::tom::find_first_nocase_rw<CF_name>(*lpp, ocs::tom::get<CF_name>(elem));
+         if (ep2 && ocs::tom::get<CF_local>(ep2)) {
+            ocs::tom::set<CF_value>(ep2, ocs::tom::get<CF_value>(elem));
          }
       }
    }

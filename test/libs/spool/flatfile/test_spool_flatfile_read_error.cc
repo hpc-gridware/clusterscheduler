@@ -42,6 +42,8 @@
 
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/sge_answer.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_HR.h"
 
 #include "spool/flatfile/sge_flatfile.h"
 #include "spool/flatfile/sge_flatfile_obj.h"
@@ -102,7 +104,7 @@ read_hgroup(lList **alp, const char *path, const char *what) {
    const lListElem *aep;
    for_each_ep(aep, *use_alp) {
       if (i++ >= before) {
-         printf("      %s: %s\n", what, lGetString(aep, AN_text));
+         printf("      %s: %s\n", what, ocs::tom::get<AN_text>(aep));
       }
    }
    lFreeList(&own_alp);
@@ -121,9 +123,9 @@ has_single_member(const lListElem *ep, const char *expected) {
    if (ep == nullptr) {
       return false;
    }
-   const lList *hosts = lGetList(ep, HGRP_host_list);
+   const lList *hosts = ocs::tom::get<HGRP_host_list>(ep);
    return lGetNumberOfElem(hosts) == 1 &&
-          strcmp(lGetHost(lFirst(hosts), HR_name), expected) == 0;
+          strcmp(ocs::tom::get<HR_name>(lFirst(hosts)), expected) == 0;
 }
 
 int main(int /*argc*/, char * /*argv*/[]) {

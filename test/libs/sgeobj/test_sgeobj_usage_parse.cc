@@ -28,6 +28,7 @@
 #include "basis_types.h"
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/sge_usage.h"
+#include "tom/ocs_Element.h"
 
 // ---------------------------------------------------------------------------
 // Test infrastructure
@@ -74,14 +75,14 @@ check_element(const char *variable, const char *value,
       printf("       usage_parse_value returned nullptr for value='%s'\n", value);
       return false;
    }
-   const char *name = lGetString(ep, UA_name);
+   const char *name = ocs::tom::get<UA_name>(ep);
    if (name == nullptr || std::strcmp(name, variable) != 0) {
       printf("       UA_name='%s', expected '%s'\n", name ? name : "(nullptr)", variable);
       lFreeElem(&ep);
       return false;
    }
-   const char *svalue = lGetString(ep, UA_svalue);
-   double dvalue = lGetDouble(ep, UA_value);
+   const char *svalue = ocs::tom::get<UA_svalue>(ep);
+   double dvalue = ocs::tom::get<UA_value>(ep);
    bool ok = true;
    if (expect_string) {
       if (svalue == nullptr) {

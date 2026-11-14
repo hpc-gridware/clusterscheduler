@@ -41,6 +41,7 @@
 #include "uti/sge_rmon_macros.h"
 
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "tom/ocs_Element.h"
 
 #include "comm/commlib.h"
 
@@ -77,7 +78,7 @@ host_notify_about_X(lListElem *host, uint32_t x, ocs::gdi::ClientServerBase::Cli
    DENTER(TOP_LAYER);
    int ret = -1;
 
-   const char *hostname = lGetHost(host, EH_name);
+   const char *hostname = ocs::tom::get<EH_name>(host);
    if (progname_id == EXECD) {
       unsigned long last_heard_from;
       u_short id = 1;

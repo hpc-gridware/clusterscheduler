@@ -97,6 +97,9 @@
 #include "sgeobj/ocs_Session.h"
 #include "sgeobj/cull/sge_event_request_EVR_L.h"
 #include "sgeobj/msg_sgeobjlib.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_ET.h"
+#include "sgeobj/tom/ocs_tom_EVS.h"
 
 #include "evm/ocs_event_master.h"
 #include "evm/sge_event_master.h"
@@ -467,7 +470,7 @@ void sge_cleanup_event_master_control(void *arg) {
    lListElem *event_client;
    while ((event_client = lFirstRW(Event_Master_Control.clients)) != nullptr) {
       DEBUG("event client " sge_u32 " (state: " sge_u32 ") is still registered at event master shutdown",
-            lGetUlong(event_client, EV_id), lGetUlong(event_client, EV_state));
+            ocs::tom::get<EV_id>(event_client), ocs::tom::get<EV_state>(event_client));
       remove_event_client(&event_client, false);
    }
 
@@ -522,17 +525,17 @@ int sge_add_event_client(const ocs::gdi::Packet *packet, lListElem *clio, lList 
    const char *commproc;
    uint32_t commproc_id;
 
-   id = lGetUlong(clio, EV_id);
-   name = lGetString(clio, EV_name);
-   ed_time = lGetUlong(clio, EV_d_time);
-   host = lGetHost(clio, EV_host);
-   commproc = lGetString(clio, EV_commproc);
-   commproc_id = lGetUlong(clio, EV_commid);
+   id = ocs::tom::get<EV_id>(clio);
+   name = ocs::tom::get<EV_name>(clio);
+   ed_time = ocs::tom::get<EV_d_time>(clio);
+   host = ocs::tom::get<EV_host>(clio);
+   commproc = ocs::tom::get<EV_commproc>(clio);
+   commproc_id = ocs::tom::get<EV_commid>(clio);
 
    /* an event client must have a name */
    if (name == nullptr) {
       name = "unnamed";
-      lSetString(clio, EV_name, name);
+      ocs::tom::set<EV_name>(clio, name);
    }
 
    /* check event client object structure */
@@ -549,7 +552,7 @@ int sge_add_event_client(const ocs::gdi::Packet *packet, lListElem *clio, lList 
       DRETURN(STATUS_ESEMANTIC);
    }
 
-   if (lGetBool(clio, EV_changed) && lGetList(clio, EV_subscribed) == nullptr) {
+   if (ocs::tom::get<EV_changed>(clio) && static_cast<const lList *>(ocs::tom::get<EV_subscribed>(clio)) == nullptr) {
       ERROR(SFNMAX, MSG_EVE_INVALIDSUBSCRIPTION);
       answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_ESEMANTIC);
@@ -597,7 +600,7 @@ int sge_add_event_client(const ocs::gdi::Packet *packet, lListElem *clio, lList 
       INFO(MSG_EVE_REG_SUU, name, id, ed_time);
 
       /* Set the new id for this client. */
-      lSetUlong(clio, EV_id, id);
+      ocs::tom::set<EV_id>(clio, id);
    }
 
    /* special event clients: we allow only one instance */
@@ -630,21 +633,21 @@ int sge_add_event_client(const ocs::gdi::Packet *packet, lListElem *clio, lList 
    ep = lCopyElem(clio);
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"
-   lSetRef(ep, EV_update_function, (void*) update_func);
-   lSetRef(ep, EV_update_function_arg, update_func_arg);
+   ocs::tom::set<EV_update_function>(ep, (void*) update_func);
+   ocs::tom::set<EV_update_function_arg>(ep, update_func_arg);
 #pragma GCC diagnostic pop
-   lSetBool(clio, EV_changed, false);
+   ocs::tom::set<EV_changed>(clio, false);
 
    lAppendElem(Event_Master_Control.clients, ep);
 
-   lSetUlong(ep, EV_next_number, 1);
+   ocs::tom::set<EV_next_number>(ep, 1);
 
    /* register this contact */
    uint64_t now = sge_get_gmt64();
-   lSetUlong64(ep, EV_last_send_time, 0);
-   lSetUlong64(ep, EV_next_send_time, now + sge_gmt32_to_gmt64(lGetUlong(ep, EV_d_time)));
-   lSetUlong64(ep, EV_last_heard_from, now);
-   lSetUlong(ep, EV_state, EV_connected);
+   ocs::tom::set<EV_last_send_time>(ep, 0);
+   ocs::tom::set<EV_next_send_time>(ep, now + sge_gmt32_to_gmt64(ocs::tom::get<EV_d_time>(ep)));
+   ocs::tom::set<EV_last_heard_from>(ep, now);
+   ocs::tom::set<EV_state>(ep, EV_connected);
 
    /* return new event client object to internal event client */
    if (eclpp != nullptr) {
@@ -652,7 +655,7 @@ int sge_add_event_client(const ocs::gdi::Packet *packet, lListElem *clio, lList 
       if (*eclpp == nullptr) {
          *eclpp = lCreateListHash("new event client", EV_Type, true);
       }
-      lSetBool(ret_el, EV_changed, false);
+      ocs::tom::set<EV_changed>(ret_el, false);
       lAppendElem(*eclpp, ret_el);
    }
 
@@ -704,15 +707,15 @@ int sge_mod_event_client(lListElem *clio, lList **alpp, char *ruser, char *rhost
    }
 
    evr = lCreateElem(EVR_Type);
-   lSetUlong(evr, EVR_operation, EVR_MOD_EVC);
-   lSetUlong64(evr, EVR_timestamp, sge_get_gmt64());
-   lSetObject(evr, EVR_event_client, lCopyElem(clio));
+   ocs::tom::set<EVR_operation>(evr, EVR_MOD_EVC);
+   ocs::tom::set<EVR_timestamp>(evr, sge_get_gmt64());
+   ocs::tom::set<EVR_event_client>(evr, lCopyElem(clio));
 
    sge_mutex_lock("event_master_request_mutex", __func__, __LINE__, &Event_Master_Control.request_mutex);
    lAppendElem(Event_Master_Control.requests, evr);
    sge_mutex_unlock("event_master_request_mutex", __func__, __LINE__, &Event_Master_Control.request_mutex);
 
-   DEBUG(MSG_SGETEXT_MODIFIEDINLIST_SSSS, ruser, rhost, lGetString(clio, EV_name), MSG_EVE_EVENTCLIENT);
+   DEBUG(MSG_SGETEXT_MODIFIEDINLIST_SSSS, ruser, rhost, ocs::tom::get<EV_name>(clio), MSG_EVE_EVENTCLIENT);
 
    // Build the answer for the requester itself instead of passing SGE_EVENT.
    // DEBUG() fills that buffer only when the log level is at least LOG_DEBUG,
@@ -721,7 +724,7 @@ int sge_mod_event_client(lListElem *clio, lList **alpp, char *ruser, char *rhost
    // thread had logged before - the buffer is thread local, not per request.
    answer_list_add_sprintf(alpp, STATUS_OK, ANSWER_QUALITY_INFO,
                            MSG_SGETEXT_MODIFIEDINLIST_SSSS, ruser, rhost,
-                           lGetString(clio, EV_name), MSG_EVE_EVENTCLIENT);
+                           ocs::tom::get<EV_name>(clio), MSG_EVE_EVENTCLIENT);
 
    sge_event_master_flush_requests();
 
@@ -751,10 +754,10 @@ sge_event_master_process_mod_event_client(lListElem *request, monitoring_t *moni
 
    MONITOR_WAIT_TIME(SGE_LOCK(LOCK_GLOBAL, LOCK_READ), monitor);
 
-   lListElem *clio = lGetObject(request, EVR_event_client);
+   lListElem *clio = ocs::tom::get<EVR_event_client>(request);
 
    /* try to find event_client */
-   uint32_t id = lGetUlong(clio, EV_id);
+   uint32_t id = ocs::tom::get<EV_id>(clio);
 
    sge_mutex_lock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
    lListElem *event_client = get_event_client(id);
@@ -767,9 +770,9 @@ sge_event_master_process_mod_event_client(lListElem *request, monitoring_t *moni
    }
 
    /* these parameters can be changed */
-   uint32_t busy = lGetUlong(clio, EV_busy);
-   uint32_t ev_d_time = lGetUlong(clio, EV_d_time);
-   uint32_t busy_handling = lGetUlong(clio, EV_busy_handling);
+   uint32_t busy = ocs::tom::get<EV_busy>(clio);
+   uint32_t ev_d_time = ocs::tom::get<EV_d_time>(clio);
+   uint32_t busy_handling = ocs::tom::get<EV_busy_handling>(clio);
 
    /* check for validity */
    if (ev_d_time < 1) {
@@ -779,7 +782,7 @@ sge_event_master_process_mod_event_client(lListElem *request, monitoring_t *moni
       DRETURN_VOID;
    }
 
-   if (lGetBool(clio, EV_changed) && lGetList(clio, EV_subscribed) == nullptr) {
+   if (ocs::tom::get<EV_changed>(clio) && static_cast<const lList *>(ocs::tom::get<EV_subscribed>(clio)) == nullptr) {
       sge_mutex_unlock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
       SGE_UNLOCK(LOCK_GLOBAL, LOCK_READ);
       ERROR(SFNMAX, MSG_EVE_INVALIDSUBSCRIPTION);
@@ -790,22 +793,22 @@ sge_event_master_process_mod_event_client(lListElem *request, monitoring_t *moni
     * We have to update the next delivery time to
     * next_delivery_time - old_interval + new_interval
     */
-   if (ev_d_time != lGetUlong(event_client, EV_d_time)) {
-      uint64_t old_interval = sge_gmt32_to_gmt64(lGetUlong(event_client, EV_d_time));
+   if (ev_d_time != ocs::tom::get<EV_d_time>(event_client)) {
+      uint64_t old_interval = sge_gmt32_to_gmt64(ocs::tom::get<EV_d_time>(event_client));
       uint64_t new_interval = sge_gmt32_to_gmt64(ev_d_time);
 
-      lSetUlong64(event_client, EV_next_send_time,
-                  lGetUlong64(event_client, EV_next_send_time) - old_interval + new_interval);
-      lSetUlong(event_client, EV_d_time, ev_d_time);
+      ocs::tom::set<EV_next_send_time>(event_client,
+                  ocs::tom::get<EV_next_send_time>(event_client) - old_interval + new_interval);
+      ocs::tom::set<EV_d_time>(event_client, ev_d_time);
    }
 
    /* subscription changed */
-   if (lGetBool(clio, EV_changed)) {
+   if (ocs::tom::get<EV_changed>(clio)) {
       subscription_t *new_sub = nullptr;
       subscription_t *old_sub = nullptr;
       build_subscription(clio);
-      new_sub = (subscription_t *)lGetRef(clio, EV_sub_array);
-      old_sub = (subscription_t *)lGetRef(event_client, EV_sub_array);
+      new_sub = (subscription_t *)ocs::tom::get<EV_sub_array>(clio);
+      old_sub = (subscription_t *)ocs::tom::get<EV_sub_array>(event_client);
 
 
       check_send_new_subscribed_list(old_sub, new_sub, event_client, sgeE_CALENDAR_LIST);
@@ -836,10 +839,10 @@ sge_event_master_process_mod_event_client(lListElem *request, monitoring_t *moni
          lXchgList(clio, EV_subscribed, &tmp_list);
       }
 #else
-      lSetList(event_client, EV_subscribed, lCopyList("", lGetList(clio, EV_subscribed)));
+      ocs::tom::set<EV_subscribed>(event_client, lCopyList("", ocs::tom::get<EV_subscribed>(clio)));
 #endif
-      lSetRef(event_client, EV_sub_array, new_sub);
-      lSetRef(clio, EV_sub_array, nullptr);
+      ocs::tom::set<EV_sub_array>(event_client, new_sub);
+      ocs::tom::set<EV_sub_array>(clio, nullptr);
       if (old_sub) {
          int i;
          for (i=0; i<sgeE_EVENTSIZE; i++){
@@ -854,19 +857,19 @@ sge_event_master_process_mod_event_client(lListElem *request, monitoring_t *moni
    }
 
    /* busy state changed */
-   if (busy != lGetUlong(event_client, EV_busy)) {
-      lSetUlong(event_client, EV_busy, busy);
+   if (busy != ocs::tom::get<EV_busy>(event_client)) {
+      ocs::tom::set<EV_busy>(event_client, busy);
    }
    /* busy_handling changed */
-   if (busy_handling != lGetUlong(event_client, EV_busy_handling)) {
-      DPRINTF("EVM: event client %s changes to " sge_u32 "\n", lGetString(event_client, EV_name), lGetUlong(event_client, EV_busy_handling));
-      lSetUlong(event_client, EV_busy_handling, busy_handling);
+   if (busy_handling != ocs::tom::get<EV_busy_handling>(event_client)) {
+      DPRINTF("EVM: event client %s changes to " sge_u32 "\n", ocs::tom::get<EV_name>(event_client), ocs::tom::get<EV_busy_handling>(event_client));
+      ocs::tom::set<EV_busy_handling>(event_client, busy_handling);
    }
 
    MONITOR_EDT_MOD(monitor);
 
    cl_thread_settings_t *thread_config = cl_thread_get_thread_config();
-   DEBUG(MSG_SGETEXT_MODIFIEDINLIST_SSSS, thread_config ? thread_config->thread_name : "-NA-", "master host", lGetString(event_client, EV_name), MSG_EVE_EVENTCLIENT);
+   DEBUG(MSG_SGETEXT_MODIFIEDINLIST_SSSS, thread_config ? thread_config->thread_name : "-NA-", "master host", ocs::tom::get<EV_name>(event_client), MSG_EVE_EVENTCLIENT);
 
    sge_mutex_unlock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
    SGE_UNLOCK(LOCK_GLOBAL, LOCK_READ);
@@ -902,7 +905,7 @@ sge_remove_event_client(uint32_t event_client_id) {
       ERROR(MSG_EVE_UNKNOWNEVCLIENT_US, event_client_id, "remove");
       DRETURN_VOID;
    }
-   lSetUlong(client, EV_state, EV_terminated);
+   ocs::tom::set<EV_state>(client, EV_terminated);
 
    sge_mutex_unlock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
    DRETURN_VOID;
@@ -973,7 +976,7 @@ sge_set_max_dynamic_event_clients(uint32_t new_value) {
 
       /* and we have to remove the ids of our existing event clients from the range */
       for_each_ep_lv(event_client, Event_Master_Control.clients) {
-         uint32_t event_client_id = lGetUlong(event_client, EV_id);
+         uint32_t event_client_id = ocs::tom::get<EV_id>(event_client);
          /* only for dynamic event clients */
          if (event_client_id >= EV_ID_FIRST_DYNAMIC) {
             /*
@@ -1124,7 +1127,7 @@ sge_shutdown_event_client(const ocs::gdi::Packet *packet, uint32_t event_client_
    client = get_event_client(event_client_id);
 
    if (client != nullptr) {
-      if (!manop_is_manager(packet) && (packet->uid != lGetUlong(client, EV_uid))) {
+      if (!manop_is_manager(packet) && (packet->uid != ocs::tom::get<EV_uid>(client))) {
          sge_mutex_unlock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
          answer_list_add(alpp, MSG_COM_NOSHUTDOWNPERMS, STATUS_DENIED,
                          ANSWER_QUALITY_ERROR);
@@ -1136,8 +1139,8 @@ sge_shutdown_event_client(const ocs::gdi::Packet *packet, uint32_t event_client_
       if (event_client_id == EV_ID_SCHEDD) {
          snprintf(SGE_EVENT, SGE_EVENT_SIZE, SFNMAX, MSG_COM_KILLED_SCHEDULER);
       } else {
-         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_COM_SHUTDOWNNOTIFICATION_SUS, lGetString(client, EV_name),
-                  lGetUlong(client, EV_id), lGetHost(client, EV_host));
+         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_COM_SHUTDOWNNOTIFICATION_SUS, ocs::tom::get<EV_name>(client),
+                  ocs::tom::get<EV_id>(client), static_cast<const char *>(ocs::tom::get<EV_host>(client)));
       }
       answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
    } else {
@@ -1182,7 +1185,7 @@ int sge_shutdown_dynamic_event_clients(const ocs::gdi::Packet *packet, lList **a
 
    sge_mutex_lock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
    for_each_ep_lv(client, Event_Master_Control.clients) {
-      id = lGetUlong(client, EV_id);
+      id = ocs::tom::get<EV_id>(client);
 
       /* Ignore clients with static ids. */
       if (id < EV_ID_FIRST_DYNAMIC) {
@@ -1191,8 +1194,8 @@ int sge_shutdown_dynamic_event_clients(const ocs::gdi::Packet *packet, lList **a
 
       sge_add_event_for_client(id, 0, sgeE_SHUTDOWN, 0, 0, nullptr, nullptr, nullptr, nullptr, packet->gdi_session);
 
-      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_COM_SHUTDOWNNOTIFICATION_SUS, lGetString(client, EV_name),
-               id, lGetHost(client, EV_host));
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_COM_SHUTDOWNNOTIFICATION_SUS, ocs::tom::get<EV_name>(client),
+               id, static_cast<const char *>(ocs::tom::get<EV_host>(client)));
       answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
    } /* for_each */
 
@@ -1381,19 +1384,19 @@ sge_create_event(const uint32_t number, uint64_t timestamp, const ev_event type,
    }
 
    lListElem *etp = lCreateElem(ET_Type);
-   lSetUlong(etp, ET_number, number);
-   lSetUlong(etp, ET_type, type);
-   lSetUlong64(etp, ET_timestamp, timestamp);
-   lSetUlong(etp, ET_intkey, int_key);
-   lSetUlong(etp, ET_intkey2, int_key2);
-   lSetString(etp, ET_strkey, str_key);
-   lSetString(etp, ET_strkey2, str_key2);
-   lSetList(etp, ET_new_version, list);
+   ocs::tom::set<ET_number>(etp, number);
+   ocs::tom::set<ET_type>(etp, type);
+   ocs::tom::set<ET_timestamp>(etp, timestamp);
+   ocs::tom::set<ET_intkey>(etp, int_key);
+   ocs::tom::set<ET_intkey2>(etp, int_key2);
+   ocs::tom::set<ET_strkey>(etp, str_key);
+   ocs::tom::set<ET_strkey2>(etp, str_key2);
+   ocs::tom::set<ET_new_version>(etp, list);
 
    // A unique ID is needed later, when we are sure that the event will be delivered.
    // Here we do not know that because the event might be part of an action or transaction
    // that is not commited later on.
-   lSetUlong64(etp, ET_unique_id, 0);
+   ocs::tom::set<ET_unique_id>(etp, 0);
 
    DRETURN(etp);
 }
@@ -1405,8 +1408,8 @@ sge_create_event(const uint32_t number, uint64_t timestamp, const ev_event type,
  */
 static void
 add_unique_id_to_evr(const lListElem *evr, const uint64_t unique_id) {
-   for_each_rw_lv(ev, lGetList(evr, EVR_event_list)) {
-      lSetUlong64(ev, ET_unique_id, unique_id);
+   for_each_rw_lv(ev, ocs::tom::get<EVR_event_list>(evr)) {
+      ocs::tom::set<ET_unique_id>(ev, unique_id);
    }
 }
 
@@ -1479,13 +1482,13 @@ add_list_event_for_client(const uint32_t event_client_id, uint64_t timestamp, co
    }
 
    lListElem *evr = lCreateElem(EVR_Type);
-   lSetUlong(evr, EVR_operation, EVR_ADD_EVENT);
-   lSetUlong64(evr, EVR_timestamp, timestamp);
-   lSetUlong(evr, EVR_event_client_id, event_client_id);
-   lSetString(evr, EVR_session, session);
+   ocs::tom::set<EVR_operation>(evr, EVR_ADD_EVENT);
+   ocs::tom::set<EVR_timestamp>(evr, timestamp);
+   ocs::tom::set<EVR_event_client_id>(evr, event_client_id);
+   ocs::tom::set<EVR_session>(evr, session);
 
    lList *etlp = lCreateListHash("Event_List", ET_Type, false);
-   lSetList(evr, EVR_event_list, etlp);
+   ocs::tom::set<EVR_event_list>(evr, etlp);
 
    /*
     * Create a new event elem (The event number is added when
@@ -1522,9 +1525,9 @@ static void
 sge_event_master_process_send(lListElem *request, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
    ev_event type = sgeE_ALL_EVENTS;
-   uint32_t ec_id = lGetUlong(request, EVR_event_client_id);
-   const char *session = lGetString(request, EVR_session);
-   lList *event_list = lGetListRW(request, EVR_event_list);
+   uint32_t ec_id = ocs::tom::get<EVR_event_client_id>(request);
+   const char *session = ocs::tom::get<EVR_session>(request);
+   lList *event_list = ocs::tom::get<EVR_event_list>(request);
 
    MONITOR_EDT_NEW(monitor);
 
@@ -1535,11 +1538,11 @@ sge_event_master_process_send(lListElem *request, monitoring_t *monitor) {
       while (event != nullptr) {
          bool added = false;
          event = lDechainElem(event_list, event);
-         type = static_cast<ev_event>(lGetUlong(event, ET_type));
+         type = static_cast<ev_event>(ocs::tom::get<ET_type>(event));
 
          sge_mutex_lock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
          for_each_rw_lv(event_client, Event_Master_Control.clients) {
-            ec_id = lGetUlong(event_client, EV_id);
+            ec_id = ocs::tom::get<EV_id>(event_client);
 
             DPRINTF("Preparing event for client %ld\n", ec_id);
 
@@ -1571,7 +1574,7 @@ sge_event_master_process_send(lListElem *request, monitoring_t *monitor) {
 
          while (event != nullptr) {
             event = lDechainElem(event_list, event);
-            type = static_cast<ev_event>(lGetUlong(event, ET_type));
+            type = static_cast<ev_event>(ocs::tom::get<ET_type>(event));
 
             if (eventclient_subscribed(event_client, type, session)) {
                add_list_event_direct(event_client, event, false);
@@ -1613,10 +1616,10 @@ sge_handle_event_ack(const uint32_t event_client_id, const uint32_t event_number
    DENTER(TOP_LAYER);
 
    lListElem *evr = lCreateElem(EVR_Type);
-   lSetUlong(evr, EVR_operation, EVR_ACK_EVENT);
-   lSetUlong64(evr, EVR_timestamp, sge_get_gmt64());
-   lSetUlong(evr, EVR_event_client_id, event_client_id);
-   lSetUlong(evr, EVR_event_number, event_number);
+   ocs::tom::set<EVR_operation>(evr, EVR_ACK_EVENT);
+   ocs::tom::set<EVR_timestamp>(evr, sge_get_gmt64());
+   ocs::tom::set<EVR_event_client_id>(evr, event_client_id);
+   ocs::tom::set<EVR_event_number>(evr, event_number);
 
    sge_mutex_lock("event_master_request_mutex", __func__, __LINE__, &Event_Master_Control.request_mutex);
    lAppendElem(Event_Master_Control.requests, evr);
@@ -1633,7 +1636,7 @@ sge_event_master_process_ack(const lListElem *request, monitoring_t *monitor) {
    lListElem *client;
    uint32_t event_client_id;
 
-   event_client_id = lGetUlong(request, EVR_event_client_id);
+   event_client_id = ocs::tom::get<EVR_event_client_id>(request);
 
    sge_mutex_lock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
 
@@ -1642,9 +1645,9 @@ sge_event_master_process_ack(const lListElem *request, monitoring_t *monitor) {
    if (client == nullptr) {
       ERROR(MSG_EVE_UNKNOWNEVCLIENT_US, event_client_id, "process acknowledgements");
    } else {
-      uint32_t event_number = lGetUlong(request, EVR_event_number);
-      uint64_t timestamp = lGetUlong64(request, EVR_timestamp);
-      lList *list = lGetListRW(client, EV_events);
+      uint32_t event_number = ocs::tom::get<EVR_event_number>(request);
+      uint64_t timestamp = ocs::tom::get<EVR_timestamp>(request);
+      lList *list = ocs::tom::get<EV_events>(client);
       int res = purge_event_list(list, event_number);
 
       MONITOR_EDT_ACK(monitor);
@@ -1652,11 +1655,11 @@ sge_event_master_process_ack(const lListElem *request, monitoring_t *monitor) {
          DPRINTF("%s: purged %d acknowledged events\n", __func__, res);
       }
 
-      lSetUlong64(client, EV_last_heard_from, timestamp); /* note time of ack */
+      ocs::tom::set<EV_last_heard_from>(client, timestamp); /* note time of ack */
 
-      switch (lGetUlong(client, EV_busy_handling)) {
+      switch (ocs::tom::get<EV_busy_handling>(client)) {
          case EV_BUSY_UNTIL_ACK:
-            lSetUlong(client, EV_busy, 0); /* clear busy state */
+            ocs::tom::set<EV_busy>(client, 0); /* clear busy state */
             break;
          default:
             break;
@@ -1721,7 +1724,7 @@ int sge_resync_schedd(monitoring_t *monitor, uint64_t gdi_session) {
    sge_mutex_lock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
 
    if ((client = get_event_client(EV_ID_SCHEDD)) != nullptr) {
-      ERROR(MSG_EVE_REINITEVENTCLIENT_S, lGetString(client, EV_name));
+      ERROR(MSG_EVE_REINITEVENTCLIENT_S, ocs::tom::get<EV_name>(client));
 
       total_update(client, gdi_session);
 
@@ -1840,11 +1843,11 @@ static void
 remove_event_client(lListElem **client, bool lock_event_master) {
    DENTER(TOP_LAYER);
 
-   uint32_t event_client_id = lGetUlong(*client, EV_id);
-   INFO(MSG_EVE_UNREG_SU, lGetString(*client, EV_name), event_client_id);
+   uint32_t event_client_id = ocs::tom::get<EV_id>(*client);
+   INFO(MSG_EVE_UNREG_SU, ocs::tom::get<EV_name>(*client), event_client_id);
 
    subscription_t *old_sub = nullptr;
-   old_sub = (subscription_t *)lGetRef(*client, EV_sub_array);
+   old_sub = (subscription_t *)ocs::tom::get<EV_sub_array>(*client);
    if (old_sub) {
       /* now free event client subscription data */
       for (int i = 0; i < sgeE_EVENTSIZE; i++) {
@@ -1857,7 +1860,7 @@ remove_event_client(lListElem **client, bool lock_event_master) {
       }
 
       sge_free(&old_sub);
-      lSetRef(*client, EV_sub_array, nullptr);
+      ocs::tom::set<EV_sub_array>(*client, nullptr);
    }
 
    if (lock_event_master) {
@@ -1921,10 +1924,10 @@ void sge_event_master_send_events(lListElem *report, lList *report_list, monitor
 
       next_event_client = lNextRW(event_client);
 
-      ec_id = lGetUlong(event_client, EV_id);
+      ec_id = ocs::tom::get<EV_id>(event_client);
 
       /* is the event client in state terminated? remove it */
-      if (lGetUlong(event_client, EV_state) == EV_terminated) {
+      if (ocs::tom::get<EV_state>(event_client) == EV_terminated) {
          remove_event_client(&event_client, false);
          /* we removed a client, continue with the next one */
          event_client = next_event_client;
@@ -1936,24 +1939,24 @@ void sge_event_master_send_events(lListElem *report, lList *report_list, monitor
       /*   host and commproc have to be freed */
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"
-      update_func = (event_client_update_func_t) lGetRef(event_client, EV_update_function);
-      update_func_arg = lGetRef(event_client, EV_update_function_arg);
+      update_func = (event_client_update_func_t) ocs::tom::get<EV_update_function>(event_client);
+      update_func_arg = ocs::tom::get<EV_update_function_arg>(event_client);
 #pragma GCC diagnostic pop
 
-      host = lGetHost(event_client, EV_host);
-      commproc = lGetString(event_client, EV_commproc);
-      commid = lGetUlong(event_client, EV_commid);
+      host = ocs::tom::get<EV_host>(event_client);
+      commproc = ocs::tom::get<EV_commproc>(event_client);
+      commid = ocs::tom::get<EV_commid>(event_client);
 
-      deliver_interval = lGetUlong(event_client, EV_d_time);
-      busy_handling = lGetUlong(event_client, EV_busy_handling);
+      deliver_interval = ocs::tom::get<EV_d_time>(event_client);
+      busy_handling = ocs::tom::get<EV_busy_handling>(event_client);
 
       /* someone turned the clock back */
-      if (lGetUlong64(event_client, EV_last_heard_from) > now) {
-         WARNING(MSG_SYSTEM_SYSTEMHASBEENMODIFIEDXSECONDS_I, (int)sge_gmt64_to_gmt32(now - lGetUlong64(event_client, EV_last_heard_from)));
-         lSetUlong64(event_client, EV_last_heard_from, now);
-         lSetUlong64(event_client, EV_next_send_time, now + sge_gmt32_to_gmt64(deliver_interval));
-      } else if (lGetUlong64(event_client, EV_last_send_time) > now) {
-         lSetUlong64(event_client, EV_last_send_time, now);
+      if (ocs::tom::get<EV_last_heard_from>(event_client) > now) {
+         WARNING(MSG_SYSTEM_SYSTEMHASBEENMODIFIEDXSECONDS_I, (int)sge_gmt64_to_gmt32(now - ocs::tom::get<EV_last_heard_from>(event_client)));
+         ocs::tom::set<EV_last_heard_from>(event_client, now);
+         ocs::tom::set<EV_next_send_time>(event_client, now + sge_gmt32_to_gmt64(deliver_interval));
+      } else if (ocs::tom::get<EV_last_send_time>(event_client) > now) {
+         ocs::tom::set<EV_last_send_time>(event_client, now);
       }
 
       /* if set, use qmaster_params SCHEDULER_TIMEOUT */
@@ -1975,7 +1978,7 @@ void sge_event_master_send_events(lListElem *report, lList *report_list, monitor
        * Flush event sgeE_ACK_TIMEOUT for out-timed clients. Clients might re-connect
        * when getting sgeE_ACK_TIMEOUT event.
        */
-      if (now > (lGetUlong64(event_client, EV_last_heard_from) + sge_gmt32_to_gmt64(timeout))) {
+      if (now > (ocs::tom::get<EV_last_heard_from>(event_client) + sge_gmt32_to_gmt64(timeout))) {
          lListElem *new_event = nullptr;
          lList* tmp_event_list = nullptr;
          lUlong tmp_cur_event_nr = 0;
@@ -1983,16 +1986,16 @@ void sge_event_master_send_events(lListElem *report, lList *report_list, monitor
          char buffer[256];
 
          DPRINTF("EVC timeout (%d s) (part 1/2)\n", timeout);
-         WARNING(MSG_COM_ACKTIMEOUT4EV_ISUSIS, (int) timeout, lGetString(event_client, EV_name),
-            lGetUlong(event_client, EV_id), commproc, (int) commid, host);
+         WARNING(MSG_COM_ACKTIMEOUT4EV_ISUSIS, (int) timeout, ocs::tom::get<EV_name>(event_client),
+            ocs::tom::get<EV_id>(event_client), commproc, (int) commid, host);
 
          /* yes, we have to remove this client after sending the sgeE_ACK_TIMEOUT event */
          do_remove = true;
 
          /* Create new ACK_TIMEOUT event and add it directly to the client event list */
-         tmp_cur_event_nr = lGetUlong(event_client, EV_next_number);
+         tmp_cur_event_nr = ocs::tom::get<EV_next_number>(event_client);
          new_event = sge_create_event(tmp_cur_event_nr, now, sgeE_ACK_TIMEOUT, 0, 0, nullptr, nullptr, nullptr);
-         tmp_event_list = lGetListRW(event_client, EV_events);
+         tmp_event_list = ocs::tom::get<EV_events>(event_client);
 
          if (tmp_event_list != nullptr) {
             lAppendElem(tmp_event_list, new_event);
@@ -2000,29 +2003,29 @@ void sge_event_master_send_events(lListElem *report, lList *report_list, monitor
          } else {
             tmp_event_list = lCreateListHash("Events", ET_Type, false);
             lAppendElem(tmp_event_list, new_event);
-            lSetList(event_client, EV_events, tmp_event_list);
+            ocs::tom::set<EV_events>(event_client, tmp_event_list);
             DPRINTF("Created new Events list with sgeE_ACK_TIMEOUT event\n");
          }
 
          /* We have to set the correct next event number */
-         lSetUlong(event_client, EV_next_number, tmp_cur_event_nr + 1);
+         ocs::tom::set<EV_next_number>(event_client, tmp_cur_event_nr + 1);
 
          /* We log the new added sgeE_ACK_TIMEOUT event */
          sge_dstring_init(&buffer_wrapper, buffer, sizeof(buffer));
          DPRINTF("%d %s\n", ec_id, event_text(new_event, &buffer_wrapper));
 
          /* Set next send time to now, we want to deliver it */
-         lSetUlong64(event_client, EV_next_send_time, now);
+         ocs::tom::set<EV_next_send_time>(event_client, now);
       }
 
       /* do we have to deliver events ? */
-      if (now >= lGetUlong64(event_client, EV_next_send_time)) {
-         if (!lGetUlong(event_client, EV_busy) || do_remove) {
+      if (now >= ocs::tom::get<EV_next_send_time>(event_client)) {
+         if (!ocs::tom::get<EV_busy>(event_client) || do_remove) {
             lList *lp = nullptr;
 
             /* put only pointer in report - dont copy */
-            lXchgList(event_client, EV_events, &lp);
-            lXchgList(report, REP_list, &lp);
+            ocs::tom::exchange<EV_events>(event_client, &lp);
+            ocs::tom::exchange<REP_list>(report, &lp);
 
             if (update_func != nullptr) {
                update_func(ec_id, nullptr, report_list, update_func_arg);
@@ -2039,23 +2042,23 @@ void sge_event_master_send_events(lListElem *report, lList *report_list, monitor
                switch (busy_handling) {
                   case EV_BUSY_UNTIL_RELEASED:
                   case EV_BUSY_UNTIL_ACK:
-                     lSetUlong(event_client, EV_busy, 1);
+                     ocs::tom::set<EV_busy>(event_client, 1);
                      break;
                   default:
                      /* EV_BUSY_NO_HANDLING */
                      break;
                }
 
-               lSetUlong64(event_client, EV_last_send_time, now);
+               ocs::tom::set<EV_last_send_time>(event_client, now);
             }
 
             /* We reset this time even if the report list send failed because we
              * want to give failed clients a break before trying them again. */
-            lSetUlong64(event_client, EV_next_send_time, now + sge_gmt32_to_gmt64(deliver_interval));
+            ocs::tom::set<EV_next_send_time>(event_client, now + sge_gmt32_to_gmt64(deliver_interval));
 
             /* don't delete sent events - deletion is triggerd by ack's */
-            lXchgList(report, REP_list, &lp);
-            lXchgList(event_client, EV_events, &lp);
+            ocs::tom::exchange<REP_list>(report, &lp);
+            ocs::tom::exchange<EV_events>(event_client, &lp);
          } else {
             MONITOR_EDT_BUSY(monitor);
          }
@@ -2067,7 +2070,7 @@ void sge_event_master_send_events(lListElem *report, lList *report_list, monitor
        */
       if (do_remove) {
          DPRINTF("REMOVE EVC because of timeout (%d s) (part 2/2)\n", timeout);
-         ERROR(MSG_COM_ACKTIMEOUT4EV_SUSIS, lGetString(event_client, EV_name), lGetUlong(event_client, EV_id),
+         ERROR(MSG_COM_ACKTIMEOUT4EV_SUSIS, ocs::tom::get<EV_name>(event_client), ocs::tom::get<EV_id>(event_client),
             commproc, (int) commid, host);
          remove_event_client(&event_client, false);
       }
@@ -2088,10 +2091,10 @@ flush_events(lListElem *event_client, int interval) {
 
    SGE_ASSERT(event_client != nullptr);
 
-   next_send = lGetUlong64(event_client, EV_next_send_time);
+   next_send = ocs::tom::get<EV_next_send_time>(event_client);
    next_send = std::min(next_send, now + sge_gmt32_to_gmt64(interval));
 
-   lSetUlong64(event_client, EV_next_send_time, next_send);
+   ocs::tom::set<EV_next_send_time>(event_client, next_send);
 
    if (now >= next_send) {
       sge_event_master_flush_requests();
@@ -2099,13 +2102,13 @@ flush_events(lListElem *event_client, int interval) {
 
    DPRINTF("%s: %s %d\tNOW: " sge_u64 " NEXT FLUSH: " sge_u64 " (%s,%s,%d)\n",
            __func__,
-           ((lGetString(event_client, EV_name) != nullptr) ? lGetString(event_client, EV_name) : "<null>"),
-           lGetUlong(event_client, EV_id),
+           ((ocs::tom::get<EV_name>(event_client) != nullptr) ? ocs::tom::get<EV_name>(event_client) : "<null>"),
+           ocs::tom::get<EV_id>(event_client),
            now,
            next_send,
-           ((lGetHost(event_client, EV_host) != nullptr) ? lGetHost(event_client, EV_host) : "<null>"),
-           ((lGetString(event_client, EV_commproc) != nullptr) ? lGetString(event_client, EV_commproc) : "<null>"),
-           lGetUlong(event_client, EV_commid));
+           ((static_cast<const char *>(ocs::tom::get<EV_host>(event_client)) != nullptr) ? static_cast<const char *>(ocs::tom::get<EV_host>(event_client)) : "<null>"),
+           ((ocs::tom::get<EV_commproc>(event_client) != nullptr) ? ocs::tom::get<EV_commproc>(event_client) : "<null>"),
+           ocs::tom::get<EV_commid>(event_client));
 
    DRETURN_VOID;
 } /* flush_events() */
@@ -2254,16 +2257,16 @@ total_update(lListElem *event_client, uint64_t gdi_session) {
 static void build_subscription(lListElem *event_el) {
    DENTER(TOP_LAYER);
 
-   const lList *subscription = lGetList(event_el, EV_subscribed);
+   const lList *subscription = ocs::tom::get<EV_subscribed>(event_el);
    subscription_t *sub_array = nullptr;
    subscription_t *old_sub_array = nullptr;
    int i = 0;
 
-   if (!lGetBool(event_el, EV_changed)) {
+   if (!ocs::tom::get<EV_changed>(event_el)) {
       DRETURN_VOID;
    }
 
-   DPRINTF("rebuild event mask for client(id): %s(" sge_u32 ")\n", lGetString(event_el, EV_name), lGetUlong(event_el, EV_id));
+   DPRINTF("rebuild event mask for client(id): %s(" sge_u32 ")\n", ocs::tom::get<EV_name>(event_el), ocs::tom::get<EV_id>(event_el));
 
    sub_array = (subscription_t *) sge_malloc(sizeof(subscription_t) * sgeE_EVENTSIZE);
    SGE_ASSERT(sub_array != nullptr);
@@ -2276,7 +2279,7 @@ static void build_subscription(lListElem *event_el) {
 
    for_each_ep_lv(sub_el, subscription) {
       const lListElem *temp = nullptr;
-      uint32_t event = lGetUlong(sub_el, EVS_id);
+      uint32_t event = ocs::tom::get<EVS_id>(sub_el);
 
       // EVS_id is client-supplied; reject out-of-range ids so they cannot index
       // past the fixed sgeE_EVENTSIZE-element sub_array (CWE-787, CS-2340). Same
@@ -2287,19 +2290,19 @@ static void build_subscription(lListElem *event_el) {
       }
 
       sub_array[event].subscription = EV_SUBSCRIBED;
-      sub_array[event].flush = lGetBool(sub_el, EVS_flush) ? true : false;
-      sub_array[event].flush_time = lGetUlong(sub_el, EVS_interval);
+      sub_array[event].flush = ocs::tom::get<EVS_flush>(sub_el) ? true : false;
+      sub_array[event].flush_time = ocs::tom::get<EVS_interval>(sub_el);
 
-      if ((temp = lGetObject(sub_el, EVS_where))) {
+      if ((temp = ocs::tom::get<EVS_where>(sub_el))) {
          sub_array[event].where = lWhereFromElem(temp);
       }
 
-      if ((temp = lGetObject(sub_el, EVS_what))) {
+      if ((temp = ocs::tom::get<EVS_what>(sub_el))) {
          sub_array[event].what = lWhatFromElem(temp);
       }
    }
 
-   old_sub_array = (subscription_t *)lGetRef(event_el, EV_sub_array);
+   old_sub_array = (subscription_t *)ocs::tom::get<EV_sub_array>(event_el);
 
    if (old_sub_array != nullptr) {
       for (int j = 0; j < sgeE_EVENTSIZE; j++) {
@@ -2312,8 +2315,8 @@ static void build_subscription(lListElem *event_el) {
       sge_free(&old_sub_array);
    }
 
-   lSetRef(event_el, EV_sub_array, sub_array);
-   lSetBool(event_el, EV_changed, false);
+   ocs::tom::set<EV_sub_array>(event_el, sub_array);
+   ocs::tom::set<EV_changed>(event_el, false);
 
    DRETURN_VOID;
 } /* build_subscription() */
@@ -2367,8 +2370,8 @@ static int eventclient_subscribed(const lListElem *event_client, ev_event event,
       DRETURN(0);
    }
 
-   subscription = (subscription_t *)lGetRef(event_client, EV_sub_array);
-   ec_session = lGetString(event_client, EV_session);
+   subscription = (subscription_t *)ocs::tom::get<EV_sub_array>(event_client);
+   ec_session = ocs::tom::get<EV_session>(event_client);
 
    if (subscription == nullptr) {
       DPRINTF("No subscription!\n");
@@ -2437,7 +2440,7 @@ static int purge_event_list(lList *event_list, uint32_t event_number) {
 
       ev = lNextRW(ev);
 
-      if (lGetUlong(tmp, ET_number) > event_number) {
+      if (ocs::tom::get<ET_number>(tmp) > event_number) {
          break;
       }
 
@@ -2455,7 +2458,7 @@ static void add_list_event_direct(lListElem *event_client, lListElem *event,
    lList *lp = nullptr;
    lList *clp = nullptr;
    lListElem *ep = nullptr;
-   ev_event type = (ev_event)lGetUlong(event, ET_type);
+   ev_event type = (ev_event)ocs::tom::get<ET_type>(event);
    subscription_t *subscription = nullptr;
    char buffer[1024];
    dstring buffer_wrapper;
@@ -2467,7 +2470,7 @@ static void add_list_event_direct(lListElem *event_client, lListElem *event,
 
    SGE_ASSERT(event_client != nullptr);
 
-   if (lGetUlong(event_client, EV_state) != EV_connected) {
+   if (ocs::tom::get<EV_state>(event_client) != EV_connected) {
       /* the event client is not connected anymore, so we are not
          adding new events to it*/
       if (!copy_event) {
@@ -2477,7 +2480,7 @@ static void add_list_event_direct(lListElem *event_client, lListElem *event,
    }
 
    /* detect internal event clients */
-   if (lGetRef(event_client, EV_update_function) != nullptr) {
+   if (ocs::tom::get<EV_update_function>(event_client) != nullptr) {
       internal_client = true;
    }
 
@@ -2487,13 +2490,13 @@ static void add_list_event_direct(lListElem *event_client, lListElem *event,
    sge_dstring_init(&buffer_wrapper, buffer, sizeof(buffer));
 
    /* Pull out payload for selecting */
-   lXchgList(event, ET_new_version, &lp);
+   ocs::tom::exchange<ET_new_version>(event, &lp);
 
    /* If the list is nullptr, no need to bother with any of this.  Plus, if we
     * did do this part with a nullptr list, the check for a clp with no
     * elements would kick us out. */
    if (lp != nullptr) {
-      subscription = (subscription_t *)lGetRef(event_client, EV_sub_array);
+      subscription = (subscription_t *)ocs::tom::get<EV_sub_array>(event_client);
       selection = subscription[type].where;
       fields = subscription[type].what;
 
@@ -2521,7 +2524,7 @@ static void add_list_event_direct(lListElem *event_client, lListElem *event,
             }
 
             /* we are not making a copy, so we have to restore the old element */
-            lXchgList(event, ET_new_version, &lp);
+            ocs::tom::exchange<ET_new_version>(event, &lp);
 
             if (!copy_event) {
                lFreeElem(&event);
@@ -2563,46 +2566,46 @@ static void add_list_event_direct(lListElem *event_client, lListElem *event,
 #endif
       ep = lCopyElemHash(event, false);
 
-      lXchgList(event, ET_new_version, &lp);
+      ocs::tom::exchange<ET_new_version>(event, &lp);
    } else {
       /* If we're not making a copy, reuse the original event. */
       ep = event;
    }
 
    /* Swap the new list into the working event. */
-   lXchgList(ep, ET_new_version, &clp);
+   ocs::tom::exchange<ET_new_version>(ep, &clp);
 
    /* fill in event number and increment
       EV_next_number of event recipient */
-   i = lGetUlong(event_client, EV_next_number);
-   lSetUlong(event_client, EV_next_number, (i + 1));
-   lSetUlong(ep, ET_number, i);
+   i = ocs::tom::get<EV_next_number>(event_client);
+   ocs::tom::set<EV_next_number>(event_client, (i + 1));
+   ocs::tom::set<ET_number>(ep, i);
 
    /* build a new event list if not exists */
-   lp = lGetListRW(event_client, EV_events);
+   lp = ocs::tom::get<EV_events>(event_client);
 
    if (lp == nullptr) {
       lp=lCreateListHash("Events", ET_Type, false);
-      lSetList(event_client, EV_events, lp);
+      ocs::tom::set<EV_events>(event_client, lp);
    }
 
    /* chain in new event */
    lAppendElem(lp, ep);
 
-   DPRINTF("%d %s\n", lGetUlong(event_client, EV_id), event_text(ep, &buffer_wrapper));
+   DPRINTF("%d %s\n", ocs::tom::get<EV_id>(event_client), event_text(ep, &buffer_wrapper));
 
    /* check if event clients wants flushing */
-   subscription = (subscription_t *)lGetRef(event_client, EV_sub_array);
+   subscription = (subscription_t *)ocs::tom::get<EV_sub_array>(event_client);
 
    if (type == sgeE_QMASTER_GOES_DOWN) {
       Event_Master_Control.is_prepare_shutdown = true;
-      lSetUlong(event_client, EV_busy, 0); /* can't be too busy for shutdown */
+      ocs::tom::set<EV_busy>(event_client, 0); /* can't be too busy for shutdown */
       flush_events(event_client, 0);
    } else if (type == sgeE_SHUTDOWN) {
       flush_events(event_client, 0);
       /* the event client should be shutdown, so we do not add any events to it, after
          the shutdown event */
-      lSetUlong(event_client, EV_state, EV_closing);
+      ocs::tom::set<EV_state>(event_client, EV_closing);
    } else if (subscription[type].flush) {
       DPRINTF("flushing event client\n");
       flush_events(event_client, subscription[type].flush_time);
@@ -2633,7 +2636,7 @@ static void total_update_event(lListElem *event_client, ev_event type, bool new_
    SGE_ASSERT(event_client != nullptr);
 
    sge_dstring_init(&buffer_wrapper, buffer, sizeof(buffer));
-   id = lGetUlong(event_client, EV_id);
+   id = ocs::tom::get<EV_id>(event_client);
 
    /* This test bothers me.  Technically, the GDI thread should just drop the
     * event in the send queue and forget about it.  However, doing this test
@@ -2912,7 +2915,7 @@ eventclient_list_locate_by_adress(const char *host, const char *commproc, uint32
    DENTER(TOP_LAYER);
 
    for_each_rw_lv(ep, Event_Master_Control.clients) {
-      if (lGetUlong(ep, EV_commid) == id && !sge_hostcmp(lGetHost(ep, EV_host), host) && !strcmp(lGetString(ep, EV_commproc), commproc)) {
+      if (ocs::tom::get<EV_commid>(ep) == id && !sge_hostcmp(ocs::tom::get<EV_host>(ep), host) && !strcmp(ocs::tom::get<EV_commproc>(ep), commproc)) {
          DRETURN(ep);
       }
    }
@@ -2959,7 +2962,7 @@ static const lDescr *getDescriptorL(subscription_t *subscription,
  * @note MT-NOTE: NOT thread safe.  Requires caller to hold Event_Master_Control.mutex.
  */
 static lListElem *get_event_client(uint32_t id) {
-   return lGetElemUlongRW(Event_Master_Control.clients, EV_id, id);
+   return ocs::tom::find_first_rw<EV_id>(Event_Master_Control.clients, id);
 }
 
 /**
@@ -3048,7 +3051,7 @@ sge_commit(uint64_t gdi_session) {
  * @note MT-NOTE: sge_commit is thread safe.
  */
 static void blockEvents(lListElem *event_client, ev_event ev_type, bool isBlock) {
-   subscription_t *sub_array = (subscription_t *)lGetRef(event_client, EV_sub_array);
+   subscription_t *sub_array = (subscription_t *)ocs::tom::get<EV_sub_array>(event_client);
 
    if (sub_array != nullptr) {
       int i = -1;
@@ -3164,7 +3167,7 @@ void sge_event_master_process_requests(monitoring_t *monitor) {
 #if 0
          DPRINTF("processing event master request: %d\n", lGetUlong(request, EVR_operation));
 #endif
-         switch (lGetUlong(request, EVR_operation)) {
+         switch (ocs::tom::get<EVR_operation>(request)) {
             case EVR_ADD_EVC:
                sge_event_master_process_add_event_client(request, monitor);
                break;
