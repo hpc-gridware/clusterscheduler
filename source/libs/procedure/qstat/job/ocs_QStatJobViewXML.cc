@@ -71,18 +71,25 @@ ocs::QStatJobViewXML::show_jobs_and_reasons(std::ostream &os, QStatParameter &pa
    DRETURN_VOID;
 }
 
+/**
+ * @brief Report why the pending jobs are not running, as XML
+ *
+ * Each message of the scheduler gets the text that summarizes its jobs, once per message, and its job ids are
+ * sorted. The list of messages is handed to the XML document and freed with it.
+ *
+ * @param os stream to write to
+ * @param parameter the call's parameters
+ * @param model the fetched lists; its message list is consumed
+ */
 void ocs::QStatJobViewXML::show_reasons(std::ostream &os, QStatParameter &parameter, QStatModelBase &model) {
    DENTER(TOP_LAYER);
 
-   /* need to modify list to display correct message */
+   // each message gets the text that summarizes its jobs, as the plain view prints it above their ids
    if (const lListElem *sme = lFirst(model.ilp); sme != nullptr) {
       for_each_rw_lv(mes, lGetListRW(sme, SME_message_list)) {
          lPSortList(lGetListRW(mes, MES_job_number_list), "I+", ULNG_value);
-
-         for_each_rw_lv(jid_ulng, lGetList(mes, MES_job_number_list)) {
-            const uint32_t mid = lGetUlong(mes, MES_message_number);
-            lSetString(mes, MES_message, sge_schedd_text(mid + SCHEDD_INFO_OFFSET));
-         }
+         const uint32_t mid = lGetUlong(mes, MES_message_number);
+         lSetString(mes, MES_message, sge_schedd_text(mid + SCHEDD_INFO_OFFSET));
       }
    }
 

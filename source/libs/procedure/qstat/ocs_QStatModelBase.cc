@@ -881,6 +881,9 @@ bool ocs::QStatModelBase::fetch_data(lList **answer_list, QStatParameter &parame
 
 /** @brief Post-process fetched lists (e.g. resolve hostgroup references).
  *
+ * For XML output of named jobs, the messages of the scheduler are reduced to those jobs. Without named jobs
+ * nothing is reduced.
+ *
  * @param answer_list receives error messages
  * @param parameter the parsed parameters
  * @return true when the lists could be prepared
@@ -925,7 +928,8 @@ bool ocs::QStatModelBase::prepare_data(lList **answer_list, QStatParameter &para
       DRETURN(false);
    }
 
-   if (parameter.get_output_format() != QStatParameter::OutputFormat::XML) {
+   // the job list exists only when jobs were named; without them (-j alone) every message is shown, as in plain
+   if (parameter.get_output_format() != QStatParameter::OutputFormat::XML || parameter.get_jid_list() == nullptr) {
       DRETURN(true);
    }
 
