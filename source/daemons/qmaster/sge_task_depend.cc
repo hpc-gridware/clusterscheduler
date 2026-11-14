@@ -143,33 +143,28 @@ sge_task_depend_get_range(lListElem **range, lList **alpp, const lListElem *pre_
    DRETURN(0);
 }
 
-/*****************************************************************************
- Tasks matching this profile are considered finished for dependence purposes
- *****************************************************************************/
+/**
+ * @brief Whether an array task counts as finished for array dependencies (-hold_jid_ad)
+ *
+ * A task that is not enrolled yet is not finished. An enrolled task that is no longer in the
+ * job was finished and buried. Otherwise the task's own status decides: its pe tasks end with
+ * it, and JAT_task_list may still hold them, or the container of their past usage, after the
+ * task finished.
+ *
+ * @param job the job, JB_Type
+ * @param task_id the id of the array task
+ * @return true if the task counts as finished
+ */
 static bool
 task_depend_is_finished(const lListElem *job, uint32_t task_id) {
    DENTER(TOP_LAYER);
-
-   const lListElem *ja_task = nullptr;
 
    if (!job_is_enrolled(job, task_id)) {
       DRETURN(false);
    }
 
-   ja_task = job_search_task(job, nullptr, task_id);
-   if (ja_task != nullptr) {
-      if (lGetUlong(ja_task, JAT_status) != JFINISHED) {
-         DRETURN(false);
-      }
-      for_each_ep_lv(task, lGetList(ja_task, JAT_task_list)) {
-         if (lGetUlong(lFirst(lGetList(task, JB_ja_tasks)), JAT_status)
-             != JFINISHED) {
-            DRETURN(false);
-         }
-      }
-   }
-
-   DRETURN(true);
+   const lListElem *ja_task = job_search_task(job, nullptr, task_id);
+   DRETURN(ja_task == nullptr || lGetUlong(ja_task, JAT_status) == JFINISHED);
 }
 
 
