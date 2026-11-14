@@ -183,10 +183,20 @@ int main(int, char *[]) {
    CHECK(17, "-1.5 -> numeric -1.5",
          check_element("x", "-1.5", false, nullptr, -1.5));
 
+   // NaN and Infinity are no numbers a JSON accounting record can hold, they stay strings
+   CHECK(18, "nan -> string \"nan\"",
+         check_element("x", "nan", true, "nan", 0.0));
+   CHECK(19, "inf -> string \"inf\"",
+         check_element("x", "inf", true, "inf", 0.0));
+   CHECK(20, "-Infinity -> string \"-Infinity\"",
+         check_element("x", "-Infinity", true, "-Infinity", 0.0));
+   CHECK(21, "1e999 (out of range) -> string \"1e999\"",
+         check_element("x", "1e999", true, "1e999", 0.0));
+
    if (s_fail == 0) {
-      printf("ALL PASS (17 tests)\n");
+      printf("ALL PASS (21 tests)\n");
       return 0;
    }
-   printf("FAIL (%d of 17)\n", s_fail);
+   printf("FAIL (%d of 21)\n", s_fail);
    return 1;
 }

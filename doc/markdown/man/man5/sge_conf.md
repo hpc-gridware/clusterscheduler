@@ -1507,7 +1507,7 @@ Examples:
 
 Custom usage values may be either numeric or strings. The type is derived from the value written 
 to the shepherd usage file by the epilog script: a value surrounded by matching quotes (`"..."` or 
-`'...'`) is a string with the quotes stripped; an unquoted value that parses as a number is 
+`'...'`) is a string with the quotes stripped; an unquoted value that parses as a finite number is
 numeric; the case-insensitive tokens `true`/`false` coerce to numeric `1`/`0`; anything else is a 
 string. Use quotes to force numeric-looking data (identifiers, version markers, categorical 
 labels) to be recorded as strings. An empty quoted pair (`""` or `''`) is silently skipped — 

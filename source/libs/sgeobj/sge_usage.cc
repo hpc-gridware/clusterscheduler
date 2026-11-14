@@ -45,6 +45,7 @@
 
 #include <cctype>
 #include <cerrno>
+#include <cmath>
 #include <cstdlib>
 #include <cstring>
 #include <string>
@@ -431,7 +432,7 @@ parse_full_double(const char *value, double &out) {
    char *end = nullptr;
    errno = 0;
    double d = std::strtod(value, &end);
-   if (errno != 0 || end == value || *end != '\0') {
+   if (errno != 0 || end == value || *end != '\0' || !std::isfinite(d)) {
       return false;
    }
    out = d;
