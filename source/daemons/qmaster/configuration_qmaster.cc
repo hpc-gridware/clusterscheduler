@@ -499,6 +499,27 @@ check_config(lList **alpp, lListElem *conf) {
             answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
             DRETURN(STATUS_EEXIST);
          }
+      } else if (!strcmp(name, "reporting_params")) {
+         // Validate parameters whose grammar we can fail-fast on. Today this
+         // covers only usage_patterns; other reporting_params tokens are
+         // sanity-checked at merge time in sge_conf.cc::merge_configuration().
+         struct saved_vars_s *context = nullptr;
+         bool rp_valid = true;
+         for (const char *s = sge_strtok_r(value, PARAMS_DELIMITER, &context);
+              rp_valid && s != nullptr;
+              s = sge_strtok_r(nullptr, PARAMS_DELIMITER, &context)) {
+            std::string usage_patterns_str;
+            if (parse_string_param(s, "usage_patterns", usage_patterns_str)) {
+               std::vector<std::pair<std::string, std::string>> discard;
+               if (!parse_usage_patterns_value(alpp, usage_patterns_str.c_str(), discard)) {
+                  rp_valid = false;
+               }
+            }
+         }
+         sge_free_saved_vars(context);
+         if (!rp_valid) {
+            DRETURN(STATUS_EEXIST);
+         }
       } else if (!strcmp(name, "admin_user")) {
          struct passwd pw_struct;
          char *buffer;

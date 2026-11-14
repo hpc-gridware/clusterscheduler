@@ -364,4 +364,8 @@
 
 #define MSG_RSMAP_TOO_MANY_IMPLICIT_IDS_SUU    _MESSAGE(64557, _("RSMAP " SFQ " would create " sge_u32 " ids implicitly, which exceeds the limit of " sge_u32 " - list the ids explicitly or raise MAX_RSMAP_IDS in qmaster_params"))
 
+#define MSG_CONF_USAGEPATTERNS_SYNTAX_S      _MESSAGE(64598, _("invalid setting for \"reporting_params\", attribute \"usage_patterns\" - entry " SFQ " is not of the form <name>:<expression>"))
+#define MSG_CONF_USAGEPATTERNS_RESERVED_S    _MESSAGE(64599, _("invalid setting for \"reporting_params\", attribute \"usage_patterns\" - group name " SFQ " is reserved (rusage, eusage and usage cannot be used)"))
+#define MSG_CONF_USAGEPATTERNS_DUPLICATE_S   _MESSAGE(64600, _("invalid setting for \"reporting_params\", attribute \"usage_patterns\" - group name " SFQ " is given more than once"))
+
 // clang-format on

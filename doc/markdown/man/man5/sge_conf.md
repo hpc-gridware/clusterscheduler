@@ -1185,6 +1185,12 @@ records in the reporting file.  The format is:
 *name* is an arbitrary name characterizing the usage values defined by *expression*. For the semantics of 
 expression (see xxqs_name_sxx_types(1) ).  
 
+*name* becomes the name of a usage container in the accounting record, next to the built-in containers
+*rusage* and *eusage* (see xxqs_name_sxx_accounting(5)). The names *rusage*, *eusage* and *usage* are
+therefore reserved, and every *name* may be given only once. Both rules ignore the case of letters.
+A configuration violating them is rejected. If such a configuration was stored by an earlier version,
+the affected groups are ignored and an error is written to the messages file.
+
 Examples:
 
     usage_patterns=gpu:nvidia.*
