@@ -106,7 +106,7 @@ void job_report_init_from_job(lListElem *job_report,
 
    uint32_t job_id = ocs::tom::get<JB_job_number>(job);
    uint32_t ja_task_id = ocs::tom::get<JAT_task_number>(ja_task);
-   const lListElem *queue;
+   ocs::tom::ConstElement<ocs::tom::JG> queue;
 
    ocs::tom::set<JR_job_number>(job_report, job_id);
    ocs::tom::set<JR_ja_task_number>(job_report, ja_task_id);

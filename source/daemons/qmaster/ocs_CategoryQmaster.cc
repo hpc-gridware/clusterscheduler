@@ -32,6 +32,9 @@
 #include "sgeobj/ocs_Session.h"
 #include "tom/ocs_Element.h"
 #include "sgeobj/tom/ocs_tom_CCT.h"
+#include "sgeobj/tom/ocs_tom_CT.h"
+#include "sgeobj/tom/ocs_tom_PR.h"
+#include "sgeobj/tom/ocs_tom_US.h"
 
 #include "ocs_CategoryQmaster.h"
 #include "ocs_DataStore.h"
@@ -129,14 +132,14 @@ ocs::CategoryQmaster::initialize_prj_and_uset_for_categories(lList *master_proje
     * now set categories flag with usersets/projects used as ACL
     */
    for_each_ep_lv(ep, p_list) {
-      lListElem *prj = ocs::tom::find_first_rw<PR_name>(master_project_list, ocs::tom::get<PR_name>(ep));
+      ocs::tom::Element<ocs::tom::PR> prj = ocs::tom::find_first_rw<PR_name>(master_project_list, ocs::tom::get<PR_name>(ep));
       if (prj != nullptr) {
          ocs::tom::set<PR_consider_with_categories>(prj, true);
       }
    }
 
    for_each_ep_lv(ep, u_list) {
-      lListElem *acl = ocs::tom::find_first_rw<US_name>(master_userset_list, ocs::tom::get<US_name>(ep));
+      ocs::tom::Element<ocs::tom::US> acl = ocs::tom::find_first_rw<US_name>(master_userset_list, ocs::tom::get<US_name>(ep));
       if (acl != nullptr) {
          ocs::tom::set<US_consider_with_categories>(acl, true);
       }
@@ -209,7 +212,7 @@ ocs::CategoryQmaster::attach_job(lList **master_category_list, lListElem *job,
 
    // get the category or create a new one
    bool is_new = false;
-   lListElem *category = ocs::tom::find_first_rw<CT_str>(*master_category_list, cat_str);
+   ocs::tom::Element<ocs::tom::CT> category = ocs::tom::find_first_rw<CT_str>(*master_category_list, cat_str);
    if (category == nullptr) {
       category = ocs::tom::emplace_back<CT_str>(master_category_list, cat_str);
       ocs::tom::set<CT_id>(category, Category::get_next_id(*master_category_list));
@@ -376,7 +379,7 @@ ocs::CategoryQmaster::reset_tmp_data(lList *master_category_list) {
    for_each_rw_lv (cat, master_category_list) {
 
       // deallocate memory stored in the cache itself
-      for_each_rw_lv (cache, ocs::tom::get<CT_cache>(cat)) {
+      for (ocs::tom::Element<ocs::tom::CCT> cache : ocs::tom::get<CT_cache>(cat)) {
          auto *range = static_cast<int *>(ocs::tom::get<CCT_pe_job_slots>(cache));
          sge_free(&range);
          ocs::tom::set<CCT_pe_job_slots>(cache, nullptr);

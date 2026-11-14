@@ -28,6 +28,8 @@
 #include "sgeobj/cull/sge_param_SPP_L.h"
 #include "sgeobj/sge_var.h"
 #include "sgeobj/sge_ulong.h"
+#include "sgeobj/tom/ocs_tom_SPP.h"
+#include "sgeobj/tom/ocs_tom_VA.h"
 #include "tom/ocs_Element.h"
 
 #include "ocs_ProcedureParameter.h"
@@ -40,7 +42,7 @@
  */
 void ocs::ProcedureParameter::add_parameter_bundle(lList *bundle, const std::string& param_name, lList *parameter) {
    SGE_ASSERT(bundle != nullptr);
-   lListElem *bundle_elem = ocs::tom::emplace_back<SPP_name>(&bundle, param_name.c_str());
+   ocs::tom::Element<ocs::tom::SPP> bundle_elem = ocs::tom::emplace_back<SPP_name>(&bundle, param_name.c_str());
    ocs::tom::set<SPP_value_list>(bundle_elem, parameter);
 }
 
@@ -56,27 +58,27 @@ ocs::ProcedureParameter::get_bundle() {
    // procedure name, sub-procedure name
    lList *name_value_list = nullptr;
 
-   lListElem *ep = ocs::tom::emplace_back<VA_variable>(&name_value_list, PROCEDURE);
+   ocs::tom::Element<ocs::tom::VA> ep = ocs::tom::emplace_back<VA_variable>(&name_value_list, PROCEDURE);
    ocs::tom::set<VA_value>(ep, procedure_name_.c_str());
    DPRINTF("procedure_name: " SFN "\n", procedure_name_.c_str());
 
-   ep = ocs::tom::emplace_back<VA_variable>(&name_value_list, SUB_PROCEDURE);
-   ocs::tom::set<VA_value>(ep, sub_procedure_name_.c_str());
+   ocs::tom::Element<ocs::tom::VA> ep_va = ocs::tom::emplace_back<VA_variable>(&name_value_list, SUB_PROCEDURE);
+   ocs::tom::set<VA_value>(ep_va, sub_procedure_name_.c_str());
    DPRINTF("sub_procedure_name: " SFN "\n", sub_procedure_name_.c_str());
 
-   ep = ocs::tom::emplace_back<SPP_name>(&bundle, NAME_VALUE_LIST);
-   ocs::tom::set<SPP_value_list>(ep, name_value_list);
+   ocs::tom::Element<ocs::tom::SPP> ep_spp = ocs::tom::emplace_back<SPP_name>(&bundle, NAME_VALUE_LIST);
+   ocs::tom::set<SPP_value_list>(ep_spp, name_value_list);
 
    // -fmt
    lList *output_format_list = nullptr;
    ocs::tom::emplace_back<ULNG_value>(&output_format_list, static_cast<uint32_t>(output_format_));
-   ep = ocs::tom::emplace_back<SPP_name>(&bundle, OUTPUT_FORMAT);
-   ocs::tom::set<SPP_value_list>(ep, output_format_list);
+   ocs::tom::Element<ocs::tom::SPP> ep_spp_2 = ocs::tom::emplace_back<SPP_name>(&bundle, OUTPUT_FORMAT);
+   ocs::tom::set<SPP_value_list>(ep_spp_2, output_format_list);
    DPRINTF("output_format: %d\n", output_format_);
 
    // environment
-   ep = ocs::tom::emplace_back<SPP_name>(&bundle, ENVIRONMENT);
-   ocs::tom::set<SPP_value_list>(ep, lCopyList("", env_variable_list_));
+   ocs::tom::Element<ocs::tom::SPP> ep_spp_3 = ocs::tom::emplace_back<SPP_name>(&bundle, ENVIRONMENT);
+   ocs::tom::set<SPP_value_list>(ep_spp_3, lCopyList("", env_variable_list_));
    DPRINTF("env_variable_list: " sge_u32 "\n", lGetNumberOfElem(env_variable_list_));
 
    // exec_context can be ignored here. It is evaluated on client side only
@@ -93,25 +95,25 @@ void ocs::ProcedureParameter::set_bundle(const lList *bundle) {
    DENTER(TOP_LAYER);
 
    // procedure name
-   const lListElem *name_value_param = ocs::tom::find_first<SPP_name>(bundle, NAME_VALUE_LIST);
+   ocs::tom::ConstElement<ocs::tom::SPP> name_value_param = ocs::tom::find_first<SPP_name>(bundle, NAME_VALUE_LIST);
    const lList *name_value_list = ocs::tom::get<SPP_value_list>(name_value_param);
-   const lListElem *procedure_elem = ocs::tom::find_first<VA_variable>(name_value_list, PROCEDURE);
+   ocs::tom::ConstElement<ocs::tom::VA> procedure_elem = ocs::tom::find_first<VA_variable>(name_value_list, PROCEDURE);
    procedure_name_ = bundle_string(ocs::tom::get<VA_value>(procedure_elem));
    DPRINTF("procedure_name: " SFN "\n", procedure_name_.c_str());
 
    // sub-procedure name
-   const lListElem *sub_procedure_elem = ocs::tom::find_first<VA_variable>(name_value_list, SUB_PROCEDURE);
+   ocs::tom::ConstElement<ocs::tom::VA> sub_procedure_elem = ocs::tom::find_first<VA_variable>(name_value_list, SUB_PROCEDURE);
    sub_procedure_name_ = bundle_string(ocs::tom::get<VA_value>(sub_procedure_elem));
    DPRINTF("sub_procedure_name: " SFN "\n", sub_procedure_name_.c_str());
 
    // -fmt
-   const lListElem *output_format_param = ocs::tom::find_first<SPP_name>(bundle, OUTPUT_FORMAT);
+   ocs::tom::ConstElement<ocs::tom::SPP> output_format_param = ocs::tom::find_first<SPP_name>(bundle, OUTPUT_FORMAT);
    const lList *output_format_list = ocs::tom::get<SPP_value_list>(output_format_param);
    output_format_ = static_cast<OutputFormat>(ocs::tom::get<ULNG_value>(lFirst(output_format_list)));
    DPRINTF("output_format: %d\n", output_format_);
 
    // environment
-   lListElem *env_param = ocs::tom::find_first_rw<SPP_name>(bundle, ENVIRONMENT);
+   ocs::tom::Element<ocs::tom::SPP> env_param = ocs::tom::find_first_rw<SPP_name>(bundle, ENVIRONMENT);
    env_variable_list_ = nullptr;
    ocs::tom::exchange<SPP_value_list>(env_param, &env_variable_list_);
    DPRINTF("env_variable_list: " sge_u32 "\n", lGetNumberOfElem(env_variable_list_));
@@ -127,9 +129,9 @@ void ocs::ProcedureParameter::set_bundle(const lList *bundle) {
  * @return the procedure name
  */
 std::string ocs::ProcedureParameter::get_procedure_from_bundle(const lList *parameter_bundle) {
-   const lListElem *name_value_param = ocs::tom::find_first<SPP_name>(parameter_bundle, NAME_VALUE_LIST);
+   ocs::tom::ConstElement<ocs::tom::SPP> name_value_param = ocs::tom::find_first<SPP_name>(parameter_bundle, NAME_VALUE_LIST);
    const lList *name_value_list = ocs::tom::get<SPP_value_list>(name_value_param);
-   const lListElem *procedure_elem = ocs::tom::find_first<VA_variable>(name_value_list, PROCEDURE);
+   ocs::tom::ConstElement<ocs::tom::VA> procedure_elem = ocs::tom::find_first<VA_variable>(name_value_list, PROCEDURE);
    return ocs::tom::get<VA_value>(procedure_elem);
 }
 
@@ -138,11 +140,11 @@ std::string ocs::ProcedureParameter::get_procedure_from_bundle(const lList *para
  * @return the sub-procedure name, empty when there is none
  */
 std::string ocs::ProcedureParameter::get_sub_procedure_from_bundle(const lList *parameter_bundle) {
-   const lListElem *name_value_param = ocs::tom::find_first<SPP_name>(parameter_bundle, NAME_VALUE_LIST);
+   ocs::tom::ConstElement<ocs::tom::SPP> name_value_param = ocs::tom::find_first<SPP_name>(parameter_bundle, NAME_VALUE_LIST);
    const lList *name_value_list = ocs::tom::get<SPP_value_list>(name_value_param);
 
    // Not every request contains sub-procedure requests
-   if (const lListElem *sub_procedure_elem = ocs::tom::find_first<VA_variable>(name_value_list, SUB_PROCEDURE); sub_procedure_elem != nullptr) {
+   if (ocs::tom::ConstElement<ocs::tom::VA> sub_procedure_elem = ocs::tom::find_first<VA_variable>(name_value_list, SUB_PROCEDURE); sub_procedure_elem != nullptr) {
       return bundle_string(ocs::tom::get<VA_value>(sub_procedure_elem));
    }
    return "";
@@ -154,7 +156,7 @@ std::string ocs::ProcedureParameter::get_sub_procedure_from_bundle(const lList *
  */
 void ocs::ProcedureParameter::add_variable(const char *name, const char *value) {
    DENTER(TOP_LAYER);
-   lListElem *elem = ocs::tom::emplace_back<VA_variable>(&env_variable_list_, name);
+   ocs::tom::Element<ocs::tom::VA> elem = ocs::tom::emplace_back<VA_variable>(&env_variable_list_, name);
    if (value != nullptr) {
       ocs::tom::set<VA_value>(elem, value);
    }
@@ -167,7 +169,7 @@ void ocs::ProcedureParameter::add_variable(const char *name, const char *value) 
  */
 const char *ocs::ProcedureParameter::get_variable(const char *name) const {
    DENTER(TOP_LAYER);
-   const lListElem *elem = ocs::tom::find_first<VA_variable>(env_variable_list_, name);
+   ocs::tom::ConstElement<ocs::tom::VA> elem = ocs::tom::find_first<VA_variable>(env_variable_list_, name);
    if (elem == nullptr) {
       DRETURN(nullptr);
    }

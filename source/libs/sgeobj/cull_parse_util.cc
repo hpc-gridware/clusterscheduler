@@ -66,6 +66,7 @@
 #include "sgeobj/sge_str.h"
 #include "sgeobj/cull/sge_parse_SPA_L.h"
 #include "sgeobj/cull/sge_resource_utilization_RUE_L.h"
+#include "sgeobj/tom/ocs_tom_JRS.h"
 #include "tom/ocs_Element.h"
 
 static int fprint_name_value_list(FILE *fp, char *name, lList *thresholds, int print_slots,
@@ -1138,7 +1139,7 @@ void parse_list_hardsoft(lList *cmdline, const char *option, lListElem *job, uin
 
    // in case of masterq: the global -q requests become the slave -q requests
    if (handled_option && sge_strnullcmp(option, "-masterq") == 0) {
-      lListElem *global = ocs::tom::find_first_in_rw<JB_request_set_list, JRS_scope>(job, JRS_SCOPE_GLOBAL);
+      ocs::tom::Element<ocs::tom::JRS> global = ocs::tom::find_first_in_rw<JB_request_set_list, JRS_scope>(job, JRS_SCOPE_GLOBAL);
       if (global != nullptr) {
          lList *global_queue_requests = nullptr;
          ocs::tom::exchange<JRS_hard_queue_list>(global, &global_queue_requests);

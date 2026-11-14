@@ -256,7 +256,6 @@ int sge_job_slot_request(const lListElem *job, const lList *pe_list) {
 
    const char *pe_name;
    const char *urgency_slot_setting; 
-   const lList* range_list;
    const lListElem *pep;
    int n;
   
@@ -266,7 +265,7 @@ int sge_job_slot_request(const lListElem *job, const lList *pe_list) {
    } 
 
    /* parallel job with fixed slot request */
-   range_list = ocs::tom::get<JB_pe_range>(job);
+   ocs::tom::ConstList<ocs::tom::RN> range_list = ocs::tom::get<JB_pe_range>(job);
    if (range_list_get_number_of_ids(range_list)==1) { 
       DRETURN(range_list_get_first_id(range_list, nullptr));
    } 

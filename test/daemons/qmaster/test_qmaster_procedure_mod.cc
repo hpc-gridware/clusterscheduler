@@ -67,6 +67,7 @@
 
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/sge_answer.h"
+#include "sgeobj/tom/ocs_tom_CAL.h"
 #include "tom/ocs_Element.h"
 
 #include "gdi/ocs_gdi_Client.h"
@@ -181,7 +182,7 @@ public:
 static bool
 add_calendar(const char *name, const char *week) {
    lList *lp = nullptr;
-   lListElem *ep = ocs::tom::emplace_back<CAL_name>(&lp, name);
+   ocs::tom::Element<ocs::tom::CAL> ep = ocs::tom::emplace_back<CAL_name>(&lp, name);
    ocs::tom::set<CAL_week_calendar>(ep, week);
 
    lList *alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::CAL_LIST, ocs::gdi::Command::ADD,
@@ -226,7 +227,7 @@ get_week_calendar(const char *name) {
    lFreeList(&alp);
 
    /* select by name rather than lFirst(): a GET may return more than asked for */
-   const lListElem *found = ocs::tom::find_first<CAL_name>(lp, name);
+   ocs::tom::ConstElement<ocs::tom::CAL> found = ocs::tom::find_first<CAL_name>(lp, name);
    const char *value = (found != nullptr) ? ocs::tom::get<CAL_week_calendar>(found) : nullptr;
    std::string result = (value != nullptr) ? value : "";
    lFreeList(&lp);

@@ -83,6 +83,7 @@
 #include "sgeobj/tom/ocs_tom_PET.h"
 #include "sgeobj/tom/ocs_tom_PN.h"
 #include "sgeobj/tom/ocs_tom_UA.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
 
 #include "gdi/ocs_gdi_security.h"
 
@@ -445,7 +446,7 @@ reaper_get_qversion(const lListElem *jr, const lListElem *ja_task) {
    uint32_t ret = 0;
    const char *qname = ocs::tom::get<JR_queue_name>(jr);
    if (ja_task != nullptr && qname != nullptr) {
-      const lListElem *gdil_ep = ocs::tom::find_first_in<JAT_granted_destin_identifier_list, JG_qname>(ja_task, qname);
+      ocs::tom::ConstElement<ocs::tom::JG> gdil_ep = ocs::tom::find_first_in<JAT_granted_destin_identifier_list, JG_qname>(ja_task, qname);
       if (gdil_ep != nullptr) {
          ret = ocs::tom::get<JG_qversion>(gdil_ep);
       }
@@ -526,7 +527,6 @@ static int clean_up_job(lListElem *jr, int failed, int shepherd_exit_status,
    FILE *fp;
    uint32_t job_id, job_pid, ckpt_arena, general_failure = 0, ja_task_id;
    const char *pe_task_id = nullptr;
-   lListElem *du;
 
    sge_dstring_init(&id_dstring, id_buffer, MAX_STRING_SIZE);
 
@@ -718,7 +718,7 @@ static int clean_up_job(lListElem *jr, int failed, int shepherd_exit_status,
    
 
    /* map system signals into sge signals to make signo's exchangable */
-   du=ocs::tom::find_first_in_rw<JR_usage, UA_name>(jr, "signal");
+   ocs::tom::Element<ocs::tom::UA> du=ocs::tom::find_first_in_rw<JR_usage, UA_name>(jr, "signal");
    if (du) {
       int signo = (int)ocs::tom::get<UA_value>(du);
 
@@ -1248,7 +1248,7 @@ static lListElem *execd_job_failure(lListElem *jep, lListElem *jatep, lListElem 
    DENTER(TOP_LAYER);
 
    lListElem *jr;
-   const lListElem *ep = nullptr;
+   ocs::tom::ConstElement<ocs::tom::JG> ep = nullptr;
    uint32_t jobid, jataskid = 0;
    const char *petaskid = nullptr;
 
@@ -1270,9 +1270,9 @@ static lListElem *execd_job_failure(lListElem *jep, lListElem *jatep, lListElem 
 
    if (jr != nullptr) {
       if (petep != nullptr) {
-         ep = lFirst(static_cast<const lList *>(ocs::tom::get<PET_granted_destin_identifier_list>(petep)));
+         ep = lFirst(ocs::tom::get<PET_granted_destin_identifier_list>(petep));
       } else if (jatep != nullptr) {
-         ep = lFirst(static_cast<const lList *>(ocs::tom::get<JAT_granted_destin_identifier_list>(jatep)));
+         ep = lFirst(ocs::tom::get<JAT_granted_destin_identifier_list>(jatep));
       }
 
       if (ep != nullptr) {
@@ -1323,8 +1323,8 @@ void job_unknown(uint32_t jobid, uint32_t jataskid, char *qname) {
    lListElem *ja_task = nullptr;
    bool unknown_tasks = false;
    if (execd_get_job_ja_task(jobid, jataskid, &job, &ja_task, false)) {
-      lListElem *pe_task;
-      for_each_rw(pe_task, static_cast<const lList *>(ocs::tom::get<JAT_task_list>(ja_task))) {
+      ocs::tom::Element<ocs::tom::PET> pe_task;
+      for_each_rw(pe_task, ocs::tom::get<JAT_task_list>(ja_task)) {
          // create the unknown job report for this pe task
          const char *pe_task_id = ocs::tom::get<PET_id>(pe_task);
          lListElem *jr = get_job_report(jobid, jataskid, pe_task_id);
@@ -1446,8 +1446,8 @@ cleanup_jobs_and_states(bool startup, const std::vector<pid_t> &shepherd_pids) {
             snprintf(dir, sizeof(dir), "%s/%s", ACTIVE_DIR, job_directory);
             examine_job_task_from_file(startup, dir, jep, ja_task, nullptr, shepherd_pids);
          }
-         lListElem *pe_task;
-         for_each_rw (pe_task, static_cast<const lList *>(ocs::tom::get<JAT_task_list>(ja_task))) {
+         ocs::tom::Element<ocs::tom::PET> pe_task;
+         for_each_rw (pe_task, ocs::tom::get<JAT_task_list>(ja_task)) {
             snprintf(dir, sizeof(dir), "%s/%s/%s", ACTIVE_DIR, job_directory, ocs::tom::get<PET_id>(pe_task));
             examine_job_task_from_file(startup, dir, jep, ja_task, pe_task, shepherd_pids);
          }
@@ -1999,7 +1999,6 @@ FCLOSE_ERROR:
 static void build_derived_final_usage(lListElem *jr, uint32_t job_id, uint32_t ja_task_id, const char *pe_task_id) {
    DENTER(TOP_LAYER);
 
-   const lList *usage_list;
    double ru_cpu, pdc_cpu;
    double cpu, r_cpu,
           mem, r_mem,
@@ -2007,11 +2006,11 @@ static void build_derived_final_usage(lListElem *jr, uint32_t job_id, uint32_t j
 
    lListElem *job = nullptr;
    lListElem *ja_task = nullptr;
-   const lListElem *pe_task = nullptr;
+   ocs::tom::ConstElement<ocs::tom::PET> pe_task = nullptr;
 
    bool accounting_summary = false;
 
-   usage_list = ocs::tom::get<JR_usage>(jr);
+   ocs::tom::ConstList<ocs::tom::UA> usage_list = ocs::tom::get<JR_usage>(jr);
 
    bool have_mem_details = static_cast<const lListElem *>(ocs::tom::find_first<UA_name>(usage_list, USAGE_ATTR_MAXPSS)) != nullptr;
 
@@ -2032,7 +2031,7 @@ static void build_derived_final_usage(lListElem *jr, uint32_t job_id, uint32_t j
       if (mconf_get_acct_reserved_usage() || mconf_get_sharetree_reserved_usage()) {
          // reserved usage
          uint64_t end_time = usage_list_get_ulong64_usage(usage_list, "end_time", 0);
-         const lListElem *pe = ocs::tom::get<JAT_pe_object>(ja_task);
+         ocs::tom::ConstElement<ocs::tom::PE> pe = ocs::tom::get<JAT_pe_object>(ja_task);
          if (pe != nullptr && ocs::tom::get<PE_accounting_summary>(pe)) {
             accounting_summary = true;
          }
@@ -2203,7 +2202,6 @@ void
 reaper_sendmail(lListElem *jep, lListElem *jr) {
    DENTER(TOP_LAYER);
 
-   const lList *mail_users; 
    uint32_t mail_options;
    char sge_mail_subj[1024];
    char sge_mail_body[10*2048];
@@ -2214,7 +2212,7 @@ reaper_sendmail(lListElem *jep, lListElem *jr) {
    double ru_cpu = 0.0, ru_maxvmem = 0.0;
    int exit_status = -1, signo = -1;
    const char *q, *h, *u;
-   const lListElem *ep;
+   ocs::tom::ConstElement<ocs::tom::UA> ep;
    const char *pe_task_id_str;
    dstring ds;
    char buffer[128];
@@ -2223,7 +2221,7 @@ reaper_sendmail(lListElem *jep, lListElem *jr) {
    const char *qualified_hostname = component_get_qualified_hostname();
 
    sge_dstring_init(&ds, buffer, sizeof(buffer));
-   mail_users = ocs::tom::get<JB_mail_list>(jep);
+   ocs::tom::ConstList<ocs::tom::MR> mail_users = ocs::tom::get<JB_mail_list>(jep);
    mail_options = ocs::tom::get<JB_mail_options>(jep); 
    pe_task_id_str = ocs::tom::get<JR_pe_task_id_str>(jr);
 
@@ -2551,11 +2549,10 @@ int count_master_tasks(const lList *lp, uint32_t job_id) {
 
    const void *iterator = nullptr;
    int master_jobs = 0;
-   const lListElem *jep;
 
-   jep = ocs::tom::find_first<JB_job_number>(lp, job_id, &iterator);
+   ocs::tom::ConstElement<ocs::tom::JB> jep = ocs::tom::find_first<JB_job_number>(lp, job_id, &iterator);
    while (jep != nullptr) {
-      const lListElem *jatep = lFirst(static_cast<const lList *>(ocs::tom::get<JB_ja_tasks>(jep)));
+      ocs::tom::ConstElement<ocs::tom::JAT> jatep = lFirst(ocs::tom::get<JB_ja_tasks>(jep));
       while (jatep != nullptr) {
          if (ocs::tom::get<JAT_status>(jatep) != JSLAVE) {
             master_jobs++;

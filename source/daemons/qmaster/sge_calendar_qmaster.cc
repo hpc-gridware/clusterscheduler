@@ -154,7 +154,7 @@ calendar_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lList
 
    if (add != 1) {
       for_each_ep_lv(cqueue, master_cqueue_list) {
-         for_each_ep_lv(queue, ocs::tom::get<CQ_qinstances>(cqueue)) {
+         for (ocs::tom::ConstElement<ocs::tom::QU> queue : ocs::tom::get<CQ_qinstances>(cqueue)) {
             const char *q_cal = ocs::tom::get<QU_calendar>(queue);
             if ((q_cal != nullptr) && (strcmp(cal_name, q_cal) == 0)) {
                if (sge_ar_list_conflicts_with_calendar(alpp, ocs::tom::get<QU_full_name>(queue), new_cal, master_ar_list)) {

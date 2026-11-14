@@ -159,7 +159,7 @@ bool spool_set_option(lList **answer_list, lListElem *context, const char *optio
                               ANSWER_QUALITY_ERROR, MSG_SPOOL_NOVALIDCONTEXT_S, 
                               __func__);
    } else {
-      for_each_rw_lv(rule, ocs::tom::get<SPC_rules>(context)) {
+      for (ocs::tom::Element<ocs::tom::SPR> rule : ocs::tom::get<SPC_rules>(context)) {
          auto func = (spooling_option_func) ocs::tom::get<SPR_option_func>(rule);
          if (func != nullptr) {
             if (!func(answer_list, rule, option)) {
@@ -224,7 +224,7 @@ bool spool_startup_context(lList **answer_list, lListElem *context, bool check) 
    } else {
 
       /* each type needs at least one rule and exactly one default rule */
-      for_each_ep_lv(type, ocs::tom::get<SPC_types>(context)) {
+      for (ocs::tom::ConstElement<ocs::tom::SPT> type : ocs::tom::get<SPC_types>(context)) {
          int default_rules = 0;
          
          if (lGetNumberOfElem(ocs::tom::get<SPT_rules>(type)) == 0) {
@@ -238,7 +238,7 @@ bool spool_startup_context(lList **answer_list, lListElem *context, bool check) 
          }
 
          /* count default rules */
-         for_each_ep_lv(type_rule, ocs::tom::get<SPT_rules>(type)) {
+         for (ocs::tom::ConstElement<ocs::tom::SPTR> type_rule : ocs::tom::get<SPT_rules>(type)) {
             if(ocs::tom::get<SPTR_is_default>(type_rule)) {
                default_rules++;
             }
@@ -275,7 +275,7 @@ bool spool_startup_context(lList **answer_list, lListElem *context, bool check) 
          goto error;
       }
       
-      for_each_ep_lv(rule, ocs::tom::get<SPC_rules>(context)) {
+      for (ocs::tom::ConstElement<ocs::tom::SPR> rule : ocs::tom::get<SPC_rules>(context)) {
          auto func = (spooling_startup_func)ocs::tom::get<SPR_startup_func>(rule);
          if (func != nullptr) {
             if (!func(answer_list, rule, check)) {
@@ -331,7 +331,7 @@ bool spool_maintain_context(lList **answer_list, lListElem *context,
                               __func__);
       ret = false;
    } else {
-      for_each_ep_lv(rule, ocs::tom::get<SPC_rules>(context)) {
+      for (ocs::tom::ConstElement<ocs::tom::SPR> rule : ocs::tom::get<SPC_rules>(context)) {
          auto func = (spooling_maintenance_func) ocs::tom::get<SPR_maintenance_func>(rule);
          if (func != nullptr) {
             if (!func(answer_list, rule, cmd, args)) {
@@ -382,7 +382,7 @@ bool spool_shutdown_context(lList **answer_list, const lListElem *context) {
                               __func__);
       ret = false;
    } else {
-      for_each_ep_lv(rule, ocs::tom::get<SPC_rules>(context)) {
+      for (ocs::tom::ConstElement<ocs::tom::SPR> rule : ocs::tom::get<SPC_rules>(context)) {
          auto func = (spooling_shutdown_func)ocs::tom::get<SPR_shutdown_func>(rule);
          if (func != nullptr) {
             if (!func(answer_list, rule)) {
@@ -431,7 +431,7 @@ bool spool_trigger_context(lList **answer_list, const lListElem *context,
                               __func__);
       ret = false;
    } else {
-      for_each_ep_lv(rule, ocs::tom::get<SPC_rules>(context)) {
+      for (ocs::tom::ConstElement<ocs::tom::SPR> rule : ocs::tom::get<SPC_rules>(context)) {
          auto func = (spooling_trigger_func)ocs::tom::get<SPR_trigger_func>(rule);
          if (func != nullptr) {
             if (!func(answer_list, rule, trigger, next_trigger)) {
@@ -479,7 +479,7 @@ bool spool_transaction(lList **answer_list, const lListElem *context,
                               __func__);
       ret = false;
    } else {
-      for_each_ep_lv(rule, ocs::tom::get<SPC_rules>(context)) {
+      for (ocs::tom::ConstElement<ocs::tom::SPR> rule : ocs::tom::get<SPC_rules>(context)) {
          auto func = (spooling_transaction_func)ocs::tom::get<SPR_transaction_func>(rule);
          if (func != nullptr) {
             if (!func(answer_list, rule, cmd)) {
@@ -736,8 +736,8 @@ lListElem *
 spool_type_search_default_rule(const lListElem *spool_type) {
    lListElem *rule = nullptr;
 
-   const lList *lp = ocs::tom::get<SPT_rules>(spool_type);
-   for_each_ep_lv(ep, lp) {
+   ocs::tom::ConstList<ocs::tom::SPTR> lp = ocs::tom::get<SPT_rules>(spool_type);
+   for (ocs::tom::ConstElement<ocs::tom::SPTR> ep : lp) {
       if (ocs::tom::get<SPTR_is_default>(ep)) {
          rule = (lListElem *)ocs::tom::get<SPTR_rule>(ep);
          break;
@@ -989,7 +989,7 @@ spool_read_keys(lList **answer_list, const lListElem *context,
                               ANSWER_QUALITY_ERROR, MSG_SPOOL_NOVALIDCONTEXT_S,
                               __func__);
    } else {
-      const lList *rules = ocs::tom::get<SPC_rules>(context);
+      ocs::tom::ConstList<ocs::tom::SPR> rules = ocs::tom::get<SPC_rules>(context);
 
       /* use the default rule to read object */
       for_each_ep_lv(rule, rules) {
@@ -1055,7 +1055,7 @@ bool spool_write_object(lList **answer_list, const lListElem *context,
                                  ocs::tom::get<SPC_name>(context));
       } else {
          /* loop over all rules and call the writing callbacks */
-         const lList *type_rules = ocs::tom::get<SPT_rules>(type);
+         ocs::tom::ConstList<ocs::tom::SPTR> type_rules = ocs::tom::get<SPT_rules>(type);
          if (type_rules == nullptr || lGetNumberOfElem(type_rules) == 0) {
             answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                                     ANSWER_QUALITY_ERROR, 
@@ -1066,7 +1066,7 @@ bool spool_write_object(lList **answer_list, const lListElem *context,
             ret = true;
 
             /* spool using multiple rules */
-            for_each_ep_lv(type_rule, type_rules) {
+            for (ocs::tom::ConstElement<ocs::tom::SPTR> type_rule : type_rules) {
                lListElem *rule;
                spooling_write_func func;
 
@@ -1139,7 +1139,7 @@ bool spool_delete_object(lList **answer_list, const lListElem *context,
                                  ocs::tom::get<SPC_name>(context));
       } else {
          /* loop over all rules and call the deleting callbacks */
-         const lList *type_rules = ocs::tom::get<SPT_rules>(type);
+         ocs::tom::ConstList<ocs::tom::SPTR> type_rules = ocs::tom::get<SPT_rules>(type);
          if (type_rules == nullptr || lGetNumberOfElem(type_rules) == 0) {
             answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                                     ANSWER_QUALITY_ERROR, 
@@ -1150,7 +1150,7 @@ bool spool_delete_object(lList **answer_list, const lListElem *context,
             ret = true;
 
             /* delete object using all spooling rules */
-            for_each_ep_lv(type_rule, type_rules) {
+            for (ocs::tom::ConstElement<ocs::tom::SPTR> type_rule : type_rules) {
                lListElem *rule;
                spooling_delete_func func;
 

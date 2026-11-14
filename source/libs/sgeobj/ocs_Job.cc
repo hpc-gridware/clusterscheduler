@@ -90,9 +90,9 @@ void ocs::Job::sgeee_sort_jobs(lList *job_list) {
 
       // First try to find an enrolled task. Those will have the highest priority
       // If there is no enrolled task then take the template element
-      const lListElem *tmp_task = lFirst(static_cast<const lList *>(ocs::tom::get<JB_ja_tasks>(job)));
+      ocs::tom::ConstElement<ocs::tom::JAT> tmp_task = lFirst(ocs::tom::get<JB_ja_tasks>(job));
       if (tmp_task == nullptr) {
-         tmp_task = lFirst(static_cast<const lList *>(ocs::tom::get<JB_ja_template>(job)));
+         tmp_task = lFirst(ocs::tom::get<JB_ja_template>(job));
       }
 
       // Store sort-criteria and job reference in the temporary list
@@ -153,7 +153,7 @@ ocs::Job::job_get_systemd_slice_and_scope(const lListElem *job, const lListElem 
       bool is_array = job_is_array(job);
       bool is_tightly_integrated = false;
       if (ja_task != nullptr) {
-         const lListElem *pe = ocs::tom::get<JAT_pe_object>(ja_task);
+         ocs::tom::ConstElement<ocs::tom::PE> pe = ocs::tom::get<JAT_pe_object>(ja_task);
          if (pe != nullptr) {
             is_tightly_integrated = ocs::tom::get<PE_control_slaves>(pe);
          }

@@ -82,8 +82,8 @@ ocs::QRStatController::process_request(QRStatParameter &parameter, QRStatModelBa
       view.report_ar_node_duration(out_, "duration", ocs::tom::get<AR_duration>(ar));
 
       if (parameter.is_explain() || !parameter.is_summary()) {
-         for_each_ep_lv(qinstance, ocs::tom::get<AR_reserved_queues>(ar)) {
-            for_each_ep_lv(qim, ocs::tom::get<QU_message_list>(qinstance)) {
+         for (ocs::tom::ConstElement<ocs::tom::QU> qinstance : ocs::tom::get<AR_reserved_queues>(ar)) {
+            for (ocs::tom::ConstElement<ocs::tom::QIM> qim : ocs::tom::get<QU_message_list>(qinstance)) {
                const char *message = ocs::tom::get<QIM_message>(qim);
                view.report_ar_node_string(out_, "message", message);
             }
@@ -106,7 +106,7 @@ ocs::QRStatController::process_request(QRStatParameter &parameter, QRStatModelBa
          if (static_cast<const lList *>(ocs::tom::get<AR_resource_list>(ar)) != nullptr) {
             view.report_resource_list_start(out_);
 
-            for_each_ep_lv(resource, ocs::tom::get<AR_resource_list>(ar)) {
+            for (ocs::tom::ConstElement<ocs::tom::CE> resource : ocs::tom::get<AR_resource_list>(ar)) {
                // get the dominant value of the resource for this host
                const auto type = static_cast<CEntry::Type>(ocs::tom::get<CE_valtype>(resource));
                const bool as_string = type == CEntry::Type::STR || type == CEntry::Type::CSTR || type == CEntry::Type::HOST || type == CEntry::Type::RESTR;
@@ -131,9 +131,9 @@ ocs::QRStatController::process_request(QRStatParameter &parameter, QRStatModelBa
 
          if (static_cast<const lList *>(ocs::tom::get<AR_granted_resources_list>(ar)) != nullptr) {
             view.report_exec_binding_list_start(out_);
-            for_each_ep_lv(resource, ocs::tom::get<AR_granted_resources_list>(ar)) {
+            for (ocs::tom::ConstElement<ocs::tom::GRU> resource : ocs::tom::get<AR_granted_resources_list>(ar)) {
                const char *hostname = ocs::tom::get<GRU_host>(resource);
-               for_each_ep_lv(binding_str, ocs::tom::get<GRU_binding_inuse>(resource)) {
+               for (ocs::tom::ConstElement<ocs::tom::ST> binding_str : ocs::tom::get<GRU_binding_inuse>(resource)) {
                   TopologyString binding;
 
                   const char *binding_touse = ocs::tom::get<ST_name>(binding_str);
@@ -153,7 +153,7 @@ ocs::QRStatController::process_request(QRStatParameter &parameter, QRStatModelBa
          if (static_cast<const lList *>(ocs::tom::get<AR_granted_resources_list>(ar)) != nullptr) {
             bool any = false;
 
-            for_each_ep_lv(resource, ocs::tom::get<AR_granted_resources_list>(ar)) {
+            for (ocs::tom::ConstElement<ocs::tom::GRU> resource : ocs::tom::get<AR_granted_resources_list>(ar)) {
                if (static_cast<GrantedResources::Type>(ocs::tom::get<GRU_type>(resource)) !=
                    GrantedResources::Type::GRU_RESOURCE_MAP_TYPE) {
                   continue;
@@ -165,10 +165,10 @@ ocs::QRStatController::process_request(QRStatParameter &parameter, QRStatModelBa
 
                std::string text = std::string(ocs::tom::get<GRU_name>(resource)) + "=" +
                                   std::to_string(static_cast<uint32_t>(ocs::tom::get<GRU_amount>(resource)));
-               const lList *ids = ocs::tom::get<GRU_resource_map_list>(resource);
+               ocs::tom::ConstList<ocs::tom::RESL> ids = ocs::tom::get<GRU_resource_map_list>(resource);
                if (ids != nullptr && lGetNumberOfElem(ids) > 0) {
                   const char *sep = "(";
-                  for_each_ep_lv(resl, ids) {
+                  for (ocs::tom::ConstElement<ocs::tom::RESL> resl : ids) {
                      // the reader folds a repeated id into one element with a count, so
                      // write it out the way the configuration does
                      for (uint32_t i = ocs::tom::get<RESL_amount>(resl); i > 0; i--) {
@@ -188,7 +188,7 @@ ocs::QRStatController::process_request(QRStatParameter &parameter, QRStatModelBa
 
          if (static_cast<const lList *>(ocs::tom::get<AR_granted_slots>(ar)) != nullptr) {
             view.report_exec_queue_list_start(out_);
-            for_each_ep_lv(resource, ocs::tom::get<AR_granted_slots>(ar)) {
+            for (ocs::tom::ConstElement<ocs::tom::JG> resource : ocs::tom::get<AR_granted_slots>(ar)) {
                view.report_exec_queue_list_node(out_,ocs::tom::get<JG_qname>(resource), ocs::tom::get<JG_slots>(resource));
             }
             view.report_exec_queue_list_finish(out_);
@@ -229,7 +229,7 @@ ocs::QRStatController::process_request(QRStatParameter &parameter, QRStatModelBa
 
          if (static_cast<const lList *>(ocs::tom::get<AR_mail_list>(ar)) != nullptr) {
             view.report_mail_list_start(out_);
-            for_each_ep_lv(mail, ocs::tom::get<AR_mail_list>(ar)) {
+            for (ocs::tom::ConstElement<ocs::tom::MR> mail : ocs::tom::get<AR_mail_list>(ar)) {
                const char *host=nullptr;
                host=ocs::tom::get<MR_host>(mail);
                view.report_mail_list_node(out_, ocs::tom::get<MR_user>(mail), host?host:"NONE");
@@ -238,14 +238,14 @@ ocs::QRStatController::process_request(QRStatParameter &parameter, QRStatModelBa
          }
          if (static_cast<const lList *>(ocs::tom::get<AR_acl_list>(ar)) != nullptr) {
             view.report_acl_list_start(out_);
-            for_each_ep_lv(acl, ocs::tom::get<AR_acl_list>(ar)) {
+            for (ocs::tom::ConstElement<ocs::tom::ARA> acl : ocs::tom::get<AR_acl_list>(ar)) {
                view.report_acl_list_node(out_,ocs::tom::get<ARA_name>(acl));
             }
             view.report_acl_list_finish(out_);
          }
          if (static_cast<const lList *>(ocs::tom::get<AR_xacl_list>(ar)) != nullptr) {
             view.report_xacl_list_start(out_);
-            for_each_ep_lv(xacl, ocs::tom::get<AR_xacl_list>(ar)) {
+            for (ocs::tom::ConstElement<ocs::tom::ARA> xacl : ocs::tom::get<AR_xacl_list>(ar)) {
                 view.report_xacl_list_node(out_, ocs::tom::get<ARA_name>(xacl));
             }
             view.report_xacl_list_finish(out_);

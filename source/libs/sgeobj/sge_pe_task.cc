@@ -80,10 +80,6 @@ lListElem *
 pe_task_sum_past_usage(lListElem *container, const lListElem *pe_task) {
    DENTER(TOP_LAYER);
 
-   lList *container_usage;
-   const lList *pe_task_usage;
-   lList *container_reported_usage;
-   const lList *pe_task_reported_usage;
    
    /* invalid input - nothing to do */
    if (container == nullptr || pe_task == nullptr) {
@@ -96,8 +92,8 @@ pe_task_sum_past_usage(lListElem *container, const lListElem *pe_task) {
    }
 
    /* we sum up the scaled_usage */
-   container_usage = ocs::tom::get_or_create<PET_scaled_usage>(container, "reported_usage");
-   pe_task_usage = ocs::tom::get<PET_scaled_usage>(pe_task);
+   ocs::tom::List<ocs::tom::UA> container_usage = ocs::tom::get_or_create<PET_scaled_usage>(container, "reported_usage");
+   ocs::tom::ConstList<ocs::tom::UA> pe_task_usage = ocs::tom::get<PET_scaled_usage>(pe_task);
    if (pe_task_usage != nullptr) {
       usage_list_sum(container_usage, pe_task_usage);
    }
@@ -106,8 +102,8 @@ pe_task_sum_past_usage(lListElem *container, const lListElem *pe_task) {
     * and we sum up the already reported usage
     * (for long running jobs having intermediate usage records) 
     */
-   container_reported_usage = ocs::tom::get_or_create<PET_reported_usage>(container, "reported_usage");
-   pe_task_reported_usage = ocs::tom::get<PET_reported_usage>(pe_task);
+   ocs::tom::List<ocs::tom::UA> container_reported_usage = ocs::tom::get_or_create<PET_reported_usage>(container, "reported_usage");
+   ocs::tom::ConstList<ocs::tom::UA> pe_task_reported_usage = ocs::tom::get<PET_reported_usage>(pe_task);
    if (pe_task_reported_usage != nullptr) {
       usage_list_sum(container_reported_usage, pe_task_reported_usage);
    }
@@ -265,7 +261,7 @@ pe_task_verify_request(const lListElem *petr, lList **answer_list) {
    }
 
    if (ret) {
-      const lList *path_aliases = ocs::tom::get<PETR_path_aliases>(petr);
+      ocs::tom::ConstList<ocs::tom::PA> path_aliases = ocs::tom::get<PETR_path_aliases>(petr);
 
       if (path_aliases != nullptr) {
          ret = path_alias_verify(path_aliases, answer_list);
@@ -273,7 +269,7 @@ pe_task_verify_request(const lListElem *petr, lList **answer_list) {
    } 
 
    if (ret) {
-      const lList *env_list = ocs::tom::get<PETR_environment>(petr);
+      ocs::tom::ConstList<ocs::tom::VA> env_list = ocs::tom::get<PETR_environment>(petr);
 
       if (env_list != nullptr) {
          ret = var_list_verify(env_list, answer_list);

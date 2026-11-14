@@ -222,7 +222,7 @@ namespace {
             lListElem *parent = (ancestors.depth == 1) ? root : ancestors.nodes[ancestors.depth - 2];
             report.info(MSG_TREE_REMOVING);
             report.info(ancestors_path(ancestors, &buffer));
-            lList *siblings = ocs::tom::get<STN_children>(parent);
+            ocs::tom::List<ocs::tom::STN> siblings = ocs::tom::get<STN_children>(parent);
             lRemoveElem(siblings, &node);
             if (lGetNumberOfElem(siblings) == 0) {
                ocs::tom::set<STN_children>(parent, nullptr);

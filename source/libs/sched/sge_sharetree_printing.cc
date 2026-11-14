@@ -119,7 +119,7 @@ static void
 calculate_share_percents(lListElem *node, double parent_percent, double sibling_shares) {
    double sum_shares=0;
 
-   for_each_rw_lv(child, ocs::tom::get<STN_children>(node)) {
+   for (ocs::tom::Element<ocs::tom::STN> child : ocs::tom::get<STN_children>(node)) {
       sum_shares += ocs::tom::get<STN_shares>(child);
    }
 
@@ -138,14 +138,14 @@ calculate_share_percents(lListElem *node, double parent_percent, double sibling_
       ocs::tom::set<STN_adjusted_proportion>(node, 0);
    }
 
-   for_each_rw_lv(child, ocs::tom::get<STN_children>(node)) {
+   for (ocs::tom::Element<ocs::tom::STN> child : ocs::tom::get<STN_children>(node)) {
       calculate_share_percents(child, ocs::tom::get<STN_adjusted_proportion>(node), sum_shares);
    }
 }
 
 static double
 get_usage_value(const lList *usage, const char *name) {
-   const lListElem *ue;
+   ocs::tom::ConstElement<ocs::tom::UA> ue;
    double value = 0;
 
    if ((ue = ocs::tom::find_first<UA_name>(usage, name))) {
@@ -270,8 +270,8 @@ print_node(dstring *out, rapidjson::StringBuffer *jsonBuffer, const lListElem *n
       combined_usage = ocs::tom::get<STN_combined_usage>(node);
 
       if (static_cast<const lList *>(ocs::tom::get<STN_children>(node)) == nullptr && user && project) {
-         const lList *projl = ocs::tom::get<UU_project>(user);
-         const lListElem *upp;
+         ocs::tom::ConstList<ocs::tom::UPP> projl = ocs::tom::get<UU_project>(user);
+         ocs::tom::ConstElement<ocs::tom::UPP> upp;
          if (projl) {
             if ((upp=ocs::tom::find_first<UPP_name>(projl,
                                  ocs::tom::get<PR_name>(project)))) {
@@ -379,7 +379,7 @@ print_nodes(dstring *out, rapidjson::StringBuffer *jsonBuffer, const lListElem *
             const lListElem *project, const lList *users, const lList *projects, bool group_nodes, const char **names,
             const format_t *format, const char *parent_node_names) {
    const lListElem *user;
-   const lList *children = ocs::tom::get<STN_children>(node);
+   ocs::tom::ConstList<ocs::tom::STN> children = ocs::tom::get<STN_children>(node);
    dstring node_name_dstring = DSTRING_INIT;
 
    if (!project) {

@@ -37,6 +37,7 @@
 #include "tom/ocs_Element.h"
 #include "sgeobj/tom/ocs_tom_JRS.h"
 #include "sgeobj/tom/ocs_tom_ST.h"
+#include "sgeobj/tom/ocs_tom_PR.h"
 
 uint32_t ocs::Category::next_id = 0;
 
@@ -62,7 +63,7 @@ ocs::Category::build_string(dstring *category_str, lListElem *job,
    // owner (user, UNIX group, and ACLs)
    const char *owner = ocs::tom::get<JB_owner>(job);
    const char *group = ocs::tom::get<JB_group>(job);
-   const lList *grp_list = ocs::tom::get<JB_grp_list>(job);
+   ocs::tom::ConstList<ocs::tom::ST> grp_list = ocs::tom::get<JB_grp_list>(job);
    sge_unparse_acl_dstring(category_str, owner, group, grp_list, acl_list, "-U");
 
    // -u if referenced in resource quota sets
@@ -96,7 +97,7 @@ ocs::Category::build_string(dstring *category_str, lListElem *job,
 
    // -scope global|master|slave -hard -par <allocation_rule>
    int par_pos = -1;
-   for_each_ep_lv(request_set, ocs::tom::get<JB_request_set_list>(job)) {
+   for (ocs::tom::ConstElement<ocs::tom::JRS> request_set : ocs::tom::get<JB_request_set_list>(job)) {
       // Get the position of JRS_allocation_rule only once.
       if (par_pos == -1) {
          par_pos = lGetPosViaElem(request_set, JRS_allocation_rule, SGE_NO_ABORT);
@@ -143,7 +144,7 @@ ocs::Category::build_string(dstring *category_str, lListElem *job,
    const char *project = lGetPosString(job, project_nm);
 
    if (project != nullptr) {
-      const lListElem *prj = ocs::tom::find_first<PR_name>(prj_list, project);
+      ocs::tom::ConstElement<ocs::tom::PR> prj = ocs::tom::find_first<PR_name>(prj_list, project);
 
       if (prj != nullptr && ocs::tom::get<PR_consider_with_categories>(prj)) {
          sge_unparse_string_option_dstring(category_str, job, project_nm, "-P");

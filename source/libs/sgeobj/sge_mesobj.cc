@@ -44,6 +44,7 @@
 
 #include "sgeobj/sge_mesobj.h"
 #include "sgeobj/msg_sgeobjlib.h"
+#include "sgeobj/tom/ocs_tom_QIM.h"
 #include "tom/ocs_Element.h"
 
 static bool
@@ -59,7 +60,7 @@ qim_list_add(lList **this_list, uint32_t type, const char *message) {
    bool ret = true;
 
    if (this_list != nullptr && message != nullptr) {
-      lListElem *new_elem = ocs::tom::emplace_back<QIM_type>(this_list, type);
+      ocs::tom::Element<ocs::tom::QIM> new_elem = ocs::tom::emplace_back<QIM_type>(this_list, type);
 
       ocs::tom::set<QIM_message>(new_elem, message);
    }

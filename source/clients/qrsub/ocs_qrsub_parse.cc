@@ -80,7 +80,6 @@ bool sge_parse_qrsub(lList *pcmdline, lList **alpp, lListElem **ar) {
    DENTER(TOP_LAYER);
 
    lListElem *ep = nullptr, *next_ep = nullptr;
-   lList *lp = nullptr;
    /* -help print this help */
    if ((ep = ocs::tom::find_first_rw<SPA_switch_val>(pcmdline, "-help"))) {
       lRemoveElem(pcmdline, &ep);
@@ -239,7 +238,7 @@ bool sge_parse_qrsub(lList *pcmdline, lList **alpp, lListElem **ar) {
    /*  an access list is a set: a name given twice is kept once, merged by parse_list_simple (CS-3053) */
    parse_list_simple(pcmdline, "-u", *ar, AR_acl_list, ARA_name, 0, FLG_LIST_APPEND);
    /*  -u ! list separation */
-   lp = ocs::tom::get<AR_acl_list>(*ar);
+   ocs::tom::List<ocs::tom::ARA> lp = ocs::tom::get<AR_acl_list>(*ar);
    next_ep = lFirstRW(lp);
    while ((ep = next_ep)) {
       bool is_xacl = false;
@@ -273,7 +272,7 @@ bool sge_parse_qrsub(lList *pcmdline, lList **alpp, lListElem **ar) {
       }
 
       if (is_xacl) {
-         lListElem *new_ep = ocs::tom::emplace_back_in<AR_xacl_list, ARA_name>(*ar, name);
+         ocs::tom::Element<ocs::tom::ARA> new_ep = ocs::tom::emplace_back_in<AR_xacl_list, ARA_name>(*ar, name);
          ocs::tom::set<ARA_group>(new_ep, ocs::tom::get<ARA_group>(ep));
          lRemoveElem(lp, &ep);
       }

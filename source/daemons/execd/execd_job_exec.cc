@@ -135,10 +135,10 @@ int do_job_exec(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, sge_pack_buffer 
       }
 
       /* we expect one jatask to start per request */
-      ja_task = lFirstRW(static_cast<const lList *>(ocs::tom::get<JB_ja_tasks>(job)));
-      if (ja_task != nullptr) {
-         DPRINTF("new job %ld.%ld\n", (long) ocs::tom::get<JB_job_number>(job), (long) ocs::tom::get<JAT_task_number>(ja_task));
-         ret = handle_job(job, ja_task, 0);
+      ocs::tom::Element<ocs::tom::JAT> ja_task_jat = lFirstRW(ocs::tom::get<JB_ja_tasks>(job));
+      if (ja_task_jat != nullptr) {
+         DPRINTF("new job %ld.%ld\n", (long) ocs::tom::get<JB_job_number>(job), (long) ocs::tom::get<JAT_task_number>(ja_task_jat));
+         ret = handle_job(job, ja_task_jat, 0);
          if (ret != 0) {
             lFreeElem(&job);
          }
@@ -295,7 +295,7 @@ static int handle_job(lListElem *jelem, lListElem *jatep, int slave) {
 
    /* ------- optionally pe */
    if (ocs::tom::get<JAT_granted_pe>(jatep)) {
-      lListElem *pelem = ocs::tom::get<JAT_pe_object>(jatep);
+      ocs::tom::Element<ocs::tom::PE> pelem = ocs::tom::get<JAT_pe_object>(jatep);
 
       if (pelem != nullptr && ocs::tom::get<PE_control_slaves>(pelem) && !ocs::tom::get<PE_job_is_first_task>(pelem)) {
          int slots;
@@ -423,9 +423,8 @@ Ignore:
 static lList *job_set_queue_info_in_task(const char *qualified_hostname, const char *qname, lListElem *petep) {
    DENTER(TOP_LAYER);
 
-   lListElem *jge;
 
-   jge = ocs::tom::emplace_back_in<PET_granted_destin_identifier_list, JG_qname>(petep, qname);
+   ocs::tom::Element<ocs::tom::JG> jge = ocs::tom::emplace_back_in<PET_granted_destin_identifier_list, JG_qname>(petep, qname);
    ocs::tom::set<JG_qhostname>(jge, qualified_hostname);
    ocs::tom::set<JG_slots>(jge, 1);
    DPRINTF("selected queue %s for task\n", qname);
@@ -461,8 +460,8 @@ static lList *job_get_queue_with_task_about_to_exit(lListElem *jep,
                                                     const char *queuename) {
    DENTER(TOP_LAYER);
 
-   for_each_ep_lv(petask, ocs::tom::get<JAT_task_list>(jatep)) {
-      const lListElem *pe_task_queue = lFirst(static_cast<const lList *>(ocs::tom::get<PET_granted_destin_identifier_list>(petask)));
+   for (ocs::tom::ConstElement<ocs::tom::PET> petask : ocs::tom::get<JAT_task_list>(jatep)) {
+      ocs::tom::ConstElement<ocs::tom::JG> pe_task_queue = lFirst(ocs::tom::get<PET_granted_destin_identifier_list>(petask));
       if (pe_task_queue != nullptr) {
          /* if a certain queue is requested, skip non matching tasks */
          if (queuename != nullptr && strcmp(queuename, ocs::tom::get<JG_qname>(pe_task_queue)) != 0) {
@@ -522,7 +521,7 @@ job_get_queue_for_task(uint32_t job_id, uint32_t ja_task_id, lListElem *jatep, l
    DENTER(TOP_LAYER);
 
    bool on_master_host = ocs::tom::get<JAT_status>(jatep) == JSLAVE ? false : true;
-   const lListElem *pe = ocs::tom::get<JAT_pe_object>(jatep);
+   ocs::tom::ConstElement<ocs::tom::PE> pe = ocs::tom::get<JAT_pe_object>(jatep);
    if (pe == nullptr) {
       // can not really happen, we start a task for a tightly integrated parallel job
       DRETURN(nullptr);
@@ -534,7 +533,7 @@ job_get_queue_for_task(uint32_t job_id, uint32_t ja_task_id, lListElem *jatep, l
       DRETURN(nullptr);
    }
 
-   const lList *gdil = ocs::tom::get<JAT_granted_destin_identifier_list>(jatep);
+   ocs::tom::ConstList<ocs::tom::JG> gdil = ocs::tom::get<JAT_granted_destin_identifier_list>(jatep);
 
    // in case of daemon_forks_slaves we have to check if we may start more tasks
    if (ocs::tom::get<PE_daemon_forks_slaves>(pe)) {
@@ -609,7 +608,7 @@ static int handle_task(lListElem *petrep, char *commproc, char *host, u_short id
 
    uint32_t jobid, jataskid;
    lListElem *jep   = nullptr;
-   lListElem *pe    = nullptr;
+   ocs::tom::Element<ocs::tom::PE> pe    = nullptr;
    lListElem *jatep = nullptr;
    lListElem *petep = nullptr;
    const char *requested_queue;
@@ -820,7 +819,7 @@ bool job_verify_execd_job(const lListElem *job, lList **answer_list, const char 
 
    /* for job execution, we need exactly one ja task */
    if (ret) {
-      const lList *ja_tasks = ocs::tom::get<JB_ja_tasks>(job);
+      ocs::tom::ConstList<ocs::tom::JAT> ja_tasks = ocs::tom::get<JB_ja_tasks>(job);
 
       if (ja_tasks == nullptr || lGetNumberOfElem(ja_tasks) != 1) {
          answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,

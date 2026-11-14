@@ -50,6 +50,7 @@
 #include "sgeobj/parse.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_job.h"
+#include "sgeobj/tom/ocs_tom_SPA.h"
 #include "tom/ocs_Element.h"
 
 #include "msg_clients_common.h"
@@ -336,11 +337,11 @@ void opt_list_append_opts_from_qalter_cmdline(uint32_t prog_number, lList **opts
 void opt_list_append_opts_from_script(uint32_t prog_number, lList **opts_scriptfile, lList **answer_list,
                                       const lList *opts_cmdline, char **envp) {
    const char *scriptfile = nullptr;
-   const lListElem *script_option = ocs::tom::find_first<SPA_switch_val>(opts_cmdline, STR_PSEUDO_SCRIPT);
+   ocs::tom::ConstElement<ocs::tom::SPA> script_option = ocs::tom::find_first<SPA_switch_val>(opts_cmdline, STR_PSEUDO_SCRIPT);
    if (script_option != nullptr) {
       scriptfile = ocs::tom::get<SPA_argval_lStringT>(script_option);
    }
-   const lListElem *c_option = ocs::tom::find_first<SPA_switch_val>(opts_cmdline, "-C");
+   ocs::tom::ConstElement<ocs::tom::SPA> c_option = ocs::tom::find_first<SPA_switch_val>(opts_cmdline, "-C");
    const char *prefix = nullptr;
    if (c_option != nullptr) {
       prefix = ocs::tom::get<SPA_argval_lStringT>(c_option);
@@ -374,7 +375,7 @@ void opt_list_append_opts_from_script_path(uint32_t prog_number, lList **opts_sc
                                            lList **answer_list, const lList *opts_cmdline, char **envp) {
    char *scriptpath = nullptr;
 
-   const lListElem *script_option = ocs::tom::find_first<SPA_switch_val>(opts_cmdline, STR_PSEUDO_SCRIPT);
+   ocs::tom::ConstElement<ocs::tom::SPA> script_option = ocs::tom::find_first<SPA_switch_val>(opts_cmdline, STR_PSEUDO_SCRIPT);
    if (script_option != nullptr) {
       const char *scriptfile = ocs::tom::get<SPA_argval_lStringT>(script_option);
 
@@ -394,7 +395,7 @@ void opt_list_append_opts_from_script_path(uint32_t prog_number, lList **opts_sc
    }
 
    const char *prefix = nullptr;
-   if (const lListElem *c_option = ocs::tom::find_first<SPA_switch_val>(opts_cmdline, "-C"); c_option != nullptr) {
+   if (ocs::tom::ConstElement<ocs::tom::SPA> c_option = ocs::tom::find_first<SPA_switch_val>(opts_cmdline, "-C"); c_option != nullptr) {
       prefix = ocs::tom::get<SPA_argval_lStringT>(c_option);
    } else {
       prefix = default_prefix;
@@ -503,7 +504,7 @@ bool opt_list_has_X(lList *opts, const char *option) {
 bool opt_list_is_X_true(lList *opts, const char *option) {
    bool ret = false;
 
-   const lListElem *opt = ocs::tom::find_first<SPA_switch_val>(opts, option);
+   ocs::tom::ConstElement<ocs::tom::SPA> opt = ocs::tom::find_first<SPA_switch_val>(opts, option);
    if (opt != nullptr) {
       ret = (ocs::tom::get<SPA_argval_lIntT>(opt) == 1) ? true : false;
    }

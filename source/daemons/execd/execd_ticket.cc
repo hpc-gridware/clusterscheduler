@@ -41,6 +41,7 @@
 
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_ja_task.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
 #include "tom/ocs_Element.h"
 
 #include "dispatcher.h"
@@ -66,7 +67,7 @@ do_ticket(ocs::gdi::ClientServerBase::struct_msg_t *aMsg) {
    DENTER(TOP_LAYER);
    uint32_t jobid, jataskid;
    double ticket;
-   lListElem *job_ticket, *task_ticket;
+   lListElem *task_ticket;
    lList *ticket_modifier = nullptr;
 
 
@@ -79,7 +80,7 @@ do_ticket(ocs::gdi::ClientServerBase::struct_msg_t *aMsg) {
       DPRINTF("got %lf new tickets for job " sge_u32 "." sge_u32 "\n", ticket, jobid, jataskid);
 
       // @todo we use only very few attributes of JB_Type and JAT_type here - use reduced elements
-      job_ticket = ocs::tom::emplace_back<JB_job_number>(&ticket_modifier, jobid);   
+      ocs::tom::Element<ocs::tom::JB> job_ticket = ocs::tom::emplace_back<JB_job_number>(&ticket_modifier, jobid);   
       if (job_ticket != nullptr) {
          task_ticket = ocs::tom::emplace_back_in<JB_ja_tasks, JAT_task_number>(job_ticket, jataskid);
          if (task_ticket) {

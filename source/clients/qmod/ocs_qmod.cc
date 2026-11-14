@@ -51,6 +51,7 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_id.h"
 #include "sgeobj/sge_qinstance_state.h"
+#include "sgeobj/tom/ocs_tom_SPA.h"
 #include "tom/ocs_Element.h"
 
 #include "gdi/ocs_gdi_Client.h"
@@ -362,7 +363,7 @@ static lList *sge_parse_qmod(lList **ppcmdline, lList **ppreflist, uint32_t *pfo
       ppcmdline list. Except f_OPT all options are exclusive.
    */
    while(lGetNumberOfElem(*ppcmdline)) {
-      lListElem *ep;
+      ocs::tom::Element<ocs::tom::SPA> ep;
       static const char *options[] = {
          "-c",
          "-cj",

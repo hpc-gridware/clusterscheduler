@@ -480,7 +480,7 @@ sge_change_queue_version_centry(uint64_t gdi_version) {
    const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
 
    for_each_ep_lv(cqueue, master_cqueue_list) {
-      const lList *qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
+      ocs::tom::ConstList<ocs::tom::QU> qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
 
       for_each_rw_lv(qinstance, qinstance_list) {
          qinstance_increase_qversion(qinstance);
@@ -528,7 +528,7 @@ void centry_redebit_consumables(const lList *centries, uint64_t gdi_version) {
 
    /* throw away all old actual values lists and rebuild them from scratch */
    for_each_ep_lv(cqueue, master_cqueue_list) {
-      const lList *qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
+      ocs::tom::ConstList<ocs::tom::QU> qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
 
       for_each_rw_lv(qinstance, qinstance_list) {
          ocs::tom::set<QU_resource_utilization>(qinstance, nullptr);
@@ -546,16 +546,16 @@ void centry_redebit_consumables(const lList *centries, uint64_t gdi_version) {
     * change versions of corresponding queues
     */
    for_each_rw_lv (jep, master_job_list) {
-      for_each_rw_lv (jatep, ocs::tom::get<JB_ja_tasks>(jep)) {
+      for (ocs::tom::Element<ocs::tom::JAT> jatep : ocs::tom::get<JB_ja_tasks>(jep)) {
          bool master_task = true;
          lListElem *qep = nullptr;
          const char *last_hostname = nullptr;
          const lListElem *pe = ocs::tom::get<JAT_pe_object>(jatep);
-         const lList *granted_resources_list = ocs::tom::get<JAT_granted_resources_list>(jatep);
+         ocs::tom::ConstList<ocs::tom::GRU> granted_resources_list = ocs::tom::get<JAT_granted_resources_list>(jatep);
 
          bool do_per_global_host_booking = true;
          lListElem *global_host = host_list_locate(master_ehost_list, SGE_GLOBAL_NAME);
-         for_each_ep_lv(gdil, ocs::tom::get<JAT_granted_destin_identifier_list>(jatep)) {
+         for (ocs::tom::ConstElement<ocs::tom::JG> gdil : ocs::tom::get<JAT_granted_destin_identifier_list>(jatep)) {
             if (!(qep = cqueue_list_locate_qinstance(master_cqueue_list, ocs::tom::get<JG_qname>(gdil)))) {
                /* should never happen */
                master_task = false;
@@ -589,9 +589,9 @@ void centry_redebit_consumables(const lList *centries, uint64_t gdi_version) {
 
       /* dump all queue consumables */
       for_each_ep_lv(cqueue, master_cqueue_list) {
-         const lList *qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
+         ocs::tom::ConstList<ocs::tom::QU> qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
 
-         for_each_ep_lv(qinstance, qinstance_list) {
+         for (ocs::tom::ConstElement<ocs::tom::QU> qinstance : qinstance_list) {
             const char *hostname = ocs::tom::get<QU_qhostname>(qinstance);
             const lListElem *host = ocs::tom::find_first<EH_name>(master_ehost_list, hostname);
             ocs::ReportingFileWriter::create_queue_consumable_records(&answer_list, host, qinstance, nullptr, now);

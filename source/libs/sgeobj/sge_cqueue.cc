@@ -79,6 +79,20 @@
 #include "tom/ocs_Element.h"
 #include "sgeobj/tom/ocs_tom_HR.h"
 #include "sgeobj/tom/ocs_tom_QU.h"
+#include "sgeobj/tom/ocs_tom_ABOOL.h"
+#include "sgeobj/tom/ocs_tom_ACELIST.h"
+#include "sgeobj/tom/ocs_tom_AINTER.h"
+#include "sgeobj/tom/ocs_tom_AMEM.h"
+#include "sgeobj/tom/ocs_tom_APRJLIST.h"
+#include "sgeobj/tom/ocs_tom_AQTLIST.h"
+#include "sgeobj/tom/ocs_tom_ASOLIST.h"
+#include "sgeobj/tom/ocs_tom_ASTR.h"
+#include "sgeobj/tom/ocs_tom_ASTRLIST.h"
+#include "sgeobj/tom/ocs_tom_ATIME.h"
+#include "sgeobj/tom/ocs_tom_AULNG.h"
+#include "sgeobj/tom/ocs_tom_AUSRLIST.h"
+#include "sgeobj/tom/ocs_tom_CE.h"
+#include "sgeobj/tom/ocs_tom_CQ.h"
 
 #include "msg_clients_common.h"
 #include "msg_common.h"
@@ -541,7 +555,7 @@ bool cqueue_set_template_attributes(lListElem *this_elem, lList **answer_list) {
 
          while (attr[index] != NoName) {
             lList *attr_list = nullptr;
-            lListElem *attr_elem = ocs::tom::emplace_back<AULNG_href>(&attr_list, 
+            ocs::tom::Element<ocs::tom::AULNG> attr_elem = ocs::tom::emplace_back<AULNG_href>(&attr_list, 
                                                 HOSTREF_DEFAULT);
 
             ocs::tom::set<AULNG_value>(attr_elem, value[index]);
@@ -582,7 +596,7 @@ bool cqueue_set_template_attributes(lListElem *this_elem, lList **answer_list) {
          const char *string = "BATCH INTERACTIVE";
          uint32_t value = 0;
          lList *attr_list = nullptr;
-         lListElem *attr_elem = ocs::tom::emplace_back<AQTLIST_href>(&attr_list,
+         ocs::tom::Element<ocs::tom::AQTLIST> attr_elem = ocs::tom::emplace_back<AQTLIST_href>(&attr_list,
                                              HOSTREF_DEFAULT);
 
          sge_parse_bitfield_str(string, queue_types, &value, "",
@@ -597,7 +611,7 @@ bool cqueue_set_template_attributes(lListElem *this_elem, lList **answer_list) {
        */
       if (ret) {
          lList *attr_list = nullptr;
-         lListElem *attr = ocs::tom::emplace_back<ABOOL_href>(&attr_list, 
+         ocs::tom::Element<ocs::tom::ABOOL> attr = ocs::tom::emplace_back<ABOOL_href>(&attr_list, 
                                         HOSTREF_DEFAULT);
 
          ocs::tom::set<ABOOL_value>(attr, false);
@@ -624,7 +638,7 @@ bool cqueue_set_template_attributes(lListElem *this_elem, lList **answer_list) {
 
          while (attr[index] != NoName) {
             lList *attr_list = nullptr;
-            lListElem *attr_elem = ocs::tom::emplace_back<AMEM_href>(&attr_list, 
+            ocs::tom::Element<ocs::tom::AMEM> attr_elem = ocs::tom::emplace_back<AMEM_href>(&attr_list, 
                                                 HOSTREF_DEFAULT);
 
             ocs::tom::set<AMEM_value>(attr_elem, value[index]);
@@ -649,7 +663,7 @@ bool cqueue_set_template_attributes(lListElem *this_elem, lList **answer_list) {
 
          while (attr[index] != NoName) {
             lList *attr_list = nullptr;
-            lListElem *attr_elem = ocs::tom::emplace_back<ATIME_href>(&attr_list, 
+            ocs::tom::Element<ocs::tom::ATIME> attr_elem = ocs::tom::emplace_back<ATIME_href>(&attr_list, 
                                                 HOSTREF_DEFAULT);
 
             ocs::tom::set<ATIME_value>(attr_elem, value[index]);
@@ -674,7 +688,7 @@ bool cqueue_set_template_attributes(lListElem *this_elem, lList **answer_list) {
 
          while (attr[index] != NoName) {
             lList *attr_list = nullptr;
-            lListElem *attr_elem = ocs::tom::emplace_back<AINTER_href>(&attr_list, 
+            ocs::tom::Element<ocs::tom::AINTER> attr_elem = ocs::tom::emplace_back<AINTER_href>(&attr_list, 
                                                 HOSTREF_DEFAULT);
 
             ocs::tom::set<AINTER_value>(attr_elem, value[index]);
@@ -707,7 +721,7 @@ bool cqueue_set_template_attributes(lListElem *this_elem, lList **answer_list) {
 
          while (attr[index] != NoName) {
             lList *attr_list = nullptr;
-            lListElem *attr_elem = ocs::tom::emplace_back<ASTR_href>(&attr_list, 
+            ocs::tom::Element<ocs::tom::ASTR> attr_elem = ocs::tom::emplace_back<ASTR_href>(&attr_list, 
                                                 HOSTREF_DEFAULT);
 
             ocs::tom::set<ASTR_value>(attr_elem, value[index]);
@@ -734,7 +748,7 @@ bool cqueue_set_template_attributes(lListElem *this_elem, lList **answer_list) {
 
          while (attr[index] != NoName) {
             lList *attr_list = nullptr;
-            lListElem *attr_elem = ocs::tom::emplace_back<ASTRLIST_href>(&attr_list, 
+            ocs::tom::Element<ocs::tom::ASTRLIST> attr_elem = ocs::tom::emplace_back<ASTRLIST_href>(&attr_list, 
                                                 HOSTREF_DEFAULT);
 
             ocs::tom::set<ASTRLIST_value>(attr_elem, value[index]);
@@ -755,7 +769,7 @@ bool cqueue_set_template_attributes(lListElem *this_elem, lList **answer_list) {
 
          while (attr[index] != NoName) {
             lList *attr_list = nullptr;
-            lListElem *attr_elem = ocs::tom::emplace_back<AUSRLIST_href>(&attr_list, 
+            ocs::tom::Element<ocs::tom::AUSRLIST> attr_elem = ocs::tom::emplace_back<AUSRLIST_href>(&attr_list, 
                                                 HOSTREF_DEFAULT);
 
             ocs::tom::set<AUSRLIST_value>(attr_elem, nullptr);
@@ -776,7 +790,7 @@ bool cqueue_set_template_attributes(lListElem *this_elem, lList **answer_list) {
 
          while (attr[index] != NoName) {
             lList *attr_list = nullptr;
-            lListElem *attr_elem = ocs::tom::emplace_back<APRJLIST_href>(&attr_list, 
+            ocs::tom::Element<ocs::tom::APRJLIST> attr_elem = ocs::tom::emplace_back<APRJLIST_href>(&attr_list, 
                                                 HOSTREF_DEFAULT);
 
             ocs::tom::set<APRJLIST_value>(attr_elem, nullptr);
@@ -798,15 +812,14 @@ bool cqueue_set_template_attributes(lListElem *this_elem, lList **answer_list) {
             nullptr, nullptr, nullptr, nullptr
          };
          int index = 0;
-         lListElem *elem;
 
          value[0] = lCreateList("", CE_Type);
-         elem = ocs::tom::emplace_back<CE_name>(&(value[0]), "np_load_avg"); 
+         ocs::tom::Element<ocs::tom::CE> elem = ocs::tom::emplace_back<CE_name>(&(value[0]), "np_load_avg"); 
          ocs::tom::set<CE_stringval>(elem, "1.75");
 
          while (attr[index] != NoName) {
             lList *attr_list = nullptr;
-            lListElem *attr_elem = ocs::tom::emplace_back<ACELIST_href>(&attr_list, 
+            ocs::tom::Element<ocs::tom::ACELIST> attr_elem = ocs::tom::emplace_back<ACELIST_href>(&attr_list, 
                                                 HOSTREF_DEFAULT);
 
             ocs::tom::set<ACELIST_value>(attr_elem, value[index]);
@@ -827,7 +840,7 @@ bool cqueue_set_template_attributes(lListElem *this_elem, lList **answer_list) {
 
          while (attr[index] != NoName) {
             lList *attr_list = nullptr;
-            lListElem *attr_elem = ocs::tom::emplace_back<ASOLIST_href>(&attr_list, 
+            ocs::tom::Element<ocs::tom::ASOLIST> attr_elem = ocs::tom::emplace_back<ASOLIST_href>(&attr_list, 
                                                 HOSTREF_DEFAULT);
 
             ocs::tom::set<ASOLIST_value>(attr_elem, nullptr);
@@ -894,7 +907,7 @@ cqueue_list_locate(const lList *this_list, const char *name) {
  */
 lListElem *
 cqueue_locate_qinstance(const lListElem *this_elem, const char *hostname) {
-   const lList *qinstance_list = ocs::tom::get<CQ_qinstances>(this_elem);
+   ocs::tom::ConstList<ocs::tom::QU> qinstance_list = ocs::tom::get<CQ_qinstances>(this_elem);
 
    return qinstance_list_locate(qinstance_list, hostname, nullptr);
 }
@@ -1326,7 +1339,7 @@ void cqueue_list_set_tag(lList *this_list, uint32_t tag_value, bool tag_qinstanc
       for_each_rw_lv(cqueue, this_list) {
          ocs::tom::set<CQ_tag>(cqueue, tag_value);
          if (tag_qinstances) {
-            lList *qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
+            ocs::tom::List<ocs::tom::QU> qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
 
             qinstance_list_set_tag(qinstance_list, tag_value);
          }
@@ -1382,9 +1395,9 @@ cqueue_list_locate_qinstance_msg(const lList *cqueue_list, const char *full_name
       cqueue_name_split(full_name, &cqueue_name_buffer, &host_domain_buffer, &has_hostname, &has_domain);
       const char *cqueue_name = sge_dstring_get_string(&cqueue_name_buffer);
       const char *hostname = sge_dstring_get_string(&host_domain_buffer);
-      const lListElem *cqueue = ocs::tom::find_first<CQ_name>(cqueue_list, cqueue_name);
+      ocs::tom::ConstElement<ocs::tom::CQ> cqueue = ocs::tom::find_first<CQ_name>(cqueue_list, cqueue_name);
       if (cqueue != nullptr) {
-         const lList *qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
+         ocs::tom::ConstList<ocs::tom::QU> qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
 
          ret = ocs::tom::find_first_rw<QU_qhostname>(qinstance_list, hostname);
       } else {

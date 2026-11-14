@@ -60,6 +60,7 @@
 #include "sgeobj/tom/ocs_tom_PET.h"
 #include "sgeobj/tom/ocs_tom_UA.h"
 #include "sgeobj/tom/ocs_tom_UPP.h"
+#include "sgeobj/tom/ocs_tom_UPU.h"
 
 /** @brief Calculate decay rate and constant based on half-life
  *
@@ -122,7 +123,7 @@ ocs::Usage::calculate_default_decay_constant(const int halftime) {
 void ocs::Usage::add_decay_element(lList **decay_list, double value, const char *name) {
    double decay_rate, decay_constant;
    calculate_decay_constant(value, &decay_rate, &decay_constant);
-   lListElem *u = ocs::tom::emplace_back<UA_name>(decay_list, name);
+   ocs::tom::Element<ocs::tom::UA> u = ocs::tom::emplace_back<UA_name>(decay_list, name);
    ocs::tom::set<UA_value>(u, decay_constant);
 }
 
@@ -269,9 +270,9 @@ book_user_project_usage(lListElem *job, lListElem *ja_task, lListElem *user, lLi
 
       /* sum sub-task usage into job_usage_list */
       if (job_usage_list) {
-         for_each_rw_lv(petask, ocs::tom::get<JAT_task_list>(ja_task)) {
-            lListElem *dst;
-            for_each_rw_lv(src, ocs::tom::get<PET_scaled_usage>(petask)) {
+         for (ocs::tom::Element<ocs::tom::PET> petask : ocs::tom::get<JAT_task_list>(ja_task)) {
+            ocs::tom::Element<ocs::tom::UA> dst;
+            for (ocs::tom::Element<ocs::tom::UA> src : ocs::tom::get<PET_scaled_usage>(petask)) {
                if ((dst=ocs::tom::find_first_rw<UA_name>(job_usage_list, ocs::tom::get<UA_name>(src)))) {
                   ocs::tom::set<UA_value>(dst, ocs::tom::get<UA_value>(dst) + ocs::tom::get<UA_value>(src));
                } else {
@@ -283,11 +284,11 @@ book_user_project_usage(lListElem *job, lListElem *ja_task, lListElem *user, lLi
    }
 
    if (userprj) {
-      const lListElem *upu;
+      ocs::tom::ConstElement<ocs::tom::UPU> upu;
       const lList *upu_list = lGetList(userprj, obj_debited_job_usage);
       if (upu_list) {
          if ((upu = ocs::tom::find_first<UPU_job_number>(upu_list, ocs::tom::get<JB_job_number>(job)))) {
-            if (const lList *debited_usage = ocs::tom::get<UPU_old_usage_list>(upu)) {
+            if (ocs::tom::ConstList<ocs::tom::UA> debited_usage = ocs::tom::get<UPU_old_usage_list>(upu)) {
                old_usage_list = lCopyList("", debited_usage);
             }
          }
@@ -304,7 +305,7 @@ book_user_project_usage(lListElem *job, lListElem *ja_task, lListElem *user, lLi
 
       if (project) {
          lList *upp_list = ocs::tom::get<UU_project>(user);
-         lListElem *upp;
+         ocs::tom::Element<ocs::tom::UPP> upp;
          const char *project_name = ocs::tom::get<PR_name>(project);
 
          if (!upp_list) {

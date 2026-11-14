@@ -806,7 +806,6 @@ static void sge_set_defined_defaults(const char *cell_root, lList **lpCfg) {
    DENTER(BASIS_LAYER);
 
    int i = 0;
-   lListElem *ep = nullptr;
    tConfEntry *pConf = nullptr;
 
    pConf = getConfEntry("execd_spool_dir", conf_entries);
@@ -821,7 +820,7 @@ static void sge_set_defined_defaults(const char *cell_root, lList **lpCfg) {
 
    while (conf_entries[i].name) {
 
-      ep = ocs::tom::emplace_back<CF_name>(lpCfg, conf_entries[i].name);
+      ocs::tom::Element<ocs::tom::CF> ep = ocs::tom::emplace_back<CF_name>(lpCfg, conf_entries[i].name);
       ocs::tom::set<CF_value>(ep, conf_entries[i].value);
       ocs::tom::set<CF_local>(ep, conf_entries[i].local);
 
@@ -848,7 +847,7 @@ void
 conf_sort_entries(lListElem *conf) {
    DENTER(BASIS_LAYER);
 
-   lList *entries = ocs::tom::get<CONF_entries>(conf);
+   ocs::tom::List<ocs::tom::CF> entries = ocs::tom::get<CONF_entries>(conf);
    if (entries == nullptr) {
       DRETURN_VOID;
    }
@@ -889,7 +888,7 @@ conf_sort_entries(lListElem *conf) {
  */
 static void
 chg_conf_val(lList *lp_cfg, const char *name, char **cpp, uint32_t *val, ocs::CEntry::Type type) {
-   const lListElem *ep;
+   ocs::tom::ConstElement<ocs::tom::CF> ep;
    const char *s;
 
    if ((ep = ocs::tom::find_first<CF_name>(lp_cfg, name))) {
@@ -928,7 +927,7 @@ static void
 setConfFromCull(lList *lpCfg) {
    DENTER(BASIS_LAYER);
 
-   const lListElem *ep;
+   ocs::tom::ConstElement<ocs::tom::CF> ep;
 
    /* get following logging entries logged if log_info is selected */
    chg_conf_val(lpCfg, "loglevel", nullptr, &Master_Config.loglevel, ocs::CEntry::Type::TYPE_LOG);
@@ -1065,9 +1064,7 @@ getConfEntry(const char *name, tConfEntry conf[]) {
 int merge_configuration(lList **answer_list, uint32_t progid, const char *cell_root, const lListElem *global, const lListElem *local, lList **lpp) {
    DENTER(BASIS_LAYER);
 
-   const lList *cl;
-   const lListElem *elem;
-   lListElem *ep2;
+   ocs::tom::ConstElement<ocs::tom::CF> elem;
    lList *mlist = nullptr;
 
    if (lpp == nullptr) {
@@ -1081,9 +1078,9 @@ int merge_configuration(lList **answer_list, uint32_t progid, const char *cell_r
    ** handled later
    */
    if (global) {
-      cl = ocs::tom::get<CONF_entries>(global);
+      ocs::tom::ConstList<ocs::tom::CF> cl = ocs::tom::get<CONF_entries>(global);
       for_each_ep(elem, cl) {
-         ep2 = ocs::tom::find_first_nocase_rw<CF_name>(*lpp, ocs::tom::get<CF_name>(elem));
+         ocs::tom::Element<ocs::tom::CF> ep2 = ocs::tom::find_first_nocase_rw<CF_name>(*lpp, ocs::tom::get<CF_name>(elem));
          if (ep2) {
             ocs::tom::set<CF_value>(ep2, ocs::tom::get<CF_value>(elem));
          }
@@ -1093,9 +1090,9 @@ int merge_configuration(lList **answer_list, uint32_t progid, const char *cell_r
 
    /* Merge in local configuration */
    if (local) {
-      cl = ocs::tom::get<CONF_entries>(local);
+      ocs::tom::ConstList<ocs::tom::CF> cl = ocs::tom::get<CONF_entries>(local);
       for_each_ep(elem, cl) {
-         ep2 = ocs::tom::find_first_nocase_rw<CF_name>(*lpp, ocs::tom::get<CF_name>(elem));
+         ocs::tom::Element<ocs::tom::CF> ep2 = ocs::tom::find_first_nocase_rw<CF_name>(*lpp, ocs::tom::get<CF_name>(elem));
          if (ep2 && ocs::tom::get<CF_local>(ep2)) {
             ocs::tom::set<CF_value>(ep2, ocs::tom::get<CF_value>(elem));
          }

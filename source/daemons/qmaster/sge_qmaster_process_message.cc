@@ -59,6 +59,8 @@
 #include "sgeobj/sge_manop.h"
 #include "tom/ocs_Element.h"
 #include "sgeobj/tom/ocs_tom_QU.h"
+#include "sgeobj/tom/ocs_tom_CQ.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
 
 #include "gdi/ocs_gdi_ClientServerBase.h"
 #include "gdi/ocs_gdi_security.h"
@@ -723,7 +725,7 @@ sge_c_job_ack(const char *host, const char *commproc, const uint32_t ack_tag,
 
          DPRINTF("TAG_SIGJOB\n");
          /* ack_ulong is the jobid */
-         lListElem *jep = ocs::tom::find_first_rw<JB_job_number>(master_job_list, ack_ulong);
+         ocs::tom::Element<ocs::tom::JB> jep = ocs::tom::find_first_rw<JB_job_number>(master_job_list, ack_ulong);
          if (jep == nullptr) {
             ERROR(MSG_COM_ACKEVENTFORUNKNOWNJOB_SU, host, ack_ulong);
             DRETURN_VOID;
@@ -753,12 +755,12 @@ sge_c_job_ack(const char *host, const char *commproc, const uint32_t ack_tag,
          dstring cqueue_name = DSTRING_INIT;
          cqueue_name_split(ack_str, &cqueue_name, &host_domain, nullptr, nullptr);
 
-         const lListElem *cqueue = ocs::tom::find_first<CQ_name>(master_cqueue_list, sge_dstring_get_string(&cqueue_name));
+         ocs::tom::ConstElement<ocs::tom::CQ> cqueue = ocs::tom::find_first<CQ_name>(master_cqueue_list, sge_dstring_get_string(&cqueue_name));
          sge_dstring_free(&cqueue_name);
 
-         lListElem *qinstance = nullptr;
+         ocs::tom::Element<ocs::tom::QU> qinstance = nullptr;
          if (cqueue != nullptr) {
-            const lList *qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
+            ocs::tom::ConstList<ocs::tom::QU> qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
 
             qinstance = ocs::tom::find_first_rw<QU_qhostname>(qinstance_list, sge_dstring_get_string(&host_domain));
          }

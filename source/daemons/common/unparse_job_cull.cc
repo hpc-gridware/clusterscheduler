@@ -296,7 +296,6 @@ lList *cull_unparse_job_parameter(lList **pcmdline, lListElem *job, int flags) {
    */
    if ((lp = ocs::tom::get<JB_mail_list>(job))) {
       lList *lp_new = nullptr;
-      lListElem *ep_new = nullptr;
       const char *host;
       const char *user;
 
@@ -309,7 +308,7 @@ lList *cull_unparse_job_parameter(lList **pcmdline, lListElem *job, int flags) {
          if (sge_strnullcmp(user, username) || 
              sge_hostcmp(host, qualified_hostname)) {
             lp_new = lCreateList("mail list", MR_Type);
-            ep_new = ocs::tom::emplace_back<MR_user>(&lp_new, user);
+            ocs::tom::Element<ocs::tom::MR> ep_new = ocs::tom::emplace_back<MR_user>(&lp_new, user);
             ocs::tom::set<MR_host>(ep_new, host);
          }
       }
@@ -712,7 +711,7 @@ lList **alpp
    DENTER(TOP_LAYER);
 
    const char *cp;
-   const lList *lp = nullptr;
+   ocs::tom::ConstList<ocs::tom::RN> lp = nullptr;
    lListElem *ep_opt;
    dstring string_buffer = DSTRING_INIT;
    int ret = 0;

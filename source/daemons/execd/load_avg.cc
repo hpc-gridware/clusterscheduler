@@ -75,6 +75,7 @@
 #include "sgeobj/tom/ocs_tom_PE.h"
 #include "sgeobj/tom/ocs_tom_PET.h"
 #include "sgeobj/tom/ocs_tom_UA.h"
+#include "sgeobj/tom/ocs_tom_LR.h"
 
 #include "job_report_execd.h"
 #include "sge_load_sensor.h"
@@ -478,7 +479,6 @@ lList *sge_build_load_report(const char *qualified_hostname, const char *binary_
    DENTER(TOP_LAYER);
 
    lList *lp = nullptr;
-   const lListElem *ep;
    int nprocs = 1;
    double load;
    const void *iterator = nullptr;
@@ -509,7 +509,7 @@ lList *sge_build_load_report(const char *qualified_hostname, const char *binary_
 
    /* make derived load values */
    /* retrieve num procs first - we need it for all other derived load values */
-   ep = ocs::tom::find_first<LR_name>(lp, LOAD_ATTR_NUM_PROC, &iterator);
+   ocs::tom::ConstElement<ocs::tom::LR> ep = ocs::tom::find_first<LR_name>(lp, LOAD_ATTR_NUM_PROC, &iterator);
    while (ep != nullptr) {
       const char *value = ocs::tom::get<LR_value>(ep);
 
@@ -523,10 +523,10 @@ lList *sge_build_load_report(const char *qualified_hostname, const char *binary_
    }
 
    /* now make the derived load values */
-   ep = ocs::tom::find_first<LR_host>(lp, qualified_hostname, &iterator);
-   while (ep != nullptr) {
-      const char *name = ocs::tom::get<LR_name>(ep);
-      const char *value = ocs::tom::get<LR_value>(ep);
+   ocs::tom::ConstElement<ocs::tom::LR> ep_lr = ocs::tom::find_first<LR_host>(lp, qualified_hostname, &iterator);
+   while (ep_lr != nullptr) {
+      const char *name = ocs::tom::get<LR_name>(ep_lr);
+      const char *value = ocs::tom::get<LR_value>(ep_lr);
 
       if (strcmp(name, LOAD_ATTR_LOAD_AVG) == 0) {
          if (value != nullptr) {
@@ -553,7 +553,7 @@ lList *sge_build_load_report(const char *qualified_hostname, const char *binary_
          }
       }
 
-      ep = ocs::tom::find_next<LR_host>(lp, qualified_hostname, &iterator);
+      ep_lr = ocs::tom::find_next<LR_host>(lp, qualified_hostname, &iterator);
    }
 
    /* qmaster expects a list sorted by host */
@@ -822,11 +822,11 @@ void update_job_usage(const char *qualified_hostname) {
    const lListElem *usage;
    for_each_ep(usage, usage_list) {
       uint32_t job_id;
-      const lListElem *ja_task;
+      ocs::tom::ConstElement<ocs::tom::JAT> ja_task;
 
       job_id = ocs::tom::get<JB_job_number>(usage);
 
-      for_each_ep(ja_task, static_cast<const lList *>(ocs::tom::get<JB_ja_tasks>(usage))) {
+      for_each_ep(ja_task, ocs::tom::get<JB_ja_tasks>(usage)) {
          uint32_t ja_task_id = ocs::tom::get<JAT_task_number>(ja_task);
          /* search matching job report */
          lListElem * jr = get_job_report(job_id, ja_task_id, nullptr);
@@ -843,8 +843,8 @@ void update_job_usage(const char *qualified_hostname) {
          DPRINTF("---> updating job report usage for job " sge_u32 "." sge_u32 "\n", job_id, ja_task_id);
          job_report_update_from_usage_list(jr, ocs::tom::get<JAT_usage_list>(ja_task));
 
-         const lListElem *pe_task;
-         for_each_ep(pe_task, static_cast<const lList *>(ocs::tom::get<JAT_task_list>(ja_task))) {
+         ocs::tom::ConstElement<ocs::tom::PET> pe_task;
+         for_each_ep(pe_task, ocs::tom::get<JAT_task_list>(ja_task)) {
             const char *pe_task_id = ocs::tom::get<PET_id>(pe_task);
 
             /* search matching job report */
@@ -977,7 +977,6 @@ calculate_reserved_usage_ja_task(const char *qualified_hostname, const lListElem
                                  const lListElem *pe, uint64_t now,
                                  lListElem *new_job) {
    lList *usage_list;
-   lListElem *new_ja_task;
 
    /* create data structures */
    if (new_job == nullptr) {
@@ -985,7 +984,7 @@ calculate_reserved_usage_ja_task(const char *qualified_hostname, const lListElem
       ocs::tom::set<JB_job_number>(new_job, job_id);
    }
 
-   new_ja_task = ocs::tom::emplace_back_in<JB_ja_tasks, JAT_task_number>(new_job, ja_task_id); 
+   ocs::tom::Element<ocs::tom::JAT> new_ja_task = ocs::tom::emplace_back_in<JB_ja_tasks, JAT_task_number>(new_job, ja_task_id); 
 
    usage_list = calculate_reserved_usage(qualified_hostname, ja_task, nullptr,
                                          job_id, ja_task_id, nullptr,
@@ -1004,7 +1003,7 @@ calculate_reserved_usage_pe_task(const char *qualified_hostname,
                                  const char *pe_task_id,
                                  const lListElem *pe, uint64_t now,
                                  lListElem *new_job) {
-   lListElem *new_ja_task, *new_pe_task;
+   lListElem *new_pe_task;
    lList *usage_list;
 
    /* create data structures */
@@ -1013,7 +1012,7 @@ calculate_reserved_usage_pe_task(const char *qualified_hostname,
       ocs::tom::set<JB_job_number>(new_job, job_id);
    }
 
-   new_ja_task = ocs::tom::find_first_rw<JAT_task_number>(ocs::tom::get<JB_ja_tasks>(new_job), ja_task_id);
+   ocs::tom::Element<ocs::tom::JAT> new_ja_task = ocs::tom::find_first_rw<JAT_task_number>(ocs::tom::get<JB_ja_tasks>(new_job), ja_task_id);
    
    if (new_ja_task == nullptr) {
       new_ja_task = ocs::tom::emplace_back_in<JB_ja_tasks, JAT_task_number>(new_job, ja_task_id); 
@@ -1048,21 +1047,21 @@ static void get_reserved_usage(const char *qualified_hostname, lList **job_usage
 
    for_each_ep(job, *ocs::DataStore::get_master_list(SGE_TYPE_JOB)) {
       uint32_t job_id;
-      const lListElem *pe, *ja_task;
+      const lListElem *ja_task;
       lListElem *new_job = nullptr;
 
       job_id = ocs::tom::get<JB_job_number>(job);
 
       for_each_ep(ja_task, static_cast<const lList *>(ocs::tom::get<JB_ja_tasks>(job))) {
          uint32_t ja_task_id;
-         const lListElem *pe_task;
+         ocs::tom::ConstElement<ocs::tom::PET> pe_task;
 
          ja_task_id = ocs::tom::get<JAT_task_number>(ja_task);
 
          /* we need the pe to be able to calculate the number of slots used
           * as multiplication factor for usage
           */
-         pe = ocs::tom::get<JAT_pe_object>(ja_task);
+         ocs::tom::ConstElement<ocs::tom::PE> pe = ocs::tom::get<JAT_pe_object>(ja_task);
 
          /* If we have a pid for the ja_task: it's either a non-parallel job
           * or the master task of a parallel job.
@@ -1079,7 +1078,7 @@ static void get_reserved_usage(const char *qualified_hostname, lList **job_usage
           * Do not report reserved usage, if accounting_summary is activated!
           */
          if (!(pe != nullptr && ocs::tom::get<PE_accounting_summary>(pe))) {
-            for_each_ep(pe_task, static_cast<const lList *>(ocs::tom::get<JAT_task_list>(ja_task))) {
+            for_each_ep(pe_task, ocs::tom::get<JAT_task_list>(ja_task)) {
                const char *pe_task_id;
 
                pe_task_id = ocs::tom::get<PET_id>(pe_task);
@@ -1219,9 +1218,9 @@ void build_reserved_usage(const uint64_t now, const lListElem *ja_task, const lL
          /* compute cpu */
          int slots = 0;
          int slots_total = 0;
-         const lList *gdil = ocs::tom::get<JAT_granted_destin_identifier_list>(ja_task);
+         ocs::tom::ConstList<ocs::tom::JG> gdil = ocs::tom::get<JAT_granted_destin_identifier_list>(ja_task);
          const lListElem *gdil_ep;
-         const lListElem *pe = ocs::tom::get<JAT_pe_object>(ja_task);
+         ocs::tom::ConstElement<ocs::tom::PE> pe = ocs::tom::get<JAT_pe_object>(ja_task);
 
          /* sequential job, or loose integration, or tight integration with accounting_summary */
          if (pe == nullptr || !ocs::tom::get<PE_control_slaves>(pe) || ocs::tom::get<PE_accounting_summary>(pe)) {

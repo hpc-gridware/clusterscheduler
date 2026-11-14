@@ -52,6 +52,7 @@
 #include "sgeobj/sge_ja_task.h"
 #include "sgeobj/sge_pe_task.h"
 #include "sgeobj/sge_job.h"
+#include "sgeobj/tom/ocs_tom_PN.h"
 #include "tom/ocs_Element.h"
 
 #include "get_path.h"
@@ -121,10 +122,10 @@ int sge_get_path(const char *qualified_hostname, const lList *lp, const char *cw
    /*
     * check if there's a path for this host
     */
-   ep = ocs::tom::find_first<PN_host>(lp, qualified_hostname);
-   if (ep != nullptr) {
-      path = expand_path(&dstr_exp_path, ocs::tom::get<PN_path>(ep), job_number, ja_task_number, job_name, owner, qualified_hostname);
-      host = ocs::tom::get<PN_host>(ep);
+   ocs::tom::ConstElement<ocs::tom::PN> ep_pn = ocs::tom::find_first<PN_host>(lp, qualified_hostname);
+   if (ep_pn != nullptr) {
+      path = expand_path(&dstr_exp_path, ocs::tom::get<PN_path>(ep_pn), job_number, ja_task_number, job_name, owner, qualified_hostname);
+      host = ocs::tom::get<PN_host>(ep_pn);
    } else {
       /* 
        * hostname: wasn't set, look for a default 

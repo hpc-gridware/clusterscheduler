@@ -126,10 +126,10 @@ int do_signal_queue(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, sge_pack_buf
 
       for_each_rw(jep, *ocs::DataStore::get_master_list(SGE_TYPE_JOB)) {
          lListElem *gdil_ep, *master_q;
-         lListElem *jatep;
+         ocs::tom::Element<ocs::tom::JAT> jatep;
          const char *qnm;
 
-         for_each_rw (jatep, static_cast<const lList *>(ocs::tom::get<JB_ja_tasks>(jep))) {
+         for_each_rw (jatep, ocs::tom::get<JB_ja_tasks>(jep)) {
             if (ocs::tom::get<JAT_status>(jatep) == JSLAVE) {
                break;
             }
@@ -280,7 +280,7 @@ int sge_execd_deliver_signal(uint32_t sig, const lListElem *jep, lListElem *jate
          && (ocs::tom::get<JB_checkpoint_attr>(jep)|CHECKPOINT_SUSPEND))
          && !queue_already_suspended) {
       /* signal each pe task */
-      for_each_ep_lv(petep, ocs::tom::get<JAT_task_list>(jatep)) {
+      for (ocs::tom::ConstElement<ocs::tom::PET> petep : ocs::tom::get<JAT_task_list>(jatep)) {
          if (sge_kill((int)ocs::tom::get<PET_pid>(petep), sig,
                       ocs::tom::get<JB_job_number>(jep), ocs::tom::get<JAT_task_number>(jatep),
                       ocs::tom::get<PET_id>(petep)) == -2) {
@@ -322,7 +322,7 @@ void sge_send_suspend_mail(uint32_t signal, const lListElem *master_q, lListElem
 
    /* only if mail at suspendsion is enabled */
    if (VALID(MAIL_AT_SUSPENSION, mail_options)) {
-       const lList *mail_users      = nullptr;
+       ocs::tom::ConstList<ocs::tom::MR> mail_users      = nullptr;
 
        uint32_t jobid         = 0;
        uint32_t taskid        = 0;

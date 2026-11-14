@@ -73,7 +73,7 @@ static void
 ids_to_string(const lListElem *centry, char *buffer, size_t size) {
    buffer[0] = '\0';
 
-   const lListElem *resl;
+   ocs::tom::ConstElement<ocs::tom::RESL> resl;
    for_each_ep(resl, ocs::tom::get<CE_resource_map_list>(centry)) {
       if (buffer[0] != '\0') {
          strncat(buffer, " ", size - strlen(buffer) - 1);
@@ -110,7 +110,7 @@ test_expand_implicit_ids() {
       lList *al = nullptr;
       lListElem *centry = make_centry(static_cast<uint32_t>(ocs::CEntry::Type::RSMAP), 2);
       centry_rsmap_expand_implicit_ids(&al, centry, 512);
-      const lListElem *first = lFirst(ocs::tom::get<CE_resource_map_list>(centry));
+      ocs::tom::ConstElement<ocs::tom::RESL> first = lFirst(ocs::tom::get<CE_resource_map_list>(centry));
       CHECK(2, "implicit id has amount 1", ocs::tom::get<RESL_amount>(first) == 1);
       lFreeElem(&centry);
       lFreeList(&al);
@@ -218,7 +218,7 @@ test_expand_implicit_ids() {
  */
 static void
 add_master_centry(lList *master, const char *name, ocs::CEntry::Type type, uint32_t consumable) {
-   lListElem *ep = ocs::tom::emplace_back<CE_name>(&master, name);
+   ocs::tom::Element<ocs::tom::CE> ep = ocs::tom::emplace_back<CE_name>(&master, name);
    ocs::tom::set<CE_valtype>(ep, static_cast<uint32_t>(type));
    ocs::tom::set<CE_relop>(ep, type == ocs::CEntry::Type::STR ? CMPLXEQ_OP : CMPLXLE_OP);
    ocs::tom::set<CE_consumable>(ep, consumable);
@@ -236,7 +236,7 @@ add_master_centry(lList *master, const char *name, ocs::CEntry::Type type, uint3
 static lListElem *
 make_map_with_characteristics(const char *const names[], const char *const values[], int count) {
    lListElem *centry = make_centry(static_cast<uint32_t>(ocs::CEntry::Type::RSMAP), 1);
-   lListElem *resl = ocs::tom::emplace_back_in<CE_resource_map_list, RESL_value>(centry, "gpu0");
+   ocs::tom::Element<ocs::tom::RESL> resl = ocs::tom::emplace_back_in<CE_resource_map_list, RESL_value>(centry, "gpu0");
    ocs::tom::set<RESL_amount>(resl, 1);
    for (int i = 0; i < count; i++) {
       lListElem *prop = lCreateElem(CE_Type);
@@ -266,8 +266,8 @@ test_check_characteristics() {
       lList *al = nullptr;
       lListElem *centry = make_map_with_characteristics(names, values, 1);
       bool ok = centry_check_rsmap_characteristics(&al, centry, master);
-      const lListElem *resl = lFirst(ocs::tom::get<CE_resource_map_list>(centry));
-      const lListElem *prop = lFirst(ocs::tom::get<RESL_properties>(resl));
+      ocs::tom::ConstElement<ocs::tom::RESL> resl = lFirst(ocs::tom::get<CE_resource_map_list>(centry));
+      ocs::tom::ConstElement<ocs::tom::CE> prop = lFirst(ocs::tom::get<RESL_properties>(resl));
       CHECK(11, "a string characteristic is accepted and typed",
             ok && static_cast<ocs::CEntry::Type>(ocs::tom::get<CE_valtype>(prop)) ==
                   ocs::CEntry::Type::STR);

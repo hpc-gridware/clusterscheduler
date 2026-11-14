@@ -82,7 +82,7 @@ bool ocs::QStatGroupController::cqueue_calculate_summary(const lListElem *cqueue
    bool ret = true;
 
    if (cqueue != nullptr) {
-      const lList *qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
+      ocs::tom::ConstList<ocs::tom::QU> qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
       double host_load_avg = 0.0;
       uint32_t load_slots = 0;
       uint32_t used_available = 0;
@@ -97,7 +97,7 @@ bool ocs::QStatGroupController::cqueue_calculate_summary(const lListElem *cqueue
       *suspend_calendar = *unknown = *load_alarm = 0;
       *disabled_manual = *disabled_calendar = *ambiguous = 0;
       *orphaned = *error = 0;
-      for_each_ep_lv(qinstance, qinstance_list) {
+      for (ocs::tom::ConstElement<ocs::tom::QU> qinstance : qinstance_list) {
          uint32_t slots = ocs::tom::get<QU_job_slots>(qinstance);
          bool has_value_from_object;
 

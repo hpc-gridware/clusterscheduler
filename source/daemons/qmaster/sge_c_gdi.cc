@@ -62,6 +62,7 @@
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_userset.h"
 #include "sgeobj/sge_manop.h"
+#include "sgeobj/tom/ocs_tom_PERM.h"
 #include "tom/ocs_Element.h"
 
 #include "gdi/ocs_gdi_Packet.h"
@@ -917,7 +918,7 @@ sge_gdi_do_permcheck(ocs::gdi::Packet *packet, ocs::gdi::Task *task) {
    const char *username = packet->user;
 
    // create list with element and fill in username, hostname and corresponding permission
-   lListElem *ep = ocs::tom::emplace_back<PERM_username>(&task->data_list, username);
+   ocs::tom::Element<ocs::tom::PERM> ep = ocs::tom::emplace_back<PERM_username>(&task->data_list, username);
    ocs::tom::set<PERM_host>(ep, hostname);
 
    // add user roles

@@ -145,13 +145,13 @@ static bool spool_data() {
    fprintf(stdout, "spooling " sge_u32 " jobs\n", lGetNumberOfElem(*ocs::DataStore::get_master_list(SGE_TYPE_JOB)));
 
    for_each_rw(job, *ocs::DataStore::get_master_list(SGE_TYPE_JOB)) {
-      const lList *ja_tasks = ocs::tom::get<JB_ja_tasks>(job);
+      ocs::tom::ConstList<ocs::tom::JAT> ja_tasks = ocs::tom::get<JB_ja_tasks>(job);
       if (ja_tasks == nullptr || lGetNumberOfElem(ja_tasks) == 0) {
          key = job_get_key(ocs::tom::get<JB_job_number>(job), 0, nullptr, &key_ds);
          spool_write_object(&answer_list, context, job, key, SGE_TYPE_JOB);
          num_total++;
       } else {
-         const lListElem *ja_task;
+         ocs::tom::ConstElement<ocs::tom::JAT> ja_task;
          for_each_rw(ja_task, ja_tasks) {
             key = job_get_key(ocs::tom::get<JB_job_number>(job), ocs::tom::get<JAT_task_number>(ja_task), nullptr, &key_ds);
             spool_write_object(&answer_list, context, ja_task, key, SGE_TYPE_JATASK);

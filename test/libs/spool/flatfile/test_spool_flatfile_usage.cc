@@ -36,6 +36,7 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_schedd_conf.h"
 #include "sgeobj/sge_usage.h"
+#include "sgeobj/tom/ocs_tom_UA.h"
 #include "tom/ocs_Element.h"
 
 #include "spool/flatfile/sge_flatfile.h"
@@ -149,7 +150,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
       CHECK(id, "scheduler config read returns non-null", reread != nullptr); id++;
 
       if (reread != nullptr) {
-         const lListElem *cpu = ocs::tom::find_first_in<SC_usage_weight_list, UA_name>(reread, USAGE_ATTR_CPU);
+         ocs::tom::ConstElement<ocs::tom::UA> cpu = ocs::tom::find_first_in<SC_usage_weight_list, UA_name>(reread, USAGE_ATTR_CPU);
          CHECK(id, "cpu weight survives the round-trip", cpu != nullptr); id++;
          CHECK(id, "cpu weight value is preserved",
                cpu != nullptr && ocs::tom::get<UA_value>(cpu) == 1.0); id++;

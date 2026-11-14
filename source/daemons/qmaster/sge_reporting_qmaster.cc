@@ -66,6 +66,7 @@
 #include "sgeobj/tom/ocs_tom_RUE.h"
 #include "sgeobj/tom/ocs_tom_STU.h"
 #include "sgeobj/tom/ocs_tom_UA.h"
+#include "sgeobj/tom/ocs_tom_CT.h"
 
 #include "sched/sge_resource_utilization.h"
 #include "sched/sge_sharetree_printing.h"
@@ -213,12 +214,12 @@ bool
 intermediate_usage_written(const lListElem *job_report, const lListElem *ja_task) {
    bool ret = false;
    const char *pe_task_id;
-   const lList *reported_usage = nullptr;
+   ocs::tom::ConstList<ocs::tom::UA> reported_usage = nullptr;
 
    /* do we have a tightly integrated parallel task? */
    pe_task_id = ocs::tom::get<JR_pe_task_id_str>(job_report);
    if (pe_task_id != nullptr) {
-      const lListElem *pe_task = ocs::tom::find_first<PET_id>(ocs::tom::get<JAT_task_list>(ja_task), pe_task_id);
+      ocs::tom::ConstElement<ocs::tom::PET> pe_task = ocs::tom::find_first<PET_id>(ocs::tom::get<JAT_task_list>(ja_task), pe_task_id);
       if (pe_task != nullptr) {
          reported_usage = ocs::tom::get<PET_reported_usage>(pe_task);
       }
@@ -251,7 +252,7 @@ ocs::ClassicAccountingFileWriter::create_acct_record(lList **answer_list, lListE
       // get the job category string
       const lList *master_category_list = *ocs::DataStore::get_master_list(SGE_TYPE_CATEGORY);
       uint32_t category_id = ocs::tom::get<JB_category_id>(job);
-      lListElem *category = ocs::tom::find_first_rw<CT_id>(master_category_list, category_id);
+      ocs::tom::Element<ocs::tom::CT> category = ocs::tom::find_first_rw<CT_id>(master_category_list, category_id);
       const char *category_string = ocs::tom::get<CT_str>(category);
 
       dstring job_dstring = DSTRING_INIT;
@@ -328,7 +329,7 @@ ocs::ClassicReportingFileWriter::create_acct_record(lList **answer_list, lListEl
    // get the job category string
    const lList *master_category_list = *ocs::DataStore::get_master_list(SGE_TYPE_CATEGORY);
    uint32_t category_id = ocs::tom::get<JB_category_id>(job);
-   lListElem *category = ocs::tom::find_first_rw<CT_id>(master_category_list, category_id);
+   ocs::tom::Element<ocs::tom::CT> category = ocs::tom::find_first_rw<CT_id>(master_category_list, category_id);
    const char *category_string = ocs::tom::get<CT_str>(category);
 
    // reporting records will be written both for intermediate and final job reports
@@ -534,7 +535,7 @@ ocs::ClassicReportingFileWriter::reporting_write_consumables(lList **answer_list
        * due to reporting_variables in global/local host
        */
       if (!log_consumables) {
-         const lList *report_variables = ocs::tom::get<EH_merged_report_variables>(host);
+         ocs::tom::ConstList<ocs::tom::STU> report_variables = ocs::tom::get<EH_merged_report_variables>(host);
          if (static_cast<const lListElem *>(ocs::tom::find_first<STU_name>(report_variables, name)) == nullptr) {
             log_variable = false;
          } else {
@@ -859,10 +860,9 @@ ocs::ClassicReportingFileWriter::write_load_values(lList **answer_list, dstring 
 
    for_each_ep_lv(variable, variables) {
       const char *name;
-      const lListElem *load;
 
       name = ocs::tom::get<STU_name>(variable);
-      load = ocs::tom::find_first<HL_name>(load_list, name);
+      ocs::tom::ConstElement<ocs::tom::HL> load = ocs::tom::find_first<HL_name>(load_list, name);
       if (load != nullptr) {
          if (first) {
             first = false;
@@ -1068,7 +1068,7 @@ bool ocs::ClassicReportingFileWriter::create_ar_acct_record(lList **answer_list,
    bool ret = true;
    dstring dstr = DSTRING_INIT;
 
-   for_each_ep_lv(elem, ocs::tom::get<AR_granted_slots>(ar)) {
+   for (ocs::tom::ConstElement<ocs::tom::JG> elem : ocs::tom::get<AR_granted_slots>(ar)) {
       const char *queue_name = ocs::tom::get<JG_qname>(elem);
       uint32_t slots = ocs::tom::get<JG_slots>(elem);
       dstring cqueue_name = DSTRING_INIT;

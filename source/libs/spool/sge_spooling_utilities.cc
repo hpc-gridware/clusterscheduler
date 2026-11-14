@@ -402,7 +402,7 @@ bool spool_default_validate_func(lList **answer_list,
 
          if (object_type == SGE_TYPE_EXECHOST && ret) {
             /* all spooled load values are static, therefore we tag them here */
-            for_each_rw_lv(load_value, ocs::tom::get<EH_load_list>(object)) {
+            for (ocs::tom::Element<ocs::tom::HL> load_value : ocs::tom::get<EH_load_list>(object)) {
                ocs::tom::set<HL_is_static>(load_value, true);
             }
 
@@ -412,7 +412,7 @@ bool spool_default_validate_func(lList **answer_list,
             /* an RSMAP that was spooled as a bare amount gets the ids 0 to amount-1 here, which
                repairs a host that was configured before the ids were created implicitly. Has to
                happen before debit_host_consumable() below, which sets up the per id booking. */
-            lList *rsmap_centries = ocs::tom::get<EH_consumable_config_list>(object);
+            ocs::tom::List<ocs::tom::CE> rsmap_centries = ocs::tom::get<EH_consumable_config_list>(object);
             if (!centry_list_rsmap_expand_implicit_ids(answer_list, rsmap_centries)) {
                ret = false;
             }
@@ -514,7 +514,7 @@ bool spool_default_validate_func(lList **answer_list,
          // spooled. The scheduler reads it directly and no longer re-parses the string, so a
          // failure here would otherwise leave the amount at 0 and the job would be dispatched
          // while booking nothing. Report it rather than discarding the answer list.
-         for_each_rw_lv (jrs, ocs::tom::get<JB_request_set_list>(object)) {
+         for (ocs::tom::Element<ocs::tom::JRS> jrs : ocs::tom::get<JB_request_set_list>(object)) {
             lList *fill_answer_list = nullptr;
             // both calls must run; do not let the first failure skip the soft list
             int hard_ret = centry_list_fill_request(ocs::tom::get<JRS_hard_resource_list>(jrs), &fill_answer_list,
@@ -612,7 +612,7 @@ ocs_spool_exechost_static_copy(const lListElem *object) {
    DENTER(TOP_LAYER);
 
    lListElem *copy = lCopyElem(object);
-   if (lList *load_list = ocs::tom::get<EH_load_list>(copy); load_list != nullptr) {
+   if (ocs::tom::List<ocs::tom::HL> load_list = ocs::tom::get<EH_load_list>(copy); load_list != nullptr) {
       lListElem *load_value;
       lListElem *next_load_value = lFirstRW(load_list);
       while ((load_value = next_load_value) != nullptr) {

@@ -37,6 +37,7 @@
 #include "sgeobj/ocs_Version.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_jsv.h"
+#include "sgeobj/tom/ocs_tom_MA.h"
 #include "tom/ocs_Element.h"
 
 #include "gdi/ocs_gdi_ClientBase.h"
@@ -190,7 +191,7 @@ ocs::gdi::Packet::create_multi_answer(lList **malpp) {
     */
    for (size_t id = 0; id < tasks.size(); ++id) {
       Task *task = tasks[id];
-      lListElem *map = ocs::tom::emplace_back<MA_id>(malpp, id);
+      ocs::tom::Element<ocs::tom::MA> map = ocs::tom::emplace_back<MA_id>(malpp, id);
 
       if (get_response_from_master(task->command, task->sub_command)) {
          ocs::tom::set<MA_objects>(map, task->data_list);

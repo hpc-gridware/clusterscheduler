@@ -47,6 +47,7 @@
 
 #include "sgeobj/sge_job.h"
 #include "sgeobj/ocs_DataStore.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
 #include "tom/ocs_Element.h"
 
 #include "mir/msg_mirlib.h"
@@ -137,7 +138,7 @@ job_update_master_list(sge_evc_class_t *evc, sge_object_type type,
    lList **list = ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB);
    const lDescr *list_descr = lGetListDescr(ocs::tom::get<ET_new_version>(event));
    uint32_t job_id = ocs::tom::get<ET_intkey>(event);
-   lListElem *job = ocs::tom::find_first_rw<JB_job_number>(*list, job_id);
+   ocs::tom::Element<ocs::tom::JB> job = ocs::tom::find_first_rw<JB_job_number>(*list, job_id);
 
    if (action == SGE_EMA_MOD) {
       uint32_t event_type = ocs::tom::get<ET_type>(event);
@@ -207,7 +208,7 @@ job_update_master_list(sge_evc_class_t *evc, sge_object_type type,
    /* restore ja_task list after modify event */
    if (action == SGE_EMA_MOD && ja_tasks != nullptr) {
       /* we have to search the replaced job */
-      job = ocs::tom::find_first_rw<JB_job_number>(*list, job_id);
+      ocs::tom::Element<ocs::tom::JB> job = ocs::tom::find_first_rw<JB_job_number>(*list, job_id);
       if (job == nullptr) {
          ERROR(MSG_JOB_CANTFINDJOBFORUPDATEIN_SS, job_get_id_string(job_id, 0, nullptr, &id_dstring), "job_update_master_list");
          lFreeList(&ja_tasks);

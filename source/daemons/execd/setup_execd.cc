@@ -187,17 +187,17 @@ void sge_setup_sge_execd_after_register(const char *tmp_err_file_name) {
 int job_initialize_job(lListElem *job) {
    DENTER(TOP_LAYER);
    uint32_t job_id;
-   lListElem *ja_task;
+   ocs::tom::Element<ocs::tom::JAT> ja_task;
 
    job_id = ocs::tom::get<JB_job_number>(job); 
-   for_each_rw (ja_task, static_cast<const lList *>(ocs::tom::get<JB_ja_tasks>(job))) {
+   for_each_rw (ja_task, ocs::tom::get<JB_ja_tasks>(job)) {
       uint32_t ja_task_id;
 
       ja_task_id = ocs::tom::get<JAT_task_number>(ja_task);
 
       add_job_report(job_id, ja_task_id, nullptr, job);
                                                                                       /* add also job reports for tasks */
-      for_each_ep_lv(pe_task, ocs::tom::get<JAT_task_list>(ja_task)) {
+      for (ocs::tom::ConstElement<ocs::tom::PET> pe_task : ocs::tom::get<JAT_task_list>(ja_task)) {
          add_job_report(job_id, ja_task_id, ocs::tom::get<PET_id>(pe_task), job);
       }
 
@@ -230,7 +230,7 @@ int job_initialize_job(lListElem *job) {
                ERROR(MSG_JOB_XREGISTERINGJOBYATPTFDURINGSTARTUP_SU, (ret == 1 ? MSG_DELAYED : MSG_FAILED), job_id);
             }
          }
-         for_each_ep_lv(pe_task, ocs::tom::get<JAT_task_list>(ja_task)) {
+         for (ocs::tom::ConstElement<ocs::tom::PET> pe_task : ocs::tom::get<JAT_task_list>(ja_task)) {
             if (ocs::tom::get<PET_status>(pe_task) == JRUNNING) {
                ret=register_at_ptf(job, ja_task, pe_task);
                if (ret) {

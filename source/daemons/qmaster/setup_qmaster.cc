@@ -102,6 +102,9 @@
 #include "sgeobj/tom/ocs_tom_SO.h"
 #include "sgeobj/tom/ocs_tom_UA.h"
 #include "sgeobj/tom/ocs_tom_UPP.h"
+#include "sgeobj/tom/ocs_tom_AR.h"
+#include "sgeobj/tom/ocs_tom_HGRP.h"
+#include "sgeobj/tom/ocs_tom_US.h"
 
 #include "gdi/ocs_gdi_ClientBase.h"
 
@@ -313,14 +316,13 @@ sge_setup_job_resend() {
    const lListElem *job = lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_JOB));
 
    while (nullptr != job) {
-      const lListElem *task;
       uint32_t job_num;
 
       job_num = ocs::tom::get<JB_job_number>(job);
-      task = lFirst(static_cast<const lList *>(ocs::tom::get<JB_ja_tasks>(job)));
+      ocs::tom::ConstElement<ocs::tom::JAT> task = lFirst(ocs::tom::get<JB_ja_tasks>(job));
       while (nullptr != task) {
          if (ocs::tom::get<JAT_status>(task) == JTRANSFERING) {
-            const lListElem *granted_queue, *qinstance;
+            const lListElem *qinstance;
             lListElem *host;
             const char *qname;
             uint32_t task_num;
@@ -328,7 +330,7 @@ sge_setup_job_resend() {
             te_event_t ev;
 
             task_num = ocs::tom::get<JAT_task_number>(task);
-            granted_queue = lFirst(static_cast<const lList *>(ocs::tom::get<JAT_granted_destin_identifier_list>(task)));
+            ocs::tom::ConstElement<ocs::tom::JG> granted_queue = lFirst(ocs::tom::get<JAT_granted_destin_identifier_list>(task));
             qname = ocs::tom::get<JG_qname>(granted_queue);
             qinstance = cqueue_list_locate_qinstance(*ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE), qname);
             host = host_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST), ocs::tom::get<QU_qhostname>(qinstance));
@@ -657,11 +659,11 @@ static void
 sge_propagate_queue_suspension(lListElem *jep, dstring *cqueue_name, dstring *host_domain) {
    const lListElem *cq, *qi;
 
-   for_each_rw_lv (jatep, ocs::tom::get<JB_ja_tasks>(jep)) {
+   for (ocs::tom::Element<ocs::tom::JAT> jatep : ocs::tom::get<JB_ja_tasks>(jep)) {
       uint32_t jstate = ocs::tom::get<JAT_state>(jatep);
       bool is_suspended = false;
 
-      for_each_ep_lv(gdil_ep, ocs::tom::get<JAT_granted_destin_identifier_list>(jatep)) {
+      for (ocs::tom::ConstElement<ocs::tom::JG> gdil_ep : ocs::tom::get<JAT_granted_destin_identifier_list>(jatep)) {
 
          if (!cqueue_name_split(ocs::tom::get<JG_qname>(gdil_ep), cqueue_name, host_domain, nullptr, nullptr)) {
             continue;
@@ -700,7 +702,7 @@ static void
 clear_deferred_starts(lListElem *jep) {
    DENTER(TOP_LAYER);
 
-   for_each_rw_lv(jatep, ocs::tom::get<JB_ja_tasks>(jep)) {
+   for (ocs::tom::Element<ocs::tom::JAT> jatep : ocs::tom::get<JB_ja_tasks>(jep)) {
       uint32_t state = ocs::tom::get<JAT_state>(jatep);
       if (state & JDEFERRED_REQ) {
          CLEARBIT(JDEFERRED_REQ, state);
@@ -910,7 +912,7 @@ setup_qmaster() {
       lList **master_hgroup_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_HGROUP);
 
       for (const char *hgrp_name : {ADMIN_HOSTGROUP, SUBMIT_HOSTGROUP, EXEC_HOSTGROUP}) {
-         lListElem *hgrp = ocs::tom::find_first_rw<HGRP_name>(*master_hgroup_list, hgrp_name);
+         ocs::tom::Element<ocs::tom::HGRP> hgrp = ocs::tom::find_first_rw<HGRP_name>(*master_hgroup_list, hgrp_name);
          bool changed = false;
 
          if (hgrp == nullptr) {
@@ -1000,7 +1002,7 @@ setup_qmaster() {
             continue;
          }
 
-         lListElem *us = ocs::tom::emplace_back<US_name>(master_userset_list, us_name);
+         ocs::tom::Element<ocs::tom::US> us = ocs::tom::emplace_back<US_name>(master_userset_list, us_name);
          ocs::tom::set<US_type>(us, US_ACL);
          ocs::tom::emplace_back_in<US_entries, UE_name>(us, "root");
          if (admin_user_name != nullptr && sge_strnullcasecmp(admin_user_name, NONE_STR) != 0 &&
@@ -1081,7 +1083,7 @@ setup_qmaster() {
     *    - suspend_on_subordinate
     */
    for_each_rw_lv(tmpqep, *(ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE))) {
-      const lList *qinstance_list = ocs::tom::get<CQ_qinstances>(tmpqep);
+      ocs::tom::ConstList<ocs::tom::QU> qinstance_list = ocs::tom::get<CQ_qinstances>(tmpqep);
 
       /*
        * Update cluster queue configuration from pre-6.2u5 to 6.2u5, i.e. from
@@ -1096,7 +1098,7 @@ setup_qmaster() {
          for_each_rw_lv (aso, aso_list) {
             const lListElem *elem;
             int pos;
-            const lList *so_list = ocs::tom::get<ASOLIST_value>(aso);
+            ocs::tom::ConstList<ocs::tom::SO> so_list = ocs::tom::get<ASOLIST_value>(aso);
 
             /* Every element of the ASOLIST should have a SOLIST, but we
              * check it to be sure.
@@ -1445,7 +1447,7 @@ ocs_qmaster_check_unique_keys(lList **answer_list) {
          int skip_nm = NoName;
          if (type == SGE_TYPE_CQUEUE) {
             // the queue instances are spooled on their own, so they are repaired on their own, not with the queue
-            for_each_rw_lv(qinstance, ocs::tom::get<CQ_qinstances>(ep)) {
+            for (ocs::tom::Element<ocs::tom::QU> qinstance : ocs::tom::get<CQ_qinstances>(ep)) {
                const std::string key = std::string(ocs::tom::get<QU_qname>(qinstance)) + "/" +
                                        static_cast<const char *>(ocs::tom::get<QU_qhostname>(qinstance));
                ocs_qmaster_repair_spooled_object(qinstance, SGE_TYPE_QINSTANCE, key, unrepaired);
@@ -1577,8 +1579,8 @@ remove_irrelevant_userprj_usage(bool user, const lList *usage_weight_list) {
          changed |= ocs::Usage::strip_irrelevant_usage(ocs::tom::get<UU_long_term_usage>(up), usage_weight_list);
 
          /* usage of a user within a project is kept in the UU_project sub-list */
-         lListElem *upp;
-         for_each_rw(upp, static_cast<lList *>(ocs::tom::get<UU_project>(up))) {
+         ocs::tom::Element<ocs::tom::UPP> upp;
+         for_each_rw(upp, ocs::tom::get<UU_project>(up)) {
             changed |= ocs::Usage::strip_irrelevant_usage(ocs::tom::get<UPP_usage>(upp), usage_weight_list);
             changed |= ocs::Usage::strip_irrelevant_usage(ocs::tom::get<UPP_long_term_usage>(upp), usage_weight_list);
          }
@@ -1612,7 +1614,7 @@ static void debit_all_jobs_from_qs() {
       next_jep = lNextRW(jep);
 
       uint32_t ar_id = ocs::tom::get<JB_ar>(jep);
-      lListElem *ar = nullptr;
+      ocs::tom::Element<ocs::tom::AR> ar = nullptr;
       lListElem *ar_global_host = nullptr;
       if (ar_id != 0) {
          ar = ocs::tom::find_first_rw<AR_id>(master_ar_list, ar_id);
@@ -1636,7 +1638,7 @@ static void debit_all_jobs_from_qs() {
          /* don't look at states - we only trust in "granted destin. ident. list" */
          bool do_per_global_host_booking = true;
          const char *last_hostname = nullptr;
-         for_each_ep_lv(gdi, ocs::tom::get<JAT_granted_destin_identifier_list>(jatep)) {
+         for (ocs::tom::ConstElement<ocs::tom::JG> gdi : ocs::tom::get<JAT_granted_destin_identifier_list>(jatep)) {
             const char *queue_name = ocs::tom::get<JG_qname>(gdi);
             int slots = (int)ocs::tom::get<JG_slots>(gdi);
 
@@ -1648,7 +1650,7 @@ static void debit_all_jobs_from_qs() {
             } else {
                const char *host_name = ocs::tom::get<JG_qhostname>(gdi);
                bool do_per_host_booking = host_do_per_host_booking(&last_hostname, host_name);
-               const lList *granted_resources_list = ocs::tom::get<JAT_granted_resources_list>(jatep);
+               ocs::tom::ConstList<ocs::tom::GRU> granted_resources_list = ocs::tom::get<JAT_granted_resources_list>(jatep);
 
                /* debit in all layers */
                lListElem *rqs = nullptr;

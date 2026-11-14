@@ -72,6 +72,7 @@
 #include "sgeobj/tom/ocs_tom_PET.h"
 #include "sgeobj/tom/ocs_tom_RESL.h"
 #include "sgeobj/tom/ocs_tom_ST.h"
+#include "sgeobj/tom/ocs_tom_GRU.h"
 
 #include "sge_ja_task.h"
 
@@ -90,7 +91,7 @@
 lListElem *ja_task_search_pe_task(const lListElem *ja_task,
                                   const char *pe_task_id) {
    if (ja_task != nullptr) {
-      const lList *pe_tasks = ocs::tom::get<JAT_task_list>(ja_task);
+      ocs::tom::ConstList<ocs::tom::PET> pe_tasks = ocs::tom::get<JAT_task_list>(ja_task);
 
       if (pe_tasks != nullptr) {
          return ocs::tom::find_first_rw<PET_id>(pe_tasks, pe_task_id);
@@ -212,10 +213,9 @@ bool ja_task_add_finished_pe_task(lListElem *ja_task, const char *pe_task_id) {
 bool ja_task_clear_finished_pe_tasks(lListElem *ja_task) {
    DENTER(TOP_LAYER);
 
-   const lList *pe_task_list;
 
    /* get list of finished pe tasks */
-   pe_task_list = ocs::tom::get<JAT_finished_task_list>(ja_task);
+   ocs::tom::ConstList<ocs::tom::FPET> pe_task_list = ocs::tom::get<JAT_finished_task_list>(ja_task);
    if (pe_task_list == nullptr) {
       DPRINTF("no finished pe task list to clear in ja_task " sge_u32 "\n", ocs::tom::get<JAT_task_number>(ja_task));
       DRETURN(false);
@@ -593,7 +593,7 @@ static int
 ja_task_debit_host_rsmap(const lListElem *granted_resource, lListElem *host, int slots, bool *just_check) {
    int mods = 0;
    const char *ce_name = ocs::tom::get<GRU_name>(granted_resource);
-   for_each_ep_lv (resl, ocs::tom::get<GRU_resource_map_list>(granted_resource)) {
+   for (ocs::tom::ConstElement<ocs::tom::RESL> resl : ocs::tom::get<GRU_resource_map_list>(granted_resource)) {
       mods += host_debit_rsmap(host, ce_name, resl, slots, just_check);
       if (just_check != nullptr && !*just_check) {
          break;
@@ -617,7 +617,7 @@ int ja_task_debit_host_rsmaps(const lList *granted_resources_list, lListElem *ho
    const char *host_name = ocs::tom::get<EH_name>(host);
    const void *iterator;
 
-   for (auto granted_resource = static_cast<const lListElem *>(ocs::tom::find_first<GRU_host>(granted_resources_list, host_name, &iterator));
+   for (ocs::tom::ConstElement<ocs::tom::GRU> granted_resource = ocs::tom::find_first<GRU_host>(granted_resources_list, host_name, &iterator);
         granted_resource != nullptr;
         granted_resource = ocs::tom::find_next<GRU_host>(granted_resources_list, host_name, &iterator)) {
 
@@ -666,7 +666,7 @@ int ja_task_debit_host_bindings(const lList *granted_resources_list, lListElem *
    int mods = 0;
    const char *host_name = ocs::tom::get<EH_name>(host);
    const void *iterator;
-   for (auto granted_resource = static_cast<const lListElem *>(ocs::tom::find_first<GRU_host>(granted_resources_list, host_name, &iterator));
+   for (ocs::tom::ConstElement<ocs::tom::GRU> granted_resource = ocs::tom::find_first<GRU_host>(granted_resources_list, host_name, &iterator);
         granted_resource != nullptr;
         granted_resource = ocs::tom::find_next<GRU_host>(granted_resources_list, host_name, &iterator)) {
 

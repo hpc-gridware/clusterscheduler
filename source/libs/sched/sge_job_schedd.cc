@@ -62,6 +62,7 @@
 #include "sgeobj/tom/ocs_tom_JRE.h"
 #include "sgeobj/tom/ocs_tom_PET.h"
 #include "sgeobj/tom/ocs_tom_RN.h"
+#include "sgeobj/tom/ocs_tom_JC.h"
 
 #include "sge_job_schedd.h"
 #include "schedd_monitor.h"
@@ -196,7 +197,7 @@ bool job_move_first_pending_to_running(lListElem **pending_job, lList **splitted
    DENTER(TOP_LAYER);
 
    bool ret = false;
-   lList *ja_task_list = nullptr;      /* JAT_Type */
+         /* JAT_Type */
    lList *r_ja_task_list = nullptr;    /* JAT_Type */
    lListElem *ja_task = nullptr;       /* JAT_Type */
    lListElem *running_job = nullptr;   /* JB_Type */
@@ -204,7 +205,7 @@ bool job_move_first_pending_to_running(lListElem **pending_job, lList **splitted
    uint32_t ja_task_id;
 
    job_id = ocs::tom::get<JB_job_number>(*pending_job);
-   ja_task_list = ocs::tom::get<JB_ja_tasks>(*pending_job);
+   ocs::tom::List<ocs::tom::JAT> ja_task_list = ocs::tom::get<JB_ja_tasks>(*pending_job);
    ja_task = lFirstRW(ja_task_list);
    
    /*
@@ -248,7 +249,7 @@ bool job_move_first_pending_to_running(lListElem **pending_job, lList **splitted
     * or move the existing array task into the running job 
     */
    if (ja_task == nullptr) {
-      const lList *n_h_ids = ocs::tom::get<JB_ja_n_h_ids>(*pending_job);
+      ocs::tom::ConstList<ocs::tom::RN> n_h_ids = ocs::tom::get<JB_ja_n_h_ids>(*pending_job);
 
       ja_task_id = range_list_get_first_id(n_h_ids, nullptr);
       ja_task = job_search_task(*pending_job, nullptr, ja_task_id);
@@ -969,9 +970,8 @@ void sge_dec_jc(lList **jcpp, const char *name, int slots) {
    DENTER(TOP_LAYER);
 
    int n = 0;
-   lListElem *ep;
 
-   ep = ocs::tom::find_first_rw<JC_name>(*jcpp, name);
+   ocs::tom::Element<ocs::tom::JC> ep = ocs::tom::find_first_rw<JC_name>(*jcpp, name);
    if (ep) {
       n = ocs::tom::get<JC_jobs>(ep) - slots;
       if (n <= 0)
@@ -994,9 +994,8 @@ void sge_inc_jc(lList **jcpp, const char *name, int slots) {
    DENTER(TOP_LAYER);
 
    int n = 0;
-   lListElem *ep;
 
-   ep = ocs::tom::find_first_rw<JC_name>(*jcpp, name);
+   ocs::tom::Element<ocs::tom::JC> ep = ocs::tom::find_first_rw<JC_name>(*jcpp, name);
    if (ep) 
       n = ocs::tom::get<JC_jobs>(ep);
    else 
@@ -1028,7 +1027,7 @@ int nslots_granted(const lList *granted, const char *qhostname) {
    } else {
       const void *iterator = nullptr;
 
-      const lListElem *gdil_ep = ocs::tom::find_first<JG_qhostname>(granted, qhostname, &iterator);
+      ocs::tom::ConstElement<ocs::tom::JG> gdil_ep = ocs::tom::find_first<JG_qhostname>(granted, qhostname, &iterator);
       while (gdil_ep != nullptr) {
          nslots += ocs::tom::get<JG_slots>(gdil_ep);
          gdil_ep = ocs::tom::find_next<JG_qhostname>(granted , qhostname, &iterator);
@@ -1053,10 +1052,10 @@ int active_subtasks(
 lListElem *job,
 const char *qname 
 ) {
-   const lListElem *ep;
+   ocs::tom::ConstElement<ocs::tom::JG> ep;
    const char *task_qname;
 
-   for_each_ep_lv(jatask, ocs::tom::get<JB_ja_tasks>(job)) {
+   for (ocs::tom::ConstElement<ocs::tom::JAT> jatask : ocs::tom::get<JB_ja_tasks>(job)) {
       const char *master_qname = ocs::tom::get<JAT_master_queue>(jatask);
 
       /* always consider the master queue to have active sub-tasks */
@@ -1064,7 +1063,7 @@ const char *qname
          return 1;
       }
 
-      for_each_ep_lv(petask, ocs::tom::get<JAT_task_list>(jatask)) {
+      for (ocs::tom::ConstElement<ocs::tom::PET> petask : ocs::tom::get<JAT_task_list>(jatask)) {
          if (qname &&
              ocs::tom::get<PET_status>(petask) != JFINISHED &&
              ((ep=lFirst(ocs::tom::get<PET_granted_destin_identifier_list>(petask)))) &&
@@ -1097,8 +1096,8 @@ active_nslots_granted(lListElem *job, const lList *granted, const char *qhostnam
 
    if (qhostname == nullptr) {
       for_each_ep_lv(gdil_ep, granted) {   /* for all hosts */
-         for_each_ep_lv(jatask, ocs::tom::get<JB_ja_tasks>(job)) {
-            const lList *task_list = ocs::tom::get<JAT_task_list>(jatask);
+         for (ocs::tom::ConstElement<ocs::tom::JAT> jatask : ocs::tom::get<JB_ja_tasks>(job)) {
+            ocs::tom::ConstList<ocs::tom::PET> task_list = ocs::tom::get<JAT_task_list>(jatask);
             if (task_list == nullptr || active_subtasks(job, ocs::tom::get<JG_qname>(gdil_ep)))
                nslots += ocs::tom::get<JG_slots>(gdil_ep);
          }
@@ -1107,10 +1106,10 @@ active_nslots_granted(lListElem *job, const lList *granted, const char *qhostnam
       const void *iterator = nullptr;
 
       /* only for qhostname */
-      lListElem *gdil_ep = ocs::tom::find_first_rw<JG_qhostname>(granted, qhostname, &iterator);
+      ocs::tom::Element<ocs::tom::JG> gdil_ep = ocs::tom::find_first_rw<JG_qhostname>(granted, qhostname, &iterator);
       while (gdil_ep != nullptr) {
-         for_each_ep_lv(jatask, ocs::tom::get<JB_ja_tasks>(job)) {
-            const lList *task_list = ocs::tom::get<JAT_task_list>(jatask);
+         for (ocs::tom::ConstElement<ocs::tom::JAT> jatask : ocs::tom::get<JB_ja_tasks>(job)) {
+            ocs::tom::ConstList<ocs::tom::PET> task_list = ocs::tom::get<JAT_task_list>(jatask);
             if (task_list == nullptr || active_subtasks(job, ocs::tom::get<JG_qname>(gdil_ep)))
                nslots += ocs::tom::get<JG_slots>(gdil_ep);
          }

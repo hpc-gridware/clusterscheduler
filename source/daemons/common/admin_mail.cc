@@ -54,6 +54,7 @@
 #include "sgeobj/sge_mailrec.h"
 #include "sgeobj/sge_feature.h"
 #include "sgeobj/sge_report.h"
+#include "sgeobj/tom/ocs_tom_UA.h"
 #include "tom/ocs_Element.h"
 
 #include "admin_mail.h"
@@ -157,7 +158,7 @@ void job_related_adminmail(uint32_t progid, lListElem *jr, int is_array, const c
    char str_general[MAX_STRING_SIZE] = "";
    uint32_t jobid, jataskid, failed, general;
    const char *q;
-   const lListElem *ep;
+   ocs::tom::ConstElement<ocs::tom::UA> ep;
    lList *lp_mail = nullptr;
    uint64_t now;
    int ret;

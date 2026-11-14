@@ -65,6 +65,7 @@
 #include "sgeobj/msg_sgeobjlib.h"
 #include "tom/ocs_Element.h"
 #include "sgeobj/tom/ocs_tom_US.h"
+#include "sgeobj/tom/ocs_tom_RUE.h"
 
 #include "msg_common.h"
 #include "msg_qmaster.h"
@@ -535,7 +536,7 @@ lListElem *pe_create_template(char *pe_name) {
  */
 int pe_get_slots_used(const lListElem *pe) {
    int ret = -1;
-   const lListElem *actual = ocs::tom::find_first_in<PE_resource_utilization, RUE_name>(pe, SGE_ATTR_SLOTS);
+   ocs::tom::ConstElement<ocs::tom::RUE> actual = ocs::tom::find_first_in<PE_resource_utilization, RUE_name>(pe, SGE_ATTR_SLOTS);
 
    if (actual) {
       ret = ocs::tom::get<RUE_utilized_now>(actual);
@@ -556,7 +557,7 @@ int pe_get_slots_used(const lListElem *pe) {
  * @note MT-NOTE: pe_set_slots_used() is MT safe
  */
 int pe_set_slots_used(lListElem *pe, int slots) {
-   lListElem *actual = ocs::tom::find_first_in_rw<PE_resource_utilization, RUE_name>(pe, SGE_ATTR_SLOTS);
+   ocs::tom::Element<ocs::tom::RUE> actual = ocs::tom::find_first_in_rw<PE_resource_utilization, RUE_name>(pe, SGE_ATTR_SLOTS);
    if (!actual && (!(actual = ocs::tom::emplace_back_in<PE_resource_utilization, RUE_name>(pe, SGE_ATTR_SLOTS))))
       return -1;
    ocs::tom::set<RUE_utilized_now>(actual, slots);

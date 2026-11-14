@@ -43,6 +43,7 @@
 
 #include "sgeobj/sge_report.h"
 #include "sgeobj/sge_load.h"
+#include "sgeobj/tom/ocs_tom_LR.h"
 #include "tom/ocs_Element.h"
 
 #include "gdi/ocs_gdi_ClientBase.h"
@@ -187,7 +188,7 @@ int sge_add_int2load_report(lList **lpp, const char *name, int value,
 int sge_add_str2load_report(lList **lpp, const char *name, const char *value, const char *host) {
    DENTER(BASIS_LAYER);
 
-   lListElem *ep = nullptr;
+   ocs::tom::Element<ocs::tom::LR> ep = nullptr;
    const void *iterator = nullptr;
 
    if (lpp == nullptr || name == nullptr || value == nullptr || host == nullptr) {
@@ -195,7 +196,7 @@ int sge_add_str2load_report(lList **lpp, const char *name, const char *value, co
    }
 
    if (*lpp != nullptr) {
-      lListElem *search_ep = ocs::tom::find_first_rw<LR_host>(*lpp, host, &iterator);
+      ocs::tom::Element<ocs::tom::LR> search_ep = ocs::tom::find_first_rw<LR_host>(*lpp, host, &iterator);
 
       while (search_ep != nullptr) {
          DPRINTF("---> %s\n", ocs::tom::get<LR_name>(search_ep));

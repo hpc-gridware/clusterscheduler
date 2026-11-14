@@ -128,6 +128,8 @@
 #include "sgeobj/tom/ocs_tom_RUE.h"
 #include "sgeobj/tom/ocs_tom_ST.h"
 #include "sgeobj/tom/ocs_tom_US.h"
+#include "sgeobj/tom/ocs_tom_JG.h"
+#include "sgeobj/tom/ocs_tom_VA.h"
 
 /* -- these implement helpers for the category optimization -------- */
 
@@ -1337,12 +1339,9 @@ bool sge_select_queue(lList *requested_attr, lListElem *queue, lListElem *host,
                       int slots, lList *queue_user_list, lList *acl_list, lListElem *job) {
    DENTER(TOP_LAYER);
    dispatch_t ret;
-   const lList *load_attr = nullptr;
-   const lList *config_attr = nullptr;
-   const lList *actual_attr = nullptr;
    lListElem *global = nullptr;
    int q_access=1;
-   const lList *projects;
+   ocs::tom::ConstList<ocs::tom::PR> projects;
    const char *project;
 
    sge_assignment_t a = SGE_ASSIGNMENT_INIT;
@@ -1435,9 +1434,9 @@ bool sge_select_queue(lList *requested_attr, lListElem *queue, lListElem *host,
 
 /* global */
    global = host_list_locate(exechost_list, SGE_GLOBAL_NAME);
-   load_attr = ocs::tom::get<EH_load_list>(global);
-   config_attr = ocs::tom::get<EH_consumable_config_list>(global);
-   actual_attr = ocs::tom::get<EH_resource_utilization>(global);
+   ocs::tom::ConstList<ocs::tom::HL> load_attr = ocs::tom::get<EH_load_list>(global);
+   ocs::tom::ConstList<ocs::tom::CE> config_attr = ocs::tom::get<EH_consumable_config_list>(global);
+   ocs::tom::ConstList<ocs::tom::RUE> actual_attr = ocs::tom::get<EH_resource_utilization>(global);
 
    /* is there a multiplier for load correction (maybe not in qstat, qhost etc.) */
    if (ocs::tom::has<EH_load_correction_factor>(global)) {
@@ -1455,9 +1454,9 @@ bool sge_select_queue(lList *requested_attr, lListElem *queue, lListElem *host,
       if(host == nullptr) {
          host = host_list_locate(exechost_list, ocs::tom::get<QU_qhostname>(queue));
       }
-      load_attr = ocs::tom::get<EH_load_list>(host);
-      config_attr = ocs::tom::get<EH_consumable_config_list>(host);
-      actual_attr = ocs::tom::get<EH_resource_utilization>(host);
+      ocs::tom::ConstList<ocs::tom::HL> load_attr = ocs::tom::get<EH_load_list>(host);
+      ocs::tom::ConstList<ocs::tom::CE> config_attr = ocs::tom::get<EH_consumable_config_list>(host);
+      ocs::tom::ConstList<ocs::tom::RUE> actual_attr = ocs::tom::get<EH_resource_utilization>(host);
 
       if (ocs::tom::has<EH_load_correction_factor>(host)) {
          if ((ulc_factor=ocs::tom::get<EH_load_correction_factor>(host)))
@@ -1471,8 +1470,8 @@ bool sge_select_queue(lList *requested_attr, lListElem *queue, lListElem *host,
 
 /* queue */
      if((ret == DISPATCH_OK || ret == DISPATCH_MISSING_ATTR) && queue){
-         config_attr = ocs::tom::get<QU_consumable_config_list>(queue);
-         actual_attr = ocs::tom::get<QU_resource_utilization>(queue);
+         ocs::tom::ConstList<ocs::tom::CE> config_attr = ocs::tom::get<QU_consumable_config_list>(queue);
+         ocs::tom::ConstList<ocs::tom::RUE> actual_attr = ocs::tom::get<QU_resource_utilization>(queue);
 
          ret = rc_time_by_slots(&a, requested_attr, nullptr, config_attr, actual_attr, nullptr,
                                 queue, allow_non_requestable, nullptr, slots, DOMINANT_LAYER_QUEUE,
@@ -1590,7 +1589,7 @@ rc_time_by_slots(sge_assignment_t *a, lList *requested, const lList *load_attr, 
 
             /* consumable && used in this global/host/queue && not requested */
             if (!is_requested(requested, name)) {
-               const lListElem *centry = ocs::tom::find_first<CE_name>(a->centry_list, name);
+               ocs::tom::ConstElement<ocs::tom::CE> centry = ocs::tom::find_first<CE_name>(a->centry_list, name);
                const char *def_req = ocs::tom::get<CE_defaultval>(centry);
                auto valtype = static_cast<ocs::CEntry::Type>(ocs::tom::get<CE_valtype>(centry));
                parse_ulong_val(&dval, nullptr, valtype, def_req, nullptr, 0);
@@ -1750,7 +1749,7 @@ static void clear_resource_tags(lList *resources, uint32_t max_tag) {
 }
 
 static void clear_resource_tags(lListElem *job, uint32_t max_tag) {
-   for_each_rw_lv(jrs, ocs::tom::get<JB_request_set_list>(job)) {
+   for (ocs::tom::Element<ocs::tom::JRS> jrs : ocs::tom::get<JB_request_set_list>(job)) {
       clear_resource_tags(static_cast<lList *>(ocs::tom::get<JRS_hard_resource_list>(jrs)), max_tag);
    }
 }
@@ -1834,7 +1833,7 @@ dispatch_t sge_queue_match_static(const sge_assignment_t *a, lListElem *queue, b
    }
 
    /* check if job can run in queue based on project */
-   const lList *projects;
+   ocs::tom::ConstList<ocs::tom::PR> projects;
    if ((projects = ocs::tom::get<QU_projects>(queue))) {
       if (!a->project) {
          schedd_mes_add(a->monitor_alpp, a->monitor_next_run, a->job_id,
@@ -2026,8 +2025,8 @@ job_is_forced_centry_missing(const sge_assignment_t *a, const lListElem *queue_o
          // check if the forced centry was requested; if so, we can continue with the next centry
          const char *name = ocs::tom::get<CE_name>(centry);
          bool skip_further_checks = false;
-         for_each_ep_lv(jrs, ocs::tom::get<JB_request_set_list>(a->job)) {
-            const lList *res_list = ocs::tom::get<JRS_hard_resource_list>(jrs);
+         for (ocs::tom::ConstElement<ocs::tom::JRS> jrs : ocs::tom::get<JB_request_set_list>(a->job)) {
+            ocs::tom::ConstList<ocs::tom::CE> res_list = ocs::tom::get<JRS_hard_resource_list>(jrs);
             if (is_requested(res_list, name)) {
                // if requested we are fine
                skip_further_checks = true;
@@ -2167,7 +2166,7 @@ dispatch_t
 sge_host_match_static(const sge_assignment_t *a, const lListElem *host) {
    DENTER(TOP_LAYER);
 
-   const lList *projects;
+   ocs::tom::ConstList<ocs::tom::PR> projects;
    const char *eh_name;
 
    if (!host) {
@@ -2237,9 +2236,9 @@ sge_host_match_static(const sge_assignment_t *a, const lListElem *host) {
    */
    if (a->ja_task) {
       uint32_t task_id = ocs::tom::get<JAT_task_number>(a->ja_task);
-      const lList *rulp = ocs::tom::get<EH_reschedule_unknown_list>(host);
+      ocs::tom::ConstList<ocs::tom::RU> rulp = ocs::tom::get<EH_reschedule_unknown_list>(host);
 
-      for_each_ep_lv(ruep, rulp) {
+      for (ocs::tom::ConstElement<ocs::tom::RU> ruep : rulp) {
          if (ocs::tom::get<RU_job_number>(ruep) == a->job_id
              && ocs::tom::get<RU_task_number>(ruep) == task_id) {
             DPRINTF("RU: Job " sge_u32 "." sge_u32 " Host " SFN "\n", a->job_id, task_id, eh_name);
@@ -2446,7 +2445,7 @@ static int load_np_value_adjustment(const char* name, lListElem *hep, double *lo
 
    int nproc = 1;
    if (!strncmp(name, "np_", 3)) {
-      const lListElem *ep_nproc = ocs::tom::find_first_in<EH_load_list, HL_name>(hep, LOAD_ATTR_NUM_PROC);
+      ocs::tom::ConstElement<ocs::tom::HL> ep_nproc = ocs::tom::find_first_in<EH_load_list, HL_name>(hep, LOAD_ATTR_NUM_PROC);
 
       if (ep_nproc != nullptr) {
          const char* cp = ocs::tom::get<HL_value>(ep_nproc);
@@ -2556,9 +2555,8 @@ int sge_load_alarm(char *reason, size_t reason_size, const lListElem *qep, const
    }
 
    for_each_ep_lv(tep, threshold) {
-      const lListElem *hlep = nullptr;
-      const lListElem *glep = nullptr;
-      const lListElem *queue_ep = nullptr;
+      ocs::tom::ConstElement<ocs::tom::HL> hlep = nullptr;
+      ocs::tom::ConstElement<ocs::tom::HL> glep = nullptr;
       lListElem *cep  = nullptr;
       bool need_free_cep = false;
       uint32_t relop;
@@ -2590,7 +2588,7 @@ int sge_load_alarm(char *reason, size_t reason_size, const lListElem *qep, const
                load_value = ocs::tom::get<HL_value>(glep);
                load_is_value = 0;
          } else {
-            queue_ep = ocs::tom::find_first_in<QU_consumable_config_list, CE_name>(qep, name);
+            ocs::tom::ConstElement<ocs::tom::CE> queue_ep = ocs::tom::find_first_in<QU_consumable_config_list, CE_name>(qep, name);
             if (queue_ep != nullptr) {
                load_value = ocs::tom::get<CE_stringval>(queue_ep);
                load_is_value = 1;
@@ -2673,7 +2671,7 @@ char *sge_load_alarm_reason(lListElem *qep, lList *threshold,
       /* check all thresholds */
       for_each_ep_lv(tep, threshold) {
          const char *name;             /* complex attrib name */
-         const lListElem *cep;         /* actual complex attribute */
+         ocs::tom::ConstElement<ocs::tom::CE> cep;         /* actual complex attribute */
          char dom_str[5];              /* dominance as string */
          uint32_t dom_val;             /* dominance as u_long */
          char buffer[MAX_STRING_SIZE]; /* buffer for one line */
@@ -3110,7 +3108,6 @@ static bool pe_cq_rejected(const char *pe_name, const lListElem *cq) {
  */
 static bool project_cq_rejected(const char *project, const lListElem *cq) {
    DENTER(TOP_LAYER);
-   const lList *projects;
 
    if (!project) {
       /* without project: rejected, if each "project" profile
@@ -3127,7 +3124,7 @@ static bool project_cq_rejected(const char *project, const lListElem *cq) {
    /* with project: rejected, if project is excluded by each "xproject" profile */
    bool rejected = true;
    for_each_ep_lv(alist, ocs::tom::get<CQ_xprojects>(cq)) {
-      projects = ocs::tom::get<APRJLIST_value>(alist);
+      ocs::tom::ConstList<ocs::tom::PR> projects = ocs::tom::get<APRJLIST_value>(alist);
       if (!projects || !prj_list_locate(projects, project)) {
          rejected = false;
          break;
@@ -3140,7 +3137,7 @@ static bool project_cq_rejected(const char *project, const lListElem *cq) {
    /* with project: rejected, if project is not included with each "project" profile */
    rejected = true;
    for_each_ep_lv(alist, ocs::tom::get<CQ_projects>(cq)) {
-      projects = ocs::tom::get<APRJLIST_value>(alist);
+      ocs::tom::ConstList<ocs::tom::PR> projects = ocs::tom::get<APRJLIST_value>(alist);
       if (!projects || prj_list_locate(projects, project)) {
          rejected = false;
          break;
@@ -3228,7 +3225,7 @@ access_cq_rejected(const char *user, const char *group, const lList *grp_list,
    /* rejected, if user/group is not included in any "acl" profile */
    rejected = true;
    for_each_ep_lv(alist, ocs::tom::get<CQ_acl>(cq)) {
-      const lList *t = ocs::tom::get<AUSRLIST_value>(alist);
+      ocs::tom::ConstList<ocs::tom::US> t = ocs::tom::get<AUSRLIST_value>(alist);
       if (!t || sge_contained_in_access_list_(user, group, grp_list, t, acl_list)) {
          rejected = false;
          break;
@@ -3908,7 +3905,7 @@ parallel_revert_rqs(sge_assignment_t *a, const char *eh_name, std::vector<queue_
    DENTER(TOP_LAYER);
 
    for (queue_slots_t &queue_slot : queue_slots) {
-      lListElem *qep = ocs::tom::find_first_rw<QU_full_name>(a->queue_list, queue_slot.qname);
+      ocs::tom::Element<ocs::tom::QU> qep = ocs::tom::find_first_rw<QU_full_name>(a->queue_list, queue_slot.qname);
       int slots = queue_slot.slots;
       if (slots != 0) {
          if (a->ar_id == 0 && !a->is_advance_reservation) {
@@ -4061,8 +4058,7 @@ parallel_allocate_queue_slots(sge_assignment_t *a, const char *eh_name, bool hav
 
    int rqs_hslots = 0;
    const void *iter = nullptr;
-   lListElem *qep;
-   for (qep = ocs::tom::find_first_rw<QU_qhostname>(a->queue_list, eh_name, &iter); qep;
+   for (ocs::tom::Element<ocs::tom::QU> qep = ocs::tom::find_first_rw<QU_qhostname>(a->queue_list, eh_name, &iter); qep;
         qep = ocs::tom::find_next_rw<QU_qhostname>(a->queue_list, eh_name, &iter)) {
       const char *qname = ocs::tom::get<QU_full_name>(qep);
 
@@ -4515,7 +4511,7 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
 
                      // Create the GDIL and book soft violations from our temporary queue list.
                      for (queue_slots_t &queue_slot : queue_slots) {
-                        lListElem *gdil_ep = ocs::tom::find_first_rw<JG_qname>(a->gdil, queue_slot.qname);
+                        ocs::tom::Element<ocs::tom::JG> gdil_ep = ocs::tom::find_first_rw<JG_qname>(a->gdil, queue_slot.qname);
                         if (gdil_ep == nullptr) {
                            // Need a new GDIL element.
                            // @todo we could store qep in queue_slots_t
@@ -4633,8 +4629,7 @@ static int already_booked_on_host(const lList *gdil, const char *host_name) {
    int ret = 0;
 
    const void *iterator = nullptr;
-   const lListElem *gdil_ep;
-   for (gdil_ep = ocs::tom::find_first<JG_qhostname>(gdil, host_name, &iterator);
+   for (ocs::tom::ConstElement<ocs::tom::JG> gdil_ep = ocs::tom::find_first<JG_qhostname>(gdil, host_name, &iterator);
         gdil_ep != nullptr;
         gdil_ep = ocs::tom::find_next<JG_qhostname>(gdil, host_name, &iterator)) {
       ret += ocs::tom::get<JG_slots>(gdil_ep);
@@ -4714,9 +4709,9 @@ parallel_host_slots(sge_assignment_t *a, int *slots, lListElem *hep, bool need_m
 
       SCHED_PROF_INC(a->pi, par_hdyn);
 
-      const lList *load_list = ocs::tom::get<EH_load_list>(hep);
-      const lList *config_attr = ocs::tom::get<EH_consumable_config_list>(hep);
-      const lList *actual_attr = ocs::tom::get<EH_resource_utilization>(hep);
+      ocs::tom::ConstList<ocs::tom::HL> load_list = ocs::tom::get<EH_load_list>(hep);
+      ocs::tom::ConstList<ocs::tom::CE> config_attr = ocs::tom::get<EH_consumable_config_list>(hep);
+      ocs::tom::ConstList<ocs::tom::RUE> actual_attr = ocs::tom::get<EH_resource_utilization>(hep);
 
       // we call this function per host, and we really need to clear the resource tags with every call
       clear_resource_tags(a->job, HOST_TAG);
@@ -4908,13 +4903,13 @@ parallel_max_host_slots(sge_assignment_t *a, lListElem *host) {
         next_queue = ocs::tom::find_next_rw<QU_qhostname>(a->queue_list, eh_name, &queue_iterator)) {
       int avail_q = INT_MAX;
 
-      const lList *load_thresholds = ocs::tom::get<QU_load_thresholds>(qep);
-      const lListElem *tr;
+      ocs::tom::ConstList<ocs::tom::CE> load_thresholds = ocs::tom::get<QU_load_thresholds>(qep);
+      ocs::tom::ConstElement<ocs::tom::CE> tr;
       for_each_ep(tr, load_thresholds) {
          bool is_np_adjustment = false;
          lListElem *centry = nullptr;
          const lListElem *cep;
-         const lListElem *lv, *fv, *lc;
+         const lListElem *lv, *lc;
          const char *load_value, *limit_value, *adj_value;
          double load, threshold, adjustment;
          const char *name = ocs::tom::get<CE_name>(tr);
@@ -4931,7 +4926,7 @@ parallel_max_host_slots(sge_assignment_t *a, lListElem *host) {
             } else if ((lv = ocs::tom::find_first_in<EH_load_list, HL_name>(a->gep, name)) != nullptr) {
                load_value = ocs::tom::get<HL_value>(lv);
             } else {
-               fv = ocs::tom::find_first_in<QU_consumable_config_list, CE_name>(qep, name);
+               ocs::tom::ConstElement<ocs::tom::CE> fv = ocs::tom::find_first_in<QU_consumable_config_list, CE_name>(qep, name);
                load_value = ocs::tom::get<CE_stringval>(fv);
             }
             adj_value = ocs::tom::get<CE_stringval>(lc);
@@ -5160,12 +5155,11 @@ dispatch_t sge_sequential_assignment(sge_assignment_t *a) {
          DRETURN(DISPATCH_NEVER_CAT); /* should never happen */
       }
       {
-         lListElem *gdil_ep;
          lList *gdil = nullptr;
          const char *qname = ocs::tom::get<QU_full_name>(best_queue);
          const char *eh_name = ocs::tom::get<QU_qhostname>(best_queue);
 
-         gdil_ep = ocs::tom::emplace_back<JG_qname>(&gdil, qname);
+         ocs::tom::Element<ocs::tom::JG> gdil_ep = ocs::tom::emplace_back<JG_qname>(&gdil, qname);
          ocs::tom::set<JG_qversion>(gdil_ep, ocs::tom::get<QU_version>(best_queue));
          ocs::tom::set<JG_qhostname>(gdil_ep, eh_name);
          ocs::tom::set<JG_slots>(gdil_ep, 1);
@@ -5226,7 +5220,6 @@ dispatch_t sge_sequential_assignment(sge_assignment_t *a) {
 static int sequential_update_host_order(lList *host_list, lList *queues) {
    DENTER(TOP_LAYER);
 
-   lListElem *qep;
    double previous_load = 0;
    int previous_load_inited = 0;
    uint32_t host_seqno = 0;
@@ -5257,7 +5250,7 @@ static int sequential_update_host_order(lList *host_list, lList *queues) {
       /* set host_seqno for all queues of this host */
       eh_name = ocs::tom::get<EH_name>(hep);
 
-      qep = ocs::tom::find_first_rw<QU_qhostname>(queues, eh_name, &iterator);
+      ocs::tom::Element<ocs::tom::QU> qep = ocs::tom::find_first_rw<QU_qhostname>(queues, eh_name, &iterator);
       while (qep != nullptr) {
           ocs::tom::set<QU_host_seq_no>(qep, host_seqno);
           qep = ocs::tom::find_next_rw<QU_qhostname>(queues, eh_name, &iterator);
@@ -5347,8 +5340,8 @@ parallel_queue_slots(sge_assignment_t *a, lListElem *qep, int *slots, bool need_
                      bool is_master_queue, bool &found_master_host, bool allow_non_requestable) {
    DENTER(TOP_LAYER);
 
-   const lList *config_attr = ocs::tom::get<QU_consumable_config_list>(qep);
-   const lList *actual_attr = ocs::tom::get<QU_resource_utilization>(qep);
+   ocs::tom::ConstList<ocs::tom::CE> config_attr = ocs::tom::get<QU_consumable_config_list>(qep);
+   ocs::tom::ConstList<ocs::tom::RUE> actual_attr = ocs::tom::get<QU_resource_utilization>(qep);
    const char *qname = ocs::tom::get<QU_full_name>(qep);
    int qslots = 0;
    int lslots = INT_MAX;
@@ -5373,7 +5366,7 @@ parallel_queue_slots(sge_assignment_t *a, lListElem *qep, int *slots, bool need_
 
       // we already have tasks running on this qinstance (round_robin), consider the already booked slots
       // @todo in case of round robin: don't we cache the number of possible slots in QU_tag? Really re-calculate them over and over again?
-      const lListElem *gdil;
+      ocs::tom::ConstElement<ocs::tom::JG> gdil;
       if ((gdil=ocs::tom::find_first<JG_qname>(a->gdil, ocs::tom::get<QU_full_name>(qep)))) {
          qslots -= ocs::tom::get<JG_slots>(gdil);
       }
@@ -5408,8 +5401,8 @@ sequential_queue_time(uint64_t *start, sge_assignment_t *a, int *violations, lLi
    dispatch_t result;
    uint64_t tmp_time = *start;
    lList *hard_requests = job_get_hard_resource_listRW(a->job);
-   const lList *config_attr = ocs::tom::get<QU_consumable_config_list>(qep);
-   const lList *actual_attr = ocs::tom::get<QU_resource_utilization>(qep);
+   ocs::tom::ConstList<ocs::tom::CE> config_attr = ocs::tom::get<QU_consumable_config_list>(qep);
+   ocs::tom::ConstList<ocs::tom::RUE> actual_attr = ocs::tom::get<QU_resource_utilization>(qep);
    const char *qname = ocs::tom::get<QU_full_name>(qep);
 
    sge_dstring_init(&reason, reason_buf, sizeof(reason_buf));
@@ -5483,9 +5476,9 @@ sequential_host_time(uint64_t *start, sge_assignment_t *a, int *violations, cons
    DENTER(TOP_LAYER);
 
    lList *hard_requests = job_get_hard_resource_listRW(a->job);
-   const lList *load_attr = ocs::tom::get<EH_load_list>(hep);
-   const lList *config_attr = ocs::tom::get<EH_consumable_config_list>(hep);
-   const lList *actual_attr = ocs::tom::get<EH_resource_utilization>(hep);
+   ocs::tom::ConstList<ocs::tom::HL> load_attr = ocs::tom::get<EH_load_list>(hep);
+   ocs::tom::ConstList<ocs::tom::CE> config_attr = ocs::tom::get<EH_consumable_config_list>(hep);
+   ocs::tom::ConstList<ocs::tom::RUE> actual_attr = ocs::tom::get<EH_resource_utilization>(hep);
    double lc_factor = 0;
    uint32_t ulc_factor;
    dispatch_t result;
@@ -5567,9 +5560,9 @@ sequential_global_time(uint64_t *start, sge_assignment_t *a, int *violations) {
    dispatch_t result = DISPATCH_NEVER_CAT;
    uint64_t tmp_time = *start;
    lList *hard_request = job_get_hard_resource_listRW(a->job);
-   const lList *load_attr = ocs::tom::get<EH_load_list>(a->gep);
-   const lList *config_attr = ocs::tom::get<EH_consumable_config_list>(a->gep);
-   const lList *actual_attr = ocs::tom::get<EH_resource_utilization>(a->gep);
+   ocs::tom::ConstList<ocs::tom::HL> load_attr = ocs::tom::get<EH_load_list>(a->gep);
+   ocs::tom::ConstList<ocs::tom::CE> config_attr = ocs::tom::get<EH_consumable_config_list>(a->gep);
+   ocs::tom::ConstList<ocs::tom::RUE> actual_attr = ocs::tom::get<EH_resource_utilization>(a->gep);
    double lc_factor=0.0;
    uint32_t ulc_factor;
 
@@ -5649,9 +5642,9 @@ parallel_global_slots(sge_assignment_t *a, int *slots) {
          }
       }
 
-      const lList *load_attr = ocs::tom::get<EH_load_list>(a->gep);
-      const lList *config_attr = ocs::tom::get<EH_consumable_config_list>(a->gep);
-      const lList *actual_attr = ocs::tom::get<EH_resource_utilization>(a->gep);
+      ocs::tom::ConstList<ocs::tom::HL> load_attr = ocs::tom::get<EH_load_list>(a->gep);
+      ocs::tom::ConstList<ocs::tom::CE> config_attr = ocs::tom::get<EH_consumable_config_list>(a->gep);
+      ocs::tom::ConstList<ocs::tom::RUE> actual_attr = ocs::tom::get<EH_resource_utilization>(a->gep);
 
       clear_resource_tags(a->job, GLOBAL_TAG);
       bool found_master_host = false;    // dummy, we do not decide on the concrete master host on global layer
@@ -5690,7 +5683,7 @@ parallel_available_slots(const sge_assignment_t *a, int *slots) {
    int total = ocs::tom::get<PE_slots>(a->pe);
    static lListElem *implicit_slots_request = nullptr;
    static lList *implicit_total_list = nullptr;
-   lListElem *tep = nullptr;
+   ocs::tom::Element<ocs::tom::CE> tep = nullptr;
    char strbuf[100];
    dstring slots_as_str;
 
@@ -5893,17 +5886,16 @@ ri_time_by_slots(const sge_assignment_t *a, lListElem *rep, const lList *load_at
    lListElem *cplx_el=nullptr;
    const char *attrname;
    dispatch_t ret = DISPATCH_OK;
-   const lListElem *actual_el;
    uint64_t ready_time;
    double util, total, request = 0;
-   const lListElem *capacitiy_el;
+   ocs::tom::ConstElement<ocs::tom::CE> capacitiy_el;
    bool schedule_based = (a->is_advance_reservation || a->is_schedule_based) ? true : false;
    uint64_t now = a->now;
    int utilized = 0;
    bool is_exclusive = false;
 
    attrname = ocs::tom::get<CE_name>(rep);
-   actual_el = ocs::tom::find_first<RUE_name>(actual_attr, attrname);
+   ocs::tom::ConstElement<ocs::tom::RUE> actual_el = ocs::tom::find_first<RUE_name>(actual_attr, attrname);
    ready_time = *start_time;
 
    /*
@@ -6171,7 +6163,7 @@ ri_slots_by_time(const sge_assignment_t *a, int *slots, const lList *rue_list, l
                  const char *object_name, ocs::TopologyString &binding_inuse) {
    DENTER(TOP_LAYER);
 
-   const lListElem *tep = nullptr;
+   ocs::tom::ConstElement<ocs::tom::CE> tep = nullptr;
    uint64_t start = a->start;
    bool schedule_based = a->is_advance_reservation || a->is_schedule_based;
    int utilized = 0;
@@ -6183,7 +6175,7 @@ ri_slots_by_time(const sge_assignment_t *a, int *slots, const lList *rue_list, l
    /* always assume zero consumable utilization in schedule based mode */
 
    const char *name = ocs::tom::get<CE_name>(request);
-   const lListElem *uep = ocs::tom::find_first<RUE_name>(rue_list, name);
+   ocs::tom::ConstElement<ocs::tom::RUE> uep = ocs::tom::find_first<RUE_name>(rue_list, name);
 
    DPRINTF("\t\t%s: ri_slots_by_time(%s)\n", object_name, name);
 
@@ -6275,7 +6267,7 @@ ri_slots_by_time(const sge_assignment_t *a, int *slots, const lList *rue_list, l
                object_name, sge_ctime64(start, &time_str), a->duration, used);
          // we have to consider additional usage (e.g. of the master task which has already been matched earlier)
          if (additional_usage != nullptr) {
-            const lListElem *add_usage_ep = ocs::tom::find_first<CE_name>(additional_usage, name);
+            ocs::tom::ConstElement<ocs::tom::CE> add_usage_ep = ocs::tom::find_first<CE_name>(additional_usage, name);
             if (add_usage_ep != nullptr) {
                DPRINTF("\t\t%s: ri_slots_by_time: additional usage for %s: %f\n", object_name, name, ocs::tom::get<CE_doubleval>(add_usage_ep));
                used += ocs::tom::get<CE_doubleval>(add_usage_ep);
@@ -6285,7 +6277,7 @@ ri_slots_by_time(const sge_assignment_t *a, int *slots, const lList *rue_list, l
          used = ocs::tom::get<RUE_utilized_now>(uep);
          // we have to consider additional usage (e.g. of the master task which has already been matched earlier)
          if (additional_usage != nullptr) {
-            const lListElem *add_usage_ep = ocs::tom::find_first<CE_name>(additional_usage, name);
+            ocs::tom::ConstElement<ocs::tom::CE> add_usage_ep = ocs::tom::find_first<CE_name>(additional_usage, name);
             if (add_usage_ep != nullptr) {
                DPRINTF("\t\t%s: ri_slots_by_time: additional usage for %s: %f\n", object_name, name, ocs::tom::get<CE_doubleval>(add_usage_ep));
                used += ocs::tom::get<CE_doubleval>(add_usage_ep);
@@ -6399,7 +6391,7 @@ rsmap_job_scope_key(sge_assignment_t *a, const lListElem *req, const char *same_
    // Decided once per assignment attempt: the hosts, the window and the request do not change
    // within one, and every host has to be told the same answer. An empty value is the recorded
    // form of "there is none" - the question is no cheaper the second time it is asked.
-   const lListElem *cached = ocs::tom::find_first<VA_variable>(a->rsmap_job_keys, name);
+   ocs::tom::ConstElement<ocs::tom::VA> cached = ocs::tom::find_first<VA_variable>(a->rsmap_job_keys, name);
    if (cached != nullptr) {
       const char *key = ocs::tom::get<VA_value>(cached);
       return (key != nullptr && key[0] != '\0') ? key : nullptr;
@@ -6477,7 +6469,7 @@ rsmap_job_scope_key(sge_assignment_t *a, const lListElem *req, const char *same_
       }
    }
 
-   lListElem *entry = ocs::tom::emplace_back<VA_variable>(&(a->rsmap_job_keys), name);
+   ocs::tom::Element<ocs::tom::VA> entry = ocs::tom::emplace_back<VA_variable>(&(a->rsmap_job_keys), name);
    if (entry == nullptr) {
       return nullptr;
    }
@@ -6565,10 +6557,10 @@ rsmap_same_slots(sge_assignment_t *a, const lList *total_list,
    int max_slots = INT_MAX;
    DSTRING_STATIC(param, 64);
 
-   const lListElem *jrs;
-   for_each_ep (jrs, static_cast<const lList *>(ocs::tom::get<JB_request_set_list>(a->job))) {
-      const lListElem *req;
-      for_each_ep (req, static_cast<const lList *>(ocs::tom::get<JRS_hard_resource_list>(jrs))) {
+   ocs::tom::ConstElement<ocs::tom::JRS> jrs;
+   for_each_ep (jrs, ocs::tom::get<JB_request_set_list>(a->job)) {
+      ocs::tom::ConstElement<ocs::tom::CE> req;
+      for_each_ep (req, ocs::tom::get<JRS_hard_resource_list>(jrs)) {
          if (static_cast<ocs::CEntry::Type>(ocs::tom::get<CE_valtype>(req)) != ocs::CEntry::Type::RSMAP) {
             continue;
          }
@@ -6791,7 +6783,7 @@ parallel_rc_slots_by_time(sge_assignment_t *a, int *slots, const lList *total_li
    // third slave, if it exists.
 
    // when matching the slave requests we have to consider the usage caused by a master task, store it here
-   lList *master_usage = nullptr;
+   ocs::tom::List<ocs::tom::CE> master_usage = nullptr;
    // when calculating the max_slots after matching the slave requests we need to add the one slot we might
    // have got for the master task
    int master_slot = 0;
@@ -6801,7 +6793,7 @@ parallel_rc_slots_by_time(sge_assignment_t *a, int *slots, const lList *total_li
    if ((need_master || is_master_host) && ocs::tom::get<PE_job_is_first_task> (a->pe)) {
       master_slot = 1; // we have a master slot now and later
    }
-   for_each_rw_lv(jrs, ocs::tom::get<JB_request_set_list>(a->job)) {
+   for (ocs::tom::Element<ocs::tom::JRS> jrs : ocs::tom::get<JB_request_set_list>(a->job)) {
       uint32_t scope = ocs::tom::get<JRS_scope>(jrs);
       if (scope == JRS_SCOPE_MASTER) {
          if (!need_master) {
@@ -6867,8 +6859,8 @@ parallel_rc_slots_by_time(sge_assignment_t *a, int *slots, const lList *total_li
 
       DPRINTF("%s: parallel_rc_slots_by_time() testing %s requests, master_slot = %d\n", object_name, job_scope_name(scope), master_slot);
 
-      lList *requests = ocs::tom::get<JRS_hard_resource_list>(jrs);
-      for_each_rw_lv (req, requests) {
+      ocs::tom::List<ocs::tom::CE> requests = ocs::tom::get<JRS_hard_resource_list>(jrs);
+      for (ocs::tom::Element<ocs::tom::CE> req : requests) {
          name = ocs::tom::get<CE_name>(req);
          DPRINTF("    ==> %s: %s = %s = %f\n", object_name, name, ocs::tom::get<CE_stringval>(req), ocs::tom::get<CE_doubleval>(req));
          result = ri_slots_by_time(a, &available, rue_list, req, load_attr, total_list, master_usage,
@@ -7071,7 +7063,7 @@ void sge_create_load_list(const lList *queue_list, const lList *host_list,
                           const lList *centry_list, lList **load_list) {
    DENTER(TOP_LAYER);
    lListElem *centry;
-   const lList * load_threshold_list;
+   ocs::tom::ConstList<ocs::tom::CE> load_threshold_list;
    const char *load_threshold_name;
    const char *limit_value;
    lListElem *global;
@@ -7353,7 +7345,7 @@ static dispatch_t match_static_advance_reservation(const sge_assignment_t *a) {
 
    if (a->ar_id != 0) {
       if (a->ar != nullptr) {
-         const lList *acl_list;
+         ocs::tom::ConstList<ocs::tom::ARA> acl_list;
 
          if (!(a->is_job_verify)) {
             /* is ar in error and error handling is not soft? */
@@ -7373,7 +7365,7 @@ static dispatch_t match_static_advance_reservation(const sge_assignment_t *a) {
 
          /* has user access? */
          if ((acl_list = ocs::tom::get<AR_xacl_list>(a->ar))) {
-            const lListElem *acl_ep;
+            ocs::tom::ConstElement<ocs::tom::ARA> acl_ep;
             for_each_ep(acl_ep, acl_list) {
                const char* user = ocs::tom::get<ARA_name>(acl_ep);
 
@@ -7403,7 +7395,7 @@ static dispatch_t match_static_advance_reservation(const sge_assignment_t *a) {
          }
 
          if ((acl_list = ocs::tom::get<AR_acl_list>(a->ar))) {
-            const lListElem *acl_ep;
+            ocs::tom::ConstElement<ocs::tom::ARA> acl_ep;
             for_each_ep(acl_ep, acl_list) {
                const char *user = ocs::tom::get<ARA_name>(acl_ep);
 
@@ -7461,10 +7453,10 @@ sge_ar_swap_resource_lists(sge_assignment_t &a) {
       DPRINTF("SWAP RESOURCE LIST FOR AR %d\n", a.ar_id);
 
       // swap host resources
-      lListElem *host;
-      for_each_rw(host, static_cast<const lList *>(ocs::tom::get<AR_reserved_hosts>(a.ar))) {
+      ocs::tom::Element<ocs::tom::EH> host;
+      for_each_rw(host, ocs::tom::get<AR_reserved_hosts>(a.ar)) {
          const char *host_name = ocs::tom::get<EH_name>(host);
-         lListElem *a_host = ocs::tom::find_first_rw<EH_name>(a.host_list, host_name);
+         ocs::tom::Element<ocs::tom::EH> a_host = ocs::tom::find_first_rw<EH_name>(a.host_list, host_name);
          if (a_host != nullptr) {
             ocs::tom::swap<EH_consumable_config_list, EH_consumable_config_list>(host, a_host);
             ocs::tom::swap<EH_resource_utilization, EH_resource_utilization>(host, a_host);
@@ -7472,10 +7464,10 @@ sge_ar_swap_resource_lists(sge_assignment_t &a) {
       }
 
       // swap queue resources
-      lListElem *queue;
-      for_each_rw(queue, static_cast<lList *>(ocs::tom::get<AR_reserved_queues>(a.ar))) {
+      ocs::tom::Element<ocs::tom::QU> queue;
+      for_each_rw(queue, ocs::tom::get<AR_reserved_queues>(a.ar)) {
          const char *queue_name = ocs::tom::get<QU_full_name>(queue);
-         lListElem *a_queue = ocs::tom::find_first_rw<QU_full_name>(a.queue_list, queue_name);
+         ocs::tom::Element<ocs::tom::QU> a_queue = ocs::tom::find_first_rw<QU_full_name>(a.queue_list, queue_name);
          if (a_queue != nullptr) {
             ocs::tom::swap<QU_consumable_config_list, QU_consumable_config_list>(queue, a_queue);
             ocs::tom::swap<QU_resource_utilization, QU_resource_utilization>(queue, a_queue);
@@ -7511,7 +7503,7 @@ parallel_limit_slots_by_time(sge_assignment_t *a, int *slots, lListElem *centry,
    lList *tmp_rue_list = lCreateList("", RUE_Type);
    lListElem *tmp_centry_elem = nullptr;
    lListElem *tmp_rue_elem = nullptr;
-   const lList *rue_list = ocs::tom::get<RQRL_usage>(limit);
+   ocs::tom::ConstList<ocs::tom::RUE> rue_list = ocs::tom::get<RQRL_usage>(limit);
    dispatch_t result = DISPATCH_NEVER_CAT;
 
    /* create tmp_centry_list */

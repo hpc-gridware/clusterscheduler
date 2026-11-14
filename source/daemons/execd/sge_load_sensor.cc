@@ -827,7 +827,7 @@ int sge_ls_get(const char *qualified_hostname, const char *binary_path, lList **
 
    for_each_rw_lv(ls_elem, ls_list) {
       /* merge external load into existing load report list */
-      for_each_rw_lv(ep, ocs::tom::get<LS_complete>(ls_elem)) {
+      for (ocs::tom::Element<ocs::tom::LR> ep : ocs::tom::get<LS_complete>(ls_elem)) {
          sge_add_str2load_report(lpp, ocs::tom::get<LR_name>(ep),
                                  ocs::tom::get<LR_value>(ep),
                                  ocs::tom::get<LR_host>(ep));

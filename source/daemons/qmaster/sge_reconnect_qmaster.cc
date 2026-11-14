@@ -50,6 +50,7 @@
 #include "sgeobj/sge_qinstance.h"
 #include "tom/ocs_Element.h"
 #include "sgeobj/tom/ocs_tom_JAT.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
 
 #include "msg_common.h"
 #include "msg_qmaster.h"
@@ -156,7 +157,7 @@ int qmaster_handle_reconnect_request(uint32_t job_id,
    const lList *master_job_list = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
    INFO("qmaster_handle_reconnect_request: looking up job " sge_u32 " in master_job_list with %d entries",
         job_id, lGetNumberOfElem(master_job_list));
-   lListElem *jep = ocs::tom::find_first_rw<JB_job_number>(master_job_list, job_id);
+   ocs::tom::Element<ocs::tom::JB> jep = ocs::tom::find_first_rw<JB_job_number>(master_job_list, job_id);
    if (jep == nullptr) {
       answer_list_add_sprintf(answer_list, STATUS_EEXIST, ANSWER_QUALITY_ERROR,
                               "job " sge_u32 " does not exist (master_job_list has %d entries)",
@@ -176,7 +177,7 @@ int qmaster_handle_reconnect_request(uint32_t job_id,
 
    // Find the running ja_task and its exec host.  Reconnect only applies to a job
    // that has been dispatched; the master queue gives us the exec host.
-   const lListElem *jatep = lFirst(static_cast<const lList *>(ocs::tom::get<JB_ja_tasks>(jep)));
+   ocs::tom::ConstElement<ocs::tom::JAT> jatep = lFirst(ocs::tom::get<JB_ja_tasks>(jep));
    if (jatep == nullptr || ocs::tom::get<JAT_master_queue>(jatep) == nullptr) {
       answer_list_add_sprintf(answer_list, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
                               "job " sge_u32 " is not currently dispatched", job_id);

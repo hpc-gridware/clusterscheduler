@@ -22,6 +22,7 @@
 
 #include "cull/cull.h"
 #include "sgeobj/sge_var.h"
+#include "sgeobj/tom/ocs_tom_VA.h"
 #include "tom/ocs_Element.h"
 #include "uti/sge_rmon_macros.h"
 
@@ -73,7 +74,7 @@ ocs::QConfExportController::process_request([[maybe_unused]] QConfParameter &par
       }
 
       const char *name = (name_nm != NoName) ? qconf_get_name(ep, name_nm) : nullptr;
-      lListElem *pair = ocs::tom::emplace_back<VA_variable>(&objects_, (name != nullptr) ? name : "");
+      ocs::tom::Element<ocs::tom::VA> pair = ocs::tom::emplace_back<VA_variable>(&objects_, (name != nullptr) ? name : "");
       ocs::tom::set<VA_value>(pair, text.str().c_str());
    }
 

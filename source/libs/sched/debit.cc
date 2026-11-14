@@ -60,6 +60,7 @@
 #include "tom/ocs_Element.h"
 #include "sgeobj/tom/ocs_tom_GRU.h"
 #include "sgeobj/tom/ocs_tom_SO.h"
+#include "sgeobj/tom/ocs_tom_QU.h"
 
 #include "sge_resource_utilization.h"
 #include "subordinate_schedd.h"
@@ -176,7 +177,7 @@ debit_job_from_queues(lListElem *job, const lListElem *pe, lList *granted, lList
    int qslots, total;
    unsigned int tagged;
    const char *qname;
-   lListElem *qep;
+   ocs::tom::Element<ocs::tom::QU> qep;
    int ret = 0;
    dstring queue_name = DSTRING_INIT;
 
@@ -200,7 +201,7 @@ debit_job_from_queues(lListElem *job, const lListElem *pe, lList *granted, lList
 
          /* precompute suspensions for subordinated queues */
          total = ocs::tom::get<QU_job_slots>(qep);
-         for_each_ep_lv(so, ocs::tom::get<QU_subordinate_list>(qep)) {
+         for (ocs::tom::ConstElement<ocs::tom::SO> so : ocs::tom::get<QU_subordinate_list>(qep)) {
             if (!tst_sos(qslots, total, so) &&  /* not suspended till now */
                 tst_sos(qslots + tagged, total, so)) {   /* but now                */
                sge_dstring_sprintf(&queue_name, "%s@%s", ocs::tom::get<SO_name>(so), static_cast<const char *>(ocs::tom::get<QU_qhostname>(qep)));
@@ -280,7 +281,7 @@ debit_job_from_hosts(lListElem *job, lListElem *ja_task, const lListElem *pe, lL
          ocs::tom::set<EH_load_correction_factor>(hep, ulc_factor);
       }
 
-      const lList *granted_resources_list = ocs::tom::get<JAT_granted_resources_list>(ja_task);
+      ocs::tom::ConstList<ocs::tom::GRU> granted_resources_list = ocs::tom::get<JAT_granted_resources_list>(ja_task);
       debit_host_consumable(job, ja_task, granted_resources_list, pe, host_list_locate(host_list, SGE_GLOBAL_NAME), centry_list, slots,
                             is_master_task, do_per_global_host_booking, nullptr);
       debit_host_consumable(job, ja_task, granted_resources_list, pe, hep, centry_list, slots, is_master_task, do_per_host_booking, nullptr);
@@ -406,7 +407,7 @@ debit_job_from_ar(lListElem *ar, lListElem *job, lListElem *ja_task, const lList
       for_each_ep_lv(gel, granted) {
          int slots = ocs::tom::get<JG_slots>(gel);
          bool do_per_host_booking = host_do_per_host_booking(&last_hostname, ocs::tom::get<JG_qhostname>(gel));
-         const lList *granted_resources_list = ocs::tom::get<JAT_granted_resources_list>(ja_task);
+         ocs::tom::ConstList<ocs::tom::GRU> granted_resources_list = ocs::tom::get<JAT_granted_resources_list>(ja_task);
 
          lListElem *queue = ocs::tom::find_first_in_rw<AR_reserved_queues, QU_full_name>(ar, ocs::tom::get<JG_qname>(gel));
          qinstance_debit_consumable(queue, job, pe, centry_list, slots, master_task, do_per_host_booking, nullptr);

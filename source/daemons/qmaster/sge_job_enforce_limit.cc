@@ -65,6 +65,7 @@
 #include "sgeobj/tom/ocs_tom_JAT.h"
 #include "sgeobj/tom/ocs_tom_JG.h"
 #include "sgeobj/tom/ocs_tom_PET.h"
+#include "sgeobj/tom/ocs_tom_CE.h"
 
 #include "ocs_ReportingFileWriter.h"
 #include "sge_qmaster_timed_event.h"
@@ -129,7 +130,7 @@ sge_host_add_remove_enforce_limit_trigger(const char *hostname, bool add) {
    DENTER(TOP_LAYER);
 
    lListElem *job;
-   lListElem *ja_task;
+   ocs::tom::Element<ocs::tom::JAT> ja_task;
    const lList *master_job_list = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
 
    /*
@@ -143,10 +144,10 @@ sge_host_add_remove_enforce_limit_trigger(const char *hostname, bool add) {
        * for a certain pe task waiting on that host
        */
       for_each_rw (job, master_job_list) {
-         for_each_rw (ja_task, static_cast<const lList *>(ocs::tom::get<JB_ja_tasks>(job))) {
+         for_each_rw (ja_task, ocs::tom::get<JB_ja_tasks>(job)) {
             bool do_action = false;
-            const lList *gdil = ocs::tom::get<JAT_granted_destin_identifier_list>(ja_task);
-            const lListElem *gdil_ep = lFirst(gdil);
+            ocs::tom::ConstList<ocs::tom::JG> gdil = ocs::tom::get<JAT_granted_destin_identifier_list>(ja_task);
+            ocs::tom::ConstElement<ocs::tom::JG> gdil_ep = lFirst(gdil);
 
             /*
              * Is the job really running?
@@ -170,11 +171,11 @@ sge_host_add_remove_enforce_limit_trigger(const char *hostname, bool add) {
                   if (sge_hostcmp(ocs::tom::get<JG_qhostname>(gdil_ep), hostname) == 0) {
                      do_action = true;
                   } else {
-                     const lListElem *pe_task;
+                     ocs::tom::ConstElement<ocs::tom::PET> pe_task;
 
-                     for_each_ep(pe_task, static_cast<const lList *>(ocs::tom::get<JAT_task_list>(ja_task))) {
-                        const lList *gdil = ocs::tom::get<PET_granted_destin_identifier_list>(pe_task);
-                        const lListElem *gdil_ep = lFirst(gdil);
+                     for_each_ep(pe_task, ocs::tom::get<JAT_task_list>(ja_task)) {
+                        ocs::tom::ConstList<ocs::tom::JG> gdil = ocs::tom::get<PET_granted_destin_identifier_list>(pe_task);
+                        ocs::tom::ConstElement<ocs::tom::JG> gdil_ep = lFirst(gdil);
 
                         if (gdil_ep != nullptr && sge_hostcmp(ocs::tom::get<JG_qhostname>(gdil_ep), hostname) == 0) {
                            do_action = true;
@@ -194,11 +195,11 @@ sge_host_add_remove_enforce_limit_trigger(const char *hostname, bool add) {
                      if (qinstance_state_is_unknown(qinstance)) {
                         do_action = true;
                      } else {
-                        const lListElem *pe_task;
+                        ocs::tom::ConstElement<ocs::tom::PET> pe_task;
 
-                        for_each_ep(pe_task, static_cast<const lList *>(ocs::tom::get<JAT_task_list>(ja_task))) {
-                           const lList *gdil = ocs::tom::get<PET_granted_destin_identifier_list>(pe_task);
-                           const lListElem *gdil_ep;
+                        for_each_ep(pe_task, ocs::tom::get<JAT_task_list>(ja_task)) {
+                           ocs::tom::ConstList<ocs::tom::JG> gdil = ocs::tom::get<PET_granted_destin_identifier_list>(pe_task);
+                           ocs::tom::ConstElement<ocs::tom::JG> gdil_ep;
 
                            for_each_ep(gdil_ep, gdil) {
                               qinstance = cqueue_list_locate_qinstance(master_cqueue_list,
@@ -327,8 +328,8 @@ sge_job_enfoce_limit_handler(te_event_t event, monitoring_t *monitor) {
           * does the job and the task structure still exist. The job might have been deleted by qdel -f
           */
          if (job != nullptr && ja_task != nullptr) {
-            const lList *gdil = ocs::tom::get<JAT_granted_destin_identifier_list>(ja_task);
-            const lListElem *gdil_ep = lFirst(gdil);
+            ocs::tom::ConstList<ocs::tom::JG> gdil = ocs::tom::get<JAT_granted_destin_identifier_list>(ja_task);
+            ocs::tom::ConstElement<ocs::tom::JG> gdil_ep = lFirst(gdil);
 
             /*
              * is it a running job?
@@ -352,16 +353,14 @@ sge_job_enfoce_limit_handler(te_event_t event, monitoring_t *monitor) {
                       * Accounting for tight pe tasks running on unknown hosts
                       */
                      if (job_is_tight_parallel(job, master_pe_list)) {
-                        const lList *pe_tasks = ocs::tom::get<JAT_task_list>(ja_task);
-                        const lListElem *pe_task;
+                        ocs::tom::ConstList<ocs::tom::PET> pe_tasks = ocs::tom::get<JAT_task_list>(ja_task);
+                        ocs::tom::ConstElement<ocs::tom::PET> pe_task;
 
                         for_each_ep(pe_task, pe_tasks) {
-                           const lList *gdil = nullptr;
-                           const lListElem *gdil_ep;
                            lListElem *qinstance;
 
-                           gdil = ocs::tom::get<PET_granted_destin_identifier_list>(pe_task);
-                           gdil_ep = lFirst(gdil);
+                           ocs::tom::ConstList<ocs::tom::JG> gdil = ocs::tom::get<PET_granted_destin_identifier_list>(pe_task);
+                           ocs::tom::ConstElement<ocs::tom::JG> gdil_ep = lFirst(gdil);
                            if (gdil_ep != nullptr) {
                               qinstance = cqueue_list_locate_qinstance(master_cqueue_list,
                                                                        ocs::tom::get<JG_qname>(gdil_ep));
@@ -390,8 +389,8 @@ sge_job_enfoce_limit_handler(te_event_t event, monitoring_t *monitor) {
                    * Accounting for tight pe tasks running on unknown hosts
                    */
                   if (job_is_tight_parallel(job, master_pe_list)) {
-                     const lList *pe_task_list = ocs::tom::get<JAT_task_list>(ja_task);
-                     lListElem *pe_task;
+                     ocs::tom::ConstList<ocs::tom::PET> pe_task_list = ocs::tom::get<JAT_task_list>(ja_task);
+                     ocs::tom::Element<ocs::tom::PET> pe_task;
 
                      for_each_rw (pe_task, pe_task_list) {
                         if (!ocs::tom::get<PET_do_contact>(pe_task)) {
@@ -522,16 +521,14 @@ sge_job_add_enforce_limit_trigger(lListElem *job, lListElem *ja_task) {
           * which are running on the host currently changing to unknown state.
           */
          if (job_is_tight_parallel(job, master_pe_list)) {
-            const lList *pe_tasks = ocs::tom::get<JAT_task_list>(ja_task);
-            lListElem *pe_task;
+            ocs::tom::ConstList<ocs::tom::PET> pe_tasks = ocs::tom::get<JAT_task_list>(ja_task);
+            ocs::tom::Element<ocs::tom::PET> pe_task;
 
             for_each_rw(pe_task, pe_tasks) {
-               const lList *gdil = nullptr;
-               const lListElem *gdil_ep;
                lListElem *qinstance;
 
-               gdil = ocs::tom::get<PET_granted_destin_identifier_list>(pe_task);
-               gdil_ep = lFirst(gdil);
+               ocs::tom::ConstList<ocs::tom::JG> gdil = ocs::tom::get<PET_granted_destin_identifier_list>(pe_task);
+               ocs::tom::ConstElement<ocs::tom::JG> gdil_ep = lFirst(gdil);
                if (gdil_ep != nullptr) {
                   qinstance = cqueue_list_locate_qinstance(master_cqueue_list, ocs::tom::get<JG_qname>(gdil_ep));
 
@@ -568,7 +565,7 @@ sge_job_add_enforce_limit_trigger(lListElem *job, lListElem *ja_task) {
                 */
                {
                   const lList *cplxl = job_get_hard_resource_list(job);
-                  const lListElem *cple = ocs::tom::find_first<CE_name>(cplxl, SGE_ATTR_H_RT);
+                  ocs::tom::ConstElement<ocs::tom::CE> cple = ocs::tom::find_first<CE_name>(cplxl, SGE_ATTR_H_RT);
 
                   if (cple != nullptr) {
                      const char *job_limit = ocs::tom::get<CE_stringval>(cple);
@@ -584,9 +581,9 @@ sge_job_add_enforce_limit_trigger(lListElem *job, lListElem *ja_task) {
                 * find the smallest queue limit where the job is running
                 */
                if (!has_rt_limit) {
-                  const lList *gdil = ocs::tom::get<JAT_granted_destin_identifier_list>(ja_task);
+                  ocs::tom::ConstList<ocs::tom::JG> gdil = ocs::tom::get<JAT_granted_destin_identifier_list>(ja_task);
                   uint32_t current_qi_h_rt = std::numeric_limits<uint32_t>::max();
-                  const lListElem *gdil_ep;
+                  ocs::tom::ConstElement<ocs::tom::JG> gdil_ep;
 
                   for_each_ep(gdil_ep, gdil) {
                      const char *qname = ocs::tom::get<JG_qname>(gdil_ep);
@@ -659,17 +656,15 @@ sge_job_remove_enforce_limit_trigger(uint32_t job_id, uint32_t ja_task_id) {
     */
    if (job != nullptr && ja_task != nullptr) {
       if (job_is_tight_parallel(job, master_pe_list)) {
-         const lList *pe_tasks = ocs::tom::get<JAT_task_list>(ja_task);
-         lListElem *pe_task;
+         ocs::tom::ConstList<ocs::tom::PET> pe_tasks = ocs::tom::get<JAT_task_list>(ja_task);
+         ocs::tom::Element<ocs::tom::PET> pe_task;
          bool all_are_known = true;
 
          for_each_rw (pe_task, pe_tasks) {
-            const lList *gdil = nullptr;
-            const lListElem *gdil_ep;
             lListElem *qinstance;
 
-            gdil = ocs::tom::get<PET_granted_destin_identifier_list>(pe_task);
-            gdil_ep = lFirst(gdil);
+            ocs::tom::ConstList<ocs::tom::JG> gdil = ocs::tom::get<PET_granted_destin_identifier_list>(pe_task);
+            ocs::tom::ConstElement<ocs::tom::JG> gdil_ep = lFirst(gdil);
             if (gdil_ep != nullptr) {
                qinstance = cqueue_list_locate_qinstance(master_cqueue_list, ocs::tom::get<JG_qname>(gdil_ep));
 

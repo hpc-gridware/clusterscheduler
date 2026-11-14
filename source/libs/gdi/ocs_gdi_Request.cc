@@ -26,6 +26,7 @@
 #include "uti/sge_rmon_macros.h"
 
 #include "sgeobj/sge_answer.h"
+#include "sgeobj/tom/ocs_tom_MA.h"
 #include "tom/ocs_Element.h"
 
 #include "gdi/ocs_gdi_Target.h"
@@ -140,7 +141,7 @@ ocs::gdi::Request::get_response(lList **alpp, const Command cmd, const SubComman
    }
 
    // get the response for the given id
-   lListElem *map = ocs::tom::find_first_rw<MA_id>(multi_answer_list, id);
+   ocs::tom::Element<ocs::tom::MA> map = ocs::tom::find_first_rw<MA_id>(multi_answer_list, id);
    if (!map) {
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_GDI_SGEGDIFAILED_S, to_string(target).c_str());
       answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);

@@ -123,7 +123,7 @@ has_single_member(const lListElem *ep, const char *expected) {
    if (ep == nullptr) {
       return false;
    }
-   const lList *hosts = ocs::tom::get<HGRP_host_list>(ep);
+   ocs::tom::ConstList<ocs::tom::HR> hosts = ocs::tom::get<HGRP_host_list>(ep);
    return lGetNumberOfElem(hosts) == 1 &&
           strcmp(ocs::tom::get<HR_name>(lFirst(hosts)), expected) == 0;
 }

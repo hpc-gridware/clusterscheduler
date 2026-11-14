@@ -174,7 +174,7 @@ sge_book_finished_job_usage(lListElem *jep, lListElem *jatep, monitoring_t * /* 
     * leaf with the fewest pending jobs wins by per-job dilution alone,
     * starving leaves with many pending (project3 in the sharetree
     * test). */
-   lList *scaled = ocs::tom::get<JAT_scaled_usage_list>(jatep);
+   ocs::tom::List<ocs::tom::UA> scaled = ocs::tom::get<JAT_scaled_usage_list>(jatep);
    if (scaled == nullptr) {
       ocs::tom::set<JAT_scaled_usage_list>(jatep, lCreateList("scaled_usage", UA_Type));
       scaled = ocs::tom::get<JAT_scaled_usage_list>(jatep);

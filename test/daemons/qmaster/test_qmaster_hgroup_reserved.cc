@@ -35,6 +35,7 @@
 #include "sgeobj/sge_href.h"
 #include "tom/ocs_Element.h"
 #include "sgeobj/tom/ocs_tom_HR.h"
+#include "sgeobj/tom/ocs_tom_HGRP.h"
 
 #include "gdi/ocs_gdi_Client.h"
 #include "gdi/ocs_gdi_ClientBase.h"
@@ -125,7 +126,7 @@ delete_refused(const char *name) {
 static bool
 modify_refused(const char *name, lList *new_host_list) {
    lList *lp = lCreateList("mod", HGRP_Type);
-   lListElem *ep = ocs::tom::emplace_back<HGRP_name>(&lp, name);
+   ocs::tom::Element<ocs::tom::HGRP> ep = ocs::tom::emplace_back<HGRP_name>(&lp, name);
    ocs::tom::set<HGRP_host_list>(ep, new_host_list);
 
    lList *alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::HGRP_LIST, ocs::gdi::Command::MOD,

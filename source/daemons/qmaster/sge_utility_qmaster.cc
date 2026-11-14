@@ -634,7 +634,7 @@ attr_mod_obj_binding(lList **alpp, lListElem *new_ar, const lListElem *ar) {
    bool ret = true;
 
    if (ocs::tom::has<AR_binding>(ar)) {
-      lListElem *old_binding_elem = ocs::tom::get<AR_binding>(new_ar);
+      ocs::tom::Element<ocs::tom::BN> old_binding_elem = ocs::tom::get<AR_binding>(new_ar);
       const lListElem *new_binding_elem = ocs::tom::get<AR_binding>(ar);
       if (old_binding_elem == nullptr) {
          ocs::tom::set<AR_binding>(new_ar, new_binding_elem != nullptr ? lCopyElem(new_binding_elem) : nullptr);

@@ -231,7 +231,7 @@ check_sharetree(lList **alpp, lListElem *node, const lList *user_list, const lLi
                 lList **found) {
    DENTER(TOP_LAYER);
 
-   const lList *children;
+   ocs::tom::ConstList<ocs::tom::STN> children;
    const lListElem *remaining;
    lList *save_found = nullptr;
    const char *name = ocs::tom::get<STN_name>(node);

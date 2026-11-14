@@ -62,6 +62,7 @@
 #include "sgeobj/tom/ocs_tom_RUE.h"
 #include "sgeobj/tom/ocs_tom_STU.h"
 #include "sgeobj/tom/ocs_tom_US.h"
+#include "sgeobj/tom/ocs_tom_RESL.h"
 
 #include "uti/ocs_Pattern.h"
 #include "uti/sge.h"
@@ -469,11 +470,10 @@ bool host_is_referenced(const lListElem *host,
  * @return string describing the load value
  */
 const char *host_get_load_value(lListElem *host, const char *name) {
-   const lListElem *load;
    const char *value = nullptr;
 
    if (host != nullptr) {
-      load = ocs::tom::find_first_in<EH_load_list, HL_name>(host, name);
+      ocs::tom::ConstElement<ocs::tom::HL> load = ocs::tom::find_first_in<EH_load_list, HL_name>(host, name);
       if (load != nullptr) {
          value = ocs::tom::get<HL_value>(load);
       }
@@ -622,9 +622,9 @@ host_is_centry_referenced(const lListElem *this_elem, const lListElem *centry) {
 
    if (this_elem != nullptr) {
       const char *name = ocs::tom::get<CE_name>(centry);
-      const lList *ce_values = ocs::tom::get<EH_consumable_config_list>(this_elem);
-      const lList *load_list = ocs::tom::get<EH_load_list>(this_elem);
-      const lList *rep_vars = ocs::tom::get<EH_report_variables>(this_elem);
+      ocs::tom::ConstList<ocs::tom::CE> ce_values = ocs::tom::get<EH_consumable_config_list>(this_elem);
+      ocs::tom::ConstList<ocs::tom::HL> load_list = ocs::tom::get<EH_load_list>(this_elem);
+      ocs::tom::ConstList<ocs::tom::STU> rep_vars = ocs::tom::get<EH_report_variables>(this_elem);
 
       /* 
        * centry may be referenced in 
@@ -661,8 +661,8 @@ host_is_centry_a_complex_value(const lListElem *this_elem,
 
    if (this_elem != nullptr) {
       const char *name = ocs::tom::get<CE_name>(centry);
-      const lList *ce_values = ocs::tom::get<EH_consumable_config_list>(this_elem);
-      const lList *load_list = ocs::tom::get<EH_load_list>(this_elem);
+      ocs::tom::ConstList<ocs::tom::CE> ce_values = ocs::tom::get<EH_consumable_config_list>(this_elem);
+      ocs::tom::ConstList<ocs::tom::HL> load_list = ocs::tom::get<EH_load_list>(this_elem);
 
       /* 
        * centry may be referenced in 
@@ -743,15 +743,14 @@ host_merge(lListElem *host, const lListElem *global_host) {
    bool ret = true;
 
    if (host != nullptr && global_host != nullptr) {
-      const lList *local_list = ocs::tom::get<EH_report_variables>(host);
+      ocs::tom::ConstList<ocs::tom::STU> local_list = ocs::tom::get<EH_report_variables>(host);
 
       /* if we have a local list: use this one */
       if (local_list != nullptr && lGetNumberOfElem(local_list) != 0) {
          ocs::tom::set<EH_merged_report_variables>(host, lCopyList("", local_list));
       } else {
-         const lList *global_list;
 
-         global_list = ocs::tom::get<EH_report_variables>(global_host);
+         ocs::tom::ConstList<ocs::tom::STU> global_list = ocs::tom::get<EH_report_variables>(global_host);
          /* if we have no local list, but a global one, use this one */
          if (global_list != nullptr && lGetNumberOfElem(global_list) != 0) {
             ocs::tom::set<EH_merged_report_variables>(host, lCopyList("", global_list));
@@ -781,13 +780,13 @@ int
 host_debit_rsmap(lListElem *host, const char *ce_name, const lListElem *resl, int slots, bool *just_check) {
    int mods = 0;
 
-   lList *resource_utilization = ocs::tom::get<EH_resource_utilization>(host);
-   lListElem *resource = ocs::tom::find_first_rw<RUE_name>(resource_utilization, ce_name);
+   ocs::tom::List<ocs::tom::RUE> resource_utilization = ocs::tom::get<EH_resource_utilization>(host);
+   ocs::tom::Element<ocs::tom::RUE> resource = ocs::tom::find_first_rw<RUE_name>(resource_utilization, ce_name);
 
    const char *id = ocs::tom::get<RESL_value>(resl);
    uint32_t amount = ocs::tom::get<RESL_amount>(resl);
 
-   lListElem *utilized_id = ocs::tom::find_first_in_rw<RUE_utilized_now_resource_map_list, RESL_value>(resource, id);
+   ocs::tom::Element<ocs::tom::RESL> utilized_id = ocs::tom::find_first_in_rw<RUE_utilized_now_resource_map_list, RESL_value>(resource, id);
    if (utilized_id == nullptr) {
       utilized_id = ocs::tom::emplace_back_in<RUE_utilized_now_resource_map_list, RESL_value>(resource, id);
    }
@@ -795,8 +794,8 @@ host_debit_rsmap(lListElem *host, const char *ce_name, const lListElem *resl, in
       if (just_check != nullptr) {
          // only check if there is enough resources free, no booking
          // only when slots > 0? It is never called with slots < 0 and just_check
-         const lListElem *complex_value = ocs::tom::find_first_in<EH_consumable_config_list, CE_name>(host, ce_name);
-         const lListElem *configured_id = ocs::tom::find_first_in<CE_resource_map_list, RESL_value>(complex_value, id);
+         ocs::tom::ConstElement<ocs::tom::CE> complex_value = ocs::tom::find_first_in<EH_consumable_config_list, CE_name>(host, ce_name);
+         ocs::tom::ConstElement<ocs::tom::RESL> configured_id = ocs::tom::find_first_in<CE_resource_map_list, RESL_value>(complex_value, id);
          uint32_t configured_amount = ocs::tom::get<RESL_amount>(configured_id);
          uint32_t utilized_amount = ocs::tom::get<RESL_amount>(utilized_id);
          if (configured_amount - utilized_amount - amount < 0) {
@@ -837,8 +836,8 @@ host_debit_binding(lListElem *host, const char *ce_name, const lListElem *resl, 
    DENTER(TOP_LAYER);
 
    // we book cores/threads in the resource utilization of slots
-   lList *resource_utilization = ocs::tom::get<EH_resource_utilization>(host);
-   lListElem *resource = ocs::tom::find_first_rw<RUE_name>(resource_utilization, ce_name);
+   ocs::tom::List<ocs::tom::RUE> resource_utilization = ocs::tom::get<EH_resource_utilization>(host);
+   ocs::tom::Element<ocs::tom::RUE> resource = ocs::tom::find_first_rw<RUE_name>(resource_utilization, ce_name);
 
    // add resource utilization entry if it does not exist yet
    if (resource == nullptr) {
@@ -970,13 +969,13 @@ host_get_topology_in_use(const lListElem *host) {
    }
 
    // get the resource utilization of the host, if there is none, return empty string
-   const lList *resource_utilization = ocs::tom::get<EH_resource_utilization>(host);
+   ocs::tom::ConstList<ocs::tom::RUE> resource_utilization = ocs::tom::get<EH_resource_utilization>(host);
    if (resource_utilization == nullptr) {
       DRETURN({});
    }
 
    // get the slots resource utilization of the host, if there is none, return empty string
-   const lListElem *slots_utilization = ocs::tom::find_first<RUE_name>(resource_utilization, SGE_ATTR_SLOTS);
+   ocs::tom::ConstElement<ocs::tom::RUE> slots_utilization = ocs::tom::find_first<RUE_name>(resource_utilization, SGE_ATTR_SLOTS);
    if (slots_utilization == nullptr) {
       DRETURN({});
    }

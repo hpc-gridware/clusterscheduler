@@ -31,6 +31,7 @@
 
 #include "sgeobj/cull/sge_host_EH_L.h"
 #include "sgeobj/cull/sge_host_HL_L.h"
+#include "sgeobj/tom/ocs_tom_HL.h"
 #include "tom/ocs_Element.h"
 
 #include "../msg_qconf.h"
@@ -89,7 +90,7 @@ namespace ocs {
          write_rule(os, binding);
 
          for_each_ep_lv(host, list) {
-            const lListElem *arch_elem = ocs::tom::find_first_in<EH_load_list, HL_name>(host, "arch");
+            ocs::tom::ConstElement<ocs::tom::HL> arch_elem = ocs::tom::find_first_in<EH_load_list, HL_name>(host, "arch");
             const char *hostname = ocs::tom::get<EH_name>(host);
 
             os << std::format("{:<25.24}", (hostname != nullptr) ? hostname : "");
@@ -141,7 +142,7 @@ namespace ocs {
        * @return the value as a number, or 0 when it is missing
        */
       static uint32_t write_load_value(std::ostream &os, const lListElem *host, const char *name) {
-         const lListElem *elem = ocs::tom::find_first_in<EH_load_list, HL_name>(host, name);
+         ocs::tom::ConstElement<ocs::tom::HL> elem = ocs::tom::find_first_in<EH_load_list, HL_name>(host, name);
          if (elem == nullptr) {
             os << std::format("{:>6.5}", "-");
             return 0;

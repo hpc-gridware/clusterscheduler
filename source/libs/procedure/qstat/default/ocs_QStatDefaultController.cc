@@ -72,11 +72,10 @@ void ocs::QStatDefaultController::remove_tagged_jobs(lList *job_list) {
    lListElem *tmp = nullptr;
 
    while (jep) {
-      lList *task_list;
       lListElem *jatep, *tmp_jatep;
 
       tmp = lNextRW(jep);
-      task_list = ocs::tom::get<JB_ja_tasks>(jep);
+      ocs::tom::List<ocs::tom::JAT> task_list = ocs::tom::get<JB_ja_tasks>(jep);
       jatep = lFirstRW(task_list);
       while (jatep) {
          tmp_jatep = lNextRW(jatep);
@@ -173,7 +172,7 @@ ocs::QStatDefaultController::process_jobs_in_queue(std::ostream &os, lListElem *
    for_each_rw_lv(jlep, model.get_job_list()) {
       int master, i;
 
-      for_each_rw_lv(jatep, ocs::tom::get<JB_ja_tasks>(jlep)) {
+      for (ocs::tom::Element<ocs::tom::JAT> jatep : ocs::tom::get<JB_ja_tasks>(jlep)) {
          uint32_t jstate = ocs::tom::get<JAT_state>(jatep);
 
          if (ISSET(jstate, JSUSPENDED_ON_SUBORDINATE) ||
@@ -182,7 +181,7 @@ ocs::QStatDefaultController::process_jobs_in_queue(std::ostream &os, lListElem *
          }
 
          lListElem *old_gdilep = nullptr;
-         for_each_rw_lv(gdilep, ocs::tom::get<JAT_granted_destin_identifier_list>(jatep)) {
+         for (ocs::tom::Element<ocs::tom::JG> gdilep : ocs::tom::get<JAT_granted_destin_identifier_list>(jatep)) {
 
             if (!queue || !strcmp(ocs::tom::get<JG_qname>(gdilep), qnm)) {
                int slot_adjust = 0;
@@ -402,17 +401,17 @@ void ocs::QStatDefaultController::process_job(std::ostream &os, lListElem *job, 
       /* sum pe-task usage based on queue slots */
       if (job_usage_list) {
          int subtask_ndx=1;
-         for_each_ep_lv(task, ocs::tom::get<JAT_task_list>(jatep)) {
-            lListElem *dst;
-            const lListElem *ep;
+         for (ocs::tom::ConstElement<ocs::tom::PET> task : ocs::tom::get<JAT_task_list>(jatep)) {
+            ocs::tom::Element<ocs::tom::UA> dst;
+            ocs::tom::ConstElement<ocs::tom::JG> ep;
             const char *qname;
 
             if (sum_pe_tasks ||
                 (summary.queue &&
-                 ((ep=lFirst(static_cast<const lList *>(ocs::tom::get<PET_granted_destin_identifier_list>(task))))) &&
+                 ((ep=lFirst(ocs::tom::get<PET_granted_destin_identifier_list>(task)))) &&
                  ((qname=ocs::tom::get<JG_qname>(ep))) &&
                  !strcmp(qname, summary.queue) && ((subtask_ndx++%slots)==slot))) {
-               for_each_ep_lv(src, ocs::tom::get<PET_scaled_usage>(task)) {
+               for (ocs::tom::ConstElement<ocs::tom::UA> src : ocs::tom::get<PET_scaled_usage>(task)) {
                   if ((dst=ocs::tom::find_first_rw<UA_name>(job_usage_list, ocs::tom::get<UA_name>(src))))
                      ocs::tom::set<UA_value>(dst, ocs::tom::get<UA_value>(dst) + ocs::tom::get<UA_value>(src));
                   else
@@ -509,15 +508,15 @@ void ocs::QStatDefaultController::process_job(std::ostream &os, lListElem *job, 
    view.report_job(os, ocs::tom::get<JB_job_number>(job), &summary, parameter, model);
 
    if (tsk_ext) {
-      const lList *task_list = ocs::tom::get<JAT_task_list>(jatep);
-      const lListElem *ep;
+      ocs::tom::ConstList<ocs::tom::PET> task_list = ocs::tom::get<JAT_task_list>(jatep);
+      ocs::tom::ConstElement<ocs::tom::JG> ep;
       const char *qname;
       int subtask_ndx=1;
       bool close_tasks{false};
 
       /* print master sub-task belonging to this queue */
       if (!slot && task_list && summary.queue &&
-          ((ep=lFirst(static_cast<const lList *>(ocs::tom::get<JAT_granted_destin_identifier_list>(jatep))))) &&
+          ((ep=lFirst(ocs::tom::get<JAT_granted_destin_identifier_list>(jatep)))) &&
           ((qname=ocs::tom::get<JG_qname>(ep))) &&
           !strcmp(qname, summary.queue)) {
 
@@ -532,7 +531,7 @@ void ocs::QStatDefaultController::process_job(std::ostream &os, lListElem *job, 
       /* print sub-tasks belonging to this queue */
       for_each_rw_lv(task, task_list) {
          if (!slots || (summary.queue &&
-              ((ep=lFirst(static_cast<const lList *>(ocs::tom::get<PET_granted_destin_identifier_list>(task))))) &&
+              ((ep=lFirst(ocs::tom::get<PET_granted_destin_identifier_list>(task)))) &&
               ((qname=ocs::tom::get<JG_qname>(ep))) &&
               !strcmp(qname, summary.queue) && ((subtask_ndx++%slots)==slot))) {
             if (!close_tasks) {
@@ -569,7 +568,7 @@ void ocs::QStatDefaultController::process_job(std::ostream &os, lListElem *job, 
 
       if (ocs::tom::get<JAT_granted_pe>(jatep)) {
          uint32_t pe_slots = 0;
-         for_each_ep_lv(l_gdil_ep, ocs::tom::get<JAT_granted_destin_identifier_list>(jatep)) {
+         for (ocs::tom::ConstElement<ocs::tom::JG> l_gdil_ep : ocs::tom::get<JAT_granted_destin_identifier_list>(jatep)) {
             pe_slots += ocs::tom::get<JG_slots>(l_gdil_ep);
          }
 
@@ -693,20 +692,20 @@ void ocs::QStatDefaultController::process_job(std::ostream &os, lListElem *job, 
       }
 
       {
-         ql = ocs::tom::get<JB_jid_request_list>(job );
+         ocs::tom::ConstList<ocs::tom::JRE> ql = ocs::tom::get<JB_jid_request_list>(job );
          if (ql) {
             view.report_predecessors_requested_started(os);
-            for_each_ep_lv(qrep, ql) {
+            for (ocs::tom::ConstElement<ocs::tom::JRE> qrep : ql) {
                view.report_predecessor_requested(os, ocs::tom::get<JRE_job_name>(qrep));
             }
             view.report_predecessors_requested_finished(os);
          }
       }
       {
-         ql = ocs::tom::get<JB_jid_predecessor_list>(job);
+         ocs::tom::ConstList<ocs::tom::JRE> ql = ocs::tom::get<JB_jid_predecessor_list>(job);
          if (ql) {
             view.report_predecessors_started(os);
-            for_each_ep_lv(qrep, ql) {
+            for (ocs::tom::ConstElement<ocs::tom::JRE> qrep : ql) {
                view.report_predecessor(os, ocs::tom::get<JRE_job_number>(qrep));
             }
             view.report_predecessors_finished(os);
@@ -714,27 +713,27 @@ void ocs::QStatDefaultController::process_job(std::ostream &os, lListElem *job, 
       }
 
       {
-         ql = ocs::tom::get<JB_ja_ad_request_list>(job );
+         ocs::tom::ConstList<ocs::tom::JRE> ql = ocs::tom::get<JB_ja_ad_request_list>(job );
          if (ql) {
             view.report_ad_predecessors_requested_started(os);
-            for_each_ep_lv(qrep, ql) {
+            for (ocs::tom::ConstElement<ocs::tom::JRE> qrep : ql) {
                view.report_ad_predecessor_requested(os, ocs::tom::get<JRE_job_name>(qrep));
             }
             view.report_ad_predecessors_requested_finished(os);
          }
       }
       {
-         ql = ocs::tom::get<JB_ja_ad_predecessor_list>(job);
+         ocs::tom::ConstList<ocs::tom::JRE> ql = ocs::tom::get<JB_ja_ad_predecessor_list>(job);
          if (ql) {
             view.report_ad_predecessors_started(os);
-            for_each_ep_lv(qrep, ql) {
+            for (ocs::tom::ConstElement<ocs::tom::JRE> qrep : ql) {
                view.report_ad_predecessor(os, ocs::tom::get<JRE_job_number>(qrep));
             }
             view.report_ad_predecessors_finished(os);
          }
       }
 
-      if (const lListElem *binding_elem = ocs::tom::get<JB_binding>(job); binding_elem != nullptr) {
+      if (ocs::tom::ConstElement<ocs::tom::BN> binding_elem = ocs::tom::get<JB_binding>(job); binding_elem != nullptr) {
          dstring binding_param = DSTRING_INIT;
 
          // all binding specific parameter as one string
@@ -768,9 +767,8 @@ ocs::QStatDefaultController::process_subtask(std::ostream &os, lListElem *job, l
    DENTER(TOP_LAYER);
    char task_state_string[8];
    uint32_t tstate, tstatus;
-   const lListElem *ep;
-   const lList *usage_list;
-   const lList *scaled_usage_list;
+   ocs::tom::ConstList<ocs::tom::UA> usage_list;
+   ocs::tom::ConstList<ocs::tom::UA> scaled_usage_list;
 
    QStatDefaultViewBase::task_summary_t summary{};
 
@@ -822,7 +820,7 @@ ocs::QStatDefaultController::process_subtask(std::ostream &os, lListElem *job, l
    summary.state = task_state_string;
 
    {
-      const lListElem *up;
+      ocs::tom::ConstElement<ocs::tom::UA> up;
 
       /* scaled cpu usage */
       if (!(up = ocs::tom::find_first<UA_name>(scaled_usage_list, USAGE_ATTR_CPU))) {
@@ -850,7 +848,7 @@ ocs::QStatDefaultController::process_subtask(std::ostream &os, lListElem *job, l
    }
 
    if (tstatus==JFINISHED) {
-      ep=ocs::tom::find_first<UA_name>(usage_list, "exit_status");
+      ocs::tom::ConstElement<ocs::tom::UA> ep=ocs::tom::find_first<UA_name>(usage_list, "exit_status");
       if (ep) {
          summary.has_exit_status = true;
          summary.exit_status = ocs::tom::get<UA_value>(ep);
@@ -989,7 +987,7 @@ void ocs::QStatDefaultController::process_jobs_finished_state(std::ostream &os, 
       lList *ja_task_list = nullptr;
       bool FoundTasks = false;
 
-      for_each_rw_lv(jatep, ocs::tom::get<JB_ja_tasks>(jep)) {
+      for (ocs::tom::Element<ocs::tom::JAT> jatep : ocs::tom::get<JB_ja_tasks>(jep)) {
          if (ocs::tom::get<JAT_status>(jatep) != JFINISHED) {
             continue;
          }
@@ -1057,7 +1055,7 @@ void ocs::QStatDefaultController::process_jobs_error_state(std::ostream &os, QSt
    dstring dyn_task_str = DSTRING_INIT;
 
    for_each_rw_lv(jep, model.get_job_list()) {
-      for_each_rw_lv(jatep, ocs::tom::get<JB_ja_tasks>(jep)) {
+      for (ocs::tom::Element<ocs::tom::JAT> jatep : ocs::tom::get<JB_ja_tasks>(jep)) {
          if (!(ocs::tom::get<JAT_suitable>(jatep) & TAG_FOUND_IT) && ocs::tom::get<JAT_status>(jatep) == JERROR) {
             ocs::tom::set<JAT_suitable>(jatep, ocs::tom::get<JAT_suitable>(jatep)|TAG_FOUND_IT);
 
@@ -1254,7 +1252,7 @@ ocs::QStatDefaultController::process_queue(std::ostream &os, lListElem *queue, Q
       }
    }
    if (parameter.explain_bits_ != QI_DEFAULT) {
-      for_each_ep_lv(qim, ocs::tom::get<QU_message_list>(queue)) {
+      for (ocs::tom::ConstElement<ocs::tom::QIM> qim : ocs::tom::get<QU_message_list>(queue)) {
          uint32_t type = ocs::tom::get<QIM_type>(qim);
 
          if ((parameter.explain_bits_ & QI_AMBIGUOUS) == type || (parameter.explain_bits_ & QI_ERROR) == type) {

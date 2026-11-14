@@ -176,11 +176,11 @@ sge_change_queue_version_acl(ocs::gdi::Packet *packet, ocs::gdi::Task *task, con
    const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
 
    for_each_ep_lv(cqueue, master_cqueue_list) {
-      const lList *qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
+      ocs::tom::ConstList<ocs::tom::QU> qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
 
       for_each_rw_lv(qinstance, qinstance_list) {
-         const lList *acl_list = ocs::tom::get<QU_acl>(qinstance);
-         const lList *xacl_list = ocs::tom::get<QU_xacl>(qinstance);
+         ocs::tom::ConstList<ocs::tom::US> acl_list = ocs::tom::get<QU_acl>(qinstance);
+         ocs::tom::ConstList<ocs::tom::US> xacl_list = ocs::tom::get<QU_xacl>(qinstance);
          const lListElem *acl = ocs::tom::find_first<US_name>(acl_list, acl_name);
          const lListElem *xacl = ocs::tom::find_first<US_name>(xacl_list, acl_name);
          bool is_used = ((acl != nullptr) || (xacl != nullptr)) ? true : false;
@@ -330,7 +330,7 @@ job_is_valid_department(lListElem *job, lList **alpp, const char *dept_name, con
    }
 
    // Does the department exist?
-   const lListElem *dept = ocs::tom::find_first<US_name>(userset_list, dept_name);
+   ocs::tom::ConstElement<ocs::tom::US> dept = ocs::tom::find_first<US_name>(userset_list, dept_name);
    if (!dept || !(ocs::tom::get<US_type>(dept) & US_DEPT)) {
       if (alpp) {
          ERROR(MSG_JOB_DEPTNOEXIST_S, dept_name);
@@ -353,7 +353,7 @@ job_is_valid_department(lListElem *job, lList **alpp, const char *dept_name, con
 
    // Does the group or a supplementary group belong to the department?
    const char *group = ocs::tom::get<JB_group>(job);
-   const lList *grp_list = ocs::tom::get<JB_grp_list>(job);
+   ocs::tom::ConstList<ocs::tom::ST> grp_list = ocs::tom::get<JB_grp_list>(job);
    if (sge_contained_in_access_list(nullptr, group, grp_list, dept)) {
       DRETURN(true);
    }
@@ -578,14 +578,13 @@ void userset_update_categories(const lList *added, const lList *removed, uint64_
    DENTER(TOP_LAYER);
    const lListElem *ep;
    const char *u;
-   lListElem *acl;
    const lList *master_userset_list = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
    bool reattach_categories = false;
 
    for_each_ep(ep, added) {
       u = ocs::tom::get<US_name>(ep);
       DPRINTF("added userset: \"%s\"\n", u);
-      acl = ocs::tom::find_first_rw<US_name>(master_userset_list, u);
+      ocs::tom::Element<ocs::tom::US> acl = ocs::tom::find_first_rw<US_name>(master_userset_list, u);
       if (acl && !ocs::tom::get<US_consider_with_categories>(acl)) {
          ocs::tom::set<US_consider_with_categories>(acl, true);
          reattach_categories = true;
@@ -596,7 +595,7 @@ void userset_update_categories(const lList *added, const lList *removed, uint64_
    for_each_ep(ep, removed) {
       u = ocs::tom::get<US_name>(ep);
       DPRINTF("removed userset: \"%s\"\n", u);
-      acl = ocs::tom::find_first_rw<US_name>(master_userset_list, u);
+      ocs::tom::Element<ocs::tom::US> acl = ocs::tom::find_first_rw<US_name>(master_userset_list, u);
 
       if (acl && !userset_still_used(u)) {
          ocs::tom::set<US_consider_with_categories>(acl, false);
@@ -748,8 +747,8 @@ int userset_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lL
       lList *new_master_userset_list = nullptr;
 
       for_each_ep(cqueue, master_cqueue_list) {
-         const lList *qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
-         const lListElem *qinstance;
+         ocs::tom::ConstList<ocs::tom::QU> qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
+         ocs::tom::ConstElement<ocs::tom::QU> qinstance;
 
          for_each_ep(qinstance, qinstance_list) {
             const char *queue_name = ocs::tom::get<QU_full_name>(qinstance);

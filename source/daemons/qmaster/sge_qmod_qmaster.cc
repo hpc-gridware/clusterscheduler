@@ -72,6 +72,8 @@
 #include "sgeobj/tom/ocs_tom_QU.h"
 #include "sgeobj/tom/ocs_tom_RN.h"
 #include "sgeobj/tom/ocs_tom_ST.h"
+#include "sgeobj/tom/ocs_tom_CQ.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
 
 #include "gdi/ocs_gdi_ClientServerBase.h"
 
@@ -141,7 +143,6 @@ sge_gdi_qmod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monit
    DENTER(TOP_LAYER);
    lList *alp = nullptr;
    lListElem *jatask = nullptr, *tmp_task;
-   const lListElem *rn;
    bool found;
    uint32_t jobid;
    uint32_t start = 0, end = 0, step = 0;
@@ -197,7 +198,7 @@ sge_gdi_qmod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monit
          // CS-2206: the reconnecting client's TLS cert (PEM) rides in
          // ID_user_list as a single ST_name element (nullptr in non-TLS mode).
          const char *reconnect_cred = nullptr;
-         const lListElem *cred_ep = lFirst(static_cast<const lList *>(ocs::tom::get<ID_user_list>(dep)));
+         ocs::tom::ConstElement<ocs::tom::ST> cred_ep = lFirst(ocs::tom::get<ID_user_list>(dep));
          if (cred_ep != nullptr) {
             reconnect_cred = ocs::tom::get<ST_name>(cred_ep);
          }
@@ -231,9 +232,7 @@ sge_gdi_qmod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monit
                const char *full_name = nullptr;
                const char *cqueue_name = nullptr;
                const char *hostname = nullptr;
-               const lListElem *cqueue = nullptr;
                lListElem *qinstance = nullptr;
-               const lList *qinstance_list = nullptr;
 
                full_name = ocs::tom::get<QR_name>(qref);
                if (!cqueue_name_split(full_name, &cqueue_buffer, &hostname_buffer, nullptr, nullptr)) {
@@ -241,8 +240,8 @@ sge_gdi_qmod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monit
                }
                cqueue_name = sge_dstring_get_string(&cqueue_buffer);
                hostname = sge_dstring_get_string(&hostname_buffer);
-               cqueue = ocs::tom::find_first<CQ_name>(master_cqueue_list, cqueue_name);
-               qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
+               ocs::tom::ConstElement<ocs::tom::CQ> cqueue = ocs::tom::find_first<CQ_name>(master_cqueue_list, cqueue_name);
+               ocs::tom::ConstList<ocs::tom::QU> qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
                qinstance = ocs::tom::find_first_rw<QU_qhostname>(qinstance_list, hostname);
 
                sge_change_queue_state(packet, task, qinstance, id_action, ocs::tom::get<ID_force>(dep), &alp, monitor);
@@ -272,7 +271,7 @@ sge_gdi_qmod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monit
               action == QI_DO_UNSUSPEND)) {
             jobid = strtol(ocs::tom::get<ID_str>(dep), nullptr, 10);
 
-            rn = lFirst(static_cast<const lList *>(ocs::tom::get<ID_ja_structure>(dep)));
+            ocs::tom::ConstElement<ocs::tom::RN> rn = lFirst(ocs::tom::get<ID_ja_structure>(dep));
             if (rn) {
                start = ocs::tom::get<RN_min>(rn);
                if (start) {
@@ -294,7 +293,7 @@ sge_gdi_qmod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monit
                alltasks = 1;
             }
 
-            lListElem *job = ocs::tom::find_first_rw<JB_job_number>(master_job_list, jobid);
+            ocs::tom::Element<ocs::tom::JB> job = ocs::tom::find_first_rw<JB_job_number>(master_job_list, jobid);
             if (job != nullptr) {
                jatask = lFirstRW(static_cast<const lList *>(ocs::tom::get<JB_ja_tasks>(job)));
 
@@ -1037,8 +1036,8 @@ rebuild_signal_events() {
 
    /* Q U E U E */
    for_each_ep(cqueue, master_cqueue_list) {
-      const lList *qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
-      const lListElem *qinstance;
+      ocs::tom::ConstList<ocs::tom::QU> qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
+      ocs::tom::ConstElement<ocs::tom::QU> qinstance;
 
       for_each_ep(qinstance, qinstance_list) {
          uint64_t when = ocs::tom::get<QU_pending_signal_delivery_time>(qinstance);
@@ -1283,7 +1282,7 @@ static void
 signal_slave_jobs_in_queue(int how, lListElem *qep, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
-   const lList *gdil_lp;
+   ocs::tom::ConstList<ocs::tom::JG> gdil_lp;
    lListElem *mq;
    lListElem *jep, *jatep;
    const char *qname, *mqname, *pe_name;
@@ -1330,7 +1329,7 @@ static void
 signal_slave_tasks_of_job(int how, lListElem *jep, lListElem *jatep, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
-   const lList *gdil_lp;
+   ocs::tom::ConstList<ocs::tom::JG> gdil_lp;
    lListElem *mq, *pe;
    const lListElem *gdil_ep;
    const char *qname, *pe_name;

@@ -165,7 +165,7 @@ sge_add_qeti_resource_container(lList **qeti_to_add, const lList *rue_list,
    DENTER(TOP_LAYER);
 
    // implicit slots request
-   const lListElem *tep = ocs::tom::find_first<CE_name>(total_list, SGE_ATTR_SLOTS);
+   ocs::tom::ConstElement<ocs::tom::CE> tep = ocs::tom::find_first<CE_name>(total_list, SGE_ATTR_SLOTS);
    if (tep != nullptr) {
       if (sge_qeti_list_add(qeti_to_add, SGE_ATTR_SLOTS, rue_list, ocs::tom::get<CE_doubleval>(tep), true)) {
          DRETURN(-1);
@@ -173,10 +173,10 @@ sge_add_qeti_resource_container(lList **qeti_to_add, const lList *rue_list,
    }
 
    /* explicit requests */
-   for_each_ep_lv(jrs, ocs::tom::get<JB_request_set_list>(job)) {
-      for_each_ep_lv(req, ocs::tom::get<JRS_hard_resource_list>(jrs)) {
+   for (ocs::tom::ConstElement<ocs::tom::JRS> jrs : ocs::tom::get<JB_request_set_list>(job)) {
+      for (ocs::tom::ConstElement<ocs::tom::CE> req : ocs::tom::get<JRS_hard_resource_list>(jrs)) {
          const char *name = ocs::tom::get<CE_name>(req);
-         const lListElem *centry_config = ocs::tom::find_first<CE_name>(centry_list, name);
+         ocs::tom::ConstElement<ocs::tom::CE> centry_config = ocs::tom::find_first<CE_name>(centry_list, name);
 
          if ((centry_config && ocs::tom::get<CE_consumable>(centry_config) != CONSUMABLE_NO) &&
              (tep = ocs::tom::find_first<CE_name>(total_list, name))) {

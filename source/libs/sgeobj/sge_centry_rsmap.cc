@@ -113,21 +113,21 @@ bool centry_check_rsmap_characteristics(lList **answer_list, lListElem *centry,
    }
 
    const char *rsmap_name = ocs::tom::get<CE_name>(centry);
-   lList *resource_map = ocs::tom::get<CE_resource_map_list>(centry);
+   ocs::tom::List<ocs::tom::RESL> resource_map = ocs::tom::get<CE_resource_map_list>(centry);
    if (resource_map == nullptr) {
       return ret;
    }
 
-   lListElem *resl;
+   ocs::tom::Element<ocs::tom::RESL> resl;
    for_each_rw (resl, resource_map) {
-      lList *props = ocs::tom::get<RESL_properties>(resl);
+      ocs::tom::List<ocs::tom::CE> props = ocs::tom::get<RESL_properties>(resl);
       if (props == nullptr || lGetNumberOfElem(props) == 0) {
          continue;
       }
       const char *id = ocs::tom::get<RESL_value>(resl);
 
       std::unordered_set<std::string> seen;
-      lListElem *prop;
+      ocs::tom::Element<ocs::tom::CE> prop;
       for_each_rw (prop, props) {
          const char *pname = ocs::tom::get<CE_name>(prop);
          if (pname == nullptr) {
@@ -658,7 +658,7 @@ centry_rsmap_resolve_request_properties(const lListElem *centry, const lList *ma
          continue;
       }
 
-      lListElem *req_ep = ocs::tom::emplace_back<CE_name>(&resolved, ocs::tom::get<CE_name>(char_cep));
+      ocs::tom::Element<ocs::tom::CE> req_ep = ocs::tom::emplace_back<CE_name>(&resolved, ocs::tom::get<CE_name>(char_cep));
       if (req_ep == nullptr) {
          lFreeList(&resolved);
          return false;
@@ -810,7 +810,7 @@ centry_rsmap_instance_key(const lListElem *defined_ep, const char *key_name) {
       return ocs::tom::get<RESL_value>(defined_ep);
    }
 
-   const lListElem *property = ocs::tom::find_first_in<RESL_properties, CE_name>(defined_ep, key_name);
+   ocs::tom::ConstElement<ocs::tom::CE> property = ocs::tom::find_first_in<RESL_properties, CE_name>(defined_ep, key_name);
    if (property == nullptr) {
       return nullptr;
    }
@@ -834,7 +834,7 @@ centry_rsmap_instance_free(const lListElem *defined_ep, const lList *taken) {
 
    if (taken != nullptr) {
       const char *id = ocs::tom::get<RESL_value>(defined_ep);
-      const lListElem *used_ep = ocs::tom::find_first<RESL_value>(taken, id);
+      ocs::tom::ConstElement<ocs::tom::RESL> used_ep = ocs::tom::find_first<RESL_value>(taken, id);
       if (used_ep != nullptr) {
          const uint32_t used = ocs::tom::get<RESL_amount>(used_ep);
          // RESL_amount is unsigned: an id taken beyond its count must read as full rather
@@ -1217,7 +1217,7 @@ centry_rsmap_take_instances(const lListElem *resource_definition,
    lList *chosen = nullptr;
    uint32_t remaining = amount;
 
-   const lListElem *defined_ep;
+   ocs::tom::ConstElement<ocs::tom::RESL> defined_ep;
    for_each_ep (defined_ep, ocs::tom::get<CE_resource_map_list>(resource_definition)) {
       if (remaining == 0) {
          break;
@@ -1237,7 +1237,7 @@ centry_rsmap_take_instances(const lListElem *resource_definition,
       uint32_t free = centry_rsmap_instance_free(defined_ep, taken);
 
       if (already != nullptr) {
-         const lListElem *mine = ocs::tom::find_first<RESL_value>(already, id);
+         ocs::tom::ConstElement<ocs::tom::RESL> mine = ocs::tom::find_first<RESL_value>(already, id);
          if (mine != nullptr) {
             const uint32_t held = ocs::tom::get<RESL_amount>(mine);
             free = (held >= free) ? 0 : free - held;
@@ -1248,7 +1248,7 @@ centry_rsmap_take_instances(const lListElem *resource_definition,
       }
 
       const uint32_t take = (free >= remaining) ? remaining : free;
-      lListElem *ep = ocs::tom::emplace_back<RESL_value>(&chosen, id);
+      ocs::tom::Element<ocs::tom::RESL> ep = ocs::tom::emplace_back<RESL_value>(&chosen, id);
       if (ep == nullptr) {
          lFreeList(&chosen);
          return false;
@@ -1415,7 +1415,7 @@ centry_rsmap_best_free_id(const lListElem *resource_definition,
       return nullptr;
    }
 
-   const lListElem *defined_ep;
+   ocs::tom::ConstElement<ocs::tom::RESL> defined_ep;
    for_each_ep (defined_ep, ocs::tom::get<CE_resource_map_list>(resource_definition)) {
       if (!centry_rsmap_instance_matches_id(defined_ep, id_expr) ||
           !centry_rsmap_instance_matches_properties(defined_ep, required_props)) {
@@ -1499,7 +1499,7 @@ centry_rsmap_expand_implicit_ids(lList **answer_list, lListElem *centry, uint32_
 
    for (uint32_t id = 0; id < amount; id++) {
       std::string id_str{std::to_string(id)};
-      lListElem *resl = ocs::tom::emplace_back_in<CE_resource_map_list, RESL_value>(centry, id_str.c_str());
+      ocs::tom::Element<ocs::tom::RESL> resl = ocs::tom::emplace_back_in<CE_resource_map_list, RESL_value>(centry, id_str.c_str());
       if (resl != nullptr) {
          ocs::tom::set<RESL_amount>(resl, 1);
       }

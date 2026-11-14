@@ -1527,7 +1527,7 @@ sge_event_master_process_send(lListElem *request, monitoring_t *monitor) {
    ev_event type = sgeE_ALL_EVENTS;
    uint32_t ec_id = ocs::tom::get<EVR_event_client_id>(request);
    const char *session = ocs::tom::get<EVR_session>(request);
-   lList *event_list = ocs::tom::get<EVR_event_list>(request);
+   ocs::tom::List<ocs::tom::ET> event_list = ocs::tom::get<EVR_event_list>(request);
 
    MONITOR_EDT_NEW(monitor);
 
@@ -1647,7 +1647,7 @@ sge_event_master_process_ack(const lListElem *request, monitoring_t *monitor) {
    } else {
       uint32_t event_number = ocs::tom::get<EVR_event_number>(request);
       uint64_t timestamp = ocs::tom::get<EVR_timestamp>(request);
-      lList *list = ocs::tom::get<EV_events>(client);
+      ocs::tom::List<ocs::tom::ET> list = ocs::tom::get<EV_events>(client);
       int res = purge_event_list(list, event_number);
 
       MONITOR_EDT_ACK(monitor);
@@ -1995,10 +1995,10 @@ void sge_event_master_send_events(lListElem *report, lList *report_list, monitor
          /* Create new ACK_TIMEOUT event and add it directly to the client event list */
          tmp_cur_event_nr = ocs::tom::get<EV_next_number>(event_client);
          new_event = sge_create_event(tmp_cur_event_nr, now, sgeE_ACK_TIMEOUT, 0, 0, nullptr, nullptr, nullptr);
-         tmp_event_list = ocs::tom::get<EV_events>(event_client);
+         ocs::tom::List<ocs::tom::ET> tmp_event_list_et = ocs::tom::get<EV_events>(event_client);
 
-         if (tmp_event_list != nullptr) {
-            lAppendElem(tmp_event_list, new_event);
+         if (tmp_event_list_et != nullptr) {
+            lAppendElem(tmp_event_list_et, new_event);
             DPRINTF("Added sgeE_ACK_TIMEOUT to already existing event report list\n");
          } else {
             tmp_event_list = lCreateListHash("Events", ET_Type, false);
@@ -2257,7 +2257,7 @@ total_update(lListElem *event_client, uint64_t gdi_session) {
 static void build_subscription(lListElem *event_el) {
    DENTER(TOP_LAYER);
 
-   const lList *subscription = ocs::tom::get<EV_subscribed>(event_el);
+   ocs::tom::ConstList<ocs::tom::EVS> subscription = ocs::tom::get<EV_subscribed>(event_el);
    subscription_t *sub_array = nullptr;
    subscription_t *old_sub_array = nullptr;
    int i = 0;
@@ -2277,7 +2277,7 @@ static void build_subscription(lListElem *event_el) {
       sub_array[i].blocked = false;
    }
 
-   for_each_ep_lv(sub_el, subscription) {
+   for (ocs::tom::ConstElement<ocs::tom::EVS> sub_el : subscription) {
       const lListElem *temp = nullptr;
       uint32_t event = ocs::tom::get<EVS_id>(sub_el);
 

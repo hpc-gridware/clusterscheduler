@@ -186,7 +186,7 @@ userset_list_validate_access(const lList *acl_list, int nm, lList **alpp, const 
 int userset_validate_entries(lListElem *userset, lList **alpp) {
    DENTER(TOP_LAYER);
 
-   for_each_ep_lv(ep, ocs::tom::get<US_entries>(userset)) {
+   for (ocs::tom::ConstElement<ocs::tom::UE> ep : ocs::tom::get<US_entries>(userset)) {
       if (!ocs::tom::get<UE_name>(ep)) {
          ERROR(SFNMAX, MSG_US_INVALIDUSERNAME);
          answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
@@ -375,7 +375,7 @@ int
 sge_contained_in_access_list(const char *user, const char *group, const lList *grp_list, const lListElem *acl) {
    DENTER(TOP_LAYER);
    bool found = false;
-   const lList *user_list = ocs::tom::get<US_entries>(acl);
+   ocs::tom::ConstList<ocs::tom::UE> user_list = ocs::tom::get<US_entries>(acl);
 
    // user name
    if (user != nullptr) {

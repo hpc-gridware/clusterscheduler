@@ -72,6 +72,7 @@
 #include "sgeobj/sge_jsv.h"
 #include "sgeobj/sge_qref.h"
 #include "sgeobj/ocs_Binding.h"
+#include "sgeobj/tom/ocs_tom_VA.h"
 #include "tom/ocs_Element.h"
 
 #include "parse_job_cull.h"
@@ -2490,7 +2491,7 @@ static int var_list_parse_from_environment(lList **lpp, char **envp) {
          sge_free_saved_vars(context);
          continue;
       }
-      lListElem *ep = ocs::tom::find_first_rw<VA_variable>(*lpp, env_name);
+      ocs::tom::Element<ocs::tom::VA> ep = ocs::tom::find_first_rw<VA_variable>(*lpp, env_name);
       if (ep == nullptr) {
          ep = ocs::tom::emplace_back<VA_variable>(lpp, env_name);
       }

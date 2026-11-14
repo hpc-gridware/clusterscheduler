@@ -285,8 +285,8 @@ hgroup_why_named(const lListElem *hgroup, const char *hostname, const lList *mas
       return false;
    }
 
-   const lList *member_list = ocs::tom::get<HGRP_host_list>(hgroup);
-   const lListElem *member;
+   ocs::tom::ConstList<ocs::tom::HR> member_list = ocs::tom::get<HGRP_host_list>(hgroup);
+   ocs::tom::ConstElement<ocs::tom::HR> member;
 
    // the names of this group before those of the groups it references, so that
    // the nearest explanation is the one reported
@@ -390,7 +390,7 @@ hgroup_split_members(const lListElem *hgroup, lList **hosts, lList **groups, lLi
    }
 
    bool has_matcher = false;
-   const lListElem *member;
+   ocs::tom::ConstElement<ocs::tom::HR> member;
 
    for_each_ep(member, ocs::tom::get<HGRP_host_list>(hgroup)) {
       const char *name = ocs::tom::get<HR_name>(member);

@@ -51,6 +51,7 @@
 #include "tom/ocs_Element.h"
 #include "sgeobj/tom/ocs_tom_HM.h"
 #include "sgeobj/tom/ocs_tom_HR.h"
+#include "sgeobj/tom/ocs_tom_HGRP.h"
 #include "tom/ocs_ElementCore.h"
 
 /*
@@ -310,9 +311,9 @@ cache_equals_walk(const lListElem *hgroup, const lList *master_list) {
       return false;
    }
 
-   const lList *cached = ocs::tom::get<HGRP_cached_hosts>(hgroup);
+   ocs::tom::ConstList<ocs::tom::HR> cached = ocs::tom::get<HGRP_cached_hosts>(hgroup);
    bool ok = lGetNumberOfElem(cached) == lGetNumberOfElem(walked);
-   const lListElem *c = lFirst(cached);
+   ocs::tom::ConstElement<ocs::tom::HR> c = lFirst(cached);
    const lListElem *w = lFirst(walked);
 
    while (ok && c != nullptr && w != nullptr) {
@@ -326,7 +327,7 @@ cache_equals_walk(const lListElem *hgroup, const lList *master_list) {
 
 static bool
 cached_has(const lList *master_list, const char *group, const char *host) {
-   const lListElem *hgroup = ocs::tom::find_first<HGRP_name>(master_list, group);
+   ocs::tom::ConstElement<ocs::tom::HGRP> hgroup = ocs::tom::find_first<HGRP_name>(master_list, group);
    return hgroup != nullptr && href_list_locate(ocs::tom::get<HGRP_cached_hosts>(hgroup), host) != nullptr;
 }
 
@@ -368,7 +369,7 @@ test_update_cache() {
 
    /* the nested case: change @leaf, and the containers must follow */
    {
-      lListElem *leaf = ocs::tom::find_first_rw<HGRP_name>(master_list, "@leaf");
+      ocs::tom::Element<ocs::tom::HGRP> leaf = ocs::tom::find_first_rw<HGRP_name>(master_list, "@leaf");
       lList *new_hosts = nullptr;
 
       href_list_add(&new_hosts, nullptr, "hosta");
@@ -757,7 +758,7 @@ test_member_classes() {
  */
 static lListElem *
 add_group(lList **list, const char *name, const char *const *members) {
-   lListElem *hgroup = ocs::tom::emplace_back<HGRP_name>(list, name);
+   ocs::tom::Element<ocs::tom::HGRP> hgroup = ocs::tom::emplace_back<HGRP_name>(list, name);
    lList *member_list = nullptr;
 
    for (int i = 0; members[i] != nullptr; i++) {
@@ -877,12 +878,12 @@ oracle_flatten(const lList *hgroup_list, const char *name, const lList *candidat
    if (depth > 32) {
       return;
    }
-   const lListElem *hgroup = ocs::tom::find_first<HGRP_name>(hgroup_list, name);
+   ocs::tom::ConstElement<ocs::tom::HGRP> hgroup = ocs::tom::find_first<HGRP_name>(hgroup_list, name);
 
    if (hgroup == nullptr) {
       return;
    }
-   for_each_ep_lv(member, ocs::tom::get<HGRP_host_list>(hgroup)) {
+   for (ocs::tom::ConstElement<ocs::tom::HR> member : ocs::tom::get<HGRP_host_list>(hgroup)) {
       const char *member_name = ocs::tom::get<HR_name>(member);
 
       switch (ocs::classify_member(member_name)) {
@@ -978,7 +979,7 @@ test_generated_trees() {
          snprintf(buffer, sizeof(buffer), "h%02d", h);
          ocs::tom::emplace_back<HR_name>(&exec_members, buffer);
       }
-      lListElem *exec_group = ocs::tom::emplace_back<HGRP_name>(&hgroup_list, EXEC_HOSTGROUP);
+      ocs::tom::Element<ocs::tom::HGRP> exec_group = ocs::tom::emplace_back<HGRP_name>(&hgroup_list, EXEC_HOSTGROUP);
       ocs::tom::set<HGRP_host_list>(exec_group, exec_members);
 
       /* a group may only reference one already built, so no cycle can arise */
@@ -1012,7 +1013,7 @@ test_generated_trees() {
             }
          }
          snprintf(buffer, sizeof(buffer), "@g%d", g);
-         lListElem *hgroup = ocs::tom::emplace_back<HGRP_name>(&hgroup_list, buffer);
+         ocs::tom::Element<ocs::tom::HGRP> hgroup = ocs::tom::emplace_back<HGRP_name>(&hgroup_list, buffer);
          ocs::tom::set<HGRP_host_list>(hgroup, members);
       }
 
@@ -1022,7 +1023,7 @@ test_generated_trees() {
 
       for (int g = 0; g < GROUPS; g++) {
          snprintf(buffer, sizeof(buffer), "@g%d", g);
-         lListElem *hgroup = ocs::tom::find_first_rw<HGRP_name>(hgroup_list, buffer);
+         ocs::tom::Element<ocs::tom::HGRP> hgroup = ocs::tom::find_first_rw<HGRP_name>(hgroup_list, buffer);
          lList *expected = nullptr;
          lList *walked = nullptr;
 
@@ -1065,7 +1066,7 @@ test_generated_trees() {
           * the membership test missing a host that is plainly in it. A linear
           * scan would not notice; this is the check that does.
           */
-         for_each_ep_lv(cached, ocs::tom::get<HGRP_cached_hosts>(hgroup)) {
+         for (ocs::tom::ConstElement<ocs::tom::HR> cached : ocs::tom::get<HGRP_cached_hosts>(hgroup)) {
             if (href_list_locate(ocs::tom::get<HGRP_cached_hosts>(hgroup),
                                  ocs::tom::get<HR_name>(cached)) == nullptr) {
                unfindable++;
@@ -1075,7 +1076,7 @@ test_generated_trees() {
          lList *named = nullptr;
          hgroup_find_all_references(hgroup, nullptr, hgroup_list, &named, nullptr, nullptr, false);
 
-         for_each_ep_lv(candidate, ocs::tom::get<HGRP_host_list>(exec_group)) {
+         for (ocs::tom::ConstElement<ocs::tom::HR> candidate : ocs::tom::get<HGRP_host_list>(exec_group)) {
             const char *host = ocs::tom::get<HR_name>(candidate);
             const bool admitted = ocs::Matcher::admits(hgroup, host, hgroup_list);
             const bool resolved = href_list_locate(ocs::tom::get<HGRP_cached_hosts>(hgroup), host) != nullptr;
@@ -1182,7 +1183,7 @@ test_match_cache() {
    printf("\n--- matching cache ---\n");
 
    lList *hgroup_list = nullptr;
-   lListElem *hgroup = ocs::tom::emplace_back<HGRP_name>(&hgroup_list, "@gpu_nodes");
+   ocs::tom::Element<ocs::tom::HGRP> hgroup = ocs::tom::emplace_back<HGRP_name>(&hgroup_list, "@gpu_nodes");
 
    // T101-T103: an empty cache misses, an insertion is findable, and a second
    // lookup hits
@@ -1203,7 +1204,7 @@ test_match_cache() {
 
    // T106: a hit advances the time of last use; this is not a read path
    {
-      lListElem *entry = ocs::tom::find_first_rw<HM_name>(ocs::tom::get<HGRP_match_cache>(hgroup), "gpu001");
+      ocs::tom::Element<ocs::tom::HM> entry = ocs::tom::find_first_rw<HM_name>(ocs::tom::get<HGRP_match_cache>(hgroup), "gpu001");
       ocs::tom::set<HM_last_used>(entry, 1);
       ocs::MatchCache::lookup(hgroup, "gpu001");
       CHECK(106, "a hit advances the time of last use", ocs::tom::get<HM_last_used>(entry) > 1);
@@ -1214,7 +1215,7 @@ test_match_cache() {
    // insertion drops it. There is no sweeper to wait for.
    {
       const uint64_t two_days = sge_gmt32_to_gmt64(2 * 24 * 3600);
-      lListElem *entry = ocs::tom::find_first_rw<HM_name>(ocs::tom::get<HGRP_match_cache>(hgroup), "gpu001");
+      ocs::tom::Element<ocs::tom::HM> entry = ocs::tom::find_first_rw<HM_name>(ocs::tom::get<HGRP_match_cache>(hgroup), "gpu001");
 
       ocs::tom::set<HM_last_used>(entry, sge_get_gmt64() - two_days);
       ocs::MatchCache::insert(hgroup, "gpu002");
@@ -1232,7 +1233,7 @@ test_match_cache() {
       lList *before_list = nullptr;
       lList *after_list = nullptr;
       lListElem *before = ocs::tom::emplace_back<HGRP_name>(&before_list, "@gpu_nodes");
-      lListElem *after = ocs::tom::emplace_back<HGRP_name>(&after_list, "@gpu_nodes");
+      ocs::tom::Element<ocs::tom::HGRP> after = ocs::tom::emplace_back<HGRP_name>(&after_list, "@gpu_nodes");
 
       ocs::MatchCache::insert(before, "gpu001");
       ocs::MatchCache::insert(before, "gpu002");

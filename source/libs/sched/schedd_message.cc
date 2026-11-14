@@ -52,6 +52,7 @@
 #include "tom/ocs_Element.h"
 #include "sgeobj/tom/ocs_tom_MES.h"
 #include "sgeobj/tom/ocs_tom_ULNG.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
 
 #include "schedd_message.h"
 #include "schedd_monitor.h"
@@ -68,7 +69,7 @@ static void schedd_mes_find_others(lListElem *tmp_sme, lList *job_list, int igno
    if (tmp_sme && job_list) {
       lRef category = nullptr;            /* Category pointer (void*) */
       lList *jid_cat_list = nullptr;      /* ULNG */
-      const lList *message_list = ocs::tom::get<SME_message_list>(tmp_sme);
+      ocs::tom::ConstList<ocs::tom::MES> message_list = ocs::tom::get<SME_message_list>(tmp_sme);
 
       /*
        * Here we have a list of message elements where each 
@@ -76,7 +77,7 @@ static void schedd_mes_find_others(lListElem *tmp_sme, lList *job_list, int igno
        * We have to find the other jobs (jids) which have the same category.
        */
       for_each_rw_lv(message_elem, message_list) {
-         const lList *jid_list = ocs::tom::get<MES_job_number_list>(message_elem);
+         ocs::tom::ConstList<ocs::tom::ULNG> jid_list = ocs::tom::get<MES_job_number_list>(message_elem);
          uint32_t jid;
          lRef jid_category; 
          jid = ocs::tom::get<ULNG_value>(lFirst(jid_list));
@@ -103,10 +104,10 @@ static void schedd_mes_find_others(lListElem *tmp_sme, lList *job_list, int igno
 static lRef schedd_mes_get_category(uint32_t job_id, lList *job_list) {
    DENTER(TOP_LAYER);
 
-   const lListElem *job = nullptr;  /* JB_Type */
+     /* JB_Type */
    lRef ret = nullptr;        /* Category pointer (void*) */
 
-   job = ocs::tom::find_first<JB_job_number>(job_list, job_id);
+   ocs::tom::ConstElement<ocs::tom::JB> job = ocs::tom::find_first<JB_job_number>(job_list, job_id);
    if (job) {
       ret = ocs::tom::get<JB_category>(job);
    }
@@ -188,7 +189,6 @@ void schedd_mes_commit(lList *job_list, int ignore_category, lRef jid_category) 
    lListElem *tmp_sme = sconf_get_tmp_sme();
 
    if (sme && tmp_sme) {
-      lList *sme_mes_list = nullptr;
       lList *tmp_sme_list = nullptr;
       
       if (jid_category != nullptr) {
@@ -208,7 +208,7 @@ void schedd_mes_commit(lList *job_list, int ignore_category, lRef jid_category) 
       /*
        * Tranfer all messages from tmp_sme to sme
        */
-      sme_mes_list = ocs::tom::get<SME_message_list>(sme);
+      ocs::tom::List<ocs::tom::MES> sme_mes_list = ocs::tom::get<SME_message_list>(sme);
       ocs::tom::exchange<SME_message_list>(tmp_sme, &tmp_sme_list);
       lAddList(sme_mes_list, &tmp_sme_list);
       tmp_sme_list = lCreateList("job info messages", MES_Type);
@@ -440,8 +440,8 @@ void schedd_mes_add_join(bool monitor_next_run, uint32_t job_number, uint32_t me
                }
             }
 
-            mes = ocs::tom::find_first_rw<MES_message_number>(ocs::tom::get<SME_message_list>(tmp_sme), message_number);
-            if (mes == nullptr) {
+            ocs::tom::Element<ocs::tom::MES> mes_mes = ocs::tom::find_first_rw<MES_message_number>(ocs::tom::get<SME_message_list>(tmp_sme), message_number);
+            if (mes_mes == nullptr) {
                mes = lCreateElem(MES_Type);
                jobs_ulng = lCreateList("job ids", ULNG_Type);
                ocs::tom::set<MES_job_number_list>(mes, jobs_ulng);
@@ -450,7 +450,7 @@ void schedd_mes_add_join(bool monitor_next_run, uint32_t job_number, uint32_t me
 
                lAppendElem(ocs::tom::get<SME_message_list>(tmp_sme), mes);
             } else {
-               jobs_ulng = ocs::tom::get<MES_job_number_list>(mes);
+               jobs_ulng = ocs::tom::get<MES_job_number_list>(mes_mes);
             }
 
             jid_ulng = lCreateElem(ULNG_Type);
@@ -541,7 +541,7 @@ void schedd_mes_add_global(lList **monitor_alpp, bool monitor_next_run, uint32_t
 const lList *schedd_mes_get_tmp_list() {
    DENTER(TOP_LAYER);
 
-   const lList *ret = nullptr;
+   ocs::tom::ConstList<ocs::tom::MES> ret = nullptr;
    const lListElem *tmp_sme = sconf_get_tmp_sme();
 
    if (tmp_sme) {

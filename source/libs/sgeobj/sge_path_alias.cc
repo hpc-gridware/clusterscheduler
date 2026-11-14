@@ -75,6 +75,7 @@
 #include "sgeobj/sge_utility.h"
 #include "sgeobj/sge_path_alias.h"
 #include "sgeobj/msg_sgeobjlib.h"
+#include "sgeobj/tom/ocs_tom_PA.h"
 #include "tom/ocs_Element.h"
 
 #include "msg_common.h"
@@ -119,7 +120,7 @@ static int path_alias_read_from_file(lList **path_alias_list, lList **alpp,
    char submit_host[SGE_PATH_MAX];
    char exec_host[SGE_PATH_MAX];
    char translation[SGE_PATH_MAX];
-   lListElem *pal;
+   ocs::tom::Element<ocs::tom::PA> pal;
    SGE_STRUCT_STAT sb;
    int ret = 0;
 

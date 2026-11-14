@@ -68,6 +68,7 @@
 #include "sgeobj/tom/ocs_tom_MR.h"
 #include "sgeobj/tom/ocs_tom_QU.h"
 #include "sgeobj/tom/ocs_tom_RU.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
 
 #include "sge.h"
 #include <cinttypes>
@@ -323,9 +324,8 @@ int reschedule_job(lListElem *jep, lListElem *jatep, lListElem *ep,
    }
 
    while ((this_jatep = next_jatep)) {
-      const lListElem *first_granted_queue;  /* JG_Type */
+        /* JG_Type */
       lListElem *host;                 /* EH_Type */
-      const lList *granted_qs;
       uint32_t task_number;
       uint32_t found;
 
@@ -335,8 +335,8 @@ int reschedule_job(lListElem *jep, lListElem *jatep, lListElem *ep,
          next_jatep = lNextRW(this_jatep);
       }
 
-      granted_qs = ocs::tom::get<JAT_granted_destin_identifier_list>(this_jatep);
-      first_granted_queue = lFirst(granted_qs);
+      ocs::tom::ConstList<ocs::tom::JG> granted_qs = ocs::tom::get<JAT_granted_destin_identifier_list>(this_jatep);
+      ocs::tom::ConstElement<ocs::tom::JG> first_granted_queue = lFirst(granted_qs);
 
       /*
        * Jobs which have no granted queue can not be rescheduled (skip pending jobs)
@@ -393,7 +393,7 @@ int reschedule_job(lListElem *jep, lListElem *jatep, lListElem *ep,
           *    PE jobs will only be rescheduled when the master task is effected
           */
          if (mconf_get_enable_reschedule_slave()) {
-            const lListElem *granted_q;
+            ocs::tom::ConstElement<ocs::tom::JG> granted_q;
             bool one_matched = false;
 
             for_each_ep(granted_q, granted_qs) {
@@ -544,11 +544,10 @@ int reschedule_job(lListElem *jep, lListElem *jatep, lListElem *ep,
             sge_strlcpy(mail_action, MSG_RU_PUSHEDR, sizeof(mail_action));
          }
          if (VALID(MAIL_AT_ABORT, mail_options)) {
-            const lList *mail_users;
             char mail_subject[1024];
             char mail_body[1024];
 
-            mail_users = ocs::tom::get<JB_mail_list>(jep);
+            ocs::tom::ConstList<ocs::tom::MR> mail_users = ocs::tom::get<JB_mail_list>(jep);
             snprintf(mail_subject, sizeof(mail_subject), MSG_RU_MAILSUB_SS, mail_type, mail_ids);
             snprintf(mail_body, sizeof(mail_body), MSG_RU_MAILBODY_SSSS, mail_type, mail_ids, hostname, mail_action, mail_type);
             cull_mail(QMASTER, mail_users, mail_subject, mail_body, MSG_RU_MAILTYPE);
@@ -636,7 +635,7 @@ lListElem *
 add_to_reschedule_unknown_list(lListElem *host, uint32_t job_number, uint32_t task_number, uint32_t state, uint64_t gdi_session) {
    DENTER(TOP_LAYER);
 
-   lListElem *ruep = nullptr;
+   ocs::tom::Element<ocs::tom::RU> ruep = nullptr;
    if (host) {
       ruep = ocs::tom::emplace_back_in<EH_reschedule_unknown_list, RU_job_number>(host, job_number);
 
@@ -699,7 +698,7 @@ delete_from_reschedule_unknown_list(lListElem *host, bool all_jobs_reported, uin
    DENTER(TOP_LAYER);
 
    bool changed = false;
-   lList *rulp = ocs::tom::get<EH_reschedule_unknown_list>(host);
+   ocs::tom::List<ocs::tom::RU> rulp = ocs::tom::get<EH_reschedule_unknown_list>(host);
    if (rulp) {
       lListElem *thiz, *next;
 
@@ -781,7 +780,7 @@ void
 reschedule_clear_deferred_starts_of_host(const lListElem *host, uint64_t gdi_session) {
    DENTER(TOP_LAYER);
 
-   for_each_ep_lv(ruep, ocs::tom::get<EH_reschedule_unknown_list>(host)) {
+   for (ocs::tom::ConstElement<ocs::tom::RU> ruep : ocs::tom::get<EH_reschedule_unknown_list>(host)) {
       if (is_master_host_entry(ruep)) {
          uint32_t job_number = ocs::tom::get<RU_job_number>(ruep);
          uint32_t task_number = ocs::tom::get<RU_task_number>(ruep);
@@ -842,7 +841,7 @@ static void
 clear_deferred_start_of_task(uint32_t job_number, uint32_t task_number, uint64_t gdi_session) {
    DENTER(TOP_LAYER);
 
-   lListElem *jep = ocs::tom::find_first_rw<JB_job_number>(*ocs::DataStore::get_master_list(SGE_TYPE_JOB),
+   ocs::tom::Element<ocs::tom::JB> jep = ocs::tom::find_first_rw<JB_job_number>(*ocs::DataStore::get_master_list(SGE_TYPE_JOB),
                                     job_number);
    if (jep != nullptr) {
       lListElem *jatep = ocs::tom::find_first_rw<JAT_task_number>(ocs::tom::get<JB_ja_tasks>(jep), task_number);
@@ -870,7 +869,7 @@ update_reschedule_unknown_list(lListElem *host, uint64_t gdi_session) {
    DENTER(TOP_LAYER);
    if (host) {
       bool changed = false;
-      for_each_rw_lv(ruep, ocs::tom::get<EH_reschedule_unknown_list>(host)) {
+      for (ocs::tom::Element<ocs::tom::RU> ruep : ocs::tom::get<EH_reschedule_unknown_list>(host)) {
          uint32_t state = ocs::tom::get<RU_state>(ruep);
 
          if (state == RESCHEDULE_SKIP_JR_SEND_ACK) {
@@ -922,9 +921,9 @@ uint32_t
 skip_restarted_job(lListElem *host, lListElem *job_report, uint32_t job_number, uint32_t task_number) {
    DENTER(TOP_LAYER);
 
-   lListElem *ruep;
+   ocs::tom::Element<ocs::tom::RU> ruep;
    uint32_t ret = 0;
-   for_each_rw(ruep, static_cast<const lList *>(ocs::tom::get<EH_reschedule_unknown_list>(host))) {
+   for_each_rw(ruep, ocs::tom::get<EH_reschedule_unknown_list>(host)) {
       if (ocs::tom::get<RU_job_number>(ruep) == job_number
           && ocs::tom::get<RU_task_number>(ruep) == task_number) {
          uint32_t state = ocs::tom::get<RU_state>(ruep);
@@ -963,10 +962,10 @@ void
 update_reschedule_unknown_list_for_job(lListElem *host, uint32_t job_number, uint32_t task_number) {
    DENTER(TOP_LAYER);
 
-   lListElem *ruep;
+   ocs::tom::Element<ocs::tom::RU> ruep;
 
    if (host) {
-      for_each_rw(ruep, static_cast<const lList *>(ocs::tom::get<EH_reschedule_unknown_list>(host))) {
+      for_each_rw(ruep, ocs::tom::get<EH_reschedule_unknown_list>(host)) {
          if (ocs::tom::get<RU_job_number>(ruep) == job_number
              && ocs::tom::get<RU_task_number>(ruep) == task_number) {
             if (ocs::tom::get<RU_state>(ruep) == RESCHEDULE_HANDLE_JR_WAIT) {
@@ -1161,7 +1160,7 @@ void
 remove_from_reschedule_unknown_list(lListElem *host, uint32_t job_number, uint32_t task_number, uint64_t gdi_session) {
    DENTER(TOP_LAYER);
    if (host) {
-      lList *unknown_list = ocs::tom::get<EH_reschedule_unknown_list>(host);
+      ocs::tom::List<ocs::tom::RU> unknown_list = ocs::tom::get<EH_reschedule_unknown_list>(host);
       lListElem *elem;
 
       for_each_rw(elem, unknown_list) {

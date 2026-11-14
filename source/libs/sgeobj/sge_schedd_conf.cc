@@ -488,7 +488,7 @@ bool sconf_is_valid_load_formula(lList **answer_list, const lList *centry_list) 
 lListElem *sconf_create_default() {
    DENTER(TOP_LAYER);
 
-   lListElem *ep, *added;
+   lListElem *ep;
 
    ep = lCreateElem(SC_Type);
 
@@ -498,7 +498,7 @@ lListElem *sconf_create_default() {
 
    ocs::tom::set<SC_queue_sort_method>(ep, QSM_LOAD);
 
-   added = ocs::tom::emplace_back_in<SC_job_load_adjustments, CE_name>(ep, "np_load_avg");
+   ocs::tom::Element<ocs::tom::CE> added = ocs::tom::emplace_back_in<SC_job_load_adjustments, CE_name>(ep, "np_load_avg");
    ocs::tom::set<CE_stringval>(added, "0.50");
 
    ocs::tom::set<SC_load_adjustment_decay_time>(ep,
@@ -512,12 +512,12 @@ lListElem *sconf_create_default() {
    ocs::tom::set<SC_reprioritize_interval>(ep, REPRIORITIZE_INTERVAL);
    ocs::tom::set<SC_halftime>(ep, 168);
 
-   added = ocs::tom::emplace_back_in<SC_usage_weight_list, UA_name>(ep, USAGE_ATTR_CPU);
-   ocs::tom::set<UA_value>(added, 1.00);
-   added = ocs::tom::emplace_back_in<SC_usage_weight_list, UA_name>(ep, USAGE_ATTR_MEM);
-   ocs::tom::set<UA_value>(added, 0.0);
-   added = ocs::tom::emplace_back_in<SC_usage_weight_list, UA_name>(ep, USAGE_ATTR_IO);
-   ocs::tom::set<UA_value>(added, 0.0);
+   ocs::tom::Element<ocs::tom::UA> added_ua = ocs::tom::emplace_back_in<SC_usage_weight_list, UA_name>(ep, USAGE_ATTR_CPU);
+   ocs::tom::set<UA_value>(added_ua, 1.00);
+   ocs::tom::Element<ocs::tom::UA> added_ua_2 = ocs::tom::emplace_back_in<SC_usage_weight_list, UA_name>(ep, USAGE_ATTR_MEM);
+   ocs::tom::set<UA_value>(added_ua_2, 0.0);
+   ocs::tom::Element<ocs::tom::UA> added_ua_3 = ocs::tom::emplace_back_in<SC_usage_weight_list, UA_name>(ep, USAGE_ATTR_IO);
+   ocs::tom::set<UA_value>(added_ua_3, 0.0);
 
    ocs::tom::set<SC_compensation_factor>(ep, 5);
    ocs::tom::set<SC_weight_user>(ep, 0.25);
@@ -565,7 +565,7 @@ bool sconf_is_centry_referenced(const lListElem *centry) {
 
    if (const lListElem *sc_ep = ocs_sconf_elem(); sc_ep != nullptr) {
       const char *name = ocs::tom::get<CE_name>(centry);
-      const lList *centry_list = ocs::tom::get<SC_job_load_adjustments>(sc_ep);
+      ocs::tom::ConstList<ocs::tom::CE> centry_list = ocs::tom::get<SC_job_load_adjustments>(sc_ep);
       const lListElem *centry_ref = ocs::tom::find_first<CE_name>(centry_list, name);
 
       ret = ((centry_ref != nullptr)? true : false);
@@ -2171,7 +2171,6 @@ bool sconf_validate_config_(lList **answer_list) {
       s = get_halflife_decay_list_str();
       if (s && (strcasecmp(s, "none") != 0)) {
          lList *halflife_decay_list = nullptr;
-         lListElem *ep = nullptr;
          const char *s0 = nullptr;
          const char *s1 = nullptr;
          const char *s2 = nullptr;
@@ -2185,7 +2184,7 @@ bool sconf_validate_config_(lList **answer_list) {
             if (((s2=sge_strtok_r(s1, "=", &sv2)) != nullptr) &&
                 ((s3=sge_strtok_r(nullptr, "=", &sv2)) != nullptr) &&
                 (sscanf(s3, "%lf", &value) == 1)) {
-               ep = ocs::tom::emplace_back<UA_name>(&halflife_decay_list, s2);
+               ocs::tom::Element<ocs::tom::UA> ep = ocs::tom::emplace_back<UA_name>(&halflife_decay_list, s2);
                ocs::tom::set<UA_value>(ep, value);
             }
             sge_free_saved_vars(sv2);

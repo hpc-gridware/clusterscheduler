@@ -44,6 +44,7 @@
 
 #include "sgeobj/sge_host.h"
 #include "sgeobj/sge_load.h"
+#include "sgeobj/tom/ocs_tom_HL.h"
 #include "tom/ocs_Element.h"
 
 /**
@@ -83,7 +84,7 @@ int
 load_list_get_nproc(const lList *load_list) {
    int nproc = 1;
 
-   const lListElem *ep_nproc = ocs::tom::find_first<HL_name>(load_list, LOAD_ATTR_NUM_PROC);
+   ocs::tom::ConstElement<ocs::tom::HL> ep_nproc = ocs::tom::find_first<HL_name>(load_list, LOAD_ATTR_NUM_PROC);
    if (ep_nproc != nullptr) {
       const char *cp = ocs::tom::get<HL_value>(ep_nproc);
       if (cp != nullptr) {

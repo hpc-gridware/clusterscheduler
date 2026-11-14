@@ -79,7 +79,7 @@ bool sge_ar_have_users_access(lList **alpp, lListElem *ar, const char *name, con
    bool ret = true;
    const char *user= nullptr;
 
-   for_each_ep_lv(acl_entry, ocs::tom::get<AR_acl_list>(ar)) {
+   for (ocs::tom::ConstElement<ocs::tom::ARA> acl_entry : ocs::tom::get<AR_acl_list>(ar)) {
       user = ocs::tom::get<ARA_name>(acl_entry);
 
       DPRINTF("check permissions for user %s\n", user);

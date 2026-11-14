@@ -57,6 +57,7 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_ja_task.h"
 #include "sgeobj/msg_sgeobjlib.h"
+#include "sgeobj/tom/ocs_tom_SPA.h"
 #include "tom/ocs_Element.h"
 
 #include "sge_options.h"
@@ -157,13 +158,12 @@ const char *opt_switch_arg
 ) {
    DENTER(TOP_LAYER);
 
-   lListElem *ep;
    
    if (popt_list == nullptr) {
        DRETURN(nullptr);
    }
 
-   ep = ocs::tom::emplace_back<SPA_switch_val>(popt_list, opt_switch);
+   ocs::tom::Element<ocs::tom::SPA> ep = ocs::tom::emplace_back<SPA_switch_val>(popt_list, opt_switch);
 
    if (ep != nullptr) {
       ocs::tom::set<SPA_number>(ep, opt_number);

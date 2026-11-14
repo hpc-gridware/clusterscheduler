@@ -109,6 +109,11 @@
 #include "sgeobj/config.h"
 #include "tom/ocs_Element.h"
 #include "sgeobj/tom/ocs_tom_ST.h"
+#include "sgeobj/tom/ocs_tom_CF.h"
+#include "sgeobj/tom/ocs_tom_MR.h"
+#include "sgeobj/tom/ocs_tom_NSV.h"
+#include "sgeobj/tom/ocs_tom_SPA.h"
+#include "sgeobj/tom/ocs_tom_VA.h"
 
 /** The environment of the process, read when a job template inherits it */
 #if defined(DARWIN10)
@@ -394,7 +399,7 @@ static char **sge_get_qtask_args(char *taskname, lList **answer_list) {
 
    sge_mutex_unlock("qtask_mutex", __func__, __LINE__, &qtask_mutex);
 
-   const lListElem *task = ocs::tom::find_first<CF_name>(task_config, taskname);
+   ocs::tom::ConstElement<ocs::tom::CF> task = ocs::tom::find_first<CF_name>(task_config, taskname);
    if (task == nullptr) {
       DRETURN(nullptr);
    }
@@ -743,7 +748,7 @@ int drmaa_set_attribute(drmaa_job_template_t *jt, const char *name, const char *
                         char *error_diagnosis, size_t error_diag_len) {
    DENTER(TOP_LAYER);
 
-   lListElem *ep = nullptr;
+   ocs::tom::Element<ocs::tom::VA> ep = nullptr;
    int       ret = DRMAA_ERRNO_SUCCESS;
    dstring   diag, *diagp = nullptr;
 
@@ -840,7 +845,7 @@ int drmaa_get_attribute(drmaa_job_template_t *jt, const char *name, char *value,
    DENTER(TOP_LAYER);
 
    dstring val, diag, *diagp = nullptr;
-   const lListElem *va = nullptr;
+   ocs::tom::ConstElement<ocs::tom::VA> va = nullptr;
    int ret = DRMAA_ERRNO_SUCCESS;
 
    if (error_diagnosis) {
@@ -960,7 +965,7 @@ int drmaa_get_vector_attribute(drmaa_job_template_t *jt, const char *name,
                                drmaa_attr_values_t **values, char *error_diagnosis, size_t error_diag_len) {
    DENTER(TOP_LAYER);
 
-   const lListElem *nsv = nullptr;
+   ocs::tom::ConstElement<ocs::tom::NSV> nsv = nullptr;
    drmaa_attr_values_t *iter = nullptr;
    dstring diag, *diagp = nullptr;
    int ret = DRMAA_ERRNO_SUCCESS;
@@ -2128,7 +2133,7 @@ static int drmaa_path2sge_path(const lList *attrs, int is_bulk,
                                const char **new_path, dstring *diag) {
    DENTER(TOP_LAYER);
 
-   const lListElem *ep = nullptr;
+   ocs::tom::ConstElement<ocs::tom::VA> ep = nullptr;
 
    if ((ep=ocs::tom::find_first<VA_variable>(attrs, attribute_key ))) {
       dstring ds = DSTRING_INIT;
@@ -2374,7 +2379,7 @@ static int drmaa_job2sge_job(lListElem **jtp, const drmaa_job_template_t *drmaa_
       const char *path = nullptr;
 
       if (opt_list_has_X(opts_drmaa, "-wd")) {
-         ep = ocs::tom::find_first<SPA_switch_val>(opts_drmaa, "-wd");
+         ocs::tom::ConstElement<ocs::tom::SPA> ep = ocs::tom::find_first<SPA_switch_val>(opts_drmaa, "-wd");
          path = ocs::tom::get<SPA_argval_lStringT>(ep);
          path = drmaa_expand_wd_path(username, path, &alp);
 
@@ -2726,14 +2731,13 @@ static int opt_list_append_opts_from_drmaa_attr(lList **args, const lList *attrs
       dstring env = DSTRING_INIT;
       char *variable = nullptr;
       char *value = nullptr;
-      const lList *olp = ocs::tom::get<NSV_strings>(ep);
-      lListElem *nep = nullptr;
+      ocs::tom::ConstList<ocs::tom::ST> olp = ocs::tom::get<NSV_strings>(ep);
       lList *nlp = lCreateList("variable list", VA_Type);
       int first_time = 1;
 
       DPRINTF("processing %s\n", DRMAA_V_ENV);
 
-      for_each_ep_lv(oep, olp) {
+      for (ocs::tom::ConstElement<ocs::tom::ST> oep : olp) {
          struct saved_vars_s *context = nullptr;
          const char *str = ocs::tom::get<ST_name>(oep);
 
@@ -2752,7 +2756,7 @@ static int opt_list_append_opts_from_drmaa_attr(lList **args, const lList *attrs
          }
 
          // a variable given twice keeps the last value (CS-3053)
-         nep = ocs::tom::find_first_rw<VA_variable>(nlp, variable);
+         ocs::tom::Element<ocs::tom::VA> nep = ocs::tom::find_first_rw<VA_variable>(nlp, variable);
          if (nep == nullptr) {
             nep = ocs::tom::emplace_back<VA_variable>(&nlp, variable);
          }
@@ -2776,15 +2780,15 @@ static int opt_list_append_opts_from_drmaa_attr(lList **args, const lList *attrs
       dstring email = DSTRING_INIT;
       char *user = nullptr;
       char *host = nullptr;
-      const lList *olp = ocs::tom::get<NSV_strings>(ep);
+      ocs::tom::ConstList<ocs::tom::ST> olp = ocs::tom::get<NSV_strings>(ep);
       lListElem *nep = nullptr;
       lList *nlp = lCreateList("mail list", MR_Type);
-      const lListElem *tmp = nullptr;
+      ocs::tom::ConstElement<ocs::tom::MR> tmp = nullptr;
       int first_time = 1;
 
       DPRINTF("processing %s = ", DRMAA_V_EMAIL);
 
-      for_each_ep_lv(oep, olp) {
+      for (ocs::tom::ConstElement<ocs::tom::ST> oep : olp) {
          struct saved_vars_s *context = nullptr;
          const char *str = ocs::tom::get<ST_name>(oep);
 
@@ -2886,11 +2890,11 @@ static int opt_list_append_opts_from_drmaa_attr(lList **args, const lList *attrs
 
       /* job arguments -- last thing on the command line */
       if ((ep=ocs::tom::find_first<NSV_name>(vattrs, DRMAA_V_ARGV))) {
-         const lList *lp = ocs::tom::get<NSV_strings>(ep);
+         ocs::tom::ConstList<ocs::tom::ST> lp = ocs::tom::get<NSV_strings>(ep);
 
          DPRINTF("processing %s\n", DRMAA_V_ARGV);
 
-         for_each_ep_lv(aep, lp) {
+         for (ocs::tom::ConstElement<ocs::tom::ST> aep : lp) {
             DPRINTF("arg: \"%s\"\n", ocs::tom::get<ST_name>(aep));
             ep_opt = sge_add_arg(args, 0, lStringT, STR_PSEUDO_JOBARG, nullptr);
             ocs::tom::set<SPA_argval_lStringT>(ep_opt, ocs::tom::get<ST_name>(aep));

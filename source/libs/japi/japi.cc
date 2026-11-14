@@ -117,6 +117,8 @@
 #include "sgeobj/tom/ocs_tom_RN.h"
 #include "sgeobj/tom/ocs_tom_ST.h"
 #include "sgeobj/tom/ocs_tom_UA.h"
+#include "sgeobj/tom/ocs_tom_ID.h"
+#include "sgeobj/tom/ocs_tom_JJ.h"
 
 #include "comm/commlib.h"
 
@@ -1207,15 +1209,15 @@ static int japi_add_job(uint32_t jobid, uint32_t start, uint32_t end, uint32_t i
    /* add job to library session data
       -  all tasks in JJ_not_yet_finished_ids
       -  no task in JJ_finished_jobs */
-   japi_job = ocs::tom::emplace_back<JJ_jobid>(&Master_japi_job_list, jobid);
-   object_set_range_id(japi_job, JJ_not_yet_finished_ids, start, end, incr);
+   ocs::tom::Element<ocs::tom::JJ> japi_job_jj = ocs::tom::emplace_back<JJ_jobid>(&Master_japi_job_list, jobid);
+   object_set_range_id(japi_job_jj, JJ_not_yet_finished_ids, start, end, incr);
 
    /* mark it as array job */
    if (is_array) {
       uint32_t job_type;
-      job_type = ocs::tom::get<JJ_type>(japi_job);
+      job_type = ocs::tom::get<JJ_type>(japi_job_jj);
       JOB_TYPE_SET_ARRAY(job_type);
-      ocs::tom::set<JJ_type>(japi_job, job_type);
+      ocs::tom::set<JJ_type>(japi_job_jj, job_type);
    }
 
    DRETURN(DRMAA_ERRNO_SUCCESS);
@@ -1541,7 +1543,7 @@ int japi_control(const char *jobid_str, int drmaa_action, dstring *diag) {
                   sge_dstring_sprintf(&job_task_specifier, sge_u32, jobid);
                   ocs::tom::emplace_back<ST_name>(&ref_list, sge_dstring_get_string (&job_task_specifier));
                } else {
-                  for_each_ep_lv(range, ocs::tom::get<JJ_not_yet_finished_ids>(japi_job)) {
+                  for (ocs::tom::ConstElement<ocs::tom::RN> range : ocs::tom::get<JJ_not_yet_finished_ids>(japi_job)) {
                      char buffer[1024];
                      dstring job_task_specifier;
                      uint32_t start, end, step;
@@ -1630,7 +1632,7 @@ int japi_control(const char *jobid_str, int drmaa_action, dstring *diag) {
                      DRETURN(drmaa_errno);
                   }
                } else {
-                  for_each_ep_lv(range, ocs::tom::get<JJ_not_yet_finished_ids>(japi_job)) {
+                  for (ocs::tom::ConstElement<ocs::tom::RN> range : ocs::tom::get<JJ_not_yet_finished_ids>(japi_job)) {
                      uint32_t min, max, step;
 
                      range_get_all_ids(range, &min, &max, &step);
@@ -1699,7 +1701,6 @@ int japi_control(const char *jobid_str, int drmaa_action, dstring *diag) {
    case DRMAA_CONTROL_TERMINATE:
       {
          lList *id_list = nullptr;
-         lListElem *id_entry;
 
          if (strcmp(jobid_str, DRMAA_JOB_IDS_SESSION_ALL) == 0) {
             bool done = false;
@@ -1721,7 +1722,7 @@ int japi_control(const char *jobid_str, int drmaa_action, dstring *diag) {
                   /* This overwrites the previous contents of the dstring. */
                   sge_dstring_sprintf(&job_task_specifier, sge_u32, jobid);
 
-                  id_entry = ocs::tom::emplace_back<ID_str>(&id_list, sge_dstring_get_string(&job_task_specifier));
+                  ocs::tom::Element<ocs::tom::ID> id_entry = ocs::tom::emplace_back<ID_str>(&id_list, sge_dstring_get_string(&job_task_specifier));
                   if (JOB_TYPE_IS_ARRAY(ocs::tom::get<JJ_type>(japi_job))) {
                      ocs::tom::set<ID_ja_structure>(id_entry, lCopyList(nullptr, ocs::tom::get<JJ_not_yet_finished_ids>(japi_job)));
                   }
@@ -1792,7 +1793,7 @@ int japi_control(const char *jobid_str, int drmaa_action, dstring *diag) {
             }
 
             sge_dstring_sprintf(&job_task_specifier, sge_u32, jobid);
-            id_entry = ocs::tom::emplace_back<ID_str>(&id_list, sge_dstring_get_string(&job_task_specifier));
+            ocs::tom::Element<ocs::tom::ID> id_entry = ocs::tom::emplace_back<ID_str>(&id_list, sge_dstring_get_string(&job_task_specifier));
             if (array) {
                lList *tlp = nullptr;
                ocs::tom::exchange<ID_ja_structure>(id_entry, &tlp);
@@ -2010,14 +2011,13 @@ int japi_synchronize(const char *job_ids[], signed long timeout, bool dispose, d
       sync_list = lCreateList ("Synchronize Job List", ST_Type);
 
       for_each_ep_lv(ep, Master_japi_job_list) {
-         const lList *not_yet_finished = nullptr;
          const lListElem *range;
          uint32_t task_id = 0;
          uint32_t min = 0;
          uint32_t max = 0;
          uint32_t step = 0;
 
-         not_yet_finished = ocs::tom::get<JJ_not_yet_finished_ids>(ep);
+         ocs::tom::ConstList<ocs::tom::RN> not_yet_finished = ocs::tom::get<JJ_not_yet_finished_ids>(ep);
 
          /* If we're supposed to dispose of the job info, we need to include
           * all jobs currently in the session.  If we're not disposing, though,
@@ -2146,7 +2146,6 @@ static int japi_synchronize_jobids_retry(const char *job_ids[], bool dispose) {
 
    int i;
    lListElem *japi_job;
-   const lList *not_yet_finished;
 
    /*
     * We simply iterate over all jobids and do the wait operation
@@ -2167,7 +2166,7 @@ static int japi_synchronize_jobids_retry(const char *job_ids[], bool dispose) {
          continue;
       }
 
-      not_yet_finished = ocs::tom::get<JJ_not_yet_finished_ids>(japi_job);
+      ocs::tom::ConstList<ocs::tom::RN> not_yet_finished = ocs::tom::get<JJ_not_yet_finished_ids>(japi_job);
       if (not_yet_finished && range_list_is_id_within(not_yet_finished, taskid)) {
          DPRINTF("job " sge_u32 "." sge_u32" is a still unfinished task\n", jobid, taskid);
          DRETURN(JAPI_WAIT_UNFINISHED);
@@ -2634,7 +2633,7 @@ static int japi_wait_retry(lList *japi_job_list, int wait4any, uint32_t jobid,
       }
 
       if (rusagep != nullptr) {
-         const lList *usage = ocs::tom::get<JJAT_rusage> (task);
+         ocs::tom::ConstList<ocs::tom::UA> usage = ocs::tom::get<JJAT_rusage> (task);
 
          if (usage != nullptr) {
             lList *usage_copy = lCopyList ("Usage List", usage);
@@ -2753,14 +2752,13 @@ japi_sge_state_to_drmaa_state(const lListElem *job, bool is_array_task, uint32_t
     * we return DRMAA_ERRNO_INVALID_JOB.
     */
    if (task_finished) {
-      lListElem *japi_job = nullptr;
-      const lListElem *japi_task = nullptr;
+      ocs::tom::ConstElement<ocs::tom::JJAT> japi_task = nullptr;
 
       DPRINTF("Job " sge_u32 "." sge_u32 " is finished.\n", jobid, taskid);
 
       JAPI_LOCK_JOB_LIST();
 
-      japi_job = ocs::tom::find_first_rw<JJ_jobid>(Master_japi_job_list, jobid);
+      ocs::tom::Element<ocs::tom::JJ> japi_job = ocs::tom::find_first_rw<JJ_jobid>(Master_japi_job_list, jobid);
 
       if (japi_job != nullptr) {
          uint32_t wait_status;
@@ -2938,11 +2936,11 @@ japi_finished_task_state(uint32_t jobid, uint32_t taskid, bool is_array_task, in
 
    bool found = false;
    JAPI_LOCK_JOB_LIST();
-   const lListElem *japi_job = ocs::tom::find_first<JJ_jobid>(Master_japi_job_list, jobid);
+   ocs::tom::ConstElement<ocs::tom::JJ> japi_job = ocs::tom::find_first<JJ_jobid>(Master_japi_job_list, jobid);
    // JOB_TYPE_IS_ARRAY() returns the bit, not a bool
    bool is_array_job = japi_job != nullptr && JOB_TYPE_IS_ARRAY(ocs::tom::get<JJ_type>(japi_job)) != 0;
    if (japi_job != nullptr && is_array_task == is_array_job) {
-      const lListElem *japi_task = ocs::tom::find_first_in<JJ_finished_tasks, JJAT_task_id>(japi_job, taskid);
+      ocs::tom::ConstElement<ocs::tom::JJAT> japi_task = ocs::tom::find_first_in<JJ_finished_tasks, JJAT_task_id>(japi_job, taskid);
       if (japi_task != nullptr) {
          bool never_ran = SGE_GET_NEVERRAN(ocs::tom::get<JJAT_stat>(japi_task));
          *remote_ps = never_ran ? DRMAA_PS_FAILED : DRMAA_PS_DONE;
@@ -3795,7 +3793,7 @@ static void *japi_implementation_thread(void *a_user_data_pointer) {
                for_each_rw_lv(sge_job, sge_job_list) {
                   lList *task_list = nullptr;
 
-                  lListElem *japi_job = ocs::tom::emplace_back<JJ_jobid>(&Master_japi_job_list,
+                  ocs::tom::Element<ocs::tom::JJ> japi_job = ocs::tom::emplace_back<JJ_jobid>(&Master_japi_job_list,
                                                   ocs::tom::get<JB_job_number>(sge_job));
                   ocs::tom::set<JJ_type>(japi_job, ocs::tom::get<JB_type>(sge_job));
                   ocs::tom::exchange<JB_ja_structure>(sge_job, &task_list);
@@ -3837,7 +3835,7 @@ static void *japi_implementation_thread(void *a_user_data_pointer) {
                japi_job = ocs::tom::find_first_rw<JJ_jobid>(Master_japi_job_list, intkey);
                if (japi_job != nullptr) {
                   if (range_list_is_id_within(ocs::tom::get<JJ_not_yet_finished_ids>(japi_job), intkey2)) {
-                     const lList *usage = nullptr;
+                     ocs::tom::ConstList<ocs::tom::UA> usage = nullptr;
 
                      /* remove task from not yet finished job id list */
                      object_delete_range_id(japi_job, nullptr, JJ_not_yet_finished_ids, intkey2);
@@ -3866,7 +3864,7 @@ static void *japi_implementation_thread(void *a_user_data_pointer) {
             } /* else if type == sgeE_JOB_FINISH */
             else if (type == sgeE_JATASK_MOD) {
                /* - add task to JJ_started_task_ids */
-               lListElem *japi_job;
+               ocs::tom::Element<ocs::tom::JJ> japi_job;
                const lList *jat = ocs::tom::get<ET_new_version>(event);
                const lListElem *ep = lFirst(jat);
                u_long job_status = ocs::tom::get<JAT_status>(ep);
@@ -4129,7 +4127,6 @@ static int japi_clean_up_jobs(int flag, dstring *diag) {
    DENTER(TOP_LAYER);
 
    const lListElem *japi_job = nullptr;
-   lListElem *id_entry = nullptr;
    lList *id_list = nullptr, *alp = nullptr;
    uint32_t jobid;
    int ret = DRMAA_ERRNO_SUCCESS;
@@ -4161,7 +4158,7 @@ static int japi_clean_up_jobs(int flag, dstring *diag) {
             DPRINTF("Stopping job %ld\n", jobid);
 
             sge_dstring_sprintf(&job_task_specifier, sge_u32, jobid);
-            id_entry = ocs::tom::emplace_back<ID_str>(&id_list, sge_dstring_get_string(&job_task_specifier));
+            ocs::tom::Element<ocs::tom::ID> id_entry = ocs::tom::emplace_back<ID_str>(&id_list, sge_dstring_get_string(&job_task_specifier));
 
             if (JOB_TYPE_IS_ARRAY(ocs::tom::get<JJ_type>(japi_job))) {
                /* Kill every task in the not yet finished list.  Some of the tasks
@@ -4308,9 +4305,7 @@ static int japi_read_dynamic_attributes(dstring *diag) {
 
    int        ret=0;
    int        drmaa_errno=DRMAA_ERRNO_SUCCESS;
-   const lList      *pSubList;
    lListElem  *config = nullptr;
-   const lListElem  *ep = nullptr;
    const char *pStr = nullptr;
 
    ret = ocs::gdi::Client::gdi_get_configuration(SGE_GLOBAL_NAME, &config, nullptr);
@@ -4341,9 +4336,9 @@ static int japi_read_dynamic_attributes(dstring *diag) {
       DRETURN(drmaa_errno);
    }
 
-   pSubList = ocs::tom::get<CONF_entries>(config);
+   ocs::tom::ConstList<ocs::tom::CF> pSubList = ocs::tom::get<CONF_entries>(config);
    if (pSubList != nullptr) {
-      ep = ocs::tom::find_first<CF_name>(pSubList, "delegated_file_staging");
+      ocs::tom::ConstElement<ocs::tom::CF> ep = ocs::tom::find_first<CF_name>(pSubList, "delegated_file_staging");
       if (ep != nullptr) {
          pStr = ocs::tom::get<CF_value>(ep);
 

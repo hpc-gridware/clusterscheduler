@@ -76,10 +76,10 @@ gru_add_selected_instances(lListElem *gru, const lListElem *resource_definition,
    for_each_ep (sel_ep, selected) {
       const char *id = ocs::tom::get<RESL_value>(sel_ep);
 
-      lListElem *resl = ocs::tom::find_first_in_rw<GRU_resource_map_list, RESL_value>(gru, id);
+      ocs::tom::Element<ocs::tom::RESL> resl = ocs::tom::find_first_in_rw<GRU_resource_map_list, RESL_value>(gru, id);
       if (resl == nullptr) {
          resl = ocs::tom::emplace_back_in<GRU_resource_map_list, RESL_value>(gru, id);
-         const lListElem *defined_ep = ocs::tom::find_first_in<CE_resource_map_list, RESL_value>(resource_definition, id);
+         ocs::tom::ConstElement<ocs::tom::RESL> defined_ep = ocs::tom::find_first_in<CE_resource_map_list, RESL_value>(resource_definition, id);
          const lList *src_props = (defined_ep != nullptr)
                                   ? static_cast<const lList *>(ocs::tom::get<RESL_properties>(defined_ep)) : nullptr;
          if (src_props != nullptr) {
@@ -194,7 +194,7 @@ rsmap_select_granted_ids(sge_assignment_t *a, const char *name, const char *host
                                                  a->duration);
 
             lList *selected = nullptr;
-            const lList *already = ocs::tom::get<GRU_resource_map_list>(gru);
+            ocs::tom::ConstList<ocs::tom::RESL> already = ocs::tom::get<GRU_resource_map_list>(gru);
             bool selected_ok;
 
             if (same_key != nullptr) {
@@ -391,7 +391,7 @@ gru_list_apply_selected_rsmap_ids(const sge_assignment_t *a, const lListElem *ja
          continue;
       }
 
-      const lList *ids = ocs::tom::get<GRU_resource_map_list>(selected);
+      ocs::tom::ConstList<ocs::tom::RESL> ids = ocs::tom::get<GRU_resource_map_list>(selected);
       if (ids != nullptr) {
          ocs::tom::set<GRU_resource_map_list>(gru, lCopyList("granted_rsmap_ids", ids));
       }
@@ -478,7 +478,7 @@ gru_build_granted_resource_list(sge_assignment_t *a, lListElem *ja_task, const l
       DPRINTF("gdil_ep: %s, %d slots%s\n", host_name, slots, is_master_task ? ", master task" : "");
 
       // add the binding_touse information (copy from JG to GRU)
-      const lList *binding_to_use_list = ocs::tom::get<JG_binding_to_use>(gdil_ep);
+      ocs::tom::ConstList<ocs::tom::ST> binding_to_use_list = ocs::tom::get<JG_binding_to_use>(gdil_ep);
       ocs::GrantedResources::add_binding_to_use(&granted_resources_list, host_name, binding_to_use_list);
 
       // book the global resources

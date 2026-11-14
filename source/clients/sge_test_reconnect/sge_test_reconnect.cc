@@ -59,6 +59,7 @@
 #include "sgeobj/sge_id.h"
 #include "sgeobj/sge_qinstance_state.h"
 #include "sgeobj/cull/sge_id_ID_L.h"
+#include "sgeobj/tom/ocs_tom_ID.h"
 #include "tom/ocs_Element.h"
 
 #include "gdi/ocs_gdi_Client.h"
@@ -102,7 +103,7 @@ int main(int argc, char **argv) {
    snprintf(spec, sizeof(spec), "%s:%s:%s", job_id_str, client_host, client_port_str);
 
    lList *ref_list = nullptr;
-   lListElem *idep = ocs::tom::emplace_back<ID_str>(&ref_list, spec);
+   ocs::tom::Element<ocs::tom::ID> idep = ocs::tom::emplace_back<ID_str>(&ref_list, spec);
    ocs::tom::set<ID_action>(idep, QI_DO_RECONNECT | JOB_DO_ACTION);
    ocs::tom::set<ID_force>(idep, 0);
 

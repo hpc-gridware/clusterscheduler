@@ -55,6 +55,7 @@
 #include "tom/ocs_Element.h"
 #include "sgeobj/tom/ocs_tom_RQRL.h"
 #include "sgeobj/tom/ocs_tom_RUE.h"
+#include "sgeobj/tom/ocs_tom_RQL.h"
 
 #include "sched/schedd_message.h"
 #include "sched/msg_schedd.h"
@@ -84,7 +85,6 @@
 static dispatch_t rqs_limitation_reached(sge_assignment_t *a, const lListElem *rule, const char *host, const char *queue, uint64_t *start) {
    DENTER(TOP_LAYER);
    dispatch_t ret = DISPATCH_MISSING_ATTR;
-   const lList *limit_list = nullptr;
    static lListElem *implicit_slots_request = nullptr;
    lListElem *exec_host = host_list_locate(a->host_list, host);
    dstring rue_name = DSTRING_INIT;
@@ -101,7 +101,7 @@ static dispatch_t rqs_limitation_reached(sge_assignment_t *a, const lListElem *r
       ocs::tom::set<CE_doubleval>(implicit_slots_request, 1);
    }
 
-   limit_list = ocs::tom::get<RQR_limit>(rule);
+   ocs::tom::ConstList<ocs::tom::RQRL> limit_list = ocs::tom::get<RQR_limit>(rule);
    for_each_rw_lv(limit, limit_list) {
       bool       is_forced = false;
       const char *limit_name = ocs::tom::get<RQRL_name>(limit);
@@ -156,7 +156,7 @@ static dispatch_t rqs_limitation_reached(sge_assignment_t *a, const lListElem *r
          lListElem *tmp_rue_elem = nullptr;
 
          if (rqs_set_dynamical_limit(limit, a->gep, exec_host, a->centry_list)) {
-            const lList *rue_list = ocs::tom::get<RQRL_usage>(limit);
+            ocs::tom::ConstList<ocs::tom::RUE> rue_list = ocs::tom::get<RQRL_usage>(limit);
             uint64_t tmp_time = a->start;
 
             /* create tmp_centry_list */
@@ -358,7 +358,7 @@ parallel_rqs_slots_by_time(sge_assignment_t *a, int *slots, lListElem *qep, bool
       const lList *grp_list = a->grp_list;
       const char* project = a->project;
       const char* pe = a->pe_name;
-      lListElem *rql;
+      ocs::tom::Element<ocs::tom::RQL> rql;
       // @todo can we used static dstrings? What size would be needed?
       dstring dstr_rule_name = DSTRING_INIT;
       dstring dstr_rue_string = DSTRING_INIT;
@@ -397,7 +397,7 @@ parallel_rqs_slots_by_time(sge_assignment_t *a, int *slots, lListElem *qep, bool
                uint32_t tagged_for_schedule_old = ocs::tom::get<QU_tagged4schedule>(qep);  /* default value or set in match_static_queue() */
                ocs::tom::set<QU_tagged4schedule>(qep, TAG4SCHED_ALL);
 
-               for_each_rw_lv(limit, ocs::tom::get<RQR_limit>(rule)) {
+               for (ocs::tom::Element<ocs::tom::RQRL> limit : ocs::tom::get<RQR_limit>(rule)) {
                   const char *limit_name = ocs::tom::get<RQRL_name>(limit);
 
                   lListElem *raw_centry = centry_list_locate(a->centry_list, limit_name);
@@ -613,7 +613,7 @@ parallel_check_and_debit_rqs_slots(sge_assignment_t *a, const char *host, const 
       if (rule != nullptr) {
          rqs_get_rue_string(rue_name, rule, user, project, host, queue, pe);
          sge_dstring_sprintf(limit_name, "%s=%s", sge_dstring_get_string(rule_name), sge_dstring_get_string(rue_name));
-         if (const lListElem *rql = ocs::tom::find_first<RQL_name>(a->limit_list, sge_dstring_get_string(limit_name)); rql != nullptr) {
+         if (ocs::tom::ConstElement<ocs::tom::RQL> rql = ocs::tom::find_first<RQL_name>(a->limit_list, sge_dstring_get_string(limit_name)); rql != nullptr) {
             *slots = std::min(*slots, ocs::tom::get<RQL_slots>(rql));
          } else {
             *slots = 0;
@@ -641,7 +641,7 @@ parallel_check_and_debit_rqs_slots(sge_assignment_t *a, const char *host, const 
          if (rule != nullptr) {
             rqs_get_rue_string(rue_name, rule, user, project, host, queue, pe);
             sge_dstring_sprintf(limit_name, "%s=%s", sge_dstring_get_string(rule_name), sge_dstring_get_string(rue_name));
-            lListElem *rql = ocs::tom::find_first_rw<RQL_name>(a->limit_list, sge_dstring_get_string(limit_name));
+            ocs::tom::Element<ocs::tom::RQL> rql = ocs::tom::find_first_rw<RQL_name>(a->limit_list, sge_dstring_get_string(limit_name));
             ocs::tom::set<RQL_slots>(rql, ocs::tom::get<RQL_slots>(rql) - *slots);
          }
       }
@@ -690,7 +690,7 @@ parallel_revert_rqs_slot_debitation(sge_assignment_t *a, const char *host, const
       if (rule != nullptr) {
          rqs_get_rue_string(rue_name, rule, user, project, host, queue, pe);
          sge_dstring_sprintf(limit_name, "%s=%s", sge_dstring_get_string(rule_name), sge_dstring_get_string(rue_name));
-         lListElem *rql = ocs::tom::find_first_rw<RQL_name>(a->limit_list, sge_dstring_get_string(limit_name));
+         ocs::tom::Element<ocs::tom::RQL> rql = ocs::tom::find_first_rw<RQL_name>(a->limit_list, sge_dstring_get_string(limit_name));
          DPRINTF("limit: %s %d <--- %d\n", sge_dstring_get_string(limit_name), ocs::tom::get<RQL_slots>(rql), ocs::tom::get<RQL_slots>(rql)+slots);
          ocs::tom::set<RQL_slots>(rql, ocs::tom::get<RQL_slots>(rql) + slots);
       }
@@ -752,7 +752,7 @@ dispatch_t rqs_by_slots(sge_assignment_t *a, const char *queue, const char *host
       rule = rqs_get_matching_rule(rqs, user, group, grp_list, project, nullptr, host, queue, a->acl_list, a->hgrp_list, rule_name);
       if (rule != nullptr) {
          const char *limit;
-         lListElem *rql;
+         ocs::tom::Element<ocs::tom::RQL> rql;
 
          /* need unique identifier for cache */
          rqs_get_rue_string(rue_string, rule, user, project, host, queue, nullptr);

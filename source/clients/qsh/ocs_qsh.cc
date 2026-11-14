@@ -114,6 +114,8 @@
 #include "sgeobj/tom/ocs_tom_JAT.h"
 #include "sgeobj/tom/ocs_tom_PA.h"
 #include "sgeobj/tom/ocs_tom_VA.h"
+#include "sgeobj/tom/ocs_tom_CF.h"
+#include "sgeobj/tom/ocs_tom_ID.h"
 
 /* module variables */
 static bool g_new_interactive_job_support = false;
@@ -863,7 +865,6 @@ get_client_name(int is_rsh, int is_rlogin, int inherit_job) {
    lList     *conf_list       = nullptr;
    lListElem *global          = nullptr;
    lListElem *local           = nullptr;
-   const lListElem *qlogin_cmd_elem = nullptr;
 
    /* session type and config entry name */
    const char *session_type;
@@ -918,7 +919,7 @@ get_client_name(int is_rsh, int is_rlogin, int inherit_job) {
    }
 
    /* search for config entry */
-   qlogin_cmd_elem = ocs::tom::find_first<CF_name>(conf_list, config_name);
+   ocs::tom::ConstElement<ocs::tom::CF> qlogin_cmd_elem = ocs::tom::find_first<CF_name>(conf_list, config_name);
    if (qlogin_cmd_elem == nullptr) {
       ERROR(SFNMAX, MSG_CONFIG_CANTGETCONFIGURATIONFROMQMASTER);
       lFreeList(&conf_list);
@@ -1261,7 +1262,7 @@ static int do_qrsh_reconnect(const char *job_id_str,
    snprintf(spec, sizeof(spec), "%s:%s:%d", job_id_str, qualified_hostname, my_port);
 
    lList *ref_list = nullptr;
-   lListElem *idep = ocs::tom::emplace_back<ID_str>(&ref_list, spec);
+   ocs::tom::Element<ocs::tom::ID> idep = ocs::tom::emplace_back<ID_str>(&ref_list, spec);
    ocs::tom::set<ID_action>(idep, QI_DO_RECONNECT | JOB_DO_ACTION);
    ocs::tom::set<ID_force>(idep, 0);
 
@@ -2028,7 +2029,6 @@ int main(int argc, const char **argv) {
          uint32_t job_status;
          int do_shut = 0;
          lList *lp_poll = nullptr;
-         lListElem *ja_task = nullptr;
          lListElem* jep;
          bool b_already_logged_job_was_scheduled = false;
          int msgsock = -1;
@@ -2244,7 +2244,7 @@ int main(int argc, const char **argv) {
             continue;
          }
 
-         ja_task = lFirstRW(ocs::tom::get<JB_ja_tasks>(jep));
+         ocs::tom::Element<ocs::tom::JAT> ja_task = lFirstRW(ocs::tom::get<JB_ja_tasks>(jep));
          if (ja_task) {
             job_status = ocs::tom::get<JAT_status>(ja_task);
             DPRINTF("Job Status is: %lx\n", job_status);

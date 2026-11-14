@@ -291,9 +291,7 @@ ocs::QHostViewBase::show_host(std::ostream &os, const lListElem *hep, const QHos
 void
 ocs::QHostViewBase::show_host_queues(std::ostream &os, lListElem *host, QHostParameter &parameter, QHostModelBase &model, QHostViewBase &report_handler) {
    DENTER(TOP_LAYER);
-   const lList *load_thresholds;
-   const lList *suspend_thresholds;
-   lListElem *qep;
+   ocs::tom::Element<ocs::tom::QU> qep;
    uint32_t interval;
    const char *ehname = ocs::tom::get<EH_name>(host);
    lList *qlp = model.get_queue_list();
@@ -306,7 +304,7 @@ ocs::QHostViewBase::show_host_queues(std::ostream &os, lListElem *host, QHostPar
    }
 
    for_each_rw_lv(cqueue, qlp) {
-      const lList *qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
+      ocs::tom::ConstList<ocs::tom::QU> qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
 
       if ((qep=ocs::tom::find_first_rw<QU_qhostname>(qinstance_list, ehname))) {
          const char *qname = ocs::tom::get<QU_qname>(qep);
@@ -334,8 +332,8 @@ ocs::QHostViewBase::show_host_queues(std::ostream &os, lListElem *host, QHostPar
             /*
             ** state of queue
             */
-            load_thresholds = ocs::tom::get<QU_load_thresholds>(qep);
-            suspend_thresholds = ocs::tom::get<QU_suspend_thresholds>(qep);
+            ocs::tom::ConstList<ocs::tom::CE> load_thresholds = ocs::tom::get<QU_load_thresholds>(qep);
+            ocs::tom::ConstList<ocs::tom::CE> suspend_thresholds = ocs::tom::get<QU_suspend_thresholds>(qep);
             if (sge_load_alarm(nullptr, 0, qep, load_thresholds, ehl, cl, nullptr, model.get_job_load_adjustments(), true)) {
                qinstance_state_set_alarm(qep, true);
             }
@@ -528,7 +526,7 @@ ocs::QHostViewBase::show_job(std::ostream &os, lListElem *job, lListElem *jatep,
    char state_string[8];
    uint32_t jstate;
    int sge_urg, sge_pri, sge_ext, sge_time;
-   const lListElem *gdil_ep = nullptr;
+   ocs::tom::ConstElement<ocs::tom::JG> gdil_ep = nullptr;
    int running;
    const char *queue_name = nullptr;
    int tsk_ext;
@@ -788,7 +786,7 @@ ocs::QHostViewBase::show_job(std::ostream &os, lListElem *job, lListElem *jatep,
    }
 
    if (sge_ext) {
-      const lListElem *up, *pe;
+      const lListElem *pe;
       lList *job_usage_list;
       const char *pe_name;
 
@@ -801,15 +799,15 @@ ocs::QHostViewBase::show_job(std::ostream &os, lListElem *job, lListElem *jatep,
       /* sum pe-task usage based on queue slots */
       if (job_usage_list) {
          int subtask_ndx = 1;
-         for_each_ep_lv(task, ocs::tom::get<JAT_task_list>(jatep)) {
-            const lListElem *ep;
-            lListElem *dst;
+         for (ocs::tom::ConstElement<ocs::tom::PET> task : ocs::tom::get<JAT_task_list>(jatep)) {
+            ocs::tom::ConstElement<ocs::tom::JG> ep;
+            ocs::tom::Element<ocs::tom::UA> dst;
             const char *qname;
 
-            if (!slots || (queue_name && ((ep = lFirst(static_cast<const lList *>(ocs::tom::get<PET_granted_destin_identifier_list>(task))))) &&
+            if (!slots || (queue_name && ((ep = lFirst(ocs::tom::get<PET_granted_destin_identifier_list>(task)))) &&
                            ((qname = ocs::tom::get<JG_qname>(ep))) && !strcmp(qname, queue_name) &&
                            ((subtask_ndx++ % slots) == slot))) {
-               for_each_ep_lv(src, ocs::tom::get<PET_scaled_usage>(task)) {
+               for (ocs::tom::ConstElement<ocs::tom::UA> src : ocs::tom::get<PET_scaled_usage>(task)) {
                   if ((dst = ocs::tom::find_first_rw<UA_name>(job_usage_list, ocs::tom::get<UA_name>(src)))) {
                      ocs::tom::set<UA_value>(dst, ocs::tom::get<UA_value>(dst) + ocs::tom::get<UA_value>(src));
                   } else {
@@ -821,7 +819,7 @@ ocs::QHostViewBase::show_job(std::ostream &os, lListElem *job, lListElem *jatep,
       }
 
       /* scaled cpu usage */
-      up = ocs::tom::find_first<UA_name>(job_usage_list, USAGE_ATTR_CPU);
+      ocs::tom::ConstElement<ocs::tom::UA> up = ocs::tom::find_first<UA_name>(job_usage_list, USAGE_ATTR_CPU);
       if (up != nullptr) {
          int secs = ocs::tom::get<UA_value>(up);
          int days = secs / (60 * 60 * 24);
@@ -838,17 +836,17 @@ ocs::QHostViewBase::show_job(std::ostream &os, lListElem *job, lListElem *jatep,
          report_handler.job_value(os, jid, "{:<10.10}", nullptr, running ? "NA" : "");
       }
       /* scaled mem usage */
-      up = ocs::tom::find_first<UA_name>(job_usage_list, USAGE_ATTR_MEM);
-      if (up != nullptr) {
-         report_handler.job_value(os, jid, "{:<5.5f}", nullptr, ocs::tom::get<UA_value>(up));
+      ocs::tom::ConstElement<ocs::tom::UA> up_ua = ocs::tom::find_first<UA_name>(job_usage_list, USAGE_ATTR_MEM);
+      if (up_ua != nullptr) {
+         report_handler.job_value(os, jid, "{:<5.5f}", nullptr, ocs::tom::get<UA_value>(up_ua));
       } else {
          report_handler.job_value(os, jid, "{:<7.7}", nullptr, running ? "NA" : "");
       }
 
       /* scaled io usage */
-      up = ocs::tom::find_first<UA_name>(job_usage_list, USAGE_ATTR_IO);
-      if (up != nullptr) {
-         report_handler.job_value(os, jid, "{:<5.5f}", nullptr, ocs::tom::get<UA_value>(up));
+      ocs::tom::ConstElement<ocs::tom::UA> up_ua_2 = ocs::tom::find_first<UA_name>(job_usage_list, USAGE_ATTR_IO);
+      if (up_ua_2 != nullptr) {
+         report_handler.job_value(os, jid, "{:<5.5f}", nullptr, ocs::tom::get<UA_value>(up_ua_2));
       } else {
          report_handler.job_value(os, jid, "{:<7.7}", nullptr, running ? "NA" : "");
       }
@@ -962,7 +960,6 @@ ocs::QHostViewBase::show_jobs_per_queue(std::ostream &os, lListElem *qep, int pr
                                         QHostParameter &parameter, QHostModelBase &model, QHostViewBase &report_handler) {
    DENTER(TOP_LAYER);
 
-   const lListElem *gdilep;
    uint32_t job_tag;
    uint32_t jid = 0, old_jid;
    uint32_t jataskid = 0, old_jataskid;
@@ -979,7 +976,7 @@ ocs::QHostViewBase::show_jobs_per_queue(std::ostream &os, lListElem *qep, int pr
    for_each_rw_lv(jlep, job_list) {
       int master, i;
 
-      for_each_rw_lv(jatep, ocs::tom::get<JB_ja_tasks>(jlep)) {
+      for (ocs::tom::Element<ocs::tom::JAT> jatep : ocs::tom::get<JB_ja_tasks>(jlep)) {
          uint32_t jstate = ocs::tom::get<JAT_state>(jatep);
 
          //if (shut_me_down) {
@@ -990,7 +987,7 @@ ocs::QHostViewBase::show_jobs_per_queue(std::ostream &os, lListElem *qep, int pr
             ocs::tom::set<JAT_state>(jatep, jstate & ~JRUNNING);
          }
 
-         gdilep = ocs::tom::find_first<JG_qname>(ocs::tom::get<JAT_granted_destin_identifier_list>(jatep), qnm);
+         ocs::tom::ConstElement<ocs::tom::JG> gdilep = ocs::tom::find_first<JG_qname>(ocs::tom::get<JAT_granted_destin_identifier_list>(jatep), qnm);
          if (gdilep != nullptr) {
             int slot_adjust = 0;
             int lines_to_print;

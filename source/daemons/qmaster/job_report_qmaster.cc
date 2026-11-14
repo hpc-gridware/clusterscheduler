@@ -62,6 +62,7 @@
 #include "sgeobj/tom/ocs_tom_PE.h"
 #include "sgeobj/tom/ocs_tom_PET.h"
 #include "sgeobj/tom/ocs_tom_UA.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
 
 #include "ocs_ReportingFileWriter.h"
 #include "sge_report_execd.h"
@@ -153,7 +154,7 @@ job_report_is_from_earlier_run(const lListElem *jatep, const char *rhost,
    if (status == JIDLE) {
       ret = true;
    } else if (status == JRUNNING || status == JTRANSFERING) {
-      const lListElem *master_gdil = lFirst(static_cast<const lList *>(ocs::tom::get<JAT_granted_destin_identifier_list>(jatep)));
+      ocs::tom::ConstElement<ocs::tom::JG> master_gdil = lFirst(ocs::tom::get<JAT_granted_destin_identifier_list>(jatep));
       const char *master_host = nullptr;
       if (master_gdil != nullptr) {
          master_host = ocs::tom::get<JG_qhostname>(master_gdil);
@@ -287,8 +288,8 @@ void process_job_report(lListElem *report, lListElem *hep, char *rhost, char *co
       uint32_t rstate = ocs::tom::get<JR_state>(jr);
 
       // find the corresponding objects
-      lListElem *jep = ocs::tom::find_first_rw<JB_job_number>(*ocs::DataStore::get_master_list(SGE_TYPE_JOB), jobid);
-      lListElem *jatep = nullptr;
+      ocs::tom::Element<ocs::tom::JB> jep = ocs::tom::find_first_rw<JB_job_number>(*ocs::DataStore::get_master_list(SGE_TYPE_JOB), jobid);
+      ocs::tom::Element<ocs::tom::JAT> jatep = nullptr;
       lListElem *petask = nullptr;
       bool petask_already_existed = false;
       if (jep != nullptr) {
@@ -420,7 +421,7 @@ void process_job_report(lListElem *report, lListElem *hep, char *rhost, char *co
                               // @todo CS-1026: This should be delivered from execd as part of the report
                               ocs::tom::set<PET_start_time>(petask, sge_get_gmt64());
                               ocs::tom::set<PET_granted_destin_identifier_list>(petask, nullptr);
-                              lListElem *ep;
+                              ocs::tom::Element<ocs::tom::JG> ep;
                               if ((ep = ocs::tom::emplace_back_in<PET_granted_destin_identifier_list, JG_qhostname>(petask, rhost))) {
                                  ocs::tom::set<JG_qname>(ep, queue_name);
                               }
@@ -450,11 +451,11 @@ void process_job_report(lListElem *report, lListElem *hep, char *rhost, char *co
                            }
                            answer_list_output(&answer_list);
                         } else if (ocs::tom::get<JAT_status>(jatep) != JFINISHED) {
-                           const lListElem *jg;
+                           ocs::tom::ConstElement<ocs::tom::JG> jg;
                            const char *shouldbe_queue_name;
                            const char *shouldbe_host_name;
 
-                           if (!(jg = lFirst(static_cast<const lList *>(ocs::tom::get<JAT_granted_destin_identifier_list>(jatep))))) {
+                           if (!(jg = lFirst(ocs::tom::get<JAT_granted_destin_identifier_list>(jatep)))) {
                               shouldbe_queue_name = MSG_OBJ_NOTRUNNING;
                               shouldbe_host_name = MSG_OBJ_NOTRUNNING;
                            } else {
@@ -560,13 +561,12 @@ void process_job_report(lListElem *report, lListElem *hep, char *rhost, char *co
                pack_ack(pb, ACK_JOB_EXIT, jobid, jataskid, pe_task_id_str);
             } else {
                /* must be ack (or later slave job report) for slave job */
-               lListElem *first_at_host;
 
                /* we lookup the first gdil for the reporting host
                 * there might be multiple gdil for one host if the pe job spawns multiple queues
                 * but only the first one is tagged
                 */
-               first_at_host = ocs::tom::find_first_rw<JG_qhostname>(ocs::tom::get<JAT_granted_destin_identifier_list>(jatep), rhost);
+               ocs::tom::Element<ocs::tom::JG> first_at_host = ocs::tom::find_first_rw<JG_qhostname>(ocs::tom::get<JAT_granted_destin_identifier_list>(jatep), rhost);
                if (first_at_host != nullptr) {
                   /* If the job is being delivered, we first deliver it to the slave hosts,
                    * once all slave hosts have been notified, we start the master task.
@@ -849,11 +849,11 @@ void process_job_report(lListElem *report, lListElem *hep, char *rhost, char *co
                         }
                      }
                   } else if (status != JFINISHED) {
-                     const lListElem *jg;
+                     ocs::tom::ConstElement<ocs::tom::JG> jg;
                      const char *shouldbe_queue_name;
                      const char *shouldbe_host_name;
 
-                     if (!(jg = lFirst(static_cast<const lList *>(ocs::tom::get<JAT_granted_destin_identifier_list>(jatep))))) {
+                     if (!(jg = lFirst(ocs::tom::get<JAT_granted_destin_identifier_list>(jatep)))) {
                         shouldbe_queue_name = MSG_OBJ_NOTRUNNING;
                         shouldbe_host_name = MSG_OBJ_NOTRUNNING;
                      } else {

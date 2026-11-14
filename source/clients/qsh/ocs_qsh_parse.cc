@@ -465,7 +465,7 @@ lList *cull_parse_qsh_parameter(uint32_t prog_number, uint32_t uid, const char *
    parse_list_simple(cmdline, "-M", *pjob, JB_mail_list, MR_host, MR_user, FLG_LIST_MERGE);
 
    if (!ocs::tom::get<JB_mail_list>(*pjob)) {   
-      ep = ocs::tom::emplace_back_in<JB_mail_list, MR_user>(*pjob, username);
+      ocs::tom::Element<ocs::tom::MR> ep = ocs::tom::emplace_back_in<JB_mail_list, MR_user>(*pjob, username);
       ocs::tom::set<MR_host>(ep, qualified_hostname);
    }
 
@@ -695,7 +695,7 @@ lList *cull_parse_qsh_parameter(uint32_t prog_number, uint32_t uid, const char *
          display = getenv("DISPLAY");
 
          if(display != nullptr) {
-            ep = ocs::tom::emplace_back_in<JB_env_list, VA_variable>(*pjob, "DISPLAY");
+            ocs::tom::Element<ocs::tom::VA> ep = ocs::tom::emplace_back_in<JB_env_list, VA_variable>(*pjob, "DISPLAY");
             ocs::tom::set<VA_value>(ep, display);   
          }   
       }

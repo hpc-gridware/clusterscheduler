@@ -152,14 +152,14 @@ ocs::ShareTree::calc_node_usage(lListElem *node, const lList *user_list, const l
    bool is_user = false;
    bool is_project = false;
    const lList *children = lGetPosList(node, STN_children_POS);
-   const lList *usage_list=nullptr;
+   ocs::tom::ConstList<ocs::tom::UA> usage_list=nullptr;
    lListElem *userprj = nullptr;
    if (!children) {
       if (project_name) {
          // Get usage from project usage sub-list in user object
          if ((userprj = user_list_locate(user_list, lGetPosString(node, STN_name_POS)))) {
-            const lList *projects = ocs::tom::get<UU_project>(userprj);
-            const lListElem *upp;
+            ocs::tom::ConstList<ocs::tom::UPP> projects = ocs::tom::get<UU_project>(userprj);
+            ocs::tom::ConstElement<ocs::tom::UPP> upp;
 
             is_user = true;
             if (projects) {
@@ -354,7 +354,7 @@ ocs::ShareTree::set_node_project_flag(lListElem *node, const lList *project_list
    } else {
       ocs::tom::set<STN_project>(node, 0);
    }
-   if (const lList *children = ocs::tom::get<STN_children>(node)) {
+   if (ocs::tom::ConstList<ocs::tom::STN> children = ocs::tom::get<STN_children>(node)) {
       lListElem *child;
       for_each_rw(child, children) {
          set_node_project_flag(child, project_list);
@@ -407,8 +407,8 @@ ocs::ShareTree::add_all_auto_users(lListElem *node, const lList *user_list, cons
       // check projects acl/xacl if the users are allowed
       if (const char *proj_name = ocs::tom::get<PR_name>(project);
           search_user_project_node(node, DEFAULT_NODE_NAME, proj_name, nullptr, node)) {
-         const lList *xacl = ocs::tom::get<PR_xacl>(project);
-         const lList *acl = ocs::tom::get<PR_acl>(project);
+         ocs::tom::ConstList<ocs::tom::US> xacl = ocs::tom::get<PR_xacl>(project);
+         ocs::tom::ConstList<ocs::tom::US> acl = ocs::tom::get<PR_acl>(project);
 
          for_each_ep_lv(user, user_list) {
             if (const char *user_name = ocs::tom::get<UU_name>(user);

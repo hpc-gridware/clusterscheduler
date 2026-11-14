@@ -103,7 +103,7 @@ role_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem
    if (ocs::tom::has<RL_parent_role_list>(ep)) {
       normalize_sublist(ep, RL_parent_role_list);
       const lList *master_role_list = *ocs::DataStore::get_master_list(SGE_TYPE_RL);
-      for_each_ep_lv(parent_ep, ocs::tom::get<RL_parent_role_list>(ep)) {
+      for (ocs::tom::ConstElement<ocs::tom::ST> parent_ep : ocs::tom::get<RL_parent_role_list>(ep)) {
          const char *parent_name = ocs::tom::get<ST_name>(parent_ep);
          if (strcmp(parent_name, role_name) == 0) {
             ERROR(MSG_ROLE_SELF_REFERENCE_S, role_name);

@@ -88,7 +88,7 @@ bool id_sharetree(lList **alpp, lListElem *ep, int id, int *ret_id) {
    ocs::tom::set<STN_id>(ep, my_id++);
 
    /* handle the children */
-   for_each_rw_lv(cep, ocs::tom::get<STN_children>(ep)) {
+   for (ocs::tom::Element<ocs::tom::STN> cep : ocs::tom::get<STN_children>(ep)) {
       if (false == id_sharetree(nullptr, cep, my_id, &my_id)) {
          DRETURN(false);
       }
@@ -147,7 +147,7 @@ int level
       os << (indent != nullptr ? indent : "");
    }
    os << std::format("{}={}\n", stn_cstr(ocs::tom::get<STN_name>(ep)), ocs::tom::get<STN_shares>(ep));
-   for_each_ep_lv(cep, ocs::tom::get<STN_children>(ep)) {
+   for (ocs::tom::ConstElement<ocs::tom::STN> cep : ocs::tom::get<STN_children>(ep)) {
       show_sharetree(os, cep, "   ", level + 1);
    }
 
@@ -201,7 +201,7 @@ const char *path
       else
          os << std::format("={}\n", ocs::tom::get<STN_shares>(node));
       free_ancestors(&ancestors);
-      for_each_ep_lv(cep, ocs::tom::get<STN_children>(node)) {
+      for (ocs::tom::ConstElement<ocs::tom::STN> cep : ocs::tom::get<STN_children>(node)) {
 
          if (!strcmp(path, "/") || !strcasecmp(path, "Root") )
             sge_dstring_sprintf(&sb, "/%s", ocs::tom::get<STN_name>(cep));
@@ -279,7 +279,7 @@ lListElem *search_named_node(lListElem *ep, /* root of the tree */
       DRETURN(ep);
    }
 
-   for_each_rw_lv(cep, ocs::tom::get<STN_children>(ep)) {
+   for (ocs::tom::Element<ocs::tom::STN> cep : ocs::tom::get<STN_children>(ep)) {
       if ((fep = search_named_node(cep, name))) {
          DRETURN(fep);
       }
@@ -319,7 +319,7 @@ search_by_path(lListElem *ep, /* root of the [sub]tree */
                int delim,
                ancestors_t *ancestors,
                int depth) {
-   lList *children;
+   ocs::tom::List<ocs::tom::STN> children;
    lListElem *ret = nullptr;
    lListElem *child;
    char *buf=nullptr, *bufp;
@@ -447,7 +447,7 @@ search_ancestors(lListElem *ep,
       DRETURN(ep);
    }
 
-   for_each_rw_lv(cep, ocs::tom::get<STN_children>(ep)) {
+   for (ocs::tom::Element<ocs::tom::STN> cep : ocs::tom::get<STN_children>(ep)) {
       if ((fep = search_ancestors(cep, name, ancestors, depth+1))) {
          ancestors->nodes[depth-1] = ep;
          DRETURN(fep);
@@ -476,7 +476,7 @@ lListElem *sge_search_unspecified_node(lListElem *ep) {
       DRETURN(nullptr);
    }
 
-   for_each_rw_lv(cep, ocs::tom::get<STN_children>(ep)) {
+   for (ocs::tom::Element<ocs::tom::STN> cep : ocs::tom::get<STN_children>(ep)) {
       if ((ret = sge_search_unspecified_node(cep))) {
          DRETURN(ret);
       }   

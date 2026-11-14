@@ -23,6 +23,8 @@
  */
 
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "sgeobj/tom/ocs_tom_SPP.h"
+#include "sgeobj/tom/ocs_tom_VA.h"
 #include "tom/ocs_Element.h"
 #include "uti/sge_rmon_macros.h"
 
@@ -36,7 +38,7 @@ void
 ocs::QConfActionParameter::set_arg(const char *name, const std::string &value) {
    DENTER(TOP_LAYER);
 
-   lListElem *arg = ocs::tom::find_first_rw<VA_variable>(args_, name);
+   ocs::tom::Element<ocs::tom::VA> arg = ocs::tom::find_first_rw<VA_variable>(args_, name);
    if (arg == nullptr) {
       arg = ocs::tom::emplace_back<VA_variable>(&args_, name);
    }
@@ -55,7 +57,7 @@ ocs::QConfActionParameter::set_arg(const char *name, const std::string &value) {
  */
 std::string
 ocs::QConfActionParameter::get_arg(const char *name) const {
-   const lListElem *arg = ocs::tom::find_first<VA_variable>(args_, name);
+   ocs::tom::ConstElement<ocs::tom::VA> arg = ocs::tom::find_first<VA_variable>(args_, name);
    const char *value = (arg != nullptr) ? ocs::tom::get<VA_value>(arg) : nullptr;
    return (value != nullptr) ? value : "";
 }
@@ -90,7 +92,7 @@ ocs::QConfActionParameter::set_bundle(const lList *bundle) {
 
    ProcedureParameter::set_bundle(bundle);
 
-   lListElem *args_param = ocs::tom::find_first_rw<SPP_name>(const_cast<lList *>(bundle), ACTION_ARGS);
+   ocs::tom::Element<ocs::tom::SPP> args_param = ocs::tom::find_first_rw<SPP_name>(const_cast<lList *>(bundle), ACTION_ARGS);
    if (args_param != nullptr) {
       lFreeList(&args_);
       ocs::tom::exchange<SPP_value_list>(args_param, &args_);

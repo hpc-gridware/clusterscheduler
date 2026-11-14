@@ -32,6 +32,8 @@
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "tom/ocs_Element.h"
 #include "sgeobj/tom/ocs_tom_UA.h"
+#include "sgeobj/tom/ocs_tom_PE.h"
+#include "sgeobj/tom/ocs_tom_PET.h"
 
 #include "sge_rusage.h"
 
@@ -59,7 +61,7 @@ write_acct_record(bool accounting_summary, bool intermediate, double *wallclock,
    // tightly integrated one, so control_slaves has to be set as well
    lList **master_pe_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_PE);
    lFreeList(master_pe_list);
-   lListElem *pe = ocs::tom::emplace_back<PE_name>(master_pe_list, "testpe");
+   ocs::tom::Element<ocs::tom::PE> pe = ocs::tom::emplace_back<PE_name>(master_pe_list, "testpe");
    ocs::tom::set<PE_control_slaves>(pe, true);
    ocs::tom::set<PE_accounting_summary>(pe, accounting_summary);
 
@@ -71,7 +73,7 @@ write_acct_record(bool accounting_summary, bool intermediate, double *wallclock,
    lListElem *ja_task = lCreateElem(JAT_Type);
    ocs::tom::set<JAT_task_number>(ja_task, 1);
    ocs::tom::set<JAT_granted_pe>(ja_task, "testpe");
-   lList *usage = ocs::tom::get_or_create<JAT_scaled_usage_list>(ja_task, "usage");
+   ocs::tom::List<ocs::tom::UA> usage = ocs::tom::get_or_create<JAT_scaled_usage_list>(ja_task, "usage");
    usage_list_set_double_usage(usage, USAGE_ATTR_WALLCLOCK, WALLCLOCK_MASTER);
    usage_list_set_double_usage(usage, USAGE_ATTR_CPU, CPU_MASTER);
    usage_list_set_double_usage(usage, USAGE_ATTR_CPU_ACCT, CPU_MASTER);
@@ -79,8 +81,8 @@ write_acct_record(bool accounting_summary, bool intermediate, double *wallclock,
    for (int i = 0; i < NUM_PE_TASKS; i++) {
       char pe_task_id[64];
       snprintf(pe_task_id, sizeof(pe_task_id), "%d.testhost", i + 1);
-      lListElem *pe_task = ocs::tom::emplace_back_in<JAT_task_list, PET_id>(ja_task, pe_task_id);
-      lList *pe_usage = ocs::tom::get_or_create<PET_scaled_usage>(pe_task, "usage");
+      ocs::tom::Element<ocs::tom::PET> pe_task = ocs::tom::emplace_back_in<JAT_task_list, PET_id>(ja_task, pe_task_id);
+      ocs::tom::List<ocs::tom::UA> pe_usage = ocs::tom::get_or_create<PET_scaled_usage>(pe_task, "usage");
       usage_list_set_double_usage(pe_usage, USAGE_ATTR_WALLCLOCK, WALLCLOCK_SLAVE);
       usage_list_set_double_usage(pe_usage, USAGE_ATTR_CPU, CPU_SLAVE);
       usage_list_set_double_usage(pe_usage, USAGE_ATTR_CPU_ACCT, CPU_SLAVE);

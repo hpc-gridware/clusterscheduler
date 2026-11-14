@@ -85,6 +85,9 @@
 #include "sgeobj/tom/ocs_tom_PET.h"
 #include "sgeobj/tom/ocs_tom_ST.h"
 #include "sgeobj/tom/ocs_tom_UA.h"
+#include "sgeobj/tom/ocs_tom_AR.h"
+#include "sgeobj/tom/ocs_tom_CE.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
 
 #include "sched/debit.h"
 
@@ -273,7 +276,7 @@ sge_give_job(lListElem *jep, lListElem *jatep, const lListElem *master_qep, lLis
 static int
 send_slave_jobs(lListElem *jep, lListElem *jatep, monitoring_t *monitor, uint64_t gdi_session) {
    DENTER(TOP_LAYER);
-   lListElem *tmpjep, *qep, *tmpjatep;
+   lListElem *tmpjep, *qep;
    int ret = 0;
    bool is_pe_jobs = false;
    const lDescr *rdp = nullptr;
@@ -282,7 +285,7 @@ send_slave_jobs(lListElem *jep, lListElem *jatep, monitoring_t *monitor, uint64_
    const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
 
    // do we still have pe slave tasks to be delivered?
-   for_each_rw_lv(gdil_ep, ocs::tom::get<JAT_granted_destin_identifier_list>(jatep)) {
+   for (ocs::tom::Element<ocs::tom::JG> gdil_ep : ocs::tom::get<JAT_granted_destin_identifier_list>(jatep)) {
       if (ocs::tom::get<JG_tag_slave_job>(gdil_ep)) {
          ocs::tom::set<JAT_next_pe_task_id>(jatep, 1);
          is_pe_jobs = true;
@@ -318,10 +321,10 @@ send_slave_jobs(lListElem *jep, lListElem *jatep, monitoring_t *monitor, uint64_
    what = lIntVector2What(QU_Type, queue_field);
    lReduceDescr(&rdp, QU_Type, what);
 
-   tmpjatep = lFirstRW(static_cast<const lList *>(ocs::tom::get<JB_ja_tasks>(tmpjep)));
+   ocs::tom::Element<ocs::tom::JAT> tmpjatep = lFirstRW(ocs::tom::get<JB_ja_tasks>(tmpjep));
    bool is_pe_job = static_cast<lObject>(ocs::tom::get<JAT_pe_object>(tmpjatep)) != nullptr;
    bool is_first_gdil_entry = true;
-   for_each_rw_lv (gdil_ep, ocs::tom::get<JAT_granted_destin_identifier_list>(tmpjatep)) {
+   for (ocs::tom::Element<ocs::tom::JG> gdil_ep : ocs::tom::get<JAT_granted_destin_identifier_list>(tmpjatep)) {
       const char *src_qname = ocs::tom::get<JG_qname>(gdil_ep);
       const lListElem *src_qep = cqueue_list_locate_qinstance(master_cqueue_list, src_qname);
 
@@ -376,7 +379,7 @@ send_slave_jobs_wc(lListElem *jep, monitoring_t *monitor, uint64_t gdi_session) 
    lList *gdil;
    lListElem *gdil_ep = nullptr;
    lListElem *next_gdil_ep = nullptr;
-   lListElem *jatep = lFirstRW(static_cast<const lList *>(ocs::tom::get<JB_ja_tasks>(jep)));
+   ocs::tom::Element<ocs::tom::JAT> jatep = lFirstRW(ocs::tom::get<JB_ja_tasks>(jep));
    int ret = 0;
    int failed = CL_RETVAL_OK;
    lList *master_ehost_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST);
@@ -499,7 +502,7 @@ send_job(const char *rhost, lListElem *jep, lListElem *jatep, lListElem *hep, in
 
    /* if a granted resource list is defined int must be passed through, too */
    if (ocs::tom::get<JAT_granted_resources_list>(jatep)) {
-      const lList *grl = ocs::tom::get<JAT_granted_resources_list>(jatep);
+      ocs::tom::ConstList<ocs::tom::GRU> grl = ocs::tom::get<JAT_granted_resources_list>(jatep);
       ocs::tom::set<JAT_granted_resources_list>(tmpjatep, lCopyList(nullptr, grl));
    }
 
@@ -529,7 +532,7 @@ send_job(const char *rhost, lListElem *jep, lListElem *jatep, lListElem *hep, in
    //               ==> The data we send here for the master task is simply thrown away, so no need to build it.
    bool is_pe_job = static_cast<lObject>(ocs::tom::get<JAT_pe_object>(tmpjatep)) != nullptr;
    bool is_first_gdil_entry = true;
-   for_each_rw_lv(gdil_ep, ocs::tom::get<JAT_granted_destin_identifier_list>(tmpjatep)) {
+   for (ocs::tom::Element<ocs::tom::JG> gdil_ep : ocs::tom::get<JAT_granted_destin_identifier_list>(tmpjatep)) {
       const char *src_qname = ocs::tom::get<JG_qname>(gdil_ep);
       const lListElem *src_qep = cqueue_list_locate_qinstance(master_cqueue_list, src_qname);
 
@@ -599,37 +602,37 @@ send_job(const char *rhost, lListElem *jep, lListElem *jatep, lListElem *hep, in
 static void
 sge_job_resend_event_handler_sim_job_end(uint32_t jobid, uint32_t jataskid, lListElem *jep, lListElem *jatep,
                                          monitoring_t *monitor, uint64_t now, int runtime, bool deleted, uint64_t gdi_session) {
-   lListElem *ue, *jr = lCreateElem(JR_Type);
+   lListElem *jr = lCreateElem(JR_Type);
    ocs::tom::set<JR_job_number>(jr, jobid);
    ocs::tom::set<JR_ja_task_number>(jr, jataskid);
 
-   const lListElem *ep;
-   if ((ep = lFirst(static_cast<const lList *>(ocs::tom::get<JAT_granted_destin_identifier_list>(jatep))))) {
+   ocs::tom::ConstElement<ocs::tom::JG> ep;
+   if ((ep = lFirst(ocs::tom::get<JAT_granted_destin_identifier_list>(jatep)))) {
       ocs::tom::set<JR_queue_name>(jr, ocs::tom::get<JG_qname>(ep));
       if (deleted) {
          ocs::tom::set<JR_wait_status>(jr, SGE_SET_WEXITSTATUS(SGE_WSIGNALED_BIT, SIGKILL)); // was killed
-         ue = ocs::tom::emplace_back_in<JR_usage, UA_name>(jr, "exit_status");
+         ocs::tom::Element<ocs::tom::UA> ue = ocs::tom::emplace_back_in<JR_usage, UA_name>(jr, "exit_status");
          ocs::tom::set<UA_value>(ue, 137); // 128 + SIGKILL
          ocs::tom::set<JR_failed>(jr, SSTATE_FAILURE_AFTER_JOB);
       } else {
          ocs::tom::set<JR_wait_status>(jr, SGE_SET_WEXITSTATUS(SGE_WEXITED_BIT, 0)); // did exit(0)
       }
 
-      ue = ocs::tom::emplace_back_in<JR_usage, UA_name>(jr, "submission_time");
+      ocs::tom::Element<ocs::tom::UA> ue = ocs::tom::emplace_back_in<JR_usage, UA_name>(jr, "submission_time");
       ocs::tom::set<UA_value>(ue, ocs::tom::get<JB_submission_time>(jep));
 
       uint64_t start_time = ocs::tom::get<JAT_start_time>(jatep);
-      ue = ocs::tom::emplace_back_in<JR_usage, UA_name>(jr, "start_time");
-      ocs::tom::set<UA_value>(ue, start_time);
+      ocs::tom::Element<ocs::tom::UA> ue_ua = ocs::tom::emplace_back_in<JR_usage, UA_name>(jr, "start_time");
+      ocs::tom::set<UA_value>(ue_ua, start_time);
 
-      ue = ocs::tom::emplace_back_in<JR_usage, UA_name>(jr, "end_time");
-      ocs::tom::set<UA_value>(ue, now);
+      ocs::tom::Element<ocs::tom::UA> ue_ua_2 = ocs::tom::emplace_back_in<JR_usage, UA_name>(jr, "end_time");
+      ocs::tom::set<UA_value>(ue_ua_2, now);
 
-      ue = ocs::tom::emplace_back_in<JR_usage, UA_name>(jr, "ru_wallclock");
-      ocs::tom::set<UA_value>(ue, sge_gmt64_to_gmt32(now - start_time));
+      ocs::tom::Element<ocs::tom::UA> ue_ua_3 = ocs::tom::emplace_back_in<JR_usage, UA_name>(jr, "ru_wallclock");
+      ocs::tom::set<UA_value>(ue_ua_3, sge_gmt64_to_gmt32(now - start_time));
 
-      ue = ocs::tom::emplace_back_in<JR_usage, UA_name>(jr, "wallclock");
-      ocs::tom::set<UA_value>(ue, sge_gmt64_to_gmt32_double(now - start_time));
+      ocs::tom::Element<ocs::tom::UA> ue_ua_4 = ocs::tom::emplace_back_in<JR_usage, UA_name>(jr, "wallclock");
+      ocs::tom::set<UA_value>(ue_ua_4, sge_gmt64_to_gmt32_double(now - start_time));
 
       ocs::tom::exchange<JR_usage>(jr, ocs::tom::list_ref<JAT_scaled_usage_list>(jatep));
       ocs::ReportingFileWriter::create_acct_records(nullptr, jr, jep, jatep, false);
@@ -640,10 +643,9 @@ sge_job_resend_event_handler_sim_job_end(uint32_t jobid, uint32_t jataskid, lLis
 
 static int
 sge_job_resend_event_handler_sim_job_runtime(uint64_t now, const lListElem *job, const lListElem *ja_task) {
-   const lListElem *argv1;
    int runtime = 3;
 
-   argv1 = lFirst(static_cast<const lList *>(ocs::tom::get<JB_job_args>(job)));
+   ocs::tom::ConstElement<ocs::tom::ST> argv1 = lFirst(ocs::tom::get<JB_job_args>(job));
    if (argv1 != nullptr) {
       runtime = atoi(ocs::tom::get<ST_name>(argv1));
    }
@@ -673,8 +675,7 @@ void
 sge_job_resend_event_handler(te_event_t anEvent, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
-   lListElem *jep, *jatep;
-   const lListElem *ep;
+   lListElem *jatep;
    lListElem *hep = nullptr;
    const lListElem *mqep;
    const char *qnm, *hnm;
@@ -687,7 +688,7 @@ sge_job_resend_event_handler(te_event_t anEvent, monitoring_t *monitor) {
    const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
    const lList *master_ehost_list = *ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST);
 
-   jep = ocs::tom::find_first_rw<JB_job_number>(*master_job_list, jobid);
+   ocs::tom::Element<ocs::tom::JB> jep = ocs::tom::find_first_rw<JB_job_number>(*master_job_list, jobid);
    jatep = job_search_task(jep, nullptr, jataskid);
    uint64_t now = sge_get_gmt64();
 
@@ -727,7 +728,7 @@ sge_job_resend_event_handler(te_event_t anEvent, monitoring_t *monitor) {
 
    if (ocs::tom::get<JAT_status>(jatep) == JTRANSFERING) {
 
-      ep = lFirst(static_cast<const lList *>(ocs::tom::get<JAT_granted_destin_identifier_list>(jatep)));
+      ocs::tom::ConstElement<ocs::tom::JG> ep = lFirst(ocs::tom::get<JAT_granted_destin_identifier_list>(jatep));
 
       if (!ep || !(qnm = ocs::tom::get<JG_qname>(ep)) || !(hnm = ocs::tom::get<JG_qhostname>(ep))) {
          ERROR(MSG_JOB_UNKNOWNGDIL4TJ_UU, jobid, jataskid);
@@ -853,7 +854,7 @@ create_timed_events_for_simulated_jobs() {
       uint64_t now = sge_get_gmt64();
       lList *master_job_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB);
       for_each_ep_lv(job, master_job_list) {
-         for_each_ep_lv(ja_task, ocs::tom::get<JB_ja_tasks>(job)) {
+         for (ocs::tom::ConstElement<ocs::tom::JAT> ja_task : ocs::tom::get<JB_ja_tasks>(job)) {
             if (ja_task_is_running(ja_task)) {
                uint32_t jobid = ocs::tom::get<JB_job_number>(job);
                uint32_t jataskid = ocs::tom::get<JAT_task_number>(ja_task);
@@ -937,7 +938,7 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
    session = ocs::tom::get<JB_session>(jep);
 
    const char *pe_name = nullptr;
-   const lListElem *pe = nullptr;
+   ocs::tom::ConstElement<ocs::tom::PE> pe = nullptr;
    if (jatep != nullptr) {
       pe_name = ocs::tom::get<JAT_granted_pe>(jatep);
       pe = ocs::tom::get<JAT_pe_object>(jatep);
@@ -962,7 +963,7 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
          bool do_per_global_host_booking = true;
 
          uint32_t ar_id = ocs::tom::get<JB_ar>(jep);
-         lListElem *ar = nullptr;
+         ocs::tom::Element<ocs::tom::AR> ar = nullptr;
          lListElem *ar_global_host = nullptr;
          if (ar_id != 0) {
             ar = ocs::tom::find_first_rw<AR_id>(master_ar_list, ar_id);
@@ -975,8 +976,8 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
          }
 
          const char *last_hostname = nullptr;
-         const lList *granted_resources_list = ocs::tom::get<JAT_granted_resources_list>(jatep);
-         const lList *gdil = ocs::tom::get<JAT_granted_destin_identifier_list>(jatep);
+         ocs::tom::ConstList<ocs::tom::GRU> granted_resources_list = ocs::tom::get<JAT_granted_resources_list>(jatep);
+         ocs::tom::ConstList<ocs::tom::JG> gdil = ocs::tom::get<JAT_granted_destin_identifier_list>(jatep);
          for_each_rw_lv(gdil_ep, gdil) {
             const char *queue_name = ocs::tom::get<JG_qname>(gdil_ep);
             lListElem *queue = nullptr;
@@ -1110,7 +1111,7 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
                if (pe != nullptr && ocs::tom::get<PE_control_slaves>(pe)) {
                   bool is_master = true;
 
-                  for_each_ep_lv(granted_queue, ocs::tom::get<JAT_granted_destin_identifier_list>(jatep)) {
+                  for (ocs::tom::ConstElement<ocs::tom::JG> granted_queue : ocs::tom::get<JAT_granted_destin_identifier_list>(jatep)) {
                      if (!is_master) {
                         lListElem *host = host_list_locate(master_exechost_list, ocs::tom::get<JG_qhostname>(granted_queue));
 
@@ -1123,8 +1124,8 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
                   }
                }
             } else {
-               const lList *granted_list = ocs::tom::get<JAT_granted_destin_identifier_list>(jatep);
-               const lListElem *granted_queue = lFirst(granted_list);
+               ocs::tom::ConstList<ocs::tom::JG> granted_list = ocs::tom::get<JAT_granted_destin_identifier_list>(jatep);
+               ocs::tom::ConstElement<ocs::tom::JG> granted_queue = lFirst(granted_list);
                lListElem *host = host_list_locate(master_exechost_list, ocs::tom::get<JG_qhostname>(granted_queue));
 
                add_to_reschedule_unknown_list(host, jobid, jataskid, RESCHEDULE_SKIP_JR, gdi_session);
@@ -1178,7 +1179,7 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
           * past usage container
           */
          {
-            lList *pe_task_list = ocs::tom::get<JAT_task_list>(jatep);
+            ocs::tom::List<ocs::tom::PET> pe_task_list = ocs::tom::get<JAT_task_list>(jatep);
 
             if (pe_task_list != nullptr) {
                const lListElem *existing_container = ocs::tom::find_first<PET_id>(pe_task_list, PE_TASK_PAST_USAGE_CONTAINER);
@@ -1247,7 +1248,7 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
             release_successor_tasks_ad(jep, jataskid, gdi_session);
          }
          sge_clear_granted_resources(jep, jatep, 1, monitor, gdi_session);
-         for_each_rw_lv(petask, ocs::tom::get<JAT_task_list>(jatep)) {
+         for (ocs::tom::Element<ocs::tom::PET> petask : ocs::tom::get<JAT_task_list>(jatep)) {
             sge_add_list_event(now, sgeE_JOB_FINAL_USAGE, jobid, jataskid,
                                ocs::tom::get<PET_id>(petask), nullptr, session,
                                ocs::tom::get<PET_scaled_usage>(petask), gdi_session);
@@ -1301,7 +1302,7 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
             ocs::tom::set<JAT_end_time>(jatep, end_time);
 
             // (2) fold finished pe_tasks into PAST_USAGE_CONTAINER, remove pe_tasks
-            lList *pe_task_list = ocs::tom::get<JAT_task_list>(jatep);
+            ocs::tom::List<ocs::tom::PET> pe_task_list = ocs::tom::get<JAT_task_list>(jatep);
             if (pe_task_list != nullptr) {
                pe_task_sum_past_usage_all(pe_task_list);
                lListElem *pe_task = lFirstRW(pe_task_list);
@@ -1431,13 +1432,12 @@ static void
 release_successor_jobs(const lListElem *jep, uint64_t gdi_session) {
    DENTER(TOP_LAYER);
 
-   const lListElem *jid;
-   lListElem *suc_jep;
+   ocs::tom::ConstElement<ocs::tom::JRE> jid;
    uint32_t job_ident;
    const lList *master_job_list = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
 
-   for_each_ep(jid, static_cast<const lList *>(ocs::tom::get<JB_jid_successor_list>(jep))) {
-      suc_jep = ocs::tom::find_first_rw<JB_job_number>(master_job_list, ocs::tom::get<JRE_job_number>(jid));
+   for_each_ep(jid, ocs::tom::get<JB_jid_successor_list>(jep)) {
+      ocs::tom::Element<ocs::tom::JB> suc_jep = ocs::tom::find_first_rw<JB_job_number>(master_job_list, ocs::tom::get<JRE_job_number>(jid));
       if (suc_jep) {
          /* if we don't find it by job id we try it with the name */
          job_ident = ocs::tom::get<JB_job_number>(jep);
@@ -1465,13 +1465,12 @@ static void
 release_successor_jobs_ad(const lListElem *jep, uint64_t gdi_session) {
    DENTER(TOP_LAYER);
 
-   const lListElem *jid;
-   lListElem *suc_jep;
+   ocs::tom::ConstElement<ocs::tom::JRE> jid;
    uint32_t job_ident;
    lList *master_job_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB);
 
-   for_each_ep(jid, static_cast<const lList *>(ocs::tom::get<JB_ja_ad_successor_list>(jep))) {
-      suc_jep = ocs::tom::find_first_rw<JB_job_number>(master_job_list, ocs::tom::get<JRE_job_number>(jid));
+   for_each_ep(jid, ocs::tom::get<JB_ja_ad_successor_list>(jep)) {
+      ocs::tom::Element<ocs::tom::JB> suc_jep = ocs::tom::find_first_rw<JB_job_number>(master_job_list, ocs::tom::get<JRE_job_number>(jid));
       if (suc_jep) {
          int Modified = 0;
          /* if we don't find it by job id we try it with the name */
@@ -1509,11 +1508,11 @@ static void
 release_successor_tasks_ad(lListElem *jep, uint32_t task_id, uint64_t gdi_session) {
    DENTER(TOP_LAYER);
 
-   const lListElem *jid;
+   ocs::tom::ConstElement<ocs::tom::JRE> jid;
    lList *master_job_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB);
 
    /* every successor job of this job might have tasks to be released */
-   for_each_ep(jid, static_cast<const lList *>(ocs::tom::get<JB_ja_ad_successor_list>(jep))) {
+   for_each_ep(jid, ocs::tom::get<JB_ja_ad_successor_list>(jep)) {
       uint32_t job_ident = ocs::tom::get<JRE_job_number>(jid);
       lListElem *suc_range = nullptr;
       lListElem *suc_jep = nullptr;
@@ -1567,7 +1566,7 @@ sge_clear_granted_resources(lListElem *job, lListElem *ja_task, int incslots, mo
    int pe_slots = 0;
    uint32_t job_id = ocs::tom::get<JB_job_number>(job);
    uint32_t ja_task_id = ocs::tom::get<JAT_task_number>(ja_task);
-   const lList *gdi_list = ocs::tom::get<JAT_granted_destin_identifier_list>(ja_task);
+   ocs::tom::ConstList<ocs::tom::JG> gdi_list = ocs::tom::get<JAT_granted_destin_identifier_list>(ja_task);
    lList *answer_list = nullptr;
    const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
    const lList *master_centry_list = *ocs::DataStore::get_master_list(SGE_TYPE_CENTRY);
@@ -1598,7 +1597,7 @@ sge_clear_granted_resources(lListElem *job, lListElem *ja_task, int incslots, mo
    lListElem *pe = ocs::tom::get<JAT_pe_object>(ja_task);
 
    uint32_t ar_id = ocs::tom::get<JB_ar>(job);
-   lListElem *ar = nullptr;
+   ocs::tom::Element<ocs::tom::AR> ar = nullptr;
    lListElem *ar_global_host = nullptr;
    if (ar_id != 0) {
       ar = ocs::tom::find_first_rw<AR_id>(master_ar_list, ar_id);
@@ -1612,7 +1611,7 @@ sge_clear_granted_resources(lListElem *job, lListElem *ja_task, int incslots, mo
 
    /* free granted resources of the queue */
    const char *last_hostname = nullptr;
-   const lListElem *gdil_ep;
+   ocs::tom::ConstElement<ocs::tom::JG> gdil_ep;
    for_each_ep(gdil_ep, gdi_list) {
       const char *queue_name = ocs::tom::get<JG_qname>(gdil_ep);
       lListElem *queue = nullptr;
@@ -1628,7 +1627,7 @@ sge_clear_granted_resources(lListElem *job, lListElem *ja_task, int incslots, mo
          pe_slots += tmp_slot;
          if (incslots) {
             lListElem *host;
-            const lList *granted_resources_list = ocs::tom::get<JAT_granted_resources_list>(ja_task);
+            ocs::tom::ConstList<ocs::tom::GRU> granted_resources_list = ocs::tom::get<JAT_granted_resources_list>(ja_task);
 
             /* undebit consumable resources */
             if (debit_host_consumable(job, ja_task, granted_resources_list, pe, global_host_ep, master_centry_list, -tmp_slot, master_task,
@@ -1721,7 +1720,7 @@ get_requested_limit(const lListElem *job, const char *limit_name,
    const char *ret = nullptr;
 
    // if we have requested the limit globally, then use this value
-   const lListElem *res = ocs::tom::find_first<CE_name>(job_get_hard_resource_list(job, JRS_SCOPE_GLOBAL), limit_name);
+   ocs::tom::ConstElement<ocs::tom::CE> res = ocs::tom::find_first<CE_name>(job_get_hard_resource_list(job, JRS_SCOPE_GLOBAL), limit_name);
    if (res != nullptr) {
       ret = ocs::tom::get<CE_stringval>(res);
    } else {
@@ -1732,7 +1731,7 @@ get_requested_limit(const lListElem *job, const char *limit_name,
             // we might have only a master task in this gdil (1 slot, job_is_first_task true) => use only master request
             // or a master task and slave tasks => use maximum of master and slave request
             if (master_only) {
-               res = ocs::tom::find_first<CE_name>(job_get_hard_resource_list(job, JRS_SCOPE_MASTER), limit_name);
+               ocs::tom::ConstElement<ocs::tom::CE> res = ocs::tom::find_first<CE_name>(job_get_hard_resource_list(job, JRS_SCOPE_MASTER), limit_name);
                if (res != nullptr) {
                   ret = ocs::tom::get<CE_stringval>(res);
                }
@@ -1740,11 +1739,11 @@ get_requested_limit(const lListElem *job, const char *limit_name,
                // we need to compare the possibly existing master and slave request as double in order to compare them
                double master_request = std::numeric_limits<double>::max();
                double slave_request = std::numeric_limits<double>::max();
-               const lListElem *master_res = ocs::tom::find_first<CE_name>(job_get_hard_resource_list(job, JRS_SCOPE_MASTER), limit_name);
+               ocs::tom::ConstElement<ocs::tom::CE> master_res = ocs::tom::find_first<CE_name>(job_get_hard_resource_list(job, JRS_SCOPE_MASTER), limit_name);
                if (master_res != nullptr) {
                   master_request = ocs::tom::get<CE_doubleval>(master_res);
                }
-               const lListElem *slave_res = ocs::tom::find_first<CE_name>(job_get_hard_resource_list(job, JRS_SCOPE_SLAVE), limit_name);
+               ocs::tom::ConstElement<ocs::tom::CE> slave_res = ocs::tom::find_first<CE_name>(job_get_hard_resource_list(job, JRS_SCOPE_SLAVE), limit_name);
                if (slave_res != nullptr) {
                   slave_request = ocs::tom::get<CE_doubleval>(slave_res);
                }
@@ -1762,7 +1761,7 @@ get_requested_limit(const lListElem *job, const char *limit_name,
             }
          } else {
             // this is a slave host/queue, we might have a slave request
-            res = ocs::tom::find_first<CE_name>(job_get_hard_resource_list(job, JRS_SCOPE_SLAVE), limit_name);
+            ocs::tom::ConstElement<ocs::tom::CE> res = ocs::tom::find_first<CE_name>(job_get_hard_resource_list(job, JRS_SCOPE_SLAVE), limit_name);
             if (res != nullptr) {
                ret = ocs::tom::get<CE_stringval>(res);
             }
@@ -1818,7 +1817,7 @@ reduce_queue_limits(const lList *master_centry_list, const lListElem *gdil_ep, l
       // this is not the case when
       //    - we have more than one slot in the queue
       //    - pe setting job_is_first_task is false
-      const lListElem *pe = ocs::tom::get<JAT_pe_object>(ja_task);
+      ocs::tom::ConstElement<ocs::tom::PE> pe = ocs::tom::get<JAT_pe_object>(ja_task);
       if (ocs::tom::get<JG_slots>(gdil_ep) > 1 ||
          (pe != nullptr && !ocs::tom::get<PE_job_is_first_task>(pe))) {
          only_master_task = false;
@@ -1925,7 +1924,7 @@ sge_finish_ja_task(const char *sge_root, lListElem *job, uint32_t job_id, lListE
    bool job_done = (job_get_ja_tasks(job) == 1);
    if (!job_done && job_get_not_enrolled_ja_tasks(job) == 0) {
       job_done = true;
-      for_each_ep_lv(iter_jat, ocs::tom::get<JB_ja_tasks>(job)) {
+      for (ocs::tom::ConstElement<ocs::tom::JAT> iter_jat : ocs::tom::get<JB_ja_tasks>(job)) {
          if (ocs::tom::get<JAT_status>(iter_jat) != JFINISHED) {
             job_done = false;
             break;

@@ -383,7 +383,7 @@ debit_all_jobs_from_pes(lList *pe_list) {
       for_each_ep_lv(jep, master_job_list) {
          if (ocs::tom::get<JB_pe>(jep) != nullptr) { /* is job  parallel */
             slots = 0;
-            for_each_ep_lv(jatep, ocs::tom::get<JB_ja_tasks>(jep)) {
+            for (ocs::tom::ConstElement<ocs::tom::JAT> jatep : ocs::tom::get<JB_ja_tasks>(jep)) {
                if ((ISSET(ocs::tom::get<JAT_status>(jatep), JRUNNING) ||      /* is job running  */
                     ISSET(ocs::tom::get<JAT_status>(jatep), JTRANSFERING)) && /* or transfering  */
                    !sge_strnullcmp(pe_name, ocs::tom::get<JAT_granted_pe>(jatep))) {/* this pe         */
@@ -415,12 +415,12 @@ pe_diff_usersets(const lListElem *new_pe, const lListElem *old_pe, lList **new_a
    const char *u;
 
    if (old_pe && old_acl) {
-      for_each_ep_lv(ep, ocs::tom::get<PE_user_list>(old_pe)) {
+      for (ocs::tom::ConstElement<ocs::tom::US> ep : ocs::tom::get<PE_user_list>(old_pe)) {
          u = ocs::tom::get<US_name>(ep);
          if (!ocs::tom::find_first<US_name>(*old_acl, u))
             ocs::tom::emplace_back<US_name>(old_acl, u);
       }
-      for_each_ep_lv(ep, ocs::tom::get<PE_xuser_list>(old_pe)) {
+      for (ocs::tom::ConstElement<ocs::tom::US> ep : ocs::tom::get<PE_xuser_list>(old_pe)) {
          u = ocs::tom::get<US_name>(ep);
          if (!ocs::tom::find_first<US_name>(*old_acl, u))
             ocs::tom::emplace_back<US_name>(old_acl, u);
@@ -428,12 +428,12 @@ pe_diff_usersets(const lListElem *new_pe, const lListElem *old_pe, lList **new_a
    }
 
    if (new_pe && new_acl) {
-      for_each_ep_lv(ep, ocs::tom::get<PE_user_list>(new_pe)) {
+      for (ocs::tom::ConstElement<ocs::tom::US> ep : ocs::tom::get<PE_user_list>(new_pe)) {
          u = ocs::tom::get<US_name>(ep);
          if (!ocs::tom::find_first<US_name>(*new_acl, u))
             ocs::tom::emplace_back<US_name>(new_acl, u);
       }
-      for_each_ep_lv(ep, ocs::tom::get<PE_xuser_list>(new_pe)) {
+      for (ocs::tom::ConstElement<ocs::tom::US> ep : ocs::tom::get<PE_xuser_list>(new_pe)) {
          u = ocs::tom::get<US_name>(ep);
          if (!ocs::tom::find_first<US_name>(*new_acl, u))
             ocs::tom::emplace_back<US_name>(new_acl, u);

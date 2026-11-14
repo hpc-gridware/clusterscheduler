@@ -41,6 +41,7 @@
 #include "tom/ocs_Element.h"
 #include "sgeobj/tom/ocs_tom_ST.h"
 #include "sgeobj/tom/ocs_tom_US.h"
+#include "sgeobj/tom/ocs_tom_RL.h"
 
 #include "msg_common.h"
 
@@ -95,7 +96,7 @@ ocs::Role::check_integrity(const lList *role_list, const lList *userset_list, lL
       const char *role_name = ocs::tom::get<RL_name>(role);
 
       // check each user_list entry against the master userset list
-      for_each_ep_lv(user_ep, ocs::tom::get<RL_user_list>(role)) {
+      for (ocs::tom::ConstElement<ocs::tom::US> user_ep : ocs::tom::get<RL_user_list>(role)) {
          const char *userset_name = ocs::tom::get<US_name>(user_ep);
          if (!ocs::tom::find_first<US_name>(userset_list, userset_name)) {
             WARNING(MSG_ROLE_INTEGRITY_USERSET_SS, role_name, userset_name);
@@ -104,7 +105,7 @@ ocs::Role::check_integrity(const lList *role_list, const lList *userset_list, lL
       }
 
       // check each parent_role_list entry against the master role list
-      for_each_ep_lv(parent_ep, ocs::tom::get<RL_parent_role_list>(role)) {
+      for (ocs::tom::ConstElement<ocs::tom::ST> parent_ep : ocs::tom::get<RL_parent_role_list>(role)) {
          const char *parent_name = ocs::tom::get<ST_name>(parent_ep);
          if (!ocs::tom::find_first<RL_name>(role_list, parent_name)) {
             WARNING(MSG_ROLE_INTEGRITY_PARENT_SS, role_name, parent_name);
@@ -503,11 +504,11 @@ static bool reachable(const char *from, const char *target, const lList *role_li
    if (!visited.insert(from).second) {
       DRETURN(false);
    }
-   const lListElem *role = ocs::tom::find_first<RL_name>(role_list, from);
+   ocs::tom::ConstElement<ocs::tom::RL> role = ocs::tom::find_first<RL_name>(role_list, from);
    if (role == nullptr) {
       DRETURN(false);
    }
-   for_each_ep_lv(parent_ep, ocs::tom::get<RL_parent_role_list>(role)) {
+   for (ocs::tom::ConstElement<ocs::tom::ST> parent_ep : ocs::tom::get<RL_parent_role_list>(role)) {
       const char *parent_name = ocs::tom::get<ST_name>(parent_ep);
       if (reachable(parent_name, target, role_list, visited)) {
          DRETURN(true);
@@ -530,7 +531,7 @@ static void collect_recursive(const char *role_name, const lList *role_list, ocs
    if (role_name == nullptr || !visited.insert(role_name).second) {
       DRETURN_VOID;
    }
-   const lListElem *role = ocs::tom::find_first<RL_name>(role_list, role_name);
+   ocs::tom::ConstElement<ocs::tom::RL> role = ocs::tom::find_first<RL_name>(role_list, role_name);
    if (role == nullptr) {
       DRETURN_VOID;
    }
@@ -546,7 +547,7 @@ static void collect_recursive(const char *role_name, const lList *role_list, ocs
    }
 
    // then recurse into parents in order
-   for_each_ep_lv(parent_ep, ocs::tom::get<RL_parent_role_list>(role)) {
+   for (ocs::tom::ConstElement<ocs::tom::ST> parent_ep : ocs::tom::get<RL_parent_role_list>(role)) {
       const char *parent_name = ocs::tom::get<ST_name>(parent_ep);
       collect_recursive(parent_name, role_list, rules, visited);
    }
@@ -652,7 +653,7 @@ ocs::Role::is_authorized(const lList *role_list, const lList *userset_list, cons
       }
       // check whether the requesting user is a member of this role's user_list
       bool user_in_role = false;
-      for_each_ep_lv(acl_ep, ocs::tom::get<RL_user_list>(role_ep)) {
+      for (ocs::tom::ConstElement<ocs::tom::US> acl_ep : ocs::tom::get<RL_user_list>(role_ep)) {
          const char *userset_name = ocs::tom::get<US_name>(acl_ep);
          const lListElem *userset_ep = ocs::tom::find_first<US_name>(userset_list, userset_name);
          if (userset_ep == nullptr) {

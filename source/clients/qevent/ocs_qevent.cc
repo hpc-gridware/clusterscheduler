@@ -68,6 +68,8 @@
 #include "sgeobj/sge_feature.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/ocs_DataStore.h"
+#include "sgeobj/tom/ocs_tom_JAT.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
 #include "tom/ocs_Element.h"
 
 #include "mir/sge_mirror.h"
@@ -135,9 +137,9 @@ static u_long
 get_current_jatask_status(u_long job_id, u_long ja_task_id) {
    uint32_t ret = JIDLE;
    const lList *master_job_list = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
-   const lListElem *job = ocs::tom::find_first<JB_job_number>(master_job_list, job_id);
+   ocs::tom::ConstElement<ocs::tom::JB> job = ocs::tom::find_first<JB_job_number>(master_job_list, job_id);
    if (job != nullptr) {
-      const lListElem *ja_task = ocs::tom::find_first_in<JB_ja_tasks, JAT_task_number>(job, ja_task_id);
+      ocs::tom::ConstElement<ocs::tom::JAT> ja_task = ocs::tom::find_first_in<JB_ja_tasks, JAT_task_number>(job, ja_task_id);
       if (ja_task != nullptr) {
          ret = ocs::tom::get<JAT_status>(ja_task);
       }

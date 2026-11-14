@@ -192,7 +192,7 @@ hgroup_reserved_delta_is_strict(const lListElem *hgroup, lList **answer_list,
       DRETURN(true);
    }
 
-   const lList *current = ocs::tom::get<HGRP_host_list>(hgroup);
+   ocs::tom::ConstList<ocs::tom::HR> current = ocs::tom::get<HGRP_host_list>(hgroup);
    const lListElem *href;
 
    for_each_ep(href, delta_list) {
@@ -247,7 +247,7 @@ hgroup_mod_hostlist(lListElem *hgroup, lList **answer_list, lListElem *reduced_e
       if (pos >= 0) {
          lList *list = lGetPosList(reduced_elem, pos);
          lList *old_href_list = lCopyList("", ocs::tom::get<HGRP_host_list>(hgroup));
-         const lList *href_list = nullptr;
+         ocs::tom::ConstList<ocs::tom::HR> href_list = nullptr;
          lList *add_groups = nullptr;
          lList *rem_groups = nullptr;
 
@@ -292,7 +292,7 @@ hgroup_mod_hostlist(lListElem *hgroup, lList **answer_list, lListElem *reduced_e
              * the incoming one, so that removing such an entry stays possible
              * while adding one does not.
              */
-            const lListElem *member;
+            ocs::tom::ConstElement<ocs::tom::HR> member;
 
             for_each_ep(member, href_list) {
                const char *member_name = ocs::tom::get<HR_name>(member);
@@ -404,7 +404,7 @@ hgroup_commit(lListElem *hgroup, uint64_t gdi_session) {
    DENTER(TOP_LAYER);
 
    lList *master_cqueue_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE);
-   lList *cqueue_list = ocs::tom::get<HGRP_cqueue_list>(hgroup);
+   ocs::tom::List<ocs::tom::CQ> cqueue_list = ocs::tom::get<HGRP_cqueue_list>(hgroup);
    lListElem *next_cqueue = nullptr;
    lListElem *cqueue = nullptr;
 
@@ -608,7 +608,7 @@ hgroup_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, 
           */
          if (ret && strcmp(ocs::tom::get<HGRP_name>(hgroup), ADMIN_HOSTGROUP) == 0) {
             const char *qualified_hostname = component_get_qualified_hostname();
-            const lList *host_list = ocs::tom::get<HGRP_host_list>(hgroup);
+            ocs::tom::ConstList<ocs::tom::HR> host_list = ocs::tom::get<HGRP_host_list>(hgroup);
 
             if (href_list_locate(host_list, qualified_hostname) == nullptr) {
                ERROR(MSG_HGRP_RESERVED_NOQMASTER_SS, qualified_hostname, ADMIN_HOSTGROUP);
@@ -822,7 +822,7 @@ hgroup_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, 
             const bool via_admin  = !is_admin  && href_list_has_member(occupant_groups, ADMIN_HOSTGROUP);
             const bool via_submit = !is_submit && href_list_has_member(occupant_groups, SUBMIT_HOSTGROUP);
 
-            for_each_ep_lv(member, ocs::tom::get<HGRP_host_list>(hgroup)) {
+            for (ocs::tom::ConstElement<ocs::tom::HR> member : ocs::tom::get<HGRP_host_list>(hgroup)) {
                const char *member_name = ocs::tom::get<HR_name>(member);
 
                if (!ocs::is_matcher(member_name) ||
@@ -1120,7 +1120,7 @@ void hgroup_refresh_matcher_caches(lList *master_hgroup_list, lList **refreshed)
       const char *group_name = ocs::tom::get<HGRP_name>(hgroup);
       bool carries_matcher = false;
 
-      for_each_ep_lv(member, ocs::tom::get<HGRP_host_list>(hgroup)) {
+      for (ocs::tom::ConstElement<ocs::tom::HR> member : ocs::tom::get<HGRP_host_list>(hgroup)) {
          if (ocs::is_matcher(ocs::tom::get<HR_name>(member))) {
             carries_matcher = true;
             break;
@@ -1236,8 +1236,8 @@ hgroup_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list
    bool tmp_ret = true;
    bool dbret;
    const char *name = ocs::tom::get<HGRP_name>(this_elem);
-   const lList *cqueue_list = ocs::tom::get<HGRP_cqueue_list>(this_elem);
-   const lListElem *cqueue = nullptr;
+   ocs::tom::ConstList<ocs::tom::CQ> cqueue_list = ocs::tom::get<HGRP_cqueue_list>(this_elem);
+   ocs::tom::ConstElement<ocs::tom::CQ> cqueue = nullptr;
    dstring key_dstring = DSTRING_INIT;
    lList *spool_answer_list = nullptr;
 
@@ -1254,8 +1254,8 @@ hgroup_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list
 
    if (tmp_ret) {
       for_each_ep(cqueue, cqueue_list) {
-         const lList *qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
-         const lListElem *qinstance = nullptr;
+         ocs::tom::ConstList<ocs::tom::QU> qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
+         ocs::tom::ConstElement<ocs::tom::QU> qinstance = nullptr;
          const char *cqname = ocs::tom::get<CQ_name>(cqueue);
 
          for_each_ep(qinstance, qinstance_list) {

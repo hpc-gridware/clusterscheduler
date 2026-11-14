@@ -34,6 +34,7 @@
 
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/sge_job.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
 #include "tom/ocs_Element.h"
 
 #include <sge_log.h>
@@ -169,7 +170,7 @@ create_jobs() {
 
    auto time_start = std::chrono::high_resolution_clock::now();
    for (int i = 0; i < num_jobs; i++) {
-      lListElem *ep = ocs::tom::emplace_back<JB_job_number>(&master_job_list, i + 1);
+      ocs::tom::Element<ocs::tom::JB> ep = ocs::tom::emplace_back<JB_job_number>(&master_job_list, i + 1);
       int idx = i % num_users;
       ocs::tom::set<JB_owner>(ep, users[idx].user);
       ocs::tom::set<JB_group>(ep, users[idx].group);
@@ -191,7 +192,7 @@ update_jobs() {
    auto time_start = std::chrono::high_resolution_clock::now();
    for (i = 0; i < num_jobs; i++) {
       uint32_t job_id = random_array[i];
-      lListElem *job = ocs::tom::find_first_rw<JB_job_number>(master_job_list, job_id);
+      ocs::tom::Element<ocs::tom::JB> job = ocs::tom::find_first_rw<JB_job_number>(master_job_list, job_id);
       if (job == nullptr) {
          fprintf(stderr, "didn't find job " sge_u32 " in job list\n", job_id);
          ret = false;

@@ -164,9 +164,9 @@ bool sge_user_is_referenced_in_rqs(const lList *rqs, const char *user, const cha
    bool ret = false;
 
    for_each_ep_lv(ep, rqs) {
-      const lList *rule_list = ocs::tom::get<RQS_rule>(ep);
+      ocs::tom::ConstList<ocs::tom::RQR> rule_list = ocs::tom::get<RQS_rule>(ep);
 
-      for_each_ep_lv(rule, rule_list) {
+      for (ocs::tom::ConstElement<ocs::tom::RQR> rule : rule_list) {
          /* there may be no per-user limitation and also not limitation that is special for this user */
          if ((is_expand(rule, RQR_filter_users) || !is_global(rule, RQR_filter_users)) &&
              rqs_filter_match(ocs::tom::get<RQR_filter_users>(rule), FILTER_USERS, user, acl_list, nullptr, group, grp_list)) {

@@ -72,6 +72,7 @@
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_qref.h"
+#include "sgeobj/tom/ocs_tom_UA.h"
 #include "tom/ocs_Element.h"
 
 #include "comm/commlib.h"
@@ -2388,14 +2389,14 @@ sge_read_rusage_json(const char *line, sge_rusage_type *d, sge_qacct_options *op
                   if (ep != nullptr) {
                      continue;   // first-wins per pre-CS-849 semantics
                   }
-                  ep = ocs::tom::emplace_back<UA_name>(&(d->other_usage), name);
-                  if (ep == nullptr) {
+                  ocs::tom::Element<ocs::tom::UA> ep_ua = ocs::tom::emplace_back<UA_name>(&(d->other_usage), name);
+                  if (ep_ua == nullptr) {
                      continue;
                   }
                   if (usage_itr->value.IsString()) {
-                     ocs::tom::set<UA_svalue>(ep, usage_itr->value.GetString());
+                     ocs::tom::set<UA_svalue>(ep_ua, usage_itr->value.GetString());
                   } else if (usage_itr->value.IsNumber()) {
-                     ocs::tom::set<UA_value>(ep, usage_itr->value.GetDouble());
+                     ocs::tom::set<UA_value>(ep_ua, usage_itr->value.GetDouble());
                   }
                   // other types (bool, array, object, null): entry created
                   // with a name but no value — matches the shepherd-side

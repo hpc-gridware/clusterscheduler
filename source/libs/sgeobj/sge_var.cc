@@ -61,6 +61,7 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/msg_sgeobjlib.h"
+#include "sgeobj/tom/ocs_tom_VA.h"
 #include "tom/ocs_Element.h"
 
 /**
@@ -109,12 +110,11 @@ const char *var_get_sharedlib_path_name() {
 void var_list_set_string(lList **varl, const char *name, const char *value) {
    DENTER(TOP_LAYER);
 
-   lListElem *elem;
 
    if (varl == nullptr || name == nullptr || value == nullptr) {
       DRETURN_VOID;
    }
-   elem = ocs::tom::find_first_rw<VA_variable>(*varl, name);
+   ocs::tom::Element<ocs::tom::VA> elem = ocs::tom::find_first_rw<VA_variable>(*varl, name);
    if (elem == nullptr) {
       elem = ocs::tom::emplace_back<VA_variable>(varl, name);
    }
@@ -211,7 +211,6 @@ void var_list_set_sharedlib_path(lList **varl) {
    size_t sge_sharedlib_path_size;
    const char *sge_root = sge_get_root_dir(0, nullptr, 0, 1);
    const char *sharedlib_path_name = var_get_sharedlib_path_name();
-   lListElem *sharedlib_elem = nullptr;
 
    /* this is the SGE sharedlib path */
    sge_sharedlib_path_size = strlen(sge_root) + strlen("/lib/") + strlen(sge_get_arch()) + 1;
@@ -219,7 +218,7 @@ void var_list_set_sharedlib_path(lList **varl) {
    snprintf(sge_sharedlib_path, sge_sharedlib_path_size, "%s/lib/%s", sge_root, sge_get_arch());
 
    /* if already in environment: extend by SGE sharedlib path, else set */
-   sharedlib_elem = ocs::tom::find_first_rw<VA_variable>(*varl, sharedlib_path_name);
+   ocs::tom::Element<ocs::tom::VA> sharedlib_elem = ocs::tom::find_first_rw<VA_variable>(*varl, sharedlib_path_name);
    if(sharedlib_elem != nullptr) {
       const char *old_value = ocs::tom::get<VA_value>(sharedlib_elem);
 
@@ -239,7 +238,7 @@ void var_list_set_sharedlib_path(lList **varl) {
       }
    } else {
       DPRINTF("creating new sharedlib path %s\n", sharedlib_path_name);
-      sharedlib_elem = ocs::tom::emplace_back<VA_variable>(varl, sharedlib_path_name);
+      ocs::tom::Element<ocs::tom::VA> sharedlib_elem = ocs::tom::emplace_back<VA_variable>(varl, sharedlib_path_name);
       ocs::tom::set<VA_value>(sharedlib_elem, sge_sharedlib_path);
    }
 
@@ -297,7 +296,7 @@ void var_list_dump_to_file(const lList *varl, FILE *file) {
  */
 const char *var_list_get_string(const lList *varl, const char *variable) {
    const char *ret = nullptr;
-   const lListElem *var = ocs::tom::find_first<VA_variable>(varl, variable);
+   ocs::tom::ConstElement<ocs::tom::VA> var = ocs::tom::find_first<VA_variable>(varl, variable);
 
    if (var != nullptr) {
       ret = ocs::tom::get<VA_value>(var);
@@ -513,7 +512,7 @@ void var_list_split_prefix_vars(lList **varl,
 int var_list_add_as_set(lList *lp0, lList *lp1) {
    DENTER(CULL_LAYER);
 
-   lListElem *ep0, *ep1;
+   lListElem *ep1;
    const lDescr *dp0, *dp1;
    const char *name, *value;
 
@@ -537,7 +536,7 @@ int var_list_add_as_set(lList *lp0, lList *lp1) {
       /* Get it's name, and use the name to look for a matching element in the
        * first list. */
       name = ocs::tom::get<VA_variable>(ep1);
-      ep0 = ocs::tom::find_first_rw<VA_variable>(lp0, name);
+      ocs::tom::Element<ocs::tom::VA> ep0 = ocs::tom::find_first_rw<VA_variable>(lp0, name);
 
       /* If there is a matching element in the first list, set it's value to the
        * value of the element from the second list. */
@@ -619,7 +618,6 @@ int var_list_parse_from_string(lList **lpp, const char *variable_str,
    int var_len;
    char **str_str;
    char **pstr;
-   lListElem *ep;
    char *va_string;
 
    if (!lpp) {
@@ -664,7 +662,7 @@ int var_list_parse_from_string(lList **lpp, const char *variable_str,
          DRETURN(5);
       }
       var_len=strlen(variable);
-      ep = ocs::tom::find_first_rw<VA_variable>(*lpp, variable);
+      ocs::tom::Element<ocs::tom::VA> ep = ocs::tom::find_first_rw<VA_variable>(*lpp, variable);
       if (ep == nullptr) {
          ep = ocs::tom::emplace_back<VA_variable>(lpp, variable);
       }

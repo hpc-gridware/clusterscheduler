@@ -432,7 +432,7 @@ static bool event_client_verify_subscription(const lListElem *event_client, lLis
    DENTER(TOP_LAYER);
    bool ret = true;
 
-   for_each_ep_lv(ep, ocs::tom::get<EV_subscribed>(event_client)) {
+   for (ocs::tom::ConstElement<ocs::tom::EVS> ep : ocs::tom::get<EV_subscribed>(event_client)) {
       uint32_t id = ocs::tom::get<EVS_id>(ep);
       if (id <= sgeE_ALL_EVENTS || id >= sgeE_EVENTSIZE) {
          answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, 

@@ -426,13 +426,13 @@ bool href_list_find_references(const lList *this_list, lList **answer_list,
          }
 
          if (hgroup != nullptr) {
-            const lList *href_list2 = ocs::tom::get<HGRP_host_list>(hgroup);
+            ocs::tom::ConstList<ocs::tom::HR> href_list2 = ocs::tom::get<HGRP_host_list>(hgroup);
 
             /*
              * Add each element contained in the sublist of the hostgroup
              * we found previously to one of the result lists.
              */
-            for_each_ep_lv(href2, href_list2) {
+            for (ocs::tom::ConstElement<ocs::tom::HR> href2 : href_list2) {
                const char *name2 = ocs::tom::get<HR_name>(href2);
 
                switch (ocs::classify_member(name2)) {
@@ -619,7 +619,7 @@ bool href_list_find_referencees(const lList *this_list, lList **answer_list,
             const lListElem *hgroup;   /* HGRP_Type */
 
             for_each_ep(hgroup, master_list) {
-               const lList *href_list = ocs::tom::get<HGRP_host_list>(hgroup);
+               ocs::tom::ConstList<ocs::tom::HR> href_list = ocs::tom::get<HGRP_host_list>(hgroup);
                lListElem *href = href_list_locate(href_list, name);
 
                if (href != nullptr) {

@@ -74,6 +74,7 @@
 #include "sgeobj/ocs_RequestLimits.h"
 #include "tom/ocs_Element.h"
 #include "sgeobj/tom/ocs_tom_CF.h"
+#include "sgeobj/tom/ocs_tom_CONF.h"
 
 #include "evm/sge_event_master.h"
 
@@ -149,42 +150,42 @@ sge_read_configuration(const lListElem *aSpoolContext, lList **config_list, lLis
    // add potentially missing attributes
    lListElem *global = ocs::tom::find_first_rw<CONF_name>(*config_list, "global");
    if (global != nullptr) {
-      const lList *entries = ocs::tom::get<CONF_entries>(global);
+      ocs::tom::ConstList<ocs::tom::CF> entries = ocs::tom::get<CONF_entries>(global);
 
       // add jsv_url
       if (lListElem *jsv_url = ocs::tom::find_first_rw<CF_name>(entries, "jsv_url"); jsv_url == nullptr) {
-         jsv_url = ocs::tom::emplace_back_in<CONF_entries, CF_name>(global, "jsv_url");
-         ocs::tom::set<CF_value>(jsv_url, NONE_STR);
+         ocs::tom::Element<ocs::tom::CF> jsv_url_cf = ocs::tom::emplace_back_in<CONF_entries, CF_name>(global, "jsv_url");
+         ocs::tom::set<CF_value>(jsv_url_cf, NONE_STR);
       }
 
       // add jsv_allowed_mod
       if (lListElem *jsv_allowed_mod = ocs::tom::find_first_rw<CF_name>(entries, "jsv_allowed_mod"); jsv_allowed_mod == nullptr) {
-         jsv_allowed_mod = ocs::tom::emplace_back_in<CONF_entries, CF_name>(global, "jsv_allowed_mod");
-         ocs::tom::set<CF_value>(jsv_allowed_mod, JSV_ALLOWED_MOD_DEFAULT);
+         ocs::tom::Element<ocs::tom::CF> jsv_allowed_mod_cf = ocs::tom::emplace_back_in<CONF_entries, CF_name>(global, "jsv_allowed_mod");
+         ocs::tom::set<CF_value>(jsv_allowed_mod_cf, JSV_ALLOWED_MOD_DEFAULT);
       }
 
       // add gdi_request_limits
       if (lListElem *gdi_request_limits = ocs::tom::find_first_rw<CF_name>(entries, "gdi_request_limits"); gdi_request_limits == nullptr) {
-         gdi_request_limits = ocs::tom::emplace_back_in<CONF_entries, CF_name>(global, "gdi_request_limits");
-         ocs::tom::set<CF_value>(gdi_request_limits, NONE_STR);
+         ocs::tom::Element<ocs::tom::CF> gdi_request_limits_cf = ocs::tom::emplace_back_in<CONF_entries, CF_name>(global, "gdi_request_limits");
+         ocs::tom::set<CF_value>(gdi_request_limits_cf, NONE_STR);
       }
 
       // add binding_params
       if (lListElem *binding_params = ocs::tom::find_first_rw<CF_name>(entries, "binding_params"); binding_params == nullptr) {
-         binding_params = ocs::tom::emplace_back_in<CONF_entries, CF_name>(global, "binding_params");
-         ocs::tom::set<CF_value>(binding_params, BINDING_PARAMS_DEFAULT);
+         ocs::tom::Element<ocs::tom::CF> binding_params_cf = ocs::tom::emplace_back_in<CONF_entries, CF_name>(global, "binding_params");
+         ocs::tom::set<CF_value>(binding_params_cf, BINDING_PARAMS_DEFAULT);
       }
 
       // add jsv_params
       if (lListElem *jsv_params = ocs::tom::find_first_rw<CF_name>(entries, "jsv_params"); jsv_params == nullptr) {
-         jsv_params = ocs::tom::emplace_back_in<CONF_entries, CF_name>(global, "jsv_params");
-         ocs::tom::set<CF_value>(jsv_params, JSV_PARAMS_DEFAULT);
+         ocs::tom::Element<ocs::tom::CF> jsv_params_cf = ocs::tom::emplace_back_in<CONF_entries, CF_name>(global, "jsv_params");
+         ocs::tom::set<CF_value>(jsv_params_cf, JSV_PARAMS_DEFAULT);
       }
 
       // add topology_string
       if (lListElem *topology_file = ocs::tom::find_first_rw<CF_name>(entries, "topology_file"); topology_file == nullptr) {
-         topology_file = ocs::tom::emplace_back_in<CONF_entries, CF_name>(global, "topology_file");
-         ocs::tom::set<CF_value>(topology_file, NONE_STR);
+         ocs::tom::Element<ocs::tom::CF> topology_file_cf = ocs::tom::emplace_back_in<CONF_entries, CF_name>(global, "topology_file");
+         ocs::tom::set<CF_value>(topology_file_cf, NONE_STR);
       }
    }
 
@@ -495,7 +496,7 @@ sge_update_heard_from_timeout() {
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
    for_each_ep_lv(conf, config_list) {
-      const lListElem *entry = ocs::tom::find_first_in<CONF_entries, CF_name>(conf, "load_report_time");
+      ocs::tom::ConstElement<ocs::tom::CF> entry = ocs::tom::find_first_in<CONF_entries, CF_name>(conf, "load_report_time");
       uint32_t load_report_time = 0;
       if (entry != nullptr && parse_ulong_val(nullptr, &load_report_time, ocs::CEntry::Type::TIME,
                                               ocs::tom::get<CF_value>(entry), nullptr, 0) != 0) {
@@ -571,7 +572,7 @@ check_config(lList **alpp, lListElem *conf) {
       DRETURN(STATUS_ESYNTAX);
    }
 
-   for_each_ep_lv(ep, ocs::tom::get<CONF_entries>(conf)) {
+   for (ocs::tom::ConstElement<ocs::tom::CF> ep : ocs::tom::get<CONF_entries>(conf)) {
       name = ocs::tom::get<CF_name>(ep);
       value = ocs::tom::get<CF_value>(ep);
 
@@ -918,7 +919,7 @@ sge_get_configuration_entry_by_name(const char *aHost, const char *anEntryName) 
 
 static lListElem *
 get_entry_from_conf(lListElem *aConf, const char *anEntryName) {
-   const lList *entries = ocs::tom::get<CONF_entries>(aConf);
+   ocs::tom::ConstList<ocs::tom::CF> entries = ocs::tom::get<CONF_entries>(aConf);
    const lListElem *elem = ocs::tom::find_first<CF_name>(entries, anEntryName);
    return lCopyElem(elem);
 }
@@ -952,7 +953,6 @@ static uint32_t
 sge_get_config_version_for_host(const char *aName) {
    DENTER(TOP_LAYER);
 
-   const lListElem *conf = nullptr;
    uint32_t version = 0;
    char unique_name[CL_MAXHOSTNAMELEN];
    int ret = -1;
@@ -961,7 +961,7 @@ sge_get_config_version_for_host(const char *aName) {
 
    const lList *config_list = *ocs::DataStore::get_master_list(SGE_TYPE_CONFIG);
 
-   conf = ocs::tom::find_first<CONF_name>(config_list, aName);
+   ocs::tom::ConstElement<ocs::tom::CONF> conf = ocs::tom::find_first<CONF_name>(config_list, aName);
    if (conf == nullptr) {
       /*
        * Due to CR 6319231 IZ 1760:
@@ -1039,13 +1039,13 @@ sge_get_configuration_for_host(const char *aName) {
 static int
 do_mod_config(char *aConfName, lListElem *anOldConf, lListElem *aNewConf, lList **anAnswer, uint64_t gdi_session) {
    DENTER(TOP_LAYER);
-   const lList *old_entries = ocs::tom::get<CONF_entries>(anOldConf);
-   lList *new_entries = ocs::tom::get<CONF_entries>(aNewConf);
+   ocs::tom::ConstList<ocs::tom::CF> old_entries = ocs::tom::get<CONF_entries>(anOldConf);
+   ocs::tom::List<ocs::tom::CF> new_entries = ocs::tom::get<CONF_entries>(aNewConf);
 
    // VALIDATION AND ADJUSTMENTS
 
    // check if gdi_request_limits are correct
-   const lListElem *gdi_request_limits_cfg = ocs::tom::find_first<CF_name>(new_entries, "gdi_request_limits");
+   ocs::tom::ConstElement<ocs::tom::CF> gdi_request_limits_cfg = ocs::tom::find_first<CF_name>(new_entries, "gdi_request_limits");
    if (gdi_request_limits_cfg != nullptr) {
       const char *gdi_request_limit_str = ocs::tom::get<CF_value>(gdi_request_limits_cfg);
       ocs::RequestLimits& limits_instance = ocs::RequestLimits::get_instance();
@@ -1083,11 +1083,11 @@ check_static_conf_entries(const lList *theOldConfEntries, const lList *theNewCon
    int entry_idx = 0;
 
    while (nullptr != Static_Conf_Entries[entry_idx]) {
-      const lListElem *old_entry, *new_entry = nullptr;
+      const lListElem *new_entry = nullptr;
       const char *old_value, *new_value = nullptr;
       const char *entry_name = Static_Conf_Entries[entry_idx];
 
-      old_entry = ocs::tom::find_first<CF_name>(theOldConfEntries, entry_name);
+      ocs::tom::ConstElement<ocs::tom::CF> old_entry = ocs::tom::find_first<CF_name>(theOldConfEntries, entry_name);
       new_entry = ocs::tom::find_first<CF_name>(theNewConfEntries, entry_name);
 
       if ((nullptr != old_entry) && (nullptr != new_entry)) {
@@ -1158,14 +1158,12 @@ static bool
 has_reschedule_unknown_change(const lList *theOldConfEntries, const lList *theNewConfEntries) {
    DENTER(TOP_LAYER);
 
-   const lListElem *old_elem = nullptr;
-   const lListElem *new_elem = nullptr;
    const char *old_value = nullptr;
    const char *new_value = nullptr;
    bool res = false;
 
-   old_elem = ocs::tom::find_first<CF_name>(theOldConfEntries, "reschedule_unknown");
-   new_elem = ocs::tom::find_first<CF_name>(theNewConfEntries, "reschedule_unknown");
+   ocs::tom::ConstElement<ocs::tom::CF> old_elem = ocs::tom::find_first<CF_name>(theOldConfEntries, "reschedule_unknown");
+   ocs::tom::ConstElement<ocs::tom::CF> new_elem = ocs::tom::find_first<CF_name>(theNewConfEntries, "reschedule_unknown");
 
    old_value = (nullptr != old_elem) ? ocs::tom::get<CF_value>(old_elem) : nullptr;
    new_value = (nullptr != new_elem) ? ocs::tom::get<CF_value>(new_elem) : nullptr;

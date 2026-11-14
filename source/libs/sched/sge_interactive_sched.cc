@@ -80,8 +80,8 @@ int remove_immediate_jobs(lList *pending_job_list, lList *running_job_list, orde
    DENTER(TOP_LAYER);
 
    lListElem *next_job, *job;
-   const lListElem *ep; 
-   const lList* lp;
+   ocs::tom::ConstElement<ocs::tom::JAT> ep; 
+   ocs::tom::ConstList<ocs::tom::JAT> lp;
 
    next_job = lFirstRW(pending_job_list);
    while ((job = next_job)) {
@@ -134,10 +134,9 @@ int remove_immediate_jobs(lList *pending_job_list, lList *running_job_list, orde
 void remove_immediate_job(lList *job_list, lListElem *job, order_t *orders, int remove_orders) {
    DENTER(TOP_LAYER);
 
-   const lList *range_list = nullptr;
    uint32_t ja_task_id;
 
-   for_each_ep_lv(ja_task, ocs::tom::get<JB_ja_tasks>(job)) {
+   for (ocs::tom::ConstElement<ocs::tom::JAT> ja_task : ocs::tom::get<JB_ja_tasks>(job)) {
       if (remove_orders) {
          order_remove_order_and_immediate(job, ja_task, orders);
       }
@@ -146,9 +145,9 @@ void remove_immediate_job(lList *job_list, lListElem *job, order_t *orders, int 
       }
    }
    
-   range_list = ocs::tom::get<JB_ja_n_h_ids>(job);
+   ocs::tom::ConstList<ocs::tom::RN> range_list = ocs::tom::get<JB_ja_n_h_ids>(job);
    
-   for_each_ep_lv(range, range_list) {
+   for (ocs::tom::ConstElement<ocs::tom::RN> range : range_list) {
       for(ja_task_id = ocs::tom::get<RN_min>(range);
           ja_task_id <= ocs::tom::get<RN_max>(range);
           ja_task_id += ocs::tom::get<RN_step>(range)) {  

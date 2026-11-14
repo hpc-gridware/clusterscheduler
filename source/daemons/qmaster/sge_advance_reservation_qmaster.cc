@@ -100,6 +100,7 @@
 #include "sgeobj/tom/ocs_tom_RUE.h"
 #include "sgeobj/tom/ocs_tom_ST.h"
 #include "sgeobj/tom/ocs_tom_US.h"
+#include "sgeobj/tom/ocs_tom_JAT.h"
 
 #include "sched/debit.h"
 #include "sched/sge_resource_utilization.h"
@@ -561,9 +562,9 @@ ar_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **al
    }
 
    const char *id_str = ocs::tom::get<ID_str>(ep);
-   const lList *user_list = ocs::tom::get<ID_user_list>(ep);
+   ocs::tom::ConstList<ocs::tom::ST> user_list = ocs::tom::get<ID_user_list>(ep);
    if (user_list != nullptr) {
-      for_each_ep_lv(user, user_list) {
+      for (ocs::tom::ConstElement<ocs::tom::ST> user : user_list) {
          const char *user_name = ocs::tom::get<ST_name>(user);
          bool is_pattern = ocs::is_pattern(user_name);
 
@@ -718,7 +719,7 @@ ar_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **al
          sge_dstring_sprintf(&buffer, "%s", id_str);
          ERROR(MSG_SGETEXT_DOESNOTEXIST_SS, SGE_OBJ_AR, sge_dstring_get_string(&buffer));
       } else {
-         const lListElem *user;
+         ocs::tom::ConstElement<ocs::tom::ST> user;
          bool first = true;
          int umax = 5;
 
@@ -1030,7 +1031,7 @@ ar_reserve_queues(lList **alpp, lListElem *ar, uint64_t gdi_session) {
 
    int verify_mode = ocs::tom::get<AR_verify>(ar);
    lList *talp = nullptr;
-   const lList *ar_queue_request = ocs::tom::get<AR_queue_list>(ar);
+   ocs::tom::ConstList<ocs::tom::QR> ar_queue_request = ocs::tom::get<AR_queue_list>(ar);
    const char *ar_pe_request = ocs::tom::get<AR_pe>(ar);
    const char *ar_ckpt_request = ocs::tom::get<AR_checkpoint_name>(ar);
 
@@ -1094,7 +1095,7 @@ ar_reserve_queues(lList **alpp, lListElem *ar, uint64_t gdi_session) {
 
    for_each_ep(cqueue, master_cqueue_list) {
       const char *cqname = ocs::tom::get<CQ_name>(cqueue);
-      const lList *qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
+      ocs::tom::ConstList<ocs::tom::QU> qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
       const lListElem *qinstance;
 
       if (cqueue_match_static(cqname, &a) != DISPATCH_OK) {
@@ -1121,9 +1122,9 @@ ar_reserve_queues(lList **alpp, lListElem *ar, uint64_t gdi_session) {
          /* we only have to consider queues containing the requested pe */
          if (ar_pe_request != nullptr) {
             bool found = false;
-            const lListElem *pe_ref;
+            ocs::tom::ConstElement<ocs::tom::ST> pe_ref;
 
-            for_each_ep(pe_ref, static_cast<const lList *>(ocs::tom::get<QU_pe_list>(qinstance))) {
+            for_each_ep(pe_ref, ocs::tom::get<QU_pe_list>(qinstance)) {
                if (pe_name_is_matching(ocs::tom::get<ST_name>(pe_ref), ar_pe_request)) {
                   found = true;
                   break;
@@ -1306,7 +1307,7 @@ ar_do_reservation(lListElem *ar, bool incslots, uint64_t gdi_session) {
 
    // the instances the reservation holds, so that they are taken on the real hosts for the
    // reservation's window and a job scheduled outside the reservation does not take them too
-   const lList *granted_resources = ocs::tom::get<AR_granted_resources_list>(ar);
+   ocs::tom::ConstList<ocs::tom::GRU> granted_resources = ocs::tom::get<AR_granted_resources_list>(ar);
 
    const char *granted_pe = ocs::tom::get<AR_granted_pe>(ar);
    lListElem *pe = nullptr;
@@ -1327,8 +1328,8 @@ ar_do_reservation(lListElem *ar, bool incslots, uint64_t gdi_session) {
    int pe_slots = 0;
    bool is_master_task = true;
    const char *last_hostname = nullptr;
-   const lListElem *gdil_ep;
-   for_each_ep(gdil_ep, static_cast<const lList *>(ocs::tom::get<AR_granted_slots>(ar))) {
+   ocs::tom::ConstElement<ocs::tom::JG> gdil_ep;
+   for_each_ep(gdil_ep, ocs::tom::get<AR_granted_slots>(ar)) {
       const char *queue_name = ocs::tom::get<JG_qname>(gdil_ep);
       lListElem *queue = cqueue_list_locate_qinstance(master_cqueue_list, queue_name);
 
@@ -1522,14 +1523,14 @@ ar_list_has_reservation_for_pe_with_slots(const lList *ar_master_list, lList **a
 
    bool ret = false;
    const lListElem *ar;
-   const lListElem *gs;
+   ocs::tom::ConstElement<ocs::tom::JG> gs;
    uint32_t max_res_slots = 0;
 
    for_each_ep(ar, ar_master_list) {
       const char *pe_string = ocs::tom::get<AR_pe>(ar);
 
       if (pe_name != nullptr && pe_string != nullptr && strcmp(pe_string, pe_name) == 0) {
-         for_each_ep(gs, static_cast<const lList *>(ocs::tom::get<AR_granted_slots>(ar))) {
+         for_each_ep(gs, ocs::tom::get<AR_granted_slots>(ar)) {
             uint32_t slots = ocs::tom::get<JG_slots>(gs);
 
             max_res_slots += slots;
@@ -1600,7 +1601,7 @@ ar_add_consumable(lListElem *target, const lListElem *source, int nm, const lLis
  */
 static void
 ar_set_reserved_rsmap(lListElem *ar_host, const char *name, const lList *taken) {
-   lListElem *ar_cr = ocs::tom::find_first_in_rw<EH_consumable_config_list, CE_name>(ar_host, name);
+   ocs::tom::Element<ocs::tom::CE> ar_cr = ocs::tom::find_first_in_rw<EH_consumable_config_list, CE_name>(ar_host, name);
    if (ar_cr != nullptr) {
       ocs::tom::set<CE_resource_map_list>(ar_cr, lCopyList("reserved_rsmap", taken));
    }
@@ -1638,7 +1639,7 @@ ar_add_rsmap_ids(const lListElem *ar, const lList *previous, lList **granted_res
                  const char *host_name, double amount) {
    DENTER(TOP_LAYER);
 
-   const lListElem *definition = ocs::tom::find_first_in<EH_consumable_config_list, CE_name>(master_host, name);
+   ocs::tom::ConstElement<ocs::tom::CE> definition = ocs::tom::find_first_in<EH_consumable_config_list, CE_name>(master_host, name);
    if (definition == nullptr || amount <= 0) {
       // the map is not configured on this host, so there is nothing to name
       DRETURN_VOID;
@@ -1667,17 +1668,17 @@ ar_add_rsmap_ids(const lListElem *ar, const lList *previous, lList **granted_res
       // a restart must not move the reservation to a different one underneath it.
       const lListElem *prev_gru = gru_list_search(const_cast<lList *>(previous), name, host_name);
       if (prev_gru != nullptr && static_cast<ocs::GrantedResources::Type>(ocs::tom::get<GRU_type>(prev_gru)) == ocs::GrantedResources::Type::GRU_RESOURCE_MAP_TYPE) {
-         const lListElem *prev_ep;
-         for_each_ep (prev_ep, static_cast<const lList *>(ocs::tom::get<GRU_resource_map_list>(prev_gru))) {
+         ocs::tom::ConstElement<ocs::tom::RESL> prev_ep;
+         for_each_ep (prev_ep, ocs::tom::get<GRU_resource_map_list>(prev_gru)) {
             const char *id = ocs::tom::get<RESL_value>(prev_ep);
             // an instance the map no longer defines is dropped, and made up for below
             if (static_cast<const lListElem *>(ocs::tom::find_first_in<CE_resource_map_list, RESL_value>(definition, id)) == nullptr) {
                continue;
             }
-            lListElem *resl = ocs::tom::emplace_back_in<GRU_resource_map_list, RESL_value>(gru, id);
+            ocs::tom::Element<ocs::tom::RESL> resl = ocs::tom::emplace_back_in<GRU_resource_map_list, RESL_value>(gru, id);
             if (resl != nullptr) {
                ocs::tom::set<RESL_amount>(resl, ocs::tom::get<RESL_amount>(prev_ep));
-               const lList *props = ocs::tom::get<RESL_properties>(prev_ep);
+               ocs::tom::ConstList<ocs::tom::CE> props = ocs::tom::get<RESL_properties>(prev_ep);
                if (props != nullptr) {
                   ocs::tom::set<RESL_properties>(resl, lCopyList("granted_properties", props));
                }
@@ -1689,9 +1690,9 @@ ar_add_rsmap_ids(const lListElem *ar, const lList *previous, lList **granted_res
    // entries add up, so what is taken here is whatever the total is still short of
    ocs::tom::set<GRU_amount>(gru, ocs::tom::get<GRU_amount>(gru) + amount);
 
-   const lList *taken = ocs::tom::get<GRU_resource_map_list>(gru);
+   ocs::tom::ConstList<ocs::tom::RESL> taken = ocs::tom::get<GRU_resource_map_list>(gru);
    uint32_t have = 0;
-   const lListElem *have_ep;
+   ocs::tom::ConstElement<ocs::tom::RESL> have_ep;
    for_each_ep (have_ep, taken) {
       have += ocs::tom::get<RESL_amount>(have_ep);
    }
@@ -1719,10 +1720,10 @@ ar_add_rsmap_ids(const lListElem *ar, const lList *previous, lList **granted_res
       const char *id = ocs::tom::get<RESL_value>(sel_ep);
 
       // the AR's granted resources, for qrstat and for a job running inside the reservation
-      lListElem *resl = ocs::tom::find_first_in_rw<GRU_resource_map_list, RESL_value>(gru, id);
+      ocs::tom::Element<ocs::tom::RESL> resl = ocs::tom::find_first_in_rw<GRU_resource_map_list, RESL_value>(gru, id);
       if (resl == nullptr) {
          resl = ocs::tom::emplace_back_in<GRU_resource_map_list, RESL_value>(gru, id);
-         const lListElem *defined_ep = ocs::tom::find_first_in<CE_resource_map_list, RESL_value>(definition, id);
+         ocs::tom::ConstElement<ocs::tom::RESL> defined_ep = ocs::tom::find_first_in<CE_resource_map_list, RESL_value>(definition, id);
          const lList *src_props = (defined_ep != nullptr)
                                   ? static_cast<const lList *>(ocs::tom::get<RESL_properties>(defined_ep)) : nullptr;
          if (src_props != nullptr) {
@@ -1778,7 +1779,7 @@ static bool
 ar_get_request_or_default(const lListElem *ar, const lListElem *cr, const char *cr_name, double &request_value) {
    double ret = false;
 
-   const lListElem *request = ocs::tom::find_first_in<AR_resource_list, CE_name>(ar, cr_name);
+   ocs::tom::ConstElement<ocs::tom::CE> request = ocs::tom::find_first_in<AR_resource_list, CE_name>(ar, cr_name);
    if (request != nullptr) {
       // resource was explicitly requested
       request_value = ocs::tom::get<CE_doubleval>(request);
@@ -1812,8 +1813,8 @@ void
 ar_initialize_resource_booking(lListElem *ar) {
    DENTER(TOP_LAYER);
 
-   const lListElem *gep;
-   const lList *gdil = ocs::tom::get<AR_granted_slots>(ar);
+   ocs::tom::ConstElement<ocs::tom::JG> gep;
+   ocs::tom::ConstList<ocs::tom::JG> gdil = ocs::tom::get<AR_granted_slots>(ar);
    const lList *master_centry_list = *ocs::DataStore::get_master_list(SGE_TYPE_CENTRY);
    const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
    const lList *master_exechost_list = *ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST);
@@ -1856,7 +1857,7 @@ ar_initialize_resource_booking(lListElem *ar) {
    const lListElem *master_global_host = ocs::tom::find_first<EH_name>(master_exechost_list, SGE_GLOBAL_NAME);
 
    // what the reservation held before this rebuild, see ar_add_rsmap_ids()
-   const lList *previous_granted_resources = ocs::tom::get<AR_granted_resources_list>(ar);
+   ocs::tom::ConstList<ocs::tom::GRU> previous_granted_resources = ocs::tom::get<AR_granted_resources_list>(ar);
 
    lList *granted_resources_list = nullptr;
    bool is_master_queue = true;
@@ -1867,7 +1868,7 @@ ar_initialize_resource_booking(lListElem *ar) {
       const char *host_name = ocs::tom::get<JG_qhostname>(gep);
 
       // add the binding_touse information (copy from JG to GRU)
-      const lList *binding_to_use_list = ocs::tom::get<JG_binding_to_use>(gep);
+      ocs::tom::ConstList<ocs::tom::ST> binding_to_use_list = ocs::tom::get<JG_binding_to_use>(gep);
       ocs::GrantedResources::add_binding_to_use(&granted_resources_list, host_name, binding_to_use_list);
 
       // create queue with slot booking
@@ -2066,7 +2067,7 @@ sge_ar_remove_all_jobs(uint32_t ar_id, int forced, monitoring_t *monitor, uint64
             if (job_is_enrolled(jep, task_number)) {
                /* delete all enrolled pending tasks */
                DPRINTF("removing enrolled task %d.%d\n", ocs::tom::get<JB_job_number>(jep), task_number);
-               tmp_task = ocs::tom::find_first_in_rw<JB_ja_tasks, JAT_task_number>(jep, task_number);
+               ocs::tom::Element<ocs::tom::JAT> tmp_task = ocs::tom::find_first_in_rw<JB_ja_tasks, JAT_task_number>(jep, task_number);
 
                /* 
                 * if task is already in status deleted and was signaled
@@ -2272,7 +2273,7 @@ sge_ar_list_set_error_state(lList *ar_list, const char *qname, uint32_t error_ty
 
    for_each_rw(ar, ar_list) {
       lListElem *qinstance;
-      const lList *granted_slots = ocs::tom::get<AR_reserved_queues>(ar);
+      ocs::tom::ConstList<ocs::tom::QU> granted_slots = ocs::tom::get<AR_reserved_queues>(ar);
 
       if ((qinstance = ocs::tom::find_first_rw<QU_full_name>(granted_slots, qname)) != nullptr) {
          uint32_t old_errors = ocs::tom::get<AR_qi_errors>(ar);
@@ -2425,20 +2426,19 @@ ar_list_has_reservation_due_to_qinstance_complex_attr(const lList *ar_master_lis
    DENTER(TOP_LAYER);
 
    const lListElem *ar;
-   const lListElem *gs;
+   ocs::tom::ConstElement<ocs::tom::JG> gs;
 
    for_each_ep(ar, ar_master_list) {
       const char *qinstance_name = ocs::tom::get<QU_full_name>(qinstance);
 
       if ((gs = ocs::tom::find_first<JG_qname>(ocs::tom::get<AR_granted_slots>(ar), qinstance_name))) {
 
-         const lListElem *rue = nullptr;
-         lListElem *request;
-         const lList *rue_list;
+         ocs::tom::ConstElement<ocs::tom::RUE> rue = nullptr;
+         ocs::tom::Element<ocs::tom::CE> request;
 
-         for_each_rw(request, static_cast<const lList *>(ocs::tom::get<AR_resource_list>(ar))) {
+         for_each_rw(request, ocs::tom::get<AR_resource_list>(ar)) {
             const char *ce_name = ocs::tom::get<CE_name>(request);
-            const lListElem *ce = ocs::tom::find_first<CE_name>(ce_master_list, ce_name);
+            ocs::tom::ConstElement<ocs::tom::CE> ce = ocs::tom::find_first<CE_name>(ce_master_list, ce_name);
             bool is_consumable = (ocs::tom::get<CE_consumable>(ce) > 0) ? true : false;
 
             if (!is_consumable) {
@@ -2465,17 +2465,17 @@ ar_list_has_reservation_due_to_qinstance_complex_attr(const lList *ar_master_lis
          /* now it gets expensive. Before we can start the check at first we have to build the
             consumable config list. */
          qinstance_reinit_consumable_actual_list(qinstance, answer_list);
-         rue_list = ocs::tom::get<QU_resource_utilization>(qinstance);
+         ocs::tom::ConstList<ocs::tom::RUE> rue_list = ocs::tom::get<QU_resource_utilization>(qinstance);
 
          for_each_ep(rue, rue_list) {
             const char *ce_name = ocs::tom::get<RUE_name>(rue);
-            const lListElem *ce = ocs::tom::find_first<CE_name>(ce_master_list, ce_name);
+            ocs::tom::ConstElement<ocs::tom::CE> ce = ocs::tom::find_first<CE_name>(ce_master_list, ce_name);
             bool is_consumable = (ocs::tom::get<CE_consumable>(ce) > 0) ? true : false;
 
             if (is_consumable) {
-               const lListElem *rde = nullptr;
-               const lList *rde_list = ocs::tom::get<RUE_utilized>(rue);
-               const lListElem *cv = ocs::tom::find_first_in<QU_consumable_config_list, CE_name>(qinstance, ce_name);
+               ocs::tom::ConstElement<ocs::tom::RDE> rde = nullptr;
+               ocs::tom::ConstList<ocs::tom::RDE> rde_list = ocs::tom::get<RUE_utilized>(rue);
+               ocs::tom::ConstElement<ocs::tom::CE> cv = ocs::tom::find_first_in<QU_consumable_config_list, CE_name>(qinstance, ce_name);
 
                if (cv == nullptr) {
                   ERROR(MSG_QUEUE_MODNOCMPLXDENYDUETOAR_SS, ce_name, SGE_ATTR_COMPLEX_VALUES);
@@ -2526,19 +2526,19 @@ ar_list_has_reservation_due_to_host_complex_attr(const lList *ar_master_list, lL
    const char *hostname = ocs::tom::get<EH_name>(host);
 
    for_each_ep(ar, ar_master_list) {
-      const lListElem *gs = nullptr;
+      ocs::tom::ConstElement<ocs::tom::JG> gs = nullptr;
 
-      for_each_ep(gs, static_cast<const lList *>(ocs::tom::get<AR_granted_slots>(ar))) {
+      for_each_ep(gs, ocs::tom::get<AR_granted_slots>(ar)) {
          const char *gh = ocs::tom::get<JG_qhostname>(gs);
 
          if (!sge_hostcmp(gh, hostname)) {
-            const lListElem *rue;
-            lListElem *request;
-            const lList *rue_list = ocs::tom::get<EH_resource_utilization>(host);
+            ocs::tom::ConstElement<ocs::tom::RUE> rue;
+            ocs::tom::Element<ocs::tom::CE> request;
+            ocs::tom::ConstList<ocs::tom::RUE> rue_list = ocs::tom::get<EH_resource_utilization>(host);
 
-            for_each_rw(request, static_cast<const lList *>(ocs::tom::get<AR_resource_list>(ar))) {
+            for_each_rw(request, ocs::tom::get<AR_resource_list>(ar)) {
                const char *ce_name = ocs::tom::get<CE_name>(request);
-               const lListElem *ce = ocs::tom::find_first<CE_name>(ce_master_list, ce_name);
+               ocs::tom::ConstElement<ocs::tom::CE> ce = ocs::tom::find_first<CE_name>(ce_master_list, ce_name);
                bool is_consumable = (ocs::tom::get<CE_consumable>(ce) > 0) ? true : false;
 
                if (!is_consumable) {
@@ -2563,13 +2563,13 @@ ar_list_has_reservation_due_to_host_complex_attr(const lList *ar_master_list, lL
             }
             for_each_ep(rue, rue_list) {
                const char *ce_name = ocs::tom::get<RUE_name>(rue);
-               const lListElem *ce = ocs::tom::find_first<CE_name>(ce_master_list, ce_name);
+               ocs::tom::ConstElement<ocs::tom::CE> ce = ocs::tom::find_first<CE_name>(ce_master_list, ce_name);
                bool is_consumable = (ocs::tom::get<CE_consumable>(ce) > 0) ? true : false;
 
                if (is_consumable) {
-                  const lListElem *rde = nullptr;
-                  const lList *rde_list = ocs::tom::get<RUE_utilized>(rue);
-                  const lListElem *cv = ocs::tom::find_first_in<EH_consumable_config_list, CE_name>(host, ce_name);
+                  ocs::tom::ConstElement<ocs::tom::RDE> rde = nullptr;
+                  ocs::tom::ConstList<ocs::tom::RDE> rde_list = ocs::tom::get<RUE_utilized>(rue);
+                  ocs::tom::ConstElement<ocs::tom::CE> cv = ocs::tom::find_first_in<EH_consumable_config_list, CE_name>(host, ce_name);
 
                   if (cv == nullptr) {
                      ERROR(MSG_QUEUE_MODNOCMPLXDENYDUETOAR_SS, ce_name, SGE_ATTR_COMPLEX_VALUES);

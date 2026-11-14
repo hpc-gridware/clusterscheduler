@@ -48,6 +48,7 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/parse.h"
 #include "sgeobj/sge_str.h"
+#include "sgeobj/tom/ocs_tom_ID.h"
 #include "tom/ocs_Element.h"
 
 #include "gdi/ocs_gdi_Client.h"
@@ -229,7 +230,7 @@ static bool sge_parse_qrdel(lList **ppcmdline, lList **ppid_list, lList **alpp) 
       /* fill up ID list */
       if (user_list != nullptr) {
          if (lGetNumberOfElem(*ppid_list) == 0){
-            lListElem *id = ocs::tom::emplace_back<ID_str>(ppid_list, "0");
+            ocs::tom::Element<ocs::tom::ID> id = ocs::tom::emplace_back<ID_str>(ppid_list, "0");
             ocs::tom::set<ID_user_list>(id, lCopyList("", user_list));
          } else {
             for_each_rw_lv (id, *ppid_list){

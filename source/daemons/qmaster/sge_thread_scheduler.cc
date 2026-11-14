@@ -703,7 +703,7 @@ sge_scheduler_main(void *arg) {
             lEnumeration *what_queue3 = nullptr;
 
             for_each_ep(cqueue, master_cqueue_list) {
-               const lList *qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
+               ocs::tom::ConstList<ocs::tom::QU> qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
                lList *t;
 
                if (qinstance_list == nullptr) {

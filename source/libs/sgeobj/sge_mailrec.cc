@@ -46,6 +46,7 @@
 
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_mailrec.h"
+#include "sgeobj/tom/ocs_tom_MR.h"
 #include "tom/ocs_Element.h"
 
 #include "symbols.h"
@@ -76,7 +77,7 @@ int mailrec_parse(lList **lpp, const char *mail_str) {
    char **str_str;
    char **pstr;
    lListElem *ep;
-   const lListElem *tmp;
+   ocs::tom::ConstElement<ocs::tom::MR> tmp;
    char *mail;
    struct saved_vars_s *context;
 

@@ -36,6 +36,7 @@
 #include "sgeobj/sge_href.h"
 #include "tom/ocs_Element.h"
 #include "sgeobj/tom/ocs_tom_HR.h"
+#include "sgeobj/tom/ocs_tom_HGRP.h"
 
 #include "gdi/ocs_gdi_Client.h"
 #include "gdi/ocs_gdi_ClientBase.h"
@@ -100,7 +101,7 @@ fetch_hgroup_list() {
 static bool
 write_hgroup(ocs::gdi::Command cmd, const char *name, const char *const members[], int num_members) {
    lList *lp = lCreateList("req", HGRP_Type);
-   lListElem *ep = ocs::tom::emplace_back<HGRP_name>(&lp, name);
+   ocs::tom::Element<ocs::tom::HGRP> ep = ocs::tom::emplace_back<HGRP_name>(&lp, name);
    lList *hosts = lCreateList("hosts", HR_Type);
 
    for (int i = 0; i < num_members; i++) {
@@ -158,11 +159,11 @@ cache_matches_walk(const lListElem *hgroup, const lList *master_hgroup_list) {
    }
    lFreeList(&answer_list);
 
-   const lList *cached = ocs::tom::get<HGRP_cached_hosts>(hgroup);
+   ocs::tom::ConstList<ocs::tom::HR> cached = ocs::tom::get<HGRP_cached_hosts>(hgroup);
    bool ok = lGetNumberOfElem(cached) == lGetNumberOfElem(walked);
 
    if (ok) {
-      const lListElem *c = lFirst(cached);
+      ocs::tom::ConstElement<ocs::tom::HR> c = lFirst(cached);
       const lListElem *w = lFirst(walked);
 
       while (c != nullptr && w != nullptr) {
@@ -185,7 +186,7 @@ cache_matches_walk(const lListElem *hgroup, const lList *master_hgroup_list) {
 /** @brief Is host a member of the group's cache? */
 static bool
 cache_contains(const lList *master_hgroup_list, const char *name, const char *host) {
-   const lListElem *hgroup = ocs::tom::find_first<HGRP_name>(master_hgroup_list, name);
+   ocs::tom::ConstElement<ocs::tom::HGRP> hgroup = ocs::tom::find_first<HGRP_name>(master_hgroup_list, name);
    return hgroup != nullptr && href_list_locate(ocs::tom::get<HGRP_cached_hosts>(hgroup), host) != nullptr;
 }
 
@@ -217,7 +218,7 @@ test_cache_content_and_invalidation() {
       bool all_match = true;
 
       for_each_ep(hgroup, hgroup_list) {
-         const lListElem *href;
+         ocs::tom::ConstElement<ocs::tom::HR> href;
 
          all_versioned &= (ocs::tom::get<HGRP_cache_version>(hgroup) != 0);
          all_match &= cache_matches_walk(hgroup, hgroup_list);
@@ -247,7 +248,7 @@ test_cache_content_and_invalidation() {
       CHECK(4, "created " GRP_LEAF, write_hgroup(ocs::gdi::Command::ADD, GRP_LEAF, leaf_members, 1));
 
       lList *hgroup_list = fetch_hgroup_list();
-      const lListElem *leaf = ocs::tom::find_first<HGRP_name>(hgroup_list, GRP_LEAF);
+      ocs::tom::ConstElement<ocs::tom::HGRP> leaf = ocs::tom::find_first<HGRP_name>(hgroup_list, GRP_LEAF);
 
       CHECK(5, GRP_LEAF " has a cache version after ADD",
             leaf != nullptr && ocs::tom::get<HGRP_cache_version>(leaf) != 0);

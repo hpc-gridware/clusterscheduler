@@ -33,6 +33,7 @@
 #include "sgeobj/sge_href.h"
 #include "tom/ocs_Element.h"
 #include "sgeobj/tom/ocs_tom_HR.h"
+#include "sgeobj/tom/ocs_tom_HGRP.h"
 
 #include "ocs_QConfHGroupStructureView.h"
 
@@ -80,11 +81,11 @@ hgroup_tree_elem(std::ostream &os, const lList *hgroup_list, const char *name, i
    }
    os << hgroup_text(name) << "\n";
 
-   const lListElem *hgroup = ocs::tom::find_first<HGRP_name>(hgroup_list, name);
+   ocs::tom::ConstElement<ocs::tom::HGRP> hgroup = ocs::tom::find_first<HGRP_name>(hgroup_list, name);
    if (hgroup != nullptr) {
-      const lList *sub_list = ocs::tom::get<HGRP_host_list>(hgroup);
+      ocs::tom::ConstList<ocs::tom::HR> sub_list = ocs::tom::get<HGRP_host_list>(hgroup);
 
-      for_each_ep_lv(href, sub_list) {
+      for (ocs::tom::ConstElement<ocs::tom::HR> href : sub_list) {
          hgroup_tree_elem(os, hgroup_list, ocs::tom::get<HR_name>(href), indent + 1);
       }
    }

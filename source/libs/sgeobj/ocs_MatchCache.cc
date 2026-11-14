@@ -193,7 +193,7 @@ ocs::MatchCache::insert(lListElem *hgroup, const char *hostname) {
    // cannot be repaired: removing either drops the key from the hash and leaves
    // the other present but unfindable.
    if (static_cast<const lListElem *>(ocs::tom::find_first<HM_name>(cache, hostname)) == nullptr) {
-      lListElem *fresh = ocs::tom::emplace_back<HM_name>(&cache, hostname);
+      ocs::tom::Element<ocs::tom::HM> fresh = ocs::tom::emplace_back<HM_name>(&cache, hostname);
 
       if (fresh != nullptr) {
          ocs::tom::set<HM_last_used>(fresh, now);
@@ -280,7 +280,7 @@ ocs::MatchCache::adopt(lListElem *hgroup, lList **cache) {
    }
 
    std::lock_guard<std::mutex> guard(match_cache_mutex);
-   const lList *resolved = ocs::tom::get<HGRP_cached_hosts>(hgroup);
+   ocs::tom::ConstList<ocs::tom::HR> resolved = ocs::tom::get<HGRP_cached_hosts>(hgroup);
    lListElem *entry = lFirstRW(*cache);
 
    for (int examined = 0; entry != nullptr && examined < MATCH_CACHE_PRUNE_BOUND; examined++) {

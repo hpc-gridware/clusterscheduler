@@ -344,11 +344,10 @@ void ptf_reinit_queue_priority(uint32_t job_id, uint32_t ja_task_id,
    }
 
    for_each_rw_lv(job_elem, ptf_jobs) {
-      const lList *os_job_list;
 
       if (ocs::tom::get<JL_job_ID>(job_elem) == job_id) {
          DPRINTF("\tjob id: " sge_u32 "\n", ocs::tom::get<JL_job_ID>(job_elem));
-         os_job_list = ocs::tom::get<JL_OS_job_list>(job_elem);
+         ocs::tom::ConstList<ocs::tom::JO> os_job_list = ocs::tom::get<JL_OS_job_list>(job_elem);
          for_each_rw_lv(os_job, os_job_list) {
             if (ocs::tom::get<JO_ja_task_ID>(os_job) == ja_task_id &&
                 ((!pe_task_id_str && !ocs::tom::get<JO_task_id_str>(os_job))
@@ -379,7 +378,7 @@ static void ptf_set_job_priority(lListElem *job) {
    DENTER(TOP_LAYER);
    long pri = ocs::tom::get<JL_pri>(job);
 
-   for_each_ep_lv(osjob, ocs::tom::get<JL_OS_job_list>(job)) {
+   for (ocs::tom::ConstElement<ocs::tom::JO> osjob : ocs::tom::get<JL_OS_job_list>(job)) {
       ptf_set_native_job_priority(job, osjob, pri);
    }
    DRETURN_VOID;
@@ -424,7 +423,7 @@ static void ptf_setpriority_addgrpid(const lListElem *job, const lListElem *osjo
    /*
     * set the priority for each active process
     */
-   for_each_ep_lv(pid, ocs::tom::get<JO_pid_list>(osjob)) {
+   for (ocs::tom::ConstElement<ocs::tom::JP> pid : ocs::tom::get<JO_pid_list>(osjob)) {
       if (setpriority(PRIO_PROCESS, ocs::tom::get<JP_pid>(pid), pri) < 0 &&
           errno != ESRCH) {
          ERROR(MSG_PRIO_JOBXPIDYSETPRIORITYFAILURE_UUS, ocs::tom::get<JL_job_ID>(job), ocs::tom::get<JP_pid>(pid), strerror(errno));
@@ -566,7 +565,7 @@ static lListElem *ptf_process_job(osjobid_t os_job_id, const char *task_id_str,
       job = ocs::tom::emplace_back<JL_job_ID>(&ptf_jobs, job_id);
    }
    if (job != nullptr) {
-      lList *osjoblist = ocs::tom::get<JL_OS_job_list>(job);
+      ocs::tom::List<ocs::tom::JO> osjoblist = ocs::tom::get<JL_OS_job_list>(job);
       lListElem *osjob = ptf_get_osjob_by_ids(osjoblist, jataskid, task_id_str);
       if (osjob == nullptr) {
          osjob = ocs::tom::emplace_back_in<JL_OS_job_list, JO_ja_task_ID>(job, jataskid);
@@ -619,7 +618,7 @@ static void ptf_get_usage_from_data_collector() {
    DENTER(TOP_LAYER);
 
    lListElem *job, *osjob;
-   lList *pidlist, *oldpidlist;
+   lList *pidlist;
    struct psJob_s *jobs, *ojobs, *tmp_jobs;
    struct psProc_s *procs;
    uint64 jobcount;
@@ -703,7 +702,7 @@ static void ptf_get_usage_from_data_collector() {
                INCJOBPTR(jobs, jobs->jd_length);
 
                if (proccount > 0) {
-                  oldpidlist = ocs::tom::get<JO_pid_list>(osjob);
+                  ocs::tom::List<ocs::tom::JP> oldpidlist = ocs::tom::get<JO_pid_list>(osjob);
                   pidlist = lCreateList("pidlist", JP_Type);
 
                   procs = (struct psProc_s *) jobs;
@@ -764,7 +763,7 @@ static void ptf_get_usage_from_data_collector() {
          int active_jobs = 0;
 
          for_each_rw(osjob, ocs::tom::get<JL_OS_job_list>(job)) {
-            lListElem *usage;
+            ocs::tom::Element<ocs::tom::UA> usage;
 
             if ((usage = ocs::tom::find_first_rw<UA_name>(ocs::tom::get<JO_usage_list>(osjob), USAGE_ATTR_CPU))) {
                cpu_usage_value += ocs::tom::get<UA_value>(usage);
@@ -1189,7 +1188,7 @@ int ptf_job_complete(uint32_t job_id, uint32_t ja_task_id, const char *pe_task_i
    *usage = _ptf_get_job_usage(ptf_job, ja_task_id, pe_task_id); 
 
    // search ptf osjob
-   lList *osjobs = ocs::tom::get<JL_OS_job_list>(ptf_job);
+   ocs::tom::List<ocs::tom::JO> osjobs = ocs::tom::get<JL_OS_job_list>(ptf_job);
    lListElem *osjob = ptf_get_osjob_by_ids(osjobs, ja_task_id, pe_task_id);
 
    if (osjob == nullptr) {
@@ -1269,7 +1268,7 @@ int ptf_process_job_ticket_list(lList *job_ticket_list) {
       // @todo what about tightly integrated PE tasks? The ja_task then only is a SLAVE container,
       //       it doesn't have osjobid, systemd_scope, usage_collection.
       uint32_t job_id = ocs::tom::get<JB_job_number>(jte);
-      const lListElem *jte_ja_task = lFirst(ocs::tom::get<JB_ja_tasks>(jte));
+      ocs::tom::ConstElement<ocs::tom::JAT> jte_ja_task = lFirst(ocs::tom::get<JB_ja_tasks>(jte));
       uint32_t ja_task_id = ocs::tom::get<JAT_task_number>(jte_ja_task);
       lListElem *job, *ja_task;
       if (execd_get_job_ja_task(job_id, ja_task_id, &job, &ja_task, false)) {
@@ -1346,7 +1345,7 @@ int ptf_adjust_job_priorities() {
    static uint64_t next = 0;
    uint64_t now = sge_get_gmt64();
    lList *job_list;
-   const lList *pid_list;
+   ocs::tom::ConstList<ocs::tom::JP> pid_list;
    u_long sum_of_job_tickets = 0;
    int num_procs = 0;
    double sum_proportion = 0;
@@ -1413,7 +1412,7 @@ int ptf_adjust_job_priorities() {
       shr = ocs::tom::get<JL_share>(job);
 
       num_procs = 0;
-      for_each_rw_lv(osjob, ocs::tom::get<JL_OS_job_list>(job)) {
+      for (ocs::tom::Element<ocs::tom::JO> osjob : ocs::tom::get<JL_OS_job_list>(job)) {
          if ((pid_list = ocs::tom::get<JO_pid_list>(osjob))) {
             num_procs += lGetNumberOfElem(pid_list);
          }
@@ -1630,14 +1629,12 @@ void ptf_show_registered_jobs() {
 
    job_list = ptf_jobs;
    for_each_ep(job_elem, job_list) {
-      const lList *os_job_list;
-      const lListElem *os_job;
+      ocs::tom::ConstElement<ocs::tom::JO> os_job;
 
       DPRINTF("\tjob id: " sge_u32 "\n", ocs::tom::get<JL_job_ID>(job_elem));
-      os_job_list = ocs::tom::get<JL_OS_job_list>(job_elem);
+      ocs::tom::ConstList<ocs::tom::JO> os_job_list = ocs::tom::get<JL_OS_job_list>(job_elem);
       for_each_ep(os_job, os_job_list) {
-         const lList *process_list;
-         const lListElem *process;
+         ocs::tom::ConstElement<ocs::tom::JP> process;
          const char *pe_task_id_str;
          uint32_t ja_task_id;
 
@@ -1647,7 +1644,7 @@ void ptf_show_registered_jobs() {
 
          DPRINTF("\t\tosjobid: " sge_u32 " ja_task_id: " sge_u32 " petaskid: %s\n",
                  ocs::tom::get<JO_OS_job_ID>(os_job), ja_task_id, pe_task_id_str);
-         process_list = ocs::tom::get<JO_pid_list>(os_job);
+         ocs::tom::ConstList<ocs::tom::JP> process_list = ocs::tom::get<JO_pid_list>(os_job);
          for_each_ep(process, process_list) {
             uint32_t pid = ocs::tom::get<JP_pid>(process);
             DPRINTF("\t\t\tpid: " sge_u32 "\n", pid);
@@ -1669,7 +1666,6 @@ void ptf_unregister_registered_job(uint32_t job_id, uint32_t ja_task_id ) {
 
    next_job = lFirstRW(ptf_jobs);
    while ((job = next_job)) {
-      lList *os_job_list;
       lListElem *os_job;
       lListElem *next_os_job;
 
@@ -1677,7 +1673,7 @@ void ptf_unregister_registered_job(uint32_t job_id, uint32_t ja_task_id ) {
 
       if (ocs::tom::get<JL_job_ID>(job) == job_id) {
          DPRINTF("PTF: found job id " sge_u32 "\n", job_id);
-         os_job_list = ocs::tom::get<JL_OS_job_list>(job);
+         ocs::tom::List<ocs::tom::JO> os_job_list = ocs::tom::get<JL_OS_job_list>(job);
          next_os_job = lFirstRW(os_job_list);
          while ((os_job = next_os_job)) {
             next_os_job = lNextRW(os_job);
@@ -1706,7 +1702,7 @@ void ptf_unregister_registered_jobs() {
    const lListElem *job;
 
    for_each_ep(job, ptf_jobs) {
-      lListElem *os_job;
+      ocs::tom::Element<ocs::tom::JO> os_job;
       for_each_rw(os_job, ocs::tom::get<JL_OS_job_list>(job)) {
          psIgnoreJob(ptf_get_osjobid(os_job));
          DPRINTF("PTF: Notify PDC to remove data for osjobid " sge_u32 "\n", ocs::tom::get<JO_OS_job_ID>(os_job));

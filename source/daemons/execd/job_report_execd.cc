@@ -58,6 +58,8 @@
 #include "tom/ocs_Element.h"
 #include "sgeobj/tom/ocs_tom_JAT.h"
 #include "sgeobj/tom/ocs_tom_JG.h"
+#include "sgeobj/tom/ocs_tom_JR.h"
+#include "sgeobj/tom/ocs_tom_UA.h"
 
 #include "job_report_execd.h"
 #include "ocs_execd_systemd.h"
@@ -179,10 +181,9 @@ lListElem *
 get_job_report(uint32_t job_id, uint32_t ja_task_id, const char *pe_task_id) {
    DENTER(TOP_LAYER);
 
-   lListElem *jr;
    const void *iterator = nullptr;
 
-   jr = ocs::tom::find_first_rw<JR_job_number>(jr_list, job_id, &iterator);
+   ocs::tom::Element<ocs::tom::JR> jr = ocs::tom::find_first_rw<JR_job_number>(jr_list, job_id, &iterator);
    while (jr != nullptr) {
       if (ocs::tom::get<JR_ja_task_number>(jr) == ja_task_id) {
          if (pe_task_id == nullptr) {
@@ -259,14 +260,13 @@ void cleanup_job_report(uint32_t jobid, uint32_t jataskid) {
 int add_usage(lListElem *jr, const char *name, const char *val_as_str, double val) {
    DENTER(TOP_LAYER);
 
-   lListElem *usage;
 
    if (!jr || !name) {
       DRETURN(-1);
    }
 
    /* check if we already have a usage value with this name */
-   usage = ocs::tom::find_first_in_rw<JR_usage, UA_name>(jr, name);
+   ocs::tom::Element<ocs::tom::UA> usage = ocs::tom::find_first_in_rw<JR_usage, UA_name>(jr, name);
    if (!usage) {
       if (!(usage = ocs::tom::emplace_back_in<JR_usage, UA_name>(jr, name))) {
          DRETURN(-1);
@@ -300,7 +300,7 @@ int add_usage(lListElem *jr, const char *name, const char *val_as_str, double va
  */
 static void
 job_report_update_value_from_usage_list(lListElem *jr, const lList *usage_list, const char *name) {
-   const lListElem *usage = ocs::tom::find_first<UA_name>(usage_list, name);
+   ocs::tom::ConstElement<ocs::tom::UA> usage = ocs::tom::find_first<UA_name>(usage_list, name);
    if (usage != nullptr) {
       add_usage(jr, name, nullptr, ocs::tom::get<UA_value>(usage));
    }
@@ -545,8 +545,8 @@ count_queue_limits(const lListElem *queue, ocs::CEntry::Type type, int limit_nm,
 void modify_queue_limits_flag_for_job(const char *qualified_hostname, lListElem *jep, bool increase) {
    const lListElem *gdil_ep;
 
-   for_each_ep_lv(jatep, ocs::tom::get<JB_ja_tasks>(jep)) {
-      const lList *gdil = ocs::tom::get<JAT_granted_destin_identifier_list>(jatep);
+   for (ocs::tom::ConstElement<ocs::tom::JAT> jatep : ocs::tom::get<JB_ja_tasks>(jep)) {
+      ocs::tom::ConstList<ocs::tom::JG> gdil = ocs::tom::get<JAT_granted_destin_identifier_list>(jatep);
       const void *iterator = nullptr;
       const lListElem *next_gdil_ep = ocs::tom::find_first<JG_qhostname>(gdil, qualified_hostname, &iterator);
       while ((gdil_ep = next_gdil_ep) != nullptr) {

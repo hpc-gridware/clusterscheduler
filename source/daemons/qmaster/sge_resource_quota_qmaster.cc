@@ -151,11 +151,11 @@ rqs_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem 
                            SGE_ATTR_RQSRULES, SGE_OBJ_RQS, 0, nullptr);
       } else {
          /* *attr cases */
-         const lList *rule_list = ocs::tom::get<RQS_rule>(rqs);
-         const lListElem *rule;
+         ocs::tom::ConstList<ocs::tom::RQR> rule_list = ocs::tom::get<RQS_rule>(rqs);
+         ocs::tom::ConstElement<ocs::tom::RQR> rule;
 
          for_each_ep(rule, rule_list) {
-            lList *new_rule_list = ocs::tom::get<RQS_rule>(new_rqs);
+            ocs::tom::List<ocs::tom::RQR> new_rule_list = ocs::tom::get<RQS_rule>(new_rqs);
             lListElem *new_rule = rqs_rule_locate(new_rule_list, ocs::tom::get<RQR_name>(rule));
             if (new_rule != nullptr) {
                /* ---- RQR_limit */
@@ -346,9 +346,9 @@ rqs_reinit_consumable_actual_list(lListElem *rqs, lList **answer_list) {
    const lList *master_pe_list = *ocs::DataStore::get_master_list(SGE_TYPE_PE);
 
    if (rqs != nullptr) {
-      const lListElem *rule = nullptr;
+      ocs::tom::ConstElement<ocs::tom::RQR> rule = nullptr;
 
-      for_each_ep(rule, static_cast<const lList *>(ocs::tom::get<RQS_rule>(rqs))) {
+      for_each_ep(rule, ocs::tom::get<RQS_rule>(rqs)) {
          for_each_rw_lv(limit, ocs::tom::get<RQR_limit>(rule)) {
             lList *usage = nullptr;
             ocs::tom::exchange<RQRL_usage>(limit, &usage);
@@ -361,11 +361,11 @@ rqs_reinit_consumable_actual_list(lListElem *rqs, lList **answer_list) {
       }
 
       for_each_rw_lv(job, master_job_list) {
-         const lList *ja_task_list = ocs::tom::get<JB_ja_tasks>(job);
-         const lListElem *ja_task = nullptr;
+         ocs::tom::ConstList<ocs::tom::JAT> ja_task_list = ocs::tom::get<JB_ja_tasks>(job);
+         ocs::tom::ConstElement<ocs::tom::JAT> ja_task = nullptr;
 
          for_each_ep(ja_task, ja_task_list) {
-            const lList *gdi_list = ocs::tom::get<JAT_granted_destin_identifier_list>(ja_task);
+            ocs::tom::ConstList<ocs::tom::JG> gdi_list = ocs::tom::get<JAT_granted_destin_identifier_list>(ja_task);
             bool is_master_task = true;
 
             const char *pe_name = ocs::tom::get<JAT_granted_pe>(ja_task);
@@ -374,7 +374,7 @@ rqs_reinit_consumable_actual_list(lListElem *rqs, lList **answer_list) {
                pe = pe_list_locate(master_pe_list, pe_name);
             }
 
-            const lListElem *gdil_ep;
+            ocs::tom::ConstElement<ocs::tom::JG> gdil_ep;
             const char *last_hostname = nullptr;
             for_each_ep(gdil_ep, gdi_list) {
                bool do_per_host_booking = host_do_per_host_booking(&last_hostname, ocs::tom::get<JG_qhostname>(gdil_ep));
@@ -685,8 +685,8 @@ scope_is_referenced_rqs(const lListElem *rqs, int nm, const char *name) {
    for_each_ep(rule, static_cast<const lList *>(ocs::tom::get<RQS_rule>(rqs))) {
       lListElem *filter = lGetObject(rule, nm);
       if (filter != nullptr) {
-         const lListElem *scope_ep;
-         for_each_ep(scope_ep, static_cast<const lList *>(ocs::tom::get<RQRF_scope>(filter))) {
+         ocs::tom::ConstElement<ocs::tom::ST> scope_ep;
+         for_each_ep(scope_ep, ocs::tom::get<RQRF_scope>(filter)) {
             const char *scope = ocs::tom::get<ST_name>(scope_ep);
             if (fnmatch(scope, name, 0) == 0) {
                ret = true;
@@ -696,7 +696,7 @@ scope_is_referenced_rqs(const lListElem *rqs, int nm, const char *name) {
          if (ret) {
             break;
          }
-         for_each_ep(scope_ep, static_cast<const lList *>(ocs::tom::get<RQRF_xscope>(filter))) {
+         for_each_ep(scope_ep, ocs::tom::get<RQRF_xscope>(filter)) {
             const char *scope = ocs::tom::get<ST_name>(scope_ep);
             if (fnmatch(scope, name, 0) == 0) {
                ret = true;

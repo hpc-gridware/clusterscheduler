@@ -23,6 +23,8 @@
  */
 
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "sgeobj/tom/ocs_tom_SPP.h"
+#include "sgeobj/tom/ocs_tom_VA.h"
 #include "tom/ocs_Element.h"
 #include "uti/sge_rmon_macros.h"
 
@@ -36,7 +38,7 @@ void
 ocs::QConfWriteParameter::add_item(const char *label, const std::string &text) {
    DENTER(TOP_LAYER);
 
-   lListElem *item = ocs::tom::emplace_back<VA_variable>(&items_, label != nullptr ? label : "");
+   ocs::tom::Element<ocs::tom::VA> item = ocs::tom::emplace_back<VA_variable>(&items_, label != nullptr ? label : "");
    ocs::tom::set<VA_value>(item, text.c_str());
 
    DRETURN_VOID;
@@ -99,25 +101,25 @@ ocs::QConfWriteParameter::set_bundle(const lList *bundle) {
 
    ProcedureParameter::set_bundle(bundle);
 
-   lListElem *set_param = ocs::tom::find_first_rw<SPP_name>(const_cast<lList *>(bundle), OBJECT_SET);
+   ocs::tom::Element<ocs::tom::SPP> set_param = ocs::tom::find_first_rw<SPP_name>(const_cast<lList *>(bundle), OBJECT_SET);
    if (set_param != nullptr) {
       lFreeList(&items_);
       ocs::tom::exchange<SPP_value_list>(set_param, &items_);
    }
 
-   const lListElem *mode_param = ocs::tom::find_first<SPP_name>(bundle, WRITE_MODE);
+   ocs::tom::ConstElement<ocs::tom::SPP> mode_param = ocs::tom::find_first<SPP_name>(bundle, WRITE_MODE);
    if (mode_param != nullptr) {
       mode_ = static_cast<uint32_t>(ocs::tom::get<ULNG_value>(lFirst(ocs::tom::get<SPP_value_list>(mode_param))));
    }
 
-   const lListElem *select_param = ocs::tom::find_first<SPP_name>(bundle, OBJECT_SELECT);
+   ocs::tom::ConstElement<ocs::tom::SPP> select_param = ocs::tom::find_first<SPP_name>(bundle, OBJECT_SELECT);
    if (select_param != nullptr) {
       const lListElem *value = lFirst(ocs::tom::get<SPP_value_list>(select_param));
       const char *names = (value != nullptr) ? ocs::tom::get<ST_name>(value) : nullptr;
       select_ = (names != nullptr) ? names : "";
    }
 
-   const lListElem *name_param = ocs::tom::find_first<SPP_name>(bundle, OBJECT_NAME);
+   ocs::tom::ConstElement<ocs::tom::SPP> name_param = ocs::tom::find_first<SPP_name>(bundle, OBJECT_NAME);
    if (name_param != nullptr) {
       const lListElem *value = lFirst(ocs::tom::get<SPP_value_list>(name_param));
       const char *name = (value != nullptr) ? ocs::tom::get<ST_name>(value) : nullptr;

@@ -199,7 +199,7 @@ get_attribute(const char *attrname, const lList *config_attr, const lList *actua
 
    /* resource_attr is a complex_entry (CE_Type) */
    if (config_attr != nullptr) {
-      const lListElem *temp = ocs::tom::find_first<CE_name>(config_attr, attrname);
+      ocs::tom::ConstElement<ocs::tom::CE> temp = ocs::tom::find_first<CE_name>(config_attr, attrname);
       if (temp != nullptr) {
          cplx_el = lCopyElem(ocs::tom::find_first<CE_name>(centry_list, attrname));
          if(cplx_el == nullptr) {
@@ -298,7 +298,7 @@ get_attribute(const char *attrname, const lList *config_attr, const lList *actua
                }
 #endif
                // look for 'name' in our load_adjustments list
-               const lListElem *job_load = ocs::tom::find_first<CE_name>(load_adjustments, attrname);
+               ocs::tom::ConstElement<ocs::tom::CE> job_load = ocs::tom::find_first<CE_name>(load_adjustments, attrname);
                if (job_load != nullptr) {
                   const char *s;
                   double load_correction;
@@ -1175,15 +1175,12 @@ get_attribute_by_name(const lListElem *global, const lListElem *host, const lLis
    lListElem *host_el=nullptr;
    lListElem *queue_el=nullptr;
    lListElem *ret_el = nullptr;
-   const lList *load_attr = nullptr;
-   const lList *config_attr = nullptr;
-   const lList *actual_attr = nullptr;
 
    if (global != nullptr) {
       double lc_factor = 0;
-      load_attr = ocs::tom::get<EH_load_list>(global);  
-      config_attr = ocs::tom::get<EH_consumable_config_list>(global);
-      actual_attr = ocs::tom::get<EH_resource_utilization>(global);
+      ocs::tom::ConstList<ocs::tom::HL> load_attr = ocs::tom::get<EH_load_list>(global);  
+      ocs::tom::ConstList<ocs::tom::CE> config_attr = ocs::tom::get<EH_consumable_config_list>(global);
+      ocs::tom::ConstList<ocs::tom::RUE> actual_attr = ocs::tom::get<EH_resource_utilization>(global);
 
       /* is there a multiplier for load correction (may be not in qstat, qmon etc) */
       if (ocs::tom::has<EH_load_correction_factor>(global)) {
@@ -1198,9 +1195,9 @@ get_attribute_by_name(const lListElem *global, const lListElem *host, const lLis
 
    if (host != nullptr) {   
       double lc_factor = 0;
-      load_attr = ocs::tom::get<EH_load_list>(host); 
-      config_attr = ocs::tom::get<EH_consumable_config_list>(host);
-      actual_attr = ocs::tom::get<EH_resource_utilization>(host);
+      ocs::tom::ConstList<ocs::tom::HL> load_attr = ocs::tom::get<EH_load_list>(host); 
+      ocs::tom::ConstList<ocs::tom::CE> config_attr = ocs::tom::get<EH_consumable_config_list>(host);
+      ocs::tom::ConstList<ocs::tom::RUE> actual_attr = ocs::tom::get<EH_resource_utilization>(host);
 
       /* is there a multiplier for load correction (may be not in qstat, qmon etc) */
       if (ocs::tom::has<EH_load_correction_factor>(host)) {
@@ -1223,8 +1220,8 @@ get_attribute_by_name(const lListElem *global, const lListElem *host, const lLis
    }
 
    if (queue != nullptr) {
-      config_attr = ocs::tom::get<QU_consumable_config_list>(queue);
-      actual_attr = ocs::tom::get<QU_resource_utilization>(queue);
+      ocs::tom::ConstList<ocs::tom::CE> config_attr = ocs::tom::get<QU_consumable_config_list>(queue);
+      ocs::tom::ConstList<ocs::tom::RUE> actual_attr = ocs::tom::get<QU_resource_utilization>(queue);
       
       queue_el = get_attribute(attrname, config_attr, actual_attr, nullptr, centry_list, load_adjustments,
                                queue, DOMINANT_LAYER_QUEUE, 0.0, nullptr, false, start_time, duration);

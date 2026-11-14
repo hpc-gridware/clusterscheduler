@@ -411,7 +411,7 @@ sge_finished_jobs_sweep_handler(te_event_t anEvent, monitoring_t *monitor) {
    std::vector<PruneCandidate> finished;
    lList *master_job_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB);
    for_each_rw_lv(job, master_job_list) {
-      for_each_rw_lv(ja_task, ocs::tom::get<JB_ja_tasks>(job)) {
+      for (ocs::tom::Element<ocs::tom::JAT> ja_task : ocs::tom::get<JB_ja_tasks>(job)) {
          if (ocs::tom::get<JAT_status>(ja_task) == JFINISHED) {
             finished.push_back({job, ja_task, ocs::tom::get<JAT_end_time>(ja_task)});
          }

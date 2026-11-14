@@ -29,6 +29,7 @@
 #include "cull/cull_multitype.h"
 
 #include "sgeobj/sge_str.h"
+#include "sgeobj/tom/ocs_tom_ST.h"
 #include "tom/ocs_Element.h"
 
 #include "sge_thread_utility.h"
@@ -51,7 +52,7 @@ add_active_threads(cl_raw_list_t *threads, lList *active_thread_list) {
    }
 
    // one entry per thread pool with the number of threads
-   lListElem *st_elem = ocs::tom::emplace_back<ST_name>(&active_thread_list, name);
+   ocs::tom::Element<ocs::tom::ST> st_elem = ocs::tom::emplace_back<ST_name>(&active_thread_list, name);
    ocs::tom::set<ST_id>(st_elem, nthreads);
 }
 
@@ -89,7 +90,7 @@ get_active_thread_list() {
 
    // Scheduler thread if it is running
    if (sge_scheduler_is_running()) {
-      lListElem *st_elem = ocs::tom::emplace_back<ST_name>(&active_thread_list, to_cstr(SCHEDD_THREAD));
+      ocs::tom::Element<ocs::tom::ST> st_elem = ocs::tom::emplace_back<ST_name>(&active_thread_list, to_cstr(SCHEDD_THREAD));
       ocs::tom::set<ST_id>(st_elem, 1);
    }
 

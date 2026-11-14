@@ -46,7 +46,7 @@ make_conf(const char *names[]) {
 
    ocs::tom::set<CONF_name>(conf, SGE_GLOBAL_NAME);
    for (int i = 0; names[i] != nullptr; i++) {
-      lListElem *ep = ocs::tom::emplace_back_in<CONF_entries, CF_name>(conf, names[i]);
+      ocs::tom::Element<ocs::tom::CF> ep = ocs::tom::emplace_back_in<CONF_entries, CF_name>(conf, names[i]);
       ocs::tom::set<CF_value>(ep, "value");
    }
 
@@ -59,8 +59,8 @@ make_conf(const char *names[]) {
  */
 static int
 check_conf(const char *test, lListElem *conf, const char *expected[]) {
-   const lList *entries = ocs::tom::get<CONF_entries>(conf);
-   const lListElem *ep;
+   ocs::tom::ConstList<ocs::tom::CF> entries = ocs::tom::get<CONF_entries>(conf);
+   ocs::tom::ConstElement<ocs::tom::CF> ep;
    int i = 0;
 
    for_each_ep(ep, entries) {

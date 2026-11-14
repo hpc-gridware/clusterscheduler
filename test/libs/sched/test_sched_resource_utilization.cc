@@ -46,6 +46,8 @@
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "tom/ocs_Element.h"
 #include "sgeobj/tom/ocs_tom_RDE.h"
+#include "sgeobj/tom/ocs_tom_CE.h"
+#include "sgeobj/tom/ocs_tom_RESL.h"
 
 #include "sge_resource_utilization.h"
 #include "sge_qeti.h"
@@ -357,7 +359,7 @@ make_rsmap(const char *id, uint32_t amount, ...) {
 
    va_start(ap, amount);
    while (id != nullptr) {
-      lListElem *ep = ocs::tom::emplace_back<RESL_value>(&ids, id);
+      ocs::tom::Element<ocs::tom::RESL> ep = ocs::tom::emplace_back<RESL_value>(&ids, id);
       ocs::tom::set<RESL_amount>(ep, amount);
       id = va_arg(ap, const char *);
       if (id != nullptr) {
@@ -374,7 +376,7 @@ make_rsmap(const char *id, uint32_t amount, ...) {
  */
 static uint32_t
 rsmap_at(const lListElem *rde, const char *id) {
-   const lListElem *ep = ocs::tom::find_first_in<RDE_resource_map_list, RESL_value>(rde, id);
+   ocs::tom::ConstElement<ocs::tom::RESL> ep = ocs::tom::find_first_in<RDE_resource_map_list, RESL_value>(rde, id);
    return (ep != nullptr) ? ocs::tom::get<RESL_amount>(ep) : 0;
 }
 
@@ -384,7 +386,7 @@ rsmap_at(const lListElem *rde, const char *id) {
 static const lListElem *
 rde_at_time(const lListElem *cr, uint64_t time) {
    const lListElem *hit = nullptr;
-   const lListElem *ep;
+   ocs::tom::ConstElement<ocs::tom::RDE> ep;
 
    for_each_ep (ep, ocs::tom::get<RUE_utilized>(cr)) {
       if (ocs::tom::get<RDE_time>(ep) > time) {
@@ -493,7 +495,7 @@ static int test_rsmap_utilization() {
    printf("reading back what is taken over a window\n");
    for (int i = 0; windows[i].id != nullptr; i++) {
       lList *taken = utilization_rsmap_max(cr, 1000, windows[i].start, windows[i].duration);
-      const lListElem *ep = ocs::tom::find_first<RESL_value>(taken, windows[i].id);
+      ocs::tom::ConstElement<ocs::tom::RESL> ep = ocs::tom::find_first<RESL_value>(taken, windows[i].id);
       uint32_t got = (ep != nullptr) ? ocs::tom::get<RESL_amount>(ep) : 0;
 
       if (got != windows[i].expected) {
@@ -516,7 +518,7 @@ static int test_rsmap_utilization() {
    printf("with the same instances also recorded as held right now\n");
    {
       lList *taken = utilization_rsmap_max(cr, 1000, 1000, 200);
-      const lListElem *ep = ocs::tom::find_first<RESL_value>(taken, "gpu0");
+      ocs::tom::ConstElement<ocs::tom::RESL> ep = ocs::tom::find_first<RESL_value>(taken, "gpu0");
       uint32_t got = (ep != nullptr) ? ocs::tom::get<RESL_amount>(ep) : 0;
       if (got != 2) {
          printf("   FAIL: gpu0 is held twice, in both places, expected 2 got " sge_u32 "\n", got);
@@ -526,8 +528,8 @@ static int test_rsmap_utilization() {
       }
 
       // an instance only the now list knows about still counts
-      ep = ocs::tom::find_first<RESL_value>(taken, "gpu2");
-      got = (ep != nullptr) ? ocs::tom::get<RESL_amount>(ep) : 0;
+      ocs::tom::ConstElement<ocs::tom::RESL> ep_resl = ocs::tom::find_first<RESL_value>(taken, "gpu2");
+      got = (ep_resl != nullptr) ? ocs::tom::get<RESL_amount>(ep_resl) : 0;
       if (got != 1) {
          printf("   FAIL: gpu2 is held right now, expected 1 got " sge_u32 "\n", got);
          ret++;
@@ -555,7 +557,7 @@ static int test_rsmap_utilization() {
    {
       // gpu2 is held now and nothing says it still is at 1200, so it does not count there
       lList *taken = utilization_rsmap_max(cr, 1000, 1200, 100);
-      const lListElem *ep = ocs::tom::find_first<RESL_value>(taken, "gpu2");
+      ocs::tom::ConstElement<ocs::tom::RESL> ep = ocs::tom::find_first<RESL_value>(taken, "gpu2");
       uint32_t got = (ep != nullptr) ? ocs::tom::get<RESL_amount>(ep) : 0;
       if (got != 0) {
          printf("   FAIL: gpu2 is held now but the window is later, expected 0 got "
@@ -577,7 +579,7 @@ static int test_rsmap_utilization() {
                       false, nullptr, one_of_gpu1);
 
       lList *taken = utilization_rsmap_max(global_cr, 1000, 1000, 100);
-      const lListElem *ep = ocs::tom::find_first<RESL_value>(taken, "gpu1");
+      ocs::tom::ConstElement<ocs::tom::RESL> ep = ocs::tom::find_first<RESL_value>(taken, "gpu1");
       if (ep == nullptr || ocs::tom::get<RESL_amount>(ep) != 1) {
          printf("   FAIL: a map on the global host records nothing\n");
          ret++;
@@ -627,9 +629,9 @@ make_two_cards() {
    ocs::tom::set<CE_valtype>(def, static_cast<uint32_t>(ocs::CEntry::Type::RSMAP));
 
    for (const char *id : {"gpu0", "gpu1"}) {
-      lListElem *resl = ocs::tom::emplace_back_in<CE_resource_map_list, RESL_value>(def, id);
+      ocs::tom::Element<ocs::tom::RESL> resl = ocs::tom::emplace_back_in<CE_resource_map_list, RESL_value>(def, id);
       ocs::tom::set<RESL_amount>(resl, 2);
-      lListElem *prop = ocs::tom::emplace_back_in<RESL_properties, CE_name>(resl, "rack");
+      ocs::tom::Element<ocs::tom::CE> prop = ocs::tom::emplace_back_in<RESL_properties, CE_name>(resl, "rack");
       ocs::tom::set<CE_stringval>(prop, "r1");
    }
 

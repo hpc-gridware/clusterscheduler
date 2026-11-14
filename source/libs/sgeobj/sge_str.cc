@@ -48,6 +48,7 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_str.h"
 #include "sgeobj/msg_sgeobjlib.h"
+#include "sgeobj/tom/ocs_tom_ST.h"
 #include "tom/ocs_Element.h"
 
 /// Debug layer the string list traces are written to
@@ -208,7 +209,7 @@ grp_list_array2list(int amount, ocs_grp_elem_t *grp_array) {
    lList *grp_list = nullptr;
 
    for(int i = 0; i < amount; i++) {
-      lListElem *new_grp = ocs::tom::emplace_back<ST_name>(&grp_list, grp_array[i].name);
+      ocs::tom::Element<ocs::tom::ST> new_grp = ocs::tom::emplace_back<ST_name>(&grp_list, grp_array[i].name);
 
       ocs::tom::set<ST_id>(new_grp, grp_array[i].id);
    }

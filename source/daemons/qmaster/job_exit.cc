@@ -307,8 +307,8 @@ sge_job_exit(lListElem *jr, lListElem *jep, lListElem *jatep, monitoring_t *moni
             found_host = true;
 
             for_each_ep(cqueue, *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE)) {
-               const lList *qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
-               lListElem *qinstance = ocs::tom::find_first_rw<QU_qhostname>(qinstance_list, host);
+               ocs::tom::ConstList<ocs::tom::QU> qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
+               ocs::tom::Element<ocs::tom::QU> qinstance = ocs::tom::find_first_rw<QU_qhostname>(qinstance_list, host);
 
                if (qinstance != nullptr) {
 

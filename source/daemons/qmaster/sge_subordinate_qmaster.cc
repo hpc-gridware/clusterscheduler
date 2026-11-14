@@ -59,6 +59,8 @@
 #include "sgeobj/tom/ocs_tom_JAT.h"
 #include "sgeobj/tom/ocs_tom_JG.h"
 #include "sgeobj/tom/ocs_tom_SO.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
+#include "sgeobj/tom/ocs_tom_QU.h"
 
 #include "evm/sge_event_master.h"
 #include "sge_qmod_qmaster.h"
@@ -86,13 +88,11 @@ qinstance_x_on_subordinate(lListElem *this_elem, bool suspend,
 static uint32_t
 get_slotwise_sos_threshold(const lListElem *qinstance) {
    uint32_t slots_sum = 0;
-   const lList *so_list = nullptr;
-   const lListElem *so = nullptr;
 
    if (qinstance != nullptr) {
-      so_list = ocs::tom::get<QU_subordinate_list>(qinstance);
+      ocs::tom::ConstList<ocs::tom::SO> so_list = ocs::tom::get<QU_subordinate_list>(qinstance);
       if (so_list != nullptr) {
-         so = lFirst(so_list);
+         ocs::tom::ConstElement<ocs::tom::SO> so = lFirst(so_list);
          if (so != nullptr) {
             slots_sum = ocs::tom::get<SO_slots_sum>(so);
          }
@@ -123,14 +123,12 @@ slotwise_x_on_subordinate(lListElem *qinstance_where_task_is_running, uint32_t j
    DENTER(TOP_LAYER);
 
    bool ret = false;
-   lListElem *jep = nullptr;
-   lListElem *jatep = nullptr;
    uint32_t state = 0;
    const lList *master_job_list = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
 
-   jep = ocs::tom::find_first_rw<JB_job_number>(master_job_list, job_id);
+   ocs::tom::Element<ocs::tom::JB> jep = ocs::tom::find_first_rw<JB_job_number>(master_job_list, job_id);
    if (jep != nullptr) {
-      jatep = ocs::tom::find_first_in_rw<JB_ja_tasks, JAT_task_number>(jep, task_id);
+      ocs::tom::Element<ocs::tom::JAT> jatep = ocs::tom::find_first_in_rw<JB_ja_tasks, JAT_task_number>(jep, task_id);
       if (jatep != nullptr) {
          sge_signal_queue(suspend ? SGE_SIGSTOP : SGE_SIGCONT,
                           qinstance_where_task_is_running, jep, jatep, monitor);
@@ -199,7 +197,6 @@ get_slotwise_sos_tree_root(lListElem *node_queue_instance) {
 
       for_each_rw_lv(cqueue, master_cqueue_list) {
          lListElem *qinstance;
-         lListElem *sub;
          qinstance = cqueue_locate_qinstance(cqueue, node_host_name);
 
          if (qinstance == nullptr) {
@@ -209,7 +206,7 @@ get_slotwise_sos_tree_root(lListElem *node_queue_instance) {
             continue;
          }
 
-         sub = ocs::tom::find_first_in_rw<QU_subordinate_list, SO_name>(qinstance, node_queue_name);
+         ocs::tom::Element<ocs::tom::SO> sub = ocs::tom::find_first_in_rw<QU_subordinate_list, SO_name>(qinstance, node_queue_name);
          if (sub != nullptr && ocs::tom::get<SO_slots_sum>(sub) != 0) {
             /* Our node queue is mentioned in the subordinate_list of
              * this queue. This queue is our superordinated queue,
@@ -243,7 +240,6 @@ get_slotwise_suspend_superordinate(const char *queue_name, const char *hostname)
    const lListElem *cqueue = nullptr;
    lListElem *qinstance = nullptr;
    lListElem *super_qinstance = nullptr;
-   lListElem *so = nullptr;
    const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
 
    for_each_ep(cqueue, master_cqueue_list) {
@@ -251,7 +247,7 @@ get_slotwise_suspend_superordinate(const char *queue_name, const char *hostname)
 
       if (qinstance != nullptr) {
          if (get_slotwise_sos_threshold(qinstance) > 0) {
-            so = ocs::tom::find_first_in_rw<QU_subordinate_list, SO_name>(qinstance, queue_name);
+            ocs::tom::Element<ocs::tom::SO> so = ocs::tom::find_first_in_rw<QU_subordinate_list, SO_name>(qinstance, queue_name);
             if (so != nullptr && ocs::tom::get<SO_slots_sum>(so) != 0) {
                /* the queue_name is listed in the subordinate list of this
                 * queue instance, so it's our superordinated queue instance.
@@ -617,8 +613,7 @@ x_most_extreme_task(sge_sl_list_t *slotwise_sos_tree_qinstances, bool suspend, m
 
 static void
 get_slotwise_sos_sub_tree_qinstances(lListElem *qinstance, sge_sl_list_t **tree_qinstances, uint32_t depth) {
-   const lList *so_list = nullptr;
-   const lListElem *so = nullptr;
+   ocs::tom::ConstElement<ocs::tom::SO> so = nullptr;
    lListElem *sub_qinstance = nullptr;
    const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
 
@@ -648,7 +643,7 @@ get_slotwise_sos_sub_tree_qinstances(lListElem *qinstance, sge_sl_list_t **tree_
       depth++;
    }
 
-   so_list = ocs::tom::get<QU_subordinate_list>(qinstance);
+   ocs::tom::ConstList<ocs::tom::SO> so_list = ocs::tom::get<QU_subordinate_list>(qinstance);
    for_each_ep(so, so_list) {
       const char *so_name = nullptr;
       const char *so_full_name = nullptr;
@@ -705,20 +700,17 @@ count_running_jobs_in_slotwise_sos_tree(sge_sl_list_t *qinstances_in_slotwise_so
       host_name = ocs::tom::get<QU_qhostname>(first_qinstance->qinstance);
 
       for_each_ep(job, master_job_list) {
-         const lList *task_list = nullptr;
 
-         task_list = ocs::tom::get<JB_ja_tasks>(job);
+         ocs::tom::ConstList<ocs::tom::JAT> task_list = ocs::tom::get<JB_ja_tasks>(job);
          for_each_rw_lv(task, task_list) {
             uint32_t state = 0;
-            const lListElem *task_gdi = nullptr;
-            const lList *task_gdi_list = nullptr;
             const void *iterator = nullptr;
 
-            task_gdi_list = ocs::tom::get<JAT_granted_destin_identifier_list>(task);
+            ocs::tom::ConstList<ocs::tom::JG> task_gdi_list = ocs::tom::get<JAT_granted_destin_identifier_list>(task);
             /* Get all destination identifiers of the current task that are on the
              * current host using lGetElemHostFirst()/lGetElemHostNext().
              */
-            task_gdi = ocs::tom::find_first<JG_qhostname>(task_gdi_list, host_name, &iterator);
+            ocs::tom::ConstElement<ocs::tom::JG> task_gdi = ocs::tom::find_first<JG_qhostname>(task_gdi_list, host_name, &iterator);
             while (task_gdi != nullptr) {
                const char *qinstance_name = nullptr;
                const char *task_gdi_qname = nullptr;
@@ -1036,7 +1028,7 @@ do_slotwise_subordinate_lists_differ(const lList *old_so_list, const lList *new_
    const lListElem *new_so = nullptr; /* SO_Type */
 
    for_each_ep(old_so, old_so_list) {
-      new_so = ocs::tom::find_first<SO_name>(new_so_list, ocs::tom::get<SO_name>(old_so));
+      ocs::tom::ConstElement<ocs::tom::SO> new_so = ocs::tom::find_first<SO_name>(new_so_list, ocs::tom::get<SO_name>(old_so));
       /* find all queues that are in the old list but not in the new list */
       if (new_so == nullptr) {
          ret = true;
@@ -1104,7 +1096,7 @@ cqueue_list_x_on_subordinate_gdil(const lList *master_cqueue_list, bool suspend,
       lListElem *qinstance = cqueue_list_locate_qinstance(master_cqueue_list, full_name);
 
       if (qinstance != nullptr) {
-         const lList *so_list = ocs::tom::get<QU_subordinate_list>(qinstance);
+         ocs::tom::ConstList<ocs::tom::SO> so_list = ocs::tom::get<QU_subordinate_list>(qinstance);
          lList *resolved_so_list = nullptr;
          const lListElem *so = nullptr;
          uint32_t slots = ocs::tom::get<QU_job_slots>(qinstance);
@@ -1292,7 +1284,6 @@ qinstance_find_suspended_subordinates(const lListElem *this_elem, lList **answer
 
    if (this_elem != nullptr && resolved_so_list != nullptr) {
       /* Temporary storage for subordinates */
-      const lList *so_list = nullptr;
       lListElem *so = nullptr;
       lListElem *next_so = nullptr;
       const char *hostname = nullptr;
@@ -1301,7 +1292,7 @@ qinstance_find_suspended_subordinates(const lListElem *this_elem, lList **answer
       uint32_t slots_used = 0;
 
       if (get_slotwise_sos_threshold(this_elem) == 0) {
-         so_list = ocs::tom::get<QU_subordinate_list>(this_elem);
+         ocs::tom::ConstList<ocs::tom::SO> so_list = ocs::tom::get<QU_subordinate_list>(this_elem);
          hostname = ocs::tom::get<QU_qhostname>(this_elem);
          slots = ocs::tom::get<QU_job_slots>(this_elem);
          slots_used = qinstance_slots_used(this_elem);
@@ -1358,7 +1349,7 @@ qinstance_initialize_sos_attr(lListElem *this_elem, monitoring_t *monitor, const
    hostname = ocs::tom::get<QU_qhostname>(this_elem);
 
    for_each_ep(cqueue, master_cqueue_list) {
-      const lListElem *qinstance = ocs::tom::find_first_in<CQ_qinstances, QU_qhostname>(cqueue, hostname);
+      ocs::tom::ConstElement<ocs::tom::QU> qinstance = ocs::tom::find_first_in<CQ_qinstances, QU_qhostname>(cqueue, hostname);
 
       if (qinstance != nullptr) {
          if (get_slotwise_sos_threshold(qinstance) > 0) {
@@ -1368,7 +1359,7 @@ qinstance_initialize_sos_attr(lListElem *this_elem, monitoring_t *monitor, const
             uint32_t slots_used = 0;
             const lListElem *so = nullptr;
             lList *resolved_so_list = nullptr;
-            const lList *so_list = ocs::tom::get<QU_subordinate_list>(qinstance);
+            ocs::tom::ConstList<ocs::tom::SO> so_list = ocs::tom::get<QU_subordinate_list>(qinstance);
 
             /* queue instance-wise suspend on subordinate */
             slots = ocs::tom::get<QU_job_slots>(qinstance);

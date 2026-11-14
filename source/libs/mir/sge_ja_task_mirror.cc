@@ -49,6 +49,7 @@
 #include "sgeobj/ocs_DataStore.h"
 #include "tom/ocs_Element.h"
 #include "sgeobj/tom/ocs_tom_JAT.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
 
 #include "mir/sge_mirror.h"
 #include "mir/msg_mirlib.h"
@@ -148,7 +149,6 @@ ja_task_update_master_list(sge_evc_class_t *evc, sge_object_type type,
    DENTER(TOP_LAYER);
 
    uint32_t job_id = 0;
-   lListElem *job = nullptr;
 
    uint32_t ja_task_id = 0;
    lListElem *ja_task = nullptr;
@@ -169,7 +169,7 @@ ja_task_update_master_list(sge_evc_class_t *evc, sge_object_type type,
    job_id = ocs::tom::get<ET_intkey>(event);
    ja_task_id = ocs::tom::get<ET_intkey2>(event);
 
-   job = ocs::tom::find_first_rw<JB_job_number>(*list, job_id);
+   ocs::tom::Element<ocs::tom::JB> job = ocs::tom::find_first_rw<JB_job_number>(*list, job_id);
    if (job == nullptr) {
       ERROR(MSG_JOB_CANTFINDJOBFORUPDATEIN_SS, job_get_id_string(job_id, 0, nullptr, &id_dstring), __func__);
       DRETURN(SGE_EMA_FAILURE);

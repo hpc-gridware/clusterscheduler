@@ -130,7 +130,7 @@ cqueue_verify_ckpt_list(lListElem *cqueue, lList **answer_list, lListElem *attr_
    bool ret = true;
 
    if (cqueue != nullptr && attr_elem != nullptr) {
-      const lList *ckpt_list = ocs::tom::get<ASTRLIST_value>(attr_elem);
+      ocs::tom::ConstList<ocs::tom::ST> ckpt_list = ocs::tom::get<ASTRLIST_value>(attr_elem);
 
       if (ckpt_list != nullptr) {
          if (!ckpt_list_do_all_exist(master_ckpt_list, answer_list, ckpt_list)) {
@@ -163,7 +163,7 @@ cqueue_verify_consumable_config_list(lListElem *cqueue, lList **answer_list, lLi
    }
 
    // consumable list empty, then all is fine
-   const lList *centry_list = ocs::tom::get<ACELIST_value>(attr_elem);
+   ocs::tom::ConstList<ocs::tom::CE> centry_list = ocs::tom::get<ACELIST_value>(attr_elem);
    if (centry_list == nullptr) {
       DRETURN(true);
    }
@@ -239,7 +239,7 @@ cqueue_verify_pe_list(lListElem *cqueue, lList **answer_list, lListElem *attr_el
    bool ret = true;
 
    if (cqueue != nullptr && attr_elem != nullptr) {
-      const lList *pe_list = ocs::tom::get<ASTRLIST_value>(attr_elem);
+      ocs::tom::ConstList<ocs::tom::ST> pe_list = ocs::tom::get<ASTRLIST_value>(attr_elem);
 
       if (pe_list != nullptr) {
          if (!pe_list_do_all_exist(master_pe_list, answer_list, pe_list, true)) {
@@ -338,7 +338,7 @@ cqueue_verify_project_list(lListElem *cqueue, lList **answer_list, lListElem *at
    bool ret = true;
 
    if (cqueue != nullptr && attr_elem != nullptr) {
-      const lList *project_list = ocs::tom::get<APRJLIST_value>(attr_elem);
+      ocs::tom::ConstList<ocs::tom::PR> project_list = ocs::tom::get<APRJLIST_value>(attr_elem);
 
       if (project_list != nullptr) {
          if (!prj_list_do_all_exist(master_project_list, answer_list, project_list)) {
@@ -445,9 +445,9 @@ cqueue_verify_subordinate_list(lListElem *cqueue, lList **answer_list, lListElem
 
    if (cqueue != nullptr && attr_elem != nullptr) {
       const char *cqueue_name = ocs::tom::get<CQ_name>(cqueue);
-      const lList *so_list = ocs::tom::get<ASOLIST_value>(attr_elem);
+      ocs::tom::ConstList<ocs::tom::SO> so_list = ocs::tom::get<ASOLIST_value>(attr_elem);
 
-      for_each_ep_lv(so, so_list) {
+      for (ocs::tom::ConstElement<ocs::tom::SO> so : so_list) {
          const char *so_name = ocs::tom::get<SO_name>(so);
  
          /*
@@ -499,7 +499,7 @@ cqueue_verify_user_list(lListElem *cqueue, lList **answer_list, lListElem *attr_
    bool ret = true;
 
    if (cqueue != nullptr && attr_elem != nullptr) {
-      const lList *user_list = ocs::tom::get<AUSRLIST_value>(attr_elem);
+      ocs::tom::ConstList<ocs::tom::US> user_list = ocs::tom::get<AUSRLIST_value>(attr_elem);
 
       if (user_list != nullptr) {
          if (userset_list_validate_acl_list(user_list, answer_list, master_userset_list) == STATUS_EUNKNOWN) {

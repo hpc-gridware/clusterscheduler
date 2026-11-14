@@ -54,6 +54,7 @@
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_subordinate.h"
 #include "sgeobj/msg_sgeobjlib.h"
+#include "sgeobj/tom/ocs_tom_SO.h"
 #include "tom/ocs_Element.h"
 
 #include "uti/sge.h"
@@ -209,7 +210,7 @@ bool so_list_add(lList **this_list, lList **answer_list, const char *so_name,
    DENTER(TOP_LAYER);
 
    if (this_list != nullptr && so_name != nullptr) {
-      lListElem *elem = ocs::tom::find_first_rw<SO_name>(*this_list, so_name);
+      ocs::tom::Element<ocs::tom::SO> elem = ocs::tom::find_first_rw<SO_name>(*this_list, so_name);
    
       if (elem != nullptr) {
          uint32_t current_threshold = ocs::tom::get<SO_threshold>(elem);
@@ -235,7 +236,7 @@ bool so_list_add(lList **this_list, lList **answer_list, const char *so_name,
          }
       } else {
          DPRINTF("Adding new entry with threshold: %d, slots_sum: %d, seq_no: %d\n", threshold, slots_sum, seq_no);
-         elem = ocs::tom::emplace_back<SO_name>(this_list, so_name);
+         ocs::tom::Element<ocs::tom::SO> elem = ocs::tom::emplace_back<SO_name>(this_list, so_name);
          ocs::tom::set<SO_threshold>(elem, threshold);
          ocs::tom::set<SO_slots_sum>(elem, slots_sum);
          ocs::tom::set<SO_seq_no>(elem,    seq_no);

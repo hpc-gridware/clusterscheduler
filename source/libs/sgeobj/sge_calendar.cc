@@ -755,8 +755,8 @@ static time_t compute_limit(bool today, bool active, const lList *year_time, con
    time = lFirst(day_time);
 
    { /* should only be one entry in case that the calendar is valid for whole days*/
-      const lListElem *end = lFirst(ocs::tom::get<TMR_end>(time));
-      const lListElem *begin = lFirst(ocs::tom::get<TMR_begin>(time));
+      ocs::tom::ConstElement<ocs::tom::TM> end = lFirst(ocs::tom::get<TMR_end>(time));
+      ocs::tom::ConstElement<ocs::tom::TM> begin = lFirst(ocs::tom::get<TMR_begin>(time));
 
       if ( (ocs::tom::get<TM_sec>(end) == 0)   &&
            (ocs::tom::get<TM_min>(end) == 0)   &&
@@ -787,8 +787,8 @@ static time_t compute_limit(bool today, bool active, const lList *year_time, con
             bool is_allways_inactive = true;
 
             for_each_ep(time, week_time) {
-               const lList *endList = ocs::tom::get<TMR_end>(time);
-               const lList *beginList = ocs::tom::get<TMR_begin>(time);
+               ocs::tom::ConstList<ocs::tom::TM> endList = ocs::tom::get<TMR_end>(time);
+               ocs::tom::ConstList<ocs::tom::TM> beginList = ocs::tom::get<TMR_begin>(time);
                if (is_full_day && (endList != nullptr) && (beginList != nullptr)
                    && (ocs::tom::get<TM_wday>(lFirst(endList)) - ocs::tom::get<TM_wday>(lFirst(beginList)) == 6)) {
                    is_allways_inactive &= true; /* the calendar is disabled for the whole week. */
@@ -798,7 +798,7 @@ static time_t compute_limit(bool today, bool active, const lList *year_time, con
                }
 
                if (in_range(now, time, tm_wday_cmp)) {
-                  const lListElem *end = lFirst(endList);
+                  ocs::tom::ConstElement<ocs::tom::TM> end = lFirst(endList);
                   uint32_t day;
 
                   if (end == nullptr) { /* we might only have one day specified. If so, the beginList contains the end */
@@ -1518,7 +1518,7 @@ static int daytime_range_list(lList **dtrl) {
 static void split_daytime_range(lList *dtrl, lListElem *tmr) {
    DENTER(TOP_LAYER);
 
-   const lListElem *t2, *t1, *t3, *t4;
+   const lListElem *t2, *t1, *t4;
    lListElem *tmr2;
 
    if ((t2=lFirst(ocs::tom::get<TMR_end>(tmr)))) {
@@ -1532,9 +1532,9 @@ static void split_daytime_range(lList *dtrl, lListElem *tmr) {
          ocs::tom::swap<TMR_end, TMR_end>(tmr, tmr2);
          lAppendElem(dtrl, tmr2);
 
-         t1=lFirst(ocs::tom::get<TMR_begin>(tmr));
-         t2=lFirst(ocs::tom::get<TMR_end>(tmr));
-         t3=lFirst(ocs::tom::get<TMR_begin>(tmr2));
+         ocs::tom::ConstElement<ocs::tom::TM> t1=lFirst(ocs::tom::get<TMR_begin>(tmr));
+         ocs::tom::ConstElement<ocs::tom::TM> t2=lFirst(ocs::tom::get<TMR_end>(tmr));
+         ocs::tom::ConstElement<ocs::tom::TM> t3=lFirst(ocs::tom::get<TMR_begin>(tmr2));
          t4=lFirst(ocs::tom::get<TMR_end>(tmr2));
 
          DPRINTF("splitted %d:%d:%d-%d:%d:%d into %d:%d:%d-%d:%d:%d and %d:%d:%d-%d:%d:%d\n",
@@ -1885,13 +1885,11 @@ static void join_wday_range(lList *week_day) {
    while ((day_range1 = next1) != nullptr) {
       uint32_t begin1;
       uint32_t end1;
-      const lList *beginList1;
-      const lList *endList1;
 
       next1 = lNextRW(next1);
 
-      beginList1 = ocs::tom::get<TMR_begin>(day_range1);
-      endList1 = ocs::tom::get<TMR_end>(day_range1);
+      ocs::tom::ConstList<ocs::tom::TM> beginList1 = ocs::tom::get<TMR_begin>(day_range1);
+      ocs::tom::ConstList<ocs::tom::TM> endList1 = ocs::tom::get<TMR_end>(day_range1);
 
       begin1 = ocs::tom::get<TM_wday>(lFirst(beginList1));
       if (endList1 != nullptr) {
@@ -1904,8 +1902,6 @@ static void join_wday_range(lList *week_day) {
       while((day_range2 = next2) != nullptr) {
          uint32_t begin2;
          uint32_t end2;
-         const lList *beginList2;
-         const lList *endList2;
 
          next2 = lNextRW(next2);
 
@@ -1913,8 +1909,8 @@ static void join_wday_range(lList *week_day) {
             continue;
          }
 
-         beginList2 = ocs::tom::get<TMR_begin>(day_range2);
-         endList2 = ocs::tom::get<TMR_end>(day_range2);
+         ocs::tom::ConstList<ocs::tom::TM> beginList2 = ocs::tom::get<TMR_begin>(day_range2);
+         ocs::tom::ConstList<ocs::tom::TM> endList2 = ocs::tom::get<TMR_end>(day_range2);
 
          begin2 = ocs::tom::get<TM_wday>(lFirst(beginList2));
          if (endList2 != nullptr) {
@@ -1966,12 +1962,11 @@ static void extend_wday_range(lList *week_day) {
    while ((day_range1 = next1) != nullptr) {
       uint32_t begin1;
       uint32_t end1;
-      const lList *beginList1;
       lList *endList1;
 
       next1 = lNextRW(next1);
 
-      beginList1 = ocs::tom::get<TMR_begin>(day_range1);
+      ocs::tom::ConstList<ocs::tom::TM> beginList1 = ocs::tom::get<TMR_begin>(day_range1);
       endList1 = ocs::tom::get<TMR_end>(day_range1);
 
       begin1 = ocs::tom::get<TM_wday>(lFirst(beginList1));
@@ -1986,8 +1981,6 @@ static void extend_wday_range(lList *week_day) {
       while((day_range2 = next2) != nullptr) {
          uint32_t begin2;
          uint32_t end2;
-         const lList *beginList2;
-         const lList *endList2;
 
          next2 = lNextRW(next2);
 
@@ -1995,8 +1988,8 @@ static void extend_wday_range(lList *week_day) {
             continue;
          }
 
-         beginList2 = ocs::tom::get<TMR_begin>(day_range2);
-         endList2 = ocs::tom::get<TMR_end>(day_range2);
+         ocs::tom::ConstList<ocs::tom::TM> beginList2 = ocs::tom::get<TMR_begin>(day_range2);
+         ocs::tom::ConstList<ocs::tom::TM> endList2 = ocs::tom::get<TMR_end>(day_range2);
 
          begin2 = ocs::tom::get<TM_wday>(lFirst(beginList2));
          if (endList2 != nullptr) {
@@ -2426,8 +2419,8 @@ static uint32_t calendar_get_current_state_and_end(const lListElem *cep, time_t 
    DENTER(TOP_LAYER);
 
    uint32_t new_state;
-   const lList *year_list = nullptr;
-   const lList *week_list = nullptr;
+   ocs::tom::ConstList<ocs::tom::CA> year_list = nullptr;
+   ocs::tom::ConstList<ocs::tom::CA> week_list = nullptr;
 
    DPRINTF("cal: %s\n", ocs::tom::get<CAL_name>(cep));
 
@@ -2541,8 +2534,8 @@ bool calendar_open_in_time_frame(const lListElem *cep, uint64_t start_time, uint
 
    bool ret = true;
    uint32_t state;
-   const lList *year_list = nullptr;
-   const lList *week_list = nullptr;
+   ocs::tom::ConstList<ocs::tom::CA> year_list = nullptr;
+   ocs::tom::ConstList<ocs::tom::CA> week_list = nullptr;
    time_t next_change;
    time_t start = sge_gmt64_to_time_t(start_time);
    time_t end = sge_gmt64_to_time_t(duration_add_offset(start_time, duration));

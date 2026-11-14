@@ -92,10 +92,10 @@ ocs::QQuotaController::qquota_print_out_filter(std::ostream &os, lListElem *filt
       DRETURN_VOID;
    }
    if (!ocs::tom::get<RQRF_expand>(filter) || value == nullptr) {
-      for_each_ep_lv(scope, ocs::tom::get<RQRF_scope>(filter)) {
+      for (ocs::tom::ConstElement<ocs::tom::ST> scope : ocs::tom::get<RQRF_scope>(filter)) {
          view.report_limit_string_value(os, name, ocs::tom::get<ST_name>(scope), false);
       }
-      for_each_ep_lv(scope, ocs::tom::get<RQRF_xscope>(filter)) {
+      for (ocs::tom::ConstElement<ocs::tom::ST> scope : ocs::tom::get<RQRF_xscope>(filter)) {
          view.report_limit_string_value(os, name, ocs::tom::get<ST_name>(scope), true);
       }
    } else {
@@ -166,7 +166,7 @@ void ocs::QQuotaController::process_request(QQuotaParameter &parameter, QQuotaMo
          continue;
       }
 
-      for_each_rw_lv(rule, ocs::tom::get<RQS_rule>(rqs)) {
+      for (ocs::tom::Element<ocs::tom::RQR> rule : ocs::tom::get<RQS_rule>(rqs)) {
          const lListElem *user_ep = lFirst(parameter.get_user_list());
          const lListElem *project_ep = lFirst(parameter.get_project_list());
          const lListElem *pe_ep = lFirst(parameter.get_pe_list());
@@ -199,9 +199,9 @@ void ocs::QQuotaController::process_request(QQuotaParameter &parameter, QQuotaMo
                                                  qquota_filter.queue, model.get_user_set_list(),
                                                  model.get_hgroup_list())) {
 
-                           for_each_ep_lv(limit, ocs::tom::get<RQR_limit>(rule)) {
+                           for (ocs::tom::ConstElement<ocs::tom::RQRL> limit : ocs::tom::get<RQR_limit>(rule)) {
                               const char *limit_name = ocs::tom::get<RQRL_name>(limit);
-                              const lList *rue_list = ocs::tom::get<RQRL_usage>(limit);
+                              ocs::tom::ConstList<ocs::tom::RUE> rue_list = ocs::tom::get<RQRL_usage>(limit);
                               lListElem *raw_centry = centry_list_locate(model.get_centry_list(), limit_name);
 
                               if (raw_centry == nullptr) {
@@ -228,7 +228,7 @@ void ocs::QQuotaController::process_request(QQuotaParameter &parameter, QQuotaMo
                               if (ocs::tom::get<CE_consumable>(raw_centry)) {
                                  /* for consumables we need to walk through the utilization and search for matching values */
                                  DPRINTF("found centry %s - consumable\n", limit_name);
-                                 for_each_ep_lv(rue_elem, rue_list) {
+                                 for (ocs::tom::ConstElement<ocs::tom::RUE> rue_elem : rue_list) {
                                     uint32_t dominant = 0;
                                     const char *rue_name = ocs::tom::get<RUE_name>(rue_elem);
                                     char *cp = nullptr;

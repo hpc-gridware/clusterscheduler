@@ -583,7 +583,7 @@ lList *cull_parse_job_parameter(uint32_t uid, const char *username, const char *
 
 #ifndef USE_CLIENT_QALTER
    if (!ocs::tom::get<JB_mail_list>(*pjob)) {   
-      ep = ocs::tom::emplace_back_in<JB_mail_list, MR_user>(*pjob, username);
+      ocs::tom::Element<ocs::tom::MR> ep = ocs::tom::emplace_back_in<JB_mail_list, MR_user>(*pjob, username);
       ocs::tom::set<MR_host>(ep, qualified_hostname);
    }
 #endif

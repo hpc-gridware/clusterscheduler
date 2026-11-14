@@ -557,7 +557,7 @@ static void lWriteXMLHead_(const lListElem *ep, int nesting_level, std::ostream 
 
    os << ocs::tom::get<XMLH_Version>(ep) << "\n";
 
-   for_each_ep_lv(elem, ocs::tom::get<XMLH_Stylesheet>(ep)) {
+   for (ocs::tom::ConstElement<ocs::tom::XMLS> elem : ocs::tom::get<XMLH_Stylesheet>(ep)) {
       os << "<xsl:stylesheet " << ocs::tom::get<XMLS_Name>(elem) << "=\"" << ocs::tom::get<XMLS_Value>(elem) << "\" version=\"" << ocs::tom::get<XMLS_Version>(elem) << "\">\n";
    }
 

@@ -69,6 +69,7 @@
 #include "tom/ocs_Element.h"
 #include "sgeobj/tom/ocs_tom_HR.h"
 #include "sgeobj/tom/ocs_tom_QU.h"
+#include "sgeobj/tom/ocs_tom_CQ.h"
 
 #include <cinttypes>
 #include "msg_common.h"
@@ -118,12 +119,10 @@ qref_list_resolve_cqueue_names(const lList *cq_qref_list,
       const char *cq_name = ocs::tom::get<QR_name>(cq_qref);
 
       if (resolve_cqueue) {
-         const lListElem *cqueue = nullptr;
-         const lList *qinstance_list = nullptr;
 
-         cqueue = ocs::tom::find_first<CQ_name>(cqueue_list, cq_name); 
-         qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
-         for_each_ep_lv(qinstance, qinstance_list) {
+         ocs::tom::ConstElement<ocs::tom::CQ> cqueue = ocs::tom::find_first<CQ_name>(cqueue_list, cq_name); 
+         ocs::tom::ConstList<ocs::tom::QU> qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
+         for (ocs::tom::ConstElement<ocs::tom::QU> qinstance : qinstance_list) {
             ocs::tom::emplace_back<QR_name>(qref_list, ocs::tom::get<QU_full_name>(qinstance));
             *found_something = true;
          }
@@ -147,14 +146,12 @@ qref_list_resolve_qinstance_names(const lList *cq_qref_list,
    for_each_ep_lv(cq_qref, cq_qref_list) {
       const char *cqueue_name = nullptr;
       const char *hostname_pattern = nullptr;
-      const lListElem *cqueue = nullptr;
-      const lList *qinstance_list = nullptr;
       lList *qi_ref_list = nullptr;
 
       cqueue_name = ocs::tom::get<QR_name>(cq_qref);
-      cqueue = ocs::tom::find_first<CQ_name>(cqueue_list, cqueue_name);
+      ocs::tom::ConstElement<ocs::tom::CQ> cqueue = ocs::tom::find_first<CQ_name>(cqueue_list, cqueue_name);
       hostname_pattern = sge_dstring_get_string(host_or_hgroup);
-      qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
+      ocs::tom::ConstList<ocs::tom::QU> qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
       qinstance_list_find_matching(qinstance_list, answer_list,
                                    hostname_pattern, &qi_ref_list);
 
@@ -199,11 +196,9 @@ qref_list_resolve_qdomain_names(const lList *cq_qref_list,
    }
    for_each_ep_lv(cq_qref, cq_qref_list) {
       const char *cqueue_name = ocs::tom::get<QR_name>(cq_qref);
-      const lListElem *cqueue = nullptr;
-      const lList *qinstance_list = nullptr;
 
-      cqueue = ocs::tom::find_first<CQ_name>(cqueue_list, cqueue_name);
-      qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
+      ocs::tom::ConstElement<ocs::tom::CQ> cqueue = ocs::tom::find_first<CQ_name>(cqueue_list, cqueue_name);
+      ocs::tom::ConstList<ocs::tom::QU> qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
       for_each_ep_lv(href, href_list) {
          if (resolve_qdomain) {
             const char *hostname = ocs::tom::get<HR_name>(href);
@@ -591,7 +586,7 @@ qref_hgroup_rejected(const lListElem *hgroup, const char *hostname, const lList 
       DRETURN(!hgroup_cache_contains_host(hgroup, hostname));
    }
 
-   for_each_ep_lv(href, ocs::tom::get<HGRP_host_list>(hgroup)) {
+   for (ocs::tom::ConstElement<ocs::tom::HR> href : ocs::tom::get<HGRP_host_list>(hgroup)) {
       const char *member = ocs::tom::get<HR_name>(href);
 
       if (ocs::is_hgroup_name(member)) {

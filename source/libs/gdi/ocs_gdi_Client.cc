@@ -49,6 +49,7 @@
 #include "sgeobj/cull/sge_permission_PERM_L.h"
 
 #include "cull/cull.h"
+#include "sgeobj/tom/ocs_tom_ID.h"
 #include "tom/ocs_Element.h"
 
 #include "ocs_gdi_Client.h"
@@ -187,7 +188,7 @@ lList *ocs::gdi::Client::gdi_kill(lList *id_list, uint32_t action_flag) {
          ** It would be better to change the call to use ID_Type!
          */
          for_each_ep_lv(hep, id_list) {
-            hlep = ocs::tom::emplace_back<ID_str>(&hlp, ocs::tom::get<EH_name>(hep));
+            ocs::tom::Element<ocs::tom::ID> hlep = ocs::tom::emplace_back<ID_str>(&hlp, ocs::tom::get<EH_name>(hep));
             ocs::tom::set<ID_force>(hlep, (action_flag & JOB_KILL) ? 1 : 0);
          }
       } else {

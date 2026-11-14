@@ -167,7 +167,7 @@ void ocs::QStatJobViewBase::show_job(std::ostream &os, const lList *ilp, const l
    if (ocs::tom::has<JB_ja_tasks>(job)) {
       // the tasks in the order of their numbers; the job is the caller's and is not sorted itself
       std::vector<const lListElem *> ja_tasks;
-      for_each_ep_lv(ja_task, ocs::tom::get<JB_ja_tasks>(job)) {
+      for (ocs::tom::ConstElement<ocs::tom::JAT> ja_task : ocs::tom::get<JB_ja_tasks>(job)) {
          ja_tasks.push_back(ja_task);
       }
       std::ranges::sort(ja_tasks, {}, [](const lListElem *ja_task) { return ocs::tom::get<JAT_task_number>(ja_task); });
@@ -221,7 +221,7 @@ uint32_t ocs::QStatJobViewBase::count_pending_tasks(const lListElem *job) {
    }
 
    if (ocs::tom::has<JB_ja_tasks>(job)) {
-      for_each_ep_lv(ja_task, ocs::tom::get<JB_ja_tasks>(job)) {
+      for (ocs::tom::ConstElement<ocs::tom::JAT> ja_task : ocs::tom::get<JB_ja_tasks>(job)) {
          if (ocs::tom::get<JAT_status>(ja_task) == JIDLE && !ISSET(ocs::tom::get<JAT_state>(ja_task), JERROR)) {
             pending++;
          }
@@ -242,7 +242,7 @@ void ocs::QStatJobViewBase::accumulate_usage(const lListElem *task, Usage &usage
    /* display online job usage separately for each array job but summarized over all pe_tasks */
    // adds one value of a scaled usage list to a total; an attribute the list does not hold adds nothing
    const auto sum_up = [](const lList *usage_list, double &dst, const char *attr) {
-      if (const lListElem *uep = ocs::tom::find_first<UA_name>(usage_list, attr)) {
+      if (ocs::tom::ConstElement<ocs::tom::UA> uep = ocs::tom::find_first<UA_name>(usage_list, attr)) {
          dst += ocs::tom::get<UA_value>(uep);
       }
    };
@@ -267,7 +267,7 @@ void ocs::QStatJobViewBase::accumulate_usage(const lListElem *task, Usage &usage
    }
 
    /* slave tasks */
-   for_each_ep_lv(pe_task_ep, ocs::tom::get<JAT_task_list>(task)) {
+   for (ocs::tom::ConstElement<ocs::tom::PET> pe_task_ep : ocs::tom::get<JAT_task_list>(task)) {
       // we do not sum up wallclock usage per pe task; a PE task keeps its usage in its own list
       const lList *pe_task_usage = ocs::tom::get<PET_scaled_usage>(pe_task_ep);
       sum_up(pe_task_usage, usage.cpu, USAGE_ATTR_CPU);

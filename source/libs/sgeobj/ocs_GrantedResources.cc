@@ -51,6 +51,7 @@
 #include "sge_str.h"
 #include "tom/ocs_Element.h"
 #include "sgeobj/tom/ocs_tom_ST.h"
+#include "sgeobj/tom/ocs_tom_GRU.h"
 
 /** @brief Convert granted resources to a comma-separated string
  *
@@ -76,8 +77,8 @@ ocs::GrantedResources::to_string(const lList *granted_resources) {
       next = ocs::tom::find_next<GRU_name>(granted_resources, SGE_ATTR_SLOTS, &iterator);
 
       const char *hostname = ocs::tom::get<GRU_host>(curr);
-      const lList *binding_in_use_list = ocs::tom::get<GRU_binding_inuse>(curr);
-      for_each_ep_lv(binding_in_use, binding_in_use_list) {
+      ocs::tom::ConstList<ocs::tom::ST> binding_in_use_list = ocs::tom::get<GRU_binding_inuse>(curr);
+      for (ocs::tom::ConstElement<ocs::tom::ST> binding_in_use : binding_in_use_list) {
          TopologyString topo_in_use(ocs::tom::get<ST_name>(binding_in_use));
          ss << (add_separator ? "," : "") << hostname << "=" << topo_in_use.to_product_topology_string();
          add_separator = true;
@@ -100,7 +101,7 @@ ocs::GrantedResources::add_binding_to_use(lList **granted_resources_list, const 
       DRETURN_VOID;
    }
 
-   lListElem *gru = ocs::tom::emplace_back<GRU_name>(granted_resources_list, SGE_ATTR_SLOTS);
+   ocs::tom::Element<ocs::tom::GRU> gru = ocs::tom::emplace_back<GRU_name>(granted_resources_list, SGE_ATTR_SLOTS);
    ocs::tom::set<GRU_host>(gru, host_name);
    ocs::tom::set<GRU_type>(gru, static_cast<lUlong>(Type::GRU_BINDING_TYPE));
    ocs::tom::set<GRU_binding_inuse>(gru, lCopyList("binding_to_use", binding_touse_list));
@@ -135,8 +136,8 @@ ocs::GrantedResources::get_combined_binding_for_host(const lList *gr_list, const
          continue; // we are only interested in binding resources
       }
 
-      const lList *binding_list = ocs::tom::get<GRU_binding_inuse>(gr);
-      for_each_ep_lv(be, binding_list) {
+      ocs::tom::ConstList<ocs::tom::ST> binding_list = ocs::tom::get<GRU_binding_inuse>(gr);
+      for (ocs::tom::ConstElement<ocs::tom::ST> be : binding_list) {
          if (binding_to_use.is_empty()) {
             binding_to_use.reset_topology(ocs::tom::get<ST_name>(be));
          } else {

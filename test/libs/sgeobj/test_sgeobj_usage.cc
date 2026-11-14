@@ -105,7 +105,7 @@ static int s_fail = 0;
 static lList *
 make_usage_list(const char *list_name, const char *attr, double value) {
    lList *l = lCreateList(list_name, UA_Type);
-   lListElem *e = ocs::tom::emplace_back<UA_name>(&l, attr);
+   ocs::tom::Element<ocs::tom::UA> e = ocs::tom::emplace_back<UA_name>(&l, attr);
    ocs::tom::set<UA_value>(e, value);
    return l;
 }
@@ -153,7 +153,7 @@ get_usage_value(const lListElem *parent, int list_field, const char *attr) {
    if (l == nullptr) {
       return -1.0;
    }
-   const lListElem *e = ocs::tom::find_first<UA_name>(l, attr);
+   ocs::tom::ConstElement<ocs::tom::UA> e = ocs::tom::find_first<UA_name>(l, attr);
    if (e == nullptr) {
       return -1.0;
    }
@@ -187,7 +187,7 @@ test_sum_usage_user_only(int *id) {
 
    /* Debited-job entry for the finished job should be present so the
     * worker thread's drop_debited_job step has something to remove. */
-   const lList *debited = ocs::tom::get<UU_debited_job_usage>(user);
+   ocs::tom::ConstList<ocs::tom::UPU> debited = ocs::tom::get<UU_debited_job_usage>(user);
    const lListElem *upu = (debited != nullptr) ?
                           static_cast<const lListElem *>(ocs::tom::find_first<UPU_job_number>(debited, 1)) : nullptr;
    CHECK((*id)++, "UU_debited_job_usage contains job 1", upu != nullptr);
@@ -219,7 +219,7 @@ test_sum_usage_user_and_project(int *id) {
 
    /* CS-1239 sharetree routing: project-bound finish populates
     * UU_project[p1].UPP_usage, NOT UU_usage. */
-   const lList *upp_list = ocs::tom::get<UU_project>(user);
+   ocs::tom::ConstList<ocs::tom::UPP> upp_list = ocs::tom::get<UU_project>(user);
    const lListElem *upp = (upp_list != nullptr) ?
                           static_cast<const lListElem *>(ocs::tom::find_first<UPP_name>(upp_list, "p1")) : nullptr;
    CHECK((*id)++, "UU_project[p1] entry created", upp != nullptr);
@@ -235,7 +235,7 @@ test_sum_usage_user_and_project(int *id) {
 
    /* Debited entry recorded on the user object (sum_usage routes debited
     * to UU_ when user is non-null). */
-   const lList *debited = ocs::tom::get<UU_debited_job_usage>(user);
+   ocs::tom::ConstList<ocs::tom::UPU> debited = ocs::tom::get<UU_debited_job_usage>(user);
    const lListElem *upu = (debited != nullptr) ?
                           static_cast<const lListElem *>(ocs::tom::find_first<UPU_job_number>(debited, 2)) : nullptr;
    CHECK((*id)++, "UU_debited_job_usage contains job 2", upu != nullptr);

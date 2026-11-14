@@ -219,7 +219,7 @@ select4suspension(lList *job_list, lListElem *qep, lListElem **jepp,
    for_each_rw_lv (jep, job_list) {
 
       /* job running */ 
-      for_each_rw_lv (ja_task, ocs::tom::get<JB_ja_tasks>(jep)) {
+      for (ocs::tom::Element<ocs::tom::JAT> ja_task : ocs::tom::get<JB_ja_tasks>(jep)) {
          jstate = ocs::tom::get<JAT_state>(ja_task);
          if (!(jstate & JRUNNING) || 
              (jstate & JSUSPENDED) || (jstate & JSUSPENDED_ON_THRESHOLD)) {
@@ -266,7 +266,7 @@ lListElem **ja_taskp
 
    const char *qnm = ocs::tom::get<QU_full_name>(qep);
    for_each_rw_lv (jep, job_list) {
-      for_each_rw_lv (ja_task, ocs::tom::get<JB_ja_tasks>(jep)) {
+      for (ocs::tom::Element<ocs::tom::JAT> ja_task : ocs::tom::get<JB_ja_tasks>(jep)) {
          /* job must be suspended */ 
          jstate = ocs::tom::get<JAT_state>(ja_task);
          if (!(jstate & JSUSPENDED_ON_THRESHOLD)) {

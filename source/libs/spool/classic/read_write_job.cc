@@ -126,7 +126,7 @@ static lListElem *job_create_from_file(uint32_t job_id, uint32_t ja_task_id,
       if (job) {
          ja_tasks = ja_task_list_create_from_file(job_id, ja_task_id, flags); 
          if (ja_tasks) {
-            lList *ja_task_list = ocs::tom::get<JB_ja_tasks>(job);
+            ocs::tom::List<ocs::tom::JAT> ja_task_list = ocs::tom::get<JB_ja_tasks>(job);
             if (ja_task_list) {
                lAddList(ja_task_list, &ja_tasks);
             } else {
@@ -474,7 +474,7 @@ static int ja_task_write_to_disk(lListElem *ja_task, uint32_t job_id,
       lListElem *pe_task = nullptr;
       lListElem *next_pe_task = nullptr;
       uint32_t ja_task_id = ocs::tom::get<JAT_task_number>(ja_task);
-      const lList *pe_task_list = ocs::tom::get<JAT_task_list>(ja_task);
+      ocs::tom::ConstList<ocs::tom::PET> pe_task_list = ocs::tom::get<JAT_task_list>(ja_task);
 
       sge_get_file_path(task_spool_dir, sizeof(task_spool_dir), TASK_SPOOL_DIR, FORMAT_DEFAULT, flags, job_id, ja_task_id, nullptr);
       sge_get_file_path(task_spool_file, sizeof(task_spool_file), TASK_SPOOL_FILE, FORMAT_DEFAULT, flags, job_id, ja_task_id, nullptr);
@@ -833,7 +833,7 @@ int job_list_read_from_disk(lList **job_list, const char *list_name, int check,
 
             /* check for scriptfile before adding job */
             all_finished = 1;
-            for_each_ep_lv(ja_task, ocs::tom::get<JB_ja_tasks>(job)) {
+            for (ocs::tom::ConstElement<ocs::tom::JAT> ja_task : ocs::tom::get<JB_ja_tasks>(job)) {
                if (ocs::tom::get<JAT_status>(ja_task) != JFINISHED) {
                   all_finished = 0;
                   break;

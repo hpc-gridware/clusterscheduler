@@ -177,13 +177,13 @@ reporting_get_ulong_usage_sum(const lList *usage_list, lList *reported_list, boo
 
    /* when we do an accounting summary, we also have to sum up the pe task usage */
    if (accounting_summary) {
-      const lList *pe_tasks = ocs::tom::get<JAT_task_list>(ja_task);
+      ocs::tom::ConstList<ocs::tom::PET> pe_tasks = ocs::tom::get<JAT_task_list>(ja_task);
 
       for_each_rw_lv (pe_task, pe_tasks) {
-         const lList *pe_usage_list = ocs::tom::get<PET_scaled_usage>(pe_task);
+         ocs::tom::ConstList<ocs::tom::UA> pe_usage_list = ocs::tom::get<PET_scaled_usage>(pe_task);
 
          if (pe_usage_list != nullptr) {
-            lList *pe_reported_list = nullptr;
+            ocs::tom::List<ocs::tom::UA> pe_reported_list = nullptr;
             if (reported_list != nullptr) {
                pe_reported_list = ocs::tom::get_or_create<PET_reported_usage>(pe_task, "reported_usage");
             }
@@ -284,13 +284,13 @@ reporting_get_double_usage_sum(const lList *usage_list, lList *reported_list, bo
 
    /* when we do an accounting summary, we also have to sum up the pe task usage */
    if (accounting_summary) {
-      const lList *pe_tasks = ocs::tom::get<JAT_task_list>(ja_task);
+      ocs::tom::ConstList<ocs::tom::PET> pe_tasks = ocs::tom::get<JAT_task_list>(ja_task);
 
       for_each_rw_lv (pe_task, pe_tasks) {
-         const lList *pe_usage_list = ocs::tom::get<PET_scaled_usage>(pe_task);
+         ocs::tom::ConstList<ocs::tom::UA> pe_usage_list = ocs::tom::get<PET_scaled_usage>(pe_task);
 
          if (pe_usage_list != nullptr) {
-            lList *pe_reported_list = nullptr;
+            ocs::tom::List<ocs::tom::UA> pe_reported_list = nullptr;
             if (reported_list != nullptr) {
                pe_reported_list = ocs::tom::get_or_create<PET_reported_usage>(pe_task, "reported_usage");
             }
@@ -347,11 +347,11 @@ sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *wr
                  bool intermediate, bool is_reporting) {
    DENTER(TOP_LAYER);
 
-   const lList *usage_list = nullptr; /* usage list of ja_task or pe_task */
-   lList *reported_list = nullptr; /* already reported usage of ja_task or pe_task */
+   ocs::tom::ConstList<ocs::tom::UA> usage_list = nullptr; /* usage list of ja_task or pe_task */
+   ocs::tom::List<ocs::tom::UA> reported_list = nullptr; /* already reported usage of ja_task or pe_task */
    char *qname = nullptr;
    char *hostname = nullptr;
-   lListElem *pe_task = nullptr;
+   ocs::tom::Element<ocs::tom::PET> pe_task = nullptr;
    uint64_t submission_time = 0;
    uint64_t start_time = 0;
    uint64_t end_time = 0;
@@ -746,7 +746,7 @@ sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *wr
             writer->Key(pattern_name.c_str());
             writer->StartObject();
 
-            for_each_ep_lv(ep, usage_list) {
+            for (ocs::tom::ConstElement<ocs::tom::UA> ep : usage_list) {
                const char *name = ocs::tom::get<UA_name>(ep);
                if (sge_eval_expression(ocs::CEntry::Type::STR, pattern.c_str(), name, nullptr, true, pattern_is_expression) == 0) {
                   // CS-849: branch on presence of UA_svalue. String custom

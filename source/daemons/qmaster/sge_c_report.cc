@@ -53,6 +53,7 @@
 #include "sgeobj/sge_host.h"
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_answer.h"
+#include "sgeobj/tom/ocs_tom_CE.h"
 #include "tom/ocs_Element.h"
 
 #include "gdi/ocs_gdi_ClientServerBase.h"
@@ -175,10 +176,9 @@ sge_c_report(ocs::gdi::Packet *packet, ocs::gdi::Task *task, char *rhost, char *
 
                if (mconf_get_simulate_execds()) {
                   const lList *master_exechost_list = *ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST);
-                  const lListElem *simhostElem = nullptr;
 
                   for_each_ep_lv(shep, master_exechost_list) {
-                     simhostElem = ocs::tom::find_first_in<EH_consumable_config_list, CE_name>(shep, "load_report_host");
+                     ocs::tom::ConstElement<ocs::tom::CE> simhostElem = ocs::tom::find_first_in<EH_consumable_config_list, CE_name>(shep, "load_report_host");
                      if (simhostElem != nullptr) {
                         const char *real_host = ocs::tom::get<CE_stringval>(simhostElem);
                         if (real_host != nullptr && sge_hostcmp(real_host, rhost) == 0) {
@@ -309,9 +309,9 @@ update_license_data(lListElem *hep, lList *lp_lic, uint64_t gdi_session) {
       // adapt slots value but do this only if it was not set by a manager already
       host_ensure_slots_are_defined(hep, processors);
 
-      lListElem *slots_complex = ocs::tom::find_first_in_rw<EH_consumable_config_list, CE_name>(hep, SGE_ATTR_SLOTS);
+      ocs::tom::Element<ocs::tom::CE> slots_complex = ocs::tom::find_first_in_rw<EH_consumable_config_list, CE_name>(hep, SGE_ATTR_SLOTS);
       if (slots_complex == nullptr) {
-         slots_complex = ocs::tom::emplace_back_in<EH_consumable_config_list, CE_name>(hep, SGE_ATTR_SLOTS);
+         ocs::tom::Element<ocs::tom::CE> slots_complex = ocs::tom::emplace_back_in<EH_consumable_config_list, CE_name>(hep, SGE_ATTR_SLOTS);
          ocs::tom::set<CE_doubleval>(slots_complex, processors);
          ocs::tom::set<CE_stringval>(slots_complex, std::to_string(processors).c_str());
       } else {

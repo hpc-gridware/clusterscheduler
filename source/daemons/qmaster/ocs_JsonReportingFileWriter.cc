@@ -45,6 +45,7 @@
 #include "sgeobj/tom/ocs_tom_RUE.h"
 #include "sgeobj/tom/ocs_tom_STU.h"
 #include "sgeobj/tom/ocs_tom_UA.h"
+#include "sgeobj/tom/ocs_tom_CT.h"
 
 #include "uti/sge_lock.h"
 #include "uti/sge_log.h"
@@ -66,7 +67,7 @@ namespace ocs {
       // get the job category string
       const lList *master_category_list = *ocs::DataStore::get_master_list(SGE_TYPE_CATEGORY);
       uint32_t category_id = ocs::tom::get<JB_category_id>(job);
-      lListElem *category = ocs::tom::find_first_rw<CT_id>(master_category_list, category_id);
+      ocs::tom::Element<ocs::tom::CT> category = ocs::tom::find_first_rw<CT_id>(master_category_list, category_id);
       const char *category_string = ocs::tom::get<CT_str>(category);
 
       // get accounting data
@@ -163,8 +164,8 @@ namespace ocs {
             break;
          }
          if (aggregate) {
-            const lListElem *pe_task_iter;
-            for_each_ep(pe_task_iter, static_cast<const lList *>(ocs::tom::get<JAT_task_list>(ja_task))) {
+            ocs::tom::ConstElement<ocs::tom::PET> pe_task_iter;
+            for_each_ep(pe_task_iter, ocs::tom::get<JAT_task_list>(ja_task)) {
                if (static_cast<const lListElem *>(ocs::tom::find_first_in<PET_scaled_usage, UA_name>(pe_task_iter, name.c_str())) != nullptr) {
                   any_data = true;
                   break;
@@ -199,16 +200,16 @@ namespace ocs {
          double total = 0.0;
          bool found_any = false;
 
-         const lListElem *u = ocs::tom::find_first<UA_name>(primary_usage, name.c_str());
+         ocs::tom::ConstElement<ocs::tom::UA> u = ocs::tom::find_first<UA_name>(primary_usage, name.c_str());
          if (u != nullptr) {
             total = ocs::tom::get<UA_value>(u);
             found_any = true;
          }
 
          if (aggregate) {
-            const lListElem *pe_task_iter;
-            for_each_ep(pe_task_iter, static_cast<const lList *>(ocs::tom::get<JAT_task_list>(ja_task))) {
-               const lListElem *pu = ocs::tom::find_first_in<PET_scaled_usage, UA_name>(pe_task_iter, name.c_str());
+            ocs::tom::ConstElement<ocs::tom::PET> pe_task_iter;
+            for_each_ep(pe_task_iter, ocs::tom::get<JAT_task_list>(ja_task)) {
+               ocs::tom::ConstElement<ocs::tom::UA> pu = ocs::tom::find_first_in<PET_scaled_usage, UA_name>(pe_task_iter, name.c_str());
                if (pu != nullptr) {
                   total += ocs::tom::get<UA_value>(pu);
                   found_any = true;
@@ -554,7 +555,7 @@ namespace ocs {
 
          writer.Key("ar_granted_resources");
          writer.StartObject();
-         for_each_ep_lv(ep, ocs::tom::get<AR_resource_list>(ar)) {
+         for (ocs::tom::ConstElement<ocs::tom::CE> ep : ocs::tom::get<AR_resource_list>(ar)) {
             write_json(writer, ocs::tom::get<CE_name>(ep), ocs::tom::get<CE_stringval>(ep));
          }
          writer.EndObject();
@@ -609,7 +610,7 @@ namespace ocs {
       if (ar == nullptr) {
          ret = false;
       } else {
-         for_each_ep_lv(ep, ocs::tom::get<AR_granted_slots>(ar)) {
+         for (ocs::tom::ConstElement<ocs::tom::JG> ep : ocs::tom::get<AR_granted_slots>(ar)) {
             const char *qinstance_name = ocs::tom::get<JG_qname>(ep);
             uint32_t slots = ocs::tom::get<JG_slots>(ep);
             DSTRING_STATIC(dstr_cqueue, MAX_STRING_SIZE);
@@ -722,10 +723,9 @@ namespace ocs {
 
          for_each_ep_lv (variable, variables) {
             const char *name;
-            const lListElem *load;
 
             name = ocs::tom::get<STU_name>(variable);
-            load = ocs::tom::find_first<HL_name>(load_list, name);
+            ocs::tom::ConstElement<ocs::tom::HL> load = ocs::tom::find_first<HL_name>(load_list, name);
             if (load != nullptr) {
                write_json(writer, name, ocs::tom::get<HL_value>(load));
             }
@@ -753,7 +753,7 @@ namespace ocs {
 
       bool consumables_initialized = false;
 
-      const lList *report_variables = ocs::tom::get<EH_merged_report_variables>(host);
+      ocs::tom::ConstList<ocs::tom::STU> report_variables = ocs::tom::get<EH_merged_report_variables>(host);
       for_each_ep_lv(cep, actual) {
          const char *name = ocs::tom::get<RUE_name>(cep);
          bool log_variable = true;

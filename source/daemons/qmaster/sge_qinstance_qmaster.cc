@@ -899,7 +899,7 @@ qinstance_change_state_on_calendar_all(const char *cal_name, uint32_t cal_order,
    bool ret = true;
 
    for_each_ep_lv(cqueue, *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE)) {
-      const lList *qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
+      ocs::tom::ConstList<ocs::tom::QU> qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
 
       for_each_rw_lv(qinstance, qinstance_list) {
          const char *queue_calendar = ocs::tom::get<QU_calendar>(qinstance);
@@ -1235,10 +1235,10 @@ qinstance_reinit_consumable_actual_list(lListElem *this_elem,
       qinstance_debit_consumable(this_elem, nullptr, nullptr, centry_list, 0, true, true, nullptr);
 
       for_each_rw_lv(ep, job_list) {
-         const lList *ja_task_list = ocs::tom::get<JB_ja_tasks>(ep);
+         ocs::tom::ConstList<ocs::tom::JAT> ja_task_list = ocs::tom::get<JB_ja_tasks>(ep);
 
-         for_each_ep_lv(ja_task, ja_task_list) {
-            const lList *gdil = ocs::tom::get<JAT_granted_destin_identifier_list>(ja_task);
+         for (ocs::tom::ConstElement<ocs::tom::JAT> ja_task : ja_task_list) {
+            ocs::tom::ConstList<ocs::tom::JG> gdil = ocs::tom::get<JAT_granted_destin_identifier_list>(ja_task);
             const lListElem *gdil_ep = ocs::tom::find_first<JG_qname>(gdil, name);
             const lListElem *pe = ocs::tom::get<JAT_pe_object>(ja_task);
 
@@ -1265,7 +1265,7 @@ qinstance_reinit_consumable_actual_list(lListElem *this_elem,
          }
       }
       for_each_rw_lv(ep, ar_list) {
-         const lList *gdil = ocs::tom::get<AR_granted_slots>(ep);
+         ocs::tom::ConstList<ocs::tom::JG> gdil = ocs::tom::get<AR_granted_slots>(ep);
          const lListElem *gdil_ep = ocs::tom::find_first<JG_qname>(gdil, name);
 
          if (gdil_ep != nullptr) {

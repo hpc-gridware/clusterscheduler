@@ -55,6 +55,7 @@
 #include "gdi/msg_gdilib.h"
 
 #include "sgeobj/sge_pe_task.h"
+#include "sgeobj/tom/ocs_tom_RT.h"
 #include "tom/ocs_Element.h"
 
 #include "msg_common.h"
@@ -111,7 +112,6 @@ sge_qexecve(const char *hostname, const char *queuename, const char *cwd, const 
    const char *s;
    int ret;
    lListElem *petrep;
-   lListElem *rt;
    sge_pack_buffer pb;
    uint32_t jobid, jataskid;
    uint32_t dummymid = 0;
@@ -237,7 +237,7 @@ sge_qexecve(const char *hostname, const char *queuename, const char *cwd, const 
    }
 
    /* add list into our remote task list */
-   rt = ocs::tom::emplace_back<RT_tid>(&remote_task_list, "none");
+   ocs::tom::Element<ocs::tom::RT> rt = ocs::tom::emplace_back<RT_tid>(&remote_task_list, "none");
    ocs::tom::set<RT_hostname>(rt, hostname);
    ocs::tom::set<RT_state>(rt, RT_STATE_WAIT4ACK);
 
@@ -273,7 +273,7 @@ sge_qexecve(const char *hostname, const char *queuename, const char *cwd, const 
 int sge_qwaittid(sge_tid_t tid, int *status, int options) {
    DENTER(TOP_LAYER);
 
-   lListElem *rt = nullptr;
+   ocs::tom::Element<ocs::tom::RT> rt = nullptr;
    int ret, rcv_opt = 0;
 
    if (!(options & WNOHANG))
@@ -322,7 +322,7 @@ static int rcv_from_execd(int options, ocs::gdi::ClientServerBase::ClientServerB
    u_short from_id;
    char host[1024];
 
-   lListElem *rt_rcv;
+   ocs::tom::Element<ocs::tom::RT> rt_rcv;
    uint32_t exit_status = 0;
    sge_tid_t tid = nullptr;
 

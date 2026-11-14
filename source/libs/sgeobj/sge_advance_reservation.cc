@@ -235,7 +235,7 @@ bool ar_validate(lListElem *ar, lList **alpp, bool in_master, bool is_spool, con
       ocs_null_out_none<AR_pe>(ar);
       {
          const char *pe_name = nullptr;
-         lList *pe_range = nullptr;
+         ocs::tom::List<ocs::tom::RN> pe_range = nullptr;
          
          pe_name = ocs::tom::get<AR_pe>(ar);
          if (pe_name) {
@@ -286,7 +286,7 @@ bool ar_validate(lListElem *ar, lList **alpp, bool in_master, bool is_spool, con
       if (is_spool) {
          dstring cqueue_buffer = DSTRING_INIT;
          dstring hostname_buffer = DSTRING_INIT;
-         for_each_rw_lv(jg, ocs::tom::get<AR_granted_slots>(ar)){
+         for (ocs::tom::Element<ocs::tom::JG> jg : ocs::tom::get<AR_granted_slots>(ar)){
             const char *hostname = nullptr;
             const char *qname = ocs::tom::get<JG_qname>(jg);
             bool has_hostname = false;

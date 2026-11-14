@@ -30,6 +30,7 @@
 #include "ocs_QConfParameter.h"
 
 #include "sgeobj/cull/sge_param_SPP_L.h"
+#include "sgeobj/tom/ocs_tom_SPP.h"
 #include "tom/ocs_Element.h"
 
 /**
@@ -139,7 +140,7 @@ ocs::QConfParameter::set_bundle(const lList *bundle) {
 
    operation_ = qconf_op{};
 
-   const lListElem *operation_param = ocs::tom::find_first<SPP_name>(bundle, OPERATION);
+   ocs::tom::ConstElement<ocs::tom::SPP> operation_param = ocs::tom::find_first<SPP_name>(bundle, OPERATION);
    if (operation_param != nullptr) {
       const lListElem *token = lFirst(ocs::tom::get<SPP_value_list>(operation_param));
       if (token != nullptr) {
@@ -147,7 +148,7 @@ ocs::QConfParameter::set_bundle(const lList *bundle) {
       }
    }
 
-   const lListElem *args_param = ocs::tom::find_first<SPP_name>(bundle, OPERATION_ARGS);
+   ocs::tom::ConstElement<ocs::tom::SPP> args_param = ocs::tom::find_first<SPP_name>(bundle, OPERATION_ARGS);
    if (args_param != nullptr) {
       const lListElem *arg;
       for_each_ep(arg, ocs::tom::get<SPP_value_list>(args_param)) {
@@ -157,7 +158,7 @@ ocs::QConfParameter::set_bundle(const lList *bundle) {
       }
    }
 
-   const lListElem *flags_param = ocs::tom::find_first<SPP_name>(bundle, INVOCATION_FLAGS);
+   ocs::tom::ConstElement<ocs::tom::SPP> flags_param = ocs::tom::find_first<SPP_name>(bundle, INVOCATION_FLAGS);
    if (flags_param != nullptr) {
       const lListElem *value = lFirst(ocs::tom::get<SPP_value_list>(flags_param));
       if (value != nullptr) {
@@ -173,7 +174,7 @@ ocs::QConfParameter::set_bundle(const lList *bundle) {
       }
    }
 
-   const lListElem *value_format_param = ocs::tom::find_first<SPP_name>(bundle, VALUE_FORMAT);
+   ocs::tom::ConstElement<ocs::tom::SPP> value_format_param = ocs::tom::find_first<SPP_name>(bundle, VALUE_FORMAT);
    if (value_format_param != nullptr) {
       const lListElem *value = lFirst(ocs::tom::get<SPP_value_list>(value_format_param));
       if (value != nullptr) {

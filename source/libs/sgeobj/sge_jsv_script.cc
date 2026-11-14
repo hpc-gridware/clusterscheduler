@@ -498,7 +498,7 @@ jsv_handle_param_command(lListElem *jsv, lList **answer_list, const dstring *c, 
       /* -display */
       {
          if (ret && strcmp("display", param) == 0) {
-            lList *env_list = ocs::tom::get<JB_env_list>(new_job);
+            ocs::tom::List<ocs::tom::VA> env_list = ocs::tom::get<JB_env_list>(new_job);
             lListElem *display = ocs::tom::find_first_rw<VA_variable>(env_list, "DISPLAY"); 
 
             if (value != nullptr) {
@@ -856,8 +856,8 @@ jsv_handle_param_command(lListElem *jsv, lList **answer_list, const dstring *c, 
             }
          }
          if (ret) {
-            const lList *range_list = ocs::tom::get<JB_pe_range>(new_job);
-            lListElem *range = lFirstRW(range_list);
+            ocs::tom::ConstList<ocs::tom::RN> range_list = ocs::tom::get<JB_pe_range>(new_job);
+            ocs::tom::Element<ocs::tom::RN> range = lFirstRW(range_list);
 
             if (range == nullptr) {
                range = ocs::tom::emplace_back_in<JB_pe_range, RN_min>(new_job, min);
@@ -877,8 +877,8 @@ jsv_handle_param_command(lListElem *jsv, lList **answer_list, const dstring *c, 
             }
          }
          if (ret) {
-            const lList *range_list = ocs::tom::get<JB_pe_range>(new_job);
-            lListElem *range = lFirstRW(range_list);
+            ocs::tom::ConstList<ocs::tom::RN> range_list = ocs::tom::get<JB_pe_range>(new_job);
+            ocs::tom::Element<ocs::tom::RN> range = lFirstRW(range_list);
 
             if (range == nullptr) {
                range = ocs::tom::emplace_back_in<JB_pe_range, RN_max>(new_job, max);
@@ -899,8 +899,8 @@ jsv_handle_param_command(lListElem *jsv, lList **answer_list, const dstring *c, 
                answer_list_add_sprintf(&local_answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, "invalid t_min " SFQ " was passed by JSV", value);
                ret = false;
             } else {
-               const lList *range_list = ocs::tom::get<JB_ja_structure>(new_job);
-               lListElem *range = lFirstRW(range_list);
+               ocs::tom::ConstList<ocs::tom::RN> range_list = ocs::tom::get<JB_ja_structure>(new_job);
+               ocs::tom::Element<ocs::tom::RN> range = lFirstRW(range_list);
 
                if (range == nullptr) {
                   range = ocs::tom::emplace_back_in<JB_ja_structure, RN_min>(new_job, min);
@@ -918,8 +918,8 @@ jsv_handle_param_command(lListElem *jsv, lList **answer_list, const dstring *c, 
                answer_list_add_sprintf(&local_answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_JSV_PARSE_VAL_SS, param, value);
                ret = false;
             } else {
-               const lList *range_list = ocs::tom::get<JB_ja_structure>(new_job);
-               lListElem *range = lFirstRW(range_list);
+               ocs::tom::ConstList<ocs::tom::RN> range_list = ocs::tom::get<JB_ja_structure>(new_job);
+               ocs::tom::Element<ocs::tom::RN> range = lFirstRW(range_list);
 
                if (range == nullptr) {
                   range = ocs::tom::emplace_back_in<JB_ja_structure, RN_max>(new_job, max);
@@ -938,8 +938,8 @@ jsv_handle_param_command(lListElem *jsv, lList **answer_list, const dstring *c, 
                                        MSG_JSV_PARSE_VAL_SS, param, value);
                ret = false;
             } else {
-               const lList *range_list = ocs::tom::get<JB_ja_structure>(new_job);
-               lListElem *range = lFirstRW(range_list);
+               ocs::tom::ConstList<ocs::tom::RN> range_list = ocs::tom::get<JB_ja_structure>(new_job);
+               ocs::tom::Element<ocs::tom::RN> range = lFirstRW(range_list);
 
                if (range == nullptr) {
                   range = ocs::tom::emplace_back_in<JB_ja_structure, RN_step>(new_job, step);
@@ -1201,8 +1201,8 @@ jsv_handle_started_command(lListElem *jsv, lList **answer_list, const dstring *c
 
    // JSV SCRIPT_ARGS
    {
-      const lList *list = ocs::tom::get<JB_job_args>(old_job);
-      const lListElem *elem;
+      ocs::tom::ConstList<ocs::tom::ST> list = ocs::tom::get<JB_job_args>(old_job);
+      ocs::tom::ConstElement<ocs::tom::ST> elem;
       int i = 0;
 
       sge_dstring_clear(&buffer);
@@ -1324,10 +1324,10 @@ jsv_handle_started_command(lListElem *jsv, lList **answer_list, const dstring *c
    /* -hard (handled as [global|master|server]_[l|q]_hard */
 
    // -hold_jid wc_job_list (optional)
-   if (const lList *hold_jid_list = ocs::tom::get<JB_jid_request_list>(old_job); hold_jid_list != nullptr) {
+   if (ocs::tom::ConstList<ocs::tom::JRE> hold_jid_list = ocs::tom::get<JB_jid_request_list>(old_job); hold_jid_list != nullptr) {
       sge_dstring_clear(&buffer);
       sge_dstring_sprintf(&buffer, "%s hold_jid", prefix);
-      const lListElem *hold_jid;
+      ocs::tom::ConstElement<ocs::tom::JRE> hold_jid;
       bool first = true;
       for_each_ep(hold_jid, hold_jid_list) {
          sge_dstring_append_char(&buffer, first ? ' ' : ',');
@@ -1342,11 +1342,11 @@ jsv_handle_started_command(lListElem *jsv, lList **answer_list, const dstring *c
    }
 
    // -hold_jid_ad wc_job_list (optional)
-   if (const lList *hold_jid_list = ocs::tom::get<JB_ja_ad_request_list>(old_job); hold_jid_list != nullptr) {
+   if (ocs::tom::ConstList<ocs::tom::JRE> hold_jid_list = ocs::tom::get<JB_ja_ad_request_list>(old_job); hold_jid_list != nullptr) {
       sge_dstring_clear(&buffer);
       sge_dstring_sprintf(&buffer, "%s hold_jid_ad", prefix);
       bool first = true;
-      const lListElem *hold_jid;
+      ocs::tom::ConstElement<ocs::tom::JRE> hold_jid;
       for_each_ep(hold_jid, hold_jid_list) {
          sge_dstring_append_char(&buffer, first ? ' ' : ',');
          if (const char *name = ocs::tom::get<JRE_job_name>(hold_jid); name != nullptr) {
@@ -1364,7 +1364,7 @@ jsv_handle_started_command(lListElem *jsv, lList **answer_list, const dstring *c
    //
    // in difference with the qsub -h switch the setting is provided as (PARAM h u) where 'u' means "user hold"
    // 'n' would mean "no hold" but in this case the parameter is not provided to the JSV script
-   if (const lList *hold_list = ocs::tom::get<JB_ja_u_h_ids>(old_job); hold_list != nullptr) {
+   if (ocs::tom::ConstList<ocs::tom::RN> hold_list = ocs::tom::get<JB_ja_u_h_ids>(old_job); hold_list != nullptr) {
       sge_dstring_clear(&buffer);
       sge_dstring_sprintf(&buffer, "%s h u", prefix);
       jsv_send_command(jsv, answer_list, sge_dstring_get_string(&buffer));
@@ -1425,10 +1425,10 @@ jsv_handle_started_command(lListElem *jsv, lList **answer_list, const dstring *c
    }
 
    // -M <mail_addr>, ... (optional)
-   if (const lList *mail_list = ocs::tom::get<JB_mail_list>(old_job); mail_list != nullptr) {
+   if (ocs::tom::ConstList<ocs::tom::MR> mail_list = ocs::tom::get<JB_mail_list>(old_job); mail_list != nullptr) {
       sge_dstring_clear(&buffer);
       sge_dstring_sprintf(&buffer, "%s M", prefix);
-      const lListElem *mail;
+      ocs::tom::ConstElement<ocs::tom::MR> mail;
       bool first = true;
       for_each_ep(mail, mail_list) {
          const char *user = ocs::tom::get<MR_user>(mail);
@@ -1579,8 +1579,8 @@ jsv_handle_started_command(lListElem *jsv, lList **answer_list, const dstring *c
     */
    {
       const char *pe_name = ocs::tom::get<JB_pe>(old_job);
-      const lList *range_list = ocs::tom::get<JB_pe_range>(old_job);
-      const lListElem *range = lFirst(range_list);
+      ocs::tom::ConstList<ocs::tom::RN> range_list = ocs::tom::get<JB_pe_range>(old_job);
+      ocs::tom::ConstElement<ocs::tom::RN> range = lFirst(range_list);
 
       if (pe_name != nullptr) {
          sge_dstring_clear(&buffer);
@@ -1755,7 +1755,7 @@ jsv_handle_started_command(lListElem *jsv, lList **answer_list, const dstring *c
        * then we will send the DISPLAY value as if it originally came 
        * from -display switch.
        */
-      if (const lListElem *display = ocs::tom::find_first<VA_variable>(env_list, "DISPLAY"); display != nullptr) {
+      if (ocs::tom::ConstElement<ocs::tom::VA> display = ocs::tom::find_first<VA_variable>(env_list, "DISPLAY"); display != nullptr) {
          const char *value = ocs::tom::get<VA_value>(display);
 
          if (ProgName prog_id = component_get_component_id();
@@ -1869,7 +1869,7 @@ jsv_handle_env_command(lListElem *jsv, lList **answer_list, const dstring *c, co
    if (skip_check != true) {
       if (mod != nullptr && var != nullptr &&
           (((strcmp(mod, "MOD") == 0 || strcmp(mod, "ADD") == 0) && val != nullptr) || (strcmp(mod, "DEL") == 0 && val == nullptr))) {
-         lList *env_list = ocs::tom::get<JB_env_list>(new_job);
+         ocs::tom::List<ocs::tom::VA> env_list = ocs::tom::get<JB_env_list>(new_job);
          lListElem *env_variable = nullptr;
 
          if (var != nullptr) {

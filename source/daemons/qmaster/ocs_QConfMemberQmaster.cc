@@ -33,6 +33,7 @@
 #include "sgeobj/sge_object.h"
 #include "tom/ocs_Element.h"
 #include "sgeobj/tom/ocs_tom_UE.h"
+#include "sgeobj/tom/ocs_tom_US.h"
 #include "uti/sge_dstring.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_string.h"
@@ -158,7 +159,7 @@ qconf_member_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, moni
 
    for_each_ep_lv(list_arg, lists) {
       const char *list_name = ocs::tom::get<US_name>(list_arg);
-      const lListElem *stored = ocs::tom::find_first<US_name>(*ocs::DataStore::get_master_list(SGE_TYPE_USERSET), list_name);
+      ocs::tom::ConstElement<ocs::tom::US> stored = ocs::tom::find_first<US_name>(*ocs::DataStore::get_master_list(SGE_TYPE_USERSET), list_name);
 
       if (stored == nullptr && !add) {
          add_answer(answer_list, STATUS_EEXIST, sge_dstring_sprintf(&buffer, MSG_ACL_ACLDOESNOTEXIST_S, list_name));

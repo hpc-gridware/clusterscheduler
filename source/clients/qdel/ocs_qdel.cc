@@ -51,6 +51,7 @@
 #include "sgeobj/sge_str.h"
 #include "sgeobj/sge_range.h"
 #include "sgeobj/msg_sgeobjlib.h"
+#include "sgeobj/tom/ocs_tom_ID.h"
 #include "tom/ocs_Element.h"
 
 #include "gdi/ocs_gdi_Client.h"
@@ -115,7 +116,7 @@ int main(int argc, char **argv) {
    
    if (user_list) {
       if (lGetNumberOfElem(ref_list) == 0){
-         lListElem *id = ocs::tom::emplace_back<ID_str>(&ref_list, "0");
+         ocs::tom::Element<ocs::tom::ID> id = ocs::tom::emplace_back<ID_str>(&ref_list, "0");
          ocs::tom::set<ID_user_list>(id, user_list);
       } else {
          for_each_rw_lv(id, ref_list){

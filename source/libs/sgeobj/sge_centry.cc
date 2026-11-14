@@ -76,6 +76,7 @@
 #include "sgeobj/sge_object.h"
 #include "sgeobj/cull_parse_util.h"
 #include "sgeobj/msg_sgeobjlib.h"
+#include "sgeobj/tom/ocs_tom_CE.h"
 #include "tom/ocs_Element.h"
 
 #include "msg_common.h"
@@ -1509,7 +1510,7 @@ centry_list_is_correct(lList *this_list, lList **answer_list) {
    bool ret = true;
 
    if (this_list != nullptr) {
-      const lListElem *centry = ocs::tom::find_first<CE_name>(this_list, "qname");
+      ocs::tom::ConstElement<ocs::tom::CE> centry = ocs::tom::find_first<CE_name>(this_list, "qname");
 
       if (centry != nullptr) {
          const char *value = ocs::tom::get<CE_stringval>(centry);
@@ -1607,7 +1608,7 @@ int host_ensure_slots_are_defined(lListElem *ehost, uint32_t processors) {
    }
 
    // Add the slot complex and use the given processors as value
-   lListElem *new_entry = ocs::tom::emplace_back_in<EH_consumable_config_list, CE_name>(ehost, SGE_ATTR_SLOTS);
+   ocs::tom::Element<ocs::tom::CE> new_entry = ocs::tom::emplace_back_in<EH_consumable_config_list, CE_name>(ehost, SGE_ATTR_SLOTS);
    ocs::tom::set<CE_stringval>(new_entry, std::to_string(processors).c_str());
    ocs::tom::set<CE_doubleval>(new_entry, processors);
 

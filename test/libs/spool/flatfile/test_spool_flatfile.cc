@@ -55,6 +55,9 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/sge_centry.h"
+#include "sgeobj/tom/ocs_tom_ARA.h"
+#include "sgeobj/tom/ocs_tom_JG.h"
+#include "sgeobj/tom/ocs_tom_MR.h"
 #include "tom/ocs_Element.h"
 #include "spool/sge_spooling_utilities.h"
 #include "spool/flatfile/sge_flatfile.h"
@@ -2713,24 +2716,24 @@ static int AR_test() {
    ocs::tom::emplace_back_in<AR_queue_list, QR_name>(ep, "queue3.q");
    ocs::tom::emplace_back_in<AR_queue_list, QR_name>(ep, "queue4.q");
 
-   ep1 = ocs::tom::emplace_back_in<AR_granted_slots, JG_qname>(ep, "all.q@bla");
-   ocs::tom::set<JG_slots>(ep1, 5);
-   ep1 = ocs::tom::emplace_back_in<AR_granted_slots, JG_qname>(ep, "my.q@bla");
-   ocs::tom::set<JG_slots>(ep1, 10);
+   ocs::tom::Element<ocs::tom::JG> ep1_jg = ocs::tom::emplace_back_in<AR_granted_slots, JG_qname>(ep, "all.q@bla");
+   ocs::tom::set<JG_slots>(ep1_jg, 5);
+   ocs::tom::Element<ocs::tom::JG> ep1_jg_2 = ocs::tom::emplace_back_in<AR_granted_slots, JG_qname>(ep, "my.q@bla");
+   ocs::tom::set<JG_slots>(ep1_jg_2, 10);
 
    ocs::tom::emplace_back_in<AR_mail_list, MR_user>(ep, "user1");
-   ep1 = ocs::tom::emplace_back_in<AR_mail_list, MR_user>(ep, "user2");
-   ocs::tom::set<MR_host>(ep1, "sun.com");
+   ocs::tom::Element<ocs::tom::MR> ep1_mr = ocs::tom::emplace_back_in<AR_mail_list, MR_user>(ep, "user2");
+   ocs::tom::set<MR_host>(ep1_mr, "sun.com");
 
    ocs::tom::emplace_back_in<AR_master_queue_list, QR_name>(ep, "queue1.q");
    ocs::tom::emplace_back_in<AR_master_queue_list, QR_name>(ep, "queue2.q");
    ocs::tom::emplace_back_in<AR_master_queue_list, QR_name>(ep, "queue3.q");
    ocs::tom::emplace_back_in<AR_master_queue_list, QR_name>(ep, "queue4.q");
 
-   ep1 = ocs::tom::emplace_back_in<AR_acl_list, ARA_name>(ep, "user1");
-   ocs::tom::set<ARA_group>(ep1, "group1");
-   ep1 = ocs::tom::emplace_back_in<AR_acl_list, ARA_name>(ep, "user2");
-   ocs::tom::set<ARA_group>(ep1, "group2");
+   ocs::tom::Element<ocs::tom::ARA> ep1_ara = ocs::tom::emplace_back_in<AR_acl_list, ARA_name>(ep, "user1");
+   ocs::tom::set<ARA_group>(ep1_ara, "group1");
+   ocs::tom::Element<ocs::tom::ARA> ep1_ara_2 = ocs::tom::emplace_back_in<AR_acl_list, ARA_name>(ep, "user2");
+   ocs::tom::set<ARA_group>(ep1_ara_2, "group2");
    ocs::tom::emplace_back_in<AR_acl_list, ARA_name>(ep, "@userset1");
    ocs::tom::emplace_back_in<AR_acl_list, ARA_name>(ep, "@userset2");
 

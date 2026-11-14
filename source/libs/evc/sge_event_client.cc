@@ -1402,17 +1402,17 @@ ec2_mod_subscription_flush(sge_evc_class_t *thiz, ev_event event, bool flush, in
    } else if (event < sgeE_ALL_EVENTS || event >= sgeE_EVENTSIZE) {
       WARNING(MSG_EVENT_ILLEGALEVENTID_I, event);
    } else {
-      if (const lList *subscribed = ocs::tom::get<EV_subscribed>(sge_evc->ec)) {
+      if (ocs::tom::ConstList<ocs::tom::EVS> subscribed = ocs::tom::get<EV_subscribed>(sge_evc->ec)) {
          if (event == sgeE_ALL_EVENTS) {
             for (int e = sgeE_ALL_EVENTS + 1; e < static_cast<int>(sgeE_EVENTSIZE); e++) {
-               if (lListElem *sub_el = ocs::tom::find_first_rw<EVS_id>(subscribed, e)) {
+               if (ocs::tom::Element<ocs::tom::EVS> sub_el = ocs::tom::find_first_rw<EVS_id>(subscribed, e)) {
                   ocs::tom::set<EVS_flush>(sub_el, flush);
                   ocs::tom::set<EVS_interval>(sub_el, intervall);
                   ocs::tom::set<EV_changed>(sge_evc->ec, true);
                }
             }
          } else {
-            if (lListElem *sub_el = ocs::tom::find_first_rw<EVS_id>(subscribed, event)) {
+            if (ocs::tom::Element<ocs::tom::EVS> sub_el = ocs::tom::find_first_rw<EVS_id>(subscribed, event)) {
                ocs::tom::set<EVS_flush>(sub_el, flush);
                ocs::tom::set<EVS_interval>(sub_el, intervall);
                ocs::tom::set<EV_changed>(sge_evc->ec, true);
@@ -1449,10 +1449,10 @@ static bool ec2_mod_subscription_where(sge_evc_class_t *thiz, ev_event event, co
    } else if (event <= sgeE_ALL_EVENTS || event >= sgeE_EVENTSIZE) {
       WARNING(MSG_EVENT_ILLEGALEVENTID_I, event);
    } else {
-      const lList *subscribed = ocs::tom::get<EV_subscribed>(sge_evc->ec);
+      ocs::tom::ConstList<ocs::tom::EVS> subscribed = ocs::tom::get<EV_subscribed>(sge_evc->ec);
       if (event != sgeE_ALL_EVENTS){
          if (subscribed) {
-            lListElem *sub_el = ocs::tom::find_first_rw<EVS_id>(subscribed, event);
+            ocs::tom::Element<ocs::tom::EVS> sub_el = ocs::tom::find_first_rw<EVS_id>(subscribed, event);
             if (sub_el) {
                ocs::tom::set<EVS_what>(sub_el, lCopyElem(what));
                ocs::tom::set<EVS_where>(sub_el, lCopyElem(where));
@@ -1484,7 +1484,7 @@ ec2_remove_subscriptionElement(sge_evc_class_t *thiz, ev_event event) {
    } else if (event < sgeE_ALL_EVENTS || event >= sgeE_EVENTSIZE) {
       WARNING(MSG_EVENT_ILLEGALEVENTID_I, event);
    } else {
-      lList *subscribed = ocs::tom::get<EV_subscribed>(sge_evc->ec);
+      ocs::tom::List<ocs::tom::EVS> subscribed = ocs::tom::get<EV_subscribed>(sge_evc->ec);
       if (event != sgeE_ALL_EVENTS) {
          if (subscribed) {
             lListElem *sub_el = ocs::tom::find_first_rw<EVS_id>(subscribed, event);
@@ -1622,7 +1622,7 @@ ec2_get_flush(sge_evc_class_t *thiz, ev_event event) {
    } else if (event < sgeE_ALL_EVENTS || event >= sgeE_EVENTSIZE) {
       WARNING(MSG_EVENT_ILLEGALEVENTID_I, event );
    } else {
-      const lListElem *sub_event = ocs::tom::find_first<EVS_id>(ocs::tom::get<EV_subscribed>(sge_evc->ec), event);
+      ocs::tom::ConstElement<ocs::tom::EVS> sub_event = ocs::tom::find_first<EVS_id>(ocs::tom::get<EV_subscribed>(sge_evc->ec), event);
 
       if (sub_event == nullptr) {
          WARNING(MSG_EVENT_NOTSUBSCRIBED_I, event);

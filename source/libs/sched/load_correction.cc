@@ -55,6 +55,10 @@
 #include "sgeobj/tom/ocs_tom_HL.h"
 #include "sgeobj/tom/ocs_tom_JAT.h"
 #include "sgeobj/tom/ocs_tom_JG.h"
+#include "sgeobj/tom/ocs_tom_CE.h"
+#include "sgeobj/tom/ocs_tom_EH.h"
+#include "sgeobj/tom/ocs_tom_HS.h"
+#include "sgeobj/tom/ocs_tom_RUE.h"
 
 #include "schedd_monitor.h"
 #include "load_correction.h"
@@ -103,10 +107,9 @@ int correct_load(lList *running_jobs, lList *queue_list, lList *host_list,
       uint32_t job_id = ocs::tom::get<JB_job_number>(job);
       double global_lcf = 0.0;
 
-      for_each_rw_lv(ja_task, ocs::tom::get<JB_ja_tasks>(job)) {
+      for (ocs::tom::Element<ocs::tom::JAT> ja_task : ocs::tom::get<JB_ja_tasks>(job)) {
          uint32_t ja_task_id = ocs::tom::get<JAT_task_number>(ja_task);
          uint64_t running_time = now - ocs::tom::get<JAT_start_time>(ja_task);
-         const lList *granted_list = nullptr;
          double host_lcf = 0.0;
 
 #if 1
@@ -116,12 +119,11 @@ int correct_load(lList *running_jobs, lList *queue_list, lList *host_list,
          if (running_time > decay_time) {
             continue;
          }
-         granted_list = ocs::tom::get<JAT_granted_destin_identifier_list>(ja_task);
-         for_each_ep_lv(granted_queue, granted_list) {
+         ocs::tom::ConstList<ocs::tom::JG> granted_list = ocs::tom::get<JAT_granted_destin_identifier_list>(ja_task);
+         for (ocs::tom::ConstElement<ocs::tom::JG> granted_queue : granted_list) {
             const char *qnm = nullptr;
             const char *hnm = nullptr;
             lListElem *qep = nullptr;
-            lListElem *hep = nullptr;
             uint32_t slots;
             
             qnm = ocs::tom::get<JG_qname>(granted_queue);
@@ -132,7 +134,7 @@ int correct_load(lList *running_jobs, lList *queue_list, lList *host_list,
             }
            
             hnm=ocs::tom::get<JG_qhostname>(granted_queue); 
-            hep = ocs::tom::find_first_rw<EH_name>(host_list, hnm);
+            ocs::tom::Element<ocs::tom::EH> hep = ocs::tom::find_first_rw<EH_name>(host_list, hnm);
             if (hep == nullptr) {
                DPRINTF("Unable to find host \"%s\" from gdil " "list of job " sge_u32 "." sge_u32"\n", hnm, job_id, ja_task_id);
                continue;
@@ -208,10 +210,10 @@ int correct_load(lList *running_jobs, lList *queue_list, lList *host_list,
 int correct_capacities(lList *host_list, const lList *centry_list, const lList *load_adjustments) {
    DENTER(TOP_LAYER);
    lListElem *cep;
-   const lListElem *job_load;
-   const lListElem *scaling;
-   lListElem *total;
-   const lListElem *inuse_rms;
+   ocs::tom::ConstElement<ocs::tom::CE> job_load;
+   ocs::tom::ConstElement<ocs::tom::HS> scaling;
+   ocs::tom::Element<ocs::tom::CE> total;
+   ocs::tom::ConstElement<ocs::tom::RUE> inuse_rms;
    ocs::CEntry::Type type;
    uint32_t relop;
    double dval, inuse_ext, full_capacity, sc_factor;
@@ -225,7 +227,7 @@ int correct_capacities(lList *host_list, const lList *centry_list, const lList *
    for_each_rw_lv(hep, host_list) {
       const char *host_name = ocs::tom::get<EH_name>(hep);
 
-      for_each_rw_lv(ep, ocs::tom::get<EH_load_list>(hep)) {
+      for (ocs::tom::Element<ocs::tom::HL> ep : ocs::tom::get<EH_load_list>(hep)) {
          const char *attr_name = ocs::tom::get<HL_name>(ep);
  
          /* seach for appropriate complex attribute */

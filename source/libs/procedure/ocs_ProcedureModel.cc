@@ -37,6 +37,7 @@
 
 #include "ocs_ProcedureParameter.h"
 #include "sgeobj/sge_answer.h"
+#include "sgeobj/tom/ocs_tom_SPP.h"
 #include "tom/ocs_Element.h"
 
 /** @brief Send the procedure request to qmaster and store the response.
@@ -84,7 +85,7 @@ ocs::ProcedureModel::get_reduction() const {
     * zero, so a reading of zero alone cannot tell "qmaster said nothing was
     * reduced" from "the entry never arrived" - and the second would mean the
     * channel is broken while looking exactly like the healthy case. */
-   const lListElem *entry = ocs::tom::find_first<SPP_name>(procedure_response, ProcedureParameter::REDUCTION);
+   ocs::tom::ConstElement<ocs::tom::SPP> entry = ocs::tom::find_first<SPP_name>(procedure_response, ProcedureParameter::REDUCTION);
    if (entry == nullptr) {
       DPRINTF("no reduction entry in the response\n");
       DRETURN(ProcedureParameter::REDUCTION_NONE);
@@ -109,9 +110,9 @@ ocs::ProcedureModel::get_write_result(uint32_t &applied, uint32_t &parse_failed,
                                       uint32_t *elements) const {
    DENTER(TOP_LAYER);
 
-   const lListElem *applied_entry = ocs::tom::find_first<SPP_name>(procedure_response,
+   ocs::tom::ConstElement<ocs::tom::SPP> applied_entry = ocs::tom::find_first<SPP_name>(procedure_response,
                                                 ProcedureParameter::WRITE_APPLIED);
-   const lListElem *failed_entry = ocs::tom::find_first<SPP_name>(procedure_response,
+   ocs::tom::ConstElement<ocs::tom::SPP> failed_entry = ocs::tom::find_first<SPP_name>(procedure_response,
                                                ProcedureParameter::WRITE_PARSE_FAILED);
    if (applied_entry == nullptr || failed_entry == nullptr) {
       DPRINTF("no write result in the response\n");
@@ -133,7 +134,7 @@ ocs::ProcedureModel::get_write_result(uint32_t &applied, uint32_t &parse_failed,
     * response that carries only the two older entries is still a complete
     * write result - the counts a caller must have are those two. */
    if (elements != nullptr) {
-      const lListElem *elements_entry = ocs::tom::find_first<SPP_name>(procedure_response,
+      ocs::tom::ConstElement<ocs::tom::SPP> elements_entry = ocs::tom::find_first<SPP_name>(procedure_response,
                                                     ProcedureParameter::WRITE_ELEMENTS);
       const lListElem *elements_value = (elements_entry != nullptr)
                                         ? lFirst(ocs::tom::get<SPP_value_list>(elements_entry))
@@ -154,7 +155,7 @@ bool
 ocs::ProcedureModel::get_export_objects(const lList **objects) const {
    DENTER(TOP_LAYER);
 
-   const lListElem *entry = ocs::tom::find_first<SPP_name>(procedure_response,
+   ocs::tom::ConstElement<ocs::tom::SPP> entry = ocs::tom::find_first<SPP_name>(procedure_response,
                                         ProcedureParameter::EXPORT_OBJECTS);
    if (entry == nullptr) {
       DPRINTF("no export entry in the response\n");
@@ -183,7 +184,7 @@ ocs::ProcedureModel::get_export_objects(const lList **objects) const {
 const char *
 ocs::ProcedureModel::get_output_text() const {
    DENTER(TOP_LAYER);
-   const lListElem *response_elem = ocs::tom::find_first<SPP_name>(procedure_response, ProcedureParameter::RESPONSE);
+   ocs::tom::ConstElement<ocs::tom::SPP> response_elem = ocs::tom::find_first<SPP_name>(procedure_response, ProcedureParameter::RESPONSE);
    if (!response_elem) {
       DRETURN("");
    }

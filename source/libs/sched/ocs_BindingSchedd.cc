@@ -53,6 +53,7 @@
 #include "sgeobj/tom/ocs_tom_BN.h"
 #include "sgeobj/tom/ocs_tom_GRU.h"
 #include "sgeobj/tom/ocs_tom_ST.h"
+#include "sgeobj/tom/ocs_tom_RUE.h"
 
 /** @brief Find the binding in use (either now, reservation, within AR or for reservation within AR
  */
@@ -76,7 +77,7 @@ ocs::BindingSchedd::find_initial_in_use(const sge_assignment_t *a, const lListEl
       DPRINTF("Host's %s reservation binding util. is:  %s\n", static_cast<const char *>(ocs::tom::get<EH_name>(host)), host_in_use.to_product_topology_string().c_str());
       found_now_utilization = true;
    } else {
-      const lListElem *utilization_slots = ocs::tom::find_first_in<EH_resource_utilization, RUE_name>(host, SGE_ATTR_SLOTS);
+      ocs::tom::ConstElement<ocs::tom::RUE> utilization_slots = ocs::tom::find_first_in<EH_resource_utilization, RUE_name>(host, SGE_ATTR_SLOTS);
       if (utilization_slots != nullptr) {
          const char *src = ocs::tom::get<RUE_utilized_now_binding_inuse>(utilization_slots);
          if (src != nullptr) {
@@ -116,7 +117,7 @@ ocs::BindingSchedd::find_initial_in_use(const sge_assignment_t *a, const lListEl
    TopologyString ar_in_use;
    const char *hostname = ocs::tom::get<EH_name>(host);
    bool first_entry = true;
-   for_each_ep_lv(granted_resource, ocs::tom::get<AR_granted_resources_list>(a->ar)) {
+   for (ocs::tom::ConstElement<ocs::tom::GRU> granted_resource : ocs::tom::get<AR_granted_resources_list>(a->ar)) {
       // skip resources that do not contain binding information
       if (static_cast<GrantedResources::Type>(ocs::tom::get<GRU_type>(granted_resource)) != GrantedResources::Type::GRU_BINDING_TYPE) {
          continue;
@@ -127,7 +128,7 @@ ocs::BindingSchedd::find_initial_in_use(const sge_assignment_t *a, const lListEl
       }
 
       // accumulate binding information of the AR
-      for_each_ep_lv(binding_in_use_elem, ocs::tom::get<GRU_binding_inuse>(granted_resource)) {
+      for (ocs::tom::ConstElement<ocs::tom::ST> binding_in_use_elem : ocs::tom::get<GRU_binding_inuse>(granted_resource)) {
          const char *bind_str = ocs::tom::get<ST_name>(binding_in_use_elem);
          if (bind_str != nullptr) {
             if (first_entry) {
@@ -449,7 +450,7 @@ ocs::BindingSchedd::apply_strategy(sge_assignment_t *a, int slots, const lListEl
    // Early exit in the case of host binding when binding was already done. We know per definition that we can
    // handle all slots if the host binding was done once.
    BindingType::Type binding_type= Job::binding_get_type(a->job);
-   lListElem *binding_done = ocs::tom::find_first_rw<BN_specific_hostname>(a->binding_to_use, hostname);
+   ocs::tom::Element<ocs::tom::BN> binding_done = ocs::tom::find_first_rw<BN_specific_hostname>(a->binding_to_use, hostname);
    if (binding_type == BindingType::HOST && binding_done != nullptr) {
       DPRINTF("find_binding: host binding already done for host %s\n", hostname);
       DRETURN(slots);
@@ -501,7 +502,7 @@ ocs::BindingSchedd::apply_strategy(sge_assignment_t *a, int slots, const lListEl
       DPRINTF("find_binding: host binding for this job will be %s\n", binding_to_use.to_product_topology_string().c_str());
 
       // store the binding decision in the assignment structure
-      binding_done = ocs::tom::emplace_back<BN_specific_hostname>(&(a->binding_to_use), hostname);
+      ocs::tom::Element<ocs::tom::BN> binding_done = ocs::tom::emplace_back<BN_specific_hostname>(&(a->binding_to_use), hostname);
       ocs::tom::set<BN_specific_binding>(binding_done, binding_to_use.to_string(true, true, true, false, false, false).c_str());
       ocs::tom::set<BN_specific_binding_list>(binding_done, nullptr);
       DRETURN(slots);
@@ -547,7 +548,7 @@ ocs::BindingSchedd::apply_strategy(sge_assignment_t *a, int slots, const lListEl
          if (binding_done == nullptr) {
             binding_done = ocs::tom::emplace_back<BN_specific_hostname>(&(a->binding_to_use), hostname);
          }
-         lListElem *binding_for_task = ocs::tom::emplace_back_in<BN_specific_binding_list, ST_id>(binding_done, next_binding_id_for_task++);
+         ocs::tom::Element<ocs::tom::ST> binding_for_task = ocs::tom::emplace_back_in<BN_specific_binding_list, ST_id>(binding_done, next_binding_id_for_task++);
          ocs::tom::set<ST_name>(binding_for_task, task_binding_to_use.to_string(true, true, handle_characteristics, false, false, false).c_str());
 
          // add the task binding to the host binding mask
@@ -602,14 +603,14 @@ ocs::BindingSchedd::copy_strategy(const sge_assignment_t *a) {
       const char *hostname = ocs::tom::get<JG_qhostname>(jg_elem);
 
       // try to find a binding for the host
-      lListElem *binding_elem = ocs::tom::find_first_rw<BN_specific_hostname>(a->binding_to_use, hostname);
+      ocs::tom::Element<ocs::tom::BN> binding_elem = ocs::tom::find_first_rw<BN_specific_hostname>(a->binding_to_use, hostname);
       if (binding_elem == nullptr) {
          DPRINTF("copy_binding: no binding found for host %s\n", hostname);
          DRETURN(true);
       }
 
       // check if the binding list for tasks is available
-      lList *task_binding_list = ocs::tom::get<BN_specific_binding_list>(binding_elem);
+      ocs::tom::List<ocs::tom::ST> task_binding_list = ocs::tom::get<BN_specific_binding_list>(binding_elem);
       if (task_binding_list == nullptr) {
          host_specific_binding = true;
       } else {
@@ -621,7 +622,7 @@ ocs::BindingSchedd::copy_strategy(const sge_assignment_t *a) {
 
          // copy the binding decision for the host (either for one task or for all tasks share the same binding)
          const char *binding_str = ocs::tom::get<BN_specific_binding>(binding_elem);
-         lListElem *jg_to_use = ocs::tom::emplace_back_in<JG_binding_to_use, ST_id>(jg_elem, 0);
+         ocs::tom::Element<ocs::tom::ST> jg_to_use = ocs::tom::emplace_back_in<JG_binding_to_use, ST_id>(jg_elem, 0);
          ocs::tom::set<ST_name>(jg_to_use, binding_str);
       } else if (task_specific_binding) {
          DPRINTF("copy_binding: task specific binding for host %s\n", hostname);

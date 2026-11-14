@@ -54,6 +54,8 @@
 
 #include "sgeobj/sge_usage.h"
 #include "sgeobj/sge_host.h"
+#include "sgeobj/tom/ocs_tom_HS.h"
+#include "sgeobj/tom/ocs_tom_UA.h"
 #include "tom/ocs_Element.h"
 
 /**
@@ -74,7 +76,7 @@
  */
 int
 usage_list_get_int_usage(const lList *usage_list, const char *name, int def) {
-   const lListElem *ep = ocs::tom::find_first<UA_name>(usage_list, name);
+   ocs::tom::ConstElement<ocs::tom::UA> ep = ocs::tom::find_first<UA_name>(usage_list, name);
    if (ep != nullptr) {
       return static_cast<int>(ocs::tom::get<UA_value>(ep));
    } else {
@@ -96,7 +98,7 @@ usage_list_get_int_usage(const lList *usage_list, const char *name, int def) {
  */
 uint32_t
 usage_list_get_ulong_usage(const lList *usage_list, const char *name, uint32_t def) {
-   const lListElem *ep = ocs::tom::find_first<UA_name>(usage_list, name);
+   ocs::tom::ConstElement<ocs::tom::UA> ep = ocs::tom::find_first<UA_name>(usage_list, name);
    if (ep != nullptr) {
       return static_cast<uint32_t>(ocs::tom::get<UA_value>(ep));
    } else {
@@ -116,7 +118,7 @@ usage_list_get_ulong_usage(const lList *usage_list, const char *name, uint32_t d
  */
 uint64_t
 usage_list_get_ulong64_usage(const lList *usage_list, const char *name, uint64_t def) {
-   const lListElem *ep = ocs::tom::find_first<UA_name>(usage_list, name);
+   ocs::tom::ConstElement<ocs::tom::UA> ep = ocs::tom::find_first<UA_name>(usage_list, name);
    if (ep != nullptr) {
       return static_cast<uint64_t>(ocs::tom::get<UA_value>(ep));
    } else {
@@ -143,7 +145,7 @@ usage_list_get_ulong64_usage(const lList *usage_list, const char *name, uint64_t
 double
 usage_list_get_double_usage(const lList *usage_list, const char *name,
                             double def) {
-   const lListElem *ep = ocs::tom::find_first<UA_name>(usage_list, name);
+   ocs::tom::ConstElement<ocs::tom::UA> ep = ocs::tom::find_first<UA_name>(usage_list, name);
    if(ep != nullptr) {
       return ocs::tom::get<UA_value>(ep);
    } else {
@@ -198,7 +200,7 @@ void usage_list_set_ulong64_usage(lList *usage_list, const char *name, uint64_t 
  * @see #usage_list_set_ulong_usage, #usage_list_get_ulong_usage, #usage_list_get_double_usage
  */
 void usage_list_set_double_usage(lList *usage_list, const char *name, double value, bool create_usage) {
-   lListElem *ep = ocs::tom::find_first_rw<UA_name>(usage_list, name);
+   ocs::tom::Element<ocs::tom::UA> ep = ocs::tom::find_first_rw<UA_name>(usage_list, name);
    if (ep == nullptr && create_usage) {
       ep = ocs::tom::emplace_back<UA_name>(&usage_list, name);
    }
@@ -222,7 +224,7 @@ void usage_list_set_double_usage(lList *usage_list, const char *name, double val
  * @param create_usage  - if true, create the usage element if it does not exist; default is true.
  */
 void usage_list_max_double_usage(lList *usage_list, const char *name, double value, bool create_usage) {
-   lListElem *ep = ocs::tom::find_first_rw<UA_name>(usage_list, name);
+   ocs::tom::Element<ocs::tom::UA> ep = ocs::tom::find_first_rw<UA_name>(usage_list, name);
    if (ep == nullptr && create_usage) {
       ep = ocs::tom::emplace_back<UA_name>(&usage_list, name);
    }
@@ -265,7 +267,7 @@ void usage_list_sum(lList *usage_list, const lList *add_usage_list) {
           strcmp(name, USAGE_ATTR_SMEM) == 0 ||
           strncmp(name, "acct_", 5) == 0 ||
           strncmp(name, "ru_", 3) == 0) {
-         lListElem *sum = ocs::tom::find_first_rw<UA_name>(usage_list, name);
+         ocs::tom::Element<ocs::tom::UA> sum = ocs::tom::find_first_rw<UA_name>(usage_list, name);
          if (sum == nullptr) {
             lAppendElem(usage_list, lCopyElem(usage));
          } else {
@@ -293,7 +295,7 @@ const lList *scaling,     /* HS_Type */
 const lList *prev_usage,  /* HS_Type */
 lList *scaled_usage /* UA_Type */
 ) {
-   const lListElem *sep;
+   ocs::tom::ConstElement<ocs::tom::HS> sep;
    lListElem *ep;
    const lListElem *prev;
 

@@ -42,6 +42,7 @@
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_range.h"
+#include "sgeobj/tom/ocs_tom_PR.h"
 #include "tom/ocs_Element.h"
 
 /** @brief One row of the category test table
@@ -158,7 +159,7 @@ static lList *test_create_access() {
 
 static lList *test_create_project(const char *project) {
    lList *project_list = nullptr;
-   lListElem *prj = ocs::tom::emplace_back<PR_name>(&project_list, project);
+   ocs::tom::Element<ocs::tom::PR> prj = ocs::tom::emplace_back<PR_name>(&project_list, project);
    ocs::tom::set<PR_consider_with_categories>(prj, true);
    return project_list;
 }

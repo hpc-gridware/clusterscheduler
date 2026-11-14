@@ -65,6 +65,7 @@
 #include "tom/ocs_Element.h"
 #include "sgeobj/tom/ocs_tom_PR.h"
 #include "sgeobj/tom/ocs_tom_US.h"
+#include "sgeobj/tom/ocs_tom_UU.h"
 
 #include "ocs_CategoryQmaster.h"
 #include "sge_utility_qmaster.h"
@@ -457,7 +458,7 @@ sge_del_userprj(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *up_ep
       lFreeList(&projects);
 
       /* check user list for reference */
-      if (const lListElem *prj = ocs::tom::find_first<UU_default_project>(*ocs::DataStore::get_master_list(SGE_TYPE_USER), name); prj != nullptr) {
+      if (ocs::tom::ConstElement<ocs::tom::UU> prj = ocs::tom::find_first<UU_default_project>(*ocs::DataStore::get_master_list(SGE_TYPE_USER), name); prj != nullptr) {
          ERROR(MSG_USERPRJ_PRJXSTILLREFERENCEDINENTRYX_SS, name, ocs::tom::get<UU_name>(prj));
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EEXIST);
@@ -791,13 +792,12 @@ void project_update_categories(const lList *added, const lList *removed, uint64_
    DENTER(TOP_LAYER);
    const lListElem *ep;
    const char *p;
-   lListElem *prj;
    bool reattach_categories = false;
 
    for_each_ep(ep, added) {
       p = ocs::tom::get<PR_name>(ep);
       DPRINTF("added project: \"%s\"\n", p);
-      prj = ocs::tom::find_first_rw<PR_name>(*ocs::DataStore::get_master_list(SGE_TYPE_PROJECT), p);
+      ocs::tom::Element<ocs::tom::PR> prj = ocs::tom::find_first_rw<PR_name>(*ocs::DataStore::get_master_list(SGE_TYPE_PROJECT), p);
       if (prj && !ocs::tom::get<PR_consider_with_categories>(prj)) {
          ocs::tom::set<PR_consider_with_categories>(prj, true);
          reattach_categories = true;
@@ -808,7 +808,7 @@ void project_update_categories(const lList *added, const lList *removed, uint64_
    for_each_ep(ep, removed) {
       p = ocs::tom::get<PR_name>(ep);
       DPRINTF("removed project: \"%s\"\n", p);
-      prj = ocs::tom::find_first_rw<PR_name>(*ocs::DataStore::get_master_list(SGE_TYPE_PROJECT), p);
+      ocs::tom::Element<ocs::tom::PR> prj = ocs::tom::find_first_rw<PR_name>(*ocs::DataStore::get_master_list(SGE_TYPE_PROJECT), p);
 
       if (prj && !project_still_used(p)) {
          ocs::tom::set<PR_consider_with_categories>(prj, false);

@@ -62,7 +62,7 @@ properties_equal(const lList *a, const lList *b) {
    const lListElem *ep;
    for_each_ep (ep, a) {
       const char *name = ocs::tom::get<CE_name>(ep);
-      const lListElem *match = ocs::tom::find_first<CE_name>(b, name);
+      ocs::tom::ConstElement<ocs::tom::CE> match = ocs::tom::find_first<CE_name>(b, name);
       if (match == nullptr) return false;
       const char *va = ocs::tom::get<CE_stringval>(ep);
       const char *vb = ocs::tom::get<CE_stringval>(match);
@@ -106,9 +106,9 @@ static bool
 store_resl(lListElem *centry, const char *id, lList **properties,
            lList **alpp, const char *rsmap_name) {
    lList *incoming = (properties != nullptr) ? *properties : nullptr;
-   lListElem *resl = ocs::tom::find_first_in_rw<CE_resource_map_list, RESL_value>(centry, id);
+   ocs::tom::Element<ocs::tom::RESL> resl = ocs::tom::find_first_in_rw<CE_resource_map_list, RESL_value>(centry, id);
    if (resl == nullptr) {
-      resl = ocs::tom::emplace_back_in<CE_resource_map_list, RESL_value>(centry, id);
+      ocs::tom::Element<ocs::tom::RESL> resl = ocs::tom::emplace_back_in<CE_resource_map_list, RESL_value>(centry, id);
       if (resl == nullptr) {
          if (properties != nullptr) lFreeList(properties);
          return true;  // allocation failure is not this function's error to report
@@ -122,7 +122,7 @@ store_resl(lListElem *centry, const char *id, lList **properties,
    }
 
    // duplicate id: incoming characteristics (if any) must match stored ones
-   const lList *stored = ocs::tom::get<RESL_properties>(resl);
+   ocs::tom::ConstList<ocs::tom::CE> stored = ocs::tom::get<RESL_properties>(resl);
    if (!properties_equal(stored, incoming)) {
       answer_list_add_sprintf(alpp, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                               MSG_RSMAP_CHARACTERISTIC_CONFLICT_SS,
@@ -446,17 +446,17 @@ write_CE_stringval_host(const lListElem *ep, int nm, dstring *buffer, lList **al
        * by CE_name (same convention as centry_list_sort) before emission; the
        * stored CULL order is not modified.
        */
-      const lList *resource_map = ocs::tom::get<CE_resource_map_list>(ep);
+      ocs::tom::ConstList<ocs::tom::RESL> resource_map = ocs::tom::get<CE_resource_map_list>(ep);
       if (resource_map != nullptr && lGetNumberOfElem(resource_map) > 0) {
          long range_start = -1, range_last = -1, range_current;
          // How often the identifiers of the range being built occur. A range is written once
          // per occurrence, so it can only hold identifiers which occur equally often.
          uint32_t range_amount = 0;
 
-         for_each_ep_lv (resource, resource_map) {
+         for (ocs::tom::ConstElement<ocs::tom::RESL> resource : resource_map) {
             str_value = ocs::tom::get<RESL_value>(resource);
             const uint32_t amount = ocs::tom::get<RESL_amount>(resource);
-            const lList *props = ocs::tom::get<RESL_properties>(resource);
+            ocs::tom::ConstList<ocs::tom::CE> props = ocs::tom::get<RESL_properties>(resource);
             const bool has_props = (props != nullptr && lGetNumberOfElem(props) > 0);
 
             if (has_props) {
@@ -468,7 +468,7 @@ write_CE_stringval_host(const lListElem *ep, int nm, dstring *buffer, lList **al
                // build "id[k1=v1;k2=v2;...]" with characteristics sorted asc by CE_name
                std::vector<std::pair<std::string, std::string>> pairs;
                pairs.reserve(lGetNumberOfElem(props));
-               const lListElem *prop;
+               ocs::tom::ConstElement<ocs::tom::CE> prop;
                for_each_ep (prop, props) {
                   const char *pname = ocs::tom::get<CE_name>(prop);
                   const char *pval = ocs::tom::get<CE_stringval>(prop);

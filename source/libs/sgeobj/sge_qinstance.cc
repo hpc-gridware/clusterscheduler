@@ -83,6 +83,7 @@
 #include "sgeobj/tom/ocs_tom_RDE.h"
 #include "sgeobj/tom/ocs_tom_ST.h"
 #include "sgeobj/tom/ocs_tom_US.h"
+#include "sgeobj/tom/ocs_tom_RUE.h"
 
 #include "msg_common.h"
 #include "ocs_TopologyString.h"
@@ -229,7 +230,7 @@ qinstance_is_owner(const ocs::gdi::Packet *packet, const lListElem *this_elem) {
    if (this_elem == nullptr) {
       ret = false;
    } else {
-      const lList *owner_list = ocs::tom::get<QU_owner_list>(this_elem);
+      ocs::tom::ConstList<ocs::tom::US> owner_list = ocs::tom::get<QU_owner_list>(this_elem);
       if (static_cast<const lListElem *>(ocs::tom::find_first<US_name>(owner_list, packet->user)) != nullptr) {
          ret = true;
       }
@@ -253,7 +254,7 @@ qinstance_is_owner(const ocs::gdi::Packet *packet, const lListElem *this_elem) {
 bool
 qinstance_is_pe_referenced(const lListElem *this_elem, const lListElem *pe) {
    DENTER(TOP_LAYER);
-   for_each_ep_lv(pe_name_elem, ocs::tom::get<QU_pe_list>(this_elem)) {
+   for (ocs::tom::ConstElement<ocs::tom::ST> pe_name_elem : ocs::tom::get<QU_pe_list>(this_elem)) {
       if (strcmp(ocs::tom::get<PE_name>(pe), ocs::tom::get<ST_name>(pe_name_elem)) == 0) {
          DRETURN(true);
       }
@@ -333,7 +334,7 @@ qinstance_is_ckpt_referenced(const lListElem *this_elem, const lListElem *ckpt) 
    DENTER(TOP_LAYER);
 
    bool ret = false;
-   const lList *ckpt_list = ocs::tom::get<QU_ckpt_list>(this_elem);
+   ocs::tom::ConstList<ocs::tom::ST> ckpt_list = ocs::tom::get<QU_ckpt_list>(this_elem);
 
    if (static_cast<const lListElem *>(ocs::tom::find_first<ST_name>(ckpt_list, ocs::tom::get<CK_name>(ckpt))) != nullptr) {
       ret = true;
@@ -385,7 +386,7 @@ qinstance_is_centry_a_complex_value(const lListElem *this_elem,
 
    if (this_elem != nullptr) {
       const char *name = ocs::tom::get<CE_name>(centry);
-      const lList *centry_list = ocs::tom::get<QU_consumable_config_list>(this_elem);
+      ocs::tom::ConstList<ocs::tom::CE> centry_list = ocs::tom::get<QU_consumable_config_list>(this_elem);
       const lListElem *centry_ref = ocs::tom::find_first<CE_name>(centry_list, name);
 
       if (centry_ref != nullptr || get_rsrc(name, true, nullptr, nullptr, nullptr, nullptr) == 0) {
@@ -455,7 +456,7 @@ qinstance_list_find_matching(const lList *this_list, lList **answer_list,
  */
 int qinstance_slots_used(const lListElem *this_elem) {
    DENTER(QINSTANCE_LAYER);
-   const lListElem *slots = ocs::tom::find_first_in<QU_resource_utilization, RUE_name>(this_elem, SGE_ATTR_SLOTS);
+   ocs::tom::ConstElement<ocs::tom::RUE> slots = ocs::tom::find_first_in<QU_resource_utilization, RUE_name>(this_elem, SGE_ATTR_SLOTS);
    int ret = 1000000; /* when slots is unknown */
 
    if (slots != nullptr) {
@@ -484,9 +485,9 @@ uint32_t
 qinstance_slots_reserved(const lListElem *this_elem) {
    DENTER(QINSTANCE_LAYER);
    uint32_t ret = 0;
-   const lListElem *slots = ocs::tom::find_first_in<QU_resource_utilization, RUE_name>(this_elem, SGE_ATTR_SLOTS);
+   ocs::tom::ConstElement<ocs::tom::RUE> slots = ocs::tom::find_first_in<QU_resource_utilization, RUE_name>(this_elem, SGE_ATTR_SLOTS);
    if (slots != nullptr) {
-      for_each_ep_lv(utilized, ocs::tom::get<RUE_utilized>(slots)) {
+      for (ocs::tom::ConstElement<ocs::tom::RDE> utilized : ocs::tom::get<RUE_utilized>(slots)) {
          ret = std::max(static_cast<double>(ret), ocs::tom::get<RDE_amount>(utilized));
       }
    }
@@ -505,7 +506,7 @@ qinstance_slots_reserved(const lListElem *this_elem) {
 void
 qinstance_set_slots_used(lListElem *this_elem, int new_slots) {
    DENTER(QINSTANCE_LAYER);
-   lListElem *slots = ocs::tom::find_first_in_rw<QU_resource_utilization, RUE_name>(this_elem, "slots");
+   ocs::tom::Element<ocs::tom::RUE> slots = ocs::tom::find_first_in_rw<QU_resource_utilization, RUE_name>(this_elem, "slots");
    if (slots != nullptr) {
       ocs::tom::set<RUE_utilized_now>(slots, new_slots);
    } else {
@@ -952,7 +953,7 @@ rc_debit_consumable(const lListElem *jep, const lListElem *pe, lListElem *ep, co
 void 
 qinstance_set_conf_slots_used(lListElem *this_elem) {
    DENTER(QINSTANCE_LAYER);
-   lListElem *slots = ocs::tom::find_first_in_rw<QU_consumable_config_list, CE_name>(this_elem, "slots");
+   ocs::tom::Element<ocs::tom::CE> slots = ocs::tom::find_first_in_rw<QU_consumable_config_list, CE_name>(this_elem, "slots");
    if (slots == nullptr) {
       slots = ocs::tom::emplace_back_in<QU_consumable_config_list, CE_name>(this_elem, "slots");
    }

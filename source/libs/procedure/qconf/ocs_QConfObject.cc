@@ -556,8 +556,8 @@ qconf_ce_retain_builtin(const lListElem *ep) {
  */
 static bool
 qconf_stn_has_ids(const lListElem *ep) {
-   const lListElem *child;
-   for_each_ep(child, static_cast<const lList *>(ocs::tom::get<STN_children>(ep))) {
+   ocs::tom::ConstElement<ocs::tom::STN> child;
+   for_each_ep(child, ocs::tom::get<STN_children>(ep)) {
       if (ocs::tom::get<STN_id>(child) != 0 || qconf_stn_has_ids(child)) {
          return true;
       }

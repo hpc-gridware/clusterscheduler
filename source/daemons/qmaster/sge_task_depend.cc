@@ -222,7 +222,7 @@ sge_task_depend_update(lListElem *jep, lList **alpp, uint32_t task_id, uint64_t 
    }
 
    /* process the resolved predecessor list */
-   for_each_ep_lv(pre, ocs::tom::get<JB_ja_ad_predecessor_list>(jep)) {
+   for (ocs::tom::ConstElement<ocs::tom::JRE> pre : ocs::tom::get<JB_ja_ad_predecessor_list>(jep)) {
       uint32_t sa, sa_task_id, amin, amax;
       const lListElem *pred_jep = nullptr; /* JB_Type */
       lListElem *dep_range = nullptr;      /* RN_Type */
@@ -395,7 +395,7 @@ sge_task_depend_flush(lListElem *jep, lList **alpp, uint64_t gdi_session) {
          ret = true;
       }
       /* unhold any arary held tasks that are enrolled */
-      for_each_rw_lv(ja_task, ocs::tom::get<JB_ja_tasks>(jep)) {
+      for (ocs::tom::Element<ocs::tom::JAT> ja_task : ocs::tom::get<JB_ja_tasks>(jep)) {
          uint32_t task_id = ocs::tom::get<JAT_task_number>(ja_task);
          uint32_t hold_state = job_get_hold_state(jep, task_id);
          if ((hold_state & MINUS_H_TGT_JA_AD) != 0) {

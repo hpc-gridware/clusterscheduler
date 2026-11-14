@@ -263,9 +263,9 @@ sge_job_verify_per_host_requests(lList **alpp, const lListElem *jep, const lList
 static bool job_verify_soft_master_slave_requests(lList **alpp, const lListElem *jep) {
    bool ret = true;
 
-   const lList *jrs_list = ocs::tom::get<JB_request_set_list>(jep);
+   ocs::tom::ConstList<ocs::tom::JRS> jrs_list = ocs::tom::get<JB_request_set_list>(jep);
    if (jrs_list != nullptr) {
-      for_each_ep_lv(jrs, jrs_list) {
+      for (ocs::tom::ConstElement<ocs::tom::JRS> jrs : jrs_list) {
          uint32_t scope = ocs::tom::get<JRS_scope>(jrs);
 
          // we do not allow master and slave soft queue requests
@@ -295,9 +295,9 @@ job_verify_non_pe_soft_master_slave_requests(lList **alpp, const lListElem *jep)
    bool ret = true;
 
    if (ocs::tom::get<JB_pe>(jep) == nullptr) {
-      const lList *jrs_list = ocs::tom::get<JB_request_set_list>(jep);
+      ocs::tom::ConstList<ocs::tom::JRS> jrs_list = ocs::tom::get<JB_request_set_list>(jep);
       if (jrs_list != nullptr) {
-         for_each_ep_lv(jrs, jrs_list) {
+         for (ocs::tom::ConstElement<ocs::tom::JRS> jrs : jrs_list) {
             if (ocs::tom::get<JRS_scope>(jrs) != JRS_SCOPE_GLOBAL) {
                ERROR(SFNMAX, MSG_JOB_MASTERSLAVENONPE);
                answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
@@ -332,8 +332,8 @@ static bool
 sge_job_verify_rsmap_scope_requests(lList **alpp, const lListElem *jep) {
    bool ret = true;
 
-   for_each_ep_lv(jrs, ocs::tom::get<JB_request_set_list>(jep)) {
-      for_each_ep_lv(request, ocs::tom::get<JRS_hard_resource_list>(jrs)) {
+   for (ocs::tom::ConstElement<ocs::tom::JRS> jrs : ocs::tom::get<JB_request_set_list>(jep)) {
+      for (ocs::tom::ConstElement<ocs::tom::CE> request : ocs::tom::get<JRS_hard_resource_list>(jrs)) {
          if (static_cast<ocs::CEntry::Type>(ocs::tom::get<CE_valtype>(request)) !=
              ocs::CEntry::Type::RSMAP) {
             continue;
@@ -343,7 +343,7 @@ sge_job_verify_rsmap_scope_requests(lList **alpp, const lListElem *jep) {
                              ? RSMAP_REQUEST_PARAM_SCOPE_JOB : RSMAP_REQUEST_PARAM_SCOPE_HOST;
 
          // only the scopes behind this one, so that a pair is reported once and not twice
-         for (const lListElem *other_jrs = lNext(jrs); other_jrs != nullptr;
+         for (ocs::tom::ConstElement<ocs::tom::JRS> other_jrs = lNext(jrs); other_jrs != nullptr;
               other_jrs = lNext(other_jrs)) {
             const lListElem *other = ocs::tom::find_first_in<JRS_hard_resource_list, CE_name>(other_jrs, name);
             if (other == nullptr) {
@@ -516,11 +516,11 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp,
     * use the master_CEntry_list for all fills
     * JB_hard/soft_resource_list points to a CE_Type list
     */
-   for_each_rw_lv(jrs, ocs::tom::get<JB_request_set_list>(jep)) {
+   for (ocs::tom::Element<ocs::tom::JRS> jrs : ocs::tom::get<JB_request_set_list>(jep)) {
       uint32_t scope = ocs::tom::get<JRS_scope>(jrs);
       DPRINTF("request set of scope %s\n", job_scope_name(scope));
 
-      lList *hard_resource_list = ocs::tom::get<JRS_hard_resource_list>(jrs);
+      ocs::tom::List<ocs::tom::CE> hard_resource_list = ocs::tom::get<JRS_hard_resource_list>(jrs);
       if (centry_list_fill_request(hard_resource_list, alpp, master_centry_list, false, true, false)) {
          ret = STATUS_EUNKNOWN;
          break;
@@ -534,7 +534,7 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp,
          break;
       }
 
-      lList *soft_resource_list = ocs::tom::get<JRS_soft_resource_list>(jrs);
+      ocs::tom::List<ocs::tom::CE> soft_resource_list = ocs::tom::get<JRS_soft_resource_list>(jrs);
       if (centry_list_fill_request(soft_resource_list, alpp, master_centry_list, false, true, false)) {
          ret = STATUS_EUNKNOWN;
          break;
@@ -552,13 +552,13 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp,
          break;
       }
 
-      lList *queue_list = ocs::tom::get<JRS_hard_queue_list>(jrs);
+      ocs::tom::List<ocs::tom::QR> queue_list = ocs::tom::get<JRS_hard_queue_list>(jrs);
       if (!qref_list_is_valid(queue_list, alpp, master_cqueue_list, master_hgroup_list, master_centry_list)) {
          ret = STATUS_EUNKNOWN;
          break;
       }
-      queue_list = ocs::tom::get<JRS_soft_queue_list>(jrs);
-      if (!qref_list_is_valid(queue_list, alpp, master_cqueue_list, master_hgroup_list, master_centry_list)) {
+      ocs::tom::List<ocs::tom::QR> queue_list_qr = ocs::tom::get<JRS_soft_queue_list>(jrs);
+      if (!qref_list_is_valid(queue_list_qr, alpp, master_cqueue_list, master_hgroup_list, master_centry_list)) {
          ret = STATUS_EUNKNOWN;
          break;
       }
@@ -693,7 +693,7 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp,
       uint32_t max_aj_tasks = mconf_get_max_aj_tasks();
 
       if (max_aj_tasks > 0) {
-         const lList *range_list = ocs::tom::get<JB_ja_structure>(jep);
+         ocs::tom::ConstList<ocs::tom::RN> range_list = ocs::tom::get<JB_ja_structure>(jep);
          uint32_t submit_size = range_list_get_number_of_ids(range_list);
 
          if (submit_size > max_aj_tasks) {
@@ -787,7 +787,6 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp,
     */
    {
       const char *pe_name = nullptr;
-      lList *pe_range = nullptr;
 
       pe_name = ocs::tom::get<JB_pe>(jep);
       if (pe_name) {
@@ -800,7 +799,7 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp,
             DRETURN(STATUS_EUNKNOWN);
          }
          /* check pe_range */
-         pe_range = ocs::tom::get<JB_pe_range>(jep);
+         ocs::tom::List<ocs::tom::RN> pe_range = ocs::tom::get<JB_pe_range>(jep);
          if (object_verify_pe_range(alpp, pe_name, pe_range, SGE_OBJ_JOB) != STATUS_OK) {
             DRETURN(STATUS_EUNKNOWN);
          }
@@ -864,9 +863,9 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp,
       lList *grp_list = grp_list_array2list(packet->amount, packet->grp_array);
 
       for_each_ep_lv(cqueue, master_cqueue_list) {
-         const lList *qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
+         ocs::tom::ConstList<ocs::tom::QU> qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
 
-         for_each_ep_lv(qinstance, qinstance_list) {
+         for (ocs::tom::ConstElement<ocs::tom::QU> qinstance : qinstance_list) {
             if (sge_has_access(packet->user, packet->group, grp_list, qinstance, master_userset_list)) {
                DPRINTF("job has access to queue " SFQ "\n", ocs::tom::get<QU_qname>(qinstance));
                has_permissions = 1;

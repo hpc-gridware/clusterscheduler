@@ -599,7 +599,7 @@ static lList *qalter_parse_job_parameter(uint32_t me_who, lList *cmdline, lList 
    while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-h"))) {
       is_hold_option = true;
 
-      for_each_rw_lv (jid, ocs::tom::get<JB_job_identifier_list>(job)) {
+      for (ocs::tom::Element<ocs::tom::ID> jid : ocs::tom::get<JB_job_identifier_list>(job)) {
          ocs::tom::set<ID_force>(jid, (uint32_t) ocs::tom::get<SPA_argval_lIntT>(ep));
       }
       lRemoveElem(cmdline, &ep);
@@ -990,7 +990,7 @@ static lList *qalter_parse_job_parameter(uint32_t me_who, lList *cmdline, lList 
          task = lAddElemUlong(&task_list, JAT_task_number, 0, task_descr);      
          ocs::tom::set<JAT_hold>(task, ocs::tom::get<ID_force>(ep));
       } else if (ocs::tom::get<ID_ja_structure>(ep)) {
-         for_each_ep_lv(range, ocs::tom::get<ID_ja_structure>(ep)) {
+         for (ocs::tom::ConstElement<ocs::tom::RN> range : ocs::tom::get<ID_ja_structure>(ep)) {
             uint32_t start = ocs::tom::get<RN_min>(range);
             uint32_t end = ocs::tom::get<RN_max>(range);
             uint32_t step = ocs::tom::get<RN_step>(range);

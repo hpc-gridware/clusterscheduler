@@ -103,6 +103,7 @@
 #include "sgeobj/tom/ocs_tom_RESL.h"
 #include "sgeobj/tom/ocs_tom_ST.h"
 #include "sgeobj/tom/ocs_tom_VA.h"
+#include "sgeobj/tom/ocs_tom_CE.h"
 
 #include "comm/commlib.h"
 
@@ -173,11 +174,11 @@ static long get_next_addgrpid(lList *, long);
 const lListElem *responsible_queue([[maybe_unused]] const lListElem *jep, const lListElem *jatep, const lListElem *petep) {
    DENTER(TOP_LAYER);
 
-   const lListElem *gdil_ep;
+   ocs::tom::ConstElement<ocs::tom::JG> gdil_ep;
    if (petep == nullptr) {
-      gdil_ep = lFirst(static_cast<const lList *>(ocs::tom::get<JAT_granted_destin_identifier_list>(jatep)));
+      gdil_ep = lFirst(ocs::tom::get<JAT_granted_destin_identifier_list>(jatep));
    } else {
-      const lListElem *pe_queue = lFirst(static_cast<const lList *>(ocs::tom::get<PET_granted_destin_identifier_list>(petep)));
+      ocs::tom::ConstElement<ocs::tom::JG> pe_queue = lFirst(ocs::tom::get<PET_granted_destin_identifier_list>(petep));
       gdil_ep = ocs::tom::find_first<JG_qname>(ocs::tom::get<JAT_granted_destin_identifier_list>(jatep),
                             ocs::tom::get<JG_qname>(pe_queue));
    }
@@ -204,11 +205,11 @@ const lListElem *responsible_queue([[maybe_unused]] const lListElem *jep, const 
 lListElem *responsible_queue([[maybe_unused]] const lListElem *jep, lListElem *jatep, const lListElem *petep) {
    DENTER(TOP_LAYER);
 
-   lListElem *gdil_ep;
+   ocs::tom::Element<ocs::tom::JG> gdil_ep;
    if (petep == nullptr) {
-      gdil_ep = lFirstRW(static_cast<lList *>(ocs::tom::get<JAT_granted_destin_identifier_list>(jatep)));
+      gdil_ep = lFirstRW(ocs::tom::get<JAT_granted_destin_identifier_list>(jatep));
    } else {
-      const lListElem *pe_queue = lFirst(static_cast<const lList *>(ocs::tom::get<PET_granted_destin_identifier_list>(petep)));
+      ocs::tom::ConstElement<ocs::tom::JG> pe_queue = lFirst(ocs::tom::get<PET_granted_destin_identifier_list>(petep));
       gdil_ep = ocs::tom::find_first_rw<JG_qname>(ocs::tom::get<JAT_granted_destin_identifier_list>(jatep),
                               ocs::tom::get<JG_qname>(pe_queue));
    }
@@ -259,13 +260,13 @@ static long get_next_addgrpid(lList *rlp, long last_addgrpid) {
 
 static int addgrpid_already_in_use(long add_grp_id) {
    for_each_ep_lv(job, *ocs::DataStore::get_master_list(SGE_TYPE_JOB)) {
-      for_each_ep_lv(ja_task, ocs::tom::get<JB_ja_tasks>(job)) {
+      for (ocs::tom::ConstElement<ocs::tom::JAT> ja_task : ocs::tom::get<JB_ja_tasks>(job)) {
          const char *id = ocs::tom::get<JAT_osjobid>(ja_task);
          if (id != nullptr && atol(id) == add_grp_id) {
             return 1;
          }
 
-         for_each_ep_lv(pe_task, ocs::tom::get<JAT_task_list>(ja_task)) {
+         for (ocs::tom::ConstElement<ocs::tom::PET> pe_task : ocs::tom::get<JAT_task_list>(ja_task)) {
             id = ocs::tom::get<PET_osjobid>(pe_task);
             if (id != nullptr && atol(id) == add_grp_id) {
                return 1;
@@ -357,7 +358,7 @@ exec_job_task_limit_is_summed(const lListElem *jep, const lListElem *jatep, cons
    DENTER(TOP_LAYER);
 
    bool ret = false;
-   const lListElem *pe = ocs::tom::get<JAT_pe_object>(jatep);
+   ocs::tom::ConstElement<ocs::tom::PE> pe = ocs::tom::get<JAT_pe_object>(jatep);
    if (pe != nullptr && !job_is_requesting_consumable(jep, limit_name)) {
       if (!ocs::tom::get<PE_control_slaves>(pe)) {
          // loosely integrated: the master task starts the processes of all slots
@@ -392,7 +393,7 @@ exec_job_sum_host_limit(int limit_nm, ocs::CEntry::Type type, const lListElem *j
    DENTER(TOP_LAYER);
 
    double limit = 0;
-   const lList *gdil = ocs::tom::get<JAT_granted_destin_identifier_list>(jatep);
+   ocs::tom::ConstList<ocs::tom::JG> gdil = ocs::tom::get<JAT_granted_destin_identifier_list>(jatep);
    const void *iterator = nullptr;
    const lListElem *gdil_ep;
    const lListElem *next_gdil_ep = ocs::tom::find_first<JG_qhostname>(gdil, qualified_hostname,
@@ -568,7 +569,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
    char cwd_out_buffer[SGE_PATH_MAX];
    dstring cwd_out;
 
-   const lList *path_aliases = nullptr;
+   ocs::tom::ConstList<ocs::tom::PA> path_aliases = nullptr;
    bool starting_shepherd_ok = true;
 
 #if COMPILE_DC
@@ -603,10 +604,10 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
 
    char mail_str[1024];
    const char *shepherd_name;
-   const lList *gdil;
+   ocs::tom::ConstList<ocs::tom::JG> gdil;
    lListElem *master_q;
    lListElem *ep;
-   const lListElem *env;
+   ocs::tom::ConstElement<ocs::tom::VA> env;
    lList *environmentList = nullptr;
    const char *arch = sge_get_arch();
    const char *sge_root = bootstrap_get_sge_root();
@@ -709,7 +710,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
 
    nhosts = get_nhosts(gdil);
    pe_slots = 0;
-   for_each_ep_lv(gdil_ep, gdil) {
+   for (ocs::tom::ConstElement<ocs::tom::JG> gdil_ep : gdil) {
       pe_slots += (int) ocs::tom::get<JG_slots>(gdil_ep);
    }
 
@@ -717,7 +718,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
    bool binding_to_use_is_initialized = false;
 #if defined(OCS_HWLOC)
    ocs::BindingInstance::Instance binding_instance = ocs::Job::binding_get_instance(jep);
-   const lList *granted_resources_list = ocs::tom::get<JAT_granted_resources_list>(jatep);
+   ocs::tom::ConstList<ocs::tom::GRU> granted_resources_list = ocs::tom::get<JAT_granted_resources_list>(jatep);
    ocs::TopologyString binding_to_use;
    ocs::GrantedResources::get_combined_binding_for_host(granted_resources_list, qualified_hostname, binding_to_use);
    binding_to_use_is_initialized = true;
@@ -773,7 +774,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
 #endif
 
       host_slots = 0;
-      for_each_ep_lv(gdil_ep, gdil) {
+      for (ocs::tom::ConstElement<ocs::tom::JG> gdil_ep : gdil) {
          lList *alp = nullptr;
 
          // get processor set configuration (used when available and thread binding is not used
@@ -820,7 +821,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
    }
 
    {
-      const lListElem *user_path;
+      ocs::tom::ConstElement<ocs::tom::VA> user_path;
       dstring buffer = DSTRING_INIT;
 
       if ((user_path = ocs::tom::find_first<VA_variable>(environmentList, "PATH"))) {
@@ -1134,7 +1135,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
    if (ocs::tom::get<JAT_granted_pe>(jatep) != nullptr) {
       DSTRING_STATIC(dstr_buffer, SGE_PATH_MAX);
       const char *str_buffer;
-      const lListElem *pe;
+      ocs::tom::ConstElement<ocs::tom::PE> pe;
 
       var_list_set_string(&environmentList, "PE", ocs::tom::get<JAT_granted_pe>(jatep));
       /* forward PE_HOSTFILE only to master task */
@@ -1512,7 +1513,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
    // instrumentation for the testsuite: on a host with systemd, sge_shepherd also sets
    // MemorySwapMax of the job scope, so that a job reaching MemoryMax is not just swapped out
    {
-      const lListElem *swap_max = ocs::tom::find_first_in<JB_env_list, VA_variable>(jep, "SGE_DEBUG_MEMORY_SWAP_MAX");
+      ocs::tom::ConstElement<ocs::tom::VA> swap_max = ocs::tom::find_first_in<JB_env_list, VA_variable>(jep, "SGE_DEBUG_MEMORY_SWAP_MAX");
       if (swap_max != nullptr && ocs::tom::get<VA_value>(swap_max) != nullptr) {
          fprintf(fp, "memory_swap_max=%s\n", ocs::tom::get<VA_value>(swap_max));
       }
@@ -1608,7 +1609,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
 
    /* write pe related data */
    if (ocs::tom::get<JAT_granted_pe>(jatep)) {
-      lListElem *pep = nullptr;
+      ocs::tom::Element<ocs::tom::PE> pep = nullptr;
       /* no pe start/stop for petasks */
       if (petep == nullptr) {
          pep = ocs::tom::get<JAT_pe_object>(jatep);
@@ -1756,9 +1757,9 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
                if (static_cast<ocs::GrantedResources::Type>(ocs::tom::get<GRU_type>(gru)) != ocs::GrantedResources::Type::GRU_RESOURCE_MAP_TYPE) {
                   continue;
                }
-               const lListElem *resl;
-               for_each_ep (resl, static_cast<const lList *>(ocs::tom::get<GRU_resource_map_list>(gru))) {
-                  const lListElem *dev_prop = ocs::tom::find_first_in<RESL_properties, CE_name>(resl, LOAD_ATTR_DEVICES);
+               ocs::tom::ConstElement<ocs::tom::RESL> resl;
+               for_each_ep (resl, ocs::tom::get<GRU_resource_map_list>(gru)) {
+                  ocs::tom::ConstElement<ocs::tom::CE> dev_prop = ocs::tom::find_first_in<RESL_properties, CE_name>(resl, LOAD_ATTR_DEVICES);
                   if (dev_prop != nullptr) {
                      add_devices(ocs::tom::get<CE_stringval>(dev_prop), ocs::tom::get<GRU_name>(gru),
                                  ocs::tom::get<RESL_value>(resl));
@@ -1904,8 +1905,8 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
 
 
    {
-      const lList *args;
-      const lListElem *se;
+      ocs::tom::ConstList<ocs::tom::ST> args;
+      ocs::tom::ConstElement<ocs::tom::ST> se;
 
       int nargs = 1;
 
@@ -2023,7 +2024,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
 
       if (JOB_TYPE_IS_QLOGIN(jb_now) || JOB_TYPE_IS_QRSH(jb_now)
           || JOB_TYPE_IS_QRLOGIN(jb_now)) {
-         const lListElem *elem;
+         ocs::tom::ConstElement<ocs::tom::VA> elem;
          char daemon[SGE_PATH_MAX];
 
          fprintf(fp, "master_host=%s\n", masterhost);
