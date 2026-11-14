@@ -125,13 +125,12 @@ enum SPA_Field {
     * @brief Parsed List Argument
     *
     * If the option argument defines a list of items then this attribute contains the parsed list.
+    * The type of its elements depends on the option, e.g. ST for -hold_jid, PN for -jsv, VA for -v.
     */
    SPA_argval_lListT,
 };
 
 namespace ocs::tom {
-
-   struct ST;
 
    /**
     * @brief Commandline Argument
@@ -168,12 +167,6 @@ namespace ocs::tom {
    template <>
    struct TypeOf<SPA_Field> {
       using type = SPA;   ///< the object type
-   };
-
-   /** @brief SPA_argval_lListT holds elements of ST */
-   template <>
-   struct SubType<SPA_argval_lListT> {
-      using type = ST;   ///< the sub-type
    };
 
 } // namespace ocs::tom

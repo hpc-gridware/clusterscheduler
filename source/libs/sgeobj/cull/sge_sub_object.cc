@@ -268,9 +268,6 @@ object_get_subtype(int nm)
       case JG_granted_rsmaps:
          ret = RESL_Type;
          break;
-      case SPA_argval_lListT:
-         ret = ST_Type;
-         break;
       case PR_usage:
          ret = UA_Type;
          break;

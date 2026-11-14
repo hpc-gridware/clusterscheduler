@@ -379,7 +379,6 @@ namespace ocs::tom {
       {CONF_entries, CF::descriptor.e},
       {JG_binding_to_use, ST::descriptor.e},
       {JG_granted_rsmaps, RESL::descriptor.e},
-      {SPA_argval_lListT, ST::descriptor.e},
       {PR_usage, UA::descriptor.e},
       {PR_long_term_usage, UA::descriptor.e},
       {PR_project, UPP::descriptor.e},
