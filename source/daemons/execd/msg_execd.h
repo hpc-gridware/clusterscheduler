@@ -247,6 +247,8 @@
 #define MSG_REJECT_TASK_SLOTS_IN_USE_UUIUS               _MESSAGE(29224, _("rejecting pe task request for job " sge_uu32 "." sge_uu32 ": %d out of " sge_uu32 " slots in queue " SFN " are in use"))
 #define MSG_REJECT_TASK_NO_FREE_SLOT_FOUND_UU            _MESSAGE(29225, _("rejecting pe task request for job " sge_uu32 "." sge_uu32 ": no free slot found"))
 
+#define MSG_EXECD_CUSTOMUSAGENOTANUMBER_UUSS             _MESSAGE(29249, _("job " sge_u32 "." sge_u32 ": custom usage variable " SFQ " has the value " SFQ ", which is not a number - the variable is left out of the usage"))
+
 // clang-format on
 
 #endif /* __MSG_EXECD_H */

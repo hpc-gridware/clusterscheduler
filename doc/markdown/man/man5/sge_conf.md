@@ -1191,6 +1191,11 @@ therefore reserved, and every *name* may be given only once. Both rules ignore t
 A configuration violating them is rejected. If such a configuration was stored by an earlier version,
 the affected groups are ignored and an error is written to the messages file.
 
+Custom usage values, e.g. written to the file *$SGE_JOB_SPOOL_DIR/usage* by a prolog or epilog as
+*name=value* lines, have to be numbers. *true* and *false* (in any case) are accounted as 1 and 0.
+A value which is not a number is left out of the usage of the job, and xxqs_name_sxx_execd(8) writes
+a warning naming the job, the variable and the value to its messages file.
+
 Examples:
 
     usage_patterns=gpu:nvidia.*
