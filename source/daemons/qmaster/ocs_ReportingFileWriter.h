@@ -51,7 +51,6 @@ namespace ocs {
       static pthread_mutex_t writer_mutex;
       static std::string writer_mutex_name;
       static std::string reporting_params;
-      static std::string usage_patterns;
 
    protected:
       std::string filename;

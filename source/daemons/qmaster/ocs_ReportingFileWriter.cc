@@ -53,7 +53,6 @@ namespace ocs {
 
    // configuration parameters
    std::string ReportingFileWriter::reporting_params;
-   std::string ReportingFileWriter::usage_patterns;
    std::vector<std::pair<std::string, std::string>> ReportingFileWriter::usage_pattern_list;
    std::vector<std::string> ReportingFileWriter::online_usage_vars;
    bool ReportingFileWriter::sync_write = false;
@@ -251,29 +250,9 @@ namespace ocs {
          sge_mutex_unlock(writer_mutex_name.c_str(), __func__, __LINE__, &writer_mutex);
 
          // usage patterns for accounting
-         std::string new_usage_patterns = mconf_get_usage_patterns();
+         std::vector<std::pair<std::string, std::string>> new_usage_pattern_list = mconf_get_usage_patterns();
          sge_mutex_lock(config_mutex_name.c_str(), __func__, __LINE__, &config_mutex);
-         if (new_usage_patterns != usage_patterns) {
-            usage_patterns = new_usage_patterns;
-            usage_pattern_list.clear();
-            struct saved_vars_s *context = nullptr;
-            const char *pattern = sge_strtok_r(usage_patterns.c_str(), ";", &context);
-            while (pattern != nullptr) {
-               struct saved_vars_s *inner_context = nullptr;
-               const char *name = sge_strtok_r(pattern, ":", &inner_context);
-               if (name != nullptr) {
-                  const char *value = sge_strtok_r(nullptr, ":", &inner_context);
-                  if (value != nullptr) {
-                     usage_pattern_list.push_back({name, value});
-                  }
-               }
-               sge_free_saved_vars(inner_context);
-
-               // next pattern
-               pattern = sge_strtok_r(nullptr, ";", &context);
-            }
-            sge_free_saved_vars(context);
-         }
+         usage_pattern_list = std::move(new_usage_pattern_list);
          sge_mutex_unlock(config_mutex_name.c_str(), __func__, __LINE__, &config_mutex);
 
          // online_usage variables

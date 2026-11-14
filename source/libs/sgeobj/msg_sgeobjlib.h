@@ -368,6 +368,9 @@
 #define MSG_OBJCONT_DUP_SS        _MESSAGE(64558, _("Duplicate entry " SFQ " in " SFQ))
 
 #define MSG_CONF_INVALIDPARAM_EMPTYTOKEN_SS  _MESSAGE(64559, _("invalid setting for " SFQ ", attribute " SFQ " - empty token between '|' separators (keeping previous value)"))
+#define MSG_CONF_USAGEPATTERNS_SYNTAX_S      _MESSAGE(64598, _("invalid setting for \"reporting_params\", attribute \"usage_patterns\" - entry " SFQ " is not of the form <name>:<expression>"))
+#define MSG_CONF_USAGEPATTERNS_RESERVED_S    _MESSAGE(64599, _("invalid setting for \"reporting_params\", attribute \"usage_patterns\" - group name " SFQ " is reserved (rusage, eusage and usage cannot be used)"))
+#define MSG_CONF_USAGEPATTERNS_DUPLICATE_S   _MESSAGE(64600, _("invalid setting for \"reporting_params\", attribute \"usage_patterns\" - group name " SFQ " is given more than once"))
 
 #define MSG_RSMAP_CHARACTERISTIC_UNKNOWN_SSS   _MESSAGE(64560, _("RSMAP " SFQ " id " SFQ ": characteristic " SFQ " is not a defined complex"))
 #define MSG_RSMAP_CHARACTERISTIC_DUPLICATE_SSS _MESSAGE(64561, _("RSMAP " SFQ " id " SFQ ": characteristic " SFQ " is set more than once"))

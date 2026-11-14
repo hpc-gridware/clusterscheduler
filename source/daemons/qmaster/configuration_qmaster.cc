@@ -576,7 +576,7 @@ check_config(lList **alpp, lListElem *conf) {
          }
       } else if (!strcmp(name, "reporting_params")) {
          // Validate parameters whose grammar we can fail-fast on. Today this
-         // covers only online_usage; other reporting_params tokens are
+         // covers online_usage and usage_patterns; other reporting_params tokens are
          // sanity-checked at merge time in sge_conf.cc::merge_configuration().
          struct saved_vars_s *context = nullptr;
          bool rp_valid = true;
@@ -587,6 +587,14 @@ check_config(lList **alpp, lListElem *conf) {
             if (parse_string_param(s, "online_usage", online_usage_str)) {
                std::vector<std::string> discard;
                if (!parse_online_usage_value(alpp, online_usage_str.c_str(), discard)) {
+                  rp_valid = false;
+               }
+               continue;
+            }
+            std::string usage_patterns_str;
+            if (parse_string_param(s, "usage_patterns", usage_patterns_str)) {
+               std::vector<std::pair<std::string, std::string>> discard;
+               if (!parse_usage_patterns_value(alpp, usage_patterns_str.c_str(), discard)) {
                   rp_valid = false;
                }
             }

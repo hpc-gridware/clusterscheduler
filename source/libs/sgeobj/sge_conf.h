@@ -200,7 +200,9 @@ bool mconf_get_old_accounting();
 bool mconf_get_old_reporting();
 int mconf_get_sharelog_time();
 int mconf_get_log_consumables();
-std::string mconf_get_usage_patterns();
+std::vector<std::pair<std::string, std::string>> mconf_get_usage_patterns();
+bool parse_usage_patterns_value(lList **answer_list, const char *value,
+                                std::vector<std::pair<std::string, std::string>> &out_patterns);
 std::vector<std::string> mconf_get_online_usage_vars();
 bool parse_online_usage_value(lList **answer_list, const char *value, std::vector<std::string> &out_vars);
 bool mconf_get_enable_forced_qdel();

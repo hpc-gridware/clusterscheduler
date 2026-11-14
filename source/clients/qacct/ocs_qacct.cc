@@ -2237,8 +2237,17 @@ sge_read_rusage_json(const char *line, sge_rusage_type *d, sge_qacct_options *op
 
       if (document.HasMember("usage")) {
          const rapidjson::Value &json_usage_list = document["usage"].GetObject();
+         // Records written before custom usage group names were checked can contain a
+         // custom group named rusage, eusage or usage next to the built-in objects.
+         // The built-in object is the first one of its name, and usage stands for eusage
+         // only in records of older versions, which have no eusage object.
+         bool have_rusage = false;
+         bool have_eusage = false;
+         const bool usage_is_eusage = !json_usage_list.HasMember("eusage");
          for (rapidjson::Value::ConstMemberIterator itr = json_usage_list.MemberBegin(); itr != json_usage_list.MemberEnd(); ++itr) {
-            if (sge_strnullcmp(itr->name.GetString(), "rusage") == 0) {
+            const char *group_name = itr->name.GetString();
+            if (!have_rusage && sge_strnullcmp(group_name, "rusage") == 0) {
+               have_rusage = true;
                const rapidjson::Value &json_usage = itr->value;
                d->ru_wallclock = read_json(json_usage, "ru_wallclock", (u_long32) 0);
                d->ru_utime = read_json(json_usage, "ru_utime", 0.0);
@@ -2258,8 +2267,9 @@ sge_read_rusage_json(const char *line, sge_rusage_type *d, sge_qacct_options *op
                d->ru_nsignals = read_json(json_usage, "ru_nsignals", (u_long32) 0);
                d->ru_nvcsw = read_json(json_usage, "ru_nvcsw", (u_long32) 0);
                d->ru_nivcsw = read_json(json_usage, "ru_nivcsw", (u_long32) 0);
-            } else if (sge_strnullcmp(itr->name.GetString(), "eusage") == 0 ||
-                       sge_strnullcmp(itr->name.GetString(), "usage") == 0) { // for backward compatibility
+            } else if (!have_eusage && (sge_strnullcmp(group_name, "eusage") == 0 ||
+                                        (usage_is_eusage && sge_strnullcmp(group_name, "usage") == 0))) {
+               have_eusage = true;
                const rapidjson::Value &json_usage = itr->value;
                d->wallclock = read_json(json_usage, "wallclock", 0.0);
                d->cpu = read_json(json_usage, "cpu", 0.0);
