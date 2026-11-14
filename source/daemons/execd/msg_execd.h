@@ -267,6 +267,7 @@
 #define MSG_EXECD_REAPWAKEUP_S                           _MESSAGE(29246, _("cannot set up the wakeup for finished jobs, they are reaped up to one second late: " SFN))
 #define MSG_EXECD_JOBALREADYKNOWN_UU                     _MESSAGE(29247, _("ignoring the start of job " sge_u32 "." sge_u32 ", the job is still known from a previous delivery"))
 #define MSG_EXECD_JOBSCOPENOTSTOPPED_SS                  _MESSAGE(29248, _("job scope " SFN " is still " SFN " after the job has ended - an OOM kill of the job might not be reported in the accounting record, and a failed job scope might stay loaded in systemd"))
+#define MSG_EXECD_CUSTOMUSAGENOTANUMBER_UUSS             _MESSAGE(29249, _("job " sge_u32 "." sge_u32 ": custom usage variable " SFQ " has the value " SFQ ", which is not a number - the variable is left out of the usage"))
 
 // clang-format on
 

@@ -104,3 +104,6 @@ void
 usage_list_sum(lList *usage_list, const lList *add_usage_list);
 
 lList *scale_usage(const lList *scaling, const lList *prev_usage, lList *scaled_usage);
+
+bool
+usage_parse_number(const char *value, double &out);

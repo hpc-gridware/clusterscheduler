@@ -32,9 +32,15 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+#include <cerrno>
+#include <cmath>
+#include <cstdlib>
 #include <cstring>
+#include <strings.h>
 
 #include "cull/cull.h"
+
+#include "uti/sge_rmon_macros.h"
 
 #include "sgeobj/sge_usage.h"
 #include "sgeobj/sge_host.h"
@@ -403,4 +409,46 @@ lList *scaled_usage /* UA_Type */
    }
 
    return scaled_usage;
+}
+
+/**
+ * @brief Parse a custom usage value from the usage file of a job.
+ *
+ * A prolog, epilog or the job itself can add custom usage values to the usage file
+ * ($SGE_JOB_SPOOL_DIR/usage), which are selected for the accounting record by
+ * reporting_params usage_patterns. Such a value has to be a number:
+ *   - a value which can be parsed completely as a finite double is used as is,
+ *   - true and false (case-insensitively) give 1 and 0,
+ *   - anything else (an empty value, text, a number followed by other characters,
+ *     NaN, Infinity) is not a number.
+ *
+ * @param[in] value the value as text, may be nullptr
+ * @param[out] out the parsed number, unchanged if the value is not a number
+ * @return true if the value is a number
+ */
+bool
+usage_parse_number(const char *value, double &out) {
+   DENTER(BASIS_LAYER);
+   if (value == nullptr || value[0] == '\0') {
+      DRETURN(false);
+   }
+
+   char *end = nullptr;
+   errno = 0;
+   const double parsed = strtod(value, &end);
+   if (errno == 0 && end != value && *end == '\0' && std::isfinite(parsed)) {
+      out = parsed;
+      DRETURN(true);
+   }
+
+   if (strcasecmp(value, "true") == 0) {
+      out = 1.0;
+      DRETURN(true);
+   }
+   if (strcasecmp(value, "false") == 0) {
+      out = 0.0;
+      DRETURN(true);
+   }
+
+   DRETURN(false);
 }

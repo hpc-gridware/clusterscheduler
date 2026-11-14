@@ -1876,13 +1876,20 @@ read_dusage(lListElem *jr, const char *jobdir, u_long32 jobid, u_long32 jataskid
 
          build_derived_final_usage(jr, jobid, jataskid, pe_task_id);
 
-         // report whatever is remaining in the usage list
+         // report whatever is remaining in the usage list, these are custom usage values
+         // written by a prolog, epilog or the job, they have to be numbers
          const lListElem *ep;
          for_each_ep(ep, cflp) {
             const char *name = lGetString(ep, CF_name);
             const char *value = lGetString(ep, CF_value);
             DEBUG("additional usage variable %s = %s", name, value);
-            add_usage(jr, name, value, 0.0);
+            double number;
+            if (usage_parse_number(value, number)) {
+               add_usage(jr, name, nullptr, number);
+            } else {
+               WARNING(MSG_EXECD_CUSTOMUSAGENOTANUMBER_UUSS, jobid, jataskid, name,
+                       value != nullptr ? value : "");
+            }
          }
          lFreeList(&cflp);
       } else {
