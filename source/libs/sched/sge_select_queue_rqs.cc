@@ -1130,7 +1130,8 @@ rqs_set_dynamical_limit(const ocs::tom::Element<ocs::tom::RQRL> limit, const ocs
    DENTER(TOP_LAYER);
 
    if (ocs::tom::get<RQRL_dynamic>(limit)) {
-      double dynamic_limit = scaled_mixed_load(ocs::tom::get<RQRL_value>(limit), global_host, exec_host, centry, nullptr);
+      double dynamic_limit = scaled_mixed_load(ocs::tom::get<RQRL_value>(limit), global_host, exec_host, centry,
+                                                 ocs::tom::ConstList<ocs::tom::CE>());
       DPRINTF("found a dynamic limit for host %s with value %d\n", static_cast<const char *>(ocs::tom::get<EH_name>(exec_host)), (int)dynamic_limit);
       ocs::tom::set<RQRL_dvalue>(limit, dynamic_limit);
    }

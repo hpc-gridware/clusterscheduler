@@ -52,6 +52,8 @@
 #include "sgeobj/sge_ja_task.h"
 #include "sgeobj/cull/sge_resource_utilization_RUE_L.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
 #include "sgeobj/tom/ocs_tom_HL.h"
 #include "sgeobj/tom/ocs_tom_JAT.h"
 #include "sgeobj/tom/ocs_tom_JG.h"
@@ -92,7 +94,8 @@
  *
  * @return 0 on success, 1 if no queue list or host list was passed
  */
-int correct_load(lList *running_jobs, lList *queue_list, lList *host_list,
+int correct_load(const ocs::tom::ConstList<ocs::tom::JB> running_jobs,
+                 const ocs::tom::ConstList<ocs::tom::QU> queue_list, const ocs::tom::List<ocs::tom::EH> host_list,
                  uint64_t decay_time, bool monitor_next_run) {
    DENTER(TOP_LAYER);
 
@@ -100,14 +103,14 @@ int correct_load(lList *running_jobs, lList *queue_list, lList *host_list,
       DRETURN(1);
    }
 
-   lListElem *global_host = host_list_locate(host_list, SGE_GLOBAL_NAME);
+   const auto global_host = ocs::tom::Element<ocs::tom::EH>::from_typed(host_list_locate(host_list, SGE_GLOBAL_NAME));
    uint64_t now = sge_get_gmt64();
 
-   for_each_rw_lv(job, running_jobs) {
+   for (const auto job : running_jobs) {
       uint32_t job_id = ocs::tom::get<JB_job_number>(job);
       double global_lcf = 0.0;
 
-      for (ocs::tom::Element<ocs::tom::JAT> ja_task : ocs::tom::get<JB_ja_tasks>(job)) {
+      for (const auto ja_task : ocs::tom::get<JB_ja_tasks>(job)) {
          uint32_t ja_task_id = ocs::tom::get<JAT_task_number>(ja_task);
          uint64_t running_time = now - ocs::tom::get<JAT_start_time>(ja_task);
          double host_lcf = 0.0;
@@ -119,22 +122,18 @@ int correct_load(lList *running_jobs, lList *queue_list, lList *host_list,
          if (running_time > decay_time) {
             continue;
          }
-         ocs::tom::ConstList<ocs::tom::JG> granted_list = ocs::tom::get<JAT_granted_destin_identifier_list>(ja_task);
-         for (ocs::tom::ConstElement<ocs::tom::JG> granted_queue : granted_list) {
-            const char *qnm = nullptr;
+         for (const auto granted_queue : ocs::tom::get<JAT_granted_destin_identifier_list>(ja_task)) {
             const char *hnm = nullptr;
-            lListElem *qep = nullptr;
             uint32_t slots;
             
-            qnm = ocs::tom::get<JG_qname>(granted_queue);
-            qep = qinstance_list_locate2(queue_list, qnm);
-            if (qep == nullptr) {
+            const char *qnm = ocs::tom::get<JG_qname>(granted_queue);
+            if (qinstance_list_locate2(queue_list, qnm) == nullptr) {
                DPRINTF("Unable to find queue \"%s\" from gdil " "list of job " sge_u32 "." sge_u32"\n", qnm, job_id, ja_task_id);
                continue;
             }
            
             hnm=ocs::tom::get<JG_qhostname>(granted_queue); 
-            ocs::tom::Element<ocs::tom::EH> hep = ocs::tom::find_first_rw<EH_name>(host_list, hnm);
+            const auto hep = ocs::tom::find_first_rw<EH_name>(host_list, hnm);
             if (hep == nullptr) {
                DPRINTF("Unable to find host \"%s\" from gdil " "list of job " sge_u32 "." sge_u32"\n", hnm, job_id, ja_task_id);
                continue;
@@ -207,9 +206,10 @@ int correct_load(lList *running_jobs, lList *queue_list, lList *host_list,
  *
  * @return always 0
  */
-int correct_capacities(lList *host_list, const lList *centry_list, const lList *load_adjustments) {
+int correct_capacities(const ocs::tom::List<ocs::tom::EH> host_list,
+                       const ocs::tom::ConstList<ocs::tom::CE> centry_list,
+                       const ocs::tom::ConstList<ocs::tom::CE> load_adjustments) {
    DENTER(TOP_LAYER);
-   lListElem *cep;
    ocs::tom::ConstElement<ocs::tom::CE> job_load;
    ocs::tom::ConstElement<ocs::tom::HS> scaling;
    ocs::tom::Element<ocs::tom::CE> total;
@@ -218,21 +218,24 @@ int correct_capacities(lList *host_list, const lList *centry_list, const lList *
    uint32_t relop;
    double dval, inuse_ext, full_capacity, sc_factor;
    double load_correction;
-   lList *local_load_adjustments = nullptr;
-   const lList *job_load_adj_list = load_adjustments;
+   ocs::tom::ListPtr<ocs::tom::CE> local_load_adjustments;
+   auto job_load_adj_list = load_adjustments;
    if (job_load_adj_list == nullptr) {
-      job_load_adj_list = local_load_adjustments = sconf_get_job_load_adjustments();
+      local_load_adjustments = ocs::tom::ListPtr<ocs::tom::CE>::from_typed(sconf_get_job_load_adjustments());
+      job_load_adj_list = local_load_adjustments.get();
    }
  
-   for_each_rw_lv(hep, host_list) {
+   for (const auto hep : host_list) {
       const char *host_name = ocs::tom::get<EH_name>(hep);
 
-      for (ocs::tom::Element<ocs::tom::HL> ep : ocs::tom::get<EH_load_list>(hep)) {
+      for (const auto ep : ocs::tom::get<EH_load_list>(hep)) {
          const char *attr_name = ocs::tom::get<HL_name>(ep);
  
          /* seach for appropriate complex attribute */
-         if (!(cep=centry_list_locate(centry_list, attr_name)))
+         const auto cep = ocs::tom::ConstElement<ocs::tom::CE>::from_typed(centry_list_locate(centry_list, attr_name));
+         if (cep == nullptr) {
             continue;
+         }
 
          type = static_cast<ocs::CEntry::Type>(ocs::tom::get<CE_valtype>(cep));
          if (type != ocs::CEntry::Type::INT &&
@@ -298,7 +301,36 @@ int correct_capacities(lList *host_list, const lList *centry_list, const lList *
          }
       }
    }
-   lFreeList(&local_load_adjustments);
 
    DRETURN(0);
+}
+
+/**
+ * @brief Adds the load correction of the recently started jobs, for a caller with untyped lists (N-X-2)
+ *
+ * @param[in]     running_jobs     the running jobs (`JB_Type`), checked
+ * @param[in]     queue_list       the queue instances (`QU_Type`), checked
+ * @param[in,out] host_list        the execution hosts (`EH_Type`), checked
+ * @param[in]     decay_time       age at which a job stops contributing
+ * @param[in]     monitor_next_run whether the next run writes the scheduler monitoring log
+ *
+ * @return 0 on success, 1 if no queue list or host list was passed
+ */
+int correct_load(lList *running_jobs, lList *queue_list, lList *host_list, uint64_t decay_time, bool monitor_next_run) {
+   return correct_load(ocs::tom::ConstList<ocs::tom::JB>(running_jobs), ocs::tom::ConstList<ocs::tom::QU>(queue_list),
+                       ocs::tom::List<ocs::tom::EH>(host_list), decay_time, monitor_next_run);
+}
+
+/**
+ * @brief Corrects the capacities of the hosts by their load values, for a caller with untyped lists (N-X-2)
+ *
+ * @param[in,out] host_list        the execution hosts (`EH_Type`), checked
+ * @param[in]     centry_list      the complex entries (`CE_Type`), checked
+ * @param[in]     load_adjustments the job load adjustments (`CE_Type`), checked, or nullptr
+ *
+ * @return always 0
+ */
+int correct_capacities(lList *host_list, const lList *centry_list, const lList *load_adjustments) {
+   return correct_capacities(ocs::tom::List<ocs::tom::EH>(host_list), ocs::tom::ConstList<ocs::tom::CE>(centry_list),
+                             ocs::tom::ConstList<ocs::tom::CE>(load_adjustments));
 }

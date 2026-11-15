@@ -58,6 +58,13 @@
 #include "sgeobj/sge_advance_reservation.h"
 #include "sgeobj/sge_resource_quota.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_AR.h"
+#include "sgeobj/tom/ocs_tom_CE.h"
+#include "sgeobj/tom/ocs_tom_EH.h"
+#include "sgeobj/tom/ocs_tom_JG.h"
+#include "sgeobj/tom/ocs_tom_OR.h"
+#include "sgeobj/tom/ocs_tom_RQS.h"
 #include "sgeobj/tom/ocs_tom_GRU.h"
 #include "sgeobj/tom/ocs_tom_SO.h"
 #include "sgeobj/tom/ocs_tom_QU.h"
@@ -69,20 +76,24 @@
 #include "sort_hosts.h"
 #include "msg_schedd.h"
 
-static int
-debit_job_from_queues(lListElem *job, const lListElem *pe, lList *selected_queue_list, lList *global_queue_list,
-                      const lList *complex_list, order_t *orders);
+static int debit_job_from_queues(ocs::tom::ConstElement<ocs::tom::JB> job, ocs::tom::ConstElement<ocs::tom::PE> pe,
+                                 ocs::tom::ConstList<ocs::tom::JG> granted,
+                                 ocs::tom::List<ocs::tom::QU> global_queue_list,
+                                 ocs::tom::ConstList<ocs::tom::CE> complex_list, order_t *orders);
 
-static int
-debit_job_from_hosts(lListElem *job, lListElem *ja_task, const lListElem *pe, lList *granted, lList *host_list, const lList *complex_list,
-                     const lList *load_adjustments, int *sort_hostlist);
+static int debit_job_from_hosts(ocs::tom::ConstElement<ocs::tom::JB> job, ocs::tom::ConstElement<ocs::tom::JAT> ja_task,
+                                ocs::tom::ConstElement<ocs::tom::PE> pe, ocs::tom::ConstList<ocs::tom::JG> granted,
+                                ocs::tom::List<ocs::tom::EH> host_list, ocs::tom::ConstList<ocs::tom::CE> complex_list,
+                                const lList *load_adjustments, int *sort_hostlist);
 
-static int
-debit_job_from_rqs(lListElem *job, lList *granted, lList *rqs_list, lListElem *pe,
-                   const lList *centry_list, const lList *acl_list, const lList *hgrp_list);
+static int debit_job_from_rqs(ocs::tom::ConstElement<ocs::tom::JB> job, ocs::tom::ConstList<ocs::tom::JG> granted,
+                              ocs::tom::List<ocs::tom::RQS> rqs_list, ocs::tom::ConstElement<ocs::tom::PE> pe,
+                              ocs::tom::ConstList<ocs::tom::CE> centry_list, const lList *acl_list,
+                              const lList *hgrp_list);
 
-static int
-debit_job_from_ar(lListElem *ar, lListElem *job, lListElem *ja_task, const lListElem *pe, lList *granted, lList *ar_list, const lList *centry_list);
+static int debit_job_from_ar(ocs::tom::Element<ocs::tom::AR> ar, ocs::tom::ConstElement<ocs::tom::JB> job,
+                             ocs::tom::ConstElement<ocs::tom::JAT> ja_task, ocs::tom::ConstElement<ocs::tom::PE> pe,
+                             ocs::tom::ConstList<ocs::tom::JG> granted, ocs::tom::ConstList<ocs::tom::CE> centry_list);
 
 /**
  * @brief Debits a scheduled job on everything the assignment touched
@@ -142,10 +153,18 @@ debit_scheduled_job(const sge_assignment_t *a, int *sort_hostlist,
       if (a->pe) {
          pe_debit_slots(a->pe, a->slots, a->job_id);
       }
-      debit_job_from_hosts(a->job, a->ja_task, a->pe, a->gdil, a->host_list, a->centry_list, a->load_adjustments, sort_hostlist);
-      debit_job_from_queues(a->job, a->pe, a->gdil, a->queue_list, a->centry_list, orders);
-      debit_job_from_rqs(a->job, a->gdil, a->rqs_list, a->pe, a->centry_list, a->acl_list, a->hgrp_list);
-      debit_job_from_ar(a->ar, a->job, a->ja_task, a->pe, a->gdil, a->ar_list, a->centry_list);
+      // the members of the assignment are raw until it is converted; they are checked where they arrive (N-X-3)
+      const auto job = ocs::tom::ConstElement<ocs::tom::JB>(a->job);
+      const auto ja_task = ocs::tom::ConstElement<ocs::tom::JAT>(a->ja_task);
+      const auto pe = ocs::tom::ConstElement<ocs::tom::PE>(a->pe);
+      const auto granted = ocs::tom::ConstList<ocs::tom::JG>(a->gdil);
+      const auto centries = ocs::tom::ConstList<ocs::tom::CE>(a->centry_list);
+      debit_job_from_hosts(job, ja_task, pe, granted, ocs::tom::List<ocs::tom::EH>(a->host_list), centries,
+                           a->load_adjustments, sort_hostlist);
+      debit_job_from_queues(job, pe, granted, ocs::tom::List<ocs::tom::QU>(a->queue_list), centries, orders);
+      debit_job_from_rqs(job, granted, ocs::tom::List<ocs::tom::RQS>(a->rqs_list), pe, centries, a->acl_list,
+                         a->hgrp_list);
+      debit_job_from_ar(ocs::tom::Element<ocs::tom::AR>(a->ar), job, ja_task, pe, granted, centries);
    }
 
    add_job_utilization(a, type, for_job_scheduling);
@@ -168,9 +187,11 @@ debit_scheduled_job(const sge_assignment_t *a, int *sort_hostlist,
  * order_t *orders    needed to warn on jobs that get dispatched and suspended
  *                    on subordinate in the very same interval 
  */
-static int
-debit_job_from_queues(lListElem *job, const lListElem *pe, lList *granted, lList *global_queue_list,
-                      const lList *centry_list, order_t *orders) {
+static int debit_job_from_queues(const ocs::tom::ConstElement<ocs::tom::JB> job,
+                                 const ocs::tom::ConstElement<ocs::tom::PE> pe,
+                                 const ocs::tom::ConstList<ocs::tom::JG> granted,
+                                 const ocs::tom::List<ocs::tom::QU> global_queue_list,
+                                 const ocs::tom::ConstList<ocs::tom::CE> centry_list, order_t *orders) {
    DENTER(TOP_LAYER);
 
    bool master_task = true;
@@ -183,8 +204,7 @@ debit_job_from_queues(lListElem *job, const lListElem *pe, lList *granted, lList
 
    /* use each entry in sel_q_list as reference into the global_queue_list */
    const char *last_hostname = nullptr;
-   for_each_ep_lv(gel, granted) {
-
+   for (const auto gel : granted) {
       tagged = ocs::tom::get<JG_slots>(gel);
       if (tagged) {
          /* find queue */
@@ -210,7 +230,7 @@ debit_job_from_queues(lListElem *job, const lListElem *pe, lList *granted, lList
 
                /* warn on jobs that were dispatched into that queue in
                   the same scheduling interval based on the orders list */
-               for_each_ep_lv(order, orders->jobStartOrderList) {
+               for (const auto order : ocs::tom::ConstList<ocs::tom::OR>(orders->jobStartOrderList)) {
                   if (ocs::tom::get<OR_type>(order) != ORT_start_job) {
                      continue;
                   }
@@ -219,7 +239,7 @@ debit_job_from_queues(lListElem *job, const lListElem *pe, lList *granted, lList
                   }
                }
 
-               for_each_ep_lv(order, orders->sentOrderList) {
+               for (const auto order : ocs::tom::ConstList<ocs::tom::OR>(orders->sentOrderList)) {
                   if (ocs::tom::get<OR_type>(order) != ORT_start_job) {
                      continue;
                   }
@@ -242,14 +262,16 @@ debit_job_from_queues(lListElem *job, const lListElem *pe, lList *granted, lList
    DRETURN(ret);
 }
 
-static int
-debit_job_from_hosts(lListElem *job, lListElem *ja_task, const lListElem *pe, lList *granted, lList *host_list, const lList *centry_list,
-                     const lList *load_adjustments, int *sort_hostlist) {
+static int debit_job_from_hosts(const ocs::tom::ConstElement<ocs::tom::JB> job,
+                                const ocs::tom::ConstElement<ocs::tom::JAT> ja_task,
+                                const ocs::tom::ConstElement<ocs::tom::PE> pe,
+                                const ocs::tom::ConstList<ocs::tom::JG> granted,
+                                const ocs::tom::List<ocs::tom::EH> host_list,
+                                const ocs::tom::ConstList<ocs::tom::CE> centry_list, const lList *load_adjustments,
+                                int *sort_hostlist) {
    DENTER(TOP_LAYER);
 
    lSortOrder *so = nullptr;
-   lListElem *hep;
-   lListElem *global;
    const char *hnm = nullptr;
    const char *load_formula = nullptr;
    uint64_t load_adjustment_decay_time = sge_gmt32_to_gmt64(sconf_get_load_adjustment_decay_time());
@@ -259,20 +281,20 @@ debit_job_from_hosts(lListElem *job, lListElem *ja_task, const lListElem *pe, lL
 
    so = lParseSortOrderVarArg(lGetListDescr(host_list), "%I+", EH_sort_value);
 
-   global = host_list_locate(host_list, "global");
+   const auto global = ocs::tom::ConstElement<ocs::tom::EH>::from_typed(host_list_locate(host_list, "global"));
    bool do_per_global_host_booking = true;
 
    load_formula = sconf_get_load_formula();
 
    /* debit from hosts */
    const char *last_hostname = nullptr;
-   for_each_ep_lv(gdil_ep, granted) {
+   for (const auto gdil_ep : granted) {
       uint32_t ulc_factor;
       int slots = ocs::tom::get<JG_slots>(gdil_ep);
 
       hnm = ocs::tom::get<JG_qhostname>(gdil_ep);
       bool do_per_host_booking = host_do_per_host_booking(&last_hostname, hnm);
-      hep = host_list_locate(host_list, hnm);
+      const auto hep = ocs::tom::Element<ocs::tom::EH>::from_typed(host_list_locate(host_list, hnm));
 
       if (load_adjustment_decay_time > 0 && lGetNumberOfElem(load_adjustments) > 0) {
          /* increase host load for each scheduled job slot */
@@ -281,9 +303,10 @@ debit_job_from_hosts(lListElem *job, lListElem *ja_task, const lListElem *pe, lL
          ocs::tom::set<EH_load_correction_factor>(hep, ulc_factor);
       }
 
-      ocs::tom::ConstList<ocs::tom::GRU> granted_resources_list = ocs::tom::get<JAT_granted_resources_list>(ja_task);
-      debit_host_consumable(job, ja_task, granted_resources_list, pe, host_list_locate(host_list, SGE_GLOBAL_NAME), centry_list, slots,
-                            is_master_task, do_per_global_host_booking, nullptr);
+      const auto granted_resources_list = ocs::tom::get<JAT_granted_resources_list>(ja_task);
+      debit_host_consumable(job, ja_task, granted_resources_list, pe,
+                            ocs::tom::Element<ocs::tom::EH>::from_typed(host_list_locate(host_list, SGE_GLOBAL_NAME)),
+                            centry_list, slots, is_master_task, do_per_global_host_booking, nullptr);
       debit_host_consumable(job, ja_task, granted_resources_list, pe, hep, centry_list, slots, is_master_task, do_per_host_booking, nullptr);
       is_master_task = false;
       do_per_global_host_booking = false;
@@ -291,7 +314,7 @@ debit_job_from_hosts(lListElem *job, lListElem *ja_task, const lListElem *pe, lL
       /* compute new combined load for this host and put it into the host */
       old_sort_value = ocs::tom::get<EH_sort_value>(hep);
 
-      new_sort_value = scaled_mixed_load(load_formula, global, hep, centry_list, nullptr);
+      new_sort_value = scaled_mixed_load(load_formula, global, hep, centry_list, ocs::tom::ConstList<ocs::tom::CE>());
 
       if (new_sort_value != old_sort_value) {
          ocs::tom::set<EH_sort_value>(hep, new_sort_value);
@@ -338,10 +361,12 @@ debit_job_from_hosts(lListElem *job, lListElem *ja_task, const lListElem *pe, lL
  * @todo Anything to do for RSMAPs? Do we want to initialize the
  *       `RUE_utilized_now_resource_map_list`?
  */
-int
-debit_host_consumable(const lListElem *jep, const lListElem *jatep, const lList *granted_resources_list, const lListElem *pe, lListElem *hep,
-                      const lList *centry_list, int slots, bool is_master_task, bool do_per_host_booking,
-                      bool *just_check) {
+int debit_host_consumable(const ocs::tom::ConstElement<ocs::tom::JB> jep,
+                          const ocs::tom::ConstElement<ocs::tom::JAT> jatep,
+                          const ocs::tom::ConstList<ocs::tom::GRU> granted_resources_list,
+                          const ocs::tom::ConstElement<ocs::tom::PE> pe, const ocs::tom::Element<ocs::tom::EH> hep,
+                          const ocs::tom::ConstList<ocs::tom::CE> centry_list, int slots, bool is_master_task,
+                          bool do_per_host_booking, bool *just_check) {
    DENTER(TOP_LAYER);
    int mods = 0;
    mods += rc_debit_consumable(jep, pe, hep, centry_list, slots, EH_consumable_config_list, EH_resource_utilization,
@@ -360,16 +385,22 @@ debit_host_consumable(const lListElem *jep, const lListElem *jatep, const lList 
  *
  * @param job job request (JB_Type)
  * @param granted granted list (JG_Type)
+ * @param rqs_list the resource quota sets to debit
  * @param pe granted pe (PE_Type)
  * @param centry_list consumable resouces list (CE_Type)
+ * @param acl_list the access lists, to find the matching rules
+ * @param hgrp_list the host groups, to find the matching rules
  *
  * @return always 0
  *
  * @note MT-NOTE: debit_job_from_rqs() is not MT safe
  */
-static int
-debit_job_from_rqs(lListElem *job, lList *granted, lList *rqs_list, lListElem *pe,
-                   const lList *centry_list, const lList *acl_list, const lList *hgrp_list) {
+static int debit_job_from_rqs(const ocs::tom::ConstElement<ocs::tom::JB> job,
+                              const ocs::tom::ConstList<ocs::tom::JG> granted,
+                              const ocs::tom::List<ocs::tom::RQS> rqs_list,
+                              const ocs::tom::ConstElement<ocs::tom::PE> pe,
+                              const ocs::tom::ConstList<ocs::tom::CE> centry_list, const lList *acl_list,
+                              const lList *hgrp_list) {
    DENTER(TOP_LAYER);
 
    if (ocs::tom::get<JB_ar>(job) != 0) {
@@ -380,12 +411,10 @@ debit_job_from_rqs(lListElem *job, lList *granted, lList *rqs_list, lListElem *p
    /* debit for all hosts */
    const char *last_hostname = nullptr;
    bool master_task = true;
-   for_each_ep_lv(gdil_ep, granted) {
+   for (const auto gdil_ep : granted) {
       int slots = ocs::tom::get<JG_slots>(gdil_ep);
-
       bool do_per_host_booking = host_do_per_host_booking(&last_hostname, ocs::tom::get<JG_qhostname>(gdil_ep));
-
-      for_each_rw_lv(rqs, rqs_list) {
+      for (const auto rqs : rqs_list) {
          rqs_debit_consumable(rqs, job, gdil_ep, pe, centry_list, acl_list, hgrp_list, slots, master_task, do_per_host_booking);
       }
       master_task = false;
@@ -394,28 +423,46 @@ debit_job_from_rqs(lListElem *job, lList *granted, lList *rqs_list, lListElem *p
    DRETURN(0);
 }
 
-static int
-debit_job_from_ar(lListElem *ar, lListElem *job, lListElem *ja_task, const lListElem *pe, lList *granted, lList *ar_list, const lList *centry_list) {
+/**
+ * @brief Debits a job of an advance reservation in the reserved queues and hosts
+ *
+ * The reservation holds its own copies of the queue instances and hosts it
+ * reserved; the job is debited there, not in the master lists.
+ *
+ * @param ar          the advance reservation of the job, or nullptr for a job outside one
+ * @param job         the job (JB_Type)
+ * @param ja_task     the array task (JAT_Type)
+ * @param pe          the granted parallel environment, or nullptr
+ * @param granted     the granted destination identifiers (JG_Type)
+ * @param centry_list the system wide attribute configuration (CE_Type)
+ *
+ * @return always 0
+ */
+static int debit_job_from_ar(const ocs::tom::Element<ocs::tom::AR> ar, const ocs::tom::ConstElement<ocs::tom::JB> job,
+                             const ocs::tom::ConstElement<ocs::tom::JAT> ja_task,
+                             const ocs::tom::ConstElement<ocs::tom::PE> pe,
+                             const ocs::tom::ConstList<ocs::tom::JG> granted,
+                             const ocs::tom::ConstList<ocs::tom::CE> centry_list) {
    DENTER(TOP_LAYER);
 
    if (ar != nullptr) {
-      lListElem *ar_global_host = ocs::tom::find_first_in_rw<AR_reserved_hosts, EH_name>(ar, SGE_GLOBAL_NAME);
+      const auto ar_global_host = ocs::tom::find_first_in_rw<AR_reserved_hosts, EH_name>(ar, SGE_GLOBAL_NAME);
 
       bool master_task = true;
       bool do_per_global_host_booking = true;
       const char *last_hostname = nullptr;
-      for_each_ep_lv(gel, granted) {
+      for (const auto gel : granted) {
          int slots = ocs::tom::get<JG_slots>(gel);
          bool do_per_host_booking = host_do_per_host_booking(&last_hostname, ocs::tom::get<JG_qhostname>(gel));
-         ocs::tom::ConstList<ocs::tom::GRU> granted_resources_list = ocs::tom::get<JAT_granted_resources_list>(ja_task);
-
-         lListElem *queue = ocs::tom::find_first_in_rw<AR_reserved_queues, QU_full_name>(ar, ocs::tom::get<JG_qname>(gel));
+         const auto granted_resources_list = ocs::tom::get<JAT_granted_resources_list>(ja_task);
+         const auto queue =
+            ocs::tom::find_first_in_rw<AR_reserved_queues, QU_full_name>(ar, ocs::tom::get<JG_qname>(gel));
          qinstance_debit_consumable(queue, job, pe, centry_list, slots, master_task, do_per_host_booking, nullptr);
          if (ar_global_host != nullptr) {
             debit_host_consumable(job, ja_task, granted_resources_list, pe, ar_global_host, centry_list, slots, master_task,
                                   do_per_global_host_booking, nullptr);
          }
-         lListElem *host = ocs::tom::find_first_in_rw<AR_reserved_hosts, EH_name>(ar, ocs::tom::get<JG_qhostname>(gel));
+         const auto host = ocs::tom::find_first_in_rw<AR_reserved_hosts, EH_name>(ar, ocs::tom::get<JG_qhostname>(gel));
          if (host != nullptr) {
             debit_host_consumable(job, ja_task, granted_resources_list, pe, host, centry_list, slots, master_task,
                                   do_per_host_booking, nullptr);
@@ -426,4 +473,30 @@ debit_job_from_ar(lListElem *ar, lListElem *job, lListElem *ja_task, const lList
    }
 
    DRETURN(0);
+}
+
+/**
+ * @brief Books a job's consumables on a host, for a caller with untyped objects (N-X-2)
+ *
+ * @param[in]     jep                     the job (`JB_Type`), checked, or nullptr
+ * @param[in]     jatep                   the array task (`JAT_Type`), checked, or nullptr
+ * @param[in]     granted_resources_list  the granted resources (`GRU_Type`), checked, or nullptr
+ * @param[in]     pe                      the granted PE (`PE_Type`), checked, or nullptr
+ * @param[in,out] hep                     the host to debit on (`EH_Type`), checked
+ * @param[in]     centry_list             the complex entries (`CE_Type`), checked
+ * @param[in]     slots                   number of slots granted on this host
+ * @param[in]     is_master_task          whether the master task runs here
+ * @param[in]     do_per_host_booking     whether the per host consumables have to be booked in this call
+ * @param[in,out] just_check              if given, nothing is booked and the flag reports whether it would fit
+ *
+ * @return the number of modifications made
+ */
+int debit_host_consumable(const lListElem *jep, const lListElem *jatep, const lList *granted_resources_list,
+                          const lListElem *pe, lListElem *hep, const lList *centry_list, int slots, bool is_master_task,
+                          bool do_per_host_booking, bool *just_check) {
+   return debit_host_consumable(ocs::tom::ConstElement<ocs::tom::JB>(jep), ocs::tom::ConstElement<ocs::tom::JAT>(jatep),
+                                ocs::tom::ConstList<ocs::tom::GRU>(granted_resources_list),
+                                ocs::tom::ConstElement<ocs::tom::PE>(pe), ocs::tom::Element<ocs::tom::EH>(hep),
+                                ocs::tom::ConstList<ocs::tom::CE>(centry_list), slots, is_master_task,
+                                do_per_host_booking, just_check);
 }

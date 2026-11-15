@@ -39,6 +39,12 @@
 
 #include "cull/cull.h"
 
+#include "sgeobj/tom/ocs_tom_CE.h"
+#include "sgeobj/tom/ocs_tom_EH.h"
+#include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "tom/ocs_Transitional.h"
+
 /**
  * Load value used when the load of a host cannot be computed. It is high
  * enough that such a host sorts to the end, so a host with broken load
@@ -46,7 +52,11 @@
  */
 #define ERROR_LOAD_VAL  9999
 
-int sort_host_list(lList *host_list, const lList *complex_list);
+int sort_host_list(ocs::tom::List<ocs::tom::EH> host_list, ocs::tom::ConstList<ocs::tom::CE> centry_list);
+OCS_TRANSITIONAL int sort_host_list(lList *host_list, const lList *centry_list);
 
-double scaled_mixed_load(const char* load_formula, const lListElem *global, const lListElem *host, const lList *centry_list,
-                         const lList *load_adjustments);
+double scaled_mixed_load(const char *load_formula, ocs::tom::ConstElement<ocs::tom::EH> global,
+                         ocs::tom::ConstElement<ocs::tom::EH> host, ocs::tom::ConstList<ocs::tom::CE> centry_list,
+                         ocs::tom::ConstList<ocs::tom::CE> load_adjustments);
+OCS_TRANSITIONAL double scaled_mixed_load(const char *load_formula, const lListElem *global, const lListElem *host,
+                                          const lList *centry_list, const lList *load_adjustments);

@@ -46,11 +46,26 @@
 
 #include "sched/sge_select_queue.h"
 
+#include "sgeobj/tom/ocs_tom_CE.h"
+#include "sgeobj/tom/ocs_tom_EH.h"
+#include "sgeobj/tom/ocs_tom_GRU.h"
+#include "sgeobj/tom/ocs_tom_JAT.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
+#include "sgeobj/tom/ocs_tom_PE.h"
+#include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "tom/ocs_Transitional.h"
+
 /* responsible for all debitations that have to be done */
 int debit_scheduled_job(const sge_assignment_t *a, int *sort_hostlist, order_t *orders,
                         bool now, const char *type, bool for_job_scheduling);
 
-int
-debit_host_consumable(const lListElem *jep, const lListElem *jatep, const lList *granted_resources_list, const lListElem *pe, lListElem *hep,
-                      const lList *complex_list, int slots, bool is_master_task, bool do_per_host_booking,
-                      bool *just_check);
+int debit_host_consumable(ocs::tom::ConstElement<ocs::tom::JB> jep, ocs::tom::ConstElement<ocs::tom::JAT> jatep,
+                          ocs::tom::ConstList<ocs::tom::GRU> granted_resources_list,
+                          ocs::tom::ConstElement<ocs::tom::PE> pe, ocs::tom::Element<ocs::tom::EH> hep,
+                          ocs::tom::ConstList<ocs::tom::CE> centry_list, int slots, bool is_master_task,
+                          bool do_per_host_booking, bool *just_check);
+OCS_TRANSITIONAL int debit_host_consumable(const lListElem *jep, const lListElem *jatep,
+                                           const lList *granted_resources_list, const lListElem *pe, lListElem *hep,
+                                           const lList *centry_list, int slots, bool is_master_task,
+                                           bool do_per_host_booking, bool *just_check);

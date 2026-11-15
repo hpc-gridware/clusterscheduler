@@ -43,6 +43,20 @@
  * started job, decaying to zero over `load_adjustment_decay_time`.
  */
 
-int correct_load(lList *lp_job, lList *lp_queue, lList *lpp_host, uint64_t decay_time, bool monitor_next_run);
+#include "cull/cull.h"
+#include "sgeobj/tom/ocs_tom_CE.h"
+#include "sgeobj/tom/ocs_tom_EH.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
+#include "sgeobj/tom/ocs_tom_QU.h"
+#include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "tom/ocs_Transitional.h"
 
-int correct_capacities(lList *host_list, const lList *complex_list, const lList *load_adjustments);
+int correct_load(ocs::tom::ConstList<ocs::tom::JB> running_jobs, ocs::tom::ConstList<ocs::tom::QU> queue_list,
+                 ocs::tom::List<ocs::tom::EH> host_list, uint64_t decay_time, bool monitor_next_run);
+OCS_TRANSITIONAL int correct_load(lList *running_jobs, lList *queue_list, lList *host_list, uint64_t decay_time,
+                                  bool monitor_next_run);
+
+int correct_capacities(ocs::tom::List<ocs::tom::EH> host_list, ocs::tom::ConstList<ocs::tom::CE> centry_list,
+                       ocs::tom::ConstList<ocs::tom::CE> load_adjustments);
+OCS_TRANSITIONAL int correct_capacities(lList *host_list, const lList *centry_list, const lList *load_adjustments);

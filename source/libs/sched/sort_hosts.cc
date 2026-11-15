@@ -94,8 +94,9 @@ enum {
 };
 
 /* prototypes */
-static int get_load_value(double *dvalp, const lListElem *global, const lListElem *host, const lList *centry_list,
-                          const lList *load_adjustments, const char *attrname);
+static int get_load_value(double *dvalp, ocs::tom::ConstElement<ocs::tom::EH> global,
+                          ocs::tom::ConstElement<ocs::tom::EH> host, ocs::tom::ConstList<ocs::tom::CE> centry_list,
+                          ocs::tom::ConstList<ocs::tom::CE> load_adjustments, const char *attrname);
 
 /**
  * @brief Sorts the host list by the load evaluation formula
@@ -109,18 +110,18 @@ static int get_load_value(double *dvalp, const lListElem *global, const lListEle
  *
  * @return 0 on success, -1 otherwise
  */
-int sort_host_list(lList *hl, const lList *centry_list) {
+int sort_host_list(const ocs::tom::List<ocs::tom::EH> hl, const ocs::tom::ConstList<ocs::tom::CE> centry_list) {
    DENTER(TOP_LAYER);
-   lListElem *global = host_list_locate(hl, SGE_GLOBAL_NAME);
+   const auto global = ocs::tom::ConstElement<ocs::tom::EH>::from_typed(host_list_locate(hl, SGE_GLOBAL_NAME));
    const char *load_formula = sconf_get_load_formula();
 
-   for_each_rw_lv(hlp, hl) {
+   for (const auto hlp : hl) {
       if (hlp == global) {
          continue;
       }
 
       /* build complexes for that host */
-      double load = scaled_mixed_load(load_formula, global, hlp, centry_list, nullptr);
+      double load = scaled_mixed_load(load_formula, global, hlp, centry_list, ocs::tom::ConstList<ocs::tom::CE>());
       ocs::tom::set<EH_sort_value>(hlp, load);
       DPRINTF("%s: %f\n", static_cast<const char *>(ocs::tom::get<EH_name>(hlp)), load);
    }
@@ -154,8 +155,10 @@ int sort_host_list(lList *hl, const lList *centry_list) {
  *         error - which sorts a host with incorrect load reporting to the end
  *         instead of to the front
  */
-double scaled_mixed_load(const char *load_formula, const lListElem *global,
-                         const lListElem *host, const lList *centry_list, const lList *load_adjustments) {
+double scaled_mixed_load(const char *load_formula, const ocs::tom::ConstElement<ocs::tom::EH> global,
+                         const ocs::tom::ConstElement<ocs::tom::EH> host,
+                         const ocs::tom::ConstList<ocs::tom::CE> centry_list,
+                         const ocs::tom::ConstList<ocs::tom::CE> load_adjustments) {
    DENTER(TOP_LAYER);
 
    char *cp = nullptr;
@@ -307,18 +310,20 @@ double scaled_mixed_load(const char *load_formula, const lListElem *global,
  *
  * @return 0 if a value was found, 1 if the host has neither a load value nor a consumable of that name
  */
-static int get_load_value(double *dvalp, const lListElem *global, const lListElem *host, const lList *centry_list,
-                          const lList *load_adjustments, const char *attrname) {
+static int get_load_value(double *dvalp, const ocs::tom::ConstElement<ocs::tom::EH> global,
+                          const ocs::tom::ConstElement<ocs::tom::EH> host,
+                          const ocs::tom::ConstList<ocs::tom::CE> centry_list,
+                          const ocs::tom::ConstList<ocs::tom::CE> load_adjustments, const char *attrname) {
    DENTER(TOP_LAYER);
-
-   lListElem *cep;
 
    /* search complex */
    if (strchr(attrname, '$')) {
       attrname++;
    }
 
-   if(!(cep = get_attribute_by_name(global, host, nullptr, attrname, centry_list, load_adjustments, DISPATCH_TIME_NOW, 0))){
+   const auto cep = get_attribute_by_name(global, host, ocs::tom::ConstElement<ocs::tom::QU>(), attrname, centry_list,
+                                          load_adjustments, DISPATCH_TIME_NOW, 0);
+   if (cep == nullptr) {
       /* neither load nor consumable available for that host */
       DRETURN(1);
    }
@@ -329,11 +334,35 @@ static int get_load_value(double *dvalp, const lListElem *global, const lListEle
       *dvalp = ocs::tom::get<CE_pj_doubleval>(cep);
    }
 
-   lFreeElem(&cep);
-
-   /*
-    * No value available.
-    */
-
    DRETURN(0);
+}
+
+/**
+ * @brief Computes the scaled and weighted load of one host, for a caller with untyped objects (N-X-2)
+ *
+ * @param[in] load_formula     the load formula of the scheduler configuration
+ * @param[in] global           the global host (`EH_Type`), checked, or nullptr
+ * @param[in] host             the host to compute the load for (`EH_Type`), checked
+ * @param[in] centry_list      the complex entry list (`CE_Type`), checked
+ * @param[in] load_adjustments the job load adjustments (`CE_Type`), checked, or nullptr
+ *
+ * @return the load value the host list is sorted by, or #ERROR_LOAD_VAL on error
+ */
+double scaled_mixed_load(const char *load_formula, const lListElem *global, const lListElem *host,
+                         const lList *centry_list, const lList *load_adjustments) {
+   return scaled_mixed_load(load_formula, ocs::tom::ConstElement<ocs::tom::EH>(global),
+                            ocs::tom::ConstElement<ocs::tom::EH>(host), ocs::tom::ConstList<ocs::tom::CE>(centry_list),
+                            ocs::tom::ConstList<ocs::tom::CE>(load_adjustments));
+}
+
+/**
+ * @brief Sorts the host list by the load evaluation formula, for a caller with untyped lists (N-X-2)
+ *
+ * @param[in,out] hl          the host list to be sorted (`EH_Type`), checked
+ * @param[in]     centry_list the complex entry list (`CE_Type`), checked
+ *
+ * @return 0 on success, -1 otherwise
+ */
+int sort_host_list(lList *hl, const lList *centry_list) {
+   return sort_host_list(ocs::tom::List<ocs::tom::EH>(hl), ocs::tom::ConstList<ocs::tom::CE>(centry_list));
 }
