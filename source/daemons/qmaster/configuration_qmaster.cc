@@ -375,8 +375,8 @@ invalidate_load_report_intervals(const char *conf_name) {
  * global configuration notifies all sge_execds, which all request their configuration at the
  * same time - in very large clusters qmaster_params NOTIFY_EXECDS_ON_CONF_CHANGE=false switches
  * the notification off.
- * sge_execds on hosts in unknown state are not notified, they get the configuration when they
- * register.
+ * sge_execds on hosts in unknown state and sge_execds without a connection to sge_qmaster, e.g.
+ * stopped ones, are not notified, they get the configuration when they register.
  *
  * @param[in] conf_name name of the changed configuration, "global" or a host name
  */
@@ -400,9 +400,19 @@ notify_execds_about_conf_change(const char *conf_name) {
       if (lGetUlong64(hep, EH_lt_heard_from) == 0) {
          continue;
       }
-      if (host_notify_about_new_conf(hep) != 0) {
-         ERROR(MSG_CONF_CANTNOTIFYEXECHOSTXOFNEWCONF_S, host);
+      // an sge_execd stopped by a signal is taken as known until it is unheard, a notification
+      // would only fail to connect and make commlib log an error
+      unsigned long connect_time = 0;
+      cl_commlib_get_connect_time(cl_com_get_handle(to_cstr(QMASTER), 0), host, to_cstr(EXECD), 1,
+                                  &connect_time);
+      if (connect_time == 0) {
+         DPRINTF("no connection to %s on host %s, not notified about the new configuration\n",
+                 to_cstr(EXECD), host);
+         continue;
       }
+      // a failed notification is not an error, the sge_execd gets the configuration with the
+      // answer to its next report
+      host_notify_about_new_conf(hep);
    }
 
    DRETURN_VOID;
