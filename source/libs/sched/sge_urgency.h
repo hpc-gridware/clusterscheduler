@@ -44,8 +44,16 @@
  */
 
 #include "sge_sched_thread.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
+#include "sgeobj/tom/ocs_tom_PE.h"
+#include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "tom/ocs_Transitional.h"
 
-void sge_do_urgency(uint64_t now, lList *running_jobs, lList *pending_jobs,
+void sge_do_urgency(uint64_t now, ocs::tom::List<ocs::tom::JB> running_jobs, ocs::tom::List<ocs::tom::JB> pending_jobs,
                     scheduler_all_data_t *lists);
+OCS_TRANSITIONAL void sge_do_urgency(uint64_t now, lList *running_jobs, lList *pending_jobs,
+                                     scheduler_all_data_t *lists);
 
-int sge_job_slot_request(const lListElem *job, const lList *pe_list);
+int sge_job_slot_request(ocs::tom::ConstElement<ocs::tom::JB> job, ocs::tom::ConstList<ocs::tom::PE> pe_list);
+OCS_TRANSITIONAL int sge_job_slot_request(const lListElem *job, const lList *pe_list);

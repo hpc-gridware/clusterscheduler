@@ -59,14 +59,18 @@
 #include "sgeobj/sge_range.h"
 #include "sgeobj/sge_pe.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_CE.h"
+#include "sgeobj/tom/ocs_tom_CT.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
+#include "sgeobj/tom/ocs_tom_PE.h"
 #include "sgeobj/tom/ocs_tom_RN.h"
 
 #include "sge_urgency.h"
 
-static void sge_normalize_urgency(lList *job_list, double min_urgency, 
-   double max_urgency);
-static void sge_urgency(uint64_t now, double *min_urgency, double *max_urgency,
-               lList *job_list, const lList *centry_list, lList *pe_list);
+static void sge_normalize_urgency(ocs::tom::List<ocs::tom::JB> job_list, double min_urgency, double max_urgency);
+static void sge_urgency(uint64_t now, double *min_urgency, double *max_urgency, ocs::tom::List<ocs::tom::JB> job_list,
+                        ocs::tom::ConstList<ocs::tom::CE> centry_list, ocs::tom::ConstList<ocs::tom::PE> pe_list);
 
 
 /**
@@ -82,22 +86,23 @@ static void sge_urgency(uint64_t now, double *min_urgency, double *max_urgency,
  * @param pending_jobs The pending jobs list
  * @param lists Additional config information
  */
-void sge_do_urgency(uint64_t now, lList *running_jobs, lList *pending_jobs,
-                    scheduler_all_data_t *lists) {
+void sge_do_urgency(uint64_t now, const ocs::tom::List<ocs::tom::JB> running_jobs,
+                    const ocs::tom::List<ocs::tom::JB> pending_jobs, scheduler_all_data_t *lists) {
    double min_urgency = DBL_MAX;
    double max_urgency = DBL_MIN;
+   // the lists of the scheduler's data are raw until it is converted; they are checked where they arrive (N-X-3)
+   const auto centries = ocs::tom::ConstList<ocs::tom::CE>(lists->centry_list);
+   const auto pes = ocs::tom::ConstList<ocs::tom::PE>(lists->pe_list);
 
    /* determine absolute static urgency and related min/max values */
-   sge_urgency(now, &min_urgency, &max_urgency, pending_jobs, 
-         lists->centry_list, lists->pe_list);
-   sge_urgency(now, &min_urgency, &max_urgency, running_jobs, 
-         lists->centry_list, lists->pe_list);
+   sge_urgency(now, &min_urgency, &max_urgency, pending_jobs, centries, pes);
+   sge_urgency(now, &min_urgency, &max_urgency, running_jobs, centries, pes);
 
    /* use min/max value to normalize static urgency */
-   if (pending_jobs) {
+   if (pending_jobs != nullptr) {
       sge_normalize_urgency(pending_jobs, min_urgency, max_urgency);
    }   
-   if (running_jobs) {
+   if (running_jobs != nullptr) {
       sge_normalize_urgency(running_jobs, min_urgency, max_urgency);
    }
 }
@@ -123,7 +128,9 @@ void sge_do_urgency(uint64_t now, lList *running_jobs, lList *pending_jobs,
  * @param pe_list Needed to determine urgency slot setting.
  */
 static void sge_urgency(uint64_t now, double *min_urgency, double *max_urgency,
-                        lList *job_list, const lList *centry_list, lList *pe_list) {
+                        const ocs::tom::List<ocs::tom::JB> job_list,
+                        const ocs::tom::ConstList<ocs::tom::CE> centry_list,
+                        const ocs::tom::ConstList<ocs::tom::PE> pe_list) {
    DENTER(TOP_LAYER);
    double rrc, wtc, dtc, absolute_urgency;
    int slots;
@@ -131,8 +138,7 @@ static void sge_urgency(uint64_t now, double *min_urgency, double *max_urgency,
    double weight_waiting_time = sconf_get_weight_waiting_time();
 
 
-   for_each_rw_lv (jep, job_list) {
-      lListElem *cat;
+   for (const auto jep : job_list) {
       uint64_t deadline;
 
       rrc = dtc = 0.0;
@@ -153,34 +159,40 @@ static void sge_urgency(uint64_t now, double *min_urgency, double *max_urgency,
       }
 
       /* we do category based caching when determining the resource request dependent contribution */
-      if ((cat = (lListElem *)ocs::tom::get<JB_category>(jep)) && ocs::tom::get<CT_rc_valid>(cat)) {
+      // the category is a reference (lRefT) to the job's category element
+      const auto cat =
+         ocs::tom::Element<ocs::tom::CT>::from_typed(static_cast<lListElem *>(ocs::tom::get<JB_category>(jep)));
+      if (cat != nullptr && ocs::tom::get<CT_rc_valid>(cat)) {
          rrc = ocs::tom::get<CT_resource_contribution>(cat);
 /*         DPRINTF("  resource contribution from category cache ---> %7f\n", rrc); */
       } else {
-         const lListElem *centry;
          double contribution;
 
          slots = sge_job_slot_request(jep, pe_list);
 
          /* contribution for implicit slot request */ 
-         if (!(centry = centry_list_locate(centry_list, SGE_ATTR_SLOTS))) {
+         const auto slots_centry =
+            ocs::tom::ConstElement<ocs::tom::CE>::from_typed(centry_list_locate(centry_list, SGE_ATTR_SLOTS));
+         if (slots_centry == nullptr) {
             continue;
          }
-         contribution = centry_urgency_contribution(slots, SGE_ATTR_SLOTS, 1.0, centry);
+         contribution = centry_urgency_contribution(slots, SGE_ATTR_SLOTS, 1.0, slots_centry);
          rrc += contribution;
 
          /* contribution for all explicit requests */
-         for_each_ep_lv(rr, job_get_hard_resource_list(jep)) {
-            if (!(centry = centry_list_locate(centry_list, ocs::tom::get<CE_name>(rr)))) {
+         for (const auto rr : ocs::tom::ConstList<ocs::tom::CE>::from_typed(job_get_hard_resource_list(jep))) {
+            const char *name = ocs::tom::get<CE_name>(rr);
+            const auto centry = ocs::tom::ConstElement<ocs::tom::CE>::from_typed(centry_list_locate(centry_list, name));
+            if (centry == nullptr) {
                continue;
-            } 
+            }
             contribution = centry_urgency_contribution(slots, ocs::tom::get<CE_name>(rr), 
                   ocs::tom::get<CE_doubleval>(rr), centry);
             rrc += contribution;
          }
 
          /* cache in category */
-         if (cat) {
+         if (cat != nullptr) {
             ocs::tom::set<CT_rc_valid>(cat,              true);
             ocs::tom::set<CT_resource_contribution>(cat, rrc);
          }
@@ -221,11 +233,11 @@ static void sge_urgency(uint64_t now, double *min_urgency, double *max_urgency,
  *
  * @note MT-NOTES: sge_normalize_urgency() is MT safe
  */
-static void sge_normalize_urgency(lList *job_list, double min_urgency, double max_urgency) {
+static void sge_normalize_urgency(const ocs::tom::List<ocs::tom::JB> job_list, double min_urgency, double max_urgency) {
    DENTER(TOP_LAYER);
 
    DPRINTF("ASU min = %13.11f, ASU max = %13.11f\n", min_urgency, max_urgency);
-   for_each_rw_lv (jep, job_list) {
+   for (const auto jep : job_list) {
       double asu = ocs::tom::get<JB_urg>(jep);
       double nsu = sge_normalize_value(asu, min_urgency, max_urgency);
       ocs::tom::set<JB_nurg>(jep, nsu);
@@ -251,12 +263,13 @@ static void sge_normalize_urgency(lList *job_list, double min_urgency, double ma
  *       first matching is used. Behaviour is undefined if multiple parallel
  *       environments specify different settings!
  */
-int sge_job_slot_request(const lListElem *job, const lList *pe_list) {
+int sge_job_slot_request(const ocs::tom::ConstElement<ocs::tom::JB> job,
+                         const ocs::tom::ConstList<ocs::tom::PE> pe_list) {
    DENTER(TOP_LAYER);
 
    const char *pe_name;
    const char *urgency_slot_setting; 
-   const lListElem *pep;
+   ocs::tom::ConstElement<ocs::tom::PE> pep;
    int n;
   
    /* sequential job */
@@ -265,21 +278,22 @@ int sge_job_slot_request(const lListElem *job, const lList *pe_list) {
    } 
 
    /* parallel job with fixed slot request */
-   ocs::tom::ConstList<ocs::tom::RN> range_list = ocs::tom::get<JB_pe_range>(job);
+   const auto range_list = ocs::tom::get<JB_pe_range>(job);
    if (range_list_get_number_of_ids(range_list)==1) { 
       DRETURN(range_list_get_first_id(range_list, nullptr));
    } 
 
    /* parallel job with slot range request */
    if (!ocs::is_pattern(pe_name))
-      pep = pe_list_locate(pe_list, pe_name);
+      pep = ocs::tom::ConstElement<ocs::tom::PE>::from_typed(pe_list_locate(pe_list, pe_name));
    else {
       /* use the first matching pe */
-      if ((pep=pe_list_find_matching(pe_list, pe_name))) {
+      pep = ocs::tom::ConstElement<ocs::tom::PE>::from_typed(pe_list_find_matching(pe_list, pe_name));
+      if (pep != nullptr) {
          DPRINTF("use %s as first matching pe for %s to verify schedulability\n", ocs::tom::get<PE_name>(pep), pe_name);
       }
    }
-   if (!pep) {
+   if (pep == nullptr) {
       ERROR("no matching parallel environment " "for job's PE request \"%s\"\n", pe_name);
       DRETURN(1);
    }
@@ -299,4 +313,28 @@ int sge_job_slot_request(const lListElem *job, const lList *pe_list) {
    }
 
    DRETURN(n);
+}
+
+/**
+ * @brief Computes the urgency of all jobs, for a caller with untyped lists (N-X-2)
+ *
+ * @param now          the time of the scheduling run
+ * @param running_jobs the running jobs (JB_Type), checked
+ * @param pending_jobs the pending jobs (JB_Type), checked
+ * @param lists        the data of the scheduling run
+ */
+void sge_do_urgency(uint64_t now, lList *running_jobs, lList *pending_jobs, scheduler_all_data_t *lists) {
+   sge_do_urgency(now, ocs::tom::List<ocs::tom::JB>(running_jobs), ocs::tom::List<ocs::tom::JB>(pending_jobs), lists);
+}
+
+/**
+ * @brief The number of slots assumed for a job's static urgency, for a caller with untyped objects (N-X-2)
+ *
+ * @param job     the job (JB_Type), checked
+ * @param pe_list the parallel environments (PE_Type), checked
+ *
+ * @return the number of slots
+ */
+int sge_job_slot_request(const lListElem *job, const lList *pe_list) {
+   return sge_job_slot_request(ocs::tom::ConstElement<ocs::tom::JB>(job), ocs::tom::ConstList<ocs::tom::PE>(pe_list));
 }

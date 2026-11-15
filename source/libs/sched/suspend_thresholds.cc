@@ -49,7 +49,12 @@
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_qinstance_state.h"
 #include "sgeobj/sge_order.h"
+#include <utility>
+
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
+#include "sgeobj/tom/ocs_tom_QU.h"
 #include "sgeobj/tom/ocs_tom_CE.h"
 #include "sgeobj/tom/ocs_tom_JAT.h"
 #include "sgeobj/tom/ocs_tom_JG.h"
@@ -58,8 +63,10 @@
 #include "suspend_thresholds.h"
 
 
-static int select4suspension(lList *job_list, lListElem *queues, lListElem **jepp, lListElem **ja_taskp);
-static int select4unsuspension(lList *job_list, lListElem *queues, lListElem **jepp, lListElem **ja_taskp);
+static std::pair<ocs::tom::Element<ocs::tom::JB>, ocs::tom::Element<ocs::tom::JAT>>
+select4suspension(ocs::tom::List<ocs::tom::JB> job_list, ocs::tom::ConstElement<ocs::tom::QU> qep);
+static std::pair<ocs::tom::Element<ocs::tom::JB>, ocs::tom::Element<ocs::tom::JAT>>
+select4unsuspension(ocs::tom::List<ocs::tom::JB> job_list, ocs::tom::ConstElement<ocs::tom::QU> qep);
 
 /**
  * @brief Selects and suspends jobs in queues that exceed their thresholds
@@ -73,13 +80,13 @@ static int select4unsuspension(lList *job_list, lListElem *queues, lListElem **j
  * @param[in]     job_list    the jobs, to pick the ones to suspend
  * @param[in,out] orders      the suspend orders are appended here
  */
-void suspend_job_in_queues(lList *susp_queues, lList *job_list, order_t *orders) {
+void suspend_job_in_queues(const ocs::tom::List<ocs::tom::QU> susp_queues, const ocs::tom::List<ocs::tom::JB> job_list,
+                           order_t *orders) {
    DENTER(TOP_LAYER);
    int i, found;
-   lListElem *jep = nullptr, *ja_task = nullptr;
 
    uint64_t now = sge_get_gmt64();
-   for_each_rw_lv (qep, susp_queues) {
+   for (const auto qep : susp_queues) {
       uint32_t interval;
 
       /* are suspend thresholds enabled? */
@@ -102,14 +109,16 @@ void suspend_job_in_queues(lList *susp_queues, lList *job_list, order_t *orders)
            i++) {
          found = 0;
          /* find one running job in suspend queue */
-         if (select4suspension(job_list, qep, &jep, &ja_task))
+         const auto [jep, ja_task] = select4suspension(job_list, qep);
+         if (ja_task == nullptr) {
             break;
+         }
 
          /* generate suspend order for found job */
          found = 1;
          orders->configOrderList = sge_create_orders(orders->configOrderList, 
                                                      ORT_suspend_on_threshold, 
-                                                     jep, ja_task, nullptr, true);
+                                                     jep, ja_task, ocs::tom::ConstList<ocs::tom::JG>(), true);
 
          DPRINTF("++++ suspending job " sge_u32 "/" sge_u32 " on threshold\n",
                  ocs::tom::get<JB_job_number>(jep), ocs::tom::get<JAT_task_number>(ja_task));
@@ -138,13 +147,13 @@ void suspend_job_in_queues(lList *susp_queues, lList *job_list, order_t *orders)
  * @param[in]     job_list    the jobs, to pick the ones to unsuspend
  * @param[in,out] orders      the unsuspend orders are appended here
  */
-void unsuspend_job_in_queues(lList *queue_list, lList *job_list, order_t *orders) {
+void unsuspend_job_in_queues(const ocs::tom::List<ocs::tom::QU> queue_list, const ocs::tom::List<ocs::tom::JB> job_list,
+                             order_t *orders) {
    DENTER(TOP_LAYER);
    int i, found;
-   lListElem *jep = nullptr, *ja_task = nullptr;
 
    uint64_t now = sge_get_gmt64();
-   for_each_rw_lv (qep, queue_list) {
+   for (const auto qep : queue_list) {
       uint32_t interval;
 
       /* are suspend thresholds enabled? */
@@ -174,15 +183,16 @@ void unsuspend_job_in_queues(lList *queue_list, lList *job_list, order_t *orders
            i++) {
          found = 0;
          /* find one running job in suspend queue */
-         if (select4unsuspension(job_list, qep, &jep, &ja_task)) {
+         const auto [jep, ja_task] = select4unsuspension(job_list, qep);
+         if (ja_task == nullptr) {
             break;
-         }   
+         }
 
          /* generate unsuspend order for found job */
          found = 1;
          orders->configOrderList = sge_create_orders(orders->configOrderList, 
                                                         ORT_unsuspend_on_threshold, 
-                                                        jep, ja_task, nullptr, true);
+                                                        jep, ja_task, ocs::tom::ConstList<ocs::tom::JG>(), true);
 
          DPRINTF("---- unsuspending job " sge_u32 "/" sge_u32 " on threshold\n",
                  ocs::tom::get<JB_job_number>(jep), ocs::tom::get<JAT_task_number>(ja_task));
@@ -200,27 +210,35 @@ void unsuspend_job_in_queues(lList *queue_list, lList *job_list, order_t *orders
 }
 
 
-static int
-select4suspension(lList *job_list, lListElem *qep, lListElem **jepp,
-                  lListElem **ja_taskp) {
+/**
+ * @brief Picks the job to suspend next in a queue that exceeds its suspend thresholds
+ *
+ * Among the running, not yet suspended tasks that use the queue, the one that
+ * has run the shortest time is taken.
+ *
+ * @param job_list the jobs (JB_Type)
+ * @param qep      the queue instance over its thresholds (QU_Type)
+ *
+ * @return the job and the task to suspend, both empty if the queue is suspended already or no task qualifies
+ */
+static std::pair<ocs::tom::Element<ocs::tom::JB>, ocs::tom::Element<ocs::tom::JAT>>
+select4suspension(const ocs::tom::List<ocs::tom::JB> job_list, const ocs::tom::ConstElement<ocs::tom::QU> qep) {
    DENTER(TOP_LAYER);
 
-   uint32_t jstate;
-   lListElem *jshortest = nullptr, *shortest = nullptr;
-   const char *qnm;
+   ocs::tom::Element<ocs::tom::JB> jshortest;
+   ocs::tom::Element<ocs::tom::JAT> shortest;
 
-   qnm = ocs::tom::get<QU_full_name>(qep);
+   const char *qnm = ocs::tom::get<QU_full_name>(qep);
    if (qinstance_state_is_manual_suspended(qep) ||
        qinstance_state_is_susp_on_sub(qep) ||
        qinstance_state_is_cal_suspended(qep)) {
-      DRETURN(-1);
+      DRETURN(std::make_pair(jshortest, shortest));
    }
-  
-   for_each_rw_lv (jep, job_list) {
 
+   for (const auto jep : job_list) {
       /* job running */ 
-      for (ocs::tom::Element<ocs::tom::JAT> ja_task : ocs::tom::get<JB_ja_tasks>(jep)) {
-         jstate = ocs::tom::get<JAT_state>(ja_task);
+      for (const auto ja_task : ocs::tom::get<JB_ja_tasks>(jep)) {
+         const uint32_t jstate = ocs::tom::get<JAT_state>(ja_task);
          if (!(jstate & JRUNNING) || 
              (jstate & JSUSPENDED) || (jstate & JSUSPENDED_ON_THRESHOLD)) {
             continue;
@@ -232,7 +250,7 @@ select4suspension(lList *job_list, lListElem *qep, lListElem **jepp,
          **    a master-task of a pe-job with sub-tasks in this queue
          ** then it is a potential candidate which we could suspend
          */
-         if (static_cast<const lListElem *>(ocs::tom::find_first_in<JAT_granted_destin_identifier_list, JG_qname>(ja_task, qnm)) == nullptr) {
+         if (ocs::tom::find_first_in<JAT_granted_destin_identifier_list, JG_qname>(ja_task, qnm) == nullptr) {
             continue;
          }
 
@@ -246,29 +264,32 @@ select4suspension(lList *job_list, lListElem *qep, lListElem **jepp,
       }
    }
 
-   if (shortest) {
-      *jepp = jshortest; 
-      *ja_taskp = shortest; 
-   }
-
-   DRETURN(shortest?0:1);
+   DRETURN(std::make_pair(jshortest, shortest));
 }
 
-static int select4unsuspension(
-lList *job_list,
-lListElem *qep,
-lListElem **jepp,
-lListElem **ja_taskp 
-) {
+/**
+ * @brief Picks the job to unsuspend next in a queue that is below its suspend thresholds again
+ *
+ * Among the tasks suspended on threshold whose master queue is this queue, the
+ * one that has run the longest time is taken.
+ *
+ * @param job_list the jobs (JB_Type)
+ * @param qep      the queue instance below its thresholds (QU_Type)
+ *
+ * @return the job and the task to unsuspend, both empty if no task qualifies
+ */
+static std::pair<ocs::tom::Element<ocs::tom::JB>, ocs::tom::Element<ocs::tom::JAT>>
+select4unsuspension(const ocs::tom::List<ocs::tom::JB> job_list, const ocs::tom::ConstElement<ocs::tom::QU> qep) {
    DENTER(TOP_LAYER);
-   uint32_t jstate;
-   lListElem *jlongest = nullptr, *longest = nullptr;
 
+   ocs::tom::Element<ocs::tom::JB> jlongest;
+   ocs::tom::Element<ocs::tom::JAT> longest;
    const char *qnm = ocs::tom::get<QU_full_name>(qep);
-   for_each_rw_lv (jep, job_list) {
-      for (ocs::tom::Element<ocs::tom::JAT> ja_task : ocs::tom::get<JB_ja_tasks>(jep)) {
+
+   for (const auto jep : job_list) {
+      for (const auto ja_task : ocs::tom::get<JB_ja_tasks>(jep)) {
          /* job must be suspended */ 
-         jstate = ocs::tom::get<JAT_state>(ja_task);
+         const uint32_t jstate = ocs::tom::get<JAT_state>(ja_task);
          if (!(jstate & JSUSPENDED_ON_THRESHOLD)) {
             continue;
          }
@@ -278,7 +299,7 @@ lListElem **ja_taskp
             DTRACE;
             continue;
          }
-         
+
          /* select task that runs longest time for unsuspension */
          if (longest == nullptr ||
              ocs::tom::get<JAT_start_time>(longest) > ocs::tom::get<JAT_start_time>(ja_task)) {
@@ -288,11 +309,27 @@ lListElem **ja_taskp
       }
    }
 
-   if (longest) {
-      *jepp = jlongest; 
-      *ja_taskp = longest; 
-   }
-
-   DRETURN(longest?0:1);
+   DRETURN(std::make_pair(jlongest, longest));
 }
 
+/**
+ * @brief Selects and suspends jobs in queues that exceed their thresholds, for a caller with untyped lists (N-X-2)
+ *
+ * @param[in]     susp_queues queues that are over their suspend thresholds (QU_Type), checked
+ * @param[in]     job_list    the jobs (JB_Type), checked
+ * @param[in,out] orders      the suspend orders are appended here
+ */
+void suspend_job_in_queues(lList *susp_queues, lList *job_list, order_t *orders) {
+   suspend_job_in_queues(ocs::tom::List<ocs::tom::QU>(susp_queues), ocs::tom::List<ocs::tom::JB>(job_list), orders);
+}
+
+/**
+ * @brief Unsuspends jobs in queues that are below their thresholds again, for a caller with untyped lists (N-X-2)
+ *
+ * @param[in]     queue_list  the queues to look at (QU_Type), checked
+ * @param[in]     job_list    the jobs (JB_Type), checked
+ * @param[in,out] orders      the unsuspend orders are appended here
+ */
+void unsuspend_job_in_queues(lList *queue_list, lList *job_list, order_t *orders) {
+   unsuspend_job_in_queues(ocs::tom::List<ocs::tom::QU>(queue_list), ocs::tom::List<ocs::tom::JB>(job_list), orders);
+}

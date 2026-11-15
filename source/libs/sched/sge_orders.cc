@@ -52,6 +52,11 @@
 #include "sgeobj/tom/ocs_tom_ST.h"
 #include "sgeobj/tom/ocs_tom_OR.h"
 #include "sgeobj/tom/ocs_tom_SME.h"
+#include "sgeobj/tom/ocs_tom_GRU.h"
+#include "sgeobj/tom/ocs_tom_JAT.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
+#include "sgeobj/tom/ocs_tom_OQ.h"
+#include "tom/ocs_List.h"
 
 #include "evc/sge_event_client.h"
 
@@ -123,15 +128,14 @@ lList *sge_add_schedd_info(lList *or_list, int *global_mes_count, int *job_mes_c
  *
  * @note MT-NOTE: sge_create_orders() is MT safe
  */
-lList *sge_create_orders(lList *or_list, uint32_t type, const lListElem *job, const lListElem *ja_task,
-                         const lList *granted, bool update_execd) {
+lList * sge_create_orders(lList *or_list, uint32_t type, const ocs::tom::ConstElement<ocs::tom::JB> job,
+                          const ocs::tom::ConstElement<ocs::tom::JAT> ja_task,
+                          const ocs::tom::ConstList<ocs::tom::JG> granted, bool update_execd) {
    DENTER(TOP_LAYER);
-
-   lList *ql = nullptr;
-   lListElem *ep2;
+   ocs::tom::ListPtr<ocs::tom::OQ> ql;
    uint32_t qslots;
 
-   if (!job) {
+   if (job == nullptr) {
       lFreeList(&or_list);
       DRETURN(or_list);
    }
@@ -143,22 +147,22 @@ lList *sge_create_orders(lList *or_list, uint32_t type, const lListElem *job, co
 
    /* build sublist of granted */
    if (update_execd) {
-      for_each_ep_lv(gel, granted) {
+      for (const auto gel : granted) {
          qslots = ocs::tom::get<JG_slots>(gel);
          if (qslots) { /* ignore Qs with slots==0 */
-            ep2=lCreateElem(OQ_Type);
-
+            auto ep2 = ocs::tom::ElementPtr<ocs::tom::OQ>::create();
             ocs::tom::set<OQ_slots>(ep2, qslots);
-            ocs::tom::set<OQ_binding_to_use>(ep2, lCopyList("binding_to_use", ocs::tom::get<JG_binding_to_use>(gel)));
+            ocs::tom::set<OQ_binding_to_use>(ep2, ocs::tom::get<JG_binding_to_use>(gel).clone("binding_to_use"));
             ocs::tom::set<OQ_dest_queue>(ep2, ocs::tom::get<JG_qname>(gel));
             ocs::tom::set<OQ_dest_version>(ep2, ocs::tom::get<JG_qversion>(gel));
             ocs::tom::set<OQ_ticket>(ep2, ocs::tom::get<JG_ticket>(gel));
             ocs::tom::set<OQ_oticket>(ep2, ocs::tom::get<JG_oticket>(gel));
             ocs::tom::set<OQ_fticket>(ep2, ocs::tom::get<JG_fticket>(gel));
             ocs::tom::set<OQ_sticket>(ep2, ocs::tom::get<JG_sticket>(gel));
-            if (!ql)
-               ql=lCreateList("orderlist",OQ_Type);
-            lAppendElem(ql, ep2);
+            if (ql == nullptr) {
+               ql = ocs::tom::ListPtr<ocs::tom::OQ>::create("orderlist");
+            }
+            ql->push_back(std::move(ep2));
          }
       }
    }
@@ -183,26 +187,20 @@ lList *sge_create_orders(lList *or_list, uint32_t type, const lListElem *job, co
                                           JAT_prio, JAT_ntix});
       static const lDescr *const jobDesc =
          ocs_cull_descr_reduce(JB_Type, {JB_nurg, JB_urg, JB_rrcontr, JB_dlcontr, JB_wtcontr, JB_ja_tasks});
-      lListElem *jep = lCreateElem(jobDesc);
-      lList *jlist = lCreateList("", jobDesc);
+      // the job and its task are reductions to the fields an order carries
+      auto jep = ocs::tom::ElementPtr<ocs::tom::JB>::from_typed(lCreateElem(jobDesc));
+      auto jlist = ocs::tom::ListPtr<ocs::tom::JB>::from_typed(lCreateList("", jobDesc));
 
       /* Create a reduced task list with only the required fields */
       {
-         lList *tlist = nullptr;
-         lListElem *tempElem = nullptr;
-
-         if (update_execd){
-            tlist = lCreateList("", tixDesc);
-            tempElem = lCreateElem(tixDesc);
-            ocs::tom::set<JAT_granted_destin_identifier_list>(tempElem,
-                     lCopyList("", ocs::tom::get<JAT_granted_destin_identifier_list>(ja_task)));
+         const lDescr *const task_descr = update_execd ? tixDesc : tix2Desc;
+         auto tlist = ocs::tom::ListPtr<ocs::tom::JAT>::from_typed(lCreateList("", task_descr));
+         auto new_task = ocs::tom::ElementPtr<ocs::tom::JAT>::from_typed(lCreateElem(task_descr));
+         if (update_execd) {
+            ocs::tom::set<JAT_granted_destin_identifier_list>(
+               new_task, ocs::tom::get<JAT_granted_destin_identifier_list>(ja_task).clone(""));
          }
-         else {
-            tlist = lCreateList("", tix2Desc);
-            tempElem = lCreateElem(tix2Desc);
-         }
-
-         lAppendElem(tlist, tempElem);
+         const auto tempElem = tlist->push_back(std::move(new_task));
 
          ocs::tom::set<JAT_tix>(tempElem, ocs::tom::get<JAT_tix>(ja_task));
          ocs::tom::set<JAT_oticket>(tempElem, ocs::tom::get<JAT_oticket>(ja_task));
@@ -212,25 +210,24 @@ lList *sge_create_orders(lList *or_list, uint32_t type, const lListElem *job, co
          ocs::tom::set<JAT_prio>(tempElem, ocs::tom::get<JAT_prio>(ja_task));
          ocs::tom::set<JAT_ntix>(tempElem, ocs::tom::get<JAT_ntix>(ja_task));
 
-         ocs::tom::set<JB_ja_tasks>(jep, tlist);
+         ocs::tom::set<JB_ja_tasks>(jep, std::move(tlist));
       }
 
       /* Create a reduced job list with only the required fields */
-      lAppendElem(jlist, jep);
-
-      ocs::tom::set<JB_nurg>(jep, ocs::tom::get<JB_nurg>(job));
-      ocs::tom::set<JB_urg>(jep, ocs::tom::get<JB_urg>(job));
-      ocs::tom::set<JB_rrcontr>(jep, ocs::tom::get<JB_rrcontr>(job));
-      ocs::tom::set<JB_dlcontr>(jep, ocs::tom::get<JB_dlcontr>(job));
-      ocs::tom::set<JB_wtcontr>(jep, ocs::tom::get<JB_wtcontr>(job));
-
-      ocs::tom::set<OR_joker>(ep, jlist);
+      const auto order_job = jlist->push_back(std::move(jep));
+      ocs::tom::set<JB_nurg>(order_job, ocs::tom::get<JB_nurg>(job));
+      ocs::tom::set<JB_urg>(order_job, ocs::tom::get<JB_urg>(job));
+      ocs::tom::set<JB_rrcontr>(order_job, ocs::tom::get<JB_rrcontr>(job));
+      ocs::tom::set<JB_dlcontr>(order_job, ocs::tom::get<JB_dlcontr>(job));
+      ocs::tom::set<JB_wtcontr>(order_job, ocs::tom::get<JB_wtcontr>(job));
+      // the joker of an order holds a list of any type (CS-3102), so it takes the raw list
+      ocs::tom::set<OR_joker>(ep, jlist.release());
    }
 
    ocs::tom::set<OR_type>(ep, type);
    ocs::tom::set<OR_job_number>(ep, ocs::tom::get<JB_job_number>(job));
    ocs::tom::set<OR_job_version>(ep, ocs::tom::get<JB_version>(job));
-   ocs::tom::set<OR_queuelist>(ep, ql);
+   ocs::tom::set<OR_queuelist>(ep, std::move(ql));
 
    if (ja_task != nullptr) {
       const char *s = nullptr;
@@ -244,7 +241,7 @@ lList *sge_create_orders(lList *or_list, uint32_t type, const lListElem *job, co
       /* RSMAP: copy from JAT_granted_resources_list
        * we can not lSwapList() it - it is still needed for debiting later
        */
-      ocs::tom::set<OR_granted_resources_list>(ep, lCopyList(nullptr, ocs::tom::get<JAT_granted_resources_list>(ja_task)));
+      ocs::tom::set<OR_granted_resources_list>(ep, ocs::tom::get<JAT_granted_resources_list>(ja_task).clone());
    }
 
    lAppendElem(or_list, std::move(ep));
@@ -370,4 +367,23 @@ int sge_GetNumberOfOrders(order_t *orders) {
    count += lGetNumberOfElem(orders->sentOrderList);
 
    return count;
+}
+
+/**
+ * @brief Creates an order for a job and appends it to an order list, for a caller with untyped objects (N-X-2)
+ *
+ * @param or_list      the order list (OR_Type), or nullptr to create one
+ * @param type         the order type (ORT_*)
+ * @param job          the job (JB_Type), checked, or nullptr
+ * @param ja_task      the array task (JAT_Type), checked, or nullptr
+ * @param granted      the granted destination identifiers (JG_Type), checked, or nullptr
+ * @param update_execd whether the order carries the queue list for the execution daemons
+ *
+ * @return the order list
+ */
+lList * sge_create_orders(lList *or_list, uint32_t type, const lListElem *job, const lListElem *ja_task,
+                          const lList *granted, bool update_execd) {
+   return sge_create_orders(or_list, type, ocs::tom::ConstElement<ocs::tom::JB>(job),
+                            ocs::tom::ConstElement<ocs::tom::JAT>(ja_task), ocs::tom::ConstList<ocs::tom::JG>(granted),
+                            update_execd);
 }

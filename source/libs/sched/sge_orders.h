@@ -45,6 +45,12 @@
 
 #include "cull/cull.h"
 #include "evc/sge_event_client.h"
+#include "sgeobj/tom/ocs_tom_JAT.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
+#include "sgeobj/tom/ocs_tom_JG.h"
+#include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "tom/ocs_Transitional.h"
 
 /** @brief The orders of one scheduling run, grouped by kind */
 typedef struct {
@@ -66,8 +72,11 @@ typedef struct {
 
 lList *sge_add_schedd_info(lList *or_list, int *global_mes_count, int *job_mes_count);
 
-lList *sge_create_orders(lList *or_list, uint32_t type, const lListElem *job, const lListElem *ja_task,
-                         const lList *queue_list, bool update_execd);
+lList *sge_create_orders(lList *or_list, uint32_t type, ocs::tom::ConstElement<ocs::tom::JB> job,
+                         ocs::tom::ConstElement<ocs::tom::JAT> ja_task, ocs::tom::ConstList<ocs::tom::JG> granted,
+                         bool update_execd);
+OCS_TRANSITIONAL lList *sge_create_orders(lList *or_list, uint32_t type, const lListElem *job, const lListElem *ja_task,
+                                          const lList *granted, bool update_execd);
 
 lList *sge_join_orders(order_t *orders);
 int sge_GetNumberOfOrders(order_t *orders); 
