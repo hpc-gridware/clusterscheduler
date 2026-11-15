@@ -604,8 +604,8 @@
             "@todo: meaning when we change it in qmaster it will not be updated in execd"
          ],
          "type": "lObjectT",
-         "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subClassName": "CK",
+         "subCullPrefix": "CK",
          "flags": [
             {
                "name": "JGDI_RO"

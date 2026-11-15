@@ -74,8 +74,8 @@
             "Queue sequence number, used together with queue_sort_method seqno."
          ],
          "type": "lListT",
-         "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subClassName": "AULNG",
+         "subCullPrefix": "AULNG",
          "flags": [
             {
                "name": "JGDI_CONF"
@@ -92,8 +92,8 @@
             "Number of jobs to suspend on suspend_threshold per time interval."
          ],
          "type": "lListT",
-         "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subClassName": "AULNG",
+         "subCullPrefix": "AULNG",
          "flags": [
             {
                "name": "JGDI_CONF"
@@ -110,8 +110,8 @@
             "Number of slots per queue instance."
          ],
          "type": "lListT",
-         "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subClassName": "AULNG",
+         "subCullPrefix": "AULNG",
          "flags": [
             {
                "name": "JGDI_CONF"
@@ -128,8 +128,8 @@
             "Are jobs running in the queue re-runnable?"
          ],
          "type": "lListT",
-         "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subClassName": "ABOOL",
+         "subCullPrefix": "ABOOL",
          "flags": [
             {
                "name": "JGDI_CONF"
@@ -146,8 +146,8 @@
             "Soft filesize limit."
          ],
          "type": "lListT",
-         "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subClassName": "AMEM",
+         "subCullPrefix": "AMEM",
          "flags": [
             {
                "name": "JGDI_CONF"
@@ -164,8 +164,8 @@
             "Hard filesize limit."
          ],
          "type": "lListT",
-         "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subClassName": "AMEM",
+         "subCullPrefix": "AMEM",
          "flags": [
             {
                "name": "JGDI_CONF"
@@ -182,8 +182,8 @@
             "Soft data limit."
          ],
          "type": "lListT",
-         "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subClassName": "AMEM",
+         "subCullPrefix": "AMEM",
          "flags": [
             {
                "name": "JGDI_CONF"
@@ -200,8 +200,8 @@
             "Hard data limit."
          ],
          "type": "lListT",
-         "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subClassName": "AMEM",
+         "subCullPrefix": "AMEM",
          "flags": [
             {
                "name": "JGDI_CONF"
@@ -218,8 +218,8 @@
             "Soft stack size limit."
          ],
          "type": "lListT",
-         "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subClassName": "AMEM",
+         "subCullPrefix": "AMEM",
          "flags": [
             {
                "name": "JGDI_CONF"
@@ -236,8 +236,8 @@
             "Hard stack size limit."
          ],
          "type": "lListT",
-         "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subClassName": "AMEM",
+         "subCullPrefix": "AMEM",
          "flags": [
             {
                "name": "JGDI_CONF"
@@ -254,8 +254,8 @@
             "Soft core size limit."
          ],
          "type": "lListT",
-         "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subClassName": "AMEM",
+         "subCullPrefix": "AMEM",
          "flags": [
             {
                "name": "JGDI_CONF"
@@ -272,8 +272,8 @@
             "Hard core size limit."
          ],
          "type": "lListT",
-         "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subClassName": "AMEM",
+         "subCullPrefix": "AMEM",
          "flags": [
             {
                "name": "JGDI_CONF"
@@ -290,8 +290,8 @@
             "Soft RSS limit."
          ],
          "type": "lListT",
-         "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subClassName": "AMEM",
+         "subCullPrefix": "AMEM",
          "flags": [
             {
                "name": "JGDI_CONF"
@@ -308,8 +308,8 @@
             "Hard RSS limit."
          ],
          "type": "lListT",
-         "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subClassName": "AMEM",
+         "subCullPrefix": "AMEM",
          "flags": [
             {
                "name": "JGDI_CONF"
@@ -326,8 +326,8 @@
             "Soft VMEM limit."
          ],
          "type": "lListT",
-         "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subClassName": "AMEM",
+         "subCullPrefix": "AMEM",
          "flags": [
             {
                "name": "JGDI_CONF"
@@ -344,8 +344,8 @@
             "Hard VMEM limit."
          ],
          "type": "lListT",
-         "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subClassName": "AMEM",
+         "subCullPrefix": "AMEM",
          "flags": [
             {
                "name": "JGDI_CONF"
@@ -362,8 +362,8 @@
             "Soft runtime limit."
          ],
          "type": "lListT",
-         "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subClassName": "ATIME",
+         "subCullPrefix": "ATIME",
          "flags": [
             {
                "name": "JGDI_CONF"
@@ -380,8 +380,8 @@
             "Hard runtime limit."
          ],
          "type": "lListT",
-         "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subClassName": "ATIME",
+         "subCullPrefix": "ATIME",
          "flags": [
             {
                "name": "JGDI_CONF"
@@ -398,8 +398,8 @@
             "Soft CPU time limit."
          ],
          "type": "lListT",
-         "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subClassName": "ATIME",
+         "subCullPrefix": "ATIME",
          "flags": [
             {
                "name": "JGDI_CONF"
@@ -416,8 +416,8 @@
             "Hard CPU time limit."
          ],
          "type": "lListT",
-         "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subClassName": "ATIME",
+         "subCullPrefix": "ATIME",
          "flags": [
             {
                "name": "JGDI_CONF"
@@ -434,8 +434,8 @@
             "Once every interval nsuspend jobs can be suspended by suspend_threshold."
          ],
          "type": "lListT",
-         "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subClassName": "AINTER",
+         "subCullPrefix": "AINTER",
          "flags": [
             {
                "name": "JGDI_CONF"
@@ -452,8 +452,8 @@
             "Time between two automatic checkpoints."
          ],
          "type": "lListT",
-         "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subClassName": "AINTER",
+         "subCullPrefix": "AINTER",
          "flags": [
             {
                "name": "JGDI_CONF"
@@ -470,8 +470,8 @@
             "Notify jobs before signalling them?"
          ],
          "type": "lListT",
-         "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subClassName": "AINTER",
+         "subCullPrefix": "AINTER",
          "flags": [
             {
                "name": "JGDI_CONF"
@@ -488,8 +488,8 @@
             "Toplevel tmp directory holding per job tmp directories on the execution side."
          ],
          "type": "lListT",
-         "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subClassName": "ASTR",
+         "subCullPrefix": "ASTR",
          "flags": [
             {
                "name": "JGDI_CONF"
@@ -506,8 +506,8 @@
             "Default shell used when starting jobs."
          ],
          "type": "lListT",
-         "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subClassName": "ASTR",
+         "subCullPrefix": "ASTR",
          "flags": [
             {
                "name": "JGDI_CONF"
@@ -524,8 +524,8 @@
             "Queue calendar."
          ],
          "type": "lListT",
-         "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subClassName": "ASTR",
+         "subCullPrefix": "ASTR",
          "flags": [
             {
                "name": "JGDI_CONF"
@@ -542,8 +542,8 @@
             "Nice value applied to jobs running in the queue."
          ],
          "type": "lListT",
-         "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subClassName": "ASTR",
+         "subCullPrefix": "ASTR",
          "flags": [
             {
                "name": "JGDI_CONF"
@@ -561,8 +561,8 @@
             "@todo is it still used at all? We now have hwloc on Solaris as well."
          ],
          "type": "lListT",
-         "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subClassName": "ASTR",
+         "subCullPrefix": "ASTR",
          "flags": [
             {
                "name": "JGDI_CONF"
@@ -579,8 +579,8 @@
             "Prolog script started before a job."
          ],
          "type": "lListT",
-         "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subClassName": "ASTR",
+         "subCullPrefix": "ASTR",
          "flags": [
             {
                "name": "JGDI_CONF"
@@ -597,8 +597,8 @@
             "Epilog script started after a job."
          ],
          "type": "lListT",
-         "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subClassName": "ASTR",
+         "subCullPrefix": "ASTR",
          "flags": [
             {
                "name": "JGDI_CONF"
@@ -615,8 +615,8 @@
             "How to start jobs (unix_behavior or posix_compliant, see sge_queue_conf.5 man page."
          ],
          "type": "lListT",
-         "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subClassName": "ASTR",
+         "subCullPrefix": "ASTR",
          "flags": [
             {
                "name": "JGDI_CONF"
@@ -633,8 +633,8 @@
             "Job starter script."
          ],
          "type": "lListT",
-         "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subClassName": "ASTR",
+         "subCullPrefix": "ASTR",
          "flags": [
             {
                "name": "JGDI_CONF"
@@ -651,8 +651,8 @@
             "Signal to be sent to suspend a job or path to a script to be executed when a job shall be suspended."
          ],
          "type": "lListT",
-         "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subClassName": "ASTR",
+         "subCullPrefix": "ASTR",
          "flags": [
             {
                "name": "JGDI_CONF"
@@ -669,8 +669,8 @@
             "Signal to be sent to resume a job or path to a script to be executed when a job shall be resumed."
          ],
          "type": "lListT",
-         "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subClassName": "ASTR",
+         "subCullPrefix": "ASTR",
          "flags": [
             {
                "name": "JGDI_CONF"
@@ -687,8 +687,8 @@
             "Signal to be sent to terminate a job or path to a script to be executed when a job shall be terminated."
          ],
          "type": "lListT",
-         "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subClassName": "ASTR",
+         "subCullPrefix": "ASTR",
          "flags": [
             {
                "name": "JGDI_CONF"
@@ -705,8 +705,8 @@
             "Initial state of a newly created queue instance (default, enabled, disabled)."
          ],
          "type": "lListT",
-         "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subClassName": "ASTR",
+         "subCullPrefix": "ASTR",
          "flags": [
             {
                "name": "JGDI_CONF"
@@ -723,8 +723,8 @@
             "List of parallel environments available for a queue instance."
          ],
          "type": "lListT",
-         "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subClassName": "ASTRLIST",
+         "subCullPrefix": "ASTRLIST",
          "flags": [
             {
                "name": "JGDI_CONF"
@@ -741,8 +741,8 @@
             "List of  checkpointing environments available for a queue instance."
          ],
          "type": "lListT",
-         "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subClassName": "ASTRLIST",
+         "subCullPrefix": "ASTRLIST",
          "flags": [
             {
                "name": "JGDI_CONF"
@@ -759,8 +759,8 @@
             "List of queue owners (has administrative rights like disable/enable, suspend/resume."
          ],
          "type": "lListT",
-         "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subClassName": "AUSRLIST",
+         "subCullPrefix": "AUSRLIST",
          "flags": [
             {
                "name": "JGDI_CONF"
@@ -777,8 +777,8 @@
             "ACL defining whose jobs may run in the queue."
          ],
          "type": "lListT",
-         "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subClassName": "AUSRLIST",
+         "subCullPrefix": "AUSRLIST",
          "flags": [
             {
                "name": "JGDI_CONF"
@@ -795,8 +795,8 @@
             "ACL defining whose jobs may not run in the queue."
          ],
          "type": "lListT",
-         "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subClassName": "AUSRLIST",
+         "subCullPrefix": "AUSRLIST",
          "flags": [
             {
                "name": "JGDI_CONF"
@@ -813,8 +813,8 @@
             "List of projects whose jobs may run in the queue."
          ],
          "type": "lListT",
-         "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subClassName": "APRJLIST",
+         "subCullPrefix": "APRJLIST",
          "flags": [
             {
                "name": "JGDI_CONF"
@@ -831,8 +831,8 @@
             "List of projects whose jobs may not run in the queue."
          ],
          "type": "lListT",
-         "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subClassName": "APRJLIST",
+         "subCullPrefix": "APRJLIST",
          "flags": [
             {
                "name": "JGDI_CONF"
@@ -849,8 +849,8 @@
             "List of load thresholds which will disable queue instances when exceeded."
          ],
          "type": "lListT",
-         "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subClassName": "ACELIST",
+         "subCullPrefix": "ACELIST",
          "flags": [
             {
                "name": "JGDI_CONF"
@@ -867,8 +867,8 @@
             "List of load thresholds which will suspend queue instances (jobs running in the qinstance) when exceeded."
          ],
          "type": "lListT",
-         "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subClassName": "ACELIST",
+         "subCullPrefix": "ACELIST",
          "flags": [
             {
                "name": "JGDI_CONF"
@@ -885,8 +885,8 @@
             "Capacities of consumable resources."
          ],
          "type": "lListT",
-         "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subClassName": "ACELIST",
+         "subCullPrefix": "ACELIST",
          "flags": [
             {
                "name": "JGDI_CONF"
@@ -903,8 +903,8 @@
             "List of subordinate queues."
          ],
          "type": "lListT",
-         "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subClassName": "ASOLIST",
+         "subCullPrefix": "ASOLIST",
          "flags": [
             {
                "name": "JGDI_CONF"
@@ -921,8 +921,8 @@
             "Queue type (batch or interactive)."
          ],
          "type": "lListT",
-         "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subClassName": "AQTLIST",
+         "subCullPrefix": "AQTLIST",
          "flags": [
             {
                "name": "JGDI_CONF"

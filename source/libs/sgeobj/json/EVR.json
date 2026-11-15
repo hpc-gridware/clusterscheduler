@@ -59,8 +59,8 @@
             "The event client object (`EV_Type`), for the register and modify operations."
          ],
          "type": "lObjectT",
-         "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subClassName": "EV",
+         "subCullPrefix": "EV",
          "flags": []
       },
       {

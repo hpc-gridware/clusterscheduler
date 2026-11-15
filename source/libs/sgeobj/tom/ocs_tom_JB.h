@@ -633,6 +633,7 @@ enum JB_Field {
 namespace ocs::tom {
 
    struct BN;
+   struct CK;
    struct CX;
    struct ID;
    struct JAT;
@@ -832,6 +833,12 @@ namespace ocs::tom {
    template <>
    struct SubType<JB_job_args> {
       using type = ST;   ///< the sub-type
+   };
+
+   /** @brief JB_checkpoint_object holds elements of CK */
+   template <>
+   struct SubType<JB_checkpoint_object> {
+      using type = CK;   ///< the sub-type
    };
 
    /** @brief JB_stdout_path_list holds elements of PN */

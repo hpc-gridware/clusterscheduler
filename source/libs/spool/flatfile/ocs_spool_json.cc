@@ -102,25 +102,6 @@ spool_json_value_to_ulong(const rapidjson::Value &v);
 static const char *const SPOOL_JSON_DEFAULT_HREF = "default";
 
 /**
- * @brief Sub-element descriptor for a sub-object (lObjectT) field.
- *
- * object_get_subtype() is generated only for CULL SGE_LIST fields, so it does not
- * cover SGE_OBJECT fields (e.g. the RQS filters); those carry their descriptor in
- * the spooling_field clientdata, which is unused for object fields on the ASCII path.
- *
- * @param field  spooling field describing the sub-object attribute
- * @return the sub-element descriptor, or nullptr if none can be determined
- */
-static const lDescr *
-spool_json_object_subtype(const spooling_field *field) {
-   const lDescr *d = object_get_subtype(field->nm);
-   if (d == nullptr) {
-      d = static_cast<const lDescr *>(field->clientdata);
-   }
-   return d;
-}
-
-/**
  * @brief Lowercase object type name (e.g. "CALENDAR" -> "calendar").
  *
  * Used for the JSON $id and the list wrapper key.
@@ -1108,7 +1089,7 @@ spool_json_write_object_members(lList **answer_list, const lListElem *object,
             "no filter" (the matcher treats a null scope as "match all"). */
          writer.Key(name);
          const lListElem *real = lGetPosObject(object, pos);
-         const lDescr *sub_descr = spool_json_object_subtype(&fields[i]);
+         const lDescr *sub_descr = object_get_subtype(fields[i].nm);
          lListElem *tmp = nullptr;
          const lListElem *sub_obj = real;
          if (sub_obj == nullptr && sub_descr != nullptr) {
@@ -1671,41 +1652,6 @@ static bool spool_json_populate_members(lListElem *ep, const lDescr *descr,
                                         lList **answer_list, const rapidjson::Value &obj);
 
 /**
- * @brief Element descriptor of a sublist field.
- *
- * object_get_subtype() (generated from the CULL metadata) covers fields whose subtype
- * is fixed, but the cqueue per-host override attributes are declared CULL_ANY_SUBTYPE,
- * so their element type is absent there. For those, derive it from the href sub-field
- * (AULNG_href -> AULNG_Type, ...).
- *
- * @param nm      CULL field id of the sublist attribute
- * @param fields  spooling fields of the sublist elements (used for the fallback)
- * @return the element descriptor, or nullptr if it cannot be determined
- */
-static const lDescr *
-spool_json_sublist_subtype(int nm, const spooling_field *fields) {
-   const lDescr *d = object_get_subtype(nm);
-   if (d != nullptr || fields == nullptr) {
-      return d;
-   }
-   switch (fields[0].nm) {
-      case AULNG_href:    return AULNG_Type;
-      case ASTR_href:     return ASTR_Type;
-      case AMEM_href:     return AMEM_Type;
-      case ATIME_href:    return ATIME_Type;
-      case AINTER_href:   return AINTER_Type;
-      case ABOOL_href:    return ABOOL_Type;
-      case ACELIST_href:  return ACELIST_Type;
-      case ASTRLIST_href: return ASTRLIST_Type;
-      case AUSRLIST_href: return AUSRLIST_Type;
-      case ASOLIST_href:  return ASOLIST_Type;
-      case APRJLIST_href: return APRJLIST_Type;
-      case AQTLIST_href:  return AQTLIST_Type;
-      default:            return nullptr;
-   }
-}
-
-/**
  * @brief Build a sublist from a JSON array, mirroring the writer's shape decisions.
  *
  * Positional (unnamed spooling fields) -> 1 field: array of scalars, 2 fields: array of
@@ -1720,7 +1666,7 @@ spool_json_sublist_subtype(int nm, const spooling_field *fields) {
 static lList *
 spool_json_read_sublist(int nm, const spooling_field *fields, lList **answer_list,
                         const rapidjson::Value &arr) {
-   const lDescr *sub_descr = spool_json_sublist_subtype(nm, fields);
+   const lDescr *sub_descr = object_get_subtype(nm);
    if (sub_descr == nullptr || fields == nullptr || !arr.IsArray() || arr.Size() == 0) {
       /* an empty array is read as a null (unset) list, mirroring the ASCII reader;
        * this also makes an empty RQS filter scope behave as "match all" (the matcher
@@ -1796,7 +1742,7 @@ spool_json_read_flatten(lListElem *ep, const lDescr *descr, const spooling_field
                         const spooling_field *flatten, int fields_out[],
                         const rapidjson::Value &obj) {
    const int fpos = lGetPosInDescr(descr, flatten->nm);
-   const lDescr *sub_descr = spool_json_sublist_subtype(flatten->nm, flatten->sub_fields);
+   const lDescr *sub_descr = object_get_subtype(flatten->nm);
    if (fpos < 0 || sub_descr == nullptr) {
       return;
    }
@@ -1927,7 +1873,7 @@ spool_json_populate_members(lListElem *ep, const lDescr *descr,
       } else if (type == lObjectT && fields[i].sub_fields != nullptr) {
          /* nested JSON object (e.g. an RQS filter) -> sub-object; null / non-object
           * leaves the field unset, so an absent filter round-trips to null */
-         const lDescr *sub_descr = spool_json_object_subtype(&fields[i]);
+         const lDescr *sub_descr = object_get_subtype(fields[i].nm);
          if (m->value.IsObject() && sub_descr != nullptr) {
             lListElem *sub = lCreateElem(sub_descr);
             if (!spool_json_populate_members(sub, sub_descr, fields[i].sub_fields, nullptr, answer_list, m->value)) {

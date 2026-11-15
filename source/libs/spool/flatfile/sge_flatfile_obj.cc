@@ -339,11 +339,11 @@ static spooling_field RQRF_sub_fields[] = {
 
 static spooling_field RQR_sub_fields[] = {
    {  RQR_name,            0, "name",              false, nullptr, false, nullptr, nullptr, nullptr},
-   {  RQR_filter_users,    0, "users",             false, RQRF_sub_fields, false, RQRF_Type, read_RQR_obj, write_RQR_obj},
-   {  RQR_filter_projects, 0, "projects",          false, RQRF_sub_fields, false, RQRF_Type, read_RQR_obj, write_RQR_obj},
-   {  RQR_filter_pes,      0, "pes",               false, RQRF_sub_fields, false, RQRF_Type, read_RQR_obj, write_RQR_obj},
-   {  RQR_filter_queues,   0, "queues",            false, RQRF_sub_fields, false, RQRF_Type, read_RQR_obj, write_RQR_obj},
-   {  RQR_filter_hosts,    0, "hosts",             false, RQRF_sub_fields, false, RQRF_Type, read_RQR_obj, write_RQR_obj},
+   {  RQR_filter_users,    0, "users",             false, RQRF_sub_fields, false, nullptr, read_RQR_obj, write_RQR_obj},
+   {  RQR_filter_projects, 0, "projects",          false, RQRF_sub_fields, false, nullptr, read_RQR_obj, write_RQR_obj},
+   {  RQR_filter_pes,      0, "pes",               false, RQRF_sub_fields, false, nullptr, read_RQR_obj, write_RQR_obj},
+   {  RQR_filter_queues,   0, "queues",            false, RQRF_sub_fields, false, nullptr, read_RQR_obj, write_RQR_obj},
+   {  RQR_filter_hosts,    0, "hosts",             false, RQRF_sub_fields, false, nullptr, read_RQR_obj, write_RQR_obj},
    {  RQR_limit,           0, "to",                false, RQRL_sub_fields,  false, &qconf_sub_name_value_comma_sfi, nullptr, nullptr},
    {  NoName,              0, nullptr,                false, nullptr, false, nullptr, nullptr, nullptr}
 };

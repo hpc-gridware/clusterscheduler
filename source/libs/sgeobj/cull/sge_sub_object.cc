@@ -58,6 +58,9 @@ object_get_subtype(int nm)
       case JB_job_args:
          ret = ST_Type;
          break;
+      case JB_checkpoint_object:
+         ret = CK_Type;
+         break;
       case JB_stdout_path_list:
          ret = PN_Type;
          break;
@@ -526,6 +529,150 @@ object_get_subtype(int nm)
       case CQ_qinstances:
          ret = QU_Type;
          break;
+      case CQ_seq_no:
+         ret = AULNG_Type;
+         break;
+      case CQ_nsuspend:
+         ret = AULNG_Type;
+         break;
+      case CQ_job_slots:
+         ret = AULNG_Type;
+         break;
+      case CQ_rerun:
+         ret = ABOOL_Type;
+         break;
+      case CQ_s_fsize:
+         ret = AMEM_Type;
+         break;
+      case CQ_h_fsize:
+         ret = AMEM_Type;
+         break;
+      case CQ_s_data:
+         ret = AMEM_Type;
+         break;
+      case CQ_h_data:
+         ret = AMEM_Type;
+         break;
+      case CQ_s_stack:
+         ret = AMEM_Type;
+         break;
+      case CQ_h_stack:
+         ret = AMEM_Type;
+         break;
+      case CQ_s_core:
+         ret = AMEM_Type;
+         break;
+      case CQ_h_core:
+         ret = AMEM_Type;
+         break;
+      case CQ_s_rss:
+         ret = AMEM_Type;
+         break;
+      case CQ_h_rss:
+         ret = AMEM_Type;
+         break;
+      case CQ_s_vmem:
+         ret = AMEM_Type;
+         break;
+      case CQ_h_vmem:
+         ret = AMEM_Type;
+         break;
+      case CQ_s_rt:
+         ret = ATIME_Type;
+         break;
+      case CQ_h_rt:
+         ret = ATIME_Type;
+         break;
+      case CQ_s_cpu:
+         ret = ATIME_Type;
+         break;
+      case CQ_h_cpu:
+         ret = ATIME_Type;
+         break;
+      case CQ_suspend_interval:
+         ret = AINTER_Type;
+         break;
+      case CQ_min_cpu_interval:
+         ret = AINTER_Type;
+         break;
+      case CQ_notify:
+         ret = AINTER_Type;
+         break;
+      case CQ_tmpdir:
+         ret = ASTR_Type;
+         break;
+      case CQ_shell:
+         ret = ASTR_Type;
+         break;
+      case CQ_calendar:
+         ret = ASTR_Type;
+         break;
+      case CQ_priority:
+         ret = ASTR_Type;
+         break;
+      case CQ_processors:
+         ret = ASTR_Type;
+         break;
+      case CQ_prolog:
+         ret = ASTR_Type;
+         break;
+      case CQ_epilog:
+         ret = ASTR_Type;
+         break;
+      case CQ_shell_start_mode:
+         ret = ASTR_Type;
+         break;
+      case CQ_starter_method:
+         ret = ASTR_Type;
+         break;
+      case CQ_suspend_method:
+         ret = ASTR_Type;
+         break;
+      case CQ_resume_method:
+         ret = ASTR_Type;
+         break;
+      case CQ_terminate_method:
+         ret = ASTR_Type;
+         break;
+      case CQ_initial_state:
+         ret = ASTR_Type;
+         break;
+      case CQ_pe_list:
+         ret = ASTRLIST_Type;
+         break;
+      case CQ_ckpt_list:
+         ret = ASTRLIST_Type;
+         break;
+      case CQ_owner_list:
+         ret = AUSRLIST_Type;
+         break;
+      case CQ_acl:
+         ret = AUSRLIST_Type;
+         break;
+      case CQ_xacl:
+         ret = AUSRLIST_Type;
+         break;
+      case CQ_projects:
+         ret = APRJLIST_Type;
+         break;
+      case CQ_xprojects:
+         ret = APRJLIST_Type;
+         break;
+      case CQ_load_thresholds:
+         ret = ACELIST_Type;
+         break;
+      case CQ_suspend_thresholds:
+         ret = ACELIST_Type;
+         break;
+      case CQ_consumable_config_list:
+         ret = ACELIST_Type;
+         break;
+      case CQ_subordinate_list:
+         ret = ASOLIST_Type;
+         break;
+      case CQ_qtype:
+         ret = AQTLIST_Type;
+         break;
       case CQ_joker:
          ret = VA_Type;
          break;
@@ -573,6 +720,21 @@ object_get_subtype(int nm)
          break;
       case RQS_joker:
          ret = VA_Type;
+         break;
+      case RQR_filter_users:
+         ret = RQRF_Type;
+         break;
+      case RQR_filter_projects:
+         ret = RQRF_Type;
+         break;
+      case RQR_filter_pes:
+         ret = RQRF_Type;
+         break;
+      case RQR_filter_queues:
+         ret = RQRF_Type;
+         break;
+      case RQR_filter_hosts:
+         ret = RQRF_Type;
          break;
       case RQR_limit:
          ret = RQRL_Type;
@@ -633,6 +795,9 @@ object_get_subtype(int nm)
          break;
       case AR_pe_object:
          ret = PE_Type;
+         break;
+      case EVR_event_client:
+         ret = EV_Type;
          break;
       case EVR_event_list:
          ret = ET_Type;

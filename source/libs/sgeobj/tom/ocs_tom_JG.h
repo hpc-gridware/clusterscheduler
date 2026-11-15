@@ -69,6 +69,9 @@ enum JG_Field {
     *
     * The queue instance definition with information required in sge_execd,
     * like limits, the tmp directory, ...
+    * It holds a reduction of a queue instance (QU) to those fields, so the field
+    * names no sub-type: the structure check of an object compares a sub-object
+    * with the full descriptor of its sub-type, which a reduction does not match.
     */
    JG_queue,
    /**

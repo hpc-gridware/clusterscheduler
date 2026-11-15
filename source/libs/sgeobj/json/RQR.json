@@ -39,8 +39,8 @@
             "Which submitting users the rule applies to (`RQRF_Type`)."
          ],
          "type": "lObjectT",
-         "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subClassName": "RQRF",
+         "subCullPrefix": "RQRF",
          "flags": [
             {
                "name": "JGDI_CONF"
@@ -57,8 +57,8 @@
             "Which projects the rule applies to."
          ],
          "type": "lObjectT",
-         "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subClassName": "RQRF",
+         "subCullPrefix": "RQRF",
          "flags": [
             {
                "name": "JGDI_CONF"
@@ -75,8 +75,8 @@
             "Which parallel environments the rule applies to."
          ],
          "type": "lObjectT",
-         "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subClassName": "RQRF",
+         "subCullPrefix": "RQRF",
          "flags": [
             {
                "name": "JGDI_CONF"
@@ -93,8 +93,8 @@
             "Which cluster queues the rule applies to."
          ],
          "type": "lObjectT",
-         "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subClassName": "RQRF",
+         "subCullPrefix": "RQRF",
          "flags": [
             {
                "name": "JGDI_CONF"
@@ -111,8 +111,8 @@
             "Which execution hosts the rule applies to."
          ],
          "type": "lObjectT",
-         "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subClassName": "RQRF",
+         "subCullPrefix": "RQRF",
          "flags": [
             {
                "name": "JGDI_CONF"

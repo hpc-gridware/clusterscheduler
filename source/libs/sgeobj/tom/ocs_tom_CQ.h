@@ -363,6 +363,18 @@ enum CQ_Field {
 
 namespace ocs::tom {
 
+   struct ABOOL;
+   struct ACELIST;
+   struct AINTER;
+   struct AMEM;
+   struct APRJLIST;
+   struct AQTLIST;
+   struct ASOLIST;
+   struct ASTR;
+   struct ASTRLIST;
+   struct ATIME;
+   struct AULNG;
+   struct AUSRLIST;
    struct HR;
    struct QU;
    struct VA;
@@ -459,6 +471,294 @@ namespace ocs::tom {
    template <>
    struct SubType<CQ_qinstances> {
       using type = QU;   ///< the sub-type
+   };
+
+   /** @brief CQ_seq_no holds elements of AULNG */
+   template <>
+   struct SubType<CQ_seq_no> {
+      using type = AULNG;   ///< the sub-type
+   };
+
+   /** @brief CQ_nsuspend holds elements of AULNG */
+   template <>
+   struct SubType<CQ_nsuspend> {
+      using type = AULNG;   ///< the sub-type
+   };
+
+   /** @brief CQ_job_slots holds elements of AULNG */
+   template <>
+   struct SubType<CQ_job_slots> {
+      using type = AULNG;   ///< the sub-type
+   };
+
+   /** @brief CQ_rerun holds elements of ABOOL */
+   template <>
+   struct SubType<CQ_rerun> {
+      using type = ABOOL;   ///< the sub-type
+   };
+
+   /** @brief CQ_s_fsize holds elements of AMEM */
+   template <>
+   struct SubType<CQ_s_fsize> {
+      using type = AMEM;   ///< the sub-type
+   };
+
+   /** @brief CQ_h_fsize holds elements of AMEM */
+   template <>
+   struct SubType<CQ_h_fsize> {
+      using type = AMEM;   ///< the sub-type
+   };
+
+   /** @brief CQ_s_data holds elements of AMEM */
+   template <>
+   struct SubType<CQ_s_data> {
+      using type = AMEM;   ///< the sub-type
+   };
+
+   /** @brief CQ_h_data holds elements of AMEM */
+   template <>
+   struct SubType<CQ_h_data> {
+      using type = AMEM;   ///< the sub-type
+   };
+
+   /** @brief CQ_s_stack holds elements of AMEM */
+   template <>
+   struct SubType<CQ_s_stack> {
+      using type = AMEM;   ///< the sub-type
+   };
+
+   /** @brief CQ_h_stack holds elements of AMEM */
+   template <>
+   struct SubType<CQ_h_stack> {
+      using type = AMEM;   ///< the sub-type
+   };
+
+   /** @brief CQ_s_core holds elements of AMEM */
+   template <>
+   struct SubType<CQ_s_core> {
+      using type = AMEM;   ///< the sub-type
+   };
+
+   /** @brief CQ_h_core holds elements of AMEM */
+   template <>
+   struct SubType<CQ_h_core> {
+      using type = AMEM;   ///< the sub-type
+   };
+
+   /** @brief CQ_s_rss holds elements of AMEM */
+   template <>
+   struct SubType<CQ_s_rss> {
+      using type = AMEM;   ///< the sub-type
+   };
+
+   /** @brief CQ_h_rss holds elements of AMEM */
+   template <>
+   struct SubType<CQ_h_rss> {
+      using type = AMEM;   ///< the sub-type
+   };
+
+   /** @brief CQ_s_vmem holds elements of AMEM */
+   template <>
+   struct SubType<CQ_s_vmem> {
+      using type = AMEM;   ///< the sub-type
+   };
+
+   /** @brief CQ_h_vmem holds elements of AMEM */
+   template <>
+   struct SubType<CQ_h_vmem> {
+      using type = AMEM;   ///< the sub-type
+   };
+
+   /** @brief CQ_s_rt holds elements of ATIME */
+   template <>
+   struct SubType<CQ_s_rt> {
+      using type = ATIME;   ///< the sub-type
+   };
+
+   /** @brief CQ_h_rt holds elements of ATIME */
+   template <>
+   struct SubType<CQ_h_rt> {
+      using type = ATIME;   ///< the sub-type
+   };
+
+   /** @brief CQ_s_cpu holds elements of ATIME */
+   template <>
+   struct SubType<CQ_s_cpu> {
+      using type = ATIME;   ///< the sub-type
+   };
+
+   /** @brief CQ_h_cpu holds elements of ATIME */
+   template <>
+   struct SubType<CQ_h_cpu> {
+      using type = ATIME;   ///< the sub-type
+   };
+
+   /** @brief CQ_suspend_interval holds elements of AINTER */
+   template <>
+   struct SubType<CQ_suspend_interval> {
+      using type = AINTER;   ///< the sub-type
+   };
+
+   /** @brief CQ_min_cpu_interval holds elements of AINTER */
+   template <>
+   struct SubType<CQ_min_cpu_interval> {
+      using type = AINTER;   ///< the sub-type
+   };
+
+   /** @brief CQ_notify holds elements of AINTER */
+   template <>
+   struct SubType<CQ_notify> {
+      using type = AINTER;   ///< the sub-type
+   };
+
+   /** @brief CQ_tmpdir holds elements of ASTR */
+   template <>
+   struct SubType<CQ_tmpdir> {
+      using type = ASTR;   ///< the sub-type
+   };
+
+   /** @brief CQ_shell holds elements of ASTR */
+   template <>
+   struct SubType<CQ_shell> {
+      using type = ASTR;   ///< the sub-type
+   };
+
+   /** @brief CQ_calendar holds elements of ASTR */
+   template <>
+   struct SubType<CQ_calendar> {
+      using type = ASTR;   ///< the sub-type
+   };
+
+   /** @brief CQ_priority holds elements of ASTR */
+   template <>
+   struct SubType<CQ_priority> {
+      using type = ASTR;   ///< the sub-type
+   };
+
+   /** @brief CQ_processors holds elements of ASTR */
+   template <>
+   struct SubType<CQ_processors> {
+      using type = ASTR;   ///< the sub-type
+   };
+
+   /** @brief CQ_prolog holds elements of ASTR */
+   template <>
+   struct SubType<CQ_prolog> {
+      using type = ASTR;   ///< the sub-type
+   };
+
+   /** @brief CQ_epilog holds elements of ASTR */
+   template <>
+   struct SubType<CQ_epilog> {
+      using type = ASTR;   ///< the sub-type
+   };
+
+   /** @brief CQ_shell_start_mode holds elements of ASTR */
+   template <>
+   struct SubType<CQ_shell_start_mode> {
+      using type = ASTR;   ///< the sub-type
+   };
+
+   /** @brief CQ_starter_method holds elements of ASTR */
+   template <>
+   struct SubType<CQ_starter_method> {
+      using type = ASTR;   ///< the sub-type
+   };
+
+   /** @brief CQ_suspend_method holds elements of ASTR */
+   template <>
+   struct SubType<CQ_suspend_method> {
+      using type = ASTR;   ///< the sub-type
+   };
+
+   /** @brief CQ_resume_method holds elements of ASTR */
+   template <>
+   struct SubType<CQ_resume_method> {
+      using type = ASTR;   ///< the sub-type
+   };
+
+   /** @brief CQ_terminate_method holds elements of ASTR */
+   template <>
+   struct SubType<CQ_terminate_method> {
+      using type = ASTR;   ///< the sub-type
+   };
+
+   /** @brief CQ_initial_state holds elements of ASTR */
+   template <>
+   struct SubType<CQ_initial_state> {
+      using type = ASTR;   ///< the sub-type
+   };
+
+   /** @brief CQ_pe_list holds elements of ASTRLIST */
+   template <>
+   struct SubType<CQ_pe_list> {
+      using type = ASTRLIST;   ///< the sub-type
+   };
+
+   /** @brief CQ_ckpt_list holds elements of ASTRLIST */
+   template <>
+   struct SubType<CQ_ckpt_list> {
+      using type = ASTRLIST;   ///< the sub-type
+   };
+
+   /** @brief CQ_owner_list holds elements of AUSRLIST */
+   template <>
+   struct SubType<CQ_owner_list> {
+      using type = AUSRLIST;   ///< the sub-type
+   };
+
+   /** @brief CQ_acl holds elements of AUSRLIST */
+   template <>
+   struct SubType<CQ_acl> {
+      using type = AUSRLIST;   ///< the sub-type
+   };
+
+   /** @brief CQ_xacl holds elements of AUSRLIST */
+   template <>
+   struct SubType<CQ_xacl> {
+      using type = AUSRLIST;   ///< the sub-type
+   };
+
+   /** @brief CQ_projects holds elements of APRJLIST */
+   template <>
+   struct SubType<CQ_projects> {
+      using type = APRJLIST;   ///< the sub-type
+   };
+
+   /** @brief CQ_xprojects holds elements of APRJLIST */
+   template <>
+   struct SubType<CQ_xprojects> {
+      using type = APRJLIST;   ///< the sub-type
+   };
+
+   /** @brief CQ_load_thresholds holds elements of ACELIST */
+   template <>
+   struct SubType<CQ_load_thresholds> {
+      using type = ACELIST;   ///< the sub-type
+   };
+
+   /** @brief CQ_suspend_thresholds holds elements of ACELIST */
+   template <>
+   struct SubType<CQ_suspend_thresholds> {
+      using type = ACELIST;   ///< the sub-type
+   };
+
+   /** @brief CQ_consumable_config_list holds elements of ACELIST */
+   template <>
+   struct SubType<CQ_consumable_config_list> {
+      using type = ACELIST;   ///< the sub-type
+   };
+
+   /** @brief CQ_subordinate_list holds elements of ASOLIST */
+   template <>
+   struct SubType<CQ_subordinate_list> {
+      using type = ASOLIST;   ///< the sub-type
+   };
+
+   /** @brief CQ_qtype holds elements of AQTLIST */
+   template <>
+   struct SubType<CQ_qtype> {
+      using type = AQTLIST;   ///< the sub-type
    };
 
    /** @brief CQ_joker holds elements of VA */

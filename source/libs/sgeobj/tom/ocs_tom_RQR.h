@@ -90,6 +90,7 @@ enum RQR_Field {
 
 namespace ocs::tom {
 
+   struct RQRF;
    struct RQRL;
 
    /**
@@ -122,6 +123,36 @@ namespace ocs::tom {
    template <>
    struct TypeOf<RQR_Field> {
       using type = RQR;   ///< the object type
+   };
+
+   /** @brief RQR_filter_users holds elements of RQRF */
+   template <>
+   struct SubType<RQR_filter_users> {
+      using type = RQRF;   ///< the sub-type
+   };
+
+   /** @brief RQR_filter_projects holds elements of RQRF */
+   template <>
+   struct SubType<RQR_filter_projects> {
+      using type = RQRF;   ///< the sub-type
+   };
+
+   /** @brief RQR_filter_pes holds elements of RQRF */
+   template <>
+   struct SubType<RQR_filter_pes> {
+      using type = RQRF;   ///< the sub-type
+   };
+
+   /** @brief RQR_filter_queues holds elements of RQRF */
+   template <>
+   struct SubType<RQR_filter_queues> {
+      using type = RQRF;   ///< the sub-type
+   };
+
+   /** @brief RQR_filter_hosts holds elements of RQRF */
+   template <>
+   struct SubType<RQR_filter_hosts> {
+      using type = RQRF;   ///< the sub-type
    };
 
    /** @brief RQR_limit holds elements of RQRL */

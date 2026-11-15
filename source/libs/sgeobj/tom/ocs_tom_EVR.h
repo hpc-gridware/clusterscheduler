@@ -85,6 +85,7 @@ enum EVR_Field {
 namespace ocs::tom {
 
    struct ET;
+   struct EV;
 
    /**
     * @brief Event Master Request
@@ -115,6 +116,12 @@ namespace ocs::tom {
    template <>
    struct TypeOf<EVR_Field> {
       using type = EVR;   ///< the object type
+   };
+
+   /** @brief EVR_event_client holds elements of EV */
+   template <>
+   struct SubType<EVR_event_client> {
+      using type = EV;   ///< the sub-type
    };
 
    /** @brief EVR_event_list holds elements of ET */

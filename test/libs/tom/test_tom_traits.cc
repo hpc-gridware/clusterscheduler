@@ -56,7 +56,11 @@ static_assert(std::is_same_v<FieldTraits<JB_job_number>::Type, ocs::tom::JB>, "a
 static_assert(std::is_same_v<FieldTraits<JB_ja_tasks>::Sub, ocs::tom::JAT>,
               "the sub-type of a list field is taken from the model");
 static_assert(FieldTraits<JB_ja_tasks>::type == FieldType::List && FieldTraits<JB_ja_tasks>::has_sub);
-static_assert(!FieldTraits<JB_checkpoint_object>::has_sub, "a field of any sub-type names none");
+static_assert(!FieldTraits<OR_joker>::has_sub, "a field of any sub-type names none");
+static_assert(std::is_same_v<FieldTraits<JB_checkpoint_object>::Sub, ocs::tom::CK>,
+              "an object field whose type is fixed names it in the model (CS-3102)");
+static_assert(std::is_same_v<FieldTraits<CQ_seq_no>::Sub, ocs::tom::AULNG>,
+              "a cluster queue attribute list names the type of its href table entry (CS-3102)");
 static_assert(std::is_same_v<FieldTraits<STN_children>::Sub, ocs::tom::STN>, "a type can be its own sub-type");
 static_assert(FieldTraits<ABOOL_href>::hashed && FieldTraits<ABOOL_href>::unique);
 static_assert(std::is_same_v<ValueOf<FieldTraits<JB_job_name>::type>::type, const char *>);
