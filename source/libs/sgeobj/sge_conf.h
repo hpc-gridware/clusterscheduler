@@ -208,6 +208,7 @@ bool parse_online_usage_value(lList **answer_list, const char *value, std::vecto
 bool mconf_get_enable_forced_qdel();
 bool mconf_get_enable_sup_grp_eval();
 bool mconf_get_enable_forced_qdel_if_unknown();
+bool mconf_get_notify_execds_on_conf_change();
 bool mconf_get_allow_any_submithosts();
 std::string mconf_get_auto_add_hosts();
 u_long32 mconf_get_auto_remove_hosts_after();

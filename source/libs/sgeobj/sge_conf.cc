@@ -152,6 +152,7 @@ static bool enable_enforce_master_limit = false;
 static bool enable_test_sleep_after_request = false;
 static int test_mirror_callback_error = 0;
 static bool enable_forced_qdel_if_unknown = false;
+static bool notify_execds_on_conf_change = true;
 static bool allow_any_submithosts = false;
 static std::string auto_add_hosts;
 static u_long32 auto_remove_hosts_after = 0;
@@ -770,6 +771,7 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
       enable_test_sleep_after_request = false;
       test_mirror_callback_error = 0;
       enable_forced_qdel_if_unknown = false;
+      notify_execds_on_conf_change = true;
       allow_any_submithosts = false;
       auto_add_hosts.clear();
       auto_remove_hosts_after = 0;
@@ -864,6 +866,9 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
             continue;
          }
          if (parse_bool_param(s, "ENABLE_FORCED_QDEL_IF_UNKNOWN", &enable_forced_qdel_if_unknown)) {
+            continue;
+         }
+         if (parse_bool_param(s, "NOTIFY_EXECDS_ON_CONF_CHANGE", &notify_execds_on_conf_change)) {
             continue;
          }
          if (parse_bool_param(s, "ALLOW_ANY_SUBMITHOSTS", &allow_any_submithosts)) {
@@ -3237,6 +3242,23 @@ bool mconf_get_enable_forced_qdel_if_unknown() {
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
    ret = enable_forced_qdel_if_unknown;
+   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
+   DRETURN(ret);
+}
+
+/**
+ * @brief Shall sge_qmaster notify the sge_execds about a configuration change at once?
+ *
+ * Set via `qmaster_params NOTIFY_EXECDS_ON_CONF_CHANGE=true|false`, default true. Without the
+ * notification an sge_execd gets a changed configuration only with the answer to its next
+ * report, up to one load_report_time later.
+ *
+ * @return true if sge_qmaster notifies the sge_execds about a configuration change
+ */
+bool mconf_get_notify_execds_on_conf_change() {
+   DENTER(BASIS_LAYER);
+   SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
+   bool ret = notify_execds_on_conf_change;
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
 }

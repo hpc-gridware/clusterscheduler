@@ -396,6 +396,8 @@ System load is reported periodically by the execution daemons to xxqs_name_sxx_q
 *load_report_time* defines the time interval between load reports.
 
 Each xxqs_name_sxx_execd(8) may use a different load report time. Changing *load_report_time* will take immediate effect.
+If *NOTIFY_EXECDS_ON_CONF_CHANGE* in *qmaster_params* is set to *false*, the change takes effect with the next load
+report of an execution daemon.
 
 Note: Be careful when modifying *load_report_time*. Reporting load too frequently might block 
 xxqs_name_sxx_qmaster(8) especially if the number of execution hosts is large. Moreover, since the system load
@@ -735,6 +737,20 @@ Note: Forced deletion for jobs is executed differently depending on whether user
 or not. In case of administrative users, the jobs are removed from the internal database of xxQS_NAMExx immediately. 
 For regular users, the equivalent of a normal qdel(1) is executed first, and deletion is forced only if the normal
 cancellation was unsuccessful.
+
+***NOTIFY_EXECDS_ON_CONF_CHANGE***
+
+If set to *true* (the default), xxqs_name_sxx_qmaster(8) notifies the execution daemons about a change of
+the configuration at once, and they fetch the new configuration right away. A change of the global
+configuration is sent to all execution daemons, a change of a local configuration to the execution daemon
+of that host. Execution daemons on hosts in unknown state are not notified, they get the configuration
+when they register.
+
+If set to *false*, an execution daemon gets a changed configuration only with the answer to its next load
+report, up to one *load_report_time* later. Until then it works with the previous configuration, e.g. it
+sends its load reports in the previous interval. In very large clusters, switching off the notification
+avoids that all execution daemons request their configuration from xxqs_name_sxx_qmaster(8) at the same
+time after a change of the global configuration.
 
 ***FORBID_RESCHEDULE***
 
