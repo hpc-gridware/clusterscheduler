@@ -74,6 +74,15 @@
 namespace {
 
    /**
+    * @brief A function giving the message of an old accessor for one error
+    *
+    * The messages are translated (`_MESSAGE()` calls gettext), so an accessor
+    * passes a function that gives its message instead of the message itself:
+    * the translation runs only on the error path, not on every access.
+    */
+   using legacy_message = const char *(*)();
+
+   /**
     * @brief The position of a field for a getter by name, through the core of the typed object model
     *
     * The core checks; this maps its exception back to what the old getters
@@ -82,11 +91,11 @@ namespace {
     * @param ep the element
     * @param name the field number
     * @param type the field type the getter reads
-    * @param wrong_type_fmt the getter's message for a field of another field type
+    * @param wrong_type_fmt gives the getter's message for a field of another field type, called only on that error
     * @return the field's position; does not return on an error
     */
    int legacy_getter_pos(const lListElem *ep, const int name, const ocs::tom::FieldType type,
-                         const char *wrong_type_fmt) {
+                         const legacy_message wrong_type_fmt) {
       DENTER(CULL_BASIS_LAYER);
       try {
          DRETURN(ocs::tom::checked_pos(ep, name, type));
@@ -97,7 +106,7 @@ namespace {
                break;
             case ocs::tom::FieldException::Reason::WrongType: {
                const int pos = ocs::tom::field_pos(ep->descr, name);
-               incompatibleType2(wrong_type_fmt, lNm2Str(name), multitypes[mt_get_type(ep->descr[pos].mt)]);
+               incompatibleType2(wrong_type_fmt(), lNm2Str(name), multitypes[mt_get_type(ep->descr[pos].mt)]);
                break;
             }
             default:
@@ -122,13 +131,15 @@ namespace {
     * @param ep the element
     * @param name the field number
     * @param type the field type the setter writes
-    * @param wrong_type_fmt the setter's message for a field of another field type
-    * @param no_such_name_fmt the setter's message for a missing field, or nullptr for the message of the getters
+    * @param wrong_type_fmt gives the setter's message for a field of another field type, called only on that error
+    * @param no_such_name_fmt gives the setter's message for a missing field, called only on that error, or nullptr
+    *        for the message of the getters
     * @param setter the setter's name, for the record of a soft path
     * @return the field's position, or -1 for a null element
     */
    int legacy_setter_pos(const lListElem *ep, const int name, const ocs::tom::FieldType type,
-                         const char *wrong_type_fmt, const char *no_such_name_fmt, const char *setter) {
+                         const legacy_message wrong_type_fmt, const legacy_message no_such_name_fmt,
+                         const char *setter) {
       DENTER(CULL_BASIS_LAYER);
       try {
          DRETURN(ocs::tom::checked_pos(ep, name, type));
@@ -140,12 +151,12 @@ namespace {
                break;
             case ocs::tom::FieldException::Reason::WrongType: {
                const int pos = ocs::tom::field_pos(ep->descr, name);
-               incompatibleType2(wrong_type_fmt, lNm2Str(name), multitypes[mt_get_type(ep->descr[pos].mt)]);
+               incompatibleType2(wrong_type_fmt(), lNm2Str(name), multitypes[mt_get_type(ep->descr[pos].mt)]);
                break;
             }
             default:
                if (no_such_name_fmt != nullptr) {
-                  incompatibleType2(no_such_name_fmt, name, lNm2Str(name));
+                  incompatibleType2(no_such_name_fmt(), name, lNm2Str(name));
                } else {
                   CRITICAL(MSG_CULL_XNOTFOUNDINELEMENT_S, lNm2Str(name));
                   ocs::TerminationManager::trigger_abort();
@@ -450,7 +461,7 @@ lInt lGetPosInt(const lListElem *ep, int pos) {
 lInt lGetInt(const lListElem *ep, int name) {
    DENTER(CULL_BASIS_LAYER);
 
-   const int pos = legacy_getter_pos(ep, name, ocs::tom::FieldType::Int32, MSG_CULL_GETINT_WRONGTYPEFORFIELDXY_SS);
+   const int pos = legacy_getter_pos(ep, name, ocs::tom::FieldType::Int32, [] { return MSG_CULL_GETINT_WRONGTYPEFORFIELDXY_SS; });
 
    DRETURN((lInt) ocs_cull_value(ep, pos).i);
 }
@@ -496,7 +507,7 @@ lUlong lGetPosUlong(const lListElem *ep, int pos) {
 lUlong lGetUlong(const lListElem *ep, int name) {
    DENTER(CULL_BASIS_LAYER);
 
-   const int pos = legacy_getter_pos(ep, name, ocs::tom::FieldType::Uint32, MSG_CULL_GETULONG_WRONGTYPEFORFIELDXY_SS);
+   const int pos = legacy_getter_pos(ep, name, ocs::tom::FieldType::Uint32, [] { return MSG_CULL_GETULONG_WRONGTYPEFORFIELDXY_SS; });
 
    DRETURN((lUlong) ocs_cull_value(ep, pos).ul);
 }
@@ -542,7 +553,7 @@ lUlong64 lGetPosUlong64(const lListElem *ep, int pos) {
 lUlong64 lGetUlong64(const lListElem *ep, int name) {
    DENTER(CULL_BASIS_LAYER);
 
-   const int pos = legacy_getter_pos(ep, name, ocs::tom::FieldType::Uint64, MSG_CULL_GETULONG64_WRONGTYPEFORFIELDXY_SS);
+   const int pos = legacy_getter_pos(ep, name, ocs::tom::FieldType::Uint64, [] { return MSG_CULL_GETULONG64_WRONGTYPEFORFIELDXY_SS; });
 
    DRETURN((lUlong64) ocs_cull_value(ep, pos).ul64);
 }
@@ -632,7 +643,7 @@ int lGetType(const lDescr *dp, int nm) {
 const char *lGetString(const lListElem *ep, int name) {
    DENTER(CULL_BASIS_LAYER);
 
-   const int pos = legacy_getter_pos(ep, name, ocs::tom::FieldType::String, MSG_CULL_GETSTRING_WRONGTYPEFORFILEDXY_SS);
+   const int pos = legacy_getter_pos(ep, name, ocs::tom::FieldType::String, [] { return MSG_CULL_GETSTRING_WRONGTYPEFORFILEDXY_SS; });
 
    DRETURN((lString) ocs_cull_value(ep, pos).str);
 }
@@ -674,7 +685,7 @@ const char *lGetStringNotNull(const lListElem *ep, int name) {
 const char *lGetHost(const lListElem *ep, int name) {
    DENTER(CULL_BASIS_LAYER);
 
-   const int pos = legacy_getter_pos(ep, name, ocs::tom::FieldType::Host, MSG_CULL_GETHOST_WRONGTYPEFORFILEDXY_SS);
+   const int pos = legacy_getter_pos(ep, name, ocs::tom::FieldType::Host, [] { return MSG_CULL_GETHOST_WRONGTYPEFORFILEDXY_SS; });
 
    DRETURN((lHost) ocs_cull_value(ep, pos).host);
 }
@@ -735,7 +746,7 @@ lList *lGetPosList(const lListElem *ep, int pos) {
 lListElem *lGetObject(const lListElem *ep, int name) {
    DENTER(CULL_BASIS_LAYER);
 
-   const int pos = legacy_getter_pos(ep, name, ocs::tom::FieldType::Object, MSG_CULL_GETOBJECT_WRONGTYPEFORFIELDXY_SS);
+   const int pos = legacy_getter_pos(ep, name, ocs::tom::FieldType::Object, [] { return MSG_CULL_GETOBJECT_WRONGTYPEFORFIELDXY_SS; });
    DRETURN((lListElem *) ocs_cull_value(ep, pos).obj);
 }
 
@@ -751,7 +762,7 @@ lListElem *lGetObject(const lListElem *ep, int name) {
 lList *lGetListRW(const lListElem *ep, int name) {
    DENTER(CULL_BASIS_LAYER);
 
-   const int pos = legacy_getter_pos(ep, name, ocs::tom::FieldType::List, MSG_CULL_GETLIST_WRONGTYPEFORFIELDXY_SS);
+   const int pos = legacy_getter_pos(ep, name, ocs::tom::FieldType::List, [] { return MSG_CULL_GETLIST_WRONGTYPEFORFIELDXY_SS; });
 
    DRETURN((lList *) ocs_cull_value(ep, pos).glp);
 }
@@ -837,7 +848,7 @@ lDouble lGetPosDouble(const lListElem *ep, int pos) {
 lDouble lGetDouble(const lListElem *ep, int name) {
    DENTER(CULL_BASIS_LAYER);
 
-   const int pos = legacy_getter_pos(ep, name, ocs::tom::FieldType::Double, MSG_CULL_GETDOUBLE_WRONGTYPEFORFIELDXY_SS);
+   const int pos = legacy_getter_pos(ep, name, ocs::tom::FieldType::Double, [] { return MSG_CULL_GETDOUBLE_WRONGTYPEFORFIELDXY_SS; });
    DRETURN(ocs_cull_value(ep, pos).db);
 }
 
@@ -880,7 +891,7 @@ lLong lGetPosLong(const lListElem *ep, int pos) {
 lLong lGetLong(const lListElem *ep, int name) {
    DENTER(CULL_BASIS_LAYER);
 
-   const int pos = legacy_getter_pos(ep, name, ocs::tom::FieldType::Int64, MSG_CULL_GETLONG_WRONGTYPEFORFIELDXY_SS);
+   const int pos = legacy_getter_pos(ep, name, ocs::tom::FieldType::Int64, [] { return MSG_CULL_GETLONG_WRONGTYPEFORFIELDXY_SS; });
    DRETURN(ocs_cull_value(ep, pos).l);
 }
 
@@ -923,7 +934,7 @@ lBool lGetPosBool(const lListElem *ep, int pos) {
 lBool lGetBool(const lListElem *ep, int name) {
    DENTER(CULL_BASIS_LAYER);
 
-   const int pos = legacy_getter_pos(ep, name, ocs::tom::FieldType::Bool, MSG_CULL_GETBOOL_WRONGTYPEFORFIELDXY_SS);
+   const int pos = legacy_getter_pos(ep, name, ocs::tom::FieldType::Bool, [] { return MSG_CULL_GETBOOL_WRONGTYPEFORFIELDXY_SS; });
    DRETURN(ocs_cull_value(ep, pos).b);
 }
 
@@ -967,7 +978,7 @@ lRef lGetPosRef(const lListElem *ep, int pos) {
 lRef lGetRef(const lListElem *ep, int name) {
    DENTER(CULL_BASIS_LAYER);
 
-   const int pos = legacy_getter_pos(ep, name, ocs::tom::FieldType::Ref, MSG_CULL_GETREF_WRONGTYPEFORFIELDXY_SS);
+   const int pos = legacy_getter_pos(ep, name, ocs::tom::FieldType::Ref, [] { return MSG_CULL_GETREF_WRONGTYPEFORFIELDXY_SS; });
    DRETURN(ocs_cull_value(ep, pos).ref);
 }
 
@@ -1030,7 +1041,7 @@ int lSetPosInt(lListElem *ep, int pos, int value) {
 int lSetInt(lListElem *ep, int name, int value) {
    DENTER(CULL_BASIS_LAYER);
 
-   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::Int32, MSG_CULL_SETINT_WRONGTYPEFORFIELDXY_SS, nullptr, "lSetInt");
+   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::Int32, [] { return MSG_CULL_SETINT_WRONGTYPEFORFIELDXY_SS; }, nullptr, "lSetInt");
    if (pos < 0) {
       DRETURN(-1);
    }
@@ -1104,7 +1115,7 @@ int lSetPosUlong(lListElem *ep, int pos, lUlong value) {
 int lSetUlong(lListElem *ep, int name, lUlong value) {
    DENTER(CULL_BASIS_LAYER);
 
-   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::Uint32, MSG_CULL_SETULONG_WRONGTYPEFORFIELDXY_SS, nullptr, "lSetUlong");
+   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::Uint32, [] { return MSG_CULL_SETULONG_WRONGTYPEFORFIELDXY_SS; }, nullptr, "lSetUlong");
    if (pos < 0) {
       DRETURN(-1);
    }
@@ -1132,7 +1143,7 @@ int lSetUlong(lListElem *ep, int name, lUlong value) {
 int lAddUlong(lListElem *ep, int name, lUlong offset) {
    DENTER(CULL_BASIS_LAYER);
 
-   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::Uint32, MSG_CULL_SETULONG_WRONGTYPEFORFIELDXY_SS, nullptr, "lAddUlong");
+   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::Uint32, [] { return MSG_CULL_SETULONG_WRONGTYPEFORFIELDXY_SS; }, nullptr, "lAddUlong");
    if (pos < 0) {
       DRETURN(-1);
    }
@@ -1183,7 +1194,7 @@ int lAddUlong(lListElem *ep, int name, lUlong offset) {
 lUlong64 lGetUlong64Atomic(const lListElem *ep, int name) {
    DENTER(CULL_BASIS_LAYER);
 
-   const int pos = legacy_getter_pos(ep, name, ocs::tom::FieldType::Uint64, MSG_CULL_GETULONG64_WRONGTYPEFORFIELDXY_SS);
+   const int pos = legacy_getter_pos(ep, name, ocs::tom::FieldType::Uint64, [] { return MSG_CULL_GETULONG64_WRONGTYPEFORFIELDXY_SS; });
 
    // std::atomic_ref would be the idiomatic form, but it cannot be used here:
    // FreeBSD 14 ships libc++ 18, which does not implement it at all
@@ -1224,7 +1235,7 @@ lUlong64 lGetUlong64Atomic(const lListElem *ep, int name) {
 int lSetUlong64Atomic(lListElem *ep, int name, lUlong64 value) {
    DENTER(CULL_BASIS_LAYER);
 
-   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::Uint64, MSG_CULL_SETULONG64_WRONGTYPEFORFIELDXY_SS, nullptr, "lSetUlong64Atomic");
+   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::Uint64, [] { return MSG_CULL_SETULONG64_WRONGTYPEFORFIELDXY_SS; }, nullptr, "lSetUlong64Atomic");
    if (pos < 0) {
       DRETURN(-1);
    }
@@ -1260,7 +1271,7 @@ int lSetUlong64Atomic(lListElem *ep, int name, lUlong64 value) {
 int lSetUlong64(lListElem *ep, int name, lUlong64 value) {
    DENTER(CULL_BASIS_LAYER);
 
-   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::Uint64, MSG_CULL_SETULONG64_WRONGTYPEFORFIELDXY_SS, nullptr, "lSetUlong64");
+   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::Uint64, [] { return MSG_CULL_SETULONG64_WRONGTYPEFORFIELDXY_SS; }, nullptr, "lSetUlong64");
    if (pos < 0) {
       DRETURN(-1);
    }
@@ -1288,7 +1299,7 @@ int lSetUlong64(lListElem *ep, int name, lUlong64 value) {
 int lAddUlong64(lListElem *ep, int name, lUlong64 offset) {
    DENTER(CULL_BASIS_LAYER);
 
-   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::Uint64, MSG_CULL_SETULONG64_WRONGTYPEFORFIELDXY_SS, nullptr, "lAddUlong64");
+   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::Uint64, [] { return MSG_CULL_SETULONG64_WRONGTYPEFORFIELDXY_SS; }, nullptr, "lAddUlong64");
    if (pos < 0) {
       DRETURN(-1);
    }
@@ -1464,7 +1475,7 @@ int lSetPosHost(lListElem *ep, int pos, const char *value) {
 int lSetString(lListElem *ep, int name, const char *value) {
    DENTER(CULL_BASIS_LAYER);
 
-   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::String, MSG_CULL_SETSTRING_WRONGTYPEFORFIELDXY_SS, MSG_CULL_SETSTRING_NOSUCHNAMEXYINDESCRIPTOR_IS, "lSetString");
+   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::String, [] { return MSG_CULL_SETSTRING_WRONGTYPEFORFIELDXY_SS; }, [] { return MSG_CULL_SETSTRING_NOSUCHNAMEXYINDESCRIPTOR_IS; }, "lSetString");
    if (pos < 0) {
       DRETURN(-1);
    }
@@ -1492,7 +1503,7 @@ int lSetString(lListElem *ep, int name, const char *value) {
 int lSetHost(lListElem *ep, int name, const char *value) {
    DENTER(CULL_BASIS_LAYER);
 
-   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::Host, MSG_CULL_SETHOST_WRONGTYPEFORFIELDXY_SS, MSG_CULL_SETHOST_NOSUCHNAMEXYINDESCRIPTOR_IS, "lSetHost");
+   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::Host, [] { return MSG_CULL_SETHOST_WRONGTYPEFORFIELDXY_SS; }, [] { return MSG_CULL_SETHOST_NOSUCHNAMEXYINDESCRIPTOR_IS; }, "lSetHost");
    if (pos < 0) {
       DRETURN(-1);
    }
@@ -1607,7 +1618,7 @@ int lXchgString(lListElem *ep, int name, char **str) {
       LERROR(LEELEMNULL);
       DRETURN(-1);
    }
-   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::String, MSG_CULL_XCHGLIST_WRONGTYPEFORFIELDXY_SS, nullptr, "lXchgString");
+   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::String, [] { return MSG_CULL_XCHGLIST_WRONGTYPEFORFIELDXY_SS; }, nullptr, "lXchgString");
    if (pos < 0) {
       DRETURN(-1);
    }
@@ -1646,7 +1657,7 @@ int lXchgList(lListElem *ep, int name, lList **lpp) {
       LERROR(LEELEMNULL);
       DRETURN(-1);
    }
-   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::List, MSG_CULL_XCHGLIST_WRONGTYPEFORFIELDXY_SS, nullptr, "lXchgList");
+   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::List, [] { return MSG_CULL_XCHGLIST_WRONGTYPEFORFIELDXY_SS; }, nullptr, "lXchgList");
    if (pos < 0) {
       DRETURN(-1);
    }
@@ -1709,7 +1720,7 @@ int lSwapList(lListElem *to, int nm_to, lListElem *from, int nm_from) {
 int lSetObject(lListElem *ep, int name, lListElem *value) {
    DENTER(CULL_BASIS_LAYER);
 
-   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::Object, MSG_CULL_SETLIST_WRONGTYPEFORFIELDXY_SS, nullptr, "lSetObject");
+   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::Object, [] { return MSG_CULL_SETLIST_WRONGTYPEFORFIELDXY_SS; }, nullptr, "lSetObject");
    if (pos < 0) {
       DRETURN(-1);
    }
@@ -1743,7 +1754,7 @@ int lSetObject(lListElem *ep, int name, lListElem *value) {
 int lSetList(lListElem *ep, int name, lList *value) {
    DENTER(CULL_BASIS_LAYER);
 
-   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::List, MSG_CULL_SETLIST_WRONGTYPEFORFIELDXY_SS, nullptr, "lSetList");
+   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::List, [] { return MSG_CULL_SETLIST_WRONGTYPEFORFIELDXY_SS; }, nullptr, "lSetList");
    if (pos < 0) {
       DRETURN(-1);
    }
@@ -1818,7 +1829,7 @@ int lSetPosDouble(lListElem *ep, int pos, lDouble value) {
 int lSetDouble(lListElem *ep, int name, lDouble value) {
    DENTER(CULL_BASIS_LAYER);
 
-   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::Double, MSG_CULL_SETDOUBLE_WRONGTYPEFORFIELDXY_SS, nullptr, "lSetDouble");
+   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::Double, [] { return MSG_CULL_SETDOUBLE_WRONGTYPEFORFIELDXY_SS; }, nullptr, "lSetDouble");
    if (pos < 0) {
       DRETURN(-1);
    }
@@ -1845,7 +1856,7 @@ int lSetDouble(lListElem *ep, int name, lDouble value) {
 int lAddDouble(lListElem *ep, int name, lDouble value) {
    DENTER(CULL_BASIS_LAYER);
 
-   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::Double, MSG_CULL_SETDOUBLE_WRONGTYPEFORFIELDXY_SS, nullptr, "lAddDouble");
+   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::Double, [] { return MSG_CULL_SETDOUBLE_WRONGTYPEFORFIELDXY_SS; }, nullptr, "lAddDouble");
    if (pos < 0) {
       DRETURN(-1);
    }
@@ -1914,7 +1925,7 @@ int lSetPosLong(lListElem *ep, int pos, lLong value) {
 int lSetLong(lListElem *ep, int name, lLong value) {
    DENTER(CULL_BASIS_LAYER);
 
-   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::Int64, MSG_CULL_SETLONG_WRONGTYPEFORFIELDXY_SS, nullptr, "lSetLong");
+   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::Int64, [] { return MSG_CULL_SETLONG_WRONGTYPEFORFIELDXY_SS; }, nullptr, "lSetLong");
    if (pos < 0) {
       DRETURN(-1);
    }
@@ -1980,7 +1991,7 @@ int lSetPosBool(lListElem *ep, int pos, lBool value) {
 int lSetBool(lListElem *ep, int name, lBool value) {
    DENTER(CULL_BASIS_LAYER);
 
-   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::Bool, MSG_CULL_SETBOOL_WRONGTYPEFORFIELDXY_SS, nullptr, "lSetBool");
+   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::Bool, [] { return MSG_CULL_SETBOOL_WRONGTYPEFORFIELDXY_SS; }, nullptr, "lSetBool");
    if (pos < 0) {
       DRETURN(-1);
    }
@@ -2046,7 +2057,7 @@ int lSetPosRef(lListElem *ep, int pos, lRef value) {
 int lSetRef(lListElem *ep, int name, lRef value) {
    DENTER(CULL_BASIS_LAYER);
 
-   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::Ref, MSG_CULL_SETREF_WRONGTYPEFORFIELDXY_SS, nullptr, "lSetRef");
+   const int pos = legacy_setter_pos(ep, name, ocs::tom::FieldType::Ref, [] { return MSG_CULL_SETREF_WRONGTYPEFORFIELDXY_SS; }, nullptr, "lSetRef");
    if (pos < 0) {
       DRETURN(-1);
    }
@@ -2062,7 +2073,8 @@ int lSetRef(lListElem *ep, int name, lRef value) {
  * aborted instead); a duplicate key in a unique field aborts, as before.
  *
  * @param function the old function's name, for the record of a soft path and the abort
- * @param wrong_field_msg the old message for a field of another type, with the field name as argument
+ * @param wrong_field_msg gives the old message for a field of another type, with the field name as argument, called
+ *        only on that error (legacy_message)
  * @param nm the key field
  * @param descr the descriptor of the list, or of the new element if there is no list yet, for the record of a soft path
  * @param add calls the core
@@ -2070,7 +2082,7 @@ int lSetRef(lListElem *ep, int name, lRef value) {
  */
 template <typename Add>
 static lListElem *
-ocs_add_by_key(const char *function, const char *wrong_field_msg, const int nm, const lDescr *descr, Add add) {
+ocs_add_by_key(const char *function, const legacy_message wrong_field_msg, const int nm, const lDescr *descr, Add add) {
    try {
       return add();
    } catch (const ocs::tom::FieldException &e) {
@@ -2079,7 +2091,7 @@ ocs_add_by_key(const char *function, const char *wrong_field_msg, const int nm, 
          case ocs::tom::FieldException::Reason::ForeignField:
          case ocs::tom::FieldException::Reason::WrongType:
             ocs::tom::report_missing_field(function, nm, descr);
-            CRITICAL(wrong_field_msg, lNm2Str(nm));
+            CRITICAL(wrong_field_msg(), lNm2Str(nm));
             break;
          default:
             ocs::tom::legacy_abort(function, e);
@@ -2228,7 +2240,7 @@ lListElem *lAddElemStr(lList **lpp, int nm, const char *str, const lDescr *dp) {
       ocs::tom::report_soft_path("lAddElemStr", nm, ocs::tom::SoftPathReason::NullArgument);
       return nullptr;
    }
-   return ocs_add_by_key("lAddElemStr", MSG_CULL_ADDELEMSTRERRORXRUNTIMETYPE_S, nm, *lpp != nullptr ? (*lpp)->descr : dp, [&] { return ocs::tom::add_elem_str(*lpp, nm, str, dp); });
+   return ocs_add_by_key("lAddElemStr", [] { return MSG_CULL_ADDELEMSTRERRORXRUNTIMETYPE_S; }, nm, *lpp != nullptr ? (*lpp)->descr : dp, [&] { return ocs::tom::add_elem_str(*lpp, nm, str, dp); });
 }
 
 /**
@@ -2253,7 +2265,7 @@ lListElem *lAddElemHost(lList **lpp, int nm, const char *str, const lDescr *dp) 
       ocs::tom::report_soft_path("lAddElemHost", nm, ocs::tom::SoftPathReason::NullArgument);
       return nullptr;
    }
-   return ocs_add_by_key("lAddElemHost", MSG_CULL_ADDELEMHOSTERRORXRUNTIMETYPE_S, nm, *lpp != nullptr ? (*lpp)->descr : dp, [&] { return ocs::tom::add_elem_host(*lpp, nm, str, dp); });
+   return ocs_add_by_key("lAddElemHost", [] { return MSG_CULL_ADDELEMHOSTERRORXRUNTIMETYPE_S; }, nm, *lpp != nullptr ? (*lpp)->descr : dp, [&] { return ocs::tom::add_elem_host(*lpp, nm, str, dp); });
 }
 
 /**
@@ -2648,7 +2660,7 @@ lListElem *lAddElemUlong(lList **lpp, int nm, lUlong val, const lDescr *dp) {
       ocs::tom::report_soft_path("lAddElemUlong", nm, ocs::tom::SoftPathReason::NullArgument);
       return nullptr;
    }
-   return ocs_add_by_key("lAddElemUlong", MSG_CULL_ADDELEMULONGERRORXRUNTIMETYPE_S, nm, *lpp != nullptr ? (*lpp)->descr : dp, [&] { return ocs::tom::add_elem_ulong(*lpp, nm, val, dp); });
+   return ocs_add_by_key("lAddElemUlong", [] { return MSG_CULL_ADDELEMULONGERRORXRUNTIMETYPE_S; }, nm, *lpp != nullptr ? (*lpp)->descr : dp, [&] { return ocs::tom::add_elem_ulong(*lpp, nm, val, dp); });
 }
 
 /**
@@ -2947,7 +2959,7 @@ lListElem *lAddElemUlong64(lList **lpp, int nm, lUlong64 val, const lDescr *dp) 
       ocs::tom::report_soft_path("lAddElemUlong64", nm, ocs::tom::SoftPathReason::NullArgument);
       return nullptr;
    }
-   return ocs_add_by_key("lAddElemUlong64", MSG_CULL_ADDELEMULONG64ERRORXRUNTIMETYPE_S, nm, *lpp != nullptr ? (*lpp)->descr : dp, [&] { return ocs::tom::add_elem_ulong64(*lpp, nm, val, dp); });
+   return ocs_add_by_key("lAddElemUlong64", [] { return MSG_CULL_ADDELEMULONG64ERRORXRUNTIMETYPE_S; }, nm, *lpp != nullptr ? (*lpp)->descr : dp, [&] { return ocs::tom::add_elem_ulong64(*lpp, nm, val, dp); });
 }
 
 /**
@@ -3512,7 +3524,7 @@ int lGetPosName(const lDescr *dp, int pos) {
 bool lMatchUlongBitMask(lListElem *ep, int nm, uint32_t bitmask) {
    DENTER(CULL_BASIS_LAYER);
 
-   const int pos = legacy_getter_pos(ep, nm, ocs::tom::FieldType::Uint32, MSG_CULL_GETULONG_WRONGTYPEFORFIELDXY_SS);
+   const int pos = legacy_getter_pos(ep, nm, ocs::tom::FieldType::Uint32, [] { return MSG_CULL_GETULONG_WRONGTYPEFORFIELDXY_SS; });
 
    DRETURN((ocs_cull_value(ep, pos).ul & bitmask) > 0 ? true : false);
 }
@@ -3531,7 +3543,7 @@ bool lMatchUlongBitMask(lListElem *ep, int nm, uint32_t bitmask) {
 int lOrUlongBitMask(lListElem *ep, int nm, uint32_t bitmask) {
    DENTER(CULL_BASIS_LAYER);
 
-   const int pos = legacy_setter_pos(ep, nm, ocs::tom::FieldType::Uint32, MSG_CULL_SETULONG_WRONGTYPEFORFIELDXY_SS, nullptr, "lOrUlongBitMask");
+   const int pos = legacy_setter_pos(ep, nm, ocs::tom::FieldType::Uint32, [] { return MSG_CULL_SETULONG_WRONGTYPEFORFIELDXY_SS; }, nullptr, "lOrUlongBitMask");
    if (pos < 0) {
       DRETURN(-1);
    }
@@ -3554,7 +3566,7 @@ int lOrUlongBitMask(lListElem *ep, int nm, uint32_t bitmask) {
 int lAndUlongBitMask(lListElem *ep, int nm, uint32_t bitmask) {
    DENTER(CULL_BASIS_LAYER);
 
-   const int pos = legacy_setter_pos(ep, nm, ocs::tom::FieldType::Uint32, MSG_CULL_SETULONG_WRONGTYPEFORFIELDXY_SS, nullptr, "lAndUlongBitMask");
+   const int pos = legacy_setter_pos(ep, nm, ocs::tom::FieldType::Uint32, [] { return MSG_CULL_SETULONG_WRONGTYPEFORFIELDXY_SS; }, nullptr, "lAndUlongBitMask");
    if (pos < 0) {
       DRETURN(-1);
    }
@@ -3577,7 +3589,7 @@ int lAndUlongBitMask(lListElem *ep, int nm, uint32_t bitmask) {
 int lClearUlongBitMask(lListElem *ep, int nm, uint32_t bitmask) {
    DENTER(CULL_BASIS_LAYER);
 
-   const int pos = legacy_setter_pos(ep, nm, ocs::tom::FieldType::Uint32, MSG_CULL_SETULONG_WRONGTYPEFORFIELDXY_SS, nullptr, "lClearUlongBitMask");
+   const int pos = legacy_setter_pos(ep, nm, ocs::tom::FieldType::Uint32, [] { return MSG_CULL_SETULONG_WRONGTYPEFORFIELDXY_SS; }, nullptr, "lClearUlongBitMask");
    if (pos < 0) {
       DRETURN(-1);
    }
