@@ -668,13 +668,20 @@ int do_ck_to_do(bool is_qmaster_down) {
    }
 
    /* do timeout calculation */
+   // the next report was scheduled with the load_report_time at that time, a lowered
+   // load_report_time has to take effect now: sge_qmaster expects reports in the new interval
+   const uint64_t load_report_interval = sge_gmt32_to_gmt64(mconf_get_load_report_time());
+   if (next_report > now + load_report_interval) {
+      next_report = now + load_report_interval;
+   }
+   sge_limit_report_times(now + load_report_interval, execd_report_sources);
    if (sge_get_flush_jr_flag() || next_report <= now || sge_get_flush_lr_flag()) {
       if (next_report <= now) {
-         next_report = now + sge_gmt32_to_gmt64(mconf_get_load_report_time());
+         next_report = now + load_report_interval;
 
          /* if pdc_interval is equals load_report time synchronize both calls to
             make the online usage accurate as possible */
-         if (sge_gmt32_to_gmt64(mconf_get_load_report_time()) == mconf_get_pdc_interval()) {
+         if (load_report_interval == mconf_get_pdc_interval()) {
             next_pdc = next_report;
          }
       }

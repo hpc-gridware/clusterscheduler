@@ -387,6 +387,8 @@ struct qmaster_params_t {
    int test_mirror_callback_error = 0;
    /// `ENABLE_FORCED_QDEL_IF_UNKNOWN` -- force deletion while the host is unknown
    bool enable_forced_qdel_if_unknown = false;
+   /// `NOTIFY_EXECDS_ON_CONF_CHANGE` -- notify the execution daemons about a configuration change
+   bool notify_execds_on_conf_change = true;
    /// `ALLOW_ANY_SUBMITHOSTS` -- allow any host to be submit host
    bool allow_any_submithosts = false;
    /// `AUTO_ADD_HOSTS` -- rules which let a host add itself as execution host
@@ -1229,6 +1231,9 @@ int merge_configuration(lList **answer_list, uint32_t progid, const char *cell_r
             continue;
          }
          if (parse_bool_param(s, "ENABLE_FORCED_QDEL_IF_UNKNOWN", &qmaster_conf.enable_forced_qdel_if_unknown)) {
+            continue;
+         }
+         if (parse_bool_param(s, "NOTIFY_EXECDS_ON_CONF_CHANGE", &qmaster_conf.notify_execds_on_conf_change)) {
             continue;
          }
          if (parse_bool_param(s, "ALLOW_ANY_SUBMITHOSTS", &qmaster_conf.allow_any_submithosts)) {
@@ -4705,6 +4710,23 @@ bool mconf_get_enable_forced_qdel_if_unknown() {
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
    ret = qmaster_conf.enable_forced_qdel_if_unknown;
+   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
+   DRETURN(ret);
+}
+
+/**
+ * @brief Shall sge_qmaster notify the sge_execds about a configuration change at once?
+ *
+ * Set via `qmaster_params NOTIFY_EXECDS_ON_CONF_CHANGE=true|false`, default true. Without the
+ * notification an sge_execd gets a changed configuration only with the answer to its next
+ * report, up to one load_report_time later.
+ *
+ * @return true if sge_qmaster notifies the sge_execds about a configuration change
+ */
+bool mconf_get_notify_execds_on_conf_change() {
+   DENTER(BASIS_LAYER);
+   SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
+   bool ret = qmaster_conf.notify_execds_on_conf_change;
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
 }
