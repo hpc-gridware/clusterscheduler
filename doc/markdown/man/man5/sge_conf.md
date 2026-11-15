@@ -743,8 +743,8 @@ cancellation was unsuccessful.
 If set to *true* (the default), xxqs_name_sxx_qmaster(8) notifies the execution daemons about a change of
 the configuration at once, and they fetch the new configuration right away. A change of the global
 configuration is sent to all execution daemons, a change of a local configuration to the execution daemon
-of that host. Execution daemons on hosts in unknown state are not notified, they get the configuration
-when they register.
+of that host. Execution daemons on hosts in unknown state and execution daemons without a connection to
+xxqs_name_sxx_qmaster(8), e.g. stopped ones, are not notified, they get the configuration when they register.
 
 If set to *false*, an execution daemon gets a changed configuration only with the answer to its next load
 report, up to one *load_report_time* later. Until then it works with the previous configuration, e.g. it
