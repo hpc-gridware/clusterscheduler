@@ -2930,15 +2930,18 @@ BackupConfig()
    # so are the dbwriter files and the JSONL accounting file.
    BUP_BDB_COMMON_FILE_LIST_TMP="accounting accounting.jsonl bootstrap qtask sge_request sge_aliases sge_ar_request sge_qstat sge_qselect sge_qquota settings.sh st.enabled act_qmaster sgemaster host_aliases settings.csh sgeexecd sgedbwriter dbwriter.conf shadow_masters cluster_name slice_name"
    BUP_BDB_COMMON_DIR_LIST_TMP="certs"
-   BUP_BDB_SPOOL_FILE_LIST_TMP="jobseqnum"
+   BUP_BDB_SPOOL_FILE_LIST_TMP="jobseqnum arseqnum"
    BUP_PG_COMMON_FILE_LIST_TMP="accounting accounting.jsonl bootstrap qtask sge_request sge_aliases sge_ar_request sge_qstat sge_qselect sge_qquota settings.sh st.enabled act_qmaster sgemaster host_aliases settings.csh sgeexecd sgedbwriter dbwriter.conf shadow_masters cluster_name slice_name"
    BUP_PG_COMMON_DIR_LIST_TMP="certs"
+   # the job and AR sequence number files stay in the qmaster spool directory with postgres
+   # spooling, without them sge_qmaster would start numbering jobs and ARs at 1 again
+   BUP_PG_SPOOL_FILE_LIST_TMP="jobseqnum arseqnum"
    BUP_PG_DUMP_FILE="postgres-config.sql"
    BUP_CLASSIC_COMMON_FILE_LIST_TMP="accounting accounting.jsonl bootstrap qtask sge_request sge_aliases sge_ar_request sge_qstat sge_qselect sge_qquota settings.sh st.enabled act_qmaster sgemaster host_aliases settings.csh sgeexecd sgedbwriter dbwriter.conf shadow_masters cluster_name slice_name"
    BUP_CLASSIC_DIR_LIST_TMP="certs"
    # CS-2394: no managers/operators files any more - managers/operators are members of
    # the reserved "manager"/"operator" usersets, covered by the usersets entry below.
-   BUP_CLASSIC_SPOOL_FILE_LIST_TMP="configs sched_configuration jobseqnum advance_reservations admin_hosts calendars centry ckpt cqueues exec_hosts hostgroups resource_quotas pe projects qinstances schedd submit_hosts users usersets"
+   BUP_CLASSIC_SPOOL_FILE_LIST_TMP="configs sched_configuration jobseqnum arseqnum advance_reservations admin_hosts calendars centry ckpt cqueues exec_hosts hostgroups resource_quotas pe projects qinstances schedd submit_hosts users usersets"
    BUP_COMMON_FILE_LIST=""
    BUP_SPOOL_FILE_LIST=""
    BUP_SPOOL_DIR_LIST=""
@@ -3073,9 +3076,10 @@ RestoreConfig()
    # other user-request/default files are restored here for exactly that reason.
    BUP_COMMON_FILE_LIST="accounting accounting.jsonl bootstrap qtask sge_request sge_aliases sge_ar_request sge_qstat sge_qselect sge_qquota settings.sh act_qmaster sgemaster host_aliases settings.csh sgeexecd sgedbwriter dbwriter.conf shadow_masters st.enabled cluster_name slice_name"
    BUP_COMMON_DIR_LIST="certs"
-   BUP_SPOOL_FILE_LIST="jobseqnum"
+   BUP_SPOOL_FILE_LIST="jobseqnum arseqnum"
    BUP_PG_COMMON_FILE_LIST="accounting accounting.jsonl bootstrap qtask sge_request sge_aliases sge_ar_request sge_qstat sge_qselect sge_qquota settings.sh act_qmaster sgemaster host_aliases settings.csh sgeexecd sgedbwriter dbwriter.conf shadow_masters st.enabled cluster_name slice_name"
    BUP_PG_COMMON_DIR_LIST="certs"
+   BUP_PG_SPOOL_FILE_LIST="jobseqnum arseqnum"
    BUP_PG_DUMP_FILE="postgres-config.sql"
    # The configs directory (global + per-host configuration) and the
    # sched_configuration file now live in the spool directory (classic spooling),
@@ -3085,7 +3089,7 @@ RestoreConfig()
    BUP_CLASSIC_DIR_LIST="certs"
    # CS-2394: no managers/operators files any more - their content lives in the reserved
    # "manager"/"operator" usersets, restored via the usersets entry.
-   BUP_CLASSIC_SPOOL_FILE_LIST="configs sched_configuration jobseqnum admin_hosts advance_reservations calendars centry ckpt cqueues exec_hosts hostgroups pe projects qinstances resource_quotas schedd submit_hosts users usersets"
+   BUP_CLASSIC_SPOOL_FILE_LIST="configs sched_configuration jobseqnum arseqnum admin_hosts advance_reservations calendars centry ckpt cqueues exec_hosts hostgroups pe projects qinstances resource_quotas schedd submit_hosts users usersets"
 
    MKDIR="mkdir -p"
    CP="cp -f"
@@ -3196,6 +3200,12 @@ RestoreConfig()
          for f in $BUP_PG_COMMON_DIR_LIST; do
             if [ -d /tmp/bup_tmp_$DATE/$f ]; then
                ExecuteAsAdmin $CPR /tmp/bup_tmp_$DATE/$f $SGE_ROOT/$SGE_CELL/common/
+            fi
+         done
+
+         for f in $BUP_PG_SPOOL_FILE_LIST; do
+            if [ -f /tmp/bup_tmp_$DATE/$f ]; then
+               ExecuteAsAdmin $CP /tmp/bup_tmp_$DATE/$f $master_spool
             fi
          done
 
@@ -3421,6 +3431,12 @@ RestoreConfig()
          for f in $BUP_PG_COMMON_DIR_LIST; do
             if [ -d $bup_file/$f ]; then
                ExecuteAsAdmin $CPR $bup_file/$f $SGE_ROOT/$SGE_CELL/common/
+            fi
+         done
+
+         for f in $BUP_PG_SPOOL_FILE_LIST; do
+            if [ -f $bup_file/$f ]; then
+               ExecuteAsAdmin $CP $bup_file/$f $master_spool
             fi
          done
 
@@ -3958,6 +3974,13 @@ DoBackup()
          if [ -d $SGE_ROOT/$SGE_CELL/common/$f ]; then
             BUP_COMMON_DIR_LIST="$BUP_COMMON_DIR_LIST $f"
             ExecuteAsAdmin $CPFR $SGE_ROOT/$SGE_CELL/common/$f $backup_dir
+         fi
+      done
+
+      for f in $BUP_PG_SPOOL_FILE_LIST_TMP; do
+         if [ -f $master_spool/$f ]; then
+            BUP_SPOOL_FILE_LIST="$BUP_SPOOL_FILE_LIST $f"
+            ExecuteAsAdmin $CPF $master_spool/$f $backup_dir
          fi
       done
 
