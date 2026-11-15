@@ -95,8 +95,8 @@ elseif (("${SGE_ARCH}" STREQUAL "lx-riscv64") AND ((${HOSTNAME} STREQUAL "v047-l
    # Ubuntu 24.04, emulated (TCG). Unlike su0-0 - which ships gcc 15.2 itself -
    # the system compiler here is gcc 13, so the tool chain under /tools is used.
    gcs_use_tools_toolchain()
-elseif (("${SGE_ARCH}" STREQUAL "lx-loong64") AND (${HOSTNAME} STREQUAL "v047-lx-loong64"))
-   # openEuler 24.03 LTS-SP4, emulated on h047. System compiler is gcc 12.3,
+elseif (("${SGE_ARCH}" STREQUAL "lx-loong64") AND (${HOSTNAME} STREQUAL "build-lx-loong64"))
+   # openEuler 24.03 LTS-SP4, emulated (TCG). System compiler is gcc 12.3,
    # so the tool chain under /tools is used here as well.
    gcs_use_tools_toolchain()
 elseif (("${SGE_ARCH}" STREQUAL "lx-arm64") AND (${HOSTNAME} STREQUAL "ce8-1-lx-arm64"))
