@@ -21,7 +21,7 @@ message(STATUS "Arch:     ${SGE_ARCH}")
 
 set(LINK_CPP_STATICALLY OFF)
 
-# The lab build host h047 is a Debian style multiarch system, but the
+# Debian style build hosts (Ubuntu) are multiarch systems, but the
 # gcc under /tools was not configured for one: on its own it finds neither
 # crt1.o (in /usr/lib/<triplet>) nor bits/wordsize.h (in /usr/include/<triplet>),
 # so both locations have to be handed to it.  The triplet is asked from the
@@ -68,21 +68,17 @@ macro(gcs_use_tools_toolchain)
    set(LINK_CPP_STATICALLY ON)
 endmacro()
 
-if (("${SGE_ARCH}" STREQUAL "ulx-amd64") AND ((${HOSTNAME} STREQUAL "ce7-0-ulx-amd64") OR (${HOSTNAME} STREQUAL "v047-ulx-amd64") OR (${HOSTNAME} STREQUAL "build-ulx-amd64")))
+if (("${SGE_ARCH}" STREQUAL "ulx-amd64") AND ((${HOSTNAME} STREQUAL "ce7-0-ulx-amd64") OR (${HOSTNAME} STREQUAL "build-ulx-amd64")))
    # CentOS 7: the system compiler is gcc 4.8.5 and provides c++20 partially only.
    # The macro picks the same tools that used to be listed by hand here; its
    # multiarch part stays without effect because "gcc -print-multiarch" returns
    # nothing on CentOS.
    gcs_use_tools_toolchain()
-elseif (("${SGE_ARCH}" STREQUAL "lx-amd64") AND ((${HOSTNAME} STREQUAL "ce8-0-lx-amd64") OR (${HOSTNAME} STREQUAL "v047-lx-amd64") OR (${HOSTNAME} STREQUAL "build-lx-amd64")))
+elseif (("${SGE_ARCH}" STREQUAL "lx-amd64") AND ((${HOSTNAME} STREQUAL "ce8-0-lx-amd64") OR (${HOSTNAME} STREQUAL "build-lx-amd64")))
    # CentOS 8: the system compiler supports c++20 only partially.
    gcs_use_tools_toolchain()
-elseif (("${SGE_ARCH}" STREQUAL "xlx-amd64") AND ((${HOSTNAME} STREQUAL "ce6-0-xlx-amd64") OR (${HOSTNAME} STREQUAL "v047-xlx-amd64") OR (${HOSTNAME} STREQUAL "build-xlx-amd64")))
+elseif (("${SGE_ARCH}" STREQUAL "xlx-amd64") AND ((${HOSTNAME} STREQUAL "ce6-0-xlx-amd64") OR (${HOSTNAME} STREQUAL "build-xlx-amd64")))
    # CentOS 6: the system compiler supports c++20 only partially.
-   gcs_use_tools_toolchain()
-elseif (("${SGE_ARCH}" STREQUAL "lx-amd64") AND (${HOSTNAME} STREQUAL "h047"))
-   # Ubuntu 26.04; system gcc is 15 already, but use the same tool chain as
-   # every other build host so that what one host accepts the next accepts too.
    gcs_use_tools_toolchain()
 elseif (("${SGE_ARCH}" STREQUAL "lx-arm64") AND (${HOSTNAME} STREQUAL "build-lx-arm64"))
    # Rocky/CentOs 8; gcc 8.5 and there is no gcc-toolset-15 for EL8, so the tool chain under
@@ -105,9 +101,9 @@ elseif (("${SGE_ARCH}" STREQUAL "lx-ppc64le") AND (${HOSTNAME} STREQUAL "al8-1-l
    # Default is gcc 13.2.1 => c++23 fully supported and stable
 elseif (("${SGE_ARCH}" STREQUAL "lx-s390x") AND (${HOSTNAME} STREQUAL "al8-2-lx-s390x"))
    # Default is gcc 11.2.1 => c++20 partially 
-elseif (("${SGE_ARCH}" STREQUAL "fbsd-amd64") AND ((${HOSTNAME} STREQUAL "fr13-0-fbsd-amd64") OR (${HOSTNAME} STREQUAL "v047-fbsd-amd64")))
+elseif (("${SGE_ARCH}" STREQUAL "fbsd-amd64") AND (${HOSTNAME} STREQUAL "fr13-0-fbsd-amd64"))
    # FreeBSD 13: default is clang 17.0.6 => c++23 fully supported and stable
-elseif (("${SGE_ARCH}" STREQUAL "fbsd-amd64") AND ((${HOSTNAME} STREQUAL "fr14-0-fbsd-amd64") OR (${HOSTNAME} STREQUAL "v047-fbsd-amd64-14")))
+elseif (("${SGE_ARCH}" STREQUAL "fbsd-amd64") AND (${HOSTNAME} STREQUAL "fr14-0-fbsd-amd64"))
    # FreeBSD 14: default is clang 18.1.5 => c++23 fully supported and stable.
    # The system compiler stays: FreeBSD ships clang *and* libc++, so a gcc from
    # the ports would be a foreign body next to the system library. 
