@@ -30,6 +30,8 @@
 #include "sgeobj/sge_attr.h"
 #include "sgeobj/sge_hgroup.h"
 #include "sgeobj/sge_href.h"
+#include "sgeobj/tom/ocs_tom_ASTR.h"
+#include "sgeobj/tom/ocs_tom_HGRP.h"
 #include "tom/ocs_Element.h"
 
 // ---------------------------------------------------------------------------
@@ -69,10 +71,10 @@ static int s_fail = 0;
 // Create a standalone ASTR_Type element mapping a hostname or hostgroup ref
 // to a string value. Use lAppendElem() to add it to an attr list.
 static lListElem *make_astr(const char *href, const char *value) {
-   lListElem *ep = lCreateElem(ASTR_Type);
+   auto ep = ocs::tom::ElementPtr<ocs::tom::ASTR>::create();
    ocs::tom::set<ASTR_href>(ep, href);
    ocs::tom::set<ASTR_value>(ep, value);
-   return ep;
+   return ep.release();
 }
 
 // Create an HGRP_Type element whose host_list contains the given names.
@@ -118,12 +120,12 @@ static void test_str_attr_list_find_value() {
    //   @grpC     → {host4}
    //   @grpOuter → {@grpInner}         nested: outer contains inner as a group
    //   @grpInner → {host5}
-   lList *hgroups = lCreateList("hgroups", HGRP_Type);
-   lAppendElem(hgroups, make_hgroup("@grpA",     {"host1", "host2"}));
-   lAppendElem(hgroups, make_hgroup("@grpB",     {"host1", "host3"}));
-   lAppendElem(hgroups, make_hgroup("@grpC",     {"host4"}));
-   lAppendElem(hgroups, make_hgroup("@grpInner", {"host5"}));
-   lAppendElem(hgroups, make_hgroup("@grpOuter", {"@grpInner"}));
+   auto hgroups = ocs::tom::ListPtr<ocs::tom::HGRP>::create("hgroups");
+   lAppendElem(*hgroups, make_hgroup("@grpA",     {"host1", "host2"}));
+   lAppendElem(*hgroups, make_hgroup("@grpB",     {"host1", "host3"}));
+   lAppendElem(*hgroups, make_hgroup("@grpC",     {"host4"}));
+   lAppendElem(*hgroups, make_hgroup("@grpInner", {"host5"}));
+   lAppendElem(*hgroups, make_hgroup("@grpOuter", {"@grpInner"}));
 
    lList *al = nullptr;
    const char *value = nullptr;
@@ -136,35 +138,35 @@ static void test_str_attr_list_find_value() {
    // When the attr list contains an entry keyed to the exact hostname,
    // that value is returned without consulting any hostgroup.
    {
-      lList *attrs = lCreateList("attrs", ASTR_Type);
-      lAppendElem(attrs, make_astr("host1",         "direct"));
-      lAppendElem(attrs, make_astr(HOSTREF_DEFAULT, "default"));
+      auto attrs = ocs::tom::ListPtr<ocs::tom::ASTR>::create("attrs");
+      lAppendElem(*attrs, make_astr("host1",         "direct"));
+      lAppendElem(*attrs, make_astr(HOSTREF_DEFAULT, "default"));
 
       value = nullptr; ambiguous = false;
-      ok = str_attr_list_find_value(attrs, &al, "host1",
+      ok = str_attr_list_find_value(*attrs, &al, "host1",
                                     &value, &match_hog, &match_grp,
-                                    &ambiguous, hgroups);
+                                    &ambiguous, *hgroups);
       CHECK(1, "direct match: returns true",   ok);
       CHECK(1, "direct match: correct value",  ok && strcmp(value, "direct") == 0);
       CHECK(1, "direct match: not ambiguous",  !ambiguous);
-      lFreeList(&al); lFreeList(&attrs);
+      lFreeList(&al); 
    }
 
    // T02 — default fallback
    // When the host has no direct entry and does not belong to any group that
    // has an entry, the HOSTREF_DEFAULT ("@/") value is used.
    {
-      lList *attrs = lCreateList("attrs", ASTR_Type);
-      lAppendElem(attrs, make_astr(HOSTREF_DEFAULT, "default"));
+      auto attrs = ocs::tom::ListPtr<ocs::tom::ASTR>::create("attrs");
+      lAppendElem(*attrs, make_astr(HOSTREF_DEFAULT, "default"));
 
       value = nullptr; ambiguous = false;
-      ok = str_attr_list_find_value(attrs, &al, "unknownhost",
+      ok = str_attr_list_find_value(*attrs, &al, "unknownhost",
                                     &value, &match_hog, &match_grp,
-                                    &ambiguous, hgroups);
+                                    &ambiguous, *hgroups);
       CHECK(2, "default fallback: returns true",    ok);
       CHECK(2, "default fallback: correct value",   ok && strcmp(value, "default") == 0);
       CHECK(2, "default fallback: not ambiguous",   !ambiguous);
-      lFreeList(&al); lFreeList(&attrs);
+      lFreeList(&al); 
    }
 
    // T03 — hostgroup match (one level)
@@ -172,19 +174,19 @@ static void test_str_attr_list_find_value() {
    // the function expands @grpA, finds host2, and returns the group value.
    // The matching_host_or_group output is set to the matched group name.
    {
-      lList *attrs = lCreateList("attrs", ASTR_Type);
-      lAppendElem(attrs, make_astr("@grpA",         "group_value"));
-      lAppendElem(attrs, make_astr(HOSTREF_DEFAULT, "default"));
+      auto attrs = ocs::tom::ListPtr<ocs::tom::ASTR>::create("attrs");
+      lAppendElem(*attrs, make_astr("@grpA",         "group_value"));
+      lAppendElem(*attrs, make_astr(HOSTREF_DEFAULT, "default"));
 
       value = nullptr; match_hog = nullptr; ambiguous = false;
-      ok = str_attr_list_find_value(attrs, &al, "host2",
+      ok = str_attr_list_find_value(*attrs, &al, "host2",
                                     &value, &match_hog, &match_grp,
-                                    &ambiguous, hgroups);
+                                    &ambiguous, *hgroups);
       CHECK(3, "hostgroup match: returns true",             ok);
       CHECK(3, "hostgroup match: correct value",            ok && strcmp(value, "group_value") == 0);
       CHECK(3, "hostgroup match: matching group is @grpA",  match_hog && strcmp(match_hog, "@grpA") == 0);
       CHECK(3, "hostgroup match: not ambiguous",            !ambiguous);
-      lFreeList(&al); lFreeList(&attrs);
+      lFreeList(&al); 
    }
 
    // T04 — transitive (nested) hostgroup expansion
@@ -192,37 +194,37 @@ static void test_str_attr_list_find_value() {
    // The attr list has an entry for @grpOuter only. The function must expand
    // @grpOuter transitively to discover host5 and return the outer group's value.
    {
-      lList *attrs = lCreateList("attrs", ASTR_Type);
-      lAppendElem(attrs, make_astr("@grpOuter",     "outer_value"));
-      lAppendElem(attrs, make_astr(HOSTREF_DEFAULT, "default"));
+      auto attrs = ocs::tom::ListPtr<ocs::tom::ASTR>::create("attrs");
+      lAppendElem(*attrs, make_astr("@grpOuter",     "outer_value"));
+      lAppendElem(*attrs, make_astr(HOSTREF_DEFAULT, "default"));
 
       value = nullptr; match_hog = nullptr; ambiguous = false;
-      ok = str_attr_list_find_value(attrs, &al, "host5",
+      ok = str_attr_list_find_value(*attrs, &al, "host5",
                                     &value, &match_hog, &match_grp,
-                                    &ambiguous, hgroups);
+                                    &ambiguous, *hgroups);
       CHECK(4, "nested group: returns true",                  ok);
       CHECK(4, "nested group: correct value from outer",      ok && strcmp(value, "outer_value") == 0);
       CHECK(4, "nested group: matching group is @grpOuter",   match_hog && strcmp(match_hog, "@grpOuter") == 0);
       CHECK(4, "nested group: not ambiguous",                 !ambiguous);
-      lFreeList(&al); lFreeList(&attrs);
+      lFreeList(&al); 
    }
 
    // T05 — group-without-attr fallback
    // host4 belongs to @grpC but the attr list has no entry for @grpC.
    // Because no group match is found, the default value is used.
    {
-      lList *attrs = lCreateList("attrs", ASTR_Type);
-      lAppendElem(attrs, make_astr("@grpA",         "group_value"));
-      lAppendElem(attrs, make_astr(HOSTREF_DEFAULT, "default"));
+      auto attrs = ocs::tom::ListPtr<ocs::tom::ASTR>::create("attrs");
+      lAppendElem(*attrs, make_astr("@grpA",         "group_value"));
+      lAppendElem(*attrs, make_astr(HOSTREF_DEFAULT, "default"));
 
       value = nullptr; ambiguous = false;
-      ok = str_attr_list_find_value(attrs, &al, "host4",
+      ok = str_attr_list_find_value(*attrs, &al, "host4",
                                     &value, &match_hog, &match_grp,
-                                    &ambiguous, hgroups);
+                                    &ambiguous, *hgroups);
       CHECK(5, "group-without-attr: returns true",    ok);
       CHECK(5, "group-without-attr: correct value",   ok && strcmp(value, "default") == 0);
       CHECK(5, "group-without-attr: not ambiguous",   !ambiguous);
-      lFreeList(&al); lFreeList(&attrs);
+      lFreeList(&al); 
    }
 
    // T06 — ambiguous with default
@@ -231,19 +233,19 @@ static void test_str_attr_list_find_value() {
    // HOSTREF_DEFAULT. The return value is true (a fallback was found) but
    // callers must check is_ambiguous before using the value.
    {
-      lList *attrs = lCreateList("attrs", ASTR_Type);
-      lAppendElem(attrs, make_astr("@grpA",         "value_a"));
-      lAppendElem(attrs, make_astr("@grpB",         "value_b"));
-      lAppendElem(attrs, make_astr(HOSTREF_DEFAULT, "default"));
+      auto attrs = ocs::tom::ListPtr<ocs::tom::ASTR>::create("attrs");
+      lAppendElem(*attrs, make_astr("@grpA",         "value_a"));
+      lAppendElem(*attrs, make_astr("@grpB",         "value_b"));
+      lAppendElem(*attrs, make_astr(HOSTREF_DEFAULT, "default"));
 
       value = nullptr; ambiguous = false;
-      ok = str_attr_list_find_value(attrs, &al, "host1",
+      ok = str_attr_list_find_value(*attrs, &al, "host1",
                                     &value, &match_hog, &match_grp,
-                                    &ambiguous, hgroups);
+                                    &ambiguous, *hgroups);
       CHECK(6, "ambiguous+default: returns true (default used)",  ok);
       CHECK(6, "ambiguous+default: is_ambiguous flag is set",     ambiguous);
       CHECK(6, "ambiguous+default: value is the default",         ok && strcmp(value, "default") == 0);
-      lFreeList(&al); lFreeList(&attrs);
+      lFreeList(&al); 
    }
 
    // T07 — ambiguous without default
@@ -251,17 +253,17 @@ static void test_str_attr_list_find_value() {
    // The function cannot fall back to a default, so it returns false and adds
    // an error to the answer list. is_ambiguous remains set.
    {
-      lList *attrs = lCreateList("attrs", ASTR_Type);
-      lAppendElem(attrs, make_astr("@grpA", "value_a"));
-      lAppendElem(attrs, make_astr("@grpB", "value_b"));
+      auto attrs = ocs::tom::ListPtr<ocs::tom::ASTR>::create("attrs");
+      lAppendElem(*attrs, make_astr("@grpA", "value_a"));
+      lAppendElem(*attrs, make_astr("@grpB", "value_b"));
 
       value = nullptr; ambiguous = false;
-      ok = str_attr_list_find_value(attrs, &al, "host1",
+      ok = str_attr_list_find_value(*attrs, &al, "host1",
                                     &value, &match_hog, &match_grp,
-                                    &ambiguous, hgroups);
+                                    &ambiguous, *hgroups);
       CHECK(7, "ambiguous+no-default: returns false",          !ok);
       CHECK(7, "ambiguous+no-default: is_ambiguous flag set",  ambiguous);
-      lFreeList(&al); lFreeList(&attrs);
+      lFreeList(&al); 
    }
 
    // T08 — direct hostname entry overrides hostgroup entry
@@ -269,19 +271,19 @@ static void test_str_attr_list_find_value() {
    // also contains a direct entry for host2. The direct entry wins because
    // the function looks for an exact hostname match before expanding groups.
    {
-      lList *attrs = lCreateList("attrs", ASTR_Type);
-      lAppendElem(attrs, make_astr("host2",         "direct_value"));
-      lAppendElem(attrs, make_astr("@grpA",         "group_value"));
-      lAppendElem(attrs, make_astr(HOSTREF_DEFAULT, "default"));
+      auto attrs = ocs::tom::ListPtr<ocs::tom::ASTR>::create("attrs");
+      lAppendElem(*attrs, make_astr("host2",         "direct_value"));
+      lAppendElem(*attrs, make_astr("@grpA",         "group_value"));
+      lAppendElem(*attrs, make_astr(HOSTREF_DEFAULT, "default"));
 
       value = nullptr; ambiguous = false;
-      ok = str_attr_list_find_value(attrs, &al, "host2",
+      ok = str_attr_list_find_value(*attrs, &al, "host2",
                                     &value, &match_hog, &match_grp,
-                                    &ambiguous, hgroups);
+                                    &ambiguous, *hgroups);
       CHECK(8, "direct overrides group: returns true",   ok);
       CHECK(8, "direct overrides group: correct value",  ok && strcmp(value, "direct_value") == 0);
       CHECK(8, "direct overrides group: not ambiguous",  !ambiguous);
-      lFreeList(&al); lFreeList(&attrs);
+      lFreeList(&al); 
    }
 
    // T09 — null attr list
@@ -291,7 +293,7 @@ static void test_str_attr_list_find_value() {
       value = nullptr; ambiguous = false;
       ok = str_attr_list_find_value(nullptr, &al, "host1",
                                     &value, &match_hog, &match_grp,
-                                    &ambiguous, hgroups);
+                                    &ambiguous, *hgroups);
       CHECK(9, "null attr list: returns false",   !ok);
       lFreeList(&al);
    }
@@ -300,18 +302,17 @@ static void test_str_attr_list_find_value() {
    // Passing a null hostname is handled symmetrically — the function returns
    // false without touching any output parameter.
    {
-      lList *attrs = lCreateList("attrs", ASTR_Type);
-      lAppendElem(attrs, make_astr(HOSTREF_DEFAULT, "default"));
+      auto attrs = ocs::tom::ListPtr<ocs::tom::ASTR>::create("attrs");
+      lAppendElem(*attrs, make_astr(HOSTREF_DEFAULT, "default"));
 
       value = nullptr; ambiguous = false;
-      ok = str_attr_list_find_value(attrs, &al, nullptr,
+      ok = str_attr_list_find_value(*attrs, &al, nullptr,
                                     &value, &match_hog, &match_grp,
-                                    &ambiguous, hgroups);
+                                    &ambiguous, *hgroups);
       CHECK(10, "null hostname: returns false",   !ok);
-      lFreeList(&al); lFreeList(&attrs);
+      lFreeList(&al); 
    }
 
-   lFreeList(&hgroups);
 }
 
 // ---------------------------------------------------------------------------
@@ -345,16 +346,16 @@ static void test_str_attr_list_find_value_href() {
    // An entry keyed to the exact hostname is returned. The `found` output is
    // set to true to indicate that this was a direct (non-default) match.
    {
-      lList *attrs = lCreateList("attrs", ASTR_Type);
-      lAppendElem(attrs, make_astr("host1",         "direct"));
-      lAppendElem(attrs, make_astr(HOSTREF_DEFAULT, "default"));
+      auto attrs = ocs::tom::ListPtr<ocs::tom::ASTR>::create("attrs");
+      lAppendElem(*attrs, make_astr("host1",         "direct"));
+      lAppendElem(*attrs, make_astr(HOSTREF_DEFAULT, "default"));
 
       value = nullptr; found = false;
-      ok = str_attr_list_find_value_href(attrs, &al, "host1", &value, &found);
+      ok = str_attr_list_find_value_href(*attrs, &al, "host1", &value, &found);
       CHECK(11, "href/direct match: returns true",   ok);
       CHECK(11, "href/direct match: correct value",  ok && strcmp(value, "direct") == 0);
       CHECK(11, "href/direct match: found is true",  found);
-      lFreeList(&al); lFreeList(&attrs);
+      lFreeList(&al); 
    }
 
    // T12 — default fallback (found = false)
@@ -362,15 +363,15 @@ static void test_str_attr_list_find_value_href() {
    // is used. The `found` output is set to false to signal that no explicit
    // configuration for this host was present.
    {
-      lList *attrs = lCreateList("attrs", ASTR_Type);
-      lAppendElem(attrs, make_astr(HOSTREF_DEFAULT, "default"));
+      auto attrs = ocs::tom::ListPtr<ocs::tom::ASTR>::create("attrs");
+      lAppendElem(*attrs, make_astr(HOSTREF_DEFAULT, "default"));
 
       value = nullptr; found = true;
-      ok = str_attr_list_find_value_href(attrs, &al, "unknownhost", &value, &found);
+      ok = str_attr_list_find_value_href(*attrs, &al, "unknownhost", &value, &found);
       CHECK(12, "href/default fallback: returns true",    ok);
       CHECK(12, "href/default fallback: correct value",   ok && strcmp(value, "default") == 0);
       CHECK(12, "href/default fallback: found is false",  !found);
-      lFreeList(&al); lFreeList(&attrs);
+      lFreeList(&al); 
    }
 
    // T13 — hostgroup entries are ignored
@@ -378,16 +379,16 @@ static void test_str_attr_list_find_value_href() {
    // be reached via a hostgroup in the full variant is not found here; the
    // default value is used instead and found is set to false.
    {
-      lList *attrs = lCreateList("attrs", ASTR_Type);
-      lAppendElem(attrs, make_astr("@grpA",         "group_value"));
-      lAppendElem(attrs, make_astr(HOSTREF_DEFAULT, "default"));
+      auto attrs = ocs::tom::ListPtr<ocs::tom::ASTR>::create("attrs");
+      lAppendElem(*attrs, make_astr("@grpA",         "group_value"));
+      lAppendElem(*attrs, make_astr(HOSTREF_DEFAULT, "default"));
 
       value = nullptr; found = true;
-      ok = str_attr_list_find_value_href(attrs, &al, "host2", &value, &found);
+      ok = str_attr_list_find_value_href(*attrs, &al, "host2", &value, &found);
       CHECK(13, "href/group ignored: returns true (default used)",  ok);
       CHECK(13, "href/group ignored: returns default not group",    ok && strcmp(value, "default") == 0);
       CHECK(13, "href/group ignored: found is false",               !found);
-      lFreeList(&al); lFreeList(&attrs);
+      lFreeList(&al); 
    }
 
    // T14 — null attr list

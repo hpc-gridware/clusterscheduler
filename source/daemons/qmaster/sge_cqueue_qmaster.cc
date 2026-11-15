@@ -67,6 +67,7 @@
 #include "sgeobj/tom/ocs_tom_JG.h"
 #include "sgeobj/tom/ocs_tom_QU.h"
 #include "sgeobj/tom/ocs_tom_US.h"
+#include "sgeobj/tom/ocs_tom_HGRP.h"
 
 #include "sched/valid_queue_user.h"
 
@@ -134,7 +135,7 @@ qinstance_create(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const lListElem
    const lList *centry_list = *ocs::DataStore::get_master_list(SGE_TYPE_CENTRY);
    const lList *master_ehost_list = *ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST);
    int index;
-   lListElem *ret = lCreateElem(QU_Type);
+   auto ret = ocs::tom::ElementPtr<ocs::tom::QU>::create();
 
    /*
     * Pre-initialize some fields: hostname, full_name
@@ -157,7 +158,7 @@ qinstance_create(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const lListElem
       const char *matching_host_or_group = nullptr;
       const char *matching_group = nullptr;
 
-      qinstance_modify_attribute(ret, answer_list, cqueue,
+      qinstance_modify_attribute(*ret, answer_list, cqueue,
                                  cqueue_attribute_array[index].qinstance_attr,
                                  cqueue_attribute_array[index].cqueue_attr,
                                  cqueue_attribute_array[index].href_attr,
@@ -175,13 +176,13 @@ qinstance_create(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const lListElem
       index++;
    }
 
-   qinstance_set_conf_slots_used(ret);
-   qinstance_debit_consumable(ret, nullptr, nullptr, centry_list, 0, true, true, nullptr);
+   qinstance_set_conf_slots_used(*ret);
+   qinstance_debit_consumable(*ret, nullptr, nullptr, centry_list, 0, true, true, nullptr);
 
    /*
     * Change qinstance state
     */
-   sge_qmaster_qinstance_state_set_ambiguous(ret, *is_ambiguous, packet->gdi_session);
+   sge_qmaster_qinstance_state_set_ambiguous(*ret, *is_ambiguous, packet->gdi_session);
    if (*is_ambiguous) {
       DPRINTF("Qinstance " SFN "@" SFN " has ambiguous configuration\n", cqueue_name, hostname);
    } else {
@@ -194,14 +195,14 @@ qinstance_create(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const lListElem
     *    - state (modification according to initial state)
     *    - qversion
     */
-   sge_qmaster_qinstance_state_set_unknown(ret, true, packet->gdi_session);
-   qinstance_check_unknown_state(ret, master_ehost_list, packet->gdi_session);
-   sge_qmaster_qinstance_set_initial_state(ret, packet->gdi_session);
-   qinstance_initialize_sos_attr(ret, monitor, master_cqueue_list, packet->gdi_session);
+   sge_qmaster_qinstance_state_set_unknown(*ret, true, packet->gdi_session);
+   qinstance_check_unknown_state(*ret, master_ehost_list, packet->gdi_session);
+   sge_qmaster_qinstance_set_initial_state(*ret, packet->gdi_session);
+   qinstance_initialize_sos_attr(*ret, monitor, master_cqueue_list, packet->gdi_session);
 
-   qinstance_increase_qversion(ret);
+   qinstance_increase_qversion(*ret);
 
-   DRETURN(ret);
+   DRETURN(ret.release());
 }
 
 static bool
@@ -509,7 +510,7 @@ cqueue_route_hostlist(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const char
    dstring name_buffer = DSTRING_INIT;
    const char *group_name = hgroup_queue_group_name(cqueue_name, &name_buffer);
    gdi_object_t *hgroup_object = get_gdi_object(ocs::gdi::Target::HGRP_LIST);
-   lListElem *instructions = lCreateElem(HGRP_Type);
+   auto instructions = ocs::tom::ElementPtr<ocs::tom::HGRP>::create();
    lList *answer_list = nullptr;
    lList *tmp_list = nullptr;
 
@@ -521,7 +522,7 @@ cqueue_route_hostlist(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const char
    ocs::tom::set<HGRP_name>(instructions, group_name);
    ocs::tom::set<HGRP_host_list>(instructions, members);
 
-   const int status = sge_gdi_add_mod_generic(packet, task, &answer_list, instructions, 0,
+   const int status = sge_gdi_add_mod_generic(packet, task, &answer_list, *instructions, 0,
                                               hgroup_object, packet->user, packet->host,
                                               task->command, task->sub_command, &tmp_list, monitor);
 
@@ -532,7 +533,7 @@ cqueue_route_hostlist(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const char
    }
    lFreeList(&answer_list);
    lFreeList(&tmp_list);
-   lFreeElem(&instructions);
+   instructions.reset();
    sge_dstring_free(&name_buffer);
 
    DRETURN(status == STATUS_OK);

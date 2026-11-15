@@ -74,10 +74,10 @@ static const char *g_current = "?";
 /* Build a fresh CE_Type element ready for read_CE_stringval_host to fill in. */
 static lListElem *
 make_rsmap_ce(const char *name) {
-   lListElem *ce = lCreateElem(CE_Type);
+   auto ce = ocs::tom::ElementPtr<ocs::tom::CE>::create();
    ocs::tom::set<CE_name>(ce, name);
    ocs::tom::set<CE_valtype>(ce, static_cast<uint32_t>(ocs::CEntry::Type::RSMAP));
-   return ce;
+   return ce.release();
 }
 
 /* read_CE_stringval_host expects a mutable buffer (sge_strtok_r modifies it),

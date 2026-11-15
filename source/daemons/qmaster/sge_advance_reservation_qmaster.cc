@@ -101,6 +101,7 @@
 #include "sgeobj/tom/ocs_tom_ST.h"
 #include "sgeobj/tom/ocs_tom_US.h"
 #include "sgeobj/tom/ocs_tom_JAT.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
 
 #include "sched/debit.h"
 #include "sched/sge_resource_utilization.h"
@@ -1053,7 +1054,7 @@ ar_reserve_queues(lList **alpp, lListElem *ar, uint64_t gdi_session) {
    dispatch_t result = DISPATCH_NEVER_CAT;
 
 
-   lListElem *dummy_job = lCreateElem(JB_Type);
+   auto dummy_job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
    if (static_cast<const lList *>(ocs::tom::get<AR_acl_list>(ar)) != nullptr) {
       ocs::tom::set<JB_owner>(dummy_job, "*");
       ocs::tom::set<JB_group>(dummy_job, "*");
@@ -1064,7 +1065,7 @@ ar_reserve_queues(lList **alpp, lListElem *ar, uint64_t gdi_session) {
    // the queues and hosts are selected for the project of the AR, see their projects and xprojects
    ocs::tom::set<JB_project>(dummy_job, ocs::tom::get<AR_project>(ar));
 
-   assignment_init(&a, dummy_job, nullptr, nullptr);
+   assignment_init(&a, *dummy_job, nullptr, nullptr);
    a.host_list = master_exechost_list;
    a.centry_list = master_centry_list;
    a.acl_list = master_userset_list;
@@ -1198,9 +1199,9 @@ ar_reserve_queues(lList **alpp, lListElem *ar, uint64_t gdi_session) {
 
    ocs::tom::set<JB_execution_time>(dummy_job, ocs::tom::get<AR_start_time>(ar));
    ocs::tom::set<JB_deadline>(dummy_job, ocs::tom::get<AR_end_time>(ar));
-   job_set_hard_resource_list(dummy_job, lCopyList(nullptr, ocs::tom::get<AR_resource_list>(ar)));
-   job_set_hard_queue_list(dummy_job, lCopyList(nullptr, ocs::tom::get<AR_queue_list>(ar)));
-   job_set_master_hard_queue_list(dummy_job, lCopyList(nullptr, ocs::tom::get<AR_master_queue_list>(ar)));
+   job_set_hard_resource_list(*dummy_job, lCopyList(nullptr, ocs::tom::get<AR_resource_list>(ar)));
+   job_set_hard_queue_list(*dummy_job, lCopyList(nullptr, ocs::tom::get<AR_queue_list>(ar)));
+   job_set_master_hard_queue_list(*dummy_job, lCopyList(nullptr, ocs::tom::get<AR_master_queue_list>(ar)));
    ocs::tom::set<JB_type>(dummy_job, ocs::tom::get<AR_type>(ar));
    ocs::tom::set<JB_checkpoint_name>(dummy_job, ocs::tom::get<AR_checkpoint_name>(ar));
    ocs::tom::set<JB_binding>(dummy_job, lCopyElem(ocs::tom::get<AR_binding>(ar)));
@@ -1214,7 +1215,7 @@ ar_reserve_queues(lList **alpp, lListElem *ar, uint64_t gdi_session) {
       // assignment_init_pe() already looks for it, so the scheduler needs no knowledge of ARs here.
       const char *allocation_rule = ocs::tom::get<AR_allocation_rule>(ar);
       if (allocation_rule != nullptr) {
-         job_set_allocation_rule(dummy_job, allocation_rule, JRS_SCOPE_GLOBAL);
+         job_set_allocation_rule(*dummy_job, allocation_rule, JRS_SCOPE_GLOBAL);
       }
 
       result = sge_select_parallel_environment(&a, master_pe_list);
@@ -1266,7 +1267,7 @@ ar_reserve_queues(lList **alpp, lListElem *ar, uint64_t gdi_session) {
    lFreeList(&(a.queue_list));
    lFreeList(&master_pe_list);
    lFreeList(&master_exechost_list);
-   lFreeElem(&dummy_job);
+   dummy_job.reset();
 
    assignment_release(&a);
 
@@ -1299,9 +1300,9 @@ ar_do_reservation(lListElem *ar, bool incslots, uint64_t gdi_session) {
    const lList *master_centry_list = *ocs::DataStore::get_master_list(SGE_TYPE_CENTRY);
    const lList *master_exechost_list = *ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST);
 
-   lListElem *dummy_job = lCreateElem(JB_Type);
-   job_set_hard_resource_list(dummy_job, lCopyList(nullptr, ocs::tom::get<AR_resource_list>(ar)));
-   job_set_hard_queue_list(dummy_job, lCopyList(nullptr, ocs::tom::get<AR_queue_list>(ar)));
+   auto dummy_job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
+   job_set_hard_resource_list(*dummy_job, lCopyList(nullptr, ocs::tom::get<AR_resource_list>(ar)));
+   job_set_hard_queue_list(*dummy_job, lCopyList(nullptr, ocs::tom::get<AR_queue_list>(ar)));
 
    lListElem *global_host_ep = host_list_locate(master_exechost_list, SGE_GLOBAL_NAME);
 
@@ -1351,7 +1352,7 @@ ar_do_reservation(lListElem *ar, bool incslots, uint64_t gdi_session) {
       pe_slots += tmp_slots;
 
       /* reserve global host */
-      if (rc_add_job_utilization(gdil_ep, dummy_job, pe, 0, SCHEDULING_RECORD_ENTRY_TYPE_RESERVING,
+      if (rc_add_job_utilization(gdil_ep, *dummy_job, pe, 0, SCHEDULING_RECORD_ENTRY_TYPE_RESERVING,
                                  global_host_ep, master_centry_list, tmp_slots,
                                  EH_consumable_config_list, EH_resource_utilization,
                                  SGE_GLOBAL_NAME, start_time, duration, GLOBAL_TAG,
@@ -1364,7 +1365,7 @@ ar_do_reservation(lListElem *ar, bool incslots, uint64_t gdi_session) {
 
       /* reserve exec host */
       lListElem *host_ep = host_list_locate(master_exechost_list, queue_hostname);
-      if (rc_add_job_utilization(gdil_ep, dummy_job, pe, 0, SCHEDULING_RECORD_ENTRY_TYPE_RESERVING,
+      if (rc_add_job_utilization(gdil_ep, *dummy_job, pe, 0, SCHEDULING_RECORD_ENTRY_TYPE_RESERVING,
                                  host_ep, master_centry_list, tmp_slots, EH_consumable_config_list,
                                  EH_resource_utilization, queue_hostname, start_time,
                                  duration, HOST_TAG, false, is_master_task, do_per_host_booking,
@@ -1375,7 +1376,7 @@ ar_do_reservation(lListElem *ar, bool incslots, uint64_t gdi_session) {
       }
 
       /* reserve queue instance */
-      rc_add_job_utilization(gdil_ep, dummy_job, pe, 0, SCHEDULING_RECORD_ENTRY_TYPE_RESERVING,
+      rc_add_job_utilization(gdil_ep, *dummy_job, pe, 0, SCHEDULING_RECORD_ENTRY_TYPE_RESERVING,
                              queue, master_centry_list, tmp_slots, QU_consumable_config_list,
                              QU_resource_utilization, queue_name, start_time, duration,
                              QUEUE_TAG, false, is_master_task, do_per_host_booking,
@@ -1405,7 +1406,7 @@ ar_do_reservation(lListElem *ar, bool incslots, uint64_t gdi_session) {
       }
    }
 
-   lFreeElem(&dummy_job);
+   dummy_job.reset();
 
    DRETURN(0);
 }

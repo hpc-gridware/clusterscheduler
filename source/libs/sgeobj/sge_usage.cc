@@ -479,7 +479,7 @@ usage_parse_value(const char *name, const char *value) {
       value = "";
    }
 
-   lListElem *ep = lCreateElem(UA_Type);
+   auto ep = ocs::tom::ElementPtr<ocs::tom::UA>::create();
    ocs::tom::set<UA_name>(ep, name);
 
    // (1) quote-prefix rule — matched pair strips.
@@ -495,32 +495,32 @@ usage_parse_value(const char *name, const char *value) {
        (value[0] == '"' || value[0] == '\'') &&
        value[len - 1] == value[0]) {
       if (len == 2) {
-         lFreeElem(&ep);
+         ep.reset();
          return nullptr;
       }
       std::string interior(value + 1, len - 2);
       ocs::tom::set<UA_svalue>(ep, interior.c_str());
-      return ep;
+      return ep.release();
    }
 
    // (2) full-double parse.
    double d = 0.0;
    if (parse_full_double(value, d)) {
       ocs::tom::set<UA_value>(ep, d);
-      return ep;
+      return ep.release();
    }
 
    // (3) case-insensitive bool coercion.
    if (str_iequal(value, "true")) {
       ocs::tom::set<UA_value>(ep, 1.0);
-      return ep;
+      return ep.release();
    }
    if (str_iequal(value, "false")) {
       ocs::tom::set<UA_value>(ep, 0.0);
-      return ep;
+      return ep.release();
    }
 
    // (4) raw string.
    ocs::tom::set<UA_svalue>(ep, value);
-   return ep;
+   return ep.release();
 }

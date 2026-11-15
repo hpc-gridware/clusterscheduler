@@ -661,23 +661,23 @@ int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_ti
                continue;
             }
             /* save groups also in the table */
-            groupTable = lCreateList("groupTable", GR_Type);
+            auto groupTable = ocs::tom::ListPtr<ocs::tom::GR>::create("groupTable");
             while (fgets(buf, sizeof(buf), f)) {
                if (strcmp("Groups:", strtok(buf, "\t"))==0) {
                   char *token;
                   
                   while ((token=strtok((char*) nullptr, " "))) {
-                     lListElem *gr = lCreateElem(GR_Type);
+                     auto gr = ocs::tom::ElementPtr<ocs::tom::GR>::create();
                      long group = atol(token);
                      list[groups] = group;
                      ocs::tom::set<GR_group>(gr, group);
-                     lAppendElem(groupTable, gr);
+                     lAppendElem(*groupTable, std::move(gr));
                      groups++;
                   }
                   break;
                }
             }
-            ocs::tom::set<PRO_groups>(pr, groupTable);
+            ocs::tom::set<PRO_groups>(pr, std::move(groupTable));
             fclose(f);
          }
       } 

@@ -33,6 +33,8 @@
 #include "tom/ocs_Element.h"
 #include "sgeobj/tom/ocs_tom_MES.h"
 #include "sgeobj/tom/ocs_tom_ULNG.h"
+#include "sgeobj/tom/ocs_tom_XMLA.h"
+#include "sgeobj/tom/ocs_tom_XMLE.h"
 
 #include "sched/sge_schedd_text.h"
 
@@ -48,24 +50,24 @@ ocs::QStatJobViewXML::show_jobs_and_reasons(std::ostream &os, QStatParameter &pa
    lList *XML_out = lCreateList("detailed_job_info", XMLE_Type);
 
    /* add job infos */
-   lListElem *xmlElem = lCreateElem(XMLE_Type);
-   lListElem *attrElem = lCreateElem(XMLA_Type);
+   auto xmlElem = ocs::tom::ElementPtr<ocs::tom::XMLE>::create();
+   auto attrElem = ocs::tom::ElementPtr<ocs::tom::XMLA>::create();
    ocs::tom::set<XMLA_Name>(attrElem, "djob_info");
-   ocs::tom::set<XMLE_Element>(xmlElem, attrElem);
+   ocs::tom::set<XMLE_Element>(xmlElem, std::move(attrElem));
    ocs::tom::set<XMLE_Print>(xmlElem, true);
    ocs::tom::set<XMLE_List>(xmlElem, model.jlp);
    model.jlp = nullptr;
-   lAppendElem(XML_out, xmlElem);
+   lAppendElem(XML_out, std::move(xmlElem));
 
    /* add messages */
-   xmlElem = lCreateElem(XMLE_Type);
-   attrElem = lCreateElem(XMLA_Type);
-   ocs::tom::set<XMLA_Name>(attrElem, "messages");
-   ocs::tom::set<XMLE_Element>(xmlElem, attrElem);
-   ocs::tom::set<XMLE_Print>(xmlElem, true);
-   ocs::tom::set<XMLE_List>(xmlElem, model.ilp);
+   auto xmlElem_xmle = ocs::tom::ElementPtr<ocs::tom::XMLE>::create();
+   auto attrElem_xmla = ocs::tom::ElementPtr<ocs::tom::XMLA>::create();
+   ocs::tom::set<XMLA_Name>(attrElem_xmla, "messages");
+   ocs::tom::set<XMLE_Element>(xmlElem_xmle, std::move(attrElem_xmla));
+   ocs::tom::set<XMLE_Print>(xmlElem_xmle, true);
+   ocs::tom::set<XMLE_List>(xmlElem_xmle, model.ilp);
    model.ilp = nullptr;
-   lAppendElem(XML_out, xmlElem);
+   lAppendElem(XML_out, std::move(xmlElem_xmle));
 
    lListElem *xml_elem = xml_getHead("detailed_job_info", XML_out, nullptr);
    lWriteElemXMLTo(xml_elem, os);

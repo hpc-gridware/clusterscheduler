@@ -41,6 +41,9 @@
 #include "sgeobj/tom/ocs_tom_UA.h"
 #include "sgeobj/tom/ocs_tom_UPP.h"
 #include "sgeobj/tom/ocs_tom_UPU.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
+#include "sgeobj/tom/ocs_tom_PR.h"
+#include "sgeobj/tom/ocs_tom_UU.h"
 
 /* CS-1239 step 10: pure-function unit tests for the usage primitives the
  * worker-thread booking helper (sge_book_finished_job_usage) and the TET
@@ -112,16 +115,16 @@ make_usage_list(const char *list_name, const char *attr, double value) {
 
 static lListElem *
 make_user(const char *name) {
-   lListElem *u = lCreateElem(UU_Type);
+   auto u = ocs::tom::ElementPtr<ocs::tom::UU>::create();
    ocs::tom::set<UU_name>(u, name);
-   return u;
+   return u.release();
 }
 
 static lListElem *
 make_project(const char *name) {
-   lListElem *p = lCreateElem(PR_Type);
+   auto p = ocs::tom::ElementPtr<ocs::tom::PR>::create();
    ocs::tom::set<PR_name>(p, name);
-   return p;
+   return p.release();
 }
 
 /* Build a 1-task job. JB_job_number is what sum_usage keys debited entries
@@ -130,21 +133,21 @@ make_project(const char *name) {
 static lListElem *
 make_job(uint32_t job_number, const char *owner, const char *project,
          double cpu) {
-   lListElem *job = lCreateElem(JB_Type);
+   auto job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
    ocs::tom::set<JB_job_number>(job, job_number);
    ocs::tom::set<JB_owner>(job, owner);
    if (project != nullptr) {
       ocs::tom::set<JB_project>(job, project);
    }
 
-   lList *ja_tasks = lCreateList("ja_tasks", JAT_Type);
-   lListElem *ja_task = lCreateElem(JAT_Type);
+   auto ja_tasks = ocs::tom::ListPtr<ocs::tom::JAT>::create("ja_tasks");
+   auto ja_task = ocs::tom::ElementPtr<ocs::tom::JAT>::create();
    ocs::tom::set<JAT_task_number>(ja_task, 1);
    ocs::tom::set<JAT_scaled_usage_list>(ja_task, make_usage_list("scaled", "cpu", cpu));
-   lAppendElem(ja_tasks, ja_task);
-   ocs::tom::set<JB_ja_tasks>(job, ja_tasks);
+   lAppendElem(*ja_tasks, std::move(ja_task));
+   ocs::tom::set<JB_ja_tasks>(job, std::move(ja_tasks));
 
-   return job;
+   return job.release();
 }
 
 static double

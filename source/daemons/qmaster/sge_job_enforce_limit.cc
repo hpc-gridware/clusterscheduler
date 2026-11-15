@@ -66,6 +66,7 @@
 #include "sgeobj/tom/ocs_tom_JG.h"
 #include "sgeobj/tom/ocs_tom_PET.h"
 #include "sgeobj/tom/ocs_tom_CE.h"
+#include "sgeobj/tom/ocs_tom_JR.h"
 
 #include "ocs_ReportingFileWriter.h"
 #include "sge_qmaster_timed_event.h"
@@ -376,7 +377,6 @@ sge_job_enfoce_limit_handler(te_event_t event, monitoring_t *monitor) {
                }
 
                if (do_action) {
-                  lListElem *dummy_jr;
 
                   /*
                    * Remember that the qmaster terminated the job because it
@@ -394,11 +394,10 @@ sge_job_enfoce_limit_handler(te_event_t event, monitoring_t *monitor) {
 
                      for_each_rw (pe_task, pe_task_list) {
                         if (!ocs::tom::get<PET_do_contact>(pe_task)) {
-                           lListElem *dummy_jr = lCreateElem(JR_Type);
+                           auto dummy_jr = ocs::tom::ElementPtr<ocs::tom::JR>::create();
 
-                           job_report_init_from_job_with_usage(dummy_jr, job, ja_task, pe_task, now);
-                           ocs::ReportingFileWriter::create_acct_records(nullptr, dummy_jr, job, ja_task, false);
-                           lFreeElem(&dummy_jr);
+                           job_report_init_from_job_with_usage(*dummy_jr, job, ja_task, pe_task, now);
+                           ocs::ReportingFileWriter::create_acct_records(nullptr, *dummy_jr, job, ja_task, false);
                         }
                      }
                   }
@@ -406,10 +405,10 @@ sge_job_enfoce_limit_handler(te_event_t event, monitoring_t *monitor) {
                   /*
                    * Accounting for the job itself
                    */
-                  dummy_jr = lCreateElem(JR_Type);
-                  job_report_init_from_job_with_usage(dummy_jr, job, ja_task, nullptr, now);
-                  ocs::ReportingFileWriter::create_acct_records(nullptr, dummy_jr, job, ja_task, false);
-                  lFreeElem(&dummy_jr);
+                  auto dummy_jr = ocs::tom::ElementPtr<ocs::tom::JR>::create();
+                  job_report_init_from_job_with_usage(*dummy_jr, job, ja_task, nullptr, now);
+                  ocs::ReportingFileWriter::create_acct_records(nullptr, *dummy_jr, job, ja_task, false);
+                  dummy_jr.reset();
                   ocs::ReportingFileWriter::create_job_logs(nullptr, now, JL_DELETED, MSG_SCHEDD,
                                            ocs::tom::get<JG_qhostname>(gdil_ep),
                                            nullptr, job, ja_task, nullptr, MSG_LOG_DELFORCED);

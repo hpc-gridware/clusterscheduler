@@ -56,6 +56,7 @@
 #include "sgeobj/sge_schedd_conf.h"
 #include "sgeobj/sge_utility.h"
 #include "sgeobj/ocs_DataStore.h"
+#include "sgeobj/tom/ocs_tom_CONF.h"
 #include "tom/ocs_Element.h"
 
 #include "gdi/ocs_gdi_Client.h"
@@ -87,9 +88,9 @@ static lListElem *sge_get_configuration_for_host(const char *aName) {
       strcpy(unique_name, aName);
    }
 
-   lListElem *conf = lCopyElem(ocs::tom::find_first<CONF_name>(cluster_config, unique_name));
+   auto conf = ocs::tom::ElementPtr<ocs::tom::CONF>::from_typed(lCopyElem(ocs::tom::find_first<CONF_name>(cluster_config, unique_name)));
 
-   DRETURN(conf);
+   DRETURN(conf.release());
 }
 
 static int sge_read_configuration(const lListElem *aSpoolContext, lList *anAnswer) {

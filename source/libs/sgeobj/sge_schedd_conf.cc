@@ -78,6 +78,7 @@
 #include "tom/ocs_Element.h"
 #include "sgeobj/tom/ocs_tom_CE.h"
 #include "sgeobj/tom/ocs_tom_UA.h"
+#include "sgeobj/tom/ocs_tom_SC.h"
 
 #include "msg_common.h"
 #include "uti/sge.h"
@@ -488,9 +489,8 @@ bool sconf_is_valid_load_formula(lList **answer_list, const lList *centry_list) 
 lListElem *sconf_create_default() {
    DENTER(TOP_LAYER);
 
-   lListElem *ep;
 
-   ep = lCreateElem(SC_Type);
+   auto ep = ocs::tom::ElementPtr<ocs::tom::SC>::create();
 
    ocs::tom::set<SC_algorithm>(ep, "default");
    ocs::tom::set<SC_schedule_interval>(ep, SCHEDULE_TIME);
@@ -543,7 +543,7 @@ lListElem *sconf_create_default() {
    ocs::tom::set<SC_weight_priority>(ep, 0.0 );
    ocs::tom::set<SC_default_duration>(ep, DEFAULT_DURATION);
 
-   DRETURN(ep);
+   DRETURN(ep.release());
 }
 
 /**

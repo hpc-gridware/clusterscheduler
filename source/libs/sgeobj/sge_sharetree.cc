@@ -236,19 +236,18 @@ const char *path
 lListElem *getSNTemplate() {
    DENTER(TOP_LAYER);
 
-   lListElem *ep;
 
    /* Use the catch-all "default" node so the offered template is a valid,
     * acceptable sharetree as-is: a single leaf named "template" would be rejected
     * (it is not a known user/project), whereas "default" matches all users. */
-   ep = lCreateElem(STN_Type);
+   auto ep = ocs::tom::ElementPtr<ocs::tom::STN>::create();
    ocs::tom::set<STN_name>(ep, "default");
    ocs::tom::set<STN_type>(ep, 0);
    ocs::tom::set<STN_id>(ep, 0);
    ocs::tom::set<STN_shares>(ep, 0);
    ocs::tom::set<STN_children>(ep, nullptr);
 
-   DRETURN(ep);
+   DRETURN(ep.release());
 }
 
 /********************************************************

@@ -61,6 +61,7 @@
 #include "tom/ocs_Element.h"
 #include "sgeobj/tom/ocs_tom_JAT.h"
 #include "sgeobj/tom/ocs_tom_PE.h"
+#include "sgeobj/tom/ocs_tom_SGEJ.h"
 
 #include "msg_common.h"
 #include "ocs_BindingInstance.h"
@@ -82,7 +83,7 @@ void ocs::Job::sgeee_sort_jobs(lList *job_list) {
    }
 
    // Create a temporary list and store the job reference and all data required to sort to list
-   lList *tmp_list = lCreateList("tmp list", SGEJ_Type);
+   auto tmp_list = ocs::tom::ListPtr<ocs::tom::SGEJ>::create("tmp list");
    lListElem *job = nullptr;
    lListElem *nxt_job = lFirstRW(job_list);
    while((job = nxt_job) != nullptr) {
@@ -96,27 +97,27 @@ void ocs::Job::sgeee_sort_jobs(lList *job_list) {
       }
 
       // Store sort-criteria and job reference in the temporary list
-      lListElem *tmp_sge_job = lCreateElem(SGEJ_Type);
+      auto tmp_sge_job = ocs::tom::ElementPtr<ocs::tom::SGEJ>::create();
       ocs::tom::set<SGEJ_priority>(tmp_sge_job, ocs::tom::get<JAT_prio>(tmp_task));
       ocs::tom::set<SGEJ_submission_time>(tmp_sge_job, ocs::tom::get<JB_submission_time>(job));
       ocs::tom::set<SGEJ_job_number>(tmp_sge_job, ocs::tom::get<JB_job_number>(job));
       ocs::tom::set<SGEJ_job_reference>(tmp_sge_job, job);
-      lAppendElem(tmp_list, tmp_sge_job);
+      lAppendElem(*tmp_list, std::move(tmp_sge_job));
 
       // Remove the job from the original list
       lDechainElem(job_list, job);
    }
 
    // Sort the temporary list according to the following criteria:
-   lPSortList(tmp_list, "%I- %I+ %I+", SGEJ_priority, SGEJ_submission_time, SGEJ_job_number);
+   lPSortList(*tmp_list, "%I- %I+ %I+", SGEJ_priority, SGEJ_submission_time, SGEJ_job_number);
 
    // The job list is empty at this point, so we can just append the sorted jobs
-   for_each_rw(job, tmp_list) {
+   for_each_rw(job, *tmp_list) {
       lAppendElem(job_list, static_cast<lListElem *>(ocs::tom::get<SGEJ_job_reference>(job)));
    }
 
    // we need to free the tmp list, but not the job references
-   lFreeList(&tmp_list);
+   tmp_list.reset();
 
    DRETURN_VOID;
 }

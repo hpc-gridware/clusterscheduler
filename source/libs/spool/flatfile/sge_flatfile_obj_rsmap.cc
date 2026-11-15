@@ -215,10 +215,10 @@ parse_id_characteristics(const char *token, std::string &id_out,
       if (props == nullptr) {
          props = lCreateList("properties", CE_Type);
       }
-      lListElem *cep = lCreateElem(CE_Type);
+      auto cep = ocs::tom::ElementPtr<ocs::tom::CE>::create();
       ocs::tom::set<CE_name>(cep, name);
       ocs::tom::set<CE_stringval>(cep, value);
-      lAppendElem(props, cep);
+      lAppendElem(props, std::move(cep));
    }
    sge_free_saved_vars(ctx);
 

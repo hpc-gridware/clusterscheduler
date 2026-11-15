@@ -91,6 +91,7 @@
 #include "sgeobj/tom/ocs_tom_STU.h"
 #include "sgeobj/tom/ocs_tom_US.h"
 #include "sgeobj/tom/ocs_tom_EH.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
 
 #include "comm/commlib.h"
 
@@ -2321,11 +2322,11 @@ attr_mod_threshold(lList **alpp, lListElem *ep, lListElem *new_ep, ocs::gdi::Com
             }
 
             if (gdil_ep != nullptr) {
-               lListElem *dummy_job = lCreateElem(JB_Type);
-               job_set_hard_resource_list(dummy_job, lCopyList(nullptr, ocs::tom::get<AR_resource_list>(ar_ep)));
+               auto dummy_job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
+               job_set_hard_resource_list(*dummy_job, lCopyList(nullptr, ocs::tom::get<AR_resource_list>(ar_ep)));
 
                while (gdil_ep != nullptr) {
-                  rc_add_job_utilization(gdil_ep, dummy_job, pe, 0, SCHEDULING_RECORD_ENTRY_TYPE_RESERVING,
+                  rc_add_job_utilization(gdil_ep, *dummy_job, pe, 0, SCHEDULING_RECORD_ENTRY_TYPE_RESERVING,
                                          tmp_elem, master_centry_list, ocs::tom::get<JG_slots>(gdil_ep),
                                          EH_consumable_config_list, EH_resource_utilization, host,
                                          ocs::tom::get<AR_start_time>(ar_ep), ocs::tom::get<AR_duration>(ar_ep),
@@ -2335,7 +2336,6 @@ attr_mod_threshold(lList **alpp, lListElem *ep, lListElem *new_ep, ocs::gdi::Com
                   do_per_host_booking = false;
                   gdil_ep = ocs::tom::find_next<JG_qhostname>(gdil, host, &iterator);
                }
-               lFreeElem(&dummy_job);
             }
          }
       }

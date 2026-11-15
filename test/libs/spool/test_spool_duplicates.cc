@@ -26,6 +26,9 @@
 
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "sgeobj/tom/ocs_tom_AR.h"
+#include "sgeobj/tom/ocs_tom_EH.h"
+#include "sgeobj/tom/ocs_tom_US.h"
 #include "tom/ocs_Element.h"
 #include "spool/ocs_spool_duplicates.h"
 
@@ -56,7 +59,7 @@ read_into(ocs::spool::DuplicateFilter &filter, lList *lp, lListElem *ep, const c
 static void
 test_string_key() {
    ocs::spool::clear_duplicate_objects();
-   lList *usersets = lCreateList("usersets", US_Type);
+   auto usersets = ocs::tom::ListPtr<ocs::tom::US>::create("usersets");
    ocs::spool::DuplicateFilter filter(US_Type, "USERSET");
 
    lListElem *a = lCreateElem(US_Type);
@@ -66,18 +69,17 @@ test_string_key() {
    lListElem *copy = lCreateElem(US_Type);
    ocs::tom::set<US_name>(copy, "arusers");
 
-   const bool first = read_into(filter, usersets, a, "usersets/arusers");
-   const bool other = read_into(filter, usersets, b, "usersets/deadlineusers");
-   const bool second = read_into(filter, usersets, copy, "usersets/arusers.copy");
+   const bool first = read_into(filter, *usersets, a, "usersets/arusers");
+   const bool other = read_into(filter, *usersets, b, "usersets/deadlineusers");
+   const bool second = read_into(filter, *usersets, copy, "usersets/arusers.copy");
    CHECK(1, "distinct names are admitted, the second arusers is not", first && other && !second);
-   CHECK(2, "the list holds two user sets", lGetNumberOfElem(usersets) == 2);
+   CHECK(2, "the list holds two user sets", lGetNumberOfElem(*usersets) == 2);
 
    const auto &duplicates = ocs::spool::duplicate_objects();
    CHECK(3, "one duplicate is recorded with type, attribute, key and both spool keys",
          duplicates.size() == 1 && duplicates[0].type == "USERSET" && duplicates[0].field == "US_name" &&
          duplicates[0].key == "arusers" && duplicates[0].first_spool_key == "usersets/arusers" &&
          duplicates[0].second_spool_key == "usersets/arusers.copy");
-   lFreeList(&usersets);
 }
 
 /**
@@ -87,7 +89,7 @@ test_string_key() {
 static void
 test_host_key() {
    ocs::spool::clear_duplicate_objects();
-   lList *hosts = lCreateList("exec hosts", EH_Type);
+   auto hosts = ocs::tom::ListPtr<ocs::tom::EH>::create("exec hosts");
    ocs::spool::DuplicateFilter filter(EH_Type, "EXECHOST");
 
    lListElem *lower = lCreateElem(EH_Type);
@@ -95,13 +97,12 @@ test_host_key() {
    lListElem *upper = lCreateElem(EH_Type);
    ocs::tom::set<EH_name>(upper, "HOST-1");
 
-   const bool first = read_into(filter, hosts, lower, "EXECHOST:host-1");
-   const bool second = read_into(filter, hosts, upper, "EXECHOST:HOST-1");
+   const bool first = read_into(filter, *hosts, lower, "EXECHOST:host-1");
+   const bool second = read_into(filter, *hosts, upper, "EXECHOST:HOST-1");
    const auto &duplicates = ocs::spool::duplicate_objects();
    CHECK(4, "a host name differing only in case is a duplicate, recorded as the second copy holds it",
-         first && !second && lGetNumberOfElem(hosts) == 1 && duplicates.size() == 1 &&
+         first && !second && lGetNumberOfElem(*hosts) == 1 && duplicates.size() == 1 &&
          duplicates[0].key == "HOST-1" && duplicates[0].first_spool_key == "EXECHOST:host-1");
-   lFreeList(&hosts);
 }
 
 /**
@@ -111,35 +112,34 @@ test_host_key() {
 static void
 test_number_key_and_clear() {
    ocs::spool::clear_duplicate_objects();
-   lList *ars = lCreateList("advance reservations", AR_Type);
+   auto ars = ocs::tom::ListPtr<ocs::tom::AR>::create("advance reservations");
    ocs::spool::DuplicateFilter filter(AR_Type, "AR");
 
    lListElem *ar = lCreateElem(AR_Type);
    ocs::tom::set<AR_id>(ar, 17);
    lListElem *again = lCreateElem(AR_Type);
    ocs::tom::set<AR_id>(again, 17);
-   const bool first = read_into(filter, ars, ar, "AR:17");
-   const bool second = read_into(filter, ars, again, "AR:17.copy");
-   CHECK(5, "an advance reservation id read twice is a duplicate", first && !second && lGetNumberOfElem(ars) == 1);
+   const bool first = read_into(filter, *ars, ar, "AR:17");
+   const bool second = read_into(filter, *ars, again, "AR:17.copy");
+   CHECK(5, "an advance reservation id read twice is a duplicate", first && !second && lGetNumberOfElem(*ars) == 1);
 
-   lList *usersets = lCreateList("usersets", US_Type);
+   auto usersets = ocs::tom::ListPtr<ocs::tom::US>::create("usersets");
    ocs::spool::DuplicateFilter unnamed_filter(US_Type, "USERSET");
-   const bool unnamed_1 = read_into(unnamed_filter, usersets, lCreateElem(US_Type), "usersets/a");
-   const bool unnamed_2 = read_into(unnamed_filter, usersets, lCreateElem(US_Type), "usersets/b");
-   CHECK(6, "objects without a key are admitted", unnamed_1 && unnamed_2 && lGetNumberOfElem(usersets) == 2);
+   const bool unnamed_1 = read_into(unnamed_filter, *usersets, lCreateElem(US_Type), "usersets/a");
+   const bool unnamed_2 = read_into(unnamed_filter, *usersets, lCreateElem(US_Type), "usersets/b");
+   CHECK(6, "objects without a key are admitted", unnamed_1 && unnamed_2 && lGetNumberOfElem(*usersets) == 2);
 
    ocs::spool::DuplicateFilter other_filter(AR_Type, "AR");
    lListElem *same_id = lCreateElem(AR_Type);
    ocs::tom::set<AR_id>(same_id, 17);
-   lList *other_ars = lCreateList("other advance reservations", AR_Type);
+   auto other_ars = ocs::tom::ListPtr<ocs::tom::AR>::create("other advance reservations");
    CHECK(7, "a filter knows only the keys of its own list",
-         read_into(other_filter, other_ars, same_id, "AR:17") && ocs::spool::duplicate_objects().size() == 1);
+         read_into(other_filter, *other_ars, same_id, "AR:17") && ocs::spool::duplicate_objects().size() == 1);
 
    ocs::spool::clear_duplicate_objects();
    CHECK(8, "clearing forgets the recorded duplicates", ocs::spool::duplicate_objects().empty());
-   lFreeList(&other_ars);
-   lFreeList(&usersets);
-   lFreeList(&ars);
+   other_ars.reset();
+   usersets.reset();
 }
 
 /**

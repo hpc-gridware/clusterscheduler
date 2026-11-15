@@ -30,6 +30,8 @@
 #include "uti/sge_component.h"
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/sge_range.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_RN.h"
 
 // ---------------------------------------------------------------------------
 // Test infrastructure
@@ -76,20 +78,18 @@ static void test_range_get_all_ids() {
 
    // T02: freshly created (zeroed) element — also produces (0, 0, 0)
    {
-      lListElem *r = lCreateElem(RN_Type);
+      auto r = ocs::tom::ElementPtr<ocs::tom::RN>::create();
       mn = 1; mx = 6; st = 2;
-      range_get_all_ids(r, &mn, &mx, &st);
+      range_get_all_ids(*r, &mn, &mx, &st);
       CHECK(2, "zeroed element → min=0 max=0 step=0", mn == 0 && mx == 0 && st == 0);
-      lFreeElem(&r);
    }
 
    // T03: set [1, 6, 2] then read back — roundtrip is exact
    {
-      lListElem *r = lCreateElem(RN_Type);
-      range_set_all_ids(r, 1, 6, 2);
-      range_get_all_ids(r, &mn, &mx, &st);
+      auto r = ocs::tom::ElementPtr<ocs::tom::RN>::create();
+      range_set_all_ids(*r, 1, 6, 2);
+      range_get_all_ids(*r, &mn, &mx, &st);
       CHECK(3, "set [1,6,2] → get [1,6,2]", mn == 1 && mx == 6 && st == 2);
-      lFreeElem(&r);
    }
 }
 
@@ -110,22 +110,20 @@ static void test_range_set_all_ids() {
 
    // T05: normal range [1, 6, 2] round-trips correctly
    {
-      lListElem *r = lCreateElem(RN_Type);
+      auto r = ocs::tom::ElementPtr<ocs::tom::RN>::create();
       uint32_t mn, mx, st;
-      range_set_all_ids(r, 1, 6, 2);
-      range_get_all_ids(r, &mn, &mx, &st);
+      range_set_all_ids(*r, 1, 6, 2);
+      range_get_all_ids(*r, &mn, &mx, &st);
       CHECK(5, "set [1,6,2] stores correctly", mn == 1 && mx == 6 && st == 2);
-      lFreeElem(&r);
    }
 
    // T06: when min == max the step is normalised to 1 (single-element range)
    {
-      lListElem *r = lCreateElem(RN_Type);
+      auto r = ocs::tom::ElementPtr<ocs::tom::RN>::create();
       uint32_t mn, mx, st;
-      range_set_all_ids(r, 5, 5, 2);
-      range_get_all_ids(r, &mn, &mx, &st);
+      range_set_all_ids(*r, 5, 5, 2);
+      range_get_all_ids(*r, &mn, &mx, &st);
       CHECK(6, "min==max → step normalised to 1", mn == 5 && mx == 5 && st == 1);
-      lFreeElem(&r);
    }
 }
 
@@ -142,26 +140,23 @@ static void test_range_get_number_of_ids() {
 
    // T07: [1, 6, 2] — ids are 1, 3, 5 → 3 ids
    {
-      lListElem *r = lCreateElem(RN_Type);
-      range_set_all_ids(r, 1, 6, 2);
-      CHECK(7, "[1,6,2] → 3 ids", range_get_number_of_ids(r) == 3);
-      lFreeElem(&r);
+      auto r = ocs::tom::ElementPtr<ocs::tom::RN>::create();
+      range_set_all_ids(*r, 1, 6, 2);
+      CHECK(7, "[1,6,2] → 3 ids", range_get_number_of_ids(*r) == 3);
    }
 
    // T08: [1, 1, 1] — single element → 1 id
    {
-      lListElem *r = lCreateElem(RN_Type);
-      range_set_all_ids(r, 1, 1, 1);
-      CHECK(8, "[1,1,1] → 1 id", range_get_number_of_ids(r) == 1);
-      lFreeElem(&r);
+      auto r = ocs::tom::ElementPtr<ocs::tom::RN>::create();
+      range_set_all_ids(*r, 1, 1, 1);
+      CHECK(8, "[1,1,1] → 1 id", range_get_number_of_ids(*r) == 1);
    }
 
    // T09: [2, 10, 2] — ids are 2, 4, 6, 8, 10 → 5 ids
    {
-      lListElem *r = lCreateElem(RN_Type);
-      range_set_all_ids(r, 2, 10, 2);
-      CHECK(9, "[2,10,2] → 5 ids", range_get_number_of_ids(r) == 5);
-      lFreeElem(&r);
+      auto r = ocs::tom::ElementPtr<ocs::tom::RN>::create();
+      range_set_all_ids(*r, 2, 10, 2);
+      CHECK(9, "[2,10,2] → 5 ids", range_get_number_of_ids(*r) == 5);
    }
 }
 
@@ -178,25 +173,24 @@ static void test_range_get_number_of_ids() {
 
 static void test_range_is_id_within() {
    printf("\n--- range_is_id_within ---\n");
-   lListElem *r = lCreateElem(RN_Type);
-   range_set_all_ids(r, 1, 6, 2);   // members: 1, 3, 5
+   auto r = ocs::tom::ElementPtr<ocs::tom::RN>::create();
+   range_set_all_ids(*r, 1, 6, 2);   // members: 1, 3, 5
 
    // T10: first element (min) is within range
-   CHECK(10, "[1,6,2]: id=1 is within",   range_is_id_within(r, 1) == true);
+   CHECK(10, "[1,6,2]: id=1 is within",   range_is_id_within(*r, 1) == true);
 
    // T11: last grid element (5) is within range
-   CHECK(11, "[1,6,2]: id=5 is within",   range_is_id_within(r, 5) == true);
+   CHECK(11, "[1,6,2]: id=5 is within",   range_is_id_within(*r, 5) == true);
 
    // T12: id=6 is the stored max but falls off the step grid — NOT within
-   CHECK(12, "[1,6,2]: id=6 not on grid → not within", range_is_id_within(r, 6) == false);
+   CHECK(12, "[1,6,2]: id=6 not on grid → not within", range_is_id_within(*r, 6) == false);
 
    // T13: id beyond max is not within range
-   CHECK(13, "[1,6,2]: id=7 beyond max → not within", range_is_id_within(r, 7) == false);
+   CHECK(13, "[1,6,2]: id=7 beyond max → not within", range_is_id_within(*r, 7) == false);
 
    // T14: nullptr range — returns false without crashing
    CHECK(14, "nullptr range → false",     range_is_id_within(nullptr, 1) == false);
 
-   lFreeElem(&r);
 }
 
 // ---------------------------------------------------------------------------
@@ -208,22 +202,21 @@ static void test_range_is_id_within() {
 
 static void test_range_containes_id_less_than() {
    printf("\n--- range_containes_id_less_than ---\n");
-   lListElem *r = lCreateElem(RN_Type);
-   range_set_all_ids(r, 1, 6, 2);   // min = 1
+   auto r = ocs::tom::ElementPtr<ocs::tom::RN>::create();
+   range_set_all_ids(*r, 1, 6, 2);   // min = 1
 
    // T15: min (1) is less than id (3) → true
    CHECK(15, "[1,6,2]: id=3 → start < id → true",
-         range_containes_id_less_than(r, 3) == true);
+         range_containes_id_less_than(*r, 3) == true);
 
    // T16: min (1) equals id (1) — NOT less than → false
    CHECK(16, "[1,6,2]: id=1 → start == id → false",
-         range_containes_id_less_than(r, 1) == false);
+         range_containes_id_less_than(*r, 1) == false);
 
    // T17: nullptr range — returns false without crashing
    CHECK(17, "nullptr range → false",
          range_containes_id_less_than(nullptr, 3) == false);
 
-   lFreeElem(&r);
 }
 
 // ---------------------------------------------------------------------------
@@ -240,22 +233,20 @@ static void test_range_correct_end() {
 
    // T18: [1, 6, 2] — 6 is off the grid (5 is the true last) → corrected to [1, 5, 2]
    {
-      lListElem *r = lCreateElem(RN_Type);
-      range_set_all_ids(r, 1, 6, 2);
-      range_correct_end(r);
-      range_get_all_ids(r, &mn, &mx, &st);
+      auto r = ocs::tom::ElementPtr<ocs::tom::RN>::create();
+      range_set_all_ids(*r, 1, 6, 2);
+      range_correct_end(*r);
+      range_get_all_ids(*r, &mn, &mx, &st);
       CHECK(18, "[1,6,2] corrected to [1,5,2]", mn == 1 && mx == 5 && st == 2);
-      lFreeElem(&r);
    }
 
    // T19: [1, 7, 2] — 7 is already on the grid (1,3,5,7) → unchanged
    {
-      lListElem *r = lCreateElem(RN_Type);
-      range_set_all_ids(r, 1, 7, 2);
-      range_correct_end(r);
-      range_get_all_ids(r, &mn, &mx, &st);
+      auto r = ocs::tom::ElementPtr<ocs::tom::RN>::create();
+      range_set_all_ids(*r, 1, 7, 2);
+      range_correct_end(*r);
+      range_get_all_ids(*r, &mn, &mx, &st);
       CHECK(19, "[1,7,2] already aligned — unchanged", mn == 1 && mx == 7 && st == 2);
-      lFreeElem(&r);
    }
 }
 
@@ -407,14 +398,13 @@ static void test_range_list_parse_from_string() {
 
 static void test_range_is_id_within_extended() {
    printf("\n--- range_is_id_within (step-grid check) ---\n");
-   lListElem *r = lCreateElem(RN_Type);
-   range_set_all_ids(r, 1, 6, 2);   // members: 1, 3, 5
+   auto r = ocs::tom::ElementPtr<ocs::tom::RN>::create();
+   range_set_all_ids(*r, 1, 6, 2);   // members: 1, 3, 5
 
    // T34: id=2 is in [1,6] but not on the step grid → false
    CHECK(34, "[1,6,2]: id=2 in bounds but off grid → false",
-         range_is_id_within(r, 2) == false);
+         range_is_id_within(*r, 2) == false);
 
-   lFreeElem(&r);
 }
 
 // ---------------------------------------------------------------------------

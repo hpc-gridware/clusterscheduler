@@ -32,6 +32,7 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_object.h"
+#include "sgeobj/tom/ocs_tom_CE.h"
 #include "tom/ocs_Element.h"
 #include "spool/flatfile/sge_flatfile.h"
 #include "uti/sge_dstring.h"
@@ -88,15 +89,15 @@ qconf_delete_one(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::gdi:
                  const char *name, lList **answer_list) {
    DENTER(TOP_LAYER);
 
-   lListElem *ep = nullptr;
+   ocs::tom::ElementPtr<ocs::tom::CE> ep = nullptr;
    int ret = STATUS_EUNKNOWN;
 
    switch (target) {
       case ocs::gdi::Target::CE_LIST:
-         ep = lCreateElem(CE_Type);
+         ep = ocs::tom::ElementPtr<ocs::tom::CE>::create();
          ocs::tom::set<CE_name>(ep, name);
-         ret = sge_del_centry(packet, task, ep, answer_list, packet->user, packet->host);
-         lFreeElem(&ep);
+         ret = sge_del_centry(packet, task, *ep, answer_list, packet->user, packet->host);
+         ep.reset();
          break;
       default:
          // qconf_can_delete() is asked first, so this is unreachable

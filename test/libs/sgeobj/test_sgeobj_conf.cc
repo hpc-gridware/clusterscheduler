@@ -31,6 +31,7 @@
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "tom/ocs_Element.h"
 #include "sgeobj/tom/ocs_tom_CF.h"
+#include "sgeobj/tom/ocs_tom_CONF.h"
 #include "tom/ocs_ElementCore.h"
 
 #include "uti/sge.h"
@@ -42,7 +43,7 @@
  */
 static lListElem *
 make_conf(const char *names[]) {
-   lListElem *conf = lCreateElem(CONF_Type);
+   auto conf = ocs::tom::ElementPtr<ocs::tom::CONF>::create();
 
    ocs::tom::set<CONF_name>(conf, SGE_GLOBAL_NAME);
    for (int i = 0; names[i] != nullptr; i++) {
@@ -50,7 +51,7 @@ make_conf(const char *names[]) {
       ocs::tom::set<CF_value>(ep, "value");
    }
 
-   return conf;
+   return conf.release();
 }
 
 /**

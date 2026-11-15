@@ -491,10 +491,10 @@ book_user_project_usage(lListElem *job, lListElem *ja_task, lListElem *user, lLi
          if ((upu = ocs::tom::find_first_rw<UPU_job_number>(upu_list, jobnum))) {
             ocs::tom::set<UPU_old_usage_list>(upu, lCopyList(lGetListName(job_usage_list), job_usage_list));
          } else {
-            upu = lCreateElem(UPU_Type);
+            auto upu = ocs::tom::ElementPtr<ocs::tom::UPU>::create();
             ocs::tom::set<UPU_job_number>(upu, jobnum);
             ocs::tom::set<UPU_old_usage_list>(upu, lCopyList(lGetListName(job_usage_list), job_usage_list));
-            lAppendElem(upu_list, upu);
+            lAppendElem(upu_list, std::move(upu));
          }
       }
       lFreeList(&job_usage_list);
@@ -638,10 +638,10 @@ ocs::Usage::get_usage(lList *usage_list, const char *name) {
  */
 lListElem *
 ocs::Usage::create_usage_elem( const char *name ) {
-   lListElem *usage = lCreateElem(UA_Type);
+   auto usage = ocs::tom::ElementPtr<ocs::tom::UA>::create();
    ocs::tom::set<UA_name>(usage, name);
    ocs::tom::set<UA_value>(usage, 0);
-   return usage;
+   return usage.release();
 }
 
 

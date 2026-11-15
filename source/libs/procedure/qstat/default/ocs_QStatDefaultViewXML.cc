@@ -38,6 +38,7 @@
 #include "sgeobj/sge_job.h"
 #include "tom/ocs_Element.h"
 #include "sgeobj/tom/ocs_tom_XMLA.h"
+#include "sgeobj/tom/ocs_tom_XMLE.h"
 
 #include "qstat/default/ocs_QStatDefaultViewXML.h"
 
@@ -65,7 +66,6 @@ void ocs::QStatDefaultViewXML::qstat_xml_create_job_list() {
  */
 void ocs::QStatDefaultViewXML::qstat_xml_finish_job_list(const char* state, lList* target_list) {
    DENTER(TOP_LAYER);
-   lListElem *state_elem = nullptr;
    lList *attributes = nullptr;
    lList *l_job_list = nullptr;
 
@@ -75,10 +75,10 @@ void ocs::QStatDefaultViewXML::qstat_xml_finish_job_list(const char* state, lLis
          attributes = lCreateList("attributes", XMLA_Type);
          ocs::tom::set<XMLE_Attribute>(l_job_elem, attributes);
       }
-      state_elem = lCreateElem(XMLA_Type);
+      auto state_elem = ocs::tom::ElementPtr<ocs::tom::XMLA>::create();
       ocs::tom::set<XMLA_Name>(state_elem, "state");
       ocs::tom::set<XMLA_Value>(state_elem, state);
-      lAppendElem(attributes, state_elem);
+      lAppendElem(attributes, std::move(state_elem));
 
       lAppendElem(l_job_list, l_job_elem);
    }
@@ -92,15 +92,15 @@ void ocs::QStatDefaultViewXML::report_started(std::ostream &os, QStatParameter &
    DENTER(TOP_LAYER);
 
    queue_list_elem = lCreateElem(XMLE_Type);
-   lListElem *attr_elem = lCreateElem(XMLA_Type);
+   auto attr_elem = ocs::tom::ElementPtr<ocs::tom::XMLA>::create();
    ocs::tom::set<XMLA_Name>(attr_elem, "queue_info");
-   ocs::tom::set<XMLE_Element>(queue_list_elem, attr_elem);
+   ocs::tom::set<XMLE_Element>(queue_list_elem, std::move(attr_elem));
    ocs::tom::set<XMLE_Print>(queue_list_elem, true);
 
    job_list_elem = lCreateElem(XMLE_Type);
-   attr_elem = lCreateElem(XMLA_Type);
-   ocs::tom::set<XMLA_Name>(attr_elem, "job_info");
-   ocs::tom::set<XMLE_Element>(job_list_elem, attr_elem);
+   auto attr_elem_xmla = ocs::tom::ElementPtr<ocs::tom::XMLA>::create();
+   ocs::tom::set<XMLA_Name>(attr_elem_xmla, "job_info");
+   ocs::tom::set<XMLE_Element>(job_list_elem, std::move(attr_elem_xmla));
    ocs::tom::set<XMLE_Print>(job_list_elem, true);
    ocs::tom::set<XMLE_List>(job_list_elem, lCreateList("job_list", XMLE_Type));
 
@@ -163,8 +163,6 @@ void ocs::QStatDefaultViewXML::report_queue_finished(std::ostream &os, const cha
 void ocs::QStatDefaultViewXML::report_queue_started(std::ostream &os, const char* qname, QStatParameter &parameter) {
    DENTER(TOP_LAYER);
 
-   lList *attribute_list = nullptr;
-   lListElem *temp = nullptr;
 
    if (parameter.show_ & QSTAT_DISPLAY_FULL) {
 
@@ -175,12 +173,12 @@ void ocs::QStatDefaultViewXML::report_queue_started(std::ostream &os, const char
 
       DPRINTF("Create ctx->queue_elem for queue %s\n", qname);
 
-      temp = lCreateElem(XMLE_Type);
+      auto temp = ocs::tom::ElementPtr<ocs::tom::XMLE>::create();
       ocs::tom::set<XMLE_Print>(temp, false);
       queue_elem = lCreateElem(XMLE_Type);
-      attribute_list = lCreateList("attributes", XMLE_Type);
-      ocs::tom::set<XMLE_List>(temp, attribute_list);
-      ocs::tom::set<XMLE_Element>(queue_elem, temp);
+      auto attribute_list = ocs::tom::ListPtr<ocs::tom::XMLE>::create("attributes");
+      ocs::tom::set<XMLE_List>(temp, std::move(attribute_list));
+      ocs::tom::set<XMLE_Element>(queue_elem, std::move(temp));
    }
 
    DRETURN_VOID;

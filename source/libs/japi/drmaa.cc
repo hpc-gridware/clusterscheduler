@@ -897,8 +897,7 @@ int drmaa_set_vector_attribute(drmaa_job_template_t *jt, const char *name,
                                const char *value[], char *error_diagnosis, size_t error_diag_len) {
    DENTER(TOP_LAYER);
 
-   lListElem *sep = nullptr, *ep = nullptr;
-   lList *lp = nullptr;
+   lListElem *ep = nullptr;
    dstring diag, *diagp = nullptr;
    int i;
    int ret = DRMAA_ERRNO_SUCCESS;
@@ -932,13 +931,13 @@ int drmaa_set_vector_attribute(drmaa_job_template_t *jt, const char *name,
       ep = ocs::tom::emplace_back<NSV_name>(&(jt->string_vectors), name);
    }
 
-   lp = lCreateList(nullptr, ST_Type);
+   auto lp = ocs::tom::ListPtr<ocs::tom::ST>::create(nullptr);
    for (i=0; value[i] != nullptr; i++) {
-      sep = lCreateElem(ST_Type);
+      auto sep = ocs::tom::ElementPtr<ocs::tom::ST>::create();
       ocs::tom::set<ST_name>(sep, value[i]);
-      lAppendElem(lp, sep);
+      lAppendElem(*lp, std::move(sep));
    }
-   ocs::tom::set<NSV_strings>(ep, lp);
+   ocs::tom::set<NSV_strings>(ep, std::move(lp));
 
    DRETURN(DRMAA_ERRNO_SUCCESS);
 }
@@ -2781,8 +2780,7 @@ static int opt_list_append_opts_from_drmaa_attr(lList **args, const lList *attrs
       char *user = nullptr;
       char *host = nullptr;
       ocs::tom::ConstList<ocs::tom::ST> olp = ocs::tom::get<NSV_strings>(ep);
-      lListElem *nep = nullptr;
-      lList *nlp = lCreateList("mail list", MR_Type);
+      auto nlp = ocs::tom::ListPtr<ocs::tom::MR>::create("mail list");
       ocs::tom::ConstElement<ocs::tom::MR> tmp = nullptr;
       int first_time = 1;
 
@@ -2803,7 +2801,7 @@ static int opt_list_append_opts_from_drmaa_attr(lList **args, const lList *attrs
          user = sge_strtok_r(str, "@", &context);
          host = sge_strtok_r(nullptr, "@", &context);
 
-         if ((tmp=ocs::tom::find_first<MR_user>(nlp, user))) {
+         if ((tmp=ocs::tom::find_first<MR_user>(*nlp, user))) {
             if (!sge_strnullcmp(host, ocs::tom::get<MR_host>(tmp))) {
                /* got this mail adress twice */
                sge_free_saved_vars(context);
@@ -2812,11 +2810,11 @@ static int opt_list_append_opts_from_drmaa_attr(lList **args, const lList *attrs
          }
 
          /* got a new adress - add it */
-         nep = lCreateElem(MR_Type);
+         auto nep = ocs::tom::ElementPtr<ocs::tom::MR>::create();
          ocs::tom::set<MR_user>(nep, user);
          if (host)
             ocs::tom::set<MR_host>(nep, host);
-         lAppendElem(nlp, nep);
+         lAppendElem(*nlp, std::move(nep));
 
          sge_free_saved_vars(context);
       }
@@ -2826,7 +2824,7 @@ static int opt_list_append_opts_from_drmaa_attr(lList **args, const lList *attrs
 
       ep_opt = sge_add_arg(args, M_OPT, lListT, "-M", sge_dstring_get_string(&email));
       sge_dstring_free(&email);
-      ocs::tom::set<SPA_argval_lListT>(ep_opt, nlp);
+      ocs::tom::set<SPA_argval_lListT>(ep_opt, std::move(nlp));
    }
 
    /* email supression -- -m */

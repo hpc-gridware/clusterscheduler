@@ -55,6 +55,7 @@
 #include "sgeobj/sge_range.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/msg_sgeobjlib.h"
+#include "sgeobj/tom/ocs_tom_RN.h"
 #include "tom/ocs_Element.h"
 
 /// Characters separating two ranges in a textual range list
@@ -513,7 +514,6 @@ void range_list_sort_uniq_compress(lList *range_list, lList **answer_list, bool 
    if (range_list) {
       lListElem *range1, *next_range1;
       lListElem *range2, *next_range2;
-      lList *tmp_list;
 
       /*
        * Sort the incomming stuff
@@ -523,7 +523,7 @@ void range_list_sort_uniq_compress(lList *range_list, lList **answer_list, bool 
       /* 
        * Remove overlapping ranges
        */
-      tmp_list = lCreateList("", RN_Type);
+      auto tmp_list = ocs::tom::ListPtr<ocs::tom::RN>::create("");
       if (tmp_list) {
          for (next_range1 = lFirstRW(range_list); (range1 = next_range1); next_range1 = lNextRW(range1)) {
             next_range2 = lNextRW(next_range1);
@@ -535,7 +535,7 @@ void range_list_sort_uniq_compress(lList *range_list, lList **answer_list, bool 
                   range_correct_end(range2);
                if (range_is_overlapping(range1, range2)) {
                   range2 = lDechainElem(range_list, range2);
-                  lAppendElem(tmp_list, range2);
+                  lAppendElem(*tmp_list, range2);
                } else {
                   break;
                }
@@ -545,7 +545,7 @@ void range_list_sort_uniq_compress(lList *range_list, lList **answer_list, bool 
          /*
           * Insert all removed entries at the correct position
           */
-         for_each_rw(range1, tmp_list) {
+         for_each_rw(range1, *tmp_list) {
             uint32_t start1, end1, step1;
 
             range_get_all_ids(range1, &start1, &end1, &step1);
@@ -554,7 +554,7 @@ void range_list_sort_uniq_compress(lList *range_list, lList **answer_list, bool 
             }
          }
 
-         lFreeList(&tmp_list);
+         tmp_list.reset();
 
          /*
           * Join sequenced ranges
@@ -812,12 +812,12 @@ void range_list_remove_id(lList **range_list, lList **answer_list, uint32_t id) 
                range_set_all_ids(range, start, end, step);
                break;
             } else {
-               lListElem *new_range = lCreateElem(RN_Type);
+               auto new_range = ocs::tom::ElementPtr<ocs::tom::RN>::create();
 
                if (new_range != nullptr) {
                   range_set_all_ids(range, start, id - step, step);
-                  range_set_all_ids(new_range, id + step, end, step);
-                  lInsertElem(*range_list, range, new_range);
+                  range_set_all_ids(*new_range, id + step, end, step);
+                  lInsertElem(*range_list, range, std::move(new_range));
                } else {
                   answer_list_add(answer_list, "unable to split range element",
                                   STATUS_ERROR1, ANSWER_QUALITY_ERROR);
@@ -944,7 +944,7 @@ void range_list_insert_id(lList **range_list, lList **answer_list, uint32_t id) 
             /* id is already part of the range */
             inserted = 1;
          } else {
-            lListElem *new_range1, *new_range2;
+            lListElem *new_range1;
             uint32_t factor, prev_id, next_id;
 
             factor = ((id - next_start) / next_step);
@@ -954,9 +954,9 @@ void range_list_insert_id(lList **range_list, lList **answer_list, uint32_t id) 
             new_range1 = lCreateElem(RN_Type);
             range_set_all_ids(new_range1, id, id, 1);
             lInsertElem(*range_list, next_range, new_range1);
-            new_range2 = lCreateElem(RN_Type);
-            range_set_all_ids(new_range2, next_id, next_end, next_step);
-            lInsertElem(*range_list, new_range1, new_range2);
+            auto new_range2 = ocs::tom::ElementPtr<ocs::tom::RN>::create();
+            range_set_all_ids(*new_range2, next_id, next_end, next_step);
+            lInsertElem(*range_list, new_range1, std::move(new_range2));
             inserted = 1;
          }
       } else {
@@ -974,12 +974,11 @@ void range_list_insert_id(lList **range_list, lList **answer_list, uint32_t id) 
             range_set_all_ids(next_range, next_start, next_end, next_step);
             inserted = 1;
          } else {
-            lListElem *new_range;
 
             /* 5 */
-            new_range = lCreateElem(RN_Type);
-            range_set_all_ids(new_range, id, id, 1);
-            lInsertElem(*range_list, range, new_range);
+            auto new_range = ocs::tom::ElementPtr<ocs::tom::RN>::create();
+            range_set_all_ids(*new_range, id, id, 1);
+            lInsertElem(*range_list, range, std::move(new_range));
             inserted = 1;
          }
       }
@@ -988,11 +987,10 @@ void range_list_insert_id(lList **range_list, lList **answer_list, uint32_t id) 
       }
    }
    if (!inserted) {
-      lListElem *new_range;
 
-      new_range = lCreateElem(RN_Type);
-      range_set_all_ids(new_range, id, id, 1);
-      lAppendElem(*range_list, new_range);
+      auto new_range = ocs::tom::ElementPtr<ocs::tom::RN>::create();
+      range_set_all_ids(*new_range, id, id, 1);
+      lAppendElem(*range_list, std::move(new_range));
       inserted = 1;
    }
    DRETURN_VOID;

@@ -23,6 +23,7 @@
  */
 
 #include "sgeobj/sge_cull_xml.h"
+#include "sgeobj/tom/ocs_tom_XMLE.h"
 #include "tom/ocs_Element.h"
 
 #include "qstat/group/ocs_QStatGroupViewXML.h"
@@ -40,7 +41,7 @@ void ocs::QStatGroupViewXML::report_finished(std::ostream &os, QStatParameter &p
 }
 
 void ocs::QStatGroupViewXML::report_cqueue(std::ostream &os, const char* cq_name, Summary *summary, QStatParameter &parameter) {
-   lListElem *elem = lCreateElem(XMLE_Type);
+   auto elem = ocs::tom::ElementPtr<ocs::tom::XMLE>::create();
    if (elem == nullptr) {
       return;
    }
@@ -74,5 +75,5 @@ void ocs::QStatGroupViewXML::report_cqueue(std::ostream &os, const char* cq_name
    if (xml_elems == nullptr){
       xml_elems = lCreateList("cluster_queue_summary", XMLE_Type);
    }
-   lAppendElem(xml_elems, elem);
+   lAppendElem(xml_elems, std::move(elem));
 }

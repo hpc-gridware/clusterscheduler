@@ -43,6 +43,7 @@
 #include "sgeobj/cull/sge_param_SPP_L.h"
 #include "sgeobj/cull/sge_ulong_ULNG_L.h"
 #include "sgeobj/cull/sge_str_ST_L.h"
+#include "sgeobj/tom/ocs_tom_SPP.h"
 #include "tom/ocs_Element.h"
 
 #include "ocs_ProcedureModel.h"
@@ -98,21 +99,21 @@ namespace {
    lList *make_response(const char *text, uint32_t reduction, bool with_reduction) {
       /* add_parameter_bundle() asserts a non-null bundle, so it starts as an
        * empty list rather than as nullptr */
-      lList *bundle = lCreateList("", SPP_Type);
+      auto bundle = ocs::tom::ListPtr<ocs::tom::SPP>::create("");
 
       if (text != nullptr) {
          lList *output_list = nullptr;
          ocs::tom::emplace_back<ST_name>(&output_list, text);
-         ocs::ProcedureParameter::add_parameter_bundle(bundle, ocs::ProcedureParameter::RESPONSE,
+         ocs::ProcedureParameter::add_parameter_bundle(*bundle, ocs::ProcedureParameter::RESPONSE,
                                                        output_list);
       }
       if (with_reduction) {
          lList *reduction_list = nullptr;
          ocs::tom::emplace_back<ULNG_value>(&reduction_list, reduction);
-         ocs::ProcedureParameter::add_parameter_bundle(bundle, ocs::ProcedureParameter::REDUCTION,
+         ocs::ProcedureParameter::add_parameter_bundle(*bundle, ocs::ProcedureParameter::REDUCTION,
                                                        reduction_list);
       }
-      return bundle;
+      return bundle.release();
    }
 }
 

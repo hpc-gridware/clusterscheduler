@@ -34,6 +34,7 @@
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_manop.h"
 #include "sgeobj/sge_userset.h"
+#include "sgeobj/tom/ocs_tom_US.h"
 #include "tom/ocs_Element.h"
 
 #include "gdi/ocs_gdi_Packet.h"
@@ -92,13 +93,13 @@ set_master_usersets(std::initializer_list<lListElem *> usersets) {
 /** @brief Build a US_ACL userset with the given UE_name entries (user or @group). */
 static lListElem *
 make_userset(const char *name, std::initializer_list<const char *> members) {
-   lListElem *us = lCreateElem(US_Type);
+   auto us = ocs::tom::ElementPtr<ocs::tom::US>::create();
    ocs::tom::set<US_name>(us, name);
    ocs::tom::set<US_type>(us, US_ACL);
    for (const char *m : members) {
       ocs::tom::emplace_back_in<US_entries, UE_name>(us, m);
    }
-   return us;
+   return us.release();
 }
 
 /**

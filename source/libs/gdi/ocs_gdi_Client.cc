@@ -180,7 +180,6 @@ lList *ocs::gdi::Client::gdi_kill(lList *id_list, uint32_t action_flag) {
    }
 
    if ((action_flag & EXECD_KILL) || (action_flag & JOB_KILL)) {
-      lListElem *hlep;
       lList *hlp = nullptr;
       if (id_list != nullptr) {
          /*
@@ -193,10 +192,10 @@ lList *ocs::gdi::Client::gdi_kill(lList *id_list, uint32_t action_flag) {
          }
       } else {
          hlp = lCreateList("kill all hosts", ID_Type);
-         hlep = lCreateElem(ID_Type);
+         auto hlep = ocs::tom::ElementPtr<ocs::tom::ID>::create();
          ocs::tom::set<ID_str>(hlep, nullptr);
          ocs::tom::set<ID_force>(hlep, (action_flag & JOB_KILL) ? 1 : 0);
-         lAppendElem(hlp, hlep);
+         lAppendElem(hlp, std::move(hlep));
       }
       lList *tmpalp = sge_gdi(Target::EH_LIST, Command::TRIGGER, SubCommand::NONE, &hlp, nullptr, nullptr);
       lAddList(alp, &tmpalp);

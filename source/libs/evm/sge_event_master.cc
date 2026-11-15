@@ -100,6 +100,8 @@
 #include "tom/ocs_Element.h"
 #include "sgeobj/tom/ocs_tom_ET.h"
 #include "sgeobj/tom/ocs_tom_EVS.h"
+#include "sgeobj/tom/ocs_tom_EVR.h"
+#include "sgeobj/tom/ocs_tom_RN.h"
 
 #include "evm/ocs_event_master.h"
 #include "evm/sge_event_master.h"
@@ -698,7 +700,6 @@ int sge_add_event_client(const ocs::gdi::Packet *packet, lListElem *clio, lList 
 int sge_mod_event_client(lListElem *clio, lList **alpp, char *ruser, char *rhost) {
    DENTER(TOP_LAYER);
 
-   lListElem *evr = nullptr;
 
    if (clio == nullptr) {
       ERROR("nullptr element passed to sge_mod_event_client");
@@ -706,13 +707,13 @@ int sge_mod_event_client(lListElem *clio, lList **alpp, char *ruser, char *rhost
       DRETURN(STATUS_ESEMANTIC);
    }
 
-   evr = lCreateElem(EVR_Type);
+   auto evr = ocs::tom::ElementPtr<ocs::tom::EVR>::create();
    ocs::tom::set<EVR_operation>(evr, EVR_MOD_EVC);
    ocs::tom::set<EVR_timestamp>(evr, sge_get_gmt64());
    ocs::tom::set<EVR_event_client>(evr, lCopyElem(clio));
 
    sge_mutex_lock("event_master_request_mutex", __func__, __LINE__, &Event_Master_Control.request_mutex);
-   lAppendElem(Event_Master_Control.requests, evr);
+   lAppendElem(Event_Master_Control.requests, std::move(evr));
    sge_mutex_unlock("event_master_request_mutex", __func__, __LINE__, &Event_Master_Control.request_mutex);
 
    DEBUG(MSG_SGETEXT_MODIFIEDINLIST_SSSS, ruser, rhost, ocs::tom::get<EV_name>(clio), MSG_EVE_EVENTCLIENT);
@@ -970,9 +971,9 @@ sge_set_max_dynamic_event_clients(uint32_t new_value) {
       /* we have to rebuild the event client id range list */
       lFreeList(&Event_Master_Control.client_ids);
       range_list_initialize(&Event_Master_Control.client_ids, &answer_list);
-      lListElem *new_range = lCreateElem(RN_Type);
-      range_set_all_ids(new_range, EV_ID_FIRST_DYNAMIC, max - 1 + EV_ID_FIRST_DYNAMIC, 1);
-      lAppendElem(Event_Master_Control.client_ids, new_range);
+      auto new_range = ocs::tom::ElementPtr<ocs::tom::RN>::create();
+      range_set_all_ids(*new_range, EV_ID_FIRST_DYNAMIC, max - 1 + EV_ID_FIRST_DYNAMIC, 1);
+      lAppendElem(Event_Master_Control.client_ids, std::move(new_range));
 
       /* and we have to remove the ids of our existing event clients from the range */
       for_each_ep_lv(event_client, Event_Master_Control.clients) {
@@ -1383,7 +1384,7 @@ sge_create_event(const uint32_t number, uint64_t timestamp, const ev_event type,
       timestamp = sge_get_gmt64();
    }
 
-   lListElem *etp = lCreateElem(ET_Type);
+   auto etp = ocs::tom::ElementPtr<ocs::tom::ET>::create();
    ocs::tom::set<ET_number>(etp, number);
    ocs::tom::set<ET_type>(etp, type);
    ocs::tom::set<ET_timestamp>(etp, timestamp);
@@ -1398,7 +1399,7 @@ sge_create_event(const uint32_t number, uint64_t timestamp, const ev_event type,
    // that is not commited later on.
    ocs::tom::set<ET_unique_id>(etp, 0);
 
-   DRETURN(etp);
+   DRETURN(etp.release());
 }
 
 /** @brief Add a unique ID to all events part of the evr
@@ -1615,14 +1616,14 @@ bool
 sge_handle_event_ack(const uint32_t event_client_id, const uint32_t event_number) {
    DENTER(TOP_LAYER);
 
-   lListElem *evr = lCreateElem(EVR_Type);
+   auto evr = ocs::tom::ElementPtr<ocs::tom::EVR>::create();
    ocs::tom::set<EVR_operation>(evr, EVR_ACK_EVENT);
    ocs::tom::set<EVR_timestamp>(evr, sge_get_gmt64());
    ocs::tom::set<EVR_event_client_id>(evr, event_client_id);
    ocs::tom::set<EVR_event_number>(evr, event_number);
 
    sge_mutex_lock("event_master_request_mutex", __func__, __LINE__, &Event_Master_Control.request_mutex);
-   lAppendElem(Event_Master_Control.requests, evr);
+   lAppendElem(Event_Master_Control.requests, std::move(evr));
    sge_mutex_unlock("event_master_request_mutex", __func__, __LINE__, &Event_Master_Control.request_mutex);
 
    sge_event_master_flush_requests();

@@ -568,7 +568,7 @@ lListElem *
 ocs::Role::create_template() {
    DENTER(TOP_LAYER);
 
-   lListElem *role = lCreateElem(RL_Type);
+   auto role = ocs::tom::ElementPtr<ocs::tom::RL>::create();
    if (role == nullptr) {
       DRETURN(nullptr);
    }
@@ -577,7 +577,7 @@ ocs::Role::create_template() {
    ocs::tom::set<RL_enabled>(role, true);
    ocs::tom::set<RL_perm_list>(role, "NONE");
 
-   DRETURN(role);
+   DRETURN(role.release());
 }
 
 /**

@@ -48,6 +48,7 @@
 #include "sgeobj/tom/ocs_tom_RDE.h"
 #include "sgeobj/tom/ocs_tom_CE.h"
 #include "sgeobj/tom/ocs_tom_RESL.h"
+#include "sgeobj/tom/ocs_tom_RUE.h"
 
 #include "sge_resource_utilization.h"
 #include "sge_qeti.h"
@@ -100,9 +101,9 @@ static void do_utilization_test(int *id, lListElem *cr, test_array_t *ta) {
 
 static void do_qeti_test(int *id, lListElem *cr,
                          uint64_t *qeti_expected_result, const char **desc) {
-   lList *cr_list = lCreateList("", RUE_Type);
-   lAppendElem(cr_list, cr);
-   sge_qeti_t *iter = sge_qeti_allocate2(cr_list);
+   auto cr_list = ocs::tom::ListPtr<ocs::tom::RUE>::create("");
+   lAppendElem(*cr_list, cr);
+   sge_qeti_t *iter = sge_qeti_allocate2(*cr_list);
 
    if (qeti_expected_result == nullptr) {
       // expect no iteration — iterator must return 0 immediately
@@ -118,9 +119,8 @@ static void do_qeti_test(int *id, lListElem *cr,
       }
    }
 
-   lDechainElem(cr_list, cr);
+   lDechainElem(*cr_list, cr);
    sge_qeti_release(&iter);
-   lFreeList(&cr_list);
 }
 
 static void test_normal_utilization(int *id) {
@@ -152,23 +152,22 @@ static void test_normal_utilization(int *id) {
       {0, 0, 0.0, nullptr}
    };
 
-   lListElem *cr = lCreateElem(RUE_Type);
+   auto cr = ocs::tom::ElementPtr<ocs::tom::RUE>::create();
    ocs::tom::set<RUE_name>(cr, "slots");
 
    printf("\n--- normal utilization ---\n");
 
-   utilization_add(cr, 800,  200, 8, 100, 1, PE_TAG, "pe_slots", "STARTING",  false, false, nullptr, nullptr);
-   utilization_add(cr, 1000, 100, 4, 101, 1, PE_TAG, "pe_slots", "STARTING",  false, false, nullptr, nullptr);
-   utilization_add(cr, 1100, 100, 8, 102, 1, PE_TAG, "pe_slots", "RESERVING", false, false, nullptr, nullptr);
+   utilization_add(*cr, 800,  200, 8, 100, 1, PE_TAG, "pe_slots", "STARTING",  false, false, nullptr, nullptr);
+   utilization_add(*cr, 1000, 100, 4, 101, 1, PE_TAG, "pe_slots", "STARTING",  false, false, nullptr, nullptr);
+   utilization_add(*cr, 1100, 100, 8, 102, 1, PE_TAG, "pe_slots", "RESERVING", false, false, nullptr, nullptr);
 
-   do_utilization_test(id, cr, test_array);
-   do_qeti_test(id, cr, qeti_expected, qeti_desc);
+   do_utilization_test(id, *cr, test_array);
+   do_qeti_test(id, *cr, qeti_expected, qeti_desc);
 
-   lFreeElem(&cr);
 }
 
 static void test_extensive_utilization(int *id) {
-   lListElem *cr = lCreateElem(RUE_Type);
+   auto cr = ocs::tom::ElementPtr<ocs::tom::RUE>::create();
    ocs::tom::set<RUE_name>(cr, "slots");
 
    // --- extensive: add unlimited reservations ---
@@ -211,13 +210,13 @@ static void test_extensive_utilization(int *id) {
          {0, 0, 0.0, nullptr}
       };
 
-      utilization_add(cr, 800,  200, 8, 100, 1, PE_TAG, "pe_slots", "STARTING",  false, false, nullptr, nullptr);
-      utilization_add(cr, 1000, 100, 4, 101, 1, PE_TAG, "pe_slots", "STARTING",  false, false, nullptr, nullptr);
-      utilization_add(cr, 1100, std::numeric_limits<uint64_t>::max(), 4, 102, 1, PE_TAG, "pe_slots", "RESERVING", false, false, nullptr, nullptr);
-      utilization_add(cr, 2000, std::numeric_limits<uint64_t>::max(), 4, 103, 1, PE_TAG, "pe_slots", "RESERVING", false, false, nullptr, nullptr);
+      utilization_add(*cr, 800,  200, 8, 100, 1, PE_TAG, "pe_slots", "STARTING",  false, false, nullptr, nullptr);
+      utilization_add(*cr, 1000, 100, 4, 101, 1, PE_TAG, "pe_slots", "STARTING",  false, false, nullptr, nullptr);
+      utilization_add(*cr, 1100, std::numeric_limits<uint64_t>::max(), 4, 102, 1, PE_TAG, "pe_slots", "RESERVING", false, false, nullptr, nullptr);
+      utilization_add(*cr, 2000, std::numeric_limits<uint64_t>::max(), 4, 103, 1, PE_TAG, "pe_slots", "RESERVING", false, false, nullptr, nullptr);
 
-      do_utilization_test(id, cr, test_array);
-      do_qeti_test(id, cr, qeti_expected, qeti_desc);
+      do_utilization_test(id, *cr, test_array);
+      do_qeti_test(id, *cr, qeti_expected, qeti_desc);
    }
 
    // --- extensive: partial remove ---
@@ -260,11 +259,11 @@ static void test_extensive_utilization(int *id) {
          {0, 0, 0.0, nullptr}
       };
 
-      utilization_add(cr, 1000, 100,                               -4, 101, 1, PE_TAG, "pe_slots", "STARTING",  false, false, nullptr, nullptr);
-      utilization_add(cr, 1100, std::numeric_limits<uint64_t>::max(), -4, 102, 1, PE_TAG, "pe_slots", "RESERVING", false, false, nullptr, nullptr);
+      utilization_add(*cr, 1000, 100,                               -4, 101, 1, PE_TAG, "pe_slots", "STARTING",  false, false, nullptr, nullptr);
+      utilization_add(*cr, 1100, std::numeric_limits<uint64_t>::max(), -4, 102, 1, PE_TAG, "pe_slots", "RESERVING", false, false, nullptr, nullptr);
 
-      do_utilization_test(id, cr, test_array);
-      do_qeti_test(id, cr, qeti_expected, qeti_desc);
+      do_utilization_test(id, *cr, test_array);
+      do_qeti_test(id, *cr, qeti_expected, qeti_desc);
    }
 
    // --- extensive: remove all ---
@@ -281,14 +280,13 @@ static void test_extensive_utilization(int *id) {
          {0, 0, 0.0, nullptr}
       };
 
-      utilization_add(cr, 800,  200,                               -8, 100, 1, PE_TAG, "pe_slots", "STARTING",  false, false, nullptr, nullptr);
-      utilization_add(cr, 2000, std::numeric_limits<uint64_t>::max(), -4, 103, 1, PE_TAG, "pe_slots", "RESERVING", false, false, nullptr, nullptr);
+      utilization_add(*cr, 800,  200,                               -8, 100, 1, PE_TAG, "pe_slots", "STARTING",  false, false, nullptr, nullptr);
+      utilization_add(*cr, 2000, std::numeric_limits<uint64_t>::max(), -4, 103, 1, PE_TAG, "pe_slots", "RESERVING", false, false, nullptr, nullptr);
 
-      do_utilization_test(id, cr, test_array);
-      do_qeti_test(id, cr, nullptr, nullptr);
+      do_utilization_test(id, *cr, test_array);
+      do_qeti_test(id, *cr, nullptr, nullptr);
    }
 
-   lFreeElem(&cr);
 }
 
 static int test_rsmap_utilization();
@@ -305,17 +303,16 @@ int main(int /*argc*/, char * /*argv*/[]) {
    // --- baseline ---
    printf("\n--- baseline ---\n");
    {
-      lListElem *cr = lCreateElem(RUE_Type);
+      auto cr = ocs::tom::ElementPtr<ocs::tom::RUE>::create();
       ocs::tom::set<RUE_name>(cr, "slots");
 
       ocs::TopologyString binding_inuse;
-      double uti = utilization_max(nullptr, nullptr, cr, 1000, 100, 0.0, 0.0, 0.0, false, binding_inuse);
+      double uti = utilization_max(nullptr, nullptr, *cr, 1000, 100, 0.0, 0.0, 0.0, false, binding_inuse);
       CHECK(id, "utilization_max on empty cr returns 0.0", uti == 0.0);
       id++;
 
-      do_qeti_test(&id, cr, nullptr, nullptr);
+      do_qeti_test(&id, *cr, nullptr, nullptr);
 
-      lFreeElem(&cr);
    }
 
    test_normal_utilization(&id);
@@ -324,18 +321,17 @@ int main(int /*argc*/, char * /*argv*/[]) {
    // --- concurrent accumulation ---
    printf("\n--- concurrent accumulation ---\n");
    {
-      lListElem *cr = lCreateElem(RUE_Type);
+      auto cr = ocs::tom::ElementPtr<ocs::tom::RUE>::create();
       ocs::tom::set<RUE_name>(cr, "slots");
 
-      utilization_add(cr, 1500, 100, 4, 200, 1, PE_TAG, "pe_slots", "STARTING", false, false, nullptr, nullptr);
-      utilization_add(cr, 1500, 100, 4, 201, 1, PE_TAG, "pe_slots", "STARTING", false, false, nullptr, nullptr);
+      utilization_add(*cr, 1500, 100, 4, 200, 1, PE_TAG, "pe_slots", "STARTING", false, false, nullptr, nullptr);
+      utilization_add(*cr, 1500, 100, 4, 201, 1, PE_TAG, "pe_slots", "STARTING", false, false, nullptr, nullptr);
 
       ocs::TopologyString binding_inuse;
-      double uti = utilization_max(nullptr, nullptr, cr, 1500, 100, 0.0, 0.0, 0.0, false, binding_inuse);
+      double uti = utilization_max(nullptr, nullptr, *cr, 1500, 100, 0.0, 0.0, 0.0, false, binding_inuse);
       CHECK(id, "two concurrent reservations (4+4) accumulate to 8.0", uti == 8.0);
       id++;
 
-      lFreeElem(&cr);
    }
 
    // the resource map tests came from V91_BRANCH with a counter of their own; fold it in
@@ -425,52 +421,52 @@ static int test_rsmap_utilization() {
 
    printf("\n - test resource map instances in the diagram - \n\n");
 
-   lListElem *cr = lCreateElem(RUE_Type);
+   auto cr = ocs::tom::ElementPtr<ocs::tom::RUE>::create();
    ocs::tom::set<RUE_name>(cr, "gpu");
 
    // a reservation takes two instances of gpu0 from 1000 for 200 seconds
    lList *two_of_gpu0 = make_rsmap("gpu0", 2, nullptr);
-   utilization_add(cr, 1000, 200, 2, 100, 1, HOST_TAG, "node01", "RESERVING", false, false,
+   utilization_add(*cr, 1000, 200, 2, 100, 1, HOST_TAG, "node01", "RESERVING", false, false,
                    nullptr, two_of_gpu0);
 
    printf("a reservation of gpu0 twice, from 1000 for 200s\n");
-   ret += check_rsmap(cr, 900, "gpu0", 0);
-   ret += check_rsmap(cr, 1000, "gpu0", 2);
-   ret += check_rsmap(cr, 1100, "gpu0", 2);
-   ret += check_rsmap(cr, 1200, "gpu0", 0);
+   ret += check_rsmap(*cr, 900, "gpu0", 0);
+   ret += check_rsmap(*cr, 1000, "gpu0", 2);
+   ret += check_rsmap(*cr, 1100, "gpu0", 2);
+   ret += check_rsmap(*cr, 1200, "gpu0", 0);
 
    // a job inside that window takes one of gpu1, which has to leave gpu0 alone
    lList *one_of_gpu1 = make_rsmap("gpu1", 1, nullptr);
-   utilization_add(cr, 1050, 100, 1, 101, 1, HOST_TAG, "node01", "STARTING", false, false,
+   utilization_add(*cr, 1050, 100, 1, 101, 1, HOST_TAG, "node01", "STARTING", false, false,
                    nullptr, one_of_gpu1);
 
    printf("a job taking gpu1 once, from 1050 for 100s\n");
-   ret += check_rsmap(cr, 1000, "gpu1", 0);
-   ret += check_rsmap(cr, 1050, "gpu1", 1);
-   ret += check_rsmap(cr, 1100, "gpu1", 1);
-   ret += check_rsmap(cr, 1150, "gpu1", 0);
-   ret += check_rsmap(cr, 1100, "gpu0", 2);
+   ret += check_rsmap(*cr, 1000, "gpu1", 0);
+   ret += check_rsmap(*cr, 1050, "gpu1", 1);
+   ret += check_rsmap(*cr, 1100, "gpu1", 1);
+   ret += check_rsmap(*cr, 1150, "gpu1", 0);
+   ret += check_rsmap(*cr, 1100, "gpu0", 2);
 
    // a second booking of gpu0 inside the same window adds up
    lList *one_of_gpu0 = make_rsmap("gpu0", 1, nullptr);
-   utilization_add(cr, 1100, 50, 1, 102, 1, HOST_TAG, "node01", "STARTING", false, false,
+   utilization_add(*cr, 1100, 50, 1, 102, 1, HOST_TAG, "node01", "STARTING", false, false,
                    nullptr, one_of_gpu0);
 
    printf("a job taking gpu0 once more, from 1100 for 50s\n");
-   ret += check_rsmap(cr, 1050, "gpu0", 2);
-   ret += check_rsmap(cr, 1100, "gpu0", 3);
-   ret += check_rsmap(cr, 1150, "gpu0", 2);
-   ret += check_rsmap(cr, 1200, "gpu0", 0);
+   ret += check_rsmap(*cr, 1050, "gpu0", 2);
+   ret += check_rsmap(*cr, 1100, "gpu0", 3);
+   ret += check_rsmap(*cr, 1150, "gpu0", 2);
+   ret += check_rsmap(*cr, 1200, "gpu0", 0);
 
    // and withdrawing it leaves what the others hold
-   utilization_add(cr, 1100, 50, -1, 102, 1, HOST_TAG, "node01", "STARTING", false, false,
+   utilization_add(*cr, 1100, 50, -1, 102, 1, HOST_TAG, "node01", "STARTING", false, false,
                    nullptr, one_of_gpu0);
 
    printf("that job is withdrawn again\n");
-   ret += check_rsmap(cr, 1100, "gpu0", 2);
-   ret += check_rsmap(cr, 1150, "gpu0", 2);
-   ret += check_rsmap(cr, 1200, "gpu0", 0);
-   ret += check_rsmap(cr, 1100, "gpu1", 1);
+   ret += check_rsmap(*cr, 1100, "gpu0", 2);
+   ret += check_rsmap(*cr, 1150, "gpu0", 2);
+   ret += check_rsmap(*cr, 1200, "gpu0", 0);
+   ret += check_rsmap(*cr, 1100, "gpu1", 1);
 
    // the reader: how much of an identifier is taken anywhere in a window. The diagram now has
    // gpu0 held twice over [1000,1200) and gpu1 once over [1050,1150).
@@ -494,7 +490,7 @@ static int test_rsmap_utilization() {
 
    printf("reading back what is taken over a window\n");
    for (int i = 0; windows[i].id != nullptr; i++) {
-      lList *taken = utilization_rsmap_max(cr, 1000, windows[i].start, windows[i].duration);
+      lList *taken = utilization_rsmap_max(*cr, 1000, windows[i].start, windows[i].duration);
       ocs::tom::ConstElement<ocs::tom::RESL> ep = ocs::tom::find_first<RESL_value>(taken, windows[i].id);
       uint32_t got = (ep != nullptr) ? ocs::tom::get<RESL_amount>(ep) : 0;
 
@@ -517,7 +513,7 @@ static int test_rsmap_utilization() {
 
    printf("with the same instances also recorded as held right now\n");
    {
-      lList *taken = utilization_rsmap_max(cr, 1000, 1000, 200);
+      lList *taken = utilization_rsmap_max(*cr, 1000, 1000, 200);
       ocs::tom::ConstElement<ocs::tom::RESL> ep = ocs::tom::find_first<RESL_value>(taken, "gpu0");
       uint32_t got = (ep != nullptr) ? ocs::tom::get<RESL_amount>(ep) : 0;
       if (got != 2) {
@@ -543,7 +539,7 @@ static int test_rsmap_utilization() {
    {
       // every job holding something now has ended by then, so the now list does not count;
       // what remains is what the diagram says at its end, which here is nothing
-      lList *taken = utilization_rsmap_max(cr, 1000, DISPATCH_TIME_QUEUE_END, 100);
+      lList *taken = utilization_rsmap_max(*cr, 1000, DISPATCH_TIME_QUEUE_END, 100);
       if (lGetNumberOfElem(taken) != 0) {
          printf("   FAIL: something is taken at queue end, expected nothing\n");
          ret++;
@@ -556,7 +552,7 @@ static int test_rsmap_utilization() {
    printf("and for a window which begins after this moment\n");
    {
       // gpu2 is held now and nothing says it still is at 1200, so it does not count there
-      lList *taken = utilization_rsmap_max(cr, 1000, 1200, 100);
+      lList *taken = utilization_rsmap_max(*cr, 1000, 1200, 100);
       ocs::tom::ConstElement<ocs::tom::RESL> ep = ocs::tom::find_first<RESL_value>(taken, "gpu2");
       uint32_t got = (ep != nullptr) ? ocs::tom::get<RESL_amount>(ep) : 0;
       if (got != 0) {
@@ -573,12 +569,12 @@ static int test_rsmap_utilization() {
    // whichever has it, so both layers have to record the instances. A queue cannot carry a map
    // and must not record any.
    {
-      lListElem *global_cr = lCreateElem(RUE_Type);
+      auto global_cr = ocs::tom::ElementPtr<ocs::tom::RUE>::create();
       ocs::tom::set<RUE_name>(global_cr, "gpu");
-      utilization_add(global_cr, 1000, 100, 1, 200, 1, GLOBAL_TAG, "global", "STARTING", false,
+      utilization_add(*global_cr, 1000, 100, 1, 200, 1, GLOBAL_TAG, "global", "STARTING", false,
                       false, nullptr, one_of_gpu1);
 
-      lList *taken = utilization_rsmap_max(global_cr, 1000, 1000, 100);
+      lList *taken = utilization_rsmap_max(*global_cr, 1000, 1000, 100);
       ocs::tom::ConstElement<ocs::tom::RESL> ep = ocs::tom::find_first<RESL_value>(taken, "gpu1");
       if (ep == nullptr || ocs::tom::get<RESL_amount>(ep) != 1) {
          printf("   FAIL: a map on the global host records nothing\n");
@@ -587,14 +583,14 @@ static int test_rsmap_utilization() {
          printf("   ok: a map on the global host records its instances\n");
       }
       lFreeList(&taken);
-      lFreeElem(&global_cr);
+      global_cr.reset();
 
-      lListElem *queue_cr = lCreateElem(RUE_Type);
+      auto queue_cr = ocs::tom::ElementPtr<ocs::tom::RUE>::create();
       ocs::tom::set<RUE_name>(queue_cr, "gpu");
-      utilization_add(queue_cr, 1000, 100, 1, 201, 1, QUEUE_TAG, "a.q", "STARTING", false,
+      utilization_add(*queue_cr, 1000, 100, 1, 201, 1, QUEUE_TAG, "a.q", "STARTING", false,
                       false, nullptr, one_of_gpu1);
 
-      taken = utilization_rsmap_max(queue_cr, 1000, 1000, 100);
+      taken = utilization_rsmap_max(*queue_cr, 1000, 1000, 100);
       if (lGetNumberOfElem(taken) != 0) {
          printf("   FAIL: a queue recorded resource map instances\n");
          ret++;
@@ -602,13 +598,12 @@ static int test_rsmap_utilization() {
          printf("   ok: a queue records no instances\n");
       }
       lFreeList(&taken);
-      lFreeElem(&queue_cr);
    }
 
    lFreeList(&two_of_gpu0);
    lFreeList(&one_of_gpu1);
    lFreeList(&one_of_gpu0);
-   lFreeElem(&cr);
+   cr.reset();
 
    if (ret == 0) {
       printf("\n - resource map instances in the diagram: ok -\n");
@@ -624,7 +619,7 @@ static int test_rsmap_utilization() {
  */
 static lListElem *
 make_two_cards() {
-   lListElem *def = lCreateElem(CE_Type);
+   auto def = ocs::tom::ElementPtr<ocs::tom::CE>::create();
    ocs::tom::set<CE_name>(def, "gpu");
    ocs::tom::set<CE_valtype>(def, static_cast<uint32_t>(ocs::CEntry::Type::RSMAP));
 
@@ -635,7 +630,7 @@ make_two_cards() {
       ocs::tom::set<CE_stringval>(prop, "r1");
    }
 
-   return def;
+   return def.release();
 }
 
 static int
@@ -664,69 +659,69 @@ static int test_rsmap_below() {
    printf("\n - test when a group of a resource map comes free - \n\n");
 
    lListElem *def = make_two_cards();
-   lListElem *cr = lCreateElem(RUE_Type);
+   auto cr = ocs::tom::ElementPtr<ocs::tom::RUE>::create();
    ocs::tom::set<RUE_name>(cr, "gpu");
 
    // nothing booked at all: any group can serve the request straight away
-   ret += check_below(def, cr, "id", 2, DISPATCH_TIME_NOW, "an empty diagram answers now");
+   ret += check_below(def, *cr, "id", 2, DISPATCH_TIME_NOW, "an empty diagram answers now");
 
    // one share of each card held to 1000 and 2000. Two shares in total are free the whole
    // time, but never two of one card until the first is given back.
    lList *one_of_gpu0 = make_rsmap("gpu0", 1, nullptr);
    lList *one_of_gpu1 = make_rsmap("gpu1", 1, nullptr);
-   utilization_add(cr, 0, 1000, 1, 100, 1, HOST_TAG, "node01", "STARTING", false, false,
+   utilization_add(*cr, 0, 1000, 1, 100, 1, HOST_TAG, "node01", "STARTING", false, false,
                    nullptr, one_of_gpu0);
-   utilization_add(cr, 0, 2000, 1, 101, 1, HOST_TAG, "node01", "STARTING", false, false,
+   utilization_add(*cr, 0, 2000, 1, 101, 1, HOST_TAG, "node01", "STARTING", false, false,
                    nullptr, one_of_gpu1);
 
-   ret += check_below(def, cr, "id", 1, DISPATCH_TIME_NOW,
+   ret += check_below(def, *cr, "id", 1, DISPATCH_TIME_NOW,
                       "one share is free on both cards now");
-   ret += check_below(def, cr, "id", 2, 1000,
+   ret += check_below(def, *cr, "id", 2, 1000,
                       "a whole card comes free when the share on gpu0 is given back");
 
    // grouped by a characteristic both cards are one group, so the shares add up and two of
    // the group are free from the start
-   ret += check_below(def, cr, "rack", 2, DISPATCH_TIME_NOW,
+   ret += check_below(def, *cr, "rack", 2, DISPATCH_TIME_NOW,
                       "grouped by rack the two free shares are in one group");
-   ret += check_below(def, cr, "rack", 3, 1000,
+   ret += check_below(def, *cr, "rack", 3, 1000,
                       "three of the group need the gpu0 share back");
-   ret += check_below(def, cr, "rack", 4, 2000,
+   ret += check_below(def, *cr, "rack", 4, 2000,
                       "the whole group needs both shares back");
 
    // A gap which closes again must not be offered. On a fresh diagram gpu0 is free from 1000,
    // taken again from 1500 to 2500 and free for good after that, while gpu1 is held to 3000.
    // The gap at 1000 fits a whole card but does not last, so the answer is gpu0 at 2500.
-   lListElem *gap = lCreateElem(RUE_Type);
+   auto gap = ocs::tom::ElementPtr<ocs::tom::RUE>::create();
    ocs::tom::set<RUE_name>(gap, "gpu");
    lList *two_of_gpu0 = make_rsmap("gpu0", 2, nullptr);
-   utilization_add(gap, 0, 1000, 1, 102, 1, HOST_TAG, "node01", "STARTING", false, false,
+   utilization_add(*gap, 0, 1000, 1, 102, 1, HOST_TAG, "node01", "STARTING", false, false,
                    nullptr, one_of_gpu0);
-   utilization_add(gap, 1500, 1000, 2, 103, 1, HOST_TAG, "node01", "STARTING", false, false,
+   utilization_add(*gap, 1500, 1000, 2, 103, 1, HOST_TAG, "node01", "STARTING", false, false,
                    nullptr, two_of_gpu0);
-   utilization_add(gap, 0, 3000, 1, 104, 1, HOST_TAG, "node01", "STARTING", false, false,
+   utilization_add(*gap, 0, 3000, 1, 104, 1, HOST_TAG, "node01", "STARTING", false, false,
                    nullptr, one_of_gpu1);
 
-   ret += check_below(def, gap, "id", 2, 2500,
+   ret += check_below(def, *gap, "id", 2, 2500,
                       "the gap at 1000 closes again, so gpu0 answers at 2500 instead");
 
    // a group still taken at the end of the diagram never comes free, but another group which
    // is free throughout still answers
-   lListElem *full = lCreateElem(RUE_Type);
+   auto full = ocs::tom::ElementPtr<ocs::tom::RUE>::create();
    ocs::tom::set<RUE_name>(full, "gpu");
    lList *both_of_gpu0 = make_rsmap("gpu0", 2, nullptr);
-   utilization_add(full, 0, std::numeric_limits<uint64_t>::max(), 2, 105, 1, HOST_TAG, "node01", "STARTING", false,
+   utilization_add(*full, 0, std::numeric_limits<uint64_t>::max(), 2, 105, 1, HOST_TAG, "node01", "STARTING", false,
                    false, nullptr, both_of_gpu0);
 
-   ret += check_below(def, full, "id", 2, DISPATCH_TIME_NOW,
+   ret += check_below(def, *full, "id", 2, DISPATCH_TIME_NOW,
                       "gpu0 never comes free, gpu1 is untouched and answers now");
 
    lList *both_cards = make_rsmap("gpu0", 2, "gpu1", 2, nullptr);
-   lListElem *all_full = lCreateElem(RUE_Type);
+   auto all_full = ocs::tom::ElementPtr<ocs::tom::RUE>::create();
    ocs::tom::set<RUE_name>(all_full, "gpu");
-   utilization_add(all_full, 0, std::numeric_limits<uint64_t>::max(), 4, 104, 1, HOST_TAG, "node01", "STARTING", false,
+   utilization_add(*all_full, 0, std::numeric_limits<uint64_t>::max(), 4, 104, 1, HOST_TAG, "node01", "STARTING", false,
                    false, nullptr, both_cards);
 
-   ret += check_below(def, all_full, "id", 2, std::numeric_limits<uint64_t>::max(),
+   ret += check_below(def, *all_full, "id", 2, std::numeric_limits<uint64_t>::max(),
                       "when no card ever comes free there is nothing to reserve");
 
    lFreeList(&one_of_gpu0);
@@ -734,10 +729,10 @@ static int test_rsmap_below() {
    lFreeList(&two_of_gpu0);
    lFreeList(&both_of_gpu0);
    lFreeList(&both_cards);
-   lFreeElem(&cr);
-   lFreeElem(&gap);
-   lFreeElem(&full);
-   lFreeElem(&all_full);
+   cr.reset();
+   gap.reset();
+   full.reset();
+   all_full.reset();
    lFreeElem(&def);
 
    if (ret == 0) {
@@ -775,12 +770,12 @@ static int test_below_window_before_closed_period() {
 
    printf("\n - test a reservation in front of a calendar closed period - \n\n");
 
-   lListElem *cr = lCreateElem(RUE_Type);
+   auto cr = ocs::tom::ElementPtr<ocs::tom::RUE>::create();
    ocs::tom::set<RUE_name>(cr, "slots");
 
    // the running job, and the stretch the calendar blocks off later on
-   utilization_add(cr, 100, 100, 1, 1, 1, PE_TAG, "slots", "STARTING", false, false, nullptr, nullptr);
-   utilization_add(cr, 1000, 1000, 1, 2, 1, PE_TAG, "slots", "STARTING", false, false, nullptr, nullptr);
+   utilization_add(*cr, 100, 100, 1, 1, 1, PE_TAG, "slots", "STARTING", false, false, nullptr, nullptr);
+   utilization_add(*cr, 1000, 1000, 1, 2, 1, PE_TAG, "slots", "STARTING", false, false, nullptr, nullptr);
 
    for (int i = 0; cases[i].what != nullptr; i++) {
       sge_assignment_t a = SGE_ASSIGNMENT_INIT;
@@ -789,7 +784,7 @@ static int test_below_window_before_closed_period() {
 
       ocs::TopologyString binding_inuse;
       // one slot in total and the job wants it, so anything above zero is in the way
-      uint64_t when = utilization_below(&a, nullptr, cr, 0.0, 1.0, 1.0, "test_queue", false,
+      uint64_t when = utilization_below(&a, nullptr, *cr, 0.0, 1.0, 1.0, "test_queue", false,
                                         binding_inuse);
       if (when != cases[i].expected) {
          printf("   FAIL: %s: expected " sge_u64 ", got " sge_u64 "\n",
@@ -800,6 +795,5 @@ static int test_below_window_before_closed_period() {
       }
    }
 
-   lFreeElem(&cr);
    return ret;
 }

@@ -4049,7 +4049,6 @@ SetupFailed:
  */
 static int japi_sync_job_tasks(lListElem *japi_job, lListElem *sge_job) {
    DENTER(TOP_LAYER);
-   lList *range_list_copy = nullptr;
    lListElem *task = nullptr;
    uint32_t min = 0;
    uint32_t max = 0;
@@ -4063,11 +4062,11 @@ static int japi_sync_job_tasks(lListElem *japi_job, lListElem *sge_job) {
     * are removed from the JJ_not_yet_finished_ids list in this loop.
     * For this reason we operate on a copy to implement the loop.
     */
-   range_list_copy = lCopyList(nullptr, ocs::tom::get<JJ_not_yet_finished_ids>(japi_job));
+   auto range_list_copy = ocs::tom::ListPtr<ocs::tom::RN>::from_typed(lCopyList(nullptr, ocs::tom::get<JJ_not_yet_finished_ids>(japi_job)));
 
    /* keep all tasks in 'not yet finished list' if tasks are
       still running or not yet running */
-   for_each_ep_lv(range, range_list_copy) {
+   for_each_ep_lv(range, *range_list_copy) {
       range_get_all_ids(range, &min, &max, &step);
 
       for (taskid = min; taskid <= max; taskid += step) {
@@ -4109,7 +4108,7 @@ static int japi_sync_job_tasks(lListElem *japi_job, lListElem *sge_job) {
       } /* for */
    } /* for_each */
 
-   lFreeList(&range_list_copy);
+   range_list_copy.reset();
    DRETURN(finished_tasks);
 }
 

@@ -93,6 +93,7 @@
 #include "sgeobj/tom/ocs_tom_UA.h"
 #include "sgeobj/tom/ocs_tom_UPP.h"
 #include "sgeobj/tom/ocs_tom_JB.h"
+#include "sgeobj/tom/ocs_tom_OR.h"
 #include "tom/ocs_Element.h"
 
 /*
@@ -3107,7 +3108,6 @@ void sge_build_sgeee_orders(scheduler_all_data_t *lists, lList *running_jobs, lL
 
    lList *up_list = nullptr;
    lList *order_list = nullptr;
-   lListElem *order = nullptr;
    int norders = 0;
    uint32_t max_pending_tasks_per_job = sconf_get_max_pending_tasks_per_job();
 
@@ -3214,10 +3214,10 @@ void sge_build_sgeee_orders(scheduler_all_data_t *lists, lList *running_jobs, lL
          ocs::tom::set<SC_weight_tickets_override>(node,
                    sconf_get_weight_tickets_override());
 
-         order = lCreateElem(OR_Type);
+         auto order = ocs::tom::ElementPtr<ocs::tom::OR>::create();
          ocs::tom::set<OR_type>(order, ORT_sched_conf);
          ocs::tom::set<OR_joker>(order, up_list);
-         lAppendElem(order_list, order);
+         lAppendElem(order_list, std::move(order));
 
          DPRINTF("   added 1 order for scheduler configuration\n");
 

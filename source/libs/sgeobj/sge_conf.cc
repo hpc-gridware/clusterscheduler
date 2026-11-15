@@ -852,23 +852,23 @@ conf_sort_entries(lListElem *conf) {
       DRETURN_VOID;
    }
 
-   lList *sorted = lCreateList(lGetListName(entries), CF_Type);
+   auto sorted = ocs::tom::ListPtr<ocs::tom::CF>::create(lGetListName(entries));
    for (int i = 0; conf_entries[i].name != nullptr; i++) {
       lListElem *ep;
 
       // a well formed configuration holds every name at most once, but a hand written
       // one might repeat a name - keep all occurrences, next to each other
       while ((ep = ocs::tom::find_first_nocase_rw<CF_name>(entries, conf_entries[i].name)) != nullptr) {
-         lAppendElem(sorted, lDechainElem(entries, ep));
+         lAppendElem(*sorted, lDechainElem(entries, ep));
       }
    }
 
    lListElem *ep;
    while ((ep = lFirstRW(entries)) != nullptr) {
-      lAppendElem(sorted, lDechainElem(entries, ep));
+      lAppendElem(*sorted, lDechainElem(entries, ep));
    }
 
-   ocs::tom::set<CONF_entries>(conf, sorted);
+   ocs::tom::set<CONF_entries>(conf, std::move(sorted));
 
    DRETURN_VOID;
 }

@@ -130,6 +130,7 @@
 #include "sgeobj/tom/ocs_tom_AR.h"
 #include "sgeobj/tom/ocs_tom_CT.h"
 #include "sgeobj/tom/ocs_tom_JB.h"
+#include "sgeobj/tom/ocs_tom_JR.h"
 
 #include "spool/sge_spooling.h"
 
@@ -508,14 +509,14 @@ sge_gdi_del_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task,  lListElem
       a job name is specified. We do not care for users, if we work on jid*/
    if (!all_users_flag && !user_list_flag && (jid_str != nullptr) &&
        !isdigit(jid_str[0])) {
-      lListElem *current_user = lCreateElem(ST_Type);
+      auto current_user = ocs::tom::ElementPtr<ocs::tom::ST>::create();
 
       if (user_list == nullptr) {
          user_list = lCreateList("user list", ST_Type);
          ocs::tom::set<ID_user_list>(idep, user_list);
       }
       ocs::tom::set<ST_name>(current_user, packet->user);
-      lAppendElem(user_list, current_user);
+      lAppendElem(user_list, std::move(current_user));
       user_list_flag = true;
    }
 
@@ -1064,7 +1065,7 @@ void get_rid_of_job_due_to_qdel(lListElem *j,
       if (force) {
          uint64_t now = sge_get_gmt64();
          const char *qualified_hostname = component_get_qualified_hostname();
-         lListElem *dummy_jr = lCreateElem(JR_Type);
+         auto dummy_jr = ocs::tom::ElementPtr<ocs::tom::JR>::create();
 
          if (is_array) {
             ERROR(MSG_JOB_FORCEDDELTASK_SUU, ruser, job_number, task_number);
@@ -1072,13 +1073,13 @@ void get_rid_of_job_due_to_qdel(lListElem *j,
             ERROR(MSG_JOB_FORCEDDELJOB_SU, ruser, job_number);
          }
 
-         job_report_init_from_job_with_usage(dummy_jr, j, t, nullptr, now);
-         ocs::ReportingFileWriter::create_acct_records(nullptr, dummy_jr, j, t, false);
+         job_report_init_from_job_with_usage(*dummy_jr, j, t, nullptr, now);
+         ocs::ReportingFileWriter::create_acct_records(nullptr, *dummy_jr, j, t, false);
          ocs::ReportingFileWriter::create_job_logs(nullptr, now, JL_DELETED, MSG_SCHEDD, qualified_hostname, nullptr, j, t, nullptr,
                                   MSG_LOG_DELFORCED);
          sge_commit_job(j, t, nullptr, COMMIT_ST_FINISHED_FAILED_EE, COMMIT_DEFAULT | COMMIT_NEVER_RAN, monitor, gdi_session);
          cancel_job_resend(job_number, task_number);
-         lFreeElem(&dummy_jr);
+         dummy_jr.reset();
          j = nullptr;
       } else {
          /*
@@ -2338,7 +2339,6 @@ mod_job_attributes(const ocs::gdi::Packet *packet, lListElem *new_job, lListElem
 
    /* ---- JB_pe_range */
    if ((pos = lGetPosViaElem(jep, JB_pe_range, SGE_NO_ABORT)) >= 0 && ocs::tom::get<JB_pe_range>(jep)) {
-      lList *pe_range;
       const char *pe_name;
       DPRINTF("got new JB_pe_range\n");
 
@@ -2349,12 +2349,12 @@ mod_job_attributes(const ocs::gdi::Packet *packet, lListElem *new_job, lListElem
          DRETURN(STATUS_EUNKNOWN);
       }
 
-      pe_range = lCopyList("", ocs::tom::get<JB_pe_range>(jep));
-      if (object_verify_pe_range(alpp, pe_name, pe_range, SGE_OBJ_JOB) != STATUS_OK) {
-         lFreeList(&pe_range);
+      auto pe_range = ocs::tom::ListPtr<ocs::tom::RN>::from_typed(lCopyList("", ocs::tom::get<JB_pe_range>(jep)));
+      if (object_verify_pe_range(alpp, pe_name, *pe_range, SGE_OBJ_JOB) != STATUS_OK) {
+         pe_range.reset();
          DRETURN(STATUS_EUNKNOWN);
       }
-      ocs::tom::set<JB_pe_range>(new_job, pe_range);
+      ocs::tom::set<JB_pe_range>(new_job, std::move(pe_range));
 
       *trigger |= MOD_EVENT;
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_SLOTRANGE, jobid);
@@ -3110,7 +3110,6 @@ int job_verify_predecessors(lListElem *job, lList **alpp) {
    uint32_t jobid = ocs::tom::get<JB_job_number>(job);
    lList *predecessors_id = nullptr;
    ocs::tom::ConstElement<ocs::tom::JRE> pre;
-   lListElem *pre_temp;
    const lList *master_job_list = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
 
    ocs::tom::ConstList<ocs::tom::JRE> predecessors_req = ocs::tom::get<JB_jid_request_list>(job);
@@ -3139,10 +3138,10 @@ int job_verify_predecessors(lListElem *job, lList **alpp) {
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             DRETURN(STATUS_EUNKNOWN);
          }
-         pre_temp = lCreateElem(JRE_Type);
+         auto pre_temp = ocs::tom::ElementPtr<ocs::tom::JRE>::create();
          if (pre_temp) {
             ocs::tom::set<JRE_job_number>(pre_temp, atoi(pre_ident));
-            lAppendElem(predecessors_id, pre_temp);
+            lAppendElem(predecessors_id, std::move(pre_temp));
          }
 
       } else {
@@ -3158,10 +3157,10 @@ int job_verify_predecessors(lListElem *job, lList **alpp) {
 
             if (!result) {
                if (ocs::tom::get<JB_job_number>(user_job) != jobid) {
-                  pre_temp = lCreateElem(JRE_Type);
+                  auto pre_temp = ocs::tom::ElementPtr<ocs::tom::JRE>::create();
                   if (pre_temp) {
                      ocs::tom::set<JRE_job_number>(pre_temp, ocs::tom::get<JB_job_number>(user_job));
-                     lAppendElem(predecessors_id, pre_temp);
+                     lAppendElem(predecessors_id, std::move(pre_temp));
                   }
                }
             }
@@ -3205,7 +3204,6 @@ int job_verify_predecessors_ad(lListElem *job, lList **alpp, uint64_t gdi_sessio
    uint32_t jobid = ocs::tom::get<JB_job_number>(job);
    lList *predecessors_id = nullptr;
    const lListElem *pre;
-   lListElem *pre_temp;
    const lList *master_job_list = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
 
    ocs::tom::ConstList<ocs::tom::JRE> predecessors_req = ocs::tom::get<JB_ja_ad_request_list>(job);
@@ -3245,10 +3243,10 @@ int job_verify_predecessors_ad(lListElem *job, lList **alpp, uint64_t gdi_sessio
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             DRETURN(STATUS_EUNKNOWN);
          }
-         pre_temp = lCreateElem(JRE_Type);
+         auto pre_temp = ocs::tom::ElementPtr<ocs::tom::JRE>::create();
          if (pre_temp) {
             ocs::tom::set<JRE_job_number>(pre_temp, atoi(pre_ident));
-            lAppendElem(predecessors_id, pre_temp);
+            lAppendElem(predecessors_id, std::move(pre_temp));
          }
       } else {
          const lListElem *user_job = nullptr;         /* JB_Type */
@@ -3263,10 +3261,10 @@ int job_verify_predecessors_ad(lListElem *job, lList **alpp, uint64_t gdi_sessio
             int result = string_base_cmp(ocs::CEntry::Type::RESTR, pre_ident, job_name);
             if (!result) {
                if (ocs::tom::get<JB_job_number>(user_job) != jobid) {
-                  pre_temp = lCreateElem(JRE_Type);
+                  auto pre_temp = ocs::tom::ElementPtr<ocs::tom::JRE>::create();
                   if (pre_temp) {
                      ocs::tom::set<JRE_job_number>(pre_temp, ocs::tom::get<JB_job_number>(user_job));
-                     lAppendElem(predecessors_id, pre_temp);
+                     lAppendElem(predecessors_id, std::move(pre_temp));
                   }
                }
             }

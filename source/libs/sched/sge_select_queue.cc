@@ -7499,8 +7499,8 @@ parallel_limit_slots_by_time(sge_assignment_t *a, int *slots, lListElem *centry,
                              lListElem *limit, dstring *rue_name, lListElem *qep, bool need_master,
                              bool is_master_queue) {
    DENTER(TOP_LAYER);
-   lList *tmp_centry_list = lCreateList("", CE_Type);
-   lList *tmp_rue_list = lCreateList("", RUE_Type);
+   auto tmp_centry_list = ocs::tom::ListPtr<ocs::tom::CE>::create("");
+   auto tmp_rue_list = ocs::tom::ListPtr<ocs::tom::RUE>::create("");
    lListElem *tmp_centry_elem = nullptr;
    lListElem *tmp_rue_elem = nullptr;
    ocs::tom::ConstList<ocs::tom::RUE> rue_list = ocs::tom::get<RQRL_usage>(limit);
@@ -7509,7 +7509,7 @@ parallel_limit_slots_by_time(sge_assignment_t *a, int *slots, lListElem *centry,
    /* create tmp_centry_list */
    tmp_centry_elem = lCopyElem(centry);
    ocs::tom::set<CE_doubleval>(tmp_centry_elem, ocs::tom::get<RQRL_dvalue>(limit));
-   lAppendElem(tmp_centry_list, tmp_centry_elem);
+   lAppendElem(*tmp_centry_list, tmp_centry_elem);
 
    /* create tmp_rue_list */
    tmp_rue_elem = lCopyElem(ocs::tom::find_first<RUE_name>(rue_list, sge_dstring_get_string(rue_name)));
@@ -7537,16 +7537,16 @@ parallel_limit_slots_by_time(sge_assignment_t *a, int *slots, lListElem *centry,
 #endif
 
    ocs::tom::set<RUE_name>(tmp_rue_elem, ocs::tom::get<RQRL_name>(limit));
-   lAppendElem(tmp_rue_list, tmp_rue_elem);
+   lAppendElem(*tmp_rue_list, tmp_rue_elem);
 
    bool found_master_host = false; // dummy, when we get here, we already decided if this *is* the master_host
    result = parallel_rc_slots_by_time(a, slots,
-                                      tmp_centry_list, tmp_rue_list, nullptr,
+                                      *tmp_centry_list, *tmp_rue_list, nullptr,
                                       false, nullptr, qep, DOMINANT_LAYER_RQS, 0.0, RQS_TAG, need_master, is_master_queue,
                                       found_master_host, false, SGE_RQS_NAME, true);
 
-   lFreeList(&tmp_centry_list);
-   lFreeList(&tmp_rue_list);
+   tmp_centry_list.reset();
+   tmp_rue_list.reset();
 
    DRETURN(result);
 }

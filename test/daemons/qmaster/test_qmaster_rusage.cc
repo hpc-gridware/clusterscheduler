@@ -34,6 +34,9 @@
 #include "sgeobj/tom/ocs_tom_UA.h"
 #include "sgeobj/tom/ocs_tom_PE.h"
 #include "sgeobj/tom/ocs_tom_PET.h"
+#include "sgeobj/tom/ocs_tom_JAT.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
+#include "sgeobj/tom/ocs_tom_JR.h"
 
 #include "sge_rusage.h"
 
@@ -65,12 +68,12 @@ write_acct_record(bool accounting_summary, bool intermediate, double *wallclock,
    ocs::tom::set<PE_control_slaves>(pe, true);
    ocs::tom::set<PE_accounting_summary>(pe, accounting_summary);
 
-   lListElem *job = lCreateElem(JB_Type);
+   auto job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
    ocs::tom::set<JB_job_number>(job, 4711);
    ocs::tom::set<JB_owner>(job, "testuser");
    ocs::tom::set<JB_group>(job, "testgroup");
 
-   lListElem *ja_task = lCreateElem(JAT_Type);
+   auto ja_task = ocs::tom::ElementPtr<ocs::tom::JAT>::create();
    ocs::tom::set<JAT_task_number>(ja_task, 1);
    ocs::tom::set<JAT_granted_pe>(ja_task, "testpe");
    ocs::tom::List<ocs::tom::UA> usage = ocs::tom::get_or_create<JAT_scaled_usage_list>(ja_task, "usage");
@@ -89,12 +92,12 @@ write_acct_record(bool accounting_summary, bool intermediate, double *wallclock,
    }
 
    // a job report of the master task - a pe task's report would carry JR_pe_task_id_str
-   lListElem *jr = lCreateElem(JR_Type);
+   auto jr = ocs::tom::ElementPtr<ocs::tom::JR>::create();
    ocs::tom::set<JR_job_number>(jr, 4711);
 
    rapidjson::StringBuffer json_buffer;
    rapidjson::Writer<rapidjson::StringBuffer> writer(json_buffer);
-   bool ret = sge_write_rusage(nullptr, &writer, jr, job, ja_task, "category", nullptr, 0,
+   bool ret = sge_write_rusage(nullptr, &writer, *jr, *job, *ja_task, "category", nullptr, 0,
                                intermediate, true);
 
    if (ret) {
@@ -118,9 +121,9 @@ write_acct_record(bool accounting_summary, bool intermediate, double *wallclock,
       printf("   sge_write_rusage() did not write a record\n");
    }
 
-   lFreeElem(&jr);
-   lFreeElem(&ja_task);
-   lFreeElem(&job);
+   jr.reset();
+   ja_task.reset();
+   job.reset();
    lFreeList(master_pe_list);
 
    return ret;

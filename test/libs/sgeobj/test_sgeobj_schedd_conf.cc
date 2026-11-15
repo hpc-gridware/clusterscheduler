@@ -46,6 +46,8 @@
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_schedd_conf.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_SC.h"
 
 static int s_fail = 0;
 
@@ -87,12 +89,12 @@ typedef struct {
 static void run_tests(int *id, schedd_conf_t *conf, conf_settings_t *settings) {
    for (int i = 0; settings[i].test_value != nullptr; i++, (*id)++) {
       lListElem *schedd_conf = sconf_create_default();
-      lList *schedd_list = lCreateList("schedd_conf", SC_Type);
+      auto schedd_list = ocs::tom::ListPtr<ocs::tom::SC>::create("schedd_conf");
       lList *answer_list = nullptr;
       bool passed = false;
 
       if (schedd_conf != nullptr && schedd_list != nullptr) {
-         lAppendElem(schedd_list, schedd_conf);
+         lAppendElem(*schedd_list, schedd_conf);
 
          switch (conf->type) {
             case lStringT:
@@ -108,12 +110,12 @@ static void run_tests(int *id, schedd_conf_t *conf, conf_settings_t *settings) {
                break;
          }
 
-         bool result = sconf_validate_config(&answer_list, schedd_list);
+         bool result = sconf_validate_config(&answer_list, *schedd_list);
          passed = (result == settings[i].result);
       }
 
       CHECK(*id, settings[i].desc, passed);
-      lFreeList(&schedd_list);
+      schedd_list.reset();
       lFreeList(&answer_list);
    }
 }

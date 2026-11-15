@@ -88,6 +88,7 @@
 #include "sgeobj/tom/ocs_tom_AR.h"
 #include "sgeobj/tom/ocs_tom_CE.h"
 #include "sgeobj/tom/ocs_tom_JB.h"
+#include "sgeobj/tom/ocs_tom_JR.h"
 
 #include "sched/debit.h"
 
@@ -602,7 +603,7 @@ send_job(const char *rhost, lListElem *jep, lListElem *jatep, lListElem *hep, in
 static void
 sge_job_resend_event_handler_sim_job_end(uint32_t jobid, uint32_t jataskid, lListElem *jep, lListElem *jatep,
                                          monitoring_t *monitor, uint64_t now, int runtime, bool deleted, uint64_t gdi_session) {
-   lListElem *jr = lCreateElem(JR_Type);
+   auto jr = ocs::tom::ElementPtr<ocs::tom::JR>::create();
    ocs::tom::set<JR_job_number>(jr, jobid);
    ocs::tom::set<JR_ja_task_number>(jr, jataskid);
 
@@ -635,10 +636,9 @@ sge_job_resend_event_handler_sim_job_end(uint32_t jobid, uint32_t jataskid, lLis
       ocs::tom::set<UA_value>(ue_ua_4, sge_gmt64_to_gmt32_double(now - start_time));
 
       ocs::tom::exchange<JR_usage>(jr, ocs::tom::list_ref<JAT_scaled_usage_list>(jatep));
-      ocs::ReportingFileWriter::create_acct_records(nullptr, jr, jep, jatep, false);
-      sge_commit_job(jep, jatep, jr, COMMIT_ST_FINISHED_FAILED_EE, COMMIT_DEFAULT, monitor, gdi_session);
+      ocs::ReportingFileWriter::create_acct_records(nullptr, *jr, jep, jatep, false);
+      sge_commit_job(jep, jatep, *jr, COMMIT_ST_FINISHED_FAILED_EE, COMMIT_DEFAULT, monitor, gdi_session);
    }
-   lFreeElem(&jr);
 }
 
 static int

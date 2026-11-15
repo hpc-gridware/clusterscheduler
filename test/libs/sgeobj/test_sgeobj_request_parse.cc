@@ -177,51 +177,51 @@ test_splitting() {
  */
 static lList *
 make_centry_list() {
-   lList *lp = lCreateList("complexes", CE_Type);
+   auto lp = ocs::tom::ListPtr<ocs::tom::CE>::create("complexes");
 
-   lListElem *ep = lCreateElem(CE_Type);
+   auto ep = ocs::tom::ElementPtr<ocs::tom::CE>::create();
    ocs::tom::set<CE_name>(ep, "gpu");
    ocs::tom::set<CE_valtype>(ep, static_cast<uint32_t>(ocs::CEntry::Type::RSMAP));
    ocs::tom::set<CE_relop>(ep, CMPLXLE_OP);
    ocs::tom::set<CE_consumable>(ep, CONSUMABLE_HOST);
    ocs::tom::set<CE_requestable>(ep, REQU_YES);
-   lAppendElem(lp, ep);
+   lAppendElem(*lp, std::move(ep));
 
-   ep = lCreateElem(CE_Type);
-   ocs::tom::set<CE_name>(ep, "gpu_memory");
-   ocs::tom::set<CE_valtype>(ep, static_cast<uint32_t>(ocs::CEntry::Type::MEM));
-   ocs::tom::set<CE_relop>(ep, CMPLXLE_OP);
-   ocs::tom::set<CE_consumable>(ep, CONSUMABLE_NO);
-   ocs::tom::set<CE_requestable>(ep, REQU_YES);
-   lAppendElem(lp, ep);
+   auto ep_ce = ocs::tom::ElementPtr<ocs::tom::CE>::create();
+   ocs::tom::set<CE_name>(ep_ce, "gpu_memory");
+   ocs::tom::set<CE_valtype>(ep_ce, static_cast<uint32_t>(ocs::CEntry::Type::MEM));
+   ocs::tom::set<CE_relop>(ep_ce, CMPLXLE_OP);
+   ocs::tom::set<CE_consumable>(ep_ce, CONSUMABLE_NO);
+   ocs::tom::set<CE_requestable>(ep_ce, REQU_YES);
+   lAppendElem(*lp, std::move(ep_ce));
 
    // a string characteristic, so that a parameter value may be a pattern
-   ep = lCreateElem(CE_Type);
-   ocs::tom::set<CE_name>(ep, "gpu_model");
-   ocs::tom::set<CE_valtype>(ep, static_cast<uint32_t>(ocs::CEntry::Type::STR));
-   ocs::tom::set<CE_relop>(ep, CMPLXEQ_OP);
-   ocs::tom::set<CE_consumable>(ep, CONSUMABLE_NO);
-   ocs::tom::set<CE_requestable>(ep, REQU_YES);
-   lAppendElem(lp, ep);
+   auto ep_ce_2 = ocs::tom::ElementPtr<ocs::tom::CE>::create();
+   ocs::tom::set<CE_name>(ep_ce_2, "gpu_model");
+   ocs::tom::set<CE_valtype>(ep_ce_2, static_cast<uint32_t>(ocs::CEntry::Type::STR));
+   ocs::tom::set<CE_relop>(ep_ce_2, CMPLXEQ_OP);
+   ocs::tom::set<CE_consumable>(ep_ce_2, CONSUMABLE_NO);
+   ocs::tom::set<CE_requestable>(ep_ce_2, REQU_YES);
+   lAppendElem(*lp, std::move(ep_ce_2));
 
    // may not be requested, so it may not be matched against either
-   ep = lCreateElem(CE_Type);
-   ocs::tom::set<CE_name>(ep, "gpu_serial");
-   ocs::tom::set<CE_valtype>(ep, static_cast<uint32_t>(ocs::CEntry::Type::STR));
-   ocs::tom::set<CE_relop>(ep, CMPLXEQ_OP);
-   ocs::tom::set<CE_consumable>(ep, CONSUMABLE_NO);
-   ocs::tom::set<CE_requestable>(ep, REQU_NO);
-   lAppendElem(lp, ep);
+   auto ep_ce_3 = ocs::tom::ElementPtr<ocs::tom::CE>::create();
+   ocs::tom::set<CE_name>(ep_ce_3, "gpu_serial");
+   ocs::tom::set<CE_valtype>(ep_ce_3, static_cast<uint32_t>(ocs::CEntry::Type::STR));
+   ocs::tom::set<CE_relop>(ep_ce_3, CMPLXEQ_OP);
+   ocs::tom::set<CE_consumable>(ep_ce_3, CONSUMABLE_NO);
+   ocs::tom::set<CE_requestable>(ep_ce_3, REQU_NO);
+   lAppendElem(*lp, std::move(ep_ce_3));
 
-   ep = lCreateElem(CE_Type);
-   ocs::tom::set<CE_name>(ep, "mem");
-   ocs::tom::set<CE_valtype>(ep, static_cast<uint32_t>(ocs::CEntry::Type::MEM));
-   ocs::tom::set<CE_relop>(ep, CMPLXLE_OP);
-   ocs::tom::set<CE_consumable>(ep, CONSUMABLE_YES);
-   ocs::tom::set<CE_requestable>(ep, REQU_YES);
-   lAppendElem(lp, ep);
+   auto ep_ce_4 = ocs::tom::ElementPtr<ocs::tom::CE>::create();
+   ocs::tom::set<CE_name>(ep_ce_4, "mem");
+   ocs::tom::set<CE_valtype>(ep_ce_4, static_cast<uint32_t>(ocs::CEntry::Type::MEM));
+   ocs::tom::set<CE_relop>(ep_ce_4, CMPLXLE_OP);
+   ocs::tom::set<CE_consumable>(ep_ce_4, CONSUMABLE_YES);
+   ocs::tom::set<CE_requestable>(ep_ce_4, REQU_YES);
+   lAppendElem(*lp, std::move(ep_ce_4));
 
-   return lp;
+   return lp.release();
 }
 
 static void
@@ -433,14 +433,14 @@ test_parameter_validation() {
  */
 static lListElem *
 make_complex(const char *name, const char *shortcut) {
-   lListElem *ep = lCreateElem(CE_Type);
+   auto ep = ocs::tom::ElementPtr<ocs::tom::CE>::create();
    ocs::tom::set<CE_name>(ep, name);
    ocs::tom::set<CE_shortcut>(ep, shortcut);
    ocs::tom::set<CE_valtype>(ep, static_cast<uint32_t>(ocs::CEntry::Type::INT));
    ocs::tom::set<CE_relop>(ep, CMPLXLE_OP);
    ocs::tom::set<CE_consumable>(ep, CONSUMABLE_NO);
    ocs::tom::set<CE_requestable>(ep, REQU_YES);
-   return ep;
+   return ep.release();
 }
 
 static void
@@ -536,7 +536,7 @@ test_parameter_values_and_defaults() {
  */
 static lListElem *
 make_resource_definition() {
-   lListElem *ep = lCreateElem(CE_Type);
+   auto ep = ocs::tom::ElementPtr<ocs::tom::CE>::create();
    ocs::tom::set<CE_name>(ep, "gpu");
    ocs::tom::set<CE_valtype>(ep, static_cast<uint32_t>(ocs::CEntry::Type::RSMAP));
    ocs::tom::set<CE_doubleval>(ep, 8);
@@ -546,7 +546,7 @@ make_resource_definition() {
    ocs::tom::Element<ocs::tom::RESL> resl_resl = ocs::tom::emplace_back_in<CE_resource_map_list, RESL_value>(ep, "1");
    ocs::tom::set<RESL_amount>(resl_resl, 4);
 
-   return ep;
+   return ep.release();
 }
 
 /**
@@ -560,7 +560,7 @@ make_resource_definition() {
  */
 static lListElem *
 make_resource_definition_numa() {
-   lListElem *ep = lCreateElem(CE_Type);
+   auto ep = ocs::tom::ElementPtr<ocs::tom::CE>::create();
    ocs::tom::set<CE_name>(ep, "gpu");
    ocs::tom::set<CE_valtype>(ep, static_cast<uint32_t>(ocs::CEntry::Type::RSMAP));
    ocs::tom::set<CE_doubleval>(ep, 8);
@@ -575,7 +575,7 @@ make_resource_definition_numa() {
       ocs::tom::set<CE_stringval>(property, node_of[i]);
    }
 
-   return ep;
+   return ep.release();
 }
 
 /**
@@ -908,7 +908,7 @@ static lListElem *
 make_named_map() {
    static const char *ids[] = {"gpu1a", "gpu1b", "gpu2a", "gpu2b"};
 
-   lListElem *ep = lCreateElem(CE_Type);
+   auto ep = ocs::tom::ElementPtr<ocs::tom::CE>::create();
    ocs::tom::set<CE_name>(ep, "gpu");
    ocs::tom::set<CE_valtype>(ep, static_cast<uint32_t>(ocs::CEntry::Type::RSMAP));
 
@@ -917,7 +917,7 @@ make_named_map() {
       ocs::tom::set<RESL_amount>(resl, 1);
    }
 
-   return ep;
+   return ep.release();
 }
 
 /**
@@ -984,7 +984,7 @@ test_id_expression() {
    lFreeElem(&def);
 
    /* id= and same= together: the instances agree in the identifier and match the expression */
-   lListElem *shared = lCreateElem(CE_Type);
+   auto shared = ocs::tom::ElementPtr<ocs::tom::CE>::create();
    ocs::tom::set<CE_name>(shared, "gpu");
    ocs::tom::set<CE_valtype>(shared, static_cast<uint32_t>(ocs::CEntry::Type::RSMAP));
    for (const char *id : {"gpu1", "gpu2"}) {
@@ -993,7 +993,7 @@ test_id_expression() {
    }
 
    check_int("T136", "a whole card is taken from the one the expression names",
-             centry_rsmap_select_group_instances(shared, nullptr, nullptr, "id", 4, &selected,
+             centry_rsmap_select_group_instances(*shared, nullptr, nullptr, "id", 4, &selected,
                                                  "gpu2*"), 1);
    check_str("T136b", "and it is that card",
              ocs::tom::get<RESL_value>(lFirst(selected)), "gpu2");
@@ -1001,11 +1001,10 @@ test_id_expression() {
    lFreeList(&selected);
 
    check_int("T137", "a card the expression excludes cannot serve the request",
-             centry_rsmap_select_group_instances(shared, nullptr, nullptr, "id", 5, &selected,
+             centry_rsmap_select_group_instances(*shared, nullptr, nullptr, "id", 5, &selected,
                                                  "gpu2*"), 0);
    lFreeList(&selected);
 
-   lFreeElem(&shared);
 }
 
 /**
@@ -1014,13 +1013,13 @@ test_id_expression() {
  */
 static lListElem *
 make_characteristic(const char *name, ocs::CEntry::Type type, uint32_t relop) {
-   lListElem *ep = lCreateElem(CE_Type);
+   auto ep = ocs::tom::ElementPtr<ocs::tom::CE>::create();
    ocs::tom::set<CE_name>(ep, name);
    ocs::tom::set<CE_valtype>(ep, static_cast<uint32_t>(type));
    ocs::tom::set<CE_relop>(ep, relop);
    ocs::tom::set<CE_consumable>(ep, CONSUMABLE_NO);
    ocs::tom::set<CE_requestable>(ep, REQU_YES);
-   return ep;
+   return ep.release();
 }
 
 /** Give one instance of a map a characteristic with a value. */
@@ -1039,7 +1038,7 @@ set_characteristic(lListElem *def, const char *id, const char *pname, ocs::CEntr
 /** A map of two instances, each carrying the characteristics the cases below ask about. */
 static lListElem *
 make_map_with_characteristics() {
-   lListElem *ep = lCreateElem(CE_Type);
+   auto ep = ocs::tom::ElementPtr<ocs::tom::CE>::create();
    ocs::tom::set<CE_name>(ep, "gpu");
    ocs::tom::set<CE_valtype>(ep, static_cast<uint32_t>(ocs::CEntry::Type::RSMAP));
 
@@ -1049,18 +1048,18 @@ make_map_with_characteristics() {
    }
 
    /* gpu0 is the cool, small, A100; gpu1 the hot, large, H100 */
-   set_characteristic(ep, "gpu0", "gpu_temp", ocs::CEntry::Type::INT, "35");
-   set_characteristic(ep, "gpu1", "gpu_temp", ocs::CEntry::Type::INT, "55");
-   set_characteristic(ep, "gpu0", "gpu_mem", ocs::CEntry::Type::MEM, "40G");
-   set_characteristic(ep, "gpu1", "gpu_mem", ocs::CEntry::Type::MEM, "80G");
-   set_characteristic(ep, "gpu0", "gpu_name", ocs::CEntry::Type::STR, "A100");
-   set_characteristic(ep, "gpu1", "gpu_name", ocs::CEntry::Type::STR, "H100");
-   set_characteristic(ep, "gpu0", "gpu_re", ocs::CEntry::Type::RESTR, "A100");
-   set_characteristic(ep, "gpu1", "gpu_re", ocs::CEntry::Type::RESTR, "H100");
-   set_characteristic(ep, "gpu0", "gpu_ci", ocs::CEntry::Type::CSTR, "A100");
-   set_characteristic(ep, "gpu1", "gpu_ci", ocs::CEntry::Type::CSTR, "H100");
+   set_characteristic(*ep, "gpu0", "gpu_temp", ocs::CEntry::Type::INT, "35");
+   set_characteristic(*ep, "gpu1", "gpu_temp", ocs::CEntry::Type::INT, "55");
+   set_characteristic(*ep, "gpu0", "gpu_mem", ocs::CEntry::Type::MEM, "40G");
+   set_characteristic(*ep, "gpu1", "gpu_mem", ocs::CEntry::Type::MEM, "80G");
+   set_characteristic(*ep, "gpu0", "gpu_name", ocs::CEntry::Type::STR, "A100");
+   set_characteristic(*ep, "gpu1", "gpu_name", ocs::CEntry::Type::STR, "H100");
+   set_characteristic(*ep, "gpu0", "gpu_re", ocs::CEntry::Type::RESTR, "A100");
+   set_characteristic(*ep, "gpu1", "gpu_re", ocs::CEntry::Type::RESTR, "H100");
+   set_characteristic(*ep, "gpu0", "gpu_ci", ocs::CEntry::Type::CSTR, "A100");
+   set_characteristic(*ep, "gpu1", "gpu_ci", ocs::CEntry::Type::CSTR, "H100");
 
-   return ep;
+   return ep.release();
 }
 
 /**
@@ -1070,26 +1069,26 @@ make_map_with_characteristics() {
  */
 static void
 test_characteristic_matching() {
-   lList *centries = lCreateList("complexes", CE_Type);
+   auto centries = ocs::tom::ListPtr<ocs::tom::CE>::create("complexes");
 
-   lListElem *gpu = lCreateElem(CE_Type);
+   auto gpu = ocs::tom::ElementPtr<ocs::tom::CE>::create();
    ocs::tom::set<CE_name>(gpu, "gpu");
    ocs::tom::set<CE_valtype>(gpu, static_cast<uint32_t>(ocs::CEntry::Type::RSMAP));
    ocs::tom::set<CE_consumable>(gpu, CONSUMABLE_HOST);
    ocs::tom::set<CE_requestable>(gpu, REQU_YES);
-   lAppendElem(centries, gpu);
+   lAppendElem(*centries, std::move(gpu));
 
    /* >= : the request is an upper bound, "no hotter than" */
-   lAppendElem(centries, make_characteristic("gpu_temp", ocs::CEntry::Type::INT, CMPLXGE_OP));
+   lAppendElem(*centries, make_characteristic("gpu_temp", ocs::CEntry::Type::INT, CMPLXGE_OP));
    /* <= : the request is a lower bound, "at least" */
-   lAppendElem(centries, make_characteristic("gpu_mem", ocs::CEntry::Type::MEM, CMPLXLE_OP));
+   lAppendElem(*centries, make_characteristic("gpu_mem", ocs::CEntry::Type::MEM, CMPLXLE_OP));
    /* == on a string: matched exactly */
-   lAppendElem(centries, make_characteristic("gpu_name", ocs::CEntry::Type::STR, CMPLXEQ_OP));
+   lAppendElem(*centries, make_characteristic("gpu_name", ocs::CEntry::Type::STR, CMPLXEQ_OP));
    /* defined, but no instance of the map carries it */
-   lAppendElem(centries, make_characteristic("gpu_clock", ocs::CEntry::Type::INT, CMPLXLE_OP));
+   lAppendElem(*centries, make_characteristic("gpu_clock", ocs::CEntry::Type::INT, CMPLXLE_OP));
    /* the string types differ in whether a value may be a pattern, and in case */
-   lAppendElem(centries, make_characteristic("gpu_re", ocs::CEntry::Type::RESTR, CMPLXEQ_OP));
-   lAppendElem(centries, make_characteristic("gpu_ci", ocs::CEntry::Type::CSTR, CMPLXEQ_OP));
+   lAppendElem(*centries, make_characteristic("gpu_re", ocs::CEntry::Type::RESTR, CMPLXEQ_OP));
+   lAppendElem(*centries, make_characteristic("gpu_ci", ocs::CEntry::Type::CSTR, CMPLXEQ_OP));
 
    lListElem *def = make_map_with_characteristics();
 
@@ -1145,7 +1144,7 @@ test_characteristic_matching() {
       ocs::tom::set<CE_valtype>(req, static_cast<uint32_t>(ocs::CEntry::Type::RSMAP));
 
       lList *required = nullptr;
-      centry_rsmap_resolve_request_properties(req, centries, &required);
+      centry_rsmap_resolve_request_properties(req, *centries, &required);
 
       const uint32_t free = centry_rsmap_free(def, nullptr, nullptr, required);
       check_int(cases[i].id, cases[i].what, (int)free, (int)cases[i].expected);
@@ -1156,7 +1155,7 @@ test_characteristic_matching() {
 
    /* an instance which does not carry the characteristic at all never matches, even when the
       operator would let anything through */
-   lListElem *bare = lCreateElem(CE_Type);
+   auto bare = ocs::tom::ElementPtr<ocs::tom::CE>::create();
    ocs::tom::set<CE_name>(bare, "gpu");
    ocs::tom::set<CE_valtype>(bare, static_cast<uint32_t>(ocs::CEntry::Type::RSMAP));
    ocs::tom::Element<ocs::tom::RESL> resl = ocs::tom::emplace_back_in<CE_resource_map_list, RESL_value>(bare, "gpu9");
@@ -1166,15 +1165,14 @@ test_characteristic_matching() {
    lListElem *req = lFirstRW(request);
    ocs::tom::set<CE_valtype>(req, static_cast<uint32_t>(ocs::CEntry::Type::RSMAP));
    lList *required = nullptr;
-   centry_rsmap_resolve_request_properties(req, centries, &required);
+   centry_rsmap_resolve_request_properties(req, *centries, &required);
    check_int("T151", "an instance carrying no characteristics matches none of them",
-             (int)centry_rsmap_free(bare, nullptr, nullptr, required), 0);
+             (int)centry_rsmap_free(*bare, nullptr, nullptr, required), 0);
    lFreeList(&required);
    lFreeList(&request);
-   lFreeElem(&bare);
+   bare.reset();
 
    lFreeElem(&def);
-   lFreeList(&centries);
 }
 
 int

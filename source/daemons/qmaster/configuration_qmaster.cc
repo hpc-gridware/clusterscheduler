@@ -1000,7 +1000,6 @@ lListElem *
 sge_get_configuration_for_host(const char *aName) {
    DENTER(TOP_LAYER);
 
-   lListElem *conf = nullptr;
    char unique_name[CL_MAXHOSTNAMELEN];
    int ret = -1;
 
@@ -1022,11 +1021,11 @@ sge_get_configuration_for_host(const char *aName) {
 
    const lList *config_list = *ocs::DataStore::get_master_list(SGE_TYPE_CONFIG);
 
-   conf = lCopyElem(ocs::tom::find_first<CONF_name>(config_list, unique_name));
+   auto conf = ocs::tom::ElementPtr<ocs::tom::CONF>::from_typed(lCopyElem(ocs::tom::find_first<CONF_name>(config_list, unique_name)));
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   DRETURN(conf);
+   DRETURN(conf.release());
 }
 
 /*

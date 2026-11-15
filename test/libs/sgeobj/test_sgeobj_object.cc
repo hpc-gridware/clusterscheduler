@@ -41,6 +41,9 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_pack.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
+#include "sgeobj/tom/ocs_tom_QU.h"
+#include "sgeobj/tom/ocs_tom_UE.h"
 #include "tom/ocs_Element.h"
 
 // ---------------------------------------------------------------------------
@@ -345,25 +348,25 @@ static void test_object_has_differences() {
    printf("\n--- object_has_differences ---\n");
 
    lList *alp = nullptr;
-   lListElem *a = lCreateElem(UE_Type);
-   lListElem *b = lCreateElem(UE_Type);
+   auto a = ocs::tom::ElementPtr<ocs::tom::UE>::create();
+   auto b = ocs::tom::ElementPtr<ocs::tom::UE>::create();
 
    // T44: two freshly allocated elements — all fields at their default values → no difference
-   CHECK(44, "identical elements → false",            object_has_differences(a, &alp, b) == false);
+   CHECK(44, "identical elements → false",            object_has_differences(*a, &alp, *b) == false);
 
    // T45: set a string field to different values → difference detected
    ocs::tom::set<UE_name>(a, "alice");
    ocs::tom::set<UE_name>(b, "bob");
-   CHECK(45, "differing string field → true",         object_has_differences(a, &alp, b) == true);
+   CHECK(45, "differing string field → true",         object_has_differences(*a, &alp, *b) == true);
 
    // T46: one nullptr, one valid element → true (one side has data, the other does not)
-   CHECK(46, "nullptr vs valid → true",               object_has_differences(nullptr, &alp, a) == true);
+   CHECK(46, "nullptr vs valid → true",               object_has_differences(nullptr, &alp, *a) == true);
 
    // T47: both nullptr → false (neither side has data; no difference)
    CHECK(47, "nullptr vs nullptr → false",            object_has_differences(nullptr, &alp, nullptr) == false);
 
-   lFreeElem(&a);
-   lFreeElem(&b);
+   a.reset();
+   b.reset();
    lFreeList(&alp);
 }
 
@@ -413,47 +416,46 @@ static void test_object_verify_field_constraints() {
    printf("\n--- object_verify_{string,ulong,double}_null/not_null ---\n");
 
    lList *alp = nullptr;
-   lListElem *ep = lCreateElem(JB_Type);
+   auto ep = ocs::tom::ElementPtr<ocs::tom::JB>::create();
 
    // T51: string field has a value → passes
    ocs::tom::set<JB_job_name>(ep, "test_job");
-   CHECK(51, "string field set → string_not_null passes",   object_verify_string_not_null(ep, &alp, JB_job_name) == true);
+   CHECK(51, "string field set → string_not_null passes",   object_verify_string_not_null(*ep, &alp, JB_job_name) == true);
    lFreeList(&alp);
 
    // T52: string field is nullptr → fails and populates answer_list
    ocs::tom::set<JB_job_name>(ep, nullptr);
-   CHECK(52, "string field nullptr → string_not_null fails", object_verify_string_not_null(ep, &alp, JB_job_name) == false);
+   CHECK(52, "string field nullptr → string_not_null fails", object_verify_string_not_null(*ep, &alp, JB_job_name) == false);
    lFreeList(&alp);
 
    // T53: ulong field is non-zero → passes
    ocs::tom::set<JB_job_number>(ep, 1);
-   CHECK(53, "ulong field 1 → ulong_not_null passes",       object_verify_ulong_not_null(ep, &alp, JB_job_number) == true);
+   CHECK(53, "ulong field 1 → ulong_not_null passes",       object_verify_ulong_not_null(*ep, &alp, JB_job_number) == true);
    lFreeList(&alp);
 
    // T54: ulong field is 0 (default) → fails
    ocs::tom::set<JB_job_number>(ep, 0);
-   CHECK(54, "ulong field 0 → ulong_not_null fails",        object_verify_ulong_not_null(ep, &alp, JB_job_number) == false);
+   CHECK(54, "ulong field 0 → ulong_not_null fails",        object_verify_ulong_not_null(*ep, &alp, JB_job_number) == false);
    lFreeList(&alp);
 
    // T55: ulong field is 0 → ulong_null passes
-   CHECK(55, "ulong field 0 → ulong_null passes",           object_verify_ulong_null(ep, &alp, JB_job_number) == true);
+   CHECK(55, "ulong field 0 → ulong_null passes",           object_verify_ulong_null(*ep, &alp, JB_job_number) == true);
    lFreeList(&alp);
 
    // T56: ulong field non-zero → ulong_null fails
    ocs::tom::set<JB_job_number>(ep, 42);
-   CHECK(56, "ulong field 42 → ulong_null fails",           object_verify_ulong_null(ep, &alp, JB_job_number) == false);
+   CHECK(56, "ulong field 42 → ulong_null fails",           object_verify_ulong_null(*ep, &alp, JB_job_number) == false);
    lFreeList(&alp);
 
    // T57: double field is 0.0 (default) → double_null passes
-   CHECK(57, "double field 0.0 → double_null passes",       object_verify_double_null(ep, &alp, JB_urg) == true);
+   CHECK(57, "double field 0.0 → double_null passes",       object_verify_double_null(*ep, &alp, JB_urg) == true);
    lFreeList(&alp);
 
    // T58: double field non-zero → double_null fails
    ocs::tom::set<JB_urg>(ep, 0.5);
-   CHECK(58, "double field 0.5 → double_null fails",        object_verify_double_null(ep, &alp, JB_urg) == false);
+   CHECK(58, "double field 0.5 → double_null fails",        object_verify_double_null(*ep, &alp, JB_urg) == false);
    lFreeList(&alp);
 
-   lFreeElem(&ep);
 }
 
 // ---------------------------------------------------------------------------
@@ -467,19 +469,18 @@ static void test_object_verify_name() {
    printf("\n--- object_verify_name ---\n");
 
    lList *alp = nullptr;
-   lListElem *ep = lCreateElem(QU_Type);
+   auto ep = ocs::tom::ElementPtr<ocs::tom::QU>::create();
 
    // T59: alphanumeric name with embedded punctuation is accepted
    ocs::tom::set<QU_qname>(ep, "all.q");
-   CHECK(59, "valid name → 0",                         object_verify_name(ep, &alp, QU_qname) == 0);
+   CHECK(59, "valid name → 0",                         object_verify_name(*ep, &alp, QU_qname) == 0);
    lFreeList(&alp);
 
    // T60: name starting with a digit is always rejected regardless of other characters
    ocs::tom::set<QU_qname>(ep, "1bad");
-   CHECK(60, "leading digit → STATUS_EUNKNOWN",        object_verify_name(ep, &alp, QU_qname) == STATUS_EUNKNOWN);
+   CHECK(60, "leading digit → STATUS_EUNKNOWN",        object_verify_name(*ep, &alp, QU_qname) == STATUS_EUNKNOWN);
    lFreeList(&alp);
 
-   lFreeElem(&ep);
 }
 
 // ---------------------------------------------------------------------------
@@ -527,7 +528,7 @@ static bool pack_job_as_shorter(sge_pack_buffer *pb, const lListElem *job, const
 static void test_spooled_job_of_shorter_type() {
    printf("\n--- spooled job of a shorter JB_Type ---\n");
 
-   lListElem *job = lCreateElem(JB_Type);
+   auto job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
    ocs::tom::set<JB_job_number>(job, 42);
    ocs::tom::set<JB_owner>(job, "owner");
    ocs::tom::set<JB_sync_options>(job, 5);
@@ -536,7 +537,7 @@ static void test_spooled_job_of_shorter_type() {
    int ret = PACK_FORMAT;
    sge_pack_buffer pb;
    if (init_packbuffer(&pb, 1024, false, false) == PACK_SUCCESS) {
-      if (pack_job_as_shorter(&pb, job, 4)) {
+      if (pack_job_as_shorter(&pb, *job, 4)) {
          char *buf = sge_malloc(pb.bytes_used);
          memcpy(buf, pb.head_ptr, pb.bytes_used);
          sge_pack_buffer in;
@@ -557,7 +558,6 @@ static void test_spooled_job_of_shorter_type() {
    CHECK(62, "added spooled field → initial value", read != nullptr && ocs::tom::get<JB_sync_options>(read) == 0);
 
    lFreeElem(&read);
-   lFreeElem(&job);
 }
 
 /**
@@ -614,15 +614,15 @@ static void test_pack_type_roundtrip() {
    lCondition *where_read = where_ret == PACK_SUCCESS && where_back != nullptr ? lWhereFromElem(where_back) : nullptr;
 
    // T66: the where read from it matches as the original does
-   lListElem *match = lCreateElem(QU_Type);
+   auto match = ocs::tom::ElementPtr<ocs::tom::QU>::create();
    ocs::tom::set<QU_qname>(match, "all.q");
-   lListElem *other = lCreateElem(QU_Type);
+   auto other = ocs::tom::ElementPtr<ocs::tom::QU>::create();
    ocs::tom::set<QU_qname>(other, "other.q");
    CHECK(66, "where from the element → same matches",
-         where_read != nullptr && lCompare(match, where_read) == 1 && lCompare(other, where_read) == 0);
+         where_read != nullptr && lCompare(*match, where_read) == 1 && lCompare(*other, where_read) == 0);
 
-   lFreeElem(&other);
-   lFreeElem(&match);
+   other.reset();
+   match.reset();
    lFreeWhere(&where_read);
    lFreeElem(&where_back);
    lFreeElem(&where_elem);
@@ -643,12 +643,12 @@ int main(int /*argc*/, char * /*argv*/[]) {
 
    lInit(nmv);
 
-   lListElem *queue = lCreateElem(QU_Type);
+   auto queue = ocs::tom::ElementPtr<ocs::tom::QU>::create();
    lList *st_list = nullptr;
    ocs::tom::emplace_back<ST_name>(&st_list, "test pe");
 
-   test_object_has_type(queue);
-   test_object_get_type(queue);
+   test_object_has_type(*queue);
+   test_object_get_type(*queue);
    test_object_get_subtype();
    test_object_get_primary_key();
    test_object_get_name();
@@ -656,7 +656,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
    test_object_type_get_name();
    test_object_name_get_type();
    test_object_type_get_descr_and_key();
-   test_object_verify_cull(queue, st_list);
+   test_object_verify_cull(*queue, st_list);
    test_object_list_verify_cull(st_list);
    test_object_name_get_type_extended();
    test_object_has_differences();
@@ -666,7 +666,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
    test_spooled_job_of_shorter_type();
    test_pack_type_roundtrip();
 
-   lFreeElem(&queue);
+   queue.reset();
    lFreeList(&st_list);
 
    printf("\n%s — %d failure(s)\n", s_fail == 0 ? "PASS" : "FAIL", s_fail);

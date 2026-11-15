@@ -39,6 +39,8 @@
 #include "uti/sge_string.h"
 #include "uti/sge_unistd.h"
 #include "sgeobj/sge_answer.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_EH.h"
 #include "spool/flatfile/sge_flatfile.h"
 #include "procedure/qconf/ocs_QConfModelBase.h"
 #include "procedure/qconf/write/ocs_QConfWriteModelClient.h"
@@ -691,8 +693,8 @@ qconf_edit_list_procedure(ocs::QConfParameterClient &param, const QConfObj o,
 static int
 qconf_conf_apply_one(const char *filepath, void *vctx) {
    auto *ctx = static_cast<qconf_conf_ctx *>(vctx);
-   lListElem *host_ep = lCreateElem(EH_Type);
-   const char *hostname = qconf_conf_host_of(filepath, host_ep);
+   auto host_ep = ocs::tom::ElementPtr<ocs::tom::EH>::create();
+   const char *hostname = qconf_conf_host_of(filepath, *host_ep);
 
    /* CS-2299 H3 used to preview -dry here, because add_modify_config() always
     * contacted qmaster. The procedure carries MODE_DRY itself and answers with
@@ -707,7 +709,7 @@ qconf_conf_apply_one(const char *filepath, void *vctx) {
     * basename, and it travels with the request because a configuration's text
     * does not carry its name (CS-2823). */
    const int ret = qconf_apply_obj(*ctx->os, QConfObj::CONF, filepath, ctx->alpp, nullptr, 0u, hostname);
-   lFreeElem(&host_ep);
+   host_ep.reset();
    if (ret != 0) {
       ctx->n_fail++;
       return 1;

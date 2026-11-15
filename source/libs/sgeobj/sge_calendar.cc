@@ -66,6 +66,8 @@
 #include "sgeobj/tom/ocs_tom_CA.h"
 #include "sgeobj/tom/ocs_tom_TM.h"
 #include "sgeobj/tom/ocs_tom_TMR.h"
+#include "sgeobj/tom/ocs_tom_CAL.h"
+#include "sgeobj/tom/ocs_tom_CQU.h"
 
 #include "msg_qmaster.h"
 
@@ -296,7 +298,6 @@ static int state_at(time_t now, const lList *ycal, const lList *wcal, time_t *ne
    struct tm *tm_now;
    uint32_t w_is_active, y_is_active;
    bool have_week_cal = false;
-   lListElem *tm;
    time_t limit;
    time_t temp_next_event = 0;
    struct tm res;
@@ -306,8 +307,8 @@ static int state_at(time_t now, const lList *ycal, const lList *wcal, time_t *ne
    tm_now = localtime_r(&now, &res);
 
    /* cullify struct tm */
-   tm = lCreateElem(TM_Type);
-   cullify_tm(tm, tm_now);
+   auto tm = ocs::tom::ElementPtr<ocs::tom::TM>::create();
+   cullify_tm(*tm, tm_now);
 
    DPRINTF("now: sec: %d min: %d hour: %d mday: %d mon: %d year:%d wday: %d yday: %d isdst: %d\n",
          tm_now->tm_sec,
@@ -322,7 +323,7 @@ static int state_at(time_t now, const lList *ycal, const lList *wcal, time_t *ne
 
    /* ycal */
    for_each_rw_lv (yc, ycal) {
-      y_is_active = is_year_entry_active(tm, yc, &limit);
+      y_is_active = is_year_entry_active(*tm, yc, &limit);
       if (state != y_is_active || state == QI_DO_NOTHING) {
          state |= y_is_active;
 
@@ -354,7 +355,7 @@ static int state_at(time_t now, const lList *ycal, const lList *wcal, time_t *ne
 
          for_each_rw_lv (wc, wcal) {
             have_week_cal = true;
-            w_is_active = is_week_entry_active(tm, wc, &limit, &next_state, 0);
+            w_is_active = is_week_entry_active(*tm, wc, &limit, &next_state, 0);
             if (w_is_active > 0) {
                state |= w_is_active;
             }
@@ -365,10 +366,10 @@ static int state_at(time_t now, const lList *ycal, const lList *wcal, time_t *ne
                   visited[counter] = true;
                   temp_next_event += 1;
                   tm_now = localtime_r(&temp_next_event, &res);
-                  cullify_tm(tm, tm_now);
+                  cullify_tm(*tm, tm_now);
 
                   temp_next_event = 0;
-                  w_is_active = is_week_entry_active(tm, wc, &limit, &next_state, 0);
+                  w_is_active = is_week_entry_active(*tm, wc, &limit, &next_state, 0);
                   if (w_is_active > 0) {
                      state |= w_is_active;
                   }
@@ -396,7 +397,7 @@ static int state_at(time_t now, const lList *ycal, const lList *wcal, time_t *ne
    DPRINTF("got state %d from %s calendar. Now: " sge_u32 " Next event: " sge_u32"\n",
            state, have_week_cal ? "week" : "year", now, next_event?*next_event:0);
 
-   lFreeElem(&tm);
+   tm.reset();
 
    if ((state & QI_DO_ENABLE)) {
       DRETURN(QI_DO_ENABLE);
@@ -462,7 +463,6 @@ static uint32_t is_week_entry_active(lListElem *tm, lListElem *week_entry, time_
       if (is_end_of_the_day_reached) {
          struct tm *tm_now;
          struct tm res;
-         lListElem *new_tm;
 
          /* we have to add a second to get into the next time slot */
          (*limit)++;
@@ -471,18 +471,17 @@ static uint32_t is_week_entry_active(lListElem *tm, lListElem *week_entry, time_
          tm_now = localtime_r(limit, &res);
 
          /* cullify struct tm */
-         new_tm= lCreateElem(TM_Type);
-         cullify_tm(new_tm, tm_now);
+         auto new_tm= ocs::tom::ElementPtr<ocs::tom::TM>::create();
+         cullify_tm(*new_tm, tm_now);
 
          /* more than 2 recursion should never be needed, we allow 4 to be save.*/
          if (rec_count < 4) {
-            state = is_week_entry_active(new_tm, week_entry, limit, next_state, rec_count++);
+            state = is_week_entry_active(*new_tm, week_entry, limit, next_state, rec_count++);
          }
          else {
             ERROR(SFNMAX, MSG_CALENDAR_CALCTERMINATED);
          }
 
-         lFreeElem(&new_tm);
       }
 
       /* there is no other state change */
@@ -550,7 +549,6 @@ static uint32_t is_year_entry_active(lListElem *tm, lListElem *year_entry, time_
       if (is_end_of_the_day_reached) {
          struct tm *tm_now;
          struct tm res;
-         lListElem *new_tm;
          DPRINTF("trying the next time slot\n");
          /* we have to add a second to get into the next time slot */
          (*limit)++;
@@ -560,10 +558,10 @@ static uint32_t is_year_entry_active(lListElem *tm, lListElem *year_entry, time_
          tm_now = localtime_r(limit, &res);
 
          /* cullify struct tm */
-         new_tm= lCreateElem(TM_Type);
-         cullify_tm(new_tm, tm_now);
+         auto new_tm= ocs::tom::ElementPtr<ocs::tom::TM>::create();
+         cullify_tm(*new_tm, tm_now);
 
-         uint32_t next_day_state = is_year_entry_active(new_tm, year_entry, limit);
+         uint32_t next_day_state = is_year_entry_active(*new_tm, year_entry, limit);
 
          /* The state does not change for the rest of the day, that is why we look at the next day.
             If the next day starts in a different state then the change happens right at midnight
@@ -576,7 +574,6 @@ static uint32_t is_year_entry_active(lListElem *tm, lListElem *year_entry, time_
             state = next_day_state;
          }
 
-         lFreeElem(&new_tm);
       }
 
    }
@@ -611,7 +608,6 @@ uint32_t calender_state_changes(const lListElem *cep, lList **state_changes_list
    uint32_t state0 = 0;
    uint32_t state1 = 0;
    uint32_t state2 = 0;
-   lListElem *state_change = nullptr;
    time_t now = 0;
    if (now64 != nullptr) {
       now = sge_gmt64_to_time_t(*now64);
@@ -671,18 +667,18 @@ uint32_t calender_state_changes(const lListElem *cep, lList **state_changes_list
    }
 
    *state_changes_list = lCreateList("state_changes", CQU_Type);
-   state_change = lCreateElem(CQU_Type);
+   auto state_change = ocs::tom::ElementPtr<ocs::tom::CQU>::create();
 
    ocs::tom::set<CQU_state>(state_change, state0);
    ocs::tom::set<CQU_till>(state_change, *when64);
-   lAppendElem(*state_changes_list, state_change);
+   lAppendElem(*state_changes_list, std::move(state_change));
 
    /* extend queue state change list */
    if (*when64 != 0) {
-      state_change = lCreateElem(CQU_Type);
+      auto state_change = ocs::tom::ElementPtr<ocs::tom::CQU>::create();
       ocs::tom::set<CQU_state>(state_change,state1);
       ocs::tom::set<CQU_till>(state_change, sge_time_t_to_gmt64(when1));
-      lAppendElem(*state_changes_list, state_change);
+      lAppendElem(*state_changes_list, std::move(state_change));
    }
 
    return state0;
@@ -1264,18 +1260,17 @@ ERROR:
 static void full_daytime_range(lList **dtrl) {
    DENTER(TOP_LAYER);
 
-   lListElem *tmr;
 
    if (!*dtrl)
       *dtrl = lCreateList("full day", TMR_Type);
 
 /*    DPRINTF("FULL_DAYTIME_RANGE\n"); */
 
-   tmr = lCreateElem(TMR_Type);
+   auto tmr = ocs::tom::ElementPtr<ocs::tom::TMR>::create();
    ocs::tom::emplace_back_in<TMR_begin, TM_hour>(tmr, 0);
    ocs::tom::emplace_back_in<TMR_end, TM_hour>(tmr, 24);
 
-   lAppendElem(*dtrl, tmr);
+   lAppendElem(*dtrl, std::move(tmr));
 
    DRETURN_VOID;
 }
@@ -1283,18 +1278,17 @@ static void full_daytime_range(lList **dtrl) {
 static void full_weekday_range(lList **dtrl) {
    DENTER(TOP_LAYER);
 
-   lListElem *tmr;
 
    if (!*dtrl)
       *dtrl = lCreateList("full week", TMR_Type);
 
 /*    DPRINTF("FULL_WEEKDAY_RANGE\n"); */
 
-   tmr = lCreateElem(TMR_Type);
+   auto tmr = ocs::tom::ElementPtr<ocs::tom::TMR>::create();
    ocs::tom::emplace_back_in<TMR_begin, TM_wday>(tmr, 0);
    ocs::tom::emplace_back_in<TMR_end, TM_wday>(tmr, 6);
 
-   lAppendElem(*dtrl, tmr);
+   lAppendElem(*dtrl, std::move(tmr));
 
    DRETURN_VOID;
 }
@@ -1354,19 +1348,18 @@ static int year_day_range(lListElem **tmr) {
    }
 
    if (tmr) {
-      lList *tmlp;
       *tmr = lCreateElem(TMR_Type);
 
-      tmlp = lCreateList("tm_list", TM_Type);
-      lAppendElem(tmlp, t1);
+      auto tmlp = ocs::tom::ListPtr<ocs::tom::TM>::create("tm_list");
+      lAppendElem(*tmlp, t1);
       t1 = nullptr;
-      ocs::tom::set<TMR_begin>(*tmr, tmlp);
+      ocs::tom::set<TMR_begin>(*tmr, std::move(tmlp));
 
       if (t2) {
-         tmlp = lCreateList("tm_list", TM_Type);
-         lAppendElem(tmlp, t2);
+         auto tmlp = ocs::tom::ListPtr<ocs::tom::TM>::create("tm_list");
+         lAppendElem(*tmlp, t2);
          t2 = nullptr;
-         ocs::tom::set<TMR_end>(*tmr, tmlp);
+         ocs::tom::set<TMR_end>(*tmr, std::move(tmlp));
       }
    }
 
@@ -2506,13 +2499,12 @@ bool calendar_is_referenced(const lListElem *calendar, lList **answer_list,
 lListElem* sge_generic_cal(char *cal_name) {
    DENTER(TOP_LAYER);
 
-   lListElem *calp;
 
-   calp = lCreateElem(CAL_Type);
+   auto calp = ocs::tom::ElementPtr<ocs::tom::CAL>::create();
 
    ocs::tom::set<CAL_name>(calp, cal_name?cal_name:"template");
 
-   DRETURN(calp);
+   DRETURN(calp.release());
 }
 
 /**

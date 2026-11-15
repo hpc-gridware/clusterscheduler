@@ -305,7 +305,6 @@ lList *cull_parse_cmdline(
       /* "-ac context_list */
       if (!strcmp("-ac", *sp)) {
          lList *variable_list = nullptr;
-         lListElem* lep = nullptr;
 
          /* next field is context_list */
          sp++;
@@ -323,9 +322,9 @@ lList *cull_parse_cmdline(
              DRETURN(answer);
          }
          ep_opt = sge_add_arg(pcmdline, ac_OPT, lListT, *(sp - 1), *sp);
-         lep = lCreateElem(VA_Type);
+         auto lep = ocs::tom::ElementPtr<ocs::tom::VA>::create();
          ocs::tom::set<VA_variable>(lep, "+");
-         lInsertElem(variable_list, nullptr, lep);
+         lInsertElem(variable_list, nullptr, std::move(lep));
          ocs::tom::set<SPA_argval_lListT>(ep_opt, variable_list);
 
          sp++;
@@ -847,7 +846,6 @@ lList *cull_parse_cmdline(
       /* "-dc simple_context_list */
       if (!strcmp("-dc", *sp)) {
          lList *variable_list = nullptr;
-         lListElem* lep = nullptr;
 
          /* next field is simple_context_list */
          sp++;
@@ -865,9 +863,9 @@ lList *cull_parse_cmdline(
              DRETURN(answer);
          }
          ep_opt = sge_add_arg(pcmdline, dc_OPT, lListT, *(sp - 1), *sp);
-         lep = lCreateElem(VA_Type);
+         auto lep = ocs::tom::ElementPtr<ocs::tom::VA>::create();
          ocs::tom::set<VA_variable>(lep, "-");
-         lInsertElem(variable_list, nullptr, lep);
+         lInsertElem(variable_list, nullptr, std::move(lep));
          ocs::tom::set<SPA_argval_lListT>(ep_opt, variable_list);
 
          sp++;
@@ -1790,7 +1788,6 @@ DTRACE;
 
       if (!strcmp("-sc", *sp)) {
          lList *variable_list = nullptr;
-         lListElem* lep = nullptr;
 
          /* next field is context_list  [ == variable_list ] */
          sp++;
@@ -1808,9 +1805,9 @@ DTRACE;
              DRETURN(answer);
          }
          ep_opt = sge_add_arg(pcmdline, sc_OPT, lListT, *(sp - 1), *sp);
-         lep = lCreateElem(VA_Type);
+         auto lep = ocs::tom::ElementPtr<ocs::tom::VA>::create();
          ocs::tom::set<VA_variable>(lep, "=");
-         lInsertElem(variable_list, nullptr, lep);
+         lInsertElem(variable_list, nullptr, std::move(lep));
          ocs::tom::set<SPA_argval_lListT>(ep_opt, variable_list);
 
          sp++;

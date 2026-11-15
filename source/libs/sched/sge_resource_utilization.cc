@@ -757,7 +757,7 @@ int utilization_add(lListElem *cr, uint64_t start_time, uint64_t duration, doubl
       binding_prev = ocs::tom::get<RDE_binding_inuse>(prev);
       ocs::tom::ConstList<ocs::tom::RESL> rsmap_prev_end = ocs::tom::get<RDE_resource_map_list>(prev);
 
-      end = lCreateElem(RDE_Type);
+      auto end = ocs::tom::ElementPtr<ocs::tom::RDE>::create();
       ocs::tom::set<RDE_time>(end, end_time);
       ocs::tom::set<RDE_amount>(end, util_prev - utilization);
       if (handle_binding) {
@@ -765,14 +765,14 @@ int utilization_add(lListElem *cr, uint64_t start_time, uint64_t duration, doubl
          if (binding_prev != nullptr) {
             topo_binding_now.reset_topology(binding_prev);
          }
-         ocs::TopologyString::elem_mark_nodes_as_used_or_unused(end, RDE_binding_inuse, topo_binding_now,
+         ocs::TopologyString::elem_mark_nodes_as_used_or_unused(*end, RDE_binding_inuse, topo_binding_now,
                                                                 binding_to_use_obj, false);
       }
       if (handle_rsmap) {
-         utilization_rsmap_set(end, rsmap_prev_end, rsmap_inuse, !rsmap_taken);
+         utilization_rsmap_set(*end, rsmap_prev_end, rsmap_inuse, !rsmap_taken);
       }
 
-      lInsertElem(resource_diagram, prev, end);
+      lInsertElem(resource_diagram, prev, std::move(end));
    }
 
    utilization_normalize(resource_diagram);
@@ -2165,15 +2165,14 @@ set_utilization(lList *uti_list, uint64_t from, uint64_t till, double uti) {
  */
 
 static lListElem *newResourceElem(uint64_t time, double amount) {
-   lListElem *elem = nullptr;
 
-   elem = lCreateElem(RDE_Type);
+   auto elem = ocs::tom::ElementPtr<ocs::tom::RDE>::create();
    if (elem != nullptr) {
       ocs::tom::set<RDE_time>(elem, time);
       ocs::tom::set<RDE_amount>(elem, amount);    
    }
 
-   return elem;
+   return elem.release();
 }
 
 /**

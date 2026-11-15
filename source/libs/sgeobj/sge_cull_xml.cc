@@ -65,6 +65,7 @@
 #include "tom/ocs_Element.h"
 #include "sgeobj/tom/ocs_tom_XMLA.h"
 #include "sgeobj/tom/ocs_tom_XMLS.h"
+#include "sgeobj/tom/ocs_tom_XMLH.h"
 
 static void lWriteElemXML_(const lListElem *ep, int nesting_level, std::ostream &os);
 
@@ -85,9 +86,8 @@ static lListElem *append_Attr_S(lList *attributeList, const char *name, const ch
  * @return the new document root
  */
 lListElem* xml_getHead(const char *name, lList *list, lList *attributes) {
-   lListElem *xml_head = nullptr;
 
-   xml_head = lCreateElem(XMLH_Type);
+   auto xml_head = ocs::tom::ElementPtr<ocs::tom::XMLH>::create();
 
    if (xml_head) {
       
@@ -95,13 +95,13 @@ lListElem* xml_getHead(const char *name, lList *list, lList *attributes) {
       ocs::tom::set<XMLH_Name>(xml_head, name);
       ocs::tom::set<XMLH_Attribute>(xml_head, attributes);
       ocs::tom::set<XMLH_Element>(xml_head, list);
-      xml_addAttribute(xml_head, "xmlns:xsd", "https://github.com/hpc-gridware/clusterscheduler/raw/master/source/dist/util/resources/schemas/qstat/qstat.xsd");
+      xml_addAttribute(*xml_head, "xmlns:xsd", "https://github.com/hpc-gridware/clusterscheduler/raw/master/source/dist/util/resources/schemas/qstat/qstat.xsd");
 
 /* we do not support stylesheets yet */
 /*    xml_addStylesheet(xml_head, "xmlns:xsl", "http://www.w3.org/1999/XSL/Transform", "1.0");*/
    }
    
-   return xml_head;
+   return xml_head.release();
 }
 
 /**
@@ -113,7 +113,7 @@ lListElem* xml_getHead(const char *name, lList *list, lList *attributes) {
  * @param version the stylesheet version
  */
 void xml_addStylesheet(lListElem *xml_head, const char* name, const char *url, const char *version) {
-   lListElem *stylesheet_elem = lCreateElem(XMLS_Type);
+   auto stylesheet_elem = ocs::tom::ElementPtr<ocs::tom::XMLS>::create();
    lList *stylesheet_list = nullptr;
    
    if (stylesheet_elem) {
@@ -125,7 +125,7 @@ void xml_addStylesheet(lListElem *xml_head, const char* name, const char *url, c
          ocs::tom::set<XMLH_Stylesheet>(xml_head, (stylesheet_list = lCreateList("Stylesheet", XMLS_Type)));
       }
       
-      lAppendElem(stylesheet_list, stylesheet_elem);
+      lAppendElem(stylesheet_list, std::move(stylesheet_elem));
    }   
 }
 
@@ -153,7 +153,7 @@ void xml_addAttributeD(lListElem *xml_elem, const char *name, double value){
 void xml_addAttribute(lListElem *xml_elem, const char *name, const char *value){
    DENTER(CULL_LAYER);
 
-   lListElem *attr_elem = lCreateElem(XMLA_Type);
+   auto attr_elem = ocs::tom::ElementPtr<ocs::tom::XMLA>::create();
    lList *attr_list = nullptr;
    dstring mod_value = DSTRING_INIT;
    bool is_mod_value; 
@@ -177,7 +177,7 @@ void xml_addAttribute(lListElem *xml_elem, const char *name, const char *value){
          CRITICAL("xml_addAttribute() called on wrong cull structure");
          ocs::TerminationManager::trigger_abort();
       }
-      lAppendElem(attr_list, attr_elem);
+      lAppendElem(attr_list, std::move(attr_elem));
    }
    sge_dstring_free(&mod_value);
    DRETURN_VOID;
@@ -571,17 +571,16 @@ static void lWriteXMLHead_(const lListElem *ep, int nesting_level, std::ostream 
 }
 
 static lListElem *append_Attr_S(lList *attributeList, const char *name, const char *value) {
-   lListElem *elem = nullptr;
    lListElem *parent = nullptr;
    if (!value)
       return parent;
    parent = lCreateElem(XMLE_Type);
    if (parent) {
-      elem = lCreateElem(XMLA_Type);
+      auto elem = ocs::tom::ElementPtr<ocs::tom::XMLA>::create();
       if (elem){
          ocs::tom::set<XMLA_Name>(elem, name);
          ocs::tom::set<XMLA_Value>(elem, value);
-         ocs::tom::set<XMLE_Element>(parent, elem);
+         ocs::tom::set<XMLE_Element>(parent, std::move(elem));
       }
       ocs::tom::set<XMLE_Print>(parent, true);
       lAppendElem(attributeList, parent);

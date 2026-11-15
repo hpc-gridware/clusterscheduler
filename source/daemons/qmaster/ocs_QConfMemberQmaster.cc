@@ -34,6 +34,7 @@
 #include "tom/ocs_Element.h"
 #include "sgeobj/tom/ocs_tom_UE.h"
 #include "sgeobj/tom/ocs_tom_US.h"
+#include "sgeobj/tom/ocs_tom_HGRP.h"
 #include "uti/sge_dstring.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_string.h"
@@ -67,13 +68,13 @@ namespace {
               const char *name, lList *entries, const bool add, std::string &why) {
       DENTER(TOP_LAYER);
 
-      lListElem *elem = lCreateElem(US_Type);
+      auto elem = ocs::tom::ElementPtr<ocs::tom::US>::create();
       ocs::tom::set<US_name>(elem, name);
       ocs::tom::set<US_entries>(elem, entries);
 
       lList *alp = nullptr;
       lList *post_list = nullptr;
-      const int ret = sge_gdi_add_mod_generic(packet, task, &alp, elem, add ? 1 : 0, object, packet->user,
+      const int ret = sge_gdi_add_mod_generic(packet, task, &alp, *elem, add ? 1 : 0, object, packet->user,
                                               packet->host, ocs::gdi::Command::MOD_PROCEDURE,
                                               ocs::gdi::SubCommand::NONE, &post_list, monitor);
       why.clear();
@@ -87,7 +88,7 @@ namespace {
       }
       lFreeList(&post_list);
       lFreeList(&alp);
-      lFreeElem(&elem);
+      elem.reset();
 
       DRETURN(static_cast<uint32_t>(ret));
    }
@@ -302,14 +303,14 @@ qconf_hgroup_member_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *tas
       }
       begin = end + 1;
    }
-   lListElem *delta = lCreateElem(HGRP_Type);
+   auto delta = ocs::tom::ElementPtr<ocs::tom::HGRP>::create();
    ocs::tom::set<HGRP_name>(delta, group.c_str());
    ocs::tom::set<HGRP_host_list>(delta, hosts);
 
    const bool add = (parameter.get_arg(ocs::QConfActionParameter::ARG_ADD) == ocs::QConfActionParameter::ARG_TRUE);
    lList *alp = nullptr;
    lList *post_list = nullptr;
-   const int ret = sge_gdi_add_mod_generic(packet, task, &alp, delta, 0, object, packet->user, packet->host,
+   const int ret = sge_gdi_add_mod_generic(packet, task, &alp, *delta, 0, object, packet->user, packet->host,
                                            ocs::gdi::Command::MOD_PROCEDURE,
                                            add ? ocs::gdi::SubCommand::APPEND : ocs::gdi::SubCommand::REMOVE,
                                            &post_list, monitor);
@@ -322,7 +323,7 @@ qconf_hgroup_member_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *tas
    }
    answer_list_append_list(answer_list, &alp);
    lFreeList(&post_list);
-   lFreeElem(&delta);
+   delta.reset();
 
    DRETURN(ret == STATUS_OK);
 }

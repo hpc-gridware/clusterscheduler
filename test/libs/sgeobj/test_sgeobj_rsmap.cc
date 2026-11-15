@@ -53,14 +53,14 @@ first_answer_text(lList *answer_list) {
  */
 static lListElem *
 make_centry(uint32_t type, double amount) {
-   lListElem *centry = lCreateElem(CE_Type);
+   auto centry = ocs::tom::ElementPtr<ocs::tom::CE>::create();
 
    ocs::tom::set<CE_name>(centry, "gpu");
    ocs::tom::set<CE_valtype>(centry, type);
    ocs::tom::set<CE_consumable>(centry, CONSUMABLE_YES);
    ocs::tom::set<CE_doubleval>(centry, amount);
 
-   return centry;
+   return centry.release();
 }
 
 /**
@@ -239,10 +239,10 @@ make_map_with_characteristics(const char *const names[], const char *const value
    ocs::tom::Element<ocs::tom::RESL> resl = ocs::tom::emplace_back_in<CE_resource_map_list, RESL_value>(centry, "gpu0");
    ocs::tom::set<RESL_amount>(resl, 1);
    for (int i = 0; i < count; i++) {
-      lListElem *prop = lCreateElem(CE_Type);
+      auto prop = ocs::tom::ElementPtr<ocs::tom::CE>::create();
       ocs::tom::set<CE_name>(prop, names[i]);
       ocs::tom::set<CE_stringval>(prop, values[i]);
-      lAppendElem(ocs::tom::get_or_create<RESL_properties>(resl, "properties"), prop);
+      lAppendElem(ocs::tom::get_or_create<RESL_properties>(resl, "properties"), std::move(prop));
    }
    return centry;
 }
@@ -253,11 +253,11 @@ make_map_with_characteristics(const char *const names[], const char *const value
  */
 static void
 test_check_characteristics() {
-   lList *master = lCreateList("complexes", CE_Type);
-   add_master_centry(master, "gpu",       ocs::CEntry::Type::RSMAP, CONSUMABLE_YES);
-   add_master_centry(master, "nested",    ocs::CEntry::Type::RSMAP, CONSUMABLE_YES);
-   add_master_centry(master, "gpu_model", ocs::CEntry::Type::STR,   CONSUMABLE_NO);
-   add_master_centry(master, "gpu_mem",   ocs::CEntry::Type::MEM,   CONSUMABLE_YES);
+   auto master = ocs::tom::ListPtr<ocs::tom::CE>::create("complexes");
+   add_master_centry(*master, "gpu",       ocs::CEntry::Type::RSMAP, CONSUMABLE_YES);
+   add_master_centry(*master, "nested",    ocs::CEntry::Type::RSMAP, CONSUMABLE_YES);
+   add_master_centry(*master, "gpu_model", ocs::CEntry::Type::STR,   CONSUMABLE_NO);
+   add_master_centry(*master, "gpu_mem",   ocs::CEntry::Type::MEM,   CONSUMABLE_YES);
 
    // T11: a string characteristic is accepted and gets the type of its complex
    {
@@ -265,7 +265,7 @@ test_check_characteristics() {
       const char *values[] = {"A100"};
       lList *al = nullptr;
       lListElem *centry = make_map_with_characteristics(names, values, 1);
-      bool ok = centry_check_rsmap_characteristics(&al, centry, master);
+      bool ok = centry_check_rsmap_characteristics(&al, centry, *master);
       ocs::tom::ConstElement<ocs::tom::RESL> resl = lFirst(ocs::tom::get<CE_resource_map_list>(centry));
       ocs::tom::ConstElement<ocs::tom::CE> prop = lFirst(ocs::tom::get<RESL_properties>(resl));
       CHECK(11, "a string characteristic is accepted and typed",
@@ -281,7 +281,7 @@ test_check_characteristics() {
       const char *values[] = {"80G"};
       lList *al = nullptr;
       lListElem *centry = make_map_with_characteristics(names, values, 1);
-      bool ok = centry_check_rsmap_characteristics(&al, centry, master);
+      bool ok = centry_check_rsmap_characteristics(&al, centry, *master);
       CHECK(12, "a consumable characteristic is accepted", ok);
       lFreeElem(&centry);
       lFreeList(&al);
@@ -293,7 +293,7 @@ test_check_characteristics() {
       const char *values[] = {"4"};
       lList *al = nullptr;
       lListElem *centry = make_map_with_characteristics(names, values, 1);
-      bool ok = centry_check_rsmap_characteristics(&al, centry, master);
+      bool ok = centry_check_rsmap_characteristics(&al, centry, *master);
       CHECK(13, "a resource map as characteristic is refused",
             !ok && strstr(first_answer_text(al), "is a resource map") != nullptr);
       lFreeElem(&centry);
@@ -306,7 +306,7 @@ test_check_characteristics() {
       const char *values[] = {"1"};
       lList *al = nullptr;
       lListElem *centry = make_map_with_characteristics(names, values, 1);
-      bool ok = centry_check_rsmap_characteristics(&al, centry, master);
+      bool ok = centry_check_rsmap_characteristics(&al, centry, *master);
       CHECK(14, "the resource map itself as characteristic is refused", !ok);
       lFreeElem(&centry);
       lFreeList(&al);
@@ -318,7 +318,7 @@ test_check_characteristics() {
       const char *values[] = {"x"};
       lList *al = nullptr;
       lListElem *centry = make_map_with_characteristics(names, values, 1);
-      bool ok = centry_check_rsmap_characteristics(&al, centry, master);
+      bool ok = centry_check_rsmap_characteristics(&al, centry, *master);
       CHECK(15, "an unknown characteristic is refused",
             !ok && strstr(first_answer_text(al), "is not a defined complex") != nullptr);
       lFreeElem(&centry);
@@ -333,14 +333,13 @@ test_check_characteristics() {
       const char *values[] = {"A100", "H100"};
       lList *al = nullptr;
       lListElem *centry = make_map_with_characteristics(names, values, 2);
-      bool ok = centry_check_rsmap_characteristics(&al, centry, master);
+      bool ok = centry_check_rsmap_characteristics(&al, centry, *master);
       CHECK(16, "a duplicate characteristic is refused",
             !ok && strstr(first_answer_text(al), "is set more than once") != nullptr);
       lFreeElem(&centry);
       lFreeList(&al);
    }
 
-   lFreeList(&master);
 }
 
 // ---------------------------------------------------------------------------

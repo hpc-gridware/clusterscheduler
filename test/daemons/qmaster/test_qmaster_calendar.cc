@@ -33,6 +33,7 @@
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/sge_calendar.h"
 #include "sgeobj/sge_qinstance_state.h"
+#include "sgeobj/tom/ocs_tom_CAL.h"
 #include "tom/ocs_Element.h"
 
 #include "sge_c_gdi.h"
@@ -301,27 +302,26 @@ static void printDateError(time_t *when, struct tm *expected) {
 
 static lListElem *createCalObject(cal_entry_t *calendar) {
    monitoring_t monitor;
-   lListElem *sourceCal = nullptr;
    lListElem *destCal = nullptr;
    lList *answerList = nullptr;
 
    sge_monitor_init(&monitor, "cal_test", NONE_EXT, NO_WARNING, NO_ERROR, nullptr);
 
-   sourceCal = lCreateElem(CAL_Type);
+   auto sourceCal = ocs::tom::ElementPtr<ocs::tom::CAL>::create();
    ocs::tom::set<CAL_name>(sourceCal, "test");
    ocs::tom::set<CAL_year_calendar>(sourceCal, calendar->year_cal);
    ocs::tom::set<CAL_week_calendar>(sourceCal, calendar->week_cal);
 
    destCal = lCreateElem(CAL_Type);
 
-   if (0 != calendar_mod(nullptr, nullptr, &answerList, destCal, sourceCal, 1, "", "", nullptr,
+   if (0 != calendar_mod(nullptr, nullptr, &answerList, destCal, *sourceCal, 1, "", "", nullptr,
                          ocs::gdi::Command::NONE, ocs::gdi::SubCommand::NONE, &monitor)) {
       lWriteListTo(answerList, stdout);
       lFreeElem(&destCal);
       lFreeList(&answerList);
    }
 
-   lFreeElem(&sourceCal);
+   sourceCal.reset();
    sge_monitor_free(&monitor);
    return destCal;
 }

@@ -1293,15 +1293,15 @@ int job_list_register_new_job(const lList *job_list, uint32_t max_jobs, int forc
 int job_initialize_id_lists(lListElem *job, lList **answer_list) {
    DENTER(TOP_LAYER);
 
-   lList *n_h_list = nullptr;    /* RN_Type */
+       /* RN_Type */
 
-   n_h_list = lCopyList("task_id_range", ocs::tom::get<JB_ja_structure>(job));
+   auto n_h_list = ocs::tom::ListPtr<ocs::tom::RN>::from_typed(lCopyList("task_id_range", ocs::tom::get<JB_ja_structure>(job)));
    if (n_h_list == nullptr) {
       answer_list_add_sprintf(answer_list, STATUS_EMALLOC, ANSWER_QUALITY_ERROR,
                               MSG_MEM_MEMORYALLOCFAILED_S, __func__);
       DRETURN(-1);
    } else {
-      ocs::tom::set<JB_ja_n_h_ids>(job, n_h_list);
+      ocs::tom::set<JB_ja_n_h_ids>(job, std::move(n_h_list));
       ocs::tom::set<JB_ja_u_h_ids>(job, nullptr);
       ocs::tom::set<JB_ja_o_h_ids>(job, nullptr);
       ocs::tom::set<JB_ja_s_h_ids>(job, nullptr);
@@ -3241,16 +3241,15 @@ job_get_context_change(const lListElem *job) {
  * @return a new `VA_Type` list the caller frees, or nullptr if the context is empty
  */
 lList *ocs_context_get_effective(const lListElem *job) {
-   lListElem *tmp_job = lCreateElem(JB_Type);
+   auto tmp_job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
    if (ocs::tom::has<JB_context>(job) && static_cast<const lList *>(ocs::tom::get<JB_context>(job)) != nullptr) {
       ocs::tom::set<JB_context>(tmp_job, lCopyList("context_list", ocs::tom::get<JB_context>(job)));
    }
    if (const lList *change = job_get_context_change(job); change != nullptr) {
-      set_context(change, tmp_job);
+      set_context(change, *tmp_job);
    }
    lList *ret = nullptr;
    ocs::tom::exchange<JB_context>(tmp_job, &ret);
-   lFreeElem(&tmp_job);
    return ret;
 }
 
@@ -4476,10 +4475,9 @@ job_get_effective_command_line(const lListElem *job, dstring *dstr, const char *
    if (job_get_context_change(job) == nullptr) {
       job_add_name_value_list_opt_to_command_line(job, dstr, "-sc", JB_context, VA_variable, VA_value);
    } else {
-      lListElem *context_job = lCreateElem(JB_Type);
+      auto context_job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
       ocs::tom::set<JB_context>(context_job, ocs_context_get_effective(job));
-      job_add_name_value_list_opt_to_command_line(context_job, dstr, "-sc", JB_context, VA_variable, VA_value);
-      lFreeElem(&context_job);
+      job_add_name_value_list_opt_to_command_line(*context_job, dstr, "-sc", JB_context, VA_variable, VA_value);
    }
    job_add_host_str_list_opt_to_command_line(job, dstr, "-shell", JB_shell_list, PN_host, PN_path);
    // -sync is not part of the job - it is only client behaviour

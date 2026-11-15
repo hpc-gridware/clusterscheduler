@@ -54,6 +54,9 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_cqueue.h"
+#include "sgeobj/tom/ocs_tom_ASTR.h"
+#include "sgeobj/tom/ocs_tom_CE.h"
+#include "sgeobj/tom/ocs_tom_CQ.h"
 #include "tom/ocs_Element.h"
 
 #include "spool/flatfile/sge_flatfile.h"
@@ -134,15 +137,15 @@ int main(int /*argc*/, char * /*argv*/[]) {
 
    ocs::tom::set<CQ_name>(cqueue, "foobar");
 
-   lList *lp = lCreateList("Shell Terminate Methods", ASTR_Type);
-   lListElem *ep = lCreateElem(ASTR_Type);
+   auto lp = ocs::tom::ListPtr<ocs::tom::ASTR>::create("Shell Terminate Methods");
+   auto ep = ocs::tom::ElementPtr<ocs::tom::ASTR>::create();
    ocs::tom::set<ASTR_href>(ep, "global");
    ocs::tom::set<ASTR_value>(ep, "/tmp/myterminate_method.sh");
-   lAppendElem(lp, ep);
-   ocs::tom::set<CQ_terminate_method>(cqueue, lp);
+   lAppendElem(*lp, std::move(ep));
+   ocs::tom::set<CQ_terminate_method>(cqueue, std::move(lp));
 
-   lList *cqueue_list = lCreateList("CQ List", CQ_Type);
-   lAppendElem(cqueue_list, cqueue);
+   auto cqueue_list = ocs::tom::ListPtr<ocs::tom::CQ>::create("CQ List");
+   lAppendElem(*cqueue_list, cqueue);
 
    // --- field alignment ---
    CHECK(id, "spool_flatfile_align_object with CQ_fields returns true",
@@ -183,7 +186,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
       lList *read_list = nullptr;
 
       lList *ce_list = lCreateList("CE List", CE_Type);
-      lListElem *ce = lCreateElem(CE_Type);
+      auto ce = ocs::tom::ElementPtr<ocs::tom::CE>::create();
       ocs::tom::set<CE_name>(ce, "test_ce");
       ocs::tom::set<CE_shortcut>(ce, "tc");
       ocs::tom::set<CE_valtype>(ce, 1);
@@ -191,7 +194,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
       ocs::tom::set<CE_requestable>(ce, REQU_YES);
       ocs::tom::set<CE_defaultval>(ce, "0");
       ocs::tom::set<CE_urgency_weight>(ce, "1");
-      lAppendElem(ce_list, ce);
+      lAppendElem(ce_list, std::move(ce));
       spool_flatfile_align_list(&alp, (const lList *)ce_list, CE_fields, 0);
       lFreeList(&alp);
 
@@ -232,10 +235,10 @@ int main(int /*argc*/, char * /*argv*/[]) {
          !spool_flatfile_align_list(&alp, nullptr, CQ_fields, 0)); id++;
    lFreeList(&alp);
    CHECK(id, "spool_flatfile_align_list rejects null fields: returns false",
-         !spool_flatfile_align_list(&alp, cqueue_list, nullptr, 0)); id++;
+         !spool_flatfile_align_list(&alp, *cqueue_list, nullptr, 0)); id++;
    lFreeList(&alp);
 
-   lFreeList(&cqueue_list);
+   cqueue_list.reset();
 
    printf("\n%s - %d failure(s)\n", s_fail == 0 ? "PASS" : "FAIL", s_fail);
    DRETURN(s_fail == 0 ? 0 : 1);

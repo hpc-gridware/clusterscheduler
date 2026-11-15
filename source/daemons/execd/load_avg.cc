@@ -76,6 +76,9 @@
 #include "sgeobj/tom/ocs_tom_PET.h"
 #include "sgeobj/tom/ocs_tom_UA.h"
 #include "sgeobj/tom/ocs_tom_LR.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
+#include "sgeobj/tom/ocs_tom_LIC.h"
+#include "sgeobj/tom/ocs_tom_REP.h"
 
 #include "job_report_execd.h"
 #include "sge_load_sensor.h"
@@ -237,7 +240,6 @@ execd_add_load_report(lList *report_list, uint64_t now, uint64_t *next_send) {
 
    if (*next_send <= now || sge_get_flush_lr_flag()) {
       lSortOrder *order = lParseSortOrderVarArg(LR_Type, "%I+", LR_host);
-      lListElem *report;
       lList *tmp_lr_list;
 
       *next_send = now + sge_gmt32_to_gmt64(mconf_get_load_report_time());
@@ -249,7 +251,7 @@ execd_add_load_report(lList *report_list, uint64_t now, uint64_t *next_send) {
       /*
       ** 1. load report
       */
-      report = lCreateElem(REP_Type);
+      auto report = ocs::tom::ElementPtr<ocs::tom::REP>::create();
       if (send_all) {
          ocs::tom::set<REP_type>(report, NUM_REP_FULL_REPORT_LOAD);
       } else {
@@ -310,11 +312,11 @@ execd_add_load_report(lList *report_list, uint64_t now, uint64_t *next_send) {
          lSortList(tmp_lr_list, order);
          ocs::tom::set<REP_list>(report, tmp_lr_list);
          lFreeElem(&last_lr);
-         last_lr = lCopyElem(report);
+         last_lr = lCopyElem(*report);
       }
       lFreeSortOrder(&order);
 
-      lAppendElem(report_list, report);
+      lAppendElem(report_list, std::move(report));
       send_all = false;
    }
 
@@ -329,7 +331,6 @@ execd_add_conf_report(lList *report_list, uint64_t now, uint64_t *next_send) {
    const char* qualified_hostname = component_get_qualified_hostname();
 
    if (*next_send <= now) {
-      lListElem *report;
 
       *next_send = now + sge_gmt32_to_gmt64(mconf_get_load_report_time());
 
@@ -338,14 +339,14 @@ execd_add_conf_report(lList *report_list, uint64_t now, uint64_t *next_send) {
       ** that the exec daemon has right now
       ** order of the reports is irrelevant
       */
-      report = lCreateElem(REP_Type);
+      auto report = ocs::tom::ElementPtr<ocs::tom::REP>::create();
       ocs::tom::set<REP_type>(report, NUM_REP_REPORT_CONF);
       ocs::tom::set<REP_version>(report, ocs::Version::get_version());
       ocs::tom::set<REP_seqno>(report, sge_execd_report_seqno);
       ocs::tom::set<REP_host>(report, qualified_hostname);
       ocs::tom::set<REP_list>(report, 
          lCopyList("execd config list copy", Execd_Config_List));
-      lAppendElem(report_list, report);
+      lAppendElem(report_list, std::move(report));
       DPRINTF("handling conf report in execd_add_conf_report\n");
    }
    DRETURN(0);
@@ -356,33 +357,30 @@ execd_add_license_report(lList *report_list, uint64_t now, uint64_t *next_send) 
    DENTER(TOP_LAYER);
    if (*next_send == 0) {
       const char* qualified_hostname = component_get_qualified_hostname();
-      lListElem *report;
 
       *next_send = now + sge_gmt32_to_gmt64(mconf_get_load_report_time());
 
       /*
       ** 3. license report
       */
-      report = lCreateElem(REP_Type);
+      auto report = ocs::tom::ElementPtr<ocs::tom::REP>::create();
       ocs::tom::set<REP_type>(report, NUM_REP_REPORT_PROCESSORS);
       ocs::tom::set<REP_version>(report, ocs::Version::get_version());
       ocs::tom::set<REP_seqno>(report, sge_execd_report_seqno);
       ocs::tom::set<REP_host>(report, qualified_hostname);
       {
-         lList *lp_lic;
-         lListElem *ep_lic;
          
-         lp_lic = lCreateList("license report list", LIC_Type);
-         ep_lic = lCreateElem(LIC_Type);
+         auto lp_lic = ocs::tom::ListPtr<ocs::tom::LIC>::create("license report list");
+         auto ep_lic = ocs::tom::ElementPtr<ocs::tom::LIC>::create();
          /*
          ** no error handling here cause we can just send 1 as #processors
          */
          ocs::tom::set<LIC_processors>(ep_lic,  sge_nprocs());
          ocs::tom::set<LIC_arch>(ep_lic, sge_get_arch());
-         lAppendElem(lp_lic, ep_lic);
-         ocs::tom::set<REP_list>(report, lp_lic);
+         lAppendElem(*lp_lic, std::move(ep_lic));
+         ocs::tom::set<REP_list>(report, std::move(lp_lic));
       }
-      lAppendElem(report_list, report);
+      lAppendElem(report_list, std::move(report));
       DPRINTF("handling license report in execd_add_license_report\n");
    }
    DRETURN(0);
@@ -419,7 +417,6 @@ execd_add_job_report(lList *report_list, uint64_t now, uint64_t *next_send) {
     * to the same host on which it executed before.
     */
    if (do_send && (last_send < now)) {
-      lListElem *job_report;
       lList *job_report_list;
       lListElem *jr;
 
@@ -427,7 +424,7 @@ execd_add_job_report(lList *report_list, uint64_t now, uint64_t *next_send) {
       last_send = now;
 
       /* create job report */
-      job_report = lCreateElem(REP_Type);
+      auto job_report = ocs::tom::ElementPtr<ocs::tom::REP>::create();
       ocs::tom::set<REP_type>(job_report, NUM_REP_REPORT_JOB);
       ocs::tom::set<REP_version>(job_report, ocs::Version::get_version());
       ocs::tom::set<REP_seqno>(job_report, sge_execd_report_seqno);
@@ -459,7 +456,7 @@ execd_add_job_report(lList *report_list, uint64_t now, uint64_t *next_send) {
       ocs::tom::set<REP_complete>(job_report, complete);
      
       /* append this new job report to the report list */
-      lAppendElem(report_list, job_report);
+      lAppendElem(report_list, std::move(job_report));
 
       /* now all is sent, reset flush_jr */
       sge_set_flush_jr_flag(false);
@@ -1032,7 +1029,6 @@ calculate_reserved_usage_pe_task(const char *qualified_hostname,
 static void get_reserved_usage(const char *qualified_hostname, lList **job_usage_list) {
    DENTER(TOP_LAYER);
 
-   lList *temp_job_usage_list;
    const lListElem *job;
    lEnumeration *what;
 
@@ -1043,7 +1039,7 @@ static void get_reserved_usage(const char *qualified_hostname, lList **job_usage
     * Same structure is delivered from PTF.
     */
 
-   temp_job_usage_list = lCreateList("JobResUsageList", JB_Type);
+   auto temp_job_usage_list = ocs::tom::ListPtr<ocs::tom::JB>::create("JobResUsageList");
 
    for_each_ep(job, *ocs::DataStore::get_master_list(SGE_TYPE_JOB)) {
       uint32_t job_id;
@@ -1092,14 +1088,14 @@ static void get_reserved_usage(const char *qualified_hostname, lList **job_usage
       }
 
       if (new_job != nullptr) {
-         lAppendElem(temp_job_usage_list, new_job);
+         lAppendElem(*temp_job_usage_list, new_job);
       }
    }
 
-   *job_usage_list = lSelect("PtfJobUsageList", temp_job_usage_list, nullptr,
+   *job_usage_list = lSelect("PtfJobUsageList", *temp_job_usage_list, nullptr,
                              what);
 
-   lFreeList(&temp_job_usage_list);
+   temp_job_usage_list.reset();
    lFreeWhat(&what);
 
    DRETURN_VOID;

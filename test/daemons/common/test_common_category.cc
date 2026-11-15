@@ -43,6 +43,13 @@
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_range.h"
 #include "sgeobj/tom/ocs_tom_PR.h"
+#include "sgeobj/tom/ocs_tom_CE.h"
+#include "sgeobj/tom/ocs_tom_RQR.h"
+#include "sgeobj/tom/ocs_tom_RQRF.h"
+#include "sgeobj/tom/ocs_tom_RQRL.h"
+#include "sgeobj/tom/ocs_tom_RQS.h"
+#include "sgeobj/tom/ocs_tom_UE.h"
+#include "sgeobj/tom/ocs_tom_US.h"
 #include "tom/ocs_Element.h"
 
 /** @brief One row of the category test table
@@ -127,7 +134,7 @@ static const char *result_category[] = {
 };
 
 static lList *test_create_access() {
-   lList *access_list = lCreateList("access", US_Type);
+   auto access_list = ocs::tom::ListPtr<ocs::tom::US>::create("access");
 
    if (access_list != nullptr) {
       for (int i = 0; AccessList[i] != nullptr; i++) {
@@ -135,18 +142,18 @@ static lList *test_create_access() {
          char *iter_dash = nullptr;
 
          for (const char *access_str = strtok_r(access_cp, " ", &iter_dash); access_str; access_str = strtok_r(nullptr, " ", &iter_dash)) {
-            lListElem *acc_elem = lCreateElem(US_Type);
+            auto acc_elem = ocs::tom::ElementPtr<ocs::tom::US>::create();
             if (acc_elem != nullptr) {
                lList *users = lCreateList("user", UE_Type);
                ocs::tom::set<US_name>(acc_elem, access_str);
                ocs::tom::set<US_entries>(acc_elem, users);
                ocs::tom::set<US_consider_with_categories>(acc_elem, true);
-               lAppendElem(access_list, acc_elem);
+               lAppendElem(*access_list, std::move(acc_elem));
 
                for (access_str = strtok_r(nullptr, " ", &iter_dash); access_str; access_str = strtok_r(nullptr, " ", &iter_dash)) {
-                  lListElem *user = lCreateElem(UE_Type);
+                  auto user = ocs::tom::ElementPtr<ocs::tom::UE>::create();
                   ocs::tom::set<UE_name>(user, access_str);
-                  lAppendElem(users, user);
+                  lAppendElem(users, std::move(user));
                }
             }
          }
@@ -154,7 +161,7 @@ static lList *test_create_access() {
       }
    }
 
-   return access_list;
+   return access_list.release();
 }
 
 static lList *test_create_project(const char *project) {
@@ -165,26 +172,26 @@ static lList *test_create_project(const char *project) {
 }
 
 static lList *test_create_rqs() {
-   lList *rqs_list = lCreateList("my_rqs", RQS_Type);
-   lListElem *rqs = lCreateElem(RQS_Type);
+   auto rqs_list = ocs::tom::ListPtr<ocs::tom::RQS>::create("my_rqs");
+   auto rqs = ocs::tom::ElementPtr<ocs::tom::RQS>::create();
    ocs::tom::set<RQS_name>(rqs, "Test_Name1");
    ocs::tom::set<RQS_enabled>(rqs, true);
-   lList *rule_list = lCreateList("Rule_List", RQR_Type);
-   lListElem *rule = lCreateElem(RQR_Type);
-   lListElem *filter = lCreateElem(RQRF_Type);
+   auto rule_list = ocs::tom::ListPtr<ocs::tom::RQR>::create("Rule_List");
+   auto rule = ocs::tom::ElementPtr<ocs::tom::RQR>::create();
+   auto filter = ocs::tom::ElementPtr<ocs::tom::RQRF>::create();
    ocs::tom::set<RQRF_expand>(filter, true);
    ocs::tom::emplace_back_in<RQRF_scope, ST_name>(filter, "rqs_user");
-   ocs::tom::set<RQR_filter_users>(rule, filter);
-   lList *limit_list = lCreateList("limit_list", RQRL_Type);
-   lListElem *limit = lCreateElem(RQRL_Type);
+   ocs::tom::set<RQR_filter_users>(rule, std::move(filter));
+   auto limit_list = ocs::tom::ListPtr<ocs::tom::RQRL>::create("limit_list");
+   auto limit = ocs::tom::ElementPtr<ocs::tom::RQRL>::create();
    ocs::tom::set<RQRL_name>(limit, "slots");
    ocs::tom::set<RQRL_value>(limit, "2*$num_proc");
-   lAppendElem(limit_list, limit);
-   ocs::tom::set<RQR_limit>(rule, limit_list);
-   lAppendElem(rule_list, rule);
-   ocs::tom::set<RQS_rule>(rqs, rule_list);
-   lAppendElem(rqs_list, rqs);
-   return rqs_list;
+   lAppendElem(*limit_list, std::move(limit));
+   ocs::tom::set<RQR_limit>(rule, std::move(limit_list));
+   lAppendElem(*rule_list, std::move(rule));
+   ocs::tom::set<RQS_rule>(rqs, std::move(rule_list));
+   lAppendElem(*rqs_list, std::move(rqs));
+   return rqs_list.release();
 }
 
 static lList *test_create_request(const char *requestStr, const int count) {
@@ -387,21 +394,20 @@ static bool run_test(const data_entry_t *t, const char *expected) {
 
 // build a normalized category string for a single mem_free=<val> request
 static std::string build_mem_cat(const char *val) {
-   lList *req = lCreateList("r", CE_Type);
+   auto req = ocs::tom::ListPtr<ocs::tom::CE>::create("r");
    lListElem *e = lCreateElem(CE_Type);
    ocs::tom::set<CE_name>(e, "mem_free");
    ocs::tom::set<CE_stringval>(e, val);
    ocs::tom::set<CE_valtype>(e, static_cast<uint32_t>(ocs::CEntry::Type::MEM));
    ocs::tom::set<CE_consumable>(e, CONSUMABLE_NO);
-   lAppendElem(req, e);
+   lAppendElem(*req, e);
    lList *al = nullptr;
    centry_fill_and_check(e, &al, false, false);
    lFreeList(&al);
    dstring cat = DSTRING_INIT;
-   sge_unparse_resource_list_dstring(&cat, req, "-scope global -hard -l");
+   sge_unparse_resource_list_dstring(&cat, *req, "-scope global -hard -l");
    std::string result(sge_dstring_get_string(&cat) ? sge_dstring_get_string(&cat) : "");
    sge_dstring_free(&cat);
-   lFreeList(&req);
    return result;
 }
 

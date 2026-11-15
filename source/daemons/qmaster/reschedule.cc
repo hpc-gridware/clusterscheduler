@@ -69,6 +69,7 @@
 #include "sgeobj/tom/ocs_tom_QU.h"
 #include "sgeobj/tom/ocs_tom_RU.h"
 #include "sgeobj/tom/ocs_tom_JB.h"
+#include "sgeobj/tom/ocs_tom_JR.h"
 
 #include "sge.h"
 #include <cinttypes>
@@ -562,7 +563,7 @@ int reschedule_job(lListElem *jep, lListElem *jatep, lListElem *ep,
        * Trigger the rescheduling of this task
        */
       if (!found) {
-         lListElem *pseudo_jr; /* JR_Type */
+          /* JR_Type */
          uint32_t state = ocs::tom::get<JAT_state>(this_jatep);
 
          ocs::tom::set<JAT_job_restarted>(this_jatep, 1);
@@ -581,7 +582,7 @@ int reschedule_job(lListElem *jep, lListElem *jatep, lListElem *ep,
          }
          ocs::tom::set<JAT_state>(this_jatep, state);
 
-         pseudo_jr = lCreateElem(JR_Type);
+         auto pseudo_jr = ocs::tom::ElementPtr<ocs::tom::JR>::create();
          if (pseudo_jr != nullptr) {
             ocs::tom::set<JR_job_number>(pseudo_jr, job_number);
             ocs::tom::set<JR_ja_task_number>(pseudo_jr, task_number);
@@ -604,8 +605,8 @@ int reschedule_job(lListElem *jep, lListElem *jatep, lListElem *ep,
                ocs::tom::set<JR_deleted_by>(pseudo_jr, sge_dstring_get_string(&dstr_deleted_by));
             }
 
-            sge_job_exit(pseudo_jr, jep, this_jatep, monitor, gdi_session);
-            lFreeElem(&pseudo_jr);
+            sge_job_exit(*pseudo_jr, jep, this_jatep, monitor, gdi_session);
+            pseudo_jr.reset();
          }
       }
    }

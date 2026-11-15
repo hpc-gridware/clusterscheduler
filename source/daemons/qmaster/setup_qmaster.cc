@@ -1118,18 +1118,18 @@ setup_qmaster() {
                    * from the cluster queue and add the new one instead.
                    */
                   const char *so_list_name = lGetListName(so_list);
-                  lList *new_so_list = lCreateList(so_list_name, SO_Type);
+                  auto new_so_list = ocs::tom::ListPtr<ocs::tom::SO>::create(so_list_name);
 
                   for_each_rw_lv (so, so_list) {
-                     lListElem *new_so = lCreateElem(SO_Type);
+                     auto new_so = ocs::tom::ElementPtr<ocs::tom::SO>::create();
                      ocs::tom::set<SO_name>(new_so, ocs::tom::get<SO_name>(so));
                      ocs::tom::set<SO_threshold>(new_so, ocs::tom::get<SO_threshold>(so));
                      ocs::tom::set<SO_slots_sum>(new_so, 0);
                      ocs::tom::set<SO_seq_no>(new_so, 0);
                      ocs::tom::set<SO_action>(new_so, 0);
-                     lAppendElem(new_so_list, new_so);
+                     lAppendElem(*new_so_list, std::move(new_so));
                   }
-                  ocs::tom::set<ASOLIST_value>(aso, new_so_list);
+                  ocs::tom::set<ASOLIST_value>(aso, std::move(new_so_list));
                }
             }
          }

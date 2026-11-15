@@ -704,7 +704,6 @@ sge_scheduler_main(void *arg) {
 
             for_each_ep(cqueue, master_cqueue_list) {
                ocs::tom::ConstList<ocs::tom::QU> qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
-               lList *t;
 
                if (qinstance_list == nullptr) {
                   continue;
@@ -714,33 +713,33 @@ sge_scheduler_main(void *arg) {
                if (!what_queue3) {
                   what_queue3 = lWhat("%T(%I%I)", lGetListDescr(qinstance_list), QU_full_name, QU_state);
                }
-               t = lSelect(nullptr, qinstance_list, nullptr, what_queue3);
+               auto t = ocs::tom::ListPtr<ocs::tom::QU>::from_typed(lSelect(nullptr, qinstance_list, nullptr, what_queue3));
                if (t) {
                   if (copy.all_queue_list == nullptr) {
-                     copy.all_queue_list = lCreateList("all", lGetListDescr(t));
+                     copy.all_queue_list = lCreateList("all", lGetListDescr(*t));
                   }
-                  lAppendList(copy.all_queue_list, t);
-                  lFreeList(&t);
+                  lAppendList(copy.all_queue_list, *t);
+                  t.reset();
                }
 
                // ensure_valid_what_and_where()
-               t = lSelect(nullptr, qinstance_list, where_what.where_queue, where_what.what_queue2);
-               if (t) {
+               auto t_qu = ocs::tom::ListPtr<ocs::tom::QU>::from_typed(lSelect(nullptr, qinstance_list, where_what.where_queue, where_what.what_queue2));
+               if (t_qu) {
                   if (copy.queue_list == nullptr) {
-                     copy.queue_list = lCreateList("enabled", lGetListDescr(t));
+                     copy.queue_list = lCreateList("enabled", lGetListDescr(*t_qu));
                   }
-                  lAppendList(copy.queue_list, t);
-                  lFreeList(&t);
+                  lAppendList(copy.queue_list, *t_qu);
+                  t_qu.reset();
                }
 
                // ensure_valid_what_and_where()
-               t = lSelect(nullptr, qinstance_list, where_what.where_queue2, where_what.what_queue2);
-               if (t) {
+               auto t_qu_2 = ocs::tom::ListPtr<ocs::tom::QU>::from_typed(lSelect(nullptr, qinstance_list, where_what.where_queue2, where_what.what_queue2));
+               if (t_qu_2) {
                   if (copy.dis_queue_list == nullptr) {
-                     copy.dis_queue_list = lCreateList("disabled", lGetListDescr(t));
+                     copy.dis_queue_list = lCreateList("disabled", lGetListDescr(*t_qu_2));
                   }
-                  lAppendList(copy.dis_queue_list, t);
-                  lFreeList(&t);
+                  lAppendList(copy.dis_queue_list, *t_qu_2);
+                  t_qu_2.reset();
                }
             }
             if (what_queue3) {

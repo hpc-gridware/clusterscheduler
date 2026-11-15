@@ -76,6 +76,7 @@
 #include "sgeobj/parse.h"
 #include "sgeobj/sge_eval_expression.h"
 #include "sgeobj/msg_sgeobjlib.h"
+#include "sgeobj/tom/ocs_tom_RN.h"
 #include "tom/ocs_Element.h"
 
 #include "msg_common.h"
@@ -840,19 +841,18 @@ object_set_range_id(lListElem *object, int rnm, uint32_t start, uint32_t end,
 
    range_elem = lFirstRW(lGetList(object, rnm));
    if (range_elem == nullptr) {
-      lList *range_list;
 
       range_elem = lCreateElem(RN_Type);
-      range_list = lCreateList("task_id_range", RN_Type);
+      auto range_list = ocs::tom::ListPtr<ocs::tom::RN>::create("task_id_range");
       if (range_elem == nullptr || range_list == nullptr) {
          lFreeElem(&range_elem);
-         lFreeList(&range_list);
+         range_list.reset();
 
          /* No memory */
          ret = 1;
       } else {
-         lAppendElem(range_list, range_elem);
-         lSetList(object, rnm, range_list);
+         lAppendElem(*range_list, range_elem);
+         lSetList(object, rnm, std::move(range_list));
       }
    }
    if (range_elem != nullptr) {

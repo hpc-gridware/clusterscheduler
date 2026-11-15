@@ -66,6 +66,7 @@
 #include "tom/ocs_Element.h"
 #include "sgeobj/tom/ocs_tom_US.h"
 #include "sgeobj/tom/ocs_tom_RUE.h"
+#include "sgeobj/tom/ocs_tom_PE.h"
 
 #include "msg_common.h"
 #include "msg_qmaster.h"
@@ -501,9 +502,8 @@ int pe_urgency_slots(const lListElem *pe, const char *urgency_slot_setting,
 lListElem *pe_create_template(char *pe_name) {
    DENTER(TOP_LAYER);
 
-   lListElem *pep;
 
-   pep = lCreateElem(PE_Type);
+   auto pep = ocs::tom::ElementPtr<ocs::tom::PE>::create();
 
    if (pe_name) {
       ocs::tom::set<PE_name>(pep, pe_name);
@@ -520,7 +520,7 @@ lListElem *pe_create_template(char *pe_name) {
 
    ocs::tom::set<PE_urgency_slots>(pep, SGE_ATTRVAL_MIN);
 
-   DRETURN(pep);
+   DRETURN(pep.release());
 }
 
 /**

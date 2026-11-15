@@ -50,6 +50,8 @@
 #include "sgeobj/sge_userprj.h"
 #include "sgeobj/sge_object.h"
 #include "sgeobj/msg_sgeobjlib.h"
+#include "sgeobj/tom/ocs_tom_PR.h"
+#include "sgeobj/tom/ocs_tom_UU.h"
 #include "tom/ocs_Element.h"
 
 /**
@@ -164,9 +166,8 @@ bool prj_list_do_all_exist(const lList *this_list, lList **answer_list,
 lListElem *getUserTemplate() {
    DENTER(TOP_LAYER);
 
-   lListElem *ep;
 
-   ep = lCreateElem(UU_Type);
+   auto ep = ocs::tom::ElementPtr<ocs::tom::UU>::create();
    ocs::tom::set<UU_name>(ep, "template");
    ocs::tom::set<UU_default_project>(ep, nullptr);
    ocs::tom::set<UU_oticket>(ep, 0);
@@ -176,7 +177,7 @@ lListElem *getUserTemplate() {
    ocs::tom::set<UU_usage>(ep, nullptr);
    ocs::tom::set<UU_long_term_usage>(ep, nullptr);
 
-   DRETURN(ep);
+   DRETURN(ep.release());
 }
 
 /***************************************************
@@ -190,9 +191,8 @@ lListElem *getUserTemplate() {
 lListElem *getPrjTemplate() {
    DENTER(TOP_LAYER);
 
-   lListElem *ep;
 
-   ep = lCreateElem(PR_Type);
+   auto ep = ocs::tom::ElementPtr<ocs::tom::PR>::create();
    ocs::tom::set<PR_name>(ep, "template");
    ocs::tom::set<PR_oticket>(ep, 0);
    ocs::tom::set<PR_fshare>(ep, 0);
@@ -203,5 +203,5 @@ lListElem *getPrjTemplate() {
    ocs::tom::set<PR_acl>(ep, nullptr);
    ocs::tom::set<PR_xacl>(ep, nullptr);
 
-   DRETURN(ep);
+   DRETURN(ep.release());
 }

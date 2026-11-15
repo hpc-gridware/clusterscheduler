@@ -140,23 +140,21 @@ void schedd_mes_initialize() {
    lListElem *tmp_sme = sconf_get_tmp_sme();
 
    if (!sme) {
-      lList *tmp_list;
 
       sme = lCreateElem(SME_Type);
-      tmp_list = lCreateList("", MES_Type);
-      ocs::tom::set<SME_message_list>(sme, tmp_list);
-      tmp_list = lCreateList("", MES_Type);
-      ocs::tom::set<SME_global_message_list>(sme, tmp_list);
+      auto tmp_list = ocs::tom::ListPtr<ocs::tom::MES>::create("");
+      ocs::tom::set<SME_message_list>(sme, std::move(tmp_list));
+      auto tmp_list_mes = ocs::tom::ListPtr<ocs::tom::MES>::create("");
+      ocs::tom::set<SME_global_message_list>(sme, std::move(tmp_list_mes));
       sconf_set_sme(sme);
    }
 
    /* prepare tmp_sme for collecting messages */
    if (!tmp_sme) {
-      lList *tmp_list;
 
       tmp_sme = lCreateElem(SME_Type);
-      tmp_list = lCreateList("", MES_Type);
-      ocs::tom::set<SME_message_list>(tmp_sme, tmp_list);
+      auto tmp_list = ocs::tom::ListPtr<ocs::tom::MES>::create("");
+      ocs::tom::set<SME_message_list>(tmp_sme, std::move(tmp_list));
       sconf_set_tmp_sme(tmp_sme);
    }
 
@@ -211,8 +209,8 @@ void schedd_mes_commit(lList *job_list, int ignore_category, lRef jid_category) 
       ocs::tom::List<ocs::tom::MES> sme_mes_list = ocs::tom::get<SME_message_list>(sme);
       ocs::tom::exchange<SME_message_list>(tmp_sme, &tmp_sme_list);
       lAddList(sme_mes_list, &tmp_sme_list);
-      tmp_sme_list = lCreateList("job info messages", MES_Type);
-      ocs::tom::set<SME_message_list>(tmp_sme, tmp_sme_list);
+      auto tmp_sme_list_mes = ocs::tom::ListPtr<ocs::tom::MES>::create("job info messages");
+      ocs::tom::set<SME_message_list>(tmp_sme, std::move(tmp_sme_list_mes));
    }
 }
 
@@ -225,10 +223,9 @@ void schedd_mes_rollback() {
    lListElem *tmp_sme = sconf_get_tmp_sme();
    
    if (tmp_sme) {
-      lList *tmp_sme_list = nullptr;
 
-      tmp_sme_list = lCreateList("job info messages", MES_Type);
-      ocs::tom::set<SME_message_list>(tmp_sme, tmp_sme_list);
+      auto tmp_sme_list = ocs::tom::ListPtr<ocs::tom::MES>::create("job info messages");
+      ocs::tom::set<SME_message_list>(tmp_sme, std::move(tmp_sme_list));
    }
 }
 
@@ -351,9 +348,7 @@ void schedd_mes_add(lList **monitor_alpp, bool monitor_next_run, uint32_t job_id
       if (!monitor_alpp) {
          if (job_id && (schedd_job_info != SCHEDD_JOB_INFO_FALSE)) {
             if (sconf_get_mes_schedd_info()) {
-               lListElem *mes = nullptr;
                lList *jobs_ulng = nullptr;
-               lListElem *jid_ulng;
                lListElem *tmp_sme = sconf_get_tmp_sme();
 
                if (schedd_job_info == SCHEDD_JOB_INFO_JOB_LIST) {
@@ -363,16 +358,16 @@ void schedd_mes_add(lList **monitor_alpp, bool monitor_next_run, uint32_t job_id
                   }
                }
 
-               mes = lCreateElem(MES_Type);
+               auto mes = ocs::tom::ElementPtr<ocs::tom::MES>::create();
                jobs_ulng = lCreateList("job ids", ULNG_Type);
                ocs::tom::set<MES_job_number_list>(mes, jobs_ulng);
                ocs::tom::set<MES_message_number>(mes, message_number);
                ocs::tom::set<MES_message>(mes, msg_str);
-               lAppendElem(ocs::tom::get<SME_message_list>(tmp_sme), mes);
+               lAppendElem(ocs::tom::get<SME_message_list>(tmp_sme), std::move(mes));
 
-               jid_ulng = lCreateElem(ULNG_Type);
+               auto jid_ulng = ocs::tom::ElementPtr<ocs::tom::ULNG>::create();
                ocs::tom::set<ULNG_value>(jid_ulng, job_id);
-               lAppendElem(jobs_ulng, jid_ulng);
+               lAppendElem(jobs_ulng, std::move(jid_ulng));
             }
          }
       }
@@ -429,9 +424,7 @@ void schedd_mes_add_join(bool monitor_next_run, uint32_t job_number, uint32_t me
       if (job_number && (schedd_job_info != SCHEDD_JOB_INFO_FALSE)) {
          if (sconf_get_mes_schedd_info()) {
             lListElem *tmp_sme = sconf_get_tmp_sme();
-            lListElem *mes;
             lList *jobs_ulng = nullptr;
-            lListElem *jid_ulng;
 
             if (schedd_job_info == SCHEDD_JOB_INFO_JOB_LIST) {
                if (!sconf_is_id_in_schedd_job_info_range(job_number)) {
@@ -442,20 +435,20 @@ void schedd_mes_add_join(bool monitor_next_run, uint32_t job_number, uint32_t me
 
             ocs::tom::Element<ocs::tom::MES> mes_mes = ocs::tom::find_first_rw<MES_message_number>(ocs::tom::get<SME_message_list>(tmp_sme), message_number);
             if (mes_mes == nullptr) {
-               mes = lCreateElem(MES_Type);
+               auto mes = ocs::tom::ElementPtr<ocs::tom::MES>::create();
                jobs_ulng = lCreateList("job ids", ULNG_Type);
                ocs::tom::set<MES_job_number_list>(mes, jobs_ulng);
                ocs::tom::set<MES_message_number>(mes, message_number);
                ocs::tom::set<MES_message>(mes, msg_str);
 
-               lAppendElem(ocs::tom::get<SME_message_list>(tmp_sme), mes);
+               lAppendElem(ocs::tom::get<SME_message_list>(tmp_sme), std::move(mes));
             } else {
                jobs_ulng = ocs::tom::get<MES_job_number_list>(mes_mes);
             }
 
-            jid_ulng = lCreateElem(ULNG_Type);
+            auto jid_ulng = ocs::tom::ElementPtr<ocs::tom::ULNG>::create();
             ocs::tom::set<ULNG_value>(jid_ulng, job_number);
-            lAppendElem(jobs_ulng, jid_ulng);
+            lAppendElem(jobs_ulng, std::move(jid_ulng));
          }
 
          if (do_logging) {
@@ -516,10 +509,10 @@ void schedd_mes_add_global(lList **monitor_alpp, bool monitor_next_run, uint32_t
          lListElem *sme = sconf_get_sme();
 
          if (sme != nullptr) {
-            lListElem *mes = lCreateElem(MES_Type);
+            auto mes = ocs::tom::ElementPtr<ocs::tom::MES>::create();
             ocs::tom::set<MES_message_number>(mes, message_number);
             ocs::tom::set<MES_message>(mes, msg_str);
-            lAppendElem(ocs::tom::get<SME_global_message_list>(sme), mes);
+            lAppendElem(ocs::tom::get<SME_global_message_list>(sme), std::move(mes));
          }
       }
 

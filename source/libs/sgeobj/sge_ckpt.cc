@@ -57,6 +57,7 @@
 #include "sgeobj/sge_ckpt.h"
 #include "sgeobj/sge_str.h"
 #include "sgeobj/msg_sgeobjlib.h"
+#include "sgeobj/tom/ocs_tom_CK.h"
 #include "tom/ocs_Element.h"
 
 #include "symbols.h"
@@ -317,9 +318,8 @@ bool ckpt_list_do_all_exist(const lList *ckpt_list, lList **answer_list,
 lListElem *sge_generic_ckpt(char *ckpt_name) {
    DENTER(TOP_LAYER);
 
-   lListElem *ep;
 
-   ep = lCreateElem(CK_Type);
+   auto ep = ocs::tom::ElementPtr<ocs::tom::CK>::create();
 
    if (ckpt_name)
       ocs::tom::set<CK_name>(ep, ckpt_name);
@@ -336,5 +336,5 @@ lListElem *sge_generic_ckpt(char *ckpt_name) {
    ocs::tom::set<CK_signal>(ep, NONE_STR);
    ocs::tom::set<CK_job_pid>(ep, 0);
 
-   DRETURN(ep);
+   DRETURN(ep.release());
 }

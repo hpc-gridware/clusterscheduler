@@ -50,6 +50,8 @@
 #include "sgeobj/tom/ocs_tom_JG.h"
 #include "sgeobj/tom/ocs_tom_MES.h"
 #include "sgeobj/tom/ocs_tom_ST.h"
+#include "sgeobj/tom/ocs_tom_OR.h"
+#include "sgeobj/tom/ocs_tom_SME.h"
 
 #include "evc/sge_event_client.h"
 
@@ -75,8 +77,7 @@
 lList *sge_add_schedd_info(lList *or_list, int *global_mes_count, int *job_mes_count) {
    DENTER(TOP_LAYER);
 
-   lList *jlist;
-   lListElem *sme, *ep;
+   lListElem *sme;
 
    sme = schedd_mes_obtain_package(global_mes_count, job_mes_count);
 
@@ -91,14 +92,14 @@ lList *sge_add_schedd_info(lList *or_list, int *global_mes_count, int *job_mes_c
    }
 
    /* build order */
-   ep=lCreateElem(OR_Type);
+   auto ep=ocs::tom::ElementPtr<ocs::tom::OR>::create();
 
-   jlist = lCreateList("", SME_Type);
-   lAppendElem(jlist, sme);
-   ocs::tom::set<OR_joker>(ep, jlist);
+   auto jlist = ocs::tom::ListPtr<ocs::tom::SME>::create("");
+   lAppendElem(*jlist, sme);
+   ocs::tom::set<OR_joker>(ep, std::move(jlist));
 
    ocs::tom::set<OR_type>(ep, ORT_job_schedd_info);
-   lAppendElem(or_list, ep);
+   lAppendElem(or_list, std::move(ep));
 
    DRETURN(or_list);
 }
@@ -127,7 +128,7 @@ lList *sge_create_orders(lList *or_list, uint32_t type, const lListElem *job, co
    DENTER(TOP_LAYER);
 
    lList *ql = nullptr;
-   lListElem *ep, *ep2;
+   lListElem *ep2;
    uint32_t qslots;
 
    if (!job) {
@@ -163,7 +164,7 @@ lList *sge_create_orders(lList *or_list, uint32_t type, const lListElem *job, co
    }
 
    /* build order */
-   ep=lCreateElem(OR_Type);
+   auto ep=ocs::tom::ElementPtr<ocs::tom::OR>::create();
 
    if(ja_task != nullptr) {
       ocs::tom::set<OR_ticket>(ep,    ocs::tom::get<JAT_tix>(ja_task));
@@ -246,7 +247,7 @@ lList *sge_create_orders(lList *or_list, uint32_t type, const lListElem *job, co
       ocs::tom::set<OR_granted_resources_list>(ep, lCopyList(nullptr, ocs::tom::get<JAT_granted_resources_list>(ja_task)));
    }
 
-   lAppendElem(or_list, ep);
+   lAppendElem(or_list, std::move(ep));
 
    DRETURN(or_list);
 }

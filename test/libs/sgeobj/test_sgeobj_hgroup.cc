@@ -52,6 +52,7 @@
 #include "sgeobj/tom/ocs_tom_HM.h"
 #include "sgeobj/tom/ocs_tom_HR.h"
 #include "sgeobj/tom/ocs_tom_HGRP.h"
+#include "sgeobj/tom/ocs_tom_EH.h"
 #include "tom/ocs_ElementCore.h"
 
 /*
@@ -452,7 +453,7 @@ static void
 test_host_is_referenced_reserved() {
    printf("\n--- host_is_referenced and reserved groups ---\n");
 
-   lListElem *host = lCreateElem(EH_Type);
+   auto host = ocs::tom::ElementPtr<ocs::tom::EH>::create();
    ocs::tom::set<EH_name>(host, "hosta");
 
    /* one group at a time, so a passing case cannot be masked by another group */
@@ -462,7 +463,7 @@ test_host_is_referenced_reserved() {
       lList *answer_list = nullptr;
 
       add_hgroup(&hgrp_list, reserved[i], {"hosta"});
-      bool referenced = host_is_referenced(host, &answer_list, nullptr, hgrp_list);
+      bool referenced = host_is_referenced(*host, &answer_list, nullptr, hgrp_list);
 
       CHECK(41 + i, reserved[i], !referenced);
       lFreeList(&answer_list);
@@ -476,7 +477,7 @@ test_host_is_referenced_reserved() {
 
       add_hgroup(&hgrp_list, "@userowned", {"hosta"});
       CHECK(44, "a user group still counts as a reference",
-            host_is_referenced(host, &answer_list, nullptr, hgrp_list));
+            host_is_referenced(*host, &answer_list, nullptr, hgrp_list));
       lFreeList(&answer_list);
       lFreeList(&hgrp_list);
    }
@@ -492,12 +493,11 @@ test_host_is_referenced_reserved() {
       add_hgroup(&hgrp_list, ADMIN_HOSTGROUP, {"hosta"});
       add_hgroup(&hgrp_list, "@wraps_admin", {ADMIN_HOSTGROUP});
       CHECK(45, "a user group referencing a reserved group still counts",
-            host_is_referenced(host, &answer_list, nullptr, hgrp_list));
+            host_is_referenced(*host, &answer_list, nullptr, hgrp_list));
       lFreeList(&answer_list);
       lFreeList(&hgrp_list);
    }
 
-   lFreeElem(&host);
 }
 
 // ---------------------------------------------------------------------------
@@ -1274,15 +1274,15 @@ test_match_cache() {
    {
       // a free element, so that the descriptor travels with it, which is what
       // a client that knows nothing of the type needs
-      lListElem *hgroup = lCreateElem(HGRP_Type);
+      auto hgroup = ocs::tom::ElementPtr<ocs::tom::HGRP>::create();
       lList *members = nullptr;
 
       ocs::tom::set<HGRP_name>(hgroup, "@gpu_nodes");
       ocs::tom::emplace_back<HR_name>(&members, "host:gpu*");
       ocs::tom::set<HGRP_host_list>(hgroup, members);
-      ocs::MatchCache::insert(hgroup, "gpu001");
+      ocs::MatchCache::insert(*hgroup, "gpu001");
 
-      lListElem *at_client = round_trip(hgroup);
+      lListElem *at_client = round_trip(*hgroup);
 
       CHECK(112, "a host group reaches a client that asks for all fields",
             at_client != nullptr &&
@@ -1293,10 +1293,9 @@ test_match_cache() {
             ocs::tom::has<HGRP_match_cache>(at_client));
       CHECK(115, "the member list, which is what defines the group, arrives in full",
             lGetNumberOfElem(ocs::tom::get<HGRP_host_list>(at_client)) == 1);
-      CHECK(116, "and what the qmaster holds is unchanged", cache_holds(hgroup, "gpu001"));
+      CHECK(116, "and what the qmaster holds is unchanged", cache_holds(*hgroup, "gpu001"));
 
       lFreeElem(&at_client);
-      lFreeElem(&hgroup);
    }
 }
 

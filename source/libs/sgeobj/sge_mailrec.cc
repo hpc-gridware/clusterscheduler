@@ -76,7 +76,6 @@ int mailrec_parse(lList **lpp, const char *mail_str) {
    const char *host;
    char **str_str;
    char **pstr;
-   lListElem *ep;
    ocs::tom::ConstElement<ocs::tom::MR> tmp;
    char *mail;
    struct saved_vars_s *context;
@@ -119,11 +118,11 @@ int mailrec_parse(lList **lpp, const char *mail_str) {
       }
 
       /* got a new adress - add it */
-      ep = lCreateElem(MR_Type);
+      auto ep = ocs::tom::ElementPtr<ocs::tom::MR>::create();
       ocs::tom::set<MR_user>(ep, user);
       if (host) 
          ocs::tom::set<MR_host>(ep, host);
-      lAppendElem(*lpp, ep);
+      lAppendElem(*lpp, std::move(ep));
 
       sge_free_saved_vars(context);
    }

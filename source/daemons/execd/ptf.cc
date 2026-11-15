@@ -100,6 +100,7 @@
 #include "sgeobj/tom/ocs_tom_JO.h"
 #include "sgeobj/tom/ocs_tom_JP.h"
 #include "sgeobj/tom/ocs_tom_UA.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
 
 #include "ocs_common_systemd.h"
 #include "ptf.h"
@@ -618,7 +619,6 @@ static void ptf_get_usage_from_data_collector() {
    DENTER(TOP_LAYER);
 
    lListElem *job, *osjob;
-   lList *pidlist;
    struct psJob_s *jobs, *ojobs, *tmp_jobs;
    struct psProc_s *procs;
    uint64 jobcount;
@@ -703,7 +703,7 @@ static void ptf_get_usage_from_data_collector() {
 
                if (proccount > 0) {
                   ocs::tom::List<ocs::tom::JP> oldpidlist = ocs::tom::get<JO_pid_list>(osjob);
-                  pidlist = lCreateList("pidlist", JP_Type);
+                  auto pidlist = ocs::tom::ListPtr<ocs::tom::JP>::create("pidlist");
 
                   procs = (struct psProc_s *) jobs;
                   for (j = 0; j < proccount; j++) {
@@ -711,19 +711,19 @@ static void ptf_get_usage_from_data_collector() {
 
                      if (procs->pd_state == 1) {
                         if ((pid = ocs::tom::find_first_rw<JP_pid>(oldpidlist, procs->pd_pid))) {
-                           lAppendElem(pidlist, lCopyElem(pid));
+                           lAppendElem(*pidlist, lCopyElem(pid));
                         } else {
-                           pid = lCreateElem(JP_Type);
+                           auto pid = ocs::tom::ElementPtr<ocs::tom::JP>::create();
 
                            ocs::tom::set<JP_pid>(pid, procs->pd_pid);
-                           lAppendElem(pidlist, pid);
+                           lAppendElem(*pidlist, std::move(pid));
                         }
                      }
                      INCPROCPTR(procs, procs->pd_length);
                   }
 
                   jobs = (struct psJob_s *)procs;
-                  ocs::tom::set<JO_pid_list>(osjob, pidlist);
+                  ocs::tom::set<JO_pid_list>(osjob, std::move(pidlist));
                } else {
                   ocs::tom::set<JO_pid_list>(osjob, nullptr);
                }
@@ -1508,13 +1508,13 @@ static lList *_ptf_get_job_usage(lListElem *job, u_long ja_task_id,
 int ptf_get_usage(lList **job_usage_list) {
    DENTER(TOP_LAYER);
 
-   lList *job_list, *temp_usage_list;
+   lList *job_list;
    const lListElem *job, *osjob;
    lEnumeration *what;
 
    what = lWhat("%T(%I %I)", JB_Type, JB_job_number, JB_ja_tasks);
 
-   temp_usage_list = lCreateList("PtfJobUsageList", JB_Type);
+   auto temp_usage_list = ocs::tom::ListPtr<ocs::tom::JB>::create("PtfJobUsageList");
    job_list = ptf_jobs;
    for_each_ep(job, job_list) {
       lListElem *tmp_job = nullptr;
@@ -1529,11 +1529,11 @@ int ptf_get_usage(lList **job_usage_list) {
             continue;
          }
 
-         tmp_job = ocs::tom::find_first_rw<JB_job_number>(temp_usage_list, job_id);
+         tmp_job = ocs::tom::find_first_rw<JB_job_number>(*temp_usage_list, job_id);
          if (tmp_job == nullptr) {
             tmp_job = lCreateElem(JB_Type);
             ocs::tom::set<JB_job_number>(tmp_job, job_id);
-            lAppendElem(temp_usage_list, tmp_job);
+            lAppendElem(*temp_usage_list, tmp_job);
          }
 
          tmp_ja_task = job_search_task(tmp_job, nullptr, ja_task_id);
@@ -1553,9 +1553,9 @@ int ptf_get_usage(lList **job_usage_list) {
       } /* for each osjob */
    } /* for each ptf job */
 
-   *job_usage_list = lSelect("PtfJobUsageList", temp_usage_list, nullptr, what);
+   *job_usage_list = lSelect("PtfJobUsageList", *temp_usage_list, nullptr, what);
 
-   lFreeList(&temp_usage_list);
+   temp_usage_list.reset();
    lFreeWhat(&what);
 
    DRETURN(0);

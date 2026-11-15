@@ -68,6 +68,7 @@
 #include "sgeobj/tom/ocs_tom_JG.h"
 #include "sgeobj/tom/ocs_tom_PE.h"
 #include "sgeobj/tom/ocs_tom_QU.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
 
 #include "sched/sge_resource_utilization.h"
 #include "sched/sge_serf.h"
@@ -1270,7 +1271,7 @@ qinstance_reinit_consumable_actual_list(lListElem *this_elem,
 
          if (gdil_ep != nullptr) {
             bool is_master_task = false;
-            lListElem *dummy_job = lCreateElem(JB_Type);
+            auto dummy_job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
 
             if (gdil_ep == lFirst(gdil)) {
                is_master_task = true;
@@ -1282,14 +1283,13 @@ qinstance_reinit_consumable_actual_list(lListElem *this_elem,
                pe = pe_list_locate(master_pe_list, pe_name);
             }
 
-            job_set_hard_resource_list(dummy_job, lCopyList(nullptr, ocs::tom::get<AR_resource_list>(ep)));
+            job_set_hard_resource_list(*dummy_job, lCopyList(nullptr, ocs::tom::get<AR_resource_list>(ep)));
 
-            rc_add_job_utilization(nullptr, dummy_job, pe, 0, SCHEDULING_RECORD_ENTRY_TYPE_RESERVING,
+            rc_add_job_utilization(nullptr, *dummy_job, pe, 0, SCHEDULING_RECORD_ENTRY_TYPE_RESERVING,
                                    this_elem, centry_list, ocs::tom::get<JG_slots>(gdil_ep),
                                    QU_consumable_config_list, QU_resource_utilization, name,
                                    ocs::tom::get<AR_start_time>(ep), ocs::tom::get<AR_duration>(ep),
                                    QUEUE_TAG, false, is_master_task, false, nullptr);
-            lFreeElem(&dummy_job);
          }
       }
    }

@@ -94,7 +94,6 @@ sge_job_exit(lListElem *jr, lListElem *jep, lListElem *jatep, monitoring_t *moni
    uint32_t jobid, jataskid;
    const lListElem *hep = nullptr;
    uint32_t failed, general_failure;
-   lList *saved_gdil;
 
    lList *master_cqueue_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE);
    lList *master_ar_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_AR);
@@ -155,7 +154,7 @@ sge_job_exit(lListElem *jr, lListElem *jep, lListElem *jatep, monitoring_t *moni
       DRETURN_VOID;
    }
 
-   saved_gdil = lCopyList("cpy", ocs::tom::get<JAT_granted_destin_identifier_list>(jatep));
+   auto saved_gdil = ocs::tom::ListPtr<ocs::tom::JG>::from_typed(lCopyList("cpy", ocs::tom::get<JAT_granted_destin_identifier_list>(jatep)));
 
    /*
     * case 1: job being trashed because 
@@ -343,10 +342,10 @@ sge_job_exit(lListElem *jr, lListElem *jep, lListElem *jatep, monitoring_t *moni
          sge_dstring_free(&error);
       }
 
-      gdil_del_all_orphaned(saved_gdil, &answer_list, gdi_session);
+      gdil_del_all_orphaned(*saved_gdil, &answer_list, gdi_session);
       answer_list_output(&answer_list);
    }
 
-   lFreeList(&saved_gdil);
+   saved_gdil.reset();
    DRETURN_VOID;
 }

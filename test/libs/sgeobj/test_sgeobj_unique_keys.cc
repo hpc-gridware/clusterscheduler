@@ -50,6 +50,8 @@
 #include "sgeobj/tom/ocs_tom_HGRP.h"
 #include "sgeobj/tom/ocs_tom_JB.h"
 #include "sgeobj/tom/ocs_tom_JRS.h"
+#include "sgeobj/tom/ocs_tom_JR.h"
+#include "sgeobj/tom/ocs_tom_US.h"
 #include "tom/ocs_ElementCore.h"
 
 #include "ocs_module_test.h"
@@ -89,11 +91,11 @@ test_flat_lists() {
    lFreeList(&answer_list);
    lFreeList(&vars);
 
-   lList *no_keys = lCreateList("no keys", VA_Type);
-   lAppendElem(no_keys, lCreateElem(VA_Type));
-   lAppendElem(no_keys, lCreateElem(VA_Type));
-   CHECK(3, "elements without a key are skipped", ocs_object_list_verify_unique_keys(no_keys, &answer_list, "test"));
-   lFreeList(&no_keys);
+   auto no_keys = ocs::tom::ListPtr<ocs::tom::VA>::create("no keys");
+   lAppendElem(*no_keys, lCreateElem(VA_Type));
+   lAppendElem(*no_keys, lCreateElem(VA_Type));
+   CHECK(3, "elements without a key are skipped", ocs_object_list_verify_unique_keys(*no_keys, &answer_list, "test"));
+   no_keys.reset();
 
    lList *hosts = nullptr;
    ocs::tom::emplace_back<HR_name>(&hosts, "h1");
@@ -127,20 +129,19 @@ test_nested() {
    // the append (N-H-18), so the check is suspended here
    const ocs::tom::UniqueCheckSuspension suspension;
    lList *answer_list = nullptr;
-   lListElem *job = lCreateElem(JB_Type);
+   auto job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
    lList *env = nullptr;
    ocs::tom::emplace_back<VA_variable>(&env, "A");
    ocs::tom::emplace_back<VA_variable>(&env, "B");
    ocs::tom::set<JB_env_list>(job, env);
-   CHECK(6, "a job with distinct variables passes", ocs_object_verify_unique_keys(job, &answer_list, "job 1"));
+   CHECK(6, "a job with distinct variables passes", ocs_object_verify_unique_keys(*job, &answer_list, "job 1"));
 
    lList *job_env = ocs::tom::get<JB_env_list>(job);
    ocs::tom::emplace_back<VA_variable>(&job_env, "B");
-   const bool rejected = !ocs_object_verify_unique_keys(job, &answer_list, "job 1");
+   const bool rejected = !ocs_object_verify_unique_keys(*job, &answer_list, "job 1");
    CHECK(7, "a repeated variable in the job's environment is rejected, naming the job",
          rejected && answer_contains(answer_list, "job 1"));
    lFreeList(&answer_list);
-   lFreeElem(&job);
 }
 
 /**
@@ -213,9 +214,9 @@ static void
 add_context_switch(lList **change, const char *marker, const char *vars) {
    lList *option = nullptr;
    var_list_parse_from_string(&option, vars, 0);
-   lListElem *ep = lCreateElem(VA_Type);
+   auto ep = ocs::tom::ElementPtr<ocs::tom::VA>::create();
    ocs::tom::set<VA_variable>(ep, marker);
-   lInsertElem(option, nullptr, ep);
+   lInsertElem(option, nullptr, std::move(ep));
    ocs_context_change_add(change, option);
    lFreeList(&option);
 }
@@ -249,25 +250,25 @@ test_context_change() {
    CHECK(15, "the request holds four markers and a three times; a lookup of a finds an element",
          lGetNumberOfElem(change) == 8 && a != nullptr);
 
-   lListElem *job = lCreateElem(JB_Type);
+   auto job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
    ocs::tom::set<JB_context_change>(job, change);
    lList *answer_list = nullptr;
    CHECK(16, "the central check accepts a job holding the request",
-         ocs_object_verify_unique_keys(job, &answer_list, "job 1"));
+         ocs_object_verify_unique_keys(*job, &answer_list, "job 1"));
    lFreeList(&answer_list);
 
-   set_context(ocs::tom::get<JB_context_change>(job), job);
+   set_context(ocs::tom::get<JB_context_change>(job), *job);
    CHECK(17, "the request yields the context b=2,a=3",
-         lGetNumberOfElem(ocs::tom::get<JB_context>(job)) == 2 && context_has(job, "b", "2") && context_has(job, "a", "3"));
+         lGetNumberOfElem(ocs::tom::get<JB_context>(job)) == 2 && context_has(*job, "b", "2") && context_has(*job, "a", "3"));
 
    // the context loses its last variable and gets a new one
    lList *readd = nullptr;
    add_context_switch(&readd, "=", "a=1");
    add_context_switch(&readd, "-", "a");
    add_context_switch(&readd, "+", "c=1");
-   set_context(readd, job);
+   set_context(readd, *job);
    CHECK(18, "a variable added after the context became empty is kept",
-         lGetNumberOfElem(ocs::tom::get<JB_context>(job)) == 1 && context_has(job, "c", "1"));
+         lGetNumberOfElem(ocs::tom::get<JB_context>(job)) == 1 && context_has(*job, "c", "1"));
    lFreeList(&readd);
 
    // above the hash threshold the markers and a repeated name are hashed without a unique key
@@ -279,10 +280,10 @@ test_context_change() {
    add_context_switch(&big, "-", "x0");
    add_context_switch(&big, "+", "x0=new");
    const bool found = static_cast<const lListElem *>(ocs::tom::find_first<CX_variable>(big, "+")) != nullptr && static_cast<const lListElem *>(ocs::tom::find_first<CX_variable>(big, "x0")) != nullptr;
-   set_context(big, job);
+   set_context(big, *job);
    CHECK(19, "above the hash threshold the lookups work; c and the 20 added variables remain, x0 with its new value",
          lGetNumberOfElem(big) > OCS_CULL_HASH_MIN_ELEMS && found &&
-         lGetNumberOfElem(ocs::tom::get<JB_context>(job)) == 21 && context_has(job, "x0", "new"));
+         lGetNumberOfElem(ocs::tom::get<JB_context>(job)) == 21 && context_has(*job, "x0", "new"));
    lFreeList(&big);
 
    // a request without a marker replaces the context
@@ -291,27 +292,27 @@ test_context_change() {
    var_list_parse_from_string(&vars, "d=4", 0);
    ocs_context_change_add(&plain, vars);
    lFreeList(&vars);
-   set_context(plain, job);
+   set_context(plain, *job);
    CHECK(20, "a request without a marker replaces the context",
-         lGetNumberOfElem(ocs::tom::get<JB_context>(job)) == 1 && context_has(job, "d", "4"));
+         lGetNumberOfElem(ocs::tom::get<JB_context>(job)) == 1 && context_has(*job, "d", "4"));
    lFreeList(&plain);
-   lFreeElem(&job);
+   job.reset();
 
    // qsh adds PARENT after the switches; a trailing -dc must not delete it
-   lListElem *child = lCreateElem(JB_Type);
+   auto child = ocs::tom::ElementPtr<ocs::tom::JB>::create();
    lList *child_change = nullptr;
    add_context_switch(&child_change, "+", "e=5");
    add_context_switch(&child_change, "-", "e");
    ocs::tom::set<JB_context_change>(child, child_change);
    setenv("JOB_ID", "42", 1);
-   job_add_parent_id_to_context(child);
+   job_add_parent_id_to_context(*child);
    unsetenv("JOB_ID");
-   lList *effective = ocs_context_get_effective(child);
+   lList *effective = ocs_context_get_effective(*child);
    ocs::tom::ConstElement<ocs::tom::VA> parent = ocs::tom::find_first<VA_variable>(effective, CONTEXT_PARENT);
    CHECK(21, "PARENT given after a trailing -dc is in the effective context",
          lGetNumberOfElem(effective) == 1 && parent != nullptr && strcmp(ocs::tom::get<VA_value>(parent), "42") == 0);
    lFreeList(&effective);
-   lFreeElem(&child);
+   child.reset();
 
    // qstat -j works on a reduced job that does not contain JB_context_change
    lList *jobs = lCreateList("jobs", JB_Type);
@@ -351,7 +352,7 @@ test_repair() {
    // builds lists with a repeated key on purpose, as input for the check; a debug build refuses them already at
    // the append (N-H-18), so the check is suspended here
    const ocs::tom::UniqueCheckSuspension suspension;
-   lListElem *job = lCreateElem(JB_Type);
+   auto job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
    ocs::tom::set<JB_job_number>(job, 7);
 
    lList *env = nullptr;
@@ -373,7 +374,7 @@ test_repair() {
 
    std::string repairs;
    lList *answer_list = nullptr;
-   const bool repaired = ocs_object_repair_repeated_keys(job, repairs, &answer_list, "job 7");
+   const bool repaired = ocs_object_repair_repeated_keys(*job, repairs, &answer_list, "job 7");
    ocs::tom::ConstElement<ocs::tom::VA> a = ocs::tom::find_first<VA_variable>(ocs::tom::get<JB_env_list>(job), "A");
    ocs::tom::ConstList<ocs::tom::QR> repaired_queues = ocs::tom::get<JRS_hard_queue_list>(request_set);
    ocs::tom::ConstList<ocs::tom::CE> repaired_resources = ocs::tom::get<JRS_hard_resource_list>(request_set);
@@ -390,28 +391,27 @@ test_repair() {
 
    repairs.clear();
    CHECK(25, "a repaired object has nothing left to repair",
-         ocs_object_repair_repeated_keys(job, repairs, &answer_list, "job 7") && repairs.empty());
+         ocs_object_repair_repeated_keys(*job, repairs, &answer_list, "job 7") && repairs.empty());
 
-   lListElem *userset = lCreateElem(US_Type);
+   auto userset = ocs::tom::ElementPtr<ocs::tom::US>::create();
    ocs::tom::set<US_name>(userset, "staff");
    ocs::tom::emplace_back_in<US_entries, UE_name>(userset, "u1");
    ocs::tom::emplace_back_in<US_entries, UE_name>(userset, "u2");
    ocs::tom::emplace_back_in<US_entries, UE_name>(userset, "u1");
    CHECK(26, "a user set keeps a repeated user once",
-         ocs_object_repair_repeated_keys(userset, repairs, &answer_list, "userset staff") &&
+         ocs_object_repair_repeated_keys(*userset, repairs, &answer_list, "userset staff") &&
          lGetNumberOfElem(ocs::tom::get<US_entries>(userset)) == 2 && repairs == "US_entries \"u1\"");
 
    ocs::tom::emplace_back_in<JB_ja_tasks, JAT_task_number>(job, 1);
    ocs::tom::emplace_back_in<JB_ja_tasks, JAT_task_number>(job, 1);
    repairs.clear();
    CHECK(27, "a repeated array task is not repaired; the error names the job, the list and the key",
-         !ocs_object_repair_repeated_keys(job, repairs, &answer_list, "job 7") && repairs.empty() &&
+         !ocs_object_repair_repeated_keys(*job, repairs, &answer_list, "job 7") && repairs.empty() &&
          lGetNumberOfElem(ocs::tom::get<JB_ja_tasks>(job)) == 2 && answer_contains(answer_list, "job 7, JB_ja_tasks") &&
          answer_contains(answer_list, "JAT_task_number"));
 
    lFreeList(&answer_list);
-   lFreeElem(&userset);
-   lFreeElem(&job);
+   userset.reset();
 }
 
 /**
@@ -574,23 +574,22 @@ test_inventory() {
    lFreeList(&answers);
 
    // the qmaster enforces a limit on a task, and then again on the same task
-   lListElem *job = lCreateElem(JB_Type);
+   auto job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
    ocs::tom::set<JB_job_number>(job, 1);
    ocs::tom::set<JB_submission_time>(job, 1000);
-   lListElem *ja_task = lCreateElem(JAT_Type);
+   auto ja_task = ocs::tom::ElementPtr<ocs::tom::JAT>::create();
    ocs::tom::set<JAT_task_number>(ja_task, 1);
    ocs::tom::set<JAT_start_time>(ja_task, 2000);
    for (uint64_t now : {3000, 4000}) {
-      lListElem *report = lCreateElem(JR_Type);
-      job_report_init_from_job_with_usage(report, job, ja_task, nullptr, now);
-      lFreeElem(&report);
+      auto report = ocs::tom::ElementPtr<ocs::tom::JR>::create();
+      job_report_init_from_job_with_usage(*report, *job, *ja_task, nullptr, now);
    }
    ocs::tom::ConstList<ocs::tom::UA> usage = ocs::tom::get<JAT_scaled_usage_list>(ja_task);
    ocs::tom::ConstElement<ocs::tom::UA> end_time = ocs::tom::find_first<UA_name>(usage, "end_time");
    CHECK(36, "a limit enforced twice leaves each usage entry once, end_time from the later enforcement",
          lGetNumberOfElem(usage) == 4 && end_time != nullptr && ocs::tom::get<UA_value>(end_time) == 4000.0);
-   lFreeElem(&ja_task);
-   lFreeElem(&job);
+   ja_task.reset();
+   job.reset();
 
    // qsub -q '*@@*': a host that belongs to several matching host groups
    lList *hgroups = nullptr;

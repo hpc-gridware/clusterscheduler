@@ -43,6 +43,8 @@
 #include "sgeobj/ocs_Role.h"
 #include "tom/ocs_Element.h"
 #include "sgeobj/tom/ocs_tom_STN.h"
+#include "sgeobj/tom/ocs_tom_CE.h"
+#include "sgeobj/tom/ocs_tom_CONF.h"
 
 #include "spool/flatfile/sge_flatfile.h"
 #include "spool/flatfile/sge_flatfile_obj.h"
@@ -415,11 +417,11 @@ qconf_template_STN([[maybe_unused]] lList **answer_list, [[maybe_unused]] const 
  */
 static lListElem *
 qconf_template_CONF([[maybe_unused]] lList **answer_list, const char *name) {
-   lListElem *ep = lCreateElem(CONF_Type);
+   auto ep = ocs::tom::ElementPtr<ocs::tom::CONF>::create();
    if (ep != nullptr && name != nullptr) {
       ocs::tom::set<CONF_name>(ep, name);
    }
-   return ep;
+   return ep.release();
 }
 
 /** @brief The checks a rule set text needs the whole list for (CS-2823)
@@ -1115,20 +1117,20 @@ qconf_json_type_load_values(lListElem *host, int load_list_nm, const lList *mast
       return;
    }
 
-   lList *ce_list = lCreateList("load_values", CE_Type);
+   auto ce_list = ocs::tom::ListPtr<ocs::tom::CE>::create("load_values");
    const lListElem *hlep;
    for_each_ep(hlep, hl) {
-      lListElem *ce = lCreateElem(CE_Type);
+      auto ce = ocs::tom::ElementPtr<ocs::tom::CE>::create();
       ocs::tom::set<CE_name>(ce, ocs::tom::get<HL_name>(hlep));
       ocs::tom::set<CE_stringval>(ce, ocs::tom::get<HL_value>(hlep));
-      lAppendElem(ce_list, ce);
+      lAppendElem(*ce_list, std::move(ce));
    }
 
    /* fill CE_valtype from the complex definitions (skips unknown load names) */
-   centry_list_fill_config(ce_list, master_centry_list);
+   centry_list_fill_config(*ce_list, master_centry_list);
 
    /* parse numeric values into CE_doubleval so the writer emits native numbers */
-   for (lListElem *ce = lFirstRW(ce_list); ce != nullptr; ce = lNextRW(ce)) {
+   for (lListElem *ce = lFirstRW(*ce_list); ce != nullptr; ce = lNextRW(ce)) {
       const auto type = static_cast<ocs::CEntry::Type>(ocs::tom::get<CE_valtype>(ce));
       const char *s = ocs::tom::get<CE_stringval>(ce);
       double dval = 0.0;
@@ -1147,7 +1149,7 @@ qconf_json_type_load_values(lListElem *host, int load_list_nm, const lList *mast
       }
    }
 
-   lSetList(host, load_list_nm, ce_list);
+   lSetList(host, load_list_nm, std::move(ce_list));
 }
 
 /** @brief Type the numeric fields of an exec host before it is rendered.

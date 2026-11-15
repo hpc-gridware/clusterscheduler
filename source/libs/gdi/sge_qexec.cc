@@ -56,6 +56,7 @@
 
 #include "sgeobj/sge_pe_task.h"
 #include "sgeobj/tom/ocs_tom_RT.h"
+#include "sgeobj/tom/ocs_tom_PETR.h"
 #include "tom/ocs_Element.h"
 
 #include "msg_common.h"
@@ -111,7 +112,6 @@ sge_qexecve(const char *hostname, const char *queuename, const char *cwd, const 
    char myname[256];
    const char *s;
    int ret;
-   lListElem *petrep;
    sge_pack_buffer pb;
    uint32_t jobid, jataskid;
    uint32_t dummymid = 0;
@@ -154,7 +154,7 @@ sge_qexecve(const char *hostname, const char *queuename, const char *cwd, const 
    }
 
    /* ---- build up pe task request structure (see gdilib/sge_petaskL.h) */
-   petrep = lCreateElem(PETR_Type);
+   auto petrep = ocs::tom::ElementPtr<ocs::tom::PETR>::create();
 
    ocs::tom::set<PETR_jobid>(petrep, jobid);
    ocs::tom::set<PETR_jataskid>(petrep, jataskid);
@@ -199,14 +199,14 @@ sge_qexecve(const char *hostname, const char *queuename, const char *cwd, const 
 
       for (int attempt = 0; attempt < task_send_max_attempts; attempt++) {
          if (init_packbuffer(&pb, 1024) != PACK_SUCCESS) {
-            lFreeElem(&petrep);
+            petrep.reset();
             snprintf(lasterror, sizeof(lasterror), SFN, MSG_GDI_OUTOFMEMORY);
             DRETURN(nullptr);
          }
 
          /* gdi_send_message_pb() consumes (frees) the packed buffer on every
           * attempt, so re-pack the task delivery for each try. */
-         pack_job_delivery(&pb, petrep);
+         pack_job_delivery(&pb, *petrep);
 
          ret = ocs::gdi::ClientServerBase::gdi_send_message_pb(1, to_cstr(EXECD), 1, hostname,
                                                            ocs::gdi::ClientServerBase::TAG_JOB_EXECUTION, &pb, &dummymid);
@@ -228,7 +228,7 @@ sge_qexecve(const char *hostname, const char *queuename, const char *cwd, const 
          sge_usleep(100000);   /* 100 ms */
       }
 
-      lFreeElem(&petrep);
+      petrep.reset();
 
       if (ret != CL_RETVAL_OK) {
          snprintf(lasterror, sizeof(lasterror), MSG_GDI_SENDTASKTOEXECDFAILED_SS, hostname, cl_get_error_text(ret));

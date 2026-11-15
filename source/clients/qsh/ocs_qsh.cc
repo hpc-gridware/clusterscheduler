@@ -116,6 +116,7 @@
 #include "sgeobj/tom/ocs_tom_VA.h"
 #include "sgeobj/tom/ocs_tom_CF.h"
 #include "sgeobj/tom/ocs_tom_ID.h"
+#include "sgeobj/tom/ocs_tom_ST.h"
 
 /* module variables */
 static bool g_new_interactive_job_support = false;
@@ -1277,11 +1278,11 @@ static int do_qrsh_reconnect(const char *job_id_str,
    if (comm_handle->ssl_server_context != nullptr) {
       const char *cred = comm_handle->ssl_server_context->get_cert();
       if (cred != nullptr) {
-         lList *cred_list = lCreateList("reconnect cred", ST_Type);
-         lListElem *cred_ep = lCreateElem(ST_Type);
+         auto cred_list = ocs::tom::ListPtr<ocs::tom::ST>::create("reconnect cred");
+         auto cred_ep = ocs::tom::ElementPtr<ocs::tom::ST>::create();
          ocs::tom::set<ST_name>(cred_ep, cred);
-         lAppendElem(cred_list, cred_ep);
-         ocs::tom::set<ID_user_list>(idep, cred_list);
+         lAppendElem(*cred_list, std::move(cred_ep));
+         ocs::tom::set<ID_user_list>(idep, std::move(cred_list));
          sge_free(&cred);
       }
    }

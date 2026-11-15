@@ -244,31 +244,28 @@ lListElem *rqs_set_defaults(lListElem *rqs) {
    DENTER(TOP_LAYER);
 
    if (rqs != nullptr) {
-      lList *limit_list = nullptr;
       lList *rule_list = nullptr;
-      lListElem *rule = nullptr;
-      lListElem *limit = nullptr;
 
       /* Free RQS_rule */
       rule_list = ocs::tom::get<RQS_rule>(rqs);
       lFreeList(&rule_list);
 
       /* Create Rule List */
-      rule_list = lCreateList("Rule_List", RQR_Type);
-      rule = lCreateElem(RQR_Type);
-      limit_list = lCreateList("Limit_List", RQRL_Type);
-      limit = lCreateElem(RQRL_Type);
+      auto rule_list_rqr = ocs::tom::ListPtr<ocs::tom::RQR>::create("Rule_List");
+      auto rule = ocs::tom::ElementPtr<ocs::tom::RQR>::create();
+      auto limit_list = ocs::tom::ListPtr<ocs::tom::RQRL>::create("Limit_List");
+      auto limit = ocs::tom::ElementPtr<ocs::tom::RQRL>::create();
       ocs::tom::set<RQRL_name>(limit, "slots");
       ocs::tom::set<RQRL_value>(limit, "0");
-      lAppendElem(limit_list, limit);
-      ocs::tom::set<RQR_limit>(rule, limit_list);
-      lAppendElem(rule_list, rule);
+      lAppendElem(*limit_list, std::move(limit));
+      ocs::tom::set<RQR_limit>(rule, std::move(limit_list));
+      lAppendElem(*rule_list_rqr, std::move(rule));
 
       /* Set RQS_enabled */
       ocs::tom::set<RQS_enabled>(rqs, false);
 
       /* Set RQS_rule */
-      ocs::tom::set<RQS_rule>(rqs, rule_list);
+      ocs::tom::set<RQS_rule>(rqs, std::move(rule_list_rqr));
    }
    DRETURN(rqs);
 }

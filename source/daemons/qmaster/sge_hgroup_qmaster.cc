@@ -246,7 +246,7 @@ hgroup_mod_hostlist(lListElem *hgroup, lList **answer_list, lListElem *reduced_e
 
       if (pos >= 0) {
          lList *list = lGetPosList(reduced_elem, pos);
-         lList *old_href_list = lCopyList("", ocs::tom::get<HGRP_host_list>(hgroup));
+         auto old_href_list = ocs::tom::ListPtr<ocs::tom::HR>::from_typed(lCopyList("", ocs::tom::get<HGRP_host_list>(hgroup)));
          ocs::tom::ConstList<ocs::tom::HR> href_list = nullptr;
          lList *add_groups = nullptr;
          lList *rem_groups = nullptr;
@@ -306,7 +306,7 @@ hgroup_mod_hostlist(lListElem *hgroup, lList **answer_list, lListElem *reduced_e
             }
          }
          if (ret) {
-            ret &= href_list_find_diff(href_list, answer_list, old_href_list,
+            ret &= href_list_find_diff(href_list, answer_list, *old_href_list,
                                        add_hosts, rem_hosts, &add_groups,
                                        &rem_groups);
          }
@@ -365,7 +365,7 @@ hgroup_mod_hostlist(lListElem *hgroup, lList **answer_list, lListElem *reduced_e
          if (ret) {
             lList *tmp_hosts = nullptr;
 
-            ret &= href_list_find_all_references(old_href_list, answer_list,
+            ret &= href_list_find_all_references(*old_href_list, answer_list,
                                                  master_hgroup_list, &tmp_hosts, nullptr);
             ret &= href_list_remove_existing(add_hosts, answer_list, tmp_hosts);
             lFreeList(&tmp_hosts);
@@ -386,7 +386,7 @@ hgroup_mod_hostlist(lListElem *hgroup, lList **answer_list, lListElem *reduced_e
          /*
           * Cleanup
           */
-         lFreeList(&old_href_list);
+         old_href_list.reset();
          lFreeList(&add_groups);
          lFreeList(&rem_groups);
       }
@@ -583,7 +583,7 @@ hgroup_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, 
           * this point it still is the one of the stored group: the driver hands
           * the modifier a copy of the old object.
           */
-         lList *members_before = lCopyList("", ocs::tom::get<HGRP_host_list>(hgroup));
+         auto members_before = ocs::tom::ListPtr<ocs::tom::HR>::from_typed(lCopyList("", ocs::tom::get<HGRP_host_list>(hgroup)));
 
          if (ret) {
             ret &= hgroup_mod_hostlist(hgroup, answer_list, reduced_elem, cmd, sub_command, &add_hosts, &rem_hosts, &occupant_groups);
@@ -826,7 +826,7 @@ hgroup_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, 
                const char *member_name = ocs::tom::get<HR_name>(member);
 
                if (!ocs::is_matcher(member_name) ||
-                   href_list_locate(members_before, member_name) != nullptr) {
+                   href_list_locate(*members_before, member_name) != nullptr) {
                   continue;
                }
                const char *payload = ocs::matcher_payload(member_name);
@@ -863,7 +863,7 @@ hgroup_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, 
          }
 
          sge_dstring_free(&referencing_queues);
-         lFreeList(&members_before);
+         members_before.reset();
          lFreeList(&add_hosts);
          lFreeList(&rem_hosts);
          lFreeList(&occupant_groups);

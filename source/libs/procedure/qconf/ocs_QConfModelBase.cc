@@ -452,9 +452,9 @@ ocs::QConfModelBase::make_hgroup_snapshot(lList **answer_list, QConfParameter &p
        * is the daemon's resolver, which is the authority for host names in this
        * product - but it is a change, and the -ectx comparison of a short name
        * is what shows whether the two agree. */
-      lListElem *probe = lCreateElem(HR_Type);
+      auto probe = ocs::tom::ElementPtr<ocs::tom::HR>::create();
       ocs::tom::set<HR_name>(probe, parameter.get_operation().arg(1));
-      sge_resolve_host(probe, HR_name);
+      sge_resolve_host(*probe, HR_name);
 
       dstring found_in = DSTRING_INIT;
       dstring matcher = DSTRING_INIT;
@@ -471,7 +471,7 @@ ocs::QConfModelBase::make_hgroup_snapshot(lList **answer_list, QConfParameter &p
 
       sge_dstring_free(&found_in);
       sge_dstring_free(&matcher);
-      lFreeElem(&probe);
+      probe.reset();
 
       if (hgroup_why_.route == Matcher::Route::NOT_A_MEMBER) {
          /* A host that is no member has always set the exit status while the
@@ -1322,9 +1322,9 @@ ocs::QConfModelBase::make_cqueue_snapshot(lList **answer_list, QConfParameter &p
                if (sge_eval_expression(CEntry::Type::HOST, h_pattern,
                                        ocs::tom::get<QU_qhostname>(qinstance), nullptr,
                                        true, is_expr) == 0) {
-                  lListElem *qi_copy = lCopyElem(qinstance);
-                  qconf_json_fill_complex(qi_copy, qu_ce, 3, centry_list_);
-                  lAppendElem(group.qinstances, qi_copy);
+                  auto qi_copy = ocs::tom::ElementPtr<ocs::tom::QU>::from_typed(lCopyElem(qinstance));
+                  qconf_json_fill_complex(*qi_copy, qu_ce, 3, centry_list_);
+                  lAppendElem(group.qinstances, std::move(qi_copy));
                }
             }
          }

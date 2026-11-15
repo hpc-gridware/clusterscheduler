@@ -616,34 +616,34 @@ sge_add_auto_user(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const char *us
    }
 
    /* create a new auto user */
-   uep = lCreateElem(UU_Type);
-   if (uep == nullptr) {
+   auto uep_uu = ocs::tom::ElementPtr<ocs::tom::UU>::create();
+   if (uep_uu == nullptr) {
       DRETURN(STATUS_EMALLOC);
    } else {
       char *auto_user_default_project = nullptr;
 
       /* set user object attributes */
-      ocs::tom::set<UU_name>(uep, user);
+      ocs::tom::set<UU_name>(uep_uu, user);
 
       if (auto_user_delete_time > 0) {
-         ocs::tom::set<UU_delete_time>(uep, sge_get_gmt64() + auto_user_delete_time);
+         ocs::tom::set<UU_delete_time>(uep_uu, sge_get_gmt64() + auto_user_delete_time);
       } else {
-         ocs::tom::set<UU_delete_time>(uep, 0);
+         ocs::tom::set<UU_delete_time>(uep_uu, 0);
       }
 
-      ocs::tom::set<UU_oticket>(uep, mconf_get_auto_user_oticket());
-      ocs::tom::set<UU_fshare>(uep, mconf_get_auto_user_fshare());
+      ocs::tom::set<UU_oticket>(uep_uu, mconf_get_auto_user_oticket());
+      ocs::tom::set<UU_fshare>(uep_uu, mconf_get_auto_user_fshare());
 
       auto_user_default_project = mconf_get_auto_user_default_project();
       if (auto_user_default_project == nullptr || strcasecmp(auto_user_default_project, "none") == 0) {
-         ocs::tom::set<UU_default_project>(uep, nullptr);
+         ocs::tom::set<UU_default_project>(uep_uu, nullptr);
       } else {
-         ocs::tom::set<UU_default_project>(uep, auto_user_default_project);
+         ocs::tom::set<UU_default_project>(uep_uu, auto_user_default_project);
       }
 
       /* add the auto user via GDI request */
-      status = do_add_auto_user(packet, task, uep, alpp, monitor);
-      lFreeElem(&uep);
+      status = do_add_auto_user(packet, task, *uep_uu, alpp, monitor);
+      uep_uu.reset();
       sge_free(&auto_user_default_project);
    }
 

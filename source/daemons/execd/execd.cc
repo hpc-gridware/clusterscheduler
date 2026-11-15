@@ -61,6 +61,7 @@
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_conf.h"
+#include "sgeobj/tom/ocs_tom_EH.h"
 #include "tom/ocs_Element.h"
 
 #include "spool/classic/read_write_job.h"
@@ -475,8 +476,8 @@ int sge_execd_register_at_qmaster(bool is_restart) {
     */
    if (master_host != nullptr && ocs::gdi::ClientBase::gdi_is_alive(&alp) == CL_RETVAL_OK) {
       lList *hlp = lCreateList("exechost starting", EH_Type);
-      lListElem *hep = lCreateElem(EH_Type);
-      lAppendElem(hlp, hep);
+      auto hep = ocs::tom::ElementPtr<ocs::tom::EH>::create();
+      lAppendElem(hlp, std::move(hep));
 
       /* register at qmaster */
       DPRINTF("*****  Register at qmaster   *****\n");

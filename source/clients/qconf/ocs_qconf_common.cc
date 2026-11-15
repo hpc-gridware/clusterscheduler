@@ -38,6 +38,7 @@
 #include "uti/sge_unistd.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_host.h"
+#include "sgeobj/tom/ocs_tom_EH.h"
 #include "tom/ocs_Element.h"
 #include "spool/flatfile/sge_flatfile.h"
 #include "sge.h"
@@ -364,15 +365,14 @@ qconf_missing_argument(const qconf_op &op, lList **alpp) {
  */
 static bool
 qconf_resolve_one_host(const char *name, std::string &resolved, lList **alpp) {
-   lListElem *host_ep = lCreateElem(EH_Type);
+   auto host_ep = ocs::tom::ElementPtr<ocs::tom::EH>::create();
    ocs::tom::set<EH_name>(host_ep, name);
-   const bool ok = (sge_resolve_host(host_ep, EH_name) == CL_RETVAL_OK);
+   const bool ok = (sge_resolve_host(*host_ep, EH_name) == CL_RETVAL_OK);
    if (ok) {
       resolved = static_cast<const char *>(ocs::tom::get<EH_name>(host_ep));
    } else {
       qconf_answer(alpp, ANSWER_QUALITY_ERROR, MSG_SGETEXT_CANTRESOLVEHOST_S, static_cast<const char *>(ocs::tom::get<EH_name>(host_ep)));
    }
-   lFreeElem(&host_ep);
    return ok;
 }
 
@@ -458,11 +458,11 @@ static void
 qconf_names_conf_hosts(const qconf_op &op, std::vector<std::string> &names, bool &failed, lList **alpp,
                        const bool keep_unresolved) {
    std::string list = op.args.empty() ? SGE_GLOBAL_NAME : op.args[0];
-   lListElem *host_ep = lCreateElem(EH_Type);
+   auto host_ep = ocs::tom::ElementPtr<ocs::tom::EH>::create();
    for (const char *cp = sge_strtok(list.data(), ","); cp != nullptr && *cp != '\0';
         cp = sge_strtok(nullptr, ",")) {
       ocs::tom::set<EH_name>(host_ep, cp);
-      const int ret = sge_resolve_host(host_ep, EH_name);
+      const int ret = sge_resolve_host(*host_ep, EH_name);
       if (ret != CL_RETVAL_OK) {
          qconf_answer(alpp, ANSWER_QUALITY_ERROR, MSG_SGETEXT_CANTRESOLVEHOST_SS, cp, cl_get_error_text(ret));
          if (!keep_unresolved) {
@@ -473,7 +473,6 @@ qconf_names_conf_hosts(const qconf_op &op, std::vector<std::string> &names, bool
       const char *hostname = ocs::tom::get<EH_name>(host_ep);
       names.emplace_back((strcasecmp(hostname, "global") == 0) ? SGE_GLOBAL_NAME : hostname);
    }
-   lFreeElem(&host_ep);
 }
 
 void

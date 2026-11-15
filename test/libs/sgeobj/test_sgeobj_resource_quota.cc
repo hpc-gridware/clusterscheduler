@@ -35,6 +35,10 @@
 #include "sgeobj/sge_href.h"
 #include "sgeobj/sge_userset.h"
 #include "sgeobj/sge_resource_quota.h"
+#include "sgeobj/tom/ocs_tom_HGRP.h"
+#include "sgeobj/tom/ocs_tom_RQR.h"
+#include "sgeobj/tom/ocs_tom_RQS.h"
+#include "sgeobj/tom/ocs_tom_US.h"
 #include "tom/ocs_Element.h"
 
 /** @brief The six filter parts of a resource quota rule, as written in the configuration
@@ -91,7 +95,7 @@ static int s_fail = 0;
 // Build an RQR_Type rule element from the users/projects/pes/hosts/queues fields.
 static lListElem *build_rule(const filter_t &f) {
    lListElem *filter = nullptr;
-   lListElem *rule = lCreateElem(RQR_Type);
+   auto rule = ocs::tom::ElementPtr<ocs::tom::RQR>::create();
    if (rqs_parse_filter_from_string(&filter, f.users, nullptr)) {
       ocs::tom::set<RQR_filter_users>(rule, filter);
    }
@@ -107,7 +111,7 @@ static lListElem *build_rule(const filter_t &f) {
    if (rqs_parse_filter_from_string(&filter, f.queues, nullptr)) {
       ocs::tom::set<RQR_filter_queues>(rule, filter);
    }
-   return rule;
+   return rule.release();
 }
 
 int main(int /*argc*/, char * /*argv*/[]) {
@@ -117,25 +121,25 @@ int main(int /*argc*/, char * /*argv*/[]) {
    lInit(nmv);
 
    // test fixtures: @hgrp1→{host1}, @hgrp2→{host2}; userset1→{user1}, userset2→{@staff}
-   lList *hgroup_list = lCreateList("", HGRP_Type);
-   lListElem *hgroup = lCreateElem(HGRP_Type);
+   auto hgroup_list = ocs::tom::ListPtr<ocs::tom::HGRP>::create("");
+   auto hgroup = ocs::tom::ElementPtr<ocs::tom::HGRP>::create();
    ocs::tom::set<HGRP_name>(hgroup, "@hgrp1");
    ocs::tom::emplace_back_in<HGRP_host_list, HR_name>(hgroup, "host1");
-   lAppendElem(hgroup_list, hgroup);
-   hgroup = lCreateElem(HGRP_Type);
-   ocs::tom::set<HGRP_name>(hgroup, "@hgrp2");
-   ocs::tom::emplace_back_in<HGRP_host_list, HR_name>(hgroup, "host2");
-   lAppendElem(hgroup_list, hgroup);
+   lAppendElem(*hgroup_list, std::move(hgroup));
+   auto hgroup_hgrp = ocs::tom::ElementPtr<ocs::tom::HGRP>::create();
+   ocs::tom::set<HGRP_name>(hgroup_hgrp, "@hgrp2");
+   ocs::tom::emplace_back_in<HGRP_host_list, HR_name>(hgroup_hgrp, "host2");
+   lAppendElem(*hgroup_list, std::move(hgroup_hgrp));
 
-   lList *userset_list = lCreateList("", US_Type);
-   lListElem *userset = lCreateElem(US_Type);
+   auto userset_list = ocs::tom::ListPtr<ocs::tom::US>::create("");
+   auto userset = ocs::tom::ElementPtr<ocs::tom::US>::create();
    ocs::tom::set<US_name>(userset, "userset1");
    ocs::tom::emplace_back_in<US_entries, UE_name>(userset, "user1");
-   lAppendElem(userset_list, userset);
-   userset = lCreateElem(US_Type);
-   ocs::tom::set<US_name>(userset, "userset2");
-   ocs::tom::emplace_back_in<US_entries, UE_name>(userset, "@staff");
-   lAppendElem(userset_list, userset);
+   lAppendElem(*userset_list, std::move(userset));
+   auto userset_us = ocs::tom::ElementPtr<ocs::tom::US>::create();
+   ocs::tom::set<US_name>(userset_us, "userset2");
+   ocs::tom::emplace_back_in<US_entries, UE_name>(userset_us, "@staff");
+   lAppendElem(*userset_list, std::move(userset_us));
 
    // positive filter matching — T01–T48
    filter_test_t positive_tests[] = {
@@ -433,7 +437,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
       const filter_t &q = positive_tests[i].query;
       CHECK(id++, positive_tests[i].label,
             rqs_is_matching_rule(rule, q.users, q.group, nullptr, q.projects,
-                                 q.pes, q.hosts, q.queues, userset_list, hgroup_list));
+                                 q.pes, q.hosts, q.queues, *userset_list, *hgroup_list));
       lFreeElem(&rule);
    }
 
@@ -444,7 +448,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
       const filter_t &q = negative_tests[i].query;
       CHECK(id++, negative_tests[i].label,
             !rqs_is_matching_rule(rule, q.users, q.group, nullptr, q.projects,
-                                  q.pes, q.hosts, q.queues, userset_list, hgroup_list));
+                                  q.pes, q.hosts, q.queues, *userset_list, *hgroup_list));
       lFreeElem(&rule);
    }
 
@@ -467,14 +471,14 @@ int main(int /*argc*/, char * /*argv*/[]) {
       lListElem *rule = build_rule(userset2_rule);
       CHECK(id++, "sup-grp: @userset2 matches nobody via supplementary group staff",
             rqs_is_matching_rule(rule, "nobody", nullptr, sup_staff, nullptr,
-                                 "*", "*", "*", userset_list, hgroup_list));
+                                 "*", "*", "*", *userset_list, *hgroup_list));
       lFreeElem(&rule);
 
       // T82: no match when supplementary group is not in userset2
       rule = build_rule(userset2_rule);
       CHECK(id++, "sup-grp: @userset2 no match when supplementary group is other",
             !rqs_is_matching_rule(rule, "nobody", nullptr, sup_other, nullptr,
-                                  "*", "*", "*", userset_list, hgroup_list));
+                                  "*", "*", "*", *userset_list, *hgroup_list));
       lFreeElem(&rule);
 
       // T83: same data but flag disabled — supplementary group path is skipped
@@ -482,7 +486,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
       rule = build_rule(userset2_rule);
       CHECK(id++, "sup-grp: @userset2 no match with flag disabled",
             !rqs_is_matching_rule(rule, "nobody", nullptr, sup_staff, nullptr,
-                                  "*", "*", "*", userset_list, hgroup_list));
+                                  "*", "*", "*", *userset_list, *hgroup_list));
       lFreeElem(&rule);
 
       lFreeList(&sup_staff);
@@ -540,31 +544,30 @@ int main(int /*argc*/, char * /*argv*/[]) {
       };
 
       for (auto &t : scope_tests) {
-         lListElem *rqs = lCreateElem(RQS_Type);
-         lList *rules = lCreateList("", RQR_Type);
+         auto rqs = ocs::tom::ElementPtr<ocs::tom::RQS>::create();
+         auto rules = ocs::tom::ListPtr<ocs::tom::RQR>::create("");
          lListElem *filter = nullptr;
          lList *alp = nullptr;
 
          ocs::tom::set<RQS_name>(rqs, "cs2687");
-         lListElem *rule = lCreateElem(RQR_Type);
+         auto rule = ocs::tom::ElementPtr<ocs::tom::RQR>::create();
          if (rqs_parse_filter_from_string(&filter, t.hosts, nullptr)) {
             ocs::tom::set<RQR_filter_hosts>(rule, filter);
          }
-         lAppendElem(rules, rule);
-         ocs::tom::set<RQS_rule>(rqs, rules);
+         lAppendElem(*rules, std::move(rule));
+         ocs::tom::set<RQS_rule>(rqs, std::move(rules));
 
-         const bool ret = rqs_verify_attributes(rqs, &alp, true, nullptr);
+         const bool ret = rqs_verify_attributes(*rqs, &alp, true, nullptr);
 
          CHECK(id++, t.label, ret == t.acceptable &&
                (t.acceptable || lGetNumberOfElem(alp) > 0));
 
          lFreeList(&alp);
-         lFreeElem(&rqs);
       }
    }
 
-   lFreeList(&hgroup_list);
-   lFreeList(&userset_list);
+   hgroup_list.reset();
+   userset_list.reset();
 
    printf("\n%s — %d failure(s)\n", s_fail == 0 ? "PASS" : "FAIL", s_fail);
    DRETURN(s_fail == 0 ? 0 : 1);

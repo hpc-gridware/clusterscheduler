@@ -36,6 +36,7 @@
 
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "sgeobj/tom/ocs_tom_CE.h"
 #include "tom/ocs_Element.h"
 
 #include "sge_complex_schedd.h"
@@ -58,12 +59,12 @@ check(const char *id, const char *what, int got, int expected) {
  */
 static lListElem *
 make_request(const char *name, ocs::CEntry::Type type, const char *stringval, double doubleval) {
-   lListElem *ep = lCreateElem(CE_Type);
+   auto ep = ocs::tom::ElementPtr<ocs::tom::CE>::create();
    ocs::tom::set<CE_name>(ep, name);
    ocs::tom::set<CE_valtype>(ep, static_cast<uint32_t>(type));
    ocs::tom::set<CE_stringval>(ep, stringval);
    ocs::tom::set<CE_doubleval>(ep, doubleval);
-   return ep;
+   return ep.release();
 }
 
 /**
@@ -74,14 +75,14 @@ make_request(const char *name, ocs::CEntry::Type type, const char *stringval, do
  */
 static lListElem *
 make_offer(const char *name, ocs::CEntry::Type type, uint32_t relop, const char *stringval, double doubleval) {
-   lListElem *ep = lCreateElem(CE_Type);
+   auto ep = ocs::tom::ElementPtr<ocs::tom::CE>::create();
    ocs::tom::set<CE_name>(ep, name);
    ocs::tom::set<CE_valtype>(ep, static_cast<uint32_t>(type));
    ocs::tom::set<CE_relop>(ep, relop);
    ocs::tom::set<CE_stringval>(ep, stringval);
    ocs::tom::set<CE_doubleval>(ep, doubleval);
    ocs::tom::set<CE_pj_doubleval>(ep, doubleval);
-   return ep;
+   return ep.release();
 }
 
 static int

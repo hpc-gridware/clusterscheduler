@@ -30,6 +30,8 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "sgeobj/tom/ocs_tom_CE.h"
+#include "sgeobj/tom/ocs_tom_EH.h"
 #include "tom/ocs_Element.h"
 
 #include "sort_hosts.h"
@@ -199,27 +201,27 @@ int main(int /*argc*/, char * /*argv*/[]) {
    lInit(nmv);
 
    // build a single-entry complex with num_proc = 4
-   lList *centry_list = lCreateList("", CE_Type);
+   auto centry_list = ocs::tom::ListPtr<ocs::tom::CE>::create("");
    lListElem *centry = lCreateElem(CE_Type);
    ocs::tom::set<CE_name>(centry, "num_proc");
    ocs::tom::set<CE_stringval>(centry, "4");
    ocs::tom::set<CE_doubleval>(centry, 4);
-   lAppendElem(centry_list, centry);
+   lAppendElem(*centry_list, centry);
 
    // build a host element carrying the complex values
-   lList *host_centry_list = lCreateList("", CE_Type);
-   lAppendElem(host_centry_list, lCopyElem(centry));
-   lListElem *host = lCreateElem(EH_Type);
-   ocs::tom::set<EH_consumable_config_list>(host, host_centry_list);
+   auto host_centry_list = ocs::tom::ListPtr<ocs::tom::CE>::create("");
+   lAppendElem(*host_centry_list, lCopyElem(centry));
+   auto host = ocs::tom::ElementPtr<ocs::tom::EH>::create();
+   ocs::tom::set<EH_consumable_config_list>(host, std::move(host_centry_list));
 
    lList *answer_list = nullptr;
 
-   test_validate_valid(&answer_list, centry_list);
-   test_validate_invalid(&answer_list, centry_list);
-   test_scaled_mixed_load(host, centry_list);
+   test_validate_valid(&answer_list, *centry_list);
+   test_validate_invalid(&answer_list, *centry_list);
+   test_scaled_mixed_load(*host, *centry_list);
 
-   lFreeList(&centry_list);
-   lFreeElem(&host);
+   centry_list.reset();
+   host.reset();
 
    printf("\n%s — %d failure(s)\n", s_fail == 0 ? "PASS" : "FAIL", s_fail);
    DRETURN(s_fail == 0 ? 0 : 1);

@@ -638,7 +638,7 @@ lList *cull_parse_qsh_parameter(uint32_t prog_number, uint32_t uid, const char *
    */
    while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-display"))) {
       lList *lp = ocs::tom::get<JB_env_list>(*pjob);
-      lListElem *vep = lCreateElem(VA_Type);
+      auto vep = ocs::tom::ElementPtr<ocs::tom::VA>::create();
 
       ocs::tom::set<VA_variable>(vep, "DISPLAY");
       ocs::tom::set<VA_value>(vep, ocs::tom::get<SPA_argval_lStringT>(ep));
@@ -646,7 +646,7 @@ lList *cull_parse_qsh_parameter(uint32_t prog_number, uint32_t uid, const char *
          lp = lCreateList("env list", VA_Type);
          ocs::tom::set<JB_env_list>(*pjob, lp);
       }
-      lAppendElem(lp, vep);
+      lAppendElem(lp, std::move(vep));
       
       lRemoveElem(cmdline, &ep);
    }
