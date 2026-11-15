@@ -53,9 +53,16 @@
 #include "sgeobj/sge_resource_quota_service.h"
 #include "sgeobj/sge_resource_utilization.h"
 #include "tom/ocs_Element.h"
-#include "sgeobj/tom/ocs_tom_RQRL.h"
-#include "sgeobj/tom/ocs_tom_RUE.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_CE.h"
+#include "sgeobj/tom/ocs_tom_CQ.h"
+#include "sgeobj/tom/ocs_tom_EH.h"
+#include "sgeobj/tom/ocs_tom_QU.h"
 #include "sgeobj/tom/ocs_tom_RQL.h"
+#include "sgeobj/tom/ocs_tom_RQR.h"
+#include "sgeobj/tom/ocs_tom_RQRL.h"
+#include "sgeobj/tom/ocs_tom_RQS.h"
+#include "sgeobj/tom/ocs_tom_RUE.h"
 
 #include "sched/schedd_message.h"
 #include "sched/msg_schedd.h"
@@ -65,6 +72,20 @@
 #include "sge_select_queue.h"
 #include "sge_select_queue_rqs.h"
 #include "sort_hosts.h"
+
+static void rqs_can_optimize(ocs::tom::ConstElement<ocs::tom::RQR> rule, bool *host, bool *queue, sge_assignment_t *a);
+static void rqs_expand_cqueues(ocs::tom::ConstElement<ocs::tom::RQR> rule, sge_assignment_t *a);
+static void rqs_expand_hosts(ocs::tom::ConstElement<ocs::tom::RQR> rule, sge_assignment_t *a);
+static bool cqueue_shadowed(ocs::tom::ConstElement<ocs::tom::RQR> rule, sge_assignment_t *a);
+static bool host_shadowed(ocs::tom::ConstElement<ocs::tom::RQR> rule, sge_assignment_t *a);
+static void rqs_excluded_hosts(ocs::tom::ConstElement<ocs::tom::RQR> rule, sge_assignment_t *a);
+static void rqs_excluded_cqueues(ocs::tom::ConstElement<ocs::tom::RQR> rule, sge_assignment_t *a);
+static bool cqueue_shadowed_by(const char *cqname, ocs::tom::ConstElement<ocs::tom::RQR> rule, sge_assignment_t *a);
+static bool host_shadowed_by(const char *host, ocs::tom::ConstElement<ocs::tom::RQR> rule, sge_assignment_t *a);
+static bool rqs_set_dynamical_limit(ocs::tom::Element<ocs::tom::RQRL> limit,
+                                    ocs::tom::ConstElement<ocs::tom::EH> global_host,
+                                    ocs::tom::ConstElement<ocs::tom::EH> exec_host,
+                                    ocs::tom::ConstList<ocs::tom::CE> centry);
 
 /**
  * @brief Is the limitation reached for a queue instance
@@ -82,16 +103,19 @@
  *
  * @note MT-NOTE: rqs_limitation_reached() is not MT safe
  */
-static dispatch_t rqs_limitation_reached(sge_assignment_t *a, const lListElem *rule, const char *host, const char *queue, uint64_t *start) {
+static dispatch_t rqs_limitation_reached(sge_assignment_t *a, const ocs::tom::Element<ocs::tom::RQR> rule,
+                                         const char *host, const char *queue, uint64_t *start) {
    DENTER(TOP_LAYER);
    dispatch_t ret = DISPATCH_MISSING_ATTR;
-   static lListElem *implicit_slots_request = nullptr;
-   lListElem *exec_host = host_list_locate(a->host_list, host);
+   // created once and kept for the life of the process, as before: a static owning handle would free it at exit,
+   // when the descriptors it needs may be gone already
+   static ocs::tom::Element<ocs::tom::CE> implicit_slots_request;
+   const auto exec_host = ocs::tom::ConstElement<ocs::tom::EH>::from_typed(host_list_locate(a->host_list, host));
    dstring rue_name = DSTRING_INIT;
    dstring reason = DSTRING_INIT;
 
    if (implicit_slots_request == nullptr) {
-      implicit_slots_request = lCreateElem(CE_Type);
+      implicit_slots_request = ocs::tom::Element<ocs::tom::CE>::from_typed(lCreateElem(CE_Type));
       ocs::tom::set<CE_name>(implicit_slots_request, SGE_ATTR_SLOTS);
       // slots is an INT; the type has to be set like on any other request, both
       // because it is true and because a CE_valtype of 0 is what marks a request
@@ -101,11 +125,12 @@ static dispatch_t rqs_limitation_reached(sge_assignment_t *a, const lListElem *r
       ocs::tom::set<CE_doubleval>(implicit_slots_request, 1);
    }
 
-   ocs::tom::ConstList<ocs::tom::RQRL> limit_list = ocs::tom::get<RQR_limit>(rule);
-   for_each_rw_lv(limit, limit_list) {
+   // the limits are changed: rqs_set_dynamical_limit() caches the evaluated value of a dynamic limit in RQRL_dvalue
+   for (const auto limit : ocs::tom::get<RQR_limit>(rule)) {
       bool       is_forced = false;
       const char *limit_name = ocs::tom::get<RQRL_name>(limit);
-      lListElem  *raw_centry = centry_list_locate(a->centry_list, limit_name);
+      const auto raw_centry =
+         ocs::tom::Element<ocs::tom::CE>::from_typed(centry_list_locate(a->centry_list, limit_name));
 
       if (raw_centry == nullptr) {
          DPRINTF("ignoring limit %s because not defined", limit_name);
@@ -117,7 +142,7 @@ static dispatch_t rqs_limitation_reached(sge_assignment_t *a, const lListElem *r
       is_forced = ocs::tom::get<CE_requestable>(raw_centry) == REQU_FORCED;
       lList *job_centry_list = job_get_hard_resource_listRW(a->job);
       // @todo CS-400: we only need job_centry. Have a function searching it in the 3 possible request lists
-      lListElem *job_centry = centry_list_locate(job_centry_list, limit_name);
+      auto job_centry = ocs::tom::Element<ocs::tom::CE>::from_typed(centry_list_locate(job_centry_list, limit_name));
 
       /* check for implicit slot and default request */
       if (job_centry == nullptr) {
@@ -149,49 +174,38 @@ static dispatch_t rqs_limitation_reached(sge_assignment_t *a, const lListElem *r
          }
       }
 
-      {
-         lList *tmp_centry_list = lCreateList("", CE_Type);
-         lList *tmp_rue_list = lCreateList("", RUE_Type);
-         lListElem *tmp_centry_elem = nullptr;
-         lListElem *tmp_rue_elem = nullptr;
+      if (rqs_set_dynamical_limit(limit, ocs::tom::ConstElement<ocs::tom::EH>::from_typed(a->gep), exec_host,
+                                  ocs::tom::ConstList<ocs::tom::CE>::from_typed(a->centry_list))) {
+         const auto rue_list = ocs::tom::get<RQRL_usage>(limit);
+         uint64_t tmp_time = a->start;
 
-         if (rqs_set_dynamical_limit(limit, a->gep, exec_host, a->centry_list)) {
-            ocs::tom::ConstList<ocs::tom::RUE> rue_list = ocs::tom::get<RQRL_usage>(limit);
-            uint64_t tmp_time = a->start;
+         /* create tmp_centry_list */
+         auto tmp_centry_list = ocs::tom::ListPtr<ocs::tom::CE>::create("");
+         auto tmp_centry_elem = raw_centry.clone();
+         ocs::tom::set<CE_stringval>(tmp_centry_elem, ocs::tom::get<RQRL_value>(limit));
+         ocs::tom::set<CE_doubleval>(tmp_centry_elem, ocs::tom::get<RQRL_dvalue>(limit));
+         tmp_centry_list->push_back(std::move(tmp_centry_elem));
 
-            /* create tmp_centry_list */
-            tmp_centry_elem = lCopyElem(raw_centry);
-            ocs::tom::set<CE_stringval>(tmp_centry_elem, ocs::tom::get<RQRL_value>(limit));
-            ocs::tom::set<CE_doubleval>(tmp_centry_elem, ocs::tom::get<RQRL_dvalue>(limit));
-            lAppendElem(tmp_centry_list, tmp_centry_elem);
+         /* create tmp_rue_list */
+         auto tmp_rue_list = ocs::tom::ListPtr<ocs::tom::RUE>::create("");
+         rqs_get_rue_string(&rue_name, rule, a->user, a->project, host, queue, nullptr);
+         const auto rue = ocs::tom::find_first<RUE_name>(rue_list, sge_dstring_get_string(&rue_name));
+         auto tmp_rue_elem = rue != nullptr ? rue.clone() : ocs::tom::ElementPtr<ocs::tom::RUE>::create();
+         ocs::tom::set<RUE_name>(tmp_rue_elem, limit_name);
+         tmp_rue_list->push_back(std::move(tmp_rue_elem));
 
-            /* create tmp_rue_list */
-            rqs_get_rue_string(&rue_name, rule, a->user, a->project, host, queue, nullptr);
-            tmp_rue_elem = lCopyElem(ocs::tom::find_first<RUE_name>(rue_list, sge_dstring_get_string(&rue_name)));
-            if (tmp_rue_elem == nullptr) {
-               tmp_rue_elem = lCreateElem(RUE_Type);
-            }
-            ocs::tom::set<RUE_name>(tmp_rue_elem, limit_name);
-            lAppendElem(tmp_rue_list, tmp_rue_elem);
+         sge_dstring_clear(&reason);
+         ocs::TopologyString binding_inuse;
+         ret = ri_time_by_slots(a, job_centry, nullptr, tmp_centry_list.get(), tmp_rue_list.get(),
+                                nullptr, nullptr, &reason, false, 1,
+                                DOMINANT_LAYER_RQS, 0.0, &tmp_time, SGE_RQS_NAME, binding_inuse);
+         if (ret != DISPATCH_OK) {
+            DPRINTF("denied because: %s\n", sge_dstring_get_string(&reason));
+            break;
+         }
 
-            sge_dstring_clear(&reason);
-            ocs::TopologyString binding_inuse;
-            ret = ri_time_by_slots(a, job_centry, nullptr, tmp_centry_list,  tmp_rue_list,
-                                   nullptr, nullptr, &reason, false, 1,
-                                   DOMINANT_LAYER_RQS, 0.0, &tmp_time, SGE_RQS_NAME, binding_inuse);
-            if (ret != DISPATCH_OK) {
-               DPRINTF("denied because: %s\n", sge_dstring_get_string(&reason));
-               lFreeList(&tmp_rue_list);
-               lFreeList(&tmp_centry_list);
-               break;
-            }
-
-            if (a->is_reservation && ret == DISPATCH_OK) {
-               *start = tmp_time;
-            }
-
-            lFreeList(&tmp_rue_list);
-            lFreeList(&tmp_centry_list);
+         if (a->is_reservation && ret == DISPATCH_OK) {
+            *start = tmp_time;
          }
       }
    }
@@ -201,7 +215,6 @@ static dispatch_t rqs_limitation_reached(sge_assignment_t *a, const lListElem *r
 
    DRETURN(ret);
 }
-
 
 /**
  * @brief Rule out queues/hosts whenever possible
@@ -222,8 +235,8 @@ static dispatch_t rqs_limitation_reached(sge_assignment_t *a, const lListElem *r
  *
  * @note MT-NOTE: rqs_exceeded_sort_out() is MT safe
  */
-static bool rqs_exceeded_sort_out(sge_assignment_t *a, const lListElem *rule, const dstring *rule_name,
-                                  const char *queue_name, const char *host_name) {
+static bool rqs_exceeded_sort_out(sge_assignment_t *a, const ocs::tom::ConstElement<ocs::tom::RQR> rule,
+                                  const dstring *rule_name, const char *queue_name, const char *host_name) {
    DENTER(TOP_LAYER);
 
    bool cq_global = is_cqueue_global(rule);
@@ -316,8 +329,8 @@ static bool rqs_exceeded_sort_out(sge_assignment_t *a, const lListElem *rule, co
  *
  * @note MT-NOTE: rqs_exceeded_sort_out_par() is MT safe
  */
-static void rqs_exceeded_sort_out_par(sge_assignment_t *a, const lListElem *rule, const dstring *rule_name,
-                                      const char *queue_name, const char *host_name) {
+static void rqs_exceeded_sort_out_par(sge_assignment_t *a, const ocs::tom::ConstElement<ocs::tom::RQR> rule,
+                                      const dstring *rule_name, const char *queue_name, const char *host_name) {
    if (rqs_exceeded_sort_out(a, rule, rule_name, queue_name, host_name)) {
       rqs_expand_hosts(rule, a);
    }
@@ -343,7 +356,7 @@ static void rqs_exceeded_sort_out_par(sge_assignment_t *a, const lListElem *rule
  * @see ri_time_by_slots()
  */
 dispatch_t
-parallel_rqs_slots_by_time(sge_assignment_t *a, int *slots, lListElem *qep, bool need_master,
+parallel_rqs_slots_by_time(sge_assignment_t *a, int *slots, const ocs::tom::Element<ocs::tom::QU> qep, bool need_master,
                            bool is_master_queue) {
    DENTER(TOP_LAYER);
 
@@ -363,19 +376,19 @@ parallel_rqs_slots_by_time(sge_assignment_t *a, int *slots, lListElem *qep, bool
       dstring dstr_rule_name = DSTRING_INIT;
       dstring dstr_rue_string = DSTRING_INIT;
       dstring dstr_limit_name = DSTRING_INIT;
-      lListElem *exec_host = host_list_locate(a->host_list, host);
+      const auto exec_host = ocs::tom::ConstElement<ocs::tom::EH>::from_typed(host_list_locate(a->host_list, host));
 
       SCHED_PROF_INC(a->pi, par_rqs);
 
-      for_each_ep_lv(rqs, a->rqs_list) {
-         lListElem *rule = nullptr;
-
+      for (const auto rqs : ocs::tom::ConstList<ocs::tom::RQS>(a->rqs_list)) {
          /* ignore disabled rule sets */
          if (!ocs::tom::get<RQS_enabled>(rqs)) {
             continue;
          }
          sge_dstring_clear(&dstr_rule_name);
-         rule = rqs_get_matching_rule(rqs, user, group, grp_list, project, pe, host, queue, a->acl_list, a->hgrp_list, &dstr_rule_name);
+         const auto rule = ocs::tom::Element<ocs::tom::RQR>::from_typed(
+            rqs_get_matching_rule(rqs, user, group, grp_list, project, pe, host, queue, a->acl_list, a->hgrp_list,
+                                  &dstr_rule_name));
          if (rule != nullptr) {
             const char *limit_s;
             rqs_get_rue_string(&dstr_rue_string, rule, user, project, host, queue, pe);
@@ -397,10 +410,11 @@ parallel_rqs_slots_by_time(sge_assignment_t *a, int *slots, lListElem *qep, bool
                uint32_t tagged_for_schedule_old = ocs::tom::get<QU_tagged4schedule>(qep);  /* default value or set in match_static_queue() */
                ocs::tom::set<QU_tagged4schedule>(qep, TAG4SCHED_ALL);
 
-               for (ocs::tom::Element<ocs::tom::RQRL> limit : ocs::tom::get<RQR_limit>(rule)) {
+               for (const auto limit : ocs::tom::get<RQR_limit>(rule)) {
                   const char *limit_name = ocs::tom::get<RQRL_name>(limit);
 
-                  lListElem *raw_centry = centry_list_locate(a->centry_list, limit_name);
+                  const auto raw_centry =
+         ocs::tom::Element<ocs::tom::CE>::from_typed(centry_list_locate(a->centry_list, limit_name));
                   if (raw_centry == nullptr) {
                      DPRINTF("ignoring limit %s because not defined", limit_name);
                      continue;
@@ -412,14 +426,15 @@ parallel_rqs_slots_by_time(sge_assignment_t *a, int *slots, lListElem *qep, bool
                   // @todo do we really need to pass the whole job_centry_list info functions below,
                   //       or could we create a sub-list with just the one job_entry element?
                   //       And would we have to copy-back info like CE_tagged?
-                  lListElem *job_centry = centry_list_locate(job_centry_list, limit_name);
+                  const auto job_centry = ocs::tom::Element<ocs::tom::CE>::from_typed(centry_list_locate(job_centry_list, limit_name));
 
                   /* found a rule, now check limit */
                   if (ocs::tom::get<CE_consumable>(raw_centry)) {
 
                      rqs_get_rue_string(&dstr_rue_string, rule, user, project, host, queue, pe);
 
-                     if (rqs_set_dynamical_limit(limit, a->gep, exec_host, a->centry_list)) {
+                     if (rqs_set_dynamical_limit(limit, ocs::tom::ConstElement<ocs::tom::EH>::from_typed(a->gep), exec_host,
+                                                 ocs::tom::ConstList<ocs::tom::CE>::from_typed(a->centry_list))) {
                         int tttslots = INT_MAX;
                         result = parallel_limit_slots_by_time(a, &tttslots, raw_centry,
                                                               limit, &dstr_rue_string, qep,
@@ -447,7 +462,8 @@ parallel_rqs_slots_by_time(sge_assignment_t *a, int *slots, lListElem *qep, bool
                      // dependent by definition, so both are wrong (CS-2740). The consumable
                      // branch above and the sequential path in rqs_limitation_reached() both
                      // evaluate the limit before using it.
-                     if (!rqs_set_dynamical_limit(limit, a->gep, exec_host, a->centry_list)) {
+                     if (!rqs_set_dynamical_limit(limit, ocs::tom::ConstElement<ocs::tom::EH>::from_typed(a->gep), exec_host,
+                                                  ocs::tom::ConstList<ocs::tom::CE>::from_typed(a->centry_list))) {
                         result = DISPATCH_NEVER_CAT;
                         break;
                      }
@@ -531,12 +547,11 @@ parallel_rqs_slots_by_time(sge_assignment_t *a, int *slots, lListElem *qep, bool
  *
  * @note MT-NOTE: rqs_match_assignment() is MT safe
  */
-static bool rqs_match_assignment(const lListElem *rule, sge_assignment_t *a) {
+static bool rqs_match_assignment(const ocs::tom::ConstElement<ocs::tom::RQR> rule, sge_assignment_t *a) {
    return (rqs_filter_match(ocs::tom::get<RQR_filter_projects>(rule), FILTER_PROJECTS, a->project, nullptr, nullptr, nullptr, nullptr) &&
            rqs_filter_match(ocs::tom::get<RQR_filter_users>(rule), FILTER_USERS, a->user, a->acl_list, nullptr, a->group, a->grp_list) &&
            rqs_filter_match(ocs::tom::get<RQR_filter_pes>(rule), FILTER_PES, nullptr, nullptr, nullptr, nullptr, nullptr))?true:false;
 }
-
 
 /**
  * @brief Poke whether a queue/host negation can be made
@@ -553,11 +568,11 @@ static bool rqs_match_assignment(const lListElem *rule, sge_assignment_t *a) {
  *
  * @note MT-NOTE: rqs_can_optimize() is MT safe
  */
-void rqs_can_optimize(const lListElem *rule, bool *host, bool *queue, sge_assignment_t *a) {
+static void rqs_can_optimize(const ocs::tom::ConstElement<ocs::tom::RQR> rule, bool *host, bool *queue, sge_assignment_t *a) {
    bool host_shadowed = false, queue_shadowed = false;
 
-   const lListElem *prev = rule;
-   while ((prev = lPrev(prev))) {
+   for (auto prev = rule.prev(); prev != nullptr; prev = prev.prev()) {
+      // @todo CS-3104 tests the current rule instead of prev
       if (!rqs_match_assignment(rule, a))
          continue;
       if (!is_host_global(prev))
@@ -594,7 +609,6 @@ void
 parallel_check_and_debit_rqs_slots(sge_assignment_t *a, const char *host, const char *queue, int *slots,
                                    dstring *rule_name, dstring *rue_name, dstring *limit_name) {
    DENTER(TOP_LAYER);
-   const lListElem *rule;
    const char* user = a->user;
    const char* group = a->group;
    const lList *grp_list = a->grp_list;
@@ -602,18 +616,20 @@ parallel_check_and_debit_rqs_slots(sge_assignment_t *a, const char *host, const 
    const char* pe = a->pe_name;
 
    /* first step - see how many slots are left */
-   for_each_ep_lv(rqs, a->rqs_list) {
+   for (const auto rqs : ocs::tom::ConstList<ocs::tom::RQS>(a->rqs_list)) {
 
       /* ignore disabled rule sets */
       if (!ocs::tom::get<RQS_enabled>(rqs)) {
          continue;
       }
       sge_dstring_clear(rule_name);
-      rule = rqs_get_matching_rule(rqs, user, group, grp_list, project, pe, host, queue, a->acl_list, a->hgrp_list, rule_name);
+      const auto rule = ocs::tom::ConstElement<ocs::tom::RQR>::from_typed(
+         rqs_get_matching_rule(rqs, user, group, grp_list, project, pe, host, queue, a->acl_list, a->hgrp_list,
+                               rule_name));
       if (rule != nullptr) {
          rqs_get_rue_string(rue_name, rule, user, project, host, queue, pe);
          sge_dstring_sprintf(limit_name, "%s=%s", sge_dstring_get_string(rule_name), sge_dstring_get_string(rue_name));
-         if (ocs::tom::ConstElement<ocs::tom::RQL> rql = ocs::tom::find_first<RQL_name>(a->limit_list, sge_dstring_get_string(limit_name)); rql != nullptr) {
+         if (const auto rql = ocs::tom::find_first<RQL_name>(a->limit_list, sge_dstring_get_string(limit_name)); rql != nullptr) {
             *slots = std::min(*slots, ocs::tom::get<RQL_slots>(rql));
          } else {
             *slots = 0;
@@ -629,7 +645,7 @@ parallel_check_and_debit_rqs_slots(sge_assignment_t *a, const char *host, const 
    // All matching RQSes had enough resources free.
    // Second step - do the booking - reduce the number of remaining slots.
    if (*slots != 0) {
-      for_each_ep_lv(rqs, a->rqs_list) {
+      for (const auto rqs : ocs::tom::ConstList<ocs::tom::RQS>(a->rqs_list)) {
 
          // ignore disabled rule sets
          if (!ocs::tom::get<RQS_enabled>(rqs)) {
@@ -637,11 +653,13 @@ parallel_check_and_debit_rqs_slots(sge_assignment_t *a, const char *host, const 
          }
 
          sge_dstring_clear(rule_name);
-         rule = rqs_get_matching_rule(rqs, user, group, grp_list, project, pe, host, queue, a->acl_list, a->hgrp_list, rule_name);
+         const auto rule = ocs::tom::ConstElement<ocs::tom::RQR>::from_typed(
+            rqs_get_matching_rule(rqs, user, group, grp_list, project, pe, host, queue, a->acl_list, a->hgrp_list,
+                                  rule_name));
          if (rule != nullptr) {
             rqs_get_rue_string(rue_name, rule, user, project, host, queue, pe);
             sge_dstring_sprintf(limit_name, "%s=%s", sge_dstring_get_string(rule_name), sge_dstring_get_string(rue_name));
-            ocs::tom::Element<ocs::tom::RQL> rql = ocs::tom::find_first_rw<RQL_name>(a->limit_list, sge_dstring_get_string(limit_name));
+            const auto rql = ocs::tom::find_first_rw<RQL_name>(a->limit_list, sge_dstring_get_string(limit_name));
             ocs::tom::set<RQL_slots>(rql, ocs::tom::get<RQL_slots>(rql) - *slots);
          }
       }
@@ -672,7 +690,7 @@ parallel_revert_rqs_slot_debitation(sge_assignment_t *a, const char *host, const
                                     int slots, dstring *rule_name, dstring *rue_name, dstring *limit_name) {
    DENTER(TOP_LAYER);
 
-   for_each_ep_lv(rqs, a->rqs_list) {
+   for (const auto rqs : ocs::tom::ConstList<ocs::tom::RQS>(a->rqs_list)) {
 
       // ignore disabled rule sets
       if (!ocs::tom::get<RQS_enabled>(rqs)) {
@@ -686,11 +704,13 @@ parallel_revert_rqs_slot_debitation(sge_assignment_t *a, const char *host, const
       const lList *grp_list = a->grp_list;
       const char* project = a->project;
       const char* pe = a->pe_name;
-      const lListElem *rule = rqs_get_matching_rule(rqs, user, group, grp_list, project, pe, host, queue, a->acl_list, a->hgrp_list, rule_name);
+      const auto rule = ocs::tom::ConstElement<ocs::tom::RQR>::from_typed(
+         rqs_get_matching_rule(rqs, user, group, grp_list, project, pe, host, queue, a->acl_list, a->hgrp_list,
+                               rule_name));
       if (rule != nullptr) {
          rqs_get_rue_string(rue_name, rule, user, project, host, queue, pe);
          sge_dstring_sprintf(limit_name, "%s=%s", sge_dstring_get_string(rule_name), sge_dstring_get_string(rue_name));
-         ocs::tom::Element<ocs::tom::RQL> rql = ocs::tom::find_first_rw<RQL_name>(a->limit_list, sge_dstring_get_string(limit_name));
+         const auto rql = ocs::tom::find_first_rw<RQL_name>(a->limit_list, sge_dstring_get_string(limit_name));
          DPRINTF("limit: %s %d <--- %d\n", sge_dstring_get_string(limit_name), ocs::tom::get<RQL_slots>(rql), ocs::tom::get<RQL_slots>(rql)+slots);
          ocs::tom::set<RQL_slots>(rql, ocs::tom::get<RQL_slots>(rql) + slots);
       }
@@ -735,21 +755,22 @@ dispatch_t rqs_by_slots(sge_assignment_t *a, const char *queue, const char *host
       SCHED_PROF_INC(a->pi, seq_rqs);
    }
 
-   const lListElem *rqs;
-   for_each_ep(rqs, a->rqs_list) {
+   bool stopped = false;   // the walk stopped at a rule set that denies the job
+   for (const auto rqs : ocs::tom::ConstList<ocs::tom::RQS>(a->rqs_list)) {
       uint64_t tt_rqs = a->start;
       const char *user = a->user;
       const char *group = a->group;
       const lList *grp_list = a->grp_list;
       const char *project = a->project;
-      const lListElem *rule;
 
       if (!ocs::tom::get<RQS_enabled>(rqs)) {
          continue;
       }
 
       sge_dstring_clear(rule_name);
-      rule = rqs_get_matching_rule(rqs, user, group, grp_list, project, nullptr, host, queue, a->acl_list, a->hgrp_list, rule_name);
+      const auto rule = ocs::tom::Element<ocs::tom::RQR>::from_typed(
+         rqs_get_matching_rule(rqs, user, group, grp_list, project, nullptr, host, queue, a->acl_list, a->hgrp_list,
+                               rule_name));
       if (rule != nullptr) {
          const char *limit;
          ocs::tom::Element<ocs::tom::RQL> rql;
@@ -787,8 +808,10 @@ dispatch_t rqs_by_slots(sge_assignment_t *a, const char *queue, const char *host
             result = DISPATCH_OK;
             continue;
          }
-         if (result != DISPATCH_OK)
+         if (result != DISPATCH_OK) {
+            stopped = true;
             break;
+         }
 
          if (a->is_reservation && tt_rqs >= tt_best) {
             /* no need to further investigate these ones */
@@ -800,7 +823,7 @@ dispatch_t rqs_by_slots(sge_assignment_t *a, const char *queue, const char *host
       }
    }
 
-   if (!rqs) {
+   if (!stopped) {
       result = DISPATCH_OK;
    }
 
@@ -825,12 +848,12 @@ dispatch_t rqs_by_slots(sge_assignment_t *a, const char *queue, const char *host
  *
  * @note MT-NOTE: rqs_expand_cqueues() is not MT safe
  */
-void rqs_expand_cqueues(const lListElem *rule, sge_assignment_t *a) {
+static void rqs_expand_cqueues(const ocs::tom::ConstElement<ocs::tom::RQR> rule, sge_assignment_t *a) {
    DENTER(TOP_LAYER);
 
-   const lListElem *qfilter = ocs::tom::get<RQR_filter_queues>(rule);
+   const auto qfilter = ocs::tom::get<RQR_filter_queues>(rule);
 
-   for_each_ep_lv(cq, *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE)) {
+   for (const auto cq : ocs::tom::ConstList<ocs::tom::CQ>::from_typed(*ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE))) {
       const char *cqname = ocs::tom::get<CQ_name>(cq);
       if (ocs::tom::find_first<CTI_name>(a->skip_cqueue_list, cqname))
          continue;
@@ -852,10 +875,10 @@ void rqs_expand_cqueues(const lListElem *rule, sge_assignment_t *a) {
  *
  * @note MT-NOTE: rqs_expand_hosts() is MT safe
  */
-void rqs_expand_hosts(const lListElem *rule, sge_assignment_t *a) {
-   const lListElem *hfilter = ocs::tom::get<RQR_filter_hosts>(rule);
+static void rqs_expand_hosts(const ocs::tom::ConstElement<ocs::tom::RQR> rule, sge_assignment_t *a) {
+   const auto hfilter = ocs::tom::get<RQR_filter_hosts>(rule);
 
-   for_each_ep_lv(eh, a->host_list) {
+   for (const auto eh : ocs::tom::ConstList<ocs::tom::EH>(a->host_list)) {
       const char *hname = ocs::tom::get<EH_name>(eh);
       if (ocs::tom::find_first<CTI_name>(a->skip_host_list, hname))
          continue;
@@ -885,9 +908,9 @@ void rqs_expand_hosts(const lListElem *rule, sge_assignment_t *a) {
  *
  * @note MT-NOTE: cqueue_shadowed() is MT safe
  */
-bool cqueue_shadowed(const lListElem *rule, sge_assignment_t *a) {
-   while ((rule = lPrev(rule))) {
-      if (rqs_match_assignment(rule, a) && !is_cqueue_global(rule)) {
+static bool cqueue_shadowed(const ocs::tom::ConstElement<ocs::tom::RQR> rule, sge_assignment_t *a) {
+   for (auto prev = rule.prev(); prev != nullptr; prev = prev.prev()) {
+      if (rqs_match_assignment(prev, a) && !is_cqueue_global(prev)) {
          return true;
       }
    }
@@ -913,9 +936,9 @@ bool cqueue_shadowed(const lListElem *rule, sge_assignment_t *a) {
  *
  * @note MT-NOTE: host_shadowed() is MT safe
  */
-bool host_shadowed(const lListElem *rule, sge_assignment_t *a) {
-   while ((rule = lPrev(rule))) {
-      if (rqs_match_assignment(rule, a) && !is_host_global(rule)) {
+static bool host_shadowed(const ocs::tom::ConstElement<ocs::tom::RQR> rule, sge_assignment_t *a) {
+   for (auto prev = rule.prev(); prev != nullptr; prev = prev.prev()) {
+      if (rqs_match_assignment(prev, a) && !is_host_global(prev)) {
          return true;
       }
    }
@@ -937,13 +960,12 @@ bool host_shadowed(const lListElem *rule, sge_assignment_t *a) {
  *
  * @note MT-NOTE: rqs_excluded_cqueues() is MT safe
  */
-void rqs_excluded_cqueues(const lListElem *rule, sge_assignment_t *a) {
+static void rqs_excluded_cqueues(const ocs::tom::ConstElement<ocs::tom::RQR> rule, sge_assignment_t *a) {
    DENTER(TOP_LAYER);
 
-   const lListElem *prev;
    int ignored = 0, excluded = 0;
 
-   for_each_ep_lv(cq, *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE)) {
+   for (const auto cq : ocs::tom::ConstList<ocs::tom::CQ>::from_typed(*ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE))) {
       const char *cqname = ocs::tom::get<CQ_name>(cq);
       bool exclude = true;
 
@@ -952,8 +974,8 @@ void rqs_excluded_cqueues(const lListElem *rule, sge_assignment_t *a) {
          continue;
       }
 
-      prev = rule;
-      while ((prev = lPrev(prev))) {
+      for (auto prev = rule.prev(); prev != nullptr; prev = prev.prev()) {
+         // @todo CS-3104 tests the current rule instead of prev
          if (!rqs_match_assignment(rule, a))
             continue;
 
@@ -990,13 +1012,12 @@ void rqs_excluded_cqueues(const lListElem *rule, sge_assignment_t *a) {
  *
  * @note MT-NOTE: rqs_excluded_hosts() is MT safe
  */
-void rqs_excluded_hosts(const lListElem *rule, sge_assignment_t *a) {
+static void rqs_excluded_hosts(const ocs::tom::ConstElement<ocs::tom::RQR> rule, sge_assignment_t *a) {
    DENTER(TOP_LAYER);
 
-   const lListElem *prev;
    int ignored = 0, excluded = 0;
 
-   for_each_ep_lv(eh, a->host_list) {
+   for (const auto eh : ocs::tom::ConstList<ocs::tom::EH>(a->host_list)) {
       const char *hname = ocs::tom::get<EH_name>(eh);
       bool exclude = true;
 
@@ -1005,8 +1026,8 @@ void rqs_excluded_hosts(const lListElem *rule, sge_assignment_t *a) {
          continue;
       }
 
-      prev = rule;
-      while ((prev = lPrev(prev))) {
+      for (auto prev = rule.prev(); prev != nullptr; prev = prev.prev()) {
+         // @todo CS-3104 tests the current rule instead of prev
          if (!rqs_match_assignment(rule, a))
             continue;
 
@@ -1046,10 +1067,10 @@ void rqs_excluded_hosts(const lListElem *rule, sge_assignment_t *a) {
  *
  * @note MT-NOTE: cqueue_shadowed_by() is MT safe
  */
-bool cqueue_shadowed_by(const char *cqname, const lListElem *rule, sge_assignment_t *a) {
-   while ((rule = lPrev(rule))) {
-      if (rqs_match_assignment(rule, a) &&
-          rqs_filter_match(ocs::tom::get<RQR_filter_queues>(rule), FILTER_QUEUES, cqname, nullptr, nullptr, nullptr, nullptr)) {
+static bool cqueue_shadowed_by(const char *cqname, const ocs::tom::ConstElement<ocs::tom::RQR> rule, sge_assignment_t *a) {
+   for (auto prev = rule.prev(); prev != nullptr; prev = prev.prev()) {
+      if (rqs_match_assignment(prev, a) &&
+          rqs_filter_match(ocs::tom::get<RQR_filter_queues>(prev), FILTER_QUEUES, cqname, nullptr, nullptr, nullptr, nullptr)) {
          return true;
       }
    }
@@ -1075,10 +1096,10 @@ bool cqueue_shadowed_by(const char *cqname, const lListElem *rule, sge_assignmen
  *
  * @note MT-NOTE: host_shadowed_by() is MT safe
  */
-bool host_shadowed_by(const char *host, const lListElem *rule, sge_assignment_t *a) {
-   while ((rule = lPrev(rule))) {
-      if (rqs_match_assignment(rule, a) &&
-          rqs_filter_match(ocs::tom::get<RQR_filter_hosts>(rule), FILTER_HOSTS, host, nullptr, a->hgrp_list, nullptr, nullptr)) {
+static bool host_shadowed_by(const char *host, const ocs::tom::ConstElement<ocs::tom::RQR> rule, sge_assignment_t *a) {
+   for (auto prev = rule.prev(); prev != nullptr; prev = prev.prev()) {
+      if (rqs_match_assignment(prev, a) &&
+          rqs_filter_match(ocs::tom::get<RQR_filter_hosts>(prev), FILTER_HOSTS, host, nullptr, a->hgrp_list, nullptr, nullptr)) {
          return true;
       }
    }
@@ -1103,8 +1124,9 @@ bool host_shadowed_by(const char *host, const lListElem *rule, sge_assignment_t 
  *
  * @note MT-NOTE: rqs_set_dynamical_limit() is MT safe
  */
-bool
-rqs_set_dynamical_limit(lListElem *limit, lListElem *global_host, lListElem *exec_host, const lList *centry) {
+static bool
+rqs_set_dynamical_limit(const ocs::tom::Element<ocs::tom::RQRL> limit, const ocs::tom::ConstElement<ocs::tom::EH> global_host,
+                        const ocs::tom::ConstElement<ocs::tom::EH> exec_host, const ocs::tom::ConstList<ocs::tom::CE> centry) {
    DENTER(TOP_LAYER);
 
    if (ocs::tom::get<RQRL_dynamic>(limit)) {
@@ -1116,3 +1138,18 @@ rqs_set_dynamical_limit(lListElem *limit, lListElem *global_host, lListElem *exe
    DRETURN(true);
 }
 
+/**
+ * @brief The slots free within the resource quotas, for a caller with an untyped queue instance (N-X-2)
+ *
+ * @param a job info structure
+ * @param slots out: # free slots
+ * @param qep queue instance (`QU_Type`), checked
+ * @param need_master a master task still has to be placed
+ * @param is_master_queue this queue instance already carries the master task
+ *
+ * @return #DISPATCH_OK or #DISPATCH_NEVER_CAT
+ */
+dispatch_t parallel_rqs_slots_by_time(sge_assignment_t *a, int *slots, lListElem *qep, bool need_master,
+                                      bool is_master_queue) {
+   return parallel_rqs_slots_by_time(a, slots, ocs::tom::Element<ocs::tom::QU>(qep), need_master, is_master_queue);
+}

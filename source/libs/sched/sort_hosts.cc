@@ -94,7 +94,7 @@ enum {
 };
 
 /* prototypes */
-static int get_load_value(double *dvalp, lListElem *global, lListElem *host, const lList *centry_list,
+static int get_load_value(double *dvalp, const lListElem *global, const lListElem *host, const lList *centry_list,
                           const lList *load_adjustments, const char *attrname);
 
 /**
@@ -154,8 +154,8 @@ int sort_host_list(lList *hl, const lList *centry_list) {
  *         error - which sorts a host with incorrect load reporting to the end
  *         instead of to the front
  */
-double scaled_mixed_load(const char *load_formula, lListElem *global,
-                         lListElem *host, const lList *centry_list, const lList *load_adjustments) {
+double scaled_mixed_load(const char *load_formula, const lListElem *global,
+                         const lListElem *host, const lList *centry_list, const lList *load_adjustments) {
    DENTER(TOP_LAYER);
 
    char *cp = nullptr;
@@ -307,7 +307,7 @@ double scaled_mixed_load(const char *load_formula, lListElem *global,
  *
  * @return 0 if a value was found, 1 if the host has neither a load value nor a consumable of that name
  */
-static int get_load_value(double *dvalp, lListElem *global, lListElem *host, const lList *centry_list,
+static int get_load_value(double *dvalp, const lListElem *global, const lListElem *host, const lList *centry_list,
                           const lList *load_adjustments, const char *attrname) {
    DENTER(TOP_LAYER);
 

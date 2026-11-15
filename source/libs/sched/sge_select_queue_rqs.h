@@ -49,10 +49,16 @@
 
 #include "sge_select_queue.h"
 
+#include "sgeobj/tom/ocs_tom_QU.h"
+#include "tom/ocs_Element.h"
+#include "tom/ocs_Transitional.h"
+
 /* parallel assignments */
 dispatch_t
-parallel_rqs_slots_by_time(sge_assignment_t *a, int *slots, lListElem *qep, bool need_master,
+parallel_rqs_slots_by_time(sge_assignment_t *a, int *slots, ocs::tom::Element<ocs::tom::QU> qep, bool need_master,
                            bool is_master_queue);
+OCS_TRANSITIONAL dispatch_t parallel_rqs_slots_by_time(sge_assignment_t *a, int *slots, lListElem *qep,
+                                                       bool need_master, bool is_master_queue);
 
 void parallel_check_and_debit_rqs_slots(sge_assignment_t *a, const char *host, const char *queue,
       int *slots, dstring *rule_name, dstring *rue_name, dstring *limit_name);
@@ -64,18 +70,3 @@ void parallel_revert_rqs_slot_debitation(sge_assignment_t *a, const char *host, 
 dispatch_t rqs_by_slots(sge_assignment_t *a, const char *queue, const char *host,
   uint64_t *tt_rqs_all, bool *is_global, dstring *rue_string, dstring *limit_name, dstring *rule_name, uint64_t tt_best);
 
-void rqs_can_optimize(const lListElem *rule, bool *host, bool *queue, sge_assignment_t *a);
-
-void rqs_expand_cqueues(const lListElem *rule, sge_assignment_t *a);
-void rqs_expand_hosts(const lListElem *rule, sge_assignment_t *a);
-
-bool cqueue_shadowed(const lListElem *rule, sge_assignment_t *a);
-bool host_shadowed(const lListElem *rule, sge_assignment_t *a);
-
-void rqs_excluded_hosts(const lListElem *rule, sge_assignment_t *a);
-void rqs_excluded_cqueues(const lListElem *rule, sge_assignment_t *a);
-
-bool cqueue_shadowed_by(const char *cqname, const lListElem *rule, sge_assignment_t *a);
-bool host_shadowed_by(const char *host, const lListElem *rule, sge_assignment_t *a);
-
-bool rqs_set_dynamical_limit(lListElem *limit, lListElem *global_host, lListElem *exec_host, const lList *centry);
