@@ -51,6 +51,15 @@
 #include "cull/cull_list.h"
 
 #include "sgeobj/ocs_CEntry.h"
+#include "sgeobj/tom/ocs_tom_CE.h"
+#include "sgeobj/tom/ocs_tom_CQ.h"
+#include "sgeobj/tom/ocs_tom_EH.h"
+#include "sgeobj/tom/ocs_tom_HL.h"
+#include "sgeobj/tom/ocs_tom_QU.h"
+#include "sgeobj/tom/ocs_tom_RUE.h"
+#include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "tom/ocs_Transitional.h"
 
 void monitor_dominance(char *str, uint32_t mask);
 
@@ -60,25 +69,37 @@ int host_complexes2scheduler(lList **new_complex_list, lListElem *host,
 int queue_complexes2scheduler(lList **new_complex_list, lListElem *queue, 
                               const lList *host_list, const lList *complex_list, const lList *load_adjustments);
 
-lListElem *
-get_attribute_by_name(const lListElem *global, const lListElem *host, const lListElem *queue, const char *attrname,
-                      const lList *centry_list, const lList *load_adjustments, uint64_t start_time, uint64_t duration);
+ocs::tom::ElementPtr<ocs::tom::CE>
+get_attribute_by_name(ocs::tom::ConstElement<ocs::tom::EH> global, ocs::tom::ConstElement<ocs::tom::EH> host,
+                      ocs::tom::ConstElement<ocs::tom::QU> queue, const char *attrname,
+                      ocs::tom::ConstList<ocs::tom::CE> centry_list, ocs::tom::ConstList<ocs::tom::CE> load_adjustments,
+                      uint64_t start_time, uint64_t duration);
+OCS_TRANSITIONAL lListElem *get_attribute_by_name(const lListElem *global, const lListElem *host, const lListElem *queue,
+                                                   const char *attrname, const lList *centry_list,
+                                                   const lList *load_adjustments, uint64_t start_time, uint64_t duration);
 
-int compare_complexes(int slots, lListElem *complex1, 
-                      lListElem *complex2, char *availability_text, 
+int compare_complexes(int slots, ocs::tom::ConstElement<ocs::tom::CE> req_cplx,
+                      ocs::tom::ConstElement<ocs::tom::CE> src_cplx, char *availability_text,
                       int is_threshold, int force_existence);
+OCS_TRANSITIONAL int compare_complexes(int slots, lListElem *req_cplx, lListElem *src_cplx, char *availability_text,
+                                       int is_threshold, int force_existence);
 
-bool is_attr_prior(lListElem *upper_el, lListElem *lower_el);
-
-bool get_queue_resource(lListElem *queue_elem, const lListElem *queue, const char *attrname);
-
-lListElem *
-get_attribute(const char *attrname, const lList *config_attr, const lList *actual_attr, const lList *load_attr,
-              const lList *centry_list, const lList *load_adjustments, const lListElem *queue, uint32_t layer,
-              double lc_factor, dstring *reason, bool zero_utilization, uint64_t start_time, uint64_t duration);
+ocs::tom::ElementPtr<ocs::tom::CE>
+get_attribute(const char *attrname, ocs::tom::ConstList<ocs::tom::CE> config_attr,
+              ocs::tom::ConstList<ocs::tom::RUE> actual_attr, ocs::tom::ConstList<ocs::tom::HL> load_attr,
+              ocs::tom::ConstList<ocs::tom::CE> centry_list, ocs::tom::ConstList<ocs::tom::CE> load_adjustments,
+              ocs::tom::ConstElement<ocs::tom::QU> queue, uint32_t layer, double lc_factor, dstring *reason,
+              bool zero_utilization, uint64_t start_time, uint64_t duration);
+OCS_TRANSITIONAL lListElem *get_attribute(const char *attrname, const lList *config_attr, const lList *actual_attr,
+                                           const lList *load_attr, const lList *centry_list,
+                                           const lList *load_adjustments, const lListElem *queue, uint32_t layer,
+                                           double lc_factor, dstring *reason, bool zero_utilization,
+                                           uint64_t start_time, uint64_t duration);
 
 int string_base_cmp(ocs::CEntry::Type type, const char *s1, const char *s2);
 int string_base_cmp_old(ocs::CEntry::Type type, const char *s1, const char *s2);
 
-bool request_cq_rejected(const lList* hard_resource_list, const lListElem *cq,
-      const lList *centry_list, bool single_slot, dstring *unsatisfied);
+bool request_cq_rejected(ocs::tom::ConstList<ocs::tom::CE> hard_resource_list, ocs::tom::ConstElement<ocs::tom::CQ> cq,
+                         ocs::tom::ConstList<ocs::tom::CE> centry_list, bool single_slot, dstring *unsatisfied);
+OCS_TRANSITIONAL bool request_cq_rejected(const lList *hard_resource_list, const lListElem *cq,
+                                          const lList *centry_list, bool single_slot, dstring *unsatisfied);

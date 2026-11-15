@@ -69,9 +69,14 @@
 #include "sgeobj/sge_str.h"
 #include "sgeobj/ocs_CEntry.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
 #include "sgeobj/tom/ocs_tom_CE.h"
+#include "sgeobj/tom/ocs_tom_CQ.h"
+#include "sgeobj/tom/ocs_tom_EH.h"
 #include "sgeobj/tom/ocs_tom_HL.h"
+#include "sgeobj/tom/ocs_tom_QU.h"
 #include "sgeobj/tom/ocs_tom_RUE.h"
+#include "sgeobj/tom/ocs_tom_ST.h"
 
 #include "sge_complex_schedd.h"
 #include "sge_resource_utilization.h"
@@ -82,16 +87,39 @@ static int resource_cmp(uint32_t relop, double req_all_slots, double src_dl);
 static int string_cmp(ocs::CEntry::Type type, uint32_t relop, const char *request,
                       const char *offer);
 
-static lList *get_attribute_list_by_names(lListElem *global, lListElem *host, lListElem *queue, 
-                                          const lList *centry_list, const lList *load_adjustments,
-                                          lList *attrnames);
+static ocs::tom::ListPtr<ocs::tom::CE>
+get_attribute_list_by_names(ocs::tom::ConstElement<ocs::tom::EH> global, ocs::tom::ConstElement<ocs::tom::EH> host,
+                            ocs::tom::ConstElement<ocs::tom::QU> queue, ocs::tom::ConstList<ocs::tom::CE> centry_list,
+                            ocs::tom::ConstList<ocs::tom::CE> load_adjustments,
+                            ocs::tom::ConstList<ocs::tom::ST> attrnames);
 
-static void build_name_filter(lList *filter, const lList *list, int t_name);
+static void build_name_filter(ocs::tom::List<ocs::tom::ST> filter, const lList *list, int t_name);
 
-static bool is_attr_prior2(lListElem *upper_el, double lower_value, int t_value, int t_dominant);
+static bool is_attr_prior(ocs::tom::Element<ocs::tom::CE> upper_el, ocs::tom::Element<ocs::tom::CE> lower_el);
 
-static lList *get_attribute_list(lListElem *global, lListElem *host, lListElem *queue, const lList *centry_list,
-                                 const lList *load_adjustments);
+static bool is_attr_prior2(ocs::tom::Element<ocs::tom::CE> upper_el, double lower_value, int t_value, int t_dominant);
+
+static bool get_queue_resource(ocs::tom::Element<ocs::tom::CE> queue_elem, ocs::tom::ConstElement<ocs::tom::QU> queue,
+                               const char *attrname);
+
+static ocs::tom::ListPtr<ocs::tom::CE>
+get_attribute_list(ocs::tom::ConstElement<ocs::tom::EH> global, ocs::tom::ConstElement<ocs::tom::EH> host,
+                   ocs::tom::ConstElement<ocs::tom::QU> queue, ocs::tom::ConstList<ocs::tom::CE> centry_list,
+                   ocs::tom::ConstList<ocs::tom::CE> load_adjustments);
+
+/**
+ * @brief A copy of the configuration of an attribute
+ *
+ * @param centry_list the system wide attribute configuration
+ * @param attrname    the attribute
+ *
+ * @return the copy, or an empty handle if the attribute is not configured
+ */
+static ocs::tom::ElementPtr<ocs::tom::CE>
+copy_centry(const ocs::tom::ConstList<ocs::tom::CE> centry_list, const char *attrname) {
+   const auto centry = ocs::tom::find_first<CE_name>(centry_list, attrname);
+   return centry != nullptr ? centry.clone() : ocs::tom::ElementPtr<ocs::tom::CE>();
+}
 
 /**
  * @def LOAD_ADJUSTMENTS_LATE_FETCH
@@ -187,25 +215,27 @@ void monitor_dominance(char *str, uint32_t mask) {
  * @param start_time begin of the time interval, one asks for the resource
  * @param duration the duration the interval
  *
- * @return the element one was looking for or nullptr
+ * @return the element one was looking for, owned by the caller, or an empty handle
  */
-lListElem *
-get_attribute(const char *attrname, const lList *config_attr, const lList *actual_attr, const lList *load_attr,
-              const lList *centry_list, const lList *load_adjustments, const lListElem *queue, uint32_t layer,
-              double lc_factor, dstring *reason, bool zero_utilization, uint64_t start_time, uint64_t duration) {
+ocs::tom::ElementPtr<ocs::tom::CE>
+get_attribute(const char *attrname, const ocs::tom::ConstList<ocs::tom::CE> config_attr,
+              const ocs::tom::ConstList<ocs::tom::RUE> actual_attr, const ocs::tom::ConstList<ocs::tom::HL> load_attr,
+              const ocs::tom::ConstList<ocs::tom::CE> centry_list, ocs::tom::ConstList<ocs::tom::CE> load_adjustments,
+              const ocs::tom::ConstElement<ocs::tom::QU> queue, uint32_t layer, double lc_factor, dstring *reason,
+              bool zero_utilization, uint64_t start_time, uint64_t duration) {
    DENTER(BASIS_LAYER);
 
-   lListElem *cplx_el = nullptr; // this is what we return
+   ocs::tom::ElementPtr<ocs::tom::CE> cplx_el; // this is what we return
 
    /* resource_attr is a complex_entry (CE_Type) */
    if (config_attr != nullptr) {
-      ocs::tom::ConstElement<ocs::tom::CE> temp = ocs::tom::find_first<CE_name>(config_attr, attrname);
+      const auto temp = ocs::tom::find_first<CE_name>(config_attr, attrname);
       if (temp != nullptr) {
-         cplx_el = lCopyElem(ocs::tom::find_first<CE_name>(centry_list, attrname));
-         if(cplx_el == nullptr) {
+         cplx_el = copy_centry(centry_list, attrname);
+         if (cplx_el == nullptr) {
             /* error */
             DPRINTF("==> ERROR in get_attribute(): didn't find centry for %s\n", attrname);
-            DRETURN(nullptr);
+            DRETURN(ocs::tom::ElementPtr<ocs::tom::CE>());
          }
          ocs::tom::set<CE_dominant>(cplx_el, layer | DOMINANT_TYPE_FIXED);
          ocs::tom::set<CE_pj_dominant>(cplx_el, DOMINANT_TYPE_VALUE);  /* default, no value set */ 
@@ -219,8 +249,9 @@ get_attribute(const char *attrname, const lList *config_attr, const lList *actua
       ocs::tom::set<CE_dominant>(cplx_el, DOMINANT_TYPE_VALUE);
       /* treat also consumables as fixed attributes when assuming an empty queuing system */
       if (sconf_get_qs_state() == QS_STATE_FULL) {
-         const lListElem *actual_el;
-         if (actual_attr != nullptr && (actual_el = ocs::tom::find_first<RUE_name>(actual_attr, attrname))) {
+         const auto actual_el = actual_attr != nullptr ? ocs::tom::find_first<RUE_name>(actual_attr, attrname)
+                                                       : ocs::tom::ConstElement<ocs::tom::RUE>();
+         if (actual_el != nullptr) {
             DSTRING_STATIC(ds, 20);
             ocs::TopologyString binding_inuse;
             double utilized = zero_utilization ? 0 : utilization_max(nullptr, nullptr, actual_el, start_time, duration, 0.0, 0.0, 0.0, false, binding_inuse);
@@ -244,8 +275,7 @@ get_attribute(const char *attrname, const lList *config_attr, const lList *actua
             ocs::tom::set<CE_pj_stringval>(cplx_el, sge_dstring_sprintf(&ds, "%8.3f", pj_doubleval));
          } else {
             sge_dstring_sprintf(reason, MSG_ATTRIB_ACTUALELEMENTTOATTRIBXMISSING_S, attrname);
-            lFreeElem(&cplx_el);
-            DRETURN(nullptr);
+            DRETURN(ocs::tom::ElementPtr<ocs::tom::CE>());
          }
       } else {
          ocs::tom::set<CE_pj_doubleval>(cplx_el, ocs::tom::get<CE_doubleval>(cplx_el)); 
@@ -254,15 +284,17 @@ get_attribute(const char *attrname, const lList *config_attr, const lList *actua
    }
 
    /** check for a load value */
-   const lListElem *load_el;
-   if (load_attr != nullptr && (load_el = ocs::tom::find_first<HL_name>(load_attr, attrname)) &&
-       (sconf_get_qs_state()==QS_STATE_FULL || ocs::tom::get<HL_is_static>(load_el)) && (!is_attr_prior(cplx_el, cplx_el))) {
+   const auto load_el = load_attr != nullptr ? ocs::tom::find_first<HL_name>(load_attr, attrname)
+                                             : ocs::tom::ConstElement<ocs::tom::HL>();
+   if (load_el != nullptr &&
+       (sconf_get_qs_state()==QS_STATE_FULL || ocs::tom::get<HL_is_static>(load_el)) &&
+       !is_attr_prior(cplx_el.get(), cplx_el.get())) {
          if (cplx_el == nullptr) {
-            cplx_el = lCopyElem(ocs::tom::find_first<CE_name>(centry_list, attrname));
-               if (cplx_el == nullptr) {
-                  /* error */
-                  DRETURN(nullptr);
-               }         
+            cplx_el = copy_centry(centry_list, attrname);
+            if (cplx_el == nullptr) {
+               /* error */
+               DRETURN(ocs::tom::ElementPtr<ocs::tom::CE>());
+            }
             ocs::tom::set<CE_dominant>(cplx_el, DOMINANT_TYPE_VALUE);
             ocs::tom::set<CE_pj_dominant>(cplx_el, DOMINANT_TYPE_VALUE);
          }
@@ -292,13 +324,14 @@ get_attribute(const char *attrname, const lList *config_attr, const lList *actua
                    */
 #define LOAD_ADJUSTMENTS_LATE_FETCH
 #ifdef LOAD_ADJUSTMENTS_LATE_FETCH
-               lList *local_load_adjustments = nullptr;
+               ocs::tom::ListPtr<ocs::tom::CE> local_load_adjustments;
                if (load_adjustments == nullptr) {
-                  load_adjustments = local_load_adjustments = sconf_get_job_load_adjustments();
+                  local_load_adjustments = ocs::tom::ListPtr<ocs::tom::CE>::from_typed(sconf_get_job_load_adjustments());
+                  load_adjustments = local_load_adjustments.get();
                }
 #endif
                // look for 'name' in our load_adjustments list
-               ocs::tom::ConstElement<ocs::tom::CE> job_load = ocs::tom::find_first<CE_name>(load_adjustments, attrname);
+               const auto job_load = ocs::tom::find_first<CE_name>(load_adjustments, attrname);
                if (job_load != nullptr) {
                   const char *s;
                   double load_correction;
@@ -331,9 +364,6 @@ get_attribute(const char *attrname, const lList *config_attr, const lList *actua
                      dom_type = DOMINANT_TYPE_CLOAD;
                   }
                }
-#ifdef LOAD_ADJUSTMENTS_LATE_FETCH
-               lFreeList(&local_load_adjustments);
-#endif
 
                /* we can have a user, who wants to override the incoming load value. This is no
                   problem for consumables, but for fixed values. A custom fixed value is a per
@@ -350,7 +380,7 @@ get_attribute(const char *attrname, const lList *config_attr, const lList *actua
                   ocs::tom::set<CE_pj_dominant>(cplx_el, layer | DOMINANT_TYPE_FIXED);
                } 
  
-               if (!is_attr_prior2(cplx_el, dval, CE_pj_doubleval, CE_pj_dominant)){
+               if (!is_attr_prior2(cplx_el.get(), dval, CE_pj_doubleval, CE_pj_dominant)){
                   ocs::tom::set<CE_pj_stringval>(cplx_el, load_value);
                   ocs::tom::set<CE_pj_dominant>(cplx_el, layer | dom_type);
                   ocs::tom::set<CE_pj_doubleval>(cplx_el, dval );
@@ -364,23 +394,52 @@ get_attribute(const char *attrname, const lList *config_attr, const lList *actua
    if (queue != nullptr) {
       bool created=false;
       if (cplx_el == nullptr) {
-         cplx_el = lCopyElem(ocs::tom::find_first<CE_name>(centry_list, attrname));
-         if(cplx_el == nullptr){
+         cplx_el = copy_centry(centry_list, attrname);
+         if (cplx_el == nullptr) {
             /* error */
-            DRETURN(nullptr);
+            DRETURN(ocs::tom::ElementPtr<ocs::tom::CE>());
          }         
          ocs::tom::set<CE_dominant>(cplx_el, DOMINANT_TYPE_VALUE);
          ocs::tom::set<CE_pj_dominant>(cplx_el, DOMINANT_TYPE_VALUE);
          created = true;
       }
-      if (!get_queue_resource(cplx_el, queue, attrname) && created) {
-         lFreeElem(&cplx_el);
+      if (!get_queue_resource(cplx_el.get(), queue, attrname) && created) {
+         cplx_el.reset();
       }
    }
 
    DRETURN(cplx_el);
 }
 
+/**
+ * @brief Looks for an attribute on one level, for a caller with untyped lists (N-X-2)
+ *
+ * @param attrname attribute name one is looking for
+ * @param config_attr user defined attributes (CE_Type), checked
+ * @param actual_attr current usage of consumables (RUE_Type), checked
+ * @param load_attr load attributes (HL_Type), checked
+ * @param centry_list the system wide attribute configuration (CE_Type), checked
+ * @param load_adjustments the load adjustments (CE_Type), checked, or nullptr
+ * @param queue the current queue (QU_Type), checked, or nullptr
+ * @param layer the current layer
+ * @param lc_factor the load correction value
+ * @param reason space for error messages or nullptr
+ * @param zero_utilization ignore the current utilization
+ * @param start_time begin of the time interval
+ * @param duration the duration the interval
+ *
+ * @return the element one was looking for, owned by the caller, or nullptr
+ */
+lListElem *
+get_attribute(const char *attrname, const lList *config_attr, const lList *actual_attr, const lList *load_attr,
+              const lList *centry_list, const lList *load_adjustments, const lListElem *queue, uint32_t layer,
+              double lc_factor, dstring *reason, bool zero_utilization, uint64_t start_time, uint64_t duration) {
+   return get_attribute(attrname, ocs::tom::ConstList<ocs::tom::CE>(config_attr),
+                        ocs::tom::ConstList<ocs::tom::RUE>(actual_attr), ocs::tom::ConstList<ocs::tom::HL>(load_attr),
+                        ocs::tom::ConstList<ocs::tom::CE>(centry_list), ocs::tom::ConstList<ocs::tom::CE>(load_adjustments),
+                        ocs::tom::ConstElement<ocs::tom::QU>(queue), layer, lc_factor, reason, zero_utilization,
+                        start_time, duration).release();
+}
 
 /**
  * @brief Extracts attribut information from the queue
@@ -395,7 +454,8 @@ get_attribute(const char *attrname, const lList *config_attr, const lList *actua
  *
  * @return true if the attribute is set in the queue, false otherwise
  */
-bool get_queue_resource(lListElem *queue_elem, const lListElem *queue, const char *attrname){
+static bool get_queue_resource(const ocs::tom::Element<ocs::tom::CE> queue_elem,
+                               const ocs::tom::ConstElement<ocs::tom::QU> queue, const char *attrname) {
    DENTER(BASIS_LAYER);
    double dval=0.0;
    const char *value=nullptr;
@@ -481,7 +541,7 @@ bool get_queue_resource(lListElem *queue_elem, const lListElem *queue, const cha
  *
  * @return true, when the first attribut has a higher priority.
  */
-bool is_attr_prior(lListElem *upper_el, lListElem *lower_el){
+static bool is_attr_prior(const ocs::tom::Element<ocs::tom::CE> upper_el, const ocs::tom::Element<ocs::tom::CE> lower_el) {
    DENTER(BASIS_LAYER);
 
    uint32_t relop;
@@ -572,7 +632,7 @@ bool is_attr_prior(lListElem *upper_el, lListElem *lower_el){
  *
  * @return true, if the value in the structure has the higher priority
  */
-static bool is_attr_prior2(lListElem *upper_el, double lower_value, int t_value, int t_dominant ){
+static bool is_attr_prior2(const ocs::tom::Element<ocs::tom::CE> upper_el, double lower_value, int t_value, int t_dominant) {
    DENTER(BASIS_LAYER);
 
    uint32_t relop;
@@ -630,8 +690,10 @@ const lList *load_adjustments
    }
    /* build global complex and add it to result */
    lFreeList(new_centry_list);
-   *new_centry_list = get_attribute_list(host_list_locate(exechost_list, SGE_GLOBAL_NAME), host, nullptr, centry_list,
-                                         load_adjustments);
+   *new_centry_list = get_attribute_list(ocs::tom::ConstElement<ocs::tom::EH>::from_typed(host_list_locate(exechost_list, SGE_GLOBAL_NAME)),
+                                         ocs::tom::ConstElement<ocs::tom::EH>(host), ocs::tom::ConstElement<ocs::tom::QU>(),
+                                         ocs::tom::ConstList<ocs::tom::CE>(centry_list),
+                                         ocs::tom::ConstList<ocs::tom::CE>(load_adjustments)).release();
 
    DRETURN(0);
 }
@@ -660,9 +722,12 @@ int queue_complexes2scheduler(lList **new_centry_list, lListElem *queue, const l
    DENTER(BASIS_LAYER);
 
    lFreeList(new_centry_list);
-   *new_centry_list = get_attribute_list(host_list_locate(exechost_list, "global"), 
-                                         queue ? host_list_locate(exechost_list, ocs::tom::get<QU_qhostname>(queue)) : nullptr,
-                                         queue, centry_list, load_adjustments);
+   const auto qu = ocs::tom::ConstElement<ocs::tom::QU>(queue);
+   const auto host = qu != nullptr ? host_list_locate(exechost_list, ocs::tom::get<QU_qhostname>(qu)) : nullptr;
+   *new_centry_list = get_attribute_list(ocs::tom::ConstElement<ocs::tom::EH>::from_typed(host_list_locate(exechost_list, "global")),
+                                         ocs::tom::ConstElement<ocs::tom::EH>::from_typed(host), qu,
+                                         ocs::tom::ConstList<ocs::tom::CE>(centry_list),
+                                         ocs::tom::ConstList<ocs::tom::CE>(load_adjustments)).release();
    DRETURN(0);
 }
 
@@ -681,22 +746,24 @@ int queue_complexes2scheduler(lList **new_centry_list, lListElem *queue, const l
  * @param load_adjustments the job load adjustments (`CE_Type`); nullptr fetches them from the data store
  * @param attrnames ST_Type list of attribute names
  *
- * @return a CULL list of elements or nullptr
+ * @return the list of attributes, owned by the caller, or an empty handle
  */
-static lList *get_attribute_list_by_names(lListElem *global, lListElem *host,
-                                          lListElem *queue, const lList *centry_list,
-                                          const lList *load_adjustments, lList *attrnames) {
-   lListElem *attr;
-   lList *list = nullptr;
+static ocs::tom::ListPtr<ocs::tom::CE>
+get_attribute_list_by_names(const ocs::tom::ConstElement<ocs::tom::EH> global, const ocs::tom::ConstElement<ocs::tom::EH> host,
+                            const ocs::tom::ConstElement<ocs::tom::QU> queue,
+                            const ocs::tom::ConstList<ocs::tom::CE> centry_list,
+                            const ocs::tom::ConstList<ocs::tom::CE> load_adjustments,
+                            const ocs::tom::ConstList<ocs::tom::ST> attrnames) {
+   ocs::tom::ListPtr<ocs::tom::CE> list;
 
-   for_each_ep_lv(elem, attrnames) {
-      attr = get_attribute_by_name(global, host, queue, ocs::tom::get<ST_name>(elem), centry_list, load_adjustments,
-                                   DISPATCH_TIME_NOW, 0);
+   for (const auto elem : attrnames) {
+      auto attr = get_attribute_by_name(global, host, queue, ocs::tom::get<ST_name>(elem), centry_list,
+                                        load_adjustments, DISPATCH_TIME_NOW, 0);
       if (attr != nullptr) {
          if (list == nullptr) {
-            list = lCreateList("attr", CE_Type);
+            list = ocs::tom::ListPtr<ocs::tom::CE>::create("attr");
          }
-         lAppendElem(list, attr);
+         list->push_back(std::move(attr));
       }
    }
 
@@ -715,42 +782,35 @@ static lList *get_attribute_list_by_names(lListElem *global, lListElem *host,
  * @param centry_list system wide attribute config list
  * @param load_adjustments the job load adjustments (`CE_Type`); nullptr fetches them from the data store
  *
- * @return list of attributes or nullptr, if no attributes exist.
+ * @return the list of attributes, owned by the caller, or an empty handle if no attributes exist
  */
-static lList *get_attribute_list(lListElem *global, lListElem *host, lListElem *queue, const lList *centry_list,
-                                 const lList *load_adjustments) {
+static ocs::tom::ListPtr<ocs::tom::CE>
+get_attribute_list(const ocs::tom::ConstElement<ocs::tom::EH> global, const ocs::tom::ConstElement<ocs::tom::EH> host,
+                   const ocs::tom::ConstElement<ocs::tom::QU> queue, const ocs::tom::ConstList<ocs::tom::CE> centry_list,
+                   const ocs::tom::ConstList<ocs::tom::CE> load_adjustments) {
    DENTER(BASIS_LAYER);
 
-   lList *filter = nullptr;
-   lList *list = nullptr;
-
-   filter = lCreateList("", ST_Type);
+   auto filter = ocs::tom::ListPtr<ocs::tom::ST>::create("");
 
    if (global != nullptr) {
-      build_name_filter(filter, ocs::tom::get<EH_load_list>(global), HL_name);
-      build_name_filter(filter, ocs::tom::get<EH_consumable_config_list>(global), CE_name);
+      build_name_filter(filter.get(), ocs::tom::get<EH_load_list>(global), HL_name);
+      build_name_filter(filter.get(), ocs::tom::get<EH_consumable_config_list>(global), CE_name);
    }    
    if (host != nullptr) {
-      build_name_filter(filter, ocs::tom::get<EH_load_list>(host), HL_name);
-      build_name_filter(filter, ocs::tom::get<EH_consumable_config_list>(host), CE_name);
+      build_name_filter(filter.get(), ocs::tom::get<EH_load_list>(host), HL_name);
+      build_name_filter(filter.get(), ocs::tom::get<EH_consumable_config_list>(host), CE_name);
    } 
 
    if (queue != nullptr) {
-      int x = 0;  
-      for (; x < max_queue_resources; x++){
-         if (static_cast<const lListElem *>(ocs::tom::find_first<ST_name>(filter, queue_resource[x].name)) == nullptr) {
-            ocs::tom::emplace_back<ST_name>(&filter, queue_resource[x].name);
+      for (int x = 0; x < max_queue_resources; x++) {
+         if (filter->find_first<ST_name>(queue_resource[x].name) == nullptr) {
+            filter->emplace_back<ST_name>(queue_resource[x].name);
          }
       }
-      build_name_filter(filter, ocs::tom::get<QU_consumable_config_list>(queue), CE_name);
+      build_name_filter(filter.get(), ocs::tom::get<QU_consumable_config_list>(queue), CE_name);
    }
 
-
-   list = get_attribute_list_by_names(global, host, queue, centry_list, load_adjustments, filter);
-
-   lFreeList(&filter);
-   
-   DRETURN(list);
+   DRETURN(get_attribute_list_by_names(global, host, queue, centry_list, load_adjustments, filter.get()));
 }
 
 /**
@@ -764,16 +824,17 @@ static lList *get_attribute_list(lListElem *global, lListElem *host, lListElem *
  *
  * @note ???
  */
-static void build_name_filter(lList *filter, const lList *list, int t_name){
+static void build_name_filter(const ocs::tom::List<ocs::tom::ST> filter, const lList *list, int t_name) {
    if (!list) {
       return;
    }
 
-   for_each_ep_lv(current,list){
+   // the list is a host's load list or a complex value list, the name field tells which (N-H-21)
+   for_each_ep_lv(current, list) {
       const char* name = lGetString(current, t_name);
 
-      if (static_cast<const lListElem *>(ocs::tom::find_first<ST_name>(filter, name)) == nullptr) {
-         ocs::tom::emplace_back<ST_name>(&filter, name);
+      if (filter.find_first<ST_name>(name) == nullptr) {
+         filter.emplace_back<ST_name>(name);
       }
    }
 }
@@ -918,7 +979,8 @@ static int resource_cmp(uint32_t relop, double req, double src_dl) {
  *
  * @return 1 if the request is satisfied, 0 otherwise
  */
-int compare_complexes(int slots, lListElem *req_cplx, lListElem *src_cplx, char *availability_text,
+int compare_complexes(int slots, const ocs::tom::ConstElement<ocs::tom::CE> req_cplx,
+                      const ocs::tom::ConstElement<ocs::tom::CE> src_cplx, char *availability_text,
                       int is_threshold, int force_existence) {
    DENTER(TOP_LAYER);
 
@@ -1148,6 +1210,25 @@ int compare_complexes(int slots, lListElem *req_cplx, lListElem *src_cplx, char 
 }
 
 /**
+ * @brief Matches a request against what an object offers, for a caller with untyped elements (N-X-2)
+ *
+ * @param[in]  slots             number of slots the request is made for
+ * @param[in]  req_cplx          the requested attribute (`CE_Type`), checked
+ * @param[in]  src_cplx          what the object offers (`CE_Type`), checked
+ * @param[out] availability_text receives the diagnosis when the match fails
+ * @param[in]  is_threshold      true when matching a threshold
+ * @param[in]  force_existence   true if an attribute that does not exist at the object makes the match fail
+ *
+ * @return 1 if the request is satisfied, 0 otherwise
+ */
+int compare_complexes(int slots, lListElem *req_cplx, lListElem *src_cplx, char *availability_text,
+                      int is_threshold, int force_existence) {
+   return compare_complexes(slots, ocs::tom::ConstElement<ocs::tom::CE>(req_cplx),
+                            ocs::tom::ConstElement<ocs::tom::CE>(src_cplx), availability_text, is_threshold,
+                            force_existence);
+}
+
+/**
  * @brief Returns an attribut by name
  *
  * It looks into the different configurations on host, global and queue and returns
@@ -1164,23 +1245,22 @@ int compare_complexes(int slots, lListElem *req_cplx, lListElem *src_cplx, char 
  * @param start_time begin of the time interval one asks for the resource
  * @param duration the duration of the interval
  *
- * @return the element one is looking for (a copy) or nullptr.
+ * @return the element one is looking for (a copy owned by the caller), or an empty handle
  */
-lListElem *
-get_attribute_by_name(const lListElem *global, const lListElem *host, const lListElem *queue, const char *attrname,
-                      const lList *centry_list, const lList *load_adjustments, uint64_t start_time, uint64_t duration) {
+ocs::tom::ElementPtr<ocs::tom::CE>
+get_attribute_by_name(const ocs::tom::ConstElement<ocs::tom::EH> global, const ocs::tom::ConstElement<ocs::tom::EH> host,
+                      const ocs::tom::ConstElement<ocs::tom::QU> queue, const char *attrname,
+                      const ocs::tom::ConstList<ocs::tom::CE> centry_list,
+                      const ocs::tom::ConstList<ocs::tom::CE> load_adjustments, uint64_t start_time, uint64_t duration) {
    DENTER(BASIS_LAYER);
 
-   lListElem *global_el=nullptr;
-   lListElem *host_el=nullptr;
-   lListElem *queue_el=nullptr;
-   lListElem *ret_el = nullptr;
+   ocs::tom::ElementPtr<ocs::tom::CE> ret_el;
 
    if (global != nullptr) {
       double lc_factor = 0;
-      ocs::tom::ConstList<ocs::tom::HL> load_attr = ocs::tom::get<EH_load_list>(global);  
-      ocs::tom::ConstList<ocs::tom::CE> config_attr = ocs::tom::get<EH_consumable_config_list>(global);
-      ocs::tom::ConstList<ocs::tom::RUE> actual_attr = ocs::tom::get<EH_resource_utilization>(global);
+      const auto load_attr = ocs::tom::get<EH_load_list>(global);
+      const auto config_attr = ocs::tom::get<EH_consumable_config_list>(global);
+      const auto actual_attr = ocs::tom::get<EH_resource_utilization>(global);
 
       /* is there a multiplier for load correction (may be not in qstat, qmon etc) */
       if (ocs::tom::has<EH_load_correction_factor>(global)) {
@@ -1188,16 +1268,16 @@ get_attribute_by_name(const lListElem *global, const lListElem *host, const lLis
             lc_factor = ((double)lc_factor)/100;
          }   
       }
-      global_el = get_attribute(attrname, config_attr, actual_attr, load_attr, centry_list, load_adjustments, nullptr,
-                                DOMINANT_LAYER_GLOBAL, lc_factor, nullptr, false, start_time, duration);
-      ret_el = global_el;
+      ret_el = get_attribute(attrname, config_attr, actual_attr, load_attr, centry_list, load_adjustments,
+                             ocs::tom::ConstElement<ocs::tom::QU>(), DOMINANT_LAYER_GLOBAL, lc_factor, nullptr, false,
+                             start_time, duration);
    } 
 
    if (host != nullptr) {   
       double lc_factor = 0;
-      ocs::tom::ConstList<ocs::tom::HL> load_attr = ocs::tom::get<EH_load_list>(host); 
-      ocs::tom::ConstList<ocs::tom::CE> config_attr = ocs::tom::get<EH_consumable_config_list>(host);
-      ocs::tom::ConstList<ocs::tom::RUE> actual_attr = ocs::tom::get<EH_resource_utilization>(host);
+      const auto load_attr = ocs::tom::get<EH_load_list>(host);
+      const auto config_attr = ocs::tom::get<EH_consumable_config_list>(host);
+      const auto actual_attr = ocs::tom::get<EH_resource_utilization>(host);
 
       /* is there a multiplier for load correction (may be not in qstat, qmon etc) */
       if (ocs::tom::has<EH_load_correction_factor>(host)) {
@@ -1205,41 +1285,51 @@ get_attribute_by_name(const lListElem *global, const lListElem *host, const lLis
             lc_factor = ((double)lc_factor)/100;
          }
       }
-      host_el = get_attribute(attrname, config_attr, actual_attr, load_attr, centry_list, load_adjustments,
-                              nullptr, DOMINANT_LAYER_HOST, lc_factor, nullptr, false, start_time, duration);
-      if (!global_el && host_el) {
-         ret_el = host_el;
-      } else if (global_el && host_el) {
-         if (is_attr_prior(global_el, host_el)) {
-            lFreeElem(&host_el);
-         } else{
-            lFreeElem(&global_el);
-            ret_el = host_el;
-         }
+      auto host_el = get_attribute(attrname, config_attr, actual_attr, load_attr, centry_list, load_adjustments,
+                                   ocs::tom::ConstElement<ocs::tom::QU>(), DOMINANT_LAYER_HOST, lc_factor, nullptr,
+                                   false, start_time, duration);
+      // the host value wins unless the global one has the higher priority; the loser is freed with its handle
+      if (host_el != nullptr && (ret_el == nullptr || !is_attr_prior(ret_el.get(), host_el.get()))) {
+         ret_el = std::move(host_el);
       }
    }
 
    if (queue != nullptr) {
-      ocs::tom::ConstList<ocs::tom::CE> config_attr = ocs::tom::get<QU_consumable_config_list>(queue);
-      ocs::tom::ConstList<ocs::tom::RUE> actual_attr = ocs::tom::get<QU_resource_utilization>(queue);
+      const auto config_attr = ocs::tom::get<QU_consumable_config_list>(queue);
+      const auto actual_attr = ocs::tom::get<QU_resource_utilization>(queue);
       
-      queue_el = get_attribute(attrname, config_attr, actual_attr, nullptr, centry_list, load_adjustments,
-                               queue, DOMINANT_LAYER_QUEUE, 0.0, nullptr, false, start_time, duration);
-
-      if (!ret_el) {
-         ret_el = queue_el;
-      } else if (ret_el && queue_el) {
-         if (is_attr_prior(ret_el, queue_el)) {
-            lFreeElem(&queue_el);
-         } else {
-            lFreeElem(&ret_el);
-            ret_el = queue_el;
-         }
+      auto queue_el = get_attribute(attrname, config_attr, actual_attr, ocs::tom::ConstList<ocs::tom::HL>(), centry_list,
+                                    load_adjustments, queue, DOMINANT_LAYER_QUEUE, 0.0, nullptr, false, start_time,
+                                    duration);
+      if (queue_el != nullptr && (ret_el == nullptr || !is_attr_prior(ret_el.get(), queue_el.get()))) {
+         ret_el = std::move(queue_el);
       }
    }
    DRETURN(ret_el);
 }
 
+/**
+ * @brief Returns an attribut by name, for a caller with untyped objects (N-X-2)
+ *
+ * @param global the global host (EH_Type), checked, or nullptr
+ * @param host a given host (EH_Type), checked, or nullptr
+ * @param queue a queue on the given host (QU_Type), checked, or nullptr
+ * @param attrname the attribute name one is looking for
+ * @param centry_list the system wide attribute config list (CE_Type), checked
+ * @param load_adjustments the load adjustments (CE_Type), checked, or nullptr
+ * @param start_time begin of the time interval one asks for the resource
+ * @param duration the duration of the interval
+ *
+ * @return the element one is looking for (a copy) or nullptr.
+ */
+lListElem *
+get_attribute_by_name(const lListElem *global, const lListElem *host, const lListElem *queue, const char *attrname,
+                      const lList *centry_list, const lList *load_adjustments, uint64_t start_time, uint64_t duration) {
+   return get_attribute_by_name(ocs::tom::ConstElement<ocs::tom::EH>(global), ocs::tom::ConstElement<ocs::tom::EH>(host),
+                                ocs::tom::ConstElement<ocs::tom::QU>(queue), attrname,
+                                ocs::tom::ConstList<ocs::tom::CE>(centry_list),
+                                ocs::tom::ConstList<ocs::tom::CE>(load_adjustments), start_time, duration).release();
+}
 
 #ifdef TEST
 /* 
@@ -1305,22 +1395,24 @@ int main(int argc, char *argv[], char *envp[]) {
  *
  * @note MT-NOTE: request_cq_rejected() is MT safe
  */
-bool request_cq_rejected(const lList *hard_resource_list, const lListElem *cq,
-                         const lList *centry_list, bool single_slot, dstring *unsatisfied) {
+bool request_cq_rejected(const ocs::tom::ConstList<ocs::tom::CE> hard_resource_list,
+                         const ocs::tom::ConstElement<ocs::tom::CQ> cq,
+                         const ocs::tom::ConstList<ocs::tom::CE> centry_list, bool single_slot, dstring *unsatisfied) {
    DENTER(TOP_LAYER);
 
-   const lListElem *val_ce = nullptr, *ce; /* CE_Type */
+   const lListElem *val_ce = nullptr; /* CE_Type */
    const char *name, *request, *offer;
    uint32_t relop;
    ocs::CEntry::Type type;
    bool rejected;
    int match;
 
-   for_each_ep_lv(req, hard_resource_list) {
+   for (const auto req : hard_resource_list) {
       int cqfld, valfld;
       name = ocs::tom::get<CE_name>(req);
 
-      if (!(ce = ocs::tom::find_first<CE_name>(centry_list, name))) {
+      const auto ce = ocs::tom::find_first<CE_name>(centry_list, name);
+      if (ce == nullptr) {
          sge_dstring_sprintf(unsatisfied, "unknown: " SFN, name);
          DRETURN(true);
       }
@@ -1344,6 +1436,7 @@ bool request_cq_rejected(const lList *hard_resource_list, const lListElem *cq,
          continue;
 
       rejected = true;
+      // the attribute list of the cluster queue is chosen at run time, so is its type (N-H-21)
       for_each_ep_lv(alist, lGetList(cq, cqfld)) {
          if (valfld == ACELIST_value) {
             /* complex_values upper limit */ 
@@ -1405,4 +1498,22 @@ bool request_cq_rejected(const lList *hard_resource_list, const lListElem *cq,
    }
 
    DRETURN(false);
+}
+
+/**
+ * @brief Check, if -l request forecloses cluster queue, for a caller with untyped objects (N-X-2)
+ *
+ * @param hard_resource_list resource list -l (CE_Type), checked
+ * @param cq cluster queue (CQ_Type), checked
+ * @param centry_list complex entry list (CE_Type), checked
+ * @param single_slot true to match for a single slot only
+ * @param unsatisfied diagnosis information, if rejected
+ *
+ * @return true, if the cluster queue is ruled out
+ */
+bool request_cq_rejected(const lList *hard_resource_list, const lListElem *cq, const lList *centry_list,
+                         bool single_slot, dstring *unsatisfied) {
+   return request_cq_rejected(ocs::tom::ConstList<ocs::tom::CE>(hard_resource_list),
+                              ocs::tom::ConstElement<ocs::tom::CQ>(cq), ocs::tom::ConstList<ocs::tom::CE>(centry_list),
+                              single_slot, unsatisfied);
 }
