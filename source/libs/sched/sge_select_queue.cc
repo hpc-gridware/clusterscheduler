@@ -6424,7 +6424,7 @@ rsmap_job_scope_key(sge_assignment_t *a, const lListElem *req, const char *same_
          lList *taken = nullptr;
          if (count_utilization) {
             taken = utilization_rsmap_max(ocs::tom::find_first_in<EH_resource_utilization, RUE_name>(host, name),
-                                          a->now, a->start, a->duration);
+                                          a->now, a->start, a->duration).release();
          }
 
          lList *keys = centry_rsmap_group_keys(definition, same_key);
@@ -6605,7 +6605,7 @@ rsmap_same_slots(sge_assignment_t *a, const lList *total_list,
          lList *taken = nullptr;
          if (a->is_advance_reservation || sconf_get_qs_state() != QS_STATE_EMPTY) {
             taken = utilization_rsmap_max(ocs::tom::find_first<RUE_name>(rue_list, name), a->now,
-                                          a->start, a->duration);
+                                          a->start, a->duration).release();
          }
 
          // scope=job takes the choice of group away from the host: the whole job is bound to

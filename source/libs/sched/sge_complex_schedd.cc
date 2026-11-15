@@ -254,7 +254,9 @@ get_attribute(const char *attrname, const ocs::tom::ConstList<ocs::tom::CE> conf
          if (actual_el != nullptr) {
             DSTRING_STATIC(ds, 20);
             ocs::TopologyString binding_inuse;
-            double utilized = zero_utilization ? 0 : utilization_max(nullptr, nullptr, actual_el, start_time, duration, 0.0, 0.0, 0.0, false, binding_inuse);
+            double utilized = zero_utilization ? 0 : utilization_max(nullptr, ocs::tom::ConstElement<ocs::tom::EH>(),
+                                                                     actual_el, start_time, duration, 0.0, 0.0, 0.0,
+                                                                     false, binding_inuse);
             double pj_doubleval;
 
             switch (ocs::tom::get<CE_relop>(cplx_el)) {

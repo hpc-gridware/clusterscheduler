@@ -51,44 +51,78 @@
 #include "sge_select_queue.h"
 #include "sgeobj/cull/sge_resource_utilization_RDE_L.h"
 #include "sgeobj/cull/sge_resource_utilization_RUE_L.h"
+#include "sgeobj/tom/ocs_tom_EH.h"
+#include "sgeobj/tom/ocs_tom_JG.h"
+#include "sgeobj/tom/ocs_tom_QU.h"
+#include "sgeobj/tom/ocs_tom_RESL.h"
+#include "sgeobj/tom/ocs_tom_RUE.h"
+#include "sgeobj/tom/ocs_tom_ST.h"
+#include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "tom/ocs_Transitional.h"
 
 /* those are for treating resource utilization */
-bool utilization_print_to_dstring(const lListElem *this_elem, dstring *string);
-void utilization_print(const lListElem *cr, const char *object_name, bool show_binding_inuse);
-void utilization_print_all(const lList* pe_list, const lList *host_list, const lList *queue_list, const lList *ar_list);
+bool utilization_print_to_dstring(ocs::tom::ConstElement<ocs::tom::RUE> this_elem, dstring *string);
+OCS_TRANSITIONAL bool utilization_print_to_dstring(const lListElem *this_elem, dstring *string);
 
 int
-utilization_add(lListElem *cr, uint64_t start_time, uint64_t duration, double utilization,
+utilization_add(ocs::tom::Element<ocs::tom::RUE> cr, uint64_t start_time, uint64_t duration, double utilization,
                 uint32_t job_id, uint32_t ja_taskid, uint32_t level, const char *object_name,
                 const char *type, bool for_job, bool implicit_non_exclusive,
-                const lList *binding_touse, const lList *rsmap_inuse);
+                ocs::tom::ConstList<ocs::tom::ST> binding_touse, ocs::tom::ConstList<ocs::tom::RESL> rsmap_inuse);
+OCS_TRANSITIONAL int utilization_add(lListElem *cr, uint64_t start_time, uint64_t duration, double utilization,
+                                     uint32_t job_id, uint32_t ja_taskid, uint32_t level, const char *object_name,
+                                     const char *type, bool for_job, bool implicit_non_exclusive,
+                                     const lList *binding_touse, const lList *rsmap_inuse);
 
-lList *utilization_rsmap_max(const lListElem *cr, uint64_t now, uint64_t start_time,
-                             uint64_t duration);
+ocs::tom::ListPtr<ocs::tom::RESL> utilization_rsmap_max(ocs::tom::ConstElement<ocs::tom::RUE> cr, uint64_t now,
+                                                        uint64_t start_time, uint64_t duration);
+OCS_TRANSITIONAL lList *utilization_rsmap_max(const lListElem *cr, uint64_t now, uint64_t start_time,
+                                              uint64_t duration);
 
-uint64_t utilization_rsmap_below(const lListElem *definition, const lListElem *cr,
+uint64_t utilization_rsmap_below(const lListElem *definition, ocs::tom::ConstElement<ocs::tom::RUE> cr,
                                  const char *key_name, uint32_t amount,
                                  const char *id_expr = nullptr,
                                  const lList *required_props = nullptr);
+OCS_TRANSITIONAL uint64_t utilization_rsmap_below(const lListElem *definition, const lListElem *cr,
+                                                  const char *key_name, uint32_t amount,
+                                                  const char *id_expr = nullptr,
+                                                  const lList *required_props = nullptr);
 
-double utilization_max(const sge_assignment_t *a, const lListElem *host, const lListElem *cr, uint64_t start_time, uint64_t duration, double total, double request, double slots, bool for_excl_request, ocs::TopologyString& binding_inuse);
+double utilization_max(const sge_assignment_t *a, ocs::tom::ConstElement<ocs::tom::EH> host,
+                       ocs::tom::ConstElement<ocs::tom::RUE> cr, uint64_t start_time, uint64_t duration, double total,
+                       double request, double slots, bool for_excl_request, ocs::TopologyString& binding_inuse);
+OCS_TRANSITIONAL double utilization_max(const sge_assignment_t *a, const lListElem *host, const lListElem *cr,
+                                        uint64_t start_time, uint64_t duration, double total, double request,
+                                        double slots, bool for_excl_request, ocs::TopologyString& binding_inuse);
 
 uint64_t
-utilization_below(const sge_assignment_t *a, const lListElem *host, const lListElem *cr, double max_util, double total,
-                  double slots, const char *object_name, bool for_excl_request, ocs::TopologyString& combined_binding_inuse);
+utilization_below(const sge_assignment_t *a, ocs::tom::ConstElement<ocs::tom::EH> host,
+                  ocs::tom::ConstElement<ocs::tom::RUE> cr, double max_util, double total, double slots,
+                  const char *object_name, bool for_excl_request, ocs::TopologyString& combined_binding_inuse);
+OCS_TRANSITIONAL uint64_t utilization_below(const sge_assignment_t *a, const lListElem *host, const lListElem *cr,
+                                            double max_util, double total, double slots, const char *object_name,
+                                            bool for_excl_request, ocs::TopologyString& combined_binding_inuse);
 
 int add_job_utilization(const sge_assignment_t *a, const char *type, bool for_job_scheduling);
-double utilization_queue_end(const sge_assignment_t *a, const lListElem *host, const lListElem *cr, double total, double request, double slots, bool for_excl_request, ocs::TopologyString& binding_inuse);
 
-int rc_add_job_utilization(const lListElem *gdil, lListElem *jep, const lListElem *pe, uint32_t task_id, const char *type, lListElem *ep,
+int rc_add_job_utilization(ocs::tom::ConstElement<ocs::tom::JG> gdil, lListElem *jep, const lListElem *pe,
+                           uint32_t task_id, const char *type, lListElem *ep,
                            const lList *centry_list, int slots, int config_nm, int actual_nm, const char *obj_name,
                            uint64_t start_time, uint64_t duration, uint32_t tag, bool for_job_scheduling,
                            bool is_master_task, bool do_per_host_booking,
                            const lList *granted_resources_list);
+OCS_TRANSITIONAL int rc_add_job_utilization(const lListElem *gdil, lListElem *jep, const lListElem *pe,
+                                            uint32_t task_id, const char *type, lListElem *ep,
+                                            const lList *centry_list, int slots, int config_nm, int actual_nm,
+                                            const char *obj_name, uint64_t start_time, uint64_t duration,
+                                            uint32_t tag, bool for_job_scheduling, bool is_master_task,
+                                            bool do_per_host_booking, const lList *granted_resources_list);
 
-void prepare_resource_schedules(const lList *running_jobs,
-      const lList *suspended_jobs, lList *pe_list, lList *host_list,
+void prepare_resource_schedules(lList *running_jobs,
+      lList *suspended_jobs, lList *pe_list, lList *host_list,
       lList *queue_list, lList *rqs_list, const lList *centry_list, const lList *acl_list,
       const lList *hgroup_list, lList *ar_list, bool for_job_scheduling, uint64_t now);
 
-int qinstance_slots_reserved_now(const lListElem *this_elem);
+int qinstance_slots_reserved_now(ocs::tom::ConstElement<ocs::tom::QU> this_elem);
+OCS_TRANSITIONAL int qinstance_slots_reserved_now(const lListElem *this_elem);

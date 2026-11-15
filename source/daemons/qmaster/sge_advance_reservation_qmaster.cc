@@ -1651,7 +1651,7 @@ ar_add_rsmap_ids(const lListElem *ar, const lList *previous, lList **granted_res
    // therefore not blocked by what that job holds now.
    lList *held = utilization_rsmap_max(ocs::tom::find_first_in<EH_resource_utilization, RUE_name>(master_host, name),
                                        sge_get_gmt64(), ocs::tom::get<AR_start_time>(ar),
-                                       ocs::tom::get<AR_duration>(ar));
+                                       ocs::tom::get<AR_duration>(ar)).release();
 
    lListElem *gru = gru_list_search(*granted_resources_list, name, host_name);
    if (gru == nullptr) {

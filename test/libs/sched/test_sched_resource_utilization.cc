@@ -54,6 +54,12 @@
 #include "sge_qeti.h"
 #include "sge_select_queue.h"
 
+// the empty handles a typed caller passes where the old interface took nullptr: a nullptr literal next to a handle
+// would fit both the typed form and its transitional overload (N-X-2)
+static const ocs::tom::ConstElement<ocs::tom::EH> no_host;
+static const ocs::tom::ConstList<ocs::tom::ST> no_binding;
+static const ocs::tom::ConstList<ocs::tom::RESL> no_rsmap;
+
 /** @brief One booking in a resource utilization test
  *
  * Resource utilization is stored as a series of changes over time rather than
@@ -157,9 +163,9 @@ static void test_normal_utilization(int *id) {
 
    printf("\n--- normal utilization ---\n");
 
-   utilization_add(*cr, 800,  200, 8, 100, 1, PE_TAG, "pe_slots", "STARTING",  false, false, nullptr, nullptr);
-   utilization_add(*cr, 1000, 100, 4, 101, 1, PE_TAG, "pe_slots", "STARTING",  false, false, nullptr, nullptr);
-   utilization_add(*cr, 1100, 100, 8, 102, 1, PE_TAG, "pe_slots", "RESERVING", false, false, nullptr, nullptr);
+   utilization_add(*cr, 800,  200, 8, 100, 1, PE_TAG, "pe_slots", "STARTING",  false, false, no_binding, no_rsmap);
+   utilization_add(*cr, 1000, 100, 4, 101, 1, PE_TAG, "pe_slots", "STARTING",  false, false, no_binding, no_rsmap);
+   utilization_add(*cr, 1100, 100, 8, 102, 1, PE_TAG, "pe_slots", "RESERVING", false, false, no_binding, no_rsmap);
 
    do_utilization_test(id, *cr, test_array);
    do_qeti_test(id, *cr, qeti_expected, qeti_desc);
@@ -210,10 +216,10 @@ static void test_extensive_utilization(int *id) {
          {0, 0, 0.0, nullptr}
       };
 
-      utilization_add(*cr, 800,  200, 8, 100, 1, PE_TAG, "pe_slots", "STARTING",  false, false, nullptr, nullptr);
-      utilization_add(*cr, 1000, 100, 4, 101, 1, PE_TAG, "pe_slots", "STARTING",  false, false, nullptr, nullptr);
-      utilization_add(*cr, 1100, std::numeric_limits<uint64_t>::max(), 4, 102, 1, PE_TAG, "pe_slots", "RESERVING", false, false, nullptr, nullptr);
-      utilization_add(*cr, 2000, std::numeric_limits<uint64_t>::max(), 4, 103, 1, PE_TAG, "pe_slots", "RESERVING", false, false, nullptr, nullptr);
+      utilization_add(*cr, 800,  200, 8, 100, 1, PE_TAG, "pe_slots", "STARTING",  false, false, no_binding, no_rsmap);
+      utilization_add(*cr, 1000, 100, 4, 101, 1, PE_TAG, "pe_slots", "STARTING",  false, false, no_binding, no_rsmap);
+      utilization_add(*cr, 1100, std::numeric_limits<uint64_t>::max(), 4, 102, 1, PE_TAG, "pe_slots", "RESERVING", false, false, no_binding, no_rsmap);
+      utilization_add(*cr, 2000, std::numeric_limits<uint64_t>::max(), 4, 103, 1, PE_TAG, "pe_slots", "RESERVING", false, false, no_binding, no_rsmap);
 
       do_utilization_test(id, *cr, test_array);
       do_qeti_test(id, *cr, qeti_expected, qeti_desc);
@@ -259,8 +265,8 @@ static void test_extensive_utilization(int *id) {
          {0, 0, 0.0, nullptr}
       };
 
-      utilization_add(*cr, 1000, 100,                               -4, 101, 1, PE_TAG, "pe_slots", "STARTING",  false, false, nullptr, nullptr);
-      utilization_add(*cr, 1100, std::numeric_limits<uint64_t>::max(), -4, 102, 1, PE_TAG, "pe_slots", "RESERVING", false, false, nullptr, nullptr);
+      utilization_add(*cr, 1000, 100,                               -4, 101, 1, PE_TAG, "pe_slots", "STARTING",  false, false, no_binding, no_rsmap);
+      utilization_add(*cr, 1100, std::numeric_limits<uint64_t>::max(), -4, 102, 1, PE_TAG, "pe_slots", "RESERVING", false, false, no_binding, no_rsmap);
 
       do_utilization_test(id, *cr, test_array);
       do_qeti_test(id, *cr, qeti_expected, qeti_desc);
@@ -280,8 +286,8 @@ static void test_extensive_utilization(int *id) {
          {0, 0, 0.0, nullptr}
       };
 
-      utilization_add(*cr, 800,  200,                               -8, 100, 1, PE_TAG, "pe_slots", "STARTING",  false, false, nullptr, nullptr);
-      utilization_add(*cr, 2000, std::numeric_limits<uint64_t>::max(), -4, 103, 1, PE_TAG, "pe_slots", "RESERVING", false, false, nullptr, nullptr);
+      utilization_add(*cr, 800,  200,                               -8, 100, 1, PE_TAG, "pe_slots", "STARTING",  false, false, no_binding, no_rsmap);
+      utilization_add(*cr, 2000, std::numeric_limits<uint64_t>::max(), -4, 103, 1, PE_TAG, "pe_slots", "RESERVING", false, false, no_binding, no_rsmap);
 
       do_utilization_test(id, *cr, test_array);
       do_qeti_test(id, *cr, nullptr, nullptr);
@@ -307,7 +313,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
       ocs::tom::set<RUE_name>(cr, "slots");
 
       ocs::TopologyString binding_inuse;
-      double uti = utilization_max(nullptr, nullptr, *cr, 1000, 100, 0.0, 0.0, 0.0, false, binding_inuse);
+      double uti = utilization_max(nullptr, no_host, *cr, 1000, 100, 0.0, 0.0, 0.0, false, binding_inuse);
       CHECK(id, "utilization_max on empty cr returns 0.0", uti == 0.0);
       id++;
 
@@ -324,11 +330,11 @@ int main(int /*argc*/, char * /*argv*/[]) {
       auto cr = ocs::tom::ElementPtr<ocs::tom::RUE>::create();
       ocs::tom::set<RUE_name>(cr, "slots");
 
-      utilization_add(*cr, 1500, 100, 4, 200, 1, PE_TAG, "pe_slots", "STARTING", false, false, nullptr, nullptr);
-      utilization_add(*cr, 1500, 100, 4, 201, 1, PE_TAG, "pe_slots", "STARTING", false, false, nullptr, nullptr);
+      utilization_add(*cr, 1500, 100, 4, 200, 1, PE_TAG, "pe_slots", "STARTING", false, false, no_binding, no_rsmap);
+      utilization_add(*cr, 1500, 100, 4, 201, 1, PE_TAG, "pe_slots", "STARTING", false, false, no_binding, no_rsmap);
 
       ocs::TopologyString binding_inuse;
-      double uti = utilization_max(nullptr, nullptr, *cr, 1500, 100, 0.0, 0.0, 0.0, false, binding_inuse);
+      double uti = utilization_max(nullptr, no_host, *cr, 1500, 100, 0.0, 0.0, 0.0, false, binding_inuse);
       CHECK(id, "two concurrent reservations (4+4) accumulate to 8.0", uti == 8.0);
       id++;
 
@@ -490,8 +496,8 @@ static int test_rsmap_utilization() {
 
    printf("reading back what is taken over a window\n");
    for (int i = 0; windows[i].id != nullptr; i++) {
-      lList *taken = utilization_rsmap_max(*cr, 1000, windows[i].start, windows[i].duration);
-      ocs::tom::ConstElement<ocs::tom::RESL> ep = ocs::tom::find_first<RESL_value>(taken, windows[i].id);
+      auto taken = utilization_rsmap_max(*cr, 1000, windows[i].start, windows[i].duration);
+      ocs::tom::ConstElement<ocs::tom::RESL> ep = ocs::tom::find_first<RESL_value>(taken.get(), windows[i].id);
       uint32_t got = (ep != nullptr) ? ocs::tom::get<RESL_amount>(ep) : 0;
 
       if (got != windows[i].expected) {
@@ -503,7 +509,6 @@ static int test_rsmap_utilization() {
       } else {
          printf("   ok: %s: " sge_u32 " of %s\n", windows[i].what, got, windows[i].id);
       }
-      lFreeList(&taken);
    }
 
    // What a job holds right now is in the utilization of the moment as well as in the diagram,
@@ -513,8 +518,8 @@ static int test_rsmap_utilization() {
 
    printf("with the same instances also recorded as held right now\n");
    {
-      lList *taken = utilization_rsmap_max(*cr, 1000, 1000, 200);
-      ocs::tom::ConstElement<ocs::tom::RESL> ep = ocs::tom::find_first<RESL_value>(taken, "gpu0");
+      auto taken = utilization_rsmap_max(*cr, 1000, 1000, 200);
+      ocs::tom::ConstElement<ocs::tom::RESL> ep = ocs::tom::find_first<RESL_value>(taken.get(), "gpu0");
       uint32_t got = (ep != nullptr) ? ocs::tom::get<RESL_amount>(ep) : 0;
       if (got != 2) {
          printf("   FAIL: gpu0 is held twice, in both places, expected 2 got " sge_u32 "\n", got);
@@ -524,7 +529,7 @@ static int test_rsmap_utilization() {
       }
 
       // an instance only the now list knows about still counts
-      ocs::tom::ConstElement<ocs::tom::RESL> ep_resl = ocs::tom::find_first<RESL_value>(taken, "gpu2");
+      ocs::tom::ConstElement<ocs::tom::RESL> ep_resl = ocs::tom::find_first<RESL_value>(taken.get(), "gpu2");
       got = (ep_resl != nullptr) ? ocs::tom::get<RESL_amount>(ep_resl) : 0;
       if (got != 1) {
          printf("   FAIL: gpu2 is held right now, expected 1 got " sge_u32 "\n", got);
@@ -532,28 +537,26 @@ static int test_rsmap_utilization() {
       } else {
          printf("   ok: gpu2 is held right now, " sge_u32 "\n", got);
       }
-      lFreeList(&taken);
    }
 
    printf("and at queue end\n");
    {
       // every job holding something now has ended by then, so the now list does not count;
       // what remains is what the diagram says at its end, which here is nothing
-      lList *taken = utilization_rsmap_max(*cr, 1000, DISPATCH_TIME_QUEUE_END, 100);
-      if (lGetNumberOfElem(taken) != 0) {
+      auto taken = utilization_rsmap_max(*cr, 1000, DISPATCH_TIME_QUEUE_END, 100);
+      if (lGetNumberOfElem(taken.get()) != 0) {
          printf("   FAIL: something is taken at queue end, expected nothing\n");
          ret++;
       } else {
          printf("   ok: nothing is taken at queue end\n");
       }
-      lFreeList(&taken);
    }
 
    printf("and for a window which begins after this moment\n");
    {
       // gpu2 is held now and nothing says it still is at 1200, so it does not count there
-      lList *taken = utilization_rsmap_max(*cr, 1000, 1200, 100);
-      ocs::tom::ConstElement<ocs::tom::RESL> ep = ocs::tom::find_first<RESL_value>(taken, "gpu2");
+      auto taken = utilization_rsmap_max(*cr, 1000, 1200, 100);
+      ocs::tom::ConstElement<ocs::tom::RESL> ep = ocs::tom::find_first<RESL_value>(taken.get(), "gpu2");
       uint32_t got = (ep != nullptr) ? ocs::tom::get<RESL_amount>(ep) : 0;
       if (got != 0) {
          printf("   FAIL: gpu2 is held now but the window is later, expected 0 got "
@@ -562,7 +565,6 @@ static int test_rsmap_utilization() {
       } else {
          printf("   ok: what is held now does not count against a later window\n");
       }
-      lFreeList(&taken);
    }
 
    // A map is configured on an exec host or on the global host, and a job takes it from
@@ -574,15 +576,14 @@ static int test_rsmap_utilization() {
       utilization_add(*global_cr, 1000, 100, 1, 200, 1, GLOBAL_TAG, "global", "STARTING", false,
                       false, nullptr, one_of_gpu1);
 
-      lList *taken = utilization_rsmap_max(*global_cr, 1000, 1000, 100);
-      ocs::tom::ConstElement<ocs::tom::RESL> ep = ocs::tom::find_first<RESL_value>(taken, "gpu1");
+      auto taken = utilization_rsmap_max(*global_cr, 1000, 1000, 100);
+      ocs::tom::ConstElement<ocs::tom::RESL> ep = ocs::tom::find_first<RESL_value>(taken.get(), "gpu1");
       if (ep == nullptr || ocs::tom::get<RESL_amount>(ep) != 1) {
          printf("   FAIL: a map on the global host records nothing\n");
          ret++;
       } else {
          printf("   ok: a map on the global host records its instances\n");
       }
-      lFreeList(&taken);
       global_cr.reset();
 
       auto queue_cr = ocs::tom::ElementPtr<ocs::tom::RUE>::create();
@@ -591,13 +592,12 @@ static int test_rsmap_utilization() {
                       false, nullptr, one_of_gpu1);
 
       taken = utilization_rsmap_max(*queue_cr, 1000, 1000, 100);
-      if (lGetNumberOfElem(taken) != 0) {
+      if (lGetNumberOfElem(taken.get()) != 0) {
          printf("   FAIL: a queue recorded resource map instances\n");
          ret++;
       } else {
          printf("   ok: a queue records no instances\n");
       }
-      lFreeList(&taken);
    }
 
    lFreeList(&two_of_gpu0);
@@ -774,8 +774,8 @@ static int test_below_window_before_closed_period() {
    ocs::tom::set<RUE_name>(cr, "slots");
 
    // the running job, and the stretch the calendar blocks off later on
-   utilization_add(*cr, 100, 100, 1, 1, 1, PE_TAG, "slots", "STARTING", false, false, nullptr, nullptr);
-   utilization_add(*cr, 1000, 1000, 1, 2, 1, PE_TAG, "slots", "STARTING", false, false, nullptr, nullptr);
+   utilization_add(*cr, 100, 100, 1, 1, 1, PE_TAG, "slots", "STARTING", false, false, no_binding, no_rsmap);
+   utilization_add(*cr, 1000, 1000, 1, 2, 1, PE_TAG, "slots", "STARTING", false, false, no_binding, no_rsmap);
 
    for (int i = 0; cases[i].what != nullptr; i++) {
       sge_assignment_t a = SGE_ASSIGNMENT_INIT;
@@ -784,7 +784,7 @@ static int test_below_window_before_closed_period() {
 
       ocs::TopologyString binding_inuse;
       // one slot in total and the job wants it, so anything above zero is in the way
-      uint64_t when = utilization_below(&a, nullptr, *cr, 0.0, 1.0, 1.0, "test_queue", false,
+      uint64_t when = utilization_below(&a, no_host, *cr, 0.0, 1.0, 1.0, "test_queue", false,
                                         binding_inuse);
       if (when != cases[i].expected) {
          printf("   FAIL: %s: expected " sge_u64 ", got " sge_u64 "\n",
