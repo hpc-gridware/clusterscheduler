@@ -82,13 +82,13 @@
  * time values were specified the default duration is used.
  *
  * @param duration Returns duration on success
- * @param jep The job (JB_Type)
+ * @param jep The job
  *
  * @return true on success
  *
  * @note MT-NOTE: job_get_duration() is MT safe
  */
-bool job_get_duration(uint64_t *duration, const lListElem *jep) {
+bool job_get_duration(uint64_t *duration, const ocs::tom::ConstElement<ocs::tom::JB> jep) {
    DENTER(TOP_LAYER);
 
    if (!job_get_wallclock_limit(duration, jep)) {
@@ -99,19 +99,31 @@ bool job_get_duration(uint64_t *duration, const lListElem *jep) {
 }
 
 /**
+ * @brief Determine a jobs runtime duration, for a caller with an untyped job (N-X-2)
+ *
+ * @param duration Returns duration on success
+ * @param jep The job (JB_Type), checked
+ *
+ * @return true on success
+ */
+bool job_get_duration(uint64_t *duration, const lListElem *jep) {
+   return job_get_duration(duration, ocs::tom::ConstElement<ocs::tom::JB>(jep));
+}
+
+/**
  * @brief Determin tasks effective runtime limit
  *
  * Determines the effictive runtime limit got by requested h_rt/s_rt or
  * by the resulting queues h_rt/s_rt
  *
  * @param duration tasks duration in seconds
- * @param ja_task task element
+ * @param ja_task task element, or an empty handle for the default duration
  *
  * @return true
  *
  * @note MT-NOTE: task_get_duration() is MT safe
  */
-bool task_get_duration(uint64_t *duration, const lListElem *ja_task) {
+bool task_get_duration(uint64_t *duration, const ocs::tom::ConstElement<ocs::tom::JAT> ja_task) {
    DENTER(TOP_LAYER);
 
    if (ja_task != nullptr) {
@@ -197,22 +209,19 @@ bool job_move_first_pending_to_running(lListElem **pending_job, lList **splitted
    DENTER(TOP_LAYER);
 
    bool ret = false;
-         /* JAT_Type */
-   lList *r_ja_task_list = nullptr;    /* JAT_Type */
-   lListElem *ja_task = nullptr;       /* JAT_Type */
-   lListElem *running_job = nullptr;   /* JB_Type */
-   uint32_t job_id;
+   const auto pending = ocs::tom::Element<ocs::tom::JB>(*pending_job);
+   ocs::tom::Element<ocs::tom::JB> running_job;
    uint32_t ja_task_id;
 
-   job_id = ocs::tom::get<JB_job_number>(*pending_job);
-   ocs::tom::List<ocs::tom::JAT> ja_task_list = ocs::tom::get<JB_ja_tasks>(*pending_job);
-   ja_task = lFirstRW(ja_task_list);
-   
+   const uint32_t job_id = ocs::tom::get<JB_job_number>(pending);
+   auto ja_task_list = ocs::tom::get<JB_ja_tasks>(pending);
+   auto ja_task = lFirstRW(ja_task_list);
+
    /*
     * Create list for running jobs
     */
    if (*(splitted_jobs[SPLIT_RUNNING]) == nullptr) {
-      const lDescr *descriptor = lGetElemDescr(*pending_job);
+      const lDescr *descriptor = lGetElemDescr(pending);
       *(splitted_jobs[SPLIT_RUNNING]) = lCreateList("", descriptor);
    } else {
       running_job = ocs::tom::find_first_rw<JB_job_number>(*(splitted_jobs[SPLIT_RUNNING]), job_id);
@@ -228,31 +237,31 @@ bool job_move_first_pending_to_running(lListElem **pending_job, lList **splitted
       lList *a_h_ids = nullptr;
       lList *r_tasks = nullptr;
       
-      ocs::tom::exchange<JB_ja_n_h_ids>(*pending_job, &n_h_ids);
-      ocs::tom::exchange<JB_ja_u_h_ids>(*pending_job, &u_h_ids);
-      ocs::tom::exchange<JB_ja_o_h_ids>(*pending_job, &o_h_ids);
-      ocs::tom::exchange<JB_ja_s_h_ids>(*pending_job, &s_h_ids);
-      ocs::tom::exchange<JB_ja_a_h_ids>(*pending_job, &a_h_ids);
-      ocs::tom::exchange<JB_ja_tasks>(*pending_job, &r_tasks);
-      running_job = lCopyElem(*pending_job);
-      ocs::tom::exchange<JB_ja_n_h_ids>(*pending_job, &n_h_ids);
-      ocs::tom::exchange<JB_ja_u_h_ids>(*pending_job, &u_h_ids);
-      ocs::tom::exchange<JB_ja_o_h_ids>(*pending_job, &o_h_ids);
-      ocs::tom::exchange<JB_ja_s_h_ids>(*pending_job, &s_h_ids);
-      ocs::tom::exchange<JB_ja_a_h_ids>(*pending_job, &a_h_ids);
-      ocs::tom::exchange<JB_ja_tasks>(*pending_job, &r_tasks);
-      lAppendElem(*(splitted_jobs[SPLIT_RUNNING]), running_job); 
-   } 
+      ocs::tom::exchange<JB_ja_n_h_ids>(pending, &n_h_ids);
+      ocs::tom::exchange<JB_ja_u_h_ids>(pending, &u_h_ids);
+      ocs::tom::exchange<JB_ja_o_h_ids>(pending, &o_h_ids);
+      ocs::tom::exchange<JB_ja_s_h_ids>(pending, &s_h_ids);
+      ocs::tom::exchange<JB_ja_a_h_ids>(pending, &a_h_ids);
+      ocs::tom::exchange<JB_ja_tasks>(pending, &r_tasks);
+      running_job = ocs::tom::Element<ocs::tom::JB>::from_typed(lCopyElem(pending));
+      ocs::tom::exchange<JB_ja_n_h_ids>(pending, &n_h_ids);
+      ocs::tom::exchange<JB_ja_u_h_ids>(pending, &u_h_ids);
+      ocs::tom::exchange<JB_ja_o_h_ids>(pending, &o_h_ids);
+      ocs::tom::exchange<JB_ja_s_h_ids>(pending, &s_h_ids);
+      ocs::tom::exchange<JB_ja_a_h_ids>(pending, &a_h_ids);
+      ocs::tom::exchange<JB_ja_tasks>(pending, &r_tasks);
+      lAppendElem(*(splitted_jobs[SPLIT_RUNNING]), running_job);
+   }
 
-   /* 
+   /*
     * Create an array instance and add it to the running job
-    * or move the existing array task into the running job 
+    * or move the existing array task into the running job
     */
    if (ja_task == nullptr) {
-      ocs::tom::ConstList<ocs::tom::RN> n_h_ids = ocs::tom::get<JB_ja_n_h_ids>(*pending_job);
+      const auto n_h_ids = ocs::tom::get<JB_ja_n_h_ids>(pending);
 
       ja_task_id = range_list_get_first_id(n_h_ids, nullptr);
-      ja_task = job_search_task(*pending_job, nullptr, ja_task_id);
+      ja_task = ocs::tom::Element<ocs::tom::JAT>::from_typed(job_search_task(pending, nullptr, ja_task_id));
       /* JG: TODO: do we need the ja_task instance here or can we
        *           wait until the JATASK_ADD event arrives from qmaster?
        *           The function should work on a copy if the job list.
@@ -260,28 +269,28 @@ bool job_move_first_pending_to_running(lListElem **pending_job, lList **splitted
        *           So the code should be ok.
        */
       if (ja_task == nullptr) {
-         ja_task = job_create_task(*pending_job, nullptr, ja_task_id);
+         ja_task = ocs::tom::Element<ocs::tom::JAT>::from_typed(job_create_task(pending, nullptr, ja_task_id));
       }
-      ja_task_list = ocs::tom::get<JB_ja_tasks>(*pending_job);
+      ja_task_list = ocs::tom::get<JB_ja_tasks>(pending);
    }
-  
+
    /*
     * Create an array task list if necessary
     */
-   r_ja_task_list = ocs::tom::get<JB_ja_tasks>(running_job); 
+   auto r_ja_task_list = ocs::tom::get<JB_ja_tasks>(running_job);
    if (r_ja_task_list == nullptr) {
-      r_ja_task_list = lCreateList("", lGetElemDescr(ja_task));
+      r_ja_task_list = ocs::tom::List<ocs::tom::JAT>::from_typed(lCreateList("", lGetElemDescr(ja_task)));
       ocs::tom::set<JB_ja_tasks>(running_job, r_ja_task_list);
    }
-  
+
    lDechainElem(ja_task_list, ja_task);
-   lAppendElem(r_ja_task_list, ja_task); 
-   
+   lAppendElem(r_ja_task_list, ja_task);
+
    /*
     * Remove pending job if there are no pending tasks anymore
     */
-   if (job_count_pending_tasks(*pending_job, false)==0) {
-      lDechainElem(*(splitted_jobs[SPLIT_PENDING]), *pending_job);
+   if (job_count_pending_tasks(pending, false) == 0) {
+      lDechainElem(*(splitted_jobs[SPLIT_PENDING]), pending);
       lFreeElem(pending_job);
       ret = true;
    }
@@ -305,13 +314,12 @@ bool job_move_first_pending_to_running(lListElem **pending_job, lList **splitted
  *
  * @return 0 on success, -1 if the job has no task left
  */
-int job_get_next_task(lListElem *job, lListElem **task_ret, uint32_t *id_ret) {
+int job_get_next_task(const ocs::tom::Element<ocs::tom::JB> job, lListElem **task_ret, uint32_t *id_ret) {
    DENTER(TOP_LAYER);
 
-   lListElem *ja_task;
    uint32_t ja_task_id;
 
-   ja_task = lFirstRW(ocs::tom::get<JB_ja_tasks>(job));
+   auto ja_task = lFirstRW(ocs::tom::get<JB_ja_tasks>(job));
    if (ja_task == nullptr) {
       lList *answer_list = nullptr;
 
@@ -320,7 +328,7 @@ int job_get_next_task(lListElem *job, lListElem **task_ret, uint32_t *id_ret) {
          lFreeList(&answer_list);
          DRETURN(-1);
       }
-      ja_task = job_get_ja_task_template_pending(job, ja_task_id);
+      ja_task = ocs::tom::Element<ocs::tom::JAT>::from_typed(job_get_ja_task_template_pending(job, ja_task_id));
    } else {
       ja_task_id = ocs::tom::get<JAT_task_number>(ja_task);
    }
@@ -329,6 +337,19 @@ int job_get_next_task(lListElem *job, lListElem **task_ret, uint32_t *id_ret) {
    *id_ret   = ja_task_id;
 
    DRETURN(0);
+}
+
+/**
+ * @brief Returns the next task of a job, for a caller with an untyped job (N-X-2)
+ *
+ * @param[in]  job      the job to take the task from (JB_Type), checked
+ * @param[out] task_ret receives the task
+ * @param[out] id_ret   receives the id of the task
+ *
+ * @return 0 on success, -1 if the job has no task left
+ */
+int job_get_next_task(lListElem *job, lListElem **task_ret, uint32_t *id_ret) {
+   return job_get_next_task(ocs::tom::Element<ocs::tom::JB>(job), task_ret, id_ret);
 }
 
 
@@ -344,15 +365,12 @@ int job_get_next_task(lListElem *job, lListElem **task_ret, uint32_t *id_ret) {
  *                                     suspended list are counted
  */
 void user_list_init_jc(lList **user_list, lList **splitted_job_lists[]) {
-   if (splitted_job_lists[SPLIT_RUNNING] != nullptr) {
-      for_each_ep_lv(job, *(splitted_job_lists[SPLIT_RUNNING])) {
-         // @todo (CS-451) the 3rd argument to sge_inc_jc is "slots", but we pass the number of array tasks. Correct?
-         sge_inc_jc(user_list, ocs::tom::get<JB_owner>(job), job_get_ja_tasks(job));
-      }
-   }
-   if (splitted_job_lists[SPLIT_SUSPENDED] != nullptr) {
-      for_each_ep_lv(job, *(splitted_job_lists[SPLIT_SUSPENDED])) {
-         sge_inc_jc(user_list, ocs::tom::get<JB_owner>(job), job_get_ja_tasks(job));
+   for (const int split : {SPLIT_RUNNING, SPLIT_SUSPENDED}) {
+      if (splitted_job_lists[split] != nullptr) {
+         for (const auto job : ocs::tom::ConstList<ocs::tom::JB>(*(splitted_job_lists[split]))) {
+            // @todo (CS-451) the 3rd argument to sge_inc_jc is "slots", but we pass the number of array tasks. Correct?
+            sge_inc_jc(user_list, ocs::tom::get<JB_owner>(job), job_get_ja_tasks(job));
+         }
       }
    }
 }
@@ -387,18 +405,18 @@ void job_lists_split_with_reference_to_max_running(bool monitor_next_run, lList 
        job_lists[SPLIT_PENDING] != nullptr &&
        *(job_lists[SPLIT_PENDING]) != nullptr &&
        job_lists[SPLIT_PENDING_EXCLUDED] != nullptr) {
-      lListElem *user = nullptr;
-      lListElem *next_user = nullptr;
+      ocs::tom::Element<ocs::tom::JC> user;
+      ocs::tom::Element<ocs::tom::JC> next_user;
 #ifndef CULL_NO_HASH
-      /* 
-       * create a hash table on JB_owner to speedup 
+      /*
+       * create a hash table on JB_owner to speedup
        * searching for jobs of a specific owner
        */
       cull_hash_new_check(*(job_lists[SPLIT_PENDING]), JB_owner, false);
-#endif      
+#endif
 
       if (user_name == nullptr) {
-         next_user = lFirstRW(*user_list);
+         next_user = lFirstRW(ocs::tom::List<ocs::tom::JC>(*user_list));
       } else {
          next_user = ocs::tom::find_first_rw<JC_name>(*user_list, user_name);
       }
@@ -413,12 +431,10 @@ void job_lists_split_with_reference_to_max_running(bool monitor_next_run, lList 
          }
          if (jobs_for_user >= max_jobs_per_user) {
             const void *user_iterator = nullptr;
-            lListElem *user_job = nullptr;         /* JB_Type */
-            lListElem *next_user_job = nullptr;    /* JB_Type */
+            ocs::tom::Element<ocs::tom::JB> user_job;
 
             DPRINTF("USER %s reached limit of %d jobs\n", jc_user_name, max_jobs_per_user);
-            next_user_job = ocs::tom::find_first_rw<JB_owner>(*(job_lists[SPLIT_PENDING]), jc_user_name, 
-                                             &user_iterator);
+            auto next_user_job = ocs::tom::find_first_rw<JB_owner>(*(job_lists[SPLIT_PENDING]), jc_user_name, &user_iterator);
             while ((user_job = next_user_job)) {
                next_user_job = ocs::tom::find_next_rw<JB_owner>(*(job_lists[SPLIT_PENDING]), jc_user_name, 
                                                &user_iterator);
@@ -488,10 +504,9 @@ void split_jobs(lList **job_list, uint32_t max_aj_instances,
 #if 0 /* EB: DEBUG: enable debug messages for split_jobs() */
 #define JOB_SPLIT_DEBUG
 #endif
-   lListElem *job = nullptr;
-   lListElem *next_job = nullptr;
-   lListElem *previous_job = nullptr;
-   next_job = lFirstRW(*job_list);
+   ocs::tom::Element<ocs::tom::JB> job;
+   auto next_job = lFirstRW(ocs::tom::List<ocs::tom::JB>(*job_list));
+   ocs::tom::Element<ocs::tom::JB> previous_job;
    while ((job = next_job)) {
       lList *ja_task_list = nullptr;
       lList *n_h_ids = nullptr;
@@ -501,11 +516,11 @@ void split_jobs(lList **job_list, uint32_t max_aj_instances,
       lList *s_h_ids = nullptr;
       lList *a_h_ids = nullptr;
       lList *target_tasks[SPLIT_LAST];
-      lListElem *target_job[SPLIT_LAST];
+      ocs::tom::Element<ocs::tom::JB> target_job[SPLIT_LAST];
       lList *target_ids = nullptr;
       int target_for_ids = SPLIT_LAST;
-      lListElem *ja_task = nullptr;
-      lListElem *next_ja_task = nullptr;
+      ocs::tom::Element<ocs::tom::JAT> ja_task;
+      ocs::tom::Element<ocs::tom::JAT> next_ja_task;
       uint32_t task_instances;
       int i, move_job;
 #ifdef JOB_SPLIT_DEBUG
@@ -540,7 +555,7 @@ void split_jobs(lList **job_list, uint32_t max_aj_instances,
 #ifdef JOB_SPLIT_DEBUG
       DPRINTF("Split enrolled tasks for job " sge_u32 ":\n", job_id);
 #endif
-      next_ja_task = lFirstRW(ja_task_list);
+      next_ja_task = lFirstRW(ocs::tom::List<ocs::tom::JAT>::from_typed(ja_task_list));
       while ((ja_task = next_ja_task)) {
          uint32_t ja_task_status = ocs::tom::get<JAT_status>(ja_task);
          uint32_t ja_task_state = ocs::tom::get<JAT_state>(ja_task);
@@ -725,7 +740,7 @@ void split_jobs(lList **job_list, uint32_t max_aj_instances,
 #endif
                   move_job = 0;
                   if (do_copy) {
-                     target_job[i] = lCopyElem(job);
+                     target_job[i] = ocs::tom::Element<ocs::tom::JB>::from_typed(lCopyElem(job));
                   } else {
                      lDechainElem(*job_list, job);
                      target_job[i] = job;
@@ -735,7 +750,7 @@ void split_jobs(lList **job_list, uint32_t max_aj_instances,
                   DPRINTF(("Copy job element " sge_u32 " for " SFN "-list\n",
                            lGetUlong(job, JB_job_number), get_name_of_split_value(i)));
 #endif
-                  target_job[i] = lCopyElem(job);
+                  target_job[i] = ocs::tom::Element<ocs::tom::JB>::from_typed(lCopyElem(job));
                }
 #ifdef JOB_SPLIT_DEBUG
                DPRINTF(("Add job element " sge_u32 " into " SFN "-list\n",
@@ -762,7 +777,7 @@ void split_jobs(lList **job_list, uint32_t max_aj_instances,
 #ifdef JOB_SPLIT_DEBUG
             DPRINTF("Put the remaining tasks into the initial container\n");
 #endif
-            job = lCopyElem(job);
+            job = ocs::tom::Element<ocs::tom::JB>::from_typed(lCopyElem(job));
             lInsertElem(*job_list, previous_job, job);
          }
       } else {
@@ -866,8 +881,8 @@ void trash_splitted_jobs(bool monitor_next_run, lList **splitted_job_lists[]) {
       lList **job_list = splitted_job_lists[split_id_a[i]];
       int is_first_of_category = 1;
 
-      for_each_ep_lv(job, *job_list) {
-         uint32_t job_id = ocs::tom::get<JB_job_number>(job);
+      for (const auto job : ocs::tom::ConstList<ocs::tom::JB>(*job_list)) {
+         const uint32_t job_id = ocs::tom::get<JB_job_number>(job);
 
          switch (split_id_a[i]) {
          case SPLIT_ERROR:
@@ -944,7 +959,7 @@ void job_lists_print(lList **job_list[]) {
       uint32_t ids = 0;
 
       if (job_list[i] && *(job_list[i])) {
-         for_each_ep_lv(job, *(job_list[i])) {
+         for (const auto job : ocs::tom::ConstList<ocs::tom::JB>(*(job_list[i]))) {
             ids += job_get_enrolled_ja_tasks(job);
             ids += job_get_not_enrolled_ja_tasks(job);
          }
@@ -971,7 +986,7 @@ void sge_dec_jc(lList **jcpp, const char *name, int slots) {
 
    int n = 0;
 
-   ocs::tom::Element<ocs::tom::JC> ep = ocs::tom::find_first_rw<JC_name>(*jcpp, name);
+   auto ep = ocs::tom::find_first_rw<JC_name>(*jcpp, name);
    if (ep) {
       n = ocs::tom::get<JC_jobs>(ep) - slots;
       if (n <= 0)
@@ -995,7 +1010,7 @@ void sge_inc_jc(lList **jcpp, const char *name, int slots) {
 
    int n = 0;
 
-   ocs::tom::Element<ocs::tom::JC> ep = ocs::tom::find_first_rw<JC_name>(*jcpp, name);
+   auto ep = ocs::tom::find_first_rw<JC_name>(*jcpp, name);
    if (ep) 
       n = ocs::tom::get<JC_jobs>(ep);
    else 
@@ -1017,17 +1032,17 @@ void sge_inc_jc(lList **jcpp, const char *name, int slots) {
  *
  * @return the number of granted slots
  */
-int nslots_granted(const lList *granted, const char *qhostname) {
+int nslots_granted(const ocs::tom::ConstList<ocs::tom::JG> granted, const char *qhostname) {
    int nslots = 0;
 
    if (qhostname == nullptr) {
-      for_each_ep_lv(gdil_ep, granted) {
+      for (const auto gdil_ep : granted) {
          nslots += ocs::tom::get<JG_slots>(gdil_ep);
       }
    } else {
       const void *iterator = nullptr;
 
-      ocs::tom::ConstElement<ocs::tom::JG> gdil_ep = ocs::tom::find_first<JG_qhostname>(granted, qhostname, &iterator);
+      auto gdil_ep = ocs::tom::find_first<JG_qhostname>(granted, qhostname, &iterator);
       while (gdil_ep != nullptr) {
          nslots += ocs::tom::get<JG_slots>(gdil_ep);
          gdil_ep = ocs::tom::find_next<JG_qhostname>(granted , qhostname, &iterator);
@@ -1035,6 +1050,18 @@ int nslots_granted(const lList *granted, const char *qhostname) {
    }
 
    return nslots;
+}
+
+/**
+ * @brief Counts the slots granted to a job, for a caller with an untyped list (N-X-2)
+ *
+ * @param[in] granted   the granted destination identifier list (`JG_Type`), checked
+ * @param[in] qhostname the host to count on, or nullptr for all hosts
+ *
+ * @return the number of granted slots
+ */
+int nslots_granted(const lList *granted, const char *qhostname) {
+   return nslots_granted(ocs::tom::ConstList<ocs::tom::JG>(granted), qhostname);
 }
 
 /**
@@ -1048,14 +1075,11 @@ int nslots_granted(const lList *granted, const char *qhostname) {
  *
  * @return 1 if the queue holds an active task of the job, 0 otherwise
  */
-int active_subtasks(
-lListElem *job,
-const char *qname 
-) {
+int active_subtasks(const ocs::tom::ConstElement<ocs::tom::JB> job, const char *qname) {
    ocs::tom::ConstElement<ocs::tom::JG> ep;
    const char *task_qname;
 
-   for (ocs::tom::ConstElement<ocs::tom::JAT> jatask : ocs::tom::get<JB_ja_tasks>(job)) {
+   for (const auto jatask : ocs::tom::get<JB_ja_tasks>(job)) {
       const char *master_qname = ocs::tom::get<JAT_master_queue>(jatask);
 
       /* always consider the master queue to have active sub-tasks */
@@ -1063,7 +1087,7 @@ const char *qname
          return 1;
       }
 
-      for (ocs::tom::ConstElement<ocs::tom::PET> petask : ocs::tom::get<JAT_task_list>(jatask)) {
+      for (const auto petask : ocs::tom::get<JAT_task_list>(jatask)) {
          if (qname &&
              ocs::tom::get<PET_status>(petask) != JFINISHED &&
              ((ep=lFirst(ocs::tom::get<PET_granted_destin_identifier_list>(petask)))) &&
@@ -1074,6 +1098,18 @@ const char *qname
       }
    }
    return 0;
+}
+
+/**
+ * @brief Does the job have active tasks in this queue, for a caller with an untyped job (N-X-2)
+ *
+ * @param[in] job   the job to look at (JB_Type), checked
+ * @param[in] qname the queue instance to look for
+ *
+ * @return 1 if the queue holds an active task of the job, 0 otherwise
+ */
+int active_subtasks(lListElem *job, const char *qname) {
+   return active_subtasks(ocs::tom::ConstElement<ocs::tom::JB>(job), qname);
 }
 
 
@@ -1090,14 +1126,14 @@ const char *qname
  *
  * @return the number of granted slots that are still in use
  */
-int 
-active_nslots_granted(lListElem *job, const lList *granted, const char *qhostname) {
+int
+active_nslots_granted(const ocs::tom::ConstElement<ocs::tom::JB> job, const ocs::tom::ConstList<ocs::tom::JG> granted, const char *qhostname) {
    int nslots = 0;
 
    if (qhostname == nullptr) {
-      for_each_ep_lv(gdil_ep, granted) {   /* for all hosts */
-         for (ocs::tom::ConstElement<ocs::tom::JAT> jatask : ocs::tom::get<JB_ja_tasks>(job)) {
-            ocs::tom::ConstList<ocs::tom::PET> task_list = ocs::tom::get<JAT_task_list>(jatask);
+      for (const auto gdil_ep : granted) {   /* for all hosts */
+         for (const auto jatask : ocs::tom::get<JB_ja_tasks>(job)) {
+            const auto task_list = ocs::tom::get<JAT_task_list>(jatask);
             if (task_list == nullptr || active_subtasks(job, ocs::tom::get<JG_qname>(gdil_ep)))
                nslots += ocs::tom::get<JG_slots>(gdil_ep);
          }
@@ -1106,18 +1142,31 @@ active_nslots_granted(lListElem *job, const lList *granted, const char *qhostnam
       const void *iterator = nullptr;
 
       /* only for qhostname */
-      ocs::tom::Element<ocs::tom::JG> gdil_ep = ocs::tom::find_first_rw<JG_qhostname>(granted, qhostname, &iterator);
+      auto gdil_ep = ocs::tom::find_first<JG_qhostname>(granted, qhostname, &iterator);
       while (gdil_ep != nullptr) {
-         for (ocs::tom::ConstElement<ocs::tom::JAT> jatask : ocs::tom::get<JB_ja_tasks>(job)) {
-            ocs::tom::ConstList<ocs::tom::PET> task_list = ocs::tom::get<JAT_task_list>(jatask);
+         for (const auto jatask : ocs::tom::get<JB_ja_tasks>(job)) {
+            const auto task_list = ocs::tom::get<JAT_task_list>(jatask);
             if (task_list == nullptr || active_subtasks(job, ocs::tom::get<JG_qname>(gdil_ep)))
                nslots += ocs::tom::get<JG_slots>(gdil_ep);
          }
-         gdil_ep = ocs::tom::find_next_rw<JG_qhostname>(granted , qhostname, &iterator); 
+         gdil_ep = ocs::tom::find_next<JG_qhostname>(granted, qhostname, &iterator);
       }
    }
 
    return nslots;
+}
+
+/**
+ * @brief Counts the granted slots that still carry active tasks, for a caller with untyped objects (N-X-2)
+ *
+ * @param[in] job       the job to look at (JB_Type), checked
+ * @param[in] granted   the granted destination identifier list (`JG_Type`), checked
+ * @param[in] qhostname the host to count on, or nullptr for all hosts
+ *
+ * @return the number of granted slots that are still in use
+ */
+int active_nslots_granted(lListElem *job, const lList *granted, const char *qhostname) {
+   return active_nslots_granted(ocs::tom::ConstElement<ocs::tom::JB>(job), ocs::tom::ConstList<ocs::tom::JG>(granted), qhostname);
 }
 
 
@@ -1128,11 +1177,12 @@ active_nslots_granted(lListElem *job, const lList *granted, const char *qhostnam
  *
  * @return the sum of the slots of all entries
  */
-int sge_granted_slots(const lList *gdil) {
+int sge_granted_slots(const ocs::tom::ConstList<ocs::tom::JG> gdil) {
    int slots = 0;
 
-   for_each_ep_lv(ep, gdil)
+   for (const auto ep : gdil) {
       slots += ocs::tom::get<JG_slots>(ep);
+   }
 
    return slots;
 }

@@ -47,174 +47,37 @@
 #include <cinttypes>
 #include "cull/cull.h"
 
-bool job_get_duration(uint64_t *duration, const lListElem *jep);
-bool task_get_duration(uint64_t *duration, const lListElem *ja_task);
+#include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "tom/ocs_Transitional.h"
+#include "sgeobj/tom/ocs_tom_JAT.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
+#include "sgeobj/tom/ocs_tom_JG.h"
+
+bool job_get_duration(uint64_t *duration, ocs::tom::ConstElement<ocs::tom::JB> jep);
+OCS_TRANSITIONAL bool job_get_duration(uint64_t *duration, const lListElem *jep);
+bool task_get_duration(uint64_t *duration, ocs::tom::ConstElement<ocs::tom::JAT> ja_task);
 
 void sge_inc_jc(lList** jcpp, const char *name, int slots);
 
 void sge_dec_jc(lList** jcpp, const char *name, int slots);
 
-int job_get_next_task(lListElem *job, lListElem **task_ret, uint32_t *id_ret);
+int job_get_next_task(ocs::tom::Element<ocs::tom::JB> job, lListElem **task_ret, uint32_t *id_ret);
+OCS_TRANSITIONAL int job_get_next_task(lListElem *job, lListElem **task_ret, uint32_t *id_ret);
 
-/**
- * @name Dead declarations
- *
- * These ten functions were the predecessor of split_jobs(): one call per
- * reason, each moving the matching jobs from `jobs` into its own list. They
- * are **declared here and defined nowhere**, and nothing in the source tree
- * calls them - the only remaining trace is a comment in
- * `daemons/qmaster/sge_sched_thread.cc` that still mentions
- * sge_move_to_running(). split_jobs() does the whole split in one pass and
- * puts the results into an array indexed by the SPLIT_* values.
- *
- * @warning Do not call any of them - linking would fail.
- * @{
- */
-/**
- * @brief Drops all running jobs into the running list
- *
- * Dead - declared here, defined nowhere. See the group description above.
- *
- * @param jobs         the job list to take from
- * @param running      receives the running jobs
- * @param running_name name given to the created list
- *
- * @return the number of jobs moved
- */
-int sge_split_job_running(lList **jobs, lList **running, const char *running_name);
+int nslots_granted(ocs::tom::ConstList<ocs::tom::JG> granted, const char *qhostname);
+OCS_TRANSITIONAL int nslots_granted(const lList *granted, const char *qhostname);
 
-/**
- * @brief Moves the first task of a job to the running list
- *
- * Dead - declared here, defined nowhere. See the group description above.
- *
- * @param jobs    the job list the job belongs to
- * @param running receives the task
- * @param job     the job whose first task is moved
- *
- * @return the number of tasks moved
- */
-int sge_move_to_running(lList **jobs, lList **running, lListElem *job);
+int active_subtasks(ocs::tom::ConstElement<ocs::tom::JB> job, const char *qname);
+OCS_TRANSITIONAL int active_subtasks(lListElem *job, const char *qname);
 
-/**
- * @brief Drops all finished jobs into the finished list
- *
- * Dead - declared here, defined nowhere. See the group description above.
- *
- * @param jobs          the job list to take from
- * @param finished      receives the finished jobs
- * @param finished_name name given to the created list
- *
- * @return the number of jobs moved
- */
-int sge_split_job_finished(lList **jobs, lList **finished, const char *finished_name);
-
-/**
- * @brief Drops all jobs whose start time has not been reached into the waiting list
- *
- * Dead - declared here, defined nowhere. See the group description above.
- *
- * @param jobs         the job list to take from
- * @param waiting      receives the waiting jobs
- * @param waiting_name name given to the created list
- * @param now          the current time the start times are compared against
- *
- * @return the number of jobs moved
- */
-int sge_split_job_wait_at_time(lList **jobs, lList **waiting, const char *waiting_name, uint32_t now);
-
-/**
- * @brief Drops all jobs in error state into the error list
- *
- * Dead - declared here, defined nowhere. See the group description above.
- *
- * @param jobs       the job list to take from
- * @param error      receives the jobs in error state
- * @param error_name name given to the created list
- *
- * @return the number of jobs moved
- */
-int sge_split_job_error(lList **jobs, lList **error, const char *error_name);
-
-/**
- * @brief Drops all jobs in hold state into the hold list
- *
- * Dead - declared here, defined nowhere. See the group description above.
- *
- * @param jobs      the job list to take from
- * @param hold      receives the jobs in hold
- * @param hold_name name given to the created list
- *
- * @return the number of jobs moved
- */
-int sge_split_job_hold(lList **jobs, lList **hold, const char *hold_name);
-
-/**
- * @brief Drops all jobs waiting for a predecessor into the waiting list
- *
- * Dead - declared here, defined nowhere. See the group description above.
- *
- * @param jobs         the job list to take from
- * @param waiting      receives the waiting jobs
- * @param waiting_name name given to the created list
- *
- * @return the number of jobs moved
- */
-int sge_split_job_wait_predecessor(lList **jobs, lList **waiting, const char *waiting_name);
-
-/**
- * @brief Drops all jobs restricted by a checkpointing environment
- *
- * Dead - declared here, defined nowhere. See the group description above.
- *
- * @param jobs            the job list to take from
- * @param restricted      receives the restricted jobs
- * @param restricted_name name given to the created list
- * @param ckpt_list       the checkpointing environments to check against
- *
- * @return the number of jobs moved
- */
-int sge_split_job_ckpt_restricted(lList **jobs, lList **restricted, const char *restricted_name, lList *ckpt_list);
-
-/**
- * @brief Filters the pending jobs against the per user job limit, one step
- *
- * Dead - declared here, defined nowhere. See the group description above.
- *
- * @param pending_jobs the pending jobs to filter
- * @param running_jobs the running jobs, counted against the limit
- * @param jct_list     the per user job counters, updated in place
- * @param max_jobs     the limit per user
- * @param elem         the field the jobs are counted by, e.g. the owner
- *
- * @return the jobs that passed the filter
- */
-lList *filter_max_running_1step(lList *pending_jobs, lList *running_jobs, lList **jct_list, int max_jobs, int elem);
-
-/**
- * @brief Filters the pending jobs against the per user job limit
- *
- * Dead - declared here, defined nowhere. See the group description above.
- *
- * @param pending_jobs the pending jobs to filter
- * @param jct_list     the per user job counters
- * @param max_jobs     the limit per user
- * @param elem         the field the jobs are counted by, e.g. the owner
- *
- * @return the jobs that passed the filter
- */
-lList *filter_max_running(lList *pending_jobs, lList *jct_list, int max_jobs, int elem);
-/** @} */
-
-int nslots_granted(const lList *granted, const char *qhostname);
-
-int active_subtasks(lListElem *job, const char *qname);
-
-int active_nslots_granted(lListElem *job, const lList *granted, const char *qhostname);
+int active_nslots_granted(ocs::tom::ConstElement<ocs::tom::JB> job, ocs::tom::ConstList<ocs::tom::JG> granted,
+                          const char *qhostname);
+OCS_TRANSITIONAL int active_nslots_granted(lListElem *job, const lList *granted, const char *qhostname);
 
 //lListElem *explicit_job_request(lListElem *jep, const char *name);
 
-int sge_granted_slots(const lList *gdil);
+int sge_granted_slots(ocs::tom::ConstList<ocs::tom::JG> gdil);
 
 const char *get_name_of_split_value(int value);
 
