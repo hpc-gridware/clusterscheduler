@@ -144,10 +144,11 @@ namespace ocs::tom {
        * Through the field's table where the list has one or reaches the hash
        * threshold, building it if needed (#ocs_cull_hash_lookup_table, which
        * throws on a repeated key of a unique field). Otherwise by a linear
-       * search; for a unique field it goes on to the end of the list and throws
-       * on a second match -- in every build on a list that may be hashed, in a
-       * debug build also on a list created without hashing (N-H-18). A non
-       * unique field stops at the first match, as before.
+       * search that stops at the first match; only a debug build goes on to
+       * the end of the list for a unique field and throws on a second match
+       * (N-H-18). A release build reads no further than it needs: the lists
+       * below the hash threshold are the most searched ones, in the scheduler
+       * above all.
        *
        * @param lp the list, not nullptr
        * @param pos the field's position
@@ -168,7 +169,7 @@ namespace ocs::tom {
 #ifdef ENABLE_DEBUG_CHECKS
          const bool to_end = mt_do_hashing(mt) && mt_is_unique(mt);
 #else
-         const bool to_end = mt_do_hashing(mt) && mt_is_unique(mt) && lp->nslots > 0;
+         constexpr bool to_end = false;
 #endif
          lListElem *found = nullptr;
          for (lListElem *ep = lp->first; ep != nullptr; ep = ep->next) {

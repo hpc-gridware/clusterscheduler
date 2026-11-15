@@ -287,19 +287,27 @@ make_tasks_with_duplicate(const std::uint32_t n) {
 }
 
 /**
- * @brief HDL-07 steps 1 to 3: a lookup on a unique field that holds a key twice throws, in every build
+ * @brief HDL-07 steps 1 to 3: a lookup on a unique field that holds a key twice throws
  *
  * Above the hash threshold the lookup builds the table, meets the second
- * element and publishes nothing; below it the linear search goes on to the end
- * of the list. The old lookup aborts with the same message.
+ * element and publishes nothing, in every build; below it a debug build's
+ * linear search goes on to the end of the list, while a release build stops at
+ * the first match and finds the first of the two (CS-3052). The old lookup
+ * aborts with the same message where the core throws.
  *
  * @return nothing; CHECK records the results
  */
 static void
 test_lookup() {
    int check = 14;
+#ifdef ENABLE_DEBUG_CHECKS
+   constexpr bool linear_finds_duplicate = true;
+#else
+   constexpr bool linear_finds_duplicate = false;   // a release build stops a linear lookup at the first match
+#endif
    for (const std::uint32_t n : {LONG_LIST, SHORT_LIST}) {
       const char *size = n == SHORT_LIST ? "below the hash threshold" : "above the hash threshold";
+      const bool finds_duplicate = n == LONG_LIST || linear_finds_duplicate;
       lList *tasks = make_tasks_with_duplicate(n);
       const List<JAT> typed{tasks};
 
@@ -320,13 +328,17 @@ test_lookup() {
       }
       bool all = true;
       for (const int t : threw) {
-         all = all && t == 2;
+         all = all && t == (finds_duplicate ? 2 : 0);
       }
-      CHECK(check++, (std::string{"every lookup of the repeated key throws, from four threads, and no table is "
-                                  "published, "} + size).c_str(), all && !has_table(tasks, JAT_task_number));
+      CHECK(check++, (std::string{finds_duplicate ? "every lookup of the repeated key throws, from four threads, and "
+                                                    "no table is published, "
+                                                  : "no lookup of the repeated key throws in a release build, from "
+                                                    "four threads, and no table is published, "} + size).c_str(),
+            all && !has_table(tasks, JAT_task_number));
 
       const bool old_aborts = aborts([&] { static_cast<void>(lGetElemUlong(tasks, JAT_task_number, 2)); });
-      CHECK(check++, (std::string{"the old lookup aborts, "} + size).c_str(), old_aborts);
+      CHECK(check++, (std::string{finds_duplicate ? "the old lookup aborts, " : "the old lookup finds the key, "} +
+                      size).c_str(), old_aborts == finds_duplicate);
 
       // above the threshold every lookup builds the table and throws; below it only the repeated key is found twice
       const bool other = n == LONG_LIST
