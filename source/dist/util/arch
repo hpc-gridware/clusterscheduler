@@ -188,6 +188,11 @@ Linux)
    riscv64)
       lxmachine=riscv64
       ;;
+   loongarch64)
+      # New World (upstream ABI). The Old World of Loongnix/Kylin/UOS is a
+      # different ABI entirely and gets its own machine name, see CS-2649.
+      lxmachine=loong64
+      ;;
    *)
       unsupported="UNSUPPORTED-"
       lxmachine=$osmachine
