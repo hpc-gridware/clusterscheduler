@@ -46,6 +46,7 @@
 #include <climits>
 #include <cmath>
 #include <string>
+#include <tuple>
 #include <vector>
 
 #include "uti/ocs_Pattern.h"
@@ -121,6 +122,7 @@
 #include "sgeobj/tom/ocs_tom_HL.h"
 #include "sgeobj/tom/ocs_tom_JRS.h"
 #include "sgeobj/tom/ocs_tom_PR.h"
+#include "sgeobj/tom/ocs_tom_QR.h"
 #include "sgeobj/tom/ocs_tom_QU.h"
 #include "sgeobj/tom/ocs_tom_RDE.h"
 #include "sgeobj/tom/ocs_tom_RN.h"
@@ -264,9 +266,10 @@ rsmap_same_slots(sge_assignment_t *a, const lList *total_list, const lList *rue_
 /* -- base functions ---------------------------------------------- */
 
 static int
-compute_soft_violations(const sge_assignment_t *a, const lListElem *host, lListElem *queue, int violation,
-                        const lList *load_attr, const lList *config_attr, const lList *actual_attr,
-                        uint32_t layer, double lc_factor, uint32_t tag);
+compute_soft_violations(const sge_assignment_t *a, ocs::tom::ConstElement<ocs::tom::EH> host,
+                        ocs::tom::Element<ocs::tom::QU> queue, int violation,
+                        ocs::tom::ConstList<ocs::tom::HL> load_attr, ocs::tom::ConstList<ocs::tom::CE> config_attr,
+                        ocs::tom::ConstList<ocs::tom::RUE> actual_attr, uint32_t layer, double lc_factor, uint32_t tag);
 
 static dispatch_t
 rc_time_by_slots(sge_assignment_t *a, lList *requested, const lList *load_attr, const lList *config_attr, const lList *actual_attr,
@@ -282,7 +285,8 @@ ri_slots_by_time(const sge_assignment_t *a, int *slots, const lList *rue_list, l
                  const char *object_name, ocs::TopologyString& binding_inuse);
 
 static dispatch_t
-match_static_resource(int slots, lListElem *req_cplx, lListElem *src_cplx, dstring *reason, bool allow_non_requestable);
+match_static_resource(int slots, ocs::tom::ConstElement<ocs::tom::CE> req_cplx,
+                      ocs::tom::ConstElement<ocs::tom::CE> src_cplx, dstring *reason, bool allow_non_requestable);
 
 static int
 resource_cmp(uint32_t relop, double req, double src_dl);
@@ -291,9 +295,9 @@ static bool
 job_is_forced_centry_missing(const sge_assignment_t *a, const lListElem *queue_or_host, bool is_qinstance);
 
 static void
-clear_resource_tags(lList *resources, uint32_t max_tag);
+clear_resource_tags(ocs::tom::List<ocs::tom::CE> resources, uint32_t max_tag);
 static void
-clear_resource_tags(lListElem *job, uint32_t max_tag);
+clear_resource_tags(ocs::tom::Element<ocs::tom::JB> job, uint32_t max_tag);
 
 static dispatch_t
 find_best_result(dispatch_t r1, dispatch_t r2);
@@ -1353,7 +1357,7 @@ bool sge_select_queue(lList *requested_attr, lListElem *queue, lListElem *host,
    uint64_t start_time = DISPATCH_TIME_NOW;
 
 
-   clear_resource_tags(requested_attr, MAX_TAG);
+   clear_resource_tags(ocs::tom::List<ocs::tom::CE>(requested_attr), MAX_TAG);
 
    assignment_init(&a, nullptr, nullptr, nullptr);
    a.centry_list      = ocs::tom::ConstList<ocs::tom::CE>(centry_list);
@@ -1536,7 +1540,7 @@ rc_time_by_slots(sge_assignment_t *a, lList *requested, const lList *load_attr, 
    //bool slots_on_host_layer = (layer == DOMINANT_LAYER_HOST && strcmp(object_name, SGE_ATTR_SLOTS) == 0);
    ocs::TopologyString binding_inuse;
 
-   clear_resource_tags(requested, QUEUE_TAG);
+   clear_resource_tags(ocs::tom::List<ocs::tom::CE>(requested), QUEUE_TAG);
 
    /* ensure availability of implicit slot request */
    if (!implicit_slots_request) {
@@ -1590,7 +1594,7 @@ rc_time_by_slots(sge_assignment_t *a, lList *requested, const lList *load_attr, 
             }
 
             /* consumable && used in this global/host/queue && not requested */
-            if (!is_requested(requested, name)) {
+            if (!is_requested(ocs::tom::ConstList<ocs::tom::CE>(requested), name)) {
                ocs::tom::ConstElement<ocs::tom::CE> centry = ocs::tom::find_first<CE_name>(a->centry_list, name);
                const char *def_req = ocs::tom::get<CE_defaultval>(centry);
                auto valtype = static_cast<ocs::CEntry::Type>(ocs::tom::get<CE_valtype>(centry));
@@ -1703,9 +1707,19 @@ rc_time_by_slots(sge_assignment_t *a, lList *requested, const lList *load_attr, 
    DRETURN(DISPATCH_OK);
 }
 
+/**
+ * @brief Static match of a resource request against the resource an object offers
+ * @param slots the number of slots the request is for
+ * @param req_cplx the request
+ * @param src_cplx the resource the object offers
+ * @param reason the reason of a mismatch is appended here
+ * @param allow_non_requestable whether a resource that is not requestable may match
+ * @return DISPATCH_OK, or DISPATCH_NEVER_CAT if the request can never be fulfilled
+ */
 static dispatch_t
-match_static_resource(int slots, lListElem *req_cplx, lListElem *src_cplx, dstring *reason,
-                      bool allow_non_requestable) {
+match_static_resource(const int slots, const ocs::tom::ConstElement<ocs::tom::CE> req_cplx,
+                      const ocs::tom::ConstElement<ocs::tom::CE> src_cplx, dstring *reason,
+                      const bool allow_non_requestable) {
    DENTER(TOP_LAYER);
 
    int match;
@@ -1742,48 +1756,72 @@ match_static_resource(int slots, lListElem *req_cplx, lListElem *src_cplx, dstri
  * @param resources list of job requests.
  * @param max_tag max tag element
  */
-static void clear_resource_tags(lList *resources, uint32_t max_tag) {
-   for_each_rw_lv(attr, resources) {
+static void clear_resource_tags(const ocs::tom::List<ocs::tom::CE> resources, const uint32_t max_tag) {
+   DENTER(TOP_LAYER);
+   for (auto attr : resources) {
       if (ocs::tom::get<CE_tagged>(attr) <= max_tag) {
          ocs::tom::set<CE_tagged>(attr, NO_TAG);
       }
    }
+   DRETURN_VOID;
 }
 
-static void clear_resource_tags(lListElem *job, uint32_t max_tag) {
-   for (ocs::tom::Element<ocs::tom::JRS> jrs : ocs::tom::get<JB_request_set_list>(job)) {
-      clear_resource_tags(static_cast<lList *>(ocs::tom::get<JRS_hard_resource_list>(jrs)), max_tag);
+/**
+ * @brief Removes the tags from the hard resource requests of a job, in every scope
+ * @param job the job
+ * @param max_tag max tag element, see the list form
+ */
+static void clear_resource_tags(const ocs::tom::Element<ocs::tom::JB> job, const uint32_t max_tag) {
+   DENTER(TOP_LAYER);
+   for (auto jrs : ocs::tom::get<JB_request_set_list>(job)) {
+      clear_resource_tags(ocs::tom::get<JRS_hard_resource_list>(jrs), max_tag);
    }
+   DRETURN_VOID;
 }
 
-static void
-get_hard_queue_lists(const lListElem *job, const lList *&global_hard_queue_list, const lList *&master_hard_queue_list,
-                     const lList *&slave_hard_queue_list) {
-   /* we can either have
-    * - a global queue request list (can not be combined with master or slave queue request list)
-    * - in case of parallel job: a master queue request list and/or a slave queue request list
-    */
-   global_hard_queue_list = job_get_hard_queue_list(job, JRS_SCOPE_GLOBAL);
-   if (/* it is a pe job && */ global_hard_queue_list == nullptr) {
-      master_hard_queue_list = job_get_hard_queue_list(job, JRS_SCOPE_MASTER);
-      slave_hard_queue_list = job_get_hard_queue_list(job, JRS_SCOPE_SLAVE);
-   } else {
-      master_hard_queue_list = nullptr;
-      slave_hard_queue_list = nullptr;
+/**
+ * @brief The hard queue requests (-q) of a job
+ *
+ * A job has either a global queue request list, which cannot be combined with
+ * a master or slave one, or - a parallel job - a master and/or a slave list.
+ *
+ * @param job the job
+ * @return the global, the master and the slave hard queue request list; each may be an empty handle
+ */
+static std::tuple<ocs::tom::ConstList<ocs::tom::QR>, ocs::tom::ConstList<ocs::tom::QR>,
+                  ocs::tom::ConstList<ocs::tom::QR>>
+get_hard_queue_lists(const ocs::tom::ConstElement<ocs::tom::JB> job) {
+   DENTER(TOP_LAYER);
+   auto global_hard_queue_list = ocs::tom::ConstList<ocs::tom::QR>(job_get_hard_queue_list(job, JRS_SCOPE_GLOBAL));
+   ocs::tom::ConstList<ocs::tom::QR> master_hard_queue_list;
+   ocs::tom::ConstList<ocs::tom::QR> slave_hard_queue_list;
+   if (/* it is a pe job && */ !global_hard_queue_list) {
+      master_hard_queue_list = ocs::tom::ConstList<ocs::tom::QR>(job_get_hard_queue_list(job, JRS_SCOPE_MASTER));
+      slave_hard_queue_list = ocs::tom::ConstList<ocs::tom::QR>(job_get_hard_queue_list(job, JRS_SCOPE_SLAVE));
    }
+   DRETURN(std::make_tuple(global_hard_queue_list, master_hard_queue_list, slave_hard_queue_list));
 }
 
-static void
-get_soft_queue_list(const lListElem *job, const lList *&soft_queue_list) {
-   const lList *master_hard_queue_list = job_get_hard_queue_list(job, JRS_SCOPE_MASTER);
-   if (master_hard_queue_list != nullptr) {
+/**
+ * @brief The soft queue requests (-q) of a job that apply to the queues being matched
+ * @param job the job
+ * @return the soft slave queue requests if the job has master queue requests, else the global soft queue requests;
+ *         may be empty
+ */
+static ocs::tom::ConstList<ocs::tom::QR>
+get_soft_queue_list(const ocs::tom::ConstElement<ocs::tom::JB> job) {
+   DENTER(TOP_LAYER);
+   ocs::tom::ConstList<ocs::tom::QR> soft_queue_list;
+   if (job_get_hard_queue_list(job, JRS_SCOPE_MASTER) != nullptr) {
       // if we have master queue requests, then work on the soft slave queue requests
-      soft_queue_list = job_get_soft_queue_list(job, JRS_SCOPE_SLAVE);
+      soft_queue_list = ocs::tom::ConstList<ocs::tom::QR>(job_get_soft_queue_list(job, JRS_SCOPE_SLAVE));
    } else {
       // if we have no master queue requests (or it is a sequential job), then work on the global soft queue requests
-      soft_queue_list = job_get_soft_queue_list(job, JRS_SCOPE_GLOBAL);
+      soft_queue_list = ocs::tom::ConstList<ocs::tom::QR>(job_get_soft_queue_list(job, JRS_SCOPE_GLOBAL));
    }
+   DRETURN(soft_queue_list);
 }
+
 /**
  * @brief Do matching that depends not on time
  *
@@ -1802,17 +1840,18 @@ get_soft_queue_list(const lListElem *job, const lList *&soft_queue_list) {
  * @return DISPATCH_OK, ok DISPATCH_NEVER_CAT, assignment will never be possible for all jobs of that category
  */
 
-dispatch_t sge_queue_match_static(const sge_assignment_t *a, lListElem *queue, bool need_master) {
+dispatch_t sge_queue_match_static(const sge_assignment_t *a, const ocs::tom::Element<ocs::tom::QU> queue,
+                                  const bool need_master) {
    DENTER(TOP_LAYER);
 
-   const char *qinstance_name = ocs::tom::get<QU_full_name>(queue);
+   auto qinstance_name = ocs::tom::get<QU_full_name>(queue);
 
    /* check if queue was reserved for AR job */
    if (a->ar_id != 0) {
       DPRINTF("searching for queue %s\n", qinstance_name);
 
-      if (static_cast<const lListElem *>(ocs::tom::find_first_in<AR_reserved_queues, QU_full_name>(a->ar, qinstance_name)) == nullptr) {
-         uint32_t ar_id = ocs::tom::get<AR_id>(a->ar);
+      if (!ocs::tom::find_first_in<AR_reserved_queues, QU_full_name>(a->ar, qinstance_name)) {
+         auto ar_id = ocs::tom::get<AR_id>(a->ar);
          schedd_mes_add_global(a->monitor_alpp, a->monitor_next_run,
                                SCHEDD_INFO_QINOTARRESERVED_SI, qinstance_name, ar_id);
          DRETURN(DISPATCH_NEVER_CAT);
@@ -1835,8 +1874,8 @@ dispatch_t sge_queue_match_static(const sge_assignment_t *a, lListElem *queue, b
    }
 
    /* check if job can run in queue based on project */
-   ocs::tom::ConstList<ocs::tom::PR> projects;
-   if ((projects = ocs::tom::get<QU_projects>(queue))) {
+   auto projects = ocs::tom::get<QU_projects>(queue);
+   if (projects) {
       if (!a->project) {
          schedd_mes_add(a->monitor_alpp, a->monitor_next_run, a->job_id,
                         SCHEDD_INFO_HASNOPRJ_S,
@@ -1852,8 +1891,9 @@ dispatch_t sge_queue_match_static(const sge_assignment_t *a, lListElem *queue, b
    }
 
    /* check if job can run in queue based on excluded projects */
-   if ((projects = ocs::tom::get<QU_xprojects>(queue))) {
-      if (a->project && prj_list_locate(projects, a->project)) {
+   auto xprojects = ocs::tom::get<QU_xprojects>(queue);
+   if (xprojects) {
+      if (a->project && prj_list_locate(xprojects, a->project)) {
          schedd_mes_add(a->monitor_alpp, a->monitor_next_run, a->job_id,
                         SCHEDD_INFO_EXCLPRJ_SSS,
                         a->project, "queue", qinstance_name);
@@ -1861,12 +1901,9 @@ dispatch_t sge_queue_match_static(const sge_assignment_t *a, lListElem *queue, b
       }
    }
 
-   const lList *global_hard_queue_list;
-   const lList *master_hard_queue_list;
-   const lList *slave_hard_queue_list;
-   get_hard_queue_lists(a->job, global_hard_queue_list, master_hard_queue_list, slave_hard_queue_list);
+   auto [global_hard_queue_list, master_hard_queue_list, slave_hard_queue_list] = get_hard_queue_lists(a->job);
    // if we have any queue request lists then check if queues may be requested at all
-   if (global_hard_queue_list != nullptr || master_hard_queue_list != nullptr || slave_hard_queue_list != nullptr) {
+   if (global_hard_queue_list || master_hard_queue_list || slave_hard_queue_list) {
       if (!centry_list_are_queues_requestable(a->centry_list)) {
          schedd_mes_add(a->monitor_alpp, a->monitor_next_run, a->job_id,
                         SCHEDD_INFO_QUEUENOTREQUESTABLE_S, qinstance_name);
@@ -2012,24 +2049,30 @@ dispatch_t sge_queue_match_static(const sge_assignment_t *a, lListElem *queue, b
    DRETURN(DISPATCH_OK);
 }
 
+/**
+ * @brief Is a forced complex entry defined in a queue or host, but not requested by the job?
+ *
+ * The object is a queue instance or an execution host, so it stays untyped here.
+ *
+ * @param a the assignment
+ * @param queue_or_host the queue instance (`QU_Type`) or execution host (`EH_Type`)
+ * @param is_qinstance true for a queue instance
+ * @return true if a forced complex entry is missing in the request; the reason is added to the scheduler messages
+ */
 static bool
-job_is_forced_centry_missing(const sge_assignment_t *a, const lListElem *queue_or_host, bool is_qinstance) {
+job_is_forced_centry_missing(const sge_assignment_t *a, const lListElem *queue_or_host, const bool is_qinstance) {
    DENTER(TOP_LAYER);
    bool ret = false;
 
-   if (a->job != nullptr && a->centry_list != nullptr && queue_or_host != nullptr) {
+   if (a->job && a->centry_list && queue_or_host != nullptr) {
       const void *iterator = nullptr;
-      const lListElem *centry;
-      const lListElem *next_centry = ocs::tom::find_first<CE_requestable>(a->centry_list, REQU_FORCED, &iterator);
-      while ((centry = next_centry) != nullptr) {
-         next_centry = ocs::tom::find_next<CE_requestable>(a->centry_list, REQU_FORCED, &iterator);
-
+      for (auto centry = ocs::tom::find_first<CE_requestable>(a->centry_list, REQU_FORCED, &iterator); centry;
+           centry = ocs::tom::find_next<CE_requestable>(a->centry_list, REQU_FORCED, &iterator)) {
          // check if the forced centry was requested; if so, we can continue with the next centry
-         const char *name = ocs::tom::get<CE_name>(centry);
+         auto name = ocs::tom::get<CE_name>(centry);
          bool skip_further_checks = false;
-         for (ocs::tom::ConstElement<ocs::tom::JRS> jrs : ocs::tom::get<JB_request_set_list>(a->job)) {
-            ocs::tom::ConstList<ocs::tom::CE> res_list = ocs::tom::get<JRS_hard_resource_list>(jrs);
-            if (is_requested(res_list, name)) {
+         for (auto jrs : ocs::tom::get<JB_request_set_list>(a->job)) {
+            if (is_requested(ocs::tom::get<JRS_hard_resource_list>(jrs), name)) {
                // if requested we are fine
                skip_further_checks = true;
                break;
@@ -2070,11 +2113,12 @@ job_is_forced_centry_missing(const sge_assignment_t *a, const lListElem *queue_o
  * given host or the queue. The function returns the number of violations.
  *
  * @param a job info structure
+ * @param host the host, only when used on host level
  * @param queue should only be set, when one using this method on queue level
  * @param violation the number of previous violations. This is needed to get a correct result on queue level.
  * @param load_attr the load attributes, only when used on hosts or global
- * @param config_attr a list of custom attributes  (CE_Type)
- * @param actual_attr a list of custom consumables, they contain the current usage of these attributes (RUE_Type)
+ * @param config_attr a list of custom attributes
+ * @param actual_attr a list of custom consumables, they contain the current usage of these attributes
  * @param layer the current layer flag
  * @param lc_factor should be set, when load correction has to be done.
  * @param tag the current layer tag. (GLOBAL_TAG, HOST_TAG, QUEUE_TAG)
@@ -2082,9 +2126,12 @@ job_is_forced_centry_missing(const sge_assignment_t *a, const lListElem *queue_o
  * @return the number of violations ( = (prev. violations) + (new violations in this run)).
  */
 static int
-compute_soft_violations(const sge_assignment_t *a, const lListElem *host, lListElem *queue, int violation,
-                        const lList *load_attr, const lList *config_attr,
-                        const lList *actual_attr, uint32_t layer, double lc_factor, uint32_t tag) {
+compute_soft_violations(const sge_assignment_t *a, const ocs::tom::ConstElement<ocs::tom::EH> host,
+                        const ocs::tom::Element<ocs::tom::QU> queue, const int violation,
+                        const ocs::tom::ConstList<ocs::tom::HL> load_attr,
+                        const ocs::tom::ConstList<ocs::tom::CE> config_attr,
+                        const ocs::tom::ConstList<ocs::tom::RUE> actual_attr, const uint32_t layer,
+                        const double lc_factor, const uint32_t tag) {
    DENTER(TOP_LAYER);
 
    const char *queue_name = nullptr;
@@ -2092,16 +2139,16 @@ compute_soft_violations(const sge_assignment_t *a, const lListElem *host, lListE
    unsigned int soft_violation = violation;
    uint64_t start_time = DISPATCH_TIME_NOW;
 
-   lList *soft_requests = job_get_soft_resource_listRW(a->job);
+   auto soft_requests = ocs::tom::List<ocs::tom::CE>(job_get_soft_resource_listRW(a->job));
    clear_resource_tags(soft_requests, tag);
 
    uint32_t job_id = a->job_id;
-   if (queue != nullptr) {
+   if (queue) {
       queue_name = ocs::tom::get<QU_full_name>(queue);
    }
 
    /* count number of soft violations for _one_ slot of this job */
-   for_each_rw_lv(attr, soft_requests) {
+   for (auto attr : soft_requests) {
       ocs::TopologyString binding_inuse;
       switch (ri_time_by_slots(a, attr, load_attr, config_attr, actual_attr, host, queue, &reason, false, 1, layer,
                                lc_factor, &start_time, queue_name?queue_name:"no queue", binding_inuse)) {
@@ -2126,17 +2173,17 @@ compute_soft_violations(const sge_assignment_t *a, const lListElem *host, lListE
       }
    }
 
-   if (queue != nullptr) {
+   if (queue) {
       DPRINTF("queue %s does not fulfill soft %d requests (first: %s)\n", queue_name, soft_violation,
               sge_dstring_get_string(&reason));
 
        // check whether queue fulfills soft queue request of the job (-q)
-      const lList *qref_list;
-      get_soft_queue_list(a->job, qref_list);
-      if (qref_list != nullptr) {
-         const char *qinstance_name = ocs::tom::get<QU_full_name>(queue);
-         for_each_ep_lv(qr, qref_list) {
-            if (qref_cq_rejected(ocs::tom::get<QR_name>(qr), ocs::tom::get<QU_qname>(queue), ocs::tom::get<QU_qhostname>(queue), a->hgrp_list)) {
+      auto qref_list = get_soft_queue_list(a->job);
+      if (qref_list) {
+         auto qinstance_name = ocs::tom::get<QU_full_name>(queue);
+         for (auto qr : qref_list) {
+            if (qref_cq_rejected(ocs::tom::get<QR_name>(qr), ocs::tom::get<QU_qname>(queue),
+                                 ocs::tom::get<QU_qhostname>(queue), a->hgrp_list)) {
                DPRINTF("Queue \"%s\" is not contained in the soft queue list (-q) that was requested by job " sge_u32 "\n",
                         qinstance_name, job_id);
                soft_violation++;
@@ -2165,23 +2212,20 @@ compute_soft_violations(const sge_assignment_t *a, const lListElem *host, lListE
  *         it is on the host's reschedule unknown list
  */
 dispatch_t
-sge_host_match_static(const sge_assignment_t *a, const lListElem *host) {
+sge_host_match_static(const sge_assignment_t *a, const ocs::tom::ConstElement<ocs::tom::EH> host) {
    DENTER(TOP_LAYER);
-
-   ocs::tom::ConstList<ocs::tom::PR> projects;
-   const char *eh_name;
 
    if (!host) {
       DRETURN(DISPATCH_OK);
    }
 
-   eh_name = ocs::tom::get<EH_name>(host);
+   // a host field reads as ocs::tom::Host, which must not go into the varargs of the messages
+   const char *eh_name = ocs::tom::get<EH_name>(host);
 
    // check if host was reserved for AR job
    if (a->ar_id != 0) {
-      if (a->ar != nullptr) {
-         const lListElem *res_host = ocs::tom::find_first_in<AR_reserved_hosts, EH_name>(a->ar, eh_name);
-         if (res_host == nullptr) {
+      if (a->ar) {
+         if (!ocs::tom::find_first_in<AR_reserved_hosts, EH_name>(a->ar, eh_name)) {
             DPRINTF("Host \"%s\" was not reserved by advance reservation %d\n", eh_name, a->ar_id);
             schedd_mes_add(a->monitor_alpp, a->monitor_next_run, a->job_id,
                            SCHEDD_INFO_HNOTARRESERVED_SI, eh_name, a->ar_id);
@@ -2203,7 +2247,8 @@ sge_host_match_static(const sge_assignment_t *a, const lListElem *host) {
    }
 
    /* check if job can run on host based on required projects */
-   if ((projects = ocs::tom::get<EH_prj>(host))) {
+   auto projects = ocs::tom::get<EH_prj>(host);
+   if (projects) {
 
       if (!a->project) {
          schedd_mes_add(a->monitor_alpp, a->monitor_next_run, a->job_id,
@@ -2219,8 +2264,9 @@ sge_host_match_static(const sge_assignment_t *a, const lListElem *host) {
    }
 
    /* check if job can run on host based on excluded projects */
-   if ((projects = ocs::tom::get<EH_xprj>(host))) {
-      if (a->project && prj_list_locate(projects, a->project)) {
+   auto xprojects = ocs::tom::get<EH_xprj>(host);
+   if (xprojects) {
+      if (a->project && prj_list_locate(xprojects, a->project)) {
          schedd_mes_add(a->monitor_alpp, a->monitor_next_run, a->job_id,
                         SCHEDD_INFO_EXCLPRJ_SSS, a->project, "host", eh_name);
          DRETURN(DISPATCH_NEVER_CAT);
@@ -2237,10 +2283,9 @@ sge_host_match_static(const sge_assignment_t *a, const lListElem *host) {
    ** contained in the reschedule_unknown-list
    */
    if (a->ja_task) {
-      uint32_t task_id = ocs::tom::get<JAT_task_number>(a->ja_task);
-      ocs::tom::ConstList<ocs::tom::RU> rulp = ocs::tom::get<EH_reschedule_unknown_list>(host);
+      auto task_id = ocs::tom::get<JAT_task_number>(a->ja_task);
 
-      for (ocs::tom::ConstElement<ocs::tom::RU> ruep : rulp) {
+      for (auto ruep : ocs::tom::get<EH_reschedule_unknown_list>(host)) {
          if (ocs::tom::get<RU_job_number>(ruep) == a->job_id
              && ocs::tom::get<RU_task_number>(ruep) == task_id) {
             DPRINTF("RU: Job " sge_u32 "." sge_u32 " Host " SFN "\n", a->job_id, task_id, eh_name);
@@ -2260,22 +2305,22 @@ sge_host_match_static(const sge_assignment_t *a, const lListElem *host) {
  * Returns true if specified resource is requested. Both long name
  * and shortcut name are checked.
  *
- * @param req The request list (CE_Type)
+ * @param req The request list
  * @param attr The resource name.
  *
  * @return true if requested, otherwise false
  *
  * @note MT-NOTE: is_requested() is MT safe
  */
-bool is_requested(const lList *req, const char *attr) {
-   if (req != nullptr) {
-      if (ocs::tom::find_first<CE_name>(req, attr) ||
-          ocs::tom::find_first<CE_shortcut>(req, attr)) {
-         return true;
+bool is_requested(const ocs::tom::ConstList<ocs::tom::CE> req, const char *attr) {
+   DENTER(TOP_LAYER);
+   bool ret = false;
+   if (req) {
+      if (ocs::tom::find_first<CE_name>(req, attr) || ocs::tom::find_first<CE_shortcut>(req, attr)) {
+         ret = true;
       }
    }
-
-   return false;
+   DRETURN(ret);
 }
 
 
@@ -2285,29 +2330,29 @@ bool is_requested(const lList *req, const char *attr) {
  * Checks the global, master and slave hard resource lists, so a request made
  * only for the master task of a parallel job counts as requested.
  *
- * @param[in] job  the job (`JB_Type`)
+ * @param[in] job  the job
  * @param[in] attr the attribute name or its shortcut
  *
  * @return true if the job requests the attribute
  *
  * @note MT-NOTE: is_requested() is MT safe
  */
-bool is_requested(const lListElem *job, const char *attr) {
+bool is_requested(const ocs::tom::ConstElement<ocs::tom::JB> job, const char *attr) {
+   DENTER(TOP_LAYER);
    bool ret = false;
 
-   const lList *global_request_list = job_get_hard_resource_list(job, JRS_SCOPE_GLOBAL);
+   auto global_request_list = ocs::tom::ConstList<ocs::tom::CE>(job_get_hard_resource_list(job, JRS_SCOPE_GLOBAL));
    if (is_requested(global_request_list, attr)) {
       ret = true;
    } else {
-      const lList *master_request_list = job_get_hard_resource_list(job, JRS_SCOPE_MASTER);
-      const lList *slave_request_list = job_get_hard_resource_list(job, JRS_SCOPE_SLAVE);
-      if (is_requested(master_request_list, attr) &&
-          is_requested(slave_request_list, attr)) {
+      auto master_request_list = ocs::tom::ConstList<ocs::tom::CE>(job_get_hard_resource_list(job, JRS_SCOPE_MASTER));
+      auto slave_request_list = ocs::tom::ConstList<ocs::tom::CE>(job_get_hard_resource_list(job, JRS_SCOPE_SLAVE));
+      if (is_requested(master_request_list, attr) && is_requested(slave_request_list, attr)) {
          ret = true;
       }
    }
 
-   return ret;
+   DRETURN(ret);
 }
 
 static int
@@ -3291,8 +3336,7 @@ bool cqueue_match_static_resource_list_rejected(sge_assignment_t *a, const char 
 dispatch_t cqueue_match_static(const char *cqname, sge_assignment_t *a) {
    DENTER(TOP_LAYER);
 
-   const lList *global_hard_queue_list, *master_hard_queue_list, *slave_hard_queue_list;
-   get_hard_queue_lists(a->job, global_hard_queue_list, master_hard_queue_list, slave_hard_queue_list);
+   auto [global_hard_queue_list, master_hard_queue_list, slave_hard_queue_list] = get_hard_queue_lists(a->job);
 
    bool rejected = false;
    if (global_hard_queue_list != nullptr) {
@@ -3534,7 +3578,7 @@ sequential_tag_queues_suitable4job(sge_assignment_t *a) {
             continue;
          }
 
-         if ((result=sge_host_match_static(a, hep))) {
+         if ((result=sge_host_match_static(a, ocs::tom::ConstElement<ocs::tom::EH>(hep)))) {
             if (result == DISPATCH_NEVER_JOB || !skip_host_list) {
                ocs::tom::emplace_back<CTI_name>(&(a->skip_host_list), eh_name);
             } else {
@@ -3817,13 +3861,13 @@ static int get_soft_violations(sge_assignment_t *a, lListElem *hep, lListElem *q
          ocs::tom::get<EH_resource_utilization>(a->gep),
          DOMINANT_LAYER_GLOBAL, 0, GLOBAL_TAG);
 
-   violations = compute_soft_violations(a, hep, nullptr, violations,
+   violations = compute_soft_violations(a, ocs::tom::ConstElement<ocs::tom::EH>(hep), nullptr, violations,
          ocs::tom::get<EH_load_list>(hep),
          ocs::tom::get<EH_consumable_config_list>(hep),
          ocs::tom::get<EH_resource_utilization>(hep),
          DOMINANT_LAYER_HOST, 0, HOST_TAG);
 
-   violations = compute_soft_violations(a, nullptr, qep, violations,
+   violations = compute_soft_violations(a, nullptr, ocs::tom::Element<ocs::tom::QU>(qep), violations,
            nullptr,
          ocs::tom::get<QU_consumable_config_list>(qep),
          ocs::tom::get<QU_resource_utilization>(qep),
@@ -4232,8 +4276,8 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
    DENTER(TOP_LAYER);
 
    lListElem *job = a->job;
-   const lList *global_hard_queue_list, *master_hard_queue_list, *slave_hard_queue_list;
-   get_hard_queue_lists(job, global_hard_queue_list, master_hard_queue_list, slave_hard_queue_list);
+   auto [global_hard_queue_list, master_hard_queue_list, slave_hard_queue_list] =
+      get_hard_queue_lists(ocs::tom::ConstElement<ocs::tom::JB>(job));
    bool have_master_and_slave_queue_request = master_hard_queue_list != nullptr && slave_hard_queue_list != nullptr;
 #if 0
    bool have_master_requests = job_get_hard_resource_list(job, JRS_SCOPE_MASTER) != nullptr;
@@ -4682,8 +4726,7 @@ parallel_host_slots(sge_assignment_t *a, int *slots, lListElem *hep, bool need_m
 
    SCHED_PROF_INC(a->pi, par_hstat);
 
-   const lList *global_hard_queue_list, *master_hard_queue_list, *slave_hard_queue_list;
-   get_hard_queue_lists(a->job, global_hard_queue_list, master_hard_queue_list, slave_hard_queue_list);
+   auto [global_hard_queue_list, master_hard_queue_list, slave_hard_queue_list] = get_hard_queue_lists(a->job);
    bool rejected_as_slave = false, rejected_as_master = false;
    if (global_hard_queue_list != nullptr) {
       rejected_as_master = rejected_as_slave = qref_list_eh_rejected(global_hard_queue_list, eh_name, a->hgrp_list);
@@ -4697,7 +4740,7 @@ parallel_host_slots(sge_assignment_t *a, int *slots, lListElem *hep, bool need_m
    }
    // @todo CS-601 remove tags from QU_tagged4schedule according to rejected_as_master and rejected_as_slave
    if (!(rejected_as_master && rejected_as_slave) &&
-       sge_host_match_static(a, hep) == DISPATCH_OK) {
+       sge_host_match_static(a, ocs::tom::ConstElement<ocs::tom::EH>(hep)) == DISPATCH_OK) {
       // this host is suited at least for slave tasks, possibly also for the master task
 
       // cause load be raised artificially to reflect load correction when checking job requests
@@ -5349,7 +5392,7 @@ parallel_queue_slots(sge_assignment_t *a, lListElem *qep, int *slots, bool need_
    int lslots = INT_MAX;
 
    SCHED_PROF_INC(a->pi, par_qstat);
-   dispatch_t result = sge_queue_match_static(a, qep, need_master);
+   dispatch_t result = sge_queue_match_static(a, ocs::tom::Element<ocs::tom::QU>(qep), need_master);
    if (result == DISPATCH_OK) {
       if (a->ar_id == 0 && !a->is_advance_reservation) {
          // no RQS for AR jobs or AR scheduling
@@ -5416,8 +5459,8 @@ sequential_queue_time(uint64_t *start, sge_assignment_t *a, int *violations, lLi
 
    if (result == DISPATCH_OK) {
       if (violations != nullptr) {
-         *violations = compute_soft_violations(a, nullptr, qep, *violations, nullptr, config_attr,
-                                               actual_attr, DOMINANT_LAYER_QUEUE, 0, QUEUE_TAG);
+         *violations = compute_soft_violations(a, nullptr, ocs::tom::Element<ocs::tom::QU>(qep), *violations, nullptr,
+                                               config_attr, actual_attr, DOMINANT_LAYER_QUEUE, 0, QUEUE_TAG);
       }
    } else {
       char buff[1024 + 1];
@@ -5490,7 +5533,7 @@ sequential_host_time(uint64_t *start, sge_assignment_t *a, int *violations, cons
 
    sge_dstring_init(&reason, reason_buf, sizeof(reason_buf));
 
-   clear_resource_tags(hard_requests, HOST_TAG);
+   clear_resource_tags(ocs::tom::List<ocs::tom::CE>(hard_requests), HOST_TAG);
 
    /* cause load be raised artificially to reflect load correction when
       checking job requests */
@@ -5520,8 +5563,8 @@ sequential_host_time(uint64_t *start, sge_assignment_t *a, int *violations, cons
 
    if (result == DISPATCH_OK || result == DISPATCH_MISSING_ATTR) {
       if (violations != nullptr) {
-         *violations = compute_soft_violations(a, hep, nullptr, *violations, load_attr, config_attr,
-                                               actual_attr, DOMINANT_LAYER_HOST, 0, HOST_TAG);
+         *violations = compute_soft_violations(a, ocs::tom::ConstElement<ocs::tom::EH>(hep), nullptr, *violations,
+                                               load_attr, config_attr, actual_attr, DOMINANT_LAYER_HOST, 0, HOST_TAG);
       }
    } else {
       char buff[1024 + 1];
@@ -5570,7 +5613,7 @@ sequential_global_time(uint64_t *start, sge_assignment_t *a, int *violations) {
 
    sge_dstring_init(&reason, reason_buf, sizeof(reason_buf));
 
-   clear_resource_tags(hard_request, GLOBAL_TAG);
+   clear_resource_tags(ocs::tom::List<ocs::tom::CE>(hard_request), GLOBAL_TAG);
 
    /* check if job has access to any hosts globally */
    if ((result=sge_host_match_static(a, a->gep)) != 0) {
@@ -5913,7 +5956,8 @@ ri_time_by_slots(const sge_assignment_t *a, lListElem *rep, const lList *load_at
 
    DPRINTF("ri_time_by_slots(%s) consumable = %s\n", attrname, map_consumable2str(ocs::tom::get<CE_consumable>(cplx_el)));
 
-   ret = match_static_resource(slots, rep, cplx_el, reason, allow_non_requestable);
+   ret = match_static_resource(slots, ocs::tom::ConstElement<ocs::tom::CE>(rep),
+                               ocs::tom::ConstElement<ocs::tom::CE>(cplx_el), reason, allow_non_requestable);
    if (actual_el != nullptr) {
       utilized = lGetNumberOfElem(ocs::tom::get<RUE_utilized>(actual_el));
    }
@@ -6190,7 +6234,8 @@ ri_slots_by_time(const sge_assignment_t *a, int *slots, const lList *rue_list, l
       }
 
       // we match with 1 slot here - we do not know how much it might actually give us, this is calculated below
-      ret = match_static_resource(1, request, cplx_el, reason, allow_non_requestable);
+      ret = match_static_resource(1, ocs::tom::ConstElement<ocs::tom::CE>(request),
+                                  ocs::tom::ConstElement<ocs::tom::CE>(cplx_el), reason, allow_non_requestable);
       if (ret != DISPATCH_OK) {
          lFreeElem(&cplx_el);
          DRETURN(ret);

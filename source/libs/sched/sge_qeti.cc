@@ -296,7 +296,7 @@ sge_qeti_t *sge_qeti_allocate(sge_assignment_t *a) {
 
    // add references to per host resource utilization entries that might affect jobs queue end time
    for (auto hep : ocs::tom::ConstList<ocs::tom::EH>(a->host_list)) {
-      auto eh_name = ocs::tom::get<EH_name>(hep);
+      const char *eh_name = ocs::tom::get<EH_name>(hep);
       // we already handled the global host above
       if (hep == a->gep) {
          continue;

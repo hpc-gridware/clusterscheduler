@@ -298,13 +298,13 @@ sge_select_parallel_environment(sge_assignment_t *best, const lList *pe_list);
 
 /* -------------------------------------------------------------------------------- */
 
-bool is_requested(const lList *req, const char *attr);
-bool is_requested(const lListElem *job, const char *attr);
+bool is_requested(ocs::tom::ConstList<ocs::tom::CE> req, const char *attr);
+bool is_requested(ocs::tom::ConstElement<ocs::tom::JB> job, const char *attr);
 
-dispatch_t sge_queue_match_static(const sge_assignment_t *a, lListElem *queue, bool need_master);
+dispatch_t sge_queue_match_static(const sge_assignment_t *a, ocs::tom::Element<ocs::tom::QU> queue, bool need_master);
 
 dispatch_t
-sge_host_match_static(const sge_assignment_t *a, const lListElem *host);
+sge_host_match_static(const sge_assignment_t *a, ocs::tom::ConstElement<ocs::tom::EH> host);
 
 /* ------ DEBUG / output methods --------------------------------------------------- */
 
