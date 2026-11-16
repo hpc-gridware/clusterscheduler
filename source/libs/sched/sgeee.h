@@ -56,10 +56,12 @@
 #include "sge_sched_process_events.h"
 
 int sgeee_scheduler(scheduler_all_data_t *lists,
-                    lList *running_jobs,
-                    lList *finished_jobs,
-                    lList *pending_jobs,
+                    ocs::tom::List<ocs::tom::JB> running_jobs,
+                    ocs::tom::List<ocs::tom::JB> finished_jobs,
+                    ocs::tom::List<ocs::tom::JB> pending_jobs,
                     order_t *orders);
+OCS_TRANSITIONAL int sgeee_scheduler(scheduler_all_data_t *lists, lList *running_jobs, lList *finished_jobs,
+                                     lList *pending_jobs, order_t *orders);
 
 void sgeee_resort_pending_jobs(ocs::tom::List<ocs::tom::JB> job_list);
 OCS_TRANSITIONAL void sgeee_resort_pending_jobs(lList **job_list);
@@ -95,9 +97,12 @@ int  sort_host_list_by_share_load ( lList *host_list,       /* EH_Type */
 void sge_clear_job(ocs::tom::Element<ocs::tom::JB> job, bool is_clear_all);
 
 void
-sge_build_sgeee_orders(scheduler_all_data_t *lists, lList *running_jobs, lList *queued_jobs,
-                      lList *finished_jobs, order_t *orders,
-                      bool update_usage_and_configuration, int seqno, bool update_execd);
+sge_build_sgeee_orders(scheduler_all_data_t *lists, ocs::tom::List<ocs::tom::JB> running_jobs,
+                       ocs::tom::List<ocs::tom::JB> queued_jobs, ocs::tom::List<ocs::tom::JB> finished_jobs,
+                       order_t *orders, bool update_usage_and_configuration, int seqno, bool update_execd);
+OCS_TRANSITIONAL void sge_build_sgeee_orders(scheduler_all_data_t *lists, lList *running_jobs, lList *queued_jobs,
+                                             lList *finished_jobs, order_t *orders,
+                                             bool update_usage_and_configuration, int seqno, bool update_execd);
 
 /* CS-1239 step 5: share-tree compute primitives exposed so the qmaster
  * TET share-tree publish handler can recompute master-sharetree node

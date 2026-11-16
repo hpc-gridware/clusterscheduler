@@ -197,10 +197,10 @@ static sge_task_ref_t *task_ref_get_first_job_entry();
 static sge_task_ref_t *task_ref_get_next_job_entry();
 static void task_ref_copy_to_ja_task(sge_task_ref_t *tref, ocs::tom::Element<ocs::tom::JAT> ja_task);
 
-static void sge_do_sgeee_priority(lList *job_list, double min_tix, double max_tix,
-            bool do_nprio, bool do_nurg);
-static void sgeee_priority(lListElem *task, uint32_t jobid, double nsu, double npri,
-            double min_tix, double max_tix);
+static void sge_do_sgeee_priority(ocs::tom::List<ocs::tom::JB> job_list, double min_tix, double max_tix,
+                                  bool do_nprio, bool do_nurg);
+static void sgeee_priority(ocs::tom::Element<ocs::tom::JAT> task, uint32_t jobid, double nsu, double npri,
+                           double min_tix, double max_tix);
 static void recompute_prio(sge_task_ref_t *tref, ocs::tom::Element<ocs::tom::JAT> task, double nurg, double npri);
 
 
@@ -3324,7 +3324,7 @@ sge_calc_node_targets(lListElem *root, lListElem *node) {
  * @param lists all the lists of this scheduling run
  * @param running_jobs list of running jobs
  * @param queued_jobs list of queued jobs (should be sorted by tickets)
- * @param finished_jobs list of finished jobs
+ * @param finished_jobs list of finished jobs, unused
  * @param orders existing order list; the new orders are added to it
  * @param update_usage_and_configuration if true, the update usage orders are generated
  * @param seqno a seqno, changed with each scheduling run
@@ -3335,41 +3335,41 @@ sge_calc_node_targets(lListElem *root, lListElem *node) {
  *       parameter - it is read from the scheduler configuration inside, see
  *       `sconf_get_report_pjob_tickets()`.
  */
-void sge_build_sgeee_orders(scheduler_all_data_t *lists, lList *running_jobs, lList *queued_jobs,
-                            lList *finished_jobs, order_t *orders,
-                            bool update_usage_and_configuration, int seqno, bool update_execd) {
+void
+sge_build_sgeee_orders(scheduler_all_data_t *lists, const ocs::tom::List<ocs::tom::JB> running_jobs,
+                       const ocs::tom::List<ocs::tom::JB> queued_jobs,
+                       [[maybe_unused]] const ocs::tom::List<ocs::tom::JB> finished_jobs, order_t *orders,
+                       const bool update_usage_and_configuration, const int seqno, const bool update_execd) {
    DENTER(TOP_LAYER);
 
-   lList *up_list = nullptr;
-   lList *order_list = nullptr;
    int norders = 0;
    uint32_t max_pending_tasks_per_job = sconf_get_max_pending_tasks_per_job();
 
    bool max_queued_ticket_orders = sconf_get_report_pjob_tickets();
 
    if (orders->pendingOrderList == nullptr) {
-      orders->pendingOrderList = lCreateList("orderlist", OR_Type);
+      orders->pendingOrderList = ocs::tom::ListPtr<ocs::tom::OR>::create("orderlist").release();
    }
 
-   order_list = orders->pendingOrderList;
+   auto order_list = ocs::tom::List<ocs::tom::OR>(orders->pendingOrderList);
 
    /*-----------------------------------------------------------------
     * build ticket orders for running jobs
     *-----------------------------------------------------------------*/
 
    if (running_jobs) {
-      norders = lGetNumberOfElem(order_list);
+      norders = static_cast<int>(order_list.size());
 
-      DPRINTF("   got %d running jobs\n", lGetNumberOfElem(running_jobs));
+      DPRINTF("   got %d running jobs\n", static_cast<int>(running_jobs.size()));
 
-      for_each_rw_lv(job, running_jobs) {
+      for (const auto job : running_jobs) {
          const char *pe_str = nullptr;
          ocs::tom::ConstList<ocs::tom::JG> granted = nullptr;
-         lListElem *pe = nullptr;
+         ocs::tom::ConstElement<ocs::tom::PE> pe;
 
          for (ocs::tom::Element<ocs::tom::JAT> ja_task : ocs::tom::get<JB_ja_tasks>(job)) {
             if ((pe_str=ocs::tom::get<JAT_granted_pe>(ja_task))
-                  && (pe=pe_list_locate(all_lists->pe_list, pe_str))
+                  && (pe = ocs::tom::ConstElement<ocs::tom::PE>(pe_list_locate(all_lists->pe_list, pe_str)))
                   && ocs::tom::get<PE_control_slaves>(pe)) {
 
                granted=ocs::tom::get<JAT_granted_destin_identifier_list>(ja_task);
@@ -3378,11 +3378,12 @@ void sge_build_sgeee_orders(scheduler_all_data_t *lists, lList *running_jobs, lL
                granted=nullptr;
             }
 
-            order_list = sge_create_orders(order_list, ORT_tickets, job, ja_task, granted, update_execd);
+            order_list = ocs::tom::List<ocs::tom::OR>(sge_create_orders(order_list, ORT_tickets, job, ja_task,
+                                                                        granted, update_execd));
          }
       }
       DPRINTF("   added %d ticket orders for running jobs\n",
-               lGetNumberOfElem(order_list) - norders);
+               static_cast<int>(order_list.size()) - norders);
    }
 
 
@@ -3395,12 +3396,12 @@ void sge_build_sgeee_orders(scheduler_all_data_t *lists, lList *running_jobs, lL
  */
    if ((queued_jobs != nullptr) && (max_queued_ticket_orders || sconf_is_new_config())) {
       uint32_t free_qslots = 0;
-      norders = lGetNumberOfElem(order_list);
-      for_each_rw_lv(qep, lists->queue_list) {
+      norders = static_cast<int>(order_list.size());
+      for (const auto qep : ocs::tom::ConstList<ocs::tom::QU>(lists->queue_list)) {
          free_qslots += MAX(0, ((int)ocs::tom::get<QU_job_slots>(qep) - qinstance_slots_used(qep)));
       }
 
-      for_each_rw_lv(job, queued_jobs) {
+      for (const auto job : queued_jobs) {
          uint32_t tasks = 0;
          if (max_queued_ticket_orders) {
 
@@ -3411,21 +3412,29 @@ void sge_build_sgeee_orders(scheduler_all_data_t *lists, lList *running_jobs, lL
                if (++tasks > std::min(max_pending_tasks_per_job, free_qslots+1)) {
                   break;
                }
-               order_list = sge_create_orders(order_list, ORT_ptickets, job, ja_task, nullptr, false);
+               order_list = ocs::tom::List<ocs::tom::OR>(sge_create_orders(order_list, ORT_ptickets, job, ja_task,
+                                                                           ocs::tom::ConstList<ocs::tom::JG>(),
+                                                                           false));
             }
 
             if (job_get_not_enrolled_ja_tasks(job) > 0) {
-               lListElem *task_template = lFirstRW(static_cast<const lList *>(ocs::tom::get<JB_ja_template>(job)));
+               const auto task_template = ocs::tom::get<JB_ja_template>(job).front();
                if (task_template) {
-                  order_list = sge_create_orders(order_list, ORT_ptickets, job, task_template, nullptr, false);
+                  order_list = ocs::tom::List<ocs::tom::OR>(sge_create_orders(order_list, ORT_ptickets, job,
+                                                                              task_template,
+                                                                              ocs::tom::ConstList<ocs::tom::JG>(),
+                                                                              false));
                }
             }
          } else {
-            order_list = sge_create_orders(order_list, ORT_clear_pri_info, job, nullptr, nullptr, false);
+            order_list = ocs::tom::List<ocs::tom::OR>(sge_create_orders(order_list, ORT_clear_pri_info, job,
+                                                                        ocs::tom::ConstElement<ocs::tom::JAT>(),
+                                                                        ocs::tom::ConstList<ocs::tom::JG>(),
+                                                                        false));
          }
       }
       DPRINTF("   added %d ticket orders for queued jobs\n",
-               lGetNumberOfElem(order_list) - norders);
+               static_cast<int>(order_list.size()) - norders);
 
    }
 
@@ -3436,12 +3445,13 @@ void sge_build_sgeee_orders(scheduler_all_data_t *lists, lList *running_jobs, lL
        *-----------------------------------------------------------------*/
 
       if (sconf_is()) {
-         lListElem *node = nullptr;
          // built once and never released, so every use only takes a reference
          static const lDescr *const schedConfDesc = ocs_cull_descr_reduce(SC_Type, {SC_weight_tickets_override});
 
-         node = lCreateElem(schedConfDesc);
-         up_list = lCreateList("sched_conf_update", schedConfDesc);
+         // node and up_list stay raw: their reduced descriptor does not start with the first SC field, so no
+         // typed handle accepts them; the order takes over up_list (and node with it)
+         lListElem *node = lCreateElem(schedConfDesc);
+         lList *up_list = lCreateList("sched_conf_update", schedConfDesc);
 
          lAppendElem(up_list, node);
 
@@ -3451,7 +3461,7 @@ void sge_build_sgeee_orders(scheduler_all_data_t *lists, lList *running_jobs, lL
          auto order = ocs::tom::ElementPtr<ocs::tom::OR>::create();
          ocs::tom::set<OR_type>(order, ORT_sched_conf);
          ocs::tom::set<OR_joker>(order, up_list);
-         lAppendElem(order_list, std::move(order));
+         order_list.push_back(std::move(order));
 
          DPRINTF("   added 1 order for scheduler configuration\n");
 
@@ -3460,6 +3470,26 @@ void sge_build_sgeee_orders(scheduler_all_data_t *lists, lList *running_jobs, lL
    }
 
    DRETURN_VOID;
+}
+
+/**
+ * @brief sge_build_sgeee_orders() for an untyped caller
+ *
+ * @param lists all the lists of this scheduling run
+ * @param running_jobs the running jobs (`JB_Type`), may be nullptr
+ * @param queued_jobs the queued jobs (`JB_Type`), may be nullptr
+ * @param finished_jobs the finished jobs (`JB_Type`), may be nullptr
+ * @param orders existing order list; the new orders are added to it
+ * @param update_usage_and_configuration if true, the update usage orders are generated
+ * @param seqno a seqno, changed with each scheduling run
+ * @param update_execd if true, the queue information is sent along with the running job tickets
+ */
+void
+sge_build_sgeee_orders(scheduler_all_data_t *lists, lList *running_jobs, lList *queued_jobs, lList *finished_jobs,
+                       order_t *orders, bool update_usage_and_configuration, int seqno, bool update_execd) {
+   sge_build_sgeee_orders(lists, ocs::tom::List<ocs::tom::JB>(running_jobs), ocs::tom::List<ocs::tom::JB>(queued_jobs),
+                          ocs::tom::List<ocs::tom::JB>(finished_jobs), orders, update_usage_and_configuration, seqno,
+                          update_execd);
 }
 
 /*--------------------------------------------------------------------
@@ -3485,17 +3515,18 @@ void sge_build_sgeee_orders(scheduler_all_data_t *lists, lList *running_jobs, lL
  *
  * @param lists a ref to all lists in this scheduler
  * @param running_jobs a list of all running jobs
- * @param finished_jobs a list of all finished jobs
+ * @param finished_jobs a list of all finished jobs, unused
  * @param pending_jobs a list of all pending jobs
  * @param orders the orders produced by this run are added here
  *
  * @return 0 if everthing went fine, -1 if not
  */
-int sgeee_scheduler(scheduler_all_data_t *lists,
-                    lList *running_jobs,
-                    lList *finished_jobs,
-                    lList *pending_jobs,
-                    order_t *orders) {
+int
+sgeee_scheduler(scheduler_all_data_t *lists,
+                const ocs::tom::List<ocs::tom::JB> running_jobs,
+                [[maybe_unused]] const ocs::tom::List<ocs::tom::JB> finished_jobs,
+                const ocs::tom::List<ocs::tom::JB> pending_jobs,
+                order_t *orders) {
    DENTER(TOP_LAYER);
 
    uint64_t now = sge_get_gmt64();
@@ -3512,11 +3543,11 @@ int sgeee_scheduler(scheduler_all_data_t *lists,
    do_nprio = (sconf_get_weight_priority() != 0 || report_priority) ? true : false;
 
    /* clear SGEEE fields for queued jobs */
-   for_each_rw_lv(job, pending_jobs) {
-      sge_clear_job(ocs::tom::Element<ocs::tom::JB>(job), false);
+   for (const auto job : pending_jobs) {
+      sge_clear_job(job, false);
    }
-   for_each_rw_lv(job, running_jobs) {
-      sge_clear_job(ocs::tom::Element<ocs::tom::JB>(job), false);
+   for (const auto job : running_jobs) {
+      sge_clear_job(job, false);
    }
 
    /* calculate per job static urgency values */
@@ -3538,11 +3569,10 @@ int sgeee_scheduler(scheduler_all_data_t *lists,
    /* calculate tickets for pending jobs and compute their shares.
     * CS-1239: finished-job booking moved to worker thread - pass nullptr so
     * the (now inert) finished-jobs branch in sge_calc_tickets is skipped. */
-   sge_calc_tickets(lists, ocs::tom::List<ocs::tom::JB>(running_jobs), nullptr,
-                    ocs::tom::List<ocs::tom::JB>(pending_jobs), 1, &max_tix);
+   sge_calc_tickets(lists, running_jobs, nullptr, pending_jobs, 1, &max_tix);
 
    /* correct the shares for the running jobs */
-   seqno = sge_calc_tickets(lists, ocs::tom::List<ocs::tom::JB>(running_jobs), nullptr, nullptr, 0, &max_tix);
+   seqno = sge_calc_tickets(lists, running_jobs, nullptr, nullptr, 0, &max_tix);
 
    if (max_tix == -1) { /* we have no running jobs and the tickets are disabled. */
       max_tix = 0;
@@ -3591,9 +3621,9 @@ int sgeee_scheduler(scheduler_all_data_t *lists,
          and the sharetree changes are processed. The pending tickets are calculated at the
          end of the scheduler cycle.
          CS-1239: finished-job booking + delete order moved to worker thread - pass
-         nullptr so the (now inert) finished-jobs branch is skipped. */
-      sge_build_sgeee_orders(lists, running_jobs, nullptr, nullptr, orders, true, seqno,
-                             update_execd);
+         empty handles so the (now inert) finished-jobs branch is skipped. */
+      sge_build_sgeee_orders(lists, running_jobs, ocs::tom::List<ocs::tom::JB>(), ocs::tom::List<ocs::tom::JB>(),
+                             orders, true, seqno, update_execd);
    }
 
    if (prof_is_active(SGE_PROF_SCHEDLIB4)) {
@@ -3603,6 +3633,25 @@ int sgeee_scheduler(scheduler_all_data_t *lists,
    }
 
    DRETURN(0);
+}
+
+/**
+ * @brief sgeee_scheduler() for an untyped caller
+ *
+ * @param lists a ref to all lists in this scheduler
+ * @param running_jobs the running jobs (`JB_Type`)
+ * @param finished_jobs the finished jobs (`JB_Type`)
+ * @param pending_jobs the pending jobs (`JB_Type`)
+ * @param orders the orders produced by this run are added here
+ *
+ * @return as sgeee_scheduler()
+ */
+int
+sgeee_scheduler(scheduler_all_data_t *lists, lList *running_jobs, lList *finished_jobs, lList *pending_jobs,
+                order_t *orders) {
+   return sgeee_scheduler(lists, ocs::tom::List<ocs::tom::JB>(running_jobs),
+                          ocs::tom::List<ocs::tom::JB>(finished_jobs), ocs::tom::List<ocs::tom::JB>(pending_jobs),
+                          orders);
 }
 
 /**
@@ -3621,13 +3670,16 @@ int sgeee_scheduler(scheduler_all_data_t *lists,
  *
  * @note MT-NOTE: sge_do_sgeee_priority() is MT safe
  */
-static void sge_do_sgeee_priority(lList *job_list, double min_tix, double max_tix,
-                                  bool do_nprio, bool do_nurg) {
+static void
+sge_do_sgeee_priority(const ocs::tom::List<ocs::tom::JB> job_list, const double min_tix, const double max_tix,
+                      const bool do_nprio, const bool do_nurg) {
+   DENTER(TOP_LAYER);
+
    uint32_t jobid;
    bool enrolled;
    double nsu = 0.5, npri = 0.5;
 
-   for_each_rw_lv (job, job_list) {
+   for (const auto job : job_list) {
       jobid = ocs::tom::get<JB_job_number>(job);
 
       if (do_nurg)
@@ -3643,10 +3695,12 @@ static void sge_do_sgeee_priority(lList *job_list, double min_tix, double max_ti
       }
 
       if (!enrolled) {
-         lListElem *task = lFirstRW(static_cast<const lList *>(ocs::tom::get<JB_ja_template>(job)));
+         const auto task = ocs::tom::get<JB_ja_template>(job).front();
          sgeee_priority(task, jobid, nsu, npri, min_tix, max_tix);
       }
    }
+
+   DRETURN_VOID;
 }
 
 /**
@@ -3658,15 +3712,17 @@ static void sge_do_sgeee_priority(lList *job_list, double min_tix, double max_ti
  * ticket and urgency value are applied.
  *
  * @param task The task whose priority is computed
- * @param jobid The jobs id
+ * @param jobid The jobs id, only for the disabled debug output
  * @param nsu The normalized urgency value that applies to all tasks of the job.
+ * @param npri The normalized POSIX priority that applies to all tasks of the job.
  * @param min_tix minimum ticket amount
  * @param max_tix maximum ticket amount
  *
  * @note MT-NOTE: sgeee_priority() is MT safe
  */
-static void sgeee_priority(lListElem *task, uint32_t jobid, double nsu,
-                           double npri, double min_tix, double max_tix) {
+static void
+sgeee_priority(const ocs::tom::Element<ocs::tom::JAT> task, [[maybe_unused]] const uint32_t jobid, const double nsu,
+               const double npri, const double min_tix, const double max_tix) {
    DENTER(TOP_LAYER);
 
    double nta, geee_priority;
@@ -3687,7 +3743,7 @@ static void sgeee_priority(lListElem *task, uint32_t jobid, double nsu,
                    weight_priority * npri;
 /*
    DPRINTF("SGEEE priority (" sge_u32 "." sge_u32 ") %f = %f * %f + %f * %f + %f * %f\n",
-      jobid, lGetUlong(task, JAT_task_number), geee_priority,
+      jobid, ocs::tom::get<JAT_task_number>(task), geee_priority,
       weight_urgency, nsu, weight_ticket, nta, weight_priority, npri);
 */
    ocs::tom::set<JAT_ntix>(task, nta);
