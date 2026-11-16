@@ -209,6 +209,10 @@ namespace ocs::tom {
       if (ep == nullptr) {
          throw_field_exception(FieldException::Reason::NullElement, NoName, lp->descr);
       }
+      // the comparisons below read the element by the list's sort positions, so check its layout first (CS-3112)
+      if (!same_layout(ep->descr, lp->descr)) [[unlikely]] {
+         throw_field_exception(FieldException::Reason::WrongLayout, NoName, ep->descr, lp->descr);
+      }
       lListElem *before = lp->first;
       while (before != nullptr && sort_compare(ep, before, so) > 0) {
          before = before->next;

@@ -742,6 +742,8 @@ int lAppendList(lList *lp0, lList *lp1) {
             LERROR(LELISTNULL);
             break;
          case ocs::tom::FieldException::Reason::WrongType:
+         case ocs::tom::FieldException::Reason::WrongLayout:
+            // lists of another type or another reduction, as lCompListDescr() reported them before
             LERROR(LEDIFFDESCR);
             break;
          default:
@@ -1071,7 +1073,8 @@ lDechainList(lList *source, lList **target, lListElem *ep) {
    if (*target == nullptr) {
       *target = lCreateList(lGetListName(source), source->descr);
    } else {
-      if (lCompListDescr(source->descr, (*target)->descr) != 0) {
+      // the elements keep their values, so the target must have the same layout, not only the same fields (CS-3112)
+      if (!ocs::tom::same_layout(source->descr, (*target)->descr)) {
          CRITICAL("Dechaining element into a different list !!!\n");
          ocs::TerminationManager::trigger_abort();
       }

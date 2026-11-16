@@ -38,6 +38,7 @@
 #include "cull/cull_lerrno.h"
 #include "cull/cull_state.h"
 #include "cull/ocs_cull_descr.h"
+#include "tom/cull_hash.h"
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/tom/ocs_tom_all.h"
 #include "tom/ocs_Element.h"
@@ -339,6 +340,99 @@ test_create_with_descriptor() {
 }
 
 /**
+ * @brief An element linked into a list must have the layout of the list's descriptor (CS-3112)
+ *
+ * Elements are created with the descriptor of a list that exists already, and
+ * an element or a list of another layout is refused instead of borrowing a
+ * descriptor that gives its values other slots.
+ *
+ * @return nothing; CHECK records the results
+ */
+static void
+test_layout() {
+   const lDescr *reduced = ocs_cull_descr_reduce(JB_Type, {JB_job_number, JB_job_name});
+
+   // emplace_back and lAddElemUlong on an existing reduced list create the element with the list's descriptor
+   auto reduced_list = ListPtr<JB>::create("reduced", reduced);
+   const Element<JB> emplaced = reduced_list.get().emplace_back<JB_job_number>(7u);
+   lList *old_list = lCreateList("old reduced", reduced);
+   const lListElem *added = lAddElemUlong(&old_list, JB_job_number, 8, JB_Type);
+   CHECK(29, "emplace_back and lAddElemUlong on a reduced list give an element with the list's descriptor",
+         lGetElemDescr(emplaced) == lGetListDescr(reduced_list.get()) && emplaced.get<JB_job_number>() == 7 &&
+         !emplaced.has<JB_owner>() && reduced_list.get().find_first<JB_job_number>(7u) == emplaced &&
+         added != nullptr && lGetElemDescr(added) == lGetListDescr(old_list) &&
+         lGetUlong(added, JB_job_number) == 8 && lGetElemUlong(old_list, JB_job_number, 8) == added);
+   lFreeList(&old_list);
+
+   // a full element into a reduced list, and a reduced element into a full list, are refused and kept
+   auto full_list = ListPtr<JB>::create("full");
+   auto full_job = ElementPtr<JB>::create();
+   auto reduced_job = ElementPtr<JB>::create(reduced);
+   const bool refused =
+      throws_field_exception([&] { static_cast<void>(reduced_list.get().push_back(std::move(full_job))); },
+                             FieldException::Reason::WrongLayout, "layout") &&
+      throws_field_exception([&] { static_cast<void>(reduced_list.get().push_front(std::move(full_job))); },
+                             FieldException::Reason::WrongLayout, "layout") &&
+      throws_field_exception([&] { static_cast<void>(full_list.get().push_back(std::move(reduced_job))); },
+                             FieldException::Reason::WrongLayout, "layout");
+   CHECK(30, "push_back and push_front of an element of another layout throw WrongLayout and keep the element",
+         refused && full_job && reduced_job && reduced_list.get().size() == 1 && full_list.get().size() == 0);
+
+   // the old interface aborts, as for the other programming errors of lAppendElem()
+   CHECK(31, "lAppendElem and lInsertElem of an element of another layout abort",
+         aborts([&] { lAppendElem(reduced_list.get(), full_job.release()); }) &&
+         aborts([&] { lInsertElem(full_list.get(), nullptr, reduced_job.release()); }));
+
+   // the same pointer, and an equal descriptor at another address, are accepted
+   reduced_job.get().set<JB_job_number>(9u);
+   const Element<JB> same = reduced_list.get().push_back(std::move(reduced_job));
+   const lDescr *copy = ocs_cull_descr_private(reduced);
+   auto copied_job = ElementPtr<JB>::create(copy);
+   const bool other_address = lGetElemDescr(copied_job.get()) != lGetListDescr(reduced_list.get());
+   copied_job.get().set<JB_job_number>(10u);
+   const Element<JB> equal = reduced_list.get().push_back(std::move(copied_job));
+   ocs_cull_descr_release(&copy);
+   full_list.get().push_back(std::move(full_job));
+   CHECK(32, "an element with the list's descriptor or an equal one at another address is linked in",
+         other_address && reduced_list.get().size() == 3 && full_list.get().size() == 1 &&
+         lGetElemDescr(same) == lGetListDescr(reduced_list.get()) &&
+         lGetElemDescr(equal) == lGetListDescr(reduced_list.get()) && equal.get<JB_job_number>() == 10 &&
+         reduced_list.get().find_first<JB_job_number>(10u) == equal);
+
+   // whole lists: splice and lAppendList compare the layouts as well
+   auto more_full = ListPtr<JB>::create("more full");
+   more_full.get().emplace_back<JB_job_number>(11u);
+   lList *old_full = lCreateList("old full", JB_Type);
+   lAddElemUlong(&old_full, JB_job_number, 12, JB_Type);
+   CHECK(33, "splice and lAppendList between a reduced and a full list refuse, moving nothing",
+         throws_field_exception([&] { reduced_list.get().splice(more_full.get()); },
+                                FieldException::Reason::WrongLayout, "layout") &&
+         lAppendList(reduced_list.get(), old_full) == -1 && reduced_list.get().size() == 3 &&
+         more_full.get().size() == 1 && lGetNumberOfElem(old_full) == 1);
+   lFreeList(&old_full);
+
+   // a list that got a hash table later holds a private copy of the type's descriptor whose flags differ
+   // (CULL_HASH); elements of the type itself still have its layout and must be linked in
+   lList *hashed = lCreateListHash("hashed", JB_Type, false);
+   const bool hash_created = cull_hash_new(hashed, JB_owner, false) == 1;
+   const bool private_copy = lGetListDescr(hashed) != JB_Type;
+   lListElem *plain_job = lCreateElem(JB_Type);
+   lSetUlong(plain_job, JB_job_number, 13);
+   lSetString(plain_job, JB_owner, "someone");
+   lAppendElem(hashed, plain_job);
+   auto typed_job = ElementPtr<JB>::create();
+   typed_job.get().set<JB_job_number>(14u);
+   const Element<JB> typed = List<JB>(hashed).push_back(std::move(typed_job));
+   CHECK(34, "elements of the full type are linked into a list whose descriptor is a private copy with hash "
+             "flags",
+         hash_created && private_copy && lGetNumberOfElem(hashed) == 2 &&
+         lGetElemStr(hashed, JB_owner, "someone") == plain_job && typed.get<JB_job_number>() == 14);
+   lFreeList(&hashed);
+
+   ocs_cull_descr_release(&reduced);
+}
+
+/**
  * @brief TRT-02: the correct counterparts of the sources the build must fail to compile
  * @return nothing; CHECK records the results
  */
@@ -406,5 +500,15 @@ int main(int argc, char *argv[]) {
        "the list and the element have the given descriptor and the list the given name; another type throws "
        "WrongType naming it, a missing descriptor throws NullDescriptor",
        {{"HDL-03", "covers"}}, {25, 26, 27, 28}, test_create_with_descriptor},
+      {"HANDLE-07", "layout",
+       "an element or a list linked into a list must have the layout of the list's descriptor (CS-3112)",
+       {"emplace_back and lAddElemUlong on an existing reduced list",
+        "push_back, push_front, lAppendElem and lInsertElem of a full element into a reduced list and the opposite",
+        "push_back of an element with the list's descriptor and with an equal one at another address",
+        "splice and lAppendList between a reduced and a full list",
+        "lAppendElem and push_back of elements of the full type into a list with a hashed private descriptor copy"},
+       "the added element has the list's descriptor and its key is found; another layout throws WrongLayout or "
+       "aborts in the old interface and leaves both sides unchanged; the same or an equal layout is linked in",
+       {{"HDL-03", "covers"}}, {29, 30, 31, 32, 33, 34}, test_layout},
    });
 }

@@ -846,7 +846,8 @@ cqueue_mod_sublist(lListElem *this_elem, lList **answer_list, lListElem *reduced
                org_list = lCreateList("", lGetElemDescr(mod_elem));
                lSetList(this_elem, attribute_name, org_list);
             }
-            org_elem = lCreateElem(lGetElemDescr(mod_elem));
+            // the element gets the layout of the list it goes into, which may exist already (CS-3112)
+            org_elem = lCreateElem(lGetListDescr(org_list));
             lSetHost(org_elem, sublist_host_name, name);
             lAppendElem(org_list, org_elem);
          }

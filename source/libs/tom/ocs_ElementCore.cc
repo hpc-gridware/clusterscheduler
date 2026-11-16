@@ -434,6 +434,23 @@ namespace ocs::tom {
       return 0;
    }
 
+   bool same_layout_entries(const lDescr *a, const lDescr *b) noexcept {
+      if (a == nullptr || b == nullptr) {
+         return false;
+      }
+      if (a == b) {
+         return true;
+      }
+      int i = 0;
+      for (; mt_get_type(a[i].mt) != lEndT && mt_get_type(b[i].mt) != lEndT; i++) {
+         if (a[i].nm != b[i].nm || mt_get_type(a[i].mt) != mt_get_type(b[i].mt) || a[i].off != b[i].off) {
+            return false;
+         }
+      }
+      // both end at the same position, or one is longer
+      return mt_get_type(a[i].mt) == lEndT && mt_get_type(b[i].mt) == lEndT;
+   }
+
    int checked_pos(const lListElem *ep, const int nm, const FieldType type) {
       if (ep == nullptr) [[unlikely]] {
          throw_field_exception(FieldException::Reason::NullElement, nm, nullptr);

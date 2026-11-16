@@ -388,19 +388,24 @@ int main(int /*argc*/, char * /*argv*/[]) {
       lSetUlong(elem, TEST_ulong, 0);
       lSetUlong64(elem, TEST_ulong64, 0);
       lSetBool(elem, TEST_bool, false);
+      // the levels alternate between the types as the sublist fields do: TEST_list holds TEST1 elements,
+      // TEST1_list holds TEST elements; an element of the other type would not have the list's layout
+      lListElem *elem1 = lCreateElem(TEST1_Type);
+      lSetInt(elem1, TEST1_int, 0);
+      lSetString(elem1, TEST1_string, "zero");
       for (int i = 0; i < 5; i++) {
          lList *tmp_list = lCreateList("", TEST1_Type);
          lListElem *tmp_elem = lCopyElem(elem);
          for (int j = 0; j < 5; j++) {
             lList *tmp_list1 = lCreateList("", TEST_Type);
-            lListElem *tmp_elem1 = lCopyElem(elem);
+            lListElem *tmp_elem1 = lCopyElem(elem1);
             for (int k = 0; k < 5; k++) {
                lList *tmp_list2 = lCreateList("", TEST1_Type);
                lListElem *tmp_elem2 = lCopyElem(elem);
                lSetList(tmp_elem2, TEST_list, tmp_list2);
                lAppendElem(tmp_list1, tmp_elem2);
             }
-            lSetList(tmp_elem1, TEST_list, tmp_list1);
+            lSetList(tmp_elem1, TEST1_list, tmp_list1);
             lAppendElem(tmp_list, tmp_elem1);
          }
          lSetList(tmp_elem, TEST_list, tmp_list);
@@ -412,6 +417,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
             list1 != nullptr && lGetNumberOfElem(list1) == 5 && lCountPresent(lGetListDescr(list1)) == 4);
       lFreeWhat(&what);
       lFreeElem(&elem);
+      lFreeElem(&elem1);
       lFreeList(&list);
       lFreeList(&list1);
    }

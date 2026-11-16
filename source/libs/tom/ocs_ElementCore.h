@@ -135,6 +135,38 @@ namespace ocs::tom {
    int layout_difference(const lDescr *a, const lDescr *b) noexcept;
 
    /**
+    * @brief Whether two descriptors have the same layout, the entry by entry part of #same_layout
+    * @param a the first descriptor, or nullptr
+    * @param b the second descriptor, or nullptr
+    * @return true if both are the same pointer, or have the same length and, at every position, the same
+    *         field number, field type and slot offset; false if one or both are nullptr
+    */
+   bool same_layout_entries(const lDescr *a, const lDescr *b) noexcept;
+
+   /**
+    * @brief Whether elements of two descriptors keep their values at the same slots (CS-3112)
+    *
+    * An element's values are laid out by the descriptor it was created with:
+    * a reduced descriptor has the full length of its type, marks the fields
+    * it leaves out #OCS_CULL_ABSENT and packs the others into fewer slots. An
+    * element linked into a list borrows the list's descriptor, so both must
+    * have the same layout: the same length and, at every position, the same
+    * field number, field type and slot offset. Attributes such as the hash
+    * flags a list adds to a private copy of its descriptor are not compared.
+    *
+    * Equal reductions share one interned descriptor and a full one is the
+    * static block of its type, so the common case is the same pointer, which
+    * is decided inline without reading an entry.
+    *
+    * @param a the first descriptor, or nullptr
+    * @param b the second descriptor, or nullptr
+    * @return true if both are the same pointer or have the same layout; false if one or both are nullptr
+    */
+   [[nodiscard]] inline bool same_layout(const lDescr *a, const lDescr *b) noexcept {
+      return a == b ? a != nullptr : same_layout_entries(a, b);
+   }
+
+   /**
     * @brief The position of a field an element must hold, with the field type it must have
     *
     * The checks of an accessor whose field number is known only at run time,

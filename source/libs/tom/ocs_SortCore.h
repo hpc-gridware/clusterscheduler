@@ -125,7 +125,8 @@ namespace ocs::tom {
     * @param lp the list, sorted by @p so, which takes the element over
     * @param ep the element
     * @param so the order
-    * @throw FieldException with reason NullList, NullElement or BoundElement, or DuplicateKey in a debug build;
+    * @throw FieldException with reason NullList, NullElement, WrongLayout if @p ep was created with a
+    *        descriptor of another layout than the list's, BoundElement, or DuplicateKey in a debug build;
     *        nothing is changed then
     */
    void insert_sorted(lList *lp, lListElem *ep, const lSortOrder *so);

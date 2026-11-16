@@ -894,9 +894,10 @@ namespace ocs::tom {
        * @brief Append an element, which the list takes over, as std::list::push_back() and lAppendElem() do
        * @param element the element, empty afterwards
        * @return the handle on the element, now in the list
-       * @throw FieldException if the handle is empty, or in a debug build with reason DuplicateKey when
-       *        the list holds a key of one of the element's unique fields; the element then stays with
-       *        @p element
+       * @throw FieldException if the handle is empty, with reason WrongLayout if the element was created with
+       *        a descriptor of another layout than the list's, e.g. a full element for a reduced list
+       *        (CS-3112), or in a debug build with reason DuplicateKey when the list holds a key of one of
+       *        the element's unique fields; the element then stays with @p element
        */
       Element<T> push_back(ElementPtr<T> &&element) const {
          check_list();
@@ -912,9 +913,9 @@ namespace ocs::tom {
        * @brief Insert an element at the front, as std::list::push_front() and lInsertElem() with no predecessor do
        * @param element the element, which the list takes over; empty afterwards
        * @return the handle on the element, now in the list
-       * @throw FieldException if this handle or @p element is empty, or in a debug build with reason
-       *        DuplicateKey when the list holds a key of one of the element's unique fields; the
-       *        element then stays with @p element
+       * @throw FieldException if this handle or @p element is empty, with reason WrongLayout as
+       *        #push_back, or in a debug build with reason DuplicateKey when the list holds a key of one
+       *        of the element's unique fields; the element then stays with @p element
        */
       Element<T> push_front(ElementPtr<T> &&element) const {
          return insert(nullptr, std::move(element));
@@ -926,7 +927,8 @@ namespace ocs::tom {
        * @param element the element, which the list takes over; empty afterwards
        * @return the handle on the element, now in the list
        * @throw FieldException if a handle is empty, with reason ForeignList if @p after is not in this
-       *        list, or in a debug build with reason DuplicateKey; the element then stays with @p element
+       *        list, WrongLayout as #push_back, or in a debug build with reason DuplicateKey; the element
+       *        then stays with @p element
        */
       Element<T> insert_after(const ConstElement<T> after, ElementPtr<T> &&element) const {
          check_member(after);
@@ -961,9 +963,9 @@ namespace ocs::tom {
       /**
        * @brief Move every element of a list to the end of this one and free the other list, as std::list::splice() and lAddList() do
        * @param other the list, empty afterwards; an empty owning handle adds nothing
-       * @throw FieldException if this handle is empty, or in a debug build with reason DuplicateKey when
-       *        an element of @p other holds a key of a unique field that this list holds; nothing is
-       *        changed then
+       * @throw FieldException if this handle is empty, with reason WrongLayout if @p other has a descriptor
+       *        of another layout (CS-3112), or in a debug build with reason DuplicateKey when an element of
+       *        @p other holds a key of a unique field that this list holds; nothing is changed then
        */
       void splice(ListPtr<T> &&other) const {
          check_list();
@@ -979,9 +981,9 @@ namespace ocs::tom {
        * @brief Move every element of another list to the end of this one, as std::list::splice() and lAppendList() do
        * @param other the list, which stays and is empty afterwards; an empty handle or this list
        *        itself moves nothing
-       * @throw FieldException if this handle is empty, or in a debug build with reason DuplicateKey when
-       *        an element of @p other holds a key of a unique field that this list holds; nothing is
-       *        changed then
+       * @throw FieldException if this handle is empty, with reason WrongLayout if @p other has a descriptor
+       *        of another layout (CS-3112), or in a debug build with reason DuplicateKey when an element of
+       *        @p other holds a key of a unique field that this list holds; nothing is changed then
        */
       void splice(const List<T> other) const {
          check_list();
@@ -1155,6 +1157,10 @@ namespace ocs::tom {
       /**
        * @brief Create an element with a key and append it, as std::list::emplace_back() and lAddElemStr(),
        *        lAddElemUlong(), lAddElemUlong64() and lAddElemHost() do
+       *
+       * The element gets the list's descriptor, so a reduced list gets a
+       * reduced element (CS-3112).
+       *
        * @tparam F the key field, of this object type, a number, string or host field
        * @param key the key; a string or host name is copied
        * @return the handle on the new element, now in the list

@@ -74,6 +74,24 @@ namespace ocs::tom {
       }
 
       /**
+       * @brief Check that an element to be linked into a list has the layout of the list's descriptor (CS-3112)
+       *
+       * A linked element borrows the list's descriptor, so its values must lie
+       * at the slots that descriptor gives. Always on: the same descriptor
+       * pointer, the common case, costs one compare; only different pointers
+       * compare the entries.
+       *
+       * @param lp the list
+       * @param ep the element
+       * @throw FieldException with reason WrongLayout if the layouts differ
+       */
+      void check_layout(const lList *lp, const lListElem *ep) {
+         if (!same_layout(ep->descr, lp->descr)) [[unlikely]] {
+            throw_field_exception(FieldException::Reason::WrongLayout, NoName, ep->descr, lp->descr);
+         }
+      }
+
+      /**
        * @brief Check that an element is in a list
        * @param lp the list
        * @param ep the element
@@ -439,6 +457,7 @@ namespace ocs::tom {
          throw_null_elem(lp->descr);
       }
       check_free(ep);
+      check_layout(lp, ep);
       check_unique_on_add(lp, ep);
 
       if (after != nullptr) {
@@ -471,6 +490,7 @@ namespace ocs::tom {
          throw_null_elem(lp->descr);
       }
       check_free(ep);
+      check_layout(lp, ep);
       check_unique_on_add(lp, ep);
 
       if (lp->last) {
@@ -505,8 +525,11 @@ namespace ocs::tom {
       if (dst == nullptr || src == nullptr) {
          throw_null_list();
       }
-      if (layout_difference(dst->descr, src->descr) != 0) {
-         throw_field_exception(FieldException::Reason::WrongType, NoName, src->descr, dst->descr);
+      // the elements move with their values, so the layouts must match, not only the types (CS-3112)
+      if (!same_layout(src->descr, dst->descr)) [[unlikely]] {
+         throw_field_exception(src->descr[0].nm != dst->descr[0].nm ? FieldException::Reason::WrongType
+                                                                    : FieldException::Reason::WrongLayout,
+                               NoName, src->descr, dst->descr);
       }
       while (src->first) {
          lListElem *ep = src->first;
@@ -554,11 +577,15 @@ namespace ocs::tom {
        *
        * A list that exists already must hold elements of the descriptor's
        * type with the key field; before CS-3045 an element of another type
-       * was appended, and the list held two types.
+       * was appended, and the list held two types. The element is created
+       * with the list's descriptor, which for a list that exists already may
+       * be a reduction of @p descr; before CS-3112 it was created with
+       * @p descr, and its values lay at other slots than the list's
+       * descriptor gives.
        *
        * @param lp the list, created if nullptr
-       * @param pos the position of the key field in @p descr
-       * @param descr the descriptor of the element
+       * @param pos the position of the key field in @p descr, the same in every descriptor of its type
+       * @param descr the descriptor of a list created here and its element; an existing list gives its own
        * @param list_name the name of a list created here
        * @param store sets the key into the new element
        * @return the element, now in the list
@@ -576,7 +603,8 @@ namespace ocs::tom {
          }
          lListElem *ep = nullptr;
          try {
-            ep = create_elem(descr);
+            // the element shares the list's descriptor, which holds the key field, checked above
+            ep = create_elem(lp->descr);
             store(ep);
             append_elem(lp, ep);
          } catch (...) {

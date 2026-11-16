@@ -56,7 +56,9 @@ namespace ocs::tom {
          NullList,      ///< the list is nullptr
          NullDescriptor,///< an element or a list was to be created without a descriptor
          BoundElement,  ///< an element to be added is bound in a list or an object already
-         NullKey        ///< an element was to be added or found by a key that is nullptr
+         NullKey,       ///< an element was to be added or found by a key that is nullptr
+         WrongLayout    ///< an element or a list to be added to a list was created with a descriptor of another
+                        ///< layout, e.g. a full element for a reduced list (CS-3112)
       };
 
       /**

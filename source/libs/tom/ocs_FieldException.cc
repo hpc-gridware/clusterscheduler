@@ -64,6 +64,28 @@ namespace ocs::tom {
       return nm == NoName ? std::string{"no field"} : std::string{lNm2Str(nm)};
    }
 
+   /**
+    * @brief The layout of a descriptor, for messages
+    * @param descr the descriptor, or nullptr
+    * @return "full", "reduced to <n> of <m> fields" or "unknown"
+    */
+   static std::string layout_name(const lDescr *descr) {
+      if (descr == nullptr) {
+         return "unknown";
+      }
+      int length = 0;
+      int present = 0;
+      for (; mt_get_type(descr[length].mt) != lEndT; length++) {
+         if (descr[length].off != OCS_CULL_ABSENT) {
+            present++;
+         }
+      }
+      if (present == length) {
+         return "full";
+      }
+      return "reduced to " + std::to_string(present) + " of " + std::to_string(length) + " fields";
+   }
+
    void throw_field_exception(const FieldException::Reason reason, const int nm, const lDescr *descr, const lDescr *expected) {
       std::string message;
       switch (reason) {
@@ -110,6 +132,10 @@ namespace ocs::tom {
             break;
          case FieldException::Reason::BoundElement:
             message = "an element of type " + type_name(descr) + " to be added is bound in a list or an object already";
+            break;
+         case FieldException::Reason::WrongLayout:
+            message = "an element of type " + type_name(descr) + " (descriptor " + layout_name(descr) +
+                      ") is to be added to a list of another layout (descriptor " + layout_name(expected) + ")";
             break;
       }
       throw FieldException(reason, nm, message);

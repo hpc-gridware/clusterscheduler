@@ -32,8 +32,9 @@
  * - a programming error throws FieldException: a null list (NullList), a null
  *   element (NullElement), no descriptor (NullDescriptor), an element bound in
  *   a list or an object (BoundElement), an element of another list
- *   (ForeignList), lists of different types (WrongType), a duplicate key in a
- *   unique field in a debug build (DuplicateKey);
+ *   (ForeignList), lists of different types (WrongType), an element or a list
+ *   whose descriptor has another layout than the list's (WrongLayout), a
+ *   duplicate key in a unique field in a debug build (DuplicateKey);
  * - a failure at run time throws ListCoreError, which carries the error number
  *   the old function set, so that its wrapper can set it again.
  */
@@ -167,8 +168,9 @@ namespace ocs::tom {
     * @param lp the list, which takes the element over
     * @param after the predecessor in @p lp, nullptr for the front
     * @param ep the element
-    * @throw FieldException with reason NullList, NullElement, BoundElement if @p ep is bound already, or
-    *        DuplicateKey in a debug build; nothing is changed then
+    * @throw FieldException with reason NullList, NullElement, BoundElement if @p ep is bound already,
+    *        WrongLayout if @p ep was created with a descriptor of another layout than the list's (CS-3112),
+    *        or DuplicateKey in a debug build; nothing is changed then
     */
    void insert_elem(lList *lp, lListElem *after, lListElem *ep);
 
@@ -176,8 +178,9 @@ namespace ocs::tom {
     * @brief Append a free element, as lAppendElem()
     * @param lp the list, which takes the element over
     * @param ep the element
-    * @throw FieldException with reason NullList, NullElement, BoundElement if @p ep is bound already, or
-    *        DuplicateKey in a debug build; nothing is changed then
+    * @throw FieldException with reason NullList, NullElement, BoundElement if @p ep is bound already,
+    *        WrongLayout if @p ep was created with a descriptor of another layout than the list's (CS-3112),
+    *        or DuplicateKey in a debug build; nothing is changed then
     */
    void append_elem(lList *lp, lListElem *ep);
 
@@ -202,8 +205,9 @@ namespace ocs::tom {
     * @brief Move every element of a list to the end of another, as lAppendList()
     * @param dst the list taking the elements
     * @param src the list giving them, empty afterwards
-    * @throw FieldException with reason NullList, WrongType if the lists are of different types, or
-    *        DuplicateKey in a debug build; in the last case the elements before the duplicate are moved and
+    * @throw FieldException with reason NullList, WrongType if the lists are of different types, WrongLayout
+    *        if they are of one type with descriptors of different layouts, or DuplicateKey in a debug build;
+    *        in the last case the elements before the duplicate are moved and
     *        the others stay in @p src
     */
    void append_list(lList *dst, lList *src);
@@ -219,13 +223,14 @@ namespace ocs::tom {
    /**
     * @brief Add an element with a string key, as lAddElemStr()
     *
-    * Creates the list if @p lp is nullptr, creates an element of @p descr,
-    * sets the key and appends the element.
+    * Creates the list with @p descr if @p lp is nullptr, creates an element
+    * with the list's descriptor, sets the key and appends the element. An
+    * existing list may be reduced; it must hold the key field (CS-3112).
     *
     * @param lp the list, created if nullptr
     * @param nm the key field, a string field of @p descr
     * @param key the key, copied
-    * @param descr the descriptor of the element
+    * @param descr the descriptor of a list created here; the element gets the list's descriptor
     * @return the element, now in the list
     * @throw FieldException with reason NullDescriptor, NullKey, AbsentField if @p descr does not hold
     *        @p nm, WrongType if it is not a string field or if the list is of another type or reduced
@@ -239,7 +244,7 @@ namespace ocs::tom {
     * @param lp the list, created if nullptr
     * @param nm the key field, a host field of @p descr
     * @param key the host name, copied
-    * @param descr the descriptor of the element
+    * @param descr the descriptor of a list created here; the element gets the list's descriptor
     * @return the element, now in the list
     * @throw FieldException and ListCoreError as #add_elem_str
     */
@@ -250,7 +255,7 @@ namespace ocs::tom {
     * @param lp the list, created if nullptr
     * @param nm the key field, a 32 bit field of @p descr
     * @param key the key
-    * @param descr the descriptor of the element
+    * @param descr the descriptor of a list created here; the element gets the list's descriptor
     * @return the element, now in the list
     * @throw FieldException and ListCoreError as #add_elem_str, without NullKey
     */
@@ -261,7 +266,7 @@ namespace ocs::tom {
     * @param lp the list, created if nullptr
     * @param nm the key field, a 64 bit field of @p descr
     * @param key the key
-    * @param descr the descriptor of the element
+    * @param descr the descriptor of a list created here; the element gets the list's descriptor
     * @return the element, now in the list
     * @throw FieldException and ListCoreError as #add_elem_str, without NullKey
     */
@@ -278,7 +283,7 @@ namespace ocs::tom {
     * @param lp the list, created if nullptr
     * @param pos the position of the key field in @p descr, a field of type @p T
     * @param key the key; a string or host name not nullptr, copied
-    * @param descr the descriptor of the element, not nullptr
+    * @param descr the descriptor of a list created here, not nullptr; the element gets the list's descriptor
     * @return the element, now in the list
     * @throw FieldException with reason WrongType if the list is of another type or reduced without the key
     *        field, or DuplicateKey in a debug build; a list created here is freed again then
