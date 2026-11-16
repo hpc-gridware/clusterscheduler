@@ -62,7 +62,6 @@ int sgeee_scheduler(scheduler_all_data_t *lists,
                     order_t *orders);
 
 void sgeee_resort_pending_jobs(ocs::tom::List<ocs::tom::JB> job_list);
-OCS_TRANSITIONAL void sgeee_resort_pending_jobs(lList **job_list);
  
 /**
  * @brief Distributes the tickets of the running jobs onto their hosts

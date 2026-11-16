@@ -7485,29 +7485,6 @@ error:
 }
 
 /**
- * @brief sge_create_load_list() for an untyped caller
- * @param queue_list  the queue instances (`QU_Type`); const only by the old signature, the load list references
- *                    them and sge_load_list_alarm() tags them, as before
- * @param host_list   the execution hosts (`EH_Type`)
- * @param centry_list the complex entries (`CE_Type`)
- * @param load_list   receives the load list (`LDR_Type`), nullptr if no consumable is used as a load threshold;
- *                    a list it holds before is freed
- */
-void sge_create_load_list(const lList *queue_list, const lList *host_list, const lList *centry_list,
-                          lList **load_list) {
-   if (load_list == nullptr) {
-      CRITICAL("no load_list specified\n");
-      ocs::TerminationManager::trigger_abort();
-   }
-   if (*load_list != nullptr) {
-      sge_free_load_list(load_list);
-   }
-   *load_list = sge_create_load_list(ocs::tom::List<ocs::tom::QU>(const_cast<lList *>(queue_list)),
-                                     ocs::tom::ConstList<ocs::tom::EH>(host_list),
-                                     ocs::tom::ConstList<ocs::tom::CE>(centry_list)).release();
-}
-
-/**
  * @brief Locates a consumable category in the given load list
  *
  * @param load_list the load list to work on (`LDR_Type`)

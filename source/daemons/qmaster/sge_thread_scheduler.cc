@@ -62,7 +62,24 @@
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_schedd_conf.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_AR.h"
+#include "sgeobj/tom/ocs_tom_CE.h"
+#include "sgeobj/tom/ocs_tom_CK.h"
+#include "sgeobj/tom/ocs_tom_CONF.h"
+#include "sgeobj/tom/ocs_tom_CQ.h"
+#include "sgeobj/tom/ocs_tom_CT.h"
+#include "sgeobj/tom/ocs_tom_EH.h"
+#include "sgeobj/tom/ocs_tom_ET.h"
+#include "sgeobj/tom/ocs_tom_HGRP.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
+#include "sgeobj/tom/ocs_tom_PE.h"
+#include "sgeobj/tom/ocs_tom_PR.h"
 #include "sgeobj/tom/ocs_tom_QU.h"
+#include "sgeobj/tom/ocs_tom_RQS.h"
+#include "sgeobj/tom/ocs_tom_STN.h"
+#include "sgeobj/tom/ocs_tom_US.h"
+#include "sgeobj/tom/ocs_tom_UU.h"
 
 #include "gdi/ocs_gdi_Packet.h"
 
@@ -200,10 +217,10 @@ sge_scheduler_cleanup_where_what(void *where_what) {
 /** @brief Wait until the events for the next scheduling run have arrived
  *
  * @param evc the event client
- * @param event_list receives the events that arrived
- * @return true when events arrived, false on shutdown
+ * @param event_list receives the events that arrived (`ET_Type`); left as it is when the wait timed out
  */
-static void sge_scheduler_wait_for_event(sge_evc_class_t *evc, lList **event_list) {
+static void
+sge_scheduler_wait_for_event(sge_evc_class_t *evc, ocs::tom::ListPtr<ocs::tom::ET> &event_list) {
    DENTER(TOP_LAYER);
 
    int wait_ret;
@@ -225,7 +242,9 @@ static void sge_scheduler_wait_for_event(sge_evc_class_t *evc, lList **event_lis
    }
 
    if (Scheduler_Control.triggered) {
-      *event_list = Scheduler_Control.new_events;
+      // new_events is an ET list by construction (REP_list of an event report); no checked constructor here,
+      // since it could throw with event_control_mutex locked
+      event_list = ocs::tom::ListPtr<ocs::tom::ET>::from_typed(Scheduler_Control.new_events);
       Scheduler_Control.new_events = nullptr;
       Scheduler_Control.triggered = false;
       do_ack = true;
@@ -234,7 +253,7 @@ static void sge_scheduler_wait_for_event(sge_evc_class_t *evc, lList **event_lis
    sge_mutex_unlock("event_control_mutex", __func__, __LINE__, &Scheduler_Control.mutex);
 
    if (do_ack) {
-      if (static_cast<const lListElem *>(ocs::tom::find_first<ET_type>(*event_list, sgeE_ACK_TIMEOUT)) != nullptr) {
+      if (event_list->find_first<ET_type>(sgeE_ACK_TIMEOUT)) {
          evc->ec_mark4registration(evc);
       }
       evc->ec_ack(evc);
@@ -543,7 +562,7 @@ sge_scheduler_main(void *arg) {
    while (true) {
       bool do_shutdown = false;
       bool handled_events = false;
-      lList *event_list = nullptr;
+      ocs::tom::ListPtr<ocs::tom::ET> event_list;
       int execute = 0;
 
       bool do_start = sconf_get_profiling();
@@ -565,49 +584,62 @@ sge_scheduler_main(void *arg) {
       /*
        * Wait for new events
        */
-      MONITOR_IDLE_TIME(sge_scheduler_wait_for_event(evc, &event_list), (&monitor), mconf_get_monitoring_options());
+      MONITOR_IDLE_TIME(sge_scheduler_wait_for_event(evc, event_list), (&monitor), mconf_get_monitoring_options());
 
       /* If we lost connection we have to register again */
       if (evc->ec_need_new_registration(evc)) {
-         lFreeList(&event_list);
+         event_list.reset();
          if (evc->ec_register(evc, false, nullptr)) {
             DPRINTF("re-registered at event master!\n");
          }
       }
 
-      if (event_list != nullptr) {
+      if (event_list) {
          /* check for shutdown */
-         do_shutdown = (static_cast<const lListElem *>(ocs::tom::find_first<ET_type>(event_list, sgeE_SHUTDOWN)) != nullptr);
+         do_shutdown = static_cast<bool>(event_list->find_first<ET_type>(sgeE_SHUTDOWN));
 
          /* update mirror and free data */
-         if (!do_shutdown && sge_mirror_process_event_list(evc, event_list) == SGE_EM_OK) {
+         if (!do_shutdown && sge_mirror_process_event_list(evc, *event_list) == SGE_EM_OK) {
             handled_events = true;
             DPRINTF("events handled\n");
          } else {
             DPRINTF("events contain shutdown event - ignoring events\n");
          }
-         lFreeList(&event_list);
+         event_list.reset();
       }
 
       /* if we actually got events, start the scheduling run and further event processing */
       if (handled_events) {
          lList *answer_list = nullptr;
          scheduler_all_data_t copy;
-         const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
-         const lList *master_job_list = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
-         const lList *master_userset_list = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
-         const lList *master_project_list = *ocs::DataStore::get_master_list(SGE_TYPE_PROJECT);
-         const lList *master_exechost_list = *ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST);
-         const lList *master_rqs_list = *ocs::DataStore::get_master_list(SGE_TYPE_RQS);
-         const lList *master_centry_list = *ocs::DataStore::get_master_list(SGE_TYPE_CENTRY);
-         const lList *master_ckpt_list = *ocs::DataStore::get_master_list(SGE_TYPE_CKPT);
-         const lList *master_user_list = *ocs::DataStore::get_master_list(SGE_TYPE_USER);
-         const lList *master_ar_list = *ocs::DataStore::get_master_list(SGE_TYPE_AR);
-         const lList *master_pe_list = *ocs::DataStore::get_master_list(SGE_TYPE_PE);
-         const lList *master_hgrp_list = *ocs::DataStore::get_master_list(SGE_TYPE_HGROUP);
-         const lList *master_sharetree_list = *ocs::DataStore::get_master_list(SGE_TYPE_SHARETREE);
-         const lList *master_config_list = *ocs::DataStore::get_master_list(SGE_TYPE_CONFIG);
-         const lList *master_category_list = *ocs::DataStore::get_master_list(SGE_TYPE_CATEGORY);
+         // the mirror's lists; the cluster queue, job, host and pe lists hold the reduced elements of the subscription
+         const auto master_cqueue_list =
+                 ocs::tom::ConstList<ocs::tom::CQ>(*ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE));
+         const auto master_job_list = ocs::tom::ConstList<ocs::tom::JB>(*ocs::DataStore::get_master_list(SGE_TYPE_JOB));
+         const auto master_userset_list =
+                 ocs::tom::ConstList<ocs::tom::US>(*ocs::DataStore::get_master_list(SGE_TYPE_USERSET));
+         const auto master_project_list =
+                 ocs::tom::ConstList<ocs::tom::PR>(*ocs::DataStore::get_master_list(SGE_TYPE_PROJECT));
+         const auto master_exechost_list =
+                 ocs::tom::ConstList<ocs::tom::EH>(*ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST));
+         const auto master_rqs_list =
+                 ocs::tom::ConstList<ocs::tom::RQS>(*ocs::DataStore::get_master_list(SGE_TYPE_RQS));
+         const auto master_centry_list =
+                 ocs::tom::ConstList<ocs::tom::CE>(*ocs::DataStore::get_master_list(SGE_TYPE_CENTRY));
+         const auto master_ckpt_list =
+                 ocs::tom::ConstList<ocs::tom::CK>(*ocs::DataStore::get_master_list(SGE_TYPE_CKPT));
+         const auto master_user_list =
+                 ocs::tom::ConstList<ocs::tom::UU>(*ocs::DataStore::get_master_list(SGE_TYPE_USER));
+         const auto master_ar_list = ocs::tom::ConstList<ocs::tom::AR>(*ocs::DataStore::get_master_list(SGE_TYPE_AR));
+         const auto master_pe_list = ocs::tom::ConstList<ocs::tom::PE>(*ocs::DataStore::get_master_list(SGE_TYPE_PE));
+         const auto master_hgrp_list =
+                 ocs::tom::ConstList<ocs::tom::HGRP>(*ocs::DataStore::get_master_list(SGE_TYPE_HGROUP));
+         const auto master_sharetree_list =
+                 ocs::tom::ConstList<ocs::tom::STN>(*ocs::DataStore::get_master_list(SGE_TYPE_SHARETREE));
+         const auto master_config_list =
+                 ocs::tom::ConstList<ocs::tom::CONF>(*ocs::DataStore::get_master_list(SGE_TYPE_CONFIG));
+         const auto master_category_list =
+                 ocs::tom::ConstList<ocs::tom::CT>(*ocs::DataStore::get_master_list(SGE_TYPE_CATEGORY));
 
          /* delay scheduling for test purposes, see issue GE-3306 */
          if (SGE_TEST_DELAY_SCHEDULING > 0) {
@@ -650,8 +682,8 @@ sge_scheduler_main(void *arg) {
                  lGetNumberOfElem(master_project_list),
                  lGetNumberOfElem(master_rqs_list),
                  lGetNumberOfElem(master_ar_list),
-                 lGetNumberOfNodes(nullptr, master_sharetree_list, STN_children),
-                 lGetNumberOfLeafs(nullptr, master_sharetree_list, STN_children)
+                 master_sharetree_list.count_nodes<STN_children>(),
+                 master_sharetree_list.count_leaves<STN_children>()
                  );
 
 #if 0
@@ -675,9 +707,8 @@ sge_scheduler_main(void *arg) {
             const char *cell_root = bootstrap_get_cell_root();
             uint32_t progid = component_get_component_id();
 
-            const lListElem *global = nullptr, *local = nullptr;
-            global = ocs::tom::find_first<CONF_name>(master_config_list, SGE_GLOBAL_NAME);
-            local = ocs::tom::find_first<CONF_name>(master_config_list, hostname);
+            const auto global = master_config_list.find_first<CONF_name>(ocs::tom::Host(SGE_GLOBAL_NAME));
+            const auto local = master_config_list.find_first<CONF_name>(ocs::tom::Host(hostname));
             merge_configuration(nullptr, progid, cell_root, global, local, nullptr);
 
             // reset the flag
@@ -695,15 +726,16 @@ sge_scheduler_main(void *arg) {
 #endif
 
          // prepare data for the scheduler itself
-         copy.host_list = lCopyList(nullptr, master_exechost_list);
+         copy.host_list = master_exechost_list.clone().release();
 
          // within the scheduler we only need QIs create one big qinstance list
          {
-            const lListElem *cqueue;
+            // the selection is built from the descriptor of the first qinstance list, which is the reduced one of
+            // the subscription; the three result lists have reduced descriptors, hence the raw lWhat()/lCreateList()
             lEnumeration *what_queue3 = nullptr;
 
-            for_each_ep(cqueue, master_cqueue_list) {
-               ocs::tom::ConstList<ocs::tom::QU> qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
+            for (const auto cqueue : master_cqueue_list) {
+               const auto qinstance_list = cqueue.get<CQ_qinstances>();
 
                if (qinstance_list == nullptr) {
                   continue;
@@ -713,7 +745,8 @@ sge_scheduler_main(void *arg) {
                if (!what_queue3) {
                   what_queue3 = lWhat("%T(%I%I)", lGetListDescr(qinstance_list), QU_full_name, QU_state);
                }
-               auto t = ocs::tom::ListPtr<ocs::tom::QU>::from_typed(lSelect(nullptr, qinstance_list, nullptr, what_queue3));
+               auto t = ocs::tom::ListPtr<ocs::tom::QU>::from_typed(
+                       lSelect(nullptr, qinstance_list, nullptr, what_queue3));
                if (t) {
                   if (copy.all_queue_list == nullptr) {
                      copy.all_queue_list = lCreateList("all", lGetListDescr(*t));
@@ -723,7 +756,8 @@ sge_scheduler_main(void *arg) {
                }
 
                // ensure_valid_what_and_where()
-               auto t_qu = ocs::tom::ListPtr<ocs::tom::QU>::from_typed(lSelect(nullptr, qinstance_list, where_what.where_queue, where_what.what_queue2));
+               auto t_qu = ocs::tom::ListPtr<ocs::tom::QU>::from_typed(
+                       lSelect(nullptr, qinstance_list, where_what.where_queue, where_what.what_queue2));
                if (t_qu) {
                   if (copy.queue_list == nullptr) {
                      copy.queue_list = lCreateList("enabled", lGetListDescr(*t_qu));
@@ -733,7 +767,8 @@ sge_scheduler_main(void *arg) {
                }
 
                // ensure_valid_what_and_where()
-               auto t_qu_2 = ocs::tom::ListPtr<ocs::tom::QU>::from_typed(lSelect(nullptr, qinstance_list, where_what.where_queue2, where_what.what_queue2));
+               auto t_qu_2 = ocs::tom::ListPtr<ocs::tom::QU>::from_typed(
+                       lSelect(nullptr, qinstance_list, where_what.where_queue2, where_what.what_queue2));
                if (t_qu_2) {
                   if (copy.dis_queue_list == nullptr) {
                      copy.dis_queue_list = lCreateList("disabled", lGetListDescr(*t_qu_2));
@@ -747,8 +782,8 @@ sge_scheduler_main(void *arg) {
             }
          }
 
-         copy.category_list = lCopyList(nullptr, master_category_list);
-         copy.job_list = lCopyList(nullptr, master_job_list);
+         copy.category_list = master_category_list.clone().release();
+         copy.job_list = master_job_list.clone().release();
 
          // We have copied the category list and the job list, so we need to update also the cached category pointers
          ocs::CategoryQmaster::refresh_cat_data_all_jobs(copy.category_list, copy.job_list);
@@ -759,12 +794,12 @@ sge_scheduler_main(void *arg) {
          copy.hgrp_list = master_hgrp_list;
 
          /* these lists need to be copied because they are modified during scheduling run */
-         copy.share_tree = lCopyList(nullptr, master_sharetree_list);
-         copy.pe_list = lCopyList(nullptr, master_pe_list);
-         copy.user_list = lCopyList(nullptr, master_user_list);
-         copy.project_list = lCopyList(nullptr, master_project_list);
-         copy.rqs_list = lCopyList(nullptr, master_rqs_list);
-         copy.ar_list = lCopyList(nullptr, master_ar_list);
+         copy.share_tree = master_sharetree_list.clone().release();
+         copy.pe_list = master_pe_list.clone().release();
+         copy.user_list = master_user_list.clone().release();
+         copy.project_list = master_project_list.clone().release();
+         copy.rqs_list = master_rqs_list.clone().release();
+         copy.ar_list = master_ar_list.clone().release();
 
          /* report number of reduced and raw (in brackets) lists */
          DPRINTF("Q:" sge_u32 ", AQ:" sge_u32 ", DQ:" sge_u32 ", J:" sge_u32 "(" sge_u32 "), H:" sge_u32 "(" sge_u32 "), C:" sge_u32
@@ -786,8 +821,8 @@ sge_scheduler_main(void *arg) {
                  lGetNumberOfElem(copy.project_list),
                  lGetNumberOfElem(copy.rqs_list),
                  lGetNumberOfElem(copy.ar_list),
-                 lGetNumberOfNodes(nullptr, copy.share_tree, STN_children),
-                 lGetNumberOfLeafs(nullptr, copy.share_tree, STN_children)
+                 ocs::tom::ConstList<ocs::tom::STN>(copy.share_tree).count_nodes<STN_children>(),
+                 ocs::tom::ConstList<ocs::tom::STN>(copy.share_tree).count_leaves<STN_children>()
                  );
 
          bool in_nd_mode = ocs::DebugParam::is_component_in_nd_mode();

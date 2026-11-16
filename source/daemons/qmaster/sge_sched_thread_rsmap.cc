@@ -218,7 +218,6 @@ rsmap_select_granted_ids(sge_assignment_t *a, const char *name, const char *host
                                                            required_props);
             }
             const auto selected = ocs::tom::ListPtr<ocs::tom::RESL>(selected_raw);
-            taken.reset();
 
             if (!selected_ok) {
                // matching said otherwise, so the two have diverged; refuse rather than hand

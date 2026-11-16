@@ -53,6 +53,9 @@
 #include "sgeobj/sge_qinstance_state.h"
 #include "sgeobj/ocs_DataStore.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_JAT.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
 
 #include "sched/msg_schedd.h"
 
@@ -486,17 +489,21 @@ sge_process_global_config_event(sge_evc_class_t *evc, sge_object_type type,
  * @return whether the event was handled
  */
 sge_callback_result
-sge_process_job_event_after(sge_evc_class_t *evc, sge_object_type type, sge_event_action action, lListElem *event, void *clientdata) {
+sge_process_job_event_after(sge_evc_class_t *evc, sge_object_type type, sge_event_action action, lListElem *event,
+                            void *clientdata) {
    DENTER(TOP_LAYER);
 
    uint32_t job_id = 0;
-   lListElem *job = nullptr;
+   ocs::tom::Element<ocs::tom::JB> job;
    if (action == SGE_EMA_ADD || action == SGE_EMA_MOD) {
 
       // Find the job for which we received an event (ADD and MOD)
       job_id = ocs::tom::get<ET_intkey>(event);
-      job = ocs::tom::find_first_rw<JB_job_number>(*ocs::DataStore::get_master_list(SGE_TYPE_JOB), job_id);
-      if (job == nullptr) {
+      // the job is modified (JAT_status), so the list is taken writable; for_read keeps the read lock semantics
+      const auto master_job_list =
+         ocs::tom::List<ocs::tom::JB>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB, true));
+      job = master_job_list.find_first<JB_job_number>(job_id);
+      if (!job) {
          DSTRING_STATIC(id_dstring, 64);
          ERROR(MSG_CANTFINDJOBINMASTERLIST_S, job_get_id_string(job_id, 0, nullptr, &id_dstring));
          DRETURN(SGE_EMA_FAILURE);
@@ -512,14 +519,14 @@ sge_process_job_event_after(sge_evc_class_t *evc, sge_object_type type, sge_even
                if (pe_task_id == nullptr) {
                   // ignore FINAL_USAGE for a pe task here
                   uint32_t ja_task_id = ocs::tom::get<ET_intkey2>(event);
-                  lListElem *ja_task = job_search_task(job, nullptr, ja_task_id);
+                  const auto ja_task = ocs::tom::Element<ocs::tom::JAT>(job_search_task(job, nullptr, ja_task_id));
 
-                  if (ja_task == nullptr) {
+                  if (!ja_task) {
                      ERROR(MSG_CANTFINDTASKINJOB_UU, ja_task_id, job_id);
                      DRETURN(SGE_EMA_FAILURE);
                   }
 
-                  ocs::tom::set<JAT_status>(ja_task, JFINISHED);
+                  ja_task.set<JAT_status>(JFINISHED);
                }
                break;
             }

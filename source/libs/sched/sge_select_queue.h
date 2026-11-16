@@ -122,8 +122,6 @@ OCS_TRANSITIONAL int sge_load_alarm(char *reason, size_t reason_size, const lLis
 ocs::tom::ListPtr<ocs::tom::LDR>
 sge_create_load_list(ocs::tom::List<ocs::tom::QU> queue_list, ocs::tom::ConstList<ocs::tom::EH> host_list,
                      ocs::tom::ConstList<ocs::tom::CE> centry_list);
-OCS_TRANSITIONAL void sge_create_load_list(const lList *queue_list, const lList *host_list, const lList *centry_list,
-                                           lList **load_list);
 
 bool sge_load_list_alarm(bool monitor_next_run, ocs::tom::ConstList<ocs::tom::LDR> load_list,
                          ocs::tom::ConstList<ocs::tom::EH> host_list, ocs::tom::ConstList<ocs::tom::CE> centry_list);

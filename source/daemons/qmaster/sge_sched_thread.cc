@@ -706,8 +706,8 @@ dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, order_t *orders
 
    /* generate a consumable load list structure. It stores which queues
       are using consumables in their load threshold. */
-   sge_create_load_list(lists->queue_list, lists->host_list, lists->centry_list,
-                        &consumable_load_list);
+   consumable_load_list = sge_create_load_list(ocs::tom::List<ocs::tom::QU>(lists->queue_list), host_list,
+                                               centry_list).release();
 
 
    /*---------------------------------------------------------------------
@@ -1008,7 +1008,7 @@ dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, order_t *orders
          }
 
          if (is_pjob_resort) {
-            sgeee_resort_pending_jobs(splitted_job_lists[SPLIT_PENDING]);
+            sgeee_resort_pending_jobs(ocs::tom::List<ocs::tom::JB>(*(splitted_job_lists[SPLIT_PENDING])));
          }
 
       } /* end of while */

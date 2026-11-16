@@ -675,16 +675,6 @@ sgeee_resort_pending_jobs(const ocs::tom::List<ocs::tom::JB> job_list) {
    DRETURN_VOID;
 }
 
-/**
- * @brief sgeee_resort_pending_jobs() for an untyped caller
- *
- * @param job_list the pending job list (`JB_Type`)
- */
-void
-sgeee_resort_pending_jobs(lList **job_list) {
-   sgeee_resort_pending_jobs(ocs::tom::List<ocs::tom::JB>(*job_list));
-}
-
 
 /**
  * @brief Recompute JAT prio based on changed ticket amount
