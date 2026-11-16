@@ -47,6 +47,11 @@
 #include "sgeobj/cull/sge_boundaries.h"
 #include "cull/cull.h"
 #include "sge_orders.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
+#include "sgeobj/tom/ocs_tom_STN.h"
+#include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "tom/ocs_Transitional.h"
 
 #include "sge_sched_process_events.h"
 
@@ -56,7 +61,8 @@ int sgeee_scheduler(scheduler_all_data_t *lists,
                     lList *pending_jobs,
                     order_t *orders);
 
-void sgeee_resort_pending_jobs(lList **job_list); 
+void sgeee_resort_pending_jobs(ocs::tom::List<ocs::tom::JB> job_list);
+OCS_TRANSITIONAL void sgeee_resort_pending_jobs(lList **job_list);
  
 /**
  * @brief Distributes the tickets of the running jobs onto their hosts
@@ -86,7 +92,7 @@ int calculate_host_tickets( lList **running, lList **hosts );
 int  sort_host_list_by_share_load ( lList *host_list,       /* EH_Type */
                                     lList *complex_list );  /* CX_Type */
 
-void sge_clear_job( lListElem *job, bool is_clear_all);
+void sge_clear_job(ocs::tom::Element<ocs::tom::JB> job, bool is_clear_all);
 
 void
 sge_build_sgeee_orders(scheduler_all_data_t *lists, lList *running_jobs, lList *queued_jobs,
@@ -97,9 +103,13 @@ sge_build_sgeee_orders(scheduler_all_data_t *lists, lList *running_jobs, lList *
  * TET share-tree publish handler can recompute master-sharetree node
  * fields without depending on a scheduler_all_data_t. The scheduler
  * itself still uses these on its mirror data store. */
-int  sge_init_share_tree_nodes(lListElem *root);
-void calculate_m_shares(lListElem *parent_node);
-u_long update_job_ref_count(lListElem *node);
-u_long update_active_job_ref_count(lListElem *node);
+int  sge_init_share_tree_nodes(ocs::tom::Element<ocs::tom::STN> root);
+OCS_TRANSITIONAL int sge_init_share_tree_nodes(lListElem *root);
+void calculate_m_shares(ocs::tom::Element<ocs::tom::STN> parent_node);
+OCS_TRANSITIONAL void calculate_m_shares(lListElem *parent_node);
+u_long update_job_ref_count(ocs::tom::Element<ocs::tom::STN> node);
+OCS_TRANSITIONAL u_long update_job_ref_count(lListElem *node);
+u_long update_active_job_ref_count(ocs::tom::Element<ocs::tom::STN> node);
+OCS_TRANSITIONAL u_long update_active_job_ref_count(lListElem *node);
 int  sge_calc_node_targets(lListElem *root, lListElem *node);
 

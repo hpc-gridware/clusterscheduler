@@ -94,7 +94,11 @@
 #include "sgeobj/tom/ocs_tom_UPP.h"
 #include "sgeobj/tom/ocs_tom_JB.h"
 #include "sgeobj/tom/ocs_tom_OR.h"
+#include "sgeobj/tom/ocs_tom_PR.h"
+#include "sgeobj/tom/ocs_tom_US.h"
+#include "sgeobj/tom/ocs_tom_UU.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
 
 /*
  * Following fields are necessary for tasks which are not
@@ -134,14 +138,17 @@ typedef struct {
  * The scheduler builds an array of these, one entry per job or array task it
  * is scheduling, so that each policy can walk the array instead of resolving
  * the user, project, department and share tree node again for every job.
+ * The object members are non-owning handles on elements of the scheduler's
+ * lists; only a temporary share tree node made from a "default" node is
+ * created here, and the share tree it was appended to owns it.
  */
-typedef struct {
-   lListElem *job;		      ///< The job (`JB_Type`)
-   lListElem *ja_task;        ///< The array task (`JAT_Type`), nullptr if not enrolled
-   lListElem *user;		      ///< The job owner
-   lListElem *project;		   ///< The project of the job
-   lListElem *dept;		      ///< The department of the job owner
-   lListElem *node;		      ///< The share tree node the job belongs to
+struct sge_ref_t {
+   ocs::tom::Element<ocs::tom::JB> job;       ///< The job
+   ocs::tom::Element<ocs::tom::JAT> ja_task;  ///< The array task, empty if not enrolled
+   ocs::tom::Element<ocs::tom::UU> user;      ///< The job owner
+   ocs::tom::Element<ocs::tom::PR> project;   ///< The project of the job
+   ocs::tom::Element<ocs::tom::US> dept;      ///< The department of the job owner
+   ocs::tom::Element<ocs::tom::STN> node;     ///< The share tree node the job belongs to
    int queued;                ///< 1 if this is a queued job
    uint32_t  share_tree_type; ///< Which share tree the node comes from
    double user_fshare;        ///< The job's share of the user functional shares
@@ -150,7 +157,7 @@ typedef struct {
    double job_fshare;         ///< The job's share of the job functional shares
    double tickets;            ///< The job's pending tickets from the hierarchical policies
    sge_task_ref_t *tref;      ///< Ticket values of a task that is not enrolled, see #sge_task_ref_t
-} sge_ref_t;
+};
 
 /*
  * this allows to build a list from
@@ -179,18 +186,18 @@ static void task_ref_print_table();
 static void task_ref_print_table_entry(sge_task_ref_t *tref);
 #endif
 
-static void sge_clear_ja_task ( lListElem *ja_task );
+static void sge_clear_ja_task(ocs::tom::Element<ocs::tom::JAT> ja_task);
 
 static sge_task_ref_t *task_ref_get_first(uint32_t job_number, uint32_t ja_task_number);
 static sge_task_ref_t *task_ref_get_first_job_entry();
 static sge_task_ref_t *task_ref_get_next_job_entry();
-static void task_ref_copy_to_ja_task(sge_task_ref_t *tref, lListElem *ja_task);
+static void task_ref_copy_to_ja_task(sge_task_ref_t *tref, ocs::tom::Element<ocs::tom::JAT> ja_task);
 
 static void sge_do_sgeee_priority(lList *job_list, double min_tix, double max_tix,
             bool do_nprio, bool do_nurg);
 static void sgeee_priority(lListElem *task, uint32_t jobid, double nsu, double npri,
             double min_tix, double max_tix);
-static void recompute_prio(sge_task_ref_t *tref, lListElem *task, double nurg, double npri);
+static void recompute_prio(sge_task_ref_t *tref, ocs::tom::Element<ocs::tom::JAT> task, double nurg, double npri);
 
 
 static void calculate_pending_shared_override_tickets(sge_ref_t *job_ref, uint32_t num_jobs, int dependent);
@@ -404,7 +411,14 @@ static sge_task_ref_t *task_ref_get_next_job_entry() {
    DRETURN(ret);
 }
 
-static void task_ref_copy_to_ja_task(sge_task_ref_t *tref, lListElem *ja_task) {
+/**
+ * @brief Copy the ticket values of a task reference into an array task element
+ *
+ * @param tref the task reference, nothing is copied if nullptr
+ * @param ja_task the array task that receives the values, nothing is copied if empty
+ */
+static void
+task_ref_copy_to_ja_task(sge_task_ref_t *tref, const ocs::tom::Element<ocs::tom::JAT> ja_task) {
    DENTER(BASIS_LAYER);
 
    if (ja_task != nullptr && tref != nullptr) {
@@ -549,16 +563,16 @@ static inline void ocs_ref_set(const sge_ref_t *ref, T sge_task_ref_t::*ref_attr
  *
  * @param job_list The pending job list. The first job in the list was assigned right before.
  */
-void sgeee_resort_pending_jobs(lList **job_list) {
+void
+sgeee_resort_pending_jobs(const ocs::tom::List<ocs::tom::JB> job_list) {
    DENTER(TOP_LAYER);
-   lListElem *next_job = lFirstRW(*job_list);
+   const auto next_job = job_list.front();
 
    if (next_job) {
       uint32_t job_id = ocs::tom::get<JB_job_number>(next_job);
       uint64_t start_time_of_job1 = ocs::tom::get<JB_submission_time>(next_job);
-      ocs::tom::ConstElement<ocs::tom::JAT> tmp_task = lFirst(ocs::tom::get<JB_ja_tasks>(next_job));
-      lListElem *jep = nullptr;
-      lListElem *insert_jep = nullptr;
+      ocs::tom::ConstElement<ocs::tom::JAT> tmp_task = ocs::tom::get<JB_ja_tasks>(next_job).front();
+      ocs::tom::Element<ocs::tom::JB> insert_jep = nullptr;
       double prio = 0.0;
 
       if (tmp_task == nullptr) {
@@ -568,7 +582,7 @@ void sgeee_resort_pending_jobs(lList **job_list) {
          ocs::tom::ConstList<ocs::tom::RN> range_list = ocs::tom::get<JB_ja_n_h_ids>(next_job);
          uint32_t ja_task_id = range_list_get_first_id(range_list, nullptr);
          sge_task_ref_t *tref = task_ref_get_first(job_id, ja_task_id);
-         ocs::tom::Element<ocs::tom::JAT> ja_task_template = lFirstRW(ocs::tom::get<JB_ja_template>(next_job));
+         const auto ja_task_template = ocs::tom::get<JB_ja_template>(next_job).front();
 
          /*
           * If no further sge_task_ref_t element was prepared during
@@ -615,16 +629,16 @@ void sgeee_resort_pending_jobs(lList **job_list) {
        * Re-Insert job at the correct possition
        */
       if (tmp_task) {
-         lDechainElem(*job_list, next_job);
+         auto dechained_job = job_list.extract(next_job);
          prio = ocs::tom::get<JAT_prio>(tmp_task);
-         for_each_rw (jep, *job_list) {
+         for (const auto jep : job_list) {
             uint64_t start_time_of_job2 = ocs::tom::get<JB_submission_time>(jep);
             uint32_t job_id2 = ocs::tom::get<JB_job_number>(jep);
-            ocs::tom::ConstElement<ocs::tom::JAT> tmp_task2 = lFirst(ocs::tom::get<JB_ja_tasks>(jep));
+            ocs::tom::ConstElement<ocs::tom::JAT> tmp_task2 = ocs::tom::get<JB_ja_tasks>(jep).front();
             double prio2;
 
             if (tmp_task2 == nullptr) {
-               tmp_task2 = lFirst(ocs::tom::get<JB_ja_template>(jep));
+               tmp_task2 = ocs::tom::get<JB_ja_template>(jep).front();
             }
             prio2 = ocs::tom::get<JAT_prio>(tmp_task2);
 	    /*
@@ -644,10 +658,24 @@ void sgeee_resort_pending_jobs(lList **job_list) {
             insert_jep = jep;
          }
 
-         lInsertElem(*job_list, insert_jep, next_job);
+         if (insert_jep) {
+            job_list.insert_after(insert_jep, std::move(dechained_job));
+         } else {
+            job_list.push_front(std::move(dechained_job));
+         }
       }
    }
    DRETURN_VOID;
+}
+
+/**
+ * @brief sgeee_resort_pending_jobs() for an untyped caller
+ *
+ * @param job_list the pending job list (`JB_Type`)
+ */
+void
+sgeee_resort_pending_jobs(lList **job_list) {
+   sgeee_resort_pending_jobs(ocs::tom::List<ocs::tom::JB>(*job_list));
 }
 
 
@@ -663,7 +691,9 @@ void sgeee_resort_pending_jobs(lList **job_list) {
  * @param nurg The normalized urgency assumed for the job.
  * @param npri The normalized POSIX priority assumed for the job.
  */
-static void recompute_prio(sge_task_ref_t *tref, lListElem *task, double nurg, double npri) {
+static void
+recompute_prio(sge_task_ref_t *tref, const ocs::tom::Element<ocs::tom::JAT> task, const double nurg,
+               const double npri) {
    DENTER(TOP_LAYER);
 
    double min_tix, max_tix, prio;
@@ -689,55 +719,78 @@ static void recompute_prio(sge_task_ref_t *tref, lListElem *task, double nurg, d
    DRETURN_VOID;
 }
 
-/*--------------------------------------------------------------------
- * job_is_active - returns true if job is active
- *--------------------------------------------------------------------*/
-
+/**
+ * @brief Whether an array task is active
+ *
+ * Active is a task that is running, migrating or transferring and that is not
+ * suspended.
+ *
+ * @param job the job of the task, unused
+ * @param ja_task the array task
+ * @return 1 if the task is active, 0 otherwise
+ */
 static int
-job_is_active(lListElem *job,
-              lListElem *ja_task) {
+job_is_active([[maybe_unused]] const ocs::tom::ConstElement<ocs::tom::JB> job,
+              const ocs::tom::ConstElement<ocs::tom::JAT> ja_task) {
+   DENTER(BASIS_LAYER);
    u_long job_status = ocs::tom::get<JAT_status>(ja_task);
 #ifdef SGE_INCLUDE_QUEUED_JOBS
-   return (job_status == JIDLE ||
+   DRETURN((job_status == JIDLE ||
        job_status & (JRUNNING | JMIGRATING | JQUEUED | JTRANSFERING)) &&
        !(ocs::tom::get<JAT_state>(ja_task)
-         & (JSUSPENDED|JSUSPENDED_ON_THRESHOLD));
+         & (JSUSPENDED|JSUSPENDED_ON_THRESHOLD)));
 #else
-   return (job_status & (JRUNNING | JMIGRATING | JTRANSFERING)) &&
-       !(lGetUlong(ja_task, JAT_state) &
-         (JSUSPENDED|JSUSPENDED_ON_THRESHOLD));
+   DRETURN((job_status & (JRUNNING | JMIGRATING | JTRANSFERING)) &&
+       !(ocs::tom::get<JAT_state>(ja_task) &
+         (JSUSPENDED|JSUSPENDED_ON_THRESHOLD)));
 #endif
 }
 
-/*--------------------------------------------------------------------
- * locate_department - locate the department object by name
- *--------------------------------------------------------------------*/
-static lListElem *
-locate_department(lList *dept_list, const char *name) {
+/**
+ * @brief Locate a department by its name
+ *
+ * @param dept_list the departments
+ * @param name the name of the department, may be nullptr
+ * @return the department, empty if @p name is nullptr or no department has that name
+ */
+static ocs::tom::Element<ocs::tom::US>
+locate_department(const ocs::tom::List<ocs::tom::US> dept_list, const char *name) {
+   DENTER(BASIS_LAYER);
    if (name == nullptr) {
-      return nullptr;
+      DRETURN(nullptr);
    }
 
-   return ocs::tom::find_first_rw<US_name>(dept_list, name);
+   DRETURN(ocs::tom::find_first_rw<US_name>(dept_list, name));
 }
 
 
 
-/*--------------------------------------------------------------------
- * sge_set_job_refs - set object references in the job entry
- *--------------------------------------------------------------------*/
-
+/**
+ * @brief Set the object references of a job entry
+ *
+ * Resets the entry, then locates the user, project, department and share tree
+ * node of the job and zeroes their job counts. A "default" share tree node
+ * found for the user is replaced by a temporary copy named after the user,
+ * which is appended to the children of the default node's parent.
+ *
+ * @param job the job
+ * @param ja_task the array task
+ * @param ref the entry to fill
+ * @param tref the task reference of a task that is not enrolled, nullptr for an enrolled task
+ * @param lists the scheduler's lists
+ * @param queued 1 if the job is pending, 0 if it is running
+ */
 static void
-sge_set_job_refs(lListElem *job,
-                 lListElem *ja_task,
+sge_set_job_refs(const ocs::tom::Element<ocs::tom::JB> job,
+                 const ocs::tom::Element<ocs::tom::JAT> ja_task,
                  sge_ref_t *ref,
                  sge_task_ref_t *tref,
                  scheduler_all_data_t *lists,
-                 int queued) {
-   lListElem *root;
+                 const int queued) {
+   DENTER(BASIS_LAYER);
    int is_enrolled_ja_task = (ja_task != nullptr && tref == nullptr) ? 1 : 0;
 
-   memset(ref, 0, sizeof(sge_ref_t));
+   *ref = sge_ref_t{};
 
    if (tref != nullptr) {
       memset(tref, 0, sizeof(sge_task_ref_t));
@@ -769,7 +822,7 @@ sge_set_job_refs(lListElem *job,
     * locate user object and save off reference
     *-------------------------------------------------------------*/
 
-   ref->user = user_list_locate(lists->user_list, ocs::tom::get<JB_owner>(job));
+   ref->user = ocs::tom::Element<ocs::tom::UU>(user_list_locate(lists->user_list, ocs::tom::get<JB_owner>(job)));
    if (ref->user) {
       ocs::tom::set<UU_job_cnt>(ref->user, 0);
       ocs::tom::set<UU_pending_job_cnt>(ref->user, 0);
@@ -779,7 +832,8 @@ sge_set_job_refs(lListElem *job,
     * locate project object and save off reference
     *-------------------------------------------------------------*/
 
-   ref->project = prj_list_locate(lists->project_list, ocs::tom::get<JB_project>(job));
+   ref->project = ocs::tom::Element<ocs::tom::PR>(prj_list_locate(lists->project_list,
+                                                                   ocs::tom::get<JB_project>(job)));
    if (ref->project) {
       ocs::tom::set<PR_job_cnt>(ref->project, 0);
       ocs::tom::set<PR_pending_job_cnt>(ref->project, 0);
@@ -789,16 +843,16 @@ sge_set_job_refs(lListElem *job,
     * locate share tree node and save off reference
     *-------------------------------------------------------------*/
 
-   if ((root = lFirstRW(lists->share_tree))) {
+   if (const auto root = ocs::tom::List<ocs::tom::STN>(lists->share_tree).front(); root) {
       lListElem *pnode = nullptr;
 
       ref->share_tree_type = ocs::tom::get<STN_type>(root);
 
       if (ref->user || ref->project) {
-         ref->node = ocs::ShareTree::search_user_project_node(root,
+         ref->node = ocs::tom::Element<ocs::tom::STN>(ocs::ShareTree::search_user_project_node(root,
                ref->user ? ocs::tom::get<UU_name>(ref->user) : nullptr,
                ref->project ? ocs::tom::get<PR_name>(ref->project) : nullptr,
-               &pnode, root);
+               &pnode, root));
 
          /*
           * if the found node is a "default" node, then create a
@@ -808,10 +862,11 @@ sge_set_job_refs(lListElem *job,
 
          if (ref->user && ref->node && pnode &&
              strcmp(ocs::tom::get<STN_name>(ref->node), "default") == 0) {
-            ref->node = lCopyElem(ref->node);
-            ocs::tom::set<STN_name>(ref->node, ocs::tom::get<UU_name>(ref->user));
-            ocs::tom::set<STN_temp>(ref->node, 1);
-            lAppendElem(ocs::tom::get<STN_children>(pnode), ref->node);
+            auto temp_node = ref->node.clone();
+            ocs::tom::set<STN_name>(*temp_node, ocs::tom::get<UU_name>(ref->user));
+            ocs::tom::set<STN_temp>(*temp_node, 1);
+            ref->node = ocs::tom::get<STN_children>(ocs::tom::Element<ocs::tom::STN>(pnode))
+                              .push_back(std::move(temp_node));
          }
       } else
          ref->node = nullptr;
@@ -821,20 +876,25 @@ sge_set_job_refs(lListElem *job,
     * locate department object and save off reference in job entry
     *-------------------------------------------------------------*/
 
-   ref->dept = locate_department(lists->dept_list, ocs::tom::get<JB_department>(job));
+   ref->dept = locate_department(ocs::tom::List<ocs::tom::US>(lists->dept_list),
+                                 ocs::tom::get<JB_department>(job));
    if (ref->dept) {
       ocs::tom::set<US_job_cnt>(ref->dept, 0);
       ocs::tom::set<US_pending_job_cnt>(ref->dept, 0);
    }
+   DRETURN_VOID;
 }
 
 
-/*--------------------------------------------------------------------
- * sge_set_job_cnts - set job counts in the various object entries
- *--------------------------------------------------------------------*/
-
+/**
+ * @brief Count a job in the job counts of its user, project and department
+ *
+ * @param ref the job's entry
+ * @param queued nonzero to count it as pending, 0 to count it as running
+ */
 static void
-sge_set_job_cnts(sge_ref_t *ref, int queued) {
+sge_set_job_cnts(sge_ref_t *ref, const int queued) {
+   DENTER(BASIS_LAYER);
    int prj_job_cnt_nm = queued ? PR_pending_job_cnt : PR_job_cnt;
    int user_job_cnt_nm = queued ? UU_pending_job_cnt : UU_job_cnt;
    int us_job_cnt_nm = queued ? US_pending_job_cnt : US_job_cnt;
@@ -847,15 +907,19 @@ sge_set_job_cnts(sge_ref_t *ref, int queued) {
    if (ref->dept) {
       lAddUlong(ref->dept, us_job_cnt_nm, 1);
    }
+   DRETURN_VOID;
 }
 
 
-/*--------------------------------------------------------------------
- * sge_unset_job_cnts - set job counts in the various object entries
- *--------------------------------------------------------------------*/
-
+/**
+ * @brief Take a job out of the job counts of its user, project and department
+ *
+ * @param ref the job's entry
+ * @param queued nonzero to uncount it as pending, 0 to uncount it as running
+ */
 static void
-sge_unset_job_cnts(sge_ref_t *ref, int queued) {
+sge_unset_job_cnts(sge_ref_t *ref, const int queued) {
+   DENTER(BASIS_LAYER);
    int prj_job_cnt_nm = queued ? PR_pending_job_cnt : PR_job_cnt;
    int user_job_cnt_nm = queued ? UU_pending_job_cnt : UU_job_cnt;
    int us_job_cnt_nm = queued ? US_pending_job_cnt : US_job_cnt;
@@ -868,6 +932,7 @@ sge_unset_job_cnts(sge_ref_t *ref, int queued) {
    if (ref->dept) {
       lAddUlong(ref->dept, us_job_cnt_nm, -1);
    }
+   DRETURN_VOID;
 }
 
 
@@ -882,13 +947,13 @@ sge_unset_job_cnts(sge_ref_t *ref, int queued) {
  *
  * @param[in,out] parent_node the node whose subtree is recalculated
  */
-
-void calculate_m_shares(lListElem *parent_node) {
+void
+calculate_m_shares(const ocs::tom::Element<ocs::tom::STN> parent_node) {
    DENTER(TOP_LAYER);
    u_long sum_of_child_shares = 0;
    double parent_m_share;
 
-   ocs::tom::ConstList<ocs::tom::STN> children = ocs::tom::get<STN_children>(parent_node);
+   const auto children = ocs::tom::get<STN_children>(parent_node);
    if (!children) {
       DRETURN_VOID;
    }
@@ -897,7 +962,7 @@ void calculate_m_shares(lListElem *parent_node) {
     * Sum child shares
     *-------------------------------------------------------------*/
 
-   for_each_rw_lv(child_node, children) {
+   for (const auto child_node : children) {
 
       if (ocs::tom::get<STN_job_ref_count>(child_node) > 0)
          sum_of_child_shares += ocs::tom::get<STN_shares>(child_node);
@@ -909,7 +974,7 @@ void calculate_m_shares(lListElem *parent_node) {
 
    parent_m_share = ocs::tom::get<STN_m_share>(parent_node);
 
-   for_each_rw_lv(child_node, children) {
+   for (const auto child_node : children) {
       if (ocs::tom::get<STN_job_ref_count>(child_node) > 0)
          ocs::tom::set<STN_m_share>(child_node,
                     parent_m_share *
@@ -925,6 +990,16 @@ void calculate_m_shares(lListElem *parent_node) {
    DRETURN_VOID;
 }
 
+/**
+ * @brief calculate_m_shares() for an untyped caller
+ *
+ * @param[in,out] parent_node the node whose subtree is recalculated (`STN_Type`)
+ */
+void
+calculate_m_shares(lListElem *parent_node) {
+   calculate_m_shares(ocs::tom::Element<ocs::tom::STN>(parent_node));
+}
+
 
 /**
  * @brief Recomputes the job reference count of a node and its descendants
@@ -933,20 +1008,32 @@ void calculate_m_shares(lListElem *parent_node) {
  *
  * @return the number of jobs below and at the node
  */
-
 u_long
-update_job_ref_count(lListElem *node) {
+update_job_ref_count(const ocs::tom::Element<ocs::tom::STN> node) {
+   DENTER(BASIS_LAYER);
    int job_count=0;
 
-   ocs::tom::ConstList<ocs::tom::STN> children = ocs::tom::get<STN_children>(node);
+   const auto children = ocs::tom::get<STN_children>(node);
    if (children) {
-      for_each_rw_lv(child, children) {
+      for (const auto child : children) {
          job_count += update_job_ref_count(child);
       }
       ocs::tom::set<STN_job_ref_count>(node, job_count);
    }
 
-   return ocs::tom::get<STN_job_ref_count>(node);
+   DRETURN(ocs::tom::get<STN_job_ref_count>(node));
+}
+
+/**
+ * @brief update_job_ref_count() for an untyped caller
+ *
+ * @param[in,out] node the node whose subtree is recounted (`STN_Type`)
+ *
+ * @return as update_job_ref_count()
+ */
+u_long
+update_job_ref_count(lListElem *node) {
+   return update_job_ref_count(ocs::tom::Element<ocs::tom::STN>(node));
 }
 
 /**
@@ -956,20 +1043,32 @@ update_job_ref_count(lListElem *node) {
  *
  * @return the number of active jobs below and at the node
  */
-
 u_long
-update_active_job_ref_count(lListElem *node) {
+update_active_job_ref_count(const ocs::tom::Element<ocs::tom::STN> node) {
+   DENTER(BASIS_LAYER);
    int active_job_count=0;
 
-   ocs::tom::ConstList<ocs::tom::STN> children = ocs::tom::get<STN_children>(node);
+   const auto children = ocs::tom::get<STN_children>(node);
    if (children) {
-      for_each_rw_lv(child, children) {
+      for (const auto child : children) {
          active_job_count += update_active_job_ref_count(child);
       }
       ocs::tom::set<STN_active_job_ref_count>(node, active_job_count);
    }
 
-   return ocs::tom::get<STN_active_job_ref_count>(node);
+   DRETURN(ocs::tom::get<STN_active_job_ref_count>(node));
+}
+
+/**
+ * @brief update_active_job_ref_count() for an untyped caller
+ *
+ * @param[in,out] node the node whose subtree is recounted (`STN_Type`)
+ *
+ * @return as update_active_job_ref_count()
+ */
+u_long
+update_active_job_ref_count(lListElem *node) {
+   return update_active_job_ref_count(ocs::tom::Element<ocs::tom::STN>(node));
 }
 
 
@@ -978,13 +1077,18 @@ update_active_job_ref_count(lListElem *node) {
  *
  * Called for every node of the share tree by ocs::ShareTree::foreach_call_func().
  *
- * @param node the share tree node (STN_Type)
+ * The signature is the one of the walk's callback, so the node comes untyped
+ * and is checked here.
+ *
+ * @param node_raw the share tree node (`STN_Type`)
  * @param ptr unused
  * @return 0, so the walk continues
  */
 static int
-sge_init_share_tree_node_fields(lListElem *node,
+sge_init_share_tree_node_fields(lListElem *node_raw,
                                 [[maybe_unused]] void *ptr) {
+   DENTER(BASIS_LAYER);
+   const auto node = ocs::tom::Element<ocs::tom::STN>(node_raw);
    ocs::tom::set<STN_m_share>(node, 0);
    ocs::tom::set<STN_last_actual_proportion>(node, 0);
    ocs::tom::set<STN_adjusted_current_proportion>(node, 0);
@@ -999,7 +1103,7 @@ sge_init_share_tree_node_fields(lListElem *node,
    ocs::tom::set<STN_oltt>(node, 0);
    ocs::tom::set<STN_shr>(node, 0);
    ocs::tom::set<STN_ref>(node, 0);
-   return 0;
+   DRETURN(0);
 }
 
 /**
@@ -1012,26 +1116,43 @@ sge_init_share_tree_node_fields(lListElem *node,
  *
  * @return 0 on success
  */
-
-int sge_init_share_tree_nodes(lListElem *root) {
-   return ocs::ShareTree::foreach_call_func(root, sge_init_share_tree_node_fields, nullptr);
+int
+sge_init_share_tree_nodes(const ocs::tom::Element<ocs::tom::STN> root) {
+   DENTER(TOP_LAYER);
+   DRETURN(ocs::ShareTree::foreach_call_func(root, sge_init_share_tree_node_fields, nullptr));
 }
 
-/*--------------------------------------------------------------------
- * combine_usage - combines a node's associated user/project usage
- * into a single value and stores it in the node.
- *--------------------------------------------------------------------*/
+/**
+ * @brief sge_init_share_tree_nodes() for an untyped caller
+ *
+ * @param[in,out] root the root of the share tree (`STN_Type`)
+ *
+ * @return as sge_init_share_tree_nodes()
+ */
+int
+sge_init_share_tree_nodes(lListElem *root) {
+   return sge_init_share_tree_nodes(ocs::tom::Element<ocs::tom::STN>(root));
+}
 
+/**
+ * @brief Combine the usage of a job's user and project into one value of its share tree node
+ *
+ * The usage comes from the user's usage of the project if the job has both,
+ * from the user if it has no project, and from the project if it has no user.
+ * Each usage value is weighted by the configured usage weights.
+ *
+ * @param ref the job's entry; nothing is done if it has no share tree node
+ */
 static void
 combine_usage(sge_ref_t *ref) {
+   DENTER(BASIS_LAYER);
    double usage_value = 0;
 
    /*-------------------------------------------------------------
     * Get usage from associated user/project object
     *-------------------------------------------------------------*/
    if (ref->node) {
-      lList *usage_weight_list = nullptr;
-      ocs::tom::ConstList<ocs::tom::UA> usage_list=nullptr;
+      ocs::tom::ConstList<ocs::tom::UA> usage_list = nullptr;
       double sum_of_usage_weights = 0;
       const char *usage_name;
 
@@ -1039,10 +1160,11 @@ combine_usage(sge_ref_t *ref) {
        * Sum usage weighting factors
        *-------------------------------------------------------------*/
 
-      usage_weight_list = sconf_get_usage_weight_list();
+      const auto usage_weight_list = ocs::tom::ListPtr<ocs::tom::UA>(sconf_get_usage_weight_list());
       if (usage_weight_list) {
-          for_each_ep_lv(usage_weight, usage_weight_list)
-             sum_of_usage_weights += ocs::tom::get<UA_value>(usage_weight);
+         for (const auto usage_weight : *usage_weight_list) {
+            sum_of_usage_weights += ocs::tom::get<UA_value>(usage_weight);
+         }
       }
 
       /*-------------------------------------------------------------
@@ -1053,10 +1175,13 @@ combine_usage(sge_ref_t *ref) {
 
          if (ref->user) {
             if (ref->project) {
-               ocs::tom::ConstList<ocs::tom::UPP> upp_list = ocs::tom::get<UU_project>(ref->user);
-               const lListElem *upp;
-               if (upp_list && ((upp = ocs::tom::find_first<UPP_name>(upp_list, ocs::tom::get<PR_name>(ref->project)))))
-                  usage_list = ocs::tom::get<UPP_usage>(upp);
+               const auto upp_list = ocs::tom::get<UU_project>(ref->user);
+               if (upp_list) {
+                  const auto upp = ocs::tom::find_first<UPP_name>(upp_list, ocs::tom::get<PR_name>(ref->project));
+                  if (upp) {
+                     usage_list = ocs::tom::get<UPP_usage>(upp);
+                  }
+               }
             }
             else {
                usage_list = ocs::tom::get<UU_usage>(ref->user);
@@ -1066,11 +1191,12 @@ combine_usage(sge_ref_t *ref) {
             usage_list = ocs::tom::get<PR_usage>(ref->project);
          }
 
-         for (ocs::tom::ConstElement<ocs::tom::UA> usage_elem : usage_list) {
+         for (const auto usage_elem : usage_list) {
             usage_name = ocs::tom::get<UA_name>(usage_elem);
-            ocs::tom::ConstElement<ocs::tom::UA> usage_weight = ocs::tom::find_first<UA_name>(usage_weight_list, usage_name);
+            const auto usage_weight = ocs::tom::find_first<UA_name>(*usage_weight_list, usage_name);
             if (usage_weight && sum_of_usage_weights>0) {
-               usage_value += ocs::tom::get<UA_value>(usage_elem) * (ocs::tom::get<UA_value>(usage_weight) / sum_of_usage_weights);
+               usage_value += ocs::tom::get<UA_value>(usage_elem) *
+                              (ocs::tom::get<UA_value>(usage_weight) / sum_of_usage_weights);
             }
          }
       }
@@ -1080,10 +1206,9 @@ combine_usage(sge_ref_t *ref) {
        *-------------------------------------------------------------*/
 
       ocs::tom::set<STN_combined_usage>(ref->node, usage_value);
-      lFreeList(&usage_weight_list);
    }
 
-   return;
+   DRETURN_VOID;
 }
 
 
@@ -1813,12 +1938,13 @@ calc_job_tickets(sge_ref_t *ref) {
 /**
  * @brief Clears the ticket values of a job
  *
- * @param[in,out] job          the job (`JB_Type`)
+ * @param[in,out] job          the job
  * @param[in]     is_clear_all true to also clear the urgency contributions,
  *                             not only the tickets
  */
-
-void sge_clear_job(lListElem *job, bool is_clear_all) {
+void
+sge_clear_job(const ocs::tom::Element<ocs::tom::JB> job, const bool is_clear_all) {
+   DENTER(BASIS_LAYER);
    if (is_clear_all) {
       ocs::tom::set<JB_urg>(job,0.0);
       ocs::tom::set<JB_nurg>(job,0.0);
@@ -1834,14 +1960,17 @@ void sge_clear_job(lListElem *job, bool is_clear_all) {
 
    for (ocs::tom::Element<ocs::tom::JAT> ja_task : ocs::tom::get<JB_ja_tasks>(job))
       sge_clear_ja_task(ja_task);
+   DRETURN_VOID;
 }
 
-/*--------------------------------------------------------------------
- * sge_clear_ja_task - clear tickets for job task
- *--------------------------------------------------------------------*/
-
+/**
+ * @brief Clear the tickets and the priority of an array task and of its granted queues
+ *
+ * @param ja_task the array task
+ */
 static void
-sge_clear_ja_task(lListElem *ja_task) {
+sge_clear_ja_task(const ocs::tom::Element<ocs::tom::JAT> ja_task) {
+   DENTER(BASIS_LAYER);
    ocs::tom::set<JAT_prio>(ja_task, 0);
    ocs::tom::set<JAT_ntix>(ja_task, 0);
    ocs::tom::set<JAT_tix>(ja_task, 0);
@@ -1857,6 +1986,7 @@ sge_clear_ja_task(lListElem *ja_task) {
       ocs::tom::set<JG_jcoticket>(granted_el, 0);
       ocs::tom::set<JG_jcfticket>(granted_el, 0);
    }
+   DRETURN_VOID;
 }
 
 /**
@@ -2073,7 +2203,7 @@ sge_calc_tickets(scheduler_all_data_t *lists,
             if (++task_cnt > max) {
                break;
             }
-            if (job_is_active(job, ja_task)) {
+            if (job_is_active(ocs::tom::ConstElement<ocs::tom::JB>(job), ja_task)) {
                num_queued_jobs++;
                num_jobs++;
             }
@@ -2092,13 +2222,12 @@ sge_calc_tickets(scheduler_all_data_t *lists,
    if (running_jobs) {
       for_each_rw(job, running_jobs) {
          for (ocs::tom::Element<ocs::tom::JAT> ja_task : ocs::tom::get<JB_ja_tasks>(job))
-            if (job_is_active(job, ja_task))
+            if (job_is_active(ocs::tom::ConstElement<ocs::tom::JB>(job), ja_task))
                num_jobs++;
       }
    }
    if (num_jobs > 0) {
-      job_ref = (sge_ref_t *)sge_malloc(num_jobs * sizeof(sge_ref_t));
-      memset(job_ref, 0, num_jobs * sizeof(sge_ref_t));
+      job_ref = new sge_ref_t[num_jobs]{};
    }
    if (num_unenrolled_tasks > 0) {
       task_ref_initialize_table(num_unenrolled_tasks);
@@ -2115,10 +2244,10 @@ sge_calc_tickets(scheduler_all_data_t *lists,
    if (running_jobs) {
       for_each_rw(job, running_jobs) {
          for (ocs::tom::Element<ocs::tom::JAT> ja_task : ocs::tom::get<JB_ja_tasks>(job)) {
-            if (!job_is_active(job, ja_task)) {
+            if (!job_is_active(ocs::tom::ConstElement<ocs::tom::JB>(job), ja_task)) {
                sge_clear_ja_task(ja_task);
             } else {
-               sge_set_job_refs(job, ja_task, &job_ref[job_ndx], nullptr, lists, 0);
+               sge_set_job_refs(ocs::tom::Element<ocs::tom::JB>(job), ja_task, &job_ref[job_ndx], nullptr, lists, 0);
                if (job_ref[job_ndx].node) {
                   ocs::tom::set<STN_job_ref_count>(job_ref[job_ndx].node,
                             ocs::tom::get<STN_job_ref_count>(job_ref[job_ndx].node)+1);
@@ -2143,10 +2272,10 @@ sge_calc_tickets(scheduler_all_data_t *lists,
             sge_ref_t *jref = &job_ref[job_ndx];
 
             if (++task_cnt > std::min(max_pending_tasks_per_job, free_qslots+1) ||
-                !job_is_active(job, ja_task)) {
+                !job_is_active(ocs::tom::ConstElement<ocs::tom::JB>(job), ja_task)) {
                sge_clear_ja_task(ja_task);
             } else {
-               sge_set_job_refs(job, ja_task, jref, nullptr, lists, 1);
+               sge_set_job_refs(ocs::tom::Element<ocs::tom::JB>(job), ja_task, jref, nullptr, lists, 1);
                if (jref->node)
                   ocs::tom::set<STN_job_ref_count>(jref->node,
                             ocs::tom::get<STN_job_ref_count>(jref->node)+1);
@@ -2166,7 +2295,8 @@ sge_calc_tickets(scheduler_all_data_t *lists,
                   break;
                }
                lListElem *ja_task = job_get_ja_task_template_pending(job, id);
-               sge_set_job_refs(job, ja_task, jref, tref, lists, 1);
+               sge_set_job_refs(ocs::tom::Element<ocs::tom::JB>(job), ocs::tom::Element<ocs::tom::JAT>(ja_task),
+                                jref, tref, lists, 1);
                if (jref->node) {
                   ocs::tom::set<STN_job_ref_count>(jref->node,
                             ocs::tom::get<STN_job_ref_count>(jref->node)+1);
@@ -2469,7 +2599,8 @@ sge_calc_tickets(scheduler_all_data_t *lists,
                /* error message to come */
 
                sge_free(&sort_list);
-               sge_free(&job_ref);
+               delete[] job_ref;
+               job_ref = nullptr;
                lFreeList(&decay_list);
                lFreeList(&usage_weight_list);
 
@@ -2701,8 +2832,8 @@ sge_calc_tickets(scheduler_all_data_t *lists,
          sge_ref_t jref;
 
          for (ocs::tom::Element<ocs::tom::JAT> ja_task : ocs::tom::get<JB_ja_tasks>(job)) {
-            memset(&jref, 0, sizeof(jref));
-            sge_set_job_refs(job, ja_task, &jref, nullptr, lists, 0);
+            jref = sge_ref_t{};
+            sge_set_job_refs(ocs::tom::Element<ocs::tom::JB>(job), ja_task, &jref, nullptr, lists, 0);
             if (jref.node) {
                if (sge_scheduling_run != ocs::tom::get<STN_pass2_seqno>(jref.node)) {
                   ocs::ShareTree::zero_node_fields(jref.node, nullptr);
@@ -2731,13 +2862,14 @@ sge_calc_tickets(scheduler_all_data_t *lists,
          if (job) {
             lListElem *ja_task_template = lFirstRW(static_cast<const lList *>(ocs::tom::get<JB_ja_template>(job)));
 
-            task_ref_copy_to_ja_task(tref, ja_task_template);
+            task_ref_copy_to_ja_task(tref, ocs::tom::Element<ocs::tom::JAT>(ja_task_template));
          }
          tref = task_ref_get_next_job_entry();
       }
    }
 
-   sge_free(&job_ref);
+   delete[] job_ref;
+   job_ref = nullptr;
    lFreeList(&decay_list);
    lFreeList(&usage_weight_list);
 
@@ -3279,10 +3411,10 @@ int sgeee_scheduler(scheduler_all_data_t *lists,
 
    /* clear SGEEE fields for queued jobs */
    for_each_rw_lv(job, pending_jobs) {
-      sge_clear_job(job, false);
+      sge_clear_job(ocs::tom::Element<ocs::tom::JB>(job), false);
    }
    for_each_rw_lv(job, running_jobs) {
-      sge_clear_job(job, false);
+      sge_clear_job(ocs::tom::Element<ocs::tom::JB>(job), false);
    }
 
    /* calculate per job static urgency values */
