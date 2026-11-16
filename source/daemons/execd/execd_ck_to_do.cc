@@ -274,20 +274,20 @@ force_job_rlimit_task(const lListElem *jep, const lListElem *jatep, const lListE
 
    // the usage of this task only - nullptr if the task does not run on this host
    const char *task_id = petep != nullptr ? ocs::tom::get<PET_id>(petep) : nullptr;
-   lList *usage_list = ptf_get_job_usage(jobid, jataskid, task_id);
-   if (usage_list == nullptr) {
+   auto usage_list = ptf_get_job_usage(jobid, jataskid, task_id);
+   if (!usage_list) {
       DRETURN(false);
    }
 
-   double cpu_val = usage_list_get_double_usage(usage_list, USAGE_ATTR_CPU, 0.0);
-   double vmem_val = usage_list_get_double_usage(usage_list, USAGE_ATTR_VMEM, 0.0);
-   double rss_val = usage_list_get_double_usage(usage_list, USAGE_ATTR_RSS, 0.0);
+   double cpu_val = usage_list_get_double_usage(*usage_list, USAGE_ATTR_CPU, 0.0);
+   double vmem_val = usage_list_get_double_usage(*usage_list, USAGE_ATTR_VMEM, 0.0);
+   double rss_val = usage_list_get_double_usage(*usage_list, USAGE_ATTR_RSS, 0.0);
    // A hard memory limit which was exceeded once is violated, also by a peak between two polls.
    // With systemd, maxrss is the high-water mark the kernel keeps, see
    // ptf_get_usage_from_systemd().
-   double maxvmem_val = usage_list_get_double_usage(usage_list, USAGE_ATTR_MAXVMEM, 0.0);
-   double maxrss_val = usage_list_get_double_usage(usage_list, USAGE_ATTR_MAXRSS, 0.0);
-   lFreeList(&usage_list);
+   double maxvmem_val = usage_list_get_double_usage(*usage_list, USAGE_ATTR_MAXVMEM, 0.0);
+   double maxrss_val = usage_list_get_double_usage(*usage_list, USAGE_ATTR_MAXRSS, 0.0);
+   usage_list.reset();
 
    DPRINTF("JOB " sge_u32 "." sge_u32 " task %s %s %10.5f %s %10.5f %s %10.5f %s %10.5f %s %10.5f"
            "\n", jobid, jataskid, task_id != nullptr ? task_id : "master", USAGE_ATTR_CPU, cpu_val,
@@ -1042,7 +1042,8 @@ int register_at_ptf(const lListElem *job, const lListElem *ja_task, const lListE
       }
 
       DPRINTF("Register job with AddGrpId " gid_t_fmt " and systemd scope " SFN " at PTF\n", addgrpid, scope_str != nullptr ? scope_str : "null");
-      if ((ptf_error = ptf_job_started(addgrpid, pe_task_id, job, ja_task_id, scope_str, usage_collection))) {
+      if ((ptf_error = ptf_job_started(addgrpid, pe_task_id, ocs::tom::ConstElement<ocs::tom::JB>(job), ja_task_id,
+                                       scope_str, usage_collection))) {
          ERROR(MSG_JOB_NOREGISTERPTF_SS, job_get_id_string(job_id, ja_task_id, pe_task_id, &id_dstring), ptf_errstr(ptf_error));
          DRETURN(1);
       }

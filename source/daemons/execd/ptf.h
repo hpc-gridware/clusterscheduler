@@ -53,6 +53,10 @@
 #include "cull/cull.h"
 
 #include "sgeobj/sge_conf.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
+#include "sgeobj/tom/ocs_tom_UA.h"
+#include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
 
 /** @brief How hard a job that fell behind is compensated
  *
@@ -197,17 +201,18 @@ void ptf_unregister_registered_job(uint32_t job_id, uint32_t ja_task_id );
 void ptf_reinit_queue_priority(uint32_t job_id, uint32_t ja_task_idr,
                                const char *pe_task_id_str, int priority);
 
-int ptf_job_started(osjobid_t os_jobid, const char *task_id_str,
-                    const lListElem *job, uint32_t jataskid, const char *systemd_scope, usage_collection_t usage_collection);
+int ptf_job_started(osjobid_t os_jobid, const char *task_id_str, ocs::tom::ConstElement<ocs::tom::JB> job,
+                    uint32_t jataskid, const char *systemd_scope, usage_collection_t usage_collection);
 
-lList *ptf_build_usage_list(const char *name, usage_collection_t usage_collection);
-int ptf_get_usage(lList **jobs);
+ocs::tom::ListPtr<ocs::tom::UA> ptf_build_usage_list(const char *name, usage_collection_t usage_collection);
+int ptf_get_usage(ocs::tom::ListPtr<ocs::tom::JB> &jobs);
 
-lList *ptf_get_job_usage(u_long job_id, u_long ja_task_id, const char *task_id);
+ocs::tom::ListPtr<ocs::tom::UA> ptf_get_job_usage(u_long job_id, u_long ja_task_id, const char *task_id);
 
-int ptf_process_job_ticket_list(lList *jobs);
+int ptf_process_job_ticket_list(ocs::tom::List<ocs::tom::JB> jobs);
 
-int ptf_job_complete(uint32_t job_id, uint32_t ja_task_id, const char *pe_task_id, lList **usage);
+int ptf_job_complete(uint32_t job_id, uint32_t ja_task_id, const char *pe_task_id,
+                     ocs::tom::ListPtr<ocs::tom::UA> &usage);
 
 void ptf_update_job_usage();
 

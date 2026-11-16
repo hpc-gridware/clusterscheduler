@@ -347,22 +347,22 @@ int sge_reap_children_execd(int max_count, bool is_qmaster_down) {
 }
 
 #ifdef COMPILE_DC
-/* 
-
-DESC
-
-   unregisters job from ptf and fills usage values
-   into appropriate job report element
-
-*/
+/**
+ * @brief Unregister a job from the PTF and put its final usage into the job report
+ *
+ * @param job_id the job
+ * @param ja_task_id the array task
+ * @param pe_task_id the PE task, or nullptr for the array task itself
+ * @param jr the job report that receives the usage
+ */
 static void unregister_from_ptf(uint32_t job_id, uint32_t ja_task_id,
                                 const char *pe_task_id, lListElem *jr) {
    DENTER(TOP_LAYER);
 
-   lList* usage = nullptr;
+   ocs::tom::ListPtr<ocs::tom::UA> usage;
    int ptf_error;
 
-   ptf_error = ptf_job_complete(job_id, ja_task_id, pe_task_id, &usage);
+   ptf_error = ptf_job_complete(job_id, ja_task_id, pe_task_id, usage);
    if (ptf_error) {
       lListElem *ja_task = nullptr;
       lListElem *job = nullptr;
@@ -408,8 +408,8 @@ static void unregister_from_ptf(uint32_t job_id, uint32_t ja_task_id,
               ptf_errstr(ptf_error));
    } else {
       if (usage) {
-         ocs::tom::exchange<JR_usage>(jr, &usage);
-         lFreeList(&usage);
+         // the job report takes the list over and frees the one it held, as exchanging and freeing did
+         ocs::tom::set<JR_usage>(jr, std::move(usage));
       }
    }
 

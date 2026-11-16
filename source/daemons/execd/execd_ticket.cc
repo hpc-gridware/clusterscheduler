@@ -95,7 +95,7 @@ do_ticket(ocs::gdi::ClientServerBase::struct_msg_t *aMsg) {
    { 
       int ptf_error;
       /* forward new tickets to ptf */
-      if ((ptf_error=ptf_process_job_ticket_list(ticket_modifier))) {
+      if ((ptf_error=ptf_process_job_ticket_list(ocs::tom::List<ocs::tom::JB>(ticket_modifier)))) {
          ERROR(MSG_JOB_TICKETPASS2PTF_IS, lGetNumberOfElem(ticket_modifier), ptf_errstr(ptf_error));
       }
 

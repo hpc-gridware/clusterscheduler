@@ -783,7 +783,10 @@ void update_job_usage(const char *qualified_hostname) {
    if (!mconf_get_sharetree_reserved_usage()) {
       int ptf_error;
 
-      if ((ptf_error=ptf_get_usage(&usage_list))) {
+      ocs::tom::ListPtr<ocs::tom::JB> ptf_usage_list;
+      ptf_error = ptf_get_usage(ptf_usage_list);
+      usage_list = ptf_usage_list.release();
+      if (ptf_error) {
          ERROR(MSG_LOAD_NOPTFUSAGE_S, ptf_errstr(ptf_error));
          /*
             use the old usage values in job report or none
@@ -909,11 +912,27 @@ calculate_reserved_memory(const lListElem *queue, int nslots, int h_nm, int s_nm
    return mem;
 }
 
+/**
+ * @brief Build the reserved online usage of an array task or of a PE task
+ *
+ * @param qualified_hostname this host, as the cluster knows it
+ * @param ja_task the array task
+ * @param pe_task the PE task, or nullptr for the array task itself
+ * @param job_id the job
+ * @param ja_task_id the array task id
+ * @param pe_task_id the PE task id, or nullptr
+ * @param pe the parallel environment, or nullptr
+ * @param now the current time
+ *
+ * @return the usage list (`UA_Type`), owned by the caller, or nullptr if the final usage was generated already
+ */
 static lList *
 calculate_reserved_usage(const char *qualified_hostname, const lListElem *ja_task, const lListElem *pe_task,
                          uint32_t job_id, uint32_t ja_task_id,
                          const char *pe_task_id,
                          const lListElem *pe, uint64_t now) {
+   DENTER(TOP_LAYER);
+
    lList *ul = nullptr;
    lListElem *jr;
 
@@ -932,13 +951,11 @@ calculate_reserved_usage(const char *qualified_hostname, const lListElem *ja_tas
 #ifdef COMPILE_DC
       {
          /* use PDC actual I/O if available */
-         lList *jul;
-         jul = ptf_get_job_usage(job_id, ja_task_id, pe_task_id);
-         if (jul != nullptr) {
-            io = usage_list_get_double_usage(jul, USAGE_ATTR_IO, 0.0);
-            ioops = usage_list_get_double_usage(jul, USAGE_ATTR_IOOPS, 0.0);
-            iow = usage_list_get_double_usage(jul, USAGE_ATTR_IOW, 0.0);
-            lFreeList(&jul);
+         const auto jul = ptf_get_job_usage(job_id, ja_task_id, pe_task_id);
+         if (jul) {
+            io = usage_list_get_double_usage(*jul, USAGE_ATTR_IO, 0.0);
+            ioops = usage_list_get_double_usage(*jul, USAGE_ATTR_IOOPS, 0.0);
+            iow = usage_list_get_double_usage(*jul, USAGE_ATTR_IOW, 0.0);
          }
       }
 #endif
@@ -965,7 +982,7 @@ calculate_reserved_usage(const char *qualified_hostname, const lListElem *ja_tas
       }
    }
 
-   return ul;
+   DRETURN(ul);
 }
 
 static lListElem *

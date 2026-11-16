@@ -642,8 +642,8 @@ namespace ocs::execd {
                         DPRINTF("==> Job is active in systemd scope %s\n", scope.c_str());
                         lList *usage_list = ocs::tom::get<JO_usage_list>(os_job);
                         if (usage_list == nullptr) {
-                           usage_list = ptf_build_usage_list("usagelist", usage_collection);
-                           ocs::tom::set<JO_usage_list>(os_job, usage_list);
+                           ocs::tom::set<JO_usage_list>(os_job, ptf_build_usage_list("usagelist", usage_collection));
+                           usage_list = ocs::tom::get<JO_usage_list>(os_job);
                         }
                         // from systemd we do *not* get vmem / maxvmem
                         ptf_get_usage_value_from_systemd(systemd, scope, usage_list, "CPUUsageNSec", USAGE_ATTR_CPU, 1.0 / 1000000000.0); // convert nanoseconds to seconds
