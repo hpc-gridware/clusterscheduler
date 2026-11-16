@@ -60,7 +60,13 @@
 #include "sgeobj/sge_userprj.h"
 #include "sgeobj/ocs_Session.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
 #include "sgeobj/tom/ocs_tom_JAT.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
+#include "sgeobj/tom/ocs_tom_PR.h"
+#include "sgeobj/tom/ocs_tom_STN.h"
+#include "sgeobj/tom/ocs_tom_UA.h"
+#include "sgeobj/tom/ocs_tom_UU.h"
 
 #include "evm/sge_event_master.h"
 
@@ -134,7 +140,7 @@ sge_sharetree_spool_handler(te_event_t /* anEvent */, monitoring_t *monitor) {
    DRETURN_VOID;
 }
 
-/** CS-1239 step 5: periodic share-tree tick - decay UU_/PR_/UPP_, then (if
+/** @brief CS-1239 step 5: periodic share-tree tick - decay UU_/PR_/UPP_, then (if
  * anything is dirty) emit batched sgeE_USER_MOD / sgeE_PROJECT_MOD /
  * sgeE_NEW_SHARETREE inside one event-master transaction.
  *
@@ -190,6 +196,9 @@ sge_sharetree_spool_handler(te_event_t /* anEvent */, monitoring_t *monitor) {
  * qmaster_param value (default 5 s, clamped to [1, 300]). Runtime changes
  * take effect on the next tick; configuration_qmaster.cc also calls
  * sge_reschedule_sharetree_tick() to apply tighter intervals faster.
+ *
+ * @param anEvent the timed event that fired (unused)
+ * @param monitor for monitoring qmaster threads
  */
 static void
 sge_sharetree_tick_handler(te_event_t /* anEvent */, monitoring_t *monitor) {
@@ -199,7 +208,7 @@ sge_sharetree_tick_handler(te_event_t /* anEvent */, monitoring_t *monitor) {
    ++tet_decay_run;
 
    const uint64_t curr_time = sge_get_gmt64();
-   lList *decay_list = ocs::Usage::get_decay_list();
+   const auto decay_list = ocs::tom::ListPtr<ocs::tom::UA>(ocs::Usage::get_decay_list());
 
    MONITOR_WAIT_TIME(SGE_LOCK(LOCK_GLOBAL, LOCK_WRITE), monitor);
 
@@ -210,7 +219,7 @@ sge_sharetree_tick_handler(te_event_t /* anEvent */, monitoring_t *monitor) {
     * the pre-CS-1239 implicit gate ("no UU/PR objects -> no work"; see
     * calc_usage.md) by checking the direct indicator. Matching gate is in
     * sge_book_finished_job_usage. */
-   if (lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SHARETREE)) == nullptr) {
+   if (!ocs::tom::ConstList<ocs::tom::STN>(*ocs::DataStore::get_master_list(SGE_TYPE_SHARETREE)).front()) {
       SGE_UNLOCK(LOCK_GLOBAL, LOCK_WRITE);
 
       const uint32_t next_in_s = static_cast<uint32_t>(mconf_get_sharetree_tick_interval());
@@ -220,7 +229,6 @@ sge_sharetree_tick_handler(te_event_t /* anEvent */, monitoring_t *monitor) {
       te_add_event(ev);
       te_free_event(&ev);
 
-      lFreeList(&decay_list);
       DRETURN_VOID;
    }
 
@@ -240,17 +248,17 @@ sge_sharetree_tick_handler(te_event_t /* anEvent */, monitoring_t *monitor) {
    bool any_object = false;
    lList **user_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_USER);
    if (user_list != nullptr) {
-      for_each_rw_lv(user, *user_list) {
-         ocs::UserProject::decay_userprj_usage(user, true, decay_list, tet_decay_run, curr_time);
-         ocs::SharetreeUsage::mark_user_event_dirty(ocs::tom::get<UU_name>(user));
+      for (const auto user : ocs::tom::List<ocs::tom::UU>(*user_list)) {
+         ocs::UserProject::decay_userprj_usage(user, true, *decay_list, tet_decay_run, curr_time);
+         ocs::SharetreeUsage::mark_user_event_dirty(user.get<UU_name>());
          any_object = true;
       }
    }
    lList **project_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_PROJECT);
    if (project_list != nullptr) {
-      for_each_rw_lv(project, *project_list) {
-         ocs::UserProject::decay_userprj_usage(project, false, decay_list, tet_decay_run, curr_time);
-         ocs::SharetreeUsage::mark_project_event_dirty(ocs::tom::get<PR_name>(project));
+      for (const auto project : ocs::tom::List<ocs::tom::PR>(*project_list)) {
+         ocs::UserProject::decay_userprj_usage(project, false, *decay_list, tet_decay_run, curr_time);
+         ocs::SharetreeUsage::mark_project_event_dirty(project.get<PR_name>());
          any_object = true;
       }
    }
@@ -265,61 +273,62 @@ sge_sharetree_tick_handler(te_event_t /* anEvent */, monitoring_t *monitor) {
 
    if (tree_dirty || any_events) {
       lList **master_stree_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_SHARETREE);
-      lListElem *root = (master_stree_list != nullptr) ? lFirstRW(*master_stree_list) : nullptr;
+      const auto root = master_stree_list != nullptr ? ocs::tom::List<ocs::tom::STN>(*master_stree_list).front()
+                                                     : ocs::tom::Element<ocs::tom::STN>();
 
       sge_set_commit_required();
 
       ocs::SharetreeUsage::emit_dirty_user_events(ocs::SessionManager::GDI_SESSION_NONE);
       ocs::SharetreeUsage::emit_dirty_project_events(ocs::SessionManager::GDI_SESSION_NONE);
 
-      if (root != nullptr) {
-         const lList *master_user_list = *ocs::DataStore::get_master_list(SGE_TYPE_USER);
-         const lList *master_project_list = *ocs::DataStore::get_master_list(SGE_TYPE_PROJECT);
-         const lList *master_job_list = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
+      if (root) {
+         const auto master_user_list =
+                 ocs::tom::ConstList<ocs::tom::UU>(*ocs::DataStore::get_master_list(SGE_TYPE_USER));
+         const auto master_project_list =
+                 ocs::tom::ConstList<ocs::tom::PR>(*ocs::DataStore::get_master_list(SGE_TYPE_PROJECT));
+         const auto master_job_list = ocs::tom::ConstList<ocs::tom::JB>(*ocs::DataStore::get_master_list(SGE_TYPE_JOB));
 
          sge_init_share_tree_nodes(root);
          ocs::ShareTree::set_node_project_flag(root, master_project_list);
 
          /* Active-ja_task predicate matches scheduler's job_is_active. */
-         for_each_ep_lv(job, master_job_list) {
-            for_each_rw_lv(ja_task, ocs::tom::get<JB_ja_tasks>(job)) {
-               const u_long status = ocs::tom::get<JAT_status>(ja_task);
-               const u_long state = ocs::tom::get<JAT_state>(ja_task);
+         for (const auto job : master_job_list) {
+            for (const auto ja_task : job.get<JB_ja_tasks>()) {
+               const u_long status = ja_task.get<JAT_status>();
+               const u_long state = ja_task.get<JAT_state>();
                const bool active = (status & (JRUNNING | JMIGRATING | JTRANSFERING))
                                 && !(state & (JSUSPENDED | JSUSPENDED_ON_THRESHOLD));
                if (!active) {
                   continue;
                }
-               const char *owner = ocs::tom::get<JB_owner>(job);
-               const char *project = ocs::tom::get<JB_project>(job);
+               const char *owner = job.get<JB_owner>();
+               const char *project = job.get<JB_project>();
                if (owner == nullptr && project == nullptr) {
                   continue;
                }
                lListElem *parent = nullptr;
-               lListElem *leaf = ocs::ShareTree::search_user_project_node(root, owner, project,
-                                                                         &parent, root);
-               if (leaf != nullptr) {
-                  ocs::tom::set<STN_job_ref_count>(leaf,
-                            ocs::tom::get<STN_job_ref_count>(leaf) + 1);
-                  ocs::tom::set<STN_active_job_ref_count>(leaf,
-                            ocs::tom::get<STN_active_job_ref_count>(leaf) + 1);
+               const auto leaf = ocs::tom::Element<ocs::tom::STN>(
+                       ocs::ShareTree::search_user_project_node(root, owner, project, &parent, root));
+               if (leaf) {
+                  leaf.set<STN_job_ref_count>(leaf.get<STN_job_ref_count>() + 1);
+                  leaf.set<STN_active_job_ref_count>(leaf.get<STN_active_job_ref_count>() + 1);
                }
             }
          }
 
          update_job_ref_count(root);
          update_active_job_ref_count(root);
-         ocs::tom::set<STN_m_share>(root, 1.0);
+         root.set<STN_m_share>(1.0);
          calculate_m_shares(root);
 
          /* Seqno (u_long)-1 tells calc_node_usage to recurse + recompute
           * without stamping UU_/PR_usage_seqno - the decay step above owns
           * that stamp and we must not double-stamp inside the same tick. */
          ocs::ShareTree::calc_node_usage(root, master_user_list, master_project_list,
-                                         decay_list, curr_time, nullptr, (u_long)-1);
+                                         *decay_list, curr_time, nullptr, (u_long)-1);
          sge_calc_node_targets(root, root);
 
-         ocs::tom::add<STN_version>(root, 1);
+         root.add<STN_version>(1);
 
          sge_add_event(curr_time, sgeE_NEW_SHARETREE, 0, 0, nullptr, nullptr,
                        nullptr, root, ocs::SessionManager::GDI_SESSION_NONE);
@@ -337,7 +346,6 @@ sge_sharetree_tick_handler(te_event_t /* anEvent */, monitoring_t *monitor) {
    te_add_event(ev);
    te_free_event(&ev);
 
-   lFreeList(&decay_list);
    DRETURN_VOID;
 }
 

@@ -103,13 +103,8 @@ sge_build_sgeee_orders(scheduler_all_data_t *lists, ocs::tom::List<ocs::tom::JB>
  * fields without depending on a scheduler_all_data_t. The scheduler
  * itself still uses these on its mirror data store. */
 int  sge_init_share_tree_nodes(ocs::tom::Element<ocs::tom::STN> root);
-OCS_TRANSITIONAL int sge_init_share_tree_nodes(lListElem *root);
 void calculate_m_shares(ocs::tom::Element<ocs::tom::STN> parent_node);
-OCS_TRANSITIONAL void calculate_m_shares(lListElem *parent_node);
 u_long update_job_ref_count(ocs::tom::Element<ocs::tom::STN> node);
-OCS_TRANSITIONAL u_long update_job_ref_count(lListElem *node);
 u_long update_active_job_ref_count(ocs::tom::Element<ocs::tom::STN> node);
-OCS_TRANSITIONAL u_long update_active_job_ref_count(lListElem *node);
 int  sge_calc_node_targets(ocs::tom::ConstElement<ocs::tom::STN> root, ocs::tom::Element<ocs::tom::STN> node);
-OCS_TRANSITIONAL int sge_calc_node_targets(lListElem *root, lListElem *node);
 

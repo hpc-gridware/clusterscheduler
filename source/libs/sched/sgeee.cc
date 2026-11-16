@@ -987,16 +987,6 @@ calculate_m_shares(const ocs::tom::Element<ocs::tom::STN> parent_node) {
    DRETURN_VOID;
 }
 
-/**
- * @brief calculate_m_shares() for an untyped caller
- *
- * @param[in,out] parent_node the node whose subtree is recalculated (`STN_Type`)
- */
-void
-calculate_m_shares(lListElem *parent_node) {
-   calculate_m_shares(ocs::tom::Element<ocs::tom::STN>(parent_node));
-}
-
 
 /**
  * @brief Recomputes the job reference count of a node and its descendants
@@ -1022,18 +1012,6 @@ update_job_ref_count(const ocs::tom::Element<ocs::tom::STN> node) {
 }
 
 /**
- * @brief update_job_ref_count() for an untyped caller
- *
- * @param[in,out] node the node whose subtree is recounted (`STN_Type`)
- *
- * @return as update_job_ref_count()
- */
-u_long
-update_job_ref_count(lListElem *node) {
-   return update_job_ref_count(ocs::tom::Element<ocs::tom::STN>(node));
-}
-
-/**
  * @brief Recomputes the active job reference count of a node and its descendants
  *
  * @param[in,out] node the node whose subtree is recounted
@@ -1054,18 +1032,6 @@ update_active_job_ref_count(const ocs::tom::Element<ocs::tom::STN> node) {
    }
 
    DRETURN(ocs::tom::get<STN_active_job_ref_count>(node));
-}
-
-/**
- * @brief update_active_job_ref_count() for an untyped caller
- *
- * @param[in,out] node the node whose subtree is recounted (`STN_Type`)
- *
- * @return as update_active_job_ref_count()
- */
-u_long
-update_active_job_ref_count(lListElem *node) {
-   return update_active_job_ref_count(ocs::tom::Element<ocs::tom::STN>(node));
 }
 
 
@@ -1117,18 +1083,6 @@ int
 sge_init_share_tree_nodes(const ocs::tom::Element<ocs::tom::STN> root) {
    DENTER(TOP_LAYER);
    DRETURN(ocs::ShareTree::foreach_call_func(root, sge_init_share_tree_node_fields, nullptr));
-}
-
-/**
- * @brief sge_init_share_tree_nodes() for an untyped caller
- *
- * @param[in,out] root the root of the share tree (`STN_Type`)
- *
- * @return as sge_init_share_tree_nodes()
- */
-int
-sge_init_share_tree_nodes(lListElem *root) {
-   return sge_init_share_tree_nodes(ocs::tom::Element<ocs::tom::STN>(root));
 }
 
 /**
@@ -3286,19 +3240,6 @@ sge_calc_node_targets(const ocs::tom::ConstElement<ocs::tom::STN> root,
    }
 
    DRETURN(0);
-}
-
-/**
- * @brief sge_calc_node_targets() for an untyped caller
- *
- * @param[in]     root the root of the share tree (`STN_Type`)
- * @param[in,out] node the node whose subtree is calculated (`STN_Type`)
- *
- * @return as sge_calc_node_targets()
- */
-int
-sge_calc_node_targets(lListElem *root, lListElem *node) {
-   return sge_calc_node_targets(ocs::tom::ConstElement<ocs::tom::STN>(root), ocs::tom::Element<ocs::tom::STN>(node));
 }
 
 /**
