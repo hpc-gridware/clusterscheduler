@@ -527,7 +527,8 @@ ocs::BindingSchedd::apply_strategy(sge_assignment_t *a, int slots, const ocs::to
       // Find the initial ID for the next task binding if there are already bindings otherwise start with 0
       uint32_t next_binding_id_for_task = 0;
       if (binding_done != nullptr) {
-         next_binding_id_for_task = lGetNumberOfElem(ocs::tom::get<BN_specific_binding_list>(binding_done));
+         next_binding_id_for_task =
+               static_cast<uint32_t>(ocs::tom::get<BN_specific_binding_list>(binding_done).size());
       }
 
       // ignore characteristics when handling binding masks.
@@ -616,7 +617,7 @@ ocs::BindingSchedd::copy_strategy(const sge_assignment_t *a) {
    bool task_specific_binding = false;
 
    // copy the host specific binding from the assignment to the gdil element
-   for_each_rw_lv(jg_elem, *a->gdil) {
+   for (auto jg_elem : *a->gdil) {
       const char *hostname = ocs::tom::get<JG_qhostname>(jg_elem);
 
       // try to find a binding for the host

@@ -81,6 +81,8 @@ static lRef schedd_mes_get_category(uint32_t job_id, ocs::tom::ConstList<ocs::to
  */
 static void schedd_mes_find_others(const ocs::tom::Element<ocs::tom::SME> tmp_sme,
                                    const ocs::tom::ConstList<ocs::tom::JB> job_list, const int ignore_category) {
+   DENTER(TOP_LAYER);
+
    if (tmp_sme && job_list) {
       lRef category = nullptr;            /* Category pointer (void*) */
       ocs::tom::ConstList<ocs::tom::ULNG> jid_cat_list;
@@ -92,7 +94,7 @@ static void schedd_mes_find_others(const ocs::tom::Element<ocs::tom::SME> tmp_sm
        */
       for (auto message_elem : ocs::tom::get<SME_message_list>(tmp_sme)) {
          auto jid_list = ocs::tom::get<MES_job_number_list>(message_elem);
-         auto jid = ocs::tom::get<ULNG_value>(lFirst(jid_list));
+         auto jid = ocs::tom::get<ULNG_value>(jid_list.front());
          auto jid_category = schedd_mes_get_category(jid, job_list);
 
          /*
@@ -109,6 +111,7 @@ static void schedd_mes_find_others(const ocs::tom::Element<ocs::tom::SME> tmp_sm
          }
       }
    }
+   DRETURN_VOID;
 }
 
 /**
@@ -269,17 +272,16 @@ ocs::tom::ElementPtr<ocs::tom::SME> schedd_mes_obtain_package(int *global_mes_co
       sconf_disable_schedd_job_info();
    } else if (schedd_job_info == SCHEDD_JOB_INFO_JOB_LIST) {
       schedd_mes_add_global(nullptr, false, SCHEDD_INFO_JOBLIST);
-   } else if (lGetNumberOfElem(ocs::tom::get<SME_message_list>(sme))<1 &&
-            lGetNumberOfElem(ocs::tom::get<SME_global_message_list>(sme))<1) {
+   } else if (ocs::tom::get<SME_message_list>(sme).empty() && ocs::tom::get<SME_global_message_list>(sme).empty()) {
       schedd_mes_add_global(nullptr, false, SCHEDD_INFO_NOMESSAGE);
    }
 
    if (global_mes_count != nullptr) {
-      *global_mes_count = lGetNumberOfElem(ocs::tom::get<SME_global_message_list>(sme));
+      *global_mes_count = static_cast<int>(ocs::tom::get<SME_global_message_list>(sme).size());
    }
 
    if (job_mes_count != nullptr) {
-      *job_mes_count = lGetNumberOfElem(ocs::tom::get<SME_message_list>(sme));
+      *job_mes_count = static_cast<int>(ocs::tom::get<SME_message_list>(sme).size());
    }
 
    // the caller takes the messages over, the temporary ones are freed

@@ -127,11 +127,12 @@ int sort_host_list(const ocs::tom::List<ocs::tom::EH> hl, const ocs::tom::ConstL
    }
    sge_free(&load_formula);
 
-   if (lPSortList(hl,"%I+", EH_sort_value)) {
+   // as lPSortList() did, an absent list is an error
+   if (hl == nullptr) {
       DRETURN(-1);
-   } else {
-      DRETURN(0);
    }
+   hl.sort<ocs::tom::asc<EH_sort_value>>();
+   DRETURN(0);
 }
 
 

@@ -4522,9 +4522,11 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
              *    - QSM_LOAD: QU_host_seq_no (from load_formula) ASCENDING, QU_seq_no (from config) ASCENDING
              *    - QSM_SEQNUM: QU_seq_no (from config) ASCENDING, QU_host_seq_no (from load_formula) ASCENDING
              */
-            lPSortList(a->queue_list, "%I- %I+ %I+ %I+", QU_tag, QU_soft_violation, QU_host_seq_no, QU_seq_no);
+            a->queue_list.sort<ocs::tom::desc<QU_tag>, ocs::tom::asc<QU_soft_violation>, ocs::tom::asc<QU_host_seq_no>,
+                               ocs::tom::asc<QU_seq_no>>();
          } else {
-            lPSortList(a->queue_list, "%I- %I+ %I+ %I+", QU_tag, QU_soft_violation, QU_seq_no, QU_host_seq_no);
+            a->queue_list.sort<ocs::tom::desc<QU_tag>, ocs::tom::asc<QU_soft_violation>, ocs::tom::asc<QU_seq_no>,
+                               ocs::tom::asc<QU_host_seq_no>>();
          }
       } else {
          int last_dispatch_type = sconf_get_last_dispatch_type();
@@ -4532,9 +4534,9 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
              last_dispatch_type == DISPATCH_TYPE_NONE ||
              sconf_get_host_order_changed()) {
             if (sconf_get_queue_sort_method() == QSM_LOAD) {
-               lPSortList(a->queue_list, "%I+ %I+", QU_host_seq_no, QU_seq_no);
+               a->queue_list.sort<ocs::tom::asc<QU_host_seq_no>, ocs::tom::asc<QU_seq_no>>();
             } else {
-               lPSortList(a->queue_list, "%I+ %I+", QU_seq_no, QU_host_seq_no);
+               a->queue_list.sort<ocs::tom::asc<QU_seq_no>, ocs::tom::asc<QU_host_seq_no>>();
             }
          }
       }
@@ -4568,7 +4570,7 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
          if (ocs::tom::get<EH_seq_no>(hep) == std::numeric_limits<uint32_t>::max())
             ocs::tom::set<EH_seq_no>(hep, host_seq_no++);
       }
-      lPSortList(a->host_list, "%I+", EH_seq_no);
+      a->host_list.sort<ocs::tom::asc<EH_seq_no>>();
 
       // now work on the host list
       int accu_host_slots = 0;
@@ -5343,9 +5345,9 @@ dispatch_t sge_sequential_assignment(sge_assignment_t *a) {
           sconf_get_host_order_changed()) {
          DPRINTF("SORTING HOSTS!\n");
          if (sconf_get_queue_sort_method() == QSM_LOAD) {
-            lPSortList(a->queue_list, "%I+ %I+", QU_host_seq_no, QU_seq_no);
+            a->queue_list.sort<ocs::tom::asc<QU_host_seq_no>, ocs::tom::asc<QU_seq_no>>();
          } else {
-            lPSortList(a->queue_list, "%I+ %I+", QU_seq_no, QU_host_seq_no);
+            a->queue_list.sort<ocs::tom::asc<QU_seq_no>, ocs::tom::asc<QU_host_seq_no>>();
          }
       }
       if (a->is_soft) {

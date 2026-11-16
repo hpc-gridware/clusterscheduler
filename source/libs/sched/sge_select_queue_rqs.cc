@@ -371,7 +371,7 @@ parallel_rqs_slots_by_time(sge_assignment_t *a, int *slots, const ocs::tom::Elem
    const char* queue = ocs::tom::get<QU_qname>(qep);
    const char* host = ocs::tom::get<QU_qhostname>(qep);
 
-   if (lGetNumberOfElem(a->rqs_list) != 0) {
+   if (!a->rqs_list.empty()) {
       const char* user = a->user;
       const char* group = a->group;
       const auto grp_list = a->grp_list;
@@ -764,7 +764,7 @@ dispatch_t rqs_by_slots(sge_assignment_t *a, const char *queue, const char *host
 
    *is_global = false;
 
-   if (lGetNumberOfElem(a->rqs_list) > 0) {
+   if (!a->rqs_list.empty()) {
       SCHED_PROF_INC(a->pi, seq_rqs);
    }
 

@@ -340,9 +340,9 @@ sge_qeti_t *sge_qeti_allocate(sge_assignment_t *a) {
       }
    }
 
-   DPRINTF("QETI: P %d G %d H %d Q %d\n", lGetNumberOfElem(*iter->cr_refs_pe),
-           lGetNumberOfElem(*iter->cr_refs_global), lGetNumberOfElem(*iter->cr_refs_host),
-           lGetNumberOfElem(*iter->cr_refs_queue));
+   DPRINTF("QETI: P %d G %d H %d Q %d\n", static_cast<int>(iter->cr_refs_pe->size()),
+           static_cast<int>(iter->cr_refs_global->size()), static_cast<int>(iter->cr_refs_host->size()),
+           static_cast<int>(iter->cr_refs_queue->size()));
 
    DRETURN(iter);
 }

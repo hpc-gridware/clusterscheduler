@@ -561,7 +561,7 @@ void sge_sharetree_print(dstring *out, rapidjson::StringBuffer *jsonBuffer,
    auto sharetree = sharetree_in.clone("copy of sharetree");
 
    /* Resolve the default users */
-   ocs::ShareTree::add_all_auto_users(lFirstRW(*sharetree), users, projects, usersets);
+   ocs::ShareTree::add_all_auto_users(sharetree->front(), users, projects, usersets);
 
    /* 
     * The sharetree calculation and output uses lots of global variables
@@ -569,7 +569,7 @@ void sge_sharetree_print(dstring *out, rapidjson::StringBuffer *jsonBuffer,
     */
    sge_mutex_lock("sharetree_printing", __func__, __LINE__, &mtx);
 
-   auto root = lFirstRW(*sharetree);
+   auto root = sharetree->front();
 
    calculate_share_percents(root, 1.0, ocs::tom::get<STN_shares>(root));
 

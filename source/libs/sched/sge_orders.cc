@@ -82,8 +82,7 @@ void sge_add_schedd_info(ocs::tom::ListPtr<ocs::tom::OR> &or_list, int *global_m
 
    auto sme = schedd_mes_obtain_package(global_mes_count, job_mes_count);
 
-   if (!sme || (lGetNumberOfElem(ocs::tom::get<SME_message_list>(sme)) < 1
-         && lGetNumberOfElem(ocs::tom::get<SME_global_message_list>(sme)) < 1)) {
+   if (!sme || (ocs::tom::get<SME_message_list>(sme).empty() && ocs::tom::get<SME_global_message_list>(sme).empty())) {
       DRETURN_VOID;
    }
 

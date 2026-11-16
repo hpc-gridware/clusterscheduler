@@ -293,7 +293,7 @@ select4unsuspension(const ocs::tom::List<ocs::tom::JB> job_list, const ocs::tom:
          }
 
          /* is this the master queue of this job ? */
-         if (strcmp(qnm, ocs::tom::get<JG_qname>(lFirst(ocs::tom::get<JAT_granted_destin_identifier_list>(ja_task))))) {
+         if (strcmp(qnm, ocs::tom::get<JG_qname>(ocs::tom::get<JAT_granted_destin_identifier_list>(ja_task).front()))) {
             DTRACE;
             continue;
          }
