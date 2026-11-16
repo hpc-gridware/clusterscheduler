@@ -262,8 +262,8 @@ static int
 sequential_update_host_order(ocs::tom::List<ocs::tom::EH> host_list, ocs::tom::List<ocs::tom::QU> queues);
 
 static int
-rsmap_same_slots(sge_assignment_t *a, const lList *total_list, const lList *rue_list,
-                 dstring *reason);
+rsmap_same_slots(sge_assignment_t *a, ocs::tom::ConstList<ocs::tom::CE> total_list,
+                 ocs::tom::ConstList<ocs::tom::RUE> rue_list, dstring *reason);
 
 /* -- base functions ---------------------------------------------- */
 
@@ -274,17 +274,21 @@ compute_soft_violations(const sge_assignment_t *a, ocs::tom::ConstElement<ocs::t
                         ocs::tom::ConstList<ocs::tom::RUE> actual_attr, uint32_t layer, double lc_factor, uint32_t tag);
 
 static dispatch_t
-rc_time_by_slots(sge_assignment_t *a, lList *requested, const lList *load_attr, const lList *config_attr, const lList *actual_attr,
-                 const lListElem *host, lListElem *queue, bool allow_non_requestable, dstring *reason, int slots,
+rc_time_by_slots(sge_assignment_t *a, ocs::tom::List<ocs::tom::CE> requested,
+                 ocs::tom::ConstList<ocs::tom::HL> load_attr, ocs::tom::ConstList<ocs::tom::CE> config_attr,
+                 ocs::tom::ConstList<ocs::tom::RUE> actual_attr, ocs::tom::ConstElement<ocs::tom::EH> host,
+                 ocs::tom::ConstElement<ocs::tom::QU> queue, bool allow_non_requestable, dstring *reason, int slots,
                  uint32_t layer, double lc_factor, uint32_t tag, uint64_t *start_time, const char *object_name);
 
 
 
 static dispatch_t
-ri_slots_by_time(const sge_assignment_t *a, int *slots, const lList *rue_list, lListElem *request,
-                 const lList *load_attr, const lList *total_list, const lList *additional_usage, lListElem *host, lListElem *queue,
-                 uint32_t layer, double lc_factor, dstring *reason, bool allow_non_requestable, bool no_centry,
-                 const char *object_name, ocs::TopologyString& binding_inuse);
+ri_slots_by_time(const sge_assignment_t *a, int *slots, ocs::tom::ConstList<ocs::tom::RUE> rue_list,
+                 ocs::tom::ConstElement<ocs::tom::CE> request, ocs::tom::ConstList<ocs::tom::HL> load_attr,
+                 ocs::tom::ConstList<ocs::tom::CE> total_list, ocs::tom::ConstList<ocs::tom::CE> additional_usage,
+                 ocs::tom::ConstElement<ocs::tom::EH> host, ocs::tom::ConstElement<ocs::tom::QU> queue, uint32_t layer,
+                 double lc_factor, dstring *reason, bool allow_non_requestable, bool no_centry, const char *object_name,
+                 ocs::TopologyString& binding_inuse);
 
 static dispatch_t
 match_static_resource(int slots, ocs::tom::ConstElement<ocs::tom::CE> req_cplx,
@@ -1471,7 +1475,7 @@ bool sge_select_queue(lList *requested_attr, lListElem *queue, lListElem *host,
          lc_factor = ((double)ulc_factor)/100;
    }
 
-   ret = rc_time_by_slots(&a, requested_attr, load_attr, config_attr, actual_attr,
+   ret = rc_time_by_slots(&a, ocs::tom::List<ocs::tom::CE>(requested_attr), load_attr, config_attr, actual_attr,
                      nullptr, nullptr, allow_non_requestable, nullptr, slots,
                           DOMINANT_LAYER_HOST, lc_factor, GLOBAL_TAG,
                           &start_time, SGE_GLOBAL_NAME);
@@ -1490,8 +1494,9 @@ bool sge_select_queue(lList *requested_attr, lListElem *queue, lListElem *host,
             lc_factor = ((double)ulc_factor)/100;
       }
 
-      ret = rc_time_by_slots(&a, requested_attr, load_attr, config_attr,
-                             actual_attr, host, nullptr, allow_non_requestable, nullptr,
+      ret = rc_time_by_slots(&a, ocs::tom::List<ocs::tom::CE>(requested_attr), load_attr, config_attr,
+                             actual_attr, ocs::tom::ConstElement<ocs::tom::EH>(host), nullptr,
+                             allow_non_requestable, nullptr,
                              slots, DOMINANT_LAYER_HOST, lc_factor, HOST_TAG,
                              &start_time, ocs::tom::get<EH_name>(host));
 
@@ -1500,8 +1505,9 @@ bool sge_select_queue(lList *requested_attr, lListElem *queue, lListElem *host,
          ocs::tom::ConstList<ocs::tom::CE> config_attr = ocs::tom::get<QU_consumable_config_list>(queue);
          ocs::tom::ConstList<ocs::tom::RUE> actual_attr = ocs::tom::get<QU_resource_utilization>(queue);
 
-         ret = rc_time_by_slots(&a, requested_attr, nullptr, config_attr, actual_attr, nullptr,
-                                queue, allow_non_requestable, nullptr, slots, DOMINANT_LAYER_QUEUE,
+         ret = rc_time_by_slots(&a, ocs::tom::List<ocs::tom::CE>(requested_attr), nullptr, config_attr,
+                                actual_attr, nullptr, ocs::tom::ConstElement<ocs::tom::QU>(queue),
+                                allow_non_requestable, nullptr, slots, DOMINANT_LAYER_QUEUE,
                                 0, QUEUE_TAG, &start_time,  ocs::tom::get<QU_full_name>(queue));
       }
    }
@@ -1520,22 +1526,23 @@ bool sge_select_queue(lList *requested_attr, lListElem *queue, lListElem *host,
  * resource container is the maximum of the earliest start times for all
  * resources comprised by the resource container that requested by a job.
  *
- * @param requested list of attribute requests
- * @param load_attr list of load attributes or null on queue level
- * @param config_attr list of user defined attributes
- * @param actual_attr usage of all consumables (RUE_Type)
- * @param centry_list system-wide attribute config. list (CE_Type)
- * @param host current host or nullptr on queue level
- * @param queue current queue or nullptr on global/host level
+ * The implicit slots request is a cache that lives as long as the process; it stays raw, a static owning
+ * handle would free it in the static destruction at exit.
+ *
+ * @param a the assignment
+ * @param requested list of attribute requests (`CE_Type`), their tags are updated
+ * @param load_attr list of load attributes (`HL_Type`) or an empty handle on queue level
+ * @param config_attr list of user defined attributes (`CE_Type`)
+ * @param actual_attr usage of all consumables (`RUE_Type`)
+ * @param host current host or an empty handle on global and queue level
+ * @param queue current queue or an empty handle on global/host level
  * @param allow_non_requestable allow none requestable?
  * @param reason error message
- * @param reason_size max error message size
- * @param slots number of slots the job is looking for
+ * @param slots number of slots the job is looking for, -1 to skip the slots and default requests
  * @param layer current layer flag
  * @param lc_factor load correction factor
  * @param tag current layer tag
  * @param start_time in/out argument for start time
- * @param duration jobs estimated total run time
  * @param object_name name of the object used for monitoring purposes
  *
  * @return #DISPATCH_OK when all requests are fulfilled at `start_time`,
@@ -1548,10 +1555,12 @@ bool sge_select_queue(lList *requested_attr, lListElem *queue, lListElem *host,
  *       we have some special behavior, when slots is set to -1.
  */
 static dispatch_t
-rc_time_by_slots(sge_assignment_t *a, lList *requested, const lList *load_attr, const lList *config_attr,
-                 const lList *actual_attr, const lListElem *host, lListElem *queue, bool allow_non_requestable,
-                 dstring *reason, int slots, uint32_t layer, double lc_factor, uint32_t tag,
-                 uint64_t *start_time, const char *object_name) {
+rc_time_by_slots(sge_assignment_t *a, const ocs::tom::List<ocs::tom::CE> requested,
+                 const ocs::tom::ConstList<ocs::tom::HL> load_attr, const ocs::tom::ConstList<ocs::tom::CE> config_attr,
+                 const ocs::tom::ConstList<ocs::tom::RUE> actual_attr, const ocs::tom::ConstElement<ocs::tom::EH> host,
+                 const ocs::tom::ConstElement<ocs::tom::QU> queue, const bool allow_non_requestable, dstring *reason,
+                 int slots, const uint32_t layer, const double lc_factor, const uint32_t tag, uint64_t *start_time,
+                 const char *object_name) {
    DENTER(TOP_LAYER);
    static lListElem *implicit_slots_request = nullptr;
    uint64_t latest_time = DISPATCH_TIME_NOW;
@@ -1561,7 +1570,7 @@ rc_time_by_slots(sge_assignment_t *a, lList *requested, const lList *load_attr, 
    //bool slots_on_host_layer = (layer == DOMINANT_LAYER_HOST && strcmp(object_name, SGE_ATTR_SLOTS) == 0);
    ocs::TopologyString binding_inuse;
 
-   clear_resource_tags(ocs::tom::List<ocs::tom::CE>(requested), QUEUE_TAG);
+   clear_resource_tags(requested, QUEUE_TAG);
 
    /* ensure availability of implicit slot request */
    if (!implicit_slots_request) {
@@ -1578,8 +1587,9 @@ rc_time_by_slots(sge_assignment_t *a, lList *requested, const lList *load_attr, 
    /* match number of free slots */
    if (slots != -1) {
       tmp_start = *start_time;
-      ret = ri_time_by_slots(a, implicit_slots_request, load_attr, config_attr, actual_attr, host, queue,
-                             reason, allow_non_requestable, slots, layer, lc_factor, &tmp_start, object_name, binding_inuse);
+      ret = ri_time_by_slots(a, ocs::tom::ConstElement<ocs::tom::CE>(implicit_slots_request), load_attr, config_attr,
+                             actual_attr, host, queue, reason, allow_non_requestable, slots, layer, lc_factor,
+                             &tmp_start, object_name, binding_inuse);
 
       if (ret == DISPATCH_OK && *start_time == DISPATCH_TIME_QUEUE_END) {
          DSTRING_STATIC(dstr1, 64);
@@ -1606,16 +1616,16 @@ rc_time_by_slots(sge_assignment_t *a, lList *requested, const lList *load_attr, 
          // the default request is built in an element of our own. a->centry_list holds the
          // complex definitions of the cluster, which other threads read while we match and
          // which the qmaster spools - a request must not be written into one of them.
-         lListElem *default_request = nullptr;
+         ocs::tom::ElementPtr<ocs::tom::CE> default_request;
 
-         for_each_rw_lv(attr, actual_attr) {
+         for (auto attr : actual_attr) {
             name = ocs::tom::get<RUE_name>(attr);
             if (!strcmp(name, SGE_ATTR_SLOTS)) {
                continue;
             }
 
             /* consumable && used in this global/host/queue && not requested */
-            if (!is_requested(ocs::tom::ConstList<ocs::tom::CE>(requested), name)) {
+            if (!is_requested(requested, name)) {
                ocs::tom::ConstElement<ocs::tom::CE> centry = ocs::tom::find_first<CE_name>(a->centry_list, name);
                const char *def_req = ocs::tom::get<CE_defaultval>(centry);
                auto valtype = static_cast<ocs::CEntry::Type>(ocs::tom::get<CE_valtype>(centry));
@@ -1630,8 +1640,8 @@ rc_time_by_slots(sge_assignment_t *a, lList *requested, const lList *load_attr, 
                   sge_dstring_init(&tmp_reason, tmp_reason_buf, sizeof(tmp_reason_buf));
 
                   /* build the default request - the same element serves every attribute */
-                  if (default_request == nullptr) {
-                     default_request = lCreateElem(CE_Type);
+                  if (!default_request) {
+                     default_request = ocs::tom::ElementPtr<ocs::tom::CE>::create();
                   }
                   ocs::tom::set<CE_name>(default_request, name);
                   ocs::tom::set<CE_valtype>(default_request, static_cast<uint32_t>(valtype));
@@ -1639,7 +1649,7 @@ rc_time_by_slots(sge_assignment_t *a, lList *requested, const lList *load_attr, 
                   ocs::tom::set<CE_doubleval>(default_request, dval);
 
                   tmp_start = *start_time;
-                  ff = ri_time_by_slots(a, default_request, load_attr, config_attr, actual_attr,
+                  ff = ri_time_by_slots(a, *default_request, load_attr, config_attr, actual_attr,
                                         host, queue, &tmp_reason, true, slots,
                                         layer, lc_factor, &tmp_start, object_name, binding_inuse);
 
@@ -1647,7 +1657,6 @@ rc_time_by_slots(sge_assignment_t *a, lList *requested, const lList *load_attr, 
                      /* useless to continue in these cases */
                      sge_dstring_append(reason, MSG_SCHEDD_FORDEFAULTREQUEST);
                      sge_dstring_append_dstring(reason, &tmp_reason);
-                     lFreeElem(&default_request);
                      DRETURN(ff);
                   }
 
@@ -1659,13 +1668,12 @@ rc_time_by_slots(sge_assignment_t *a, lList *requested, const lList *load_attr, 
                }
             }
          }/* end for*/
-         lFreeElem(&default_request);
       }
    } else {
       slots = 1;
    }
    /* explicit requests */
-   for_each_rw_lv(attr, requested) {
+   for (auto attr : requested) {
       const char *attr_name = ocs::tom::get<CE_name>(attr);
 
       tmp_start = *start_time;
@@ -5975,8 +5983,9 @@ parallel_available_slots(const sge_assignment_t *a, int *slots) {
    ocs::tom::set<CE_stringval>(tep, strbuf);
 
    ocs::TopologyString binding_inuse;
-   if (ri_slots_by_time(a, slots, ocs::tom::get<PE_resource_utilization>(a->pe), implicit_slots_request,
-                        nullptr, implicit_total_list, nullptr, nullptr, nullptr,
+   if (ri_slots_by_time(a, slots, ocs::tom::get<PE_resource_utilization>(a->pe),
+                        ocs::tom::ConstElement<ocs::tom::CE>(implicit_slots_request), nullptr,
+                        ocs::tom::ConstList<ocs::tom::CE>(implicit_total_list), nullptr, nullptr, nullptr,
                         0, 0, &reason, true, true, a->pe_name, binding_inuse) != DISPATCH_OK) {
       DRETURN(DISPATCH_NEVER_CAT);
    }
@@ -6110,12 +6119,12 @@ const lList *load_adjustments
  * threshold required for the request.
  *
  * @param a assignment object that holds job specific scheduling relevant data
- * @param rep requested attribute
- * @param load_attr list of load attributes or null on queue level
- * @param config_attr list of user defined attributes (CE_Type)
- * @param actual_attr usage of user consumables (RUE_Type)
- * @param host the current host, or nullptr on global level
- * @param queue the current queue, or nullptr on host level
+ * @param rep requested attribute (`CE_Type`)
+ * @param load_attr list of load attributes (`HL_Type`), or an empty handle on queue level
+ * @param config_attr list of user defined attributes (`CE_Type`)
+ * @param actual_attr usage of user consumables (`RUE_Type`)
+ * @param host the current host, or an empty handle on global level
+ * @param queue the current queue, or an empty handle on host level
  * @param reason target for error message
  * @param allow_non_requestable allow non requestable attributes?
  * @param slots the number of slots the job is looking for
@@ -6132,12 +6141,14 @@ const lList *load_adjustments
  *         #DISPATCH_NEVER_CAT when it can never be fulfilled
  */
 dispatch_t
-ri_time_by_slots(const sge_assignment_t *a, lListElem *rep, const lList *load_attr, const lList *config_attr,
-                 const lList *actual_attr, const lListElem *host, const lListElem *queue, dstring *reason, bool allow_non_requestable,
-                 int slots, uint32_t layer, double lc_factor, uint64_t *start_time, const char *object_name, ocs::TopologyString &binding_inuse) {
+ri_time_by_slots(const sge_assignment_t *a, const ocs::tom::ConstElement<ocs::tom::CE> rep,
+                 const ocs::tom::ConstList<ocs::tom::HL> load_attr, const ocs::tom::ConstList<ocs::tom::CE> config_attr,
+                 const ocs::tom::ConstList<ocs::tom::RUE> actual_attr, const ocs::tom::ConstElement<ocs::tom::EH> host,
+                 const ocs::tom::ConstElement<ocs::tom::QU> queue, dstring *reason, const bool allow_non_requestable,
+                 const int slots, const uint32_t layer, const double lc_factor, uint64_t *start_time,
+                 const char *object_name, ocs::TopologyString &binding_inuse) {
    DENTER(TOP_LAYER);
 
-   lListElem *cplx_el=nullptr;
    const char *attrname;
    dispatch_t ret = DISPATCH_OK;
    uint64_t ready_time;
@@ -6157,23 +6168,21 @@ ri_time_by_slots(const sge_assignment_t *a, lListElem *rep, const lList *load_at
     * thus we always assume zero consumable utilization here
     */
 
-   if (!(cplx_el = get_attribute(attrname, config_attr, actual_attr, load_attr, a->centry_list, a->load_adjustments,
-                                 queue, layer,
-                                 lc_factor, reason, schedule_based, DISPATCH_TIME_NOW, 0))) {
+   auto cplx_el = get_attribute(attrname, config_attr, actual_attr, load_attr, a->centry_list, a->load_adjustments,
+                                queue, layer, lc_factor, reason, schedule_based, DISPATCH_TIME_NOW, 0);
+   if (!cplx_el) {
       DRETURN(DISPATCH_MISSING_ATTR);
    }
 
    DPRINTF("ri_time_by_slots(%s) consumable = %s\n", attrname, map_consumable2str(ocs::tom::get<CE_consumable>(cplx_el)));
 
-   ret = match_static_resource(slots, ocs::tom::ConstElement<ocs::tom::CE>(rep),
-                               ocs::tom::ConstElement<ocs::tom::CE>(cplx_el), reason, allow_non_requestable);
+   ret = match_static_resource(slots, rep, *cplx_el, reason, allow_non_requestable);
    if (actual_el != nullptr) {
       utilized = lGetNumberOfElem(ocs::tom::get<RUE_utilized>(actual_el));
    }
 
    if (ret != DISPATCH_OK || (!schedule_based && utilized == 0 && ocs::tom::get<CE_relop>(cplx_el) != CMPLXEXCL_OP)) {
       DPRINTF("skipping expensive checks, utilized is %d\n", utilized);
-      lFreeElem(&cplx_el);
       DRETURN(ret);
    }
 
@@ -6182,7 +6191,6 @@ ri_time_by_slots(const sge_assignment_t *a, lListElem *rep, const lList *load_at
          *start_time = now;
       }
       DPRINTF("%s: ri_time_by_slots(%s) <is no consumable>\n", object_name, attrname);
-      lFreeElem(&cplx_el);
       DRETURN(DISPATCH_OK); /* already checked */
    }
 
@@ -6200,11 +6208,9 @@ ri_time_by_slots(const sge_assignment_t *a, lListElem *rep, const lList *load_at
          }
          DPRINTF("%s: ri_time_by_slots(%s) <no capacity, matched statically>\n", object_name,
                  attrname);
-         lFreeElem(&cplx_el);
          DRETURN(DISPATCH_OK);
       }
       DPRINTF("%s: ri_time_by_slots(%s) <does not exist>\n", object_name, attrname);
-      lFreeElem(&cplx_el);
       DRETURN(DISPATCH_MISSING_ATTR); /* does not exist */
    }
 
@@ -6223,7 +6229,6 @@ ri_time_by_slots(const sge_assignment_t *a, lListElem *rep, const lList *load_at
    // rather than read as a request for nothing, which would match every host and book nothing.
    if (static_cast<ocs::CEntry::Type>(ocs::tom::get<CE_valtype>(rep)) == ocs::CEntry::Type::NONE) {
       sge_dstring_append(reason, MSG_SCHEDD_REQUESTNOTRESOLVED);
-      lFreeElem(&cplx_el);
       DRETURN(DISPATCH_NEVER_CAT);
    }
    request = ocs::tom::get<CE_doubleval>(rep);
@@ -6257,16 +6262,17 @@ ri_time_by_slots(const sge_assignment_t *a, lListElem *rep, const lList *load_at
             is_rsmap && centry_rsmap_get_request_param(rep, RSMAP_REQUEST_PARAM_SAME, &same_key);
          const bool id_given =
             is_rsmap && centry_rsmap_get_request_param(rep, RSMAP_REQUEST_PARAM_ID, &id_key);
-         lList *required_props = nullptr;
+         lList *required_props_raw = nullptr;
          const bool props_given =
             is_rsmap && centry_rsmap_resolve_request_properties(rep, a->centry_list,
-                                                                &required_props);
+                                                                &required_props_raw);
+         auto required_props = ocs::tom::ListPtr<ocs::tom::CE>(required_props_raw);
          if (same_given || id_given || props_given) {
             const char *same_arg = same_given ? sge_dstring_get_string(&same_key) : nullptr;
             const char *id_arg = id_given ? sge_dstring_get_string(&id_key) : nullptr;
             const auto group_amount = static_cast<uint32_t>(request * slots);
             uint64_t group_when = utilization_rsmap_below(capacitiy_el, actual_el, same_arg,
-                                                          group_amount, id_arg, required_props);
+                                                          group_amount, id_arg, *required_props);
             if (group_when == std::numeric_limits<uint64_t>::max()) {
                // the request can never be served here, so there is nothing to wait for
                if (same_given) {
@@ -6278,8 +6284,6 @@ ri_time_by_slots(const sge_assignment_t *a, lListElem *rep, const lList *load_at
                } else {
                   sge_dstring_sprintf(reason, MSG_SCHEDD_CHARNOTFULLFILLED_S, attrname);
                }
-               lFreeList(&required_props);
-               lFreeElem(&cplx_el);
                DRETURN(DISPATCH_NEVER_CAT);
             }
             if (group_when > when) {
@@ -6289,7 +6293,6 @@ ri_time_by_slots(const sge_assignment_t *a, lListElem *rep, const lList *load_at
                        sge_ctime64(group_when, &when_dstr), when);
                when = group_when;
             }
-            lFreeList(&required_props);
          }
 
          if (when == 0) {
@@ -6306,13 +6309,11 @@ ri_time_by_slots(const sge_assignment_t *a, lListElem *rep, const lList *load_at
 
       DPRINTF("\t\t%s: time_by_slots: %d of %s=%f can be served %s\n", object_name, slots, attrname, request, ret == DISPATCH_OK ? "at time" : "never");
 
-      lFreeElem(&cplx_el);
-
       DRETURN(ret);
    }
 
    uint32_t relop = ocs::tom::get<CE_relop>(cplx_el);
-   lFreeElem(&cplx_el);
+   cplx_el.reset();
 
    if (relop == CMPLXEXCL_OP) {
 
@@ -6392,11 +6393,14 @@ ri_time_by_slots(const sge_assignment_t *a, lListElem *rep, const lList *load_at
  *
  * @param a the assignment being built
  * @param slots Returns maximum slots that can be served within the specified time frame.
- * @param rue_list Resource utilization (RUE_Type)
- * @param request Job request (CE_Type)
- * @param load_attr Load information for the resource
- * @param total_list Total resource amount (CE_Type)
- * @param queue Queue instance (QU_Type) for queue-based resources
+ * @param rue_list Resource utilization (`RUE_Type`)
+ * @param request Job request (`CE_Type`)
+ * @param load_attr Load information for the resource (`HL_Type`), an empty handle on queue level
+ * @param total_list Total resource amount (`CE_Type`)
+ * @param additional_usage usage to add to the utilization (`CE_Type`), e.g. of a master task matched
+ *                         before, or an empty handle
+ * @param host Execution host (`EH_Type`), or an empty handle above the host level
+ * @param queue Queue instance (`QU_Type`) for queue-based resources, or an empty handle
  * @param layer DOMINANT_LAYER_{GLOBAL|HOST|QUEUE}
  * @param lc_factor load correction factor
  * @param reason diagnosis information if no resource is available
@@ -6404,18 +6408,23 @@ ri_time_by_slots(const sge_assignment_t *a, lListElem *rep, const lList *load_at
  * @param no_centry set when the attribute is not configured at all, which is
  *                  not the same as it being exhausted
  * @param object_name name of the object, used for monitoring purposes
+ * @param binding_inuse the topology units in use
  *
  * @return #DISPATCH_OK when slots could be determined, #DISPATCH_NOT_AT_TIME
- *         when none are available in the time frame, or
- *         #DISPATCH_MISSING_ATTR when the attribute does not exist
+ *         when none are available in the time frame,
+ *         #DISPATCH_MISSING_ATTR when the attribute does not exist, or
+ *         #DISPATCH_NEVER_CAT when the request can never be served
  *
  * @note MT-NOTE: ri_slots_by_time() is not MT safe
  */
 static dispatch_t
-ri_slots_by_time(const sge_assignment_t *a, int *slots, const lList *rue_list, lListElem *request,
-                 const lList *load_attr, const lList *total_list, const lList *additional_usage, lListElem *host, lListElem *queue,
-                 uint32_t layer, double lc_factor, dstring *reason, bool allow_non_requestable, bool no_centry,
-                 const char *object_name, ocs::TopologyString &binding_inuse) {
+ri_slots_by_time(const sge_assignment_t *a, int *slots, const ocs::tom::ConstList<ocs::tom::RUE> rue_list,
+                 const ocs::tom::ConstElement<ocs::tom::CE> request, const ocs::tom::ConstList<ocs::tom::HL> load_attr,
+                 const ocs::tom::ConstList<ocs::tom::CE> total_list,
+                 const ocs::tom::ConstList<ocs::tom::CE> additional_usage,
+                 const ocs::tom::ConstElement<ocs::tom::EH> host, const ocs::tom::ConstElement<ocs::tom::QU> queue,
+                 const uint32_t layer, const double lc_factor, dstring *reason, const bool allow_non_requestable,
+                 const bool no_centry, const char *object_name, ocs::TopologyString &binding_inuse) {
    DENTER(TOP_LAYER);
 
    ocs::tom::ConstElement<ocs::tom::CE> tep = nullptr;
@@ -6435,38 +6444,32 @@ ri_slots_by_time(const sge_assignment_t *a, int *slots, const lList *rue_list, l
    DPRINTF("\t\t%s: ri_slots_by_time(%s)\n", object_name, name);
 
    if (!no_centry) {
-      lListElem *cplx_el;
-      if (!(cplx_el = get_attribute(name, total_list, rue_list, load_attr, a->centry_list, a->load_adjustments, queue,
-                                    layer, lc_factor, reason, schedule_based,
-                                    DISPATCH_TIME_NOW, 0))) {
+      auto cplx_el = get_attribute(name, total_list, rue_list, load_attr, a->centry_list, a->load_adjustments, queue,
+                                   layer, lc_factor, reason, schedule_based, DISPATCH_TIME_NOW, 0);
+      if (!cplx_el) {
          DRETURN(DISPATCH_MISSING_ATTR); /* does not exist */
       }
 
       // we match with 1 slot here - we do not know how much it might actually give us, this is calculated below
-      ret = match_static_resource(1, ocs::tom::ConstElement<ocs::tom::CE>(request),
-                                  ocs::tom::ConstElement<ocs::tom::CE>(cplx_el), reason, allow_non_requestable);
+      ret = match_static_resource(1, request, *cplx_el, reason, allow_non_requestable);
       if (ret != DISPATCH_OK) {
-         lFreeElem(&cplx_el);
          DRETURN(ret);
       }
 
       consumable = ocs::tom::get<CE_consumable>(cplx_el);
       if (ret == DISPATCH_OK && consumable == CONSUMABLE_NO) {
-         lFreeElem(&cplx_el);
          *slots      = INT_MAX;
          DRETURN(DISPATCH_OK); /* no limitations */
       }
 
       /* we're done if there is no consumable capacity */
       if (!(tep=ocs::tom::find_first<CE_name>(total_list, name))) {
-         lFreeElem(&cplx_el);
          *slots      = INT_MAX;
          DRETURN(DISPATCH_OK);
       }
       if (ocs::tom::get<CE_relop>(cplx_el) == CMPLXEXCL_OP) {
          exclusive_centry = true;
       }
-      lFreeElem(&cplx_el);
    }
 
    if (!tep && !(tep=ocs::tom::find_first<CE_name>(total_list, name))) {
@@ -6522,20 +6525,22 @@ ri_slots_by_time(const sge_assignment_t *a, int *slots, const lList *rue_list, l
          DPRINTF("\t\t%s: ri_slots_by_time: utilization_max(%s, " sge_u64") returns %f\n",
                object_name, sge_ctime64(start, &time_str), a->duration, used);
          // we have to consider additional usage (e.g. of the master task which has already been matched earlier)
-         if (additional_usage != nullptr) {
-            ocs::tom::ConstElement<ocs::tom::CE> add_usage_ep = ocs::tom::find_first<CE_name>(additional_usage, name);
-            if (add_usage_ep != nullptr) {
-               DPRINTF("\t\t%s: ri_slots_by_time: additional usage for %s: %f\n", object_name, name, ocs::tom::get<CE_doubleval>(add_usage_ep));
+         if (additional_usage) {
+            auto add_usage_ep = ocs::tom::find_first<CE_name>(additional_usage, name);
+            if (add_usage_ep) {
+               DPRINTF("\t\t%s: ri_slots_by_time: additional usage for %s: %f\n", object_name, name,
+                       ocs::tom::get<CE_doubleval>(add_usage_ep));
                used += ocs::tom::get<CE_doubleval>(add_usage_ep);
             }
          }
       } else {
          used = ocs::tom::get<RUE_utilized_now>(uep);
          // we have to consider additional usage (e.g. of the master task which has already been matched earlier)
-         if (additional_usage != nullptr) {
-            ocs::tom::ConstElement<ocs::tom::CE> add_usage_ep = ocs::tom::find_first<CE_name>(additional_usage, name);
-            if (add_usage_ep != nullptr) {
-               DPRINTF("\t\t%s: ri_slots_by_time: additional usage for %s: %f\n", object_name, name, ocs::tom::get<CE_doubleval>(add_usage_ep));
+         if (additional_usage) {
+            auto add_usage_ep = ocs::tom::find_first<CE_name>(additional_usage, name);
+            if (add_usage_ep) {
+               DPRINTF("\t\t%s: ri_slots_by_time: additional usage for %s: %f\n", object_name, name,
+                       ocs::tom::get<CE_doubleval>(add_usage_ep));
                used += ocs::tom::get<CE_doubleval>(add_usage_ep);
             }
          }
@@ -6597,8 +6602,21 @@ ri_slots_by_time(const sge_assignment_t *a, int *slots, const lList *rue_list, l
  * @return     true when the request carries scope=job and the job spans more than one host
  */
 bool
+rsmap_request_has_job_scope(const sge_assignment_t *a, const ocs::tom::ConstElement<ocs::tom::CE> req) {
+   DENTER(TOP_LAYER);
+   const bool ret = a->pe != nullptr && centry_rsmap_request_is_job_scope(req);
+   DRETURN(ret);
+}
+
+/**
+ * @brief rsmap_request_has_job_scope() for an untyped caller
+ * @param a    the assignment
+ * @param req  the request (`CE_Type`)
+ * @return     as rsmap_request_has_job_scope()
+ */
+bool
 rsmap_request_has_job_scope(const sge_assignment_t *a, const lListElem *req) {
-   return a->pe != nullptr && centry_rsmap_request_is_job_scope(req);
+   return rsmap_request_has_job_scope(a, ocs::tom::ConstElement<ocs::tom::CE>(req));
 }
 
 /**
@@ -6634,23 +6652,25 @@ rsmap_request_has_job_scope(const sge_assignment_t *a, const lListElem *req) {
  * @param same_key        what the instances have to agree in: "id" or a characteristic name
  * @param id_expr         nullptr when the request carries no id= parameter, otherwise the
  *                        expression an instance's identifier has to satisfy
- * @param required_props  nullptr when the request names no characteristic, otherwise the
- *                        resolved requirements an instance has to carry
+ * @param required_props  an empty handle when the request names no characteristic, otherwise the
+ *                        resolved requirements an instance has to carry (`CE_Type`)
  * @return                the key of the group, or nullptr when no group can serve the request
  *                        on any host the job could use
  */
 const char *
-rsmap_job_scope_key(sge_assignment_t *a, const lListElem *req, const char *same_key,
-                    const char *id_expr, const lList *required_props) {
+rsmap_job_scope_key(sge_assignment_t *a, const ocs::tom::ConstElement<ocs::tom::CE> req, const char *same_key,
+                    const char *id_expr, const ocs::tom::ConstList<ocs::tom::CE> required_props) {
+   DENTER(TOP_LAYER);
    const char *name = ocs::tom::get<CE_name>(req);
 
    // Decided once per assignment attempt: the hosts, the window and the request do not change
    // within one, and every host has to be told the same answer. An empty value is the recorded
    // form of "there is none" - the question is no cheaper the second time it is asked.
-   ocs::tom::ConstElement<ocs::tom::VA> cached = ocs::tom::find_first<VA_variable>(a->rsmap_job_keys, name);
-   if (cached != nullptr) {
+   // a->rsmap_job_keys is an owning raw member of the assignment, read through a checked handle
+   auto cached = ocs::tom::find_first<VA_variable>(ocs::tom::ConstList<ocs::tom::VA>(a->rsmap_job_keys), name);
+   if (cached) {
       const char *key = ocs::tom::get<VA_value>(cached);
-      return (key != nullptr && key[0] != '\0') ? key : nullptr;
+      DRETURN((key != nullptr && key[0] != '\0') ? key : nullptr);
    }
 
    const auto amount = static_cast<uint32_t>(ocs::tom::get<CE_doubleval>(req));
@@ -6666,27 +6686,26 @@ rsmap_job_scope_key(sge_assignment_t *a, const lListElem *req, const char *same_
    for (int pass = 0; pass < 2 && totals.empty(); ++pass) {
       const bool only_reachable_hosts = (pass == 0);
 
-      for_each_ep_lv(host, a->host_list) {
-         const lListElem *definition = ocs::tom::find_first_in<EH_consumable_config_list, CE_name>(host, name);
-         if (definition == nullptr) {
+      for (auto host : a->host_list) {
+         auto definition = ocs::tom::find_first_in<EH_consumable_config_list, CE_name>(host, name);
+         if (!definition) {
             continue;
          }
          const char *host_name = ocs::tom::get<EH_name>(host);
-         if (only_reachable_hosts &&
-             static_cast<const lListElem *>(ocs::tom::find_first<QU_qhostname>(a->queue_list, host_name)) == nullptr) {
+         if (only_reachable_hosts && !ocs::tom::find_first<QU_qhostname>(a->queue_list, host_name)) {
             continue;
          }
 
-         lList *taken = nullptr;
+         ocs::tom::ListPtr<ocs::tom::RESL> taken;
          if (count_utilization) {
             taken = utilization_rsmap_max(ocs::tom::find_first_in<EH_resource_utilization, RUE_name>(host, name),
-                                          a->now, a->start, a->duration).release();
+                                          a->now, a->start, a->duration);
          }
 
-         lList *keys = centry_rsmap_group_keys(definition, same_key);
-         for_each_ep_lv(key_ep, keys) {
+         auto keys = ocs::tom::ListPtr<ocs::tom::ST>(centry_rsmap_group_keys(definition, same_key));
+         for (auto key_ep : *keys) {
             const char *key = ocs::tom::get<ST_name>(key_ep);
-            const uint32_t free = centry_rsmap_group_free(definition, taken, same_key, key,
+            const uint32_t free = centry_rsmap_group_free(definition, *taken, same_key, key,
                                                           id_expr, required_props);
             uint64_t slots;
             if (per_slot) {
@@ -6710,8 +6729,6 @@ rsmap_job_scope_key(sge_assignment_t *a, const lListElem *req, const char *same_
                totals.emplace_back(key, slots);
             }
          }
-         lFreeList(&keys);
-         lFreeList(&taken);
       }
    }
 
@@ -6727,47 +6744,28 @@ rsmap_job_scope_key(sge_assignment_t *a, const lListElem *req, const char *same_
 
    ocs::tom::Element<ocs::tom::VA> entry = ocs::tom::emplace_back<VA_variable>(&(a->rsmap_job_keys), name);
    if (entry == nullptr) {
-      return nullptr;
+      DRETURN(nullptr);
    }
    ocs::tom::set<VA_value>(entry, best != nullptr ? best->c_str() : "");
 
-   return best != nullptr ? ocs::tom::get<VA_value>(entry) : nullptr;
+   DRETURN(best != nullptr ? ocs::tom::get<VA_value>(entry) : nullptr);
 }
 
 /**
- * @brief How many slots one object can offer, over all requested resources
- *
- * For every resource the job requests at this object the available slot count
- * is `(total - used) / request`, and the object can offer the minimum over
- * all of them:
- *
- *     host_slot_max_by_R = min over all requested R of avail(R)
- *     host_slot          = min(host_slot_max_by_T, host_slot_max_by_R)
- *
- * @param[in,out] a                 the assignment
- * @param[in,out] slots             in: the slots wanted, out: the slots
- *                                  actually available
- * @param[in]     total_list        the configured capacities (`CE_Type`)
- * @param[in]     rue_list          the current utilization (`RUE_Type`)
- * @param[in]     load_attr         the load values, nullptr at queue level
- * @param[in]     force_slots       evaluate the slots attribute even when the
- *                                  job did not request it
- * @param[in]     host              the execution host, nullptr at global level
- * @param[in]     queue             the queue instance, nullptr above it
- * @param[in]     layer             the layer being matched
- * @param[in]     lc_factor         load correction factor
- * @param[in]     tag               which task the match is for, see
- *                                  #TAG4SCHED_MASTER
- * @param[in]     need_master       a master task still has to be placed
- * @param[in]     is_master_host    this host already carries the master task
- * @param[out]    found_master_host set when the master task can be placed here
- * @param[in]     allow_non_requestable allow non requestable attributes
- * @param[in]     object_name       name of the object, for monitoring
- * @param[in]     isRQ              the match is made for a resource quota
- *
- * @return #DISPATCH_OK, #DISPATCH_NOT_AT_TIME or #DISPATCH_NEVER_CAT
+ * @brief rsmap_job_scope_key() for an untyped caller
+ * @param a               the assignment
+ * @param req             the request carrying scope=job (`CE_Type`)
+ * @param same_key        what the instances have to agree in
+ * @param id_expr         the id= expression, or nullptr
+ * @param required_props  the resolved requirements (`CE_Type`), or nullptr
+ * @return                as rsmap_job_scope_key()
  */
-
+const char *
+rsmap_job_scope_key(sge_assignment_t *a, const lListElem *req, const char *same_key, const char *id_expr,
+                    const lList *required_props) {
+   return rsmap_job_scope_key(a, ocs::tom::ConstElement<ocs::tom::CE>(req), same_key, id_expr,
+                              ocs::tom::ConstList<ocs::tom::CE>(required_props));
+}
 
 // @todo CS-601 we should also clear the SLAVE tags in QU_tagged4schedule - we might need this for detecting disjoint
 //              master/slave requests
@@ -6801,22 +6799,21 @@ rsmap_job_scope_key(sge_assignment_t *a, const lListElem *req, const char *same_
  * records the choice, which the booking applies.
  *
  * @param a          the assignment
- * @param total_list the host's consumable configuration
- * @param rue_list   the host's resource utilization
+ * @param total_list the host's consumable configuration (`CE_Type`)
+ * @param rue_list   the host's resource utilization (`RUE_Type`)
  * @param reason     filled in when the constraint cannot be met at all
  * @return           the number of slots the constraint permits, INT_MAX when no request carries
  *                   one, 0 when it cannot be met
  */
 static int
-rsmap_same_slots(sge_assignment_t *a, const lList *total_list,
-                          const lList *rue_list, dstring *reason) {
+rsmap_same_slots(sge_assignment_t *a, const ocs::tom::ConstList<ocs::tom::CE> total_list,
+                 const ocs::tom::ConstList<ocs::tom::RUE> rue_list, dstring *reason) {
+   DENTER(TOP_LAYER);
    int max_slots = INT_MAX;
    DSTRING_STATIC(param, 64);
 
-   ocs::tom::ConstElement<ocs::tom::JRS> jrs;
-   for_each_ep (jrs, ocs::tom::get<JB_request_set_list>(a->job)) {
-      ocs::tom::ConstElement<ocs::tom::CE> req;
-      for_each_ep (req, ocs::tom::get<JRS_hard_resource_list>(jrs)) {
+   for (auto jrs : ocs::tom::get<JB_request_set_list>(a->job)) {
+      for (auto req : ocs::tom::get<JRS_hard_resource_list>(jrs)) {
          if (static_cast<ocs::CEntry::Type>(ocs::tom::get<CE_valtype>(req)) != ocs::CEntry::Type::RSMAP) {
             continue;
          }
@@ -6829,9 +6826,10 @@ rsmap_same_slots(sge_assignment_t *a, const lList *total_list,
          // A parameter which is not a reserved word names a characteristic the instances have
          // to carry. Resolved once here rather than once per instance, because the comparison
          // needs the type and the operator of that characteristic's own complex.
-         lList *required_props = nullptr;
+         lList *required_props_raw = nullptr;
          const bool has_props = centry_rsmap_resolve_request_properties(req, a->centry_list,
-                                                                        &required_props);
+                                                                        &required_props_raw);
+         auto required_props = ocs::tom::ListPtr<ocs::tom::CE>(required_props_raw);
          if (!has_same && !has_id && !has_props) {
             continue;
          }
@@ -6840,10 +6838,9 @@ rsmap_same_slots(sge_assignment_t *a, const lList *total_list,
 
          const char *name = ocs::tom::get<CE_name>(req);
 
-         const lListElem *definition = ocs::tom::find_first<CE_name>(total_list, name);
-         if (definition == nullptr) {
+         auto definition = ocs::tom::find_first<CE_name>(total_list, name);
+         if (!definition) {
             // the map is not configured on this host; the ordinary matching rejects the host
-            lFreeList(&required_props);
             continue;
          }
 
@@ -6858,10 +6855,10 @@ rsmap_same_slots(sge_assignment_t *a, const lList *total_list,
          // and since qsub adds -w e to a job requesting an advance reservation, refuses every
          // such job whose map is in use (CS-2770). An advance reservation is itself exempt: it
          // is scheduled against what is really there.
-         lList *taken = nullptr;
+         ocs::tom::ListPtr<ocs::tom::RESL> taken;
          if (a->is_advance_reservation || sconf_get_qs_state() != QS_STATE_EMPTY) {
             taken = utilization_rsmap_max(ocs::tom::find_first<RUE_name>(rue_list, name), a->now,
-                                          a->start, a->duration).release();
+                                          a->start, a->duration);
          }
 
          // scope=job takes the choice of group away from the host: the whole job is bound to
@@ -6870,7 +6867,7 @@ rsmap_same_slots(sge_assignment_t *a, const lList *total_list,
          // free to pick its own, which is what scope=host means and what same= has always done.
          const bool job_scope = has_same && rsmap_request_has_job_scope(a, req);
          const char *job_key = job_scope
-                               ? rsmap_job_scope_key(a, req, same_key, id_expr, required_props)
+                               ? rsmap_job_scope_key(a, req, same_key, id_expr, *required_props)
                                : nullptr;
 
          // With same=, what one group can serve: same=id groups by the identifier,
@@ -6882,17 +6879,17 @@ rsmap_same_slots(sge_assignment_t *a, const lList *total_list,
          if (job_scope) {
             // no group serves the request anywhere, so none serves it here either
             if (job_key != nullptr) {
-               best_free = centry_rsmap_group_free(definition, taken, same_key, job_key,
-                                                   id_expr, required_props);
+               best_free = centry_rsmap_group_free(definition, *taken, same_key, job_key,
+                                                   id_expr, *required_props);
             }
          } else if (has_same) {
-            centry_rsmap_best_free_group(definition, taken, same_key, &best_free, id_expr,
-                                         required_props);
+            centry_rsmap_best_free_group(definition, *taken, same_key, &best_free, id_expr,
+                                         *required_props);
          } else {
-            best_free = centry_rsmap_free(definition, taken, id_expr, required_props);
+            best_free = centry_rsmap_free(definition, *taken, id_expr, *required_props);
          }
-         lFreeList(&taken);
-         lFreeList(&required_props);
+         taken.reset();
+         required_props.reset();
 
          const auto amount = static_cast<uint32_t>(ocs::tom::get<CE_doubleval>(req));
          if (amount == 0) {
@@ -6916,29 +6913,65 @@ rsmap_same_slots(sge_assignment_t *a, const lList *total_list,
             } else {
                sge_dstring_sprintf(reason, MSG_SCHEDD_CHARNOTFULLFILLED_S, name);
             }
-            return 0;
+            DRETURN(0);
          }
          max_slots = MIN(max_slots, slots);
       }
    }
 
-   return max_slots;
+   DRETURN(max_slots);
 }
 
+/**
+ * @brief How many slots one object can offer, over all requested resources
+ *
+ * For every resource the job requests at this object the available slot count
+ * is `(total - used) / request`, and the object can offer the minimum over
+ * all of them:
+ *
+ *     host_slot_max_by_R = min over all requested R of avail(R)
+ *     host_slot          = min(host_slot_max_by_T, host_slot_max_by_R)
+ *
+ * The implicit slots request is a cache that lives as long as the process; it stays raw, a static owning
+ * handle would free it in the static destruction at exit.
+ *
+ * @param[in,out] a                 the assignment
+ * @param[in,out] slots             in: the slots wanted, out: the slots
+ *                                  actually available
+ * @param[in]     total_list        the configured capacities (`CE_Type`)
+ * @param[in]     rue_list          the current utilization (`RUE_Type`)
+ * @param[in]     load_attr         the load values (`HL_Type`), an empty handle at queue level
+ * @param[in]     force_slots       evaluate the slots attribute even when the
+ *                                  job did not request it
+ * @param[in]     host              the execution host, an empty handle at global level
+ * @param[in,out] queue             the queue instance, an empty handle above it; its master
+ *                                  tags may be cleared
+ * @param[in]     layer             the layer being matched
+ * @param[in]     lc_factor         load correction factor
+ * @param[in]     tag               which task the match is for, see
+ *                                  #TAG4SCHED_MASTER
+ * @param[in]     need_master       a master task still has to be placed
+ * @param[in]     is_master_host    this host already carries the master task
+ * @param[out]    found_master_host set when the master task can be placed here
+ * @param[in]     allow_non_requestable allow non requestable attributes
+ * @param[in]     object_name       name of the object, for monitoring
+ * @param[in]     isRQ              the match is made for a resource quota
+ *
+ * @return #DISPATCH_OK, #DISPATCH_NOT_AT_TIME or #DISPATCH_NEVER_CAT
+ */
 dispatch_t
-parallel_rc_slots_by_time(sge_assignment_t *a, int *slots, const lList *total_list,
-                          const lList *rue_list, const lList *load_attr, bool force_slots,
-                          lListElem *host, lListElem *queue,
-                          uint32_t layer, double lc_factor, uint32_t tag, bool need_master,
-                          bool is_master_host, bool &found_master_host, bool allow_non_requestable,
-                          const char *object_name, bool isRQ) {
+parallel_rc_slots_by_time(sge_assignment_t *a, int *slots, const ocs::tom::ConstList<ocs::tom::CE> total_list,
+                          const ocs::tom::ConstList<ocs::tom::RUE> rue_list,
+                          const ocs::tom::ConstList<ocs::tom::HL> load_attr, const bool force_slots,
+                          const ocs::tom::ConstElement<ocs::tom::EH> host, const ocs::tom::Element<ocs::tom::QU> queue,
+                          const uint32_t layer, const double lc_factor, const uint32_t tag, const bool need_master,
+                          const bool is_master_host, bool &found_master_host, const bool allow_non_requestable,
+                          const char *object_name, const bool isRQ) {
    DENTER(TOP_LAYER);
 
    DSTRING_STATIC(reason, 1024);
    int available = 0;
    int max_available_slots = INT_MAX;
-   const lListElem *actual;
-   lListElem *cep;
    dispatch_t result, ret = DISPATCH_OK;
    ocs::TopologyString binding_inuse;
 
@@ -6947,13 +6980,13 @@ parallel_rc_slots_by_time(sge_assignment_t *a, int *slots, const lList *total_li
    /* --- implicit slot request */
    // if slots are not defined on host level
    // @todo what is force_slots?
-   const lListElem *tep = ocs::tom::find_first<CE_name>(total_list, SGE_ATTR_SLOTS);
-   if (tep == nullptr && force_slots) {
+   auto tep = ocs::tom::find_first<CE_name>(total_list, SGE_ATTR_SLOTS);
+   if (!tep && force_slots) {
       DRETURN(DISPATCH_OK); // no slots capacity defined on exec host level, it's the queue instances which limit it
    }
 
    // if slots is defined on host level then check how much is available
-   if (tep != nullptr) {
+   if (tep) {
       // @todo CS-482 not thread safe
       static lListElem *implicit_slots_request = nullptr;
       if (!implicit_slots_request) {
@@ -6967,8 +7000,8 @@ parallel_rc_slots_by_time(sge_assignment_t *a, int *slots, const lList *total_li
          ocs::tom::set<CE_doubleval>(implicit_slots_request, 1);
       }
 
-      result = ri_slots_by_time(a, &available, rue_list, implicit_slots_request, load_attr, total_list,
-                                nullptr, host, queue, layer, lc_factor,
+      result = ri_slots_by_time(a, &available, rue_list, ocs::tom::ConstElement<ocs::tom::CE>(implicit_slots_request),
+                                load_attr, total_list, nullptr, host, queue, layer, lc_factor,
                                 &reason, allow_non_requestable, false, object_name, binding_inuse);
       if (result != DISPATCH_OK) {
          /* If the request is made from the resource quota module, this error message
@@ -6990,12 +7023,13 @@ parallel_rc_slots_by_time(sge_assignment_t *a, int *slots, const lList *total_li
 
    /* --- default requests except slots which we handled above */
    const char *name;
-   for_each_ep(actual, rue_list) {
+   for (auto actual : rue_list) {
       name = ocs::tom::get<RUE_name>(actual);
       if (strcmp(name, SGE_ATTR_SLOTS) == 0) {
          continue;
       }
-      cep = centry_list_locate(a->centry_list, name);
+      // the default request is written into the complex definition of a->centry_list itself
+      auto cep = ocs::tom::Element<ocs::tom::CE>(centry_list_locate(a->centry_list, name));
 
       // we need to check how much would give us a default request if the attribute is not requested
       // if there are any tasks (master or slave) which have no request
@@ -7067,7 +7101,7 @@ parallel_rc_slots_by_time(sge_assignment_t *a, int *slots, const lList *total_li
             }
             continue;
          } else {
-            if (queue != nullptr) {
+            if (queue) {
                DPRINTF("=====> we are processing master requests and have a queue\n");
                print_tagged4schedule(queue);
                if (!ocs::tom::has_bits<QU_tagged4schedule>(queue, TAG4SCHED_MASTER)) {
@@ -7078,7 +7112,7 @@ parallel_rc_slots_by_time(sge_assignment_t *a, int *slots, const lList *total_li
             }
          }
       }
-      if (scope == JRS_SCOPE_SLAVE && queue != nullptr) {
+      if (scope == JRS_SCOPE_SLAVE && queue) {
          DPRINTF("=====> we are processing slave requests and have a queue\n");
          print_tagged4schedule(queue);
          if (!ocs::tom::has_bits<QU_tagged4schedule>(queue, TAG4SCHED_SLAVE)) {
@@ -7128,9 +7162,8 @@ parallel_rc_slots_by_time(sge_assignment_t *a, int *slots, const lList *total_li
             // special handling: the queue can still be used as slave queue
             if (scope == JRS_SCOPE_GLOBAL && ocs::tom::get<CE_consumable>(req) == CONSUMABLE_JOB) {
                DPRINTF("===> CONSUMABLE_JOB %s does not match - can still use %s %s as slave queue\n",
-                       name, queue == nullptr ? "host" : "qinstance", object_name);
-               host_or_queue_clear_tags(object_name, ocs::tom::Element<ocs::tom::QU>(queue), a->queue_list,
-                                        TAG4SCHED_MASTER);
+                       name, !queue ? "host" : "qinstance", object_name);
+               host_or_queue_clear_tags(object_name, queue, a->queue_list, TAG4SCHED_MASTER);
                /* misuse of the DISPATCH_MISSING_ATTR
                 * add a new DISPATCH result, e.g. DISPATCH_HANDLE_CONSUMABLE_JOB
                 */
@@ -7158,8 +7191,7 @@ parallel_rc_slots_by_time(sge_assignment_t *a, int *slots, const lList *total_li
                   if (available == 0) {
                      master_slot = 0;
                      master_usage = nullptr;
-                     host_or_queue_clear_tags(object_name, ocs::tom::Element<ocs::tom::QU>(queue), a->queue_list,
-                                              TAG4SCHED_MASTER);
+                     host_or_queue_clear_tags(object_name, queue, a->queue_list, TAG4SCHED_MASTER);
                   }
                   break;
                case DISPATCH_MISSING_ATTR:
@@ -7172,8 +7204,7 @@ parallel_rc_slots_by_time(sge_assignment_t *a, int *slots, const lList *total_li
                case DISPATCH_NEVER_CAT:
                case DISPATCH_NEVER_JOB:
                   DPRINTF("    --> we matched the master requests, -> never_cat or never_job, clearing master tags\n");
-                  host_or_queue_clear_tags(object_name, ocs::tom::Element<ocs::tom::QU>(queue), a->queue_list,
-                                           TAG4SCHED_MASTER);
+                  host_or_queue_clear_tags(object_name, queue, a->queue_list, TAG4SCHED_MASTER);
                   master_slot = 0; // no master slot
                   // continue with slave tasks, they might match, and we can use the queue as slave only queue
                   continue;
@@ -7230,8 +7261,7 @@ parallel_rc_slots_by_time(sge_assignment_t *a, int *slots, const lList *total_li
                      max_available_slots = std::min(max_available_slots, available);
                      // only suitable for slave tasks
                      // @todo we did this already above, why repeat it? Can it get overwritten in between?
-                     host_or_queue_clear_tags(object_name, ocs::tom::Element<ocs::tom::QU>(queue), a->queue_list,
-                                              TAG4SCHED_MASTER);
+                     host_or_queue_clear_tags(object_name, queue, a->queue_list, TAG4SCHED_MASTER);
                   } else {
                      DPRINTF("%s: parallel_rc_slots_by_time(%s) <never found>\n", object_name, name);
                      *slots = 0;
@@ -7743,7 +7773,7 @@ sge_ar_swap_resource_lists(sge_assignment_t &a) {
  *
  * @param a job info structure (in)
  * @param slots out: free slots
- * @param centry Load information for the resource
+ * @param centry the complex definition of the limited resource (`CE_Type`)
  * @param limit limitation (`RQRL_Type`)
  * @param rue_name rue_name saved in the limit sublist `RQRL_usage`
  * @param qep queue instance (`QU_Type`)
@@ -7755,27 +7785,26 @@ sge_ar_swap_resource_lists(sge_assignment_t &a) {
  * @note MT-NOTE: parallel_limit_slots_by_time() is not MT safe
  */
 dispatch_t
-parallel_limit_slots_by_time(sge_assignment_t *a, int *slots, lListElem *centry,
-                             lListElem *limit, dstring *rue_name, lListElem *qep, bool need_master,
-                             bool is_master_queue) {
+parallel_limit_slots_by_time(sge_assignment_t *a, int *slots, const ocs::tom::ConstElement<ocs::tom::CE> centry,
+                             const ocs::tom::ConstElement<ocs::tom::RQRL> limit, dstring *rue_name,
+                             const ocs::tom::Element<ocs::tom::QU> qep, const bool need_master,
+                             const bool is_master_queue) {
    DENTER(TOP_LAYER);
    auto tmp_centry_list = ocs::tom::ListPtr<ocs::tom::CE>::create("");
    auto tmp_rue_list = ocs::tom::ListPtr<ocs::tom::RUE>::create("");
-   lListElem *tmp_centry_elem = nullptr;
-   lListElem *tmp_rue_elem = nullptr;
-   ocs::tom::ConstList<ocs::tom::RUE> rue_list = ocs::tom::get<RQRL_usage>(limit);
+   auto rue_list = ocs::tom::get<RQRL_usage>(limit);
    dispatch_t result = DISPATCH_NEVER_CAT;
 
    /* create tmp_centry_list */
-   tmp_centry_elem = lCopyElem(centry);
+   auto tmp_centry_elem = centry.clone();
    ocs::tom::set<CE_doubleval>(tmp_centry_elem, ocs::tom::get<RQRL_dvalue>(limit));
-   lAppendElem(*tmp_centry_list, tmp_centry_elem);
+   tmp_centry_list->push_back(std::move(tmp_centry_elem));
 
    /* create tmp_rue_list */
-   tmp_rue_elem = lCopyElem(ocs::tom::find_first<RUE_name>(rue_list, sge_dstring_get_string(rue_name)));
-   if (tmp_rue_elem == nullptr) {
+   auto tmp_rue_elem = ocs::tom::find_first<RUE_name>(rue_list, sge_dstring_get_string(rue_name)).clone();
+   if (!tmp_rue_elem) {
       DPRINTF("RD: 1\n");
-      tmp_rue_elem = lCreateElem(RUE_Type);
+      tmp_rue_elem = ocs::tom::ElementPtr<ocs::tom::RUE>::create();
    }
 #if 0
 {
@@ -7797,7 +7826,7 @@ parallel_limit_slots_by_time(sge_assignment_t *a, int *slots, lListElem *centry,
 #endif
 
    ocs::tom::set<RUE_name>(tmp_rue_elem, ocs::tom::get<RQRL_name>(limit));
-   lAppendElem(*tmp_rue_list, tmp_rue_elem);
+   tmp_rue_list->push_back(std::move(tmp_rue_elem));
 
    bool found_master_host = false; // dummy, when we get here, we already decided if this *is* the master_host
    result = parallel_rc_slots_by_time(a, slots,

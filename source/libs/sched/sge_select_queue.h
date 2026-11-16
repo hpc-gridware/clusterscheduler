@@ -69,11 +69,14 @@
 #include "sgeobj/tom/ocs_tom_CK.h"
 #include "sgeobj/tom/ocs_tom_EH.h"
 #include "sgeobj/tom/ocs_tom_HGRP.h"
+#include "sgeobj/tom/ocs_tom_HL.h"
 #include "sgeobj/tom/ocs_tom_JAT.h"
 #include "sgeobj/tom/ocs_tom_JB.h"
 #include "sgeobj/tom/ocs_tom_PE.h"
 #include "sgeobj/tom/ocs_tom_QU.h"
+#include "sgeobj/tom/ocs_tom_RQRL.h"
 #include "sgeobj/tom/ocs_tom_RQS.h"
+#include "sgeobj/tom/ocs_tom_RUE.h"
 #include "sgeobj/tom/ocs_tom_US.h"
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
@@ -264,10 +267,13 @@ void assignment_copy(sge_assignment_t *dst, sge_assignment_t *src, bool move_gdi
 void assignment_release(sge_assignment_t *a);
 void assignment_clear_cache(sge_assignment_t *a);
 
-bool rsmap_request_has_job_scope(const sge_assignment_t *a, const lListElem *req);
+bool rsmap_request_has_job_scope(const sge_assignment_t *a, ocs::tom::ConstElement<ocs::tom::CE> req);
+OCS_TRANSITIONAL bool rsmap_request_has_job_scope(const sge_assignment_t *a, const lListElem *req);
 
-const char *rsmap_job_scope_key(sge_assignment_t *a, const lListElem *req, const char *same_key,
-                                const char *id_expr, const lList *required_props);
+const char *rsmap_job_scope_key(sge_assignment_t *a, ocs::tom::ConstElement<ocs::tom::CE> req, const char *same_key,
+                                const char *id_expr, ocs::tom::ConstList<ocs::tom::CE> required_props);
+OCS_TRANSITIONAL const char *rsmap_job_scope_key(sge_assignment_t *a, const lListElem *req, const char *same_key,
+                                                 const char *id_expr, const lList *required_props);
 
 /* -------------------------------------------------------------------------------- */
 
@@ -330,17 +336,20 @@ int sge_get_string_qattr(char *dst, int dst_len, const char *attrname, lListElem
                          const lList *complex_list, const lList *load_adjustments);
 
 dispatch_t
-parallel_rc_slots_by_time(sge_assignment_t *a, int *slots, const lList *total_list,
-                          const lList *rue_list, const lList *load_attr, bool force_slots,
-                          lListElem *host, lListElem *queue,
-                          uint32_t layer, double lc_factor, uint32_t tag, bool need_master,
-                          bool is_master_host, bool &found_master_host, bool allow_non_requestable,
+parallel_rc_slots_by_time(sge_assignment_t *a, int *slots, ocs::tom::ConstList<ocs::tom::CE> total_list,
+                          ocs::tom::ConstList<ocs::tom::RUE> rue_list, ocs::tom::ConstList<ocs::tom::HL> load_attr,
+                          bool force_slots, ocs::tom::ConstElement<ocs::tom::EH> host,
+                          ocs::tom::Element<ocs::tom::QU> queue, uint32_t layer, double lc_factor, uint32_t tag,
+                          bool need_master, bool is_master_host, bool &found_master_host, bool allow_non_requestable,
                           const char *object_name, bool isRQ);
 
 dispatch_t
-ri_time_by_slots(const sge_assignment_t *a, lListElem *request, const lList *load_attr, const lList *config_attr,
-                 const lList *actual_attr, const lListElem *host, const lListElem *queue, dstring *reason, bool allow_non_requestable,
-                 int slots, uint32_t layer, double lc_factor, uint64_t *start_time, const char *object_name, ocs::TopologyString& binding_inuse);
+ri_time_by_slots(const sge_assignment_t *a, ocs::tom::ConstElement<ocs::tom::CE> request,
+                 ocs::tom::ConstList<ocs::tom::HL> load_attr, ocs::tom::ConstList<ocs::tom::CE> config_attr,
+                 ocs::tom::ConstList<ocs::tom::RUE> actual_attr, ocs::tom::ConstElement<ocs::tom::EH> host,
+                 ocs::tom::ConstElement<ocs::tom::QU> queue, dstring *reason, bool allow_non_requestable, int slots,
+                 uint32_t layer, double lc_factor, uint64_t *start_time, const char *object_name,
+                 ocs::TopologyString& binding_inuse);
 
 dispatch_t cqueue_match_static(const char *cqname, sge_assignment_t *a);
 
@@ -348,6 +357,6 @@ void
 sge_ar_swap_resource_lists(sge_assignment_t &a);
 
 dispatch_t
-parallel_limit_slots_by_time(sge_assignment_t *a, int *slots, lListElem *centry,
-                             lListElem *limit, dstring *rue_name, lListElem *qep, bool need_master,
-                             bool is_master_queue);
+parallel_limit_slots_by_time(sge_assignment_t *a, int *slots, ocs::tom::ConstElement<ocs::tom::CE> centry,
+                             ocs::tom::ConstElement<ocs::tom::RQRL> limit, dstring *rue_name,
+                             ocs::tom::Element<ocs::tom::QU> qep, bool need_master, bool is_master_queue);
