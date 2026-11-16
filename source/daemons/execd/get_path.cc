@@ -54,6 +54,7 @@
 #include "sgeobj/sge_job.h"
 #include "sgeobj/tom/ocs_tom_PN.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
 
 #include "get_path.h"
 #include "msg_execd.h"
@@ -89,13 +90,14 @@ getHomeDir(dstring *dstr_exp_path, const char *user) {
 }
 
 
-/** @brief Resolve one of a job's paths into a concrete filename
+/**
+ * @brief Resolve one of a job's paths into a concrete filename
  *
  * Picks the entry that applies to this host, expands the pseudo variables, and
  * appends the job's own name when what the user gave is a directory.
  *
  * @param qualified_hostname this host, as the cluster knows it
- * @param lp the path list the user submitted
+ * @param lp the path list the user submitted, or an empty handle
  * @param cwd the job's working directory, for a relative path
  * @param owner the job owner, for the home directory
  * @param job_name the job's name
@@ -106,12 +108,11 @@ getHomeDir(dstring *dstr_exp_path, const char *user) {
  * @param pathstr_len size of that buffer
  * @return 0 on success
  */
-int sge_get_path(const char *qualified_hostname, const lList *lp, const char *cwd, const char *owner,
-                 const char *job_name, uint32_t job_number,
-                 uint32_t ja_task_number, int type,
-                 char *pathstr, size_t pathstr_len) {
+int sge_get_path(const char *qualified_hostname, const ocs::tom::ConstList<ocs::tom::PN> lp, const char *cwd,
+                 const char *owner, const char *job_name, const uint32_t job_number,
+                 const uint32_t ja_task_number, const int type,
+                 char *pathstr, const size_t pathstr_len) {
    DENTER(TOP_LAYER);
-   const lListElem *ep = nullptr;
    const char *path = nullptr, *host = nullptr;
    char exp_path_buf[SGE_PATH_MAX];
    dstring dstr_exp_path;
@@ -122,16 +123,18 @@ int sge_get_path(const char *qualified_hostname, const lList *lp, const char *cw
    /*
     * check if there's a path for this host
     */
-   ocs::tom::ConstElement<ocs::tom::PN> ep_pn = ocs::tom::find_first<PN_host>(lp, qualified_hostname);
-   if (ep_pn != nullptr) {
-      path = expand_path(&dstr_exp_path, ocs::tom::get<PN_path>(ep_pn), job_number, ja_task_number, job_name, owner, qualified_hostname);
+   const auto ep_pn = lp.find_first<PN_host>(ocs::tom::Host(qualified_hostname));
+   if (ep_pn) {
+      path = expand_path(&dstr_exp_path, ocs::tom::get<PN_path>(ep_pn), job_number, ja_task_number, job_name, owner,
+                         qualified_hostname);
       host = ocs::tom::get<PN_host>(ep_pn);
    } else {
       /* 
        * hostname: wasn't set, look for a default 
        */
-      for_each_ep(ep, lp) {
-         path = expand_path(&dstr_exp_path, ocs::tom::get<PN_path>(ep), job_number, ja_task_number, job_name, owner, qualified_hostname);
+      for (const auto ep : lp) {
+         path = expand_path(&dstr_exp_path, ocs::tom::get<PN_path>(ep), job_number, ja_task_number, job_name, owner,
+                            qualified_hostname);
          host = ocs::tom::get<PN_host>(ep);
          if (host == nullptr) {
             break;
@@ -164,7 +167,7 @@ int sge_get_path(const char *qualified_hostname, const lList *lp, const char *cw
  * Retrieves the file staging host and path from the
  * job list element.
  *
- * @param lp pointer to the path sublist
+ * @param lp the path sublist, or an empty handle
  * @param[out] fs_host buffer to hold the host name
  * @param fs_host_len size of that buffer
  * @param[out] fs_path buffer to hold the file path
@@ -172,13 +175,14 @@ int sge_get_path(const char *qualified_hostname, const lList *lp, const char *cw
  *
  * @return Is file staging enabled for this (stdin/stdout/stderr) path sublist?
  */
-bool sge_get_fs_path(const lList *lp, char *fs_host, size_t fs_host_len, char *fs_path, size_t fs_path_len) {
+bool sge_get_fs_path(const ocs::tom::ConstList<ocs::tom::PN> lp, char *fs_host, const size_t fs_host_len,
+                     char *fs_path, const size_t fs_path_len) {
    DENTER(TOP_LAYER);
 
-   const lListElem* ep;
    bool       bFileStaging=false;
 
-   if(lp && (ep=lFirst(lp))) {
+   const auto ep = lp.front();
+   if (ep) {
       bFileStaging = (bool)ocs::tom::get<PN_file_staging>(ep);
  
       if( bFileStaging ) {
@@ -289,15 +293,16 @@ expand_path(dstring *dstr_exp_path, const char *in_path, uint32_t job_id, uint32
  * n is a number from 0 to 9. If a job is restarted more than 10 times,
  * the old active job dir will be removed and only the first 10 be kept.
  *
- * @param job job object
- * @param ja_task ja task object
+ * @param job the job, or an empty handle
+ * @param ja_task the array task, or an empty handle
  * @param err_str optional buffer to hold error strings. If it is nullptr, errors are output.
  *
  * @return the path of the jobs/jatasks active job directory, or nullptr if the function call failed.
  *
  * @see `sge_get_active_job_file_path()`, #sge_make_pe_task_active_dir
  */
-const char *sge_make_ja_task_active_dir(const lListElem *job, const lListElem *ja_task, dstring *err_str) {
+const char *sge_make_ja_task_active_dir(const ocs::tom::ConstElement<ocs::tom::JB> job,
+                                        const ocs::tom::ConstElement<ocs::tom::JAT> ja_task, dstring *err_str) {
    DENTER(TOP_LAYER);
 
    static dstring path_buffer = DSTRING_INIT;
@@ -309,7 +314,7 @@ const char *sge_make_ja_task_active_dir(const lListElem *job, const lListElem *j
       sge_dstring_clear(err_str);
    }
    
-   if (job == nullptr || ja_task == nullptr) {
+   if (!job || !ja_task) {
       DRETURN(nullptr);
    }
 
@@ -378,16 +383,18 @@ const char *sge_make_ja_task_active_dir(const lListElem *job, const lListElem *j
  *
  * Creates the active job sub directory for a pe task.
  *
- * @param job the job object
- * @param ja_task the ja task object
- * @param pe_task the pe task object
+ * @param job the job, or an empty handle
+ * @param ja_task the array task, or an empty handle
+ * @param pe_task the pe task, or an empty handle
  * @param err_str optional buffer to hold error strings. If it is nullptr, errors are output.
  *
  * @return the path of the jobs/jatasks active job directory, or nullptr if the function call failed.
  *
  * @see `sge_get_active_job_file_path()`, #sge_make_ja_task_active_dir
  */
-const char *sge_make_pe_task_active_dir(const lListElem *job, const lListElem *ja_task, const lListElem *pe_task, dstring *err_str) {
+const char *sge_make_pe_task_active_dir(const ocs::tom::ConstElement<ocs::tom::JB> job,
+                                        const ocs::tom::ConstElement<ocs::tom::JAT> ja_task,
+                                        const ocs::tom::ConstElement<ocs::tom::PET> pe_task, dstring *err_str) {
    DENTER(TOP_LAYER);
 
    static dstring path_buffer = DSTRING_INIT;
@@ -397,7 +404,7 @@ const char *sge_make_pe_task_active_dir(const lListElem *job, const lListElem *j
       sge_dstring_clear(err_str);
    }
   
-   if(job == nullptr || ja_task == nullptr || pe_task == nullptr) {
+   if (!job || !ja_task || !pe_task) {
       DRETURN(nullptr);
    }
 

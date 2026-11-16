@@ -23,6 +23,10 @@
  * @brief Talking to systemd: running as a service, and scoping the shepherds
  */
 
+#include "sgeobj/tom/ocs_tom_JAT.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
+#include "tom/ocs_Element.h"
+
 namespace ocs::execd {
 
    bool
@@ -46,7 +50,8 @@ namespace ocs::execd {
    execd_move_shepherd_to_scope();
 
    void
-   execd_store_tight_pe_slice(const lListElem *job, lListElem *ja_task, const char *slice_name = nullptr);
+   execd_store_tight_pe_slice(ocs::tom::ConstElement<ocs::tom::JB> job, ocs::tom::Element<ocs::tom::JAT> ja_task,
+                              const char *slice_name = nullptr);
 
    void
    execd_delete_tight_pe_slice(uint32_t job_id, uint32_t ja_task_id, const char *pe_task_id);

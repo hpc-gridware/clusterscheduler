@@ -45,15 +45,15 @@
 #include "uti/sge_unistd.h"
 
 #include "sgeobj/sge_qinstance.h"
+#include "sgeobj/tom/ocs_tom_QU.h"
 #include "tom/ocs_Element.h"
 
 #include "tmpdir.h"
 #include "msg_common.h"
 #include "msg_execd.h"
 
-/*******************************************************/
-char *
-/** @brief Create the temporary directory a job runs with as `$TMPDIR`
+/**
+ * @brief Create the temporary directory a job runs with as `$TMPDIR`
  *
  * Created as the daemon and then handed to the job owner, because the parent
  * directory is usually not writable by users.
@@ -65,9 +65,11 @@ char *
  * @param gid the job owner's group
  * @param[out] tmpdir receives the directory
  * @param tmpdir_size size of that buffer
- * @return 0 on success
+ * @return the directory, or nullptr when none was configured or it could not be handed to the job owner
  */
-sge_make_tmpdir(lListElem *qep, uint32_t jobid, uint32_t jataskid, uid_t uid, gid_t gid, char *tmpdir, size_t tmpdir_size) {
+char *
+sge_make_tmpdir(const ocs::tom::ConstElement<ocs::tom::QU> qep, const uint32_t jobid, const uint32_t jataskid,
+                const uid_t uid, const gid_t gid, char *tmpdir, const size_t tmpdir_size) {
    DENTER(TOP_LAYER);
 
    const char *t;
@@ -144,7 +146,8 @@ int sge_remove_tmpdir(const char *dir, const char *job_owner, uint32_t jobid, ui
    DRETURN(0);
 }
 
-/** @brief The temporary directory a job was given
+/**
+ * @brief The temporary directory a job was given
  * @param qep the queue instance, which configures where temporary directories live
  * @param jobid the job
  * @param jataskid the array task
@@ -152,7 +155,8 @@ int sge_remove_tmpdir(const char *dir, const char *job_owner, uint32_t jobid, ui
  * @param tmpdir_size size of that buffer
  * @return the directory, or nullptr when none was configured
  */
-char *sge_get_tmpdir(lListElem *qep, uint32_t jobid, uint32_t jataskid, char *tmpdir, size_t tmpdir_size) {
+char *sge_get_tmpdir(const ocs::tom::ConstElement<ocs::tom::QU> qep, const uint32_t jobid, const uint32_t jataskid,
+                     char *tmpdir, const size_t tmpdir_size) {
    DENTER(TOP_LAYER);
    const char *t;
 

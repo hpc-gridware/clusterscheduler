@@ -52,6 +52,8 @@
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_job.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
 
 #include "gdi/ocs_gdi_ClientBase.h"
 
@@ -381,8 +383,9 @@ int sge_execd_process_messages() {
 
                   // Check if we have to delay job reporting. This is the case if there are running qsub -sync jobs
                   bool delay_job_reporting = false;
-                  const lList *master_job_list = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
-                  for_each_ep_lv(job, master_job_list) {
+                  const ocs::tom::ConstList<ocs::tom::JB>
+                     master_job_list(*ocs::DataStore::get_master_list(SGE_TYPE_JOB));
+                  for (const auto job : master_job_list) {
                      uint32_t sync_options = ocs::tom::get<JB_sync_options>(job);
                      if (sync_options != SYNC_NO) {
                         delay_job_reporting = true;

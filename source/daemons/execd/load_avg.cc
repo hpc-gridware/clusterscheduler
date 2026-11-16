@@ -41,6 +41,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <cfloat>
+#include <utility>
 
 #include "uti/sge_arch.h"
 #include "uti/sge_hostname.h"
@@ -220,7 +221,7 @@ void execd_merge_load_report(const uint32_t seqno) {
          known_lr.push_back(old_lr.clone());
       }
    }
-   lFreeElem(&last_lr);
+   ocs::tom::ElementPtr<ocs::tom::REP>::from_typed(std::exchange(last_lr, nullptr)).reset();
 
    DRETURN_VOID;
 }
@@ -274,8 +275,8 @@ execd_add_load_report(lList *report_list, const uint64_t now, uint64_t *next_sen
       auto tmp_lr_list = sge_build_load_report(qualified_hostname, binary_path);
 
       if (lr_list == nullptr) {
-         lr_list = lCopyList("", *tmp_lr_list);
-         lFreeElem(&last_lr);
+         lr_list = tmp_lr_list->clone("").release();
+         ocs::tom::ElementPtr<ocs::tom::REP>::from_typed(std::exchange(last_lr, nullptr)).reset();
          tmp_lr_list->sort<ocs::tom::asc<LR_host>>();
          ocs::tom::set<REP_list>(report, std::move(tmp_lr_list));
       } else {
@@ -315,8 +316,8 @@ execd_add_load_report(lList *report_list, const uint64_t now, uint64_t *next_sen
 
          tmp_lr_list->sort<ocs::tom::asc<LR_host>>();
          ocs::tom::set<REP_list>(report, std::move(tmp_lr_list));
-         lFreeElem(&last_lr);
-         last_lr = lCopyElem(*report);
+         ocs::tom::ElementPtr<ocs::tom::REP>::from_typed(std::exchange(last_lr, nullptr)).reset();
+         last_lr = report->clone().release();
       }
 
       ocs::tom::List<ocs::tom::REP>(report_list).push_back(std::move(report));

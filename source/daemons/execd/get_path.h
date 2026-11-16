@@ -45,6 +45,12 @@
 #include "uti/sge_dstring.h"
 
 #include "cull/cull.h"
+#include "sgeobj/tom/ocs_tom_JAT.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
+#include "sgeobj/tom/ocs_tom_PET.h"
+#include "sgeobj/tom/ocs_tom_PN.h"
+#include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
 
 #include <cinttypes>
 
@@ -59,15 +65,18 @@
 #define SGE_PAR_STDERR      0x40000000   ///< Standard error of a PE task
 /** @} */
 
-int sge_get_path(const char *qualified_hostname, const lList *lp, const char *cwd, const char *owner, 
-                 const char *job_name, uint32_t job_number,
+int sge_get_path(const char *qualified_hostname, ocs::tom::ConstList<ocs::tom::PN> lp, const char *cwd,
+                 const char *owner, const char *job_name, uint32_t job_number,
                  uint32_t task_number, int type, char *path, size_t path_len);
                  
-bool sge_get_fs_path(const lList* lp, char* fs_host, size_t fs_host_len,
-                                char* fs_path, size_t fs_path_len);
+bool sge_get_fs_path(ocs::tom::ConstList<ocs::tom::PN> lp, char *fs_host, size_t fs_host_len,
+                     char *fs_path, size_t fs_path_len);
 
-const char *sge_make_ja_task_active_dir(const lListElem *job, const lListElem *ja_task, dstring *err_str);
-const char *sge_make_pe_task_active_dir(const lListElem *job, const lListElem *ja_task, const lListElem *pe_task, dstring *err_str);
+const char *sge_make_ja_task_active_dir(ocs::tom::ConstElement<ocs::tom::JB> job,
+                                        ocs::tom::ConstElement<ocs::tom::JAT> ja_task, dstring *err_str);
+const char *sge_make_pe_task_active_dir(ocs::tom::ConstElement<ocs::tom::JB> job,
+                                        ocs::tom::ConstElement<ocs::tom::JAT> ja_task,
+                                        ocs::tom::ConstElement<ocs::tom::PET> pe_task, dstring *err_str);
 
 const char *
 expand_path(dstring *dstr_exp_path, const char *path_in, uint32_t job_id, uint32_t ja_task_id,

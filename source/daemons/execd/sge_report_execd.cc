@@ -44,7 +44,9 @@
 #include "sgeobj/sge_report.h"
 #include "sgeobj/sge_load.h"
 #include "sgeobj/tom/ocs_tom_LR.h"
+#include "sgeobj/tom/ocs_tom_REP.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
 
 #include "gdi/ocs_gdi_ClientBase.h"
 #include "gdi/ocs_gdi_ClientExecd.h"
@@ -70,12 +72,12 @@ static const char* report_types[] = {
 extern lUlong sge_execd_report_seqno;
 
 
-/*-------------------------------------------------------------------------*/
-/** @brief Send whichever reports are due
+/**
+ * @brief Send whichever reports are due
  * @param now the current time
  * @param which a mask of the report types to consider, 0 for all of them
  * @param report_sources the table of report kinds
- * @return 0 on success
+ * @return 0 on success, 1 if qmaster is not connected since the last registration
  */
 int sge_send_all_reports(uint64_t now, int which, report_source *report_sources) {
    DENTER(TOP_LAYER);
@@ -94,28 +96,27 @@ int sge_send_all_reports(uint64_t now, int which, report_source *report_sources)
    if (connect_time != 0 && get_last_qmaster_register_time() >= sge_gmt32_to_gmt64(connect_time)) {
       if (!ocs::gdi::ClientBase::sge_get_com_error_flag(EXECD, ocs::gdi::SGE_COM_WAS_COMMUNICATION_ERROR, false)) {
          const char *master_host = nullptr;
-         lList *report_list = nullptr;
          int i = 0;
 
          master_host = ocs::gdi::ClientBase::gdi_get_act_master_host(false);
          DPRINTF("SENDING LOAD AND REPORTS\n");
-         report_list = lCreateList("report list", REP_Type);
+         const auto report_list = ocs::tom::ListPtr<ocs::tom::REP>::create("report list");
          for (i = 0; report_sources[i].type; i++) {
             if (!which || which == report_sources[i].type) {
                DPRINTF("%s\n", report_types[report_sources[i].type - 1]);
-               report_sources[i].func(report_list, now, &(report_sources[i].next_send));
+               // the report functions fill the list through the raw pointer of report_func_type
+               report_sources[i].func(*report_list, now, &(report_sources[i].next_send));
             }
          }
 
          /* send load report asynchron to qmaster */
-         if (lGetNumberOfElem(report_list) > 0) {
+         if (!report_list->empty()) {
             /* wrap around */
             if (++sge_execd_report_seqno == 10000) {
                sge_execd_report_seqno = 0;
             }
-            ocs::gdi::ClientExecd::report_list_send(report_list, master_host, to_cstr(QMASTER), 1, 0);
+            ocs::gdi::ClientExecd::report_list_send(*report_list, master_host, to_cstr(QMASTER), 1, 0);
          }
-         lFreeList(&report_list);
       }
    } else {
       ret = 1;

@@ -59,6 +59,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <cerrno>
+#include <utility>
 #include <sys/types.h>
 #include <unistd.h>
 #include <math.h>
@@ -1613,21 +1614,14 @@ ptf_get_usage(ocs::tom::ListPtr<ocs::tom::JB> &job_usage_list) {
 }
 
 
-/*--------------------------------------------------------------------
- * ptf_init - initialize the Priority Translation Facility
- *--------------------------------------------------------------------*/
-
-/** @brief Prepare the PTF's job list
- * @return 0 on success
+/** @brief Initialize the Priority Translation Facility: the PTF's job list and the data collector
+ * @return 0 on success, -1 if the data collector could not be started
  */
 int ptf_init() {
    DENTER(TOP_LAYER);
    lInit(nmv);
 
-   ptf_jobs = lCreateList("ptf_job_list", JL_Type);
-   if (ptf_jobs == nullptr) {
-      DRETURN(-1); 
-   }
+   ptf_jobs = ocs::tom::ListPtr<ocs::tom::JL>::create("ptf_job_list").release();
 
    sge_switch2start_user();
    if (psStartCollector()) {
@@ -1667,7 +1661,7 @@ void ptf_stop() {
       is_ptf_running = 0;
    }
 
-   lFreeList(&ptf_jobs);
+   ocs::tom::ListPtr<ocs::tom::JL>::from_typed(std::exchange(ptf_jobs, nullptr)).reset();
    DRETURN_VOID;
 }
 
@@ -1746,7 +1740,7 @@ void ptf_unregister_registered_jobs() {
       }
    }
 
-   lFreeList(&ptf_jobs);
+   ocs::tom::ListPtr<ocs::tom::JL>::from_typed(std::exchange(ptf_jobs, nullptr)).reset();
    DPRINTF("PTF: All jobs unregistered from PTF\n");
    DRETURN_VOID;
 }

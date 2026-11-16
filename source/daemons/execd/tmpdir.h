@@ -39,11 +39,14 @@
 
 #include <cinttypes>
 #include "cull/cull.h"
+#include "sgeobj/tom/ocs_tom_QU.h"
+#include "tom/ocs_Element.h"
 
-char *sge_make_tmpdir(lListElem *qep, uint32_t jobid, uint32_t jataskid,
+char *sge_make_tmpdir(ocs::tom::ConstElement<ocs::tom::QU> qep, uint32_t jobid, uint32_t jataskid,
                       uid_t uid, gid_t gid, char *tmpdir, size_t tmpdir_size);
 
-char *sge_get_tmpdir(lListElem *qep, uint32_t jobid, uint32_t jataskid, char *tmpdir, size_t tmpdir_size);
+char *sge_get_tmpdir(ocs::tom::ConstElement<ocs::tom::QU> qep, uint32_t jobid, uint32_t jataskid, char *tmpdir,
+                     size_t tmpdir_size);
 
 int sge_remove_tmpdir(const char *dir, const char *job_owner, uint32_t jobid,
                       uint32_t jataskid, const char *queue_name);

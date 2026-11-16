@@ -140,8 +140,6 @@ static void force_job_rlimit(const char* qualified_hostname);
 
 extern volatile int jobs_to_start;
 
-extern lList *jr_list;
-
 #ifdef COMPILE_DC
 /**
  * @brief Notify PTF about newly started jobs
@@ -1125,9 +1123,9 @@ int register_at_ptf(const ocs::tom::ConstElement<ocs::tom::JB> job, const ocs::t
 #if 1
    const char *osjobid_str;
    if (pe_task != nullptr) {
-      osjobid_str = lGetString(pe_task, PET_osjobid);
+      osjobid_str = ocs::tom::get<PET_osjobid>(pe_task);
    } else {
-      osjobid_str = lGetString(ja_task, JAT_osjobid);
+      osjobid_str = ocs::tom::get<JAT_osjobid>(ja_task);
    }
    osjobid = static_cast<gid_t>(std::stoul(osjobid_str));
 #else
@@ -1156,9 +1154,9 @@ int register_at_ptf(const ocs::tom::ConstElement<ocs::tom::JB> job, const ocs::t
 
    /* store osjobid in job report to be sent to qmaster later on */
    {
-      lListElem *jr;
-      if ((jr=get_job_report(job_id, ja_task_id, pe_task_id)))
-         lSetString(jr, JR_osjobid, osjobid_str);
+      const auto jr = get_job_report(job_id, ja_task_id, pe_task_id);
+      if (jr)
+         ocs::tom::set<JR_osjobid>(jr, osjobid_str);
       DPRINTF(("job %s: osjobid = %s\n",
                job_get_id_string(job_id, ja_task_id, pe_task_id, &id_dstring),
                osjobid_str));

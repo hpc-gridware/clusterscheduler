@@ -41,6 +41,7 @@
 #include <cerrno>
 #include <cstring>
 #include <string>
+#include <utility>
 
 #include "uti/sge.h"
 #include "uti/sge_arch.h"
@@ -56,20 +57,23 @@
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_report.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
 #include "sgeobj/tom/ocs_tom_LR.h"
+#include "sgeobj/tom/ocs_tom_LS.h"
 
 #include "execd.h"
 #include "sge_load_sensor.h"
 #include "sge_report_execd.h"
 #include "msg_execd.h"
 
-static int ls_send_command(lListElem *elem, const char *command);
-static pid_t sge_ls_get_pid(const lListElem *this_ls);
-static void sge_ls_set_pid(lListElem *this_ls, pid_t pid);
-static int sge_ls_status(lListElem *this_ls);
-static lListElem *sge_ls_create_ls(const char* qualified_hostname, const char *name, const char *scriptfile);
-static int sge_ls_start_ls(const char *qualified_hostname, lListElem *this_ls);
-static void sge_ls_stop_ls(lListElem *this_ls, int send_no_quit_command);
+static int ls_send_command(ocs::tom::ConstElement<ocs::tom::LS> this_ls, const char *command);
+static pid_t sge_ls_get_pid(ocs::tom::ConstElement<ocs::tom::LS> this_ls);
+static void sge_ls_set_pid(ocs::tom::Element<ocs::tom::LS> this_ls, pid_t pid);
+static int sge_ls_status(ocs::tom::ConstElement<ocs::tom::LS> this_ls);
+static ocs::tom::ElementPtr<ocs::tom::LS>
+sge_ls_create_ls(const char *qualified_hostname, const char *name, const char *scriptfile);
+static int sge_ls_start_ls(const char *qualified_hostname, ocs::tom::Element<ocs::tom::LS> this_ls);
+static void sge_ls_stop_ls(ocs::tom::Element<ocs::tom::LS> this_ls, int send_no_quit_command);
 static int sge_ls_start(const char* qualified_hostname, const char *binary_path, char *scriptfile);
 static bool sge_ls_expand_variables(const char *qualified_hostname, const char *scriptfile,
                                     std::string &expanded);
@@ -84,7 +88,8 @@ static int read_ls();
 
 /* 
  * Each element in this list contains elements which show the state
- * of the corresponding load sensor 
+ * of the corresponding load sensor; it lives as long as the process,
+ * so it stays a raw pointer and is read through checked handles
  */
 static lList *ls_list = nullptr;   /* LS_Type */
 
@@ -106,11 +111,12 @@ static int has_to_use_gnu_load_sensor = 0;
  * the type LS_Type. If the corresponding loadsensor was
  * not started until now then -1 will be returned.
  *
- * @param this_ls pointer to a CULL element of type LS_Type
+ * @param this_ls the load sensor
  *
  * @return returns pid
  */
-static pid_t sge_ls_get_pid(const lListElem *this_ls) {
+static pid_t sge_ls_get_pid(const ocs::tom::ConstElement<ocs::tom::LS> this_ls) {
+   DENTER(TOP_LAYER);
    pid_t pid = -1;
    const char *pid_string;
 
@@ -118,7 +124,7 @@ static pid_t sge_ls_get_pid(const lListElem *this_ls) {
    if (pid_string) {
       sscanf(pid_string, pid_t_fmt, &pid);
    }
-   return pid;
+   DRETURN(pid);
 }
 
 /**
@@ -126,16 +132,18 @@ static pid_t sge_ls_get_pid(const lListElem *this_ls) {
  *
  * Set the pid entry in a CULL element of the type LS_Type.
  *
- * @param this_ls pointer to a CULL element of type LS_Type
+ * @param this_ls the load sensor
  * @param pid pid of the loadsensor process or -1
  *
  * @note [this_ls] - LS_pid entry of the CULL element will be modified
  */
-static void sge_ls_set_pid(lListElem *this_ls, pid_t pid) {
+static void sge_ls_set_pid(const ocs::tom::Element<ocs::tom::LS> this_ls, const pid_t pid) {
+   DENTER(TOP_LAYER);
    char pid_buffer[256];
 
    snprintf(pid_buffer, sizeof(pid_buffer), pid_t_fmt, pid);
    ocs::tom::set<LS_pid>(this_ls, pid_buffer);
+   DRETURN_VOID;
 }
 
 /**
@@ -148,11 +156,11 @@ static void sge_ls_set_pid(lListElem *this_ls, pid_t pid) {
  *    LS_NOT_STARTED     - load sensor not started
  *    LS_BROKEN_PIPE     - ls has exited or is not ready to read
  *
- * @param this_ls pointer to a CULL element of type LS_Type
+ * @param this_ls the load sensor
  *
  * @return returns the status of the loadsensor
  */
-static int sge_ls_status(lListElem *this_ls) {
+static int sge_ls_status(const ocs::tom::ConstElement<ocs::tom::LS> this_ls) {
    DENTER(TOP_LAYER);
 
    fd_set writefds;
@@ -191,11 +199,14 @@ static int sge_ls_status(lListElem *this_ls) {
  * also the XAUTHORITY environment variable will be set.
  *
  * @param qualified_hostname qualified host name
- * @param this_ls pointer to a CULL element of type LS_Type
+ * @param this_ls the load sensor
  *
- * @return An additional loadsensor process will be started. [this_ls] - the CULL element will be modified LS_pid containes the pid of the ls process LS_in, LS_out, LS_err are the FILE-streams for the communication with the ls-process returns LS_OK If sge_peopen fails, returns LS_CANT_PEOPEN
+ * An additional load sensor process is started; this_ls is modified: LS_pid contains the pid of the
+ * process, LS_in, LS_out and LS_err the streams for the communication with it.
+ *
+ * @return LS_OK on success, LS_CANT_PEOPEN if sge_peopen() fails
  */
-static int sge_ls_start_ls(const char *qualified_hostname, lListElem *this_ls) {
+static int sge_ls_start_ls(const char *qualified_hostname, const ocs::tom::Element<ocs::tom::LS> this_ls) {
    DENTER(TOP_LAYER);
 
    pid_t pid = -1;
@@ -258,8 +269,8 @@ static int sge_ls_start_ls(const char *qualified_hostname, lListElem *this_ls) {
 /**
  * @brief Creates a new CULL loadsensor element
  *
- * The function creates a new CULL element of type LS_Type and
- * returns a pointer to this object. The loadsensor will be
+ * The function creates a new element of type LS_Type and
+ * returns it. The loadsensor will be
  * started immediately.
  * If it cannot be started then, LS_has_to_restart is set to
  * true so that it will be attempted to be restarted in the next load interval
@@ -268,12 +279,14 @@ static int sge_ls_start_ls(const char *qualified_hostname, lListElem *this_ls) {
  * @param name pseudo name of the ls "extern" for user defined loadsensors "intern" for qidle and qloadsensor
  * @param scriptfile absolute path to the ls scriptfile
  *
- * @return new CULL element of type LS_Type will be returned and a new loadsensor process will be created by this function
+ * @return the new load sensor, owned by the caller, with its process started or due for a restart; an empty
+ *         handle if there is no scriptfile or it cannot be stat()ed
  */
-static lListElem *sge_ls_create_ls(const char *qualified_hostname, const char *name, const char *scriptfile) {
+static ocs::tom::ElementPtr<ocs::tom::LS>
+sge_ls_create_ls(const char *qualified_hostname, const char *name, const char *scriptfile) {
    DENTER(TOP_LAYER);
 
-   lListElem *new_ls = nullptr;    /* LS_Type */
+   ocs::tom::ElementPtr<ocs::tom::LS> new_ls;
    SGE_STRUCT_STAT st;
 
    if (scriptfile != nullptr) {
@@ -284,25 +297,25 @@ static lListElem *sge_ls_create_ls(const char *qualified_hostname, const char *n
          DRETURN(nullptr);
       }
 
-      new_ls = lCreateElem(LS_Type);
+      new_ls = ocs::tom::ElementPtr<ocs::tom::LS>::create();
       if (new_ls) {
          /* initialize all attributes */
          ocs::tom::set<LS_name>(new_ls, name);
          ocs::tom::set<LS_command>(new_ls, scriptfile);
-         sge_ls_set_pid(new_ls, -1);
+         sge_ls_set_pid(*new_ls, -1);
          ocs::tom::set<LS_in>(new_ls, nullptr);
          ocs::tom::set<LS_out>(new_ls, nullptr);
          ocs::tom::set<LS_err>(new_ls, nullptr);
          ocs::tom::set<LS_has_to_restart>(new_ls, false);
          ocs::tom::set<LS_tag>(new_ls, 0);
-         ocs::tom::set<LS_incomplete>(new_ls, lCreateList("", LR_Type));
-         ocs::tom::set<LS_complete>(new_ls, lCreateList("", LR_Type));
+         ocs::tom::set<LS_incomplete>(new_ls, ocs::tom::ListPtr<ocs::tom::LR>::create(""));
+         ocs::tom::set<LS_complete>(new_ls, ocs::tom::ListPtr<ocs::tom::LR>::create(""));
          ocs::tom::set<LS_last_mod>(new_ls, st.st_mtime);
 
          /* start loadsensor, if couldn't set the restart flag so that we
           * restart it in the next load interval
           */
-         if (sge_ls_start_ls(qualified_hostname, new_ls) != LS_OK) {
+         if (sge_ls_start_ls(qualified_hostname, *new_ls) != LS_OK) {
             ocs::tom::set<LS_has_to_restart>(new_ls, true);
          }
       }
@@ -316,14 +329,12 @@ static lListElem *sge_ls_create_ls(const char *qualified_hostname, const char *n
  * The "quit" command will be send to the loadsensor process.
  * So the loadsensor process can stop itself.
  *
- * @param this_ls pointer to a CULL element of type LS_Type
- * @param send_no_quit_command
- * @param 0 send quit command
- * @param 1 no quit command will be send (kill without notification)
+ * @param this_ls the load sensor
+ * @param send_no_quit_command 0 sends the quit command, 1 sends none (kill without notification)
  *
  * @note the loadsensor process will be terminated [this_ls] the entries will be reinitialized
  */
-static void sge_ls_stop_ls(lListElem *this_ls, int send_no_quit_command) {
+static void sge_ls_stop_ls(const ocs::tom::Element<ocs::tom::LS> this_ls, const int send_no_quit_command) {
    DENTER(TOP_LAYER);
 
    int ret, exit_status;
@@ -379,9 +390,7 @@ static void sge_ls_stop_ls(lListElem *this_ls, int send_no_quit_command) {
  * The last complete set of load values (LS_complete)
  * will be added to the load report.
  *
- * @param this_ls pointer to a CULL element of type LS_Type
- *
- * @return [this_ls] LS_incomplete and LS_complete will be modified.
+ * @return 0; LS_incomplete and LS_complete of the load sensors are modified.
  */
 static int read_ls() {
    DENTER(TOP_LAYER);
@@ -391,7 +400,7 @@ static int read_ls() {
    char value[1000];
    bool flag = true;
 
-   for_each_rw_lv(ls_elem, ls_list) {
+   for (const auto ls_elem : ocs::tom::List<ocs::tom::LS>(ls_list)) {
       if (sge_ls_get_pid(ls_elem) == -1) {
          continue;
       }
@@ -408,16 +417,14 @@ static int read_ls() {
 
          if (!strcmp(input, "begin") || !strcmp(input, "start")) {
             /* remove last possibly incomplete load report */
-            ocs::tom::set<LS_incomplete>(ls_elem, lCreateList("", LR_Type));
+            ocs::tom::set<LS_incomplete>(ls_elem, ocs::tom::ListPtr<ocs::tom::LR>::create(""));
             continue;
          }
 
          if (!strcmp(input, "end")) {
-            /* replace old load report by new one */
-            lList *tmp_list = nullptr;
-            ocs::tom::exchange<LS_incomplete>(ls_elem, &tmp_list);
-            ocs::tom::exchange<LS_complete>(ls_elem, &tmp_list);
-            lFreeList(&tmp_list);
+            /* replace old load report by new one; LS_incomplete is left nullptr, the old one is freed */
+            auto tmp_list = ls_elem.exchange<LS_incomplete>(nullptr);
+            tmp_list = ls_elem.exchange<LS_complete>(std::move(tmp_list));
 
             /* request next load report from ls */
             ls_send_command(ls_elem, "\n");
@@ -431,6 +438,7 @@ static int read_ls() {
             ERROR(MSG_LS_FORMAT_ERROR_SS, ocs::tom::get<LS_command>(ls_elem), input);
          } else {
             {
+               // sge_add_str2load_report() takes the list through an lList **
                lList *tmp_list = ocs::tom::get<LS_incomplete>(ls_elem);
                sge_add_str2load_report(&tmp_list, name, value, host);
             }
@@ -447,12 +455,12 @@ static int read_ls() {
  * This function will send a command through the input
  * stream (LS_in) to the loadsensor.
  *
- * @param this_ls pointer to a CULL element of type LS_Type
+ * @param this_ls the load sensor
  * @param command valid loadsensor command
  *
- * @return success -1 - error
+ * @return 0 on success, -1 on error
  */
-static int ls_send_command(lListElem *this_ls, const char *command) {
+static int ls_send_command(const ocs::tom::ConstElement<ocs::tom::LS> this_ls, const char *command) {
    DENTER(TOP_LAYER);
 
    // A sensor which has been stopped has no streams any more. fileno() on a closed stream
@@ -596,19 +604,20 @@ sge_ls_expand_variables(const char *qualified_hostname, const char *scriptfile,
  *  'has_to_use_gnu_load_sensor' == 1  => start qloadsensor
  *  'has_to_use_qidle' == 1            => start qidle
  *
+ * @param qualified_hostname this host, as the cluster knows it
+ * @param binary_path where to find the load sensor binaries
  * @param scriptfiles comma separated list of scriptfiles
  *
- * @return LS_OK
+ * @return LS_OK, LS_NOT_STARTED if the list of scriptfiles is too long
  */
 static int sge_ls_start(const char *qualified_hostname, const char *binary_path, char *scriptfiles) {
    DENTER(TOP_LAYER);
 
-   lListElem *nxt_ls_elem = nullptr;    /* LS_Type */
    char scriptfiles_buffer[MAX_STRING_SIZE];
    SGE_STRUCT_STAT stat_buffer;
 
    /* tag all elements */
-   for_each_rw_lv(ls_elem, ls_list) {
+   for (const auto ls_elem : ocs::tom::List<ocs::tom::LS>(ls_list)) {
       ocs::tom::set<LS_tag>(ls_elem, 1);
    }
 
@@ -632,18 +641,20 @@ static int sge_ls_start(const char *qualified_hostname, const char *binary_path,
             scriptfile = strtok(nullptr, ",\n");
             continue;
          }
-         lListElem *ls_elem = ocs::tom::find_first_rw<LS_command>(ls_list, expanded.c_str());
+         auto ls_elem = ocs::tom::List<ocs::tom::LS>(ls_list).find_first<LS_command>(expanded.c_str());
 
-         if (ls_elem == nullptr) {
+         if (!ls_elem) {
             INFO(MSG_LS_STARTLS_S, expanded.c_str());
-            ls_elem = sge_ls_create_ls(qualified_hostname, "extern", expanded.c_str());
+            auto new_ls = sge_ls_create_ls(qualified_hostname, "extern", expanded.c_str());
 
             if (ls_list == nullptr) {
-               ls_list = lCreateList("", LS_Type);
+               ls_list = ocs::tom::ListPtr<ocs::tom::LS>::create("").release();
             }
-            lAppendElem(ls_list, ls_elem);
+            if (new_ls) {
+               ls_elem = ocs::tom::List<ocs::tom::LS>(ls_list).push_back(std::move(new_ls));
+            }
          }
-         if (ls_elem != nullptr) {
+         if (ls_elem) {
             ocs::tom::set<LS_tag>(ls_elem, 0);
          }
          scriptfile = strtok(nullptr, ",\n");
@@ -661,16 +672,18 @@ static int sge_ls_start(const char *qualified_hostname, const char *binary_path,
                   binary_path, IDLE_LOADSENSOR_NAME);
       }
       
-      lListElem *ls_elem = ocs::tom::find_first_rw<LS_command>(ls_list, scriptfiles_buffer);
-      if (ls_elem == nullptr) {
-         ls_elem = sge_ls_create_ls(qualified_hostname, IDLE_LOADSENSOR_NAME, scriptfiles_buffer);
+      auto ls_elem = ocs::tom::List<ocs::tom::LS>(ls_list).find_first<LS_command>(scriptfiles_buffer);
+      if (!ls_elem) {
+         auto new_ls = sge_ls_create_ls(qualified_hostname, IDLE_LOADSENSOR_NAME, scriptfiles_buffer);
 
          if (ls_list == nullptr) {
-            ls_list = lCreateList("", LS_Type);
+            ls_list = ocs::tom::ListPtr<ocs::tom::LS>::create("").release();
          }
-         lAppendElem(ls_list, ls_elem);
+         if (new_ls) {
+            ls_elem = ocs::tom::List<ocs::tom::LS>(ls_list).push_back(std::move(new_ls));
+         }
       }
-      if (ls_elem != nullptr) {
+      if (ls_elem) {
          ocs::tom::set<LS_tag>(ls_elem, 0);
       }
    }
@@ -686,31 +699,33 @@ static int sge_ls_start(const char *qualified_hostname, const char *binary_path,
                   binary_path, GNU_LOADSENSOR_NAME);
       }
       
-      lListElem *ls_elem = ocs::tom::find_first_rw<LS_command>(ls_list, scriptfiles_buffer);
-      if (ls_elem == nullptr) {
-         ls_elem = sge_ls_create_ls(qualified_hostname, GNU_LOADSENSOR_NAME, scriptfiles_buffer);
+      auto ls_elem = ocs::tom::List<ocs::tom::LS>(ls_list).find_first<LS_command>(scriptfiles_buffer);
+      if (!ls_elem) {
+         auto new_ls = sge_ls_create_ls(qualified_hostname, GNU_LOADSENSOR_NAME, scriptfiles_buffer);
 
          if (ls_list == nullptr) {
-            ls_list = lCreateList("", LS_Type);
+            ls_list = ocs::tom::ListPtr<ocs::tom::LS>::create("").release();
          }
-         lAppendElem(ls_list, ls_elem);
+         if (new_ls) {
+            ls_elem = ocs::tom::List<ocs::tom::LS>(ls_list).push_back(std::move(new_ls));
+         }
       }
-      if (ls_elem != nullptr) {
+      if (ls_elem) {
          ocs::tom::set<LS_tag>(ls_elem, 0);
       }
    }
 
    /* tagged elements are not contained in 'scriptfiles'
     * => we will remove them */
-   lListElem *ls_elem;
-   nxt_ls_elem = lFirstRW(ls_list);
-   while ((ls_elem = nxt_ls_elem)) {
-      nxt_ls_elem = lNextRW(ls_elem);
+   const ocs::tom::List<ocs::tom::LS> ls_elems(ls_list);
+   for (auto ls_elem = ls_elems.front(); ls_elem;) {
+      const auto nxt_ls_elem = ls_elem.next();
       if (ocs::tom::get<LS_tag>(ls_elem) == 1) {
          INFO(MSG_LS_STOPLS_S, ocs::tom::get<LS_command>(ls_elem));
          sge_ls_stop_ls(ls_elem, 0);
-         lRemoveElem(ls_list, &ls_elem);
+         ls_elems.erase(ls_elem);
       }
+      ls_elem = nxt_ls_elem;
    }
 
    DRETURN(LS_OK);
@@ -724,7 +739,7 @@ static int sge_ls_start(const char *qualified_hostname, const char *binary_path,
 void trigger_ls_restart() {
    DENTER(TOP_LAYER);
 
-   for_each_rw_lv(ls, ls_list) {
+   for (const auto ls : ocs::tom::List<ocs::tom::LS>(ls_list)) {
       ocs::tom::set<LS_has_to_restart>(ls, true);
    }
 
@@ -741,12 +756,12 @@ void trigger_ls_restart() {
  *
  * @param pid process id
  *
- * @return pid was not a loadsensor 1 - we triggerd the restart because pid was a loadsensor
+ * @return 0 if pid was not a load sensor, 1 if it was one and its restart was triggered
  */
-int sge_ls_stop_if_pid(pid_t pid) {
+int sge_ls_stop_if_pid(const pid_t pid) {
    DENTER(TOP_LAYER);
 
-   for_each_rw_lv(ls, ls_list) {
+   for (const auto ls : ocs::tom::List<ocs::tom::LS>(ls_list)) {
       if (pid == sge_ls_get_pid(ls)) {
          trigger_ls_restart();
          DRETURN(1);
@@ -781,7 +796,7 @@ int sge_ls_get(const char *qualified_hostname, const char *binary_path, lList **
    load_sensor = mconf_get_load_sensor();
    sge_ls_start(qualified_hostname, binary_path, load_sensor);
 
-   for_each_rw_lv(ls_elem, ls_list) {
+   for (const auto ls_elem : ocs::tom::List<ocs::tom::LS>(ls_list)) {
       bool restart = false;
       SGE_STRUCT_STAT st;
       const char *ls_command;
@@ -825,9 +840,9 @@ int sge_ls_get(const char *qualified_hostname, const char *binary_path, lList **
 
    read_ls();
 
-   for_each_rw_lv(ls_elem, ls_list) {
+   for (const auto ls_elem : ocs::tom::List<ocs::tom::LS>(ls_list)) {
       /* merge external load into existing load report list */
-      for (ocs::tom::Element<ocs::tom::LR> ep : ocs::tom::get<LS_complete>(ls_elem)) {
+      for (const auto ep : ocs::tom::get<LS_complete>(ls_elem)) {
          sge_add_str2load_report(lpp, ocs::tom::get<LR_name>(ep),
                                  ocs::tom::get<LR_value>(ep),
                                  ocs::tom::get<LR_host>(ep));
@@ -852,12 +867,11 @@ int sge_ls_get(const char *qualified_hostname, const char *binary_path, lList **
 void sge_ls_stop(int exited) {
    DENTER(TOP_LAYER);
 
-   lListElem *ls_elem;
-
-   for_each_rw(ls_elem, ls_list) {
+   for (const auto ls_elem : ocs::tom::List<ocs::tom::LS>(ls_list)) {
       sge_ls_stop_ls(ls_elem, exited);
    }
-   lFreeList(&ls_list);
+   // the process-lifetime list is given up here
+   ocs::tom::ListPtr<ocs::tom::LS>::from_typed(std::exchange(ls_list, nullptr)).reset();
 
    DRETURN_VOID;
 }

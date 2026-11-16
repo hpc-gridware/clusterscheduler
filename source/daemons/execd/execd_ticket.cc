@@ -43,6 +43,9 @@
 #include "sgeobj/sge_ja_task.h"
 #include "sgeobj/tom/ocs_tom_JB.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_FreeAccess.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_JAT.h"
 
 #include "dispatcher.h"
 #include "execd_ticket.h"
@@ -52,23 +55,22 @@
 #  include "ptf.h"
 #endif
 
-/*************************************************************************
- EXECD function called by dispatcher
-
- get a list of jobid/tickets tuples and pass them to the PTF
- *************************************************************************/
-
-/** @brief Handle the new ticket values message from qmaster
+/**
+ * @brief Handle the new ticket values message from qmaster
+ *
+ * Called by the dispatcher: gets a list of jobid/tickets tuples and passes
+ * them to the PTF.
+ *
  * @param aMsg the received message
- * @return 0 on success
+ * @return 0 on success, also when the message cannot be unpacked
  */
 int
 do_ticket(ocs::gdi::ClientServerBase::struct_msg_t *aMsg) {
    DENTER(TOP_LAYER);
    uint32_t jobid, jataskid;
    double ticket;
-   lListElem *task_ticket;
-   lList *ticket_modifier = nullptr;
+   // freed on every way out, also on the early return for a message that cannot be unpacked
+   ocs::tom::ListPtr<ocs::tom::JB> ticket_modifier;
 
 
    while (pb_unused(&(aMsg->buf))>0) {
@@ -80,23 +82,27 @@ do_ticket(ocs::gdi::ClientServerBase::struct_msg_t *aMsg) {
       DPRINTF("got %lf new tickets for job " sge_u32 "." sge_u32 "\n", ticket, jobid, jataskid);
 
       // @todo we use only very few attributes of JB_Type and JAT_type here - use reduced elements
-      ocs::tom::Element<ocs::tom::JB> job_ticket = ocs::tom::emplace_back<JB_job_number>(&ticket_modifier, jobid);   
-      if (job_ticket != nullptr) {
-         task_ticket = ocs::tom::emplace_back_in<JB_ja_tasks, JAT_task_number>(job_ticket, jataskid);
+      if (!ticket_modifier) {
+         // created with the first element, under the name lAddElemUlong() gave it
+         ticket_modifier = ocs::tom::ListPtr<ocs::tom::JB>::create("ulong_sublist");
+      }
+      const auto job_ticket = ticket_modifier->emplace_back<JB_job_number>(jobid);
+      if (job_ticket) {
+         const auto task_ticket = ocs::tom::emplace_back_in<JB_ja_tasks, JAT_task_number>(job_ticket, jataskid);
          if (task_ticket) {
             ocs::tom::set<JAT_tix>(task_ticket, ticket);
          }
       }
    }
   
-   DPRINTF("got new tickets for %d jobs\n", lGetNumberOfElem(ticket_modifier));
+   DPRINTF("got new tickets for %d jobs\n", static_cast<int>(ticket_modifier->size()));
 
 #ifdef COMPILE_DC
    { 
       int ptf_error;
       /* forward new tickets to ptf */
-      if ((ptf_error=ptf_process_job_ticket_list(ocs::tom::List<ocs::tom::JB>(ticket_modifier)))) {
-         ERROR(MSG_JOB_TICKETPASS2PTF_IS, lGetNumberOfElem(ticket_modifier), ptf_errstr(ptf_error));
+      if ((ptf_error=ptf_process_job_ticket_list(*ticket_modifier))) {
+         ERROR(MSG_JOB_TICKETPASS2PTF_IS, static_cast<int>(ticket_modifier->size()), ptf_errstr(ptf_error));
       }
 
       sge_switch2start_user();
@@ -105,8 +111,6 @@ do_ticket(ocs::gdi::ClientServerBase::struct_msg_t *aMsg) {
       sge_switch2admin_user();
    }
 #endif
-
-   lFreeList(&ticket_modifier);
 
    DRETURN(0);
 }

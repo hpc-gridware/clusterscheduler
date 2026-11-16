@@ -70,7 +70,6 @@
 #include "msg_execd.h"
 
 extern char execd_spool_dir[SGE_PATH_MAX];
-extern lList *jr_list;
 
 static char execd_messages_file[SGE_PATH_MAX];
 
@@ -176,29 +175,32 @@ void sge_setup_sge_execd_after_register(const char *tmp_err_file_name) {
    DRETURN_VOID;
 }
 
-/** @brief Take over a job that was already running when the daemon started
+/**
+ * @brief Take over a job that was already running when the daemon started
  *
  * Its shepherd is still alive and its active_jobs directory is still there, so
  * the job is adopted rather than restarted.
  *
- * @param job the job (`JB_Type`)
+ * The signature is the one job_list_read_from_disk() calls through its function pointer.
+ *
+ * @param job_raw the job (`JB_Type`)
  * @return 0 on success
  */
-int job_initialize_job(lListElem *job) {
+int job_initialize_job(lListElem *job_raw) {
    DENTER(TOP_LAYER);
+   const ocs::tom::Element<ocs::tom::JB> job(job_raw);
    uint32_t job_id;
-   ocs::tom::Element<ocs::tom::JAT> ja_task;
 
    job_id = ocs::tom::get<JB_job_number>(job); 
-   for_each_rw (ja_task, ocs::tom::get<JB_ja_tasks>(job)) {
+   for (const auto ja_task : ocs::tom::get<JB_ja_tasks>(job)) {
       uint32_t ja_task_id;
 
       ja_task_id = ocs::tom::get<JAT_task_number>(ja_task);
 
-      add_job_report(job_id, ja_task_id, nullptr, ocs::tom::ConstElement<ocs::tom::JB>(job));
+      add_job_report(job_id, ja_task_id, nullptr, job);
                                                                                       /* add also job reports for tasks */
-      for (ocs::tom::ConstElement<ocs::tom::PET> pe_task : ocs::tom::get<JAT_task_list>(ja_task)) {
-         add_job_report(job_id, ja_task_id, ocs::tom::get<PET_id>(pe_task), ocs::tom::ConstElement<ocs::tom::JB>(job));
+      for (const auto pe_task : ocs::tom::get<JAT_task_list>(ja_task)) {
+         add_job_report(job_id, ja_task_id, ocs::tom::get<PET_id>(pe_task), job);
       }
 
       if (mconf_get_simulate_jobs()) {
@@ -215,7 +217,7 @@ int job_initialize_job(lListElem *job) {
          sge_get_file_path(active_dir, sizeof(active_dir), JOB_ACTIVE_DIR, FORMAT_DEFAULT, SPOOL_WITHIN_EXECD, job_id, ja_task_id, nullptr);
          if (SGE_STAT(active_dir, &stat_buffer)) {
             /* lost active directory - initiate cleanup for job */
-            execd_job_run_failure(ocs::tom::ConstElement<ocs::tom::JB>(job), ja_task, nullptr,
+            execd_job_run_failure(job, ja_task, nullptr,
                                   "lost active dir of running " "job", GFSTATE_HOST);
             continue;
          }
@@ -226,14 +228,14 @@ int job_initialize_job(lListElem *job) {
          int ret;
          /* register still running jobs at ptf */
          if (ocs::tom::get<JAT_status>(ja_task) == JRUNNING) {
-            ret = register_at_ptf(ocs::tom::ConstElement<ocs::tom::JB>(job), ja_task, nullptr);
+            ret = register_at_ptf(job, ja_task, nullptr);
             if (ret) {
                ERROR(MSG_JOB_XREGISTERINGJOBYATPTFDURINGSTARTUP_SU, (ret == 1 ? MSG_DELAYED : MSG_FAILED), job_id);
             }
          }
-         for (ocs::tom::ConstElement<ocs::tom::PET> pe_task : ocs::tom::get<JAT_task_list>(ja_task)) {
+         for (const auto pe_task : ocs::tom::get<JAT_task_list>(ja_task)) {
             if (ocs::tom::get<PET_status>(pe_task) == JRUNNING) {
-               ret=register_at_ptf(ocs::tom::ConstElement<ocs::tom::JB>(job), ja_task, pe_task);
+               ret=register_at_ptf(job, ja_task, pe_task);
                if (ret) {
                   ERROR(MSG_JOB_XREGISTERINGJOBYTASKZATPTFDURINGSTARTUP_SUS, (ret == 1 ? MSG_DELAYED : MSG_FAILED), job_id, ocs::tom::get<PET_id>(pe_task));
                }
