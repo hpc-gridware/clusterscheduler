@@ -48,15 +48,18 @@
 #include "sgeobj/sge_range.h"
 #include "sgeobj/sge_job.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
 #include "sgeobj/tom/ocs_tom_JAT.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
+#include "sgeobj/tom/ocs_tom_OR.h"
 #include "sgeobj/tom/ocs_tom_RN.h"
 
 #include "sge_orders.h"
 #include "sge_interactive_sched.h"
 
-static void 
-order_remove_order_and_immediate(const lListElem *job, const lListElem *ja_task,
-                                 order_t *orders);
+static void
+order_remove_order_and_immediate(ocs::tom::ConstElement<ocs::tom::JB> job,
+                                 ocs::tom::ConstElement<ocs::tom::JAT> ja_task, order_t *orders);
 
 /**
  * @brief Test for and remove immediate jobs which can't
@@ -68,52 +71,61 @@ order_remove_order_and_immediate(const lListElem *job, const lListElem *ja_task,
  * also removed.  This is done by removing the ORT_start_job orders and
  * adding an order of type ORT_remove_immediate_job.
  *
- * @param pending_job_list The list of pending jobs for this scheduler pass (JB_Type)
- * @param running_job_list The list of running jobs for this scheduler pass (JB_Type)
+ * @param pending_job_list The list of pending jobs for this scheduler pass
+ * @param running_job_list The list of running jobs for this scheduler pass
  * @param orders The order structure for this scheduler pass
  *
  * @return Error code: 0 = OK, 1 = Errors -- always returns 0
  *
  * @note MT-NOTE: remove_immediate_jobs() is MT safe
  */
-int remove_immediate_jobs(lList *pending_job_list, lList *running_job_list, order_t *orders) {
+int remove_immediate_jobs(const ocs::tom::List<ocs::tom::JB> pending_job_list,
+                          const ocs::tom::List<ocs::tom::JB> running_job_list, order_t *orders) {
    DENTER(TOP_LAYER);
 
-   lListElem *next_job, *job;
-   ocs::tom::ConstElement<ocs::tom::JAT> ep; 
-   ocs::tom::ConstList<ocs::tom::JAT> lp;
+   auto next_job = pending_job_list.front();
+   while (next_job) {
+      auto job = next_job;
+      next_job = job.next();
 
-   next_job = lFirstRW(pending_job_list);
-   while ((job = next_job)) {
-      lCondition *where = nullptr;
-      next_job = lNextRW(job);
-      
       /* skip non immediate .. */
       if (!JOB_TYPE_IS_IMMEDIATE(ocs::tom::get<JB_type>(job))) {
          continue;
       }
 
       /* .. and non idle jobs */
-      if ((lp = ocs::tom::get<JB_ja_tasks>(job)) && (ep = lFirst(lp)) && ocs::tom::get<JAT_status>(ep)==JIDLE) {
-         continue;    
+      auto first_task = ocs::tom::get<JB_ja_tasks>(job).front();
+      if (first_task && ocs::tom::get<JAT_status>(first_task) == JIDLE) {
+         continue;
       }
 
-      /* Prepare search condition for running list */
-      where = lWhere("%T(%I==%u)", JB_Type, JB_job_number, ocs::tom::get<JB_job_number>(job));
-      
+      // the job is freed when it is removed, its number is needed for the running list
+      auto job_number = ocs::tom::get<JB_job_number>(job);
+
       /* Remove the job from the pending list */
       remove_immediate_job(pending_job_list, job, orders, 0);
-      
+
       /* If the job also exists in the running list, we need to remove it there
        * as well since array jobs are all or nothing. */
-      if ((job = lFindFirstRW(running_job_list, where)) != nullptr) {
-         remove_immediate_job(running_job_list, job, orders, 1);
+      auto running_job = ocs::tom::find_first_rw<JB_job_number>(running_job_list, job_number);
+      if (running_job) {
+         remove_immediate_job(running_job_list, running_job, orders, 1);
       }
-      
-      lFreeWhere(&where);
    }
 
    DRETURN(0);
+}
+
+/**
+ * @brief remove_immediate_jobs() for an untyped caller
+ * @param pending_job_list the pending jobs (`JB_Type`)
+ * @param running_job_list the running jobs (`JB_Type`)
+ * @param orders as remove_immediate_jobs()
+ * @return as remove_immediate_jobs()
+ */
+int remove_immediate_jobs(lList *pending_job_list, lList *running_job_list, order_t *orders) {
+   return remove_immediate_jobs(ocs::tom::List<ocs::tom::JB>(pending_job_list),
+                                ocs::tom::List<ocs::tom::JB>(running_job_list), orders);
 }
 
 /**
@@ -124,19 +136,18 @@ int remove_immediate_jobs(lList *pending_job_list, lList *running_job_list, orde
  * remove_orders is set, the ORT_start_job orders are first removed from the
  * order list before adding the remove order.
  *
- * @param job_list The list of jobs from which the job should be removed (JB_Type)
- * @param job The job to remove (JB_Type)
+ * @param job_list The list of jobs from which the job should be removed
+ * @param job The job to remove, freed afterwards
  * @param orders The order structure for this scheduler pass
- * @param remove_orders Whether the ORT_start_job orders should also be be removed
+ * @param remove_orders Whether the ORT_start_job orders should also be removed
  *
  * @note MT-NOTE: remove_immediate_job() is MT safe
  */
-void remove_immediate_job(lList *job_list, lListElem *job, order_t *orders, int remove_orders) {
+void remove_immediate_job(const ocs::tom::List<ocs::tom::JB> job_list, const ocs::tom::Element<ocs::tom::JB> job,
+                          order_t *orders, const int remove_orders) {
    DENTER(TOP_LAYER);
 
-   uint32_t ja_task_id;
-
-   for (ocs::tom::ConstElement<ocs::tom::JAT> ja_task : ocs::tom::get<JB_ja_tasks>(job)) {
+   for (auto ja_task : ocs::tom::get<JB_ja_tasks>(job)) {
       if (remove_orders) {
          order_remove_order_and_immediate(job, ja_task, orders);
       }
@@ -145,23 +156,33 @@ void remove_immediate_job(lList *job_list, lListElem *job, order_t *orders, int 
       }
    }
    
-   ocs::tom::ConstList<ocs::tom::RN> range_list = ocs::tom::get<JB_ja_n_h_ids>(job);
-   
-   for (ocs::tom::ConstElement<ocs::tom::RN> range : range_list) {
-      for(ja_task_id = ocs::tom::get<RN_min>(range);
-          ja_task_id <= ocs::tom::get<RN_max>(range);
-          ja_task_id += ocs::tom::get<RN_step>(range)) {  
-         lListElem *ja_task = job_get_ja_task_template_pending(job, ja_task_id);
-         
+   for (auto range : ocs::tom::get<JB_ja_n_h_ids>(job)) {
+      for (uint32_t ja_task_id = ocs::tom::get<RN_min>(range);
+           ja_task_id <= ocs::tom::get<RN_max>(range);
+           ja_task_id += ocs::tom::get<RN_step>(range)) {
+         auto ja_task = ocs::tom::ConstElement<ocs::tom::JAT>(job_get_ja_task_template_pending(job, ja_task_id));
+
          /* No need to remove the orders here because tasks in JB_ja_n_h_ids
           * haven't been scheduled, and hence don't have start orders to
           * remove. */
          order_remove_immediate(job, ja_task, orders);
       }
    }
-   lRemoveElem(job_list, &job);
-   
+   job_list.erase(job);
+
    DRETURN_VOID;
+}
+
+/**
+ * @brief remove_immediate_job() for an untyped caller
+ * @param job_list the jobs (`JB_Type`)
+ * @param job the job (`JB_Type`), freed afterwards
+ * @param orders as remove_immediate_job()
+ * @param remove_orders as remove_immediate_job()
+ */
+void remove_immediate_job(lList *job_list, lListElem *job, order_t *orders, const int remove_orders) {
+   remove_immediate_job(ocs::tom::List<ocs::tom::JB>(job_list), ocs::tom::Element<ocs::tom::JB>(job), orders,
+                        remove_orders);
 }
 
 /**
@@ -171,16 +192,15 @@ void remove_immediate_job(lList *job_list, lListElem *job, order_t *orders, int 
  * task.  Also removes the ORT_start_job order for this task from the order
  * list.
  *
- * @param job The job to remove  (JB_Type)
- * @param ja_task The task to remove (JAT_Type)
- * @param orders The order structurestructure  for this scheduler pass be removed
- *
- * @note int - Error code: 0 = OK, 1 = Errors
+ * @param job The job to remove
+ * @param ja_task The task to remove
+ * @param orders The order structure for this scheduler pass
  *
  * @note MT-NOTE: order_remove_order_and_immediate() is MT safe
  */
 static void
-order_remove_order_and_immediate(const lListElem *job, const lListElem *ja_task, order_t *orders) {
+order_remove_order_and_immediate(const ocs::tom::ConstElement<ocs::tom::JB> job,
+                                 const ocs::tom::ConstElement<ocs::tom::JAT> ja_task, order_t *orders) {
    DENTER(TOP_LAYER);
 
    /* The possibility exists that this task is part of an array task, that it
@@ -194,21 +214,22 @@ order_remove_order_and_immediate(const lListElem *job, const lListElem *ja_task,
     * might have started a array task of an immediate array job without verifying, that
     * the whole job can run
     */  
-   lList *orderList = orders->jobStartOrderList;
-   lCondition *where = lWhere("%T(%I==%u && %I==%u && %I==%u)", OR_Type,
-                      OR_type, ORT_start_job,
-                      OR_job_number, ocs::tom::get<JB_job_number>(job),
-                      OR_ja_task_number, ocs::tom::get<JAT_task_number>(ja_task));
-   lListElem *ep = lFindFirstRW(orderList, where);
-   
-   if (ep != nullptr) {
-      DPRINTF("Removing job start order for job task %u.%u\n", ocs::tom::get<JB_job_number>(job), ocs::tom::get<JAT_task_number>(ja_task));
-      lRemoveElem(orderList, &ep);
+   auto order_list = ocs::tom::List<ocs::tom::OR>(orders->jobStartOrderList);
+   auto job_number = ocs::tom::get<JB_job_number>(job);
+   auto task_number = ocs::tom::get<JAT_task_number>(ja_task);
+
+   // remove the first start order of this task
+   for (auto ep : order_list) {
+      if (ocs::tom::get<OR_type>(ep) == ORT_start_job && ocs::tom::get<OR_job_number>(ep) == job_number &&
+          ocs::tom::get<OR_ja_task_number>(ep) == task_number) {
+         DPRINTF("Removing job start order for job task %u.%u\n", job_number, task_number);
+         order_list.erase(ep);
+         break;
+      }
    }
-   
+
    order_remove_immediate(job, ja_task, orders);
-   lFreeWhere(&where);
-   
+
    DRETURN_VOID;
 }
 
@@ -218,22 +239,35 @@ order_remove_order_and_immediate(const lListElem *job, const lListElem *ja_task,
  * Generates an order of type ORT_remove_immediate_job for the given job
  * task.
  *
- * @param job The job to remove (JB_Type)
- * @param ja_task The task to remove (JAT_Type)
+ * @param job The job to remove
+ * @param ja_task The task to remove
  * @param orders The order structure will be extended by one del order
  *
  * @return Error code: 0 = OK, 1 = Errors
  *
  * @note MT-NOTE: order_remove_immediate() is MT safe
  */
-int order_remove_immediate(const lListElem *job, const lListElem *ja_task, order_t *orders) {
+int order_remove_immediate(const ocs::tom::ConstElement<ocs::tom::JB> job,
+                           const ocs::tom::ConstElement<ocs::tom::JAT> ja_task, order_t *orders) {
    DENTER(TOP_LAYER);
 
    DPRINTF("JOB " sge_u32 "." sge_u32 " can't get dispatched - removing\n",
            ocs::tom::get<JB_job_number>(job), ocs::tom::get<JAT_task_number>(ja_task));
    
-   orders->jobStartOrderList = sge_create_orders(orders->jobStartOrderList, ORT_remove_immediate_job,
-                                                 job, ja_task, nullptr, true);
-   
+   orders->jobStartOrderList = sge_create_orders(orders->jobStartOrderList, ORT_remove_immediate_job, job, ja_task,
+                                                 ocs::tom::ConstList<ocs::tom::JG>(), true);
+
    DRETURN((orders->jobStartOrderList == nullptr));
+}
+
+/**
+ * @brief order_remove_immediate() for an untyped caller
+ * @param job the job (`JB_Type`)
+ * @param ja_task the task (`JAT_Type`)
+ * @param orders as order_remove_immediate()
+ * @return as order_remove_immediate()
+ */
+int order_remove_immediate(const lListElem *job, const lListElem *ja_task, order_t *orders) {
+   return order_remove_immediate(ocs::tom::ConstElement<ocs::tom::JB>(job),
+                                 ocs::tom::ConstElement<ocs::tom::JAT>(ja_task), orders);
 }

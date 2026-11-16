@@ -47,7 +47,9 @@
 #include "sgeobj/sge_userset.h"
 #include "sgeobj/sge_advance_reservation.h"
 #include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_AR.h"
 #include "sgeobj/tom/ocs_tom_ARA.h"
+#include "sgeobj/tom/ocs_tom_US.h"
 
 #include "valid_queue_user.h"
 #include "msg_qmaster.h"
@@ -61,7 +63,7 @@
  * If only one has no access the function returns false
  *
  * @param[out] alpp                answer list
- * @param[in]  ar                  advance reservation object (`AR_Type`)
+ * @param[in]  ar                  advance reservation object
  * @param[in]  name                name of the object access is checked for,
  *                                 used in the message written to `alpp`
  * @param[in]  acl_list            the access lists of the object
@@ -70,17 +72,18 @@
  *
  * @return true if all have access false if only one has no access
  *
- * @note MT-NOTE: sge_ar_queue_have_users_access() is MT safe
+ * @note MT-NOTE: sge_ar_have_users_access() is MT safe
  */
-bool sge_ar_have_users_access(lList **alpp, lListElem *ar, const char *name, const lList *acl_list,
-                              const lList *xacl_list, const lList *master_userset_list) {
+bool sge_ar_have_users_access(lList **alpp, const ocs::tom::ConstElement<ocs::tom::AR> ar, const char *name,
+                              const ocs::tom::ConstList<ocs::tom::US> acl_list,
+                              const ocs::tom::ConstList<ocs::tom::US> xacl_list,
+                              const ocs::tom::ConstList<ocs::tom::US> master_userset_list) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
-   const char *user= nullptr;
 
-   for (ocs::tom::ConstElement<ocs::tom::ARA> acl_entry : ocs::tom::get<AR_acl_list>(ar)) {
-      user = ocs::tom::get<ARA_name>(acl_entry);
+   for (auto acl_entry : ocs::tom::get<AR_acl_list>(ar)) {
+      auto user = ocs::tom::get<ARA_name>(acl_entry);
 
       DPRINTF("check permissions for user %s\n", user);
       if (!ocs::is_hgroup_name(user)) {
@@ -97,13 +100,13 @@ bool sge_ar_have_users_access(lList **alpp, lListElem *ar, const char *name, con
          DPRINTF("acl :%s", acl_name);
 
          /* at first xacl */
-         if (xacl_list && static_cast<const lListElem *>(ocs::tom::find_first<US_name>(xacl_list, acl_name)) != nullptr) {
+         if (xacl_list && ocs::tom::find_first<US_name>(xacl_list, acl_name)) {
             ret = false;
             break;
          }
 
          /* at second acl */
-         if (acl_list && (static_cast<const lListElem *>(ocs::tom::find_first<US_name>(acl_list, acl_name)) == nullptr)) {
+         if (acl_list && !ocs::tom::find_first<US_name>(acl_list, acl_name)) {
             answer_list_add_sprintf(alpp, STATUS_OK, ANSWER_QUALITY_INFO, MSG_AR_QUEUEDNOPERMISSIONS, name); 
             ret = false;
             break;
@@ -112,4 +115,22 @@ bool sge_ar_have_users_access(lList **alpp, lListElem *ar, const char *name, con
    }
 
    DRETURN(ret);
+}
+
+/**
+ * @brief sge_ar_have_users_access() for an untyped caller
+ * @param[out] alpp                as sge_ar_have_users_access()
+ * @param[in]  ar                  advance reservation object (`AR_Type`)
+ * @param[in]  name                as sge_ar_have_users_access()
+ * @param[in]  acl_list            the access lists of the object (`US_Type`)
+ * @param[in]  xacl_list           the deny lists of the object (`US_Type`)
+ * @param[in]  master_userset_list master userset list (`US_Type`)
+ * @return as sge_ar_have_users_access()
+ */
+bool sge_ar_have_users_access(lList **alpp, lListElem *ar, const char *name, const lList *acl_list,
+                              const lList *xacl_list, const lList *master_userset_list) {
+   return sge_ar_have_users_access(alpp, ocs::tom::ConstElement<ocs::tom::AR>(ar), name,
+                                   ocs::tom::ConstList<ocs::tom::US>(acl_list),
+                                   ocs::tom::ConstList<ocs::tom::US>(xacl_list),
+                                   ocs::tom::ConstList<ocs::tom::US>(master_userset_list));
 }

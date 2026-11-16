@@ -45,6 +45,8 @@
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_qinstance_state.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_QU.h"
 
 #include "subordinate_schedd.h"
 
@@ -64,14 +66,12 @@
  *         error: the list may be a subset, and a queue that is not in it is
  *         already suspended
  */
-int sos_schedd(const char *qname, lList *qlist) {
+int sos_schedd(const char *qname, const ocs::tom::List<ocs::tom::QU> qlist) {
    DENTER(TOP_LAYER);
 
-   lListElem *q;
-   uint32_t sos;
    int ret = 0;
 
-   q = qinstance_list_locate2(qlist, qname);
+   auto q = ocs::tom::find_first_rw<QU_full_name>(qlist, qname);
    if (!q) {
       /* 
          In the qlist we got is only a subset of all
@@ -83,7 +83,7 @@ int sos_schedd(const char *qname, lList *qlist) {
    }
 
    /* increment sos counter */
-   sos = ocs::tom::get<QU_suspended_on_subordinate>(q);
+   auto sos = ocs::tom::get<QU_suspended_on_subordinate>(q);
    ocs::tom::set<QU_suspended_on_subordinate>(q, ++sos);
 
    /* first sos ? */

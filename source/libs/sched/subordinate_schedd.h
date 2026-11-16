@@ -42,4 +42,7 @@
  * suspended.
  */
 
-int sos_schedd(const char *qname, lList *qlist);
+#include "sgeobj/tom/ocs_tom_QU.h"
+#include "tom/ocs_List.h"
+
+int sos_schedd(const char *qname, ocs::tom::List<ocs::tom::QU> qlist);

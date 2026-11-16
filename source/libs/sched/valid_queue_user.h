@@ -37,7 +37,15 @@
  * @brief Access checks of the scheduler against user and project lists
  */
 
+#include "cull/cull.h"
+#include "sgeobj/tom/ocs_tom_AR.h"
+#include "sgeobj/tom/ocs_tom_US.h"
+#include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "tom/ocs_Transitional.h"
 
-
-
-bool sge_ar_have_users_access(lList **alpp, lListElem *ar, const char *name, const lList *acl_list, const lList *xacl_list, const lList *master_userset_list);
+bool sge_ar_have_users_access(lList **alpp, ocs::tom::ConstElement<ocs::tom::AR> ar, const char *name,
+                              ocs::tom::ConstList<ocs::tom::US> acl_list, ocs::tom::ConstList<ocs::tom::US> xacl_list,
+                              ocs::tom::ConstList<ocs::tom::US> master_userset_list);
+OCS_TRANSITIONAL bool sge_ar_have_users_access(lList **alpp, lListElem *ar, const char *name, const lList *acl_list,
+                                               const lList *xacl_list, const lList *master_userset_list);
