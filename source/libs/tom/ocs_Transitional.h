@@ -27,8 +27,8 @@
  * wrapper carries `OCS_TRANSITIONAL`:
  *
  * ```cpp
- * int nslots_granted(ocs::tom::ConstList<ocs::tom::JG> granted, const char *qhostname);
- * OCS_TRANSITIONAL int nslots_granted(const lList *granted, const char *qhostname);
+ * bool job_get_duration(uint64_t *duration, ocs::tom::ConstElement<ocs::tom::JB> jep);
+ * OCS_TRANSITIONAL bool job_get_duration(uint64_t *duration, const lListElem *jep);
  * ```
  *
  * In a normal build the marker is empty. A report build defines

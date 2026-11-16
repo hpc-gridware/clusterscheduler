@@ -45,6 +45,8 @@
  */
 
 #include <cinttypes>
+#include <optional>
+#include <utility>
 #include "cull/cull.h"
 
 #include "tom/ocs_Element.h"
@@ -62,18 +64,16 @@ void sge_inc_jc(lList** jcpp, const char *name, int slots);
 
 void sge_dec_jc(lList** jcpp, const char *name, int slots);
 
-int job_get_next_task(ocs::tom::Element<ocs::tom::JB> job, lListElem **task_ret, uint32_t *id_ret);
+std::optional<std::pair<ocs::tom::Element<ocs::tom::JAT>, uint32_t>>
+job_get_next_task(ocs::tom::Element<ocs::tom::JB> job);
 OCS_TRANSITIONAL int job_get_next_task(lListElem *job, lListElem **task_ret, uint32_t *id_ret);
 
 int nslots_granted(ocs::tom::ConstList<ocs::tom::JG> granted, const char *qhostname);
-OCS_TRANSITIONAL int nslots_granted(const lList *granted, const char *qhostname);
 
 int active_subtasks(ocs::tom::ConstElement<ocs::tom::JB> job, const char *qname);
-OCS_TRANSITIONAL int active_subtasks(lListElem *job, const char *qname);
 
 int active_nslots_granted(ocs::tom::ConstElement<ocs::tom::JB> job, ocs::tom::ConstList<ocs::tom::JG> granted,
                           const char *qhostname);
-OCS_TRANSITIONAL int active_nslots_granted(lListElem *job, const lList *granted, const char *qhostname);
 
 //lListElem *explicit_job_request(lListElem *jep, const char *name);
 
