@@ -43,17 +43,15 @@
 #  include <sys/param.h>
 #endif
 
-#if defined(COMPILE_DC) || defined(MODULE_TEST)
+#if defined(COMPILE_DC)
 
-#if defined(LINUX) || defined(SOLARIS) || !defined(MODULE_TEST) || defined(FREEBSD) || defined(DARWIN)
 /** @brief Take usage from the process data collector rather than from wait3()
  *
  * Set on every platform where the collector runs; without it the PTF sees only
  * what the shepherd reports when a job ends, which is too late to adjust
  * anything.
  */
-#   define USE_DC
-#endif
+#define USE_DC
 
 #include <cstdio>
 #include <cstdlib>
@@ -68,16 +66,6 @@
 #  include <sys/resource.h>
 #endif
 
-#ifdef MODULE_TEST
-#   include <sys/stat.h>
-#   include <fcntl.h>
-#   include <sys/signal.h>
-#   ifdef SOLARIS
-#      include <sys/fault.h>
-#   endif
-#   include <sys/syscall.h>
-#   include <sys/procfs.h>
-#endif
 
 #include "comm/commlib.h"
 
@@ -827,88 +815,6 @@ static void ptf_get_usage_from_data_collector() {
 
 #else
 
-# ifdef MODULE_TEST
-
-   DENTER(TOP_LAYER);
-
-   lListElem *proc;
-   lList *usage_list;
-   lList *pid_list;
-   int j;
-
-   j = 0;
-   for_each_ep_lv(job, ptf_jobs) {
-
-      lListElem *osjob = lFirst(lGetList(job, JL_OS_job_list));
-
-      usage_list = lGetList(osjob, JO_usage_list);
-      if (!usage_list) {
-         usage_list = ptf_build_usage_list("usagelist");
-         lSetList(osjob, JO_usage_list, usage_list);
-      }
-
-      /* add to usage */
-
-      for_each_ep_lv(usage, usage_list) {
-         double value;
-
-         value = lGetDouble(usage, UA_value);
-         value += drand48();
-         lSetDouble(usage, UA_value, value);
-      }
-
-      /* calculate JL_usage */
-      {
-         prstatus_t pinfo;
-         int procfd;
-
-         procfd = lGetUlong(job, JL_procfd);
-         if (procfd > 0) {
-
-            double usage_value, old_usage_value;
-
-            if (ioctl(procfd, PIOCSTATUS, &pinfo) < 0) {
-               perror("ioctl on /proc");
-            }
-
-            usage_value =
-               pinfo.pr_utime.tv_sec +
-               pinfo.pr_utime.tv_nsec / 1000000000.0L +
-               pinfo.pr_stime.tv_sec +
-               pinfo.pr_stime.tv_nsec / 1000000000.0L +
-               pinfo.pr_cutime.tv_sec +
-               pinfo.pr_cutime.tv_nsec / 1000000000.0L +
-               pinfo.pr_cstime.tv_sec +
-               pinfo.pr_cstime.tv_nsec / 1000000000.0L;
-
-            old_usage_value = lGetDouble(job, JL_old_usage_value);
-
-            lSetDouble(job, JL_old_usage_value, usage_value);
-
-            lSetDouble(job, JL_usage,
-                       lGetDouble(job, JL_usage) *
-                       PTF_USAGE_DECAY_FACTOR +
-                       (usage_value - old_usage_value));
-
-            lSetDouble(job, JL_last_usage, usage_value - old_usage_value);
-         }
-      }
-
-      /* build a fake pid list with the OS job ID as the pid */
-
-      pid_list = lGetList(osjob, JO_pid_list);
-      if (!pid_list) {
-         pid_list = lCreateList("pidlist", JP_Type);
-         lSetList(osjob, JO_pid_list, pid_list);
-         proc = lCreateElem(JP_Type);
-         lSetUlong(proc, JP_pid, lGetUlong(osjob, JO_OS_job_ID));
-         lAppendElem(pid_list, proc);
-      }
-
-      j++;
-   }
-
-# endif /* MODULE_TEST */
 
    DRETURN_VOID;
 
@@ -1184,20 +1090,6 @@ ptf_job_started(const osjobid_t os_job_id, const char *task_id_str, const ocs::t
    }
 #else
 
-# ifdef MODULE_TEST
-   if (os_job_id > 0) {
-      int fd;
-      char fname[32];
-
-      sprintf(fname, "/proc/%05d", os_job_id);
-
-      fd = open(fname, O_RDONLY);
-      if (fd < 0)
-         fprintf(stderr, "opening of %s failed\n", fname);
-      else
-         lSetUlong(job, JL_procfd, fd);
-   }
-# endif
 
 #endif
 
@@ -1269,15 +1161,6 @@ ptf_job_complete(const uint32_t job_id, const uint32_t ja_task_id, const char *p
 #endif
 
 #ifndef USE_DC
-# ifdef MODULE_TEST
-
-   {
-      int procfd = ocs::tom::get<JL_procfd>(ptf_job);
-
-      if (procfd > 0)
-         close(procfd);
-   }
-# endif
 #endif
 
    /*
@@ -1785,189 +1668,5 @@ const char *ptf_errstr(int ptf_error_code) {
    DRETURN(errmsg);
 }
 
-#ifdef MODULE_TEST
-
-#define TESTJOB "./cpu_bound"
-
-int main(int argc, char **argv) {
-   int i;
-   FILE *f;
-   lList *job_ticket_list, *job_usage_list;
-   lListElem *jte, *job;
-   u_long job_id = 0;
-   osjobid_t os_job_id = 100;
-
-#ifdef __SGE_COMPILE_WITH_GETTEXT__
-   /* init language output for gettext() , it will use the right language */
-   sge_init_language_func((gettext_func_type) gettext,
-                         (setlocale_func_type) setlocale,
-                         (bindtextdomain_func_type) bindtextdomain,
-                         (textdomain_func_type) textdomain);
-   sge_init_language(nullptr, nullptr);
-#endif /* __SGE_COMPILE_WITH_GETTEXT__  */
-
-   ptf_init();
-
-#ifdef USE_DC
-
-   psStartCollector();
-
-#endif
-
-   /* build job ticket list */
-
-   job_ticket_list = lCreateList("jobticketlist", JB_Type);
-
-   if (argc < 2) {
-      jte = lCreateElem(JB_Type);
-      lSetUlong(jte, JB_job_number, ++job_id);
-      lSetUlong(jte, JB_ticket, 100);
-      lSetString(jte, JB_script_file, TESTJOB);
-      lAppendElem(job_ticket_list, jte);
-
-      jte = lCreateElem(JB_Type);
-      lSetUlong(jte, JB_job_number, ++job_id);
-      lSetUlong(jte, JB_ticket, 500);
-      lSetString(jte, JB_script_file, TESTJOB);
-      lAppendElem(job_ticket_list, jte);
-
-      jte = lCreateElem(JB_Type);
-      lSetUlong(jte, JB_job_number, ++job_id);
-      lSetUlong(jte, JB_ticket, 300);
-      lSetString(jte, JB_script_file, TESTJOB);
-      lAppendElem(job_ticket_list, jte);
-
-      jte = lCreateElem(JB_Type);
-      lSetUlong(jte, JB_job_number, ++job_id);
-      lSetUlong(jte, JB_ticket, 100);
-      lSetString(jte, JB_script_file, TESTJOB);
-      lAppendElem(job_ticket_list, jte);
-   } else {
-      int argn;
-
-      for (argn = 1; argn < argc; argn++) {
-         int tickets = atoi(argv[argn]);
-
-         if (tickets <= 0)
-            tickets = 1;
-         jte = lCreateElem(JB_Type);
-         lSetUlong(jte, JB_job_number, ++job_id);
-         lSetUlong(jte, JB_ticket, tickets);
-         lSetString(jte, JB_script_file, TESTJOB);
-         lAppendElem(job_ticket_list, jte);
-      }
-   }
-
-   /* Start jobs and tell PTF jobs have started */
-
-   for_each_ep(jte, job_ticket_list) {
-      pid_t pid;
-
-      pid = fork();
-      if (pid == 0) {
-         char *jobname = lGetString(jte, JB_script_file);
-
-         /* schedctl(NDPRI, 0, 0); */
-         execl(jobname, jobname, nullptr);
-         perror("exec");
-         exit(1);
-      } else {
-         ptf_job_started(os_job_id, jte, 0);
-      }
-   }
-
-   ptf_process_job_ticket_list(job_ticket_list);
-
-   /* dump job_list */
-
-   if (!(f = fdopen(1, "w"))) {
-      fprintf(stderr, MSG_ERROR_COULDNOTOPENSTDOUTASFILE);
-      exit(1);
-   }
-
-   if (lDumpList(f, ptf_jobs, 0) == EOF) {
-      fprintf(stderr, MSG_ERROR_UNABLETODUMPJOBLIST);
-      exit(2);
-   }
-
-   /* get job usage */
-
-   ptf_get_usage(&job_usage_list);
-
-   for (i = 0; i < 100; i++) {
-      u_long sum_of_tickets = 0;
-      double sum_of_usage = 0;
-      double sum_of_last_usage = 0;
-
-      /* adjust priorities */
-
-      ptf_adjust_job_priorities();
-
-      for_each_ep(job, ptf_jobs) {
-         sum_of_tickets += lGetUlong(job, JL_tickets);
-         sum_of_usage += lGetDouble(job, JL_usage);
-         sum_of_last_usage += lGetDouble(job, JL_last_usage);
-      }
-
-#     define XFMT "%20lld"
-
-      puts("                                           adj    total     curr"
-           "                      last     next     prev");
-      puts("job_id              os_job_id tickets    usage    usage    usage"
-           "  target%  actual%  actual%  target%    diff% curr_pri   pri");
-      for_each_ep(job, ptf_jobs) {
-         printf("%6d   " XFMT " %7d %8.3lf %8.3lf %8.3lf %8.3lf"
-                " %8.3lf %8.3lf %8.3lf %8.3lf %8.3lf %5d\n",
-                lGetUlong(job, JL_job_ID), ptf_get_osjobid(job),
-                lGetUlong(job, JL_tickets), lGetDouble(job, JL_usage),
-                lGetDouble(job, JL_adjusted_usage), 
-                lGetDouble(job, JL_last_usage),
-                sum_of_tickets ? lGetUlong(job, JL_tickets) /
-                (double) sum_of_tickets : 0,
-                sum_of_usage ? lGetDouble(job, JL_usage) / sum_of_usage : 0,
-                sum_of_last_usage ? lGetDouble(job, JL_last_usage) /
-                sum_of_last_usage : 0, 
-                lGetDouble(job, JL_adjusted_current_proportion),
-                lGetDouble(job, JL_diff_proportion), 
-                lGetDouble(job, JL_curr_pri), lGetLong(job, JL_pri));
-      }
-
-#if 0
-      /* 
-       * dump job_list 
-       */
-      if (!(f = fdopen(1, "w"))) {
-         fprintf(stderr, MSG_ERROR_COULDNOTOPENSTDOUTASFILE);
-         exit(1);
-      }
-
-      if (lDumpList(f, ptf_jobs, 0) == EOF) {
-         fprintf(stderr, MSG_ERROR_UNABLETODUMPJOBLIST);
-         exit(2);
-      }
-
-      /* dump job usage list */
-
-      if (lDumpList(f, job_usage_list, 0) == EOF) {
-         fprintf(stderr, "%s\n", MSG_ERROR_UNABLETODUMPJOBUSAGELIST);
-         exit(2);
-      }
-#endif
-
-      sleep(10);
-   }
-
-   for_each_ep(job, ptf_jobs) {
-      ptf_kill(ptf_get_jobid(job), SIGTERM);
-   }
-
-#ifdef USE_DC
-   psStopCollector();
-#endif
-
-   return 0;
-}
-
-#endif /* MODULE_TEST */
 
 #endif
