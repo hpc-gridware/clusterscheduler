@@ -3516,14 +3516,14 @@ int verify_suitable_queues(lList **alpp, lListElem *jep, int *trigger, bool is_m
 
       sge_assignment_t a = SGE_ASSIGNMENT_INIT;
 
-      assignment_init(&a, jep, nullptr, nullptr);
-      assignment_init_ar(&a, master_ar_list);
+      assignment_init(&a, ocs::tom::Element<ocs::tom::JB>(jep), nullptr, nullptr);
+      assignment_init_ar(&a, ocs::tom::List<ocs::tom::AR>(master_ar_list));
 
       DPRINTF("verify schedulability = %c\n", OPTION_VERIFY_STR[verify_mode]);
 
       /* checkpointing */
       if ((ckpt_name = ocs::tom::get<JB_checkpoint_name>(jep)))
-         if (!(a.ckpt = ckpt_list_locate(master_ckpt_list, ckpt_name)))
+         if (!(a.ckpt = ocs::tom::ConstElement<ocs::tom::CK>(ckpt_list_locate(master_ckpt_list, ckpt_name))))
             try_it = 0;
 
       /* parallel */
@@ -3536,16 +3536,16 @@ int verify_suitable_queues(lList **alpp, lListElem *jep, int *trigger, bool is_m
             }
          }
 
-         a.host_list = master_ehost_list;
-         a.centry_list = master_centry_list;
-         a.acl_list = master_userset_list;
-         a.hgrp_list = master_hgroup_list;
+         a.host_list = ocs::tom::List<ocs::tom::EH>(master_ehost_list);
+         a.centry_list = ocs::tom::ConstList<ocs::tom::CE>(master_centry_list);
+         a.acl_list = ocs::tom::ConstList<ocs::tom::US>(master_userset_list);
+         a.hgrp_list = ocs::tom::ConstList<ocs::tom::HGRP>(master_hgroup_list);
          if (ocs::tom::get<JB_ar>(jep) == 0) {
-            a.rqs_list = master_rqs_list;
+            a.rqs_list = ocs::tom::List<ocs::tom::RQS>(master_rqs_list);
          } else {
-            a.ar_list = master_ar_list;
+            a.ar_list = ocs::tom::List<ocs::tom::AR>(master_ar_list);
          }
-         a.gep = host_list_locate(master_ehost_list, SGE_GLOBAL_NAME);
+         a.gep = ocs::tom::Element<ocs::tom::EH>(host_list_locate(master_ehost_list, SGE_GLOBAL_NAME));
          a.start = DISPATCH_TIME_NOW;
          /* in reservation scheduling mode a non-zero duration always must be defined */
          job_get_duration(&a.duration, jep);
@@ -3564,7 +3564,8 @@ int verify_suitable_queues(lList **alpp, lListElem *jep, int *trigger, bool is_m
           * deciding about assignment. This is because assignment_release() sees
           * queue_list only as a list pointer.
           */
-         a.queue_list = lCreateList("", QU_Type);
+         auto queue_copy = ocs::tom::ListPtr<ocs::tom::QU>::create("");
+         a.queue_list = queue_copy.get();
 
          /* imagine qs is empty */
          if (verify_mode != POKE_VERIFY) {
@@ -3663,7 +3664,8 @@ int verify_suitable_queues(lList **alpp, lListElem *jep, int *trigger, bool is_m
             sconf_set_qs_state(QS_STATE_FULL);
          }
 
-         lFreeList(&(a.queue_list));
+         queue_copy.reset();
+         a.queue_list = nullptr;
       }
 
 

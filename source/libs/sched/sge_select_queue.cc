@@ -348,12 +348,14 @@ print_tagged4schedule(const lListElem *qinstance) {
  * advance reservation job assignment_init_ar() has to follow.
  *
  * @param[out] a                the assignment to initialize
- * @param[in]  job              the job (`JB_Type`)
- * @param[in]  ja_task          the array task (`JAT_Type`), may be nullptr
- * @param[in]  load_adjustments the load adjustments to apply
+ * @param[in]  job              the job, may be empty
+ * @param[in]  ja_task          the array task, may be empty
+ * @param[in]  load_adjustments the load adjustments to apply, may be empty
  */
-void assignment_init(sge_assignment_t *a, lListElem *job, lListElem *ja_task, lList *load_adjustments) {
-   if (job != nullptr) {
+void assignment_init(sge_assignment_t *a, const ocs::tom::Element<ocs::tom::JB> job,
+                     const ocs::tom::Element<ocs::tom::JAT> ja_task,
+                     const ocs::tom::List<ocs::tom::CE> load_adjustments) {
+   if (job) {
       a->job = job;
       a->user = ocs::tom::get<JB_owner>(job);
       a->group = ocs::tom::get<JB_group>(job);
@@ -363,7 +365,7 @@ void assignment_init(sge_assignment_t *a, lListElem *job, lListElem *ja_task, lL
       a->is_soft = job_has_soft_requests(job);
    }
 
-   if (ja_task != nullptr) {
+   if (ja_task) {
       a->ja_task = ja_task;
       a->ja_task_id = ocs::tom::get<JAT_task_number>(ja_task);
    }
@@ -385,14 +387,14 @@ void assignment_init(sge_assignment_t *a, lListElem *job, lListElem *ja_task, lL
  * @param a  the assignment
  * @param ar_list  the list of advance reservations
  */
-void assignment_init_ar(sge_assignment_t *a, lList *ar_list) {
-   // ar_list can be called with nullprt from prepare_resource_schedules()
+void assignment_init_ar(sge_assignment_t *a, const ocs::tom::List<ocs::tom::AR> ar_list) {
+   // ar_list can be called with nullptr from prepare_resource_schedules()
    // do not handle not finding the AR as an error then
    a->ar_id = ocs::tom::get<JB_ar>(a->job);
-   if (ar_list != nullptr) {
+   if (ar_list) {
       a->ar_list = ar_list;
       if (a->ar_id > 0) {
-         a->ar = ar_list_locate(a->ar_list, a->ar_id);
+         a->ar = ocs::tom::find_first_rw<AR_id>(a->ar_list, a->ar_id);
          if (a->ar == nullptr) {
             CRITICAL("AR object for AR_id " sge_u32 " not found", a->ar_id);
 #if defined(ENABLE_DEBUG_CHECKS)
@@ -466,13 +468,13 @@ assignment_init_pe_parse_check_allocation_rules(sge_assignment_t *a, int check_s
  * Initializes the PE related attributes of an assignment structure:
  *    - the pe (object)
  *    - the pe name
- *    - allocation rules (from PE and optinally overwritten in the job via -par switch)
+ *    - allocation rules (from PE and optionally overwritten in the job via -par switch)
  *
  * @param a the assignment structure
  * @param pe the pe
  */
 static void
-assignment_init_pe(sge_assignment_t *a, lListElem *pe) {
+assignment_init_pe(sge_assignment_t *a, const ocs::tom::Element<ocs::tom::PE> pe) {
    DENTER(TOP_LAYER);
 
    a->pe = pe;
@@ -749,7 +751,7 @@ sge_select_parallel_environment(sge_assignment_t *best, const lList *pe_list) {
 
          pe_name = ocs::tom::get<PE_name>(pe);
          if (best->gdil == nullptr) { /* first pe run */
-            assignment_init_pe(best, pe);
+            assignment_init_pe(best, ocs::tom::Element<ocs::tom::PE>(pe));
 
             /* determine the earliest start time with that PE */
             result = parallel_reservation_max_time_slots(best, &available_slots);
@@ -767,7 +769,7 @@ sge_select_parallel_environment(sge_assignment_t *best, const lList *pe_list) {
             sge_assignment_t tmp = SGE_ASSIGNMENT_INIT;
 
             assignment_copy(&tmp, best, false);
-            assignment_init_pe(&tmp, pe);
+            assignment_init_pe(&tmp, ocs::tom::Element<ocs::tom::PE>(pe));
 
             /* try to find an earlier assignment again with the minimum slot amount */
             tmp.slots = 0;
@@ -813,7 +815,7 @@ sge_select_parallel_environment(sge_assignment_t *best, const lList *pe_list) {
          if (best->gdil == nullptr) {
             // first PE matching the requested name
             int available_slots = 0;
-            assignment_init_pe(best, pe);
+            assignment_init_pe(best, ocs::tom::Element<ocs::tom::PE>(pe));
             result = parallel_maximize_slots_pe(best, &available_slots);
 
             if (result != DISPATCH_OK) {
@@ -835,7 +837,7 @@ sge_select_parallel_environment(sge_assignment_t *best, const lList *pe_list) {
             int available_slots = 0;
             sge_assignment_t tmp = SGE_ASSIGNMENT_INIT;
             assignment_copy(&tmp, best, false);
-            assignment_init_pe(&tmp, pe);
+            assignment_init_pe(&tmp, ocs::tom::Element<ocs::tom::PE>(pe));
 
             result = parallel_maximize_slots_pe(&tmp, &available_slots);
 
@@ -1354,8 +1356,8 @@ bool sge_select_queue(lList *requested_attr, lListElem *queue, lListElem *host,
    clear_resource_tags(requested_attr, MAX_TAG);
 
    assignment_init(&a, nullptr, nullptr, nullptr);
-   a.centry_list      = centry_list;
-   a.host_list        = exechost_list;
+   a.centry_list      = ocs::tom::ConstList<ocs::tom::CE>(centry_list);
+   a.host_list        = ocs::tom::List<ocs::tom::EH>(exechost_list);
 
    if (acl_list != nullptr) {
       /* check if job owner has access rights to the queue */

@@ -57,12 +57,26 @@
  */
 
 #include <limits>
+#include <type_traits>
 
 #ifndef __SGE_H
 #   include "uti/sge.h"
 #endif
 
 #include "sge_orders.h"
+#include "sgeobj/tom/ocs_tom_AR.h"
+#include "sgeobj/tom/ocs_tom_CE.h"
+#include "sgeobj/tom/ocs_tom_CK.h"
+#include "sgeobj/tom/ocs_tom_EH.h"
+#include "sgeobj/tom/ocs_tom_HGRP.h"
+#include "sgeobj/tom/ocs_tom_JAT.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
+#include "sgeobj/tom/ocs_tom_PE.h"
+#include "sgeobj/tom/ocs_tom_QU.h"
+#include "sgeobj/tom/ocs_tom_RQS.h"
+#include "sgeobj/tom/ocs_tom_US.h"
+#include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
 #include "sgeobj/ocs_TopologyString.h"
 
 /**
@@ -165,25 +179,25 @@ typedef struct {
    uint32_t    job_id;          ///< job id (convenience reasons)
    uint32_t    ja_task_id;      ///< job array task id (convenience reasons)
    uint32_t    ar_id;           ///< ar id if the job requested to run in an AR, else 0
-   lListElem  *job;             ///< the job (JB_Type)
-   lListElem  *ja_task;         ///< the task (JAT_Type); nullptr means only the
-                                ///< reschedule unknown verification is missing
-   lListElem *ar;               ///< the advance reservation if requested (AR_Type)
+   ocs::tom::Element<ocs::tom::JB> job;      ///< the job
+   ocs::tom::Element<ocs::tom::JAT> ja_task; ///< the task; empty means only the
+                                             ///< reschedule unknown verification is missing
+   ocs::tom::Element<ocs::tom::AR> ar;       ///< the advance reservation if requested
    const char* user;            ///< username (JB_owner)
    const char* group;           ///< group name (JB_group)
    const lList *grp_list;       ///< supplementary grp list (JB_grp_list)
    const char* project;         ///< project name (JB_project)
-   const lListElem *ckpt;       ///< the checkpoint interface (CK_Type)
-   lListElem *gep;              ///< the global host (EH_Type)
+   ocs::tom::ConstElement<ocs::tom::CK> ckpt; ///< the checkpoint interface
+   ocs::tom::Element<ocs::tom::EH> gep;      ///< the global host
    uint64_t duration;           ///< jobs time of the assignment
-   lList *load_adjustments;     ///< job load adjustments (CE_Type)
-   lList *host_list;            ///< the hosts (EH_Type)
-   lList *queue_list;           ///< the queues (QU_Type)
-   const lList *centry_list;    ///< the complex entries (CE_Type)
-   const lList *acl_list;       ///< the user sets (US_Type)
-   const lList *hgrp_list;      ///< the host group list (HGRP_Type)
-   lList      *rqs_list;        ///< the resource quota set list (RQS_Type)
-   lList      *ar_list;         ///< the advance reservation list (AR_Type)
+   ocs::tom::List<ocs::tom::CE> load_adjustments;  ///< job load adjustments
+   ocs::tom::List<ocs::tom::EH> host_list;         ///< the hosts
+   ocs::tom::List<ocs::tom::QU> queue_list;        ///< the queues
+   ocs::tom::ConstList<ocs::tom::CE> centry_list;  ///< the complex entries
+   ocs::tom::ConstList<ocs::tom::US> acl_list;     ///< the user sets
+   ocs::tom::ConstList<ocs::tom::HGRP> hgrp_list;  ///< the host group list
+   ocs::tom::List<ocs::tom::RQS> rqs_list;         ///< the resource quota set list
+   ocs::tom::List<ocs::tom::AR> ar_list;           ///< the advance reservation list
    bool       is_reservation;   ///< true, if a reservation for this job should be done
    bool       is_advance_reservation; ///< true for advance reservation scheduling
    bool       is_job_verify;    ///< true, if job verification (-w ev) (in qmaster)
@@ -200,7 +214,7 @@ typedef struct {
                                 ///< the whole job to (VA_Type: VA_variable the map name, VA_value
                                 ///< the group key), see rsmap_job_scope_key()
    // -------------------- this section are parallel job related settings --------------------
-   lListElem  *pe;              ///< the parallel environment (PE_Type)
+   ocs::tom::Element<ocs::tom::PE> pe;       ///< the parallel environment
    const char* pe_name;         ///< name of the PE
    const char *allocation_rule; ///< the allocation rule of the PE or overwritten globally/for slaves
    int allocation_parsed;       ///< the allocation rule of the PE parsed with a->slots as the maximum
@@ -220,6 +234,9 @@ typedef struct {
    sched_prof_t *pi;            ///< Profiling counters, or nullptr when profiling is off
 } sge_assignment_t;
 
+// assignment_copy() copies the struct with memcpy() and SGE_ASSIGNMENT_INIT initializes it positionally
+static_assert(std::is_trivially_copyable_v<sge_assignment_t>, "sge_assignment_t must stay trivially copyable");
+
 /** Initializer for an empty #sge_assignment_t */
 #define SGE_ASSIGNMENT_INIT {0, 0, 0, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, \
    0, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, false, false, false, false, false, 0,    \
@@ -230,8 +247,9 @@ typedef struct {
    nullptr                                               /* profiling */                                               \
 }
 
-void assignment_init(sge_assignment_t *a, lListElem *job, lListElem *ja_task, lList *load_adjustments);
-void assignment_init_ar(sge_assignment_t *a, lList *ar_list);
+void assignment_init(sge_assignment_t *a, ocs::tom::Element<ocs::tom::JB> job, ocs::tom::Element<ocs::tom::JAT> ja_task,
+                     ocs::tom::List<ocs::tom::CE> load_adjustments);
+void assignment_init_ar(sge_assignment_t *a, ocs::tom::List<ocs::tom::AR> ar_list);
 void assignment_copy(sge_assignment_t *dst, sge_assignment_t *src, bool move_gdil);
 void assignment_release(sge_assignment_t *a);
 void assignment_clear_cache(sge_assignment_t *a);

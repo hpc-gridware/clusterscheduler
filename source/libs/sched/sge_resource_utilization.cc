@@ -2053,15 +2053,34 @@ rqs_add_job_utilization(lListElem *jep, const lListElem *pe, uint32_t task_id, c
    DRETURN(mods);
 }
 
+/**
+ * @brief Debit the tasks of a list of running or suspended jobs in the resource schedules
+ * @param job_list the jobs
+ * @param suspended whether the jobs are suspended, for the scheduling record
+ * @param pe_list the parallel environments
+ * @param host_list the execution hosts
+ * @param queue_list the queue instances
+ * @param rqs_list the resource quota sets
+ * @param centry_list the complex entries
+ * @param acl_list the access lists
+ * @param hgroup_list the host groups
+ * @param ar_list the advance reservations
+ * @param for_job_scheduling prepare for job or for advance reservation scheduling
+ * @param now now time of assignment
+ * @return always 0
+ */
 static int
-add_job_list_to_schedule(const ocs::tom::List<ocs::tom::JB> job_list, bool suspended, lList *pe_list, lList *host_list,
-                         lList *queue_list, lList *rqs_list,
-                         const lList *centry_list, const lList *acl_list, const lList *hgroup_list, lList *ar_list,
-                         bool for_job_scheduling, uint64_t now) {
+add_job_list_to_schedule(const ocs::tom::List<ocs::tom::JB> job_list, const bool suspended,
+                         const ocs::tom::List<ocs::tom::PE> pe_list, const ocs::tom::List<ocs::tom::EH> host_list,
+                         const ocs::tom::List<ocs::tom::QU> queue_list, const ocs::tom::List<ocs::tom::RQS> rqs_list,
+                         const ocs::tom::ConstList<ocs::tom::CE> centry_list,
+                         const ocs::tom::ConstList<ocs::tom::US> acl_list,
+                         const ocs::tom::ConstList<ocs::tom::HGRP> hgroup_list,
+                         const ocs::tom::List<ocs::tom::AR> ar_list, const bool for_job_scheduling,
+                         const uint64_t now) {
    DENTER(TOP_LAYER);
 
-   // a member of the assignment, raw until the assignment is converted
-   lListElem *gep = host_list_locate(host_list, SGE_GLOBAL_NAME);
+   auto gep = ocs::tom::find_first_rw<EH_name>(host_list, SGE_GLOBAL_NAME);
    const char *type;
    uint32_t interval = sconf_get_schedule_interval();
 
@@ -2114,7 +2133,7 @@ add_job_list_to_schedule(const ocs::tom::List<ocs::tom::JB> job_list, bool suspe
 
          // Step 1/3 We need the current PE for the resource utilization calculation
          const char *pe_name = ocs::tom::get<JAT_granted_pe>(ja_task);
-         a.pe = pe_list_locate(pe_list, pe_name);
+         a.pe = ocs::tom::Element<ocs::tom::PE>(pe_list_locate(pe_list, pe_name));
          if (pe_name != nullptr && a.pe == nullptr) {
             CRITICAL("===> granted_pe is %s but pe_object is nullptr", pe_name);
          }
@@ -2182,13 +2201,20 @@ void prepare_resource_schedules(lList *running_jobs, lList *suspended_jobs,
                                 const lList *acl_list, const lList *hgroup_list, lList *ar_list, bool for_job_scheduling, uint64_t now) {
    DENTER(TOP_LAYER);
 
+   auto pes = ocs::tom::List<ocs::tom::PE>(pe_list);
+   auto hosts = ocs::tom::List<ocs::tom::EH>(host_list);
+   auto queues = ocs::tom::List<ocs::tom::QU>(queue_list);
+   auto rqss = ocs::tom::List<ocs::tom::RQS>(rqs_list);
+   auto centries = ocs::tom::ConstList<ocs::tom::CE>(centry_list);
+   auto acls = ocs::tom::ConstList<ocs::tom::US>(acl_list);
+   auto hgroups = ocs::tom::ConstList<ocs::tom::HGRP>(hgroup_list);
+   auto ars = ocs::tom::List<ocs::tom::AR>(ar_list);
+
    // the tasks of the jobs are booked, so the job lists are changed
-   add_job_list_to_schedule(ocs::tom::List<ocs::tom::JB>(running_jobs), false, pe_list, host_list, queue_list,
-                            rqs_list, centry_list, acl_list, hgroup_list,
-                            ar_list, for_job_scheduling, now);
-   add_job_list_to_schedule(ocs::tom::List<ocs::tom::JB>(suspended_jobs), true, pe_list, host_list, queue_list,
-                            rqs_list, centry_list, acl_list, hgroup_list,
-                            ar_list, for_job_scheduling, now);
+   add_job_list_to_schedule(ocs::tom::List<ocs::tom::JB>(running_jobs), false, pes, hosts, queues, rqss, centries, acls,
+                            hgroups, ars, for_job_scheduling, now);
+   add_job_list_to_schedule(ocs::tom::List<ocs::tom::JB>(suspended_jobs), true, pes, hosts, queues, rqss, centries,
+                            acls, hgroups, ars, for_job_scheduling, now);
    add_calendar_to_schedule(ocs::tom::List<ocs::tom::QU>(queue_list), now);
 
    if (print_resource_utilization) {

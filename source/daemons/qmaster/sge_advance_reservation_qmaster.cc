@@ -1066,11 +1066,11 @@ ar_reserve_queues(lList **alpp, lListElem *ar, uint64_t gdi_session) {
    ocs::tom::set<JB_project>(dummy_job, ocs::tom::get<AR_project>(ar));
 
    assignment_init(&a, *dummy_job, nullptr, nullptr);
-   a.host_list = master_exechost_list;
-   a.centry_list = master_centry_list;
-   a.acl_list = master_userset_list;
-   a.hgrp_list = master_hgroup_list;
-   a.gep = host_list_locate(master_exechost_list, SGE_GLOBAL_NAME);
+   a.host_list = ocs::tom::List<ocs::tom::EH>(master_exechost_list);
+   a.centry_list = ocs::tom::ConstList<ocs::tom::CE>(master_centry_list);
+   a.acl_list = ocs::tom::ConstList<ocs::tom::US>(master_userset_list);
+   a.hgrp_list = ocs::tom::ConstList<ocs::tom::HGRP>(master_hgroup_list);
+   a.gep = ocs::tom::Element<ocs::tom::EH>(host_list_locate(master_exechost_list, SGE_GLOBAL_NAME));
    a.start = ocs::tom::get<AR_start_time>(ar);
    a.duration = ocs::tom::get<AR_duration>(ar);
    a.is_reservation = true;
@@ -1083,7 +1083,8 @@ ar_reserve_queues(lList **alpp, lListElem *ar, uint64_t gdi_session) {
     * deciding about assignment. This is because assignment_release() sees 
     * queue_list only as a list pointer.
     */
-   a.queue_list = lCreateList("", QU_Type);
+   auto queue_copy = ocs::tom::ListPtr<ocs::tom::QU>::create("");
+   a.queue_list = queue_copy.get();
 
    /* imagine qs is empty */
    sconf_set_qs_state(QS_STATE_EMPTY);
@@ -1264,7 +1265,8 @@ ar_reserve_queues(lList **alpp, lListElem *ar, uint64_t gdi_session) {
    /* stop dreaming */
    sconf_set_qs_state(QS_STATE_FULL);
 
-   lFreeList(&(a.queue_list));
+   queue_copy.reset();
+   a.queue_list = nullptr;
    lFreeList(&master_pe_list);
    lFreeList(&master_exechost_list);
    dummy_job.reset();

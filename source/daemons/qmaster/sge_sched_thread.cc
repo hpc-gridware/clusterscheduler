@@ -1054,14 +1054,15 @@ select_assign_debit(lList **queue_list, lList **dis_queue_list, lListElem *job, 
    sge_assignment_t a = SGE_ASSIGNMENT_INIT;
    bool is_computed_reservation = false;
 
-   assignment_init(&a, job, ja_task, load_adjustments);
-   assignment_init_ar(&a, ar_list);
-   a.queue_list = *queue_list;
-   a.host_list = host_list;
-   a.centry_list = centry_list;
-   a.acl_list = acl_list;
-   a.hgrp_list = hgrp_list;
-   a.rqs_list = rqs_list;
+   assignment_init(&a, ocs::tom::Element<ocs::tom::JB>(job), ocs::tom::Element<ocs::tom::JAT>(ja_task),
+                   ocs::tom::List<ocs::tom::CE>(load_adjustments));
+   assignment_init_ar(&a, ocs::tom::List<ocs::tom::AR>(ar_list));
+   a.queue_list = ocs::tom::List<ocs::tom::QU>(*queue_list);
+   a.host_list = ocs::tom::List<ocs::tom::EH>(host_list);
+   a.centry_list = ocs::tom::ConstList<ocs::tom::CE>(centry_list);
+   a.acl_list = ocs::tom::ConstList<ocs::tom::US>(acl_list);
+   a.hgrp_list = ocs::tom::ConstList<ocs::tom::HGRP>(hgrp_list);
+   a.rqs_list = ocs::tom::List<ocs::tom::RQS>(rqs_list);
    a.pi = pi;
    a.monitor_next_run = monitor_next_run;
    a.now = now;
@@ -1072,7 +1073,7 @@ select_assign_debit(lList **queue_list, lList **dis_queue_list, lListElem *job, 
    if (is_reserve) {
       if (*queue_list == nullptr) {
          *queue_list = lCreateList("temp queue", lGetListDescr(*dis_queue_list));
-         a.queue_list = *queue_list;
+         a.queue_list = ocs::tom::List<ocs::tom::QU>(*queue_list);
       }
       is_computed_reservation = true;
       lAppendList(*queue_list, *dis_queue_list);
@@ -1086,7 +1087,7 @@ select_assign_debit(lList **queue_list, lList **dis_queue_list, lListElem *job, 
     * in case of ckpt jobs 
     *------------------------------------------------------------------*/
    if ((ckpt_name = ocs::tom::get<JB_checkpoint_name>(job))) {
-      a.ckpt = ckpt_list_locate(ckpt_list, ckpt_name);
+      a.ckpt = ocs::tom::ConstElement<ocs::tom::CK>(ckpt_list_locate(ckpt_list, ckpt_name));
       if (a.ckpt == nullptr) {
          schedd_mes_add(a.monitor_alpp, a.monitor_next_run, a.job_id, SCHEDD_INFO_CKPTNOTFOUND_);
          assignment_release(&a);
@@ -1098,7 +1099,7 @@ select_assign_debit(lList **queue_list, lList **dis_queue_list, lListElem *job, 
     * if a global host pointer exists it is needed everywhere 
     * down in the assignment code (tired of searching/passing it).
     *------------------------------------------------------------------*/
-   a.gep = host_list_locate(host_list, SGE_GLOBAL_NAME);
+   a.gep = ocs::tom::Element<ocs::tom::EH>(host_list_locate(host_list, SGE_GLOBAL_NAME));
 
    // in case of running in an AR, we swap resources to the AR state
    sge_ar_swap_resource_lists(a);
