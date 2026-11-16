@@ -98,7 +98,8 @@ sge_make_tmpdir(const ocs::tom::ConstElement<ocs::tom::QU> qep, const uint32_t j
    if (chown(tmpdir, uid, gid) != 0) {
       DSTRING_STATIC(ds, MAX_STRING_SIZE);
       ERROR(MSG_FILE_NOCHOWN_SS, tmpdir, sge_strerror(errno, &ds));
-      unlink(tmpdir);
+      rmdir(tmpdir);
+      sge_switch2admin_user();
       DRETURN(nullptr);
    }
 
