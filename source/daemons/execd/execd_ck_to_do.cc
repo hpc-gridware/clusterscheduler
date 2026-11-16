@@ -95,19 +95,45 @@ static int sge_start_jobs();
 static int exec_job_or_task(lListElem *jep, lListElem *jatep, lListElem *petep);
 
 /**
- * Records in the job report that sge_execd killed the job because it exceeded
- * a resource limit (e.g. h_rt, h_cpu, h_vmem). The string is added to the
- * accounting record as "execd@<hostname>" once the job report reaches
- * sge_qmaster, unless a value set by qdel takes precedence.
+ * @brief Record that sge_execd killed a job because it exceeded a resource limit
+ *
+ * sge_execd kills the master task and every pe task of the job on this host when the job exceeds
+ * a resource limit (e.g. h_rt, h_cpu, h_vmem). The job report of each of these tasks gets
+ * "execd@<hostname>" as JR_deleted_by, which is written into the accounting record of the task,
+ * unless a value set by qdel takes precedence.
+ * Whichever report makes sge_qmaster delete the job carries the cause, and sge_qmaster passes it
+ * on to the records of the tasks on the other hosts. pe tasks which already exited were not
+ * killed and keep their report as it is.
+ *
+ * @param jep the job
+ * @param jatep the ja task which was killed
  */
 static void
-job_report_set_deleted_by_execd(u_long32 jobid, u_long32 jataskid) {
+job_report_set_deleted_by_execd(const lListElem *jep, const lListElem *jatep) {
+   DENTER(TOP_LAYER);
+
+   DSTRING_STATIC(dstr, MAX_STRING_SIZE);
+   const char *deleted_by = sge_dstring_sprintf(&dstr, "execd@%s",
+                                                component_get_qualified_hostname());
+   u_long32 jobid = lGetUlong(jep, JB_job_number);
+   u_long32 jataskid = lGetUlong(jatep, JAT_task_number);
+
    lListElem *jr = get_job_report(jobid, jataskid, nullptr);
    if (jr != nullptr) {
-      DSTRING_STATIC(dstr, MAX_STRING_SIZE);
-      sge_dstring_sprintf(&dstr, "execd@%s", component_get_qualified_hostname());
-      lSetString(jr, JR_deleted_by, sge_dstring_get_string(&dstr));
+      lSetString(jr, JR_deleted_by, deleted_by);
    }
+
+   const lListElem *petep;
+   for_each_ep(petep, lGetList(jatep, JAT_task_list)) {
+      if (lGetUlong(petep, PET_status) != JEXITING) {
+         jr = get_job_report(jobid, jataskid, lGetString(petep, PET_id));
+         if (jr != nullptr) {
+            lSetString(jr, JR_deleted_by, deleted_by);
+         }
+      }
+   }
+
+   DRETURN_VOID;
 }
 
 #ifdef COMPILE_DC
@@ -216,15 +242,19 @@ static void notify_ptf() {
  * @param limit_name The name of the resource limit (e.g., "h_cpu").
  * @param is_hard_limit True if it is a hard limit, false if it is a soft limit.
  * @param queue The queue element where the job is running.
- * @param jobid The job ID.
- * @param jataskid The job task ID.
+ * @param jep The job.
+ * @param jatep The ja task.
  *
  * @return true if the job was signaled, false otherwise.
  */
 static bool
 force_job_rlimit_apply_limit(double usage, double limit, const char *limit_name,
                              bool is_hard_limit, const lListElem *queue,
-                             u_long32 jobid, u_long32 jataskid) {
+                             const lListElem *jep, const lListElem *jatep) {
+   DENTER(TOP_LAYER);
+
+   u_long32 jobid = lGetUlong(jep, JB_job_number);
+   u_long32 jataskid = lGetUlong(jatep, JAT_task_number);
    bool signaled = false;
 
    if (limit < usage) {
@@ -232,7 +262,7 @@ force_job_rlimit_apply_limit(double usage, double limit, const char *limit_name,
          WARNING(MSG_JOB_EXCEEDHLIM_USSFF, jobid, limit_name,
                  lGetString(queue, QU_full_name), usage, limit);
          signal_job(jobid, jataskid, SGE_SIGKILL);
-         job_report_set_deleted_by_execd(jobid, jataskid);
+         job_report_set_deleted_by_execd(jep, jatep);
       } else {
          WARNING(MSG_JOB_EXCEEDSLIM_USSFF, jobid, limit_name,
                  lGetString(queue, QU_full_name), usage, limit);
@@ -241,7 +271,7 @@ force_job_rlimit_apply_limit(double usage, double limit, const char *limit_name,
       signaled = true;
    }
 
-   return signaled;
+   DRETURN(signaled);
 }
 
 
@@ -306,9 +336,9 @@ force_job_rlimit_task(const lListElem *jep, const lListElem *jatep, const lListE
                                        qualified_hostname);
    double h_vmem = execd_get_task_limit(QU_h_vmem, "h_vmem", TYPE_MEM, q, jep, jatep, petep,
                                         qualified_hostname);
-   if (force_job_rlimit_apply_limit(cpu_val, h_cpu, "h_cpu", true, q, jobid, jataskid) ||
-       force_job_rlimit_apply_limit(maxrss_val, h_rss, "h_rss", true, q, jobid, jataskid) ||
-       force_job_rlimit_apply_limit(maxvmem_val, h_vmem, "h_vmem", true, q, jobid, jataskid)) {
+   if (force_job_rlimit_apply_limit(cpu_val, h_cpu, "h_cpu", true, q, jep, jatep) ||
+       force_job_rlimit_apply_limit(maxrss_val, h_rss, "h_rss", true, q, jep, jatep) ||
+       force_job_rlimit_apply_limit(maxvmem_val, h_vmem, "h_vmem", true, q, jep, jatep)) {
       DRETURN(true);
    }
 
@@ -321,9 +351,9 @@ force_job_rlimit_task(const lListElem *jep, const lListElem *jatep, const lListE
    double s_vmem = execd_get_task_limit(QU_s_vmem, "s_vmem", TYPE_MEM, q, jep, jatep, petep,
                                         qualified_hostname);
    bool signaled =
-      force_job_rlimit_apply_limit(cpu_val, s_cpu, "s_cpu", false, q, jobid, jataskid) ||
-      force_job_rlimit_apply_limit(rss_val, s_rss, "s_rss", false, q, jobid, jataskid) ||
-      force_job_rlimit_apply_limit(vmem_val, s_vmem, "s_vmem", false, q, jobid, jataskid);
+      force_job_rlimit_apply_limit(cpu_val, s_cpu, "s_cpu", false, q, jep, jatep) ||
+      force_job_rlimit_apply_limit(rss_val, s_rss, "s_rss", false, q, jep, jatep) ||
+      force_job_rlimit_apply_limit(vmem_val, s_vmem, "s_vmem", false, q, jep, jatep);
 
    DRETURN(signaled);
 }
@@ -614,8 +644,7 @@ int do_ck_to_do(bool is_qmaster_down) {
                               lGetUlong(jatep, JAT_task_number),
                               nullptr);
                   }
-                  job_report_set_deleted_by_execd(lGetUlong(jep, JB_job_number),
-                                                  lGetUlong(jatep, JAT_task_number));
+                  job_report_set_deleted_by_execd(jep, jatep);
                   lSetUlong64(jatep, JAT_pending_signal_delivery_time, now + sge_gmt32_to_gmt64(90));
                }    
                continue;
