@@ -111,5 +111,6 @@ u_long update_job_ref_count(ocs::tom::Element<ocs::tom::STN> node);
 OCS_TRANSITIONAL u_long update_job_ref_count(lListElem *node);
 u_long update_active_job_ref_count(ocs::tom::Element<ocs::tom::STN> node);
 OCS_TRANSITIONAL u_long update_active_job_ref_count(lListElem *node);
-int  sge_calc_node_targets(lListElem *root, lListElem *node);
+int  sge_calc_node_targets(ocs::tom::ConstElement<ocs::tom::STN> root, ocs::tom::Element<ocs::tom::STN> node);
+OCS_TRANSITIONAL int sge_calc_node_targets(lListElem *root, lListElem *node);
 

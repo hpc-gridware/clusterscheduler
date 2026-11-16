@@ -58,6 +58,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <memory>
 #include <sys/types.h>
 #include <unistd.h>
 #include <math.h>
@@ -94,7 +95,10 @@
 #include "sgeobj/tom/ocs_tom_UPP.h"
 #include "sgeobj/tom/ocs_tom_JB.h"
 #include "sgeobj/tom/ocs_tom_OR.h"
+#include "sgeobj/tom/ocs_tom_FCAT.h"
+#include "sgeobj/tom/ocs_tom_PE.h"
 #include "sgeobj/tom/ocs_tom_PR.h"
+#include "sgeobj/tom/ocs_tom_QU.h"
 #include "sgeobj/tom/ocs_tom_US.h"
 #include "sgeobj/tom/ocs_tom_UU.h"
 #include "tom/ocs_Element.h"
@@ -204,31 +208,34 @@ static void calculate_pending_shared_override_tickets(sge_ref_t *job_ref, uint32
 
 static double calc_job_tickets(sge_ref_t *ref);
 
-static int sge_calc_tickets (scheduler_all_data_t *lists,
-                      lList *running_jobs,
-                      lList *finished_jobs,
-	          	       lList *queued_jobs,
-                      int do_usage,
-                      double *max_tickets);
+static int sge_calc_tickets(scheduler_all_data_t *lists,
+                            ocs::tom::List<ocs::tom::JB> running_jobs,
+                            ocs::tom::List<ocs::tom::JB> finished_jobs,
+                            ocs::tom::List<ocs::tom::JB> queued_jobs,
+                            int do_usage,
+                            double *max_tickets);
 
-static lList *sge_sort_pending_job_nodes(lListElem *root, lListElem *node,
-                           double total_share_tree_tickets);
-static int sge_calc_sharetree_targets(lListElem *root, scheduler_all_data_t *lists,
-                           lList *decay_list, uint64_t curr_time,
-                           u_long seqno);
+static ocs::tom::ListPtr<ocs::tom::STN> sge_sort_pending_job_nodes(ocs::tom::Element<ocs::tom::STN> root,
+                                                                   ocs::tom::Element<ocs::tom::STN> node,
+                                                                   double total_share_tree_tickets);
+static int sge_calc_sharetree_targets(ocs::tom::Element<ocs::tom::STN> root, scheduler_all_data_t *lists,
+                                      ocs::tom::ConstList<ocs::tom::UA> decay_list, uint64_t curr_time,
+                                      u_long seqno);
 static int sge_init_share_tree_node_fields( lListElem *node, void *ptr );
 
 static double calc_pjob_override_tickets_shared( sge_ref_t *ref);
 
-static void free_fcategories(lList **fcategories, sge_ref_list_t ** ref_array);
-static uint32_t build_functional_categories(sge_ref_t *job_ref, uint32_t num_jobs, lList **root,
-                                        sge_ref_list_t ** ref_array, int dependent,
-                                        uint32_t job_tickets, uint32_t user_tickets, uint32_t prj_tickets, uint32_t dp_tickets);
+static void free_fcategories(ocs::tom::ListPtr<ocs::tom::FCAT> &fcategories, sge_ref_list_t **ref_array);
+static uint32_t build_functional_categories(sge_ref_t *job_ref, uint32_t num_jobs,
+                                            ocs::tom::ListPtr<ocs::tom::FCAT> &fcategories,
+                                            sge_ref_list_t **ref_array, int dependent,
+                                            JB_Field job_tickets, UU_Field user_tickets, PR_Field project_tickets,
+                                            US_Field dp_tickets);
 static void copy_ftickets(sge_ref_list_t *source, sge_ref_list_t *dest);
-static void destribute_ftickets(lList *root, int dependent);
+static void destribute_ftickets(ocs::tom::ConstList<ocs::tom::FCAT> fcategories, int dependent);
 
 static void calc_intern_pending_job_functional_tickets(
-                                    lListElem *current,
+                                    ocs::tom::ConstElement<ocs::tom::FCAT> current,
                                     double sum_of_user_functional_shares,
                                     double sum_of_project_functional_shares,
                                     double sum_of_department_functional_shares,
@@ -1212,18 +1219,21 @@ combine_usage(sge_ref_t *ref) {
 }
 
 
-/*--------------------------------------------------------------------
- * calc_job_share_tree_tickets_pass1 - performs pass 1 of calculating
- *      the job share tree tickets for the specified job
- *--------------------------------------------------------------------*/
-
+/**
+ * @brief Pass 1 of the share tree tickets of a job: add the job's shares to its share tree node
+ *
+ * The sum is what pass 2 divides the node's tickets by.
+ *
+ * @param ref the job's entry; nothing is done if it has no share tree node
+ */
 static void
 calc_job_share_tree_tickets_pass1(sge_ref_t *ref) {
-   lListElem *job = ref->job;
-   lListElem *node = ref->node;
+   DENTER(BASIS_LAYER);
+   const auto job = ref->job;
+   const auto node = ref->node;
 
    if (!node) {
-      return;
+      DRETURN_VOID;
    }
 
    /*-------------------------------------------------------
@@ -1233,22 +1243,28 @@ calc_job_share_tree_tickets_pass1(sge_ref_t *ref) {
    ocs::tom::set<STN_sum_priority>(node,
              ocs::tom::get<STN_sum_priority>(node) +
              ocs::tom::get<JB_jobshare>(job));
+   DRETURN_VOID;
 }
 
 
-/*--------------------------------------------------------------------
- * calc_job_share_tree_tickets_pass2 - performs pass 2 of calculating
- *      the job share tree tickets for the specified job
- *--------------------------------------------------------------------*/
-
+/**
+ * @brief Pass 2 of the share tree tickets of a job: set the job's share tree tickets
+ *
+ * The job gets its part of the tickets of its share tree node, in proportion
+ * to its shares if the jobs of the node have shares, otherwise an equal part.
+ *
+ * @param ref the job's entry; nothing is done if it has no share tree node
+ * @param total_share_tree_tickets the tickets of the share tree policy
+ */
 static void
-calc_job_share_tree_tickets_pass2(sge_ref_t *ref, double total_share_tree_tickets) {
+calc_job_share_tree_tickets_pass2(sge_ref_t *ref, const double total_share_tree_tickets) {
+   DENTER(BASIS_LAYER);
    double share_tree_tickets;
-   lListElem *job = ref->job;
-   lListElem *node = ref->node;
+   const auto job = ref->job;
+   const auto node = ref->node;
 
    if (!node) {
-      return;
+      DRETURN_VOID;
    }
 
    /*-------------------------------------------------------
@@ -1267,6 +1283,7 @@ calc_job_share_tree_tickets_pass2(sge_ref_t *ref, double total_share_tree_ticket
       REF_SET_STICKET(ref,
                 share_tree_tickets / ocs::tom::get<STN_job_ref_count>(node));
    }
+   DRETURN_VOID;
 }
 
 /**
@@ -1302,19 +1319,21 @@ static void copy_ftickets(sge_ref_list_t *source, sge_ref_list_t *dest){
  * job list has ftix. This function copies the result from the first job to all
  * other jobs in the same list and sums the job ticket count with the ftix.
  *
- * @param root fcategory list
+ * @param fcategories the functional categories
  * @param dependent does the final ticket count depend on ftix?
  *
  * @note - This function is only needed, because not all functional tickets are calculated
  *       and to give a best guess result, all jobs in one category with no ftix get the
  *       same amount of ftix.
  */
-static void destribute_ftickets(lList *root, int dependent) {
+static void
+destribute_ftickets(const ocs::tom::ConstList<ocs::tom::FCAT> fcategories, const int dependent) {
+   DENTER(TOP_LAYER);
    sge_ref_list_t *current = nullptr;
    sge_ref_list_t *first = nullptr;
 
-   for_each_rw_lv(elem, root) {
-      first = (sge_ref_list_t *)ocs::tom::get<FCAT_jobrelated_ticket_first>(elem);
+   for (const auto elem : fcategories) {
+      first = static_cast<sge_ref_list_t *>(ocs::tom::get<FCAT_jobrelated_ticket_first>(elem));
 /*      if(!first)
          continue;*/
       current = first->next;
@@ -1326,6 +1345,7 @@ static void destribute_ftickets(lList *root, int dependent) {
          current = current->next;
       }
    }
+   DRETURN_VOID;
 }
 
 /*
@@ -1342,15 +1362,17 @@ static void destribute_ftickets(lList *root, int dependent) {
  * - project shares
  * Alljobs with the same job, user,... shares are put in the same fcategory.
  *
- * @param job_ref array of pointers to the job reference structure
+ * @param job_ref array of the job reference structures
  * @param num_jobs amount of elements in the job_ref array
- * @param root root pointer to the functional category list
- * @param ref_array has to be a pointer to nullptr pointer. The memory will be allocated in this function and freed with free_fcategories.
+ * @param fcategories the functional category list; created here when the first category is added
+ * @param ref_array has to be a pointer to nullptr pointer. The memory will be allocated in this function and freed
+ *                  with free_fcategories.
  * @param dependent does the functional tickets depend on prior computed tickets?
- * @param job_tickets job field, which has the tickets ( JB>_jobshare, JB_override_tickets)
- * @param up_tickets source for the user/department tickets/shares (UP_fshare, UP_otickets)
+ * @param job_tickets job field, which has the tickets (JB_jobshare, JB_override_tickets)
+ * @param user_tickets source for the user tickets/shares (UU_fshare, UU_oticket)
+ * @param project_tickets source for the project tickets/shares (PR_fshare, PR_oticket)
  * @param dp_tickets source for the department tickets/shares (US_fshare, US_oticket)
- * @param uint32_t number of jobs in the categories
+ * @return number of jobs in the categories
  *
  * @note - job classes are ignored.
  *
@@ -1366,12 +1388,14 @@ static void destribute_ftickets(lList *root, int dependent) {
  *
  * @bug ???
  */
-static uint32_t build_functional_categories(sge_ref_t *job_ref, uint32_t num_jobs, lList **fcategories,
-                                        sge_ref_list_t ** ref_array, int dependent,
-                                        uint32_t job_tickets, uint32_t user_tickets, uint32_t project_tickets, uint32_t dp_tickets) {
+static uint32_t
+build_functional_categories(sge_ref_t *job_ref, const uint32_t num_jobs,
+                            ocs::tom::ListPtr<ocs::tom::FCAT> &fcategories,
+                            sge_ref_list_t **ref_array, const int dependent,
+                            const JB_Field job_tickets, const UU_Field user_tickets, const PR_Field project_tickets,
+                            const US_Field dp_tickets) {
    DENTER(TOP_LAYER);
 
-   lListElem *current;
    uint32_t job_ndx;
    int ref_array_pos = 0;
    uint32_t job_counter = 0;
@@ -1387,40 +1411,37 @@ static uint32_t build_functional_categories(sge_ref_t *job_ref, uint32_t num_job
       sge_ref_t *jref = &job_ref[job_ndx];
 
       if (jref->queued) { /* only work on pending jobs */
-         lListElem *user_el;
-         lListElem *dept_el;
-         lListElem *project_el;
          uint32_t job_shares = 0;
          uint32_t user_shares = 0;
          uint32_t dept_shares = 0;
          uint32_t project_shares = 0;
 
-         user_el = jref->user;
-         dept_el = jref->dept;
-         project_el = jref->project;
+         auto user_el = jref->user;
+         auto dept_el = jref->dept;
+         auto project_el = jref->project;
 
          if(user_el){
-            user_shares = lGetUlong(user_el, user_tickets);
+            user_shares = user_el.get<uint32_t>(user_tickets);
             if (user_shares == 0) {
                user_el = nullptr;
             }
          }
          if(project_el){
-            project_shares = lGetUlong(project_el, project_tickets);
+            project_shares = project_el.get<uint32_t>(project_tickets);
             if (project_shares == 0) {
                project_el = nullptr;
             }
 
          }
          if(dept_el){
-            dept_shares = lGetUlong(dept_el, dp_tickets);
+            dept_shares = dept_el.get<uint32_t>(dp_tickets);
             if (dept_shares == 0) {
                dept_el = nullptr;
             }
 
          }
 
-         job_shares =  lGetUlong(jref->job, job_tickets);
+         job_shares = jref->job.get<uint32_t>(job_tickets);
 
          /* jobs in this category will never get tickets, so why compute them...? */
          if ( (job_shares == 0) &&
@@ -1433,27 +1454,29 @@ static uint32_t build_functional_categories(sge_ref_t *job_ref, uint32_t num_job
          job_counter++;
 
          /* locate the right category */
-         for_each_rw (current, *fcategories) {
-            if ((ocs::tom::get<FCAT_job_share>(current) == job_shares) &&
-                (ocs::tom::get<FCAT_user>(current) == user_el) &&
-                (ocs::tom::get<FCAT_dept>(current) == dept_el) &&
-                (ocs::tom::get<FCAT_project>(current) == project_el)) {
+         ocs::tom::Element<ocs::tom::FCAT> current;
+         for (const auto fcategory : *fcategories) {
+            if ((ocs::tom::get<FCAT_job_share>(fcategory) == job_shares) &&
+                (ocs::tom::get<FCAT_user>(fcategory) == user_el.raw()) &&
+                (ocs::tom::get<FCAT_dept>(fcategory) == dept_el.raw()) &&
+                (ocs::tom::get<FCAT_project>(fcategory) == project_el.raw())) {
+               current = fcategory;
                break;
             }
          }
 
          if (current == nullptr) {   /* create new category */
-            if (!(current = ocs::tom::emplace_back<FCAT_job_share>(fcategories, job_shares))) {
-               free_fcategories(fcategories, ref_array);
-               /* maybe an error code */
-               DRETURN(0);
+            if (!fcategories) {
+               // the name and the hashing are those of the list lAddElemUlong() created here before
+               fcategories = ocs::tom::ListPtr<ocs::tom::FCAT>::create("ulong_sublist");
             }
+            current = fcategories->emplace_back<FCAT_job_share>(job_shares);
             ocs::tom::set<FCAT_user_share>(current, user_shares);
-            ocs::tom::set<FCAT_user>(current, user_el);
+            ocs::tom::set<FCAT_user>(current, user_el.raw());
             ocs::tom::set<FCAT_dept_share>(current, dept_shares);
-            ocs::tom::set<FCAT_dept>(current, dept_el);
+            ocs::tom::set<FCAT_dept>(current, dept_el.raw());
             ocs::tom::set<FCAT_project_share>(current, project_shares);
-            ocs::tom::set<FCAT_project>(current, project_el);
+            ocs::tom::set<FCAT_project>(current, project_el.raw());
          }
 
          {  /* create new job entry */
@@ -1463,7 +1486,7 @@ static uint32_t build_functional_categories(sge_ref_t *job_ref, uint32_t num_job
             new_elem->ref = jref;
 
             /* find the location for the new element */
-            cur_ref_entry = (sge_ref_list_t *)ocs::tom::get<FCAT_jobrelated_ticket_last>(current);
+            cur_ref_entry = static_cast<sge_ref_list_t *>(ocs::tom::get<FCAT_jobrelated_ticket_last>(current));
 
             if (dependent) {
                while (cur_ref_entry != nullptr) {
@@ -1499,7 +1522,7 @@ static uint32_t build_functional_categories(sge_ref_t *job_ref, uint32_t num_job
                }
                else {
                   /* insert element at the beginning */
-                  cur_ref_entry = (sge_ref_list_t *)ocs::tom::get<FCAT_jobrelated_ticket_first>(current);
+                  cur_ref_entry = static_cast<sge_ref_list_t *>(ocs::tom::get<FCAT_jobrelated_ticket_first>(current));
                   cur_ref_entry->prev = new_elem;
                   new_elem->next = cur_ref_entry;
                   ocs::tom::set<FCAT_jobrelated_ticket_first>(current, new_elem);
@@ -1531,14 +1554,18 @@ static uint32_t build_functional_categories(sge_ref_t *job_ref, uint32_t num_job
  *
  * frees all fcategories and their job lists.
  *
- * @param ref_array memory for internal structures, allocated with build_functional_categories. Needs to be freed as well.
+ * @param fcategories the functional categories, empty afterwards
+ * @param ref_array memory for internal structures, allocated with build_functional_categories. Needs to be freed
+ *                  as well.
  *
  * @note - it does not delete the sge_ref_t structures, which are stored in
  *       in the job lists.
  */
-static void free_fcategories(lList **fcategories, sge_ref_list_t **ref_array) {
+static void
+free_fcategories(ocs::tom::ListPtr<ocs::tom::FCAT> &fcategories, sge_ref_list_t **ref_array) {
+   DENTER(TOP_LAYER);
 
-   for_each_rw_lv(fcategory, *fcategories) {
+   for (const auto fcategory : *fcategories) {
       ocs::tom::set<FCAT_jobrelated_ticket_last>(fcategory, nullptr);
       ocs::tom::set<FCAT_jobrelated_ticket_first>(fcategory, nullptr);
       ocs::tom::set<FCAT_user>(fcategory, nullptr);
@@ -1546,23 +1573,34 @@ static void free_fcategories(lList **fcategories, sge_ref_list_t **ref_array) {
       ocs::tom::set<FCAT_project>(fcategory, nullptr);
    }
 
-   lFreeList(fcategories);
+   fcategories.reset();
    sge_free(ref_array);
 
+   DRETURN_VOID;
 }
 
-/*--------------------------------------------------------------------
- * calc_functional_tickets_pass1 - performs pass 1 of calculating
- *      the functional tickets for the specified job
- *--------------------------------------------------------------------*/
-
-static void calc_job_functional_tickets_pass1(sge_ref_t *ref,
-                                              double *sum_of_user_functional_shares,
-                                              double *sum_of_project_functional_shares,
-                                              double *sum_of_department_functional_shares,
-                                              double *sum_of_job_functional_shares,
-                                              int shared,
-                                              int sum_shares) {
+/**
+ * @brief Pass 1 of the functional tickets of a job: the job's functional shares and their sums
+ *
+ * @param ref the job's entry; receives the job's user, project, department and job functional shares
+ * @param[in,out] sum_of_user_functional_shares the sum of the user functional shares, the job's is added
+ * @param[in,out] sum_of_project_functional_shares the sum of the project functional shares, the job's is added
+ * @param[in,out] sum_of_department_functional_shares the sum of the department functional shares, the job's
+ *                is added
+ * @param[in,out] sum_of_job_functional_shares the sum of the job functional shares, the job's is added
+ * @param shared nonzero if the functional shares of an object are shared between its jobs
+ * @param sum_shares nonzero to add the user, project and department shares in any case, 0 to add them
+ *                   only if the object has at most one job
+ */
+static void
+calc_job_functional_tickets_pass1(sge_ref_t *ref,
+                                  double *sum_of_user_functional_shares,
+                                  double *sum_of_project_functional_shares,
+                                  double *sum_of_department_functional_shares,
+                                  double *sum_of_job_functional_shares,
+                                  const int shared,
+                                  const int sum_shares) {
+   DENTER(BASIS_LAYER);
    double job_cnt;
 
    /*-------------------------------------------------------------
@@ -1612,6 +1650,7 @@ static void calc_job_functional_tickets_pass1(sge_ref_t *ref,
    REF_SET_FSHARE(ref, ocs::tom::get<JB_jobshare>(ref->job));
 
    *sum_of_job_functional_shares += REF_GET_FSHARE(ref);
+   DRETURN_VOID;
 }
 
 /**
@@ -1675,20 +1714,29 @@ get_functional_weighting_parameters(double sum_of_user_functional_shares,
 }
 
 
-/*--------------------------------------------------------------------
- * calc_functional_tickets_pass2 - performs pass 2 of calculating
- *      the functional tickets for the specified job
- *--------------------------------------------------------------------*/
-
+/**
+ * @brief Pass 2 of the functional tickets of a job: set the job's functional tickets
+ *
+ * @param ref the job's entry, with the functional shares of pass 1; receives the functional tickets
+ * @param sum_of_user_functional_shares the sum of the user functional shares
+ * @param sum_of_project_functional_shares the sum of the project functional shares
+ * @param sum_of_department_functional_shares the sum of the department functional shares
+ * @param sum_of_job_functional_shares the sum of the job functional shares
+ * @param total_functional_tickets the tickets of the functional policy
+ * @param weight the weights of the categories, indexed by k_user, k_department, k_project and k_job
+ * @param shared unused
+ * @return the job functional tickets of the job, before weighting
+ */
 static double
 calc_job_functional_tickets_pass2(sge_ref_t *ref,
-                                  double sum_of_user_functional_shares,
-                                  double sum_of_project_functional_shares,
-                                  double sum_of_department_functional_shares,
-                                  double sum_of_job_functional_shares,
-                                  double total_functional_tickets,
+                                  const double sum_of_user_functional_shares,
+                                  const double sum_of_project_functional_shares,
+                                  const double sum_of_department_functional_shares,
+                                  const double sum_of_job_functional_shares,
+                                  const double total_functional_tickets,
                                   double weight[],
-                                  int shared) {
+                                  [[maybe_unused]] const int shared) {
+   DENTER(BASIS_LAYER);
    double user_functional_tickets=0,
           project_functional_tickets=0,
           department_functional_tickets=0,
@@ -1743,16 +1791,21 @@ calc_job_functional_tickets_pass2(sge_ref_t *ref,
 
    REF_SET_FTICKET(ref, total_job_functional_tickets);
 
-   return job_functional_tickets;
+   DRETURN(job_functional_tickets);
 }
 
 
-/*--------------------------------------------------------------------
- * calc_override_tickets - calculates the number of override tickets for the
- * specified job
- *--------------------------------------------------------------------*/
-
-static double calc_job_override_tickets( sge_ref_t *ref, int shared) {
+/**
+ * @brief Calculate the override tickets of a job
+ *
+ * The job's override tickets plus those of its user, project and department.
+ *
+ * @param ref the job's entry; receives the override tickets
+ * @param shared nonzero if the override tickets of an object are shared between its jobs
+ * @return the override tickets of the job
+ */
+static double
+calc_job_override_tickets(sge_ref_t *ref, const int shared) {
    DENTER(TOP_LAYER);
 
    double job_override_tickets = 0;
@@ -1808,7 +1861,17 @@ static double calc_job_override_tickets( sge_ref_t *ref, int shared) {
    DRETURN(job_override_tickets);
 }
 
-static double calc_pjob_override_tickets_shared( sge_ref_t *ref) {
+/**
+ * @brief Calculate the shared override tickets of a pending job as if it were running
+ *
+ * The override tickets of the user, project and department are shared
+ * between their running jobs and this one.
+ *
+ * @param ref the pending job's entry; receives the override tickets
+ * @return the override tickets of the job
+ */
+static double
+calc_pjob_override_tickets_shared(sge_ref_t *ref) {
    DENTER(TOP_LAYER);
 
    double job_override_tickets = 0;
@@ -1849,18 +1912,24 @@ static double calc_pjob_override_tickets_shared( sge_ref_t *ref) {
    DRETURN(job_override_tickets);
 }
 
-/*--------------------------------------------------------------------
- * calc_job_tickets - calculates the total number of tickets for
- * the specified job
- *--------------------------------------------------------------------*/
-
+/**
+ * @brief Calculate the total tickets of a job
+ *
+ * Sums the share tree, functional and override tickets of the job. For a
+ * job of a parallel environment that controls its slaves, the tickets are
+ * also distributed onto the granted queues.
+ *
+ * @param ref the job's entry; receives the total tickets
+ * @return the total tickets of the job
+ */
 static double
 calc_job_tickets(sge_ref_t *ref) {
-   const lList *granted;
-   lListElem *job = ref->job,
-             *ja_task = ref->ja_task;
+   DENTER(BASIS_LAYER);
+   ocs::tom::List<ocs::tom::JG> granted;
+   const auto job = ref->job;
+   const auto ja_task = ref->ja_task;
    double job_tickets;
-   lListElem *pe;
+   ocs::tom::ConstElement<ocs::tom::PE> pe;
    const char *pe_str;
 
    /*-------------------------------------------------------------
@@ -1875,7 +1944,7 @@ calc_job_tickets(sge_ref_t *ref) {
    /* for PE slave-controlled jobs, set tickets for each granted queue */
 
    if (ja_task && (pe_str=ocs::tom::get<JAT_granted_pe>(ja_task))
-         && (pe=pe_list_locate(all_lists->pe_list, pe_str))
+         && (pe = ocs::tom::ConstElement<ocs::tom::PE>(pe_list_locate(all_lists->pe_list, pe_str)))
          && ocs::tom::get<PE_control_slaves>(pe)
          && (granted=ocs::tom::get<JAT_granted_destin_identifier_list>(ja_task))) {
 
@@ -1901,7 +1970,7 @@ calc_job_tickets(sge_ref_t *ref) {
          job_stickets_per_slot = 0;
       }
 
-      for_each_rw_lv(granted_el, granted) {
+      for (const auto granted_el : granted) {
          double slots;
 
          /* Only give tickets to queues with active sub-tasks or sub-tasks
@@ -1931,7 +2000,7 @@ calc_job_tickets(sge_ref_t *ref) {
       }
    }
 
-   return job_tickets;
+   DRETURN(job_tickets);
 }
 
 
@@ -1996,22 +2065,32 @@ sge_clear_ja_task(const ocs::tom::Element<ocs::tom::JAT> ja_task) {
  * It is good enough to get the order right within the inner loop of the ftix
  * calculation.
  *
- * @param current current fcategory double sum_of_user_functional_shares double sum_of_project_functional_shares double sum_of_department_functional_shares double sum_of_job_functional_shares double total_functional_tickets double weight[]                            - destribution of the shares to each other
+ * The tickets are calculated for the first job of the category only.
+ *
+ * @param current the functional category
+ * @param sum_of_user_functional_shares the sum of the user functional shares
+ * @param sum_of_project_functional_shares the sum of the project functional shares
+ * @param sum_of_department_functional_shares the sum of the department functional shares
+ * @param sum_of_job_functional_shares the sum of the job functional shares
+ * @param total_functional_tickets the tickets of the functional policy
+ * @param weight destribution of the shares to each other
+ * @param share_functional_shares true if the functional shares of an object are shared between its jobs
  *
  * @note be carefull using it
  *
  * @bug ???
  */
-static void calc_intern_pending_job_functional_tickets(
-        lListElem *current,
-        double sum_of_user_functional_shares,
-        double sum_of_project_functional_shares,
-        double sum_of_department_functional_shares,
-        double sum_of_job_functional_shares,
-        double total_functional_tickets,
-        double weight[],
-        bool share_functional_shares) {
-   sge_ref_list_t *tmp = (sge_ref_list_t *)ocs::tom::get<FCAT_jobrelated_ticket_first>(current);
+static void
+calc_intern_pending_job_functional_tickets(const ocs::tom::ConstElement<ocs::tom::FCAT> current,
+                                           double sum_of_user_functional_shares,
+                                           double sum_of_project_functional_shares,
+                                           double sum_of_department_functional_shares,
+                                           double sum_of_job_functional_shares,
+                                           const double total_functional_tickets,
+                                           double weight[],
+                                           const bool share_functional_shares) {
+   DENTER(BASIS_LAYER);
+   auto *tmp = static_cast<sge_ref_list_t *>(ocs::tom::get<FCAT_jobrelated_ticket_first>(current));
    sge_ref_t *ref = tmp->ref;
 
    /*-------------------------------------------------------------
@@ -2073,17 +2152,31 @@ static void calc_intern_pending_job_functional_tickets(
                                      weight,
                                      share_functional_shares);
 
-   return;
+   DRETURN_VOID;
 }
 
-static void calc_pending_job_functional_tickets(sge_ref_t *ref,
-                                                double *sum_of_user_functional_shares,
-                                                double *sum_of_project_functional_shares,
-                                                double *sum_of_department_functional_shares,
-                                                double *sum_of_job_functional_shares,
-                                                double total_functional_tickets,
-                                                double weight[],
-                                                int shared) {
+/**
+ * @brief Calculate the functional tickets of a pending job, adding its shares to the sums
+ *
+ * @param ref the pending job's entry; receives the functional shares and tickets
+ * @param[in,out] sum_of_user_functional_shares the sum of the user functional shares
+ * @param[in,out] sum_of_project_functional_shares the sum of the project functional shares
+ * @param[in,out] sum_of_department_functional_shares the sum of the department functional shares
+ * @param[in,out] sum_of_job_functional_shares the sum of the job functional shares
+ * @param total_functional_tickets the tickets of the functional policy
+ * @param weight the weights of the categories
+ * @param shared nonzero if the functional shares of an object are shared between its jobs
+ */
+static void
+calc_pending_job_functional_tickets(sge_ref_t *ref,
+                                    double *sum_of_user_functional_shares,
+                                    double *sum_of_project_functional_shares,
+                                    double *sum_of_department_functional_shares,
+                                    double *sum_of_job_functional_shares,
+                                    const double total_functional_tickets,
+                                    double weight[],
+                                    const int shared) {
+   DENTER(BASIS_LAYER);
    /*
     * If the functional shares of a given object are shared between jobs
     * (schedd_param SHARE_FUNCTIONAL_SHARES=true), then we need to reduce
@@ -2109,24 +2202,26 @@ static void calc_pending_job_functional_tickets(sge_ref_t *ref,
                                      total_functional_tickets,
                                      weight,
                                      shared);
-   return;
+   DRETURN_VOID;
 }
 
-/*--------------------------------------------------------------------
- * sge_calc_tickets - calculate proportional shares in terms of tickets
- * for all active jobs.
+/**
+ * @brief Calculate proportional shares in terms of tickets for all active jobs
  *
- * queued_jobs should contain all pending jobs to be scheduled
- * running_jobs should contain all currently executing jobs
- * finished_jobs should contain all completed jobs
- *--------------------------------------------------------------------*/
-
+ * @param lists all the lists of this scheduling run
+ * @param running_jobs all currently executing jobs, may be empty
+ * @param finished_jobs all completed jobs, may be empty
+ * @param queued_jobs all pending jobs to be scheduled, may be empty
+ * @param do_usage nonzero to sum the usage of the running jobs into their users and projects
+ * @param[in,out] max_tickets the highest ticket amount of a job, raised to the highest one found here
+ * @return the sequence number of this ticket calculation
+ */
 static int
 sge_calc_tickets(scheduler_all_data_t *lists,
-                 lList *running_jobs,
-                 lList *finished_jobs,
-                 lList *queued_jobs,
-                 int do_usage,
+                 const ocs::tom::List<ocs::tom::JB> running_jobs,
+                 const ocs::tom::List<ocs::tom::JB> finished_jobs,
+                 const ocs::tom::List<ocs::tom::JB> queued_jobs,
+                 const int do_usage,
                  double *max_tickets) {
    DENTER(TOP_LAYER);
 
@@ -2142,9 +2237,7 @@ sge_calc_tickets(scheduler_all_data_t *lists,
 
    uint32_t num_unenrolled_tasks = 0;
 
-   sge_ref_t *job_ref = nullptr;
-
-   lListElem *job, *root = nullptr;
+   std::unique_ptr<sge_ref_t[]> job_ref;
 
    double prof_init=0, prof_pass0=0, prof_pass1=0, prof_pass2=0, prof_calc=0;
 
@@ -2162,26 +2255,25 @@ sge_calc_tickets(scheduler_all_data_t *lists,
 
    sge_scheduling_run++;
 
-   lList *decay_list = ocs::Usage::get_decay_list();
+   const auto decay_list = ocs::tom::ListPtr<ocs::tom::UA>(ocs::Usage::get_decay_list());
 
    /* the configured usage weights decide which usage attributes are
     * relevant for share tree usage and may be booked into the
     * user/project usage lists (CS-1385) */
-   lList *usage_weight_list = sconf_get_usage_weight_list();
+   const auto usage_weight_list = ocs::tom::ListPtr<ocs::tom::UA>(sconf_get_usage_weight_list());
 
 
    /*-------------------------------------------------------------
     * Init job_ref_count in each share tree node to zero
     *-------------------------------------------------------------*/
 
-   if ((lists->share_tree)) {
-      if ((root = lFirstRW(lists->share_tree))) {
-         sge_init_share_tree_nodes(root);
-         ocs::ShareTree::set_node_project_flag(root, lists->project_list);
-      }
+   const auto root = ocs::tom::List<ocs::tom::STN>(lists->share_tree).front();
+   if (root) {
+      sge_init_share_tree_nodes(root);
+      ocs::ShareTree::set_node_project_flag(root, lists->project_list);
    }
 
-   for_each_rw_lv(qep, lists->queue_list) {
+   for (const auto qep : ocs::tom::ConstList<ocs::tom::QU>(lists->queue_list)) {
       free_qslots += MAX(0, ((int)ocs::tom::get<QU_job_slots>(qep)) - qinstance_slots_used(qep));
    }
 
@@ -2194,16 +2286,16 @@ sge_calc_tickets(scheduler_all_data_t *lists,
 
    num_jobs = num_queued_jobs = 0;
    if (queued_jobs) {
-      for_each_rw(job, queued_jobs) {
+      for (const auto job : queued_jobs) {
          uint32_t max = std::min(max_pending_tasks_per_job, free_qslots+1);
          uint32_t num_unenrolled_tasks_for_job = 0;
          uint32_t task_cnt = 0;
 
-         for (ocs::tom::Element<ocs::tom::JAT> ja_task : ocs::tom::get<JB_ja_tasks>(job)) {
+         for (const auto ja_task : ocs::tom::get<JB_ja_tasks>(job)) {
             if (++task_cnt > max) {
                break;
             }
-            if (job_is_active(ocs::tom::ConstElement<ocs::tom::JB>(job), ja_task)) {
+            if (job_is_active(job, ja_task)) {
                num_queued_jobs++;
                num_jobs++;
             }
@@ -2220,14 +2312,14 @@ sge_calc_tickets(scheduler_all_data_t *lists,
       }
    }
    if (running_jobs) {
-      for_each_rw(job, running_jobs) {
-         for (ocs::tom::Element<ocs::tom::JAT> ja_task : ocs::tom::get<JB_ja_tasks>(job))
-            if (job_is_active(ocs::tom::ConstElement<ocs::tom::JB>(job), ja_task))
+      for (const auto job : running_jobs) {
+         for (const auto ja_task : ocs::tom::get<JB_ja_tasks>(job))
+            if (job_is_active(job, ja_task))
                num_jobs++;
       }
    }
    if (num_jobs > 0) {
-      job_ref = new sge_ref_t[num_jobs]{};
+      job_ref = std::make_unique<sge_ref_t[]>(num_jobs);
    }
    if (num_unenrolled_tasks > 0) {
       task_ref_initialize_table(num_unenrolled_tasks);
@@ -2242,12 +2334,12 @@ sge_calc_tickets(scheduler_all_data_t *lists,
    job_ndx = 0;
 
    if (running_jobs) {
-      for_each_rw(job, running_jobs) {
-         for (ocs::tom::Element<ocs::tom::JAT> ja_task : ocs::tom::get<JB_ja_tasks>(job)) {
-            if (!job_is_active(ocs::tom::ConstElement<ocs::tom::JB>(job), ja_task)) {
+      for (const auto job : running_jobs) {
+         for (const auto ja_task : ocs::tom::get<JB_ja_tasks>(job)) {
+            if (!job_is_active(job, ja_task)) {
                sge_clear_ja_task(ja_task);
             } else {
-               sge_set_job_refs(ocs::tom::Element<ocs::tom::JB>(job), ja_task, &job_ref[job_ndx], nullptr, lists, 0);
+               sge_set_job_refs(job, ja_task, &job_ref[job_ndx], nullptr, lists, 0);
                if (job_ref[job_ndx].node) {
                   ocs::tom::set<STN_job_ref_count>(job_ref[job_ndx].node,
                             ocs::tom::get<STN_job_ref_count>(job_ref[job_ndx].node)+1);
@@ -2263,19 +2355,18 @@ sge_calc_tickets(scheduler_all_data_t *lists,
    if (queued_jobs) {
       uint32_t ja_task_ndx = 0;
 
-      for_each_rw(job, queued_jobs) {
-         ocs::tom::Element<ocs::tom::RN> range = nullptr;
+      for (const auto job : queued_jobs) {
          uint32_t id;
          uint32_t task_cnt = 0;
 
-         for (ocs::tom::Element<ocs::tom::JAT> ja_task : ocs::tom::get<JB_ja_tasks>(job)) {
+         for (const auto ja_task : ocs::tom::get<JB_ja_tasks>(job)) {
             sge_ref_t *jref = &job_ref[job_ndx];
 
             if (++task_cnt > std::min(max_pending_tasks_per_job, free_qslots+1) ||
-                !job_is_active(ocs::tom::ConstElement<ocs::tom::JB>(job), ja_task)) {
+                !job_is_active(job, ja_task)) {
                sge_clear_ja_task(ja_task);
             } else {
-               sge_set_job_refs(ocs::tom::Element<ocs::tom::JB>(job), ja_task, jref, nullptr, lists, 1);
+               sge_set_job_refs(job, ja_task, jref, nullptr, lists, 1);
                if (jref->node)
                   ocs::tom::set<STN_job_ref_count>(jref->node,
                             ocs::tom::get<STN_job_ref_count>(jref->node)+1);
@@ -2283,8 +2374,7 @@ sge_calc_tickets(scheduler_all_data_t *lists,
             }
          }
 
-         ocs::tom::ConstList<ocs::tom::RN> range_list = ocs::tom::get<JB_ja_n_h_ids>(job);
-         for_each_rw(range, range_list) {
+         for (const auto range : ocs::tom::get<JB_ja_n_h_ids>(job)) {
             for(id = ocs::tom::get<RN_min>(range);
                 id <= ocs::tom::get<RN_max>(range);
                 id += ocs::tom::get<RN_step>(range)) {
@@ -2294,9 +2384,8 @@ sge_calc_tickets(scheduler_all_data_t *lists,
                if (++task_cnt > std::min(max_pending_tasks_per_job, free_qslots+1)) {
                   break;
                }
-               lListElem *ja_task = job_get_ja_task_template_pending(job, id);
-               sge_set_job_refs(ocs::tom::Element<ocs::tom::JB>(job), ocs::tom::Element<ocs::tom::JAT>(ja_task),
-                                jref, tref, lists, 1);
+               const auto ja_task = ocs::tom::Element<ocs::tom::JAT>(job_get_ja_task_template_pending(job, id));
+               sge_set_job_refs(job, ja_task, jref, tref, lists, 1);
                if (jref->node) {
                   ocs::tom::set<STN_job_ref_count>(jref->node,
                             ocs::tom::get<STN_job_ref_count>(jref->node)+1);
@@ -2352,7 +2441,7 @@ sge_calc_tickets(scheduler_all_data_t *lists,
           * mirror currently holds. sum_usage = book_user_project_usage
           * with do_decay=false. */
          ocs::Usage::sum_usage(job_ref[job_ndx].job, job_ref[job_ndx].ja_task,
-                               job_ref[job_ndx].user, job_ref[job_ndx].project, usage_weight_list);
+                               job_ref[job_ndx].user, job_ref[job_ndx].project, *usage_weight_list);
       }
 #endif
 
@@ -2366,7 +2455,7 @@ sge_calc_tickets(scheduler_all_data_t *lists,
        * decayed values via sgeE_USER_MOD / sgeE_PROJECT_MOD; scheduler
        * just reads what mirror has. seqno is irrelevant when now=0
        * because the per-userprj decay branch is gated on now != 0. */
-      sge_calc_sharetree_targets(root, lists, decay_list, 0, 0);
+      sge_calc_sharetree_targets(root, lists, *decay_list, 0, 0);
    }
 
    PROF_STOP_MEASUREMENT(SGE_PROF_SCHEDLIB4);
@@ -2423,8 +2512,6 @@ sge_calc_tickets(scheduler_all_data_t *lists,
             break;
          }
 
-         job = job_ref[job_ndx].job;
-
          if (total_share_tree_tickets > 0) {
             calc_job_share_tree_tickets_pass2(&job_ref[job_ndx],
                                            total_share_tree_tickets);
@@ -2463,8 +2550,6 @@ sge_calc_tickets(scheduler_all_data_t *lists,
     *-----------------------------------------------------------------*/
 
    if (queued_jobs) {
-      lList *sorted_job_node_list;
-
       policy_hierarchy_t hierarchy[POLICY_VALUES];
       int policy_ndx;
 
@@ -2495,15 +2580,16 @@ sge_calc_tickets(scheduler_all_data_t *lists,
 
          for(job_ndx=0; job_ndx<num_jobs; job_ndx++) {
             sge_ref_t *jref = &job_ref[job_ndx];
-            lListElem *node = jref->node;
+            const auto node = jref->node;
             if (jref->queued) {
                if (node) {
                   /* add each job to the share tree as a temporary sibling node */
                   char tmpstr[64];
 
-                  job = jref->job;
-                  snprintf(tmpstr, sizeof(tmpstr), sge_u32 "." sge_u32, ocs::tom::get<JB_job_number>(job), REF_GET_JA_TASK_NUMBER(jref));
-                  ocs::tom::Element<ocs::tom::STN> child = ocs::tom::emplace_back_in<STN_children, STN_name>(node, tmpstr);
+                  const auto job = jref->job;
+                  snprintf(tmpstr, sizeof(tmpstr), sge_u32 "." sge_u32, ocs::tom::get<JB_job_number>(job),
+                           REF_GET_JA_TASK_NUMBER(jref));
+                  const auto child = ocs::tom::emplace_back_in<STN_children, STN_name>(node, tmpstr);
                   ocs::tom::set<STN_jobid>(child, ocs::tom::get<JB_job_number>(job));
                   ocs::tom::set<STN_taskid>(child, REF_GET_JA_TASK_NUMBER(jref));
                   ocs::tom::set<STN_temp>(child, 1);
@@ -2521,19 +2607,19 @@ sge_calc_tickets(scheduler_all_data_t *lists,
             }
          }
 
-         if ((sorted_job_node_list = sge_sort_pending_job_nodes(root, root, total_share_tree_tickets))) {
+         const auto sorted_job_node_list = sge_sort_pending_job_nodes(root, root, total_share_tree_tickets);
+         if (sorted_job_node_list) {
             /*
              * set share tree tickets of each pending job
              * based on the returned sorted node list
              */
-            for_each_rw_lv(job_node, sorted_job_node_list) {
+            for (const auto job_node : *sorted_job_node_list) {
                sge_ref_t *jref = &job_ref[ocs::tom::get<STN_ref>(job_node)-1];
                REF_SET_STICKET(jref,
                      ocs::tom::get<STN_shr>(job_node) * total_share_tree_tickets);
                if (hierarchy[policy_ndx].dependent)
                   jref->tickets += REF_GET_STICKET(jref);
             }
-            lFreeList(&sorted_job_node_list);
          }
       }
 
@@ -2572,7 +2658,7 @@ sge_calc_tickets(scheduler_all_data_t *lists,
       DPRINTF("calc funktional tickets %.3f\n", total_functional_tickets);
       if (total_functional_tickets > 0 && num_queued_jobs > 0) {
          sge_ref_t **sort_list=nullptr;
-         lList *fcategories = nullptr;
+         ocs::tom::ListPtr<ocs::tom::FCAT> fcategories;
 
          uint32_t i=0;
 
@@ -2585,7 +2671,7 @@ sge_calc_tickets(scheduler_all_data_t *lists,
          double pending_job_fshares = sum_of_job_functional_shares;
 
          uint32_t max =   sconf_get_max_functional_jobs_to_schedule();
-         uint32_t pjobs = build_functional_categories(job_ref, num_jobs, &fcategories,
+         uint32_t pjobs = build_functional_categories(job_ref.get(), num_jobs, fcategories,
                                      &ref_array, hierarchy[policy_ndx].dependent,
                                      JB_jobshare, UU_fshare, PR_fshare, US_fshare);
 
@@ -2599,13 +2685,9 @@ sge_calc_tickets(scheduler_all_data_t *lists,
                /* error message to come */
 
                sge_free(&sort_list);
-               delete[] job_ref;
-               job_ref = nullptr;
-               lFreeList(&decay_list);
-               lFreeList(&usage_weight_list);
 
                if (fcategories != nullptr) {
-                  free_fcategories(&fcategories, &ref_array);
+                  free_fcategories(fcategories, &ref_array);
                }
 
                DRETURN(sge_scheduling_run);
@@ -2622,11 +2704,11 @@ sge_calc_tickets(scheduler_all_data_t *lists,
                double ftickets, max_ftickets=-1;
                uint32_t jid, save_jid=0, save_tid=0;
 	            uint64_t submission_time = 0, save_submission_time = 0;
-               lListElem *max_current = nullptr;
+               ocs::tom::Element<ocs::tom::FCAT> max_current;
 
                /* loop over all first jobs from the different categories */
-               for_each_rw_lv(current, fcategories) {
-                  sge_ref_list_t *tmp = (sge_ref_list_t *)ocs::tom::get<FCAT_jobrelated_ticket_first>(current);
+               for (const auto current : *fcategories) {
+                  auto *tmp = static_cast<sge_ref_list_t *>(ocs::tom::get<FCAT_jobrelated_ticket_first>(current));
                   sge_ref_t *jref = tmp->ref;
                   double user_fshares = pending_user_fshares + 0.001;
                   double proj_fshares = pending_proj_fshares + 0.001;
@@ -2672,7 +2754,7 @@ sge_calc_tickets(scheduler_all_data_t *lists,
                   - remove the winning element
                   - if it was the last element, remove the fcategory*/
                if (max_current != nullptr) {
-                  sge_ref_list_t *tmp = (sge_ref_list_t *)ocs::tom::get<FCAT_jobrelated_ticket_first>(max_current);
+                  auto *tmp = static_cast<sge_ref_list_t *>(ocs::tom::get<FCAT_jobrelated_ticket_first>(max_current));
                   copy_ftickets (tmp, tmp->next);
 
                   /* switch to next elem */
@@ -2685,7 +2767,7 @@ sge_calc_tickets(scheduler_all_data_t *lists,
                      ocs::tom::set<FCAT_dept>(max_current, nullptr);
                      ocs::tom::set<FCAT_project>(max_current, nullptr);
 
-                     lRemoveElem(fcategories, &max_current);
+                     fcategories->erase(max_current);
                   }
 
                /* This is the job with the most functional tickets, consider it active */
@@ -2719,13 +2801,13 @@ sge_calc_tickets(scheduler_all_data_t *lists,
                   }
                }
 
-               destribute_ftickets(fcategories, depend);
+               destribute_ftickets(*fcategories, depend);
             }
          }
 
          /* free the allocated memory */
          sge_free(&sort_list);
-         free_fcategories(&fcategories, &ref_array);
+         free_fcategories(fcategories, &ref_array);
 
       }
 
@@ -2738,7 +2820,8 @@ sge_calc_tickets(scheduler_all_data_t *lists,
                {
                   bool share_override_tickets = sconf_get_share_override_tickets();
                   if (share_override_tickets) {
-                     calculate_pending_shared_override_tickets(job_ref, num_jobs, hierarchy[policy_ndx].dependent );
+                     calculate_pending_shared_override_tickets(job_ref.get(), num_jobs,
+                                                               hierarchy[policy_ndx].dependent);
                   }
                   else {
                      for(job_ndx=0; job_ndx<num_jobs; job_ndx++) {
@@ -2809,8 +2892,6 @@ sge_calc_tickets(scheduler_all_data_t *lists,
             *max_tickets = tickets;
          }
 
-         job = jref->job;
-
          if (tickets > 0) {
             REF_SET_SHARE(jref, tickets / sum_of_active_tickets);
          }
@@ -2828,12 +2909,12 @@ sge_calc_tickets(scheduler_all_data_t *lists,
    /* update share tree node for finished jobs */
    /* NOTE: what purpose does this serve? */
    if (do_usage && finished_jobs) {
-      for_each_rw(job, finished_jobs) {
+      for (const auto job : finished_jobs) {
          sge_ref_t jref;
 
-         for (ocs::tom::Element<ocs::tom::JAT> ja_task : ocs::tom::get<JB_ja_tasks>(job)) {
+         for (const auto ja_task : ocs::tom::get<JB_ja_tasks>(job)) {
             jref = sge_ref_t{};
-            sge_set_job_refs(ocs::tom::Element<ocs::tom::JB>(job), ja_task, &jref, nullptr, lists, 0);
+            sge_set_job_refs(job, ja_task, &jref, nullptr, lists, 0);
             if (jref.node) {
                if (sge_scheduling_run != ocs::tom::get<STN_pass2_seqno>(jref.node)) {
                   ocs::ShareTree::zero_node_fields(jref.node, nullptr);
@@ -2857,21 +2938,16 @@ sge_calc_tickets(scheduler_all_data_t *lists,
       sge_task_ref_t *tref = task_ref_get_first_job_entry();
 
       while (tref != nullptr) {
-         ocs::tom::Element<ocs::tom::JB> job = ocs::tom::find_first_rw<JB_job_number>(queued_jobs, tref->job_number);
+         const auto job = queued_jobs.find_first<JB_job_number>(tref->job_number);
 
          if (job) {
-            lListElem *ja_task_template = lFirstRW(static_cast<const lList *>(ocs::tom::get<JB_ja_template>(job)));
+            const auto ja_task_template = ocs::tom::get<JB_ja_template>(job).front();
 
-            task_ref_copy_to_ja_task(tref, ocs::tom::Element<ocs::tom::JAT>(ja_task_template));
+            task_ref_copy_to_ja_task(tref, ja_task_template);
          }
          tref = task_ref_get_next_job_entry();
       }
    }
-
-   delete[] job_ref;
-   job_ref = nullptr;
-   lFreeList(&decay_list);
-   lFreeList(&usage_weight_list);
 
    if (prof_is_active(SGE_PROF_SCHEDLIB4)){
       prof_stop_measurement(SGE_PROF_SCHEDLIB4, nullptr);
@@ -2885,25 +2961,32 @@ sge_calc_tickets(scheduler_all_data_t *lists,
 }
 
 
-/*--------------------------------------------------------------------
- * sge_sort_pending_job_nodes - return a sorted list of pending job
- * nodes with the pending priority set in STN_sort.
- *--------------------------------------------------------------------*/
-
-static lList *
-sge_sort_pending_job_nodes(lListElem *root,
-                           lListElem *node,
-                           double total_share_tree_tickets) {
-   lList *job_node_list = nullptr;
+/**
+ * @brief Sorted list of the pending job nodes below a share tree node, with the pending priority set in STN_sort
+ *
+ * The temporary job nodes that sge_calc_tickets() added below @p node are
+ * copied into the list and freed in the share tree.
+ *
+ * @param root the root of the share tree
+ * @param node the node whose subtree is collected
+ * @param total_share_tree_tickets the tickets of the share tree policy
+ * @return the job nodes, sorted; empty if there are none
+ */
+static ocs::tom::ListPtr<ocs::tom::STN>
+sge_sort_pending_job_nodes(const ocs::tom::Element<ocs::tom::STN> root,
+                           const ocs::tom::Element<ocs::tom::STN> node,
+                           const double total_share_tree_tickets) {
+   DENTER(TOP_LAYER);
+   ocs::tom::ListPtr<ocs::tom::STN> job_node_list;
    double node_stt;
    double job_count=0;
    int job_nodes = 0;
 
    if(root == node){
       int active_nodes = 0;
-      lListElem *temp_root = nullptr;
+      ocs::tom::Element<ocs::tom::STN> temp_root;
 
-      for (ocs::tom::Element<ocs::tom::STN> child : ocs::tom::get<STN_children>(node)) {
+      for (const auto child : ocs::tom::get<STN_children>(node)) {
          if (ocs::tom::get<STN_ref>(child)) {
             active_nodes++;
             break;
@@ -2914,26 +2997,27 @@ sge_sort_pending_job_nodes(lListElem *root,
          if (active_nodes >1)
                break;
       }
-      if (active_nodes == 1 && temp_root)
-         return sge_sort_pending_job_nodes(temp_root, temp_root, total_share_tree_tickets);
+      if (active_nodes == 1 && temp_root) {
+         DRETURN(sge_sort_pending_job_nodes(temp_root, temp_root, total_share_tree_tickets));
+      }
    }
    /* get the child job nodes in a single list */
 
-   for (ocs::tom::Element<ocs::tom::STN> child : ocs::tom::get<STN_children>(node)) {
+   for (const auto child : ocs::tom::get<STN_children>(node)) {
       if (ocs::tom::get<STN_ref>(child)) {
          /* this is a job node, chain it onto our list */
          if (!job_node_list)
-            job_node_list = lCreateList("sorted job node list", STN_Type);
-         lAppendElem(job_node_list, lCopyElem(child));
+            job_node_list = ocs::tom::ListPtr<ocs::tom::STN>::create("sorted job node list");
+         job_node_list->push_back(child.clone());
          job_nodes++;
       } else if ((ocs::tom::get<STN_job_ref_count>(child)-ocs::tom::get<STN_active_job_ref_count>(child))>0) {
-         lList *child_job_node_list;
          /* recursively get all the child job nodes onto our list */
-         if ((child_job_node_list = sge_sort_pending_job_nodes(root, child, total_share_tree_tickets))) {
+         auto child_job_node_list = sge_sort_pending_job_nodes(root, child, total_share_tree_tickets);
+         if (child_job_node_list) {
             if (job_node_list == nullptr)
-               job_node_list = child_job_node_list;
+               job_node_list = std::move(child_job_node_list);
             else
-               lAddList(job_node_list, &child_job_node_list);
+               job_node_list->splice(std::move(child_job_node_list));
          }
       }
    }
@@ -2945,8 +3029,8 @@ sge_sort_pending_job_nodes(lListElem *root,
    if (root != node || job_nodes) {
       ocs::tom::ConstElement<ocs::tom::UA> u;
 
-      if (job_node_list && lGetNumberOfElem(job_node_list)>1)
-         lPSortList(job_node_list, "%I- %I+ %I+", STN_sort, STN_jobid, STN_taskid);
+      if (job_node_list && job_node_list->size()>1)
+         job_node_list->sort<ocs::tom::desc<STN_sort>, ocs::tom::asc<STN_jobid>, ocs::tom::asc<STN_taskid>>();
 
       /* calculate a new pending priority -
          The priority of each pending job associated with this node is the
@@ -2959,7 +3043,7 @@ sge_sort_pending_job_nodes(lListElem *root,
       if ((u=ocs::tom::find_first<UA_name>(ocs::tom::get<STN_usage_list>(node), "finished_jobs")))
          job_count += ocs::tom::get<UA_value>(u);
       node_stt = ocs::tom::get<STN_stt>(node);
-      for_each_rw_lv(job_node, job_node_list) {
+      for (const auto job_node : *job_node_list) {
          job_count++;
          ocs::tom::set<STN_shr>(job_node, node_stt / job_count);
          ocs::tom::set<STN_sort>(job_node, ocs::tom::get<STN_tickets>(job_node) +
@@ -2970,21 +3054,26 @@ sge_sort_pending_job_nodes(lListElem *root,
 
    /* return the new list */
 
-   return job_node_list;
+   DRETURN(job_node_list);
 }
 
 
-/*--------------------------------------------------------------------
- * sge_calc_sharetree_targets - calculate the targeted
- * proportional share for each node in the sharetree.
- *--------------------------------------------------------------------*/
-
+/**
+ * @brief Calculate the targeted proportional share of each node in the share tree
+ *
+ * @param root the root of the share tree
+ * @param lists all the lists of this scheduling run
+ * @param decay_list the decay constants of the usage
+ * @param curr_time the time to decay the usage to; 0 for no decay
+ * @param seqno the sequence number of this calculation
+ * @return 0
+ */
 static int
-sge_calc_sharetree_targets(lListElem *root,
+sge_calc_sharetree_targets(const ocs::tom::Element<ocs::tom::STN> root,
                            scheduler_all_data_t *lists,
-                           lList *decay_list,
-                           uint64_t curr_time,
-                           u_long seqno) {
+                           const ocs::tom::ConstList<ocs::tom::UA> decay_list,
+                           const uint64_t curr_time,
+                           const u_long seqno) {
    DENTER(TOP_LAYER);
 
    /* decay and store user and project usage into sharetree nodes */
@@ -3017,12 +3106,11 @@ sge_calc_sharetree_targets(lListElem *root,
  *
  * @return 0 on success
  */
-
-int sge_calc_node_targets(lListElem *root,
-                          lListElem *node) {
+int
+sge_calc_node_targets(const ocs::tom::ConstElement<ocs::tom::STN> root,
+                      const ocs::tom::Element<ocs::tom::STN> node) {
    DENTER(TOP_LAYER);
 
-   ocs::tom::ConstList<ocs::tom::STN> children;
    double sum_shares, sum, compensation_factor;
    /* char *node_name = lGetString(node, STN_name); */
 
@@ -3045,7 +3133,8 @@ int sge_calc_node_targets(lListElem *root,
     * if this node has no children, there's nothing to do
     *---------------------------------------------------------------*/
 
-   if ((!(children = ocs::tom::get<STN_children>(node))) || lGetNumberOfElem(children) == 0) {
+   const auto children = ocs::tom::get<STN_children>(node);
+   if (children.empty()) {
       DRETURN(0);
    }
 
@@ -3063,14 +3152,14 @@ int sge_calc_node_targets(lListElem *root,
     *---------------------------------------------------------------*/
 
    sum_shares = 0;
-   for_each_rw_lv(child, children) {
+   for (const auto child : children) {
       if (ocs::tom::get<STN_job_ref_count>(child)>0) {
          sum_shares += ocs::tom::get<STN_shares>(child);
       }
    }
 
    sum = 0;
-   for_each_rw_lv(child, children) {
+   for (const auto child : children) {
       if (ocs::tom::get<STN_job_ref_count>(child)>0) {
          double shares, shr, ltt, oltt;
          shares = ocs::tom::get<STN_shares>(child);
@@ -3106,7 +3195,7 @@ int sge_calc_node_targets(lListElem *root,
     * calculate the short term targeted proportions
     *---------------------------------------------------------------*/
 
-   for_each_rw_lv(child, children) {
+   for (const auto child : children) {
       if (ocs::tom::get<STN_job_ref_count>(child)>0) {
          double stt;
 
@@ -3157,7 +3246,7 @@ int sge_calc_node_targets(lListElem *root,
        *---------------------------------------------------------------*/
 
       sum = 0;
-      for_each_rw_lv(child, children) {
+      for (const auto child : children) {
          if (ocs::tom::get<STN_job_ref_count>(child)>0) {
             double ostt = ocs::tom::get<STN_ostt>(child);
             double oltt = ocs::tom::get<STN_oltt>(child);
@@ -3178,7 +3267,7 @@ int sge_calc_node_targets(lListElem *root,
        *---------------------------------------------------------------*/
 
       if (compensation) {
-         for_each_rw_lv(child, children) {
+         for (const auto child : children) {
             if (ocs::tom::get<STN_job_ref_count>(child)>0) {
                double stt = ocs::tom::get<STN_shr>(child) / sum;
                ocs::tom::set<STN_stt>(child, stt);
@@ -3200,13 +3289,26 @@ int sge_calc_node_targets(lListElem *root,
     * recursively call self for all active child nodes
     *---------------------------------------------------------------*/
 
-   for_each_rw_lv(child, children) {
+   for (const auto child : children) {
       if (ocs::tom::get<STN_job_ref_count>(child)>0) {
          sge_calc_node_targets(root, child);
       }
    }
 
    DRETURN(0);
+}
+
+/**
+ * @brief sge_calc_node_targets() for an untyped caller
+ *
+ * @param[in]     root the root of the share tree (`STN_Type`)
+ * @param[in,out] node the node whose subtree is calculated (`STN_Type`)
+ *
+ * @return as sge_calc_node_targets()
+ */
+int
+sge_calc_node_targets(lListElem *root, lListElem *node) {
+   return sge_calc_node_targets(ocs::tom::ConstElement<ocs::tom::STN>(root), ocs::tom::Element<ocs::tom::STN>(node));
 }
 
 /**
@@ -3436,10 +3538,11 @@ int sgeee_scheduler(scheduler_all_data_t *lists,
    /* calculate tickets for pending jobs and compute their shares.
     * CS-1239: finished-job booking moved to worker thread - pass nullptr so
     * the (now inert) finished-jobs branch in sge_calc_tickets is skipped. */
-   sge_calc_tickets(lists, running_jobs, nullptr, pending_jobs, 1, &max_tix);
+   sge_calc_tickets(lists, ocs::tom::List<ocs::tom::JB>(running_jobs), nullptr,
+                    ocs::tom::List<ocs::tom::JB>(pending_jobs), 1, &max_tix);
 
    /* correct the shares for the running jobs */
-   seqno = sge_calc_tickets(lists, running_jobs, nullptr, nullptr, 0, &max_tix);
+   seqno = sge_calc_tickets(lists, ocs::tom::List<ocs::tom::JB>(running_jobs), nullptr, nullptr, 0, &max_tix);
 
    if (max_tix == -1) { /* we have no running jobs and the tickets are disabled. */
       max_tix = 0;
@@ -3631,17 +3734,18 @@ static void sgeee_priority(lListElem *task, uint32_t jobid, double nsu,
  *
  * @note MT-NOTE: calculate_pending_shared_override_tickets() is MT safe
  */
-static void calculate_pending_shared_override_tickets(sge_ref_t *job_ref, uint32_t num_jobs, int dependent) {
+static void
+calculate_pending_shared_override_tickets(sge_ref_t *job_ref, const uint32_t num_jobs, const int dependent) {
          DENTER(TOP_LAYER);
 
-         lList *fcategories = nullptr;
+         ocs::tom::ListPtr<ocs::tom::FCAT> fcategories;
          sge_ref_list_t *ref_array = nullptr;
          sge_ref_t **sort_list=nullptr;
          uint32_t i;
          uint32_t max;
          uint32_t job_ndx;
 
-         max = build_functional_categories(job_ref, num_jobs, &fcategories, &ref_array, dependent,
+         max = build_functional_categories(job_ref, num_jobs, fcategories, &ref_array, dependent,
                                      JB_override_tickets, UU_oticket, PR_oticket, US_oticket);
 
          if (max > 0) {
@@ -3653,7 +3757,7 @@ static void calculate_pending_shared_override_tickets(sge_ref_t *job_ref, uint32
                sge_free(&sort_list);
 
                if (fcategories != nullptr) {
-                  free_fcategories(&fcategories, &ref_array);
+                  free_fcategories(fcategories, &ref_array);
                }
                DRETURN_VOID;
             }
@@ -3661,11 +3765,10 @@ static void calculate_pending_shared_override_tickets(sge_ref_t *job_ref, uint32
             for (i = 0; i < max; i++) {
                double max_otickets=-1;
                uint32_t jid, tid, max_jid=0, max_tid=0;
-               lListElem *current = nullptr;
-               lListElem *max_current = nullptr;
+               ocs::tom::Element<ocs::tom::FCAT> max_current;
                /* loop over all first jobs from the different categories */
-               for_each_rw(current, fcategories){
-                  sge_ref_list_t *tmp = (sge_ref_list_t *)ocs::tom::get<FCAT_jobrelated_ticket_first>(current);
+               for (const auto current : *fcategories) {
+                  auto *tmp = static_cast<sge_ref_list_t *>(ocs::tom::get<FCAT_jobrelated_ticket_first>(current));
                   sge_ref_t *jref = tmp->ref;
                   double otickets;
 
@@ -3695,7 +3798,7 @@ static void calculate_pending_shared_override_tickets(sge_ref_t *job_ref, uint32
                }
 
                if (max_current != nullptr) {
-                  sge_ref_list_t *tmp = (sge_ref_list_t *)ocs::tom::get<FCAT_jobrelated_ticket_first>(max_current);
+                  auto *tmp = static_cast<sge_ref_list_t *>(ocs::tom::get<FCAT_jobrelated_ticket_first>(max_current));
                   sge_set_job_cnts(tmp->ref, 0); /* set job active */
                   ocs::tom::set<FCAT_jobrelated_ticket_first>(max_current, tmp->next);/* next job in that category */
                   sort_list[i]->tickets += max_otickets;
@@ -3707,7 +3810,7 @@ static void calculate_pending_shared_override_tickets(sge_ref_t *job_ref, uint32
                      ocs::tom::set<FCAT_dept>(max_current, nullptr);
                      ocs::tom::set<FCAT_project>(max_current, nullptr);
 
-                     lRemoveElem(fcategories, &max_current);
+                     fcategories->erase(max_current);
                   }
                }
                else { /* we reached an end. */
@@ -3723,9 +3826,9 @@ static void calculate_pending_shared_override_tickets(sge_ref_t *job_ref, uint32
          }
          /* free the allocated memory */
 
-         free_fcategories(&fcategories, &ref_array);
+         free_fcategories(fcategories, &ref_array);
 
-   return;
+   DRETURN_VOID;
 }
 
 
