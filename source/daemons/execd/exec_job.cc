@@ -92,6 +92,9 @@
 #include "sgeobj/sge_path_alias.h"
 #include "sgeobj/sge_ulong.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_AN.h"
+#include "sgeobj/tom/ocs_tom_CK.h"
 #include "sgeobj/tom/ocs_tom_GRU.h"
 #include "sgeobj/tom/ocs_tom_JAT.h"
 #include "sgeobj/tom/ocs_tom_JG.h"
@@ -100,8 +103,11 @@
 #include "sgeobj/tom/ocs_tom_PE.h"
 #include "sgeobj/tom/ocs_tom_PET.h"
 #include "sgeobj/tom/ocs_tom_PN.h"
+#include "sgeobj/tom/ocs_tom_QU.h"
 #include "sgeobj/tom/ocs_tom_RESL.h"
+#include "sgeobj/tom/ocs_tom_RN.h"
 #include "sgeobj/tom/ocs_tom_ST.h"
+#include "sgeobj/tom/ocs_tom_STU.h"
 #include "sgeobj/tom/ocs_tom_VA.h"
 #include "sgeobj/tom/ocs_tom_CE.h"
 
@@ -140,51 +146,50 @@
 
 static int ck_login_sh(char *shell);
 
-static int get_nhosts(const lList *gdil_list);
+static int get_nhosts(ocs::tom::ConstList<ocs::tom::JG> gdil_orig);
 
 
 #if COMPILE_DC
-#if defined(SOLARIS) || defined(LINUX) || defined(FREEBSD) || defined(FREEBSD)
+#if defined(SOLARIS) || defined(LINUX) || defined(FREEBSD) || defined(DARWIN)
 
 /* local functions */
-static int addgrpid_already_in_use(long);
+static int addgrpid_already_in_use(long add_grp_id);
 
-static long get_next_addgrpid(lList *, long);
+static long get_next_addgrpid(ocs::tom::ConstList<ocs::tom::RN> rlp, long last_addgrpid);
 
 #endif
 #endif
-
-/*
-   in case of regular jobs the queue is the first entry in the gdil list of the job
-   in case of tasks the queue is the appropriate entry in the gdil list of the slave job
-*/
 
 /**
  * @brief The queue instance a job, task or PE task is accounted against, read only
  *
  * For a job or an array task it is the queue of the first entry of the array
  * task's granted destination identifier list; for a PE task it is the entry
- * of that list whose queue name is the PE task's queue.
+ * of that list whose queue name is the PE task's queue, which is the
+ * appropriate entry of the slave job's list.
  *
- * @param jep the job (`JB_Type`), unused
+ * @param jep the job, unused
  * @param jatep the array task
- * @param petep the PE task, or nullptr
- * @return the queue instance, or nullptr
+ * @param petep the PE task, or an empty handle
+ * @return the queue instance, or an empty handle
  */
-const lListElem *responsible_queue([[maybe_unused]] const lListElem *jep, const lListElem *jatep, const lListElem *petep) {
+ocs::tom::ConstElement<ocs::tom::QU>
+responsible_queue([[maybe_unused]] const ocs::tom::ConstElement<ocs::tom::JB> jep,
+                  const ocs::tom::ConstElement<ocs::tom::JAT> jatep,
+                  const ocs::tom::ConstElement<ocs::tom::PET> petep) {
    DENTER(TOP_LAYER);
 
    ocs::tom::ConstElement<ocs::tom::JG> gdil_ep;
-   if (petep == nullptr) {
-      gdil_ep = lFirst(ocs::tom::get<JAT_granted_destin_identifier_list>(jatep));
+   if (!petep) {
+      gdil_ep = ocs::tom::get<JAT_granted_destin_identifier_list>(jatep).front();
    } else {
-      ocs::tom::ConstElement<ocs::tom::JG> pe_queue = lFirst(ocs::tom::get<PET_granted_destin_identifier_list>(petep));
-      gdil_ep = ocs::tom::find_first<JG_qname>(ocs::tom::get<JAT_granted_destin_identifier_list>(jatep),
-                            ocs::tom::get<JG_qname>(pe_queue));
+      const auto pe_queue = ocs::tom::get<PET_granted_destin_identifier_list>(petep).front();
+      gdil_ep = ocs::tom::get<JAT_granted_destin_identifier_list>(jatep).find_first<JG_qname>(
+         ocs::tom::get<JG_qname>(pe_queue));
    }
-   const lListElem *master_q = nullptr;
-   if (gdil_ep != nullptr) {
-      master_q = ocs::tom::get<JG_queue>(gdil_ep);
+   ocs::tom::ConstElement<ocs::tom::QU> master_q;
+   if (gdil_ep) {
+      master_q = ocs::tom::ConstElement<ocs::tom::QU>(ocs::tom::get<JG_queue>(gdil_ep));
    }
 
    DRETURN(master_q);
@@ -197,25 +202,28 @@ const lListElem *responsible_queue([[maybe_unused]] const lListElem *jep, const 
  * granted destination identifier list, so a caller that changes it, such as
  * its used slots, passes a mutable array task.
  *
- * @param jep the job (`JB_Type`), unused
+ * @param jep the job, unused
  * @param jatep the array task
- * @param petep the PE task, or nullptr
- * @return the queue instance, or nullptr
+ * @param petep the PE task, or an empty handle
+ * @return the queue instance, or an empty handle
  */
-lListElem *responsible_queue([[maybe_unused]] const lListElem *jep, lListElem *jatep, const lListElem *petep) {
+ocs::tom::Element<ocs::tom::QU>
+responsible_queue([[maybe_unused]] const ocs::tom::ConstElement<ocs::tom::JB> jep,
+                  const ocs::tom::Element<ocs::tom::JAT> jatep,
+                  const ocs::tom::ConstElement<ocs::tom::PET> petep) {
    DENTER(TOP_LAYER);
 
    ocs::tom::Element<ocs::tom::JG> gdil_ep;
-   if (petep == nullptr) {
-      gdil_ep = lFirstRW(ocs::tom::get<JAT_granted_destin_identifier_list>(jatep));
+   if (!petep) {
+      gdil_ep = ocs::tom::get<JAT_granted_destin_identifier_list>(jatep).front();
    } else {
-      ocs::tom::ConstElement<ocs::tom::JG> pe_queue = lFirst(ocs::tom::get<PET_granted_destin_identifier_list>(petep));
-      gdil_ep = ocs::tom::find_first_rw<JG_qname>(ocs::tom::get<JAT_granted_destin_identifier_list>(jatep),
-                              ocs::tom::get<JG_qname>(pe_queue));
+      const auto pe_queue = ocs::tom::get<PET_granted_destin_identifier_list>(petep).front();
+      gdil_ep = ocs::tom::get<JAT_granted_destin_identifier_list>(jatep).find_first<JG_qname>(
+         ocs::tom::get<JG_qname>(pe_queue));
    }
-   lListElem *master_q = nullptr;
-   if (gdil_ep != nullptr) {
-      master_q = ocs::tom::get<JG_queue>(gdil_ep);
+   ocs::tom::Element<ocs::tom::QU> master_q;
+   if (gdil_ep) {
+      master_q = ocs::tom::Element<ocs::tom::QU>(ocs::tom::get<JG_queue>(gdil_ep));
    }
 
    DRETURN(master_q);
@@ -224,57 +232,78 @@ lListElem *responsible_queue([[maybe_unused]] const lListElem *jep, lListElem *j
 #if COMPILE_DC
 #if defined(SOLARIS) || defined(LINUX) || defined(FREEBSD) || defined(DARWIN)
 
-static long get_next_addgrpid(lList *rlp, long last_addgrpid) {
+/**
+ * @brief The additional group id after the last one, taken from a range list
+ *
+ * @param rlp the ranges of the additional group ids, see gid_range
+ * @param last_addgrpid the id used last, 0 if none has been used yet
+ * @return the next id within the ranges; the first one of the first range if no id has been used yet
+ *         or the last one was the end of the last range; 0 if the list has no range
+ */
+static long get_next_addgrpid(const ocs::tom::ConstList<ocs::tom::RN> rlp, long last_addgrpid) {
+   DENTER(TOP_LAYER);
+
    int take_next = 0;
 
    /* uninitialized => return first number in list */
    if (last_addgrpid == 0) {
-      const lListElem *rep = lFirst(rlp);
-      if (rep)
-         return (ocs::tom::get<RN_min>(rep));
-      else
-         return (0);
+      const auto rep = rlp.front();
+      if (rep) {
+         DRETURN(ocs::tom::get<RN_min>(rep));
+      } else {
+         DRETURN(0);
+      }
    }
 
    /* search range and return next id */
-   for_each_ep_lv(rep, rlp) {
+   for (const auto rep : rlp) {
       long min, max;
 
       min = ocs::tom::get<RN_min>(rep);
       max = ocs::tom::get<RN_max>(rep);
-      if (take_next)
-         return (min);
-      else if (last_addgrpid >= min && last_addgrpid < max)
-         return (++last_addgrpid);
-      else if (last_addgrpid == max)
+      if (take_next) {
+         DRETURN(min);
+      } else if (last_addgrpid >= min && last_addgrpid < max) {
+         DRETURN(++last_addgrpid);
+      } else if (last_addgrpid == max) {
          take_next = 1;
+      }
    }
 
    /* not successful until now => take first number */
-   const lListElem *rep = lFirst(rlp);
-   if (rep)
-      return (ocs::tom::get<RN_min>(rep));
+   const auto rep = rlp.front();
+   if (rep) {
+      DRETURN(ocs::tom::get<RN_min>(rep));
+   }
 
-   return (0);
+   DRETURN(0);
 }
 
-static int addgrpid_already_in_use(long add_grp_id) {
-   for_each_ep_lv(job, *ocs::DataStore::get_master_list(SGE_TYPE_JOB)) {
-      for (ocs::tom::ConstElement<ocs::tom::JAT> ja_task : ocs::tom::get<JB_ja_tasks>(job)) {
+/**
+ * @brief Whether an array task or a PE task of the execd's job list uses an additional group id
+ *
+ * @param add_grp_id the additional group id
+ * @return 1 if the id is in use, 0 otherwise
+ */
+static int addgrpid_already_in_use(const long add_grp_id) {
+   DENTER(TOP_LAYER);
+
+   for (const auto job : ocs::tom::ConstList<ocs::tom::JB>(*ocs::DataStore::get_master_list(SGE_TYPE_JOB))) {
+      for (const auto ja_task : ocs::tom::get<JB_ja_tasks>(job)) {
          const char *id = ocs::tom::get<JAT_osjobid>(ja_task);
          if (id != nullptr && atol(id) == add_grp_id) {
-            return 1;
+            DRETURN(1);
          }
 
-         for (ocs::tom::ConstElement<ocs::tom::PET> pe_task : ocs::tom::get<JAT_task_list>(ja_task)) {
+         for (const auto pe_task : ocs::tom::get<JAT_task_list>(ja_task)) {
             id = ocs::tom::get<PET_osjobid>(pe_task);
             if (id != nullptr && atol(id) == add_grp_id) {
-               return 1;
+               DRETURN(1);
             }
          }
       }
    }
-   return 0;
+   DRETURN(0);
 }
 
 #endif
@@ -295,15 +324,16 @@ static int addgrpid_already_in_use(long add_grp_id) {
  *
  * @param granted_resources_list the granted resources of the job, JAT_granted_resources_list
  * @param host_name              the host the job is started on
- * @return a new GRU_Type list holding copies of the entries of granted_resources_list which
- *         apply on host_name, in list order - nullptr when there are none. The caller frees it.
+ * @return the owning handle on a new list holding copies of the entries of granted_resources_list which
+ *         apply on host_name, in list order - an empty handle when there are none
  */
-static lList *
-exec_job_granted_resources_for_host(const lList *granted_resources_list, const char *host_name) {
+static ocs::tom::ListPtr<ocs::tom::GRU>
+exec_job_granted_resources_for_host(const ocs::tom::ConstList<ocs::tom::GRU> granted_resources_list,
+                                    const char *host_name) {
    DENTER(TOP_LAYER);
 
-   lList *ret = nullptr;
-   for_each_ep_lv(gru, granted_resources_list) {
+   ocs::tom::ListPtr<ocs::tom::GRU> ret;
+   for (const auto gru : granted_resources_list) {
       const char *gru_host = ocs::tom::get<GRU_host>(gru);
       bool applies = sge_hostcmp(gru_host, host_name) == 0;
 
@@ -311,7 +341,7 @@ exec_job_granted_resources_for_host(const lList *granted_resources_list, const c
       if (!applies && sge_hostcmp(gru_host, SGE_GLOBAL_NAME) == 0) {
          const char *name = ocs::tom::get<GRU_name>(gru);
          applies = true;
-         for_each_ep_lv(other, granted_resources_list) {
+         for (const auto other : granted_resources_list) {
             if (sge_strnullcmp(ocs::tom::get<GRU_name>(other), name) == 0 &&
                 sge_hostcmp(ocs::tom::get<GRU_host>(other), host_name) == 0) {
                applies = false;
@@ -321,10 +351,10 @@ exec_job_granted_resources_for_host(const lList *granted_resources_list, const c
       }
 
       if (applies) {
-         if (ret == nullptr) {
-            ret = lCreateList("host granted resources", GRU_Type);
+         if (!ret) {
+            ret = ocs::tom::ListPtr<ocs::tom::GRU>::create("host granted resources");
          }
-         lAppendElem(ret, lCopyElem(gru));
+         ret->push_back(gru.clone());
       }
    }
 
@@ -348,25 +378,26 @@ exec_job_granted_resources_for_host(const lList *granted_resources_list, const c
  *
  * @param jep the job
  * @param jatep the ja_task
- * @param petep the pe task, nullptr for the master task
+ * @param petep the pe task, an empty handle for the master task
  * @param limit_name the name of the limit, e.g. h_rss
  * @return true if the limits of all slots of the job on the host are summed up
  */
 static bool
-exec_job_task_limit_is_summed(const lListElem *jep, const lListElem *jatep, const lListElem *petep,
-                              const char *limit_name) {
+exec_job_task_limit_is_summed(const ocs::tom::ConstElement<ocs::tom::JB> jep,
+                              const ocs::tom::ConstElement<ocs::tom::JAT> jatep,
+                              const ocs::tom::ConstElement<ocs::tom::PET> petep, const char *limit_name) {
    DENTER(TOP_LAYER);
 
    bool ret = false;
-   ocs::tom::ConstElement<ocs::tom::PE> pe = ocs::tom::get<JAT_pe_object>(jatep);
-   if (pe != nullptr && !job_is_requesting_consumable(jep, limit_name)) {
+   const auto pe = ocs::tom::get<JAT_pe_object>(jatep);
+   if (pe && !job_is_requesting_consumable(jep, limit_name)) {
       if (!ocs::tom::get<PE_control_slaves>(pe)) {
          // loosely integrated: the master task starts the processes of all slots
-         ret = petep == nullptr;
+         ret = !petep;
       } else {
          // the master task forks the slaves on the master host, or the one pe task (daemon)
          // per host forks the slaves on its host
-         if (petep == nullptr) {
+         if (!petep) {
             ret = ocs::tom::get<PE_master_forks_slaves>(pe);
          } else {
             ret = ocs::tom::get<PE_daemon_forks_slaves>(pe);
@@ -388,21 +419,16 @@ exec_job_task_limit_is_summed(const lListElem *jep, const lListElem *jatep, cons
  *         slots, DBL_MAX (infinity) if one of the queue instances has no limit
  */
 static double
-exec_job_sum_host_limit(int limit_nm, ocs::CEntry::Type type, const lListElem *jatep,
-                        const char *qualified_hostname) {
+exec_job_sum_host_limit(const int limit_nm, const ocs::CEntry::Type type,
+                        const ocs::tom::ConstElement<ocs::tom::JAT> jatep, const char *qualified_hostname) {
    DENTER(TOP_LAYER);
 
    double limit = 0;
-   ocs::tom::ConstList<ocs::tom::JG> gdil = ocs::tom::get<JAT_granted_destin_identifier_list>(jatep);
-   const void *iterator = nullptr;
-   const lListElem *gdil_ep;
-   const lListElem *next_gdil_ep = ocs::tom::find_first<JG_qhostname>(gdil, qualified_hostname,
-                                                     &iterator);
-   while ((gdil_ep = next_gdil_ep) != nullptr) {
-      next_gdil_ep = ocs::tom::find_next<JG_qhostname>(gdil, qualified_hostname, &iterator);
-
-      const lListElem *queue = ocs::tom::get<JG_queue>(gdil_ep);
-      if (queue != nullptr) {
+   const auto gdil = ocs::tom::get<JAT_granted_destin_identifier_list>(jatep);
+   for (const auto gdil_ep : gdil.find_all<JG_qhostname>(ocs::tom::Host(qualified_hostname))) {
+      const ocs::tom::ConstElement<ocs::tom::QU> queue(ocs::tom::get<JG_queue>(gdil_ep));
+      if (queue) {
+         // the limit field is known only at run time
          const char *limit_str = lGetString(queue, limit_nm);
          if (limit_str != nullptr) {
             // if one of the queue instances has a limit of infinity the sum is infinity
@@ -438,17 +464,19 @@ exec_job_sum_host_limit(int limit_nm, ocs::CEntry::Type type, const lListElem *j
  * @param queue the queue instance the task is running in
  * @param jep the job
  * @param jatep the ja_task
- * @param petep the pe task, nullptr for the master task
+ * @param petep the pe task, an empty handle for the master task
  * @param qualified_hostname the host the task is running on
  * @return the limit, DBL_MAX (infinity) if the task has no limit
  */
 double
-execd_get_task_limit(int limit_nm, const char *limit_name, ocs::CEntry::Type type,
-                     const lListElem *queue, const lListElem *jep, const lListElem *jatep,
-                     const lListElem *petep, const char *qualified_hostname) {
+execd_get_task_limit(const int limit_nm, const char *limit_name, const ocs::CEntry::Type type,
+                     const ocs::tom::ConstElement<ocs::tom::QU> queue, const ocs::tom::ConstElement<ocs::tom::JB> jep,
+                     const ocs::tom::ConstElement<ocs::tom::JAT> jatep,
+                     const ocs::tom::ConstElement<ocs::tom::PET> petep, const char *qualified_hostname) {
    DENTER(TOP_LAYER);
 
    double limit = DBL_MAX;
+   // the limit field is known only at run time
    const char *limit_str = lGetString(queue, limit_nm);
    if (limit_str != nullptr && strcasecmp(limit_str, INFINITY_STR) != 0) {
       if (exec_job_task_limit_is_summed(jep, jatep, petep, limit_name)) {
@@ -475,16 +503,19 @@ execd_get_task_limit(int limit_nm, const char *limit_name, ocs::CEntry::Type typ
  * @param master_q the queue instance the task is running in
  * @param jep the job
  * @param jatep the ja_task
- * @param petep the pe task, nullptr for the master task
+ * @param petep the pe task, an empty handle for the master task
  * @param qualified_hostname the host the task is running on
  * @return the limit as a string
  */
 static const char *
-sge_exec_job_get_limit(dstring *dstr, int limit_nm, const char *limit_name, ocs::CEntry::Type type,
-                       const lListElem *master_q, const lListElem *jep, const lListElem *jatep,
-                       const lListElem *petep, const char *qualified_hostname) {
+sge_exec_job_get_limit(dstring *dstr, const int limit_nm, const char *limit_name, const ocs::CEntry::Type type,
+                       const ocs::tom::ConstElement<ocs::tom::QU> master_q,
+                       const ocs::tom::ConstElement<ocs::tom::JB> jep,
+                       const ocs::tom::ConstElement<ocs::tom::JAT> jatep,
+                       const ocs::tom::ConstElement<ocs::tom::PET> petep, const char *qualified_hostname) {
    DENTER(TOP_LAYER);
 
+   // the limit field is known only at run time
    const char *ret = lGetString(master_q, limit_nm);
    // can not really happen but just to be sure
    if (ret == nullptr) {
@@ -512,16 +543,6 @@ sge_exec_job_get_limit(dstring *dstr, int limit_nm, const char *limit_name, ocs:
    DRETURN(ret);
 }
 
-/************************************************************************
- part of execd. Setup job environment then start shepherd.
-
- If we encounter an error we return an error
- return -1==error
-        -2==general error (Halt queue)
-        -3==general error (Halt job)
-        err_str set to error string
-        err_length size of err_str
- ************************************************************************/
 /** @def WRITE_COMPLEX_AND_CONSUMABLE_ATTR
  * @brief Write one resource limit to the shepherd config, and whether it is a job consumable
  *
@@ -545,14 +566,19 @@ sge_exec_job_get_limit(dstring *dstr, int limit_nm, const char *limit_name, ocs:
  * first, because once the shepherd is forked the daemon can no longer tell it
  * anything.
  *
- * @param jep the job (`JB_Type`)
+ * The forked child execs the shepherd and never returns; if the exec fails, it writes the
+ * "error" and "exit_status" files the way the shepherd does and exits.
+ *
+ * @param jep the job
  * @param jatep the array task
- * @param petep the PE task, or nullptr
+ * @param petep the PE task, or an empty handle
  * @param[out] err_str receives the reason on failure
  * @param err_length size of that buffer
- * @return 0 on success
+ * @return the pid of the shepherd (in the parent) on success; on failure -1 (error), -2 (general
+ *         error, halt the queue) or -3 (general error, halt the job), with err_str set to the reason
  */
-int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_str, int err_length) {
+int sge_exec_job(const ocs::tom::Element<ocs::tom::JB> jep, const ocs::tom::Element<ocs::tom::JAT> jatep,
+                 const ocs::tom::Element<ocs::tom::PET> petep, char *err_str, const int err_length) {
    DENTER(TOP_LAYER);
 
    int i;
@@ -562,6 +588,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
    struct passwd *pw;
    SGE_STRUCT_STAT buf;
    int used_slots, pe_slots = 0, host_slots = 0, nhosts = 0;
+   // process-lifetime object, freed and refilled for every master task: stays raw
    static lList *processor_set = nullptr;
    const char *cp;
    char *shell;
@@ -605,9 +632,10 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
    char mail_str[1024];
    const char *shepherd_name;
    ocs::tom::ConstList<ocs::tom::JG> gdil;
-   lListElem *master_q;
-   lListElem *ep;
+   ocs::tom::Element<ocs::tom::QU> master_q;
+   ocs::tom::ConstElement<ocs::tom::CK> ep;
    ocs::tom::ConstElement<ocs::tom::VA> env;
+   // owned, but a raw out parameter of the var_list functions
    lList *environmentList = nullptr;
    const char *arch = sge_get_arch();
    const char *sge_root = bootstrap_get_sge_root();
@@ -657,7 +685,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
    ja_task_id = ocs::tom::get<JAT_task_number>(jatep);
    gdil = ocs::tom::get<JAT_granted_destin_identifier_list>(jatep);
 
-   if (petep != nullptr) {
+   if (petep) {
       pe_task_id = ocs::tom::get<PET_id>(petep);
    }
 
@@ -775,6 +803,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
 
       host_slots = 0;
       for (ocs::tom::ConstElement<ocs::tom::JG> gdil_ep : gdil) {
+         // raw out parameter of range_list_parse_from_string()
          lList *alp = nullptr;
 
          // get processor set configuration (used when available and thread binding is not used
@@ -824,7 +853,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
       ocs::tom::ConstElement<ocs::tom::VA> user_path;
       dstring buffer = DSTRING_INIT;
 
-      if ((user_path = ocs::tom::find_first<VA_variable>(environmentList, "PATH"))) {
+      if ((user_path = ocs::tom::ConstList<ocs::tom::VA>(environmentList).find_first<VA_variable>("PATH"))) {
          sge_dstring_sprintf(&buffer, "%s:%s", tmpdir, ocs::tom::get<VA_value>(user_path));
       } else {
          sge_dstring_sprintf(&buffer, "%s:%s", tmpdir, SGE_DEFAULT_PATH);
@@ -894,11 +923,11 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
    {
       // this host's grants and those of the global host - not the whole list, which holds the
       // grants of every host of the job
-      lList *host_grants = exec_job_granted_resources_for_host(
+      const auto host_grants = exec_job_granted_resources_for_host(
          ocs::tom::get<JAT_granted_resources_list>(jatep), qualified_hostname);
 
       /* now setting the granted resources list */
-      for_each_ep_lv(gr, host_grants) {
+      for (const auto gr : *host_grants) {
          auto gru_type = static_cast<ocs::GrantedResources::Type>(ocs::tom::get<GRU_type>(gr));
          if (gru_type == ocs::GrantedResources::Type::GRU_HARD_REQUEST_TYPE
              || gru_type == ocs::GrantedResources::Type::GRU_RESOURCE_MAP_TYPE) {
@@ -920,8 +949,6 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
                                 id_buffer.c_str());
          }
       }
-
-      lFreeList(&host_grants);
    }
 
    /*
@@ -1092,7 +1119,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
    var_list_set_string(&environmentList, VAR_PREFIX "ROOT", sge_root);
 
    var_list_set_int(&environmentList, "NQUEUES",
-                    lGetNumberOfElem(gdil));
+                    static_cast<int>(gdil.size()));
    var_list_set_int(&environmentList, "NSLOTS", pe_slots);
    var_list_set_int(&environmentList, "NHOSTS", nhosts);
 
@@ -1299,16 +1326,18 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
    // And when we enabled killing by add_grp_id, we also need to set it.
    if (ocs::execd::execd_use_pdc_for_usage_collection() || mconf_get_enable_addgrp_kill()) {
       // parse range and create list
-      lList *rlp = nullptr;
-      lList *alp = nullptr;
+      // raw out parameters of range_list_parse_from_string(), owned by the handles below
+      lList *rlp_raw = nullptr;
+      lList *alp_raw = nullptr;
       gid_t temp_id;
       char *gid_range = mconf_get_gid_range();
       DPRINTF("gid_range = %s\n", gid_range);
-      range_list_parse_from_string(&rlp, &alp, gid_range,
+      range_list_parse_from_string(&rlp_raw, &alp_raw, gid_range,
                                    0, 0, INF_NOT_ALLOWED);
       sge_free(&gid_range);
-      if (rlp == nullptr) {
-         lFreeList(&alp);
+      const ocs::tom::ListPtr<ocs::tom::RN> rlp(rlp_raw);
+      const ocs::tom::ListPtr<ocs::tom::AN> alp(alp_raw);
+      if (!rlp) {
          snprintf(err_str, err_length, SFNMAX, MSG_EXECD_NOPARSEGIDRANGE);
          lFreeList(&environmentList);
          FCLOSE(fp);
@@ -1317,9 +1346,9 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
 
       /* search next add_grp_id */
       temp_id = last_addgrpid;
-      last_addgrpid = get_next_addgrpid(rlp, last_addgrpid);
+      last_addgrpid = get_next_addgrpid(*rlp, last_addgrpid);
       while (addgrpid_already_in_use(last_addgrpid)) {
-         last_addgrpid = get_next_addgrpid(rlp, last_addgrpid);
+         last_addgrpid = get_next_addgrpid(*rlp, last_addgrpid);
          if (temp_id == last_addgrpid) {
             snprintf(err_str, err_length, SFNMAX, MSG_EXECD_NOADDGID);
             lFreeList(&environmentList);
@@ -1327,8 +1356,6 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
             DRETURN(-1);
          }
       }
-      lFreeList(&rlp);
-      lFreeList(&alp);
    } else {
       // We do not use PDC for usage collection nor do we kill by addrgp,
       // no need to set an additional group id.
@@ -1513,8 +1540,8 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
    // instrumentation for the testsuite: on a host with systemd, sge_shepherd also sets
    // MemorySwapMax of the job scope, so that a job reaching MemoryMax is not just swapped out
    {
-      ocs::tom::ConstElement<ocs::tom::VA> swap_max = ocs::tom::find_first_in<JB_env_list, VA_variable>(jep, "SGE_DEBUG_MEMORY_SWAP_MAX");
-      if (swap_max != nullptr && ocs::tom::get<VA_value>(swap_max) != nullptr) {
+      const auto swap_max = ocs::tom::get<JB_env_list>(jep).find_first<VA_variable>("SGE_DEBUG_MEMORY_SWAP_MAX");
+      if (swap_max && ocs::tom::get<VA_value>(swap_max) != nullptr) {
          fprintf(fp, "memory_swap_max=%s\n", ocs::tom::get<VA_value>(swap_max));
       }
    }
@@ -1751,22 +1778,21 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
 
             // the "devices" characteristic of the RSMAP instances granted on this host - see
             // exec_job_granted_resources_for_host()
-            lList *host_grants = exec_job_granted_resources_for_host(granted_resources_list,
-                                                                     qualified_hostname);
-            for_each_ep_lv(gru, host_grants) {
-               if (static_cast<ocs::GrantedResources::Type>(ocs::tom::get<GRU_type>(gru)) != ocs::GrantedResources::Type::GRU_RESOURCE_MAP_TYPE) {
+            const auto host_grants = exec_job_granted_resources_for_host(granted_resources_list,
+                                                                         qualified_hostname);
+            for (const auto gru : *host_grants) {
+               if (static_cast<ocs::GrantedResources::Type>(ocs::tom::get<GRU_type>(gru)) !=
+                   ocs::GrantedResources::Type::GRU_RESOURCE_MAP_TYPE) {
                   continue;
                }
-               ocs::tom::ConstElement<ocs::tom::RESL> resl;
-               for_each_ep (resl, ocs::tom::get<GRU_resource_map_list>(gru)) {
-                  ocs::tom::ConstElement<ocs::tom::CE> dev_prop = ocs::tom::find_first_in<RESL_properties, CE_name>(resl, LOAD_ATTR_DEVICES);
-                  if (dev_prop != nullptr) {
+               for (const auto resl : ocs::tom::get<GRU_resource_map_list>(gru)) {
+                  const auto dev_prop = ocs::tom::get<RESL_properties>(resl).find_first<CE_name>(LOAD_ATTR_DEVICES);
+                  if (dev_prop) {
                      add_devices(ocs::tom::get<CE_stringval>(dev_prop), ocs::tom::get<GRU_name>(gru),
                                  ocs::tom::get<RESL_value>(resl));
                   }
                }
             }
-            lFreeList(&host_grants);
 
             // Emit the merged line (sorted by path — deterministic for testing).
             std::string devices_allow;
@@ -1906,7 +1932,6 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
 
    {
       ocs::tom::ConstList<ocs::tom::ST> args;
-      ocs::tom::ConstElement<ocs::tom::ST> se;
 
       int nargs = 1;
 
@@ -1919,9 +1944,9 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
          args = ocs::tom::get<JB_job_args>(jep);
       }
 
-      fprintf(fp, "njob_args=" sge_u32 "\n", lGetNumberOfElem(args));
+      fprintf(fp, "njob_args=" sge_u32 "\n", static_cast<uint32_t>(args.size()));
 
-      for_each_ep(se, args) {
+      for (const auto se : args) {
          const char *arg = ocs::tom::get<ST_name>(se);
          if (arg != nullptr) {
             fprintf(fp, "job_arg%d=%s\n", nargs++, arg);
@@ -1945,16 +1970,17 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
 
       /* check DISPLAY variable for qsh jobs */
       if (JOB_TYPE_IS_QSH(jb_now)) {
+         // raw out parameter of job_check_qsh_display()
          lList *answer_list = nullptr;
 
          if (job_check_qsh_display(jep, &answer_list, false) == STATUS_OK) {
-            env = ocs::tom::find_first<VA_variable>(ocs::tom::get<JB_env_list>(jep), "DISPLAY");
+            env = ocs::tom::get<JB_env_list>(jep).find_first<VA_variable>("DISPLAY");
             fprintf(fp, "display=%s\n", ocs::tom::get<VA_value>(env));
          } else {
             /* JG: TODO: the whole function should not use err_str to return
              *           error descriptions, but an answer list.
              */
-            const char *error_string = ocs::tom::get<AN_text>(lFirst(answer_list));
+            const char *error_string = ocs::tom::get<AN_text>(ocs::tom::ConstList<ocs::tom::AN>(answer_list).front());
             if (error_string != nullptr) {
                snprintf(err_str, err_length, SFNMAX, error_string);
             }
@@ -2030,7 +2056,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
          fprintf(fp, "master_host=%s\n", masterhost);
          fprintf(fp, "commd_port=-1\n");  /* commd_port not used for GE > 6.0 */
 
-         if ((elem = ocs::tom::find_first<VA_variable>(environmentList, "QRSH_PORT")) != nullptr) {
+         if ((elem = ocs::tom::ConstList<ocs::tom::VA>(environmentList).find_first<VA_variable>("QRSH_PORT"))) {
             fprintf(fp, "qrsh_control_port=%s\n", ocs::tom::get<VA_value>(elem));
          }
 
@@ -2486,23 +2512,29 @@ static int ck_login_sh(char *shell) {
 }
 
 
+/**
+ * @brief The number of different hosts in a granted destination identifier list
+ *
+ * @param gdil_orig the granted destination identifier list
+ * @return the number of hosts
+ */
 static int
-get_nhosts(const lList *gdil_orig) {
+get_nhosts(const ocs::tom::ConstList<ocs::tom::JG> gdil_orig) {
    DENTER(TOP_LAYER);
 
    int nhosts = 0;
-   const lListElem *ep;
-   lList *cache = lCreateList("", STU_Type);
-   const char *hostname;
+   const auto cache = ocs::tom::ListPtr<ocs::tom::STU>::create("");
 
-   for_each_ep(ep, gdil_orig) {
-      hostname = ocs::tom::get<JG_qhostname>(ep);
-      if (static_cast<const lListElem *>(ocs::tom::find_first<STU_name>(cache, hostname)) == nullptr) {
+   for (const auto ep : gdil_orig) {
+      const char *hostname = ocs::tom::get<JG_qhostname>(ep);
+      if (!cache->find_first<STU_name>(hostname)) {
          nhosts++;
-         ocs::tom::emplace_back<STU_name>(&cache, hostname);
+         // emplace_back() throws on a null key, where the free form added nothing
+         if (hostname != nullptr) {
+            cache->emplace_back<STU_name>(hostname);
+         }
       }
    }
-   lFreeList(&cache);
 
    DRETURN(nhosts);
 }

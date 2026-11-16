@@ -295,8 +295,11 @@ force_job_rlimit_task(const lListElem *jep, const lListElem *jatep, const lListE
            USAGE_ATTR_MAXRSS, maxrss_val);
 
    // need the queue object - it must have been delivered by sge_qmaster
-   const lListElem *q = responsible_queue(nullptr, jatep, petep);
-   if (q == nullptr) {
+   const ocs::tom::ConstElement<ocs::tom::JB> job(jep);
+   const ocs::tom::ConstElement<ocs::tom::JAT> ja_task(jatep);
+   const ocs::tom::ConstElement<ocs::tom::PET> pe_task(petep);
+   const auto q = responsible_queue(nullptr, ja_task, pe_task);
+   if (!q) {
       // this should never happen, but if it does, we have to skip this task
       CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, "gdil_ep->JG_queue");
 #if defined (ENABLE_DEBUG_CHECKS)
@@ -307,11 +310,11 @@ force_job_rlimit_task(const lListElem *jep, const lListElem *jatep, const lListE
 
    // hard limits
    double h_cpu = execd_get_task_limit(QU_h_cpu, "h_cpu", ocs::CEntry::Type::TIME, q,
-                                       jep, jatep, petep, qualified_hostname);
+                                       job, ja_task, pe_task, qualified_hostname);
    double h_rss = execd_get_task_limit(QU_h_rss, "h_rss", ocs::CEntry::Type::MEM, q,
-                                       jep, jatep, petep, qualified_hostname);
+                                       job, ja_task, pe_task, qualified_hostname);
    double h_vmem = execd_get_task_limit(QU_h_vmem, "h_vmem", ocs::CEntry::Type::MEM, q,
-                                        jep, jatep, petep, qualified_hostname);
+                                        job, ja_task, pe_task, qualified_hostname);
    if (force_job_rlimit_apply_limit(cpu_val, h_cpu, "h_cpu", true, q, jobid, jataskid) ||
        force_job_rlimit_apply_limit(maxrss_val, h_rss, "h_rss", true, q, jobid, jataskid) ||
        force_job_rlimit_apply_limit(maxvmem_val, h_vmem, "h_vmem", true, q, jobid, jataskid)) {
@@ -321,11 +324,11 @@ force_job_rlimit_task(const lListElem *jep, const lListElem *jatep, const lListE
    // soft limits: the current usage - a job is signaled with SIGXCPU while it exceeds the limit,
    // a single peak would make it get the signal with every check
    double s_cpu = execd_get_task_limit(QU_s_cpu, "s_cpu", ocs::CEntry::Type::TIME, q,
-                                       jep, jatep, petep, qualified_hostname);
+                                       job, ja_task, pe_task, qualified_hostname);
    double s_rss = execd_get_task_limit(QU_s_rss, "s_rss", ocs::CEntry::Type::MEM, q,
-                                       jep, jatep, petep, qualified_hostname);
+                                       job, ja_task, pe_task, qualified_hostname);
    double s_vmem = execd_get_task_limit(QU_s_vmem, "s_vmem", ocs::CEntry::Type::MEM, q,
-                                        jep, jatep, petep, qualified_hostname);
+                                        job, ja_task, pe_task, qualified_hostname);
    bool signaled =
       force_job_rlimit_apply_limit(cpu_val, s_cpu, "s_cpu", false, q, jobid, jataskid) ||
       force_job_rlimit_apply_limit(rss_val, s_rss, "s_rss", false, q, jobid, jataskid) ||
@@ -799,6 +802,16 @@ static int sge_start_jobs() {
 }
 
 
+/**
+ * @brief Start an idle array task or PE task: simulate it, or fork its shepherd
+ *
+ * A failure to start is reported with a job report, see execd_job_start_failure().
+ *
+ * @param jep the job
+ * @param jatep the array task
+ * @param petep the PE task, or nullptr for the array task itself
+ * @return 1 if the task was started, 0 if it was not idle or could not be started
+ */
 static int exec_job_or_task(lListElem *jep, lListElem *jatep, lListElem *petep) {
    DENTER(TOP_LAYER);
 
@@ -886,7 +899,8 @@ static int exec_job_or_task(lListElem *jep, lListElem *jatep, lListElem *petep) 
       pid = -1; 
       strcpy(err_str, "FAILURE_BEFORE_EXEC");
    } else {
-      pid = sge_exec_job(jep, jatep, petep, err_str, 256);
+      pid = sge_exec_job(ocs::tom::Element<ocs::tom::JB>(jep), ocs::tom::Element<ocs::tom::JAT>(jatep),
+                         ocs::tom::Element<ocs::tom::PET>(petep), err_str, 256);
    }   
 
    if (pid < 0) {

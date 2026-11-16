@@ -38,10 +38,21 @@
  */
 
 #include "sgeobj/sge_daemonize.h"
+#include "sgeobj/tom/ocs_tom_JAT.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
+#include "sgeobj/tom/ocs_tom_PET.h"
+#include "sgeobj/tom/ocs_tom_QU.h"
+#include "tom/ocs_Element.h"
 
-int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_str, int err_length);
-const lListElem *responsible_queue(const lListElem *jep, const lListElem *jatep, const lListElem *petep);
-lListElem *responsible_queue(const lListElem *jep, lListElem *jatep, const lListElem *petep);
+int sge_exec_job(ocs::tom::Element<ocs::tom::JB> jep, ocs::tom::Element<ocs::tom::JAT> jatep,
+                 ocs::tom::Element<ocs::tom::PET> petep, char *err_str, int err_length);
+ocs::tom::ConstElement<ocs::tom::QU>
+responsible_queue(ocs::tom::ConstElement<ocs::tom::JB> jep, ocs::tom::ConstElement<ocs::tom::JAT> jatep,
+                  ocs::tom::ConstElement<ocs::tom::PET> petep);
+ocs::tom::Element<ocs::tom::QU>
+responsible_queue(ocs::tom::ConstElement<ocs::tom::JB> jep, ocs::tom::Element<ocs::tom::JAT> jatep,
+                  ocs::tom::ConstElement<ocs::tom::PET> petep);
 double execd_get_task_limit(int limit_nm, const char *limit_name, ocs::CEntry::Type type,
-                            const lListElem *queue, const lListElem *jep, const lListElem *jatep,
-                            const lListElem *petep, const char *qualified_hostname);
+                            ocs::tom::ConstElement<ocs::tom::QU> queue, ocs::tom::ConstElement<ocs::tom::JB> jep,
+                            ocs::tom::ConstElement<ocs::tom::JAT> jatep, ocs::tom::ConstElement<ocs::tom::PET> petep,
+                            const char *qualified_hostname);

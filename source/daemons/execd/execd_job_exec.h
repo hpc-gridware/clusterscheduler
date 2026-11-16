@@ -38,9 +38,12 @@
  */
 
 #include "gdi/ocs_gdi_ClientServerBase.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
+#include "tom/ocs_Element.h"
 
 int do_job_exec(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, sge_pack_buffer *apb, bool from_qmaster);
 
 int do_job_slave(ocs::gdi::ClientServerBase::struct_msg_t *aMsg);
 
-bool job_verify_execd_job(const lListElem *job, lList **answer_list, const char *qualified_hostname);
+bool job_verify_execd_job(ocs::tom::ConstElement<ocs::tom::JB> job, lList **answer_list,
+                          const char *qualified_hostname);

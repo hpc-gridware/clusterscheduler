@@ -68,12 +68,19 @@
 #include "sgeobj/sge_ckpt.h"
 #include "sgeobj/sge_report.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_AN.h"
+#include "sgeobj/tom/ocs_tom_CK.h"
 #include "sgeobj/tom/ocs_tom_JAT.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
 #include "sgeobj/tom/ocs_tom_JG.h"
+#include "sgeobj/tom/ocs_tom_JR.h"
 #include "sgeobj/tom/ocs_tom_PA.h"
 #include "sgeobj/tom/ocs_tom_PE.h"
 #include "sgeobj/tom/ocs_tom_PET.h"
+#include "sgeobj/tom/ocs_tom_PETR.h"
 #include "sgeobj/tom/ocs_tom_PN.h"
+#include "sgeobj/tom/ocs_tom_QU.h"
 #include "sgeobj/tom/ocs_tom_VA.h"
 
 #include "gdi/ocs_gdi_security.h"
@@ -92,8 +99,10 @@
 
 extern volatile int jobs_to_start;
 
-static int handle_job(lListElem *jelem, lListElem *jatep, int slave);
-static int handle_task(lListElem *petrep, char *commproc, char *host, u_short id, sge_pack_buffer *apb);
+static int handle_job(ocs::tom::ElementPtr<ocs::tom::JB> &owned_job, ocs::tom::Element<ocs::tom::JAT> jatep,
+                      int slave);
+static int handle_task(ocs::tom::ConstElement<ocs::tom::PETR> petrep, char *commproc, char *host, u_short id,
+                       sge_pack_buffer *apb);
 
 /** @brief Handle qmaster's request to start a job on this host
  * @param aMsg the received message
@@ -110,62 +119,62 @@ int do_job_exec(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, sge_pack_buffer 
     * else it is a request to start a pe task
     */
    if (from_qmaster) {
-      lListElem *job, *ja_task;
+      // raw out parameters of object_unpack_elem_verify() and of the answer list functions
+      lListElem *job_raw = nullptr;
       lList *answer_list = nullptr;
 
 
-      if (!object_unpack_elem_verify(&answer_list, &(aMsg->buf), &job, JB_Type)) {
+      if (!object_unpack_elem_verify(&answer_list, &(aMsg->buf), &job_raw, JB_Type)) {
          answer_list_output(&answer_list);
          ERROR(SFNMAX, MSG_COM_UNPACKJOB);
          DRETURN(0);
       }
+      // freed when leaving this block, unless handle_job() put it into the job list
+      ocs::tom::ElementPtr<ocs::tom::JB> job(job_raw);
 
-      if (!job_verify_execd_job(job, &answer_list, component_get_qualified_hostname())) {
-         const char *err_str = ocs::tom::get<AN_text>(lFirst(answer_list));
-         ja_task = lFirstRW(static_cast<const lList *>(ocs::tom::get<JB_ja_tasks>(job)));
+      if (!job_verify_execd_job(*job, &answer_list, component_get_qualified_hostname())) {
+         const char *err_str = ocs::tom::get<AN_text>(ocs::tom::ConstList<ocs::tom::AN>(answer_list).front());
+         const auto ja_task = ocs::tom::get<JB_ja_tasks>(job).front();
 
          /* set the job into error state */
-         execd_job_start_failure(ocs::tom::ConstElement<ocs::tom::JB>(job),
-                                 ocs::tom::ConstElement<ocs::tom::JAT>(ja_task), nullptr, err_str, GFSTATE_JOB);
+         execd_job_start_failure(*job, ja_task, nullptr, err_str, GFSTATE_JOB);
 
          /* error output to messages file, cleanup */
          answer_list_output(&answer_list);
          ERROR(MSG_EXECD_INVALIDJOBREQUEST_SS, aMsg->snd_name, aMsg->snd_host);
-         lFreeElem(&job);
          DRETURN(0);
       }
 
       /* we expect one jatask to start per request */
-      ocs::tom::Element<ocs::tom::JAT> ja_task_jat = lFirstRW(ocs::tom::get<JB_ja_tasks>(job));
-      if (ja_task_jat != nullptr) {
-         DPRINTF("new job %ld.%ld\n", (long) ocs::tom::get<JB_job_number>(job), (long) ocs::tom::get<JAT_task_number>(ja_task_jat));
-         ret = handle_job(job, ja_task_jat, 0);
-         if (ret != 0) {
-            lFreeElem(&job);
-         }
+      const auto ja_task = ocs::tom::get<JB_ja_tasks>(job).front();
+      if (ja_task) {
+         DPRINTF("new job %ld.%ld\n", (long) ocs::tom::get<JB_job_number>(job),
+                 (long) ocs::tom::get<JAT_task_number>(ja_task));
+         ret = handle_job(job, ja_task, 0);
       }
    } else {
       /* start a pe task */
-      lListElem *petrep;
+      // raw out parameters of object_unpack_elem_verify() and of the answer list functions
+      lListElem *petrep_raw = nullptr;
       lList *answer_list = nullptr;
 
-      if (!object_unpack_elem_verify(&answer_list, &(aMsg->buf), &petrep, PETR_Type)) {
+      if (!object_unpack_elem_verify(&answer_list, &(aMsg->buf), &petrep_raw, PETR_Type)) {
          answer_list_output(&answer_list);
          ERROR(SFNMAX, MSG_COM_UNPACKJOB);
          DRETURN(0);
       }
+      const ocs::tom::ElementPtr<ocs::tom::PETR> petrep(petrep_raw);
 
-      if (!pe_task_verify_request(petrep, &answer_list)) {
+      if (!pe_task_verify_request(*petrep, &answer_list)) {
          answer_list_output(&answer_list);
          ERROR(MSG_EXECD_INVALIDTASKREQUEST_SS, aMsg->snd_name, aMsg->snd_host);
          DRETURN(0);
       }
 
-      DPRINTF("new pe task for job: %ld.%ld\n", (long) ocs::tom::get<PETR_jobid>(petrep), (long) ocs::tom::get<PETR_jataskid>(petrep));
+      DPRINTF("new pe task for job: %ld.%ld\n", (long) ocs::tom::get<PETR_jobid>(petrep),
+              (long) ocs::tom::get<PETR_jataskid>(petrep));
 
-      ret = handle_task(petrep, aMsg->snd_name, aMsg->snd_host, aMsg->snd_id, apb);
-
-      lFreeElem(&petrep);
+      ret = handle_task(*petrep, aMsg->snd_name, aMsg->snd_host, aMsg->snd_id, apb);
    }
 
    if (ret == 0) {
@@ -186,8 +195,8 @@ int do_job_exec(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, sge_pack_buffer 
 int do_job_slave(ocs::gdi::ClientServerBase::struct_msg_t *aMsg) {
    DENTER(TOP_LAYER);
 
-   int ret = 1;
-   lListElem *jelem, *ja_task;
+   // raw out parameters of object_unpack_elem_verify() and of the answer list functions
+   lListElem *jelem_raw = nullptr;
    lList *answer_list = nullptr;
 
    /*
@@ -197,35 +206,49 @@ int do_job_slave(ocs::gdi::ClientServerBase::struct_msg_t *aMsg) {
    */
 
    /* ------- job */
-   if (!object_unpack_elem_verify(&answer_list, &(aMsg->buf), &jelem, JB_Type)) {
+   if (!object_unpack_elem_verify(&answer_list, &(aMsg->buf), &jelem_raw, JB_Type)) {
       answer_list_output(&answer_list);
       ERROR(SFNMAX, MSG_COM_UNPACKJOB);
       DRETURN(0);
    }
    lFreeList(&answer_list);
+   // freed on return, unless handle_job() put it into the job list; a failure keeps it here
+   ocs::tom::ElementPtr<ocs::tom::JB> jelem(jelem_raw);
 
-   for_each_rw(ja_task, static_cast<const lList *>(ocs::tom::get<JB_ja_tasks>(jelem))) {
-      DPRINTF("Job: " sge_u32 " Task: " sge_u32 "\n", ocs::tom::get<JB_job_number>(jelem), ocs::tom::get<JAT_task_number>(ja_task));
-      ret = handle_job(jelem, ja_task, 1);
-   }
-
-   if (ret)  {
-      lFreeElem(&jelem);
+   for (const auto ja_task : ocs::tom::get<JB_ja_tasks>(jelem)) {
+      // the job list took the job over with the array task started before
+      if (!jelem) {
+         break;
+      }
+      DPRINTF("Job: " sge_u32 " Task: " sge_u32 "\n", ocs::tom::get<JB_job_number>(jelem),
+              ocs::tom::get<JAT_task_number>(ja_task));
+      handle_job(jelem, ja_task, 1);
    }
 
    DRETURN(0);
 }
 
-static int handle_job(lListElem *jelem, lListElem *jatep, int slave) {
+/**
+ * @brief Accept an array task of a job delivered by qmaster, as master or as slave host
+ *
+ * Checks the queues of the array task, writes the job script and spools the job, adds the job
+ * report and puts the job into the execd's job list.
+ *
+ * @param owned_job the job; on success the job list takes it over and the handle is empty afterwards,
+ *        otherwise it stays with the caller
+ * @param jatep the array task of the job to start
+ * @param slave whether this host is a slave host of the job
+ * @return 0 on success, -1 if the job was rejected or ignored
+ */
+static int handle_job(ocs::tom::ElementPtr<ocs::tom::JB> &owned_job, const ocs::tom::Element<ocs::tom::JAT> jatep,
+                      const int slave) {
    DENTER(TOP_LAYER);
 
-   lListElem *jep;
+   const auto jelem = owned_job.get();
    dstring err_str = DSTRING_INIT;
    uint32_t jobid, jataskid;
    int general = GFSTATE_QUEUE;
-   lListElem *qep, *gdil_ep;
    const char *qnm;
-   const void *iterator = nullptr;
    bool report_job_error = true;   /* send job report on error? */
 
    DPRINTF("got %s job " sge_u32 "\n", slave ?"slave ":"", ocs::tom::get<JB_job_number>(jelem));
@@ -240,8 +263,8 @@ static int handle_job(lListElem *jelem, lListElem *jatep, int slave) {
     *
     * We can ignore this job because job is resend by qmaster.
     */
-   jep = ocs::tom::find_first_rw<JB_job_number>(*ocs::DataStore::get_master_list(SGE_TYPE_JOB), jobid, &iterator);
-   while (jep != nullptr) {
+   for (const auto jep : ocs::tom::ConstList<ocs::tom::JB>(*ocs::DataStore::get_master_list(SGE_TYPE_JOB))
+                            .find_all<JB_job_number>(jobid)) {
       if (job_search_task(jep, nullptr, jataskid) != nullptr) {
          // qmaster resends the job when it did not get the acknowledgement of a delivery in
          // time, then the job is already here. It can also be the slave container of a
@@ -251,8 +274,6 @@ static int handle_job(lListElem *jelem, lListElem *jatep, int slave) {
          WARNING(MSG_EXECD_JOBALREADYKNOWN_UU, jobid, jataskid);
          goto Ignore;   /* don't set queue in error state */
       }
-
-      jep = ocs::tom::find_next_rw<JB_job_number>(*ocs::DataStore::get_master_list(SGE_TYPE_JOB), jobid, &iterator);
    }
 
    /* initialize state - prevent slaves from getting started */
@@ -262,11 +283,13 @@ static int handle_job(lListElem *jelem, lListElem *jatep, int slave) {
    DPRINTF("===>JOB_EXECUTION: >" sge_u32 "." sge_u32 "< with " sge_u32 " tickets\n", jobid, jataskid, static_cast<uint32_t>(ocs::tom::get<JAT_tix>(jatep)));
 
    /* initialize job */
-   for_each_rw (gdil_ep, static_cast<const lList *>(ocs::tom::get<JAT_granted_destin_identifier_list>(jatep))) {
+   for (const auto gdil_ep : ocs::tom::get<JAT_granted_destin_identifier_list>(jatep)) {
+      // raw out parameter of qinstance_verify()
       lList *answer_list = nullptr;
       int slots;
 
-      if (!(qep=ocs::tom::get<JG_queue>(gdil_ep))) {
+      const ocs::tom::Element<ocs::tom::QU> qep(ocs::tom::get<JG_queue>(gdil_ep));
+      if (!qep) {
          qnm = ocs::tom::get<JG_qname>(gdil_ep);
          sge_dstring_sprintf(&err_str, MSG_JOB_MISSINGQINGDIL_SU, qnm, ocs::tom::get<JB_job_number>(jelem));
          goto Error;
@@ -300,7 +323,8 @@ static int handle_job(lListElem *jelem, lListElem *jatep, int slave) {
 
       if (pelem != nullptr && ocs::tom::get<PE_control_slaves>(pelem) && !ocs::tom::get<PE_job_is_first_task>(pelem)) {
          int slots;
-         lListElem *mq = ocs::tom::get<JG_queue>(lFirstRW(static_cast<lList *>(ocs::tom::get<JAT_granted_destin_identifier_list>(jatep))));
+         const ocs::tom::Element<ocs::tom::QU> mq(
+            ocs::tom::get<JG_queue>(ocs::tom::get<JAT_granted_destin_identifier_list>(jatep).front()));
          slots = ocs::tom::get<QU_job_slots>(mq) + 1;
          DPRINTF("Increasing job slots in master queue \"%s\" to %d because job is not first task\n",
                  ocs::tom::get<QU_qname>(mq), slots);
@@ -385,7 +409,8 @@ static int handle_job(lListElem *jelem, lListElem *jatep, int slave) {
    }
 
    {
-      lListElem *report = add_job_report(jobid, jataskid, nullptr, jelem);
+      // the job reports belong to job_report_execd.cc
+      const auto report = ocs::tom::Element<ocs::tom::JR>(add_job_report(jobid, jataskid, nullptr, jelem));
 
       flush_job_report(report);
    }
@@ -394,14 +419,13 @@ static int handle_job(lListElem *jelem, lListElem *jatep, int slave) {
    modify_queue_limits_flag_for_job(component_get_qualified_hostname(), jelem, true);
 
    /* put into job list */
-   lAppendElem(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB), jelem);
+   ocs::tom::List<ocs::tom::JB>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB)).push_back(std::move(owned_job));
 
    DRETURN(0);
 
 Error:
    if (report_job_error) {
-      execd_job_start_failure(ocs::tom::ConstElement<ocs::tom::JB>(jelem), ocs::tom::ConstElement<ocs::tom::JAT>(jatep),
-                              nullptr, sge_dstring_get_string(&err_str), general);
+      execd_job_start_failure(jelem, jatep, nullptr, sge_dstring_get_string(&err_str), general);
    }
 
    sge_dstring_free(&err_str);
@@ -419,15 +443,17 @@ Ignore:
  *
  * @param qualified_hostname name of host
  * @param qname name of queue to set
- * @param pe_task task structure
+ * @param petep task structure
  *
  * @return the new created JAT_granted_destin_identifier list
  */
-static lList *job_set_queue_info_in_task(const char *qualified_hostname, const char *qname, lListElem *petep) {
+static ocs::tom::List<ocs::tom::JG>
+job_set_queue_info_in_task(const char *qualified_hostname, const char *qname,
+                           const ocs::tom::Element<ocs::tom::PET> petep) {
    DENTER(TOP_LAYER);
 
 
-   ocs::tom::Element<ocs::tom::JG> jge = ocs::tom::emplace_back_in<PET_granted_destin_identifier_list, JG_qname>(petep, qname);
+   const auto jge = ocs::tom::emplace_back_in<PET_granted_destin_identifier_list, JG_qname>(petep, qname);
    ocs::tom::set<JG_qhostname>(jge, qualified_hostname);
    ocs::tom::set<JG_slots>(jge, 1);
    DPRINTF("selected queue %s for task\n", qname);
@@ -447,25 +473,26 @@ static lList *job_set_queue_info_in_task(const char *qualified_hostname, const c
  * The check is done for all running tasks of the job, if one is found,
  * the corresponding queue is set to be used by the new task.
  *
+ * @param jep the job
  * @param jatep the actual job (substructure job array task)
- * @param jatask the new pe task
- * @param jobid the jobid of the job
- * @param jataskid the task id of the job array task
+ * @param petep the new pe task
+ * @param qualified_hostname this host
+ * @param queuename optional: request a certain queue
  *
- * @return on success, the JAT_granted_destin_identifier list of the new pe task else nullptr
+ * @return on success, the JAT_granted_destin_identifier list of the new pe task else an empty handle
  *
  * @see #job_set_queue_info_in_task
  */
-static lList *job_get_queue_with_task_about_to_exit(lListElem *jep,
-                                                    lListElem *jatep,
-                                                    lListElem *petep,
-                                                    const char *qualified_hostname,
-                                                    const char *queuename) {
+static ocs::tom::List<ocs::tom::JG>
+job_get_queue_with_task_about_to_exit(const ocs::tom::ConstElement<ocs::tom::JB> jep,
+                                      const ocs::tom::ConstElement<ocs::tom::JAT> jatep,
+                                      const ocs::tom::Element<ocs::tom::PET> petep, const char *qualified_hostname,
+                                      const char *queuename) {
    DENTER(TOP_LAYER);
 
-   for (ocs::tom::ConstElement<ocs::tom::PET> petask : ocs::tom::get<JAT_task_list>(jatep)) {
-      ocs::tom::ConstElement<ocs::tom::JG> pe_task_queue = lFirst(ocs::tom::get<PET_granted_destin_identifier_list>(petask));
-      if (pe_task_queue != nullptr) {
+   for (const auto petask : ocs::tom::get<JAT_task_list>(jatep)) {
+      const auto pe_task_queue = ocs::tom::get<PET_granted_destin_identifier_list>(petask).front();
+      if (pe_task_queue) {
          /* if a certain queue is requested, skip non matching tasks */
          if (queuename != nullptr && strcmp(queuename, ocs::tom::get<JG_qname>(pe_task_queue)) != 0) {
             continue;
@@ -486,8 +513,8 @@ static lList *job_get_queue_with_task_about_to_exit(lListElem *jep,
             DPRINTF("checking for file %s\n", sge_dstring_get_string(&shepherd_about_to_exit));
 
             if (SGE_STAT(sge_dstring_get_string(&shepherd_about_to_exit), &stat_buffer) == 0) {
-               lList *jat_gdil = job_set_queue_info_in_task(qualified_hostname,
-                                       ocs::tom::get<JG_qname>(pe_task_queue), petep);
+               const auto jat_gdil = job_set_queue_info_in_task(qualified_hostname,
+                                                                ocs::tom::get<JG_qname>(pe_task_queue), petep);
                DPRINTF("task %s of job %d.%d already exited, using its slot for new task\n", petaskid, jobid, jataskid);
                sge_dstring_free(&shepherd_about_to_exit);
                DRETURN(jat_gdil);
@@ -509,23 +536,26 @@ static lList *job_get_queue_with_task_about_to_exit(lListElem *jep,
  *    - has free slots for the job in which new task shall be started
  * If a suited queue is found, it is set to be used by the new task.
  *
+ * @param job_id the job
+ * @param ja_task_id the array task
  * @param jatep the actual job (substructure job array task)
  * @param petep the new pe task
  * @param qualified_hostname qualfied hostname
  * @param queuename optional: request a certain queue
  *
- * @return on success, the JAT_granted_destin_identifier list of the new pe task else nullptr
+ * @return on success, the JAT_granted_destin_identifier list of the new pe task else an empty handle
  *
  * @see #job_set_queue_info_in_task
  */
-static lList *
-job_get_queue_for_task(uint32_t job_id, uint32_t ja_task_id, lListElem *jatep, lListElem *petep,
+static ocs::tom::List<ocs::tom::JG>
+job_get_queue_for_task(const uint32_t job_id, const uint32_t ja_task_id,
+                       const ocs::tom::ConstElement<ocs::tom::JAT> jatep, const ocs::tom::Element<ocs::tom::PET> petep,
                        const char *qualified_hostname, const char *queuename) {
    DENTER(TOP_LAYER);
 
    bool on_master_host = ocs::tom::get<JAT_status>(jatep) == JSLAVE ? false : true;
-   ocs::tom::ConstElement<ocs::tom::PE> pe = ocs::tom::get<JAT_pe_object>(jatep);
-   if (pe == nullptr) {
+   const auto pe = ocs::tom::get<JAT_pe_object>(jatep);
+   if (!pe) {
       // can not really happen, we start a task for a tightly integrated parallel job
       DRETURN(nullptr);
    }
@@ -536,7 +566,7 @@ job_get_queue_for_task(uint32_t job_id, uint32_t ja_task_id, lListElem *jatep, l
       DRETURN(nullptr);
    }
 
-   ocs::tom::ConstList<ocs::tom::JG> gdil = ocs::tom::get<JAT_granted_destin_identifier_list>(jatep);
+   const auto gdil = ocs::tom::get<JAT_granted_destin_identifier_list>(jatep);
 
    // in case of daemon_forks_slaves we have to check if we may start more tasks
    if (ocs::tom::get<PE_daemon_forks_slaves>(pe)) {
@@ -553,14 +583,9 @@ job_get_queue_for_task(uint32_t job_id, uint32_t ja_task_id, lListElem *jatep, l
       // count how many slots are used in total
       // and check if we may still start more
       int total_slots_used = 0;
-      const void *iterator = nullptr;
-      const lListElem *next_gdil_ep = ocs::tom::find_first<JG_qhostname>(gdil, qualified_hostname, &iterator);
-      const lListElem *gdil_ep;
-      while ((gdil_ep = next_gdil_ep) != nullptr) {
-         next_gdil_ep = ocs::tom::find_next<JG_qhostname>(gdil, qualified_hostname, &iterator);
-
-         const lListElem *queue = ocs::tom::get<JG_queue>(gdil_ep);
-         if (queue != nullptr) {
+      for (const auto gdil_ep : gdil.find_all<JG_qhostname>(ocs::tom::Host(qualified_hostname))) {
+         const ocs::tom::ConstElement<ocs::tom::QU> queue(ocs::tom::get<JG_queue>(gdil_ep));
+         if (queue) {
             total_slots_used += qinstance_slots_used(queue);
             if (total_slots_used >= max_slots) {
                // all possible tasks are already running
@@ -573,23 +598,19 @@ job_get_queue_for_task(uint32_t job_id, uint32_t ja_task_id, lListElem *jatep, l
 
    // if we get here we may still start tasks
    // select a queue
-   const void *iterator = nullptr;
-   const lListElem *next_gdil_ep = ocs::tom::find_first<JG_qhostname>(gdil, qualified_hostname, &iterator);
-   const lListElem *gdil_ep;
-   while ((gdil_ep = next_gdil_ep) != nullptr) {
-      next_gdil_ep = ocs::tom::find_next<JG_qhostname>(gdil, qualified_hostname, &iterator);
-
+   for (const auto gdil_ep : gdil.find_all<JG_qhostname>(ocs::tom::Host(qualified_hostname))) {
       // if a specific queue is requested, skip non matching queues
       if (queuename != nullptr && sge_strnullcmp(queuename, ocs::tom::get<JG_qname>(gdil_ep)) != 0) {
          continue;
       }
 
-      const lListElem *queue = ocs::tom::get<JG_queue>(gdil_ep);
-      if (queue != nullptr) {
+      const ocs::tom::ConstElement<ocs::tom::QU> queue(ocs::tom::get<JG_queue>(gdil_ep));
+      if (queue) {
          /* Queue must have free slots */
          if (qinstance_slots_used(queue) < (int)ocs::tom::get<QU_job_slots>(queue)) {
-            lList *jat_gdil = job_set_queue_info_in_task(qualified_hostname, ocs::tom::get<JG_qname>(gdil_ep), petep);
-            if (jat_gdil == nullptr) {
+            const auto jat_gdil = job_set_queue_info_in_task(qualified_hostname, ocs::tom::get<JG_qname>(gdil_ep),
+                                                             petep);
+            if (!jat_gdil) {
                WARNING(MSG_REJECT_TASK_OUT_OF_MEMORY_UU, job_id, ja_task_id);
             }
             DRETURN(jat_gdil);
@@ -606,17 +627,37 @@ job_get_queue_for_task(uint32_t job_id, uint32_t ja_task_id, lListElem *jatep, l
 }
 
 
-static int handle_task(lListElem *petrep, char *commproc, char *host, u_short id, sge_pack_buffer *apb) {
+/**
+ * @brief Start a PE task of a tightly integrated parallel job, as qrsh -inherit requests it
+ *
+ * Creates the PE task in the array task of the job, selects a queue for it, spools the job and
+ * adds the job report, which acknowledges the request. The answer packed into @p apb is the id
+ * of the new PE task, or "none" if it was rejected.
+ *
+ * @param petrep the PE task request
+ * @param commproc the name of the sender of the request
+ * @param host the host of the sender
+ * @param id the id of the sender
+ * @param apb the buffer the answer is packed into
+ * @return 0 on success, -1 if the request was rejected
+ */
+static int handle_task(const ocs::tom::ConstElement<ocs::tom::PETR> petrep, char *commproc, char *host,
+                       const u_short id, sge_pack_buffer *apb) {
    DENTER(TOP_LAYER);
 
    uint32_t jobid, jataskid;
-   lListElem *jep   = nullptr;
+   // raw out parameters of execd_get_job_ja_task(); the objects belong to the execd's job list
+   lListElem *jep_raw = nullptr;
+   lListElem *jatep_raw = nullptr;
+   ocs::tom::Element<ocs::tom::JB> jep;
    ocs::tom::Element<ocs::tom::PE> pe    = nullptr;
-   lListElem *jatep = nullptr;
-   lListElem *petep = nullptr;
+   ocs::tom::Element<ocs::tom::JAT> jatep;
+   // the new PE task, until the task list of the array task takes it over
+   ocs::tom::ElementPtr<ocs::tom::PET> new_petep;
+   ocs::tom::Element<ocs::tom::PET> petep;
    const char *requested_queue;
    char new_task_id[1024];
-   lList *gdil = nullptr;
+   ocs::tom::List<ocs::tom::JG> gdil;
    int tid = 0;
    const char *qualified_hostname = component_get_qualified_hostname();
    const char *unqualified_hostname = component_get_unqualified_hostname();
@@ -625,9 +666,11 @@ static int handle_task(lListElem *petrep, char *commproc, char *host, u_short id
    jobid    = ocs::tom::get<PETR_jobid>(petrep);
    jataskid = ocs::tom::get<PETR_jataskid>(petrep);
 
-   if (!execd_get_job_ja_task(jobid, jataskid, &jep, &jatep, false)) {
+   if (!execd_get_job_ja_task(jobid, jataskid, &jep_raw, &jatep_raw, false)) {
       goto Error;
    }
+   jep = ocs::tom::Element<ocs::tom::JB>(jep_raw);
+   jatep = ocs::tom::Element<ocs::tom::JAT>(jatep_raw);
 
 /*
  * Verify that it is actually the job owner starting a pe task: compare the
@@ -661,7 +704,8 @@ static int handle_task(lListElem *petrep, char *commproc, char *host, u_short id
    tid = std::max(1u, ocs::tom::get<JAT_next_pe_task_id>(jatep));
    snprintf(new_task_id, sizeof(new_task_id), "%d.%s", tid, unqualified_hostname);
    DPRINTF("using pe_task_id_str %s for job " sge_u32 "." sge_u32"\n", new_task_id, jobid, jataskid);
-   petep = lCreateElem(PET_Type);
+   new_petep = ocs::tom::ElementPtr<ocs::tom::PET>::create();
+   petep = new_petep.get();
    ocs::tom::set<PET_id>(petep, new_task_id);
 
    /* set taskid for next task to be started */
@@ -670,10 +714,9 @@ static int handle_task(lListElem *petrep, char *commproc, char *host, u_short id
    ocs::tom::set<PET_name>(petep, "petask");
    ocs::tom::set<PET_submission_time>(petep, ocs::tom::get<PETR_submission_time>(petrep));
    ocs::tom::set<PET_cwd>(petep, ocs::tom::get<PETR_cwd>(petrep));
-   ocs::tom::set<PET_environment>(petep,
-            lCopyList("petask environment", ocs::tom::get<PETR_environment>(petrep)));
+   ocs::tom::set<PET_environment>(petep, ocs::tom::get<PETR_environment>(petrep).clone("petask environment"));
    ocs::tom::set<PET_path_aliases>(petep,
-            lCopyList("petask path_aliases", ocs::tom::get<PETR_path_aliases>(petrep)));
+                                   ocs::tom::get<PETR_path_aliases>(petrep).clone("petask path_aliases"));
 #if defined(OCS_WITH_OPENSSL)
    ocs::tom::set<PET_cred>(petep, ocs::tom::get<PETR_cred>(petrep));
 #endif
@@ -686,30 +729,24 @@ static int handle_task(lListElem *petrep, char *commproc, char *host, u_short id
 
    gdil = job_get_queue_for_task(jobid, jataskid, jatep, petep, qualified_hostname, requested_queue);
 
-   if (gdil == nullptr) { /* ran through list without finding matching queue */
+   if (!gdil) { /* ran through list without finding matching queue */
       gdil = job_get_queue_with_task_about_to_exit(jep, jatep, petep, qualified_hostname, requested_queue);
 
-      if (gdil == nullptr) {  /* also no already exited task found -> no way to start new task */
+      if (!gdil) {  /* also no already exited task found -> no way to start new task */
          ERROR(MSG_JOB_NOFREEQ_USSS, jobid, ocs::tom::get<PETR_owner>(petrep), host, qualified_hostname);
-         lFreeElem(&petep);
+         new_petep.reset();
          goto Error;
       }
    }
 
    /* put task into task_list of slave/master job */
-   if (static_cast<const lList *>(ocs::tom::get<JAT_task_list>(jatep)) == nullptr) {
-      ocs::tom::set<JAT_task_list>(jatep, lCreateList("task_list", PET_Type));
-   }
-   /* put task into task_list of slave/master job */
-   lAppendElem(ocs::tom::get<JAT_task_list>(jatep), petep);
+   petep = jatep.get_or_create<JAT_task_list>("task_list").push_back(std::move(new_petep));
 
    if (!mconf_get_simulate_jobs()) {
       if (job_write_spool_file(jep, jataskid, nullptr, SPOOL_WITHIN_EXECD)) {
          dstring err_str = DSTRING_INIT;
          sge_dstring_copy_string(&err_str, SGE_EVENT);
-         execd_job_start_failure(ocs::tom::ConstElement<ocs::tom::JB>(jep),
-                                 ocs::tom::ConstElement<ocs::tom::JAT>(jatep),
-                                 ocs::tom::ConstElement<ocs::tom::PET>(petep), sge_dstring_get_string(&err_str), 1);
+         execd_job_start_failure(jep, jatep, petep, sge_dstring_get_string(&err_str), 1);
          sge_dstring_free(&err_str);
          goto Error;
       }
@@ -722,7 +759,8 @@ static int handle_task(lListElem *petrep, char *commproc, char *host, u_short id
     * Add the submission time for the task here.
     */
    {
-      lListElem *jr = add_job_report(jobid, jataskid, new_task_id, jep);
+      // the job reports belong to job_report_execd.cc
+      const auto jr = ocs::tom::Element<ocs::tom::JR>(add_job_report(jobid, jataskid, new_task_id, jep));
 
       add_usage(jr, "submission_time", nullptr, ocs::tom::get<PET_submission_time>(petep));
 
@@ -734,8 +772,7 @@ static int handle_task(lListElem *petrep, char *commproc, char *host, u_short id
 
    /* for debugging: never start job but report a failure */
    if (getenv("FAILURE_BEFORE_START")) {
-      execd_job_start_failure(ocs::tom::ConstElement<ocs::tom::JB>(jep), ocs::tom::ConstElement<ocs::tom::JAT>(jatep),
-                              ocs::tom::ConstElement<ocs::tom::PET>(petep), "FAILURE_BEFORE_START", 0);
+      execd_job_start_failure(jep, jatep, petep, "FAILURE_BEFORE_START", 0);
    }
 
    if (sge_make_pe_task_active_dir(jep, jatep, petep, nullptr) == nullptr) {
@@ -784,7 +821,8 @@ Error:
  *
  * @see `job_verify()`
  */
-bool job_verify_execd_job(const lListElem *job, lList **answer_list, const char *qualified_hostname) {
+bool job_verify_execd_job(const ocs::tom::ConstElement<ocs::tom::JB> job, lList **answer_list,
+                          const char *qualified_hostname) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
@@ -815,8 +853,8 @@ bool job_verify_execd_job(const lListElem *job, lList **answer_list, const char 
    }
 
    if (ret) {
-      const lListElem *ckpt = ocs::tom::get<JB_checkpoint_object>(job);
-      if (ckpt != nullptr) {
+      const auto ckpt = ocs::tom::get<JB_checkpoint_object>(job);
+      if (ckpt) {
          if (ckpt_validate(ckpt, answer_list) != STATUS_OK) {
             ret = false;
          }
@@ -825,9 +863,9 @@ bool job_verify_execd_job(const lListElem *job, lList **answer_list, const char 
 
    /* for job execution, we need exactly one ja task */
    if (ret) {
-      ocs::tom::ConstList<ocs::tom::JAT> ja_tasks = ocs::tom::get<JB_ja_tasks>(job);
+      const auto ja_tasks = ocs::tom::get<JB_ja_tasks>(job);
 
-      if (ja_tasks == nullptr || lGetNumberOfElem(ja_tasks) != 1) {
+      if (!ja_tasks || ja_tasks.size() != 1) {
          answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                            MSG_JOB_INVALIDJATASK_REQUEST);
          ret = false;
@@ -835,7 +873,7 @@ bool job_verify_execd_job(const lListElem *job, lList **answer_list, const char 
 
       /* verify the ja task structure */
       if (ret) {
-         ret = ja_task_verify_execd_job(lFirst(ja_tasks), answer_list);
+         ret = ja_task_verify_execd_job(ja_tasks.front(), answer_list);
       }
    }
 
@@ -849,7 +887,7 @@ bool job_verify_execd_job(const lListElem *job, lList **answer_list, const char 
       char stdout_path[SGE_PATH_MAX];
       char stderr_path[SGE_PATH_MAX];
       uint32_t job_id = ocs::tom::get<JB_job_number>(job);
-      uint32_t ja_task_id = ocs::tom::get<JAT_task_number>(lFirst(static_cast<const lList *>(ocs::tom::get<JB_ja_tasks>(job))));
+      uint32_t ja_task_id = ocs::tom::get<JAT_task_number>(ocs::tom::get<JB_ja_tasks>(job).front());
 
       sge_get_path(qualified_hostname,
                    ocs::tom::get<JB_stdin_path_list>(job), "",

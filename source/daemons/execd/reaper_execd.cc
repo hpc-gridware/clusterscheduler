@@ -874,7 +874,8 @@ static int clean_up_job(const ocs::tom::Element<ocs::tom::JR> jr, int failed, co
 
          /* search job and ja_task */
          if (execd_get_job_ja_task(job_id, ja_task_id, &job_raw, &ja_task_raw, false)) {
-            master_queue = ocs::tom::ConstElement<ocs::tom::QU>(responsible_queue(job_raw, ja_task_raw, nullptr));
+            master_queue = responsible_queue(ocs::tom::ConstElement<ocs::tom::JB>(job_raw),
+                                             ocs::tom::ConstElement<ocs::tom::JAT>(ja_task_raw), nullptr);
          }
          const ocs::tom::ConstElement<ocs::tom::JB> job(job_raw);
 
@@ -1071,9 +1072,9 @@ void remove_acked_job_exit(const uint32_t job_id, const uint32_t ja_task_id, con
             DRETURN_VOID;
          }
 
-         master_q = ocs::tom::Element<ocs::tom::QU>(responsible_queue(jep_raw, jatep_raw, petep));
+         master_q = responsible_queue(jep, jatep, petep);
       } else {
-         master_q = ocs::tom::Element<ocs::tom::QU>(responsible_queue(jep_raw, jatep_raw, nullptr));
+         master_q = responsible_queue(jep, jatep, nullptr);
       }
      
       /* use mail list of job instead of tasks one */
