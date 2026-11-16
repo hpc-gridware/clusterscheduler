@@ -228,10 +228,6 @@
 #define MSG_SCHEDD_LCDIAGNONE                         _MESSAGE(47335, _("no load adjustment"))
 #define MSG_SCHEDD_LCDIAGNOLOAD                       _MESSAGE(47336, _("no load value"))
 
-#define MSG_SSI_ERRORPARSINGJOBIDENTIFIER_S           _MESSAGE(47350, _("error parsing job identifier " SFQ))
-#define MSG_SSI_MISSINGHOSTNAMEINTASKLIST             _MESSAGE(47351, _("missing hostname in task list"))
-#define MSG_SSI_COULDNOTFINDQUEUEFORHOST_S            _MESSAGE(47352, _("could not find a queue for host " SFQ))
-
 #define MSG_CANTFINDJOBINMASTERLIST_S                 _MESSAGE(47360, _("could not find job " SFQ " in master list"))
 #define MSG_CANTFINDTASKINJOB_UU                      _MESSAGE(47361, _("could not find task " sge_u32 " in job " sge_u32))
 
