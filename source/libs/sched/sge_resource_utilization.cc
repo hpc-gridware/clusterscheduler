@@ -1584,7 +1584,7 @@ int add_job_utilization(const sge_assignment_t *a, const char *type, bool for_jo
       bool is_master_task = true;
       const char *last_eh_name = nullptr;
       bool do_per_global_host_booking = true;
-      for (const auto gdil_ep : ocs::tom::ConstList<ocs::tom::JG>(a->gdil)) {
+      for (const auto gdil_ep : ocs::tom::ConstList<ocs::tom::JG>(*a->gdil)) {
          int slots = ocs::tom::get<JG_slots>(gdil_ep);
          const char *eh_name = ocs::tom::get<JG_qhostname>(gdil_ep);
          const char *qname = ocs::tom::get<JG_qname>(gdil_ep);
@@ -1660,7 +1660,7 @@ int add_job_utilization(const sge_assignment_t *a, const char *type, bool for_jo
          bool is_master_task = true;
          bool do_per_global_host_booking = true;
          const char *last_eh_name = nullptr;
-         for (const auto gdil_ep : ocs::tom::ConstList<ocs::tom::JG>(a->gdil)) {
+         for (const auto gdil_ep : ocs::tom::ConstList<ocs::tom::JG>(*a->gdil)) {
             int slots = ocs::tom::get<JG_slots>(gdil_ep);
             const char *qname = ocs::tom::get<JG_qname>(gdil_ep);
             const char *eh_name = ocs::tom::get<JG_qhostname>(gdil_ep);
@@ -2092,7 +2092,7 @@ add_job_list_to_schedule(const ocs::tom::List<ocs::tom::JB> job_list, const bool
 
    for (const auto jep : job_list) {
       for (const auto ja_task : ocs::tom::get<JB_ja_tasks>(jep)) {
-         sge_assignment_t a = SGE_ASSIGNMENT_INIT;
+         sge_assignment_t a{};
 
          assignment_init(&a, jep, ja_task, nullptr);
          assignment_init_ar(&a, ar_list);
@@ -2120,8 +2120,19 @@ add_job_list_to_schedule(const ocs::tom::List<ocs::tom::JB> job_list, const bool
             a.duration = (now - a.start) + interval;
          }
 
-         a.gdil = ocs::tom::get<JAT_granted_destin_identifier_list>(ja_task);
-         a.slots = nslots_granted(a.gdil, nullptr);
+         // The granted list belongs to the task, but a.gdil owns what it holds: the loan gives it back before the
+         // assignment ends, also when an exception leaves the loop, so the task keeps its list
+         a.gdil = ocs::tom::ListPtr<ocs::tom::JG>::from_typed(
+               ocs::tom::get<JAT_granted_destin_identifier_list>(ja_task));
+         struct GdilLoan {
+            ocs::tom::ListPtr<ocs::tom::JG> &gdil; ///< the owning member holding the borrowed list
+
+            /** @brief Give the borrowed list back without freeing it */
+            ~GdilLoan() {
+               [[maybe_unused]] lList *borrowed = gdil.release();
+            }
+         } gdil_loan{a.gdil};
+         a.slots = nslots_granted(*a.gdil, nullptr);
          a.host_list = host_list;
          a.queue_list = queue_list;
          a.centry_list = centry_list;

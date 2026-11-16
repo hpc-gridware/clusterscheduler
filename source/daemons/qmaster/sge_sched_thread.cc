@@ -1051,7 +1051,7 @@ select_assign_debit(lList **queue_list, lList **dis_queue_list, lListElem *job, 
    DENTER(TOP_LAYER);
    dispatch_t result = DISPATCH_NEVER_CAT;
    const char *pe_name, *ckpt_name;
-   sge_assignment_t a = SGE_ASSIGNMENT_INIT;
+   sge_assignment_t a{};
    bool is_computed_reservation = false;
 
    assignment_init(&a, ocs::tom::Element<ocs::tom::JB>(job), ocs::tom::Element<ocs::tom::JAT>(ja_task),
@@ -1273,7 +1273,7 @@ select_assign_debit(lList **queue_list, lList **dis_queue_list, lListElem *job, 
          job_otickets_per_slot = (double) ocs::tom::get<JAT_oticket>(ja_task) / a.slots;
          job_stickets_per_slot = (double) ocs::tom::get<JAT_sticket>(ja_task) / a.slots;
 
-         for_each_rw_lv(granted_el, a.gdil) {
+         for_each_rw_lv(granted_el, *a.gdil) {
             uint32_t granted_slots = ocs::tom::get<JG_slots>(granted_el);
             ocs::tom::set<JG_ticket>(granted_el, job_tickets_per_slot * granted_slots);
             ocs::tom::set<JG_oticket>(granted_el, job_otickets_per_slot * granted_slots);
@@ -1289,7 +1289,7 @@ select_assign_debit(lList **queue_list, lList **dis_queue_list, lListElem *job, 
       }
 
       orders->jobStartOrderList = sge_create_orders(orders->jobStartOrderList, ORT_start_job,
-                                                    job, ja_task, a.gdil, true);
+                                                    job, ja_task, *a.gdil, true);
 
       /* increase the number of jobs a user/group has running */
       sge_inc_jc(user_list, ocs::tom::get<JB_owner>(job), 1);
@@ -1357,7 +1357,7 @@ select_assign_debit(lList **queue_list, lList **dis_queue_list, lListElem *job, 
               host_list,                                      /* host list contains load values           */
               centry_list,
               a.load_adjustments,
-              a.gdil,
+              *a.gdil,
               is_consumable_load_alarm,
               false, QU_load_thresholds)) {   /* use load thresholds here */
 

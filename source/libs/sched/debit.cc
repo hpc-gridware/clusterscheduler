@@ -157,7 +157,7 @@ debit_scheduled_job(const sge_assignment_t *a, int *sort_hostlist,
       const auto job = ocs::tom::ConstElement<ocs::tom::JB>(a->job);
       const auto ja_task = ocs::tom::ConstElement<ocs::tom::JAT>(a->ja_task);
       const auto pe = ocs::tom::ConstElement<ocs::tom::PE>(a->pe);
-      const auto granted = ocs::tom::ConstList<ocs::tom::JG>(a->gdil);
+      const auto granted = ocs::tom::ConstList<ocs::tom::JG>(*a->gdil);
       const auto centries = ocs::tom::ConstList<ocs::tom::CE>(a->centry_list);
       debit_job_from_hosts(job, ja_task, pe, granted, ocs::tom::List<ocs::tom::EH>(a->host_list), centries,
                            a->load_adjustments, sort_hostlist);

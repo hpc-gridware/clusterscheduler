@@ -520,43 +520,47 @@ assignment_init_pe(sge_assignment_t *a, const ocs::tom::Element<ocs::tom::PE> pe
 /**
  * @brief Copies an assignment, optionally moving the owned lists along
  *
- * The struct is copied bitwise, so the lists it owns would end up referenced
- * twice. `move_gdil` decides who keeps them: with true they move to `dst` and
- * are cleared in `src`, with false they stay in `src` and are cleared in
- * `dst`. Either way exactly one of the two owns them.
+ * The base part #sge_assignment_base_t is copied. `move_gdil` decides who
+ * keeps the owned lists: with true they move to `dst`, freeing what `dst`
+ * held, and are empty in `src` afterwards; with false they stay in `src` and
+ * the lists `dst` held are freed. Either way exactly one of the two owns them.
  *
  * @param[out]    dst        the assignment to copy into
  * @param[in,out] src        the assignment to copy from
  * @param[in]     move_gdil  move the granted list and the caches to `dst`
  */
 void assignment_copy(sge_assignment_t *dst, sge_assignment_t *src, bool move_gdil) {
+   DENTER(TOP_LAYER);
+
    if (dst == nullptr || src == nullptr) {
-      return;
+      DRETURN_VOID;
    }
 
-   if (move_gdil) {
-      lFreeList(&(dst->gdil));
-      lFreeList(&(dst->binding_to_use));
-      lFreeList(&(dst->granted_rsmaps));
-      lFreeList(&(dst->limit_list));
-      lFreeList(&(dst->skip_cqueue_list));
-      lFreeList(&(dst->skip_host_list));
-      lFreeList(&(dst->rsmap_job_keys));
-   }
-
-   memcpy(dst, src, sizeof(sge_assignment_t));
+   static_cast<sge_assignment_base_t &>(*dst) = static_cast<const sge_assignment_base_t &>(*src);
 
    if (src->load_adjustments != nullptr) {
       dst->load_adjustments = src->load_adjustments;
    }
 
    if (move_gdil) {
-      src->gdil = src->binding_to_use = src->granted_rsmaps = src->limit_list =
-            src->skip_cqueue_list = src->skip_host_list = src->rsmap_job_keys = nullptr;
+      dst->gdil = std::move(src->gdil);
+      dst->binding_to_use = std::move(src->binding_to_use);
+      dst->granted_rsmaps = std::move(src->granted_rsmaps);
+      dst->limit_list = std::move(src->limit_list);
+      dst->skip_cqueue_list = std::move(src->skip_cqueue_list);
+      dst->skip_host_list = std::move(src->skip_host_list);
+      dst->rsmap_job_keys = std::move(src->rsmap_job_keys);
    } else {
-      dst->gdil = dst->binding_to_use = dst->granted_rsmaps = dst->limit_list =
-            dst->skip_cqueue_list = dst->skip_host_list = dst->rsmap_job_keys = nullptr;
+      dst->gdil.reset();
+      dst->binding_to_use.reset();
+      dst->granted_rsmaps.reset();
+      dst->limit_list.reset();
+      dst->skip_cqueue_list.reset();
+      dst->skip_host_list.reset();
+      dst->rsmap_job_keys.reset();
    }
+
+   DRETURN_VOID;
 }
 
 /**
@@ -565,13 +569,17 @@ void assignment_copy(sge_assignment_t *dst, sge_assignment_t *src, bool move_gdi
  * @param[in,out] a the assignment
  */
 void assignment_release(sge_assignment_t *a) {
-   lFreeList(&(a->gdil));
-   lFreeList(&(a->binding_to_use));
-   lFreeList(&(a->granted_rsmaps));
-   lFreeList(&(a->limit_list));
-   lFreeList(&(a->skip_cqueue_list));
-   lFreeList(&(a->skip_host_list));
-   lFreeList(&(a->rsmap_job_keys));
+   DENTER(TOP_LAYER);
+
+   a->gdil.reset();
+   a->binding_to_use.reset();
+   a->granted_rsmaps.reset();
+   a->limit_list.reset();
+   a->skip_cqueue_list.reset();
+   a->skip_host_list.reset();
+   a->rsmap_job_keys.reset();
+
+   DRETURN_VOID;
 }
 
 /**
@@ -584,20 +592,24 @@ void assignment_release(sge_assignment_t *a) {
  * @param[in,out] a the assignment
  */
 void assignment_clear_cache(sge_assignment_t *a) {
-   lFreeList(&(a->limit_list));
-   lFreeList(&(a->skip_cqueue_list));
-   lFreeList(&(a->skip_host_list));
+   DENTER(TOP_LAYER);
+
+   a->limit_list.reset();
+   a->skip_cqueue_list.reset();
+   a->skip_host_list.reset();
 
    // The group a scope=job request binds the job to is chosen from what is free over the window
    // the job would run in, so it belongs to the attempt it was chosen for just as the instances
    // themselves do.
-   lFreeList(&(a->rsmap_job_keys));
+   a->rsmap_job_keys.reset();
 
    // The resource map instances are chosen per host for a given number of slots, so a choice
    // belongs to the attempt it was made in. The parallel path clears the cache between slot
    // count probes and between the times a reservation is tried at, and a choice left over from
    // a probe which was then rejected would be applied to an assignment it was not made for.
-   lFreeList(&(a->granted_rsmaps));
+   a->granted_rsmaps.reset();
+
+   DRETURN_VOID;
 }
 
 static dispatch_t
@@ -767,7 +779,7 @@ sge_select_parallel_environment(sge_assignment_t *best, const ocs::tom::List<ocs
                     best->ar_id == 0 ? "" : " AR",
                     pe_name, sge_ctime64(best->start, &time_str), best->soft_violations);
          } else { /* test with all other pes */
-            sge_assignment_t tmp = SGE_ASSIGNMENT_INIT;
+            sge_assignment_t tmp{};
 
             assignment_copy(&tmp, best, false);
             assignment_init_pe(&tmp, pe);
@@ -836,7 +848,7 @@ sge_select_parallel_environment(sge_assignment_t *best, const ocs::tom::List<ocs
          } else {
             // another PE matching the requested name
             int available_slots = 0;
-            sge_assignment_t tmp = SGE_ASSIGNMENT_INIT;
+            sge_assignment_t tmp{};
             assignment_copy(&tmp, best, false);
             assignment_init_pe(&tmp, pe);
 
@@ -970,7 +982,7 @@ parallel_reservation_max_time_slots(sge_assignment_t *best, int *available_slots
    DENTER(TOP_LAYER);
 
    uint64_t pe_time, first_time;
-   sge_assignment_t tmp_assignment = SGE_ASSIGNMENT_INIT;
+   sge_assignment_t tmp_assignment{};
    dispatch_t result = DISPATCH_NEVER_CAT;
    sge_qeti_t *qeti = nullptr;
    bool is_first = true;
@@ -1114,7 +1126,7 @@ parallel_maximize_slots_pe(sge_assignment_t *best, int *available_slots) {
    int min_slots, max_slots;
    int max_pe_slots;
    int first, last;
-   sge_assignment_t tmp = SGE_ASSIGNMENT_INIT;
+   sge_assignment_t tmp{};
    dispatch_t result = DISPATCH_NEVER_CAT;
    const char *pe_name = best->pe_name;
    bool is_first = true;
@@ -1366,7 +1378,7 @@ sge_select_queue(const ocs::tom::List<ocs::tom::CE> requested_attr, const ocs::t
    ocs::tom::ConstList<ocs::tom::PR> projects;
    const char *project;
 
-   sge_assignment_t a = SGE_ASSIGNMENT_INIT;
+   sge_assignment_t a{};
    double lc_factor = 0; /* scaling for load correction */
    uint32_t ulc_factor;
    /* actually we don't care on start time here to this is just a dummy setting */
@@ -3624,11 +3636,11 @@ sequential_tag_queues_suitable4job(sge_assignment_t *a) {
       ocs::tom::set<QU_tag>(qep, 0);
 
       /* try to foreclose the cluster queue */
-      if (ocs::tom::find_first<CTI_name>(a->skip_cqueue_list, cqname)) {
+      if (ocs::tom::find_first<CTI_name>(*a->skip_cqueue_list, cqname)) {
          DPRINTF("skip cluster queue %s\n", cqname);
          continue;
       }
-      if (ocs::tom::find_first<CTI_name>(a->skip_host_list, eh_name)) {
+      if (ocs::tom::find_first<CTI_name>(*a->skip_host_list, eh_name)) {
          DPRINTF("rqs skip host %s\n", eh_name);
          continue;
       }
@@ -3667,7 +3679,10 @@ sequential_tag_queues_suitable4job(sge_assignment_t *a) {
       if (!ocs::tom::find_first<CTI_name>(*unclear_cqueue_list, cqname)) {
          SCHED_PROF_INC(a->pi, seq_cqstat);
          if (cqueue_match_static(cqname, a) != DISPATCH_OK) {
-            ocs::tom::emplace_back<CTI_name>(&(a->skip_cqueue_list), cqname);
+            if (!a->skip_cqueue_list) {
+               a->skip_cqueue_list = ocs::tom::ListPtr<ocs::tom::CTI>::create("");
+            }
+            a->skip_cqueue_list->emplace_back<CTI_name>(cqname);
             best_queue_result = find_best_result(DISPATCH_NEVER_CAT, best_queue_result);
             continue;
          }
@@ -3696,7 +3711,10 @@ sequential_tag_queues_suitable4job(sge_assignment_t *a) {
             if (skip_host_list) {
                skip_host_list.emplace_back<CTI_name>(eh_name);
             } else {
-               ocs::tom::emplace_back<CTI_name>(&(a->skip_host_list), eh_name);
+               if (!a->skip_host_list) {
+                  a->skip_host_list = ocs::tom::ListPtr<ocs::tom::CTI>::create("");
+               }
+               a->skip_host_list->emplace_back<CTI_name>(eh_name);
             }
             best_queue_result = find_best_result(DISPATCH_NEVER_CAT, best_queue_result);
             continue;
@@ -3704,9 +3722,15 @@ sequential_tag_queues_suitable4job(sge_assignment_t *a) {
 
          if ((result=sge_host_match_static(a, hep))) {
             if (result == DISPATCH_NEVER_JOB || !skip_host_list) {
-               ocs::tom::emplace_back<CTI_name>(&(a->skip_host_list), eh_name);
+               if (!a->skip_host_list) {
+                  a->skip_host_list = ocs::tom::ListPtr<ocs::tom::CTI>::create("");
+               }
+               a->skip_host_list->emplace_back<CTI_name>(eh_name);
             } else {
-               ocs::tom::emplace_back<CTI_name>(&(a->skip_host_list), eh_name);
+               if (!a->skip_host_list) {
+                  a->skip_host_list = ocs::tom::ListPtr<ocs::tom::CTI>::create("");
+               }
+               a->skip_host_list->emplace_back<CTI_name>(eh_name);
             }
             best_queue_result = find_best_result(result, best_queue_result);
             continue;
@@ -3732,16 +3756,23 @@ sequential_tag_queues_suitable4job(sge_assignment_t *a) {
       SCHED_PROF_INC(a->pi, seq_hdyn);
       result = sequential_host_time(&tt_host, a, &queue_violations, hep);
       if (result != DISPATCH_OK && result != DISPATCH_MISSING_ATTR) {
-         if (skip_host_list)
+         if (skip_host_list) {
             skip_host_list.emplace_back<CTI_name>(eh_name);
-         else
-            ocs::tom::emplace_back<CTI_name>(&(a->skip_host_list), eh_name);
+         } else {
+            if (!a->skip_host_list) {
+               a->skip_host_list = ocs::tom::ListPtr<ocs::tom::CTI>::create("");
+            }
+            a->skip_host_list->emplace_back<CTI_name>(eh_name);
+         }
          DPRINTF("host %s returned %d\n", eh_name, result);
          best_queue_result = find_best_result(result, best_queue_result);
          continue;
       }
       if (got_solution && is_not_better(a, violations_best, tt_best, queue_violations, tt_host)) {
-         ocs::tom::emplace_back<CTI_name>(&(a->skip_host_list), eh_name);
+         if (!a->skip_host_list) {
+            a->skip_host_list = ocs::tom::ListPtr<ocs::tom::CTI>::create("");
+         }
+         a->skip_host_list->emplace_back<CTI_name>(eh_name);
          DPRINTF("CUT TREE: Due to HOST for \"%s\"\n", qname);
          continue;
       }
@@ -4029,12 +4060,11 @@ parallel_add_queue_to_gdil(sge_assignment_t *a, const char *qname, const char *e
 
    DPRINTF("add %s queue %s to GDIL, " sge_u32 " slots\n", is_master_queue ? "master" : "slave", qname, slots);
 
-   // a->gdil is an owning raw member until the owning members of the assignment are converted; like the element,
-   // the list is created the typed way, which throws if there is no memory instead of giving nullptr
+   // like the element, the list is created the typed way, which throws if there is no memory instead of giving nullptr
    if (a->gdil == nullptr) {
-      a->gdil = ocs::tom::ListPtr<ocs::tom::JG>::create("").release();
+      a->gdil = ocs::tom::ListPtr<ocs::tom::JG>::create("");
    }
-   auto gdil = ocs::tom::List<ocs::tom::JG>(a->gdil);
+   auto gdil = *a->gdil;
    auto gdil_ep = ocs::tom::ElementPtr<ocs::tom::JG>::create();
    ocs::tom::set<JG_qname>(gdil_ep, qname);
    ocs::tom::set<JG_qversion>(gdil_ep, ocs::tom::get<QU_version>(qep));
@@ -4468,7 +4498,8 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
          auto cqname = ocs::tom::get<QU_qname>(qep);
 
          /* try to foreclose the cluster queue */
-         if (ocs::tom::find_first<CTI_name>(a->skip_cqueue_list, cqname)) { // @todo (CS-453) why is the skip_cqueue_list not cached?
+         // @todo (CS-453) why is the skip_cqueue_list not cached?
+         if (ocs::tom::find_first<CTI_name>(*a->skip_cqueue_list, cqname)) {
             ocs::tom::set<QU_tag>(qep, 0);    // @todo why set it? It is already 0 from clean_up_parallel_job() above. Similar cases below.
             DPRINTF("(1) skip cluster queue %s\n", cqname);
             continue;
@@ -4477,7 +4508,10 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
          if (!ocs::tom::find_first<CTI_name>(*unclear_cqueue_list, cqname)) {
             SCHED_PROF_INC(a->pi, par_cqstat);
             if (cqueue_match_static(cqname, a) != DISPATCH_OK) {
-               ocs::tom::emplace_back<CTI_name>(&(a->skip_cqueue_list), cqname);
+               if (!a->skip_cqueue_list) {
+                  a->skip_cqueue_list = ocs::tom::ListPtr<ocs::tom::CTI>::create("");
+               }
+               a->skip_cqueue_list->emplace_back<CTI_name>(cqname);
                /* tag QI as unsuited */
                ocs::tom::set<QU_tag>(qep, 0);
                DPRINTF("add cluster queue %s to skip list\n", cqname);
@@ -4604,7 +4638,7 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
             if (skip_host_list && ocs::tom::find_first<CTI_name>(skip_host_list, eh_name)) {
                continue;
             }
-            if (ocs::tom::find_first<CTI_name>(a->skip_host_list, eh_name)) {
+            if (ocs::tom::find_first<CTI_name>(*a->skip_host_list, eh_name)) {
                continue;
             }
 
@@ -4715,7 +4749,7 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
 
                      // Create the GDIL and book soft violations from our temporary queue list.
                      for (queue_slots_t &queue_slot : queue_slots) {
-                        auto gdil_ep = ocs::tom::find_first_rw<JG_qname>(a->gdil, queue_slot.qname);
+                        auto gdil_ep = ocs::tom::find_first_rw<JG_qname>(*a->gdil, queue_slot.qname);
                         if (!gdil_ep) {
                            // Need a new GDIL element.
                            // @todo we could store qep in queue_slots_t
@@ -4782,7 +4816,7 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
 #if 0
       if (best_result != DISPATCH_OK) {
          dstring sched_info = DSTRING_INIT;
-         for_each_ep(gdil_ep, a->gdil) {
+         for_each_ep(gdil_ep, *a->gdil) {
             sge_dstring_sprintf(&sched_info, "   HOST: %s QUEUE: %s SLOTS %d",
                lGetHost(gdil_ep, JG_qhostname), lGetString(gdil_ep, JG_qname), (int)lGetUlong(gdil_ep, JG_slots));
             schedd_log(sge_dstring_get_string(&sched_info));
@@ -4824,7 +4858,7 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
    }
 
    if (best_result != DISPATCH_OK) {
-      lFreeList(&(a->gdil));
+      a->gdil.reset();
    }
 
    DRETURN(best_result);
@@ -4972,7 +5006,7 @@ parallel_host_slots(sge_assignment_t *a, int *slots, const ocs::tom::Element<ocs
          }
 
          // reduce by what we already booked on this host
-         hslots -= already_booked_on_host(ocs::tom::ConstList<ocs::tom::JG>(a->gdil), eh_name);
+         hslots -= already_booked_on_host(*a->gdil, eh_name);
       }
    }
 
@@ -5066,7 +5100,7 @@ parallel_tag_hosts_queues(sge_assignment_t *a, const ocs::tom::Element<ocs::tom:
          auto qname = ocs::tom::get<QU_full_name>(qep);
          auto cqname = ocs::tom::get<QU_qname>(qep);
 
-         if (ocs::tom::find_first<CTI_name>(a->skip_cqueue_list, cqname)) {
+         if (ocs::tom::find_first<CTI_name>(*a->skip_cqueue_list, cqname)) {
             /* QU_tag is already 0 */
             DPRINTF("skipped due to cluster queue %s\n", cqname);
             continue;
@@ -5415,9 +5449,7 @@ dispatch_t sge_sequential_assignment(sge_assignment_t *a) {
             sconf_inc_fast_jobs();
          }
 
-         // a->gdil is an owning raw member until the owning members of the assignment are converted
-         lFreeList(&(a->gdil));
-         a->gdil = gdil.release();
+         a->gdil = std::move(gdil);
          a->slots = 1;
          if (a->start == DISPATCH_TIME_QUEUE_END) {
             a->start = job_start_time;
@@ -5627,7 +5659,7 @@ parallel_queue_slots(sge_assignment_t *a, const ocs::tom::Element<ocs::tom::QU> 
 
       // we already have tasks running on this qinstance (round_robin), consider the already booked slots
       // @todo in case of round robin: don't we cache the number of possible slots in QU_tag? Really re-calculate them over and over again?
-      auto gdil = ocs::tom::find_first<JG_qname>(a->gdil, qname);
+      auto gdil = ocs::tom::find_first<JG_qname>(*a->gdil, qname);
       if (gdil) {
          qslots -= ocs::tom::get<JG_slots>(gdil);
       }
@@ -6712,8 +6744,7 @@ rsmap_job_scope_key(sge_assignment_t *a, const ocs::tom::ConstElement<ocs::tom::
    // Decided once per assignment attempt: the hosts, the window and the request do not change
    // within one, and every host has to be told the same answer. An empty value is the recorded
    // form of "there is none" - the question is no cheaper the second time it is asked.
-   // a->rsmap_job_keys is an owning raw member of the assignment, read through a checked handle
-   auto cached = ocs::tom::find_first<VA_variable>(ocs::tom::ConstList<ocs::tom::VA>(a->rsmap_job_keys), name);
+   auto cached = ocs::tom::find_first<VA_variable>(*a->rsmap_job_keys, name);
    if (cached) {
       const char *key = ocs::tom::get<VA_value>(cached);
       DRETURN((key != nullptr && key[0] != '\0') ? key : nullptr);
@@ -6788,7 +6819,10 @@ rsmap_job_scope_key(sge_assignment_t *a, const ocs::tom::ConstElement<ocs::tom::
       }
    }
 
-   ocs::tom::Element<ocs::tom::VA> entry = ocs::tom::emplace_back<VA_variable>(&(a->rsmap_job_keys), name);
+   if (!a->rsmap_job_keys) {
+      a->rsmap_job_keys = ocs::tom::ListPtr<ocs::tom::VA>::create("");
+   }
+   ocs::tom::Element<ocs::tom::VA> entry = a->rsmap_job_keys->emplace_back<VA_variable>(name);
    if (entry == nullptr) {
       DRETURN(nullptr);
    }

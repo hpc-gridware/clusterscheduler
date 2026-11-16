@@ -284,7 +284,10 @@ static bool rqs_exceeded_sort_out(sge_assignment_t *a, const ocs::tom::ConstElem
       }
 
       if (ocs::tom::get<RQRF_expand>(ocs::tom::get<RQR_filter_queues>(rule))) {
-         ocs::tom::emplace_back<CTI_name>(&(a->skip_cqueue_list), queue_name);
+         if (!a->skip_cqueue_list) {
+            a->skip_cqueue_list = ocs::tom::ListPtr<ocs::tom::CTI>::create("");
+         }
+         a->skip_cqueue_list->emplace_back<CTI_name>(queue_name);
          DPRINTF("QUEUE: resource quota set %s deny job execution in queue %s\n", sge_dstring_get_string(rule_name), queue_name);
       } else {
          rqs_expand_cqueues(rule, a);
@@ -303,7 +306,10 @@ static bool rqs_exceeded_sort_out(sge_assignment_t *a, const ocs::tom::ConstElem
       }
 
       if (ocs::tom::get<RQRF_expand>(ocs::tom::get<RQR_filter_hosts>(rule))) {
-         ocs::tom::emplace_back<CTI_name>(&(a->skip_host_list), host_name);
+         if (!a->skip_host_list) {
+            a->skip_host_list = ocs::tom::ListPtr<ocs::tom::CTI>::create("");
+         }
+         a->skip_host_list->emplace_back<CTI_name>(host_name);
          DPRINTF("HOST: resource quota set %s deny job execution at host %s\n", sge_dstring_get_string(rule_name), host_name);
       } else {
          rqs_expand_hosts(rule, a);
@@ -395,7 +401,7 @@ parallel_rqs_slots_by_time(sge_assignment_t *a, int *slots, const ocs::tom::Elem
             limit_s = sge_dstring_sprintf(&dstr_limit_name, "%s=%s", sge_dstring_get_string(&dstr_rule_name), sge_dstring_get_string(&dstr_rue_string));
 
             /* reuse earlier result */
-            if ((rql=ocs::tom::find_first_rw<RQL_name>(a->limit_list, limit_s))) {
+            if ((rql=ocs::tom::find_first_rw<RQL_name>(*a->limit_list, limit_s))) {
                result = (dispatch_t)ocs::tom::get<RQL_result>(rql);
                tslots = std::min(tslots, ocs::tom::get<RQL_slots>(rql));
 
@@ -495,7 +501,10 @@ parallel_rqs_slots_by_time(sge_assignment_t *a, int *slots, const ocs::tom::Elem
                        queue, host, result, ttslots, limit_s);
 
                /* store result for reuse */
-               rql = ocs::tom::emplace_back<RQL_name>(&(a->limit_list), limit_s);
+               if (!a->limit_list) {
+                  a->limit_list = ocs::tom::ListPtr<ocs::tom::RQL>::create("");
+               }
+               rql = a->limit_list->emplace_back<RQL_name>(limit_s);
                ocs::tom::set<RQL_result>(rql, result);
                ocs::tom::set<RQL_slots>(rql, ttslots);
                ocs::tom::set<RQL_tagged4schedule>(rql, ocs::tom::get<QU_tagged4schedule>(qep));
@@ -629,7 +638,8 @@ parallel_check_and_debit_rqs_slots(sge_assignment_t *a, const char *host, const 
       if (rule != nullptr) {
          rqs_get_rue_string(rue_name, rule, user, project, host, queue, pe);
          sge_dstring_sprintf(limit_name, "%s=%s", sge_dstring_get_string(rule_name), sge_dstring_get_string(rue_name));
-         if (const auto rql = ocs::tom::find_first<RQL_name>(a->limit_list, sge_dstring_get_string(limit_name)); rql != nullptr) {
+         if (const auto rql = ocs::tom::find_first<RQL_name>(*a->limit_list, sge_dstring_get_string(limit_name));
+             rql != nullptr) {
             *slots = std::min(*slots, ocs::tom::get<RQL_slots>(rql));
          } else {
             *slots = 0;
@@ -659,7 +669,8 @@ parallel_check_and_debit_rqs_slots(sge_assignment_t *a, const char *host, const 
          if (rule != nullptr) {
             rqs_get_rue_string(rue_name, rule, user, project, host, queue, pe);
             sge_dstring_sprintf(limit_name, "%s=%s", sge_dstring_get_string(rule_name), sge_dstring_get_string(rue_name));
-            const auto rql = ocs::tom::find_first_rw<RQL_name>(a->limit_list, sge_dstring_get_string(limit_name));
+            const auto rql =
+                  ocs::tom::find_first_rw<RQL_name>(*a->limit_list, sge_dstring_get_string(limit_name));
             ocs::tom::set<RQL_slots>(rql, ocs::tom::get<RQL_slots>(rql) - *slots);
          }
       }
@@ -710,7 +721,7 @@ parallel_revert_rqs_slot_debitation(sge_assignment_t *a, const char *host, const
       if (rule != nullptr) {
          rqs_get_rue_string(rue_name, rule, user, project, host, queue, pe);
          sge_dstring_sprintf(limit_name, "%s=%s", sge_dstring_get_string(rule_name), sge_dstring_get_string(rue_name));
-         const auto rql = ocs::tom::find_first_rw<RQL_name>(a->limit_list, sge_dstring_get_string(limit_name));
+         const auto rql = ocs::tom::find_first_rw<RQL_name>(*a->limit_list, sge_dstring_get_string(limit_name));
          DPRINTF("limit: %s %d <--- %d\n", sge_dstring_get_string(limit_name), ocs::tom::get<RQL_slots>(rql), ocs::tom::get<RQL_slots>(rql)+slots);
          ocs::tom::set<RQL_slots>(rql, ocs::tom::get<RQL_slots>(rql) + slots);
       }
@@ -781,14 +792,17 @@ dispatch_t rqs_by_slots(sge_assignment_t *a, const char *queue, const char *host
          limit = sge_dstring_get_string(limit_name);
 
          /* check limit or reuse earlier results */
-         if ((rql=ocs::tom::find_first_rw<RQL_name>(a->limit_list, limit))) {
+         if ((rql=ocs::tom::find_first_rw<RQL_name>(*a->limit_list, limit))) {
             tt_rqs = ocs::tom::get<RQL_time>(rql);
             result = (dispatch_t)ocs::tom::get<RQL_result>(rql);
          } else {
             /* Check booked usage */
             result = rqs_limitation_reached(a, rule, host, queue, &tt_rqs);
 
-            rql = ocs::tom::emplace_back<RQL_name>(&(a->limit_list), limit);
+            if (!a->limit_list) {
+               a->limit_list = ocs::tom::ListPtr<ocs::tom::RQL>::create("");
+            }
+            rql = a->limit_list->emplace_back<RQL_name>(limit);
             ocs::tom::set<RQL_result>(rql, result);
             ocs::tom::set<RQL_time>(rql, tt_rqs);
             /* init with same value as QU_tagged4schedule */
@@ -855,10 +869,15 @@ static void rqs_expand_cqueues(const ocs::tom::ConstElement<ocs::tom::RQR> rule,
 
    for (const auto cq : ocs::tom::ConstList<ocs::tom::CQ>::from_typed(*ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE))) {
       const char *cqname = ocs::tom::get<CQ_name>(cq);
-      if (ocs::tom::find_first<CTI_name>(a->skip_cqueue_list, cqname))
+      if (ocs::tom::find_first<CTI_name>(*a->skip_cqueue_list, cqname))
          continue;
-      if (rqs_filter_match(qfilter, FILTER_QUEUES, cqname, nullptr, nullptr, nullptr, nullptr) && !cqueue_shadowed_by(cqname, rule, a))
-         ocs::tom::emplace_back<CTI_name>(&(a->skip_cqueue_list), cqname);
+      if (rqs_filter_match(qfilter, FILTER_QUEUES, cqname, nullptr, nullptr, nullptr, nullptr) &&
+          !cqueue_shadowed_by(cqname, rule, a)) {
+         if (!a->skip_cqueue_list) {
+            a->skip_cqueue_list = ocs::tom::ListPtr<ocs::tom::CTI>::create("");
+         }
+         a->skip_cqueue_list->emplace_back<CTI_name>(cqname);
+      }
    }
 
    DRETURN_VOID;
@@ -876,17 +895,23 @@ static void rqs_expand_cqueues(const ocs::tom::ConstElement<ocs::tom::RQR> rule,
  * @note MT-NOTE: rqs_expand_hosts() is MT safe
  */
 static void rqs_expand_hosts(const ocs::tom::ConstElement<ocs::tom::RQR> rule, sge_assignment_t *a) {
+   DENTER(TOP_LAYER);
    const auto hfilter = ocs::tom::get<RQR_filter_hosts>(rule);
 
    for (const auto eh : ocs::tom::ConstList<ocs::tom::EH>(a->host_list)) {
       const char *hname = ocs::tom::get<EH_name>(eh);
-      if (ocs::tom::find_first<CTI_name>(a->skip_host_list, hname))
+      if (ocs::tom::find_first<CTI_name>(*a->skip_host_list, hname))
          continue;
-      if (rqs_filter_match(hfilter, FILTER_HOSTS, hname, nullptr, a->hgrp_list, nullptr, nullptr) && !host_shadowed_by(hname, rule, a))
-         ocs::tom::emplace_back<CTI_name>(&(a->skip_host_list), hname);
+      if (rqs_filter_match(hfilter, FILTER_HOSTS, hname, nullptr, a->hgrp_list, nullptr, nullptr) &&
+          !host_shadowed_by(hname, rule, a)) {
+         if (!a->skip_host_list) {
+            a->skip_host_list = ocs::tom::ListPtr<ocs::tom::CTI>::create("");
+         }
+         a->skip_host_list->emplace_back<CTI_name>(hname);
+      }
    }
 
-   return;
+   DRETURN_VOID;
 }
 
 /**
@@ -969,7 +994,7 @@ static void rqs_excluded_cqueues(const ocs::tom::ConstElement<ocs::tom::RQR> rul
       const char *cqname = ocs::tom::get<CQ_name>(cq);
       bool exclude = true;
 
-      if (ocs::tom::find_first<CTI_name>(a->skip_cqueue_list, cqname)) {
+      if (ocs::tom::find_first<CTI_name>(*a->skip_cqueue_list, cqname)) {
          ignored++;
          continue;
       }
@@ -985,7 +1010,10 @@ static void rqs_excluded_cqueues(const ocs::tom::ConstElement<ocs::tom::RQR> rul
          }
       }
       if (exclude) {
-         ocs::tom::emplace_back<CTI_name>(&(a->skip_cqueue_list), cqname);
+         if (!a->skip_cqueue_list) {
+            a->skip_cqueue_list = ocs::tom::ListPtr<ocs::tom::CTI>::create("");
+         }
+         a->skip_cqueue_list->emplace_back<CTI_name>(cqname);
          excluded++;
       }
    }
@@ -1021,7 +1049,7 @@ static void rqs_excluded_hosts(const ocs::tom::ConstElement<ocs::tom::RQR> rule,
       const char *hname = ocs::tom::get<EH_name>(eh);
       bool exclude = true;
 
-      if (ocs::tom::find_first<CTI_name>(a->skip_host_list, hname)) {
+      if (ocs::tom::find_first<CTI_name>(*a->skip_host_list, hname)) {
          ignored++;
          continue;
       }
@@ -1037,7 +1065,10 @@ static void rqs_excluded_hosts(const ocs::tom::ConstElement<ocs::tom::RQR> rule,
          }
       }
       if (exclude) {
-         ocs::tom::emplace_back<CTI_name>(&(a->skip_host_list), hname);
+         if (!a->skip_host_list) {
+            a->skip_host_list = ocs::tom::ListPtr<ocs::tom::CTI>::create("");
+         }
+         a->skip_host_list->emplace_back<CTI_name>(hname);
          excluded++;
       }
    }

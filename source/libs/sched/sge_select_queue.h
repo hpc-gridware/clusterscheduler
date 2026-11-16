@@ -65,21 +65,27 @@
 
 #include "sge_orders.h"
 #include "sgeobj/tom/ocs_tom_AR.h"
+#include "sgeobj/tom/ocs_tom_BN.h"
 #include "sgeobj/tom/ocs_tom_CE.h"
 #include "sgeobj/tom/ocs_tom_CK.h"
+#include "sgeobj/tom/ocs_tom_CTI.h"
 #include "sgeobj/tom/ocs_tom_EH.h"
+#include "sgeobj/tom/ocs_tom_GRU.h"
 #include "sgeobj/tom/ocs_tom_HGRP.h"
 #include "sgeobj/tom/ocs_tom_HL.h"
 #include "sgeobj/tom/ocs_tom_JAT.h"
 #include "sgeobj/tom/ocs_tom_JB.h"
+#include "sgeobj/tom/ocs_tom_JG.h"
 #include "sgeobj/tom/ocs_tom_LDR.h"
 #include "sgeobj/tom/ocs_tom_PE.h"
 #include "sgeobj/tom/ocs_tom_QU.h"
+#include "sgeobj/tom/ocs_tom_RQL.h"
 #include "sgeobj/tom/ocs_tom_RQRL.h"
 #include "sgeobj/tom/ocs_tom_RQS.h"
 #include "sgeobj/tom/ocs_tom_RUE.h"
 #include "sgeobj/tom/ocs_tom_ST.h"
 #include "sgeobj/tom/ocs_tom_US.h"
+#include "sgeobj/tom/ocs_tom_VA.h"
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
 #include "tom/ocs_Transitional.h"
@@ -189,17 +195,13 @@ typedef struct {
 #define SCHED_PROF_INC(pi, attrib) if (pi != nullptr) pi->attrib++
 
 /**
- * @brief Everything one matching run needs and everything it produces
+ * @brief The trivially copyable part of #sge_assignment_t
  *
- * Passed through the whole matching machinery as `a`. It has four parts, in
- * this order: what determines the assignment (the job and all the lists),
- * caches of intermediate results, the parallel job settings, and the
- * resulting assignment itself.
- *
- * Initialize with #SGE_ASSIGNMENT_INIT or assignment_init(), release with
- * assignment_release().
+ * Everything of the assignment except the lists it owns: the values, the
+ * caches of plain values and the non-owning handles. assignment_copy()
+ * copies this part by assignment.
  */
-typedef struct {
+struct sge_assignment_base_t {
    // -------------------- this section determines the assignment --------------------
    uint32_t    job_id;          ///< job id (convenience reasons)
    uint32_t    ja_task_id;      ///< job array task id (convenience reasons)
@@ -231,13 +233,6 @@ typedef struct {
    uint64_t   now;              ///< now time for immediate jobs
    bool is_binding_enabled;     ///< cached value of the corresponding configuration parameter
    bool do_binding_on_any_host; ///< cached value of the corresponding configuration parameter
-   // -------------------- this section is for caching of intermediate results --------------------
-   lList      *limit_list;      ///< the resource quota limit list (RQL_Type)
-   lList      *skip_cqueue_list; ///< cluster queues that need not be checked anymore (CTI_Type)
-   lList      *skip_host_list;  ///< hosts that need not be checked anymore (CTI_Type)
-   lList      *rsmap_job_keys;  ///< per resource map, the instance group a scope=job request binds
-                                ///< the whole job to (VA_Type: VA_variable the map name, VA_value
-                                ///< the group key), see rsmap_job_scope_key()
    // -------------------- this section are parallel job related settings --------------------
    ocs::tom::Element<ocs::tom::PE> pe;       ///< the parallel environment
    const char* pe_name;         ///< name of the PE
@@ -246,31 +241,45 @@ typedef struct {
    const char *mallocation_rule; ///< the allocation rule for the master task (or nullptr)
    int mallocation_parsed;      ///< the allocation rule for the master task parsed with a->slots as the maximum (or nullptr)
    // -------------------- this section is the resulting assignment --------------------
-   lList      *gdil;            ///< the resources (JG_Type)
    int        slots;            ///< total number of slots we do matching against
    uint64_t   start;            ///< jobs start time
    int        soft_violations;  ///< number of soft request violations
    lList      **monitor_alpp;   ///< place scheduler diagnosis here if non-nullptr
    bool       monitor_next_run; ///< controls qconf -tsm scheduler diagnosis
-   lList      *binding_to_use;  ///< Core/thread binding information
-   lList      *granted_rsmaps;  ///< resource map ids granted, keyed by GRU_name and GRU_host (GRU_Type)
    bool       filter_first_core; ///< globals binding filter: true if first core of first socket should not be used
    // -------------------- scheduler profiling index as picky pack data -------------------------
    sched_prof_t *pi;            ///< Profiling counters, or nullptr when profiling is off
-} sge_assignment_t;
+};
 
-// assignment_copy() copies the struct with memcpy() and SGE_ASSIGNMENT_INIT initializes it positionally
-static_assert(std::is_trivially_copyable_v<sge_assignment_t>, "sge_assignment_t must stay trivially copyable");
+// assignment_copy() copies the base part by assignment
+static_assert(std::is_trivially_copyable_v<sge_assignment_base_t>,
+              "sge_assignment_base_t must stay trivially copyable");
 
-/** Initializer for an empty #sge_assignment_t */
-#define SGE_ASSIGNMENT_INIT {0, 0, 0, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, \
-   0, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, false, false, false, false, false, 0,    \
-   false, false,                                                                                                       \
-   nullptr, nullptr, nullptr, nullptr,                   /* caching */                                                 \
-   nullptr, nullptr, nullptr, 0, nullptr, 0,             /* parallel job related settings */                           \
-   nullptr, 0, 0, 0, nullptr, false, nullptr, nullptr, false, /* resulting assignment */                               \
-   nullptr                                               /* profiling */                                               \
-}
+/**
+ * @brief Everything one matching run needs and everything it produces
+ *
+ * Passed through the whole matching machinery as `a`. It has four parts: what
+ * determines the assignment (the job and all the lists), caches of
+ * intermediate results, the parallel job settings, and the resulting
+ * assignment itself. The values and the non-owning handles are in the base
+ * #sge_assignment_base_t, the lists the assignment owns are here.
+ *
+ * Initialize with `sge_assignment_t a{};` and assignment_init(), release with
+ * assignment_release().
+ */
+struct sge_assignment_t : sge_assignment_base_t {
+   // -------------------- this section is for caching of intermediate results --------------------
+   ocs::tom::ListPtr<ocs::tom::RQL> limit_list;       ///< the resource quota limit list
+   ocs::tom::ListPtr<ocs::tom::CTI> skip_cqueue_list; ///< cluster queues that need not be checked anymore
+   ocs::tom::ListPtr<ocs::tom::CTI> skip_host_list;   ///< hosts that need not be checked anymore
+   ocs::tom::ListPtr<ocs::tom::VA> rsmap_job_keys;    ///< per resource map, the instance group a scope=job request
+                                                      ///< binds the whole job to (VA_variable the map name,
+                                                      ///< VA_value the group key), see rsmap_job_scope_key()
+   // -------------------- this section is the resulting assignment --------------------
+   ocs::tom::ListPtr<ocs::tom::JG> gdil;              ///< the resources
+   ocs::tom::ListPtr<ocs::tom::BN> binding_to_use;    ///< Core/thread binding information
+   ocs::tom::ListPtr<ocs::tom::GRU> granted_rsmaps;   ///< resource map ids granted, keyed by GRU_name and GRU_host
+};
 
 void assignment_init(sge_assignment_t *a, ocs::tom::Element<ocs::tom::JB> job, ocs::tom::Element<ocs::tom::JAT> ja_task,
                      ocs::tom::List<ocs::tom::CE> load_adjustments);

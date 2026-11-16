@@ -1039,7 +1039,7 @@ ar_reserve_queues(lList **alpp, lListElem *ar, uint64_t gdi_session) {
    const lListElem *cqueue = nullptr;
    bool ret = true;
    int i = 0;
-   sge_assignment_t a = SGE_ASSIGNMENT_INIT;
+   sge_assignment_t a{};
    const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
    const lList *master_userset_list = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
    lList *master_job_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB);
@@ -1253,9 +1253,8 @@ ar_reserve_queues(lList **alpp, lListElem *ar, uint64_t gdi_session) {
          answer_list_add_sprintf(alpp, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR, MSG_JOB_NOSUITABLEQ_S, SGE_OBJ_AR);
          ret = false;
       } else {
-         ocs::tom::set<AR_granted_slots>(ar, a.gdil);
+         ocs::tom::set<AR_granted_slots>(ar, std::move(a.gdil));
          ar_initialize_resource_booking(ar);
-         a.gdil = nullptr;
 
          ar_do_reservation(ar, true, gdi_session);
       }

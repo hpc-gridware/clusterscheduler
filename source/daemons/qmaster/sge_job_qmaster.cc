@@ -3514,7 +3514,7 @@ int verify_suitable_queues(lList **alpp, lListElem *jep, int *trigger, bool is_m
       const lList *job_hard_queue_list = job_get_hard_queue_list(jep);
       const char *pe_name = ocs::tom::get<JB_pe>(jep);
 
-      sge_assignment_t a = SGE_ASSIGNMENT_INIT;
+      sge_assignment_t a{};
 
       assignment_init(&a, ocs::tom::Element<ocs::tom::JB>(jep), nullptr, nullptr);
       assignment_init_ar(&a, ocs::tom::List<ocs::tom::AR>(master_ar_list));

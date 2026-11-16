@@ -778,7 +778,7 @@ static int test_below_window_before_closed_period() {
    utilization_add(*cr, 1000, 1000, 1, 2, 1, PE_TAG, "slots", "STARTING", false, false, no_binding, no_rsmap);
 
    for (int i = 0; cases[i].what != nullptr; i++) {
-      sge_assignment_t a = SGE_ASSIGNMENT_INIT;
+      sge_assignment_t a{};
       a.now = 50;
       a.duration = cases[i].duration;
 

@@ -148,9 +148,12 @@ rsmap_select_granted_ids(sge_assignment_t *a, const char *name, const char *host
    // reaches it and added to by the ones which follow
    lListElem *gru = nullptr;
    if (ret) {
-      gru = gru_list_search(a->granted_rsmaps, name, host_name);
+      gru = gru_list_search(*a->granted_rsmaps, name, host_name);
       if (gru == nullptr) {
-         gru = ocs::tom::emplace_back<GRU_name>(&(a->granted_rsmaps), name);
+         if (!a->granted_rsmaps) {
+            a->granted_rsmaps = ocs::tom::ListPtr<ocs::tom::GRU>::create("");
+         }
+         gru = a->granted_rsmaps->emplace_back<GRU_name>(name);
          if (gru == nullptr) {
             ret = false;
          } else {
@@ -340,7 +343,7 @@ gru_list_add_request(sge_assignment_t *a, lList **granted_resources_list, const 
          if (select_instances) {
             ret = rsmap_select_granted_ids(a, name, host_name, host_list, amount * slots,
                                            same_key, id_expr, required_props, required_key);
-         } else if (gru_list_search(a->granted_rsmaps, name, host_name) == nullptr) {
+         } else if (gru_list_search(*a->granted_rsmaps, name, host_name) == nullptr) {
             // The selection pass walks the same granted requests in the same order, so a map
             // reached here was reached there. Nothing recorded means the two have drifted
             // apart, and handing out a map with no instances would give the job a card the
@@ -378,7 +381,7 @@ gru_list_apply_selected_rsmap_ids(const sge_assignment_t *a, const lListElem *ja
    bool ret = true;
 
    const lListElem *selected;
-   for_each_ep (selected, a->granted_rsmaps) {
+   for_each_ep (selected, *a->granted_rsmaps) {
       const char *name = ocs::tom::get<GRU_name>(selected);
       const char *host_name = ocs::tom::get<GRU_host>(selected);
 
@@ -471,7 +474,7 @@ gru_build_granted_resource_list(sge_assignment_t *a, lListElem *ja_task, const l
    // Attention: One host can appear multiple times in gdil (for different queue instances)!
    bool is_master_task = true;
    const char *last_host = nullptr;
-   for_each_ep_lv(gdil_ep, a->gdil) {
+   for_each_ep_lv(gdil_ep, *a->gdil) {
       int slots = ocs::tom::get<JG_slots>(gdil_ep);
       const char *host_name = ocs::tom::get<JG_qhostname>(gdil_ep);
 
