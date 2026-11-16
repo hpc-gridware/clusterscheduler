@@ -77,6 +77,7 @@
 #include "sgeobj/tom/ocs_tom_US.h"
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
+#include "tom/ocs_Transitional.h"
 #include "sgeobj/ocs_TopologyString.h"
 
 /**
@@ -93,10 +94,14 @@ sge_select_queue(lList *requested_attr, lListElem *queue, lListElem *host, lList
 
 /* --- is there a load alarm on this queue ---------------------------- */
 
-int sge_load_alarm(char *reason, size_t reason_size, const lListElem *queue, const lList *threshold,
-                   const lList *exechost_list, const lList *complex_list,
-                   const lList *load_adjustments, const lList *consumable_load_adjustments,
-                   bool is_check_consumable);
+int sge_load_alarm(char *reason, size_t reason_size, ocs::tom::ConstElement<ocs::tom::QU> queue,
+                   ocs::tom::ConstList<ocs::tom::CE> threshold, ocs::tom::ConstList<ocs::tom::EH> exechost_list,
+                   ocs::tom::ConstList<ocs::tom::CE> complex_list, ocs::tom::ConstList<ocs::tom::CE> load_adjustments,
+                   ocs::tom::ConstList<ocs::tom::CE> consumable_load_adjustments, bool is_check_consumable);
+OCS_TRANSITIONAL int sge_load_alarm(char *reason, size_t reason_size, const lListElem *queue, const lList *threshold,
+                                    const lList *exechost_list, const lList *complex_list,
+                                    const lList *load_adjustments, const lList *consumable_load_adjustments,
+                                    bool is_check_consumable);
 
 void sge_create_load_list(const lList *queue_list, const lList *host_list,
                           const lList *centry_list, lList **load_list);
@@ -108,9 +113,14 @@ void sge_remove_queue_from_load_list(lList **load_list, const lList *queue_list)
 
 void sge_free_load_list(lList **load_list);
 
-char *sge_load_alarm_reason(lListElem *queue, lList *threshold, const lList *exechost_list,
-                            const lList *complex_list, const lList *load_adjustments, char *reason, int reason_size,
+char *sge_load_alarm_reason(ocs::tom::Element<ocs::tom::QU> queue, ocs::tom::ConstList<ocs::tom::CE> threshold,
+                            ocs::tom::ConstList<ocs::tom::EH> exechost_list,
+                            ocs::tom::ConstList<ocs::tom::CE> complex_list,
+                            ocs::tom::ConstList<ocs::tom::CE> load_adjustments, char *reason, int reason_size,
                             const char *type);
+OCS_TRANSITIONAL char *sge_load_alarm_reason(lListElem *queue, lList *threshold, const lList *exechost_list,
+                                             const lList *complex_list, const lList *load_adjustments, char *reason,
+                                             int reason_size, const char *type);
 
 int sge_split_queue_load(bool monitor_next_run, lList **unloaded, lList **overloaded, lList *exechost_list,
                          const lList *complex_list, const lList *load_adjustments,

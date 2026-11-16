@@ -47,6 +47,7 @@
 #include <cmath>
 #include <string>
 #include <tuple>
+#include <utility>
 #include <vector>
 
 #include "uti/ocs_Pattern.h"
@@ -117,6 +118,7 @@
 #include "sgeobj/tom/ocs_tom_ARA.h"
 #include "sgeobj/tom/ocs_tom_CCT.h"
 #include "sgeobj/tom/ocs_tom_CE.h"
+#include "sgeobj/tom/ocs_tom_CQ.h"
 #include "sgeobj/tom/ocs_tom_CTI.h"
 #include "sgeobj/tom/ocs_tom_EH.h"
 #include "sgeobj/tom/ocs_tom_HL.h"
@@ -310,11 +312,12 @@ static lListElem
 
 static int
 load_check_alarm(char *reason, size_t reason_size, const char *name, const char *load_value, const char *limit_value,
-                     uint32_t relop, ocs::CEntry::Type type, lListElem *hep, const lListElem *hlep, double lc_host,
-                     double lc_global, const lList *load_adjustments, int load_is_value);
+                 uint32_t relop, ocs::CEntry::Type type, ocs::tom::ConstElement<ocs::tom::EH> hep,
+                 ocs::tom::ConstElement<ocs::tom::HL> hlep, double lc_host, double lc_global,
+                 ocs::tom::ConstList<ocs::tom::CE> load_adjustments, int load_is_value);
 
 static int
-load_np_value_adjustment(const char* name, lListElem *hep, double *load_correction);
+load_np_value_adjustment(const char *name, ocs::tom::ConstElement<ocs::tom::EH> hep, double *load_correction);
 
 
 static void
@@ -2355,13 +2358,32 @@ bool is_requested(const ocs::tom::ConstElement<ocs::tom::JB> job, const char *at
    DRETURN(ret);
 }
 
+/**
+ * @brief Is one load threshold exceeded?
+ * @param reason buffer receiving the reason, may be nullptr
+ * @param reason_size size of the @p reason buffer
+ * @param name the name of the attribute
+ * @param load_value the load value, or the complex value if @p load_is_value
+ * @param limit_value the threshold
+ * @param relop the relational operator of the attribute
+ * @param type the type of the attribute
+ * @param hep the host of the queue, for the number of processors of an np_* load value
+ * @param hlep the load value of the host, empty if the load value is a global one
+ * @param lc_host the load correction factor of the host
+ * @param lc_global the load correction factor of the global host
+ * @param load_adjustments the load adjustments to apply
+ * @param load_is_value whether @p load_value is a complex value and no load
+ * @return 1 if the threshold is exceeded or cannot be evaluated, 0 otherwise
+ */
 static int
-load_check_alarm(char *reason, size_t reason_size, const char *name, const char *load_value, const char *limit_value,
-                 uint32_t relop, ocs::CEntry::Type type, lListElem *hep, const lListElem *hlep, double lc_host, double lc_global,
-                 const lList *load_adjustments, int load_is_value) {
+load_check_alarm(char *reason, const size_t reason_size, const char *name, const char *load_value,
+                 const char *limit_value, const uint32_t relop, const ocs::CEntry::Type type,
+                 const ocs::tom::ConstElement<ocs::tom::EH> hep, const ocs::tom::ConstElement<ocs::tom::HL> hlep,
+                 const double lc_host, const double lc_global, const ocs::tom::ConstList<ocs::tom::CE> load_adjustments,
+                 const int load_is_value) {
    DENTER(TOP_LAYER);
 
-   const lListElem *job_load;
+   ocs::tom::ConstElement<ocs::tom::CE> job_load;
    double limit, load;
    int match;
 #define STR_LC_DIAGNOSIS 1024
@@ -2488,14 +2510,16 @@ load_check_alarm(char *reason, size_t reason_size, const char *name, const char 
  *
  * @note MT-NOTE: load_np_value_adjustment() is MT safe
  */
-static int load_np_value_adjustment(const char* name, lListElem *hep, double *load_correction) {
+static int
+load_np_value_adjustment(const char *name, const ocs::tom::ConstElement<ocs::tom::EH> hep, double *load_correction) {
+   DENTER(TOP_LAYER);
 
    int nproc = 1;
    if (!strncmp(name, "np_", 3)) {
-      ocs::tom::ConstElement<ocs::tom::HL> ep_nproc = ocs::tom::find_first_in<EH_load_list, HL_name>(hep, LOAD_ATTR_NUM_PROC);
+      auto ep_nproc = ocs::tom::find_first_in<EH_load_list, HL_name>(hep, LOAD_ATTR_NUM_PROC);
 
-      if (ep_nproc != nullptr) {
-         const char* cp = ocs::tom::get<HL_value>(ep_nproc);
+      if (ep_nproc) {
+         const char *cp = ocs::tom::get<HL_value>(ep_nproc);
          if (cp) {
             nproc = atoi(cp);
 
@@ -2508,7 +2532,7 @@ static int load_np_value_adjustment(const char* name, lListElem *hep, double *lo
       nproc = 0;
    }
 
-   return nproc;
+   DRETURN(nproc);
 }
 
 static int resource_cmp(uint32_t relop, double req, double src_dl) {
@@ -2548,28 +2572,30 @@ static int resource_cmp(uint32_t relop, double req, double src_dl) {
  *
  * @param[out] reason              buffer receiving the reason, may be nullptr
  * @param[in]  reason_size         size of the `reason` buffer
- * @param[in]  qep                 the queue instance (`QU_Type`)
- * @param[in]  threshold           the thresholds to check (`CE_Type`)
+ * @param[in]  qep                 the queue instance
+ * @param[in]  threshold           the thresholds to check
  * @param[in]  exechost_list       the execution hosts, for the load values
  * @param[in]  centry_list         the system wide attribute configuration
  * @param[in]  load_adjustments    the load adjustments to apply to the load
- *                                 values; nullptr applies none
+ *                                 values; an empty handle applies none
  * @param[in]  consumable_load_adjustments the load adjustments used to
- *                                 resolve a consumable threshold; nullptr
- *                                 fetches them from the data store of the
+ *                                 resolve a consumable threshold; an empty
+ *                                 handle fetches them from the data store of the
  *                                 calling thread
  * @param[in]  is_check_consumable whether consumables count as load values
  *
  * @return 1 if a threshold is exceeded, 0 otherwise
  */
 
-int sge_load_alarm(char *reason, size_t reason_size, const lListElem *qep, const lList *threshold,
-                   const lList *exechost_list, const lList *centry_list,
-                   const lList *load_adjustments, const lList *consumable_load_adjustments,
-                   bool is_check_consumable) {
+int sge_load_alarm(char *reason, const size_t reason_size, const ocs::tom::ConstElement<ocs::tom::QU> qep,
+                   const ocs::tom::ConstList<ocs::tom::CE> threshold,
+                   const ocs::tom::ConstList<ocs::tom::EH> exechost_list,
+                   const ocs::tom::ConstList<ocs::tom::CE> centry_list,
+                   const ocs::tom::ConstList<ocs::tom::CE> load_adjustments,
+                   const ocs::tom::ConstList<ocs::tom::CE> consumable_load_adjustments,
+                   const bool is_check_consumable) {
    DENTER(TOP_LAYER);
 
-   lListElem *hep, *global_hep;
    uint32_t ulc_factor;
    const char *load_value = nullptr;
    const char *limit_value = nullptr;
@@ -2581,9 +2607,9 @@ int sge_load_alarm(char *reason, size_t reason_size, const lListElem *qep, const
       DRETURN(0);
    }
 
-   hep = host_list_locate(exechost_list, ocs::tom::get<QU_qhostname>(qep));
+   auto hep = ocs::tom::find_first<EH_name>(exechost_list, ocs::tom::get<QU_qhostname>(qep));
 
-   if(!hep) {
+   if (!hep) {
       if (reason)
          snprintf(reason, reason_size, MSG_SCHEDD_WHYEXCEEDNOHOST_S, static_cast<const char *>(ocs::tom::get<QU_qhostname>(qep)));
       /* no host for queue -> ERROR */
@@ -2595,24 +2621,24 @@ int sge_load_alarm(char *reason, size_t reason_size, const lListElem *qep, const
       lc_host = ((double)ulc_factor)/100;
    }
 
-   if ((global_hep = host_list_locate(exechost_list, SGE_GLOBAL_NAME)) != nullptr) {
+   auto global_hep = ocs::tom::find_first<EH_name>(exechost_list, SGE_GLOBAL_NAME);
+   if (global_hep) {
       if ((ocs::tom::has<EH_load_correction_factor>(global_hep))
           && (ulc_factor=ocs::tom::get<EH_load_correction_factor>(global_hep)))
          lc_global = ((double)ulc_factor)/100;
    }
 
-   for_each_ep_lv(tep, threshold) {
-      ocs::tom::ConstElement<ocs::tom::HL> hlep = nullptr;
-      ocs::tom::ConstElement<ocs::tom::HL> glep = nullptr;
-      lListElem *cep  = nullptr;
-      bool need_free_cep = false;
-      uint32_t relop;
-      ocs::CEntry::Type type;
+   for (auto tep : threshold) {
+      ocs::tom::ConstElement<ocs::tom::HL> hlep;
+      ocs::tom::ConstElement<ocs::tom::HL> glep;
+      // the attribute of a consumable threshold is built for the check, and this handle frees it
+      ocs::tom::ElementPtr<ocs::tom::CE> attribute;
 
-      const char *name = ocs::tom::get<CE_name>(tep);
+      auto name = ocs::tom::get<CE_name>(tep);
       /* complex attriute definition */
 
-      if (!(cep = centry_list_locate(centry_list, name))) {
+      auto cep = ocs::tom::ConstElement<ocs::tom::CE>(centry_list_locate(centry_list, name));
+      if (!cep) {
          if (reason) {
             snprintf(reason, reason_size, MSG_SCHEDD_WHYEXCEEDNOCOMPLEX_S, name);
          }
@@ -2622,21 +2648,20 @@ int sge_load_alarm(char *reason, size_t reason_size, const lListElem *qep, const
          continue;
       }
 
-      if (hep != nullptr) {
+      if (hep) {
          hlep = ocs::tom::find_first_in<EH_load_list, HL_name>(hep, name);
       }
 
       if (ocs::tom::get<CE_consumable>(cep) == CONSUMABLE_NO) {
-         if (hlep != nullptr) {
+         if (hlep) {
             load_value = ocs::tom::get<HL_value>(hlep);
             load_is_value = 0;
-         } else if ((global_hep != nullptr) &&
-                  ((glep = ocs::tom::find_first_in<EH_load_list, HL_name>(global_hep, name)) != nullptr)) {
+         } else if (global_hep && (glep = ocs::tom::find_first_in<EH_load_list, HL_name>(global_hep, name))) {
                load_value = ocs::tom::get<HL_value>(glep);
                load_is_value = 0;
          } else {
-            ocs::tom::ConstElement<ocs::tom::CE> queue_ep = ocs::tom::find_first_in<QU_consumable_config_list, CE_name>(qep, name);
-            if (queue_ep != nullptr) {
+            auto queue_ep = ocs::tom::find_first_in<QU_consumable_config_list, CE_name>(qep, name);
+            if (queue_ep) {
                load_value = ocs::tom::get<CE_stringval>(queue_ep);
                load_is_value = 1;
             } else {
@@ -2648,35 +2673,53 @@ int sge_load_alarm(char *reason, size_t reason_size, const lListElem *qep, const
          }
       } else {
          /* load thesholds... */
-         if ((cep = get_attribute_by_name(global_hep, hep, qep, name, centry_list, consumable_load_adjustments,
-                                          DISPATCH_TIME_NOW, 0)) == nullptr ) {
+         attribute = get_attribute_by_name(global_hep, hep, qep, name, centry_list, consumable_load_adjustments,
+                                           DISPATCH_TIME_NOW, 0);
+         if (!attribute) {
             if (reason)
                snprintf(reason, reason_size, MSG_SCHEDD_WHYEXCEEDNOCOMPLEX_S, name);
             DRETURN(1);
          }
-         need_free_cep = true;
+         cep = *attribute;
 
          load_value = ocs::tom::get<CE_pj_stringval>(cep);
          load_is_value = (ocs::tom::get<CE_pj_dominant>(cep) & DOMINANT_TYPE_MASK) != DOMINANT_TYPE_CLOAD;
       }
 
-      relop = ocs::tom::get<CE_relop>(cep);
+      auto relop = ocs::tom::get<CE_relop>(cep);
       limit_value = ocs::tom::get<CE_stringval>(tep);
-      type = static_cast<ocs::CEntry::Type>(ocs::tom::get<CE_valtype>(cep));
+      auto type = static_cast<ocs::CEntry::Type>(ocs::tom::get<CE_valtype>(cep));
 
       if (load_check_alarm(reason, reason_size, name, load_value, limit_value, relop, type, hep, hlep, lc_host,
                            lc_global, load_adjustments, load_is_value)) {
-         if (need_free_cep) {
-            lFreeElem(&cep);
-         }
          DRETURN(1);
-      }
-      if (need_free_cep) {
-         lFreeElem(&cep);
       }
    }
 
    DRETURN(0);
+}
+
+/**
+ * @brief sge_load_alarm() for an untyped caller
+ * @param[out] reason              as sge_load_alarm()
+ * @param[in]  reason_size         as sge_load_alarm()
+ * @param[in]  qep                 the queue instance (`QU_Type`)
+ * @param[in]  threshold           the thresholds to check (`CE_Type`)
+ * @param[in]  exechost_list       the execution hosts (`EH_Type`)
+ * @param[in]  centry_list         the complex entries (`CE_Type`)
+ * @param[in]  load_adjustments    the load adjustments (`CE_Type`), or nullptr
+ * @param[in]  consumable_load_adjustments as sge_load_alarm() (`CE_Type`)
+ * @param[in]  is_check_consumable as sge_load_alarm()
+ * @return as sge_load_alarm()
+ */
+int sge_load_alarm(char *reason, const size_t reason_size, const lListElem *qep, const lList *threshold,
+                   const lList *exechost_list, const lList *centry_list, const lList *load_adjustments,
+                   const lList *consumable_load_adjustments, const bool is_check_consumable) {
+   return sge_load_alarm(reason, reason_size, ocs::tom::ConstElement<ocs::tom::QU>(qep),
+                         ocs::tom::ConstList<ocs::tom::CE>(threshold), ocs::tom::ConstList<ocs::tom::EH>(exechost_list),
+                         ocs::tom::ConstList<ocs::tom::CE>(centry_list),
+                         ocs::tom::ConstList<ocs::tom::CE>(load_adjustments),
+                         ocs::tom::ConstList<ocs::tom::CE>(consumable_load_adjustments), is_check_consumable);
 }
 
 /**
@@ -2685,12 +2728,12 @@ int sge_load_alarm(char *reason, size_t reason_size, const lListElem *qep, const
  * Same checks as sge_load_alarm(), but it reports every exceeded threshold
  * rather than stopping at the first - this is what `qstat -explain a` prints.
  *
- * @param[in]  qep            the queue instance (`QU_Type`)
- * @param[in]  threshold      the thresholds to check (`CE_Type`)
+ * @param[in]  qep            the queue instance
+ * @param[in]  threshold      the thresholds to check
  * @param[in]  exechost_list  the execution hosts, for the load values
  * @param[in]  centry_list    the system wide attribute configuration
  * @param[in]  load_adjustments the job load adjustments of the scheduler
- *                            configuration (`CE_Type`); nullptr fetches them
+ *                            configuration; an empty handle fetches them
  *                            from the data store of the calling thread
  * @param[out] reason         buffer receiving the reasons
  * @param[in]  reason_size    size of the `reason` buffer
@@ -2699,24 +2742,27 @@ int sge_load_alarm(char *reason, size_t reason_size, const lListElem *qep, const
  * @return `reason`
  */
 
-char *sge_load_alarm_reason(lListElem *qep, lList *threshold,
-                            const lList *exechost_list, const lList *centry_list,
-                            const lList *load_adjustments, char *reason, int reason_size,
-                            const char *threshold_type) {
+char *sge_load_alarm_reason(const ocs::tom::Element<ocs::tom::QU> qep,
+                            const ocs::tom::ConstList<ocs::tom::CE> threshold,
+                            const ocs::tom::ConstList<ocs::tom::EH> exechost_list,
+                            const ocs::tom::ConstList<ocs::tom::CE> centry_list,
+                            const ocs::tom::ConstList<ocs::tom::CE> load_adjustments, char *reason,
+                            const int reason_size, const char *threshold_type) {
    DENTER(TOP_LAYER);
 
    *reason = 0;
 
    /* no threshold -> no alarm */
-   if (threshold != nullptr) {
-      lList *rlp = nullptr;
+   if (threshold) {
       bool first = true;
 
       /* get actual complex values for queue */
-      queue_complexes2scheduler(&rlp, qep, exechost_list, centry_list, load_adjustments);
+      lList *raw_rlp = nullptr;
+      queue_complexes2scheduler(&raw_rlp, qep, exechost_list, centry_list, load_adjustments);
+      auto rlp = ocs::tom::ListPtr<ocs::tom::CE>(raw_rlp);
 
       /* check all thresholds */
-      for_each_ep_lv(tep, threshold) {
+      for (auto tep : threshold) {
          const char *name;             /* complex attrib name */
          ocs::tom::ConstElement<ocs::tom::CE> cep;         /* actual complex attribute */
          char dom_str[5];              /* dominance as string */
@@ -2734,7 +2780,7 @@ char *sge_load_alarm_reason(lListElem *qep, lList *threshold,
          }
 
          /* find actual complex attribute */
-         if ((cep = ocs::tom::find_first<CE_name>(rlp, name)) == nullptr) {
+         if (!(cep = ocs::tom::find_first<CE_name>(*rlp, name))) {
             /* no complex attribute for threshold -> ERROR */
             if (qinstance_state_is_unknown(qep)) {
                snprintf(buffer, MAX_STRING_SIZE, MSG_QINSTANCE_VALUEMISSINGMASTERDOWN_S, name);
@@ -2769,11 +2815,31 @@ char *sge_load_alarm_reason(lListElem *qep, lList *threshold,
          DTRACE;
          strncat(reason, buffer, reason_size);
       }
-
-      lFreeList(&rlp);
    }
 
    DRETURN(reason);
+}
+
+/**
+ * @brief sge_load_alarm_reason() for an untyped caller
+ * @param[in]  qep              the queue instance (`QU_Type`)
+ * @param[in]  threshold        the thresholds to check (`CE_Type`)
+ * @param[in]  exechost_list    the execution hosts (`EH_Type`)
+ * @param[in]  centry_list      the complex entries (`CE_Type`)
+ * @param[in]  load_adjustments the load adjustments (`CE_Type`), or nullptr
+ * @param[out] reason           as sge_load_alarm_reason()
+ * @param[in]  reason_size      as sge_load_alarm_reason()
+ * @param[in]  threshold_type   as sge_load_alarm_reason()
+ * @return as sge_load_alarm_reason()
+ */
+char *sge_load_alarm_reason(lListElem *qep, lList *threshold, const lList *exechost_list, const lList *centry_list,
+                            const lList *load_adjustments, char *reason, const int reason_size,
+                            const char *threshold_type) {
+   return sge_load_alarm_reason(ocs::tom::Element<ocs::tom::QU>(qep), ocs::tom::ConstList<ocs::tom::CE>(threshold),
+                                ocs::tom::ConstList<ocs::tom::EH>(exechost_list),
+                                ocs::tom::ConstList<ocs::tom::CE>(centry_list),
+                                ocs::tom::ConstList<ocs::tom::CE>(load_adjustments), reason, reason_size,
+                                threshold_type);
 }
 
 /**
@@ -2818,7 +2884,6 @@ uint32_t ttype
 ) {
    DENTER(TOP_LAYER);
 
-   const lList *thresholds;
    int nverified = 0;
    char reason[2048];
 
@@ -2829,12 +2894,14 @@ uint32_t ttype
    }
 
    if (!granted || load_adjustments) {
-      lListElem *qep, *next_qep;
+      auto queues = ocs::tom::List<ocs::tom::QU>(*unloaded);
+      auto granted_list = ocs::tom::ConstList<ocs::tom::JG>(granted);
 
-      next_qep = lFirstRW(*unloaded);
-      while ((qep = next_qep)) {
+      auto next_qep = queues.front();
+      while (next_qep) {
+         auto qep = next_qep;
          bool remove_queue = false;
-         next_qep = lNextRW(qep);
+         next_qep = qep.next();
 
          /* do not verify load alarm if a job has been dispatched recently
             but not to the host where this queue resides */
@@ -2842,13 +2909,17 @@ uint32_t ttype
             /* this queue is already tagged for removing */
             remove_queue = true;
             ocs::tom::set<QU_tagged4schedule>(qep, 0);
-         } else if (!granted || (granted && (sconf_get_global_load_correction() ||
-                              ocs::tom::find_first<JG_qhostname>(granted, ocs::tom::get<QU_qhostname>(qep))))) {
-            thresholds = lGetList(qep, ttype);
+         } else if (!granted_list || (sconf_get_global_load_correction() ||
+                              ocs::tom::find_first<JG_qhostname>(granted_list, ocs::tom::get<QU_qhostname>(qep)))) {
+            // ttype is QU_load_thresholds or QU_suspend_thresholds
+            auto thresholds = ocs::tom::ConstList<ocs::tom::CE>(lGetList(qep, ttype));
             nverified++;
 
-            if (sge_load_alarm(reason, sizeof(reason), qep, thresholds, exechost_list, centry_list, load_adjustments,
-                               load_adjustments, is_comprehensive) != 0) {
+            if (sge_load_alarm(reason, sizeof(reason), qep, thresholds,
+                               ocs::tom::ConstList<ocs::tom::EH>(exechost_list),
+                               ocs::tom::ConstList<ocs::tom::CE>(centry_list),
+                               ocs::tom::ConstList<ocs::tom::CE>(load_adjustments),
+                               ocs::tom::ConstList<ocs::tom::CE>(load_adjustments), is_comprehensive) != 0) {
                remove_queue = true;
                if (ttype==QU_suspend_thresholds) {
                   DPRINTF("queue %s tagged to be in suspend alarm: %s\n", ocs::tom::get<QU_full_name>(qep), reason);
@@ -2861,13 +2932,13 @@ uint32_t ttype
          }
          if (remove_queue) {
             if (overloaded != nullptr) {
-               lDechainElem(*unloaded, qep);
+               // the list of the overloaded queues gets the (reduced) descriptor of the scheduler's queue list
                if (*overloaded == nullptr) {
                   *overloaded = lCreateListHash("", lGetListDescr(*unloaded), false);
                }
-               lAppendElem(*overloaded, qep);
+               lAppendElem(*overloaded, queues.extract(qep));
             } else {
-               lRemoveElem(*unloaded, &qep);
+               queues.erase(qep);
             }
          }
       }
@@ -2891,36 +2962,37 @@ int sge_split_queue_slots_free(bool monitor_next_run, lList **free, lList **full
    DENTER(TOP_LAYER);
 
    lList *full_queues = nullptr;
-   lListElem *thiz = nullptr;
-   lListElem *next = nullptr;
 
    if (free == nullptr) {
       DRETURN(-1);
    }
 
-   for (thiz=lFirstRW(*free); (next=lNextRW(thiz)), thiz ; thiz = next) {
+   auto queues = ocs::tom::List<ocs::tom::QU>(*free);
+   auto next = queues.front();
+   while (next) {
+      auto thiz = next;
+      next = thiz.next();
       if (qinstance_slots_used(thiz) >= (int)ocs::tom::get<QU_job_slots>(thiz)) {
+         // the lists of the full queues get the (reduced) descriptor of the scheduler's queue list
+         auto full_queue = queues.extract(thiz);
 
-         thiz = lDechainElem(*free, thiz);
-
-         if (!qinstance_state_is_full(thiz)) {
+         if (!qinstance_state_is_full(*full_queue)) {
             schedd_mes_add_global(nullptr, monitor_next_run,
                                   SCHEDD_INFO_QUEUEFULL_,
-                                  ocs::tom::get<QU_full_name>(thiz));
-            qinstance_state_set_full(thiz, true);
+                                  ocs::tom::get<QU_full_name>(full_queue));
+            qinstance_state_set_full(*full_queue, true);
 
             if (full_queues == nullptr) {
                full_queues = lCreateListHash("full one", lGetListDescr(*free), false);
             }
-            lAppendElem(full_queues, thiz);
+            lAppendElem(full_queues, std::move(full_queue));
          } else if (full != nullptr) {
             if (*full == nullptr) {
                *full = lCreateList("full one", lGetListDescr(*free));
             }
-            lAppendElem(*full, thiz);
-         } else {
-            lFreeElem(&thiz);
+            lAppendElem(*full, std::move(full_queue));
          }
+         // else the handle frees the queue
       }
    }
 
@@ -2983,7 +3055,7 @@ lList **suspended         /* QU_Type */
    lFreeWhere(&where);
 
    if (lp != nullptr) {
-      for_each_rw_lv(mes_queue, lp) {
+      for (auto mes_queue : ocs::tom::List<ocs::tom::QU>(lp)) {
          if (!qinstance_state_is_manual_suspended(mes_queue)) {
             qinstance_state_set_manual_suspended(mes_queue, true);
             schedd_mes_add_global(nullptr, monitor_next_run,
@@ -3039,7 +3111,7 @@ int sge_split_cal_disabled(bool monitor_next_run, lList **queue_list, lList **di
    lFreeWhere(&where);
 
    if (lp != nullptr) {
-      for_each_rw_lv(mes_queue, lp) {
+      for (auto mes_queue : ocs::tom::List<ocs::tom::QU>(lp)) {
          schedd_mes_add_global(nullptr, monitor_next_run,
                                SCHEDD_INFO_QUEUEDISABLED_,
                                ocs::tom::get<QU_full_name>(mes_queue));
@@ -3089,7 +3161,7 @@ int sge_split_disabled(bool monitor_next_run, lList **queue_list, lList **disabl
    lFreeWhere(&where);
 
    if (lp != nullptr) {
-      for_each_rw_lv (mes_queue, lp) {
+      for (auto mes_queue : ocs::tom::List<ocs::tom::QU>(lp)) {
          schedd_mes_add_global(nullptr, monitor_next_run,
                                SCHEDD_INFO_QUEUEDISABLED_,
                                ocs::tom::get<QU_full_name>(mes_queue));
@@ -3115,14 +3187,14 @@ int sge_split_disabled(bool monitor_next_run, lList **queue_list, lList **disabl
  * Match a jobs -pe 'pe_name' with pe_list cluster queue configuration.
  * True is returned if the parallel environment has no access.
  *
- * @param project the pe request of a job (no wildcard)
- * @param cq cluster queue (CQ_Type)
+ * @param pe_name the pe request of a job (no wildcard)
+ * @param cq cluster queue
  *
  * @return True, if rejected
  *
  * @note MT-NOTE: pe_cq_rejected() is MT safe
  */
-static bool pe_cq_rejected(const char *pe_name, const lListElem *cq) {
+static bool pe_cq_rejected(const char *pe_name, const ocs::tom::ConstElement<ocs::tom::CQ> cq) {
    DENTER(TOP_LAYER);
 
    if (!pe_name) {
@@ -3130,7 +3202,7 @@ static bool pe_cq_rejected(const char *pe_name, const lListElem *cq) {
    }
 
    bool rejected = true;
-   for_each_ep_lv(alist, ocs::tom::get<CQ_pe_list>(cq)) {
+   for (auto alist : ocs::tom::get<CQ_pe_list>(cq)) {
       if (ocs::tom::find_first_in<ASTRLIST_value, ST_name>(alist, pe_name)) {
          rejected = false;
          break;
@@ -3147,19 +3219,19 @@ static bool pe_cq_rejected(const char *pe_name, const lListElem *cq) {
  * True is returned if the project has no access.
  *
  * @param project the project of a job or nullptr
- * @param cq cluster queue (CQ_Type)
+ * @param cq cluster queue
  *
  * @return True, if rejected
  *
  * @note MT-NOTE: project_cq_rejected() is MT safe
  */
-static bool project_cq_rejected(const char *project, const lListElem *cq) {
+static bool project_cq_rejected(const char *project, const ocs::tom::ConstElement<ocs::tom::CQ> cq) {
    DENTER(TOP_LAYER);
 
    if (!project) {
       /* without project: rejected, if each "project" profile
          does contain project references */
-      for_each_ep_lv(alist, ocs::tom::get<CQ_projects>(cq)) {
+      for (auto alist : ocs::tom::get<CQ_projects>(cq)) {
          if (!ocs::tom::get<APRJLIST_value>(alist)) {
             DRETURN(false);
          }
@@ -3170,8 +3242,8 @@ static bool project_cq_rejected(const char *project, const lListElem *cq) {
 
    /* with project: rejected, if project is excluded by each "xproject" profile */
    bool rejected = true;
-   for_each_ep_lv(alist, ocs::tom::get<CQ_xprojects>(cq)) {
-      ocs::tom::ConstList<ocs::tom::PR> projects = ocs::tom::get<APRJLIST_value>(alist);
+   for (auto alist : ocs::tom::get<CQ_xprojects>(cq)) {
+      auto projects = ocs::tom::get<APRJLIST_value>(alist);
       if (!projects || !prj_list_locate(projects, project)) {
          rejected = false;
          break;
@@ -3183,8 +3255,8 @@ static bool project_cq_rejected(const char *project, const lListElem *cq) {
 
    /* with project: rejected, if project is not included with each "project" profile */
    rejected = true;
-   for_each_ep_lv(alist, ocs::tom::get<CQ_projects>(cq)) {
-      ocs::tom::ConstList<ocs::tom::PR> projects = ocs::tom::get<APRJLIST_value>(alist);
+   for (auto alist : ocs::tom::get<CQ_projects>(cq)) {
+      auto projects = ocs::tom::get<APRJLIST_value>(alist);
       if (!projects || prj_list_locate(projects, project)) {
          rejected = false;
          break;
@@ -3202,17 +3274,17 @@ static bool project_cq_rejected(const char *project, const lListElem *cq) {
  *
  * Returns true if -now yes jobs can not be run in cluster queue
  *
- * @param cq cluster queue (CQ_Type)
+ * @param cq cluster queue
  *
  * @return True, if rejected
  *
  * @note MT-NOTE: interactive_cq_rejected() is MT safe
  */
-static bool interactive_cq_rejected(const lListElem *cq) {
+static bool interactive_cq_rejected(const ocs::tom::ConstElement<ocs::tom::CQ> cq) {
    DENTER(TOP_LAYER);
 
    bool rejected = true;
-   for_each_ep_lv(alist, ocs::tom::get<CQ_qtype>(cq)) {
+   for (auto alist : ocs::tom::get<CQ_qtype>(cq)) {
       if ((ocs::tom::get<AQTLIST_value>(alist) & IQ)) {
          rejected = false;
          break;
@@ -3245,6 +3317,7 @@ bool sge_contained_in_access_list_(const char * user, const char * group, const 
  *
  * @param user Username
  * @param group Groupname
+ * @param grp_list the supplementary groups of the job
  * @param acl_list List of access list definitions
  * @param cq Cluster queue
  *
@@ -3254,13 +3327,13 @@ bool sge_contained_in_access_list_(const char * user, const char * group, const 
  */
 static bool
 access_cq_rejected(const char *user, const char *group, const lList *grp_list,
-                   const lList *acl_list, const lListElem *cq) {
+                   const ocs::tom::ConstList<ocs::tom::US> acl_list, const ocs::tom::ConstElement<ocs::tom::CQ> cq) {
    DENTER(TOP_LAYER);
 
    /* rejected, if user/group is excluded by each "xacl" profile */
    bool rejected = true;
-   for_each_ep_lv(alist, ocs::tom::get<CQ_xacl>(cq)) {
-      if (!sge_contained_in_access_list_(user, group, grp_list, static_cast<const lList *>(ocs::tom::get<AUSRLIST_value>(alist)), acl_list)) {
+   for (auto alist : ocs::tom::get<CQ_xacl>(cq)) {
+      if (!sge_contained_in_access_list_(user, group, grp_list, ocs::tom::get<AUSRLIST_value>(alist), acl_list)) {
          rejected = false;
          break;
       }
@@ -3271,8 +3344,8 @@ access_cq_rejected(const char *user, const char *group, const lList *grp_list,
 
    /* rejected, if user/group is not included in any "acl" profile */
    rejected = true;
-   for_each_ep_lv(alist, ocs::tom::get<CQ_acl>(cq)) {
-      ocs::tom::ConstList<ocs::tom::US> t = ocs::tom::get<AUSRLIST_value>(alist);
+   for (auto alist : ocs::tom::get<CQ_acl>(cq)) {
+      auto t = ocs::tom::get<AUSRLIST_value>(alist);
       if (!t || sge_contained_in_access_list_(user, group, grp_list, t, acl_list)) {
          rejected = false;
          break;
@@ -3292,19 +3365,21 @@ access_cq_rejected(const char *user, const char *group, const lList *grp_list,
  * @param[in,out] a                  the assignment; a rejection is recorded
  *                                   as a scheduling message
  * @param[in]     cqname             name of the cluster queue
- * @param[in]     cq                 the cluster queue (`CQ_Type`)
- * @param[in]     hard_resource_list the `-l` requests to check (`CE_Type`)
+ * @param[in]     cq                 the cluster queue
+ * @param[in]     hard_resource_list the `-l` requests to check
  * @param[in]     scope_name         name of the request scope, for the message
  *
  * @return true if the cluster queue is ruled out
  */
-bool cqueue_match_static_resource_list_rejected(sge_assignment_t *a, const char *cqname, const lListElem *cq,
-                                                const lList *hard_resource_list, const char *scope_name) {
+bool cqueue_match_static_resource_list_rejected(sge_assignment_t *a, const char *cqname,
+                                                const ocs::tom::ConstElement<ocs::tom::CQ> cq,
+                                                const ocs::tom::ConstList<ocs::tom::CE> hard_resource_list,
+                                                const char *scope_name) {
    DENTER(TOP_LAYER);
 
    bool rejected = false;
 
-   if (hard_resource_list != nullptr) {
+   if (hard_resource_list) {
       dstring unsatisfied = DSTRING_INIT;
       if (request_cq_rejected(hard_resource_list, cq, a->centry_list,
                               (!a->pe_name || a->slots == 1)?true:false, &unsatisfied)) {
@@ -3327,7 +3402,7 @@ bool cqueue_match_static_resource_list_rejected(sge_assignment_t *a, const char 
  * entire cluster is not suited for the job.
  *
  * @param cqname Cluster queue name
- * @param a
+ * @param a the assignment
  *
  * @return Returns DISPATCH_OK  or DISPATCH_NEVER_CAT
  *
@@ -3362,9 +3437,8 @@ dispatch_t cqueue_match_static(const char *cqname, sge_assignment_t *a) {
 
    /* check if cqueue was reserved for AR job */
    if (a->ar_id != 0) {
-      if (a->ar != nullptr) {
-         const lListElem *gdil_ep = ocs::tom::find_first_in<AR_reserved_queues, QU_qname>(a->ar, cqname);
-         if (gdil_ep == nullptr) {
+      if (a->ar) {
+         if (!ocs::tom::find_first_in<AR_reserved_queues, QU_qname>(a->ar, cqname)) {
             DPRINTF("Cluster Queue \"%s\" was not reserved by advance reservation %d\n", cqname, a->ar_id);
             schedd_mes_add(a->monitor_alpp, a->monitor_next_run, a->job_id,
                            SCHEDD_INFO_QNOTARRESERVED_SI, cqname, a->ar_id);
@@ -3376,16 +3450,18 @@ dispatch_t cqueue_match_static(const char *cqname, sge_assignment_t *a) {
       }
    }
 
-   const lListElem *cq = ocs::tom::find_first<CQ_name>(*ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE), cqname);
+   auto cq = ocs::tom::find_first<CQ_name>(*ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE), cqname);
 
    /* detect if entire cluster queue ruled out due to -l */
-   const lList *hard_resource_list = job_get_hard_resource_list(a->job, JRS_SCOPE_GLOBAL);
+   auto hard_resource_list = ocs::tom::ConstList<ocs::tom::CE>(job_get_hard_resource_list(a->job, JRS_SCOPE_GLOBAL));
    if (cqueue_match_static_resource_list_rejected(a, cqname, cq, hard_resource_list, "global")) {
       // if global requests do not match, we can rule out the cluster queue
       DRETURN(DISPATCH_NEVER_CAT);
    }
-   const lList *master_hard_resource_list = job_get_hard_resource_list(a->job, JRS_SCOPE_MASTER);
-   const lList *slave_hard_resource_list = job_get_hard_resource_list(a->job, JRS_SCOPE_SLAVE);
+   auto master_hard_resource_list =
+      ocs::tom::ConstList<ocs::tom::CE>(job_get_hard_resource_list(a->job, JRS_SCOPE_MASTER));
+   auto slave_hard_resource_list =
+      ocs::tom::ConstList<ocs::tom::CE>(job_get_hard_resource_list(a->job, JRS_SCOPE_SLAVE));
    if (cqueue_match_static_resource_list_rejected(a, cqname, cq, master_hard_resource_list, "master") &&
        cqueue_match_static_resource_list_rejected(a, cqname, cq, slave_hard_resource_list, "slave")) {
       // if both master and slave requests do not match, we cannot run any tasks in this cluster queue
@@ -5052,7 +5128,7 @@ parallel_max_host_slots(sge_assignment_t *a, lListElem *host) {
          }
 
          if (is_np_adjustment) {
-            load_np_value_adjustment(name, host, &adjustment);
+            load_np_value_adjustment(name, ocs::tom::ConstElement<ocs::tom::EH>(host), &adjustment);
          }
 
          /* Load alarm is defined in a way that a queue may go into alarm with the last
