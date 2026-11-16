@@ -51,12 +51,20 @@
 #include "sge_select_queue.h"
 #include "sgeobj/cull/sge_resource_utilization_RDE_L.h"
 #include "sgeobj/cull/sge_resource_utilization_RUE_L.h"
+#include "sgeobj/tom/ocs_tom_AR.h"
+#include "sgeobj/tom/ocs_tom_CE.h"
 #include "sgeobj/tom/ocs_tom_EH.h"
+#include "sgeobj/tom/ocs_tom_GRU.h"
+#include "sgeobj/tom/ocs_tom_HGRP.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
 #include "sgeobj/tom/ocs_tom_JG.h"
+#include "sgeobj/tom/ocs_tom_PE.h"
 #include "sgeobj/tom/ocs_tom_QU.h"
 #include "sgeobj/tom/ocs_tom_RESL.h"
+#include "sgeobj/tom/ocs_tom_RQS.h"
 #include "sgeobj/tom/ocs_tom_RUE.h"
 #include "sgeobj/tom/ocs_tom_ST.h"
+#include "sgeobj/tom/ocs_tom_US.h"
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
 #include "tom/ocs_Transitional.h"
@@ -80,10 +88,10 @@ ocs::tom::ListPtr<ocs::tom::RESL> utilization_rsmap_max(ocs::tom::ConstElement<o
 OCS_TRANSITIONAL lList *utilization_rsmap_max(const lListElem *cr, uint64_t now, uint64_t start_time,
                                               uint64_t duration);
 
-uint64_t utilization_rsmap_below(const lListElem *definition, ocs::tom::ConstElement<ocs::tom::RUE> cr,
-                                 const char *key_name, uint32_t amount,
-                                 const char *id_expr = nullptr,
-                                 const lList *required_props = nullptr);
+uint64_t
+utilization_rsmap_below(ocs::tom::ConstElement<ocs::tom::CE> definition, ocs::tom::ConstElement<ocs::tom::RUE> cr,
+                        const char *key_name, uint32_t amount, const char *id_expr = nullptr,
+                        ocs::tom::ConstList<ocs::tom::CE> required_props = ocs::tom::ConstList<ocs::tom::CE>());
 OCS_TRANSITIONAL uint64_t utilization_rsmap_below(const lListElem *definition, const lListElem *cr,
                                                   const char *key_name, uint32_t amount,
                                                   const char *id_expr = nullptr,
@@ -100,18 +108,15 @@ uint64_t
 utilization_below(const sge_assignment_t *a, ocs::tom::ConstElement<ocs::tom::EH> host,
                   ocs::tom::ConstElement<ocs::tom::RUE> cr, double max_util, double total, double slots,
                   const char *object_name, bool for_excl_request, ocs::TopologyString& combined_binding_inuse);
-OCS_TRANSITIONAL uint64_t utilization_below(const sge_assignment_t *a, const lListElem *host, const lListElem *cr,
-                                            double max_util, double total, double slots, const char *object_name,
-                                            bool for_excl_request, ocs::TopologyString& combined_binding_inuse);
 
 int add_job_utilization(const sge_assignment_t *a, const char *type, bool for_job_scheduling);
 
-int rc_add_job_utilization(ocs::tom::ConstElement<ocs::tom::JG> gdil, lListElem *jep, const lListElem *pe,
-                           uint32_t task_id, const char *type, lListElem *ep,
-                           const lList *centry_list, int slots, int config_nm, int actual_nm, const char *obj_name,
-                           uint64_t start_time, uint64_t duration, uint32_t tag, bool for_job_scheduling,
-                           bool is_master_task, bool do_per_host_booking,
-                           const lList *granted_resources_list);
+int rc_add_job_utilization(ocs::tom::ConstElement<ocs::tom::JG> gdil, ocs::tom::ConstElement<ocs::tom::JB> jep,
+                           ocs::tom::ConstElement<ocs::tom::PE> pe, uint32_t task_id, const char *type, lListElem *ep,
+                           ocs::tom::ConstList<ocs::tom::CE> centry_list, int slots, int config_nm, int actual_nm,
+                           const char *obj_name, uint64_t start_time, uint64_t duration, uint32_t tag,
+                           bool for_job_scheduling, bool is_master_task, bool do_per_host_booking,
+                           ocs::tom::ConstList<ocs::tom::GRU> granted_resources_list);
 OCS_TRANSITIONAL int rc_add_job_utilization(const lListElem *gdil, lListElem *jep, const lListElem *pe,
                                             uint32_t task_id, const char *type, lListElem *ep,
                                             const lList *centry_list, int slots, int config_nm, int actual_nm,
@@ -119,10 +124,18 @@ OCS_TRANSITIONAL int rc_add_job_utilization(const lListElem *gdil, lListElem *je
                                             uint32_t tag, bool for_job_scheduling, bool is_master_task,
                                             bool do_per_host_booking, const lList *granted_resources_list);
 
-void prepare_resource_schedules(lList *running_jobs,
-      lList *suspended_jobs, lList *pe_list, lList *host_list,
-      lList *queue_list, lList *rqs_list, const lList *centry_list, const lList *acl_list,
-      const lList *hgroup_list, lList *ar_list, bool for_job_scheduling, uint64_t now);
+void prepare_resource_schedules(ocs::tom::List<ocs::tom::JB> running_jobs, ocs::tom::List<ocs::tom::JB> suspended_jobs,
+                                ocs::tom::List<ocs::tom::PE> pe_list, ocs::tom::List<ocs::tom::EH> host_list,
+                                ocs::tom::List<ocs::tom::QU> queue_list, ocs::tom::List<ocs::tom::RQS> rqs_list,
+                                ocs::tom::ConstList<ocs::tom::CE> centry_list,
+                                ocs::tom::ConstList<ocs::tom::US> acl_list,
+                                ocs::tom::ConstList<ocs::tom::HGRP> hgroup_list, ocs::tom::List<ocs::tom::AR> ar_list,
+                                bool for_job_scheduling, uint64_t now);
+OCS_TRANSITIONAL void prepare_resource_schedules(lList *running_jobs, lList *suspended_jobs, lList *pe_list,
+                                                 lList *host_list, lList *queue_list, lList *rqs_list,
+                                                 const lList *centry_list, const lList *acl_list,
+                                                 const lList *hgroup_list, lList *ar_list, bool for_job_scheduling,
+                                                 uint64_t now);
 
 int qinstance_slots_reserved_now(ocs::tom::ConstElement<ocs::tom::QU> this_elem);
 OCS_TRANSITIONAL int qinstance_slots_reserved_now(const lListElem *this_elem);

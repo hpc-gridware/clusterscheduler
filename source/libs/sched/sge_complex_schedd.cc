@@ -70,6 +70,7 @@
 #include "sgeobj/ocs_CEntry.h"
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_ACELIST.h"
 #include "sgeobj/tom/ocs_tom_CE.h"
 #include "sgeobj/tom/ocs_tom_CQ.h"
 #include "sgeobj/tom/ocs_tom_EH.h"
@@ -93,7 +94,9 @@ get_attribute_list_by_names(ocs::tom::ConstElement<ocs::tom::EH> global, ocs::to
                             ocs::tom::ConstList<ocs::tom::CE> load_adjustments,
                             ocs::tom::ConstList<ocs::tom::ST> attrnames);
 
-static void build_name_filter(ocs::tom::List<ocs::tom::ST> filter, const lList *list, int t_name);
+template <auto F>
+static void build_name_filter(ocs::tom::List<ocs::tom::ST> filter,
+                              ocs::tom::ConstList<typename ocs::tom::FieldTraits<F>::Type> list);
 
 static bool is_attr_prior(ocs::tom::Element<ocs::tom::CE> upper_el, ocs::tom::Element<ocs::tom::CE> lower_el);
 
@@ -414,36 +417,6 @@ get_attribute(const char *attrname, const ocs::tom::ConstList<ocs::tom::CE> conf
 }
 
 /**
- * @brief Looks for an attribute on one level, for a caller with untyped lists (N-X-2)
- *
- * @param attrname attribute name one is looking for
- * @param config_attr user defined attributes (CE_Type), checked
- * @param actual_attr current usage of consumables (RUE_Type), checked
- * @param load_attr load attributes (HL_Type), checked
- * @param centry_list the system wide attribute configuration (CE_Type), checked
- * @param load_adjustments the load adjustments (CE_Type), checked, or nullptr
- * @param queue the current queue (QU_Type), checked, or nullptr
- * @param layer the current layer
- * @param lc_factor the load correction value
- * @param reason space for error messages or nullptr
- * @param zero_utilization ignore the current utilization
- * @param start_time begin of the time interval
- * @param duration the duration the interval
- *
- * @return the element one was looking for, owned by the caller, or nullptr
- */
-lListElem *
-get_attribute(const char *attrname, const lList *config_attr, const lList *actual_attr, const lList *load_attr,
-              const lList *centry_list, const lList *load_adjustments, const lListElem *queue, uint32_t layer,
-              double lc_factor, dstring *reason, bool zero_utilization, uint64_t start_time, uint64_t duration) {
-   return get_attribute(attrname, ocs::tom::ConstList<ocs::tom::CE>(config_attr),
-                        ocs::tom::ConstList<ocs::tom::RUE>(actual_attr), ocs::tom::ConstList<ocs::tom::HL>(load_attr),
-                        ocs::tom::ConstList<ocs::tom::CE>(centry_list), ocs::tom::ConstList<ocs::tom::CE>(load_adjustments),
-                        ocs::tom::ConstElement<ocs::tom::QU>(queue), layer, lc_factor, reason, zero_utilization,
-                        start_time, duration).release();
-}
-
-/**
  * @brief Extracts attribut information from the queue
  *
  * All fixed queue attributes are directly coded into the queue structure. These have to extraced
@@ -667,37 +640,56 @@ static bool is_attr_prior2(const ocs::tom::Element<ocs::tom::CE> upper_el, doubl
  * The global attributes are merged in, so the result is what a request has to
  * be matched against for this host.
  *
- * @param[out] new_centry_list receives the attribute list (`CE_Type`); a
- *                             previous list is freed
- * @param[in]  host            the execution host
- * @param[in]  exechost_list   all execution hosts, to find the global host
- * @param[in]  centry_list     the system wide attribute configuration
- * @param[in]  load_adjustments the job load adjustments of the scheduler
- *                             configuration (`CE_Type`); nullptr fetches them
- *                             from the data store of the calling thread
+ * @param[in] host             the execution host, or an empty handle for the
+ *                             global attributes alone
+ * @param[in] exechost_list    all execution hosts, to find the global host
+ * @param[in] centry_list      the system wide attribute configuration
+ * @param[in] load_adjustments the job load adjustments of the scheduler
+ *                             configuration; an empty handle fetches them from
+ *                             the data store of the calling thread
  *
- * @return always 0
+ * @return the attribute list, owned by the caller, or an empty handle if no
+ *         attribute exists
  */
-int host_complexes2scheduler(
-lList **new_centry_list,
-lListElem *host,
-lList *exechost_list,
-lList *centry_list,
-const lList *load_adjustments
-) {
+ocs::tom::ListPtr<ocs::tom::CE>
+host_complexes2scheduler(const ocs::tom::ConstElement<ocs::tom::EH> host,
+                         const ocs::tom::ConstList<ocs::tom::EH> exechost_list,
+                         const ocs::tom::ConstList<ocs::tom::CE> centry_list,
+                         const ocs::tom::ConstList<ocs::tom::CE> load_adjustments) {
    DENTER(TOP_LAYER);
 
    if (host == nullptr) {
       DPRINTF("!!missing host!!\n");
    }
    /* build global complex and add it to result */
-   lFreeList(new_centry_list);
-   *new_centry_list = get_attribute_list(ocs::tom::ConstElement<ocs::tom::EH>::from_typed(host_list_locate(exechost_list, SGE_GLOBAL_NAME)),
-                                         ocs::tom::ConstElement<ocs::tom::EH>(host), ocs::tom::ConstElement<ocs::tom::QU>(),
-                                         ocs::tom::ConstList<ocs::tom::CE>(centry_list),
-                                         ocs::tom::ConstList<ocs::tom::CE>(load_adjustments)).release();
+   DRETURN(get_attribute_list(exechost_list.find_first<EH_name>(ocs::tom::Host(SGE_GLOBAL_NAME)), host,
+                              ocs::tom::ConstElement<ocs::tom::QU>(), centry_list, load_adjustments));
+}
 
-   DRETURN(0);
+/**
+ * @brief host_complexes2scheduler() for an untyped caller
+ *
+ * @param[out] new_centry_list receives the attribute list (`CE_Type`); a
+ *                             previous list is freed
+ * @param[in]  host            the execution host (`EH_Type`), or nullptr
+ * @param[in]  exechost_list   all execution hosts (`EH_Type`)
+ * @param[in]  centry_list     the system wide attribute configuration
+ *                             (`CE_Type`)
+ * @param[in]  load_adjustments the job load adjustments (`CE_Type`), or
+ *                             nullptr
+ *
+ * @return always 0; the list host_complexes2scheduler() returns is in
+ *         `new_centry_list`
+ */
+int
+host_complexes2scheduler(lList **new_centry_list, lListElem *host, lList *exechost_list, lList *centry_list,
+                         const lList *load_adjustments) {
+   lFreeList(new_centry_list);
+   *new_centry_list = host_complexes2scheduler(ocs::tom::ConstElement<ocs::tom::EH>(host),
+                                               ocs::tom::ConstList<ocs::tom::EH>(exechost_list),
+                                               ocs::tom::ConstList<ocs::tom::CE>(centry_list),
+                                               ocs::tom::ConstList<ocs::tom::CE>(load_adjustments)).release();
+   return 0;
 }
 
 /**
@@ -707,30 +699,56 @@ const lList *load_adjustments
  * the global host, so the scheduler can decide from this list alone whether a
  * request matches the queue.
  *
- * @param[out] new_centry_list receives the attribute list (`CE_Type`); a
- *                             previous list is freed
- * @param[in]  queue           the queue instance
- * @param[in]  exechost_list   all execution hosts, to find the queue's host
+ * @param[in] queue            the queue instance, or an empty handle for the
+ *                             global attributes alone
+ * @param[in] exechost_list    all execution hosts, to find the queue's host
  *                             and the global host
- * @param[in]  centry_list     the system wide attribute configuration
- * @param[in]  load_adjustments the job load adjustments of the scheduler
- *                             configuration (`CE_Type`); nullptr fetches them
- *                             from the data store of the calling thread
+ * @param[in] centry_list      the system wide attribute configuration
+ * @param[in] load_adjustments the job load adjustments of the scheduler
+ *                             configuration; an empty handle fetches them from
+ *                             the data store of the calling thread
  *
- * @return always 0
+ * @return the attribute list, owned by the caller, or an empty handle if no
+ *         attribute exists
  */
-int queue_complexes2scheduler(lList **new_centry_list, lListElem *queue, const lList *exechost_list,
-                              const lList *centry_list, const lList *load_adjustments) {
+ocs::tom::ListPtr<ocs::tom::CE>
+queue_complexes2scheduler(const ocs::tom::ConstElement<ocs::tom::QU> queue,
+                          const ocs::tom::ConstList<ocs::tom::EH> exechost_list,
+                          const ocs::tom::ConstList<ocs::tom::CE> centry_list,
+                          const ocs::tom::ConstList<ocs::tom::CE> load_adjustments) {
    DENTER(BASIS_LAYER);
 
+   const auto host = queue != nullptr
+                     ? exechost_list.find_first<EH_name>(ocs::tom::get<QU_qhostname>(queue))
+                     : ocs::tom::ConstElement<ocs::tom::EH>();
+   DRETURN(get_attribute_list(exechost_list.find_first<EH_name>(ocs::tom::Host(SGE_GLOBAL_NAME)), host, queue, centry_list,
+                              load_adjustments));
+}
+
+/**
+ * @brief queue_complexes2scheduler() for an untyped caller
+ *
+ * @param[out] new_centry_list receives the attribute list (`CE_Type`); a
+ *                             previous list is freed
+ * @param[in]  queue           the queue instance (`QU_Type`), or nullptr
+ * @param[in]  exechost_list   all execution hosts (`EH_Type`)
+ * @param[in]  centry_list     the system wide attribute configuration
+ *                             (`CE_Type`)
+ * @param[in]  load_adjustments the job load adjustments (`CE_Type`), or
+ *                             nullptr
+ *
+ * @return always 0; the list queue_complexes2scheduler() returns is in
+ *         `new_centry_list`
+ */
+int
+queue_complexes2scheduler(lList **new_centry_list, lListElem *queue, const lList *exechost_list,
+                          const lList *centry_list, const lList *load_adjustments) {
    lFreeList(new_centry_list);
-   const auto qu = ocs::tom::ConstElement<ocs::tom::QU>(queue);
-   const auto host = qu != nullptr ? host_list_locate(exechost_list, ocs::tom::get<QU_qhostname>(qu)) : nullptr;
-   *new_centry_list = get_attribute_list(ocs::tom::ConstElement<ocs::tom::EH>::from_typed(host_list_locate(exechost_list, "global")),
-                                         ocs::tom::ConstElement<ocs::tom::EH>::from_typed(host), qu,
-                                         ocs::tom::ConstList<ocs::tom::CE>(centry_list),
-                                         ocs::tom::ConstList<ocs::tom::CE>(load_adjustments)).release();
-   DRETURN(0);
+   *new_centry_list = queue_complexes2scheduler(ocs::tom::ConstElement<ocs::tom::QU>(queue),
+                                                ocs::tom::ConstList<ocs::tom::EH>(exechost_list),
+                                                ocs::tom::ConstList<ocs::tom::CE>(centry_list),
+                                                ocs::tom::ConstList<ocs::tom::CE>(load_adjustments)).release();
+   return 0;
 }
 
 /**
@@ -795,12 +813,12 @@ get_attribute_list(const ocs::tom::ConstElement<ocs::tom::EH> global, const ocs:
    auto filter = ocs::tom::ListPtr<ocs::tom::ST>::create("");
 
    if (global != nullptr) {
-      build_name_filter(filter.get(), ocs::tom::get<EH_load_list>(global), HL_name);
-      build_name_filter(filter.get(), ocs::tom::get<EH_consumable_config_list>(global), CE_name);
+      build_name_filter<HL_name>(filter.get(), ocs::tom::get<EH_load_list>(global));
+      build_name_filter<CE_name>(filter.get(), ocs::tom::get<EH_consumable_config_list>(global));
    }    
    if (host != nullptr) {
-      build_name_filter(filter.get(), ocs::tom::get<EH_load_list>(host), HL_name);
-      build_name_filter(filter.get(), ocs::tom::get<EH_consumable_config_list>(host), CE_name);
+      build_name_filter<HL_name>(filter.get(), ocs::tom::get<EH_load_list>(host));
+      build_name_filter<CE_name>(filter.get(), ocs::tom::get<EH_consumable_config_list>(host));
    } 
 
    if (queue != nullptr) {
@@ -809,36 +827,34 @@ get_attribute_list(const ocs::tom::ConstElement<ocs::tom::EH> global, const ocs:
             filter->emplace_back<ST_name>(queue_resource[x].name);
          }
       }
-      build_name_filter(filter.get(), ocs::tom::get<QU_consumable_config_list>(queue), CE_name);
+      build_name_filter<CE_name>(filter.get(), ocs::tom::get<QU_consumable_config_list>(queue));
    }
 
    DRETURN(get_attribute_list_by_names(global, host, queue, centry_list, load_adjustments, filter.get()));
 }
 
 /**
- * @brief Fills in an array with complex nams, which can be used
+ * @brief Adds the names of a list to a name filter, each name once
  *
- * Takes an array of a given size and fills in complex names.
- *
- * @param filter target for the filter strings. It has to be of sufficant size.
- * @param list a list of complexes, from which the names are extracted
- * @param t_name specifies the field which is used as a name
- *
- * @note ???
+ * @tparam F the name field of the list's object type, `HL_name` for a host's
+ *           load list or `CE_name` for a complex value list
+ * @param filter the names collected so far, extended here
+ * @param list   the list whose names are added, may be an empty handle
  */
-static void build_name_filter(const ocs::tom::List<ocs::tom::ST> filter, const lList *list, int t_name) {
-   if (!list) {
-      return;
-   }
+template <auto F>
+static void build_name_filter(const ocs::tom::List<ocs::tom::ST> filter,
+                              const ocs::tom::ConstList<typename ocs::tom::FieldTraits<F>::Type> list) {
+   DENTER(BASIS_LAYER);
 
-   // the list is a host's load list or a complex value list, the name field tells which (N-H-21)
-   for_each_ep_lv(current, list) {
-      const char* name = lGetString(current, t_name);
+   for (const auto current : list) {
+      const char *name = ocs::tom::get<F>(current);
 
       if (filter.find_first<ST_name>(name) == nullptr) {
          filter.emplace_back<ST_name>(name);
       }
    }
+
+   DRETURN_VOID;
 }
 
 /**
@@ -1402,7 +1418,6 @@ bool request_cq_rejected(const ocs::tom::ConstList<ocs::tom::CE> hard_resource_l
                          const ocs::tom::ConstList<ocs::tom::CE> centry_list, bool single_slot, dstring *unsatisfied) {
    DENTER(TOP_LAYER);
 
-   const lListElem *val_ce = nullptr; /* CE_Type */
    const char *name, *request, *offer;
    uint32_t relop;
    ocs::CEntry::Type type;
@@ -1441,8 +1456,10 @@ bool request_cq_rejected(const ocs::tom::ConstList<ocs::tom::CE> hard_resource_l
       // the attribute list of the cluster queue is chosen at run time, so is its type (N-H-21)
       for_each_ep_lv(alist, lGetList(cq, cqfld)) {
          if (valfld == ACELIST_value) {
-            /* complex_values upper limit */ 
-            val_ce = lGetSubStr(alist, CE_name, name, valfld);
+            /* complex_values upper limit */
+            // the list is a CQ_consumable_config_list here; the checked constructor confirms it is an ACELIST
+            const auto val_ce = ocs::tom::find_first_in<ACELIST_value, CE_name>(
+               ocs::tom::ConstElement<ocs::tom::ACELIST>(alist), name);
             if (!val_ce) {
                rejected = false;
                break;
@@ -1500,22 +1517,4 @@ bool request_cq_rejected(const ocs::tom::ConstList<ocs::tom::CE> hard_resource_l
    }
 
    DRETURN(false);
-}
-
-/**
- * @brief Check, if -l request forecloses cluster queue, for a caller with untyped objects (N-X-2)
- *
- * @param hard_resource_list resource list -l (CE_Type), checked
- * @param cq cluster queue (CQ_Type), checked
- * @param centry_list complex entry list (CE_Type), checked
- * @param single_slot true to match for a single slot only
- * @param unsatisfied diagnosis information, if rejected
- *
- * @return true, if the cluster queue is ruled out
- */
-bool request_cq_rejected(const lList *hard_resource_list, const lListElem *cq, const lList *centry_list,
-                         bool single_slot, dstring *unsatisfied) {
-   return request_cq_rejected(ocs::tom::ConstList<ocs::tom::CE>(hard_resource_list),
-                              ocs::tom::ConstElement<ocs::tom::CQ>(cq), ocs::tom::ConstList<ocs::tom::CE>(centry_list),
-                              single_slot, unsatisfied);
 }

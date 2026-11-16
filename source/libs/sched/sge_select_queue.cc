@@ -2813,9 +2813,7 @@ char *sge_load_alarm_reason(const ocs::tom::Element<ocs::tom::QU> qep,
       bool first = true;
 
       /* get actual complex values for queue */
-      lList *raw_rlp = nullptr;
-      queue_complexes2scheduler(&raw_rlp, qep, exechost_list, centry_list, load_adjustments);
-      auto rlp = ocs::tom::ListPtr<ocs::tom::CE>(raw_rlp);
+      auto rlp = queue_complexes2scheduler(qep, exechost_list, centry_list, load_adjustments);
 
       /* check all thresholds */
       for (auto tep : threshold) {

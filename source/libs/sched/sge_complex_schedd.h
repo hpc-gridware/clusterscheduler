@@ -63,11 +63,19 @@
 
 void monitor_dominance(char *str, uint32_t mask);
 
-int host_complexes2scheduler(lList **new_complex_list, lListElem *host, 
-                             lList *exechost_list, lList *complex_list, const lList *load_adjustments);
+ocs::tom::ListPtr<ocs::tom::CE>
+host_complexes2scheduler(ocs::tom::ConstElement<ocs::tom::EH> host, ocs::tom::ConstList<ocs::tom::EH> exechost_list,
+                         ocs::tom::ConstList<ocs::tom::CE> centry_list,
+                         ocs::tom::ConstList<ocs::tom::CE> load_adjustments);
+OCS_TRANSITIONAL int host_complexes2scheduler(lList **new_complex_list, lListElem *host, lList *exechost_list,
+                                              lList *complex_list, const lList *load_adjustments);
 
-int queue_complexes2scheduler(lList **new_complex_list, lListElem *queue, 
-                              const lList *host_list, const lList *complex_list, const lList *load_adjustments);
+ocs::tom::ListPtr<ocs::tom::CE>
+queue_complexes2scheduler(ocs::tom::ConstElement<ocs::tom::QU> queue, ocs::tom::ConstList<ocs::tom::EH> exechost_list,
+                          ocs::tom::ConstList<ocs::tom::CE> centry_list,
+                          ocs::tom::ConstList<ocs::tom::CE> load_adjustments);
+OCS_TRANSITIONAL int queue_complexes2scheduler(lList **new_complex_list, lListElem *queue, const lList *host_list,
+                                               const lList *complex_list, const lList *load_adjustments);
 
 ocs::tom::ElementPtr<ocs::tom::CE>
 get_attribute_by_name(ocs::tom::ConstElement<ocs::tom::EH> global, ocs::tom::ConstElement<ocs::tom::EH> host,
@@ -90,16 +98,9 @@ get_attribute(const char *attrname, ocs::tom::ConstList<ocs::tom::CE> config_att
               ocs::tom::ConstList<ocs::tom::CE> centry_list, ocs::tom::ConstList<ocs::tom::CE> load_adjustments,
               ocs::tom::ConstElement<ocs::tom::QU> queue, uint32_t layer, double lc_factor, dstring *reason,
               bool zero_utilization, uint64_t start_time, uint64_t duration);
-OCS_TRANSITIONAL lListElem *get_attribute(const char *attrname, const lList *config_attr, const lList *actual_attr,
-                                           const lList *load_attr, const lList *centry_list,
-                                           const lList *load_adjustments, const lListElem *queue, uint32_t layer,
-                                           double lc_factor, dstring *reason, bool zero_utilization,
-                                           uint64_t start_time, uint64_t duration);
 
 int string_base_cmp(ocs::CEntry::Type type, const char *s1, const char *s2);
 int string_base_cmp_old(ocs::CEntry::Type type, const char *s1, const char *s2);
 
 bool request_cq_rejected(ocs::tom::ConstList<ocs::tom::CE> hard_resource_list, ocs::tom::ConstElement<ocs::tom::CQ> cq,
                          ocs::tom::ConstList<ocs::tom::CE> centry_list, bool single_slot, dstring *unsatisfied);
-OCS_TRANSITIONAL bool request_cq_rejected(const lList *hard_resource_list, const lListElem *cq,
-                                          const lList *centry_list, bool single_slot, dstring *unsatisfied);
