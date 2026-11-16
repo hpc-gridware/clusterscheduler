@@ -522,7 +522,7 @@ namespace ocs::tom {
       {RUE_utilized_now_resource_map_list, RESL::descriptor.e},
       {RUE_utilized, RDE::descriptor.e},
       {RUE_utilized_nonexclusive, RDE::descriptor.e},
-      {LDR_queue_ref_list, QR::descriptor.e},
+      {LDR_queue_ref_list, QRL::descriptor.e},
       {CCT_ignore_queues, CTI::descriptor.e},
       {CCT_ignore_hosts, CTI::descriptor.e},
       {CCT_job_messages, MES::descriptor.e},

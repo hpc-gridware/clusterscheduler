@@ -698,7 +698,7 @@ object_get_subtype(int nm)
          ret = RDE_Type;
          break;
       case LDR_queue_ref_list:
-         ret = QR_Type;
+         ret = QRL_Type;
          break;
       case CCT_ignore_queues:
          ret = CTI_Type;

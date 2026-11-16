@@ -25,7 +25,7 @@
  */
 
 /** @file
- * @brief Load Threshold Reference (unused)
+ * @brief Load Threshold Reference
  */
 
 #include "cull/cull.h"

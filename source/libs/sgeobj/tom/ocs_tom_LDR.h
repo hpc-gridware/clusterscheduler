@@ -25,14 +25,14 @@
  */
 
 /** @file
- * @brief Load Threshold Reference (unused): object type of the typed object model
+ * @brief Load Threshold Reference: object type of the typed object model
  */
 
 #include "tom/ocs_FieldTraits.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
 /**
- * @brief The field numbers of LDR, Load Threshold Reference (unused)
+ * @brief The field numbers of LDR, Load Threshold Reference
  *
  * The enumeration is the type of every field number of LDR, so a parameter
  * of this type takes the field numbers of LDR only.
@@ -41,44 +41,44 @@ enum LDR_Field {
    /**
     * @brief Queue References
     *
-    * Part of the unused LDR object; see the object description.
+    * Part of the scheduler's load threshold reference; see the object description.
     */
    LDR_queue_ref_list = LDR_LOWERBOUND,
    /**
     * @brief Limit
     *
-    * Part of the unused LDR object; see the object description.
+    * Part of the scheduler's load threshold reference; see the object description.
     */
    LDR_limit,
    /**
     * @brief Global Object
     *
-    * Part of the unused LDR object; see the object description.
+    * Part of the scheduler's load threshold reference; see the object description.
     */
    LDR_global,
    /**
     * @brief Host Object
     *
-    * Part of the unused LDR object; see the object description.
+    * Part of the scheduler's load threshold reference; see the object description.
     */
    LDR_host,
    /**
     * @brief Queue Object
     *
-    * Part of the unused LDR object; see the object description.
+    * Part of the scheduler's load threshold reference; see the object description.
     */
    LDR_queue,
 };
 
 namespace ocs::tom {
 
-   struct QR;
+   struct QRL;
 
    /**
-    * @brief Load Threshold Reference (unused)
+    * @brief Load Threshold Reference
     *
     * A limit with references to the global, host and queue objects it was resolved against.
-    * @warning No attribute of this type is read or written anywhere in either repository, and `LDR_Type` itself is referenced nowhere. Left in place because removing a type changes the spooled object model.
+    * The scheduler builds one per load threshold that depends on a consumable (sge_create_load_list() in libs/sched/sge_select_queue.cc) and checks the queues of the list for load alarm after each dispatch.
     */
    struct LDR {
       /** @brief The fields: number, name, type and flags, in the order of the field numbers */
@@ -103,10 +103,10 @@ namespace ocs::tom {
       using type = LDR;   ///< the object type
    };
 
-   /** @brief LDR_queue_ref_list holds elements of QR */
+   /** @brief LDR_queue_ref_list holds elements of QRL */
    template <>
    struct SubType<LDR_queue_ref_list> {
-      using type = QR;   ///< the sub-type
+      using type = QRL;   ///< the sub-type
    };
 
 } // namespace ocs::tom
