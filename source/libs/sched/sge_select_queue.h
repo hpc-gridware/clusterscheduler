@@ -304,7 +304,8 @@ dispatch_t
 sge_sequential_assignment(sge_assignment_t *a);
 
 dispatch_t
-sge_select_parallel_environment(sge_assignment_t *best, const lList *pe_list);
+sge_select_parallel_environment(sge_assignment_t *best, ocs::tom::List<ocs::tom::PE> pe_list);
+OCS_TRANSITIONAL dispatch_t sge_select_parallel_environment(sge_assignment_t *best, const lList *pe_list);
 
 /* -------------------------------------------------------------------------------- */
 

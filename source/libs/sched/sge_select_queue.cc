@@ -235,7 +235,7 @@ parallel_max_host_slots(sge_assignment_t *a, ocs::tom::ConstElement<ocs::tom::EH
 
 
 static dispatch_t
-parallel_queue_slots(sge_assignment_t *a, lListElem *qep, int *slots, bool need_master,
+parallel_queue_slots(sge_assignment_t *a, ocs::tom::Element<ocs::tom::QU> qep, int *slots, bool need_master,
                      bool is_master_queue, bool &found_master_host, bool allow_non_requestable);
 
 static
@@ -698,14 +698,15 @@ is_acceptable_result(sge_assignment_t *a) {
  * this has to be changed.
  *
  * @param best herein we keep all important in/out information
- * @param pe_list the list of all parallel environments (PE_Type)
+ * @param pe_list the list of all parallel environments; the one chosen is referenced by the assignment
  *
- * @return 0 ok got an assignment 1 no assignment at the specified time (???) -1 assignment will never be possible for all jobs of that category -2 assignment will never be possible for that particular job
+ * @return 0 ok got an assignment, 1 no assignment at the specified time (???), -1 assignment will never be possible
+ *         for all jobs of that category, -2 assignment will never be possible for that particular job
  *
  * @note MT-NOTE: sge_select_parallel_environment() is not MT safe
  */
 dispatch_t
-sge_select_parallel_environment(sge_assignment_t *best, const lList *pe_list) {
+sge_select_parallel_environment(sge_assignment_t *best, const ocs::tom::List<ocs::tom::PE> pe_list) {
    DENTER(TOP_LAYER);
    int matched_pe_count = 0;
    const char *pe_request, *pe_name;
@@ -736,7 +737,7 @@ sge_select_parallel_environment(sge_assignment_t *best, const lList *pe_list) {
    sequential_update_host_order(best->host_list, best->queue_list);
 
    /* initialize all tags */
-   for_each_rw_lv(queue, best->queue_list) {
+   for (auto queue : best->queue_list) {
       ocs::tom::set<QU_tagged4schedule>(queue, TAG4SCHED_ALL); // = can be used as master and slave for now and reservation
    }
 
@@ -747,7 +748,7 @@ sge_select_parallel_environment(sge_assignment_t *best, const lList *pe_list) {
          sconf_set_mes_schedd_info(false);
       }
 
-      for_each_rw_lv(pe, pe_list) {
+      for (auto pe : pe_list) {
          int available_slots = 0;
 
          if (!pe_is_matching(pe, pe_request)) {
@@ -758,7 +759,7 @@ sge_select_parallel_environment(sge_assignment_t *best, const lList *pe_list) {
 
          pe_name = ocs::tom::get<PE_name>(pe);
          if (best->gdil == nullptr) { /* first pe run */
-            assignment_init_pe(best, ocs::tom::Element<ocs::tom::PE>(pe));
+            assignment_init_pe(best, pe);
 
             /* determine the earliest start time with that PE */
             result = parallel_reservation_max_time_slots(best, &available_slots);
@@ -776,7 +777,7 @@ sge_select_parallel_environment(sge_assignment_t *best, const lList *pe_list) {
             sge_assignment_t tmp = SGE_ASSIGNMENT_INIT;
 
             assignment_copy(&tmp, best, false);
-            assignment_init_pe(&tmp, ocs::tom::Element<ocs::tom::PE>(pe));
+            assignment_init_pe(&tmp, pe);
 
             /* try to find an earlier assignment again with the minimum slot amount */
             tmp.slots = 0;
@@ -811,7 +812,7 @@ sge_select_parallel_environment(sge_assignment_t *best, const lList *pe_list) {
    } else {
       /* now assignments */
       // we have no advance reservation
-      for_each_rw_lv(pe, pe_list) {
+      for (auto pe : pe_list) {
          if (!pe_is_matching(pe, pe_request)) {
             continue;
          }
@@ -822,7 +823,7 @@ sge_select_parallel_environment(sge_assignment_t *best, const lList *pe_list) {
          if (best->gdil == nullptr) {
             // first PE matching the requested name
             int available_slots = 0;
-            assignment_init_pe(best, ocs::tom::Element<ocs::tom::PE>(pe));
+            assignment_init_pe(best, pe);
             result = parallel_maximize_slots_pe(best, &available_slots);
 
             if (result != DISPATCH_OK) {
@@ -844,7 +845,7 @@ sge_select_parallel_environment(sge_assignment_t *best, const lList *pe_list) {
             int available_slots = 0;
             sge_assignment_t tmp = SGE_ASSIGNMENT_INIT;
             assignment_copy(&tmp, best, false);
-            assignment_init_pe(&tmp, ocs::tom::Element<ocs::tom::PE>(pe));
+            assignment_init_pe(&tmp, pe);
 
             result = parallel_maximize_slots_pe(&tmp, &available_slots);
 
@@ -926,6 +927,18 @@ sge_select_parallel_environment(sge_assignment_t *best, const lList *pe_list) {
 }
 
 /**
+ * @brief sge_select_parallel_environment() for an untyped caller
+ * @param best as sge_select_parallel_environment()
+ * @param pe_list the parallel environments (`PE_Type`); the list is const only by the old signature, the chosen
+ *                PE is referenced and later changed by the assignment, as before
+ * @return as sge_select_parallel_environment()
+ */
+dispatch_t
+sge_select_parallel_environment(sge_assignment_t *best, const lList *pe_list) {
+   return sge_select_parallel_environment(best, ocs::tom::List<ocs::tom::PE>(const_cast<lList *>(pe_list)));
+}
+
+/**
  * @brief Removes tags
  *
  * during pe job dispatch are man queues and hosts tagged. This
@@ -936,7 +949,9 @@ sge_select_parallel_environment(sge_assignment_t *best, const lList *pe_list) {
  * @note MT-NOTE: clean_up_parallel_job() is not MT safe
  */
 static void clean_up_parallel_job(sge_assignment_t *a) {
+   DENTER(TOP_LAYER);
    qinstance_list_set_tag(a->queue_list, 0);
+   DRETURN_VOID;
 }
 
 /**
@@ -950,8 +965,10 @@ static void clean_up_parallel_job(sge_assignment_t *a) {
  * rather than a real time value.
  *
  * @param best herein we keep all important in/out information
+ * @param available_slots out: the number of slots found
  *
- * @return 0 ok got an assignment 1 no assignment at the specified time (???) -1 assignment will never be possible for all jobs of that category -2 assignment will never be possible for that particular job
+ * @return 0 ok got an assignment, 1 no assignment at the specified time (???), -1 assignment will never be possible
+ *         for all jobs of that category, -2 assignment will never be possible for that particular job
  *
  * @note MT-NOTE: parallel_reservation_max_time_slots() is not MT safe
  */
@@ -1085,17 +1102,17 @@ parallel_reservation_max_time_slots(sge_assignment_t *best, int *available_slots
  * It might be a good idea to store the derived values with the job categories
  * and allow to find the best strategy per category.
  *
- * @param best herein we keep all important in/out information int *available_slots   -
+ * @param best herein we keep all important in/out information
+ * @param available_slots out: the number of slots found
  *
- * @return 0 ok got an assignment (maybe without maximizing it) 1 no assignment at the specified time -1 assignment will never be possible for all jobs of that category -2 assignment will never be possible for that particular job
+ * @return 0 ok got an assignment (maybe without maximizing it), 1 no assignment at the specified time, -1 assignment
+ *         will never be possible for all jobs of that category, -2 assignment will never be possible for that
+ *         particular job
  *
  * @note MT-NOTE: parallel_maximize_slots_pe() is MT safe as long as the provided
  *       lists are owned be the caller
  *
- *       SEE ALSO:
- *       sconf_best_pe_alg
- *       sconf_update_pe_alg
- *       add_pe_slots_to_category
+ * @see #sconf_best_pe_alg, #sconf_update_pe_alg, #add_pe_slots_to_category
  */
 static dispatch_t
 parallel_maximize_slots_pe(sge_assignment_t *best, int *available_slots) {
@@ -1104,8 +1121,6 @@ parallel_maximize_slots_pe(sge_assignment_t *best, int *available_slots) {
    int min_slots, max_slots;
    int max_pe_slots;
    int first, last;
-   lList *pe_range;
-   lListElem *pe;
    sge_assignment_t tmp = SGE_ASSIGNMENT_INIT;
    dispatch_t result = DISPATCH_NEVER_CAT;
    const char *pe_name = best->pe_name;
@@ -1118,9 +1133,12 @@ parallel_maximize_slots_pe(sge_assignment_t *best, int *available_slots) {
    int runs = 0;
    schedd_pe_algorithm alg =  sconf_best_pe_alg();
 
-   if (best == nullptr ||
-       (pe_range=ocs::tom::get<JB_pe_range>(best->job)) == nullptr ||
-       (pe=best->pe) == nullptr) {
+   if (best == nullptr) {
+      DRETURN(DISPATCH_NEVER_CAT);
+   }
+   auto pe_range = ocs::tom::get<JB_pe_range>(best->job);
+   auto pe = best->pe;
+   if (!pe_range || !pe) {
       DRETURN(DISPATCH_NEVER_CAT);
    }
 
@@ -1167,8 +1185,7 @@ parallel_maximize_slots_pe(sge_assignment_t *best, int *available_slots) {
 
    /* --- prepare the possible slots for the binary search */
    max_slotsp = (max_slots - min_slots+1);
-   if (!add_pe_slots_to_category(best, &use_category, &max_slotsp, min_slots, max_slots,
-                                 ocs::tom::ConstList<ocs::tom::RN>(pe_range))) {
+   if (!add_pe_slots_to_category(best, &use_category, &max_slotsp, min_slots, max_slots, pe_range)) {
       ERROR(SFNMAX, MSG_SGETEXT_NOMEM);
       DRETURN(DISPATCH_NEVER_CAT);
    }
@@ -5540,21 +5557,32 @@ parallel_assignment(sge_assignment_t *a, category_use_t *use_category, int *avai
  * Slots this job already holds on the queue instance are subtracted, so
  * that a round robin pass does not count them twice.
  *
- * @return 0 ok got an assignment + set time for DISPATCH_TIME_NOW and DISPATCH_TIME_QUEUE_END (only with fixed_slot equals true) 1 no assignment at the specified time -1 assignment will never be possible for all jobs of that category
+ * @param a the assignment
+ * @param qep the queue instance
+ * @param slots out: the number of slots
+ * @param need_master whether the master task still needs a queue
+ * @param is_master_queue whether the queue instance is on the master host
+ * @param found_master_host in/out: whether a candidate for the master host was found
+ * @param allow_non_requestable whether resources that are not requestable may match
+ *
+ * @return 0 ok got an assignment + set time for DISPATCH_TIME_NOW and DISPATCH_TIME_QUEUE_END (only with
+ *         fixed_slot equals true), 1 no assignment at the specified time, -1 assignment will never be possible
+ *         for all jobs of that category
  */
 static dispatch_t
-parallel_queue_slots(sge_assignment_t *a, lListElem *qep, int *slots, bool need_master,
-                     bool is_master_queue, bool &found_master_host, bool allow_non_requestable) {
+parallel_queue_slots(sge_assignment_t *a, const ocs::tom::Element<ocs::tom::QU> qep, int *slots,
+                     const bool need_master, const bool is_master_queue, bool &found_master_host,
+                     const bool allow_non_requestable) {
    DENTER(TOP_LAYER);
 
-   ocs::tom::ConstList<ocs::tom::CE> config_attr = ocs::tom::get<QU_consumable_config_list>(qep);
-   ocs::tom::ConstList<ocs::tom::RUE> actual_attr = ocs::tom::get<QU_resource_utilization>(qep);
-   const char *qname = ocs::tom::get<QU_full_name>(qep);
+   auto config_attr = ocs::tom::get<QU_consumable_config_list>(qep);
+   auto actual_attr = ocs::tom::get<QU_resource_utilization>(qep);
+   auto qname = ocs::tom::get<QU_full_name>(qep);
    int qslots = 0;
    int lslots = INT_MAX;
 
    SCHED_PROF_INC(a->pi, par_qstat);
-   dispatch_t result = sge_queue_match_static(a, ocs::tom::Element<ocs::tom::QU>(qep), need_master);
+   dispatch_t result = sge_queue_match_static(a, qep, need_master);
    if (result == DISPATCH_OK) {
       if (a->ar_id == 0 && !a->is_advance_reservation) {
          // no RQS for AR jobs or AR scheduling
@@ -5573,8 +5601,8 @@ parallel_queue_slots(sge_assignment_t *a, lListElem *qep, int *slots, bool need_
 
       // we already have tasks running on this qinstance (round_robin), consider the already booked slots
       // @todo in case of round robin: don't we cache the number of possible slots in QU_tag? Really re-calculate them over and over again?
-      ocs::tom::ConstElement<ocs::tom::JG> gdil;
-      if ((gdil=ocs::tom::find_first<JG_qname>(a->gdil, ocs::tom::get<QU_full_name>(qep)))) {
+      auto gdil = ocs::tom::find_first<JG_qname>(a->gdil, qname);
+      if (gdil) {
          qslots -= ocs::tom::get<JG_slots>(gdil);
       }
    }
@@ -5837,7 +5865,11 @@ sequential_global_time(uint64_t *start, sge_assignment_t *a, int *violations) {
  * the global host: how many slots the global load values and consumables
  * permit, with the load correction factor applied.
  *
- * @return 0 ok got an assignment + set time for DISPATCH_TIME_QUEUE_END 1 no assignment at the specified time -1 assignment will never be possible for all jobs of that category
+ * @param a the assignment
+ * @param slots out: the number of slots
+ *
+ * @return 0 ok got an assignment + set time for DISPATCH_TIME_QUEUE_END, 1 no assignment at the specified time,
+ *         -1 assignment will never be possible for all jobs of that category
  */
 static dispatch_t
 parallel_global_slots(sge_assignment_t *a, int *slots) {
@@ -5857,9 +5889,9 @@ parallel_global_slots(sge_assignment_t *a, int *slots) {
          }
       }
 
-      ocs::tom::ConstList<ocs::tom::HL> load_attr = ocs::tom::get<EH_load_list>(a->gep);
-      ocs::tom::ConstList<ocs::tom::CE> config_attr = ocs::tom::get<EH_consumable_config_list>(a->gep);
-      ocs::tom::ConstList<ocs::tom::RUE> actual_attr = ocs::tom::get<EH_resource_utilization>(a->gep);
+      auto load_attr = ocs::tom::get<EH_load_list>(a->gep);
+      auto config_attr = ocs::tom::get<EH_consumable_config_list>(a->gep);
+      auto actual_attr = ocs::tom::get<EH_resource_utilization>(a->gep);
 
       clear_resource_tags(a->job, GLOBAL_TAG);
       bool found_master_host = false;    // dummy, we do not decide on the concrete master host on global layer
@@ -5884,7 +5916,14 @@ parallel_global_slots(sge_assignment_t *a, int *slots) {
 /**
  * @brief Check if number of PE slots is available
  *
- * @return 0 ok got an assignment 1 no assignment at the specified time -1 assignment will never be possible for all jobs of that category
+ * The implicit slots request and the PE's total are kept in two caches that live as long as the process; they
+ * stay raw, a static owning handle would free them in the static destruction at exit.
+ *
+ * @param a the assignment
+ * @param slots out: the number of slots the PE has free
+ *
+ * @return 0 ok got an assignment, 1 no assignment at the specified time, -1 assignment will never be possible
+ *         for all jobs of that category
  *
  * @note MT-NOTE: parallel_available_slots() is not MT safe
  */
