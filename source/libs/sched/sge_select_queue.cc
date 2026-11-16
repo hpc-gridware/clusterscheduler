@@ -171,8 +171,8 @@ enum {
  * category is used in this run.
  */
 typedef struct {
-   lListElem *category;           ///< Reference to the category
-   lListElem *cache;              ///< Reference to the cache object inside the category
+   ocs::tom::Element<ocs::tom::CT> category; ///< Reference to the category
+   ocs::tom::Element<ocs::tom::CCT> cache;   ///< Reference to the cache object inside the category
    /**
     * Use what the category already knows. Only set for immediate dispatch
     * runs and only when the category holds more than a single job, which is
@@ -196,7 +196,7 @@ fill_category_use_t(const sge_assignment_t *a, category_use_t *use_category, con
 
 static bool
 add_pe_slots_to_category(sge_assignment_t *a, category_use_t *use_category, uint32_t *max_slotsp,
-                         int min_slots, int max_slots, lList *pe_range);
+                         int min_slots, int max_slots, ocs::tom::ConstList<ocs::tom::RN> pe_range);
 /* -- these implement parallel assignment ------------------------- */
 
 static dispatch_t
@@ -247,10 +247,10 @@ static dispatch_t
 sequential_tag_queues_suitable4job(sge_assignment_t *a);
 
 static dispatch_t
-sequential_queue_time(uint64_t *start, sge_assignment_t *a, int *violations, lListElem *qep);
+sequential_queue_time(uint64_t *start, sge_assignment_t *a, int *violations, ocs::tom::Element<ocs::tom::QU> qep);
 
 static dispatch_t
-sequential_host_time(uint64_t *start, sge_assignment_t *a, int *violations, const lListElem *hep);
+sequential_host_time(uint64_t *start, sge_assignment_t *a, int *violations, ocs::tom::ConstElement<ocs::tom::EH> hep);
 
 static dispatch_t
 sequential_global_time(uint64_t *start_time, sge_assignment_t *a, int *violations);
@@ -259,7 +259,7 @@ static dispatch_t
 match_static_advance_reservation(const sge_assignment_t *a);
 
 static int
-sequential_update_host_order(lList *host_list, lList *queues);
+sequential_update_host_order(ocs::tom::List<ocs::tom::EH> host_list, ocs::tom::List<ocs::tom::QU> queues);
 
 static int
 rsmap_same_slots(sge_assignment_t *a, const lList *total_list, const lList *rue_list,
@@ -1167,7 +1167,8 @@ parallel_maximize_slots_pe(sge_assignment_t *best, int *available_slots) {
 
    /* --- prepare the possible slots for the binary search */
    max_slotsp = (max_slots - min_slots+1);
-   if (!add_pe_slots_to_category(best, &use_category, &max_slotsp, min_slots, max_slots, pe_range)) {
+   if (!add_pe_slots_to_category(best, &use_category, &max_slotsp, min_slots, max_slots,
+                                 ocs::tom::ConstList<ocs::tom::RN>(pe_range))) {
       ERROR(SFNMAX, MSG_SGETEXT_NOMEM);
       DRETURN(DISPATCH_NEVER_CAT);
    }
@@ -3518,11 +3519,13 @@ static dispatch_t
 sequential_tag_queues_suitable4job(sge_assignment_t *a) {
    DENTER(TOP_LAYER);
 
-   lList *skip_host_list = nullptr;
-   lList *skip_queue_list = nullptr;
+   // what the job category knows already, used only in immediate dispatch runs
+   ocs::tom::List<ocs::tom::CTI> skip_host_list;
+   ocs::tom::List<ocs::tom::CTI> skip_queue_list;
 
-   lList *unclear_cqueue_list = nullptr;
-   lList *unclear_host_list = nullptr;
+   // the cluster queues and hosts that passed the static matching
+   ocs::tom::ListPtr<ocs::tom::CTI> unclear_cqueue_list;
+   ocs::tom::ListPtr<ocs::tom::CTI> unclear_host_list;
    dstring rule_name = DSTRING_INIT;
    dstring rue_string = DSTRING_INIT;
    dstring limit_name = DSTRING_INIT;
@@ -3537,7 +3540,7 @@ sequential_tag_queues_suitable4job(sge_assignment_t *a) {
    dispatch_t best_queue_result = DISPATCH_NEVER_CAT;
    int global_violations = 0;
    int queue_violations = 0;
-   lListElem *best_qep = nullptr;
+   ocs::tom::Element<ocs::tom::QU> best_qep;
    uint32_t best_qep_violations = std::numeric_limits<uint32_t>::max();
    uint64_t best_qep_tt = std::numeric_limits<uint64_t>::max();
 
@@ -3546,12 +3549,12 @@ sequential_tag_queues_suitable4job(sge_assignment_t *a) {
 
    /* restore job messages from previous dispatch runs of jobs of the same category */
    if (use_category.use_category) {
-      schedd_mes_set_tmp_list(ocs::tom::Element<ocs::tom::CCT>(use_category.cache), a->job_id);
+      schedd_mes_set_tmp_list(use_category.cache, a->job_id);
       skip_host_list = ocs::tom::get<CCT_ignore_hosts>(use_category.cache);
       skip_queue_list = ocs::tom::get<CCT_ignore_queues>(use_category.cache);
    }
 
-   if (a->ar != nullptr) {
+   if (a->ar) {
       result = match_static_advance_reservation(a);
       if (result != DISPATCH_OK) {
          DRETURN(result);
@@ -3564,17 +3567,15 @@ sequential_tag_queues_suitable4job(sge_assignment_t *a) {
       DRETURN(result);
    }
 
-   for_each_rw_lv(qep, a->queue_list) {
+   for (auto qep : a->queue_list) {
       uint64_t tt_host = a->start;
       uint64_t tt_queue = a->start;
-      const char *eh_name;
-      const char *qname, *cqname;
       uint64_t tt_rqs = 0;
-      const lListElem *hep;
 
-      qname = ocs::tom::get<QU_full_name>(qep);
-      cqname = ocs::tom::get<QU_qname>(qep);
-      eh_name = ocs::tom::get<QU_qhostname>(qep);
+      auto qname = ocs::tom::get<QU_full_name>(qep);
+      auto cqname = ocs::tom::get<QU_qname>(qep);
+      // a host field reads as ocs::tom::Host, which must not go into the varargs of the messages
+      const char *eh_name = ocs::tom::get<QU_qhostname>(qep);
 
       /* untag this queues */
       ocs::tom::set<QU_tag>(qep, 0);
@@ -3599,7 +3600,7 @@ sequential_tag_queues_suitable4job(sge_assignment_t *a) {
       }
 
       // @todo wouldn't it make sense to to the rqs matching (expensive) *after* the static matching?
-      if (a->ar == nullptr) {
+      if (!a->ar) {
          bool is_global;
          /* resource quota matching */
          if ((result = rqs_by_slots(a, cqname, eh_name, &tt_rqs, &is_global,
@@ -3620,25 +3621,29 @@ sequential_tag_queues_suitable4job(sge_assignment_t *a) {
       }
 
       /* static cqueue matching */
-      if (!ocs::tom::find_first<CTI_name>(unclear_cqueue_list, cqname)) {
+      if (!ocs::tom::find_first<CTI_name>(*unclear_cqueue_list, cqname)) {
          SCHED_PROF_INC(a->pi, seq_cqstat);
          if (cqueue_match_static(cqname, a) != DISPATCH_OK) {
             ocs::tom::emplace_back<CTI_name>(&(a->skip_cqueue_list), cqname);
             best_queue_result = find_best_result(DISPATCH_NEVER_CAT, best_queue_result);
             continue;
          }
-         ocs::tom::emplace_back<CTI_name>(&unclear_cqueue_list, cqname);
+         if (!unclear_cqueue_list) {
+            unclear_cqueue_list = ocs::tom::ListPtr<ocs::tom::CTI>::create("unclear cluster queues");
+         }
+         unclear_cqueue_list->emplace_back<CTI_name>(cqname);
       }
 
       /* static host matching */
-      if (!(hep = ocs::tom::find_first<EH_name>(a->host_list, eh_name))) {
+      auto hep = ocs::tom::find_first<EH_name>(a->host_list, eh_name);
+      if (!hep) {
          ERROR(MSG_SCHEDD_UNKNOWN_HOST_SS, qname, eh_name);
-         if (skip_queue_list != nullptr) {
-            ocs::tom::emplace_back<CTI_name>(&skip_queue_list, qname);
+         if (skip_queue_list) {
+            skip_queue_list.emplace_back<CTI_name>(qname);
          }
          continue;
       }
-      if (!ocs::tom::find_first<CTI_name>(unclear_host_list, eh_name)) {
+      if (!ocs::tom::find_first<CTI_name>(*unclear_host_list, eh_name)) {
          SCHED_PROF_INC(a->pi, seq_hstat);
          if (qref_list_eh_rejected(job_get_hard_queue_list(a->job), eh_name, a->hgrp_list)) {
             schedd_mes_add(a->monitor_alpp, a->monitor_next_run,
@@ -3646,7 +3651,7 @@ sequential_tag_queues_suitable4job(sge_assignment_t *a) {
             DPRINTF("Host \"%s\" is not contained in the hard queue list (-q) that "
                   "was requested by job %d\n", eh_name, (int)a->job_id);
             if (skip_host_list) {
-               ocs::tom::emplace_back<CTI_name>(&skip_host_list, eh_name);
+               skip_host_list.emplace_back<CTI_name>(eh_name);
             } else {
                ocs::tom::emplace_back<CTI_name>(&(a->skip_host_list), eh_name);
             }
@@ -3654,7 +3659,7 @@ sequential_tag_queues_suitable4job(sge_assignment_t *a) {
             continue;
          }
 
-         if ((result=sge_host_match_static(a, ocs::tom::ConstElement<ocs::tom::EH>(hep)))) {
+         if ((result=sge_host_match_static(a, hep))) {
             if (result == DISPATCH_NEVER_JOB || !skip_host_list) {
                ocs::tom::emplace_back<CTI_name>(&(a->skip_host_list), eh_name);
             } else {
@@ -3663,14 +3668,17 @@ sequential_tag_queues_suitable4job(sge_assignment_t *a) {
             best_queue_result = find_best_result(result, best_queue_result);
             continue;
          }
-         ocs::tom::emplace_back<CTI_name>(&unclear_host_list, eh_name);
+         if (!unclear_host_list) {
+            unclear_host_list = ocs::tom::ListPtr<ocs::tom::CTI>::create("unclear hosts");
+         }
+         unclear_host_list->emplace_back<CTI_name>(eh_name);
       }
 
       /* static queue matching */
       SCHED_PROF_INC(a->pi, seq_qstat);
       if (sge_queue_match_static(a, qep, true) != DISPATCH_OK) {
          if (skip_queue_list)
-            ocs::tom::emplace_back<CTI_name>(&skip_queue_list, qname);
+            skip_queue_list.emplace_back<CTI_name>(qname);
          best_queue_result = find_best_result(DISPATCH_NEVER_CAT, best_queue_result);
          continue;
       }
@@ -3682,7 +3690,7 @@ sequential_tag_queues_suitable4job(sge_assignment_t *a) {
       result = sequential_host_time(&tt_host, a, &queue_violations, hep);
       if (result != DISPATCH_OK && result != DISPATCH_MISSING_ATTR) {
          if (skip_host_list)
-            ocs::tom::emplace_back<CTI_name>(&skip_host_list, eh_name);
+            skip_host_list.emplace_back<CTI_name>(eh_name);
          else
             ocs::tom::emplace_back<CTI_name>(&(a->skip_host_list), eh_name);
          DPRINTF("host %s returned %d\n", eh_name, result);
@@ -3701,7 +3709,7 @@ sequential_tag_queues_suitable4job(sge_assignment_t *a) {
       if (result != DISPATCH_OK) {
          DPRINTF("queue %s returned %d\n", qname, result);
          if (skip_queue_list) {
-            ocs::tom::emplace_back<CTI_name>(&skip_queue_list, qname);
+            skip_queue_list.emplace_back<CTI_name>(qname);
          }
          best_queue_result = find_best_result(result, best_queue_result);
          continue;
@@ -3730,7 +3738,7 @@ sequential_tag_queues_suitable4job(sge_assignment_t *a) {
          if (!a->is_reservation) {
             if (!a->is_soft || this_violations == 0) {
                /* we found our queue */
-               if (best_qep != nullptr) {
+               if (best_qep) {
                   ocs::tom::set<QU_tag>(best_qep, 0);
                }
                break;
@@ -3738,9 +3746,9 @@ sequential_tag_queues_suitable4job(sge_assignment_t *a) {
          } else {
             /* further search is pointless, if reservation depends on a global consumable */
             /* earlier start time has higher preference than lower soft violations */
-            if (a->ar == nullptr && (tt_global >= MAX(MAX(tt_queue, tt_host), tt_rqs)) && !a->is_soft) {
+            if (!a->ar && (tt_global >= MAX(MAX(tt_queue, tt_host), tt_rqs)) && !a->is_soft) {
                /* we found our queue */
-               if (best_qep != nullptr) {
+               if (best_qep) {
                   ocs::tom::set<QU_tag>(best_qep, 0);
                }
                break;
@@ -3751,7 +3759,7 @@ sequential_tag_queues_suitable4job(sge_assignment_t *a) {
             if (!a->is_reservation) {
                /* check if this queue is better than our last best queue */
                if (this_violations < best_qep_violations) {
-                  if (best_qep != nullptr) {
+                  if (best_qep) {
                      ocs::tom::set<QU_tag>(best_qep, 0);
                   }
                   best_qep = qep;
@@ -3780,20 +3788,17 @@ sequential_tag_queues_suitable4job(sge_assignment_t *a) {
       } else {
          DPRINTF("queue %s reported %d\n", qname, result);
          if (skip_queue_list) {
-            ocs::tom::emplace_back<CTI_name>(&skip_queue_list, qname);
+            skip_queue_list.emplace_back<CTI_name>(qname);
          }
          best_queue_result = find_best_result(result, best_queue_result);
       }
    } // end loop over all qinstances
 
-   lFreeList(&unclear_cqueue_list);
-   lFreeList(&unclear_host_list);
-
    /* cache so far generated messages with the job category */
    if (use_category.use_category) {
-      const lList *temp = schedd_mes_get_tmp_list();
-      if (temp){
-         ocs::tom::set<CCT_job_messages>(use_category.cache, lCopyList(nullptr, temp));
+      auto temp = schedd_mes_get_tmp_list();
+      if (temp) {
+         ocs::tom::set<CCT_job_messages>(use_category.cache, temp.clone());
       }
    }
 
@@ -3812,11 +3817,12 @@ sequential_tag_queues_suitable4job(sge_assignment_t *a) {
  * valid pe slot values. If a category is set, it stores them the category
  * for further jobs.
  *
+ * @param a the assignment
  * @param use_category category caching structure, must not be nullptr
  * @param max_slotsp number of different slot settings
  * @param min_slots min slot setting (pe range)
  * @param max_slots max slot setting (pe range)
- * @param pe_range pe range, must not be nullptr
+ * @param pe_range pe range, must not be empty
  *
  * @return true, if successful
  *
@@ -3824,11 +3830,11 @@ sequential_tag_queues_suitable4job(sge_assignment_t *a) {
  */
 static bool
 add_pe_slots_to_category(sge_assignment_t *a, category_use_t *use_category, uint32_t *max_slotsp,
-                         int min_slots, int max_slots, lList *pe_range) {
+                         const int min_slots, const int max_slots, const ocs::tom::ConstList<ocs::tom::RN> pe_range) {
    DENTER(TOP_LAYER);
 
    DPRINTF("add_pe_slots_to_category\n");
-   if (use_category->cache != nullptr) {
+   if (use_category->cache) {
       use_category->possible_pe_slots = (uint32_t *)ocs::tom::get<CCT_pe_job_slots>(use_category->cache);
    }
 
@@ -3858,7 +3864,7 @@ add_pe_slots_to_category(sge_assignment_t *a, category_use_t *use_category, uint
          (*max_slotsp)++;
       }
 
-      if (use_category->cache != nullptr) {
+      if (use_category->cache) {
          ocs::tom::set<CCT_pe_job_slots>(use_category->cache, use_category->possible_pe_slots);
          ocs::tom::set<CCT_pe_job_slot_count>(use_category->cache, *max_slotsp);
          use_category->is_pe_slots_rev = true;
@@ -3889,26 +3895,25 @@ add_pe_slots_to_category(sge_assignment_t *a, category_use_t *use_category, uint
 static void fill_category_use_t(const sge_assignment_t *a, category_use_t *use_category, const char *pe_name) {
    DENTER(TOP_LAYER);
 
-   lListElem *job = a->job;
-
-   use_category->category = (lListElem *)ocs::tom::get<JB_category>(job);
-   if (use_category->category != nullptr) {
+   use_category->category =
+      ocs::tom::Element<ocs::tom::CT>(static_cast<lListElem *>(ocs::tom::get<JB_category>(a->job)));
+   if (use_category->category) {
       // the category cache is stored in the job category object and contains an element per pe
-      use_category->cache = ocs::tom::find_first_rw<CCT_pe_name>(ocs::tom::get<CT_cache>(use_category->category), pe_name);
-      if (use_category->cache == nullptr) {
+      use_category->cache = ocs::tom::get<CT_cache>(use_category->category).find_first<CCT_pe_name>(pe_name);
+      if (!use_category->cache) {
          // there is no cache yet, create it
-         use_category->cache = lCreateElem(CCT_Type);
+         auto cache = ocs::tom::ElementPtr<ocs::tom::CCT>::create();
 
-         ocs::tom::set<CCT_pe_name>(use_category->cache, pe_name);
-         ocs::tom::set<CCT_ignore_queues>(use_category->cache, lCreateList(nullptr, CTI_Type));
-         ocs::tom::set<CCT_ignore_hosts>(use_category->cache, lCreateList(nullptr, CTI_Type));
-         ocs::tom::set<CCT_job_messages>(use_category->cache, lCreateList(nullptr, MES_Type));
+         ocs::tom::set<CCT_pe_name>(cache, pe_name);
+         ocs::tom::set<CCT_ignore_queues>(cache, ocs::tom::ListPtr<ocs::tom::CTI>::create(nullptr));
+         ocs::tom::set<CCT_ignore_hosts>(cache, ocs::tom::ListPtr<ocs::tom::CTI>::create(nullptr));
+         ocs::tom::set<CCT_job_messages>(cache, ocs::tom::ListPtr<ocs::tom::MES>::create(nullptr));
 
          // store the cache in the job category
-         if (static_cast<const lList *>(ocs::tom::get<CT_cache>(use_category->category)) == nullptr) {
-            ocs::tom::set<CT_cache>(use_category->category, lCreateList("pe_cache", CCT_Type));
+         if (!ocs::tom::get<CT_cache>(use_category->category)) {
+            ocs::tom::set<CT_cache>(use_category->category, ocs::tom::ListPtr<ocs::tom::CCT>::create("pe_cache"));
          }
-         lAppendElem(ocs::tom::get<CT_cache>(use_category->category), use_category->cache);
+         use_category->cache = ocs::tom::get<CT_cache>(use_category->category).push_back(std::move(cache));
       }
 
       use_category->mod_category = true;
@@ -3917,7 +3922,7 @@ static void fill_category_use_t(const sge_assignment_t *a, category_use_t *use_c
                                    ocs::tom::get<CT_refcount>(use_category->category) > MIN_JOBS_IN_CATEGORY;
    } else {
       // we have a job without category (does this case exist at all?)
-      use_category->cache = nullptr;
+      use_category->cache = ocs::tom::Element<ocs::tom::CCT>();
       use_category->mod_category = false;
       use_category->use_category = false;
    }
@@ -3927,7 +3932,16 @@ static void fill_category_use_t(const sge_assignment_t *a, category_use_t *use_c
    DRETURN_VOID;
 }
 
-static int get_soft_violations(sge_assignment_t *a, lListElem *hep, lListElem *qep) {
+/**
+ * @brief The soft violations of the job on the global host, a host and a queue instance
+ * @param a the assignment
+ * @param hep the host
+ * @param qep the queue instance; its QU_soft_violation is set
+ * @return the number of violations
+ */
+static int get_soft_violations(sge_assignment_t *a, const ocs::tom::ConstElement<ocs::tom::EH> hep,
+                               const ocs::tom::Element<ocs::tom::QU> qep) {
+   DENTER(TOP_LAYER);
    int violations;
 
    // @todo CS-483 only compute soft violations for a host if EH_soft_violations == -1
@@ -3937,19 +3951,19 @@ static int get_soft_violations(sge_assignment_t *a, lListElem *hep, lListElem *q
          ocs::tom::get<EH_resource_utilization>(a->gep),
          DOMINANT_LAYER_GLOBAL, 0, GLOBAL_TAG);
 
-   violations = compute_soft_violations(a, ocs::tom::ConstElement<ocs::tom::EH>(hep), nullptr, violations,
+   violations = compute_soft_violations(a, hep, nullptr, violations,
          ocs::tom::get<EH_load_list>(hep),
          ocs::tom::get<EH_consumable_config_list>(hep),
          ocs::tom::get<EH_resource_utilization>(hep),
          DOMINANT_LAYER_HOST, 0, HOST_TAG);
 
-   violations = compute_soft_violations(a, nullptr, ocs::tom::Element<ocs::tom::QU>(qep), violations,
+   violations = compute_soft_violations(a, nullptr, qep, violations,
            nullptr,
          ocs::tom::get<QU_consumable_config_list>(qep),
          ocs::tom::get<QU_resource_utilization>(qep),
          DOMINANT_LAYER_QUEUE, 0, QUEUE_TAG);
 
-   return violations;
+   DRETURN(violations);
 }
 
 static void
@@ -4366,7 +4380,7 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
    clean_up_parallel_job(a);
 
    if (use_category->use_category) {
-      schedd_mes_set_tmp_list(ocs::tom::Element<ocs::tom::CCT>(use_category->cache), a->job_id);
+      schedd_mes_set_tmp_list(use_category->cache, a->job_id);
    }
 
    SCHED_PROF_INC(a->pi, par_global);
@@ -4425,7 +4439,7 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
             if (ocs::tom::get<QU_tag>(qep) == 0 || !(hep = host_list_locate(a->host_list, ocs::tom::get<QU_qhostname>(qep)))) {
                continue;
             }
-            get_soft_violations(a, hep, qep);
+            get_soft_violations(a, ocs::tom::ConstElement<ocs::tom::EH>(hep), ocs::tom::Element<ocs::tom::QU>(qep));
             DPRINTF("EVALUATE: %s soft violations %d\n", ocs::tom::get<QU_full_name>(qep), ocs::tom::get<QU_soft_violation>(qep));
          }
          if (sconf_get_queue_sort_method() == QSM_LOAD) {
@@ -4734,9 +4748,9 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
    }
 
    if (use_category->use_category) {
-      const lList *temp = schedd_mes_get_tmp_list();
-      if (temp){
-         ocs::tom::set<CCT_job_messages>(use_category->cache, lCopyList(nullptr, temp));
+      auto temp = schedd_mes_get_tmp_list();
+      if (temp) {
+         ocs::tom::set<CCT_job_messages>(use_category->cache, temp.clone());
        }
    }
 
@@ -5230,13 +5244,12 @@ dispatch_t sge_sequential_assignment(sge_assignment_t *a) {
    result = sequential_tag_queues_suitable4job(a);
 
    if (result == DISPATCH_OK) {
-      const lListElem *qep;
       uint64_t job_start_time = std::numeric_limits<uint64_t>::max();
       uint32_t min_soft_violations = std::numeric_limits<uint32_t>::max();
-      const lListElem *best_queue = nullptr;
+      ocs::tom::ConstElement<ocs::tom::QU> best_queue;
 
       if (a->is_reservation) {
-         for_each_ep(qep, a->queue_list) {
+         for (auto qep : a->queue_list) {
             if (ocs::tom::get<QU_tag>(qep) != 0) {
                uint64_t temp_job_start_time = ocs::tom::get<QU_available_at>(qep);
 
@@ -5263,7 +5276,7 @@ dispatch_t sge_sequential_assignment(sge_assignment_t *a) {
          }
       } else {
 
-         for_each_ep(qep, a->queue_list) {
+         for (auto qep : a->queue_list) {
             if (ocs::tom::get<QU_tag>(qep)) {
                job_start_time = ocs::tom::get<QU_available_at>(qep);
                best_queue = qep;
@@ -5276,11 +5289,11 @@ dispatch_t sge_sequential_assignment(sge_assignment_t *a) {
          DRETURN(DISPATCH_NEVER_CAT); /* should never happen */
       }
       {
-         lList *gdil = nullptr;
-         const char *qname = ocs::tom::get<QU_full_name>(best_queue);
+         auto gdil = ocs::tom::ListPtr<ocs::tom::JG>::create("");
+         auto qname = ocs::tom::get<QU_full_name>(best_queue);
          const char *eh_name = ocs::tom::get<QU_qhostname>(best_queue);
 
-         ocs::tom::Element<ocs::tom::JG> gdil_ep = ocs::tom::emplace_back<JG_qname>(&gdil, qname);
+         auto gdil_ep = gdil->emplace_back<JG_qname>(qname);
          ocs::tom::set<JG_qversion>(gdil_ep, ocs::tom::get<QU_version>(best_queue));
          ocs::tom::set<JG_qhostname>(gdil_ep, eh_name);
          ocs::tom::set<JG_slots>(gdil_ep, 1);
@@ -5293,8 +5306,9 @@ dispatch_t sge_sequential_assignment(sge_assignment_t *a) {
             sconf_inc_fast_jobs();
          }
 
+         // a->gdil is an owning raw member until the owning members of the assignment are converted
          lFreeList(&(a->gdil));
-         a->gdil = gdil;
+         a->gdil = gdil.release();
          a->slots = 1;
          if (a->start == DISPATCH_TIME_QUEUE_END) {
             a->start = job_start_time;
@@ -5332,19 +5346,24 @@ dispatch_t sge_sequential_assignment(sge_assignment_t *a) {
    DRETURN(result);
 }
 
-/*------------------------------------------------------------------
- *  FAST TRACK FOR SEQUENTIAL JOBS WITHOUT A SOFT REQUEST
+/**
+ * @brief Gives the queue instances the sequence number of their host in the host sort order
  *
- *  It is much faster not to review slots in a comprehensive fashion
- *  for jobs of this type.
- * ------------------------------------------------------------------*/
-static int sequential_update_host_order(lList *host_list, lList *queues) {
+ * Part of the fast track for sequential jobs without a soft request: it is
+ * much faster not to review slots in a comprehensive fashion for jobs of
+ * this type.
+ *
+ * @param host_list the hosts, in share/load order
+ * @param queues the queue instances
+ * @return always 0
+ */
+static int sequential_update_host_order(const ocs::tom::List<ocs::tom::EH> host_list,
+                                        const ocs::tom::List<ocs::tom::QU> queues) {
    DENTER(TOP_LAYER);
 
    double previous_load = 0;
    int previous_load_inited = 0;
    uint32_t host_seqno = 0;
-   const char *eh_name;
    const void *iterator = nullptr;
    bool host_order_changed = false;
 
@@ -5352,7 +5371,7 @@ static int sequential_update_host_order(lList *host_list, lList *queues) {
       DRETURN(0);
    }
 
-   for_each_rw_lv(hep, host_list) { /* in share/load order */
+   for (auto hep : host_list) { /* in share/load order */
 
       /* figure out host_seqno
          in case the load of two hosts is equal this
@@ -5369,10 +5388,11 @@ static int sequential_update_host_order(lList *host_list, lList *queues) {
       }
 
       /* set host_seqno for all queues of this host */
-      eh_name = ocs::tom::get<EH_name>(hep);
+      // a host field reads as ocs::tom::Host, which must not go into the varargs of the messages
+      const char *eh_name = ocs::tom::get<EH_name>(hep);
 
-      ocs::tom::Element<ocs::tom::QU> qep = ocs::tom::find_first_rw<QU_qhostname>(queues, eh_name, &iterator);
-      while (qep != nullptr) {
+      auto qep = ocs::tom::find_first_rw<QU_qhostname>(queues, eh_name, &iterator);
+      while (qep) {
           ocs::tom::set<QU_host_seq_no>(qep, host_seqno);
           qep = ocs::tom::find_next_rw<QU_qhostname>(queues, eh_name, &iterator);
       }
@@ -5511,20 +5531,26 @@ parallel_queue_slots(sge_assignment_t *a, lListElem *qep, int *slots, bool need_
  * consumables of the queue instance, at queue level only. The reason for a
  * rejection is added to the scheduling info of the job.
  *
+ * @param start in: the time to check, out: the earliest start time in a reservation run
+ * @param a the assignment
+ * @param violations the soft violations so far, updated; nullptr to skip them
+ * @param qep the queue instance
+ *
  * @return 0 ok got an assignment + set time for DISPATCH_TIME_NOW and DISPATCH_TIME_QUEUE_END (only with fixed_slot equals true) 1 no assignment at the specified time -1 assignment will never be possible for all jobs of that category
  */
 static dispatch_t
-sequential_queue_time(uint64_t *start, sge_assignment_t *a, int *violations, lListElem *qep) {
+sequential_queue_time(uint64_t *start, sge_assignment_t *a, int *violations,
+                      const ocs::tom::Element<ocs::tom::QU> qep) {
    DENTER(TOP_LAYER);
 
    dstring reason;
    char reason_buf[1024];
    dispatch_t result;
    uint64_t tmp_time = *start;
-   lList *hard_requests = job_get_hard_resource_listRW(a->job);
-   ocs::tom::ConstList<ocs::tom::CE> config_attr = ocs::tom::get<QU_consumable_config_list>(qep);
-   ocs::tom::ConstList<ocs::tom::RUE> actual_attr = ocs::tom::get<QU_resource_utilization>(qep);
-   const char *qname = ocs::tom::get<QU_full_name>(qep);
+   auto hard_requests = ocs::tom::List<ocs::tom::CE>(job_get_hard_resource_listRW(a->job));
+   auto config_attr = ocs::tom::get<QU_consumable_config_list>(qep);
+   auto actual_attr = ocs::tom::get<QU_resource_utilization>(qep);
+   auto qname = ocs::tom::get<QU_full_name>(qep);
 
    sge_dstring_init(&reason, reason_buf, sizeof(reason_buf));
 
@@ -5535,8 +5561,8 @@ sequential_queue_time(uint64_t *start, sge_assignment_t *a, int *violations, lLi
 
    if (result == DISPATCH_OK) {
       if (violations != nullptr) {
-         *violations = compute_soft_violations(a, nullptr, ocs::tom::Element<ocs::tom::QU>(qep), *violations, nullptr,
-                                               config_attr, actual_attr, DOMINANT_LAYER_QUEUE, 0, QUEUE_TAG);
+         *violations = compute_soft_violations(a, nullptr, qep, *violations, nullptr, config_attr, actual_attr,
+                                               DOMINANT_LAYER_QUEUE, 0, QUEUE_TAG);
       }
    } else {
       char buff[1024 + 1];
@@ -5582,24 +5608,22 @@ sequential_queue_time(uint64_t *start, sge_assignment_t *a, int *violations, lLi
  *      -1 assignment never possible for all jobs of the same category
  *      -2 assignment never possible for that particular job
  *
- * @param slots
- * @param start
- * @param duration
- * @param host_soft_violations
- * @param job
- * @param ja_task
- * @param hep
- * @param centry_list
- * @param acl_list
+ * @param start in: the time to check, out: the earliest start time in a reservation run
+ * @param a the assignment
+ * @param violations the soft violations so far, updated; nullptr to skip them
+ * @param hep the host
+ *
+ * @return the dispatch result, see above
  */
 static dispatch_t
-sequential_host_time(uint64_t *start, sge_assignment_t *a, int *violations, const lListElem *hep) {
+sequential_host_time(uint64_t *start, sge_assignment_t *a, int *violations,
+                     const ocs::tom::ConstElement<ocs::tom::EH> hep) {
    DENTER(TOP_LAYER);
 
-   lList *hard_requests = job_get_hard_resource_listRW(a->job);
-   ocs::tom::ConstList<ocs::tom::HL> load_attr = ocs::tom::get<EH_load_list>(hep);
-   ocs::tom::ConstList<ocs::tom::CE> config_attr = ocs::tom::get<EH_consumable_config_list>(hep);
-   ocs::tom::ConstList<ocs::tom::RUE> actual_attr = ocs::tom::get<EH_resource_utilization>(hep);
+   auto hard_requests = ocs::tom::List<ocs::tom::CE>(job_get_hard_resource_listRW(a->job));
+   auto load_attr = ocs::tom::get<EH_load_list>(hep);
+   auto config_attr = ocs::tom::get<EH_consumable_config_list>(hep);
+   auto actual_attr = ocs::tom::get<EH_resource_utilization>(hep);
    double lc_factor = 0;
    uint32_t ulc_factor;
    dispatch_t result;
@@ -5609,7 +5633,7 @@ sequential_host_time(uint64_t *start, sge_assignment_t *a, int *violations, cons
 
    sge_dstring_init(&reason, reason_buf, sizeof(reason_buf));
 
-   clear_resource_tags(ocs::tom::List<ocs::tom::CE>(hard_requests), HOST_TAG);
+   clear_resource_tags(hard_requests, HOST_TAG);
 
    /* cause load be raised artificially to reflect load correction when
       checking job requests */
@@ -5639,8 +5663,8 @@ sequential_host_time(uint64_t *start, sge_assignment_t *a, int *violations, cons
 
    if (result == DISPATCH_OK || result == DISPATCH_MISSING_ATTR) {
       if (violations != nullptr) {
-         *violations = compute_soft_violations(a, ocs::tom::ConstElement<ocs::tom::EH>(hep), nullptr, *violations,
-                                               load_attr, config_attr, actual_attr, DOMINANT_LAYER_HOST, 0, HOST_TAG);
+         *violations = compute_soft_violations(a, hep, nullptr, *violations, load_attr, config_attr, actual_attr,
+                                               DOMINANT_LAYER_HOST, 0, HOST_TAG);
       }
    } else {
       char buff[1024 + 1];
@@ -5671,6 +5695,10 @@ sequential_host_time(uint64_t *start, sge_assignment_t *a, int *violations, cons
  * the global host: access to any host, the global load values corrected by
  * the load correction factor, and the global consumables.
  *
+ * @param start in: the time to check, out: the earliest start time in a reservation run
+ * @param a the assignment
+ * @param violations the soft violations so far, updated; nullptr to skip them
+ *
  * @return 0 ok got an assignment + set time for DISPATCH_TIME_QUEUE_END 1 no assignment at the specified time -1 assignment will never be possible for all jobs of that category
  */
 static dispatch_t
@@ -5680,16 +5708,16 @@ sequential_global_time(uint64_t *start, sge_assignment_t *a, int *violations) {
    dstring reason; char reason_buf[1024];
    dispatch_t result = DISPATCH_NEVER_CAT;
    uint64_t tmp_time = *start;
-   lList *hard_request = job_get_hard_resource_listRW(a->job);
-   ocs::tom::ConstList<ocs::tom::HL> load_attr = ocs::tom::get<EH_load_list>(a->gep);
-   ocs::tom::ConstList<ocs::tom::CE> config_attr = ocs::tom::get<EH_consumable_config_list>(a->gep);
-   ocs::tom::ConstList<ocs::tom::RUE> actual_attr = ocs::tom::get<EH_resource_utilization>(a->gep);
+   auto hard_request = ocs::tom::List<ocs::tom::CE>(job_get_hard_resource_listRW(a->job));
+   auto load_attr = ocs::tom::get<EH_load_list>(a->gep);
+   auto config_attr = ocs::tom::get<EH_consumable_config_list>(a->gep);
+   auto actual_attr = ocs::tom::get<EH_resource_utilization>(a->gep);
    double lc_factor=0.0;
    uint32_t ulc_factor;
 
    sge_dstring_init(&reason, reason_buf, sizeof(reason_buf));
 
-   clear_resource_tags(ocs::tom::List<ocs::tom::CE>(hard_request), GLOBAL_TAG);
+   clear_resource_tags(hard_request, GLOBAL_TAG);
 
    /* check if job has access to any hosts globally */
    if ((result=sge_host_match_static(a, a->gep)) != 0) {
