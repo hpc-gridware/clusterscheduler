@@ -72,11 +72,13 @@
 #include "sgeobj/tom/ocs_tom_HL.h"
 #include "sgeobj/tom/ocs_tom_JAT.h"
 #include "sgeobj/tom/ocs_tom_JB.h"
+#include "sgeobj/tom/ocs_tom_LDR.h"
 #include "sgeobj/tom/ocs_tom_PE.h"
 #include "sgeobj/tom/ocs_tom_QU.h"
 #include "sgeobj/tom/ocs_tom_RQRL.h"
 #include "sgeobj/tom/ocs_tom_RQS.h"
 #include "sgeobj/tom/ocs_tom_RUE.h"
+#include "sgeobj/tom/ocs_tom_ST.h"
 #include "sgeobj/tom/ocs_tom_US.h"
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
@@ -91,9 +93,14 @@
 #define MIN_JOBS_IN_CATEGORY 1
 
 bool
-sge_select_queue(lList *requested_attr, lListElem *queue, lListElem *host, lList *exechost_list,
-                 lList *centry_list, bool allow_non_requestable, int slots, lList *queue_user_list,
-                 lList *acl_list, lListElem *job);
+sge_select_queue(ocs::tom::List<ocs::tom::CE> requested_attr, ocs::tom::ConstElement<ocs::tom::QU> queue,
+                 ocs::tom::ConstElement<ocs::tom::EH> host, ocs::tom::List<ocs::tom::EH> exechost_list,
+                 ocs::tom::ConstList<ocs::tom::CE> centry_list, bool allow_non_requestable, int slots,
+                 ocs::tom::ConstList<ocs::tom::ST> queue_user_list, ocs::tom::ConstList<ocs::tom::US> acl_list,
+                 ocs::tom::ConstElement<ocs::tom::JB> job);
+OCS_TRANSITIONAL bool sge_select_queue(lList *requested_attr, lListElem *queue, lListElem *host, lList *exechost_list,
+                                       lList *centry_list, bool allow_non_requestable, int slots,
+                                       lList *queue_user_list, lList *acl_list, lListElem *job);
 
 /* --- is there a load alarm on this queue ---------------------------- */
 
@@ -106,11 +113,16 @@ OCS_TRANSITIONAL int sge_load_alarm(char *reason, size_t reason_size, const lLis
                                     const lList *load_adjustments, const lList *consumable_load_adjustments,
                                     bool is_check_consumable);
 
-void sge_create_load_list(const lList *queue_list, const lList *host_list,
-                          const lList *centry_list, lList **load_list);
+ocs::tom::ListPtr<ocs::tom::LDR>
+sge_create_load_list(ocs::tom::List<ocs::tom::QU> queue_list, ocs::tom::ConstList<ocs::tom::EH> host_list,
+                     ocs::tom::ConstList<ocs::tom::CE> centry_list);
+OCS_TRANSITIONAL void sge_create_load_list(const lList *queue_list, const lList *host_list, const lList *centry_list,
+                                           lList **load_list);
 
-bool sge_load_list_alarm(bool monitor_next_run, lList *load_list, const lList *host_list,
-                         const lList *centry_list);
+bool sge_load_list_alarm(bool monitor_next_run, ocs::tom::ConstList<ocs::tom::LDR> load_list,
+                         ocs::tom::ConstList<ocs::tom::EH> host_list, ocs::tom::ConstList<ocs::tom::CE> centry_list);
+OCS_TRANSITIONAL bool sge_load_list_alarm(bool monitor_next_run, lList *load_list, const lList *host_list,
+                                          const lList *centry_list);
 
 void sge_remove_queue_from_load_list(lList **load_list, const lList *queue_list);
 
@@ -328,12 +340,21 @@ sge_host_match_static(const sge_assignment_t *a, ocs::tom::ConstElement<ocs::tom
 /* not used */
 /* int sge_get_ulong_qattr(uint32_t *uvalp, char *attrname, lListElem *q, lList *exechost_list, lList *complex_list); */
 
-int sge_get_double_qattr(double *dvalp, const char *attrname, const lListElem *q,
-                         const lList *exechost_list, const lList *complex_list,
-                         const lList *load_adjustments, bool *has_value_from_object);
+int sge_get_double_qattr(double *dvalp, const char *attrname, ocs::tom::ConstElement<ocs::tom::QU> q,
+                         ocs::tom::ConstList<ocs::tom::EH> exechost_list,
+                         ocs::tom::ConstList<ocs::tom::CE> centry_list,
+                         ocs::tom::ConstList<ocs::tom::CE> load_adjustments, bool *has_value_from_object);
+OCS_TRANSITIONAL int sge_get_double_qattr(double *dvalp, const char *attrname, const lListElem *q,
+                                          const lList *exechost_list, const lList *complex_list,
+                                          const lList *load_adjustments, bool *has_value_from_object);
 
-int sge_get_string_qattr(char *dst, int dst_len, const char *attrname, lListElem *q, const lList *exechost_list,
-                         const lList *complex_list, const lList *load_adjustments);
+int sge_get_string_qattr(char *dst, int dst_len, const char *attrname, ocs::tom::ConstElement<ocs::tom::QU> q,
+                         ocs::tom::ConstList<ocs::tom::EH> exechost_list,
+                         ocs::tom::ConstList<ocs::tom::CE> centry_list,
+                         ocs::tom::ConstList<ocs::tom::CE> load_adjustments);
+OCS_TRANSITIONAL int sge_get_string_qattr(char *dst, int dst_len, const char *attrname, lListElem *q,
+                                          const lList *exechost_list, const lList *complex_list,
+                                          const lList *load_adjustments);
 
 dispatch_t
 parallel_rc_slots_by_time(sge_assignment_t *a, int *slots, ocs::tom::ConstList<ocs::tom::CE> total_list,

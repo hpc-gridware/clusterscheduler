@@ -146,23 +146,6 @@
  */
 
 /**
- * @brief Field positions of the `LDR_Type` cull element
- *
- * Used to read the load threshold entries by position instead of by name,
- * which matters because the load alarm check runs per queue instance.
- *
- * @warning Must stay in sync with `libs/sgeobj/json/LDR.json` - the positions
- *          are the order of the fields there.
- */
-enum {
-   LDR_queue_ref_list_pos = 0,   ///< The queues this load value applies to
-   LDR_limit_pos,                ///< The configured threshold
-   LDR_global_pos,               ///< The value at global level
-   LDR_host_pos,                 ///< The value at host level
-   LDR_queue_pos                 ///< The value at queue level
-};
-
-/**
  * @brief What one matching run may reuse from, and contribute to, its category
  *
  * Jobs with identical requests share a category, so what was learned matching
@@ -310,9 +293,10 @@ find_best_result(dispatch_t r1, dispatch_t r2);
 
 /* ---- helpers for load computation ---------------------------------------------------------- */
 
-static lListElem
-*load_locate_elem(lList *load_list, lListElem *global_consumable, lListElem *host_consumable,
-                  lListElem *queue_consumable, const char *limit);
+static ocs::tom::Element<ocs::tom::LDR>
+load_locate_elem(ocs::tom::List<ocs::tom::LDR> load_list, ocs::tom::ConstElement<ocs::tom::RUE> global_consumable,
+                 ocs::tom::ConstElement<ocs::tom::RUE> host_consumable,
+                 ocs::tom::ConstElement<ocs::tom::RUE> queue_consumable, const char *limit);
 
 static int
 load_check_alarm(char *reason, size_t reason_size, const char *name, const char *load_value, const char *limit_value,
@@ -324,8 +308,13 @@ static int
 load_np_value_adjustment(const char *name, ocs::tom::ConstElement<ocs::tom::EH> hep, double *load_correction);
 
 
+/**
+ * @brief Prints the master and slave tags of a queue instance in the debug output
+ *
+ * @param qinstance the queue instance, or an empty handle when matching hosts
+ */
 static void
-print_tagged4schedule(const lListElem *qinstance) {
+print_tagged4schedule(const ocs::tom::ConstElement<ocs::tom::QU> qinstance) {
    DENTER(TOP_LAYER);
 
    if (DPRINTF_IS_ACTIVE) {
@@ -1345,16 +1334,16 @@ parallel_maximize_slots_pe(sge_assignment_t *best, int *available_slots) {
  * host or queue. One and only one should be specified. If both, the function
  * assumes, that the queue belongs to the given host.
  *
- * @param requested_attr list of requested attributes
- * @param queue current queue or null if host is set
- * @param host current host or null if queue is set
- * @param exechost_list list of all hosts in the system
- * @param centry_list system wide attribute config list
+ * @param requested_attr list of requested attributes (`CE_Type`), their tags are updated
+ * @param queue current queue (`QU_Type`) or an empty handle if host is set
+ * @param host current host (`EH_Type`) or an empty handle if queue is set
+ * @param exechost_list list of all hosts in the system (`EH_Type`)
+ * @param centry_list system wide attribute config list (`CE_Type`)
  * @param allow_non_requestable allow non requestable?
  * @param slots number of requested slots
- * @param queue_user_list list of users or null
- * @param acl_list acl_list or null
- * @param job job or null
+ * @param queue_user_list list of users (`ST_Type`) or an empty handle
+ * @param acl_list the user sets (`US_Type`) or an empty handle
+ * @param job job (`JB_Type`) or an empty handle
  *
  * @return 1, if okay, QU_tag will be set if a queue is selected 0, if not okay
  *
@@ -1365,12 +1354,14 @@ parallel_maximize_slots_pe(sge_assignment_t *best, int *available_slots) {
  *       -l request. Because of in serial jobs requests can be simply added.
  *       In Parallel jobs each -l requests a different set of queues.
  */
-bool sge_select_queue(lList *requested_attr, lListElem *queue, lListElem *host,
-                      lList *exechost_list, lList *centry_list, bool allow_non_requestable,
-                      int slots, lList *queue_user_list, lList *acl_list, lListElem *job) {
+bool
+sge_select_queue(const ocs::tom::List<ocs::tom::CE> requested_attr, const ocs::tom::ConstElement<ocs::tom::QU> queue,
+                 ocs::tom::ConstElement<ocs::tom::EH> host, const ocs::tom::List<ocs::tom::EH> exechost_list,
+                 const ocs::tom::ConstList<ocs::tom::CE> centry_list, const bool allow_non_requestable,
+                 const int slots, const ocs::tom::ConstList<ocs::tom::ST> queue_user_list,
+                 const ocs::tom::ConstList<ocs::tom::US> acl_list, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    dispatch_t ret;
-   lListElem *global = nullptr;
    int q_access=1;
    ocs::tom::ConstList<ocs::tom::PR> projects;
    const char *project;
@@ -1382,16 +1373,16 @@ bool sge_select_queue(lList *requested_attr, lListElem *queue, lListElem *host,
    uint64_t start_time = DISPATCH_TIME_NOW;
 
 
-   clear_resource_tags(ocs::tom::List<ocs::tom::CE>(requested_attr), MAX_TAG);
+   clear_resource_tags(requested_attr, MAX_TAG);
 
    assignment_init(&a, nullptr, nullptr, nullptr);
-   a.centry_list      = ocs::tom::ConstList<ocs::tom::CE>(centry_list);
-   a.host_list        = ocs::tom::List<ocs::tom::EH>(exechost_list);
+   a.centry_list      = centry_list;
+   a.host_list        = exechost_list;
 
    if (acl_list != nullptr) {
       /* check if job owner has access rights to the queue */
       DPRINTF("testing queue access lists\n");
-      for_each_ep_lv(qu, queue_user_list) {
+      for (auto qu : queue_user_list) {
          const char *name = ocs::tom::get<ST_name>(qu);
          DPRINTF("-----> checking queue user: %s\n", name );
          q_access |= (name[0]=='@')?
@@ -1443,15 +1434,16 @@ bool sge_select_queue(lList *requested_attr, lListElem *queue, lListElem *host,
       *is queue contained in hard queue list ?
       */
       DPRINTF("queue contained in jobs hard queue list?\n");
-      const lList *qref_list = job_get_hard_queue_list(job); // @todo CS-400 where is sge_select_queue() called?
+      // @todo CS-400 where is sge_select_queue() called?
+      auto qref_list = ocs::tom::ConstList<ocs::tom::QR>(job_get_hard_queue_list(job));
       if (qref_list != nullptr) {
          const char *qname = nullptr;
          const char *qinstance_name = nullptr;
 
          qname = ocs::tom::get<QU_qname>(queue);
          qinstance_name = ocs::tom::get<QU_full_name>(queue);
-         if ((static_cast<const lListElem *>(ocs::tom::find_first<QR_name>(qref_list, qname)) != nullptr) ||
-             (static_cast<const lListElem *>(ocs::tom::find_first<QR_name>(qref_list, qinstance_name)) != nullptr)) {
+         if (qref_list.find_first<QR_name>(qname) != nullptr ||
+             qref_list.find_first<QR_name>(qinstance_name) != nullptr) {
             DPRINTF("ok\n");
          } else {
             DPRINTF("denied because queue \"%s\" is not contained in the hard "
@@ -1464,7 +1456,7 @@ bool sge_select_queue(lList *requested_attr, lListElem *queue, lListElem *host,
    }
 
 /* global */
-   global = host_list_locate(exechost_list, SGE_GLOBAL_NAME);
+   auto global = ocs::tom::ConstElement<ocs::tom::EH>(host_list_locate(exechost_list, SGE_GLOBAL_NAME));
    ocs::tom::ConstList<ocs::tom::HL> load_attr = ocs::tom::get<EH_load_list>(global);
    ocs::tom::ConstList<ocs::tom::CE> config_attr = ocs::tom::get<EH_consumable_config_list>(global);
    ocs::tom::ConstList<ocs::tom::RUE> actual_attr = ocs::tom::get<EH_resource_utilization>(global);
@@ -1475,7 +1467,7 @@ bool sge_select_queue(lList *requested_attr, lListElem *queue, lListElem *host,
          lc_factor = ((double)ulc_factor)/100;
    }
 
-   ret = rc_time_by_slots(&a, ocs::tom::List<ocs::tom::CE>(requested_attr), load_attr, config_attr, actual_attr,
+   ret = rc_time_by_slots(&a, requested_attr, load_attr, config_attr, actual_attr,
                      nullptr, nullptr, allow_non_requestable, nullptr, slots,
                           DOMINANT_LAYER_HOST, lc_factor, GLOBAL_TAG,
                           &start_time, SGE_GLOBAL_NAME);
@@ -1483,7 +1475,8 @@ bool sge_select_queue(lList *requested_attr, lListElem *queue, lListElem *host,
 /* host */
    if(ret == DISPATCH_OK || ret == DISPATCH_MISSING_ATTR){
       if(host == nullptr) {
-         host = host_list_locate(exechost_list, ocs::tom::get<QU_qhostname>(queue));
+         host = ocs::tom::ConstElement<ocs::tom::EH>(host_list_locate(exechost_list,
+                                                                      ocs::tom::get<QU_qhostname>(queue)));
       }
       ocs::tom::ConstList<ocs::tom::HL> load_attr = ocs::tom::get<EH_load_list>(host);
       ocs::tom::ConstList<ocs::tom::CE> config_attr = ocs::tom::get<EH_consumable_config_list>(host);
@@ -1494,8 +1487,8 @@ bool sge_select_queue(lList *requested_attr, lListElem *queue, lListElem *host,
             lc_factor = ((double)ulc_factor)/100;
       }
 
-      ret = rc_time_by_slots(&a, ocs::tom::List<ocs::tom::CE>(requested_attr), load_attr, config_attr,
-                             actual_attr, ocs::tom::ConstElement<ocs::tom::EH>(host), nullptr,
+      ret = rc_time_by_slots(&a, requested_attr, load_attr, config_attr,
+                             actual_attr, host, nullptr,
                              allow_non_requestable, nullptr,
                              slots, DOMINANT_LAYER_HOST, lc_factor, HOST_TAG,
                              &start_time, ocs::tom::get<EH_name>(host));
@@ -1505,8 +1498,8 @@ bool sge_select_queue(lList *requested_attr, lListElem *queue, lListElem *host,
          ocs::tom::ConstList<ocs::tom::CE> config_attr = ocs::tom::get<QU_consumable_config_list>(queue);
          ocs::tom::ConstList<ocs::tom::RUE> actual_attr = ocs::tom::get<QU_resource_utilization>(queue);
 
-         ret = rc_time_by_slots(&a, ocs::tom::List<ocs::tom::CE>(requested_attr), nullptr, config_attr,
-                                actual_attr, nullptr, ocs::tom::ConstElement<ocs::tom::QU>(queue),
+         ret = rc_time_by_slots(&a, requested_attr, nullptr, config_attr,
+                                actual_attr, nullptr, queue,
                                 allow_non_requestable, nullptr, slots, DOMINANT_LAYER_QUEUE,
                                 0, QUEUE_TAG, &start_time,  ocs::tom::get<QU_full_name>(queue));
       }
@@ -1515,6 +1508,31 @@ bool sge_select_queue(lList *requested_attr, lListElem *queue, lListElem *host,
    assignment_release(&a);
 
    DRETURN((ret == DISPATCH_OK) ? true : false);
+}
+
+/**
+ * @brief sge_select_queue() for an untyped caller
+ * @param requested_attr        the requested attributes (`CE_Type`)
+ * @param queue                 the queue instance (`QU_Type`), or nullptr
+ * @param host                  the execution host (`EH_Type`), or nullptr
+ * @param exechost_list         the execution hosts (`EH_Type`)
+ * @param centry_list           the complex entries (`CE_Type`)
+ * @param allow_non_requestable as sge_select_queue()
+ * @param slots                 as sge_select_queue()
+ * @param queue_user_list       the queue users (`ST_Type`), or nullptr
+ * @param acl_list              the user sets (`US_Type`), or nullptr
+ * @param job                   the job (`JB_Type`), or nullptr
+ * @return as sge_select_queue()
+ */
+bool
+sge_select_queue(lList *requested_attr, lListElem *queue, lListElem *host, lList *exechost_list, lList *centry_list,
+                 const bool allow_non_requestable, const int slots, lList *queue_user_list, lList *acl_list,
+                 lListElem *job) {
+   return sge_select_queue(ocs::tom::List<ocs::tom::CE>(requested_attr), ocs::tom::ConstElement<ocs::tom::QU>(queue),
+                           ocs::tom::ConstElement<ocs::tom::EH>(host), ocs::tom::List<ocs::tom::EH>(exechost_list),
+                           ocs::tom::ConstList<ocs::tom::CE>(centry_list), allow_non_requestable, slots,
+                           ocs::tom::ConstList<ocs::tom::ST>(queue_user_list),
+                           ocs::tom::ConstList<ocs::tom::US>(acl_list), ocs::tom::ConstElement<ocs::tom::JB>(job));
 }
 
 /**
@@ -6002,38 +6020,38 @@ parallel_available_slots(const sge_assignment_t *a, int *slots) {
  * @param[out] dvalp                 receives the value
  * @param[in]  attrname              name of the attribute
  * @param[in]  q                     the queue instance (`QU_Type`)
- * @param[in]  exechost_list         the execution hosts, for the host and
+ * @param[in]  exechost_list         the execution hosts (`EH_Type`), for the host and
  *                                   global values
- * @param[in]  centry_list           the system wide attribute configuration
+ * @param[in]  centry_list           the system wide attribute configuration (`CE_Type`)
  * @param[in]  load_adjustments      the job load adjustments of the scheduler
- *                                   configuration (`CE_Type`); nullptr fetches
- *                                   them from the data store of the calling
- *                                   thread
+ *                                   configuration (`CE_Type`); an empty handle
+ *                                   fetches them from the data store of the
+ *                                   calling thread
  * @param[out] has_value_from_object true if the value came from the object
  *                                   rather than from a load value
  *
  * @return 0 on success, -1 if the queue has no such attribute, -2 if the
  *         value cannot be converted to a number
  */
-int sge_get_double_qattr(double *dvalp, const char *attrname, const lListElem *q,
-                         const lList *exechost_list, const lList *centry_list,
-                         const lList *load_adjustments, bool *has_value_from_object) {
+int sge_get_double_qattr(double *dvalp, const char *attrname, const ocs::tom::ConstElement<ocs::tom::QU> q,
+                         const ocs::tom::ConstList<ocs::tom::EH> exechost_list,
+                         const ocs::tom::ConstList<ocs::tom::CE> centry_list,
+                         const ocs::tom::ConstList<ocs::tom::CE> load_adjustments, bool *has_value_from_object) {
    DENTER(TOP_LAYER);
 
    int ret = -1;
-   lListElem *ep;
    ocs::CEntry::Type type;
    double tmp_dval;
    char dom_str[4];
-   lListElem *global = nullptr;
-   lListElem *host = nullptr;
 
-   global = host_list_locate(exechost_list, SGE_GLOBAL_NAME);
-   host = host_list_locate(exechost_list, ocs::tom::get<QU_qhostname>(q));
+   auto global = ocs::tom::ConstElement<ocs::tom::EH>(host_list_locate(exechost_list, SGE_GLOBAL_NAME));
+   auto host = ocs::tom::ConstElement<ocs::tom::EH>(host_list_locate(exechost_list,
+                                                                     ocs::tom::get<QU_qhostname>(q)));
 
    /* find matching */
    *has_value_from_object = false;
-   if (( ep = get_attribute_by_name(global, host, q, attrname, centry_list, load_adjustments, DISPATCH_TIME_NOW, 0)) &&
+   auto ep = get_attribute_by_name(global, host, q, attrname, centry_list, load_adjustments, DISPATCH_TIME_NOW, 0);
+   if (ep &&
        ((type=static_cast<ocs::CEntry::Type>(ocs::tom::get<CE_valtype>(ep))) != ocs::CEntry::Type::STR) &&
        (type != ocs::CEntry::Type::CSTR) && (type != ocs::CEntry::Type::RESTR) && (type != ocs::CEntry::Type::HOST) ) {
 
@@ -6052,10 +6070,26 @@ int sge_get_double_qattr(double *dvalp, const char *attrname, const lListElem *q
       DPRINTF("resource %s: %f\n", dom_str, tmp_dval);
    }
 
-   /* free */
-   lFreeElem(&ep);
-
    DRETURN(ret);
+}
+
+/**
+ * @brief sge_get_double_qattr() for an untyped caller
+ * @param[out] dvalp                 as sge_get_double_qattr()
+ * @param[in]  attrname              as sge_get_double_qattr()
+ * @param[in]  q                     the queue instance (`QU_Type`)
+ * @param[in]  exechost_list         the execution hosts (`EH_Type`)
+ * @param[in]  centry_list           the complex entries (`CE_Type`)
+ * @param[in]  load_adjustments      the job load adjustments (`CE_Type`), or nullptr
+ * @param[out] has_value_from_object as sge_get_double_qattr()
+ * @return as sge_get_double_qattr()
+ */
+int sge_get_double_qattr(double *dvalp, const char *attrname, const lListElem *q, const lList *exechost_list,
+                         const lList *centry_list, const lList *load_adjustments, bool *has_value_from_object) {
+   return sge_get_double_qattr(dvalp, attrname, ocs::tom::ConstElement<ocs::tom::QU>(q),
+                               ocs::tom::ConstList<ocs::tom::EH>(exechost_list),
+                               ocs::tom::ConstList<ocs::tom::CE>(centry_list),
+                               ocs::tom::ConstList<ocs::tom::CE>(load_adjustments), has_value_from_object);
 }
 
 
@@ -6066,46 +6100,58 @@ int sge_get_double_qattr(double *dvalp, const char *attrname, const lListElem *q
  * @param[in]  dst_len       size of the `dst` buffer
  * @param[in]  attrname      name of the attribute
  * @param[in]  q             the queue instance (`QU_Type`)
- * @param[in]  exechost_list the execution hosts, for the host and global
- *                           values
- * @param[in]  centry_list   the system wide attribute configuration
+ * @param[in]  exechost_list the execution hosts (`EH_Type`), for the host and
+ *                           global values
+ * @param[in]  centry_list   the system wide attribute configuration (`CE_Type`)
  * @param[in]  load_adjustments the job load adjustments of the scheduler
- *                           configuration (`CE_Type`); nullptr fetches them
- *                           from the data store of the calling thread
+ *                           configuration (`CE_Type`); an empty handle fetches
+ *                           them from the data store of the calling thread
  *
  * @return 0 on success, -1 if the queue has no such attribute
  */
-int sge_get_string_qattr(
-char *dst,
-int dst_len,
-const char *attrname,
-lListElem *q,
-const lList *exechost_list,
-const lList *centry_list,
-const lList *load_adjustments
-) {
+int sge_get_string_qattr(char *dst, const int dst_len, const char *attrname,
+                         const ocs::tom::ConstElement<ocs::tom::QU> q,
+                         const ocs::tom::ConstList<ocs::tom::EH> exechost_list,
+                         const ocs::tom::ConstList<ocs::tom::CE> centry_list,
+                         const ocs::tom::ConstList<ocs::tom::CE> load_adjustments) {
    DENTER(TOP_LAYER);
 
-   lListElem *ep;
-   lListElem *global = nullptr;
-   lListElem *host = nullptr;
    int ret = -1;
 
-   global = host_list_locate(exechost_list, SGE_GLOBAL_NAME);
-   host = host_list_locate(exechost_list, ocs::tom::get<QU_qhostname>(q));
+   auto global = ocs::tom::ConstElement<ocs::tom::EH>(host_list_locate(exechost_list, SGE_GLOBAL_NAME));
+   auto host = ocs::tom::ConstElement<ocs::tom::EH>(host_list_locate(exechost_list,
+                                                                     ocs::tom::get<QU_qhostname>(q)));
 
-   ep = get_attribute_by_name(global, host, q, attrname, centry_list, load_adjustments, DISPATCH_TIME_NOW, 0);
+   auto ep = get_attribute_by_name(global, host, q, attrname, centry_list, load_adjustments, DISPATCH_TIME_NOW, 0);
 
    /* first copy ... */
    if (ep && dst)
       sge_strlcpy(dst, ocs::tom::get<CE_stringval>(ep), dst_len);
 
    if (ep){
-      lFreeElem(&ep);
       ret = 0;
    }
 
    DRETURN(ret);
+}
+
+/**
+ * @brief sge_get_string_qattr() for an untyped caller
+ * @param[out] dst              as sge_get_string_qattr()
+ * @param[in]  dst_len          as sge_get_string_qattr()
+ * @param[in]  attrname         as sge_get_string_qattr()
+ * @param[in]  q                the queue instance (`QU_Type`)
+ * @param[in]  exechost_list    the execution hosts (`EH_Type`)
+ * @param[in]  centry_list      the complex entries (`CE_Type`)
+ * @param[in]  load_adjustments the job load adjustments (`CE_Type`), or nullptr
+ * @return as sge_get_string_qattr()
+ */
+int sge_get_string_qattr(char *dst, const int dst_len, const char *attrname, lListElem *q,
+                         const lList *exechost_list, const lList *centry_list, const lList *load_adjustments) {
+   return sge_get_string_qattr(dst, dst_len, attrname, ocs::tom::ConstElement<ocs::tom::QU>(q),
+                               ocs::tom::ConstList<ocs::tom::EH>(exechost_list),
+                               ocs::tom::ConstList<ocs::tom::CE>(centry_list),
+                               ocs::tom::ConstList<ocs::tom::CE>(load_adjustments));
 }
 
 /**
@@ -6178,7 +6224,7 @@ ri_time_by_slots(const sge_assignment_t *a, const ocs::tom::ConstElement<ocs::to
 
    ret = match_static_resource(slots, rep, *cplx_el, reason, allow_non_requestable);
    if (actual_el != nullptr) {
-      utilized = lGetNumberOfElem(ocs::tom::get<RUE_utilized>(actual_el));
+      utilized = static_cast<int>(ocs::tom::get<RUE_utilized>(actual_el).size());
    }
 
    if (ret != DISPATCH_OK || (!schedule_based && utilized == 0 && ocs::tom::get<CE_relop>(cplx_el) != CMPLXEXCL_OP)) {
@@ -6510,7 +6556,7 @@ ri_slots_by_time(const sge_assignment_t *a, int *slots, const ocs::tom::ConstLis
       DPRINTF("\t\t%s: ri_slots_by_time: non exclusive request %s\n", object_name, name);
 
       if (uep != nullptr) {
-         utilized = lGetNumberOfElem(ocs::tom::get<RUE_utilized>(uep));
+         utilized = static_cast<int>(ocs::tom::get<RUE_utilized>(uep).size());
       }
 
       if (!a->is_advance_reservation && sconf_get_qs_state() == QS_STATE_EMPTY) {
@@ -7340,148 +7386,154 @@ parallel_rc_slots_by_time(sge_assignment_t *a, int *slots, const ocs::tom::Const
  * scanes all queues for consumables as load thresholds. It builds a
  * consumable category for each queue which is using consumables as a load
  * threshold.
- * If no consumables are used, the *load_list is set to nullptr.
+ * If no consumables are used, an empty handle is returned.
  *
- * @param queue_list a list of queue instances
- * @param host_list a list of hosts
- * @param centry_list a list of complex entries
- * @param load_list a ref to the target load list
+ * @param queue_list a list of queue instances (`QU_Type`); the load list
+ *                   references them, sge_load_list_alarm() tags them
+ * @param host_list a list of hosts (`EH_Type`)
+ * @param centry_list a list of complex entries (`CE_Type`)
+ *
+ * @return the load list (`LDR_Type`), or an empty handle if no consumable is
+ *         used as a load threshold or on an error
  *
  * @note MT-NOTE: sge_create_load_list() is MT safe
  */
-void sge_create_load_list(const lList *queue_list, const lList *host_list,
-                          const lList *centry_list, lList **load_list) {
+ocs::tom::ListPtr<ocs::tom::LDR>
+sge_create_load_list(const ocs::tom::List<ocs::tom::QU> queue_list, const ocs::tom::ConstList<ocs::tom::EH> host_list,
+                     const ocs::tom::ConstList<ocs::tom::CE> centry_list) {
    DENTER(TOP_LAYER);
-   lListElem *centry;
+   ocs::tom::ListPtr<ocs::tom::LDR> load_list;
    ocs::tom::ConstList<ocs::tom::CE> load_threshold_list;
    const char *load_threshold_name;
    const char *limit_value;
-   lListElem *global;
-   lListElem *host;
 
-
-   if (load_list == nullptr){
-      CRITICAL("no load_list specified\n");
-      ocs::TerminationManager::trigger_abort();
-   }
-
-   if (*load_list != nullptr){
-      sge_free_load_list(load_list);
-   }
-
-   if ((global = host_list_locate(host_list, SGE_GLOBAL_NAME)) == nullptr) {
+   auto global = ocs::tom::Element<ocs::tom::EH>(host_list_locate(host_list, SGE_GLOBAL_NAME));
+   if (global == nullptr) {
       ERROR("no global host in sge_create_load_list");
-      DRETURN_VOID;
+      DRETURN(load_list);
    }
 
-   for_each_rw_lv(queue, queue_list) {
+   for (auto queue : queue_list) {
       load_threshold_list = ocs::tom::get<QU_load_thresholds>(queue);
-      for_each_rw_lv(load_threshold, load_threshold_list) {
+      for (auto load_threshold : load_threshold_list) {
          load_threshold_name = ocs::tom::get<CE_name>(load_threshold);
          limit_value = ocs::tom::get<CE_stringval>(load_threshold);
-         if ((centry = centry_list_locate(centry_list, load_threshold_name)) == nullptr) {
+         auto centry = ocs::tom::ConstElement<ocs::tom::CE>(centry_list_locate(centry_list, load_threshold_name));
+         if (centry == nullptr) {
             ERROR(MSG_SCHEDD_WHYEXCEEDNOCOMPLEX_S, load_threshold_name);
             goto error;
          }
 
          if (ocs::tom::get<CE_consumable>(centry) != CONSUMABLE_NO) {
-            lListElem *global_consumable = nullptr;
-            lListElem *host_consumable = nullptr;
-            lListElem *queue_consumable = nullptr;
+            ocs::tom::Element<ocs::tom::LDR> load_elem;
+            const char *qhostname = ocs::tom::get<QU_qhostname>(queue);
 
-            lListElem *load_elem = nullptr;
-            lListElem *queue_ref_elem = nullptr;
-            lList *queue_ref_list = nullptr;
-
-
-            if ((host = host_list_locate(host_list, ocs::tom::get<QU_qhostname>(queue))) == nullptr){
-               ERROR(MSG_SGETEXT_INVALIDHOSTINQUEUE_SS, static_cast<const char *>(ocs::tom::get<QU_qhostname>(queue)), ocs::tom::get<QU_full_name>(queue));
+            auto host = ocs::tom::Element<ocs::tom::EH>(host_list_locate(host_list, qhostname));
+            if (host == nullptr) {
+               ERROR(MSG_SGETEXT_INVALIDHOSTINQUEUE_SS, qhostname, ocs::tom::get<QU_full_name>(queue));
                goto error;
             }
 
-            global_consumable = ocs::tom::find_first_in_rw<EH_resource_utilization, RUE_name>(global, load_threshold_name);
-            host_consumable = ocs::tom::find_first_in_rw<EH_resource_utilization, RUE_name>(host, load_threshold_name);
-            queue_consumable = ocs::tom::find_first_in_rw<QU_resource_utilization, RUE_name>(queue, load_threshold_name);
+            auto global_consumable =
+               ocs::tom::find_first_in_rw<EH_resource_utilization, RUE_name>(global, load_threshold_name);
+            auto host_consumable =
+               ocs::tom::find_first_in_rw<EH_resource_utilization, RUE_name>(host, load_threshold_name);
+            auto queue_consumable =
+               ocs::tom::find_first_in_rw<QU_resource_utilization, RUE_name>(queue, load_threshold_name);
 
-            if (*load_list == nullptr) {
-               *load_list = lCreateList("load_ref_list", LDR_Type);
-               if (*load_list == nullptr) {
-                  goto error;
-               }
+            if (!load_list) {
+               load_list = ocs::tom::ListPtr<ocs::tom::LDR>::create("load_ref_list");
             } else {
-               load_elem = load_locate_elem(*load_list, global_consumable,
-                                            host_consumable, queue_consumable,
+               load_elem = load_locate_elem(*load_list, global_consumable, host_consumable, queue_consumable,
                                             limit_value);
             }
             if (load_elem == nullptr) {
-               load_elem = lCreateElem(LDR_Type);
-               if (load_elem == nullptr) {
-                  goto error;
-               }
-               lSetPosRef(load_elem, LDR_global_pos, global_consumable);
-               lSetPosRef(load_elem, LDR_host_pos, host_consumable);
-               lSetPosRef(load_elem, LDR_queue_pos, queue_consumable);
-               lSetPosString(load_elem, LDR_limit_pos, limit_value);
-               lAppendElem(*load_list, load_elem);
+               auto new_load_elem = ocs::tom::ElementPtr<ocs::tom::LDR>::create();
+               ocs::tom::set<LDR_global>(new_load_elem, global_consumable.raw());
+               ocs::tom::set<LDR_host>(new_load_elem, host_consumable.raw());
+               ocs::tom::set<LDR_queue>(new_load_elem, queue_consumable.raw());
+               ocs::tom::set<LDR_limit>(new_load_elem, limit_value);
+               load_elem = load_list->push_back(std::move(new_load_elem));
             }
 
-            queue_ref_list = lGetPosList(load_elem, LDR_queue_ref_list_pos);
-            if (queue_ref_list == nullptr) {
-               queue_ref_list = lCreateList("", QRL_Type);
-               if (queue_ref_list == nullptr) {
-                  goto error;
-               }
-               lSetPosList(load_elem, LDR_queue_ref_list_pos, queue_ref_list);
+            auto queue_ref_list = ocs::tom::get<LDR_queue_ref_list>(load_elem);
+            if (!queue_ref_list) {
+               ocs::tom::set<LDR_queue_ref_list>(load_elem, ocs::tom::ListPtr<ocs::tom::QRL>::create(""));
+               queue_ref_list = ocs::tom::get<LDR_queue_ref_list>(load_elem);
             }
 
-            queue_ref_elem = lCreateElem(QRL_Type);
-            if (queue_ref_elem == nullptr) {
-               goto error;
-            }
-            ocs::tom::set<QRL_queue>(queue_ref_elem, queue);
-            lAppendElem(queue_ref_list, queue_ref_elem);
+            auto queue_ref_elem = ocs::tom::ElementPtr<ocs::tom::QRL>::create();
+            ocs::tom::set<QRL_queue>(queue_ref_elem, queue.raw());
+            queue_ref_list.push_back(std::move(queue_ref_elem));
          }
       }
    }
 
-   DRETURN_VOID;
+   DRETURN(load_list);
 
 error:
    DPRINTF("error in sge_create_load_list!\n");
    ERROR(SFNMAX, MSG_SGETEXT_CONSUMABLE_AS_LOAD);
-   sge_free_load_list(load_list);
-   DRETURN_VOID;
+   load_list.reset();
+   DRETURN(load_list);
 
+}
+
+/**
+ * @brief sge_create_load_list() for an untyped caller
+ * @param queue_list  the queue instances (`QU_Type`); const only by the old signature, the load list references
+ *                    them and sge_load_list_alarm() tags them, as before
+ * @param host_list   the execution hosts (`EH_Type`)
+ * @param centry_list the complex entries (`CE_Type`)
+ * @param load_list   receives the load list (`LDR_Type`), nullptr if no consumable is used as a load threshold;
+ *                    a list it holds before is freed
+ */
+void sge_create_load_list(const lList *queue_list, const lList *host_list, const lList *centry_list,
+                          lList **load_list) {
+   if (load_list == nullptr) {
+      CRITICAL("no load_list specified\n");
+      ocs::TerminationManager::trigger_abort();
+   }
+   if (*load_list != nullptr) {
+      sge_free_load_list(load_list);
+   }
+   *load_list = sge_create_load_list(ocs::tom::List<ocs::tom::QU>(const_cast<lList *>(queue_list)),
+                                     ocs::tom::ConstList<ocs::tom::EH>(host_list),
+                                     ocs::tom::ConstList<ocs::tom::CE>(centry_list)).release();
 }
 
 /**
  * @brief Locates a consumable category in the given load list
  *
- * @param load_list the load list to work on
- * @param global_consumable a ref to the global consumable
- * @param host_consumable a ref to the host consumable
- * @param queue_consumable a ref to the qeue consumable
+ * @param load_list the load list to work on (`LDR_Type`)
+ * @param global_consumable the global consumable (`RUE_Type`), or an empty handle
+ * @param host_consumable the host consumable (`RUE_Type`), or an empty handle
+ * @param queue_consumable the queue consumable (`RUE_Type`), or an empty handle
+ * @param limit the configured load threshold
  *
- * @return nullptr, or the category element from the load list
+ * @return an empty handle, or the category element from the load list
  *
  * @note MT-NOTE: load_locate_elem() is MT safe
  */
-static lListElem *load_locate_elem(lList *load_list, lListElem *global_consumable,
-                            lListElem *host_consumable, lListElem *queue_consumable,
-                            const char *limit) {
-   lListElem *load_elem = nullptr;
+static ocs::tom::Element<ocs::tom::LDR>
+load_locate_elem(const ocs::tom::List<ocs::tom::LDR> load_list,
+                 const ocs::tom::ConstElement<ocs::tom::RUE> global_consumable,
+                 const ocs::tom::ConstElement<ocs::tom::RUE> host_consumable,
+                 const ocs::tom::ConstElement<ocs::tom::RUE> queue_consumable, const char *limit) {
+   DENTER(TOP_LAYER);
+   ocs::tom::Element<ocs::tom::LDR> load_elem;
 
-   for_each_rw_lv(load, load_list) {
-      if ((lGetPosRef(load, LDR_global_pos) == global_consumable) &&
-          (lGetPosRef(load, LDR_host_pos) == host_consumable) &&
-          (lGetPosRef(load, LDR_queue_pos) == queue_consumable) &&
-          ( strcmp(lGetPosString(load, LDR_limit_pos), limit) == 0)) {
+   for (auto load : load_list) {
+      if ((ocs::tom::get<LDR_global>(load) == global_consumable.raw()) &&
+          (ocs::tom::get<LDR_host>(load) == host_consumable.raw()) &&
+          (ocs::tom::get<LDR_queue>(load) == queue_consumable.raw()) &&
+          ( strcmp(ocs::tom::get<LDR_limit>(load), limit) == 0)) {
          load_elem = load;
          break;
       }
    }
 
-   return load_elem;
+   DRETURN(load_elem);
 }
 
 /**
@@ -7493,22 +7545,19 @@ static lListElem *load_locate_elem(lList *load_list, lListElem *global_consumabl
  * load threshold, QU_tagged4schedule is set to 1.
  *
  * @param monitor_next_run whether the messages also go into the scheduler run log
- * @param load_list the cached load values per consumable (`LDR_Type`)
- * @param host_list the execution hosts
- * @param centry_list the system wide attribute configuration
+ * @param load_list the cached load values per consumable (`LDR_Type`), or an empty handle
+ * @param host_list the execution hosts (`EH_Type`)
+ * @param centry_list the system wide attribute configuration (`CE_Type`)
  *
  * @return true, if at least one queue was set into alarm state
  *
  * @note MT-NOTE: sge_load_list_alarm() is MT safe
  */
-bool sge_load_list_alarm(bool monitor_next_run, lList *load_list, const lList *host_list,
-                         const lList *centry_list) {
+bool sge_load_list_alarm(const bool monitor_next_run, const ocs::tom::ConstList<ocs::tom::LDR> load_list,
+                         const ocs::tom::ConstList<ocs::tom::EH> host_list,
+                         const ocs::tom::ConstList<ocs::tom::CE> centry_list) {
    DENTER(TOP_LAYER);
 
-   lListElem *load;
-   lListElem *queue;
-   lListElem *queue_ref;
-   lList *queue_ref_list;
    char reason[2048];
    bool is_alarm = false;
 
@@ -7516,19 +7565,20 @@ bool sge_load_list_alarm(bool monitor_next_run, lList *load_list, const lList *h
       DRETURN(is_alarm);
    }
 
-   for_each_rw(load, load_list) {
+   for (auto load : load_list) {
       /* we used to have code here to check if load elements had changed and only then did the alarm calculation.
        * but load elements will constantly change, so no real optimization
        * removed it as part of CS-438
        */
       bool is_category_alarm = false;
-      queue_ref_list = lGetPosList(load, LDR_queue_ref_list_pos);
-      for_each_rw(queue_ref, queue_ref_list) {
-         queue = (lListElem *)ocs::tom::get<QRL_queue>(queue_ref);
+      auto queue_ref_list = ocs::tom::get<LDR_queue_ref_list>(load);
+      for (auto queue_ref : queue_ref_list) {
+         auto queue = ocs::tom::Element<ocs::tom::QU>(static_cast<lListElem *>(ocs::tom::get<QRL_queue>(queue_ref)));
          if (is_category_alarm) {
             ocs::tom::set<QU_tagged4schedule>(queue, 1);
-         } else if (sge_load_alarm(reason, sizeof(reason), queue, ocs::tom::get<QU_load_thresholds>(queue), host_list, centry_list, nullptr,
-                                   nullptr, true)) {
+         } else if (sge_load_alarm(reason, sizeof(reason), queue, ocs::tom::get<QU_load_thresholds>(queue), host_list,
+                                   centry_list, ocs::tom::ConstList<ocs::tom::CE>(),
+                                   ocs::tom::ConstList<ocs::tom::CE>(), true)) {
 
             DPRINTF("queue %s tagged to be overloaded: %s\n", ocs::tom::get<QU_full_name>(queue), reason);
             schedd_mes_add_global(nullptr, monitor_next_run, SCHEDD_INFO_QUEUEOVERLOADED_SS,
@@ -7546,18 +7596,34 @@ bool sge_load_list_alarm(bool monitor_next_run, lList *load_list, const lList *h
 }
 
 /**
+ * @brief sge_load_list_alarm() for an untyped caller
+ * @param monitor_next_run as sge_load_list_alarm()
+ * @param load_list        the load list (`LDR_Type`), or nullptr
+ * @param host_list        the execution hosts (`EH_Type`)
+ * @param centry_list      the complex entries (`CE_Type`)
+ * @return as sge_load_list_alarm()
+ */
+bool sge_load_list_alarm(const bool monitor_next_run, lList *load_list, const lList *host_list,
+                         const lList *centry_list) {
+   return sge_load_list_alarm(monitor_next_run, ocs::tom::ConstList<ocs::tom::LDR>(load_list),
+                              ocs::tom::ConstList<ocs::tom::EH>(host_list),
+                              ocs::tom::ConstList<ocs::tom::CE>(centry_list));
+}
+
+/**
  * @brief Removes queues from the load list
  *
- * @param load_list load list structure
- * @param queue_list queues to be removed from it.
+ * The signature stays untyped: the function frees the load list of the
+ * caller and sets it to nullptr when its last element is gone.
+ *
+ * @param load_list load list structure (`LDR_Type`); freed and set to nullptr
+ *                  when it becomes empty
+ * @param queue_list queues to be removed from it (`QU_Type`)
  *
  * @note MT-NOTE: sge_remove_queue_from_load_list() is MT safe
  */
 void sge_remove_queue_from_load_list(lList **load_list, const lList *queue_list){
    DENTER(TOP_LAYER);
-
-   const lListElem* queue = nullptr;
-   lListElem *load = nullptr;
 
    if (load_list == nullptr){
       CRITICAL("no load_list specified\n");
@@ -7568,30 +7634,31 @@ void sge_remove_queue_from_load_list(lList **load_list, const lList *queue_list)
       DRETURN_VOID;
    }
 
-   for_each_ep(queue, queue_list) {
+   auto loads = ocs::tom::List<ocs::tom::LDR>(*load_list);
+   for (auto queue : ocs::tom::ConstList<ocs::tom::QU>(queue_list)) {
       bool is_found = false;
-      lList *queue_ref_list = nullptr;
-      lListElem *queue_ref = nullptr;
 
-      for_each_rw(load, *load_list) {
-         queue_ref_list = lGetPosList(load, LDR_queue_ref_list_pos);
-         for_each_rw (queue_ref, queue_ref_list) {
-            if (queue == ocs::tom::get<QRL_queue>(queue_ref)) {
+      for (auto load : loads) {
+         auto queue_ref_list = ocs::tom::get<LDR_queue_ref_list>(load);
+         ocs::tom::Element<ocs::tom::QRL> queue_ref;
+         for (auto ref : queue_ref_list) {
+            if (queue.raw() == ocs::tom::get<QRL_queue>(ref)) {
+               queue_ref = ref;
                is_found = true;
                break;
             }
          }
          if (is_found) {
-            lRemoveElem(queue_ref_list, &queue_ref);
+            queue_ref_list.erase(queue_ref);
 
-            if (lGetNumberOfElem(queue_ref_list) == 0) {
-               lRemoveElem(*load_list, &load);
+            if (queue_ref_list.empty()) {
+               loads.erase(load);
             }
             break;
          }
       }
 
-      if (lGetNumberOfElem(*load_list) == 0) {
+      if (loads.empty()) {
          lFreeList(load_list);
          DRETURN_VOID;
       }
@@ -7599,7 +7666,6 @@ void sge_remove_queue_from_load_list(lList **load_list, const lList *queue_list)
 
    DRETURN_VOID;
 }
-
 
 /**
  * @brief Frees the load list and sets it to nullptr
@@ -7620,7 +7686,8 @@ void sge_free_load_list(lList **load_list) {
  * @brief Do matching that depends not on queue
  *
  * Checks whether a job that requests a advance reservation can be scheduled.
- * The job can be scheduled if the advance reservation is in state "running".
+ * The job can be scheduled if the advance reservation is in state "running"
+ * and the job owner passes its access lists.
  *
  * @param a assignment to match
  *
@@ -7656,19 +7723,21 @@ static dispatch_t match_static_advance_reservation(const sge_assignment_t *a) {
          /* has user access? */
          if ((acl_list = ocs::tom::get<AR_xacl_list>(a->ar))) {
             ocs::tom::ConstElement<ocs::tom::ARA> acl_ep;
-            for_each_ep(acl_ep, acl_list) {
-               const char* user = ocs::tom::get<ARA_name>(acl_ep);
+            for (auto acl : acl_list) {
+               const char* user = ocs::tom::get<ARA_name>(acl);
 
                if (!ocs::is_hgroup_name(user)) {
                   if (strcmp(a->user, user) == 0) {
+                     acl_ep = acl;
                      break;
                   }
                } else {
                   /* skip preattached \@ sign */
                   const char *acl_name = ++user;
-                  const lListElem *userset_list = ocs::tom::find_first<US_name>(a->acl_list, acl_name);
+                  auto userset_list = ocs::tom::find_first<US_name>(a->acl_list, acl_name);
 
                   if (sge_contained_in_access_list(a->user, a->group, a->grp_list, userset_list) == 1) {
+                     acl_ep = acl;
                      break;
                   }
                }
@@ -7686,19 +7755,21 @@ static dispatch_t match_static_advance_reservation(const sge_assignment_t *a) {
 
          if ((acl_list = ocs::tom::get<AR_acl_list>(a->ar))) {
             ocs::tom::ConstElement<ocs::tom::ARA> acl_ep;
-            for_each_ep(acl_ep, acl_list) {
-               const char *user = ocs::tom::get<ARA_name>(acl_ep);
+            for (auto acl : acl_list) {
+               const char *user = ocs::tom::get<ARA_name>(acl);
 
                if (!ocs::is_hgroup_name(user)) {
                   if (strcmp(a->user, user) == 0) {
+                     acl_ep = acl;
                      break;
                   }
                } else {
                   /* skip preattached \@ sign */
                   const char *acl_name = ++user;
-                  const lListElem *userset_list = ocs::tom::find_first<US_name>(a->acl_list, acl_name);
+                  auto userset_list = ocs::tom::find_first<US_name>(a->acl_list, acl_name);
 
                   if (sge_contained_in_access_list(a->user, a->group, a->grp_list, userset_list) == 1) {
+                     acl_ep = acl;
                      break;
                   }
                }
@@ -7743,8 +7814,7 @@ sge_ar_swap_resource_lists(sge_assignment_t &a) {
       DPRINTF("SWAP RESOURCE LIST FOR AR %d\n", a.ar_id);
 
       // swap host resources
-      ocs::tom::Element<ocs::tom::EH> host;
-      for_each_rw(host, ocs::tom::get<AR_reserved_hosts>(a.ar)) {
+      for (auto host : ocs::tom::get<AR_reserved_hosts>(a.ar)) {
          const char *host_name = ocs::tom::get<EH_name>(host);
          ocs::tom::Element<ocs::tom::EH> a_host = ocs::tom::find_first_rw<EH_name>(a.host_list, host_name);
          if (a_host != nullptr) {
@@ -7754,8 +7824,7 @@ sge_ar_swap_resource_lists(sge_assignment_t &a) {
       }
 
       // swap queue resources
-      ocs::tom::Element<ocs::tom::QU> queue;
-      for_each_rw(queue, ocs::tom::get<AR_reserved_queues>(a.ar)) {
+      for (auto queue : ocs::tom::get<AR_reserved_queues>(a.ar)) {
          const char *queue_name = ocs::tom::get<QU_full_name>(queue);
          ocs::tom::Element<ocs::tom::QU> a_queue = ocs::tom::find_first_rw<QU_full_name>(a.queue_list, queue_name);
          if (a_queue != nullptr) {
