@@ -163,7 +163,6 @@ print_jatask_event([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type,
 
             if (task_running) {
                fprintf(stdout,"JOB_START (%ld.%ld:ECL_TIME=" sge_u64 ")\n", job_id ,task_id, timestamp);
-               fflush(stdout);
                Global_jobs_running++;
             }
          }
@@ -173,7 +172,6 @@ print_jatask_event([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type,
          u_long task_id = lGetUlong(event, ET_intkey2);
          fprintf(stdout,"JOB_FINISH (%ld.%ld:ECL_TIME=" sge_u64 ")\n", job_id, task_id, timestamp);
          Global_jobs_running--;
-         fflush(stdout);
       }
       if (event_type == sgeE_JOB_ADD) {
          const lList *jat = lGetListRW(event,ET_new_version);
@@ -186,14 +184,12 @@ print_jatask_event([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type,
          }
          fprintf(stdout,"JOB_ADD (%ld.%ld:ECL_TIME=" sge_u64 ":project=%s)\n", job_id, task_id, timestamp,job_project);
          Global_jobs_registered++;
-         fflush(stdout);
       }
       if (event_type == sgeE_JOB_DEL) {
          u_long job_id  = lGetUlong(event, ET_intkey);
          u_long task_id = lGetUlong(event, ET_intkey2);
          fprintf(stdout,"JOB_DEL (%ld.%ld:ECL_TIME=" sge_u64 ")\n", job_id, task_id, timestamp);
          Global_jobs_registered--;
-         fflush(stdout);
       }
    }
    DRETURN(SGE_EMA_OK);
@@ -640,6 +636,12 @@ static void qevent_testsuite_mode(sge_evc_class_t *evc)
 #endif
 
    DENTER(TOP_LAYER);
+
+#ifndef QEVENT_SHOW_ALL
+   // The job events of one event package are written at once, ECL_STATE flushes them. A reader
+   // like the throughput check then gets one package with one read instead of one read per line.
+   setvbuf(stdout, nullptr, _IOFBF, 64 * 1024);
+#endif
 
    sge_mirror_initialize(evc, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr);
 
