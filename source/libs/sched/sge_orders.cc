@@ -82,9 +82,7 @@
 lList *sge_add_schedd_info(lList *or_list, int *global_mes_count, int *job_mes_count) {
    DENTER(TOP_LAYER);
 
-   lListElem *sme;
-
-   sme = schedd_mes_obtain_package(global_mes_count, job_mes_count);
+   auto sme = schedd_mes_obtain_package(global_mes_count, job_mes_count);
 
    if (!sme || (lGetNumberOfElem(ocs::tom::get<SME_message_list>(sme)) < 1
          && lGetNumberOfElem(ocs::tom::get<SME_global_message_list>(sme)) < 1)) {
@@ -100,7 +98,7 @@ lList *sge_add_schedd_info(lList *or_list, int *global_mes_count, int *job_mes_c
    auto ep=ocs::tom::ElementPtr<ocs::tom::OR>::create();
 
    auto jlist = ocs::tom::ListPtr<ocs::tom::SME>::create("");
-   lAppendElem(*jlist, sme);
+   jlist->push_back(std::move(sme));
    ocs::tom::set<OR_joker>(ep, std::move(jlist));
 
    ocs::tom::set<OR_type>(ep, ORT_job_schedd_info);

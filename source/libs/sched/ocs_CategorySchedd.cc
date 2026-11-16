@@ -29,6 +29,7 @@
 #include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/ocs_Category.h"
 #include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_CT.h"
 
 #include "ocs_CategorySchedd.h"
 
@@ -41,12 +42,22 @@
  *         scheduling run
  */
 int
-ocs::CategorySchedd::job_is_category_rejected(const lListElem *job) {
+ocs::CategorySchedd::job_is_category_rejected(const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
-   auto *cat = static_cast<lListElem *>(ocs::tom::get<JB_category>(job));
-   SGE_ASSERT(cat != nullptr);
+   auto cat = ocs::tom::ConstElement<ocs::tom::CT>(static_cast<const lListElem *>(ocs::tom::get<JB_category>(job)));
+   SGE_ASSERT(cat);
    const int ret = ocs::tom::get<CT_rejected>(cat);
    DRETURN(ret);
+}
+
+/**
+ * @brief job_is_category_rejected() for an untyped caller
+ * @param[in] job the job (`JB_Type`)
+ * @return as job_is_category_rejected()
+ */
+int
+ocs::CategorySchedd::job_is_category_rejected(const lListElem *job) {
+   return job_is_category_rejected(ocs::tom::ConstElement<ocs::tom::JB>(job));
 }
 
 /**
@@ -58,12 +69,22 @@ ocs::CategorySchedd::job_is_category_rejected(const lListElem *job) {
  *         this scheduling run
  */
 int
-ocs::CategorySchedd::job_is_category_reservation_rejected(const lListElem *job) {
+ocs::CategorySchedd::job_is_category_reservation_rejected(const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
-   auto *cat = static_cast<lListElem *>(ocs::tom::get<JB_category>(job));
-   SGE_ASSERT(cat != nullptr);
+   auto cat = ocs::tom::ConstElement<ocs::tom::CT>(static_cast<const lListElem *>(ocs::tom::get<JB_category>(job)));
+   SGE_ASSERT(cat);
    const int ret = ocs::tom::get<CT_reservation_rejected>(cat);
    DRETURN(ret);
+}
+
+/**
+ * @brief job_is_category_reservation_rejected() for an untyped caller
+ * @param[in] job the job (`JB_Type`)
+ * @return as job_is_category_reservation_rejected()
+ */
+int
+ocs::CategorySchedd::job_is_category_reservation_rejected(const lListElem *job) {
+   return job_is_category_reservation_rejected(ocs::tom::ConstElement<ocs::tom::JB>(job));
 }
 
 /**
@@ -74,13 +95,23 @@ ocs::CategorySchedd::job_is_category_reservation_rejected(const lListElem *job) 
  *                             reservation, not only for dispatching now
  */
 void
-ocs::CategorySchedd::job_reject_category(const lListElem *job, bool with_reservation) {
+ocs::CategorySchedd::job_reject_category(const ocs::tom::ConstElement<ocs::tom::JB> job, const bool with_reservation) {
    DENTER(TOP_LAYER);
-   auto *cat = static_cast<lListElem *>(ocs::tom::get<JB_category>(job));
-   SGE_ASSERT(cat != nullptr);
+   auto cat = ocs::tom::Element<ocs::tom::CT>(static_cast<lListElem *>(ocs::tom::get<JB_category>(job)));
+   SGE_ASSERT(cat);
    ocs::tom::set<CT_rejected>(cat, true);
    if (with_reservation) {
       ocs::tom::set<CT_reservation_rejected>(cat, true);
    }
    DRETURN_VOID;
+}
+
+/**
+ * @brief job_reject_category() for an untyped caller
+ * @param[in] job              the job (`JB_Type`)
+ * @param[in] with_reservation as job_reject_category()
+ */
+void
+ocs::CategorySchedd::job_reject_category(const lListElem *job, const bool with_reservation) {
+   job_reject_category(ocs::tom::ConstElement<ocs::tom::JB>(job), with_reservation);
 }

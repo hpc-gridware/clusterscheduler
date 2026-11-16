@@ -33,18 +33,24 @@
  */
 
 #include "cull/cull.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
+#include "tom/ocs_Element.h"
+#include "tom/ocs_Transitional.h"
 
 namespace ocs {
    /** @brief Marks and queries the rejected state of a job's category */
    class CategorySchedd {
    public:
       static void
-      job_reject_category(const lListElem *job, bool with_reservation);
+      job_reject_category(ocs::tom::ConstElement<ocs::tom::JB> job, bool with_reservation);
+      OCS_TRANSITIONAL static void job_reject_category(const lListElem *job, bool with_reservation);
 
       static int
-      job_is_category_rejected(const lListElem *job);
+      job_is_category_rejected(ocs::tom::ConstElement<ocs::tom::JB> job);
+      OCS_TRANSITIONAL static int job_is_category_rejected(const lListElem *job);
 
       static int
-      job_is_category_reservation_rejected(const lListElem *job);
+      job_is_category_reservation_rejected(ocs::tom::ConstElement<ocs::tom::JB> job);
+      OCS_TRANSITIONAL static int job_is_category_reservation_rejected(const lListElem *job);
    };
 }

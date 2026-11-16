@@ -56,9 +56,13 @@
 #include "sgeobj/sge_userprj.h"
 #include "sgeobj/sge_usage.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_PR.h"
 #include "sgeobj/tom/ocs_tom_STN.h"
 #include "sgeobj/tom/ocs_tom_UA.h"
 #include "sgeobj/tom/ocs_tom_UPP.h"
+#include "sgeobj/tom/ocs_tom_US.h"
+#include "sgeobj/tom/ocs_tom_UU.h"
 
 #include "sge_sharetree_printing.h"
 
@@ -115,11 +119,19 @@ static const int items = sizeof(item) / sizeof(item_t);
 
 /* ------------- static functions ---------------- */
 
+/**
+ * @brief Set the proportion of the shares of a node and its subtree
+ * @param node the node
+ * @param parent_percent the adjusted proportion of the parent node
+ * @param sibling_shares the sum of the shares of the node and its siblings
+ */
 static void
-calculate_share_percents(lListElem *node, double parent_percent, double sibling_shares) {
+calculate_share_percents(const ocs::tom::Element<ocs::tom::STN> node, const double parent_percent,
+                         const double sibling_shares) {
+   DENTER(TOP_LAYER);
    double sum_shares=0;
 
-   for (ocs::tom::Element<ocs::tom::STN> child : ocs::tom::get<STN_children>(node)) {
+   for (auto child : ocs::tom::get<STN_children>(node)) {
       sum_shares += ocs::tom::get<STN_shares>(child);
    }
 
@@ -138,21 +150,29 @@ calculate_share_percents(lListElem *node, double parent_percent, double sibling_
       ocs::tom::set<STN_adjusted_proportion>(node, 0);
    }
 
-   for (ocs::tom::Element<ocs::tom::STN> child : ocs::tom::get<STN_children>(node)) {
+   for (auto child : ocs::tom::get<STN_children>(node)) {
       calculate_share_percents(child, ocs::tom::get<STN_adjusted_proportion>(node), sum_shares);
    }
+   DRETURN_VOID;
 }
 
+/**
+ * @brief The value of one usage entry
+ * @param usage the usage
+ * @param name the name of the entry
+ * @return the value, 0 if @p usage has no such entry
+ */
 static double
-get_usage_value(const lList *usage, const char *name) {
-   ocs::tom::ConstElement<ocs::tom::UA> ue;
+get_usage_value(const ocs::tom::ConstList<ocs::tom::UA> usage, const char *name) {
+   DENTER(TOP_LAYER);
    double value = 0;
 
-   if ((ue = ocs::tom::find_first<UA_name>(usage, name))) {
+   auto ue = ocs::tom::find_first<UA_name>(usage, name);
+   if (ue) {
       value = ocs::tom::get<UA_value>(ue);
    }
 
-   return value;
+   DRETURN(value);
 }
 
 static void
@@ -217,12 +237,27 @@ print_field(dstring *out, rapidjson::Writer<rapidjson::StringBuffer> *writer, co
    }
 }
 
+/**
+ * @brief Print one node
+ * @param out the text form is appended here, or nullptr
+ * @param jsonBuffer the JSON form is appended here, or nullptr
+ * @param node the node
+ * @param user the user the node stands for, or an empty handle
+ * @param project the project the node or one of its parents stands for, or an empty handle
+ * @param names the full names of the nodes to print, nullptr terminated; nullptr prints every node
+ * @param format the format
+ * @param parent the parent node, an empty handle for the root node
+ * @param parent_node_names the full name of the parent node
+ */
 static void
-print_node(dstring *out, rapidjson::StringBuffer *jsonBuffer, const lListElem *node,
-           const lListElem *user, const lListElem *project, const char **names, const format_t *format,
-           const lListElem *parent, const char *parent_node_names) {
-   if (node != nullptr) {
-      const lList *usage=nullptr, *ltusage=nullptr;
+print_node(dstring *out, rapidjson::StringBuffer *jsonBuffer, const ocs::tom::ConstElement<ocs::tom::STN> node,
+           const ocs::tom::ConstElement<ocs::tom::UU> user, const ocs::tom::ConstElement<ocs::tom::PR> project,
+           const char **names, const format_t *format, const ocs::tom::ConstElement<ocs::tom::STN> parent,
+           const char *parent_node_names) {
+   DENTER(TOP_LAYER);
+   if (node) {
+      ocs::tom::ConstList<ocs::tom::UA> usage;
+      ocs::tom::ConstList<ocs::tom::UA> ltusage;
       int i, fields_printed=0;
       dstring node_name_dstring = DSTRING_INIT;
       rapidjson::Writer<rapidjson::StringBuffer> *writer = nullptr;
@@ -244,14 +279,14 @@ print_node(dstring *out, rapidjson::StringBuffer *jsonBuffer, const lListElem *n
        * of whether the node is a user, a project, or a UPP leaf (where the
        * user UU stamp wins because it's set by worker booking on every
        * project-job finish too). */
-      time_stamp = user != nullptr ? ocs::tom::get<UU_usage_time_stamp>(user) :
-                   project != nullptr ? ocs::tom::get<PR_usage_time_stamp>(project) : 0;
+      time_stamp = user ? ocs::tom::get<UU_usage_time_stamp>(user) :
+                   project ? ocs::tom::get<PR_usage_time_stamp>(project) : 0;
 
       /*
        * we want to name the Root node simply /, instead of /Root 
        * but it is possible to create nodes /project1/Root
        */
-      if (parent == nullptr) {
+      if (!parent) {
          sge_dstring_sprintf(&node_name_dstring, "/");
       } else {
          sge_dstring_sprintf(&node_name_dstring, "%s/%s", parent_node_names, ocs::tom::get<STN_name>(node));
@@ -269,12 +304,11 @@ print_node(dstring *out, rapidjson::StringBuffer *jsonBuffer, const lListElem *n
       actual_share = ocs::tom::get<STN_actual_proportion>(node);
       combined_usage = ocs::tom::get<STN_combined_usage>(node);
 
-      if (static_cast<const lList *>(ocs::tom::get<STN_children>(node)) == nullptr && user && project) {
-         ocs::tom::ConstList<ocs::tom::UPP> projl = ocs::tom::get<UU_project>(user);
-         ocs::tom::ConstElement<ocs::tom::UPP> upp;
+      if (!ocs::tom::get<STN_children>(node) && user && project) {
+         auto projl = ocs::tom::get<UU_project>(user);
          if (projl) {
-            if ((upp=ocs::tom::find_first<UPP_name>(projl,
-                                 ocs::tom::get<PR_name>(project)))) {
+            auto upp = ocs::tom::find_first<UPP_name>(projl, ocs::tom::get<PR_name>(project));
+            if (upp) {
                usage = ocs::tom::get<UPP_usage>(upp);
                ltusage = ocs::tom::get<UPP_long_term_usage>(upp);
             }
@@ -289,7 +323,7 @@ print_node(dstring *out, rapidjson::StringBuffer *jsonBuffer, const lListElem *n
          ltusage = ocs::tom::get<PR_long_term_usage>(project);
       }
 
-      if (usage != nullptr) {
+      if (usage) {
          cpu = get_usage_value(usage, USAGE_ATTR_CPU);
          mem = get_usage_value(usage, USAGE_ATTR_MEM);
          io  = get_usage_value(usage, USAGE_ATTR_IO);
@@ -297,7 +331,7 @@ print_node(dstring *out, rapidjson::StringBuffer *jsonBuffer, const lListElem *n
          cpu = mem = io = 0;
       }
 
-      if (ltusage != nullptr) {
+      if (ltusage) {
          ltcpu = get_usage_value(ltusage, USAGE_ATTR_CPU);
          ltmem = get_usage_value(ltusage, USAGE_ATTR_MEM);
          ltio  = get_usage_value(ltusage, USAGE_ATTR_IO);
@@ -316,8 +350,10 @@ print_node(dstring *out, rapidjson::StringBuffer *jsonBuffer, const lListElem *n
          }
          if (!found) {
             sge_dstring_free(&node_name_dstring);
-            return;
-         }   
+            // the writer was created above and must not leak on this path
+            delete writer;
+            DRETURN_VOID;
+         }
       }
 
       /* print line prefix */
@@ -371,34 +407,49 @@ print_node(dstring *out, rapidjson::StringBuffer *jsonBuffer, const lListElem *n
          delete writer;
       }
    }
+   DRETURN_VOID;
 }
 
 
+/**
+ * @brief Print a node and its subtree
+ * @param out the text form is appended here, or nullptr
+ * @param jsonBuffer the JSON form is appended here, or nullptr
+ * @param node the node
+ * @param parent the parent node, an empty handle for the root node
+ * @param project the project a parent node stands for, or an empty handle
+ * @param users the users
+ * @param projects the projects
+ * @param group_nodes print the inner nodes too, not only the leaves
+ * @param names the full names of the nodes to print, nullptr terminated; nullptr prints every node
+ * @param format the format
+ * @param parent_node_names the full name of the parent node
+ */
 static void
-print_nodes(dstring *out, rapidjson::StringBuffer *jsonBuffer, const lListElem *node, const lListElem *parent,
-            const lListElem *project, const lList *users, const lList *projects, bool group_nodes, const char **names,
-            const format_t *format, const char *parent_node_names) {
-   const lListElem *user;
-   ocs::tom::ConstList<ocs::tom::STN> children = ocs::tom::get<STN_children>(node);
+print_nodes(dstring *out, rapidjson::StringBuffer *jsonBuffer, const ocs::tom::ConstElement<ocs::tom::STN> node,
+            const ocs::tom::ConstElement<ocs::tom::STN> parent, ocs::tom::ConstElement<ocs::tom::PR> project,
+            const ocs::tom::ConstList<ocs::tom::UU> users, const ocs::tom::ConstList<ocs::tom::PR> projects,
+            const bool group_nodes, const char **names, const format_t *format, const char *parent_node_names) {
+   DENTER(TOP_LAYER);
+   ocs::tom::ConstElement<ocs::tom::UU> user;
+   auto children = ocs::tom::get<STN_children>(node);
    dstring node_name_dstring = DSTRING_INIT;
 
    if (!project) {
-      project = prj_list_locate(projects, ocs::tom::get<STN_name>(node));
+      project = ocs::tom::ConstElement<ocs::tom::PR>(prj_list_locate(projects, ocs::tom::get<STN_name>(node)));
    }
 
-   if (children == nullptr) {
-      user = user_list_locate(users, ocs::tom::get<STN_name>(node));
-   } else {
-      user = nullptr;
+   if (!children) {
+      user = ocs::tom::ConstElement<ocs::tom::UU>(user_list_locate(users, ocs::tom::get<STN_name>(node)));
    }
 
-   if (group_nodes || (children == nullptr)) {
+   if (group_nodes || !children) {
       print_node(out, jsonBuffer, node, user, project, names, format, parent, parent_node_names);
    }
 
-   for_each_ep_lv(child, children) {
+   for (auto child : children) {
       /* we want to name the Root node simply /, instead of /Root */
-      if (parent == nullptr) {
+      if (!parent) {
          sge_dstring_sprintf(&node_name_dstring, "");
       } else {
          sge_dstring_sprintf(&node_name_dstring, "%s/%s", parent_node_names, ocs::tom::get<STN_name>(node));
@@ -408,6 +459,7 @@ print_nodes(dstring *out, rapidjson::StringBuffer *jsonBuffer, const lListElem *
    }
 
    sge_dstring_free(&node_name_dstring);
+   DRETURN_VOID;
 }
 
 /* ------------- public functions ---------------- */
@@ -490,25 +542,26 @@ void print_hdr(dstring *out, const format_t *format) {
  *
  * @see #print_hdr
  */
-void sge_sharetree_print(dstring *out, rapidjson::StringBuffer *jsonBuffer, const lList *sharetree_in,
-                         const lList *users, const lList *projects, const lList *usersets, bool group_nodes,
-                         bool decay_usage, const char **names, const format_t *format) {
+void sge_sharetree_print(dstring *out, rapidjson::StringBuffer *jsonBuffer,
+                         const ocs::tom::ConstList<ocs::tom::STN> sharetree_in,
+                         const ocs::tom::ConstList<ocs::tom::UU> users,
+                         const ocs::tom::ConstList<ocs::tom::PR> projects,
+                         const ocs::tom::ConstList<ocs::tom::US> usersets, const bool group_nodes,
+                         const bool decay_usage, const char **names, const format_t *format) {
    DENTER(TOP_LAYER);
 
-   lListElem *root;
    uint64_t curr_time = 0;
-   lList *sharetree;
 
-   /* 
+   /*
     * The sharetree might contain "default" nodes which
     * have to be resolved to individual user nodes.
-    * This implies modifying the sharetree - so we better create a 
+    * This implies modifying the sharetree - so we better create a
     * copy of the sharetree
     */
-   sharetree = lCopyList("copy of sharetree", sharetree_in);
-   
+   auto sharetree = sharetree_in.clone("copy of sharetree");
+
    /* Resolve the default users */
-   ocs::ShareTree::add_all_auto_users(lFirstRW(sharetree), users, projects, usersets);
+   ocs::ShareTree::add_all_auto_users(lFirstRW(*sharetree), users, projects, usersets);
 
    /* 
     * The sharetree calculation and output uses lots of global variables
@@ -516,7 +569,7 @@ void sge_sharetree_print(dstring *out, rapidjson::StringBuffer *jsonBuffer, cons
     */
    sge_mutex_lock("sharetree_printing", __func__, __LINE__, &mtx);
 
-   root = lFirstRW(sharetree);
+   auto root = lFirstRW(*sharetree);
 
    calculate_share_percents(root, 1.0, ocs::tom::get<STN_shares>(root));
 
@@ -524,13 +577,34 @@ void sge_sharetree_print(dstring *out, rapidjson::StringBuffer *jsonBuffer, cons
       curr_time = sge_get_gmt64();
    }
 
-   ocs::ShareTree::calc_proportions(sharetree, users, projects, nullptr, curr_time);
+   ocs::ShareTree::calc_proportions(*sharetree, users, projects, nullptr, curr_time);
 
-   print_nodes(out, jsonBuffer, root, nullptr, nullptr, users, projects, group_nodes, names, format, "");
+   print_nodes(out, jsonBuffer, root, ocs::tom::ConstElement<ocs::tom::STN>(), ocs::tom::ConstElement<ocs::tom::PR>(),
+               users, projects, group_nodes, names, format, "");
 
    sge_mutex_unlock("sharetree_printing", __func__, __LINE__, &mtx);
 
-   /* free our sharetree copy */
-   lFreeList(&sharetree);
+   // the owning handle frees our sharetree copy
    DRETURN_VOID;
+}
+
+/**
+ * @brief sge_sharetree_print() for an untyped caller
+ * @param[out] out          as sge_sharetree_print()
+ * @param[out] jsonBuffer   as sge_sharetree_print()
+ * @param[in]  sharetree_in the share tree (`STN_Type`)
+ * @param[in]  users        the users (`UU_Type`)
+ * @param[in]  projects     the projects (`PR_Type`)
+ * @param[in]  usersets     the usersets (`US_Type`)
+ * @param[in]  group_nodes  as sge_sharetree_print()
+ * @param[in]  decay_usage  as sge_sharetree_print()
+ * @param[in]  names        as sge_sharetree_print()
+ * @param[in]  format       as sge_sharetree_print()
+ */
+void sge_sharetree_print(dstring *out, rapidjson::StringBuffer *jsonBuffer, const lList *sharetree_in,
+                         const lList *users, const lList *projects, const lList *usersets, const bool group_nodes,
+                         const bool decay_usage, const char **names, const format_t *format) {
+   sge_sharetree_print(out, jsonBuffer, ocs::tom::ConstList<ocs::tom::STN>(sharetree_in),
+                       ocs::tom::ConstList<ocs::tom::UU>(users), ocs::tom::ConstList<ocs::tom::PR>(projects),
+                       ocs::tom::ConstList<ocs::tom::US>(usersets), group_nodes, decay_usage, names, format);
 }

@@ -3424,7 +3424,7 @@ sequential_tag_queues_suitable4job(sge_assignment_t *a) {
 
    /* restore job messages from previous dispatch runs of jobs of the same category */
    if (use_category.use_category) {
-      schedd_mes_set_tmp_list(use_category.cache, CCT_job_messages, a->job_id);
+      schedd_mes_set_tmp_list(ocs::tom::Element<ocs::tom::CCT>(use_category.cache), a->job_id);
       skip_host_list = ocs::tom::get<CCT_ignore_hosts>(use_category.cache);
       skip_queue_list = ocs::tom::get<CCT_ignore_queues>(use_category.cache);
    }
@@ -4244,7 +4244,7 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
    clean_up_parallel_job(a);
 
    if (use_category->use_category) {
-      schedd_mes_set_tmp_list(use_category->cache, CCT_job_messages, a->job_id);
+      schedd_mes_set_tmp_list(ocs::tom::Element<ocs::tom::CCT>(use_category->cache), a->job_id);
    }
 
    SCHED_PROF_INC(a->pi, par_global);

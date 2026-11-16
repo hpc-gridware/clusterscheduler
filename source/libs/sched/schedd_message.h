@@ -45,6 +45,14 @@
  */
 
 #include "cull/cull.h"
+#include "sgeobj/tom/ocs_tom_CCT.h"
+#include "sgeobj/tom/ocs_tom_CT.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
+#include "sgeobj/tom/ocs_tom_MES.h"
+#include "sgeobj/tom/ocs_tom_SME.h"
+#include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "tom/ocs_Transitional.h"
 #include "sge_select_queue.h"
 
 /** Size of the buffer one formatted scheduler message is built in */
@@ -56,7 +64,7 @@
 void schedd_mes_initialize();
 
 /* Get message structure */
-lListElem *schedd_mes_obtain_package(int *global_mes_count, int *job_mes_count);
+ocs::tom::ElementPtr<ocs::tom::SME> schedd_mes_obtain_package(int *global_mes_count, int *job_mes_count);
 
 void schedd_mes_add(lList **monitor_alpp, bool monitor_next_run, uint32_t job_id, uint32_t message_number, ...);
 
@@ -68,10 +76,12 @@ void schedd_mes_set_logging(int bval);
 
 int schedd_mes_get_logging();
 
-void schedd_mes_commit(lList *job_list, int ignore_category, lRef jid_category);
+void schedd_mes_commit(ocs::tom::ConstList<ocs::tom::JB> job_list, int ignore_category,
+                       ocs::tom::Element<ocs::tom::CT> jid_category);
+OCS_TRANSITIONAL void schedd_mes_commit(lList *job_list, int ignore_category, lRef jid_category);
 
 void schedd_mes_rollback();
 
-const lList *schedd_mes_get_tmp_list();
+ocs::tom::ConstList<ocs::tom::MES> schedd_mes_get_tmp_list();
 
-void schedd_mes_set_tmp_list(lListElem *category, int name, uint32_t job_number);
+void schedd_mes_set_tmp_list(ocs::tom::Element<ocs::tom::CCT> category, uint32_t job_number);

@@ -940,7 +940,7 @@ void trash_splitted_jobs(bool monitor_next_run, lList **splitted_job_lists[]) {
          }
          if (is_first_of_category) {
             is_first_of_category = 0;
-            schedd_mes_commit(*job_list, 1, nullptr);
+            schedd_mes_commit(ocs::tom::ConstList<ocs::tom::JB>(*job_list), 1, ocs::tom::Element<ocs::tom::CT>());
          } 
       }
       lFreeList(job_list);

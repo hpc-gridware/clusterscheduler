@@ -50,6 +50,8 @@
 #include "sched/sge_select_queue.h"
 
 #include "sgeobj/cull/sge_qeti_QETI_L.h"
+#include "sgeobj/tom/ocs_tom_RUE.h"
+#include "tom/ocs_List.h"
 
 /**
  * @brief Opaque queue end time iterator
@@ -65,4 +67,4 @@ void sge_qeti_next_before(sge_qeti_t *qeti, uint64_t start);
 uint64_t sge_qeti_next(sge_qeti_t *qeti);
 void sge_qeti_release(sge_qeti_t **qeti);
 
-sge_qeti_t *sge_qeti_allocate2(lList *cr_list);
+sge_qeti_t *sge_qeti_allocate2(ocs::tom::ConstList<ocs::tom::RUE> cr_list);
