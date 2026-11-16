@@ -117,18 +117,6 @@ int remove_immediate_jobs(const ocs::tom::List<ocs::tom::JB> pending_job_list,
 }
 
 /**
- * @brief remove_immediate_jobs() for an untyped caller
- * @param pending_job_list the pending jobs (`JB_Type`)
- * @param running_job_list the running jobs (`JB_Type`)
- * @param orders as remove_immediate_jobs()
- * @return as remove_immediate_jobs()
- */
-int remove_immediate_jobs(lList *pending_job_list, lList *running_job_list, order_t *orders) {
-   return remove_immediate_jobs(ocs::tom::List<ocs::tom::JB>(pending_job_list),
-                                ocs::tom::List<ocs::tom::JB>(running_job_list), orders);
-}
-
-/**
  * @brief Test for and remove immediate job which can't
  *
  * Removes immediate jobs which cannot be scheduled from the given job list.
@@ -171,18 +159,6 @@ void remove_immediate_job(const ocs::tom::List<ocs::tom::JB> job_list, const ocs
    job_list.erase(job);
 
    DRETURN_VOID;
-}
-
-/**
- * @brief remove_immediate_job() for an untyped caller
- * @param job_list the jobs (`JB_Type`)
- * @param job the job (`JB_Type`), freed afterwards
- * @param orders as remove_immediate_job()
- * @param remove_orders as remove_immediate_job()
- */
-void remove_immediate_job(lList *job_list, lListElem *job, order_t *orders, const int remove_orders) {
-   remove_immediate_job(ocs::tom::List<ocs::tom::JB>(job_list), ocs::tom::Element<ocs::tom::JB>(job), orders,
-                        remove_orders);
 }
 
 /**
@@ -258,16 +234,4 @@ int order_remove_immediate(const ocs::tom::ConstElement<ocs::tom::JB> job,
                                                  ocs::tom::ConstList<ocs::tom::JG>(), true);
 
    DRETURN((orders->jobStartOrderList == nullptr));
-}
-
-/**
- * @brief order_remove_immediate() for an untyped caller
- * @param job the job (`JB_Type`)
- * @param ja_task the task (`JAT_Type`)
- * @param orders as order_remove_immediate()
- * @return as order_remove_immediate()
- */
-int order_remove_immediate(const lListElem *job, const lListElem *ja_task, order_t *orders) {
-   return order_remove_immediate(ocs::tom::ConstElement<ocs::tom::JB>(job),
-                                 ocs::tom::ConstElement<ocs::tom::JAT>(ja_task), orders);
 }

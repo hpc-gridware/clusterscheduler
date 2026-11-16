@@ -51,16 +51,6 @@ ocs::CategorySchedd::job_is_category_rejected(const ocs::tom::ConstElement<ocs::
 }
 
 /**
- * @brief job_is_category_rejected() for an untyped caller
- * @param[in] job the job (`JB_Type`)
- * @return as job_is_category_rejected()
- */
-int
-ocs::CategorySchedd::job_is_category_rejected(const lListElem *job) {
-   return job_is_category_rejected(ocs::tom::ConstElement<ocs::tom::JB>(job));
-}
-
-/**
  * @brief Was the category of this job already rejected for reservation?
  *
  * @param[in] job the job to look at
@@ -75,16 +65,6 @@ ocs::CategorySchedd::job_is_category_reservation_rejected(const ocs::tom::ConstE
    SGE_ASSERT(cat);
    const int ret = ocs::tom::get<CT_reservation_rejected>(cat);
    DRETURN(ret);
-}
-
-/**
- * @brief job_is_category_reservation_rejected() for an untyped caller
- * @param[in] job the job (`JB_Type`)
- * @return as job_is_category_reservation_rejected()
- */
-int
-ocs::CategorySchedd::job_is_category_reservation_rejected(const lListElem *job) {
-   return job_is_category_reservation_rejected(ocs::tom::ConstElement<ocs::tom::JB>(job));
 }
 
 /**
@@ -104,14 +84,4 @@ ocs::CategorySchedd::job_reject_category(const ocs::tom::ConstElement<ocs::tom::
       ocs::tom::set<CT_reservation_rejected>(cat, true);
    }
    DRETURN_VOID;
-}
-
-/**
- * @brief job_reject_category() for an untyped caller
- * @param[in] job              the job (`JB_Type`)
- * @param[in] with_reservation as job_reject_category()
- */
-void
-ocs::CategorySchedd::job_reject_category(const lListElem *job, const bool with_reservation) {
-   job_reject_category(ocs::tom::ConstElement<ocs::tom::JB>(job), with_reservation);
 }

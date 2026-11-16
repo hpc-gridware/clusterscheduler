@@ -354,15 +354,3 @@ double scaled_mixed_load(const char *load_formula, const lListElem *global, cons
                             ocs::tom::ConstElement<ocs::tom::EH>(host), ocs::tom::ConstList<ocs::tom::CE>(centry_list),
                             ocs::tom::ConstList<ocs::tom::CE>(load_adjustments));
 }
-
-/**
- * @brief Sorts the host list by the load evaluation formula, for a caller with untyped lists (N-X-2)
- *
- * @param[in,out] hl          the host list to be sorted (`EH_Type`), checked
- * @param[in]     centry_list the complex entry list (`CE_Type`), checked
- *
- * @return 0 on success, -1 otherwise
- */
-int sort_host_list(lList *hl, const lList *centry_list) {
-   return sort_host_list(ocs::tom::List<ocs::tom::EH>(hl), ocs::tom::ConstList<ocs::tom::CE>(centry_list));
-}

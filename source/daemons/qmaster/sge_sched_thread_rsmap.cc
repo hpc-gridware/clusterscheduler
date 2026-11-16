@@ -36,8 +36,11 @@
 #include "sgeobj/sge_resource_utilization.h"
 #include "sgeobj/sge_str.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
 #include "sgeobj/tom/ocs_tom_CE.h"
+#include "sgeobj/tom/ocs_tom_GRU.h"
 #include "sgeobj/tom/ocs_tom_RESL.h"
+#include "sgeobj/tom/ocs_tom_RUE.h"
 #include "sgeobj/tom/ocs_tom_ST.h"
 
 #include "uti/sge_log.h"
@@ -55,8 +58,8 @@
 #include "ocs_GrantedResources.h"
 
 static void
-gru_report_booking_failure(const sge_assignment_t *a, const lListElem *job,
-                           const lListElem *ja_task, const char *name, const char *host_name);
+gru_report_booking_failure(const sge_assignment_t *a, ocs::tom::ConstElement<ocs::tom::JB> job,
+                           ocs::tom::ConstElement<ocs::tom::JAT> ja_task, const char *name, const char *host_name);
 
 /**
  * @brief add the instances a selection names to the granted resource map, with their characteristics
@@ -70,24 +73,28 @@ gru_report_booking_failure(const sge_assignment_t *a, const lListElem *job,
  * @param selected            the (identifier, amount) pairs to record
  */
 static void
-gru_add_selected_instances(lListElem *gru, const lListElem *resource_definition,
-                           const lList *selected) {
-   const lListElem *sel_ep;
-   for_each_ep (sel_ep, selected) {
+gru_add_selected_instances(const ocs::tom::Element<ocs::tom::GRU> gru,
+                           const ocs::tom::ConstElement<ocs::tom::CE> resource_definition,
+                           const ocs::tom::ConstList<ocs::tom::RESL> selected) {
+   DENTER(TOP_LAYER);
+
+   for (const auto sel_ep : selected) {
       const char *id = ocs::tom::get<RESL_value>(sel_ep);
 
-      ocs::tom::Element<ocs::tom::RESL> resl = ocs::tom::find_first_in_rw<GRU_resource_map_list, RESL_value>(gru, id);
+      auto resl = ocs::tom::find_first_in_rw<GRU_resource_map_list, RESL_value>(gru, id);
       if (resl == nullptr) {
          resl = ocs::tom::emplace_back_in<GRU_resource_map_list, RESL_value>(gru, id);
-         ocs::tom::ConstElement<ocs::tom::RESL> defined_ep = ocs::tom::find_first_in<CE_resource_map_list, RESL_value>(resource_definition, id);
-         const lList *src_props = (defined_ep != nullptr)
-                                  ? static_cast<const lList *>(ocs::tom::get<RESL_properties>(defined_ep)) : nullptr;
+         const auto defined_ep = ocs::tom::find_first_in<CE_resource_map_list, RESL_value>(resource_definition, id);
+         const auto src_props = (defined_ep != nullptr) ? ocs::tom::get<RESL_properties>(defined_ep)
+                                                        : ocs::tom::ConstList<ocs::tom::CE>();
          if (src_props != nullptr) {
-            ocs::tom::set<RESL_properties>(resl, lCopyList("granted_properties", src_props));
+            ocs::tom::set<RESL_properties>(resl, src_props.clone("granted_properties"));
          }
       }
       ocs::tom::add<RESL_amount>(resl, ocs::tom::get<RESL_amount>(sel_ep));
    }
+
+   DRETURN_VOID;
 }
 
 /**
@@ -125,9 +132,9 @@ gru_add_selected_instances(lListElem *gru, const lListElem *resource_definition,
  */
 static bool
 rsmap_select_granted_ids(sge_assignment_t *a, const char *name, const char *host_name,
-                         const lList *host_list, uint32_t amount, const char *same_key,
-                         const char *id_expr, const lList *required_props,
-                         const char *required_key) {
+                         const ocs::tom::ConstList<ocs::tom::EH> host_list, const uint32_t amount,
+                         const char *same_key, const char *id_expr,
+                         const ocs::tom::ConstList<ocs::tom::CE> required_props, const char *required_key) {
    DENTER(TOP_LAYER);
    bool ret = true;
 
@@ -138,7 +145,7 @@ rsmap_select_granted_ids(sge_assignment_t *a, const char *name, const char *host
    // AR_reserved_hosts instead would reach the real lists, which is the opposite of what is
    // wanted - while the swap is in place the reservation's copy is where the host's own
    // lists are parked.
-   const lListElem *host = host_list_locate(host_list, host_name);
+   const auto host = ocs::tom::ConstElement<ocs::tom::EH>(host_list_locate(host_list, host_name));
    if (host == nullptr) {
       ret = false;
    }
@@ -146,9 +153,9 @@ rsmap_select_granted_ids(sge_assignment_t *a, const char *name, const char *host
 
    // the selection for this map on this host, created on the first request scope which
    // reaches it and added to by the ones which follow
-   lListElem *gru = nullptr;
+   ocs::tom::Element<ocs::tom::GRU> gru;
    if (ret) {
-      gru = gru_list_search(*a->granted_rsmaps, name, host_name);
+      gru = ocs::tom::Element<ocs::tom::GRU>(gru_list_search(*a->granted_rsmaps, name, host_name));
       if (gru == nullptr) {
          if (!a->granted_rsmaps) {
             a->granted_rsmaps = ocs::tom::ListPtr<ocs::tom::GRU>::create("");
@@ -163,8 +170,8 @@ rsmap_select_granted_ids(sge_assignment_t *a, const char *name, const char *host
       }
    }
    if (ret) {
-      const lListElem *resource_definition = ocs::tom::find_first_in<EH_consumable_config_list, CE_name>(host, name);
-      const lListElem *resource_utilization = ocs::tom::find_first_in<EH_resource_utilization, RUE_name>(host, name);
+      const auto resource_definition = ocs::tom::find_first_in<EH_consumable_config_list, CE_name>(host, name);
+      const auto resource_utilization = ocs::tom::find_first_in<EH_resource_utilization, RUE_name>(host, name);
       if (resource_definition == nullptr) {
          // the map is not configured on this host, which matching should have ruled out
          ret = false;
@@ -193,24 +200,25 @@ rsmap_select_granted_ids(sge_assignment_t *a, const char *name, const char *host
             // complete.
             // what is not free over the time this job will run, the same question matching
             // asked of the same lists in rsmap_same_slots()
-            lList *taken = utilization_rsmap_max(resource_utilization, a->now, a->start,
-                                                 a->duration);
+            auto taken = utilization_rsmap_max(resource_utilization, a->now, a->start, a->duration);
 
-            lList *selected = nullptr;
-            ocs::tom::ConstList<ocs::tom::RESL> already = ocs::tom::get<GRU_resource_map_list>(gru);
+            // the centry_rsmap_select_* functions return the selection through a raw list
+            lList *selected_raw = nullptr;
+            const ocs::tom::ConstList<ocs::tom::RESL> already = ocs::tom::get<GRU_resource_map_list>(gru);
             bool selected_ok;
 
             if (same_key != nullptr) {
-               selected_ok = centry_rsmap_select_group_instances(resource_definition, taken,
+               selected_ok = centry_rsmap_select_group_instances(resource_definition, *taken,
                                                                  already, same_key, amount,
-                                                                 &selected, id_expr,
+                                                                 &selected_raw, id_expr,
                                                                  required_props, required_key);
             } else {
-               selected_ok = centry_rsmap_select_instances(resource_definition, taken, already,
-                                                           amount, &selected, id_expr,
+               selected_ok = centry_rsmap_select_instances(resource_definition, *taken, already,
+                                                           amount, &selected_raw, id_expr,
                                                            required_props);
             }
-            lFreeList(&taken);
+            const auto selected = ocs::tom::ListPtr<ocs::tom::RESL>(selected_raw);
+            taken.reset();
 
             if (!selected_ok) {
                // matching said otherwise, so the two have diverged; refuse rather than hand
@@ -221,8 +229,7 @@ rsmap_select_granted_ids(sge_assignment_t *a, const char *name, const char *host
                        same_key != nullptr ? same_key : "");
                ret = false;
             } else {
-               gru_add_selected_instances(gru, resource_definition, selected);
-               lFreeList(&selected);
+               gru_add_selected_instances(gru, resource_definition, *selected);
             }
          }
       }
@@ -246,9 +253,10 @@ rsmap_select_granted_ids(sge_assignment_t *a, const char *name, const char *host
  * @return true on success, false when a resource map could not be granted
  */
 static bool
-gru_list_add_request(sge_assignment_t *a, lList **granted_resources_list, const lListElem *request,
-                     const char *host_name, const lList *host_list, double amount, uint32_t slots,
-                     bool select_instances) {
+gru_list_add_request(sge_assignment_t *a, lList **granted_resources_list,
+                     const ocs::tom::ConstElement<ocs::tom::CE> request, const char *host_name,
+                     const ocs::tom::ConstList<ocs::tom::EH> host_list, const double amount, const uint32_t slots,
+                     const bool select_instances) {
    DENTER(TOP_LAYER);
 
    const char *name = ocs::tom::get<CE_name>(request);
@@ -258,11 +266,11 @@ gru_list_add_request(sge_assignment_t *a, lList **granted_resources_list, const 
    bool ret = true;
 
    // try to get the resource from the local host, if not available, then from the global host
-   const lListElem *host = host_list_locate(host_list, host_name);
-   if (host == nullptr || static_cast<const lListElem *>(ocs::tom::find_first_in<EH_consumable_config_list, CE_name>(host, name)) == nullptr) {
+   auto host = ocs::tom::ConstElement<ocs::tom::EH>(host_list_locate(host_list, host_name));
+   if (host == nullptr || ocs::tom::find_first_in<EH_consumable_config_list, CE_name>(host, name) == nullptr) {
       host_name = SGE_GLOBAL_NAME;
       host = a->gep;
-      if (host == nullptr || static_cast<const lListElem *>(ocs::tom::find_first_in<EH_consumable_config_list, CE_name>(host, name)) == nullptr) {
+      if (host == nullptr || ocs::tom::find_first_in<EH_consumable_config_list, CE_name>(host, name) == nullptr) {
          // The resource has no capacity at host level. For a RSMAP that is an inconsistency: it can
          // only be configured on a host (see sge_complex(5)) and we would have to select instances
          // of it here.
@@ -280,7 +288,7 @@ gru_list_add_request(sge_assignment_t *a, lList **granted_resources_list, const 
       }
    }
    DPRINTF("  ==> gru_list_add_request: booking %s: " sge_u32 " * %f from host %s\n", name, slots, amount, host_name);
-   lListElem *gru = gru_list_search(*granted_resources_list, name, host_name);
+   auto gru = ocs::tom::Element<ocs::tom::GRU>(gru_list_search(*granted_resources_list, name, host_name));
    if (gru == nullptr) {
       DPRINTF("   -> adding new GRU\n");
       gru = ocs::tom::emplace_back<GRU_name>(granted_resources_list, name);
@@ -328,8 +336,9 @@ gru_list_add_request(sge_assignment_t *a, lList **granted_resources_list, const 
 
          // the characteristics the request asks the instances to carry, resolved against the
          // complex list the same way matching resolved them
-         lList *required_props = nullptr;
-         centry_rsmap_resolve_request_properties(request, a->centry_list, &required_props);
+         lList *required_props_raw = nullptr;
+         centry_rsmap_resolve_request_properties(request, a->centry_list, &required_props_raw);
+         const auto required_props = ocs::tom::ListPtr<ocs::tom::CE>(required_props_raw);
 
          // scope=job: the group was chosen over all the hosts the job could run on while
          // matching, and this host has to take from that one. Asking for it again here returns
@@ -337,12 +346,12 @@ gru_list_add_request(sge_assignment_t *a, lList **granted_resources_list, const 
          // the group the host was offered slots for.
          const char *required_key = nullptr;
          if (same_key != nullptr && rsmap_request_has_job_scope(a, request)) {
-            required_key = rsmap_job_scope_key(a, request, same_key, id_expr, required_props);
+            required_key = rsmap_job_scope_key(a, request, same_key, id_expr, *required_props);
          }
 
          if (select_instances) {
             ret = rsmap_select_granted_ids(a, name, host_name, host_list, amount * slots,
-                                           same_key, id_expr, required_props, required_key);
+                                           same_key, id_expr, *required_props, required_key);
          } else if (gru_list_search(*a->granted_rsmaps, name, host_name) == nullptr) {
             // The selection pass walks the same granted requests in the same order, so a map
             // reached here was reached there. Nothing recorded means the two have drifted
@@ -352,7 +361,6 @@ gru_list_add_request(sge_assignment_t *a, lList **granted_resources_list, const 
                     name, host_name);
             ret = false;
          }
-         lFreeList(&required_props);
       }
    } else {
       // couldn't malloc gru?
@@ -371,21 +379,21 @@ gru_list_add_request(sge_assignment_t *a, lList **granted_resources_list, const 
  * assignment, which frees its selection in assignment_release().
  *
  * @param a                       the assignment carrying the selection
+ * @param ja_task                 the task, for the failure messages
  * @param granted_resources_list  the list being built for the task
  * @return true on success, false when a selection has no resource map to belong to
  */
 static bool
-gru_list_apply_selected_rsmap_ids(const sge_assignment_t *a, const lListElem *ja_task,
-                                  lList *granted_resources_list) {
+gru_list_apply_selected_rsmap_ids(const sge_assignment_t *a, const ocs::tom::ConstElement<ocs::tom::JAT> ja_task,
+                                  const ocs::tom::List<ocs::tom::GRU> granted_resources_list) {
    DENTER(TOP_LAYER);
    bool ret = true;
 
-   const lListElem *selected;
-   for_each_ep (selected, *a->granted_rsmaps) {
+   for (const auto selected : *a->granted_rsmaps) {
       const char *name = ocs::tom::get<GRU_name>(selected);
       const char *host_name = ocs::tom::get<GRU_host>(selected);
 
-      lListElem *gru = gru_list_search(granted_resources_list, name, host_name);
+      const auto gru = ocs::tom::Element<ocs::tom::GRU>(gru_list_search(granted_resources_list, name, host_name));
       if (gru == nullptr) {
          // the selection is made from the same walk which creates these, so this cannot
          // happen without the two having drifted apart
@@ -394,9 +402,9 @@ gru_list_apply_selected_rsmap_ids(const sge_assignment_t *a, const lListElem *ja
          continue;
       }
 
-      ocs::tom::ConstList<ocs::tom::RESL> ids = ocs::tom::get<GRU_resource_map_list>(selected);
+      const ocs::tom::ConstList<ocs::tom::RESL> ids = ocs::tom::get<GRU_resource_map_list>(selected);
       if (ids != nullptr) {
-         ocs::tom::set<GRU_resource_map_list>(gru, lCopyList("granted_rsmap_ids", ids));
+         ocs::tom::set<GRU_resource_map_list>(gru, ids.clone("granted_rsmap_ids"));
       }
    }
 
@@ -426,12 +434,17 @@ gru_list_apply_selected_rsmap_ids(const sge_assignment_t *a, const lListElem *ja
  * @param host_name host the booking was attempted on
  */
 static void
-gru_report_booking_failure(const sge_assignment_t *a, const lListElem *job,
-                           const lListElem *ja_task, const char *name, const char *host_name) {
+gru_report_booking_failure(const sge_assignment_t *a, const ocs::tom::ConstElement<ocs::tom::JB> job,
+                           const ocs::tom::ConstElement<ocs::tom::JAT> ja_task, const char *name,
+                           const char *host_name) {
+   DENTER(TOP_LAYER);
+
    ERROR(MSG_JOB_CANNOTBOOKRESOURCE_SSUU, name, host_name,
          ocs::tom::get<JB_job_number>(job), ocs::tom::get<JAT_task_number>(ja_task));
    schedd_mes_add(a->monitor_alpp, a->monitor_next_run, ocs::tom::get<JB_job_number>(job),
                   SCHEDD_INFO_CANNOTBOOKRESOURCE_SS, name, host_name);
+
+   DRETURN_VOID;
 }
 
 /**
@@ -453,13 +466,14 @@ gru_report_booking_failure(const sge_assignment_t *a, const lListElem *job,
  * @param job                    the job being scheduled
  * @param host_list              the execution hosts, for their complex values
  * @param select_instances       true on the selection pass, false on the booking pass
- * @param granted_resources_list_out out: the list built, nullptr when nothing was granted
+ * @param granted_resources_list_out out: the list built, empty when nothing was granted
  * @return true in case of success, false in case of errors
  */
 static bool
-gru_build_granted_resource_list(sge_assignment_t *a, lListElem *ja_task, const lListElem *job,
-                                const lList *host_list, bool select_instances,
-                                lList **granted_resources_list_out) {
+gru_build_granted_resource_list(sge_assignment_t *a, const ocs::tom::ConstElement<ocs::tom::JAT> ja_task,
+                                const ocs::tom::ConstElement<ocs::tom::JB> job,
+                                const ocs::tom::ConstList<ocs::tom::EH> host_list, const bool select_instances,
+                                ocs::tom::ListPtr<ocs::tom::GRU> *granted_resources_list_out) {
    DENTER(TOP_LAYER);
 
    // check input parameters
@@ -468,24 +482,25 @@ gru_build_granted_resource_list(sge_assignment_t *a, lListElem *ja_task, const l
    }
 
    bool ret = true;
+   // built through ocs::GrantedResources::add_binding_to_use() and gru_list_add_request(), which take lList **
    lList *granted_resources_list = nullptr;
 
    // loop over the gdil and figure out the hosts
    // Attention: One host can appear multiple times in gdil (for different queue instances)!
    bool is_master_task = true;
    const char *last_host = nullptr;
-   for_each_ep_lv(gdil_ep, *a->gdil) {
+   for (const auto gdil_ep : *a->gdil) {
       int slots = ocs::tom::get<JG_slots>(gdil_ep);
       const char *host_name = ocs::tom::get<JG_qhostname>(gdil_ep);
 
       DPRINTF("gdil_ep: %s, %d slots%s\n", host_name, slots, is_master_task ? ", master task" : "");
 
       // add the binding_touse information (copy from JG to GRU)
-      ocs::tom::ConstList<ocs::tom::ST> binding_to_use_list = ocs::tom::get<JG_binding_to_use>(gdil_ep);
+      const ocs::tom::ConstList<ocs::tom::ST> binding_to_use_list = ocs::tom::get<JG_binding_to_use>(gdil_ep);
       ocs::GrantedResources::add_binding_to_use(&granted_resources_list, host_name, binding_to_use_list);
 
       // book the global resources
-      for_each_ep_lv (request, job_get_hard_resource_list(job, JRS_SCOPE_GLOBAL)) {
+      for (const auto request : ocs::tom::ConstList<ocs::tom::CE>(job_get_hard_resource_list(job, JRS_SCOPE_GLOBAL))) {
          uint32_t consumable = ocs::tom::get<CE_consumable>(request);
 
          if (consumable == CONSUMABLE_NO ||
@@ -507,7 +522,8 @@ gru_build_granted_resource_list(sge_assignment_t *a, lListElem *ja_task, const l
 
       // book the master resources
       if (is_master_task) {
-         for_each_ep_lv (request, job_get_hard_resource_list(job, JRS_SCOPE_MASTER)) {
+         for (const auto request :
+              ocs::tom::ConstList<ocs::tom::CE>(job_get_hard_resource_list(job, JRS_SCOPE_MASTER))) {
             uint32_t consumable = ocs::tom::get<CE_consumable>(request);
 
             if (consumable == CONSUMABLE_NO) {
@@ -530,7 +546,7 @@ gru_build_granted_resource_list(sge_assignment_t *a, lListElem *ja_task, const l
       }
 
       // book slave resources
-      for_each_ep_lv (request, job_get_hard_resource_list(job, JRS_SCOPE_SLAVE)) {
+      for (const auto request : ocs::tom::ConstList<ocs::tom::CE>(job_get_hard_resource_list(job, JRS_SCOPE_SLAVE))) {
          uint32_t consumable = ocs::tom::get<CE_consumable>(request);
 
          if (consumable == CONSUMABLE_NO) {
@@ -551,7 +567,7 @@ gru_build_granted_resource_list(sge_assignment_t *a, lListElem *ja_task, const l
       last_host = host_name;
    }
 
-   *granted_resources_list_out = granted_resources_list;
+   *granted_resources_list_out = ocs::tom::ListPtr<ocs::tom::GRU>::from_typed(granted_resources_list);
 
    DRETURN(ret);
 }
@@ -570,14 +586,15 @@ gru_build_granted_resource_list(sge_assignment_t *a, lListElem *ja_task, const l
  * @param host_list the execution hosts, for their complex values
  * @return true in case of success, false when a resource map could not be served
  */
-bool select_granted_rsmap_instances(sge_assignment_t *a, lListElem *ja_task, const lListElem *job,
-                                    const lList *host_list) {
+bool
+select_granted_rsmap_instances(sge_assignment_t *a, const ocs::tom::ConstElement<ocs::tom::JAT> ja_task,
+                               const ocs::tom::ConstElement<ocs::tom::JB> job,
+                               const ocs::tom::ConstList<ocs::tom::EH> host_list) {
    DENTER(TOP_LAYER);
 
-   lList *granted_resources_list = nullptr;
-   bool ret = gru_build_granted_resource_list(a, ja_task, job, host_list, true,
-                                              &granted_resources_list);
-   lFreeList(&granted_resources_list);
+   // only the selection on the assignment is kept, the list built on the way is freed
+   ocs::tom::ListPtr<ocs::tom::GRU> granted_resources_list;
+   const bool ret = gru_build_granted_resource_list(a, ja_task, job, host_list, true, &granted_resources_list);
 
    DRETURN(ret);
 }
@@ -595,18 +612,19 @@ bool select_granted_rsmap_instances(sge_assignment_t *a, lListElem *ja_task, con
  * @param host_list the execution hosts, for their complex values
  * @return true in case of success, false in case of errors
  */
-bool add_granted_resource_list(sge_assignment_t *a, lListElem *ja_task, const lListElem *job, const lList *host_list) {
+bool
+add_granted_resource_list(sge_assignment_t *a, const ocs::tom::Element<ocs::tom::JAT> ja_task,
+                          const ocs::tom::ConstElement<ocs::tom::JB> job,
+                          const ocs::tom::ConstList<ocs::tom::EH> host_list) {
    DENTER(TOP_LAYER);
 
-   lList *granted_resources_list = nullptr;
-   bool ret = gru_build_granted_resource_list(a, ja_task, job, host_list, false,
-                                              &granted_resources_list);
+   ocs::tom::ListPtr<ocs::tom::GRU> granted_resources_list;
+   bool ret = gru_build_granted_resource_list(a, ja_task, job, host_list, false, &granted_resources_list);
 
    // The ids were selected once, onto the assignment; hand them to the resource maps they
    // were selected for. Doing it after the walk rather than inside it means a map requested
    // in more than one scope is copied once, when its selection is complete.
-   if (granted_resources_list != nullptr &&
-       !gru_list_apply_selected_rsmap_ids(a, ja_task, granted_resources_list)) {
+   if (granted_resources_list && !gru_list_apply_selected_rsmap_ids(a, ja_task, *granted_resources_list)) {
       ret = false;
    }
 
@@ -614,8 +632,8 @@ bool add_granted_resource_list(sge_assignment_t *a, lListElem *ja_task, const lL
    // could not be booked. Such a resource says nothing about the others: throwing the list away
    // would cost the task the RSMAP ids and the binding information of every unrelated request
    // as well (CS-2672).
-   if (granted_resources_list != nullptr) {
-      ocs::tom::set<JAT_granted_resources_list>(ja_task, granted_resources_list);
+   if (granted_resources_list) {
+      ocs::tom::set<JAT_granted_resources_list>(ja_task, std::move(granted_resources_list));
    }
 
    DRETURN(ret);

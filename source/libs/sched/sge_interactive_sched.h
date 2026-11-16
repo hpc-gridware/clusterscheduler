@@ -51,12 +51,9 @@
 
 void remove_immediate_job(ocs::tom::List<ocs::tom::JB> job_list, ocs::tom::Element<ocs::tom::JB> job, order_t *orders,
                           int remove_orders);
-OCS_TRANSITIONAL void remove_immediate_job(lList *job_list, lListElem *job, order_t *orders, int remove_orders);
 
 int remove_immediate_jobs(ocs::tom::List<ocs::tom::JB> pending_job_list, ocs::tom::List<ocs::tom::JB> running_job_list,
                           order_t *orders);
-OCS_TRANSITIONAL int remove_immediate_jobs(lList *pending_job_list, lList *running_job_list, order_t *orders);
 
 int order_remove_immediate(ocs::tom::ConstElement<ocs::tom::JB> job, ocs::tom::ConstElement<ocs::tom::JAT> ja_task,
                            order_t *orders);
-OCS_TRANSITIONAL int order_remove_immediate(const lListElem *job, const lListElem *ja_task, order_t *orders);

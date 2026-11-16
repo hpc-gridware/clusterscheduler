@@ -3472,26 +3472,6 @@ sge_build_sgeee_orders(scheduler_all_data_t *lists, const ocs::tom::List<ocs::to
    DRETURN_VOID;
 }
 
-/**
- * @brief sge_build_sgeee_orders() for an untyped caller
- *
- * @param lists all the lists of this scheduling run
- * @param running_jobs the running jobs (`JB_Type`), may be nullptr
- * @param queued_jobs the queued jobs (`JB_Type`), may be nullptr
- * @param finished_jobs the finished jobs (`JB_Type`), may be nullptr
- * @param orders existing order list; the new orders are added to it
- * @param update_usage_and_configuration if true, the update usage orders are generated
- * @param seqno a seqno, changed with each scheduling run
- * @param update_execd if true, the queue information is sent along with the running job tickets
- */
-void
-sge_build_sgeee_orders(scheduler_all_data_t *lists, lList *running_jobs, lList *queued_jobs, lList *finished_jobs,
-                       order_t *orders, bool update_usage_and_configuration, int seqno, bool update_execd) {
-   sge_build_sgeee_orders(lists, ocs::tom::List<ocs::tom::JB>(running_jobs), ocs::tom::List<ocs::tom::JB>(queued_jobs),
-                          ocs::tom::List<ocs::tom::JB>(finished_jobs), orders, update_usage_and_configuration, seqno,
-                          update_execd);
-}
-
 /*--------------------------------------------------------------------
  * sge_scheduler
  *--------------------------------------------------------------------*/
@@ -3633,25 +3613,6 @@ sgeee_scheduler(scheduler_all_data_t *lists,
    }
 
    DRETURN(0);
-}
-
-/**
- * @brief sgeee_scheduler() for an untyped caller
- *
- * @param lists a ref to all lists in this scheduler
- * @param running_jobs the running jobs (`JB_Type`)
- * @param finished_jobs the finished jobs (`JB_Type`)
- * @param pending_jobs the pending jobs (`JB_Type`)
- * @param orders the orders produced by this run are added here
- *
- * @return as sgeee_scheduler()
- */
-int
-sgeee_scheduler(scheduler_all_data_t *lists, lList *running_jobs, lList *finished_jobs, lList *pending_jobs,
-                order_t *orders) {
-   return sgeee_scheduler(lists, ocs::tom::List<ocs::tom::JB>(running_jobs),
-                          ocs::tom::List<ocs::tom::JB>(finished_jobs), ocs::tom::List<ocs::tom::JB>(pending_jobs),
-                          orders);
 }
 
 /**

@@ -231,17 +231,6 @@ void schedd_mes_commit(const ocs::tom::ConstList<ocs::tom::JB> job_list, const i
 }
 
 /**
- * @brief schedd_mes_commit() for an untyped caller
- * @param job_list the jobs (`JB_Type`)
- * @param ignore_category as schedd_mes_commit()
- * @param jid_category the category (`CT_Type`), or nullptr
- */
-void schedd_mes_commit(lList *job_list, const int ignore_category, const lRef jid_category) {
-   schedd_mes_commit(ocs::tom::ConstList<ocs::tom::JB>(job_list), ignore_category,
-                     ocs::tom::Element<ocs::tom::CT>(static_cast<lListElem *>(jid_category)));
-}
-
-/**
  * @brief Free temporaryly generated messages
  *
  * Free temporaryly generated messages contained in "tmp_sme".

@@ -54,8 +54,6 @@
 
 int correct_load(ocs::tom::ConstList<ocs::tom::JB> running_jobs, ocs::tom::ConstList<ocs::tom::QU> queue_list,
                  ocs::tom::List<ocs::tom::EH> host_list, uint64_t decay_time, bool monitor_next_run);
-OCS_TRANSITIONAL int correct_load(lList *running_jobs, lList *queue_list, lList *host_list, uint64_t decay_time,
-                                  bool monitor_next_run);
 
 int correct_capacities(ocs::tom::List<ocs::tom::EH> host_list, ocs::tom::ConstList<ocs::tom::CE> centry_list,
                        ocs::tom::ConstList<ocs::tom::CE> load_adjustments);

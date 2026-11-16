@@ -311,25 +311,3 @@ select4unsuspension(const ocs::tom::List<ocs::tom::JB> job_list, const ocs::tom:
 
    DRETURN(std::make_pair(jlongest, longest));
 }
-
-/**
- * @brief Selects and suspends jobs in queues that exceed their thresholds, for a caller with untyped lists (N-X-2)
- *
- * @param[in]     susp_queues queues that are over their suspend thresholds (QU_Type), checked
- * @param[in]     job_list    the jobs (JB_Type), checked
- * @param[in,out] orders      the suspend orders are appended here
- */
-void suspend_job_in_queues(lList *susp_queues, lList *job_list, order_t *orders) {
-   suspend_job_in_queues(ocs::tom::List<ocs::tom::QU>(susp_queues), ocs::tom::List<ocs::tom::JB>(job_list), orders);
-}
-
-/**
- * @brief Unsuspends jobs in queues that are below their thresholds again, for a caller with untyped lists (N-X-2)
- *
- * @param[in]     queue_list  the queues to look at (QU_Type), checked
- * @param[in]     job_list    the jobs (JB_Type), checked
- * @param[in,out] orders      the unsuspend orders are appended here
- */
-void unsuspend_job_in_queues(lList *queue_list, lList *job_list, order_t *orders) {
-   unsuspend_job_in_queues(ocs::tom::List<ocs::tom::QU>(queue_list), ocs::tom::List<ocs::tom::JB>(job_list), orders);
-}

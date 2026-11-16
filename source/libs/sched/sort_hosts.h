@@ -53,7 +53,6 @@
 #define ERROR_LOAD_VAL  9999
 
 int sort_host_list(ocs::tom::List<ocs::tom::EH> host_list, ocs::tom::ConstList<ocs::tom::CE> centry_list);
-OCS_TRANSITIONAL int sort_host_list(lList *host_list, const lList *centry_list);
 
 double scaled_mixed_load(const char *load_formula, ocs::tom::ConstElement<ocs::tom::EH> global,
                          ocs::tom::ConstElement<ocs::tom::EH> host, ocs::tom::ConstList<ocs::tom::CE> centry_list,

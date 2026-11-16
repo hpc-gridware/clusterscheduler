@@ -43,14 +43,11 @@ namespace ocs {
    public:
       static void
       job_reject_category(ocs::tom::ConstElement<ocs::tom::JB> job, bool with_reservation);
-      OCS_TRANSITIONAL static void job_reject_category(const lListElem *job, bool with_reservation);
 
       static int
       job_is_category_rejected(ocs::tom::ConstElement<ocs::tom::JB> job);
-      OCS_TRANSITIONAL static int job_is_category_rejected(const lListElem *job);
 
       static int
       job_is_category_reservation_rejected(ocs::tom::ConstElement<ocs::tom::JB> job);
-      OCS_TRANSITIONAL static int job_is_category_reservation_rejected(const lListElem *job);
    };
 }

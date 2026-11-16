@@ -78,7 +78,6 @@ int schedd_mes_get_logging();
 
 void schedd_mes_commit(ocs::tom::ConstList<ocs::tom::JB> job_list, int ignore_category,
                        ocs::tom::Element<ocs::tom::CT> jid_category);
-OCS_TRANSITIONAL void schedd_mes_commit(lList *job_list, int ignore_category, lRef jid_category);
 
 void schedd_mes_rollback();
 

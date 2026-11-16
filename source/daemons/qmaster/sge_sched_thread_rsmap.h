@@ -27,9 +27,10 @@
 #include "sge_select_queue.h"
 
 bool
-select_granted_rsmap_instances(sge_assignment_t *a, lListElem *ja_task, const lListElem *job,
-                               const lList *host_list);
+select_granted_rsmap_instances(sge_assignment_t *a, ocs::tom::ConstElement<ocs::tom::JAT> ja_task,
+                               ocs::tom::ConstElement<ocs::tom::JB> job, ocs::tom::ConstList<ocs::tom::EH> host_list);
 
 bool
-add_granted_resource_list(sge_assignment_t *a, lListElem *ja_task, const lListElem *job, const lList *host_list);
+add_granted_resource_list(sge_assignment_t *a, ocs::tom::Element<ocs::tom::JAT> ja_task,
+                          ocs::tom::ConstElement<ocs::tom::JB> job, ocs::tom::ConstList<ocs::tom::EH> host_list);
 

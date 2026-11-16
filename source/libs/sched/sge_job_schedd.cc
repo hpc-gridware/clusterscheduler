@@ -331,25 +331,6 @@ job_get_next_task(const ocs::tom::Element<ocs::tom::JB> job) {
 }
 
 /**
- * @brief job_get_next_task() for an untyped caller
- *
- * @param[in]  job      the job to take the task from (`JB_Type`), checked
- * @param[out] task_ret receives the task (`JAT_Type`)
- * @param[out] id_ret   receives the id of the task
- *
- * @return as job_get_next_task(): 0 if it returned a task, -1 if the job has no task left
- */
-int job_get_next_task(lListElem *job, lListElem **task_ret, uint32_t *id_ret) {
-   const auto next = job_get_next_task(ocs::tom::Element<ocs::tom::JB>(job));
-   if (!next) {
-      return -1;
-   }
-   *task_ret = next->first;
-   *id_ret = next->second;
-   return 0;
-}
-
-/**
  * @brief Inc. the # of jobs a user has running
  *
  * Initialize "user_list" and JC_jobs attribute for each user according

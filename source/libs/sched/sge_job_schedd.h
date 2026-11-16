@@ -66,7 +66,6 @@ void sge_dec_jc(lList** jcpp, const char *name, int slots);
 
 std::optional<std::pair<ocs::tom::Element<ocs::tom::JAT>, uint32_t>>
 job_get_next_task(ocs::tom::Element<ocs::tom::JB> job);
-OCS_TRANSITIONAL int job_get_next_task(lListElem *job, lListElem **task_ret, uint32_t *id_ret);
 
 int nslots_granted(ocs::tom::ConstList<ocs::tom::JG> granted, const char *qhostname);
 

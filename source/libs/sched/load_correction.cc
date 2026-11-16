@@ -306,22 +306,6 @@ int correct_capacities(const ocs::tom::List<ocs::tom::EH> host_list,
 }
 
 /**
- * @brief Adds the load correction of the recently started jobs, for a caller with untyped lists (N-X-2)
- *
- * @param[in]     running_jobs     the running jobs (`JB_Type`), checked
- * @param[in]     queue_list       the queue instances (`QU_Type`), checked
- * @param[in,out] host_list        the execution hosts (`EH_Type`), checked
- * @param[in]     decay_time       age at which a job stops contributing
- * @param[in]     monitor_next_run whether the next run writes the scheduler monitoring log
- *
- * @return 0 on success, 1 if no queue list or host list was passed
- */
-int correct_load(lList *running_jobs, lList *queue_list, lList *host_list, uint64_t decay_time, bool monitor_next_run) {
-   return correct_load(ocs::tom::ConstList<ocs::tom::JB>(running_jobs), ocs::tom::ConstList<ocs::tom::QU>(queue_list),
-                       ocs::tom::List<ocs::tom::EH>(host_list), decay_time, monitor_next_run);
-}
-
-/**
  * @brief Corrects the capacities of the hosts by their load values, for a caller with untyped lists (N-X-2)
  *
  * @param[in,out] host_list        the execution hosts (`EH_Type`), checked

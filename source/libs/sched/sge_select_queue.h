@@ -127,8 +127,6 @@ OCS_TRANSITIONAL void sge_create_load_list(const lList *queue_list, const lList 
 
 bool sge_load_list_alarm(bool monitor_next_run, ocs::tom::ConstList<ocs::tom::LDR> load_list,
                          ocs::tom::ConstList<ocs::tom::EH> host_list, ocs::tom::ConstList<ocs::tom::CE> centry_list);
-OCS_TRANSITIONAL bool sge_load_list_alarm(bool monitor_next_run, lList *load_list, const lList *host_list,
-                                          const lList *centry_list);
 
 void sge_remove_queue_from_load_list(lList **load_list, const lList *queue_list);
 
@@ -289,12 +287,9 @@ void assignment_release(sge_assignment_t *a);
 void assignment_clear_cache(sge_assignment_t *a);
 
 bool rsmap_request_has_job_scope(const sge_assignment_t *a, ocs::tom::ConstElement<ocs::tom::CE> req);
-OCS_TRANSITIONAL bool rsmap_request_has_job_scope(const sge_assignment_t *a, const lListElem *req);
 
 const char *rsmap_job_scope_key(sge_assignment_t *a, ocs::tom::ConstElement<ocs::tom::CE> req, const char *same_key,
                                 const char *id_expr, ocs::tom::ConstList<ocs::tom::CE> required_props);
-OCS_TRANSITIONAL const char *rsmap_job_scope_key(sge_assignment_t *a, const lListElem *req, const char *same_key,
-                                                 const char *id_expr, const lList *required_props);
 
 /* -------------------------------------------------------------------------------- */
 

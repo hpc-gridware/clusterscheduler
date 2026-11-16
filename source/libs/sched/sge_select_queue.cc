@@ -6685,17 +6685,6 @@ rsmap_request_has_job_scope(const sge_assignment_t *a, const ocs::tom::ConstElem
 }
 
 /**
- * @brief rsmap_request_has_job_scope() for an untyped caller
- * @param a    the assignment
- * @param req  the request (`CE_Type`)
- * @return     as rsmap_request_has_job_scope()
- */
-bool
-rsmap_request_has_job_scope(const sge_assignment_t *a, const lListElem *req) {
-   return rsmap_request_has_job_scope(a, ocs::tom::ConstElement<ocs::tom::CE>(req));
-}
-
-/**
  * @brief the instance group every host of a scope=job request has to take from
  *
  * A same= constraint is per host: the instances granted on one host have to agree, and a job
@@ -6827,22 +6816,6 @@ rsmap_job_scope_key(sge_assignment_t *a, const ocs::tom::ConstElement<ocs::tom::
    ocs::tom::set<VA_value>(entry, best != nullptr ? best->c_str() : "");
 
    DRETURN(best != nullptr ? ocs::tom::get<VA_value>(entry) : nullptr);
-}
-
-/**
- * @brief rsmap_job_scope_key() for an untyped caller
- * @param a               the assignment
- * @param req             the request carrying scope=job (`CE_Type`)
- * @param same_key        what the instances have to agree in
- * @param id_expr         the id= expression, or nullptr
- * @param required_props  the resolved requirements (`CE_Type`), or nullptr
- * @return                as rsmap_job_scope_key()
- */
-const char *
-rsmap_job_scope_key(sge_assignment_t *a, const lListElem *req, const char *same_key, const char *id_expr,
-                    const lList *required_props) {
-   return rsmap_job_scope_key(a, ocs::tom::ConstElement<ocs::tom::CE>(req), same_key, id_expr,
-                              ocs::tom::ConstList<ocs::tom::CE>(required_props));
 }
 
 // @todo CS-601 we should also clear the SLAVE tags in QU_tagged4schedule - we might need this for detecting disjoint
@@ -7625,21 +7598,6 @@ bool sge_load_list_alarm(const bool monitor_next_run, const ocs::tom::ConstList<
    }
 
    DRETURN(is_alarm);
-}
-
-/**
- * @brief sge_load_list_alarm() for an untyped caller
- * @param monitor_next_run as sge_load_list_alarm()
- * @param load_list        the load list (`LDR_Type`), or nullptr
- * @param host_list        the execution hosts (`EH_Type`)
- * @param centry_list      the complex entries (`CE_Type`)
- * @return as sge_load_list_alarm()
- */
-bool sge_load_list_alarm(const bool monitor_next_run, lList *load_list, const lList *host_list,
-                         const lList *centry_list) {
-   return sge_load_list_alarm(monitor_next_run, ocs::tom::ConstList<ocs::tom::LDR>(load_list),
-                              ocs::tom::ConstList<ocs::tom::EH>(host_list),
-                              ocs::tom::ConstList<ocs::tom::CE>(centry_list));
 }
 
 /**
