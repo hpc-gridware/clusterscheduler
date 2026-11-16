@@ -3458,7 +3458,7 @@ sgeee_scheduler(scheduler_all_data_t *lists,
    /* calculate per job static urgency values */
    if (do_nurg) {
       PROF_START_MEASUREMENT(SGE_PROF_CUSTOM3);
-      sge_do_urgency(now, pending_jobs, running_jobs, lists);
+      sge_do_urgency(now, running_jobs, pending_jobs, lists);
 
       if (prof_is_active(SGE_PROF_CUSTOM3)) {
          prof_stop_measurement(SGE_PROF_CUSTOM3, nullptr);

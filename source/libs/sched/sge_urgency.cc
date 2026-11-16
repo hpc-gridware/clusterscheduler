@@ -317,18 +317,6 @@ int sge_job_slot_request(const ocs::tom::ConstElement<ocs::tom::JB> job,
 }
 
 /**
- * @brief Computes the urgency of all jobs, for a caller with untyped lists (N-X-2)
- *
- * @param now          the time of the scheduling run
- * @param running_jobs the running jobs (JB_Type), checked
- * @param pending_jobs the pending jobs (JB_Type), checked
- * @param lists        the data of the scheduling run
- */
-void sge_do_urgency(uint64_t now, lList *running_jobs, lList *pending_jobs, scheduler_all_data_t *lists) {
-   sge_do_urgency(now, ocs::tom::List<ocs::tom::JB>(running_jobs), ocs::tom::List<ocs::tom::JB>(pending_jobs), lists);
-}
-
-/**
  * @brief The number of slots assumed for a job's static urgency, for a caller with untyped objects (N-X-2)
  *
  * @param job     the job (JB_Type), checked

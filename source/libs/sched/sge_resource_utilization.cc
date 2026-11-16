@@ -620,26 +620,6 @@ utilization_rsmap_below(const ocs::tom::ConstElement<ocs::tom::CE> definition,
 }
 
 /**
- * @brief the earliest time one group of a resource map has a number of instances free, for a caller with an untyped
- *        entry (N-X-2)
- *
- * @param definition the resource map on the host, from EH_consumable_config_list
- * @param cr         the resource utilization of the map (RUE_Type), checked, may be nullptr
- * @param key_name   "id" or the name of a characteristic
- * @param amount     how many instances of one group are needed
- * @param id_expr    the expression an instance's identifier has to satisfy, or nullptr
- * @param required_props the requirements an instance has to carry, or nullptr
- * @return           the time from which a group can serve the request
- */
-uint64_t
-utilization_rsmap_below(const lListElem *definition, const lListElem *cr, const char *key_name,
-                        uint32_t amount, const char *id_expr, const lList *required_props) {
-   return utilization_rsmap_below(ocs::tom::ConstElement<ocs::tom::CE>(definition),
-                                  ocs::tom::ConstElement<ocs::tom::RUE>(cr), key_name, amount, id_expr,
-                                  ocs::tom::ConstList<ocs::tom::CE>(required_props));
-}
-
-/**
  * @brief Debit a jobs resource utilization
  *
  * A jobs resource utilization is debited into the resource
@@ -1285,30 +1265,6 @@ utilization_max(const sge_assignment_t *a, const ocs::tom::ConstElement<ocs::tom
    }
 
    DRETURN(max);
-}
-
-/**
- * @brief Returns the maximum utilization within a timeframe, for a caller with untyped objects (N-X-2)
- *
- * @param a               the assignment, or nullptr
- * @param host            the execution host (EH_Type), checked, or nullptr
- * @param cr              Resource utilization entry (RUE_Type), checked
- * @param start_time      Start time of the timeframe
- * @param duration        Duration of timeframe
- * @param total           the total capacity of the resource
- * @param request         the amount the job requests
- * @param slots           the number of slots in question
- * @param for_excl_request Whether to check for exclusive requests
- * @param[out] combined_binding_inuse the topology units in use over the timeframe
- *
- * @return Maximum utilization value
- */
-double
-utilization_max(const sge_assignment_t *a, const lListElem *host, const lListElem *cr,
-                uint64_t start_time, uint64_t duration, double total, double request, double slots,
-                bool for_excl_request, ocs::TopologyString &combined_binding_inuse) {
-   return utilization_max(a, ocs::tom::ConstElement<ocs::tom::EH>(host), ocs::tom::ConstElement<ocs::tom::RUE>(cr),
-                          start_time, duration, total, request, slots, for_excl_request, combined_binding_inuse);
 }
 
 /** @brief Whether the resource stays below max_util for as long as the job would run
@@ -2175,7 +2131,7 @@ add_job_list_to_schedule(const ocs::tom::List<ocs::tom::JB> job_list, const bool
 
             /** @brief Give the borrowed list back without freeing it */
             ~GdilLoan() {
-               [[maybe_unused]] lList *borrowed = gdil.release();
+               [[maybe_unused]] auto borrowed = gdil.release();
             }
          } gdil_loan{a.gdil};
          a.slots = nslots_granted(*a.gdil, nullptr);

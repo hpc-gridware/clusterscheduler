@@ -57,8 +57,6 @@
 dispatch_t
 parallel_rqs_slots_by_time(sge_assignment_t *a, int *slots, ocs::tom::Element<ocs::tom::QU> qep, bool need_master,
                            bool is_master_queue);
-OCS_TRANSITIONAL dispatch_t parallel_rqs_slots_by_time(sge_assignment_t *a, int *slots, lListElem *qep,
-                                                       bool need_master, bool is_master_queue);
 
 void parallel_check_and_debit_rqs_slots(sge_assignment_t *a, const char *host, const char *queue,
       int *slots, dstring *rule_name, dstring *rue_name, dstring *limit_name);

@@ -98,7 +98,7 @@ static int s_fail = 0;
 static void do_utilization_test(int *id, lListElem *cr, test_array_t *ta) {
    ocs::TopologyString binding_inuse;
    for (int i = 0; ta[i].start_time != 0; i++, (*id)++) {
-      double uti = utilization_max(nullptr, nullptr, cr,
+      double uti = utilization_max(nullptr, nullptr, ocs::tom::ConstElement<ocs::tom::RUE>(cr),
                                    ta[i].start_time, ta[i].duration,
                                    0.0, 0.0, 0.0, false, binding_inuse);
       CHECK(*id, ta[i].desc, uti == ta[i].uti);
@@ -636,7 +636,8 @@ make_two_cards() {
 static int
 check_below(const lListElem *def, const lListElem *cr, const char *key_name, uint32_t amount,
             uint64_t expected, const char *what) {
-   uint64_t got = utilization_rsmap_below(def, cr, key_name, amount);
+   uint64_t got = utilization_rsmap_below(ocs::tom::ConstElement<ocs::tom::CE>(def),
+                                          ocs::tom::ConstElement<ocs::tom::RUE>(cr), key_name, amount);
 
    if (got != expected) {
       printf("   FAIL: %s: expected " sge_u64 ", got " sge_u64 "\n", what, expected, got);

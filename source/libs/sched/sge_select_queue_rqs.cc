@@ -1172,18 +1172,3 @@ rqs_set_dynamical_limit(const ocs::tom::Element<ocs::tom::RQRL> limit, const ocs
    DRETURN(true);
 }
 
-/**
- * @brief The slots free within the resource quotas, for a caller with an untyped queue instance (N-X-2)
- *
- * @param a job info structure
- * @param slots out: # free slots
- * @param qep queue instance (`QU_Type`), checked
- * @param need_master a master task still has to be placed
- * @param is_master_queue this queue instance already carries the master task
- *
- * @return #DISPATCH_OK or #DISPATCH_NEVER_CAT
- */
-dispatch_t parallel_rqs_slots_by_time(sge_assignment_t *a, int *slots, lListElem *qep, bool need_master,
-                                      bool is_master_queue) {
-   return parallel_rqs_slots_by_time(a, slots, ocs::tom::Element<ocs::tom::QU>(qep), need_master, is_master_queue);
-}

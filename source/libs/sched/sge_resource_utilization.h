@@ -92,17 +92,10 @@ uint64_t
 utilization_rsmap_below(ocs::tom::ConstElement<ocs::tom::CE> definition, ocs::tom::ConstElement<ocs::tom::RUE> cr,
                         const char *key_name, uint32_t amount, const char *id_expr = nullptr,
                         ocs::tom::ConstList<ocs::tom::CE> required_props = ocs::tom::ConstList<ocs::tom::CE>());
-OCS_TRANSITIONAL uint64_t utilization_rsmap_below(const lListElem *definition, const lListElem *cr,
-                                                  const char *key_name, uint32_t amount,
-                                                  const char *id_expr = nullptr,
-                                                  const lList *required_props = nullptr);
 
 double utilization_max(const sge_assignment_t *a, ocs::tom::ConstElement<ocs::tom::EH> host,
                        ocs::tom::ConstElement<ocs::tom::RUE> cr, uint64_t start_time, uint64_t duration, double total,
                        double request, double slots, bool for_excl_request, ocs::TopologyString& binding_inuse);
-OCS_TRANSITIONAL double utilization_max(const sge_assignment_t *a, const lListElem *host, const lListElem *cr,
-                                        uint64_t start_time, uint64_t duration, double total, double request,
-                                        double slots, bool for_excl_request, ocs::TopologyString& binding_inuse);
 
 uint64_t
 utilization_below(const sge_assignment_t *a, ocs::tom::ConstElement<ocs::tom::EH> host,
