@@ -172,20 +172,27 @@ debit_scheduled_job(const sge_assignment_t *a, int *sort_hostlist,
    DRETURN(0);
 }
 
-/*
- * Here
+/**
+ * @brief Debits a job from the queues of its granted list
  *
- *   - we reduce the amount of free slots in the queue.
- *   - we activte suspend_on_subordinate to prevent
- *     scheduling on queues that will get suspended
- *   - we debit consumable resouces of queue
+ * - reduces the amount of free slots in the queues
+ * - activates suspend_on_subordinate to prevent scheduling on queues that
+ *   will get suspended
+ * - debits the consumable resources of the queues
  *
- * to represent the job again we use the tagged selected queue list
- * (same game as calling sge_create_orders())
- * (would be better to use the granted_destin_identifier_list of the job)
+ * To represent the job again the granted list is used (same game as calling
+ * sge_create_orders()); the granted_destin_identifier_list of the job would
+ * be better.
  *
- * order_t *orders    needed to warn on jobs that get dispatched and suspended
- *                    on subordinate in the very same interval 
+ * @param job               the job
+ * @param pe                the parallel environment of the job, or empty
+ * @param granted           the granted list, the queues and slots to debit
+ * @param global_queue_list the queue list the granted queues are looked up in and debited
+ * @param centry_list       the complex list
+ * @param orders            the job start orders not yet sent, to warn on jobs that get dispatched and
+ *                          suspended on subordinate in the very same interval
+ *
+ * @return 0, or the ORed results of sos_schedd() for the queues suspended on subordinate
  */
 static int debit_job_from_queues(const ocs::tom::ConstElement<ocs::tom::JB> job,
                                  const ocs::tom::ConstElement<ocs::tom::PE> pe,
@@ -231,15 +238,6 @@ static int debit_job_from_queues(const ocs::tom::ConstElement<ocs::tom::JB> job,
                /* warn on jobs that were dispatched into that queue in
                   the same scheduling interval based on the orders list */
                for (const auto order : *orders->jobStartOrderList) {
-                  if (ocs::tom::get<OR_type>(order) != ORT_start_job) {
-                     continue;
-                  }
-                  if (ocs::tom::find_first_in<OR_queuelist, OQ_dest_queue>(order, sge_dstring_get_string(&queue_name))) {
-                     WARNING(MSG_SUBORDPOLICYCONFLICT_UUSS, ocs::tom::get<JB_job_number>(job), ocs::tom::get<OR_job_number>(order), qname, sge_dstring_get_string(&queue_name));
-                  }
-               }
-
-               for (const auto order : *orders->sentOrderList) {
                   if (ocs::tom::get<OR_type>(order) != ORT_start_job) {
                      continue;
                   }

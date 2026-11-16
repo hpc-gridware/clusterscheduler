@@ -64,26 +64,18 @@ typedef struct {
    ocs::tom::ListPtr<ocs::tom::OR> configOrderList;   ///< Suspend and unsuspend on threshold orders
    ocs::tom::ListPtr<ocs::tom::OR> pendingOrderList;  ///< Ticket and scheduler configuration orders
    ocs::tom::ListPtr<ocs::tom::OR> jobStartOrderList; ///< Job start, job info and remove-immediate-job orders
-   /**
-    * Job start orders that were already sent. Kept so the profiling reports
-    * the correct total, and so a subordinate policy conflict can still be
-    * warned about after the order left.
-    */
-   ocs::tom::ListPtr<ocs::tom::OR> sentOrderList;
    uint32_t numberSendOrders;   ///< Number of orders sent so far
    uint32_t numberSendPackages; ///< Number of sends done in between
 }order_t;
 
 /** Initializer for an empty #order_t */
-#define ORDER_INIT {nullptr, nullptr, nullptr, nullptr, 0, 0}
+#define ORDER_INIT {nullptr, nullptr, nullptr, 0, 0}
 
 void sge_add_schedd_info(ocs::tom::ListPtr<ocs::tom::OR> &or_list, int *global_mes_count, int *job_mes_count);
 
 void sge_create_orders(ocs::tom::ListPtr<ocs::tom::OR> &or_list, uint32_t type,
                        ocs::tom::ConstElement<ocs::tom::JB> job, ocs::tom::ConstElement<ocs::tom::JAT> ja_task,
                        ocs::tom::ConstList<ocs::tom::JG> granted, bool update_execd);
-
-int sge_GetNumberOfOrders(const order_t *orders);
 
 #if 0
 int sge_send_job_start_orders(sge_evc_class_t *evc, order_t *orders);

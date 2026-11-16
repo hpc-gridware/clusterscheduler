@@ -1104,6 +1104,30 @@ namespace ocs::tom {
          return handle;
       }
 
+      /**
+       * @brief Create an element of the type with a given descriptor, with every field at its default, as
+       *        lCreateElem() does
+       *
+       * For an element that must have the descriptor of another list or
+       * element, typically a reduced one. A reduced descriptor keeps the first
+       * field and the full length of the type, so it is checked like the
+       * element the checked constructor takes.
+       *
+       * @param descr the descriptor, the full one of the type or a reduction of it
+       * @return the owning handle
+       * @throw FieldException with reason WrongType if @p descr is of another type or empty, NullDescriptor
+       *        if it is null
+       * @throw ocs::RuntimeException if there is no memory
+       */
+      [[nodiscard]] static ElementPtr create(const lDescr *descr) {
+         if (descr != nullptr && descr[0].nm != T::fields[0].nm) [[unlikely]] {
+            detail::throw_wrong_type<T>(descr);
+         }
+         ElementPtr handle;
+         handle.ep_ = create_elem(descr);
+         return handle;
+      }
+
       ElementPtr(const ElementPtr &) = delete;
       ElementPtr &operator=(const ElementPtr &) = delete;
 

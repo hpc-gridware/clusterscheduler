@@ -149,7 +149,7 @@ log_list_impl(const bool monitor_next_run, const char *logstr, const ocs::tom::C
    ocs::tom::ListPtr<T> lp_part;
    for (const auto ep : lp) {
       if (lp_part == nullptr) {
-         lp_part = ocs::tom::ListPtr<T>::from_typed(lCreateList("partial list", lGetListDescr(lp)));
+         lp_part = ocs::tom::ListPtr<T>::create("partial list", lGetListDescr(lp));
       }
       lp_part->push_back(ep.clone());
       if (lp_part->size() == NUM_ITEMS_ON_LINE || ep.next() == nullptr) {

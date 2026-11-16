@@ -182,14 +182,14 @@ void sge_create_orders(ocs::tom::ListPtr<ocs::tom::OR> &or_list, const uint32_t 
       static const lDescr *const jobDesc =
          ocs_cull_descr_reduce(JB_Type, {JB_nurg, JB_urg, JB_rrcontr, JB_dlcontr, JB_wtcontr, JB_ja_tasks});
       // the job and its task are reductions to the fields an order carries
-      auto jep = ocs::tom::ElementPtr<ocs::tom::JB>::from_typed(lCreateElem(jobDesc));
-      auto jlist = ocs::tom::ListPtr<ocs::tom::JB>::from_typed(lCreateList("", jobDesc));
+      auto jep = ocs::tom::ElementPtr<ocs::tom::JB>::create(jobDesc);
+      auto jlist = ocs::tom::ListPtr<ocs::tom::JB>::create("", jobDesc);
 
       /* Create a reduced task list with only the required fields */
       {
          const lDescr *const task_descr = update_execd ? tixDesc : tix2Desc;
-         auto tlist = ocs::tom::ListPtr<ocs::tom::JAT>::from_typed(lCreateList("", task_descr));
-         auto new_task = ocs::tom::ElementPtr<ocs::tom::JAT>::from_typed(lCreateElem(task_descr));
+         auto tlist = ocs::tom::ListPtr<ocs::tom::JAT>::create("", task_descr);
+         auto new_task = ocs::tom::ElementPtr<ocs::tom::JAT>::create(task_descr);
          if (update_execd) {
             ocs::tom::set<JAT_granted_destin_identifier_list>(
                new_task, ocs::tom::get<JAT_granted_destin_identifier_list>(ja_task).clone(""));
@@ -249,26 +249,3 @@ void sge_create_orders(ocs::tom::ListPtr<ocs::tom::OR> &or_list, const uint32_t 
  * books usage and buries the job in one step), so the scheduler no longer
  * needs to emit ORT_remove_job orders. */
 
-/**
- * @brief Returns the number of orders generated
- *
- * returns the number of orders generated
- *
- * @param orders a structure of orders
- *
- * @return number of orders in the structure
- *
- * @note MT-NOTE: sge_GetNumberOfOrders() is  MT safe
- */
-int sge_GetNumberOfOrders(const order_t *orders) {
-   DENTER(TOP_LAYER);
-
-   std::size_t count = 0;
-
-   count += orders->configOrderList->size();
-   count += orders->pendingOrderList->size();
-   count += orders->jobStartOrderList->size();
-   count += orders->sentOrderList->size();
-
-   DRETURN(static_cast<int>(count));
-}

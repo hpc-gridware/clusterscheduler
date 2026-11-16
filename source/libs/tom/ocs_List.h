@@ -1368,6 +1368,32 @@ namespace ocs::tom {
          return handle;
       }
 
+      /**
+       * @brief Create an empty list of the type with a given descriptor, as lCreateList() and lCreateListHash()
+       *        do
+       *
+       * For a list that must have the descriptor of another list or element,
+       * typically a reduced one. A reduced descriptor keeps the first field and
+       * the full length of the type, so it is checked like the list the checked
+       * constructor takes.
+       *
+       * @param name the name of the list, for dumps and messages
+       * @param descr the descriptor of the elements, the full one of the type or a reduction of it
+       * @param hashing whether the list keeps hash tables for its hashed fields
+       * @return the owning handle
+       * @throw FieldException with reason WrongType if @p descr is of another type or empty, NullDescriptor
+       *        if it is null
+       * @throw ocs::RuntimeException if there is no memory
+       */
+      [[nodiscard]] static ListPtr create(const char *name, const lDescr *descr, const Hashing hashing = Hashing::On) {
+         if (descr != nullptr && descr[0].nm != T::fields[0].nm) [[unlikely]] {
+            detail::throw_wrong_type<T>(descr);
+         }
+         ListPtr handle;
+         handle.lp_ = create_list(name, descr, hashing == Hashing::On);
+         return handle;
+      }
+
       ListPtr(const ListPtr &) = delete;
       ListPtr &operator=(const ListPtr &) = delete;
 

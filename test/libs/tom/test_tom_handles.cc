@@ -37,6 +37,7 @@
 
 #include "cull/cull_lerrno.h"
 #include "cull/cull_state.h"
+#include "cull/ocs_cull_descr.h"
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/tom/ocs_tom_all.h"
 #include "tom/ocs_Element.h"
@@ -299,6 +300,45 @@ test_hash_tables() {
 }
 
 /**
+ * @brief The owning handles create a list and an element with a given descriptor, checking that it belongs to
+ *        their type
+ * @return nothing; CHECK records the results
+ */
+static void
+test_create_with_descriptor() {
+   const lDescr *reduced = ocs_cull_descr_reduce(JB_Type, {JB_job_number, JB_job_name});
+
+   auto full_list = ListPtr<JB>::create("full", JB_Type);
+   auto full_job = ElementPtr<JB>::create(JB_Type);
+   CHECK(25, "with the full descriptor: the list has it and the name, the element has it",
+         lGetListDescr(full_list.get()) == JB_Type && std::strcmp(lGetListName(full_list.get()), "full") == 0 &&
+         lGetElemDescr(full_job.get()) == JB_Type);
+
+   auto reduced_list = ListPtr<JB>::create("reduced", reduced, Hashing::Off);
+   auto reduced_job = ElementPtr<JB>::create(reduced);
+   reduced_job.get().set<JB_job_number>(7u);
+   const auto pushed = reduced_list.get().push_back(std::move(reduced_job));
+   CHECK(26, "with a reduced descriptor: list and element have it and hold the fields it keeps",
+         reduced != nullptr && lGetListDescr(reduced_list.get()) == reduced &&
+         std::strcmp(lGetListName(reduced_list.get()), "reduced") == 0 && lGetElemDescr(pushed) == reduced &&
+         pushed.get<JB_job_number>() == 7 && !pushed.has<JB_owner>());
+
+   CHECK(27, "with the descriptor of another type: list and element throw, naming the type",
+         throws_field_exception([] { static_cast<void>(ListPtr<JB>::create("queue", QU_Type)); },
+                                FieldException::Reason::WrongType, "QU") &&
+         throws_field_exception([] { static_cast<void>(ElementPtr<JB>::create(QU_Type)); },
+                                FieldException::Reason::WrongType, "QU"));
+   CHECK(28, "without a descriptor: list and element throw",
+         throws_field_exception([] { static_cast<void>(ListPtr<JB>::create("none", nullptr)); },
+                                FieldException::Reason::NullDescriptor, "") &&
+         throws_field_exception([] { static_cast<void>(ElementPtr<JB>::create(nullptr)); },
+                                FieldException::Reason::NullDescriptor, ""));
+
+   // the list holds its own reference on the reduced descriptor, so the caller's is released independently
+   ocs_cull_descr_release(&reduced);
+}
+
+/**
  * @brief TRT-02: the correct counterparts of the sources the build must fail to compile
  * @return nothing; CHECK records the results
  */
@@ -359,5 +399,12 @@ int main(int argc, char *argv[]) {
         "set through a mutable handle, convert a read-only handle to a const pointer"},
        "each compiles and works",
        {{"TRT-02", "covers"}}, {23}, test_correct_counterparts},
+      {"HANDLE-06", "creation with a descriptor",
+       "the owning handles create a list and an element with a given, possibly reduced, descriptor of their type",
+       {"create a list and an element with the full descriptor and with a reduced one",
+        "create them with the descriptor of another type and without a descriptor"},
+       "the list and the element have the given descriptor and the list the given name; another type throws "
+       "WrongType naming it, a missing descriptor throws NullDescriptor",
+       {{"HDL-03", "covers"}}, {25, 26, 27, 28}, test_create_with_descriptor},
    });
 }

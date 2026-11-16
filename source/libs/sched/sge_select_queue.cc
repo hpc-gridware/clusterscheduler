@@ -2987,7 +2987,8 @@ int sge_split_queue_load(const bool monitor_next_run, const ocs::tom::List<ocs::
             if (overloaded != nullptr) {
                // the list of the overloaded queues gets the (reduced) descriptor of the scheduler's queue list
                if (*overloaded == nullptr) {
-                  *overloaded = ocs::tom::ListPtr<ocs::tom::QU>(lCreateListHash("", lGetListDescr(unloaded), false));
+                  *overloaded = ocs::tom::ListPtr<ocs::tom::QU>::create("", lGetListDescr(unloaded),
+                                                                        ocs::tom::Hashing::Off);
                }
                (*overloaded)->push_back(unloaded.extract(qep));
             } else {
@@ -3036,12 +3037,13 @@ int sge_split_queue_slots_free(const bool monitor_next_run, const ocs::tom::List
             qinstance_state_set_full(*full_queue, true);
 
             if (full_queues == nullptr) {
-               full_queues = ocs::tom::ListPtr<ocs::tom::QU>(lCreateListHash("full one", lGetListDescr(free), false));
+               full_queues = ocs::tom::ListPtr<ocs::tom::QU>::create("full one", lGetListDescr(free),
+                                                                     ocs::tom::Hashing::Off);
             }
             full_queues->push_back(std::move(full_queue));
          } else {
             if (full == nullptr) {
-               full = ocs::tom::ListPtr<ocs::tom::QU>(lCreateList("full one", lGetListDescr(free)));
+               full = ocs::tom::ListPtr<ocs::tom::QU>::create("full one", lGetListDescr(free));
             }
             full->push_back(std::move(full_queue));
          }

@@ -3377,8 +3377,8 @@ sge_build_sgeee_orders(scheduler_all_data_t *lists, const ocs::tom::List<ocs::to
          // A reduced descriptor keeps the full length of SC_Type, so the typed handles accept it.
          static const lDescr *const schedConfDesc = ocs_cull_descr_reduce(SC_Type, {SC_weight_tickets_override});
 
-         auto up_list = ocs::tom::ListPtr<ocs::tom::SC>(lCreateList("sched_conf_update", schedConfDesc));
-         const auto node = up_list->push_back(ocs::tom::ElementPtr<ocs::tom::SC>(lCreateElem(schedConfDesc)));
+         auto up_list = ocs::tom::ListPtr<ocs::tom::SC>::create("sched_conf_update", schedConfDesc);
+         const auto node = up_list->push_back(ocs::tom::ElementPtr<ocs::tom::SC>::create(schedConfDesc));
 
          ocs::tom::set<SC_weight_tickets_override>(node, sconf_get_weight_tickets_override());
 
