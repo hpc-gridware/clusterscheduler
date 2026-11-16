@@ -50,17 +50,29 @@
 #include "cull/cull.h"
 
 #include "sgeobj/sge_daemonize.h"
+#include "sgeobj/tom/ocs_tom_JAT.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
+#include "sgeobj/tom/ocs_tom_JR.h"
+#include "sgeobj/tom/ocs_tom_PET.h"
+#include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
 
 int sge_reap_children_execd(int max_count, bool is_qmaster_down);
-lListElem *execd_job_start_failure(lListElem *jep, lListElem *jatep, lListElem *petep, const char *error_string, int general);
-lListElem *execd_job_run_failure(lListElem *jep, lListElem *jatep, lListElem *petep, const char *error_string, int general);
+ocs::tom::Element<ocs::tom::JR>
+execd_job_start_failure(ocs::tom::ConstElement<ocs::tom::JB> jep, ocs::tom::ConstElement<ocs::tom::JAT> jatep,
+                        ocs::tom::ConstElement<ocs::tom::PET> petep, const char *error_string, int general);
+ocs::tom::Element<ocs::tom::JR>
+execd_job_run_failure(ocs::tom::ConstElement<ocs::tom::JB> jep, ocs::tom::ConstElement<ocs::tom::JAT> jatep,
+                      ocs::tom::ConstElement<ocs::tom::PET> petep, const char *error_string, int general);
 void job_unknown(uint32_t jobid, uint32_t jataskid, char *qname);
 bool clean_up_old_jobs(bool startup);
-void remove_acked_job_exit(uint32_t job_id, uint32_t ja_task_id, const char *pe_task_id, lListElem *jr);
-void reaper_sendmail(lListElem *jep, lListElem *jr);
+void remove_acked_job_exit(uint32_t job_id, uint32_t ja_task_id, const char *pe_task_id,
+                           ocs::tom::Element<ocs::tom::JR> jr);
+void reaper_sendmail(ocs::tom::ConstElement<ocs::tom::JB> jep, ocs::tom::ConstElement<ocs::tom::JR> jr);
 
 void execd_slave_job_exit(uint32_t job_id, uint32_t ja_task_id);
-int count_master_tasks(const lList *lp, uint32_t job_id);
+int count_master_tasks(ocs::tom::ConstList<ocs::tom::JB> lp, uint32_t job_id);
 void set_enforce_cleanup_old_jobs();
 
-void simulated_job_exit(const lListElem *jep, lListElem *jatep, uint32_t sig = 0);
+void simulated_job_exit(ocs::tom::ConstElement<ocs::tom::JB> jep, ocs::tom::Element<ocs::tom::JAT> jatep,
+                        uint32_t sig = 0);

@@ -666,7 +666,7 @@ int do_ck_to_do(bool is_qmaster_down) {
       for_each_rw_lv(jep, *ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB)) {
          for (ocs::tom::Element<ocs::tom::JAT> jatep : ocs::tom::get<JB_ja_tasks>(jep)) {
             if (ocs::tom::get<JAT_end_time>(jatep) <= now) {
-               simulated_job_exit(jep, jatep);
+               simulated_job_exit(ocs::tom::ConstElement<ocs::tom::JB>(jep), jatep);
             }
          }
       }   
@@ -890,18 +890,21 @@ static int exec_job_or_task(lListElem *jep, lListElem *jatep, lListElem *petep) 
    }   
 
    if (pid < 0) {
+      const ocs::tom::ConstElement<ocs::tom::JB> job(jep);
+      const ocs::tom::ConstElement<ocs::tom::JAT> ja_task(jatep);
+      const ocs::tom::ConstElement<ocs::tom::PET> pe_task(petep);
       switch (pid) {
          case -1:
-            execd_job_start_failure(jep, jatep, petep, err_str, GFSTATE_NO_HALT);
+            execd_job_start_failure(job, ja_task, pe_task, err_str, GFSTATE_NO_HALT);
             break;
          case -2:
-            execd_job_start_failure(jep, jatep, petep, err_str, GFSTATE_QUEUE);
+            execd_job_start_failure(job, ja_task, pe_task, err_str, GFSTATE_QUEUE);
             break;
          case -3:
-            execd_job_start_failure(jep, jatep, petep, err_str, GFSTATE_JOB);
+            execd_job_start_failure(job, ja_task, pe_task, err_str, GFSTATE_JOB);
             break;
          default:
-            execd_job_start_failure(jep, jatep, petep, err_str, GFSTATE_HOST);
+            execd_job_start_failure(job, ja_task, pe_task, err_str, GFSTATE_HOST);
             break;
       }
       DRETURN(0);

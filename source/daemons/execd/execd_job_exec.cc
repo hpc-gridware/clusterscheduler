@@ -125,7 +125,8 @@ int do_job_exec(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, sge_pack_buffer 
          ja_task = lFirstRW(static_cast<const lList *>(ocs::tom::get<JB_ja_tasks>(job)));
 
          /* set the job into error state */
-         execd_job_start_failure(job, ja_task, nullptr, err_str, GFSTATE_JOB);
+         execd_job_start_failure(ocs::tom::ConstElement<ocs::tom::JB>(job),
+                                 ocs::tom::ConstElement<ocs::tom::JAT>(ja_task), nullptr, err_str, GFSTATE_JOB);
 
          /* error output to messages file, cleanup */
          answer_list_output(&answer_list);
@@ -326,7 +327,8 @@ static int handle_job(lListElem *jelem, lListElem *jatep, int slave) {
              * check wether there is another master task of the same job running
              * on this host. This is important in case of array pe-jobs.
              */
-             if (count_master_tasks(*ocs::DataStore::get_master_list(SGE_TYPE_JOB), job_id) == 0) {
+             if (count_master_tasks(ocs::tom::ConstList<ocs::tom::JB>(*ocs::DataStore::get_master_list(SGE_TYPE_JOB)),
+                                    job_id) == 0) {
                int fd;
 
                /* We are root. Make the scriptfile readable for the jobs submitter,
@@ -398,7 +400,8 @@ static int handle_job(lListElem *jelem, lListElem *jatep, int slave) {
 
 Error:
    if (report_job_error) {
-      execd_job_start_failure(jelem, jatep, nullptr, sge_dstring_get_string(&err_str), general);
+      execd_job_start_failure(ocs::tom::ConstElement<ocs::tom::JB>(jelem), ocs::tom::ConstElement<ocs::tom::JAT>(jatep),
+                              nullptr, sge_dstring_get_string(&err_str), general);
    }
 
    sge_dstring_free(&err_str);
@@ -704,7 +707,9 @@ static int handle_task(lListElem *petrep, char *commproc, char *host, u_short id
       if (job_write_spool_file(jep, jataskid, nullptr, SPOOL_WITHIN_EXECD)) {
          dstring err_str = DSTRING_INIT;
          sge_dstring_copy_string(&err_str, SGE_EVENT);
-         execd_job_start_failure(jep, jatep, petep, sge_dstring_get_string(&err_str), 1);
+         execd_job_start_failure(ocs::tom::ConstElement<ocs::tom::JB>(jep),
+                                 ocs::tom::ConstElement<ocs::tom::JAT>(jatep),
+                                 ocs::tom::ConstElement<ocs::tom::PET>(petep), sge_dstring_get_string(&err_str), 1);
          sge_dstring_free(&err_str);
          goto Error;
       }
@@ -729,7 +734,8 @@ static int handle_task(lListElem *petrep, char *commproc, char *host, u_short id
 
    /* for debugging: never start job but report a failure */
    if (getenv("FAILURE_BEFORE_START")) {
-      execd_job_start_failure(jep, jatep, petep, "FAILURE_BEFORE_START", 0);
+      execd_job_start_failure(ocs::tom::ConstElement<ocs::tom::JB>(jep), ocs::tom::ConstElement<ocs::tom::JAT>(jatep),
+                              ocs::tom::ConstElement<ocs::tom::PET>(petep), "FAILURE_BEFORE_START", 0);
    }
 
    if (sge_make_pe_task_active_dir(jep, jatep, petep, nullptr) == nullptr) {

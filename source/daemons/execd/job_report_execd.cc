@@ -402,7 +402,7 @@ int do_ack(ocs::gdi::ClientServerBase::struct_msg_t *aMsg) {
 #endif
 
             if ((jr = get_job_report(jobid, jataskid, pe_task_id_str))) {
-               remove_acked_job_exit(jobid, jataskid, pe_task_id_str, jr);
+               remove_acked_job_exit(jobid, jataskid, pe_task_id_str, ocs::tom::Element<ocs::tom::JR>(jr));
             } else {
                DPRINTF("acknowledged job " sge_u32 "." sge_u32" not found\n", jobid, jataskid);
             }
@@ -453,7 +453,7 @@ int do_ack(ocs::gdi::ClientServerBase::struct_msg_t *aMsg) {
                      jr = add_job_report(jobid, jataskid, nullptr, nullptr);
                   }
                   if (jr != nullptr) {
-                     remove_acked_job_exit(jobid, jataskid, nullptr, jr);
+                     remove_acked_job_exit(jobid, jataskid, nullptr, ocs::tom::Element<ocs::tom::JR>(jr));
                   }
                   job_unknown(jobid, jataskid, nullptr);
                }

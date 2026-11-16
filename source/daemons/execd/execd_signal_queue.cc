@@ -202,7 +202,7 @@ int do_signal_queue(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, sge_pack_buf
          jr = add_job_report(jobid, jataskid, nullptr, nullptr);
       }
       if (jr != nullptr) {
-         remove_acked_job_exit(jobid, jataskid, nullptr, jr);
+         remove_acked_job_exit(jobid, jataskid, nullptr, ocs::tom::Element<ocs::tom::JR>(jr));
       }
       job_unknown(jobid, jataskid, qname);
    }
@@ -261,7 +261,7 @@ int sge_execd_deliver_signal(uint32_t sig, const lListElem *jep, lListElem *jate
    // for simulated jobs fill in the job report
    if (mconf_get_simulate_jobs()) {
       if (sig == SGE_SIGKILL) {
-         simulated_job_exit(jep, jatep, sig);
+         simulated_job_exit(ocs::tom::ConstElement<ocs::tom::JB>(jep), ocs::tom::Element<ocs::tom::JAT>(jatep), sig);
       }
 
       DRETURN(0);

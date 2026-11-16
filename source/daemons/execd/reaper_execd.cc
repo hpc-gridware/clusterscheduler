@@ -76,12 +76,16 @@
 #include "sgeobj/sge_object.h"
 #include "sgeobj/ocs_Binding.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_CF.h"
 #include "sgeobj/tom/ocs_tom_JAT.h"
 #include "sgeobj/tom/ocs_tom_JG.h"
+#include "sgeobj/tom/ocs_tom_JR.h"
 #include "sgeobj/tom/ocs_tom_MR.h"
 #include "sgeobj/tom/ocs_tom_PE.h"
 #include "sgeobj/tom/ocs_tom_PET.h"
 #include "sgeobj/tom/ocs_tom_PN.h"
+#include "sgeobj/tom/ocs_tom_QU.h"
 #include "sgeobj/tom/ocs_tom_UA.h"
 #include "sgeobj/tom/ocs_tom_JB.h"
 
@@ -119,45 +123,46 @@
 
 #ifdef COMPILE_DC
 #  include "ptf.h"
-static void unregister_from_ptf(uint32_t jobid, uint32_t jataskid, const char *pe_task_id, lListElem *jr);
+static void unregister_from_ptf(uint32_t jobid, uint32_t jataskid, const char *pe_task_id,
+                                ocs::tom::Element<ocs::tom::JR> jr);
 #endif
 
-static int clean_up_job(lListElem *jr, int failed, int signal, int is_array, const lListElem *ja_task, const char *job_owner);
-static void convert_attribute(lList **cflpp, lListElem *jr, const char *name, uint32_t udefau);
-static int extract_ulong_attribute(lList **cflpp, const char *name, uint32_t *valuep);
+static int clean_up_job(ocs::tom::Element<ocs::tom::JR> jr, int failed, int signal, int is_array,
+                        ocs::tom::ConstElement<ocs::tom::JAT> ja_task, const char *job_owner);
+static void convert_attribute(ocs::tom::List<ocs::tom::CF> cflp, ocs::tom::Element<ocs::tom::JR> jr, const char *name,
+                              uint32_t udefau);
+static int extract_ulong_attribute(ocs::tom::List<ocs::tom::CF> cflp, const char *name, uint32_t *valuep);
 
-static lListElem *execd_job_failure(lListElem *jep, lListElem *jatep, lListElem *petep, const char *error_string, int general, int failed);
-static int read_dusage(lListElem *jr, const char *jobdir, uint32_t job_id, uint32_t ja_task_id, const char *pe_task_id, int failed);
-static void build_derived_final_usage(lListElem *jr, uint32_t job_id, uint32_t ja_task_id, const char *pe_task_id);
+static ocs::tom::Element<ocs::tom::JR>
+execd_job_failure(ocs::tom::ConstElement<ocs::tom::JB> jep, ocs::tom::ConstElement<ocs::tom::JAT> jatep,
+                  ocs::tom::ConstElement<ocs::tom::PET> petep, const char *error_string, int general, int failed);
+static int read_dusage(ocs::tom::Element<ocs::tom::JR> jr, const char *jobdir, uint32_t job_id, uint32_t ja_task_id,
+                       const char *pe_task_id, int failed);
+static void build_derived_final_usage(ocs::tom::Element<ocs::tom::JR> jr, uint32_t job_id, uint32_t ja_task_id,
+                                      const char *pe_task_id);
 
-static void examine_job_task_from_file(int startup, char *dir, lListElem *jep, lListElem *jatep, lListElem *petep, const std::vector<pid_t> &pids);
+static void examine_job_task_from_file(int startup, char *dir, ocs::tom::Element<ocs::tom::JB> jep,
+                                       ocs::tom::ConstElement<ocs::tom::JAT> jatep,
+                                       ocs::tom::ConstElement<ocs::tom::PET> petep, const std::vector<pid_t> &pids);
 
 static void clean_up_binding(char* binding);
-static void reaper_finish_job_scope(lListElem *jr, const lListElem *jep, const lListElem *jatep,
-                                    const lListElem *petep);
+static void reaper_finish_job_scope(ocs::tom::Element<ocs::tom::JR> jr, ocs::tom::ConstElement<ocs::tom::JB> jep,
+                                    ocs::tom::ConstElement<ocs::tom::JAT> jatep,
+                                    ocs::tom::ConstElement<ocs::tom::PET> petep);
 /* TODO: global c file with #define JAPI_SINGLE_SESSION_KEY "JAPI_SSK" */
 static const char *JAPI_SINGLE_SESSION_KEY = "JAPI_SSK";
 
-/*****************************************************************************
- This code is used only by execd.
- Execd has gotten a SIGCLD or execd starts up.
- Look whether there are finished jobs. Report them to the qmaster.
- Our input is what shepherd wrote to the directory of the job:
- "<execd_spool>/active_jobs/<jobnumber>/".
-
- "error"-file  errors detected by shepherd
- "trace"-file  information only interesting for sge programmers
- "usage"-file  usage of job (man getrusage)
- "pid"-file    pid of shepherd; can be used to look into the process table
-
- If everything is done we can remove the job directory.
- We also enable or disable delayed reporting for a job here. (Ref CR6888406 for why).
- It is enabled for jobs which:
-  - have been started via qsub -sync/DRMAA and
-  - submission time is before the qmaster restarted or if qmaster is currently down
-  
- ****************************************************************************/
 /** @brief Reap the shepherds that have exited and report their jobs
+ *
+ * Called when the execd got a SIGCLD or starts up. Looks for finished jobs and reports them to qmaster.
+ * The input is what the shepherd wrote into the job directory `<execd_spool>/active_jobs/<jobnumber>/`:
+ * the "error" file (errors detected by the shepherd), the "trace" file (information for developers),
+ * the "usage" file (usage of the job, see getrusage(2)) and the "pid" file (pid of the shepherd).
+ * When everything is done the job directory is removed.
+ *
+ * Delayed reporting (CR6888406) is enabled for jobs which were started via qsub -sync/DRMAA and whose
+ * submission time is before the qmaster restart, or if qmaster is currently down.
+ *
  * @param max_count how many to reap in this pass, so one call cannot block the daemon
  * @param is_qmaster_down whether qmaster is currently unreachable
  * @return the number reaped
@@ -167,8 +172,6 @@ int sge_reap_children_execd(int max_count, bool is_qmaster_down) {
    pid_t pid = 999;
    int exit_status, child_signal, core_dumped, failed;
    uint32_t jobid, jataskid;
-   const lListElem *jep;
-   lListElem *petep = nullptr, *jatep = nullptr;
 
    int status;
    int reap_count = 0;
@@ -234,37 +237,37 @@ int sge_reap_children_execd(int max_count, bool is_qmaster_down) {
       reap_count++;
 
       /* search whether it was a job or one of its tasks */
-      for_each_ep(jep, *ocs::DataStore::get_master_list(SGE_TYPE_JOB)) {
-         int Break = 0;
-   
-         petep = nullptr;
-         for_each_rw (jatep, static_cast<const lList *>(ocs::tom::get<JB_ja_tasks>(jep))) {
-            if ((int)ocs::tom::get<JAT_pid>(jatep) == pid) {
-               petep = nullptr;
-               Break = 1;
+      // the job list is read through the writable access, the task found is changed below
+      ocs::tom::Element<ocs::tom::JB> jep;
+      ocs::tom::Element<ocs::tom::JAT> jatep;
+      ocs::tom::Element<ocs::tom::PET> petep;
+      for (const auto job : ocs::tom::List<ocs::tom::JB>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB))) {
+         for (const auto ja_task : ocs::tom::get<JB_ja_tasks>(job)) {
+            if ((int)ocs::tom::get<JAT_pid>(ja_task) == pid) {
+               jatep = ja_task;
                break;
             }
-            
-            for_each_rw (petep, static_cast<const lList *>(ocs::tom::get<JAT_task_list>(jatep))) {
-               if ((int)ocs::tom::get<PET_pid>(petep) == pid) {
+
+            for (const auto pe_task : ocs::tom::get<JAT_task_list>(ja_task)) {
+               if ((int)ocs::tom::get<PET_pid>(pe_task) == pid) {
+                  petep = pe_task;
                   break;
                }
             }
-            
+
             if (petep) {
-               Break = 1;
+               jatep = ja_task;
                break;
             }
          }
-         if (Break) {
+         if (jatep) {
+            jep = job;
             break;
          }
       }
 
       /* was it a job ? */
       if (jep && jatep) {
-         lListElem *jr;
-
          jobid = ocs::tom::get<JB_job_number>(jep);
          jataskid = ocs::tom::get<JAT_task_number>(jatep);
    
@@ -282,12 +285,16 @@ int sge_reap_children_execd(int max_count, bool is_qmaster_down) {
           */
          DPRINTF("Job: " sge_u32 ", JA-Task: " sge_u32 ", PE-Task: %s\n", jobid, jataskid,
             petep != nullptr ? ocs::tom::get<PET_id>(petep) : "");
-         if (!(jr=get_job_report(jobid, jataskid, petep != nullptr ? ocs::tom::get<PET_id>(petep) : nullptr))) {
+         // the job reports belong to job_report_execd.cc
+         auto jr = ocs::tom::Element<ocs::tom::JR>(get_job_report(jobid, jataskid,
+                                                                  petep != nullptr ? ocs::tom::get<PET_id>(petep)
+                                                                                   : nullptr));
+         if (!jr) {
             ERROR(MSG_JOB_MISSINGJOBXYINJOBREPORTFOREXITINGJOBADDINGIT_UU, jobid, jataskid);
             if (petep != nullptr) {
-               jr = add_job_report(jobid, jataskid, ocs::tom::get<PET_id>(petep), jep);
+               jr = ocs::tom::Element<ocs::tom::JR>(add_job_report(jobid, jataskid, ocs::tom::get<PET_id>(petep), jep));
             } else {
-               jr = add_job_report(jobid, jataskid, nullptr, jep);
+               jr = ocs::tom::Element<ocs::tom::JR>(add_job_report(jobid, jataskid, nullptr, jep));
             }
          }
 
@@ -355,8 +362,8 @@ int sge_reap_children_execd(int max_count, bool is_qmaster_down) {
  * @param pe_task_id the PE task, or nullptr for the array task itself
  * @param jr the job report that receives the usage
  */
-static void unregister_from_ptf(uint32_t job_id, uint32_t ja_task_id,
-                                const char *pe_task_id, lListElem *jr) {
+static void unregister_from_ptf(const uint32_t job_id, const uint32_t ja_task_id,
+                                const char *pe_task_id, const ocs::tom::Element<ocs::tom::JR> jr) {
    DENTER(TOP_LAYER);
 
    ocs::tom::ListPtr<ocs::tom::UA> usage;
@@ -364,11 +371,13 @@ static void unregister_from_ptf(uint32_t job_id, uint32_t ja_task_id,
 
    ptf_error = ptf_job_complete(job_id, ja_task_id, pe_task_id, usage);
    if (ptf_error) {
-      lListElem *ja_task = nullptr;
+      // raw out parameters of execd_get_job_ja_task(); the objects belong to the execd's job list
+      lListElem *ja_task_raw = nullptr;
       lListElem *job = nullptr;
 
       /* if the job was a 'short-runner' omit the warning */
-      if (execd_get_job_ja_task(job_id, ja_task_id, &job, &ja_task, false)) {
+      if (execd_get_job_ja_task(job_id, ja_task_id, &job, &ja_task_raw, false)) {
+         const ocs::tom::ConstElement<ocs::tom::JAT> ja_task(ja_task_raw);
          // @todo and I doubt that the code is required at all,
          //       might just have been a workaround for bug CS-1019
          //
@@ -381,8 +390,8 @@ static void unregister_from_ptf(uint32_t job_id, uint32_t ja_task_id,
          // one case that produces short runners in bulk.
          uint64_t start_time = 0;
          if (pe_task_id != nullptr) {
-            const lListElem *pe_task = ja_task_search_pe_task(ja_task, pe_task_id);
-            if (pe_task != nullptr) {
+            const ocs::tom::ConstElement<ocs::tom::PET> pe_task(ja_task_search_pe_task(ja_task, pe_task_id));
+            if (pe_task) {
                start_time = ocs::tom::get<PET_start_time>(pe_task);
             }
          } else {
@@ -436,18 +445,19 @@ static void unregister_from_ptf(uint32_t job_id, uint32_t ja_task_id,
  * at hand here without asking the qmaster for it.
  *
  * @param jr      the job report, which names the queue the failure is attributed to
- * @param ja_task the array task of the job, may be nullptr
+ * @param ja_task the array task of the job, may be an empty handle
  * @return the version of that queue instance, or 0 when it cannot be determined
  */
 static uint32_t
-reaper_get_qversion(const lListElem *jr, const lListElem *ja_task) {
+reaper_get_qversion(const ocs::tom::ConstElement<ocs::tom::JR> jr,
+                    const ocs::tom::ConstElement<ocs::tom::JAT> ja_task) {
    DENTER(TOP_LAYER);
 
    uint32_t ret = 0;
    const char *qname = ocs::tom::get<JR_queue_name>(jr);
-   if (ja_task != nullptr && qname != nullptr) {
-      ocs::tom::ConstElement<ocs::tom::JG> gdil_ep = ocs::tom::find_first_in<JAT_granted_destin_identifier_list, JG_qname>(ja_task, qname);
-      if (gdil_ep != nullptr) {
+   if (ja_task && qname != nullptr) {
+      const auto gdil_ep = ocs::tom::find_first_in<JAT_granted_destin_identifier_list, JG_qname>(ja_task, qname);
+      if (gdil_ep) {
          ret = ocs::tom::get<JG_qversion>(gdil_ep);
       }
    }
@@ -465,11 +475,12 @@ reaper_get_qversion(const lListElem *jr, const lListElem *ja_task) {
  * @param jr the job report of the job or pe task
  * @param jep the job
  * @param jatep the ja task
- * @param petep the pe task, nullptr for the job itself
+ * @param petep the pe task, an empty handle for the job itself
  */
 static void
-reaper_finish_job_scope(lListElem *jr, const lListElem *jep, const lListElem *jatep,
-                        const lListElem *petep) {
+reaper_finish_job_scope(const ocs::tom::Element<ocs::tom::JR> jr, const ocs::tom::ConstElement<ocs::tom::JB> jep,
+                        const ocs::tom::ConstElement<ocs::tom::JAT> jatep,
+                        const ocs::tom::ConstElement<ocs::tom::PET> petep) {
    DENTER(TOP_LAYER);
 
 #if defined(OCS_WITH_SYSTEMD)
@@ -511,8 +522,23 @@ reaper_finish_job_scope(lListElem *jr, const lListElem *jep, const lListElem *ja
    DRETURN_VOID;
 }
 
-static int clean_up_job(lListElem *jr, int failed, int shepherd_exit_status,
-                        int is_array, const lListElem *ja_task, const char *job_owner) {
+/**
+ * @brief Read what the shepherd of a job left behind and fill in the job report
+ *
+ * Reads the exit status, error, usage and checkpoint files from the active jobs directory and sets the failure
+ * state, the general failure and the usage of the job report; sends an administrator mail on a failure.
+ *
+ * @param jr the job report of the job or PE task
+ * @param failed the failure seen by the daemon, see shepherd_states.h, 0 if none
+ * @param shepherd_exit_status the exit status of the shepherd
+ * @param is_array whether the job is an array job, for the administrator mail
+ * @param ja_task the array task, or an empty handle
+ * @param job_owner the owner of the job, for the administrator mail
+ * @return 0, or -1 if the job report is missing or the active jobs directory cannot be found
+ */
+static int clean_up_job(const ocs::tom::Element<ocs::tom::JR> jr, int failed, const int shepherd_exit_status,
+                        const int is_array, const ocs::tom::ConstElement<ocs::tom::JAT> ja_task,
+                        const char *job_owner) {
    DENTER(TOP_LAYER);
 
    char* binding;
@@ -530,7 +556,7 @@ static int clean_up_job(lListElem *jr, int failed, int shepherd_exit_status,
 
    sge_dstring_init(&id_dstring, id_buffer, MAX_STRING_SIZE);
 
-   if (jr == nullptr) {
+   if (!jr) {
       CRITICAL(SFNMAX, MSG_JOB_CLEANUPJOBCALLEDWITHINVALIDPARAMETERS);
       DRETURN(-1);
    }
@@ -544,14 +570,14 @@ static int clean_up_job(lListElem *jr, int failed, int shepherd_exit_status,
 #ifdef COMPILE_DC
    unregister_from_ptf(job_id, ja_task_id, pe_task_id, jr);
 #else
-   lDelSubStr(jr, UA_name, USAGE_ATTR_WALLCLOCK, JR_usage);
-   lDelSubStr(jr, UA_name, USAGE_ATTR_CPU, JR_usage);
-   lDelSubStr(jr, UA_name, USAGE_ATTR_MEM, JR_usage);
-   lDelSubStr(jr, UA_name, USAGE_ATTR_IO, JR_usage);
-   lDelSubStr(jr, UA_name, USAGE_ATTR_IOOPS, JR_usage);
-   lDelSubStr(jr, UA_name, USAGE_ATTR_IOW, JR_usage);
-   lDelSubStr(jr, UA_name, USAGE_ATTR_VMEM, JR_usage);
-   lDelSubStr(jr, UA_name, USAGE_ATTR_MAXVMEM, JR_usage);
+   ocs::tom::erase_in<JR_usage, UA_name>(jr, USAGE_ATTR_WALLCLOCK);
+   ocs::tom::erase_in<JR_usage, UA_name>(jr, USAGE_ATTR_CPU);
+   ocs::tom::erase_in<JR_usage, UA_name>(jr, USAGE_ATTR_MEM);
+   ocs::tom::erase_in<JR_usage, UA_name>(jr, USAGE_ATTR_IO);
+   ocs::tom::erase_in<JR_usage, UA_name>(jr, USAGE_ATTR_IOOPS);
+   ocs::tom::erase_in<JR_usage, UA_name>(jr, USAGE_ATTR_IOW);
+   ocs::tom::erase_in<JR_usage, UA_name>(jr, USAGE_ATTR_VMEM);
+   ocs::tom::erase_in<JR_usage, UA_name>(jr, USAGE_ATTR_MAXVMEM);
 #endif
 
 #if 0  
@@ -841,17 +867,19 @@ static int clean_up_job(lListElem *jr, int failed, int shepherd_exit_status,
    case SSTATE_NO_SHELL:
       {
          int job_caused_failure = 0;
-         lListElem *job = nullptr;
-         lListElem *ja_task = nullptr;
-         lListElem *master_queue = nullptr;
+         // raw out parameters of execd_get_job_ja_task(); the objects belong to the execd's job list
+         lListElem *job_raw = nullptr;
+         lListElem *ja_task_raw = nullptr;
+         ocs::tom::ConstElement<ocs::tom::QU> master_queue;
 
          /* search job and ja_task */
-         if (execd_get_job_ja_task(job_id, ja_task_id, &job, &ja_task, false)) {
-            master_queue = responsible_queue(job, ja_task, nullptr);
+         if (execd_get_job_ja_task(job_id, ja_task_id, &job_raw, &ja_task_raw, false)) {
+            master_queue = ocs::tom::ConstElement<ocs::tom::QU>(responsible_queue(job_raw, ja_task_raw, nullptr));
          }
+         const ocs::tom::ConstElement<ocs::tom::JB> job(job_raw);
 
          if ((failed == SSTATE_NO_SHELL) && (job != nullptr) &&
-             ((static_cast<const lList *>(ocs::tom::get<JB_shell_list>(job)) != nullptr) ||
+             ((ocs::tom::get<JB_shell_list>(job) != nullptr) ||
              ((master_queue != nullptr) && JOB_TYPE_IS_BINARY(ocs::tom::get<JB_type>(job))
                                         && JOB_TYPE_IS_NO_SHELL(ocs::tom::get<JB_type>(job))))) {
             job_caused_failure = 1;
@@ -931,8 +959,19 @@ static int clean_up_job(lListElem *jr, int failed, int shepherd_exit_status,
    DRETURN(0);
 }
 
+/**
+ * @brief Write the failure of a job into the file "failed" of its active jobs directory
+ *
+ * @param job_id the job
+ * @param ja_task_id the array task
+ * @param pe_task_id the PE task, or nullptr
+ * @param jr the job report holding the failure
+ */
 static void
-write_failed_info(uint32_t job_id, uint32_t ja_task_id, const char *pe_task_id, const lListElem *jr) {
+write_failed_info(const uint32_t job_id, const uint32_t ja_task_id, const char *pe_task_id,
+                  const ocs::tom::ConstElement<ocs::tom::JR> jr) {
+   DENTER(TOP_LAYER);
+
    DSTRING_STATIC(dstr_filename, SGE_PATH_MAX);
    DSTRING_STATIC(dstr_failed, MAX_STRING_SIZE);
    sge_get_active_job_file_path(&dstr_filename, job_id, ja_task_id, pe_task_id, "failed");
@@ -940,6 +979,8 @@ write_failed_info(uint32_t job_id, uint32_t ja_task_id, const char *pe_task_id, 
                        ocs::tom::get<JR_failed>(jr), ocs::tom::get<JR_err_str>(jr));
    sge_string2file(sge_dstring_get_string(&dstr_failed), sge_dstring_strlen(&dstr_failed),
                 sge_dstring_get_string(&dstr_filename));
+
+   DRETURN_VOID;
 }
 
 /* ------------------------- */
@@ -953,7 +994,8 @@ write_failed_info(uint32_t job_id, uint32_t ja_task_id, const char *pe_task_id, 
  * @param pe_task_id the PE task, or nullptr
  * @param jr the job report that was acknowledged
  */
-void remove_acked_job_exit(uint32_t job_id, uint32_t ja_task_id, const char *pe_task_id, lListElem *jr) {
+void remove_acked_job_exit(const uint32_t job_id, const uint32_t ja_task_id, const char *pe_task_id,
+                           const ocs::tom::Element<ocs::tom::JR> jr) {
    DENTER(TOP_LAYER);
    char *exec_file, *script_file, *tmpdir, *job_owner, *qname;
    dstring jobdir = DSTRING_INIT;
@@ -961,8 +1003,9 @@ void remove_acked_job_exit(uint32_t job_id, uint32_t ja_task_id, const char *pe_
    char err_str_buffer[10000];
    dstring err_str;
    SGE_STRUCT_STAT statbuf;
-   lListElem *jep = nullptr, *petep = nullptr, *jatep = nullptr;
-   const char *pe_task_id_str; 
+   // raw out parameters of execd_get_job_ja_task(); the objects belong to the execd's job list
+   lListElem *jep_raw = nullptr, *jatep_raw = nullptr;
+   const char *pe_task_id_str;
    bool do_rm_active_dir = true;
 
    sge_dstring_init(&err_str, err_str_buffer, sizeof(err_str_buffer));
@@ -992,8 +1035,11 @@ void remove_acked_job_exit(uint32_t job_id, uint32_t ja_task_id, const char *pe_
    }
 
    /* try to find this job in our job list */
-   if (execd_get_job_ja_task(job_id, ja_task_id, &jep, &jatep, false)) {
-      lListElem *master_q;
+   if (execd_get_job_ja_task(job_id, ja_task_id, &jep_raw, &jatep_raw, false)) {
+      const ocs::tom::Element<ocs::tom::JB> jep(jep_raw);
+      const ocs::tom::Element<ocs::tom::JAT> jatep(jatep_raw);
+      ocs::tom::Element<ocs::tom::PET> petep;
+      ocs::tom::Element<ocs::tom::QU> master_q;
       int used_slots;
 
       // We get here through an ACK_JOB_EXIT.
@@ -1002,7 +1048,7 @@ void remove_acked_job_exit(uint32_t job_id, uint32_t ja_task_id, const char *pe_
       // as we would delete the pe tasks' active_job directories and other data.
       // Just return, the ACK_JOB_EXIT will be repeated by sge_qmaster.
       if (pe_task_id == nullptr &&
-          lGetNumberOfElem(ocs::tom::get<JAT_task_list>(jatep)) > 0) {
+          !ocs::tom::get<JAT_task_list>(jatep).empty()) {
          // flush the job report to speed up repeating of the ACK_JOB_EXIT
          flush_job_report(jr);
          DRETURN_VOID;
@@ -1010,9 +1056,9 @@ void remove_acked_job_exit(uint32_t job_id, uint32_t ja_task_id, const char *pe_
 
       DPRINTF("REMOVING WITH jep && jatep\n");
       if (pe_task_id_str) {
-         petep = ocs::tom::find_first_rw<PET_id>(ocs::tom::get<JAT_task_list>(jatep), pe_task_id_str);
+         petep = ocs::tom::get<JAT_task_list>(jatep).find_first<PET_id>(pe_task_id_str);
 
-         if (petep == nullptr) {
+         if (!petep) {
             ERROR(MSG_JOB_XYHASNOTASKZ_UUS, job_id, ja_task_id, pe_task_id_str);
             del_job_report(jr);
             DRETURN_VOID;
@@ -1025,10 +1071,10 @@ void remove_acked_job_exit(uint32_t job_id, uint32_t ja_task_id, const char *pe_
             DRETURN_VOID;
          }
 
-         master_q = responsible_queue(jep, jatep, petep);
-      } else { 
-         master_q = responsible_queue(jep, jatep, nullptr);
-      }   
+         master_q = ocs::tom::Element<ocs::tom::QU>(responsible_queue(jep_raw, jatep_raw, petep));
+      } else {
+         master_q = ocs::tom::Element<ocs::tom::QU>(responsible_queue(jep_raw, jatep_raw, nullptr));
+      }
      
       /* use mail list of job instead of tasks one */
       if (jr != nullptr && ocs::tom::get<JR_state>(jr) != JSLAVE) {
@@ -1088,7 +1134,8 @@ void remove_acked_job_exit(uint32_t job_id, uint32_t ja_task_id, const char *pe_
                 * Unlink job_script if there are no other master tasks
                 * (e.g. task arrays) for this job present on execd
                 */
-               if (count_master_tasks(*ocs::DataStore::get_master_list(SGE_TYPE_JOB), job_id) <= 1) {
+               if (count_master_tasks(ocs::tom::ConstList<ocs::tom::JB>(*ocs::DataStore::get_master_list(SGE_TYPE_JOB)),
+                                      job_id) <= 1) {
                   DPRINTF("unlinking script file %s\n", ocs::tom::get<JB_exec_file>(jep));
                   unlink(ocs::tom::get<JB_exec_file>(jep));
                }
@@ -1104,14 +1151,14 @@ void remove_acked_job_exit(uint32_t job_id, uint32_t ja_task_id, const char *pe_
           */
 
          /* unchain pe task element from task list */
-         lRemoveElem(ocs::tom::get<JAT_task_list>(jatep), &petep);
+         ocs::tom::get<JAT_task_list>(jatep).erase(petep);
 
          /*
           * if this was the last pe_task of an exiting slave job
           * send the slave job final report
           */
-         if (lGetNumberOfElem(ocs::tom::get<JAT_task_list>(jatep)) == 0) {
-            lListElem *jr = get_job_report(job_id, ja_task_id, nullptr);
+         if (ocs::tom::get<JAT_task_list>(jatep).empty()) {
+            const auto jr = ocs::tom::Element<ocs::tom::JR>(get_job_report(job_id, ja_task_id, nullptr));
             if (jr != nullptr && ocs::tom::get<JR_state>(jr) == JSLAVE && ISSET(ocs::tom::get<JAT_state>(jatep), JDELETED)) {
                add_usage(jr, "exit_status", nullptr, 0);
                flush_job_report(jr);
@@ -1123,7 +1170,7 @@ void remove_acked_job_exit(uint32_t job_id, uint32_t ja_task_id, const char *pe_
 
          if (used_slots == 0 || mconf_get_simulate_jobs()) {
             /* remove the jep element only if all slave tasks are gone, we need to job object to remove the tmpdir */
-            lRemoveElem(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB), &jep);
+            ocs::tom::List<ocs::tom::JB>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB)).erase(jep);
          }
       }
 
@@ -1197,85 +1244,90 @@ void remove_acked_job_exit(uint32_t job_id, uint32_t ja_task_id, const char *pe_
    DRETURN_VOID;
 }
 
-/**************************************************************************
- This function is called if we fail to start a job. 
- Returns the appropriate job report.
-
- We clean up the job.
- We report the job_number and the error to the master.
- If general is set we have a general problems starting jobs.
- The master should not give us jobs in the future and the administrator
- should be informed about the problem (e.g. we cant write to a filesystem).
- **************************************************************************/
 /** @brief Report that a job could not be started at all
- * @param jep the job (`JB_Type`)
- * @param jatep the array task
- * @param petep the PE task, or nullptr
+ *
+ * The job is cleaned up and its number and the error are reported to qmaster. If general is set,
+ * the host has a general problem starting jobs (e.g. a file system that cannot be written): qmaster
+ * should not send further jobs and the administrator should be informed.
+ *
+ * @param jep the job
+ * @param jatep the array task, or an empty handle
+ * @param petep the PE task, or an empty handle
  * @param error_string what went wrong
  * @param general whether the failure is the host's fault rather than the job's
- * @return the job report that was built
+ * @return the job report that was built, or an empty handle if none could be built
  */
-lListElem *execd_job_start_failure(
-lListElem *jep,
-lListElem *jatep,
-lListElem *petep,
-const char *error_string,
-int general 
-) {
-   return execd_job_failure(jep, jatep, petep, error_string, general, SSTATE_FAILURE_BEFORE_JOB);
+ocs::tom::Element<ocs::tom::JR>
+execd_job_start_failure(const ocs::tom::ConstElement<ocs::tom::JB> jep,
+                        const ocs::tom::ConstElement<ocs::tom::JAT> jatep,
+                        const ocs::tom::ConstElement<ocs::tom::PET> petep, const char *error_string,
+                        const int general) {
+   DENTER(TOP_LAYER);
+   DRETURN(execd_job_failure(jep, jatep, petep, error_string, general, SSTATE_FAILURE_BEFORE_JOB));
 }
 
 /** @brief Report that a job started but then failed
- * @param jep the job (`JB_Type`)
- * @param jatep the array task
- * @param petep the PE task, or nullptr
+ * @param jep the job
+ * @param jatep the array task, or an empty handle
+ * @param petep the PE task, or an empty handle
  * @param error_string what went wrong
  * @param general whether the failure is the host's fault rather than the job's
- * @return the job report that was built
+ * @return the job report that was built, or an empty handle if none could be built
  */
-lListElem *execd_job_run_failure(
-lListElem *jep,
-lListElem *jatep,
-lListElem *petep,
-const char *error_string,
-int general 
-) {
-   return execd_job_failure(jep, jatep, petep, error_string, general, SSTATE_FAILURE_AFTER_JOB);
+ocs::tom::Element<ocs::tom::JR>
+execd_job_run_failure(const ocs::tom::ConstElement<ocs::tom::JB> jep, const ocs::tom::ConstElement<ocs::tom::JAT> jatep,
+                      const ocs::tom::ConstElement<ocs::tom::PET> petep, const char *error_string,
+                      const int general) {
+   DENTER(TOP_LAYER);
+   DRETURN(execd_job_failure(jep, jatep, petep, error_string, general, SSTATE_FAILURE_AFTER_JOB));
 }
 
-static lListElem *execd_job_failure(lListElem *jep, lListElem *jatep, lListElem *petep,
-                                    const char *error_string, int general, int failed) {
+/**
+ * @brief Put the failure of a job into its job report and send an administrator mail
+ *
+ * @param jep the job
+ * @param jatep the array task, or an empty handle
+ * @param petep the PE task, or an empty handle
+ * @param error_string what went wrong
+ * @param general the general failure state, see GFSTATE_*
+ * @param failed the failure state, SSTATE_FAILURE_BEFORE_JOB or SSTATE_FAILURE_AFTER_JOB
+ * @return the job report, or an empty handle if it could not be created
+ */
+static ocs::tom::Element<ocs::tom::JR>
+execd_job_failure(const ocs::tom::ConstElement<ocs::tom::JB> jep, const ocs::tom::ConstElement<ocs::tom::JAT> jatep,
+                  const ocs::tom::ConstElement<ocs::tom::PET> petep, const char *error_string, const int general,
+                  const int failed) {
    DENTER(TOP_LAYER);
 
-   lListElem *jr;
-   ocs::tom::ConstElement<ocs::tom::JG> ep = nullptr;
+   ocs::tom::ConstElement<ocs::tom::JG> ep;
    uint32_t jobid, jataskid = 0;
    const char *petaskid = nullptr;
 
    jobid = ocs::tom::get<JB_job_number>(jep);
-   if (jatep != nullptr) {
+   if (jatep) {
       jataskid = ocs::tom::get<JAT_task_number>(jatep);
    }
-   if (petep != nullptr) {
+   if (petep) {
       petaskid = ocs::tom::get<PET_id>(petep);
    }
 
    ERROR((failed==SSTATE_FAILURE_BEFORE_JOB)? MSG_SHEPHERD_CANTSTARTJOBXY_US: MSG_SHEPHERD_PROBLEMSAFTERSTART_DS, jobid, error_string);
 
-   jr = get_job_report(jobid, jataskid, petaskid);
-   if (jr == nullptr) {
+   // the job reports belong to job_report_execd.cc
+   auto jr = ocs::tom::Element<ocs::tom::JR>(get_job_report(jobid, jataskid, petaskid));
+   if (!jr) {
       DPRINTF("no job report found to report job start failure!\n");
-      jr = add_job_report(jobid, jataskid, petaskid, jep);
+      jr = ocs::tom::Element<ocs::tom::JR>(add_job_report(jobid, jataskid, petaskid, jep));
    }
 
-   if (jr != nullptr) {
-      if (petep != nullptr) {
-         ep = lFirst(ocs::tom::get<PET_granted_destin_identifier_list>(petep));
-      } else if (jatep != nullptr) {
-         ep = lFirst(ocs::tom::get<JAT_granted_destin_identifier_list>(jatep));
+   if (jr) {
+      if (petep) {
+         ep = ocs::tom::get<PET_granted_destin_identifier_list>(petep).front();
+      } else if (jatep) {
+         ep = ocs::tom::get<JAT_granted_destin_identifier_list>(jatep).front();
       }
 
-      if (ep != nullptr) {
+      if (ep) {
          ocs::tom::set<JR_queue_name>(jr, ocs::tom::get<JG_qname>(ep));
       }
 
@@ -1286,24 +1338,18 @@ static lListElem *execd_job_failure(lListElem *jep, lListElem *jatep, lListElem 
       ocs::tom::set<JR_state>(jr, JEXITING);
 
       job_related_adminmail(EXECD, jr, job_is_array(jep), ocs::tom::get<JB_owner>(jep),
-                            ep != nullptr ? ocs::tom::get<JG_qversion>(ep) : 0);
+                            ep ? ocs::tom::get<JG_qversion>(ep) : 0);
    }
 
    DRETURN(jr);
 }
 
 
-/**************************************************************************
- This function is called if we are asked by the master concerning a job
- we don't know anything about. We have to tell this to the qmaster, so that
- he can clean up this job.
- This is done very like the normal job finish and runs into the same
- functions in the qmaster.
- **************************************************************************/
 /** @brief Handle a job qmaster says it does not know about
  *
  * Happens after a qmaster restart from an older spool: the job is running here
  * but no longer exists there, so it has to be cleaned up rather than reported.
+ * qmaster is told about it the same way as for a normal job finish, and runs into the same functions.
  *
  * @param jobid the job
  * @param jataskid the array task
@@ -1319,19 +1365,20 @@ void job_unknown(uint32_t jobid, uint32_t jataskid, char *qname) {
    // Once they are all handled in sge_qmaster, it will repeat the ACK_SIGNAL_JOB for the master task,
    // which will then call this function again with the master task.
    // If there are no pe tasks running, we can create the job report for the master
+   // raw out parameters of execd_get_job_ja_task(); the objects belong to the execd's job list
    lListElem *job = nullptr;
-   lListElem *ja_task = nullptr;
+   lListElem *ja_task_raw = nullptr;
    bool unknown_tasks = false;
-   if (execd_get_job_ja_task(jobid, jataskid, &job, &ja_task, false)) {
-      ocs::tom::Element<ocs::tom::PET> pe_task;
-      for_each_rw(pe_task, ocs::tom::get<JAT_task_list>(ja_task)) {
+   if (execd_get_job_ja_task(jobid, jataskid, &job, &ja_task_raw, false)) {
+      const ocs::tom::ConstElement<ocs::tom::JAT> ja_task(ja_task_raw);
+      for (const auto pe_task : ocs::tom::get<JAT_task_list>(ja_task)) {
          // create the unknown job report for this pe task
          const char *pe_task_id = ocs::tom::get<PET_id>(pe_task);
-         lListElem *jr = get_job_report(jobid, jataskid, pe_task_id);
-         if (jr == nullptr) {
-            jr = add_job_report(jobid, jataskid, pe_task_id, nullptr);
+         auto jr = ocs::tom::Element<ocs::tom::JR>(get_job_report(jobid, jataskid, pe_task_id));
+         if (!jr) {
+            jr = ocs::tom::Element<ocs::tom::JR>(add_job_report(jobid, jataskid, pe_task_id, nullptr));
          }
-         if (jr != nullptr) {
+         if (jr) {
             ocs::tom::set<JR_queue_name>(jr, qname);
             ocs::tom::set<JR_failed>(jr, ESSTATE_UNKNOWN_JOB);
             ocs::tom::set<JR_state>(jr, JEXITING);
@@ -1343,11 +1390,11 @@ void job_unknown(uint32_t jobid, uint32_t jataskid, char *qname) {
 
    // If there are no pe tasks running, we create the unknown job report for the master task.
    if (!unknown_tasks) {
-      lListElem *jr = get_job_report(jobid, jataskid, nullptr);
-      if (jr == nullptr) {
-         jr = add_job_report(jobid, jataskid, nullptr, nullptr);
+      auto jr = ocs::tom::Element<ocs::tom::JR>(get_job_report(jobid, jataskid, nullptr));
+      if (!jr) {
+         jr = ocs::tom::Element<ocs::tom::JR>(add_job_report(jobid, jataskid, nullptr, nullptr));
       }
-      if (jr != nullptr) {
+      if (jr) {
          ocs::tom::set<JR_queue_name>(jr, qname);
          ocs::tom::set<JR_failed>(jr, ESSTATE_UNKNOWN_JOB);
          ocs::tom::set<JR_state>(jr, JEXITING);
@@ -1420,9 +1467,10 @@ cleanup_jobs_and_states(bool startup, const std::vector<pid_t> &shepherd_pids) {
 
       // remove active job directory for jobs that are not in the job list
       // or sync state with qmaster for jobs depending on shepherd and job state
-      lListElem *jep, *ja_task = nullptr;
+      // raw out parameters of execd_get_job_ja_task(); the objects belong to the execd's job list
+      lListElem *jep_raw, *ja_task_raw = nullptr;
       bool ignore_missing_job_task = true; // missing job and task are expected. no need for error logging
-      bool found_job_and_task = execd_get_job_ja_task(jid, tid, &jep, &ja_task, ignore_missing_job_task);
+      bool found_job_and_task = execd_get_job_ja_task(jid, tid, &jep_raw, &ja_task_raw, ignore_missing_job_task);
       if (!found_job_and_task) {
 
          // we have an active job directory for a job that is not in the job list
@@ -1441,13 +1489,14 @@ cleanup_jobs_and_states(bool startup, const std::vector<pid_t> &shepherd_pids) {
          // here we have a job and task that is still in the job list
          // check if shepherd is still running and handle state changes
          // by syncing state via job report with qmaster
+         const ocs::tom::Element<ocs::tom::JB> jep(jep_raw);
+         const ocs::tom::ConstElement<ocs::tom::JAT> ja_task(ja_task_raw);
          char dir[SGE_PATH_MAX];
          if (ocs::tom::get<JAT_status>(ja_task) != JSLAVE) {
             snprintf(dir, sizeof(dir), "%s/%s", ACTIVE_DIR, job_directory);
             examine_job_task_from_file(startup, dir, jep, ja_task, nullptr, shepherd_pids);
          }
-         ocs::tom::Element<ocs::tom::PET> pe_task;
-         for_each_rw (pe_task, ocs::tom::get<JAT_task_list>(ja_task)) {
+         for (const auto pe_task : ocs::tom::get<JAT_task_list>(ja_task)) {
             snprintf(dir, sizeof(dir), "%s/%s/%s", ACTIVE_DIR, job_directory, ocs::tom::get<PET_id>(pe_task));
             examine_job_task_from_file(startup, dir, jep, ja_task, pe_task, shepherd_pids);
          }
@@ -1699,13 +1748,23 @@ clean_up_old_jobs(bool startup) {
    DRETURN(true);
 }
 
+/**
+ * @brief Check a job or PE task found in the active jobs directory, and report it when its shepherd is gone
+ *
+ * @param startup whether the daemon is starting up
+ * @param dir the active jobs directory of the job or PE task
+ * @param jep the job
+ * @param jatep the array task
+ * @param petep the PE task, or an empty handle for the array task itself
+ * @param pids the pids of the shepherds running on this host
+ */
 static void
-examine_job_task_from_file(int startup, char *dir, lListElem *jep,
-                           lListElem *jatep, lListElem *petep,
-                           const std::vector<pid_t> &pids) {
+examine_job_task_from_file(const int startup, char *dir, const ocs::tom::Element<ocs::tom::JB> jep,
+                           const ocs::tom::ConstElement<ocs::tom::JAT> jatep,
+                           const ocs::tom::ConstElement<ocs::tom::PET> petep, const std::vector<pid_t> &pids) {
    DENTER(TOP_LAYER);
 
-   lListElem *jr = nullptr;
+   ocs::tom::Element<ocs::tom::JR> jr;
    bool shepherd_alive;  /* true -> this shepherd is in the process table */
    FILE *fp = nullptr;
    SGE_STRUCT_STAT statbuf;
@@ -1718,7 +1777,7 @@ examine_job_task_from_file(int startup, char *dir, lListElem *jep,
 
    jobid = ocs::tom::get<JB_job_number>(jep);
    jataskid = ocs::tom::get<JAT_task_number>(jatep);
-   if (petep != nullptr) {
+   if (petep) {
       pe_task_id_str = ocs::tom::get<PET_id>(petep);
    }
 
@@ -1756,9 +1815,9 @@ examine_job_task_from_file(int startup, char *dir, lListElem *jep,
             in the interval between making the jobs active directory and writing
             the shepherds pid (done by the started shepherd). So we just remove
             and report this job. */
-         if (!(jr=get_job_report(jobid, jataskid, pe_task_id_str))) {
+         if (!(jr = ocs::tom::Element<ocs::tom::JR>(get_job_report(jobid, jataskid, pe_task_id_str)))) {
             CRITICAL(MSG_SHEPHERD_MISSINGJOBXINJOBREPORTFOREXITINGJOB_U, jobid);
-            jr = add_job_report(jobid, jataskid, pe_task_id_str, nullptr);
+            jr = ocs::tom::Element<ocs::tom::JR>(add_job_report(jobid, jataskid, pe_task_id_str, nullptr));
          }
          ocs::tom::set<JR_state>(jr, JEXITING);
          clean_up_job(jr, ESSTATE_NO_PID, 0, job_is_array(jep), jatep, ocs::tom::get<JB_owner>(jep));  /* failed before execution */
@@ -1807,13 +1866,13 @@ examine_job_task_from_file(int startup, char *dir, lListElem *jep,
             state of not exited jobs from JWRITTEN
             to JRUNNING
          */
-         if ((jr=get_job_report(jobid, jataskid, pe_task_id_str))) {
+         if ((jr = ocs::tom::Element<ocs::tom::JR>(get_job_report(jobid, jataskid, pe_task_id_str)))) {
             ocs::tom::set<JR_state>(jr, JRUNNING);
          } else {
             /* found job in active jobs directory 
                but not in spool directory of execd */
             ERROR(MSG_SHEPHERD_INCONSISTENTDATAFORJOBX_U, jobid);
-            jr = add_job_report(jobid, jataskid, pe_task_id_str, nullptr);
+            jr = ocs::tom::Element<ocs::tom::JR>(add_job_report(jobid, jataskid, pe_task_id_str, nullptr));
             ocs::tom::set<JR_state>(jr, JEXITING);
          }
       }
@@ -1821,9 +1880,9 @@ examine_job_task_from_file(int startup, char *dir, lListElem *jep,
    }
 
    /* seek job report for this job - it must be contained in job report */
-   if (!(jr=get_job_report(jobid, jataskid, pe_task_id_str))) {
+   if (!(jr = ocs::tom::Element<ocs::tom::JR>(get_job_report(jobid, jataskid, pe_task_id_str)))) {
       CRITICAL(MSG_SHEPHERD_MISSINGJOBXYINJOBREPORT_UU, jobid, jataskid);
-      jr = add_job_report(jobid, jataskid, pe_task_id_str, jep);
+      jr = ocs::tom::Element<ocs::tom::JR>(add_job_report(jobid, jataskid, pe_task_id_str, jep));
       DRETURN_VOID;
    }
 
@@ -1844,14 +1903,23 @@ examine_job_task_from_file(int startup, char *dir, lListElem *jep,
    DRETURN_VOID;
 }
 
-/************************************************************/
-/* fill dusage with:                                        */ 
-/* - data retrieved from config - file                      */
-/* - data retrieved from "usage" as shepherd has written it */
-/*   if we cant read "usage" exit_status = 0xffffffff       */ 
-/************************************************************/
+/**
+ * @brief Fill the usage of a job report
+ *
+ * Takes the data retrieved from the config file and the data from the "usage" file as the
+ * shepherd has written it. If "usage" cannot be read, exit_status is 0xffffffff.
+ *
+ * @param jr the job report
+ * @param jobdir the active jobs directory of the job or PE task
+ * @param jobid the job
+ * @param jataskid the array task
+ * @param pe_task_id the PE task, or nullptr
+ * @param failed the failure state found so far, see shepherd_states.h
+ * @return 0, or -1 if the usage file cannot be read or closed
+ */
 static int
-read_dusage(lListElem *jr, const char *jobdir, uint32_t jobid, uint32_t jataskid, const char *pe_task_id, int failed) {
+read_dusage(const ocs::tom::Element<ocs::tom::JR> jr, const char *jobdir, const uint32_t jobid,
+            const uint32_t jataskid, const char *pe_task_id, const int failed) {
    DENTER(TOP_LAYER);
 
    char pid_file[SGE_PATH_MAX];
@@ -1901,39 +1969,42 @@ read_dusage(lListElem *jr, const char *jobdir, uint32_t jobid, uint32_t jataskid
       fp = fopen(usage_file, "r");
       if (fp) {
          char buf[10000];
-         lList *cflp = nullptr;
+         // raw out parameter of read_config_list()
+         lList *cflp_raw = nullptr;
          uint32_t wait_status;
 
-         read_config_list(fp, &cflp, nullptr, CF_Type, CF_name, CF_value, 0, "=", 0, buf, sizeof(buf));
+         read_config_list(fp, &cflp_raw, nullptr, CF_Type, CF_name, CF_value, 0, "=", 0, buf, sizeof(buf));
+         // freed on every way out, also when FCLOSE() jumps to FCLOSE_ERROR
+         const auto cflp = ocs::tom::ListPtr<ocs::tom::CF>::from_typed(cflp_raw);
          FCLOSE(fp);
 
-         if (extract_ulong_attribute(&cflp, "wait_status", &wait_status)==0)
+         if (extract_ulong_attribute(*cflp, "wait_status", &wait_status)==0)
             ocs::tom::set<JR_wait_status>(jr, wait_status);
 
-         convert_attribute(&cflp, jr, "exit_status",   1);
-         convert_attribute(&cflp, jr, "signal",        0);
-         convert_attribute(&cflp, jr, "start_time",    0);
-         convert_attribute(&cflp, jr, "end_time",      0);
+         convert_attribute(*cflp, jr, "exit_status",   1);
+         convert_attribute(*cflp, jr, "signal",        0);
+         convert_attribute(*cflp, jr, "start_time",    0);
+         convert_attribute(*cflp, jr, "end_time",      0);
 
-         convert_attribute(&cflp, jr, "ru_wallclock",  0);
+         convert_attribute(*cflp, jr, "ru_wallclock",  0);
 
-         convert_attribute(&cflp, jr, "ru_utime",      0);
-         convert_attribute(&cflp, jr, "ru_stime",      0);
-         convert_attribute(&cflp, jr, "ru_maxrss",     0);
-         convert_attribute(&cflp, jr, "ru_ixrss",      0);
-         convert_attribute(&cflp, jr, "ru_ismrss",     0);
-         convert_attribute(&cflp, jr, "ru_idrss",      0);
-         convert_attribute(&cflp, jr, "ru_isrss",      0);
-         convert_attribute(&cflp, jr, "ru_minflt",     0);
-         convert_attribute(&cflp, jr, "ru_majflt",     0);
-         convert_attribute(&cflp, jr, "ru_nswap",      0);
-         convert_attribute(&cflp, jr, "ru_inblock",    0);
-         convert_attribute(&cflp, jr, "ru_oublock",    0);
-         convert_attribute(&cflp, jr, "ru_msgsnd",     0);
-         convert_attribute(&cflp, jr, "ru_msgrcv",     0);
-         convert_attribute(&cflp, jr, "ru_nsignals",   0);
-         convert_attribute(&cflp, jr, "ru_nvcsw",      0);
-         convert_attribute(&cflp, jr, "ru_nivcsw",     0);
+         convert_attribute(*cflp, jr, "ru_utime",      0);
+         convert_attribute(*cflp, jr, "ru_stime",      0);
+         convert_attribute(*cflp, jr, "ru_maxrss",     0);
+         convert_attribute(*cflp, jr, "ru_ixrss",      0);
+         convert_attribute(*cflp, jr, "ru_ismrss",     0);
+         convert_attribute(*cflp, jr, "ru_idrss",      0);
+         convert_attribute(*cflp, jr, "ru_isrss",      0);
+         convert_attribute(*cflp, jr, "ru_minflt",     0);
+         convert_attribute(*cflp, jr, "ru_majflt",     0);
+         convert_attribute(*cflp, jr, "ru_nswap",      0);
+         convert_attribute(*cflp, jr, "ru_inblock",    0);
+         convert_attribute(*cflp, jr, "ru_oublock",    0);
+         convert_attribute(*cflp, jr, "ru_msgsnd",     0);
+         convert_attribute(*cflp, jr, "ru_msgrcv",     0);
+         convert_attribute(*cflp, jr, "ru_nsignals",   0);
+         convert_attribute(*cflp, jr, "ru_nvcsw",      0);
+         convert_attribute(*cflp, jr, "ru_nivcsw",     0);
 
          build_derived_final_usage(jr, jobid, jataskid, pe_task_id);
 
@@ -1942,29 +2013,23 @@ read_dusage(lListElem *jr, const char *jobdir, uint32_t jobid, uint32_t jataskid
          // (usage_parse_value): the resulting element carries either UA_value
          // (numeric) or UA_svalue (string) but never both. The factory-append
          // shape bypasses add_usage()'s numeric-only path entirely.
-         const lListElem *ep;
-         for_each_ep(ep, cflp) {
+         for (const auto ep : *cflp) {
             const char *name = ocs::tom::get<CF_name>(ep);
             const char *value = ocs::tom::get<CF_value>(ep);
             DEBUG("additional usage variable %s = %s", name, value);
-            lListElem *parsed = usage_parse_value(name, value);
-            if (parsed == nullptr) {
+            auto parsed = ocs::tom::ElementPtr<ocs::tom::UA>::from_typed(usage_parse_value(name, value));
+            if (!parsed) {
                continue;
             }
-            lList *usage_list = ocs::tom::get<JR_usage>(jr);
-            if (usage_list == nullptr) {
-               usage_list = lCreateList("usage", UA_Type);
-               ocs::tom::set<JR_usage>(jr, usage_list);
-            }
+            const auto usage_list = jr.get_or_create<JR_usage>("usage");
             // replace any earlier entry with the same name (e.g. one added by
             // build_derived_final_usage) so the shepherd file wins
-            lListElem *existing = ocs::tom::find_first_rw<UA_name>(usage_list, name);
-            if (existing != nullptr) {
-               lRemoveElem(usage_list, &existing);
+            const auto existing = usage_list.find_first<UA_name>(name);
+            if (existing) {
+               usage_list.erase(existing);
             }
-            lAppendElem(usage_list, parsed);
+            usage_list.push_back(std::move(parsed));
          }
-         lFreeList(&cflp);
       } else {
          ERROR(MSG_SHEPHERD_CANTOPENUSAGEFILEXFORJOBYZX_SUUS, usage_file, jobid, jataskid, strerror(errno));
          DRETURN(-1);
@@ -1996,7 +2061,20 @@ FCLOSE_ERROR:
 }
 
 
-static void build_derived_final_usage(lListElem *jr, uint32_t job_id, uint32_t ja_task_id, const char *pe_task_id) {
+/**
+ * @brief Add the final usage derived from the usage the shepherd reported to a job report
+ *
+ * cpu, mem, io, maxvmem and maxrss, real or reserved as configured, both for the accounting and for the
+ * sharetree; also the wallclock time.
+ *
+ * @param jr the job report
+ * @param job_id the job
+ * @param ja_task_id the array task
+ * @param pe_task_id the PE task, or nullptr
+ */
+static void
+build_derived_final_usage(const ocs::tom::Element<ocs::tom::JR> jr, const uint32_t job_id, const uint32_t ja_task_id,
+                          const char *pe_task_id) {
    DENTER(TOP_LAYER);
 
    double ru_cpu, pdc_cpu;
@@ -2004,15 +2082,16 @@ static void build_derived_final_usage(lListElem *jr, uint32_t job_id, uint32_t j
           mem, r_mem,
           io, ioops, iow, r_io, r_ioops, r_iow, maxvmem, r_maxvmem, maxrss, r_maxrss, maxpss = 0;
 
+   // raw out parameters of execd_get_job_ja_task(); the objects belong to the execd's job list
    lListElem *job = nullptr;
-   lListElem *ja_task = nullptr;
-   ocs::tom::ConstElement<ocs::tom::PET> pe_task = nullptr;
+   lListElem *ja_task_raw = nullptr;
+   ocs::tom::ConstElement<ocs::tom::PET> pe_task;
 
    bool accounting_summary = false;
 
-   ocs::tom::ConstList<ocs::tom::UA> usage_list = ocs::tom::get<JR_usage>(jr);
+   const ocs::tom::ConstList<ocs::tom::UA> usage_list = ocs::tom::get<JR_usage>(jr);
 
-   bool have_mem_details = static_cast<const lListElem *>(ocs::tom::find_first<UA_name>(usage_list, USAGE_ATTR_MAXPSS)) != nullptr;
+   bool have_mem_details = static_cast<bool>(usage_list.find_first<UA_name>(USAGE_ATTR_MAXPSS));
 
    /* cpu    = std::max(sum of "ru_utime" and "ru_stime" , PDC "cpu" usage) */
    ru_cpu = usage_list_get_double_usage(usage_list, "ru_utime", 0) +
@@ -2022,7 +2101,8 @@ static void build_derived_final_usage(lListElem *jr, uint32_t job_id, uint32_t j
 
    /* build reserved usage if required */ 
    r_cpu = r_mem = r_maxvmem = r_maxrss = 0.0;
-   if (execd_get_job_ja_task(job_id, ja_task_id, &job, &ja_task, false)) {
+   if (execd_get_job_ja_task(job_id, ja_task_id, &job, &ja_task_raw, false)) {
+      const ocs::tom::ConstElement<ocs::tom::JAT> ja_task(ja_task_raw);
       if (pe_task_id != nullptr) {
          pe_task = ocs::tom::find_first_in<JAT_task_list, PET_id>(ja_task, pe_task_id);
       }
@@ -2031,7 +2111,7 @@ static void build_derived_final_usage(lListElem *jr, uint32_t job_id, uint32_t j
       if (mconf_get_acct_reserved_usage() || mconf_get_sharetree_reserved_usage()) {
          // reserved usage
          uint64_t end_time = usage_list_get_ulong64_usage(usage_list, "end_time", 0);
-         ocs::tom::ConstElement<ocs::tom::PE> pe = ocs::tom::get<JAT_pe_object>(ja_task);
+         const auto pe = ocs::tom::get<JAT_pe_object>(ja_task);
          if (pe != nullptr && ocs::tom::get<PE_accounting_summary>(pe)) {
             accounting_summary = true;
          }
@@ -2160,46 +2240,66 @@ static void build_derived_final_usage(lListElem *jr, uint32_t job_id, uint32_t j
    DRETURN_VOID;
 }
 
-/*****************************************************************/
-static void convert_attribute(
-lList **cflpp,
-lListElem *jr,
-const char *name,
-uint32_t udefault
-) {
+/**
+ * @brief Move a value of the usage file into the usage of a job report
+ *
+ * The entry is taken out of the usage file's list, so that what is left is reported as additional usage.
+ *
+ * @param cflp the entries of the usage file, or an empty handle
+ * @param jr the job report
+ * @param name the name of the value
+ * @param udefault the value to report if the usage file has none
+ */
+static void
+convert_attribute(const ocs::tom::List<ocs::tom::CF> cflp, const ocs::tom::Element<ocs::tom::JR> jr, const char *name,
+                  const uint32_t udefault) {
+   DENTER(TOP_LAYER);
+
    const char *s;
 
-   s = get_conf_value(nullptr, *cflpp, CF_name, CF_value, name);
+   s = get_conf_value(nullptr, cflp, CF_name, CF_value, name);
    add_usage(jr, name, s, (double)udefault);
-   ocs::tom::erase<CF_name>(cflpp, name);
+   // an empty list stays rather than being freed as before: nothing reads it as "no entries"
+   if (cflp) {
+      cflp.erase<CF_name>(name);
+   }
+
+   DRETURN_VOID;
 }
 
+/**
+ * @brief Take an unsigned value out of the usage file
+ *
+ * @param cflp the entries of the usage file, or an empty handle
+ * @param name the name of the value
+ * @param valuep where the value is stored
+ * @return 0, or -1 if the usage file has no such value or it is not a number
+ */
+static int
+extract_ulong_attribute(const ocs::tom::List<ocs::tom::CF> cflp, const char *name, uint32_t *valuep) {
+   DENTER(TOP_LAYER);
 
-/*****************************************************************/
-
-static int extract_ulong_attribute(
-lList **cflpp,
-const char *name,
-uint32_t *valuep
-) {
    const char *s;
    int ret;
 
-   if (!(s = get_conf_value(nullptr, *cflpp, CF_name, CF_value, name)))
-      return -1;
+   if (!(s = get_conf_value(nullptr, cflp, CF_name, CF_value, name))) {
+      DRETURN(-1);
+   }
    ret = sscanf(s, sge_u32, valuep);
-   ocs::tom::erase<CF_name>(cflpp, name);
-   return (ret == 1)?0:-1;
+   if (cflp) {
+      cflp.erase<CF_name>(name);
+   }
+   DRETURN((ret == 1)?0:-1);
 }
 
 
 /* send mail to users if requested */
 /** @brief Mail the user about a job that has ended, if they asked to be told
- * @param jep the job (`JB_Type`)
+ * @param jep the job
  * @param jr the job report, for the usage and exit status
  */
 void
-reaper_sendmail(lListElem *jep, lListElem *jr) {
+reaper_sendmail(const ocs::tom::ConstElement<ocs::tom::JB> jep, const ocs::tom::ConstElement<ocs::tom::JR> jr) {
    DENTER(TOP_LAYER);
 
    uint32_t mail_options;
@@ -2389,19 +2489,24 @@ reaper_sendmail(lListElem *jep, lListElem *jr) {
  *
  * @note MT-NOTE: execd_slave_job_exit() is MT safe
  */
-void execd_slave_job_exit(uint32_t job_id, uint32_t ja_task_id) {
-   lListElem *job = nullptr;
-   lListElem *ja_task = nullptr;
+void execd_slave_job_exit(const uint32_t job_id, const uint32_t ja_task_id) {
+   DENTER(TOP_LAYER);
 
-   if (execd_get_job_ja_task(job_id, ja_task_id, &job, &ja_task, false)) {
+   // raw out parameters of execd_get_job_ja_task(); the objects belong to the execd's job list
+   lListElem *job = nullptr;
+   lListElem *ja_task_raw = nullptr;
+
+   if (execd_get_job_ja_task(job_id, ja_task_id, &job, &ja_task_raw, false)) {
+      const ocs::tom::ConstElement<ocs::tom::JAT> ja_task(ja_task_raw);
+
       /* kill possibly still running tasks */
       signal_job(job_id, ja_task_id, SGE_SIGKILL);
 
       /* if there are no pe_tasks running
        * we can finish the slave job right away
        */
-      if (lGetNumberOfElem(ocs::tom::get<JAT_task_list>(ja_task)) == 0) {
-         lListElem *jr = get_job_report(job_id, ja_task_id, nullptr);
+      if (ocs::tom::get<JAT_task_list>(ja_task).empty()) {
+         const auto jr = ocs::tom::Element<ocs::tom::JR>(get_job_report(job_id, ja_task_id, nullptr));
 
          // qmaster only has to see *an* exit status here to know that this host is
          // done with the job - the value itself carries no information for a slave
@@ -2412,12 +2517,14 @@ void execd_slave_job_exit(uint32_t job_id, uint32_t ja_task_id) {
          // the master task's own and already carries the status the job ended with,
          // so overwriting it would replace it with a zero and make the accounting
          // record of a failed job indistinguishable from a successful one (CS-2632).
-         if (jr != nullptr && static_cast<const lListElem *>(ocs::tom::find_first_in<JR_usage, UA_name>(jr, "exit_status")) == nullptr) {
+         if (jr && !ocs::tom::find_first_in<JR_usage, UA_name>(jr, "exit_status")) {
             add_usage(jr, "exit_status", nullptr, 0);
          }
          flush_job_report(jr);
       }
    }
+
+   DRETURN_VOID;
 }
 
 /**
@@ -2537,29 +2644,24 @@ static void clean_up_binding(char *binding) {
  * Counts the number of master tasks for a specific job that are present
  * on the execd.
  *
- * @param lp Pointer to the job list
+ * @param lp the job list
  * @param job_id Job number to count master tasks for
  *
  * @return Number of master tasks found
  *
  * @note MT-NOTE: count_master_tasks() is MT safe
  */
-int count_master_tasks(const lList *lp, uint32_t job_id) {
+int count_master_tasks(const ocs::tom::ConstList<ocs::tom::JB> lp, const uint32_t job_id) {
    DENTER(TOP_LAYER);
 
-   const void *iterator = nullptr;
    int master_jobs = 0;
 
-   ocs::tom::ConstElement<ocs::tom::JB> jep = ocs::tom::find_first<JB_job_number>(lp, job_id, &iterator);
-   while (jep != nullptr) {
-      ocs::tom::ConstElement<ocs::tom::JAT> jatep = lFirst(ocs::tom::get<JB_ja_tasks>(jep));
-      while (jatep != nullptr) {
+   for (const auto jep : lp.find_all<JB_job_number>(job_id)) {
+      for (const auto jatep : ocs::tom::get<JB_ja_tasks>(jep)) {
          if (ocs::tom::get<JAT_status>(jatep) != JSLAVE) {
             master_jobs++;
          }
-         jatep = lNext(jatep);
       }
-      jep = ocs::tom::find_next<JB_job_number>(lp, job_id, &iterator);
    }
 
    DPRINTF("Found %d master jobs for " sge_u32, master_jobs, job_id);
@@ -2571,11 +2673,12 @@ int count_master_tasks(const lList *lp, uint32_t job_id) {
  *
  * Simulated hosts run no shepherd, so their jobs have to be finished by hand.
  *
- * @param jep the job (`JB_Type`)
+ * @param jep the job
  * @param jatep the array task
  * @param sig the signal to report the job as having died from, 0 for a normal exit
  */
-void simulated_job_exit(const lListElem *jep, lListElem *jatep, uint32_t sig) {
+void simulated_job_exit(const ocs::tom::ConstElement<ocs::tom::JB> jep, const ocs::tom::Element<ocs::tom::JAT> jatep,
+                        const uint32_t sig) {
    DENTER(TOP_LAYER);
 
    uint32_t jobid = ocs::tom::get<JB_job_number>(jep);
@@ -2587,10 +2690,11 @@ void simulated_job_exit(const lListElem *jep, lListElem *jatep, uint32_t sig) {
    } else {
       DPRINTF("Simulated job " sge_u32"." sge_u32" is %s\n", jobid, jataskid, sig == 0 ? "exiting" : "killed");
 
-      lListElem *jr = get_job_report(jobid, jataskid, nullptr);
-      if (jr == nullptr) {
+      // the job reports belong to job_report_execd.cc
+      auto jr = ocs::tom::Element<ocs::tom::JR>(get_job_report(jobid, jataskid, nullptr));
+      if (!jr) {
          ERROR(MSG_JOB_MISSINGJOBXYINJOBREPORTFOREXITINGJOBADDINGIT_UU, jobid, jataskid);
-         jr = add_job_report(jobid, jataskid, nullptr, jep);
+         jr = ocs::tom::Element<ocs::tom::JR>(add_job_report(jobid, jataskid, nullptr, jep));
       }
 
       ocs::tom::set<JR_state>(jr, JEXITING);

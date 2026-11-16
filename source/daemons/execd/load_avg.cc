@@ -70,8 +70,12 @@
 
 #include "sgeobj/ocs_Version.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_CONF.h"
 #include "sgeobj/tom/ocs_tom_JAT.h"
 #include "sgeobj/tom/ocs_tom_JG.h"
+#include "sgeobj/tom/ocs_tom_JR.h"
+#include "sgeobj/tom/ocs_tom_QU.h"
 #include "sgeobj/tom/ocs_tom_PE.h"
 #include "sgeobj/tom/ocs_tom_PET.h"
 #include "sgeobj/tom/ocs_tom_UA.h"
@@ -95,8 +99,8 @@
 #   include <dlfcn.h>
 #endif
 
-static void 
-get_reserved_usage(const char*qualified_hostname, lList **job_usage_list);
+static ocs::tom::ListPtr<ocs::tom::JB>
+get_reserved_usage(const char *qualified_hostname);
 static int 
 execd_add_load_report(lList *report_list, uint64_t now, uint64_t *next_send);
 static int 
@@ -187,39 +191,38 @@ void sge_set_flush_lr_flag(bool new_val) {
 /** @brief Fold the current load values into the report being assembled
  * @param seqno the report's sequence number
  */
-void execd_merge_load_report(uint32_t seqno) {
+void execd_merge_load_report(const uint32_t seqno) {
+   DENTER(TOP_LAYER);
+
    if (last_lr == nullptr || seqno != ocs::tom::get<REP_seqno>(last_lr)) {
-      return;
-   } else {
-      const lListElem *old_lr;
+      DRETURN_VOID;
+   }
 
-      for_each_ep(old_lr, ocs::tom::get<REP_list>(last_lr)) {
-         const void *iterator = nullptr;
-         const char *hostname = ocs::tom::get<LR_host>(old_lr);
-         const char *name = ocs::tom::get<LR_name>(old_lr);
-         lListElem *lr, *lr_next;
-         bool found = false;
+   // last_lr and lr_list stay raw process-lifetime statics; last_lr is only set beside an existing lr_list
+   const ocs::tom::List<ocs::tom::LR> known_lr(lr_list);
+   for (const auto old_lr : ocs::tom::ConstList<ocs::tom::LR>(ocs::tom::get<REP_list>(last_lr))) {
+      const char *hostname = ocs::tom::get<LR_host>(old_lr);
+      const char *name = ocs::tom::get<LR_name>(old_lr);
+      bool found = false;
 
-         lr_next = ocs::tom::find_first_rw<LR_name>(lr_list, name, &iterator);
-         while ((lr = lr_next)) {
-            lr_next = ocs::tom::find_next_rw<LR_name>(lr_list, name, &iterator);
-
-            if (sge_hostcmp(ocs::tom::get<LR_host>(lr), hostname) == 0) {
-               found = true;
-               if (ocs::tom::get<LR_is_static>(old_lr) == 2) {
-                  lRemoveElem(lr_list, &lr); 
-               } else {
-                  ocs::tom::set<LR_value>(lr, ocs::tom::get<LR_value>(old_lr));
-               }
-               break;
+      for (const auto lr : known_lr.find_all<LR_name>(name)) {
+         if (sge_hostcmp(ocs::tom::get<LR_host>(lr), hostname) == 0) {
+            found = true;
+            if (ocs::tom::get<LR_is_static>(old_lr) == 2) {
+               known_lr.erase(lr);
+            } else {
+               ocs::tom::set<LR_value>(lr, ocs::tom::get<LR_value>(old_lr));
             }
+            break;
          }
-         if (!found) {
-            lAppendElem(lr_list, lCopyElem(old_lr));
-         }
+      }
+      if (!found) {
+         known_lr.push_back(old_lr.clone());
       }
    }
    lFreeElem(&last_lr);
+
+   DRETURN_VOID;
 }
 
 /** @brief Discard the report being assembled
@@ -231,17 +234,24 @@ void execd_trash_load_report() {
    send_all = true;
 }
 
+/**
+ * @brief Add the load report to the reports to send, if it is due
+ *
+ * Only the load values that changed since the last report are sent, unless a full report is due.
+ *
+ * @param report_list the reports to send (`REP_Type`)
+ * @param now the current time
+ * @param next_send when the next load report is due; updated when one is added
+ * @return 0
+ */
 static int
-execd_add_load_report(lList *report_list, uint64_t now, uint64_t *next_send) {
+execd_add_load_report(lList *report_list, const uint64_t now, uint64_t *next_send) {
    DENTER(TOP_LAYER);
 
    const char* qualified_hostname = component_get_qualified_hostname();
    const char* binary_path = ocs::Bootstrap::get_binary_path();
 
    if (*next_send <= now || sge_get_flush_lr_flag()) {
-      lSortOrder *order = lParseSortOrderVarArg(LR_Type, "%I+", LR_host);
-      lList *tmp_lr_list;
-
       *next_send = now + sge_gmt32_to_gmt64(mconf_get_load_report_time());
       sge_set_flush_lr_flag(false);
 
@@ -261,38 +271,32 @@ execd_add_load_report(lList *report_list, uint64_t now, uint64_t *next_send) {
       ocs::tom::set<REP_seqno>(report, sge_execd_report_seqno);
       ocs::tom::set<REP_host>(report, qualified_hostname);
 
-      tmp_lr_list = sge_build_load_report(qualified_hostname, binary_path);
+      auto tmp_lr_list = sge_build_load_report(qualified_hostname, binary_path);
 
       if (lr_list == nullptr) {
-         lr_list = lCopyList("", tmp_lr_list);
+         lr_list = lCopyList("", *tmp_lr_list);
          lFreeElem(&last_lr);
-         lSortList(tmp_lr_list, order);
-         ocs::tom::set<REP_list>(report, tmp_lr_list);
+         tmp_lr_list->sort<ocs::tom::asc<LR_host>>();
+         ocs::tom::set<REP_list>(report, std::move(tmp_lr_list));
       } else {
-         lListElem *lr;
-
-         for_each_rw(lr, lr_list) {
-            const void *iterator = nullptr;
+         for (const auto lr : ocs::tom::List<ocs::tom::LR>(lr_list)) {
             const char *hostname = ocs::tom::get<LR_host>(lr);
             const char *name = ocs::tom::get<LR_name>(lr);
             const char *value = ocs::tom::get<LR_value>(lr);
-            lListElem *ep, *next_ep;
             bool found = false;
-         
-            next_ep = ocs::tom::find_first_rw<LR_name>(tmp_lr_list, name, &iterator);
-            while ((ep = next_ep)) {
-               next_ep = ocs::tom::find_next_rw<LR_name>(tmp_lr_list, name, &iterator);
 
+            for (const auto ep : tmp_lr_list->find_all<LR_name>(name)) {
                DPRINTF("handling %s in execd_add_load_report\n", name);
                if (sge_hostcmp(ocs::tom::get<LR_host>(ep), hostname) == 0) {
                   /* we found the same load value in the temp list */
                   found = true;
 
                   if (!send_all && sge_strnullcmp(ocs::tom::get<LR_value>(ep), value) == 0) {
-                     /* value hasn't changed, remove it from list */ 
-                     lRemoveElem(tmp_lr_list, &ep);
+                     /* value hasn't changed, remove it from list */
+                     tmp_lr_list->erase(ep);
                   } else {
-                     DPRINTF("value %s has changed from %s to %s\n", name, value ? value:"nullptr", ocs::tom::get<LR_value>(ep));
+                     DPRINTF("value %s has changed from %s to %s\n", name, value ? value : "nullptr",
+                             ocs::tom::get<LR_value>(ep));
                      /* Old value is no longer valid */
                      ocs::tom::set<LR_value>(lr, nullptr);
                   }
@@ -303,29 +307,35 @@ execd_add_load_report(lList *report_list, uint64_t now, uint64_t *next_send) {
             if (!found) {
                /* the load value is no longer reported, tag is as deleted and
                   add it to the report list */
-               lListElem *del_report = lCopyElem(lr);     
-               ocs::tom::set<LR_is_static>(del_report, 2); 
-               lAppendElem(tmp_lr_list, del_report);
+               auto del_report = lr.clone();
+               ocs::tom::set<LR_is_static>(del_report, 2);
+               tmp_lr_list->push_back(std::move(del_report));
             }
          }
 
-         lSortList(tmp_lr_list, order);
-         ocs::tom::set<REP_list>(report, tmp_lr_list);
+         tmp_lr_list->sort<ocs::tom::asc<LR_host>>();
+         ocs::tom::set<REP_list>(report, std::move(tmp_lr_list));
          lFreeElem(&last_lr);
          last_lr = lCopyElem(*report);
       }
-      lFreeSortOrder(&order);
 
-      lAppendElem(report_list, std::move(report));
+      ocs::tom::List<ocs::tom::REP>(report_list).push_back(std::move(report));
       send_all = false;
    }
 
    DRETURN(0);
 }
 
-
+/**
+ * @brief Add the report of the configuration versions to the reports to send, if it is due
+ *
+ * @param report_list the reports to send (`REP_Type`)
+ * @param now the current time
+ * @param next_send when the next configuration report is due; updated when one is added
+ * @return 0
+ */
 static int
-execd_add_conf_report(lList *report_list, uint64_t now, uint64_t *next_send) {
+execd_add_conf_report(lList *report_list, const uint64_t now, uint64_t *next_send) {
    DENTER(TOP_LAYER);
 
    const char* qualified_hostname = component_get_qualified_hostname();
@@ -344,16 +354,24 @@ execd_add_conf_report(lList *report_list, uint64_t now, uint64_t *next_send) {
       ocs::tom::set<REP_version>(report, ocs::Version::get_version());
       ocs::tom::set<REP_seqno>(report, sge_execd_report_seqno);
       ocs::tom::set<REP_host>(report, qualified_hostname);
-      ocs::tom::set<REP_list>(report, 
-         lCopyList("execd config list copy", Execd_Config_List));
-      lAppendElem(report_list, std::move(report));
+      ocs::tom::set<REP_list>(report,
+         ocs::tom::ConstList<ocs::tom::CONF>(Execd_Config_List).clone("execd config list copy"));
+      ocs::tom::List<ocs::tom::REP>(report_list).push_back(std::move(report));
       DPRINTF("handling conf report in execd_add_conf_report\n");
    }
    DRETURN(0);
 }
 
+/**
+ * @brief Add the report of the number of processors to the reports to send, once
+ *
+ * @param report_list the reports to send (`REP_Type`)
+ * @param now the current time
+ * @param next_send 0 as long as the report was not added; set when it is
+ * @return 0
+ */
 static int
-execd_add_license_report(lList *report_list, uint64_t now, uint64_t *next_send) {
+execd_add_license_report(lList *report_list, const uint64_t now, uint64_t *next_send) {
    DENTER(TOP_LAYER);
    if (*next_send == 0) {
       const char* qualified_hostname = component_get_qualified_hostname();
@@ -377,17 +395,25 @@ execd_add_license_report(lList *report_list, uint64_t now, uint64_t *next_send) 
          */
          ocs::tom::set<LIC_processors>(ep_lic,  sge_nprocs());
          ocs::tom::set<LIC_arch>(ep_lic, sge_get_arch());
-         lAppendElem(*lp_lic, std::move(ep_lic));
+         lp_lic->push_back(std::move(ep_lic));
          ocs::tom::set<REP_list>(report, std::move(lp_lic));
       }
-      lAppendElem(report_list, std::move(report));
+      ocs::tom::List<ocs::tom::REP>(report_list).push_back(std::move(report));
       DPRINTF("handling license report in execd_add_license_report\n");
    }
    DRETURN(0);
 }
 
+/**
+ * @brief Add the job report to the reports to send, if it is due or reports are to be flushed
+ *
+ * @param report_list the reports to send (`REP_Type`)
+ * @param now the current time
+ * @param next_send when the next complete job report is due; updated when one is added
+ * @return 0
+ */
 static int
-execd_add_job_report(lList *report_list, uint64_t now, uint64_t *next_send) {
+execd_add_job_report(lList *report_list, const uint64_t now, uint64_t *next_send) {
    DENTER(TOP_LAYER);
 
    bool do_send = false;
@@ -397,7 +423,9 @@ execd_add_job_report(lList *report_list, uint64_t now, uint64_t *next_send) {
 
    /* without job reports, only the periodic report is sent: an empty complete job report tells
     * sge_qmaster that no job runs on this host any more */
-   if (lGetNumberOfElem(jr_list) == 0 && *next_send > now) {
+   // jr_list belongs to job_report_execd.cc
+   const ocs::tom::List<ocs::tom::JR> job_reports(jr_list);
+   if (job_reports.empty() && *next_send > now) {
       DRETURN(0);
    }
 
@@ -417,9 +445,6 @@ execd_add_job_report(lList *report_list, uint64_t now, uint64_t *next_send) {
     * to the same host on which it executed before.
     */
    if (do_send && (last_send < now)) {
-      lList *job_report_list;
-      lListElem *jr;
-
       /* remember last send time */
       last_send = now;
 
@@ -431,24 +456,24 @@ execd_add_job_report(lList *report_list, uint64_t now, uint64_t *next_send) {
       ocs::tom::set<REP_host>(job_report, qualified_hostname);
 
       /* create job report list */
-      job_report_list = lCreateList("jr", JR_Type);
-      ocs::tom::set<REP_list>(job_report, job_report_list);
+      auto job_report_list = ocs::tom::ListPtr<ocs::tom::JR>::create("jr");
 
       /* copy reports (all or only to flush) 
        * We keep job reports where the job is started via JAPI (qsub -sync or
        * DRMAA). This is done only when we reconnect after a qmaster failover
        */
       bool complete = !only_flush;
-      for_each_rw (jr, jr_list) {
+      for (const auto jr : job_reports) {
          bool delayed = sge_get_delay_job_reports_flag() && ocs::tom::get<JR_delay_report>(jr);
          if ((!only_flush || ocs::tom::get<JR_flush>(jr)) && !ocs::tom::get<JR_no_send>(jr) && !delayed) {
-            lAppendElem(job_report_list, lCopyElem(jr));
+            job_report_list->push_back(jr.clone());
             ocs::tom::set<JR_flush>(jr, false);
          } else if (delayed) {
             // the job is on this host, but it is missing in the report
             complete = false;
          } /* else not sending report for this job */
       }
+      ocs::tom::set<REP_list>(job_report, std::move(job_report_list));
 
       /* a complete job report contains all jobs on this host, sge_qmaster uses it to find out
        * that a job does not run here any more (reschedule unknown list), see CS-3076
@@ -456,7 +481,7 @@ execd_add_job_report(lList *report_list, uint64_t now, uint64_t *next_send) {
       ocs::tom::set<REP_complete>(job_report, complete);
      
       /* append this new job report to the report list */
-      lAppendElem(report_list, std::move(job_report));
+      ocs::tom::List<ocs::tom::REP>(report_list).push_back(std::move(job_report));
 
       /* now all is sent, reset flush_jr */
       sge_set_flush_jr_flag(false);
@@ -470,11 +495,13 @@ execd_add_job_report(lList *report_list, uint64_t now, uint64_t *next_send) {
  *
  * @param qualified_hostname this host, as the cluster knows it
  * @param binary_path where to find the load sensor binaries
- * @return the report
+ * @return the report, owned by the caller
  */
-lList *sge_build_load_report(const char *qualified_hostname, const char *binary_path) {
+ocs::tom::ListPtr<ocs::tom::LR>
+sge_build_load_report(const char *qualified_hostname, const char *binary_path) {
    DENTER(TOP_LAYER);
 
+   // stays raw while it is built: the functions filling it create it through an `lList **`
    lList *lp = nullptr;
    int nprocs = 1;
    double load;
@@ -554,9 +581,10 @@ lList *sge_build_load_report(const char *qualified_hostname, const char *binary_
    }
 
    /* qmaster expects a list sorted by host */
-   lPSortList(lp, "%I+", LR_host);
+   auto report = ocs::tom::ListPtr<ocs::tom::LR>::from_typed(lp);
+   report->sort<ocs::tom::asc<LR_host>>();
 
-   DRETURN(lp);
+   DRETURN(report);
 }
 
 /**
@@ -755,10 +783,10 @@ void update_job_usage(const char *qualified_hostname) {
    DENTER(TOP_LAYER);
 
    if (mconf_get_simulate_jobs()) {
-      lListElem *jr;
       bool enable_mem_details = mconf_get_enable_mem_details();
 
-      for_each_rw(jr, jr_list) {
+      // jr_list belongs to job_report_execd.cc
+      for (const auto jr : ocs::tom::List<ocs::tom::JR>(jr_list)) {
          add_usage(jr, USAGE_ATTR_CPU, nullptr, 0.1);
          add_usage(jr, USAGE_ATTR_MEM, nullptr, 0.1);
          add_usage(jr, USAGE_ATTR_IO, nullptr, 0.0);
@@ -778,14 +806,12 @@ void update_job_usage(const char *qualified_hostname) {
       DRETURN_VOID;
    }
 
-   lList *usage_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::JB> usage_list;
 #ifdef COMPILE_DC
    if (!mconf_get_sharetree_reserved_usage()) {
       int ptf_error;
 
-      ocs::tom::ListPtr<ocs::tom::JB> ptf_usage_list;
-      ptf_error = ptf_get_usage(ptf_usage_list);
-      usage_list = ptf_usage_list.release();
+      ptf_error = ptf_get_usage(usage_list);
       if (ptf_error) {
          ERROR(MSG_LOAD_NOPTFUSAGE_S, ptf_errstr(ptf_error));
          /*
@@ -799,16 +825,15 @@ void update_job_usage(const char *qualified_hostname) {
 #endif
 
    if (mconf_get_sharetree_reserved_usage()) {
-      get_reserved_usage(qualified_hostname, &usage_list);
+      usage_list = get_reserved_usage(qualified_hostname);
    }
 
-   if (usage_list == nullptr) {
+   if (!usage_list) {
       DRETURN_VOID;
    }
 
-   if (lGetNumberOfElem(usage_list) == 0) {
+   if (usage_list->empty()) {
       /* could be an empty list head */
-      lFreeList(&usage_list);
       DRETURN_VOID;
    }
 
@@ -819,18 +844,14 @@ void update_job_usage(const char *qualified_hostname) {
 #endif
 
    /* replace existing usage in the job report with the new one */
-   const lListElem *usage;
-   for_each_ep(usage, usage_list) {
-      uint32_t job_id;
-      ocs::tom::ConstElement<ocs::tom::JAT> ja_task;
+   for (const auto usage : *usage_list) {
+      uint32_t job_id = ocs::tom::get<JB_job_number>(usage);
 
-      job_id = ocs::tom::get<JB_job_number>(usage);
-
-      for_each_ep(ja_task, ocs::tom::get<JB_ja_tasks>(usage)) {
+      for (const auto ja_task : ocs::tom::get<JB_ja_tasks>(usage)) {
          uint32_t ja_task_id = ocs::tom::get<JAT_task_number>(ja_task);
          /* search matching job report */
-         lListElem * jr = get_job_report(job_id, ja_task_id, nullptr);
-         if (jr == nullptr) {
+         auto jr = ocs::tom::Element<ocs::tom::JR>(get_job_report(job_id, ja_task_id, nullptr));
+         if (!jr) {
             /* should not happen in theory */
             ERROR("removing unreferenced job " sge_u32 "." sge_u32 " without job report from ptf", job_id ,ja_task_id );
 #ifdef COMPILE_DC
@@ -843,13 +864,12 @@ void update_job_usage(const char *qualified_hostname) {
          DPRINTF("---> updating job report usage for job " sge_u32 "." sge_u32 "\n", job_id, ja_task_id);
          job_report_update_from_usage_list(jr, ocs::tom::get<JAT_usage_list>(ja_task));
 
-         ocs::tom::ConstElement<ocs::tom::PET> pe_task;
-         for_each_ep(pe_task, ocs::tom::get<JAT_task_list>(ja_task)) {
+         for (const auto pe_task : ocs::tom::get<JAT_task_list>(ja_task)) {
             const char *pe_task_id = ocs::tom::get<PET_id>(pe_task);
 
             /* search matching job report */
-            jr = get_job_report(job_id, ja_task_id, pe_task_id);
-            if (jr == nullptr) {
+            jr = ocs::tom::Element<ocs::tom::JR>(get_job_report(job_id, ja_task_id, pe_task_id));
+            if (!jr) {
                /* should not happen in theory */
                ERROR("could not find job report for job " sge_u32"." sge_u32" " "task " SFN " contained in job usage from ptf", job_id, ja_task_id, pe_task_id);
 #ifdef COMPILE_DC
@@ -868,35 +888,36 @@ void update_job_usage(const char *qualified_hostname) {
       }
    }
 
-   lFreeList(&usage_list);
-
    DRETURN_VOID;
 }
 
 /**
  * @brief Calculate the reserved memory
  *
- * @param queue the queue element, read only
+ * @param queue the queue instance, read only, or an empty handle
  * @param nslots the number of slots
  * @param h_nm the name of the hard resource queue limit
  * @param s_nm the name of the soft resource queue limit
  * @return the reserved memory
  */
 static double
-calculate_reserved_memory(const lListElem *queue, int nslots, int h_nm, int s_nm) {
+calculate_reserved_memory(const ocs::tom::ConstElement<ocs::tom::QU> queue, const int nslots, const int h_nm,
+                          const int s_nm) {
+   DENTER(TOP_LAYER);
+
    double mem = 0.0;
 
 
-   if (queue != nullptr) {
+   if (queue) {
       double lim, h_mem_lim, s_mem_lim;
       char err_str[128];
 
       parse_ulong_val(&h_mem_lim, nullptr, ocs::CEntry::Type::MEM,
-                      lGetString(queue, h_nm),
+                      queue.get<const char *>(h_nm),
                       err_str, sizeof(err_str)-1);
 
       parse_ulong_val(&s_mem_lim, nullptr, ocs::CEntry::Type::MEM,
-                      lGetString(queue, s_nm),
+                      queue.get<const char *>(s_nm),
                       err_str, sizeof(err_str)-1);
 
       lim = std::min(h_mem_lim, s_mem_lim);
@@ -909,7 +930,7 @@ calculate_reserved_memory(const lListElem *queue, int nslots, int h_nm, int s_nm
       mem = lim * nslots;
    }
 
-   return mem;
+   DRETURN(mem);
 }
 
 /**
@@ -917,31 +938,31 @@ calculate_reserved_memory(const lListElem *queue, int nslots, int h_nm, int s_nm
  *
  * @param qualified_hostname this host, as the cluster knows it
  * @param ja_task the array task
- * @param pe_task the PE task, or nullptr for the array task itself
+ * @param pe_task the PE task, or an empty handle for the array task itself
  * @param job_id the job
  * @param ja_task_id the array task id
  * @param pe_task_id the PE task id, or nullptr
- * @param pe the parallel environment, or nullptr
+ * @param pe the parallel environment, or an empty handle
  * @param now the current time
  *
- * @return the usage list (`UA_Type`), owned by the caller, or nullptr if the final usage was generated already
+ * @return the usage list, owned by the caller, or an empty handle if the final usage was generated already
  */
-static lList *
-calculate_reserved_usage(const char *qualified_hostname, const lListElem *ja_task, const lListElem *pe_task,
-                         uint32_t job_id, uint32_t ja_task_id,
-                         const char *pe_task_id,
-                         const lListElem *pe, uint64_t now) {
+static ocs::tom::ListPtr<ocs::tom::UA>
+calculate_reserved_usage(const char *qualified_hostname, const ocs::tom::ConstElement<ocs::tom::JAT> ja_task,
+                         const ocs::tom::ConstElement<ocs::tom::PET> pe_task, const uint32_t job_id,
+                         const uint32_t ja_task_id, const char *pe_task_id,
+                         const ocs::tom::ConstElement<ocs::tom::PE> pe, const uint64_t now) {
    DENTER(TOP_LAYER);
 
-   lList *ul = nullptr;
-   lListElem *jr;
+   ocs::tom::ListPtr<ocs::tom::UA> ul;
 
    /* We only build new reserved online usage,
     * when the final (acct) usage has not yet been generated.
     * Otherwise, online usage might get higher than final usage!
     */
-   jr = get_job_report(job_id, ja_task_id, pe_task_id);
-   if (static_cast<const lListElem *>(ocs::tom::find_first_in<JR_usage, UA_name>(jr, USAGE_ATTR_CPU_ACCT)) == nullptr) {
+   // the job report belongs to job_report_execd.cc
+   const auto jr = ocs::tom::ConstElement<ocs::tom::JR>(get_job_report(job_id, ja_task_id, pe_task_id));
+   if (!ocs::tom::find_first_in<JR_usage, UA_name>(jr, USAGE_ATTR_CPU_ACCT)) {
       double cpu{}, mem{}, maxvmem{}, maxrss{};
       double wall_clock_time;
       build_reserved_usage(now, ja_task, pe_task, &wall_clock_time, &cpu, &mem, &maxvmem, &maxrss);
@@ -961,96 +982,121 @@ calculate_reserved_usage(const char *qualified_hostname, const lListElem *ja_tas
 #endif
 
       /* create the reserved usage list */
-      ul = lCreateList("usage_list", UA_Type);
+      ul = ocs::tom::ListPtr<ocs::tom::UA>::create("usage_list");
 
-      usage_list_set_double_usage(ul, USAGE_ATTR_CPU, cpu);
-      usage_list_set_double_usage(ul, USAGE_ATTR_MEM, mem);
-      usage_list_set_double_usage(ul, USAGE_ATTR_IO, io);
-      usage_list_set_double_usage(ul, USAGE_ATTR_IOOPS, ioops);
-      usage_list_set_double_usage(ul, USAGE_ATTR_IOW, iow);
+      usage_list_set_double_usage(*ul, USAGE_ATTR_CPU, cpu);
+      usage_list_set_double_usage(*ul, USAGE_ATTR_MEM, mem);
+      usage_list_set_double_usage(*ul, USAGE_ATTR_IO, io);
+      usage_list_set_double_usage(*ul, USAGE_ATTR_IOOPS, ioops);
+      usage_list_set_double_usage(*ul, USAGE_ATTR_IOW, iow);
 
       /* for reserved usage, we assume that the job always
        * consumes the maximum allowed memory (by h_vmem/s_vmem)
        */
       if (maxvmem != 0) {
-         usage_list_set_double_usage(ul, USAGE_ATTR_VMEM, maxvmem);
-         usage_list_set_double_usage(ul, USAGE_ATTR_MAXVMEM, maxvmem);
+         usage_list_set_double_usage(*ul, USAGE_ATTR_VMEM, maxvmem);
+         usage_list_set_double_usage(*ul, USAGE_ATTR_MAXVMEM, maxvmem);
       }
       if (maxrss != 0) {
-         usage_list_set_double_usage(ul, USAGE_ATTR_RSS, maxrss);
-         usage_list_set_double_usage(ul, USAGE_ATTR_MAXRSS, maxrss);
+         usage_list_set_double_usage(*ul, USAGE_ATTR_RSS, maxrss);
+         usage_list_set_double_usage(*ul, USAGE_ATTR_MAXRSS, maxrss);
       }
    }
 
    DRETURN(ul);
 }
 
-static lListElem *
-calculate_reserved_usage_ja_task(const char *qualified_hostname, const lListElem *ja_task,
-                                 uint32_t job_id, uint32_t ja_task_id,
-                                 const lListElem *pe, uint64_t now,
-                                 lListElem *new_job) {
-   lList *usage_list;
-
-   /* create data structures */
-   if (new_job == nullptr) {
-      new_job = lCreateElem(JB_Type);
-      ocs::tom::set<JB_job_number>(new_job, job_id);
-   }
-
-   ocs::tom::Element<ocs::tom::JAT> new_ja_task = ocs::tom::emplace_back_in<JB_ja_tasks, JAT_task_number>(new_job, ja_task_id); 
-
-   usage_list = calculate_reserved_usage(qualified_hostname, ja_task, nullptr,
-                                         job_id, ja_task_id, nullptr,
-                                         pe, now);
-  
-   ocs::tom::set<JAT_usage_list>(new_ja_task, usage_list);
-
-   return new_job;
-}
-
-static lListElem *
-calculate_reserved_usage_pe_task(const char *qualified_hostname,
-                                 const lListElem *ja_task,
-                                 const lListElem *pe_task,
-                                 uint32_t job_id, uint32_t ja_task_id,
-                                 const char *pe_task_id,
-                                 const lListElem *pe, uint64_t now,
-                                 lListElem *new_job) {
-   lListElem *new_pe_task;
-   lList *usage_list;
-
-   /* create data structures */
-   if (new_job == nullptr) {
-      new_job = lCreateElem(JB_Type);
-      ocs::tom::set<JB_job_number>(new_job, job_id);
-   }
-
-   ocs::tom::Element<ocs::tom::JAT> new_ja_task = ocs::tom::find_first_rw<JAT_task_number>(ocs::tom::get<JB_ja_tasks>(new_job), ja_task_id);
-   
-   if (new_ja_task == nullptr) {
-      new_ja_task = ocs::tom::emplace_back_in<JB_ja_tasks, JAT_task_number>(new_job, ja_task_id); 
-   }
-
-   new_pe_task = ocs::tom::emplace_back_in<JAT_task_list, PET_id>(new_ja_task, pe_task_id);
-   
-   usage_list = calculate_reserved_usage(qualified_hostname, ja_task, pe_task, 
-                                         job_id, ja_task_id, pe_task_id, pe, now);
-  
-   ocs::tom::set<PET_usage>(new_pe_task, usage_list);
-
-   return new_job;
-}
-
-/* calculate reserved resource usage */
-static void get_reserved_usage(const char *qualified_hostname, lList **job_usage_list) {
+/**
+ * @brief Add the reserved online usage of an array task to the usage record of its job
+ *
+ * @param qualified_hostname this host, as the cluster knows it
+ * @param ja_task the array task
+ * @param job_id the job
+ * @param ja_task_id the array task id
+ * @param pe the parallel environment, or an empty handle
+ * @param now the current time
+ * @param new_job the usage record of the job, or an empty handle to create it
+ *
+ * @return the usage record of the job
+ */
+static ocs::tom::ElementPtr<ocs::tom::JB>
+calculate_reserved_usage_ja_task(const char *qualified_hostname, const ocs::tom::ConstElement<ocs::tom::JAT> ja_task,
+                                 const uint32_t job_id, const uint32_t ja_task_id,
+                                 const ocs::tom::ConstElement<ocs::tom::PE> pe, const uint64_t now,
+                                 ocs::tom::ElementPtr<ocs::tom::JB> new_job) {
    DENTER(TOP_LAYER);
 
-   const lListElem *job;
-   lEnumeration *what;
+   /* create data structures */
+   if (!new_job) {
+      new_job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
+      ocs::tom::set<JB_job_number>(new_job, job_id);
+   }
+
+   const auto new_ja_task = ocs::tom::emplace_back_in<JB_ja_tasks, JAT_task_number>(new_job, ja_task_id);
+
+   ocs::tom::set<JAT_usage_list>(new_ja_task, calculate_reserved_usage(qualified_hostname, ja_task, nullptr,
+                                                                       job_id, ja_task_id, nullptr, pe, now));
+
+   DRETURN(new_job);
+}
+
+/**
+ * @brief Add the reserved online usage of a PE task to the usage record of its job
+ *
+ * @param qualified_hostname this host, as the cluster knows it
+ * @param ja_task the array task
+ * @param pe_task the PE task
+ * @param job_id the job
+ * @param ja_task_id the array task id
+ * @param pe_task_id the PE task id
+ * @param pe the parallel environment, or an empty handle
+ * @param now the current time
+ * @param new_job the usage record of the job, or an empty handle to create it
+ *
+ * @return the usage record of the job
+ */
+static ocs::tom::ElementPtr<ocs::tom::JB>
+calculate_reserved_usage_pe_task(const char *qualified_hostname, const ocs::tom::ConstElement<ocs::tom::JAT> ja_task,
+                                 const ocs::tom::ConstElement<ocs::tom::PET> pe_task, const uint32_t job_id,
+                                 const uint32_t ja_task_id, const char *pe_task_id,
+                                 const ocs::tom::ConstElement<ocs::tom::PE> pe, const uint64_t now,
+                                 ocs::tom::ElementPtr<ocs::tom::JB> new_job) {
+   DENTER(TOP_LAYER);
+
+   /* create data structures */
+   if (!new_job) {
+      new_job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
+      ocs::tom::set<JB_job_number>(new_job, job_id);
+   }
+
+   auto new_ja_task = ocs::tom::get<JB_ja_tasks>(new_job).find_first<JAT_task_number>(ja_task_id);
+
+   if (!new_ja_task) {
+      new_ja_task = ocs::tom::emplace_back_in<JB_ja_tasks, JAT_task_number>(new_job, ja_task_id);
+   }
+
+   const auto new_pe_task = ocs::tom::emplace_back_in<JAT_task_list, PET_id>(new_ja_task, pe_task_id);
+
+   ocs::tom::set<PET_usage>(new_pe_task, calculate_reserved_usage(qualified_hostname, ja_task, pe_task,
+                                                                  job_id, ja_task_id, pe_task_id, pe, now));
+
+   DRETURN(new_job);
+}
+
+/**
+ * @brief Calculate the reserved resource usage of every job on this host
+ *
+ * @param qualified_hostname this host, as the cluster knows it
+ *
+ * @return the usage, one job element per job holding only the job number and the array tasks, owned by the caller;
+ *         an empty list if no job has usage
+ */
+static ocs::tom::ListPtr<ocs::tom::JB>
+get_reserved_usage(const char *qualified_hostname) {
+   DENTER(TOP_LAYER);
 
    uint64_t now = sge_get_gmt64();
-   what = lWhat("%T(%I %I)", JB_Type, JB_job_number, JB_ja_tasks);
+   const auto what = ocs::tom::what<JB_job_number, JB_ja_tasks>();
    /* JG: TODO: why use JB_Type etc.? We only need an object containing
     * job_id, ja_task_id, pe_task_id and a usage_list.
     * Same structure is delivered from PTF.
@@ -1058,32 +1104,25 @@ static void get_reserved_usage(const char *qualified_hostname, lList **job_usage
 
    auto temp_job_usage_list = ocs::tom::ListPtr<ocs::tom::JB>::create("JobResUsageList");
 
-   for_each_ep(job, *ocs::DataStore::get_master_list(SGE_TYPE_JOB)) {
-      uint32_t job_id;
-      const lListElem *ja_task;
-      lListElem *new_job = nullptr;
+   for (const auto job : ocs::tom::ConstList<ocs::tom::JB>(*ocs::DataStore::get_master_list(SGE_TYPE_JOB))) {
+      uint32_t job_id = ocs::tom::get<JB_job_number>(job);
+      ocs::tom::ElementPtr<ocs::tom::JB> new_job;
 
-      job_id = ocs::tom::get<JB_job_number>(job);
-
-      for_each_ep(ja_task, static_cast<const lList *>(ocs::tom::get<JB_ja_tasks>(job))) {
-         uint32_t ja_task_id;
-         ocs::tom::ConstElement<ocs::tom::PET> pe_task;
-
-         ja_task_id = ocs::tom::get<JAT_task_number>(ja_task);
+      for (const auto ja_task : ocs::tom::get<JB_ja_tasks>(job)) {
+         uint32_t ja_task_id = ocs::tom::get<JAT_task_number>(ja_task);
 
          /* we need the pe to be able to calculate the number of slots used
           * as multiplication factor for usage
           */
-         ocs::tom::ConstElement<ocs::tom::PE> pe = ocs::tom::get<JAT_pe_object>(ja_task);
+         const auto pe = ocs::tom::get<JAT_pe_object>(ja_task);
 
          /* If we have a pid for the ja_task: it's either a non-parallel job
           * or the master task of a parallel job.
           * Produce a usage record for it.
           */
-         if (ocs::tom::get<JAT_pid>(ja_task) != 0) { 
-            new_job = calculate_reserved_usage_ja_task(qualified_hostname, ja_task,
-                                                       job_id, ja_task_id,
-                                                       pe, now, new_job);
+         if (ocs::tom::get<JAT_pid>(ja_task) != 0) {
+            new_job = calculate_reserved_usage_ja_task(qualified_hostname, ja_task, job_id, ja_task_id, pe, now,
+                                                       std::move(new_job));
          }
 
          /* If we have pe tasks (tightly integrated): Produce a usage record
@@ -1091,31 +1130,23 @@ static void get_reserved_usage(const char *qualified_hostname, lList **job_usage
           * Do not report reserved usage, if accounting_summary is activated!
           */
          if (!(pe != nullptr && ocs::tom::get<PE_accounting_summary>(pe))) {
-            for_each_ep(pe_task, ocs::tom::get<JAT_task_list>(ja_task)) {
-               const char *pe_task_id;
-
-               pe_task_id = ocs::tom::get<PET_id>(pe_task);
-               new_job = calculate_reserved_usage_pe_task(qualified_hostname, 
-                                                          ja_task, pe_task, 
-                                                          job_id, ja_task_id, 
-                                                          pe_task_id, 
-                                                          pe, now, new_job);
+            for (const auto pe_task : ocs::tom::get<JAT_task_list>(ja_task)) {
+               const char *pe_task_id = ocs::tom::get<PET_id>(pe_task);
+               new_job = calculate_reserved_usage_pe_task(qualified_hostname, ja_task, pe_task, job_id, ja_task_id,
+                                                          pe_task_id, pe, now, std::move(new_job));
             }
          }
       }
 
-      if (new_job != nullptr) {
-         lAppendElem(*temp_job_usage_list, new_job);
+      if (new_job) {
+         temp_job_usage_list->push_back(std::move(new_job));
       }
    }
 
-   *job_usage_list = lSelect("PtfJobUsageList", *temp_job_usage_list, nullptr,
-                             what);
+   // the same reduced descriptor as lWhat("%T(%I %I)", JB_Type, JB_job_number, JB_ja_tasks) gave
+   auto job_usage_list = temp_job_usage_list->select(what, "PtfJobUsageList");
 
-   temp_job_usage_list.reset();
-   lFreeWhat(&what);
-
-   DRETURN_VOID;
+   DRETURN(job_usage_list);
 }
 
 /**
@@ -1132,17 +1163,22 @@ static void get_reserved_usage(const char *qualified_hostname, lList **job_usage
  * @param maxvmem the maximum vmem to add to
  * @param maxrss the maximum rss to add to
  */
-static void build_reserved_mem_usage(const lListElem *gdil_ep, int slots, double wallclock, double *mem, double *maxvmem,
-                                     double *maxrss) {
+static void
+build_reserved_mem_usage(const ocs::tom::ConstElement<ocs::tom::JG> gdil_ep, const int slots, const double wallclock,
+                         double *mem, double *maxvmem, double *maxrss) {
+   DENTER(TOP_LAYER);
+
    /* 
     * sum up memory usage (integral current memory * wallclock time)
     * and maxvmem (assume it is vmem)
     */
-   const lListElem *queue = ocs::tom::get<JG_queue>(gdil_ep);
+   const ocs::tom::ConstElement<ocs::tom::QU> queue(ocs::tom::get<JG_queue>(gdil_ep));
    double vmem = calculate_reserved_memory(queue, slots, QU_h_vmem, QU_s_vmem);
    *mem += vmem * wallclock / (1024*1024*1024);
    *maxvmem += vmem;
    *maxrss += calculate_reserved_memory(queue, slots, QU_h_rss, QU_s_rss);
+
+   DRETURN_VOID;
 }
 
 /**
@@ -1159,7 +1195,7 @@ static void build_reserved_mem_usage(const lListElem *gdil_ep, int slots, double
  *
  * @param now current time
  * @param ja_task job array task
- * @param pe_task parallel task, or nullptr for job ja task
+ * @param pe_task parallel task, or an empty handle for job ja task
  *
  * @param[out] wallclock returns the wallclock time
  * @param[out] cpu returns the reserved cpu usage
@@ -1169,16 +1205,20 @@ static void build_reserved_mem_usage(const lListElem *gdil_ep, int slots, double
  *
  * @note MT-NOTE: build_reserved_usage() is MT safe
  */
-void build_reserved_usage(const uint64_t now, const lListElem *ja_task, const lListElem *pe_task,
-                          double *wallclock, double *cpu, double *mem, double *maxvmem, double *maxrss) {
+void
+build_reserved_usage(const uint64_t now, const ocs::tom::ConstElement<ocs::tom::JAT> ja_task,
+                     const ocs::tom::ConstElement<ocs::tom::PET> pe_task, double *wallclock, double *cpu, double *mem,
+                     double *maxvmem, double *maxrss) {
+   DENTER(TOP_LAYER);
+
    uint64_t start_time;
 
-   if (ja_task == nullptr || wallclock == nullptr || cpu == nullptr || mem == nullptr || maxvmem == nullptr) {
-      return;
+   if (!ja_task || wallclock == nullptr || cpu == nullptr || mem == nullptr || maxvmem == nullptr) {
+      DRETURN_VOID;
    }
 
    /* calculate wallclock time */ 
-   if (pe_task == nullptr) {
+   if (!pe_task) {
       start_time = ocs::tom::get<JAT_start_time>(ja_task);
    } else {
       start_time = ocs::tom::get<PET_start_time>(pe_task);
@@ -1214,32 +1254,30 @@ void build_reserved_usage(const uint64_t now, const lListElem *ja_task, const lL
        *       - for the master task (1 slot)
        *       - for the individual pe tasks
        */
-      if (pe_task != nullptr) {
+      if (pe_task) {
          /*
           * A pe task occupies one slot,
           * we get the virtual memory information from the queue
           * it is running in.
           */
-         const char *queue_name;
-         const lListElem *gdil_ep;
-
          *cpu = *wallclock;
-         queue_name = ocs::tom::get<JG_qname>(lFirst(static_cast<const lList *>(ocs::tom::get<PET_granted_destin_identifier_list>(pe_task))));
-         gdil_ep = ocs::tom::find_first<JG_qname>(ocs::tom::get<JAT_granted_destin_identifier_list>(ja_task), queue_name);
+         const char *queue_name =
+            ocs::tom::get<JG_qname>(ocs::tom::get<PET_granted_destin_identifier_list>(pe_task).front());
+         const auto gdil_ep =
+            ocs::tom::get<JAT_granted_destin_identifier_list>(ja_task).find_first<JG_qname>(queue_name);
          build_reserved_mem_usage(gdil_ep, 1, *wallclock, mem, maxvmem, maxrss);
       } else {
          /* compute cpu */
          int slots = 0;
          int slots_total = 0;
-         ocs::tom::ConstList<ocs::tom::JG> gdil = ocs::tom::get<JAT_granted_destin_identifier_list>(ja_task);
-         const lListElem *gdil_ep;
-         ocs::tom::ConstElement<ocs::tom::PE> pe = ocs::tom::get<JAT_pe_object>(ja_task);
+         const auto gdil = ocs::tom::get<JAT_granted_destin_identifier_list>(ja_task);
+         const auto pe = ocs::tom::get<JAT_pe_object>(ja_task);
 
          /* sequential job, or loose integration, or tight integration with accounting_summary */
          if (pe == nullptr || !ocs::tom::get<PE_control_slaves>(pe) || ocs::tom::get<PE_accounting_summary>(pe)) {
             /* account for all gdil */
-            const lListElem *master_gdil_ep = lFirst(gdil);
-            for_each_ep(gdil_ep, gdil) {
+            const auto master_gdil_ep = gdil.front();
+            for (const auto gdil_ep : gdil) {
                slots = ocs::tom::get<JG_slots>(gdil_ep);
                /* respect job_is_first_task, only once (for the master task gdil) */
                // @todo CS-547 we cannot differentiate master task only and master task + 1 slave task
@@ -1251,13 +1289,14 @@ void build_reserved_usage(const uint64_t now, const lListElem *ja_task, const lL
             }
          } else {
             /* tightly integrated without accounting_summary, this is the master task only */
-            gdil_ep = lFirst(gdil);
             slots_total = 1;
-            build_reserved_mem_usage(gdil_ep, 1, *wallclock, mem, maxvmem, maxrss);
+            build_reserved_mem_usage(gdil.front(), 1, *wallclock, mem, maxvmem, maxrss);
          }
 
          /* cpu is wallclock time * total number of job slots */
          *cpu = *wallclock * slots_total;
       }
    }
+
+   DRETURN_VOID;
 }

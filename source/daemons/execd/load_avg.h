@@ -39,9 +39,15 @@
 
 #include "sge_report_execd.h"
 
+#include "sgeobj/tom/ocs_tom_JAT.h"
+#include "sgeobj/tom/ocs_tom_LR.h"
+#include "sgeobj/tom/ocs_tom_PET.h"
+#include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+
 extern report_source execd_report_sources[];
 
-lList *sge_build_load_report(const char* qualified_hostname, const char* binary_path);
+ocs::tom::ListPtr<ocs::tom::LR> sge_build_load_report(const char *qualified_hostname, const char *binary_path);
 
 void update_job_usage(const char *qualified_hostname);
 
@@ -58,5 +64,6 @@ void sge_set_delay_job_reports_flag(bool new_val);
 uint64_t sge_get_qmrestart_time();
 void sge_set_qmrestart_time(uint64_t qmr);
 
-void build_reserved_usage(const uint64_t now, const lListElem *ja_task, const lListElem *pe_task,
-                          double *wallclock, double *cpu, double *mem, double *maxvmem, double *maxrss);
+void build_reserved_usage(uint64_t now, ocs::tom::ConstElement<ocs::tom::JAT> ja_task,
+                          ocs::tom::ConstElement<ocs::tom::PET> pe_task, double *wallclock, double *cpu, double *mem,
+                          double *maxvmem, double *maxrss);

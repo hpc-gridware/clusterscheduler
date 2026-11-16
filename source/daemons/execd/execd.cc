@@ -344,8 +344,8 @@ int main(int argc, char **argv) {
 
    /* test load sensor (internal or external) */
    {
-      lList *report_list = sge_build_load_report(component_get_qualified_hostname(), ocs::Bootstrap::get_binary_path());
-      lFreeList(&report_list);
+      const auto report_list = sge_build_load_report(component_get_qualified_hostname(),
+                                                     ocs::Bootstrap::get_binary_path());
    }
 
    /*
