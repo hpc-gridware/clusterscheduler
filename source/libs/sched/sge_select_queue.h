@@ -126,9 +126,8 @@ sge_create_load_list(ocs::tom::List<ocs::tom::QU> queue_list, ocs::tom::ConstLis
 bool sge_load_list_alarm(bool monitor_next_run, ocs::tom::ConstList<ocs::tom::LDR> load_list,
                          ocs::tom::ConstList<ocs::tom::EH> host_list, ocs::tom::ConstList<ocs::tom::CE> centry_list);
 
-void sge_remove_queue_from_load_list(lList **load_list, const lList *queue_list);
-
-void sge_free_load_list(lList **load_list);
+void sge_remove_queue_from_load_list(ocs::tom::ListPtr<ocs::tom::LDR> &load_list,
+                                     ocs::tom::ConstList<ocs::tom::QU> queue_list);
 
 char *sge_load_alarm_reason(ocs::tom::Element<ocs::tom::QU> queue, ocs::tom::ConstList<ocs::tom::CE> threshold,
                             ocs::tom::ConstList<ocs::tom::EH> exechost_list,
@@ -139,17 +138,22 @@ OCS_TRANSITIONAL char *sge_load_alarm_reason(lListElem *queue, lList *threshold,
                                              const lList *complex_list, const lList *load_adjustments, char *reason,
                                              int reason_size, const char *type);
 
-int sge_split_queue_load(bool monitor_next_run, lList **unloaded, lList **overloaded, lList *exechost_list,
+int sge_split_queue_load(bool monitor_next_run, ocs::tom::List<ocs::tom::QU> unloaded,
+                         ocs::tom::ListPtr<ocs::tom::QU> *overloaded, lList *exechost_list,
                          const lList *complex_list, const lList *load_adjustments,
                          lList *granted, bool is_consumable_load_alarm, bool is_comprehensive,
                          uint32_t ttype);
 
-int sge_split_queue_slots_free(bool monitor_next_run, lList **unloaded, lList **overloaded);
+int sge_split_queue_slots_free(bool monitor_next_run, ocs::tom::List<ocs::tom::QU> free,
+                               ocs::tom::ListPtr<ocs::tom::QU> &full);
 
-int sge_split_cal_disabled(bool monitor_next_run, lList **unloaded, lList **overloaded);
-int sge_split_disabled(bool monitor_next_run, lList **unloaded, lList **overloaded);
+int sge_split_cal_disabled(bool monitor_next_run, ocs::tom::ListPtr<ocs::tom::QU> &queue_list,
+                           ocs::tom::ListPtr<ocs::tom::QU> &disabled);
+int sge_split_disabled(bool monitor_next_run, ocs::tom::ListPtr<ocs::tom::QU> &queue_list,
+                       ocs::tom::ListPtr<ocs::tom::QU> &disabled);
 
-int sge_split_suspended(bool monitor_next_run, lList **queue_list, lList **suspended);
+int sge_split_suspended(bool monitor_next_run, ocs::tom::ListPtr<ocs::tom::QU> &queue_list,
+                        ocs::tom::ListPtr<ocs::tom::QU> &suspended);
 
 
 /* --- job assignment methods ---------------------------- */

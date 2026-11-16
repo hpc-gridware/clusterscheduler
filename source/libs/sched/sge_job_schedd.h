@@ -54,13 +54,14 @@
 #include "tom/ocs_Transitional.h"
 #include "sgeobj/tom/ocs_tom_JAT.h"
 #include "sgeobj/tom/ocs_tom_JB.h"
+#include "sgeobj/tom/ocs_tom_JC.h"
 #include "sgeobj/tom/ocs_tom_JG.h"
 
 bool job_get_duration(uint64_t *duration, ocs::tom::ConstElement<ocs::tom::JB> jep);
 OCS_TRANSITIONAL bool job_get_duration(uint64_t *duration, const lListElem *jep);
 bool task_get_duration(uint64_t *duration, ocs::tom::ConstElement<ocs::tom::JAT> ja_task);
 
-void sge_inc_jc(lList** jcpp, const char *name, int slots);
+void sge_inc_jc(ocs::tom::ListPtr<ocs::tom::JC> &jc_list, const char *name, int slots);
 
 void sge_dec_jc(lList** jcpp, const char *name, int slots);
 
@@ -107,25 +108,25 @@ enum {
    SPLIT_LAST                          ///< Number of result lists, for loops
 };
 
-void 
-split_jobs(lList **job_list, uint32_t max_aj_instances,
-           lList **result_lists[], bool do_copy); 
+void
+split_jobs(ocs::tom::List<ocs::tom::JB> job_list, uint32_t max_aj_instances,
+           ocs::tom::ListPtr<ocs::tom::JB> *result_lists[], bool do_copy);
 
-void 
-job_lists_split_with_reference_to_max_running(bool monitor_next_run, lList **job_lists[],
-                                              lList **user_list,
+void
+job_lists_split_with_reference_to_max_running(bool monitor_next_run, ocs::tom::ListPtr<ocs::tom::JB> *job_lists[],
+                                              ocs::tom::ConstList<ocs::tom::JC> user_list,
                                               const char *user_name,
                                               uint32_t max_jobs_per_user);
 
 bool
 job_move_first_pending_to_running(lListElem **pending_job,
-                                  lList **result_lists[]);
+                                  ocs::tom::ListPtr<ocs::tom::JB> *result_lists[]);
 
-void 
-trash_splitted_jobs(bool monitor_next_run, lList **job_list[]);
+void
+trash_splitted_jobs(bool monitor_next_run, ocs::tom::ListPtr<ocs::tom::JB> *job_list[]);
 
-void 
-job_lists_print(lList **job_list[]);
+void
+job_lists_print(ocs::tom::ListPtr<ocs::tom::JB> *job_list[]);
 
-void 
-user_list_init_jc(lList **user_list, lList **splitted_job_lists[]);
+void
+user_list_init_jc(ocs::tom::ListPtr<ocs::tom::JC> &user_list, ocs::tom::ListPtr<ocs::tom::JB> *splitted_job_lists[]);

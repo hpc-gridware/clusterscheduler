@@ -199,13 +199,14 @@ const char *get_name_of_split_value(int value) {
  * @param[in,out] pending_job    the pending job (`JB_Type`); set to nullptr
  *                               when the whole job was moved
  * @param[in,out] splitted_jobs  the array of job lists, indexed by the
- *                               SPLIT_* values
+ *                               SPLIT_* values; the running list is created
+ *                               when there is none yet
  *
  * @return true if the pending job was removed
  *
  * @see #split_jobs
  */
-bool job_move_first_pending_to_running(lListElem **pending_job, lList **splitted_jobs[]) {
+bool job_move_first_pending_to_running(lListElem **pending_job, ocs::tom::ListPtr<ocs::tom::JB> *splitted_jobs[]) {
    DENTER(TOP_LAYER);
 
    bool ret = false;
@@ -220,9 +221,10 @@ bool job_move_first_pending_to_running(lListElem **pending_job, lList **splitted
     */
    if (*(splitted_jobs[SPLIT_RUNNING]) == nullptr) {
       // the list belongs to the caller and gets the descriptor of the (possibly reduced) job
-      *(splitted_jobs[SPLIT_RUNNING]) = lCreateList("", lGetElemDescr(pending));
+      *(splitted_jobs[SPLIT_RUNNING]) =
+              ocs::tom::ListPtr<ocs::tom::JB>::from_typed(lCreateList("", lGetElemDescr(pending)));
    }
-   const auto running_list = ocs::tom::List<ocs::tom::JB>(*(splitted_jobs[SPLIT_RUNNING]));
+   const auto running_list = splitted_jobs[SPLIT_RUNNING]->get();
    auto running_job = running_list.find_first<JB_job_number>(job_id);
 
    /*
@@ -284,7 +286,7 @@ bool job_move_first_pending_to_running(lListElem **pending_job, lList **splitted
     * Remove pending job if there are no pending tasks anymore
     */
    if (job_count_pending_tasks(pending, false) == 0) {
-      ocs::tom::List<ocs::tom::JB>(*(splitted_jobs[SPLIT_PENDING])).erase(pending);
+      splitted_jobs[SPLIT_PENDING]->get().erase(pending);
       *pending_job = nullptr;
       ret = true;
    }
@@ -336,17 +338,19 @@ job_get_next_task(const ocs::tom::Element<ocs::tom::JB> job) {
  * Initialize "user_list" and JC_jobs attribute for each user according
  * to the list of running jobs.
  *
- * @param[in,out] user_list           the job counters per user (`JC_Type`)
+ * @param[in,out] user_list           the job counters per user (`JC_Type`),
+ *                                     created with the first counter
  * @param[in]     splitted_job_lists   the array of job lists, indexed by the
  *                                     SPLIT_* values; the running and the
  *                                     suspended list are counted
  */
-void user_list_init_jc(lList **user_list, lList **splitted_job_lists[]) {
+void user_list_init_jc(ocs::tom::ListPtr<ocs::tom::JC> &user_list,
+                       ocs::tom::ListPtr<ocs::tom::JB> *splitted_job_lists[]) {
    DENTER(TOP_LAYER);
 
    for (const int split : {SPLIT_RUNNING, SPLIT_SUSPENDED}) {
       if (splitted_job_lists[split] != nullptr) {
-         for (const auto job : ocs::tom::ConstList<ocs::tom::JB>(*(splitted_job_lists[split]))) {
+         for (const auto job : splitted_job_lists[split]->get()) {
             // @todo (CS-451) the 3rd argument to sge_inc_jc is "slots", but we pass the number of array tasks. Correct?
             sge_inc_jc(user_list, ocs::tom::get<JB_owner>(job), job_get_ja_tasks(job));
          }
@@ -367,7 +371,7 @@ void user_list_init_jc(lList **user_list, lList **splitted_job_lists[]) {
  *                                  scheduler run log
  * @param[in,out] job_lists         the array of job lists, indexed by the
  *                                  SPLIT_* values
- * @param[in,out] user_list         the job counters per user (`JC_Type`)
+ * @param[in]     user_list         the job counters per user (`JC_Type`)
  * @param[in]     user_name         the user to limit, or nullptr for all users
  * @param[in]     max_jobs_per_user the limit, the `max_u_jobs` of the
  *                                  scheduler configuration
@@ -377,19 +381,19 @@ void user_list_init_jc(lList **user_list, lList **splitted_job_lists[]) {
  *
  * @see #trash_splitted_jobs, #split_jobs, #user_list_init_jc
  */
-void job_lists_split_with_reference_to_max_running(const bool monitor_next_run, lList **job_lists[],
-                                                   lList **user_list,
+void job_lists_split_with_reference_to_max_running(const bool monitor_next_run,
+                                                   ocs::tom::ListPtr<ocs::tom::JB> *job_lists[],
+                                                   const ocs::tom::ConstList<ocs::tom::JC> user_list,
                                                    const char *user_name,
                                                    const uint32_t max_jobs_per_user) {
    DENTER(TOP_LAYER);
-   if (max_jobs_per_user != 0 && 
+   if (max_jobs_per_user != 0 &&
        job_lists[SPLIT_PENDING] != nullptr &&
        *(job_lists[SPLIT_PENDING]) != nullptr &&
        job_lists[SPLIT_PENDING_EXCLUDED] != nullptr) {
-      const auto pending_list = ocs::tom::List<ocs::tom::JB>(*(job_lists[SPLIT_PENDING]));
-      const auto users = ocs::tom::List<ocs::tom::JC>(*user_list);
-      ocs::tom::Element<ocs::tom::JC> user;
-      ocs::tom::Element<ocs::tom::JC> next_user;
+      const auto pending_list = job_lists[SPLIT_PENDING]->get();
+      ocs::tom::ConstElement<ocs::tom::JC> user;
+      ocs::tom::ConstElement<ocs::tom::JC> next_user;
 #ifndef CULL_NO_HASH
       /*
        * create a hash table on JB_owner to speedup
@@ -399,9 +403,9 @@ void job_lists_split_with_reference_to_max_running(const bool monitor_next_run, 
 #endif
 
       if (user_name == nullptr) {
-         next_user = users.front();
+         next_user = user_list.front();
       } else {
-         next_user = users.find_first<JC_name>(user_name);
+         next_user = user_list.find_first<JC_name>(user_name);
       }
       while ((user = next_user) != nullptr) {
          uint32_t jobs_for_user = ocs::tom::get<JC_jobs>(user);
@@ -428,10 +432,11 @@ void job_lists_split_with_reference_to_max_running(const bool monitor_next_run, 
                auto excluded_job = pending_list.extract(user_job);
                if (*(job_lists[SPLIT_PENDING_EXCLUDED]) == nullptr) {
                   // the list belongs to the caller and gets the descriptor of the (possibly reduced) job
-                  *(job_lists[SPLIT_PENDING_EXCLUDED]) = lCreateList("", lGetElemDescr(user_job));
+                  *(job_lists[SPLIT_PENDING_EXCLUDED]) =
+                          ocs::tom::ListPtr<ocs::tom::JB>::from_typed(lCreateList("", lGetElemDescr(user_job)));
                }
 
-               ocs::tom::List<ocs::tom::JB>(*(job_lists[SPLIT_PENDING_EXCLUDED])).push_back(std::move(excluded_job));
+               (*(job_lists[SPLIT_PENDING_EXCLUDED]))->push_back(std::move(excluded_job));
             }
          }
       } 
@@ -461,11 +466,17 @@ void job_lists_split_with_reference_to_max_running(const bool monitor_next_run, 
  * errors (It is not used in the moment)
  *
  * @param[in,out] job_list         the input list of jobs (`JB_Type`); the
- *                                 jobs are moved out of it unless `do_copy`
+ *                                 jobs are moved out of it unless `do_copy`.
+ *                                 The list itself belongs to the caller and
+ *                                 is never replaced or freed, also when it is
+ *                                 left empty; with `do_copy` its jobs are
+ *                                 taken apart and put together again
  * @param[in]     max_aj_instances maximum number of tasks of an array job
  *                                 that may be instantiated at the same time
  * @param[out]    result_list      the array of result lists (`JB_Type`),
- *                                 indexed by the SPLIT_* values
+ *                                 indexed by the SPLIT_* values; a nullptr
+ *                                 entry is not collected, a result list is
+ *                                 created with its first job
  * @param[in]     do_copy          true to copy the jobs instead of moving
  *                                 them, leaving `job_list` intact
  *
@@ -481,15 +492,15 @@ void job_lists_split_with_reference_to_max_running(const bool monitor_next_run, 
  *
  * @see #trash_splitted_jobs, #job_lists_split_with_reference_to_max_running
  */
-void split_jobs(lList **job_list, const uint32_t max_aj_instances,
-                lList **result_list[], const bool do_copy) {
+void split_jobs(const ocs::tom::List<ocs::tom::JB> job_list, const uint32_t max_aj_instances,
+                ocs::tom::ListPtr<ocs::tom::JB> *result_list[], const bool do_copy) {
    DENTER(TOP_LAYER);
 
 #if 0 /* EB: DEBUG: enable debug messages for split_jobs() */
 #define JOB_SPLIT_DEBUG
 #endif
    // the input list belongs to the caller; the handle does not replace it
-   const auto jobs = ocs::tom::List<ocs::tom::JB>(*job_list);
+   const auto jobs = job_list;
    ocs::tom::Element<ocs::tom::JB> job;
    auto next_job = jobs.front();
    ocs::tom::Element<ocs::tom::JB> previous_job;
@@ -706,7 +717,7 @@ void split_jobs(lList **job_list, const uint32_t max_aj_instances,
                   DPRINTF("Create " SFN "-list\n", get_name_of_split_value(i));
 #endif
                   // the list belongs to the caller and gets the descriptor of the (possibly reduced) job
-                  *(result_list[i]) = lCreateList("", lGetElemDescr(job));
+                  *(result_list[i]) = ocs::tom::ListPtr<ocs::tom::JB>::from_typed(lCreateList("", lGetElemDescr(job)));
                } 
                if (move_job == 1) {
 #ifdef JOB_SPLIT_DEBUG
@@ -730,7 +741,7 @@ void split_jobs(lList **job_list, const uint32_t max_aj_instances,
                DPRINTF(("Add job element " sge_u32 " into " SFN "-list\n",
                         ocs::tom::get<JB_job_number>(new_job.get()), get_name_of_split_value(i)));
 #endif
-               target_job[i] = ocs::tom::List<ocs::tom::JB>(*(result_list[i])).push_back(std::move(new_job));
+               target_job[i] = (*(result_list[i]))->push_back(std::move(new_job));
             }
          }
       }
@@ -840,7 +851,7 @@ void split_jobs(lList **job_list, const uint32_t max_aj_instances,
  *
  * @see #split_jobs, #job_lists_split_with_reference_to_max_running
  */
-void trash_splitted_jobs(const bool monitor_next_run, lList **splitted_job_lists[]) {
+void trash_splitted_jobs(const bool monitor_next_run, ocs::tom::ListPtr<ocs::tom::JB> *splitted_job_lists[]) {
    DENTER(TOP_LAYER);
 
    int split_id_a[] = {
@@ -855,8 +866,8 @@ void trash_splitted_jobs(const bool monitor_next_run, lList **splitted_job_lists
    int i = -1;
 
    while (split_id_a[++i] != SPLIT_LAST) { 
-      lList **job_list = splitted_job_lists[split_id_a[i]];
-      const auto jobs = ocs::tom::List<ocs::tom::JB>(*job_list);
+      ocs::tom::ListPtr<ocs::tom::JB> *job_list = splitted_job_lists[split_id_a[i]];
+      const auto jobs = job_list->get();
       int is_first_of_category = 1;
 
       for (const auto job : jobs) {
@@ -922,7 +933,7 @@ void trash_splitted_jobs(const bool monitor_next_run, lList **splitted_job_lists
          } 
       }
       // the lists belong to the caller, which gets them back freed
-      lFreeList(job_list);
+      job_list->reset();
    }
 
    DRETURN_VOID;
@@ -933,14 +944,14 @@ void trash_splitted_jobs(const bool monitor_next_run, lList **splitted_job_lists
  *
  * @param[in] job_list the array of result lists, indexed by the SPLIT_* values
  */
-void job_lists_print(lList **job_list[]) {
+void job_lists_print(ocs::tom::ListPtr<ocs::tom::JB> *job_list[]) {
    DENTER(TOP_LAYER);
 
    for (int i = SPLIT_FIRST; i < SPLIT_LAST; i++) {
       uint32_t ids = 0;
 
       if (job_list[i] && *(job_list[i])) {
-         const auto jobs = ocs::tom::ConstList<ocs::tom::JB>(*(job_list[i]));
+         const auto jobs = ocs::tom::ConstList<ocs::tom::JB>(job_list[i]->get());
          for (const auto job : jobs) {
             ids += job_get_enrolled_ja_tasks(job);
             ids += job_get_not_enrolled_ja_tasks(job);
@@ -983,20 +994,25 @@ void sge_dec_jc(lList **jcpp, const char *name, int slots) {
 /**
  * @brief Raises the job counter of one user, creating the entry if needed
  *
- * @param[in,out] jcpp  the job counter list (`JC_Type`)
- * @param[in]     name  the user the counter belongs to
- * @param[in]     slots how much to add
+ * @param[in,out] jc_list the job counter list (`JC_Type`), created with its first entry
+ * @param[in]     name    the user the counter belongs to
+ * @param[in]     slots   how much to add
  */
-void sge_inc_jc(lList **jcpp, const char *name, int slots) {
+void sge_inc_jc(ocs::tom::ListPtr<ocs::tom::JC> &jc_list, const char *name, const int slots) {
    DENTER(TOP_LAYER);
 
    int n = 0;
 
-   auto ep = ocs::tom::find_first_rw<JC_name>(*jcpp, name);
-   if (ep) 
+   auto ep = jc_list->find_first<JC_name>(name);
+   if (ep) {
       n = ocs::tom::get<JC_jobs>(ep);
-   else 
-      ep = ocs::tom::emplace_back<JC_name>(jcpp, name);
+   } else {
+      // created as the free emplace_back() created it: unnamed and hashed
+      if (jc_list == nullptr) {
+         jc_list = ocs::tom::ListPtr<ocs::tom::JC>::create("");
+      }
+      ep = jc_list->emplace_back<JC_name>(name);
+   }
 
    n += slots;
 

@@ -88,11 +88,11 @@ static void sge_urgency(uint64_t now, double *min_urgency, double *max_urgency, 
  */
 void sge_do_urgency(uint64_t now, const ocs::tom::List<ocs::tom::JB> running_jobs,
                     const ocs::tom::List<ocs::tom::JB> pending_jobs, scheduler_all_data_t *lists) {
+   DENTER(TOP_LAYER);
    double min_urgency = DBL_MAX;
    double max_urgency = DBL_MIN;
-   // the lists of the scheduler's data are raw until it is converted; they are checked where they arrive (N-X-3)
-   const auto centries = ocs::tom::ConstList<ocs::tom::CE>(lists->centry_list);
-   const auto pes = ocs::tom::ConstList<ocs::tom::PE>(lists->pe_list);
+   const auto centries = lists->centry_list;
+   const auto pes = ocs::tom::ConstList<ocs::tom::PE>(*lists->pe_list);
 
    /* determine absolute static urgency and related min/max values */
    sge_urgency(now, &min_urgency, &max_urgency, pending_jobs, centries, pes);
@@ -105,6 +105,7 @@ void sge_do_urgency(uint64_t now, const ocs::tom::List<ocs::tom::JB> running_job
    if (running_jobs != nullptr) {
       sge_normalize_urgency(running_jobs, min_urgency, max_urgency);
    }
+   DRETURN_VOID;
 }
 
 /**

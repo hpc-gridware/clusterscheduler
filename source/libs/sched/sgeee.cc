@@ -819,7 +819,7 @@ sge_set_job_refs(const ocs::tom::Element<ocs::tom::JB> job,
     * locate user object and save off reference
     *-------------------------------------------------------------*/
 
-   ref->user = ocs::tom::Element<ocs::tom::UU>(user_list_locate(lists->user_list, ocs::tom::get<JB_owner>(job)));
+   ref->user = ocs::tom::Element<ocs::tom::UU>(user_list_locate(*lists->user_list, ocs::tom::get<JB_owner>(job)));
    if (ref->user) {
       ocs::tom::set<UU_job_cnt>(ref->user, 0);
       ocs::tom::set<UU_pending_job_cnt>(ref->user, 0);
@@ -829,7 +829,7 @@ sge_set_job_refs(const ocs::tom::Element<ocs::tom::JB> job,
     * locate project object and save off reference
     *-------------------------------------------------------------*/
 
-   ref->project = ocs::tom::Element<ocs::tom::PR>(prj_list_locate(lists->project_list,
+   ref->project = ocs::tom::Element<ocs::tom::PR>(prj_list_locate(*lists->project_list,
                                                                    ocs::tom::get<JB_project>(job)));
    if (ref->project) {
       ocs::tom::set<PR_job_cnt>(ref->project, 0);
@@ -840,7 +840,7 @@ sge_set_job_refs(const ocs::tom::Element<ocs::tom::JB> job,
     * locate share tree node and save off reference
     *-------------------------------------------------------------*/
 
-   if (const auto root = ocs::tom::List<ocs::tom::STN>(lists->share_tree).front(); root) {
+   if (const auto root = lists->share_tree->front(); root) {
       lListElem *pnode = nullptr;
 
       ref->share_tree_type = ocs::tom::get<STN_type>(root);
@@ -873,7 +873,7 @@ sge_set_job_refs(const ocs::tom::Element<ocs::tom::JB> job,
     * locate department object and save off reference in job entry
     *-------------------------------------------------------------*/
 
-   ref->dept = locate_department(ocs::tom::List<ocs::tom::US>(lists->dept_list),
+   ref->dept = locate_department(lists->dept_list.get(),
                                  ocs::tom::get<JB_department>(job));
    if (ref->dept) {
       ocs::tom::set<US_job_cnt>(ref->dept, 0);
@@ -1888,7 +1888,7 @@ calc_job_tickets(sge_ref_t *ref) {
    /* for PE slave-controlled jobs, set tickets for each granted queue */
 
    if (ja_task && (pe_str=ocs::tom::get<JAT_granted_pe>(ja_task))
-         && (pe = ocs::tom::ConstElement<ocs::tom::PE>(pe_list_locate(all_lists->pe_list, pe_str)))
+         && (pe = ocs::tom::ConstElement<ocs::tom::PE>(pe_list_locate(*all_lists->pe_list, pe_str)))
          && ocs::tom::get<PE_control_slaves>(pe)
          && (granted=ocs::tom::get<JAT_granted_destin_identifier_list>(ja_task))) {
 
@@ -2211,13 +2211,13 @@ sge_calc_tickets(scheduler_all_data_t *lists,
     * Init job_ref_count in each share tree node to zero
     *-------------------------------------------------------------*/
 
-   const auto root = ocs::tom::List<ocs::tom::STN>(lists->share_tree).front();
+   const auto root = lists->share_tree->front();
    if (root) {
       sge_init_share_tree_nodes(root);
-      ocs::ShareTree::set_node_project_flag(root, lists->project_list);
+      ocs::ShareTree::set_node_project_flag(root, *lists->project_list);
    }
 
-   for (const auto qep : ocs::tom::ConstList<ocs::tom::QU>(lists->queue_list)) {
+   for (const auto qep : ocs::tom::ConstList<ocs::tom::QU>(*lists->queue_list)) {
       free_qslots += MAX(0, ((int)ocs::tom::get<QU_job_slots>(qep)) - qinstance_slots_used(qep));
    }
 
@@ -3023,8 +3023,8 @@ sge_calc_sharetree_targets(const ocs::tom::Element<ocs::tom::STN> root,
    /* decay and store user and project usage into sharetree nodes */
 
    ocs::ShareTree::calc_node_usage(root,
-                       lists->user_list,
-                       lists->project_list,
+                       *lists->user_list,
+                       *lists->project_list,
                        decay_list,
                        curr_time,
                        nullptr,
@@ -3300,7 +3300,7 @@ sge_build_sgeee_orders(scheduler_all_data_t *lists, const ocs::tom::List<ocs::to
 
          for (ocs::tom::Element<ocs::tom::JAT> ja_task : ocs::tom::get<JB_ja_tasks>(job)) {
             if ((pe_str=ocs::tom::get<JAT_granted_pe>(ja_task))
-                  && (pe = ocs::tom::ConstElement<ocs::tom::PE>(pe_list_locate(all_lists->pe_list, pe_str)))
+                  && (pe = ocs::tom::ConstElement<ocs::tom::PE>(pe_list_locate(*all_lists->pe_list, pe_str)))
                   && ocs::tom::get<PE_control_slaves>(pe)) {
 
                granted=ocs::tom::get<JAT_granted_destin_identifier_list>(ja_task);
@@ -3328,7 +3328,7 @@ sge_build_sgeee_orders(scheduler_all_data_t *lists, const ocs::tom::List<ocs::to
    if ((queued_jobs != nullptr) && (max_queued_ticket_orders || sconf_is_new_config())) {
       uint32_t free_qslots = 0;
       norders = static_cast<int>(order_list.size());
-      for (const auto qep : ocs::tom::ConstList<ocs::tom::QU>(lists->queue_list)) {
+      for (const auto qep : ocs::tom::ConstList<ocs::tom::QU>(*lists->queue_list)) {
          free_qslots += MAX(0, ((int)ocs::tom::get<QU_job_slots>(qep) - qinstance_slots_used(qep)));
       }
 

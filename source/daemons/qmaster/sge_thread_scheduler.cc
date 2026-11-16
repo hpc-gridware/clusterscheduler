@@ -611,7 +611,8 @@ sge_scheduler_main(void *arg) {
       /* if we actually got events, start the scheduling run and further event processing */
       if (handled_events) {
          lList *answer_list = nullptr;
-         scheduler_all_data_t copy;
+         // the snapshot owns its copies; they are freed at the end of the run, see below
+         scheduler_all_data_t copy{};
          // the mirror's lists; the cluster queue, job, host and pe lists hold the reduced elements of the subscription
          const auto master_cqueue_list =
                  ocs::tom::ConstList<ocs::tom::CQ>(*ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE));
@@ -663,10 +664,11 @@ sge_scheduler_main(void *arg) {
           * copy/filter data necessary for the scheduler run
           * and run the scheduler method
           */
-         memset(&copy, 0, sizeof(copy));
-
-         copy.dept_list = lSelect(nullptr, master_userset_list, where_what.where_dept, where_what.what_acldept);
-         copy.acl_list = lSelect(nullptr, master_userset_list, where_what.where_acl, where_what.what_acldept);
+         // the selections have the reduced descriptor of the subscription, hence the checked handles
+         copy.dept_list = ocs::tom::ListPtr<ocs::tom::US>(
+                 lSelect(nullptr, master_userset_list, where_what.where_dept, where_what.what_acldept));
+         copy.acl_list = ocs::tom::ListPtr<ocs::tom::US>(
+                 lSelect(nullptr, master_userset_list, where_what.where_acl, where_what.what_acldept));
 
          DPRINTF("RAW CQ:%d, J:%d, H:%d, C:%d, A:%d, D:%d, P:%d, CKPT:%d,"
                   " US:%d, PR:%d, RQS:%d, AR:%d, S:nd:%d/lf:%d\n",
@@ -674,8 +676,8 @@ sge_scheduler_main(void *arg) {
                  lGetNumberOfElem(master_job_list),
                  lGetNumberOfElem(master_exechost_list),
                  lGetNumberOfElem(master_centry_list),
-                 lGetNumberOfElem(copy.acl_list),
-                 lGetNumberOfElem(copy.dept_list),
+                 lGetNumberOfElem(*copy.acl_list),
+                 lGetNumberOfElem(*copy.dept_list),
                  lGetNumberOfElem(master_project_list),
                  lGetNumberOfElem(master_ckpt_list),
                  lGetNumberOfElem(master_user_list),
@@ -726,7 +728,7 @@ sge_scheduler_main(void *arg) {
 #endif
 
          // prepare data for the scheduler itself
-         copy.host_list = master_exechost_list.clone().release();
+         copy.host_list = master_exechost_list.clone();
 
          // within the scheduler we only need QIs create one big qinstance list
          {
@@ -749,9 +751,10 @@ sge_scheduler_main(void *arg) {
                        lSelect(nullptr, qinstance_list, nullptr, what_queue3));
                if (t) {
                   if (copy.all_queue_list == nullptr) {
-                     copy.all_queue_list = lCreateList("all", lGetListDescr(*t));
+                     // the list gets the reduced descriptor of the selection
+                     copy.all_queue_list = ocs::tom::ListPtr<ocs::tom::QU>(lCreateList("all", lGetListDescr(*t)));
                   }
-                  lAppendList(copy.all_queue_list, *t);
+                  lAppendList(*copy.all_queue_list, *t);
                   t.reset();
                }
 
@@ -760,9 +763,10 @@ sge_scheduler_main(void *arg) {
                        lSelect(nullptr, qinstance_list, where_what.where_queue, where_what.what_queue2));
                if (t_qu) {
                   if (copy.queue_list == nullptr) {
-                     copy.queue_list = lCreateList("enabled", lGetListDescr(*t_qu));
+                     // the list gets the reduced descriptor of the selection
+                     copy.queue_list = ocs::tom::ListPtr<ocs::tom::QU>(lCreateList("enabled", lGetListDescr(*t_qu)));
                   }
-                  lAppendList(copy.queue_list, *t_qu);
+                  lAppendList(*copy.queue_list, *t_qu);
                   t_qu.reset();
                }
 
@@ -771,9 +775,11 @@ sge_scheduler_main(void *arg) {
                        lSelect(nullptr, qinstance_list, where_what.where_queue2, where_what.what_queue2));
                if (t_qu_2) {
                   if (copy.dis_queue_list == nullptr) {
-                     copy.dis_queue_list = lCreateList("disabled", lGetListDescr(*t_qu_2));
+                     // the list gets the reduced descriptor of the selection
+                     copy.dis_queue_list =
+                             ocs::tom::ListPtr<ocs::tom::QU>(lCreateList("disabled", lGetListDescr(*t_qu_2)));
                   }
-                  lAppendList(copy.dis_queue_list, *t_qu_2);
+                  lAppendList(*copy.dis_queue_list, *t_qu_2);
                   t_qu_2.reset();
                }
             }
@@ -782,11 +788,11 @@ sge_scheduler_main(void *arg) {
             }
          }
 
-         copy.category_list = master_category_list.clone().release();
-         copy.job_list = master_job_list.clone().release();
+         copy.category_list = master_category_list.clone();
+         copy.job_list = master_job_list.clone();
 
          // We have copied the category list and the job list, so we need to update also the cached category pointers
-         ocs::CategoryQmaster::refresh_cat_data_all_jobs(copy.category_list, copy.job_list);
+         ocs::CategoryQmaster::refresh_cat_data_all_jobs(*copy.category_list, *copy.job_list);
 
          /* no need to copy these lists, they are read only used */
          copy.centry_list = master_centry_list;
@@ -794,35 +800,35 @@ sge_scheduler_main(void *arg) {
          copy.hgrp_list = master_hgrp_list;
 
          /* these lists need to be copied because they are modified during scheduling run */
-         copy.share_tree = master_sharetree_list.clone().release();
-         copy.pe_list = master_pe_list.clone().release();
-         copy.user_list = master_user_list.clone().release();
-         copy.project_list = master_project_list.clone().release();
-         copy.rqs_list = master_rqs_list.clone().release();
-         copy.ar_list = master_ar_list.clone().release();
+         copy.share_tree = master_sharetree_list.clone();
+         copy.pe_list = master_pe_list.clone();
+         copy.user_list = master_user_list.clone();
+         copy.project_list = master_project_list.clone();
+         copy.rqs_list = master_rqs_list.clone();
+         copy.ar_list = master_ar_list.clone();
 
          /* report number of reduced and raw (in brackets) lists */
          DPRINTF("Q:" sge_u32 ", AQ:" sge_u32 ", DQ:" sge_u32 ", J:" sge_u32 "(" sge_u32 "), H:" sge_u32 "(" sge_u32 "), C:" sge_u32
                   ", A:" sge_u32 ", D:" sge_u32 ", P:" sge_u32 ", CKPT:" sge_u32 ", US:" sge_u32 ", PR:" sge_u32
                   ", RQS:" sge_u32 ", AR:" sge_u32 ", S:nd:%d/lf:%d\n",
-                 lGetNumberOfElem(copy.queue_list),
-                 lGetNumberOfElem(copy.all_queue_list),
-                 lGetNumberOfElem(copy.dis_queue_list),
-                 lGetNumberOfElem(copy.job_list),
+                 lGetNumberOfElem(*copy.queue_list),
+                 lGetNumberOfElem(*copy.all_queue_list),
+                 lGetNumberOfElem(*copy.dis_queue_list),
+                 lGetNumberOfElem(*copy.job_list),
                  lGetNumberOfElem(master_job_list),
-                 lGetNumberOfElem(copy.host_list),
+                 lGetNumberOfElem(*copy.host_list),
                  lGetNumberOfElem(master_exechost_list),
                  lGetNumberOfElem(copy.centry_list),
-                 lGetNumberOfElem(copy.acl_list),
-                 lGetNumberOfElem(copy.dept_list),
-                 lGetNumberOfElem(copy.pe_list),
+                 lGetNumberOfElem(*copy.acl_list),
+                 lGetNumberOfElem(*copy.dept_list),
+                 lGetNumberOfElem(*copy.pe_list),
                  lGetNumberOfElem(copy.ckpt_list),
-                 lGetNumberOfElem(copy.user_list),
-                 lGetNumberOfElem(copy.project_list),
-                 lGetNumberOfElem(copy.rqs_list),
-                 lGetNumberOfElem(copy.ar_list),
-                 ocs::tom::ConstList<ocs::tom::STN>(copy.share_tree).count_nodes<STN_children>(),
-                 ocs::tom::ConstList<ocs::tom::STN>(copy.share_tree).count_leaves<STN_children>()
+                 lGetNumberOfElem(*copy.user_list),
+                 lGetNumberOfElem(*copy.project_list),
+                 lGetNumberOfElem(*copy.rqs_list),
+                 lGetNumberOfElem(*copy.ar_list),
+                 copy.share_tree->count_nodes<STN_children>(),
+                 copy.share_tree->count_leaves<STN_children>()
                  );
 
          bool in_nd_mode = ocs::DebugParam::is_component_in_nd_mode();
@@ -862,23 +868,23 @@ sge_scheduler_main(void *arg) {
          PROF_START_MEASUREMENT(SGE_PROF_CUSTOM7);
 
          // free category cache within the category list
-         ocs::CategoryQmaster::reset_tmp_data(copy.category_list);
-         lFreeList(&(copy.category_list));
+         ocs::CategoryQmaster::reset_tmp_data(*copy.category_list);
+         copy.category_list.reset();
 
-         /* ... which gets deleted after using */
-         lFreeList(&(copy.host_list));
-         lFreeList(&(copy.queue_list));
-         lFreeList(&(copy.dis_queue_list));
-         lFreeList(&(copy.all_queue_list));
-         lFreeList(&(copy.job_list));
-         lFreeList(&(copy.acl_list));
-         lFreeList(&(copy.dept_list));
-         lFreeList(&(copy.pe_list));
-         lFreeList(&(copy.share_tree));
-         lFreeList(&(copy.user_list));
-         lFreeList(&(copy.project_list));
-         lFreeList(&(copy.rqs_list));
-         lFreeList(&(copy.ar_list));
+         // ... which gets deleted after using; here and not at the end of the scope, so the free is measured
+         copy.host_list.reset();
+         copy.queue_list.reset();
+         copy.dis_queue_list.reset();
+         copy.all_queue_list.reset();
+         copy.job_list.reset();
+         copy.acl_list.reset();
+         copy.dept_list.reset();
+         copy.pe_list.reset();
+         copy.share_tree.reset();
+         copy.user_list.reset();
+         copy.project_list.reset();
+         copy.rqs_list.reset();
+         copy.ar_list.reset();
 
          PROF_STOP_MEASUREMENT(SGE_PROF_CUSTOM7);
          double prof_free = prof_get_measurement_wallclock(SGE_PROF_CUSTOM7, true, nullptr);

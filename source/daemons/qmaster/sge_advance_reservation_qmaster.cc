@@ -1018,6 +1018,7 @@ sge_ar_event_handler(te_event_t anEvent, monitoring_t *monitor) {
  *
  * @param alpp answer list pointer pointer
  * @param ar ar object
+ * @param gdi_session the GDI session of the request, for reading the data store consistently
  *
  * @return true on success, enough resources reservable false in verify mode or not enough resources available
  *
@@ -1026,9 +1027,9 @@ sge_ar_event_handler(te_event_t anEvent, monitoring_t *monitor) {
 static bool
 ar_reserve_queues(lList **alpp, lListElem *ar, uint64_t gdi_session) {
    DENTER(TOP_LAYER);
-   lList **splitted_job_lists[SPLIT_LAST];
-   lList *suspended_list = nullptr;                   /* JB_Type */
-   lList *running_list = nullptr;                     /* JB_Type */
+   ocs::tom::ListPtr<ocs::tom::JB> *splitted_job_lists[SPLIT_LAST];
+   ocs::tom::ListPtr<ocs::tom::JB> suspended_list;
+   ocs::tom::ListPtr<ocs::tom::JB> running_list;
 
    int verify_mode = ocs::tom::get<AR_verify>(ar);
    lList *talp = nullptr;
@@ -1181,22 +1182,23 @@ ar_reserve_queues(lList **alpp, lListElem *ar, uint64_t gdi_session) {
       splitted_job_lists[SPLIT_SUSPENDED] = &suspended_list;
       splitted_job_lists[SPLIT_RUNNING] = &running_list;
 
-      /* split job lists must be freed */
-      split_jobs(&master_job_list, mconf_get_max_aj_instances(), splitted_job_lists, true);
+      // the jobs are copied, the master job list stays the data store's and is not replaced
+      split_jobs(ocs::tom::List<ocs::tom::JB>(master_job_list), mconf_get_max_aj_instances(), splitted_job_lists,
+                 true);
    }
 
    /*
     * prepare resource schedule
     */
-   prepare_resource_schedules(*(splitted_job_lists[SPLIT_RUNNING]),
-                              *(splitted_job_lists[SPLIT_SUSPENDED]),
+   prepare_resource_schedules(*running_list,
+                              *suspended_list,
                               master_pe_list, a.host_list, a.queue_list,
                               nullptr, a.centry_list, a.acl_list,
                               a.hgrp_list, nullptr, false, a.now);
 
    /* free generated job lists */
-   lFreeList(splitted_job_lists[SPLIT_RUNNING]);
-   lFreeList(splitted_job_lists[SPLIT_SUSPENDED]);
+   running_list.reset();
+   suspended_list.reset();
 
    ocs::tom::set<JB_execution_time>(dummy_job, ocs::tom::get<AR_start_time>(ar));
    ocs::tom::set<JB_deadline>(dummy_job, ocs::tom::get<AR_end_time>(ar));

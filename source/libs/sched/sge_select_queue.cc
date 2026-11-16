@@ -2900,14 +2900,16 @@ char *sge_load_alarm_reason(lListElem *qep, lList *threshold, const lList *exech
  * @brief Splits the queue list into unloaded and overloaded queues
  *
  * The overloaded ones are taken out of `unloaded`, so what remains there is
- * what the scheduler may still dispatch to.
+ * what the scheduler may still dispatch to. The list itself stays, also when
+ * it is left empty.
  *
  * @param[in]     monitor_next_run       whether the messages also go into the
  *                                       scheduler run log
  * @param[in,out] unloaded               the queue list; the overloaded queues
  *                                       are removed from it (`QU_Type`)
- * @param[out]    overloaded             receives the overloaded queues, may
- *                                       be nullptr to drop them
+ * @param[out]    overloaded             receives the overloaded queues, created
+ *                                       when the first one is moved; may be
+ *                                       nullptr to drop them
  * @param[in]     exechost_list          the execution hosts, for the load
  *                                       values (`EH_Type`)
  * @param[in]     centry_list            the system wide attribute
@@ -2924,17 +2926,17 @@ char *sge_load_alarm_reason(lListElem *qep, lList *threshold, const lList *exech
  * @return 0 on success, -1 on an error in a called function
  */
 int sge_split_queue_load(
-bool monitor_next_run,
-lList **unloaded,               /* QU_Type */
-lList **overloaded,             /* QU_Type */
+const bool monitor_next_run,
+const ocs::tom::List<ocs::tom::QU> unloaded,
+ocs::tom::ListPtr<ocs::tom::QU> *overloaded,
 lList *exechost_list,           /* EH_Type */
 const lList *centry_list,             /* CE_Type */
 const lList *load_adjustments,  /* CE_Type */
 lList *granted,                 /* JG_Type */
-bool  is_consumable_load_alarm, /* is true, when the consumable evaluation
+const bool is_consumable_load_alarm, /* is true, when the consumable evaluation
                                    set a load alarm */
-bool is_comprehensive,          /* do the load evaluation comprehensive (include consumables) */
-uint32_t ttype
+const bool is_comprehensive,          /* do the load evaluation comprehensive (include consumables) */
+const uint32_t ttype
 ) {
    DENTER(TOP_LAYER);
 
@@ -2948,10 +2950,9 @@ uint32_t ttype
    }
 
    if (!granted || load_adjustments) {
-      auto queues = ocs::tom::List<ocs::tom::QU>(*unloaded);
       auto granted_list = ocs::tom::ConstList<ocs::tom::JG>(granted);
 
-      auto next_qep = queues.front();
+      auto next_qep = unloaded.front();
       while (next_qep) {
          auto qep = next_qep;
          bool remove_queue = false;
@@ -2988,11 +2989,11 @@ uint32_t ttype
             if (overloaded != nullptr) {
                // the list of the overloaded queues gets the (reduced) descriptor of the scheduler's queue list
                if (*overloaded == nullptr) {
-                  *overloaded = lCreateListHash("", lGetListDescr(*unloaded), false);
+                  *overloaded = ocs::tom::ListPtr<ocs::tom::QU>(lCreateListHash("", lGetListDescr(unloaded), false));
                }
-               lAppendElem(*overloaded, queues.extract(qep));
+               (*overloaded)->push_back(unloaded.extract(qep));
             } else {
-               queues.erase(qep);
+               unloaded.erase(qep);
             }
          }
       }
@@ -3006,29 +3007,29 @@ uint32_t ttype
 /**
  * @brief Splits the queue list into queues with free slots and full ones
  *
- * @param monitor_next_run whether the messages also go into the scheduler run log
- * @param free Input queue instance list and return free slots.
- * @param full If non-nullptr the full queue instances get returned here.
+ * A full queue that was not marked full yet gets a message and the mark; the
+ * other full ones are moved without one. The list of free queues stays, also
+ * when it is left empty.
  *
- * @return 0 success -1 error
+ * @param monitor_next_run whether the messages also go into the scheduler run log
+ * @param free the queue instances (`QU_Type`); the full ones are removed, the free ones stay
+ * @param full receives the full queue instances, created when the first one is moved
+ *
+ * @return 0 success
  */
-int sge_split_queue_slots_free(bool monitor_next_run, lList **free, lList **full) {
+int sge_split_queue_slots_free(const bool monitor_next_run, const ocs::tom::List<ocs::tom::QU> free,
+                               ocs::tom::ListPtr<ocs::tom::QU> &full) {
    DENTER(TOP_LAYER);
 
-   lList *full_queues = nullptr;
+   ocs::tom::ListPtr<ocs::tom::QU> full_queues;
 
-   if (free == nullptr) {
-      DRETURN(-1);
-   }
-
-   auto queues = ocs::tom::List<ocs::tom::QU>(*free);
-   auto next = queues.front();
+   auto next = free.front();
    while (next) {
       auto thiz = next;
       next = thiz.next();
       if (qinstance_slots_used(thiz) >= (int)ocs::tom::get<QU_job_slots>(thiz)) {
          // the lists of the full queues get the (reduced) descriptor of the scheduler's queue list
-         auto full_queue = queues.extract(thiz);
+         auto full_queue = free.extract(thiz);
 
          if (!qinstance_state_is_full(*full_queue)) {
             schedd_mes_add_global(nullptr, monitor_next_run,
@@ -3037,16 +3038,15 @@ int sge_split_queue_slots_free(bool monitor_next_run, lList **free, lList **full
             qinstance_state_set_full(*full_queue, true);
 
             if (full_queues == nullptr) {
-               full_queues = lCreateListHash("full one", lGetListDescr(*free), false);
+               full_queues = ocs::tom::ListPtr<ocs::tom::QU>(lCreateListHash("full one", lGetListDescr(free), false));
             }
-            lAppendElem(full_queues, std::move(full_queue));
-         } else if (full != nullptr) {
-            if (*full == nullptr) {
-               *full = lCreateList("full one", lGetListDescr(*free));
+            full_queues->push_back(std::move(full_queue));
+         } else {
+            if (full == nullptr) {
+               full = ocs::tom::ListPtr<ocs::tom::QU>(lCreateList("full one", lGetListDescr(free)));
             }
-            lAppendElem(*full, std::move(full_queue));
+            full->push_back(std::move(full_queue));
          }
-         // else the handle frees the queue
       }
    }
 
@@ -3054,21 +3054,58 @@ int sge_split_queue_slots_free(bool monitor_next_run, lList **free, lList **full
    if (full_queues) {
       schedd_log_list(nullptr, monitor_next_run,
                       MSG_SCHEDD_LOGLIST_QUEUESFULLANDDROPPED,
-                      full_queues, QU_full_name);
-      if (full != nullptr) {
-         if (*full == nullptr) {
-            *full = full_queues;
-         } else {
-            lAddList(*full, &full_queues);
-         }
+                      *full_queues, QU_full_name);
+      if (full == nullptr) {
+         full = std::move(full_queues);
       } else {
-         lFreeList(&full_queues);
+         full->splice(std::move(full_queues));
       }
    }
 
    DRETURN(0);
 }
 
+/**
+ * @brief Takes the queues that do not fulfil a condition out of a queue list, as lSplit() does
+ *
+ * The queues taken out keep their order, in a new hashed list with the
+ * descriptor of the queue list. A queue list that is left empty is freed, as
+ * lSplit() frees it.
+ *
+ * @param queue_list the queue list (`QU_Type`), may be empty
+ * @param where the condition the queues that stay fulfil
+ * @return the queues taken out, empty if there are none
+ */
+static ocs::tom::ListPtr<ocs::tom::QU>
+split_queues(ocs::tom::ListPtr<ocs::tom::QU> &queue_list, const ocs::tom::Where<ocs::tom::QU> &where) {
+   DENTER(TOP_LAYER);
+
+   auto taken = queue_list->split_off(where, "full queues");
+   if (queue_list != nullptr && queue_list->empty()) {
+      queue_list.reset();
+   }
+
+   DRETURN(taken);
+}
+
+/**
+ * @brief Moves split off queues to the end of a target list, creating it when there is none yet
+ *
+ * @param target the target list (`QU_Type`)
+ * @param queues the queues, empty afterwards
+ */
+static void
+add_split_queues(ocs::tom::ListPtr<ocs::tom::QU> &target, ocs::tom::ListPtr<ocs::tom::QU> &&queues) {
+   DENTER(TOP_LAYER);
+
+   if (target == nullptr) {
+      target = std::move(queues);
+   } else {
+      target->splice(std::move(queues));
+   }
+
+   DRETURN_VOID;
+}
 
 /**
  * @brief Splits the queue list into running and suspended queues
@@ -3076,40 +3113,25 @@ int sge_split_queue_slots_free(bool monitor_next_run, lList **free, lList **full
  * @param[in]     monitor_next_run whether the messages also go into the
  *                                 scheduler run log
  * @param[in,out] queue_list       the queue list; the suspended queues are
- *                                 removed from it (`QU_Type`)
- * @param[out]    suspended        receives the suspended queues, may be
- *                                 nullptr to drop them
+ *                                 removed from it (`QU_Type`), a list left
+ *                                 empty is freed
+ * @param[out]    suspended        receives the suspended queues, created when
+ *                                 there is none yet
  *
- * @return 0 on success, -1 on error
+ * @return 0 on success
  */
-int sge_split_suspended(
-bool monitor_next_run,
-lList **queue_list,        /* QU_Type */
-lList **suspended         /* QU_Type */
-) {
+int sge_split_suspended(const bool monitor_next_run, ocs::tom::ListPtr<ocs::tom::QU> &queue_list,
+                        ocs::tom::ListPtr<ocs::tom::QU> &suspended) {
    DENTER(TOP_LAYER);
 
-   lCondition *where;
-   int ret;
-   lList *lp = nullptr;
-
-   if (!queue_list) {
-      DRETURN(-1);
-   }
-
    /* split queues */
-   where = lWhere("%T(!(%I m= %u) && !(%I m= %u) && !(%I m= %u) && !(%I m= %u))",
-      lGetListDescr(*queue_list),
-         QU_state, QI_SUSPENDED,
-         QU_state, QI_CAL_SUSPENDED,
-         QU_state, QI_CAL_DISABLED,
-         QU_state, QI_SUSPENDED_ON_SUBORDINATE);
-
-   ret = lSplit(queue_list, &lp, "full queues", where);
-   lFreeWhere(&where);
+   auto lp = split_queues(queue_list, !ocs::tom::field<QU_state>().has_bits(QI_SUSPENDED) &&
+                                      !ocs::tom::field<QU_state>().has_bits(QI_CAL_SUSPENDED) &&
+                                      !ocs::tom::field<QU_state>().has_bits(QI_CAL_DISABLED) &&
+                                      !ocs::tom::field<QU_state>().has_bits(QI_SUSPENDED_ON_SUBORDINATE));
 
    if (lp != nullptr) {
-      for (auto mes_queue : ocs::tom::List<ocs::tom::QU>(lp)) {
+      for (auto mes_queue : *lp) {
          if (!qinstance_state_is_manual_suspended(mes_queue)) {
             qinstance_state_set_manual_suspended(mes_queue, true);
             schedd_mes_add_global(nullptr, monitor_next_run,
@@ -3120,16 +3142,12 @@ lList **suspended         /* QU_Type */
 
       schedd_log_list(nullptr, monitor_next_run,
                       MSG_SCHEDD_LOGLIST_QUEUESSUSPENDEDANDDROPPED,
-                      lp, QU_full_name);
+                      *lp, QU_full_name);
 
-      if (*suspended == nullptr) {
-         *suspended = lp;
-      } else {
-         lAddList(*suspended, &lp);
-      }
+      add_split_queues(suspended, std::move(lp));
    }
 
-   DRETURN(ret);
+   DRETURN(0);
 }
 
 /**
@@ -3141,31 +3159,22 @@ lList **suspended         /* QU_Type */
  * @param[in]     monitor_next_run whether the messages also go into the
  *                                 scheduler run log
  * @param[in,out] queue_list       the queue list; the disabled queues are
- *                                 removed from it (`QU_Type`)
- * @param[out]    disabled         receives the disabled queues, may be
- *                                 nullptr to drop them
+ *                                 removed from it (`QU_Type`), a list left
+ *                                 empty is freed
+ * @param[out]    disabled         receives the disabled queues, created when
+ *                                 there is none yet
  *
- * @return 0 on success, -1 on an error in a called function
+ * @return 0 on success
  */
-int sge_split_cal_disabled(bool monitor_next_run, lList **queue_list, lList **disabled) {
+int sge_split_cal_disabled(const bool monitor_next_run, ocs::tom::ListPtr<ocs::tom::QU> &queue_list,
+                           ocs::tom::ListPtr<ocs::tom::QU> &disabled) {
    DENTER(TOP_LAYER);
 
-   lCondition *where;
-   int ret;
-   lList *lp = nullptr;
-
-   if (!queue_list) {
-      DRETURN(-1);
-   }
-
    /* split queues */
-   where = lWhere("%T(!(%I m= %u))", lGetListDescr(*queue_list),
-                  QU_state, QI_CAL_DISABLED);
-   ret = lSplit(queue_list, &lp, "full queues", where);
-   lFreeWhere(&where);
+   auto lp = split_queues(queue_list, !ocs::tom::field<QU_state>().has_bits(QI_CAL_DISABLED));
 
    if (lp != nullptr) {
-      for (auto mes_queue : ocs::tom::List<ocs::tom::QU>(lp)) {
+      for (auto mes_queue : *lp) {
          schedd_mes_add_global(nullptr, monitor_next_run,
                                SCHEDD_INFO_QUEUEDISABLED_,
                                ocs::tom::get<QU_full_name>(mes_queue));
@@ -3173,16 +3182,12 @@ int sge_split_cal_disabled(bool monitor_next_run, lList **queue_list, lList **di
 
       schedd_log_list(nullptr, monitor_next_run,
                       MSG_SCHEDD_LOGLIST_QUEUESDISABLEDANDDROPPED,
-                      lp, QU_full_name);
+                      *lp, QU_full_name);
 
-      if (*disabled == nullptr) {
-         *disabled = lp;
-      } else {
-         lAddList(*disabled, &lp);
-      }
+      add_split_queues(disabled, std::move(lp));
    }
 
-   DRETURN(ret);
+   DRETURN(0);
 }
 
 /**
@@ -3191,31 +3196,23 @@ int sge_split_cal_disabled(bool monitor_next_run, lList **queue_list, lList **di
  * @param[in]     monitor_next_run whether the messages also go into the
  *                                 scheduler run log
  * @param[in,out] queue_list       the queue list; the disabled queues are
- *                                 removed from it (`QU_Type`)
- * @param[out]    disabled         receives the disabled queues, may be
- *                                 nullptr to drop them
+ *                                 removed from it (`QU_Type`), a list left
+ *                                 empty is freed
+ * @param[out]    disabled         receives the disabled queues, created when
+ *                                 there is none yet
  *
- * @return 0 on success, -1 on an error in a called function
+ * @return 0 on success
  */
-int sge_split_disabled(bool monitor_next_run, lList **queue_list, lList **disabled) {
+int sge_split_disabled(const bool monitor_next_run, ocs::tom::ListPtr<ocs::tom::QU> &queue_list,
+                       ocs::tom::ListPtr<ocs::tom::QU> &disabled) {
    DENTER(TOP_LAYER);
 
-   lCondition *where;
-   int ret;
-   lList *lp = nullptr;
-
-   if (!queue_list) {
-      DRETURN(-1);
-   }
-
    /* split queues */
-   where = lWhere("%T(!(%I m= %u) && !(%I m= %u))", lGetListDescr(*queue_list),
-                  QU_state, QI_DISABLED, QU_state, QI_CAL_DISABLED);
-   ret = lSplit(queue_list, &lp, "full queues", where);
-   lFreeWhere(&where);
+   auto lp = split_queues(queue_list, !ocs::tom::field<QU_state>().has_bits(QI_DISABLED) &&
+                                      !ocs::tom::field<QU_state>().has_bits(QI_CAL_DISABLED));
 
    if (lp != nullptr) {
-      for (auto mes_queue : ocs::tom::List<ocs::tom::QU>(lp)) {
+      for (auto mes_queue : *lp) {
          schedd_mes_add_global(nullptr, monitor_next_run,
                                SCHEDD_INFO_QUEUEDISABLED_,
                                ocs::tom::get<QU_full_name>(mes_queue));
@@ -3223,16 +3220,12 @@ int sge_split_disabled(bool monitor_next_run, lList **queue_list, lList **disabl
 
       schedd_log_list(nullptr, monitor_next_run,
                       MSG_SCHEDD_LOGLIST_QUEUESDISABLEDANDDROPPED,
-                      lp, QU_full_name);
+                      *lp, QU_full_name);
 
-      if (*disabled == nullptr) {
-         *disabled = lp;
-      } else {
-         lAddList(*disabled, &lp);
-      }
+      add_split_queues(disabled, std::move(lp));
    }
 
-   DRETURN(ret);
+   DRETURN(0);
 }
 
 /**
@@ -7580,29 +7573,23 @@ bool sge_load_list_alarm(const bool monitor_next_run, const ocs::tom::ConstList<
 /**
  * @brief Removes queues from the load list
  *
- * The signature stays untyped: the function frees the load list of the
- * caller and sets it to nullptr when its last element is gone.
+ * The load list is freed when its last element is gone.
  *
- * @param load_list load list structure (`LDR_Type`); freed and set to nullptr
- *                  when it becomes empty
+ * @param load_list load list structure (`LDR_Type`); freed when it becomes empty
  * @param queue_list queues to be removed from it (`QU_Type`)
  *
  * @note MT-NOTE: sge_remove_queue_from_load_list() is MT safe
  */
-void sge_remove_queue_from_load_list(lList **load_list, const lList *queue_list){
+void sge_remove_queue_from_load_list(ocs::tom::ListPtr<ocs::tom::LDR> &load_list,
+                                     const ocs::tom::ConstList<ocs::tom::QU> queue_list) {
    DENTER(TOP_LAYER);
 
-   if (load_list == nullptr){
-      CRITICAL("no load_list specified\n");
-      ocs::TerminationManager::trigger_abort();
-   }
-
-   if (*load_list == nullptr) {
+   if (load_list == nullptr) {
       DRETURN_VOID;
    }
 
-   auto loads = ocs::tom::List<ocs::tom::LDR>(*load_list);
-   for (auto queue : ocs::tom::ConstList<ocs::tom::QU>(queue_list)) {
+   const auto loads = load_list.get();
+   for (auto queue : queue_list) {
       bool is_found = false;
 
       for (auto load : loads) {
@@ -7626,25 +7613,10 @@ void sge_remove_queue_from_load_list(lList **load_list, const lList *queue_list)
       }
 
       if (loads.empty()) {
-         lFreeList(load_list);
+         load_list.reset();
          DRETURN_VOID;
       }
    }
-
-   DRETURN_VOID;
-}
-
-/**
- * @brief Frees the load list and sets it to nullptr
- *
- * @param load_list the load list
- *
- * @note MT-NOTE: sge_free_load_list() is MT safe
- */
-void sge_free_load_list(lList **load_list) {
-   DENTER(TOP_LAYER);
-
-   lFreeList(load_list);
 
    DRETURN_VOID;
 }

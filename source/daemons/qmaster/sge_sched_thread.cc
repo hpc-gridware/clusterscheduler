@@ -110,16 +110,18 @@ static void wait_for_events();
 #endif
 
 static int
-dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, order_t *orders, lList **splitted_job_lists[]);
+dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, order_t *orders,
+              ocs::tom::ListPtr<ocs::tom::JB> *splitted_job_lists[]);
 
 static dispatch_t
-select_assign_debit(lList **queue_list, lList **dis_queue_list, ocs::tom::Element<ocs::tom::JB> job,
-                    ocs::tom::Element<ocs::tom::JAT> ja_task, ocs::tom::List<ocs::tom::PE> pe_list,
-                    ocs::tom::ConstList<ocs::tom::CK> ckpt_list, ocs::tom::ConstList<ocs::tom::CE> centry_list,
-                    ocs::tom::List<ocs::tom::EH> host_list, ocs::tom::ConstList<ocs::tom::US> acl_list,
-                    ocs::tom::List<ocs::tom::CE> load_adjustments, lList **user_list, lList **group_list,
-                    order_t *orders, double *total_running_job_tickets, int *sort_hostlist, bool is_start,
-                    bool is_reserve, bool is_schedule_based, lList **load_list,
+select_assign_debit(ocs::tom::ListPtr<ocs::tom::QU> &queue_list, ocs::tom::ListPtr<ocs::tom::QU> &dis_queue_list,
+                    ocs::tom::Element<ocs::tom::JB> job, ocs::tom::Element<ocs::tom::JAT> ja_task,
+                    ocs::tom::List<ocs::tom::PE> pe_list, ocs::tom::ConstList<ocs::tom::CK> ckpt_list,
+                    ocs::tom::ConstList<ocs::tom::CE> centry_list, ocs::tom::List<ocs::tom::EH> host_list,
+                    ocs::tom::ConstList<ocs::tom::US> acl_list, ocs::tom::List<ocs::tom::CE> load_adjustments,
+                    ocs::tom::ListPtr<ocs::tom::JC> &user_list, lList **group_list, order_t *orders,
+                    double *total_running_job_tickets, int *sort_hostlist, bool is_start, bool is_reserve,
+                    bool is_schedule_based, ocs::tom::ListPtr<ocs::tom::LDR> &load_list,
                     ocs::tom::ConstList<ocs::tom::HGRP> hgrp_list, ocs::tom::List<ocs::tom::RQS> rqs_list,
                     ocs::tom::List<ocs::tom::AR> ar_list, sched_prof_t *pi, bool monitor_next_run, uint64_t now);
 
@@ -163,7 +165,7 @@ static void
 scheduler_global_queue_messages(scheduler_all_data_t *lists, const bool monitor_next_run) {
    DENTER(TOP_LAYER);
 
-   const auto all_queues = ocs::tom::ConstList<ocs::tom::QU>(lists->all_queue_list);
+   const auto all_queues = ocs::tom::ConstList<ocs::tom::QU>(*lists->all_queue_list);
    if (all_queues != nullptr) {
       // @todo: here are also states missing that make queues unavailable
       const auto where = ocs::tom::field<QU_state>().has_bits(QI_SUSPENDED) ||   // only not suspended queues
@@ -178,7 +180,7 @@ scheduler_global_queue_messages(scheduler_all_data_t *lists, const bool monitor_
          schedd_mes_add_global(nullptr, monitor_next_run, SCHEDD_INFO_QUEUENOTAVAIL_, queue_name);
       }
 
-      for (const auto queue : ocs::tom::ConstList<ocs::tom::QU>(lists->dis_queue_list)) {
+      for (const auto queue : ocs::tom::ConstList<ocs::tom::QU>(*lists->dis_queue_list)) {
          const char *queue_name = ocs::tom::get<QU_full_name>(queue);
          schedd_mes_add_global(nullptr, monitor_next_run, SCHEDD_INFO_QUEUENOTAVAIL_, queue_name);
       }
@@ -199,19 +201,20 @@ void scheduler_method(sge_evc_class_t *evc, lList **answer_list, scheduler_all_d
    DENTER(TOP_LAYER);
 
    order_t orders = ORDER_INIT;
-   lList **splitted_job_lists[SPLIT_LAST];            /* JB_Type */
-   lList *waiting_due_to_pedecessor_list = nullptr;   /* JB_Type */
-   lList *waiting_due_to_time_list = nullptr;         /* JB_Type */
-   lList *pending_excluded_list = nullptr;            /* JB_Type */
-   lList *suspended_list = nullptr;                   /* JB_Type */
-   lList *finished_list = nullptr;                    /* JB_Type */
-   lList *pending_list = nullptr;                     /* JB_Type */
-   lList *pending_excludedlist = nullptr;             /* JB_Type */
-   lList *running_list = nullptr;                     /* JB_Type */
-   lList *error_list = nullptr;                       /* JB_Type */
-   lList *hold_list = nullptr;                        /* JB_Type */
-   lList *not_started_list = nullptr;                 /* JB_Type */
-   lList *deferred_list = nullptr;                    /* JB_Type */
+   // the job lists by state; a nullptr entry is a state split_jobs() does not collect
+   ocs::tom::ListPtr<ocs::tom::JB> *splitted_job_lists[SPLIT_LAST];
+   ocs::tom::ListPtr<ocs::tom::JB> waiting_due_to_pedecessor_list;
+   ocs::tom::ListPtr<ocs::tom::JB> waiting_due_to_time_list;
+   ocs::tom::ListPtr<ocs::tom::JB> pending_excluded_list;
+   ocs::tom::ListPtr<ocs::tom::JB> suspended_list;
+   ocs::tom::ListPtr<ocs::tom::JB> finished_list;
+   ocs::tom::ListPtr<ocs::tom::JB> pending_list;
+   ocs::tom::ListPtr<ocs::tom::JB> pending_excludedlist;
+   ocs::tom::ListPtr<ocs::tom::JB> running_list;
+   ocs::tom::ListPtr<ocs::tom::JB> error_list;
+   ocs::tom::ListPtr<ocs::tom::JB> hold_list;
+   ocs::tom::ListPtr<ocs::tom::JB> not_started_list;
+   ocs::tom::ListPtr<ocs::tom::JB> deferred_list;
    int prof_job_count, global_mes_count, job_mes_count;
 
    int i;
@@ -219,7 +222,7 @@ void scheduler_method(sge_evc_class_t *evc, lList **answer_list, scheduler_all_d
    PROF_START_MEASUREMENT(SGE_PROF_CUSTOM0);
 
    // initializations
-   prof_job_count = lGetNumberOfElem(lists->job_list);
+   prof_job_count = lGetNumberOfElem(*lists->job_list);
 
    sconf_reset_jobs();
    schedd_mes_initialize();
@@ -242,7 +245,7 @@ void scheduler_method(sge_evc_class_t *evc, lList **answer_list, scheduler_all_d
    splitted_job_lists[SPLIT_HOLD] = &hold_list;
    splitted_job_lists[SPLIT_NOT_STARTED] = &not_started_list;
    splitted_job_lists[SPLIT_DEFERRED] = &deferred_list;
-   split_jobs(&(lists->job_list), mconf_get_max_aj_instances(), splitted_job_lists, false);
+   split_jobs(*lists->job_list, mconf_get_max_aj_instances(), splitted_job_lists, false);
 
    // generate global queue messages (disabled, suspended, unknown, ...)
    scheduler_global_queue_messages(lists, evc->monitor_next_run);
@@ -251,8 +254,7 @@ void scheduler_method(sge_evc_class_t *evc, lList **answer_list, scheduler_all_d
    dispatch_jobs(evc, lists, &orders, splitted_job_lists);
 
    // post-processing
-   remove_immediate_jobs(ocs::tom::List<ocs::tom::JB>(*(splitted_job_lists[SPLIT_PENDING])),
-                         ocs::tom::List<ocs::tom::JB>(*(splitted_job_lists[SPLIT_RUNNING])), &orders);
+   remove_immediate_jobs(splitted_job_lists[SPLIT_PENDING]->get(), splitted_job_lists[SPLIT_RUNNING]->get(), &orders);
 
    // send orders to worker threads
    if (!sge_thread_has_shutdown_started()) {
@@ -273,19 +275,17 @@ void scheduler_method(sge_evc_class_t *evc, lList **answer_list, scheduler_all_d
 
       for (int i = 0; i < max; ++i) {
          /* clear SGEEE fields for queued jobs */
-         for (const auto job : ocs::tom::ConstList<ocs::tom::JB>(*(splitted_job_lists[clean_jobs[i]]))) {
+         for (const auto job : ocs::tom::ConstList<ocs::tom::JB>(splitted_job_lists[clean_jobs[i]]->get())) {
             orders.pendingOrderList = sge_create_orders(orders.pendingOrderList, ORT_clear_pri_info, job,
                                                         ocs::tom::ConstElement<ocs::tom::JAT>(),
                                                         ocs::tom::ConstList<ocs::tom::JG>(), false);
          }
       }
    }
-   sge_build_sgeee_orders(lists, ocs::tom::List<ocs::tom::JB>(),
-                          ocs::tom::List<ocs::tom::JB>(*(splitted_job_lists[SPLIT_PENDING])),
+   sge_build_sgeee_orders(lists, ocs::tom::List<ocs::tom::JB>(), splitted_job_lists[SPLIT_PENDING]->get(),
                           ocs::tom::List<ocs::tom::JB>(), &orders, false, 0, false);
 
-   sge_build_sgeee_orders(lists, ocs::tom::List<ocs::tom::JB>(),
-                          ocs::tom::List<ocs::tom::JB>(*(splitted_job_lists[SPLIT_NOT_STARTED])),
+   sge_build_sgeee_orders(lists, ocs::tom::List<ocs::tom::JB>(), splitted_job_lists[SPLIT_NOT_STARTED]->get(),
                           ocs::tom::List<ocs::tom::JB>(), &orders, false, 0, false);
 
    /* generated scheduler messages, thus we have to call it */
@@ -326,29 +326,30 @@ void scheduler_method(sge_evc_class_t *evc, lList **answer_list, scheduler_all_d
 
                       sconf_get_pe_jobs(),
                       orders.numberSendOrders,
-                      lGetNumberOfElem(lists->host_list),
-                      lGetNumberOfElem(lists->queue_list),
-                      lGetNumberOfElem(lists->all_queue_list),
+                      lGetNumberOfElem(*lists->host_list),
+                      lGetNumberOfElem(*lists->queue_list),
+                      lGetNumberOfElem(*lists->all_queue_list),
 
-                      (lGetNumberOfElem(*(splitted_job_lists[SPLIT_PENDING])) + lGetNumberOfElem(*(splitted_job_lists[SPLIT_NOT_STARTED]))),
-                      lGetNumberOfElem(*(splitted_job_lists[SPLIT_RUNNING])),
-                      lGetNumberOfElem(*(splitted_job_lists[SPLIT_SUSPENDED])),
-                      lGetNumberOfElem(*(splitted_job_lists[SPLIT_HOLD])),
-                      lGetNumberOfElem(*(splitted_job_lists[SPLIT_ERROR])),
+                      (lGetNumberOfElem(splitted_job_lists[SPLIT_PENDING]->get()) +
+                       lGetNumberOfElem(splitted_job_lists[SPLIT_NOT_STARTED]->get())),
+                      lGetNumberOfElem(splitted_job_lists[SPLIT_RUNNING]->get()),
+                      lGetNumberOfElem(splitted_job_lists[SPLIT_SUSPENDED]->get()),
+                      lGetNumberOfElem(splitted_job_lists[SPLIT_HOLD]->get()),
+                      lGetNumberOfElem(splitted_job_lists[SPLIT_ERROR]->get()),
 
-                      lGetNumberOfElem(*(splitted_job_lists[SPLIT_FINISHED])),
+                      lGetNumberOfElem(splitted_job_lists[SPLIT_FINISHED]->get()),
                       prof_job_count,
                       lGetNumberOfElem(lists->centry_list),
-                      lGetNumberOfElem(lists->acl_list),
-                      lGetNumberOfElem(lists->pe_list),
+                      lGetNumberOfElem(*lists->acl_list),
+                      lGetNumberOfElem(*lists->pe_list),
 
-                      lGetNumberOfElem(lists->user_list),
-                      lGetNumberOfElem(lists->dept_list),
-                      lGetNumberOfElem(lists->project_list),
-                      lGetNumberOfElem(lists->share_tree),
+                      lGetNumberOfElem(*lists->user_list),
+                      lGetNumberOfElem(*lists->dept_list),
+                      lGetNumberOfElem(*lists->project_list),
+                      lGetNumberOfElem(*lists->share_tree),
                       lGetNumberOfElem(lists->ckpt_list),
 
-                      lGetNumberOfElem(lists->running_per_user),
+                      lGetNumberOfElem(*lists->running_per_user),
                       global_mes_count,
                       job_mes_count,
                       orders.numberSendOrders,
@@ -362,10 +363,10 @@ void scheduler_method(sge_evc_class_t *evc, lList **answer_list, scheduler_all_d
 
    PROF_START_MEASUREMENT(SGE_PROF_CUSTOM5);
 
-   /* free all job lists */
+   /* free all job lists, here and not at the end of the scope, so the free is measured */
    for (i = SPLIT_FIRST; i < SPLIT_LAST; i++) {
       if (splitted_job_lists[i] != nullptr) {
-         lFreeList(splitted_job_lists[i]);
+         splitted_job_lists[i]->reset();
          splitted_job_lists[i] = nullptr;
       }
    }
@@ -404,10 +405,10 @@ do_load_adjustment(scheduler_all_data_t *lists, const ocs::tom::ConstList<ocs::t
 
    uint64_t decay_time = sge_gmt32_to_gmt64(sconf_get_load_adjustment_decay_time());
    if (decay_time > 0) {
-      const auto host_list = ocs::tom::List<ocs::tom::EH>(lists->host_list);
+      const auto host_list = lists->host_list.get();
 
       correct_load(running_jobs,
-                   ocs::tom::ConstList<ocs::tom::QU>(lists->queue_list),
+                   ocs::tom::ConstList<ocs::tom::QU>(*lists->queue_list),
                    host_list,
                    decay_time, monitor_next_run);
 
@@ -447,15 +448,18 @@ do_load_adjustment(scheduler_all_data_t *lists, const ocs::tom::ConstList<ocs::t
  * @return 0 on success, -1 if the queue list could not be split or the ticket calculation failed
  */
 static int
-dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, order_t *orders, lList **splitted_job_lists[]) {
+dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, order_t *orders,
+              ocs::tom::ListPtr<ocs::tom::JB> *splitted_job_lists[]) {
    DENTER(TOP_LAYER);
 
-   // the sge_split_* functions, user_list_init_jc() and sge_inc_jc() take these by lList **
-   lList *user_list = nullptr, *group_list = nullptr;
+   // the running jobs per user, created with the first counter; the group list is never filled
+   ocs::tom::ListPtr<ocs::tom::JC> user_list;
+   lList *group_list = nullptr;
    ocs::tom::Element<ocs::tom::JB> orig_job;
    ocs::tom::Element<ocs::tom::CT> cat;
-   lList *none_avail_queues = nullptr;
-   lList *consumable_load_list = nullptr;
+   // the queues split off, created by the sge_split_* functions with the first queue
+   ocs::tom::ListPtr<ocs::tom::QU> none_avail_queues;
+   ocs::tom::ListPtr<ocs::tom::LDR> consumable_load_list;
    sched_prof_t pi;
 
    double total_running_job_tickets = 0;
@@ -477,22 +481,22 @@ dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, order_t *orders
    sconf_set_host_order_changed(false);
 
    // the members of the snapshot whose list does not change during the run; the queue lists do
-   // (the sge_split_* functions replace them) and are wrapped where they are read
-   const auto host_list = ocs::tom::List<ocs::tom::EH>(lists->host_list);
-   const auto centry_list = ocs::tom::ConstList<ocs::tom::CE>(lists->centry_list);
-   const auto pe_list = ocs::tom::List<ocs::tom::PE>(lists->pe_list);
-   const auto ckpt_list = ocs::tom::ConstList<ocs::tom::CK>(lists->ckpt_list);
-   const auto acl_list = ocs::tom::ConstList<ocs::tom::US>(lists->acl_list);
-   const auto hgrp_list = ocs::tom::ConstList<ocs::tom::HGRP>(lists->hgrp_list);
-   const auto rqs_list = ocs::tom::List<ocs::tom::RQS>(lists->rqs_list);
-   const auto ar_list = ocs::tom::List<ocs::tom::AR>(lists->ar_list);
+   // (the sge_split_* functions replace them) and are read through their owning handles
+   const auto host_list = lists->host_list.get();
+   const auto centry_list = lists->centry_list;
+   const auto pe_list = lists->pe_list.get();
+   const auto ckpt_list = lists->ckpt_list;
+   const auto acl_list = ocs::tom::ConstList<ocs::tom::US>(*lists->acl_list);
+   const auto hgrp_list = lists->hgrp_list;
+   const auto rqs_list = lists->rqs_list.get();
+   const auto ar_list = lists->ar_list.get();
 
    // adjust virtual load added at job start (if configured)
-   do_load_adjustment(lists, ocs::tom::ConstList<ocs::tom::JB>(*(splitted_job_lists[SPLIT_RUNNING])),
+   do_load_adjustment(lists, ocs::tom::ConstList<ocs::tom::JB>(splitted_job_lists[SPLIT_RUNNING]->get()),
                       *job_load_adjustments, evc->monitor_next_run);
 
    if (max_reserve != 0 || !ar_list.empty()) {
-      const auto dis_queue_elem = ocs::tom::List<ocs::tom::QU>(lists->dis_queue_list).front();
+      const auto dis_queue_elem = lists->dis_queue_list->front();
       /*------------------------------------------------------------------------------
        * ENSURE RUNNING JOBS ARE REFLECTED IN PER RESOURCE SCHEDULE (resource diagram)
        * as well as suspended jobs and calendar events
@@ -505,17 +509,20 @@ dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, order_t *orders
       // queues could have been disabled in the meantime, we still need to book into them
       // @todo what about suspended queues etc. - are they also in the dis_queue_list?
       // @todo see ensure_valid_what_and_where()
+      // neither list is replaced: the queues move over and back, the disabled queue list stays, also while empty
       if (dis_queue_elem != nullptr) {
-         lAppendList(lists->queue_list, lists->dis_queue_list);
+         lAppendList(*lists->queue_list, *lists->dis_queue_list);
       }
 
-      prepare_resource_schedules(ocs::tom::List<ocs::tom::JB>(*(splitted_job_lists[SPLIT_RUNNING])),
-                                 ocs::tom::List<ocs::tom::JB>(*(splitted_job_lists[SPLIT_SUSPENDED])),
-                                 pe_list, host_list, ocs::tom::List<ocs::tom::QU>(lists->queue_list),
+      prepare_resource_schedules(splitted_job_lists[SPLIT_RUNNING]->get(),
+                                 splitted_job_lists[SPLIT_SUSPENDED]->get(),
+                                 pe_list, host_list, *lists->queue_list,
                                  rqs_list, centry_list, acl_list, hgrp_list, ar_list, true, now);
 
       if (dis_queue_elem != nullptr) {
-         lDechainList(lists->queue_list, &(lists->dis_queue_list), dis_queue_elem);
+         // the disabled queue list exists, so lDechainList() appends to it and does not create one
+         lList *dis_queues = *lists->dis_queue_list;
+         lDechainList(*lists->queue_list, &dis_queues, dis_queue_elem);
       }
    }
 
@@ -532,31 +539,27 @@ dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, order_t *orders
     *---------------------------------------------------------------------*/
    if (sge_split_queue_load(
            evc->monitor_next_run,
-           &(lists->queue_list),    /* queue list                             */
+           *lists->queue_list,      /* queue list                             */
            &none_avail_queues,      /* list of queues in suspend alarm state  */
            host_list,
            centry_list,
            *job_load_adjustments,
            nullptr, false, false,
            QU_suspend_thresholds)) {
-      lFreeList(&none_avail_queues);
+      none_avail_queues.reset();
       DPRINTF("couldn't split queue list with regard to suspend thresholds\n");
       DRETURN(-1);
    }
 
-   unsuspend_job_in_queues(ocs::tom::List<ocs::tom::QU>(lists->queue_list),
-                           ocs::tom::List<ocs::tom::JB>(*(splitted_job_lists[SPLIT_SUSPENDED])),
-                           orders);
-   suspend_job_in_queues(ocs::tom::List<ocs::tom::QU>(none_avail_queues),
-                         ocs::tom::List<ocs::tom::JB>(*(splitted_job_lists[SPLIT_RUNNING])),
-                         orders);
-   lFreeList(&none_avail_queues);
+   unsuspend_job_in_queues(lists->queue_list.get(), splitted_job_lists[SPLIT_SUSPENDED]->get(), orders);
+   suspend_job_in_queues(none_avail_queues.get(), splitted_job_lists[SPLIT_RUNNING]->get(), orders);
+   none_avail_queues.reset();
 
    /*---------------------------------------------------------------------
     * FILTER QUEUES
     *---------------------------------------------------------------------*/
    /* split queues into overloaded and non-overloaded queues */
-   if (sge_split_queue_load(evc->monitor_next_run, &(lists->queue_list), nullptr,
+   if (sge_split_queue_load(evc->monitor_next_run, *lists->queue_list, nullptr,
                             host_list, centry_list, *job_load_adjustments,
                             nullptr, false, true, QU_load_thresholds)) {
       DPRINTF("couldn't split queue list concerning load\n");
@@ -564,29 +567,28 @@ dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, order_t *orders
    }
 
    /* remove cal_disabled queues - needed them for implementing suspend thresholds */
-   if (sge_split_cal_disabled(evc->monitor_next_run, &(lists->queue_list), &lists->dis_queue_list)) {
+   if (sge_split_cal_disabled(evc->monitor_next_run, lists->queue_list, lists->dis_queue_list)) {
       DPRINTF("couldn't split queue list concerning cal_disabled state\n");
       DRETURN(-1);
    }
 
    /* trash disabled queues - needed them for implementing suspend thresholds */
-   if (sge_split_disabled(evc->monitor_next_run, &(lists->queue_list), &none_avail_queues)) {
+   if (sge_split_disabled(evc->monitor_next_run, lists->queue_list, none_avail_queues)) {
       DPRINTF("couldn't split queue list concerning disabled state\n");
-      lFreeList(&none_avail_queues);
+      none_avail_queues.reset();
       DRETURN(-1);
    }
 
-   lFreeList(&none_avail_queues);
-   if (sge_split_queue_slots_free(evc->monitor_next_run, &(lists->queue_list), &none_avail_queues)) {
+   none_avail_queues.reset();
+   if (sge_split_queue_slots_free(evc->monitor_next_run, *lists->queue_list, none_avail_queues)) {
       DPRINTF("couldn't split queue list concerning free slots\n");
-      lFreeList(&none_avail_queues);
+      none_avail_queues.reset();
       DRETURN(-1);
    }
    if (lists->dis_queue_list != nullptr) {
-      lAddList(lists->dis_queue_list, &none_avail_queues);
+      lists->dis_queue_list->splice(std::move(none_avail_queues));
    } else {
-      lists->dis_queue_list = none_avail_queues;
-      none_avail_queues = nullptr;
+      lists->dis_queue_list = std::move(none_avail_queues);
    }
 
 
@@ -595,10 +597,10 @@ dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, order_t *orders
     *---------------------------------------------------------------------*/
 
    DPRINTF("STARTING FILTERING JOBS WITH " sge_u32 " PENDING JOBS\n",
-           lGetNumberOfElem(*(splitted_job_lists[SPLIT_PENDING])));
+           lGetNumberOfElem(splitted_job_lists[SPLIT_PENDING]->get()));
 
    // update the running jobs per user (in JC_Type objects)
-   user_list_init_jc(&user_list, splitted_job_lists);
+   user_list_init_jc(user_list, splitted_job_lists);
 
    /*--------------------------------------------------------------------
     * CALL SGEEE SCHEDULER TO
@@ -609,9 +611,9 @@ dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, order_t *orders
       PROF_START_MEASUREMENT(SGE_PROF_CUSTOM1);
 
       ret = sgeee_scheduler(lists,
-                            ocs::tom::List<ocs::tom::JB>(*(splitted_job_lists[SPLIT_RUNNING])),
-                            ocs::tom::List<ocs::tom::JB>(*(splitted_job_lists[SPLIT_FINISHED])),
-                            ocs::tom::List<ocs::tom::JB>(*(splitted_job_lists[SPLIT_PENDING])),
+                            splitted_job_lists[SPLIT_RUNNING]->get(),
+                            splitted_job_lists[SPLIT_FINISHED]->get(),
+                            splitted_job_lists[SPLIT_PENDING]->get(),
                             orders);
 
       sge_schedd_send_orders(orders, &(orders->configOrderList), nullptr, "A: config orders");
@@ -625,20 +627,20 @@ dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, order_t *orders
       }
 
       if (ret != 0) {
-         lFreeList(&user_list);
+         user_list.reset();
          lFreeList(&group_list);
          DRETURN(-1);
       }
    }
 
    // shortcut: all queues are full, no need to continue
-   const bool no_queues = ocs::tom::ConstList<ocs::tom::QU>(lists->queue_list).empty();
-   const bool no_dis_queues = ocs::tom::ConstList<ocs::tom::QU>(lists->dis_queue_list).empty();
+   const bool no_queues = lists->queue_list->empty();
+   const bool no_dis_queues = lists->dis_queue_list->empty();
    if ((max_reserve == 0 && no_queues) || /* no reservation and no queues avail */
        (no_queues && no_dis_queues)) {    /* reservation and no queues avail */
       DPRINTF("queues dropped because of overload or full: ALL\n");
       schedd_mes_add_global(nullptr, evc->monitor_next_run, SCHEDD_INFO_ALLALARMOVERLOADED_);
-      lFreeList(&user_list);
+      user_list.reset();
       lFreeList(&group_list);
       DRETURN(0);
    }
@@ -646,17 +648,17 @@ dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, order_t *orders
    // we need to do this *after* the SGEEE scheduler to make sure that we keep
    // the jobs with high priority
    job_lists_split_with_reference_to_max_running(evc->monitor_next_run, splitted_job_lists,
-                                                 &user_list,
+                                                 *user_list,
                                                  nullptr,
                                                  maxujobs);
 
    DPRINTF("AFTER FILTERING WE HAVE " sge_u32 " PENDING JOBS\n",
-           lGetNumberOfElem(*(splitted_job_lists[SPLIT_PENDING])));
+           lGetNumberOfElem(splitted_job_lists[SPLIT_PENDING]->get()));
 
-   if (ocs::tom::ConstList<ocs::tom::JB>(*splitted_job_lists[SPLIT_PENDING]).empty()) {
+   if ((*splitted_job_lists[SPLIT_PENDING])->empty()) {
       /* no jobs to schedule */
       schedd_log(MSG_SCHEDD_MON_NOPENDJOBSTOPERFORMSCHEDULINGON, nullptr, evc->monitor_next_run);
-      lFreeList(&user_list);
+      user_list.reset();
       lFreeList(&group_list);
       DRETURN(0);
    }
@@ -667,7 +669,7 @@ dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, order_t *orders
     */
    PROF_START_MEASUREMENT(SGE_PROF_CUSTOM3);
 
-   ocs::Job::sgeee_sort_jobs(*splitted_job_lists[SPLIT_PENDING]);
+   ocs::Job::sgeee_sort_jobs(splitted_job_lists[SPLIT_PENDING]->get());
 
    if (prof_is_active(SGE_PROF_CUSTOM3)) {
       prof_stop_measurement(SGE_PROF_CUSTOM3, nullptr);
@@ -706,8 +708,7 @@ dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, order_t *orders
 
    /* generate a consumable load list structure. It stores which queues
       are using consumables in their load threshold. */
-   consumable_load_list = sge_create_load_list(ocs::tom::List<ocs::tom::QU>(lists->queue_list), host_list,
-                                               centry_list).release();
+   consumable_load_list = sge_create_load_list(*lists->queue_list, host_list, centry_list);
 
 
    /*---------------------------------------------------------------------
@@ -732,7 +733,7 @@ dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, order_t *orders
       memset(&pi, 0, sizeof(sched_prof_t));
 
       // the pending list stays the same list during the loop; jobs leave it, it is not replaced
-      const auto pending_jobs = ocs::tom::List<ocs::tom::JB>(*(splitted_job_lists[SPLIT_PENDING]));
+      const auto pending_jobs = splitted_job_lists[SPLIT_PENDING]->get();
 
       while ((orig_job = pending_jobs.front()) != nullptr) {
          dispatch_t result = DISPATCH_NEVER_CAT;
@@ -795,8 +796,8 @@ dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, order_t *orders
                DPRINTF("-----------------------------------------\n");
 
                result = select_assign_debit(
-                       &(lists->queue_list),
-                       &(lists->dis_queue_list),
+                       lists->queue_list,
+                       lists->dis_queue_list,
                        *job, ja_task,
                        pe_list,
                        ckpt_list,
@@ -804,7 +805,7 @@ dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, order_t *orders
                        host_list,
                        acl_list,
                        *job_load_adjustments,
-                       &user_list,
+                       user_list,
                        &group_list,
                        orders,
                        &total_running_job_tickets,
@@ -812,7 +813,7 @@ dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, order_t *orders
                        is_start,
                        is_reserve,
                        is_schedule_based,
-                       &consumable_load_list,
+                       consumable_load_list,
                        hgrp_list,
                        rqs_list,
                        ar_list,
@@ -871,7 +872,7 @@ dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, order_t *orders
                 * should be done after resort_job() 'cause job is referenced 
                 */
                job_lists_split_with_reference_to_max_running(evc->monitor_next_run, splitted_job_lists,
-                                                             &user_list,
+                                                             *user_list,
                                                              owner,
                                                              maxujobs);
                sge_free(&owner);
@@ -930,10 +931,10 @@ dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, order_t *orders
                   auto not_started_job = pending_jobs.extract(orig_job);
                   if ((*(splitted_job_lists[SPLIT_NOT_STARTED])) == nullptr) {
                      // the list belongs to the caller and gets the descriptor of the (possibly reduced) jobs
-                     *(splitted_job_lists[SPLIT_NOT_STARTED]) = lCreateList("", lGetListDescr(pending_jobs));
+                     *(splitted_job_lists[SPLIT_NOT_STARTED]) =
+                             ocs::tom::ListPtr<ocs::tom::JB>::from_typed(lCreateList("", lGetListDescr(pending_jobs)));
                   }
-                  ocs::tom::List<ocs::tom::JB>(*(splitted_job_lists[SPLIT_NOT_STARTED]))
-                          .push_back(std::move(not_started_job));
+                  (*(splitted_job_lists[SPLIT_NOT_STARTED]))->push_back(std::move(not_started_job));
                   is_pjob_resort = false;
                } else {
                   uint32_t ja_task_number = range_list_get_first_id(ocs::tom::get<JB_ja_n_h_ids>(orig_job), nullptr);
@@ -970,7 +971,7 @@ dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, order_t *orders
                      for all tasks including already assigned ones */
                   remove_immediate_job(pending_jobs, orig_job, orders, 0);
                   // a running job is in the list once, so the first match by job number is the job
-                  const auto running_jobs = ocs::tom::List<ocs::tom::JB>(*(splitted_job_lists[SPLIT_RUNNING]));
+                  const auto running_jobs = splitted_job_lists[SPLIT_RUNNING]->get();
                   const auto rjob = running_jobs.find_first<JB_job_number>(job_id);
                   if (rjob != nullptr) {
                      remove_immediate_job(running_jobs, rjob, orders, 1);
@@ -980,10 +981,10 @@ dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, order_t *orders
                   auto not_started_job = pending_jobs.extract(orig_job);
                   if ((*(splitted_job_lists[SPLIT_NOT_STARTED])) == nullptr) {
                      // the list belongs to the caller and gets the descriptor of the (possibly reduced) jobs
-                     *(splitted_job_lists[SPLIT_NOT_STARTED]) = lCreateList("", lGetListDescr(pending_jobs));
+                     *(splitted_job_lists[SPLIT_NOT_STARTED]) =
+                             ocs::tom::ListPtr<ocs::tom::JB>::from_typed(lCreateList("", lGetListDescr(pending_jobs)));
                   }
-                  ocs::tom::List<ocs::tom::JB>(*(splitted_job_lists[SPLIT_NOT_STARTED]))
-                          .push_back(std::move(not_started_job));
+                  (*(splitted_job_lists[SPLIT_NOT_STARTED]))->push_back(std::move(not_started_job));
                }
                orig_job = nullptr;
                break;
@@ -1002,13 +1003,13 @@ dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, order_t *orders
           *------------------------------------------------------------------*/
 
          /* no more free queues - then exit */
-         if (ocs::tom::ConstList<ocs::tom::QU>(lists->queue_list).empty()) {
+         if (lists->queue_list->empty()) {
             DPRINTF("no more free queues\n");
             break;
          }
 
          if (is_pjob_resort) {
-            sgeee_resort_pending_jobs(ocs::tom::List<ocs::tom::JB>(*(splitted_job_lists[SPLIT_PENDING])));
+            sgeee_resort_pending_jobs(splitted_job_lists[SPLIT_PENDING]->get());
          }
 
       } /* end of while */
@@ -1050,9 +1051,9 @@ dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, order_t *orders
               pi.seq_qstat, pi.seq_hdyn, pi.seq_qdyn);
    }
 
-   lFreeList(&user_list);
+   user_list.reset();
    lFreeList(&group_list);
-   sge_free_load_list(&consumable_load_list);
+   consumable_load_list.reset();
 
    /* reset last dispatch type. Indicator for sorting queues */
    sconf_set_last_dispatch_type(DISPATCH_TYPE_NONE);
@@ -1063,8 +1064,9 @@ dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, order_t *orders
 /**
  * @brief Selects resources for 'job', add appropriate order to the 'orders_list',
  *
- * @param queue_list the queues that can take jobs (`QU_Type`); queues that become full move to @p dis_queue_list
- * @param dis_queue_list the queues that cannot take jobs now (`QU_Type`)
+ * @param queue_list the queues that can take jobs (`QU_Type`); queues that become full move to @p dis_queue_list,
+ *        a list left empty is freed, and for a reservation a missing one is created
+ * @param dis_queue_list the queues that cannot take jobs now (`QU_Type`), created when the first queue moves there
  * @param job a copy of the job being scheduled
  * @param ja_task the task being scheduled
  * @param pe_list the parallel environments
@@ -1073,7 +1075,7 @@ dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, order_t *orders
  * @param host_list the execution hosts
  * @param acl_list the access lists
  * @param load_adjustments the job load adjustments
- * @param user_list the running jobs per user (`JC_Type`), increased for a started job
+ * @param user_list the running jobs per user (`JC_Type`), increased for a started job, created with the first one
  * @param group_list unused
  * @param orders receives the start order
  * @param total_running_job_tickets increased by the tickets of a started job
@@ -1081,7 +1083,8 @@ dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, order_t *orders
  * @param is_start try to find a now assignment
  * @param is_reserve try to find a reservation assignment
  * @param is_schedule_based whether resource availability is checked in the resource diagram
- * @param load_list the consumable load list (`LDR_Type`), queues that become unusable are removed from it
+ * @param load_list the consumable load list (`LDR_Type`), queues that become unusable are removed from it; freed
+ *        when it becomes empty
  * @param hgrp_list the host groups
  * @param rqs_list the resource quota sets
  * @param ar_list the advance reservations
@@ -1093,17 +1096,17 @@ dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, order_t *orders
  *         category -2 will never get an assignment for that particular job
  */
 static dispatch_t
-select_assign_debit(lList **queue_list, lList **dis_queue_list, const ocs::tom::Element<ocs::tom::JB> job,
-                    const ocs::tom::Element<ocs::tom::JAT> ja_task, const ocs::tom::List<ocs::tom::PE> pe_list,
-                    const ocs::tom::ConstList<ocs::tom::CK> ckpt_list,
+select_assign_debit(ocs::tom::ListPtr<ocs::tom::QU> &queue_list, ocs::tom::ListPtr<ocs::tom::QU> &dis_queue_list,
+                    const ocs::tom::Element<ocs::tom::JB> job, const ocs::tom::Element<ocs::tom::JAT> ja_task,
+                    const ocs::tom::List<ocs::tom::PE> pe_list, const ocs::tom::ConstList<ocs::tom::CK> ckpt_list,
                     const ocs::tom::ConstList<ocs::tom::CE> centry_list, const ocs::tom::List<ocs::tom::EH> host_list,
                     const ocs::tom::ConstList<ocs::tom::US> acl_list,
-                    const ocs::tom::List<ocs::tom::CE> load_adjustments, lList **user_list, lList **group_list,
-                    order_t *orders, double *total_running_job_tickets, int *sort_hostlist, const bool is_start,
-                    const bool is_reserve, const bool is_schedule_based, lList **load_list,
-                    const ocs::tom::ConstList<ocs::tom::HGRP> hgrp_list, const ocs::tom::List<ocs::tom::RQS> rqs_list,
-                    const ocs::tom::List<ocs::tom::AR> ar_list, sched_prof_t *pi, const bool monitor_next_run,
-                    const uint64_t now) {
+                    const ocs::tom::List<ocs::tom::CE> load_adjustments, ocs::tom::ListPtr<ocs::tom::JC> &user_list,
+                    lList **group_list, order_t *orders, double *total_running_job_tickets, int *sort_hostlist,
+                    const bool is_start, const bool is_reserve, const bool is_schedule_based,
+                    ocs::tom::ListPtr<ocs::tom::LDR> &load_list, const ocs::tom::ConstList<ocs::tom::HGRP> hgrp_list,
+                    const ocs::tom::List<ocs::tom::RQS> rqs_list, const ocs::tom::List<ocs::tom::AR> ar_list,
+                    sched_prof_t *pi, const bool monitor_next_run, const uint64_t now) {
    DENTER(TOP_LAYER);
    dispatch_t result = DISPATCH_NEVER_CAT;
    const char *pe_name, *ckpt_name;
@@ -1112,7 +1115,7 @@ select_assign_debit(lList **queue_list, lList **dis_queue_list, const ocs::tom::
 
    assignment_init(&a, job, ja_task, load_adjustments);
    assignment_init_ar(&a, ar_list);
-   a.queue_list = ocs::tom::List<ocs::tom::QU>(*queue_list);
+   a.queue_list = queue_list.get();
    a.host_list = host_list;
    a.centry_list = centry_list;
    a.acl_list = acl_list;
@@ -1126,11 +1129,13 @@ select_assign_debit(lList **queue_list, lList **dis_queue_list, const ocs::tom::
    job_get_duration(&a.duration, job);
 
    if (is_reserve) {
-      if (*queue_list == nullptr) {
-         *queue_list = lCreateList("temp queue", lGetListDescr(*dis_queue_list));
-         a.queue_list = ocs::tom::List<ocs::tom::QU>(*queue_list);
+      if (queue_list == nullptr) {
+         // the list gets the reduced descriptor of the disabled queues
+         queue_list = ocs::tom::ListPtr<ocs::tom::QU>(lCreateList("temp queue", lGetListDescr(*dis_queue_list)));
+         a.queue_list = queue_list.get();
       }
       is_computed_reservation = true;
+      // the disabled queue list is not replaced, it stays, also while empty
       lAppendList(*queue_list, *dis_queue_list);
    }
 
@@ -1381,35 +1386,32 @@ select_assign_debit(lList **queue_list, lList **dis_queue_list, const ocs::tom::
        * @todo (CS-449) can the fact that a reservation was done lead to queues in suspended or alarm state?
        *    It does not consume slots *now*, so does it have any effect on sge_split_queue_slots_free()?
        */
-      lList *disabled_queues = nullptr;
+      ocs::tom::ListPtr<ocs::tom::QU> disabled_queues;
 
-      if (*load_list == nullptr) {
+      if (load_list == nullptr) {
          sge_split_suspended(monitor_next_run, queue_list, dis_queue_list);
-         sge_split_queue_slots_free(monitor_next_run, queue_list, dis_queue_list);
+         sge_split_queue_slots_free(monitor_next_run, *queue_list, dis_queue_list);
       } else {
-         sge_split_suspended(monitor_next_run, queue_list, &disabled_queues);
-         sge_split_queue_slots_free(monitor_next_run, queue_list, &disabled_queues);
+         sge_split_suspended(monitor_next_run, queue_list, disabled_queues);
+         sge_split_queue_slots_free(monitor_next_run, *queue_list, disabled_queues);
 
-         sge_remove_queue_from_load_list(load_list, disabled_queues);
-         if (*dis_queue_list == nullptr) {
-            *dis_queue_list = disabled_queues;
+         sge_remove_queue_from_load_list(load_list, *disabled_queues);
+         if (dis_queue_list == nullptr) {
+            dis_queue_list = std::move(disabled_queues);
          } else {
-            lAddList(*dis_queue_list, &disabled_queues);
+            dis_queue_list->splice(std::move(disabled_queues));
          }
-         disabled_queues = nullptr;
       }
 
       // clear the QU_tagged4schedule - we re/mis-use it in sge_load_list_alarm() and sge_split_queue_load()
       qinstance_list_set_tag(*queue_list, 0, QU_tagged4schedule);
 
-      bool is_consumable_load_alarm =
-              sge_load_list_alarm(monitor_next_run, ocs::tom::ConstList<ocs::tom::LDR>(*load_list), host_list,
-                                  centry_list);
+      bool is_consumable_load_alarm = sge_load_list_alarm(monitor_next_run, *load_list, host_list, centry_list);
 
       /* split queues into overloaded and non-overloaded queues */
       if (sge_split_queue_load(
               monitor_next_run,
-              queue_list,                                     /* source list                              */
+              *queue_list,                                    /* source list                              */
               &disabled_queues,
               host_list,                                      /* host list contains load values           */
               centry_list,
@@ -1422,16 +1424,15 @@ select_assign_debit(lList **queue_list, lList **dis_queue_list, const ocs::tom::
          assignment_release(&a);
          DRETURN(DISPATCH_NEVER);
       }
-      if (*load_list != nullptr) {
-         sge_remove_queue_from_load_list(load_list, disabled_queues);
+      if (load_list != nullptr) {
+         sge_remove_queue_from_load_list(load_list, *disabled_queues);
       }
 
-      if (*dis_queue_list == nullptr) {
-         *dis_queue_list = disabled_queues;
+      if (dis_queue_list == nullptr) {
+         dis_queue_list = std::move(disabled_queues);
       } else {
-         lAddList(*dis_queue_list, &disabled_queues);
+         dis_queue_list->splice(std::move(disabled_queues));
       }
-      disabled_queues = nullptr;
    }
 
    /* no longer needed - having built the order 

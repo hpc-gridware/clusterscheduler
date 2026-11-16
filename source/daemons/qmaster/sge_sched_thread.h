@@ -45,33 +45,52 @@
 #include "evc/sge_event_client.h"
 #include "mir/sge_mirror.h"
 #include "sge_sched_prepare_data.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_AR.h"
+#include "sgeobj/tom/ocs_tom_CE.h"
+#include "sgeobj/tom/ocs_tom_CK.h"
+#include "sgeobj/tom/ocs_tom_CT.h"
+#include "sgeobj/tom/ocs_tom_EH.h"
+#include "sgeobj/tom/ocs_tom_HGRP.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
+#include "sgeobj/tom/ocs_tom_JC.h"
+#include "sgeobj/tom/ocs_tom_PE.h"
+#include "sgeobj/tom/ocs_tom_PR.h"
+#include "sgeobj/tom/ocs_tom_QU.h"
+#include "sgeobj/tom/ocs_tom_RQS.h"
+#include "sgeobj/tom/ocs_tom_STN.h"
+#include "sgeobj/tom/ocs_tom_US.h"
+#include "sgeobj/tom/ocs_tom_UU.h"
 
 /** @brief The scheduler's private snapshot of the cluster
  *
  * Maintained by the mirror from the event stream, so a scheduling run never
- * touches the live master lists.
+ * touches the live master lists. The copies are owned by the snapshot and
+ * freed with it; the read-only lists are borrowed from the mirror. Move-only,
+ * as its owning members are.
  */
-typedef struct {
-   lList *host_list;        ///< Execution hosts (`EH_Type`)
-   lList *queue_list;       ///< Queue instances that can take jobs (`QU_Type`)
-   lList *dis_queue_list;   ///< `QU_Type` - contains the queues only for the reservation
-   lList *all_queue_list;   ///< Every queue instance, including the unusable ones (`QU_Type`)
-   lList *job_list;         ///< Jobs (`JB_Type`)
-   const lList *centry_list;      ///< Complex entries (`CE_Type`)
-   lList *acl_list;         ///< Access control lists (`US_Type`)
-   lList *pe_list;          ///< Parallel environments (`PE_Type`)
-   lList *user_list;        ///< Users (`UP_Type`)
-   lList *dept_list;        ///< Departments (`US_Type`)
-   lList *project_list;     ///< Projects (`UP_Type`)
-   lList *share_tree;       ///< The share tree (`STN_Type`)
-   const lList *ckpt_list;        ///< Checkpointing environments (`CK_Type`)
-   lList *running_per_user; ///< How many jobs each user is running (`JC_Type`)
-   const lList *hgrp_list;        ///< Host groups (`HGRP_Type`)
-   lList *rqs_list;         ///< Resource quota sets (`RQS_Type`)
-   lList *ar_list;          ///< Advance reservations (`AR_Type`)
-   lList *category_list;    ///< Scheduling categories, so jobs that look alike are decided once (`CT_Type`)
-   bool monitor_next_run;   ///< Whether the next run writes a scheduling decision profile
-} scheduler_all_data_t;
+struct scheduler_all_data_t {
+   ocs::tom::ListPtr<ocs::tom::EH> host_list;          ///< Execution hosts
+   ocs::tom::ListPtr<ocs::tom::QU> queue_list;         ///< Queue instances that can take jobs, reduced
+   ocs::tom::ListPtr<ocs::tom::QU> dis_queue_list;     ///< Queue instances only for the reservation, reduced
+   ocs::tom::ListPtr<ocs::tom::QU> all_queue_list;     ///< Every queue instance, with full name and state only
+   ocs::tom::ListPtr<ocs::tom::JB> job_list;           ///< Jobs
+   ocs::tom::ConstList<ocs::tom::CE> centry_list;      ///< Complex entries, the mirror's list
+   ocs::tom::ListPtr<ocs::tom::US> acl_list;           ///< Access control lists
+   ocs::tom::ListPtr<ocs::tom::PE> pe_list;            ///< Parallel environments
+   ocs::tom::ListPtr<ocs::tom::UU> user_list;          ///< Users
+   ocs::tom::ListPtr<ocs::tom::US> dept_list;          ///< Departments
+   ocs::tom::ListPtr<ocs::tom::PR> project_list;       ///< Projects
+   ocs::tom::ListPtr<ocs::tom::STN> share_tree;        ///< The share tree
+   ocs::tom::ConstList<ocs::tom::CK> ckpt_list;        ///< Checkpointing environments, the mirror's list
+   ocs::tom::ListPtr<ocs::tom::JC> running_per_user;   ///< How many jobs each user is running
+   ocs::tom::ConstList<ocs::tom::HGRP> hgrp_list;      ///< Host groups, the mirror's list
+   ocs::tom::ListPtr<ocs::tom::RQS> rqs_list;          ///< Resource quota sets
+   ocs::tom::ListPtr<ocs::tom::AR> ar_list;            ///< Advance reservations
+   ocs::tom::ListPtr<ocs::tom::CT> category_list;      ///< Scheduling categories, so jobs that look alike are
+                                                       ///< decided once
+   bool monitor_next_run = false;                      ///< Whether the next run writes a scheduling decision profile
+};
 
 /** @brief How the rest of qmaster wakes the scheduler up */
 typedef struct {
