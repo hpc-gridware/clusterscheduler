@@ -222,16 +222,16 @@ static dispatch_t
 parallel_global_slots(sge_assignment_t *a, int *slots);
 
 static dispatch_t
-parallel_tag_hosts_queues(sge_assignment_t *a, lListElem *hep, int *slots, bool need_master,
-                          bool is_master_host, bool *master_host, category_use_t *use_category,
-                          lList **unclear_cqueue_list, int min_host_slots, int max_host_slots);
+parallel_tag_hosts_queues(sge_assignment_t *a, ocs::tom::Element<ocs::tom::EH> hep, int *slots, bool need_master,
+                          bool is_master_host, bool *master_host, category_use_t *use_category, int min_host_slots,
+                          int max_host_slots);
 
 #ifdef SOLARIS
 #pragma no_inline(parallel_tag_hosts_queues)
 #endif
 
 static int
-parallel_max_host_slots(sge_assignment_t *a, lListElem *host);
+parallel_max_host_slots(sge_assignment_t *a, ocs::tom::ConstElement<ocs::tom::EH> host);
 
 
 static dispatch_t
@@ -3966,44 +3966,58 @@ static int get_soft_violations(sge_assignment_t *a, const ocs::tom::ConstElement
    DRETURN(violations);
 }
 
+/**
+ * @brief Add a queue instance with its slots to the granted destination identifier list of the assignment
+ *
+ * The master queue becomes the first element; the elements of one host are kept together.
+ *
+ * @param a the assignment, its gdil is created if needed
+ * @param qname the name of the queue instance
+ * @param eh_name the name of its host
+ * @param qep the queue instance
+ * @param slots the number of slots
+ * @param is_master_queue whether the queue instance is the one of the master task
+ */
 static void
-parallel_add_queue_to_gdil(sge_assignment_t *a, const char *qname, const char *eh_name, const lListElem *qep,
-                           uint32_t slots, bool is_master_queue) {
+parallel_add_queue_to_gdil(sge_assignment_t *a, const char *qname, const char *eh_name,
+                           const ocs::tom::ConstElement<ocs::tom::QU> qep, const uint32_t slots,
+                           const bool is_master_queue) {
    DENTER(TOP_LAYER);
 
    DPRINTF("add %s queue %s to GDIL, " sge_u32 " slots\n", is_master_queue ? "master" : "slave", qname, slots);
 
+   // a->gdil is an owning raw member until the owning members of the assignment are converted; like the element,
+   // the list is created the typed way, which throws if there is no memory instead of giving nullptr
    if (a->gdil == nullptr) {
-      a->gdil = lCreateList("", JG_Type);
+      a->gdil = ocs::tom::ListPtr<ocs::tom::JG>::create("").release();
    }
-   lListElem *gdil_ep = lCreateElem(JG_Type);
-   if (a->gdil != nullptr && gdil_ep != nullptr) {
-      ocs::tom::set<JG_qname>(gdil_ep, qname);
-      ocs::tom::set<JG_qversion>(gdil_ep, ocs::tom::get<QU_version>(qep));
-      ocs::tom::set<JG_qhostname>(gdil_ep, eh_name);
-      ocs::tom::set<JG_slots>(gdil_ep, slots);
+   auto gdil = ocs::tom::List<ocs::tom::JG>(a->gdil);
+   auto gdil_ep = ocs::tom::ElementPtr<ocs::tom::JG>::create();
+   ocs::tom::set<JG_qname>(gdil_ep, qname);
+   ocs::tom::set<JG_qversion>(gdil_ep, ocs::tom::get<QU_version>(qep));
+   ocs::tom::set<JG_qhostname>(gdil_ep, eh_name);
+   ocs::tom::set<JG_slots>(gdil_ep, slots);
 
-      if (is_master_queue) {
-         // the gdil element for the master queue must be the first one in the list
-         lInsertElem(a->gdil, nullptr, gdil_ep);
+   if (is_master_queue) {
+      // the gdil element for the master queue must be the first one in the list
+      gdil.push_front(std::move(gdil_ep));
+   } else {
+      // if we already have a gdil element for this host,
+      // make sure all gdil elements for a host are grouped together
+      ocs::tom::Element<ocs::tom::JG> insert_host;
+      const void *iterator = nullptr;
+      auto next_host = ocs::tom::find_first_rw<JG_qhostname>(gdil, eh_name, &iterator);
+      // find the last host with the same name
+      while (next_host) {
+         insert_host = next_host;
+         next_host = ocs::tom::find_next_rw<JG_qhostname>(gdil, eh_name, &iterator);
+      }
+
+      // insert the new host after the last host with the same name
+      if (insert_host) {
+         gdil.insert_after(insert_host, std::move(gdil_ep));
       } else {
-         // if we already have a gdil element for this host,
-         // make sure all gdil elements for a host are grouped together
-         lListElem *insert_host = nullptr;
-         const void *iterator = nullptr;
-         lListElem *next_host = ocs::tom::find_first_rw<JG_qhostname>(a->gdil, eh_name, &iterator);
-         // find the last host with the same name
-         while (next_host != nullptr) {
-            insert_host = next_host;
-            next_host = ocs::tom::find_next_rw<JG_qhostname>(a->gdil, eh_name, &iterator);
-         }
-
-         // insert the new host after the last host with the same name
-         if (insert_host != nullptr) {
-            lInsertElem(a->gdil, insert_host, gdil_ep);
-         } else {
-            lAppendElem(a->gdil, gdil_ep);
-         }
+         gdil.push_back(std::move(gdil_ep));
       }
    }
 
@@ -4041,7 +4055,7 @@ parallel_revert_rqs(sge_assignment_t *a, const char *eh_name, std::vector<queue_
    DENTER(TOP_LAYER);
 
    for (queue_slots_t &queue_slot : queue_slots) {
-      ocs::tom::Element<ocs::tom::QU> qep = ocs::tom::find_first_rw<QU_full_name>(a->queue_list, queue_slot.qname);
+      auto qep = ocs::tom::find_first_rw<QU_full_name>(a->queue_list, queue_slot.qname);
       int slots = queue_slot.slots;
       if (slots != 0) {
          if (a->ar_id == 0 && !a->is_advance_reservation) {
@@ -4074,7 +4088,7 @@ parallel_revert_rqs(sge_assignment_t *a, const char *eh_name, std::vector<queue_
  * @param maxslots_slaves      - the maximum number of slots we will assign as maximum in one round
  * @param minslots_for_tagging - the minimum number of slots we want to find on a host in queue tagging
  * @param maxslots_for_tagging - the maximum number of slots we want to find on a host in queue tagging
- * @return
+ * @return true if a round robin run is still required
  */
 static bool
 parallel_get_minmax_slots_for_allocation_rules(sge_assignment_t *a, bool have_master_host, int accu_slots,
@@ -4186,17 +4200,20 @@ parallel_get_minmax_slots_for_allocation_rules(sge_assignment_t *a, bool have_ma
  * @return the number of slots we could allocate
  */
 static int
-parallel_allocate_queue_slots(sge_assignment_t *a, const char *eh_name, bool have_master_host, bool &got_master_queue,
-                              bool only_with_master, int minslots, int maxslots,
-                              int accu_host_slots, bool have_master_and_slave_queue_request,
-                              const lList *slave_hard_queue_list, std::vector<queue_slots_t> &queue_slots, dstring *rule_name, dstring *rue_name, dstring *limit_name) {
+parallel_allocate_queue_slots(sge_assignment_t *a, const char *eh_name, const bool have_master_host,
+                              bool &got_master_queue, const bool only_with_master, const int minslots,
+                              const int maxslots, const int accu_host_slots,
+                              const bool have_master_and_slave_queue_request,
+                              const ocs::tom::ConstList<ocs::tom::QR> slave_hard_queue_list,
+                              std::vector<queue_slots_t> &queue_slots, dstring *rule_name, dstring *rue_name,
+                              dstring *limit_name) {
    DENTER(TOP_LAYER);
 
    int rqs_hslots = 0;
    const void *iter = nullptr;
-   for (ocs::tom::Element<ocs::tom::QU> qep = ocs::tom::find_first_rw<QU_qhostname>(a->queue_list, eh_name, &iter); qep;
+   for (auto qep = ocs::tom::find_first_rw<QU_qhostname>(a->queue_list, eh_name, &iter); qep;
         qep = ocs::tom::find_next_rw<QU_qhostname>(a->queue_list, eh_name, &iter)) {
-      const char *qname = ocs::tom::get<QU_full_name>(qep);
+      auto qname = ocs::tom::get<QU_full_name>(qep);
 
       DPRINTF("%s: tagged: " sge_u32 " accu_host_slots: %d, maxslots: %d, rqs_hslots: %d\n", qname,
               ocs::tom::get<QU_tag>(qep), accu_host_slots, maxslots, rqs_hslots);
@@ -4354,10 +4371,12 @@ parallel_allocate_queue_slots(sge_assignment_t *a, const char *eh_name, bool hav
  * order of each host. Assumption is the host list passed is sorted
  * according the load formula.
  *
- * @param assignment
+ * @param a the assignment
  * @param use_category information on how to use the job category
+ * @param available_slots out: the number of slots found
  *
- * @return 0 ok got an assignment 1 no assignment at the specified time -1 assignment will never be possible for all jobs of that category -2 assignment will never be possible for that particular job
+ * @return 0 ok got an assignment, 1 no assignment at the specified time, -1 assignment will never be possible
+ *         for all jobs of that category, -2 assignment will never be possible for that particular job
  *
  * @note MT-NOTE: parallel_tag_queues_suitable4job() is not MT safe
  */
@@ -4365,13 +4384,11 @@ static dispatch_t
 parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_category, int *available_slots) {
    DENTER(TOP_LAYER);
 
-   lListElem *job = a->job;
-   auto [global_hard_queue_list, master_hard_queue_list, slave_hard_queue_list] =
-      get_hard_queue_lists(ocs::tom::ConstElement<ocs::tom::JB>(job));
+   auto [global_hard_queue_list, master_hard_queue_list, slave_hard_queue_list] = get_hard_queue_lists(a->job);
    bool have_master_and_slave_queue_request = master_hard_queue_list != nullptr && slave_hard_queue_list != nullptr;
 #if 0
-   bool have_master_requests = job_get_hard_resource_list(job, JRS_SCOPE_MASTER) != nullptr;
-   bool have_slave_requests = job_get_hard_resource_list(job, JRS_SCOPE_SLAVE) != nullptr;
+   bool have_master_requests = job_get_hard_resource_list(a->job, JRS_SCOPE_MASTER) != nullptr;
+   bool have_slave_requests = job_get_hard_resource_list(a->job, JRS_SCOPE_SLAVE) != nullptr;
 #endif
 
    dispatch_t best_result = DISPATCH_NEVER_CAT;
@@ -4392,11 +4409,11 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
    } else {
       // cluster queues which are not rejected at cluster queue level
       // no need to repeat the cluster queue checks but need to check on lower level
-      lList *unclear_cqueue_list = nullptr;
+      ocs::tom::ListPtr<ocs::tom::CTI> unclear_cqueue_list;
 
       int last_accu_host_slots;
 
-      lList *skip_host_list = nullptr;
+      ocs::tom::List<ocs::tom::CTI> skip_host_list;
       if (use_category->use_category) {
          skip_host_list = ocs::tom::get<CCT_ignore_hosts>(use_category->cache);
       }
@@ -4404,8 +4421,8 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
       /* first queue filtering step on cluster queue layer
        * non-eligible queues may have no impact on host preference
        */
-      for_each_rw_lv (qep, a->queue_list) {
-         const char *cqname = ocs::tom::get<QU_qname>(qep);
+      for (auto qep : a->queue_list) {
+         auto cqname = ocs::tom::get<QU_qname>(qep);
 
          /* try to foreclose the cluster queue */
          if (ocs::tom::find_first<CTI_name>(a->skip_cqueue_list, cqname)) { // @todo (CS-453) why is the skip_cqueue_list not cached?
@@ -4414,7 +4431,7 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
             continue;
          }
 
-         if (!ocs::tom::find_first<CTI_name>(unclear_cqueue_list, cqname)) {
+         if (!ocs::tom::find_first<CTI_name>(*unclear_cqueue_list, cqname)) {
             SCHED_PROF_INC(a->pi, par_cqstat);
             if (cqueue_match_static(cqname, a) != DISPATCH_OK) {
                ocs::tom::emplace_back<CTI_name>(&(a->skip_cqueue_list), cqname);
@@ -4424,7 +4441,10 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
                continue;
             }
             DPRINTF("cqueue %s is not rejected\n", cqname);
-            ocs::tom::emplace_back<CTI_name>(&unclear_cqueue_list, cqname);
+            if (!unclear_cqueue_list) {
+               unclear_cqueue_list = ocs::tom::ListPtr<ocs::tom::CTI>::create("unclear cluster queues");
+            }
+            unclear_cqueue_list->emplace_back<CTI_name>(cqname);
          }
          // the queue can potentially be used - it is not rejected by static cqueue matching
          ocs::tom::set<QU_tag>(qep, 1);
@@ -4433,13 +4453,16 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
       // sorting queue list, with or without respecting soft requests
       if (a->is_soft) {
          a->soft_violations = 0;
-         for_each_rw_lv (qep, a->queue_list) {
+         for (auto qep : a->queue_list) {
             ocs::tom::set<QU_soft_violation>(qep, 0);
-            lListElem *hep;
-            if (ocs::tom::get<QU_tag>(qep) == 0 || !(hep = host_list_locate(a->host_list, ocs::tom::get<QU_qhostname>(qep)))) {
+            if (ocs::tom::get<QU_tag>(qep) == 0) {
                continue;
             }
-            get_soft_violations(a, ocs::tom::ConstElement<ocs::tom::EH>(hep), ocs::tom::Element<ocs::tom::QU>(qep));
+            auto hep = ocs::tom::find_first<EH_name>(a->host_list, ocs::tom::get<QU_qhostname>(qep));
+            if (!hep) {
+               continue;
+            }
+            get_soft_violations(a, hep, qep);
             DPRINTF("EVALUATE: %s soft violations %d\n", ocs::tom::get<QU_full_name>(qep), ocs::tom::get<QU_soft_violation>(qep));
          }
          if (sconf_get_queue_sort_method() == QSM_LOAD) {
@@ -4470,11 +4493,11 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
 
       // Sort the host list
       // Hosts which are not referenced in the queue list have seq_no std::numeric_limits<uint32_t>::max() = will land at the end of the list
-      for_each_rw_lv(hep, a->host_list) {
+      for (auto hep : a->host_list) {
          ocs::tom::set<EH_seq_no>(hep, std::numeric_limits<uint32_t>::max());
       }
       uint32_t host_seq_no = 0;
-      for_each_rw_lv (qep, a->queue_list) {
+      for (auto qep : a->queue_list) {
          /* @todo CS-602 verify: if all.q is disabled or job requests queue != all.q, why is it still on top of the list?
           * AFTER SORT: all.q@ubuntu-22-amd64-1: available: 0, soft violations 0
           * AFTER SORT: all.q@ubuntu-20-amd64-1: available: 0, soft violations 0
@@ -4490,9 +4513,8 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
          if (ocs::tom::get<QU_tag>(qep) == 0) {
             continue;
          }
-         const char *eh_name = ocs::tom::get<QU_qhostname>(qep);
-         lListElem *hep = host_list_locate(a->host_list, eh_name);
-         if (hep == nullptr) {
+         auto hep = ocs::tom::find_first_rw<EH_name>(a->host_list, ocs::tom::get<QU_qhostname>(qep));
+         if (!hep) {
             continue;
          }
          if (ocs::tom::get<EH_seq_no>(hep) == std::numeric_limits<uint32_t>::max())
@@ -4513,7 +4535,8 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
       dstring rue_name = DSTRING_INIT;
       dstring limit_name = DSTRING_INIT;
 
-      const lListElem *master_host = nullptr; // here we remember the master host, it is used when we are in the second round
+      // here we remember the master host, it is used when we are in the second round
+      ocs::tom::ConstElement<ocs::tom::EH> master_host;
       // @todo do we need to remember the master queue as well? We also do matching on queues and might have multiple
       //       queues on a host and be matching queue resources. A job might not get these resources.
 
@@ -4526,13 +4549,14 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
          last_accu_host_slots = accu_host_slots;
 
          // loop over the sorted host list
-         for_each_rw_lv(hep, a->host_list) {
+         for (auto hep : a->host_list) {
             // we already handled global resources
-            if (hep == a->gep) {
+            if (hep.raw() == a->gep.raw()) {
                continue;
             }
 
             /* this host does not work for this category, skip it */
+            // a host field reads as ocs::tom::Host, which must not go into the varargs of the messages
             const char *eh_name = ocs::tom::get<EH_name>(hep);
             if (skip_host_list && ocs::tom::find_first<CTI_name>(skip_host_list, eh_name)) {
                continue;
@@ -4543,7 +4567,7 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
 
             // If we already have the master host and come to the master host again (due to round robin)
             // and the master allocation rule is a fixed one, skip the host - we have already filled it
-            if (have_master_host && master_host == hep && ALLOC_RULE_IS_FIXED(a->mallocation_parsed)) {
+            if (have_master_host && master_host.raw() == hep.raw() && ALLOC_RULE_IS_FIXED(a->mallocation_parsed)) {
                DPRINTF("skip master host %s as we already filled it\n", eh_name);
                continue;
             }
@@ -4577,14 +4601,15 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
             //       wouldn't eh_name be in some skip list then?
             if (ocs::tom::find_first<QU_qhostname>(a->queue_list, eh_name)) {
                bool need_master = !have_master_host;
-               bool is_master_host = (hep == master_host);
-               DPRINTF("===> HOST: %s %p <=== need_master: %d is_master_host: %d (%p)\n", eh_name, (void *)hep,
-                       need_master, is_master_host, (void *)master_host);
+               bool is_master_host = hep.raw() == master_host.raw();
+               DPRINTF("===> HOST: %s %p <=== need_master: %d is_master_host: %d (%p)\n", eh_name,
+                       static_cast<const void *>(hep.raw()), need_master, is_master_host,
+                       static_cast<const void *>(master_host.raw()));
                // @todo Why do we call parallel_tag_hosts_queues,
                //       when we have round_robin and are in the second or higher round?
                //       ==> store the possible amount somewhere (QU_tag?)
                parallel_tag_hosts_queues(a, hep, &hslots, need_master, is_master_host,
-                                         &suited_as_master_host, use_category, &unclear_cqueue_list,
+                                         &suited_as_master_host, use_category,
                                          minslots_for_tagging, maxslots_for_tagging);
                if (hslots >= minslots_for_tagging) {
                   bool got_master_queue = have_master_host;
@@ -4640,19 +4665,20 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
                      if (got_master_queue) {
                         have_master_host = true;
                         // remember the master host only once, otherwise we overwrite it with some different host
-                        if (master_host == nullptr) {
+                        if (!master_host) {
                            master_host = hep;
                         }
                      }
 
                      // Create the GDIL and book soft violations from our temporary queue list.
                      for (queue_slots_t &queue_slot : queue_slots) {
-                        ocs::tom::Element<ocs::tom::JG> gdil_ep = ocs::tom::find_first_rw<JG_qname>(a->gdil, queue_slot.qname);
-                        if (gdil_ep == nullptr) {
+                        auto gdil_ep = ocs::tom::find_first_rw<JG_qname>(a->gdil, queue_slot.qname);
+                        if (!gdil_ep) {
                            // Need a new GDIL element.
                            // @todo we could store qep in queue_slots_t
-                           lListElem *qep = ocs::tom::find_first_rw<QU_full_name>(a->queue_list, queue_slot.qname);
-                           parallel_add_queue_to_gdil(a, queue_slot.qname, eh_name, qep, queue_slot.slots, queue_slot.is_master_queue);
+                           auto qep = ocs::tom::find_first<QU_full_name>(a->queue_list, queue_slot.qname);
+                           parallel_add_queue_to_gdil(a, queue_slot.qname, eh_name, qep, queue_slot.slots,
+                                                      queue_slot.is_master_queue);
                         } else {
                            // Update slots of an existing GDIL element (in case of $round_robin)
                            ocs::tom::add<JG_slots>(gdil_ep, queue_slot.slots);
@@ -4675,7 +4701,7 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
                if (hslots == 0) {
                   // @todo (CS-457) what if the host is already in the skip list? Can probably not happen here.
                   //       but still we should have functions add_to_skip_list(), is_in_skip_list()
-                  ocs::tom::emplace_back<CTI_name>(&skip_host_list, eh_name);
+                  skip_host_list.emplace_back<CTI_name>(eh_name);
                }
             }
 
@@ -4689,7 +4715,7 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
          // @todo additional termination condition: if we didn't find the master host in the first round, we will never find it!
       } while (do_round_robin && !done && last_accu_host_slots != accu_host_slots);
 
-      lFreeList(&unclear_cqueue_list);
+      unclear_cqueue_list.reset();
 
       sge_dstring_free(&rule_name);
       sge_dstring_free(&rue_name);
@@ -4761,39 +4787,62 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
    DRETURN(best_result);
 }
 
-static int already_booked_on_host(const lList *gdil, const char *host_name) {
+/**
+ * @brief The number of slots already booked on a host
+ * @param gdil the granted destination identifier list
+ * @param host_name the host
+ * @return the sum of the slots of the host's elements
+ */
+static int already_booked_on_host(const ocs::tom::ConstList<ocs::tom::JG> gdil, const char *host_name) {
+   DENTER(TOP_LAYER);
    int ret = 0;
 
    const void *iterator = nullptr;
-   for (ocs::tom::ConstElement<ocs::tom::JG> gdil_ep = ocs::tom::find_first<JG_qhostname>(gdil, host_name, &iterator);
-        gdil_ep != nullptr;
+   for (auto gdil_ep = ocs::tom::find_first<JG_qhostname>(gdil, host_name, &iterator); gdil_ep;
         gdil_ep = ocs::tom::find_next<JG_qhostname>(gdil, host_name, &iterator)) {
       ret += ocs::tom::get<JG_slots>(gdil_ep);
    }
 
-   return ret;
+   DRETURN(ret);
 }
 
-static void host_clear_qinstance_tags(lList *queue_list, const char *host_name, uint32_t bitmask) {
+/**
+ * @brief Clear bits of QU_tagged4schedule in all queue instances of a host
+ * @param queue_list the queue instances
+ * @param host_name the host
+ * @param bitmask the bits to clear
+ */
+static void host_clear_qinstance_tags(const ocs::tom::List<ocs::tom::QU> queue_list, const char *host_name,
+                                      const uint32_t bitmask) {
+   DENTER(TOP_LAYER);
    const void *queue_iterator = nullptr;
-   lListElem *next_queue, *qep;
-   for (next_queue = ocs::tom::find_first_rw<QU_qhostname>(queue_list, host_name, &queue_iterator);
-        (qep = next_queue);
-        next_queue = ocs::tom::find_next_rw<QU_qhostname>(queue_list, host_name, &queue_iterator)) {
+   for (auto qep = ocs::tom::find_first_rw<QU_qhostname>(queue_list, host_name, &queue_iterator); qep;
+        qep = ocs::tom::find_next_rw<QU_qhostname>(queue_list, host_name, &queue_iterator)) {
       ocs::tom::clear_bits<QU_tagged4schedule>(qep, bitmask);
       print_tagged4schedule(qep);
    }
+   DRETURN_VOID;
 }
 
+/**
+ * @brief Clear bits of QU_tagged4schedule in a queue instance, or in all queue instances of a host
+ * @param object_name the host, used if @p queue is empty
+ * @param queue the queue instance, or an empty handle when matching on host level
+ * @param queue_list the queue instances
+ * @param bitmask the bits to clear
+ */
 static void
-host_or_queue_clear_tags(const char *object_name, lListElem *queue, lList *queue_list, uint32_t bitmask) {
-   if (queue != nullptr) {
+host_or_queue_clear_tags(const char *object_name, const ocs::tom::Element<ocs::tom::QU> queue,
+                         const ocs::tom::List<ocs::tom::QU> queue_list, const uint32_t bitmask) {
+   DENTER(TOP_LAYER);
+   if (queue) {
       ocs::tom::clear_bits<QU_tagged4schedule>(queue, bitmask);
       print_tagged4schedule(queue);
    } else {
       // we are coming from host matching, clear tags in all queues on this host
       host_clear_qinstance_tags(queue_list, object_name, bitmask);
    }
+   DRETURN_VOID;
 }
 
 /**
@@ -4801,36 +4850,47 @@ host_or_queue_clear_tags(const char *object_name, lListElem *queue, lList *queue
  *
  * The maximum amount available at the host for the specified time period
  * is determined.
+ *
+ * @param a the assignment
+ * @param slots out: the number of slots
+ * @param hep the host
+ * @param need_master whether the master task still needs a host
+ * @param is_master_host whether the host is the master host
+ * @param found_master_host out: we just found a candidate for the master host
+ * @param allow_non_requestable whether resources that are not requestable may match
+ * @return the dispatch result
  */
 // @todo there is a single call to parallel_host_slots() in parallel_tag_hosts_queues() where we pass false as/
 //       allow_non_requestable - should we remove this parameter?
 // found_master_host: we just found a candidate for the master host
 static dispatch_t
-parallel_host_slots(sge_assignment_t *a, int *slots, lListElem *hep, bool need_master,
-                    bool is_master_host, bool &found_master_host, bool allow_non_requestable) {
+parallel_host_slots(sge_assignment_t *a, int *slots, const ocs::tom::Element<ocs::tom::EH> hep,
+                    const bool need_master, const bool is_master_host, bool &found_master_host,
+                    const bool allow_non_requestable) {
    DENTER(TOP_LAYER);
 
    int hslots = 0;
    dispatch_t result = DISPATCH_NEVER_CAT;
+   // a host field reads as ocs::tom::Host, which must not go into the varargs of the messages
    const char *eh_name = ocs::tom::get<EH_name>(hep);
 
    SCHED_PROF_INC(a->pi, par_hstat);
 
    auto [global_hard_queue_list, master_hard_queue_list, slave_hard_queue_list] = get_hard_queue_lists(a->job);
    bool rejected_as_slave = false, rejected_as_master = false;
-   if (global_hard_queue_list != nullptr) {
+   if (global_hard_queue_list) {
       rejected_as_master = rejected_as_slave = qref_list_eh_rejected(global_hard_queue_list, eh_name, a->hgrp_list);
    } else {
-      if (master_hard_queue_list != nullptr) {
+      if (master_hard_queue_list) {
          rejected_as_master = qref_list_eh_rejected(master_hard_queue_list, eh_name, a->hgrp_list);
       }
-      if (slave_hard_queue_list != nullptr) {
+      if (slave_hard_queue_list) {
          rejected_as_slave = qref_list_eh_rejected(slave_hard_queue_list, eh_name, a->hgrp_list);
       }
    }
    // @todo CS-601 remove tags from QU_tagged4schedule according to rejected_as_master and rejected_as_slave
    if (!(rejected_as_master && rejected_as_slave) &&
-       sge_host_match_static(a, ocs::tom::ConstElement<ocs::tom::EH>(hep)) == DISPATCH_OK) {
+       sge_host_match_static(a, hep) == DISPATCH_OK) {
       // this host is suited at least for slave tasks, possibly also for the master task
 
       // cause load be raised artificially to reflect load correction when checking job requests
@@ -4844,9 +4904,9 @@ parallel_host_slots(sge_assignment_t *a, int *slots, lListElem *hep, bool need_m
 
       SCHED_PROF_INC(a->pi, par_hdyn);
 
-      ocs::tom::ConstList<ocs::tom::HL> load_list = ocs::tom::get<EH_load_list>(hep);
-      ocs::tom::ConstList<ocs::tom::CE> config_attr = ocs::tom::get<EH_consumable_config_list>(hep);
-      ocs::tom::ConstList<ocs::tom::RUE> actual_attr = ocs::tom::get<EH_resource_utilization>(hep);
+      auto load_list = ocs::tom::get<EH_load_list>(hep);
+      auto config_attr = ocs::tom::get<EH_consumable_config_list>(hep);
+      auto actual_attr = ocs::tom::get<EH_resource_utilization>(hep);
 
       // we call this function per host, and we really need to clear the resource tags with every call
       clear_resource_tags(a->job, HOST_TAG);
@@ -4869,7 +4929,7 @@ parallel_host_slots(sge_assignment_t *a, int *slots, lListElem *hep, bool need_m
          }
 
          // reduce by what we already booked on this host
-         hslots -= already_booked_on_host(a->gdil, eh_name);
+         hslots -= already_booked_on_host(ocs::tom::ConstList<ocs::tom::JG>(a->gdil), eh_name);
       }
    }
 
@@ -4911,21 +4971,25 @@ parallel_host_slots(sge_assignment_t *a, int *slots, lListElem *hep, bool need_m
  * effect here is to check always only if we could get more slots than with
  * the former per host slot amount iteration.
  *
+ * @param a the assignment
  * @param hep current host
- * @param global global host
  * @param slots out: # free slots
- * @param global_soft_violations # of global soft violations
+ * @param need_master whether the master task still needs a host
+ * @param is_master_host whether the host is the master host
  * @param master_host out: if true, found a master host
  * @param use_category int/out : how to use the job category
+ * @param min_host_slots the minimum number of slots needed on the host
+ * @param max_host_slots the maximum number of slots wanted on the host
  *
- * @return 0 ok got an assignment 1 no assignment at the specified time -1 assignment will never be possible for all jobs of that category -2 assignment will never be possible for that particular job
+ * @return 0 ok got an assignment, 1 no assignment at the specified time, -1 assignment will never be possible
+ *         for all jobs of that category, -2 assignment will never be possible for that particular job
  *
  * @note MT-NOTE: parallel_tag_hosts_queues() is not MT safe
  */
 static dispatch_t
-parallel_tag_hosts_queues(sge_assignment_t *a, lListElem *hep, int *slots, bool need_master,
-                          bool is_master_host, bool *master_host, category_use_t *use_category,
-                          lList **unclear_cqueue_list, int min_host_slots, int max_host_slots) {
+parallel_tag_hosts_queues(sge_assignment_t *a, const ocs::tom::Element<ocs::tom::EH> hep, int *slots,
+                          const bool need_master, const bool is_master_host, bool *master_host,
+                          category_use_t *use_category, const int min_host_slots, const int max_host_slots) {
    DENTER(TOP_LAYER);
 
    bool suited_as_master_host = false;
@@ -4933,8 +4997,8 @@ parallel_tag_hosts_queues(sge_assignment_t *a, lListElem *hep, int *slots, bool 
    int accu_queue_slots;
    int qslots;
    int hslots = 0;
-   const char *cqname, *qname, *eh_name = ocs::tom::get<EH_name>(hep);
-   lListElem *qep, *next_queue;
+   // a host field reads as ocs::tom::Host, which must not go into the varargs of the messages
+   const char *eh_name = ocs::tom::get<EH_name>(hep);
    dispatch_t result = DISPATCH_OK;
    const void *queue_iterator = nullptr;
 
@@ -4945,7 +5009,7 @@ parallel_tag_hosts_queues(sge_assignment_t *a, lListElem *hep, int *slots, bool 
    hslots = std::min(hslots, max_host_slots);
 
    if (hslots >= min_host_slots) {
-      lList *skip_queue_list = nullptr;
+      ocs::tom::List<ocs::tom::CTI> skip_queue_list;
       if (use_category->use_category) {
          skip_queue_list = ocs::tom::get<CCT_ignore_queues>(use_category->cache);
       }
@@ -4953,12 +5017,11 @@ parallel_tag_hosts_queues(sge_assignment_t *a, lListElem *hep, int *slots, bool 
       accu_queue_slots = 0;
 
       // check and tag all qinstances on this host
-      for (next_queue = ocs::tom::find_first_rw<QU_qhostname>(a->queue_list, eh_name, &queue_iterator);
-          (qep = next_queue);
-           next_queue = ocs::tom::find_next_rw<QU_qhostname>(a->queue_list, eh_name, &queue_iterator)) {
+      for (auto qep = ocs::tom::find_first_rw<QU_qhostname>(a->queue_list, eh_name, &queue_iterator); qep;
+           qep = ocs::tom::find_next_rw<QU_qhostname>(a->queue_list, eh_name, &queue_iterator)) {
 
-         qname = ocs::tom::get<QU_full_name>(qep);
-         cqname = ocs::tom::get<QU_qname>(qep);
+         auto qname = ocs::tom::get<QU_full_name>(qep);
+         auto cqname = ocs::tom::get<QU_qname>(qep);
 
          if (ocs::tom::find_first<CTI_name>(a->skip_cqueue_list, cqname)) {
             /* QU_tag is already 0 */
@@ -4990,7 +5053,7 @@ parallel_tag_hosts_queues(sge_assignment_t *a, lListElem *hep, int *slots, bool 
          } else {
             ocs::tom::set<QU_tag>(qep, 0);
             if (skip_queue_list) {
-               ocs::tom::emplace_back<CTI_name>(&skip_queue_list, qname);
+               skip_queue_list.emplace_back<CTI_name>(qname);
             }
             DPRINTF("HOST(1.5) %s will get us nothing\n", eh_name);
          }
@@ -5009,11 +5072,13 @@ parallel_tag_hosts_queues(sge_assignment_t *a, lListElem *hep, int *slots, bool 
    DRETURN(DISPATCH_OK);
 }
 
-/*
- * Determine maximum number of host_slots as limited by queue load thresholds.
+/**
+ * @brief Determine maximum number of host_slots as limited by queue load thresholds.
+ *
  * Goal is to prevent the queue(s) on the host to go into load alarm.
  * The maximum only considers thresholds with load adjustments
  *
+ * @code
  * for each queue Q at this host {
  *    for each threshold T of a queue {
  *       if compare operator > or >=
@@ -5024,64 +5089,67 @@ parallel_tag_hosts_queues(sge_assignment_t *a, lListElem *hep, int *slots, bool 
  *    avail(Q) = std::min(all avail(Q, T))
  * }
  * host_slot_max_by_T = MAX(all min(Q))
+ * @endcode
+ *
+ * @param a the assignment
+ * @param host the host
+ * @return the maximum number of slots on the host
  */
 static int
-parallel_max_host_slots(sge_assignment_t *a, lListElem *host) {
+parallel_max_host_slots(sge_assignment_t *a, const ocs::tom::ConstElement<ocs::tom::EH> host) {
    DENTER(TOP_LAYER);
 
    int avail_h = 0;
    const char *eh_name = ocs::tom::get<EH_name>(host);
    const void *queue_iterator = nullptr;
-   lListElem *next_queue, *qep;
-   for (next_queue = ocs::tom::find_first_rw<QU_qhostname>(a->queue_list, eh_name, &queue_iterator);
-       (qep = next_queue);
-        next_queue = ocs::tom::find_next_rw<QU_qhostname>(a->queue_list, eh_name, &queue_iterator)) {
+   for (auto qep = ocs::tom::find_first<QU_qhostname>(a->queue_list, eh_name, &queue_iterator); qep;
+        qep = ocs::tom::find_next<QU_qhostname>(a->queue_list, eh_name, &queue_iterator)) {
       int avail_q = INT_MAX;
 
-      ocs::tom::ConstList<ocs::tom::CE> load_thresholds = ocs::tom::get<QU_load_thresholds>(qep);
-      ocs::tom::ConstElement<ocs::tom::CE> tr;
-      for_each_ep(tr, load_thresholds) {
+      for (auto tr : ocs::tom::get<QU_load_thresholds>(qep)) {
          bool is_np_adjustment = false;
-         lListElem *centry = nullptr;
-         const lListElem *cep;
-         const lListElem *lv, *lc;
+         // the attribute of a consumable threshold is built for the check, and this handle frees it
+         ocs::tom::ElementPtr<ocs::tom::CE> centry;
+         ocs::tom::ConstElement<ocs::tom::CE> lc;
          const char *load_value, *limit_value, *adj_value;
          double load, threshold, adjustment;
-         const char *name = ocs::tom::get<CE_name>(tr);
-         if ((cep = centry_list_locate(a->centry_list, name)) == nullptr) {
+         auto name = ocs::tom::get<CE_name>(tr);
+         auto cep = ocs::tom::ConstElement<ocs::tom::CE>(centry_list_locate(a->centry_list, name));
+         if (!cep) {
             continue;
          }
 
          if (ocs::tom::get<CE_consumable>(cep) == CONSUMABLE_NO) { /* work on the load values */
-            if ((lc = ocs::tom::find_first<CE_name>(a->load_adjustments, name)) == nullptr) {
+            if (!(lc = ocs::tom::find_first<CE_name>(a->load_adjustments, name))) {
                continue;
             }
-            if ((lv=ocs::tom::find_first_in<EH_load_list, HL_name>(host, name)) != nullptr) {
+            ocs::tom::ConstElement<ocs::tom::HL> lv;
+            if ((lv = ocs::tom::find_first_in<EH_load_list, HL_name>(host, name))) {
                load_value = ocs::tom::get<HL_value>(lv);
-            } else if ((lv = ocs::tom::find_first_in<EH_load_list, HL_name>(a->gep, name)) != nullptr) {
+            } else if ((lv = ocs::tom::find_first_in<EH_load_list, HL_name>(a->gep, name))) {
                load_value = ocs::tom::get<HL_value>(lv);
             } else {
-               ocs::tom::ConstElement<ocs::tom::CE> fv = ocs::tom::find_first_in<QU_consumable_config_list, CE_name>(qep, name);
+               auto fv = ocs::tom::find_first_in<QU_consumable_config_list, CE_name>(qep, name);
                load_value = ocs::tom::get<CE_stringval>(fv);
             }
             adj_value = ocs::tom::get<CE_stringval>(lc);
             is_np_adjustment = true;
-            adj_value = ocs::tom::get<CE_stringval>(lc);
 
          } else { /* work on a consumable */
             // we might have different requests (global or (master and slave)). Use the highest one to make sure
             // that queues will not go into load alarm.
             // BUT: E.g. in case of a high request for the master and low (no) requests for the slaves this could
             // possibly prevent a job from starting!
-            lc = job_get_highest_hard_request(a->job, name);
-            if (lc != nullptr) {
+            lc = ocs::tom::ConstElement<ocs::tom::CE>(job_get_highest_hard_request(a->job, name));
+            if (lc) {
                adj_value = ocs::tom::get<CE_stringval>(lc);
             } else { /* is default value */
                adj_value = ocs::tom::get<CE_defaultval>(cep);
             }
 
-            if ((centry = get_attribute_by_name(a->gep, host, qep, name, a->centry_list, a->load_adjustments, a->start,
-                                                a->duration)) == nullptr) {
+            centry = get_attribute_by_name(a->gep, host, qep, name, a->centry_list, a->load_adjustments, a->start,
+                                           a->duration);
+            if (!centry) {
                 /* No load value and no consumable assigned at queue, host or global level, so
                  * this threshold cannot be evaluated. Skip it instead of discarding the whole
                  * host: a single unevaluable threshold in one queue must not make every queue
@@ -5114,18 +5182,16 @@ parallel_max_host_slots(sge_assignment_t *a, lListElem *host) {
                if (!parse_ulong_val(&load, nullptr, type, load_value, nullptr, 0) ||
                    !parse_ulong_val(&threshold, nullptr, type, limit_value, nullptr, 0) ||
                    !parse_ulong_val(&adjustment, nullptr, type, adj_value, nullptr, 0)) {
-                   lFreeElem(&centry);
                   continue;
                }
 
                break;
 
             default:
-               lFreeElem(&centry);
                continue;
          }
          /* the string in load_value is not needed anymore, we can free the element */
-         lFreeElem(&centry);
+         centry.reset();
 
          /* an adjustment of nullptr is ignored here. We can dispatch unlimited jobs based
             on the load value */
@@ -5142,7 +5208,7 @@ parallel_max_host_slots(sge_assignment_t *a, lListElem *host) {
          }
 
          if (is_np_adjustment) {
-            load_np_value_adjustment(name, ocs::tom::ConstElement<ocs::tom::EH>(host), &adjustment);
+            load_np_value_adjustment(name, host, &adjustment);
          }
 
          /* Load alarm is defined in a way that a queue may go into alarm with the last
@@ -7024,7 +7090,8 @@ parallel_rc_slots_by_time(sge_assignment_t *a, int *slots, const lList *total_li
             if (scope == JRS_SCOPE_GLOBAL && ocs::tom::get<CE_consumable>(req) == CONSUMABLE_JOB) {
                DPRINTF("===> CONSUMABLE_JOB %s does not match - can still use %s %s as slave queue\n",
                        name, queue == nullptr ? "host" : "qinstance", object_name);
-               host_or_queue_clear_tags(object_name, queue, a->queue_list, TAG4SCHED_MASTER);
+               host_or_queue_clear_tags(object_name, ocs::tom::Element<ocs::tom::QU>(queue), a->queue_list,
+                                        TAG4SCHED_MASTER);
                /* misuse of the DISPATCH_MISSING_ATTR
                 * add a new DISPATCH result, e.g. DISPATCH_HANDLE_CONSUMABLE_JOB
                 */
@@ -7052,7 +7119,8 @@ parallel_rc_slots_by_time(sge_assignment_t *a, int *slots, const lList *total_li
                   if (available == 0) {
                      master_slot = 0;
                      master_usage = nullptr;
-                     host_or_queue_clear_tags(object_name, queue, a->queue_list, TAG4SCHED_MASTER);
+                     host_or_queue_clear_tags(object_name, ocs::tom::Element<ocs::tom::QU>(queue), a->queue_list,
+                                              TAG4SCHED_MASTER);
                   }
                   break;
                case DISPATCH_MISSING_ATTR:
@@ -7065,7 +7133,8 @@ parallel_rc_slots_by_time(sge_assignment_t *a, int *slots, const lList *total_li
                case DISPATCH_NEVER_CAT:
                case DISPATCH_NEVER_JOB:
                   DPRINTF("    --> we matched the master requests, -> never_cat or never_job, clearing master tags\n");
-                  host_or_queue_clear_tags(object_name, queue, a->queue_list, TAG4SCHED_MASTER);
+                  host_or_queue_clear_tags(object_name, ocs::tom::Element<ocs::tom::QU>(queue), a->queue_list,
+                                           TAG4SCHED_MASTER);
                   master_slot = 0; // no master slot
                   // continue with slave tasks, they might match, and we can use the queue as slave only queue
                   continue;
@@ -7122,7 +7191,8 @@ parallel_rc_slots_by_time(sge_assignment_t *a, int *slots, const lList *total_li
                      max_available_slots = std::min(max_available_slots, available);
                      // only suitable for slave tasks
                      // @todo we did this already above, why repeat it? Can it get overwritten in between?
-                     host_or_queue_clear_tags(object_name, queue, a->queue_list, TAG4SCHED_MASTER);
+                     host_or_queue_clear_tags(object_name, ocs::tom::Element<ocs::tom::QU>(queue), a->queue_list,
+                                              TAG4SCHED_MASTER);
                   } else {
                      DPRINTF("%s: parallel_rc_slots_by_time(%s) <never found>\n", object_name, name);
                      *slots = 0;
