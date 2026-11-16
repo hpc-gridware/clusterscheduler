@@ -25,29 +25,35 @@
 
 #include "cull/cull.h"
 
+#include "sgeobj/tom/ocs_tom_EH.h"
+#include "tom/ocs_Element.h"
+
 #include "sge_select_queue.h"
 
 namespace ocs {
    /** @brief Decides which topology units a job gets on a host */
    class BindingSchedd {
       static bool
-      find_initial_in_use(const sge_assignment_t *a, const lListElem *host, TopologyString &host_in_use);
+      find_initial_in_use(const sge_assignment_t *a, ocs::tom::ConstElement<ocs::tom::EH> host,
+                          TopologyString &host_in_use);
 
       static bool
       find_final_in_use(const sge_assignment_t *a, TopologyString& binding_in_use, TopologyString& binding_in_use_sorted);
 
       static bool
-      ignore_binding(const sge_assignment_t *a, const lListElem *host);
+      ignore_binding(const sge_assignment_t *a, ocs::tom::ConstElement<ocs::tom::EH> host);
 
       static int
       slots_reduced_to_available_maximum(const sge_assignment_t *a, int slots_max_available);
    public:
 
       static double
-      test_strategy(const sge_assignment_t *a, const lListElem *host, double slots, const TopologyString &binding_in_use);
+      test_strategy(const sge_assignment_t *a, ocs::tom::ConstElement<ocs::tom::EH> host, double slots,
+                    const TopologyString &binding_in_use);
 
       static int
-      apply_strategy(sge_assignment_t *a, int slots, const lListElem *host, TopologyString& topo_in_use);
+      apply_strategy(sge_assignment_t *a, int slots, ocs::tom::ConstElement<ocs::tom::EH> host,
+                     TopologyString& topo_in_use);
 
       static bool
       copy_strategy(const sge_assignment_t *a);

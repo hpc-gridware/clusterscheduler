@@ -190,7 +190,7 @@ order_remove_order_and_immediate(const ocs::tom::ConstElement<ocs::tom::JB> job,
     * might have started a array task of an immediate array job without verifying, that
     * the whole job can run
     */  
-   auto order_list = ocs::tom::List<ocs::tom::OR>(orders->jobStartOrderList);
+   const auto order_list = orders->jobStartOrderList.get();
    auto job_number = ocs::tom::get<JB_job_number>(job);
    auto task_number = ocs::tom::get<JAT_task_number>(ja_task);
 
@@ -230,8 +230,8 @@ int order_remove_immediate(const ocs::tom::ConstElement<ocs::tom::JB> job,
    DPRINTF("JOB " sge_u32 "." sge_u32 " can't get dispatched - removing\n",
            ocs::tom::get<JB_job_number>(job), ocs::tom::get<JAT_task_number>(ja_task));
    
-   orders->jobStartOrderList = sge_create_orders(orders->jobStartOrderList, ORT_remove_immediate_job, job, ja_task,
-                                                 ocs::tom::ConstList<ocs::tom::JG>(), true);
+   sge_create_orders(orders->jobStartOrderList, ORT_remove_immediate_job, job, ja_task,
+                     ocs::tom::ConstList<ocs::tom::JG>(), true);
 
    DRETURN((orders->jobStartOrderList == nullptr));
 }

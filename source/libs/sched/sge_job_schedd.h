@@ -63,8 +63,6 @@ bool task_get_duration(uint64_t *duration, ocs::tom::ConstElement<ocs::tom::JAT>
 
 void sge_inc_jc(ocs::tom::ListPtr<ocs::tom::JC> &jc_list, const char *name, int slots);
 
-void sge_dec_jc(lList** jcpp, const char *name, int slots);
-
 std::optional<std::pair<ocs::tom::Element<ocs::tom::JAT>, uint32_t>>
 job_get_next_task(ocs::tom::Element<ocs::tom::JB> job);
 
@@ -119,7 +117,7 @@ job_lists_split_with_reference_to_max_running(bool monitor_next_run, ocs::tom::L
                                               uint32_t max_jobs_per_user);
 
 bool
-job_move_first_pending_to_running(lListElem **pending_job,
+job_move_first_pending_to_running(ocs::tom::Element<ocs::tom::JB> &pending_job,
                                   ocs::tom::ListPtr<ocs::tom::JB> *result_lists[]);
 
 void

@@ -63,34 +63,6 @@ int sgeee_scheduler(scheduler_all_data_t *lists,
 
 void sgeee_resort_pending_jobs(ocs::tom::List<ocs::tom::JB> job_list);
  
-/**
- * @brief Distributes the tickets of the running jobs onto their hosts
- *
- * @param[in,out] running the running jobs
- * @param[in,out] hosts   the execution hosts, receiving the ticket sums
- *
- * @return 0 on success
- *
- * @warning Declared here, defined nowhere, and called nowhere in the source
- *          tree - see sort_host_list_by_share_load(), which was its only
- *          consumer.
- */
-int calculate_host_tickets( lList **running, lList **hosts );
-/**
- * @brief Sorts the hosts by the share load rather than by the load formula
- *
- * @param[in,out] host_list    the execution hosts (`EH_Type`)
- * @param[in]     complex_list the complex entries
- *
- * @return 0 on success
- *
- * @warning Declared here, defined nowhere, and called nowhere in the source
- *          tree. The host order used by the scheduler comes from
- *          sort_host_list() in `sort_hosts.cc`.
- */
-int  sort_host_list_by_share_load ( lList *host_list,       /* EH_Type */
-                                    lList *complex_list );  /* CX_Type */
-
 void sge_clear_job(ocs::tom::Element<ocs::tom::JB> job, bool is_clear_all);
 
 void

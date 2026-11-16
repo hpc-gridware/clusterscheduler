@@ -48,21 +48,28 @@
 #include "sgeobj/tom/ocs_tom_JAT.h"
 #include "sgeobj/tom/ocs_tom_JB.h"
 #include "sgeobj/tom/ocs_tom_JG.h"
+#include "sgeobj/tom/ocs_tom_OR.h"
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
 #include "tom/ocs_Transitional.h"
 
-/** @brief The orders of one scheduling run, grouped by kind */
+/**
+ * @brief The orders of one scheduling run, grouped by kind
+ *
+ * The struct owns its order lists: a list still held when it goes out of
+ * scope is freed with it. A list is created with its first order and handed
+ * over (and emptied) when it is sent.
+ */
 typedef struct {
-   lList *configOrderList;   ///< Suspend and unsuspend on threshold orders
-   lList *pendingOrderList;  ///< Ticket and scheduler configuration orders
-   lList *jobStartOrderList; ///< Job start, job info and remove-immediate-job orders
+   ocs::tom::ListPtr<ocs::tom::OR> configOrderList;   ///< Suspend and unsuspend on threshold orders
+   ocs::tom::ListPtr<ocs::tom::OR> pendingOrderList;  ///< Ticket and scheduler configuration orders
+   ocs::tom::ListPtr<ocs::tom::OR> jobStartOrderList; ///< Job start, job info and remove-immediate-job orders
    /**
     * Job start orders that were already sent. Kept so the profiling reports
     * the correct total, and so a subordinate policy conflict can still be
     * warned about after the order left.
     */
-   lList *sentOrderList;
+   ocs::tom::ListPtr<ocs::tom::OR> sentOrderList;
    uint32_t numberSendOrders;   ///< Number of orders sent so far
    uint32_t numberSendPackages; ///< Number of sends done in between
 }order_t;
@@ -70,18 +77,13 @@ typedef struct {
 /** Initializer for an empty #order_t */
 #define ORDER_INIT {nullptr, nullptr, nullptr, nullptr, 0, 0}
 
-lList *sge_add_schedd_info(lList *or_list, int *global_mes_count, int *job_mes_count);
+void sge_add_schedd_info(ocs::tom::ListPtr<ocs::tom::OR> &or_list, int *global_mes_count, int *job_mes_count);
 
-lList *sge_create_orders(lList *or_list, uint32_t type, ocs::tom::ConstElement<ocs::tom::JB> job,
-                         ocs::tom::ConstElement<ocs::tom::JAT> ja_task, ocs::tom::ConstList<ocs::tom::JG> granted,
-                         bool update_execd);
-OCS_TRANSITIONAL lList *sge_create_orders(lList *or_list, uint32_t type, const lListElem *job, const lListElem *ja_task,
-                                          const lList *granted, bool update_execd);
+void sge_create_orders(ocs::tom::ListPtr<ocs::tom::OR> &or_list, uint32_t type,
+                       ocs::tom::ConstElement<ocs::tom::JB> job, ocs::tom::ConstElement<ocs::tom::JAT> ja_task,
+                       ocs::tom::ConstList<ocs::tom::JG> granted, bool update_execd);
 
-lList *sge_join_orders(order_t *orders);
-int sge_GetNumberOfOrders(order_t *orders); 
-
-int sge_send_orders2master(sge_evc_class_t *evc, lList **orders);
+int sge_GetNumberOfOrders(const order_t *orders);
 
 #if 0
 int sge_send_job_start_orders(sge_evc_class_t *evc, order_t *orders);

@@ -47,6 +47,10 @@
 
 #include "sgeobj/cull_parse_util.h"
 #include "sgeobj/sge_answer.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
+#include "sgeobj/tom/ocs_tom_QU.h"
+#include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
 
 #include "schedd_monitor.h"
 #include "msg_common.h"
@@ -120,50 +124,71 @@ FCLOSE_ERROR:
  * @brief Logs a list of items behind a common prefix, wrapping the lines
  *
  * Used for enumerations such as job ids. The list is printed in chunks, so
- * that no single log line becomes unreadably long.
+ * that no single log line becomes unreadably long. Each chunk is copied into
+ * a partial list of the list's own (possibly reduced) descriptor and printed
+ * with uni_print_list().
  *
- * @param[in,out] monitor_alpp     answer list for `qalter -w v`, or nullptr
- * @param[in]     monitor_next_run whether to append to the run log file
- * @param[in]     logstr           prefix put in front of every line
- * @param[in]     lp               the list of items to print
- * @param[in]     nm               the field of an element to print
- *
- * @return always 0
+ * @tparam T the object type of the elements
+ * @tparam F the field of an element to print
+ * @param[in] monitor_next_run whether to append to the run log file
+ * @param[in] logstr           prefix put in front of every line
+ * @param[in] lp               the list of items to print
  */
-int schedd_log_list(lList **monitor_alpp, bool monitor_next_run, const char *logstr, lList *lp, int nm) {
+template <typename T, auto F>
+static void
+log_list_impl(const bool monitor_next_run, const char *logstr, const ocs::tom::ConstList<T> lp) {
    DENTER(TOP_LAYER);
 
-   if (monitor_alpp == nullptr && !monitor_next_run) {
-      DRETURN(0);
+   if (!monitor_next_run) {
+      DRETURN_VOID;
    }
 
-   int fields[] = { 0, 0 };
-   fields[0] = nm;
+   int fields[] = {static_cast<int>(F), 0};
 
    const char *delis[] = {nullptr, " ", nullptr};
-   lList *lp_part = nullptr;
-   for_each_ep_lv(ep, lp) {
+   ocs::tom::ListPtr<T> lp_part;
+   for (const auto ep : lp) {
       if (lp_part == nullptr) {
-         lp_part = lCreateList("partial list", lGetListDescr(lp));
+         lp_part = ocs::tom::ListPtr<T>::from_typed(lCreateList("partial list", lGetListDescr(lp)));
       }
-      lAppendElem(lp_part, lCopyElem(ep));
-      if (lGetNumberOfElem(lp_part) == NUM_ITEMS_ON_LINE || lNext(ep) == nullptr) {
+      lp_part->push_back(ep.clone());
+      if (lp_part->size() == NUM_ITEMS_ON_LINE || ep.next() == nullptr) {
          char log_string[2048];
 
          strcpy(log_string, logstr);
          uni_print_list(nullptr,
                         log_string + strlen(log_string),
                         sizeof(log_string) - strlen(log_string) - 1,
-                        lp_part,
+                        lp_part->raw(),
                         fields, delis, 0);
-         schedd_log(log_string, monitor_alpp, monitor_next_run);
-         lFreeList(&lp_part);
+         schedd_log(log_string, nullptr, monitor_next_run);
+         lp_part.reset();
       }
    }
 
-   lFreeList(&lp_part);
+   DRETURN_VOID;
+}
 
-   DRETURN(0);
+/**
+ * @brief Logs the full names of a list of queue instances behind a common prefix, wrapping the lines
+ *
+ * @param[in] monitor_next_run whether to append to the run log file
+ * @param[in] logstr           prefix put in front of every line
+ * @param[in] lp               the queue instances
+ */
+void schedd_log_list(const bool monitor_next_run, const char *logstr, const ocs::tom::ConstList<ocs::tom::QU> lp) {
+   log_list_impl<ocs::tom::QU, QU_full_name>(monitor_next_run, logstr, lp);
+}
+
+/**
+ * @brief Logs the ids of a list of jobs behind a common prefix, wrapping the lines
+ *
+ * @param[in] monitor_next_run whether to append to the run log file
+ * @param[in] logstr           prefix put in front of every line
+ * @param[in] lp               the jobs
+ */
+void schedd_log_list(const bool monitor_next_run, const char *logstr, const ocs::tom::ConstList<ocs::tom::JB> lp) {
+   log_list_impl<ocs::tom::JB, JB_job_number>(monitor_next_run, logstr, lp);
 }
 
 /**

@@ -139,10 +139,10 @@ OCS_TRANSITIONAL char *sge_load_alarm_reason(lListElem *queue, lList *threshold,
                                              int reason_size, const char *type);
 
 int sge_split_queue_load(bool monitor_next_run, ocs::tom::List<ocs::tom::QU> unloaded,
-                         ocs::tom::ListPtr<ocs::tom::QU> *overloaded, lList *exechost_list,
-                         const lList *complex_list, const lList *load_adjustments,
-                         lList *granted, bool is_consumable_load_alarm, bool is_comprehensive,
-                         uint32_t ttype);
+                         ocs::tom::ListPtr<ocs::tom::QU> *overloaded, ocs::tom::ConstList<ocs::tom::EH> exechost_list,
+                         ocs::tom::ConstList<ocs::tom::CE> centry_list,
+                         ocs::tom::ConstList<ocs::tom::CE> load_adjustments, ocs::tom::ConstList<ocs::tom::JG> granted,
+                         bool is_consumable_load_alarm, bool is_comprehensive, uint32_t ttype);
 
 int sge_split_queue_slots_free(bool monitor_next_run, ocs::tom::List<ocs::tom::QU> free,
                                ocs::tom::ListPtr<ocs::tom::QU> &full);
@@ -212,7 +212,7 @@ struct sge_assignment_base_t {
    ocs::tom::Element<ocs::tom::AR> ar;       ///< the advance reservation if requested
    const char* user;            ///< username (JB_owner)
    const char* group;           ///< group name (JB_group)
-   const lList *grp_list;       ///< supplementary grp list (JB_grp_list)
+   ocs::tom::ConstList<ocs::tom::ST> grp_list; ///< supplementary grp list (JB_grp_list)
    const char* project;         ///< project name (JB_project)
    ocs::tom::ConstElement<ocs::tom::CK> ckpt; ///< the checkpoint interface
    ocs::tom::Element<ocs::tom::EH> gep;      ///< the global host

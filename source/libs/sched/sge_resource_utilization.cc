@@ -1596,7 +1596,7 @@ int add_job_utilization(const sge_assignment_t *a, const char *type, bool for_jo
          // global
          // we really need to do it per gdil_ep, because we have to consider is_master_task and ign_sreq_on_mhost
          rc_add_job_utilization(gdil_ep, a->job, a->pe, a->ja_task_id, type, a->gep, a->centry_list, slots,
-                                EH_consumable_config_list, EH_resource_utilization, SGE_GLOBAL_NAME,
+                                SGE_GLOBAL_NAME,
                                 a->start, a->duration, GLOBAL_TAG, for_job_scheduling,
                                 is_master_task,
                                 do_per_global_host_booking, job_granted_resources);
@@ -1604,7 +1604,7 @@ int add_job_utilization(const sge_assignment_t *a, const char *type, bool for_jo
          // host
          if (const auto hep = a->host_list.find_first<EH_name>(ocs::tom::Host(eh_name)); hep != nullptr) {
             rc_add_job_utilization(gdil_ep, a->job, a->pe, a->ja_task_id, type, hep, a->centry_list, slots,
-                                   EH_consumable_config_list, EH_resource_utilization, eh_name, a->start,
+                                   eh_name, a->start,
                                    a->duration, HOST_TAG, for_job_scheduling, is_master_task,
                                    do_per_host_booking,
                                    job_granted_resources);
@@ -1621,7 +1621,7 @@ int add_job_utilization(const sge_assignment_t *a, const char *type, bool for_jo
              * 
              */
             rc_add_job_utilization(gdil_ep, a->job, a->pe, a->ja_task_id, type, qep, a->centry_list, slots,
-                                   QU_consumable_config_list, QU_resource_utilization, qname, a->start,
+                                   qname, a->start,
                                    a->duration, QUEUE_TAG, for_job_scheduling, is_master_task,
                                    false,
                                    job_granted_resources);
@@ -1671,21 +1671,21 @@ int add_job_utilization(const sge_assignment_t *a, const char *type, bool for_jo
             if (const auto qep = ocs::tom::find_first_in_rw<AR_reserved_queues, QU_full_name>(a->ar, qname);
                 qep != nullptr) {
                rc_add_job_utilization(gdil_ep, a->job, a->pe, a->ja_task_id, type, qep, a->centry_list, slots,
-                                      QU_consumable_config_list, QU_resource_utilization, qname, a->start,
+                                      qname, a->start,
                                       a->duration, QUEUE_TAG, for_job_scheduling, is_master_task,
                                       do_per_host_booking,
                                       job_granted_resources);
             }
             if (ar_global_host != nullptr) {
                rc_add_job_utilization(gdil_ep, a->job, a->pe, a->ja_task_id, type, ar_global_host, a->centry_list, slots,
-                                      EH_consumable_config_list, EH_resource_utilization, SGE_GLOBAL_NAME, a->start,
+                                      SGE_GLOBAL_NAME, a->start,
                                       a->duration, HOST_TAG, for_job_scheduling, is_master_task,
                                       do_per_global_host_booking, job_granted_resources);
             }
             const auto host = ocs::tom::find_first_in_rw<AR_reserved_hosts, EH_name>(a->ar, eh_name);
             if (host != nullptr) {
                rc_add_job_utilization(gdil_ep, a->job, a->pe, a->ja_task_id, type, host, a->centry_list, slots,
-                                      EH_consumable_config_list, EH_resource_utilization, eh_name, a->start,
+                                      eh_name, a->start,
                                       a->duration, HOST_TAG, for_job_scheduling, is_master_task,
                                       do_per_host_booking,
                                       job_granted_resources);
@@ -1702,10 +1702,14 @@ int add_job_utilization(const sge_assignment_t *a, const char *type, bool for_jo
 /**
  * @brief Books a job's consumables into the diagrams of one object
  *
- * The object is passed generically: `ep` is the queue instance, host or PE,
- * and `config_nm` / `actual_nm` name its configuration and utilization
- * fields, which is why the same function serves all three levels.
+ * The object is a host (the global one included) or a queue instance. Its
+ * configuration and utilization fields are template arguments, which is why
+ * the same implementation serves both levels; the public overloads of
+ * rc_add_job_utilization() name them.
  *
+ * @tparam T       the object type, ocs::tom::EH or ocs::tom::QU
+ * @tparam ConfigF the field of the object holding its consumable configuration
+ * @tparam ActualF the field of the object holding its utilization
  * @param[in]     gdil                the granted destination identifier the
  *                                    booking is made for
  * @param[in]     jep                 the job (`JB_Type`)
@@ -1715,13 +1719,10 @@ int add_job_utilization(const sge_assignment_t *a, const char *type, bool for_jo
  * @param[in]     type                why the utilization is booked, one of
  *                                    the SCHEDULING_RECORD_ENTRY_TYPE_*
  *                                    strings
- * @param[in,out] ep                  the object to book on - queue instance,
- *                                    host or PE
+ * @param[in,out] ep                  the object to book on, or an empty
+ *                                    handle, which is an error
  * @param[in]     centry_list         the system wide attribute configuration
  * @param[in]     slots               number of slots granted here
- * @param[in]     config_nm           field of `ep` holding its consumable
- *                                    configuration
- * @param[in]     actual_nm           field of `ep` holding its utilization
  * @param[in]     obj_name            name of the object, for messages
  * @param[in]     start_time          start of the utilization
  * @param[in]     duration            duration of the utilization
@@ -1734,38 +1735,39 @@ int add_job_utilization(const sge_assignment_t *a, const char *type, bool for_jo
  * @param[in]     granted_resources_list the granted resources of the task
  *                                    (`GRU_Type`), or an empty handle
  *
- * @return the number of modifications made
- *
- * @note `ep` stays an untyped element: it is a queue instance or a host, and
- *       `config_nm` and `actual_nm` name its fields at run time (N-H-21)
+ * @return the number of modifications made, -1 if a configured attribute is
+ *         missing in the complexes
  */
-int
-rc_add_job_utilization(const ocs::tom::ConstElement<ocs::tom::JG> gdil, const ocs::tom::ConstElement<ocs::tom::JB> jep,
-                       const ocs::tom::ConstElement<ocs::tom::PE> pe, const uint32_t task_id, const char *type,
-                       lListElem *ep, const ocs::tom::ConstList<ocs::tom::CE> centry_list, const int slots,
-                       const int config_nm, const int actual_nm, const char *obj_name, const uint64_t start_time,
-                       const uint64_t duration, const uint32_t tag, const bool for_job_scheduling,
-                       const bool is_master_task, const bool do_per_host_booking,
-                       const ocs::tom::ConstList<ocs::tom::GRU> granted_resources_list) {
+template <typename T, auto ConfigF, auto ActualF>
+static int
+rc_add_job_utilization_impl(const ocs::tom::ConstElement<ocs::tom::JG> gdil,
+                            const ocs::tom::ConstElement<ocs::tom::JB> jep,
+                            const ocs::tom::ConstElement<ocs::tom::PE> pe, const uint32_t task_id, const char *type,
+                            const ocs::tom::Element<T> ep, const ocs::tom::ConstList<ocs::tom::CE> centry_list,
+                            const int slots, const char *obj_name, const uint64_t start_time, const uint64_t duration,
+                            const uint32_t tag, const bool for_job_scheduling, const bool is_master_task,
+                            const bool do_per_host_booking,
+                            const ocs::tom::ConstList<ocs::tom::GRU> granted_resources_list) {
    DENTER(TOP_LAYER);
 
    ocs::tom::Element<ocs::tom::RUE> cr;
    int mods = 0;
 
    if (ep == nullptr) {
-      ERROR("rc_add_job_utilization nullptr object " "(job " sge_u32 " obj %s type %s) slots %d ep %p\n", ocs::tom::get<JB_job_number>(jep), obj_name, type, slots, (void*)ep);
+      ERROR("rc_add_job_utilization nullptr object " "(job " sge_u32 " obj %s type %s) slots %d ep %p\n",
+            ocs::tom::get<JB_job_number>(jep), obj_name, type, slots, static_cast<void *>(ep.raw()));
       DRETURN(0);
    }
 
    if (slots == 0) {
-      ERROR("rc_add_job_utilization 0 slot amount " "(job " sge_u32 " obj %s type %s) slots %d ep %p\n", ocs::tom::get<JB_job_number>(jep), obj_name, type, slots, (void*)ep);
+      ERROR("rc_add_job_utilization 0 slot amount " "(job " sge_u32 " obj %s type %s) slots %d ep %p\n",
+            ocs::tom::get<JB_job_number>(jep), obj_name, type, slots, static_cast<void *>(ep.raw()));
       DRETURN(0);
    }
 
    uint32_t job_id = ocs::tom::get<JB_job_number>(jep);
 
-   // the object is a queue instance, a host or the global host, its fields are passed by number (N-H-21)
-   for (const auto cr_config : ocs::tom::ConstList<ocs::tom::CE>(lGetList(ep, config_nm))) {
+   for (const auto cr_config : ocs::tom::get<ConfigF>(ep)) {
       const char *name = ocs::tom::get<CE_name>(cr_config);
 
       /* search default request */  
@@ -1779,9 +1781,9 @@ rc_add_job_utilization(const ocs::tom::ConstElement<ocs::tom::JG> gdil, const oc
 
       if (consumable != CONSUMABLE_NO) {
          /* ensure attribute is in actual list */
-         cr = ocs::tom::Element<ocs::tom::RUE>::from_typed(lGetSubStrRW(ep, RUE_name, name, actual_nm));
+         cr = ocs::tom::find_first_in_rw<ActualF, RUE_name>(ep, name);
          if (cr == nullptr) {
-            cr = ocs::tom::Element<ocs::tom::RUE>::from_typed(lAddSubStr(ep, RUE_name, name, actual_nm, RUE_Type));
+            cr = ocs::tom::emplace_back_in<ActualF, RUE_name>(ep, name);
             /* CE_double is implicitly set to zero */
          }
       }
@@ -1886,40 +1888,73 @@ rc_add_job_utilization(const ocs::tom::ConstElement<ocs::tom::JG> gdil, const oc
 }
 
 /**
- * @brief Books a job's consumables into the diagrams of one object, for a caller with an untyped granted
- *        destination identifier (N-X-2)
+ * @brief Books a job's consumables into the diagrams of a host, the global host included
  *
- * @param[in]     gdil                the granted destination identifier (`JG_Type`), checked
- * @param[in]     jep                 the job (`JB_Type`)
- * @param[in]     pe                  the granted parallel environment
+ * @param[in]     gdil                the granted destination identifier the booking is made for
+ * @param[in]     jep                 the job
+ * @param[in]     pe                  the granted parallel environment, or an empty handle
  * @param[in]     task_id             id of the array task
  * @param[in]     type                why the utilization is booked
- * @param[in,out] ep                  the object to book on - queue instance, host or PE
+ * @param[in,out] host                the host to book on
  * @param[in]     centry_list         the system wide attribute configuration
  * @param[in]     slots               number of slots granted here
- * @param[in]     config_nm           field of `ep` holding its consumable configuration
- * @param[in]     actual_nm           field of `ep` holding its utilization
  * @param[in]     obj_name            name of the object, for messages
  * @param[in]     start_time          start of the utilization
  * @param[in]     duration            duration of the utilization
- * @param[in]     tag                 the level tag - queue, host or global
+ * @param[in]     tag                 the level tag
  * @param[in]     for_job_scheduling  book for a job (true) or for an advance reservation (false)
  * @param[in]     is_master_task      whether the master task runs here
  * @param[in]     do_per_host_booking whether the per host consumables have to be booked in this call
- * @param[in]     granted_resources_list the granted resources of the task
+ * @param[in]     granted_resources_list the granted resources of the task, or an empty handle
  *
- * @return the number of modifications made
+ * @return the number of modifications made, -1 if a configured attribute is missing in the complexes
  */
-int rc_add_job_utilization(const lListElem *gdil, lListElem *jep, const lListElem *pe, uint32_t task_id,
-                           const char *type, lListElem *ep, const lList *centry_list, int slots, int config_nm,
-                           int actual_nm, const char *obj_name, uint64_t start_time, uint64_t duration, uint32_t tag,
-                           bool for_job_scheduling, bool is_master_task, bool do_per_host_booking,
-                           const lList *granted_resources_list) {
-   return rc_add_job_utilization(ocs::tom::ConstElement<ocs::tom::JG>(gdil), ocs::tom::ConstElement<ocs::tom::JB>(jep),
-                                 ocs::tom::ConstElement<ocs::tom::PE>(pe), task_id, type, ep,
-                                 ocs::tom::ConstList<ocs::tom::CE>(centry_list), slots, config_nm, actual_nm, obj_name,
-                                 start_time, duration, tag, for_job_scheduling, is_master_task, do_per_host_booking,
-                                 ocs::tom::ConstList<ocs::tom::GRU>(granted_resources_list));
+int
+rc_add_job_utilization(const ocs::tom::ConstElement<ocs::tom::JG> gdil, const ocs::tom::ConstElement<ocs::tom::JB> jep,
+                       const ocs::tom::ConstElement<ocs::tom::PE> pe, const uint32_t task_id, const char *type,
+                       const ocs::tom::Element<ocs::tom::EH> host, const ocs::tom::ConstList<ocs::tom::CE> centry_list,
+                       const int slots, const char *obj_name, const uint64_t start_time, const uint64_t duration,
+                       const uint32_t tag, const bool for_job_scheduling, const bool is_master_task,
+                       const bool do_per_host_booking,
+                       const ocs::tom::ConstList<ocs::tom::GRU> granted_resources_list) {
+   return rc_add_job_utilization_impl<ocs::tom::EH, EH_consumable_config_list, EH_resource_utilization>(
+      gdil, jep, pe, task_id, type, host, centry_list, slots, obj_name, start_time, duration, tag, for_job_scheduling,
+      is_master_task, do_per_host_booking, granted_resources_list);
+}
+
+/**
+ * @brief Books a job's consumables into the diagrams of a queue instance
+ *
+ * @param[in]     gdil                the granted destination identifier the booking is made for
+ * @param[in]     jep                 the job
+ * @param[in]     pe                  the granted parallel environment, or an empty handle
+ * @param[in]     task_id             id of the array task
+ * @param[in]     type                why the utilization is booked
+ * @param[in,out] queue               the queue instance to book on
+ * @param[in]     centry_list         the system wide attribute configuration
+ * @param[in]     slots               number of slots granted here
+ * @param[in]     obj_name            name of the object, for messages
+ * @param[in]     start_time          start of the utilization
+ * @param[in]     duration            duration of the utilization
+ * @param[in]     tag                 the level tag
+ * @param[in]     for_job_scheduling  book for a job (true) or for an advance reservation (false)
+ * @param[in]     is_master_task      whether the master task runs here
+ * @param[in]     do_per_host_booking whether the per host consumables have to be booked in this call
+ * @param[in]     granted_resources_list the granted resources of the task, or an empty handle
+ *
+ * @return the number of modifications made, -1 if a configured attribute is missing in the complexes
+ */
+int
+rc_add_job_utilization(const ocs::tom::ConstElement<ocs::tom::JG> gdil, const ocs::tom::ConstElement<ocs::tom::JB> jep,
+                       const ocs::tom::ConstElement<ocs::tom::PE> pe, const uint32_t task_id, const char *type,
+                       const ocs::tom::Element<ocs::tom::QU> queue, const ocs::tom::ConstList<ocs::tom::CE> centry_list,
+                       const int slots, const char *obj_name, const uint64_t start_time, const uint64_t duration,
+                       const uint32_t tag, const bool for_job_scheduling, const bool is_master_task,
+                       const bool do_per_host_booking,
+                       const ocs::tom::ConstList<ocs::tom::GRU> granted_resources_list) {
+   return rc_add_job_utilization_impl<ocs::tom::QU, QU_consumable_config_list, QU_resource_utilization>(
+      gdil, jep, pe, task_id, type, queue, centry_list, slots, obj_name, start_time, duration, tag, for_job_scheduling,
+      is_master_task, do_per_host_booking, granted_resources_list);
 }
 
 /**

@@ -2326,12 +2326,14 @@ attr_mod_threshold(lList **alpp, lListElem *ep, lListElem *new_ep, ocs::gdi::Com
                job_set_hard_resource_list(*dummy_job, lCopyList(nullptr, ocs::tom::get<AR_resource_list>(ar_ep)));
 
                while (gdil_ep != nullptr) {
-                  rc_add_job_utilization(gdil_ep, *dummy_job, pe, 0, SCHEDULING_RECORD_ENTRY_TYPE_RESERVING,
-                                         tmp_elem, master_centry_list, ocs::tom::get<JG_slots>(gdil_ep),
-                                         EH_consumable_config_list, EH_resource_utilization, host,
-                                         ocs::tom::get<AR_start_time>(ar_ep), ocs::tom::get<AR_duration>(ar_ep),
-                                         HOST_TAG, false, is_master_task, do_per_host_booking,
-                                         ocs::tom::get<AR_granted_resources_list>(ar_ep));
+                  rc_add_job_utilization(ocs::tom::ConstElement<ocs::tom::JG>(gdil_ep), *dummy_job,
+                                         ocs::tom::ConstElement<ocs::tom::PE>(pe), 0,
+                                         SCHEDULING_RECORD_ENTRY_TYPE_RESERVING,
+                                         ocs::tom::Element<ocs::tom::EH>(tmp_elem),
+                                         ocs::tom::ConstList<ocs::tom::CE>(master_centry_list),
+                                         ocs::tom::get<JG_slots>(gdil_ep), host, ocs::tom::get<AR_start_time>(ar_ep),
+                                         ocs::tom::get<AR_duration>(ar_ep), HOST_TAG, false, is_master_task,
+                                         do_per_host_booking, ocs::tom::get<AR_granted_resources_list>(ar_ep));
                   is_master_task = false;
                   do_per_host_booking = false;
                   gdil_ep = ocs::tom::find_next<JG_qhostname>(gdil, host, &iterator);

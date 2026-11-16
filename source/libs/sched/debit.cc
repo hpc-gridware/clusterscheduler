@@ -84,12 +84,12 @@ static int debit_job_from_queues(ocs::tom::ConstElement<ocs::tom::JB> job, ocs::
 static int debit_job_from_hosts(ocs::tom::ConstElement<ocs::tom::JB> job, ocs::tom::ConstElement<ocs::tom::JAT> ja_task,
                                 ocs::tom::ConstElement<ocs::tom::PE> pe, ocs::tom::ConstList<ocs::tom::JG> granted,
                                 ocs::tom::List<ocs::tom::EH> host_list, ocs::tom::ConstList<ocs::tom::CE> complex_list,
-                                const lList *load_adjustments, int *sort_hostlist);
+                                ocs::tom::ConstList<ocs::tom::CE> load_adjustments, int *sort_hostlist);
 
 static int debit_job_from_rqs(ocs::tom::ConstElement<ocs::tom::JB> job, ocs::tom::ConstList<ocs::tom::JG> granted,
                               ocs::tom::List<ocs::tom::RQS> rqs_list, ocs::tom::ConstElement<ocs::tom::PE> pe,
-                              ocs::tom::ConstList<ocs::tom::CE> centry_list, const lList *acl_list,
-                              const lList *hgrp_list);
+                              ocs::tom::ConstList<ocs::tom::CE> centry_list, ocs::tom::ConstList<ocs::tom::US> acl_list,
+                              ocs::tom::ConstList<ocs::tom::HGRP> hgrp_list);
 
 static int debit_job_from_ar(ocs::tom::Element<ocs::tom::AR> ar, ocs::tom::ConstElement<ocs::tom::JB> job,
                              ocs::tom::ConstElement<ocs::tom::JAT> ja_task, ocs::tom::ConstElement<ocs::tom::PE> pe,
@@ -230,7 +230,7 @@ static int debit_job_from_queues(const ocs::tom::ConstElement<ocs::tom::JB> job,
 
                /* warn on jobs that were dispatched into that queue in
                   the same scheduling interval based on the orders list */
-               for (const auto order : ocs::tom::ConstList<ocs::tom::OR>(orders->jobStartOrderList)) {
+               for (const auto order : *orders->jobStartOrderList) {
                   if (ocs::tom::get<OR_type>(order) != ORT_start_job) {
                      continue;
                   }
@@ -239,7 +239,7 @@ static int debit_job_from_queues(const ocs::tom::ConstElement<ocs::tom::JB> job,
                   }
                }
 
-               for (const auto order : ocs::tom::ConstList<ocs::tom::OR>(orders->sentOrderList)) {
+               for (const auto order : *orders->sentOrderList) {
                   if (ocs::tom::get<OR_type>(order) != ORT_start_job) {
                      continue;
                   }
@@ -262,13 +262,31 @@ static int debit_job_from_queues(const ocs::tom::ConstElement<ocs::tom::JB> job,
    DRETURN(ret);
 }
 
+/**
+ * @brief Debits a job on the hosts it was granted
+ *
+ * Books the consumables on the global host and on each granted host, raises
+ * the load correction of the hosts while load adjustments are in effect, and
+ * re-sorts a host whose combined load changed.
+ *
+ * @param job the job (JB_Type)
+ * @param ja_task the array task, for its granted resources
+ * @param pe the granted parallel environment, or an empty handle
+ * @param granted the granted destination identifiers (JG_Type)
+ * @param host_list the execution hosts, debited and re-sorted
+ * @param centry_list the complex entries
+ * @param load_adjustments the load adjustments; the load correction is only raised while there are any
+ * @param sort_hostlist set to 1 when a host's sort value changed; may be nullptr
+ *
+ * @return always 0
+ */
 static int debit_job_from_hosts(const ocs::tom::ConstElement<ocs::tom::JB> job,
                                 const ocs::tom::ConstElement<ocs::tom::JAT> ja_task,
                                 const ocs::tom::ConstElement<ocs::tom::PE> pe,
                                 const ocs::tom::ConstList<ocs::tom::JG> granted,
                                 const ocs::tom::List<ocs::tom::EH> host_list,
-                                const ocs::tom::ConstList<ocs::tom::CE> centry_list, const lList *load_adjustments,
-                                int *sort_hostlist) {
+                                const ocs::tom::ConstList<ocs::tom::CE> centry_list,
+                                const ocs::tom::ConstList<ocs::tom::CE> load_adjustments, int *sort_hostlist) {
    DENTER(TOP_LAYER);
 
    lSortOrder *so = nullptr;
@@ -296,7 +314,7 @@ static int debit_job_from_hosts(const ocs::tom::ConstElement<ocs::tom::JB> job,
       bool do_per_host_booking = host_do_per_host_booking(&last_hostname, hnm);
       const auto hep = ocs::tom::Element<ocs::tom::EH>::from_typed(host_list_locate(host_list, hnm));
 
-      if (load_adjustment_decay_time > 0 && lGetNumberOfElem(load_adjustments) > 0) {
+      if (load_adjustment_decay_time > 0 && !load_adjustments.empty()) {
          /* increase host load for each scheduled job slot */
          ulc_factor = ocs::tom::get<EH_load_correction_factor>(hep);
          ulc_factor += 100 * slots;
@@ -399,8 +417,9 @@ static int debit_job_from_rqs(const ocs::tom::ConstElement<ocs::tom::JB> job,
                               const ocs::tom::ConstList<ocs::tom::JG> granted,
                               const ocs::tom::List<ocs::tom::RQS> rqs_list,
                               const ocs::tom::ConstElement<ocs::tom::PE> pe,
-                              const ocs::tom::ConstList<ocs::tom::CE> centry_list, const lList *acl_list,
-                              const lList *hgrp_list) {
+                              const ocs::tom::ConstList<ocs::tom::CE> centry_list,
+                              const ocs::tom::ConstList<ocs::tom::US> acl_list,
+                              const ocs::tom::ConstList<ocs::tom::HGRP> hgrp_list) {
    DENTER(TOP_LAYER);
 
    if (ocs::tom::get<JB_ar>(job) != 0) {

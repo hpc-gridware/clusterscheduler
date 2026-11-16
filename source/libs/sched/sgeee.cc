@@ -95,6 +95,7 @@
 #include "sgeobj/tom/ocs_tom_UPP.h"
 #include "sgeobj/tom/ocs_tom_JB.h"
 #include "sgeobj/tom/ocs_tom_OR.h"
+#include "sgeobj/tom/ocs_tom_SC.h"
 #include "sgeobj/tom/ocs_tom_FCAT.h"
 #include "sgeobj/tom/ocs_tom_PE.h"
 #include "sgeobj/tom/ocs_tom_PR.h"
@@ -3279,10 +3280,11 @@ sge_build_sgeee_orders(scheduler_all_data_t *lists, const ocs::tom::List<ocs::to
    bool max_queued_ticket_orders = sconf_get_report_pjob_tickets();
 
    if (orders->pendingOrderList == nullptr) {
-      orders->pendingOrderList = ocs::tom::ListPtr<ocs::tom::OR>::create("orderlist").release();
+      orders->pendingOrderList = ocs::tom::ListPtr<ocs::tom::OR>::create("orderlist");
    }
 
-   auto order_list = ocs::tom::List<ocs::tom::OR>(orders->pendingOrderList);
+   // the list stays the same one below: it exists, and every order is created for a job
+   const auto order_list = orders->pendingOrderList.get();
 
    /*-----------------------------------------------------------------
     * build ticket orders for running jobs
@@ -3309,8 +3311,7 @@ sge_build_sgeee_orders(scheduler_all_data_t *lists, const ocs::tom::List<ocs::to
                granted=nullptr;
             }
 
-            order_list = ocs::tom::List<ocs::tom::OR>(sge_create_orders(order_list, ORT_tickets, job, ja_task,
-                                                                        granted, update_execd));
+            sge_create_orders(orders->pendingOrderList, ORT_tickets, job, ja_task, granted, update_execd);
          }
       }
       DPRINTF("   added %d ticket orders for running jobs\n",
@@ -3343,25 +3344,20 @@ sge_build_sgeee_orders(scheduler_all_data_t *lists, const ocs::tom::List<ocs::to
                if (++tasks > std::min(max_pending_tasks_per_job, free_qslots+1)) {
                   break;
                }
-               order_list = ocs::tom::List<ocs::tom::OR>(sge_create_orders(order_list, ORT_ptickets, job, ja_task,
-                                                                           ocs::tom::ConstList<ocs::tom::JG>(),
-                                                                           false));
+               sge_create_orders(orders->pendingOrderList, ORT_ptickets, job, ja_task,
+                                 ocs::tom::ConstList<ocs::tom::JG>(), false);
             }
 
             if (job_get_not_enrolled_ja_tasks(job) > 0) {
                const auto task_template = ocs::tom::get<JB_ja_template>(job).front();
                if (task_template) {
-                  order_list = ocs::tom::List<ocs::tom::OR>(sge_create_orders(order_list, ORT_ptickets, job,
-                                                                              task_template,
-                                                                              ocs::tom::ConstList<ocs::tom::JG>(),
-                                                                              false));
+                  sge_create_orders(orders->pendingOrderList, ORT_ptickets, job, task_template,
+                                    ocs::tom::ConstList<ocs::tom::JG>(), false);
                }
             }
          } else {
-            order_list = ocs::tom::List<ocs::tom::OR>(sge_create_orders(order_list, ORT_clear_pri_info, job,
-                                                                        ocs::tom::ConstElement<ocs::tom::JAT>(),
-                                                                        ocs::tom::ConstList<ocs::tom::JG>(),
-                                                                        false));
+            sge_create_orders(orders->pendingOrderList, ORT_clear_pri_info, job,
+                              ocs::tom::ConstElement<ocs::tom::JAT>(), ocs::tom::ConstList<ocs::tom::JG>(), false);
          }
       }
       DPRINTF("   added %d ticket orders for queued jobs\n",
@@ -3376,22 +3372,20 @@ sge_build_sgeee_orders(scheduler_all_data_t *lists, const ocs::tom::List<ocs::to
        *-----------------------------------------------------------------*/
 
       if (sconf_is()) {
-         // built once and never released, so every use only takes a reference
+         // built once and never released, so every use only takes a reference; the order carries
+         // SC_weight_tickets_override only, which is all qmaster's ORT_sched_conf handling (sge_follow.cc) reads.
+         // A reduced descriptor keeps the full length of SC_Type, so the typed handles accept it.
          static const lDescr *const schedConfDesc = ocs_cull_descr_reduce(SC_Type, {SC_weight_tickets_override});
 
-         // node and up_list stay raw: their reduced descriptor does not start with the first SC field, so no
-         // typed handle accepts them; the order takes over up_list (and node with it)
-         lListElem *node = lCreateElem(schedConfDesc);
-         lList *up_list = lCreateList("sched_conf_update", schedConfDesc);
+         auto up_list = ocs::tom::ListPtr<ocs::tom::SC>(lCreateList("sched_conf_update", schedConfDesc));
+         const auto node = up_list->push_back(ocs::tom::ElementPtr<ocs::tom::SC>(lCreateElem(schedConfDesc)));
 
-         lAppendElem(up_list, node);
-
-         ocs::tom::set<SC_weight_tickets_override>(node,
-                   sconf_get_weight_tickets_override());
+         ocs::tom::set<SC_weight_tickets_override>(node, sconf_get_weight_tickets_override());
 
          auto order = ocs::tom::ElementPtr<ocs::tom::OR>::create();
          ocs::tom::set<OR_type>(order, ORT_sched_conf);
-         ocs::tom::set<OR_joker>(order, up_list);
+         // the order takes the list over, and the element with it
+         ocs::tom::set<OR_joker>(order, std::move(up_list));
          order_list.push_back(std::move(order));
 
          DPRINTF("   added 1 order for scheduler configuration\n");

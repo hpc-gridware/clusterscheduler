@@ -1285,11 +1285,13 @@ qinstance_reinit_consumable_actual_list(lListElem *this_elem,
 
             job_set_hard_resource_list(*dummy_job, lCopyList(nullptr, ocs::tom::get<AR_resource_list>(ep)));
 
-            rc_add_job_utilization(nullptr, *dummy_job, pe, 0, SCHEDULING_RECORD_ENTRY_TYPE_RESERVING,
-                                   this_elem, centry_list, ocs::tom::get<JG_slots>(gdil_ep),
-                                   QU_consumable_config_list, QU_resource_utilization, name,
-                                   ocs::tom::get<AR_start_time>(ep), ocs::tom::get<AR_duration>(ep),
-                                   QUEUE_TAG, false, is_master_task, false, nullptr);
+            rc_add_job_utilization(ocs::tom::ConstElement<ocs::tom::JG>(), *dummy_job,
+                                   ocs::tom::ConstElement<ocs::tom::PE>(pe), 0, SCHEDULING_RECORD_ENTRY_TYPE_RESERVING,
+                                   ocs::tom::Element<ocs::tom::QU>(this_elem),
+                                   ocs::tom::ConstList<ocs::tom::CE>(centry_list),
+                                   ocs::tom::get<JG_slots>(gdil_ep), name, ocs::tom::get<AR_start_time>(ep),
+                                   ocs::tom::get<AR_duration>(ep), QUEUE_TAG, false, is_master_task, false,
+                                   ocs::tom::ConstList<ocs::tom::GRU>());
          }
       }
    }

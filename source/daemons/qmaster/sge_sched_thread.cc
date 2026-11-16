@@ -185,8 +185,8 @@ scheduler_global_queue_messages(scheduler_all_data_t *lists, const bool monitor_
          schedd_mes_add_global(nullptr, monitor_next_run, SCHEDD_INFO_QUEUENOTAVAIL_, queue_name);
       }
 
-      schedd_log_list(nullptr, monitor_next_run, MSG_SCHEDD_LOGLIST_QUEUESTEMPORARLYNOTAVAILABLEDROPPED,
-                      *not_available, QU_full_name);
+      schedd_log_list(monitor_next_run, MSG_SCHEDD_LOGLIST_QUEUESTEMPORARLYNOTAVAILABLEDROPPED,
+                      *not_available);
    }
 
    DRETURN_VOID;
@@ -258,9 +258,9 @@ void scheduler_method(sge_evc_class_t *evc, lList **answer_list, scheduler_all_d
 
    // send orders to worker threads
    if (!sge_thread_has_shutdown_started()) {
-      sge_schedd_send_orders(&orders, &(orders.configOrderList), nullptr, "C: config orders");
-      sge_schedd_send_orders(&orders, &(orders.jobStartOrderList), nullptr, "C: job start orders");
-      sge_schedd_send_orders(&orders, &(orders.pendingOrderList), nullptr, "C: pending ticket orders");
+      sge_schedd_send_orders(&orders, orders.configOrderList, nullptr, "C: config orders");
+      sge_schedd_send_orders(&orders, orders.jobStartOrderList, nullptr, "C: job start orders");
+      sge_schedd_send_orders(&orders, orders.pendingOrderList, nullptr, "C: pending ticket orders");
    }
 
    PROF_START_MEASUREMENT(SGE_PROF_SCHEDLIB4);
@@ -276,9 +276,8 @@ void scheduler_method(sge_evc_class_t *evc, lList **answer_list, scheduler_all_d
       for (int i = 0; i < max; ++i) {
          /* clear SGEEE fields for queued jobs */
          for (const auto job : ocs::tom::ConstList<ocs::tom::JB>(splitted_job_lists[clean_jobs[i]]->get())) {
-            orders.pendingOrderList = sge_create_orders(orders.pendingOrderList, ORT_clear_pri_info, job,
-                                                        ocs::tom::ConstElement<ocs::tom::JAT>(),
-                                                        ocs::tom::ConstList<ocs::tom::JG>(), false);
+            sge_create_orders(orders.pendingOrderList, ORT_clear_pri_info, job, ocs::tom::ConstElement<ocs::tom::JAT>(),
+                              ocs::tom::ConstList<ocs::tom::JG>(), false);
          }
       }
    }
@@ -291,17 +290,17 @@ void scheduler_method(sge_evc_class_t *evc, lList **answer_list, scheduler_all_d
    /* generated scheduler messages, thus we have to call it */
    trash_splitted_jobs(evc->monitor_next_run, splitted_job_lists);
 
-   orders.jobStartOrderList = sge_add_schedd_info(orders.jobStartOrderList, &global_mes_count, &job_mes_count);
+   sge_add_schedd_info(orders.jobStartOrderList, &global_mes_count, &job_mes_count);
 
    if (prof_is_active(SGE_PROF_SCHEDLIB4)) {
       prof_stop_measurement(SGE_PROF_SCHEDLIB4, nullptr);
       PROFILING("PROF: create pending job orders: %.3f s", prof_get_measurement_utime(SGE_PROF_SCHEDLIB4, false, nullptr));
    }
 
-   sge_schedd_send_orders(&orders, &(orders.configOrderList), answer_list, "D: config orders");
-   sge_schedd_send_orders(&orders, &(orders.jobStartOrderList), answer_list,
+   sge_schedd_send_orders(&orders, orders.configOrderList, answer_list, "D: config orders");
+   sge_schedd_send_orders(&orders, orders.jobStartOrderList, answer_list,
                           "D: job start orders");
-   sge_schedd_send_orders(&orders, &(orders.pendingOrderList), answer_list,
+   sge_schedd_send_orders(&orders, orders.pendingOrderList, answer_list,
                           "D: pending ticket orders");
 
    if (Master_Request_Queue.order_list != nullptr) {
@@ -544,7 +543,7 @@ dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, order_t *orders
            host_list,
            centry_list,
            *job_load_adjustments,
-           nullptr, false, false,
+           ocs::tom::ConstList<ocs::tom::JG>(), false, false,
            QU_suspend_thresholds)) {
       none_avail_queues.reset();
       DPRINTF("couldn't split queue list with regard to suspend thresholds\n");
@@ -561,7 +560,7 @@ dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, order_t *orders
    /* split queues into overloaded and non-overloaded queues */
    if (sge_split_queue_load(evc->monitor_next_run, *lists->queue_list, nullptr,
                             host_list, centry_list, *job_load_adjustments,
-                            nullptr, false, true, QU_load_thresholds)) {
+                            ocs::tom::ConstList<ocs::tom::JG>(), false, true, QU_load_thresholds)) {
       DPRINTF("couldn't split queue list concerning load\n");
       DRETURN(-1);
    }
@@ -616,9 +615,9 @@ dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, order_t *orders
                             splitted_job_lists[SPLIT_PENDING]->get(),
                             orders);
 
-      sge_schedd_send_orders(orders, &(orders->configOrderList), nullptr, "A: config orders");
-      sge_schedd_send_orders(orders, &(orders->jobStartOrderList), nullptr, "A: job start orders");
-      sge_schedd_send_orders(orders, &(orders->pendingOrderList), nullptr, "A: pending ticket orders");
+      sge_schedd_send_orders(orders, orders->configOrderList, nullptr, "A: config orders");
+      sge_schedd_send_orders(orders, orders->jobStartOrderList, nullptr, "A: job start orders");
+      sge_schedd_send_orders(orders, orders->pendingOrderList, nullptr, "A: pending ticket orders");
 
       if (prof_is_active(SGE_PROF_CUSTOM1)) {
          prof_stop_measurement(SGE_PROF_CUSTOM1, nullptr);
@@ -857,9 +856,8 @@ dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, order_t *orders
                else
                   is_pjob_resort = true;
 
-               // job_move_first_pending_to_running() takes the raw pointer and may free the job
-               lListElem *moved_job = orig_job;
-               job_move_first_pending_to_running(&moved_job, splitted_job_lists);
+               // job_move_first_pending_to_running() may free the job; it empties orig_job then
+               job_move_first_pending_to_running(orig_job, splitted_job_lists);
 
                /* 
                 * after sge_move_to_running() orig_job can be removed and job 
@@ -879,8 +877,7 @@ dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, order_t *orders
 
                // do not send job start orders in between, if we have an immediate array job.
                // and only if we have at least 10 jobs to start (why?)
-               const auto num_jobs =
-                       static_cast<uint32_t>(ocs::tom::ConstList<ocs::tom::OR>(orders->jobStartOrderList).size());
+               const auto num_jobs = static_cast<uint32_t>(orders->jobStartOrderList->size());
                if (!is_immediate_array_job  && num_jobs > 0 /* 10 */) {
                   uint64_t later = sge_get_gmt64();
                   uint64_t passed = later - tnow;
@@ -899,9 +896,9 @@ dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, order_t *orders
                         num_intermediate_sends++;
                      }
 
-                     sge_schedd_send_orders(orders, &(orders->configOrderList), &answer_list, "B: config orders");
-                     sge_schedd_send_orders(orders, &(orders->jobStartOrderList), &answer_list, "B: job start orders");
-                     sge_schedd_send_orders(orders, &(orders->pendingOrderList), &answer_list, "B: pending ticket orders");
+                     sge_schedd_send_orders(orders, orders->configOrderList, &answer_list, "B: config orders");
+                     sge_schedd_send_orders(orders, orders->jobStartOrderList, &answer_list, "B: job start orders");
+                     sge_schedd_send_orders(orders, orders->pendingOrderList, &answer_list, "B: pending ticket orders");
                      answer_list_output(&answer_list);
                      tnow = later;
                   }
@@ -1348,8 +1345,7 @@ select_assign_debit(ocs::tom::ListPtr<ocs::tom::QU> &queue_list, ocs::tom::ListP
          ocs::tom::set<JAT_granted_pe>(ja_task, ocs::tom::get<PE_name>(a.pe));
       }
 
-      orders->jobStartOrderList = sge_create_orders(orders->jobStartOrderList, ORT_start_job,
-                                                    job, ja_task, *a.gdil, true);
+      sge_create_orders(orders->jobStartOrderList, ORT_start_job, job, ja_task, *a.gdil, true);
 
       /* increase the number of jobs a user/group has running */
       sge_inc_jc(user_list, ocs::tom::get<JB_owner>(job), 1);

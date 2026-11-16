@@ -55,10 +55,18 @@
 #include "sgeobj/tom/ocs_tom_ST.h"
 #include "sgeobj/tom/ocs_tom_RUE.h"
 
-/** @brief Find the binding in use (either now, reservation, within AR or for reservation within AR
+/**
+ * @brief Find the binding in use (either now, reservation, within AR or for reservation within AR)
+ *
+ * @param[in]     a           the assignment being built
+ * @param[in]     host        the execution host (`EH_Type`)
+ * @param[in,out] host_in_use the reservation binding in use on entry, if any; the binding in use on return
+ *
+ * @return true if an initial binding in use was found
  */
 bool
-ocs::BindingSchedd::find_initial_in_use(const sge_assignment_t *a, const lListElem *host, TopologyString& host_in_use) {
+ocs::BindingSchedd::find_initial_in_use(const sge_assignment_t *a, const ocs::tom::ConstElement<ocs::tom::EH> host,
+                                        TopologyString& host_in_use) {
    DENTER(TOP_LAYER);
 
    bool in_reservation_mode = !host_in_use.is_empty();
@@ -221,12 +229,12 @@ ocs::BindingSchedd::find_final_in_use(const sge_assignment_t *a, TopologyString&
  *    - job is requesting binding, but host does not provide binding information
  *      and configuration allows to schedule binding jobs to such hosts
  *
- * @params a     Assignment data structure
- * @params host  Object where binding should be checked
- * @returns      true if a binding request can be ignored
+ * @param a     Assignment data structure
+ * @param host  Object where binding should be checked (`EH_Type`)
+ * @return      true if a binding request can be ignored
  */
 bool
-ocs::BindingSchedd::ignore_binding(const sge_assignment_t *a, const lListElem *host) {
+ocs::BindingSchedd::ignore_binding(const sge_assignment_t *a, const ocs::tom::ConstElement<ocs::tom::EH> host) {
    DENTER(TOP_LAYER);
 
    if (a == nullptr || host == nullptr || !a->is_binding_enabled
@@ -318,7 +326,8 @@ ocs::BindingSchedd::slots_reduced_to_available_maximum(const sge_assignment_t *a
  *         binding is not requested or has to be ignored, 0 when none fits
  */
 double
-ocs::BindingSchedd::test_strategy(const sge_assignment_t *a, const lListElem *host, double slots, const TopologyString &binding_in_use) {
+ocs::BindingSchedd::test_strategy(const sge_assignment_t *a, const ocs::tom::ConstElement<ocs::tom::EH> host,
+                                  double slots, const TopologyString &binding_in_use) {
    DENTER(TOP_LAYER);
 
    // We can handle all slots (with respect to binding) if binding can or has to be ignored
@@ -430,7 +439,8 @@ std::string vector_to_string(const std::vector<int>& vec) {
  *         when binding is not requested or has to be ignored
  */
 int
-ocs::BindingSchedd::apply_strategy(sge_assignment_t *a, int slots, const lListElem *host, TopologyString& topo_in_use) {
+ocs::BindingSchedd::apply_strategy(sge_assignment_t *a, int slots, const ocs::tom::ConstElement<ocs::tom::EH> host,
+                                   TopologyString& topo_in_use) {
    DENTER(TOP_LAYER);
 
    // We can handle all slots (with respect to binding) if binding can or has to be ignored
@@ -638,17 +648,18 @@ ocs::BindingSchedd::copy_strategy(const sge_assignment_t *a) {
          uint32_t slots = ocs::tom::get<JG_slots>(jg_elem);
 
          // create the binding list in the granted element that will hold all task bindings
-         lList *jg_binding_list = ocs::tom::get<JG_binding_to_use>(jg_elem);
+         ocs::tom::List<ocs::tom::ST> jg_binding_list = ocs::tom::get<JG_binding_to_use>(jg_elem);
          if (jg_binding_list == nullptr) {
-            jg_binding_list = lCreateList("binding_touse", ST_Type);
-            ocs::tom::set<JG_binding_to_use>(jg_elem, jg_binding_list);
+            auto new_binding_list = ocs::tom::ListPtr<ocs::tom::ST>::create("binding_touse");
+            jg_binding_list = *new_binding_list;
+            ocs::tom::set<JG_binding_to_use>(jg_elem, std::move(new_binding_list));
          }
 
          // copy the binding decision for the amount of tasks that where granted
          while (slots > 0) {
 
             // get the first binding for a task
-            lListElem *task_binding_elem = lFirstRW(task_binding_list);
+            const auto task_binding_elem = task_binding_list.front();
             if (task_binding_elem == nullptr) {
                DPRINTF("copy_binding: something went wrong, no task binding found for slot %d\n", slots);
                DRETURN(false);
@@ -657,8 +668,7 @@ ocs::BindingSchedd::copy_strategy(const sge_assignment_t *a) {
             // move the element from the task binding list to the granted element
             ocs::TopologyString task_binding(ocs::tom::get<ST_name>(task_binding_elem));
             DPRINTF("copy_binding: moved task binding %s for slot %d\n", task_binding.to_product_topology_string().c_str(), slots);
-            lDechainElem(task_binding_list, task_binding_elem);
-            lAppendElem(jg_binding_list, task_binding_elem);
+            jg_binding_list.push_back(task_binding_list.extract(task_binding_elem));
 
             // handle the next slot's binding
             slots--;

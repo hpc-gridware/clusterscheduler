@@ -196,7 +196,7 @@ const char *get_name_of_split_value(int value) {
  * array job, than the first task (task id) will be moved into
  * 'pending_job[SPLIT_RUNNING]'
  *
- * @param[in,out] pending_job    the pending job (`JB_Type`); set to nullptr
+ * @param[in,out] pending_job    the pending job; set to an empty handle
  *                               when the whole job was moved
  * @param[in,out] splitted_jobs  the array of job lists, indexed by the
  *                               SPLIT_* values; the running list is created
@@ -206,11 +206,12 @@ const char *get_name_of_split_value(int value) {
  *
  * @see #split_jobs
  */
-bool job_move_first_pending_to_running(lListElem **pending_job, ocs::tom::ListPtr<ocs::tom::JB> *splitted_jobs[]) {
+bool job_move_first_pending_to_running(ocs::tom::Element<ocs::tom::JB> &pending_job,
+                                       ocs::tom::ListPtr<ocs::tom::JB> *splitted_jobs[]) {
    DENTER(TOP_LAYER);
 
    bool ret = false;
-   const auto pending = ocs::tom::Element<ocs::tom::JB>(*pending_job);
+   const auto pending = pending_job;
 
    const uint32_t job_id = ocs::tom::get<JB_job_number>(pending);
    auto ja_task_list = ocs::tom::get<JB_ja_tasks>(pending);
@@ -287,7 +288,7 @@ bool job_move_first_pending_to_running(lListElem **pending_job, ocs::tom::ListPt
     */
    if (job_count_pending_tasks(pending, false) == 0) {
       splitted_jobs[SPLIT_PENDING]->get().erase(pending);
-      *pending_job = nullptr;
+      pending_job = nullptr;
       ret = true;
    }
 
@@ -881,36 +882,36 @@ void trash_splitted_jobs(const bool monitor_next_run, ocs::tom::ListPtr<ocs::tom
                               SCHEDD_INFO_JOBINERROR_);
             }
             /* for qalter -w v and qconf -tsm */
-            schedd_log_list(nullptr, monitor_next_run,
+            schedd_log_list(monitor_next_run,
                             MSG_LOG_JOBSDROPPEDERRORSTATEREACHED, 
-                            jobs, JB_job_number);
+                            jobs);
             break;
          case SPLIT_HOLD:
             if (is_first_of_category) {
                schedd_mes_add(nullptr, monitor_next_run, job_id,
                               SCHEDD_INFO_JOBHOLD_);
             }
-            schedd_log_list(nullptr, monitor_next_run,
+            schedd_log_list(monitor_next_run,
                             MSG_LOG_JOBSDROPPEDBECAUSEOFXHOLD, 
-                            jobs, JB_job_number);
+                            jobs);
             break;
          case SPLIT_WAITING_DUE_TO_TIME:
             if (is_first_of_category) {
                schedd_mes_add(nullptr, monitor_next_run, job_id,
                               SCHEDD_INFO_EXECTIME_);
             }
-            schedd_log_list(nullptr, monitor_next_run,
+            schedd_log_list(monitor_next_run,
                             MSG_LOG_JOBSDROPPEDEXECUTIONTIMENOTREACHED, 
-                               jobs, JB_job_number);
+                               jobs);
             break;
          case SPLIT_WAITING_DUE_TO_PREDECESSOR:
             if (is_first_of_category) {
                schedd_mes_add(nullptr, monitor_next_run, job_id,
                               SCHEDD_INFO_JOBDEPEND_);
             }
-            schedd_log_list(nullptr, monitor_next_run,
+            schedd_log_list(monitor_next_run,
                             MSG_LOG_JOBSDROPPEDBECAUSEDEPENDENCIES, 
-                               jobs, JB_job_number);
+                               jobs);
             break;
          case SPLIT_PENDING_EXCLUDED_INSTANCES:
             if (is_first_of_category) {
@@ -960,33 +961,6 @@ void job_lists_print(ocs::tom::ListPtr<ocs::tom::JB> *job_list[]) {
                  get_name_of_split_value(i), static_cast<uint32_t>(jobs.size()), ids);
       }
    } 
-
-   DRETURN_VOID;
-}
-
-/**
- * @brief Lowers the job counter of one user
- *
- * The entry is removed once its count reaches zero, so the list only ever
- * holds users that actually have jobs.
- *
- * @param[in,out] jcpp  the job counter list (`JC_Type`)
- * @param[in]     name  the user the counter belongs to
- * @param[in]     slots how much to subtract
- */
-void sge_dec_jc(lList **jcpp, const char *name, int slots) {
-   DENTER(TOP_LAYER);
-
-   int n = 0;
-
-   auto ep = ocs::tom::find_first_rw<JC_name>(*jcpp, name);
-   if (ep) {
-      n = ocs::tom::get<JC_jobs>(ep) - slots;
-      if (n <= 0)
-         ocs::tom::erase<JC_name>(jcpp, name);
-      else
-         ocs::tom::set<JC_jobs>(ep, n);
-   }
 
    DRETURN_VOID;
 }

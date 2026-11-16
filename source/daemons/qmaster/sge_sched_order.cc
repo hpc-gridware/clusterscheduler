@@ -80,31 +80,32 @@ schedd_order_destroy() {
 
 /** @brief Send the assembled batch of orders to qmaster
  * @param orders the order buffers being assembled
- * @param order_list the orders to send
+ * @param order_list the orders to send; handed over and empty afterwards
  * @param answer_list receives messages for the caller
  * @param name what the batch is, for the log
  * @return true on success
  */
 bool
-sge_schedd_send_orders(order_t *orders, lList **order_list, lList **answer_list, const char *name) {
+sge_schedd_send_orders(order_t *orders, ocs::tom::ListPtr<ocs::tom::OR> &order_list, lList **answer_list,
+                       const char *name) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
 
-   if ((order_list != nullptr) && (*order_list != nullptr) && (lGetNumberOfElem(*order_list) != 0)) {
+   if (!order_list->empty()) {
       /*
        * Add the new orders 
        */
       if (Master_Request_Queue.order_list == nullptr) {
-         Master_Request_Queue.order_list = *order_list;
-         *order_list = nullptr;
+         // the GDI request takes the batch over as a raw list
+         Master_Request_Queue.order_list = order_list.release();
       } else {
-         lAddList(Master_Request_Queue.order_list, order_list);
+         ocs::tom::List<ocs::tom::OR>::from_typed(Master_Request_Queue.order_list).splice(std::move(order_list));
       }
 
       ret = sge_schedd_add_gdi_order_request(orders, answer_list, &Master_Request_Queue.order_list);
    }
-   lFreeList(order_list);
+   order_list.reset();
 
    DRETURN(ret);
 }

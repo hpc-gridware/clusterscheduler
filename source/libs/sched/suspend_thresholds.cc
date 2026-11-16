@@ -116,9 +116,8 @@ void suspend_job_in_queues(const ocs::tom::List<ocs::tom::QU> susp_queues, const
 
          /* generate suspend order for found job */
          found = 1;
-         orders->configOrderList = sge_create_orders(orders->configOrderList, 
-                                                     ORT_suspend_on_threshold, 
-                                                     jep, ja_task, ocs::tom::ConstList<ocs::tom::JG>(), true);
+         sge_create_orders(orders->configOrderList, ORT_suspend_on_threshold, jep, ja_task,
+                           ocs::tom::ConstList<ocs::tom::JG>(), true);
 
          DPRINTF("++++ suspending job " sge_u32 "/" sge_u32 " on threshold\n",
                  ocs::tom::get<JB_job_number>(jep), ocs::tom::get<JAT_task_number>(ja_task));
@@ -190,9 +189,8 @@ void unsuspend_job_in_queues(const ocs::tom::List<ocs::tom::QU> queue_list, cons
 
          /* generate unsuspend order for found job */
          found = 1;
-         orders->configOrderList = sge_create_orders(orders->configOrderList, 
-                                                        ORT_unsuspend_on_threshold, 
-                                                        jep, ja_task, ocs::tom::ConstList<ocs::tom::JG>(), true);
+         sge_create_orders(orders->configOrderList, ORT_unsuspend_on_threshold, jep, ja_task,
+                           ocs::tom::ConstList<ocs::tom::JG>(), true);
 
          DPRINTF("---- unsuspending job " sge_u32 "/" sge_u32 " on threshold\n",
                  ocs::tom::get<JB_job_number>(jep), ocs::tom::get<JAT_task_number>(ja_task));

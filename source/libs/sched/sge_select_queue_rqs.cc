@@ -140,7 +140,7 @@ static dispatch_t rqs_limitation_reached(sge_assignment_t *a, const ocs::tom::El
       }
 
       is_forced = ocs::tom::get<CE_requestable>(raw_centry) == REQU_FORCED;
-      lList *job_centry_list = job_get_hard_resource_listRW(a->job);
+      const auto job_centry_list = ocs::tom::List<ocs::tom::CE>::from_typed(job_get_hard_resource_listRW(a->job));
       // @todo CS-400: we only need job_centry. Have a function searching it in the 3 possible request lists
       auto job_centry = ocs::tom::Element<ocs::tom::CE>::from_typed(centry_list_locate(job_centry_list, limit_name));
 
@@ -374,7 +374,7 @@ parallel_rqs_slots_by_time(sge_assignment_t *a, int *slots, const ocs::tom::Elem
    if (lGetNumberOfElem(a->rqs_list) != 0) {
       const char* user = a->user;
       const char* group = a->group;
-      const lList *grp_list = a->grp_list;
+      const auto grp_list = a->grp_list;
       const char* project = a->project;
       const char* pe = a->pe_name;
       ocs::tom::Element<ocs::tom::RQL> rql;
@@ -428,7 +428,9 @@ parallel_rqs_slots_by_time(sge_assignment_t *a, int *slots, const ocs::tom::Elem
                      DPRINTF("checking limit %s\n", ocs::tom::get<CE_name>(raw_centry));
                   }
 
-                  lList *job_centry_list = job_get_hard_resource_listRW(a->job); // @todo CS-400 need to check all request lists
+                  // @todo CS-400 need to check all request lists
+                  const auto job_centry_list =
+                     ocs::tom::List<ocs::tom::CE>::from_typed(job_get_hard_resource_listRW(a->job));
                   // @todo do we really need to pass the whole job_centry_list info functions below,
                   //       or could we create a sub-list with just the one job_entry element?
                   //       And would we have to copy-back info like CE_tagged?
@@ -620,7 +622,7 @@ parallel_check_and_debit_rqs_slots(sge_assignment_t *a, const char *host, const 
    DENTER(TOP_LAYER);
    const char* user = a->user;
    const char* group = a->group;
-   const lList *grp_list = a->grp_list;
+   const auto grp_list = a->grp_list;
    const char* project = a->project;
    const char* pe = a->pe_name;
 
@@ -712,7 +714,7 @@ parallel_revert_rqs_slot_debitation(sge_assignment_t *a, const char *host, const
       sge_dstring_clear(rule_name);
       const char* user = a->user;
       const char* group = a->group;
-      const lList *grp_list = a->grp_list;
+      const auto grp_list = a->grp_list;
       const char* project = a->project;
       const char* pe = a->pe_name;
       const auto rule = ocs::tom::ConstElement<ocs::tom::RQR>::from_typed(
@@ -771,7 +773,7 @@ dispatch_t rqs_by_slots(sge_assignment_t *a, const char *queue, const char *host
       uint64_t tt_rqs = a->start;
       const char *user = a->user;
       const char *group = a->group;
-      const lList *grp_list = a->grp_list;
+      const auto grp_list = a->grp_list;
       const char *project = a->project;
 
       if (!ocs::tom::get<RQS_enabled>(rqs)) {

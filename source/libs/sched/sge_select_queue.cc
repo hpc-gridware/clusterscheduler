@@ -47,6 +47,7 @@
 #include <cmath>
 #include <string>
 #include <tuple>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -280,8 +281,9 @@ match_static_resource(int slots, ocs::tom::ConstElement<ocs::tom::CE> req_cplx,
 static int
 resource_cmp(uint32_t relop, double req, double src_dl);
 
+template <typename T>
 static bool
-job_is_forced_centry_missing(const sge_assignment_t *a, const lListElem *queue_or_host, bool is_qinstance);
+job_is_forced_centry_missing(const sge_assignment_t *a, ocs::tom::ConstElement<T> queue_or_host);
 
 static void
 clear_resource_tags(ocs::tom::List<ocs::tom::CE> resources, uint32_t max_tag);
@@ -2101,7 +2103,7 @@ dispatch_t sge_queue_match_static(const sge_assignment_t *a, const ocs::tom::Ele
       DRETURN(DISPATCH_NEVER_CAT);
    }
 
-   if (job_is_forced_centry_missing(a, queue, true)) {
+   if (job_is_forced_centry_missing<ocs::tom::QU>(a, queue)) {
       DRETURN(DISPATCH_NEVER_CAT);
    }
 
@@ -2111,15 +2113,20 @@ dispatch_t sge_queue_match_static(const sge_assignment_t *a, const ocs::tom::Ele
 /**
  * @brief Is a forced complex entry defined in a queue or host, but not requested by the job?
  *
- * The object is a queue instance or an execution host, so it stays untyped here.
+ * The object is a queue instance or an execution host. Which one is a
+ * compile-time choice: the caller names the type, and only the branch for
+ * that type is built.
  *
+ * @tparam T ocs::tom::QU for a queue instance, ocs::tom::EH for an execution host
  * @param a the assignment
- * @param queue_or_host the queue instance (`QU_Type`) or execution host (`EH_Type`)
- * @param is_qinstance true for a queue instance
+ * @param queue_or_host the queue instance or execution host
  * @return true if a forced complex entry is missing in the request; the reason is added to the scheduler messages
  */
+template <typename T>
 static bool
-job_is_forced_centry_missing(const sge_assignment_t *a, const lListElem *queue_or_host, const bool is_qinstance) {
+job_is_forced_centry_missing(const sge_assignment_t *a, const ocs::tom::ConstElement<T> queue_or_host) {
+   static_assert(std::is_same_v<T, ocs::tom::QU> || std::is_same_v<T, ocs::tom::EH>,
+                 "a forced complex entry is defined in a queue instance or an execution host");
    DENTER(TOP_LAYER);
    bool ret = false;
 
@@ -2142,7 +2149,7 @@ job_is_forced_centry_missing(const sge_assignment_t *a, const lListElem *queue_o
          }
 
          // if the centry was not requested then we need to complain about it if it is defined in the current object (queue or host)
-         if (is_qinstance) {
+         if constexpr (std::is_same_v<T, ocs::tom::QU>) {
             if (qinstance_is_centry_a_complex_value(queue_or_host, centry)) {
                schedd_mes_add(a->monitor_alpp, a->monitor_next_run, a->job_id,
                               SCHEDD_INFO_NOTREQFORCEDRES_SS,
@@ -2332,7 +2339,7 @@ sge_host_match_static(const sge_assignment_t *a, const ocs::tom::ConstElement<oc
       }
    }
 
-   if (job_is_forced_centry_missing(a, host, false)) {
+   if (job_is_forced_centry_missing<ocs::tom::EH>(a, host)) {
       DRETURN(DISPATCH_NEVER_CAT);
    }
 
@@ -2911,33 +2918,29 @@ char *sge_load_alarm_reason(lListElem *qep, lList *threshold, const lList *exech
  *                                       when the first one is moved; may be
  *                                       nullptr to drop them
  * @param[in]     exechost_list          the execution hosts, for the load
- *                                       values (`EH_Type`)
- * @param[in]     centry_list            the system wide attribute
- *                                       configuration (`CE_Type`)
- * @param[in]     load_adjustments       the load adjustments to apply
- * @param[in]     granted                the already granted assignments,
- *                                       whose load adjustment counts
- * @param[in]     is_consumable_load_alarm whether consumables count as load
  *                                       values
+ * @param[in]     centry_list            the system wide attribute
+ *                                       configuration
+ * @param[in]     load_adjustments       the load adjustments to apply; empty
+ *                                       when load correction is not in use
+ * @param[in]     granted                the already granted assignments,
+ *                                       whose load adjustment counts; empty
+ *                                       before a job was dispatched
+ * @param[in]     is_consumable_load_alarm true when the consumable
+ *                                       evaluation set a load alarm
  * @param[in]     is_comprehensive       check every queue instead of stopping
  *                                       at the first alarm per host
  * @param[in]     ttype                  which threshold list to check
  *
  * @return 0 on success, -1 on an error in a called function
  */
-int sge_split_queue_load(
-const bool monitor_next_run,
-const ocs::tom::List<ocs::tom::QU> unloaded,
-ocs::tom::ListPtr<ocs::tom::QU> *overloaded,
-lList *exechost_list,           /* EH_Type */
-const lList *centry_list,             /* CE_Type */
-const lList *load_adjustments,  /* CE_Type */
-lList *granted,                 /* JG_Type */
-const bool is_consumable_load_alarm, /* is true, when the consumable evaluation
-                                   set a load alarm */
-const bool is_comprehensive,          /* do the load evaluation comprehensive (include consumables) */
-const uint32_t ttype
-) {
+int sge_split_queue_load(const bool monitor_next_run, const ocs::tom::List<ocs::tom::QU> unloaded,
+                         ocs::tom::ListPtr<ocs::tom::QU> *overloaded,
+                         const ocs::tom::ConstList<ocs::tom::EH> exechost_list,
+                         const ocs::tom::ConstList<ocs::tom::CE> centry_list,
+                         const ocs::tom::ConstList<ocs::tom::CE> load_adjustments,
+                         const ocs::tom::ConstList<ocs::tom::JG> granted, const bool is_consumable_load_alarm,
+                         const bool is_comprehensive, const uint32_t ttype) {
    DENTER(TOP_LAYER);
 
    int nverified = 0;
@@ -2950,8 +2953,6 @@ const uint32_t ttype
    }
 
    if (!granted || load_adjustments) {
-      auto granted_list = ocs::tom::ConstList<ocs::tom::JG>(granted);
-
       auto next_qep = unloaded.front();
       while (next_qep) {
          auto qep = next_qep;
@@ -2964,17 +2965,14 @@ const uint32_t ttype
             /* this queue is already tagged for removing */
             remove_queue = true;
             ocs::tom::set<QU_tagged4schedule>(qep, 0);
-         } else if (!granted_list || (sconf_get_global_load_correction() ||
-                              ocs::tom::find_first<JG_qhostname>(granted_list, ocs::tom::get<QU_qhostname>(qep)))) {
+         } else if (!granted || (sconf_get_global_load_correction() ||
+                              ocs::tom::find_first<JG_qhostname>(granted, ocs::tom::get<QU_qhostname>(qep)))) {
             // ttype is QU_load_thresholds or QU_suspend_thresholds
             auto thresholds = ocs::tom::ConstList<ocs::tom::CE>(lGetList(qep, ttype));
             nverified++;
 
-            if (sge_load_alarm(reason, sizeof(reason), qep, thresholds,
-                               ocs::tom::ConstList<ocs::tom::EH>(exechost_list),
-                               ocs::tom::ConstList<ocs::tom::CE>(centry_list),
-                               ocs::tom::ConstList<ocs::tom::CE>(load_adjustments),
-                               ocs::tom::ConstList<ocs::tom::CE>(load_adjustments), is_comprehensive) != 0) {
+            if (sge_load_alarm(reason, sizeof(reason), qep, thresholds, exechost_list, centry_list, load_adjustments,
+                               load_adjustments, is_comprehensive) != 0) {
                remove_queue = true;
                if (ttype==QU_suspend_thresholds) {
                   DPRINTF("queue %s tagged to be in suspend alarm: %s\n", ocs::tom::get<QU_full_name>(qep), reason);
@@ -3052,9 +3050,9 @@ int sge_split_queue_slots_free(const bool monitor_next_run, const ocs::tom::List
 
    /* dump out the -tsm log and add the new queues to the disabled queue list */
    if (full_queues) {
-      schedd_log_list(nullptr, monitor_next_run,
+      schedd_log_list(monitor_next_run,
                       MSG_SCHEDD_LOGLIST_QUEUESFULLANDDROPPED,
-                      *full_queues, QU_full_name);
+                      *full_queues);
       if (full == nullptr) {
          full = std::move(full_queues);
       } else {
@@ -3140,9 +3138,9 @@ int sge_split_suspended(const bool monitor_next_run, ocs::tom::ListPtr<ocs::tom:
          }
       }
 
-      schedd_log_list(nullptr, monitor_next_run,
+      schedd_log_list(monitor_next_run,
                       MSG_SCHEDD_LOGLIST_QUEUESSUSPENDEDANDDROPPED,
-                      *lp, QU_full_name);
+                      *lp);
 
       add_split_queues(suspended, std::move(lp));
    }
@@ -3180,9 +3178,9 @@ int sge_split_cal_disabled(const bool monitor_next_run, ocs::tom::ListPtr<ocs::t
                                ocs::tom::get<QU_full_name>(mes_queue));
       }
 
-      schedd_log_list(nullptr, monitor_next_run,
+      schedd_log_list(monitor_next_run,
                       MSG_SCHEDD_LOGLIST_QUEUESDISABLEDANDDROPPED,
-                      *lp, QU_full_name);
+                      *lp);
 
       add_split_queues(disabled, std::move(lp));
    }
@@ -3218,9 +3216,9 @@ int sge_split_disabled(const bool monitor_next_run, ocs::tom::ListPtr<ocs::tom::
                                ocs::tom::get<QU_full_name>(mes_queue));
       }
 
-      schedd_log_list(nullptr, monitor_next_run,
+      schedd_log_list(monitor_next_run,
                       MSG_SCHEDD_LOGLIST_QUEUESDISABLEDANDDROPPED,
-                      *lp, QU_full_name);
+                      *lp);
 
       add_split_queues(disabled, std::move(lp));
    }
@@ -3342,24 +3340,6 @@ static bool interactive_cq_rejected(const ocs::tom::ConstElement<ocs::tom::CQ> c
 }
 
 /**
- * @brief Is the user or group contained in the access list?
- *
- * @param[in] user     the user name
- * @param[in] group    the primary group name
- * @param[in] grp_list the supplementary groups
- * @param[in] acl      the access list to search
- * @param[in] list     a second access list to search
- * @param[in] acl_list all userset definitions, to resolve the names
- *
- * @return true if the user or one of the groups is contained
- *
- * @warning This declares a **second, six parameter** overload that is defined
- *          nowhere and called nowhere. The function actually used is the five
- *          parameter one from `sgeobj/sge_userset.h`, which returns `int` -
- *          the calls below resolve to that one.
- */
-bool sge_contained_in_access_list_(const char * user, const char * group, const lList *grp_list,  const lList * acl, const lList * list, const lList * acl_list);
-/**
  * @brief Check, if cluster queue rejects user/project
  *
  * @param user Username
@@ -3373,7 +3353,7 @@ bool sge_contained_in_access_list_(const char * user, const char * group, const 
  * @note MT-NOTE: access_cq_rejected() is MT safe
  */
 static bool
-access_cq_rejected(const char *user, const char *group, const lList *grp_list,
+access_cq_rejected(const char *user, const char *group, const ocs::tom::ConstList<ocs::tom::ST> grp_list,
                    const ocs::tom::ConstList<ocs::tom::US> acl_list, const ocs::tom::ConstElement<ocs::tom::CQ> cq) {
    DENTER(TOP_LAYER);
 

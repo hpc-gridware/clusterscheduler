@@ -1355,9 +1355,10 @@ ar_do_reservation(lListElem *ar, bool incslots, uint64_t gdi_session) {
       pe_slots += tmp_slots;
 
       /* reserve global host */
-      if (rc_add_job_utilization(gdil_ep, *dummy_job, pe, 0, SCHEDULING_RECORD_ENTRY_TYPE_RESERVING,
-                                 global_host_ep, master_centry_list, tmp_slots,
-                                 EH_consumable_config_list, EH_resource_utilization,
+      if (rc_add_job_utilization(ocs::tom::ConstElement<ocs::tom::JG>(gdil_ep), *dummy_job,
+                                 ocs::tom::ConstElement<ocs::tom::PE>(pe), 0, SCHEDULING_RECORD_ENTRY_TYPE_RESERVING,
+                                 ocs::tom::Element<ocs::tom::EH>(global_host_ep),
+                                 ocs::tom::ConstList<ocs::tom::CE>(master_centry_list), tmp_slots,
                                  SGE_GLOBAL_NAME, start_time, duration, GLOBAL_TAG,
                                  false, is_master_task, do_per_host_booking,
                                  granted_resources) != 0) {
@@ -1368,10 +1369,11 @@ ar_do_reservation(lListElem *ar, bool incslots, uint64_t gdi_session) {
 
       /* reserve exec host */
       lListElem *host_ep = host_list_locate(master_exechost_list, queue_hostname);
-      if (rc_add_job_utilization(gdil_ep, *dummy_job, pe, 0, SCHEDULING_RECORD_ENTRY_TYPE_RESERVING,
-                                 host_ep, master_centry_list, tmp_slots, EH_consumable_config_list,
-                                 EH_resource_utilization, queue_hostname, start_time,
-                                 duration, HOST_TAG, false, is_master_task, do_per_host_booking,
+      if (rc_add_job_utilization(ocs::tom::ConstElement<ocs::tom::JG>(gdil_ep), *dummy_job,
+                                 ocs::tom::ConstElement<ocs::tom::PE>(pe), 0, SCHEDULING_RECORD_ENTRY_TYPE_RESERVING,
+                                 ocs::tom::Element<ocs::tom::EH>(host_ep),
+                                 ocs::tom::ConstList<ocs::tom::CE>(master_centry_list), tmp_slots, queue_hostname,
+                                 start_time, duration, HOST_TAG, false, is_master_task, do_per_host_booking,
                                  granted_resources) != 0) {
          /* this info is not spooled */
          sge_add_event(0, sgeE_EXECHOST_MOD, 0, 0,
@@ -1379,10 +1381,11 @@ ar_do_reservation(lListElem *ar, bool incslots, uint64_t gdi_session) {
       }
 
       /* reserve queue instance */
-      rc_add_job_utilization(gdil_ep, *dummy_job, pe, 0, SCHEDULING_RECORD_ENTRY_TYPE_RESERVING,
-                             queue, master_centry_list, tmp_slots, QU_consumable_config_list,
-                             QU_resource_utilization, queue_name, start_time, duration,
-                             QUEUE_TAG, false, is_master_task, do_per_host_booking,
+      rc_add_job_utilization(ocs::tom::ConstElement<ocs::tom::JG>(gdil_ep), *dummy_job,
+                             ocs::tom::ConstElement<ocs::tom::PE>(pe), 0, SCHEDULING_RECORD_ENTRY_TYPE_RESERVING,
+                             ocs::tom::Element<ocs::tom::QU>(queue),
+                             ocs::tom::ConstList<ocs::tom::CE>(master_centry_list), tmp_slots, queue_name,
+                             start_time, duration, QUEUE_TAG, false, is_master_task, do_per_host_booking,
                              granted_resources);
 
       qinstance_increase_qversion(queue);

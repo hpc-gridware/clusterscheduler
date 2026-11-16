@@ -71,27 +71,25 @@
  * retrieves all messages, puts them into an order package, and frees the
  * orginal messages. It also returns the number of global and job messages.
  *
- * @param or_list int: the order list to which the message order is added
- * @param global_mes_count out: global message count
- * @param job_mes_count out: job message count
- *
- * @return the order list
+ * @param[in,out] or_list the order list to which the message order is added; created if it is empty
+ * @param[out] global_mes_count global message count
+ * @param[out] job_mes_count job message count
  *
  * @note MT-NOTE: sge_add_schedd_info() is not MT safe
  */
-lList *sge_add_schedd_info(lList *or_list, int *global_mes_count, int *job_mes_count) {
+void sge_add_schedd_info(ocs::tom::ListPtr<ocs::tom::OR> &or_list, int *global_mes_count, int *job_mes_count) {
    DENTER(TOP_LAYER);
 
    auto sme = schedd_mes_obtain_package(global_mes_count, job_mes_count);
 
    if (!sme || (lGetNumberOfElem(ocs::tom::get<SME_message_list>(sme)) < 1
          && lGetNumberOfElem(ocs::tom::get<SME_global_message_list>(sme)) < 1)) {
-      DRETURN(or_list);
+      DRETURN_VOID;
    }
 
    /* create orders list if not existent */
    if (!or_list) {
-      or_list = lCreateList("orderlist", OR_Type);
+      or_list = ocs::tom::ListPtr<ocs::tom::OR>::create("orderlist");
    }
 
    /* build order */
@@ -102,9 +100,9 @@ lList *sge_add_schedd_info(lList *or_list, int *global_mes_count, int *job_mes_c
    ocs::tom::set<OR_joker>(ep, std::move(jlist));
 
    ocs::tom::set<OR_type>(ep, ORT_job_schedd_info);
-   lAppendElem(or_list, std::move(ep));
+   or_list->push_back(std::move(ep));
 
-   DRETURN(or_list);
+   DRETURN_VOID;
 }
 
 /**
@@ -115,32 +113,31 @@ lList *sge_add_schedd_info(lList *or_list, int *global_mes_count, int *job_mes_c
  *   in for ja_task, only the pending tasks of the specified job are set to nullptr.
  *   If a ja_task is put in, all tasks of the job are set to nullptr
  *
- * @param or_list the order list
+ * @param[in,out] or_list the order list; created if it is empty, freed and emptied if @p job is empty
  * @param type order type
  * @param job job
  * @param ja_task ja_task ref or nullptr(there is only one case, where it can be nullptr)
  * @param granted granted queue list
  * @param update_execd should the execd get new ticket values?
  *
- * @return returns the orderlist
- *
  * @note MT-NOTE: sge_create_orders() is MT safe
  */
-lList * sge_create_orders(lList *or_list, uint32_t type, const ocs::tom::ConstElement<ocs::tom::JB> job,
-                          const ocs::tom::ConstElement<ocs::tom::JAT> ja_task,
-                          const ocs::tom::ConstList<ocs::tom::JG> granted, bool update_execd) {
+void sge_create_orders(ocs::tom::ListPtr<ocs::tom::OR> &or_list, const uint32_t type,
+                       const ocs::tom::ConstElement<ocs::tom::JB> job,
+                       const ocs::tom::ConstElement<ocs::tom::JAT> ja_task,
+                       const ocs::tom::ConstList<ocs::tom::JG> granted, const bool update_execd) {
    DENTER(TOP_LAYER);
    ocs::tom::ListPtr<ocs::tom::OQ> ql;
    uint32_t qslots;
 
    if (job == nullptr) {
-      lFreeList(&or_list);
-      DRETURN(or_list);
+      or_list.reset();
+      DRETURN_VOID;
    }
 
    /* create orders list if not existent */
    if (!or_list) {
-      or_list = lCreateList("orderlist", OR_Type);
+      or_list = ocs::tom::ListPtr<ocs::tom::OR>::create("orderlist");
    }
 
    /* build sublist of granted */
@@ -242,56 +239,9 @@ lList * sge_create_orders(lList *or_list, uint32_t type, const ocs::tom::ConstEl
       ocs::tom::set<OR_granted_resources_list>(ep, ocs::tom::get<JAT_granted_resources_list>(ja_task).clone());
    }
 
-   lAppendElem(or_list, std::move(ep));
+   or_list->push_back(std::move(ep));
 
-   DRETURN(or_list);
-}
-
-
-/**
- * @brief Sends a list of orders to qmaster
- *
- * The list is sent as one GDI request and is freed on success, so the caller
- * must not reuse it.
- *
- * @param[in]     evc    the event client the scheduler runs on, for the GDI
- *                       connection
- * @param[in,out] orders the orders to send; freed and set to nullptr
- *
- * @return `STATUS_OK`, or the error status of the GDI request
- */
-int sge_send_orders2master(sge_evc_class_t *evc, lList **orders) {
-   DENTER(TOP_LAYER);
-
-   int ret = STATUS_OK;
-   lList *alp = nullptr;
-
-   int order_id = 0;
-   ocs::gdi::Request gdi_multi{};
-
-   if (*orders != nullptr) {
-      DPRINTF("SENDING %d ORDERS TO QMASTER\n", lGetNumberOfElem(*orders));
-      order_id = gdi_multi.request(&alp, ocs::gdi::Mode::SEND, ocs::gdi::Target::ORDER_LIST,
-                                   ocs::gdi::Command::ADD, ocs::gdi::SubCommand::NONE,
-                                   orders, nullptr, nullptr, false);
-
-      if (alp != nullptr) {
-         ret = answer_list_handle_request_answer_list(&alp, stderr);
-         DRETURN(ret);
-      }
-
-      gdi_multi.wait();
-   }
-
-   /* check result of orders */
-   if(order_id > 0) {
-      gdi_multi.get_response(&alp, ocs::gdi::Command::ADD, ocs::gdi::SubCommand::NONE,
-                             ocs::gdi::Target::ORDER_LIST, order_id, nullptr);
-
-      ret = answer_list_handle_request_answer_list(&alp, stderr);
-   }
-
-   DRETURN(ret);
+   DRETURN_VOID;
 }
 
 
@@ -299,51 +249,6 @@ int sge_send_orders2master(sge_evc_class_t *evc, lList **orders) {
  * the finished job inline (sge_commit_job(COMMIT_ST_FINISHED_FAILED_EE)
  * books usage and buries the job in one step), so the scheduler no longer
  * needs to emit ORT_remove_job orders. */
-
-/**
- * @brief Generates one order list from the order structure
- *
- *  generates one order list from the order structure, and cleans the
- *  the order structure. The orders, which have been send already, are
- *  removed.
- *
- * @param orders the order strucutre
- *
- * @return a order list
- *
- * @note MT-NOTE: sge_join_orders() is not  safe
- */
-lList *sge_join_orders(order_t *orders){
-      lList *orderlist=nullptr;
-   
-      orderlist = orders->configOrderList;
-      orders->configOrderList = nullptr;
-  
-      
-      if (orderlist == nullptr) {
-         orderlist = orders->jobStartOrderList;
-      }
-      else {
-         lAddList(orderlist, &(orders->jobStartOrderList));
-      }   
-      orders->jobStartOrderList = nullptr;
-    
-      
-      if (orderlist == nullptr) {
-         orderlist = orders->pendingOrderList;
-      }
-      else {
-         lAddList(orderlist, &(orders->pendingOrderList));
-      }
-      orders->pendingOrderList= nullptr;
-
-      
-      /* they have been send earlier, so we can remove them */
-      lFreeList(&(orders->sentOrderList));
-
-      return orderlist;
-}
-
 
 /**
  * @brief Returns the number of orders generated
@@ -356,32 +261,15 @@ lList *sge_join_orders(order_t *orders){
  *
  * @note MT-NOTE: sge_GetNumberOfOrders() is  MT safe
  */
-int sge_GetNumberOfOrders(order_t *orders) {
-   int count = 0;
+int sge_GetNumberOfOrders(const order_t *orders) {
+   DENTER(TOP_LAYER);
 
-   count += lGetNumberOfElem(orders->configOrderList);
-   count += lGetNumberOfElem(orders->pendingOrderList);
-   count += lGetNumberOfElem(orders->jobStartOrderList);
-   count += lGetNumberOfElem(orders->sentOrderList);
+   std::size_t count = 0;
 
-   return count;
-}
+   count += orders->configOrderList->size();
+   count += orders->pendingOrderList->size();
+   count += orders->jobStartOrderList->size();
+   count += orders->sentOrderList->size();
 
-/**
- * @brief Creates an order for a job and appends it to an order list, for a caller with untyped objects (N-X-2)
- *
- * @param or_list      the order list (OR_Type), or nullptr to create one
- * @param type         the order type (ORT_*)
- * @param job          the job (JB_Type), checked, or nullptr
- * @param ja_task      the array task (JAT_Type), checked, or nullptr
- * @param granted      the granted destination identifiers (JG_Type), checked, or nullptr
- * @param update_execd whether the order carries the queue list for the execution daemons
- *
- * @return the order list
- */
-lList * sge_create_orders(lList *or_list, uint32_t type, const lListElem *job, const lListElem *ja_task,
-                          const lList *granted, bool update_execd) {
-   return sge_create_orders(or_list, type, ocs::tom::ConstElement<ocs::tom::JB>(job),
-                            ocs::tom::ConstElement<ocs::tom::JAT>(ja_task), ocs::tom::ConstList<ocs::tom::JG>(granted),
-                            update_execd);
+   DRETURN(static_cast<int>(count));
 }

@@ -112,17 +112,17 @@ utilization_below(const sge_assignment_t *a, ocs::tom::ConstElement<ocs::tom::EH
 int add_job_utilization(const sge_assignment_t *a, const char *type, bool for_job_scheduling);
 
 int rc_add_job_utilization(ocs::tom::ConstElement<ocs::tom::JG> gdil, ocs::tom::ConstElement<ocs::tom::JB> jep,
-                           ocs::tom::ConstElement<ocs::tom::PE> pe, uint32_t task_id, const char *type, lListElem *ep,
-                           ocs::tom::ConstList<ocs::tom::CE> centry_list, int slots, int config_nm, int actual_nm,
-                           const char *obj_name, uint64_t start_time, uint64_t duration, uint32_t tag,
+                           ocs::tom::ConstElement<ocs::tom::PE> pe, uint32_t task_id, const char *type,
+                           ocs::tom::Element<ocs::tom::EH> host, ocs::tom::ConstList<ocs::tom::CE> centry_list,
+                           int slots, const char *obj_name, uint64_t start_time, uint64_t duration, uint32_t tag,
                            bool for_job_scheduling, bool is_master_task, bool do_per_host_booking,
                            ocs::tom::ConstList<ocs::tom::GRU> granted_resources_list);
-OCS_TRANSITIONAL int rc_add_job_utilization(const lListElem *gdil, lListElem *jep, const lListElem *pe,
-                                            uint32_t task_id, const char *type, lListElem *ep,
-                                            const lList *centry_list, int slots, int config_nm, int actual_nm,
-                                            const char *obj_name, uint64_t start_time, uint64_t duration,
-                                            uint32_t tag, bool for_job_scheduling, bool is_master_task,
-                                            bool do_per_host_booking, const lList *granted_resources_list);
+int rc_add_job_utilization(ocs::tom::ConstElement<ocs::tom::JG> gdil, ocs::tom::ConstElement<ocs::tom::JB> jep,
+                           ocs::tom::ConstElement<ocs::tom::PE> pe, uint32_t task_id, const char *type,
+                           ocs::tom::Element<ocs::tom::QU> queue, ocs::tom::ConstList<ocs::tom::CE> centry_list,
+                           int slots, const char *obj_name, uint64_t start_time, uint64_t duration, uint32_t tag,
+                           bool for_job_scheduling, bool is_master_task, bool do_per_host_booking,
+                           ocs::tom::ConstList<ocs::tom::GRU> granted_resources_list);
 
 void prepare_resource_schedules(ocs::tom::List<ocs::tom::JB> running_jobs, ocs::tom::List<ocs::tom::JB> suspended_jobs,
                                 ocs::tom::List<ocs::tom::PE> pe_list, ocs::tom::List<ocs::tom::EH> host_list,

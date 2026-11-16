@@ -64,7 +64,8 @@ bool
 sge_schedd_add_gdi_order_request(order_t *orders, lList **answer_list, lList **order_list);
 
 bool
-sge_schedd_send_orders(order_t *orders, lList **order_list, lList **answer_list,const char *name);
+sge_schedd_send_orders(order_t *orders, ocs::tom::ListPtr<ocs::tom::OR> &order_list, lList **answer_list,
+                       const char *name);
 
 bool
 sge_schedd_block_until_orders_processed(lList **answer_list);
