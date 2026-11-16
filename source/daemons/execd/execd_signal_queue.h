@@ -38,15 +38,21 @@
  */
 
 #include "gdi/ocs_gdi_ClientServerBase.h"
+#include "sgeobj/tom/ocs_tom_JAT.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
+#include "sgeobj/tom/ocs_tom_QU.h"
+#include "tom/ocs_Element.h"
 
 int do_signal_queue(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, sge_pack_buffer *apb);
 
 int signal_job(uint32_t jobid, uint32_t jataskid, uint32_t signal);
 
-int sge_execd_deliver_signal(uint32_t sig, const lListElem *jep, lListElem *jatep);
+int sge_execd_deliver_signal(uint32_t sig, ocs::tom::ConstElement<ocs::tom::JB> jep,
+                             ocs::tom::Element<ocs::tom::JAT> jatep);
 
 
 int sge_kill(int pid, uint32_t sge_signal, uint32_t jobid, uint32_t jataskid,
              const char *petask);
 
-void sge_send_suspend_mail(uint32_t signal, const lListElem *master_q, lListElem *jep, lListElem *jatep);
+void sge_send_suspend_mail(uint32_t signal, ocs::tom::ConstElement<ocs::tom::QU> master_q,
+                           ocs::tom::ConstElement<ocs::tom::JB> jep, ocs::tom::ConstElement<ocs::tom::JAT> jatep);

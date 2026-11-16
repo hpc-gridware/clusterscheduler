@@ -72,8 +72,8 @@ int do_kill_execd(ocs::gdi::ClientServerBase::struct_msg_t *aMsg) {
 
    DPRINTF("===>KILL EXECD%s\n", kill_jobs?" and jobs":"");
    if (kill_jobs) {
-      for_each_ep_lv(jep, *ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB)) {
-         for_each_rw_lv (jatep, ocs::tom::get<JB_ja_tasks>(jep)) {
+      for (const auto jep : ocs::tom::List<ocs::tom::JB>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB))) {
+         for (const auto jatep : jep.get<JB_ja_tasks>()) {
             uint32_t sge_signal;
             if (ocs::tom::get<JB_checkpoint_attr>(jep) & CHECKPOINT_AT_SHUTDOWN) {
                WARNING(MSG_JOB_INITCKPTSHUTDOWN_U, ocs::tom::get<JB_job_number>(jep));

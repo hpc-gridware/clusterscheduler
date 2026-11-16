@@ -410,7 +410,7 @@ static int handle_job(ocs::tom::ElementPtr<ocs::tom::JB> &owned_job, const ocs::
 
    {
       // the job reports belong to job_report_execd.cc
-      const auto report = ocs::tom::Element<ocs::tom::JR>(add_job_report(jobid, jataskid, nullptr, jelem));
+      const auto report = add_job_report(jobid, jataskid, nullptr, jelem);
 
       flush_job_report(report);
    }
@@ -646,9 +646,7 @@ static int handle_task(const ocs::tom::ConstElement<ocs::tom::PETR> petrep, char
    DENTER(TOP_LAYER);
 
    uint32_t jobid, jataskid;
-   // raw out parameters of execd_get_job_ja_task(); the objects belong to the execd's job list
-   lListElem *jep_raw = nullptr;
-   lListElem *jatep_raw = nullptr;
+   // the objects belong to the execd's job list
    ocs::tom::Element<ocs::tom::JB> jep;
    ocs::tom::Element<ocs::tom::PE> pe    = nullptr;
    ocs::tom::Element<ocs::tom::JAT> jatep;
@@ -666,11 +664,9 @@ static int handle_task(const ocs::tom::ConstElement<ocs::tom::PETR> petrep, char
    jobid    = ocs::tom::get<PETR_jobid>(petrep);
    jataskid = ocs::tom::get<PETR_jataskid>(petrep);
 
-   if (!execd_get_job_ja_task(jobid, jataskid, &jep_raw, &jatep_raw, false)) {
+   if (!execd_get_job_ja_task(jobid, jataskid, &jep, &jatep, false)) {
       goto Error;
    }
-   jep = ocs::tom::Element<ocs::tom::JB>(jep_raw);
-   jatep = ocs::tom::Element<ocs::tom::JAT>(jatep_raw);
 
 /*
  * Verify that it is actually the job owner starting a pe task: compare the
@@ -760,7 +756,7 @@ static int handle_task(const ocs::tom::ConstElement<ocs::tom::PETR> petrep, char
     */
    {
       // the job reports belong to job_report_execd.cc
-      const auto jr = ocs::tom::Element<ocs::tom::JR>(add_job_report(jobid, jataskid, new_task_id, jep));
+      const auto jr = add_job_report(jobid, jataskid, new_task_id, jep);
 
       add_usage(jr, "submission_time", nullptr, ocs::tom::get<PET_submission_time>(petep));
 

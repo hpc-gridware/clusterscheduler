@@ -56,9 +56,14 @@
 #include "sgeobj/sge_usage.h"
 #include "sgeobj/sge_qinstance.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_ACK.h"
 #include "sgeobj/tom/ocs_tom_JAT.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
 #include "sgeobj/tom/ocs_tom_JG.h"
 #include "sgeobj/tom/ocs_tom_JR.h"
+#include "sgeobj/tom/ocs_tom_PET.h"
+#include "sgeobj/tom/ocs_tom_QU.h"
 #include "sgeobj/tom/ocs_tom_UA.h"
 
 #include "job_report_execd.h"
@@ -71,11 +76,12 @@
 #include "msg_execd.h"
 #include "sge_conf.h"
 
-/** @brief The job reports waiting to be sent to qmaster
+/** @brief The job reports waiting to be sent to qmaster (`JR_Type`)
  *
  * A report stays in this list until qmaster acknowledges it, so that a report
  * lost to a restart or a network failure is sent again rather than dropped -
- * which is what keeps a finished job from being forgotten.
+ * which is what keeps a finished job from being forgotten. The list lives as
+ * long as the process and is read and written through non-owning handles.
  */
 lList *jr_list = nullptr;
 static bool flush_jr = false;
@@ -95,18 +101,23 @@ bool sge_get_flush_jr_flag() {
    return flush_jr;
 }
 
-/** @brief Mark one job report as worth sending immediately
+/**
+ * @brief Mark one job report as worth sending immediately
  *
  * A state change the user is waiting on - a job starting or finishing -
  * should not wait for the next periodic report.
  *
- * @param jr the job report
+ * @param jr the job report, or an empty handle
  */
-void flush_job_report(lListElem *jr) {
-   if (jr != nullptr) {
+void flush_job_report(const ocs::tom::Element<ocs::tom::JR> jr) {
+   DENTER(TOP_LAYER);
+
+   if (jr) {
       ocs::tom::set<JR_flush>(jr, true);
       sge_set_flush_jr_flag(true);
    }
+
+   DRETURN_VOID;
 }
 
 #if 0
@@ -128,41 +139,47 @@ void trace_jr()
 }
 #endif
 
-/** @brief Start a job report for a job, task or PE task
+/**
+ * @brief Start a job report for a job, task or PE task
+ *
+ * The report is appended to #jr_list, which is created with the first report.
+ * A report that exists already for the task is not looked for.
+ *
  * @param jobid the job
  * @param jataskid the array task
  * @param petaskid the PE task, or nullptr
- * @param jep the job (`JB_Type`)
- * @return the new report, or the existing one when there already is one
+ * @param jep the job, or an empty handle; when given, the report is initialized from it and from its array
+ *        task and PE task
+ * @return the new report
  */
-lListElem *add_job_report(uint32_t jobid, uint32_t jataskid, const char *petaskid, const lListElem *jep) {
+ocs::tom::Element<ocs::tom::JR>
+add_job_report(const uint32_t jobid, const uint32_t jataskid, const char *petaskid,
+               const ocs::tom::ConstElement<ocs::tom::JB> jep) {
    DENTER(TOP_LAYER);
 
-   lListElem *jr, *jatep = nullptr;
-
-   if (jr_list == nullptr)
-      jr_list = lCreateList("job report list", JR_Type);
-
-   if (jr_list == nullptr || (jr=lCreateElem(JR_Type)) == nullptr) {
-      ERROR(SFNMAX, MSG_JOB_TYPEMALLOC);
-      DRETURN(nullptr);
+   if (jr_list == nullptr) {
+      // the list lives as long as the process
+      jr_list = ocs::tom::ListPtr<ocs::tom::JR>::create("job report list").release();
    }
+   const ocs::tom::List<ocs::tom::JR> job_reports(jr_list);
 
-   ocs::tom::set<JR_job_number>(jr, jobid);
-   ocs::tom::set<JR_ja_task_number>(jr, jataskid);
+   auto new_jr = ocs::tom::ElementPtr<ocs::tom::JR>::create();
+
+   ocs::tom::set<JR_job_number>(new_jr, jobid);
+   ocs::tom::set<JR_ja_task_number>(new_jr, jataskid);
    if (petaskid != nullptr) {
-      ocs::tom::set<JR_pe_task_id_str>(jr, petaskid);
+      ocs::tom::set<JR_pe_task_id_str>(new_jr, petaskid);
    }
 
-   lAppendElem(jr_list, jr);
+   const auto jr = job_reports.push_back(std::move(new_jr));
    DPRINTF("adding job report for " sge_u32 "." sge_u32 "\n", jobid, jataskid);
 
-   if (jep != nullptr) {
-      jatep = job_search_task(jep, nullptr, jataskid);
-      if (jatep != nullptr) {
-         lListElem *petep = nullptr;
+   if (jep) {
+      const ocs::tom::ConstElement<ocs::tom::JAT> jatep(job_search_task(jep, nullptr, jataskid));
+      if (jatep) {
+         ocs::tom::ConstElement<ocs::tom::PET> petep;
          if (petaskid != nullptr) {
-            petep = ja_task_search_pe_task(jatep, petaskid);
+            petep = ocs::tom::ConstElement<ocs::tom::PET>(ja_task_search_pe_task(jatep, petaskid));
          }
          job_report_init_from_job(jr, jep, jatep, petep);
       }
@@ -171,93 +188,94 @@ lListElem *add_job_report(uint32_t jobid, uint32_t jataskid, const char *petaski
    DRETURN(jr);
 }
 
-lListElem *
-/** @brief The pending report for a job, task or PE task
+/**
+ * @brief The pending report for a job, task or PE task
+ *
+ * Without a PE task the first report of the array task is found, which may
+ * also be the report of one of its PE tasks.
+ *
  * @param job_id the job
  * @param ja_task_id the array task
  * @param pe_task_id the PE task, or nullptr
- * @return the report, or nullptr when there is none
+ * @return the report, or an empty handle when there is none
  */
-get_job_report(uint32_t job_id, uint32_t ja_task_id, const char *pe_task_id) {
+ocs::tom::Element<ocs::tom::JR>
+get_job_report(const uint32_t job_id, const uint32_t ja_task_id, const char *pe_task_id) {
    DENTER(TOP_LAYER);
 
-   const void *iterator = nullptr;
-
-   ocs::tom::Element<ocs::tom::JR> jr = ocs::tom::find_first_rw<JR_job_number>(jr_list, job_id, &iterator);
-   while (jr != nullptr) {
+   ocs::tom::Element<ocs::tom::JR> ret;
+   for (const auto jr : ocs::tom::List<ocs::tom::JR>(jr_list).find_all<JR_job_number>(job_id)) {
       if (ocs::tom::get<JR_ja_task_number>(jr) == ja_task_id) {
          if (pe_task_id == nullptr) {
+            ret = jr;
             break;
          } else {
-            if (sge_strnullcmp(pe_task_id, ocs::tom::get<JR_pe_task_id_str>(jr))
-                == 0) {
-                break;
+            if (sge_strnullcmp(pe_task_id, ocs::tom::get<JR_pe_task_id_str>(jr)) == 0) {
+               ret = jr;
+               break;
             }
          }
       }
-      jr = ocs::tom::find_next_rw<JR_job_number>(jr_list, job_id, &iterator);
    }
 
-   DRETURN(jr);
+   DRETURN(ret);
 }
 
-/** @brief Drop one job report, once qmaster has acknowledged it
- * @param jr the report
+/**
+ * @brief Drop one job report, once qmaster has acknowledged it
+ * @param jr the report, an element of #jr_list; the handle dangles afterwards
  */
-void del_job_report(lListElem *jr) {
-   lRemoveElem(jr_list, &jr);
+void del_job_report(const ocs::tom::Element<ocs::tom::JR> jr) {
+   DENTER(TOP_LAYER);
+
+   ocs::tom::List<ocs::tom::JR>(jr_list).erase(jr);
+
+   DRETURN_VOID;
 }
 
-/** @brief Drop every report belonging to one job task
+/**
+ * @brief Drop every report belonging to one job task
  * @param jobid the job
  * @param jataskid the array task
  */
-void cleanup_job_report(uint32_t jobid, uint32_t jataskid) {
+void cleanup_job_report(const uint32_t jobid, const uint32_t jataskid) {
    DENTER(TOP_LAYER);
 
-   lListElem *jr, *jr_next;
+   const ocs::tom::List<ocs::tom::JR> job_reports(jr_list);
    const void *iterator = nullptr;
 
    /* get rid of job reports for all slave tasks */
-   jr_next = ocs::tom::find_first_rw<JR_job_number>(jr_list, jobid, &iterator);
-   while ((jr = jr_next)) {
-      jr_next = ocs::tom::find_next_rw<JR_job_number>(jr_list, jobid, &iterator);
+   // the next report is fetched before the current one is removed
+   auto jr_next = ocs::tom::find_first_rw<JR_job_number>(job_reports, jobid, &iterator);
+   while (jr_next) {
+      const auto jr = jr_next;
+      jr_next = ocs::tom::find_next_rw<JR_job_number>(job_reports, jobid, &iterator);
       if (ocs::tom::get<JR_ja_task_number>(jr) == jataskid) {
          const char *s = ocs::tom::get<JR_pe_task_id_str>(jr);
 
-         DPRINTF("!!!! removing jobreport for " sge_u32 "." sge_u32 " task %s !!!!\n", jobid, jataskid, s?s:"master");
-         lRemoveElem(jr_list, &jr);
+         DPRINTF("!!!! removing jobreport for " sge_u32 "." sge_u32 " task %s !!!!\n", jobid, jataskid,
+                 s?s:"master");
+         job_reports.erase(jr);
       }
    }
 
    DRETURN_VOID;
 }
 
-/* ------------------------------------------------------------
-   NAME
-
-      add_usage()
-
-   DESCR
-
-      Adds ulong attribute 'name' to the usage list of a
-      job report 'jr'. If no 'uval_as_str' or it is not
-      convertable into a ulong 'uval_as_ulong' is used
-      as value for UA_value.
-
-   RETURN
-
-      0 on success
-      -1 on error
-   ------------------------------------------------------------ */
-/** @brief Add one usage figure to a job report
- * @param jr the report
+/**
+ * @brief Add one usage figure to a job report
+ *
+ * Adds the attribute 'name' to the usage list of a job report, or updates it.
+ * If there is no 'val_as_str', or it cannot be converted into a number, 'val'
+ * is used as the value for UA_value.
+ *
+ * @param jr the report, or an empty handle
  * @param name the usage attribute
- * @param val_as_str its value as text, for the attributes reported that way
+ * @param val_as_str its value as text, for the attributes reported that way, or nullptr
  * @param val its value as a number
- * @return true on success
+ * @return 0 on success, -1 on error
  */
-int add_usage(lListElem *jr, const char *name, const char *val_as_str, double val) {
+int add_usage(const ocs::tom::Element<ocs::tom::JR> jr, const char *name, const char *val_as_str, double val) {
    DENTER(TOP_LAYER);
 
 
@@ -289,33 +307,41 @@ int add_usage(lListElem *jr, const char *name, const char *val_as_str, double va
    DRETURN(0);
 }
 
-/*!
+/**
  * @brief Update job report value from usage list
  *
  * Updates a single usage value in a job report from a usage list.
  *
- * @param jr            - Pointer to the job report element to update.
- * @param usage_list    - Pointer to the list of usage elements.
- * @param name          - Name of the usage attribute to update.
+ * @param jr the job report to update
+ * @param usage_list the usage, or an empty handle
+ * @param name the name of the usage attribute to update
  */
 static void
-job_report_update_value_from_usage_list(lListElem *jr, const lList *usage_list, const char *name) {
-   ocs::tom::ConstElement<ocs::tom::UA> usage = ocs::tom::find_first<UA_name>(usage_list, name);
-   if (usage != nullptr) {
+job_report_update_value_from_usage_list(const ocs::tom::Element<ocs::tom::JR> jr,
+                                        const ocs::tom::ConstList<ocs::tom::UA> usage_list, const char *name) {
+   DENTER(TOP_LAYER);
+
+   const auto usage = usage_list.find_first<UA_name>(name);
+   if (usage) {
       add_usage(jr, name, nullptr, ocs::tom::get<UA_value>(usage));
    }
+
+   DRETURN_VOID;
 }
 
-/*!
+/**
  * @brief Update job report from usage list
  *
  * Update all default usage values in a job report from a usage list.
  *
- * @param jr Pointer to the job report element to update.
- * @param usage_list Pointer to the list of usage elements.
+ * @param jr the job report to update
+ * @param usage_list the usage, or an empty handle
  */
 void
-job_report_update_from_usage_list(lListElem *jr, const lList *usage_list) {
+job_report_update_from_usage_list(const ocs::tom::Element<ocs::tom::JR> jr,
+                                  const ocs::tom::ConstList<ocs::tom::UA> usage_list) {
+   DENTER(TOP_LAYER);
+
    job_report_update_value_from_usage_list(jr, usage_list, USAGE_ATTR_CPU);
    job_report_update_value_from_usage_list(jr, usage_list, USAGE_ATTR_MEM);
    job_report_update_value_from_usage_list(jr, usage_list, USAGE_ATTR_IO);
@@ -331,51 +357,40 @@ job_report_update_from_usage_list(lListElem *jr, const lList *usage_list) {
       job_report_update_value_from_usage_list(jr, usage_list, USAGE_ATTR_PMEM);
       job_report_update_value_from_usage_list(jr, usage_list, USAGE_ATTR_SMEM);
    }
+
+   DRETURN_VOID;
 }
 
-/* ------------------------------------------------------------
-
-NAME
-
-   execd_c_ack()
-
-DESCRIPTION
-
-   These requests are triggered by our job report list
-   that is sent periodically. They are responses of
-   Qmaster in different cases. But they get sent as one
-   message, to save communication.
-
-RETURN
-
-   Typical dispatcher service function return values
-
-   ------------------------------------------------------------ */
-/** @brief Handle a qmaster acknowledgement of the reports it received
+/**
+ * @brief Handle a qmaster acknowledgement of the reports it received
+ *
+ * These requests are triggered by our job report list that is sent
+ * periodically. They are responses of qmaster in different cases, but they
+ * get sent as one message, to save communication.
  *
  * This is what lets a report be dropped from #jr_list; anything not
  * acknowledged is sent again.
  *
  * @param aMsg the received message
- * @return 0 on success
+ * @return 0, the typical dispatcher service function return value
  */
 int do_ack(ocs::gdi::ClientServerBase::struct_msg_t *aMsg) {
    DENTER(TOP_LAYER);
 
    uint32_t jobid, jataskid;
-   lListElem *jr;
-   lListElem *ack;
+   ocs::tom::Element<ocs::tom::JR> jr;
    const char *pe_task_id_str;
 
    DPRINTF("------- GOT ACK'S ---------\n");
 
    /* we get a bunch of ack's */
    while (pb_unused(&(aMsg->buf)) > 0) {
-
-      if (cull_unpack_elem(&(aMsg->buf), &ack, nullptr)) {
+      lListElem *ack_raw = nullptr;
+      if (cull_unpack_elem(&(aMsg->buf), &ack_raw, nullptr)) {
          ERROR(SFNMAX, MSG_COM_UNPACKJOB);
          DRETURN(0);
       }
+      ocs::tom::ElementPtr<ocs::tom::ACK> ack(ack_raw);
 
       switch (ocs::tom::get<ACK_type>(ack)) {
 
@@ -402,7 +417,7 @@ int do_ack(ocs::gdi::ClientServerBase::struct_msg_t *aMsg) {
 #endif
 
             if ((jr = get_job_report(jobid, jataskid, pe_task_id_str))) {
-               remove_acked_job_exit(jobid, jataskid, pe_task_id_str, ocs::tom::Element<ocs::tom::JR>(jr));
+               remove_acked_job_exit(jobid, jataskid, pe_task_id_str, jr);
             } else {
                DPRINTF("acknowledged job " sge_u32 "." sge_u32" not found\n", jobid, jataskid);
             }
@@ -448,12 +463,12 @@ int do_ack(ocs::gdi::ClientServerBase::struct_msg_t *aMsg) {
                jataskid = ocs::tom::get<ACK_id2>(ack);
 
                if (signal_job(jobid, jataskid, signo)) {
-                  lListElem *jr = get_job_report(jobid, jataskid, nullptr);
-                  if (jr == nullptr) {
+                  auto jr = get_job_report(jobid, jataskid, nullptr);
+                  if (!jr) {
                      jr = add_job_report(jobid, jataskid, nullptr, nullptr);
                   }
-                  if (jr != nullptr) {
-                     remove_acked_job_exit(jobid, jataskid, nullptr, ocs::tom::Element<ocs::tom::JR>(jr));
+                  if (jr) {
+                     remove_acked_job_exit(jobid, jataskid, nullptr, jr);
                   }
                   job_unknown(jobid, jataskid, nullptr);
                }
@@ -484,7 +499,7 @@ int do_ack(ocs::gdi::ClientServerBase::struct_msg_t *aMsg) {
             break;
       }
 
-      lFreeElem(&ack);
+      ack.reset();
       /*
        * delete job's spooling directory may take some time
        * (NFS directory case). We have to trigger communication
@@ -502,11 +517,12 @@ int do_ack(ocs::gdi::ClientServerBase::struct_msg_t *aMsg) {
 }
 
 /**
- * @brief
+ * @brief Count a limit of a queue instance in or out of the queue limits to be checked
+ *
  * This function checks if the queue limits for a job are set and updates the
  * global check_queue_limits counter accordingly.
  *
- * @param queue The queue element to check.
+ * @param queue The queue instance to check.
  * @param type The type of limit to check (e.g., TYPE_TIM, TYPE_MEM).
  * @param limit_nm The name of the limit attribute in the queue (e.g., QU_h_cpu).
  * @param increase If true, increments the check_queue_limits counter; otherwise, decrements it.
@@ -514,12 +530,16 @@ int do_ack(ocs::gdi::ClientServerBase::struct_msg_t *aMsg) {
  * @return true if a limit was found and processed, false otherwise.
  */
 static bool
-count_queue_limits(const lListElem *queue, ocs::CEntry::Type type, int limit_nm, bool increase) {
+count_queue_limits(const ocs::tom::ConstElement<ocs::tom::QU> queue, const ocs::CEntry::Type type, const int limit_nm,
+                   const bool increase) {
+   DENTER(TOP_LAYER);
+
    // check_queue_limits is a global variable that is used to determine
    // whether we need to check queue limits or not.
    // @todo: store this once in the ja_task?
    double lim{};
    bool found_limit = false;
+   // the limit field is known only at run time
    parse_ulong_val(&lim, nullptr, type, lGetString(queue, limit_nm), nullptr, 0);
    if (lim != DBL_MAX) {
       if (increase) {
@@ -530,30 +550,28 @@ count_queue_limits(const lListElem *queue, ocs::CEntry::Type type, int limit_nm,
       found_limit = true;
    }
 
-   return found_limit;
+   DRETURN(found_limit);
 }
 
-/** @brief Count a job in or out of the queues whose limits have to be watched
+/**
+ * @brief Count a job in or out of the queues whose limits have to be watched
  *
  * Only queues holding a job with a resource limit need to be checked each
  * interval, so the daemon keeps a count rather than scanning all of them.
  *
  * @param qualified_hostname this host, as the cluster knows it
- * @param jep the job (`JB_Type`)
+ * @param jep the job
  * @param increase true when the job starts, false when it ends
  */
-void modify_queue_limits_flag_for_job(const char *qualified_hostname, lListElem *jep, bool increase) {
-   const lListElem *gdil_ep;
+void modify_queue_limits_flag_for_job(const char *qualified_hostname, const ocs::tom::ConstElement<ocs::tom::JB> jep,
+                                      const bool increase) {
+   DENTER(TOP_LAYER);
 
-   for (ocs::tom::ConstElement<ocs::tom::JAT> jatep : ocs::tom::get<JB_ja_tasks>(jep)) {
-      ocs::tom::ConstList<ocs::tom::JG> gdil = ocs::tom::get<JAT_granted_destin_identifier_list>(jatep);
-      const void *iterator = nullptr;
-      const lListElem *next_gdil_ep = ocs::tom::find_first<JG_qhostname>(gdil, qualified_hostname, &iterator);
-      while ((gdil_ep = next_gdil_ep) != nullptr) {
-         next_gdil_ep = ocs::tom::find_next<JG_qhostname>(gdil, qualified_hostname, &iterator);
-
-         const lListElem *q = ocs::tom::get<JG_queue>(gdil_ep);
-         if (q == nullptr) {
+   for (const auto jatep : ocs::tom::get<JB_ja_tasks>(jep)) {
+      const auto gdil = ocs::tom::get<JAT_granted_destin_identifier_list>(jatep);
+      for (const auto gdil_ep : gdil.find_all<JG_qhostname>(ocs::tom::Host(qualified_hostname))) {
+         const ocs::tom::ConstElement<ocs::tom::QU> q(ocs::tom::get<JG_queue>(gdil_ep));
+         if (!q) {
             // this should never happen, but if it does, we have to skip this gdil_ep
             CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, "gdil_ep->JG_queue");
 #if defined (ENABLE_DEBUG_CHECKS)
@@ -572,6 +590,8 @@ void modify_queue_limits_flag_for_job(const char *qualified_hostname, lListElem 
          }
       }
    }
+
+   DRETURN_VOID;
 }
 
 /** @brief Whether any running job is subject to a queue resource limit

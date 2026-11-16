@@ -65,10 +65,14 @@
 #include "sgeobj/sge_ack.h"
 #include "sgeobj/sge_report.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
 #include "sgeobj/tom/ocs_tom_JAT.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
 #include "sgeobj/tom/ocs_tom_JG.h"
+#include "sgeobj/tom/ocs_tom_JR.h"
 #include "sgeobj/tom/ocs_tom_MR.h"
 #include "sgeobj/tom/ocs_tom_PET.h"
+#include "sgeobj/tom/ocs_tom_QU.h"
 
 #include "comm/commlib.h"
 
@@ -89,20 +93,18 @@
 
 extern volatile int shut_me_down;
 
-/**************************************************************************
- called from dispatcher
-
- counterpart in qmaster: c_qmod.c
- **************************************************************************/
-/** @brief Handle qmaster's request to signal a queue or the jobs in it
+/**
+ * @brief Handle qmaster's request to signal a queue or the jobs in it
+ *
+ * Called from the dispatcher; the counterpart in qmaster is c_qmod.c.
+ *
  * @param aMsg the received message
  * @param apb the buffer the answer is packed into
- * @return 0 on success
+ * @return 0 on success, 1 if the message cannot be unpacked
  */
 int do_signal_queue(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, sge_pack_buffer *apb) {
    DENTER(TOP_LAYER);
 
-   lListElem *jep;
    bool found = false;
    uint32_t jobid, signal, jataskid;
    char *qname = nullptr;
@@ -124,12 +126,12 @@ int do_signal_queue(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, sge_pack_buf
    } else {            /* signal a queue */
       pack_ack(apb, ACK_SIGQUEUE, jobid, jataskid, qname);
 
-      for_each_rw(jep, *ocs::DataStore::get_master_list(SGE_TYPE_JOB)) {
-         lListElem *gdil_ep, *master_q;
-         ocs::tom::Element<ocs::tom::JAT> jatep;
+      // the job list is accessed for reading as before, although the jobs are changed
+      const ocs::tom::List<ocs::tom::JB> job_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB, true));
+      for (const auto jep : job_list) {
          const char *qnm;
 
-         for_each_rw (jatep, ocs::tom::get<JB_ja_tasks>(jep)) {
+         for (const auto jatep : ocs::tom::get<JB_ja_tasks>(jep)) {
             if (ocs::tom::get<JAT_status>(jatep) == JSLAVE) {
                break;
             }
@@ -137,9 +139,9 @@ int do_signal_queue(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, sge_pack_buf
             /* iterate through all queues of a parallel job -
                this is done to ensure that signal delivery is also
                forwarded to the job in case the master queue keeps still active */
-            for_each_rw (gdil_ep, static_cast<const lList *>(ocs::tom::get<JAT_granted_destin_identifier_list>(jatep))) {
-               master_q = ocs::tom::get<JG_queue>(gdil_ep);
-               if (master_q != nullptr) {
+            for (const auto gdil_ep : ocs::tom::get<JAT_granted_destin_identifier_list>(jatep)) {
+               const ocs::tom::Element<ocs::tom::QU> master_q(ocs::tom::get<JG_queue>(gdil_ep));
+               if (master_q) {
                   qnm =  ocs::tom::get<QU_full_name>(master_q);
                   if (strcmp(qname, qnm) == 0) {
                      char tmpstr[SGE_PATH_MAX];
@@ -177,7 +179,8 @@ int do_signal_queue(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, sge_pack_buf
 
                      if (!mconf_get_simulate_jobs()) {
                         job_write_spool_file(jep,
-                           ocs::tom::get<JAT_task_number>(lFirst(static_cast<const lList *>(ocs::tom::get<JB_ja_tasks>(jep)))), nullptr, SPOOL_WITHIN_EXECD);
+                                             ocs::tom::get<JAT_task_number>(ocs::tom::get<JB_ja_tasks>(jep).front()),
+                                             nullptr, SPOOL_WITHIN_EXECD);
                      }
 
                   }
@@ -195,14 +198,14 @@ int do_signal_queue(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, sge_pack_buf
    // Found tells us if a job was signaled (either due to a job signal or a queue signal).
    // If it was a job signal, but we didn't find the job, then ack it to get rid of it in sge_qmaster.
    if (!found && aMsg->tag == ocs::gdi::ClientServerBase::TAG_SIGJOB) {
-      lListElem *jr = get_job_report(jobid, jataskid, nullptr);
+      auto jr = get_job_report(jobid, jataskid, nullptr);
 
-      if (jr == nullptr) {
+      if (!jr) {
          ERROR(MSG_SHEPHERD_MISSINGJOBXYINJOBREPORT_UU, jobid, jataskid);
          jr = add_job_report(jobid, jataskid, nullptr, nullptr);
       }
-      if (jr != nullptr) {
-         remove_acked_job_exit(jobid, jataskid, nullptr, ocs::tom::Element<ocs::tom::JR>(jr));
+      if (jr) {
+         remove_acked_job_exit(jobid, jataskid, nullptr, jr);
       }
       job_unknown(jobid, jataskid, qname);
    }
@@ -212,45 +215,40 @@ int do_signal_queue(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, sge_pack_buf
    DRETURN(0);
 }
 
-/*************************************************************************
- execds function to deliver a signal to the job. This cant be done direct,
- because there is the shepherd between.
- We do a signal mapping for the shepherd.
-
- sent to shepherd  |  signal to deliver to job
- ------------------|---------------------------
- SIGTTIN           | given in "signal"-file
- SIGUSR1           | SIGUSR1
- SIGUSR2           | SIGXCPU
- SIGCONT           | SIGCONT
- SIGWINCH          | SIGSTOP (not used anymore, use SIGTTIN to fwd SIGSTOP )
- SIGTSTP           | SIGKILL
-
- SIGTTIN forces the shepherd to look into the "signal" file. This file
- contains the number of the signal to send.
-
- The job will get a SIGUSR1 as notification for SIGSTOP and
-                    SIGUSR2                     SIGKILL if
- The job has been submitted with -notify and the notification time of the
- queue is > 0.
-
- returns
-   0 on success
-   1 if job is supposed to be not in a healthy state and thus
-     should be removed by the calling context
- *************************************************************************/
-/** @brief Deliver a signal to a job, remembering it so it can be resent
+/**
+ * @brief Deliver a signal to a job, remembering it so it can be resent
  *
  * A job that does not react within #SIGNAL_RESEND_INTERVAL gets the signal
  * again, which is what makes a delete eventually take effect on a job that is
  * ignoring it.
  *
+ * The signal cannot be delivered directly, because the shepherd is in
+ * between, so it is mapped for the shepherd:
+ *
+ *     sent to shepherd  |  signal to deliver to job
+ *     ------------------|---------------------------
+ *     SIGTTIN           | given in "signal"-file
+ *     SIGUSR1           | SIGUSR1
+ *     SIGUSR2           | SIGXCPU
+ *     SIGCONT           | SIGCONT
+ *     SIGWINCH          | SIGSTOP (not used anymore, use SIGTTIN to fwd SIGSTOP )
+ *     SIGTSTP           | SIGKILL
+ *
+ * SIGTTIN forces the shepherd to look into the "signal" file. This file
+ * contains the number of the signal to send.
+ *
+ * The job gets a SIGUSR1 as notification for SIGSTOP and SIGUSR2 for SIGKILL
+ * if it has been submitted with -notify and the notification time of the
+ * queue is > 0.
+ *
  * @param sig the signal
- * @param jep the job (`JB_Type`)
+ * @param jep the job
  * @param jatep the array task
- * @return 0 on success
+ * @return 0 on success, 1 if the job is supposed to be not in a healthy state
+ *         and thus should be removed by the calling context
  */
-int sge_execd_deliver_signal(uint32_t sig, const lListElem *jep, lListElem *jatep) {
+int sge_execd_deliver_signal(const uint32_t sig, const ocs::tom::ConstElement<ocs::tom::JB> jep,
+                             const ocs::tom::Element<ocs::tom::JAT> jatep) {
    DENTER(TOP_LAYER);
 
    int queue_already_suspended;
@@ -261,7 +259,7 @@ int sge_execd_deliver_signal(uint32_t sig, const lListElem *jep, lListElem *jate
    // for simulated jobs fill in the job report
    if (mconf_get_simulate_jobs()) {
       if (sig == SGE_SIGKILL) {
-         simulated_job_exit(ocs::tom::ConstElement<ocs::tom::JB>(jep), ocs::tom::Element<ocs::tom::JAT>(jatep), sig);
+         simulated_job_exit(jep, jatep, sig);
       }
 
       DRETURN(0);
@@ -280,7 +278,7 @@ int sge_execd_deliver_signal(uint32_t sig, const lListElem *jep, lListElem *jate
          && (ocs::tom::get<JB_checkpoint_attr>(jep)|CHECKPOINT_SUSPEND))
          && !queue_already_suspended) {
       /* signal each pe task */
-      for (ocs::tom::ConstElement<ocs::tom::PET> petep : ocs::tom::get<JAT_task_list>(jatep)) {
+      for (const auto petep : ocs::tom::get<JAT_task_list>(jatep)) {
          if (sge_kill((int)ocs::tom::get<PET_pid>(petep), sig,
                       ocs::tom::get<JB_job_number>(jep), ocs::tom::get<JAT_task_number>(jatep),
                       ocs::tom::get<PET_id>(petep)) == -2) {
@@ -309,11 +307,13 @@ int sge_execd_deliver_signal(uint32_t sig, const lListElem *jep, lListElem *jate
  * SGE_SIGSTOP(suspend) / SGE_SIGCONT(continue)
  *
  * @param signal type of signal (SGE_SIGSTOP/SGE_SIGCONT)
- * @param master_q pointer to QU_Type  cull list element of job (not used)
- * @param jep pointer to JB_Type  cull list element of job
- * @param jatep pointer to JAT_Type cull list element of job
+ * @param master_q the master queue instance of the job (not used)
+ * @param jep the job, or an empty handle
+ * @param jatep the array task, or an empty handle
  */
-void sge_send_suspend_mail(uint32_t signal, const lListElem *master_q, lListElem *jep, lListElem *jatep) {
+void sge_send_suspend_mail(const uint32_t signal, const ocs::tom::ConstElement<ocs::tom::QU> master_q,
+                           const ocs::tom::ConstElement<ocs::tom::JB> jep,
+                           const ocs::tom::ConstElement<ocs::tom::JAT> jatep) {
    DENTER(TOP_LAYER);
 
    uint32_t mail_options;
@@ -346,7 +346,7 @@ void sge_send_suspend_mail(uint32_t signal, const lListElem *master_q, lListElem
 
 
        /* get values */
-       if (jep != nullptr) {
+       if (jep) {
           job_sub_time = ocs::tom::get<JB_submission_time>(jep);
           jobid        = ocs::tom::get<JB_job_number>(jep);
           mail_users   = ocs::tom::get<JB_mail_list>(jep);
@@ -354,7 +354,7 @@ void sge_send_suspend_mail(uint32_t signal, const lListElem *master_q, lListElem
           job_owner    = ocs::tom::get<JB_owner>(jep);
         }
 
-       if (jatep != nullptr) {
+       if (jatep) {
           job_exec_time    = ocs::tom::get<JAT_start_time>(jatep);
           taskid           = ocs::tom::get<JAT_task_number>(jatep);
           job_master_queue = ocs::tom::get<JAT_master_queue>(jatep);
@@ -623,35 +623,24 @@ CheckShepherdStillRunning:
    }
    }
 
-/*------------------------------------------------------------
-
-NAME
-
-   signal_job()
-
-DESCRIPTION
-
-   Tries to signal the job.
-
-RETURN
-
-   0 job was found and was signaled
-   1 job was not found you better get rid of it to prevent
-     infinite pingpong effects
-   ------------------------------------------------------------ */
-/** @brief Signal one job, through its shepherd
+/**
+ * @brief Signal one job, through its shepherd
+ *
+ * Tries to signal the job.
+ *
  * @param jobid the job
  * @param jataskid the array task
  * @param signal the signal to send
- * @return 0 on success
+ * @return 0 if the job was found and was signaled; 1 if the job was not found
+ *         or is not running any more - better get rid of it to prevent
+ *         infinite pingpong effects
  */
-   int signal_job(uint32_t jobid, uint32_t jataskid, uint32_t signal) {
+   int signal_job(const uint32_t jobid, const uint32_t jataskid, uint32_t signal) {
       DENTER(TOP_LAYER);
 
-      lListElem *jep;
+      ocs::tom::Element<ocs::tom::JB> jep;
       uint32_t state;
-      const lListElem *master_q;
-      lListElem *jatep = nullptr;
+      ocs::tom::Element<ocs::tom::JAT> jatep;
       int getridofjob = 0;
 
       int suspend_change = 0;
@@ -662,7 +651,8 @@ RETURN
          DRETURN(1);
       }
 
-      master_q = ocs::tom::get<JG_queue>(lFirst(static_cast<const lList *>(ocs::tom::get<JAT_granted_destin_identifier_list>(jatep))));
+      const ocs::tom::ConstElement<ocs::tom::QU> master_q(
+         ocs::tom::get<JG_queue>(ocs::tom::get<JAT_granted_destin_identifier_list>(jatep).front()));
 
       DPRINTF("sending %s to job " sge_u32 "." sge_u32 "\n", sge_sig2str(signal), jobid, jataskid);
       if (signal == SGE_SIGCONT) {

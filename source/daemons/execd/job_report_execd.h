@@ -38,15 +38,21 @@
  */
 
 #include "gdi/ocs_gdi_ClientServerBase.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
+#include "sgeobj/tom/ocs_tom_JR.h"
+#include "sgeobj/tom/ocs_tom_UA.h"
+#include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
 
 void sge_set_flush_jr_flag(bool value);
 bool sge_get_flush_jr_flag();
-void flush_job_report(lListElem *jr);
+void flush_job_report(ocs::tom::Element<ocs::tom::JR> jr);
 
-lListElem *add_job_report(uint32_t jobid, uint32_t jataskid, const char *petaskid, const lListElem *jep);
-lListElem *get_job_report(uint32_t jobid, uint32_t jataskid, const char *petaskid);
+ocs::tom::Element<ocs::tom::JR>
+add_job_report(uint32_t jobid, uint32_t jataskid, const char *petaskid, ocs::tom::ConstElement<ocs::tom::JB> jep);
+ocs::tom::Element<ocs::tom::JR> get_job_report(uint32_t jobid, uint32_t jataskid, const char *petaskid);
 
-void del_job_report(lListElem *jr);
+void del_job_report(ocs::tom::Element<ocs::tom::JR> jr);
 void cleanup_job_report(uint32_t jobid, uint32_t jataskid);
 /** @brief Write the pending job reports to the trace log
  *
@@ -56,12 +62,14 @@ void cleanup_job_report(uint32_t jobid, uint32_t jataskid);
  */
 void trace_jr();
 
-int add_usage(lListElem *jr, const char *name, const char *uval_as_str, double val);
-void job_report_update_from_usage_list(lListElem *jr, const lList *usage_list);
+int add_usage(ocs::tom::Element<ocs::tom::JR> jr, const char *name, const char *uval_as_str, double val);
+void job_report_update_from_usage_list(ocs::tom::Element<ocs::tom::JR> jr,
+                                       ocs::tom::ConstList<ocs::tom::UA> usage_list);
 
 #include "dispatcher.h"
 
 int do_ack(ocs::gdi::ClientServerBase::struct_msg_t *aMsg);
 
-void modify_queue_limits_flag_for_job(const char *qualified_hostname, lListElem *jep, bool increase);
+void modify_queue_limits_flag_for_job(const char *qualified_hostname, ocs::tom::ConstElement<ocs::tom::JB> jep,
+                                      bool increase);
 bool check_for_queue_limits();

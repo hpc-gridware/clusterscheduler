@@ -195,10 +195,10 @@ int job_initialize_job(lListElem *job) {
 
       ja_task_id = ocs::tom::get<JAT_task_number>(ja_task);
 
-      add_job_report(job_id, ja_task_id, nullptr, job);
+      add_job_report(job_id, ja_task_id, nullptr, ocs::tom::ConstElement<ocs::tom::JB>(job));
                                                                                       /* add also job reports for tasks */
       for (ocs::tom::ConstElement<ocs::tom::PET> pe_task : ocs::tom::get<JAT_task_list>(ja_task)) {
-         add_job_report(job_id, ja_task_id, ocs::tom::get<PET_id>(pe_task), job);
+         add_job_report(job_id, ja_task_id, ocs::tom::get<PET_id>(pe_task), ocs::tom::ConstElement<ocs::tom::JB>(job));
       }
 
       if (mconf_get_simulate_jobs()) {
@@ -226,14 +226,14 @@ int job_initialize_job(lListElem *job) {
          int ret;
          /* register still running jobs at ptf */
          if (ocs::tom::get<JAT_status>(ja_task) == JRUNNING) {
-            ret = register_at_ptf(job, ja_task, nullptr);
+            ret = register_at_ptf(ocs::tom::ConstElement<ocs::tom::JB>(job), ja_task, nullptr);
             if (ret) {
                ERROR(MSG_JOB_XREGISTERINGJOBYATPTFDURINGSTARTUP_SU, (ret == 1 ? MSG_DELAYED : MSG_FAILED), job_id);
             }
          }
          for (ocs::tom::ConstElement<ocs::tom::PET> pe_task : ocs::tom::get<JAT_task_list>(ja_task)) {
             if (ocs::tom::get<PET_status>(pe_task) == JRUNNING) {
-               ret=register_at_ptf(job, ja_task, pe_task);
+               ret=register_at_ptf(ocs::tom::ConstElement<ocs::tom::JB>(job), ja_task, pe_task);
                if (ret) {
                   ERROR(MSG_JOB_XREGISTERINGJOBYTASKZATPTFDURINGSTARTUP_SUS, (ret == 1 ? MSG_DELAYED : MSG_FAILED), job_id, ocs::tom::get<PET_id>(pe_task));
                }

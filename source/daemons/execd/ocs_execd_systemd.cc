@@ -331,8 +331,8 @@ namespace ocs::execd {
       if (pe_task_id == nullptr) {
          bool enable_systemd = ocs::execd::execd_use_systemd();
          if (enable_systemd) {
-            lListElem *job = nullptr;
-            lListElem *ja_task = nullptr;
+            ocs::tom::Element<ocs::tom::JB> job;
+            ocs::tom::Element<ocs::tom::JAT> ja_task;
             if (execd_get_job_ja_task(job_id, ja_task_id, &job, &ja_task, false)) {
                const char *slice = ocs::tom::get<JAT_systemd_slice>(ja_task);
                // only if there is a job slice and it has not yet been deleted
@@ -448,8 +448,8 @@ namespace ocs::execd {
             continue;            // not a name we built
          }
 
-         lListElem *job = nullptr;
-         lListElem *ja_task = nullptr;
+         ocs::tom::Element<ocs::tom::JB> job;
+         ocs::tom::Element<ocs::tom::JAT> ja_task;
          if (!execd_get_job_ja_task(job_id, ja_task_id, &job, &ja_task, true)) {
             stale_slices.push_back(name);
          }

@@ -850,7 +850,7 @@ void update_job_usage(const char *qualified_hostname) {
       for (const auto ja_task : ocs::tom::get<JB_ja_tasks>(usage)) {
          uint32_t ja_task_id = ocs::tom::get<JAT_task_number>(ja_task);
          /* search matching job report */
-         auto jr = ocs::tom::Element<ocs::tom::JR>(get_job_report(job_id, ja_task_id, nullptr));
+         auto jr = get_job_report(job_id, ja_task_id, nullptr);
          if (!jr) {
             /* should not happen in theory */
             ERROR("removing unreferenced job " sge_u32 "." sge_u32 " without job report from ptf", job_id ,ja_task_id );
@@ -868,7 +868,7 @@ void update_job_usage(const char *qualified_hostname) {
             const char *pe_task_id = ocs::tom::get<PET_id>(pe_task);
 
             /* search matching job report */
-            jr = ocs::tom::Element<ocs::tom::JR>(get_job_report(job_id, ja_task_id, pe_task_id));
+            jr = get_job_report(job_id, ja_task_id, pe_task_id);
             if (!jr) {
                /* should not happen in theory */
                ERROR("could not find job report for job " sge_u32"." sge_u32" " "task " SFN " contained in job usage from ptf", job_id, ja_task_id, pe_task_id);

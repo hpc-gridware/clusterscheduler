@@ -286,15 +286,15 @@ int sge_reap_children_execd(int max_count, bool is_qmaster_down) {
          DPRINTF("Job: " sge_u32 ", JA-Task: " sge_u32 ", PE-Task: %s\n", jobid, jataskid,
             petep != nullptr ? ocs::tom::get<PET_id>(petep) : "");
          // the job reports belong to job_report_execd.cc
-         auto jr = ocs::tom::Element<ocs::tom::JR>(get_job_report(jobid, jataskid,
+         auto jr = get_job_report(jobid, jataskid,
                                                                   petep != nullptr ? ocs::tom::get<PET_id>(petep)
-                                                                                   : nullptr));
+                                                                                   : nullptr);
          if (!jr) {
             ERROR(MSG_JOB_MISSINGJOBXYINJOBREPORTFOREXITINGJOBADDINGIT_UU, jobid, jataskid);
             if (petep != nullptr) {
-               jr = ocs::tom::Element<ocs::tom::JR>(add_job_report(jobid, jataskid, ocs::tom::get<PET_id>(petep), jep));
+               jr = add_job_report(jobid, jataskid, ocs::tom::get<PET_id>(petep), jep);
             } else {
-               jr = ocs::tom::Element<ocs::tom::JR>(add_job_report(jobid, jataskid, nullptr, jep));
+               jr = add_job_report(jobid, jataskid, nullptr, jep);
             }
          }
 
@@ -371,13 +371,13 @@ static void unregister_from_ptf(const uint32_t job_id, const uint32_t ja_task_id
 
    ptf_error = ptf_job_complete(job_id, ja_task_id, pe_task_id, usage);
    if (ptf_error) {
-      // raw out parameters of execd_get_job_ja_task(); the objects belong to the execd's job list
-      lListElem *ja_task_raw = nullptr;
-      lListElem *job = nullptr;
+      // out parameters of execd_get_job_ja_task(); the objects belong to the execd's job list
+      ocs::tom::Element<ocs::tom::JAT> ja_task_found;
+      ocs::tom::Element<ocs::tom::JB> job;
 
       /* if the job was a 'short-runner' omit the warning */
-      if (execd_get_job_ja_task(job_id, ja_task_id, &job, &ja_task_raw, false)) {
-         const ocs::tom::ConstElement<ocs::tom::JAT> ja_task(ja_task_raw);
+      if (execd_get_job_ja_task(job_id, ja_task_id, &job, &ja_task_found, false)) {
+         const ocs::tom::ConstElement<ocs::tom::JAT> ja_task(ja_task_found);
          // @todo and I doubt that the code is required at all,
          //       might just have been a workaround for bug CS-1019
          //
@@ -867,17 +867,17 @@ static int clean_up_job(const ocs::tom::Element<ocs::tom::JR> jr, int failed, co
    case SSTATE_NO_SHELL:
       {
          int job_caused_failure = 0;
-         // raw out parameters of execd_get_job_ja_task(); the objects belong to the execd's job list
-         lListElem *job_raw = nullptr;
-         lListElem *ja_task_raw = nullptr;
+         // out parameters of execd_get_job_ja_task(); the objects belong to the execd's job list
+         ocs::tom::Element<ocs::tom::JB> job_found;
+         ocs::tom::Element<ocs::tom::JAT> ja_task_found;
          ocs::tom::ConstElement<ocs::tom::QU> master_queue;
 
          /* search job and ja_task */
-         if (execd_get_job_ja_task(job_id, ja_task_id, &job_raw, &ja_task_raw, false)) {
-            master_queue = responsible_queue(ocs::tom::ConstElement<ocs::tom::JB>(job_raw),
-                                             ocs::tom::ConstElement<ocs::tom::JAT>(ja_task_raw), nullptr);
+         if (execd_get_job_ja_task(job_id, ja_task_id, &job_found, &ja_task_found, false)) {
+            master_queue = responsible_queue(ocs::tom::ConstElement<ocs::tom::JB>(job_found),
+                                             ocs::tom::ConstElement<ocs::tom::JAT>(ja_task_found), nullptr);
          }
-         const ocs::tom::ConstElement<ocs::tom::JB> job(job_raw);
+         const ocs::tom::ConstElement<ocs::tom::JB> job(job_found);
 
          if ((failed == SSTATE_NO_SHELL) && (job != nullptr) &&
              ((ocs::tom::get<JB_shell_list>(job) != nullptr) ||
@@ -1004,8 +1004,9 @@ void remove_acked_job_exit(const uint32_t job_id, const uint32_t ja_task_id, con
    char err_str_buffer[10000];
    dstring err_str;
    SGE_STRUCT_STAT statbuf;
-   // raw out parameters of execd_get_job_ja_task(); the objects belong to the execd's job list
-   lListElem *jep_raw = nullptr, *jatep_raw = nullptr;
+   // out parameters of execd_get_job_ja_task(); the objects belong to the execd's job list
+   ocs::tom::Element<ocs::tom::JB> jep_found;
+   ocs::tom::Element<ocs::tom::JAT> jatep_found;
    const char *pe_task_id_str;
    bool do_rm_active_dir = true;
 
@@ -1036,9 +1037,9 @@ void remove_acked_job_exit(const uint32_t job_id, const uint32_t ja_task_id, con
    }
 
    /* try to find this job in our job list */
-   if (execd_get_job_ja_task(job_id, ja_task_id, &jep_raw, &jatep_raw, false)) {
-      const ocs::tom::Element<ocs::tom::JB> jep(jep_raw);
-      const ocs::tom::Element<ocs::tom::JAT> jatep(jatep_raw);
+   if (execd_get_job_ja_task(job_id, ja_task_id, &jep_found, &jatep_found, false)) {
+      const ocs::tom::Element<ocs::tom::JB> jep(jep_found);
+      const ocs::tom::Element<ocs::tom::JAT> jatep(jatep_found);
       ocs::tom::Element<ocs::tom::PET> petep;
       ocs::tom::Element<ocs::tom::QU> master_q;
       int used_slots;
@@ -1159,7 +1160,7 @@ void remove_acked_job_exit(const uint32_t job_id, const uint32_t ja_task_id, con
           * send the slave job final report
           */
          if (ocs::tom::get<JAT_task_list>(jatep).empty()) {
-            const auto jr = ocs::tom::Element<ocs::tom::JR>(get_job_report(job_id, ja_task_id, nullptr));
+            const auto jr = get_job_report(job_id, ja_task_id, nullptr);
             if (jr != nullptr && ocs::tom::get<JR_state>(jr) == JSLAVE && ISSET(ocs::tom::get<JAT_state>(jatep), JDELETED)) {
                add_usage(jr, "exit_status", nullptr, 0);
                flush_job_report(jr);
@@ -1315,10 +1316,10 @@ execd_job_failure(const ocs::tom::ConstElement<ocs::tom::JB> jep, const ocs::tom
    ERROR((failed==SSTATE_FAILURE_BEFORE_JOB)? MSG_SHEPHERD_CANTSTARTJOBXY_US: MSG_SHEPHERD_PROBLEMSAFTERSTART_DS, jobid, error_string);
 
    // the job reports belong to job_report_execd.cc
-   auto jr = ocs::tom::Element<ocs::tom::JR>(get_job_report(jobid, jataskid, petaskid));
+   auto jr = get_job_report(jobid, jataskid, petaskid);
    if (!jr) {
       DPRINTF("no job report found to report job start failure!\n");
-      jr = ocs::tom::Element<ocs::tom::JR>(add_job_report(jobid, jataskid, petaskid, jep));
+      jr = add_job_report(jobid, jataskid, petaskid, jep);
    }
 
    if (jr) {
@@ -1366,18 +1367,18 @@ void job_unknown(uint32_t jobid, uint32_t jataskid, char *qname) {
    // Once they are all handled in sge_qmaster, it will repeat the ACK_SIGNAL_JOB for the master task,
    // which will then call this function again with the master task.
    // If there are no pe tasks running, we can create the job report for the master
-   // raw out parameters of execd_get_job_ja_task(); the objects belong to the execd's job list
-   lListElem *job = nullptr;
-   lListElem *ja_task_raw = nullptr;
+   // out parameters of execd_get_job_ja_task(); the objects belong to the execd's job list
+   ocs::tom::Element<ocs::tom::JB> job;
+   ocs::tom::Element<ocs::tom::JAT> ja_task_found;
    bool unknown_tasks = false;
-   if (execd_get_job_ja_task(jobid, jataskid, &job, &ja_task_raw, false)) {
-      const ocs::tom::ConstElement<ocs::tom::JAT> ja_task(ja_task_raw);
+   if (execd_get_job_ja_task(jobid, jataskid, &job, &ja_task_found, false)) {
+      const ocs::tom::ConstElement<ocs::tom::JAT> ja_task(ja_task_found);
       for (const auto pe_task : ocs::tom::get<JAT_task_list>(ja_task)) {
          // create the unknown job report for this pe task
          const char *pe_task_id = ocs::tom::get<PET_id>(pe_task);
-         auto jr = ocs::tom::Element<ocs::tom::JR>(get_job_report(jobid, jataskid, pe_task_id));
+         auto jr = get_job_report(jobid, jataskid, pe_task_id);
          if (!jr) {
-            jr = ocs::tom::Element<ocs::tom::JR>(add_job_report(jobid, jataskid, pe_task_id, nullptr));
+            jr = add_job_report(jobid, jataskid, pe_task_id, nullptr);
          }
          if (jr) {
             ocs::tom::set<JR_queue_name>(jr, qname);
@@ -1391,9 +1392,9 @@ void job_unknown(uint32_t jobid, uint32_t jataskid, char *qname) {
 
    // If there are no pe tasks running, we create the unknown job report for the master task.
    if (!unknown_tasks) {
-      auto jr = ocs::tom::Element<ocs::tom::JR>(get_job_report(jobid, jataskid, nullptr));
+      auto jr = get_job_report(jobid, jataskid, nullptr);
       if (!jr) {
-         jr = ocs::tom::Element<ocs::tom::JR>(add_job_report(jobid, jataskid, nullptr, nullptr));
+         jr = add_job_report(jobid, jataskid, nullptr, nullptr);
       }
       if (jr) {
          ocs::tom::set<JR_queue_name>(jr, qname);
@@ -1468,10 +1469,12 @@ cleanup_jobs_and_states(bool startup, const std::vector<pid_t> &shepherd_pids) {
 
       // remove active job directory for jobs that are not in the job list
       // or sync state with qmaster for jobs depending on shepherd and job state
-      // raw out parameters of execd_get_job_ja_task(); the objects belong to the execd's job list
-      lListElem *jep_raw, *ja_task_raw = nullptr;
+      // out parameters of execd_get_job_ja_task(); the objects belong to the execd's job list
+      ocs::tom::Element<ocs::tom::JB> jep_found;
+      ocs::tom::Element<ocs::tom::JAT> ja_task_found;
       bool ignore_missing_job_task = true; // missing job and task are expected. no need for error logging
-      bool found_job_and_task = execd_get_job_ja_task(jid, tid, &jep_raw, &ja_task_raw, ignore_missing_job_task);
+      bool found_job_and_task = execd_get_job_ja_task(jid, tid, &jep_found, &ja_task_found,
+                                                      ignore_missing_job_task);
       if (!found_job_and_task) {
 
          // we have an active job directory for a job that is not in the job list
@@ -1490,8 +1493,8 @@ cleanup_jobs_and_states(bool startup, const std::vector<pid_t> &shepherd_pids) {
          // here we have a job and task that is still in the job list
          // check if shepherd is still running and handle state changes
          // by syncing state via job report with qmaster
-         const ocs::tom::Element<ocs::tom::JB> jep(jep_raw);
-         const ocs::tom::ConstElement<ocs::tom::JAT> ja_task(ja_task_raw);
+         const ocs::tom::Element<ocs::tom::JB> jep(jep_found);
+         const ocs::tom::ConstElement<ocs::tom::JAT> ja_task(ja_task_found);
          char dir[SGE_PATH_MAX];
          if (ocs::tom::get<JAT_status>(ja_task) != JSLAVE) {
             snprintf(dir, sizeof(dir), "%s/%s", ACTIVE_DIR, job_directory);
@@ -1816,9 +1819,9 @@ examine_job_task_from_file(const int startup, char *dir, const ocs::tom::Element
             in the interval between making the jobs active directory and writing
             the shepherds pid (done by the started shepherd). So we just remove
             and report this job. */
-         if (!(jr = ocs::tom::Element<ocs::tom::JR>(get_job_report(jobid, jataskid, pe_task_id_str)))) {
+         if (!(jr = get_job_report(jobid, jataskid, pe_task_id_str))) {
             CRITICAL(MSG_SHEPHERD_MISSINGJOBXINJOBREPORTFOREXITINGJOB_U, jobid);
-            jr = ocs::tom::Element<ocs::tom::JR>(add_job_report(jobid, jataskid, pe_task_id_str, nullptr));
+            jr = add_job_report(jobid, jataskid, pe_task_id_str, nullptr);
          }
          ocs::tom::set<JR_state>(jr, JEXITING);
          clean_up_job(jr, ESSTATE_NO_PID, 0, job_is_array(jep), jatep, ocs::tom::get<JB_owner>(jep));  /* failed before execution */
@@ -1867,13 +1870,13 @@ examine_job_task_from_file(const int startup, char *dir, const ocs::tom::Element
             state of not exited jobs from JWRITTEN
             to JRUNNING
          */
-         if ((jr = ocs::tom::Element<ocs::tom::JR>(get_job_report(jobid, jataskid, pe_task_id_str)))) {
+         if ((jr = get_job_report(jobid, jataskid, pe_task_id_str))) {
             ocs::tom::set<JR_state>(jr, JRUNNING);
          } else {
             /* found job in active jobs directory 
                but not in spool directory of execd */
             ERROR(MSG_SHEPHERD_INCONSISTENTDATAFORJOBX_U, jobid);
-            jr = ocs::tom::Element<ocs::tom::JR>(add_job_report(jobid, jataskid, pe_task_id_str, nullptr));
+            jr = add_job_report(jobid, jataskid, pe_task_id_str, nullptr);
             ocs::tom::set<JR_state>(jr, JEXITING);
          }
       }
@@ -1881,9 +1884,9 @@ examine_job_task_from_file(const int startup, char *dir, const ocs::tom::Element
    }
 
    /* seek job report for this job - it must be contained in job report */
-   if (!(jr = ocs::tom::Element<ocs::tom::JR>(get_job_report(jobid, jataskid, pe_task_id_str)))) {
+   if (!(jr = get_job_report(jobid, jataskid, pe_task_id_str))) {
       CRITICAL(MSG_SHEPHERD_MISSINGJOBXYINJOBREPORT_UU, jobid, jataskid);
-      jr = ocs::tom::Element<ocs::tom::JR>(add_job_report(jobid, jataskid, pe_task_id_str, jep));
+      jr = add_job_report(jobid, jataskid, pe_task_id_str, jep);
       DRETURN_VOID;
    }
 
@@ -2083,9 +2086,9 @@ build_derived_final_usage(const ocs::tom::Element<ocs::tom::JR> jr, const uint32
           mem, r_mem,
           io, ioops, iow, r_io, r_ioops, r_iow, maxvmem, r_maxvmem, maxrss, r_maxrss, maxpss = 0;
 
-   // raw out parameters of execd_get_job_ja_task(); the objects belong to the execd's job list
-   lListElem *job = nullptr;
-   lListElem *ja_task_raw = nullptr;
+   // out parameters of execd_get_job_ja_task(); the objects belong to the execd's job list
+   ocs::tom::Element<ocs::tom::JB> job;
+   ocs::tom::Element<ocs::tom::JAT> ja_task_found;
    ocs::tom::ConstElement<ocs::tom::PET> pe_task;
 
    bool accounting_summary = false;
@@ -2102,8 +2105,8 @@ build_derived_final_usage(const ocs::tom::Element<ocs::tom::JR> jr, const uint32
 
    /* build reserved usage if required */ 
    r_cpu = r_mem = r_maxvmem = r_maxrss = 0.0;
-   if (execd_get_job_ja_task(job_id, ja_task_id, &job, &ja_task_raw, false)) {
-      const ocs::tom::ConstElement<ocs::tom::JAT> ja_task(ja_task_raw);
+   if (execd_get_job_ja_task(job_id, ja_task_id, &job, &ja_task_found, false)) {
+      const ocs::tom::ConstElement<ocs::tom::JAT> ja_task(ja_task_found);
       if (pe_task_id != nullptr) {
          pe_task = ocs::tom::find_first_in<JAT_task_list, PET_id>(ja_task, pe_task_id);
       }
@@ -2493,12 +2496,12 @@ reaper_sendmail(const ocs::tom::ConstElement<ocs::tom::JB> jep, const ocs::tom::
 void execd_slave_job_exit(const uint32_t job_id, const uint32_t ja_task_id) {
    DENTER(TOP_LAYER);
 
-   // raw out parameters of execd_get_job_ja_task(); the objects belong to the execd's job list
-   lListElem *job = nullptr;
-   lListElem *ja_task_raw = nullptr;
+   // out parameters of execd_get_job_ja_task(); the objects belong to the execd's job list
+   ocs::tom::Element<ocs::tom::JB> job;
+   ocs::tom::Element<ocs::tom::JAT> ja_task_found;
 
-   if (execd_get_job_ja_task(job_id, ja_task_id, &job, &ja_task_raw, false)) {
-      const ocs::tom::ConstElement<ocs::tom::JAT> ja_task(ja_task_raw);
+   if (execd_get_job_ja_task(job_id, ja_task_id, &job, &ja_task_found, false)) {
+      const ocs::tom::ConstElement<ocs::tom::JAT> ja_task(ja_task_found);
 
       /* kill possibly still running tasks */
       signal_job(job_id, ja_task_id, SGE_SIGKILL);
@@ -2507,7 +2510,7 @@ void execd_slave_job_exit(const uint32_t job_id, const uint32_t ja_task_id) {
        * we can finish the slave job right away
        */
       if (ocs::tom::get<JAT_task_list>(ja_task).empty()) {
-         const auto jr = ocs::tom::Element<ocs::tom::JR>(get_job_report(job_id, ja_task_id, nullptr));
+         const auto jr = get_job_report(job_id, ja_task_id, nullptr);
 
          // qmaster only has to see *an* exit status here to know that this host is
          // done with the job - the value itself carries no information for a slave
@@ -2692,10 +2695,10 @@ void simulated_job_exit(const ocs::tom::ConstElement<ocs::tom::JB> jep, const oc
       DPRINTF("Simulated job " sge_u32"." sge_u32" is %s\n", jobid, jataskid, sig == 0 ? "exiting" : "killed");
 
       // the job reports belong to job_report_execd.cc
-      auto jr = ocs::tom::Element<ocs::tom::JR>(get_job_report(jobid, jataskid, nullptr));
+      auto jr = get_job_report(jobid, jataskid, nullptr);
       if (!jr) {
          ERROR(MSG_JOB_MISSINGJOBXYINJOBREPORTFOREXITINGJOBADDINGIT_UU, jobid, jataskid);
-         jr = ocs::tom::Element<ocs::tom::JR>(add_job_report(jobid, jataskid, nullptr, jep));
+         jr = add_job_report(jobid, jataskid, nullptr, jep);
       }
 
       ocs::tom::set<JR_state>(jr, JEXITING);

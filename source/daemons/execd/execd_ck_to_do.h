@@ -38,6 +38,11 @@
  */
 
 #include "sgeobj/sge_daemonize.h"
+#include "sgeobj/tom/ocs_tom_JAT.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
+#include "sgeobj/tom/ocs_tom_PET.h"
+#include "tom/ocs_Element.h"
 
 int do_ck_to_do(bool is_qmaster_down);
-int register_at_ptf(const lListElem *jep, const lListElem *jatep, const lListElem *petep);
+int register_at_ptf(ocs::tom::ConstElement<ocs::tom::JB> jep, ocs::tom::ConstElement<ocs::tom::JAT> jatep,
+                    ocs::tom::ConstElement<ocs::tom::PET> petep);

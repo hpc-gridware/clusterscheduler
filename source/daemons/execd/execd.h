@@ -37,9 +37,14 @@
  * @brief sge_execd - runs the jobs qmaster assigns to this host
  */
 
+#include "sgeobj/tom/ocs_tom_JAT.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
+#include "tom/ocs_Element.h"
+
 /* from execd.cc import the working dir of the execd */
 extern char execd_spool_dir[SGE_PATH_MAX];
 
 int sge_execd_register_at_qmaster(bool is_restart);
 uint64_t get_last_qmaster_register_time();
-bool execd_get_job_ja_task(uint32_t job_id, uint32_t ja_task_id, lListElem **job, lListElem **ja_task, bool ignore_missing_job_task);
+bool execd_get_job_ja_task(uint32_t job_id, uint32_t ja_task_id, ocs::tom::Element<ocs::tom::JB> *job,
+                           ocs::tom::Element<ocs::tom::JAT> *ja_task, bool ignore_missing_job_task);

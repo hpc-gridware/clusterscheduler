@@ -39,6 +39,7 @@
 #include <sys/stat.h>
 #include <cerrno>
 #include <cstdlib>
+#include <utility>
 
 #include "uti/ocs_Bootstrap.h"
 #include "uti/ocs_Systemd.h"
@@ -61,8 +62,13 @@
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_conf.h"
+#include "sgeobj/tom/ocs_tom_AN.h"
 #include "sgeobj/tom/ocs_tom_EH.h"
+#include "sgeobj/tom/ocs_tom_JAT.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
+#include "sgeobj/tom/ocs_tom_SPA.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
 
 #include "spool/classic/read_write_job.h"
 
@@ -117,8 +123,8 @@ char execd_spool_dir[SGE_PATH_MAX];   ///< Where the daemon spools; see the comm
 
 static void execd_exit_func(int i);
 static void parse_cmdline_execd(char **argv);
-static lList *sge_parse_cmdline_execd(char **argv, lList **ppcmdline);
-static lList *sge_parse_execd(lList **ppcmdline, lList **ppreflist, uint32_t *help);
+static ocs::tom::ListPtr<ocs::tom::AN> sge_parse_cmdline_execd(char **argv, lList **ppcmdline);
+static ocs::tom::ListPtr<ocs::tom::AN> sge_parse_execd(lList **ppcmdline, lList **ppreflist, uint32_t *help);
 
 static uint64_t last_qmaster_registration_time = 0;
 /** @brief When this daemon last registered with qmaster
@@ -155,7 +161,16 @@ unsigned long sge_execd_application_status(char **info_message) {
    return sge_monitor_status(info_message, 0);
 }
 
-/*-------------------------------------------------------------------------*/
+/**
+ * @brief The entry point of sge_execd
+ *
+ * Sets the daemon up, registers it at qmaster, reads the spooled jobs into the
+ * job list of the data store and runs the dispatcher until the daemon shall exit.
+ *
+ * @param argc the number of command line arguments, unused
+ * @param argv the command line arguments
+ * @return the exit state of the daemon
+ */
 int main(int argc, char **argv) {
    DENTER_MAIN(TOP_LAYER, "execd");
 
@@ -381,7 +396,8 @@ int main(int argc, char **argv) {
 #endif
 
    master_job_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB);
-   *master_job_list = lCreateList("master job list", JB_Type);
+   // the data store holds the job list until the daemon goes down
+   *master_job_list = ocs::tom::ListPtr<ocs::tom::JB>::create("master job list").release();
    job_list_read_from_disk(master_job_list, "master job list", 0, SPOOL_WITHIN_EXECD, job_initialize_job);
 
    /* clean up jobs hanging around (look in active_dir) */
@@ -405,7 +421,8 @@ int main(int argc, char **argv) {
 #if defined(LINUX)
    free_procList();
 #endif
-   lFreeList(master_job_list);
+   // the data store gives the job list up, as lFreeList() did
+   ocs::tom::ListPtr<ocs::tom::JB>(std::exchange(*master_job_list, nullptr)).reset();
 
    ocs::execd_profiling_cleanup();
 
@@ -462,7 +479,8 @@ int sge_execd_register_at_qmaster(bool is_restart) {
 
    int return_value = 0;
    static int sge_last_register_error_flag = 0;
-   lList *alp = nullptr;
+   // filled through an lList ** by gdi_is_alive() and sge_gdi()
+   lList *alp_raw = nullptr;
 
    /*
     * If it is a reconnect (is_restart is true) the act_qmaster file must be
@@ -474,10 +492,11 @@ int sge_execd_register_at_qmaster(bool is_restart) {
     * gdi will return with timeout after one minute. If qmaster is not alive
     * we will not try a gdi request!
     */
-   if (master_host != nullptr && ocs::gdi::ClientBase::gdi_is_alive(&alp) == CL_RETVAL_OK) {
-      lList *hlp = lCreateList("exechost starting", EH_Type);
-      auto hep = ocs::tom::ElementPtr<ocs::tom::EH>::create();
-      lAppendElem(hlp, std::move(hep));
+   if (master_host != nullptr && ocs::gdi::ClientBase::gdi_is_alive(&alp_raw) == CL_RETVAL_OK) {
+      auto hlp = ocs::tom::ListPtr<ocs::tom::EH>::create("exechost starting");
+      hlp->push_back(ocs::tom::ElementPtr<ocs::tom::EH>::create());
+      // sge_gdi() takes the list through an lList **
+      lList *hlp_raw = hlp.release();
 
       /* register at qmaster */
       DPRINTF("*****  Register at qmaster   *****\n");
@@ -485,28 +504,31 @@ int sge_execd_register_at_qmaster(bool is_restart) {
          /*
           * This is a regular startup.
           */
-         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::EH_LIST, ocs::gdi::Command::ADD, ocs::gdi::SubCommand::NONE, &hlp, nullptr, nullptr);
+         alp_raw = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::EH_LIST, ocs::gdi::Command::ADD,
+                                             ocs::gdi::SubCommand::NONE, &hlp_raw, nullptr, nullptr);
       } else {
          /*
           * Indicate this is a restart to qmaster.
           * This is used for the initial_state of queue_configuration implementation.
           */
-         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::EH_LIST, ocs::gdi::Command::ADD, ocs::gdi::SubCommand::EXECD_RESTART,
-                        &hlp, nullptr, nullptr);
+         alp_raw = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::EH_LIST, ocs::gdi::Command::ADD,
+                                             ocs::gdi::SubCommand::EXECD_RESTART, &hlp_raw, nullptr, nullptr);
       }
-      lFreeList(&hlp);
+      hlp = ocs::tom::ListPtr<ocs::tom::EH>(hlp_raw);
+      hlp.reset();
    } else {
       DPRINTF("*****  Register at qmaster - qmaster not alive!  *****\n");
    }
 
-   if (alp == nullptr) {
+   const ocs::tom::ListPtr<ocs::tom::AN> alp(alp_raw);
+   if (!alp) {
       if (sge_last_register_error_flag == 0) {
          WARNING(MSG_COM_CANTREGISTER_SS, master_host?master_host:"", MSG_COM_ERROR);
          sge_last_register_error_flag = 1;
       }
       return_value = 1;
    } else {
-      const lListElem *aep = lFirst(alp);
+      const auto aep = alp->front();
       if (ocs::tom::get<AN_status>(aep) != STATUS_OK) {
          if (sge_last_register_error_flag == 0) {
             WARNING(MSG_COM_CANTREGISTER_SS, master_host?master_host:"", ocs::tom::get<AN_text>(aep));
@@ -521,28 +543,30 @@ int sge_execd_register_at_qmaster(bool is_restart) {
       INFO(MSG_EXECD_REGISTERED_AT_QMASTER_S, master_host?master_host:"");
       last_qmaster_registration_time = sge_get_gmt64();
    }
-   lFreeList(&alp);
    DRETURN(return_value);
 }
 
 
-/*---------------------------------------------------------------------
- * parse_cmdline_execd
- *---------------------------------------------------------------------*/
+/**
+ * @brief Parse the command line of sge_execd; exits the daemon on an error or after -help
+ *
+ * @param argv the command line arguments, the name of the program first
+ */
 static void parse_cmdline_execd(char **argv) {
    DENTER(TOP_LAYER);
-   lList *ref_list = nullptr, *alp = nullptr, *pcmdline = nullptr;
+   // the parsing functions fill and consume these lists through an lList **
+   lList *ref_list = nullptr, *pcmdline = nullptr;
    uint32_t help = 0;
 
-   alp = sge_parse_cmdline_execd(argv+1, &pcmdline);
+   auto alp = sge_parse_cmdline_execd(argv+1, &pcmdline);
    if(alp) {
       /*
       ** high level parsing error! show answer list
       */
-      for_each_ep_lv(aep, alp) {
+      for (const auto aep : *alp) {
          fprintf(stderr, "%s", ocs::tom::get<AN_text>(aep));
       }
-      lFreeList(&alp);
+      alp.reset();
       lFreeList(&pcmdline);
       /* TODO: replace with alpp and DRETURN */
       sge_exit(1);
@@ -556,14 +580,14 @@ static void parse_cmdline_execd(char **argv) {
       /*
       ** low level parsing error! show answer list
       */
-      for_each_ep_lv(aep, alp) {
+      for (const auto aep : *alp) {
          fprintf(stderr, "%s", ocs::tom::get<AN_text>(aep));
       }
-      lFreeList(&alp);
+      alp.reset();
       /* TODO: replace with alpp and DRETURN */
       sge_exit(1);
    }
-   lFreeList(&alp);
+   alp.reset();
 
    if(help) {
       /*
@@ -576,16 +600,20 @@ static void parse_cmdline_execd(char **argv) {
 }
 
 
-/*-------------------------------------------------------------
- * sge_parse_cmdline_execd
+/**
+ * @brief Parse the command line options of sge_execd into a list of options
  *
- *-------------------------------------------------------------*/
-static lList *sge_parse_cmdline_execd(char **argv, lList **ppcmdline) {
+ * @param argv the command line arguments, without the name of the program
+ * @param[out] ppcmdline receives the options found (`SPA_Type`)
+ * @return the owning handle on the answer list of an invalid argument, empty if all arguments are valid
+ */
+static ocs::tom::ListPtr<ocs::tom::AN> sge_parse_cmdline_execd(char **argv, lList **ppcmdline) {
    DENTER(TOP_LAYER);
 
    char **sp;
    char **rp;
    stringT str;
+   // filled through an lList ** by the parsing functions
    lList *alp = nullptr;
 
    rp = argv;
@@ -606,27 +634,32 @@ static lList *sge_parse_cmdline_execd(char **argv, lList **ppcmdline) {
       snprintf(str, sizeof(str), MSG_PARSE_INVALIDARG_S, *sp);
       sge_usage(EXECD, stderr);
       answer_list_add(&alp, str, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
-      DRETURN(alp);
+      DRETURN(ocs::tom::ListPtr<ocs::tom::AN>(alp));
    }
-   DRETURN(alp);
+   DRETURN(ocs::tom::ListPtr<ocs::tom::AN>(alp));
 }
 
 
-/*-------------------------------------------------------------
- * sge_parse_execd
+/**
+ * @brief Evaluate the parsed command line options of sge_execd
  *
- *-------------------------------------------------------------*/
-static lList *sge_parse_execd(lList **ppcmdline, lList **ppreflist,
-                              uint32_t *help) {
+ * @param ppcmdline the options (`SPA_Type`); an option evaluated is removed
+ * @param ppreflist unused
+ * @param[out] help set if -help was given
+ * @return the owning handle on the answer list of an error, empty if there is none
+ */
+static ocs::tom::ListPtr<ocs::tom::AN> sge_parse_execd(lList **ppcmdline, lList **ppreflist,
+                                                       uint32_t *help) {
    DENTER(TOP_LAYER);
 
+   // filled through an lList ** by the parsing functions
    lList *alp = nullptr;
    int usageshowed = 0;
 
    /* Loop over all options. Only valid options can be in the
       ppcmdline list.
    */
-   while(lGetNumberOfElem(*ppcmdline)) {
+   while(!ocs::tom::ConstList<ocs::tom::SPA>(*ppcmdline).empty()) {
       /* -help */
       if(parse_flag(ppcmdline, "-help", &alp, help)) {
          usageshowed = 1;
@@ -635,15 +668,15 @@ static lList *sge_parse_execd(lList **ppcmdline, lList **ppreflist,
       }
    }
 
-   if(lGetNumberOfElem(*ppcmdline)) {
+   if(!ocs::tom::ConstList<ocs::tom::SPA>(*ppcmdline).empty()) {
       if(!usageshowed) {
          sge_usage(EXECD, stderr);
       }
       answer_list_add(&alp, MSG_PARSE_TOOMANYARGS, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
-      DRETURN(alp);
+      DRETURN(ocs::tom::ListPtr<ocs::tom::AN>(alp));
    }
 
-   DRETURN(alp);
+   DRETURN(ocs::tom::ListPtr<ocs::tom::AN>(alp));
 }
 
 /* JG: TODO: we have this searching code in many places!! */
@@ -655,39 +688,41 @@ static lList *sge_parse_execd(lList **ppcmdline, lList **ppreflist,
  *
  * @param job_id job id
  * @param ja_task_id ja_task id
- * @param[out] job returns job or nullptr if not found
- * @param[out] ja_task returns ja_task or nullptr if not found
+ * @param[out] job returns job or an empty handle if not found; the job belongs to the job list
+ * @param[out] ja_task returns ja_task or an empty handle if not found
  * @param ignore_missing_job_task do not log when the job or task is absent
  *
  * @return true if both job and ja_task are found, else false
  *
  * @note MT-NOTE: execd_get_job_ja_task() is MT safe
  */
-bool execd_get_job_ja_task(uint32_t job_id, uint32_t ja_task_id, lListElem **job, lListElem **ja_task, bool ignore_missing_job_task) {
+bool execd_get_job_ja_task(const uint32_t job_id, const uint32_t ja_task_id, ocs::tom::Element<ocs::tom::JB> *job,
+                           ocs::tom::Element<ocs::tom::JAT> *ja_task, const bool ignore_missing_job_task) {
    DENTER(TOP_LAYER);
 
-   const void *iterator = nullptr;
+   *job = nullptr;
+   *ja_task = nullptr;
 
-   *job = ocs::tom::find_first_rw<JB_job_number>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB), job_id, &iterator);
-   while (*job != nullptr) {
-      *ja_task = job_search_task(*job, nullptr, ja_task_id);
-      if (*ja_task != nullptr) {
+   /* in execd, we have exactly one ja_task per job,
+    * therefore we can have multiple jobs with the same job_id
+    */
+   const ocs::tom::List<ocs::tom::JB> job_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB));
+   for (const auto jep : job_list.find_all<JB_job_number>(job_id)) {
+      *ja_task = ocs::tom::Element<ocs::tom::JAT>(job_search_task(jep, nullptr, ja_task_id));
+      if (*ja_task) {
+         *job = jep;
          DRETURN(true);
       }
-
-      /* in execd, we have exactly one ja_task per job,
-       * therefore we can have multiple jobs with the same job_id
-       */
-      *job = ocs::tom::find_next_rw<JB_job_number>(*ocs::DataStore::get_master_list(SGE_TYPE_JOB), job_id, &iterator);
    }
 
    // check if we should report an error in the message file
    // when cleanup of the active jobs directories is done then missing
    // references are expected (e.g. because KEEP_ACTIVE changed
+   // as before, the job is empty once all jobs with the id have been looked at
    if (!ignore_missing_job_task) {
-      if (*job == nullptr) {
+      if (!*job) {
          ERROR(MSG_JOB_TASKWITHOUTJOB_U, job_id);
-      } else if (*ja_task == nullptr) {
+      } else if (!*ja_task) {
          ERROR(MSG_JOB_TASKNOTASKINJOB_UU, job_id, ja_task_id);
       }
    }

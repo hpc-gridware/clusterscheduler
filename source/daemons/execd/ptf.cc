@@ -1329,10 +1329,10 @@ ptf_process_job_ticket_list(const ocs::tom::List<ocs::tom::JB> job_ticket_list) 
       uint32_t job_id = ocs::tom::get<JB_job_number>(jte);
       const auto jte_ja_task = ocs::tom::get<JB_ja_tasks>(jte).front();
       uint32_t ja_task_id = ocs::tom::get<JAT_task_number>(jte_ja_task);
-      // raw out parameters of execd_get_job_ja_task(); the objects belong to the execd's job list
-      lListElem *job, *ja_task_raw;
-      if (execd_get_job_ja_task(job_id, ja_task_id, &job, &ja_task_raw, false)) {
-         const ocs::tom::ConstElement<ocs::tom::JAT> ja_task(ja_task_raw);
+      // the objects belong to the execd's job list
+      ocs::tom::Element<ocs::tom::JB> job;
+      ocs::tom::Element<ocs::tom::JAT> ja_task;
+      if (execd_get_job_ja_task(job_id, ja_task_id, &job, &ja_task, false)) {
          osjobid_t osjobid{};
          const char *osjobid_str = ocs::tom::get<JAT_osjobid>(ja_task);
          if (osjobid_str != nullptr) {
