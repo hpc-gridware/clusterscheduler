@@ -202,5 +202,7 @@
 /* CS-2985: the members of the reserved host groups, changed in qmaster */
 #define MSG_QCONF_HGROUPMEMBERINCOMPLETE           _MESSAGE(12070, _("a change of reserved host group members needs at least one member"))
 #define MSG_QCONF_HGROUPMEMBERNOTRESERVED_S        _MESSAGE(12071, _("the members of " SFQ " are not changed by this action: it serves the reserved host groups only"))
+/* CS-3117: the default entry of a queue attribute cannot be purged */
+#define MSG_QCONF_PURGEDEFAULTNOTSUPPORTED_S       _MESSAGE(12072, _("purging the default entry " SFQ " of a queue attribute is not supported"))
 
 // clang-format on

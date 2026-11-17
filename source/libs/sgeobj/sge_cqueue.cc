@@ -1712,7 +1712,8 @@ bool cqueue_trash_used_href_setting(lListElem *this_elem, lList **answer_list,
  * @param attr_list US_Type list with attributes to search for hgroup_or_hostname wildcards allowed
  * @param hgroup_or_hostname host group or hostname which should be purged
  *
- * @return true     - hostname found and purged false    - attribute or hostname not found
+ * @return true when hgroup_or_hostname was found and purged, false when no matching attribute
+ *         holds it; an attribute without a list counts as not found (CS-3117)
  *
  * @note MT-NOTE: cqueue_purge_host() is not MT safe
  */
@@ -1734,7 +1735,8 @@ bool cqueue_purge_host(const ocs::tom::Element<ocs::tom::CQ> this_elem, lList **
          if (!sge_eval_expression(ocs::CEntry::Type::HOST, attr_name, SGE_ATTR_HOSTLIST, nullptr)) {
             sublist = nullptr;
             ocs::tom::exchange<CQ_hostlist>(this_elem, &sublist);
-            if (ocs::tom::erase<HR_name>(&sublist, hgroup_or_hostname) == 1) {
+            // the removal reports success for a missing list as well, which is no deletion
+            if (sublist != nullptr && ocs::tom::erase<HR_name>(&sublist, hgroup_or_hostname) == 1) {
                DPRINTF(SFQ " deleted in " SFQ "\n", hgroup_or_hostname, SGE_ATTR_HOSTLIST);
                ret = true;
             }
@@ -1747,13 +1749,18 @@ bool cqueue_purge_host(const ocs::tom::Element<ocs::tom::CQ> this_elem, lList **
 
             /* Does the given attr_wildcard match with the actual attr_name */
             if (!sge_eval_expression(ocs::CEntry::Type::STR, attr_name, cqueue_attribute_array[index].name, nullptr)) {
-               // the attribute and its host field are given at run time, so the untyped access stays
-               sublist = lGetListRW(this_elem, cqueue_attribute_array[index].cqueue_attr);
-
-               if (lDelElemHost(&sublist, cqueue_attribute_array[index].href_attr, hgroup_or_hostname) == 1) {
+               // the attribute and its host field are given at run time, so the untyped access stays.
+               // The list is taken out of the element and put back like the host list above:
+               // lDelElemHost() frees a list that becomes empty and resets only the pointer it was
+               // given, so a copy of the field pointer left the element pointing at freed memory (CS-3117).
+               sublist = nullptr;
+               lXchgList(this_elem, cqueue_attribute_array[index].cqueue_attr, &sublist);
+               if (sublist != nullptr &&
+                   lDelElemHost(&sublist, cqueue_attribute_array[index].href_attr, hgroup_or_hostname) == 1) {
                   DPRINTF(SFQ " deleted in " SFQ "\n", hgroup_or_hostname, cqueue_attribute_array[index].name);
                   ret = true;
                }
+               lXchgList(this_elem, cqueue_attribute_array[index].cqueue_attr, &sublist);
             }
             index++;
          }

@@ -67,6 +67,9 @@
  * Finding nothing to remove is answered with a warning and is not a failure,
  * as it was in the client.
  *
+ * The default entry "@/" is refused, as the client refuses it: it is the value
+ * every queue instance falls back on (CS-3117).
+ *
  * @param packet the client request, for the user and host the change is logged under
  * @param task the GDI task being answered
  * @param monitor for monitoring qmaster threads
@@ -87,6 +90,13 @@ qconf_purge_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monit
     * against a caller that is not qconf */
    if (queue_arg.empty() || attributes_arg.empty() || domain_arg.empty()) {
       answer_list_add(answer_list, MSG_QCONF_PURGEINCOMPLETE, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
+      DRETURN(false);
+   }
+   /* the default entry @/ is the value every queue instance falls back on; the client refuses it,
+    * and so does qmaster for a caller that is not qconf (CS-3117) */
+   if (domain_arg == "@/") {
+      answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_QCONF_PURGEDEFAULTNOTSUPPORTED_S,
+                              domain_arg.c_str());
       DRETURN(false);
    }
    const char *queue_name = queue_arg.c_str();
