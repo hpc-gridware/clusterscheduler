@@ -39,11 +39,24 @@
 
 #include "sgeobj/sge_daemonize.h"
 
-int
-sge_add_sharetree(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **lpp, lList **alpp, char *ruser, char *rhost);
+#include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "tom/ocs_Transitional.h"
+#include "sgeobj/tom/ocs_tom_PR.h"
+#include "sgeobj/tom/ocs_tom_STN.h"
+#include "sgeobj/tom/ocs_tom_UU.h"
 
 int
-sge_mod_sharetree(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **lpp, lList **alpp, char *ruser, char *rhost);
+sge_add_sharetree(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::Element<ocs::tom::STN> ep, lList **lpp,
+                  lList **alpp, const char *ruser, const char *rhost);
+OCS_TRANSITIONAL int sge_add_sharetree(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **lpp,
+                                       lList **alpp, const char *ruser, const char *rhost);
+
+int
+sge_mod_sharetree(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::Element<ocs::tom::STN> ep, lList **lpp,
+                  lList **alpp, const char *ruser, const char *rhost);
+OCS_TRANSITIONAL int sge_mod_sharetree(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **lpp,
+                                       lList **alpp, const char *ruser, const char *rhost);
 
 int
 sge_del_sharetree(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **lpp, lList **alpp, char *ruser, char *rhost);
@@ -51,9 +64,10 @@ sge_del_sharetree(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **lpp, l
 int
 update_sharetree(lList *dst, const lList *src);
 
-lListElem *
-getNode(const lList *share_tree, const char *name, int node_type, int recurse);
+ocs::tom::ConstElement<ocs::tom::STN>
+getNode(ocs::tom::ConstList<ocs::tom::STN> share_tree, const char *name, int node_type, int recurse);
 
 int
-check_sharetree(lList **alpp, lListElem *node, const lList *user_list, const lList *project_list, lListElem *project,
-                lList **found);
+check_sharetree(lList **alpp, ocs::tom::Element<ocs::tom::STN> node, ocs::tom::ConstList<ocs::tom::UU> user_list,
+                ocs::tom::ConstList<ocs::tom::PR> project_list, ocs::tom::ConstElement<ocs::tom::PR> project,
+                ocs::tom::ListPtr<ocs::tom::STN> &found);

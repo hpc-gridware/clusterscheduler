@@ -41,6 +41,11 @@
 
 #include "sgeobj/sge_daemonize.h"
 #include "gdi/ocs_gdi_Packet.h"
+#include "tom/ocs_Element.h"
+#include "tom/ocs_Transitional.h"
+#include "sgeobj/tom/ocs_tom_JAT.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
+#include "sgeobj/tom/ocs_tom_QU.h"
 
 #include "sge_qmaster_timed_event.h"
 
@@ -55,4 +60,5 @@ void
 sge_gdi_qmod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monitor);
 
 int
-sge_signal_queue(int how, lListElem *qep, lListElem *jep, lListElem *jatep, monitoring_t *monitor);
+sge_signal_queue(int how, ocs::tom::Element<ocs::tom::QU> qep, ocs::tom::Element<ocs::tom::JB> jep,
+                 ocs::tom::Element<ocs::tom::JAT> jatep, monitoring_t *monitor);

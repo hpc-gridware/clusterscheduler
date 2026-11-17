@@ -35,6 +35,13 @@
 #include "sgeobj/sge_userprj.h"
 #include "tom/ocs_Element.h"
 #include "sgeobj/tom/ocs_tom_UA.h"
+#include "sgeobj/tom/ocs_tom_JAT.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
+#include "sgeobj/tom/ocs_tom_PR.h"
+#include "sgeobj/tom/ocs_tom_STN.h"
+#include "sgeobj/tom/ocs_tom_UPU.h"
+#include "sgeobj/tom/ocs_tom_UU.h"
+#include "tom/ocs_List.h"
 
 #include "ocs_SharetreeUsage.h"
 #include "ocs_FinishedJob.h"
@@ -42,33 +49,53 @@
 #include "sge_qmaster_timed_event.h"
 
 namespace {
-   /* Remove the debited-job-usage entry for the given job number from the
-    * passed list, if present. Mirrors the "UPU_old_usage_list == nullptr"
-    * signal in the ORT_update_user_usage / _project_usage handlers, which is
-    * how the order-driven path tells qmaster to drop the entry: with the
+   /**
+    * @brief Remove the debited-job-usage entry for a job number from a user or project, if present
+    *
+    * Mirrors the "UPU_old_usage_list == nullptr" signal in the
+    * ORT_update_user_usage / _project_usage handlers, which is how the
+    * order-driven path tells qmaster to drop the entry: with the
     * worker-thread path the qmaster IS the one doing the modification, so
-    * the drop is direct. */
-   void drop_debited_job(lListElem *userprj, int upu_field, uint32_t job_number) {
-      lList *upu_list = lGetListRW(userprj, upu_field);
-      if (upu_list == nullptr) {
-         return;
+    * the drop is direct.
+    *
+    * @tparam F the debited job usage list field, UU_debited_job_usage or PR_debited_job_usage
+    * @tparam T the object type of the user or project
+    * @param userprj the user or project
+    * @param job_number the job number
+    */
+   template <auto F, typename T>
+   void drop_debited_job(const ocs::tom::Element<T> userprj, const uint32_t job_number) {
+      DENTER(TOP_LAYER);
+
+      const auto upu_list = ocs::tom::get<F>(userprj);
+      if (upu_list) {
+         if (const auto upu = upu_list.template find_first<UPU_job_number>(job_number); upu) {
+            upu_list.erase(upu);
+         }
       }
-      lListElem *upu = ocs::tom::find_first_rw<UPU_job_number>(upu_list, job_number);
-      if (upu != nullptr) {
-         lRemoveElem(upu_list, &upu);
-      }
+
+      DRETURN_VOID;
    }
 
-   /* Bump UU_/PR_version so consumers that key off it see a change.
+   /**
+    * @brief Bump UU_/PR_version so consumers that key off it see a change
     *
     * Do NOT bump UU_/PR_usage_seqno: that field is the periodic decay
     * handler's idempotency stamp - decay_userprj_usage skips when
     * seqno == stored_seqno. The handler's tet_decay_run counter also
     * starts at 0 and ++s by 1, so a booking bump would silently match a
     * tick and the decay would be a no-op. (That collision produced
-    * u0 == u1 bit-exact in the sharetree_decay_periodic test.) */
-   void bump_change_markers(lListElem *userprj, int version_field) {
-      lAddUlong(userprj, version_field, 1);
+    * u0 == u1 bit-exact in the sharetree_decay_periodic test.)
+    *
+    * @tparam F the version field, UU_version or PR_version
+    * @tparam T the object type of the user or project
+    * @param userprj the user or project
+    */
+   template <auto F, typename T>
+   void bump_change_markers(const ocs::tom::Element<T> userprj) {
+      DENTER(TOP_LAYER);
+      ocs::tom::add<F>(userprj, 1);
+      DRETURN_VOID;
    }
 }
 
@@ -103,16 +130,19 @@ namespace {
  *
  *  Returns 0 on success, a negative value on a hard error (missing jep/jatep).
  *
- * @param jep the job (`JB_Type`)
- * @param jatep the array task that finished (`JAT_Type`)
+ * @param jep the job
+ * @param jatep the array task that finished
  * @param monitor unused; kept so the signature matches the other commit helpers
- * @param gdi_session the session the change belongs to
- * @return 0 on success, a negative value if `jep` or `jatep` is `nullptr`
+ * @param gdi_session the session the change belongs to (unused)
+ * @return 0 on success, a negative value if `jep` or `jatep` is empty
  */
 int
-sge_book_finished_job_usage(lListElem *jep, lListElem *jatep, monitoring_t * /* monitor */, uint64_t gdi_session) {
-   if (jep == nullptr || jatep == nullptr) {
-      return -1;
+sge_book_finished_job_usage(const ocs::tom::Element<ocs::tom::JB> jep, const ocs::tom::Element<ocs::tom::JAT> jatep,
+                            [[maybe_unused]] monitoring_t *monitor, [[maybe_unused]] const uint64_t gdi_session) {
+   DENTER(TOP_LAYER);
+
+   if (!jep || !jatep) {
+      DRETURN(-1);
    }
 
    /* Idempotency guard: skip if this ja_task has already been booked.
@@ -124,8 +154,8 @@ sge_book_finished_job_usage(lListElem *jep, lListElem *jatep, monitoring_t * /* 
     * COMMIT_ST_RESCHEDULED / COMMIT_ST_USER_RESCHEDULED so the next exit
     * re-seeds. The guard is defensive coverage for future paths that may
     * re-invoke this helper (e.g. CS-1908 finished-job retention). */
-   if (static_cast<const lListElem *>(ocs::tom::find_first_in<JAT_scaled_usage_list, UA_name>(jatep, "finished_jobs")) != nullptr) {
-      return 0;
+   if (ocs::tom::find_first_in<JAT_scaled_usage_list, UA_name>(jatep, "finished_jobs")) {
+      DRETURN(0);
    }
 
    /* CS-1239: skip the entire booking when no master share tree is configured.
@@ -137,15 +167,15 @@ sge_book_finished_job_usage(lListElem *jep, lListElem *jatep, monitoring_t * /* 
     * zero history for one tick. Matching gate is in sge_sharetree_tick_handler.
     * Caller holds LOCK_GLOBAL write (always via sge_commit_job), so reading
     * the SHARETREE master list without an extra lock is safe. */
-   if (lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SHARETREE)) == nullptr) {
-      return 0;
+   if (ocs::tom::ConstList<ocs::tom::STN>(*ocs::DataStore::get_master_list(SGE_TYPE_SHARETREE)).empty()) {
+      DRETURN(0);
    }
 
-   const lList *master_user_list = *ocs::DataStore::get_master_list(SGE_TYPE_USER);
-   const lList *master_project_list = *ocs::DataStore::get_master_list(SGE_TYPE_PROJECT);
+   const ocs::tom::ConstList<ocs::tom::UU> master_user_list(*ocs::DataStore::get_master_list(SGE_TYPE_USER));
+   const ocs::tom::ConstList<ocs::tom::PR> master_project_list(*ocs::DataStore::get_master_list(SGE_TYPE_PROJECT));
 
-   lListElem *user = user_list_locate(master_user_list, ocs::tom::get<JB_owner>(jep));
-   lListElem *project = nullptr;
+   const auto user = user_list_locate(master_user_list, ocs::tom::get<JB_owner>(jep));
+   ocs::tom::Element<ocs::tom::PR> project;
    const char *project_name = ocs::tom::get<JB_project>(jep);
    if (project_name != nullptr && *project_name != '\0') {
       project = prj_list_locate(master_project_list, project_name);
@@ -175,8 +205,8 @@ sge_book_finished_job_usage(lListElem *jep, lListElem *jatep, monitoring_t * /* 
     * starving leaves with many pending (project3 in the sharetree
     * test). */
    ocs::tom::List<ocs::tom::UA> scaled = ocs::tom::get<JAT_scaled_usage_list>(jatep);
-   if (scaled == nullptr) {
-      ocs::tom::set<JAT_scaled_usage_list>(jatep, lCreateList("scaled_usage", UA_Type));
+   if (!scaled) {
+      ocs::tom::set<JAT_scaled_usage_list>(jatep, ocs::tom::ListPtr<ocs::tom::UA>::create("scaled_usage"));
       scaled = ocs::tom::get<JAT_scaled_usage_list>(jatep);
    }
    usage_list_set_double_usage(scaled, "finished_jobs", 1.0);
@@ -193,7 +223,7 @@ sge_book_finished_job_usage(lListElem *jep, lListElem *jatep, monitoring_t * /* 
     * test fails. seqno = (u_long)-1 tells decay_userprj_usage to update
     * the stamp but NOT update the stored seqno - the TET tick owns the
     * seqno namespace, we just want a catch-up decay tick here. */
-   ocs::Usage::decay_and_sum_usage(jep, jatep, nullptr, user, project,
+   ocs::Usage::decay_and_sum_usage(jep, jatep, ocs::tom::Element<ocs::tom::STN>(), user, project,
                                    decay_list.get(), usage_weight_list.get(),
                                    static_cast<u_long>(-1), curr_time);
 
@@ -202,13 +232,13 @@ sge_book_finished_job_usage(lListElem *jep, lListElem *jatep, monitoring_t * /* 
    /* 2. drop the per-job debited entry the sum step just appended (the job
     *    is gone; no further deltas to compute), and bump change markers so
     *    consumers see "something happened to this object". */
-   if (user != nullptr) {
-      drop_debited_job(user, UU_debited_job_usage, job_number);
-      bump_change_markers(user, UU_version);
+   if (user) {
+      drop_debited_job<UU_debited_job_usage>(user, job_number);
+      bump_change_markers<UU_version>(user);
    }
-   if (project != nullptr) {
-      drop_debited_job(project, PR_debited_job_usage, job_number);
-      bump_change_markers(project, PR_version);
+   if (project) {
+      drop_debited_job<PR_debited_job_usage>(project, job_number);
+      bump_change_markers<PR_version>(project);
    }
 
    /* 3. mark user / project dirty for both event emission and spool. The
@@ -219,12 +249,12 @@ sge_book_finished_job_usage(lListElem *jep, lListElem *jatep, monitoring_t * /* 
     *    atomic snapshot (pre-CS-1239 ORT_share_tree invariant restored).
     *    Spool is deferred to the share-tree spool handler at its own
     *    cadence. */
-   if (user != nullptr) {
+   if (user) {
       const char *uname = ocs::tom::get<UU_name>(user);
       ocs::SharetreeUsage::mark_user_event_dirty(uname);
       ocs::SharetreeUsage::mark_user_spool_dirty(uname);
    }
-   if (project != nullptr) {
+   if (project) {
       const char *pname = ocs::tom::get<PR_name>(project);
       ocs::SharetreeUsage::mark_project_event_dirty(pname);
       ocs::SharetreeUsage::mark_project_spool_dirty(pname);
@@ -235,7 +265,7 @@ sge_book_finished_job_usage(lListElem *jep, lListElem *jatep, monitoring_t * /* 
     * clients via sgeE_NEW_SHARETREE) is now stale. Flag it so the TET
     * share-tree tick handler republishes on its next tick. Cheap (one
     * bool write under the LOCK_GLOBAL we already hold). */
-   if (user != nullptr || project != nullptr) {
+   if (user || project) {
       ocs::SharetreeUsage::mark_share_tree_dirty();
    }
 
@@ -244,7 +274,7 @@ sge_book_finished_job_usage(lListElem *jep, lListElem *jatep, monitoring_t * /* 
     * Keeping this function a pure "book the usage" routine keeps its
     * pre-/post-conditions reviewable in isolation. */
 
-   return 0;
+   DRETURN(0);
 }
 
 /* CS-1908 finished-job retention sweep reschedule helper. See the doxygen

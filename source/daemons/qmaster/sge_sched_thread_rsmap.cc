@@ -233,7 +233,7 @@ rsmap_select_granted_ids(sge_assignment_t *a, const char *name, const char *host
  * @brief book one granted request of a job into the granted resource list
  *
  * @param a                      the assignment
- * @param granted_resources_list the list being built
+ * @param granted_resources_list the list being built (`GRU_Type`), created with the first entry
  * @param request                the request being booked, from the scope it was written in
  * @param host_name              host it is booked on
  * @param host_list              the host list
@@ -244,7 +244,7 @@ rsmap_select_granted_ids(sge_assignment_t *a, const char *name, const char *host
  * @return true on success, false when a resource map could not be granted
  */
 static bool
-gru_list_add_request(sge_assignment_t *a, lList **granted_resources_list,
+gru_list_add_request(sge_assignment_t *a, ocs::tom::ListPtr<ocs::tom::GRU> &granted_resources_list,
                      const ocs::tom::ConstElement<ocs::tom::CE> request, const char *host_name,
                      const ocs::tom::ConstList<ocs::tom::EH> host_list, const double amount, const uint32_t slots,
                      const bool select_instances) {
@@ -279,10 +279,16 @@ gru_list_add_request(sge_assignment_t *a, lList **granted_resources_list,
       }
    }
    DPRINTF("  ==> gru_list_add_request: booking %s: " sge_u32 " * %f from host %s\n", name, slots, amount, host_name);
-   auto gru = ocs::tom::Element<ocs::tom::GRU>(gru_list_search(*granted_resources_list, name, host_name));
+   auto gru = gru_list_search(*granted_resources_list, name, host_name);
    if (gru == nullptr) {
       DPRINTF("   -> adding new GRU\n");
-      gru = ocs::tom::emplace_back<GRU_name>(granted_resources_list, name);
+      // a null name adds nothing, as the untyped emplace_back() did (soft path)
+      if (name != nullptr) {
+         if (!granted_resources_list) {
+            granted_resources_list = ocs::tom::ListPtr<ocs::tom::GRU>::create("");
+         }
+         gru = granted_resources_list->emplace_back<GRU_name>(name);
+      }
       if (gru != nullptr) {
          // initialize GRU element
          ocs::tom::set<GRU_host>(gru, host_name);
@@ -382,7 +388,7 @@ gru_list_apply_selected_rsmap_ids(const sge_assignment_t *a, const ocs::tom::Con
       const char *name = ocs::tom::get<GRU_name>(selected);
       const char *host_name = ocs::tom::get<GRU_host>(selected);
 
-      const auto gru = ocs::tom::Element<ocs::tom::GRU>(gru_list_search(granted_resources_list, name, host_name));
+      const auto gru = gru_list_search(granted_resources_list, name, host_name);
       if (gru == nullptr) {
          // the selection is made from the same walk which creates these, so this cannot
          // happen without the two having drifted apart
@@ -471,8 +477,8 @@ gru_build_granted_resource_list(sge_assignment_t *a, const ocs::tom::ConstElemen
    }
 
    bool ret = true;
-   // built through ocs::GrantedResources::add_binding_to_use() and gru_list_add_request(), which take lList **
-   lList *granted_resources_list = nullptr;
+   // built through ocs::GrantedResources::add_binding_to_use() and gru_list_add_request()
+   ocs::tom::ListPtr<ocs::tom::GRU> granted_resources_list;
 
    // loop over the gdil and figure out the hosts
    // Attention: One host can appear multiple times in gdil (for different queue instances)!
@@ -486,7 +492,7 @@ gru_build_granted_resource_list(sge_assignment_t *a, const ocs::tom::ConstElemen
 
       // add the binding_touse information (copy from JG to GRU)
       const ocs::tom::ConstList<ocs::tom::ST> binding_to_use_list = ocs::tom::get<JG_binding_to_use>(gdil_ep);
-      ocs::GrantedResources::add_binding_to_use(&granted_resources_list, host_name, binding_to_use_list);
+      ocs::GrantedResources::add_binding_to_use(granted_resources_list, host_name, binding_to_use_list);
 
       // book the global resources
       for (const auto request : job_get_hard_resource_list(job, JRS_SCOPE_GLOBAL)) {
@@ -502,7 +508,7 @@ gru_build_granted_resource_list(sge_assignment_t *a, const ocs::tom::ConstElemen
          const char *name = ocs::tom::get<CE_name>(request);
          double amount = ocs::tom::get<CE_doubleval>(request);
          DPRINTF("  global: %s, %d, %f\n", name, debit_slots, amount);
-         if (!gru_list_add_request(a, &granted_resources_list, request, host_name,
+         if (!gru_list_add_request(a, granted_resources_list, request, host_name,
                                    host_list, amount, debit_slots, select_instances)) {
             gru_report_booking_failure(a, job, ja_task, name, host_name);
             ret = false;
@@ -523,7 +529,7 @@ gru_build_granted_resource_list(sge_assignment_t *a, const ocs::tom::ConstElemen
             const char *name = ocs::tom::get<CE_name>(request);
             double amount = ocs::tom::get<CE_doubleval>(request);
             DPRINTF("  master: %s, %d, %f\n", name, debit_slots, amount);
-            if (!gru_list_add_request(a, &granted_resources_list, request, host_name,
+            if (!gru_list_add_request(a, granted_resources_list, request, host_name,
                                       host_list, amount, debit_slots, select_instances)) {
                gru_report_booking_failure(a, job, ja_task, name, host_name);
                ret = false;
@@ -546,7 +552,7 @@ gru_build_granted_resource_list(sge_assignment_t *a, const ocs::tom::ConstElemen
          const char *name = ocs::tom::get<CE_name>(request);
          double amount = ocs::tom::get<CE_doubleval>(request);
          DPRINTF("  slave: %s, %d, %f\n", name, debit_slots, amount);
-         if (!gru_list_add_request(a, &granted_resources_list, request, host_name,
+         if (!gru_list_add_request(a, granted_resources_list, request, host_name,
                                    host_list, amount, debit_slots, select_instances)) {
             gru_report_booking_failure(a, job, ja_task, name, host_name);
             ret = false;
@@ -556,7 +562,7 @@ gru_build_granted_resource_list(sge_assignment_t *a, const ocs::tom::ConstElemen
       last_host = host_name;
    }
 
-   *granted_resources_list_out = ocs::tom::ListPtr<ocs::tom::GRU>::from_typed(granted_resources_list);
+   *granted_resources_list_out = std::move(granted_resources_list);
 
    DRETURN(ret);
 }

@@ -42,34 +42,48 @@
 #include "uti/sge_monitor.h"
 #include "sgeobj/sge_daemonize.h"
 
+#include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "tom/ocs_Transitional.h"
+#include "sgeobj/tom/ocs_tom_PR.h"
+#include "sgeobj/tom/ocs_tom_UU.h"
+
 void
 sge_userprj_spool(uint64_t gdi_session);
 
 int
-userprj_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList,
-                monitoring_t *monitor);
+userprj_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object,
+                lList **ppList, monitoring_t *monitor);
 
 int
-userprj_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *modp, lListElem *ep, int add, const char *ruser,
-            const char *rhost, gdi_object_t *object,
+userprj_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *modp, lListElem *ep, int add,
+            const char *ruser, const char *rhost, gdi_object_t *object,
             ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command, monitoring_t *monitor);
 
 int
 userprj_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *upe, gdi_object_t *object);
 
 int
-sge_del_userprj(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **alpp, lList **upl, const char *ruser,
-                const char *rhost, int user);
+sge_del_userprj(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ConstElement<ocs::tom::UU> up_ep,
+                lList **alpp, ocs::tom::List<ocs::tom::UU> upl, const char *ruser, const char *rhost);
+int
+sge_del_userprj(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ConstElement<ocs::tom::PR> up_ep,
+                lList **alpp, ocs::tom::List<ocs::tom::PR> upl, const char *ruser, const char *rhost);
+OCS_TRANSITIONAL int sge_del_userprj(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **alpp,
+                                     lList **upl, const char *ruser, const char *rhost, int user);
 
 int
-verify_project_list(lList **alpp, const lList *name_list, const lList *userprj_list, const char *attr_name,
-                    const char *obj_descr, const char *obj_name);
+verify_project_list(lList **alpp, ocs::tom::ConstList<ocs::tom::PR> name_list,
+                    ocs::tom::ConstList<ocs::tom::PR> userprj_list, const char *attr_name, const char *obj_descr,
+                    const char *obj_name);
 
 void
 sge_automatic_user_cleanup_handler(te_event_t anEvent, monitoring_t *monitor);
 
 int
-sge_add_auto_user(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const char *user, lList **alpp, monitoring_t *monitor);
+sge_add_auto_user(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const char *user, lList **alpp,
+                  monitoring_t *monitor);
 
 void
-project_update_categories(const lList *added, const lList *removed, uint64_t gdi_session);
+project_update_categories(ocs::tom::ConstList<ocs::tom::PR> added, ocs::tom::ConstList<ocs::tom::PR> removed,
+                          uint64_t gdi_session);

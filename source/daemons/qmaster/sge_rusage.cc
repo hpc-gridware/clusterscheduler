@@ -60,6 +60,12 @@
 #include "sgeobj/tom/ocs_tom_JG.h"
 #include "sgeobj/tom/ocs_tom_PET.h"
 #include "sgeobj/tom/ocs_tom_UA.h"
+#include "sgeobj/tom/ocs_tom_AR.h"
+#include "sgeobj/tom/ocs_tom_JAT.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
+#include "sgeobj/tom/ocs_tom_JR.h"
+#include "sgeobj/tom/ocs_tom_PE.h"
+#include "tom/ocs_List.h"
 
 #include "sched/sge_job_schedd.h"
 
@@ -115,12 +121,15 @@ sge_u32 "%c" sge_u32 "%c" sge_u32 "%c" sge_u32 "%c" sge_u32 "%c" sge_u32 "%c%s%c
  * @see #usage_list_get_ulong_usage
  */
 static uint32_t
-reporting_get_ulong_usage(const lList *usage_list, lList *reported_list,
-                          const char *name, const char *rname, uint32_t def) {
+reporting_get_ulong_usage(const ocs::tom::ConstList<ocs::tom::UA> usage_list,
+                          const ocs::tom::List<ocs::tom::UA> reported_list, const char *name, const char *rname,
+                          const uint32_t def) {
+   DENTER(TOP_LAYER);
+
    /* total usage */
    uint32_t usage = usage_list_get_ulong_usage(usage_list, name, def);
 
-   if (reported_list != nullptr) {
+   if (reported_list) {
       uint32_t reported;
 
       /* usage already reported */
@@ -135,7 +144,7 @@ reporting_get_ulong_usage(const lList *usage_list, lList *reported_list,
       usage -= reported;
    }
 
-   return usage;
+   DRETURN(usage);
 }
 
 /**
@@ -171,28 +180,30 @@ reporting_get_ulong_usage(const lList *usage_list, lList *reported_list,
  * @see #reporting_get_ulong_usage
  */
 static uint32_t
-reporting_get_ulong_usage_sum(const lList *usage_list, lList *reported_list, bool accounting_summary,
-                              const lListElem *ja_task, const char *name, const char *rname, uint32_t def) {
+reporting_get_ulong_usage_sum(const ocs::tom::ConstList<ocs::tom::UA> usage_list,
+                              const ocs::tom::List<ocs::tom::UA> reported_list, const bool accounting_summary,
+                              const ocs::tom::Element<ocs::tom::JAT> ja_task, const char *name, const char *rname,
+                              const uint32_t def) {
+   DENTER(TOP_LAYER);
+
    uint32_t usage = reporting_get_ulong_usage(usage_list, reported_list, name, rname, def);
 
    /* when we do an accounting summary, we also have to sum up the pe task usage */
    if (accounting_summary) {
-      ocs::tom::ConstList<ocs::tom::PET> pe_tasks = ocs::tom::get<JAT_task_list>(ja_task);
-
-      for_each_rw_lv (pe_task, pe_tasks) {
+      for (const auto pe_task : ocs::tom::get<JAT_task_list>(ja_task)) {
          ocs::tom::ConstList<ocs::tom::UA> pe_usage_list = ocs::tom::get<PET_scaled_usage>(pe_task);
 
-         if (pe_usage_list != nullptr) {
+         if (pe_usage_list) {
             ocs::tom::List<ocs::tom::UA> pe_reported_list = nullptr;
-            if (reported_list != nullptr) {
-               pe_reported_list = ocs::tom::get_or_create<PET_reported_usage>(pe_task, "reported_usage");
+            if (reported_list) {
+               pe_reported_list = pe_task.get_or_create<PET_reported_usage>("reported_usage");
             }
             usage += reporting_get_ulong_usage(pe_usage_list, pe_reported_list, name, rname, def);
          }
       }
    }
 
-   return usage;
+   DRETURN(usage);
 }
 
 /**
@@ -222,12 +233,15 @@ reporting_get_ulong_usage_sum(const lList *usage_list, lList *reported_list, boo
  * @see `usage_list_get_double_usage()`
  */
 static double
-reporting_get_double_usage(const lList *usage_list, lList *reported_list, const char *name, const char *rname,
-                           double def) {
+reporting_get_double_usage(const ocs::tom::ConstList<ocs::tom::UA> usage_list,
+                           const ocs::tom::List<ocs::tom::UA> reported_list, const char *name, const char *rname,
+                           const double def) {
+   DENTER(TOP_LAYER);
+
    /* total usage */
    double usage = usage_list_get_double_usage(usage_list, name, def);
 
-   if (reported_list != nullptr) {
+   if (reported_list) {
       double reported;
 
       /* usage already reported */
@@ -242,7 +256,7 @@ reporting_get_double_usage(const lList *usage_list, lList *reported_list, const 
       usage -= reported;
    }
 
-   return usage;
+   DRETURN(usage);
 }
 
 /**
@@ -278,39 +292,37 @@ reporting_get_double_usage(const lList *usage_list, lList *reported_list, const 
  * @see #reporting_get_double_usage
  */
 static double
-reporting_get_double_usage_sum(const lList *usage_list, lList *reported_list, bool accounting_summary,
-                               const lListElem *ja_task, const char *name, const char *rname, double def) {
+reporting_get_double_usage_sum(const ocs::tom::ConstList<ocs::tom::UA> usage_list,
+                               const ocs::tom::List<ocs::tom::UA> reported_list, const bool accounting_summary,
+                               const ocs::tom::Element<ocs::tom::JAT> ja_task, const char *name, const char *rname,
+                               const double def) {
+   DENTER(TOP_LAYER);
+
    double usage = reporting_get_double_usage(usage_list, reported_list, name, rname, def);
 
    /* when we do an accounting summary, we also have to sum up the pe task usage */
    if (accounting_summary) {
-      ocs::tom::ConstList<ocs::tom::PET> pe_tasks = ocs::tom::get<JAT_task_list>(ja_task);
-
-      for_each_rw_lv (pe_task, pe_tasks) {
+      for (const auto pe_task : ocs::tom::get<JAT_task_list>(ja_task)) {
          ocs::tom::ConstList<ocs::tom::UA> pe_usage_list = ocs::tom::get<PET_scaled_usage>(pe_task);
 
-         if (pe_usage_list != nullptr) {
+         if (pe_usage_list) {
             ocs::tom::List<ocs::tom::UA> pe_reported_list = nullptr;
-            if (reported_list != nullptr) {
-               pe_reported_list = ocs::tom::get_or_create<PET_reported_usage>(pe_task, "reported_usage");
+            if (reported_list) {
+               pe_reported_list = pe_task.get_or_create<PET_reported_usage>("reported_usage");
             }
             usage += reporting_get_double_usage(pe_usage_list, pe_reported_list, name, rname, def);
          }
       }
    }
 
-   return usage;
+   DRETURN(usage);
 }
 
-/* ------------------------------------------------------------
-
-   write usage to a dstring buffer
-
-   sge_write_rusage - write rusage info to a dstring buffer
-   Returns: false, if it receives invalid data
-            true on success
-
-*/
+/**
+ * @brief NONE_STR for an unset or empty string
+ * @param str the string
+ * @return @p str, or NONE_STR if it is nullptr or empty
+ */
 
 static const char *
 none_string(const char *str) {
@@ -331,9 +343,11 @@ none_string(const char *str) {
  *
  * @param buffer receives the record in delimiter-separated form, or nullptr
  * @param writer receives the record as JSON, or nullptr
- * @param jr the job report the execution host sent
- * @param job the job (`JB_Type`)
- * @param ja_task the array task
+ * The signature stays raw while the callers outside this module pass raw elements.
+ *
+ * @param raw_jr the job report the execution host sent (`JR_Type`)
+ * @param raw_job the job (`JB_Type`)
+ * @param raw_ja_task the array task (`JAT_Type`)
  * @param category_str the job's scheduling category
  * @param usage_patterns which of the reported usage values to include
  * @param delimiter what separates the fields of the accounting format
@@ -342,10 +356,16 @@ none_string(const char *str) {
  * @return true on success
  */
 bool
-sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *writer, lListElem *jr, lListElem *job,
-                 lListElem *ja_task, const char *category_str, std::vector<std::pair<std::string, std::string>> *usage_patterns, const char delimiter,
-                 bool intermediate, bool is_reporting) {
+sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *writer, lListElem *raw_jr,
+                 lListElem *raw_job, lListElem *raw_ja_task, const char *category_str,
+                 std::vector<std::pair<std::string, std::string>> *usage_patterns, const char delimiter,
+                 const bool intermediate, const bool is_reporting) {
    DENTER(TOP_LAYER);
+
+   // the callers pass a job report, a job and an array task, checked here once
+   const ocs::tom::Element<ocs::tom::JR> jr(raw_jr);
+   const ocs::tom::Element<ocs::tom::JB> job(raw_job);
+   const ocs::tom::Element<ocs::tom::JAT> ja_task(raw_ja_task);
 
    ocs::tom::ConstList<ocs::tom::UA> usage_list = nullptr; /* usage list of ja_task or pe_task */
    ocs::tom::List<ocs::tom::UA> reported_list = nullptr; /* already reported usage of ja_task or pe_task */
@@ -357,13 +377,13 @@ sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *wr
    uint64_t end_time = 0;
    uint64_t now = sge_get_gmt64();
    uint32_t ar_id = 0;
-   lListElem *ar = nullptr;
+   ocs::tom::ConstElement<ocs::tom::AR> ar;
    int exit_status = 0;
    bool do_accounting_summary = false;
-   const lList *master_pe_list = *ocs::DataStore::get_master_list(SGE_TYPE_PE);
-   const lList *master_ar_list = *ocs::DataStore::get_master_list(SGE_TYPE_AR);
+   const ocs::tom::ConstList<ocs::tom::PE> master_pe_list(*ocs::DataStore::get_master_list(SGE_TYPE_PE));
+   const ocs::tom::ConstList<ocs::tom::AR> master_ar_list(*ocs::DataStore::get_master_list(SGE_TYPE_AR));
 
-   if (jr == nullptr || job == nullptr || ja_task == nullptr) {
+   if (!jr || !job || !ja_task) {
       DRETURN(false);
    }
 
@@ -379,7 +399,7 @@ sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *wr
     */
    const char *granted_pe = ocs::tom::get<JAT_granted_pe>(ja_task);
    if (granted_pe != nullptr) {
-      const lListElem *pe = pe_list_locate(master_pe_list, granted_pe);
+      const auto pe = pe_list_locate(master_pe_list, granted_pe);
       do_accounting_summary = pe_do_accounting_summary(pe);
    }
 
@@ -398,8 +418,8 @@ sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *wr
       }
 
       /* try to find the pe_task */
-      pe_task = ocs::tom::find_first_rw<PET_id>(ocs::tom::get<JAT_task_list>(ja_task), pe_task_id);
-      if (pe_task == nullptr) {
+      pe_task = ocs::tom::get<JAT_task_list>(ja_task).find_first<PET_id>(pe_task_id);
+      if (!pe_task) {
          DSTRING_STATIC(err_buffer, MAX_STRING_SIZE);
          ERROR(MSG_GOTUSAGEREPORTFORUNKNOWNPETASK_S, job_get_id_string(job_id, ja_task_id, pe_task_id, &err_buffer));
          DRETURN(false);
@@ -417,10 +437,10 @@ sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *wr
     * ja_task or pe_task reported_list.
     */
    if (intermediate) {
-      if (pe_task != nullptr) {
-         reported_list = ocs::tom::get_or_create<PET_reported_usage>(pe_task, "reported_usage");
+      if (pe_task) {
+         reported_list = pe_task.get_or_create<PET_reported_usage>("reported_usage");
       } else {
-         reported_list = ocs::tom::get_or_create<JAT_reported_usage_list>(ja_task, "reported_usage");
+         reported_list = ja_task.get_or_create<JAT_reported_usage_list>("reported_usage");
       }
 
       /*
@@ -463,7 +483,7 @@ sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *wr
        * for the job, we don't have the submission time in the job report
        * before job exit
        */
-      if (job != nullptr && pe_task == nullptr) {
+      if (job && !pe_task) {
          submission_time = ocs::tom::get<JB_submission_time>(job);
       }
       /*
@@ -471,7 +491,7 @@ sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *wr
        * For consequent intermediate records, we already set the start_time to the
        * previous intermediate record's end time.
        */
-      if (start_time == 0 && ja_task != nullptr) {
+      if (start_time == 0 && ja_task) {
          start_time = ocs::tom::get<JAT_start_time>(ja_task);
       }
 
@@ -592,7 +612,8 @@ sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *wr
                                                                             : USAGE_ATTR_MAXVMEM_ACCT,
                                                                USAGE_ATTR_MAXVMEM, 0), delimiter,
                                 ocs::tom::get<JB_ar>(job), delimiter,
-                                (ar != nullptr) ? static_cast<uint64_t>(sge_gmt64_to_time_t(ocs::tom::get<AR_submission_time>(ar))) : 0
+                                (ar) ? static_cast<uint64_t>(
+                                          sge_gmt64_to_time_t(ocs::tom::get<AR_submission_time>(ar))) : 0
       );
    } else {
       writer->StartObject();
@@ -621,7 +642,7 @@ sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *wr
       write_json(*writer, "granted_pe", granted_pe);
       write_json(*writer, "slots", sge_granted_slots(ocs::tom::get<JAT_granted_destin_identifier_list>(ja_task)));
 
-      if (ar != nullptr) {
+      if (ar) {
          write_json(*writer, "arid", ocs::tom::get<JB_ar>(job));
       }
 
@@ -631,7 +652,7 @@ sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *wr
 
       write_json(*writer, "submission_time", submission_time);
       write_json(*writer, "submit_cmd_line", ocs::tom::get<JB_submission_command_line>(job));
-      if (ar != nullptr) {
+      if (ar) {
          write_json(*writer, "ar_submission_time", ocs::tom::get<AR_submission_time>(ar));
       }
 
@@ -729,7 +750,7 @@ sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *wr
 
       // If additional memory values were reported (execd_params ENABLE_MEM_DETAILS=TRUE)
       // then we want to see the maxpss in accounting.
-      if (static_cast<const lListElem *>(ocs::tom::find_first<UA_name>(usage_list, USAGE_ATTR_MAXPSS)) != nullptr) {
+      if (usage_list.find_first<UA_name>(USAGE_ATTR_MAXPSS)) {
          write_json(*writer, USAGE_ATTR_MAXPSS, reporting_get_double_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
                                         intermediate ? USAGE_ATTR_MAXPSS : USAGE_ATTR_MAXPSS_ACCT, USAGE_ATTR_MAXPSS, 0));
       }

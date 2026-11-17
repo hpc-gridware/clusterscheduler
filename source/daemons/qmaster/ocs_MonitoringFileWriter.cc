@@ -34,8 +34,17 @@
 #include "ocs_JsonUtil.h"
 
 namespace ocs {
-   bool MonitoringFileWriter::create_acct_record(lList **answer_list, lListElem *job_report,
-                                                 lListElem *job, lListElem *ja_task, bool intermediate) {
+   /** @brief Accounting records are not part of the monitoring file: does nothing
+    * @param answer_list receives error messages, unused
+    * @param job_report the job report (`JR_Type`), unused
+    * @param job the job (`JB_Type`), unused
+    * @param ja_task the array task (`JAT_Type`), unused
+    * @param intermediate whether this is an interim record, unused
+    * @return true
+    */
+   bool MonitoringFileWriter::create_acct_record(lList **answer_list, const ocs::tom::Element<ocs::tom::JR> job_report,
+                                                 const ocs::tom::Element<ocs::tom::JB> job,
+                                                 const ocs::tom::Element<ocs::tom::JAT> ja_task, bool intermediate) {
       return true;
    }
 

@@ -41,24 +41,36 @@
 #include "uti/sge_monitor.h"
 #include "sgeobj/sge_daemonize.h"
 
-int
-sge_del_userset(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **alpp, lList **userset_list, char *ruser, char *rhost);
+#include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "tom/ocs_Transitional.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
+#include "sgeobj/tom/ocs_tom_US.h"
 
 int
-sge_verify_department_entries(const lList *userset_list, lListElem *new_userset, lList **alpp);
+sge_del_userset(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ConstElement<ocs::tom::US> ep, lList **alpp,
+                ocs::tom::List<ocs::tom::US> userset_list, const char *ruser, const char *rhost);
+OCS_TRANSITIONAL int sge_del_userset(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **alpp,
+                                     lList **userset_list, char *ruser, char *rhost);
+
+int
+sge_verify_department_entries(ocs::tom::ConstList<ocs::tom::US> userset_list,
+                              ocs::tom::ConstElement<ocs::tom::US> new_userset, lList **alpp);
 
 bool
-job_is_valid_department(lListElem *job, lList **alpp, const char *dept_name, const lList *userset_list);
+job_is_valid_department(ocs::tom::ConstElement<ocs::tom::JB> job, lList **alpp, const char *dept_name,
+                        ocs::tom::ConstList<ocs::tom::US> userset_list);
 
 bool
-job_set_department(lListElem *job, lList **alpp, const lList *userset_list);
+job_set_department(ocs::tom::Element<ocs::tom::JB> job, lList **alpp, ocs::tom::ConstList<ocs::tom::US> userset_list);
 
 void
-userset_update_categories(const lList *added, const lList *removed, uint64_t gdi_session);
+userset_update_categories(ocs::tom::ConstList<ocs::tom::US> added, ocs::tom::ConstList<ocs::tom::US> removed,
+                          uint64_t gdi_session);
 
 int
-userset_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *new_userset, lListElem *userset, int add,
-            const char *ruser, const char *rhost, gdi_object_t *object,
+userset_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *new_userset, lListElem *userset,
+            int add, const char *ruser, const char *rhost, gdi_object_t *object,
             ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command,
             monitoring_t *monitor);
 
@@ -66,5 +78,5 @@ int
 userset_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *userset, gdi_object_t *object);
 
 int
-userset_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList,
-                monitoring_t *monitor);
+userset_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object,
+                lList **ppList, monitoring_t *monitor);

@@ -129,7 +129,9 @@ sge_schedd_add_gdi_order_request(order_t *orders, lList **answer_list, lList **o
    if (gdi_multi != nullptr) {
       int order_id;
 
-      orders->numberSendOrders += lGetNumberOfElem(*order_list);
+      // the batch is the order list of Master_Request_Queue, OR_Type by construction
+      orders->numberSendOrders +=
+              static_cast<uint32_t>(ocs::tom::ConstList<ocs::tom::OR>::from_typed(*order_list).size());
       orders->numberSendPackages++;
 
       /*

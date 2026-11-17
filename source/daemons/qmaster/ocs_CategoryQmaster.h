@@ -25,6 +25,17 @@
 
 #include "cull/cull.h"
 
+#include "tom/ocs_Element.h"
+#include "tom/ocs_Transitional.h"
+#include "sgeobj/tom/ocs_tom_CQ.h"
+#include "sgeobj/tom/ocs_tom_CT.h"
+#include "sgeobj/tom/ocs_tom_EH.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
+#include "sgeobj/tom/ocs_tom_PE.h"
+#include "sgeobj/tom/ocs_tom_PR.h"
+#include "sgeobj/tom/ocs_tom_RQS.h"
+#include "sgeobj/tom/ocs_tom_US.h"
+
 #include "gdi/ocs_gdi_Packet.h"
 #include "gdi/ocs_gdi_Task.h"
 
@@ -46,48 +57,77 @@ namespace ocs {
     */
    class CategoryQmaster {
       static void
-      initialize_prj_and_uset_for_categories(lList *master_project_list, lList *master_userset_list,
-                                             const lList *master_rqs_list, const lList *master_cqueue_list,
-                                             const lList *master_pe_list, const lList *master_host_list);
+      initialize_prj_and_uset_for_categories(ocs::tom::List<ocs::tom::PR> master_project_list,
+                                             ocs::tom::List<ocs::tom::US> master_userset_list,
+                                             ocs::tom::ConstList<ocs::tom::RQS> master_rqs_list,
+                                             ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list,
+                                             ocs::tom::ConstList<ocs::tom::PE> master_pe_list,
+                                             ocs::tom::ConstList<ocs::tom::EH> master_host_list);
 
    public:
       static void
-      initialize_prj_uset_and_create_categories(lList **master_category_list, lList *master_job_list,
-                                                lList *master_project_list, lList *master_userset_list,
-                                                const lList *master_rqs_list, const lList *master_cqueue_list,
-                                                const lList *master_pe_list, const lList *master_host_list);
-
+      initialize_prj_uset_and_create_categories(lList **master_category_list,
+                                                ocs::tom::List<ocs::tom::JB> master_job_list,
+                                                ocs::tom::List<ocs::tom::PR> master_project_list,
+                                                ocs::tom::List<ocs::tom::US> master_userset_list,
+                                                ocs::tom::ConstList<ocs::tom::RQS> master_rqs_list,
+                                                ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list,
+                                                ocs::tom::ConstList<ocs::tom::PE> master_pe_list,
+                                                ocs::tom::ConstList<ocs::tom::EH> master_host_list);
+      OCS_TRANSITIONAL static void initialize_prj_uset_and_create_categories(lList **master_category_list,
+                                                                             lList *master_job_list,
+                                                                             lList *master_project_list,
+                                                                             lList *master_userset_list,
+                                                                             const lList *master_rqs_list,
+                                                                             const lList *master_cqueue_list,
+                                                                             const lList *master_pe_list,
+                                                                             const lList *master_host_list);
 
       static bool
-      attach_job(lList **master_category_list, lListElem *job,
-                 const lList *master_userset_list, const lList *master_project_list, const lList *master_rqs_list,
-                 bool send_events, uint32_t gdi_session);
+      attach_job(lList **master_category_list, ocs::tom::Element<ocs::tom::JB> job,
+                 ocs::tom::ConstList<ocs::tom::US> master_userset_list,
+                 ocs::tom::ConstList<ocs::tom::PR> master_project_list,
+                 ocs::tom::ConstList<ocs::tom::RQS> master_rqs_list, bool send_events, uint32_t gdi_session);
+      OCS_TRANSITIONAL static bool attach_job(lList **master_category_list, lListElem *job,
+                                              const lList *master_userset_list, const lList *master_project_list,
+                                              const lList *master_rqs_list, bool send_events, uint32_t gdi_session);
 
       static bool
-      detach_job(lList **master_category_list, lListElem *job, bool send_events, uint32_t gdi_session);
+      detach_job(lList **master_category_list, ocs::tom::Element<ocs::tom::JB> job, bool send_events,
+                 uint32_t gdi_session);
+      OCS_TRANSITIONAL static bool detach_job(lList **master_category_list, lListElem *job, bool send_events,
+                                              uint32_t gdi_session);
 
       static void
-      reattach_job(lList **master_category_list, lListElem *job,
-                   const lList *master_userset_list, const lList *master_project_list, const lList *master_rqs_list,
-                   bool send_events, uint64_t now, uint32_t gdi_session);
+      reattach_job(lList **master_category_list, ocs::tom::Element<ocs::tom::JB> job,
+                   ocs::tom::ConstList<ocs::tom::US> master_userset_list,
+                   ocs::tom::ConstList<ocs::tom::PR> master_project_list,
+                   ocs::tom::ConstList<ocs::tom::RQS> master_rqs_list, bool send_events, uint64_t now,
+                   uint32_t gdi_session);
 
       static void
-      refresh_cat_data_in_job(lList *master_category_list, lListElem *job);
+      refresh_cat_data_in_job(ocs::tom::List<ocs::tom::CT> master_category_list, ocs::tom::Element<ocs::tom::JB> job);
 
       static void
-      attach_all_jobs(lList *master_job_list, lList **master_category_list,
-                      const lList *master_userset_list, const lList *master_project_list, const lList *master_rqs_list,
-                      bool send_events, uint32_t gdi_session);
+      attach_all_jobs(ocs::tom::List<ocs::tom::JB> master_job_list, lList **master_category_list,
+                      ocs::tom::ConstList<ocs::tom::US> master_userset_list,
+                      ocs::tom::ConstList<ocs::tom::PR> master_project_list,
+                      ocs::tom::ConstList<ocs::tom::RQS> master_rqs_list, bool send_events, uint32_t gdi_session);
 
       static void
-      reattach_all_jobs(lList *master_job_list,
-                        const lList *master_userset_list, const lList *master_project_list, const lList *master_rqs_list,
-                        bool send_events, uint32_t gdi_session);
+      reattach_all_jobs(ocs::tom::List<ocs::tom::JB> master_job_list,
+                        ocs::tom::ConstList<ocs::tom::US> master_userset_list,
+                        ocs::tom::ConstList<ocs::tom::PR> master_project_list,
+                        ocs::tom::ConstList<ocs::tom::RQS> master_rqs_list, bool send_events, uint32_t gdi_session);
+      OCS_TRANSITIONAL static void reattach_all_jobs(lList *master_job_list, const lList *master_userset_list,
+                                                     const lList *master_project_list, const lList *master_rqs_list,
+                                                     bool send_events, uint32_t gdi_session);
 
       static void
-      reset_tmp_data(lList *master_category_list);
+      reset_tmp_data(ocs::tom::List<ocs::tom::CT> master_category_list);
 
       static void
-      refresh_cat_data_all_jobs(lList *master_category_list, lList *master_job_list);
+      refresh_cat_data_all_jobs(ocs::tom::List<ocs::tom::CT> master_category_list,
+                                ocs::tom::List<ocs::tom::JB> master_job_list);
    };
 }

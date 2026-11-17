@@ -40,6 +40,11 @@
 #include "sge_c_gdi.h"
 #include "uti/sge_monitor.h"
 #include "sgeobj/sge_daemonize.h"
+#include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "tom/ocs_Transitional.h"
+#include "sgeobj/tom/ocs_tom_HGRP.h"
+#include "sgeobj/tom/ocs_tom_HR.h"
 
 int
 hgroup_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList, monitoring_t *monitor);
@@ -49,21 +54,24 @@ hgroup_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lL
  * hgroup_success() and by the @exec_hosts sync in sge_host_qmaster.cc (CS-2438
  * chunk 7), which changes a host group without going through the GDI path. */
 void
-hgroup_refresh_caches(lListElem *hgroup, lList *master_hgroup_list, lList **referencees);
+hgroup_refresh_caches(ocs::tom::Element<ocs::tom::HGRP> hgroup, ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list,
+                      ocs::tom::ListPtr<ocs::tom::HR> &referencees);
 
 void
-hgroup_send_referencee_events(const lList *referencees, lList *master_hgroup_list, uint64_t gdi_session);
+hgroup_send_referencee_events(ocs::tom::ConstList<ocs::tom::HR> referencees,
+                              ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list, uint64_t gdi_session);
 
 void
-hgroup_refresh_matcher_caches(lList *master_hgroup_list, lList **refreshed);
+hgroup_refresh_matcher_caches(ocs::tom::List<ocs::tom::HGRP> master_hgroup_list,
+                              ocs::tom::ListPtr<ocs::tom::HR> &refreshed);
 
 /* CS-2438 chunk 7: install the queue copies a membership change produced, and
  * discard them if the change is abandoned. Shared with the @exec_hosts sync. */
 void
-hgroup_commit(lListElem *hgroup, uint64_t gdi_session);
+hgroup_commit(ocs::tom::Element<ocs::tom::HGRP> hgroup, uint64_t gdi_session);
 
 void
-hgroup_rollback_cqueues(lListElem *hgroup);
+hgroup_rollback_cqueues(ocs::tom::Element<ocs::tom::HGRP> hgroup);
 
 int
 hgroup_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *modp, lListElem *ep, int add, const char *ruser, const char *rhost, gdi_object_t *object, ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command, monitoring_t *monitor);
@@ -72,4 +80,7 @@ int
 hgroup_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *upe, gdi_object_t *object);
 
 int
-hgroup_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *cep, lList **alpp, char *ruser, char *rhost);
+hgroup_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ConstElement<ocs::tom::HGRP> cep, lList **alpp,
+           char *ruser, char *rhost);
+OCS_TRANSITIONAL int hgroup_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *cep, lList **alpp,
+                                char *ruser, char *rhost);

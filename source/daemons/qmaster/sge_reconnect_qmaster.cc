@@ -51,6 +51,8 @@
 #include "tom/ocs_Element.h"
 #include "sgeobj/tom/ocs_tom_JAT.h"
 #include "sgeobj/tom/ocs_tom_JB.h"
+#include "sgeobj/tom/ocs_tom_CQ.h"
+#include "sgeobj/tom/ocs_tom_QU.h"
 
 #include "msg_common.h"
 #include "msg_qmaster.h"
@@ -154,14 +156,14 @@ int qmaster_handle_reconnect_request(uint32_t job_id,
    }
 
    // Locate the job.
-   const lList *master_job_list = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
+   const auto master_job_list = ocs::tom::ConstList<ocs::tom::JB>(*ocs::DataStore::get_master_list(SGE_TYPE_JOB));
    INFO("qmaster_handle_reconnect_request: looking up job " sge_u32 " in master_job_list with %d entries",
-        job_id, lGetNumberOfElem(master_job_list));
-   ocs::tom::Element<ocs::tom::JB> jep = ocs::tom::find_first_rw<JB_job_number>(master_job_list, job_id);
+        job_id, static_cast<int>(master_job_list.size()));
+   const auto jep = master_job_list.find_first<JB_job_number>(job_id);
    if (jep == nullptr) {
       answer_list_add_sprintf(answer_list, STATUS_EEXIST, ANSWER_QUALITY_ERROR,
                               "job " sge_u32 " does not exist (master_job_list has %d entries)",
-                              job_id, lGetNumberOfElem(master_job_list));
+                              job_id, static_cast<int>(master_job_list.size()));
       DRETURN(-1);
    }
 
@@ -177,16 +179,17 @@ int qmaster_handle_reconnect_request(uint32_t job_id,
 
    // Find the running ja_task and its exec host.  Reconnect only applies to a job
    // that has been dispatched; the master queue gives us the exec host.
-   ocs::tom::ConstElement<ocs::tom::JAT> jatep = lFirst(ocs::tom::get<JB_ja_tasks>(jep));
+   const auto jatep = ocs::tom::get<JB_ja_tasks>(jep).front();
    if (jatep == nullptr || ocs::tom::get<JAT_master_queue>(jatep) == nullptr) {
       answer_list_add_sprintf(answer_list, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
                               "job " sge_u32 " is not currently dispatched", job_id);
       DRETURN(-1);
    }
 
-   const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
-   const lListElem *qinstance = cqueue_list_locate_qinstance(master_cqueue_list,
-                                                             ocs::tom::get<JAT_master_queue>(jatep));
+   const auto master_cqueue_list =
+           ocs::tom::ConstList<ocs::tom::CQ>(*ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE));
+   const ocs::tom::ConstElement<ocs::tom::QU> qinstance =
+           cqueue_list_locate_qinstance(master_cqueue_list, ocs::tom::get<JAT_master_queue>(jatep));
    if (qinstance == nullptr) {
       answer_list_add_sprintf(answer_list, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
                               "could not locate master queue for job " sge_u32, job_id);

@@ -52,8 +52,18 @@
 #include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/msg_sgeobjlib.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_AR.h"
+#include "sgeobj/tom/ocs_tom_AUSRLIST.h"
+#include "sgeobj/tom/ocs_tom_CQ.h"
+#include "sgeobj/tom/ocs_tom_EH.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
 #include "sgeobj/tom/ocs_tom_JG.h"
+#include "sgeobj/tom/ocs_tom_PE.h"
+#include "sgeobj/tom/ocs_tom_PR.h"
 #include "sgeobj/tom/ocs_tom_QU.h"
+#include "sgeobj/tom/ocs_tom_RL.h"
+#include "sgeobj/tom/ocs_tom_RQS.h"
 #include "sgeobj/tom/ocs_tom_ST.h"
 #include "sgeobj/tom/ocs_tom_UE.h"
 #include "sgeobj/tom/ocs_tom_US.h"
@@ -78,17 +88,13 @@ static void sge_change_queue_version_acl(ocs::gdi::Packet *packet, ocs::gdi::Tas
 
 static int verify_userset_deletion(lList **alpp, const char *userset_name);
 
-static int dept_is_valid_defaultdepartment(lListElem *dept, lList **answer_list);
+static int dept_is_valid_defaultdepartment(ocs::tom::ConstElement<ocs::tom::US> dept, lList **answer_list);
 
-static int acl_is_valid_acl(lListElem *acl, lList **answer_list);
+static int acl_is_valid_acl(ocs::tom::ConstElement<ocs::tom::US> acl, lList **answer_list);
 
-/******************************************************************
-   sge_del_userset() - Qmaster code
-
-   deletes an userset list from the global userset_list
- ******************************************************************/
 /** @brief Delete a user set from the master list
  *
+ * Qmaster code: deletes a user set from the global user set list.
  * Refuses while the set is still referenced - by a queue's access lists, a
  * project, or a resource quota - because a dangling reference would silently
  * change who may run where.
@@ -103,12 +109,9 @@ static int acl_is_valid_acl(lListElem *acl, lList **answer_list);
  * @return STATUS_OK on success
  */
 int
-sge_del_userset(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **alpp, lList **userset_list, char *ruser, char *rhost) {
+sge_del_userset(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::ConstElement<ocs::tom::US> ep,
+                lList **alpp, const ocs::tom::List<ocs::tom::US> userset_list, const char *ruser, const char *rhost) {
    DENTER(TOP_LAYER);
-
-   lListElem *found;
-   int pos, ret;
-   const char *userset_name;
 
    if (!ep || !ruser || !rhost) {
       CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, __func__);
@@ -117,13 +120,13 @@ sge_del_userset(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, l
    }
 
    /* ep is no userset element, if ep has no US_name */
-   if ((pos = lGetPosViaElem(ep, US_name, SGE_NO_ABORT)) < 0) {
+   if (!ep.has<US_name>()) {
       CRITICAL(MSG_SGETEXT_MISSINGCULLFIELD_SS, lNm2Str(US_name), __func__);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
 
-   userset_name = lGetPosString(ep, pos);
+   const char *userset_name = ocs::tom::get<US_name>(ep);
    if (!userset_name) {
       CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, __func__);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
@@ -139,7 +142,8 @@ sge_del_userset(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, l
    }
 
    /* search for userset with this name and remove it from the list */
-   if (!(found = ocs::tom::find_first_rw<US_name>(*userset_list, userset_name))) {
+   const auto found = ocs::tom::find_first_rw<US_name>(userset_list, userset_name);
+   if (!found) {
       ERROR(MSG_SGETEXT_DOESNOTEXIST_SS, MSG_OBJ_USERSET, userset_name);
       answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EEXIST);
@@ -147,12 +151,12 @@ sge_del_userset(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, l
 
    /* ensure there are no (x)acl lists in 
       a queue/pe/project/.. refering to this userset */
-   if ((ret = verify_userset_deletion(alpp, userset_name)) != STATUS_OK) {
+   if (const int ret = verify_userset_deletion(alpp, userset_name); ret != STATUS_OK) {
       /* answerlist gets filled by verify_userset_deletion() in case of errors */
       DRETURN(ret);
    }
 
-   lRemoveElem(*userset_list, &found);
+   userset_list.erase(found);
 
    sge_event_spool(alpp, 0, sgeE_USERSET_DEL, 0, 0, userset_name, nullptr, nullptr,
                    nullptr, nullptr, nullptr, true, true, packet->gdi_session);
@@ -162,28 +166,45 @@ sge_del_userset(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, l
    DRETURN(STATUS_OK);
 }
 
-/*********************************************************************
-   Qmaster code
+/** @brief sge_del_userset() for an untyped caller
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param ep the user set to delete (US_Type)
+ * @param alpp receives messages for the caller
+ * @param userset_list the master user set list (US_Type)
+ * @param ruser the requesting user
+ * @param rhost the requesting host
+ * @return STATUS_OK on success
+ */
+int
+sge_del_userset(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **alpp, lList **userset_list,
+                char *ruser, char *rhost) {
+   return sge_del_userset(packet, task, ocs::tom::ConstElement<ocs::tom::US>(ep), alpp,
+                          ocs::tom::List<ocs::tom::US>(userset_list != nullptr ? *userset_list : nullptr), ruser,
+                          rhost);
+}
 
-   increase version of queues using given userset as access list (acl or xacl)
-
-   having changed a complex we have to increase the versions
-   of all queues containing this complex;
- **********************************************************************/
+/** @brief Increase the version of all queue instances using a user set as access list
+ *
+ * Qmaster code: having changed a user set we have to increase the versions of all
+ * queue instances referencing it in their acl or xacl.
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param acl_name the name of the changed user set
+ */
 static void
 sge_change_queue_version_acl(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const char *acl_name) {
    DENTER(TOP_LAYER);
-   const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
+   const ocs::tom::List<ocs::tom::CQ> master_cqueue_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE,
+                                                                                             true));
 
-   for_each_ep_lv(cqueue, master_cqueue_list) {
-      ocs::tom::ConstList<ocs::tom::QU> qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
-
-      for_each_rw_lv(qinstance, qinstance_list) {
-         ocs::tom::ConstList<ocs::tom::US> acl_list = ocs::tom::get<QU_acl>(qinstance);
-         ocs::tom::ConstList<ocs::tom::US> xacl_list = ocs::tom::get<QU_xacl>(qinstance);
-         const lListElem *acl = ocs::tom::find_first<US_name>(acl_list, acl_name);
-         const lListElem *xacl = ocs::tom::find_first<US_name>(xacl_list, acl_name);
-         bool is_used = ((acl != nullptr) || (xacl != nullptr)) ? true : false;
+   for (const auto cqueue : master_cqueue_list) {
+      for (const auto qinstance : ocs::tom::get<CQ_qinstances>(cqueue)) {
+         const auto acl = ocs::tom::find_first<US_name>(ocs::tom::get<QU_acl>(qinstance), acl_name);
+         const auto xacl = ocs::tom::find_first<US_name>(ocs::tom::get<QU_xacl>(qinstance), acl_name);
+         const bool is_used = acl || xacl;
 
          if (is_used) {
             lList *answer_list = nullptr;
@@ -192,7 +213,8 @@ sge_change_queue_version_acl(ocs::gdi::Packet *packet, ocs::gdi::Task *task, con
                     " changed\n", ocs::tom::get<QU_full_name>(qinstance), acl_name);
             qinstance_increase_qversion(qinstance);
             sge_event_spool(&answer_list, 0, sgeE_QINSTANCE_MOD, 0, 0, ocs::tom::get<QU_qname>(qinstance),
-                            ocs::tom::get<QU_qhostname>(qinstance), nullptr, qinstance, nullptr, nullptr, true, false, packet->gdi_session);
+                            ocs::tom::get<QU_qhostname>(qinstance), nullptr, qinstance, nullptr, nullptr, true, false,
+                            packet->gdi_session);
             answer_list_output(&answer_list);
          }
       }
@@ -201,35 +223,19 @@ sge_change_queue_version_acl(ocs::gdi::Packet *packet, ocs::gdi::Task *task, con
    DRETURN_VOID;
 }
 
-/******************************************************
-   sge_verify_department_entries()
-      resolves user set/department
-
-   userset_list
-      the current master user list (US_Type)
-   new_userset
-      the new userset element
-   alpp
-      may be nullptr
-      is used to build up an answer
-      element in case of error
-
-   returns
-      STATUS_OK         - on success
-      STATUS_ESEMANTIC  - on error
- ******************************************************/
 /** @brief Check that a user set may become, or remain, a department
  *
- * A user may belong to only one department, so a set marked as one must not
- * overlap any other department.
+ * Resolves user set/department. A user may belong to only one department, so a
+ * set marked as one must not overlap any other department.
  *
- * @param userset_list the existing user sets
+ * @param userset_list the existing user sets, the current master user set list
  * @param new_userset the set being added or changed
- * @param alpp receives messages for the caller
- * @return STATUS_OK when the departments stay consistent
+ * @param alpp receives messages for the caller, may be nullptr
+ * @return STATUS_OK when the departments stay consistent, STATUS_ESEMANTIC on error
  */
 int
-sge_verify_department_entries(const lList *userset_list, lListElem *new_userset, lList **alpp) {
+sge_verify_department_entries(const ocs::tom::ConstList<ocs::tom::US> userset_list,
+                              const ocs::tom::ConstElement<ocs::tom::US> new_userset, lList **alpp) {
    DENTER(TOP_LAYER);
 
    if (!strcmp(ocs::tom::get<US_name>(new_userset), DEFAULT_DEPARTMENT)) {
@@ -256,11 +262,11 @@ sge_verify_department_entries(const lList *userset_list, lListElem *new_userset,
  * @return 0 or 1
  */
 static int
-dept_is_valid_defaultdepartment(lListElem *dept, lList **answer_list) {
+dept_is_valid_defaultdepartment(const ocs::tom::ConstElement<ocs::tom::US> dept, lList **answer_list) {
    DENTER(TOP_LAYER);
 
    int ret = 1;
-   if (dept != nullptr) {
+   if (dept) {
       /* test 'type' */
       if (!(ocs::tom::get<US_type>(dept) & US_DEPT)) {
          ERROR(SFNMAX, MSG_QMASTER_DEPTFORDEFDEPARTMENT);
@@ -268,7 +274,7 @@ dept_is_valid_defaultdepartment(lListElem *dept, lList **answer_list) {
          ret = 0;
       }
       /* test user list */
-      if (lGetNumberOfElem(ocs::tom::get<US_entries>(dept)) > 0) {
+      if (!ocs::tom::get<US_entries>(dept).empty()) {
          ERROR(SFNMAX, MSG_QMASTER_AUTODEFDEPARTMENT);
          answer_list_add(answer_list, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
          ret = 0;
@@ -288,11 +294,11 @@ dept_is_valid_defaultdepartment(lListElem *dept, lList **answer_list) {
  * @return 0 or 1
  */
 static int
-acl_is_valid_acl(lListElem *acl, lList **answer_list) {
+acl_is_valid_acl(const ocs::tom::ConstElement<ocs::tom::US> acl, lList **answer_list) {
    DENTER(TOP_LAYER);
 
    int ret = 1;
-   if (acl != nullptr) {
+   if (acl) {
       if (!(ocs::tom::get<US_type>(acl) & US_DEPT)) {
          if (ocs::tom::get<US_fshare>(acl) > 0) {
             ERROR(SFNMAX, MSG_QMASTER_ACLNOSHARE);
@@ -319,7 +325,8 @@ acl_is_valid_acl(lListElem *acl, lList **answer_list) {
  * @return true if the owner is a member of `dept_name`
  */
 bool
-job_is_valid_department(lListElem *job, lList **alpp, const char *dept_name, const lList *userset_list) {
+job_is_valid_department(const ocs::tom::ConstElement<ocs::tom::JB> job, lList **alpp, const char *dept_name,
+                        const ocs::tom::ConstList<ocs::tom::US> userset_list) {
    DENTER(TOP_LAYER);
 
    // Do we have a department name?
@@ -330,7 +337,7 @@ job_is_valid_department(lListElem *job, lList **alpp, const char *dept_name, con
    }
 
    // Does the department exist?
-   ocs::tom::ConstElement<ocs::tom::US> dept = ocs::tom::find_first<US_name>(userset_list, dept_name);
+   const auto dept = ocs::tom::find_first<US_name>(userset_list, dept_name);
    if (!dept || !(ocs::tom::get<US_type>(dept) & US_DEPT)) {
       if (alpp) {
          ERROR(MSG_JOB_DEPTNOEXIST_S, dept_name);
@@ -353,7 +360,7 @@ job_is_valid_department(lListElem *job, lList **alpp, const char *dept_name, con
 
    // Does the group or a supplementary group belong to the department?
    const char *group = ocs::tom::get<JB_group>(job);
-   ocs::tom::ConstList<ocs::tom::ST> grp_list = ocs::tom::get<JB_grp_list>(job);
+   const ocs::tom::ConstList<ocs::tom::ST> grp_list = ocs::tom::get<JB_grp_list>(job);
    if (sge_contained_in_access_list(nullptr, group, grp_list, dept)) {
       DRETURN(true);
    }
@@ -379,11 +386,12 @@ job_is_valid_department(lListElem *job, lList **alpp, const char *dept_name, con
  * @return true if a department could be assigned
  */
 bool
-job_set_department(lListElem *job, lList **alpp, const lList *userset_list) {
+job_set_department(const ocs::tom::Element<ocs::tom::JB> job, lList **alpp,
+                   const ocs::tom::ConstList<ocs::tom::US> userset_list) {
    DENTER(TOP_LAYER);
 
    // Find the first department where the user is a member of
-   for_each_ep_lv(dept, userset_list) {
+   for (const auto dept : userset_list) {
       const char *dept_name = ocs::tom::get<US_name>(dept);
       if (strcmp(dept_name, DEFAULT_DEPARTMENT) == 0) {
          continue;
@@ -406,84 +414,100 @@ job_set_department(lListElem *job, lList **alpp, const lList *userset_list) {
    DRETURN(false);
 }
 
+/** @brief Check that no object still references a user set that is to be deleted
+ *
+ * Checks the cluster queue configurations (fix for bug 6422335: the cq
+ * configuration instead of the qinstances), PEs, projects, exec hosts, roles
+ * and the global configuration.
+ *
+ * @param alpp receives an error message per reference found
+ * @param userset_name the user set to be deleted
+ * @return STATUS_OK if unreferenced, STATUS_EUNKNOWN or STATUS_EEXIST (exec host reference) otherwise
+ */
 static int
 verify_userset_deletion(lList **alpp, const char *userset_name) {
    DENTER(TOP_LAYER);
    int ret = STATUS_OK;
-   const lListElem *ep;
-   const lListElem *cl;
-   const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
-   const lList *master_pe_list = *ocs::DataStore::get_master_list(SGE_TYPE_PE);
-   const lList *master_project_list = *ocs::DataStore::get_master_list(SGE_TYPE_PROJECT);
-   const lList *master_ehost_list = *ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST);
-   const lList *master_role_list = *ocs::DataStore::get_master_list(SGE_TYPE_RL);
-
+   const ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list(*ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE));
+   const ocs::tom::ConstList<ocs::tom::PE> master_pe_list(*ocs::DataStore::get_master_list(SGE_TYPE_PE));
+   const ocs::tom::ConstList<ocs::tom::PR> master_project_list(*ocs::DataStore::get_master_list(SGE_TYPE_PROJECT));
+   const ocs::tom::ConstList<ocs::tom::EH> master_ehost_list(*ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST));
+   const ocs::tom::ConstList<ocs::tom::RL> master_role_list(*ocs::DataStore::get_master_list(SGE_TYPE_RL));
 
    /*
     * fix for bug 6422335
     * check the cq configuration for userset references instead of qinstances
     */
-   for_each_ep_lv(cqueue, master_cqueue_list) {
-      for_each_ep(cl, ocs::tom::get<CQ_acl>(cqueue)) {
-         if (ocs::tom::find_first_in<AUSRLIST_value, US_name>(cl, userset_name)) {
-            ERROR(MSG_SGETEXT_USERSETSTILLREFERENCED_SSSS, userset_name, MSG_OBJ_USERLIST, MSG_OBJ_QUEUE, ocs::tom::get<CQ_name>(cqueue));
+   for (const auto cqueue : master_cqueue_list) {
+      for (const auto cl : ocs::tom::get<CQ_acl>(cqueue)) {
+         if (ocs::tom::find_first<US_name>(ocs::tom::get<AUSRLIST_value>(cl), userset_name)) {
+            ERROR(MSG_SGETEXT_USERSETSTILLREFERENCED_SSSS, userset_name, MSG_OBJ_USERLIST, MSG_OBJ_QUEUE,
+                  ocs::tom::get<CQ_name>(cqueue));
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             ret = STATUS_EUNKNOWN;
          }
       }
-      for_each_ep(cl, ocs::tom::get<CQ_xacl>(cqueue)) {
-         if (ocs::tom::find_first_in<AUSRLIST_value, US_name>(cl, userset_name)) {
-            ERROR(MSG_SGETEXT_USERSETSTILLREFERENCED_SSSS, userset_name, MSG_OBJ_XUSERLIST, MSG_OBJ_QUEUE, ocs::tom::get<CQ_name>(cqueue));
+      for (const auto cl : ocs::tom::get<CQ_xacl>(cqueue)) {
+         if (ocs::tom::find_first<US_name>(ocs::tom::get<AUSRLIST_value>(cl), userset_name)) {
+            ERROR(MSG_SGETEXT_USERSETSTILLREFERENCED_SSSS, userset_name, MSG_OBJ_XUSERLIST, MSG_OBJ_QUEUE,
+                  ocs::tom::get<CQ_name>(cqueue));
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             ret = STATUS_EUNKNOWN;
          }
       }
    }
 
-   for_each_ep(ep, master_pe_list) {
+   for (const auto ep : master_pe_list) {
       if (ocs::tom::find_first<US_name>(ocs::tom::get<PE_user_list>(ep), userset_name)) {
-         ERROR(MSG_SGETEXT_USERSETSTILLREFERENCED_SSSS, userset_name, MSG_OBJ_USERLIST, MSG_OBJ_PE, ocs::tom::get<PE_name>(ep));
+         ERROR(MSG_SGETEXT_USERSETSTILLREFERENCED_SSSS, userset_name, MSG_OBJ_USERLIST, MSG_OBJ_PE,
+               ocs::tom::get<PE_name>(ep));
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          ret = STATUS_EUNKNOWN;
       }
       if (ocs::tom::find_first<US_name>(ocs::tom::get<PE_xuser_list>(ep), userset_name)) {
-         ERROR(MSG_SGETEXT_USERSETSTILLREFERENCED_SSSS, userset_name, MSG_OBJ_XUSERLIST, MSG_OBJ_PE, ocs::tom::get<PE_name>(ep));
+         ERROR(MSG_SGETEXT_USERSETSTILLREFERENCED_SSSS, userset_name, MSG_OBJ_XUSERLIST, MSG_OBJ_PE,
+               ocs::tom::get<PE_name>(ep));
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          ret = STATUS_EUNKNOWN;
       }
    }
 
-   for_each_ep(ep, master_project_list) {
+   for (const auto ep : master_project_list) {
       if (ocs::tom::find_first<US_name>(ocs::tom::get<PR_acl>(ep), userset_name)) {
-         ERROR(MSG_SGETEXT_USERSETSTILLREFERENCED_SSSS, userset_name, MSG_OBJ_USERLIST, MSG_OBJ_PRJ, ocs::tom::get<PR_name>(ep));
+         ERROR(MSG_SGETEXT_USERSETSTILLREFERENCED_SSSS, userset_name, MSG_OBJ_USERLIST, MSG_OBJ_PRJ,
+               ocs::tom::get<PR_name>(ep));
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          ret = STATUS_EUNKNOWN;
       }
       if (ocs::tom::find_first<US_name>(ocs::tom::get<PR_xacl>(ep), userset_name)) {
-         ERROR(MSG_SGETEXT_USERSETSTILLREFERENCED_SSSS, userset_name, MSG_OBJ_XUSERLIST, MSG_OBJ_PRJ, ocs::tom::get<PR_name>(ep));
+         ERROR(MSG_SGETEXT_USERSETSTILLREFERENCED_SSSS, userset_name, MSG_OBJ_XUSERLIST, MSG_OBJ_PRJ,
+               ocs::tom::get<PR_name>(ep));
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          ret = STATUS_EUNKNOWN;
       }
    }
 
    /* hosts */
-   for_each_ep(ep, master_ehost_list) {
+   for (const auto ep : master_ehost_list) {
       if (ocs::tom::find_first<US_name>(ocs::tom::get<EH_acl>(ep), userset_name)) {
-         ERROR(MSG_SGETEXT_USERSETSTILLREFERENCED_SSSS, userset_name, MSG_OBJ_USERLIST, MSG_OBJ_EH, static_cast<const char *>(ocs::tom::get<EH_name>(ep)));
+         ERROR(MSG_SGETEXT_USERSETSTILLREFERENCED_SSSS, userset_name, MSG_OBJ_USERLIST, MSG_OBJ_EH,
+               static_cast<const char *>(ocs::tom::get<EH_name>(ep)));
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EEXIST);
       }
       if (ocs::tom::find_first<US_name>(ocs::tom::get<EH_xacl>(ep), userset_name)) {
-         ERROR(MSG_SGETEXT_USERSETSTILLREFERENCED_SSSS, userset_name, MSG_OBJ_XUSERLIST, MSG_OBJ_EH, static_cast<const char *>(ocs::tom::get<EH_name>(ep)));
+         ERROR(MSG_SGETEXT_USERSETSTILLREFERENCED_SSSS, userset_name, MSG_OBJ_XUSERLIST, MSG_OBJ_EH,
+               static_cast<const char *>(ocs::tom::get<EH_name>(ep)));
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EEXIST);
       }
    }
 
    // refuse deletion if any role still references this userset in its user_list
-   for_each_ep_lv(role_ep, master_role_list) {
+   for (const auto role_ep : master_role_list) {
       if (ocs::tom::find_first<US_name>(ocs::tom::get<RL_user_list>(role_ep), userset_name)) {
-         ERROR(MSG_SGETEXT_USERSETSTILLREFERENCED_SSSS, userset_name, MSG_OBJ_USERLIST, MSG_OBJ_ROLE, ocs::tom::get<RL_name>(role_ep));
+         ERROR(MSG_SGETEXT_USERSETSTILLREFERENCED_SSSS, userset_name, MSG_OBJ_USERLIST, MSG_OBJ_ROLE,
+               ocs::tom::get<RL_name>(role_ep));
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          ret = STATUS_EUNKNOWN;
       }
@@ -509,52 +533,64 @@ verify_userset_deletion(lList **alpp, const char *userset_name) {
  * @brief True, if userset still used
  *
  * Returns true, if userset is still used as ACL with host_conf(5),
- * queue_conf(5), or sge_pe(5).
+ * queue_conf(5), or sge_pe(5) or in a resource quota set.
  * Use of usersets as ACLs in sge_conf(5) play no role here,
  * since such ACLs are checked in qmaster and thus are not
  * relevant for the scheduling algorithm.
  *
- * @param p the userset
+ * @param u the name of the userset
  *
  * @return True, if userset still used
  *
  * @note MT-NOTE: userset_still_used() is not MT safe
  */
 static bool userset_still_used(const char *u) {
-   const lListElem *qc, *cq, *hep, *rqs;
+   DENTER(TOP_LAYER);
    dstring ds = DSTRING_INIT;
-   const lList *master_rqs_list = *ocs::DataStore::get_master_list(SGE_TYPE_RQS);
-   const lList *master_pe_list = *ocs::DataStore::get_master_list(SGE_TYPE_PE);
-   const lList *master_ehost_list = *ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST);
-   const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
+   const ocs::tom::ConstList<ocs::tom::RQS> master_rqs_list(*ocs::DataStore::get_master_list(SGE_TYPE_RQS));
+   const ocs::tom::ConstList<ocs::tom::PE> master_pe_list(*ocs::DataStore::get_master_list(SGE_TYPE_PE));
+   const ocs::tom::ConstList<ocs::tom::EH> master_ehost_list(*ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST));
+   const ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list(*ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE));
 
    sge_dstring_sprintf(&ds, "@%s", u);
 
-   for_each_ep(rqs, master_rqs_list) {
+   for (const auto rqs : master_rqs_list) {
       if (scope_is_referenced_rqs(rqs, RQR_filter_users, sge_dstring_get_string(&ds))) {
          sge_dstring_free(&ds);
-         return true;
+         DRETURN(true);
       }
    }
    sge_dstring_free(&ds);
 
-   for_each_ep(hep, master_pe_list)if (ocs::tom::find_first_in<PE_user_list, US_name>(hep, u) ||
-                                       ocs::tom::find_first_in<PE_xuser_list, US_name>(hep, u))
-         return true;
-
-   for_each_ep(hep, master_ehost_list)if (ocs::tom::find_first_in<EH_acl, US_name>(hep, u) || ocs::tom::find_first_in<EH_xacl, US_name>(hep, u))
-         return true;
-
-   for_each_ep(cq, master_cqueue_list) {
-      for_each_ep(qc, ocs::tom::get<CQ_acl>(cq))if (ocs::tom::find_first_in<AUSRLIST_value, US_name>(qc, u))
-            return true;
-      for_each_ep(qc, ocs::tom::get<CQ_xacl>(cq))if (ocs::tom::find_first_in<AUSRLIST_value, US_name>(qc, u))
-            return true;
+   for (const auto pe : master_pe_list) {
+      if (ocs::tom::find_first<US_name>(ocs::tom::get<PE_user_list>(pe), u) ||
+          ocs::tom::find_first<US_name>(ocs::tom::get<PE_xuser_list>(pe), u)) {
+         DRETURN(true);
+      }
    }
 
-   return false;
-}
+   for (const auto hep : master_ehost_list) {
+      if (ocs::tom::find_first<US_name>(ocs::tom::get<EH_acl>(hep), u) ||
+          ocs::tom::find_first<US_name>(ocs::tom::get<EH_xacl>(hep), u)) {
+         DRETURN(true);
+      }
+   }
 
+   for (const auto cq : master_cqueue_list) {
+      for (const auto qc : ocs::tom::get<CQ_acl>(cq)) {
+         if (ocs::tom::find_first<US_name>(ocs::tom::get<AUSRLIST_value>(qc), u)) {
+            DRETURN(true);
+         }
+      }
+      for (const auto qc : ocs::tom::get<CQ_xacl>(cq)) {
+         if (ocs::tom::find_first<US_name>(ocs::tom::get<AUSRLIST_value>(qc), u)) {
+            DRETURN(true);
+         }
+      }
+   }
+
+   DRETURN(false);
+}
 
 /**
  * @brief Update all usersets wrts categories
@@ -569,17 +605,18 @@ static bool userset_still_used(const char *u) {
  *
  * @note MT-NOTE: userset_update_categories() is not MT safe
  */
-void userset_update_categories(const lList *added, const lList *removed, uint64_t gdi_session) {
+void
+userset_update_categories(const ocs::tom::ConstList<ocs::tom::US> added,
+                          const ocs::tom::ConstList<ocs::tom::US> removed, const uint64_t gdi_session) {
    DENTER(TOP_LAYER);
-   const lListElem *ep;
-   const char *u;
-   const lList *master_userset_list = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
+   const ocs::tom::List<ocs::tom::US> master_userset_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_USERSET,
+                                                                                         true));
    bool reattach_categories = false;
 
-   for_each_ep(ep, added) {
-      u = ocs::tom::get<US_name>(ep);
+   for (const auto ep : added) {
+      const char *u = ocs::tom::get<US_name>(ep);
       DPRINTF("added userset: \"%s\"\n", u);
-      ocs::tom::Element<ocs::tom::US> acl = ocs::tom::find_first_rw<US_name>(master_userset_list, u);
+      const auto acl = ocs::tom::find_first_rw<US_name>(master_userset_list, u);
       if (acl && !ocs::tom::get<US_consider_with_categories>(acl)) {
          ocs::tom::set<US_consider_with_categories>(acl, true);
          reattach_categories = true;
@@ -587,10 +624,10 @@ void userset_update_categories(const lList *added, const lList *removed, uint64_
       }
    }
 
-   for_each_ep(ep, removed) {
-      u = ocs::tom::get<US_name>(ep);
+   for (const auto ep : removed) {
+      const char *u = ocs::tom::get<US_name>(ep);
       DPRINTF("removed userset: \"%s\"\n", u);
-      ocs::tom::Element<ocs::tom::US> acl = ocs::tom::find_first_rw<US_name>(master_userset_list, u);
+      const auto acl = ocs::tom::find_first_rw<US_name>(master_userset_list, u);
 
       if (acl && !userset_still_used(u)) {
          ocs::tom::set<US_consider_with_categories>(acl, false);
@@ -601,11 +638,11 @@ void userset_update_categories(const lList *added, const lList *removed, uint64_
 
    // reattach all jobs to categories and consider the new project attributes
    if (reattach_categories) {
-      lList *master_job_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB);
-      const lList *master_userset_list = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
-      const lList *master_project_list = *ocs::DataStore::get_master_list(SGE_TYPE_PROJECT);
-      const lList *master_rqs_list = *ocs::DataStore::get_master_list(SGE_TYPE_RQS);
-      ocs::CategoryQmaster::reattach_all_jobs(master_job_list, master_userset_list, master_project_list, master_rqs_list, true, gdi_session);
+      const ocs::tom::List<ocs::tom::JB> master_job_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB));
+      const ocs::tom::ConstList<ocs::tom::PR> master_project_list(*ocs::DataStore::get_master_list(SGE_TYPE_PROJECT));
+      const ocs::tom::ConstList<ocs::tom::RQS> master_rqs_list(*ocs::DataStore::get_master_list(SGE_TYPE_RQS));
+      ocs::CategoryQmaster::reattach_all_jobs(master_job_list, master_userset_list, master_project_list,
+                                              master_rqs_list, true, gdi_session);
    }
 
    DRETURN_VOID;
@@ -615,8 +652,11 @@ void userset_update_categories(const lList *added, const lList *removed, uint64_
  * @brief Gdi callback function for adding/modifing a userset
  *
  * This function is called from the generic gdi framework when a userset is
- * added or modified.
+ * added or modified. The raw parameters are fixed by the modifier_func_t of
+ * the gdi object table.
  *
+ * @param packet the client request
+ * @param task the GDI task being answered
  * @param alpp answer list
  * @param new_userset if add it's an empty userset that needs to be filled if mod it's the actual stored userset
  * @param userset reduced userset object with new/modified values
@@ -624,11 +664,9 @@ void userset_update_categories(const lList *added, const lList *removed, uint64_
  * @param ruser user who invoked the gdi request
  * @param rhost host where the gid request was invoked
  * @param object structure of the gdi framework
+ * @param cmd the command being executed
  * @param sub_command requested sub_commands
  * @param monitor monitoring structure
- * @param packet the client request
- * @param task the GDI task being answered
- * @param cmd the command being executed
  *
  * @return 0 on success STATUS_EUNKNOWN if an error occurred
  *
@@ -641,18 +679,21 @@ int userset_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lL
                 monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
+   // both elements are of US_Type: the gdi object table and the listener's structure check guarantee it
+   const ocs::tom::Element<ocs::tom::US> new_us(new_userset);
+   const ocs::tom::Element<ocs::tom::US> delta_us(userset);
    const char *userset_name;
-   const lList *master_userset_list = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
-   const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
-   const lList *master_ar_list = *ocs::DataStore::get_master_list(SGE_TYPE_AR);
+   const ocs::tom::ConstList<ocs::tom::US> master_userset_list(*ocs::DataStore::get_master_list(SGE_TYPE_USERSET));
+   const ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list(*ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE));
+   const ocs::tom::ConstList<ocs::tom::AR> master_ar_list(*ocs::DataStore::get_master_list(SGE_TYPE_AR));
 
    /* ---- US_name */
    if (add) {
-      if (attr_mod_str(alpp, userset, new_userset, US_name, object->object_name)) {
+      if (attr_mod_str(alpp, delta_us, new_us, US_name, object->object_name)) {
          goto ERROR;
       }
    }
-   userset_name = ocs::tom::get<US_name>(new_userset);
+   userset_name = ocs::tom::get<US_name>(new_us);
 
    if (add && verify_obj_name(
            alpp, userset_name, MAX_VERIFY_STRING, object->object_name) != STATUS_OK) {
@@ -660,29 +701,29 @@ int userset_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lL
    }
 
    /* ---- US_fshare */
-   attr_mod_ulong(userset, new_userset, US_fshare, object->object_name);
+   attr_mod_ulong(delta_us, new_us, US_fshare, object->object_name);
 
    /* ---- US_oticket */
-   attr_mod_ulong(userset, new_userset, US_oticket, object->object_name);
+   attr_mod_ulong(delta_us, new_us, US_oticket, object->object_name);
 
    /* ---- US_type */
-   attr_mod_ulong(userset, new_userset, US_type, object->object_name);
+   attr_mod_ulong(delta_us, new_us, US_type, object->object_name);
 
    /* ensure userset is at least an ACL (qconf -au ) */
-   if (ocs::tom::get<US_type>(new_userset) == 0) {
-      ocs::tom::set<US_type>(new_userset, US_ACL);
+   if (ocs::tom::get<US_type>(new_us) == 0) {
+      ocs::tom::set<US_type>(new_us, US_ACL);
    }
    /* make sure acl is valid */
    if (!add) {
-      if (acl_is_valid_acl(new_userset, alpp) != STATUS_OK) {
+      if (acl_is_valid_acl(new_us, alpp) != STATUS_OK) {
          goto ERROR;
       }
    }
    /* ---- US_entries */
-   attr_mod_sub_list(alpp, new_userset, US_entries,
-                     UE_name, userset, cmd, sub_command, SGE_ATTR_USER_LISTS, object->object_name, 0, nullptr);
+   attr_mod_sub_list(alpp, new_us, US_entries,
+                     UE_name, delta_us, cmd, sub_command, SGE_ATTR_USER_LISTS, object->object_name, 0, nullptr);
    /* interpret user/group names */
-   if (userset_validate_entries(new_userset, alpp) != STATUS_OK) {
+   if (userset_validate_entries(new_us, alpp) != STATUS_OK) {
       goto ERROR;
    }
 
@@ -705,7 +746,7 @@ int userset_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lL
       /* NOTE: these rejections must not use STATUS_EEXIST: sge_client_del_user()
        * (qconf -du) maps STATUS_EEXIST to "access list does not exist" and drops
        * our message. STATUS_ESEMANTIC makes the client print the text below. */
-      if ((ocs::tom::get<US_type>(new_userset) & US_ACL) == 0) {
+      if ((ocs::tom::get<US_type>(new_us) & US_ACL) == 0) {
          ERROR(MSG_USERSET_RESERVED_MUSTBEACL_S, userset_name);
          answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
          goto ERROR;
@@ -713,13 +754,14 @@ int userset_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lL
 
       /* admin_user "none" is the sentinel for "no admin user", it is not seeded either */
       const char *admin_user = ocs::Bootstrap::get_admin_user();
-      if (static_cast<const lListElem *>(ocs::tom::find_first_in<US_entries, UE_name>(new_userset, "root")) == nullptr) {
+      const auto entries = ocs::tom::get<US_entries>(new_us);
+      if (!ocs::tom::find_first<UE_name>(entries, "root")) {
          ERROR(MSG_SGETEXT_MAY_NOT_REMOVE_USER_FROM_LIST_SS, "root", manop_name);
          answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
          goto ERROR;
       }
       if (admin_user != nullptr && sge_strnullcasecmp(admin_user, NONE_STR) != 0 &&
-          static_cast<const lListElem *>(ocs::tom::find_first_in<US_entries, UE_name>(new_userset, admin_user)) == nullptr) {
+          !ocs::tom::find_first<UE_name>(entries, admin_user)) {
          ERROR(MSG_SGETEXT_MAY_NOT_REMOVE_USER_FROM_LIST_SS, admin_user, manop_name);
          answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
          goto ERROR;
@@ -730,7 +772,7 @@ int userset_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lL
    ** check for users defined in more than one userset if they
    ** are used as departments
    */
-   if (sge_verify_department_entries(master_userset_list, new_userset, alpp) != STATUS_OK) {
+   if (sge_verify_department_entries(master_userset_list, new_us, alpp) != STATUS_OK) {
       goto ERROR;
    }
 
@@ -738,14 +780,10 @@ int userset_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lL
    ** check advance reservations
    */
    if (!add) {
-      const lListElem *cqueue;
-      lList *new_master_userset_list = nullptr;
+      ocs::tom::ListPtr<ocs::tom::US> new_master_userset_list;
 
-      for_each_ep(cqueue, master_cqueue_list) {
-         ocs::tom::ConstList<ocs::tom::QU> qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
-         ocs::tom::ConstElement<ocs::tom::QU> qinstance;
-
-         for_each_ep(qinstance, qinstance_list) {
+      for (const auto cqueue : master_cqueue_list) {
+         for (const auto qinstance : ocs::tom::get<CQ_qinstances>(cqueue)) {
             const char *queue_name = ocs::tom::get<QU_full_name>(qinstance);
 
             if (qinstance_slots_reserved(qinstance) == 0) {
@@ -753,39 +791,35 @@ int userset_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lL
                continue;
             }
 
-            if (static_cast<const lListElem *>(ocs::tom::find_first<US_name>(ocs::tom::get<QU_acl>(qinstance), userset_name)) == nullptr &&
-                static_cast<const lListElem *>(ocs::tom::find_first<US_name>(ocs::tom::get<QU_xacl>(qinstance), userset_name)) == nullptr) {
+            if (!ocs::tom::find_first<US_name>(ocs::tom::get<QU_acl>(qinstance), userset_name) &&
+                !ocs::tom::find_first<US_name>(ocs::tom::get<QU_xacl>(qinstance), userset_name)) {
                /* userset not referenced by queue instance */
                continue;
             }
 
-            for_each_rw_lv(ar, master_ar_list) {
+            for (const auto ar : master_ar_list) {
                if (ocs::tom::find_first<JG_qname>(ocs::tom::get<AR_granted_slots>(ar), queue_name)) {
-                  if (new_master_userset_list == nullptr) {
-                     lListElem *old_userset;
-                     new_master_userset_list = lCopyList("", master_userset_list);
-                     old_userset = ocs::tom::find_first_rw<US_name>(new_master_userset_list, userset_name);
-                     lRemoveElem(new_master_userset_list, &old_userset);
-                     lAppendElem(new_master_userset_list, lCopyElem(new_userset));
+                  if (!new_master_userset_list) {
+                     new_master_userset_list = master_userset_list.clone("");
+                     new_master_userset_list->erase<US_name>(userset_name);
+                     new_master_userset_list->push_back(new_us.clone());
                   }
 
                   if (!sge_ar_have_users_access(nullptr, ar, ocs::tom::get<QU_full_name>(qinstance),
                                                 ocs::tom::get<QU_acl>(qinstance),
                                                 ocs::tom::get<QU_xacl>(qinstance),
-                                                new_master_userset_list)) {
+                                                new_master_userset_list.get())) {
                      answer_list_add_sprintf(alpp, STATUS_ESYNTAX,
                                              ANSWER_QUALITY_ERROR,
                                              MSG_PARSE_MOD3_REJECTED_DUE_TO_AR_SU,
                                              "entries",
                                              ocs::tom::get<AR_id>(ar));
-                     lFreeList(&new_master_userset_list);
                      goto ERROR;
                   }
                }
             }
          }
       }
-      lFreeList(&new_master_userset_list);
    }
 
    DRETURN(0);
@@ -798,31 +832,33 @@ DRETURN(STATUS_EUNKNOWN);
  * @brief Gdi callback funtion to spool a userset
  *
  * This function is called by the gdi framework after successfully adding or
- * modifing a userset.
+ * modifing a userset. The raw parameters are fixed by the writer_func_t of the
+ * gdi object table.
  *
- * @param alpp answer list
- * @param userset userset object to spool
- * @param object structure of the gdi framework
  * @param packet the client request
  * @param task the GDI task being answered
+ * @param alpp answer list, error messages will be added to this list
+ * @param userset userset object to spool
+ * @param object structure of the gdi framework
  *
- * @return [alpp] - error messages will be added to this list 0 - success STATUS_EEXIST - an error occurred
+ * @return 0 - success, 1 - an error occurred
  *
  * @note MT-NOTE: userset_spool() is not MT safe
  */
-int userset_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *userset, gdi_object_t *object) {
+int userset_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *userset,
+                  gdi_object_t *object) {
    DENTER(TOP_LAYER);
 
+   const ocs::tom::ConstElement<ocs::tom::US> us(userset);
    lList *answer_list = nullptr;
-   bool dbret;
 
-   dbret = spool_write_object(&answer_list, spool_get_default_context(), userset,
-                              ocs::tom::get<US_name>(userset), SGE_TYPE_USERSET);
+   const bool dbret = spool_write_object(&answer_list, spool_get_default_context(), us,
+                                         ocs::tom::get<US_name>(us), SGE_TYPE_USERSET);
    answer_list_output(&answer_list);
 
    if (!dbret) {
       answer_list_add_sprintf(alpp, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
-                              MSG_PERSISTENCE_WRITE_FAILED_S, ocs::tom::get<US_name>(userset));
+                              MSG_PERSISTENCE_WRITE_FAILED_S, ocs::tom::get<US_name>(us));
    }
 
    DRETURN(dbret ? 0 : 1);
@@ -833,34 +869,35 @@ int userset_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, 
  * @brief Do something after a successful add/mod
  *
  * This function is called from the framework after successfull add/mod and
- * spool.
+ * spool. The raw parameters are fixed by the on_success_func_t of the gdi
+ * object table.
  *
+ * @param packet the client request
+ * @param task the GDI task being answered
  * @param ep new added userset
  * @param old_ep for mod the old userset
  * @param object structure of the gdi framework
  * @param ppList additional list that is returned to the client
  * @param monitor monitoring structure
- * @param packet the client request
- * @param task the GDI task being answered
  *
  * @return 0 on success
  *
  * @note MT-NOTE: userset_success() is not MT safe
  */
-int userset_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList,
-                    monitoring_t *monitor) {
+int userset_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListElem *old_ep,
+                    gdi_object_t *object, lList **ppList, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
    dstring ds = DSTRING_INIT;
-   const lListElem *rqs;
-   const lList *master_rqs_list = *ocs::DataStore::get_master_list(SGE_TYPE_RQS);
-   const char *userset_name = ocs::tom::get<US_name>(ep);
+   const ocs::tom::Element<ocs::tom::US> userset(ep);
+   const ocs::tom::ConstList<ocs::tom::RQS> master_rqs_list(*ocs::DataStore::get_master_list(SGE_TYPE_RQS));
+   const char *userset_name = ocs::tom::get<US_name>(userset);
 
    /* set consider with categories */
    bool reattach_categories = false;
    sge_dstring_sprintf(&ds, "@%s", userset_name);
-   for_each_ep(rqs, master_rqs_list) {
+   for (const auto rqs : master_rqs_list) {
       if (scope_is_referenced_rqs(rqs, RQR_filter_users, sge_dstring_get_string(&ds))) {
-         ocs::tom::set<US_consider_with_categories>(ep, true);
+         ocs::tom::set<US_consider_with_categories>(userset, true);
          reattach_categories = true;
          break;
       }
@@ -872,14 +909,16 @@ int userset_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *e
    }
 
    if (reattach_categories) {
-      lList *master_job_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB);
-      const lList *master_userset_list = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
-      const lList *master_project_list = *ocs::DataStore::get_master_list(SGE_TYPE_PROJECT);
-      ocs::CategoryQmaster::reattach_all_jobs(master_job_list, master_userset_list, master_project_list, master_rqs_list, true, packet->gdi_session);
+      const ocs::tom::List<ocs::tom::JB> master_job_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB));
+      const ocs::tom::ConstList<ocs::tom::US> master_userset_list(
+         *ocs::DataStore::get_master_list(SGE_TYPE_USERSET));
+      const ocs::tom::ConstList<ocs::tom::PR> master_project_list(*ocs::DataStore::get_master_list(SGE_TYPE_PROJECT));
+      ocs::CategoryQmaster::reattach_all_jobs(master_job_list, master_userset_list, master_project_list,
+                                              master_rqs_list, true, packet->gdi_session);
    }
 
    sge_add_event(0, old_ep ? sgeE_USERSET_MOD : sgeE_USERSET_ADD, 0, 0,
-                 userset_name, nullptr, nullptr, ep, packet->gdi_session);
+                 userset_name, nullptr, nullptr, userset, packet->gdi_session);
 
    sge_dstring_free(&ds);
    DRETURN(0);

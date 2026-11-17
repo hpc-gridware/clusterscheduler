@@ -49,6 +49,16 @@
 
 #include "uti/sge_bootstrap_files.h"
 
+#include "tom/ocs_Element.h"
+#include "tom/ocs_Transitional.h"
+#include "sgeobj/tom/ocs_tom_AR.h"
+#include "sgeobj/tom/ocs_tom_EH.h"
+#include "sgeobj/tom/ocs_tom_JAT.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
+#include "sgeobj/tom/ocs_tom_JR.h"
+#include "sgeobj/tom/ocs_tom_PET.h"
+#include "sgeobj/tom/ocs_tom_QU.h"
+
 #include "sge_job_qmaster.h"
 
 namespace ocs {
@@ -115,53 +125,90 @@ namespace ocs {
       static void update_config_all();
 
       static bool
-      create_new_job_records(lList **answer_list, const lListElem *job);
+      create_new_job_records(lList **answer_list, ocs::tom::ConstElement<ocs::tom::JB> job);
+      OCS_TRANSITIONAL static bool create_new_job_records(lList **answer_list, const lListElem *job);
 
       static bool
       create_job_logs(lList **answer_list, uint64_t event_time, job_log_t, const char *user, const char *host,
-                      const lListElem *job_report, const lListElem *job, const lListElem *ja_task,
-                      const lListElem *pe_task, const char *message);
+                      ocs::tom::ConstElement<ocs::tom::JR> job_report, ocs::tom::ConstElement<ocs::tom::JB> job,
+                      ocs::tom::ConstElement<ocs::tom::JAT> ja_task, ocs::tom::ConstElement<ocs::tom::PET> pe_task,
+                      const char *message);
+      OCS_TRANSITIONAL static bool create_job_logs(lList **answer_list, uint64_t event_time, job_log_t,
+                                                   const char *user, const char *host, const lListElem *job_report,
+                                                   const lListElem *job, const lListElem *ja_task,
+                                                   const lListElem *pe_task, const char *message);
 
       static bool
-      create_acct_records(lList **answer_list, lListElem *job_report, lListElem *job,
-                          lListElem *ja_task, bool intermediate);
+      create_acct_records(lList **answer_list, ocs::tom::Element<ocs::tom::JR> job_report,
+                          ocs::tom::Element<ocs::tom::JB> job, ocs::tom::Element<ocs::tom::JAT> ja_task,
+                          bool intermediate);
+      OCS_TRANSITIONAL static bool create_acct_records(lList **answer_list, lListElem *job_report, lListElem *job,
+                                                       lListElem *ja_task, bool intermediate);
 
       static bool
-      create_online_usage_records(lList **answer_list, lListElem *job_report, lListElem *job,
-                                  lListElem *ja_task, lListElem *pe_task, bool aggregate_pe_tasks);
+      create_online_usage_records(lList **answer_list, ocs::tom::ConstElement<ocs::tom::JR> job_report,
+                                  ocs::tom::ConstElement<ocs::tom::JB> job,
+                                  ocs::tom::ConstElement<ocs::tom::JAT> ja_task,
+                                  ocs::tom::ConstElement<ocs::tom::PET> pe_task, bool aggregate_pe_tasks);
+      OCS_TRANSITIONAL static bool create_online_usage_records(lList **answer_list, lListElem *job_report,
+                                                               lListElem *job, lListElem *ja_task, lListElem *pe_task,
+                                                               bool aggregate_pe_tasks);
 
       static bool
       is_online_usage_required();
 
       static bool
-      create_host_records(lList **answer_list, const lListElem *host, uint64_t report_time);
+      create_host_records(lList **answer_list, ocs::tom::ConstElement<ocs::tom::EH> host, uint64_t report_time);
+      OCS_TRANSITIONAL static bool create_host_records(lList **answer_list, const lListElem *host,
+                                                       uint64_t report_time);
 
       static bool
-      create_host_consumable_records(lList **answer_list, const lListElem *host, const lListElem *job,
-                                     uint64_t report_time);
+      create_host_consumable_records(lList **answer_list, ocs::tom::ConstElement<ocs::tom::EH> host,
+                                     ocs::tom::ConstElement<ocs::tom::JB> job, uint64_t report_time);
+      OCS_TRANSITIONAL static bool create_host_consumable_records(lList **answer_list, const lListElem *host,
+                                                                  const lListElem *job, uint64_t report_time);
 
       static bool
-      create_queue_records(lList **answer_list, const lListElem *queue, uint64_t report_time);
+      create_queue_records(lList **answer_list, ocs::tom::ConstElement<ocs::tom::QU> queue, uint64_t report_time);
+      OCS_TRANSITIONAL static bool create_queue_records(lList **answer_list, const lListElem *queue,
+                                                        uint64_t report_time);
 
       static bool
-      create_queue_consumable_records(lList **answer_list, const lListElem *host, const lListElem *queue,
-                                      const lListElem *job, uint64_t report_time);
+      create_queue_consumable_records(lList **answer_list, ocs::tom::ConstElement<ocs::tom::EH> host,
+                                      ocs::tom::ConstElement<ocs::tom::QU> queue,
+                                      ocs::tom::ConstElement<ocs::tom::JB> job, uint64_t report_time);
+      OCS_TRANSITIONAL static bool create_queue_consumable_records(lList **answer_list, const lListElem *host,
+                                                                   const lListElem *queue, const lListElem *job,
+                                                                   uint64_t report_time);
 
       static bool
-      create_new_ar_records(lList **answer_list, const lListElem *ar, uint64_t report_time);
+      create_new_ar_records(lList **answer_list, ocs::tom::ConstElement<ocs::tom::AR> ar, uint64_t report_time);
+      OCS_TRANSITIONAL static bool create_new_ar_records(lList **answer_list, const lListElem *ar,
+                                                         uint64_t report_time);
 
       static bool
-      create_ar_attribute_records(lList **answer_list, const lListElem *ar, uint64_t report_time);
+      create_ar_attribute_records(lList **answer_list, ocs::tom::ConstElement<ocs::tom::AR> ar, uint64_t report_time);
+      OCS_TRANSITIONAL static bool create_ar_attribute_records(lList **answer_list, const lListElem *ar,
+                                                               uint64_t report_time);
 
       static bool
-      create_ar_log_records(lList **answer_list, const lListElem *ar, ar_state_event_t state,
+      create_ar_log_records(lList **answer_list, ocs::tom::ConstElement<ocs::tom::AR> ar, ar_state_event_t state,
                             const char *ar_description, uint64_t report_time);
+      OCS_TRANSITIONAL static bool create_ar_log_records(lList **answer_list, const lListElem *ar,
+                                                         ar_state_event_t state, const char *ar_description,
+                                                         uint64_t report_time);
 
       static bool
-      create_ar_acct_records(lList **answer_list, const lListElem *ar, uint64_t report_time);
+      create_ar_acct_records(lList **answer_list, ocs::tom::ConstElement<ocs::tom::AR> ar, uint64_t report_time);
+      OCS_TRANSITIONAL static bool create_ar_acct_records(lList **answer_list, const lListElem *ar,
+                                                          uint64_t report_time);
 
       static bool
-      is_intermediate_acct_required(const lListElem *job, const lListElem *ja_task, const lListElem *pe_task);
+      is_intermediate_acct_required(ocs::tom::ConstElement<ocs::tom::JB> job,
+                                    ocs::tom::ConstElement<ocs::tom::JAT> ja_task,
+                                    ocs::tom::ConstElement<ocs::tom::PET> pe_task);
+      OCS_TRANSITIONAL static bool is_intermediate_acct_required(const lListElem *job, const lListElem *ja_task,
+                                                                 const lListElem *pe_task);
 
       static bool
       create_monitoring_records(const char *json_data);
@@ -182,7 +229,7 @@ namespace ocs {
        * @return true on success
        */
       virtual bool
-      create_new_job_record(lList **answer_list, const lListElem *job) { return true; }
+      create_new_job_record(lList **answer_list, ocs::tom::ConstElement<ocs::tom::JB> job) { return true; }
 
       /** @brief Record a change in a job's life: submitted, started, deleted, finished
        * @param answer_list receives error messages
@@ -198,8 +245,9 @@ namespace ocs {
        */
       virtual bool
       create_job_log(lList **answer_list, uint64_t event_time, const job_log_t, const char *user, const char *host,
-                     const lListElem *job_report, const lListElem *job, const lListElem *ja_task,
-                     const lListElem *pe_task, const char *message) { return true; }
+                     ocs::tom::ConstElement<ocs::tom::JR> job_report, ocs::tom::ConstElement<ocs::tom::JB> job,
+                     ocs::tom::ConstElement<ocs::tom::JAT> ja_task, ocs::tom::ConstElement<ocs::tom::PET> pe_task,
+                     const char *message) { return true; }
 
       /** @brief Record a finished job, or an intermediate record for one still running
        * @param answer_list receives error messages
@@ -210,8 +258,9 @@ namespace ocs {
        * @return true on success
        */
       virtual bool
-      create_acct_record(lList **answer_list, lListElem *job_report, lListElem *job,
-                         lListElem *ja_task, bool intermediate) = 0;
+      create_acct_record(lList **answer_list, ocs::tom::Element<ocs::tom::JR> job_report,
+                         ocs::tom::Element<ocs::tom::JB> job, ocs::tom::Element<ocs::tom::JAT> ja_task,
+                         bool intermediate) = 0;
 
       /** @brief Record the usage of a job that is still running
        * @param answer_list receives error messages
@@ -223,8 +272,12 @@ namespace ocs {
        * @return true on success
        */
       virtual bool
-      create_online_usage_record(lList **answer_list, lListElem *job_report, lListElem *job,
-                                 lListElem *ja_task, lListElem *pe_task, bool aggregate_pe_tasks) { return true; }
+      create_online_usage_record(lList **answer_list, ocs::tom::ConstElement<ocs::tom::JR> job_report,
+                                 ocs::tom::ConstElement<ocs::tom::JB> job,
+                                 ocs::tom::ConstElement<ocs::tom::JAT> ja_task,
+                                 ocs::tom::ConstElement<ocs::tom::PET> pe_task, bool aggregate_pe_tasks) {
+         return true;
+      }
 
       /** @brief Record an execution host and its load values
        * @param answer_list receives error messages
@@ -233,7 +286,9 @@ namespace ocs {
        * @return true on success
        */
       virtual bool
-      create_host_record(lList **answer_list, const lListElem *host, uint64_t report_time) { return true; }
+      create_host_record(lList **answer_list, ocs::tom::ConstElement<ocs::tom::EH> host, uint64_t report_time) {
+         return true;
+      }
 
       /** @brief Record the consumables a job took from a host
        * @param answer_list receives error messages
@@ -243,8 +298,8 @@ namespace ocs {
        * @return true on success
        */
       virtual bool
-      create_host_consumable_record(lList **answer_list, const lListElem *host, const lListElem *job,
-                                    uint64_t report_time) { return true; }
+      create_host_consumable_record(lList **answer_list, ocs::tom::ConstElement<ocs::tom::EH> host,
+                                    ocs::tom::ConstElement<ocs::tom::JB> job, uint64_t report_time) { return true; }
 
       /** @brief Record a queue instance and its state
        * @param answer_list receives error messages
@@ -253,7 +308,9 @@ namespace ocs {
        * @return true on success
        */
       virtual bool
-      create_queue_record(lList **answer_list, const lListElem *queue, uint64_t report_time) { return true; }
+      create_queue_record(lList **answer_list, ocs::tom::ConstElement<ocs::tom::QU> queue, uint64_t report_time) {
+         return true;
+      }
 
       /** @brief Record the consumables a job took from a queue instance
        * @param answer_list receives error messages
@@ -264,8 +321,9 @@ namespace ocs {
        * @return true on success
        */
       virtual bool
-      create_queue_consumable_record(lList **answer_list, const lListElem *host, const lListElem *queue,
-                                     const lListElem *job, uint64_t report_time) { return true; }
+      create_queue_consumable_record(lList **answer_list, ocs::tom::ConstElement<ocs::tom::EH> host,
+                                     ocs::tom::ConstElement<ocs::tom::QU> queue,
+                                     ocs::tom::ConstElement<ocs::tom::JB> job, uint64_t report_time) { return true; }
 
       /** @brief Record an advance reservation that has just been created
        * @param answer_list receives error messages
@@ -274,7 +332,9 @@ namespace ocs {
        * @return true on success
        */
       virtual bool
-      create_new_ar_record(lList **answer_list, const lListElem *ar, uint64_t report_time) { return true; }
+      create_new_ar_record(lList **answer_list, ocs::tom::ConstElement<ocs::tom::AR> ar, uint64_t report_time) {
+         return true;
+      }
 
       /** @brief Record the attributes of an advance reservation
        * @param answer_list receives error messages
@@ -283,7 +343,9 @@ namespace ocs {
        * @return true on success
        */
       virtual bool
-      create_ar_attribute_record(lList **answer_list, const lListElem *ar, uint64_t report_time) { return true; }
+      create_ar_attribute_record(lList **answer_list, ocs::tom::ConstElement<ocs::tom::AR> ar, uint64_t report_time) {
+         return true;
+      }
 
       /** @brief Record a change in an advance reservation's state
        * @param answer_list receives error messages
@@ -294,7 +356,7 @@ namespace ocs {
        * @return true on success
        */
       virtual bool
-      create_ar_log_record(lList **answer_list, const lListElem *ar, ar_state_event_t state,
+      create_ar_log_record(lList **answer_list, ocs::tom::ConstElement<ocs::tom::AR> ar, ar_state_event_t state,
                            const char *ar_description, uint64_t report_time) { return true; }
 
       /** @brief Record the accounting record of an advance reservation
@@ -304,7 +366,9 @@ namespace ocs {
        * @return true on success
        */
       virtual bool
-      create_ar_acct_record(lList **answer_list, const lListElem *ar, uint64_t report_time) { return true; }
+      create_ar_acct_record(lList **answer_list, ocs::tom::ConstElement<ocs::tom::AR> ar, uint64_t report_time) {
+         return true;
+      }
 
       /** @brief Record a monitoring snapshot
        * @param json_data the snapshot, already rendered as JSON

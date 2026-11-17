@@ -38,8 +38,11 @@
  */
 
 #include "uti/sge_monitor.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_EH.h"
+#include "sgeobj/tom/ocs_tom_REP.h"
 #include "sgeobj/sge_daemonize.h"
 
 void
-process_job_report(lListElem *report, lListElem *hep, char *rhost, char *commproc,
-                   sge_pack_buffer *pb, monitoring_t *monitor, uint64_t gdi_session);
+process_job_report(ocs::tom::Element<ocs::tom::REP> report, ocs::tom::Element<ocs::tom::EH> hep, char *rhost,
+                   char *commproc, sge_pack_buffer *pb, monitoring_t *monitor, uint64_t gdi_session);

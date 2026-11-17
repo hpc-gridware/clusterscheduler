@@ -38,9 +38,15 @@
  */
 
 #include "sgeobj/sge_daemonize.h"
+#include "sgeobj/tom/ocs_tom_SC.h"
+#include "tom/ocs_Element.h"
+#include "tom/ocs_Transitional.h"
 
 int
 sge_read_sched_configuration(const lListElem *aSpoolContext, lList **anAnswer, uint64_t gdi_session);
 
 int
-sge_mod_sched_configuration(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *confp, lList **alpp, char *ruser, char *rhost);
+sge_mod_sched_configuration(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::Element<ocs::tom::SC> confp,
+                            lList **alpp, char *ruser, char *rhost);
+OCS_TRANSITIONAL int sge_mod_sched_configuration(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *confp,
+                                                 lList **alpp, char *ruser, char *rhost);

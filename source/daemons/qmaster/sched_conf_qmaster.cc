@@ -44,6 +44,8 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_object.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_SC.h"
 
 #include "sched/msg_schedd.h"
 
@@ -62,27 +64,26 @@
  * @return STATUS_OK on success
  */
 int
-sge_read_sched_configuration(const lListElem *aSpoolContext, lList **anAnswer, uint64_t gdi_session) {
+sge_read_sched_configuration(const lListElem *aSpoolContext, lList **anAnswer, const uint64_t gdi_session) {
    DENTER(TOP_LAYER);
 
-   lList *sched_conf = nullptr;
+   // the spooling layer has no typed form yet; it reads SC_Type elements for SGE_TYPE_SCHEDD_CONF
+   lList *spooled_conf = nullptr;
+   spool_read_list(anAnswer, aSpoolContext, &spooled_conf, SGE_TYPE_SCHEDD_CONF);
+   auto sched_conf = ocs::tom::ListPtr<ocs::tom::SC>::from_typed(spooled_conf);
 
-   spool_read_list(anAnswer, aSpoolContext, &sched_conf, SGE_TYPE_SCHEDD_CONF);
-
-   if (lGetNumberOfElem(sched_conf) == 0) {
+   if (sched_conf->empty()) {
       auto default_conf = sconf_create_default();
 
-      if (sched_conf == nullptr) {
-         sched_conf = lCreateList("schedd_config_list", SC_Type);
+      if (!sched_conf) {
+         sched_conf = ocs::tom::ListPtr<ocs::tom::SC>::create("schedd_config_list");
       }
 
-      // the spooled list holds SC_Type elements only
-      const auto ep = ocs::tom::List<ocs::tom::SC>::from_typed(sched_conf).push_back(std::move(default_conf));
+      const auto ep = sched_conf->push_back(std::move(default_conf));
       spool_write_object(anAnswer, spool_get_default_context(), ep, "schedd_conf", SGE_TYPE_SCHEDD_CONF);
    }
 
-   if (!sconf_set_config(&sched_conf, anAnswer)) {
-      lFreeList(&sched_conf);
+   if (!sconf_set_config(sched_conf, anAnswer)) {
       DRETURN(-1);
    }
 
@@ -111,10 +112,9 @@ sge_read_sched_configuration(const lListElem *aSpoolContext, lList **anAnswer, u
  *         on other errors
  */
 int
-sge_mod_sched_configuration(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *confp, lList **alpp, char *ruser, char *rhost) {
+sge_mod_sched_configuration(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Element<ocs::tom::SC> confp,
+                            lList **alpp, char *ruser, char *rhost) {
    DENTER(TOP_LAYER);
-
-   lList *temp_conf_list = nullptr;
 
    if (!confp || !ruser || !rhost) {
       CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, __func__);
@@ -128,22 +128,19 @@ sge_mod_sched_configuration(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lLis
    if (!ocs_object_verify_unique_keys(confp, alpp, "scheduler configuration")) {
       DRETURN(STATUS_ESYNTAX);
    }
-   temp_conf_list = lCreateList("sched config", SC_Type);
+   auto temp_conf_list = ocs::tom::ListPtr<ocs::tom::SC>::create("sched config");
 
-   ocs::tom::set<SC_weight_tickets_override>(confp,
-             sconf_get_weight_tickets_override());
+   ocs::tom::set<SC_weight_tickets_override>(confp, sconf_get_weight_tickets_override());
 
-   confp = lCopyElem(confp);
-   lAppendElem(temp_conf_list, confp);
+   const auto new_conf = temp_conf_list->push_back(confp.clone());
 
-   /* just check and log */
-   if (!sconf_set_config(&temp_conf_list, alpp)) {
-      lFreeList(&temp_conf_list);
+   /* just check and log; on success the list belongs to the master list, on failure it is freed here */
+   if (!sconf_set_config(temp_conf_list, alpp)) {
       DRETURN(STATUS_EUNKNOWN);
    }
 
    if (!sge_event_spool(alpp, 0, sgeE_SCHED_CONF, 0, 0, "schedd_conf", nullptr, nullptr,
-                        confp, nullptr, nullptr, true, true, packet->gdi_session)) {
+                        new_conf, nullptr, nullptr, true, true, packet->gdi_session)) {
       answer_list_add(alpp, MSG_SCHEDCONF_CANTCREATESCHEDULERCONFIGURATION, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
       DRETURN(-1);
    }
@@ -152,4 +149,25 @@ sge_mod_sched_configuration(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lLis
    answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
 
    DRETURN(STATUS_OK);
-} /* sge_mod_sched_configuration */
+}
+
+/**
+ * @brief sge_mod_sched_configuration() for an untyped caller
+ *
+ * The element is wrapped without a type check: the typed function rejects an element of
+ * another type with object_verify_cull() and STATUS_ESYNTAX, as the raw function did.
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param confp the new configuration as sent by the client
+ * @param alpp receives messages for the caller
+ * @param ruser the requesting user
+ * @param rhost the requesting host
+ * @return as the typed sge_mod_sched_configuration()
+ */
+int
+sge_mod_sched_configuration(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *confp, lList **alpp,
+                            char *ruser, char *rhost) {
+   return sge_mod_sched_configuration(packet, task, ocs::tom::Element<ocs::tom::SC>::from_typed(confp), alpp,
+                                      ruser, rhost);
+}

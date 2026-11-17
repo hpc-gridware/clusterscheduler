@@ -41,6 +41,9 @@
 #include "sge_qmaster_timed_event.h"
 #include "uti/sge_monitor.h"
 #include "sgeobj/sge_daemonize.h"
+#include "tom/ocs_Element.h"
+#include "tom/ocs_Transitional.h"
+#include "sgeobj/tom/ocs_tom_CAL.h"
 
 
 int
@@ -51,11 +54,18 @@ int
 calendar_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *cep, gdi_object_t *object);
 
 int
+calendar_update_queue_states(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::Element<ocs::tom::CAL> cep,
+                             ocs::tom::ConstElement<ocs::tom::CAL> old_cep, monitoring_t *monitor);
+
+int
 calendar_update_queue_states(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *cep, lListElem *old_cep, gdi_object_t *object,
                              lList **ppList, monitoring_t *monitor);
 
 int
-sge_del_calendar(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **alpp, char *ruser, char *rhost);
+sge_del_calendar(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ConstElement<ocs::tom::CAL> cep,
+                 lList **alpp, char *ruser, char *rhost);
+OCS_TRANSITIONAL int sge_del_calendar(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *cep, lList **alpp,
+                                      char *ruser, char *rhost);
 
 void
 sge_calendar_event_handler(te_event_t anEvent, monitoring_t *monitor);

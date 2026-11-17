@@ -52,6 +52,8 @@
 
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_Select.h"
+#include "sgeobj/tom/ocs_tom_TE.h"
 
 #include "sge_qmaster_timed_event.h"
 
@@ -113,49 +115,35 @@ static int
 te_delete_all_or_one_time_event(te_type_t aType, uint32_t aKey1, uint32_t aKey2, const char *strKey, bool ignore_keys) {
    DENTER(EVENT_LAYER);
 
-   int res, n = 0;
-   lCondition *cond = nullptr;
+   int res = 0;
 
    DPRINTF("%s: (t:" sge_u32" u1:" sge_u32" u2:" sge_u32" s:%s)\n", __func__,
            static_cast<uint32_t>(aType), aKey1, aKey2, strKey ? strKey : MSG_SMALLNULL);
 
-   if (ignore_keys) {
-      cond = lWhere("%T(%I != %u || %I != %u)", TE_Type, TE_type, aType, TE_mode, ONE_TIME_EVENT);
-   } else {
+   // the events to keep: every event that differs from the one(s) to delete
+   auto keep = ocs::tom::field<TE_type>() != static_cast<uint32_t>(aType) ||
+               ocs::tom::field<TE_mode>() != static_cast<uint32_t>(ONE_TIME_EVENT);
+   if (!ignore_keys) {
+      keep = std::move(keep) || ocs::tom::field<TE_uval0>() != aKey1 || ocs::tom::field<TE_uval1>() != aKey2;
       if (strKey != nullptr) {
-         cond = lWhere("%T(%I != %u || %I != %u || %I != %u || %I != %u || %I != %s)", TE_Type,
-                       TE_type, aType, TE_mode, ONE_TIME_EVENT, TE_uval0, aKey1, TE_uval1, aKey2, TE_sval, strKey);
-      } else {
-         cond = lWhere("%T(%I != %u || %I != %u || %I != %u || %I != %u)", TE_Type,
-                       TE_type, aType, TE_mode, ONE_TIME_EVENT, TE_uval0, aKey1, TE_uval1, aKey2);
-
+         keep = std::move(keep) || ocs::tom::field<TE_sval>() != strKey;
       }
    }
 
    sge_mutex_lock("event_control_mutex", __func__, __LINE__, &Event_Control.mutex);
 
-   n = lGetNumberOfElem(Event_Control.list);
-
-   if (0 == n) {
+   // Event_Control.list is a process-lifetime global created as TE_Type in te_init()
+   const auto event_list = ocs::tom::List<ocs::tom::TE>::from_typed(Event_Control.list);
+   if (event_list.empty()) {
       DPRINTF("%s: event list empty!\n", __func__);
 
       sge_mutex_unlock("event_control_mutex", __func__, __LINE__, &Event_Control.mutex);
 
-      lFreeWhere(&cond);
-
       DRETURN(0);
    }
 
-   lSplit(&Event_Control.list, nullptr, nullptr, cond);
-
-   if (nullptr == Event_Control.list) {
-      DPRINTF("%s: event list has been freed --> recreate \n", __func__);
-
-      Event_Control.list = lCreateList("timed event list", TE_Type);
-      res = n; /* all elements have been deleted */
-   } else {
-      res = n - lGetNumberOfElem(Event_Control.list);
-   }
+   // unlike the former lSplit(), remove_if() keeps the emptied list, so it is never recreated here
+   res = static_cast<int>(event_list.remove_if(!std::move(keep)));
 
    if (res > 0) {
       Event_Control.deleted = true;
@@ -166,8 +154,6 @@ te_delete_all_or_one_time_event(te_type_t aType, uint32_t aKey1, uint32_t aKey2,
    }
 
    sge_mutex_unlock("event_control_mutex", __func__, __LINE__, &Event_Control.mutex);
-
-   lFreeWhere(&cond);
 
    DRETURN(res);
 }
@@ -182,7 +168,7 @@ te_delete_all_or_one_time_event(te_type_t aType, uint32_t aKey1, uint32_t aKey2,
 void te_wait_empty() {
    DENTER(EVENT_LAYER);
 
-   while (lGetNumberOfElem((const lList *) Event_Control.list) == 0) {
+   while (ocs::tom::ConstList<ocs::tom::TE>::from_typed(Event_Control.list).empty()) {
       DPRINTF("%s: event list empty --> will wait\n", __func__);
       Event_Control.next = 0;
       pthread_cond_wait(&Event_Control.cond_var, &Event_Control.mutex);
@@ -386,13 +372,11 @@ void
 te_add_event(te_event_t anEvent) {
    DENTER(EVENT_LAYER);
 
-   lListElem *le;
-
    SGE_ASSERT((anEvent != nullptr));
 
    uint64_t when = (ONE_TIME_EVENT == anEvent->mode) ? anEvent->when : (sge_get_gmt64() + anEvent->interval);
 
-   le = lCreateElem(TE_Type);
+   auto le = ocs::tom::ElementPtr<ocs::tom::TE>::create();
    ocs::tom::set<TE_when>(le, when);
    ocs::tom::set<TE_type>(le, anEvent->type);
    ocs::tom::set<TE_mode>(le, anEvent->mode);
@@ -408,12 +392,16 @@ te_add_event(te_event_t anEvent) {
 
    ocs::tom::set<TE_seqno>(le, Event_Control.seq_no++);
 
-   if (lInsertSorted(Event_Control.sort_order, le, Event_Control.list) != 0) {
+   // Event_Control.sort_order is a process-lifetime global; a SortOrder handle would own it, hence the raw call
+   if (lInsertSorted(Event_Control.sort_order, le.get(), Event_Control.list) != 0) {
       // the event is lost here - without this message nothing would ever tell that the timer
       // for e.g. a calendar state change was never armed
       ERROR(MSG_TE_CANNOTADDEVENT_US, static_cast<uint32_t>(anEvent->type),
             anEvent->str_key != nullptr ? anEvent->str_key : MSG_SMALLNULL);
-      lFreeElem(&le);
+      le.reset();
+   } else {
+      // the event list owns the element now
+      static_cast<void>(le.release());
    }
 
    if ((Event_Control.next == 0) || (when < Event_Control.next)) {
@@ -618,7 +606,8 @@ char *te_get_alphanumeric_key(te_event_t anEvent) {
 void te_init() {
    DENTER(EVENT_LAYER);
 
-   Event_Control.list = lCreateList("timed event list", TE_Type);
+   // a process-lifetime global: no owning handle, see event_control_t
+   Event_Control.list = ocs::tom::ListPtr<ocs::tom::TE>::create("timed event list").release();
    Event_Control.sort_order = lParseSortOrderVarArg(TE_Type, "%I+", TE_when);
 
    Handler_Tbl.list = (struct tbl_elem *) sge_malloc(TBL_INIT_SIZE * sizeof(struct tbl_elem));
@@ -665,14 +654,12 @@ void te_shutdown() {
 void te_check_time(uint64_t aTime) {
    DENTER(EVENT_LAYER);
 
-   lListElem *le;
-
    if (Event_Control.last > aTime) {
       uint64_t delta = Event_Control.last - aTime;
 
       WARNING(MSG_SYSTEM_SYSTEMHASBEENMODIFIEDXSECONDS_I, (int) sge_gmt64_to_gmt32(delta));
 
-      for_each_rw (le, Event_Control.list) {
+      for (const auto le : ocs::tom::List<ocs::tom::TE>::from_typed(Event_Control.list)) {
          ocs::tom::set<TE_when>(le, (ocs::tom::get<TE_when>(le) - delta));
       }
 
@@ -691,13 +678,13 @@ void te_check_time(uint64_t aTime) {
  * The caller of this function is responsible to free the timed event
  * returned, using 'te_free_event()'.
  *
- * @param aListElem list element
+ * @param aListElem list element (TE_Type)
  *
  * @return new timed event
  *
  * @note MT-NOTE: te_event_from_list_elem() is MT safe.
  */
-te_event_t te_event_from_list_elem(const lListElem *aListElem) {
+te_event_t te_event_from_list_elem(const ocs::tom::ConstElement<ocs::tom::TE> aListElem) {
    DENTER(EVENT_LAYER);
 
    te_event_t ev = nullptr;

@@ -56,6 +56,7 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_object.h"
 #include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_AR.h"
 #include "sgeobj/tom/ocs_tom_BN.h"
 
 #include "msg_common.h"
@@ -622,22 +623,27 @@ attr_mod_sub_list(lList **alpp, lListElem *this_elem, int this_elem_name, int th
    DRETURN(ret);
 }
 
-/** @brief Apply a binding change to an object that carries one
+/**
+ * @brief Apply a binding change to an advance reservation
+ *
  * @param alpp receives messages for the caller
- * @param new_ar the object as it is to become
- * @param ar the reduced element the client sent
+ * @param new_ar the advance reservation as it is to become (AR_Type)
+ * @param ar the reduced element the client sent (AR_Type)
+ *
  * @return true on success
  */
 bool
-attr_mod_obj_binding(lList **alpp, lListElem *new_ar, const lListElem *ar) {
+attr_mod_obj_binding(lList **alpp, const ocs::tom::Element<ocs::tom::AR> new_ar,
+                     const ocs::tom::ConstElement<ocs::tom::AR> ar) {
    DENTER(TOP_LAYER);
    bool ret = true;
 
    if (ocs::tom::has<AR_binding>(ar)) {
-      ocs::tom::Element<ocs::tom::BN> old_binding_elem = ocs::tom::get<AR_binding>(new_ar);
-      const lListElem *new_binding_elem = ocs::tom::get<AR_binding>(ar);
+      const auto old_binding_elem = ocs::tom::get<AR_binding>(new_ar);
+      const auto new_binding_elem = ocs::tom::get<AR_binding>(ar);
       if (old_binding_elem == nullptr) {
-         ocs::tom::set<AR_binding>(new_ar, new_binding_elem != nullptr ? lCopyElem(new_binding_elem) : nullptr);
+         // clone() keeps an empty handle empty, as the former nullptr check did
+         ocs::tom::set<AR_binding>(new_ar, new_binding_elem.clone());
       } else {
          if (new_binding_elem != nullptr) {
             // copy new amount but only if it is not UNINITIALIZED and different from the old one
@@ -733,6 +739,20 @@ attr_mod_obj_binding(lList **alpp, lListElem *new_ar, const lListElem *ar) {
       ocs::AdvanceReservation::binding_set_missing_defaults(new_ar, alpp);
    }
    DRETURN(ret);
+}
+
+/**
+ * @brief attr_mod_obj_binding() for an untyped caller
+ *
+ * @param alpp receives messages for the caller
+ * @param new_ar the advance reservation as it is to become (AR_Type), checked
+ * @param ar the reduced element the client sent (AR_Type), checked
+ *
+ * @return as attr_mod_obj_binding()
+ */
+bool
+attr_mod_obj_binding(lList **alpp, lListElem *new_ar, const lListElem *ar) {
+   return attr_mod_obj_binding(alpp, ocs::tom::Element<ocs::tom::AR>(new_ar), ocs::tom::ConstElement<ocs::tom::AR>(ar));
 }
 
 

@@ -36,17 +36,33 @@
 #include "ocs_JsonAccountingFileWriter.h"
 
 namespace ocs {
-   bool JsonAccountingFileWriter::create_acct_record(lList **answer_list, lListElem *job_report,
-                                                     lListElem *job, lListElem *ja_task, bool intermediate) {
+   /** @brief Write the accounting record of a finished job as one JSON object to the accounting file
+    *
+    * Intermediate records are not written to the accounting file, only the
+    * record at job end.
+    *
+    * @param answer_list receives error messages
+    * @param job_report the job report the execution host sent (`JR_Type`)
+    * @param job the job (`JB_Type`)
+    * @param ja_task the array task that finished (`JAT_Type`)
+    * @param intermediate whether this is an interim record for a job that is still running
+    * @return true on success
+    */
+   bool JsonAccountingFileWriter::create_acct_record(lList **answer_list,
+                                                     const ocs::tom::Element<ocs::tom::JR> job_report,
+                                                     const ocs::tom::Element<ocs::tom::JB> job,
+                                                     const ocs::tom::Element<ocs::tom::JAT> ja_task,
+                                                     bool intermediate) {
       DENTER(TOP_LAYER);
 
       bool ret = true;
 
       if (!intermediate) {
          // get the job category string
-         const lList *master_category_list = *ocs::DataStore::get_master_list(SGE_TYPE_CATEGORY);
-         uint32_t category_id = ocs::tom::get<JB_category_id>(job);
-         ocs::tom::Element<ocs::tom::CT> category = ocs::tom::find_first_rw<CT_id>(master_category_list, category_id);
+         const auto master_category_list =
+                 ocs::tom::ConstList<ocs::tom::CT>(*ocs::DataStore::get_master_list(SGE_TYPE_CATEGORY));
+         const uint32_t category_id = ocs::tom::get<JB_category_id>(job);
+         const auto category = master_category_list.find_first<CT_id>(category_id);
          const char *category_string = ocs::tom::get<CT_str>(category);
 
          // get accounting data

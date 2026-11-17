@@ -69,6 +69,15 @@
 #include "sgeobj/tom/ocs_tom_PE.h"
 #include "sgeobj/tom/ocs_tom_QU.h"
 #include "sgeobj/tom/ocs_tom_JB.h"
+#include "sgeobj/tom/ocs_tom_AR.h"
+#include "sgeobj/tom/ocs_tom_AULNG.h"
+#include "sgeobj/tom/ocs_tom_CAL.h"
+#include "sgeobj/tom/ocs_tom_CQ.h"
+#include "sgeobj/tom/ocs_tom_CQU.h"
+#include "sgeobj/tom/ocs_tom_GRU.h"
+#include "sgeobj/tom/ocs_tom_SO.h"
+#include "sgeobj/tom/ocs_tom_ST.h"
+#include "tom/ocs_List.h"
 
 #include "sched/sge_resource_utilization.h"
 #include "sched/sge_serf.h"
@@ -94,19 +103,21 @@ typedef struct {
    uint32_t transition;   ///< The `qmod` transition this row applies to
    long state_mask;       ///< The state bit it concerns
 
-   bool (*has_state)(const lListElem *this_elem);   ///< Reads that state from a queue instance
+   bool (*has_state)(ocs::tom::ConstElement<ocs::tom::QU> this_elem);   ///< Reads that state from a queue instance
 
    bool is;               ///< What #has_state must return for this row to apply
 
-   bool (*set_state)(lListElem *this_elem, bool set, uint64_t gdi_session);   ///< Writes that state
+   /// Writes that state
+   bool (*set_state)(ocs::tom::Element<ocs::tom::QU> this_elem, bool set, uint64_t gdi_session);
 
    bool set;              ///< What #set_state is called with
    const char *success_msg;   ///< What to report when the transition worked
 } change_state_t;
 
 static bool
-qinstance_change_state_on_calender_(lListElem *qi_elem, uint32_t cal_order,
-                                    lList **state_change_list, monitoring_t *monitor, uint64_t gdi_session);
+qinstance_change_state_on_calender_(ocs::tom::Element<ocs::tom::QU> qi_elem, uint32_t cal_order,
+                                    ocs::tom::ListPtr<ocs::tom::CQU> &&state_change_list, monitoring_t *monitor,
+                                    uint64_t gdi_session);
 
 /** @brief Resolve one cluster queue attribute down to this queue instance
  *
@@ -137,12 +148,14 @@ qinstance_change_state_on_calender_(lListElem *qi_elem, uint32_t cal_order,
  * @return true on success
  */
 bool
-qinstance_modify_attribute(lListElem *this_elem, lList **answer_list, const lListElem *cqueue,
-                           int attribute_name, int cqueue_attibute_name, int sub_host_name, int sub_value_name,
-                           int subsub_key, const char **matching_host_or_group, const char **matching_group,
-                           bool *is_ambiguous, bool *has_changed_conf_attr, bool *has_changed_state_attr,
-                           const bool initial_modify, bool *need_reinitialize, monitoring_t *monitor,
-                           const lList *master_hgroup_list, lList *master_cqueue_list, uint64_t gdi_session) {
+qinstance_modify_attribute(const ocs::tom::Element<ocs::tom::QU> this_elem, lList **answer_list,
+                           const ocs::tom::ConstElement<ocs::tom::CQ> cqueue,
+                           const int attribute_name, const int cqueue_attibute_name, const int sub_host_name,
+                           const int sub_value_name, const int subsub_key, const char **matching_host_or_group,
+                           const char **matching_group, bool *is_ambiguous, bool *has_changed_conf_attr,
+                           bool *has_changed_state_attr, const bool initial_modify, bool *need_reinitialize,
+                           monitoring_t *monitor, const ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list,
+                           const ocs::tom::List<ocs::tom::CQ> master_cqueue_list, const uint64_t gdi_session) {
 #if 0 /* EB: DEBUG: enable debugging for qinstance_modify_attribute() */
 #define QINSTANCE_MODIFY_DEBUG
 #endif
@@ -153,13 +166,14 @@ qinstance_modify_attribute(lListElem *this_elem, lList **answer_list, const lLis
 #endif
 
    bool ret = true;
-   const lList *master_calendar_list = *ocs::DataStore::get_master_list(SGE_TYPE_CALENDAR);
-   const lList *master_ar_list = *ocs::DataStore::get_master_list(SGE_TYPE_AR);
-   const lList *master_centry_list = *ocs::DataStore::get_master_list(SGE_TYPE_CENTRY);
+   const ocs::tom::ConstList<ocs::tom::CAL> master_calendar_list(*ocs::DataStore::get_master_list(SGE_TYPE_CALENDAR));
+   const ocs::tom::ConstList<ocs::tom::AR> master_ar_list(*ocs::DataStore::get_master_list(SGE_TYPE_AR));
+   const ocs::tom::ConstList<ocs::tom::CE> master_centry_list(*ocs::DataStore::get_master_list(SGE_TYPE_CENTRY));
 
    if (this_elem != nullptr && cqueue != nullptr &&
        attribute_name != NoName && cqueue_attibute_name != NoName) {
       const char *hostname = ocs::tom::get<QU_qhostname>(this_elem);
+      // the attribute is known only at run time (cqueue_attribute_array), so the access stays generic
       const lList *attr_list = lGetList(cqueue, cqueue_attibute_name);
       const lDescr *descr = lGetElemDescr(this_elem);
       int pos = lGetPosInDescr(descr, attribute_name);
@@ -174,7 +188,8 @@ qinstance_modify_attribute(lListElem *this_elem, lList **answer_list, const lLis
             str_attr_list_find_value(attr_list, answer_list, hostname, &new_value, matching_host_or_group,
                                      matching_group, is_ambiguous, master_hgroup_list);
             if (old_value == nullptr || new_value == nullptr || strcmp(old_value, new_value)) {
-               const lListElem *calendar = ocs::tom::find_first<CAL_name>(master_calendar_list, new_value);
+               const ocs::tom::ConstElement<ocs::tom::CAL> calendar =
+                       ocs::tom::find_first<CAL_name>(master_calendar_list, new_value);
 
 #ifdef QINSTANCE_MODIFY_DEBUG
                DPRINTF(("Changed " SFQ " from " SFQ " to " SFQ "\n",
@@ -324,13 +339,15 @@ qinstance_modify_attribute(lListElem *this_elem, lList **answer_list, const lLis
                 * an existing AR violates that modification
                 */
                if (cqueue_attibute_name == CQ_ckpt_list &&
-                   ar_list_has_reservation_due_to_ckpt(master_ar_list, answer_list, ocs::tom::get<QU_full_name>(this_elem),
-                                                       new_value)) {
+                   ar_list_has_reservation_due_to_ckpt(master_ar_list, answer_list,
+                                                       ocs::tom::get<QU_full_name>(this_elem),
+                                                       ocs::tom::ConstList<ocs::tom::ST>(new_value))) {
                   ret = false;
                   break;
                } else if (!initial_modify && cqueue_attibute_name == CQ_pe_list &&
                           ar_list_has_reservation_due_to_pe(master_ar_list, answer_list,
-                                                            ocs::tom::get<QU_full_name>(this_elem), new_value)) {
+                                                            ocs::tom::get<QU_full_name>(this_elem),
+                                                            ocs::tom::ConstList<ocs::tom::ST>(new_value))) {
                   ret = false;
                   break;
                }
@@ -409,13 +426,13 @@ qinstance_modify_attribute(lListElem *this_elem, lList **answer_list, const lLis
             celist_attr_list_find_value(attr_list, answer_list, hostname, &new_value, matching_host_or_group,
                                         matching_group, is_ambiguous, master_hgroup_list);
 
-            if (centry_list_fill_request(new_value, answer_list, master_centry_list,
+            if (centry_list_fill_request(ocs::tom::List<ocs::tom::CE>(new_value), answer_list, master_centry_list,
                                          true, true, false) == 0) {
-               lListElem *slots_ce = nullptr;
+               ocs::tom::Element<ocs::tom::CE> slots_ce = nullptr;
 
                /* implicit slots entry */
-               if (static_cast<const lListElem *>(ocs::tom::find_first<CE_name>(new_value, SGE_ATTR_SLOTS)) == nullptr) {
-                  const lList *cq_slots_attr = ocs::tom::get<CQ_job_slots>(cqueue);
+               if (ocs::tom::find_first<CE_name>(new_value, SGE_ATTR_SLOTS) == nullptr) {
+                  const ocs::tom::ConstList<ocs::tom::AULNG> cq_slots_attr = ocs::tom::get<CQ_job_slots>(cqueue);
                   uint32_t slots_value;
                   dstring buffer = DSTRING_INIT;
 
@@ -449,7 +466,9 @@ qinstance_modify_attribute(lListElem *this_elem, lList **answer_list, const lLis
                      *has_changed_conf_attr = true;
                   }
                }
-               lRemoveElem(new_value, &slots_ce);
+               if (slots_ce) {
+                  ocs::tom::List<ocs::tom::CE>::from_typed(new_value).erase(slots_ce);
+               }
             } else {
                ret &= false;
             }
@@ -489,10 +508,8 @@ qinstance_modify_attribute(lListElem *this_elem, lList **answer_list, const lLis
             solist_attr_list_find_value(attr_list, answer_list, hostname, &new_value,
                                         matching_host_or_group, matching_group, is_ambiguous, master_hgroup_list);
             if (object_list_has_differences(old_value, answer_list, new_value)) {
-               lList *unsuspended_so = nullptr;  /* SO_Type list */
-               lList *suspended_so = nullptr;    /* SO_Type list */
-               const lListElem *first_old_elem = nullptr;
-               const lListElem *first_new_elem = nullptr;
+               ocs::tom::ListPtr<ocs::tom::SO> unsuspended_so;
+               ocs::tom::ListPtr<ocs::tom::SO> suspended_so;
                bool valid_config = false;
 
                /*
@@ -501,21 +518,17 @@ qinstance_modify_attribute(lListElem *this_elem, lList **answer_list, const lLis
                /*
                 * Check if there are loops in the slotwise subordination tree.
                 */
-               lList *old_value_copy = nullptr;  /* SO_Type list */
-               lList *new_value_copy = nullptr;  /* SO_Type list */
+               {
+                  auto old_value_copy = ocs::tom::ConstList<ocs::tom::SO>(old_value).clone("copy_old");
+                  auto new_value_copy = ocs::tom::ConstList<ocs::tom::SO>(new_value).clone("copy_new");
 
-               old_value_copy = lCopyList("copy_old", old_value);
-               new_value_copy = lCopyList("copy_new", new_value);
-
-               /*
-                * Find all queues that were slotwise subordinated before
-                * and are no longer subordinated now and trigger them.
-                */
-               lDiffListStr(SO_name, &old_value_copy, &new_value_copy);
-               valid_config = check_new_slotwise_subordinate_tree(this_elem, new_value_copy, answer_list);
-
-               lFreeList(&old_value_copy);
-               lFreeList(&new_value_copy);
+                  /*
+                   * Find all queues that were slotwise subordinated before
+                   * and are no longer subordinated now and trigger them.
+                   */
+                  old_value_copy.get().remove_common<SO_name>(new_value_copy.get());
+                  valid_config = check_new_slotwise_subordinate_tree(this_elem, new_value_copy.get(), answer_list);
+               }
 
                if (!valid_config) {
                   ret = false;
@@ -527,8 +540,10 @@ qinstance_modify_attribute(lListElem *this_elem, lList **answer_list, const lLis
                 * trigger recalculation for them.
                 */
                hostname = ocs::tom::get<QU_qhostname>(this_elem);
-               first_old_elem = lFirst(old_value);
-               first_new_elem = lFirst(new_value);
+               const ocs::tom::ConstElement<ocs::tom::SO> first_old_elem =
+                       ocs::tom::ConstList<ocs::tom::SO>(old_value).front();
+               const ocs::tom::ConstElement<ocs::tom::SO> first_new_elem =
+                       ocs::tom::ConstList<ocs::tom::SO>(new_value).front();
 
                if (first_old_elem != nullptr && ocs::tom::get<SO_slots_sum>(first_old_elem) > 0 &&
                    first_new_elem != nullptr && ocs::tom::get<SO_slots_sum>(first_new_elem) == 0) {
@@ -553,7 +568,8 @@ qinstance_modify_attribute(lListElem *this_elem, lList **answer_list, const lLis
                    * TODO: HP: Make sure these two lDiffListUlong() always
                    *           return the results we expect!
                    */
-                  if (do_slotwise_subordinate_lists_differ(old_value, new_value)) {
+                  if (do_slotwise_subordinate_lists_differ(ocs::tom::ConstList<ocs::tom::SO>(old_value),
+                                                           ocs::tom::ConstList<ocs::tom::SO>(new_value))) {
                      /*
                       * unsuspend all tasks in the whole subtree, new suspends will
                       * be calculated in cqueue_success().
@@ -576,7 +592,7 @@ qinstance_modify_attribute(lListElem *this_elem, lList **answer_list, const lLis
                 * subordinate anything if the queue was freshly added
                 */
                if (!initial_modify) {
-                  qinstance_find_suspended_subordinates(this_elem, answer_list, &unsuspended_so, master_cqueue_list);
+                  unsuspended_so = qinstance_find_suspended_subordinates(this_elem, answer_list, master_cqueue_list);
                }
 
                /*
@@ -590,25 +606,22 @@ qinstance_modify_attribute(lListElem *this_elem, lList **answer_list, const lLis
                    * Find list of subordinates that have to be suspended after
                    * the modification of CQ_subordinate_list-sublist
                    */
-                  qinstance_find_suspended_subordinates(this_elem, answer_list, &suspended_so, master_cqueue_list);
+                  suspended_so = qinstance_find_suspended_subordinates(this_elem, answer_list, master_cqueue_list);
 
                   /*
                    * Remove equal entries in both lists
+                   * (unlike lDiffListStr() an emptied list stays allocated, which makes no difference below)
                    */
-                  lDiffListStr(SO_name, &suspended_so, &unsuspended_so);
+                  suspended_so.get().remove_common<SO_name>(unsuspended_so.get());
 
                   /*
                    * (Un)suspend subordinated queue instances
                    */
-                  cqueue_list_x_on_subordinate_so(master_cqueue_list, answer_list, false, unsuspended_so, monitor, gdi_session);
-                  cqueue_list_x_on_subordinate_so(master_cqueue_list, answer_list, true, suspended_so, monitor, gdi_session);
+                  cqueue_list_x_on_subordinate_so(master_cqueue_list, answer_list, false, unsuspended_so.get(), monitor,
+                                                  gdi_session);
+                  cqueue_list_x_on_subordinate_so(master_cqueue_list, answer_list, true, suspended_so.get(), monitor,
+                                                  gdi_session);
                }
-
-               /*
-                * Cleanup
-                */
-               lFreeList(&suspended_so);
-               lFreeList(&unsuspended_so);
             }
          }
             break;
@@ -706,9 +719,10 @@ qinstance_modify_attribute(lListElem *this_elem, lList **answer_list, const lLis
  * @return true when the transition was made
  */
 bool
-qinstance_change_state_on_command(lListElem *this_elem, lList **answer_list,
-                                  uint32_t transition, bool force_transition, const char *user, const char *host,
-                                  bool is_operator, bool is_owner, monitoring_t *monitor, uint64_t gdi_session) {
+qinstance_change_state_on_command(const ocs::tom::Element<ocs::tom::QU> this_elem, lList **answer_list,
+                                  const uint32_t transition, const bool force_transition, const char *user,
+                                  const char *host, const bool is_operator, const bool is_owner,
+                                  monitoring_t *monitor, const uint64_t gdi_session) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
@@ -763,14 +777,16 @@ qinstance_change_state_on_command(lListElem *this_elem, lList **answer_list,
                if ((!qinstance_state_is_susp_on_sub(this_elem) &&
                     !qinstance_state_is_cal_suspended(this_elem)) ||
                    force_transition) {
-                  sge_signal_queue(SGE_SIGSTOP, this_elem, nullptr, nullptr, monitor);
+                  sge_signal_queue(SGE_SIGSTOP, this_elem, ocs::tom::Element<ocs::tom::JB>(),
+                                   ocs::tom::Element<ocs::tom::JAT>(), monitor);
                   did_something = true;
                }
                break;
             case QI_DO_UNSUSPEND :
                if (!qinstance_state_is_susp_on_sub(this_elem) &&
                    !qinstance_state_is_cal_suspended(this_elem)) {
-                  sge_signal_queue(SGE_SIGCONT, this_elem, nullptr, nullptr, monitor);
+                  sge_signal_queue(SGE_SIGCONT, this_elem, ocs::tom::Element<ocs::tom::JB>(),
+                                   ocs::tom::Element<ocs::tom::JAT>(), monitor);
                   did_something = true;
                }
                break;
@@ -850,19 +866,18 @@ qinstance_change_state_on_command(lListElem *this_elem, lList **answer_list,
  * @note MT-NOTE: qinstance_change_state_on_calendar() is MT safe
  */
 bool
-qinstance_change_state_on_calendar(lListElem *this_elem, const lListElem *calendar, monitoring_t *monitor, uint64_t gdi_session) {
+qinstance_change_state_on_calendar(const ocs::tom::Element<ocs::tom::QU> this_elem,
+                                   const ocs::tom::ConstElement<ocs::tom::CAL> calendar, monitoring_t *monitor,
+                                   const uint64_t gdi_session) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
 
    if (this_elem != nullptr && calendar != nullptr) {
-      lList *state_changes_list = nullptr;
-      uint32_t state;
-      uint64_t when = 0;
+      auto [state, when, state_changes_list] = calender_state_changes(calendar, nullptr);
 
-      state = calender_state_changes(calendar, &state_changes_list, &when, nullptr);
-
-      ret = qinstance_change_state_on_calender_(this_elem, state, &state_changes_list, monitor, gdi_session);
+      ret = qinstance_change_state_on_calender_(this_elem, state, std::move(state_changes_list), monitor,
+                                                gdi_session);
 
       if (when != 0) {
          /* Arm the timer for the next state change of the calendar. A calendar gets a timer of its
@@ -894,20 +909,20 @@ qinstance_change_state_on_calendar(lListElem *this_elem, const lListElem *calend
  *       Directly access the cluster queue list
  */
 bool
-qinstance_change_state_on_calendar_all(const char *cal_name, uint32_t cal_order,
-                                       const lList *state_change_list, monitoring_t *monitor, uint64_t gdi_session) {
+qinstance_change_state_on_calendar_all(const char *cal_name, const uint32_t cal_order,
+                                       const ocs::tom::ConstList<ocs::tom::CQU> state_change_list,
+                                       monitoring_t *monitor, const uint64_t gdi_session) {
    DENTER(TOP_LAYER);
    bool ret = true;
+   const ocs::tom::List<ocs::tom::CQ> master_cqueue_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE));
 
-   for_each_ep_lv(cqueue, *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE)) {
-      ocs::tom::ConstList<ocs::tom::QU> qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
-
-      for_each_rw_lv(qinstance, qinstance_list) {
+   for (const auto cqueue : master_cqueue_list) {
+      for (const auto qinstance : ocs::tom::get<CQ_qinstances>(cqueue)) {
          const char *queue_calendar = ocs::tom::get<QU_calendar>(qinstance);
 
          if (queue_calendar != nullptr && !strcmp(queue_calendar, cal_name)) {
-            lList *copy_state_change_list = lCopyList("state list", state_change_list);
-            ret = qinstance_change_state_on_calender_(qinstance, cal_order, &copy_state_change_list, monitor, gdi_session);
+            ret = qinstance_change_state_on_calender_(qinstance, cal_order, state_change_list.clone("state list"),
+                                                      monitor, gdi_session);
          }
       }
    }
@@ -920,24 +935,28 @@ qinstance_change_state_on_calendar_all(const char *cal_name, uint32_t cal_order,
  *
  * @param this_elem qi
  * @param cal_order next state (order)
- * @param state_change_list qi state list
+ * @param state_change_list qi state list, stored in the queue instance (always consumed)
+ * @param monitor for monitoring qmaster threads
+ * @param gdi_session the session the change belongs to
  *
  * @return true, if it worked
  *
  * @note MT-NOTE: qinstance_change_state_on_calender_() is MT safe
  */
-static bool qinstance_change_state_on_calender_(lListElem *this_elem, uint32_t cal_order,
-                                                lList **state_change_list, monitoring_t *monitor, uint64_t gdi_session) {
+static bool qinstance_change_state_on_calender_(const ocs::tom::Element<ocs::tom::QU> this_elem,
+                                                const uint32_t cal_order,
+                                                ocs::tom::ListPtr<ocs::tom::CQU> &&state_change_list,
+                                                monitoring_t *monitor, const uint64_t gdi_session) {
    DENTER(TOP_LAYER);
 
+   ocs::tom::ListPtr<ocs::tom::CQU> state_changes = std::move(state_change_list);
    bool ret = true;
    bool old_cal_disabled = qinstance_state_is_cal_disabled(this_elem);
    bool old_cal_suspended = qinstance_state_is_cal_suspended(this_elem);
    bool new_cal_disabled = (cal_order == QI_DO_CAL_DISABLE) ? true : false;
    bool new_cal_suspended = (cal_order == QI_DO_CAL_SUSPEND) ? true : false;
 
-   ocs::tom::set<QU_state_changes>(this_elem, *state_change_list);
-   *state_change_list = nullptr;
+   ocs::tom::set<QU_state_changes>(this_elem, std::move(state_changes));
 
    if (old_cal_disabled != new_cal_disabled || old_cal_suspended != new_cal_suspended) {
       // together with the calendar timer messages this shows whether a state change that the
@@ -959,7 +978,8 @@ static bool qinstance_change_state_on_calender_(lListElem *this_elem, uint32_t c
          } else if (qinstance_state_is_manual_suspended(this_elem)) {
             INFO(MSG_QINSTANCE_NOUSADM_S, name);
          } else {
-            sge_signal_queue(SGE_SIGSTOP, this_elem, nullptr, nullptr, monitor);
+            sge_signal_queue(SGE_SIGSTOP, this_elem, ocs::tom::Element<ocs::tom::JB>(),
+                             ocs::tom::Element<ocs::tom::JAT>(), monitor);
          }
       } else {
          if (qinstance_state_is_susp_on_sub(this_elem)) {
@@ -967,7 +987,8 @@ static bool qinstance_change_state_on_calender_(lListElem *this_elem, uint32_t c
          } else if (qinstance_state_is_manual_suspended(this_elem)) {
             INFO(MSG_QINSTANCE_NOSADM_S, name);
          } else {
-            sge_signal_queue(SGE_SIGCONT, this_elem, nullptr, nullptr, monitor);
+            sge_signal_queue(SGE_SIGCONT, this_elem, ocs::tom::Element<ocs::tom::JB>(),
+                             ocs::tom::Element<ocs::tom::JAT>(), monitor);
          }
       }
    }
@@ -987,16 +1008,19 @@ static bool qinstance_change_state_on_calender_(lListElem *this_elem, uint32_t c
  * @return true when the state changed
  */
 bool
-sge_qmaster_qinstance_state_set_manual_disabled(lListElem *this_elem, bool set_state, uint64_t gdi_session) {
+sge_qmaster_qinstance_state_set_manual_disabled(const ocs::tom::Element<ocs::tom::QU> this_elem, const bool set_state,
+                                                const uint64_t gdi_session) {
+   DENTER(TOP_LAYER);
+
    bool changed;
    changed = qinstance_state_set_manual_disabled(this_elem, set_state);
    if (changed) {
       ocs::ReportingFileWriter::create_queue_records(nullptr, this_elem, sge_get_gmt64());
-      sge_ar_list_set_error_state(*ocs::DataStore::get_master_list_rw(SGE_TYPE_AR),
+      sge_ar_list_set_error_state(ocs::tom::List<ocs::tom::AR>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_AR)),
                                   ocs::tom::get<QU_full_name>(this_elem), QI_DISABLED, set_state, gdi_session);
    }
 
-   return changed;
+   DRETURN(changed);
 }
 
 /** @brief Mark a queue instance as suspended by an administrator, or no longer so
@@ -1009,17 +1033,20 @@ sge_qmaster_qinstance_state_set_manual_disabled(lListElem *this_elem, bool set_s
  * @return true when the state changed
  */
 bool
-sge_qmaster_qinstance_state_set_manual_suspended(lListElem *this_elem, bool set_state, uint64_t gdi_session) {
+sge_qmaster_qinstance_state_set_manual_suspended(const ocs::tom::Element<ocs::tom::QU> this_elem, const bool set_state,
+                                                 const uint64_t gdi_session) {
+   DENTER(TOP_LAYER);
+
    bool changed;
    changed = qinstance_state_set_manual_suspended(this_elem, set_state);
    if (changed) {
       ocs::ReportingFileWriter::create_queue_records(nullptr, this_elem, sge_get_gmt64());
-      sge_ar_list_set_error_state(*ocs::DataStore::get_master_list_rw(SGE_TYPE_AR),
+      sge_ar_list_set_error_state(ocs::tom::List<ocs::tom::AR>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_AR)),
                                   ocs::tom::get<QU_full_name>(this_elem), QI_SUSPENDED, set_state, gdi_session);
    }
 
 
-   return changed;
+   DRETURN(changed);
 }
 
 /** @brief Mark a queue instance as unreachable, because its execution host stopped answering, or no longer so
@@ -1032,22 +1059,25 @@ sge_qmaster_qinstance_state_set_manual_suspended(lListElem *this_elem, bool set_
  * @return true when the state changed
  */
 bool
-sge_qmaster_qinstance_state_set_unknown(lListElem *this_elem, bool set_state, uint64_t gdi_session) {
+sge_qmaster_qinstance_state_set_unknown(const ocs::tom::Element<ocs::tom::QU> this_elem, const bool set_state,
+                                        const uint64_t gdi_session) {
+   DENTER(TOP_LAYER);
+
    bool changed;
    changed = qinstance_state_set_unknown(this_elem, set_state);
    if (changed) {
       ocs::ReportingFileWriter::create_queue_records(nullptr, this_elem, sge_get_gmt64());
       if (mconf_get_simulate_execds()) {
-         sge_ar_list_set_error_state(*ocs::DataStore::get_master_list_rw(SGE_TYPE_AR),
+         sge_ar_list_set_error_state(ocs::tom::List<ocs::tom::AR>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_AR)),
                                      ocs::tom::get<QU_full_name>(this_elem), QI_UNKNOWN, false, gdi_session);
       } else {
-         sge_ar_list_set_error_state(*ocs::DataStore::get_master_list_rw(SGE_TYPE_AR),
+         sge_ar_list_set_error_state(ocs::tom::List<ocs::tom::AR>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_AR)),
                                      ocs::tom::get<QU_full_name>(this_elem), QI_UNKNOWN, set_state, gdi_session);
       }
    }
 
 
-   return changed;
+   DRETURN(changed);
 }
 
 /** @brief Mark a queue instance as in error state, because a job could not be started there, or no longer so
@@ -1060,17 +1090,20 @@ sge_qmaster_qinstance_state_set_unknown(lListElem *this_elem, bool set_state, ui
  * @return true when the state changed
  */
 bool
-sge_qmaster_qinstance_state_set_error(lListElem *this_elem, bool set_state, uint64_t gdi_session) {
+sge_qmaster_qinstance_state_set_error(const ocs::tom::Element<ocs::tom::QU> this_elem, const bool set_state,
+                                      const uint64_t gdi_session) {
+   DENTER(TOP_LAYER);
+
    bool changed;
    changed = qinstance_state_set_error(this_elem, set_state);
    if (changed) {
       ocs::ReportingFileWriter::create_queue_records(nullptr, this_elem, sge_get_gmt64());
-      sge_ar_list_set_error_state(*ocs::DataStore::get_master_list_rw(SGE_TYPE_AR),
+      sge_ar_list_set_error_state(ocs::tom::List<ocs::tom::AR>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_AR)),
                                   ocs::tom::get<QU_full_name>(this_elem), QI_ERROR, set_state, gdi_session);
    }
 
 
-   return changed;
+   DRETURN(changed);
 }
 
 /** @brief Mark a queue instance as suspended by a subordinate relationship, or no longer so
@@ -1083,14 +1116,17 @@ sge_qmaster_qinstance_state_set_error(lListElem *this_elem, bool set_state, uint
  * @return true when the state changed
  */
 bool
-sge_qmaster_qinstance_state_set_susp_on_sub(lListElem *this_elem, bool set_state, uint64_t gid_session) {
+sge_qmaster_qinstance_state_set_susp_on_sub(const ocs::tom::Element<ocs::tom::QU> this_elem, const bool set_state,
+                                            const uint64_t gid_session) {
+   DENTER(TOP_LAYER);
+
    bool changed;
    changed = qinstance_state_set_susp_on_sub(this_elem, set_state);
    if (changed) {
       ocs::ReportingFileWriter::create_queue_records(nullptr, this_elem, sge_get_gmt64());
    }
 
-   return changed;
+   DRETURN(changed);
 }
 
 /** @brief Mark a queue instance as disabled by its calendar, or no longer so
@@ -1103,14 +1139,17 @@ sge_qmaster_qinstance_state_set_susp_on_sub(lListElem *this_elem, bool set_state
  * @return true when the state changed
  */
 bool
-sge_qmaster_qinstance_state_set_cal_disabled(lListElem *this_elem, bool set_state, uint64_t gid_session) {
+sge_qmaster_qinstance_state_set_cal_disabled(const ocs::tom::Element<ocs::tom::QU> this_elem, const bool set_state,
+                                             const uint64_t gid_session) {
+   DENTER(TOP_LAYER);
+
    bool changed;
    changed = qinstance_state_set_cal_disabled(this_elem, set_state);
    if (changed) {
       ocs::ReportingFileWriter::create_queue_records(nullptr, this_elem, sge_get_gmt64());
    }
 
-   return changed;
+   DRETURN(changed);
 }
 
 /** @brief Mark a queue instance as suspended by its calendar, or no longer so
@@ -1121,14 +1160,17 @@ sge_qmaster_qinstance_state_set_cal_disabled(lListElem *this_elem, bool set_stat
  * @return true when the state changed
  */
 bool
-sge_qmaster_qinstance_state_set_cal_suspended(lListElem *this_elem, bool set_state, uint64_t gid_session) {
+sge_qmaster_qinstance_state_set_cal_suspended(const ocs::tom::Element<ocs::tom::QU> this_elem, const bool set_state,
+                                              const uint64_t gid_session) {
+   DENTER(TOP_LAYER);
+
    bool changed;
    changed = qinstance_state_set_cal_suspended(this_elem, set_state);
    if (changed) {
       ocs::ReportingFileWriter::create_queue_records(nullptr, this_elem, sge_get_gmt64());
    }
 
-   return changed;
+   DRETURN(changed);
 }
 
 /** @brief Mark a queue instance as orphaned - deleted but still holding jobs
@@ -1139,14 +1181,17 @@ sge_qmaster_qinstance_state_set_cal_suspended(lListElem *this_elem, bool set_sta
  * @return true when the state changed
  */
 bool
-sge_qmaster_qinstance_state_set_orphaned(lListElem *this_elem, bool set_state, uint64_t gid_session) {
+sge_qmaster_qinstance_state_set_orphaned(const ocs::tom::Element<ocs::tom::QU> this_elem, const bool set_state,
+                                         const uint64_t gid_session) {
+   DENTER(TOP_LAYER);
+
    bool changed;
    changed = qinstance_state_set_orphaned(this_elem, set_state);
    if (changed) {
       ocs::ReportingFileWriter::create_queue_records(nullptr, this_elem, sge_get_gmt64());
    }
 
-   return changed;
+   DRETURN(changed);
 }
 
 /** @brief Mark a queue instance as ambiguously configured, so it cannot be used, or no longer so
@@ -1159,17 +1204,20 @@ sge_qmaster_qinstance_state_set_orphaned(lListElem *this_elem, bool set_state, u
  * @return true when the state changed
  */
 bool
-sge_qmaster_qinstance_state_set_ambiguous(lListElem *this_elem, bool set_state, uint64_t gid_session) {
+sge_qmaster_qinstance_state_set_ambiguous(const ocs::tom::Element<ocs::tom::QU> this_elem, const bool set_state,
+                                          const uint64_t gid_session) {
+   DENTER(TOP_LAYER);
+
    bool changed;
    changed = qinstance_state_set_ambiguous(this_elem, set_state);
    if (changed) {
       ocs::ReportingFileWriter::create_queue_records(nullptr, this_elem, sge_get_gmt64());
-      sge_ar_list_set_error_state(*ocs::DataStore::get_master_list_rw(SGE_TYPE_AR),
+      sge_ar_list_set_error_state(ocs::tom::List<ocs::tom::AR>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_AR)),
                                   ocs::tom::get<QU_full_name>(this_elem), QI_AMBIGUOUS, set_state, gid_session);
    }
 
 
-   return changed;
+   DRETURN(changed);
 }
 
 /* ret: did the state change */
@@ -1184,7 +1232,7 @@ sge_qmaster_qinstance_state_set_ambiguous(lListElem *this_elem, bool set_state, 
  * @return true if the initial configuration changed the state
  */
 bool
-sge_qmaster_qinstance_set_initial_state(lListElem *this_elem, uint64_t gdi_session) {
+sge_qmaster_qinstance_set_initial_state(const ocs::tom::Element<ocs::tom::QU> this_elem, const uint64_t gdi_session) {
 #ifdef QINSTANCE_MODIFY_DEBUG
    DENTER(TOP_LAYER);
 #else
@@ -1218,41 +1266,39 @@ sge_qmaster_qinstance_set_initial_state(lListElem *this_elem, uint64_t gdi_sessi
  * @note MT-NOTE: qinstance_reinit_consumable_actual_list() is MT safe
  */
 bool
-qinstance_reinit_consumable_actual_list(lListElem *this_elem,
-                                        lList **answer_list) {
+qinstance_reinit_consumable_actual_list(const ocs::tom::Element<ocs::tom::QU> this_elem, lList **answer_list) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
 
    if (this_elem != nullptr) {
       const char *name = ocs::tom::get<QU_full_name>(this_elem);
-      const lList *job_list = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
-      const lList *centry_list = *ocs::DataStore::get_master_list(SGE_TYPE_CENTRY);
-      const lList *ar_list = *ocs::DataStore::get_master_list(SGE_TYPE_AR);
-      const lList *master_pe_list = *ocs::DataStore::get_master_list(SGE_TYPE_PE);
+      const ocs::tom::ConstList<ocs::tom::JB> job_list(*ocs::DataStore::get_master_list(SGE_TYPE_JOB));
+      const ocs::tom::ConstList<ocs::tom::CE> centry_list(*ocs::DataStore::get_master_list(SGE_TYPE_CENTRY));
+      const ocs::tom::ConstList<ocs::tom::AR> ar_list(*ocs::DataStore::get_master_list(SGE_TYPE_AR));
+      const ocs::tom::ConstList<ocs::tom::PE> master_pe_list(*ocs::DataStore::get_master_list(SGE_TYPE_PE));
 
       ocs::tom::set<QU_resource_utilization>(this_elem, nullptr);
       qinstance_set_conf_slots_used(this_elem);
-      qinstance_debit_consumable(this_elem, nullptr, nullptr, centry_list, 0, true, true, nullptr);
+      qinstance_debit_consumable(this_elem, ocs::tom::ConstElement<ocs::tom::JB>(),
+                                 ocs::tom::ConstElement<ocs::tom::PE>(), centry_list, 0, true, true, nullptr);
 
-      for_each_rw_lv(ep, job_list) {
-         ocs::tom::ConstList<ocs::tom::JAT> ja_task_list = ocs::tom::get<JB_ja_tasks>(ep);
-
-         for (ocs::tom::ConstElement<ocs::tom::JAT> ja_task : ja_task_list) {
+      for (const auto ep : job_list) {
+         for (const auto ja_task : ocs::tom::get<JB_ja_tasks>(ep)) {
             ocs::tom::ConstList<ocs::tom::JG> gdil = ocs::tom::get<JAT_granted_destin_identifier_list>(ja_task);
-            const lListElem *gdil_ep = ocs::tom::find_first<JG_qname>(gdil, name);
-            const lListElem *pe = ocs::tom::get<JAT_pe_object>(ja_task);
+            const ocs::tom::ConstElement<ocs::tom::JG> gdil_ep = ocs::tom::find_first<JG_qname>(gdil, name);
+            const ocs::tom::ConstElement<ocs::tom::PE> pe = ocs::tom::get<JAT_pe_object>(ja_task);
 
             if (gdil_ep != nullptr) {
                int slots = ocs::tom::get<JG_slots>(gdil_ep);
 
                bool is_master_task = false;
-               if (gdil_ep == lFirst(gdil)) {
+               if (gdil_ep == gdil.front()) {
                   is_master_task = true;
                }
 
                bool do_per_host_booking = true;
-               const lListElem *prev = lPrev(gdil_ep);
+               const ocs::tom::ConstElement<ocs::tom::JG> prev = gdil_ep.prev();
                if (prev != nullptr &&
                    sge_strnullcmp(ocs::tom::get<JG_qhostname>(gdil_ep), ocs::tom::get<JG_qhostname>(prev)) == 0) {
                   do_per_host_booking = false;
@@ -1265,30 +1311,29 @@ qinstance_reinit_consumable_actual_list(lListElem *this_elem,
             }
          }
       }
-      for_each_rw_lv(ep, ar_list) {
+      for (const auto ep : ar_list) {
          ocs::tom::ConstList<ocs::tom::JG> gdil = ocs::tom::get<AR_granted_slots>(ep);
-         const lListElem *gdil_ep = ocs::tom::find_first<JG_qname>(gdil, name);
+         const ocs::tom::ConstElement<ocs::tom::JG> gdil_ep = ocs::tom::find_first<JG_qname>(gdil, name);
 
          if (gdil_ep != nullptr) {
             bool is_master_task = false;
             auto dummy_job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
 
-            if (gdil_ep == lFirst(gdil)) {
+            if (gdil_ep == gdil.front()) {
                is_master_task = true;
             }
 
             const char *pe_name = ocs::tom::get<AR_granted_pe>(ep);
-            const lListElem *pe = nullptr;
+            ocs::tom::ConstElement<ocs::tom::PE> pe = nullptr;
             if (pe_name != nullptr) {
                pe = pe_list_locate(master_pe_list, pe_name);
             }
 
-            job_set_hard_resource_list(*dummy_job, lCopyList(nullptr, ocs::tom::get<AR_resource_list>(ep)));
+            job_set_hard_resource_list(*dummy_job, ocs::tom::get<AR_resource_list>(ep).clone());
 
             rc_add_job_utilization(ocs::tom::ConstElement<ocs::tom::JG>(), *dummy_job,
-                                   ocs::tom::ConstElement<ocs::tom::PE>(pe), 0, SCHEDULING_RECORD_ENTRY_TYPE_RESERVING,
-                                   ocs::tom::Element<ocs::tom::QU>(this_elem),
-                                   ocs::tom::ConstList<ocs::tom::CE>(centry_list),
+                                   pe, 0, SCHEDULING_RECORD_ENTRY_TYPE_RESERVING,
+                                   this_elem, centry_list,
                                    ocs::tom::get<JG_slots>(gdil_ep), name, ocs::tom::get<AR_start_time>(ep),
                                    ocs::tom::get<AR_duration>(ep), QUEUE_TAG, false, is_master_task, false,
                                    ocs::tom::ConstList<ocs::tom::GRU>());
@@ -1297,4 +1342,15 @@ qinstance_reinit_consumable_actual_list(lListElem *this_elem,
    }
 
    DRETURN(ret);
+}
+
+/**
+ * @brief qinstance_reinit_consumable_actual_list() for an untyped caller
+ * @param this_elem the queue instance (QU_Type), checked
+ * @param answer_list AN_Type list
+ * @return as qinstance_reinit_consumable_actual_list()
+ */
+bool
+qinstance_reinit_consumable_actual_list(lListElem *this_elem, lList **answer_list) {
+   return qinstance_reinit_consumable_actual_list(ocs::tom::Element<ocs::tom::QU>(this_elem), answer_list);
 }

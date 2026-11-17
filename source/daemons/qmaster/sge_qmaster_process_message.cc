@@ -60,8 +60,10 @@
 #include "sgeobj/sge_object.h"
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_ACK.h"
 #include "sgeobj/tom/ocs_tom_QU.h"
 #include "sgeobj/tom/ocs_tom_CQ.h"
+#include "sgeobj/tom/ocs_tom_JAT.h"
 #include "sgeobj/tom/ocs_tom_JB.h"
 
 #include "gdi/ocs_gdi_ClientServerBase.h"
@@ -152,13 +154,16 @@ do_c_ack_request(ocs::gdi::ClientServerBase::struct_msg_t *message, monitoring_t
    }
 
    while (pb_unused(&(message->buf)) > 0) {
-      lListElem *ack = nullptr;
+      lListElem *raw_ack = nullptr;
 
-      // get the ACK element
-      if (cull_unpack_elem(&message->buf, &ack, nullptr)) {
+      // get the ACK element; stays raw: cull_unpack_elem() returns an error instead of throwing on bad bytes
+      if (cull_unpack_elem(&message->buf, &raw_ack, nullptr)) {
          ERROR("failed unpacking ACK");
          DRETURN_VOID;
       }
+      // checked: the element type comes from the wire; an element of another type throws here as the
+      // first field access threw before
+      auto ack = ocs::tom::ElementPtr<ocs::tom::ACK>(raw_ack);
 
       // check the tag and the sender
       uint32_t ack_tag = ocs::tom::get<ACK_type>(ack);
@@ -175,7 +180,6 @@ do_c_ack_request(ocs::gdi::ClientServerBase::struct_msg_t *message, monitoring_t
       } else {
          // unknown tag
          ERROR(MSG_COM_UNKNOWN_TAG, ack_tag);
-         lFreeElem(&ack);
          DRETURN_VOID;
       }
 
@@ -186,12 +190,11 @@ do_c_ack_request(ocs::gdi::ClientServerBase::struct_msg_t *message, monitoring_t
          uint32_t ack_ulong = ocs::tom::get<ACK_id>(ack);
          const uint32_t ack_ulong2 = ocs::tom::get<ACK_id2>(ack);
          sge_handle_event_ack(ack_ulong2, (ev_event) ack_ulong);
-         lFreeElem(&ack);
       } else {
          // sge_c_ack() will be called by the worker thread to execute the ACK request stored here
-         lList *ack_list = lCreateList("ACK list", lGetElemDescr(ack));
-         lAppendElem(ack_list, ack);
-         ocs_store_packet(message, ack_list, PACKET_ACK_REQUEST);
+         auto ack_list = ocs::tom::ListPtr<ocs::tom::ACK>::create("ACK list", lGetElemDescr(ack.get()));
+         ack_list->push_back(std::move(ack));
+         ocs_store_packet(message, ack_list.release(), PACKET_ACK_REQUEST);
       }
    }
 }
@@ -765,9 +768,8 @@ void
 sge_c_ack(const ocs::gdi::Packet *packet, const ocs::gdi::Task *task, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
-   // extract information from the task about the ACK
-   const lList *ack_list = task->data_list;
-   const lListElem *ack = lFirst(ack_list);
+   // extract information from the task about the ACK; the listener built the list of ACK_Type itself
+   const auto ack = ocs::tom::ConstList<ocs::tom::ACK>::from_typed(task->data_list).front();
    const uint32_t ack_tag = ocs::tom::get<ACK_type>(ack);
    uint32_t ack_ulong = ocs::tom::get<ACK_id>(ack);
    const uint32_t ack_ulong2 = ocs::tom::get<ACK_id2>(ack);
@@ -791,7 +793,17 @@ sge_c_ack(const ocs::gdi::Packet *packet, const ocs::gdi::Task *task, monitoring
    DRETURN_VOID;
 }
 
-/***************************************************************/
+/**
+ * @brief Handle an execd's acknowledgement of a job or queue signal
+ *
+ * @param host the sending host
+ * @param commproc the sending component, must be execd
+ * @param ack_tag ACK_SIGJOB or ACK_SIGQUEUE
+ * @param ack_ulong the job id for a job signal
+ * @param ack_ulong2 the task id for a job signal
+ * @param ack_str the full queue instance name for a queue signal
+ * @param monitor for monitoring qmaster threads
+ */
 static void
 sge_c_job_ack(const char *host, const char *commproc, const uint32_t ack_tag,
               const uint32_t ack_ulong, const uint32_t ack_ulong2, const char *ack_str, monitoring_t *monitor) {
@@ -805,7 +817,7 @@ sge_c_job_ack(const char *host, const char *commproc, const uint32_t ack_tag,
 
    switch (ack_tag) {
       case ACK_SIGJOB: {
-         const lList *master_job_list = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
+         const auto master_job_list = ocs::tom::ConstList<ocs::tom::JB>(*ocs::DataStore::get_master_list(SGE_TYPE_JOB));
 
          DPRINTF("TAG_SIGJOB\n");
          /* ack_ulong is the jobid */
@@ -814,7 +826,7 @@ sge_c_job_ack(const char *host, const char *commproc, const uint32_t ack_tag,
             ERROR(MSG_COM_ACKEVENTFORUNKNOWNJOB_SU, host, ack_ulong);
             DRETURN_VOID;
          }
-         lListElem *jatep = job_search_task(jep, nullptr, ack_ulong2);
+         const auto jatep = job_search_task(jep, nullptr, ack_ulong2);
          if (jatep == nullptr) {
             ERROR(MSG_COM_ACKEVENTFORUNKNOWNTASKOFJOB_SUU, host, ack_ulong2, ack_ulong);
             DRETURN_VOID;
@@ -834,7 +846,8 @@ sge_c_job_ack(const char *host, const char *commproc, const uint32_t ack_tag,
       }
 
       case ACK_SIGQUEUE: {
-         const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
+         const auto master_cqueue_list =
+                 ocs::tom::ConstList<ocs::tom::CQ>(*ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE));
          dstring host_domain = DSTRING_INIT;
          dstring cqueue_name = DSTRING_INIT;
          cqueue_name_split(ack_str, &cqueue_name, &host_domain, nullptr, nullptr);

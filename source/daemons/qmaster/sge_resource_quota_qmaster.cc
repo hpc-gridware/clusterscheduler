@@ -37,6 +37,7 @@
  */
 #include <cstring>
 #include <fnmatch.h>
+#include <utility>
 
 #include "uti/ocs_Pattern.h"
 #include "uti/sge_log.h"
@@ -54,11 +55,22 @@
 #include "sgeobj/sge_str.h"
 #include "sgeobj/ocs_DataStore.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "tom/ocs_Select.h"
+#include "sgeobj/tom/ocs_tom_CE.h"
+#include "sgeobj/tom/ocs_tom_HGRP.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
 #include "sgeobj/tom/ocs_tom_JAT.h"
 #include "sgeobj/tom/ocs_tom_JG.h"
+#include "sgeobj/tom/ocs_tom_PE.h"
+#include "sgeobj/tom/ocs_tom_PR.h"
 #include "sgeobj/tom/ocs_tom_RQR.h"
+#include "sgeobj/tom/ocs_tom_RQRF.h"
 #include "sgeobj/tom/ocs_tom_RQRL.h"
+#include "sgeobj/tom/ocs_tom_RQS.h"
+#include "sgeobj/tom/ocs_tom_RUE.h"
 #include "sgeobj/tom/ocs_tom_ST.h"
+#include "sgeobj/tom/ocs_tom_US.h"
 
 #include "spool/sge_spooling.h"
 
@@ -73,18 +85,11 @@
 #include "msg_qmaster.h"
 
 static bool
-rqs_reinit_consumable_actual_list(lListElem *rqs, lList **answer_list);
+rqs_reinit_consumable_actual_list(ocs::tom::Element<ocs::tom::RQS> rqs, lList **answer_list);
 
 static void
-rqs_update_categories(const lListElem *new_rqs, const lListElem *old_rqs, uint64_t gdi_session);
-
-static bool
-filter_diff_usersets_or_projects(const lListElem *rule, int filter_nm, lList **scope_l, int nm, const lDescr *dp,
-                                 const lList *master_list);
-
-static bool
-filter_diff_usersets_or_projects_scope(lList *filter_scope, int filter_nm, lList **scope_ref, int nm, const lDescr *dp,
-                                       const lList *master_list);
+rqs_update_categories(ocs::tom::ConstElement<ocs::tom::RQS> new_rqs, ocs::tom::ConstElement<ocs::tom::RQS> old_rqs,
+                      uint64_t gdi_session);
 
 /**
  * @brief Gdi callback function for modifing resource quota sets
@@ -93,42 +98,48 @@ filter_diff_usersets_or_projects_scope(lList *filter_scope, int filter_nm, lList
  * add/modify/delete generic gdi objects.
  * The purpose of this function is it to add new rqs
  * objects or modify existing resource quota sets.
+ * The raw parameters are fixed by modifier_func_t; both elements are of RQS_Type.
  *
+ * @param packet the client request
+ * @param task the GDI task being answered
  * @param alpp reference to an answer list
- * @param new_rqs if a new rqs object will be created by this function, then new_rqs is a newly initialized CULL object. if this function was called due to a modify request than new_rqs will contain the old data
- * @param rqs a reduced rqs object which contains all necessary information to create a new object or modify parts of an existing one
+ * @param new_rqs if a new rqs object will be created by this function, then new_rqs is a newly initialized
+ *        CULL object. if this function was called due to a modify request than new_rqs will contain the old data
+ * @param rqs a reduced rqs object which contains all necessary information to create a new object or modify
+ *        parts of an existing one
  * @param add 1 if a new element should be added to the master list 0 to modify an existing object
  * @param ruser username who invoked this gdi request
  * @param rhost hostname of where the gdi request was invoked
  * @param object structure of the gdi framework which contains additional information to perform the request
+ * @param cmd the command being executed
  * @param sub_command how should we handle sublist elements: `SGE_GDI_CHANGE`
  *        modifies them, `SGE_GDI_APPEND` adds to the sublist, `SGE_GDI_REMOVE`
  *        removes from it, `SGE_GDI_SET` replaces the whole sublist
  * @param monitor monitoring structure
- * @param packet the client request
- * @param task the GDI task being answered
- * @param cmd the command being executed
  *
  * @return 0 on success STATUS_EUNKNOWN if an error occurred
  *
  * @note MT-NOTE: rqs_mod() is MT safe
  */
 int
-rqs_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *new_rqs, lListElem *rqs, int add, const char *ruser,
-        const char *rhost, gdi_object_t *object, ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command, monitoring_t *monitor) {
+rqs_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *new_rqs, lListElem *rqs, int add,
+        const char *ruser, const char *rhost, gdi_object_t *object, ocs::gdi::Command cmd,
+        ocs::gdi::SubCommand sub_command, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
+   const ocs::tom::Element<ocs::tom::RQS> target(new_rqs);
+   const ocs::tom::Element<ocs::tom::RQS> delta(rqs);
    const char *rqs_name = nullptr;
    bool rules_changed = false;
-   bool previous_enabled = (bool) ocs::tom::get<RQS_enabled>(new_rqs);
-   const lList *master_centry_list = *ocs::DataStore::get_master_list(SGE_TYPE_CENTRY);
+   bool previous_enabled = ocs::tom::get<RQS_enabled>(target);
+   const ocs::tom::ConstList<ocs::tom::CE> master_centry_list(*ocs::DataStore::get_master_list(SGE_TYPE_CENTRY));
 
    /* ---- RQS_name */
    if (add) {
-      if (attr_mod_str(alpp, rqs, new_rqs, RQS_name, object->object_name))
+      if (attr_mod_str(alpp, delta, target, RQS_name, object->object_name))
          goto ERROR;
    }
-   rqs_name = ocs::tom::get<RQS_name>(new_rqs);
+   rqs_name = ocs::tom::get<RQS_name>(target);
 
    /* Name has to be a valid name */
    if (add && verify_obj_name(alpp, rqs_name, MAX_VERIFY_STRING,
@@ -137,27 +148,23 @@ rqs_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem 
    }
 
    /* ---- RQS_description */
-   attr_mod_zerostr(rqs, new_rqs, RQS_description, "description");
+   attr_mod_zerostr(delta, target, RQS_description, "description");
 
    /* ---- RQS_enabled */
-   attr_mod_bool(rqs, new_rqs, RQS_enabled, "enabled");
+   attr_mod_bool(delta, target, RQS_enabled, "enabled");
 
    /* ---- RQS_rule */
-   if (ocs::tom::has<RQS_rule>(rqs)) {
+   if (ocs::tom::has<RQS_rule>(delta)) {
       rules_changed = true;
       if ((sub_command & ocs::gdi::SubCommand::SET_ALL) == ocs::gdi::SubCommand::SET_ALL) {
-         normalize_sublist(rqs, RQS_rule);
-         attr_mod_sub_list(alpp, new_rqs, RQS_rule, RQS_name, rqs, cmd, sub_command,
+         normalize_sublist(delta, RQS_rule);
+         attr_mod_sub_list(alpp, target, RQS_rule, RQS_name, delta, cmd, sub_command,
                            SGE_ATTR_RQSRULES, SGE_OBJ_RQS, 0, nullptr);
       } else {
          /* *attr cases */
-         ocs::tom::ConstList<ocs::tom::RQR> rule_list = ocs::tom::get<RQS_rule>(rqs);
-         ocs::tom::ConstElement<ocs::tom::RQR> rule;
-
-         for_each_ep(rule, rule_list) {
-            ocs::tom::List<ocs::tom::RQR> new_rule_list = ocs::tom::get<RQS_rule>(new_rqs);
-            const auto new_rule = rqs_rule_locate(new_rule_list, ocs::tom::get<RQR_name>(rule));
-            if (new_rule != nullptr) {
+         for (const auto rule : ocs::tom::get<RQS_rule>(delta)) {
+            const auto new_rule = rqs_rule_locate(ocs::tom::get<RQS_rule>(target), ocs::tom::get<RQR_name>(rule));
+            if (new_rule) {
                /* ---- RQR_limit */
                attr_mod_sub_list(alpp, new_rule, RQR_limit, RQRL_name, rule, cmd,
                                  sub_command, SGE_ATTR_RQSRULES, SGE_OBJ_RQS, 0, nullptr);
@@ -171,11 +178,11 @@ rqs_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem 
       }
    }
 
-   if (!rqs_verify_attributes(new_rqs, alpp, true, master_centry_list)) {
+   if (!rqs_verify_attributes(target, alpp, true, master_centry_list)) {
       goto ERROR;
    }
-   if (rules_changed || (ocs::tom::get<RQS_enabled>(new_rqs) != previous_enabled)) {
-      rqs_reinit_consumable_actual_list(new_rqs, alpp);
+   if (rules_changed || (ocs::tom::get<RQS_enabled>(target) != previous_enabled)) {
+      rqs_reinit_consumable_actual_list(target, alpp);
    }
 
    DRETURN(0);
@@ -191,14 +198,16 @@ DRETURN(STATUS_EUNKNOWN);
  * add/modify/delete generic gdi objects.
  * After an object was modified/added successfully it
  * is necessary to spool the current state to the filesystem.
+ * The raw parameters are fixed by writer_func_t; the element is of RQS_Type.
  *
- * @param alpp reference to an answer list.
- * @param ep rqs object which should be spooled
- * @param object structure of the gdi framework which contains additional information to perform the request (function pointers, names, CULL-types)
  * @param packet the client request
  * @param task the GDI task being answered
+ * @param alpp reference to an answer list, error messages will be added to this list
+ * @param ep rqs object which should be spooled
+ * @param object structure of the gdi framework which contains additional information to perform the request
+ *        (function pointers, names, CULL-types)
  *
- * @return [alpp] - error messages will be added to this list 0 - success STATUS_EEXIST - an error occurred
+ * @return 0 - success, 1 - an error occurred
  *
  * @note MT-NOTE: rqs_spool() is MT safe
  */
@@ -206,16 +215,16 @@ int
 rqs_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *ep, gdi_object_t *object) {
    DENTER(TOP_LAYER);
 
+   const ocs::tom::ConstElement<ocs::tom::RQS> rqs(ep);
    lList *answer_list = nullptr;
-   bool dbret;
 
-   dbret = spool_write_object(&answer_list, spool_get_default_context(), ep,
-                              ocs::tom::get<RQS_name>(ep), SGE_TYPE_RQS);
+   const bool dbret = spool_write_object(&answer_list, spool_get_default_context(), rqs,
+                                         ocs::tom::get<RQS_name>(rqs), SGE_TYPE_RQS);
    answer_list_output(&answer_list);
 
    if (!dbret) {
       answer_list_add_sprintf(alpp, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
-                              MSG_PERSISTENCE_WRITE_FAILED_S, ocs::tom::get<RQS_name>(ep));
+                              MSG_PERSISTENCE_WRITE_FAILED_S, ocs::tom::get<RQS_name>(rqs));
    }
 
    DRETURN(dbret ? 0 : 1);
@@ -229,26 +238,30 @@ rqs_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListEle
  * After an object was modified/added and spooled successfully
  * it is possibly necessary to perform additional tasks.
  * For example it is necessary to send some events to
- * other daemon.
+ * other daemon. The raw parameters are fixed by on_success_func_t; the
+ * elements are of RQS_Type.
  *
- * @param ep new rqs object
- * @param old_ep old rqs object before modification or nullptr if a new object was added
- * @param object structure of the gdi framework which contains additional information to perform the request (function pointers, names, CULL-types)
- * @param ppList
- * @param monitor monitoring structure
  * @param packet the client request
  * @param task the GDI task being answered
+ * @param ep new rqs object
+ * @param old_ep old rqs object before modification or nullptr if a new object was added
+ * @param object structure of the gdi framework which contains additional information to perform the request
+ *        (function pointers, names, CULL-types)
+ * @param ppList receives information for post processing, unused
+ * @param monitor monitoring structure
  *
  * @return 0 success
  *
  * @note MT-NOTE: rqs() is MT safe
  */
 int
-rqs_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList, monitoring_t *monitor) {
+rqs_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object,
+            lList **ppList, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
-   const char *rqs_name = ocs::tom::get<RQS_name>(ep);
-   rqs_update_categories(ep, old_ep, packet->gdi_session);
-   sge_add_event(0, old_ep ? sgeE_RQS_MOD : sgeE_RQS_ADD, 0, 0, rqs_name, nullptr, nullptr, ep, packet->gdi_session);
+   const ocs::tom::Element<ocs::tom::RQS> rqs(ep);
+   const char *rqs_name = ocs::tom::get<RQS_name>(rqs);
+   rqs_update_categories(rqs, ocs::tom::ConstElement<ocs::tom::RQS>(old_ep), packet->gdi_session);
+   sge_add_event(0, old_ep ? sgeE_RQS_MOD : sgeE_RQS_ADD, 0, 0, rqs_name, nullptr, nullptr, rqs, packet->gdi_session);
    DRETURN(0);
 }
 
@@ -257,27 +270,24 @@ rqs_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList
  *
  * This function will be called from the framework which will
  * add/modify/delete generic gdi objects.
- * The purpose of this function is it to delete ckpt objects.
+ * The purpose of this function is it to delete rqs objects.
  *
- * @param ep element which should be deleted
- * @param alpp reference to an answer list.
- * @param rqs_list reference to the Master_RQS_LIST
- * @param ruser username of person who invoked this gdi request
- * @param rhost hostname of the host where someone initiated an gdi call
  * @param packet the client request
  * @param task the GDI task being answered
+ * @param ep element which should be deleted
+ * @param alpp reference to an answer list.
+ * @param rqs_list the master resource quota set list
+ * @param ruser username of person who invoked this gdi request
+ * @param rhost hostname of the host where someone initiated an gdi call
  *
- * @return success STATUS_EUNKNOWN - an error occurred
+ * @return STATUS_OK on success, STATUS_EUNKNOWN or STATUS_EEXIST if an error occurred
  *
  * @note MT-NOTE: rqs_del() is MT safe
  */
 int
-rqs_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **alpp, lList **rqs_list, char *ruser, char *rhost) {
+rqs_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::ConstElement<ocs::tom::RQS> ep, lList **alpp,
+        const ocs::tom::List<ocs::tom::RQS> rqs_list, const char *ruser, const char *rhost) {
    DENTER(TOP_LAYER);
-
-   const char *rqs_name;
-   int pos;
-   lListElem *found;
 
    if (!ep || !ruser || !rhost) {
       CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, __func__);
@@ -286,13 +296,13 @@ rqs_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **a
    }
 
    /* ep is no rqs element, if ep has no RQS_name */
-   if ((pos = lGetPosViaElem(ep, RQS_name, SGE_NO_ABORT)) < 0) {
+   if (!ep.has<RQS_name>()) {
       CRITICAL(MSG_SGETEXT_MISSINGCULLFIELD_SS, lNm2Str(RQS_name), __func__);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
 
-   rqs_name = lGetPosString(ep, pos);
+   const char *rqs_name = ocs::tom::get<RQS_name>(ep);
    if (!rqs_name) {
       CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, __func__);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
@@ -300,15 +310,16 @@ rqs_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **a
    }
 
    /* search for rqs with this name and remove it from the list */
-   if (!(found = rqs_list_locate(*rqs_list, rqs_name))) {
+   const auto found = rqs_list_locate(rqs_list, rqs_name);
+   if (!found) {
       ERROR(MSG_SGETEXT_DOESNOTEXIST_SS, MSG_OBJ_RQS, rqs_name);
       answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EEXIST);
    }
 
-   found = lDechainElem(*rqs_list, found);
+   auto removed = rqs_list.extract(found);
 
-   rqs_update_categories(nullptr, found, packet->gdi_session);
+   rqs_update_categories(nullptr, *removed, packet->gdi_session);
 
    sge_event_spool(alpp, 0, sgeE_RQS_DEL, 0, 0, rqs_name, nullptr, nullptr,
                    nullptr, nullptr, nullptr, true, true, packet->gdi_session);
@@ -316,9 +327,29 @@ rqs_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **a
    INFO(MSG_SGETEXT_REMOVEDFROMLIST_SSSS, ruser, rhost, rqs_name, MSG_OBJ_RQS);
    answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
 
-   lFreeElem(&found);
+   removed.reset();
 
    DRETURN(STATUS_OK);
+}
+
+/**
+ * @brief rqs_del() for an untyped caller
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param ep element which should be deleted (RQS_Type)
+ * @param alpp reference to an answer list.
+ * @param rqs_list reference to the master resource quota set list
+ * @param ruser username of person who invoked this gdi request
+ * @param rhost hostname of the host where someone initiated an gdi call
+ *
+ * @return STATUS_OK on success, STATUS_EUNKNOWN or STATUS_EEXIST if an error occurred
+ */
+int
+rqs_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **alpp, lList **rqs_list, char *ruser,
+        char *rhost) {
+   return rqs_del(packet, task, ocs::tom::ConstElement<ocs::tom::RQS>(ep), alpp,
+                  ocs::tom::List<ocs::tom::RQS>(*rqs_list), ruser, rhost);
 }
 
 /**
@@ -335,24 +366,20 @@ rqs_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **a
  * @note MT-NOTE: rqs_reinit_consumable_actual_list() is not MT safe
  */
 static bool
-rqs_reinit_consumable_actual_list(lListElem *rqs, lList **answer_list) {
+rqs_reinit_consumable_actual_list(const ocs::tom::Element<ocs::tom::RQS> rqs, lList **answer_list) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
-   const lList *master_centry_list = *ocs::DataStore::get_master_list(SGE_TYPE_CENTRY);
-   const lList *master_userset_list = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
-   const lList *master_hgroup_list = *ocs::DataStore::get_master_list(SGE_TYPE_HGROUP);
-   const lList *master_job_list = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
-   const lList *master_pe_list = *ocs::DataStore::get_master_list(SGE_TYPE_PE);
+   const ocs::tom::ConstList<ocs::tom::CE> master_centry_list(*ocs::DataStore::get_master_list(SGE_TYPE_CENTRY));
+   const ocs::tom::ConstList<ocs::tom::US> master_userset_list(*ocs::DataStore::get_master_list(SGE_TYPE_USERSET));
+   const ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list(*ocs::DataStore::get_master_list(SGE_TYPE_HGROUP));
+   const ocs::tom::ConstList<ocs::tom::JB> master_job_list(*ocs::DataStore::get_master_list(SGE_TYPE_JOB));
+   const ocs::tom::ConstList<ocs::tom::PE> master_pe_list(*ocs::DataStore::get_master_list(SGE_TYPE_PE));
 
-   if (rqs != nullptr) {
-      ocs::tom::ConstElement<ocs::tom::RQR> rule = nullptr;
-
-      for_each_ep(rule, ocs::tom::get<RQS_rule>(rqs)) {
-         for_each_rw_lv(limit, ocs::tom::get<RQR_limit>(rule)) {
-            lList *usage = nullptr;
-            ocs::tom::exchange<RQRL_usage>(limit, &usage);
-            lFreeList(&usage);
+   if (rqs) {
+      for (const auto rule : ocs::tom::get<RQS_rule>(rqs)) {
+         for (const auto limit : ocs::tom::get<RQR_limit>(rule)) {
+            ocs::tom::set<RQRL_usage>(limit, ocs::tom::ListPtr<ocs::tom::RUE>());
          }
       }
 
@@ -360,27 +387,24 @@ rqs_reinit_consumable_actual_list(lListElem *rqs, lList **answer_list) {
          DRETURN(ret);
       }
 
-      for_each_rw_lv(job, master_job_list) {
-         ocs::tom::ConstList<ocs::tom::JAT> ja_task_list = ocs::tom::get<JB_ja_tasks>(job);
-         ocs::tom::ConstElement<ocs::tom::JAT> ja_task = nullptr;
-
-         for_each_ep(ja_task, ja_task_list) {
-            ocs::tom::ConstList<ocs::tom::JG> gdi_list = ocs::tom::get<JAT_granted_destin_identifier_list>(ja_task);
+      for (const auto job : master_job_list) {
+         for (const auto ja_task : ocs::tom::get<JB_ja_tasks>(job)) {
             bool is_master_task = true;
 
             const char *pe_name = ocs::tom::get<JAT_granted_pe>(ja_task);
-            const lListElem *pe = nullptr;
+            ocs::tom::ConstElement<ocs::tom::PE> pe;
             if (pe_name != nullptr) {
                pe = pe_list_locate(master_pe_list, pe_name);
             }
 
-            ocs::tom::ConstElement<ocs::tom::JG> gdil_ep;
             const char *last_hostname = nullptr;
-            for_each_ep(gdil_ep, gdi_list) {
-               bool do_per_host_booking = host_do_per_host_booking(&last_hostname, ocs::tom::get<JG_qhostname>(gdil_ep));
+            for (const auto gdil_ep : ocs::tom::get<JAT_granted_destin_identifier_list>(ja_task)) {
+               bool do_per_host_booking = host_do_per_host_booking(&last_hostname,
+                                                                   ocs::tom::get<JG_qhostname>(gdil_ep));
                int tmp_slot = ocs::tom::get<JG_slots>(gdil_ep);
                rqs_debit_consumable(rqs, job, gdil_ep, pe, master_centry_list,
-                                    master_userset_list, master_hgroup_list, tmp_slot, is_master_task, do_per_host_booking);
+                                    master_userset_list, master_hgroup_list, tmp_slot, is_master_task,
+                                    do_per_host_booking);
                is_master_task = false;
             }
          }
@@ -391,6 +415,68 @@ rqs_reinit_consumable_actual_list(lListElem *rqs, lList **answer_list) {
 }
 
 /**
+ * @brief The filter of a rule for a filter field known at run time
+ * @param rule the rule (RQR_Type)
+ * @param filter_nm the filter field, one of RQR_filter_users, _projects, _pes, _queues and _hosts
+ * @return the filter, or an empty handle if the rule has none or the field is no filter field
+ */
+static ocs::tom::ConstElement<ocs::tom::RQRF>
+ocs_rqr_filter(const ocs::tom::ConstElement<ocs::tom::RQR> rule, const int filter_nm) {
+   DENTER(TOP_LAYER);
+
+   ocs::tom::ConstElement<ocs::tom::RQRF> filter;
+   switch (filter_nm) {
+      case RQR_filter_users:
+         filter = ocs::tom::get<RQR_filter_users>(rule);
+         break;
+      case RQR_filter_projects:
+         filter = ocs::tom::get<RQR_filter_projects>(rule);
+         break;
+      case RQR_filter_pes:
+         filter = ocs::tom::get<RQR_filter_pes>(rule);
+         break;
+      case RQR_filter_queues:
+         filter = ocs::tom::get<RQR_filter_queues>(rule);
+         break;
+      case RQR_filter_hosts:
+         filter = ocs::tom::get<RQR_filter_hosts>(rule);
+         break;
+      default:
+         break;
+   }
+
+   DRETURN(filter);
+}
+
+/**
+ * @brief Remove the names two lists share from both, freeing a list emptied by that, as lDiffListStr() did
+ * @tparam T the object type
+ * @tparam F the name field
+ * @param lp1 the first list, an empty handle removes nothing
+ * @param lp2 the second list, an empty handle removes nothing
+ */
+template <typename T, auto F>
+static void
+ocs_diff_list_str(ocs::tom::ListPtr<T> &lp1, ocs::tom::ListPtr<T> &lp2) {
+   DENTER(TOP_LAYER);
+
+   if (lp1 && lp2) {
+      const std::size_t before = lp1.get().size();
+      lp1->template remove_common<F>(lp2.get());
+      if (lp1.get().size() != before) {
+         if (lp1.get().empty()) {
+            lp1.reset();
+         }
+         if (lp2.get().empty()) {
+            lp2.reset();
+         }
+      }
+   }
+
+   DRETURN_VOID;
+}
+
+/**
  * @brief Diff single scope
  *
  * This function iterates over a scope and generates
@@ -398,11 +484,11 @@ rqs_reinit_consumable_actual_list(lListElem *rqs, lList **answer_list) {
  * This function resolves wildcards by using fnmatch for patterned scopes.
  * This function can only be used for usersets or projects
  *
- * @param filter_scope filter scope (RQRF_type)
- * @param filter_nm nm of the filter type (eg. RQR_filter_users)
+ * @tparam T the object type of the generated list, US or PR
+ * @tparam F the name field of @p T
+ * @tparam FILTER the filter field, RQR_filter_users or RQR_filter_projects
+ * @param filter_scope filter scope (ST_Type)
  * @param scope_ref generated resolved list
- * @param nm nm of the names of the list
- * @param dp type of the generated list
  * @param master_list master list, needed for resolving
  *
  * @return true if one or more scopes where found false if all projects or usersets are referenced
@@ -411,18 +497,17 @@ rqs_reinit_consumable_actual_list(lListElem *rqs, lList **answer_list) {
  *
  * @see #filter_diff_usersets_or_projects
  */
+template <typename T, auto F, auto FILTER>
 static bool
-filter_diff_usersets_or_projects_scope(lList *filter_scope, int filter_nm, lList **scope_ref, int nm, const lDescr *dp,
-                                       const lList *master_list) {
+filter_diff_usersets_or_projects_scope(const ocs::tom::ConstList<ocs::tom::ST> filter_scope,
+                                       ocs::tom::ListPtr<T> &scope_ref, const ocs::tom::ConstList<T> master_list) {
    DENTER(TOP_LAYER);
 
-   const lListElem *scope_ep;
-   const char *scope;
    bool ret = true;
 
-   for_each_ep(scope_ep, filter_scope) {
-      scope = ocs::tom::get<ST_name>(scope_ep);
-      if (filter_nm == RQR_filter_users) {
+   for (const auto scope_ep : filter_scope) {
+      const char *scope = ocs::tom::get<ST_name>(scope_ep);
+      if constexpr (FILTER == RQR_filter_users) {
          if (!ocs::is_hgroup_name(scope)) {
             continue;
          } else {
@@ -431,32 +516,33 @@ filter_diff_usersets_or_projects_scope(lList *filter_scope, int filter_nm, lList
       }
 
       if (strcmp("*", scope) == 0) {
-         lEnumeration *what = lWhat("%T(%I)", dp, nm);
-
-         lFreeList(scope_ref);
          /* 
           * that looks strange: list is simply sge_free()'d 
           * however this is no bug since any entry contained 
           * in the old scope_ref list will be also in the new one 
           */
-         *scope_ref = lSelect("", master_list, nullptr, what);
-         lFreeWhat(&what);
+         scope_ref = master_list.select(ocs::tom::what<F>(), "");
          ret = false;
          break;
       } else {
          if (ocs::is_pattern(scope)) {
-            const lListElem *ep;
-            for_each_ep(ep, master_list) {
-               const char *ep_entry = lGetString(ep, nm);
+            for (const auto ep : master_list) {
+               const char *ep_entry = ocs::tom::get<F>(ep);
                if (fnmatch(scope, ep_entry, 0) == 0) {
-                  if (lGetElemStr(*scope_ref, nm, scope) == nullptr) {
-                     lAddElemStr(scope_ref, nm, ep_entry, dp);
+                  if (!ocs::tom::find_first<F>(scope_ref.get(), scope)) {
+                     if (!scope_ref) {
+                        scope_ref = ocs::tom::ListPtr<T>::create("");
+                     }
+                     scope_ref->template emplace_back<F>(ep_entry);
                   }
                }
             }
          } else {
-            if (lGetElemStr(*scope_ref, nm, scope) == nullptr) {
-               lAddElemStr(scope_ref, nm, scope, dp);
+            if (!ocs::tom::find_first<F>(scope_ref.get(), scope)) {
+               if (!scope_ref) {
+                  scope_ref = ocs::tom::ListPtr<T>::create("");
+               }
+               scope_ref->template emplace_back<F>(scope);
             }
          }
       }
@@ -473,41 +559,85 @@ filter_diff_usersets_or_projects_scope(lList *filter_scope, int filter_nm, lList
  * This function resolves wildcards by using fnmatch for patterned scopes.
  * This function can only be used for usersets or projects
  *
+ * @tparam T the object type of the generated list, US or PR
+ * @tparam F the name field of @p T
+ * @tparam FILTER the filter field, RQR_filter_users or RQR_filter_projects
  * @param rule resource quota rule (RQR_Type)
- * @param filter_nm nm of the filter type (eg. RQR_filter_users)
  * @param scope_l generated resolved list
- * @param nm nm of the names of the list
- * @param dp type of the generated list
  * @param master_list master list, needed for resolving
  *
  * @return true if one or more scopes where found false if all projects or usersets are referenced
  *
  * @note MT-NOTE: filter_diff_usersets_or_projects() is MT safe
  */
+template <typename T, auto F, auto FILTER>
 static bool
-filter_diff_usersets_or_projects(const lListElem *rule, int filter_nm, lList **scope_l, int nm, const lDescr *dp,
-                                 const lList *master_list) {
+filter_diff_usersets_or_projects(const ocs::tom::ConstElement<ocs::tom::RQR> rule, ocs::tom::ListPtr<T> &scope_l,
+                                 const ocs::tom::ConstList<T> master_list) {
    DENTER(TOP_LAYER);
 
-   lListElem *filter;
    bool ret = true;
 
-   if (filter_nm != RQR_filter_users && filter_nm != RQR_filter_projects) {
+   if (!rule || !master_list) {
       DRETURN(ret);
    }
 
-   if (rule == nullptr || master_list == nullptr) {
+   const auto filter = ocs::tom::get<FILTER>(rule);
+   if (!filter) {
       DRETURN(ret);
    }
 
-   if ((filter = lGetObject(rule, filter_nm)) == nullptr) {
-      DRETURN(ret);
+   if ((ret = filter_diff_usersets_or_projects_scope<T, F, FILTER>(ocs::tom::get<RQRF_scope>(filter), scope_l,
+                                                                   master_list))) {
+      ret = filter_diff_usersets_or_projects_scope<T, F, FILTER>(ocs::tom::get<RQRF_xscope>(filter), scope_l,
+                                                                 master_list);
    }
 
-   if ((ret = filter_diff_usersets_or_projects_scope(ocs::tom::get<RQRF_scope>(filter), filter_nm, scope_l, nm, dp,
-                                                     master_list))) {
-      ret = filter_diff_usersets_or_projects_scope(ocs::tom::get<RQRF_xscope>(filter), filter_nm, scope_l, nm, dp,
-                                                   master_list);
+   DRETURN(ret);
+}
+
+/**
+ * @brief Diff referenced usersets or projects in rqs
+ *
+ * @tparam T the object type of the generated lists, US or PR
+ * @tparam F the name field of @p T
+ * @tparam FILTER the filter field, RQR_filter_users or RQR_filter_projects
+ * @param new_rqs new resource quota set (RQS_Type), or an empty handle
+ * @param old_rqs old resource quota set (RQS_Type), or an empty handle
+ * @param new_list list of referenced objects in new_rqs, or nullptr
+ * @param old_list list of referenced objects in old_rqs, or nullptr
+ * @param master_list the master list of @p T
+ *
+ * @return true if some or none object is referenced false if all objects are referenced in new_list
+ */
+template <typename T, auto F, auto FILTER>
+static bool
+ocs_rqs_diff(const ocs::tom::ConstElement<ocs::tom::RQS> new_rqs, const ocs::tom::ConstElement<ocs::tom::RQS> old_rqs,
+             ocs::tom::ListPtr<T> *new_list, ocs::tom::ListPtr<T> *old_list, const ocs::tom::ConstList<T> master_list) {
+   DENTER(TOP_LAYER);
+
+   bool ret = true;
+
+   if (old_rqs && old_list) {
+      for (const auto rule : ocs::tom::get<RQS_rule>(old_rqs)) {
+         if (!filter_diff_usersets_or_projects<T, F, FILTER>(rule, *old_list, master_list)) {
+            break;
+         }
+      }
+   }
+
+   if (new_rqs && new_list) {
+      for (const auto rule : ocs::tom::get<RQS_rule>(new_rqs)) {
+         if (!filter_diff_usersets_or_projects<T, F, FILTER>(rule, *new_list, master_list)) {
+            if (!old_rqs || old_list->get().empty()) {
+               ret = false;
+            }
+            break;
+         }
+      }
+   }
+   if (new_list != nullptr && old_list != nullptr) {
+      ocs_diff_list_str<T, F>(*new_list, *old_list);
    }
 
    DRETURN(ret);
@@ -520,11 +650,11 @@ filter_diff_usersets_or_projects(const lListElem *rule, int filter_nm, lList **s
  * After locating the usersets a diff beween the usersets found in old_list and new_list
  * is done and the usersets referenced in both are removed.
  *
- * @param new_rqs new resource quota set list (RQS_Type)
- * @param old_rqs old resource quota set list (RQS_Type)
- * @param new_list list of referenced usersets in new_rqs (US_Type)
- * @param old_list list of referenced usersets in old_rqs (US_Type)
- * @param master_userset_list see the brief above
+ * @param new_rqs new resource quota set (RQS_Type)
+ * @param old_rqs old resource quota set (RQS_Type)
+ * @param new_list list of referenced usersets in new_rqs (US_Type), or nullptr
+ * @param old_list list of referenced usersets in old_rqs (US_Type), or nullptr
+ * @param master_userset_list the master userset list, for resolving patterns
  *
  * @return true if some or none userset is referenced false if all userset are referenced in new_list
  *
@@ -533,50 +663,64 @@ filter_diff_usersets_or_projects(const lListElem *rule, int filter_nm, lList **s
  * @see #rqs_diff_projects
  */
 bool
-rqs_diff_usersets(const lListElem *new_rqs, const lListElem *old_rqs, lList **new_list, lList **old_list,
-                  const lList *master_userset_list) {
+rqs_diff_usersets(const ocs::tom::ConstElement<ocs::tom::RQS> new_rqs,
+                  const ocs::tom::ConstElement<ocs::tom::RQS> old_rqs, ocs::tom::ListPtr<ocs::tom::US> *new_list,
+                  ocs::tom::ListPtr<ocs::tom::US> *old_list,
+                  const ocs::tom::ConstList<ocs::tom::US> master_userset_list) {
    DENTER(TOP_LAYER);
-
-   const lListElem *rule;
-   bool ret = true;
-
-   if (old_rqs && old_list) {
-      for_each_ep(rule, static_cast<const lList *>(ocs::tom::get<RQS_rule>(old_rqs))) {
-         if (!filter_diff_usersets_or_projects(rule, RQR_filter_users, old_list, US_name, US_Type,
-                                               master_userset_list)) {
-            break;
-         }
-      }
-   }
-
-   if (new_rqs && new_list) {
-      for_each_ep(rule, static_cast<const lList *>(ocs::tom::get<RQS_rule>(new_rqs))) {
-         if (!filter_diff_usersets_or_projects(rule, RQR_filter_users, new_list, US_name, US_Type,
-                                               master_userset_list)) {
-            if (!old_rqs || lGetNumberOfElem(*old_list) == 0) {
-               ret = false;
-            }
-            break;
-         }
-      }
-   }
-   lDiffListStr(US_name, new_list, old_list);
-
+   const bool ret = ocs_rqs_diff<ocs::tom::US, US_name, RQR_filter_users>(new_rqs, old_rqs, new_list, old_list,
+                                                                           master_userset_list);
    DRETURN(ret);
 }
 
 /**
- * @brief Diff referenced usersets in rqs
+ * @brief rqs_diff_usersets() for an untyped caller
+ *
+ * @param new_rqs new resource quota set (RQS_Type)
+ * @param old_rqs old resource quota set (RQS_Type)
+ * @param new_list list of referenced usersets in new_rqs (US_Type), or nullptr
+ * @param old_list list of referenced usersets in old_rqs (US_Type), or nullptr
+ * @param master_userset_list the master userset list (US_Type)
+ *
+ * @return as rqs_diff_usersets()
+ */
+bool
+rqs_diff_usersets(const lListElem *new_rqs, const lListElem *old_rqs, lList **new_list, lList **old_list,
+                  const lList *master_userset_list) {
+   ocs::tom::ListPtr<ocs::tom::US> typed_new;
+   ocs::tom::ListPtr<ocs::tom::US> typed_old;
+   if (new_list != nullptr) {
+      typed_new = ocs::tom::ListPtr<ocs::tom::US>::from_typed(std::exchange(*new_list, nullptr));
+   }
+   if (old_list != nullptr) {
+      typed_old = ocs::tom::ListPtr<ocs::tom::US>::from_typed(std::exchange(*old_list, nullptr));
+   }
+   const bool ret = rqs_diff_usersets(ocs::tom::ConstElement<ocs::tom::RQS>(new_rqs),
+                                      ocs::tom::ConstElement<ocs::tom::RQS>(old_rqs),
+                                      new_list != nullptr ? &typed_new : nullptr,
+                                      old_list != nullptr ? &typed_old : nullptr,
+                                      ocs::tom::ConstList<ocs::tom::US>(master_userset_list));
+   if (new_list != nullptr) {
+      *new_list = typed_new.release();
+   }
+   if (old_list != nullptr) {
+      *old_list = typed_old.release();
+   }
+   return ret;
+}
+
+/**
+ * @brief Diff referenced projects in rqs
  *
  * This function generates a list of all projects referenced in a resource quota set.
  * After locating the projects a diff beween the projects found in old_list and new_list
  * is done and the projects referenced in both are removed.
  *
- * @param new_rqs new resource quota set list (RQS_Type)
- * @param old_rqs old resource quota set list (RQS_Type)
- * @param new_list list of referenced projects in new_rqs (PR_Type)
- * @param old_list list of referenced projects in old_rqs (PR_Type)
- * @param master_project_list see the brief above
+ * @param new_rqs new resource quota set (RQS_Type)
+ * @param old_rqs old resource quota set (RQS_Type)
+ * @param new_list list of referenced projects in new_rqs (PR_Type), or nullptr
+ * @param old_list list of referenced projects in old_rqs (PR_Type), or nullptr
+ * @param master_project_list the master project list, for resolving patterns
  *
  * @return true if some or none project is referenced false if all projects are referenced in new_list
  *
@@ -585,38 +729,50 @@ rqs_diff_usersets(const lListElem *new_rqs, const lListElem *old_rqs, lList **ne
  * @see #rqs_diff_usersets
  */
 bool
+rqs_diff_projects(const ocs::tom::ConstElement<ocs::tom::RQS> new_rqs,
+                  const ocs::tom::ConstElement<ocs::tom::RQS> old_rqs, ocs::tom::ListPtr<ocs::tom::PR> *new_list,
+                  ocs::tom::ListPtr<ocs::tom::PR> *old_list,
+                  const ocs::tom::ConstList<ocs::tom::PR> master_project_list) {
+   DENTER(TOP_LAYER);
+   const bool ret = ocs_rqs_diff<ocs::tom::PR, PR_name, RQR_filter_projects>(new_rqs, old_rqs, new_list, old_list,
+                                                                              master_project_list);
+   DRETURN(ret);
+}
+
+/**
+ * @brief rqs_diff_projects() for an untyped caller
+ *
+ * @param new_rqs new resource quota set (RQS_Type)
+ * @param old_rqs old resource quota set (RQS_Type)
+ * @param new_list list of referenced projects in new_rqs (PR_Type), or nullptr
+ * @param old_list list of referenced projects in old_rqs (PR_Type), or nullptr
+ * @param master_project_list the master project list (PR_Type)
+ *
+ * @return as rqs_diff_projects()
+ */
+bool
 rqs_diff_projects(const lListElem *new_rqs, const lListElem *old_rqs, lList **new_list, lList **old_list,
                   const lList *master_project_list) {
-   DENTER(TOP_LAYER);
-
-   bool ret = true;
-
-   if (old_rqs && old_list) {
-      const lListElem *rule;
-      for_each_ep(rule, static_cast<const lList *>(ocs::tom::get<RQS_rule>(old_rqs))) {
-         if (!filter_diff_usersets_or_projects(rule, RQR_filter_projects, old_list, PR_name, PR_Type,
-                                               master_project_list)) {
-            break;
-         }
-      }
+   ocs::tom::ListPtr<ocs::tom::PR> typed_new;
+   ocs::tom::ListPtr<ocs::tom::PR> typed_old;
+   if (new_list != nullptr) {
+      typed_new = ocs::tom::ListPtr<ocs::tom::PR>::from_typed(std::exchange(*new_list, nullptr));
    }
-
-   if (new_rqs && new_list) {
-      const lListElem *rule;
-      for_each_ep(rule, static_cast<const lList *>(ocs::tom::get<RQS_rule>(new_rqs))) {
-         if (!filter_diff_usersets_or_projects(rule, RQR_filter_projects, new_list, PR_name, PR_Type,
-                                               master_project_list)) {
-            if (!old_rqs || lGetNumberOfElem(*old_list) == 0) {
-               ret = false;
-            }
-            break;
-         }
-      }
+   if (old_list != nullptr) {
+      typed_old = ocs::tom::ListPtr<ocs::tom::PR>::from_typed(std::exchange(*old_list, nullptr));
    }
-
-   lDiffListStr(PR_name, new_list, old_list);
-
-   DRETURN(ret);
+   const bool ret = rqs_diff_projects(ocs::tom::ConstElement<ocs::tom::RQS>(new_rqs),
+                                      ocs::tom::ConstElement<ocs::tom::RQS>(old_rqs),
+                                      new_list != nullptr ? &typed_new : nullptr,
+                                      old_list != nullptr ? &typed_old : nullptr,
+                                      ocs::tom::ConstList<ocs::tom::PR>(master_project_list));
+   if (new_list != nullptr) {
+      *new_list = typed_new.release();
+   }
+   if (old_list != nullptr) {
+      *old_list = typed_old.release();
+   }
+   return ret;
 }
 
 /**
@@ -628,26 +784,31 @@ rqs_diff_projects(const lListElem *new_rqs, const lListElem *old_rqs, lList **ne
  *
  * @param new_rqs new resource quota set (RQS_Type)
  * @param old_rqs old resource quota set (RQS_Type)
+ * @param gdi_session the session the change belongs to
  *
  * @note MT-NOTE: rqs_update_categories() is not MT safe
  */
 static void
-rqs_update_categories(const lListElem *new_rqs, const lListElem *old_rqs, uint64_t gdi_session) {
+rqs_update_categories(const ocs::tom::ConstElement<ocs::tom::RQS> new_rqs,
+                      const ocs::tom::ConstElement<ocs::tom::RQS> old_rqs, const uint64_t gdi_session) {
    DENTER(TOP_LAYER);
 
-   lList *old_lp = nullptr, *new_lp = nullptr;
-   const lList *master_userset_list = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
-   const lList *master_project_list = *ocs::DataStore::get_master_list(SGE_TYPE_PROJECT);
+   const ocs::tom::ConstList<ocs::tom::US> master_userset_list(*ocs::DataStore::get_master_list(SGE_TYPE_USERSET));
+   const ocs::tom::ConstList<ocs::tom::PR> master_project_list(*ocs::DataStore::get_master_list(SGE_TYPE_PROJECT));
 
-   rqs_diff_projects(new_rqs, old_rqs, &new_lp, &old_lp, master_project_list);
-   project_update_categories(new_lp, old_lp, gdi_session);
-   lFreeList(&old_lp);
-   lFreeList(&new_lp);
+   {
+      ocs::tom::ListPtr<ocs::tom::PR> old_lp;
+      ocs::tom::ListPtr<ocs::tom::PR> new_lp;
+      rqs_diff_projects(new_rqs, old_rqs, &new_lp, &old_lp, master_project_list);
+      project_update_categories(new_lp.get(), old_lp.get(), gdi_session);
+   }
 
-   rqs_diff_usersets(new_rqs, old_rqs, &new_lp, &old_lp, master_userset_list);
-   userset_update_categories(new_lp, old_lp, gdi_session);
-   lFreeList(&old_lp);
-   lFreeList(&new_lp);
+   {
+      ocs::tom::ListPtr<ocs::tom::US> old_lp;
+      ocs::tom::ListPtr<ocs::tom::US> new_lp;
+      rqs_diff_usersets(new_rqs, old_rqs, &new_lp, &old_lp, master_userset_list);
+      userset_update_categories(new_lp.get(), old_lp.get(), gdi_session);
+   }
 
    DRETURN_VOID;
 }
@@ -664,7 +825,7 @@ rqs_update_categories(const lListElem *new_rqs, const lListElem *old_rqs, uint64
  * this function searches for users instead of usersets.
  *
  * @param rqs resource quota set to search (RQS_Type)
- * @param nm type of the filter scope
+ * @param nm the filter field of the rules to search, e.g. RQR_filter_users
  * @param name name so search
  *
  * @return true if name is referenced false if no reference was found
@@ -672,21 +833,19 @@ rqs_update_categories(const lListElem *new_rqs, const lListElem *old_rqs, uint64
  * @note MT-NOTE: scope_is_referenced_rqs() is MT safe
  */
 bool
-scope_is_referenced_rqs(const lListElem *rqs, int nm, const char *name) {
+scope_is_referenced_rqs(const ocs::tom::ConstElement<ocs::tom::RQS> rqs, const int nm, const char *name) {
    DENTER(TOP_LAYER);
 
-   const lListElem *rule;
    bool ret = false;
 
-   if (rqs == nullptr || name == nullptr) {
+   if (!rqs || name == nullptr) {
       DRETURN(ret);
    }
 
-   for_each_ep(rule, static_cast<const lList *>(ocs::tom::get<RQS_rule>(rqs))) {
-      lListElem *filter = lGetObject(rule, nm);
-      if (filter != nullptr) {
-         ocs::tom::ConstElement<ocs::tom::ST> scope_ep;
-         for_each_ep(scope_ep, ocs::tom::get<RQRF_scope>(filter)) {
+   for (const auto rule : ocs::tom::get<RQS_rule>(rqs)) {
+      const auto filter = ocs_rqr_filter(rule, nm);
+      if (filter) {
+         for (const auto scope_ep : ocs::tom::get<RQRF_scope>(filter)) {
             const char *scope = ocs::tom::get<ST_name>(scope_ep);
             if (fnmatch(scope, name, 0) == 0) {
                ret = true;
@@ -696,7 +855,7 @@ scope_is_referenced_rqs(const lListElem *rqs, int nm, const char *name) {
          if (ret) {
             break;
          }
-         for_each_ep(scope_ep, ocs::tom::get<RQRF_xscope>(filter)) {
+         for (const auto scope_ep : ocs::tom::get<RQRF_xscope>(filter)) {
             const char *scope = ocs::tom::get<ST_name>(scope_ep);
             if (fnmatch(scope, name, 0) == 0) {
                ret = true;

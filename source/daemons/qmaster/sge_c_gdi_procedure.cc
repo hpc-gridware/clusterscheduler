@@ -34,6 +34,10 @@
 
 #include "sgeobj/sge_answer.h"
 #include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_SPP.h"
+#include "sgeobj/tom/ocs_tom_ST.h"
+#include "sgeobj/tom/ocs_tom_ULNG.h"
+#include "sgeobj/tom/ocs_tom_VA.h"
 
 #include "gdi/ocs_gdi_Target.h"
 
@@ -624,17 +628,12 @@ namespace {
       uint32_t reduction = ocs::ProcedureParameter::REDUCTION_NONE;  ///< what RBAC removed
       ocs::QConfWriteResult write;                                   ///< what a write did
       bool has_write_result = false;                                 ///< whether @ref write was filled
-      lList *export_objects = nullptr;   ///< what an export rendered, one entry per file (CS-2826)
+      /** what an export rendered, one entry per file (CS-2826). The one member that owns memory: it is
+       * handed to the response bundle when there is one to build, and freed with the outcome on the path
+       * where there is not - a request that left exec_procedure() with an error still rendered whatever it
+       * got that far with. */
+      ocs::tom::ListPtr<ocs::tom::VA> export_objects;
       bool has_export_result = false;    ///< whether @ref export_objects was filled
-
-      /** @brief Free what prepare_response() did not take
-       *
-       * The export list is the one member that owns memory. It is handed to the
-       * response bundle when there is one to build, and the destructor catches
-       * the path where there is not - a request that left exec_procedure() with
-       * an error still rendered whatever it got that far with.
-       */
-      ~ProcedureOutcome() { lFreeList(&export_objects); }
 
       /* One owner, and the one that frees. Copying it would hand two of them the
        * same list, and the request path needs no copy: the struct is created in
@@ -643,6 +642,20 @@ namespace {
       ProcedureOutcome(const ProcedureOutcome &) = delete;
       ProcedureOutcome &operator=(const ProcedureOutcome &) = delete;
    };
+
+   /** @brief A one-entry list carrying a number, as the response bundle carries one
+    *
+    * Named and hashed as the free emplace_back() named and hashed the list it created here before.
+    *
+    * @param value the number
+    * @return the ULNG_Type list
+    */
+   ocs::tom::ListPtr<ocs::tom::ULNG> ocs_ulong_parameter(const uint32_t value) {
+      DENTER(TOP_LAYER);
+      auto list = ocs::tom::ListPtr<ocs::tom::ULNG>::create("ulong_sublist");
+      list->emplace_back<ULNG_value>(value);
+      DRETURN(list);
+   }
 
    /** @brief The reduction a caller asked to have simulated (CS-2823)
     *
@@ -729,6 +742,15 @@ namespace {
               sge_chck_mod_perm_host(packet, &task->answer_list, target, ocs::gdi::Command::MOD));
    }
 
+   /** @brief Run the controller of a procedure on the request's parameters
+    *
+    * @tparam Traits the procedure's parameter, model, view and controller types
+    * @param packet the client request
+    * @param task the GDI task being answered; its data list holds the SPP_Type parameter bundle
+    * @param monitor for monitoring qmaster threads
+    * @param os receives the rendered output
+    * @param outcome receives what the caller has to act on besides the output
+    */
    template<typename Traits>
    void exec_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monitor,
                        std::ostringstream &os, ProcedureOutcome &outcome) {
@@ -817,7 +839,8 @@ namespace {
        * the model - detected rather than imposed, so no other controller needs
        * an empty accessor for it. */
       if constexpr (requires { controller.take_export_objects(); }) {
-         outcome.export_objects = controller.take_export_objects();
+         // the controller hands over a VA_Type list it built itself
+         outcome.export_objects = ocs::tom::ListPtr<ocs::tom::VA>::from_typed(controller.take_export_objects());
          outcome.has_export_result = true;
       }
 
@@ -844,6 +867,14 @@ namespace {
       DRETURN_VOID;
    }
 
+   /** @brief Build the response bundle of a procedure and hand it to the task
+    *
+    * @tparam Traits the procedure's types; its program number names the response
+    * @param packet the client request
+    * @param task the GDI task being answered; its data list receives the SPP_Type bundle
+    * @param os the rendered output
+    * @param outcome what the procedure did besides rendering; its export list moves into the bundle
+    */
    template<typename Traits>
    void prepare_response(ocs::gdi::Packet *packet, ocs::gdi::Task *task, std::ostringstream &os,
                          ProcedureOutcome &outcome) {
@@ -857,39 +888,32 @@ namespace {
 
       // Prepare a response
       ocs::ProcedureParameter response(to_string(Traits::prog_number), packet);
-      lList *bundle = response.get_bundle();
+      // the parameter builds the SPP_Type bundle itself
+      auto bundle = ocs::tom::ListPtr<ocs::tom::SPP>::from_typed(response.get_bundle());
 
-      // Add the procedures output to the bundle
-      lList *output_list = nullptr;
-      ocs::tom::emplace_back<ST_name>(&output_list, os.str().c_str());
-      ocs::ProcedureParameter::add_parameter_bundle(bundle, ocs::ProcedureParameter::RESPONSE, output_list);
+      // Add the procedures output to the bundle, named and hashed as the free emplace_back() created it before
+      auto output_list = ocs::tom::ListPtr<ocs::tom::ST>::create("");
+      output_list->emplace_back<ST_name>(os.str().c_str());
+      ocs::ProcedureParameter::add_parameter_bundle(bundle.get(), ocs::ProcedureParameter::RESPONSE,
+                                                    output_list.release());
 
       /* CS-2821: and what RBAC removed from it. A separate entry rather than a
        * field of the response, because the response is a text and this is about
        * the text. The bundle's sublist is CULL_ANY_SUBTYPE, so a ULNG entry
        * round-trips without a wire format change. */
-      lList *reduction_list = nullptr;
-      ocs::tom::emplace_back<ULNG_value>(&reduction_list, outcome.reduction);
-      ocs::ProcedureParameter::add_parameter_bundle(bundle, ocs::ProcedureParameter::REDUCTION, reduction_list);
+      ocs::ProcedureParameter::add_parameter_bundle(bundle.get(), ocs::ProcedureParameter::REDUCTION,
+                                                    ocs_ulong_parameter(outcome.reduction).release());
 
       /* CS-2822: and what a write did, when this was one. Sent only then, so a
        * reading procedure's response is unchanged and the client can tell "no
        * write happened here" from "a write applied nothing". */
       if (outcome.has_write_result) {
-         lList *applied_list = nullptr;
-         ocs::tom::emplace_back<ULNG_value>(&applied_list, outcome.write.applied);
-         ocs::ProcedureParameter::add_parameter_bundle(bundle, ocs::ProcedureParameter::WRITE_APPLIED,
-                                                       applied_list);
-
-         lList *failed_list = nullptr;
-         ocs::tom::emplace_back<ULNG_value>(&failed_list, outcome.write.parse_failed);
-         ocs::ProcedureParameter::add_parameter_bundle(bundle, ocs::ProcedureParameter::WRITE_PARSE_FAILED,
-                                                       failed_list);
-
-         lList *elements_list = nullptr;
-         ocs::tom::emplace_back<ULNG_value>(&elements_list, outcome.write.elements);
-         ocs::ProcedureParameter::add_parameter_bundle(bundle, ocs::ProcedureParameter::WRITE_ELEMENTS,
-                                                       elements_list);
+         ocs::ProcedureParameter::add_parameter_bundle(bundle.get(), ocs::ProcedureParameter::WRITE_APPLIED,
+                                                       ocs_ulong_parameter(outcome.write.applied).release());
+         ocs::ProcedureParameter::add_parameter_bundle(bundle.get(), ocs::ProcedureParameter::WRITE_PARSE_FAILED,
+                                                       ocs_ulong_parameter(outcome.write.parse_failed).release());
+         ocs::ProcedureParameter::add_parameter_bundle(bundle.get(), ocs::ProcedureParameter::WRITE_ELEMENTS,
+                                                       ocs_ulong_parameter(outcome.write.elements).release());
       }
 
       /* CS-2826: and the files an export rendered, as name/value pairs. Sent
@@ -899,16 +923,15 @@ namespace {
        * ProcedureModel::get_export_objects(). The bundle takes the list, so the
        * outcome gives up its ownership here. */
       if (outcome.has_export_result) {
-         ocs::ProcedureParameter::add_parameter_bundle(bundle, ocs::ProcedureParameter::EXPORT_OBJECTS,
-                                                       outcome.export_objects);
-         outcome.export_objects = nullptr;
+         ocs::ProcedureParameter::add_parameter_bundle(bundle.get(), ocs::ProcedureParameter::EXPORT_OBJECTS,
+                                                       outcome.export_objects.release());
       }
 #if 0
       DPRINTF("response:\n %s", os.str().c_str());
 #endif
 
       // Pass responsibility for the bundle to gdi
-      task->data_list = bundle;
+      task->data_list = bundle.release();
 
       DRETURN_VOID;
    }

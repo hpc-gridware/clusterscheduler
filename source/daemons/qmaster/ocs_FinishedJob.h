@@ -25,9 +25,12 @@
 
 #include <cstdint>
 
-#include "cull/cull.h"
 #include "uti/sge_monitor.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_JAT.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
 
-int sge_book_finished_job_usage(lListElem *jep, lListElem *jatep, monitoring_t *monitor, uint64_t gdi_session);
+int sge_book_finished_job_usage(ocs::tom::Element<ocs::tom::JB> jep, ocs::tom::Element<ocs::tom::JAT> jatep,
+                                monitoring_t *monitor, uint64_t gdi_session);
 
 void sge_reschedule_finished_jobs_sweep();

@@ -40,12 +40,21 @@
 #include "sge_c_gdi.h"
 #include "uti/sge_monitor.h"
 #include "sgeobj/sge_daemonize.h"
+#include "sgeobj/tom/ocs_tom_CE.h"
+#include "sgeobj/tom/ocs_tom_STU.h"
+#include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "tom/ocs_Transitional.h"
 
-int 
-sge_del_centry(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *cxp, lList **alpp, char *ruser, char *rhost);
+int
+sge_del_centry(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ConstElement<ocs::tom::CE> centry,
+               lList **alpp, char *ruser, char *rhost);
+OCS_TRANSITIONAL int sge_del_centry(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *cxp, lList **alpp,
+                                    char *ruser, char *rhost);
 
-int 
-centry_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList, monitoring_t *monitor);
+int
+centry_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListElem *old_ep,
+               gdi_object_t *object, lList **ppList, monitoring_t *monitor);
 
 int 
 centry_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *cep, gdi_object_t *object);
@@ -56,4 +65,5 @@ centry_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListEl
            ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command, monitoring_t *monitor);
 
 void
-centry_redebit_consumables(const lList *centries, uint64_t gdi_version);
+centry_redebit_consumables(ocs::tom::ConstList<ocs::tom::STU> centries, uint64_t gdi_version);
+OCS_TRANSITIONAL void centry_redebit_consumables(const lList *centries, uint64_t gdi_version);

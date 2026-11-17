@@ -51,6 +51,8 @@
 
 #include <cinttypes>
 #include "cull/cull_list.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_TE.h"
 #include "uti/sge_monitor.h"
 #include "sgeobj/sge_daemonize.h"
 
@@ -164,7 +166,7 @@ void te_check_time(uint64_t time);
 
 void te_wait_empty();
 
-te_event_t te_event_from_list_elem(const lListElem *aListElem);
+te_event_t te_event_from_list_elem(ocs::tom::ConstElement<ocs::tom::TE> aListElem);
 
 void te_wait_next(te_event_t te, uint64_t now);
 

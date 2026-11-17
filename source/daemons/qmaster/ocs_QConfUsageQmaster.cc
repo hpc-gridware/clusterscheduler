@@ -25,13 +25,14 @@
 #include <string>
 #include <vector>
 
-#include "cull/cull_db.h"
-#include "cull/cull_what.h"
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_object.h"
+#include "sgeobj/tom/ocs_tom_PR.h"
+#include "sgeobj/tom/ocs_tom_UU.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_cull_descr.h"
 #include "uti/sge_rmon_macros.h"
 
 #include "msg_common.h"
@@ -49,22 +50,22 @@ namespace {
     * The names are collected before the first write, because a write replaces
     * the element in the very list this walks.
     *
+    * @tparam T the object type, UU or PR
+    * @tparam KeyF the field holding the object's name
+    * @tparam UsageF the usage list field
+    * @tparam ProjectF the per project usage field
     * @param packet the client request
     * @param task the GDI task being answered
     * @param monitor for monitoring qmaster threads
     * @param target the object list, `UU_LIST` or `PR_LIST`
     * @param type the master list type that goes with it
-    * @param descr the CULL type of its elements
-    * @param key_nm the field holding the object's name
-    * @param usage_nm the usage list field
-    * @param project_nm the per project usage field
     * @param answer_list receives the reason of every write that failed
     * @return true when every write succeeded
     */
+   template <ocs::tom::ObjectType T, auto KeyF, auto UsageF, auto ProjectF>
    bool
    clear_usage_of(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monitor,
-                  const ocs::gdi::Target target, const sge_object_type type, const lDescr *descr,
-                  const int key_nm, const int usage_nm, const int project_nm, lList **answer_list) {
+                  const ocs::gdi::Target target, const sge_object_type type, lList **answer_list) {
       DENTER(TOP_LAYER);
 
       gdi_object_t *object = get_gdi_object(target);
@@ -74,27 +75,23 @@ namespace {
       }
 
       std::vector<std::string> names;
-      const lListElem *ep;
-      for_each_ep(ep, *ocs::DataStore::get_master_list(type)) {
-         if (lGetNumberOfElem(lGetList(ep, usage_nm)) > 0 || lGetNumberOfElem(lGetList(ep, project_nm)) > 0) {
-            names.emplace_back(lGetString(ep, key_nm));
+      for (const auto ep : ocs::tom::ConstList<T>(*ocs::DataStore::get_master_list(type))) {
+         if (!ocs::tom::get<UsageF>(ep).empty() || !ocs::tom::get<ProjectF>(ep).empty()) {
+            names.emplace_back(ocs::tom::get<KeyF>(ep));
          }
       }
 
+      /* the name and the two lists, as lSelectElemPack() reduced the element before */
+      static const lDescr *const reduced_descr = ocs_cull_descr_reduce(T::descriptor.e, {KeyF, UsageF, ProjectF});
       bool all_ok = true;
-      const int fields[] = {key_nm, usage_nm, project_nm, NoName};
       for (const std::string &name : names) {
          /* A fresh element's list fields are empty, and empty is the payload. */
-         lEnumeration *what = lIntVector2What(descr, fields);
-         lListElem *full = lCreateElem(descr);
-         lSetString(full, key_nm, name.c_str());
-         lListElem *reduced = lSelectElemPack(full, nullptr, what, false, nullptr);
-         lFreeWhat(&what);
-         lFreeElem(&full);
+         auto reduced = ocs::tom::ElementPtr<T>::create(reduced_descr);
+         ocs::tom::set<KeyF>(reduced, name.c_str());
 
          lList *alp = nullptr;
-         lList *post_list = nullptr;
-         const int ret = sge_gdi_add_mod_generic(packet, task, &alp, reduced, 0, object, packet->user,
+         lList *post_list = nullptr;   // stays raw: the generic path's post processing list has no fixed type
+         const int ret = sge_gdi_add_mod_generic(packet, task, &alp, reduced.get(), 0, object, packet->user,
                                                  packet->host, ocs::gdi::Command::MOD_PROCEDURE,
                                                  ocs::gdi::SubCommand::NONE, &post_list, monitor);
          /* only what went wrong is passed on: a successful clear said nothing
@@ -111,7 +108,6 @@ namespace {
          }
          lFreeList(&post_list);
          lFreeList(&alp);
-         lFreeElem(&reduced);
       }
 
       DRETURN(all_ok);
@@ -140,10 +136,10 @@ qconf_usage_clear_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
                                  lList **answer_list) {
    DENTER(TOP_LAYER);
 
-   const bool users_ok = clear_usage_of(packet, task, monitor, ocs::gdi::Target::UU_LIST, SGE_TYPE_USER, UU_Type,
-                                        UU_name, UU_usage, UU_project, answer_list);
-   const bool projects_ok = clear_usage_of(packet, task, monitor, ocs::gdi::Target::PR_LIST, SGE_TYPE_PROJECT,
-                                           PR_Type, PR_name, PR_usage, PR_project, answer_list);
+   const bool users_ok = clear_usage_of<ocs::tom::UU, UU_name, UU_usage, UU_project>(
+           packet, task, monitor, ocs::gdi::Target::UU_LIST, SGE_TYPE_USER, answer_list);
+   const bool projects_ok = clear_usage_of<ocs::tom::PR, PR_name, PR_usage, PR_project>(
+           packet, task, monitor, ocs::gdi::Target::PR_LIST, SGE_TYPE_PROJECT, answer_list);
 
    DRETURN(users_ok && projects_ok);
 }

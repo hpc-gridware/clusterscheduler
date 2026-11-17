@@ -672,18 +672,18 @@ sge_scheduler_main(void *arg) {
 
          DPRINTF("RAW CQ:%d, J:%d, H:%d, C:%d, A:%d, D:%d, P:%d, CKPT:%d,"
                   " US:%d, PR:%d, RQS:%d, AR:%d, S:nd:%d/lf:%d\n",
-                 lGetNumberOfElem(master_cqueue_list),
-                 lGetNumberOfElem(master_job_list),
-                 lGetNumberOfElem(master_exechost_list),
-                 lGetNumberOfElem(master_centry_list),
-                 lGetNumberOfElem(*copy.acl_list),
-                 lGetNumberOfElem(*copy.dept_list),
-                 lGetNumberOfElem(master_project_list),
-                 lGetNumberOfElem(master_ckpt_list),
-                 lGetNumberOfElem(master_user_list),
-                 lGetNumberOfElem(master_project_list),
-                 lGetNumberOfElem(master_rqs_list),
-                 lGetNumberOfElem(master_ar_list),
+                 static_cast<uint32_t>(master_cqueue_list.size()),
+                 static_cast<uint32_t>(master_job_list.size()),
+                 static_cast<uint32_t>(master_exechost_list.size()),
+                 static_cast<uint32_t>(master_centry_list.size()),
+                 static_cast<uint32_t>(copy.acl_list->size()),
+                 static_cast<uint32_t>(copy.dept_list->size()),
+                 static_cast<uint32_t>(master_project_list.size()),
+                 static_cast<uint32_t>(master_ckpt_list.size()),
+                 static_cast<uint32_t>(master_user_list.size()),
+                 static_cast<uint32_t>(master_project_list.size()),
+                 static_cast<uint32_t>(master_rqs_list.size()),
+                 static_cast<uint32_t>(master_ar_list.size()),
                  master_sharetree_list.count_nodes<STN_children>(),
                  master_sharetree_list.count_leaves<STN_children>()
                  );
@@ -733,7 +733,8 @@ sge_scheduler_main(void *arg) {
          // within the scheduler we only need QIs create one big qinstance list
          {
             // the selection is built from the descriptor of the first qinstance list, which is the reduced one of
-            // the subscription; the three result lists have reduced descriptors, hence the raw lWhat()/lCreateList()
+            // the subscription; the three result lists have reduced descriptors, hence the raw lWhat() and the lists
+            // created with the descriptor of the first selection
             lEnumeration *what_queue3 = nullptr;
 
             for (const auto cqueue : master_cqueue_list) {
@@ -752,10 +753,9 @@ sge_scheduler_main(void *arg) {
                if (t) {
                   if (copy.all_queue_list == nullptr) {
                      // the list gets the reduced descriptor of the selection
-                     copy.all_queue_list = ocs::tom::ListPtr<ocs::tom::QU>(lCreateList("all", lGetListDescr(*t)));
+                     copy.all_queue_list = ocs::tom::ListPtr<ocs::tom::QU>::create("all", lGetListDescr(*t));
                   }
-                  lAppendList(*copy.all_queue_list, *t);
-                  t.reset();
+                  copy.all_queue_list->splice(std::move(t));
                }
 
                // ensure_valid_what_and_where()
@@ -764,10 +764,9 @@ sge_scheduler_main(void *arg) {
                if (t_qu) {
                   if (copy.queue_list == nullptr) {
                      // the list gets the reduced descriptor of the selection
-                     copy.queue_list = ocs::tom::ListPtr<ocs::tom::QU>(lCreateList("enabled", lGetListDescr(*t_qu)));
+                     copy.queue_list = ocs::tom::ListPtr<ocs::tom::QU>::create("enabled", lGetListDescr(*t_qu));
                   }
-                  lAppendList(*copy.queue_list, *t_qu);
-                  t_qu.reset();
+                  copy.queue_list->splice(std::move(t_qu));
                }
 
                // ensure_valid_what_and_where()
@@ -777,10 +776,9 @@ sge_scheduler_main(void *arg) {
                   if (copy.dis_queue_list == nullptr) {
                      // the list gets the reduced descriptor of the selection
                      copy.dis_queue_list =
-                             ocs::tom::ListPtr<ocs::tom::QU>(lCreateList("disabled", lGetListDescr(*t_qu_2)));
+                             ocs::tom::ListPtr<ocs::tom::QU>::create("disabled", lGetListDescr(*t_qu_2));
                   }
-                  lAppendList(*copy.dis_queue_list, *t_qu_2);
-                  t_qu_2.reset();
+                  copy.dis_queue_list->splice(std::move(t_qu_2));
                }
             }
             if (what_queue3) {
@@ -811,22 +809,22 @@ sge_scheduler_main(void *arg) {
          DPRINTF("Q:" sge_u32 ", AQ:" sge_u32 ", DQ:" sge_u32 ", J:" sge_u32 "(" sge_u32 "), H:" sge_u32 "(" sge_u32 "), C:" sge_u32
                   ", A:" sge_u32 ", D:" sge_u32 ", P:" sge_u32 ", CKPT:" sge_u32 ", US:" sge_u32 ", PR:" sge_u32
                   ", RQS:" sge_u32 ", AR:" sge_u32 ", S:nd:%d/lf:%d\n",
-                 lGetNumberOfElem(*copy.queue_list),
-                 lGetNumberOfElem(*copy.all_queue_list),
-                 lGetNumberOfElem(*copy.dis_queue_list),
-                 lGetNumberOfElem(*copy.job_list),
-                 lGetNumberOfElem(master_job_list),
-                 lGetNumberOfElem(*copy.host_list),
-                 lGetNumberOfElem(master_exechost_list),
-                 lGetNumberOfElem(copy.centry_list),
-                 lGetNumberOfElem(*copy.acl_list),
-                 lGetNumberOfElem(*copy.dept_list),
-                 lGetNumberOfElem(*copy.pe_list),
-                 lGetNumberOfElem(copy.ckpt_list),
-                 lGetNumberOfElem(*copy.user_list),
-                 lGetNumberOfElem(*copy.project_list),
-                 lGetNumberOfElem(*copy.rqs_list),
-                 lGetNumberOfElem(*copy.ar_list),
+                 static_cast<uint32_t>(copy.queue_list->size()),
+                 static_cast<uint32_t>(copy.all_queue_list->size()),
+                 static_cast<uint32_t>(copy.dis_queue_list->size()),
+                 static_cast<uint32_t>(copy.job_list->size()),
+                 static_cast<uint32_t>(master_job_list.size()),
+                 static_cast<uint32_t>(copy.host_list->size()),
+                 static_cast<uint32_t>(master_exechost_list.size()),
+                 static_cast<uint32_t>(copy.centry_list.size()),
+                 static_cast<uint32_t>(copy.acl_list->size()),
+                 static_cast<uint32_t>(copy.dept_list->size()),
+                 static_cast<uint32_t>(copy.pe_list->size()),
+                 static_cast<uint32_t>(copy.ckpt_list.size()),
+                 static_cast<uint32_t>(copy.user_list->size()),
+                 static_cast<uint32_t>(copy.project_list->size()),
+                 static_cast<uint32_t>(copy.rqs_list->size()),
+                 static_cast<uint32_t>(copy.ar_list->size()),
                  copy.share_tree->count_nodes<STN_children>(),
                  copy.share_tree->count_leaves<STN_children>()
                  );
@@ -923,7 +921,8 @@ sge_scheduler_main(void *arg) {
             PROFILING("PROF: schedd run took: %.3f s (init: %.3f s, copy: %.3f s, "
                       "run:%.3f, free: %.3f s, jobs: " sge_u32 ", categories: " sge_u32 "/%d)",
                       prof_total, prof_init, prof_copy, prof_run, prof_free,
-                      lGetNumberOfElem(master_job_list), lGetNumberOfElem(master_category_list), 0);
+                      static_cast<uint32_t>(master_job_list.size()),
+                      static_cast<uint32_t>(master_category_list.size()), 0);
          }
          if (in_nd_mode) {
             printf("--------------STOP-SCHEDULER-RUN-------------\n");

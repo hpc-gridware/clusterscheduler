@@ -48,6 +48,10 @@
 #include "sgeobj/sge_utility.h"
 #include "sgeobj/ocs_DataStore.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_CK.h"
+#include "sgeobj/tom/ocs_tom_CQ.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
 
 #include "spool/sge_spooling.h"
 
@@ -70,12 +74,16 @@
  * objects or modify existing checkpointing interfaces.
  *
  * @param alpp reference to an answer list.
- * @param new_ckpt if a new ckpt object will be created by this function, than new_ckpt is new uninitialized CULL object if this function was called due to a modify request than new_ckpt will contain the old data (see add parameter)
- * @param ckpt a reduced ckpt object which contains all necessary information to create a new object or modify parts of an existing one
+ * @param new_ckpt if a new ckpt object will be created by this function, than new_ckpt is new uninitialized
+ *        CULL object if this function was called due to a modify request than new_ckpt will contain the old
+ *        data (see add parameter)
+ * @param ckpt a reduced ckpt object which contains all necessary information to create a new object or modify
+ *        parts of an existing one
  * @param add 1 if a new element should be added to the master list 0 to modify an existing object
  * @param ruser username of person who invoked this gdi request
  * @param rhost hostname of the host where someone initiated an gdi call
- * @param object structure of the gdi framework which contains additional information to perform the request (function pointers, names, CULL-types)
+ * @param object structure of the gdi framework which contains additional information to perform the request
+ *        (function pointers, names, CULL-types)
  * @param sub_command how should we handle sublist elements: `SGE_GDI_CHANGE`
  * @param packet the client request
  * @param task the GDI task being answered
@@ -87,8 +95,8 @@
  * @return [alpp] - error messages will be added to this list 0 - success STATUS_EUNKNOWN - an error occurred
  */
 int
-ckpt_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *new_ckpt, lListElem *ckpt, int add, const char *ruser,
-         const char *rhost, gdi_object_t *object,
+ckpt_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *new_ckpt, lListElem *ckpt, int add,
+         const char *ruser, const char *rhost, gdi_object_t *object,
          ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command,
          monitoring_t *monitor) {
    DENTER(TOP_LAYER);
@@ -136,7 +144,8 @@ ckpt_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem
       new_flags = sge_parse_checkpoint_attr(ocs::tom::get<CK_when>(new_ckpt));
       flags = sge_parse_checkpoint_attr(ocs::tom::get<CK_when>(ckpt));
 
-      if ((sub_command & ocs::gdi::SubCommand::APPEND) == ocs::gdi::SubCommand::APPEND || (sub_command & ocs::gdi::SubCommand::CHANGE) == ocs::gdi::SubCommand::CHANGE) {
+      if ((sub_command & ocs::gdi::SubCommand::APPEND) == ocs::gdi::SubCommand::APPEND ||
+          (sub_command & ocs::gdi::SubCommand::CHANGE) == ocs::gdi::SubCommand::CHANGE) {
          new_flags |= flags;
       } else if ((sub_command & ocs::gdi::SubCommand::REMOVE) == ocs::gdi::SubCommand::REMOVE) {
          new_flags &= (~flags);
@@ -162,7 +171,7 @@ ckpt_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem
    attr_mod_ulong(ckpt, new_ckpt, CK_job_pid, "job_pid");
 
    /* validate ckpt data */
-   if (ckpt_validate(new_ckpt, alpp) != STATUS_OK) {
+   if (ckpt_validate(ocs::tom::ConstElement<ocs::tom::CK>(new_ckpt), alpp) != STATUS_OK) {
       goto ERROR;
    }
 
@@ -182,7 +191,8 @@ DRETURN(STATUS_EUNKNOWN);
  *
  * @param alpp reference to an answer list.
  * @param ep ckpt object which should be spooled
- * @param object structure of the gdi framework which contains additional information to perform the request (function pointers, names, CULL-types)
+ * @param object structure of the gdi framework which contains additional information to perform the request
+ *        (function pointers, names, CULL-types)
  * @param packet the client request
  * @param task the GDI task being answered
  *
@@ -217,7 +227,8 @@ int ckpt_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lLi
  *
  * @param ep new ckpt object
  * @param old_ep old ckpt object before modification or nullptr if a new object was added
- * @param object structure of the gdi framework which contains additional information to perform the request (function pointers, names, CULL-types)
+ * @param object structure of the gdi framework which contains additional information to perform the request
+ *        (function pointers, names, CULL-types)
  * @param packet the client request
  * @param task the GDI task being answered
  * @param ppList see the brief above
@@ -226,7 +237,8 @@ int ckpt_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lLi
  * @return success
  */
 int
-ckpt_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList, monitoring_t *monitor) {
+ckpt_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object,
+             lList **ppList, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
    const char *ckpt_name;
@@ -246,23 +258,21 @@ ckpt_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lLis
  * add/modify/delete generic gdi objects.
  * The purpose of this function is it to delete ckpt objects.
  *
+ * @param packet the client request
+ * @param task the GDI task being answered
  * @param ep element which should be deleted
  * @param alpp reference to an answer list.
  * @param ruser username of person who invoked this gdi request
  * @param rhost hostname of the host where someone initiated an gdi call
- * @param packet the client request
- * @param task the GDI task being answered
  *
  * @return [alpp] - error messages will be added to this list 0 - success STATUS_EUNKNOWN - an error occurred
  */
 int
-sge_del_ckpt(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **alpp, char *ruser, char *rhost) {
+sge_del_ckpt(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::ConstElement<ocs::tom::CK> ep,
+             lList **alpp, char *ruser, char *rhost) {
    DENTER(TOP_LAYER);
 
-   lListElem *found;
-   int pos;
-   const char *ckpt_name;
-   lList **lpp = ocs::DataStore::get_master_list_rw(SGE_TYPE_CKPT);
+   const ocs::tom::List<ocs::tom::CK> ckpt_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_CKPT));
 
    if (!ep || !ruser || !rhost) {
       CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, __func__);
@@ -271,19 +281,19 @@ sge_del_ckpt(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lLis
    }
 
    /* ep is no ckpt element, if ep has no CK_name */
-   if ((pos = lGetPosViaElem(ep, CK_name, SGE_NO_ABORT)) < 0) {
+   if (!ocs::tom::has<CK_name>(ep)) {
       CRITICAL(MSG_SGETEXT_MISSINGCULLFIELD_SS, lNm2Str(CK_name), __func__);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
 
-   ckpt_name = lGetPosString(ep, pos);
+   const char *ckpt_name = ocs::tom::get<CK_name>(ep);
    if (!ckpt_name) {
       CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, __func__);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
-   found = ckpt_list_locate(*lpp, ckpt_name);
+   const auto found = ckpt_list_locate(ckpt_list, ckpt_name);
 
    if (!found) {
       ERROR(MSG_SGETEXT_DOESNOTEXIST_SS, MSG_OBJ_CKPT, ckpt_name);
@@ -297,8 +307,9 @@ sge_del_ckpt(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lLis
    {
       lList *local_answer_list = nullptr;
 
-      if (ckpt_is_referenced(found, &local_answer_list, *ocs::DataStore::get_master_list(SGE_TYPE_JOB),
-                             *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE))) {
+      if (ckpt_is_referenced(found, &local_answer_list,
+                             ocs::tom::ConstList<ocs::tom::JB>(*ocs::DataStore::get_master_list(SGE_TYPE_JOB)),
+                             ocs::tom::ConstList<ocs::tom::CQ>(*ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE)))) {
          const lListElem *answer = lFirst(local_answer_list);
 
          ERROR("denied: %s", ocs::tom::get<AN_text>(answer));
@@ -318,11 +329,26 @@ sge_del_ckpt(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lLis
    }
 
    /* now we can remove the element */
-   lRemoveElem(*lpp, &found);
+   ckpt_list.erase(found);
 
    INFO(MSG_SGETEXT_REMOVEDFROMLIST_SSSS, ruser, rhost, ckpt_name, MSG_OBJ_CKPT);
    answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
    DRETURN(STATUS_OK);
+}
+
+/** @brief sge_del_ckpt() for an untyped caller
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param ep element which should be deleted
+ * @param alpp reference to an answer list.
+ * @param ruser username of person who invoked this gdi request
+ * @param rhost hostname of the host where someone initiated an gdi call
+ * @return see the typed form
+ */
+int
+sge_del_ckpt(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **alpp, char *ruser, char *rhost) {
+   return sge_del_ckpt(packet, task, ocs::tom::ConstElement<ocs::tom::CK>(ep), alpp, ruser, rhost);
 }
 
 /** @brief The `when` string of a checkpointing environment, from its bitmask

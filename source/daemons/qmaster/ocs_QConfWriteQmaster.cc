@@ -33,6 +33,7 @@
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_object.h"
 #include "sgeobj/tom/ocs_tom_CE.h"
+#include "sgeobj/tom/ocs_tom_ST.h"
 #include "tom/ocs_Element.h"
 #include "spool/flatfile/sge_flatfile.h"
 #include "uti/sge_dstring.h"
@@ -157,8 +158,9 @@ qconf_write_is_unchanged(const qconf_object_desc &desc, const lList *master_list
       return false;
    }
 
-   const lListElem *stored = centry_list_locate(master_list, name);
-   if (stored == nullptr) {
+   // a complex entry is written here, so the master list is the one of the complex entries
+   const auto stored = centry_list_locate(ocs::tom::ConstList<ocs::tom::CE>(master_list), name);
+   if (!stored) {
       return false;
    }
 
@@ -447,10 +449,10 @@ qconf_write_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monit
           * would write nothing at all when the administrator renamed the
           * object in the editor - which is exactly how "-arqs" creates one. */
          if (!parameter.get_select().empty() && !parameter.is_round_trip()) {
-            lList *wanted = nullptr;
-            lString2List(parameter.get_select().c_str(), &wanted, ST_Type, ST_name, ", ");
+            const auto wanted =
+                    ocs::tom::ListPtr<ocs::tom::ST>::from_string<ST_name>(parameter.get_select().c_str(), ", ");
             bool all_found = true;
-            for_each_ep_lv(name_elem, wanted) {
+            for (const auto name_elem : *wanted) {
                const char *name = ocs::tom::get<ST_name>(name_elem);
                lListElem *found = (name != nullptr)
                                   ? lGetElemStrRW(lp, key_nm, name) : nullptr;
@@ -465,7 +467,6 @@ qconf_write_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monit
                lDechainElem(lp, found);
                entry.elements.push_back(found);
             }
-            lFreeList(&wanted);
             lFreeList(&lp);          /* what was not named stays untouched */
             if (!all_found) {
                for (lListElem *ep: entry.elements) {
@@ -681,7 +682,8 @@ qconf_write_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monit
     * Deletes are not counted in result->elements: that count is what a caller
     * prints as "N objects written", and an object that is gone was not written. */
    if (parameter.is_replace() && result->parse_failed == 0) {
-      lList *to_delete = nullptr;
+      // created with the first name, as the untyped emplace_back() created it
+      ocs::tom::ListPtr<ocs::tom::ST> to_delete;
       dstring kept = DSTRING_INIT;
       int num_kept = 0;
 
@@ -710,7 +712,10 @@ qconf_write_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monit
             num_kept++;
             continue;
          }
-         ocs::tom::emplace_back<ST_name>(&to_delete, name);
+         if (!to_delete) {
+            to_delete = ocs::tom::ListPtr<ocs::tom::ST>::create("");
+         }
+         to_delete->emplace_back<ST_name>(name);
       }
 
       /* Say what was kept. Staying silent would hide an edit that was not
@@ -722,7 +727,7 @@ qconf_write_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monit
       }
       sge_dstring_free(&kept);
 
-      for_each_ep_lv(name_elem, to_delete) {
+      for (const auto name_elem : *to_delete) {
          const char *name = ocs::tom::get<ST_name>(name_elem);
          if (parameter.is_dry()) {
             answer_list_add_sprintf(answer_list, STATUS_OK, ANSWER_QUALITY_INFO,
@@ -733,7 +738,7 @@ qconf_write_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monit
             all_ok = false;
          }
       }
-      lFreeList(&to_delete);
+      to_delete.reset();
    }
 
    /* CS-2823: what the round trip's text left out is still there, and the
@@ -749,17 +754,25 @@ qconf_write_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monit
     * comparison: there is nothing left over to report, it was deleted. */
    if (parameter.is_list() && !parameter.is_replace() && parameter.is_round_trip() &&
        !parameter.is_dry() && result->parse_failed == 0) {
-      lList *in_scope = nullptr;
+      ocs::tom::ListPtr<ocs::tom::ST> in_scope;
       if (parameter.get_select().empty()) {
+         // the object type is given at run time by the target, hence the untyped walk
          for (const lListElem *ep = lFirst(*ocs::DataStore::get_master_list(list_type));
               ep != nullptr; ep = lNext(ep)) {
-            ocs::tom::emplace_back<ST_name>(&in_scope, qconf_key_of(ep, key_nm));
+            // a nameless object adds nothing, as the untyped emplace_back() did not; the list comes with the first
+            const char *key = qconf_key_of(ep, key_nm);
+            if (key != nullptr) {
+               if (!in_scope) {
+                  in_scope = ocs::tom::ListPtr<ocs::tom::ST>::create("");
+               }
+               in_scope->emplace_back<ST_name>(key);
+            }
          }
       } else {
-         lString2List(parameter.get_select().c_str(), &in_scope, ST_Type, ST_name, ", ");
+         in_scope = ocs::tom::ListPtr<ocs::tom::ST>::from_string<ST_name>(parameter.get_select().c_str(), ", ");
       }
 
-      for_each_ep_lv(name_elem, in_scope) {
+      for (const auto name_elem : *in_scope) {
          const char *name = ocs::tom::get<ST_name>(name_elem);
          if (name == nullptr) {
             continue;
@@ -778,7 +791,7 @@ qconf_write_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monit
                                     MSG_QCONF_WRITENOTREMOVED_S, name);
          }
       }
-      lFreeList(&in_scope);
+      in_scope.reset();
    }
 
    /* A write that changed nothing has to say so (CS-2823). Every object of the

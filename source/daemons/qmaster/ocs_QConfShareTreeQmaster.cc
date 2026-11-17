@@ -119,14 +119,13 @@ namespace {
     * @return how many nodes were changed
     */
    int
-   set_node_shares(lListElem *root, const lList *nodes, const bool add, const char *typed, NodeReport &report,
-                   bool &refused) {
+   set_node_shares(const ocs::tom::Element<ocs::tom::STN> root, const ocs::tom::ConstList<ocs::tom::STN> nodes,
+                   const bool add, const char *typed, NodeReport &report, bool &refused) {
       DENTER(TOP_LAYER);
 
       int modified = 0;
       dstring buffer = DSTRING_INIT;
-      const lListElem *arg;
-      for_each_ep(arg, nodes) {
+      for (const auto arg : nodes) {
          std::string path;
          int shares = 0;
          if (!parse_node_shares(ocs::tom::get<STN_name>(arg), path, shares)) {
@@ -136,12 +135,12 @@ namespace {
 
          ancestors_t ancestors;
          memset(&ancestors, 0, sizeof(ancestors));
-         lListElem *node = search_named_node_path(root, path.c_str(), &ancestors);
-         if (node == nullptr && add) {
+         auto node = search_named_node_path(root, path.c_str(), &ancestors);
+         if (!node && add) {
             // the basename of the path, after the last '/' or '.'
             const std::string::size_type last = path.find_last_of("/.");
             if (last != std::string::npos && last + 1 < path.size()) {
-               lListElem *parent = nullptr;
+               ocs::tom::Element<ocs::tom::STN> parent;
                if (last == 0 && path[0] == '/') {
                   parent = root;
                } else {
@@ -150,11 +149,18 @@ namespace {
                   parent = search_named_node_path(root, path.substr(0, last).c_str(), &parent_ancestors);
                   free_ancestors(&parent_ancestors);
                }
-               if (parent != nullptr) {
-                  lList *children = ocs::tom::get<STN_children>(parent);
-                  lListElem *added = ocs::tom::emplace_back<STN_name>(&children, path.substr(last + 1).c_str());
-                  if (added != nullptr && static_cast<const lList *>(ocs::tom::get<STN_children>(parent)) == nullptr) {
-                     ocs::tom::set<STN_children>(parent, children);
+               if (parent) {
+                  // a parent without children gets the list with its first child, as the untyped emplace_back()
+                  // created it
+                  auto children = ocs::tom::get<STN_children>(parent);
+                  ocs::tom::ListPtr<ocs::tom::STN> new_children;
+                  if (!children) {
+                     new_children = ocs::tom::ListPtr<ocs::tom::STN>::create("");
+                     children = *new_children;
+                  }
+                  const auto added = children.emplace_back<STN_name>(path.substr(last + 1).c_str());
+                  if (new_children) {
+                     ocs::tom::set<STN_children>(parent, std::move(new_children));
                   }
                   free_ancestors(&ancestors);
                   memset(&ancestors, 0, sizeof(ancestors));
@@ -169,7 +175,7 @@ namespace {
             }
          }
 
-         if (node != nullptr) {
+         if (node) {
             modified++;
             ocs::tom::set<STN_shares>(node, shares);
             report.info(MSG_TREE_SETTING);
@@ -197,34 +203,37 @@ namespace {
     * @return how many nodes were deleted
     */
    int
-   delete_nodes(lListElem *root, const lList *nodes, NodeReport &report) {
+   delete_nodes(const ocs::tom::Element<ocs::tom::STN> root, const ocs::tom::ConstList<ocs::tom::STN> nodes,
+                NodeReport &report) {
       DENTER(TOP_LAYER);
 
       int modified = 0;
       dstring buffer = DSTRING_INIT;
-      const lListElem *arg;
-      for_each_ep(arg, nodes) {
+      for (const auto arg : nodes) {
          const char *path = ocs::tom::get<STN_name>(arg);
          if (path == nullptr) {
             continue;
          }
          ancestors_t ancestors;
          memset(&ancestors, 0, sizeof(ancestors));
-         lListElem *node = search_named_node_path(root, path, &ancestors);
-         if (node == nullptr) {
+         const auto node = search_named_node_path(root, path, &ancestors);
+         if (!node) {
             report.problem(sge_dstring_sprintf(&buffer, MSG_TREE_UNABLETOLACATEXINSHARETREE_S, path));
-         } else if (static_cast<const lList *>(ocs::tom::get<STN_children>(node)) != nullptr) {
+         } else if (ocs::tom::get<STN_children>(node)) {
             report.problem(MSG_TREE_CANTDELNODESWITHCHILD);
          } else if (ancestors.depth <= 0) {
             report.problem(MSG_TREE_CANTDELROOTNODE);
          } else {
             modified++;
-            lListElem *parent = (ancestors.depth == 1) ? root : ancestors.nodes[ancestors.depth - 2];
+            // the ancestors are nodes of the tree (STN_Type), held untyped by ancestors_t
+            const auto parent =
+                    (ancestors.depth == 1)
+                    ? root : ocs::tom::Element<ocs::tom::STN>::from_typed(ancestors.nodes[ancestors.depth - 2]);
             report.info(MSG_TREE_REMOVING);
             report.info(ancestors_path(ancestors, &buffer));
-            ocs::tom::List<ocs::tom::STN> siblings = ocs::tom::get<STN_children>(parent);
-            lRemoveElem(siblings, &node);
-            if (lGetNumberOfElem(siblings) == 0) {
+            const auto siblings = ocs::tom::get<STN_children>(parent);
+            siblings.erase(node);
+            if (siblings.empty()) {
                ocs::tom::set<STN_children>(parent, nullptr);
             }
          }
@@ -273,44 +282,41 @@ qconf_sharetree_nodes_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *t
       DRETURN(false);
    }
 
-   lList *nodes = nullptr;
-   lString2List(nodes_arg.c_str(), &nodes, STN_Type, STN_name, ", ");
+   auto nodes = ocs::tom::ListPtr<ocs::tom::STN>::from_string<STN_name>(nodes_arg.c_str(), ", ");
 
    /* a negative share value refuses the request before anything is changed */
    if (!del) {
-      const lListElem *arg;
-      for_each_ep(arg, nodes) {
+      for (const auto arg : *nodes) {
          std::string path;
          int shares = 0;
          if (parse_node_shares(ocs::tom::get<STN_name>(arg), path, shares) && shares < 0) {
             answer_list_add(answer_list, MSG_QCONF_POSITIVE_SHARE_VALUE, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
-            lFreeList(&nodes);
             DRETURN(false);
          }
       }
    }
 
+   // the master list slot stays untyped: sge_mod_sharetree() replaces the tree through it
    lList **tree_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_SHARETREE);
-   const lListElem *stored = lFirst(*tree_list);
-   lListElem *root = nullptr;
-   if (stored != nullptr) {
-      root = lCopyElem(stored);
+   const auto stored = ocs::tom::ConstList<ocs::tom::STN>(*tree_list).front();
+   ocs::tom::ElementPtr<ocs::tom::STN> root;
+   if (stored) {
+      root = stored.clone();
    } else if (add) {
       /* "-astnode" on a cluster without a tree starts one, as it did */
-      root = lCreateElem(STN_Type);
+      root = ocs::tom::ElementPtr<ocs::tom::STN>::create();
       ocs::tom::set<STN_name>(root, "Root");
       ocs::tom::set<STN_shares>(root, 1);
    } else {
       answer_list_add(answer_list, MSG_TREE_NOSHARETREE, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
-      lFreeList(&nodes);
       DRETURN(false);
    }
 
    NodeReport report;
    bool refused = false;
-   const int modified = del ? delete_nodes(root, nodes, report)
-                            : set_node_shares(root, nodes, add, nodes_arg.c_str(), report, refused);
-   lFreeList(&nodes);
+   const int modified = del ? delete_nodes(*root, *nodes, report)
+                            : set_node_shares(*root, *nodes, add, nodes_arg.c_str(), report, refused);
+   nodes.reset();
 
    bool ok = false;
    if (refused) {
@@ -323,7 +329,7 @@ qconf_sharetree_nodes_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *t
       /* the reason of a refused write is what the client printed; the generic
        * confirmation is replaced by its own line, as before */
       lList *alp = nullptr;
-      const int ret = sge_mod_sharetree(packet, task, root, tree_list, &alp, packet->user, packet->host);
+      const int ret = sge_mod_sharetree(packet, task, *root, tree_list, &alp, packet->user, packet->host);
       if (ret == STATUS_OK) {
          answer_list_add(answer_list, MSG_TREE_MODIFIEDSHARETREE, STATUS_OK, ANSWER_QUALITY_INFO);
          ok = true;
@@ -344,7 +350,7 @@ qconf_sharetree_nodes_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *t
       }
       lFreeList(&alp);
    }
-   lFreeElem(&root);
+   root.reset();
 
    DRETURN(ok);
 }

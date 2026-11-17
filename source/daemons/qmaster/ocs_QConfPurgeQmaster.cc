@@ -37,7 +37,10 @@
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_str.h"
 #include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_CQ.h"
+#include "sgeobj/tom/ocs_tom_HGRP.h"
 #include "sgeobj/tom/ocs_tom_HR.h"
+#include "sgeobj/tom/ocs_tom_US.h"
 #include "uti/sge.h"
 #include "uti/sge_dstring.h"
 #include "uti/sge_rmon_macros.h"
@@ -103,8 +106,10 @@ qconf_purge_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monit
    const char *attributes = attributes_arg.c_str();
    const char *domain = domain_arg.c_str();
 
-   const lListElem *stored = cqueue_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE), queue_name);
-   if (stored == nullptr) {
+   const auto stored =
+           cqueue_list_locate(ocs::tom::ConstList<ocs::tom::CQ>(*ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE)),
+                              queue_name);
+   if (!stored) {
       answer_list_add_sprintf(answer_list, STATUS_EEXIST, ANSWER_QUALITY_ERROR, MSG_CQUEUE_DOESNOTEXIST_S,
                               queue_name);
       DRETURN(false);
@@ -117,15 +122,14 @@ qconf_purge_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monit
    }
 
    // the patterns, separated as the client always separated them
-   lList *attr_list = nullptr;
-   lString2List(attributes, &attr_list, US_Type, US_name, ",");
+   auto attr_list = ocs::tom::ListPtr<ocs::tom::US>::from_string<US_name>(attributes, ",");
 
-   lListElem *copy = lCopyElem(stored);
+   auto copy = stored.clone();
 
    /* The current members of @@<queue>, for a pattern that matches the host list -
     * see the function comment. */
    bool hostlist_wanted = false;
-   for_each_ep_lv(attr, attr_list) {
+   for (const auto attr : *attr_list) {
       if (sge_eval_expression(ocs::CEntry::Type::HOST, ocs::tom::get<US_name>(attr), SGE_ATTR_HOSTLIST, nullptr) == 0) {
          hostlist_wanted = true;
          break;
@@ -134,49 +138,50 @@ qconf_purge_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monit
    uint32_t hostlist_before = 0;
    if (hostlist_wanted) {
       dstring group_name = DSTRING_INIT;
-      const lListElem *group = hgroup_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_HGROUP),
-                                                  hgroup_queue_group_name(queue_name, &group_name));
+      const auto group =
+              hgroup_list_locate(ocs::tom::ConstList<ocs::tom::HGRP>(*ocs::DataStore::get_master_list(SGE_TYPE_HGROUP)),
+                                 hgroup_queue_group_name(queue_name, &group_name));
       sge_dstring_free(&group_name);
-      if (group != nullptr) {
-         ocs::tom::set<CQ_hostlist>(copy, lCopyList("", ocs::tom::get<HGRP_host_list>(group)));
+      if (group) {
+         ocs::tom::set<CQ_hostlist>(copy, ocs::tom::get<HGRP_host_list>(group).clone(""));
       }
-      hostlist_before = lGetNumberOfElem(ocs::tom::get<CQ_hostlist>(copy));
+      hostlist_before = static_cast<uint32_t>(ocs::tom::get<CQ_hostlist>(copy).size());
    }
 
-   if (!cqueue_purge_host(copy, answer_list, attr_list, domain)) {
+   if (!cqueue_purge_host(*copy, answer_list, *attr_list, domain)) {
       answer_list_add_sprintf(answer_list, STATUS_OK, ANSWER_QUALITY_WARNING, MSG_QCONF_ATTR_ARGS_NOT_FOUND,
                               attributes, domain);
-      lFreeElem(&copy);
-      lFreeList(&attr_list);
       DRETURN(true);
    }
-   lFreeList(&attr_list);
+   attr_list.reset();
 
    /* What lost an entry: the queue name to address it, every attribute list that
     * is shorter than the stored one, and the host list when it is. */
    std::vector<int> fields{CQ_name};
    for (int i = 0; cqueue_attribute_array[i].name != nullptr; i++) {
       const int nm = cqueue_attribute_array[i].cqueue_attr;
-      if (lGetNumberOfElem(lGetList(copy, nm)) != lGetNumberOfElem(lGetList(stored, nm))) {
+      // the attribute is given at run time by the attribute table
+      if (lGetNumberOfElem(lGetList(*copy, nm)) != lGetNumberOfElem(lGetList(stored, nm))) {
          fields.push_back(nm);
       }
    }
-   if (hostlist_wanted && lGetNumberOfElem(ocs::tom::get<CQ_hostlist>(copy)) != hostlist_before) {
+   if (hostlist_wanted && static_cast<uint32_t>(ocs::tom::get<CQ_hostlist>(copy).size()) != hostlist_before) {
       fields.push_back(CQ_hostlist);
    }
    fields.push_back(NoName);
 
+   // the reduction is given at run time by the fields that lost an entry
    lEnumeration *what = lIntVector2What(CQ_Type, fields.data());
-   lListElem *reduced = lSelectElemPack(copy, nullptr, what, false, nullptr);
+   auto reduced = ocs::tom::ElementPtr<ocs::tom::CQ>::from_typed(lSelectElemPack(*copy, nullptr, what, false, nullptr));
    lFreeWhat(&what);
-   lFreeElem(&copy);
+   copy.reset();
 
-   lList *post_list = nullptr;
-   const int ret = sge_gdi_add_mod_generic(packet, task, answer_list, reduced, 0, object, packet->user,
+   lList *post_list = nullptr;   // the generic path's post processing list has no fixed type
+   const int ret = sge_gdi_add_mod_generic(packet, task, answer_list, *reduced, 0, object, packet->user,
                                            packet->host, ocs::gdi::Command::MOD_PROCEDURE,
                                            ocs::gdi::SubCommand::SET_ALL, &post_list, monitor);
    lFreeList(&post_list);
-   lFreeElem(&reduced);
+   reduced.reset();
 
    DRETURN(ret == STATUS_OK);
 }

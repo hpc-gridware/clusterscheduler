@@ -38,7 +38,12 @@
  */
 
 #include "uti/sge_monitor.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_JAT.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
+#include "sgeobj/tom/ocs_tom_JR.h"
 #include "sgeobj/sge_daemonize.h"
 
 void
-sge_job_exit(lListElem *jr, lListElem *jep, lListElem *jatep, monitoring_t *monitor, uint64_t gdi_session);
+sge_job_exit(ocs::tom::Element<ocs::tom::JR> jr, ocs::tom::Element<ocs::tom::JB> jep,
+             ocs::tom::Element<ocs::tom::JAT> jatep, monitoring_t *monitor, uint64_t gdi_session);

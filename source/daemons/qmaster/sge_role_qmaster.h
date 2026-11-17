@@ -25,6 +25,9 @@
 
 #include "sge_c_gdi.h"
 #include "uti/sge_monitor.h"
+#include "tom/ocs_Element.h"
+#include "tom/ocs_Transitional.h"
+#include "sgeobj/tom/ocs_tom_RL.h"
 
 int
 role_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *new_ep, lListElem *ep, int add,
@@ -40,4 +43,7 @@ role_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lLis
              lList **ppList, monitoring_t *monitor);
 
 int
-sge_del_role(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **alpp, char *ruser, char *rhost);
+sge_del_role(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ConstElement<ocs::tom::RL> ep,
+             lList **alpp, char *ruser, char *rhost);
+OCS_TRANSITIONAL int sge_del_role(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **alpp,
+                                  char *ruser, char *rhost);

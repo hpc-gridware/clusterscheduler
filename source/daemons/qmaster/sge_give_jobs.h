@@ -47,6 +47,12 @@
  * that `qstat -s f` can still show the task.
  */
 
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_EH.h"
+#include "sgeobj/tom/ocs_tom_JAT.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
+#include "sgeobj/tom/ocs_tom_QU.h"
+
 #include "sge_qmaster_timed_event.h"
 #include "sgeobj/sge_daemonize.h"
 
@@ -86,9 +92,11 @@ typedef enum {
    COMMIT_ST_USER_RESCHEDULED = 9    ///< job get rescheduled due to exit 99 or qmod -rj executed by job user
 } sge_commit_mode_t;
 
-int sge_give_job(lListElem *jep, lListElem *jatep, const lListElem *master_qep, lListElem *hep, monitoring_t *monitor, uint64_t gdi_session);
+int sge_give_job(ocs::tom::Element<ocs::tom::JB> jep, ocs::tom::Element<ocs::tom::JAT> jatep,
+                 ocs::tom::ConstElement<ocs::tom::QU> master_qep, ocs::tom::Element<ocs::tom::EH> hep,
+                 monitoring_t *monitor, uint64_t gdi_session);
 
-void sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_t mode,
+void sge_commit_job(lListElem *raw_jep, lListElem *raw_jatep, lListElem *raw_jr, sge_commit_mode_t mode,
                     int commit_flags, monitoring_t *monitor, uint64_t gdi_session);
 
 /* CS-1908: sge_bury_job SPLIT into finish-side and bury-side. Existing callers
@@ -96,11 +104,11 @@ void sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_
  * external callers:
  *   - U4 finish path calls sge_finish_ja_task and defers the bury-side.
  *   - U5 retention sweep calls sge_bury_ja_task at prune time. */
-void sge_finish_ja_task(const char *sge_root, lListElem *job, uint32_t job_id,
-                        lListElem *ja_task, int no_events, uint64_t gdi_session);
+void sge_finish_ja_task(const char *sge_root, ocs::tom::Element<ocs::tom::JB> job, uint32_t job_id,
+                        ocs::tom::Element<ocs::tom::JAT> ja_task, int no_events, uint64_t gdi_session);
 
-void sge_bury_ja_task(const char *sge_root, lListElem *job, uint32_t job_id,
-                      lListElem *ja_task, int spool_job, int no_events, uint64_t gdi_session);
+void sge_bury_ja_task(const char *sge_root, lListElem *raw_job, uint32_t job_id,
+                      lListElem *raw_ja_task, int spool_job, int no_events, uint64_t gdi_session);
 
 bool gdil_del_all_orphaned(const lList *gdil_list, lList **alpp, uint64_t gdi_session);
 

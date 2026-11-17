@@ -40,11 +40,16 @@
 #include "sge_c_gdi.h"
 #include "uti/sge_monitor.h"
 #include "sgeobj/sge_daemonize.h"
+#include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "tom/ocs_Transitional.h"
+#include "sgeobj/tom/ocs_tom_PE.h"
+#include "sgeobj/tom/ocs_tom_US.h"
 
 /* funtions called from within gdi framework in qmaster */
 int
-pe_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *new_pe, lListElem *pe, int add, const char *ruser,
-       const char *rhost, gdi_object_t *object,
+pe_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *new_pe, lListElem *pe, int add,
+       const char *ruser, const char *rhost, gdi_object_t *object,
        ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command,
        monitoring_t *monitor);
 
@@ -52,16 +57,20 @@ int
 pe_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *pep, gdi_object_t *object);
 
 int
-pe_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList,
-           monitoring_t *monitor);
+pe_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object,
+           lList **ppList, monitoring_t *monitor);
 
 /* funtions called via gdi and inside the qmaster */
 int
-sge_del_pe(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *, lList **, char *, char *);
+sge_del_pe(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ConstElement<ocs::tom::PE> pep, lList **alpp,
+           char *ruser, char *rhost);
+OCS_TRANSITIONAL int sge_del_pe(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *pep, lList **alpp,
+                                char *ruser, char *rhost);
 
 /* to do at qmasters startup */
 void
-debit_all_jobs_from_pes(lList *pe_list);
+debit_all_jobs_from_pes(ocs::tom::List<ocs::tom::PE> pe_list);
+OCS_TRANSITIONAL void debit_all_jobs_from_pes(lList *pe_list);
 
 /** @brief Book a job's slots against a parallel environment
  *
@@ -90,4 +99,7 @@ void
 reverse_job_from_pe(lListElem *pep, int slots, uint32_t job_id);
 
 void
-pe_diff_usersets(const lListElem *new_pe, const lListElem *old, lList **new_acl, lList **old_acl);
+pe_diff_usersets(ocs::tom::ConstElement<ocs::tom::PE> new_pe, ocs::tom::ConstElement<ocs::tom::PE> old_pe,
+                 ocs::tom::ListPtr<ocs::tom::US> *new_acl, ocs::tom::ListPtr<ocs::tom::US> *old_acl);
+OCS_TRANSITIONAL void pe_diff_usersets(const lListElem *new_pe, const lListElem *old_pe, lList **new_acl,
+                                       lList **old_acl);

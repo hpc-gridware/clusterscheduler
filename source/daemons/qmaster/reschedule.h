@@ -37,6 +37,13 @@
  * @brief Rescheduling the jobs of a host that stopped answering
  */
 
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_EH.h"
+#include "sgeobj/tom/ocs_tom_JAT.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
+#include "sgeobj/tom/ocs_tom_JR.h"
+#include "sgeobj/tom/ocs_tom_RU.h"
+
 #include "sge_qmaster_timed_event.h"
 #include "uti/sge_monitor.h"
 #include "sgeobj/sge_daemonize.h"
@@ -60,47 +67,50 @@ void
 reschedule_unknown_event(te_event_t anEvent, monitoring_t *monitor);
 
 uint32_t
-skip_restarted_job(lListElem *host, lListElem *job_report, uint32_t job_number, uint32_t task_number);
+skip_restarted_job(ocs::tom::Element<ocs::tom::EH> host, ocs::tom::ConstElement<ocs::tom::JR> job_report,
+                   uint32_t job_number, uint32_t task_number);
 
 int
 reschedule_jobs(lListElem *ep, uint32_t force, lList **answer, monitoring_t *monitor,
                 bool is_manual, const char *caller_user, const char *caller_host, uint64_t gdi_session);
 
 int
-reschedule_job(lListElem *jep, lListElem *jatep, lListElem *qep, uint32_t force,
+reschedule_job(lListElem *raw_jep, lListElem *raw_jatep, lListElem *ep, uint32_t force,
                lList **answer, monitoring_t *monitor, bool is_manual,
                const char *caller_user, const char *caller_host, uint64_t gdi_session);
 
-lListElem *
-add_to_reschedule_unknown_list(lListElem *hostr, uint32_t job_number, uint32_t task_number,
+ocs::tom::Element<ocs::tom::RU>
+add_to_reschedule_unknown_list(ocs::tom::Element<ocs::tom::EH> host, uint32_t job_number, uint32_t task_number,
                                uint32_t state, uint64_t gdi_session);
 
 void
-delete_from_reschedule_unknown_list(lListElem *host, bool all_jobs_reported, uint64_t gdi_session);
+delete_from_reschedule_unknown_list(ocs::tom::Element<ocs::tom::EH> host, bool all_jobs_reported, uint64_t gdi_session);
 
 void
-reschedule_clear_deferred_start(lListElem *jep, lListElem *jatep, uint64_t gdi_session);
+reschedule_clear_deferred_start(ocs::tom::Element<ocs::tom::JB> jep, ocs::tom::Element<ocs::tom::JAT> jatep,
+                                uint64_t gdi_session);
 
 void
-reschedule_clear_deferred_starts_of_host(const lListElem *host, uint64_t gdi_session);
+reschedule_clear_deferred_starts_of_host(const lListElem *raw_host, uint64_t gdi_session);
 
 void
-update_reschedule_unknown_list(lListElem *host, uint64_t gdi_session);
+update_reschedule_unknown_list(ocs::tom::Element<ocs::tom::EH> host, uint64_t gdi_session);
 
 void
-update_reschedule_unknown_list_for_job(lListElem *host, uint32_t job_number, uint32_t task_number);
+update_reschedule_unknown_list_for_job(ocs::tom::Element<ocs::tom::EH> host, uint32_t job_number, uint32_t task_number);
 
 void
 update_reschedule_unknown_timout_values(const char *config_name);
 
 void
-reschedule_unknown_trigger(lListElem *hep);
+reschedule_unknown_trigger(lListElem *raw_hep);
 
 void
 reschedule_add_additional_time(uint64_t time);
 
 void
-remove_from_reschedule_unknown_list(lListElem *host, uint32_t job_number, uint32_t task_number, uint64_t gdi_session);
+remove_from_reschedule_unknown_list(ocs::tom::Element<ocs::tom::EH> host, uint32_t job_number, uint32_t task_number,
+                                    uint64_t gdi_session);
 
 void
 remove_from_reschedule_unknown_lists(uint32_t job_number, uint32_t task_number, uint64_t gdi_session);

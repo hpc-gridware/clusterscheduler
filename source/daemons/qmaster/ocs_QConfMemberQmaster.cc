@@ -35,6 +35,7 @@
 #include "sgeobj/tom/ocs_tom_UE.h"
 #include "sgeobj/tom/ocs_tom_US.h"
 #include "sgeobj/tom/ocs_tom_HGRP.h"
+#include "sgeobj/tom/ocs_tom_HR.h"
 #include "uti/sge_dstring.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_string.h"
@@ -58,22 +59,23 @@ namespace {
     * @param monitor for monitoring qmaster threads
     * @param object the access list row of the GDI object table
     * @param name the access list
-    * @param entries the new entry list (`UE_Type`), taken over
+    * @param entries the new entry list (`UE_Type`), taken over; may be an empty handle
     * @param add true to create the list, false to modify it
     * @param why receives the reason on failure, empty otherwise
     * @return the status of the write
     */
    uint32_t
    write_list(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monitor, gdi_object_t *object,
-              const char *name, lList *entries, const bool add, std::string &why) {
+              const char *name, ocs::tom::ListPtr<ocs::tom::UE> &&entries, const bool add, std::string &why) {
       DENTER(TOP_LAYER);
 
+      auto taken_entries = std::move(entries);
       auto elem = ocs::tom::ElementPtr<ocs::tom::US>::create();
       ocs::tom::set<US_name>(elem, name);
-      ocs::tom::set<US_entries>(elem, entries);
+      ocs::tom::set<US_entries>(elem, std::move(taken_entries));
 
       lList *alp = nullptr;
-      lList *post_list = nullptr;
+      lList *post_list = nullptr;   // the generic path's post processing list has no fixed type
       const int ret = sge_gdi_add_mod_generic(packet, task, &alp, *elem, add ? 1 : 0, object, packet->user,
                                               packet->host, ocs::gdi::Command::MOD_PROCEDURE,
                                               ocs::gdi::SubCommand::NONE, &post_list, monitor);
@@ -149,18 +151,18 @@ qconf_member_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, moni
    }
 
    // separated as the client always separated them
-   lList *users = nullptr;
-   lString2List(users_arg.c_str(), &users, UE_Type, UE_name, ", ");
-   lList *lists = nullptr;
-   lString2List(lists_arg.c_str(), &lists, US_Type, US_name, ", ");
+   const auto users = ocs::tom::ListPtr<ocs::tom::UE>::from_string<UE_name>(users_arg.c_str(), ", ");
+   const auto lists = ocs::tom::ListPtr<ocs::tom::US>::from_string<US_name>(lists_arg.c_str(), ", ");
 
    const bool add = (parameter.get_arg(ocs::QConfActionParameter::ARG_ADD) == ocs::QConfActionParameter::ARG_TRUE);
    bool all_ok = true;
    dstring buffer = DSTRING_INIT;
 
-   for_each_ep_lv(list_arg, lists) {
+   const auto master_userset_list =
+           ocs::tom::ConstList<ocs::tom::US>(*ocs::DataStore::get_master_list(SGE_TYPE_USERSET));
+   for (const auto list_arg : *lists) {
       const char *list_name = ocs::tom::get<US_name>(list_arg);
-      ocs::tom::ConstElement<ocs::tom::US> stored = ocs::tom::find_first<US_name>(*ocs::DataStore::get_master_list(SGE_TYPE_USERSET), list_name);
+      const auto stored = master_userset_list.find_first<US_name>(list_name);
 
       if (stored == nullptr && !add) {
          add_answer(answer_list, STATUS_EEXIST, sge_dstring_sprintf(&buffer, MSG_ACL_ACLDOESNOTEXIST_S, list_name));
@@ -171,40 +173,56 @@ qconf_member_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, moni
       /* Decide who has to change. "changed" is also what tells the report below
        * which users the write carried, so a user named twice is reported once as
        * changed and once as already in (or not in) the list. */
-      lList *entries = (stored != nullptr) ? lCopyList("", ocs::tom::get<US_entries>(stored)) : nullptr;
-      lList *changed = nullptr;
-      for_each_ep_lv(user_arg, users) {
+      ocs::tom::ListPtr<ocs::tom::UE> entries;
+      if (stored) {
+         entries = ocs::tom::get<US_entries>(stored).clone("");
+      }
+      // the lists are created with the first entry, as the untyped emplace_back() created them
+      ocs::tom::ListPtr<ocs::tom::UE> changed;
+      for (const auto user_arg : *users) {
          const char *user_name = ocs::tom::get<UE_name>(user_arg);
-         const bool present = static_cast<const lListElem *>(ocs::tom::find_first<UE_name>(entries, user_name)) != nullptr;
+         const bool present = static_cast<bool>(entries->find_first<UE_name>(user_name));
          if (add && !present) {
-            ocs::tom::emplace_back<UE_name>(&entries, user_name);
-            ocs::tom::emplace_back<UE_name>(&changed, user_name);
+            if (!entries) {
+               entries = ocs::tom::ListPtr<ocs::tom::UE>::create("");
+            }
+            entries->emplace_back<UE_name>(user_name);
+            if (!changed) {
+               changed = ocs::tom::ListPtr<ocs::tom::UE>::create("");
+            }
+            changed->emplace_back<UE_name>(user_name);
          } else if (!add && present) {
-            ocs::tom::erase<UE_name>(&entries, user_name);
-            ocs::tom::emplace_back<UE_name>(&changed, user_name);
+            entries->erase<UE_name>(user_name);
+            // an entry list left empty is freed, as the untyped erase() freed it
+            if (entries->empty()) {
+               entries.reset();
+            }
+            if (!changed) {
+               changed = ocs::tom::ListPtr<ocs::tom::UE>::create("");
+            }
+            changed->emplace_back<UE_name>(user_name);
          }
       }
 
       uint32_t write_status = STATUS_OK;
       std::string why;
-      if (stored == nullptr || lGetNumberOfElem(changed) > 0) {
-         write_status = write_list(packet, task, monitor, object, list_name, entries, stored == nullptr, why);
-         entries = nullptr;
+      if (!stored || !changed->empty()) {
+         write_status = write_list(packet, task, monitor, object, list_name, std::move(entries), !stored, why);
       }
-      lFreeList(&entries);
+      entries.reset();
 
       // report in the order the users were named
-      for_each_ep_lv(user_arg, users) {
+      for (const auto user_arg : *users) {
          const char *user_name = ocs::tom::get<UE_name>(user_arg);
-         lListElem *carried = ocs::tom::find_first_rw<UE_name>(changed, user_name);
+         const auto carried = changed->find_first<UE_name>(user_name);
          uint32_t status;
          const char *text;
-         if (carried == nullptr) {
+         if (!carried) {
             status = add ? STATUS_EEXIST : STATUS_EEXIST + 1;
             text = sge_dstring_sprintf(&buffer, add ? MSG_ACL_USERINACL_SS : MSG_ACL_USERNOTINACL_SS, user_name,
                                        list_name);
          } else {
-            lRemoveElem(changed, &carried);
+            changed->erase(carried);
             status = write_status;
             if (status == STATUS_OK) {
                text = sge_dstring_sprintf(&buffer, add ? MSG_ACL_ADDTOACL_SS : MSG_ACL_DELFROMACL_SS, user_name,
@@ -221,12 +239,10 @@ qconf_member_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, moni
          }
          add_answer(answer_list, status, text);
       }
-      lFreeList(&changed);
+      changed.reset();
    }
 
    sge_dstring_free(&buffer);
-   lFreeList(&lists);
-   lFreeList(&users);
 
    DRETURN(all_ok);
 }
@@ -290,13 +306,17 @@ qconf_hgroup_member_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *tas
    }
 
    /* the delta: the group name and every member to add or remove */
-   lList *hosts = nullptr;
+   // created with the first member, as the untyped emplace_back() created it
+   ocs::tom::ListPtr<ocs::tom::HR> hosts;
    std::string::size_type begin = 0;
    while (begin <= hosts_arg.size()) {
       const std::string::size_type end = hosts_arg.find(ocs::QConfActionParameter::LINE_SEPARATOR, begin);
       const std::string host = hosts_arg.substr(begin, end == std::string::npos ? std::string::npos : end - begin);
       if (!host.empty()) {
-         ocs::tom::emplace_back<HR_name>(&hosts, host.c_str());
+         if (!hosts) {
+            hosts = ocs::tom::ListPtr<ocs::tom::HR>::create("");
+         }
+         hosts->emplace_back<HR_name>(ocs::tom::Host(host.c_str()));
       }
       if (end == std::string::npos) {
          break;
@@ -305,7 +325,7 @@ qconf_hgroup_member_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *tas
    }
    auto delta = ocs::tom::ElementPtr<ocs::tom::HGRP>::create();
    ocs::tom::set<HGRP_name>(delta, group.c_str());
-   ocs::tom::set<HGRP_host_list>(delta, hosts);
+   ocs::tom::set<HGRP_host_list>(delta, std::move(hosts));
 
    const bool add = (parameter.get_arg(ocs::QConfActionParameter::ARG_ADD) == ocs::QConfActionParameter::ARG_TRUE);
    lList *alp = nullptr;

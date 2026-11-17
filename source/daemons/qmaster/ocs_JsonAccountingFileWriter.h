@@ -38,7 +38,8 @@ namespace ocs {
       JsonAccountingFileWriter() : BaseAccountingFileWriter(std::string{bootstrap_get_acct_file()} + ".jsonl", false) {
       }
 
-      bool create_acct_record(lList **answer_list, lListElem *job_report, lListElem *job, lListElem *ja_task,
+      bool create_acct_record(lList **answer_list, ocs::tom::Element<ocs::tom::JR> job_report,
+                              ocs::tom::Element<ocs::tom::JB> job, ocs::tom::Element<ocs::tom::JAT> ja_task,
                               bool intermediate) override;
    };
 }

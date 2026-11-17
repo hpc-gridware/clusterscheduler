@@ -67,6 +67,10 @@
 #include "sgeobj/tom/ocs_tom_STU.h"
 #include "sgeobj/tom/ocs_tom_UA.h"
 #include "sgeobj/tom/ocs_tom_CT.h"
+#include "sgeobj/tom/ocs_tom_PR.h"
+#include "sgeobj/tom/ocs_tom_STN.h"
+#include "sgeobj/tom/ocs_tom_US.h"
+#include "sgeobj/tom/ocs_tom_UU.h"
 
 #include "sched/sge_resource_utilization.h"
 #include "sched/sge_sharetree_printing.h"
@@ -203,15 +207,21 @@ reporting_trigger_handler(te_event_t anEvent, monitoring_t *monitor) {
 
 /** @brief Has an interim accounting record already been written for this task?
  *
- * NOTES
- * MT-NOTE: intermediate_usage_written() is MT-safe
+ * The reported usage list of the array task, or of the PE task the job report
+ * is about, is created when the first intermediate accounting record is
+ * written, so its existence answers the question.
  *
- * @param job_report see the description above
- * @param ja_task the array task
- * @return see the description above
+ * @param job_report the job report (`JR_Type`); its PE task id selects the PE task
+ * @param ja_task the array task (`JAT_Type`)
+ * @return true if an intermediate accounting record has been written before
+ *
+ * @note MT-NOTE: intermediate_usage_written() is MT-safe
  */
 bool
-intermediate_usage_written(const lListElem *job_report, const lListElem *ja_task) {
+intermediate_usage_written(const ocs::tom::ConstElement<ocs::tom::JR> job_report,
+                           const ocs::tom::ConstElement<ocs::tom::JAT> ja_task) {
+   DENTER(TOP_LAYER);
+
    bool ret = false;
    const char *pe_task_id;
    ocs::tom::ConstList<ocs::tom::UA> reported_usage = nullptr;
@@ -219,8 +229,8 @@ intermediate_usage_written(const lListElem *job_report, const lListElem *ja_task
    /* do we have a tightly integrated parallel task? */
    pe_task_id = ocs::tom::get<JR_pe_task_id_str>(job_report);
    if (pe_task_id != nullptr) {
-      ocs::tom::ConstElement<ocs::tom::PET> pe_task = ocs::tom::find_first<PET_id>(ocs::tom::get<JAT_task_list>(ja_task), pe_task_id);
-      if (pe_task != nullptr) {
+      const auto pe_task = ocs::tom::get<JAT_task_list>(ja_task).find_first<PET_id>(pe_task_id);
+      if (pe_task) {
          reported_usage = ocs::tom::get<PET_reported_usage>(pe_task);
       }
    } else {
@@ -230,18 +240,34 @@ intermediate_usage_written(const lListElem *job_report, const lListElem *ja_task
    /* the reported usage list will be created when the first intermediate
     * acct record is written
     */
-   if (reported_usage != nullptr) {
+   if (reported_usage) {
       ret = true;
    }
 
-   return ret;
+   DRETURN(ret);
 }
 
 // object methods
 
+/**
+ * @brief Write the accounting record of a finished job to the classic accounting file
+ *
+ * Intermediate records are not written to the accounting file, only the
+ * record at job end.
+ *
+ * @param answer_list used to report error messages
+ * @param job_report the job report the execution host sent (`JR_Type`)
+ * @param job the job (`JB_Type`)
+ * @param ja_task the array task that finished (`JAT_Type`)
+ * @param intermediate whether this is an interim record for a job that is still running
+ * @return true on success, false on error
+ */
 bool
-ocs::ClassicAccountingFileWriter::create_acct_record(lList **answer_list, lListElem *job_report, lListElem *job,
-                                                lListElem *ja_task, bool intermediate) {
+ocs::ClassicAccountingFileWriter::create_acct_record(lList **answer_list,
+                                                     const ocs::tom::Element<ocs::tom::JR> job_report,
+                                                     const ocs::tom::Element<ocs::tom::JB> job,
+                                                     const ocs::tom::Element<ocs::tom::JAT> ja_task,
+                                                     bool intermediate) {
    DENTER(TOP_LAYER);
    bool ret = true;
 
@@ -250,9 +276,10 @@ ocs::ClassicAccountingFileWriter::create_acct_record(lList **answer_list, lListE
     */
    if (!intermediate) {
       // get the job category string
-      const lList *master_category_list = *ocs::DataStore::get_master_list(SGE_TYPE_CATEGORY);
-      uint32_t category_id = ocs::tom::get<JB_category_id>(job);
-      ocs::tom::Element<ocs::tom::CT> category = ocs::tom::find_first_rw<CT_id>(master_category_list, category_id);
+      const auto master_category_list =
+              ocs::tom::ConstList<ocs::tom::CT>(*ocs::DataStore::get_master_list(SGE_TYPE_CATEGORY));
+      const uint32_t category_id = ocs::tom::get<JB_category_id>(job);
+      const auto category = master_category_list.find_first<CT_id>(category_id);
       const char *category_string = ocs::tom::get<CT_str>(category);
 
       dstring job_dstring = DSTRING_INIT;
@@ -322,14 +349,17 @@ ocs::ClassicReportingFileWriter::create_record(const char *type, const char *dat
  * create_acct_record is called and we needn't search it from ja_task
  */
 bool
-ocs::ClassicReportingFileWriter::create_acct_record(lList **answer_list, lListElem *job_report, lListElem *job,
-                                               lListElem *ja_task, bool intermediate) {
+ocs::ClassicReportingFileWriter::create_acct_record(lList **answer_list,
+                                                    const ocs::tom::Element<ocs::tom::JR> job_report,
+                                                    const ocs::tom::Element<ocs::tom::JB> job,
+                                                    const ocs::tom::Element<ocs::tom::JAT> ja_task, bool intermediate) {
    DENTER(TOP_LAYER);
 
    // get the job category string
-   const lList *master_category_list = *ocs::DataStore::get_master_list(SGE_TYPE_CATEGORY);
-   uint32_t category_id = ocs::tom::get<JB_category_id>(job);
-   ocs::tom::Element<ocs::tom::CT> category = ocs::tom::find_first_rw<CT_id>(master_category_list, category_id);
+   const auto master_category_list =
+           ocs::tom::ConstList<ocs::tom::CT>(*ocs::DataStore::get_master_list(SGE_TYPE_CATEGORY));
+   const uint32_t category_id = ocs::tom::get<JB_category_id>(job);
+   const auto category = master_category_list.find_first<CT_id>(category_id);
    const char *category_string = ocs::tom::get<CT_str>(category);
 
    // reporting records will be written both for intermediate and final job reports
@@ -357,8 +387,18 @@ ocs::ClassicReportingFileWriter::create_acct_record(lList **answer_list, lListEl
    DRETURN(ret);
 }
 
+/**
+ * @brief Write a new_job record for a job that has just been submitted
+ *
+ * Nothing is written unless job logging is enabled.
+ *
+ * @param answer_list used to report error messages
+ * @param job the job (`JB_Type`), may be an empty handle
+ * @return true on success
+ */
 bool
-ocs::ClassicReportingFileWriter::create_new_job_record(lList **answer_list, const lListElem *job) {
+ocs::ClassicReportingFileWriter::create_new_job_record(lList **answer_list,
+                                                       const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
@@ -413,10 +453,31 @@ ocs::ClassicReportingFileWriter::create_new_job_record(lList **answer_list, cons
    DRETURN(ret);
 }
 
+/**
+ * @brief Write a job_log record for a change in a job's life
+ *
+ * Nothing is written unless job logging is enabled.
+ *
+ * @param answer_list used to report error messages
+ * @param event_time when it happened
+ * @param type which change it was
+ * @param user who caused it
+ * @param host the host it happened on
+ * @param job_report the job report the execution host sent (`JR_Type`), not used here
+ * @param job the job (`JB_Type`), may be an empty handle
+ * @param ja_task the array task (`JAT_Type`), may be an empty handle
+ * @param pe_task the PE task (`PET_Type`), may be an empty handle
+ * @param message a description of what happened, may be nullptr
+ * @return true on success
+ */
 bool
-ocs::ClassicReportingFileWriter::create_job_log(lList **answer_list, uint64_t event_time, const job_log_t type, const char *user,
-                                           const char *host, const lListElem *job_report, const lListElem *job, const lListElem *ja_task,
-                                           const lListElem *pe_task, const char *message) {
+ocs::ClassicReportingFileWriter::create_job_log(lList **answer_list, uint64_t event_time, const job_log_t type,
+                                                const char *user, const char *host,
+                                                const ocs::tom::ConstElement<ocs::tom::JR> job_report,
+                                                const ocs::tom::ConstElement<ocs::tom::JB> job,
+                                                const ocs::tom::ConstElement<ocs::tom::JAT> ja_task,
+                                                const ocs::tom::ConstElement<ocs::tom::PET> pe_task,
+                                                const char *message) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
@@ -479,7 +540,8 @@ ocs::ClassicReportingFileWriter::create_job_log(lList **answer_list, uint64_t ev
       account = ocs::tom::get_or_empty<JB_account>(job);
 
       sge_dstring_sprintf(&job_dstring,
-                          sge_u64 "%c%s%c" sge_u32 "%c%d%c%s%c%s%c%s%c%s%c" sge_u32 "%c" sge_u32 "%c" sge_u64 "%c%s%c%s%c%s%c%s%c%s%c%s%c%s\n",
+                          sge_u64 "%c%s%c" sge_u32 "%c%d%c%s%c%s%c%s%c%s%c" sge_u32 "%c" sge_u32 "%c" sge_u64
+                          "%c%s%c%s%c%s%c%s%c%s%c%s%c%s\n",
                           (uint64_t)sge_gmt64_to_time_t(event_time), REPORTING_DELIMITER,
                           event, REPORTING_DELIMITER,
                           job_id, REPORTING_DELIMITER,
@@ -515,18 +577,19 @@ ocs::ClassicReportingFileWriter::create_job_log(lList **answer_list, uint64_t ev
  * @param actual actual consumable values
  * @param total configured consumable values
  * @param host host for which to output data
- * @param job optional: job which changes consumables
- *
- * @note bool - true on success, false on error
+ * @param job optional: job which changes consumables, may be an empty handle
  *
  * @note MT-NOTE: reporting_write_consumables() is MT safe
  */
 void
-ocs::ClassicReportingFileWriter::reporting_write_consumables(lList **answer_list, dstring *buffer, const lList *actual, const lList *total,
-                            const lListElem *host, const lListElem *job) const {
+ocs::ClassicReportingFileWriter::reporting_write_consumables(lList **answer_list, dstring *buffer,
+                                                             const ocs::tom::ConstList<ocs::tom::RUE> actual,
+                                                             const ocs::tom::ConstList<ocs::tom::CE> total,
+                                                             const ocs::tom::ConstElement<ocs::tom::EH> host,
+                                                             const ocs::tom::ConstElement<ocs::tom::JB> job) const {
    DENTER(TOP_LAYER);
 
-   for_each_ep_lv(cep, actual) {
+   for (const auto cep : actual) {
       const char *name = ocs::tom::get<RUE_name>(cep);
       bool log_variable = true;
 
@@ -535,8 +598,8 @@ ocs::ClassicReportingFileWriter::reporting_write_consumables(lList **answer_list
        * due to reporting_variables in global/local host
        */
       if (!log_consumables) {
-         ocs::tom::ConstList<ocs::tom::STU> report_variables = ocs::tom::get<EH_merged_report_variables>(host);
-         if (static_cast<const lListElem *>(ocs::tom::find_first<STU_name>(report_variables, name)) == nullptr) {
+         const auto report_variables = ocs::tom::get<EH_merged_report_variables>(host);
+         if (!report_variables.find_first<STU_name>(name)) {
             log_variable = false;
          } else {
             /*
@@ -545,7 +608,7 @@ ocs::ClassicReportingFileWriter::reporting_write_consumables(lList **answer_list
              * slots is an implicit request - always log it if requested
              */
             if (strcmp(name, SGE_ATTR_SLOTS) != 0 && job != nullptr) {
-               if (job_get_request(job, name) == nullptr) {
+               if (!job_get_request(job, name)) {
                   log_variable = false;
                }
             }
@@ -554,15 +617,15 @@ ocs::ClassicReportingFileWriter::reporting_write_consumables(lList **answer_list
 
       /* now do the logging, if requested */
       if (log_variable) {
-         const lListElem *tep = ocs::tom::find_first<CE_name>(total, name);
-         if (tep != nullptr) {
+         const auto tep = total.find_first<CE_name>(name);
+         if (tep) {
             sge_dstring_append(buffer, name);
             sge_dstring_append_char(buffer, '=');
             utilization_print_to_dstring(cep, buffer);
             sge_dstring_append_char(buffer, '=');
             centry_print_resource_to_dstring(tep, buffer);
 
-            if (lNext(cep) != nullptr) {
+            if (cep.next()) {
                sge_dstring_append_char(buffer, ',');
             }
          }
@@ -585,8 +648,8 @@ ocs::ClassicReportingFileWriter::reporting_write_consumables(lList **answer_list
  */
 bool
 ocs::ClassicReportingFileWriter::create_queue_record(lList **answer_list,
-                                                const lListElem *queue,
-                                                uint64_t report_time) {
+                                                     const ocs::tom::ConstElement<ocs::tom::QU> queue,
+                                                     uint64_t report_time) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
@@ -628,10 +691,10 @@ ocs::ClassicReportingFileWriter::create_queue_record(lList **answer_list,
  */
 bool
 ocs::ClassicReportingFileWriter::create_queue_consumable_record(lList **answer_list,
-                                                           const lListElem *host,
-                                                           const lListElem *queue,
-                                                           const lListElem *job,
-                                                           uint64_t report_time) {
+                                                                const ocs::tom::ConstElement<ocs::tom::EH> host,
+                                                                const ocs::tom::ConstElement<ocs::tom::QU> queue,
+                                                                const ocs::tom::ConstElement<ocs::tom::JB> job,
+                                                                uint64_t report_time) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
@@ -684,8 +747,8 @@ ocs::ClassicReportingFileWriter::create_queue_consumable_record(lList **answer_l
  */
 bool
 ocs::ClassicReportingFileWriter::create_host_record(lList **answer_list,
-                                               const lListElem *host,
-                                               uint64_t report_time) {
+                                                    const ocs::tom::ConstElement<ocs::tom::EH> host,
+                                                    uint64_t report_time) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
@@ -732,9 +795,9 @@ ocs::ClassicReportingFileWriter::create_host_record(lList **answer_list,
  */
 bool
 ocs::ClassicReportingFileWriter::create_host_consumable_record(lList **answer_list,
-                                                          const lListElem *host,
-                                                          const lListElem *job,
-                                                          uint64_t report_time) {
+                                                               const ocs::tom::ConstElement<ocs::tom::EH> host,
+                                                               const ocs::tom::ConstElement<ocs::tom::JB> job,
+                                                               uint64_t report_time) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
@@ -774,8 +837,6 @@ ocs::ClassicReportingFileWriter::create_host_consumable_record(lList **answer_li
  *
  * @param monitor monitors the use of the global lock
  *
- * @note bool -  true on success, false on error
- *
  * @note MT-NOTE: create_sharelog_record() is most probably MT safe
  *       (depends on sge_sharetree_print with uncertain MT safety)
  */
@@ -808,12 +869,16 @@ ocs::ClassicReportingFileWriter::create_sharelog_record(monitoring_t *monitor) {
       /* dump the sharetree data - only create sharelog entries if we have a sharetree */
       MONITOR_WAIT_TIME(SGE_LOCK(LOCK_GLOBAL, LOCK_READ), monitor);
 
-      const lList *master_stree_list = *ocs::DataStore::get_master_list(SGE_TYPE_SHARETREE);
-      const bool has_sharetree = lGetNumberOfElem(master_stree_list) > 0;
+      const auto master_stree_list =
+              ocs::tom::ConstList<ocs::tom::STN>(*ocs::DataStore::get_master_list(SGE_TYPE_SHARETREE));
+      const bool has_sharetree = !master_stree_list.empty();
       if (has_sharetree) {
-         const lList *master_user_list = *ocs::DataStore::get_master_list(SGE_TYPE_USER);
-         const lList *master_userset_list = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
-         const lList *master_project_list = *ocs::DataStore::get_master_list(SGE_TYPE_PROJECT);
+         const auto master_user_list =
+                 ocs::tom::ConstList<ocs::tom::UU>(*ocs::DataStore::get_master_list(SGE_TYPE_USER));
+         const auto master_userset_list =
+                 ocs::tom::ConstList<ocs::tom::US>(*ocs::DataStore::get_master_list(SGE_TYPE_USERSET));
+         const auto master_project_list =
+                 ocs::tom::ConstList<ocs::tom::PR>(*ocs::DataStore::get_master_list(SGE_TYPE_PROJECT));
 
          sge_sharetree_print(&data_dstring, nullptr, master_stree_list, master_user_list, master_project_list,
                              master_userset_list,
@@ -834,6 +899,8 @@ ocs::ClassicReportingFileWriter::create_sharelog_record(monitoring_t *monitor) {
       sge_dstring_free(&prefix_dstring);
       sge_dstring_free(&data_dstring);
    }
+
+   DRETURN_VOID;
 }
 
 /** @brief Append the requested load values as a comma separated `name=value` list
@@ -853,17 +920,16 @@ ocs::ClassicReportingFileWriter::create_sharelog_record(monitoring_t *monitor) {
  */
 bool
 ocs::ClassicReportingFileWriter::write_load_values(lList **answer_list, dstring *buffer,
-                                              const lList *load_list, const lList *variables) {
+                                                   const ocs::tom::ConstList<ocs::tom::HL> load_list,
+                                                   const ocs::tom::ConstList<ocs::tom::STU> variables) {
    DENTER(TOP_LAYER);
    bool ret = true;
    bool first = true;
 
-   for_each_ep_lv(variable, variables) {
-      const char *name;
-
-      name = ocs::tom::get<STU_name>(variable);
-      ocs::tom::ConstElement<ocs::tom::HL> load = ocs::tom::find_first<HL_name>(load_list, name);
-      if (load != nullptr) {
+   for (const auto variable : variables) {
+      const char *name = ocs::tom::get<STU_name>(variable);
+      const auto load = load_list.find_first<HL_name>(name);
+      if (load) {
          if (first) {
             first = false;
          } else {
@@ -894,8 +960,8 @@ ocs::ClassicReportingFileWriter::write_load_values(lList **answer_list, dstring 
  */
 bool
 ocs::ClassicReportingFileWriter::create_new_ar_record(lList **answer_list,
-                                                 const lListElem *ar,
-                                                 uint64_t report_time) {
+                                                      const ocs::tom::ConstElement<ocs::tom::AR> ar,
+                                                      uint64_t report_time) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
@@ -940,8 +1006,8 @@ ocs::ClassicReportingFileWriter::create_new_ar_record(lList **answer_list,
  */
 bool
 ocs::ClassicReportingFileWriter::create_ar_attribute_record(lList **answer_list,
-                                                       const lListElem *ar,
-                                                       uint64_t report_time) {
+                                                            const ocs::tom::ConstElement<ocs::tom::AR> ar,
+                                                            uint64_t report_time) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
@@ -1008,10 +1074,9 @@ ocs::ClassicReportingFileWriter::create_ar_attribute_record(lList **answer_list,
  */
 bool
 ocs::ClassicReportingFileWriter::create_ar_log_record(lList **answer_list,
-                                                 const lListElem *ar,
-                                                 ar_state_event_t event,
-                                                 const char *ar_description,
-                                                 uint64_t report_time) {
+                                                      const ocs::tom::ConstElement<ocs::tom::AR> ar,
+                                                      ar_state_event_t event, const char *ar_description,
+                                                      uint64_t report_time) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
@@ -1064,7 +1129,11 @@ ocs::ClassicReportingFileWriter::create_ar_log_record(lList **answer_list,
  *
  * @see #create_single_ar_acct_record
  */
-bool ocs::ClassicReportingFileWriter::create_ar_acct_record(lList **answer_list, const lListElem *ar, uint64_t report_time) {
+bool ocs::ClassicReportingFileWriter::create_ar_acct_record(lList **answer_list,
+                                                            const ocs::tom::ConstElement<ocs::tom::AR> ar,
+                                                            uint64_t report_time) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
    dstring dstr = DSTRING_INIT;
 
@@ -1093,7 +1162,7 @@ bool ocs::ClassicReportingFileWriter::create_ar_acct_record(lList **answer_list,
 
    sge_dstring_free(&dstr);
 
-   return ret;
+   DRETURN(ret);
 }
 
 /**
@@ -1109,17 +1178,15 @@ bool ocs::ClassicReportingFileWriter::create_ar_acct_record(lList **answer_list,
  * @param slots number of reserved slots
  * @param report_time the corresponding timestamp
  *
- * @note int - true  success false failure
- *
- * @note MT-NOTE: reporting_flush() is MT-safe
+ * @note MT-NOTE: create_single_ar_acct_record() is MT-safe
  */
 void
 ocs::ClassicReportingFileWriter::create_single_ar_acct_record(dstring *dstr,
-                                                         const lListElem *ar,
-                                                         const char *cqueue_name,
-                                                         const char *hostname,
-                                                         uint32_t slots,
-                                                         uint64_t report_time) {
+                                                              const ocs::tom::ConstElement<ocs::tom::AR> ar,
+                                                              const char *cqueue_name, const char *hostname,
+                                                              uint32_t slots, uint64_t report_time) {
+   DENTER(TOP_LAYER);
+
    sge_dstring_sprintf_append(dstr,
                               sge_u64 "%c"
                               SFN "%c"
@@ -1137,4 +1204,6 @@ ocs::ClassicReportingFileWriter::create_single_ar_acct_record(dstring *dstr,
                               cqueue_name, REPORTING_DELIMITER,
                               hostname, REPORTING_DELIMITER,
                               slots);
+
+   DRETURN_VOID;
 }

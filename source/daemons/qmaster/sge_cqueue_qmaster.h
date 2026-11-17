@@ -40,19 +40,29 @@
 #include "sge_c_gdi.h"
 #include "uti/sge_monitor.h"
 #include "sgeobj/sge_daemonize.h"
+#include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "tom/ocs_Transitional.h"
+#include "sgeobj/tom/ocs_tom_CQ.h"
+#include "sgeobj/tom/ocs_tom_HGRP.h"
+#include "sgeobj/tom/ocs_tom_HR.h"
 
 bool
-cqueue_mod_qinstances(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *cqueue, lList **answer_list, lListElem *reduced_elem,
-                      bool refresh_all_values, bool is_startup, monitoring_t *monitor, const lList *master_hgroup_list,
-                      lList *master_cqueue_list);
+cqueue_mod_qinstances(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::Element<ocs::tom::CQ> cqueue,
+                      lList **answer_list, const lListElem *reduced_elem, bool refresh_all_values, bool is_startup,
+                      monitoring_t *monitor, ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list,
+                      ocs::tom::List<ocs::tom::CQ> master_cqueue_list);
 
 bool
-cqueue_handle_qinstances(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *cqueue, lList **answer_list, lListElem *reduced_elem,
-                         lList *add_hosts, lList *rem_hosts, bool refresh_all_values, monitoring_t *monitor,
-                         const lList *master_hgroup_list, lList *master_cqueue_list);
+cqueue_handle_qinstances(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::Element<ocs::tom::CQ> cqueue,
+                         lList **answer_list, const lListElem *reduced_elem,
+                         ocs::tom::ConstList<ocs::tom::HR> add_hosts, ocs::tom::ConstList<ocs::tom::HR> rem_hosts,
+                         bool refresh_all_values, monitoring_t *monitor,
+                         ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list,
+                         ocs::tom::List<ocs::tom::CQ> master_cqueue_list);
 
 void
-cqueue_commit(lListElem *cqueue, uint64_t gdi_session);
+cqueue_commit(ocs::tom::Element<ocs::tom::CQ> cqueue, uint64_t gdi_session);
 
 /** @brief Discard the pending changes of a cluster queue
  *
@@ -79,19 +89,27 @@ int
 cqueue_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *this_elem, gdi_object_t *object);
 
 int
-cqueue_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *this_elem, lList **alpp, char *ruser, char *rhost);
+cqueue_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ConstElement<ocs::tom::CQ> this_elem, lList **alpp,
+           char *ruser, char *rhost);
+OCS_TRANSITIONAL int cqueue_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *this_elem, lList **alpp,
+                                char *ruser, char *rhost);
 
 bool
-cqueue_del_all_orphaned(lListElem *this_elem, lList **answer_list, const char *ehname, uint64_t gdi_session);
+cqueue_del_all_orphaned(ocs::tom::Element<ocs::tom::CQ> this_elem, lList **answer_list, const char *ehname,
+                        uint64_t gdi_session);
 
 bool
-cqueue_list_del_all_orphaned(lList *this_list, lList **answer_list, const char *cqname,
+cqueue_list_del_all_orphaned(ocs::tom::List<ocs::tom::CQ> this_list, lList **answer_list, const char *cqname,
                              const char *ehname, uint64_t gdi_session);
 
 void
-cqueue_list_set_unknown_state(lList *this_list, const char *hostname,
+cqueue_list_set_unknown_state(ocs::tom::List<ocs::tom::CQ> this_list, const char *hostname,
                               bool send_events, bool is_unknown, uint64_t gdi_session);
+OCS_TRANSITIONAL void cqueue_list_set_unknown_state(lList *this_list, const char *hostname,
+                                                    bool send_events, bool is_unknown, uint64_t gdi_session);
 
-void cqueue_diff_projects(const lListElem *new_cqueue, const lListElem *old_cqueue, lList **new_prj, lList **old_prj);
+void cqueue_diff_projects(ocs::tom::ConstElement<ocs::tom::CQ> new_cqueue,
+                          ocs::tom::ConstElement<ocs::tom::CQ> old_cqueue, lList **new_prj, lList **old_prj);
 
-void cqueue_diff_usersets(const lListElem *new_cqueue, const lListElem *old_cqueue, lList **new_acl, lList **old_acl);
+void cqueue_diff_usersets(ocs::tom::ConstElement<ocs::tom::CQ> new_cqueue,
+                          ocs::tom::ConstElement<ocs::tom::CQ> old_cqueue, lList **new_acl, lList **old_acl);

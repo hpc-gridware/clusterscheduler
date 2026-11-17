@@ -65,6 +65,7 @@
 #include "sgeobj/tom/ocs_tom_JB.h"
 #include "sgeobj/tom/ocs_tom_PR.h"
 #include "sgeobj/tom/ocs_tom_STN.h"
+#include "sgeobj/tom/ocs_tom_TE.h"
 #include "sgeobj/tom/ocs_tom_UA.h"
 #include "sgeobj/tom/ocs_tom_UU.h"
 
@@ -400,8 +401,8 @@ sge_finished_jobs_sweep_handler(te_event_t anEvent, monitoring_t *monitor) {
    MONITOR_WAIT_TIME(SGE_LOCK(LOCK_GLOBAL, LOCK_WRITE), monitor);
 
    struct PruneCandidate {
-      lListElem *job;
-      lListElem *ja_task;
+      ocs::tom::Element<ocs::tom::JB> job;
+      ocs::tom::Element<ocs::tom::JAT> ja_task;
       uint64_t end_time;
    };
 
@@ -415,9 +416,9 @@ sge_finished_jobs_sweep_handler(te_event_t anEvent, monitoring_t *monitor) {
     * and if a JB is whole-removed at entry i then no other entry references
     * it (that would contradict the "last remaining JAT" precondition). */
    std::vector<PruneCandidate> finished;
-   lList *master_job_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB);
-   for_each_rw_lv(job, master_job_list) {
-      for (ocs::tom::Element<ocs::tom::JAT> ja_task : ocs::tom::get<JB_ja_tasks>(job)) {
+   const auto master_job_list = ocs::tom::List<ocs::tom::JB>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB));
+   for (const auto job : master_job_list) {
+      for (const auto ja_task : ocs::tom::get<JB_ja_tasks>(job)) {
          if (ocs::tom::get<JAT_status>(ja_task) == JFINISHED) {
             finished.push_back({job, ja_task, ocs::tom::get<JAT_end_time>(ja_task)});
          }
@@ -758,7 +759,7 @@ sge_timer_main(void *arg) {
    monitoring_t monitor;
    monitoring_t *p_monitor = &monitor;
 
-   lListElem *le = nullptr;
+   ocs::tom::Element<ocs::tom::TE> le;
    te_event_t te = nullptr;
    uint64_t next_prof_output = 0;
 
@@ -800,9 +801,11 @@ sge_timer_main(void *arg) {
       MONITOR_MESSAGES(p_monitor);
 
       MONITOR_TET_COUNT(p_monitor);
-      MONITOR_TET_EVENT(p_monitor, lGetNumberOfElem(Event_Control.list));
+      // Event_Control.list is the process-lifetime TE_Type list created in te_init()
+      const auto event_list = ocs::tom::List<ocs::tom::TE>::from_typed(Event_Control.list);
+      MONITOR_TET_EVENT(p_monitor, static_cast<uint32_t>(event_list.size()));
 
-      le = lFirstRW(Event_Control.list);
+      le = event_list.front();
       te = te_event_from_list_elem(le);
 
       if (const uint64_t now = Event_Control.next = sge_get_gmt64(); te->when > now) {
@@ -840,8 +843,7 @@ sge_timer_main(void *arg) {
       MONITOR_TET_EXEC(p_monitor);
 
       if (!list_changed) {
-         lDechainElem(Event_Control.list, le);
-         lFreeElem(&le);
+         event_list.erase(le);
 
          sge_mutex_unlock("event_control_mutex", __func__, __LINE__, &Event_Control.mutex);
       }

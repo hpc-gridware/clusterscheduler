@@ -31,6 +31,8 @@
 #include "sgeobj/sge_str.h"
 #include "sgeobj/tom/ocs_tom_ST.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "tom/ocs_Sort.h"
 
 #include "sge_thread_utility.h"
 
@@ -38,8 +40,17 @@
 #include <sge_thread_main.h>
 #include <sge_thread_scheduler.h>
 
+/**
+ * @brief Add one entry for a thread pool to the list of active threads
+ *
+ * @param threads the commlib thread list of the pool, holding at least one thread
+ * @param active_thread_list the list to add to (ST_Type); `ST_name` gets the name of the pool's first thread,
+ *                           `ST_id` the number of threads in the pool
+ */
 static void
-add_active_threads(cl_raw_list_t *threads, lList *active_thread_list) {
+add_active_threads(cl_raw_list_t *threads, const ocs::tom::List<ocs::tom::ST> active_thread_list) {
+   DENTER(TOP_LAYER);
+
    cl_thread_list_elem_t *thiz;
    cl_thread_list_elem_t *next = cl_thread_list_get_first_elem(threads);
 
@@ -52,8 +63,10 @@ add_active_threads(cl_raw_list_t *threads, lList *active_thread_list) {
    }
 
    // one entry per thread pool with the number of threads
-   ocs::tom::Element<ocs::tom::ST> st_elem = ocs::tom::emplace_back<ST_name>(&active_thread_list, name);
+   const auto st_elem = active_thread_list.emplace_back<ST_name>(name);
    ocs::tom::set<ST_id>(st_elem, nthreads);
+
+   DRETURN_VOID;
 }
 
 
@@ -67,12 +80,11 @@ add_active_threads(cl_raw_list_t *threads, lList *active_thread_list) {
  *
  * @return a newly created `ST_Type` list, one element per pool, `ST_name` the
  *         pool name and `ST_id` the number of threads in it, sorted by name.
- *         The caller owns the list.
  */
-lList *
-get_active_thread_list() {
+ocs::tom::ListPtr<ocs::tom::ST>
+ocs_get_active_thread_list() {
    DENTER(TOP_LAYER);
-   lList *active_thread_list = lCreateList("", ST_Type);
+   auto active_thread_list = ocs::tom::ListPtr<ocs::tom::ST>::create("");
 
    // Internal threads where the user has no influence on, will not be shown
 #if 0
@@ -90,17 +102,29 @@ get_active_thread_list() {
 
    // Scheduler thread if it is running
    if (sge_scheduler_is_running()) {
-      ocs::tom::Element<ocs::tom::ST> st_elem = ocs::tom::emplace_back<ST_name>(&active_thread_list, to_cstr(SCHEDD_THREAD));
+      const auto st_elem = active_thread_list->emplace_back<ST_name>(to_cstr(SCHEDD_THREAD));
       ocs::tom::set<ST_id>(st_elem, 1);
    }
 
    // Thread pools with dynamic number of threads
-   add_active_threads(Main_Control.listener_thread_pool, active_thread_list);
-   add_active_threads(Main_Control.reader_thread_pool, active_thread_list);
-   add_active_threads(Main_Control.worker_thread_pool, active_thread_list);
+   add_active_threads(Main_Control.listener_thread_pool, active_thread_list.get());
+   add_active_threads(Main_Control.reader_thread_pool, active_thread_list.get());
+   add_active_threads(Main_Control.worker_thread_pool, active_thread_list.get());
 
    // Sort the list
-   lPSortList(active_thread_list, "%I+", ST_name);
+   active_thread_list->sort<ocs::tom::asc<ST_name>>();
 
    DRETURN(active_thread_list);
+}
+
+/**
+ * @brief ocs_get_active_thread_list() for an untyped caller
+ *
+ * The GDI request data and the thread pool provider of the qconf procedures still take a raw list.
+ *
+ * @return as ocs_get_active_thread_list(); the caller owns the list
+ */
+lList *
+get_active_thread_list() {
+   return ocs_get_active_thread_list().release();
 }

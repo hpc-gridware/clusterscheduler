@@ -29,6 +29,10 @@
 #include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_userprj.h"
+#include "sgeobj/tom/ocs_tom_PR.h"
+#include "sgeobj/tom/ocs_tom_UU.h"
+
+#include "tom/ocs_List.h"
 
 #include "uti/ocs_UniqueFifo.h"
 #include "uti/sge_rmon_macros.h"
@@ -56,53 +60,88 @@ namespace {
     * qmaster's master share tree with combined_usage / m_share. */
    bool share_tree_dirty = true;
 
-   /* Spool one user by name. Skips silently if the user has been removed
-    * between mark_user_spool_dirty and the flush (qconf -duser race). */
+   /**
+    * @brief Spool one user by name
+    *
+    * Skips silently if the user has been removed between
+    * mark_user_spool_dirty and the flush (qconf -duser race).
+    *
+    * @param name the user
+    * @param gdi_session the session the change belongs to
+    */
    void spool_one_user(const std::string &name, uint64_t gdi_session) {
-      const lList *master_user_list = *ocs::DataStore::get_master_list(SGE_TYPE_USER);
-      lListElem *u = user_list_locate(master_user_list, name.c_str());
-      if (u == nullptr) {
-         return;
+      DENTER(TOP_LAYER);
+      const ocs::tom::ConstList<ocs::tom::UU> master_user_list(*ocs::DataStore::get_master_list(SGE_TYPE_USER));
+      const auto u = user_list_locate(master_user_list, name.c_str());
+      if (!u) {
+         DRETURN_VOID;
       }
       lList *answer_list = nullptr;
       sge_event_spool(&answer_list, 0, sgeE_USER_MOD, 0, 0, name.c_str(),
                       nullptr, nullptr, u, nullptr, nullptr, false, true, gdi_session);
       answer_list_output(&answer_list);
+      DRETURN_VOID;
    }
 
-   /* Spool one project by name. Skips silently if removed in the meantime. */
+   /**
+    * @brief Spool one project by name
+    *
+    * Skips silently if the project has been removed in the meantime.
+    *
+    * @param name the project
+    * @param gdi_session the session the change belongs to
+    */
    void spool_one_project(const std::string &name, uint64_t gdi_session) {
-      const lList *master_project_list = *ocs::DataStore::get_master_list(SGE_TYPE_PROJECT);
-      lListElem *p = prj_list_locate(master_project_list, name.c_str());
-      if (p == nullptr) {
-         return;
+      DENTER(TOP_LAYER);
+      const ocs::tom::ConstList<ocs::tom::PR> master_project_list(*ocs::DataStore::get_master_list(SGE_TYPE_PROJECT));
+      const auto p = prj_list_locate(master_project_list, name.c_str());
+      if (!p) {
+         DRETURN_VOID;
       }
       lList *answer_list = nullptr;
       sge_event_spool(&answer_list, 0, sgeE_PROJECT_MOD, 0, 0, name.c_str(),
                       nullptr, nullptr, p, nullptr, nullptr, false, true, gdi_session);
       answer_list_output(&answer_list);
+      DRETURN_VOID;
    }
 
-   /* Emit sgeE_USER_MOD for one user. Caller owns the event-master
-    * transaction. Skips silently if the user was removed since the mark. */
+   /**
+    * @brief Emit sgeE_USER_MOD for one user
+    *
+    * The caller owns the event-master transaction. Skips silently if the
+    * user was removed since the mark.
+    *
+    * @param name the user
+    * @param gdi_session the session the event belongs to
+    */
    void emit_one_user_event(const std::string &name, uint64_t gdi_session) {
-      const lList *master_user_list = *ocs::DataStore::get_master_list(SGE_TYPE_USER);
-      lListElem *u = user_list_locate(master_user_list, name.c_str());
-      if (u == nullptr) {
-         return;
+      DENTER(TOP_LAYER);
+      const ocs::tom::ConstList<ocs::tom::UU> master_user_list(*ocs::DataStore::get_master_list(SGE_TYPE_USER));
+      const auto u = user_list_locate(master_user_list, name.c_str());
+      if (!u) {
+         DRETURN_VOID;
       }
       sge_add_event(0, sgeE_USER_MOD, 0, 0, name.c_str(), nullptr, nullptr, u, gdi_session);
+      DRETURN_VOID;
    }
 
-   /* Emit sgeE_PROJECT_MOD for one project. Same contract as the user
-    * helper above. */
+   /**
+    * @brief Emit sgeE_PROJECT_MOD for one project
+    *
+    * Same contract as the user helper above.
+    *
+    * @param name the project
+    * @param gdi_session the session the event belongs to
+    */
    void emit_one_project_event(const std::string &name, uint64_t gdi_session) {
-      const lList *master_project_list = *ocs::DataStore::get_master_list(SGE_TYPE_PROJECT);
-      lListElem *p = prj_list_locate(master_project_list, name.c_str());
-      if (p == nullptr) {
-         return;
+      DENTER(TOP_LAYER);
+      const ocs::tom::ConstList<ocs::tom::PR> master_project_list(*ocs::DataStore::get_master_list(SGE_TYPE_PROJECT));
+      const auto p = prj_list_locate(master_project_list, name.c_str());
+      if (!p) {
+         DRETURN_VOID;
       }
       sge_add_event(0, sgeE_PROJECT_MOD, 0, 0, name.c_str(), nullptr, nullptr, p, gdi_session);
+      DRETURN_VOID;
    }
 }
 

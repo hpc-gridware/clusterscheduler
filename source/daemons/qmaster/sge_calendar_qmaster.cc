@@ -56,6 +56,12 @@
 #include "sgeobj/ocs_DataStore.h"
 #include "tom/ocs_Element.h"
 #include "sgeobj/tom/ocs_tom_QU.h"
+#include "sgeobj/tom/ocs_tom_AN.h"
+#include "sgeobj/tom/ocs_tom_AR.h"
+#include "sgeobj/tom/ocs_tom_CAL.h"
+#include "sgeobj/tom/ocs_tom_CQ.h"
+#include "sgeobj/tom/ocs_tom_CQU.h"
+#include "tom/ocs_List.h"
 
 #include "spool/sge_spooling.h"
 
@@ -78,12 +84,10 @@ void
 calendar_initalize_timer(monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
-   lListElem *cep;
-   lList *ppList = nullptr;
    lList *answer_list = nullptr;
-   const lList *master_calendar_list = *ocs::DataStore::get_master_list(SGE_TYPE_CALENDAR);
+   const ocs::tom::List<ocs::tom::CAL> master_calendar_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_CALENDAR));
 
-   for_each_rw (cep, master_calendar_list) {
+   for (const auto cep : master_calendar_list) {
       calendar_parse_year(cep, &answer_list);
       calendar_parse_week(cep, &answer_list);
       answer_list_output(&answer_list);
@@ -91,11 +95,10 @@ calendar_initalize_timer(monitoring_t *monitor) {
       ocs::gdi::Packet packet;
       ocs::gdi::Task task{};
       packet.gdi_session = ocs::SessionManager::GDI_SESSION_NONE;
-      calendar_update_queue_states(&packet, &task, cep, nullptr, nullptr, &ppList, monitor);
+      calendar_update_queue_states(&packet, &task, cep, nullptr, monitor);
    }
 
    lFreeList(&answer_list);
-   lFreeList(&ppList);
 
    DRETURN_VOID;
 }
@@ -107,8 +110,8 @@ calendar_initalize_timer(monitoring_t *monitor) {
  * @param packet the client request
  * @param task the GDI task being answered
  * @param alpp receives messages for the caller
- * @param new_cal see the declaration
- * @param cep see the declaration
+ * @param raw_new_cal the calendar being built (CAL_Type), checked
+ * @param raw_cep the calendar as sent by the client (CAL_Type), checked
  * @param add 1 for add, 0 for modify
  * @param ruser the requesting user
  * @param rhost the requesting host
@@ -119,13 +122,16 @@ calendar_initalize_timer(monitoring_t *monitor) {
  * @return 0 on success
  */
 int
-calendar_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *new_cal, lListElem *cep, int add,
-             const char *ruser, const char *rhost, gdi_object_t *object,
+calendar_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *raw_new_cal, lListElem *raw_cep,
+             int add, const char *ruser, const char *rhost, gdi_object_t *object,
              ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
-   const lList *master_ar_list = *ocs::DataStore::get_master_list(SGE_TYPE_AR);
-   const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
+   // the signature is fixed by gdi_object_t::modifier; both elements are calendars (request data is checked)
+   const ocs::tom::Element<ocs::tom::CAL> new_cal(raw_new_cal);
+   const ocs::tom::Element<ocs::tom::CAL> cep(raw_cep);
+   const ocs::tom::ConstList<ocs::tom::AR> master_ar_list(*ocs::DataStore::get_master_list(SGE_TYPE_AR));
+   const ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list(*ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE));
    const char *cal_name;
 
    /* ---- CAL_name cannot get changed - we just ignore it */
@@ -153,7 +159,7 @@ calendar_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lList
    }
 
    if (add != 1) {
-      for_each_ep_lv(cqueue, master_cqueue_list) {
+      for (const auto cqueue : master_cqueue_list) {
          for (ocs::tom::ConstElement<ocs::tom::QU> queue : ocs::tom::get<CQ_qinstances>(cqueue)) {
             const char *q_cal = ocs::tom::get<QU_calendar>(queue);
             if ((q_cal != nullptr) && (strcmp(cal_name, q_cal) == 0)) {
@@ -184,6 +190,7 @@ DRETURN(STATUS_EUNKNOWN);
  */
 int
 calendar_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *cep, gdi_object_t *object) {
+   // the signature is fixed by gdi_object_t::writer; spool_write_object() is generic over the object type
    DENTER(TOP_LAYER);
 
    lList *answer_list = nullptr;
@@ -211,12 +218,13 @@ calendar_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lLi
  * @return STATUS_OK on success
  */
 int
-sge_del_calendar(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *cep, lList **alpp, char *ruser, char *rhost) {
+sge_del_calendar(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::ConstElement<ocs::tom::CAL> cep,
+                 lList **alpp, char *ruser, char *rhost) {
    DENTER(TOP_LAYER);
 
    const char *cal_name;
-   lList **master_calendar_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_CALENDAR);
-   const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
+   const ocs::tom::List<ocs::tom::CAL> master_calendar_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_CALENDAR));
+   const ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list(*ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE));
 
    if (!cep || !ruser || !rhost) {
       CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, __func__);
@@ -232,7 +240,7 @@ sge_del_calendar(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *cep,
    }
    cal_name = ocs::tom::get<CAL_name>(cep);
 
-   if (!ocs::tom::find_first_rw<CAL_name>(*master_calendar_list, cal_name)) {
+   if (!master_calendar_list.find_first<CAL_name>(cal_name)) {
       ERROR(MSG_SGETEXT_DOESNOTEXIST_SS, MSG_OBJ_CALENDAR, cal_name);
       answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EEXIST);
@@ -243,7 +251,9 @@ sge_del_calendar(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *cep,
       lList *local_answer_list = nullptr;
 
       if (calendar_is_referenced(cep, &local_answer_list, master_cqueue_list)) {
-         const lListElem *answer = lFirst(local_answer_list);
+         // the answer list API stays raw by design
+         const ocs::tom::ConstElement<ocs::tom::AN> answer =
+                 ocs::tom::ConstList<ocs::tom::AN>(local_answer_list).front();
 
          ERROR("denied: %s", ocs::tom::get<AN_text>(answer));
          answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC,
@@ -258,11 +268,27 @@ sge_del_calendar(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *cep,
 
    sge_event_spool(alpp, 0, sgeE_CALENDAR_DEL, 0, 0, cal_name, nullptr, nullptr,
                    nullptr, nullptr, nullptr, true, true,packet->gdi_session);
-   ocs::tom::erase<CAL_name>(master_calendar_list, cal_name);
+   master_calendar_list.erase<CAL_name>(cal_name);
 
    INFO(MSG_SGETEXT_REMOVEDFROMLIST_SSSS, ruser, rhost, cal_name, MSG_OBJ_CALENDAR);
    answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
    DRETURN(STATUS_OK);
+}
+
+/**
+ * @brief sge_del_calendar() for an untyped caller
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param cep the calendar (CAL_Type), checked
+ * @param alpp receives messages for the caller
+ * @param ruser the requesting user
+ * @param rhost the requesting host
+ * @return as sge_del_calendar()
+ */
+int
+sge_del_calendar(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *cep, lList **alpp, char *ruser,
+                 char *rhost) {
+   return sge_del_calendar(packet, task, ocs::tom::ConstElement<ocs::tom::CAL>(cep), alpp, ruser, rhost);
 }
 
 /**
@@ -278,15 +304,14 @@ sge_del_calendar(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *cep,
 void sge_calendar_event_handler(te_event_t anEvent, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
-   lListElem *cep;
    const char *cal_name = te_get_alphanumeric_key(anEvent);
-   lList *ppList = nullptr;
 
    MONITOR_WAIT_TIME(SGE_LOCK(LOCK_GLOBAL, LOCK_WRITE), monitor);
 
-   const lList *master_calendar_list = *ocs::DataStore::get_master_list(SGE_TYPE_CALENDAR);
+   const ocs::tom::List<ocs::tom::CAL> master_calendar_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_CALENDAR));
 
-   if (!(cep = ocs::tom::find_first_rw<CAL_name>(master_calendar_list, cal_name))) {
+   const ocs::tom::Element<ocs::tom::CAL> cep = master_calendar_list.find_first<CAL_name>(cal_name);
+   if (!cep) {
       ERROR(MSG_EVE_TE4CAL_S, cal_name);
       SGE_UNLOCK(LOCK_GLOBAL, LOCK_WRITE);
       DRETURN_VOID;
@@ -304,34 +329,28 @@ void sge_calendar_event_handler(te_event_t anEvent, monitoring_t *monitor) {
    ocs::gdi::Packet packet;
    ocs::gdi::Task task;
    packet.gdi_session = ocs::SessionManager::GDI_SESSION_NONE;
-   calendar_update_queue_states(&packet, &task, cep, nullptr, nullptr, &ppList, monitor);
+   calendar_update_queue_states(&packet, &task, cep, nullptr, monitor);
 
    SGE_UNLOCK(LOCK_GLOBAL, LOCK_WRITE);
 
-   lFreeList(&ppList);
    sge_free(&cal_name);
 
    DRETURN_VOID;
 } /* sge_calendar_event_handler() */
 
-/****** qmaster/sge_calendar_qmaster/calendar_arm_timer() **********************
-*  NAME
-*     calendar_arm_timer() -- schedule the next state change of a calendar
-*
-*  FUNCTION
-*     Adds a one time event that makes the calendar be re-evaluated when its next
-*     state change is due. Any event that is still pending for the calendar is
-*     removed first: delivering an event recomputes the state of every queue
-*     instance using the calendar, so duplicates would repeat that sweep once per
-*     event, and the callers cannot tell whether a timer has been armed already.
-*
-*  INPUTS
-*     const char *cal_name - name of the calendar
-*     uint64_t when        - time of the next state change, must not be 0
-*
-*  NOTES
-*     MT-NOTE: calendar_arm_timer() is MT safe
-*******************************************************************************/
+/** @brief Schedule the next state change of a calendar
+ *
+ * Adds a one time event that makes the calendar be re-evaluated when its next
+ * state change is due. Any event that is still pending for the calendar is
+ * removed first: delivering an event recomputes the state of every queue
+ * instance using the calendar, so duplicates would repeat that sweep once per
+ * event, and the callers cannot tell whether a timer has been armed already.
+ *
+ * @param cal_name name of the calendar
+ * @param when time of the next state change, must not be 0
+ *
+ * @note MT-NOTE: calendar_arm_timer() is MT safe
+ */
 void
 calendar_arm_timer(const char *cal_name, uint64_t when) {
    DENTER(TOP_LAYER);
@@ -354,27 +373,22 @@ calendar_arm_timer(const char *cal_name, uint64_t when) {
  * @param packet the client request
  * @param task the GDI task being answered
  * @param cep the calendar
- * @param old_cep the calendar as it was, or nullptr when a timer triggered this
- * @param object the table entry for calendars, or nullptr when a timer triggered this
- * @param ppList receives information for post processing
+ * @param old_cep the calendar as it was, or an empty handle when a timer triggered this
  * @param monitor for monitoring qmaster threads
  * @return 0 on success
  */
-int calendar_update_queue_states(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *cep, lListElem *old_cep, gdi_object_t *object,
-                                 lList **ppList, monitoring_t *monitor) {
+int
+calendar_update_queue_states(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Element<ocs::tom::CAL> cep,
+                             const ocs::tom::ConstElement<ocs::tom::CAL> old_cep, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
    const char *cal_name = ocs::tom::get<CAL_name>(cep);
-   lList *state_changes_list = nullptr;
-   uint32_t state;
-   uint64_t when = 0;
-   sge_add_event(0, old_cep != nullptr ? sgeE_CALENDAR_MOD : sgeE_CALENDAR_ADD, 0, 0, cal_name, nullptr, nullptr, cep, packet->gdi_session);
+   sge_add_event(0, old_cep != nullptr ? sgeE_CALENDAR_MOD : sgeE_CALENDAR_ADD, 0, 0, cal_name, nullptr, nullptr, cep,
+                 packet->gdi_session);
 
-   state = calender_state_changes(cep, &state_changes_list, &when, nullptr);
+   auto [state, when, state_changes_list] = calender_state_changes(cep, nullptr);
 
-   qinstance_change_state_on_calendar_all(cal_name, state, state_changes_list, monitor, packet->gdi_session);
-
-   lFreeList(&state_changes_list);
+   qinstance_change_state_on_calendar_all(cal_name, state, state_changes_list.get(), monitor, packet->gdi_session);
 
    if (when != 0) {
       DSTRING_STATIC(when_dstr, 64);
@@ -389,3 +403,22 @@ int calendar_update_queue_states(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
    DRETURN(0);
 }
 
+/** @brief calendar_update_queue_states() as the gdi_object_t::on_success callback of calendars
+ *
+ * The signature is fixed by the gdi_object_t table in sge_c_gdi.cc.
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param cep the calendar (CAL_Type), checked
+ * @param old_cep the calendar as it was (CAL_Type), checked, or nullptr when it was added
+ * @param object the table entry for calendars, unused
+ * @param ppList receives information for post processing, unused
+ * @param monitor for monitoring qmaster threads
+ * @return 0 on success
+ */
+int
+calendar_update_queue_states(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *cep, lListElem *old_cep,
+                             gdi_object_t *object, lList **ppList, monitoring_t *monitor) {
+   return calendar_update_queue_states(packet, task, ocs::tom::Element<ocs::tom::CAL>(cep),
+                                       ocs::tom::ConstElement<ocs::tom::CAL>(old_cep), monitor);
+}

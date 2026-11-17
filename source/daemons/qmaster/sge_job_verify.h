@@ -37,8 +37,14 @@
  * @brief Verifying a submitted job before it is accepted
  */
 
+#include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_CE.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
+
 int
-sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp,
+sge_job_verify_adjust(ocs::tom::Element<ocs::tom::JB> jep, lList **alpp, lList **lpp,
                       ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monitor);
 bool
-job_verify_adjust_request_set(lList **alpp, const lListElem *jep, const lList *master_centry_list);
+job_verify_adjust_request_set(lList **alpp, ocs::tom::ConstElement<ocs::tom::JB> jep,
+                              ocs::tom::ConstList<ocs::tom::CE> master_centry_list);

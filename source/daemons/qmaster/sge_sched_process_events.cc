@@ -51,6 +51,8 @@
 
 #include "sgeobj/sge_schedd_conf.h"
 #include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_ET.h"
+#include "sgeobj/tom/ocs_tom_REP.h"
 
 #include "mir/sge_mirror.h"
 #include "evc/sge_event_client.h"
@@ -81,13 +83,17 @@ void event_update_func(uint32_t ec_id, lList **alpp, lList *event_list, void *ar
 
    sge_mutex_lock("event_control_mutex", __func__, __LINE__, &Scheduler_Control.mutex);
    
+   // the report list of an event delivery, its first report carries the events (REP_list, ET_Type)
+   const auto report = ocs::tom::List<ocs::tom::REP>::from_typed(event_list).front();
    if (Scheduler_Control.new_events != nullptr) {
+      // the storage in Scheduler_Control is process-lifetime and stays untyped; the events move in
       lList *events = nullptr;
-      ocs::tom::exchange<REP_list>(lFirstRW(event_list), &(events));
-      lAddList(Scheduler_Control.new_events, &events);
+      ocs::tom::exchange<REP_list>(report, &events);
+      ocs::tom::List<ocs::tom::ET>::from_typed(Scheduler_Control.new_events)
+              .splice(ocs::tom::ListPtr<ocs::tom::ET>::from_typed(events));
    } else {
-      ocs::tom::exchange<REP_list>(lFirstRW(event_list), &(Scheduler_Control.new_events));
-   }   
+      ocs::tom::exchange<REP_list>(report, &(Scheduler_Control.new_events));
+   }
    
    Scheduler_Control.triggered = true;
 

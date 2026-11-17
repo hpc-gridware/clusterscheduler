@@ -44,14 +44,25 @@
 
 #include "sge_c_gdi.h"
 #include "sge_qmaster_timed_event.h"
+#include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "tom/ocs_Transitional.h"
+#include "sgeobj/tom/ocs_tom_EH.h"
+#include "sgeobj/tom/ocs_tom_HGRP.h"
+#include "sgeobj/tom/ocs_tom_HR.h"
+#include "sgeobj/tom/ocs_tom_LR.h"
 
 void
 sge_automatic_host_cleanup_handler(te_event_t anEvent, monitoring_t *monitor);
 
 /* funtions called via gdi and inside the qmaster */
 int
-sge_del_host(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *, lList **, char *, char *, ocs::gdi::Target traget,
-             const lList *master_hGroup_List, monitoring_t *monitor);
+sge_del_host(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ConstElement<ocs::tom::EH> hep, lList **alpp,
+             char *ruser, char *rhost, ocs::gdi::Target target, ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list,
+             monitoring_t *monitor);
+OCS_TRANSITIONAL int sge_del_host(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *hep, lList **alpp,
+                                  char *ruser, char *rhost, ocs::gdi::Target target, const lList *master_hgroup_list,
+                                  monitoring_t *monitor);
 
 int
 host_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *ep, gdi_object_t *object);
@@ -72,7 +83,7 @@ host_sync_exec_hostgroup(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitor
                          bool send_events);
 
 void
-sge_mark_unheard(lListElem *hep, uint64_t gdi_session);
+sge_mark_unheard(ocs::tom::Element<ocs::tom::EH> hep, uint64_t gdi_session);
 
 int
 sge_add_host_of_type(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const char *hostname, ocs::gdi::Target target, monitoring_t *monitor);
@@ -81,30 +92,37 @@ void
 sge_gdi_kill_exechost(ocs::gdi::Packet *packet, ocs::gdi::Task *task);
 
 void
-sge_update_load_values(const char *rhost, const char *real_host, lList *lp, uint64_t gdi_session);
+sge_update_load_values(const char *rhost, const char *real_host, ocs::tom::List<ocs::tom::LR> lp, uint64_t gdi_session);
+OCS_TRANSITIONAL void sge_update_load_values(const char *rhost, const char *real_host, lList *lp, uint64_t gdi_session);
 
 void
 sge_load_value_cleanup_handler(te_event_t anEvent, monitoring_t *monitor);
 
 int
-sge_execd_startedup(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *hep, lList **alpp, char *ruser, char *rhost,
-                    ocs::gdi::Target target, monitoring_t *monitor, bool is_restart);
+sge_execd_startedup(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ConstElement<ocs::tom::EH> hep,
+                    lList **alpp, char *ruser, char *rhost, ocs::gdi::Target target, monitoring_t *monitor,
+                    bool is_restart);
+OCS_TRANSITIONAL int sge_execd_startedup(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *hep, lList **alpp,
+                                         char *ruser, char *rhost, ocs::gdi::Target target, monitoring_t *monitor,
+                                         bool is_restart);
 
 uint32_t
-load_report_interval(lListElem *hep);
+load_report_interval(ocs::tom::Element<ocs::tom::EH> hep);
 
 uint64_t
-host_unheard_timeout(lListElem *hep);
+host_unheard_timeout(ocs::tom::Element<ocs::tom::EH> hep);
 
 bool
-host_list_add_missing_href(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const lList *this_list, lList **answer_list,
-                           const lList *href_list, monitoring_t *monitor);
+host_list_add_missing_href(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ConstList<ocs::tom::EH> this_list,
+                           lList **answer_list, ocs::tom::ConstList<ocs::tom::HR> href_list, monitoring_t *monitor);
 
 void
-host_diff_projects(const lListElem *new_host, const lListElem *old, lList **new_prj, lList **old_prj);
+host_diff_projects(ocs::tom::ConstElement<ocs::tom::EH> new_host, ocs::tom::ConstElement<ocs::tom::EH> old,
+                   lList **new_prj, lList **old_prj);
 
 void
-host_diff_usersets(const lListElem *new_host, const lListElem *old, lList **new_acl, lList **old_acl);
+host_diff_usersets(ocs::tom::ConstElement<ocs::tom::EH> new_host, ocs::tom::ConstElement<ocs::tom::EH> old,
+                   lList **new_acl, lList **old_acl);
 
 
 void

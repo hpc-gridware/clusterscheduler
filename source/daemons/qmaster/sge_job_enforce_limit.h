@@ -37,6 +37,10 @@
  * @brief Enforcing the resource limits of running jobs
  */
 
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_JAT.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
+
 void
 sge_job_enfoce_limit_handler(te_event_t event, monitoring_t *monitor);
 
@@ -50,7 +54,7 @@ void
 sge_host_remove_enforce_limit_trigger(const char *hostname);
 
 void
-sge_job_add_enforce_limit_trigger(lListElem *jep, lListElem *jatep);
+sge_job_add_enforce_limit_trigger(ocs::tom::Element<ocs::tom::JB> jep, ocs::tom::Element<ocs::tom::JAT> jatep);
 
 void
 sge_job_remove_enforce_limit_trigger(uint32_t jid, uint32_t ja_task_id);

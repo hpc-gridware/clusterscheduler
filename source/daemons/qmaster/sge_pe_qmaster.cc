@@ -37,6 +37,7 @@
  */
 #include <cstdio>
 #include <cstring>
+#include <initializer_list>
 
 #include "uti/config_file.h"
 #include "uti/sge_bitfield.h"
@@ -51,8 +52,13 @@
 #include "sgeobj/sge_utility.h"
 #include "sgeobj/ocs_DataStore.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_AR.h"
+#include "sgeobj/tom/ocs_tom_CQ.h"
 #include "sgeobj/tom/ocs_tom_JAT.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
 #include "sgeobj/tom/ocs_tom_JG.h"
+#include "sgeobj/tom/ocs_tom_PE.h"
 #include "sgeobj/tom/ocs_tom_US.h"
 
 #include "sched/sge_job_schedd.h"
@@ -72,7 +78,8 @@
 
 static char object_name[] = "parallel environment";
 
-static void pe_update_categories(const lListElem *new_pe, const lListElem *old_pe, uint64_t gdi_session);
+static void pe_update_categories(ocs::tom::ConstElement<ocs::tom::PE> new_pe,
+                                 ocs::tom::ConstElement<ocs::tom::PE> old_pe, uint64_t gdi_session);
 
 /** @brief Apply one attribute change to a parallel environment
  *
@@ -101,8 +108,8 @@ pe_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *
 
    int ret;
    const char *s, *pe_name;
-   const lList *master_userset_list = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
-   const lList *master_ar_list = *ocs::DataStore::get_master_list(SGE_TYPE_AR);
+   const ocs::tom::ConstList<ocs::tom::US> master_userset_list(*ocs::DataStore::get_master_list(SGE_TYPE_USERSET));
+   const ocs::tom::ConstList<ocs::tom::AR> master_ar_list(*ocs::DataStore::get_master_list(SGE_TYPE_AR));
 
    /* ---- PE_name */
    if (add) {
@@ -164,8 +171,8 @@ pe_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *
 
    if (ocs::tom::has<PE_xuser_list>(pe) ||
        ocs::tom::has<PE_user_list>(pe)) {
-      if (multiple_occurances(alpp, ocs::tom::get<PE_user_list>(new_pe), ocs::tom::get<PE_xuser_list>(new_pe), US_name, pe_name,
-                              object_name)) {
+      if (multiple_occurances(alpp, ocs::tom::get<PE_user_list>(new_pe), ocs::tom::get<PE_xuser_list>(new_pe), US_name,
+                              pe_name, object_name)) {
          goto ERROR;
       }
    }
@@ -212,7 +219,7 @@ pe_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *
 
    /* -------- PE_resource_utilization */
    if (add) {
-      if (pe_set_slots_used(new_pe, 0)) {
+      if (pe_set_slots_used(ocs::tom::Element<ocs::tom::PE>(new_pe), 0)) {
          ERROR(SFNMAX, MSG_MEM_MALLOC);
          answer_list_add(alpp, SGE_EVENT, STATUS_EMALLOC, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EMALLOC);
@@ -268,15 +275,16 @@ pe_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem
  * @param monitor for monitoring qmaster threads
  * @return 0 on success
  */
-int pe_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList,
-               monitoring_t *monitor) {
+int pe_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object,
+               lList **ppList, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
    const char *pe_name;
 
    pe_name = ocs::tom::get<PE_name>(ep);
 
-   pe_update_categories(ep, old_ep, packet->gdi_session);
+   pe_update_categories(ocs::tom::ConstElement<ocs::tom::PE>(ep), ocs::tom::ConstElement<ocs::tom::PE>(old_ep),
+                        packet->gdi_session);
 
    sge_add_event(0, old_ep ? sgeE_PE_MOD : sgeE_PE_ADD, 0, 0, pe_name, nullptr, nullptr, ep, packet->gdi_session);
 
@@ -294,15 +302,13 @@ int pe_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lL
  * @return STATUS_OK on success
  */
 int
-sge_del_pe(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *pep, lList **alpp, char *ruser, char *rhost) {
+sge_del_pe(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::ConstElement<ocs::tom::PE> pep,
+           lList **alpp, char *ruser, char *rhost) {
    DENTER(TOP_LAYER);
 
-   int pos;
-   lListElem *ep = nullptr;
-   const char *pe = nullptr;
-   const lList *master_job_list = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
-   const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
-   lList *master_pe_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_PE);
+   const ocs::tom::ConstList<ocs::tom::JB> master_job_list(*ocs::DataStore::get_master_list(SGE_TYPE_JOB));
+   const ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list(*ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE));
+   const ocs::tom::List<ocs::tom::PE> master_pe_list(*ocs::DataStore::get_master_list_rw(SGE_TYPE_PE));
 
    if (!pep || !ruser || !rhost) {
       CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, __func__);
@@ -310,20 +316,21 @@ sge_del_pe(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *pep, lList
       DRETURN(STATUS_EUNKNOWN);
    }
 
-   if ((pos = lGetPosViaElem(pep, PE_name, SGE_NO_ABORT)) < 0) {
+   if (!ocs::tom::has<PE_name>(pep)) {
       ERROR(MSG_SGETEXT_MISSINGCULLFIELD_SS, lNm2Str(PE_name), __func__);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
 
-   pe = lGetPosString(pep, pos);
+   const char *pe = ocs::tom::get<PE_name>(pep);
    if (!pe) {
       ERROR(MSG_SGETEXT_NULLPTRPASSED_S, __func__);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
 
-   if ((ep = pe_list_locate(master_pe_list, pe)) == nullptr) {
+   const auto ep = pe_list_locate(master_pe_list, pe);
+   if (!ep) {
       ERROR(MSG_SGETEXT_DOESNOTEXIST_SS, object_name, pe);
       answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EEXIST);
@@ -357,11 +364,26 @@ sge_del_pe(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *pep, lList
    pe_update_categories(nullptr, ep, packet->gdi_session);
 
    /* delete found pe element */
-   lRemoveElem(master_pe_list, &ep);
+   master_pe_list.erase(ep);
 
    INFO(MSG_SGETEXT_REMOVEDFROMLIST_SSSS, ruser, rhost, pe, object_name);
    answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
    DRETURN(STATUS_OK);
+}
+
+/** @brief sge_del_pe() for an untyped caller
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param pep the parallel environment (`PE_Type`)
+ * @param alpp receives messages for the caller
+ * @param ruser the requesting user
+ * @param rhost the requesting host
+ * @return see the typed form
+ */
+int
+sge_del_pe(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *pep, lList **alpp, char *ruser, char *rhost) {
+   return sge_del_pe(packet, task, ocs::tom::ConstElement<ocs::tom::PE>(pep), alpp, ruser, rhost);
 }
 
 /** @brief Rebuild every parallel environment's slot booking from the running jobs
@@ -369,21 +391,19 @@ sge_del_pe(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *pep, lList
  * @param pe_list the parallel environments
  */
 void
-debit_all_jobs_from_pes(lList *pe_list) {
+debit_all_jobs_from_pes(const ocs::tom::List<ocs::tom::PE> pe_list) {
    DENTER(TOP_LAYER);
-   const char *pe_name;
-   int slots;
-   const lList *master_job_list = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
+   const ocs::tom::ConstList<ocs::tom::JB> master_job_list(*ocs::DataStore::get_master_list(SGE_TYPE_JOB));
 
-   for_each_rw_lv(pep, pe_list) {
+   for (const auto pep : pe_list) {
       pe_set_slots_used(pep, 0);
-      pe_name = ocs::tom::get<PE_name>(pep);
+      const char *pe_name = ocs::tom::get<PE_name>(pep);
       DPRINTF("debiting from pe %s:\n", pe_name);
 
-      for_each_ep_lv(jep, master_job_list) {
+      for (const auto jep : master_job_list) {
          if (ocs::tom::get<JB_pe>(jep) != nullptr) { /* is job  parallel */
-            slots = 0;
-            for (ocs::tom::ConstElement<ocs::tom::JAT> jatep : ocs::tom::get<JB_ja_tasks>(jep)) {
+            int slots = 0;
+            for (const auto jatep : ocs::tom::get<JB_ja_tasks>(jep)) {
                if ((ISSET(ocs::tom::get<JAT_status>(jatep), JRUNNING) ||      /* is job running  */
                     ISSET(ocs::tom::get<JAT_status>(jatep), JTRANSFERING)) && /* or transfering  */
                    !sge_strnullcmp(pe_name, ocs::tom::get<JAT_granted_pe>(jatep))) {/* this pe         */
@@ -397,50 +417,103 @@ debit_all_jobs_from_pes(lList *pe_list) {
    DRETURN_VOID;
 }
 
+/** @brief debit_all_jobs_from_pes() for an untyped caller
+ *
+ * @param pe_list the parallel environments
+ */
+void
+debit_all_jobs_from_pes(lList *pe_list) {
+   debit_all_jobs_from_pes(ocs::tom::List<ocs::tom::PE>(pe_list));
+}
+
+/**
+ * @brief Add the names of the usersets of a PE's user_lists and xuser_lists to a list, each once
+ *
+ * @param pe the PE (PE_Type)
+ * @param acl the list of userset references (US_Type), created when it is empty and a name is added
+ */
+static void
+ocs_pe_collect_usersets(const ocs::tom::ConstElement<ocs::tom::PE> pe, ocs::tom::ListPtr<ocs::tom::US> &acl) {
+   DENTER(TOP_LAYER);
+
+   for (const auto user_list : {ocs::tom::get<PE_user_list>(pe), ocs::tom::get<PE_xuser_list>(pe)}) {
+      for (const auto ep : user_list) {
+         const char *u = ocs::tom::get<US_name>(ep);
+         if (!acl) {
+            acl = ocs::tom::ListPtr<ocs::tom::US>::create("");
+         }
+         if (!acl->find_first<US_name>(u)) {
+            acl->emplace_back<US_name>(u);
+         }
+      }
+   }
+
+   DRETURN_VOID;
+}
+
 /**
  * @brief Diff old/new PE usersets
  *
  * A diff new/old is made regarding PE acl/xacl.
  * Userset references are returned in new_acl/old_acl.
+ * Names in both lists are removed from both; a list that becomes empty then is freed, as lDiffListStr() did.
  *
- * @param new_pe New PE (PE_Type)
- * @param old_pe Old PE (PE_Type)
- * @param new_acl New userset references (US_Type)
- * @param old_acl Old userset references (US_Type)
+ * @param new_pe New PE (PE_Type), or an empty handle
+ * @param old_pe Old PE (PE_Type), or an empty handle
+ * @param new_acl New userset references (US_Type), or nullptr
+ * @param old_acl Old userset references (US_Type), or nullptr
  *
  * @note MT-NOTE: pe_diff_usersets() is not MT safe
  */
 void
-pe_diff_usersets(const lListElem *new_pe, const lListElem *old_pe, lList **new_acl, lList **old_acl) {
-   const char *u;
+pe_diff_usersets(const ocs::tom::ConstElement<ocs::tom::PE> new_pe, const ocs::tom::ConstElement<ocs::tom::PE> old_pe,
+                 ocs::tom::ListPtr<ocs::tom::US> *new_acl, ocs::tom::ListPtr<ocs::tom::US> *old_acl) {
+   DENTER(TOP_LAYER);
 
    if (old_pe && old_acl) {
-      for (ocs::tom::ConstElement<ocs::tom::US> ep : ocs::tom::get<PE_user_list>(old_pe)) {
-         u = ocs::tom::get<US_name>(ep);
-         if (!ocs::tom::find_first<US_name>(*old_acl, u))
-            ocs::tom::emplace_back<US_name>(old_acl, u);
-      }
-      for (ocs::tom::ConstElement<ocs::tom::US> ep : ocs::tom::get<PE_xuser_list>(old_pe)) {
-         u = ocs::tom::get<US_name>(ep);
-         if (!ocs::tom::find_first<US_name>(*old_acl, u))
-            ocs::tom::emplace_back<US_name>(old_acl, u);
-      }
+      ocs_pe_collect_usersets(old_pe, *old_acl);
    }
 
    if (new_pe && new_acl) {
-      for (ocs::tom::ConstElement<ocs::tom::US> ep : ocs::tom::get<PE_user_list>(new_pe)) {
-         u = ocs::tom::get<US_name>(ep);
-         if (!ocs::tom::find_first<US_name>(*new_acl, u))
-            ocs::tom::emplace_back<US_name>(new_acl, u);
-      }
-      for (ocs::tom::ConstElement<ocs::tom::US> ep : ocs::tom::get<PE_xuser_list>(new_pe)) {
-         u = ocs::tom::get<US_name>(ep);
-         if (!ocs::tom::find_first<US_name>(*new_acl, u))
-            ocs::tom::emplace_back<US_name>(new_acl, u);
+      ocs_pe_collect_usersets(new_pe, *new_acl);
+   }
+
+   if (new_acl != nullptr && old_acl != nullptr && *new_acl && *old_acl) {
+      const std::size_t new_size = (*new_acl)->size();
+      (*new_acl)->remove_common<US_name>(**old_acl);
+      if ((*new_acl)->size() != new_size) {
+         // lDiffListStr() freed a list that a removal emptied
+         if ((*new_acl)->empty()) {
+            new_acl->reset();
+         }
+         if ((*old_acl)->empty()) {
+            old_acl->reset();
+         }
       }
    }
 
-   lDiffListStr(US_name, new_acl, old_acl);
+   DRETURN_VOID;
+}
+
+/** @brief pe_diff_usersets() for an untyped caller
+ *
+ * @param new_pe New PE (PE_Type)
+ * @param old_pe Old PE (PE_Type)
+ * @param new_acl New userset references (US_Type), or nullptr
+ * @param old_acl Old userset references (US_Type), or nullptr
+ */
+void
+pe_diff_usersets(const lListElem *new_pe, const lListElem *old_pe, lList **new_acl, lList **old_acl) {
+   auto new_list = ocs::tom::ListPtr<ocs::tom::US>(new_acl != nullptr ? *new_acl : nullptr);
+   auto old_list = ocs::tom::ListPtr<ocs::tom::US>(old_acl != nullptr ? *old_acl : nullptr);
+   pe_diff_usersets(ocs::tom::ConstElement<ocs::tom::PE>(new_pe), ocs::tom::ConstElement<ocs::tom::PE>(old_pe),
+                    new_acl != nullptr ? &new_list : nullptr, old_acl != nullptr ? &old_list : nullptr);
+   if (new_acl != nullptr) {
+      *new_acl = new_list.release();
+   }
+   if (old_acl != nullptr) {
+      *old_acl = old_list.release();
+   }
 }
 
 
@@ -450,18 +523,22 @@ pe_diff_usersets(const lListElem *new_pe, const lListElem *old_pe, lList **new_a
  * The userset information wrts categories is updated based
  *  on new/old PE configuration and events are sent upon changes.
  *
- * @param new_pe New PE (PE_Type)
- * @param old_pe Old PE (PE_Type)
+ * @param new_pe New PE (PE_Type), or an empty handle
+ * @param old_pe Old PE (PE_Type), or an empty handle
+ * @param gdi_session the GDI session of the request, for the events
  *
  * @note MT-NOTE: pe_update_categories() is not MT safe
  */
 static void
-pe_update_categories(const lListElem *new_pe, const lListElem *old_pe, uint64_t gdi_session) {
-   lList *old_lp = nullptr, *new_lp = nullptr;
+pe_update_categories(const ocs::tom::ConstElement<ocs::tom::PE> new_pe,
+                     const ocs::tom::ConstElement<ocs::tom::PE> old_pe, const uint64_t gdi_session) {
+   DENTER(TOP_LAYER);
+
+   ocs::tom::ListPtr<ocs::tom::US> old_lp;
+   ocs::tom::ListPtr<ocs::tom::US> new_lp;
 
    pe_diff_usersets(new_pe, old_pe, &new_lp, &old_lp);
-   userset_update_categories(new_lp, old_lp, gdi_session);
-   lFreeList(&old_lp);
-   lFreeList(&new_lp);
-}
+   userset_update_categories(*new_lp, *old_lp, gdi_session);
 
+   DRETURN_VOID;
+}

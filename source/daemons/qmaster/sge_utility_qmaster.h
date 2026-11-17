@@ -41,6 +41,9 @@
 #include "cull/cull.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_daemonize.h"
+#include "tom/ocs_Element.h"
+#include "tom/ocs_Transitional.h"
+#include "sgeobj/tom/ocs_tom_AR.h"
 
 int attr_mod_procedure(lList **alpp, lListElem *qep, lListElem *new_queue, int nm, const char *attr_name, const char *variables[]);
 
@@ -74,4 +77,6 @@ bool attr_mod_sub_list(lList **alpp, lListElem *this_elem, int this_elem_name, i
                        const char *sub_list_name, const char *object_name, int no_info, bool *changed);
 
 bool
-attr_mod_obj_binding(lList **alpp, lListElem *this_elem, const lListElem *delta_elem);
+attr_mod_obj_binding(lList **alpp, ocs::tom::Element<ocs::tom::AR> new_ar, ocs::tom::ConstElement<ocs::tom::AR> ar);
+
+OCS_TRANSITIONAL bool attr_mod_obj_binding(lList **alpp, lListElem *new_ar, const lListElem *ar);

@@ -32,6 +32,8 @@
 #include "sgeobj/sge_utility.h"
 #include "sgeobj/ocs_DataStore.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_RL.h"
 #include "sgeobj/tom/ocs_tom_ST.h"
 #include "sgeobj/tom/ocs_tom_US.h"
 
@@ -90,7 +92,7 @@ role_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem
    // ---- RL_user_list: verify all referenced usersets exist, then apply
    if (ocs::tom::has<RL_user_list>(ep)) {
       normalize_sublist(ep, RL_user_list);
-      const lList *master_userset_list = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
+      const ocs::tom::ConstList<ocs::tom::US> master_userset_list(*ocs::DataStore::get_master_list(SGE_TYPE_USERSET));
       if (userset_list_validate_acl_list(ocs::tom::get<RL_user_list>(ep), alpp, master_userset_list) != STATUS_OK) {
          // answer list already filled by userset_list_validate_acl_list()
          DRETURN(STATUS_EUNKNOWN);
@@ -102,8 +104,8 @@ role_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem
    // ---- RL_parent_role_list: reject self-reference and unknown parents, then apply
    if (ocs::tom::has<RL_parent_role_list>(ep)) {
       normalize_sublist(ep, RL_parent_role_list);
-      const lList *master_role_list = *ocs::DataStore::get_master_list(SGE_TYPE_RL);
-      for (ocs::tom::ConstElement<ocs::tom::ST> parent_ep : ocs::tom::get<RL_parent_role_list>(ep)) {
+      const ocs::tom::ConstList<ocs::tom::RL> master_role_list(*ocs::DataStore::get_master_list(SGE_TYPE_RL));
+      for (const ocs::tom::ConstElement<ocs::tom::ST> parent_ep : ocs::tom::get<RL_parent_role_list>(ep)) {
          const char *parent_name = ocs::tom::get<ST_name>(parent_ep);
          if (strcmp(parent_name, role_name) == 0) {
             ERROR(MSG_ROLE_SELF_REFERENCE_S, role_name);
@@ -157,7 +159,7 @@ role_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListEl
 
    lList *answer_list = nullptr;
 
-   bool dbret = spool_write_object(&answer_list, spool_get_default_context(), ep,
+   const bool dbret = spool_write_object(&answer_list, spool_get_default_context(), ep,
                                    ocs::tom::get<RL_name>(ep), SGE_TYPE_RL);
    answer_list_output(&answer_list);
 
@@ -205,9 +207,11 @@ role_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lLis
  *         `alpp` filled
  */
 int
-sge_del_role(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **alpp, char *ruser, char *rhost) {
+sge_del_role(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::ConstElement<ocs::tom::RL> ep,
+             lList **alpp, char *ruser, char *rhost) {
    DENTER(TOP_LAYER);
 
+   // raw out-parameter of the DataStore API: ocs::tom::erase() below frees the list when it becomes empty
    lList **master_role_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_RL);
 
    if (!ep || !ruser || !rhost) {
@@ -223,14 +227,15 @@ sge_del_role(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lLis
    }
 
    const char *role_name = ocs::tom::get<RL_name>(ep);
-   if (!ocs::tom::find_first_rw<RL_name>(*master_role_list, role_name)) {
+   const ocs::tom::ConstList<ocs::tom::RL> role_list(*master_role_list);
+   if (!role_list.find_first<RL_name>(role_name)) {
       ERROR(MSG_SGETEXT_DOESNOTEXIST_SS, MSG_OBJ_ROLE, role_name);
       answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EEXIST);
    }
 
    // refuse deletion if this role is still a parent of another role
-   for_each_ep_lv(other_role, *master_role_list) {
+   for (const auto other_role : role_list) {
       if (ocs::tom::find_first_in<RL_parent_role_list, ST_name>(other_role, role_name)) {
          ERROR(MSG_ROLE_STILL_REFERENCED_INPARENT_SS, role_name, ocs::tom::get<RL_name>(other_role));
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
@@ -245,4 +250,19 @@ sge_del_role(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lLis
    INFO(MSG_SGETEXT_REMOVEDFROMLIST_SSSS, ruser, rhost, role_name, MSG_OBJ_ROLE);
    answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
    DRETURN(STATUS_OK);
+}
+
+/** @brief sge_del_role() for an untyped caller
+ *
+ * @param packet the GDI packet holding the request
+ * @param task the GDI task within that packet
+ * @param ep an element carrying at least the `RL_name` of the role to delete
+ * @param alpp used to return error messages
+ * @param ruser the user who requested the deletion
+ * @param rhost the host the request came from
+ * @return see the typed form
+ */
+int
+sge_del_role(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **alpp, char *ruser, char *rhost) {
+   return sge_del_role(packet, task, ocs::tom::ConstElement<ocs::tom::RL>(ep), alpp, ruser, rhost);
 }

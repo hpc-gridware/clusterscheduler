@@ -40,6 +40,12 @@
 #include <cinttypes>
 #include "cull/cull.h"
 #include "sgeobj/sge_daemonize.h"
+#include "sgeobj/tom/ocs_tom_CF.h"
+#include "sgeobj/tom/ocs_tom_CONF.h"
+#include "sgeobj/tom/ocs_tom_EH.h"
+#include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "tom/ocs_Transitional.h"
 
 int
 sge_read_configuration(const lListElem *aSpoolContext, lList **config_list, lList **answer_list);
@@ -47,20 +53,28 @@ sge_read_configuration(const lListElem *aSpoolContext, lList **config_list, lLis
 lList *
 sge_get_configuration(const lCondition *condition, const lEnumeration *enumeration);
 
-lListElem *
+ocs::tom::ElementPtr<ocs::tom::CONF>
 sge_get_configuration_for_host(const char *aName);
 
-lListElem *
-sge_get_configuration_entry_by_name(const char *aHost, const char *anEntryName);
+ocs::tom::ElementPtr<ocs::tom::CF>
+ocs_get_configuration_entry_by_name(const char *aHost, const char *anEntryName);
+OCS_TRANSITIONAL lListElem *sge_get_configuration_entry_by_name(const char *aHost, const char *anEntryName);
 
 int
-sge_del_configuration(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *cxp, lList **alpp, char *ruser, char *rhost);
+sge_del_configuration(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ConstElement<ocs::tom::CONF> aConf,
+                      lList **anAnswer, char *aUser, char *aHost);
+OCS_TRANSITIONAL int sge_del_configuration(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *cxp,
+                                           lList **alpp, char *ruser, char *rhost);
 
 int
-sge_mod_configuration(lListElem *aConf, lList **anAnswer, const char *aUser, const char *aHost, uint64_t gdi_session);
+sge_mod_configuration(ocs::tom::Element<ocs::tom::CONF> aConf, lList **anAnswer, const char *aUser, const char *aHost,
+                      uint64_t gdi_session);
+OCS_TRANSITIONAL int sge_mod_configuration(lListElem *aConf, lList **anAnswer, const char *aUser, const char *aHost,
+                                           uint64_t gdi_session);
 
 int
-sge_compare_configuration(const lListElem *aHost, const lList *aConf);
+sge_compare_configuration(ocs::tom::ConstElement<ocs::tom::EH> aHost, ocs::tom::ConstList<ocs::tom::CONF> aConf);
+OCS_TRANSITIONAL int sge_compare_configuration(const lListElem *aHost, const lList *aConf);
 
 void
 sge_update_heard_from_timeout();

@@ -42,6 +42,7 @@
 
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_EH.h"
 
 #include "comm/commlib.h"
 
@@ -74,7 +75,8 @@
  * @see `host_notify_about_featureset()`
  */
 static int
-host_notify_about_X(lListElem *host, uint32_t x, ocs::gdi::ClientServerBase::ClientServerBaseTag tag, ProgName progname_id) {
+host_notify_about_X(const ocs::tom::ConstElement<ocs::tom::EH> host, const uint32_t x,
+                    const ocs::gdi::ClientServerBase::ClientServerBaseTag tag, const ProgName progname_id) {
    DENTER(TOP_LAYER);
    int ret = -1;
 
@@ -118,8 +120,21 @@ host_notify_about_X(lListElem *host, uint32_t x, ocs::gdi::ClientServerBase::Cli
  *
  * @see `host_notify_about_X()`
  */
+int host_notify_about_new_conf(const ocs::tom::ConstElement<ocs::tom::EH> host) {
+   DENTER(TOP_LAYER);
+   const int ret = host_notify_about_X(host, 0, ocs::gdi::ClientServerBase::TAG_GET_NEW_CONF, EXECD);
+   DRETURN(ret);
+}
+
+/**
+ * @brief host_notify_about_new_conf() for an untyped caller
+ *
+ * @param host EH_Type element, checked
+ *
+ * @return as host_notify_about_new_conf()
+ */
 int host_notify_about_new_conf(lListElem *host) {
-   return host_notify_about_X(host, 0, ocs::gdi::ClientServerBase::TAG_GET_NEW_CONF, EXECD);
+   return host_notify_about_new_conf(ocs::tom::ConstElement<ocs::tom::EH>(host));
 }
 
 /**
@@ -134,16 +149,45 @@ int host_notify_about_new_conf(lListElem *host) {
  *
  * @see `host_notify_about_X()`
  */
-int host_notify_about_kill(lListElem *host, int kill_command) {
-   return host_notify_about_X(host, kill_command, ocs::gdi::ClientServerBase::TAG_KILL_EXECD, EXECD);
+int host_notify_about_kill(const ocs::tom::ConstElement<ocs::tom::EH> host, const int kill_command) {
+   DENTER(TOP_LAYER);
+   const int ret = host_notify_about_X(host, kill_command, ocs::gdi::ClientServerBase::TAG_KILL_EXECD, EXECD);
+   DRETURN(ret);
 }
 
-/** @brief Ask an execution host to send its complete load report rather than a delta
+/**
+ * @brief host_notify_about_kill() for an untyped caller
  *
- * @param host the execution host
- * @return 0 on success
+ * @param host EH_Type element, checked
+ * @param kill_command command
+ *
+ * @return as host_notify_about_kill()
+ */
+int host_notify_about_kill(lListElem *host, int kill_command) {
+   return host_notify_about_kill(ocs::tom::ConstElement<ocs::tom::EH>(host), kill_command);
+}
+
+/**
+ * @brief Ask an execution host to send its complete load report rather than a delta
+ *
+ * @param host the execution host (EH_Type)
+ *
+ * @return see host_notify_about_X()
+ */
+int host_notify_about_full_load_report(const ocs::tom::ConstElement<ocs::tom::EH> host) {
+   DENTER(TOP_LAYER);
+   const int ret = host_notify_about_X(host, 0, ocs::gdi::ClientServerBase::TAG_FULL_LOAD_REPORT, EXECD);
+   DRETURN(ret);
+}
+
+/**
+ * @brief host_notify_about_full_load_report() for an untyped caller
+ *
+ * @param host EH_Type element, checked
+ *
+ * @return as host_notify_about_full_load_report()
  */
 int host_notify_about_full_load_report(lListElem *host) {
-   return host_notify_about_X(host, 0, ocs::gdi::ClientServerBase::TAG_FULL_LOAD_REPORT, EXECD);
+   return host_notify_about_full_load_report(ocs::tom::ConstElement<ocs::tom::EH>(host));
 }
 

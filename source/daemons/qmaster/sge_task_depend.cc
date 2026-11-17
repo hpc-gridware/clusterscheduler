@@ -80,13 +80,12 @@ static void task_depend(uint32_t *lb, uint32_t *ub, uint32_t t0, uint32_t sa, ui
  * suc_jep.task_id will be dependent on when suc_jep has an explicit
  * array dependency hold on pre_jep (with -hold_jid_ad option).
  *
- * @param range RN_Type pointer
- * @param alpp AN_Type list pointer
- * @param pre_jep const JB_Type element
- * @param suc_jep const JB_Type element
+ * @param alpp AN_Type list pointer, not used
+ * @param pre_jep the predecessor job, JB_Type
+ * @param suc_jep the successor job, JB_Type
  * @param task_id a valid suc_jep task id
  *
- * @return 0 on success
+ * @return the range of predecessor task ids (RN_Type), empty if it cannot be determined
  *
  * @note Let div(a, b) = floor(a / b)
  *       Let nearest_index_in_A(i) = t0 + div(i - t0, sa) * sa
@@ -100,30 +99,28 @@ static void task_depend(uint32_t *lb, uint32_t *ub, uint32_t t0, uint32_t sa, ui
  *
  *       MT-NOTE: sge_task_depend_get_range() is MT safe
  */
-int
-sge_task_depend_get_range(lListElem **range, lList **alpp, const lListElem *pre_jep, const lListElem *suc_jep,
-                          uint32_t task_id) {
+ocs::tom::ElementPtr<ocs::tom::RN>
+sge_task_depend_get_range([[maybe_unused]] lList **alpp, const ocs::tom::ConstElement<ocs::tom::JB> pre_jep,
+                          const ocs::tom::ConstElement<ocs::tom::JB> suc_jep, const uint32_t task_id) {
    DENTER(TOP_LAYER);
 
-   uint32_t a0, a1, b0, b1, sa, sb, rmin, rmax;
+   uint32_t rmin, rmax;
 
-   if (range == nullptr ||
-       pre_jep == nullptr ||
-       suc_jep == nullptr) {
-      DRETURN(STATUS_EUNKNOWN);
+   if (!pre_jep || !suc_jep) {
+      DRETURN(nullptr);
    }
 
-   job_get_submit_task_ids(pre_jep, &a0, &a1, &sa);
-   job_get_submit_task_ids(suc_jep, &b0, &b1, &sb);
+   const auto [a0, a1, sa] = job_get_submit_task_ids(pre_jep);
+   const auto [b0, b1, sb] = job_get_submit_task_ids(suc_jep);
 
    /* sanity check on task ranges */
    if (!sge_task_depend_is_same_range(pre_jep, suc_jep)) {
-      DRETURN(STATUS_EUNKNOWN);
+      DRETURN(nullptr);
    }
 
    /* make sure task_id is the first task in a range */
    if (task_id < b0 || ((task_id - b0) % sb) != 0) {
-      DRETURN(STATUS_EUNKNOWN);
+      DRETURN(nullptr);
    }
 
    /* make the actual call to the core dependence function */
@@ -131,20 +128,46 @@ sge_task_depend_get_range(lListElem **range, lList **alpp, const lListElem *pre_
 
    /* do some basic checks on the output */
    if (rmin < a0 || rmax > a1) {
-      DRETURN(STATUS_EUNKNOWN);
+      DRETURN(nullptr);
    }
 
-   /* if an existing range was not given, create one */
+   auto range = ocs::tom::ElementPtr<ocs::tom::RN>::create();
+   range_set_all_ids(range.get(), rmin, rmax, sa);
+
+   DRETURN(range);
+}
+
+/**
+ * @brief sge_task_depend_get_range() for an untyped caller
+ *
+ * Fills an existing range or creates one, as the function did before it returned the range.
+ *
+ * @param range RN_Type pointer; an existing range is filled, else one is created
+ * @param alpp AN_Type list pointer, not used
+ * @param pre_jep const JB_Type element
+ * @param suc_jep const JB_Type element
+ * @param task_id a valid suc_jep task id
+ * @return 0 on success, STATUS_EUNKNOWN if the range cannot be determined
+ */
+int
+sge_task_depend_get_range(lListElem **range, lList **alpp, const lListElem *pre_jep, const lListElem *suc_jep,
+                          const uint32_t task_id) {
+   if (range == nullptr) {
+      return STATUS_EUNKNOWN;
+   }
+   auto result = sge_task_depend_get_range(alpp, ocs::tom::ConstElement<ocs::tom::JB>(pre_jep),
+                                           ocs::tom::ConstElement<ocs::tom::JB>(suc_jep), task_id);
+   if (!result) {
+      return STATUS_EUNKNOWN;
+   }
    if (*range == nullptr) {
-      *range = lCreateElem(RN_Type);
-      if (*range == nullptr) {
-         DRETURN(STATUS_EUNKNOWN);
-      }
+      *range = result.release();
+   } else {
+      uint32_t rmin, rmax, rstep;
+      range_get_all_ids(result.get(), &rmin, &rmax, &rstep);
+      range_set_all_ids(*range, rmin, rmax, rstep);
    }
-
-   range_set_all_ids(*range, rmin, rmax, sa);
-
-   DRETURN(0);
+   return 0;
 }
 
 /**
@@ -160,15 +183,15 @@ sge_task_depend_get_range(lListElem **range, lList **alpp, const lListElem *pre_
  * @return true if the task counts as finished
  */
 static bool
-task_depend_is_finished(const lListElem *job, uint32_t task_id) {
+task_depend_is_finished(const ocs::tom::ConstElement<ocs::tom::JB> job, const uint32_t task_id) {
    DENTER(TOP_LAYER);
 
    if (!job_is_enrolled(job, task_id)) {
       DRETURN(false);
    }
 
-   const lListElem *ja_task = job_search_task(job, nullptr, task_id);
-   DRETURN(ja_task == nullptr || ocs::tom::get<JAT_status>(ja_task) == JFINISHED);
+   const auto ja_task = job_search_task(job, nullptr, task_id);
+   DRETURN(!ja_task || ocs::tom::get<JAT_status>(ja_task) == JFINISHED);
 }
 
 
@@ -203,14 +226,16 @@ task_depend_is_finished(const lListElem *job, uint32_t task_id) {
  *       MT-NOTE: Is not thread safe. Reads from the global Job-List
  */
 bool
-sge_task_depend_update(lListElem *jep, lList **alpp, uint32_t task_id, uint64_t gdi_request) {
+sge_task_depend_update(const ocs::tom::Element<ocs::tom::JB> jep, lList **alpp, const uint32_t task_id,
+                       const uint64_t gdi_request) {
    DENTER(TOP_LAYER);
    uint32_t hold_state, new_state;
    int Depend = 0;
-   const lList *master_job_list = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
+   const auto master_job_list =
+           ocs::tom::ConstList<ocs::tom::JB>::from_typed(*ocs::DataStore::get_master_list(SGE_TYPE_JOB));
 
    /* this should not really be necessary */
-   if (jep == nullptr) {
+   if (!jep) {
       DPRINTF("got nullptr for job argument\n");
       DRETURN(false);
    }
@@ -222,38 +247,38 @@ sge_task_depend_update(lListElem *jep, lList **alpp, uint32_t task_id, uint64_t 
    }
 
    /* process the resolved predecessor list */
-   for (ocs::tom::ConstElement<ocs::tom::JRE> pre : ocs::tom::get<JB_ja_ad_predecessor_list>(jep)) {
+   for (const auto pre : ocs::tom::get<JB_ja_ad_predecessor_list>(jep)) {
       uint32_t sa, sa_task_id, amin, amax;
-      const lListElem *pred_jep = nullptr; /* JB_Type */
-      lListElem *dep_range = nullptr;      /* RN_Type */
 
       /* locate the job id in the master list, if not found we can't do much */
-      pred_jep = ocs::tom::find_first<JB_job_number>(master_job_list, ocs::tom::get<JRE_job_number>(pre));
-      if (!pred_jep) continue;
+      const auto pred_jep = master_job_list.find_first<JB_job_number>(ocs::tom::get<JRE_job_number>(pre));
+      if (!pred_jep) {
+         continue;
+      }
 
       /* use the RSP functions to determine dependent predecessor task range */
-      if (sge_task_depend_get_range(&dep_range, alpp, pred_jep, jep, task_id)) {
+      const auto dep_range = sge_task_depend_get_range(alpp, pred_jep, jep, task_id);
+      if (!dep_range) {
          /* since we can't calculate it, we must assume dependence */
-         lFreeElem(&dep_range);
          Depend = 1;
          break;
       }
 
       /* fetch predecessor job dependency range ids */
-      range_get_all_ids(dep_range, &amin, &amax, &sa);
+      range_get_all_ids(dep_range.get(), &amin, &amax, &sa);
 
       /* all tasks between {amin, ..., amax} are dependencies unless finished */
       for (sa_task_id = amin; sa_task_id <= amax; sa_task_id += sa) {
          /* if the task is not finished => dependence */
-         if (!task_depend_is_finished(pred_jep, sa_task_id))
+         if (!task_depend_is_finished(pred_jep, sa_task_id)) {
             Depend = 1;
+         }
       }
 
-      /* cleanup, if a dep range was allocated */
-      lFreeElem(&dep_range);
-
       /* minor speed optimization */
-      if (Depend) break;
+      if (Depend) {
+         break;
+      }
    }
 
    /* alter the hold state based on dependence info */
@@ -270,15 +295,29 @@ sge_task_depend_update(lListElem *jep, lList **alpp, uint32_t task_id, uint64_t 
       job_set_hold_state(jep, alpp, task_id, new_state);
       if (job_is_enrolled(jep, task_id)) {
          /* all task mod events will need to be added individually */
-         lListElem *ja_task = job_search_task(jep, nullptr, task_id);
-         if (ja_task != nullptr)
+         const auto ja_task = job_search_task(jep, nullptr, task_id);
+         if (ja_task) {
             sge_add_jatask_event(sgeE_JATASK_MOD, jep, ja_task, gdi_request);
+         }
          DRETURN(false);
       }
       DRETURN(true);
    }
 
    DRETURN(false);
+}
+
+/**
+ * @brief sge_task_depend_update() for an untyped caller
+ * @param jep JB_Type element
+ * @param alpp AN_Type list pointer
+ * @param task_id a task id in job jep
+ * @param gdi_request the session the change belongs to
+ * @return true if the job was modified, otherwise false
+ */
+bool
+sge_task_depend_update(lListElem *jep, lList **alpp, const uint32_t task_id, const uint64_t gdi_request) {
+   return sge_task_depend_update(ocs::tom::Element<ocs::tom::JB>(jep), alpp, task_id, gdi_request);
 }
 
 /**
@@ -304,32 +343,45 @@ sge_task_depend_update(lListElem *jep, lList **alpp, uint32_t task_id, uint64_t 
  *       MT-NOTE: sge_task_depend_init() is not MT safe (calls MT unsafe method)
  */
 bool
-sge_task_depend_init(lListElem *jep, lList **alpp, uint64_t gdi_session) {
+sge_task_depend_init(const ocs::tom::Element<ocs::tom::JB> jep, lList **alpp, const uint64_t gdi_session) {
    DENTER(TOP_LAYER);
 
    bool ret = false;
 
-   if (jep == nullptr) {
+   if (!jep) {
       DPRINTF("got nullptr for job argument\n");
       DRETURN(false);
    }
 
-   if (lGetNumberOfElem(ocs::tom::get<JB_ja_ad_request_list>(jep)) > 0) {
-      if (lGetNumberOfElem(ocs::tom::get<JB_ja_ad_predecessor_list>(jep)) == 0) {
+   if (!ocs::tom::get<JB_ja_ad_request_list>(jep).empty()) {
+      if (ocs::tom::get<JB_ja_ad_predecessor_list>(jep).empty()) {
          /* fast case where all predecessors are "gone" */
-         if (sge_task_depend_flush(jep, alpp, gdi_session))
+         if (sge_task_depend_flush(jep, alpp, gdi_session)) {
             ret = true;
+         }
       } else {
-         uint32_t taskid, b0, b1, sb;
-         job_get_submit_task_ids(jep, &b0, &b1, &sb);
-         for (taskid = b0; taskid <= b1; taskid += sb) {
-            if (sge_task_depend_update(jep, alpp, taskid, gdi_session))
+         const auto [b0, b1, sb] = job_get_submit_task_ids(jep);
+         for (uint32_t taskid = b0; taskid <= b1; taskid += sb) {
+            if (sge_task_depend_update(jep, alpp, taskid, gdi_session)) {
                ret = true;
+            }
          }
       }
    }
 
    DRETURN(ret);
+}
+
+/**
+ * @brief sge_task_depend_init() for an untyped caller
+ * @param jep JB_Type element
+ * @param alpp AN_Type list pointer
+ * @param gdi_session the session the change belongs to
+ * @return true if the job was modified, otherwise false
+ */
+bool
+sge_task_depend_init(lListElem *jep, lList **alpp, const uint64_t gdi_session) {
+   return sge_task_depend_init(ocs::tom::Element<ocs::tom::JB>(jep), alpp, gdi_session);
 }
 
 /**
@@ -359,24 +411,24 @@ sge_task_depend_init(lListElem *jep, lList **alpp, uint64_t gdi_session) {
  *       MT-NOTE: sge_task_depend_flush() is MT safe
  */
 bool
-sge_task_depend_flush(lListElem *jep, lList **alpp, uint64_t gdi_session) {
+sge_task_depend_flush(const ocs::tom::Element<ocs::tom::JB> jep, lList **alpp, const uint64_t gdi_session) {
    DENTER(TOP_LAYER);
 
    bool ret = false;
 
    /* this should not really be necessary */
-   if (jep == nullptr) {
+   if (!jep) {
       DPRINTF("got nullptr for job argument\n");
       DRETURN(false);
    }
 
    /* ensure empty hold states are consistent. if the request list is empty
       then we don't want to modify array predecessors cache */
-   if (lGetNumberOfElem(ocs::tom::get<JB_ja_ad_request_list>(jep)) > 0 &&
-       lGetNumberOfElem(ocs::tom::get<JB_ja_ad_predecessor_list>(jep)) == 0) {
+   if (!ocs::tom::get<JB_ja_ad_request_list>(jep).empty() &&
+       ocs::tom::get<JB_ja_ad_predecessor_list>(jep).empty()) {
       if (ocs::tom::get<JB_ja_a_h_ids>(jep)) {
-         lList *a_h_ids = lCopyList("", ocs::tom::get<JB_ja_a_h_ids>(jep));
-         for_each_ep_lv(range, a_h_ids) {
+         const auto a_h_ids = ocs::tom::get<JB_ja_a_h_ids>(jep).clone("");
+         for (const auto range : *a_h_ids) {
             uint32_t rmin, rmax, rstep, hold_state;
             range_get_all_ids(range, &rmin, &rmax, &rstep);
             for (; rmin <= rmax; rmin += rstep) {
@@ -385,17 +437,14 @@ sge_task_depend_flush(lListElem *jep, lList **alpp, uint64_t gdi_session) {
                job_set_hold_state(jep, alpp, rmin, hold_state);
             }
          }
-         lFreeList(&a_h_ids);
          /* just make sure it is null */
          if (ocs::tom::get<JB_ja_a_h_ids>(jep)) {
-            a_h_ids = nullptr;
-            ocs::tom::exchange<JB_ja_a_h_ids>(jep, &a_h_ids);
-            lFreeList(&a_h_ids);
+            jep.exchange<JB_ja_a_h_ids>(nullptr);
          }
          ret = true;
       }
       /* unhold any arary held tasks that are enrolled */
-      for (ocs::tom::Element<ocs::tom::JAT> ja_task : ocs::tom::get<JB_ja_tasks>(jep)) {
+      for (const auto ja_task : ocs::tom::get<JB_ja_tasks>(jep)) {
          uint32_t task_id = ocs::tom::get<JAT_task_number>(ja_task);
          uint32_t hold_state = job_get_hold_state(jep, task_id);
          if ((hold_state & MINUS_H_TGT_JA_AD) != 0) {
@@ -409,6 +458,18 @@ sge_task_depend_flush(lListElem *jep, lList **alpp, uint64_t gdi_session) {
    DRETURN(ret);
 }
 
+/**
+ * @brief sge_task_depend_flush() for an untyped caller
+ * @param jep JB_Type element
+ * @param alpp AN_Type list pointer
+ * @param gdi_session the session the change belongs to
+ * @return true if the job was modified, otherwise false
+ */
+bool
+sge_task_depend_flush(lListElem *jep, lList **alpp, const uint64_t gdi_session) {
+   return sge_task_depend_flush(ocs::tom::Element<ocs::tom::JB>(jep), alpp, gdi_session);
+}
+
 
 /**
  * @brief Determine array job equivalence
@@ -416,21 +477,20 @@ sge_task_depend_flush(lListElem *jep, lList **alpp, uint64_t gdi_session) {
  * This function determines if the job arguments are suitable predecessor
  * and successor jobs for an array dependency pair (-hold_jid_ad option).
  *
- * @param pre_jep const JB_Type element
- * @param suc_jep const JB_Type element
+ * @param pre_jep the predecessor job, JB_Type
+ * @param suc_jep the successor job, JB_Type
  *
- * @return true if jobs are compatible array jobs, otherwise false sge_task_depend_is_same_range() is MT safe
+ * @return true if jobs are compatible array jobs, otherwise false
  *
- * @note MT-NOTE
+ * @note MT-NOTE: sge_task_depend_is_same_range() is MT safe
  */
 bool
-sge_task_depend_is_same_range(const lListElem *pre_jep, const lListElem *suc_jep) {
+sge_task_depend_is_same_range(const ocs::tom::ConstElement<ocs::tom::JB> pre_jep,
+                              const ocs::tom::ConstElement<ocs::tom::JB> suc_jep) {
    DENTER(TOP_LAYER);
 
-   uint32_t a0, a1, b0, b1, sa, sb;
-
    /* equivalent jobs cannot be nullptr */
-   if (pre_jep == nullptr || suc_jep == nullptr) {
+   if (!pre_jep || !suc_jep) {
       DPRINTF("got nullptr pre_jep or suc_jep job argument\n");
       DRETURN(false);
    }
@@ -441,8 +501,8 @@ sge_task_depend_is_same_range(const lListElem *pre_jep, const lListElem *suc_jep
    }
 
    /* fetch job submit ranges */
-   job_get_submit_task_ids(pre_jep, &a0, &a1, &sa);
-   job_get_submit_task_ids(suc_jep, &b0, &b1, &sb);
+   const auto [a0, a1, sa] = job_get_submit_task_ids(pre_jep);
+   const auto [b0, b1, sb] = job_get_submit_task_ids(suc_jep);
 
    /* equivalent jobs must have the same range of sub-tasks */
    if (a0 != b0 || a1 != b1) {

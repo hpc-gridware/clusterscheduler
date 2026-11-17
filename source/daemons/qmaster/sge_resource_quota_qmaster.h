@@ -41,29 +41,46 @@
 #include "uti/sge_monitor.h"
 #include "sgeobj/sge_daemonize.h"
 
+#include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "tom/ocs_Transitional.h"
+#include "sgeobj/tom/ocs_tom_PR.h"
+#include "sgeobj/tom/ocs_tom_RQS.h"
+#include "sgeobj/tom/ocs_tom_US.h"
+
 /* funtions called from within gdi framework in qmaster */
 int
-rqs_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *new_rqs, lListElem *rqs, int add, const char *ruser,
-        const char *rhost, gdi_object_t *object, ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command, monitoring_t *monitor);
+rqs_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *new_rqs, lListElem *rqs, int add,
+        const char *ruser, const char *rhost, gdi_object_t *object, ocs::gdi::Command cmd,
+        ocs::gdi::SubCommand sub_command, monitoring_t *monitor);
 
 int
 rqs_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *pep, gdi_object_t *object);
 
 int
-rqs_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList,
-            monitoring_t *monitor);
+rqs_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object,
+            lList **ppList, monitoring_t *monitor);
 
 /* funtions called via gdi and inside the qmaster */
 int
-rqs_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **alpp, lList **rqs_list, char *ruser, char *rhost);
+rqs_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ConstElement<ocs::tom::RQS> ep, lList **alpp,
+        ocs::tom::List<ocs::tom::RQS> rqs_list, const char *ruser, const char *rhost);
+OCS_TRANSITIONAL int rqs_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **alpp,
+                             lList **rqs_list, char *ruser, char *rhost);
 
 bool
-rqs_diff_usersets(const lListElem *new_rqs, const lListElem *old_rqs, lList **new_acl, lList **old_acl,
-                  const lList *master_userset_list);
+rqs_diff_usersets(ocs::tom::ConstElement<ocs::tom::RQS> new_rqs, ocs::tom::ConstElement<ocs::tom::RQS> old_rqs,
+                  ocs::tom::ListPtr<ocs::tom::US> *new_list, ocs::tom::ListPtr<ocs::tom::US> *old_list,
+                  ocs::tom::ConstList<ocs::tom::US> master_userset_list);
+OCS_TRANSITIONAL bool rqs_diff_usersets(const lListElem *new_rqs, const lListElem *old_rqs, lList **new_list,
+                                        lList **old_list, const lList *master_userset_list);
 
 bool
-rqs_diff_projects(const lListElem *new_rqs, const lListElem *old_rqs, lList **new_acl, lList **old_acl,
-                  const lList *master_project_list);
+rqs_diff_projects(ocs::tom::ConstElement<ocs::tom::RQS> new_rqs, ocs::tom::ConstElement<ocs::tom::RQS> old_rqs,
+                  ocs::tom::ListPtr<ocs::tom::PR> *new_list, ocs::tom::ListPtr<ocs::tom::PR> *old_list,
+                  ocs::tom::ConstList<ocs::tom::PR> master_project_list);
+OCS_TRANSITIONAL bool rqs_diff_projects(const lListElem *new_rqs, const lListElem *old_rqs, lList **new_list,
+                                        lList **old_list, const lList *master_project_list);
 
 bool
-scope_is_referenced_rqs(const lListElem *rqs, int filter_type, const char *name);
+scope_is_referenced_rqs(ocs::tom::ConstElement<ocs::tom::RQS> rqs, int filter_type, const char *name);

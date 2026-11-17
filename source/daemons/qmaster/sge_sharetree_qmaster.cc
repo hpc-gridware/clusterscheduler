@@ -42,6 +42,7 @@
 
 #include <cstdio>
 #include <cstring>
+#include <utility>
 
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
@@ -52,7 +53,10 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_userprj.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_PR.h"
 #include "sgeobj/tom/ocs_tom_STN.h"
+#include "sgeobj/tom/ocs_tom_UU.h"
 
 #include "sge_persistence_qmaster.h"
 #include "sge_sharetree_qmaster.h"
@@ -75,24 +79,19 @@
  * @return STATUS_OK on success
  */
 int
-sge_add_sharetree(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **lpp, lList **alpp, char *ruser, char *rhost) {
+sge_add_sharetree(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Element<ocs::tom::STN> ep,
+                  lList **lpp, lList **alpp, const char *ruser, const char *rhost) {
    DENTER(TOP_LAYER);
 
-   int ret;
-
-   ret = sge_mod_sharetree(packet, task, ep, lpp, alpp, ruser, rhost);
+   const int ret = sge_mod_sharetree(packet, task, ep, lpp, alpp, ruser, rhost);
    DRETURN(ret);
 }
 
-/** @brief Replace the share tree as a whole
- *
- * Modify a share tree
- * lListElem *ep,   This is the new share tree
- * lList **lpp,     list to change
+/** @brief sge_add_sharetree() for an untyped caller
  *
  * @param packet the client request
  * @param task the GDI task being answered
- * @param ep the new share tree
+ * @param ep the share tree (STN_Type)
  * @param lpp the master share tree list
  * @param alpp receives messages for the caller
  * @param ruser the requesting user
@@ -100,15 +99,35 @@ sge_add_sharetree(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep,
  * @return STATUS_OK on success
  */
 int
-sge_mod_sharetree(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **lpp, lList **alpp, char *ruser, char *rhost) {
+sge_add_sharetree(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **lpp, lList **alpp,
+                  const char *ruser, const char *rhost) {
+   return sge_add_sharetree(packet, task, ocs::tom::Element<ocs::tom::STN>(ep), lpp, alpp, ruser, rhost);
+}
+
+/** @brief Replace the share tree as a whole
+ *
+ * We simply replace the old root element with a copy of the new one. If
+ * there is no old one we simply add the new. The master share tree list is
+ * created if it does not exist yet.
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param ep the new share tree; its version and node ids are set
+ * @param lpp the master share tree list, the list to change
+ * @param alpp receives messages for the caller
+ * @param ruser the requesting user
+ * @param rhost the requesting host
+ * @return STATUS_OK on success
+ */
+int
+sge_mod_sharetree(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Element<ocs::tom::STN> ep,
+                  lList **lpp, lList **alpp, const char *ruser, const char *rhost) {
    DENTER(TOP_LAYER);
 
-   int ret;
    int prev_version;
    int adding;
-   lList *found = nullptr;
-   const lList *master_user_list = *ocs::DataStore::get_master_list(SGE_TYPE_USER);
-   const lList *master_project_list = *ocs::DataStore::get_master_list(SGE_TYPE_PROJECT);
+   const ocs::tom::ConstList<ocs::tom::UU> master_user_list(*ocs::DataStore::get_master_list(SGE_TYPE_USER));
+   const ocs::tom::ConstList<ocs::tom::PR> master_project_list(*ocs::DataStore::get_master_list(SGE_TYPE_PROJECT));
 
    /* do some checks */
    if (!ep || !ruser || !rhost) {
@@ -117,8 +136,11 @@ sge_mod_sharetree(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep,
       DRETURN(STATUS_EUNKNOWN);
    }
 
-   ret = check_sharetree(alpp, ep, master_user_list, master_project_list, nullptr, &found);
-   lFreeList(&found);
+   int ret;
+   {
+      ocs::tom::ListPtr<ocs::tom::STN> found;
+      ret = check_sharetree(alpp, ep, master_user_list, master_project_list, nullptr, found);
+   }
    if (ret) {
       /* alpp gets filled by check_sharetree() */
       DRETURN(STATUS_EUNKNOWN);
@@ -127,19 +149,21 @@ sge_mod_sharetree(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep,
    /* check for presence of sharetree list and create if neccesary */
    if (!*lpp) {
       prev_version = 0;
-      *lpp = lCreateList("sharetree list", STN_Type);
+      // the master list slot of the data store is raw
+      *lpp = ocs::tom::ListPtr<ocs::tom::STN>::create("sharetree list").release();
       adding = 1;
-   } else if (lGetNumberOfElem(*lpp) == 0) {
+   } else if (ocs::tom::ConstList<ocs::tom::STN>(*lpp).empty()) {
       prev_version = 0;
       adding = 1;
    } else {
-      lListElem *first = lFirstRW(*lpp);
+      const ocs::tom::List<ocs::tom::STN> tree(*lpp);
+      const auto first = tree.front();
       /* real action: change user or project
          We simply replace the old element with the new one. If there is no
          old we simle add the new. */
 
-      prev_version = ocs::tom::get<STN_version>(lFirst(*lpp));
-      lRemoveElem(*lpp, &first);
+      prev_version = ocs::tom::get<STN_version>(first);
+      tree.erase(first);
       adding = 0;
    }
 
@@ -148,24 +172,42 @@ sge_mod_sharetree(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep,
    id_sharetree(alpp, ep, 0);
 
    /* now insert new element */
-   lAppendElem(*lpp, lCopyElem(ep));
+   ocs::tom::List<ocs::tom::STN>(*lpp).push_back(ep.clone());
 
    /* write sharetree to file */
-   if (!sge_event_spool(alpp, 0, sgeE_NEW_SHARETREE, 0, 0, nullptr, nullptr, nullptr, ep, nullptr, nullptr, true, true, packet->gdi_session)) {
+   if (!sge_event_spool(alpp, 0, sgeE_NEW_SHARETREE, 0, 0, nullptr, nullptr, nullptr, ep, nullptr, nullptr, true, true,
+                        packet->gdi_session)) {
 
       /* answer list gets filled in sge_event_spool() */
       DRETURN(ret);
    }
 
    if (adding) {
-      INFO(MSG_STREE_ADDSTREE_SSII, ruser, rhost, lGetNumberOfNodes(ep, nullptr, STN_children), lGetNumberOfLeafs(ep, nullptr, STN_children));
+      INFO(MSG_STREE_ADDSTREE_SSII, ruser, rhost, ep.count_nodes<STN_children>(), ep.count_leaves<STN_children>());
    } else {
-      INFO(MSG_STREE_MODSTREE_SSII, ruser, rhost, lGetNumberOfNodes(ep, nullptr, STN_children), lGetNumberOfLeafs(ep, nullptr, STN_children));
+      INFO(MSG_STREE_MODSTREE_SSII, ruser, rhost, ep.count_nodes<STN_children>(), ep.count_leaves<STN_children>());
    }
 
    answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
 
    DRETURN(STATUS_OK);
+}
+
+/** @brief sge_mod_sharetree() for an untyped caller
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param ep the new share tree (STN_Type)
+ * @param lpp the master share tree list
+ * @param alpp receives messages for the caller
+ * @param ruser the requesting user
+ * @param rhost the requesting host
+ * @return STATUS_OK on success
+ */
+int
+sge_mod_sharetree(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **lpp, lList **alpp,
+                  const char *ruser, const char *rhost) {
+   return sge_mod_sharetree(packet, task, ocs::tom::Element<ocs::tom::STN>(ep), lpp, alpp, ruser, rhost);
 }
 
 /** @brief Remove the share tree
@@ -184,7 +226,7 @@ int
 sge_del_sharetree(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **lpp, lList **alpp, char *ruser, char *rhost) {
    DENTER(TOP_LAYER);
 
-   if (!*lpp || !lFirst(*lpp)) {
+   if (ocs::tom::ConstList<ocs::tom::STN>(*lpp).empty()) {
       ERROR(MSG_SGETEXT_DOESNOTEXIST_S, MSG_OBJ_SHARETREE);
       answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EEXIST);
@@ -193,7 +235,9 @@ sge_del_sharetree(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **lpp, l
    sge_event_spool(alpp, 0, sgeE_NEW_SHARETREE, 0, 0, nullptr, nullptr, nullptr,
                    nullptr, nullptr, nullptr, true, true, packet->gdi_session);
 
-   lFreeList(lpp);
+   // the master list slot of the data store is raw: take the list over and free it
+   ocs::tom::ListPtr<ocs::tom::STN>::from_typed(*lpp).reset();
+   *lpp = nullptr;
 
    INFO(MSG_SGETEXT_REMOVEDLIST_SSS, ruser, rhost, MSG_OBJ_SHARETREE);
    answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
@@ -216,26 +260,23 @@ sge_del_sharetree(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **lpp, l
  * user or project object
  * - all user leaf nodes in a project sub-tree have access
  * to the project
- * found  - tmp list that contains one entry for each found u/p
  *
  * @param alpp receives messages for the caller
- * @param node the node to check
+ * @param node the node to check; a leaf naming a project gets STN_type STT_PROJECT
  * @param user_list the known users
  * @param project_list the known projects
- * @param project the project this subtree belongs to, or nullptr at the root
- * @param found tmp list that contains one entry for each found u/p
- * @return STATUS_OK when the subtree is valid
+ * @param project the project this subtree belongs to, or an empty handle at the root
+ * @param found tmp list that contains one entry for each found u/p, created when needed
+ * @return 0 when the subtree is valid, -1 otherwise
  */
 int
-check_sharetree(lList **alpp, lListElem *node, const lList *user_list, const lList *project_list, lListElem *project,
-                lList **found) {
+check_sharetree(lList **alpp, const ocs::tom::Element<ocs::tom::STN> node,
+                const ocs::tom::ConstList<ocs::tom::UU> user_list, const ocs::tom::ConstList<ocs::tom::PR> project_list,
+                ocs::tom::ConstElement<ocs::tom::PR> project, ocs::tom::ListPtr<ocs::tom::STN> &found) {
    DENTER(TOP_LAYER);
 
-   ocs::tom::ConstList<ocs::tom::STN> children;
-   const lListElem *remaining;
-   lList *save_found = nullptr;
+   ocs::tom::ListPtr<ocs::tom::STN> save_found;
    const char *name = ocs::tom::get<STN_name>(node);
-   lListElem *pep;
 
    /* Check for dangling or circular references. */
    if (name == nullptr) {
@@ -244,12 +285,12 @@ check_sharetree(lList **alpp, lListElem *node, const lList *user_list, const lLi
       DRETURN(-1);
    }
 
-   if ((children = ocs::tom::get<STN_children>(node))) {
+   if (const auto children = ocs::tom::get<STN_children>(node); children) {
 
       /* not a leaf node */
 
       /* check if this is a project node */
-      if ((pep = prj_list_locate(project_list, name))) {
+      if (const auto pep = prj_list_locate(project_list, name); pep) {
 
          /* check for sub-projects (not allowed) */
          if (project) {
@@ -259,19 +300,21 @@ check_sharetree(lList **alpp, lListElem *node, const lList *user_list, const lLi
          }
 
          /* check for projects appearing more than once */
-         if (ocs::tom::find_first<STN_name>(*found, name)) {
+         if (ocs::tom::find_first<STN_name>(found.get(), name)) {
             ERROR(MSG_STREE_PRJTWICE_S, name);
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             DRETURN(-1);
          }
 
          /* register that this project was found */
-         ocs::tom::emplace_back<STN_name>(found, name);
+         if (!found) {
+            found = ocs::tom::ListPtr<ocs::tom::STN>::create("");
+         }
+         found->emplace_back<STN_name>(name);
 
          /* set up for project sub-tree recursion */
          project = pep;
-         save_found = *found;
-         *found = nullptr;
+         save_found = std::move(found);
 
          /* check for user appearing as non-leaf node */
       } else if (user_list_locate(user_list, name)) {
@@ -280,9 +323,9 @@ check_sharetree(lList **alpp, lListElem *node, const lList *user_list, const lLi
          DRETURN(-1);
       }
 
-      for_each_rw_lv(child, children) {
+      for (const auto child : children) {
          /* ensure pathes are identically inside share tree */
-         for (remaining = lNext(child); remaining; remaining = lNext(remaining)) {
+         for (auto remaining = child.next(); remaining; remaining = remaining.next()) {
             const char *cn = ocs::tom::get<STN_name>(child);
             const char *rn = ocs::tom::get<STN_name>(remaining);
             if (cn == nullptr || rn == nullptr) {
@@ -290,8 +333,7 @@ check_sharetree(lList **alpp, lListElem *node, const lList *user_list, const lLi
                answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
                /* restore old found list */
                if (save_found) {
-                  lFreeList(found);
-                  *found = save_found;
+                  found = std::move(save_found);
                }
                DRETURN(-1);
             }
@@ -300,19 +342,16 @@ check_sharetree(lList **alpp, lListElem *node, const lList *user_list, const lLi
                answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
                /* restore old found list */
                if (save_found) {
-                  lFreeList(found);
-                  *found = save_found;
+                  found = std::move(save_found);
                }
                DRETURN(-1);
             }
          }
 
-         if (check_sharetree(alpp, child, user_list, project_list, project,
-                             found)) {
+         if (check_sharetree(alpp, child, user_list, project_list, project, found)) {
             /* restore old found list */
             if (save_found) {
-               lFreeList(found);
-               *found = save_found;
+               found = std::move(save_found);
             }
             DRETURN(-1);
          }
@@ -320,8 +359,7 @@ check_sharetree(lList **alpp, lListElem *node, const lList *user_list, const lLi
 
       /* restore old found list */
       if (save_found) {
-         lFreeList(found);
-         *found = save_found;
+         found = std::move(save_found);
       }
    } else {
       /* a leaf node */
@@ -351,7 +389,7 @@ check_sharetree(lList **alpp, lListElem *node, const lList *user_list, const lLi
          }
 
          /* make sure this user is in the project sub-tree once */
-         if (ocs::tom::find_first<STN_name>(*found, name)) {
+         if (ocs::tom::find_first<STN_name>(found.get(), name)) {
             ERROR(MSG_STREE_USERTWICEINPRJSUBTREE_SS, name, ocs::tom::get<PR_name>(project));
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             DRETURN(-1);
@@ -360,12 +398,12 @@ check_sharetree(lList **alpp, lListElem *node, const lList *user_list, const lLi
          const char *objname = MSG_OBJ_USER;
 
          /* non project sub-tree leaf nodes must be a user or a project */
-         if (user_list_locate(user_list, name) == nullptr &&
+         if (!user_list_locate(user_list, name) &&
              strcmp(name, "default") != 0) {
 
             objname = MSG_JOB_PROJECT;
 
-            if (prj_list_locate(project_list, name) == nullptr) {
+            if (!prj_list_locate(project_list, name)) {
                ERROR(MSG_SGETEXT_UNKNOWN_SHARE_TREE_REF_TO_SS, MSG_OBJ_USERPRJ, name);
                answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
                DRETURN(-1);
@@ -374,7 +412,7 @@ check_sharetree(lList **alpp, lListElem *node, const lList *user_list, const lLi
 
          /* make sure this user or project is in the non-project sub-tree 
             portion of the share tree only once */
-         if (ocs::tom::find_first<STN_name>(*found, name)) {
+         if (ocs::tom::find_first<STN_name>(found.get(), name)) {
             ERROR(MSG_STREE_USERPRJTWICE_SS, objname, name);
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             DRETURN(-1);
@@ -383,7 +421,10 @@ check_sharetree(lList **alpp, lListElem *node, const lList *user_list, const lLi
       }
 
       /* register that this was found */
-      ocs::tom::emplace_back<STN_name>(found, name);
+      if (!found) {
+         found = ocs::tom::ListPtr<ocs::tom::STN>::create("");
+      }
+      found->emplace_back<STN_name>(name);
    }
 
    DRETURN(0);
@@ -471,28 +512,27 @@ update_sharetree(lList *dst, const lList *src) {
  *
  * @param share_tree the share tree (`STN_Type`) to search
  * @param name the node name to look for
- * @param node_type `STT_USER` or `STT_PROJECT`; only nodes of that type match
- * @param recurse if non-zero, descend into the children of non-matching nodes
- * @return the node, or `nullptr` if the tree is empty or holds no such node
+ * @param node_type `STT_USER` or `STT_PROJECT`; meant to restrict the match, but not evaluated
+ * @param recurse meant to restrict the descent, but not evaluated: the search always descends
+ * @return the node, or an empty handle if the tree is empty or holds no such node
  */
-lListElem *
-getNode(const lList *share_tree, const char *name, int node_type, int recurse) {
+ocs::tom::ConstElement<ocs::tom::STN>
+getNode(const ocs::tom::ConstList<ocs::tom::STN> share_tree, const char *name, const int node_type,
+        const int recurse) {
    DENTER(TOP_LAYER);
-   lListElem *tmp;
 
-   if (!share_tree || !lFirst(share_tree)) {
+   if (share_tree.empty()) {
       DRETURN(nullptr);
    }
 
-   for_each_rw_lv (node, share_tree) {
+   for (const auto node : share_tree) {
       if (!strcmp(name, ocs::tom::get<STN_name>(node))) {
          DRETURN(node);
       }
-      if ((tmp = getNode(ocs::tom::get<STN_children>(node), name, node_type, 1))) {
+      if (const auto tmp = getNode(ocs::tom::get<STN_children>(node), name, node_type, 1); tmp) {
          DRETURN(tmp);
       }
    }
 
    DRETURN(nullptr);
 }
-

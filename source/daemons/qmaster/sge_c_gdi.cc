@@ -62,7 +62,27 @@
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_userset.h"
 #include "sgeobj/sge_manop.h"
+#include "sgeobj/tom/ocs_tom_EV.h"
+#include "sgeobj/tom/ocs_tom_ID.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
 #include "sgeobj/tom/ocs_tom_PERM.h"
+#include "sgeobj/tom/ocs_tom_SC.h"
+#include "sgeobj/tom/ocs_tom_STN.h"
+#include "sgeobj/tom/ocs_tom_STU.h"
+#include "sgeobj/tom/ocs_tom_CAL.h"
+#include "sgeobj/tom/ocs_tom_CE.h"
+#include "sgeobj/tom/ocs_tom_CK.h"
+#include "sgeobj/tom/ocs_tom_CONF.h"
+#include "sgeobj/tom/ocs_tom_CQ.h"
+#include "sgeobj/tom/ocs_tom_EH.h"
+#include "sgeobj/tom/ocs_tom_HGRP.h"
+#include "sgeobj/tom/ocs_tom_PE.h"
+#include "sgeobj/tom/ocs_tom_PR.h"
+#include "sgeobj/tom/ocs_tom_RL.h"
+#include "sgeobj/tom/ocs_tom_RQS.h"
+#include "sgeobj/tom/ocs_tom_US.h"
+#include "sgeobj/tom/ocs_tom_UU.h"
+#include "sgeobj/tom/ocs_tom_AR.h"
 #include "tom/ocs_Element.h"
 
 #include "gdi/ocs_gdi_Packet.h"
@@ -141,7 +161,7 @@ sge_gdi_tigger_thread_state_transition(ocs::gdi::Packet *packet, ocs::gdi::Task 
                                        monitoring_t *monitor);
 
 static int
-get_client_id(lListElem *, int *);
+get_client_id(ocs::tom::ConstElement<ocs::tom::ID> anElem, int *anID);
 
 static void
 trigger_scheduler_monitoring(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monitor);
@@ -458,6 +478,13 @@ sge_c_gdi_process_in_worker(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
    DRETURN_VOID;
 }
 
+/** @brief Answer the GET requests a listener thread handles itself: event clients and active threads
+ *
+ * @param ao      the table entry of the target, unused
+ * @param packet  the client request
+ * @param task    the GDI task being answered; its data list receives the result
+ * @param monitor for monitoring qmaster threads, unused
+ */
 static void
 sge_c_gdi_get_in_listener(gdi_object_t *ao, ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
@@ -478,7 +505,8 @@ sge_c_gdi_get_in_listener(gdi_object_t *ao, ocs::gdi::Packet *packet, ocs::gdi::
          answer_list_add(&(task->answer_list), MSG_GDI_OKNL, STATUS_OK, ANSWER_QUALITY_END);
          DRETURN_VOID;
       case ocs::gdi::Target::DUMMY_LIST:
-         task->data_list = get_active_thread_list();
+         // the data list of a GDI task is untyped (libs/gdi)
+         task->data_list = ocs_get_active_thread_list().release();
          task->do_select_pack_simultaneous = false;
          answer_list_add(&(task->answer_list), MSG_GDI_OKNL, STATUS_OK, ANSWER_QUALITY_END);
          DRETURN_VOID;
@@ -581,12 +609,10 @@ static void
 sge_c_gdi_add(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
               gdi_object_t *ao, ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
-   lListElem *ep;
    lList *ticket_orders = nullptr;
    bool reprioritize_tickets = sconf_get_reprioritize_interval() > 0;
 
    if (task->target == ocs::gdi::Target::EV_LIST) {
-      lListElem *next;
       bool return_new_version =
               (sub_command & ocs::gdi::SubCommand::RETURN_NEW_VERSION) == ocs::gdi::SubCommand::RETURN_NEW_VERSION;
 
@@ -598,13 +624,12 @@ sge_c_gdi_add(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
        * a member of - two elements under a key that EV_id declares unique, and
        * the walk below would run into the appended elements as well.
        */
-      lList *requests = task->data_list;
+      // the request data is structure checked by the listener (CS-3125): an EV_LIST add carries EV_Type
+      auto requests = ocs::tom::ListPtr<ocs::tom::EV>(task->data_list);
       task->data_list = nullptr;
 
-      next = lFirstRW(requests);
-      while ((ep = next) != nullptr) {/* is thread save. the global lock is used when needed */
-         next = lNextRW(ep);
-
+      /* is thread save. the global lock is used when needed */
+      for (const auto ep : *requests) {
          /* fill address infos from request into event client that must be added */
          ocs::tom::set<EV_host>(ep, packet->host);
          ocs::tom::set<EV_commproc>(ep, packet->commproc);
@@ -612,7 +637,7 @@ sge_c_gdi_add(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
 
          /* fill in authentication infos from request */
          ocs::tom::set<EV_uid>(ep, packet->uid);
-         if (!event_client_verify(ocs::tom::ConstElement<ocs::tom::EV>(ep), &(task->answer_list), true)) {
+         if (!event_client_verify(ep, &(task->answer_list), true)) {
             ERROR(MSG_QMASTER_INVALIDEVENTCLIENT_SSS, packet->user, packet->commproc, packet->host);
          } else {
             sge_add_event_client(packet, ep, &(task->answer_list),
@@ -621,45 +646,51 @@ sge_c_gdi_add(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
          }
       }
 
-      if (return_new_version) {
-         lFreeList(&requests);
-      } else {
-         /* nothing was returned, so the requests go back as they always did */
-         task->data_list = requests;
+      if (!return_new_version) {
+         /* nothing was returned, so the requests go back as they always did; otherwise requests frees them */
+         task->data_list = requests.release();
       }
    } else if (task->target == ocs::gdi::Target::JB_LIST) {
-      lListElem *next;
+      // the request data is structure checked by the listener (CS-3125): a JB_LIST add carries JB_Type
+      const auto jobs = ocs::tom::List<ocs::tom::JB>(task->data_list);
+      const bool return_new_version =
+              (sub_command & ocs::gdi::SubCommand::RETURN_NEW_VERSION) == ocs::gdi::SubCommand::RETURN_NEW_VERSION;
 
-      next = lFirstRW(task->data_list);
-      while ((ep = next) != nullptr) { /* is thread save. the global lock is used, when needed */
-         next = lNextRW(ep);
+      auto ep = jobs.front();
+      while (ep) { /* is thread save. the global lock is used, when needed */
+         const auto next = ep.next();
 
-         lDechainElem(task->data_list, ep);
+         // sge_gdi_add_job() takes the job over and may free it
+         auto job = jobs.extract(ep);
 
          /* fill address infos from request into event client that must be added */
-         if (!job_verify_submitted_job(ep, &(task->answer_list))) {
+         if (!job_verify_submitted_job(*job, &(task->answer_list))) {
             ERROR(MSG_QMASTER_INVALIDJOBSUBMISSION_SSS, packet->user, packet->commproc, packet->host);
          } else {
             /* submit needs to know user and group */
-            sge_gdi_add_job(&ep, &(task->answer_list),
-                            (sub_command & ocs::gdi::SubCommand::RETURN_NEW_VERSION) == ocs::gdi::SubCommand::RETURN_NEW_VERSION ?
-                            &(task->data_list) : nullptr,
+            sge_gdi_add_job(job, &(task->answer_list), return_new_version ? &(task->data_list) : nullptr,
                             packet, task, monitor);
          }
-         lInsertElem(task->data_list, nullptr, ep);
+         // a job freed by sge_gdi_add_job() is not put back, as lInsertElem() of a null element did nothing
+         if (job) {
+            jobs.push_front(std::move(job));
+         }
+         ep = next;
       }
    } else if (task->target == ocs::gdi::Target::SC_LIST) {
-      lListElem *next;
-
-      next = lFirstRW(task->data_list);
-      while ((ep = next) != nullptr) {
-         next = lNextRW(ep);
+      // the request data is structure checked by the listener (CS-3125): an SC_LIST add carries SC_Type
+      auto ep = ocs::tom::List<ocs::tom::SC>(task->data_list).front();
+      while (ep) {
+         const auto next = ep.next();
 
          sge_mod_sched_configuration(packet, task, ep, &(task->answer_list), packet->user, packet->host);
+         ep = next;
       }
    } else {
+      // stays raw: the element type of the data list and of tmp_list is given at run time by the target
       bool is_scheduler_resync = false;
       lList *tmp_list = nullptr;
+      lListElem *ep;
       lListElem *next;
 
       next = lFirstRW(task->data_list);
@@ -691,7 +722,9 @@ sge_c_gdi_add(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
                break;
 
             case ocs::gdi::Target::STN_LIST:
-               sge_add_sharetree(packet, task, ep, ocs::DataStore::get_master_list_rw(SGE_TYPE_SHARETREE), &(task->answer_list),
+               // the request data is structure checked by the listener (CS-3125): an STN_LIST add carries STN_Type
+               sge_add_sharetree(packet, task, ocs::tom::Element<ocs::tom::STN>(ep),
+                                 ocs::DataStore::get_master_list_rw(SGE_TYPE_SHARETREE), &(task->answer_list),
                                  packet->user, packet->host);
                break;
 
@@ -709,8 +742,9 @@ sge_c_gdi_add(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
                      is_restart = true;
                   }
 
-                  sge_execd_startedup(packet, task, ep, &(task->answer_list), packet->user,
-                                      packet->host, task->target, monitor, is_restart);
+                  // the request data is structure checked by the listener (CS-3125): an EH_LIST add carries EH_Type
+                  sge_execd_startedup(packet, task, ocs::tom::ConstElement<ocs::tom::EH>(ep), &(task->answer_list),
+                                      packet->user, packet->host, task->target, monitor, is_restart);
                } else {
                   sge_gdi_add_mod_generic(packet, task, &(task->answer_list), ep, 1, ao, packet->user, packet->host,
                                           cmd, sub_command, &tmp_list, monitor);
@@ -784,73 +818,81 @@ sge_c_gdi_del_element(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs:
       DRETURN_VOID;
    }
 
-      switch (target) {
-         case ocs::gdi::Target::EH_LIST:
-            sge_del_host(packet, task, ep, alpp, packet->user, packet->host, target,
-                         *ocs::DataStore::get_master_list_rw(SGE_TYPE_HGROUP), monitor);
-            break;
+   // the element carries the type of the target: request data is structure checked by the listener (CS-3125),
+   // and the qconf delete procedure builds it with the descriptor of the target
+   switch (target) {
+      case ocs::gdi::Target::EH_LIST:
+         sge_del_host(packet, task, ocs::tom::ConstElement<ocs::tom::EH>(ep), alpp, packet->user, packet->host, target,
+                      ocs::tom::ConstList<ocs::tom::HGRP>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_HGROUP)),
+                      monitor);
+         break;
 
-         case ocs::gdi::Target::CQ_LIST:
-            cqueue_del(packet, task, ep, alpp, packet->user, packet->host);
-            break;
+      case ocs::gdi::Target::CQ_LIST:
+         cqueue_del(packet, task, ocs::tom::ConstElement<ocs::tom::CQ>(ep), alpp, packet->user, packet->host);
+         break;
 
-         case ocs::gdi::Target::JB_LIST:
-            sge_gdi_del_job(packet, task, ep, alpp, cmd, sub_command, monitor);
-            break;
+      case ocs::gdi::Target::JB_LIST:
+         sge_gdi_del_job(packet, task, ocs::tom::Element<ocs::tom::ID>(ep), alpp, cmd, sub_command, monitor);
+         break;
 
-         case ocs::gdi::Target::CE_LIST:
-            sge_del_centry(packet, task, ep, alpp, packet->user, packet->host);
-            break;
+      case ocs::gdi::Target::CE_LIST:
+         sge_del_centry(packet, task, ocs::tom::ConstElement<ocs::tom::CE>(ep), alpp, packet->user, packet->host);
+         break;
 
-         case ocs::gdi::Target::PE_LIST:
-            sge_del_pe(packet, task, ep, alpp, packet->user, packet->host);
-            break;
+      case ocs::gdi::Target::PE_LIST:
+         sge_del_pe(packet, task, ocs::tom::ConstElement<ocs::tom::PE>(ep), alpp, packet->user, packet->host);
+         break;
 
+      case ocs::gdi::Target::CONF_LIST:
+         sge_del_configuration(packet, task, ocs::tom::ConstElement<ocs::tom::CONF>(ep), alpp, packet->user,
+                               packet->host);
+         break;
 
-         case ocs::gdi::Target::CONF_LIST:
-            sge_del_configuration(packet, task, ep, alpp, packet->user, packet->host);
-            break;
+      case ocs::gdi::Target::UU_LIST:
+         sge_del_userprj(packet, task, ocs::tom::ConstElement<ocs::tom::UU>(ep), alpp,
+                         ocs::tom::List<ocs::tom::UU>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_USER)),
+                         packet->user, packet->host);
+         break;
 
-         case ocs::gdi::Target::UU_LIST:
-            sge_del_userprj(packet, task, ep, alpp, ocs::DataStore::get_master_list_rw(SGE_TYPE_USER),
-                            packet->user, packet->host, 1);
-            break;
+      case ocs::gdi::Target::US_LIST:
+         sge_del_userset(packet, task, ocs::tom::ConstElement<ocs::tom::US>(ep), alpp,
+                         ocs::tom::List<ocs::tom::US>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_USERSET)),
+                         packet->user, packet->host);
+         break;
 
-         case ocs::gdi::Target::US_LIST:
-            sge_del_userset(packet, task, ep, alpp, ocs::DataStore::get_master_list_rw(SGE_TYPE_USERSET),
-                            packet->user, packet->host);
-            break;
+      case ocs::gdi::Target::PR_LIST:
+         sge_del_userprj(packet, task, ocs::tom::ConstElement<ocs::tom::PR>(ep), alpp,
+                         ocs::tom::List<ocs::tom::PR>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_PROJECT)),
+                         packet->user, packet->host);
+         break;
 
-         case ocs::gdi::Target::PR_LIST:
-            sge_del_userprj(packet, task, ep, alpp, ocs::DataStore::get_master_list_rw(SGE_TYPE_PROJECT),
-                            packet->user, packet->host, 0);
-            break;
+      case ocs::gdi::Target::RQS_LIST:
+         rqs_del(packet, task, ocs::tom::ConstElement<ocs::tom::RQS>(ep), alpp,
+                 ocs::tom::List<ocs::tom::RQS>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_RQS)), packet->user,
+                 packet->host);
+         break;
 
-         case ocs::gdi::Target::RQS_LIST:
-            rqs_del(packet, task, ep, alpp, ocs::DataStore::get_master_list_rw(SGE_TYPE_RQS), packet->user,
-                    packet->host);
-            break;
+      case ocs::gdi::Target::CK_LIST:
+         sge_del_ckpt(packet, task, ocs::tom::ConstElement<ocs::tom::CK>(ep), alpp, packet->user, packet->host);
+         break;
 
-         case ocs::gdi::Target::CK_LIST:
-            sge_del_ckpt(packet, task, ep, alpp, packet->user, packet->host);
-            break;
-
-         case ocs::gdi::Target::CAL_LIST:
-            sge_del_calendar(packet, task, ep, alpp, packet->user, packet->host);
-            break;
-         case ocs::gdi::Target::HGRP_LIST:
-            hgroup_del(packet, task, ep, alpp, packet->user, packet->host);
-            break;
-         case ocs::gdi::Target::AR_LIST:
-            ar_del(packet, task, ep, alpp, ocs::DataStore::get_master_list_rw(SGE_TYPE_AR), monitor);
-            break;
-         case ocs::gdi::Target::RL_LIST:
-            sge_del_role(packet, task, ep, alpp, packet->user, packet->host);
-            break;
-         default:
-            snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_OPNOIMPFORTARGET_S, "sge_c_gdi_del");
-            answer_list_add(alpp, SGE_EVENT, STATUS_ENOIMP, ANSWER_QUALITY_ERROR);
-            break;
+      case ocs::gdi::Target::CAL_LIST:
+         sge_del_calendar(packet, task, ocs::tom::ConstElement<ocs::tom::CAL>(ep), alpp, packet->user, packet->host);
+         break;
+      case ocs::gdi::Target::HGRP_LIST:
+         hgroup_del(packet, task, ocs::tom::ConstElement<ocs::tom::HGRP>(ep), alpp, packet->user, packet->host);
+         break;
+      case ocs::gdi::Target::AR_LIST:
+         ar_del(packet, task, ocs::tom::ConstElement<ocs::tom::ID>(ep), alpp,
+                ocs::tom::List<ocs::tom::AR>(*ocs::DataStore::get_master_list_rw(SGE_TYPE_AR)), monitor);
+         break;
+      case ocs::gdi::Target::RL_LIST:
+         sge_del_role(packet, task, ocs::tom::ConstElement<ocs::tom::RL>(ep), alpp, packet->user, packet->host);
+         break;
+      default:
+         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_OPNOIMPFORTARGET_S, "sge_c_gdi_del");
+         answer_list_add(alpp, SGE_EVENT, STATUS_ENOIMP, ANSWER_QUALITY_ERROR);
+         break;
    }
 
    DRETURN_VOID;
@@ -882,17 +924,27 @@ sge_c_gdi_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::gdi::Command 
    DRETURN_VOID;
 }
 
-/*
- * MT-NOTE: sge_c_gdi_copy() is MT safe
+/**
+ * @brief Carry out a GDI copy request; only jobs can be copied
+ *
+ * @param ao          the table entry of the target, unused
+ * @param packet      the client request
+ * @param task        the GDI task being answered; its data list holds the objects to copy
+ * @param sub_command GDI sub command, e.g. RETURN_NEW_VERSION
+ * @param monitor     for monitoring qmaster threads
+ *
+ * @note MT-NOTE: sge_c_gdi_copy() is MT safe
  */
 static void sge_c_gdi_copy(gdi_object_t *ao, ocs::gdi::Packet *packet, ocs::gdi::Task *task,
                            ocs::gdi::SubCommand sub_command, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
+   // the element type of the data list is given at run time by the target; only jobs are handled
    for_each_rw_lv (ep, task->data_list) {
       switch (task->target) {
          case ocs::gdi::Target::JB_LIST:
             /* gdi_copy_job uses the global lock internal */
-            sge_gdi_copy_job(ep, &(task->answer_list),
+            // the request data is structure checked by the listener (CS-3125): a JB_LIST copy carries JB_Type
+            sge_gdi_copy_job(ocs::tom::Element<ocs::tom::JB>(ep), &(task->answer_list),
                              (sub_command & ocs::gdi::SubCommand::RETURN_NEW_VERSION) == ocs::gdi::SubCommand::RETURN_NEW_VERSION ? &(task->answer_list) : nullptr,
                              packet, task, monitor);
             break;
@@ -1027,13 +1079,22 @@ sge_c_gdi_trigger_in_worker(ocs::gdi::Packet *packet, ocs::gdi::Task *task, moni
    DRETURN_VOID;
 }
 
+/**
+ * @brief Start or stop a qmaster thread on request; only the scheduler thread supports it
+ *
+ * @param packet  the client request
+ * @param task    the GDI task being answered; its data list holds ID_Type elements naming the thread
+ *                and the action
+ * @param monitor for monitoring qmaster threads
+ */
 static void
 sge_gdi_tigger_thread_state_transition(ocs::gdi::Packet *packet,
                                        ocs::gdi::Task *task,
                                        monitoring_t *monitor) {
    DENTER(TOP_LAYER);
    lList **answer_list = &(task->answer_list);
-   for_each_rw_lv(elem, task->data_list) {
+   // every element is read as ID_Type below, as the free access on the raw element did
+   for (const auto elem : ocs::tom::List<ocs::tom::ID>(task->data_list)) {
       const char *name = ocs::tom::get<ID_str>(elem);
       sge_thread_state_transitions_t action = (sge_thread_state_transitions_t) ocs::tom::get<ID_action>(elem);
 
@@ -1065,6 +1126,8 @@ sge_gdi_tigger_thread_state_transition(ocs::gdi::Packet *packet,
  * Shutdown event clients by client id. tasks data_list does contain a list of
  * client id's. This is a list of 'ID_Type' elements.
  *
+ * @param packet the client request
+ * @param task the GDI task being answered; its data list holds the ID_Type elements
  * @param monitor the monitoring structure
  *
  * @note MT-NOTE: ocs::gdi::Client::sge_gdi_shutdown_event_client() is NOT MT safe.
@@ -1073,7 +1136,8 @@ static void
 sge_gdi_shutdown_event_client(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
-   for_each_rw_lv(elem, task->data_list) {
+   // every element is read as ID_Type by get_client_id(), as the free access on the raw element did
+   for (const auto elem : ocs::tom::List<ocs::tom::ID>(task->data_list)) {
       lList *local_alp = nullptr;
       int client_id = EV_ID_ANY;
       int res = -1;
@@ -1136,14 +1200,14 @@ sge_gdi_shutdown_event_client(const ocs::gdi::Packet *packet, ocs::gdi::Task *ta
  * @param anElem ID_Type element
  * @param anID will contain client id on return
  *
- * @return failed to extract client id. 0      - otherwise
+ * @return EINVAL if the client id could not be extracted, 0 otherwise
  *
  * @note MT-NOTE: get_client_id() is MT safe.
  *
  *       Using 'errno' to check for 'strtol' error situations is recommended
  *       by POSIX.
  */
-static int get_client_id(lListElem *anElem, int *anID) {
+static int get_client_id(const ocs::tom::ConstElement<ocs::tom::ID> anElem, int *anID) {
    DENTER(TOP_LAYER);
 
    const char *id = nullptr;
@@ -1193,8 +1257,20 @@ trigger_scheduler_monitoring(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
    DRETURN_VOID;
 } /* trigger_scheduler_monitoring() */
 
-/*
- * MT-NOTE: sge_c_gdi_mod() is MT safe
+/**
+ * @brief Carry out a GDI modify request, one object of its data list after the other
+ *
+ * The element type of the data list, and of the list collected for post processing, is given at run time
+ * by the target, so both stay untyped here.
+ *
+ * @param ao          the table entry of the target, nullptr if it has no generic handling
+ * @param packet      the client request
+ * @param task        the GDI task being answered; its data list holds the modification instructions
+ * @param command     the GDI command
+ * @param sub_command GDI sub command, e.g. RETURN_NEW_VERSION
+ * @param monitor     for monitoring qmaster threads
+ *
+ * @note MT-NOTE: sge_c_gdi_mod() is MT safe
  */
 static void sge_c_gdi_mod(gdi_object_t *ao, ocs::gdi::Packet *packet, ocs::gdi::Task *task,
                           ocs::gdi::Command command, ocs::gdi::SubCommand sub_command,
@@ -1204,31 +1280,41 @@ static void sge_c_gdi_mod(gdi_object_t *ao, ocs::gdi::Packet *packet, ocs::gdi::
 
    for_each_rw_lv(ep, task->data_list) {
       if (task->target == ocs::gdi::Target::CONF_LIST) {
-         sge_mod_configuration(ep, &(task->answer_list), packet->user, packet->host, packet->gdi_session);
+         // the request data is structure checked by the listener (CS-3125): a CONF_LIST mod carries CONF_Type
+         sge_mod_configuration(ocs::tom::Element<ocs::tom::CONF>(ep), &(task->answer_list), packet->user,
+                               packet->host, packet->gdi_session);
       } else if (task->target == ocs::gdi::Target::EV_LIST) {
+         // the request data is structure checked by the listener (CS-3125): an EV_LIST mod carries EV_Type
+         const auto ev = ocs::tom::Element<ocs::tom::EV>(ep);
+
          /* fill address infos from request into event client that must be added */
-         ocs::tom::set<EV_host>(ep, packet->host);
-         ocs::tom::set<EV_commproc>(ep, packet->commproc);
-         ocs::tom::set<EV_commid>(ep, packet->commproc_id);
+         ocs::tom::set<EV_host>(ev, packet->host);
+         ocs::tom::set<EV_commproc>(ev, packet->commproc);
+         ocs::tom::set<EV_commid>(ev, packet->commproc_id);
 
          /* fill in authentication infos from request */
-         ocs::tom::set<EV_uid>(ep, packet->uid);
-         if (!event_client_verify(ocs::tom::ConstElement<ocs::tom::EV>(ep), &(task->answer_list), false)) {
+         ocs::tom::set<EV_uid>(ev, packet->uid);
+         if (!event_client_verify(ev, &(task->answer_list), false)) {
             ERROR(MSG_QMASTER_INVALIDEVENTCLIENT_SSS, packet->user, packet->commproc, packet->host);
          } else {
-            sge_mod_event_client(ep, &(task->answer_list), packet->user, packet->host);
+            sge_mod_event_client(ev, &(task->answer_list), packet->user, packet->host);
          }
       } else if (task->target == ocs::gdi::Target::SC_LIST) {
-         sge_mod_sched_configuration(packet, task, ep, &(task->answer_list), packet->user, packet->host);
+         // the request data is structure checked by the listener (CS-3125): an SC_LIST mod carries SC_Type
+         sge_mod_sched_configuration(packet, task, ocs::tom::Element<ocs::tom::SC>(ep), &(task->answer_list),
+                                     packet->user, packet->host);
       } else {
          switch (task->target) {
             case ocs::gdi::Target::JB_LIST:
-               sge_gdi_mod_job(packet, task, ep, &(task->answer_list), sub_command);
+               // the request data is structure checked by the listener (CS-3125): a JB_LIST mod carries JB_Type
+               sge_gdi_mod_job(packet, task, ocs::tom::Element<ocs::tom::JB>(ep), &(task->answer_list), sub_command);
                break;
 
             case ocs::gdi::Target::STN_LIST:
-               sge_mod_sharetree(packet, task, ep, ocs::DataStore::get_master_list_rw(SGE_TYPE_SHARETREE),
-                                 &(task->answer_list), packet->user, packet->host);
+               // the request data is structure checked by the listener (CS-3125): an STN_LIST mod carries STN_Type
+               sge_mod_sharetree(packet, task, ocs::tom::Element<ocs::tom::STN>(ep),
+                                 ocs::DataStore::get_master_list_rw(SGE_TYPE_SHARETREE), &(task->answer_list),
+                                 packet->user, packet->host);
                break;
             default:
                if (ao == nullptr) {
@@ -1248,7 +1334,8 @@ static void sge_c_gdi_mod(gdi_object_t *ao, ocs::gdi::Packet *packet, ocs::gdi::
       switch (task->target) {
          case ocs::gdi::Target::CE_LIST:
          DPRINTF("rebuilding consumable debitation\n");
-            centry_redebit_consumables(tmp_list, packet->gdi_session);
+            // centry_success() collects the names of the changed complex entries (STU_Type)
+            centry_redebit_consumables(ocs::tom::ConstList<ocs::tom::STU>(tmp_list), packet->gdi_session);
             break;
       default: ;
       }
@@ -1356,6 +1443,7 @@ sge_chck_mod_perm_user(const ocs::gdi::Packet *packet, lList **alpp, ocs::gdi::T
  * @param packet - packet to check
  * @param alpp - answer list pointer
  * @param target - target to check
+ * @param command - the GDI command of the request
  *
  * @return true if permission is granted, false otherwise
  */
@@ -1369,8 +1457,9 @@ sge_chck_mod_perm_host(const ocs::gdi::Packet *packet, lList **alpp, const ocs::
 
       switch (target) {
          case ocs::gdi::Target::EH_LIST: {
-            const lList *master_exec_host_list = *ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST);
-            bool is_exec_host = host_list_locate(master_exec_host_list, packet->host) != nullptr ? true : false;
+            const auto master_exec_host_list =
+                    ocs::tom::ConstList<ocs::tom::EH>(*ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST));
+            bool is_exec_host = host_list_locate(master_exec_host_list, packet->host) != nullptr;
             bool is_execd = strcmp(packet->commproc, to_cstr(EXECD)) == 0;
 
             // a host which is not known yet may add itself to the cluster if one of the rules
@@ -1473,8 +1562,9 @@ sge_task_check_get_perm_host(ocs::gdi::Packet *packet, ocs::gdi::Task *task) {
 
       switch (task->target) {
          case ocs::gdi::Target::CONF_LIST: {
-            const lList *master_exec_host_list = *ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST);
-            bool is_exec_host = host_list_locate(master_exec_host_list, packet->host) != nullptr ? true : false;
+            const auto master_exec_host_list =
+                    ocs::tom::ConstList<ocs::tom::EH>(*ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST));
+            bool is_exec_host = host_list_locate(master_exec_host_list, packet->host) != nullptr;
 
             // host must be either admin/submit or exec host
             if (!is_admin_host && !is_submit_host && !is_exec_host) {

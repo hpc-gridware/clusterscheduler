@@ -46,6 +46,10 @@
 #include "sgeobj/tom/ocs_tom_STU.h"
 #include "sgeobj/tom/ocs_tom_UA.h"
 #include "sgeobj/tom/ocs_tom_CT.h"
+#include "sgeobj/tom/ocs_tom_PR.h"
+#include "sgeobj/tom/ocs_tom_STN.h"
+#include "sgeobj/tom/ocs_tom_US.h"
+#include "sgeobj/tom/ocs_tom_UU.h"
 
 #include "uti/sge_lock.h"
 #include "uti/sge_log.h"
@@ -60,14 +64,30 @@
 #include "ocs_JsonUtil.h"
 
 namespace ocs {
-   bool JsonReportingFileWriter::create_acct_record(lList **answer_list, lListElem *job_report,
-                                                    lListElem *job, lListElem *ja_task, bool intermediate) {
+   /** @brief Write the accounting record of a job as a JSON acct record to the reporting file
+    *
+    * Written for the final record and for intermediate ones; once an
+    * intermediate record has been written, every further record reports only
+    * the usage since the previous one.
+    *
+    * @param answer_list receives error messages
+    * @param job_report the job report the execution host sent (`JR_Type`)
+    * @param job the job (`JB_Type`)
+    * @param ja_task the array task (`JAT_Type`)
+    * @param intermediate whether this is an interim record for a job that is still running
+    * @return true on success
+    */
+   bool JsonReportingFileWriter::create_acct_record(lList **answer_list,
+                                                    const ocs::tom::Element<ocs::tom::JR> job_report,
+                                                    const ocs::tom::Element<ocs::tom::JB> job,
+                                                    const ocs::tom::Element<ocs::tom::JAT> ja_task, bool intermediate) {
       DENTER(TOP_LAYER);
 
       // get the job category string
-      const lList *master_category_list = *ocs::DataStore::get_master_list(SGE_TYPE_CATEGORY);
-      uint32_t category_id = ocs::tom::get<JB_category_id>(job);
-      ocs::tom::Element<ocs::tom::CT> category = ocs::tom::find_first_rw<CT_id>(master_category_list, category_id);
+      const auto master_category_list =
+              ocs::tom::ConstList<ocs::tom::CT>(*ocs::DataStore::get_master_list(SGE_TYPE_CATEGORY));
+      const uint32_t category_id = ocs::tom::get<JB_category_id>(job);
+      const auto category = master_category_list.find_first<CT_id>(category_id);
       const char *category_string = ocs::tom::get<CT_str>(category);
 
       // get accounting data
@@ -127,12 +147,15 @@ namespace ocs {
     * @see ReportingFileWriter::create_online_usage_records()
     */
    bool
-   JsonReportingFileWriter::create_online_usage_record(lList **answer_list, lListElem *job_report,
-                                                       lListElem *job, lListElem *ja_task, lListElem *pe_task,
+   JsonReportingFileWriter::create_online_usage_record(lList **answer_list,
+                                                       const ocs::tom::ConstElement<ocs::tom::JR> job_report,
+                                                       const ocs::tom::ConstElement<ocs::tom::JB> job,
+                                                       const ocs::tom::ConstElement<ocs::tom::JAT> ja_task,
+                                                       const ocs::tom::ConstElement<ocs::tom::PET> pe_task,
                                                        bool aggregate_pe_tasks) {
       DENTER(TOP_LAYER);
 
-      if (job == nullptr || ja_task == nullptr) {
+      if (!job || !ja_task) {
          DRETURN(true);
       }
 
@@ -146,27 +169,25 @@ namespace ocs {
          DRETURN(true);
       }
 
-      // pe_task != nullptr: report scaled usage of the pe_task,
+      // a PE task given: report scaled usage of the pe_task,
       // otherwise the (possibly aggregated) scaled usage on the ja_task
-      const lList *primary_usage = (pe_task != nullptr)
-                                   ? static_cast<const lList *>(ocs::tom::get<PET_scaled_usage>(pe_task))
-                                   : static_cast<const lList *>(ocs::tom::get<JAT_scaled_usage_list>(ja_task));
+      const ocs::tom::ConstList<ocs::tom::UA> primary_usage = pe_task ? ocs::tom::get<PET_scaled_usage>(pe_task)
+                                                                     : ocs::tom::get<JAT_scaled_usage_list>(ja_task);
 
       // aggregation only applies to ja_task-level records
-      const bool aggregate = (pe_task == nullptr) && aggregate_pe_tasks;
+      const bool aggregate = !pe_task && aggregate_pe_tasks;
 
       // Suppress empty-usage records: if none of the configured variables
       // have data yet, do not emit anything.
       bool any_data = false;
       for (const auto &name : vars) {
-         if (static_cast<const lListElem *>(ocs::tom::find_first<UA_name>(primary_usage, name.c_str())) != nullptr) {
+         if (primary_usage.find_first<UA_name>(name.c_str())) {
             any_data = true;
             break;
          }
          if (aggregate) {
-            ocs::tom::ConstElement<ocs::tom::PET> pe_task_iter;
-            for_each_ep(pe_task_iter, ocs::tom::get<JAT_task_list>(ja_task)) {
-               if (static_cast<const lListElem *>(ocs::tom::find_first_in<PET_scaled_usage, UA_name>(pe_task_iter, name.c_str())) != nullptr) {
+            for (const auto pe_task_iter : ocs::tom::get<JAT_task_list>(ja_task)) {
+               if (ocs::tom::get<PET_scaled_usage>(pe_task_iter).find_first<UA_name>(name.c_str())) {
                   any_data = true;
                   break;
                }
@@ -192,7 +213,7 @@ namespace ocs {
       // Always emit pe_taskid so the JSONL record carries the full sge_job
       // primary key; "NONE" is the classic-format sentinel for ja_task-level
       // records (and for jobs without a parallel environment).
-      write_json(writer, "pe_taskid", pe_task != nullptr ? ocs::tom::get<PET_id>(pe_task) : NONE_STR);
+      write_json(writer, "pe_taskid", pe_task ? ocs::tom::get<PET_id>(pe_task) : NONE_STR);
 
       writer.Key("usage");
       writer.StartObject();
@@ -200,17 +221,16 @@ namespace ocs {
          double total = 0.0;
          bool found_any = false;
 
-         ocs::tom::ConstElement<ocs::tom::UA> u = ocs::tom::find_first<UA_name>(primary_usage, name.c_str());
-         if (u != nullptr) {
+         const auto u = primary_usage.find_first<UA_name>(name.c_str());
+         if (u) {
             total = ocs::tom::get<UA_value>(u);
             found_any = true;
          }
 
          if (aggregate) {
-            ocs::tom::ConstElement<ocs::tom::PET> pe_task_iter;
-            for_each_ep(pe_task_iter, ocs::tom::get<JAT_task_list>(ja_task)) {
-               ocs::tom::ConstElement<ocs::tom::UA> pu = ocs::tom::find_first_in<PET_scaled_usage, UA_name>(pe_task_iter, name.c_str());
-               if (pu != nullptr) {
+            for (const auto pe_task_iter : ocs::tom::get<JAT_task_list>(ja_task)) {
+               const auto pu = ocs::tom::get<PET_scaled_usage>(pe_task_iter).find_first<UA_name>(name.c_str());
+               if (pu) {
                   total += ocs::tom::get<UA_value>(pu);
                   found_any = true;
                }
@@ -241,8 +261,13 @@ namespace ocs {
       sge_mutex_unlock(typeid(*this).name(), __func__, __LINE__, &buffer_mutex);
    }
 
+   /** @brief Write a new_job record for a job that has just been submitted
+    * @param answer_list receives error messages
+    * @param job the job (`JB_Type`), may be an empty handle
+    * @return true on success
+    */
    bool
-   JsonReportingFileWriter::create_new_job_record(lList **answer_list, const lListElem *job) {
+   JsonReportingFileWriter::create_new_job_record(lList **answer_list, const ocs::tom::ConstElement<ocs::tom::JB> job) {
       DENTER(TOP_LAYER);
 
       bool ret = true;
@@ -280,11 +305,28 @@ namespace ocs {
       DRETURN(ret);
    }
 
+   /** @brief Write a job_log record for a change in a job's life
+    *
+    * Nothing is written unless job logging is enabled.
+    *
+    * @param answer_list receives error messages
+    * @param event_time when it happened
+    * @param type which change it was
+    * @param user who caused it
+    * @param host the host it happened on
+    * @param job_report the job report the execution host sent (`JR_Type`), not used here
+    * @param job the job (`JB_Type`), may be an empty handle
+    * @param ja_task the array task (`JAT_Type`), may be an empty handle
+    * @param pe_task the PE task (`PET_Type`), may be an empty handle
+    * @param message a description of what happened, may be nullptr
+    * @return true on success
+    */
    bool
    JsonReportingFileWriter::create_job_log(lList **answer_list, uint64_t event_time, job_log_t type, const char *user,
-                                           const char *host,
-                                           const lListElem *job_report, const lListElem *job, const lListElem *ja_task,
-                                           const lListElem *pe_task, const char *message) {
+                                           const char *host, const ocs::tom::ConstElement<ocs::tom::JR> job_report,
+                                           const ocs::tom::ConstElement<ocs::tom::JB> job,
+                                           const ocs::tom::ConstElement<ocs::tom::JAT> ja_task,
+                                           const ocs::tom::ConstElement<ocs::tom::PET> pe_task, const char *message) {
       DENTER(TOP_LAYER);
 
       bool ret = true;
@@ -362,8 +404,18 @@ namespace ocs {
       DRETURN(ret);
    }
 
+   /** @brief Write a host record with the host's reported load values
+    *
+    * The record is written only when there are load values to report.
+    *
+    * @param answer_list receives error messages
+    * @param host the execution host (`EH_Type`), may be an empty handle
+    * @param report_time the time to stamp the record with
+    * @return true on success
+    */
    bool
-   JsonReportingFileWriter::create_host_record(lList **answer_list, const lListElem *host, uint64_t report_time) {
+   JsonReportingFileWriter::create_host_record(lList **answer_list, const ocs::tom::ConstElement<ocs::tom::EH> host,
+                                               uint64_t report_time) {
       DENTER(TOP_LAYER);
 
       bool ret = true;
@@ -392,9 +444,20 @@ namespace ocs {
       DRETURN(ret);
    }
 
+   /** @brief Write a host_consumable record with the consumables of a host
+    *
+    * The record is written only when at least one consumable is logged.
+    *
+    * @param answer_list receives error messages
+    * @param host the execution host (`EH_Type`), may be an empty handle
+    * @param job the job that changed the consumables (`JB_Type`), may be an empty handle
+    * @param report_time the time to stamp the record with
+    * @return true on success
+    */
    bool
-   JsonReportingFileWriter::create_host_consumable_record(lList **answer_list, const lListElem *host,
-                                                          const lListElem *job,
+   JsonReportingFileWriter::create_host_consumable_record(lList **answer_list,
+                                                          const ocs::tom::ConstElement<ocs::tom::EH> host,
+                                                          const ocs::tom::ConstElement<ocs::tom::JB> job,
                                                           uint64_t report_time) {
       DENTER(TOP_LAYER);
 
@@ -425,8 +488,15 @@ namespace ocs {
       DRETURN(ret);
    }
 
+   /** @brief Write a queue record with the state of a queue instance
+    * @param answer_list receives error messages
+    * @param queue the queue instance (`QU_Type`), may be an empty handle
+    * @param report_time the time to stamp the record with
+    * @return true on success, false for an empty handle
+    */
    bool
-   JsonReportingFileWriter::create_queue_record(lList **answer_list, const lListElem *queue, uint64_t report_time) {
+   JsonReportingFileWriter::create_queue_record(lList **answer_list, const ocs::tom::ConstElement<ocs::tom::QU> queue,
+                                                uint64_t report_time) {
       DENTER(TOP_LAYER);
 
       bool ret = true;
@@ -458,10 +528,23 @@ namespace ocs {
 
    }
 
+   /** @brief Write a queue_consumable record with the consumables of a queue instance
+    *
+    * The record is written only when at least one consumable is logged.
+    *
+    * @param answer_list receives error messages
+    * @param host the host of the queue instance (`EH_Type`), may be an empty handle
+    * @param queue the queue instance (`QU_Type`), may be an empty handle
+    * @param job the job that changed the consumables (`JB_Type`), may be an empty handle
+    * @param report_time the time to stamp the record with
+    * @return true on success, false for an empty host or queue handle
+    */
    bool
-   JsonReportingFileWriter::create_queue_consumable_record(lList **answer_list, const lListElem *host,
-                                                           const lListElem *queue,
-                                                           const lListElem *job, uint64_t report_time) {
+   JsonReportingFileWriter::create_queue_consumable_record(lList **answer_list,
+                                                           const ocs::tom::ConstElement<ocs::tom::EH> host,
+                                                           const ocs::tom::ConstElement<ocs::tom::QU> queue,
+                                                           const ocs::tom::ConstElement<ocs::tom::JB> job,
+                                                           uint64_t report_time) {
       DENTER(TOP_LAYER);
 
       bool ret = true;
@@ -498,8 +581,15 @@ namespace ocs {
       DRETURN(ret);
    }
 
+   /** @brief Write a new_ar record for an advance reservation that has just been created
+    * @param answer_list receives error messages
+    * @param ar the advance reservation (`AR_Type`), may be an empty handle
+    * @param report_time the time to stamp the record with
+    * @return true on success, false for an empty handle
+    */
    bool
-   JsonReportingFileWriter::create_new_ar_record(lList **answer_list, const lListElem *ar, uint64_t report_time) {
+   JsonReportingFileWriter::create_new_ar_record(lList **answer_list, const ocs::tom::ConstElement<ocs::tom::AR> ar,
+                                                 uint64_t report_time) {
       DENTER(TOP_LAYER);
 
       bool ret = true;
@@ -525,8 +615,16 @@ namespace ocs {
       DRETURN(ret);
    }
 
+   /** @brief Write an ar_attribute record with the attributes of an advance reservation
+    * @param answer_list receives error messages
+    * @param ar the advance reservation (`AR_Type`), may be an empty handle
+    * @param report_time the time to stamp the record with
+    * @return true on success, false for an empty handle
+    */
    bool
-   JsonReportingFileWriter::create_ar_attribute_record(lList **answer_list, const lListElem *ar, uint64_t report_time) {
+   JsonReportingFileWriter::create_ar_attribute_record(lList **answer_list,
+                                                       const ocs::tom::ConstElement<ocs::tom::AR> ar,
+                                                       uint64_t report_time) {
       DENTER(TOP_LAYER);
 
       bool ret = true;
@@ -567,9 +665,18 @@ namespace ocs {
       DRETURN(ret);
    }
 
+   /** @brief Write an ar_log record for a state change of an advance reservation
+    * @param answer_list receives error messages
+    * @param ar the advance reservation (`AR_Type`), may be an empty handle
+    * @param event the event that caused the state change
+    * @param ar_description a description of the change
+    * @param report_time the time of the state change
+    * @return true on success, false for an empty handle
+    */
    bool
-   JsonReportingFileWriter::create_ar_log_record(lList **answer_list, const lListElem *ar, ar_state_event_t event,
-                                                 const char *ar_description, uint64_t report_time) {
+   JsonReportingFileWriter::create_ar_log_record(lList **answer_list, const ocs::tom::ConstElement<ocs::tom::AR> ar,
+                                                 ar_state_event_t event, const char *ar_description,
+                                                 uint64_t report_time) {
       DENTER(TOP_LAYER);
 
       bool ret = true;
@@ -602,8 +709,15 @@ namespace ocs {
       DRETURN(ret);
    }
 
+   /** @brief Write one ar_acct record per queue instance of a terminated advance reservation
+    * @param answer_list receives error messages
+    * @param ar the advance reservation (`AR_Type`), may be an empty handle
+    * @param report_time the termination time
+    * @return true on success, false for an empty handle or an unparsable queue instance name
+    */
    bool
-   JsonReportingFileWriter::create_ar_acct_record(lList **answer_list, const lListElem *ar, uint64_t report_time) {
+   JsonReportingFileWriter::create_ar_acct_record(lList **answer_list, const ocs::tom::ConstElement<ocs::tom::AR> ar,
+                                                  uint64_t report_time) {
       DENTER(TOP_LAYER);
       bool ret = true;
 
@@ -641,8 +755,10 @@ namespace ocs {
     * @param report_time the time to stamp the record with
     */
    void
-   ocs::JsonReportingFileWriter::create_single_ar_acct_record(const lListElem *ar, const char *cqueue_name,
-                                const char *hostname, uint32_t slots, uint64_t report_time) {
+   ocs::JsonReportingFileWriter::create_single_ar_acct_record(const ocs::tom::ConstElement<ocs::tom::AR> ar,
+                                                              const char *cqueue_name, const char *hostname,
+                                                              uint32_t slots, uint64_t report_time) {
+      DENTER(TOP_LAYER);
 
       rapidjson::StringBuffer stringBuffer;
       rapidjson::Writer<rapidjson::StringBuffer> writer(stringBuffer);
@@ -660,8 +776,16 @@ namespace ocs {
 
       writer.EndObject();
       create_record(stringBuffer);
+
+      DRETURN_VOID;
    }
 
+   /** @brief Write the share tree usage as sharelog records
+    *
+    * Written only when a sharelog interval is configured and a share tree exists.
+    *
+    * @param monitor monitors the use of the global lock
+    */
    void
    JsonReportingFileWriter::create_sharelog_record(monitoring_t *monitor) {
       DENTER(TOP_LAYER);
@@ -669,15 +793,19 @@ namespace ocs {
       if (sharelog_interval > 0) {
          // only create sharelog entries if we have a sharetree
          MONITOR_WAIT_TIME(SGE_LOCK(LOCK_GLOBAL, LOCK_READ), monitor);
-         const lList *master_stree_list = *ocs::DataStore::get_master_list(SGE_TYPE_SHARETREE);
-         if (lGetNumberOfElem(master_stree_list) == 0) {
+         const auto master_stree_list =
+                 ocs::tom::ConstList<ocs::tom::STN>(*ocs::DataStore::get_master_list(SGE_TYPE_SHARETREE));
+         if (master_stree_list.empty()) {
             SGE_UNLOCK(LOCK_GLOBAL, LOCK_READ);
          } else {
             rapidjson::StringBuffer stringBuffer;
 
-            const lList *master_user_list = *ocs::DataStore::get_master_list(SGE_TYPE_USER);
-            const lList *master_userset_list = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
-            const lList *master_project_list = *ocs::DataStore::get_master_list(SGE_TYPE_PROJECT);
+            const auto master_user_list =
+                    ocs::tom::ConstList<ocs::tom::UU>(*ocs::DataStore::get_master_list(SGE_TYPE_USER));
+            const auto master_userset_list =
+                    ocs::tom::ConstList<ocs::tom::US>(*ocs::DataStore::get_master_list(SGE_TYPE_USERSET));
+            const auto master_project_list =
+                    ocs::tom::ConstList<ocs::tom::PR>(*ocs::DataStore::get_master_list(SGE_TYPE_PROJECT));
 
             /* define output format */
             format_t format;
@@ -711,22 +839,21 @@ namespace ocs {
     */
    bool
    JsonReportingFileWriter::write_load_values(rapidjson::Writer<rapidjson::StringBuffer> &writer,
-                                              const lList *load_list, const lList *variables) {
+                                              const ocs::tom::ConstList<ocs::tom::HL> load_list,
+                                              const ocs::tom::ConstList<ocs::tom::STU> variables) {
       DENTER(TOP_LAYER);
 
       bool ret = false; // did we write any values?
 
       // write load values only when requested
-      if (lGetNumberOfElem(variables) > 0) {
+      if (!variables.empty()) {
          writer.Key("load_values");
          writer.StartObject();
 
-         for_each_ep_lv (variable, variables) {
-            const char *name;
-
-            name = ocs::tom::get<STU_name>(variable);
-            ocs::tom::ConstElement<ocs::tom::HL> load = ocs::tom::find_first<HL_name>(load_list, name);
-            if (load != nullptr) {
+         for (const auto variable : variables) {
+            const char *name = ocs::tom::get<STU_name>(variable);
+            const auto load = load_list.find_first<HL_name>(name);
+            if (load) {
                write_json(writer, name, ocs::tom::get<HL_value>(load));
             }
          }
@@ -747,14 +874,16 @@ namespace ocs {
     */
    bool
    JsonReportingFileWriter::write_consumables(rapidjson::Writer<rapidjson::StringBuffer> &writer,
-                                              const lList *actual, const lList *total,
-                                              const lListElem *host, const lListElem *job) const {
+                                              const ocs::tom::ConstList<ocs::tom::RUE> actual,
+                                              const ocs::tom::ConstList<ocs::tom::CE> total,
+                                              const ocs::tom::ConstElement<ocs::tom::EH> host,
+                                              const ocs::tom::ConstElement<ocs::tom::JB> job) const {
       DENTER(TOP_LAYER);
 
       bool consumables_initialized = false;
 
-      ocs::tom::ConstList<ocs::tom::STU> report_variables = ocs::tom::get<EH_merged_report_variables>(host);
-      for_each_ep_lv(cep, actual) {
+      const auto report_variables = ocs::tom::get<EH_merged_report_variables>(host);
+      for (const auto cep : actual) {
          const char *name = ocs::tom::get<RUE_name>(cep);
          bool log_variable = true;
 
@@ -763,7 +892,7 @@ namespace ocs {
           * due to reporting_variables in global/local host
           */
          if (!log_consumables) {
-            if (static_cast<const lListElem *>(ocs::tom::find_first<STU_name>(report_variables, name)) == nullptr) {
+            if (!report_variables.find_first<STU_name>(name)) {
                log_variable = false;
             } else {
                /*
@@ -771,8 +900,8 @@ namespace ocs {
                 * consumables, which are requested by the job
                 * slots is an implicit request - always log it if requested
                 */
-               if (strcmp(name, "slots") != 0 && job != nullptr) {
-                  if (job_get_request(job, name) == nullptr) {
+               if (strcmp(name, "slots") != 0 && job) {
+                  if (!job_get_request(job, name)) {
                      log_variable = false;
                   }
                }
@@ -787,8 +916,8 @@ namespace ocs {
                writer.StartObject();
                consumables_initialized = true;
             }
-            const lListElem *tep = ocs::tom::find_first<CE_name>(total, name);
-            if (tep != nullptr) {
+            const auto tep = total.find_first<CE_name>(name);
+            if (tep) {
                writer.Key(name);
                writer.StartObject();
 

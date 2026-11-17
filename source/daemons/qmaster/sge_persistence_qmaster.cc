@@ -41,6 +41,8 @@
 #include "uti/sge_time.h"
 
 #include "cull/cull.h"
+#include "tom/ocs_Element.h"
+#include "sgeobj/tom/ocs_tom_SPC.h"
 
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_event.h"
@@ -69,7 +71,6 @@ sge_initialize_persistence(lList **answer_list) {
    DENTER(TOP_LAYER);
    bool ret = true;
 
-   lListElem *spooling_context;
    const char *spooling_method = ocs::Bootstrap::get_spooling_method();
    const char *spooling_lib = ocs::Bootstrap::get_spooling_lib();
    const char *spooling_params = ocs::Bootstrap::get_spooling_params();
@@ -79,9 +80,10 @@ sge_initialize_persistence(lList **answer_list) {
       spooling_wait_time = atoi(getenv("SGE_TEST_SPOOLING_WAIT_TIME"));
    }
 
-   /* create spooling context */
-   spooling_context = spool_create_dynamic_context(answer_list, spooling_method, spooling_lib, spooling_params);
-   if (spooling_context == nullptr) {
+   /* create spooling context; the spooling loader creates it as SPC_Type */
+   const auto spooling_context = ocs::tom::Element<ocs::tom::SPC>::from_typed(
+           spool_create_dynamic_context(answer_list, spooling_method, spooling_lib, spooling_params));
+   if (!spooling_context) {
       /* error message created in spool_create_dynamic_context */
       ret = false;
    } else {
@@ -130,29 +132,28 @@ sge_shutdown_persistence(lList **answer_list) {
    bool ret = true;
    uint64_t time = 0;
    lList *alp = nullptr;
-   lListElem *context;
 
    /* trigger spooling actions (flush data) */
    if (!spool_trigger_context(&alp, spool_get_default_context(), 0, &time)) {
       answer_list_output(&alp);
    }
 
-   /* shutdown spooling */
-   context = spool_get_default_context();
-   if (context != nullptr) {
+   /* shutdown spooling; the default context is the SPC_Type element set in sge_initialize_persistence() */
+   auto context = ocs::tom::ElementPtr<ocs::tom::SPC>::from_typed(spool_get_default_context());
+   if (context) {
       lList *local_answer = nullptr;
 
       if (answer_list != nullptr) {
          local_answer = *answer_list;
       }
 
-      spool_shutdown_context(&local_answer, context);
+      spool_shutdown_context(&local_answer, context.get());
       if (answer_list == nullptr) {
          answer_list_output(&local_answer);
       }
 
-      lFreeElem(&context);
-      spool_set_default_context(context);
+      context.reset();
+      spool_set_default_context(nullptr);
    }
 
    DRETURN(ret);
