@@ -658,8 +658,9 @@ The reconnect token mechanism described above works identically either way: the 
 of MUNGE.
 
 For strong cross-host authentication, run **both** MUNGE and TLS: MUNGE ties each request to the
-caller's verified UID / GID, and TLS provides mutual-cert host authentication and encrypts the
-transport. The two layers cover different threats and do not substitute for each other.
+caller's verified UID / GID, and TLS authenticates the daemon (server) towards the connecting client
+and encrypts the transport (`security_mode tls,munge`); TLS does not authenticate the client side.
+The two layers cover different threats and do not substitute for each other.
 
 ### UID, GID, supplementary groups
 
