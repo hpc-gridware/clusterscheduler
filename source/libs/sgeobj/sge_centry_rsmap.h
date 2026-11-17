@@ -29,12 +29,22 @@
 #include "cull/cull_list.h"
 #include "uti/sge_dstring.h"
 
+#include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "tom/ocs_Transitional.h"
+#include "sgeobj/tom/ocs_tom_CE.h"
+#include "sgeobj/tom/ocs_tom_RESL.h"
+#include "sgeobj/tom/ocs_tom_ST.h"
+
 bool centry_check_rsmap(lList **answer_list, uint32_t status, const char* attrname);
 
-bool centry_check_rsmap_characteristics(lList **answer_list, lListElem *centry,
-                                        const lList *master_centry_list);
+bool centry_check_rsmap_characteristics(lList **answer_list, ocs::tom::Element<ocs::tom::CE> centry,
+                                        ocs::tom::ConstList<ocs::tom::CE> master_centry_list);
+OCS_TRANSITIONAL bool centry_check_rsmap_characteristics(lList **answer_list, lListElem *centry,
+                                                         const lList *master_centry_list);
 
-bool centry_rsmap_expand_implicit_ids(lList **answer_list, lListElem *centry, uint32_t max_ids);
+bool centry_rsmap_expand_implicit_ids(lList **answer_list, ocs::tom::Element<ocs::tom::CE> centry, uint32_t max_ids);
+OCS_TRANSITIONAL bool centry_rsmap_expand_implicit_ids(lList **answer_list, lListElem *centry, uint32_t max_ids);
 
 /**
  * The parameters a resource map request may carry in brackets after its amount. The names are
@@ -56,55 +66,74 @@ extern const char *const RSMAP_REQUEST_PARAM_SCOPE_JOB;
 
 bool centry_rsmap_is_reserved_param(const char *name);
 
-bool centry_rsmap_request_is_job_scope(const lListElem *centry);
+bool centry_rsmap_request_is_job_scope(ocs::tom::ConstElement<ocs::tom::CE> centry);
+OCS_TRANSITIONAL bool centry_rsmap_request_is_job_scope(const lListElem *centry);
 
-bool centry_rsmap_check_request_params(lList **answer_list, const lListElem *centry,
-                                       const lList *master_centry_list);
+bool centry_rsmap_check_request_params(lList **answer_list, ocs::tom::ConstElement<ocs::tom::CE> centry,
+                                       ocs::tom::ConstList<ocs::tom::CE> master_centry_list);
 
-bool centry_rsmap_get_request_param(const lListElem *centry, const char *param,
-                                    dstring *value);
+bool centry_rsmap_get_request_param(ocs::tom::ConstElement<ocs::tom::CE> centry, const char *param, dstring *value);
+OCS_TRANSITIONAL bool centry_rsmap_get_request_param(const lListElem *centry, const char *param, dstring *value);
 
+[[nodiscard]] ocs::tom::ListPtr<ocs::tom::CE>
+centry_rsmap_resolve_request_properties(ocs::tom::ConstElement<ocs::tom::CE> centry,
+                                        ocs::tom::ConstList<ocs::tom::CE> master_centry_list);
+OCS_TRANSITIONAL bool centry_rsmap_resolve_request_properties(const lListElem *centry, const lList *master_centry_list,
+                                                              lList **required);
 
-bool centry_rsmap_resolve_request_properties(const lListElem *centry,
-                                             const lList *master_centry_list, lList **required);
+[[nodiscard]] ocs::tom::ListPtr<ocs::tom::ST>
+centry_rsmap_group_keys(ocs::tom::ConstElement<ocs::tom::CE> resource_definition, const char *key_name);
 
-lList *centry_rsmap_group_keys(const lListElem *resource_definition, const char *key_name);
+uint32_t centry_rsmap_free(ocs::tom::ConstElement<ocs::tom::CE> resource_definition,
+                           ocs::tom::ConstList<ocs::tom::RESL> taken, const char *id_expr,
+                           ocs::tom::ConstList<ocs::tom::CE> required_props = nullptr);
+OCS_TRANSITIONAL uint32_t centry_rsmap_free(const lListElem *resource_definition, const lList *taken,
+                                            const char *id_expr, const lList *required_props = nullptr);
 
-uint32_t centry_rsmap_free(const lListElem *resource_definition, const lList *taken,
-                           const char *id_expr, const lList *required_props = nullptr);
-
-uint32_t centry_rsmap_group_free(const lListElem *resource_definition, const lList *taken,
-                                 const char *key_name, const char *key,
+uint32_t centry_rsmap_group_free(ocs::tom::ConstElement<ocs::tom::CE> resource_definition,
+                                 ocs::tom::ConstList<ocs::tom::RESL> taken, const char *key_name, const char *key,
                                  const char *id_expr = nullptr,
-                                 const lList *required_props = nullptr);
+                                 ocs::tom::ConstList<ocs::tom::CE> required_props = nullptr);
 
-const char *centry_rsmap_best_free_group(const lListElem *resource_definition,
-                                         const lList *taken,
-                                         const char *key_name, uint32_t *free_amount,
-                                         const char *id_expr = nullptr,
-                                         const lList *required_props = nullptr);
+const char *centry_rsmap_best_free_group(ocs::tom::ConstElement<ocs::tom::CE> resource_definition,
+                                         ocs::tom::ConstList<ocs::tom::RESL> taken, const char *key_name,
+                                         uint32_t *free_amount, const char *id_expr = nullptr,
+                                         ocs::tom::ConstList<ocs::tom::CE> required_props = nullptr);
+OCS_TRANSITIONAL const char *centry_rsmap_best_free_group(const lListElem *resource_definition, const lList *taken,
+                                                          const char *key_name, uint32_t *free_amount,
+                                                          const char *id_expr = nullptr,
+                                                          const lList *required_props = nullptr);
 
-bool centry_rsmap_select_instances(const lListElem *resource_definition,
-                                   const lList *taken, const lList *already,
-                                   uint32_t amount, lList **selected,
-                                   const char *id_expr = nullptr,
-                                   const lList *required_props = nullptr);
+[[nodiscard]] ocs::tom::ListPtr<ocs::tom::RESL>
+centry_rsmap_select_instances(ocs::tom::ConstElement<ocs::tom::CE> resource_definition,
+                              ocs::tom::ConstList<ocs::tom::RESL> taken, ocs::tom::ConstList<ocs::tom::RESL> already,
+                              uint32_t amount, const char *id_expr = nullptr,
+                              ocs::tom::ConstList<ocs::tom::CE> required_props = nullptr);
+OCS_TRANSITIONAL bool centry_rsmap_select_instances(const lListElem *resource_definition, const lList *taken,
+                                                    const lList *already, uint32_t amount, lList **selected,
+                                                    const char *id_expr = nullptr,
+                                                    const lList *required_props = nullptr);
 
-bool centry_rsmap_select_group_instances(const lListElem *resource_definition,
-                                         const lList *taken,
-                                         const lList *already, const char *key_name,
-                                         uint32_t amount, lList **selected,
-                                         const char *id_expr = nullptr,
-                                         const lList *required_props = nullptr,
-                                         const char *required_key = nullptr);
+[[nodiscard]] ocs::tom::ListPtr<ocs::tom::RESL>
+centry_rsmap_select_group_instances(ocs::tom::ConstElement<ocs::tom::CE> resource_definition,
+                                    ocs::tom::ConstList<ocs::tom::RESL> taken,
+                                    ocs::tom::ConstList<ocs::tom::RESL> already, const char *key_name,
+                                    uint32_t amount, const char *id_expr = nullptr,
+                                    ocs::tom::ConstList<ocs::tom::CE> required_props = nullptr,
+                                    const char *required_key = nullptr);
+OCS_TRANSITIONAL bool centry_rsmap_select_group_instances(const lListElem *resource_definition, const lList *taken,
+                                                          const lList *already, const char *key_name,
+                                                          uint32_t amount, lList **selected,
+                                                          const char *id_expr = nullptr,
+                                                          const lList *required_props = nullptr,
+                                                          const char *required_key = nullptr);
 
-const char *centry_rsmap_best_free_id(const lListElem *resource_definition,
-                                      const lList *taken,
-                                      uint32_t *free_amount, const char *id_expr = nullptr,
-                                      const lList *required_props = nullptr);
+const char *centry_rsmap_best_free_id(ocs::tom::ConstElement<ocs::tom::CE> resource_definition,
+                                      ocs::tom::ConstList<ocs::tom::RESL> taken, uint32_t *free_amount,
+                                      const char *id_expr = nullptr,
+                                      ocs::tom::ConstList<ocs::tom::CE> required_props = nullptr);
+OCS_TRANSITIONAL const char *centry_rsmap_best_free_id(const lListElem *resource_definition, const lList *taken,
+                                                       uint32_t *free_amount, const char *id_expr = nullptr,
+                                                       const lList *required_props = nullptr);
 
-
-bool centry_rsmap_expand_implicit_ids(lList **answer_list, lListElem *centry, uint32_t max_ids);
-
-bool centry_list_rsmap_expand_implicit_ids(lList **answer_list, lList *centry_list);
-
+bool centry_list_rsmap_expand_implicit_ids(lList **answer_list, ocs::tom::List<ocs::tom::CE> centry_list);

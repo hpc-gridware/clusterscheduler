@@ -726,32 +726,6 @@ queue_complexes2scheduler(const ocs::tom::ConstElement<ocs::tom::QU> queue,
 }
 
 /**
- * @brief queue_complexes2scheduler() for an untyped caller
- *
- * @param[out] new_centry_list receives the attribute list (`CE_Type`); a
- *                             previous list is freed
- * @param[in]  queue           the queue instance (`QU_Type`), or nullptr
- * @param[in]  exechost_list   all execution hosts (`EH_Type`)
- * @param[in]  centry_list     the system wide attribute configuration
- *                             (`CE_Type`)
- * @param[in]  load_adjustments the job load adjustments (`CE_Type`), or
- *                             nullptr
- *
- * @return always 0; the list queue_complexes2scheduler() returns is in
- *         `new_centry_list`
- */
-int
-queue_complexes2scheduler(lList **new_centry_list, lListElem *queue, const lList *exechost_list,
-                          const lList *centry_list, const lList *load_adjustments) {
-   lFreeList(new_centry_list);
-   *new_centry_list = queue_complexes2scheduler(ocs::tom::ConstElement<ocs::tom::QU>(queue),
-                                                ocs::tom::ConstList<ocs::tom::EH>(exechost_list),
-                                                ocs::tom::ConstList<ocs::tom::CE>(centry_list),
-                                                ocs::tom::ConstList<ocs::tom::CE>(load_adjustments)).release();
-   return 0;
-}
-
-/**
  * @brief Generates a list of attributes from the given names
  *
  * Assembles a list of attributes for a given queue, host, global, which contains all

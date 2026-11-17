@@ -202,24 +202,16 @@ rsmap_select_granted_ids(sge_assignment_t *a, const char *name, const char *host
             // asked of the same lists in rsmap_same_slots()
             auto taken = utilization_rsmap_max(resource_utilization, a->now, a->start, a->duration);
 
-            // the centry_rsmap_select_* functions return the selection through a raw list
-            lList *selected_raw = nullptr;
+            // an empty handle means the map cannot serve the request
             const ocs::tom::ConstList<ocs::tom::RESL> already = ocs::tom::get<GRU_resource_map_list>(gru);
-            bool selected_ok;
+            const auto selected =
+               (same_key != nullptr)
+                  ? centry_rsmap_select_group_instances(resource_definition, *taken, already, same_key, amount,
+                                                        id_expr, required_props, required_key)
+                  : centry_rsmap_select_instances(resource_definition, *taken, already, amount, id_expr,
+                                                  required_props);
 
-            if (same_key != nullptr) {
-               selected_ok = centry_rsmap_select_group_instances(resource_definition, *taken,
-                                                                 already, same_key, amount,
-                                                                 &selected_raw, id_expr,
-                                                                 required_props, required_key);
-            } else {
-               selected_ok = centry_rsmap_select_instances(resource_definition, *taken, already,
-                                                           amount, &selected_raw, id_expr,
-                                                           required_props);
-            }
-            const auto selected = ocs::tom::ListPtr<ocs::tom::RESL>(selected_raw);
-
-            if (!selected_ok) {
+            if (!selected) {
                // matching said otherwise, so the two have diverged; refuse rather than hand
                // out a set which does not meet the request
                DPRINTF("rsmap_select_granted_ids: %s on %s cannot serve %d%s%s\n",
@@ -335,9 +327,7 @@ gru_list_add_request(sge_assignment_t *a, lList **granted_resources_list,
 
          // the characteristics the request asks the instances to carry, resolved against the
          // complex list the same way matching resolved them
-         lList *required_props_raw = nullptr;
-         centry_rsmap_resolve_request_properties(request, a->centry_list, &required_props_raw);
-         const auto required_props = ocs::tom::ListPtr<ocs::tom::CE>(required_props_raw);
+         const auto required_props = centry_rsmap_resolve_request_properties(request, a->centry_list);
 
          // scope=job: the group was chosen over all the hosts the job could run on while
          // matching, and this host has to take from that one. Asking for it again here returns

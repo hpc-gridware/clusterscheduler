@@ -2882,28 +2882,6 @@ char *sge_load_alarm_reason(const ocs::tom::Element<ocs::tom::QU> qep,
 }
 
 /**
- * @brief sge_load_alarm_reason() for an untyped caller
- * @param[in]  qep              the queue instance (`QU_Type`)
- * @param[in]  threshold        the thresholds to check (`CE_Type`)
- * @param[in]  exechost_list    the execution hosts (`EH_Type`)
- * @param[in]  centry_list      the complex entries (`CE_Type`)
- * @param[in]  load_adjustments the load adjustments (`CE_Type`), or nullptr
- * @param[out] reason           as sge_load_alarm_reason()
- * @param[in]  reason_size      as sge_load_alarm_reason()
- * @param[in]  threshold_type   as sge_load_alarm_reason()
- * @return as sge_load_alarm_reason()
- */
-char *sge_load_alarm_reason(lListElem *qep, lList *threshold, const lList *exechost_list, const lList *centry_list,
-                            const lList *load_adjustments, char *reason, const int reason_size,
-                            const char *threshold_type) {
-   return sge_load_alarm_reason(ocs::tom::Element<ocs::tom::QU>(qep), ocs::tom::ConstList<ocs::tom::CE>(threshold),
-                                ocs::tom::ConstList<ocs::tom::EH>(exechost_list),
-                                ocs::tom::ConstList<ocs::tom::CE>(centry_list),
-                                ocs::tom::ConstList<ocs::tom::CE>(load_adjustments), reason, reason_size,
-                                threshold_type);
-}
-
-/**
  * @brief Splits the queue list into unloaded and overloaded queues
  *
  * The overloaded ones are taken out of `unloaded`, so what remains there is
@@ -6082,25 +6060,6 @@ int sge_get_double_qattr(double *dvalp, const char *attrname, const ocs::tom::Co
    DRETURN(ret);
 }
 
-/**
- * @brief sge_get_double_qattr() for an untyped caller
- * @param[out] dvalp                 as sge_get_double_qattr()
- * @param[in]  attrname              as sge_get_double_qattr()
- * @param[in]  q                     the queue instance (`QU_Type`)
- * @param[in]  exechost_list         the execution hosts (`EH_Type`)
- * @param[in]  centry_list           the complex entries (`CE_Type`)
- * @param[in]  load_adjustments      the job load adjustments (`CE_Type`), or nullptr
- * @param[out] has_value_from_object as sge_get_double_qattr()
- * @return as sge_get_double_qattr()
- */
-int sge_get_double_qattr(double *dvalp, const char *attrname, const lListElem *q, const lList *exechost_list,
-                         const lList *centry_list, const lList *load_adjustments, bool *has_value_from_object) {
-   return sge_get_double_qattr(dvalp, attrname, ocs::tom::ConstElement<ocs::tom::QU>(q),
-                               ocs::tom::ConstList<ocs::tom::EH>(exechost_list),
-                               ocs::tom::ConstList<ocs::tom::CE>(centry_list),
-                               ocs::tom::ConstList<ocs::tom::CE>(load_adjustments), has_value_from_object);
-}
-
 
 /**
  * @brief Reads a string queue attribute, resolved over all three layers
@@ -6317,11 +6276,9 @@ ri_time_by_slots(const sge_assignment_t *a, const ocs::tom::ConstElement<ocs::to
             is_rsmap && centry_rsmap_get_request_param(rep, RSMAP_REQUEST_PARAM_SAME, &same_key);
          const bool id_given =
             is_rsmap && centry_rsmap_get_request_param(rep, RSMAP_REQUEST_PARAM_ID, &id_key);
-         lList *required_props_raw = nullptr;
-         const bool props_given =
-            is_rsmap && centry_rsmap_resolve_request_properties(rep, a->centry_list,
-                                                                &required_props_raw);
-         auto required_props = ocs::tom::ListPtr<ocs::tom::CE>(required_props_raw);
+         auto required_props = is_rsmap ? centry_rsmap_resolve_request_properties(rep, a->centry_list)
+                                        : ocs::tom::ListPtr<ocs::tom::CE>();
+         const bool props_given = static_cast<bool>(required_props);
          if (same_given || id_given || props_given) {
             const char *same_arg = same_given ? sge_dstring_get_string(&same_key) : nullptr;
             const char *id_arg = id_given ? sge_dstring_get_string(&id_key) : nullptr;
@@ -6745,7 +6702,7 @@ rsmap_job_scope_key(sge_assignment_t *a, const ocs::tom::ConstElement<ocs::tom::
                                           a->now, a->start, a->duration);
          }
 
-         auto keys = ocs::tom::ListPtr<ocs::tom::ST>(centry_rsmap_group_keys(definition, same_key));
+         const auto keys = centry_rsmap_group_keys(definition, same_key);
          for (auto key_ep : *keys) {
             const char *key = ocs::tom::get<ST_name>(key_ep);
             const uint32_t free = centry_rsmap_group_free(definition, *taken, same_key, key,
@@ -6856,10 +6813,8 @@ rsmap_same_slots(sge_assignment_t *a, const ocs::tom::ConstList<ocs::tom::CE> to
          // A parameter which is not a reserved word names a characteristic the instances have
          // to carry. Resolved once here rather than once per instance, because the comparison
          // needs the type and the operator of that characteristic's own complex.
-         lList *required_props_raw = nullptr;
-         const bool has_props = centry_rsmap_resolve_request_properties(req, a->centry_list,
-                                                                        &required_props_raw);
-         auto required_props = ocs::tom::ListPtr<ocs::tom::CE>(required_props_raw);
+         auto required_props = centry_rsmap_resolve_request_properties(req, a->centry_list);
+         const bool has_props = static_cast<bool>(required_props);
          if (!has_same && !has_id && !has_props) {
             continue;
          }

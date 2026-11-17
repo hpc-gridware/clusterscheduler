@@ -74,8 +74,6 @@ ocs::tom::ListPtr<ocs::tom::CE>
 queue_complexes2scheduler(ocs::tom::ConstElement<ocs::tom::QU> queue, ocs::tom::ConstList<ocs::tom::EH> exechost_list,
                           ocs::tom::ConstList<ocs::tom::CE> centry_list,
                           ocs::tom::ConstList<ocs::tom::CE> load_adjustments);
-OCS_TRANSITIONAL int queue_complexes2scheduler(lList **new_complex_list, lListElem *queue, const lList *host_list,
-                                               const lList *complex_list, const lList *load_adjustments);
 
 ocs::tom::ElementPtr<ocs::tom::CE>
 get_attribute_by_name(ocs::tom::ConstElement<ocs::tom::EH> global, ocs::tom::ConstElement<ocs::tom::EH> host,

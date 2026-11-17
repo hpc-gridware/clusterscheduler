@@ -134,9 +134,6 @@ char *sge_load_alarm_reason(ocs::tom::Element<ocs::tom::QU> queue, ocs::tom::Con
                             ocs::tom::ConstList<ocs::tom::CE> complex_list,
                             ocs::tom::ConstList<ocs::tom::CE> load_adjustments, char *reason, int reason_size,
                             const char *type);
-OCS_TRANSITIONAL char *sge_load_alarm_reason(lListElem *queue, lList *threshold, const lList *exechost_list,
-                                             const lList *complex_list, const lList *load_adjustments, char *reason,
-                                             int reason_size, const char *type);
 
 int sge_split_queue_load(bool monitor_next_run, ocs::tom::List<ocs::tom::QU> unloaded,
                          ocs::tom::ListPtr<ocs::tom::QU> *overloaded, ocs::tom::ConstList<ocs::tom::EH> exechost_list,
@@ -350,9 +347,6 @@ int sge_get_double_qattr(double *dvalp, const char *attrname, ocs::tom::ConstEle
                          ocs::tom::ConstList<ocs::tom::EH> exechost_list,
                          ocs::tom::ConstList<ocs::tom::CE> centry_list,
                          ocs::tom::ConstList<ocs::tom::CE> load_adjustments, bool *has_value_from_object);
-OCS_TRANSITIONAL int sge_get_double_qattr(double *dvalp, const char *attrname, const lListElem *q,
-                                          const lList *exechost_list, const lList *complex_list,
-                                          const lList *load_adjustments, bool *has_value_from_object);
 
 int sge_get_string_qattr(char *dst, int dst_len, const char *attrname, ocs::tom::ConstElement<ocs::tom::QU> q,
                          ocs::tom::ConstList<ocs::tom::EH> exechost_list,

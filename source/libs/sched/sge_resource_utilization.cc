@@ -565,7 +565,7 @@ utilization_rsmap_below(const ocs::tom::ConstElement<ocs::tom::CE> definition,
    // A single element list keeps that as one walk rather than a second copy of it.
    ocs::tom::ListPtr<ocs::tom::ST> keys;
    if (key_name != nullptr) {
-      keys = ocs::tom::ListPtr<ocs::tom::ST>::from_typed(centry_rsmap_group_keys(definition, key_name));
+      keys = centry_rsmap_group_keys(definition, key_name);
    } else {
       keys = ocs::tom::ListPtr<ocs::tom::ST>::create("");
       keys->emplace_back<ST_name>("");

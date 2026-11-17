@@ -141,7 +141,6 @@ cqueue_verify_ckpt_list(lListElem *cqueue, lList **answer_list, lListElem *attr_
    DRETURN(ret);
 }
 
-bool
 /**
  * @brief Verify that every resource in the complex values is defined and its value fits its type
  *
@@ -154,7 +153,9 @@ bool
  * @param master_centry_list the defined complex entries
  * @return true when the value is acceptable
  */
-cqueue_verify_consumable_config_list(lListElem *cqueue, lList **answer_list, lListElem *attr_elem, const lList *master_centry_list) {
+bool
+cqueue_verify_consumable_config_list(lListElem *cqueue, lList **answer_list, lListElem *attr_elem,
+                                     const lList *master_centry_list) {
    DENTER(CQUEUE_VERIFY_LAYER);
 
    // early exit if there is nothing to do
@@ -174,7 +175,7 @@ cqueue_verify_consumable_config_list(lListElem *cqueue, lList **answer_list, lLi
    }
 
    // check that all centries in the consumable list exist in the master centry list
-   if (!centry_list_do_all_exists(master_centry_list, answer_list, centry_list)) {
+   if (!centry_list_do_all_exists(ocs::tom::ConstList<ocs::tom::CE>(master_centry_list), answer_list, centry_list)) {
       DRETURN(false);
    }
    DRETURN(true);

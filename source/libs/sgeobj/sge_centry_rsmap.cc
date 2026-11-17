@@ -39,6 +39,7 @@
 #include "sgeobj/sge_eval_expression.h"
 
 #include "uti/sge_hostname.h"
+#include "uti/sge_rmon_macros.h"
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_host.h"
 #include "sgeobj/sge_job.h"
@@ -49,8 +50,10 @@
 
 #include "sgeobj/sge_centry_rsmap.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
 #include "sgeobj/tom/ocs_tom_CE.h"
 #include "sgeobj/tom/ocs_tom_RESL.h"
+#include "sgeobj/tom/ocs_tom_ST.h"
 #include "uti/ocs_Systemd.h"
 
 /**
@@ -77,8 +80,9 @@ bool centry_check_rsmap(lList **answer_list, uint32_t consumable, const char *at
 }
 
 /**
- * Validate the per-instance characteristics on an RSMAP CE element. Each
- * RESL entry in CE_resource_map_list may carry a RESL_properties list of
+ * @brief Validate the per-instance characteristics on an RSMAP CE element
+ *
+ * Each RESL entry in CE_resource_map_list may carry a RESL_properties list of
  * ComplexEntry (CE_Type) elements — after the flatfile reader they hold only
  * CE_name and CE_stringval verbatim. This function resolves each name against
  * the master centry list, copies the referenced complex's valtype into the
@@ -92,10 +96,10 @@ bool centry_check_rsmap(lList **answer_list, uint32_t consumable, const char *at
  * @param answer_list          answer list; validation errors are appended
  *                             with STATUS_EUNKNOWN/ANSWER_QUALITY_ERROR
  * @param centry               CE_Type element of a host's complex_values
- *                             entry; its CE_resource_map_list is walked and
- *                             each property's CE_name/CE_valtype/CE_doubleval
+ *                             entry, may be an empty handle; its CE_resource_map_list
+ *                             is walked and each property's CE_name/CE_valtype/CE_doubleval
  *                             may be updated in place
- * @param master_centry_list   the master complex-list used to resolve
+ * @param master_centry_list   the master complex-list (CE_Type) used to resolve
  *                             characteristic names and their valtypes
  * @return                     true if every property resolves to a complex
  *                             which is not a RSMAP and its value parses; false
@@ -104,31 +108,30 @@ bool centry_check_rsmap(lList **answer_list, uint32_t consumable, const char *at
  *                             the answer_list — the function does not stop
  *                             on the first error within a single centry)
  */
-bool centry_check_rsmap_characteristics(lList **answer_list, lListElem *centry,
-                                        const lList *master_centry_list) {
+bool centry_check_rsmap_characteristics(lList **answer_list, const ocs::tom::Element<ocs::tom::CE> centry,
+                                        const ocs::tom::ConstList<ocs::tom::CE> master_centry_list) {
+   DENTER(TOP_LAYER);
    bool ret = true;
 
-   if (centry == nullptr) {
-      return ret;
+   if (!centry) {
+      DRETURN(ret);
    }
 
    const char *rsmap_name = ocs::tom::get<CE_name>(centry);
-   ocs::tom::List<ocs::tom::RESL> resource_map = ocs::tom::get<CE_resource_map_list>(centry);
-   if (resource_map == nullptr) {
-      return ret;
+   const auto resource_map = ocs::tom::get<CE_resource_map_list>(centry);
+   if (!resource_map) {
+      DRETURN(ret);
    }
 
-   ocs::tom::Element<ocs::tom::RESL> resl;
-   for_each_rw (resl, resource_map) {
-      ocs::tom::List<ocs::tom::CE> props = ocs::tom::get<RESL_properties>(resl);
-      if (props == nullptr || lGetNumberOfElem(props) == 0) {
+   for (const auto resl : resource_map) {
+      const auto props = ocs::tom::get<RESL_properties>(resl);
+      if (props.empty()) {
          continue;
       }
       const char *id = ocs::tom::get<RESL_value>(resl);
 
       std::unordered_set<std::string> seen;
-      ocs::tom::Element<ocs::tom::CE> prop;
-      for_each_rw (prop, props) {
+      for (const auto prop : props) {
          const char *pname = ocs::tom::get<CE_name>(prop);
          if (pname == nullptr) {
             continue;
@@ -144,8 +147,8 @@ bool centry_check_rsmap_characteristics(lList **answer_list, lListElem *centry,
          }
 
          // resolve against master centry list
-         const lListElem *master_cep = centry_list_locate(master_centry_list, pname);
-         if (master_cep == nullptr) {
+         const auto master_cep = centry_list_locate(master_centry_list, pname);
+         if (!master_cep) {
             answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                                     MSG_RSMAP_CHARACTERISTIC_UNKNOWN_SSS,
                                     rsmap_name, id != nullptr ? id : "", pname);
@@ -177,7 +180,7 @@ bool centry_check_rsmap_characteristics(lList **answer_list, lListElem *centry,
          lList *sub_answers = nullptr;
          if (centry_fill_and_check(prop, &sub_answers, false, false) != 0) {
             const char *sub_msg = "";
-            const lListElem *first = lFirst(sub_answers);
+            const lListElem *first = lFirst(sub_answers);   // answer lists stay untyped
             if (first != nullptr) {
                const char *txt = ocs::tom::get<AN_text>(first);
                if (txt != nullptr) {
@@ -229,7 +232,20 @@ bool centry_check_rsmap_characteristics(lList **answer_list, lListElem *centry,
       }
    }
 
-   return ret;
+   DRETURN(ret);
+}
+
+/**
+ * @brief centry_check_rsmap_characteristics() for an untyped caller
+ *
+ * @param answer_list          answer list; validation errors are appended
+ * @param centry               CE_Type element of a host's complex_values entry, checked; may be nullptr
+ * @param master_centry_list   the master complex-list (CE_Type), checked; may be nullptr
+ * @return                     as centry_check_rsmap_characteristics()
+ */
+bool centry_check_rsmap_characteristics(lList **answer_list, lListElem *centry, const lList *master_centry_list) {
+   return centry_check_rsmap_characteristics(answer_list, ocs::tom::Element<ocs::tom::CE>(centry),
+                                             ocs::tom::ConstList<ocs::tom::CE>(master_centry_list));
 }
 
 const char *const RSMAP_REQUEST_PARAM_ID       = "id";
@@ -338,7 +354,7 @@ centry_rsmap_split_params(const char *open, const char *close,
 }
 
 /**
- * Validate the bracketed parameter list of a resource map request.
+ * @brief Validate the bracketed parameter list of a resource map request
  *
  * A request may carry a list of named parameters after the amount:
  *
@@ -359,18 +375,18 @@ centry_rsmap_split_params(const char *open, const char *close,
  * request parameter list.
  *
  * @param answer_list        errors are appended here
- * @param centry             the request; CE_name and CE_stringval are read
- * @param master_centry_list complex list, used to resolve a parameter which is not reserved
+ * @param centry             the request (CE_Type); CE_name, CE_valtype and CE_stringval are read
+ * @param master_centry_list complex list (CE_Type), used to resolve a parameter which is not reserved
  * @return                   true if the request carries no parameter list or a valid one
  */
-bool
-centry_rsmap_check_request_params(lList **answer_list, const lListElem *centry,
-                                  const lList *master_centry_list) {
+bool centry_rsmap_check_request_params(lList **answer_list, const ocs::tom::ConstElement<ocs::tom::CE> centry,
+                                       const ocs::tom::ConstList<ocs::tom::CE> master_centry_list) {
+   DENTER(TOP_LAYER);
    const char *name = ocs::tom::get<CE_name>(centry);
    const char *value = ocs::tom::get<CE_stringval>(centry);
 
    if (value == nullptr) {
-      return true;
+      DRETURN(true);
    }
 
    // A parameter list belongs to a resource map request and to nothing else. Asked of any
@@ -380,12 +396,12 @@ centry_rsmap_check_request_params(lList **answer_list, const lListElem *centry,
    // fills CE_valtype from the complex before asking - so the question is decided before a
    // bracket is looked for rather than after.
    if (static_cast<ocs::CEntry::Type>(ocs::tom::get<CE_valtype>(centry)) != ocs::CEntry::Type::RSMAP) {
-      return true;
+      DRETURN(true);
    }
 
    const char *open = strchr(value, '[');
    if (open == nullptr) {
-      return true;
+      DRETURN(true);
    }
 
    // This is the single point where a parameter list enters the system from a request, the way
@@ -397,7 +413,7 @@ centry_rsmap_check_request_params(lList **answer_list, const lListElem *centry,
 #if !defined(WITH_EXTENSIONS)
    answer_list_add_sprintf(answer_list, STATUS_ENOTAVAILABLE, ANSWER_QUALITY_ERROR,
                            MSG_RSMAP_PARAM_NOT_AVAILABLE_SS, name, value);
-   return false;
+   DRETURN(false);
 #endif
 
    // the list has to be closed, and nothing may follow it. Bracket depth is tracked because a
@@ -418,12 +434,12 @@ centry_rsmap_check_request_params(lList **answer_list, const lListElem *centry,
    if (close == nullptr) {
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                               MSG_RSMAP_PARAM_UNCLOSED_SS, name, value);
-      return false;
+      DRETURN(false);
    }
    if (*(close + 1) != '\0') {
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                               MSG_RSMAP_PARAM_TRAILING_SSS, name, close + 1, value);
-      return false;
+      DRETURN(false);
    }
 
    bool ret = true;
@@ -495,7 +511,7 @@ centry_rsmap_check_request_params(lList **answer_list, const lListElem *centry,
          // message saying the map has no instances sharing one of them.
          if (param_name == RSMAP_REQUEST_PARAM_SAME &&
              param_value != RSMAP_REQUEST_PARAM_ID &&
-             centry_list_locate(master_centry_list, param_value.c_str()) == nullptr) {
+             !centry_list_locate(master_centry_list, param_value.c_str())) {
             answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                                     MSG_RSMAP_PARAM_BAD_VALUE_SSS, name, param_name.c_str(),
                                     param_value.c_str());
@@ -557,8 +573,8 @@ centry_rsmap_check_request_params(lList **answer_list, const lListElem *centry,
       // characteristic of that name on an instance. The name is resolved first so that one
       // nobody defined is still told it does not exist, which is the more useful of the two
       // messages.
-      const lListElem *char_cep = centry_list_locate(master_centry_list, param_name.c_str());
-      if (char_cep == nullptr) {
+      const auto char_cep = centry_list_locate(master_centry_list, param_name.c_str());
+      if (!char_cep) {
          answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                                  MSG_RSMAP_PARAM_UNKNOWN_SS, name, param_name.c_str());
          ret = false;
@@ -599,7 +615,7 @@ centry_rsmap_check_request_params(lList **answer_list, const lListElem *centry,
       ret = false;
    }
 
-   return ret;
+   DRETURN(ret);
 }
 
 /**
@@ -621,27 +637,29 @@ centry_rsmap_check_request_params(lList **answer_list, const lListElem *centry,
  * consumable, or to a complex which may not be requested. A name which somehow reaches here
  * without resolving is skipped rather than guessed at.
  *
- * @param centry              the request (CE_Type), its value holding the parameter list
- * @param master_centry_list  the complex list the names are resolved against
- * @param required            out: a new CE_Type list, untouched when the request names none
- * @return                    true when the request named at least one characteristic
+ * @param centry              the request (CE_Type), its value holding the parameter list; may be an
+ *                            empty handle
+ * @param master_centry_list  the complex list (CE_Type) the names are resolved against
+ * @return                    a new CE_Type list of the requirements, or an empty handle when the
+ *                            request names no characteristic
  */
-bool
-centry_rsmap_resolve_request_properties(const lListElem *centry, const lList *master_centry_list,
-                                        lList **required) {
-   if (centry == nullptr || required == nullptr) {
-      return false;
+ocs::tom::ListPtr<ocs::tom::CE>
+centry_rsmap_resolve_request_properties(const ocs::tom::ConstElement<ocs::tom::CE> centry,
+                                        const ocs::tom::ConstList<ocs::tom::CE> master_centry_list) {
+   if (!centry) {
+      return ocs::tom::ListPtr<ocs::tom::CE>();
    }
 
    const char *open;
    const char *close;
    if (!centry_rsmap_find_params(ocs::tom::get<CE_stringval>(centry), &open, &close)) {
-      return false;
+      return ocs::tom::ListPtr<ocs::tom::CE>();
    }
 
    std::vector<std::string> params;
    centry_rsmap_split_params(open, close, params);
 
+   // built through the raw list reference, which creates the list with its first element
    lList *resolved = nullptr;
    for (const std::string &param : params) {
       const size_t eq = param.find('=');
@@ -653,15 +671,15 @@ centry_rsmap_resolve_request_properties(const lListElem *centry, const lList *ma
          continue;
       }
 
-      const lListElem *char_cep = centry_list_locate(master_centry_list, param_name.c_str());
-      if (char_cep == nullptr) {
+      const auto char_cep = centry_list_locate(master_centry_list, param_name.c_str());
+      if (!char_cep) {
          continue;
       }
 
-      ocs::tom::Element<ocs::tom::CE> req_ep = ocs::tom::emplace_back<CE_name>(&resolved, ocs::tom::get<CE_name>(char_cep));
-      if (req_ep == nullptr) {
+      const auto req_ep = ocs::tom::emplace_back<CE_name>(&resolved, ocs::tom::get<CE_name>(char_cep));
+      if (!req_ep) {
          lFreeList(&resolved);
-         return false;
+         return ocs::tom::ListPtr<ocs::tom::CE>();
       }
       ocs::tom::set<CE_valtype>(req_ep, ocs::tom::get<CE_valtype>(char_cep));
       ocs::tom::set<CE_relop>(req_ep, ocs::tom::get<CE_relop>(char_cep));
@@ -675,11 +693,30 @@ centry_rsmap_resolve_request_properties(const lListElem *centry, const lList *ma
       lFreeList(&sub_answers);
    }
 
-   if (resolved == nullptr) {
+   return ocs::tom::ListPtr<ocs::tom::CE>::from_typed(resolved);
+}
+
+/**
+ * @brief centry_rsmap_resolve_request_properties() for an untyped caller
+ *
+ * @param centry              the request (CE_Type), checked; may be nullptr
+ * @param master_centry_list  the complex list (CE_Type), checked; may be nullptr
+ * @param required            out: a new CE_Type list, untouched when the request names none
+ * @return                    true when the request named at least one characteristic
+ */
+bool centry_rsmap_resolve_request_properties(const lListElem *centry, const lList *master_centry_list,
+                                             lList **required) {
+   if (centry == nullptr || required == nullptr) {
       return false;
    }
 
-   *required = resolved;
+   auto resolved = centry_rsmap_resolve_request_properties(ocs::tom::ConstElement<ocs::tom::CE>(centry),
+                                                           ocs::tom::ConstList<ocs::tom::CE>(master_centry_list));
+   if (!resolved) {
+      return false;
+   }
+
+   *required = resolved.release();
    return true;
 }
 
@@ -694,17 +731,26 @@ centry_rsmap_resolve_request_properties(const lListElem *centry, const lList *ma
  * gru_list_add_request() gives: a constraint written in one request scope belongs to that
  * scope, and a lookup by name would have to pick one of them.
  *
- * @param centry  the request
+ * @param centry  the request (CE_Type)
  * @return        true when the request carries scope=job
  */
-bool
-centry_rsmap_request_is_job_scope(const lListElem *centry) {
+bool centry_rsmap_request_is_job_scope(const ocs::tom::ConstElement<ocs::tom::CE> centry) {
    DSTRING_STATIC(scope, 32);
 
    if (!centry_rsmap_get_request_param(centry, RSMAP_REQUEST_PARAM_SCOPE, &scope)) {
       return false;
    }
    return strcmp(sge_dstring_get_string(&scope), RSMAP_REQUEST_PARAM_SCOPE_JOB) == 0;
+}
+
+/**
+ * @brief centry_rsmap_request_is_job_scope() for an untyped caller
+ *
+ * @param centry  the request (CE_Type), checked
+ * @return        as centry_rsmap_request_is_job_scope()
+ */
+bool centry_rsmap_request_is_job_scope(const lListElem *centry) {
+   return centry_rsmap_request_is_job_scope(ocs::tom::ConstElement<ocs::tom::CE>(centry));
 }
 
 /**
@@ -725,13 +771,13 @@ centry_rsmap_request_is_job_scope(const lListElem *centry) {
  * asks for a parameter, so this does not report errors - a malformed list simply has no
  * parameters to find.
  *
- * @param centry  the request
+ * @param centry  the request (CE_Type)
  * @param param   name of the parameter, e.g. RSMAP_REQUEST_PARAM_SAME
  * @param value   filled in with the value if the parameter is present; untouched otherwise
  * @return        true if the parameter is present
  */
-bool
-centry_rsmap_get_request_param(const lListElem *centry, const char *param, dstring *value) {
+bool centry_rsmap_get_request_param(const ocs::tom::ConstElement<ocs::tom::CE> centry, const char *param,
+                                    dstring *value) {
    const char *s = ocs::tom::get<CE_stringval>(centry);
 
    if (s == nullptr || param == nullptr) {
@@ -786,6 +832,18 @@ centry_rsmap_get_request_param(const lListElem *centry, const char *param, dstri
    return false;
 }
 
+/**
+ * @brief centry_rsmap_get_request_param() for an untyped caller
+ *
+ * @param centry  the request (CE_Type), checked
+ * @param param   name of the parameter, e.g. RSMAP_REQUEST_PARAM_SAME
+ * @param value   filled in with the value if the parameter is present; untouched otherwise
+ * @return        as centry_rsmap_get_request_param()
+ */
+bool centry_rsmap_get_request_param(const lListElem *centry, const char *param, dstring *value) {
+   return centry_rsmap_get_request_param(ocs::tom::ConstElement<ocs::tom::CE>(centry), param, value);
+}
+
 
 /**
  * @brief the value an instance is grouped by for a same= constraint
@@ -805,13 +863,13 @@ centry_rsmap_get_request_param(const lListElem *centry, const char *param, dstri
  * @return            the key, or nullptr when the instance cannot take part
  */
 static const char *
-centry_rsmap_instance_key(const lListElem *defined_ep, const char *key_name) {
+centry_rsmap_instance_key(const ocs::tom::ConstElement<ocs::tom::RESL> defined_ep, const char *key_name) {
    if (key_name == nullptr || strcmp(key_name, RSMAP_REQUEST_PARAM_ID) == 0) {
       return ocs::tom::get<RESL_value>(defined_ep);
    }
 
-   ocs::tom::ConstElement<ocs::tom::CE> property = ocs::tom::find_first_in<RESL_properties, CE_name>(defined_ep, key_name);
-   if (property == nullptr) {
+   const auto property = ocs::tom::find_first_in<RESL_properties, CE_name>(defined_ep, key_name);
+   if (!property) {
       return nullptr;
    }
    return ocs::tom::get<CE_stringval>(property);
@@ -824,18 +882,20 @@ centry_rsmap_instance_key(const lListElem *defined_ep, const char *key_name) {
  * two lists. Who holds an instance, and over what period, is a scheduling question and is
  * answered where the utilization and the resource diagram are - see utilization_rsmap_max().
  *
- * @param defined_ep the instance, from CE_resource_map_list
- * @param taken      the identifiers which are spoken for and how many of each, may be nullptr
+ * @param defined_ep the instance (RESL_Type), from CE_resource_map_list
+ * @param taken      the identifiers which are spoken for and how many of each (RESL_Type), may be an
+ *                   empty handle
  * @return           the configured amount less what is taken of it
  */
 static uint32_t
-centry_rsmap_instance_free(const lListElem *defined_ep, const lList *taken) {
+centry_rsmap_instance_free(const ocs::tom::ConstElement<ocs::tom::RESL> defined_ep,
+                           const ocs::tom::ConstList<ocs::tom::RESL> taken) {
    uint32_t free = ocs::tom::get<RESL_amount>(defined_ep);
 
-   if (taken != nullptr) {
+   if (taken) {
       const char *id = ocs::tom::get<RESL_value>(defined_ep);
-      ocs::tom::ConstElement<ocs::tom::RESL> used_ep = ocs::tom::find_first<RESL_value>(taken, id);
-      if (used_ep != nullptr) {
+      const auto used_ep = ocs::tom::find_first<RESL_value>(taken, id);
+      if (used_ep) {
          const uint32_t used = ocs::tom::get<RESL_amount>(used_ep);
          // RESL_amount is unsigned: an id taken beyond its count must read as full rather
          // than wrap round to an enormous free amount
@@ -853,23 +913,23 @@ centry_rsmap_instance_free(const lListElem *defined_ep, const lList *taken) {
  * carrying the same value of that characteristic form one. An instance which does not carry the
  * characteristic belongs to no group and cannot satisfy the constraint, so it is left out.
  *
- * @param resource_definition the resource map on the host, from EH_consumable_config_list
+ * @param resource_definition the resource map on the host (CE_Type), from EH_consumable_config_list
  * @param key_name            "id" or the name of a characteristic
- * @return                    the distinct keys, an ST_Type list, to be freed by the caller
+ * @return                    the distinct keys, an ST_Type list, or an empty handle when there are none
  */
-lList *
-centry_rsmap_group_keys(const lListElem *resource_definition, const char *key_name) {
+ocs::tom::ListPtr<ocs::tom::ST>
+centry_rsmap_group_keys(const ocs::tom::ConstElement<ocs::tom::CE> resource_definition, const char *key_name) {
+   // built through the raw list reference, which creates the list with its first element
    lList *keys = nullptr;
 
-   const lListElem *defined_ep;
-   for_each_ep (defined_ep, ocs::tom::get<CE_resource_map_list>(resource_definition)) {
+   for (const auto defined_ep : ocs::tom::get<CE_resource_map_list>(resource_definition)) {
       const char *key = centry_rsmap_instance_key(defined_ep, key_name);
-      if (key != nullptr && static_cast<const lListElem *>(ocs::tom::find_first<ST_name>(keys, key)) == nullptr) {
+      if (key != nullptr && !ocs::tom::find_first<ST_name>(keys, key)) {
          ocs::tom::emplace_back<ST_name>(&keys, key);
       }
    }
 
-   return keys;
+   return ocs::tom::ListPtr<ocs::tom::ST>::from_typed(keys);
 }
 
 /**
@@ -897,13 +957,14 @@ centry_rsmap_group_keys(const lListElem *resource_definition, const char *key_na
  *
  * @param type    the type of the characteristic's complex
  * @param relop   the operator that complex declares
- * @param request the requested value (CE_stringval, CE_doubleval)
- * @param offer   the value the instance carries
+ * @param request the requested value (CE_Type: CE_stringval, CE_doubleval)
+ * @param offer   the value the instance carries (CE_Type)
  * @return        true when the instance satisfies the request
  */
 static bool
-centry_rsmap_value_matches(ocs::CEntry::Type type, uint32_t relop, const lListElem *request,
-                           const lListElem *offer) {
+centry_rsmap_value_matches(const ocs::CEntry::Type type, const uint32_t relop,
+                           const ocs::tom::ConstElement<ocs::tom::CE> request,
+                           const ocs::tom::ConstElement<ocs::tom::CE> offer) {
    int cmp;
 
    switch (type) {
@@ -963,21 +1024,21 @@ centry_rsmap_value_matches(ocs::CEntry::Type type, uint32_t relop, const lListEl
  * The requirements arrive resolved: each carries the name, the type and the operator of the
  * characteristic's complex, looked up once per request rather than once per instance.
  *
- * @param defined_ep the instance, from CE_resource_map_list
- * @param required   the resolved requirements, or nullptr when the request names none
+ * @param defined_ep the instance (RESL_Type), from CE_resource_map_list
+ * @param required   the resolved requirements (CE_Type), or an empty handle when the request names none
  * @return           true when the instance satisfies all of them
  */
 static bool
-centry_rsmap_instance_matches_properties(const lListElem *defined_ep, const lList *required) {
-   if (required == nullptr) {
+centry_rsmap_instance_matches_properties(const ocs::tom::ConstElement<ocs::tom::RESL> defined_ep,
+                                         const ocs::tom::ConstList<ocs::tom::CE> required) {
+   if (!required) {
       return true;
    }
 
-   const lListElem *req_ep;
-   for_each_ep (req_ep, required) {
+   for (const auto req_ep : required) {
       const char *pname = ocs::tom::get<CE_name>(req_ep);
-      const lListElem *offer = ocs::tom::find_first_in<RESL_properties, CE_name>(defined_ep, pname);
-      if (offer == nullptr) {
+      const auto offer = ocs::tom::find_first_in<RESL_properties, CE_name>(defined_ep, pname);
+      if (!offer) {
          return false;
       }
       const auto type = static_cast<ocs::CEntry::Type>(ocs::tom::get<CE_valtype>(req_ep));
@@ -1000,12 +1061,12 @@ centry_rsmap_instance_matches_properties(const lListElem *defined_ep, const lLis
  * selection takes are the same set. It is the request which is evaluated, never a host state,
  * so both sides reach the same answer from the same request.
  *
- * @param defined_ep the instance, from CE_resource_map_list
+ * @param defined_ep the instance (RESL_Type), from CE_resource_map_list
  * @param id_expr    the expression, or nullptr when the request names none
  * @return           true when the instance may be used
  */
 static bool
-centry_rsmap_instance_matches_id(const lListElem *defined_ep, const char *id_expr) {
+centry_rsmap_instance_matches_id(const ocs::tom::ConstElement<ocs::tom::RESL> defined_ep, const char *id_expr) {
    if (id_expr == nullptr) {
       return true;
    }
@@ -1026,24 +1087,24 @@ centry_rsmap_instance_matches_id(const lListElem *defined_ep, const char *id_exp
  * centry_rsmap_group_free(): the instances need not agree in anything, they only have to be
  * ones the request allows.
  *
- * @param resource_definition the resource map on the host, from EH_consumable_config_list
- * @param taken               the identifiers which are spoken for, may be nullptr
+ * @param resource_definition the resource map on the host (CE_Type), from EH_consumable_config_list;
+ *                            may be an empty handle
+ * @param taken               the identifiers which are spoken for (RESL_Type), may be an empty handle
  * @param id_expr             the expression over the identifiers, or nullptr for all of them
- * @param required_props      nullptr when the request names no characteristic, otherwise the
- *                            resolved requirements an instance has to carry
+ * @param required_props      an empty handle when the request names no characteristic, otherwise the
+ *                            resolved requirements (CE_Type) an instance has to carry
  * @return                    the free instances the request may take
  */
-uint32_t
-centry_rsmap_free(const lListElem *resource_definition, const lList *taken, const char *id_expr,
-                  const lList *required_props) {
+uint32_t centry_rsmap_free(const ocs::tom::ConstElement<ocs::tom::CE> resource_definition,
+                           const ocs::tom::ConstList<ocs::tom::RESL> taken, const char *id_expr,
+                           const ocs::tom::ConstList<ocs::tom::CE> required_props) {
    uint32_t free = 0;
 
-   if (resource_definition == nullptr) {
+   if (!resource_definition) {
       return 0;
    }
 
-   const lListElem *defined_ep;
-   for_each_ep (defined_ep, ocs::tom::get<CE_resource_map_list>(resource_definition)) {
+   for (const auto defined_ep : ocs::tom::get<CE_resource_map_list>(resource_definition)) {
       if (!centry_rsmap_instance_matches_id(defined_ep, id_expr) ||
           !centry_rsmap_instance_matches_properties(defined_ep, required_props)) {
          continue;
@@ -1055,34 +1116,49 @@ centry_rsmap_free(const lListElem *resource_definition, const lList *taken, cons
 }
 
 /**
+ * @brief centry_rsmap_free() for an untyped caller
+ *
+ * @param resource_definition the resource map on the host (CE_Type), checked; may be nullptr
+ * @param taken               the identifiers which are spoken for (RESL_Type), checked; may be nullptr
+ * @param id_expr             the expression over the identifiers, or nullptr for all of them
+ * @param required_props      the resolved requirements (CE_Type), checked; may be nullptr
+ * @return                    as centry_rsmap_free()
+ */
+uint32_t centry_rsmap_free(const lListElem *resource_definition, const lList *taken, const char *id_expr,
+                           const lList *required_props) {
+   return centry_rsmap_free(ocs::tom::ConstElement<ocs::tom::CE>(resource_definition),
+                            ocs::tom::ConstList<ocs::tom::RESL>(taken), id_expr,
+                            ocs::tom::ConstList<ocs::tom::CE>(required_props));
+}
+
+/**
  * @brief how many instances of one group of a resource map are free
  *
  * The group counterpart of centry_rsmap_instance_free(): what the instances sharing one key
  * have free between them. This is what a same= request asks for - the instances it is granted
  * have to come from one group, so what matters is what one group can serve, not the map.
  *
- * @param resource_definition the resource map on the host, from EH_consumable_config_list
- * @param taken               the identifiers which are spoken for, may be nullptr
+ * @param resource_definition the resource map on the host (CE_Type), from EH_consumable_config_list;
+ *                            may be an empty handle
+ * @param taken               the identifiers which are spoken for (RESL_Type), may be an empty handle
  * @param key_name            "id" or the name of a characteristic
  * @param key                 which group
  * @param id_expr             nullptr when the request carries no id= parameter, otherwise the
  *                            expression an instance's identifier has to satisfy
- * @param required_props      nullptr when the request names no characteristic, otherwise the
- *                            resolved requirements an instance has to carry
+ * @param required_props      an empty handle when the request names no characteristic, otherwise the
+ *                            resolved requirements (CE_Type) an instance has to carry
  * @return                    the free instances of that group
  */
-uint32_t
-centry_rsmap_group_free(const lListElem *resource_definition, const lList *taken,
-                        const char *key_name, const char *key, const char *id_expr,
-                        const lList *required_props) {
+uint32_t centry_rsmap_group_free(const ocs::tom::ConstElement<ocs::tom::CE> resource_definition,
+                                 const ocs::tom::ConstList<ocs::tom::RESL> taken, const char *key_name, const char *key,
+                                 const char *id_expr, const ocs::tom::ConstList<ocs::tom::CE> required_props) {
    uint32_t free = 0;
 
-   if (resource_definition == nullptr || key == nullptr) {
+   if (!resource_definition || key == nullptr) {
       return 0;
    }
 
-   const lListElem *defined_ep;
-   for_each_ep (defined_ep, ocs::tom::get<CE_resource_map_list>(resource_definition)) {
+   for (const auto defined_ep : ocs::tom::get<CE_resource_map_list>(resource_definition)) {
       if (!centry_rsmap_instance_matches_id(defined_ep, id_expr) ||
           !centry_rsmap_instance_matches_properties(defined_ep, required_props)) {
          continue;
@@ -1113,25 +1189,26 @@ centry_rsmap_group_free(const lListElem *resource_definition, const lList *taken
  * has one member there, so there is nothing to add up, and it is the case every existing request
  * takes - it should not start paying for a generalization it does not use.
  *
- * @param resource_definition  the resource map on the host, from EH_consumable_config_list
- * @param taken                the identifiers which are already spoken for, may be nullptr
+ * @param resource_definition  the resource map on the host (CE_Type), from EH_consumable_config_list;
+ *                             may be an empty handle
+ * @param taken                the identifiers which are already spoken for (RESL_Type), may be an
+ *                             empty handle
  * @param key_name             nullptr or "id" for the identifier, otherwise a characteristic
- * @param free_amount          out: the free count of the group returned, 0 if there is none
+ * @param free_amount          out: the free count of the group returned, 0 if there is none; may be nullptr
  * @param id_expr              nullptr when the request carries no id= parameter, otherwise the
  *                             expression an instance's identifier has to satisfy
- * @param required_props       nullptr when the request names no characteristic, otherwise the
- *                             resolved requirements an instance has to carry
+ * @param required_props       an empty handle when the request names no characteristic, otherwise the
+ *                             resolved requirements (CE_Type) an instance has to carry
  * @return                     the key of the group with the most free instances, or nullptr
  */
-const char *
-centry_rsmap_best_free_group(const lListElem *resource_definition,
-                             const lList *taken, const char *key_name,
-                             uint32_t *free_amount, const char *id_expr,
-                             const lList *required_props) {
+const char *centry_rsmap_best_free_group(const ocs::tom::ConstElement<ocs::tom::CE> resource_definition,
+                                         const ocs::tom::ConstList<ocs::tom::RESL> taken, const char *key_name,
+                                         uint32_t *free_amount, const char *id_expr,
+                                         const ocs::tom::ConstList<ocs::tom::CE> required_props) {
    if (free_amount != nullptr) {
       *free_amount = 0;
    }
-   if (resource_definition == nullptr) {
+   if (!resource_definition) {
       return nullptr;
    }
    if (key_name == nullptr || strcmp(key_name, RSMAP_REQUEST_PARAM_ID) == 0) {
@@ -1143,8 +1220,7 @@ centry_rsmap_best_free_group(const lListElem *resource_definition,
    // a handful of entries and a linear scan beats hashing and copying the keys into strings
    std::vector<std::pair<const char *, uint32_t>> groups;
 
-   const lListElem *defined_ep;
-   for_each_ep (defined_ep, ocs::tom::get<CE_resource_map_list>(resource_definition)) {
+   for (const auto defined_ep : ocs::tom::get<CE_resource_map_list>(resource_definition)) {
       if (!centry_rsmap_instance_matches_id(defined_ep, id_expr) ||
           !centry_rsmap_instance_matches_properties(defined_ep, required_props)) {
          continue;
@@ -1184,6 +1260,25 @@ centry_rsmap_best_free_group(const lListElem *resource_definition,
 }
 
 /**
+ * @brief centry_rsmap_best_free_group() for an untyped caller
+ *
+ * @param resource_definition  the resource map on the host (CE_Type), checked; may be nullptr
+ * @param taken                the identifiers which are already spoken for (RESL_Type), checked; may be nullptr
+ * @param key_name             nullptr or "id" for the identifier, otherwise a characteristic
+ * @param free_amount          out: the free count of the group returned, 0 if there is none; may be nullptr
+ * @param id_expr              nullptr, or the expression an instance's identifier has to satisfy
+ * @param required_props       the resolved requirements (CE_Type), checked; may be nullptr
+ * @return                     as centry_rsmap_best_free_group()
+ */
+const char *centry_rsmap_best_free_group(const lListElem *resource_definition, const lList *taken,
+                                         const char *key_name, uint32_t *free_amount, const char *id_expr,
+                                         const lList *required_props) {
+   return centry_rsmap_best_free_group(ocs::tom::ConstElement<ocs::tom::CE>(resource_definition),
+                                       ocs::tom::ConstList<ocs::tom::RESL>(taken), key_name, free_amount, id_expr,
+                                       ocs::tom::ConstList<ocs::tom::CE>(required_props));
+}
+
+/**
  * @brief take a number of instances, optionally restricted to one group
  *
  * The body shared by centry_rsmap_select_instances() and
@@ -1195,30 +1290,31 @@ centry_rsmap_best_free_group(const lListElem *resource_definition,
  * debited until the assignment is complete, and a map requested in more than one request scope
  * arrives here more than once.
  *
- * @param resource_definition  the resource map on the host, from EH_consumable_config_list
- * @param taken                the identifiers which are already spoken for, may be nullptr
- * @param already              what this job already holds of the map (RESL_Type), may be nullptr
+ * @param resource_definition  the resource map on the host (CE_Type), from EH_consumable_config_list
+ * @param taken                the identifiers which are already spoken for (RESL_Type), may be an
+ *                             empty handle
+ * @param already              what this job already holds of the map (RESL_Type), may be an empty handle
  * @param key_name             nullptr, or "id" or the name of the characteristic to group by
  * @param key                  nullptr for every instance, otherwise the group to take from
- * @param amount               how many instances to take
- * @param selected             out: a new list of (RESL_value, RESL_amount), untouched on failure
+ * @param amount               how many instances to take, more than 0
  * @param id_expr              nullptr when the request carries no id= parameter, otherwise the
  *                             expression an instance's identifier has to satisfy
- * @param required_props       nullptr when the request names no characteristic, otherwise the
- *                             resolved requirements an instance has to carry
- * @return                     true when the amount was taken, false when it cannot be served
+ * @param required_props       an empty handle when the request names no characteristic, otherwise the
+ *                             resolved requirements (CE_Type) an instance has to carry
+ * @return                     a new list of (RESL_value, RESL_amount) when the amount was taken, an
+ *                             empty handle when it cannot be served
  */
-static bool
-centry_rsmap_take_instances(const lListElem *resource_definition,
-                            const lList *taken, const lList *already,
-                            const char *key_name, const char *key, uint32_t amount,
-                            lList **selected, const char *id_expr,
-                            const lList *required_props) {
+static ocs::tom::ListPtr<ocs::tom::RESL>
+centry_rsmap_take_instances(const ocs::tom::ConstElement<ocs::tom::CE> resource_definition,
+                            const ocs::tom::ConstList<ocs::tom::RESL> taken,
+                            const ocs::tom::ConstList<ocs::tom::RESL> already, const char *key_name, const char *key,
+                            const uint32_t amount, const char *id_expr,
+                            const ocs::tom::ConstList<ocs::tom::CE> required_props) {
+   // built through the raw list reference, which creates the list with its first element
    lList *chosen = nullptr;
    uint32_t remaining = amount;
 
-   ocs::tom::ConstElement<ocs::tom::RESL> defined_ep;
-   for_each_ep (defined_ep, ocs::tom::get<CE_resource_map_list>(resource_definition)) {
+   for (const auto defined_ep : ocs::tom::get<CE_resource_map_list>(resource_definition)) {
       if (remaining == 0) {
          break;
       }
@@ -1236,9 +1332,9 @@ centry_rsmap_take_instances(const lListElem *resource_definition,
       const char *id = ocs::tom::get<RESL_value>(defined_ep);
       uint32_t free = centry_rsmap_instance_free(defined_ep, taken);
 
-      if (already != nullptr) {
-         ocs::tom::ConstElement<ocs::tom::RESL> mine = ocs::tom::find_first<RESL_value>(already, id);
-         if (mine != nullptr) {
+      if (already) {
+         const auto mine = ocs::tom::find_first<RESL_value>(already, id);
+         if (mine) {
             const uint32_t held = ocs::tom::get<RESL_amount>(mine);
             free = (held >= free) ? 0 : free - held;
          }
@@ -1248,22 +1344,20 @@ centry_rsmap_take_instances(const lListElem *resource_definition,
       }
 
       const uint32_t take = (free >= remaining) ? remaining : free;
-      ocs::tom::Element<ocs::tom::RESL> ep = ocs::tom::emplace_back<RESL_value>(&chosen, id);
-      if (ep == nullptr) {
+      const auto ep = ocs::tom::emplace_back<RESL_value>(&chosen, id);
+      if (!ep) {
          lFreeList(&chosen);
-         return false;
+         return ocs::tom::ListPtr<ocs::tom::RESL>();
       }
       ocs::tom::set<RESL_amount>(ep, take);
       remaining -= take;
    }
 
+   auto ret = ocs::tom::ListPtr<ocs::tom::RESL>::from_typed(chosen);
    if (remaining > 0) {
-      lFreeList(&chosen);
-      return false;
+      ret.reset();
    }
-
-   *selected = chosen;
-   return true;
+   return ret;
 }
 
 /**
@@ -1273,28 +1367,58 @@ centry_rsmap_take_instances(const lListElem *resource_definition,
  * taken in the order the map defines them, filling one identifier before touching the next, so
  * that whole identifiers stay free for the requests which need a whole one.
  *
- * @param resource_definition  the resource map on the host, from EH_consumable_config_list
- * @param taken                the identifiers which are already spoken for, may be nullptr
- * @param already              what this job already holds of the map (RESL_Type), may be nullptr
+ * @param resource_definition  the resource map on the host (CE_Type), from EH_consumable_config_list;
+ *                             may be an empty handle
+ * @param taken                the identifiers which are already spoken for (RESL_Type), may be an
+ *                             empty handle
+ * @param already              what this job already holds of the map (RESL_Type), may be an empty handle
  * @param amount               how many instances to take
- * @param selected             out: a new list of (RESL_value, RESL_amount), untouched on failure
  * @param id_expr              nullptr when the request carries no id= parameter, otherwise the
  *                             expression an instance's identifier has to satisfy
- * @param required_props       nullptr when the request names no characteristic, otherwise the
- *                             resolved requirements an instance has to carry
+ * @param required_props       an empty handle when the request names no characteristic, otherwise the
+ *                             resolved requirements (CE_Type) an instance has to carry
+ * @return                     a new list of (RESL_value, RESL_amount) when the amount was taken, an
+ *                             empty handle when the map cannot serve it or @p amount is 0
+ */
+ocs::tom::ListPtr<ocs::tom::RESL>
+centry_rsmap_select_instances(const ocs::tom::ConstElement<ocs::tom::CE> resource_definition,
+                              const ocs::tom::ConstList<ocs::tom::RESL> taken,
+                              const ocs::tom::ConstList<ocs::tom::RESL> already, const uint32_t amount,
+                              const char *id_expr, const ocs::tom::ConstList<ocs::tom::CE> required_props) {
+   if (!resource_definition || amount == 0) {
+      return ocs::tom::ListPtr<ocs::tom::RESL>();
+   }
+   return centry_rsmap_take_instances(resource_definition, taken, already, nullptr, nullptr, amount, id_expr,
+                                      required_props);
+}
+
+/**
+ * @brief centry_rsmap_select_instances() for an untyped caller
+ *
+ * @param resource_definition  the resource map on the host (CE_Type), checked; may be nullptr
+ * @param taken                the identifiers which are already spoken for (RESL_Type), checked; may be nullptr
+ * @param already              what this job already holds of the map (RESL_Type), checked; may be nullptr
+ * @param amount               how many instances to take
+ * @param selected             out: a new list of (RESL_value, RESL_amount), untouched on failure
+ * @param id_expr              nullptr, or the expression an instance's identifier has to satisfy
+ * @param required_props       the resolved requirements (CE_Type), checked; may be nullptr
  * @return                     true when the amount was taken, false when the map cannot serve it
  */
-bool
-centry_rsmap_select_instances(const lListElem *resource_definition,
-                              const lList *taken, const lList *already,
-                              uint32_t amount, lList **selected, const char *id_expr,
-                              const lList *required_props) {
+bool centry_rsmap_select_instances(const lListElem *resource_definition, const lList *taken, const lList *already,
+                                   const uint32_t amount, lList **selected, const char *id_expr,
+                                   const lList *required_props) {
    if (resource_definition == nullptr || selected == nullptr || amount == 0) {
       return false;
    }
-   return centry_rsmap_take_instances(resource_definition, taken, already,
-                                      nullptr, nullptr, amount, selected, id_expr,
-                                      required_props);
+   auto chosen = centry_rsmap_select_instances(ocs::tom::ConstElement<ocs::tom::CE>(resource_definition),
+                                               ocs::tom::ConstList<ocs::tom::RESL>(taken),
+                                               ocs::tom::ConstList<ocs::tom::RESL>(already), amount, id_expr,
+                                               ocs::tom::ConstList<ocs::tom::CE>(required_props));
+   if (!chosen) {
+      return false;
+   }
+   *selected = chosen.release();
+   return true;
 }
 
 /**
@@ -1317,29 +1441,31 @@ centry_rsmap_select_instances(const lListElem *resource_definition,
  * touched. That leaves whole identifiers free for the jobs which need a whole one, which is the
  * same thing the unconstrained path does.
  *
- * @param resource_definition  the resource map on the host, from EH_consumable_config_list
- * @param taken                the identifiers which are already spoken for, may be nullptr
- * @param already              what this job already holds of the map (RESL_Type), may be nullptr
+ * @param resource_definition  the resource map on the host (CE_Type), from EH_consumable_config_list;
+ *                             may be an empty handle
+ * @param taken                the identifiers which are already spoken for (RESL_Type), may be an
+ *                             empty handle
+ * @param already              what this job already holds of the map (RESL_Type), may be an empty handle
  * @param key_name             nullptr or "id" for the identifier, otherwise a characteristic
  * @param amount               how many instances to take
- * @param selected             out: a new list of (RESL_value, RESL_amount), untouched on failure
  * @param id_expr              nullptr when the request carries no id= parameter, otherwise the
  *                             expression an instance's identifier has to satisfy
- * @param required_props       nullptr when the request names no characteristic, otherwise the
- *                             resolved requirements an instance has to carry
+ * @param required_props       an empty handle when the request names no characteristic, otherwise the
+ *                             resolved requirements (CE_Type) an instance has to carry
  * @param required_key         nullptr when this host may choose its own group, otherwise the
  *                             group the choice is confined to - what scope=job binds every host
  *                             of the job to, see rsmap_job_scope_key()
- * @return                     true when the amount was taken, false when no group can serve it
+ * @return                     a new list of (RESL_value, RESL_amount) when the amount was taken, an
+ *                             empty handle when no group can serve it or @p amount is 0
  */
-bool
-centry_rsmap_select_group_instances(const lListElem *resource_definition,
-                                    const lList *taken, const lList *already,
-                                    const char *key_name, uint32_t amount, lList **selected,
-                                    const char *id_expr, const lList *required_props,
-                                    const char *required_key) {
-   if (resource_definition == nullptr || selected == nullptr || amount == 0) {
-      return false;
+ocs::tom::ListPtr<ocs::tom::RESL>
+centry_rsmap_select_group_instances(const ocs::tom::ConstElement<ocs::tom::CE> resource_definition,
+                                    const ocs::tom::ConstList<ocs::tom::RESL> taken,
+                                    const ocs::tom::ConstList<ocs::tom::RESL> already, const char *key_name,
+                                    const uint32_t amount, const char *id_expr,
+                                    const ocs::tom::ConstList<ocs::tom::CE> required_props, const char *required_key) {
+   if (!resource_definition || amount == 0) {
+      return ocs::tom::ListPtr<ocs::tom::RESL>();
    }
 
    // which group: the one an earlier request scope took from on this host, the one the job is
@@ -1347,12 +1473,13 @@ centry_rsmap_select_group_instances(const lListElem *resource_definition,
    // two can only disagree if the map changed underneath, and a request scope which has already
    // been granted instances cannot be given different ones now.
    const char *key;
-   if (already != nullptr && lGetNumberOfElem(already) > 0) {
-      const char *chosen_id = ocs::tom::get<RESL_value>(lFirst(already));
-      const lListElem *chosen_ep = ocs::tom::find_first_in<CE_resource_map_list, RESL_value>(resource_definition, chosen_id);
-      if (chosen_ep == nullptr) {
+   if (!already.empty()) {
+      const char *chosen_id = ocs::tom::get<RESL_value>(already.front());
+      const auto chosen_ep =
+         ocs::tom::find_first_in<CE_resource_map_list, RESL_value>(resource_definition, chosen_id);
+      if (!chosen_ep) {
          // the map changed under us between one scope and the next
-         return false;
+         return ocs::tom::ListPtr<ocs::tom::RESL>();
       }
       key = centry_rsmap_instance_key(chosen_ep, key_name);
    } else if (required_key != nullptr) {
@@ -1363,11 +1490,44 @@ centry_rsmap_select_group_instances(const lListElem *resource_definition,
                                          &free_in_group, id_expr, required_props);
    }
    if (key == nullptr) {
-      return false;
+      return ocs::tom::ListPtr<ocs::tom::RESL>();
    }
 
-   return centry_rsmap_take_instances(resource_definition, taken, already,
-                                      key_name, key, amount, selected, id_expr, required_props);
+   return centry_rsmap_take_instances(resource_definition, taken, already, key_name, key, amount, id_expr,
+                                      required_props);
+}
+
+/**
+ * @brief centry_rsmap_select_group_instances() for an untyped caller
+ *
+ * @param resource_definition  the resource map on the host (CE_Type), checked; may be nullptr
+ * @param taken                the identifiers which are already spoken for (RESL_Type), checked; may be nullptr
+ * @param already              what this job already holds of the map (RESL_Type), checked; may be nullptr
+ * @param key_name             nullptr or "id" for the identifier, otherwise a characteristic
+ * @param amount               how many instances to take
+ * @param selected             out: a new list of (RESL_value, RESL_amount), untouched on failure
+ * @param id_expr              nullptr, or the expression an instance's identifier has to satisfy
+ * @param required_props       the resolved requirements (CE_Type), checked; may be nullptr
+ * @param required_key         nullptr, or the group the choice is confined to
+ * @return                     true when the amount was taken, false when no group can serve it
+ */
+bool centry_rsmap_select_group_instances(const lListElem *resource_definition, const lList *taken,
+                                         const lList *already, const char *key_name, const uint32_t amount,
+                                         lList **selected, const char *id_expr, const lList *required_props,
+                                         const char *required_key) {
+   if (resource_definition == nullptr || selected == nullptr || amount == 0) {
+      return false;
+   }
+   auto chosen = centry_rsmap_select_group_instances(ocs::tom::ConstElement<ocs::tom::CE>(resource_definition),
+                                                     ocs::tom::ConstList<ocs::tom::RESL>(taken),
+                                                     ocs::tom::ConstList<ocs::tom::RESL>(already), key_name, amount,
+                                                     id_expr, ocs::tom::ConstList<ocs::tom::CE>(required_props),
+                                                     required_key);
+   if (!chosen) {
+      return false;
+   }
+   *selected = chosen.release();
+   return true;
 }
 
 /**
@@ -1391,32 +1551,31 @@ centry_rsmap_select_group_instances(const lListElem *resource_definition,
  * being offered slots that the selection then cannot fill. The choice itself is made once and
  * recorded on the assignment for the booking to apply (CS-2805).
  *
- * @param resource_definition  the resource map on the host, from EH_consumable_config_list
+ * @param resource_definition  the resource map on the host (CE_Type), from EH_consumable_config_list;
+ *                             may be an empty handle
  * @param taken                the identifiers which are already spoken for and how many of
- *                             each, may be nullptr when nothing is
- * @param free_amount          out: the free count of the id returned, 0 if there is none
+ *                             each (RESL_Type), may be an empty handle when nothing is
+ * @param free_amount          out: the free count of the id returned, 0 if there is none; may be nullptr
  * @param id_expr              nullptr when the request carries no id= parameter, otherwise the
  *                             expression an instance's identifier has to satisfy
- * @param required_props       nullptr when the request names no characteristic, otherwise the
- *                             resolved requirements an instance has to carry
+ * @param required_props       an empty handle when the request names no characteristic, otherwise the
+ *                             resolved requirements (CE_Type) an instance has to carry
  * @return                     the id with the most free instances, or nullptr for an empty map
  */
-const char *
-centry_rsmap_best_free_id(const lListElem *resource_definition,
-                          const lList *taken, uint32_t *free_amount, const char *id_expr,
-                          const lList *required_props) {
+const char *centry_rsmap_best_free_id(const ocs::tom::ConstElement<ocs::tom::CE> resource_definition,
+                                      const ocs::tom::ConstList<ocs::tom::RESL> taken, uint32_t *free_amount,
+                                      const char *id_expr, const ocs::tom::ConstList<ocs::tom::CE> required_props) {
    const char *best_id = nullptr;
    uint32_t best_free = 0;
 
    if (free_amount != nullptr) {
       *free_amount = 0;
    }
-   if (resource_definition == nullptr) {
+   if (!resource_definition) {
       return nullptr;
    }
 
-   ocs::tom::ConstElement<ocs::tom::RESL> defined_ep;
-   for_each_ep (defined_ep, ocs::tom::get<CE_resource_map_list>(resource_definition)) {
+   for (const auto defined_ep : ocs::tom::get<CE_resource_map_list>(resource_definition)) {
       if (!centry_rsmap_instance_matches_id(defined_ep, id_expr) ||
           !centry_rsmap_instance_matches_properties(defined_ep, required_props)) {
          continue;
@@ -1437,7 +1596,24 @@ centry_rsmap_best_free_id(const lListElem *resource_definition,
 }
 
 /**
- * Give an RSMAP that was configured with a bare amount the ids it is missing.
+ * @brief centry_rsmap_best_free_id() for an untyped caller
+ *
+ * @param resource_definition  the resource map on the host (CE_Type), checked; may be nullptr
+ * @param taken                the identifiers which are already spoken for (RESL_Type), checked; may be nullptr
+ * @param free_amount          out: the free count of the id returned, 0 if there is none; may be nullptr
+ * @param id_expr              nullptr, or the expression an instance's identifier has to satisfy
+ * @param required_props       the resolved requirements (CE_Type), checked; may be nullptr
+ * @return                     as centry_rsmap_best_free_id()
+ */
+const char *centry_rsmap_best_free_id(const lListElem *resource_definition, const lList *taken,
+                                      uint32_t *free_amount, const char *id_expr, const lList *required_props) {
+   return centry_rsmap_best_free_id(ocs::tom::ConstElement<ocs::tom::CE>(resource_definition),
+                                    ocs::tom::ConstList<ocs::tom::RESL>(taken), free_amount, id_expr,
+                                    ocs::tom::ConstList<ocs::tom::CE>(required_props));
+}
+
+/**
+ * @brief Give an RSMAP that was configured with a bare amount the ids it is missing
  *
  * An RSMAP value may be written as a plain number, e.g. "gpu=4". The amount is then
  * known but no instance is, and since the scheduler picks the granted instances from
@@ -1458,29 +1634,31 @@ centry_rsmap_best_free_id(const lListElem *resource_definition,
  *
  * @param answer_list  answer list; a rejection is appended with
  *                     STATUS_EUNKNOWN/ANSWER_QUALITY_ERROR
- * @param centry       CE_Type element of a host's complex_values entry. Requires
- *                     CE_valtype and CE_doubleval to be filled in, i.e. the element
+ * @param centry       CE_Type element of a host's complex_values entry, may be an empty handle.
+ *                     Requires CE_valtype and CE_doubleval to be filled in, i.e. the element
  *                     must have passed centry_list_fill_request()
  * @param max_ids      upper bound for the number of ids to create, 0 disables the
  *                     implicit ids
  * @return             true if nothing had to be done or the ids were created,
  *                     false if the amount exceeds max_ids
  */
-bool
-centry_rsmap_expand_implicit_ids(lList **answer_list, lListElem *centry, uint32_t max_ids) {
-   if (centry == nullptr || static_cast<ocs::CEntry::Type>(ocs::tom::get<CE_valtype>(centry)) != ocs::CEntry::Type::RSMAP) {
-      return true;
+bool centry_rsmap_expand_implicit_ids(lList **answer_list, const ocs::tom::Element<ocs::tom::CE> centry,
+                                      const uint32_t max_ids) {
+   DENTER(TOP_LAYER);
+   if (!centry ||
+       static_cast<ocs::CEntry::Type>(ocs::tom::get<CE_valtype>(centry)) != ocs::CEntry::Type::RSMAP) {
+      DRETURN(true);
    }
 
    // ids have been configured - nothing to do
-   if (static_cast<const lList *>(ocs::tom::get<CE_resource_map_list>(centry)) != nullptr) {
-      return true;
+   if (ocs::tom::get<CE_resource_map_list>(centry)) {
+      DRETURN(true);
    }
 
    const double dval = ocs::tom::get<CE_doubleval>(centry);
    if (dval <= 0) {
       // "gpu=0" - the host provides no instance, which is a valid configuration
-      return true;
+      DRETURN(true);
    }
    const auto amount = static_cast<uint32_t>(dval);
 
@@ -1488,48 +1666,59 @@ centry_rsmap_expand_implicit_ids(lList **answer_list, lListElem *centry, uint32_
       // the implicit ids are switched off - the instances have to be named explicitly
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                               MSG_CONFIG_CONF_RSMAP_NEEDS_IDS_S, ocs::tom::get<CE_name>(centry));
-      return false;
+      DRETURN(false);
    }
    if (amount > max_ids) {
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                               MSG_RSMAP_TOO_MANY_IMPLICIT_IDS_SUU,
                               ocs::tom::get<CE_name>(centry), amount, max_ids);
-      return false;
+      DRETURN(false);
    }
 
    for (uint32_t id = 0; id < amount; id++) {
       std::string id_str{std::to_string(id)};
-      ocs::tom::Element<ocs::tom::RESL> resl = ocs::tom::emplace_back_in<CE_resource_map_list, RESL_value>(centry, id_str.c_str());
-      if (resl != nullptr) {
+      const auto resl = ocs::tom::emplace_back_in<CE_resource_map_list, RESL_value>(centry, id_str.c_str());
+      if (resl) {
          ocs::tom::set<RESL_amount>(resl, 1);
       }
    }
 
-   return true;
+   DRETURN(true);
 }
 
 /**
- * Expand the implicit ids of every RSMAP in a host's complex_values list.
+ * @brief centry_rsmap_expand_implicit_ids() for an untyped caller
+ *
+ * @param answer_list  answer list; a rejection is appended
+ * @param centry       CE_Type element of a host's complex_values entry, checked; may be nullptr
+ * @param max_ids      upper bound for the number of ids to create, 0 disables the implicit ids
+ * @return             as centry_rsmap_expand_implicit_ids()
+ */
+bool centry_rsmap_expand_implicit_ids(lList **answer_list, lListElem *centry, const uint32_t max_ids) {
+   return centry_rsmap_expand_implicit_ids(answer_list, ocs::tom::Element<ocs::tom::CE>(centry), max_ids);
+}
+
+/**
+ * @brief Expand the implicit ids of every RSMAP in a host's complex_values list
  *
  * Wrapper around centry_rsmap_expand_implicit_ids() which takes the limit from
  * MAX_RSMAP_IDS in qmaster_params. All entries are processed even if one of them is
  * rejected, so that an administrator sees every offending RSMAP at once.
  *
  * @param answer_list  answer list; rejections are appended
- * @param centry_list  CE_Type list of an exec host (EH_consumable_config_list)
+ * @param centry_list  CE_Type list of an exec host (EH_consumable_config_list), may be an empty handle
  * @return             true if no entry was rejected
  */
-bool
-centry_list_rsmap_expand_implicit_ids(lList **answer_list, lList *centry_list) {
+bool centry_list_rsmap_expand_implicit_ids(lList **answer_list, const ocs::tom::List<ocs::tom::CE> centry_list) {
+   DENTER(TOP_LAYER);
    bool ret = true;
    const auto max_ids = static_cast<uint32_t>(mconf_get_max_rsmap_ids());
 
-   lListElem *centry;
-   for_each_rw(centry, centry_list) {
+   for (const auto centry : centry_list) {
       if (!centry_rsmap_expand_implicit_ids(answer_list, centry, max_ids)) {
          ret = false;
       }
    }
 
-   return ret;
+   DRETURN(ret);
 }

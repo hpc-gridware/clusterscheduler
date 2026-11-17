@@ -76,8 +76,13 @@
 #include "sgeobj/sge_object.h"
 #include "sgeobj/cull_parse_util.h"
 #include "sgeobj/msg_sgeobjlib.h"
+#include "sgeobj/tom/ocs_tom_ACELIST.h"
 #include "sgeobj/tom/ocs_tom_CE.h"
+#include "sgeobj/tom/ocs_tom_CQ.h"
+#include "sgeobj/tom/ocs_tom_EH.h"
+#include "sgeobj/tom/ocs_tom_RQS.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
 
 #include "msg_common.h"
 #include "uti/sge.h"
@@ -192,20 +197,20 @@ int get_rsrc(const char *name, bool queue, int *field, int *cqfld, int *valfld, 
 /**
  * @brief Fill and check the attribute
  *
- * fill and check the attribute
+ * Parses the value of a request or a complex value according to its type, stores the amount in
+ * CE_doubleval and resolves a host name in place.
  *
- * @param this_elem CE_Type, this object will be checked
- * @param answer_list answer list
+ * @param this_elem CE_Type element, this object will be checked and filled
+ * @param answer_list answer list, receives the error message
  * @param allow_empty_boolean true replaces a nullptr value of a boolean
  *                            attribute with "true"; false treats it as an error
  * @param allow_neg_consumable true allows a negative value for a consumable
  *                             resource; false makes the function return -1 for one
  *
- * @return 1 on error an error message will be written into SGE_EVENT
+ * @return 0 on success, -1 on error; the error message is written into @p answer_list
  */
-int
-centry_fill_and_check(lListElem *this_elem, lList **answer_list, bool allow_empty_boolean,
-                      bool allow_neg_consumable) {
+int centry_fill_and_check(const ocs::tom::Element<ocs::tom::CE> this_elem, lList **answer_list,
+                          const bool allow_empty_boolean, const bool allow_neg_consumable) {
    DENTER(CENTRY_LAYER);
    static char tmp[1000];
    const char *name, *s;
@@ -220,7 +225,8 @@ centry_fill_and_check(lListElem *this_elem, lList **answer_list, bool allow_empt
    allow_infinity = (ocs::tom::get<CE_consumable>(this_elem) != CONSUMABLE_NO) ? 0 : 1;
 
    if (s == nullptr) {
-      if (allow_empty_boolean && static_cast<ocs::CEntry::Type>(ocs::tom::get<CE_valtype>(this_elem)) == ocs::CEntry::Type::BOOL) {
+      if (allow_empty_boolean &&
+          static_cast<ocs::CEntry::Type>(ocs::tom::get<CE_valtype>(this_elem)) == ocs::CEntry::Type::BOOL) {
          ocs::tom::set<CE_stringval>(this_elem, "TRUE");
          s = ocs::tom::get<CE_stringval>(this_elem);
       } else {
@@ -255,7 +261,8 @@ centry_fill_and_check(lListElem *this_elem, lList **answer_list, bool allow_empt
 
          if (!extended_parse_ulong_val(&dval, nullptr, type, amount, tmp, sizeof(tmp)-1, allow_infinity, false)) {
 /*             ERROR(MSG_CPLX_WRONGTYPE_SSS, name, s, tmp); */
-            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ATTRIB_XISNOTAY_SS, name, tmp);
+            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ATTRIB_XISNOTAY_SS,
+                                    name, tmp);
             DRETURN(-1);
          }
          DPRINTF("   ===> centry_fill_and_check(%s, %s), dval = %f\n", name, s, dval);
@@ -283,7 +290,8 @@ centry_fill_and_check(lListElem *this_elem, lList **answer_list, bool allow_empt
          /* also the CE_defaultval must be parsable for numeric types */
          if ((s=ocs::tom::get<CE_defaultval>(this_elem))
             && !parse_ulong_val(&dval, nullptr, type, s, tmp, sizeof(tmp)-1)) {
-            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_CPLX_WRONGTYPE_SSS, name, s, tmp);
+            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_CPLX_WRONGTYPE_SSS,
+                                    name, s, tmp);
             DRETURN(-1);
          }
 
@@ -301,9 +309,11 @@ centry_fill_and_check(lListElem *this_elem, lList **answer_list, bool allow_empt
          ret = sge_resolve_host(this_elem, CE_stringval);
          if (ret != CL_RETVAL_OK) {
             if (ret == CL_RETVAL_GETHOSTNAME_ERROR) {
-               answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_SGETEXT_CANTRESOLVEHOST_S, s);
+               answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                                       MSG_SGETEXT_CANTRESOLVEHOST_S, s);
             } else {
-               answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_SGETEXT_INVALIDHOST_S, s);
+               answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                                       MSG_SGETEXT_INVALIDHOST_S, s);
             }
             DRETURN(-1);
          }
@@ -321,6 +331,22 @@ centry_fill_and_check(lListElem *this_elem, lList **answer_list, bool allow_empt
    }
 
    DRETURN(0);
+}
+
+/**
+ * @brief centry_fill_and_check() for an untyped caller
+ *
+ * @param this_elem CE_Type element, checked
+ * @param answer_list answer list, receives the error message
+ * @param allow_empty_boolean true replaces a nullptr value of a boolean attribute with "true"
+ * @param allow_neg_consumable true allows a negative value for a consumable resource
+ *
+ * @return as centry_fill_and_check()
+ */
+int centry_fill_and_check(lListElem *this_elem, lList **answer_list, const bool allow_empty_boolean,
+                          const bool allow_neg_consumable) {
+   return centry_fill_and_check(ocs::tom::Element<ocs::tom::CE>(this_elem), answer_list, allow_empty_boolean,
+                                allow_neg_consumable);
 }
 
 /**
@@ -471,19 +497,18 @@ centry_create(lList **answer_list, const char *name) {
  * "master_queue_list", "master_exechost_list" or
  * "master_sconf_list".
  *
- * @param centry CE_Type
- * @param answer_list AN_Type
- * @param master_cqueue_list CQ_Type
- * @param master_exechost_list EH_Type
- * @param master_rqs_list RQS_Type
+ * @param centry CE_Type element
+ * @param answer_list AN_Type list, receives an info message naming the first reference found
+ * @param master_cqueue_list CQ_Type list, may be an empty handle
+ * @param master_exechost_list EH_Type list, may be an empty handle
+ * @param master_rqs_list RQS_Type list, may be an empty handle
  *
- * @return true or false
+ * @return true if the complex entry is referenced, else false
  */
-bool
-centry_is_referenced(const lListElem *centry, lList **answer_list,
-                     const lList *master_cqueue_list,
-                     const lList *master_exechost_list,
-                     const lList *master_rqs_list) {
+bool centry_is_referenced(const ocs::tom::ConstElement<ocs::tom::CE> centry, lList **answer_list,
+                          const ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list,
+                          const ocs::tom::ConstList<ocs::tom::EH> master_exechost_list,
+                          const ocs::tom::ConstList<ocs::tom::RQS> master_rqs_list) {
    DENTER(CENTRY_LAYER);
 
    bool ret = false;
@@ -496,13 +521,11 @@ centry_is_referenced(const lListElem *centry, lList **answer_list,
       ret = true;
    }
    if (!ret) {
-      const lListElem *cqueue = nullptr, *cel = nullptr;
-
       /* fix for bug 6422335
        * check the cq configuration for centry references instead of qinstances
        */
-      for_each_ep(cqueue, master_cqueue_list) {
-         for_each_ep(cel, ocs::tom::get<CQ_consumable_config_list>(cqueue)) {
+      for (const auto cqueue : master_cqueue_list) {
+         for (const auto cel : ocs::tom::get<CQ_consumable_config_list>(cqueue)) {
             if (ocs::tom::find_first_in<ACELIST_value, CE_name>(cel, centry_name)) {
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
                                        ANSWER_QUALITY_INFO,
@@ -519,9 +542,7 @@ centry_is_referenced(const lListElem *centry, lList **answer_list,
       }
    }
    if (!ret) {
-      const lListElem *host = nullptr;    /* EH_Type */
-
-      for_each_ep(host, master_exechost_list) {
+      for (const auto host : master_exechost_list) {
          if (host_is_centry_referenced(host, centry)) {
             const char *host_name = ocs::tom::get<EH_name>(host);
 
@@ -535,8 +556,7 @@ centry_is_referenced(const lListElem *centry, lList **answer_list,
       }
    }
    if (!ret) {
-      const lListElem *rqs = nullptr;
-      for_each_ep(rqs, master_rqs_list) {
+      for (const auto rqs : master_rqs_list) {
          if (sge_centry_referenced_in_rqs(rqs, centry)) {
             answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
                                     ANSWER_QUALITY_INFO,
@@ -552,22 +572,40 @@ centry_is_referenced(const lListElem *centry, lList **answer_list,
 }
 
 /**
+ * @brief centry_is_referenced() for an untyped caller
+ *
+ * @param centry CE_Type element, checked
+ * @param answer_list AN_Type list
+ * @param master_cqueue_list CQ_Type list, checked; may be nullptr
+ * @param master_exechost_list EH_Type list, checked; may be nullptr
+ * @param master_rqs_list RQS_Type list, checked; may be nullptr
+ *
+ * @return as centry_is_referenced()
+ */
+bool centry_is_referenced(const lListElem *centry, lList **answer_list, const lList *master_cqueue_list,
+                          const lList *master_exechost_list, const lList *master_rqs_list) {
+   return centry_is_referenced(ocs::tom::ConstElement<ocs::tom::CE>(centry), answer_list,
+                               ocs::tom::ConstList<ocs::tom::CQ>(master_cqueue_list),
+                               ocs::tom::ConstList<ocs::tom::EH>(master_exechost_list),
+                               ocs::tom::ConstList<ocs::tom::RQS>(master_rqs_list));
+}
+
+/**
  * @brief Print to dstring
  *
  * Print resource string (memory, time) to dstring.
  *
- * @param this_elem CE_Type
+ * @param this_elem CE_Type element, may be an empty handle
  * @param string dynamic string
  *
- * @return error state true  - success false - error
+ * @return always true
  *
  * @note MT-NOTE: centry_print_resource_to_dstring() is MT safe
  */
-bool
-centry_print_resource_to_dstring(const lListElem *this_elem, dstring *string) {
+bool centry_print_resource_to_dstring(const ocs::tom::ConstElement<ocs::tom::CE> this_elem, dstring *string) {
    DENTER(CENTRY_LAYER);
 
-   if (this_elem != nullptr && string != nullptr) {
+   if (this_elem && string != nullptr) {
       const auto type = static_cast<ocs::CEntry::Type>(ocs::tom::get<CE_valtype>(this_elem));
       const double val = ocs::tom::get<CE_doubleval>(this_elem);
 
@@ -587,24 +625,37 @@ centry_print_resource_to_dstring(const lListElem *this_elem, dstring *string) {
 }
 
 /**
+ * @brief centry_print_resource_to_dstring() for an untyped caller
+ *
+ * @param this_elem CE_Type element, checked; may be nullptr
+ * @param string dynamic string
+ *
+ * @return as centry_print_resource_to_dstring()
+ */
+bool centry_print_resource_to_dstring(const lListElem *this_elem, dstring *string) {
+   return centry_print_resource_to_dstring(ocs::tom::ConstElement<ocs::tom::CE>(this_elem), string);
+}
+
+/**
  * @brief Find Centry element
  *
- * Find CEntry element with "name" in "this_list".
+ * Find the CEntry element with "name" in "this_list", by its name first and then by its shortcut.
+ * The list is only searched; the element is handed out writable, as before.
  *
- * @param this_list CE_Type list
- * @param name name of an CE_Type entry
+ * @param this_list CE_Type list, may be an empty handle
+ * @param name name or shortcut of a CE_Type entry, may be nullptr
  *
- * @return CE_Type element
+ * @return CE_Type element, or an empty handle
  */
-lListElem *
-centry_list_locate(const lList *this_list, const char *name) {
+ocs::tom::Element<ocs::tom::CE> centry_list_locate(const ocs::tom::ConstList<ocs::tom::CE> this_list,
+                                                   const char *name) {
    DENTER(CENTRY_LAYER);
 
-   lListElem *ret = nullptr;   /* CE_Type */
+   ocs::tom::Element<ocs::tom::CE> ret = nullptr;
 
-   if (this_list != nullptr && name != nullptr) {
+   if (this_list && name != nullptr) {
       ret = ocs::tom::find_first_rw<CE_name>(this_list, name);
-      if (ret == nullptr) {
+      if (!ret) {
          ret = ocs::tom::find_first_rw<CE_shortcut>(this_list, name);
       }
    }
@@ -612,47 +663,69 @@ centry_list_locate(const lList *this_list, const char *name) {
 }
 
 /**
- * @brief Sort a CE_Type list
+ * @brief centry_list_locate() for an untyped caller
  *
- * @param this_list CE_Type list
+ * @param this_list CE_Type list, checked; may be nullptr
+ * @param name name or shortcut of a CE_Type entry, may be nullptr
  *
- * @return error state true  - success false - error
+ * @return CE_Type element or nullptr
  */
-bool
-centry_list_sort(lList *this_list) {
+lListElem *centry_list_locate(const lList *this_list, const char *name) {
+   return centry_list_locate(ocs::tom::ConstList<ocs::tom::CE>(this_list), name).raw();
+}
+
+/**
+ * @brief Sort a CE_Type list by CE_name, ascending
+ *
+ * @param this_list CE_Type list, may be an empty handle
+ *
+ * @return always true
+ */
+bool centry_list_sort(const ocs::tom::List<ocs::tom::CE> this_list) {
    DENTER(CENTRY_LAYER);
 
-   bool ret = true;
+   this_list.sort<ocs::tom::asc<CE_name>>();
+   DRETURN(true);
+}
 
-   if (this_list != nullptr) {
-      lSortOrder *order = nullptr;
-
-      order = lParseSortOrderVarArg(lGetListDescr(this_list), "%I+", CE_name);
-      lSortList(this_list, order);
-      lFreeSortOrder(&order);
-   }
-   DRETURN(ret);
+/**
+ * @brief centry_list_sort() for an untyped caller
+ *
+ * @param this_list CE_Type list, checked; may be nullptr
+ *
+ * @return as centry_list_sort()
+ */
+bool centry_list_sort(lList *this_list) {
+   return centry_list_sort(ocs::tom::List<ocs::tom::CE>(this_list));
 }
 
 /**
  * @brief Initialize double from string
  *
- * Initialize all double values contained in "this_list"
+ * Initialize all double values contained in "this_list" from their CE_stringval.
  *
- * @param this_list CE_Type list
- *
- * @note bool - true
+ * @param this_list CE_Type list, may be an empty handle
  */
-void
-centry_list_init_double(const lList *this_list) {
+void centry_list_init_double(const ocs::tom::List<ocs::tom::CE> this_list) {
    DENTER(CENTRY_LAYER);
-   for_each_rw_lv (centry, this_list) {
+   for (const auto centry : this_list) {
       double new_val = 0.0; // parse_ulong_val will not set it for all data types!
       parse_ulong_val(&new_val, nullptr, static_cast<ocs::CEntry::Type>(ocs::tom::get<CE_valtype>(centry)),
                       ocs::tom::get<CE_stringval>(centry), nullptr, 0);
       ocs::tom::set<CE_doubleval>(centry, new_val);
    }
    DRETURN_VOID;
+}
+
+/**
+ * @brief centry_list_init_double() for an untyped caller
+ *
+ * The elements have always been changed through the read-only list; the cast keeps that.
+ *
+ * @param this_list CE_Type list, checked; may be nullptr
+ */
+void centry_list_init_double(const lList *this_list) {
+   centry_list_init_double(ocs::tom::List<ocs::tom::CE>(const_cast<lList *>(this_list)));
 }
 
 /**
@@ -665,23 +738,25 @@ centry_list_init_double(const lList *this_list) {
  * function: the input paths keep it once (CS-3053), so one entry is all there is to remove.
  *
  * @param this_list the request list, CE_Type
- * @param entry the entry carrying the shortcut
+ * @param entry the entry carrying the shortcut, an element of @p this_list
  * @param full_name the full name of the attribute
  * @return true if @p entry was removed, false if it stays and gets the full name
  */
 static bool
-ocs_centry_list_drop_earlier_request(lList *this_list, lListElem *entry, const char *full_name) {
+ocs_centry_list_drop_earlier_request(const ocs::tom::List<ocs::tom::CE> this_list,
+                                     const ocs::tom::Element<ocs::tom::CE> entry, const char *full_name) {
    bool entry_seen = false;
-   for (lListElem *other = lFirstRW(this_list); other != nullptr; other = lNextRW(other)) {
+   for (const auto other : this_list) {
       if (other == entry) {
          entry_seen = true;
       } else if (const char *other_name = ocs::tom::get<CE_name>(other);
                  other_name != nullptr && strcmp(other_name, full_name) == 0) {
+         // the loop ends here, so erasing does not disturb the iteration
          if (entry_seen) {
-            lRemoveElem(this_list, &entry);
+            this_list.erase(entry);
             return true;
          }
-         lRemoveElem(this_list, &other);
+         this_list.erase(other);
          return false;
       }
    }
@@ -701,10 +776,11 @@ ocs_centry_list_drop_earlier_request(lList *this_list, lListElem *entry, const c
  * not spooled and is 0 for an entry read back from the spool: without the marker an unfilled
  * entry would look like a request for nothing.
  *
- * @param[in,out] this_list resources as complex list CE_Type; the entries are filled in place, a shortcut is
- *        replaced by the full name, and of a shortcut and its full name requested together only the later stays
+ * @param[in,out] this_list resources as complex list CE_Type, may be an empty handle; the entries are filled in
+ *        place, a shortcut is replaced by the full name, and of a shortcut and its full name requested together
+ *        only the later stays
  * @param answer_list answer list
- * @param master_centry_list the global complex list
+ * @param master_centry_list the global complex list, CE_Type
  * @param allow_non_requestable needed for qstat -l or qmon customize dialog
  * @param allow_empty_boolean true replaces a nullptr value of a boolean
  *                            attribute with "true"; false treats it as an error
@@ -713,12 +789,11 @@ ocs_centry_list_drop_earlier_request(lList *this_list, lListElem *entry, const c
  *
  * @return error 0 on success -1 on error an error message will be written into SGE_EVENT
  */
-int
-centry_list_fill_request(lList *this_list, lList **answer_list, const lList *master_centry_list,
-                         bool allow_non_requestable, bool allow_empty_boolean,
-                         bool allow_neg_consumable) {
+int centry_list_fill_request(const ocs::tom::List<ocs::tom::CE> this_list, lList **answer_list,
+                             const ocs::tom::ConstList<ocs::tom::CE> master_centry_list,
+                             const bool allow_non_requestable, const bool allow_empty_boolean,
+                             const bool allow_neg_consumable) {
    DENTER(TOP_LAYER);
-   lListElem *cep = nullptr;
    int ret = 0;
 
    /* An entry which cannot be filled in is marked by clearing its CE_valtype, and the loop
@@ -732,17 +807,18 @@ centry_list_fill_request(lList *this_list, lList **answer_list, const lList *mas
     * complete; entries behind the failing one would otherwise keep their spooled valtype and
     * be indistinguishable from filled ones. Callers see the same -1 as before.
     */
-   lListElem *next = lFirstRW(this_list);
-   while (lListElem *entry = next) {
-      next = lNextRW(entry);
+   auto next = this_list.front();
+   while (const auto entry = next) {
+      next = entry.next();
       const char *name = ocs::tom::get<CE_name>(entry);
 
-      cep = centry_list_locate(master_centry_list, name);
-      if (cep != nullptr) {
+      const auto cep = centry_list_locate(master_centry_list, name);
+      if (cep) {
          uint32_t requestable = ocs::tom::get<CE_requestable>(cep);
          if (!allow_non_requestable && requestable == REQU_NO) {
 /*             ERROR(MSG_SGETEXT_RESOURCE_NOT_REQUESTABLE_S, name); */
-            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_SGETEXT_RESOURCE_NOT_REQUESTABLE_S, name);
+            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                                    MSG_SGETEXT_RESOURCE_NOT_REQUESTABLE_S, name);
             ocs::tom::set<CE_valtype>(entry, 0);
             ret = -1;
             continue;
@@ -791,7 +867,8 @@ centry_list_fill_request(lList *this_list, lList **answer_list, const lList *mas
             continue;
          }
       } else {
-         answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_SGETEXT_UNKNOWN_RESOURCE_S, name);
+         answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                                 MSG_SGETEXT_UNKNOWN_RESOURCE_S, name);
          ocs::tom::set<CE_valtype>(entry, 0);
          ret = -1;
          continue;
@@ -802,20 +879,41 @@ centry_list_fill_request(lList *this_list, lList **answer_list, const lList *mas
 }
 
 /**
+ * @brief centry_list_fill_request() for an untyped caller
+ *
+ * @param this_list CE_Type list, checked; may be nullptr
+ * @param answer_list answer list
+ * @param master_centry_list the global complex list, CE_Type, checked; may be nullptr
+ * @param allow_non_requestable needed for qstat -l or qmon customize dialog
+ * @param allow_empty_boolean true replaces a nullptr value of a boolean attribute with "true"
+ * @param allow_neg_consumable true allows a negative value for a consumable resource
+ *
+ * @return as centry_list_fill_request()
+ */
+int centry_list_fill_request(lList *this_list, lList **answer_list, const lList *master_centry_list,
+                             const bool allow_non_requestable, const bool allow_empty_boolean,
+                             const bool allow_neg_consumable) {
+   return centry_list_fill_request(ocs::tom::List<ocs::tom::CE>(this_list), answer_list,
+                                   ocs::tom::ConstList<ocs::tom::CE>(master_centry_list), allow_non_requestable,
+                                   allow_empty_boolean, allow_neg_consumable);
+}
+
+/**
  * @brief fill in configuration attributes into a list of complex attributes
  *
  * The function makes sure that all configuration attributes of objects in a CE_Type list
  * are properly filled in.
  * The actual configuration values are taken from the complex definition (the master_centry_list).
+ * An entry the complex definition does not know is left as it is.
  *
- * @param centry_list
- * @param master_centry_list
+ * @param centry_list CE_Type list to fill in, may be an empty handle
+ * @param master_centry_list the complex definition, CE_Type
  */
-void
-centry_list_fill_config(lList *centry_list, const lList *master_centry_list) {
-   for_each_rw_lv(centry, centry_list) {
-      const lListElem *master_centry = centry_list_locate(master_centry_list, ocs::tom::get<CE_name>(centry));
-      if (master_centry != nullptr) {
+void centry_list_fill_config(const ocs::tom::List<ocs::tom::CE> centry_list,
+                             const ocs::tom::ConstList<ocs::tom::CE> master_centry_list) {
+   for (const auto centry : centry_list) {
+      const auto master_centry = centry_list_locate(master_centry_list, ocs::tom::get<CE_name>(centry));
+      if (master_centry) {
          ocs::tom::set<CE_name>(centry, ocs::tom::get<CE_name>(master_centry));
          ocs::tom::set<CE_shortcut>(centry, ocs::tom::get<CE_shortcut>(master_centry));
          ocs::tom::set<CE_valtype>(centry, ocs::tom::get<CE_valtype>(master_centry));
@@ -828,40 +926,49 @@ centry_list_fill_config(lList *centry_list, const lList *master_centry_list) {
    }
 }
 
-bool
+/**
+ * @brief centry_list_fill_config() for an untyped caller
+ *
+ * @param centry_list CE_Type list to fill in, checked; may be nullptr
+ * @param master_centry_list the complex definition, CE_Type, checked; may be nullptr
+ */
+void centry_list_fill_config(lList *centry_list, const lList *master_centry_list) {
+   centry_list_fill_config(ocs::tom::List<ocs::tom::CE>(centry_list),
+                           ocs::tom::ConstList<ocs::tom::CE>(master_centry_list));
+}
+
 /**
  * @brief May a job request a specific queue?
  *
  * Decided by whether the `qname` complex entry is requestable, which an
  * administrator can turn off to stop users from bypassing the scheduler.
  *
- * @param this_list the complex entries to look in
+ * @param this_list the complex entries to look in, CE_Type, may be an empty handle
  * @return true when `qname` exists and is requestable
  */
-centry_list_are_queues_requestable(const lList *this_list) {
+bool centry_list_are_queues_requestable(const ocs::tom::ConstList<ocs::tom::CE> this_list) {
    DENTER(CENTRY_LAYER);
 
    bool ret = false;
 
-   if (this_list != nullptr) {
-      lListElem *centry = centry_list_locate(this_list, "qname");
+   if (this_list) {
+      const auto centry = centry_list_locate(this_list, "qname");
 
-      if (centry != nullptr) {
+      if (centry) {
          ret = (ocs::tom::get<CE_requestable>(centry) != REQU_NO) ? true : false;
       }
    }
    DRETURN(ret);
 }
 
-const char *
 /**
  * @brief Render a complex entry list into a dstring
  *
- * @param this_list the entries to render
- * @param[out] string receives the text, appended
- * @return the resulting text
+ * @param this_list the entries to render, CE_Type, may be an empty handle
+ * @param[out] string receives the text, appended; `NONE` for no entries
+ * @return the resulting text, or nullptr when @p string is nullptr
  */
-centry_list_append_to_dstring(const lList *this_list, dstring *string) {
+const char *centry_list_append_to_dstring(const ocs::tom::ConstList<ocs::tom::CE> this_list, dstring *string) {
    DENTER(CENTRY_LAYER);
 
    const char *ret = nullptr;
@@ -869,8 +976,7 @@ centry_list_append_to_dstring(const lList *this_list, dstring *string) {
    if (string != nullptr) {
       bool printed = false;
 
-      const lListElem *elem;
-      for_each_ep(elem, this_list) {
+      for (const auto elem : this_list) {
          if (printed) {
             sge_dstring_append(string, ",");
          }
@@ -889,34 +995,55 @@ centry_list_append_to_dstring(const lList *this_list, dstring *string) {
    DRETURN(ret);
 }
 
-/* CLEANUP: should be replaced by centry_list_append_to_dstring() */
-int
+/**
+ * @brief centry_list_append_to_dstring() for an untyped caller
+ *
+ * @param this_list the entries to render, CE_Type, checked; may be nullptr
+ * @param[out] string receives the text, appended
+ * @return as centry_list_append_to_dstring()
+ */
+const char *centry_list_append_to_dstring(const lList *this_list, dstring *string) {
+   return centry_list_append_to_dstring(ocs::tom::ConstList<ocs::tom::CE>(this_list), string);
+}
+
 /**
  * @brief Render a complex entry list into a fixed size buffer
  *
- * @param this_list the entries to render
- * @param[out] buff receives the text
+ * The list is sorted by CE_name first.
+ *
+ * @todo CLEANUP: should be replaced by centry_list_append_to_dstring()
+ *
+ * @param this_list the entries to render, CE_Type, may be an empty handle
+ * @param[out] buff receives the text, may be nullptr
  * @param max_len the size of `buff`
- * @return true when the text fitted
+ * @return 0 on success, the non-zero result of uni_print_list() otherwise
  */
-centry_list_append_to_string(lList *this_list, char *buff, uint32_t max_len) {
+int centry_list_append_to_string(const ocs::tom::List<ocs::tom::CE> this_list, char *buff, const uint32_t max_len) {
    DENTER(TOP_LAYER);
 
    int attr_fields[] = {CE_name, CE_stringval, 0};
    const char *attr_delis[] = {"=", ",", "\n"};
-   int ret;
 
-   if (buff)
+   if (buff) {
       buff[0] = '\0';
-
-   lPSortList(this_list, "%I+", CE_name);
-
-   ret = uni_print_list(nullptr, buff, max_len, this_list, attr_fields, attr_delis, 0);
-   if (ret) {
-      DRETURN(ret);
    }
 
-   DRETURN(0);
+   this_list.sort<ocs::tom::asc<CE_name>>();
+
+   const int ret = uni_print_list(nullptr, buff, max_len, this_list, attr_fields, attr_delis, 0);
+   DRETURN(ret);
+}
+
+/**
+ * @brief centry_list_append_to_string() for an untyped caller
+ *
+ * @param this_list the entries to render, CE_Type, checked; may be nullptr
+ * @param[out] buff receives the text, may be nullptr
+ * @param max_len the size of `buff`
+ * @return as centry_list_append_to_string()
+ */
+int centry_list_append_to_string(lList *this_list, char *buff, const uint32_t max_len) {
+   return centry_list_append_to_string(ocs::tom::List<ocs::tom::CE>(this_list), buff, max_len);
 }
 
 /**
@@ -979,36 +1106,39 @@ request_next_token(char **pos) {
    return token;
 }
 
-/* CLEANUP: add answer_list remove SGE_EVENT */
-/*
- * NOTE
- *    MT-NOTE: centry_list_parse_from_string() is MT safe
- */
 /**
  * @brief Parse a `name=value,name=value` list into complex entries
  *
- * @param[in,out] complex_attributes the list the parsed entries are added to;
- *                                   a new list is created when it is nullptr
+ * A name given twice keeps one entry, with the later value.
+ *
+ * @todo CLEANUP: add answer_list remove SGE_EVENT
+ *
+ * @param[in] complex_attributes the list the parsed entries are added to, taken over;
+ *                               a new list is created when it is an empty handle
  * @param str the text to parse
- * @param check_value true to reject a value that does not fit the resource's type
- * @return the resulting list, or nullptr when the text could not be parsed
+ * @param check_value true to reject a missing value; false makes a missing value TRUE
+ * @return the resulting list, or an empty handle when the text could not be parsed;
+ *         @p complex_attributes is freed then
  *
  * @note MT-NOTE: centry_list_parse_from_string() is MT safe
  */
-lList *
-centry_list_parse_from_string(lList *complex_attributes,
-                              const char *str, bool check_value) {
+ocs::tom::ListPtr<ocs::tom::CE>
+centry_list_parse_from_string(ocs::tom::ListPtr<ocs::tom::CE> &&complex_attributes, const char *str,
+                              const bool check_value) {
    DENTER(TOP_LAYER);
 
    char *cp;
+   auto ret = std::move(complex_attributes);
 
    /* allocate space for attribute list if no list is passed */
-   if (complex_attributes == nullptr) {
-      if ((complex_attributes = lCreateList("qstat_l_requests", CE_Type)) == nullptr) {
+   if (!ret) {
+      ret = ocs::tom::ListPtr<ocs::tom::CE>::create("qstat_l_requests");
+      if (!ret) {
          ERROR(SFNMAX, MSG_PARSE_NOALLOCATTRLIST);
-         DRETURN(nullptr);
+         DRETURN(ocs::tom::ListPtr<ocs::tom::CE>());
       }
    }
+   const auto list = *ret;
 
    /* tokens are terminated in place, so work on a copy of the caller's string */
    char *buffer = sge_strdup(nullptr, str);
@@ -1016,20 +1146,16 @@ centry_list_parse_from_string(lList *complex_attributes,
 
    /* buffer now points to the attr=value pairs */
    while ((cp = request_next_token(&pos)) != nullptr) {
-      lListElem *complex_attribute = nullptr;
-      const char *attr = nullptr;
-      char *value = nullptr;
-
-      attr = cp;
-      if ((value = strchr(cp, '='))) {
+      const char *attr = cp;
+      char *value = strchr(cp, '=');
+      if (value != nullptr) {
          *value++ = 0;
       }
 
       if (attr == nullptr || *attr == '\0') {
          ERROR(MSG_SGETEXT_UNKNOWN_RESOURCE_S, "");
-         lFreeList(&complex_attributes);
          FREE(buffer);
-         DRETURN(nullptr);
+         DRETURN(ocs::tom::ListPtr<ocs::tom::CE>());
       }
 
       /*
@@ -1039,17 +1165,14 @@ centry_list_parse_from_string(lList *complex_attributes,
          value = (char*)TRUE_STR;
       } else if (check_value && (value == nullptr || *value == '\0')) {
          ERROR(MSG_CPLX_VALUEMISSING_S, attr);
-         lFreeList(&complex_attributes);
          FREE(buffer);
-         DRETURN(nullptr);
+         DRETURN(ocs::tom::ListPtr<ocs::tom::CE>());
       }
 
       /* create new element, fill in the values and append it */
-      complex_attribute = ocs::tom::find_first_rw<CE_name>(complex_attributes, attr);
-      if (complex_attribute == nullptr) {
-         complex_attribute = lCreateElem(CE_Type);
-         ocs::tom::set<CE_name>(complex_attribute, attr);
-         lAppendElem(complex_attributes, complex_attribute);
+      auto complex_attribute = list.find_first<CE_name>(attr);
+      if (!complex_attribute) {
+         complex_attribute = list.emplace_back<CE_name>(attr);
       }
 
       ocs::tom::set<CE_stringval>(complex_attribute, value);
@@ -1057,19 +1180,32 @@ centry_list_parse_from_string(lList *complex_attributes,
 
    FREE(buffer);
 
-   DRETURN(complex_attributes);
+   DRETURN(ret);
 }
 
-void
+/**
+ * @brief centry_list_parse_from_string() for an untyped caller
+ *
+ * @param complex_attributes CE_Type list the parsed entries are added to, checked and taken over;
+ *                           a new list is created when it is nullptr
+ * @param str the text to parse
+ * @param check_value true to reject a missing value; false makes a missing value TRUE
+ * @return the resulting list, or nullptr when the text could not be parsed
+ */
+lList *centry_list_parse_from_string(lList *complex_attributes, const char *str, const bool check_value) {
+   return centry_list_parse_from_string(ocs::tom::ListPtr<ocs::tom::CE>(complex_attributes), str, check_value)
+      .release();
+}
+
 /**
  * @brief Collapse repeated requests for the same resource
  *
  * The last value for a name wins, which is what a user writing the same
  * `-l` option twice expects.
  *
- * @param[in,out] this_list the request list to compress
+ * @param[in,out] this_list the request list to compress, CE_Type
  */
-centry_list_remove_duplicates(lList *this_list) {
+void centry_list_remove_duplicates(const ocs::tom::List<ocs::tom::CE> this_list) {
    DENTER(TOP_LAYER);
    cull_compress_definition_list(this_list, CE_name, CE_stringval, 0);
    DRETURN_VOID;
@@ -1099,14 +1235,17 @@ centry_list_remove_duplicates(lList *this_list) {
  * When no centy list is passed in, the check for uniqie name and
  * short cuts is skipt.
  *
- * @param centry the centry list, which should be validated
- * @param centry_list if not null, the function checks, if the centry element is already in the list
+ * @param centry the CE_Type element, which should be validated
+ * @param centry_list if not an empty handle, the function checks, if the centry element is already in the list
  * @param answer_list contains the error messages
+ * @param from_spool_read true when the element is read from the spool: a reserved name is then only
+ *                        reported as a warning instead of being refused
  *
- * @return error (the anwer_list contains the error message) true - okay
+ * @return false on error (the answer_list contains the error message), true if okay
  */
-bool centry_elem_validate(lListElem *centry, const lList *centry_list,
-                          lList **answer_list, bool from_spool_read) {
+bool centry_elem_validate(const ocs::tom::ConstElement<ocs::tom::CE> centry,
+                          const ocs::tom::ConstList<ocs::tom::CE> centry_list, lList **answer_list,
+                          const bool from_spool_read) {
    DENTER(TOP_LAYER);
    uint32_t relop = ocs::tom::get<CE_relop>(centry);
    auto type = static_cast<ocs::CEntry::Type>(ocs::tom::get<CE_valtype>(centry));
@@ -1353,9 +1492,11 @@ bool centry_elem_validate(lListElem *centry, const lList *centry_list,
       for (i = 0; i < max_queue_resources; i++) {
          if (strcmp(queue_resource[i].name, attrname) == 0 &&
              queue_resource[i].type != type) {
-            if ((queue_resource[i].type != ocs::CEntry::Type::STR && queue_resource[i].type != ocs::CEntry::Type::CSTR &&
+            if ((queue_resource[i].type != ocs::CEntry::Type::STR &&
+                 queue_resource[i].type != ocs::CEntry::Type::CSTR &&
                  queue_resource[i].type != ocs::CEntry::Type::RESTR) ||
-                (type != ocs::CEntry::Type::CSTR && type != ocs::CEntry::Type::RESTR && type !=ocs::CEntry::Type:: STR)) {
+                (type != ocs::CEntry::Type::CSTR && type != ocs::CEntry::Type::RESTR &&
+                 type != ocs::CEntry::Type::STR)) {
 
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                                        MSG_INVALID_CENTRY_TYPE_CHANGE_S, attrname);
@@ -1370,9 +1511,11 @@ bool centry_elem_validate(lListElem *centry, const lList *centry_list,
          if (strcmp(host_resource[i].name, attrname) == 0 &&
              host_resource[i].type != type) {
 
-            if ((host_resource[i].type != ocs::CEntry::Type::STR && host_resource[i].type != ocs::CEntry::Type::CSTR &&
+            if ((host_resource[i].type != ocs::CEntry::Type::STR &&
+                 host_resource[i].type != ocs::CEntry::Type::CSTR &&
                  host_resource[i].type != ocs::CEntry::Type::RESTR) ||
-                (type != ocs::CEntry::Type::CSTR && type != ocs::CEntry::Type::RESTR && type != ocs::CEntry::Type::STR)) {
+                (type != ocs::CEntry::Type::CSTR && type != ocs::CEntry::Type::RESTR &&
+                 type != ocs::CEntry::Type::STR)) {
 
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                                        MSG_INVALID_CENTRY_TYPE_CHANGE_S, attrname);
@@ -1387,15 +1530,15 @@ bool centry_elem_validate(lListElem *centry, const lList *centry_list,
    /* check for duplicates */
    if (centry_list) {
       const char *shortcut = ocs::tom::get<CE_shortcut>(centry);
-      const lListElem *ce1 = centry_list_locate(centry_list, attrname);
-      const lListElem *ce2 = centry_list_locate(centry_list, shortcut);
+      const auto ce1 = centry_list_locate(centry_list, attrname);
+      const auto ce2 = centry_list_locate(centry_list, shortcut);
 
       /*
        * if we already have a centry with this name or shortcut,
        * that is not the current centry -> cannot add/mod this one
        */
-      if ((ce1 != nullptr && ce1 != centry) ||
-          (ce2 != nullptr && ce2 != centry)) {
+      if ((ce1 && ce1 != centry) ||
+          (ce2 && ce2 != centry)) {
          answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
                                  ANSWER_QUALITY_ERROR,
                                  MSG_ANSWER_COMPLEXXALREADYEXISTS_SS,
@@ -1404,6 +1547,22 @@ bool centry_elem_validate(lListElem *centry, const lList *centry_list,
       }
    }
    DRETURN(ret);
+}
+
+/**
+ * @brief centry_elem_validate() for an untyped caller
+ *
+ * @param centry CE_Type element, checked
+ * @param centry_list CE_Type list, checked; nullptr skips the check for duplicates
+ * @param answer_list contains the error messages
+ * @param from_spool_read true when the element is read from the spool
+ *
+ * @return as centry_elem_validate()
+ */
+bool centry_elem_validate(lListElem *centry, const lList *centry_list, lList **answer_list,
+                          const bool from_spool_read) {
+   return centry_elem_validate(ocs::tom::ConstElement<ocs::tom::CE>(centry),
+                               ocs::tom::ConstList<ocs::tom::CE>(centry_list), answer_list, from_spool_read);
 }
 
 /**
@@ -1416,15 +1575,14 @@ bool centry_elem_validate(lListElem *centry, const lList *centry_list,
  * @param slots The slot amount assumed.
  * @param name The resource name.
  * @param value The per slot request.
- * @param centry The centry element (CE_Type)
+ * @param centry The centry element (CE_Type), may be an empty handle
  *
  * @return The resulting urgency contribution
  *
  * @note MT-NOTES: centry_urgency_contribution() is MT safe
  */
-double
-centry_urgency_contribution(int slots, const char *name, double value,
-                            const lListElem *centry) {
+double centry_urgency_contribution(const int slots, const char *name, const double value,
+                                   const ocs::tom::ConstElement<ocs::tom::CE> centry) {
    DENTER(TOP_LAYER);
 
    double contribution, weight;
@@ -1465,26 +1623,24 @@ centry_urgency_contribution(int slots, const char *name, double value,
    DRETURN(contribution);
 }
 
-bool
 /**
  * @brief Is every entry of a list defined in the complex configuration?
  *
- * @param this_list the complex configuration to check against
+ * @param this_list the complex configuration to check against, CE_Type
  * @param[out] answer_list receives the name of the first entry that is missing
- * @param centry_list the entries to look for
+ * @param centry_list the entries to look for, CE_Type, may be an empty handle
  * @return true when all of them exist
  */
-centry_list_do_all_exists(const lList *this_list, lList **answer_list,
-                          const lList *centry_list) {
+bool centry_list_do_all_exists(const ocs::tom::ConstList<ocs::tom::CE> this_list, lList **answer_list,
+                               const ocs::tom::ConstList<ocs::tom::CE> centry_list) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
-   const lListElem *centry = nullptr;
 
-   for_each_ep(centry, centry_list) {
+   for (const auto centry : centry_list) {
       const char *name = ocs::tom::get<CE_name>(centry);
 
-      if (centry_list_locate(this_list, name) == nullptr) {
+      if (!centry_list_locate(this_list, name)) {
          answer_list_add_sprintf(answer_list, STATUS_EEXIST,
                                  ANSWER_QUALITY_ERROR,
                                  MSG_CQUEUE_UNKNOWNCENTRY_S, name);
@@ -1496,23 +1652,24 @@ centry_list_do_all_exists(const lList *this_list, lList **answer_list,
    DRETURN(ret);
 }
 
-bool
 /**
- * @brief Reject a complex configuration that cannot work
+ * @brief Reject a request list that cannot work
  *
- * @param this_list the complex configuration to check
+ * A `qname` request must not name a queue instance, and every value must be a valid expression.
+ *
+ * @param this_list the request list to check, CE_Type, may be an empty handle
  * @param[out] answer_list receives the reason it was rejected
- * @return true when the configuration is usable
+ * @return true when the list is usable
  */
-centry_list_is_correct(lList *this_list, lList **answer_list) {
+bool centry_list_is_correct(const ocs::tom::ConstList<ocs::tom::CE> this_list, lList **answer_list) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
 
-   if (this_list != nullptr) {
-      ocs::tom::ConstElement<ocs::tom::CE> centry = ocs::tom::find_first<CE_name>(this_list, "qname");
+   if (this_list) {
+      const auto centry = this_list.find_first<CE_name>("qname");
 
-      if (centry != nullptr) {
+      if (centry) {
          const char *value = ocs::tom::get<CE_stringval>(centry);
 
          if (strchr(value, (int) '@')) {
@@ -1526,10 +1683,11 @@ centry_list_is_correct(lList *this_list, lList **answer_list) {
 
 /* do complex attributes syntax verification */
    if (ret) {
-      const lListElem *elem;
-      for_each_ep(elem, this_list) {
+      for (const auto elem : this_list) {
          ret = object_verify_expression_syntax(elem, answer_list);
-         if (!ret) break;
+         if (!ret) {
+            break;
+         }
       }
    }
    DRETURN(ret);
@@ -1538,21 +1696,25 @@ centry_list_is_correct(lList *this_list, lList **answer_list) {
 /**
  * @brief Reject an object that refers to a resource the complex does not define
  *
+ * A shortcut in the object's list is replaced by the full name.
+ *
  * @param[out] alpp receives the name of the unknown resource
- * @param ep the object to check
- * @param nm the attribute of `ep` holding the resource list
- * @param master_centry_list the defined complex entries
- * @return 0 when every referenced resource exists
+ * @param ep the object to check, of any type with a CE_Type list in @p nm; may be nullptr
+ * @param nm the attribute of `ep` holding the resource list (CE_Type), given at run time
+ * @param master_centry_list the defined complex entries, CE_Type
+ * @return 0 when every referenced resource exists, STATUS_EUNKNOWN otherwise
  */
-int ensure_attrib_available(lList **alpp, lListElem *ep, int nm, const lList *master_centry_list) {
+int ensure_attrib_available(lList **alpp, lListElem *ep, const int nm,
+                            const ocs::tom::ConstList<ocs::tom::CE> master_centry_list) {
    DENTER(TOP_LAYER);
    int ret = 0;
    if (ep != nullptr) {
-      for_each_rw_lv (attr, lGetList(ep, nm)) {
+      // the field is given at run time, the list it holds is checked to be CE_Type
+      for (const auto attr : ocs::tom::List<ocs::tom::CE>(lGetListRW(ep, nm))) {
          const char *name = ocs::tom::get<CE_name>(attr);
-         lListElem *centry = centry_list_locate(master_centry_list, name);
+         const auto centry = centry_list_locate(master_centry_list, name);
 
-         if (centry == nullptr) {
+         if (!centry) {
             ERROR(MSG_GDI_NO_ATTRIBUTE_S, name != nullptr ? name : "<noname>");
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             ret = STATUS_EUNKNOWN;
@@ -1572,21 +1734,34 @@ int ensure_attrib_available(lList **alpp, lListElem *ep, int nm, const lList *ma
    DRETURN(ret);
 }
 
+/**
+ * @brief ensure_attrib_available() for an untyped caller
+ *
+ * @param[out] alpp receives the name of the unknown resource
+ * @param ep the object to check; may be nullptr
+ * @param nm the attribute of `ep` holding the resource list (CE_Type)
+ * @param master_centry_list the defined complex entries, CE_Type, checked; may be nullptr
+ * @return as ensure_attrib_available()
+ */
+int ensure_attrib_available(lList **alpp, lListElem *ep, const int nm, const lList *master_centry_list) {
+   return ensure_attrib_available(alpp, ep, nm, ocs::tom::ConstList<ocs::tom::CE>(master_centry_list));
+}
+
 /** @brief Adds the slot complex to the complex values
  *
  * The global and the template host are skipped: neither runs jobs, so neither
  * needs a slot count.
  *
- * @param ehost Host object
+ * @param ehost Host object (EH_Type), may be an empty handle
  * @param processors how many processors the host reported, used as the default
  *                   slot count
  * @return an error status, or 0 on success
  */
-int host_ensure_slots_are_defined(lListElem *ehost, uint32_t processors) {
+int host_ensure_slots_are_defined(const ocs::tom::Element<ocs::tom::EH> ehost, uint32_t processors) {
    DENTER(TOP_LAYER);
 
    // Input argument incorrect
-   if (ehost == nullptr) {
+   if (!ehost) {
       DRETURN(STATUS_EUNKNOWN);
    }
 
@@ -1597,10 +1772,10 @@ int host_ensure_slots_are_defined(lListElem *ehost, uint32_t processors) {
    }
 
    // Complex is already there.
-   const lListElem *slots_complex = ocs::tom::find_first_in<EH_consumable_config_list, CE_name>(ehost, SGE_ATTR_SLOTS);
-   if (slots_complex != nullptr) {
+   const auto slots_complex = ocs::tom::find_first_in<EH_consumable_config_list, CE_name>(ehost, SGE_ATTR_SLOTS);
+   if (slots_complex) {
       DPRINTF("slots complex is already there\n");
-      return 0;
+      DRETURN(0);
    }
 
    if (processors == 0) {
@@ -1608,11 +1783,22 @@ int host_ensure_slots_are_defined(lListElem *ehost, uint32_t processors) {
    }
 
    // Add the slot complex and use the given processors as value
-   ocs::tom::Element<ocs::tom::CE> new_entry = ocs::tom::emplace_back_in<EH_consumable_config_list, CE_name>(ehost, SGE_ATTR_SLOTS);
+   const auto new_entry = ocs::tom::emplace_back_in<EH_consumable_config_list, CE_name>(ehost, SGE_ATTR_SLOTS);
    ocs::tom::set<CE_stringval>(new_entry, std::to_string(processors).c_str());
    ocs::tom::set<CE_doubleval>(new_entry, processors);
 
    DRETURN(0);
+}
+
+/**
+ * @brief host_ensure_slots_are_defined() for an untyped caller
+ *
+ * @param ehost Host object (EH_Type), checked; may be nullptr
+ * @param processors how many processors the host reported, used as the default slot count
+ * @return as host_ensure_slots_are_defined()
+ */
+int host_ensure_slots_are_defined(lListElem *ehost, const uint32_t processors) {
+   return host_ensure_slots_are_defined(ocs::tom::Element<ocs::tom::EH>(ehost), processors);
 }
 
 /**
@@ -1622,14 +1808,16 @@ int host_ensure_slots_are_defined(lListElem *ehost, uint32_t processors) {
  *
  * @param load_formula string that should be a valid load formula
  * @param answer_list error messages
- * @param centry_list list of defined complex values
+ * @param centry_list list of defined complex values (CE_Type); an empty handle skips the check of the
+ *                    complex names
  * @param name the attribute the formula belongs to, used in error messages
  *
  * @return true if valid false if unvalid
  *
  * @note MT-NOTE: is MT-safe, works only on the passed in data
  */
-bool validate_load_formula(const char *load_formula, lList **answer_list, const lList *centry_list, const char *name) {
+bool validate_load_formula(const char *load_formula, lList **answer_list,
+                           const ocs::tom::ConstList<ocs::tom::CE> centry_list, const char *name) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
@@ -1667,13 +1855,14 @@ bool validate_load_formula(const char *load_formula, lList **answer_list, const 
             }
 
             // in case the master list is available we can check that it is a complex name
-            if (centry_list != nullptr) {
-               const lListElem *cmplx_attr = centry_list_locate(centry_list, fact);
+            if (centry_list) {
+               const auto cmplx_attr = centry_list_locate(centry_list, fact);
 
-               if (cmplx_attr != nullptr) {
-                  auto type = static_cast<ocs::CEntry::Type>(ocs::tom::get<CE_valtype>(cmplx_attr));
+               if (cmplx_attr) {
+                  const auto type = static_cast<ocs::CEntry::Type>(ocs::tom::get<CE_valtype>(cmplx_attr));
 
-                  if (type == ocs::CEntry::Type::STR || type == ocs::CEntry::Type::CSTR || type == ocs::CEntry::Type::HOST || type == ocs::CEntry::Type::RESTR) {
+                  if (type == ocs::CEntry::Type::STR || type == ocs::CEntry::Type::CSTR ||
+                      type == ocs::CEntry::Type::HOST || type == ocs::CEntry::Type::RESTR) {
                      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_WRONGTYPE_ATTRIBUTE_SS, name, fact);
                      answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
                      ret = false;
@@ -1710,19 +1899,34 @@ bool validate_load_formula(const char *load_formula, lList **answer_list, const 
 }
 
 /**
+ * @brief validate_load_formula() for an untyped caller
+ *
+ * @param load_formula string that should be a valid load formula
+ * @param answer_list error messages
+ * @param centry_list list of defined complex values (CE_Type), checked; nullptr skips the check of the names
+ * @param name the attribute the formula belongs to, used in error messages
+ *
+ * @return as validate_load_formula()
+ */
+bool validate_load_formula(const char *load_formula, lList **answer_list, const lList *centry_list,
+                           const char *name) {
+   return validate_load_formula(load_formula, answer_list, ocs::tom::ConstList<ocs::tom::CE>(centry_list), name);
+}
+
+/**
  * @brief Search load formula for centry reference
  *
  * This function searches for a centry reference in the defined algebraic
  * expression
  *
- * @param load_formula load formula expression
- * @param centry centry to search for
+ * @param load_formula load formula expression, may be nullptr
+ * @param centry centry to search for (CE_Type)
  *
  * @return true if referenced false if not referenced
  *
  * @note MT-NOTE: load_formula_is_centry_referenced() is MT safe
  */
-bool load_formula_is_centry_referenced(const char *load_formula, const lListElem *centry) {
+bool load_formula_is_centry_referenced(const char *load_formula, const ocs::tom::ConstElement<ocs::tom::CE> centry) {
    DENTER(TOP_LAYER);
 
    bool ret = false;
@@ -1760,20 +1964,33 @@ bool load_formula_is_centry_referenced(const char *load_formula, const lListElem
 }
 
 /**
+ * @brief load_formula_is_centry_referenced() for an untyped caller
+ *
+ * @param load_formula load formula expression, may be nullptr
+ * @param centry centry to search for (CE_Type), checked
+ *
+ * @return as load_formula_is_centry_referenced()
+ */
+bool load_formula_is_centry_referenced(const char *load_formula, const lListElem *centry) {
+   return load_formula_is_centry_referenced(load_formula, ocs::tom::ConstElement<ocs::tom::CE>(centry));
+}
+
+/**
  * @brief The value of a resource together with where it came from
  *
  * A resource can be defined at several layers; this reports the value that
  * actually applies and, through `dominant_p`, which layer and kind it came
  * from - see the `DOMINANT_*` bits.
  *
- * @param rep the resource element to read
+ * @param rep the resource element to read (CE_Type)
  * @param[out] dominant_p receives the `DOMINANT_*` bits
  * @param[out] resource_string_p receives the value as text
- * @param[out] dbl_value receives the value as a double
- * @param[out] uint64_value receives the value as an unsigned integer
+ * @param[out] dbl_value receives the value as a double, may be nullptr
+ * @param[out] uint64_value receives the value as an unsigned integer, may be nullptr
  * @return the value as text
  */
-const char *sge_get_dominant_stringval(const lListElem *rep, uint32_t *dominant_p, dstring *resource_string_p, double *dbl_value, uint64_t *uint64_value) {
+const char *sge_get_dominant_stringval(const ocs::tom::ConstElement<ocs::tom::CE> rep, uint32_t *dominant_p,
+                                       dstring *resource_string_p, double *dbl_value, uint64_t *uint64_value) {
    DENTER(TOP_LAYER);
 
    const char *s = nullptr;
@@ -1854,6 +2071,22 @@ const char *sge_get_dominant_stringval(const lListElem *rep, uint32_t *dominant_
    }
 
    DRETURN(s);
+}
+
+/**
+ * @brief sge_get_dominant_stringval() for an untyped caller
+ *
+ * @param rep the resource element to read (CE_Type), checked
+ * @param[out] dominant_p receives the `DOMINANT_*` bits
+ * @param[out] resource_string_p receives the value as text
+ * @param[out] dbl_value receives the value as a double, may be nullptr
+ * @param[out] uint64_value receives the value as an unsigned integer, may be nullptr
+ * @return as sge_get_dominant_stringval()
+ */
+const char *sge_get_dominant_stringval(const lListElem *rep, uint32_t *dominant_p, dstring *resource_string_p,
+                                       double *dbl_value, uint64_t *uint64_value) {
+   return sge_get_dominant_stringval(ocs::tom::ConstElement<ocs::tom::CE>(rep), dominant_p, resource_string_p,
+                                     dbl_value, uint64_value);
 }
 
 /**
