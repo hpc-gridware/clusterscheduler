@@ -87,12 +87,12 @@
  * @param indent leading whitespace for a continuation line
  * @param separator what goes between two entries
  */
-void ocs::QStatJobViewPlain::show_ce_type_list(std::ostream &os, const lList *cel, const char *indent,
-                                               const char *separator) {
+void ocs::QStatJobViewPlain::show_ce_type_list(std::ostream &os, const ocs::tom::ConstList<ocs::tom::CE> cel,
+                                               const char *indent, const char *separator) {
    DENTER(TOP_LAYER);
 
    bool first = true;
-   for_each_ep_lv(ce, cel) {
+   for (const ocs::tom::ConstElement<ocs::tom::CE> ce : cel) {
       if (first) {
          first = false;
       } else {
@@ -120,12 +120,26 @@ void ocs::QStatJobViewPlain::show_ce_type_list(std::ostream &os, const lList *ce
  * @param job the job (`JB_Type`)
  * @param flags which parts of the listing were requested
  */
-void ocs::QStatJobViewPlain::cull_show_job(std::ostream &os, const lList *ilp, const lListElem *job, const int flags) {
+void ocs::QStatJobViewPlain::cull_show_job(std::ostream &os, const ocs::tom::ConstList<ocs::tom::SME> ilp,
+                                           const ocs::tom::ConstElement<ocs::tom::JB> job, const int flags) {
+   DENTER(TOP_LAYER);
    // create dummy params and view so that we can call virtual methods in this static function
    const ProcedureParameter parameter("", nullptr);
    QStatJobViewPlain view(parameter);
 
    view.show_job(os, ilp, job, flags);
+   DRETURN_VOID;
+}
+
+/**
+ * @brief cull_show_job() for an untyped caller
+ * @param os stream to write to
+ * @param ilp the scheduler job info list (`SME_Type`), or nullptr
+ * @param job the job (`JB_Type`), checked
+ * @param flags which parts of the listing were requested
+ */
+void ocs::QStatJobViewPlain::cull_show_job(std::ostream &os, const lList *ilp, const lListElem *job, const int flags) {
+   cull_show_job(os, ocs::tom::ConstList<ocs::tom::SME>(ilp), ocs::tom::ConstElement<ocs::tom::JB>(job), flags);
 }
 
 void
@@ -295,7 +309,14 @@ void ocs::QStatJobViewPlain::report_job_finished(std::ostream &os, QStatParamete
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewPlain::report_job_id(std::ostream &os, const lListElem *job, int flags) {
+/**
+ * @brief Report the job number, as plain text
+ * @param os stream to write to
+ * @param job the job
+ * @param flags which parts of the listing were requested
+ */
+void ocs::QStatJobViewPlain::report_job_id(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job,
+                                           int flags) {
    DENTER(TOP_LAYER);
    if (!(flags & FLG_QALTER)) {
       uint32_t jid = ocs::tom::get<JB_job_number>(job);
@@ -308,15 +329,26 @@ void ocs::QStatJobViewPlain::report_job_id(std::ostream &os, const lListElem *jo
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewPlain::report_category_id(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Report the scheduling category the job was sorted into, as plain text
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewPlain::report_category_id(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    if (ocs::tom::has<JB_category_id>(job)) {
-      os << std::format("{:<{}} {}", ocs::ascii_width("category_id:"), left_width, ocs::tom::get<JB_category_id>(job)) << "\n";
+      os << std::format("{:<{}} {}", ocs::ascii_width("category_id:"), left_width,
+                        ocs::tom::get<JB_category_id>(job)) << "\n";
    }
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewPlain::report_exec_file(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Report the job script as it was spooled, as plain text
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewPlain::report_exec_file(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    if (ocs::tom::has<JB_exec_file>(job)) {
       if (const char *exec_file = ocs::tom::get<JB_exec_file>(job)) {
@@ -326,29 +358,46 @@ void ocs::QStatJobViewPlain::report_exec_file(std::ostream &os, const lListElem 
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewPlain::report_submission_time(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Report when the job was submitted, as plain text
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewPlain::report_submission_time(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    DSTRING_STATIC(dstr, 128);
    if (ocs::tom::has<JB_submission_time>(job)) {
       if (const uint64_t time_value = ocs::tom::get<JB_submission_time>(job); time_value > 0) {
-         os << std::format("{:<{}} {}", ocs::ascii_width("submission_time:"), left_width, sge_ctime64(time_value, &dstr)) << "\n";
+         os << std::format("{:<{}} {}", ocs::ascii_width("submission_time:"), left_width,
+                           sge_ctime64(time_value, &dstr)) << "\n";
       }
    }
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewPlain::report_deadline_time(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Report the deadline of a deadline job, as plain text
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewPlain::report_deadline_time(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    DSTRING_STATIC(dstr, 128);
    if (ocs::tom::has<JB_deadline>(job)) {
       if (const uint64_t time_value = ocs::tom::get<JB_deadline>(job); time_value > 0) {
-         os << std::format("{:<{}} {}", ocs::ascii_width("deadline:"), left_width, sge_ctime64(time_value, &dstr)) << "\n";
+         os << std::format("{:<{}} {}", ocs::ascii_width("deadline:"), left_width,
+                           sge_ctime64(time_value, &dstr)) << "\n";
       }
    }
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewPlain::report_submit_cmd_line(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Report the command line the job was submitted with, as plain text
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewPlain::report_submit_cmd_line(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    if (ocs::tom::has<JB_submission_command_line>(job)) {
       if (const char *str = ocs::tom::get<JB_submission_command_line>(job); str != nullptr) {
@@ -358,7 +407,13 @@ void ocs::QStatJobViewPlain::report_submit_cmd_line(std::ostream &os, const lLis
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewPlain::report_effective_submit_cmd_line(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Report the command line after defaults and `sge_request` files were applied, as plain text
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewPlain::report_effective_submit_cmd_line(std::ostream &os,
+                                                              const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    if (ocs::tom::has<JB_submission_command_line>(job)) {
       if (const char *str = ocs::tom::get<JB_submission_command_line>(job); str != nullptr) {
@@ -376,7 +431,12 @@ void ocs::QStatJobViewPlain::report_effective_submit_cmd_line(std::ostream &os, 
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewPlain::report_ownership(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Report the submitting user and group, as plain text
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewPlain::report_ownership(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    if (ocs::tom::has<JB_owner>(job)) {
       if (const char *owner = ocs::tom::get<JB_owner>(job)) {
@@ -429,7 +489,12 @@ void ocs::QStatJobViewPlain::report_ownership(std::ostream &os, const lListElem 
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewPlain::report_env_core(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Report the parts of the environment the system itself sets, as plain text
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewPlain::report_env_core(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    const char *name[] = {"O_HOME", "O_LOGNAME", "O_PATH", "O_SHELL", "O_TZ", "O_WORKDIR", "O_HOST", nullptr};
    const char *fmt_string[] = {
@@ -448,18 +513,29 @@ void ocs::QStatJobViewPlain::report_env_core(std::ostream &os, const lListElem *
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewPlain::report_execution_time(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Report the earliest time the job may start, as plain text
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewPlain::report_execution_time(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    if (ocs::tom::has<JB_execution_time>(job)) {
       DSTRING_STATIC(dstr, 128);
       if (const uint64_t time_value = ocs::tom::get<JB_execution_time>(job); time_value > 0) {
-         os << std::format("{:<{}} {}", ocs::ascii_width("execution_time:"), left_width, sge_ctime64(time_value, &dstr)) << "\n";
+         os << std::format("{:<{}} {}", ocs::ascii_width("execution_time:"), left_width,
+                           sge_ctime64(time_value, &dstr)) << "\n";
       }
    }
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewPlain::report_account(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Report the accounting string, as plain text
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewPlain::report_account(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    if (ocs::tom::has<JB_account>(job)) {
       if (const char *account = ocs::tom::get<JB_account>(job)) {
@@ -469,7 +545,12 @@ void ocs::QStatJobViewPlain::report_account(std::ostream &os, const lListElem *j
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewPlain::report_checkpoint(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Report the checkpointing environment, as plain text
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewPlain::report_checkpoint(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    if (ocs::tom::has<JB_checkpoint_name>(job)) {
       if (const char *ckpt_name = ocs::tom::get<JB_checkpoint_name>(job)) {
@@ -493,7 +574,12 @@ void ocs::QStatJobViewPlain::report_checkpoint(std::ostream &os, const lListElem
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewPlain::report_cwd(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Report the working directory, as plain text
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewPlain::report_cwd(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    if (ocs::tom::has<JB_cwd>(job)) {
       if (const char *cwd = ocs::tom::get<JB_cwd>(job)) {
@@ -503,7 +589,12 @@ void ocs::QStatJobViewPlain::report_cwd(std::ostream &os, const lListElem *job) 
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewPlain::report_path_aliases(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Report the path aliases in effect, as plain text
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewPlain::report_path_aliases(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    if (ocs::tom::has<JB_cwd>(job)) {
       if (const char *cwd = ocs::tom::get<JB_cwd>(job)) {
@@ -523,7 +614,12 @@ void ocs::QStatJobViewPlain::report_path_aliases(std::ostream &os, const lListEl
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewPlain::report_directive_prefix(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Report the prefix that marks directives in the job script, as plain text
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewPlain::report_directive_prefix(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    if (ocs::tom::has<JB_directive_prefix>(job)) {
       if (const char *prefix = ocs::tom::get<JB_directive_prefix>(job)) {
@@ -533,7 +629,12 @@ void ocs::QStatJobViewPlain::report_directive_prefix(std::ostream &os, const lLi
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewPlain::report_stdin_path_list(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Report where standard input comes from, as plain text
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewPlain::report_stdin_path_list(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    if (ocs::tom::has<JB_stdin_path_list>(job)) {
       if (ocs::tom::ConstList<ocs::tom::PN> list = ocs::tom::get<JB_stdin_path_list>(job)) {
@@ -548,7 +649,12 @@ void ocs::QStatJobViewPlain::report_stdin_path_list(std::ostream &os, const lLis
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewPlain::report_stdout_path_list(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Report where standard output goes, as plain text
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewPlain::report_stdout_path_list(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    if (ocs::tom::has<JB_stdout_path_list>(job)) {
       if (ocs::tom::ConstList<ocs::tom::PN> list = ocs::tom::get<JB_stdout_path_list>(job)) {
@@ -562,7 +668,12 @@ void ocs::QStatJobViewPlain::report_stdout_path_list(std::ostream &os, const lLi
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewPlain::report_stderr_path_list(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Report where standard error goes, as plain text
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewPlain::report_stderr_path_list(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    if (ocs::tom::has<JB_stderr_path_list>(job)) {
       if (ocs::tom::ConstList<ocs::tom::PN> path_list = ocs::tom::get<JB_stderr_path_list>(job)) {
@@ -577,7 +688,12 @@ void ocs::QStatJobViewPlain::report_stderr_path_list(std::ostream &os, const lLi
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewPlain::report_reserve(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Report whether the job reserves resources while it waits, as plain text
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewPlain::report_reserve(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    if (ocs::tom::has<JB_reserve>(job)) {
       if (const bool reserve = ocs::tom::get<JB_reserve>(job)) {
@@ -587,7 +703,12 @@ void ocs::QStatJobViewPlain::report_reserve(std::ostream &os, const lListElem *j
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewPlain::report_merge_stderr(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Report whether standard error is merged into standard output, as plain text
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewPlain::report_merge_stderr(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    if (ocs::tom::has<JB_merge_stderr>(job)) {
       if (const bool merge = ocs::tom::get<JB_merge_stderr>(job)) {
@@ -597,7 +718,12 @@ void ocs::QStatJobViewPlain::report_merge_stderr(std::ostream &os, const lListEl
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewPlain::report_request_set_list(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Report the hard and soft resource requests, as plain text
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewPlain::report_request_set_list(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    if (ocs::tom::has<JB_request_set_list>(job)) {
       ocs::tom::ConstList<ocs::tom::JRS> jrs_list = ocs::tom::get<JB_request_set_list>(job);
@@ -655,20 +781,31 @@ void ocs::QStatJobViewPlain::report_request_set_list(std::ostream &os, const lLi
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewPlain::report_mail_options(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Report which job events trigger a mail, as plain text
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewPlain::report_mail_options(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    if (ocs::tom::has<JB_mail_options>(job)) {
       if (const uint32_t mail_options = ocs::tom::get<JB_mail_options>(job)) {
          dstring mailopt = DSTRING_INIT;
          sge_dstring_append_mailopt(&mailopt, mail_options);
-         os << std::format("{:<{}} {}", ocs::ascii_width("mail_options:"), left_width, sge_dstring_get_string(&mailopt)) << "\n";
+         os << std::format("{:<{}} {}", ocs::ascii_width("mail_options:"), left_width,
+                           sge_dstring_get_string(&mailopt)) << "\n";
          sge_dstring_free(&mailopt);
       }
    }
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewPlain::report_mail_list(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Report who is mailed about the job, as plain text
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewPlain::report_mail_list(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    if (ocs::tom::has<JB_mail_list>(job)) {
       if (ocs::tom::ConstList<ocs::tom::MR> mail_list = ocs::tom::get<JB_mail_list>(job)) {
@@ -682,15 +819,26 @@ void ocs::QStatJobViewPlain::report_mail_list(std::ostream &os, const lListElem 
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewPlain::report_notify(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Report whether the job is warned before it is signalled, as plain text
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewPlain::report_notify(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    if (ocs::tom::has<JB_notify>(job)) {
-      os << std::format("{:<{}} ", ocs::ascii_width("notify:"), left_width) << (ocs::tom::get<JB_notify>(job) ? "TRUE" : "FALSE") << "\n";
+      os << std::format("{:<{}} ", ocs::ascii_width("notify:"), left_width)
+         << (ocs::tom::get<JB_notify>(job) ? "TRUE" : "FALSE") << "\n";
    }
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewPlain::report_name(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Report the job name, as plain text
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewPlain::report_name(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    if (ocs::tom::has<JB_job_name>(job)) {
       os << std::format("{:<{}} ", ocs::ascii_width("job_name:"), left_width) << (ocs::tom::get<JB_job_name>(job)
@@ -700,7 +848,12 @@ void ocs::QStatJobViewPlain::report_name(std::ostream &os, const lListElem *job)
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewPlain::report_priority(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Report the priority the job was submitted with, as plain text
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewPlain::report_priority(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    if (ocs::tom::has<JB_priority>(job)) {
       os << std::format("{:<{}} {}", ocs::ascii_width("priority:"), left_width,
@@ -709,15 +862,26 @@ void ocs::QStatJobViewPlain::report_priority(std::ostream &os, const lListElem *
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewPlain::report_job_share(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Report the share the job was submitted with, as plain text
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewPlain::report_job_share(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    if (ocs::tom::has<JB_jobshare>(job)) {
-      os << std::format("{:<{}} {}", ocs::ascii_width("jobshare:"), left_width, ocs::tom::get<JB_jobshare>(job)) << "\n";
+      os << std::format("{:<{}} {}", ocs::ascii_width("jobshare:"), left_width,
+                        ocs::tom::get<JB_jobshare>(job)) << "\n";
    }
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewPlain::report_restart(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Report whether the job may be restarted after a failure, as plain text
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewPlain::report_restart(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    if (ocs::tom::has<JB_restart>(job)) {
       if (const uint32_t restart = ocs::tom::get<JB_restart>(job)) {
@@ -727,7 +891,12 @@ void ocs::QStatJobViewPlain::report_restart(std::ostream &os, const lListElem *j
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewPlain::report_shell_list(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Report the shell the job runs under, per host, as plain text
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewPlain::report_shell_list(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    if (ocs::tom::has<JB_shell_list>(job)) {
       if (ocs::tom::ConstList<ocs::tom::PN> list = ocs::tom::get<JB_shell_list>(job)) {
@@ -756,7 +925,7 @@ void ocs::QStatJobViewPlain::report_shell_list(std::ostream &os, const lListElem
  * @param[in,out] os  output stream
  * @param[in]     job job element to report
  */
-void ocs::QStatJobViewPlain::report_env_list(std::ostream &os, const lListElem *job) {
+void ocs::QStatJobViewPlain::report_env_list(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    if (ocs::tom::has<JB_env_list>(job)) {
       if (ocs::tom::ConstList<ocs::tom::VA> env_list = ocs::tom::get<JB_env_list>(job)) {
@@ -781,7 +950,12 @@ void ocs::QStatJobViewPlain::report_env_list(std::ostream &os, const lListElem *
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewPlain::report_verify(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Report the verification mode the job was submitted with, as plain text
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewPlain::report_verify(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    if (ocs::tom::has<JB_verify>(job)) {
       if (ocs::tom::get<JB_verify>(job)) {
@@ -791,7 +965,12 @@ void ocs::QStatJobViewPlain::report_verify(std::ostream &os, const lListElem *jo
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewPlain::report_job_args(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Report the arguments passed to the job script, as plain text
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewPlain::report_job_args(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    if (ocs::tom::has<JB_job_args>(job)) {
       if (ocs::tom::ConstList<ocs::tom::ST> list = ocs::tom::get<JB_job_args>(job); list != nullptr) {
@@ -805,7 +984,13 @@ void ocs::QStatJobViewPlain::report_job_args(std::ostream &os, const lListElem *
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewPlain::report_job_identifier_list(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Report the tasks of an array job that were selected, as plain text
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewPlain::report_job_identifier_list(std::ostream &os,
+                                                        const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    if (ocs::tom::has<JB_job_identifier_list>(job)) {
       if (ocs::tom::ConstList<ocs::tom::ID> list = ocs::tom::get<JB_job_identifier_list>(job)) {
@@ -819,7 +1004,12 @@ void ocs::QStatJobViewPlain::report_job_identifier_list(std::ostream &os, const 
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewPlain::report_script_size(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Report the size of the spooled job script, as plain text
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewPlain::report_script_size(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    if (ocs::tom::has<JB_script_size>(job)) {
       if (const uint32_t size = ocs::tom::get<JB_script_size>(job)) {
@@ -829,7 +1019,12 @@ void ocs::QStatJobViewPlain::report_script_size(std::ostream &os, const lListEle
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewPlain::report_script_file(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Report the name of the job script, as plain text
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewPlain::report_script_file(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    if (ocs::tom::has<JB_script_file>(job)) {
       if (const char *file = ocs::tom::get<JB_script_file>(job)) {
@@ -839,7 +1034,12 @@ void ocs::QStatJobViewPlain::report_script_file(std::ostream &os, const lListEle
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewPlain::report_script_ptr(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Report the job script itself, for a script read from standard input, as plain text
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewPlain::report_script_ptr(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    if (ocs::tom::has<JB_script_ptr>(job)) {
       if (const char *file = ocs::tom::get<JB_script_ptr>(job)) {
@@ -849,7 +1049,12 @@ void ocs::QStatJobViewPlain::report_script_ptr(std::ostream &os, const lListElem
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewPlain::report_pe(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Report the parallel environment and the slot range requested, as plain text
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewPlain::report_pe(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    if (ocs::tom::has<JB_pe>(job)) {
       if (const char *pe = ocs::tom::get<JB_pe>(job)) {
@@ -860,13 +1065,19 @@ void ocs::QStatJobViewPlain::report_pe(std::ostream &os, const lListElem *job) {
          ss_pe_details << pe << " range: " << sge_dstring_get_string(&range_string);
          sge_dstring_free(&range_string);
 
-         os << std::format("{:<{}} {}", ocs::ascii_width("parallel_environment:"), left_width, ss_pe_details.str()) << "\n";
+         os << std::format("{:<{}} {}", ocs::ascii_width("parallel_environment:"), left_width,
+                           ss_pe_details.str()) << "\n";
       }
    }
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewPlain::report_jid_request_list(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Report the jobs this one was asked to wait for, as they were named, as plain text
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewPlain::report_jid_request_list(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    if (ocs::tom::has<JB_jid_request_list>(job)) {
       if (ocs::tom::ConstList<ocs::tom::JRE> list = ocs::tom::get<JB_jid_request_list>(job)) {
@@ -880,7 +1091,13 @@ void ocs::QStatJobViewPlain::report_jid_request_list(std::ostream &os, const lLi
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewPlain::report_jid_predecessor_list(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Report the jobs this one is still waiting for, as plain text
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewPlain::report_jid_predecessor_list(std::ostream &os,
+                                                         const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    if (ocs::tom::has<JB_jid_predecessor_list>(job)) {
       if (ocs::tom::ConstList<ocs::tom::JRE> list = ocs::tom::get<JB_jid_predecessor_list>(job)) {
@@ -894,7 +1111,13 @@ void ocs::QStatJobViewPlain::report_jid_predecessor_list(std::ostream &os, const
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewPlain::report_jid_successor_list(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Report the jobs waiting for this one, as plain text
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewPlain::report_jid_successor_list(std::ostream &os,
+                                                       const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    if (ocs::tom::has<JB_jid_successor_list>(job)) {
       if (ocs::tom::ConstList<ocs::tom::JRE> list = ocs::tom::get<JB_jid_successor_list>(job)) {
@@ -908,7 +1131,13 @@ void ocs::QStatJobViewPlain::report_jid_successor_list(std::ostream &os, const l
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewPlain::report_ja_ad_request_list(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Report the array dependencies as they were named, as plain text
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewPlain::report_ja_ad_request_list(std::ostream &os,
+                                                       const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    if (ocs::tom::has<JB_ja_ad_request_list>(job)) {
       if (ocs::tom::ConstList<ocs::tom::JRE> list = ocs::tom::get<JB_ja_ad_request_list>(job)) {
@@ -922,7 +1151,13 @@ void ocs::QStatJobViewPlain::report_ja_ad_request_list(std::ostream &os, const l
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewPlain::report_ja_ad_predecessor_list(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Report the array jobs whose tasks this one is waiting for, as plain text
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewPlain::report_ja_ad_predecessor_list(std::ostream &os,
+                                                           const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    if (ocs::tom::has<JB_ja_ad_predecessor_list>(job)) {
       if (ocs::tom::ConstList<ocs::tom::JRE> list = ocs::tom::get<JB_ja_ad_predecessor_list>(job)) {
@@ -936,7 +1171,13 @@ void ocs::QStatJobViewPlain::report_ja_ad_predecessor_list(std::ostream &os, con
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewPlain::report_ja_ad_successor_list(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Report the array jobs whose tasks wait for this one, as plain text
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewPlain::report_ja_ad_successor_list(std::ostream &os,
+                                                         const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    if (ocs::tom::has<JB_ja_ad_successor_list>(job)) {
       if (ocs::tom::ConstList<ocs::tom::JRE> list = ocs::tom::get<JB_ja_ad_successor_list>(job)) {
@@ -950,7 +1191,13 @@ void ocs::QStatJobViewPlain::report_ja_ad_successor_list(std::ostream &os, const
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewPlain::report_verify_suitable_queues(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Report which queues the job could run in, as plain text
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewPlain::report_verify_suitable_queues(std::ostream &os,
+                                                           const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    if (ocs::tom::has<JB_verify_suitable_queues>(job)) {
       if (const uint32_t vsq = ocs::tom::get<JB_verify_suitable_queues>(job)) {
@@ -960,29 +1207,48 @@ void ocs::QStatJobViewPlain::report_verify_suitable_queues(std::ostream &os, con
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewPlain::report_soft_wallclock_gmt(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Report the soft wallclock limit, as plain text
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewPlain::report_soft_wallclock_gmt(std::ostream &os,
+                                                       const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    DSTRING_STATIC(dstr, 128);
    if (ocs::tom::has<JB_soft_wallclock_gmt>(job)) {
       if (const uint64_t time_value = ocs::tom::get<JB_soft_wallclock_gmt>(job)) {
-         os << std::format("{:<{}} {}", ocs::ascii_width("soft_wallclock_gmt:"), left_width, sge_ctime64(time_value, &dstr)) << "\n";
+         os << std::format("{:<{}} {}", ocs::ascii_width("soft_wallclock_gmt:"), left_width,
+                           sge_ctime64(time_value, &dstr)) << "\n";
       }
    }
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewPlain::report_hard_wallclock_gmt(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Report the hard wallclock limit, as plain text
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewPlain::report_hard_wallclock_gmt(std::ostream &os,
+                                                       const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    DSTRING_STATIC(dstr, 128);
    if (ocs::tom::has<JB_hard_wallclock_gmt>(job)) {
       if (const uint64_t time_value = ocs::tom::get<JB_hard_wallclock_gmt>(job)) {
-         os << std::format("{:<{}} {}", ocs::ascii_width("hard_wallclock_gmt:"), left_width, sge_ctime64(time_value, &dstr)) << "\n";
+         os << std::format("{:<{}} {}", ocs::ascii_width("hard_wallclock_gmt:"), left_width,
+                           sge_ctime64(time_value, &dstr)) << "\n";
       }
    }
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewPlain::report_version(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Report the job version, which counts how often the job was modified, as plain text
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewPlain::report_version(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    if (ocs::tom::has<JB_version>(job)) {
       if (uint32_t version = ocs::tom::get<JB_version>(job)) {
@@ -992,7 +1258,12 @@ void ocs::QStatJobViewPlain::report_version(std::ostream &os, const lListElem *j
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewPlain::report_override_tickets(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Report the tickets a manager granted the job, as plain text
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewPlain::report_override_tickets(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    if (ocs::tom::has<JB_override_tickets>(job)) {
       if (uint32_t tickets = ocs::tom::get<JB_override_tickets>(job)) {
@@ -1002,7 +1273,12 @@ void ocs::QStatJobViewPlain::report_override_tickets(std::ostream &os, const lLi
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewPlain::report_ar(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Report the advance reservation the job runs in, as plain text
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewPlain::report_ar(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    if (ocs::tom::has<JB_ar>(job)) {
       if (uint32_t ar_id = ocs::tom::get<JB_ar>(job)) {
@@ -1012,7 +1288,12 @@ void ocs::QStatJobViewPlain::report_ar(std::ostream &os, const lListElem *job) {
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewPlain::report_project(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Report the project the job is accounted to, as plain text
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewPlain::report_project(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    if (ocs::tom::has<JB_project>(job)) {
       if (const char *project = ocs::tom::get<JB_project>(job)) {
@@ -1022,7 +1303,12 @@ void ocs::QStatJobViewPlain::report_project(std::ostream &os, const lListElem *j
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewPlain::report_department(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Report the department the submitting user belongs to, as plain text
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewPlain::report_department(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    if (ocs::tom::has<JB_department>(job)) {
       if (const char *dept = ocs::tom::get<JB_department>(job)) {
@@ -1032,7 +1318,12 @@ void ocs::QStatJobViewPlain::report_department(std::ostream &os, const lListElem
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewPlain::report_sync_options(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Report whether the client waits for the job, as plain text
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewPlain::report_sync_options(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    if (ocs::tom::has<JB_sync_options>(job)) {
       if (ocs::tom::get<JB_sync_options>(job)) {
@@ -1043,7 +1334,12 @@ void ocs::QStatJobViewPlain::report_sync_options(std::ostream &os, const lListEl
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewPlain::report_ja_structure(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Report the task range of an array job, as plain text
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewPlain::report_ja_structure(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    if (ocs::tom::has<JB_ja_structure>(job)) {
       if (job_is_array(job)) {
@@ -1057,7 +1353,12 @@ void ocs::QStatJobViewPlain::report_ja_structure(std::ostream &os, const lListEl
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewPlain::report_pending_tasks(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Report how many tasks of an array job have not started yet, as plain text
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewPlain::report_pending_tasks(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    if (ocs::tom::has<JB_ja_n_h_ids>(job)) {
       os << std::format("{:<{}} {}", ocs::ascii_width("pending_tasks:"), left_width, count_pending_tasks(job)) << "\n";
@@ -1065,7 +1366,13 @@ void ocs::QStatJobViewPlain::report_pending_tasks(std::ostream &os, const lListE
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewPlain::report_ja_task_concurrency(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Report how many tasks of an array job may run at once, as plain text
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewPlain::report_ja_task_concurrency(std::ostream &os,
+                                                        const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    if (ocs::tom::has<JB_ja_task_concurrency>(job)) {
       if (uint32_t tc = ocs::tom::get<JB_ja_task_concurrency>(job)) {
@@ -1075,7 +1382,12 @@ void ocs::QStatJobViewPlain::report_ja_task_concurrency(std::ostream &os, const 
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewPlain::report_ctx_list(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Report the job context, as plain text
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewPlain::report_ctx_list(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    if (ocs::tom::has<JB_context>(job)) {
       if (ocs::tom::ConstList<ocs::tom::VA> list = ocs::tom::get<JB_context>(job)) {
@@ -1089,7 +1401,12 @@ void ocs::QStatJobViewPlain::report_ctx_list(std::ostream &os, const lListElem *
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewPlain::report_binding(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Report the requested core binding, as plain text
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewPlain::report_binding(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    if (ocs::tom::has<JB_binding>(job)) {
       const lListElem *binding_elem = ocs::tom::get<JB_binding>(job);
@@ -1100,32 +1417,72 @@ void ocs::QStatJobViewPlain::report_binding(std::ostream &os, const lListElem *j
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewPlain::report_task_list_started(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Begin the tasks of the current job, as plain text
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewPlain::report_task_list_started(std::ostream &os,
+                                                      const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewPlain::report_task_list_finished(std::ostream &os, const lListElem *job) {
+/**
+ * @brief End the task list, as plain text
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewPlain::report_task_list_finished(std::ostream &os,
+                                                       const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewPlain::report_task_started(std::ostream &os, const lListElem *job, const lListElem *task) {
+/**
+ * @brief Begin one task, as plain text
+ * @param os stream to write to
+ * @param job the job
+ * @param task the array task the row is about
+ */
+void ocs::QStatJobViewPlain::report_task_started(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job,
+                                                 const ocs::tom::ConstElement<ocs::tom::JAT> task) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewPlain::report_task_finished(std::ostream &os, const lListElem *job, const lListElem *task) {
+/**
+ * @brief End the current task, as plain text
+ * @param os stream to write to
+ * @param job the job
+ * @param task the array task the row is about
+ */
+void ocs::QStatJobViewPlain::report_task_finished(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job,
+                                                  const ocs::tom::ConstElement<ocs::tom::JAT> task) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewPlain::report_task_id(std::ostream &os, const lListElem *job, const lListElem *task) {
+/**
+ * @brief Report the task number, as plain text
+ * @param os stream to write to
+ * @param job the job
+ * @param task the array task the row is about
+ */
+void ocs::QStatJobViewPlain::report_task_id(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job,
+                                            const ocs::tom::ConstElement<ocs::tom::JAT> task) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewPlain::report_task_state(std::ostream &os, const lListElem *job, const lListElem *task) {
+/**
+ * @brief Report the state of the task, as plain text
+ * @param os stream to write to
+ * @param job the job
+ * @param task the array task the row is about
+ */
+void ocs::QStatJobViewPlain::report_task_state(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job,
+                                               const ocs::tom::ConstElement<ocs::tom::JAT> task) {
    DENTER(TOP_LAYER);
    uint32_t task_number = ocs::tom::get<JAT_task_number>(task);
 
@@ -1133,11 +1490,19 @@ void ocs::QStatJobViewPlain::report_task_state(std::ostream &os, const lListElem
    const uint32_t state = jatask_combine_state_and_status_for_output(job, task);
    job_get_state_string(state_string, state);
 
-   os << std::format("{:<{}} {:>{}}: {}", ocs::ascii_width("job_state"), left_width_short, task_number, mid_width, state_string) << "\n";
+   os << std::format("{:<{}} {:>{}}: {}", ocs::ascii_width("job_state"), left_width_short, task_number, mid_width,
+                     state_string) << "\n";
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewPlain::report_task_usage(std::ostream &os, const lListElem *job, const lListElem *task) {
+/**
+ * @brief Report the resources the task has consumed, as plain text
+ * @param os stream to write to
+ * @param job the job
+ * @param task the array task the row is about
+ */
+void ocs::QStatJobViewPlain::report_task_usage(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job,
+                                               const ocs::tom::ConstElement<ocs::tom::JAT> task) {
    DENTER(TOP_LAYER);
 
    /* jobs whose job start orders were not processed to the end due to a qmaster/schedd collision appear
@@ -1193,12 +1558,20 @@ void ocs::QStatJobViewPlain::report_task_usage(std::ostream &os, const lListElem
    }
 
    uint32_t task_number = ocs::tom::get<JAT_task_number>(task);
-   os << std::format("{:<{}} {:>{}}: {}", ocs::ascii_width("usage"), left_width_short, task_number, mid_width, ss_usage.str()) << "\n";
+   os << std::format("{:<{}} {:>{}}: {}", ocs::ascii_width("usage"), left_width_short, task_number, mid_width,
+                     ss_usage.str()) << "\n";
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewPlain::report_task_exec_binding_list(std::ostream &os, const lListElem *job,
-                                                           const lListElem *task) {
+/**
+ * @brief Report the cores the task was bound to, as plain text
+ * @param os stream to write to
+ * @param job the job
+ * @param task the array task the row is about
+ */
+void ocs::QStatJobViewPlain::report_task_exec_binding_list(std::ostream &os,
+                                                           const ocs::tom::ConstElement<ocs::tom::JB> job,
+                                                           const ocs::tom::ConstElement<ocs::tom::JAT> task) {
    DENTER(TOP_LAYER);
    uint32_t task_number = ocs::tom::get<JAT_task_number>(task);
 
@@ -1211,8 +1584,15 @@ void ocs::QStatJobViewPlain::report_task_exec_binding_list(std::ostream &os, con
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewPlain::report_task_exec_queue_list(std::ostream &os, const lListElem *job,
-                                                         const lListElem *task) {
+/**
+ * @brief Report the queue instances the task runs in, as plain text
+ * @param os stream to write to
+ * @param job the job
+ * @param task the array task the row is about
+ */
+void ocs::QStatJobViewPlain::report_task_exec_queue_list(std::ostream &os,
+                                                         const ocs::tom::ConstElement<ocs::tom::JB> job,
+                                                         const ocs::tom::ConstElement<ocs::tom::JAT> task) {
    DENTER(TOP_LAYER);
 
    // show granted host list
@@ -1224,13 +1604,21 @@ void ocs::QStatJobViewPlain::report_task_exec_queue_list(std::ostream &os, const
       int queue_fields[] = {JG_qname, JG_slots, 0};
       uni_print_list(ss_list, gdil_org, queue_fields, delis, 0);
       uint32_t task_number = ocs::tom::get<JAT_task_number>(task);
-      os << std::format("{:<{}} {:>{}}: {}", ocs::ascii_width("exec_queue_list"), left_width_short, task_number, mid_width,
-                        ss_list.str());
+      os << std::format("{:<{}} {:>{}}: {}", ocs::ascii_width("exec_queue_list"), left_width_short, task_number,
+                        mid_width, ss_list.str());
    }
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewPlain::report_task_exec_host_list(std::ostream &os, const lListElem *job, const lListElem *task) {
+/**
+ * @brief Report the hosts the task runs on, as plain text
+ * @param os stream to write to
+ * @param job the job
+ * @param task the array task the row is about
+ */
+void ocs::QStatJobViewPlain::report_task_exec_host_list(std::ostream &os,
+                                                        const ocs::tom::ConstElement<ocs::tom::JB> job,
+                                                        const ocs::tom::ConstElement<ocs::tom::JAT> task) {
    DENTER(TOP_LAYER);
    uint32_t task_number = ocs::tom::get<JAT_task_number>(task);
 
@@ -1247,8 +1635,8 @@ void ocs::QStatJobViewPlain::report_task_exec_host_list(std::ostream &os, const 
          std::stringstream ss_list2;
          const int host_fields[] = {JG_qhostname, JG_slots, 0};
          uni_print_list(ss_list2, gdil_unique, host_fields, delis, 0);
-         os << std::format("{:<{}} {:>{}}: {}", ocs::ascii_width("exec_host_list"), left_width_short, task_number, mid_width,
-                           ss_list2.str());
+         os << std::format("{:<{}} {:>{}}: {}", ocs::ascii_width("exec_host_list"), left_width_short, task_number,
+                           mid_width, ss_list2.str());
 
          // free the list of granted hosts
          lFreeList(&gdil_unique);
@@ -1257,7 +1645,14 @@ void ocs::QStatJobViewPlain::report_task_exec_host_list(std::ostream &os, const 
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewPlain::report_task_start_time(std::ostream &os, const lListElem *job, const lListElem *task) {
+/**
+ * @brief Report when the task started, as plain text
+ * @param os stream to write to
+ * @param job the job
+ * @param task the array task the row is about
+ */
+void ocs::QStatJobViewPlain::report_task_start_time(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job,
+                                                    const ocs::tom::ConstElement<ocs::tom::JAT> task) {
    DENTER(TOP_LAYER);
    uint32_t task_number = ocs::tom::get<JAT_task_number>(task);
    DSTRING_STATIC(time_ds, 32);
@@ -1266,10 +1661,19 @@ void ocs::QStatJobViewPlain::report_task_start_time(std::ostream &os, const lLis
    DRETURN_VOID;
 }
 
-/* CS-1908 retention: emit end_time only for retained finished ja_tasks
+/**
+ * @brief Report when the task finished, as plain text
+ *
+ * CS-1908 retention: emit end_time only for retained finished ja_tasks
  * (JAT_status == JFINISHED). For live/pending rows the field is either 0 or
- * an execd-side h_rt projection that would be misleading here. */
-void ocs::QStatJobViewPlain::report_task_end_time(std::ostream &os, const lListElem *job, const lListElem *task) {
+ * an execd-side h_rt projection that would be misleading here.
+ *
+ * @param os stream to write to
+ * @param job the job
+ * @param task the array task the row is about
+ */
+void ocs::QStatJobViewPlain::report_task_end_time(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job,
+                                                  const ocs::tom::ConstElement<ocs::tom::JAT> task) {
    DENTER(TOP_LAYER);
    if (ocs::tom::get<JAT_status>(task) != JFINISHED) {
       DRETURN_VOID;
@@ -1281,7 +1685,14 @@ void ocs::QStatJobViewPlain::report_task_end_time(std::ostream &os, const lListE
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewPlain::report_task_resource_map(std::ostream &os, const lListElem *job, const lListElem *task) {
+/**
+ * @brief Report the resource map ids the task was granted, as plain text
+ * @param os stream to write to
+ * @param job the job
+ * @param task the array task the row is about
+ */
+void ocs::QStatJobViewPlain::report_task_resource_map(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job,
+                                                      const ocs::tom::ConstElement<ocs::tom::JAT> task) {
    DENTER(TOP_LAYER);
    dstring task_resources = DSTRING_INIT;
 
@@ -1321,21 +1732,35 @@ void ocs::QStatJobViewPlain::report_task_resource_map(std::ostream &os, const lL
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewPlain::report_task_error_reason(std::ostream &os, const lListElem *job, const lListElem *task) {
+/**
+ * @brief Report why the task failed, as plain text
+ * @param os stream to write to
+ * @param job the job
+ * @param task the array task the row is about
+ */
+void ocs::QStatJobViewPlain::report_task_error_reason(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job,
+                                                      const ocs::tom::ConstElement<ocs::tom::JAT> task) {
    DENTER(TOP_LAYER);
    uint32_t task_number = ocs::tom::get<JAT_task_number>(task);
    for (ocs::tom::ConstElement<ocs::tom::QIM> mesobj : ocs::tom::get<JAT_message_list>(task)) {
       if (const char *message = ocs::tom::get<QIM_message>(mesobj)) {
-         os << std::format("{:<{}} {:>{}}: {}", ocs::ascii_width("error_reason"), left_width_short, task_number, mid_width,
-                           message) << "\n";
+         os << std::format("{:<{}} {:>{}}: {}", ocs::ascii_width("error_reason"), left_width_short, task_number,
+                           mid_width, message) << "\n";
       }
    }
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewPlain::report_schedd_job_info(std::ostream &os, const lList *ilp, const lListElem *job) {
+/**
+ * @brief Report why the job has not been scheduled yet, as plain text
+ * @param os stream to write to
+ * @param ilp the scheduler job info list (`SME_Type`), holding the reasons a job is not running
+ * @param job the job
+ */
+void ocs::QStatJobViewPlain::report_schedd_job_info(std::ostream &os, const ocs::tom::ConstList<ocs::tom::SME> ilp,
+                                                    const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
-   if (const lListElem *sme = lFirst(ilp); sme != nullptr) {
+   if (const ocs::tom::ConstElement<ocs::tom::SME> sme = ilp.front(); sme != nullptr) {
       // Local lambda to print a message with correct prefix/indent
       bool first_run = true;
       auto print_sched_message = [&](const char *msg) {

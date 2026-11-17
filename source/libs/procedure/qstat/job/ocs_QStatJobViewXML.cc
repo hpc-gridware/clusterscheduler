@@ -41,7 +41,15 @@
 #include "qstat/job/ocs_QStatJobViewXML.h"
 #include "qstat/ocs_QStatModelBase.h"
 
-void ocs::QStatJobViewXML::show_job(std::ostream &os, const lList *ilp, const lListElem *job, int flags) {
+/**
+ * @brief Report one job: nothing, the XML view writes the whole job list in show_jobs_and_reasons()
+ * @param os stream to write to
+ * @param ilp the scheduler job info list (`SME_Type`), holding the reasons a job is not running
+ * @param job the job
+ * @param flags which parts of the listing were requested
+ */
+void ocs::QStatJobViewXML::show_job(std::ostream &os, const ocs::tom::ConstList<ocs::tom::SME> ilp,
+                                    const ocs::tom::ConstElement<ocs::tom::JB> job, int flags) {
 }
 
 void
@@ -143,146 +151,293 @@ void ocs::QStatJobViewXML::report_job_finished(std::ostream &os, QStatParameter 
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewXML::report_job_id(std::ostream &os, const lListElem *job, int flags) {
+/**
+ * @brief Unused: the XML view writes the whole job list in show_jobs_and_reasons()
+ * @param os stream to write to
+ * @param job the job
+ * @param flags which parts of the listing were requested
+ */
+void ocs::QStatJobViewXML::report_job_id(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job, int flags) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewXML::report_category_id(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Unused: the XML view writes the whole job list in show_jobs_and_reasons()
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewXML::report_category_id(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewXML::report_exec_file(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Unused: the XML view writes the whole job list in show_jobs_and_reasons()
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewXML::report_exec_file(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewXML::report_submission_time(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Unused: the XML view writes the whole job list in show_jobs_and_reasons()
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewXML::report_submission_time(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewXML::report_deadline_time(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Unused: the XML view writes the whole job list in show_jobs_and_reasons()
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewXML::report_deadline_time(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewXML::report_submit_cmd_line(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Unused: the XML view writes the whole job list in show_jobs_and_reasons()
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewXML::report_submit_cmd_line(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewXML::report_effective_submit_cmd_line(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Unused: the XML view writes the whole job list in show_jobs_and_reasons()
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewXML::report_effective_submit_cmd_line(std::ostream &os,
+                                                            const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewXML::report_ownership(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Unused: the XML view writes the whole job list in show_jobs_and_reasons()
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewXML::report_ownership(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;
 }
-void ocs::QStatJobViewXML::report_env_core(std::ostream &os, const lListElem *job) {
-   DENTER(TOP_LAYER);
-   DRETURN_VOID;
-}
-
-void ocs::QStatJobViewXML::report_execution_time(std::ostream &os, const lListElem *job) {
-   DENTER(TOP_LAYER);
-   DRETURN_VOID;
-}
-
-void ocs::QStatJobViewXML::report_account(std::ostream &os, const lListElem *job) {
-   DENTER(TOP_LAYER);
-   DRETURN_VOID;
-}
-
-void ocs::QStatJobViewXML::report_checkpoint(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Unused: the XML view writes the whole job list in show_jobs_and_reasons()
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewXML::report_env_core(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewXML::report_cwd(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Unused: the XML view writes the whole job list in show_jobs_and_reasons()
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewXML::report_execution_time(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewXML::report_path_aliases(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Unused: the XML view writes the whole job list in show_jobs_and_reasons()
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewXML::report_account(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewXML::report_directive_prefix(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Unused: the XML view writes the whole job list in show_jobs_and_reasons()
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewXML::report_checkpoint(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewXML::report_stdin_path_list(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Unused: the XML view writes the whole job list in show_jobs_and_reasons()
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewXML::report_cwd(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewXML::report_stdout_path_list(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Unused: the XML view writes the whole job list in show_jobs_and_reasons()
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewXML::report_path_aliases(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewXML::report_stderr_path_list(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Unused: the XML view writes the whole job list in show_jobs_and_reasons()
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewXML::report_directive_prefix(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewXML::report_reserve(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Unused: the XML view writes the whole job list in show_jobs_and_reasons()
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewXML::report_stdin_path_list(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewXML::report_merge_stderr(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Unused: the XML view writes the whole job list in show_jobs_and_reasons()
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewXML::report_stdout_path_list(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewXML::report_request_set_list(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Unused: the XML view writes the whole job list in show_jobs_and_reasons()
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewXML::report_stderr_path_list(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewXML::report_mail_options(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Unused: the XML view writes the whole job list in show_jobs_and_reasons()
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewXML::report_reserve(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewXML::report_mail_list(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Unused: the XML view writes the whole job list in show_jobs_and_reasons()
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewXML::report_merge_stderr(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewXML::report_notify(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Unused: the XML view writes the whole job list in show_jobs_and_reasons()
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewXML::report_request_set_list(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewXML::report_name(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Unused: the XML view writes the whole job list in show_jobs_and_reasons()
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewXML::report_mail_options(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewXML::report_priority(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Unused: the XML view writes the whole job list in show_jobs_and_reasons()
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewXML::report_mail_list(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewXML::report_job_share(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Unused: the XML view writes the whole job list in show_jobs_and_reasons()
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewXML::report_notify(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewXML::report_restart(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Unused: the XML view writes the whole job list in show_jobs_and_reasons()
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewXML::report_name(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewXML::report_shell_list(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Unused: the XML view writes the whole job list in show_jobs_and_reasons()
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewXML::report_priority(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
+   DENTER(TOP_LAYER);
+   DRETURN_VOID;
+}
+
+/**
+ * @brief Unused: the XML view writes the whole job list in show_jobs_and_reasons()
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewXML::report_job_share(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
+   DENTER(TOP_LAYER);
+   DRETURN_VOID;
+}
+
+/**
+ * @brief Unused: the XML view writes the whole job list in show_jobs_and_reasons()
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewXML::report_restart(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
+   DENTER(TOP_LAYER);
+   DRETURN_VOID;
+}
+
+/**
+ * @brief Unused: the XML view writes the whole job list in show_jobs_and_reasons()
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewXML::report_shell_list(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;
 }
@@ -300,217 +455,460 @@ void ocs::QStatJobViewXML::report_shell_list(std::ostream &os, const lListElem *
  * @param[in,out] os  output stream (unused)
  * @param[in]     job job element (unused)
  */
-void ocs::QStatJobViewXML::report_env_list(std::ostream &os, const lListElem *job) {
+void ocs::QStatJobViewXML::report_env_list(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewXML::report_verify(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Unused: the XML view writes the whole job list in show_jobs_and_reasons()
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewXML::report_verify(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewXML::report_job_args(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Unused: the XML view writes the whole job list in show_jobs_and_reasons()
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewXML::report_job_args(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewXML::report_job_identifier_list(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Unused: the XML view writes the whole job list in show_jobs_and_reasons()
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewXML::report_job_identifier_list(std::ostream &os,
+                                                      const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewXML::report_script_size(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Unused: the XML view writes the whole job list in show_jobs_and_reasons()
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewXML::report_script_size(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewXML::report_script_file(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Unused: the XML view writes the whole job list in show_jobs_and_reasons()
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewXML::report_script_file(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewXML::report_script_ptr(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Unused: the XML view writes the whole job list in show_jobs_and_reasons()
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewXML::report_script_ptr(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewXML::report_pe(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Unused: the XML view writes the whole job list in show_jobs_and_reasons()
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewXML::report_pe(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewXML::report_jid_request_list(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Unused: the XML view writes the whole job list in show_jobs_and_reasons()
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewXML::report_jid_request_list(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewXML::report_jid_predecessor_list(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Unused: the XML view writes the whole job list in show_jobs_and_reasons()
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewXML::report_jid_predecessor_list(std::ostream &os,
+                                                       const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewXML::report_jid_successor_list(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Unused: the XML view writes the whole job list in show_jobs_and_reasons()
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewXML::report_jid_successor_list(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewXML::report_ja_ad_request_list(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Unused: the XML view writes the whole job list in show_jobs_and_reasons()
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewXML::report_ja_ad_request_list(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewXML::report_ja_ad_predecessor_list(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Unused: the XML view writes the whole job list in show_jobs_and_reasons()
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewXML::report_ja_ad_predecessor_list(std::ostream &os,
+                                                         const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewXML::report_ja_ad_successor_list(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Unused: the XML view writes the whole job list in show_jobs_and_reasons()
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewXML::report_ja_ad_successor_list(std::ostream &os,
+                                                       const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewXML::report_verify_suitable_queues(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Unused: the XML view writes the whole job list in show_jobs_and_reasons()
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewXML::report_verify_suitable_queues(std::ostream &os,
+                                                         const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewXML::report_soft_wallclock_gmt(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Unused: the XML view writes the whole job list in show_jobs_and_reasons()
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewXML::report_soft_wallclock_gmt(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewXML::report_hard_wallclock_gmt(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Unused: the XML view writes the whole job list in show_jobs_and_reasons()
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewXML::report_hard_wallclock_gmt(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewXML::report_version(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Unused: the XML view writes the whole job list in show_jobs_and_reasons()
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewXML::report_version(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewXML::report_override_tickets(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Unused: the XML view writes the whole job list in show_jobs_and_reasons()
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewXML::report_override_tickets(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewXML::report_ar(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Unused: the XML view writes the whole job list in show_jobs_and_reasons()
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewXML::report_ar(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewXML::report_project(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Unused: the XML view writes the whole job list in show_jobs_and_reasons()
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewXML::report_project(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewXML::report_department(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Unused: the XML view writes the whole job list in show_jobs_and_reasons()
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewXML::report_department(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewXML::report_sync_options(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Unused: the XML view writes the whole job list in show_jobs_and_reasons()
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewXML::report_sync_options(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewXML::report_ja_structure(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Unused: the XML view writes the whole job list in show_jobs_and_reasons()
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewXML::report_ja_structure(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewXML::report_ja_task_concurrency(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Unused: the XML view writes the whole job list in show_jobs_and_reasons()
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewXML::report_ja_task_concurrency(std::ostream &os,
+                                                      const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewXML::report_pending_tasks(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Unused: the XML view writes the whole job list in show_jobs_and_reasons()
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewXML::report_pending_tasks(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewXML::report_ctx_list(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Unused: the XML view writes the whole job list in show_jobs_and_reasons()
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewXML::report_ctx_list(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewXML::report_binding(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Unused: the XML view writes the whole job list in show_jobs_and_reasons()
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewXML::report_binding(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewXML::report_task_list_started(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Unused: the XML view writes the whole job list in show_jobs_and_reasons()
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewXML::report_task_list_started(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewXML::report_task_list_finished(std::ostream &os, const lListElem *job) {
+/**
+ * @brief Unused: the XML view writes the whole job list in show_jobs_and_reasons()
+ * @param os stream to write to
+ * @param job the job
+ */
+void ocs::QStatJobViewXML::report_task_list_finished(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewXML::report_task_started(std::ostream &os, const lListElem *job, const lListElem *task) {
+/**
+ * @brief Unused: the XML view writes the whole job list in show_jobs_and_reasons()
+ * @param os stream to write to
+ * @param job the job
+ * @param task the array task the row is about
+ */
+void ocs::QStatJobViewXML::report_task_started(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job,
+                                               const ocs::tom::ConstElement<ocs::tom::JAT> task) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewXML::report_task_finished(std::ostream &os, const lListElem *job, const lListElem *task) {
+/**
+ * @brief Unused: the XML view writes the whole job list in show_jobs_and_reasons()
+ * @param os stream to write to
+ * @param job the job
+ * @param task the array task the row is about
+ */
+void ocs::QStatJobViewXML::report_task_finished(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job,
+                                                const ocs::tom::ConstElement<ocs::tom::JAT> task) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewXML::report_task_state(std::ostream &os, const lListElem *job, const lListElem *task) {
+/**
+ * @brief Unused: the XML view writes the whole job list in show_jobs_and_reasons()
+ * @param os stream to write to
+ * @param job the job
+ * @param task the array task the row is about
+ */
+void ocs::QStatJobViewXML::report_task_state(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job,
+                                             const ocs::tom::ConstElement<ocs::tom::JAT> task) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewXML::report_task_id(std::ostream &os, const lListElem *job, const lListElem *task) {
+/**
+ * @brief Unused: the XML view writes the whole job list in show_jobs_and_reasons()
+ * @param os stream to write to
+ * @param job the job
+ * @param task the array task the row is about
+ */
+void ocs::QStatJobViewXML::report_task_id(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job,
+                                          const ocs::tom::ConstElement<ocs::tom::JAT> task) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewXML::report_task_usage(std::ostream &os, const lListElem *job, const lListElem *task) {
+/**
+ * @brief Unused: the XML view writes the whole job list in show_jobs_and_reasons()
+ * @param os stream to write to
+ * @param job the job
+ * @param task the array task the row is about
+ */
+void ocs::QStatJobViewXML::report_task_usage(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job,
+                                             const ocs::tom::ConstElement<ocs::tom::JAT> task) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewXML::report_task_exec_binding_list(std::ostream &os, const lListElem *job, const lListElem *task) {
+/**
+ * @brief Unused: the XML view writes the whole job list in show_jobs_and_reasons()
+ * @param os stream to write to
+ * @param job the job
+ * @param task the array task the row is about
+ */
+void ocs::QStatJobViewXML::report_task_exec_binding_list(std::ostream &os,
+                                                         const ocs::tom::ConstElement<ocs::tom::JB> job,
+                                                         const ocs::tom::ConstElement<ocs::tom::JAT> task) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewXML::report_task_exec_queue_list(std::ostream &os, const lListElem *job, const lListElem *task) {
+/**
+ * @brief Unused: the XML view writes the whole job list in show_jobs_and_reasons()
+ * @param os stream to write to
+ * @param job the job
+ * @param task the array task the row is about
+ */
+void ocs::QStatJobViewXML::report_task_exec_queue_list(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job,
+                                                       const ocs::tom::ConstElement<ocs::tom::JAT> task) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewXML::report_task_exec_host_list(std::ostream &os, const lListElem *job, const lListElem *task) {
+/**
+ * @brief Unused: the XML view writes the whole job list in show_jobs_and_reasons()
+ * @param os stream to write to
+ * @param job the job
+ * @param task the array task the row is about
+ */
+void ocs::QStatJobViewXML::report_task_exec_host_list(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job,
+                                                      const ocs::tom::ConstElement<ocs::tom::JAT> task) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewXML::report_task_start_time(std::ostream &os, const lListElem *job, const lListElem *task) {
+/**
+ * @brief Unused: the XML view writes the whole job list in show_jobs_and_reasons()
+ * @param os stream to write to
+ * @param job the job
+ * @param task the array task the row is about
+ */
+void ocs::QStatJobViewXML::report_task_start_time(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job,
+                                                  const ocs::tom::ConstElement<ocs::tom::JAT> task) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewXML::report_task_end_time(std::ostream &os, const lListElem *job, const lListElem *task) {
+/**
+ * @brief Unused: the XML view writes the whole job list in show_jobs_and_reasons()
+ * @param os stream to write to
+ * @param job the job
+ * @param task the array task the row is about
+ */
+void ocs::QStatJobViewXML::report_task_end_time(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job,
+                                                const ocs::tom::ConstElement<ocs::tom::JAT> task) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewXML::report_task_resource_map(std::ostream &os, const lListElem *job, const lListElem *task) {
+/**
+ * @brief Unused: the XML view writes the whole job list in show_jobs_and_reasons()
+ * @param os stream to write to
+ * @param job the job
+ * @param task the array task the row is about
+ */
+void ocs::QStatJobViewXML::report_task_resource_map(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job,
+                                                    const ocs::tom::ConstElement<ocs::tom::JAT> task) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewXML::report_task_error_reason(std::ostream &os, const lListElem *job, const lListElem *task) {
+/**
+ * @brief Unused: the XML view writes the whole job list in show_jobs_and_reasons()
+ * @param os stream to write to
+ * @param job the job
+ * @param task the array task the row is about
+ */
+void ocs::QStatJobViewXML::report_task_error_reason(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job,
+                                                    const ocs::tom::ConstElement<ocs::tom::JAT> task) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewXML::report_schedd_job_info(std::ostream &os, const lList *ilp, const lListElem *job) {
+/**
+ * @brief Unused: the XML view writes the whole job list in show_jobs_and_reasons()
+ * @param os stream to write to
+ * @param ilp the scheduler job info list (`SME_Type`), holding the reasons a job is not running
+ * @param job the job
+ */
+void ocs::QStatJobViewXML::report_schedd_job_info(std::ostream &os, const ocs::tom::ConstList<ocs::tom::SME> ilp,
+                                                  const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;
 }

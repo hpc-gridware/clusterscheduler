@@ -38,8 +38,11 @@
 #include "sgeobj/sge_range.h"
 #include "sgeobj/sge_usage.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
 #include "sgeobj/tom/ocs_tom_JAT.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
 #include "sgeobj/tom/ocs_tom_PET.h"
+#include "sgeobj/tom/ocs_tom_SME.h"
 #include "sgeobj/tom/ocs_tom_UA.h"
 
 #include "qstat/job/ocs_QStatJobViewBase.h"
@@ -57,10 +60,11 @@ void ocs::QStatJobViewBase::show_jobs_and_reasons(std::ostream &os, QStatParamet
 #endif
 
    /* print scheduler job information and global scheduler info */
-   for_each_ep_lv(j_elem, model.jlp) {
+   const ocs::tom::ConstList<ocs::tom::SME> ilp(model.ilp);
+   for (const ocs::tom::ConstElement<ocs::tom::JB> job : ocs::tom::ConstList<ocs::tom::JB>(model.jlp)) {
 #if 0
       // Do not show jobs that should not be visible
-      if (!job_is_visible(packet, lGetString(j_elem, JB_owner), model.is_manager())) {
+      if (!job_is_visible(packet, ocs::tom::get<JB_owner>(job), model.is_manager())) {
          continue;
       }
 #endif
@@ -73,7 +77,7 @@ void ocs::QStatJobViewBase::show_jobs_and_reasons(std::ostream &os, QStatParamet
       report_job_separator(os, parameter);
 
       report_job_started(os, parameter);
-      show_job(os, model.ilp, j_elem, 0);
+      show_job(os, ilp, job, 0);
       report_job_finished(os, parameter);
    }
    if (!first_job) {
@@ -91,7 +95,8 @@ void ocs::QStatJobViewBase::show_jobs_and_reasons(std::ostream &os, QStatParamet
  * @param job the job (`JB_Type`)
  * @param flags which parts of the listing were requested
  */
-void ocs::QStatJobViewBase::show_job(std::ostream &os, const lList *ilp, const lListElem *job, int flags) {
+void ocs::QStatJobViewBase::show_job(std::ostream &os, const ocs::tom::ConstList<ocs::tom::SME> ilp,
+                                     const ocs::tom::ConstElement<ocs::tom::JB> job, int flags) {
    DENTER(TOP_LAYER);
 
    if (job == nullptr) {
@@ -166,27 +171,29 @@ void ocs::QStatJobViewBase::show_job(std::ostream &os, const lList *ilp, const l
    report_task_list_started(os, job);
    if (ocs::tom::has<JB_ja_tasks>(job)) {
       // the tasks in the order of their numbers; the job is the caller's and is not sorted itself
-      std::vector<const lListElem *> ja_tasks;
-      for (ocs::tom::ConstElement<ocs::tom::JAT> ja_task : ocs::tom::get<JB_ja_tasks>(job)) {
+      std::vector<ocs::tom::ConstElement<ocs::tom::JAT>> ja_tasks;
+      for (const ocs::tom::ConstElement<ocs::tom::JAT> ja_task : ocs::tom::get<JB_ja_tasks>(job)) {
          ja_tasks.push_back(ja_task);
       }
-      std::ranges::sort(ja_tasks, {}, [](const lListElem *ja_task) { return ocs::tom::get<JAT_task_number>(ja_task); });
+      std::ranges::sort(ja_tasks, {}, [](const ocs::tom::ConstElement<ocs::tom::JAT> ja_task) {
+         return ocs::tom::get<JAT_task_number>(ja_task);
+      });
 
-      for (const lListElem *jatep : ja_tasks) {
-         report_task_started(os, job, jatep);
+      for (const ocs::tom::ConstElement<ocs::tom::JAT> ja_task : ja_tasks) {
+         report_task_started(os, job, ja_task);
 
-         report_task_id(os, job, jatep);
-         report_task_state(os, job, jatep);
-         report_task_usage(os, job, jatep);
-         report_task_exec_binding_list(os, job, jatep);
-         report_task_exec_queue_list(os, job, jatep);
-         report_task_exec_host_list(os, job, jatep);
-         report_task_start_time(os, job, jatep);
-         report_task_end_time(os, job, jatep);
-         report_task_resource_map(os, job, jatep);
-         report_task_error_reason(os, job, jatep);
+         report_task_id(os, job, ja_task);
+         report_task_state(os, job, ja_task);
+         report_task_usage(os, job, ja_task);
+         report_task_exec_binding_list(os, job, ja_task);
+         report_task_exec_queue_list(os, job, ja_task);
+         report_task_exec_host_list(os, job, ja_task);
+         report_task_start_time(os, job, ja_task);
+         report_task_end_time(os, job, ja_task);
+         report_task_resource_map(os, job, ja_task);
+         report_task_error_reason(os, job, ja_task);
 
-         report_task_finished(os, job, jatep);
+         report_task_finished(os, job, ja_task);
       }
    }
    report_task_list_finished(os, job);
@@ -197,18 +204,18 @@ void ocs::QStatJobViewBase::show_job(std::ostream &os, const lList *ilp, const l
    DRETURN_VOID;
 }
 
-/** Count pending tasks of a job.
- *
- * Sums the range elements in the five JB_ja_*_h_ids hold lists and adds
- * the number of enrolled ja_tasks in JB_ja_tasks whose JAT_status is JIDLE.
- * Enrolled tasks that already have the JERROR bit set in JAT_state are
- * excluded.
- */
 /** @brief Count the tasks of an array job that have not started yet
+ *
+ * Sums the ids in the five JB_ja_*_h_ids hold lists and adds the number of
+ * enrolled ja_tasks in JB_ja_tasks whose JAT_status is JIDLE. Enrolled tasks
+ * that already have the JERROR bit set in JAT_state are excluded. A hold list
+ * the (reduced) job does not hold counts nothing.
+ *
  * @param job the job (`JB_Type`)
  * @return the number of pending tasks
  */
-uint32_t ocs::QStatJobViewBase::count_pending_tasks(const lListElem *job) {
+uint32_t ocs::QStatJobViewBase::count_pending_tasks(const ocs::tom::ConstElement<ocs::tom::JB> job) {
+   DENTER(TOP_LAYER);
    uint32_t pending = 0;
    const int range_fields[] = {
       JB_ja_n_h_ids, JB_ja_u_h_ids, JB_ja_s_h_ids, JB_ja_o_h_ids, JB_ja_a_h_ids
@@ -221,34 +228,36 @@ uint32_t ocs::QStatJobViewBase::count_pending_tasks(const lListElem *job) {
    }
 
    if (ocs::tom::has<JB_ja_tasks>(job)) {
-      for (ocs::tom::ConstElement<ocs::tom::JAT> ja_task : ocs::tom::get<JB_ja_tasks>(job)) {
+      for (const ocs::tom::ConstElement<ocs::tom::JAT> ja_task : ocs::tom::get<JB_ja_tasks>(job)) {
          if (ocs::tom::get<JAT_status>(ja_task) == JIDLE && !ISSET(ocs::tom::get<JAT_state>(ja_task), JERROR)) {
             pending++;
          }
       }
    }
 
-   return pending;
+   DRETURN(pending);
 }
 
 /** @brief Add one task's usage to a running total
  * @param task the task whose usage is added
  * @param usage the total, updated in place
  */
-void ocs::QStatJobViewBase::accumulate_usage(const lListElem *task, Usage &usage) {
+void ocs::QStatJobViewBase::accumulate_usage(const ocs::tom::ConstElement<ocs::tom::JAT> task, Usage &usage) {
    DENTER(TOP_LAYER);
-   usage.have_mem_details = static_cast<const lListElem *>(ocs::tom::find_first_in<JAT_scaled_usage_list, UA_name>(task, USAGE_ATTR_PSS)) != nullptr;
+   usage.have_mem_details =
+      static_cast<const lListElem *>(ocs::tom::find_first_in<JAT_scaled_usage_list, UA_name>(task, USAGE_ATTR_PSS)) !=
+      nullptr;
 
    /* display online job usage separately for each array job but summarized over all pe_tasks */
    // adds one value of a scaled usage list to a total; an attribute the list does not hold adds nothing
-   const auto sum_up = [](const lList *usage_list, double &dst, const char *attr) {
+   const auto sum_up = [](const ocs::tom::ConstList<ocs::tom::UA> usage_list, double &dst, const char *attr) {
       if (ocs::tom::ConstElement<ocs::tom::UA> uep = ocs::tom::find_first<UA_name>(usage_list, attr)) {
          dst += ocs::tom::get<UA_value>(uep);
       }
    };
 
    /* master task */
-   const lList *ja_task_usage = ocs::tom::get<JAT_scaled_usage_list>(task);
+   const auto ja_task_usage = ocs::tom::get<JAT_scaled_usage_list>(task);
    sum_up(ja_task_usage, usage.wallclock, USAGE_ATTR_WALLCLOCK);
    sum_up(ja_task_usage, usage.cpu, USAGE_ATTR_CPU);
    sum_up(ja_task_usage, usage.mem, USAGE_ATTR_MEM);
@@ -267,9 +276,9 @@ void ocs::QStatJobViewBase::accumulate_usage(const lListElem *task, Usage &usage
    }
 
    /* slave tasks */
-   for (ocs::tom::ConstElement<ocs::tom::PET> pe_task_ep : ocs::tom::get<JAT_task_list>(task)) {
+   for (const ocs::tom::ConstElement<ocs::tom::PET> pe_task_ep : ocs::tom::get<JAT_task_list>(task)) {
       // we do not sum up wallclock usage per pe task; a PE task keeps its usage in its own list
-      const lList *pe_task_usage = ocs::tom::get<PET_scaled_usage>(pe_task_ep);
+      const auto pe_task_usage = ocs::tom::get<PET_scaled_usage>(pe_task_ep);
       sum_up(pe_task_usage, usage.cpu, USAGE_ATTR_CPU);
       sum_up(pe_task_usage, usage.mem, USAGE_ATTR_MEM);
       sum_up(pe_task_usage, usage.io, USAGE_ATTR_IO);

@@ -25,6 +25,9 @@
 
 #include "qstat/ocs_QStatModelBase.h"
 
+#include "tom/ocs_Transitional.h"
+#include "sgeobj/tom/ocs_tom_CE.h"
+
 #include "ocs_QStatJobViewBase.h"
 #include "ocs_ProcedureParameter.h"
 
@@ -43,7 +46,8 @@ namespace ocs {
       const int left_width = left_width_short + mid_width + 2;  ///< Width of the name column on a job row
       const char *delis[3] = {nullptr, ",", "\n"};              ///< Separators for the three nesting levels of a list value
 
-      static void show_ce_type_list(std::ostream &os, const lList *cel, const char *indent, const char *separator);
+      static void show_ce_type_list(std::ostream &os, ocs::tom::ConstList<ocs::tom::CE> cel, const char *indent,
+                                    const char *separator);
    public:
       /** @brief Build the plain text view
        * @param parameter the call's parameters
@@ -53,7 +57,9 @@ namespace ocs {
 
       ~QStatJobViewPlain() override = default;
 
-      static void cull_show_job(std::ostream &os, const lList *ilp, const lListElem *job, int flags);
+      static void cull_show_job(std::ostream &os, ocs::tom::ConstList<ocs::tom::SME> ilp,
+                                ocs::tom::ConstElement<ocs::tom::JB> job, int flags);
+      OCS_TRANSITIONAL static void cull_show_job(std::ostream &os, const lList *ilp, const lListElem *job, int flags);
       void show_reasons(std::ostream &os, QStatParameter &parameter, QStatModelBase &model) override;
 
       void report_started(std::ostream &os, QStatParameter &parameter) override;
@@ -65,78 +71,91 @@ namespace ocs {
       void report_job_started(std::ostream &os, QStatParameter &parameter) override;
       void report_job_finished(std::ostream &os, QStatParameter &parameter) override;
 
-      void report_job_id(std::ostream &os, const lListElem *job, int flags) override;
-      void report_category_id(std::ostream &os, const lListElem *job) override;
-      void report_exec_file(std::ostream &os, const lListElem *job) override;
-      void report_submission_time(std::ostream &os, const lListElem *job) override;
-      void report_deadline_time(std::ostream &os, const lListElem *job) override;
-      void report_submit_cmd_line(std::ostream &os, const lListElem *job) override;
-      void report_effective_submit_cmd_line(std::ostream &os, const lListElem *job) override;
-      void report_ownership(std::ostream &os, const lListElem *job) override;
-      void report_env_core(std::ostream &os, const lListElem *job) override;
-      void report_execution_time(std::ostream &os, const lListElem *job) override;
-      void report_account(std::ostream &os, const lListElem *job) override;
-      void report_checkpoint(std::ostream &os, const lListElem *job) override;
-      void report_cwd(std::ostream &os, const lListElem *job) override;
-      void report_path_aliases(std::ostream &os, const lListElem *job) override;
-      void report_directive_prefix(std::ostream &os, const lListElem *job) override;
-      void report_stdin_path_list(std::ostream &os, const lListElem *job) override;
-      void report_stdout_path_list(std::ostream &os, const lListElem *job) override;
-      void report_stderr_path_list(std::ostream &os, const lListElem *job) override;
-      void report_reserve(std::ostream &os, const lListElem *job) override;
-      void report_merge_stderr(std::ostream &os, const lListElem *job) override;
-      void report_request_set_list(std::ostream &os, const lListElem *job) override;
-      void report_mail_options(std::ostream &os, const lListElem *job) override;
-      void report_mail_list(std::ostream &os, const lListElem *job) override;
-      void report_notify(std::ostream &os, const lListElem *job) override;
-      void report_name(std::ostream &os, const lListElem *job) override;
-      void report_priority(std::ostream &os, const lListElem *job) override;
-      void report_job_share(std::ostream &os, const lListElem *job) override;
-      void report_restart(std::ostream &os, const lListElem *job) override;
-      void report_shell_list(std::ostream &os, const lListElem *job) override;
-      void report_env_list(std::ostream &os, const lListElem *job) override;
-      void report_verify(std::ostream &os, const lListElem *job) override;
-      void report_job_args(std::ostream &os, const lListElem *job) override;
-      void report_job_identifier_list(std::ostream &os, const lListElem *job) override;
-      void report_script_size(std::ostream &os, const lListElem *job) override;
-      void report_script_file(std::ostream &os, const lListElem *job) override;
-      void report_script_ptr(std::ostream &os, const lListElem *job) override;
-      void report_pe(std::ostream &os, const lListElem *job) override;
-      void report_jid_request_list(std::ostream &os, const lListElem *job) override;
-      void report_jid_predecessor_list(std::ostream &os, const lListElem *job) override;
-      void report_jid_successor_list(std::ostream &os, const lListElem *job) override;
-      void report_ja_ad_request_list(std::ostream &os, const lListElem *job) override;
-      void report_ja_ad_predecessor_list(std::ostream &os, const lListElem *job) override;
-      void report_ja_ad_successor_list(std::ostream &os, const lListElem *job) override;
-      void report_verify_suitable_queues(std::ostream &os, const lListElem *job) override;
-      void report_soft_wallclock_gmt(std::ostream &os, const lListElem *job) override;
-      void report_hard_wallclock_gmt(std::ostream &os, const lListElem *job) override;
-      void report_version(std::ostream &os, const lListElem *job) override;
-      void report_override_tickets(std::ostream &os, const lListElem *job) override;
-      void report_ar(std::ostream &os, const lListElem *job) override;
-      void report_project(std::ostream &os, const lListElem *job) override;
-      void report_department(std::ostream &os, const lListElem *job) override;
-      void report_sync_options(std::ostream &os, const lListElem *job) override;
-      void report_ja_structure(std::ostream &os, const lListElem *job) override;
-      void report_pending_tasks(std::ostream &os, const lListElem *job) override;
-      void report_ja_task_concurrency(std::ostream &os, const lListElem *job) override;
-      void report_ctx_list(std::ostream &os, const lListElem *job) override;
-      void report_binding(std::ostream &os, const lListElem *job) override;
-      void report_schedd_job_info(std::ostream &os, const lList *ilp,const lListElem *job) override;
+      void report_job_id(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job, int flags) override;
+      void report_category_id(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) override;
+      void report_exec_file(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) override;
+      void report_submission_time(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) override;
+      void report_deadline_time(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) override;
+      void report_submit_cmd_line(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) override;
+      void report_effective_submit_cmd_line(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) override;
+      void report_ownership(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) override;
+      void report_env_core(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) override;
+      void report_execution_time(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) override;
+      void report_account(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) override;
+      void report_checkpoint(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) override;
+      void report_cwd(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) override;
+      void report_path_aliases(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) override;
+      void report_directive_prefix(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) override;
+      void report_stdin_path_list(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) override;
+      void report_stdout_path_list(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) override;
+      void report_stderr_path_list(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) override;
+      void report_reserve(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) override;
+      void report_merge_stderr(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) override;
+      void report_request_set_list(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) override;
+      void report_mail_options(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) override;
+      void report_mail_list(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) override;
+      void report_notify(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) override;
+      void report_name(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) override;
+      void report_priority(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) override;
+      void report_job_share(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) override;
+      void report_restart(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) override;
+      void report_shell_list(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) override;
+      void report_env_list(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) override;
+      void report_verify(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) override;
+      void report_job_args(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) override;
+      void report_job_identifier_list(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) override;
+      void report_script_size(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) override;
+      void report_script_file(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) override;
+      void report_script_ptr(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) override;
+      void report_pe(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) override;
+      void report_jid_request_list(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) override;
+      void report_jid_predecessor_list(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) override;
+      void report_jid_successor_list(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) override;
+      void report_ja_ad_request_list(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) override;
+      void report_ja_ad_predecessor_list(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) override;
+      void report_ja_ad_successor_list(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) override;
+      void report_verify_suitable_queues(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) override;
+      void report_soft_wallclock_gmt(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) override;
+      void report_hard_wallclock_gmt(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) override;
+      void report_version(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) override;
+      void report_override_tickets(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) override;
+      void report_ar(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) override;
+      void report_project(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) override;
+      void report_department(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) override;
+      void report_sync_options(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) override;
+      void report_ja_structure(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) override;
+      void report_pending_tasks(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) override;
+      void report_ja_task_concurrency(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) override;
+      void report_ctx_list(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) override;
+      void report_binding(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) override;
+      void report_schedd_job_info(std::ostream &os, ocs::tom::ConstList<ocs::tom::SME> ilp,
+                                  ocs::tom::ConstElement<ocs::tom::JB> job) override;
 
-      void report_task_list_started(std::ostream &os, const lListElem *job) override;
-      void report_task_list_finished(std::ostream &os, const lListElem *job) override;
-      void report_task_started(std::ostream &os, const lListElem *job, const lListElem *task) override;
-      void report_task_finished(std::ostream &os, const lListElem *job, const lListElem *task) override;
-      void report_task_id(std::ostream &os, const lListElem *job, const lListElem *task) override;
-      void report_task_state(std::ostream &os, const lListElem *job, const lListElem *task) override;
-      void report_task_usage(std::ostream &os, const lListElem *job, const lListElem *task) override;
-      void report_task_exec_binding_list(std::ostream &os, const lListElem *job, const lListElem *task) override;
-      void report_task_exec_queue_list(std::ostream &os, const lListElem *job, const lListElem *task) override;
-      void report_task_exec_host_list(std::ostream &os, const lListElem *job, const lListElem *task) override;
-      void report_task_start_time(std::ostream &os, const lListElem *job, const lListElem *task) override;
-      void report_task_end_time(std::ostream &os, const lListElem *job, const lListElem *task) override;
-      void report_task_resource_map(std::ostream &os, const lListElem *job, const lListElem *task) override;
-      void report_task_error_reason(std::ostream &os, const lListElem *job, const lListElem *task) override;
+      void report_task_list_started(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) override;
+      void report_task_list_finished(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job) override;
+      void report_task_started(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job,
+                               ocs::tom::ConstElement<ocs::tom::JAT> task) override;
+      void report_task_finished(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job,
+                                ocs::tom::ConstElement<ocs::tom::JAT> task) override;
+      void report_task_id(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job,
+                          ocs::tom::ConstElement<ocs::tom::JAT> task) override;
+      void report_task_state(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job,
+                             ocs::tom::ConstElement<ocs::tom::JAT> task) override;
+      void report_task_usage(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job,
+                             ocs::tom::ConstElement<ocs::tom::JAT> task) override;
+      void report_task_exec_binding_list(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job,
+                                         ocs::tom::ConstElement<ocs::tom::JAT> task) override;
+      void report_task_exec_queue_list(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job,
+                                       ocs::tom::ConstElement<ocs::tom::JAT> task) override;
+      void report_task_exec_host_list(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job,
+                                      ocs::tom::ConstElement<ocs::tom::JAT> task) override;
+      void report_task_start_time(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job,
+                                  ocs::tom::ConstElement<ocs::tom::JAT> task) override;
+      void report_task_end_time(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job,
+                                ocs::tom::ConstElement<ocs::tom::JAT> task) override;
+      void report_task_resource_map(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job,
+                                    ocs::tom::ConstElement<ocs::tom::JAT> task) override;
+      void report_task_error_reason(std::ostream &os, ocs::tom::ConstElement<ocs::tom::JB> job,
+                                    ocs::tom::ConstElement<ocs::tom::JAT> task) override;
    };
 }
