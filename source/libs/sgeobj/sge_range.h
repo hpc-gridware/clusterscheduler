@@ -63,6 +63,9 @@
 /// The value standing for an unbounded upper end of a range
 #define RANGE_INFINITY (9999999)
 
+/// The most slots a queue or a parallel environment may have; a slot range ending above it would mean infinity
+constexpr uint32_t OCS_MAX_SLOTS = RANGE_INFINITY;
+
 /// Callback that either removes an id from a range list or inserts it into one
 typedef void (*range_remove_insert_t)(lList **, lList **, uint32_t);
 

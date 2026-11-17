@@ -42,7 +42,7 @@ by such jobs for reservation.
 Note: Resource Quotas are not considered for AR queue selection and nor for jobs requesting an AR.
 
 When an AR was successfully added to the xxQS_NAMExx queuing system `qrsub` returns a unique integer ID referring 
-the newly created AR. The highest AR ID is 9999999. If the highest ID is reached, a wraparound happens and the 
+the newly created AR. The highest AR ID is 4294967295. If the highest ID is reached, a wraparound happens and the 
 next unused ID, starting with 1, will be used.
 
 For `qrsub`, the administrator and the user may define default request files (analogous to xxQS_NAMExx_request for 

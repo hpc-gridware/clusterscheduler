@@ -121,7 +121,7 @@ pe_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *
    if (ocs::tom::has<PE_slots>(pe)) {
       uint32_t pe_slots = ocs::tom::get<PE_slots>(pe);
 
-      if (pe_validate_slots(alpp, pe_slots) != STATUS_OK) {
+      if (pe_validate_slots(alpp, pe_slots, false) != STATUS_OK) {
          goto ERROR;
       }
 

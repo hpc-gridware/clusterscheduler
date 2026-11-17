@@ -78,7 +78,7 @@ pe_validate(ocs::tom::Element<ocs::tom::PE> pep, lList **alpp, int startup,
 OCS_TRANSITIONAL int pe_validate(lListElem *pep, lList **alpp, int startup, const lList *master_userset_list);
 
 int
-pe_validate_slots(lList **alpp, uint32_t slots);
+pe_validate_slots(lList **alpp, uint32_t slots, bool warn_only);
 
 int
 pe_validate_urgency_slots(lList **alpp, const char *s);

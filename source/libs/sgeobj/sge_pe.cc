@@ -298,7 +298,7 @@ int pe_validate(const ocs::tom::Element<ocs::tom::PE> pep, lList **alpp, const i
    }
 
    /* -------- slots */
-   if ((ret=pe_validate_slots(alpp, ocs::tom::get<PE_slots>(pep))) != STATUS_OK) {
+   if ((ret = pe_validate_slots(alpp, ocs::tom::get<PE_slots>(pep), startup != 0)) != STATUS_OK) {
       DRETURN(ret);
    }
 
@@ -348,27 +348,37 @@ int pe_validate(lListElem *pep, lList **alpp, int startup, const lList *master_u
 /**
  * @brief Ensure urgency slot setting is valid
  *
- * Validates slot setting.
+ * Validates the slots setting against #OCS_MAX_SLOTS (CS-3146). A parallel environment read from the spool
+ * at startup may hold more, as the limit was not enforced between CS-173 and CS-3146: it is reported as a
+ * warning then and kept, so qmaster still starts; a new or modified one is refused.
  *
- * @param alpp On error a context message is returned.
+ * @param alpp On error a context message is returned; nullptr to log it instead.
  * @param slots The slots value.
+ * @param warn_only true at startup: report a value above the limit as a warning and accept it
  *
  * @return values other than STATUS_OK indicate error condition
  *
  * @note MT-NOTE: pe_validate_slots() is MT safe
  */
-int pe_validate_slots(lList **alpp, uint32_t slots) {
+int pe_validate_slots(lList **alpp, const uint32_t slots, const bool warn_only) {
    DENTER(TOP_LAYER);
 
-   if (slots > std::numeric_limits<uint32_t>::max()) {
+   if (slots > OCS_MAX_SLOTS) {
+      const answer_quality_t quality = warn_only ? ANSWER_QUALITY_WARNING : ANSWER_QUALITY_ERROR;
       if (alpp == nullptr) {
-         ERROR(MSG_ATTR_INVALID_ULONGVALUE_USUU, slots, "slots", 0, std::numeric_limits<uint32_t>::max());
+         if (warn_only) {
+            WARNING(MSG_ATTR_INVALID_ULONGVALUE_USUU, slots, "slots", static_cast<uint32_t>(0), OCS_MAX_SLOTS);
+         } else {
+            ERROR(MSG_ATTR_INVALID_ULONGVALUE_USUU, slots, "slots", static_cast<uint32_t>(0), OCS_MAX_SLOTS);
+         }
       } else {
-         answer_list_add_sprintf(alpp, STATUS_EEXIST, ANSWER_QUALITY_ERROR,
-                                 MSG_ATTR_INVALID_ULONGVALUE_USUU, slots,
-                                 "slots", static_cast<uint32_t>(0), static_cast<uint32_t>(std::numeric_limits<uint32_t>::max()));
+         answer_list_add_sprintf(alpp, warn_only ? STATUS_OK : STATUS_EEXIST, quality,
+                                 MSG_ATTR_INVALID_ULONGVALUE_USUU, slots, "slots", static_cast<uint32_t>(0),
+                                 OCS_MAX_SLOTS);
       }
-      DRETURN(STATUS_ESEMANTIC);
+      if (!warn_only) {
+         DRETURN(STATUS_ESEMANTIC);
+      }
    }
 
    DRETURN(STATUS_OK);

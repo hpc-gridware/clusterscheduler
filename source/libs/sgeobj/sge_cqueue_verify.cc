@@ -524,7 +524,8 @@ bool cqueue_verify_user_list(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue, 
  * @brief Verify the queue slots attribute
  *
  * Verifies if the slots attribute of a queue is in the expected range
- * (0 .. std::numeric_limits<uint32_t>::max()). std::numeric_limits<uint32_t>::max() is 9999999.
+ * (0 .. #OCS_MAX_SLOTS). The limit is its own constant since CS-3146: CS-173 raised the job and AR id
+ * limit it shared before, which silently lifted the slots limit too.
  *
  * @param cqueue The queue to verify.
  * @param answer_list answer list to report errors
@@ -544,10 +545,10 @@ bool cqueue_verify_job_slots(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue, 
    if (cqueue && attr_elem != nullptr) {
       uint32_t slots = ocs::tom::get<AULNG_value>(attr_elem);
 
-      if (slots > std::numeric_limits<uint32_t>::max()) {
+      if (slots > OCS_MAX_SLOTS) {
          answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                                  MSG_ATTR_INVALID_ULONGVALUE_USUU, slots, "slots",
-                                 0, std::numeric_limits<uint32_t>::max());
+                                 static_cast<uint32_t>(0), OCS_MAX_SLOTS);
          ret = false;
       }
    }

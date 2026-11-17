@@ -36,6 +36,9 @@
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_cqueue.h"
+#include "sgeobj/sge_cqueue_verify.h"
+#include "sgeobj/sge_pe.h"
+#include "sgeobj/sge_range.h"
 #include "sgeobj/sge_str.h"
 #include "sgeobj/tom/ocs_tom_CQ.h"
 #include "sgeobj/tom/ocs_tom_US.h"
@@ -140,6 +143,40 @@ test_purge_default_entry() {
 }
 
 /**
+ * @brief The slots limit of queues and parallel environments (CS-3146)
+ *
+ * CS-173 raised the job and AR id limit that the slots checks shared, which lifted the slots limit too.
+ * A new or modified queue or parallel environment above #OCS_MAX_SLOTS is refused again; a parallel
+ * environment read from the spool at startup is only warned about, so qmaster still starts.
+ */
+static void
+test_slots_limit() {
+   printf("\n--- slots limit ---\n");
+
+   auto cqueue = ocs::tom::ElementPtr<ocs::tom::CQ>::create();
+   ocs::tom::set<CQ_name>(cqueue, "all.q");
+   lListElem *attr = lCreateElem(AULNG_Type);
+
+   lList *alp = nullptr;
+   lSetUlong(attr, AULNG_value, OCS_MAX_SLOTS);
+   CHECK(9, "a queue with OCS_MAX_SLOTS slots is accepted", cqueue_verify_job_slots(*cqueue, &alp, attr, nullptr));
+   lSetUlong(attr, AULNG_value, OCS_MAX_SLOTS + 1);
+   CHECK(10, "a queue with more slots is refused", !cqueue_verify_job_slots(*cqueue, &alp, attr, nullptr));
+   CHECK(11, "the refusal is an error", answer_list_has_error(&alp));
+   lFreeList(&alp);
+   lFreeElem(&attr);
+
+   CHECK(12, "a PE with OCS_MAX_SLOTS slots is accepted", pe_validate_slots(&alp, OCS_MAX_SLOTS, false) == STATUS_OK);
+   CHECK(13, "a PE with more slots is refused", pe_validate_slots(&alp, OCS_MAX_SLOTS + 1, false) != STATUS_OK);
+   lFreeList(&alp);
+   CHECK(14, "at startup a PE with more slots is accepted",
+         pe_validate_slots(&alp, OCS_MAX_SLOTS + 1, true) == STATUS_OK);
+   CHECK(15, "and only warned about", alp != nullptr && !answer_list_has_error(&alp) &&
+                                         answer_list_has_quality(&alp, ANSWER_QUALITY_WARNING));
+   lFreeList(&alp);
+}
+
+/**
  * @brief Entry point
  * @return 0 when every check passed, 1 otherwise
  */
@@ -147,6 +184,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
    lInit(nmv);
 
    test_purge_default_entry();
+   test_slots_limit();
 
    printf("\n%s - %d failure(s)\n", s_fail == 0 ? "PASS" : "FAIL", s_fail);
    return s_fail == 0 ? 0 : 1;
