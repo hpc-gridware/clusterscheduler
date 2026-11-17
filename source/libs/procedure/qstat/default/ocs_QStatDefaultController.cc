@@ -193,7 +193,8 @@ ocs::QStatDefaultController::process_resources(std::ostream &os, const ocs::tom:
 /** @brief Report the jobs running in one queue instance, or all running jobs
  *
  * Every task found is tagged #TAG_FOUND_IT, so that it is not reported again
- * as pending.
+ * as pending. Line counts derived from the granted slots are computed without
+ * signed overflow (CS-2367).
  *
  * @param os stream to write to
  * @param queue the queue instance, or an empty handle for the running jobs of all queues
@@ -337,7 +338,8 @@ ocs::QStatDefaultController::process_jobs_in_queue(std::ostream &os, const ocs::
                            sge_dstring_sprintf(&dyn_task_str, sge_u32, jataskid);
                            process_job(os, jlep, jatep, queue, gdilep, print_jobid,
                                        (master && different && (i==0))?"MASTER":"SLAVE", &dyn_task_str,
-                                       slots_in_queue+slot_adjust, i, slots_per_line, parameter, model, view);
+                                       ProcedureView::add_saturating_int(slots_in_queue, slot_adjust), i,
+                                       slots_per_line, parameter, model, view);
                         }
                      }
                   }
