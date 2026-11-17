@@ -26,9 +26,13 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_centry_rsmap.h"
+#include "sgeobj/sge_host.h"
 #include "tom/ocs_Element.h"
 #include "sgeobj/tom/ocs_tom_CE.h"
+#include "sgeobj/tom/ocs_tom_EH.h"
 #include "sgeobj/tom/ocs_tom_RESL.h"
+#include "sgeobj/tom/ocs_tom_RUE.h"
+#include "tom/ocs_List.h"
 #include "tom/ocs_ElementCore.h"
 
 #include "ocs_module_test.h"
@@ -345,6 +349,108 @@ test_check_characteristics() {
 // ---------------------------------------------------------------------------
 
 /**
+ * @brief A resource map instance with its amount
+ * @param id the instance id
+ * @param amount its amount
+ * @return the RESL_Type element
+ */
+static ocs::tom::ElementPtr<ocs::tom::RESL>
+make_resl(const char *id, const uint32_t amount) {
+   auto resl = ocs::tom::ElementPtr<ocs::tom::RESL>::create();
+   resl->set<RESL_value>(id);
+   resl->set<RESL_amount>(amount);
+   return resl;
+}
+
+/**
+ * @brief CS-3124: host_debit_rsmap() in the check mode reports an over-booked id and leaves the host alone
+ *
+ * The host configures the resource map "gpu" with the id gpu0 of amount 1; gpu0 is utilized with 1.
+ */
+static void
+test_debit_check_mode() {
+   auto host = ocs::tom::ElementPtr<ocs::tom::EH>::create();
+
+   auto config = ocs::tom::ElementPtr<ocs::tom::CE>::create();
+   config->set<CE_name>("gpu");
+   auto configured = ocs::tom::ListPtr<ocs::tom::RESL>::create("");
+   configured->push_back(make_resl("gpu0", 1));
+   configured->push_back(make_resl("gpu1", 1));
+   config->set<CE_resource_map_list>(std::move(configured));
+   auto configs = ocs::tom::ListPtr<ocs::tom::CE>::create("");
+   configs->push_back(std::move(config));
+   host->set<EH_consumable_config_list>(std::move(configs));
+
+   auto utilization = ocs::tom::ElementPtr<ocs::tom::RUE>::create();
+   utilization->set<RUE_name>("gpu");
+   auto utilized = ocs::tom::ListPtr<ocs::tom::RESL>::create("");
+   utilized->push_back(make_resl("gpu0", 1));
+   utilization->set<RUE_utilized_now_resource_map_list>(std::move(utilized));
+   auto utilizations = ocs::tom::ListPtr<ocs::tom::RUE>::create("");
+   utilizations->push_back(std::move(utilization));
+   host->set<EH_resource_utilization>(std::move(utilizations));
+
+   const auto utilized_list = [&host]() {
+      return host->get<EH_resource_utilization>().front().get<RUE_utilized_now_resource_map_list>();
+   };
+
+   // T17: the used id does not fit a second time
+   {
+      bool fits = true;
+      const auto request = make_resl("gpu0", 1);
+      host_debit_rsmap(*host, "gpu", *request, 1, &fits);
+      CHECK(17, "an id already in use does not fit again", !fits);
+   }
+
+   // T18/T19: the free id fits, and checking it does not add a utilization entry to the host
+   {
+      bool fits = true;
+      const auto request = make_resl("gpu1", 1);
+      const size_t entries_before = utilized_list().size();
+      host_debit_rsmap(*host, "gpu", *request, 1, &fits);
+      CHECK(18, "a free id fits", fits);
+      CHECK(19, "the check leaves the utilization of the host unchanged",
+            utilized_list().size() == entries_before);
+   }
+
+   // T20: more than configured does not fit
+   {
+      bool fits = true;
+      const auto request = make_resl("gpu1", 2);
+      host_debit_rsmap(*host, "gpu", *request, 1, &fits);
+      CHECK(20, "an amount above the configured one does not fit", !fits);
+   }
+
+   // T21: an id the host does not configure is not judged, as before
+   {
+      bool fits = true;
+      const auto request = make_resl("gpu9", 1);
+      host_debit_rsmap(*host, "gpu", *request, 1, &fits);
+      CHECK(21, "an id the host does not configure is not judged", fits);
+   }
+
+   // T22: a resource without a utilization entry on the host is not judged and counts no modification
+   {
+      bool fits = true;
+      const auto request = make_resl("gpu0", 1);
+      const int mods = host_debit_rsmap(*host, "fpga", *request, 1, &fits);
+      CHECK(22, "a resource the host does not utilize is not judged", fits && mods == 0);
+   }
+
+   // T23: an id of amount 2 with 1 in use still takes 1
+   {
+      const auto configured_list = host->get<EH_consumable_config_list>().front().get<CE_resource_map_list>();
+      configured_list.push_back(make_resl("gpu2", 2));
+      utilized_list().push_back(make_resl("gpu2", 1));
+      bool fits = true;
+      const auto request = make_resl("gpu2", 1);
+      host_debit_rsmap(*host, "gpu", *request, 1, &fits);
+      CHECK(23, "an id of amount 2 with 1 in use takes 1 more", fits);
+   }
+}
+
+
+/**
  * @brief Module-test entry point; runs the scenarios through the shared frame.
  * @param argc argument count, see ocs_module_test.h for the frame's options
  * @param argv argument vector
@@ -374,5 +480,15 @@ int main(int argc, char *argv[]) {
        "the string and the consumable characteristic are accepted, the string one typed; every "
        "other case is refused with its own message",
        {}, {11, 12, 13, 14, 15, 16}, test_check_characteristics},
+      {"RSMAP-03", "check mode of the resource map debiting (CS-3124)",
+       "host_debit_rsmap() with just_check only answers whether an id still fits; it compares the "
+       "utilized and the requested amount with the configured one and leaves the host unchanged",
+       {"check an id already in use", "check a free id", "check an amount above the configured one",
+        "check an id the host does not configure and a resource it does not utilize",
+        "check an id of amount 2 with 1 in use"},
+       "the id in use and the amount above the configuration do not fit, the free id fits, the "
+       "utilization of the host is unchanged, unconfigured ids and unutilized resources are not judged, "
+       "and the partly used id takes 1 more",
+       {}, {17, 18, 19, 20, 21, 22, 23}, test_debit_check_mode},
    });
 }

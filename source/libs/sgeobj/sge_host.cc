@@ -819,8 +819,10 @@ bool host_merge(lListElem *host, const lListElem *global_host) {
  * @param ce_name       name of the RSMAP complex variable
  * @param resl          the resource map object to be debited (RESL_Type)
  * @param slots         the number of slots for which we do debiting (can be negativ in undebiting)
- * @param just_check    when != nullptr we just check if debiting would be successful and return the result here
- * @return the number of modifications done (0 or 1)
+ * @param just_check    when != nullptr we just check if debiting would be successful and return the result here;
+ *                      the host is not modified then, and an id the host configures is reported as not fitting
+ *                      when its utilized and requested amounts exceed the configured one
+ * @return the number of modifications done (0 or 1); in the check mode 1 when the resource is utilized on the host
  */
 int host_debit_rsmap(const ocs::tom::Element<ocs::tom::EH> host, const char *ce_name,
                      const ocs::tom::ConstElement<ocs::tom::RESL> resl, const int slots, bool *just_check) {
@@ -832,30 +834,39 @@ int host_debit_rsmap(const ocs::tom::Element<ocs::tom::EH> host, const char *ce_
    const char *id = ocs::tom::get<RESL_value>(resl);
    const uint32_t amount = ocs::tom::get<RESL_amount>(resl);
 
+   if (just_check != nullptr) {
+      // only check if there is enough resources free, no booking - the host is not modified: an id
+      // without a utilization entry yet counts as unused (CS-3124)
+      // only when slots > 0? It is never called with slots < 0 and just_check
+      if (!resource) {
+         return mods;
+      }
+      const auto utilized_id = ocs::tom::find_first_in<RUE_utilized_now_resource_map_list, RESL_value>(resource, id);
+      const uint32_t utilized_amount = utilized_id ? ocs::tom::get<RESL_amount>(utilized_id) : 0;
+      const auto complex_value = ocs::tom::find_first_in<EH_consumable_config_list, CE_name>(host, ce_name);
+      const auto configured_id = ocs::tom::find_first_in<CE_resource_map_list, RESL_value>(complex_value, id);
+      // an id the host does not configure is not judged here, as before; for a configured one the amounts
+      // are compared without the unsigned subtraction, which never became negative (CS-3124)
+      if (configured_id &&
+          static_cast<uint64_t>(utilized_amount) + amount > ocs::tom::get<RESL_amount>(configured_id)) {
+         // not enough available of this id
+         *just_check = false;
+      }
+      mods++;
+      return mods;
+   }
+
    auto utilized_id = ocs::tom::find_first_in_rw<RUE_utilized_now_resource_map_list, RESL_value>(resource, id);
    if (!utilized_id) {
       utilized_id = ocs::tom::emplace_back_in<RUE_utilized_now_resource_map_list, RESL_value>(resource, id);
    }
    if (utilized_id) {
-      if (just_check != nullptr) {
-         // only check if there is enough resources free, no booking
-         // only when slots > 0? It is never called with slots < 0 and just_check
-         const auto complex_value = ocs::tom::find_first_in<EH_consumable_config_list, CE_name>(host, ce_name);
-         const auto configured_id = ocs::tom::find_first_in<CE_resource_map_list, RESL_value>(complex_value, id);
-         const uint32_t configured_amount = ocs::tom::get<RESL_amount>(configured_id);
-         const uint32_t utilized_amount = ocs::tom::get<RESL_amount>(utilized_id);
-         if (configured_amount - utilized_amount - amount < 0) {
-            // not enough available of this id
-            *just_check = false;
-         }
+      if (slots < 0) {
+         // undebit
+         ocs::tom::add<RESL_amount>(utilized_id, -amount);
       } else {
-         if (slots < 0) {
-            // undebit
-            ocs::tom::add<RESL_amount>(utilized_id, -amount);
-         } else {
-            // debit
-            ocs::tom::add<RESL_amount>(utilized_id, amount);
-         }
+         // debit
+         ocs::tom::add<RESL_amount>(utilized_id, amount);
       }
       mods++;
    }
