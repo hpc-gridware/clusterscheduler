@@ -80,15 +80,26 @@ static void addenv(const char *key, const char *value) {
    /* there is intentionally no sge_free(&str) */
 }
 
-/* 
- * TODO: CLEANUP
+/** @brief Start a command in a shell, with pipes to its standard streams
  *
- * This function is DEPRECATED and should be removed with the next
- * major release.
+ * Like `popen`, but gives the caller all three streams, lets the command run as
+ * another user, and returns the pid so the caller can control the process.
+ * Close it again with #sge_peclose.
  *
- * This function can't be used in multi threaded environments because it
- * might cause a deadlock in the executing qmaster thread.
- * Use sge_peopen_r() instead.
+ * This function is DEPRECATED and should be removed with the next major
+ * release. It can't be used in multi threaded environments because it might
+ * cause a deadlock in the executing qmaster thread; use sge_peopen_r() there.
+ *
+ * @param shell shell to run the command in (argv[0] is built bounded into arg0[256])
+ * @param login_shell start the shell as a login shell
+ * @param command the command line to run
+ * @param user user to run as, or nullptr to stay the current one
+ * @param env environment for the child, nullptr to inherit
+ * @param[out] fp_in receives the pipe writing to the child's stdin
+ * @param[out] fp_out receives the pipe reading the child's stdout
+ * @param[out] fp_err receives the pipe reading the child's stderr
+ * @param null_stderr send the child's stderr to /dev/null instead of @p fp_err
+ * @return pid of the child, or -1 on error
  */
 pid_t sge_peopen(const char *shell, int login_shell, const char *command,
                  const char *user, char **env, FILE **fp_in, FILE **fp_out,
@@ -249,12 +260,10 @@ pid_t sge_peopen(const char *shell, int login_shell, const char *command,
          sge_free(&buffer);
       }
 
-      if (login_shell) {
-         strcpy(arg0, "-");
-      } else {
-         strcpy(arg0, "");
-      }
-      strcat(arg0, shell);
+      // bounded build of argv[0]; shell is conceptually a configurable path, so
+      // never strcat it into the fixed arg0[256] (CS-2356, CWE-121). A
+      // pathological shell path is truncated instead of overflowing the stack.
+      snprintf(arg0, sizeof(arg0), "%s%s", login_shell ? "-" : "", shell);
 
       if (env) {
          for (; *env; env++) {
@@ -307,53 +316,32 @@ pid_t sge_peopen(const char *shell, int login_shell, const char *command,
    DRETURN(pid);
 }
 
-/****** uti/stdio/sge_peopen() ************************************************
-*  NAME
-*     sge_peopen_r() -- Advanced popen()
-*
-*  SYNOPSIS
-*     pid_t sge_peopen_r(const char *shell, int login_shell,
-*                        const char *command, const char *user,
-*                        char **env, FILE **fp_in, FILE **fp_out,
-*                        FILE **fp_err)
-*
-*  FUNCTION
-*     Advanced popen() with additional parameters:
-*        - free shell usage
-*        - login shell if wanted
-*        - user under which to start (for root only)
-*        - stdin and stderr file pointers
-*        - wait for exactly the process we started
-*     File descriptors have to be closed with sge_peclose().
-*
-*     This function is reentrant as long as env is not provided to
-*     this function. This means that the function can be used in 
-*     multi thread processed as long as env is not used. 
-*
-*  INPUTS
-*     const char *shell   - which shell to use
-*     int login_shell     - make it a login shell?
-*     const char *command - name of the program
-*     const char *user    - user under which to start (for root only)
-*     char **env          - env variables to add to child
-*     FILE **fp_in        - file input stream
-*     FILE **fp_out       - file output stream
-*     FILE **fp_err       - file error stream
-*
-*  RESULT
-*     pid_t - process id
-*
-*  NOTES
-*     MT-NOTE: sge_peopen() is MT safe 
-*
-*     DO NOT ADD ASYNC SIGNAL UNSAFE FUNCTIONS BETWEEN FORK AND EXEC
-*     DUE TO THE FACT THAT THIS FUNCTION WILL BE USED IN QMASTER
-*     (MULTITHREADED ENVIRONMENT) THIS MIGHT CAUSE A DEADLOCK 
-*     IN A MASTER THREAD. 
-*
-*  SEE ALSO
-*     uti/stdio/sge_peclose()
-******************************************************************************/
+/**
+ * @brief Advanced popen() variant: run @p command under @p shell with pipes.
+ *
+ * Like sge_peopen() but reentrant as long as @p env is not provided, so it can
+ * be used from multi-threaded processes (e.g. qmaster) in that case. Forks a
+ * child that execs `shell -c command`, optionally as a login shell and/or as a
+ * different user (root only), and returns the pipe streams. File descriptors
+ * must be closed with sge_peclose().
+ *
+ * @note MT-NOTE: sge_peopen_r() is MT safe when @p env is nullptr.
+ * @note DO NOT ADD ASYNC-SIGNAL-UNSAFE FUNCTIONS BETWEEN FORK AND EXEC: this is
+ *       used in the multithreaded qmaster and could otherwise deadlock a thread.
+ *
+ * @param[in]  shell       shell to exec (argv[0] is built bounded into arg0[256])
+ * @param[in]  login_shell if true, prefix argv[0] with '-' to make it a login shell
+ * @param[in]  command     command string passed as `-c command`
+ * @param[in]  user        user to switch to before exec (root only); may be nullptr
+ * @param[in]  env         extra environment for the child; nullptr keeps it reentrant
+ * @param[out] fp_in       child stdin stream
+ * @param[out] fp_out      child stdout stream
+ * @param[out] fp_err      child stderr stream
+ * @param[in]  null_stderr if true, redirect the child's stderr to /dev/null
+ * @return child process id on success, -1 on error
+ *
+ * @see sge_peclose(), sge_peopen()
+ */
 pid_t sge_peopen_r(const char *shell, int login_shell, const char *command,
                    const char *user, char **env, FILE **fp_in, FILE **fp_out,
                    FILE **fp_err, bool null_stderr) {
@@ -398,12 +386,10 @@ pid_t sge_peopen_r(const char *shell, int login_shell, const char *command,
     * set arg0 for exec call correctly to that
     * either a normal shell or a login shell will be started
     */
-   if (login_shell) {
-      strcpy(arg0, "-");
-   } else {
-      strcpy(arg0, "");
-   }
-   strcat(arg0, shell);
+   // bounded build of argv[0]; shell is conceptually a configurable path, so
+   // never strcat it into the fixed arg0[256] (CS-2356, CWE-121). A pathological
+   // shell path is truncated instead of overflowing the stack.
+   snprintf(arg0, sizeof(arg0), "%s%s", login_shell ? "-" : "", shell);
    DPRINTF("arg0 = %s\n", arg0);
    DPRINTF("arg1 = -c\n");
    DPRINTF("arg2 = %s\n", command);
