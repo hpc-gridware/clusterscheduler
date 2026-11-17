@@ -102,6 +102,7 @@ static void  shepherd_trace_chown_intern(const char* job_owner, FILE* fp,
                                          st_shepherd_file_t shepherd_file);
 static bool  nfs_mounted(const char *path);
 static void  shepherd_panic(const char *s);
+static bool  shepherd_seteuid(uid_t uid, const char *op);
 
 
 /******************************************************************************
@@ -133,6 +134,12 @@ void shepherd_trace_init()
 	}
 }
 
+/**
+ * @brief Close the shepherd's trace file and the error and exit status files.
+ *
+ * Switches to root for that when running as root; a failed switch is reported
+ * to the panic file (CS-2434).
+ */
 void shepherd_trace_exit()
 {
     int  old_euid = SGE_SUPERUSER_UID;
@@ -150,7 +157,7 @@ void shepherd_trace_exit()
     */
     if (getuid() == SGE_SUPERUSER_UID) {
         old_euid = geteuid();
-        seteuid(SGE_SUPERUSER_UID);
+        shepherd_seteuid(SGE_SUPERUSER_UID, "shepherd_trace_exit");
      }
 
 	if (shepherd_trace_fp) {
@@ -163,7 +170,7 @@ FCLOSE_ERROR:
     * Switch back to admin user?
     */
     if (old_euid != SGE_SUPERUSER_UID) {
-	   seteuid(old_euid);
+	   shepherd_seteuid(old_euid, "shepherd_trace_exit restore");
 	}
 
 	shepherd_error_exit();
@@ -217,6 +224,12 @@ void shepherd_error_init()
 	}
 }
 
+/**
+ * @brief Close the shepherd's error and exit status files.
+ *
+ * Switches to root for that when running as root; a failed switch is reported
+ * to the panic file (CS-2434).
+ */
 void shepherd_error_exit()
 {
     int  old_euid = SGE_SUPERUSER_UID;
@@ -227,7 +240,7 @@ void shepherd_error_exit()
     */
    if (getuid() == SGE_SUPERUSER_UID) {
       old_euid = geteuid();
-      seteuid(SGE_SUPERUSER_UID);
+      shepherd_seteuid(SGE_SUPERUSER_UID, "shepherd_error_exit");
    }
 
    /*
@@ -240,13 +253,13 @@ void shepherd_error_exit()
 	if (shepherd_exit_status_fp) {
 		FCLOSE_IGNORE_ERROR(shepherd_exit_status_fp);
       shepherd_exit_status_fp = nullptr;
-	}	
+	}
 
    /*
     * Switch back to admin user?
     */
    if (old_euid != SGE_SUPERUSER_UID) {
-      seteuid(old_euid);
+      shepherd_seteuid(old_euid, "shepherd_error_exit restore");
    }
 }
 
@@ -452,22 +465,14 @@ void shepherd_error_ptr(const char *text)
    shepherd_error(1, text); 
 }
 
-/****** shepherd_write_exit_status ********************************************
-*  NAME
-*     shepherd_write_exit_status() -- Write exit status to exit_status file.
-*
-*  SYNOPSIS
-*     void shepherd_write_exit_status(const char *exit_status)
-*
-*  FUNCTION
-*     Writes the exit status to the exit_status file.
-*
-*  INPUTS
-*     exit_status: The exit status of the shepherd.
-*
-*  RESULT
-*     void - none
-*******************************************************************************/
+/**
+ * @brief Write the exit status to the exit_status file.
+ *
+ * Switches to root while writing when running as root; a failed switch is
+ * reported to the panic file (CS-2434).
+ *
+ * @param exit_status the exit status of the shepherd
+ */
 void shepherd_write_exit_status(const char *exit_status)
 {
 	struct stat statbuf;
@@ -483,7 +488,7 @@ void shepherd_write_exit_status(const char *exit_status)
 		 */
       if (getuid() == SGE_SUPERUSER_UID) {
          old_euid = geteuid();
-         seteuid(SGE_SUPERUSER_UID);
+         shepherd_seteuid(SGE_SUPERUSER_UID, "shepherd_write_exit_status");
       }
 #endif
 		/* File was closed (e.g. by an exec()) but fp was not set to nullptr */
@@ -502,10 +507,10 @@ void shepherd_write_exit_status(const char *exit_status)
       }
 #if 1
 		if (old_euid != SGE_SUPERUSER_UID) {
-			seteuid(old_euid);
+			shepherd_seteuid(old_euid, "shepherd_write_exit_status restore");
 		}
 #endif
-      /* There are cases where we have to open and close the files 
+      /* There are cases where we have to open and close the files
        * for every write.
        */
       if (!g_keep_files_open) {
@@ -623,7 +628,17 @@ static int set_cloexec(int fd)
 	return 1;
 }
 
-/*-----------------------------------------------------------------*/
+/**
+ * @brief Write a line, optionally with a header, to one of the shepherd's files.
+ *
+ * Switches to root while writing when running as root; a failed switch is
+ * reported to the panic file (CS-2434).
+ *
+ * @param header_str optional header, may be nullptr
+ * @param str        the text to write, may be nullptr
+ * @param fp         the open file
+ * @return 0 on success, 1 on error
+ */
 static int sh_str2file(const char *header_str, const char *str, FILE* fp) 
 {
 	int     ret = 1;
@@ -640,7 +655,7 @@ static int sh_str2file(const char *header_str, const char *str, FILE* fp)
        */
       if (getuid() == SGE_SUPERUSER_UID) {
          old_euid = geteuid();
-         seteuid(SGE_SUPERUSER_UID);
+         shepherd_seteuid(SGE_SUPERUSER_UID, "sh_str2file");
       }
 
    	if (!str && !header_str) {
@@ -664,7 +679,7 @@ static int sh_str2file(const char *header_str, const char *str, FILE* fp)
        * Switch back to admin user?
        */
       if (old_euid != SGE_SUPERUSER_UID) {
-         seteuid(old_euid);
+         shepherd_seteuid(old_euid, "sh_str2file restore");
          old_euid = SGE_SUPERUSER_UID;
       }
 
@@ -688,31 +703,17 @@ static int sh_str2file(const char *header_str, const char *str, FILE* fp)
    return ret;
 }
 
-/****** err_trace/shepherd_trace_init_intern() *******************************
-*  NAME
-*     shepherd_trace_init_intern() -- Initialize shepherd's tracing. 
-*
-*  SYNOPSIS
-*     static FILE* shepherd_trace_init(char *trace_file_path,
-*													char *trace_file_name)
-*
-*  FUNCTION
-*     Opens the shepherd's trace file and sets the FD_CLOEXEC-flag so it will
-*     be closed automatically in an exec()-call.
-*     Must be called with euid=admin user to work properly!
-*
-*  INPUTS
-*     char *trace_file_path - either the whole path of the trace file (including
-*                             the file itself)
-*                             or nullptr to retrieve the file pointer of an already
-*                             opened trace file.
-*     char *trace_file_name - the name of the trace file itself. Ignored when
-*                             *trace_file_path is nullptr.
-* 
-*  RESULT
-*     FILE* - If successfully opened, the file pointer of shepherd's trace file.
-*           - Otherwise nullptr.
-*******************************************************************************/
+/**
+ * @brief Open one of the shepherd's files (trace, error, exit status).
+ *
+ * Opens the file and sets the FD_CLOEXEC flag so it is closed automatically
+ * by an exec(). Must be called with euid = admin user to work properly. When
+ * the switch back from root fails, the file is closed again and nullptr is
+ * returned (CS-2434).
+ *
+ * @param shepherd_file which of the shepherd files to open
+ * @return the file pointer, or nullptr on error
+ */
 static FILE* shepherd_trace_init_intern(st_shepherd_file_t shepherd_file)
 {
    static char     path[SGE_PATH_MAX];
@@ -789,7 +790,7 @@ static FILE* shepherd_trace_init_intern(st_shepherd_file_t shepherd_file)
        */
       if (getuid() == SGE_SUPERUSER_UID) {
          old_euid = geteuid();
-         seteuid(SGE_SUPERUSER_UID);
+         shepherd_seteuid(SGE_SUPERUSER_UID, "shepherd_trace_init_intern");
       }
 
       fd = SGE_OPEN2(tmppath, O_RDWR | O_APPEND);
@@ -805,7 +806,10 @@ static FILE* shepherd_trace_init_intern(st_shepherd_file_t shepherd_file)
        * Switch back to admin user?
        */
       if (old_euid != SGE_SUPERUSER_UID) {
-         seteuid(old_euid);
+         if (!shepherd_seteuid(old_euid, "shepherd_trace_init_intern restore") && fd >= 0) {
+            close(fd);
+            fd = -1;
+         }
       }
 	}
 
@@ -863,7 +867,43 @@ FCLOSE_ERROR:
    return;
 }
 
-/* In an admin user system, this function must be called as admin user! */
+/**
+ * @brief Wrap seteuid() and report a failure to the shepherd panic file.
+ *
+ * A failed seteuid() used to be ignored, leaving the shepherd at the wrong
+ * privilege level without any trace (CS-2434).
+ *
+ * @param uid the effective user id to switch to
+ * @param op  short description of the caller, written into the panic message
+ * @return true on success, false if seteuid() failed
+ */
+static bool shepherd_seteuid(uid_t uid, const char *op)
+{
+   if (seteuid(uid) != 0) {
+      char buffer[256];
+
+      snprintf(buffer, sizeof(buffer), "seteuid(" uid_t_fmt ") failed (%s): %s",
+               uid, op, strerror(errno));
+      shepherd_panic(buffer);
+      return false;
+   }
+   return true;
+}
+
+/**
+ * @brief Hand a shepherd file over to the job user.
+ *
+ * As root the file is chowned to the job user; when that fails (root is a
+ * normal user on an NFS mount) or the job user is unknown, it is made
+ * writable for everyone instead. When the switch to root fails, nothing is
+ * changed (CS-2434).
+ *
+ * @note In an admin user system, this function must be called as admin user!
+ *
+ * @param job_owner     name of the job user
+ * @param fp            the open shepherd file
+ * @param shepherd_file which shepherd file this is
+ */
 static void shepherd_trace_chown_intern(const char* job_owner, FILE* fp,
                                         st_shepherd_file_t shepherd_file)
 {
@@ -894,19 +934,25 @@ static void shepherd_trace_chown_intern(const char* job_owner, FILE* fp,
              * to change the ownership of a file. 
  	 	 	 	 */
 				old_euid = geteuid();
-            seteuid(SGE_SUPERUSER_UID);
+            if (!shepherd_seteuid(SGE_SUPERUSER_UID, "shepherd_trace_chown_intern")) {
+               /* Without root neither the chown nor the 0666 fallback below
+                * must run: the fallback would make the file world-writable
+                * because of a failed privilege switch (CS-2434). The failure
+                * was written to the panic file. */
+               return;
+            }
 
             /* Have to use chown() here, because fchown() has some bugs
              * on True64 and Irix.
              */
-            if (chown(g_shepherd_file_path[shepherd_file], 
+            if (chown(g_shepherd_file_path[shepherd_file],
                       jobuser_id, jobuser_gid) != 0) {
                /* chown failed. This means that user root is a normal user
                 * for the file system (due to NFS rights). So we have no
-                * other chance than open the file for writing for everyone. 
+                * other chance than open the file for writing for everyone.
                 * We must do this as file owner = admin user.
                 */
-               seteuid(old_euid);
+               shepherd_seteuid(old_euid, "shepherd_trace_chown_intern restore (chown failed)");
                if (fchmod(fd, 0666) == -1) {
                   snprintf(buffer, sizeof(buffer), "can't fchmod(fd, 0666): %s\n", strerror(errno));
                   shepherd_panic(buffer);
@@ -926,7 +972,7 @@ static void shepherd_trace_chown_intern(const char* job_owner, FILE* fp,
                   g_keep_files_open = false;
                }
             }
-				seteuid(old_euid);
+				shepherd_seteuid(old_euid, "shepherd_trace_chown_intern restore");
          } else {
             /* Can't get jobuser_id -> grant access for everyone */
             if (fchmod(fd, 0666)==-1) {

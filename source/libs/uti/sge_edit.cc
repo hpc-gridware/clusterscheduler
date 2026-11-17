@@ -37,6 +37,7 @@
 #include <sys/wait.h>
 #include <cerrno>
 
+#include "uti/msg_utilib.h"
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_signal.h"
@@ -47,6 +48,18 @@
 
 #include "msg_common.h"
 
+/**
+ * @brief Run the user's editor ($EDITOR, default vi) on a file and wait for it.
+ *
+ * The editor runs in a child with the real user and group id; a failure to
+ * drop to them ends the child instead of running the editor with the wrong
+ * identity (CS-2434).
+ *
+ * @param fname the file to edit
+ * @param myuid uid the file is chowned to before editing
+ * @param mygid gid the file is chowned to before editing
+ * @return 0 if the file was modified, 1 if it was not, -1 on error
+ */
 int sge_edit(const char *fname, uid_t myuid, gid_t mygid) {
    SGE_STRUCT_STAT before, after;
    pid_t pid;
@@ -104,8 +117,16 @@ int sge_edit(const char *fname, uid_t myuid, gid_t mygid) {
 
       sge_set_def_sig_mask(nullptr, nullptr);
       sge_unblock_all_signals();
-      setuid(getuid());
-      setgid(getgid());
+      // the group first: after setuid() a non-root process may no longer
+      // change its group
+      if (setgid(getgid())) {
+         ERROR(MSG_SYSTEM_SETGIDFAILED_g, getgid());
+         sge_exit(1);
+      }
+      if (setuid(getuid())) {
+         ERROR(MSG_SYSTEM_SETUIDFAILED_u, getuid());
+         sge_exit(1);
+      }
 
       cp = sge_getenv("EDITOR");
       if (cp == nullptr || strlen(cp) == 0) {

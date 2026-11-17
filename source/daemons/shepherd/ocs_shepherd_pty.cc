@@ -269,38 +269,24 @@ ptys_open(int fdm, char *pts_name) {
 
 #endif
 
-/****** uti/pty/fork_pty() *****************************************************
-*  NAME
-*     fork_pty() -- Opens a pty, forks and redirects the std handles
-*
-*  SYNOPSIS
-*     pid_t fork_pty(int *ptrfdm, int *fd_pipe_err, dstring *err_msg)
-*
-*  FUNCTION
-*     Opens a pty, forks and redirects stdin, stdout and stderr of the child
-*     to the pty.
-*
-*  INPUTS
-*     int *ptrfdm      - Receives the file descriptor of the master side of
-*                        the pty.
-*     int *fd_pipe_err - A int[2] array that receives the file descriptors
-*                        of a pipe to separately redirect stderr.
-*                        To achieve the same behaviour like rlogin/rsh, this
-*                        is normally disabled, compile with
-*                        -DUSE_PTY_AND_PIPE_ERR to enable this feature.
-*     dstring *err_msg - Receives an error string in case of error.
-*
-*  RESULT
-*     pid_t - -1 in case of error,
-*              0 in the child process,
-*              or the pid of the child process in the parent process.
-*
-*  NOTES
-*     MT-NOTE: fork_pty() is not MT safe
-*
-*  SEE ALSO
-*     pty/fork_no_pty
-*******************************************************************************/
+/**
+ * @brief Open a pty, fork and redirect the std handles of the child to it.
+ *
+ * The pty is opened as root when the shepherd runs with another effective
+ * user; a failure to switch the effective user id is reported as an error
+ * (CS-2434).
+ *
+ * @param ptrfdm      receives the file descriptor of the master side of the pty
+ * @param fd_pipe_err an int[2] array that receives the file descriptors of a
+ *                    pipe to redirect stderr separately (only with
+ *                    -DUSE_PTY_AND_PIPE_ERR, disabled to behave like rlogin/rsh)
+ * @param err_msg     receives an error string in case of error
+ * @return -1 in case of error, 0 in the child process, the pid of the child
+ *         in the parent process
+ *
+ * @note MT-NOTE: fork_pty() is not MT safe
+ * @see fork_no_pty()
+ */
 pid_t fork_pty(int *ptrfdm, int *fd_pipe_err, dstring *err_msg) {
    pid_t pid;
    int fdm, fds;
@@ -315,7 +301,10 @@ pid_t fork_pty(int *ptrfdm, int *fd_pipe_err, dstring *err_msg) {
    uid_t old_euid = geteuid();
    bool changed_uid = false;
    if (old_euid != SGE_SUPERUSER_UID) {
-      seteuid(SGE_SUPERUSER_UID);
+      if (seteuid(SGE_SUPERUSER_UID) < 0) {
+         sge_dstring_sprintf(err_msg, "seteuid(root) error: %d, %s", errno, strerror(errno));
+         return -1;
+      }
       changed_uid = true;
    }
 #if defined(FREEBSD) || defined(NETBSD)
@@ -331,7 +320,11 @@ pid_t fork_pty(int *ptrfdm, int *fd_pipe_err, dstring *err_msg) {
    shepherd_trace("created pty with slave device %s", pts_name);
 #endif
    if (changed_uid) {
-      seteuid(old_euid);
+      if (seteuid(old_euid) < 0) {
+         sge_dstring_sprintf(err_msg, "seteuid(%d) error: %d, %s", (int) old_euid, errno, strerror(errno));
+         close(fdm);
+         return -1;
+      }
    }
 #if defined(USE_PTY_AND_PIPE_ERR)
    if (pipe(fd_pipe_err) == -1) {

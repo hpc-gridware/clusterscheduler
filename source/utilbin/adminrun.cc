@@ -35,6 +35,7 @@
 #include <csignal>
 #include <unistd.h>
 #include <cstdlib>
+#include <cstring>
 #include <sys/types.h>
 #include <pwd.h>
 #include <cerrno>
@@ -52,6 +53,17 @@ void usage()
    exit(1);
 }
 
+/**
+ * @brief Run a command as the given user (used by the installation scripts).
+ *
+ * The group and user id are switched before the command is executed; a
+ * failure to switch ends adminrun instead of running the command with root's
+ * identity (CS-2434).
+ *
+ * @param argc argument count
+ * @param argv user name followed by the command and its arguments
+ * @return 1 on error; on success the process is replaced by the command
+ */
 int main(int argc, char **argv)
 {
    struct passwd *pw = nullptr;
@@ -83,9 +95,15 @@ int main(int argc, char **argv)
       return 1;
    }
    
-   setgid(pw->pw_gid);
-   setuid(pw->pw_uid);  
- 
+   if (setgid(pw->pw_gid)) {
+      fprintf(stderr, "setgid(%d) failed: %s\n", (int) pw->pw_gid, strerror(errno));
+      return 1;
+   }
+   if (setuid(pw->pw_uid)) {
+      fprintf(stderr, "setuid(%d) failed: %s\n", (int) pw->pw_uid, strerror(errno));
+      return 1;
+   }
+
    argv += 2;
    execvp(argv[0], argv);
    fprintf(stderr, "execvp errno=%d\n", errno);
