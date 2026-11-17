@@ -355,11 +355,7 @@ bool qref_list_resolve(const ocs::tom::ConstList<ocs::tom::QR> src_qref_list, lL
          }
          const char *cq_pattern = sge_dstring_get_string(&cqueue_name);
 
-         // out-parameter of the cluster queue search, which takes a raw in-out list
-         lList *cq_ref_list_raw = nullptr;
-         cqueue_list_find_all_matching_references(cqueue_list, answer_list,
-                                                  cq_pattern, &cq_ref_list_raw);
-         const auto cq_ref_list = ocs::tom::ListPtr<ocs::tom::QR>::from_typed(cq_ref_list_raw);
+         const auto cq_ref_list = cqueue_list_find_all_matching_references(cqueue_list, answer_list, cq_pattern);
 
          /*
           * Depending on the type of pattern -> resolve QC or QI names

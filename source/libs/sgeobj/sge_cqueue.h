@@ -40,6 +40,21 @@
  * @see sge_cqueue.cc
  */
 
+#include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "tom/ocs_Transitional.h"
+#include "sgeobj/tom/ocs_tom_CAL.h"
+#include "sgeobj/tom/ocs_tom_CE.h"
+#include "sgeobj/tom/ocs_tom_CK.h"
+#include "sgeobj/tom/ocs_tom_CQ.h"
+#include "sgeobj/tom/ocs_tom_HGRP.h"
+#include "sgeobj/tom/ocs_tom_HR.h"
+#include "sgeobj/tom/ocs_tom_PE.h"
+#include "sgeobj/tom/ocs_tom_PR.h"
+#include "sgeobj/tom/ocs_tom_QR.h"
+#include "sgeobj/tom/ocs_tom_QU.h"
+#include "sgeobj/tom/ocs_tom_US.h"
+
 #include "sgeobj/cull/sge_cqueue_CQ_L.h"
 
 /**
@@ -74,7 +89,9 @@ typedef struct _list_attribute_struct {
    const char *name;       ///< the attribute name an administrator writes
    bool is_sgeee_attribute; ///< the attribute only exists in the ticket based policies
    bool verify_client;     ///< the client verifies the value too, not only qmaster
-   bool (*verify_function)(lListElem *attr_elem, lList **answer_list, lListElem *cqueue, const lList *master_list); ///< validates a new value, or nullptr
+   /// validates a new value, or nullptr; called with the cluster queue, the answer list, one entry of the
+   /// attribute list and the master list the attribute refers to
+   bool (*verify_function)(lListElem *cqueue, lList **answer_list, lListElem *attr_elem, const lList *master_list);
 } list_attribute_struct;
 
 /// Every cluster queue attribute, terminated by an entry whose `name` is nullptr
@@ -92,70 +109,83 @@ cqueue_create(lList **answer_list, const char *name);
 /* CS-2677: the host list of a cluster queue, i.e. the member list of the host
  * group "@@<queue>" it owns. Replaces lGetList(cqueue, CQ_hostlist), which is
  * empty on every element the master list holds. */
-const lList *
-cqueue_get_hostlist(const lListElem *cqueue, const lList *master_hgroup_list);
+ocs::tom::ConstList<ocs::tom::HR> cqueue_get_hostlist(ocs::tom::ConstElement<ocs::tom::CQ> cqueue,
+                                                      ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list);
+OCS_TRANSITIONAL const lList *cqueue_get_hostlist(const lListElem *cqueue, const lList *master_hgroup_list);
 
 /* CS-2677: the client side of the above -- join the member list of "@@<queue>"
  * back onto a fetched queue, so that the configuration renders and round-trips
  * in the shape it always had. */
-void
-cqueue_fill_hostlist(lListElem *cqueue, const lList *master_hgroup_list);
+void cqueue_fill_hostlist(ocs::tom::Element<ocs::tom::CQ> cqueue,
+                          ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list);
 
-void
-cqueue_list_fill_hostlist(lList *cqueue_list, const lList *master_hgroup_list);
+void cqueue_list_fill_hostlist(ocs::tom::List<ocs::tom::CQ> cqueue_list,
+                               ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list);
+OCS_TRANSITIONAL void cqueue_list_fill_hostlist(lList *cqueue_list, const lList *master_hgroup_list);
 
-bool 
-cqueue_is_href_referenced(const lListElem *this_elem, 
-                          const lListElem *href, bool only_hostlist);
+bool cqueue_is_href_referenced(ocs::tom::ConstElement<ocs::tom::CQ> this_elem,
+                               ocs::tom::ConstElement<ocs::tom::HR> href, bool only_hostlist);
 
-bool
-cqueue_is_a_href_referenced(const lListElem *this_elem, 
-                            const lList *href_list, bool only_hostlist);
+bool cqueue_is_a_href_referenced(ocs::tom::ConstElement<ocs::tom::CQ> this_elem,
+                                 ocs::tom::ConstList<ocs::tom::HR> href_list, bool only_hostlist);
+OCS_TRANSITIONAL bool cqueue_is_a_href_referenced(const lListElem *this_elem, const lList *href_list,
+                                                  bool only_hostlist);
 
 bool
 cqueue_list_add_cqueue(lList *this_list, lListElem *queue);
 
-bool
-cqueue_set_template_attributes(lListElem *this_elem, lList **answer_list);
+bool cqueue_set_template_attributes(ocs::tom::Element<ocs::tom::CQ> this_elem, lList **answer_list);
+OCS_TRANSITIONAL bool cqueue_set_template_attributes(lListElem *this_elem, lList **answer_list);
 
-lListElem *
-cqueue_list_locate(const lList *this_list, const char *name);
+ocs::tom::Element<ocs::tom::CQ> cqueue_list_locate(ocs::tom::ConstList<ocs::tom::CQ> this_list, const char *name);
+OCS_TRANSITIONAL lListElem *cqueue_list_locate(const lList *this_list, const char *name);
 
-lListElem *
-cqueue_locate_qinstance(const lListElem *this_elem, const char *hostname);
+ocs::tom::Element<ocs::tom::QU> cqueue_locate_qinstance(ocs::tom::ConstElement<ocs::tom::CQ> this_elem,
+                                                        const char *hostname);
+OCS_TRANSITIONAL lListElem *cqueue_locate_qinstance(const lListElem *this_elem, const char *hostname);
 
-lListElem *
-cqueue_list_locate_qinstance_msg(const lList *cqueue_list, const char *full_name, bool raise_error);
+ocs::tom::Element<ocs::tom::QU> cqueue_list_locate_qinstance_msg(ocs::tom::ConstList<ocs::tom::CQ> cqueue_list,
+                                                                 const char *full_name, bool raise_error);
+OCS_TRANSITIONAL lListElem *cqueue_list_locate_qinstance_msg(const lList *cqueue_list, const char *full_name,
+                                                              bool raise_error);
 
-bool
-cqueue_list_find_all_matching_references(const lList *this_list,
-                                         lList **answer_list,
-                                         const char *cqueue_pattern,
-                                         lList **qref_list);
+[[nodiscard]] ocs::tom::ListPtr<ocs::tom::QR>
+cqueue_list_find_all_matching_references(ocs::tom::ConstList<ocs::tom::CQ> this_list, lList **answer_list,
+                                         const char *cqueue_pattern);
+OCS_TRANSITIONAL bool cqueue_list_find_all_matching_references(const lList *this_list, lList **answer_list,
+                                                               const char *cqueue_pattern, lList **qref_list);
 
-bool
-cqueue_list_find_hgroup_references(const lList *this_list, 
-                                   lList **answer_list,
-                                   const lListElem *hgroup, 
-                                   lList **string_list);
+bool cqueue_list_find_hgroup_references(ocs::tom::ConstList<ocs::tom::CQ> this_list, lList **answer_list,
+                                        ocs::tom::ConstElement<ocs::tom::HGRP> hgroup, lList **string_list);
 
 bool
 cqueue_xattr_pre_gdi(lList *this_list, lList **answer_list);
 
-bool
-cqueue_verify_attributes(lListElem *cqueue, lList **answer_list, lListElem *reduced_elem, bool in_master, 
-      const lList *master_calendar_list, const lList *master_ckpt_list, const lList *master_pe_list, 
-      const lList *master_userset_list, const lList *master_project_list, const lList *master_centry_list, 
-      const lList *master_cqueue_list, const lList *master_hgroup_list);
+bool cqueue_verify_attributes(ocs::tom::Element<ocs::tom::CQ> cqueue, lList **answer_list,
+                              ocs::tom::ConstElement<ocs::tom::CQ> reduced_elem, bool in_master,
+                              ocs::tom::ConstList<ocs::tom::CAL> master_calendar_list,
+                              ocs::tom::ConstList<ocs::tom::CK> master_ckpt_list,
+                              ocs::tom::ConstList<ocs::tom::PE> master_pe_list,
+                              ocs::tom::ConstList<ocs::tom::US> master_userset_list,
+                              ocs::tom::ConstList<ocs::tom::PR> master_project_list,
+                              ocs::tom::ConstList<ocs::tom::CE> master_centry_list,
+                              ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list,
+                              ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list);
+OCS_TRANSITIONAL bool cqueue_verify_attributes(lListElem *cqueue, lList **answer_list, lListElem *reduced_elem,
+                                               bool in_master, const lList *master_calendar_list,
+                                               const lList *master_ckpt_list, const lList *master_pe_list,
+                                               const lList *master_userset_list, const lList *master_project_list,
+                                               const lList *master_centry_list, const lList *master_cqueue_list,
+                                               const lList *master_hgroup_list);
 
-bool
-cqueue_is_used_in_subordinate(const char *cqueue_name, const lListElem *cqueue);
+bool cqueue_is_used_in_subordinate(const char *cqueue_name, ocs::tom::ConstElement<ocs::tom::CQ> cqueue);
+OCS_TRANSITIONAL bool cqueue_is_used_in_subordinate(const char *cqueue_name, const lListElem *cqueue);
 
-void
-cqueue_list_set_tag(lList *this_list, uint32_t tag_value, bool tag_qinstances);
+void cqueue_list_set_tag(ocs::tom::List<ocs::tom::CQ> this_list, uint32_t tag_value, bool tag_qinstances);
 
-lListElem *
-cqueue_list_locate_qinstance(const lList *cqueue_list, const char *full_name);
+ocs::tom::Element<ocs::tom::QU> cqueue_list_locate_qinstance(ocs::tom::ConstList<ocs::tom::CQ> cqueue_list,
+                                                             const char *full_name);
+OCS_TRANSITIONAL lListElem *cqueue_list_locate_qinstance(const lList *cqueue_list, const char *full_name);
 
 bool
 cqueue_find_used_href(lListElem *this_elem, lList **answer_list, 
@@ -165,8 +195,10 @@ bool
 cqueue_trash_used_href_setting(lListElem *this_elem, lList **answer_list,
                                const char *hgroup_or_hostname);
 
-bool
-cqueue_purge_host(lListElem *this_elem, lList **answer_list, lList *attr_list, const char *hgroup_or_hostname);
+bool cqueue_purge_host(ocs::tom::Element<ocs::tom::CQ> this_elem, lList **answer_list,
+                       ocs::tom::ConstList<ocs::tom::US> attr_list, const char *hgroup_or_hostname);
+OCS_TRANSITIONAL bool cqueue_purge_host(lListElem *this_elem, lList **answer_list, lList *attr_list,
+                                        const char *hgroup_or_hostname);
 
-bool
-cqueue_sick(lListElem *cqueue, lList **answer_list, lList *hgroup_list, dstring *ds);
+bool cqueue_sick(ocs::tom::ConstElement<ocs::tom::CQ> cqueue, lList **answer_list,
+                 ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list, dstring *ds);

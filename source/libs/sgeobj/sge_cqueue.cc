@@ -77,8 +77,14 @@
 #include "sgeobj/sge_eval_expression.h"
 #include "sgeobj/msg_sgeobjlib.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_HGRP.h"
 #include "sgeobj/tom/ocs_tom_HR.h"
+#include "sgeobj/tom/ocs_tom_QR.h"
 #include "sgeobj/tom/ocs_tom_QU.h"
+#include "sgeobj/tom/ocs_tom_SO.h"
+#include "sgeobj/tom/ocs_tom_ST.h"
+#include "sgeobj/tom/ocs_tom_US.h"
 #include "sgeobj/tom/ocs_tom_ABOOL.h"
 #include "sgeobj/tom/ocs_tom_ACELIST.h"
 #include "sgeobj/tom/ocs_tom_AINTER.h"
@@ -91,8 +97,12 @@
 #include "sgeobj/tom/ocs_tom_ATIME.h"
 #include "sgeobj/tom/ocs_tom_AULNG.h"
 #include "sgeobj/tom/ocs_tom_AUSRLIST.h"
+#include "sgeobj/tom/ocs_tom_CAL.h"
 #include "sgeobj/tom/ocs_tom_CE.h"
+#include "sgeobj/tom/ocs_tom_CK.h"
 #include "sgeobj/tom/ocs_tom_CQ.h"
+#include "sgeobj/tom/ocs_tom_PE.h"
+#include "sgeobj/tom/ocs_tom_PR.h"
 
 #include "msg_clients_common.h"
 #include "msg_common.h"
@@ -316,25 +326,41 @@ cqueue_create(lList **answer_list, const char *name) {
  * references, and whatever else a host group may contain. Callers wanting the
  * hosts it reaches resolve it with href_list_find_all_references().
  *
- * @param cqueue CQ_Type object
- * @param master_hgroup_list HGRP_Type master list
+ * @param cqueue CQ_Type object, may be an empty handle
+ * @param master_hgroup_list HGRP_Type master list, may be an empty handle
  *
- * @return the member list (HR_Type), or nullptr when the queue has no group yet
+ * @return the member list (HR_Type), or an empty handle when the queue has no group yet
  *
  * @note MT-NOTE: cqueue_get_hostlist() is MT safe
  */
-const lList *
-cqueue_get_hostlist(const lListElem *cqueue, const lList *master_hgroup_list) {
-   if (cqueue == nullptr) {
+ocs::tom::ConstList<ocs::tom::HR> cqueue_get_hostlist(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue,
+                                                      const ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list) {
+   if (!cqueue) {
       return nullptr;
    }
    dstring name_buffer = DSTRING_INIT;
    const char *group_name = hgroup_queue_group_name(ocs::tom::get<CQ_name>(cqueue), &name_buffer);
-   const lListElem *hgroup = hgroup_list_locate(master_hgroup_list, group_name);
+   const auto hgroup = hgroup_list_locate(master_hgroup_list, group_name);
 
    sge_dstring_free(&name_buffer);
 
-   return (hgroup != nullptr) ? static_cast<const lList *>(ocs::tom::get<HGRP_host_list>(hgroup)) : nullptr;
+   if (!hgroup) {
+      return nullptr;
+   }
+   return ocs::tom::get<HGRP_host_list>(hgroup);
+}
+
+/**
+ * @brief cqueue_get_hostlist() for an untyped caller
+ *
+ * @param cqueue CQ_Type object, checked; may be nullptr
+ * @param master_hgroup_list HGRP_Type master list, checked; may be nullptr
+ *
+ * @return the member list (HR_Type), or nullptr when the queue has no group yet
+ */
+const lList *cqueue_get_hostlist(const lListElem *cqueue, const lList *master_hgroup_list) {
+   return cqueue_get_hostlist(ocs::tom::ConstElement<ocs::tom::CQ>(cqueue),
+                              ocs::tom::ConstList<ocs::tom::HGRP>(master_hgroup_list)).raw();
 }
 
 /**
@@ -351,35 +377,45 @@ cqueue_get_hostlist(const lListElem *cqueue, const lList *master_hgroup_list) {
  * here and sent back unchanged reproduces the same member list -- which is
  * what makes the round trip idempotent (N-X-3).
  *
- * @param cqueue CQ_Type object, modified in place
+ * @param cqueue CQ_Type object, modified in place; may be an empty handle
  * @param master_hgroup_list HGRP_Type list, as fetched from the qmaster
  *
  * @note MT-NOTE: cqueue_fill_hostlist() is MT safe
  */
-void
-cqueue_fill_hostlist(lListElem *cqueue, const lList *master_hgroup_list) {
-   const lList *href_list = cqueue_get_hostlist(cqueue, master_hgroup_list);
+void cqueue_fill_hostlist(const ocs::tom::Element<ocs::tom::CQ> cqueue,
+                          const ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list) {
+   const auto href_list = cqueue_get_hostlist(cqueue, master_hgroup_list);
 
-   if (cqueue != nullptr) {
-      ocs::tom::set<CQ_hostlist>(cqueue, (href_list != nullptr) ? lCopyList("", href_list) : nullptr);
+   if (cqueue) {
+      // a copy named "", or nullptr for a queue without a group, as lCopyList() gave
+      ocs::tom::set<CQ_hostlist>(cqueue, href_list.clone(""));
    }
 }
 
 /**
  * @brief Put the host list onto every cluster queue of a list
  *
- * @param cqueue_list CQ_Type list, modified in place
+ * @param cqueue_list CQ_Type list, modified in place; may be an empty handle
  * @param master_hgroup_list HGRP_Type list, as fetched from the qmaster
  *
  * @note MT-NOTE: cqueue_list_fill_hostlist() is MT safe
  */
-void
-cqueue_list_fill_hostlist(lList *cqueue_list, const lList *master_hgroup_list) {
-   lListElem *cqueue;
-
-   for_each_rw(cqueue, cqueue_list) {
+void cqueue_list_fill_hostlist(const ocs::tom::List<ocs::tom::CQ> cqueue_list,
+                               const ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list) {
+   for (const auto cqueue : cqueue_list) {
       cqueue_fill_hostlist(cqueue, master_hgroup_list);
    }
+}
+
+/**
+ * @brief cqueue_list_fill_hostlist() for an untyped caller
+ *
+ * @param cqueue_list CQ_Type list, checked; modified in place; may be nullptr
+ * @param master_hgroup_list HGRP_Type list, checked; may be nullptr
+ */
+void cqueue_list_fill_hostlist(lList *cqueue_list, const lList *master_hgroup_list) {
+   cqueue_list_fill_hostlist(ocs::tom::List<ocs::tom::CQ>(cqueue_list),
+                             ocs::tom::ConstList<ocs::tom::HGRP>(master_hgroup_list));
 }
 
 /**
@@ -390,17 +426,19 @@ cqueue_list_fill_hostlist(lList *cqueue_list, const lList *master_hgroup_list) {
  * is true then only the hostlist will be tested and all
  * parameter lists will be ignored.
  *
- * @param this_elem CQ_Type
- * @param href HR_Type
+ * @param this_elem CQ_Type, may be an empty handle
+ * @param href HR_Type, may be an empty handle
  * @param only_hostlist check only hostlist and ignore all parameter lists
  *
  * @return true if it is referenced
  */
-bool cqueue_is_href_referenced(const lListElem *this_elem,
-                               const lListElem *href, bool only_hostlist) {
+bool cqueue_is_href_referenced(const ocs::tom::ConstElement<ocs::tom::CQ> this_elem,
+                               const ocs::tom::ConstElement<ocs::tom::HR> href, const bool only_hostlist) {
+   DENTER(CQUEUE_LAYER);
+
    bool ret = false;
 
-   if (this_elem != nullptr && href != nullptr) {
+   if (this_elem && href) {
       const char *href_name = ocs::tom::get<HR_name>(href);
       
       if (href_name != nullptr) {
@@ -428,9 +466,11 @@ bool cqueue_is_href_referenced(const lListElem *this_elem,
             int index = 0;
 
             while (cqueue_attribute_array[index].cqueue_attr != NoName && !ret) {
+               // the attribute and its host field are given at run time, so the untyped access stays
                const lList *attr_list = lGetList(this_elem, cqueue_attribute_array[index].cqueue_attr);
-               const lListElem *attr_elem = lGetElemHost(attr_list, cqueue_attribute_array[index].href_attr, href_name);
-                                                                                   
+               const lListElem *attr_elem = lGetElemHost(attr_list, cqueue_attribute_array[index].href_attr,
+                                                         href_name);
+
                if (attr_elem != nullptr) {
                   ret = true;
                }
@@ -439,7 +479,7 @@ bool cqueue_is_href_referenced(const lListElem *this_elem,
          }
       }
    }
-   return ret;
+   DRETURN(ret);
 }
 
 /**
@@ -448,15 +488,18 @@ bool cqueue_is_href_referenced(const lListElem *this_elem,
  * Is the given "hgroup" object referenced in the cluster queue
  * "this_elem".
  *
- * @param this_elem CQ_Type
- * @param hgroup HGRP_Type
+ * @param this_elem CQ_Type, may be an empty handle
+ * @param hgroup HGRP_Type, may be an empty handle
  *
  * @return true if "hgroup" is referenced
  */
-bool cqueue_is_hgroup_referenced(const lListElem *this_elem, const lListElem *hgroup) {
+static bool cqueue_is_hgroup_referenced(const ocs::tom::ConstElement<ocs::tom::CQ> this_elem,
+                                        const ocs::tom::ConstElement<ocs::tom::HGRP> hgroup) {
+   DENTER(CQUEUE_LAYER);
+
    bool ret = false;
 
-   if (this_elem != nullptr && hgroup != nullptr) {
+   if (this_elem && hgroup) {
       const char *name = ocs::tom::get<HGRP_name>(hgroup);
       
       if (name != nullptr) {
@@ -479,6 +522,7 @@ bool cqueue_is_hgroup_referenced(const lListElem *this_elem, const lListElem *hg
              */
             int index = 0;
             while (cqueue_attribute_array[index].cqueue_attr != NoName) {
+               // the attribute and its host field are given at run time, so the untyped access stays
                const lList *attr_list = lGetList(this_elem, cqueue_attribute_array[index].cqueue_attr);
                const lListElem *attr_elem = lGetElemHost(attr_list, cqueue_attribute_array[index].href_attr, name);
 
@@ -491,7 +535,7 @@ bool cqueue_is_hgroup_referenced(const lListElem *this_elem, const lListElem *hg
          }
       }
    }
-   return ret;
+   DRETURN(ret);
 }
 
 /**
@@ -502,25 +546,41 @@ bool cqueue_is_hgroup_referenced(const lListElem *this_elem, const lListElem *hg
  * is true then only the hostlist will be tested and all
  * parameter lists will be ignored.
  *
- * @param this_elem CQ_Type object
- * @param href_list HR_Type list
+ * @param this_elem CQ_Type object, may be an empty handle
+ * @param href_list HR_Type list, may be an empty handle
  * @param only_hostlist check only hostlist and ignore all parameter lists
  *
  * @return at least one object is referenced
  */
-bool cqueue_is_a_href_referenced(const lListElem *this_elem,
-                                 const lList *href_list, bool only_hostlist) {
+bool cqueue_is_a_href_referenced(const ocs::tom::ConstElement<ocs::tom::CQ> this_elem,
+                                 const ocs::tom::ConstList<ocs::tom::HR> href_list, const bool only_hostlist) {
+   DENTER(CQUEUE_LAYER);
+
    bool ret = false;
-  
-   if (this_elem != nullptr && href_list != nullptr) {
-      for_each_ep_lv(href, href_list) {
+
+   if (this_elem && href_list) {
+      for (const auto href : href_list) {
          if (cqueue_is_href_referenced(this_elem, href, only_hostlist)) {
             ret = true;
             break;
          }
       }
    }
-   return ret;
+   DRETURN(ret);
+}
+
+/**
+ * @brief cqueue_is_a_href_referenced() for an untyped caller
+ *
+ * @param this_elem CQ_Type object, checked; may be nullptr
+ * @param href_list HR_Type list, checked; may be nullptr
+ * @param only_hostlist check only hostlist and ignore all parameter lists
+ *
+ * @return as cqueue_is_a_href_referenced()
+ */
+bool cqueue_is_a_href_referenced(const lListElem *this_elem, const lList *href_list, const bool only_hostlist) {
+   return cqueue_is_a_href_referenced(ocs::tom::ConstElement<ocs::tom::CQ>(this_elem),
+                                      ocs::tom::ConstList<ocs::tom::HR>(href_list), only_hostlist);
 }
 
 /**
@@ -530,17 +590,20 @@ bool cqueue_is_a_href_referenced(const lListElem *this_elem,
  * queue with default values. Please note that "this_elem" has to
  * be "empty" before this function is called.
  *
- * @param this_elem CQ_Type
+ * The attribute lists are set through their field numbers, which
+ * this function walks in tables; that part stays untyped.
+ *
+ * @param this_elem CQ_Type, may be an empty handle
  * @param answer_list AN_Type
  *
  * @return error state true  - success false - error
  */
-bool cqueue_set_template_attributes(lListElem *this_elem, lList **answer_list) {
+bool cqueue_set_template_attributes(const ocs::tom::Element<ocs::tom::CQ> this_elem, lList **answer_list) {
    DENTER(CQUEUE_LAYER);
 
    bool ret = true;
 
-   if (this_elem != nullptr) {
+   if (this_elem) {
       /*
        * initialize uint32_t values
        */
@@ -555,8 +618,7 @@ bool cqueue_set_template_attributes(lListElem *this_elem, lList **answer_list) {
 
          while (attr[index] != NoName) {
             lList *attr_list = nullptr;
-            ocs::tom::Element<ocs::tom::AULNG> attr_elem = ocs::tom::emplace_back<AULNG_href>(&attr_list, 
-                                                HOSTREF_DEFAULT);
+            auto attr_elem = ocs::tom::emplace_back<AULNG_href>(&attr_list, HOSTREF_DEFAULT);
 
             ocs::tom::set<AULNG_value>(attr_elem, value[index]);
             lSetList(this_elem, attr[index], attr_list);
@@ -596,8 +658,7 @@ bool cqueue_set_template_attributes(lListElem *this_elem, lList **answer_list) {
          const char *string = "BATCH INTERACTIVE";
          uint32_t value = 0;
          lList *attr_list = nullptr;
-         ocs::tom::Element<ocs::tom::AQTLIST> attr_elem = ocs::tom::emplace_back<AQTLIST_href>(&attr_list,
-                                             HOSTREF_DEFAULT);
+         auto attr_elem = ocs::tom::emplace_back<AQTLIST_href>(&attr_list, HOSTREF_DEFAULT);
 
          sge_parse_bitfield_str(string, queue_types, &value, "",
                                 answer_list, true);
@@ -611,8 +672,7 @@ bool cqueue_set_template_attributes(lListElem *this_elem, lList **answer_list) {
        */
       if (ret) {
          lList *attr_list = nullptr;
-         ocs::tom::Element<ocs::tom::ABOOL> attr = ocs::tom::emplace_back<ABOOL_href>(&attr_list, 
-                                        HOSTREF_DEFAULT);
+         auto attr = ocs::tom::emplace_back<ABOOL_href>(&attr_list, HOSTREF_DEFAULT);
 
          ocs::tom::set<ABOOL_value>(attr, false);
          ocs::tom::set<CQ_rerun>(this_elem, attr_list);
@@ -638,8 +698,7 @@ bool cqueue_set_template_attributes(lListElem *this_elem, lList **answer_list) {
 
          while (attr[index] != NoName) {
             lList *attr_list = nullptr;
-            ocs::tom::Element<ocs::tom::AMEM> attr_elem = ocs::tom::emplace_back<AMEM_href>(&attr_list, 
-                                                HOSTREF_DEFAULT);
+            auto attr_elem = ocs::tom::emplace_back<AMEM_href>(&attr_list, HOSTREF_DEFAULT);
 
             ocs::tom::set<AMEM_value>(attr_elem, value[index]);
             lSetList(this_elem, attr[index], attr_list);
@@ -663,8 +722,7 @@ bool cqueue_set_template_attributes(lListElem *this_elem, lList **answer_list) {
 
          while (attr[index] != NoName) {
             lList *attr_list = nullptr;
-            ocs::tom::Element<ocs::tom::ATIME> attr_elem = ocs::tom::emplace_back<ATIME_href>(&attr_list, 
-                                                HOSTREF_DEFAULT);
+            auto attr_elem = ocs::tom::emplace_back<ATIME_href>(&attr_list, HOSTREF_DEFAULT);
 
             ocs::tom::set<ATIME_value>(attr_elem, value[index]);
             lSetList(this_elem, attr[index], attr_list);
@@ -688,8 +746,7 @@ bool cqueue_set_template_attributes(lListElem *this_elem, lList **answer_list) {
 
          while (attr[index] != NoName) {
             lList *attr_list = nullptr;
-            ocs::tom::Element<ocs::tom::AINTER> attr_elem = ocs::tom::emplace_back<AINTER_href>(&attr_list, 
-                                                HOSTREF_DEFAULT);
+            auto attr_elem = ocs::tom::emplace_back<AINTER_href>(&attr_list, HOSTREF_DEFAULT);
 
             ocs::tom::set<AINTER_value>(attr_elem, value[index]);
             lSetList(this_elem, attr[index], attr_list);
@@ -721,8 +778,7 @@ bool cqueue_set_template_attributes(lListElem *this_elem, lList **answer_list) {
 
          while (attr[index] != NoName) {
             lList *attr_list = nullptr;
-            ocs::tom::Element<ocs::tom::ASTR> attr_elem = ocs::tom::emplace_back<ASTR_href>(&attr_list, 
-                                                HOSTREF_DEFAULT);
+            auto attr_elem = ocs::tom::emplace_back<ASTR_href>(&attr_list, HOSTREF_DEFAULT);
 
             ocs::tom::set<ASTR_value>(attr_elem, value[index]);
             lSetList(this_elem, attr[index], attr_list);
@@ -748,8 +804,7 @@ bool cqueue_set_template_attributes(lListElem *this_elem, lList **answer_list) {
 
          while (attr[index] != NoName) {
             lList *attr_list = nullptr;
-            ocs::tom::Element<ocs::tom::ASTRLIST> attr_elem = ocs::tom::emplace_back<ASTRLIST_href>(&attr_list, 
-                                                HOSTREF_DEFAULT);
+            auto attr_elem = ocs::tom::emplace_back<ASTRLIST_href>(&attr_list, HOSTREF_DEFAULT);
 
             ocs::tom::set<ASTRLIST_value>(attr_elem, value[index]);
             lSetList(this_elem, attr[index], attr_list);
@@ -769,8 +824,7 @@ bool cqueue_set_template_attributes(lListElem *this_elem, lList **answer_list) {
 
          while (attr[index] != NoName) {
             lList *attr_list = nullptr;
-            ocs::tom::Element<ocs::tom::AUSRLIST> attr_elem = ocs::tom::emplace_back<AUSRLIST_href>(&attr_list, 
-                                                HOSTREF_DEFAULT);
+            auto attr_elem = ocs::tom::emplace_back<AUSRLIST_href>(&attr_list, HOSTREF_DEFAULT);
 
             ocs::tom::set<AUSRLIST_value>(attr_elem, nullptr);
             lSetList(this_elem, attr[index], attr_list);
@@ -790,8 +844,7 @@ bool cqueue_set_template_attributes(lListElem *this_elem, lList **answer_list) {
 
          while (attr[index] != NoName) {
             lList *attr_list = nullptr;
-            ocs::tom::Element<ocs::tom::APRJLIST> attr_elem = ocs::tom::emplace_back<APRJLIST_href>(&attr_list, 
-                                                HOSTREF_DEFAULT);
+            auto attr_elem = ocs::tom::emplace_back<APRJLIST_href>(&attr_list, HOSTREF_DEFAULT);
 
             ocs::tom::set<APRJLIST_value>(attr_elem, nullptr);
             lSetList(this_elem, attr[index], attr_list);
@@ -814,13 +867,12 @@ bool cqueue_set_template_attributes(lListElem *this_elem, lList **answer_list) {
          int index = 0;
 
          value[0] = lCreateList("", CE_Type);
-         ocs::tom::Element<ocs::tom::CE> elem = ocs::tom::emplace_back<CE_name>(&(value[0]), "np_load_avg"); 
+         auto elem = ocs::tom::emplace_back<CE_name>(&(value[0]), "np_load_avg");
          ocs::tom::set<CE_stringval>(elem, "1.75");
 
          while (attr[index] != NoName) {
             lList *attr_list = nullptr;
-            ocs::tom::Element<ocs::tom::ACELIST> attr_elem = ocs::tom::emplace_back<ACELIST_href>(&attr_list, 
-                                                HOSTREF_DEFAULT);
+            auto attr_elem = ocs::tom::emplace_back<ACELIST_href>(&attr_list, HOSTREF_DEFAULT);
 
             ocs::tom::set<ACELIST_value>(attr_elem, value[index]);
             lSetList(this_elem, attr[index], attr_list);
@@ -840,8 +892,7 @@ bool cqueue_set_template_attributes(lListElem *this_elem, lList **answer_list) {
 
          while (attr[index] != NoName) {
             lList *attr_list = nullptr;
-            ocs::tom::Element<ocs::tom::ASOLIST> attr_elem = ocs::tom::emplace_back<ASOLIST_href>(&attr_list, 
-                                                HOSTREF_DEFAULT);
+            auto attr_elem = ocs::tom::emplace_back<ASOLIST_href>(&attr_list, HOSTREF_DEFAULT);
 
             ocs::tom::set<ASOLIST_value>(attr_elem, nullptr);
             lSetList(this_elem, attr[index], attr_list);
@@ -850,6 +901,18 @@ bool cqueue_set_template_attributes(lListElem *this_elem, lList **answer_list) {
       }
    }
    DRETURN(ret);
+}
+
+/**
+ * @brief cqueue_set_template_attributes() for an untyped caller
+ *
+ * @param this_elem CQ_Type, checked; may be nullptr
+ * @param answer_list AN_Type
+ *
+ * @return as cqueue_set_template_attributes()
+ */
+bool cqueue_set_template_attributes(lListElem *this_elem, lList **answer_list) {
+   return cqueue_set_template_attributes(ocs::tom::Element<ocs::tom::CQ>(this_elem), answer_list);
 }
 
 /**
@@ -884,14 +947,26 @@ bool cqueue_list_add_cqueue(lList *this_list, lListElem *queue) {
  *
  * Find the cluster queue with name "name" in the list "this_list".
  *
- * @param this_list CQ_Type list
+ * @param this_list CQ_Type list, may be an empty handle
+ * @param name cluster queue name
+ *
+ * @return cluster queue object, or an empty handle
+ */
+ocs::tom::Element<ocs::tom::CQ> cqueue_list_locate(const ocs::tom::ConstList<ocs::tom::CQ> this_list,
+                                                   const char *name) {
+   return ocs::tom::find_first_rw<CQ_name>(this_list, name);
+}
+
+/**
+ * @brief cqueue_list_locate() for an untyped caller
+ *
+ * @param this_list CQ_Type list, checked; may be nullptr
  * @param name cluster queue name
  *
  * @return cluster queue object or nullptr
  */
-lListElem *
-cqueue_list_locate(const lList *this_list, const char *name) {
-   return ocs::tom::find_first_rw<CQ_name>(this_list, name);
+lListElem *cqueue_list_locate(const lList *this_list, const char *name) {
+   return cqueue_list_locate(ocs::tom::ConstList<ocs::tom::CQ>(this_list), name).raw();
 }
 
 /**
@@ -903,13 +978,25 @@ cqueue_list_locate(const lList *this_list, const char *name) {
  * @param this_elem CQ_Type object
  * @param hostname resolved hostname
  *
- * @return qinstance object or nullptr
+ * @return qinstance object, or an empty handle
  */
-lListElem *
-cqueue_locate_qinstance(const lListElem *this_elem, const char *hostname) {
-   ocs::tom::ConstList<ocs::tom::QU> qinstance_list = ocs::tom::get<CQ_qinstances>(this_elem);
+ocs::tom::Element<ocs::tom::QU> cqueue_locate_qinstance(const ocs::tom::ConstElement<ocs::tom::CQ> this_elem,
+                                                        const char *hostname) {
+   const auto qinstance_list = ocs::tom::get<CQ_qinstances>(this_elem);
 
    return qinstance_list_locate(qinstance_list, hostname, nullptr);
+}
+
+/**
+ * @brief cqueue_locate_qinstance() for an untyped caller
+ *
+ * @param this_elem CQ_Type object, checked
+ * @param hostname resolved hostname
+ *
+ * @return qinstance object or nullptr
+ */
+lListElem *cqueue_locate_qinstance(const lListElem *this_elem, const char *hostname) {
+   return cqueue_locate_qinstance(ocs::tom::ConstElement<ocs::tom::CQ>(this_elem), hostname).raw();
 }
 
 /**
@@ -921,9 +1008,13 @@ cqueue_locate_qinstance(const lListElem *this_elem, const char *hostname) {
  *    - resolve hostnames
  *    - test attribute values
  *
- * @param cqueue CQ_Type object to be verified
+ * The attributes are walked through #cqueue_attribute_array, by field
+ * numbers given at run time, and the native verify functions keep their
+ * untyped signature; those parts stay untyped.
+ *
+ * @param cqueue CQ_Type object to be verified, may be an empty handle
  * @param answer_list AN_Type list
- * @param reduced_elem reduced CQ_Type. Containes only those attributes to be checked
+ * @param reduced_elem reduced CQ_Type. Contains only those attributes to be checked; may be an empty handle
  * @param in_master true if this function is called in the master code
  * @param master_calendar_list the calendars an attribute may refer to
  * @param master_ckpt_list the checkpointing environments an attribute may refer to
@@ -936,16 +1027,21 @@ cqueue_locate_qinstance(const lListElem *this_elem, const char *hostname) {
  *
  * @return error state true  - success false - error
  */
-bool cqueue_verify_attributes(lListElem *cqueue, lList **answer_list,
-                              lListElem *reduced_elem, bool in_master, const lList *master_calendar_list,
-                              const lList *master_ckpt_list, const lList *master_pe_list, const lList *master_userset_list,
-                              const lList *master_project_list, const lList *master_centry_list, const lList *master_cqueue_list,
-                              const lList *master_hgroup_list) {
+bool cqueue_verify_attributes(const ocs::tom::Element<ocs::tom::CQ> cqueue, lList **answer_list,
+                              const ocs::tom::ConstElement<ocs::tom::CQ> reduced_elem, const bool in_master,
+                              const ocs::tom::ConstList<ocs::tom::CAL> master_calendar_list,
+                              const ocs::tom::ConstList<ocs::tom::CK> master_ckpt_list,
+                              const ocs::tom::ConstList<ocs::tom::PE> master_pe_list,
+                              const ocs::tom::ConstList<ocs::tom::US> master_userset_list,
+                              const ocs::tom::ConstList<ocs::tom::PR> master_project_list,
+                              const ocs::tom::ConstList<ocs::tom::CE> master_centry_list,
+                              const ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list,
+                              const ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list) {
    DENTER(CQUEUE_LAYER);
 
    bool ret = true;
 
-   if (cqueue != nullptr && reduced_elem != nullptr) {
+   if (cqueue && reduced_elem) {
       int index = 0;
 
       while (cqueue_attribute_array[index].cqueue_attr != NoName && ret) {
@@ -1003,9 +1099,9 @@ bool cqueue_verify_attributes(lListElem *cqueue, lList **answer_list,
                         break;
                      }
                      if (in_master && strcmp(hostname, HOSTREF_DEFAULT)) {
-                        const lListElem *hgroup = hgroup_list_locate(master_hgroup_list, hostname);
+                        const auto hgroup = hgroup_list_locate(master_hgroup_list, hostname);
 
-                        if (hgroup == nullptr) {
+                        if (!hgroup) {
                            ERROR(MSG_CQUEUE_INVALIDDOMSETTING_SS, cqueue_attribute_array[index].name, hostname);
                            answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
                            ret = false;
@@ -1076,48 +1172,109 @@ bool cqueue_verify_attributes(lListElem *cqueue, lList **answer_list,
 }
 
 /**
- * @brief As it says
+ * @brief cqueue_verify_attributes() for an untyped caller
+ *
+ * @param cqueue CQ_Type object to be verified, checked; may be nullptr
+ * @param answer_list AN_Type list
+ * @param reduced_elem reduced CQ_Type, checked; may be nullptr
+ * @param in_master true if this function is called in the master code
+ * @param master_calendar_list CAL_Type, checked; may be nullptr
+ * @param master_ckpt_list CK_Type, checked; may be nullptr
+ * @param master_pe_list PE_Type, checked; may be nullptr
+ * @param master_userset_list US_Type, checked; may be nullptr
+ * @param master_project_list PR_Type, checked; may be nullptr
+ * @param master_centry_list CE_Type, checked; may be nullptr
+ * @param master_cqueue_list CQ_Type, checked; may be nullptr
+ * @param master_hgroup_list HGRP_Type, checked; may be nullptr
+ *
+ * @return as cqueue_verify_attributes()
+ */
+bool cqueue_verify_attributes(lListElem *cqueue, lList **answer_list, lListElem *reduced_elem, const bool in_master,
+                              const lList *master_calendar_list, const lList *master_ckpt_list,
+                              const lList *master_pe_list, const lList *master_userset_list,
+                              const lList *master_project_list, const lList *master_centry_list,
+                              const lList *master_cqueue_list, const lList *master_hgroup_list) {
+   return cqueue_verify_attributes(ocs::tom::Element<ocs::tom::CQ>(cqueue), answer_list,
+                                   ocs::tom::ConstElement<ocs::tom::CQ>(reduced_elem), in_master,
+                                   ocs::tom::ConstList<ocs::tom::CAL>(master_calendar_list),
+                                   ocs::tom::ConstList<ocs::tom::CK>(master_ckpt_list),
+                                   ocs::tom::ConstList<ocs::tom::PE>(master_pe_list),
+                                   ocs::tom::ConstList<ocs::tom::US>(master_userset_list),
+                                   ocs::tom::ConstList<ocs::tom::PR>(master_project_list),
+                                   ocs::tom::ConstList<ocs::tom::CE>(master_centry_list),
+                                   ocs::tom::ConstList<ocs::tom::CQ>(master_cqueue_list),
+                                   ocs::tom::ConstList<ocs::tom::HGRP>(master_hgroup_list));
+}
+
+/**
+ * @brief Find the cluster queues whose name matches a pattern
  *
  * Find all cqueues in "this_list" where the cqueue name matches
- * the pattern "cqueue_pattern". The names of that cqueues will
- * be added to the sublist "qref_list" (QR_Type). "answer_list" will
- * contain an error message if this function failes.
+ * the pattern "cqueue_pattern" and return their names as queue
+ * references.
  *
- * @param this_list CQ_Type
- * @param answer_list AN_Type
- * @param cqueue_pattern fnmatch patterm
- * @param qref_list QR_Type list
+ * @param this_list CQ_Type, may be an empty handle
+ * @param answer_list AN_Type; not written, the pattern is evaluated without an answer list
+ * @param cqueue_pattern fnmatch pattern
  *
- * @return error state true  - success false - error
+ * @return QR_Type list of the matching names; an empty handle if nothing matched or an argument is missing
  *
  * @note MT-NOTE: cqueue_list_find_all_matching_references() is MT safe
  */
-bool cqueue_list_find_all_matching_references(const lList *this_list,
-                                              lList **answer_list,
-                                              const char *cqueue_pattern,
-                                              lList **qref_list) {
+ocs::tom::ListPtr<ocs::tom::QR>
+cqueue_list_find_all_matching_references(const ocs::tom::ConstList<ocs::tom::CQ> this_list, lList **answer_list,
+                                         const char *cqueue_pattern) {
    DENTER(CQUEUE_LAYER);
 
-   bool ret = true;
+   // created by the first match, as the old out-parameter was
+   ocs::tom::ListPtr<ocs::tom::QR> qref_list;
 
-   if (this_list != nullptr && cqueue_pattern != nullptr && qref_list != nullptr) {
-      const lListElem *cqueue;
+   if (this_list && cqueue_pattern != nullptr) {
       const bool cqueue_pattern_is_expression = ocs::is_expression(cqueue_pattern);
 
-      for_each_ep(cqueue, this_list) {
+      for (const auto cqueue : this_list) {
          const char *cqueue_name = ocs::tom::get<CQ_name>(cqueue);
-         /* use cqueue expression */         
-         if (!sge_eval_expression(ocs::CEntry::Type::STR, cqueue_pattern, cqueue_name, nullptr, true, cqueue_pattern_is_expression)) {
-            if (*qref_list == nullptr) {
-               *qref_list = lCreateList("", QR_Type);
+         /* use cqueue expression */
+         if (!sge_eval_expression(ocs::CEntry::Type::STR, cqueue_pattern, cqueue_name, nullptr, true,
+                                  cqueue_pattern_is_expression)) {
+            if (!qref_list) {
+               qref_list = ocs::tom::ListPtr<ocs::tom::QR>::create("");
             }
-            if (*qref_list != nullptr) {
-               ocs::tom::emplace_back<QR_name>(qref_list, cqueue_name);
-            }
+            qref_list->emplace_back<QR_name>(cqueue_name);
          }
       }
    }
-   DRETURN(ret);
+   DRETURN(qref_list);
+}
+
+/**
+ * @brief cqueue_list_find_all_matching_references() for an untyped caller
+ *
+ * Appends the matching names to "qref_list", creating it with the first
+ * match, as the function did before it returned its result.
+ *
+ * @param this_list CQ_Type, checked; may be nullptr
+ * @param answer_list AN_Type
+ * @param cqueue_pattern fnmatch pattern
+ * @param qref_list in-out: QR_Type list; nullptr makes the call a no-op
+ *
+ * @return always true
+ */
+bool cqueue_list_find_all_matching_references(const lList *this_list, lList **answer_list,
+                                              const char *cqueue_pattern, lList **qref_list) {
+   if (qref_list != nullptr) {
+      auto found = cqueue_list_find_all_matching_references(ocs::tom::ConstList<ocs::tom::CQ>(this_list),
+                                                            answer_list, cqueue_pattern);
+      if (found) {
+         if (*qref_list == nullptr) {
+            *qref_list = found.release();
+         } else {
+            lList *found_raw = found.release();
+            lAddList(*qref_list, &found_raw);
+         }
+      }
+   }
+   return true;
 }
 
 /**
@@ -1255,26 +1412,22 @@ bool cqueue_xattr_pre_gdi(lList *this_list, lList **answer_list) {
  * true.
  *
  * @param cqueue_name cq name to look for
- * @param cqueue cq to look in
+ * @param cqueue cq to look in (CQ_Type), may be an empty handle
  *
  * @return true - a reference was found
  *
  * @note MT-NOTE: cqueue_is_used_in_subordinate() is MT safe
  */
-bool cqueue_is_used_in_subordinate(const char *cqueue_name, const lListElem *cqueue) {
+bool cqueue_is_used_in_subordinate(const char *cqueue_name, const ocs::tom::ConstElement<ocs::tom::CQ> cqueue) {
    DENTER(CQUEUE_LAYER);
 
    bool ret = false;
 
-   if (cqueue != nullptr && cqueue_name != nullptr) {
-      const lList *sub_list = ocs::tom::get<CQ_subordinate_list>(cqueue);
-      const lListElem *sub_el;
-      const lListElem *so;
+   if (cqueue && cqueue_name != nullptr) {
+      for (const auto sub_el : ocs::tom::get<CQ_subordinate_list>(cqueue)) {
+         const auto so = ocs::tom::find_first_in<ASOLIST_value, SO_name>(sub_el, cqueue_name);
 
-      for_each_ep(sub_el, sub_list) {
-         so = ocs::tom::find_first_in<ASOLIST_value, SO_name>(sub_el, cqueue_name);
-
-         if (so != nullptr) { /* we found a reference */
+         if (so) { /* we found a reference */
             ret = true;
             break;
          }
@@ -1285,30 +1438,41 @@ bool cqueue_is_used_in_subordinate(const char *cqueue_name, const lListElem *cqu
 }
 
 /**
+ * @brief cqueue_is_used_in_subordinate() for an untyped caller
+ *
+ * @param cqueue_name cq name to look for
+ * @param cqueue cq to look in (CQ_Type), checked; may be nullptr
+ *
+ * @return as cqueue_is_used_in_subordinate()
+ */
+bool cqueue_is_used_in_subordinate(const char *cqueue_name, const lListElem *cqueue) {
+   return cqueue_is_used_in_subordinate(cqueue_name, ocs::tom::ConstElement<ocs::tom::CQ>(cqueue));
+}
+
+/**
  * @brief Find hgroup references
  *
  * This function add each cqueue name contained in "this_list"
  * to "string_list" where "hgroup" is referenced. Errors will
  * be reported via "answer_list".
  *
- * @param this_list CQ_Type
+ * @param this_list CQ_Type, may be an empty handle
  * @param answer_list AN_Type
- * @param hgroup HGRP_Type
- * @param string_list ST_Type
+ * @param hgroup HGRP_Type, may be an empty handle
+ * @param string_list in-out: ST_Type list the names are appended to, created by the first one
  *
  * @return error state true  - success false - error
  *
  * @note MT-NOTE: cqueue_list_find_hgroup_references() is MT safe
  */
-bool cqueue_list_find_hgroup_references(const lList *this_list, lList **answer_list,
-                                        const lListElem *hgroup, lList **string_list) {
+bool cqueue_list_find_hgroup_references(const ocs::tom::ConstList<ocs::tom::CQ> this_list, lList **answer_list,
+                                        const ocs::tom::ConstElement<ocs::tom::HGRP> hgroup, lList **string_list) {
    DENTER(CQUEUE_LAYER);
 
    bool ret = true;
-   const lListElem *cqueue;
 
-   if (this_list != nullptr && hgroup != nullptr && string_list != nullptr) {
-      for_each_ep(cqueue, this_list) {
+   if (this_list && hgroup && string_list != nullptr) {
+      for (const auto cqueue : this_list) {
          if (cqueue_is_hgroup_referenced(cqueue, hgroup)) {
             const char *name = ocs::tom::get<CQ_name>(cqueue);
 
@@ -1327,22 +1491,21 @@ bool cqueue_list_find_hgroup_references(const lList *this_list, lList **answer_l
  * CQ_qinstances-sublist will be tagged too if "tag_qinstances"
  * is true.
  *
- * @param this_list CQ_Type
+ * @param this_list CQ_Type, may be an empty handle
  * @param tag_value value
  * @param tag_qinstances true if instances should be tagged
  *
  * @note MT-NOTE: cqueue_list_set_tag() is MT safe
  */
-void cqueue_list_set_tag(lList *this_list, uint32_t tag_value, bool tag_qinstances) {
+void cqueue_list_set_tag(const ocs::tom::List<ocs::tom::CQ> this_list, const uint32_t tag_value,
+                         const bool tag_qinstances) {
    DENTER(TOP_LAYER);
-   if (this_list != nullptr) {
-      for_each_rw_lv(cqueue, this_list) {
-         ocs::tom::set<CQ_tag>(cqueue, tag_value);
-         if (tag_qinstances) {
-            ocs::tom::List<ocs::tom::QU> qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
+   for (const auto cqueue : this_list) {
+      ocs::tom::set<CQ_tag>(cqueue, tag_value);
+      if (tag_qinstances) {
+         const auto qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
 
-            qinstance_list_set_tag(qinstance_list, tag_value);
-         }
+         qinstance_list_set_tag(qinstance_list, tag_value);
       }
    }
    DRETURN_VOID;
@@ -1354,16 +1517,28 @@ void cqueue_list_set_tag(lList *this_list, uint32_t tag_value, bool tag_qinstanc
  * Returns a certain qinstance with the name "full_name" from
  * the master cqueue list given by "cqueue_list".
  *
- * @param cqueue_list CQ_Type
+ * @param cqueue_list CQ_Type, may be an empty handle
  * @param full_name qinstance name of the form `CQNAME@HOSTNAME`
  *
- * @return QU_Type
+ * @return QU_Type element, or an empty handle
  *
  * @note MT-NOTE: cqueue_list_locate_qinstance() is MT safe
  */
-lListElem *
-cqueue_list_locate_qinstance(const lList *cqueue_list, const char *full_name) {
+ocs::tom::Element<ocs::tom::QU> cqueue_list_locate_qinstance(const ocs::tom::ConstList<ocs::tom::CQ> cqueue_list,
+                                                             const char *full_name) {
    return cqueue_list_locate_qinstance_msg(cqueue_list, full_name, true);
+}
+
+/**
+ * @brief cqueue_list_locate_qinstance() for an untyped caller
+ *
+ * @param cqueue_list CQ_Type, checked; may be nullptr
+ * @param full_name qinstance name of the form `CQNAME@HOSTNAME`
+ *
+ * @return QU_Type element or nullptr
+ */
+lListElem *cqueue_list_locate_qinstance(const lList *cqueue_list, const char *full_name) {
+   return cqueue_list_locate_qinstance_msg(ocs::tom::ConstList<ocs::tom::CQ>(cqueue_list), full_name, true).raw();
 }
 
 /**
@@ -1372,19 +1547,19 @@ cqueue_list_locate_qinstance(const lList *cqueue_list, const char *full_name) {
  * Returns a certain qinstance with the name "full_name" from
  * the master cqueue list given by "cqueue_list".
  *
- * @param cqueue_list CQ_Type
+ * @param cqueue_list CQ_Type, may be an empty handle
  * @param full_name qinstance name of the form `CQNAME@HOSTNAME`
  * @param raise_error true - show error messages - false - suppress error messages
  *
- * @return QU_Type
+ * @return QU_Type element, or an empty handle
  *
  * @note MT-NOTE: cqueue_list_locate_qinstance_msg() is MT safe
  */
-lListElem *
-cqueue_list_locate_qinstance_msg(const lList *cqueue_list, const char *full_name, bool raise_error) {
+ocs::tom::Element<ocs::tom::QU> cqueue_list_locate_qinstance_msg(const ocs::tom::ConstList<ocs::tom::CQ> cqueue_list,
+                                                                 const char *full_name, const bool raise_error) {
    DENTER(TOP_LAYER);
 
-   lListElem *ret = nullptr;
+   ocs::tom::Element<ocs::tom::QU> ret = nullptr;
 
    if (full_name != nullptr) {
       dstring cqueue_name_buffer = DSTRING_INIT;
@@ -1395,14 +1570,15 @@ cqueue_list_locate_qinstance_msg(const lList *cqueue_list, const char *full_name
       cqueue_name_split(full_name, &cqueue_name_buffer, &host_domain_buffer, &has_hostname, &has_domain);
       const char *cqueue_name = sge_dstring_get_string(&cqueue_name_buffer);
       const char *hostname = sge_dstring_get_string(&host_domain_buffer);
-      ocs::tom::ConstElement<ocs::tom::CQ> cqueue = ocs::tom::find_first<CQ_name>(cqueue_list, cqueue_name);
-      if (cqueue != nullptr) {
-         ocs::tom::ConstList<ocs::tom::QU> qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
+      const auto cqueue = ocs::tom::find_first<CQ_name>(cqueue_list, cqueue_name);
+      if (cqueue) {
+         const auto qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
 
          ret = ocs::tom::find_first_rw<QU_qhostname>(qinstance_list, hostname);
       } else {
          if (raise_error) {
-            ERROR(MSG_CQUEUE_CQUEUEISNULL_SSSII, full_name, cqueue_name != nullptr ? cqueue_name : "<null>", hostname != nullptr ? hostname: "<null>", (int)has_hostname, (int)has_domain);
+            ERROR(MSG_CQUEUE_CQUEUEISNULL_SSSII, full_name, cqueue_name != nullptr ? cqueue_name : "<null>",
+                  hostname != nullptr ? hostname : "<null>", (int)has_hostname, (int)has_domain);
          }
       }
       sge_dstring_free(&cqueue_name_buffer);
@@ -1413,6 +1589,20 @@ cqueue_list_locate_qinstance_msg(const lList *cqueue_list, const char *full_name
       }
    }
    DRETURN(ret);
+}
+
+/**
+ * @brief cqueue_list_locate_qinstance_msg() for an untyped caller
+ *
+ * @param cqueue_list CQ_Type, checked; may be nullptr
+ * @param full_name qinstance name of the form `CQNAME@HOSTNAME`
+ * @param raise_error true - show error messages - false - suppress error messages
+ *
+ * @return QU_Type element or nullptr
+ */
+lListElem *cqueue_list_locate_qinstance_msg(const lList *cqueue_list, const char *full_name, const bool raise_error) {
+   return cqueue_list_locate_qinstance_msg(ocs::tom::ConstList<ocs::tom::CQ>(cqueue_list), full_name, raise_error)
+           .raw();
 }
 
 /**
@@ -1513,29 +1703,31 @@ bool cqueue_trash_used_href_setting(lListElem *this_elem, lList **answer_list,
 /**
  * @brief Purge attributes from queue
  *
- * @param this_elem cqueue list element
+ * The attribute lists other than the host list are reached through
+ * #cqueue_attribute_array, by field numbers given at run time; that part
+ * stays untyped.
+ *
+ * @param this_elem cqueue list element (CQ_Type), may be an empty handle
  * @param answer_list answer list
- * @param attr_list list with attributes to search for hgroup_or_hostname wildcards allowed
+ * @param attr_list US_Type list with attributes to search for hgroup_or_hostname wildcards allowed
  * @param hgroup_or_hostname host group or hostname which should be purged
  *
  * @return true     - hostname found and purged false    - attribute or hostname not found
  *
  * @note MT-NOTE: cqueue_purge_host() is not MT safe
  */
-bool cqueue_purge_host(lListElem *this_elem, lList **answer_list,
-                       lList *attr_list, const char *hgroup_or_hostname) {
+bool cqueue_purge_host(const ocs::tom::Element<ocs::tom::CQ> this_elem, lList **answer_list,
+                       const ocs::tom::ConstList<ocs::tom::US> attr_list, const char *hgroup_or_hostname) {
    DENTER(CQUEUE_LAYER);
 
    bool ret = false;
    int index;
 
    lList *sublist = nullptr;
-   const lListElem *ep = nullptr;
-   const char *attr_name = nullptr;
 
-   if (this_elem != nullptr) {
-      for_each_ep(ep, attr_list) {
-         attr_name = ocs::tom::get<US_name>(ep);
+   if (this_elem) {
+      for (const auto ep : attr_list) {
+         const char *attr_name = ocs::tom::get<US_name>(ep);
          DPRINTF(SFQ "\n", attr_name);
       
          /* purge hostlist */         
@@ -1553,9 +1745,10 @@ bool cqueue_purge_host(lListElem *this_elem, lList **answer_list,
          index = 0;
          while(cqueue_attribute_array[index].name != nullptr) {
 
-            /* Does the given attr_wildcard match with the actual attr_name */         
+            /* Does the given attr_wildcard match with the actual attr_name */
             if (!sge_eval_expression(ocs::CEntry::Type::STR, attr_name, cqueue_attribute_array[index].name, nullptr)) {
-               sublist = lGetListRW(this_elem, cqueue_attribute_array[index].cqueue_attr );
+               // the attribute and its host field are given at run time, so the untyped access stays
+               sublist = lGetListRW(this_elem, cqueue_attribute_array[index].cqueue_attr);
 
                if (lDelElemHost(&sublist, cqueue_attribute_array[index].href_attr, hgroup_or_hostname) == 1) {
                   DPRINTF(SFQ " deleted in " SFQ "\n", hgroup_or_hostname, cqueue_attribute_array[index].name);
@@ -1571,20 +1764,38 @@ bool cqueue_purge_host(lListElem *this_elem, lList **answer_list,
 }
 
 /**
+ * @brief cqueue_purge_host() for an untyped caller
+ *
+ * @param this_elem cqueue list element (CQ_Type), checked; may be nullptr
+ * @param answer_list answer list
+ * @param attr_list US_Type list, checked; may be nullptr
+ * @param hgroup_or_hostname host group or hostname which should be purged
+ *
+ * @return as cqueue_purge_host()
+ */
+bool cqueue_purge_host(lListElem *this_elem, lList **answer_list, lList *attr_list, const char *hgroup_or_hostname) {
+   return cqueue_purge_host(ocs::tom::Element<ocs::tom::CQ>(this_elem), answer_list,
+                            ocs::tom::ConstList<ocs::tom::US>(attr_list), hgroup_or_hostname);
+}
+
+/**
  * @brief Report configuration settings that look wrong but are not errors
  *
  * Backs `qconf -sick`. Warns about attribute settings that can never take
  * effect and about host group settings that do not cover every host in the
  * queue's host list.
  *
- * @param cqueue the cluster queue to inspect
+ * The attribute lists are walked through #cqueue_attribute_array, by field
+ * numbers given at run time; that part stays untyped.
+ *
+ * @param cqueue the cluster queue to inspect (CQ_Type)
  * @param[out] answer_list receives error messages
  * @param master_hgroup_list the host groups, needed to resolve the host list
  * @param[out] ds receives the human readable report
  * @return true when the queue could be inspected
  */
-bool cqueue_sick(lListElem *cqueue, lList **answer_list,
-                 lList *master_hgroup_list, dstring *ds) {
+bool cqueue_sick(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue, lList **answer_list,
+                 const ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list, dstring *ds) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
@@ -1596,8 +1807,8 @@ bool cqueue_sick(lListElem *cqueue, lList **answer_list,
     */
    {
       const char *cqueue_name = ocs::tom::get<CQ_name>(cqueue);
-      lList *used_hosts = nullptr;
-      lList *used_groups = nullptr;
+      lList *used_hosts_raw = nullptr;    // HR_Type, written by href_list_find_all_references()
+      lList *used_groups_raw = nullptr;   // HR_Type, written by href_list_find_all_references()
       lList **answer_list = nullptr;
       int index;
       
@@ -1605,17 +1816,20 @@ bool cqueue_sick(lListElem *cqueue, lList **answer_list,
        * resolve href list of cqueue
        */
       href_list_find_all_references(ocs::tom::get<CQ_hostlist>(cqueue), answer_list,
-                                    master_hgroup_list, &used_hosts,
-                                    &used_groups);
+                                    master_hgroup_list, &used_hosts_raw,
+                                    &used_groups_raw);
+      const auto used_hosts = ocs::tom::ListPtr<ocs::tom::HR>::from_typed(used_hosts_raw);
+      const auto used_groups = ocs::tom::ListPtr<ocs::tom::HR>::from_typed(used_groups_raw);
 
       index = 0;
       while (cqueue_attribute_array[index].cqueue_attr != NoName) {
          /*
           * Skip geee attributes in ge mode
           */
-         lList *attr_list = lGetListRW(cqueue, cqueue_attribute_array[index].cqueue_attr);
-         lListElem *next_attr = lFirstRW(attr_list);
-         lListElem *attr = nullptr;
+         // the attribute and its host field are given at run time, so the untyped access stays
+         const lList *attr_list = lGetList(cqueue, cqueue_attribute_array[index].cqueue_attr);
+         const lListElem *next_attr = lFirst(attr_list);
+         const lListElem *attr = nullptr;
 
          /*
           * Test each attribute setting if it is really used in the
@@ -1624,16 +1838,15 @@ bool cqueue_sick(lListElem *cqueue, lList **answer_list,
          while((attr = next_attr) != nullptr) {
             const char *name = lGetHost(attr, cqueue_attribute_array[index].href_attr);
 
-            next_attr = lNextRW(attr);
+            next_attr = lNext(attr);
             if (ocs::is_hgroup_name(name)) {
                if (strcmp(name, HOSTREF_DEFAULT)) {
-                  lListElem *hgroup = nullptr;
-                  lList *used_hgroup_hosts = nullptr;
-                  lList *used_hgroup_groups = nullptr;
-                  lList *add_hosts = nullptr;
-                  lList *equity_hosts = nullptr;
+                  lList *used_hgroup_hosts_raw = nullptr;    // HR_Type, written by hgroup_find_all_references()
+                  lList *used_hgroup_groups_raw = nullptr;   // HR_Type, written by hgroup_find_all_references()
+                  lList *add_hosts_raw = nullptr;            // HR_Type, written by href_list_compare()
+                  lList *equity_hosts_raw = nullptr;         // HR_Type, written by href_list_compare()
 
-                  hgroup = hgroup_list_locate(master_hgroup_list, name);
+                  const auto hgroup = hgroup_list_locate(master_hgroup_list, name);
 
                   /*
                    * hgroup specific setting:
@@ -1642,13 +1855,17 @@ bool cqueue_sick(lListElem *cqueue, lList **answer_list,
                    */
                   hgroup_find_all_references(hgroup, answer_list, 
                                              master_hgroup_list, 
-                                             &used_hgroup_hosts,
-                                             &used_hgroup_groups);
-                  href_list_compare(used_hgroup_hosts, answer_list,
-                                    used_hosts, &add_hosts, nullptr,
-                                    &equity_hosts, nullptr);
+                                             &used_hgroup_hosts_raw,
+                                             &used_hgroup_groups_raw);
+                  const auto used_hgroup_hosts = ocs::tom::ListPtr<ocs::tom::HR>::from_typed(used_hgroup_hosts_raw);
+                  const auto used_hgroup_groups = ocs::tom::ListPtr<ocs::tom::HR>::from_typed(used_hgroup_groups_raw);
+                  href_list_compare(*used_hgroup_hosts, answer_list,
+                                    *used_hosts, &add_hosts_raw, nullptr,
+                                    &equity_hosts_raw, nullptr);
+                  const auto add_hosts = ocs::tom::ListPtr<ocs::tom::HR>::from_typed(add_hosts_raw);
+                  const auto equity_hosts = ocs::tom::ListPtr<ocs::tom::HR>::from_typed(equity_hosts_raw);
 
-                  if (lGetNumberOfElem(add_hosts)) {
+                  if (!add_hosts->empty()) {
                      DTRACE;
                      sge_dstring_sprintf_append(ds, 
                              MSG_CQUEUE_DEFOVERWRITTEN_SSSSS,
@@ -1656,11 +1873,6 @@ bool cqueue_sick(lListElem *cqueue, lList **answer_list,
                              name, cqueue_name, name, cqueue_name);
                      sge_dstring_append(ds, "\n");
                   }
-
-                  lFreeList(&add_hosts);
-                  lFreeList(&equity_hosts);
-                  lFreeList(&used_hgroup_hosts);
-                  lFreeList(&used_hgroup_groups);
                } else {
                   DTRACE;
                }
@@ -1669,7 +1881,7 @@ bool cqueue_sick(lListElem *cqueue, lList **answer_list,
                 * host specific setting:
                 *    make sure the host is contained in resolved list 
                 */ 
-               if (!href_list_has_member(used_hosts, name)) {
+               if (!href_list_has_member(*used_hosts, name)) {
                   DTRACE;
                   sge_dstring_sprintf_append(ds, 
                              MSG_CQUEUE_UNUSEDATTRSETTING_SS,
@@ -1684,8 +1896,6 @@ bool cqueue_sick(lListElem *cqueue, lList **answer_list,
             
          index++;
       }
-      lFreeList(&used_hosts);
-      lFreeList(&used_groups);
    }
    
    DRETURN(ret);

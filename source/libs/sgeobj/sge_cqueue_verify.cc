@@ -68,7 +68,11 @@
 #include "sgeobj/sge_path_alias.h"
 #include "sgeobj/msg_sgeobjlib.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_AMEM.h"
+#include "sgeobj/tom/ocs_tom_CAL.h"
 #include "sgeobj/tom/ocs_tom_CE.h"
+#include "sgeobj/tom/ocs_tom_CQ.h"
 #include "sgeobj/tom/ocs_tom_PR.h"
 #include "sgeobj/tom/ocs_tom_SO.h"
 #include "sgeobj/tom/ocs_tom_ST.h"
@@ -78,7 +82,6 @@
 /// Debug layer the cluster queue verification traces are written to
 #define CQUEUE_VERIFY_LAYER TOP_LAYER
 
-bool
 /**
  * @brief Verify that the calendar a queue refers to exists
  *
@@ -88,10 +91,12 @@ bool
  * @param cqueue the cluster queue being verified
  * @param[out] answer_list receives the reason the value was rejected
  * @param attr_elem the attribute value to verify
- * @param master_calendar_list the defined calendars
+ * @param master_calendar_list the defined calendars (CAL_Type)
  * @return true when the value is acceptable
  */
-cqueue_verify_calendar(lListElem *cqueue, lList **answer_list, lListElem *attr_elem, const lList *master_calendar_list) {
+bool
+cqueue_verify_calendar(lListElem *cqueue, lList **answer_list, lListElem *attr_elem,
+                       const lList *master_calendar_list) {
    DENTER(CQUEUE_VERIFY_LAYER);
 
    bool ret = true;
@@ -100,8 +105,8 @@ cqueue_verify_calendar(lListElem *cqueue, lList **answer_list, lListElem *attr_e
       const char *name = ocs::tom::get<ASTR_value>(attr_elem);
 
       if (name != nullptr && strcasecmp("none", name)) {
-         const lListElem *calendar = ocs::tom::find_first<CAL_name>(master_calendar_list, name);
-         if (calendar == nullptr) {
+         const auto calendar = ocs::tom::find_first<CAL_name>(master_calendar_list, name);
+         if (!calendar) {
             snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_CQUEUE_UNKNOWNCALENDAR_S, name);
             answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             ret = false;
@@ -426,7 +431,6 @@ cqueue_verify_shell(lListElem *cqueue, lList **answer_list, lListElem *attr_elem
    DRETURN(ret);
 }
 
-bool
 /**
  * @brief Verify that every subordinate relation names an existing cluster queue
  *
@@ -436,19 +440,22 @@ bool
  * @param cqueue the cluster queue being verified
  * @param[out] answer_list receives the reason the value was rejected
  * @param attr_elem the attribute value to verify
- * @param master_cqueue_list the defined cluster queues
+ * @param master_cqueue_list the defined cluster queues (CQ_Type)
  * @return true when the value is acceptable
  */
-cqueue_verify_subordinate_list(lListElem *cqueue, lList **answer_list, lListElem *attr_elem, const lList *master_cqueue_list) {
+bool
+cqueue_verify_subordinate_list(lListElem *cqueue, lList **answer_list, lListElem *attr_elem,
+                               const lList *master_cqueue_list) {
    DENTER(CQUEUE_VERIFY_LAYER);
 
    bool ret = true;
 
    if (cqueue != nullptr && attr_elem != nullptr) {
       const char *cqueue_name = ocs::tom::get<CQ_name>(cqueue);
-      ocs::tom::ConstList<ocs::tom::SO> so_list = ocs::tom::get<ASOLIST_value>(attr_elem);
+      const auto so_list = ocs::tom::get<ASOLIST_value>(attr_elem);
+      const ocs::tom::ConstList<ocs::tom::CQ> cqueue_list(master_cqueue_list);
 
-      for (ocs::tom::ConstElement<ocs::tom::SO> so : so_list) {
+      for (const auto so : so_list) {
          const char *so_name = ocs::tom::get<SO_name>(so);
  
          /*
@@ -458,8 +465,8 @@ cqueue_verify_subordinate_list(lListElem *cqueue, lList **answer_list, lListElem
             /*
              * Check if cqueue exists
              */
-            const lListElem *lcqueue = cqueue_list_locate(master_cqueue_list, so_name);
-            if (lcqueue != nullptr) {
+            const auto lcqueue = cqueue_list_locate(cqueue_list, so_name);
+            if (lcqueue) {
                /*
                 * Success
                 */
@@ -554,14 +561,15 @@ bool cqueue_verify_job_slots(lListElem *cqueue, lList **answer_list, lListElem *
  *
  * @param cqueue The queue to verify.
  * @param answer_list answer list to report errors
- * @param attr_elem the attribute to verify
+ * @param attr_elem the attribute to verify (AMEM_Type)
  * @param master_list unused
  *
  * @return true on success, false on error
  *
  * @note MT-NOTE: cqueue_verify_memory_value() is MT safe
  */
-bool cqueue_verify_memory_value(lListElem *cqueue, lList **answer_list, lListElem *attr_elem, const lList *master_list) {
+bool cqueue_verify_memory_value(lListElem *cqueue, lList **answer_list, lListElem *attr_elem,
+                                const lList *master_list) {
    DENTER(CQUEUE_VERIFY_LAYER);
 
    bool ret = true;
@@ -570,11 +578,11 @@ bool cqueue_verify_memory_value(lListElem *cqueue, lList **answer_list, lListEle
       const char *memory_string = ocs::tom::get<AMEM_value>(attr_elem);
 
 #if 1
-      lListElem *copy = lCopyElem(attr_elem);
-      if (!object_parse_field_from_string(copy, answer_list, AMEM_value, memory_string)) {
+      const auto copy = ocs::tom::ConstElement<ocs::tom::AMEM>(attr_elem).clone();
+      // the field is passed by number to the generic parser, which takes the untyped element
+      if (!object_parse_field_from_string(*copy, answer_list, AMEM_value, memory_string)) {
          ret = false;
       }
-      lFreeElem(&copy);
 #else
       if (memory_string == nullptr || !strcasecmp(memory_string, "none")) {
          answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
