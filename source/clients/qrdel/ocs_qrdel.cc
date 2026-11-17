@@ -61,8 +61,10 @@
 #include "msg_common.h"
 #include "msg_clients_common.h"
 
-static bool sge_parse_cmdline_qrdel(char **argv, char **envp, lList **ppcmdline, lList **alpp);
-static bool sge_parse_qrdel(lList **ppcmdline, lList **ppid_list, lList **alpp);
+static bool sge_parse_cmdline_qrdel(char **argv, char **envp, ocs::tom::ListPtr<ocs::tom::SPA> &cmdline,
+                                    lList **alpp);
+static bool sge_parse_qrdel(ocs::tom::List<ocs::tom::SPA> cmdline, ocs::tom::ListPtr<ocs::tom::ID> &id_list,
+                            lList **alpp);
 
 /** @brief The process environment, as the C library defines it
  *
@@ -72,10 +74,18 @@ static bool sge_parse_qrdel(lList **ppcmdline, lList **ppid_list, lList **alpp);
  */
 extern char **environ;
 
-/************************************************************************/
+/**
+ * @brief qrdel: parse the command line and delete the advance reservations it names
+ *
+ * @param argc the number of arguments
+ * @param argv the arguments
+ *
+ * @return 0 on success; on an error the process ends with sge_exit(1)
+ */
 int main(int argc, char **argv) {
    DENTER_MAIN(TOP_LAYER, "qrdel");
-   lList *pcmdline = nullptr, *id_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::SPA> pcmdline;
+   ocs::tom::ListPtr<ocs::tom::ID> id_list;
    lList *alp = nullptr;
 
    /* Set up the program information name */
@@ -92,25 +102,25 @@ int main(int argc, char **argv) {
    /*
    ** stage 1 of commandline parsing
    */
-   if (!sge_parse_cmdline_qrdel(++argv, environ, &pcmdline, &alp)) {
+   if (!sge_parse_cmdline_qrdel(++argv, environ, pcmdline, &alp)) {
       /*
       ** high level parsing error! show answer list
       */
       answer_list_output(&alp);
-      lFreeList(&pcmdline);
+      pcmdline.reset();
       goto error_exit;
    }
 
    /*
    ** stage 2 of command line parsing
    */
-   if (!sge_parse_qrdel(&pcmdline, &id_list, &alp)) {
+   if (!sge_parse_qrdel(*pcmdline, id_list, &alp)) {
       answer_list_output(&alp);
-      lFreeList(&pcmdline);
+      pcmdline.reset();
       goto error_exit;
    }
 
-   lFreeList(&pcmdline);
+   pcmdline.reset();
 
    if (!id_list) {
       sge_usage(QRDEL, stderr);
@@ -118,9 +128,13 @@ int main(int argc, char **argv) {
       goto error_exit;
    }
 
-   alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::AR_LIST, ocs::gdi::Command::DEL,
-                 ocs::gdi::SubCommand::NONE, &id_list, nullptr, nullptr);
-   lFreeList(&id_list);
+   {
+      // sge_gdi() has no typed form yet; it replaces the request list with the response, which is freed
+      lList *id_lp = id_list.release();
+      alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::AR_LIST, ocs::gdi::Command::DEL,
+                    ocs::gdi::SubCommand::NONE, &id_lp, nullptr, nullptr);
+      lFreeList(&id_lp);
+   }
    if (answer_list_has_error(&alp)) {
       answer_list_on_error_print_or_exit(&alp, stdout);
       goto error_exit;
@@ -141,15 +155,16 @@ error_exit:
 /**
  * @brief 'Stage 1' parsing of the qrdel options
  *
- * Parses the options with their arguments and stores them in @p ppcmdline.
+ * Parses the options with their arguments and stores them in @p cmdline.
  *
  * @param argv the arguments, without the program name
  * @param envp the process environment
- * @param ppcmdline receives the parsed options (`SPA_Type`)
+ * @param cmdline receives the parsed options (`SPA_Type`), created with the first option
  * @param alpp receives the parse errors
  * @return true on success, false on a parse error
  */
-static bool sge_parse_cmdline_qrdel(char **argv, char **envp, lList **ppcmdline, lList **alpp) {
+static bool sge_parse_cmdline_qrdel(char **argv, [[maybe_unused]] char **envp,
+                                    ocs::tom::ListPtr<ocs::tom::SPA> &cmdline, lList **alpp) {
    DENTER(TOP_LAYER);
 
    char **sp;
@@ -158,12 +173,14 @@ static bool sge_parse_cmdline_qrdel(char **argv, char **envp, lList **ppcmdline,
    rp = argv;
    while (*(sp=rp)) {
       /* -help */
-      if ((rp = parse_noopt(sp, "-help", nullptr, ppcmdline, alpp)) != sp)
+      if ((rp = parse_noopt(sp, "-help", nullptr, cmdline, alpp)) != sp) {
          continue;
+      }
 
       /* -f option */
-      if ((rp = parse_noopt(sp, "-f", "--force", ppcmdline, alpp)) != sp)
+      if ((rp = parse_noopt(sp, "-f", "--force", cmdline, alpp)) != sp) {
          continue;
+      }
 
       /* -u option */
       if (!strcmp("-u", *sp)) {
@@ -171,7 +188,7 @@ static bool sge_parse_cmdline_qrdel(char **argv, char **envp, lList **ppcmdline,
          if (*sp) {
             auto user_list = str_list_parse_from_string(*sp, ",");
 
-            lListElem *ep_opt = sge_add_arg(ppcmdline, 0, lListT, *(sp - 1), *sp);
+            const auto ep_opt = sge_add_arg(cmdline, 0, lListT, *(sp - 1), *sp);
             ocs::tom::set<SPA_argval_lListT>(ep_opt, std::move(user_list));
             sp++;
          }
@@ -179,7 +196,7 @@ static bool sge_parse_cmdline_qrdel(char **argv, char **envp, lList **ppcmdline,
          continue;
       }
       /* job id's */
-      if ((rp = parse_param(sp, "ars", ppcmdline, alpp)) != sp) {
+      if ((rp = parse_param(sp, "ars", cmdline, alpp)) != sp) {
          continue;
       }
       /* oops */
@@ -195,15 +212,17 @@ static bool sge_parse_cmdline_qrdel(char **argv, char **envp, lList **ppcmdline,
 /**
  * @brief 'Stage 2' parsing of the qrdel options
  *
- * Gets the options from @p ppcmdline and puts the advance reservation ids, with
- * the user list and the force flag, in @p ppid_list.
+ * Gets the options from @p cmdline and puts the advance reservation ids, with
+ * the user list and the force flag, in @p id_list.
  *
- * @param ppcmdline the parsed options (`SPA_Type`); the options served are removed
- * @param ppid_list receives the advance reservation references (`ID_Type`); freed on an error
+ * @param cmdline the parsed options (`SPA_Type`); the options served are removed
+ * @param id_list receives the advance reservation references (`ID_Type`), created with the first one; freed on
+ *                an error
  * @param alpp receives the errors
  * @return true on success, false on an error
  */
-static bool sge_parse_qrdel(lList **ppcmdline, lList **ppid_list, lList **alpp) {
+static bool sge_parse_qrdel(const ocs::tom::List<ocs::tom::SPA> cmdline, ocs::tom::ListPtr<ocs::tom::ID> &id_list,
+                            lList **alpp) {
    DENTER(TOP_LAYER);
 
    uint32_t pforce = 0;
@@ -211,30 +230,37 @@ static bool sge_parse_qrdel(lList **ppcmdline, lList **ppid_list, lList **alpp) 
    ocs::tom::ListPtr<ocs::tom::ST> user_list;
    bool ret = true;
 
-   while (lGetNumberOfElem(*ppcmdline)) {
-      if (parse_flag(ppcmdline, "-help",  alpp, &helpflag)) {
+   while (!cmdline.empty()) {
+      if (parse_flag(cmdline, "-help",  alpp, &helpflag)) {
          sge_usage(QRDEL, stdout);
          sge_exit(0);
          break;
       }
-      if (parse_flag(ppcmdline, "-f", alpp, &pforce))
+      if (parse_flag(cmdline, "-f", alpp, &pforce)) {
          continue;
+      }
 
-      if (parse_multi_stringlist<ST_name>(ocs::tom::List<ocs::tom::SPA>(*ppcmdline), "-u", alpp, user_list)) {
+      if (parse_multi_stringlist<ST_name>(cmdline, "-u", alpp, user_list)) {
          continue;
       }
 
       ocs::tom::ListPtr<ocs::tom::ST> ars;
-      if (parse_multi_stringlist<ST_name>(ocs::tom::List<ocs::tom::SPA>(*ppcmdline), "ars", alpp, ars)) {
+      if (parse_multi_stringlist<ST_name>(cmdline, "ars", alpp, ars)) {
          for (const auto ep : *ars) {
             const char *id = ocs::tom::get<ST_name>(ep);
-            ocs::tom::emplace_back<ID_str>(ppid_list, id);
+            // a null id added nothing in the free emplace_back(), which created the list with the first one
+            if (id == nullptr) {
+               continue;
+            }
+            if (!id_list) {
+               id_list = ocs::tom::ListPtr<ocs::tom::ID>::create("");
+            }
+            id_list->emplace_back<ID_str>(id);
          }
          continue;
       }
 
-      /* the options are created by sge_add_arg() and friends with SPA_Type */
-      for (const auto ep : ocs::tom::ConstList<ocs::tom::SPA>::from_typed(*ppcmdline)) {
+      for (const auto ep : cmdline) {
          answer_list_add_sprintf(alpp, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
                                  MSG_PARSE_INVALIDOPTIONARGUMENTX_S,
                                  ocs::tom::get<SPA_switch_val>(ep));
@@ -245,22 +271,25 @@ static bool sge_parse_qrdel(lList **ppcmdline, lList **ppid_list, lList **alpp) 
 
    if (answer_list_has_error(alpp)) {
       ret = false;
-      lFreeList(ppid_list);
+      id_list.reset();
    } else {
-      /* fill up ID list; emplace_back<ID_str>() creates it with ID_Type, so it is wrapped unchecked */
+      /* fill up ID list */
       if (user_list != nullptr) {
-         if (ocs::tom::List<ocs::tom::ID>::from_typed(*ppid_list).empty()) {
-            ocs::tom::Element<ocs::tom::ID> id = ocs::tom::emplace_back<ID_str>(ppid_list, "0");
+         if (id_list->empty()) {
+            if (!id_list) {
+               id_list = ocs::tom::ListPtr<ocs::tom::ID>::create("");
+            }
+            const auto id = id_list->emplace_back<ID_str>("0");
             ocs::tom::set<ID_user_list>(id, user_list->clone(""));
          } else {
-            for (const auto id : ocs::tom::List<ocs::tom::ID>::from_typed(*ppid_list)) {
+            for (const auto id : *id_list) {
                ocs::tom::set<ID_user_list>(id, user_list->clone(""));
             }
          }
       }
 
       if (pforce != 0) {
-         for (const auto id : ocs::tom::List<ocs::tom::ID>::from_typed(*ppid_list)) {
+         for (const auto id : *id_list) {
             ocs::tom::set<ID_force>(id, pforce);
          }
       }

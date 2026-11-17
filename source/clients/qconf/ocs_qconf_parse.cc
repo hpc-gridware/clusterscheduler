@@ -77,6 +77,11 @@
 #include "sgeobj/sge_schedd_conf.h"
 #include "sgeobj/sge_userprj.h"
 #include "sgeobj/sge_calendar.h"
+#include "sgeobj/tom/ocs_tom_EH.h"
+#include "sgeobj/tom/ocs_tom_HGRP.h"
+#include "sgeobj/tom/ocs_tom_HR.h"
+#include "sgeobj/tom/ocs_tom_US.h"
+#include "tom/ocs_Element.h"
 #include "sgeobj/sge_ckpt.h"
 #include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_resource_quota.h"
@@ -381,54 +386,43 @@ int sge_parse_qconf(char *argv[]) {
 
 /***********************************************************************/
 
-void parse_name_list_to_cull(const char *name, lList **lpp, const lDescr *dp, int nm, char *s) {
+/** @brief Turn a comma separated name list into a new CULL list, one element per name
+ *
+ * The name goes into a string or a host field, whichever @p F is. Of a host
+ * list, every host but the first is resolved into EH_name.
+ *
+ * @tparam F the field the name is written into; its type is the type of the elements
+ * @param name the name of the new list
+ * @param s the name list; taken apart in place by sge_strtok()
+ * @return the new list, never an empty handle
+ */
+template <auto F>
+ocs::tom::ListPtr<typename ocs::tom::FieldTraits<F>::Type> parse_name_list_to_cull(const char *name, char *s) {
    DENTER(TOP_LAYER);
 
-   char *cp2 = nullptr;
-   lListElem *ep = nullptr;
-   int pos;
-   int dataType;
+   using T = typename ocs::tom::FieldTraits<F>::Type;
+   constexpr bool is_host = ocs::tom::FieldTraits<F>::type == ocs::tom::FieldType::Host;
+   auto list = ocs::tom::ListPtr<T>::create(name);
 
-
-   *lpp = lCreateList(name, dp);
-   cp2 = sge_strtok(s, ",");
-   ep = lCreateElem(dp);
-
-   pos = lGetPosInDescr(dp, nm);
-   dataType = lGetPosType(dp,pos);
-   switch (dataType) {
-      case lStringT:
-         DPRINTF("parse_name_list_to_cull: Adding lStringT type element\n");
-         lSetString(ep, nm, cp2);
-         break;
-      case lHostT:
-         DPRINTF("parse_name_list_to_cull: Adding lHostT type element\n");
-         lSetHost(ep, nm, cp2);
-         break;
-      default:
-         DPRINTF("parse_name_list_to_cull: unexpected data type\n");
-         break;
-   }
-   lAppendElem(*lpp, ep);
-
-   while ((cp2 = sge_strtok(nullptr, ",")) != nullptr) {
-      ep = lCreateElem(dp);
-      switch (dataType) {
-         case lStringT:
-            DPRINTF("parse_name_list_to_cull: Adding lStringT type element\n");
-            lSetString(ep, nm, cp2);
-            break;
-         case lHostT:
-            DPRINTF("parse_name_list_to_cull: Adding lHostT type element\n");
-            lSetHost(ep, nm, cp2);
-            sge_resolve_host(ep, EH_name);
-            break;
-         default:
-            DPRINTF("parse_name_list_to_cull: unexpected data type\n");
-            break;
+   // the first token is added even when there is none, as an element without a name
+   const char *cp2 = sge_strtok(s, ",");
+   bool first = true;
+   do {
+      DPRINTF("parse_name_list_to_cull: Adding %s type element\n", is_host ? "lHostT" : "lStringT");
+      auto ep = ocs::tom::ElementPtr<T>::create();
+      ocs::tom::set<F>(ep, cp2);
+      if (is_host && !first) {
+         // sge_resolve_host() works on any host field and has no typed form; it is given EH_name as always
+         sge_resolve_host(*ep, EH_name);
       }
-      lAppendElem(*lpp, ep);
-   }
+      list->push_back(std::move(ep));
+      first = false;
+   } while ((cp2 = sge_strtok(nullptr, ",")) != nullptr);
 
-   DRETURN_VOID;
+   DRETURN(list);
 }
+
+template ocs::tom::ListPtr<ocs::tom::EH> parse_name_list_to_cull<EH_name>(const char *name, char *s);
+template ocs::tom::ListPtr<ocs::tom::US> parse_name_list_to_cull<US_name>(const char *name, char *s);
+template ocs::tom::ListPtr<ocs::tom::HR> parse_name_list_to_cull<HR_name>(const char *name, char *s);
+template ocs::tom::ListPtr<ocs::tom::HGRP> parse_name_list_to_cull<HGRP_name>(const char *name, char *s);

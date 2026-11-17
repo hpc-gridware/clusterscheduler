@@ -53,6 +53,7 @@
 #include "sgeobj/msg_sgeobjlib.h"
 #include "sgeobj/tom/ocs_tom_ID.h"
 #include "sgeobj/tom/ocs_tom_RN.h"
+#include "sgeobj/tom/ocs_tom_SPA.h"
 #include "sgeobj/tom/ocs_tom_ST.h"
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
@@ -66,8 +67,10 @@
 #include "msg_common.h"
 #include "msg_clients_common.h"
 
-static bool sge_parse_cmdline_qdel(char **argv, char **envp, lList **ppcmdline, lList **alpp);
-static bool sge_parse_qdel(lList **ppcmdline, lList **ppreflist, uint32_t *pforce, lList **ppuserlist, lList **alpp);
+static bool sge_parse_cmdline_qdel(char **argv, char **envp, ocs::tom::ListPtr<ocs::tom::SPA> &cmdline,
+                                   lList **alpp);
+static bool sge_parse_qdel(ocs::tom::List<ocs::tom::SPA> cmdline, ocs::tom::ListPtr<ocs::tom::ID> &reflist,
+                           uint32_t *pforce, ocs::tom::ListPtr<ocs::tom::ST> &userlist, lList **alpp);
 
 /** @brief The process environment, as the C library defines it
  *
@@ -85,9 +88,11 @@ extern char **environ;
  */
 int main(int argc, char **argv) {
    DENTER_MAIN(TOP_LAYER, "qdel");
-   /* lListElem *rep, *nxt_rep, *jep, *aep, *jrep, *idep; */
    int ret = 0;
-   lList *jlp = nullptr, *alp = nullptr, *pcmdline = nullptr, *ref_list = nullptr, *user_list=nullptr;
+   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::SPA> pcmdline;
+   ocs::tom::ListPtr<ocs::tom::ID> ref_list;
+   ocs::tom::ListPtr<ocs::tom::ST> user_list;
    uint32_t force = 0;
    int wait;
    unsigned long status = 0;
@@ -102,40 +107,41 @@ int main(int argc, char **argv) {
       goto error_exit;
    }
 
-   if (!sge_parse_cmdline_qdel(++argv, environ, &pcmdline, &alp)) {
+   if (!sge_parse_cmdline_qdel(++argv, environ, pcmdline, &alp)) {
       /*
       ** high level parsing error! show answer list
       */
       answer_list_output(&alp);
-      lFreeList(&pcmdline);
+      pcmdline.reset();
       goto error_exit;
    }
 
-   if (!sge_parse_qdel(&pcmdline, &ref_list, &force, &user_list, &alp)) {
+   if (!sge_parse_qdel(*pcmdline, ref_list, &force, user_list, &alp)) {
       /*
       ** low level parsing error! show answer list
       */
       answer_list_output(&alp);
-      lFreeList(&pcmdline);
+      pcmdline.reset();
       goto error_exit;
    }
 
    DPRINTF("force     = " sge_u32"\n", force);
    
    if (user_list) {
-      /* parse_multi_jobtaskslist() creates the list with ID_Type, so it is wrapped unchecked */
-      const auto refs = ocs::tom::List<ocs::tom::ID>::from_typed(ref_list);
-      if (refs.empty()) {
-         ocs::tom::Element<ocs::tom::ID> id = ocs::tom::emplace_back<ID_str>(&ref_list, "0");
-         ocs::tom::set<ID_user_list>(id, user_list);
+      if (ref_list->empty()) {
+         // created as the free emplace_back() created it
+         if (!ref_list) {
+            ref_list = ocs::tom::ListPtr<ocs::tom::ID>::create("");
+         }
+         const auto id = ref_list->emplace_back<ID_str>("0");
+         ocs::tom::set<ID_user_list>(id, std::move(user_list));
       } else {
          // every reference gets its own copy: the request list frees the sublist of each element, so
          // one list shared by several elements was freed once per element (CS-3118)
-         const auto users = ocs::tom::ConstList<ocs::tom::ST>::from_typed(user_list);
-         for (const auto id : refs) {
-            ocs::tom::set<ID_user_list>(id, users.clone(""));
+         for (const auto id : *ref_list) {
+            ocs::tom::set<ID_user_list>(id, user_list->clone(""));
          }
-         lFreeList(&user_list);
+         user_list.reset();
       }
    }
 
@@ -188,7 +194,7 @@ int main(int argc, char **argv) {
          bool first_try = true;
          uint32_t MAX_DELETE_JOBS = 500;
          lList *part_ref_list = nullptr;
-         const auto cp_refs = ocs::tom::ConstList<ocs::tom::ID>::from_typed(ref_list).clone("");
+         const auto cp_refs = ref_list->clone("");
 
          for (const auto idep : *cp_refs) {
             ocs::tom::set<ID_force>(idep, !no_forced_deletion);
@@ -223,7 +229,8 @@ int main(int argc, char **argv) {
                      break;
                   }   
                }
-               /* sge_gdi() replaces the request list with the response, so it is handed over raw */
+               /* sge_gdi() has no typed form yet; it replaces the request list with the response, so it is
+                * handed over raw */
                part_ref_list = part_refs.release();
             }
             alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::JB_LIST, ocs::gdi::Command::DEL,
@@ -278,16 +285,14 @@ int main(int argc, char **argv) {
    }
 
    lFreeList(&alp);
-   lFreeList(&jlp);
-   lFreeList(&ref_list);
+   ref_list.reset();
    ocs::gdi::ClientBase::shutdown();
    sge_exit(ret);
    return ret;
 
 error_exit:
    lFreeList(&alp);
-   lFreeList(&jlp);
-   lFreeList(&ref_list);
+   ref_list.reset();
    ocs::gdi::ClientBase::shutdown();
    sge_exit(1);
    DRETURN(1);
@@ -296,15 +301,16 @@ error_exit:
 /**
  * @brief 'Stage 1' parsing of the qdel options
  *
- * Parses the options with their arguments and stores them in @p ppcmdline.
+ * Parses the options with their arguments and stores them in @p cmdline.
  *
  * @param argv the arguments, without the program name
  * @param envp the process environment
- * @param ppcmdline receives the parsed options (`SPA_Type`)
+ * @param cmdline receives the parsed options (`SPA_Type`), created with the first option
  * @param alpp receives the parse errors
  * @return true on success, false on a parse error
  */
-static bool sge_parse_cmdline_qdel(char **argv, char **envp, lList **ppcmdline, lList **alpp) {
+static bool sge_parse_cmdline_qdel(char **argv, [[maybe_unused]] char **envp,
+                                   ocs::tom::ListPtr<ocs::tom::SPA> &cmdline, lList **alpp) {
    DENTER(TOP_LAYER);
 
    char **sp;
@@ -313,12 +319,14 @@ static bool sge_parse_cmdline_qdel(char **argv, char **envp, lList **ppcmdline, 
    rp = argv;
    while (*(sp=rp)) {
       /* -help */
-      if ((rp = parse_noopt(sp, "-help", nullptr, ppcmdline, alpp)) != sp)
+      if ((rp = parse_noopt(sp, "-help", nullptr, cmdline, alpp)) != sp) {
          continue;
-      
+      }
+
       /* -f option */
-      if ((rp = parse_noopt(sp, "-f", "--force", ppcmdline, alpp)) != sp)
+      if ((rp = parse_noopt(sp, "-f", "--force", cmdline, alpp)) != sp) {
          continue;
+      }
 
       /* -u */
       if (!strcmp("-u", *sp)) {
@@ -326,7 +334,7 @@ static bool sge_parse_cmdline_qdel(char **argv, char **envp, lList **ppcmdline, 
          if (*sp) {
             auto user_list = str_list_parse_from_string(*sp, ",");
 
-            lListElem *ep_opt = sge_add_arg(ppcmdline, 0, lListT, *(sp - 1), *sp);
+            const auto ep_opt = sge_add_arg(cmdline, 0, lListT, *(sp - 1), *sp);
             ocs::tom::set<SPA_argval_lListT>(ep_opt, std::move(user_list));
             sp++;
          }
@@ -345,10 +353,8 @@ static bool sge_parse_cmdline_qdel(char **argv, char **envp, lList **ppcmdline, 
 
          DPRINTF("\"-t %s\"\n", *sp);
 
-         lList *ranges_out = nullptr;
-         range_list_parse_from_string(&ranges_out, alpp, *sp, false, true, INF_NOT_ALLOWED);
-         /* range_list_parse_from_string() creates the list with RN_Type, so it is taken over unchecked */
-         auto task_id_ranges = ocs::tom::ListPtr<ocs::tom::RN>::from_typed(ranges_out);
+         ocs::tom::ListPtr<ocs::tom::RN> task_id_ranges;
+         range_list_parse_from_string(task_id_ranges, alpp, *sp, false, true, INF_NOT_ALLOWED);
          if (!task_id_ranges) {
             goto error; 
          }
@@ -359,7 +365,7 @@ static bool sge_parse_cmdline_qdel(char **argv, char **envp, lList **ppcmdline, 
             goto error;
          }
 
-         lListElem *ep_opt = sge_add_arg(ppcmdline, t_OPT, lListT, *(sp - 1), *sp);
+         const auto ep_opt = sge_add_arg(cmdline, t_OPT, lListT, *(sp - 1), *sp);
          ocs::tom::set<SPA_argval_lListT>(ep_opt, std::move(task_id_ranges));
 
          sp++;
@@ -369,16 +375,27 @@ static bool sge_parse_cmdline_qdel(char **argv, char **envp, lList **ppcmdline, 
 
       /* job id's */
       if (*sp) {
-         lListElem *ep = nullptr;
+         ocs::tom::Element<ocs::tom::SPA> ep;
          const auto del_list = str_list_parse_from_string(*sp, ",");
-        
+
+         // the job names are collected here and put into the option, which created its list with the first name
+         ocs::tom::ListPtr<ocs::tom::ST> job_names;
          for (const auto job : *del_list) {
             const char *job_name = ocs::tom::get<ST_name>(job);
-            if(ep == nullptr) {
-               ep = sge_add_arg(ppcmdline, 0, lListT, "jobs", nullptr);
+            if (!ep) {
+               ep = sge_add_arg(cmdline, 0, lListT, "jobs", nullptr);
             }
-            ocs::tom::emplace_back<ST_name>(ocs::tom::list_ref<SPA_argval_lListT>(ep), job_name);
-         }  
+            // a null name added nothing in the free emplace_back()
+            if (job_name != nullptr) {
+               if (!job_names) {
+                  job_names = ocs::tom::ListPtr<ocs::tom::ST>::create("");
+               }
+               job_names->emplace_back<ST_name>(job_name);
+            }
+         }
+         if (ep) {
+            ocs::tom::set<SPA_argval_lListT>(ep, std::move(job_names));
+         }
          sp ++;
          rp = sp;
          continue;        
@@ -396,63 +413,66 @@ error:
 
 }
 
-/****
- **** sge_parse_qdel (static)
- ****
- **** 'stage 2' parsing of qdel-options. Gets the options
- **** from ppcmdline, sets the force-flag and puts the
- **** job-numbers (strings) in ppreflist.
- ****/
-static bool sge_parse_qdel(
-lList **ppcmdline,
-lList **ppreflist,
-uint32_t *pforce,
-lList **ppuserlist,
-lList **alpp
-) {
+/**
+ * @brief 'Stage 2' parsing of the qdel options
+ *
+ * Gets the options from @p cmdline, sets the force flag and puts the
+ * job numbers (strings) in @p reflist.
+ *
+ * @param cmdline the parsed options (`SPA_Type`); the options used are removed
+ * @param reflist receives the job references (`ID_Type`)
+ * @param pforce receives the -f flag
+ * @param userlist receives the users of -u (`ST_Type`)
+ * @param alpp receives the parse errors
+ * @return true on success, false on a parse error
+ */
+static bool sge_parse_qdel(const ocs::tom::List<ocs::tom::SPA> cmdline, ocs::tom::ListPtr<ocs::tom::ID> &reflist,
+                           uint32_t *pforce, ocs::tom::ListPtr<ocs::tom::ST> &userlist, lList **alpp) {
    DENTER(TOP_LAYER);
 
    uint32_t helpflag;
-   lListElem *ep;
+   ocs::tom::Element<ocs::tom::SPA> ep;
    bool ret = true;
 
    /* Loop over all options. Only valid options can be in the
-      ppcmdline list. 
+      cmdline list.
    */
 
-   while(lGetNumberOfElem(*ppcmdline))
-   {
-      if(parse_flag(ppcmdline, "-help",  alpp, &helpflag)) {
+   while (!cmdline.empty()) {
+      if (parse_flag(cmdline, "-help",  alpp, &helpflag)) {
          sge_usage(QDEL, stdout);
          sge_exit(0);
          break;
       }
-      if(parse_flag(ppcmdline, "-f", alpp, pforce)) 
+      if (parse_flag(cmdline, "-f", alpp, pforce)) {
          continue;
+      }
 
-      while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(*ppcmdline, "-u"))) {
-         ocs::tom::exchange<SPA_argval_lListT>(ep, ppuserlist);
-         lRemoveElem(*ppcmdline, &ep);
-      } 
+      while ((ep = cmdline.find_first<SPA_switch_val>("-u"))) {
+         // SPA_argval_lListT carries lists of several types and has no typed exchange; the parser fills the
+         // argument of -u with an ST_Type user list
+         lList *users = userlist.release();
+         ocs::tom::exchange<SPA_argval_lListT>(ep, &users);
+         userlist = ocs::tom::ListPtr<ocs::tom::ST>::from_typed(users);
+         cmdline.erase(ep);
+      }
+
+      if (parse_multi_stringlist<ST_name>(cmdline, "-u", alpp, userlist)) {
+         continue;
+      }
 
       {
-         // the user list is an ST_Type list: the -u argument above or what the parser collects
-         auto user_list = ocs::tom::ListPtr<ocs::tom::ST>::from_typed(*ppuserlist);
-         *ppuserlist = nullptr;
-         const bool found = parse_multi_stringlist<ST_name>(ocs::tom::List<ocs::tom::SPA>(*ppcmdline), "-u", alpp,
-                                                            user_list);
-         *ppuserlist = user_list.release();
+         // parse_multi_jobtaskslist() has no typed form for the destination list yet; it creates it with ID_Type
+         lList *refs = reflist.release();
+         const bool found = parse_multi_jobtaskslist(cmdline, "jobs", alpp, &refs, true, 0);
+         reflist = ocs::tom::ListPtr<ocs::tom::ID>::from_typed(refs);
          if (found) {
             continue;
          }
       }
 
-      if(parse_multi_jobtaskslist(ppcmdline, "jobs", alpp, ppreflist, true, 0)) {
-         continue;
-      }
-
        /* we get to this point, than there are -t options without job names. We have to write an error message */
-      if ((ep = ocs::tom::find_first_rw<SPA_switch_val>(*ppcmdline, "-t")) != nullptr) {
+      if ((ep = cmdline.find_first<SPA_switch_val>("-t"))) {
          answer_list_add_sprintf(alpp, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR, MSG_JOB_LONELY_TOPTION_S, ocs::tom::get<SPA_switch_arg>(ep));
          break;
       }

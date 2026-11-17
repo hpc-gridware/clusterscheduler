@@ -33,6 +33,7 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_host.h"
 #include "sgeobj/tom/ocs_tom_EH.h"
+#include "sgeobj/tom/ocs_tom_HGRP.h"
 #include "sgeobj/tom/ocs_tom_RQS.h"
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
@@ -118,6 +119,25 @@ qconf_delete_names_of(const QConfObj o, lList **lpp) {
    }
    lFreeList(lpp);
    return names;
+}
+
+/** @brief The names of a parsed name list of a known type
+ * @tparam F the name field of the elements
+ * @param list the elements
+ * @return the names, in the order given; elements without a name are skipped
+ */
+template <auto F>
+static std::vector<std::string>
+qconf_delete_names_of(const ocs::tom::ConstList<typename ocs::tom::FieldTraits<F>::Type> list) {
+   DENTER(TOP_LAYER);
+   std::vector<std::string> names;
+   for (const auto ep : list) {
+      const char *name = static_cast<const char *>(ocs::tom::get<F>(ep));
+      if (name != nullptr) {
+         names.emplace_back(name);
+      }
+   }
+   DRETURN(names);
 }
 
 /** @brief Delete the objects whose names a batch read from files collected
@@ -296,9 +316,8 @@ struct qconf_delete_entry {
 static int
 qconf_delete_hgroup_list([[maybe_unused]] std::ostream &os, const qconf_op &op, lList **alpp) {
    std::string arg = op.args[0];
-   lList *groups = nullptr;
-   parse_name_list_to_cull("host groups to del", &groups, HGRP_Type, HGRP_name, arg.data());
-   return qconf_delete_send(QConfObj::HGRP, qconf_delete_names_of(QConfObj::HGRP, &groups), {}, alpp);
+   const auto groups = parse_name_list_to_cull<HGRP_name>("host groups to del", arg.data());
+   return qconf_delete_send(QConfObj::HGRP, qconf_delete_names_of<HGRP_name>(*groups), {}, alpp);
 }
 
 /** @brief "-de host,...": the execution hosts of the list
@@ -314,9 +333,8 @@ qconf_delete_hgroup_list([[maybe_unused]] std::ostream &os, const qconf_op &op, 
 static int
 qconf_delete_exechost_list([[maybe_unused]] std::ostream &os, const qconf_op &op, lList **alpp) {
    std::string arg = op.args[0];
-   lList *hosts = nullptr;
-   parse_name_list_to_cull("host to del", &hosts, EH_Type, EH_name, arg.data());
-   return qconf_delete_send(QConfObj::EH, qconf_delete_names_of(QConfObj::EH, &hosts), {}, alpp);
+   const auto hosts = parse_name_list_to_cull<EH_name>("host to del", arg.data());
+   return qconf_delete_send(QConfObj::EH, qconf_delete_names_of<EH_name>(*hosts), {}, alpp);
 }
 
 /** @brief "-dconf host,...": the configurations of the hosts of the list (CS-2967)

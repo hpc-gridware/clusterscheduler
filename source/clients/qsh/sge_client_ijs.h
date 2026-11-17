@@ -40,6 +40,8 @@
  */
 
 #include "cull/cull_list.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_RN.h"
 #include "uti/ocs_Ternary.h"
 
 #define COMM_SERVER "qrsh_ijs"      ///< commlib component name of this end; the client listens, so it is the server
@@ -51,7 +53,7 @@ void* commlib_to_tty(void *t_conf);
 
 int start_ijs_server(cl_framework_t communication_framework,
                      const char *hostname, const char *username,
-                     const lList *port_range,
+                     ocs::tom::ConstList<ocs::tom::RN> port_range,
                      COMM_HANDLE **phandle, dstring *p_err_msg);
 
 int run_ijs_server(COMM_HANDLE *phandle, const char *remote_host,

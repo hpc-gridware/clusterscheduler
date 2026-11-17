@@ -42,6 +42,8 @@
 #include "spool/sge_spooling_utilities.h"
 #include "spool/flatfile/sge_flatfile.h"   /* CS-2313a: spool_flatfile_format */
 #include "sgeobj/sge_daemonize.h"
+#include "tom/ocs_FieldTraits.h"
+#include "tom/ocs_List.h"
 
 /** @brief printf's rendering of a `%s` argument, nullptr included (CS-1841)
  *
@@ -87,16 +89,18 @@ extern spool_flatfile_format qconf_opt_format;
 
 /** @brief Turn a comma separated name list into a new CULL list, one element per name
  *
- * The name goes into a string or a host field, whichever @p nm is. Of a host
+ * The name goes into a string or a host field, whichever @p F is. Of a host
  * list, every host but the first is resolved into EH_name.
  *
+ * Instantiated for EH_name, US_name, HR_name and HGRP_name.
+ *
+ * @tparam F the field the name is written into; its type is the type of the elements
  * @param name the name of the new list
- * @param lpp receives the new list
- * @param dp the descriptor of the elements to create
- * @param nm the field the name is written into
  * @param s the name list; taken apart in place by sge_strtok()
+ * @return the new list, never an empty handle
  */
-void parse_name_list_to_cull(const char *name, lList **lpp, const lDescr *dp, int nm, char *s);
+template <auto F>
+ocs::tom::ListPtr<typename ocs::tom::FieldTraits<F>::Type> parse_name_list_to_cull(const char *name, char *s);
 
 
 /** @brief Work through the `qconf` command line, one switch at a time

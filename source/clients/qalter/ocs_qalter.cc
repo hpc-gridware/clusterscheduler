@@ -58,7 +58,11 @@
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
 #include "sgeobj/tom/ocs_tom_ID.h"
+#include "sgeobj/tom/ocs_tom_JAT.h"
 #include "sgeobj/tom/ocs_tom_JB.h"
+#include "sgeobj/tom/ocs_tom_JRE.h"
+#include "sgeobj/tom/ocs_tom_SME.h"
+#include "sgeobj/tom/ocs_tom_SPA.h"
 #include "sgeobj/tom/ocs_tom_MR.h"
 #include "sgeobj/tom/ocs_tom_PN.h"
 #include "sgeobj/tom/ocs_tom_RN.h"
@@ -85,7 +89,9 @@
    */
 static const char *JOB_NAME_DEL = ":";
 
-static lList *qalter_parse_job_parameter(uint32_t prog_number, lList *cmdline, lList **pjob, int *all_jobs, int *all_users);
+static lList *qalter_parse_job_parameter(uint32_t prog_number, ocs::tom::List<ocs::tom::SPA> cmdline,
+                                         ocs::tom::ListPtr<ocs::tom::JB> &requestlist, int *all_jobs,
+                                         int *all_users);
 
 /** @brief `-w v` was given: report what would happen and change nothing
  *
@@ -102,13 +108,22 @@ int verify = 0;
  */
 extern char **environ;
 
-/************************************************************************/
+/**
+ * @brief Modify, hold, release or resubmit jobs: qalter, qhold, qrls and qresub
+ *
+ * The program name decides which of the four clients runs.
+ *
+ * @param argc number of command line arguments
+ * @param argv the command line arguments
+ *
+ * @return the exit status of the client
+ */
 int main(int argc, const char **argv) {
    DENTER_MAIN(TOP_LAYER, "qalter");
    int ret = STATUS_OK;
    lList *alp = nullptr;
-   lList *request_list = nullptr;
-   lList *cmdline = nullptr;
+   ocs::tom::ListPtr<ocs::tom::JB> request_list;
+   ocs::tom::ListPtr<ocs::tom::SPA> cmdline;
    int all_jobs = 0;
    int all_users = 0;
    ocs::gdi::Command gdi_cmd = ocs::gdi::Command::MOD;
@@ -146,7 +161,7 @@ int main(int argc, const char **argv) {
    /*
    ** begin to work
    */
-   opt_list_append_opts_from_qalter_cmdline(me_who, &cmdline, &alp, argv + 1, environ);
+   opt_list_append_opts_from_qalter_cmdline(me_who, cmdline, &alp, argv + 1, environ);
    tmp_ret = answer_list_print_err_warn(&alp, MSG_QALTER, MSG_QALTER, MSG_QALTERWARNING);
    
    if (tmp_ret > 0) {
@@ -154,26 +169,27 @@ int main(int argc, const char **argv) {
    }
    
    /* handling the case that no command line parameter was specified */
-   if ((me_who == QHOLD || me_who == QRLS) && lGetNumberOfElem(cmdline) == 1) {
+   if ((me_who == QHOLD || me_who == QRLS) && cmdline->size() == 1) {
       /* -h option is set implicitly for QHOLD and QRLS */
       sge_usage(me_who, stderr);
       fprintf(stderr, "%s\n", MSG_PARSE_NOOPTIONARGUMENT);
       sge_exit(1);
-   } else if ((me_who == QRESUB || me_who == QALTER) && lGetNumberOfElem(cmdline) == 0) {
+   } else if ((me_who == QRESUB || me_who == QALTER) && cmdline->size() == 0) {
       /* qresub and qalter have nothing set */ 
       sge_usage(me_who, stderr);
       fprintf(stderr, "%s\n", MSG_PARSE_NOOPTIONARGUMENT);
       sge_exit(1);
-   } else if (opt_list_has_X(cmdline, "-help")) {
+   } else if (opt_list_has_X(*cmdline, "-help")) {
       /* -help was specified */
       sge_usage(me_who, stdout);
       sge_exit(0);
    }
    
-   alp = qalter_parse_job_parameter(me_who, cmdline, &request_list, &all_jobs, &all_users);
+   alp = qalter_parse_job_parameter(me_who, *cmdline, request_list, &all_jobs, &all_users);
 
-   if (sge_getenv("SGE_DEBUG_DUMP_JOB") != nullptr) {
-      lWriteListTo(request_list, stdout);
+   // print() throws on an empty handle where lWriteListTo() printed nothing
+   if (sge_getenv("SGE_DEBUG_DUMP_JOB") != nullptr && request_list) {
+      request_list->print(stdout);
    }
 
    DPRINTF("all_jobs = %d, all_user = %d\n", all_jobs, all_users);
@@ -192,7 +208,8 @@ int main(int argc, const char **argv) {
          show_job()
       */
       std::stringstream ss;
-      ocs::QStatJobViewPlain::cull_show_job(ss, nullptr, lFirst(request_list), FLG_QALTER);
+      ocs::QStatJobViewPlain::cull_show_job(ss, ocs::tom::ConstList<ocs::tom::SME>(), request_list->front(),
+                                            FLG_QALTER);
       printf("%s", ss.str().c_str());
       sge_exit(0);
    }
@@ -221,7 +238,12 @@ int main(int argc, const char **argv) {
    if (all_users)
       sub_cmd = ocs::gdi::SubCommand::ALL_USERS;
 
-   alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::JB_LIST, gdi_cmd, sub_cmd, &request_list, nullptr, nullptr);
+   {
+      // sge_gdi() has no typed form yet; it replaces the request list with the response
+      lList *request_lp = request_list.release();
+      alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::JB_LIST, gdi_cmd, sub_cmd, &request_lp, nullptr, nullptr);
+      request_list = ocs::tom::ListPtr<ocs::tom::JB>::from_typed(request_lp);
+   }
    for_each_ep_lv(aep, alp) {
       printf("%s\n", ocs::tom::get<AN_text>(aep));
       if (ret == STATUS_OK) {
@@ -253,20 +275,22 @@ int main(int argc, const char **argv) {
  * to the request list.
  *
  * @param me_who the program, QALTER, QHOLD, QRLS or QRESUB
- * @param cmdline the parsed command line (SPA_Type), or nullptr for the defaults
- * @param prequestlist receives the job modify requests for ocs::gdi::Client::sge_gdi
+ * @param cmdline the parsed command line (SPA_Type), or an empty handle for the defaults; the options used
+ *                are removed
+ * @param requestlist receives the job modify requests for ocs::gdi::Client::sge_gdi (reduced JB_Type),
+ *                    created with the first request
  * @param all_jobs set to 1 if the requests address all jobs, 0 if they name jobs
  * @param all_users not used
  * @return nullptr on success, else an answer list (AN_Type) with STATUS_EUNKNOWN for
  *         an internal error, STATUS_EDISK if getcwd() failed or STATUS_ENOIMP for an
  *         unknown switch or -help
  */
-static lList *qalter_parse_job_parameter(uint32_t me_who, lList *cmdline, lList **prequestlist,
-                                         int *all_jobs, int *all_users) {
-   DENTER(TOP_LAYER); 
+static lList *qalter_parse_job_parameter(const uint32_t me_who, const ocs::tom::List<ocs::tom::SPA> cmdline,
+                                         ocs::tom::ListPtr<ocs::tom::JB> &requestlist, int *all_jobs,
+                                         [[maybe_unused]] int *all_users) {
+   DENTER(TOP_LAYER);
 
-   lListElem *ep  = nullptr;
-   lListElem *rep = nullptr;
+   ocs::tom::Element<ocs::tom::SPA> ep;
    uint32_t jobid;
    int i;
    lEnumeration *what = nullptr;
@@ -277,12 +301,6 @@ static lList *qalter_parse_job_parameter(uint32_t me_who, lList *cmdline, lList 
 
    int job_field[100];
    bool is_hold_option = false;
-
-   if (!prequestlist) {
-      answer_list_add(&answer, MSG_PARSE_NULLPOINTERRECEIVED, STATUS_EUNKNOWN, 
-                      ANSWER_QUALITY_ERROR);
-      DRETURN(answer);
-   }
 
    /*
       STEP 1:
@@ -314,8 +332,8 @@ static lList *qalter_parse_job_parameter(uint32_t me_who, lList *cmdline, lList 
    ** you dont want the user to be able to make qmon do funny things, do you?
    ** (e.g. by putting -help in a script file)
    */
-   if ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-help"))) {
-      lRemoveElem(cmdline, &ep);
+   if ((ep = cmdline.find_first<SPA_switch_val>("-help"))) {
+      cmdline.erase(ep);
       answer_list_add_sprintf(&answer, STATUS_ENOIMP, ANSWER_QUALITY_ERROR,
                               SFNMAX, MSG_ANSWER_HELPNOTALLOWEDINCONTEXT);
       DRETURN(answer);
@@ -324,29 +342,29 @@ static lList *qalter_parse_job_parameter(uint32_t me_who, lList *cmdline, lList 
    /* ---------------------------------------------------------- */
 
    if (me_who != QRESUB) {
-      while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-a"))) {
+      while ((ep = cmdline.find_first<SPA_switch_val>("-a"))) {
          ocs::tom::set<JB_execution_time>(job, ocs::tom::get<SPA_argval_lUlong64T>(ep));
-         lRemoveElem(cmdline, &ep);
+         cmdline.erase(ep);
          nm_set(job_field, JB_execution_time);
       }
 
-      while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-A"))) {
+      while ((ep = cmdline.find_first<SPA_switch_val>("-A"))) {
          ocs::tom::set<JB_account>(job, ocs::tom::get<SPA_argval_lStringT>(ep));
-         lRemoveElem(cmdline, &ep);
+         cmdline.erase(ep);
          nm_set(job_field, JB_account);
       }
       
-      while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-ar"))) {
+      while ((ep = cmdline.find_first<SPA_switch_val>("-ar"))) {
          ocs::tom::set<JB_ar>(job, ocs::tom::get<SPA_argval_lUlongT>(ep));
-         lRemoveElem(cmdline, &ep);
+         cmdline.erase(ep);
          nm_set(job_field, JB_ar);
       }
 
       // -btype host | slot
-      while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-btype"))) {
+      while ((ep = cmdline.find_first<SPA_switch_val>("-btype"))) {
          // Create a binding element if it does not exist
-         lListElem *binding_elem = ocs::Job::binding_get_or_create_elem(job, &answer);
-         if (binding_elem == nullptr) {
+         const auto binding_elem = ocs::Job::binding_get_or_create_elem(job, &answer);
+         if (!binding_elem) {
             DRETURN(answer);
          }
 
@@ -354,15 +372,15 @@ static lList *qalter_parse_job_parameter(uint32_t me_who, lList *cmdline, lList 
          ocs::tom::set<BN_new_type>(binding_elem, ocs::tom::get<SPA_argval_lIntT>(ep));
 
          // Get rid of the binding element from the command line
-         lRemoveElem(cmdline, &ep);
+         cmdline.erase(ep);
          nm_set(job_field, JB_binding);
       }
 
       // -bamount number
-      while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-bamount"))) {
+      while ((ep = cmdline.find_first<SPA_switch_val>("-bamount"))) {
          // Create a binding element if it does not exist
-         lListElem *binding_elem = ocs::Job::binding_get_or_create_elem(job, &answer);
-         if (binding_elem == nullptr) {
+         const auto binding_elem = ocs::Job::binding_get_or_create_elem(job, &answer);
+         if (!binding_elem) {
             DRETURN(answer);
          }
 
@@ -370,15 +388,15 @@ static lList *qalter_parse_job_parameter(uint32_t me_who, lList *cmdline, lList 
          ocs::tom::set<BN_amount>(binding_elem, ocs::tom::get<SPA_argval_lIntT>(ep));
 
          // Get rid of the binding element from the command line
-         lRemoveElem(cmdline, &ep);
+         cmdline.erase(ep);
          nm_set(job_field, JB_binding);
       }
 
       // -binstance set | env | pe
-      while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-binstance"))) {
+      while ((ep = cmdline.find_first<SPA_switch_val>("-binstance"))) {
          // Create a binding element if it does not exist
-         lListElem *binding_elem = ocs::Job::binding_get_or_create_elem(job, &answer);
-         if (binding_elem == nullptr) {
+         const auto binding_elem = ocs::Job::binding_get_or_create_elem(job, &answer);
+         if (!binding_elem) {
             DRETURN(answer);
          }
 
@@ -386,15 +404,15 @@ static lList *qalter_parse_job_parameter(uint32_t me_who, lList *cmdline, lList 
          ocs::tom::set<BN_instance>(binding_elem, ocs::tom::get<SPA_argval_lIntT>(ep));
 
          // Get rid of the binding element from the command line
-         lRemoveElem(cmdline, &ep);
+         cmdline.erase(ep);
          nm_set(job_field, JB_binding);
       }
 
       // -bunit binding_unit
-      while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-bunit"))) {
+      while ((ep = cmdline.find_first<SPA_switch_val>("-bunit"))) {
          // Create a binding element if it does not exist
-         lListElem *binding_elem = ocs::Job::binding_get_or_create_elem(job, &answer);
-         if (binding_elem == nullptr) {
+         const auto binding_elem = ocs::Job::binding_get_or_create_elem(job, &answer);
+         if (!binding_elem) {
             DRETURN(answer);
          }
 
@@ -402,15 +420,15 @@ static lList *qalter_parse_job_parameter(uint32_t me_who, lList *cmdline, lList 
          ocs::tom::set<BN_unit>(binding_elem, ocs::tom::get<SPA_argval_lIntT>(ep));
 
          // Get rid of the binding element from the command line
-         lRemoveElem(cmdline, &ep);
+         cmdline.erase(ep);
          nm_set(job_field, JB_binding);
       }
 
       // -bfilter topo_string
-      while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-bfilter"))) {
+      while ((ep = cmdline.find_first<SPA_switch_val>("-bfilter"))) {
          // Create a binding element if it does not exist
-         lListElem *binding_elem = ocs::Job::binding_get_or_create_elem(job, &answer);
-         if (binding_elem == nullptr) {
+         const auto binding_elem = ocs::Job::binding_get_or_create_elem(job, &answer);
+         if (!binding_elem) {
             DRETURN(answer);
          }
 
@@ -418,15 +436,15 @@ static lList *qalter_parse_job_parameter(uint32_t me_who, lList *cmdline, lList 
          ocs::tom::set<BN_filter>(binding_elem, ocs::tom::get<SPA_argval_lStringT>(ep));
 
          // Get rid of the binding element from the command line
-         lRemoveElem(cmdline, &ep);
+         cmdline.erase(ep);
          nm_set(job_field, JB_binding);
       }
 
       // -bsort sort_string
-      while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-bsort"))) {
+      while ((ep = cmdline.find_first<SPA_switch_val>("-bsort"))) {
          // Create a binding element if it does not exist
-         lListElem *binding_elem = ocs::Job::binding_get_or_create_elem(job, &answer);
-         if (binding_elem == nullptr) {
+         const auto binding_elem = ocs::Job::binding_get_or_create_elem(job, &answer);
+         if (!binding_elem) {
             DRETURN(answer);
          }
 
@@ -434,15 +452,15 @@ static lList *qalter_parse_job_parameter(uint32_t me_who, lList *cmdline, lList 
          ocs::tom::set<BN_sort>(binding_elem, ocs::tom::get<SPA_argval_lStringT>(ep));
 
          // Get rid of the binding element from the command line
-         lRemoveElem(cmdline, &ep);
+         cmdline.erase(ep);
          nm_set(job_field, JB_binding);
       }
 
       // -bstart
-      while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-bstart"))) {
+      while ((ep = cmdline.find_first<SPA_switch_val>("-bstart"))) {
          // Create a binding element if it does not exist
-         lListElem *binding_elem = ocs::Job::binding_get_or_create_elem(job, &answer);
-         if (binding_elem == nullptr) {
+         const auto binding_elem = ocs::Job::binding_get_or_create_elem(job, &answer);
+         if (!binding_elem) {
             DRETURN(answer);
          }
 
@@ -450,15 +468,15 @@ static lList *qalter_parse_job_parameter(uint32_t me_who, lList *cmdline, lList 
          ocs::tom::set<BN_start>(binding_elem, ocs::tom::get<SPA_argval_lIntT>(ep));
 
          // Get rid of the binding element from the command line
-         lRemoveElem(cmdline, &ep);
+         cmdline.erase(ep);
          nm_set(job_field, JB_binding);
       }
 
       // -bstop
-      while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-bstop"))) {
+      while ((ep = cmdline.find_first<SPA_switch_val>("-bstop"))) {
          // Create a binding element if it does not exist
-         lListElem *binding_elem = ocs::Job::binding_get_or_create_elem(job, &answer);
-         if (binding_elem == nullptr) {
+         const auto binding_elem = ocs::Job::binding_get_or_create_elem(job, &answer);
+         if (!binding_elem) {
             DRETURN(answer);
          }
 
@@ -466,15 +484,15 @@ static lList *qalter_parse_job_parameter(uint32_t me_who, lList *cmdline, lList 
          ocs::tom::set<BN_stop>(binding_elem, ocs::tom::get<SPA_argval_lIntT>(ep));
 
          // Get rid of the binding element from the command line
-         lRemoveElem(cmdline, &ep);
+         cmdline.erase(ep);
          nm_set(job_field, JB_binding);
       }
 
       // -bstrategy
-      while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-bstrategy"))) {
+      while ((ep = cmdline.find_first<SPA_switch_val>("-bstrategy"))) {
          // Create a binding element if it does not exist
-         lListElem *binding_elem = ocs::Job::binding_get_or_create_elem(job, &answer);
-         if (binding_elem == nullptr) {
+         const auto binding_elem = ocs::Job::binding_get_or_create_elem(job, &answer);
+         if (!binding_elem) {
             DRETURN(answer);
          }
 
@@ -482,11 +500,11 @@ static lList *qalter_parse_job_parameter(uint32_t me_who, lList *cmdline, lList 
          ocs::tom::set<BN_strategy>(binding_elem, ocs::tom::get<SPA_argval_lIntT>(ep));
 
          // Get rid of the binding element from the command line
-         lRemoveElem(cmdline, &ep);
+         cmdline.erase(ep);
          nm_set(job_field, JB_binding);
       }
 
-      while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-cwd"))) {
+      while ((ep = cmdline.find_first<SPA_switch_val>("-cwd"))) {
          char tmp_str[SGE_PATH_MAX + 1];
          char tmp_str2[SGE_PATH_MAX + 1];
          char tmp_str3[SGE_PATH_MAX + 1];
@@ -519,11 +537,11 @@ static lList *qalter_parse_job_parameter(uint32_t me_who, lList *cmdline, lList 
             }
          }
          ocs::tom::set<JB_cwd>(job, tmp_str);
-         lRemoveElem(cmdline, &ep);
+         cmdline.erase(ep);
          nm_set(job_field, JB_cwd);
       }
 
-      while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-c"))) {
+      while ((ep = cmdline.find_first<SPA_switch_val>("-c"))) {
          if (ocs::tom::get<SPA_argtype>(ep) == lLongT) {
             ocs::tom::set<JB_checkpoint_interval>(job, 
                         ocs::tom::get<SPA_argval_lLongT>(ep));
@@ -533,25 +551,25 @@ static lList *qalter_parse_job_parameter(uint32_t me_who, lList *cmdline, lList 
             ocs::tom::set<JB_checkpoint_attr>(job, ocs::tom::get<SPA_argval_lIntT>(ep));
             nm_set(job_field, JB_checkpoint_attr);
          }
-         lRemoveElem(cmdline, &ep);
+         cmdline.erase(ep);
       }
 
 
-      while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-ckpt"))) {
+      while ((ep = cmdline.find_first<SPA_switch_val>("-ckpt"))) {
          ocs::tom::set<JB_checkpoint_name>(job, ocs::tom::get<SPA_argval_lStringT>(ep));
-         lRemoveElem(cmdline, &ep);
+         cmdline.erase(ep);
          nm_set(job_field, JB_checkpoint_name);
       }
 
-      while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-dept"))) {
+      while ((ep = cmdline.find_first<SPA_switch_val>("-dept"))) {
          ocs::tom::set<JB_department>(job, ocs::tom::get<SPA_argval_lStringT>(ep));
-         lRemoveElem(cmdline, &ep);
+         cmdline.erase(ep);
          nm_set(job_field, JB_department);
       }
 
-      while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-dl"))) {
+      while ((ep = cmdline.find_first<SPA_switch_val>("-dl"))) {
          ocs::tom::set<JB_deadline>(job, ocs::tom::get<SPA_argval_lUlong64T>(ep));
-         lRemoveElem(cmdline, &ep);
+         cmdline.erase(ep);
          nm_set(job_field, JB_deadline);
       }
 
@@ -567,9 +585,10 @@ static lList *qalter_parse_job_parameter(uint32_t me_who, lList *cmdline, lList 
    }
 
    /* STR_PSEUDO_JOBID */
-   if (ocs::tom::find_first<SPA_switch_val>(cmdline, STR_PSEUDO_JOBID)) {
+   if (cmdline.find_first<SPA_switch_val>(STR_PSEUDO_JOBID)) {
+      // parse_multi_jobtaskslist() has no typed form for the destination list yet
       lList *jids_out = nullptr;
-      const bool parsed = parse_multi_jobtaskslist(&cmdline, STR_PSEUDO_JOBID, &answer, &jids_out, true, 0);
+      const bool parsed = parse_multi_jobtaskslist(cmdline, STR_PSEUDO_JOBID, &answer, &jids_out, true, 0);
       /* parse_multi_jobtaskslist() creates the list with ID_Type, so it is taken over unchecked */
       auto jid_list = ocs::tom::ListPtr<ocs::tom::ID>::from_typed(jids_out);
       if (!parsed) {
@@ -579,75 +598,94 @@ static lList *qalter_parse_job_parameter(uint32_t me_who, lList *cmdline, lList 
    } 
 
    if (me_who != QRESUB) {
-      while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-u"))) {
-         lList *lp = nullptr;
-         lList *jid_list = nullptr;
+      while ((ep = cmdline.find_first<SPA_switch_val>("-u"))) {
+         auto jid_list = ocs::tom::ListPtr<ocs::tom::ID>::create("");
+         jid_list->emplace_back<ID_str>("*");
+         ocs::tom::set<JB_job_identifier_list>(job, std::move(jid_list));
 
-         ocs::tom::emplace_back<ID_str>(&jid_list, "*"); 
-         ocs::tom::set<JB_job_identifier_list>(job, jid_list);
-    
+         // SPA_argval_lListT carries lists of several types and has no typed exchange; the parser fills the
+         // argument of -u with an ST_Type user list
+         lList *lp = nullptr;
          ocs::tom::exchange<SPA_argval_lListT>(ep, &lp);
-         ocs::tom::set<JB_user_list>(job, lp);
-         lRemoveElem(cmdline, &ep);
+         ocs::tom::set<JB_user_list>(job, ocs::tom::ListPtr<ocs::tom::ST>::from_typed(lp));
+         cmdline.erase(ep);
          nm_set(job_field, JB_user_list);
          users_flag = 1;
       }
  
    }                    
    
-   while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-h"))) {
+   while ((ep = cmdline.find_first<SPA_switch_val>("-h"))) {
       is_hold_option = true;
 
       for (ocs::tom::Element<ocs::tom::ID> jid : ocs::tom::get<JB_job_identifier_list>(job)) {
          ocs::tom::set<ID_force>(jid, (uint32_t) ocs::tom::get<SPA_argval_lIntT>(ep));
       }
-      lRemoveElem(cmdline, &ep);
+      cmdline.erase(ep);
       nm_set(job_field, JB_ja_tasks);
       nm_set(job_field, JB_ja_structure);
    }
 
    if (me_who != QRESUB) {
       /* -hold_jid */
-      if (ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-hold_jid")) {
-         lListElem *ep;
-         lList *jref_list = nullptr;
-         while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-hold_jid"))) {
-            for_each_ep_lv(sep, ocs::tom::get<SPA_argval_lListT>(ep)) {
-               DPRINTF("-hold_jid %s\n", ocs::tom::get<ST_name>(sep));
-               ocs::tom::emplace_back<JRE_job_name>(&jref_list, ocs::tom::get<ST_name>(sep));
+      if (cmdline.find_first<SPA_switch_val>("-hold_jid")) {
+         // created with the first reference, as the free emplace_back() created it
+         ocs::tom::ListPtr<ocs::tom::JRE> jref_list;
+         while ((ep = cmdline.find_first<SPA_switch_val>("-hold_jid"))) {
+            // the parser fills the argument with an ST_Type name list
+            for (const auto sep : ocs::tom::ConstList<ocs::tom::ST>::from_typed(ocs::tom::get<SPA_argval_lListT>(ep))) {
+               const char *name = ocs::tom::get<ST_name>(sep);
+               DPRINTF("-hold_jid %s\n", name);
+               // a null name added nothing in the free emplace_back()
+               if (name == nullptr) {
+                  continue;
+               }
+               if (!jref_list) {
+                  jref_list = ocs::tom::ListPtr<ocs::tom::JRE>::create("");
+               }
+               jref_list->emplace_back<JRE_job_name>(name);
             }
-            lRemoveElem(cmdline, &ep);
+            cmdline.erase(ep);
          }
-         ocs::tom::set<JB_jid_request_list>(job , jref_list);
+         ocs::tom::set<JB_jid_request_list>(job, std::move(jref_list));
          nm_set(job_field, JB_jid_request_list );
          nm_set(job_field, JB_jid_predecessor_list);
       }
 
       /* -hold_jid_ad */
-      if (ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-hold_jid_ad")) {
-         lListElem *ep;
-         lList *jref_list = nullptr;
-         while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-hold_jid_ad"))) {
-            for_each_ep_lv(sep, ocs::tom::get<SPA_argval_lListT>(ep)) {
-               DPRINTF("-hold_jid_ad %s\n", ocs::tom::get<ST_name>(sep));
-               ocs::tom::emplace_back<JRE_job_name>(&jref_list, ocs::tom::get<ST_name>(sep));
+      if (cmdline.find_first<SPA_switch_val>("-hold_jid_ad")) {
+         // created with the first reference, as the free emplace_back() created it
+         ocs::tom::ListPtr<ocs::tom::JRE> jref_list;
+         while ((ep = cmdline.find_first<SPA_switch_val>("-hold_jid_ad"))) {
+            // the parser fills the argument with an ST_Type name list
+            for (const auto sep : ocs::tom::ConstList<ocs::tom::ST>::from_typed(ocs::tom::get<SPA_argval_lListT>(ep))) {
+               const char *name = ocs::tom::get<ST_name>(sep);
+               DPRINTF("-hold_jid_ad %s\n", name);
+               // a null name added nothing in the free emplace_back()
+               if (name == nullptr) {
+                  continue;
+               }
+               if (!jref_list) {
+                  jref_list = ocs::tom::ListPtr<ocs::tom::JRE>::create("");
+               }
+               jref_list->emplace_back<JRE_job_name>(name);
             }
-            lRemoveElem(cmdline, &ep);
+            cmdline.erase(ep);
          }
-         ocs::tom::set<JB_ja_ad_request_list>(job , jref_list);
+         ocs::tom::set<JB_ja_ad_request_list>(job, std::move(jref_list));
          nm_set(job_field, JB_ja_ad_request_list );
          nm_set(job_field, JB_ja_ad_predecessor_list);
       }
 
-      while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-R"))) {
+      while ((ep = cmdline.find_first<SPA_switch_val>("-R"))) {
          ocs::tom::set<JB_reserve>(job, ocs::tom::get<SPA_argval_lIntT>(ep));
-         lRemoveElem(cmdline, &ep);
+         cmdline.erase(ep);
          nm_set(job_field, JB_reserve);
       }
 
-      while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-j"))) {
+      while ((ep = cmdline.find_first<SPA_switch_val>("-j"))) {
          ocs::tom::set<JB_merge_stderr>(job, ocs::tom::get<SPA_argval_lIntT>(ep));
-         lRemoveElem(cmdline, &ep);
+         cmdline.erase(ep);
          nm_set(job_field, JB_merge_stderr);
       }
 
@@ -659,7 +697,7 @@ static lList *qalter_parse_job_parameter(uint32_t me_who, lList *cmdline, lList 
          nm_set(job_field, JB_request_set_list);
       }
 
-      while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-m"))) {
+      while ((ep = cmdline.find_first<SPA_switch_val>("-m"))) {
          uint32_t ul;
          uint32_t old_mail_opts;
     
@@ -671,7 +709,7 @@ static lList *qalter_parse_job_parameter(uint32_t me_who, lList *cmdline, lList 
             old_mail_opts = ocs::tom::get<JB_mail_options>(job);
             ocs::tom::set<JB_mail_options>(job, ul | old_mail_opts);
          }
-         lRemoveElem(cmdline, &ep);
+         cmdline.erase(ep);
          nm_set(job_field, JB_mail_options);
       }
 
@@ -679,15 +717,15 @@ static lList *qalter_parse_job_parameter(uint32_t me_who, lList *cmdline, lList 
       if (ocs::tom::get<JB_mail_list>(job))
          nm_set(job_field, JB_mail_list);
 
-      while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-N"))) {
+      while ((ep = cmdline.find_first<SPA_switch_val>("-N"))) {
          ocs::tom::set<JB_job_name>(job, ocs::tom::get<SPA_argval_lStringT>(ep));
-         lRemoveElem(cmdline, &ep);
+         cmdline.erase(ep);
          nm_set(job_field, JB_job_name); 
       }
 
-      while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-notify"))) {
+      while ((ep = cmdline.find_first<SPA_switch_val>("-notify"))) {
          ocs::tom::set<JB_notify>(job, true);
-         lRemoveElem(cmdline, &ep);
+         cmdline.erase(ep);
          nm_set(job_field, JB_notify);
       }
 
@@ -696,50 +734,51 @@ static lList *qalter_parse_job_parameter(uint32_t me_who, lList *cmdline, lList 
       if (ocs::tom::get<JB_stdout_path_list>(job))
          nm_set(job_field, JB_stdout_path_list);
 
-      while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-p"))) {
+      while ((ep = cmdline.find_first<SPA_switch_val>("-p"))) {
          ocs::tom::set<JB_priority>(job, 
             BASE_PRIORITY + ocs::tom::get<SPA_argval_lIntT>(ep));
-         lRemoveElem(cmdline, &ep);
+         cmdline.erase(ep);
          nm_set(job_field, JB_priority);
       }
 
-      while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-js"))) {
+      while ((ep = cmdline.find_first<SPA_switch_val>("-js"))) {
          ocs::tom::set<JB_jobshare>(job, ocs::tom::get<SPA_argval_lUlongT>(ep));
-         lRemoveElem(cmdline, &ep);
+         cmdline.erase(ep);
          nm_set(job_field, JB_jobshare);
       }
 
-      while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-P"))) {
+      while ((ep = cmdline.find_first<SPA_switch_val>("-P"))) {
          ocs::tom::set<JB_project>(job, ocs::tom::get<SPA_argval_lStringT>(ep));
-         lRemoveElem(cmdline, &ep);
+         cmdline.erase(ep);
          nm_set(job_field, JB_project);
       }
 
-      while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-par"))) {
+      while ((ep = cmdline.find_first<SPA_switch_val>("-par"))) {
          const char *allocation_rule = ocs::tom::get<SPA_switch_arg>(ep);
          uint32_t scope = ocs::tom::get<SPA_argval_lLongT>(ep);
-         lListElem *jrs = job_get_or_create_request_setRW(job, scope);
-         if (jrs != nullptr) {
+         const auto jrs = job_get_or_create_request_setRW(job, scope);
+         if (jrs) {
             ocs::tom::set<JRS_allocation_rule>(jrs, allocation_rule);
          }
-         lRemoveElem(cmdline, &ep);
+         cmdline.erase(ep);
          nm_set(job_field, JB_request_set_list);
       }
 
-      while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-pe"))) {
+      while ((ep = cmdline.find_first<SPA_switch_val>("-pe"))) {
          ocs::tom::set<JB_pe>(job, ocs::tom::get<SPA_argval_lStringT>(ep));
          /* put sublist from parsing into job */
+         // SPA_argval_lListT carries lists of several types and has no typed swap
          lSwapList(job, JB_pe_range, ep, SPA_argval_lListT);
-         lRemoveElem(cmdline, &ep);
+         cmdline.erase(ep);
 
          /* cannot address fields separately in command line but in gdi interface */ 
          nm_set(job_field, JB_pe);
          nm_set(job_field, JB_pe_range);
       }
 
-      while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-ot"))) {
+      while ((ep = cmdline.find_first<SPA_switch_val>("-ot"))) {
          ocs::tom::set<JB_override_tickets>(job, ocs::tom::get<SPA_argval_lUlongT>(ep));
-         lRemoveElem(cmdline, &ep);
+         cmdline.erase(ep);
          nm_set(job_field, JB_override_tickets);
       }
 
@@ -754,41 +793,44 @@ static lList *qalter_parse_job_parameter(uint32_t me_who, lList *cmdline, lList 
       if (job_get_master_hard_queue_list(job) != nullptr)
          nm_set(job_field, JB_request_set_list);
     
-      while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-r"))) {
+      while ((ep = cmdline.find_first<SPA_switch_val>("-r"))) {
          ocs::tom::set<JB_restart>(job, ocs::tom::get<SPA_argval_lIntT>(ep));
-         lRemoveElem(cmdline, &ep);
+         cmdline.erase(ep);
          nm_set(job_field, JB_restart);
       }
 
-      while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-w"))) {
+      while ((ep = cmdline.find_first<SPA_switch_val>("-w"))) {
          ocs::tom::set<JB_verify_suitable_queues>(job, ocs::tom::get<SPA_argval_lIntT>(ep));
-         lRemoveElem(cmdline, &ep);
+         cmdline.erase(ep);
          nm_set(job_field, JB_verify_suitable_queues);
       }
 
       /* not needed in job struct - they are still used at this point */
-      while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-soft"))) 
-         lRemoveElem(cmdline, &ep);
-      while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-hard")))
-         lRemoveElem(cmdline, &ep);
-      while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-scope")))
-         lRemoveElem(cmdline, &ep);
+      while ((ep = cmdline.find_first<SPA_switch_val>("-soft"))) {
+         cmdline.erase(ep);
+      }
+      while ((ep = cmdline.find_first<SPA_switch_val>("-hard"))) {
+         cmdline.erase(ep);
+      }
+      while ((ep = cmdline.find_first<SPA_switch_val>("-scope"))) {
+         cmdline.erase(ep);
+      }
 
       parse_list_simple(cmdline, "-S", job, JB_shell_list, 0, 0, FLG_LIST_APPEND);
       if (ocs::tom::get<JB_shell_list>(job))
          nm_set(job_field, JB_shell_list);
 
       
-      while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-wd"))) {
+      while ((ep = cmdline.find_first<SPA_switch_val>("-wd"))) {
          ocs::tom::set<JB_cwd>(job, ocs::tom::get<SPA_argval_lStringT>(ep));
-         lRemoveElem(cmdline, &ep);
+         cmdline.erase(ep);
          nm_set(job_field, JB_cwd);
       }
 
 #ifdef WITH_EXTENSIONS
-      while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-when"))) {
+      while ((ep = cmdline.find_first<SPA_switch_val>("-when"))) {
          ocs::tom::set<JB_when>(job, ocs::tom::get<SPA_argval_lUlongT>(ep));
-         lRemoveElem(cmdline, &ep);
+         cmdline.erase(ep);
          nm_set(job_field, JB_when);
       }
 #endif
@@ -796,65 +838,72 @@ static lList *qalter_parse_job_parameter(uint32_t me_who, lList *cmdline, lList 
       /*
       ** to be processed in the original order, set -V equal to -v
       */
-      while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-V"))) {
+      while ((ep = cmdline.find_first<SPA_switch_val>("-V"))) {
          ocs::tom::set<SPA_switch_val>(ep, "-v");
       }
       parse_list_simple(cmdline, "-v", job, JB_env_list, VA_variable, VA_value, FLG_LIST_MERGE);
       if (ocs::tom::get<JB_env_list>(job))
          nm_set(job_field, JB_env_list);
 
-      while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-tc"))) {
+      while ((ep = cmdline.find_first<SPA_switch_val>("-tc"))) {
          ocs::tom::set<JB_ja_task_concurrency>(job, ocs::tom::get<SPA_argval_lUlongT>(ep));
-         lRemoveElem(cmdline, &ep);
+         cmdline.erase(ep);
          nm_set(job_field, JB_ja_task_concurrency);
       }
 
-      if ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "--"))) {
-         lRemoveElem(cmdline, &ep);
+      if ((ep = cmdline.find_first<SPA_switch_val>("--"))) {
+         cmdline.erase(ep);
          nm_set(job_field, JB_job_args);
       }
       {
-         lList *lp;
-    
-         lp = lCopyList("job args", ocs::tom::get<JB_job_args>(job));
-    
-         while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, STR_PSEUDO_JOBARG))) {
-            ocs::tom::emplace_back<ST_name>(&lp, ocs::tom::get<SPA_argval_lStringT>(ep));
-            lRemoveElem(cmdline, &ep);
+         auto lp = ocs::tom::get<JB_job_args>(job).clone("job args");
+
+         while ((ep = cmdline.find_first<SPA_switch_val>(STR_PSEUDO_JOBARG))) {
+            // a null argument added nothing in the free emplace_back(); the list is created with the first one
+            if (const char *arg = ocs::tom::get<SPA_argval_lStringT>(ep); arg != nullptr) {
+               if (!lp) {
+                  lp = ocs::tom::ListPtr<ocs::tom::ST>::create("job args");
+               }
+               lp->emplace_back<ST_name>(arg);
+            }
+            cmdline.erase(ep);
             nm_set(job_field, JB_job_args);
          }
-         ocs::tom::set<JB_job_args>(job, lp);
+         ocs::tom::set<JB_job_args>(job, std::move(lp));
       }
 
       /* context switches are sensitive to order */
-      ep = lFirstRW(cmdline);
-      while(ep)
-         if(!strcmp(ocs::tom::get<SPA_switch_val>(ep), "-ac") ||
-            !strcmp(ocs::tom::get<SPA_switch_val>(ep), "-dc") ||
-            !strcmp(ocs::tom::get<SPA_switch_val>(ep), "-sc")) {
-            lListElem* temp;
-            // the switches are concatenated in their order, as instructions for the qmaster (CS-3058)
+      ep = cmdline.front();
+      while (ep) {
+         if (!strcmp(ocs::tom::get<SPA_switch_val>(ep), "-ac") ||
+             !strcmp(ocs::tom::get<SPA_switch_val>(ep), "-dc") ||
+             !strcmp(ocs::tom::get<SPA_switch_val>(ep), "-sc")) {
+            // the switches are concatenated in their order, as instructions for the qmaster (CS-3058);
+            // ocs_context_change_add() has no typed form for the change list yet
             lList *change = nullptr;
             ocs::tom::exchange<JB_context_change>(job, &change);
-            ocs_context_change_add(&change, ocs::tom::get<SPA_argval_lListT>(ep));
+            // the parser fills the argument of the context switches with a VA_Type list
+            ocs_context_change_add(&change, ocs::tom::ConstList<ocs::tom::VA>::from_typed(
+                                               ocs::tom::get<SPA_argval_lListT>(ep)));
             ocs::tom::exchange<JB_context_change>(job, &change);
-            temp = lNextRW(ep);
-            lRemoveElem(cmdline, &ep);
+            const auto temp = ep.next();
+            cmdline.erase(ep);
             ep = temp;
             nm_set(job_field, JB_context_change);
          } else {
-            ep = lNextRW(ep);
+            ep = ep.next();
          }
+      }
    }
 
    /* complain about unused options */
-   for_each_rw(ep, cmdline) {
+   for (const auto unknown : cmdline) {
       const char *cp;
       char str[1024];
- 
+
       snprintf(str, sizeof(str), MSG_ANSWER_UNKNOWNOPTIONX_S,
-         ocs::tom::get<SPA_switch_val>(ep));
-      cp = ocs::tom::get<SPA_switch_arg>(ep);
+         ocs::tom::get<SPA_switch_val>(unknown));
+      cp = ocs::tom::get<SPA_switch_arg>(unknown);
       if (cp) {
          strcat(str, " ");
          strcat(str, cp);
@@ -863,8 +912,8 @@ static lList *qalter_parse_job_parameter(uint32_t me_who, lList *cmdline, lList 
       answer_list_add(&answer, str, STATUS_ENOIMP, ANSWER_QUALITY_ERROR);
    }
 
-   if ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-verify"))) {
-      lRemoveElem(cmdline, &ep);
+   if ((ep = cmdline.find_first<SPA_switch_val>("-verify"))) {
+      cmdline.erase(ep);
       verify = 1;
       nm_set(job_field, JB_env_list);
    } 
@@ -905,17 +954,17 @@ static lList *qalter_parse_job_parameter(uint32_t me_who, lList *cmdline, lList 
 
    /* if a user uses -u or -uall flag and does not enter jids
       we will add a dummy job to send other parameters to qmaster */
-   if (users_flag && !ocs::tom::get<JB_job_identifier_list>(job)){   
-      lList *jid_list = nullptr;
-
-      ocs::tom::emplace_back<ID_str>(&jid_list, "*");
-      ocs::tom::set<JB_job_identifier_list>(job, jid_list);
+   if (users_flag && !ocs::tom::get<JB_job_identifier_list>(job)) {
+      auto jid_list = ocs::tom::ListPtr<ocs::tom::ID>::create("");
+      jid_list->emplace_back<ID_str>("*");
+      ocs::tom::set<JB_job_identifier_list>(job, std::move(jid_list));
    }
 
    /* get next job id from cmd line */
    for (const auto jid : ocs::tom::get<JB_job_identifier_list>(job)) {
-      lList *task_list = nullptr;
-      lListElem *task;
+      // created with the first task, reduced as lAddElemUlong() created it
+      ocs::tom::ListPtr<ocs::tom::JAT> task_list;
+      ocs::tom::Element<ocs::tom::JB> rep;
       // built once and never released, so every use only takes a reference
       static const lDescr *const task_descr = ocs_cull_descr_reduce(JAT_Type, {JAT_task_number, JAT_hold});
 
@@ -949,7 +998,13 @@ static lList *qalter_parse_job_parameter(uint32_t me_who, lList *cmdline, lList 
       if ((jobid != 0) || ((*all_jobs) == 1)){
          const char *job_name = ocs::tom::get<JB_job_name>(job);
 
-         rep = lAddElemUlong(prequestlist, JB_job_number, jobid, rdp);
+         // the requests carry reduced jobs, created as lAddElemUlong() created them
+         if (!requestlist) {
+            requestlist = ocs::tom::ListPtr<ocs::tom::JB>::create("ulong_sublist", rdp);
+         }
+         auto new_rep = ocs::tom::ElementPtr<ocs::tom::JB>::create(rdp);
+         ocs::tom::set<JB_job_number>(new_rep, jobid);
+         rep = requestlist->push_back(std::move(new_rep));
          if (job_name != nullptr) {
             ocs::tom::set<JB_job_name>(rep, job_name);
          }
@@ -966,7 +1021,13 @@ static lList *qalter_parse_job_parameter(uint32_t me_who, lList *cmdline, lList 
          name = sge_malloc(size);
          /* format: <delimiter>old_name<delimiter>new_name */
          snprintf(name, size, "%s%s%s%s", JOB_NAME_DEL, ocs::tom::get<ID_str>(jid), JOB_NAME_DEL, job_name?job_name:"");
-         rep = lAddElemStr(prequestlist, JB_job_name, name, rdp);
+         // the requests carry reduced jobs, created as lAddElemStr() created them
+         if (!requestlist) {
+            requestlist = ocs::tom::ListPtr<ocs::tom::JB>::create("", rdp);
+         }
+         auto new_rep = ocs::tom::ElementPtr<ocs::tom::JB>::create(rdp);
+         ocs::tom::set<JB_job_name>(new_rep, name);
+         rep = requestlist->push_back(std::move(new_rep));
          sge_free(&name);
       }   
 
@@ -980,30 +1041,38 @@ static lList *qalter_parse_job_parameter(uint32_t me_who, lList *cmdline, lList 
       /* build task list from ID_Type from JB_job_identifier */
       
       if (is_hold_option && !ocs::tom::get<ID_ja_structure>(jid)) {
-         task = lAddElemUlong(&task_list, JAT_task_number, 0, task_descr);      
+         task_list = ocs::tom::ListPtr<ocs::tom::JAT>::create("ulong_sublist", task_descr);
+         auto task = ocs::tom::ElementPtr<ocs::tom::JAT>::create(task_descr);
+         ocs::tom::set<JAT_task_number>(task, 0);
          ocs::tom::set<JAT_hold>(task, ocs::tom::get<ID_force>(jid));
+         task_list->push_back(std::move(task));
       } else if (ocs::tom::get<ID_ja_structure>(jid)) {
          for (ocs::tom::ConstElement<ocs::tom::RN> range : ocs::tom::get<ID_ja_structure>(jid)) {
             uint32_t start = ocs::tom::get<RN_min>(range);
             uint32_t end = ocs::tom::get<RN_max>(range);
             uint32_t step = ocs::tom::get<RN_step>(range);
             for (;start<=end; start += step) {
-               task = lAddElemUlong(&task_list, JAT_task_number, 
-                                       start, task_descr);
+               if (!task_list) {
+                  task_list = ocs::tom::ListPtr<ocs::tom::JAT>::create("ulong_sublist", task_descr);
+               }
+               auto task = ocs::tom::ElementPtr<ocs::tom::JAT>::create(task_descr);
+               ocs::tom::set<JAT_task_number>(task, start);
                ocs::tom::set<JAT_hold>(task, ocs::tom::get<ID_force>(jid));
+               task_list->push_back(std::move(task));
             } 
          }
       }
-      if ((!ocs::tom::has<JB_ja_tasks>(rep)) && (lGetNumberOfElem(task_list))){
+      if (!ocs::tom::has<JB_ja_tasks>(rep) && task_list->size() > 0) {
          answer_list_add_sprintf(&answer, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                                  SFNMAX, MSG_OPTIONWORKSONLYONJOB);
          ocs_cull_descr_release(&rdp);
          DRETURN(answer);
       }
-      ocs::tom::set<JB_ja_tasks>(job, task_list);
+      ocs::tom::set<JB_ja_tasks>(job, std::move(task_list));
       ocs::tom::set<JB_ja_structure>(job, ocs::tom::get<ID_ja_structure>(jid).clone(""));
 
-      /* fill in fields of the job */
+      /* fill in fields of the job; the field numbers come from tables and the request is reduced, so the
+       * copy stays on the generic interface */
       {
          static int str_nm[] = {
             JB_account,

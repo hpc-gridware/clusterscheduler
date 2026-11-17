@@ -39,6 +39,7 @@
 #include <sys/stat.h>
 #include <cerrno>
 #include <sstream>
+#include <tuple>
 
 #include "uti/ocs_TerminationManager.h"
 #include "uti/ocs_cond.h"
@@ -52,6 +53,10 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_job.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
+#include "sgeobj/tom/ocs_tom_SPA.h"
+#include "sgeobj/tom/ocs_tom_SME.h"
 
 #include "japi/japi.h"
 #include "japi/japiP.h"
@@ -88,14 +93,21 @@ static void *sig_thread(void *dummy);
 static int report_exit_status(int stat, const char *jobid);
 static void error_handler(const char *message);
 
-/************************************************************************/
+/**
+ * @brief Submit a batch job, the qsub client
+ *
+ * @param argc number of command line arguments
+ * @param argv the command line arguments
+ *
+ * @return the exit status of qsub, or of the job with -sync
+ */
 int main(int argc, const char **argv) {
    DENTER_MAIN(TOP_LAYER, "qsub");
-   lList *opts_cmdline = nullptr;
-   lList *opts_defaults = nullptr;
-   lList *opts_scriptfile = nullptr;
-   lList *opts_all = nullptr;
-   lListElem *job = nullptr;
+   ocs::tom::ListPtr<ocs::tom::SPA> opts_cmdline;
+   ocs::tom::ListPtr<ocs::tom::SPA> opts_defaults;
+   ocs::tom::ListPtr<ocs::tom::SPA> opts_scriptfile;
+   ocs::tom::ListPtr<ocs::tom::SPA> opts_all;
+   ocs::tom::ElementPtr<ocs::tom::JB> job;
    lList *alp = nullptr;
    int exit_status = 0;
    int just_verify;
@@ -152,7 +164,7 @@ int main(int argc, const char **argv) {
    /*
     * read switches from the various defaults files
     */
-   opt_list_append_opts_from_default_files(prog_number, cell_root, username, &opts_defaults, &alp, environ);
+   opt_list_append_opts_from_default_files(prog_number, cell_root, username, opts_defaults, &alp, environ);
    tmp_ret = answer_list_print_err_warn(&alp, nullptr, nullptr, MSG_WARNING);
    if (tmp_ret > 0) {
       sge_exit(tmp_ret);
@@ -161,7 +173,7 @@ int main(int argc, const char **argv) {
    /*
     * append the commandline switches to the list
     */
-   opt_list_append_opts_from_qsub_cmdline(prog_number, &opts_cmdline, &alp,
+   opt_list_append_opts_from_qsub_cmdline(prog_number, opts_cmdline, &alp,
                                           argv + 1, environ);
    tmp_ret = answer_list_print_err_warn(&alp, nullptr, "qsub: ", MSG_QSUB_WARNING_S);
    if (tmp_ret > 0) {
@@ -171,7 +183,7 @@ int main(int argc, const char **argv) {
    /*
     * show usage if -help was in commandline
     */
-   if (opt_list_has_X(opts_cmdline, "-help")) {
+   if (opt_list_has_X(*opts_cmdline, "-help")) {
       sge_usage(QSUB, stdout);
       sge_exit(0);
    }
@@ -180,14 +192,14 @@ int main(int argc, const char **argv) {
     * We will only read commandline options from scripfile if the script
     * itself should not be handled as binary
     */
-   if (opt_list_is_X_true(opts_cmdline, "-b") ||
-       (!opt_list_has_X(opts_cmdline, "-b") &&
-        opt_list_is_X_true(opts_defaults, "-b"))) {
+   if (opt_list_is_X_true(*opts_cmdline, "-b") ||
+       (!opt_list_has_X(*opts_cmdline, "-b") &&
+        opt_list_is_X_true(*opts_defaults, "-b"))) {
       DPRINTF("Skipping options from script due to -b option\n");
    } else {
       opt_list_append_opts_from_script(prog_number,
-                                       &opts_scriptfile, &alp,
-                                       opts_cmdline, environ);
+                                       opts_scriptfile, &alp,
+                                       *opts_cmdline, environ);
       tmp_ret = answer_list_print_err_warn(&alp, nullptr, MSG_QSUB_COULDNOTREADSCRIPT_S, MSG_WARNING);
       if (tmp_ret > 0) {
          sge_exit(tmp_ret);
@@ -197,29 +209,36 @@ int main(int argc, const char **argv) {
    /*
     * Merge all commandline options and interpret them
     */
-   opt_list_merge_command_lines(&opts_all, &opts_defaults,
-                                &opts_scriptfile, &opts_cmdline);
+   opt_list_merge_command_lines(opts_all, std::move(opts_defaults),
+                                std::move(opts_scriptfile), std::move(opts_cmdline));
 
    /*
     * Check if -terse is requested
     */
-   if (opt_list_has_X(opts_all, "-terse")) {
+   if (opt_list_has_X(*opts_all, "-terse")) {
       has_terse = true;
    }
 
-   opt_list_verify_scope(opts_all, &alp);
+   opt_list_verify_scope(*opts_all, &alp);
    tmp_ret = answer_list_print_err_warn(&alp, nullptr, nullptr, nullptr);
    if (tmp_ret > 0) {
       sge_exit(tmp_ret);
    }
 
    uint32_t sync_opt = SYNC_NO;
-   alp = cull_parse_job_parameter(myuid, username, cell_root, unqualified_hostname, qualified_hostname, opts_all, &job, &sync_opt);
+   {
+      // cull_parse_job_parameter() has no typed form yet; it creates the job
+      lListElem *job_ep = nullptr;
+      alp = cull_parse_job_parameter(myuid, username, cell_root, unqualified_hostname, qualified_hostname, *opts_all,
+                                     &job_ep, &sync_opt);
+      job = ocs::tom::ElementPtr<ocs::tom::JB>::from_typed(job_ep);
+   }
 
-   job_set_command_line(job, argc, argv);
+   job_set_command_line(*job, argc, argv);
 
-   if (sge_getenv("SGE_DEBUG_DUMP_JOB") != nullptr) {
-      lWriteElemTo(job, stdout);
+   // print() throws on an empty handle where lWriteElemTo() printed nothing
+   if (sge_getenv("SGE_DEBUG_DUMP_JOB") != nullptr && job) {
+      job->print(stdout);
    }
 
    tmp_ret = answer_list_print_err_warn(&alp, nullptr, "qsub: ", MSG_WARNING);
@@ -227,7 +246,8 @@ int main(int argc, const char **argv) {
       sge_exit(tmp_ret);
    }
 
-   if (set_sec_cred(sge_root, mastername, job, &alp) != 0) {
+   // set_sec_cred() has no typed form yet
+   if (set_sec_cred(sge_root, mastername, *job, &alp) != 0) {
       answer_list_output(&alp);
       sge_exit(1);
    }
@@ -240,7 +260,7 @@ int main(int argc, const char **argv) {
 
    if (ocs::tom::get<JB_verify>(job)) {
       std::stringstream ss;
-      ocs::QStatJobViewPlain::cull_show_job(ss, nullptr, job, 0);
+      ocs::QStatJobViewPlain::cull_show_job(ss, ocs::tom::ConstList<ocs::tom::SME>(), *job, 0);
       printf("%s", ss.str().c_str());
       sge_exit(0);
    }
@@ -273,11 +293,11 @@ int main(int argc, const char **argv) {
       }
    }
 
-   job_get_submit_task_ids(job, &start, &end, &step);
+   std::tie(start, end, step) = job_get_submit_task_ids(*job);
    num_tasks = (end - start) / step + 1;
 
    if (num_tasks > 1) {
-      int error = japi_run_bulk_jobs(&jobids, &job, start, end, step, &diag);
+      int error = japi_run_bulk_jobs(&jobids, job, start, end, step, &diag);
       if (error != DRMAA_ERRNO_SUCCESS) {
          /* No active session here means that japi_enable_job_wait() was
           * interrupted by the signal handler, in which case we just break out
@@ -309,7 +329,7 @@ int main(int argc, const char **argv) {
       jobid_string = get_bulk_jobid_string((long)jobids->it.ji.jobid, start, end, step);
    }
    else if (num_tasks == 1) {
-      int error = japi_run_job(&jobid, &job, &diag);
+      int error = japi_run_job(&jobid, job, &diag);
 
       if (error != DRMAA_ERRNO_SUCCESS) {
          if (error != DRMAA_ERRNO_NO_ACTIVE_SESSION) {
@@ -468,7 +488,8 @@ int main(int argc, const char **argv) {
 Error:
    sge_free(&jobid_string);
    lFreeList(&alp);
-   lFreeList(&opts_all);
+   opts_all.reset();
+   job.reset();
 
    if ((tmp_ret = japi_exit(JAPI_EXIT_NO_FLAG, &diag)) != DRMAA_ERRNO_SUCCESS) {
       if (tmp_ret != DRMAA_ERRNO_NO_ACTIVE_SESSION) {

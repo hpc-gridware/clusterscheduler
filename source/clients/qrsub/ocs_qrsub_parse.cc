@@ -73,163 +73,164 @@
 
 /** @brief Build an advance reservation from the parsed `qrsub` command line
  *
- * @param pcmdline the parsed options (`SPA_Type`)
+ * @param pcmdline the parsed options (`SPA_Type`); the options used are removed
  * @param alpp used to return error messages
  * @param ar the advance reservation the options are written into
  * @return true on success; false with `alpp` filled otherwise
  */
-bool sge_parse_qrsub(lList *pcmdline, lList **alpp, const ocs::tom::Element<ocs::tom::AR> ar) {
+bool sge_parse_qrsub(const ocs::tom::List<ocs::tom::SPA> pcmdline, lList **alpp,
+                     const ocs::tom::Element<ocs::tom::AR> ar) {
    DENTER(TOP_LAYER);
 
-   lListElem *ep = nullptr;
+   ocs::tom::Element<ocs::tom::SPA> ep;
    /* -help print this help */
-   if ((ep = ocs::tom::find_first_rw<SPA_switch_val>(pcmdline, "-help"))) {
-      lRemoveElem(pcmdline, &ep);
+   if ((ep = pcmdline.find_first<SPA_switch_val>("-help"))) {
+      pcmdline.erase(ep);
       sge_usage(QRSUB, stdout);
       sge_exit(0);
    }
 
    /* -a date_time start time in [[CC]YY]MMDDhhmm[.SS] SGE_ULONG */
-   while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(pcmdline, "-a"))) {
+   while ((ep = pcmdline.find_first<SPA_switch_val>("-a"))) {
       ocs::tom::set<AR_start_time>(ar, ocs::tom::get<SPA_argval_lUlong64T>(ep));
-      lRemoveElem(pcmdline, &ep);
+      pcmdline.erase(ep);
    }
 
    // -btype host | slot
-   ep = ocs::tom::find_first_rw<SPA_switch_val>(pcmdline, "-btype");
-   if (ep != nullptr) {
-      lListElem *binding_elem = ocs::AdvanceReservation::binding_get_or_create_elem(ar, alpp);
+   ep = pcmdline.find_first<SPA_switch_val>("-btype");
+   if (ep) {
+      const auto binding_elem = ocs::AdvanceReservation::binding_get_or_create_elem(ar, alpp);
       // nullptr means failure, as in the other -b* branches (the check was inverted, CS-3119)
-      if (binding_elem == nullptr) {
+      if (!binding_elem) {
          DRETURN(false);
       }
       ocs::tom::set<BN_new_type>(binding_elem, ocs::tom::get<SPA_argval_lIntT>(ep));
-      lRemoveElem(pcmdline, &ep);
+      pcmdline.erase(ep);
    }
 
    // -bamount number
-   ep = ocs::tom::find_first_rw<SPA_switch_val>(pcmdline, "-bamount");
-   if (ep != nullptr) {
-      lListElem *binding_elem = ocs::AdvanceReservation::binding_get_or_create_elem(ar, alpp);
-      if (binding_elem == nullptr) {
+   ep = pcmdline.find_first<SPA_switch_val>("-bamount");
+   if (ep) {
+      const auto binding_elem = ocs::AdvanceReservation::binding_get_or_create_elem(ar, alpp);
+      if (!binding_elem) {
          DRETURN(false);
       }
       ocs::tom::set<BN_amount>(binding_elem, ocs::tom::get<SPA_argval_lIntT>(ep));
-      lRemoveElem(pcmdline, &ep);
+      pcmdline.erase(ep);
    }
 
    // -binstance set | env | pe
-   ep = ocs::tom::find_first_rw<SPA_switch_val>(pcmdline, "-binstance");
-   if (ep != nullptr) {
-      lListElem *binding_elem = ocs::AdvanceReservation::binding_get_or_create_elem(ar, alpp);
-      if (binding_elem == nullptr) {
+   ep = pcmdline.find_first<SPA_switch_val>("-binstance");
+   if (ep) {
+      const auto binding_elem = ocs::AdvanceReservation::binding_get_or_create_elem(ar, alpp);
+      if (!binding_elem) {
          DRETURN(false);
       }
       ocs::tom::set<BN_instance>(binding_elem, ocs::tom::get<SPA_argval_lIntT>(ep));
-      lRemoveElem(pcmdline, &ep);
+      pcmdline.erase(ep);
    }
 
    // -bunit binding_unit
-   ep = ocs::tom::find_first_rw<SPA_switch_val>(pcmdline, "-bunit");
-   if (ep != nullptr) {
-      lListElem *binding_elem = ocs::AdvanceReservation::binding_get_or_create_elem(ar, alpp);
-      if (binding_elem == nullptr) {
+   ep = pcmdline.find_first<SPA_switch_val>("-bunit");
+   if (ep) {
+      const auto binding_elem = ocs::AdvanceReservation::binding_get_or_create_elem(ar, alpp);
+      if (!binding_elem) {
          DRETURN(false);
       }
       ocs::tom::set<BN_unit>(binding_elem, ocs::tom::get<SPA_argval_lIntT>(ep));
-      lRemoveElem(pcmdline, &ep);
+      pcmdline.erase(ep);
    }
 
    // -bfilter topo_string
-   ep = ocs::tom::find_first_rw<SPA_switch_val>(pcmdline, "-bfilter");
-   if (ep != nullptr) {
-      lListElem *binding_elem = ocs::AdvanceReservation::binding_get_or_create_elem(ar, alpp);
-      if (binding_elem == nullptr) {
+   ep = pcmdline.find_first<SPA_switch_val>("-bfilter");
+   if (ep) {
+      const auto binding_elem = ocs::AdvanceReservation::binding_get_or_create_elem(ar, alpp);
+      if (!binding_elem) {
          DRETURN(false);
       }
       ocs::tom::set<BN_filter>(binding_elem, ocs::tom::get<SPA_argval_lStringT>(ep));
-      lRemoveElem(pcmdline, &ep);
+      pcmdline.erase(ep);
    }
 
    // -bsort sort_string
-   ep = ocs::tom::find_first_rw<SPA_switch_val>(pcmdline, "-bsort");
-   if (ep != nullptr) {
-      lListElem *binding_elem = ocs::AdvanceReservation::binding_get_or_create_elem(ar, alpp);
-      if (binding_elem == nullptr) {
+   ep = pcmdline.find_first<SPA_switch_val>("-bsort");
+   if (ep) {
+      const auto binding_elem = ocs::AdvanceReservation::binding_get_or_create_elem(ar, alpp);
+      if (!binding_elem) {
          DRETURN(false);
       }
       ocs::tom::set<BN_sort>(binding_elem, ocs::tom::get<SPA_argval_lStringT>(ep));
-      lRemoveElem(pcmdline, &ep);
+      pcmdline.erase(ep);
    }
 
    // -bstart
-   ep = ocs::tom::find_first_rw<SPA_switch_val>(pcmdline, "-bstart");
-   if (ep != nullptr) {
-      lListElem *binding_elem = ocs::AdvanceReservation::binding_get_or_create_elem(ar, alpp);
-      if (binding_elem == nullptr) {
+   ep = pcmdline.find_first<SPA_switch_val>("-bstart");
+   if (ep) {
+      const auto binding_elem = ocs::AdvanceReservation::binding_get_or_create_elem(ar, alpp);
+      if (!binding_elem) {
          DRETURN(false);
       }
       ocs::tom::set<BN_start>(binding_elem, ocs::tom::get<SPA_argval_lIntT>(ep));
-      lRemoveElem(pcmdline, &ep);
+      pcmdline.erase(ep);
    }
 
    // -bstop
-   ep = ocs::tom::find_first_rw<SPA_switch_val>(pcmdline, "-bstop");
-   if (ep != nullptr) {
-      lListElem *binding_elem = ocs::AdvanceReservation::binding_get_or_create_elem(ar, alpp);
-      if (binding_elem == nullptr) {
+   ep = pcmdline.find_first<SPA_switch_val>("-bstop");
+   if (ep) {
+      const auto binding_elem = ocs::AdvanceReservation::binding_get_or_create_elem(ar, alpp);
+      if (!binding_elem) {
          DRETURN(false);
       }
       ocs::tom::set<BN_stop>(binding_elem, ocs::tom::get<SPA_argval_lIntT>(ep));
-      lRemoveElem(pcmdline, &ep);
+      pcmdline.erase(ep);
    }
 
    // -bstrategy
-   ep = ocs::tom::find_first_rw<SPA_switch_val>(pcmdline, "-bstrategy");
-   if (ep != nullptr) {
-      lListElem *binding_elem = ocs::AdvanceReservation::binding_get_or_create_elem(ar, alpp);
-      if (binding_elem == nullptr) {
+   ep = pcmdline.find_first<SPA_switch_val>("-bstrategy");
+   if (ep) {
+      const auto binding_elem = ocs::AdvanceReservation::binding_get_or_create_elem(ar, alpp);
+      if (!binding_elem) {
          DRETURN(false);
       }
       ocs::tom::set<BN_strategy>(binding_elem, ocs::tom::get<SPA_argval_lIntT>(ep));
-      lRemoveElem(pcmdline, &ep);
+      pcmdline.erase(ep);
    }
 
 
    /*  -e date_time 	 end time in [[CC]YY]MMDDhhmm[.SS] SGE_ULONG*/
-   while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(pcmdline, "-e"))) {
+   while ((ep = pcmdline.find_first<SPA_switch_val>("-e"))) {
       ocs::tom::set<AR_end_time>(ar, ocs::tom::get<SPA_argval_lUlong64T>(ep));
-      lRemoveElem(pcmdline, &ep);
+      pcmdline.erase(ep);
    }
 
    /*  -d time duration in TIME format SGE_ULONG */
-   while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(pcmdline, "-d"))) {
+   while ((ep = pcmdline.find_first<SPA_switch_val>("-d"))) {
       ocs::tom::set<AR_duration>(ar, ocs::tom::get<SPA_argval_lUlong64T>(ep));
-      lRemoveElem(pcmdline, &ep);
+      pcmdline.erase(ep);
    }
    
    /*  -w e/v 	 validate availability of AR request, default e SGE_ULONG */
-   while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(pcmdline, "-w"))) {
+   while ((ep = pcmdline.find_first<SPA_switch_val>("-w"))) {
       ocs::tom::set<AR_verify>(ar, ocs::tom::get<SPA_argval_lIntT>(ep));
-      lRemoveElem(pcmdline, &ep);
+      pcmdline.erase(ep);
    }
   
    /*  -N name 	 AR name SGE_STRING */
-   while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(pcmdline, "-N"))) {
+   while ((ep = pcmdline.find_first<SPA_switch_val>("-N"))) {
       ocs::tom::set<AR_name>(ar, ocs::tom::get<SPA_argval_lStringT>(ep));
-      lRemoveElem(pcmdline, &ep);
+      pcmdline.erase(ep);
    }
       
    /*  -A account_string AR name in accounting record SGE_STRING */
-   while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(pcmdline, "-A"))) {
+   while ((ep = pcmdline.find_first<SPA_switch_val>("-A"))) {
       ocs::tom::set<AR_account>(ar, ocs::tom::get<SPA_argval_lStringT>(ep));
-      lRemoveElem(pcmdline, &ep);
+      pcmdline.erase(ep);
    }
      
    /*  -P project_name project of the AR SGE_STRING */
-   while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(pcmdline, "-P"))) {
+   while ((ep = pcmdline.find_first<SPA_switch_val>("-P"))) {
       ocs::tom::set<AR_project>(ar, ocs::tom::get<SPA_argval_lStringT>(ep));
-      lRemoveElem(pcmdline, &ep);
+      pcmdline.erase(ep);
    }
 
    /*  -l resource_list request the given resources  SGE_LIST */
@@ -288,30 +289,31 @@ bool sge_parse_qrsub(lList *pcmdline, lList **alpp, const ocs::tom::Element<ocs:
    parse_list_simple(pcmdline, "-q", ar, AR_queue_list, 0, 0, FLG_LIST_APPEND);
 
   /*    -pe pe_name slot_range reserve slot range for parallel jobs */
-   while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(pcmdline, "-pe"))) {
+   while ((ep = pcmdline.find_first<SPA_switch_val>("-pe"))) {
       ocs::tom::set<AR_pe>(ar, ocs::tom::get<SPA_argval_lStringT>(ep)); /* SGE_STRING, */
+      // SPA_argval_lListT carries lists of several types and has no typed swap
       lSwapList(ar, AR_pe_range, ep, SPA_argval_lListT);       /* SGE_LIST */
-      lRemoveElem(pcmdline, &ep);
+      pcmdline.erase(ep);
    }
    /*  -par allocation_rule  reserve the slots with this rule instead of the PE's allocation_rule */
-   while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(pcmdline, "-par"))) {
+   while ((ep = pcmdline.find_first<SPA_switch_val>("-par"))) {
       /* The scope the tokenizer stored in SPA_argval_lCharT is always the global one: qrsub has no
        * -scope switch, and a -scope given anyway stays in pcmdline and is rejected further down. */
       ocs::tom::set<AR_allocation_rule>(ar, ocs::tom::get<SPA_switch_arg>(ep));
-      lRemoveElem(pcmdline, &ep);
+      pcmdline.erase(ep);
    }
 
    /*   AR_master_queue_list  -masterq wc_queue_list, SGE_LIST bind master task to queue(s) */
    parse_list_simple(pcmdline, "-masterq", ar, AR_master_queue_list, 0, 0, FLG_LIST_APPEND);
 
    /*  -ckpt ckpt-name 	 reserve in queue with ckpt method SGE_STRING */
-   while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(pcmdline, "-ckpt"))) {
+   while ((ep = pcmdline.find_first<SPA_switch_val>("-ckpt"))) {
       ocs::tom::set<AR_checkpoint_name>(ar, ocs::tom::get<SPA_argval_lStringT>(ep));
-      lRemoveElem(pcmdline, &ep);
+      pcmdline.erase(ep);
    }
    
    /*  -m b/e/a/n 	 define mail notification events SGE_ULONG */
-   while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(pcmdline, "-m"))) {
+   while ((ep = pcmdline.find_first<SPA_switch_val>("-m"))) {
       uint32_t ul;
       uint32_t old_mail_opts;
 
@@ -322,20 +324,20 @@ bool sge_parse_qrsub(lList *pcmdline, lList **alpp, const ocs::tom::Element<ocs:
          old_mail_opts = ocs::tom::get<AR_mail_options>(ar);
          ocs::tom::set<AR_mail_options>(ar, ul | old_mail_opts);
       }
-      lRemoveElem(pcmdline, &ep);
+      pcmdline.erase(ep);
    }
 
    /*   -M user[@host],... 	 notify these e-mail addresses SGE_LIST*/
    parse_list_simple(pcmdline, "-M", ar, AR_mail_list, MR_host, MR_user, FLG_LIST_MERGE);
 
    /*  -he yes/no 	 hard error handling SGE_ULONG */
-   while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(pcmdline, "-he"))) {
+   while ((ep = pcmdline.find_first<SPA_switch_val>("-he"))) {
       ocs::tom::set<AR_error_handling>(ar, ocs::tom::get<SPA_argval_lUlongT>(ep));
-      lRemoveElem(pcmdline, &ep);
+      pcmdline.erase(ep);
    }
 
    /*   -now 	 reserve in queues with qtype interactive  SGE_ULONG */
-   while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(pcmdline, "-now"))) {
+   while ((ep = pcmdline.find_first<SPA_switch_val>("-now"))) {
       uint32_t ar_now = ocs::tom::get<AR_type>(ar);
       if(ocs::tom::get<SPA_argval_lIntT>(ep)) {
          JOB_TYPE_SET_IMMEDIATE(ar_now);
@@ -345,24 +347,24 @@ bool sge_parse_qrsub(lList *pcmdline, lList **alpp, const ocs::tom::Element<ocs:
 
       ocs::tom::set<AR_type>(ar, ar_now);
 
-      lRemoveElem(pcmdline, &ep);
+      pcmdline.erase(ep);
    }
 
   /* Remove the script elements. They are not stored in the ar structure */
-  if ((ep = ocs::tom::find_first_rw<SPA_switch_val>(pcmdline, STR_PSEUDO_SCRIPT))) {
-      lRemoveElem(pcmdline, &ep);
+  if ((ep = pcmdline.find_first<SPA_switch_val>(STR_PSEUDO_SCRIPT))) {
+      pcmdline.erase(ep);
    }
 
-   if ((ep = ocs::tom::find_first_rw<SPA_switch_val>(pcmdline, STR_PSEUDO_SCRIPTLEN))) {
-      lRemoveElem(pcmdline, &ep);
+   if ((ep = pcmdline.find_first<SPA_switch_val>(STR_PSEUDO_SCRIPTLEN))) {
+      pcmdline.erase(ep);
    }
 
-   if ((ep = ocs::tom::find_first_rw<SPA_switch_val>(pcmdline, STR_PSEUDO_SCRIPTPTR))) {
-      lRemoveElem(pcmdline, &ep);
+   if ((ep = pcmdline.find_first<SPA_switch_val>(STR_PSEUDO_SCRIPTPTR))) {
+      pcmdline.erase(ep);
    }
 
-   ep = lFirstRW(pcmdline);   
-   if(ep) {
+   ep = pcmdline.front();
+   if (ep) {
       const char *option = ocs::tom::get<SPA_switch_val>(ep);
       /* as jobarg are stored no switch values, need to be filtered */ 
       if(sge_strnullcmp(option, "jobarg") != 0) {

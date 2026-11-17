@@ -78,7 +78,7 @@ extern char **environ;
  */
 int main(int argc, const char **argv) {
    DENTER_MAIN(TOP_LAYER, "qrsub");
-   lList *pcmdline = nullptr;
+   ocs::tom::ListPtr<ocs::tom::SPA> pcmdline;
    lList *alp = nullptr;
    lList *ar_lp = nullptr;
    ocs::tom::ElementPtr<ocs::tom::AR> ar;
@@ -102,14 +102,18 @@ int main(int argc, const char **argv) {
       const char *user = component_get_username();
       const char *cell_root = bootstrap_get_cell_root();
 
+      // parse_script_file() and cull_parse_cmdline() have no typed form yet; they append to (or create) the raw
+      // option list, which is taken over afterwards
+      lList *cmdline_lp = nullptr;
+
       /* arguments from SGE_ROOT/common/sge_ar_request file */
       get_root_file_path(&file, cell_root, SGE_COMMON_DEF_AR_REQ_FILE);
-      if ((alp = parse_script_file(QRSUB, sge_dstring_get_string(&file), "", &pcmdline, environ,
+      if ((alp = parse_script_file(QRSUB, sge_dstring_get_string(&file), "", &cmdline_lp, environ,
          FLG_HIGHER_PRIOR | FLG_IGN_NO_FILE)) == nullptr) {
          /* arguments from $HOME/.sge_ar_request file */
          if (get_user_home_file_path(&file, SGE_HOME_DEF_AR_REQ_FILE, user, &alp)) {
             lFreeList(&alp);
-            alp = parse_script_file(QRSUB, sge_dstring_get_string(&file), "", &pcmdline, environ,
+            alp = parse_script_file(QRSUB, sge_dstring_get_string(&file), "", &cmdline_lp, environ,
             FLG_HIGHER_PRIOR | FLG_IGN_NO_FILE);
          }
       }
@@ -117,19 +121,20 @@ int main(int argc, const char **argv) {
 
       if (alp) {
          answer_list_output(&alp);
-         lFreeList(&pcmdline);
+         lFreeList(&cmdline_lp);
          goto error_exit;
       }
+
+      alp = cull_parse_cmdline(QRSUB, argv+1, environ, &cmdline_lp, FLG_USE_PSEUDOS);
+      pcmdline = ocs::tom::ListPtr<ocs::tom::SPA>::from_typed(cmdline_lp);
    }
 
-   alp = cull_parse_cmdline(QRSUB, argv+1, environ, &pcmdline, FLG_USE_PSEUDOS);
-
    if (answer_list_print_err_warn(&alp, nullptr, "qrsub: ", MSG_WARNING) > 0) {
-      lFreeList(&pcmdline);
+      pcmdline.reset();
       goto error_exit;
    }
 
-   if (pcmdline == nullptr) {
+   if (!pcmdline) {
       /* no command line option is present: print help to stderr */
       sge_usage(QRSUB, stderr);
       fprintf(stderr, "%s\n", MSG_PARSE_NOOPTIONARGUMENT);
@@ -141,18 +146,19 @@ int main(int argc, const char **argv) {
    */
    ar = ocs::tom::ElementPtr<ocs::tom::AR>::create();
 
-   if (!sge_parse_qrsub(pcmdline, &alp, ar.get())) {
+   if (!sge_parse_qrsub(*pcmdline, &alp, ar.get())) {
       answer_list_output(&alp);
-      lFreeList(&pcmdline);
+      pcmdline.reset();
       goto error_exit;
    }
 
-   lFreeList(&pcmdline);
+   pcmdline.reset();
 
    {
       auto ars = ocs::tom::ListPtr<ocs::tom::AR>::create(nullptr);
       ars->push_back(std::move(ar));
-      /* sge_gdi() replaces the request list with the response, so it is handed over raw */
+      /* sge_gdi() has no typed form yet; it replaces the request list with the response, so it is handed
+       * over raw */
       ar_lp = ars.release();
    }
 

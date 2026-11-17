@@ -1514,8 +1514,8 @@ bool ijs_was_escape_disconnect() {
  * @param username                 Owner of the TLS certificates; used only
  *                                 when TLS is active, otherwise ignored.
  * @param port_range               RN_Type CULL range list of ports to try, or
- *                                 nullptr/empty for an OS-assigned ephemeral
- *                                 port.  Supports N-M and N-M:S (step) syntax.
+ *                                 an empty handle/empty list for an OS-assigned
+ *                                 ephemeral port.  Supports N-M and N-M:S (step) syntax.
  * @param[out] phandle             Receives the initialized COMM server handle.
  * @param[out] p_err_msg           Error description on failure.
  * @return 0 on success;
@@ -1524,13 +1524,13 @@ bool ijs_was_escape_disconnect() {
  * @note MT-NOTE: not MT-safe.
  */
 int start_ijs_server(cl_framework_t communication_framework, const char *hostname,
-                     const char *username, const lList *port_range,
+                     const char *username, const ocs::tom::ConstList<ocs::tom::RN> port_range,
                      COMM_HANDLE **phandle, dstring *p_err_msg) {
    DENTER(TOP_LAYER);
 
    int  ret;
    int  ret_val   = 0;
-   bool use_range = (port_range != nullptr && lGetNumberOfElem(port_range) > 0);
+   bool use_range = !port_range.empty();
 
    DPRINTF("starting commlib server\n");
 
@@ -1548,7 +1548,7 @@ int start_ijs_server(cl_framework_t communication_framework, const char *hostnam
       // reaching the user). Only an exhausted range is a real error (CS-2358).
       bool found = false;
       comm_set_suppress_bind_errors(true);
-      for (const lListElem *rep = lFirst(port_range); rep && !found; rep = lNext(rep)) {
+      for (auto rep = port_range.front(); rep && !found; rep = rep.next()) {
          const uint32_t min  = ocs::tom::get<RN_min>(rep);
          const uint32_t max  = ocs::tom::get<RN_max>(rep);
          uint32_t step = ocs::tom::get<RN_step>(rep);

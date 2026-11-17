@@ -122,18 +122,21 @@
 #include "sgeobj/tom/ocs_tom_CF.h"
 #include "sgeobj/tom/ocs_tom_ID.h"
 #include "sgeobj/tom/ocs_tom_ST.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
+#include "sgeobj/tom/ocs_tom_SME.h"
+#include "tom/ocs_Select.h"
 
 /* module variables */
 static bool g_new_interactive_job_support = false;
 
-static int open_qrsh_socket(int *port, const lList *port_range);
+static int open_qrsh_socket(int *port, ocs::tom::ConstList<ocs::tom::RN> port_range);
 static int wait_for_qrsh_socket(int sock, int timeout);
 static char *read_from_qrsh_socket(int msgsock);
 static int get_remote_exit_code(int sock);
 static const char *quote_argument(const char *arg);
 static int parse_result_list(lList *alp, int *alp_error);
 static int start_client_program(const char *client_name,
-                                lList *opts_qrsh,
+                                ocs::tom::ConstList<ocs::tom::SPA> opts_qrsh,
                                 const char *host,
                                 const char *port,
                                 const char *job_dir,
@@ -145,10 +148,11 @@ static int start_client_program(const char *client_name,
                                 int sock);
 static int get_client_server_context(int msgsock, char **port, char **job_dir, char **utilbin_dir, const char **host);
 static const char *get_client_name(int is_rsh, int is_rlogin, int inherit_job);
-static void set_job_info(lListElem *job, const char *name, int is_qlogin, int is_rsh, int is_rlogin);
-static void remove_unknown_opts(lList *lp, uint32_t jb_now, int tightly_integrated, bool error,
+static void set_job_info(ocs::tom::Element<ocs::tom::JB> job, const char *name, int is_qlogin, int is_rsh,
+                         int is_rlogin);
+static void remove_unknown_opts(ocs::tom::List<ocs::tom::SPA> lp, uint32_t jb_now, int tightly_integrated, bool error,
                                 int is_qlogin, int is_rsh, int is_qsh);
-static void delete_job(uint32_t job_id, lList *lp);
+static void delete_job(uint32_t job_id, ocs::tom::ConstList<ocs::tom::JB> lp);
 static void set_builtin_ijs_signals_and_handlers();
 
 /** @brief Print progress to stderr, but only under `-verbose`
@@ -309,18 +313,16 @@ static void forward_signal(int sig) {
  * If no port can be bound the program exits.
  *
  * @param port reference to port number; set to the bound port on success
- * @param port_range RN_Type list of port ranges, or nullptr for OS-assigned port
+ * @param port_ranges RN_Type list of port ranges, or an empty handle for OS-assigned port
  *
  * @return socket file descriptor, or 0 if listen() failed
  */
-static int open_qrsh_socket(int *port, const lList *port_range) {
+static int open_qrsh_socket(int *port, const ocs::tom::ConstList<ocs::tom::RN> port_ranges) {
    DENTER(TOP_LAYER);
 
    struct sockaddr_in server;
    socklen_t length;
    int sock = -1;
-   /* range_list_parse_from_string() creates the list with RN_Type, so it is wrapped unchecked */
-   const auto port_ranges = ocs::tom::ConstList<ocs::tom::RN>::from_typed(port_range);
    bool use_range = (port_ranges != nullptr && !port_ranges.empty());
 
    if (!use_range) {
@@ -632,7 +634,7 @@ static int parse_result_list(lList *alp, int *alp_error) {
  * @return returncode of the executed command or EXIT_FAILURE, if exec failed ***************************************************************************
  */
 static int start_client_program(const char *client_name,
-                                lList *opts_qrsh,
+                                ocs::tom::ConstList<ocs::tom::SPA> opts_qrsh,
                                 const char *host,
                                 const char *port,
                                 const char *job_dir,
@@ -982,10 +984,9 @@ get_client_name(int is_rsh, int is_rlogin, int inherit_job) {
  * @param is_qlogin are we treating a qlogin call
  * @param is_rsh are we treating a qrsh call
  * @param is_rlogin are we treating a qrsh call without commands (-> rlogin)
- * @return none
  */
-static void set_job_info(lListElem *job, const char *name, int is_qlogin,
-                         int is_rsh, int is_rlogin) {
+static void set_job_info(const ocs::tom::Element<ocs::tom::JB> job, const char *name, const int is_qlogin,
+                         const int is_rsh, const int is_rlogin) {
    DENTER(TOP_LAYER);
 
    uint32_t jb_now = ocs::tom::get<JB_type>(job);
@@ -1035,8 +1036,8 @@ static void set_job_info(lListElem *job, const char *name, int is_qlogin,
  * `opts_qrsh`.
  * Arguments are separated by the character code 0xff.
  *
- * @param envlp environment list
- * @param opts_qrsh list of commandline arguments
+ * @param envlp environment list (`VA_Type`); created if it is an empty handle
+ * @param opts_qrsh list of commandline arguments (`SPA_Type`)
  *
  * @bug In general, passing the commandline via environment variable is only
  *      a workaround for the problems occuring when passing the commandline
@@ -1046,17 +1047,15 @@ static void set_job_info(lListElem *job, const char *name, int is_qlogin,
  *      mechanism, e.g. passing each argument as a line over file (not possible)
  *      or a socket connection.
  *
- *
- * @return none
  */
-static void set_command_to_env(lList *envlp, lList *opts_qrsh) {
+static void set_command_to_env(ocs::tom::ListPtr<ocs::tom::VA> &envlp,
+                               const ocs::tom::ConstList<ocs::tom::SPA> opts_qrsh) {
    DENTER(TOP_LAYER);
 
    dstring buffer = DSTRING_INIT;
 
    if (opts_qrsh) {
-      /* opts_qrsh is created with the descriptor of the SPA_Type command line, so it is wrapped unchecked */
-      auto ep = ocs::tom::ConstList<ocs::tom::SPA>::from_typed(opts_qrsh).front();
+      auto ep = opts_qrsh.front();
       if (ep) {
          char delimiter[2];
          const char *help = nullptr;
@@ -1081,7 +1080,7 @@ static void set_command_to_env(lList *envlp, lList *opts_qrsh) {
    fflush(stdout); fflush(stderr);
 #endif
 
-   var_list_set_string(&envlp, "QRSH_COMMAND", sge_dstring_get_string(&buffer));
+   var_list_set_string(envlp, "QRSH_COMMAND", sge_dstring_get_string(&buffer));
    sge_dstring_free(&buffer);
 
    DRETURN_VOID;
@@ -1112,45 +1111,42 @@ static void set_builtin_ijs_signals_and_handlers() {
  * started before this function gets called to the job object.
  *
  * @param qualified_hostname The qualified hostname of this host. Returned by sge_gethostbyname().
- * @param port The TCP/SSL/??? port this server is listening on for new connections
+ * @param com_handle the commlib server handle; its port is the one the shepherd connects to
  * @param job The job object where the connection data gets written to.
  * @param opts_qrsh The command line of this command. We need the name of the binary from the command line, the shepherd must know which kind of interactive job this is.
- * @param job The job object where the connection data gets written to.
- *
- * @note static void -  no result
  *
  * @note MT-NOTE: write_builtin_ijs_connection_data_to_job_object() is not MT safe
  */
 static void write_builtin_ijs_connection_data_to_job_object(
         const char *qualified_hostname,
         cl_com_handle *com_handle,
-        lListElem *job,
-        lList *opts_qrsh) {
+        const ocs::tom::Element<ocs::tom::JB> job,
+        const ocs::tom::ConstList<ocs::tom::SPA> opts_qrsh) {
+   DENTER(TOP_LAYER);
    dstring connection_params = DSTRING_INIT;
-   lList *envlp = nullptr;
 
    sge_dstring_sprintf(&connection_params, "%s:%d", qualified_hostname, com_handle->service_port);
 
    /*
     * Get environment from job object. If there is no environment yet,
-    * create one.
+    * create one. It is taken out for var_list_set_string() and put back below.
     */
-   envlp = ocs::tom::get<JB_env_list>(job);
-   if (envlp == nullptr) {
-      envlp = lCreateList("environment list", VA_Type);
-      ocs::tom::set<JB_env_list>(job, envlp);
+   auto envlp = job.exchange<JB_env_list>(nullptr);
+   if (!envlp) {
+      envlp = ocs::tom::ListPtr<ocs::tom::VA>::create("environment list");
    }
 
    /* TODO: Instead of using env, use job field to transfer infos
     *       JB_qrsh_port field.
     * HP: Do this in the next minor release, not in a patch update.
     */
-   var_list_set_string(&envlp, "QRSH_PORT", sge_dstring_get_string(&connection_params));
+   var_list_set_string(envlp, "QRSH_PORT", sge_dstring_get_string(&connection_params));
 
    /* TODO: write the command in JB_job_args field
     * HP: Do this in the next minor release, not in a patch update.
     */
    set_command_to_env(envlp, opts_qrsh);
+   static_cast<void>(job.exchange<JB_env_list>(std::move(envlp)));
    sge_dstring_free(&connection_params);
 
    // In case of TLS encryption, send the credentials to the shepherd
@@ -1163,6 +1159,7 @@ static void write_builtin_ijs_connection_data_to_job_object(
       }
    }
 #endif
+   DRETURN_VOID;
 }
 
 /**
@@ -1251,14 +1248,12 @@ static int do_qrsh_reconnect(const char *job_id_str,
    // Build port_range_list from cluster config (same as the normal startup path).
    char *port_range_str = mconf_get_port_range();
    lList *alp_pr = nullptr;
-   lList *ranges_out = nullptr;
+   ocs::tom::ListPtr<ocs::tom::RN> port_range_list;
    if (port_range_str != nullptr && strcmp(port_range_str, NONE_STR) != 0) {
-      range_list_parse_from_string(&ranges_out, &alp_pr, port_range_str, false, true, INF_NOT_ALLOWED);
+      range_list_parse_from_string(port_range_list, &alp_pr, port_range_str, false, true, INF_NOT_ALLOWED);
       lFreeList(&alp_pr);
    }
    sge_free(&port_range_str);
-   /* range_list_parse_from_string() creates the list with RN_Type, so it is taken over unchecked */
-   auto port_range_list = ocs::tom::ListPtr<ocs::tom::RN>::from_typed(ranges_out);
 
    set_builtin_ijs_signals_and_handlers();
 
@@ -1297,17 +1292,18 @@ static int do_qrsh_reconnect(const char *job_id_str,
          auto cred_list = ocs::tom::ListPtr<ocs::tom::ST>::create("reconnect cred");
          auto cred_ep = ocs::tom::ElementPtr<ocs::tom::ST>::create();
          ocs::tom::set<ST_name>(cred_ep, cred);
-         lAppendElem(*cred_list, std::move(cred_ep));
+         cred_list->push_back(std::move(cred_ep));
          ocs::tom::set<ID_user_list>(idep, std::move(cred_list));
          sge_free(&cred);
       }
    }
 #endif
 
-   /* sge_gdi() replaces the request list with the response, so it is handed over raw */
+   /* sge_gdi() has no typed form yet; it replaces the request list with the response, freed with the handle */
    lList *ref_list = refs.release();
    lList *alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::JB_LIST, ocs::gdi::Command::TRIGGER,
                                           ocs::gdi::SubCommand::NONE, &ref_list, nullptr, nullptr);
+   refs = ocs::tom::ListPtr<ocs::tom::ID>::from_typed(ref_list);
 
    // Look for the one STATUS_OK answer carrying "RECONNECT_OK <token> <exec_host>".
    char token[128] = {0};
@@ -1325,7 +1321,7 @@ static int do_qrsh_reconnect(const char *job_id_str,
       }
    }
    lFreeList(&alp);
-   lFreeList(&ref_list);
+   refs.reset();
 
    if (!ok) {
       ERROR("qrsh -reconnect: no RECONNECT_OK response from qmaster");
@@ -1370,13 +1366,13 @@ int main(int argc, const char **argv) {
    DENTER_MAIN(TOP_LAYER, "qsh");
 
    ProgName my_who = QSH;
-   lList *opts_cmdline = nullptr;
-   lList *opts_defaults = nullptr;
-   lList *opts_scriptfile = nullptr;
-   lList *opts_all = nullptr;
-   lList *opts_qrsh = nullptr;
-   lListElem *job = nullptr;
-   lList *lp_jobs = nullptr;
+   ocs::tom::ListPtr<ocs::tom::SPA> opts_cmdline;
+   ocs::tom::ListPtr<ocs::tom::SPA> opts_defaults;
+   ocs::tom::ListPtr<ocs::tom::SPA> opts_scriptfile;
+   ocs::tom::ListPtr<ocs::tom::SPA> opts_all;
+   ocs::tom::ListPtr<ocs::tom::SPA> opts_qrsh;
+   ocs::tom::ElementPtr<ocs::tom::JB> job;
+   ocs::tom::ListPtr<ocs::tom::JB> lp_jobs;
    lList *alp = nullptr;
    lList *answer = nullptr;
    uint32_t status = STATUS_OK;
@@ -1403,7 +1399,7 @@ int main(int argc, const char **argv) {
    char *job_dir = nullptr;
    char *utilbin_dir = nullptr;
    int alp_error;
-   lListElem *ep = nullptr;
+   ocs::tom::Element<ocs::tom::SPA> ep;
    int sock = 0;
    const char* progname = nullptr;
    const char* unqualified_hostname = nullptr;
@@ -1489,7 +1485,7 @@ int main(int argc, const char **argv) {
    /*
    ** read switches from the various defaults files
    */
-   opt_list_append_opts_from_default_files(my_who, cell_root, username, &opts_defaults, &alp, environ);
+   opt_list_append_opts_from_default_files(my_who, cell_root, username, opts_defaults, &alp, environ);
    do_exit = parse_result_list(alp, &alp_error);
    lFreeList(&alp);
 
@@ -1500,7 +1496,12 @@ int main(int argc, const char **argv) {
    /*
    ** append the commandline switches to the list
    */
-   alp = cull_parse_cmdline(my_who, argv + 1, environ, &opts_cmdline, FLG_USE_PSEUDOS);
+   {
+      // cull_parse_cmdline() has no typed form yet; it creates the option list
+      lList *cmdline_lp = nullptr;
+      alp = cull_parse_cmdline(my_who, argv + 1, environ, &cmdline_lp, FLG_USE_PSEUDOS);
+      opts_cmdline = ocs::tom::ListPtr<ocs::tom::SPA>::from_typed(cmdline_lp);
+   }
    do_exit = parse_result_list(alp, &alp_error);
    lFreeList(&alp);
 
@@ -1508,7 +1509,7 @@ int main(int argc, const char **argv) {
       sge_exit(1);
    }
 
-   job = lCreateElem(JB_Type);
+   job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
 
    if (job == nullptr) {
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_MEM_MEMORYALLOCFAILED_S, __func__);
@@ -1522,59 +1523,59 @@ int main(int argc, const char **argv) {
       }
    }
 
-   if (opt_list_has_X(opts_cmdline, "-help")) {
+   if (opt_list_has_X(*opts_cmdline, "-help")) {
       sge_usage(my_who, stdout);
       sge_exit(0);
    }
 
    /* set verbosity */
-   while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(opts_cmdline, "-verbose"))) {
-      lRemoveElem(opts_cmdline, &ep);
+   while ((ep = opts_cmdline->find_first<SPA_switch_val>("-verbose"))) {
+      opts_cmdline->erase(ep);
       log_state_set_log_verbose(1);
    }
 
    /* parse -noshell */
-   while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(opts_cmdline, "-noshell"))) {
-      lRemoveElem(opts_cmdline, &ep);
+   while ((ep = opts_cmdline->find_first<SPA_switch_val>("-noshell"))) {
+      opts_cmdline->erase(ep);
       noshell = 1;
    }
 
    /* parse -X (X11 forwarding, builtin IJS only) — mode check happens after get_client_name() */
-   while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(opts_cmdline, "-X"))) {
-      lRemoveElem(opts_cmdline, &ep);
+   while ((ep = opts_cmdline->find_first<SPA_switch_val>("-X"))) {
+      opts_cmdline->erase(ep);
       forward_x11 = true;
    }
 
    /* parse -suspend_remote <yes|no> */
-   if (opt_list_has_X(opts_cmdline, "-suspend_remote")) {
-      suspend_remote_option = static_cast<ocs::Ternary>(opt_list_is_X_true(opts_cmdline, "-suspend_remote"));
+   if (opt_list_has_X(*opts_cmdline, "-suspend_remote")) {
+      suspend_remote_option = static_cast<ocs::Ternary>(opt_list_is_X_true(*opts_cmdline, "-suspend_remote"));
    }
    /* remove the suspend_remote option from commandline before proceeding */
-   while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(opts_cmdline, "-suspend_remote"))) {
-      lRemoveElem(opts_cmdline, &ep);
+   while ((ep = opts_cmdline->find_first<SPA_switch_val>("-suspend_remote"))) {
+      opts_cmdline->erase(ep);
    }
 
    /* parse -pty <yes|no> */
-   if (opt_list_has_X(opts_cmdline, "-pty")) {
-      pty_option = static_cast<ocs::Ternary>(opt_list_is_X_true(opts_cmdline, "-pty"));
+   if (opt_list_has_X(*opts_cmdline, "-pty")) {
+      pty_option = static_cast<ocs::Ternary>(opt_list_is_X_true(*opts_cmdline, "-pty"));
    }
    ocs::tom::set<JB_pty>(job, static_cast<lUlong>(pty_option));
    /* remove the pty option from commandline before proceeding */
-   while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(opts_cmdline, "-pty"))) {
-      lRemoveElem(opts_cmdline, &ep);
+   while ((ep = opts_cmdline->find_first<SPA_switch_val>("-pty"))) {
+      opts_cmdline->erase(ep);
    }
 
    /*
    ** if qrsh, parse command to call
    */
    if (is_rsh) {
-      while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(opts_cmdline, "-nostdin"))) {
-         lRemoveElem(opts_cmdline, &ep);
+      while ((ep = opts_cmdline->find_first<SPA_switch_val>("-nostdin"))) {
+         opts_cmdline->erase(ep);
          nostdin = 1;
       }
 
-      while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(opts_cmdline, "-inherit"))) {
-         lRemoveElem(opts_cmdline, &ep);
+      while ((ep = opts_cmdline->find_first<SPA_switch_val>("-inherit"))) {
+         opts_cmdline->erase(ep);
          inherit_job = 1;
       }
 
@@ -1594,35 +1595,34 @@ int main(int argc, const char **argv) {
       strcpy(name, "QRSH");
       host = nullptr;
 
-      opts_qrsh = lCreateList("opts_qrsh", lGetListDescr(opts_cmdline));
+      /* the command line options are full SPA_Type elements, as sge_add_arg() creates them; the list is created
+       * even without a command line, where lCreateList() with the missing descriptor had left it nullptr, which
+       * reads as the empty list everywhere below */
+      opts_qrsh = ocs::tom::ListPtr<ocs::tom::SPA>::create("opts_qrsh");
 
-      if ((ep = ocs::tom::find_first_rw<SPA_switch_val>(opts_cmdline, "script"))) {
+      if ((ep = opts_cmdline->find_first<SPA_switch_val>("script"))) {
          if (existing_job) {
             host = strdup(ocs::tom::get<SPA_argval_lStringT>(ep));
-            lRemoveElem(opts_cmdline, &ep);
-            ep = ocs::tom::find_first_rw<SPA_switch_val>(opts_cmdline, "jobarg");
+            opts_cmdline->erase(ep);
+            ep = opts_cmdline->find_first<SPA_switch_val>("jobarg");
          }
 
-         if (ep != nullptr) {
-            const char *new_name = nullptr;
-
+         if (ep) {
             ocs::tom::set<JB_script_file>(job, ocs::tom::get<SPA_argval_lStringT>(ep));
-            lDechainElem(opts_cmdline, ep);
-            lAppendElem(opts_qrsh, ep);
+            const auto moved = opts_qrsh->push_back(opts_cmdline->extract(ep));
 
-            new_name = sge_jobname(ocs::tom::get<SPA_argval_lStringT>(ep));
+            const char *new_name = sge_jobname(ocs::tom::get<SPA_argval_lStringT>(moved));
             if (new_name != nullptr) {
                sge_strlcpy(name, new_name, MAX_JOB_NAME);
             }
 
-            while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(opts_cmdline, "jobarg"))) {
-               lDechainElem(opts_cmdline, ep);
-               lAppendElem(opts_qrsh, ep);
+            while ((ep = opts_cmdline->find_first<SPA_switch_val>("jobarg"))) {
+               opts_qrsh->push_back(opts_cmdline->extract(ep));
             }
          }
       }
 
-      if (lGetNumberOfElem(opts_qrsh) <= 0) {
+      if (opts_qrsh->size() == 0) {
          if (inherit_job) {
             ERROR(MSG_QSH_INHERITUSAGE_SS, "-inherit", "qrsh -inherit ... <host> <command> [args]");
             sge_exit(1);
@@ -1638,20 +1638,20 @@ int main(int argc, const char **argv) {
       bool binary = true;
 
       /* do we have -b in commandline? */
-      if (opt_list_has_X(opts_cmdline, "-b")) {
+      if (opt_list_has_X(*opts_cmdline, "-b")) {
          /* then commandline will determine over binary vs. script submiss. */
-         binary = opt_list_is_X_true(opts_cmdline, "-b");
-      } else if (opt_list_has_X(opts_defaults, "-b")) {
+         binary = opt_list_is_X_true(*opts_cmdline, "-b");
+      } else if (opt_list_has_X(*opts_defaults, "-b")) {
          /* we have -b in defaults files, this one will decide */
-         binary = opt_list_is_X_true(opts_defaults, "-b");
+         binary = opt_list_is_X_true(*opts_defaults, "-b");
       }
 
       /* remove the binary option from commandline before proceeding */
-      while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(opts_defaults, "-b"))) {
-         lRemoveElem(opts_defaults, &ep);
+      while ((ep = opts_defaults->find_first<SPA_switch_val>("-b"))) {
+         opts_defaults->erase(ep);
       }
-      while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(opts_cmdline, "-b"))) {
-         lRemoveElem(opts_cmdline, &ep);
+      while ((ep = opts_cmdline->find_first<SPA_switch_val>("-b"))) {
+         opts_cmdline->erase(ep);
       }
 
       /* set binary bit or handle script submission */
@@ -1674,17 +1674,15 @@ int main(int argc, const char **argv) {
          /* move -C directives into opts_qrsh - we need them for parsing
           * the script
           */
-         while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(opts_defaults, "-C"))) {
-            lDechainElem(opts_defaults, ep);
-            lAppendElem(opts_qrsh, ep);
+         while ((ep = opts_defaults->find_first<SPA_switch_val>("-C"))) {
+            opts_qrsh->push_back(opts_defaults->extract(ep));
          }
-         while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(opts_cmdline, "-C"))) {
-            lDechainElem(opts_cmdline, ep);
-            lAppendElem(opts_qrsh, ep);
+         while ((ep = opts_cmdline->find_first<SPA_switch_val>("-C"))) {
+            opts_qrsh->push_back(opts_cmdline->extract(ep));
          }
 
          /* read scriptfile and parse script options */
-         opt_list_append_opts_from_script(my_who, &opts_scriptfile, &alp, opts_qrsh, environ);
+         opt_list_append_opts_from_script(my_who, opts_scriptfile, &alp, *opts_qrsh, environ);
          do_exit = parse_result_list(alp, &alp_error);
          lFreeList(&alp);
 
@@ -1693,19 +1691,19 @@ int main(int argc, const char **argv) {
          }
 
          /* set length and script contents in job */
-         if ((ep = ocs::tom::find_first_rw<SPA_switch_val>(opts_scriptfile, STR_PSEUDO_SCRIPTLEN))) {
+         if ((ep = opts_scriptfile->find_first<SPA_switch_val>(STR_PSEUDO_SCRIPTLEN))) {
             ocs::tom::set<JB_script_size>(job, ocs::tom::get<SPA_argval_lUlongT>(ep));
-            lRemoveElem(opts_scriptfile, &ep);
+            opts_scriptfile->erase(ep);
          }
-         if ((ep = ocs::tom::find_first_rw<SPA_switch_val>(opts_scriptfile, STR_PSEUDO_SCRIPTPTR))) {
+         if ((ep = opts_scriptfile->find_first<SPA_switch_val>(STR_PSEUDO_SCRIPTPTR))) {
             ocs::tom::set<JB_script_ptr>(job, ocs::tom::get<SPA_argval_lStringT>(ep));
-            lRemoveElem(opts_scriptfile, &ep);
+            opts_scriptfile->erase(ep);
          }
       }
    }
 
    if (!existing_job) {
-      set_job_info(job, name, is_qlogin, is_rsh, is_rlogin);
+      set_job_info(*job, name, is_qlogin, is_rsh, is_rlogin);
    }
 
    if (is_qlogin) {
@@ -1721,23 +1719,24 @@ int main(int argc, const char **argv) {
       sge_exit(EXIT_FAILURE);
    }
 
-   remove_unknown_opts(opts_cmdline, ocs::tom::get<JB_type>(job), existing_job, true, is_qlogin, is_rsh, is_qsh);
-   remove_unknown_opts(opts_defaults, ocs::tom::get<JB_type>(job), existing_job, false, is_qlogin, is_rsh, is_qsh);
-   remove_unknown_opts(opts_scriptfile, ocs::tom::get<JB_type>(job), existing_job, false, is_qlogin, is_rsh, is_qsh);
+   remove_unknown_opts(*opts_cmdline, ocs::tom::get<JB_type>(job), existing_job, true, is_qlogin, is_rsh, is_qsh);
+   remove_unknown_opts(*opts_defaults, ocs::tom::get<JB_type>(job), existing_job, false, is_qlogin, is_rsh, is_qsh);
+   remove_unknown_opts(*opts_scriptfile, ocs::tom::get<JB_type>(job), existing_job, false, is_qlogin, is_rsh, is_qsh);
 
-   opt_list_merge_command_lines(&opts_all, &opts_defaults, &opts_scriptfile,
-                                &opts_cmdline);
+   opt_list_merge_command_lines(opts_all, std::move(opts_defaults), std::move(opts_scriptfile),
+                                std::move(opts_cmdline));
 
-   opt_list_verify_scope(opts_all, &alp);
+   opt_list_verify_scope(*opts_all, &alp);
    do_exit = answer_list_print_err_warn(&alp, nullptr, nullptr, nullptr);
    if (do_exit > 0) {
       sge_exit(1);
    }
 
-   alp = cull_parse_qsh_parameter(my_who, myuid, username, cell_root, unqualified_hostname, qualified_hostname, opts_all, &job);
+   alp = cull_parse_qsh_parameter(my_who, myuid, username, cell_root, unqualified_hostname, qualified_hostname,
+                                  *opts_all, *job);
    do_exit = parse_result_list(alp, &alp_error);
    lFreeList(&alp);
-   lFreeList(&opts_all);
+   opts_all.reset();
    if (alp_error) {
       sge_exit(1);
    }
@@ -1746,15 +1745,18 @@ int main(int argc, const char **argv) {
    // from the user's DISPLAY env var) and inject SGE_X11_FORWARD=1 instead. The shepherd will
    // create a local proxy display and inject the real DISPLAY into the job's environment.
    if (forward_x11) {
-      lList *envlp = ocs::tom::get<JB_env_list>(job);
       ocs::tom::erase_in<JB_env_list, VA_variable>(job, "DISPLAY");
-      var_list_set_string(&envlp, "SGE_X11_FORWARD", "1");
+      // taken out for var_list_set_string() and put back; a list created here now reaches the job
+      auto envlp = job->exchange<JB_env_list>(nullptr);
+      var_list_set_string(envlp, "SGE_X11_FORWARD", "1");
+      static_cast<void>(job->exchange<JB_env_list>(std::move(envlp)));
    }
 
-   job_set_command_line(job, argc, argv);
+   job_set_command_line(*job, argc, argv);
 
-   if (sge_getenv("SGE_DEBUG_DUMP_JOB") != nullptr) {
-      lWriteElemTo(job, stdout);
+   // print() throws on an empty handle where lWriteElemTo() printed nothing
+   if (sge_getenv("SGE_DEBUG_DUMP_JOB") != nullptr && job) {
+      job->print(stdout);
    }
 
    if (!existing_job) {
@@ -1762,7 +1764,7 @@ int main(int argc, const char **argv) {
 
       if (ocs::tom::get<JB_verify>(job)) {
          std::stringstream ss;
-         ocs::QStatJobViewPlain::cull_show_job(ss, nullptr, job, 0);
+         ocs::QStatJobViewPlain::cull_show_job(ss, ocs::tom::ConstList<ocs::tom::SME>(), *job, 0);
          printf("%s", ss.str().c_str());
          sge_exit(0);
       }
@@ -1771,7 +1773,8 @@ int main(int argc, const char **argv) {
        * security hook
        * @todo it might be necessary to do this in the loop closing / reopening the sge_qmaster connection
        */
-      if (set_sec_cred(sge_root, mastername, job, &alp) != 0) {
+      // set_sec_cred() has no typed form yet
+      if (set_sec_cred(sge_root, mastername, *job, &alp) != 0) {
          answer_list_output(&alp);
          sge_exit(1);
       }
@@ -1792,14 +1795,12 @@ int main(int argc, const char **argv) {
    // fetch IJS escape character (default '~', '\0' = disabled via ijs_escape_char=none)
    char ijs_escape_char = mconf_get_ijs_escape_char();
    lList *alp_pr = nullptr;
-   lList *ranges_out = nullptr;
+   ocs::tom::ListPtr<ocs::tom::RN> port_range_list;
    if (port_range_str != nullptr && strcmp(port_range_str, NONE_STR) != 0) {
-      range_list_parse_from_string(&ranges_out, &alp_pr, port_range_str, false, true, INF_NOT_ALLOWED);
+      range_list_parse_from_string(port_range_list, &alp_pr, port_range_str, false, true, INF_NOT_ALLOWED);
       lFreeList(&alp_pr);
    }
    sge_free(&port_range_str);
-   /* range_list_parse_from_string() creates the list with RN_Type, so it is taken over unchecked */
-   auto port_range_list = ocs::tom::ListPtr<ocs::tom::RN>::from_typed(ranges_out);
 
    if (!g_new_interactive_job_support) {
       /*
@@ -1808,18 +1809,18 @@ int main(int argc, const char **argv) {
       */
       char buffer[1024];
       int my_port = 0;
-      lList *envlp = nullptr;
-
       sock = open_qrsh_socket(&my_port, *port_range_list);
       snprintf(buffer, sizeof(buffer), "%s:%d", qualified_hostname, my_port);
 
-      if ((envlp = ocs::tom::get<JB_env_list>(job)) == nullptr) {
-         envlp = lCreateList("environment list", VA_Type);
-         ocs::tom::set<JB_env_list>(job, envlp);
+      // taken out for var_list_set_string() and put back
+      auto envlp = job->exchange<JB_env_list>(nullptr);
+      if (!envlp) {
+         envlp = ocs::tom::ListPtr<ocs::tom::VA>::create("environment list");
       }
 
-      var_list_set_string(&envlp, "QRSH_PORT", buffer);
-      set_command_to_env(envlp, opts_qrsh);
+      var_list_set_string(envlp, "QRSH_PORT", buffer);
+      set_command_to_env(envlp, *opts_qrsh);
+      static_cast<void>(job->exchange<JB_env_list>(std::move(envlp)));
    } else {
       int     ret = 0;
       dstring err_msg = DSTRING_INIT;
@@ -1844,7 +1845,7 @@ int main(int argc, const char **argv) {
        */
       // Also for qrsh -inherit we set variables in the environment and in the job object.
       // They will be used in sge_qexecve().
-      write_builtin_ijs_connection_data_to_job_object(qualified_hostname, comm_handle, job, opts_qrsh);
+      write_builtin_ijs_connection_data_to_job_object(qualified_hostname, comm_handle, *job, *opts_qrsh);
    }
    port_range_list.reset();
 
@@ -1855,8 +1856,10 @@ int main(int argc, const char **argv) {
       char  *wrapper = getenv("QRSH_WRAPPER");
 
       if (wrapper != nullptr) {
-         lList *envlp = ocs::tom::get<JB_env_list>(job);
-         var_list_set_string(&envlp, "QRSH_WRAPPER", wrapper);
+         // taken out for var_list_set_string() and put back; a list created here now reaches the job
+         auto envlp = job->exchange<JB_env_list>(nullptr);
+         var_list_set_string(envlp, "QRSH_WRAPPER", wrapper);
+         static_cast<void>(job->exchange<JB_env_list>(std::move(envlp)));
       }
    }
 
@@ -1883,6 +1886,7 @@ int main(int argc, const char **argv) {
 
       /* start task in tightly integrated job */
       /* directly connect to commlib of exec daemon and submit task */
+      // sge_qexecve() has no typed form yet
       tid = sge_qexecve(host, nullptr,
                         ocs::tom::get<JB_cwd>(job),
                         ocs::tom::get<JB_env_list>(job),
@@ -1915,7 +1919,7 @@ int main(int argc, const char **argv) {
          VERBOSE_LOG((stderr, "\n"));
 
          /* start task via rsh on rshd */
-         exit_status = start_client_program(client_name, opts_qrsh, host, port,
+         exit_status = start_client_program(client_name, *opts_qrsh, host, port,
             job_dir, utilbin_dir, is_rsh, is_rlogin, nostdin, noshell, sock);
       } else { /* g_new_interactive_job_support is true */
          int     ret;
@@ -1977,7 +1981,7 @@ int main(int argc, const char **argv) {
          polling_interval = QSH_BATCH_POLLING_MIN;
       }
 
-      job_add_parent_id_to_context(job);
+      job_add_parent_id_to_context(*job);
 
       /*
        * fill in user and group
@@ -1990,24 +1994,28 @@ int main(int argc, const char **argv) {
       int amount;
       ocs_grp_elem_t *grp_array;
       component_get_supplementray_groups(&amount, &grp_array);
-      job_set_owner_and_group(job, component_get_uid(), component_get_gid(),
+      job_set_owner_and_group(*job, component_get_uid(), component_get_gid(),
                               component_get_username(), component_get_groupname(),
                               amount, grp_array);
 
-      lp_jobs = lCreateList("submitted jobs", JB_Type);
-      lAppendElem(lp_jobs, job);
+      lp_jobs = ocs::tom::ListPtr<ocs::tom::JB>::create("submitted jobs");
+      lp_jobs->push_back(std::move(job));
 
       DPRINTF("B E F O R E     S E N D I N G! ! ! ! ! ! ! ! ! ! ! ! ! !\n");
       DPRINTF("=====================================================\n");
 
-      /* submit the job to the QMaster */
-      alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::JB_LIST, ocs::gdi::Command::ADD,
-                    ocs::gdi::SubCommand::RETURN_NEW_VERSION, &lp_jobs, nullptr, nullptr);
+      /* submit the job to the QMaster; sge_gdi() has no typed form yet, it replaces the request list with
+       * the response, a JB_Type list */
+      {
+         lList *jobs_lp = lp_jobs.release();
+         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::JB_LIST, ocs::gdi::Command::ADD,
+                       ocs::gdi::SubCommand::RETURN_NEW_VERSION, &jobs_lp, nullptr, nullptr);
+         lp_jobs = ocs::tom::ListPtr<ocs::tom::JB>::from_typed(jobs_lp);
+      }
 
-      /* reinitialize 'job' with pointer to new version from qmaster */
-      job = lFirstRW(lp_jobs);
-      if (job) {
-        job_id = ocs::tom::get<JB_job_number>(job );
+      /* the new version of the job from qmaster */
+      if (const auto new_job = lp_jobs->front()) {
+        job_id = ocs::tom::get<JB_job_number>(new_job);
       } else {
         job_id = 0;
       }
@@ -2041,7 +2049,7 @@ int main(int argc, const char **argv) {
          do_exit = 1;
 
       if (do_exit) {
-         lFreeList(&lp_jobs);
+         lp_jobs.reset();
          if (status == STATUS_NOTOK_DOAGAIN || just_verify) {
             sge_exit(status);
          } else {
@@ -2055,12 +2063,8 @@ int main(int argc, const char **argv) {
       DPRINTF("============================================\n");
 
       while (!do_exit) {
-         lCondition *where;
-         lEnumeration *what;
          uint32_t job_status;
          int do_shut = 0;
-         lList *lp_poll = nullptr;
-         lListElem* jep;
          bool b_already_logged_job_was_scheduled = false;
          int msgsock = -1;
          int random_poll = polling_interval + (rand() % polling_interval);
@@ -2094,7 +2098,7 @@ int main(int argc, const char **argv) {
                                         to_cstr(QMASTER),
                                         1);
                      DPRINTF("cl_commlib_open_connection (%s) returned %d\n", mastername, cl_ret);
-                     delete_job(job_id, lp_jobs);
+                     delete_job(job_id, *lp_jobs);
                      do_exit = 1;
                      exit_status = 1;
                      break;
@@ -2112,7 +2116,7 @@ int main(int argc, const char **argv) {
                    * start client program (e.g. rsh) and wait blocking until
                    * it quits.
                    */
-                  exit_status = start_client_program(client_name, opts_qrsh,
+                  exit_status = start_client_program(client_name, *opts_qrsh,
                      host, port, job_dir, utilbin_dir, is_rsh, is_rlogin,
                      nostdin, noshell, sock);
 
@@ -2129,7 +2133,7 @@ int main(int argc, const char **argv) {
                         (char*)mastername, to_cstr(QMASTER), 1);
                      DPRINTF("cl_commlib_open_connection (%s) returned %d\n", mastername, cl_ret);
                      DPRINTF("deleting job\n");
-                     delete_job(job_id, lp_jobs);
+                     delete_job(job_id, *lp_jobs);
                      exit_status = EXIT_FAILURE;
                   }
 
@@ -2178,7 +2182,7 @@ int main(int argc, const char **argv) {
                                         to_cstr(QMASTER),
                                         1);
                      DPRINTF("cl_commlib_open_connection (%s) returned %d\n", mastername, cl_ret);
-                     delete_job(job_id, lp_jobs);
+                     delete_job(job_id, *lp_jobs);
 
                      do_exit = 1;
                      exit_status = 1;
@@ -2240,42 +2244,45 @@ int main(int argc, const char **argv) {
          DPRINTF("cl_commlib_open_connection (%s) returned %d\n", mastername, cl_ret);
 
          /* get job from qmaster: to handle qsh and to detect deleted qrsh job */
-         what = lWhat("%T(%I)", JB_Type, JB_ja_tasks);
-         where = lWhere("%T(%I==%u)", JB_Type, JB_job_number, job_id);
-         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::JB_LIST, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, &lp_poll, where, what);
+         const auto what = ocs::tom::what<JB_ja_tasks>();
+         const auto where = ocs::tom::field<JB_job_number>() == job_id;
+         // sge_gdi() has no typed form yet; it does not change the condition and the selection
+         lList *poll_lp = nullptr;
+         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::JB_LIST, ocs::gdi::Command::GET,
+                                         ocs::gdi::SubCommand::NONE, &poll_lp,
+                                         const_cast<lCondition *>(where.get()),
+                                         const_cast<lEnumeration *>(what.get()));
+         /* the GDI GET answers with a job list (JB_Type, reduced to JB_ja_tasks) */
+         const auto lp_poll = ocs::tom::ListPtr<ocs::tom::JB>::from_typed(poll_lp);
 
          do_exit = parse_result_list(alp, &alp_error);
 
-         lFreeWhere(&where);
-         lFreeWhat(&what);
          lFreeList(&alp);
 
          do_shut = shut_me_down;
          if (do_shut || do_exit) {
             WARNING(SFNMAX, MSG_QSH_REQUESTFORINTERACTIVEJOBHASBEENCANCELED);
-            delete_job(job_id, lp_jobs);
-            lFreeList(&lp_poll);
+            delete_job(job_id, *lp_jobs);
             do_exit = 1;
             exit_status = 1;
             continue;
          }
 
          if (alp_error) {
-            lFreeList(&lp_poll);
             continue;
          }
 
-         if ((lp_poll == nullptr || lGetNumberOfElem(lp_poll) == 0 ) || !(jep = lFirstRW(lp_poll))) {
+         const auto jep = lp_poll->front();
+         if (!jep) {
             WARNING("\n");
             log_state_set_log_verbose(1);
             WARNING(MSG_QSH_REQUESTCANTBESCHEDULEDTRYLATER_S, progname);
             do_exit = 1;
             exit_status = 1;
-            lFreeList(&lp_poll);
             continue;
          }
 
-         ocs::tom::Element<ocs::tom::JAT> ja_task = lFirstRW(ocs::tom::get<JB_ja_tasks>(jep));
+         const auto ja_task = ocs::tom::get<JB_ja_tasks>(jep).front();
          if (ja_task) {
             job_status = ocs::tom::get<JAT_status>(ja_task);
             DPRINTF("Job Status is: %lx\n", job_status);
@@ -2283,8 +2290,6 @@ int main(int argc, const char **argv) {
             job_status = JIDLE;
             DPRINTF("Job Status is: %lx (unenrolled)\n", job_status);
          }
-
-         lFreeList(&lp_poll);
 
          switch(job_status) {
             /* qsh or future -wait case */
@@ -2350,7 +2355,7 @@ int main(int argc, const char **argv) {
          sge_dstring_free(&err_msg);
       }
 
-      lFreeList(&lp_jobs);
+      lp_jobs.reset();
       sge_dstring_free(&id_dstring);
    }
 
@@ -2359,47 +2364,67 @@ int main(int argc, const char **argv) {
    DRETURN(exit_status);
 }
 
-static void delete_job(uint32_t job_id, lList *jlp) {
-   const lListElem *jep;
-   lList *idlp = nullptr;
-   lList *alp;
+/**
+ * @brief Delete the submitted interactive job in qmaster
+ *
+ * No error handling, the job is deleted if it can be.
+ *
+ * @param job_id the id of the job
+ * @param jlp the submitted jobs (`JB_Type`); nothing is done when it is empty
+ */
+static void delete_job(const uint32_t job_id, const ocs::tom::ConstList<ocs::tom::JB> jlp) {
+   DENTER(TOP_LAYER);
    char job_str[128];
 
-   if (jlp == nullptr) {
-      return;
-   }
-   jep = lFirst(jlp);
-   if (jep == nullptr) {
-      return;
+   if (!jlp.front()) {
+      DRETURN_VOID;
    }
 
    snprintf(job_str, sizeof(job_str), sge_u32, job_id);
-   ocs::tom::emplace_back<ID_str>(&idlp, job_str);
+   auto idlp = ocs::tom::ListPtr<ocs::tom::ID>::create("job id list");
+   idlp->emplace_back<ID_str>(job_str);
 
-   alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::JB_LIST, ocs::gdi::Command::DEL, ocs::gdi::SubCommand::NONE, &idlp, nullptr, nullptr);
+   // sge_gdi() has no typed form yet; it replaces the request list with the response, freed with the handle
+   lList *id_lp = idlp.release();
+   lList *alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::JB_LIST, ocs::gdi::Command::DEL,
+                                          ocs::gdi::SubCommand::NONE, &id_lp, nullptr, nullptr);
+   idlp = ocs::tom::ListPtr<ocs::tom::ID>::from_typed(id_lp);
 
    /* no error handling here, we try to delete the job if we can */
-   lFreeList(&idlp);
+   idlp.reset();
    lFreeList(&alp);
+   DRETURN_VOID;
 }
 
-static void remove_unknown_opts(lList *lp, uint32_t jb_now, int tightly_integrated, bool error,
-                                int is_qlogin, int is_rsh, int is_qsh) {
+/**
+ * @brief Remove the options an interactive job does not know, or reject them
+ *
+ * @param lp the options (`SPA_Type`); an empty handle has nothing to remove
+ * @param jb_now the job type of the interactive job
+ * @param tightly_integrated true for `qrsh -inherit`, which only allows a few options
+ * @param error true to reject an unknown option and exit, false to remove it
+ * @param is_qlogin are we treating a qlogin call
+ * @param is_rsh are we treating a qrsh call
+ * @param is_qsh are we treating a qsh call
+ */
+static void remove_unknown_opts(const ocs::tom::List<ocs::tom::SPA> lp, const uint32_t jb_now,
+                                const int tightly_integrated, const bool error, [[maybe_unused]] const int is_qlogin,
+                                const int is_rsh, [[maybe_unused]] const int is_qsh) {
    DENTER(TOP_LAYER);
 
-   lListElem *ep, *next;
+   ocs::tom::Element<ocs::tom::SPA> ep;
 
    /* no options given - nothing to remove */
-   if (lp == nullptr) {
+   if (!lp) {
       DRETURN_VOID;
    }
 
    /* loop over all options and remove the ones that are not allowed */
-   next = lFirstRW(lp);
-   while ((ep = next) != nullptr) {
+   auto next = lp.front();
+   while ((ep = next)) {
       const char *cp;
 
-      next = lNextRW(ep);
+      next = ep.next();
       cp = ocs::tom::get<SPA_switch_val>(ep);
 
       if (cp != nullptr) {
@@ -2414,7 +2439,7 @@ static void remove_unknown_opts(lList *lp, uint32_t jb_now, int tightly_integrat
                ERROR(MSG_ANSWER_UNKNOWNOPTIONX_S, cp);
                sge_exit(EXIT_FAILURE);
             } else {
-               lRemoveElem(lp, &ep);
+               lp.erase(ep);
                continue;
             }
          }
@@ -2442,7 +2467,7 @@ static void remove_unknown_opts(lList *lp, uint32_t jb_now, int tightly_integrat
                sge_exit(EXIT_FAILURE);
             } else {
                DPRINTF("removing option %s\n", cp);
-               lRemoveElem(lp, &ep);
+               lp.erase(ep);
                continue;
             }
          }
@@ -2457,7 +2482,7 @@ static void remove_unknown_opts(lList *lp, uint32_t jb_now, int tightly_integrat
                   ERROR(MSG_ANSWER_UNKNOWNOPTIONX_S, cp);
                   sge_exit(EXIT_FAILURE);
                } else {
-                  lRemoveElem(lp, &ep);
+                  lp.erase(ep);
                   continue;
                }
             }
@@ -2470,7 +2495,7 @@ static void remove_unknown_opts(lList *lp, uint32_t jb_now, int tightly_integrat
                      ERROR(MSG_OPTION_ONLY_WITH_BUILTIN_IJS_S, cp);
                      sge_exit(EXIT_FAILURE);
                   } else {
-                     lRemoveElem(lp, &ep);
+                     lp.erase(ep);
                      continue;
                   }
                }
@@ -2484,7 +2509,7 @@ static void remove_unknown_opts(lList *lp, uint32_t jb_now, int tightly_integrat
                   ERROR(MSG_ANSWER_UNKNOWNOPTIONX_S, cp);
                   sge_exit(EXIT_FAILURE);
                } else {
-                  lRemoveElem(lp, &ep);
+                  lp.erase(ep);
                   continue;
                }
             }
@@ -2502,7 +2527,7 @@ static void remove_unknown_opts(lList *lp, uint32_t jb_now, int tightly_integrat
                   ERROR(MSG_ANSWER_UNKNOWNOPTIONX_S, cp);
                   sge_exit(EXIT_FAILURE);
                } else {
-                  lRemoveElem(lp, &ep);
+                  lp.erase(ep);
                   continue;
                }
             }

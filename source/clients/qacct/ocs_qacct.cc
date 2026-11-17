@@ -72,12 +72,20 @@
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_qref.h"
+#include "sgeobj/tom/ocs_tom_CE.h"
+#include "sgeobj/tom/ocs_tom_CQ.h"
+#include "sgeobj/tom/ocs_tom_EH.h"
+#include "sgeobj/tom/ocs_tom_HGRP.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
 #include "sgeobj/tom/ocs_tom_QAJ.h"
 #include "sgeobj/tom/ocs_tom_QR.h"
 #include "sgeobj/tom/ocs_tom_RN.h"
+#include "sgeobj/tom/ocs_tom_ST.h"
 #include "sgeobj/tom/ocs_tom_UA.h"
+#include "sgeobj/tom/ocs_tom_US.h"
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
+#include "tom/ocs_Select.h"
 #include "tom/ocs_Sort.h"
 
 #include "comm/commlib.h"
@@ -161,10 +169,11 @@ static void print_full(int length, const char* string);
 static void print_full_ulong(int length, uint32_t value);
 static void calc_column_sizes(ocs::tom::ConstElement<ocs::tom::QAJ> ep, sge_qacct_columns *column_size_data);
 static void showjob(sge_rusage_type *dusage);
-static bool get_qacct_lists(lList **alpp,
-                            lList **ppcomplex, lList **ppqeues, lList **ppexechosts,
-                            lList **hgrp_l);
-static void free_qacct_lists(lList **ppcomplex, lList **ppqeues, lList **ppexechosts, lList **hgrp_l);
+static bool get_qacct_lists(lList **alpp, ocs::tom::ListPtr<ocs::tom::CE> *ppcentries,
+                            ocs::tom::ListPtr<ocs::tom::CQ> *ppqueues, ocs::tom::ListPtr<ocs::tom::EH> *ppexechosts,
+                            ocs::tom::ListPtr<ocs::tom::HGRP> *hgrp_l);
+static void free_qacct_lists(ocs::tom::ListPtr<ocs::tom::CE> &ppcentries, ocs::tom::ListPtr<ocs::tom::CQ> &ppqueues,
+                             ocs::tom::ListPtr<ocs::tom::EH> &ppexechosts, ocs::tom::ListPtr<ocs::tom::HGRP> &hgrp_l);
 static int sge_read_rusage(std::ifstream &acct_file_stream, sge_rusage_type *d, sge_qacct_options *options,
                            std::string &acct_file_line);
 
@@ -194,12 +203,12 @@ int main(int argc, char **argv) {
    sge_rusage_type dusage{}; // zeroed here, the exit code frees its other_usage
    sge_rusage_type totals;
    int ii;
-   lList *complex_options = nullptr;
-   lList *centry_list = nullptr;
-   lList *queue_list = nullptr;
-   lList *exechost_list = nullptr;
-   lList *hgrp_list = nullptr;
-   lList *queueref_list = nullptr;
+   ocs::tom::ListPtr<ocs::tom::CE> complex_options;
+   ocs::tom::ListPtr<ocs::tom::CE> centry_list;
+   ocs::tom::ListPtr<ocs::tom::CQ> queue_list;
+   ocs::tom::ListPtr<ocs::tom::EH> exechost_list;
+   ocs::tom::ListPtr<ocs::tom::HGRP> hgrp_list;
+   ocs::tom::ListPtr<ocs::tom::QR> queueref_list;
    ocs::tom::ListPtr<ocs::tom::QAJ> sorted_list;
    ocs::tom::SortOrder<ocs::tom::QAJ> sort_order;
    int is_path_setup = 0;
@@ -288,7 +297,11 @@ int main(int argc, char **argv) {
          if (argv[ii+1]) {
             if (*(argv[ii+1]) != '-') {
                options.hostflag = 1;
-               ocs::tom::emplace_back<QR_name>(&queueref_list, argv[++ii]);
+               // created with the first queue, as the free emplace_back() created it
+               if (!queueref_list) {
+                  queueref_list = ocs::tom::ListPtr<ocs::tom::QR>::create("");
+               }
+               queueref_list->emplace_back<QR_name>(argv[++ii]);
             }
          }
       }
@@ -342,13 +355,11 @@ int main(int argc, char **argv) {
             qacct_usage(stderr);
             DRETURN(1);
          } else {
-            lList *ranges_out = nullptr;
+            ocs::tom::ListPtr<ocs::tom::RN> task_id_ranges;
             lList* answer = nullptr;
 
             ii++;
-            range_list_parse_from_string(&ranges_out, &answer, argv[ii], false, true, INF_NOT_ALLOWED);
-            /* range_list_parse_from_string() creates the list with RN_Type, so it is taken over unchecked */
-            const auto task_id_ranges = ocs::tom::ListPtr<ocs::tom::RN>::from_typed(ranges_out);
+            range_list_parse_from_string(task_id_ranges, &answer, argv[ii], false, true, INF_NOT_ALLOWED);
             if (task_id_ranges == nullptr) {
                lFreeList(&answer);
                fprintf(stderr, MSG_HISTORY_INVALIDLISTOFTASKIDRANGES_S , argv[ii]);
@@ -603,8 +614,7 @@ int main(int argc, char **argv) {
       bool has_hostname = false;
       bool has_domain = true;
 
-      /* emplace_back<QR_name>() creates the list with QR_Type, so it is wrapped unchecked */
-      for (const auto qref_pattern : ocs::tom::ConstList<ocs::tom::QR>::from_typed(queueref_list)) {
+      for (const auto qref_pattern : *queueref_list) {
          name = ocs::tom::get<QR_name>(qref_pattern);
          cqueue_name_split(name, &cqueue_name, &host_or_hgroup,
                            &has_hostname, &has_domain);
@@ -619,7 +629,7 @@ int main(int argc, char **argv) {
          from the qmaster, but we have to work on the user input and generate the
          same data structure, that we would have gotten with the qmaster functions*/
       if (!has_domain) {
-         for (const auto qref_pattern : ocs::tom::ConstList<ocs::tom::QR>::from_typed(queueref_list)) {
+         for (const auto qref_pattern : *queueref_list) {
             dstring qi_name = DSTRING_INIT;
             const char *tmp_str = nullptr;
             name = ocs::tom::get<QR_name>(qref_pattern);
@@ -643,7 +653,7 @@ int main(int argc, char **argv) {
          */
          bool found_something;
 
-         complex_options = centry_list_parse_from_string(nullptr, options.complexes, true);
+         complex_options = centry_list_parse_from_string(ocs::tom::ListPtr<ocs::tom::CE>(), options.complexes, true);
          if (!complex_options) {
             /*
             ** problem: still to tell some more to the user
@@ -666,8 +676,10 @@ int main(int argc, char **argv) {
                goto QACCT_EXIT;
             }
 
-            qref_list_resolve(queueref_list, nullptr, &options.queue_name_list,
-                           &found_something, queue_list, hgrp_list, true, true);
+            // qref_list_resolve() has no typed form for the destination list yet; it is a member of the
+            // memset options struct
+            qref_list_resolve(*queueref_list, nullptr, &options.queue_name_list,
+                           &found_something, *queue_list, *hgrp_list, true, true);
             if (!found_something) {
                fprintf(stderr, "%s\n", MSG_QINSTANCE_NOQUEUES);
                goto QACCT_EXIT;
@@ -685,13 +697,22 @@ int main(int argc, char **argv) {
    /* debug output) */
    if (getenv("SGE_QACCT_DEBUG")) {
       printf("complex entries:\n");
-      lWriteListTo(centry_list, stdout);
+      // print() throws on an empty handle where lWriteListTo() printed nothing
+      if (centry_list) {
+         centry_list->print(stdout);
+      }
       printf("queue instances:\n");
-      lWriteListTo(queue_list, stdout);
+      if (queue_list) {
+         queue_list->print(stdout);
+      }
       printf("exec hosts:\n");
-      lWriteListTo(exechost_list, stdout);
+      if (exechost_list) {
+         exechost_list->print(stdout);
+      }
       printf("host groups\n");
-      lWriteListTo(hgrp_list, stdout);
+      if (hgrp_list) {
+         hgrp_list->print(stdout);
+      }
    }
 
    acct_file_stream.open(acct_file);
@@ -743,11 +764,10 @@ int main(int argc, char **argv) {
 
       if (options.complexflag) {
          dstring qi = DSTRING_INIT;
-         lListElem *queue;
          int selected;
 
          sge_dstring_sprintf(&qi,"%s@%s", dusage.qname, dusage.hostname );
-         queue = cqueue_list_locate_qinstance_msg(queue_list, sge_dstring_get_string(&qi), false);
+         const auto queue = cqueue_list_locate_qinstance_msg(*queue_list, sge_dstring_get_string(&qi), false);
          sge_dstring_free(&qi);
 
          if (!queue) {
@@ -761,13 +781,14 @@ int main(int argc, char **argv) {
 
          sconf_set_qs_state(QS_STATE_EMPTY);
 
-         if (centry_list_fill_request(complex_options, &alp, centry_list, true, true, false)) {
+         if (centry_list_fill_request(*complex_options, &alp, *centry_list, true, true, false)) {
             answer_list_output(&alp);
             goto QACCT_EXIT;
          }
 
-         selected = sge_select_queue(complex_options, queue, nullptr, exechost_list,
-                    centry_list, true, 1, nullptr, nullptr, nullptr);
+         selected = sge_select_queue(*complex_options, queue, ocs::tom::ConstElement<ocs::tom::EH>(), *exechost_list,
+                    *centry_list, true, 1, ocs::tom::ConstList<ocs::tom::ST>(), ocs::tom::ConstList<ocs::tom::US>(),
+                    ocs::tom::ConstElement<ocs::tom::JB>());
 
          if (!selected) {
             continue;
@@ -903,13 +924,13 @@ int main(int argc, char **argv) {
          }
          goto QACCT_EXIT;
       } else {
-         free_qacct_lists(&centry_list, &queue_list, &exechost_list, &hgrp_list);
+         free_qacct_lists(centry_list, queue_list, exechost_list, hgrp_list);
          sge_exit(0);
       }
    } else if (options.taskstart && options.taskend && options.taskstep) {
       ERROR(SFNMAX, MSG_HISTORY_TOPTIONREQUIRESJOPTION);
       qacct_usage(stderr);
-      free_qacct_lists(&centry_list, &queue_list, &exechost_list, &hgrp_list);
+      free_qacct_lists(centry_list, queue_list, exechost_list, hgrp_list);
       sge_exit(0);
    }
 
@@ -1116,7 +1137,7 @@ int main(int argc, char **argv) {
    */
    sge_free(&(options.group));
    sge_free(&(options.host));
-   free_qacct_lists(&centry_list, &queue_list, &exechost_list, &hgrp_list);
+   free_qacct_lists(centry_list, queue_list, exechost_list, hgrp_list);
    sge_exit(0);
    DRETURN(0);
 
@@ -1128,7 +1149,7 @@ QACCT_EXIT_BUT_NO_ERROR:
    sort_order = ocs::tom::SortOrder<ocs::tom::QAJ>();
    sge_free(&(options.group));
    sge_free(&(options.host));
-   free_qacct_lists(&centry_list, &queue_list, &exechost_list, &hgrp_list);
+   free_qacct_lists(centry_list, queue_list, exechost_list, hgrp_list);
    sge_exit(ret);
    DRETURN(ret);
 }
@@ -1568,51 +1589,37 @@ static void showjob(sge_rusage_type *dusage) {
    DRETURN_VOID;
 }
 
-/*
-** NAME
-**   get_qacct_lists
-** PARAMETER
-**   ctx         - communication context
-**   alpp        - list pointer-pointer answer list
-**   ppcentries  - list pointer-pointer to be set to the complex list, CX_Type, can be nullptr
-**   ppqueues    - list pointer-pointer to be set to the queues list, QU_Type, has to be set
-**   ppexechosts - list pointer-pointer to be set to the exechosts list,EH_Type, can be nullptr
-**   hgrp_l      - host group list, HGRP_Type, can be nullptr
-**
-** RETURN
-**   none
-**
-** EXTERNAL
-**
-** DESCRIPTION
-**   retrieves the lists from qmaster
-**   programmed after the get_all_lists() function in qstat.c,
-**   but gets queue list in a different way
-**   none of the old list types is explicitly used
-**   function does its own error handling by calling SGE_EXIT
-**   problem: exiting is against the philosophy, restricts usage to clients
-*/
-static bool get_qacct_lists(
-lList **alpp,
-lList **ppcentries,
-lList **ppqueues,
-lList **ppexechosts,
-lList **hgrp_l
-) {
+/**
+ * @brief Retrieve the lists qacct needs from qmaster
+ *
+ * Programmed after the get_all_lists() function in qstat, but gets the queue
+ * list in a different way. The queue list is always requested.
+ *
+ * @param alpp the answer list
+ * @param ppcentries receives the complex list (CE_Type), or nullptr if it is not needed
+ * @param ppqueues receives the cluster queue list (CQ_Type); must not be nullptr
+ * @param ppexechosts receives the exec host list (EH_Type), or nullptr if it is not needed
+ * @param hgrp_l receives the host group list (HGRP_Type), or nullptr if it is not needed
+ *
+ * @return true on success, false with @p alpp filled otherwise
+ */
+static bool get_qacct_lists(lList **alpp, ocs::tom::ListPtr<ocs::tom::CE> *ppcentries,
+                            ocs::tom::ListPtr<ocs::tom::CQ> *ppqueues, ocs::tom::ListPtr<ocs::tom::EH> *ppexechosts,
+                            ocs::tom::ListPtr<ocs::tom::HGRP> *hgrp_l) {
    DENTER(TOP_LAYER);
 
-   lCondition *where = nullptr;
-   lEnumeration *what = nullptr;
    int ce_id = 0, eh_id = 0, q_id = 0, hgrp_id = 0;
    ocs::gdi::Request gdi_multi{};
 
+   // Request has no typed form yet; it does not change the condition and the selection
    /*
    ** GET SGE_CE_LIST
    */
    if (ppcentries) {
-      what = lWhat("%T(ALL)", CE_Type);
-      ce_id = gdi_multi.request(alpp, ocs::gdi::Mode::RECORD, ocs::gdi::Target::CE_LIST, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, nullptr, nullptr, what, true);
-      lFreeWhat(&what);
+      const auto what = ocs::tom::what_all<ocs::tom::CE>();
+      ce_id = gdi_multi.request(alpp, ocs::gdi::Mode::RECORD, ocs::gdi::Target::CE_LIST, ocs::gdi::Command::GET,
+                                ocs::gdi::SubCommand::NONE, nullptr, nullptr,
+                                const_cast<lEnumeration *>(what.get()), true);
 
       if (answer_list_has_error(alpp)) {
          DRETURN(false);
@@ -1622,11 +1629,11 @@ lList **hgrp_l
    ** GET SGE_EH_LIST
    */
    if (ppexechosts) {
-      where = lWhere("%T(%I!=%s)", EH_Type, EH_name, SGE_TEMPLATE_NAME);
-      what = lWhat("%T(ALL)", EH_Type);
-      eh_id = gdi_multi.request(alpp, ocs::gdi::Mode::RECORD, ocs::gdi::Target::EH_LIST, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, nullptr, where, what, true);
-      lFreeWhat(&what);
-      lFreeWhere(&where);
+      const auto where = ocs::tom::field<EH_name>() != SGE_TEMPLATE_NAME;
+      const auto what = ocs::tom::what_all<ocs::tom::EH>();
+      eh_id = gdi_multi.request(alpp, ocs::gdi::Mode::RECORD, ocs::gdi::Target::EH_LIST, ocs::gdi::Command::GET,
+                                ocs::gdi::SubCommand::NONE, nullptr, const_cast<lCondition *>(where.get()),
+                                const_cast<lEnumeration *>(what.get()), true);
 
       if (answer_list_has_error(alpp)) {
          DRETURN(false);
@@ -1637,9 +1644,10 @@ lList **hgrp_l
    ** hgroup
    */
    if (hgrp_l) {
-      what = lWhat("%T(ALL)", HGRP_Type);
-      hgrp_id = gdi_multi.request(alpp, ocs::gdi::Mode::RECORD, ocs::gdi::Target::HGRP_LIST, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, nullptr, nullptr, what, true);
-      lFreeWhat(&what);
+      const auto what = ocs::tom::what_all<ocs::tom::HGRP>();
+      hgrp_id = gdi_multi.request(alpp, ocs::gdi::Mode::RECORD, ocs::gdi::Target::HGRP_LIST,
+                                  ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, nullptr, nullptr,
+                                  const_cast<lEnumeration *>(what.get()), true);
 
       if (answer_list_has_error(alpp)) {
          DRETURN(false);
@@ -1648,21 +1656,29 @@ lList **hgrp_l
    /*
    ** GET SGE_QUEUE_LIST
    */
-   what = lWhat("%T(ALL)", QU_Type);
-   q_id = gdi_multi.request(alpp, ocs::gdi::Mode::SEND, ocs::gdi::Target::CQ_LIST, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, nullptr, nullptr, what, true);
-   gdi_multi.wait();
-   lFreeWhat(&what);
+   {
+      // the selection of every field is built for QU_Type, as it always was, and asks for all of a cluster queue
+      const auto what = ocs::tom::what_all<ocs::tom::QU>();
+      q_id = gdi_multi.request(alpp, ocs::gdi::Mode::SEND, ocs::gdi::Target::CQ_LIST, ocs::gdi::Command::GET,
+                               ocs::gdi::SubCommand::NONE, nullptr, nullptr,
+                               const_cast<lEnumeration *>(what.get()), true);
+      gdi_multi.wait();
+   }
 
    if (answer_list_has_error(alpp)) {
       DRETURN(false);
    }
 
    /*
-   ** handle results
+   ** handle results; get_response() has no typed form yet, it sets the raw list of the response, which is
+   ** taken over with the type of the request; a list held before is freed (it was leaked)
    */
    /* --- complex */
    if (ppcentries) {
-      gdi_multi.get_response(alpp, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, ocs::gdi::Target::CE_LIST, ce_id, ppcentries);
+      lList *lp = nullptr;
+      gdi_multi.get_response(alpp, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, ocs::gdi::Target::CE_LIST,
+                             ce_id, &lp);
+      *ppcentries = ocs::tom::ListPtr<ocs::tom::CE>::from_typed(lp);
       if (answer_list_has_error(alpp)) {
          DRETURN(false);
       }
@@ -1670,7 +1686,10 @@ lList **hgrp_l
 
    /* --- exec host */
    if (ppexechosts) {
-      gdi_multi.get_response(alpp, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, ocs::gdi::Target::EH_LIST, eh_id, ppexechosts);
+      lList *lp = nullptr;
+      gdi_multi.get_response(alpp, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, ocs::gdi::Target::EH_LIST,
+                             eh_id, &lp);
+      *ppexechosts = ocs::tom::ListPtr<ocs::tom::EH>::from_typed(lp);
       if (answer_list_has_error(alpp)) {
          DRETURN(false);
       }
@@ -1678,7 +1697,10 @@ lList **hgrp_l
 
    /* --- queue */
    if (ppqueues) {
-      gdi_multi.get_response(alpp, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, ocs::gdi::Target::CQ_LIST, q_id, ppqueues);
+      lList *lp = nullptr;
+      gdi_multi.get_response(alpp, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, ocs::gdi::Target::CQ_LIST,
+                             q_id, &lp);
+      *ppqueues = ocs::tom::ListPtr<ocs::tom::CQ>::from_typed(lp);
       if (answer_list_has_error(alpp)) {
          DRETURN(false);
       }
@@ -1686,7 +1708,10 @@ lList **hgrp_l
 
    /* --- hgrp */
    if (hgrp_l) {
-      gdi_multi.get_response(alpp, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, ocs::gdi::Target::HGRP_LIST, hgrp_id, hgrp_l);
+      lList *lp = nullptr;
+      gdi_multi.get_response(alpp, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, ocs::gdi::Target::HGRP_LIST,
+                             hgrp_id, &lp);
+      *hgrp_l = ocs::tom::ListPtr<ocs::tom::HGRP>::from_typed(lp);
       if (answer_list_has_error(alpp)) {
          DRETURN(false);
       }
@@ -1695,11 +1720,22 @@ lList **hgrp_l
    DRETURN(true);
 }
 
-static void free_qacct_lists(lList **ppcentries, lList **ppqueues, lList **ppexechosts, lList **hgrp_l) {
-   lFreeList(ppcentries);
-   lFreeList(ppqueues);
-   lFreeList(ppexechosts);
-   lFreeList(hgrp_l);
+/**
+ * @brief Free the lists get_qacct_lists() retrieved, before the process ends with sge_exit()
+ *
+ * @param ppcentries the complex list
+ * @param ppqueues the cluster queue list
+ * @param ppexechosts the exec host list
+ * @param hgrp_l the host group list
+ */
+static void free_qacct_lists(ocs::tom::ListPtr<ocs::tom::CE> &ppcentries, ocs::tom::ListPtr<ocs::tom::CQ> &ppqueues,
+                             ocs::tom::ListPtr<ocs::tom::EH> &ppexechosts, ocs::tom::ListPtr<ocs::tom::HGRP> &hgrp_l) {
+   DENTER(TOP_LAYER);
+   ppcentries.reset();
+   ppqueues.reset();
+   ppexechosts.reset();
+   hgrp_l.reset();
+   DRETURN_VOID;
 }
 
 static int
@@ -2397,8 +2433,8 @@ sge_read_rusage_json(const char *line, sge_rusage_type *d, sge_qacct_options *op
                const rapidjson::Value &json_usage = itr->value;
                for (rapidjson::Value::ConstMemberIterator usage_itr = json_usage.MemberBegin(); usage_itr != json_usage.MemberEnd(); ++usage_itr) {
                   const char *name = usage_itr->name.GetString();
-                  lListElem *ep = ocs::tom::find_first_rw<UA_name>(d->other_usage, name);
-                  if (ep != nullptr) {
+                  // other_usage is a raw member of sge_rusage_type; the free forms keep its creation
+                  if (ocs::tom::find_first<UA_name>(d->other_usage, name)) {
                      continue;   // first-wins per pre-CS-849 semantics
                   }
                   ocs::tom::Element<ocs::tom::UA> ep_ua = ocs::tom::emplace_back<UA_name>(&(d->other_usage), name);

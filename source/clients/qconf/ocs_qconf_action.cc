@@ -286,10 +286,7 @@ qconf_run_reserved_hgroup(std::ostream &os, const ocs::QConfParameterClient &par
    }
 
    std::string arg = op.args[0];
-   lList *names_out = nullptr;
-   /* parse_name_list_to_cull() creates the list with HR_Type, so it is taken over unchecked */
-   parse_name_list_to_cull(entry.add ? "host to add" : "host to del", &names_out, HR_Type, HR_name, arg.data());
-   auto names = ocs::tom::ListPtr<ocs::tom::HR>::from_typed(names_out);
+   auto names = parse_name_list_to_cull<HR_name>(entry.add ? "host to add" : "host to del", arg.data());
 
    bool ok = true;
    std::vector<std::string> members;

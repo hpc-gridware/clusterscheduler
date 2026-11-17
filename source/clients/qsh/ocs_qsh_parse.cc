@@ -57,6 +57,11 @@
 #include "sgeobj/sge_mailrec.h"
 #include "sgeobj/sge_jsv.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_JRE.h"
+#include "sgeobj/tom/ocs_tom_PA.h"
+#include "sgeobj/tom/ocs_tom_PN.h"
+#include "sgeobj/tom/ocs_tom_SPA.h"
 #include "sgeobj/tom/ocs_tom_MR.h"
 #include "sgeobj/tom/ocs_tom_RN.h"
 #include "sgeobj/tom/ocs_tom_ST.h"
@@ -79,8 +84,9 @@
  * @param cell_root the cell directory, for resolving the default files
  * @param unqualified_hostname the submit host, unqualified
  * @param qualified_hostname the submit host, fully qualified
- * @param cmdline the parsed options (`SPA_Type`), or `nullptr` for defaults only
- * @param pjob the job (`JB_Type`) to fill in
+ * @param cmdline the parsed options (`SPA_Type`), or an empty handle for defaults only; the options used are
+ *                removed, those left are reported as unknown
+ * @param job the job (`JB_Type`) to fill in
  *
  * @return `nullptr` when everything was fine, otherwise an answer list
  *         (`AN_Type`) carrying one of
@@ -88,17 +94,19 @@
  *         - `STATUS_EDISK` - `getcwd()` failed
  *         - `STATUS_ENOIMP` - an unknown switch, or `-help`
  */
-lList *cull_parse_qsh_parameter(uint32_t prog_number, uint32_t uid, const char *username, const char *cell_root,
-                                const char *unqualified_hostname, const char *qualified_hostname, lList *cmdline, lListElem **pjob) {
-   DENTER(TOP_LAYER); 
+lList *cull_parse_qsh_parameter(const uint32_t prog_number, [[maybe_unused]] uint32_t uid, const char *username,
+                                const char *cell_root, const char *unqualified_hostname,
+                                const char *qualified_hostname, const ocs::tom::List<ocs::tom::SPA> cmdline,
+                                const ocs::tom::Element<ocs::tom::JB> job) {
+   DENTER(TOP_LAYER);
 
    const char *cp;
-   lListElem *ep;
+   ocs::tom::Element<ocs::tom::SPA> ep;
    lList *answer = nullptr;
-   lList *path_alias = nullptr;
+   ocs::tom::ListPtr<ocs::tom::PA> path_alias;
    uint32_t job_now;
 
-   if (!pjob) {
+   if (!job) {
       answer_list_add(&answer, MSG_PARSE_NULLPOINTERRECEIVED, 
                       STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(answer);
@@ -107,37 +115,34 @@ lList *cull_parse_qsh_parameter(uint32_t prog_number, uint32_t uid, const char *
    /*
    ** path aliasing
    */
-   if (path_alias_list_initialize(&path_alias, &answer, cell_root, username, 
-                                  qualified_hostname) == -1) {
-      lFreeList(&path_alias);
+   if (path_alias_list_initialize(path_alias, &answer, cell_root, username, qualified_hostname) == -1) {
       DRETURN(answer);
    }
 
-   job_initialize_env(*pjob, &answer, path_alias, unqualified_hostname, qualified_hostname);
+   job_initialize_env(job, &answer, *path_alias, unqualified_hostname, qualified_hostname);
    if (answer) {
-      lFreeList(&path_alias);
       DRETURN(answer);
    }
 
-   ocs::tom::set<JB_priority>(*pjob, BASE_PRIORITY);
-   ocs::tom::set<JB_jobshare>(*pjob, 0);
-   ocs::tom::set<JB_verify_suitable_queues>(*pjob, SKIP_VERIFY);
+   ocs::tom::set<JB_priority>(job, BASE_PRIORITY);
+   ocs::tom::set<JB_jobshare>(job, 0);
+   ocs::tom::set<JB_verify_suitable_queues>(job, SKIP_VERIFY);
 
    /*
    ** it does not make sense to rerun interactive jobs
    ** the default is to decide via the queue configuration
    ** we turn this off here explicitly (2 is no)
    */
-   job_now = ocs::tom::get<JB_type>(*pjob);
+   job_now = ocs::tom::get<JB_type>(job);
    if (JOB_TYPE_IS_QSH(job_now) || JOB_TYPE_IS_QLOGIN(job_now)
        || JOB_TYPE_IS_QRSH(job_now) || JOB_TYPE_IS_QRLOGIN(job_now)) {
-      ocs::tom::set<JB_restart>(*pjob, 2);
+      ocs::tom::set<JB_restart>(job, 2);
    }
 
    while (JOB_TYPE_IS_QRSH(job_now)
-          && (ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-notify"))) {
-      ocs::tom::set<JB_notify>(*pjob, true);
-      lRemoveElem(cmdline, &ep);
+          && (ep = cmdline.find_first<SPA_switch_val>("-notify"))) {
+      ocs::tom::set<JB_notify>(job, true);
+      cmdline.erase(ep);
    }  
 
    /* 
@@ -145,17 +150,17 @@ lList *cull_parse_qsh_parameter(uint32_t prog_number, uint32_t uid, const char *
     * can be overwriten by option -now n 
     */
    {
-      uint32_t type = ocs::tom::get<JB_type>(*pjob);
+      uint32_t type = ocs::tom::get<JB_type>(job);
 
       JOB_TYPE_SET_IMMEDIATE(type);
-      ocs::tom::set<JB_type>(*pjob, type);
+      ocs::tom::set<JB_type>(job, type);
    }
 
    // -btype host | slot
-   while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-btype"))) {
+   while ((ep = cmdline.find_first<SPA_switch_val>("-btype"))) {
       // Create a binding element if it does not exist
-      lListElem *binding_elem = ocs::Job::binding_get_or_create_elem(*pjob, &answer);
-      if (binding_elem == nullptr) {
+      const auto binding_elem = ocs::Job::binding_get_or_create_elem(job, &answer);
+      if (!binding_elem) {
          DRETURN(answer);
       }
 
@@ -163,14 +168,14 @@ lList *cull_parse_qsh_parameter(uint32_t prog_number, uint32_t uid, const char *
       ocs::tom::set<BN_new_type>(binding_elem, ocs::tom::get<SPA_argval_lIntT>(ep));
 
       // Get rid of the binding element from the command line
-      lRemoveElem(cmdline, &ep);
+      cmdline.erase(ep);
    }
 
    // -bamount number
-   while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-bamount"))) {
+   while ((ep = cmdline.find_first<SPA_switch_val>("-bamount"))) {
       // Create a binding element if it does not exist
-      lListElem *binding_elem = ocs::Job::binding_get_or_create_elem(*pjob, &answer);
-      if (binding_elem == nullptr) {
+      const auto binding_elem = ocs::Job::binding_get_or_create_elem(job, &answer);
+      if (!binding_elem) {
          DRETURN(answer);
       }
 
@@ -178,14 +183,14 @@ lList *cull_parse_qsh_parameter(uint32_t prog_number, uint32_t uid, const char *
       ocs::tom::set<BN_amount>(binding_elem, ocs::tom::get<SPA_argval_lIntT>(ep));
 
       // Get rid of the binding element from the command line
-      lRemoveElem(cmdline, &ep);
+      cmdline.erase(ep);
    }
 
    // -binstance set | env | pe
-   while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-binstance"))) {
+   while ((ep = cmdline.find_first<SPA_switch_val>("-binstance"))) {
       // Create a binding element if it does not exist
-      lListElem *binding_elem = ocs::Job::binding_get_or_create_elem(*pjob, &answer);
-      if (binding_elem == nullptr) {
+      const auto binding_elem = ocs::Job::binding_get_or_create_elem(job, &answer);
+      if (!binding_elem) {
          DRETURN(answer);
       }
 
@@ -193,14 +198,14 @@ lList *cull_parse_qsh_parameter(uint32_t prog_number, uint32_t uid, const char *
       ocs::tom::set<BN_instance>(binding_elem, ocs::tom::get<SPA_argval_lIntT>(ep));
 
       // Get rid of the binding element from the command line
-      lRemoveElem(cmdline, &ep);
+      cmdline.erase(ep);
    }
 
    // -bunit binding_unit
-   while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-bunit"))) {
+   while ((ep = cmdline.find_first<SPA_switch_val>("-bunit"))) {
       // Create a binding element if it does not exist
-      lListElem *binding_elem = ocs::Job::binding_get_or_create_elem(*pjob, &answer);
-      if (binding_elem == nullptr) {
+      const auto binding_elem = ocs::Job::binding_get_or_create_elem(job, &answer);
+      if (!binding_elem) {
          DRETURN(answer);
       }
 
@@ -208,14 +213,14 @@ lList *cull_parse_qsh_parameter(uint32_t prog_number, uint32_t uid, const char *
       ocs::tom::set<BN_unit>(binding_elem, ocs::tom::get<SPA_argval_lIntT>(ep));
 
       // Get rid of the binding element from the command line
-      lRemoveElem(cmdline, &ep);
+      cmdline.erase(ep);
    }
 
    // -bfilter topo_string
-   while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-bfilter"))) {
+   while ((ep = cmdline.find_first<SPA_switch_val>("-bfilter"))) {
       // Create a binding element if it does not exist
-      lListElem *binding_elem = ocs::Job::binding_get_or_create_elem(*pjob, &answer);
-      if (binding_elem == nullptr) {
+      const auto binding_elem = ocs::Job::binding_get_or_create_elem(job, &answer);
+      if (!binding_elem) {
          DRETURN(answer);
       }
 
@@ -223,14 +228,14 @@ lList *cull_parse_qsh_parameter(uint32_t prog_number, uint32_t uid, const char *
       ocs::tom::set<BN_filter>(binding_elem, ocs::tom::get<SPA_argval_lStringT>(ep));
 
       // Get rid of the binding element from the command line
-      lRemoveElem(cmdline, &ep);
+      cmdline.erase(ep);
    }
 
    // -bsort sort_string
-   while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-bsort"))) {
+   while ((ep = cmdline.find_first<SPA_switch_val>("-bsort"))) {
       // Create a binding element if it does not exist
-      lListElem *binding_elem = ocs::Job::binding_get_or_create_elem(*pjob, &answer);
-      if (binding_elem == nullptr) {
+      const auto binding_elem = ocs::Job::binding_get_or_create_elem(job, &answer);
+      if (!binding_elem) {
          DRETURN(answer);
       }
 
@@ -238,14 +243,14 @@ lList *cull_parse_qsh_parameter(uint32_t prog_number, uint32_t uid, const char *
       ocs::tom::set<BN_sort>(binding_elem, ocs::tom::get<SPA_argval_lStringT>(ep));
 
       // Get rid of the binding element from the command line
-      lRemoveElem(cmdline, &ep);
+      cmdline.erase(ep);
    }
 
    // -bstart
-   while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-bstart"))) {
+   while ((ep = cmdline.find_first<SPA_switch_val>("-bstart"))) {
       // Create a binding element if it does not exist
-      lListElem *binding_elem = ocs::Job::binding_get_or_create_elem(*pjob, &answer);
-      if (binding_elem == nullptr) {
+      const auto binding_elem = ocs::Job::binding_get_or_create_elem(job, &answer);
+      if (!binding_elem) {
          DRETURN(answer);
       }
 
@@ -253,14 +258,14 @@ lList *cull_parse_qsh_parameter(uint32_t prog_number, uint32_t uid, const char *
       ocs::tom::set<BN_start>(binding_elem, ocs::tom::get<SPA_argval_lIntT>(ep));
 
       // Get rid of the binding element from the command line
-      lRemoveElem(cmdline, &ep);
+      cmdline.erase(ep);
    }
 
    // -bstop
-   while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-bstop"))) {
+   while ((ep = cmdline.find_first<SPA_switch_val>("-bstop"))) {
       // Create a binding element if it does not exist
-      lListElem *binding_elem = ocs::Job::binding_get_or_create_elem(*pjob, &answer);
-      if (binding_elem == nullptr) {
+      const auto binding_elem = ocs::Job::binding_get_or_create_elem(job, &answer);
+      if (!binding_elem) {
          DRETURN(answer);
       }
 
@@ -268,14 +273,14 @@ lList *cull_parse_qsh_parameter(uint32_t prog_number, uint32_t uid, const char *
       ocs::tom::set<BN_stop>(binding_elem, ocs::tom::get<SPA_argval_lIntT>(ep));
 
       // Get rid of the binding element from the command line
-      lRemoveElem(cmdline, &ep);
+      cmdline.erase(ep);
    }
 
    // -bstrategy
-   while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-bstrategy"))) {
+   while ((ep = cmdline.find_first<SPA_switch_val>("-bstrategy"))) {
       // Create a binding element if it does not exist
-      lListElem *binding_elem = ocs::Job::binding_get_or_create_elem(*pjob, &answer);
-      if (binding_elem == nullptr) {
+      const auto binding_elem = ocs::Job::binding_get_or_create_elem(job, &answer);
+      if (!binding_elem) {
          DRETURN(answer);
       }
 
@@ -283,7 +288,7 @@ lList *cull_parse_qsh_parameter(uint32_t prog_number, uint32_t uid, const char *
       ocs::tom::set<BN_strategy>(binding_elem, ocs::tom::get<SPA_argval_lIntT>(ep));
 
       // Get rid of the binding element from the command line
-      lRemoveElem(cmdline, &ep);
+      cmdline.erase(ep);
    }
 
    /*
@@ -291,35 +296,31 @@ lList *cull_parse_qsh_parameter(uint32_t prog_number, uint32_t uid, const char *
    ** kills all options that come before
    ** there might be more than one -clear
    */
-   while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-clear"))) {
-      lListElem *ep_run;
-      const char *cp_switch;
-
-      for (ep_run = lFirstRW(cmdline); ep_run;) {
+   while ((ep = cmdline.find_first<SPA_switch_val>("-clear"))) {
+      for (auto ep_run = cmdline.front(); ep_run;) {
          /*
          ** remove -clear itsself
          */
          if (ep_run == ep) {
-            lRemoveElem(cmdline, &ep_run);
+            cmdline.erase(ep_run);
             break;
          }
          /*
-         ** lNext can never be nullptr here, because the -clear
+         ** next() can never be empty here, because the -clear
          ** element is the last one to delete
          ** in general, these two lines wont work!
          */
-         ep_run = lNextRW(ep_run);
-         
+         ep_run = ep_run.next();
+
          /*
          ** remove switch only if it is not a pseudo-arg
          */
-         cp_switch = ocs::tom::get<SPA_switch_val>(lPrev(ep_run));
+         const auto prev = ep_run.prev();
+         const char *cp_switch = ocs::tom::get<SPA_switch_val>(prev);
          if (cp_switch && (*cp_switch == '-')) {
-            lListElem *prev = lPrevRW(ep_run);
-            lRemoveElem(cmdline, &prev);
+            cmdline.erase(prev);
          }
       }
-
    }
 
    /*
@@ -330,10 +331,10 @@ lList *cull_parse_qsh_parameter(uint32_t prog_number, uint32_t uid, const char *
    **                 or simply ignored.
    */ 
 
-   while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-A"))) {
+   while ((ep = cmdline.find_first<SPA_switch_val>("-A"))) {
       /* the old account string is overwritten */
-      ocs::tom::set<JB_account>(*pjob, ocs::tom::get<SPA_argval_lStringT>(ep));
-      lRemoveElem(cmdline, &ep);
+      ocs::tom::set<JB_account>(job, ocs::tom::get<SPA_argval_lStringT>(ep));
+      cmdline.erase(ep);
    }
 
    /*
@@ -356,238 +357,261 @@ lList *cull_parse_qsh_parameter(uint32_t prog_number, uint32_t uid, const char *
    ** a little redesign of cull would be nice
    ** see parse_list_simple
    */
-   job_set_submit_task_ids(*pjob, 1, 1, 1);
-   job_initialize_id_lists(*pjob, &answer);
+   job_set_submit_task_ids(job, 1, 1, 1);
+   job_initialize_id_lists(job, &answer);
    if (answer != nullptr) {
-      lFreeList(&path_alias);
       DRETURN(answer);
    }
 
-   while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-ar"))) {
+   while ((ep = cmdline.find_first<SPA_switch_val>("-ar"))) {
       /* the old advance reservation is overwritten */
-      ocs::tom::set<JB_ar>(*pjob, ocs::tom::get<SPA_argval_lUlongT>(ep));
-      lRemoveElem(cmdline, &ep);
+      ocs::tom::set<JB_ar>(job, ocs::tom::get<SPA_argval_lUlongT>(ep));
+      cmdline.erase(ep);
    }
 
-   while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-dept"))) {
-      ocs::tom::set<JB_department>(*pjob, ocs::tom::get<SPA_argval_lStringT>(ep));
-      lRemoveElem(cmdline, &ep);
+   while ((ep = cmdline.find_first<SPA_switch_val>("-dept"))) {
+      ocs::tom::set<JB_department>(job, ocs::tom::get<SPA_argval_lStringT>(ep));
+      cmdline.erase(ep);
    }
 
-   while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-e"))) {
-      ocs::tom::set<JB_stderr_path_list>(*pjob, lCopyList("stderr_path_list", ocs::tom::get<SPA_argval_lListT>(ep)));
-      lRemoveElem(cmdline, &ep);
+   while ((ep = cmdline.find_first<SPA_switch_val>("-e"))) {
+      // the parser fills the argument of -e with a PN_Type path list
+      ocs::tom::set<JB_stderr_path_list>(job, ocs::tom::ConstList<ocs::tom::PN>::from_typed(
+                                                 ocs::tom::get<SPA_argval_lListT>(ep)).clone("stderr_path_list"));
+      cmdline.erase(ep);
    }
 
-   while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-h"))) {
+   while ((ep = cmdline.find_first<SPA_switch_val>("-h"))) {
       if (ocs::tom::get<SPA_argval_lIntT>(ep) & MINUS_H_TGT_USER) {
-         ocs::tom::set<JB_ja_u_h_ids>(*pjob, lCopyList("task_id_range",
-            ocs::tom::get<JB_ja_n_h_ids>(*pjob)));
+         ocs::tom::set<JB_ja_u_h_ids>(job, ocs::tom::get<JB_ja_n_h_ids>(job).clone("task_id_range"));
       }
-      ocs::tom::set<JB_ja_n_h_ids>(*pjob, nullptr);
-      lRemoveElem(cmdline, &ep);
+      ocs::tom::set<JB_ja_n_h_ids>(job, nullptr);
+      cmdline.erase(ep);
    }
 
    /* -hold_jid */
-   if (ocs::tom::find_first<SPA_switch_val>(cmdline, "-hold_jid")) {
-      lListElem *ep;
-      lList *jref_list = nullptr;
-      while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-hold_jid"))) {
-         for_each_ep_lv(sep, ocs::tom::get<SPA_argval_lListT>(ep)) {
-            DPRINTF("-hold_jid %s\n", ocs::tom::get<ST_name>(sep));
-            ocs::tom::emplace_back<JRE_job_name>(&jref_list, ocs::tom::get<ST_name>(sep));
+   if (cmdline.find_first<SPA_switch_val>("-hold_jid")) {
+      // created with the first reference, as the free emplace_back() created it
+      ocs::tom::ListPtr<ocs::tom::JRE> jref_list;
+      while ((ep = cmdline.find_first<SPA_switch_val>("-hold_jid"))) {
+         // the parser fills the argument with an ST_Type name list
+         for (const auto sep : ocs::tom::ConstList<ocs::tom::ST>::from_typed(ocs::tom::get<SPA_argval_lListT>(ep))) {
+            const char *name = ocs::tom::get<ST_name>(sep);
+            DPRINTF("-hold_jid %s\n", name);
+            // a null name added nothing in the free emplace_back()
+            if (name == nullptr) {
+               continue;
+            }
+            if (!jref_list) {
+               jref_list = ocs::tom::ListPtr<ocs::tom::JRE>::create("job reference list");
+            }
+            jref_list->emplace_back<JRE_job_name>(name);
          }
-         lRemoveElem(cmdline, &ep);
+         cmdline.erase(ep);
       }
-      ocs::tom::set<JB_jid_request_list>(*pjob, jref_list);
+      ocs::tom::set<JB_jid_request_list>(job, std::move(jref_list));
    }
 
    /* -hold_jid_ad */
-   if (ocs::tom::find_first<SPA_switch_val>(cmdline, "-hold_jid_ad")) {
-      lListElem *ep;
-      lList *jref_list = nullptr;
-      while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-hold_jid_ad"))) {
-         for_each_ep_lv(sep, ocs::tom::get<SPA_argval_lListT>(ep)) {
-            DPRINTF("-hold_jid_ad %s\n", ocs::tom::get<ST_name>(sep));
-            ocs::tom::emplace_back<JRE_job_name>(&jref_list, ocs::tom::get<ST_name>(sep));
+   if (cmdline.find_first<SPA_switch_val>("-hold_jid_ad")) {
+      // created with the first reference, as the free emplace_back() created it
+      ocs::tom::ListPtr<ocs::tom::JRE> jref_list;
+      while ((ep = cmdline.find_first<SPA_switch_val>("-hold_jid_ad"))) {
+         // the parser fills the argument with an ST_Type name list
+         for (const auto sep : ocs::tom::ConstList<ocs::tom::ST>::from_typed(ocs::tom::get<SPA_argval_lListT>(ep))) {
+            const char *name = ocs::tom::get<ST_name>(sep);
+            DPRINTF("-hold_jid_ad %s\n", name);
+            // a null name added nothing in the free emplace_back()
+            if (name == nullptr) {
+               continue;
+            }
+            if (!jref_list) {
+               jref_list = ocs::tom::ListPtr<ocs::tom::JRE>::create("job reference list");
+            }
+            jref_list->emplace_back<JRE_job_name>(name);
          }
-         lRemoveElem(cmdline, &ep);
+         cmdline.erase(ep);
       }
-      ocs::tom::set<JB_ja_ad_request_list>(*pjob, jref_list);
+      ocs::tom::set<JB_ja_ad_request_list>(job, std::move(jref_list));
    }
 
    /* not needed in job struct */
-   while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-hard"))) {
-      lRemoveElem(cmdline, &ep);
+   while ((ep = cmdline.find_first<SPA_switch_val>("-hard"))) {
+      cmdline.erase(ep);
    }
 
-   if ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-help"))) {
-      lRemoveElem(cmdline, &ep);
+   if ((ep = cmdline.find_first<SPA_switch_val>("-help"))) {
+      cmdline.erase(ep);
       answer_list_add_sprintf(&answer, STATUS_ENOIMP, ANSWER_QUALITY_ERROR,
                               SFNMAX, MSG_ANSWER_HELPNOTALLOWEDINCONTEXT);
-      lFreeList(&path_alias);
       DRETURN(answer);
    }
 
-   while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-j"))) {
-      ocs::tom::set<JB_merge_stderr>(*pjob, ocs::tom::get<SPA_argval_lIntT>(ep));
-      lRemoveElem(cmdline, &ep);
+   while ((ep = cmdline.find_first<SPA_switch_val>("-j"))) {
+      ocs::tom::set<JB_merge_stderr>(job, ocs::tom::get<SPA_argval_lIntT>(ep));
+      cmdline.erase(ep);
    }
 
-   while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-jsv"))) {
-      const lList *list = ocs::tom::get<SPA_argval_lListT>(ep);
-      const char *file = ocs::tom::get<PN_path>(lFirst(list));
+   while ((ep = cmdline.find_first<SPA_switch_val>("-jsv"))) {
+      // the parser fills the argument of -jsv with a PN_Type path list
+      const auto list = ocs::tom::ConstList<ocs::tom::PN>::from_typed(ocs::tom::get<SPA_argval_lListT>(ep));
+      const char *file = ocs::tom::get<PN_path>(list.front());
 
       jsv_list_add("jsv_switch", JSV_CONTEXT_CLIENT, nullptr, file);
-      lRemoveElem(cmdline, &ep);
+      cmdline.erase(ep);
    }
 
-   parse_list_hardsoft(cmdline, "-l", *pjob, JRS_SCOPE_GLOBAL, JRS_hard_resource_list, JRS_soft_resource_list);
-   parse_list_hardsoft(cmdline, "-l", *pjob, JRS_SCOPE_MASTER, JRS_hard_resource_list, JRS_soft_resource_list);
-   parse_list_hardsoft(cmdline, "-l", *pjob, JRS_SCOPE_SLAVE, JRS_hard_resource_list, JRS_soft_resource_list);
-   job_request_set_remove_duplicates(*pjob);
+   parse_list_hardsoft(cmdline, "-l", job, JRS_SCOPE_GLOBAL, JRS_hard_resource_list, JRS_soft_resource_list);
+   parse_list_hardsoft(cmdline, "-l", job, JRS_SCOPE_MASTER, JRS_hard_resource_list, JRS_soft_resource_list);
+   parse_list_hardsoft(cmdline, "-l", job, JRS_SCOPE_SLAVE, JRS_hard_resource_list, JRS_soft_resource_list);
+   job_request_set_remove_duplicates(job);
 
-   while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-m"))) {
+   while ((ep = cmdline.find_first<SPA_switch_val>("-m"))) {
       uint32_t ul;
       uint32_t old_mail_opts;
 
       ul = ocs::tom::get<SPA_argval_lIntT>(ep);
       if  ((ul & NO_MAIL)) {
-         ocs::tom::set<JB_mail_options>(*pjob, 0);
+         ocs::tom::set<JB_mail_options>(job, 0);
       }
       else {
-         old_mail_opts = ocs::tom::get<JB_mail_options>(*pjob);
-         ocs::tom::set<JB_mail_options>(*pjob, ul | old_mail_opts);
+         old_mail_opts = ocs::tom::get<JB_mail_options>(job);
+         ocs::tom::set<JB_mail_options>(job, ul | old_mail_opts);
       }
-      lRemoveElem(cmdline, &ep);
+      cmdline.erase(ep);
    }
 
-   parse_list_simple(cmdline, "-M", *pjob, JB_mail_list, MR_host, MR_user, FLG_LIST_MERGE);
+   parse_list_simple(cmdline, "-M", job, JB_mail_list, MR_host, MR_user, FLG_LIST_MERGE);
 
-   if (!ocs::tom::get<JB_mail_list>(*pjob)) {   
-      ocs::tom::Element<ocs::tom::MR> ep = ocs::tom::emplace_back_in<JB_mail_list, MR_user>(*pjob, username);
-      ocs::tom::set<MR_host>(ep, qualified_hostname);
+   if (!ocs::tom::get<JB_mail_list>(job)) {
+      const auto mail_ep = ocs::tom::emplace_back_in<JB_mail_list, MR_user>(job, username);
+      ocs::tom::set<MR_host>(mail_ep, qualified_hostname);
    }
 
-   while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-N"))) {
-      ocs::tom::set<JB_job_name>(*pjob, ocs::tom::get<SPA_argval_lStringT>(ep));
-      lRemoveElem(cmdline, &ep);
+   while ((ep = cmdline.find_first<SPA_switch_val>("-N"))) {
+      ocs::tom::set<JB_job_name>(job, ocs::tom::get<SPA_argval_lStringT>(ep));
+      cmdline.erase(ep);
    }
    
-   while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-now"))) {
-      uint32_t jb_now = ocs::tom::get<JB_type>(*pjob);
+   while ((ep = cmdline.find_first<SPA_switch_val>("-now"))) {
+      uint32_t jb_now = ocs::tom::get<JB_type>(job);
       if(ocs::tom::get<SPA_argval_lIntT>(ep)) {
          JOB_TYPE_SET_IMMEDIATE(jb_now);
       } else {
          JOB_TYPE_CLEAR_IMMEDIATE(jb_now);
       }
 
-      ocs::tom::set<JB_type>(*pjob, jb_now);
+      ocs::tom::set<JB_type>(job, jb_now);
 
-      lRemoveElem(cmdline, &ep);
+      cmdline.erase(ep);
    }
 
-   while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-o"))) {
-      ocs::tom::set<JB_stdout_path_list>(*pjob, lCopyList("stdout_path_list", ocs::tom::get<SPA_argval_lListT>(ep))); 
-      lRemoveElem(cmdline, &ep);
+   while ((ep = cmdline.find_first<SPA_switch_val>("-o"))) {
+      // the parser fills the argument of -o with a PN_Type path list
+      ocs::tom::set<JB_stdout_path_list>(job, ocs::tom::ConstList<ocs::tom::PN>::from_typed(
+                                                 ocs::tom::get<SPA_argval_lListT>(ep)).clone("stdout_path_list"));
+      cmdline.erase(ep);
    }
 
-   while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-P"))) {
+   while ((ep = cmdline.find_first<SPA_switch_val>("-P"))) {
       /* the old project string is overwritten */
-      ocs::tom::set<JB_project>(*pjob, ocs::tom::get<SPA_argval_lStringT>(ep));
-      lRemoveElem(cmdline, &ep);
+      ocs::tom::set<JB_project>(job, ocs::tom::get<SPA_argval_lStringT>(ep));
+      cmdline.erase(ep);
    }
 
-   while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-p"))) {
-      ocs::tom::set<JB_priority>(*pjob, 
+   while ((ep = cmdline.find_first<SPA_switch_val>("-p"))) {
+      ocs::tom::set<JB_priority>(job, 
          BASE_PRIORITY + ocs::tom::get<SPA_argval_lIntT>(ep));
-      lRemoveElem(cmdline, &ep);
+      cmdline.erase(ep);
    }
 
-   while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-par"))) {
+   while ((ep = cmdline.find_first<SPA_switch_val>("-par"))) {
       const char *allocation_rule = ocs::tom::get<SPA_switch_arg>(ep);
       long scope = ocs::tom::get<SPA_argval_lLongT>(ep);
-      lListElem *jrs = job_get_or_create_request_setRW(*pjob, scope);
-      if (jrs != nullptr) {
+      const auto jrs = job_get_or_create_request_setRW(job, scope);
+      if (jrs) {
          ocs::tom::set<JRS_allocation_rule>(jrs, allocation_rule);
       }
-      lRemoveElem(cmdline, &ep);
+      cmdline.erase(ep);
    }
 
-   while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-js"))) {
-      ocs::tom::set<JB_jobshare>(*pjob, ocs::tom::get<SPA_argval_lUlongT>(ep));
-      lRemoveElem(cmdline, &ep);
+   while ((ep = cmdline.find_first<SPA_switch_val>("-js"))) {
+      ocs::tom::set<JB_jobshare>(job, ocs::tom::get<SPA_argval_lUlongT>(ep));
+      cmdline.erase(ep);
    }
 
-   while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-pe"))) {
+   while ((ep = cmdline.find_first<SPA_switch_val>("-pe"))) {
 
-      ocs::tom::set<JB_pe>(*pjob, ocs::tom::get<SPA_argval_lStringT>(ep));
+      ocs::tom::set<JB_pe>(job, ocs::tom::get<SPA_argval_lStringT>(ep));
 
       /* put sublist from parsing into job */
-      lSwapList(*pjob, JB_pe_range, ep, SPA_argval_lListT);
-      lRemoveElem(cmdline, &ep);
+      // SPA_argval_lListT carries lists of several types and has no typed swap
+      lSwapList(job, JB_pe_range, ep, SPA_argval_lListT);
+      cmdline.erase(ep);
    }
 
-   parse_list_hardsoft(cmdline, "-q", *pjob, JRS_SCOPE_GLOBAL, JRS_hard_queue_list, JRS_soft_queue_list);
-   parse_list_hardsoft(cmdline, "-q", *pjob, JRS_SCOPE_MASTER, JRS_hard_queue_list, JRS_soft_queue_list);
-   parse_list_hardsoft(cmdline, "-q", *pjob, JRS_SCOPE_SLAVE, JRS_hard_queue_list, JRS_soft_queue_list);
-   parse_list_hardsoft(cmdline, "-masterq", *pjob, JRS_SCOPE_MASTER, JRS_hard_queue_list, 0);
+   parse_list_hardsoft(cmdline, "-q", job, JRS_SCOPE_GLOBAL, JRS_hard_queue_list, JRS_soft_queue_list);
+   parse_list_hardsoft(cmdline, "-q", job, JRS_SCOPE_MASTER, JRS_hard_queue_list, JRS_soft_queue_list);
+   parse_list_hardsoft(cmdline, "-q", job, JRS_SCOPE_SLAVE, JRS_hard_queue_list, JRS_soft_queue_list);
+   parse_list_hardsoft(cmdline, "-masterq", job, JRS_SCOPE_MASTER, JRS_hard_queue_list, 0);
 
-   while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-R"))) {
-      ocs::tom::set<JB_reserve>(*pjob, ocs::tom::get<SPA_argval_lIntT>(ep));
-      lRemoveElem(cmdline, &ep);
+   while ((ep = cmdline.find_first<SPA_switch_val>("-R"))) {
+      ocs::tom::set<JB_reserve>(job, ocs::tom::get<SPA_argval_lIntT>(ep));
+      cmdline.erase(ep);
    }
 
-   parse_list_simple(cmdline, "-S", *pjob, JB_shell_list, PN_host, PN_path, FLG_LIST_MERGE);
+   parse_list_simple(cmdline, "-S", job, JB_shell_list, PN_host, PN_path, FLG_LIST_MERGE);
 
    /* context switches are sensitive to order */
-   ep = lFirstRW(cmdline);
-   while(ep) {
+   ep = cmdline.front();
+   while (ep) {
       if (!strcmp(ocs::tom::get<SPA_switch_val>(ep), "-ac") ||
           !strcmp(ocs::tom::get<SPA_switch_val>(ep), "-dc") ||
           !strcmp(ocs::tom::get<SPA_switch_val>(ep), "-sc")) {
-         lListElem *temp;
-         // the switches are concatenated in their order, as instructions for the qmaster (CS-3058)
+         // the switches are concatenated in their order, as instructions for the qmaster (CS-3058);
+         // ocs_context_change_add() has no typed form for the change list yet
          lList *change = nullptr;
-         ocs::tom::exchange<JB_context_change>(*pjob, &change);
-         ocs_context_change_add(&change, ocs::tom::get<SPA_argval_lListT>(ep));
-         ocs::tom::exchange<JB_context_change>(*pjob, &change);
-         temp = lNextRW(ep);
-         lRemoveElem(cmdline, &ep);
+         ocs::tom::exchange<JB_context_change>(job, &change);
+         // the parser fills the argument of the context switches with a VA_Type list
+         ocs_context_change_add(&change, ocs::tom::ConstList<ocs::tom::VA>::from_typed(
+                                            ocs::tom::get<SPA_argval_lListT>(ep)));
+         ocs::tom::exchange<JB_context_change>(job, &change);
+         const auto temp = ep.next();
+         cmdline.erase(ep);
          ep = temp;
       } else {
-         ep = lNextRW(ep);
+         ep = ep.next();
       }
    }
 
    /* not needed in job struct */
-   while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-scope"))) {
-      lRemoveElem(cmdline, &ep);
+   while ((ep = cmdline.find_first<SPA_switch_val>("-scope"))) {
+      cmdline.erase(ep);
    }
 
    /* not needed in job struct */
-   while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-soft"))) {
-      lRemoveElem(cmdline, &ep);
+   while ((ep = cmdline.find_first<SPA_switch_val>("-soft"))) {
+      cmdline.erase(ep);
    }
 
    /*
    ** to be processed in original order, set -V equal to -v
    */
-   while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-V"))) {
+   while ((ep = cmdline.find_first<SPA_switch_val>("-V"))) {
       ocs::tom::set<SPA_switch_val>(ep, "-v");
    }
-   parse_list_simple(cmdline, "-v", *pjob, JB_env_list, VA_variable, VA_value, FLG_LIST_MERGE);
+   parse_list_simple(cmdline, "-v", job, JB_env_list, VA_variable, VA_value, FLG_LIST_MERGE);
 
    /* -w e is default for interactive jobs */
    /* JG: changed default behaviour: skip verify to be consistant to qsub */
-   ocs::tom::set<JB_verify_suitable_queues>(*pjob, SKIP_VERIFY);
+   ocs::tom::set<JB_verify_suitable_queues>(job, SKIP_VERIFY);
 
-   while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-w"))) {
-      ocs::tom::set<JB_verify_suitable_queues>(*pjob, ocs::tom::get<SPA_argval_lIntT>(ep));
-      lRemoveElem(cmdline, &ep);
+   while ((ep = cmdline.find_first<SPA_switch_val>("-w"))) {
+      ocs::tom::set<JB_verify_suitable_queues>(job, ocs::tom::get<SPA_argval_lIntT>(ep));
+      cmdline.erase(ep);
    }
 
-   while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-wd"))) {
+   while ((ep = cmdline.find_first<SPA_switch_val>("-wd"))) {
       const char *path = ocs::tom::get<SPA_argval_lStringT>(ep);
       bool is_cwd = false;
 
@@ -597,32 +621,30 @@ lList *cull_parse_qsh_parameter(uint32_t prog_number, uint32_t uid, const char *
          is_cwd = true;
          if (!getcwd(tmp_str, sizeof(tmp_str))) {
             /* If getcwd() fails... */
-            answer_list_add(&answer, MSG_ANSWER_GETCWDFAILED, 
+            answer_list_add(&answer, MSG_ANSWER_GETCWDFAILED,
                             STATUS_EDISK, ANSWER_QUALITY_ERROR);
-            lFreeList(&path_alias);
             DRETURN(answer);
          }
          
-         path = reroot_path(*pjob, tmp_str, &answer);
-         
+         path = reroot_path(job, tmp_str, &answer);
+
          if (path == nullptr) {
-            lFreeList(&path_alias);
             DRETURN(answer);
          }
       }
 
-      ocs::tom::set<JB_cwd>(*pjob, path);
-      lRemoveElem(cmdline, &ep);
+      ocs::tom::set<JB_cwd>(job, path);
+      cmdline.erase(ep);
       
-      ocs::tom::set<JB_path_aliases>(*pjob, lCopyList("PathAliases", path_alias));
+      ocs::tom::set<JB_path_aliases>(job, path_alias->clone("PathAliases"));
 
       if (is_cwd) {
          sge_free(&path);
       }
    }
 
-   lFreeList(&path_alias);
-   
+   path_alias.reset();
+
    /*
    * handling for display:
    * command line (-display) has highest priority
@@ -636,47 +658,47 @@ lList *cull_parse_qsh_parameter(uint32_t prog_number, uint32_t uid, const char *
    * we put the display switch into the variable list
    * otherwise, we'd have to add a field to the job structure
    */
-   while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-display"))) {
-      lList *lp = ocs::tom::get<JB_env_list>(*pjob);
+   while ((ep = cmdline.find_first<SPA_switch_val>("-display"))) {
       auto vep = ocs::tom::ElementPtr<ocs::tom::VA>::create();
 
       ocs::tom::set<VA_variable>(vep, "DISPLAY");
       ocs::tom::set<VA_value>(vep, ocs::tom::get<SPA_argval_lStringT>(ep));
-      if (!lp) {
-         lp = lCreateList("env list", VA_Type);
-         ocs::tom::set<JB_env_list>(*pjob, lp);
-      }
-      lAppendElem(lp, std::move(vep));
-      
-      lRemoveElem(cmdline, &ep);
+      job.get_or_create<JB_env_list>("env list").push_back(std::move(vep));
+
+      cmdline.erase(ep);
    }
-   cull_compress_definition_list(ocs::tom::get<JB_env_list>(*pjob), VA_variable, VA_value, 0);
+   // cull_compress_definition_list() works on any definition list and has no typed form
+   cull_compress_definition_list(ocs::tom::get<JB_env_list>(job), VA_variable, VA_value, 0);
 
 
-   while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-verify"))) {
-      ocs::tom::set<JB_verify>(*pjob, true);
-      lRemoveElem(cmdline, &ep);
+   while ((ep = cmdline.find_first<SPA_switch_val>("-verify"))) {
+      ocs::tom::set<JB_verify>(job, true);
+      cmdline.erase(ep);
    }
 
    {
-      lList *lp;
-      
-      lp = lCopyList("job args", ocs::tom::get<JB_job_args>(*pjob));
+      auto lp = ocs::tom::get<JB_job_args>(job).clone("job args");
 
-      while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, STR_PSEUDO_JOBARG))) {
-         ocs::tom::emplace_back<ST_name>(&lp, ocs::tom::get<SPA_argval_lStringT>(ep));
-         
-         lRemoveElem(cmdline, &ep);
+      while ((ep = cmdline.find_first<SPA_switch_val>(STR_PSEUDO_JOBARG))) {
+         // a null argument added nothing in the free emplace_back(); the list is created with the first one
+         if (const char *arg = ocs::tom::get<SPA_argval_lStringT>(ep); arg != nullptr) {
+            if (!lp) {
+               lp = ocs::tom::ListPtr<ocs::tom::ST>::create("job args");
+            }
+            lp->emplace_back<ST_name>(arg);
+         }
+
+         cmdline.erase(ep);
       }
-      ocs::tom::set<JB_job_args>(*pjob, lp);
+      ocs::tom::set<JB_job_args>(job, std::move(lp));
    }
 
    
-   for_each_rw(ep, cmdline) {
+   for (const auto unknown : cmdline) {
       char str[1024];
 
-      snprintf(str, sizeof(str), MSG_ANSWER_UNKNOWNOPTIONX_S, ocs::tom::get<SPA_switch_val>(ep));
-      cp = ocs::tom::get<SPA_switch_arg>(ep);
+      snprintf(str, sizeof(str), MSG_ANSWER_UNKNOWNOPTIONX_S, ocs::tom::get<SPA_switch_val>(unknown));
+      cp = ocs::tom::get<SPA_switch_arg>(unknown);
       if (cp) {
          strcat(str, " ");
          strcat(str, cp);
@@ -684,20 +706,15 @@ lList *cull_parse_qsh_parameter(uint32_t prog_number, uint32_t uid, const char *
       answer_list_add(&answer, str, STATUS_ENOIMP, ANSWER_QUALITY_ERROR);
    } 
 
-   {
-      lListElem *ep = ocs::tom::find_first_in_rw<JB_env_list, VA_variable>(*pjob, "DISPLAY");
+   /* if DISPLAY not set from -display or -v option,
+    * try to read it from the environment
+    */
+   if (!ocs::tom::find_first_in<JB_env_list, VA_variable>(job, "DISPLAY")) {
+      const char *display = getenv("DISPLAY");
 
-      /* if DISPLAY not set from -display or -v option,
-       * try to read it from the environment
-       */
-      if (ep == nullptr) {
-         const char *display;
-         display = getenv("DISPLAY");
-
-         if(display != nullptr) {
-            ocs::tom::Element<ocs::tom::VA> ep = ocs::tom::emplace_back_in<JB_env_list, VA_variable>(*pjob, "DISPLAY");
-            ocs::tom::set<VA_value>(ep, display);   
-         }   
+      if (display != nullptr) {
+         const auto display_ep = ocs::tom::emplace_back_in<JB_env_list, VA_variable>(job, "DISPLAY");
+         ocs::tom::set<VA_value>(display_ep, display);
       }
    }
 
@@ -705,7 +722,7 @@ lList *cull_parse_qsh_parameter(uint32_t prog_number, uint32_t uid, const char *
     * only needed for qsh 
     */
    if(prog_number == QSH) {
-      job_check_qsh_display(*pjob, &answer, false);
+      job_check_qsh_display(job, &answer, false);
    }
 
    DRETURN(answer);

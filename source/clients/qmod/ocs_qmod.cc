@@ -67,8 +67,9 @@
 #include "msg_qmod.h"
 
 
-static lList *sge_parse_cmdline_qmod(char **argv, char **envp, lList **ppcmdline);
-static lList *sge_parse_qmod(lList **ppcmdline, lList **ppreflist, uint32_t *pforce);
+static lList *sge_parse_cmdline_qmod(char **argv, char **envp, ocs::tom::ListPtr<ocs::tom::SPA> &cmdline);
+static lList *sge_parse_qmod(ocs::tom::List<ocs::tom::SPA> cmdline, ocs::tom::ListPtr<ocs::tom::ID> &reflist,
+                             uint32_t *pforce);
 
 static int qmod_usage(FILE *fp, char *what);
 
@@ -91,8 +92,9 @@ extern char **environ;
 int main(int argc, char **argv) {
    DENTER_MAIN(TOP_LAYER, "qmod");
    uint32_t force = 0;
-   lList *ref_list = nullptr;
-   lList *alp = nullptr, *pcmdline = nullptr;
+   ocs::tom::ListPtr<ocs::tom::ID> ref_list;
+   lList *alp = nullptr;
+   ocs::tom::ListPtr<ocs::tom::SPA> pcmdline;
    bool answ_list_has_err = false;
 
    sge_setup_sig_handlers(QMOD);
@@ -109,7 +111,7 @@ int main(int argc, char **argv) {
    ** static func for parsing all qmod specific switches
    ** here we get action, force, ref_list
    */
-   alp = sge_parse_cmdline_qmod(++argv, environ, &pcmdline);
+   alp = sge_parse_cmdline_qmod(++argv, environ, pcmdline);
    if(alp) {
       /*
       ** high level parsing error! show answer list
@@ -118,11 +120,11 @@ int main(int argc, char **argv) {
          fprintf(stderr, "%s\n", ocs::tom::get<AN_text>(aep));
       }
       lFreeList(&alp);
-      lFreeList(&pcmdline);
+      pcmdline.reset();
       sge_exit(1);
    }
 
-   alp = sge_parse_qmod(&pcmdline, &ref_list, &force);
+   alp = sge_parse_qmod(*pcmdline, ref_list, &force);
 
    if(alp) {
       /*
@@ -132,20 +134,21 @@ int main(int argc, char **argv) {
          fprintf(stderr, "%s\n", ocs::tom::get<AN_text>(aep));
       }
       lFreeList(&alp);
-      lFreeList(&pcmdline);
-      lFreeList(&ref_list);
+      pcmdline.reset();
+      ref_list.reset();
       sge_exit(1);
    }
 
-   /* parse_multi_jobtaskslist() and id_list_build_from_str_list() create the list with ID_Type,
-    * so it is wrapped unchecked */
-   for (const auto idep : ocs::tom::List<ocs::tom::ID>::from_typed(ref_list)) {
+   for (const auto idep : *ref_list) {
       ocs::tom::set<ID_force>(idep, force);
    }
 
    if (ref_list) {
+      // sge_gdi() has no typed form yet; it replaces the request list with the response, freed with the handle
+      lList *ref_lp = ref_list.release();
       alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::CQ_LIST, ocs::gdi::Command::TRIGGER,
-                    ocs::gdi::SubCommand::NONE, &ref_list, nullptr, nullptr);
+                    ocs::gdi::SubCommand::NONE, &ref_lp, nullptr, nullptr);
+      ref_list = ocs::tom::ListPtr<ocs::tom::ID>::from_typed(ref_lp);
    }
 
    answ_list_has_err = answer_list_has_exit_code_error(&alp); 
@@ -158,8 +161,8 @@ int main(int argc, char **argv) {
    }
 
    lFreeList(&alp);
-   lFreeList(&ref_list);
-   lFreeList(&pcmdline);
+   ref_list.reset();
+   pcmdline.reset();
 
    if(answ_list_has_err) {
       sge_exit(1);
@@ -210,14 +213,15 @@ static bool answer_list_has_exit_code_error(lList **answer_list) {
 /**
  * @brief 'Stage 1' parsing of the qmod options
  *
- * Parses the options with their arguments and stores them in @p ppcmdline.
+ * Parses the options with their arguments and stores them in @p cmdline.
  *
  * @param argv the arguments, without the program name
  * @param envp the process environment
- * @param ppcmdline receives the parsed options (`SPA_Type`)
+ * @param cmdline receives the parsed options (`SPA_Type`), created with the first option
  * @return the answer list with the parse errors, nullptr if there were none
  */
-static lList *sge_parse_cmdline_qmod(char **argv, char **envp, lList **ppcmdline) {
+static lList *sge_parse_cmdline_qmod(char **argv, [[maybe_unused]] char **envp,
+                                     ocs::tom::ListPtr<ocs::tom::SPA> &cmdline) {
    DENTER(TOP_LAYER);
 
 char **sp;
@@ -234,67 +238,67 @@ lList *alp = nullptr;
 
    while(*(sp=rp)) {
       /* -help */
-      if ((rp = parse_noopt(sp, "-help", "--help", ppcmdline, &alp)) != sp)
+      if ((rp = parse_noopt(sp, "-help", "--help", cmdline, &alp)) != sp)
          continue;
 
       /* -f option */
-      if ((rp = parse_noopt(sp, "-f", "--force", ppcmdline, &alp)) != sp)
+      if ((rp = parse_noopt(sp, "-f", "--force", cmdline, &alp)) != sp)
          continue;
 
       /* -c option */
-      if ((rp = parse_until_next_opt(sp, "-c", "--clear", ppcmdline, &alp)) != sp)
+      if ((rp = parse_until_next_opt(sp, "-c", "--clear", cmdline, &alp)) != sp)
          continue;
 
       /* -cj option */
-      if ((rp = parse_until_next_opt(sp, "-cj", "--clearjob", ppcmdline, &alp)) != sp)
+      if ((rp = parse_until_next_opt(sp, "-cj", "--clearjob", cmdline, &alp)) != sp)
          continue;
 
       /* -cq option */
-      if ((rp = parse_until_next_opt(sp, "-cq", "--clearqueue", ppcmdline, &alp)) != sp)
+      if ((rp = parse_until_next_opt(sp, "-cq", "--clearqueue", cmdline, &alp)) != sp)
          continue;
 
       /* -s option */
-      if ((rp = parse_until_next_opt(sp, "-s", "--suspend", ppcmdline, &alp)) != sp)
+      if ((rp = parse_until_next_opt(sp, "-s", "--suspend", cmdline, &alp)) != sp)
          continue;
 
       /* -sj option */
-      if ((rp = parse_until_next_opt(sp, "-sj", "--suspendjob", ppcmdline, &alp)) != sp)
+      if ((rp = parse_until_next_opt(sp, "-sj", "--suspendjob", cmdline, &alp)) != sp)
          continue;
 
       /* -sq option */
-      if ((rp = parse_until_next_opt(sp, "-sq", "--suspendqueue", ppcmdline, &alp)) != sp)
+      if ((rp = parse_until_next_opt(sp, "-sq", "--suspendqueue", cmdline, &alp)) != sp)
          continue;
 
       /* -us option */
-      if ((rp = parse_until_next_opt(sp, "-us", "--unsuspend", ppcmdline, &alp)) != sp)
+      if ((rp = parse_until_next_opt(sp, "-us", "--unsuspend", cmdline, &alp)) != sp)
          continue;
 
       /* -usj option */
-      if ((rp = parse_until_next_opt(sp, "-usj", "--unsuspendjob", ppcmdline, &alp)) != sp)
+      if ((rp = parse_until_next_opt(sp, "-usj", "--unsuspendjob", cmdline, &alp)) != sp)
          continue;
 
       /* -usq option */
-      if ((rp = parse_until_next_opt(sp, "-usq", "--unsuspendqueue", ppcmdline, &alp)) != sp)
+      if ((rp = parse_until_next_opt(sp, "-usq", "--unsuspendqueue", cmdline, &alp)) != sp)
          continue;
 
       /* -d option */
-      if ((rp = parse_until_next_opt(sp, "-d", "--disable", ppcmdline, &alp)) != sp)
+      if ((rp = parse_until_next_opt(sp, "-d", "--disable", cmdline, &alp)) != sp)
          continue;
 
       /* -rj option */
-      if ((rp = parse_until_next_opt(sp, "-rj", "--reschedulejob", ppcmdline, &alp)) != sp)
+      if ((rp = parse_until_next_opt(sp, "-rj", "--reschedulejob", cmdline, &alp)) != sp)
          continue;
 
       /* -rq option */
-      if ((rp = parse_until_next_opt(sp, "-rq", "--reschedulequeue", ppcmdline, &alp)) != sp)
+      if ((rp = parse_until_next_opt(sp, "-rq", "--reschedulequeue", cmdline, &alp)) != sp)
          continue;
 
       /* -r option */
-      if ((rp = parse_until_next_opt(sp, "-r", "--reschedule", ppcmdline, &alp)) != sp)
+      if ((rp = parse_until_next_opt(sp, "-r", "--reschedule", cmdline, &alp)) != sp)
          continue;
 
       /* -e option */
-      if ((rp = parse_until_next_opt(sp, "-e", "--enable", ppcmdline, &alp)) != sp)
+      if ((rp = parse_until_next_opt(sp, "-e", "--enable", cmdline, &alp)) != sp)
          continue;
 
       /* -t */
@@ -308,10 +312,8 @@ lList *alp = nullptr;
 
          DPRINTF("\"-t %s\"\n", *sp);
 
-         lList *ranges_out = nullptr;
-         range_list_parse_from_string(&ranges_out, &alp, *sp, false, true, INF_NOT_ALLOWED);
-         /* range_list_parse_from_string() creates the list with RN_Type, so it is taken over unchecked */
-         auto task_id_ranges = ocs::tom::ListPtr<ocs::tom::RN>::from_typed(ranges_out);
+         ocs::tom::ListPtr<ocs::tom::RN> task_id_ranges;
+         range_list_parse_from_string(task_id_ranges, &alp, *sp, false, true, INF_NOT_ALLOWED);
          if (!task_id_ranges) {
             goto error;
          }
@@ -322,7 +324,7 @@ lList *alp = nullptr;
             goto error;
          }
 
-         lListElem *ep_opt = sge_add_arg(ppcmdline, t_OPT, lListT, *(sp - 1), *sp);
+         const auto ep_opt = sge_add_arg(cmdline, t_OPT, lListT, *(sp - 1), *sp);
          ocs::tom::set<SPA_argval_lListT>(ep_opt, std::move(task_id_ranges));
 
          sp++;
@@ -331,19 +333,19 @@ lList *alp = nullptr;
       }
 
 #ifdef __SGE_QINSTANCE_STATE_DEBUG__
-      if ((rp = parse_until_next_opt(sp, "-_e", "--_error", ppcmdline, &alp)) != sp)
+      if ((rp = parse_until_next_opt(sp, "-_e", "--_error", cmdline, &alp)) != sp)
          continue;
-      if ((rp = parse_until_next_opt(sp, "-_o", "--_orphaned", ppcmdline, &alp)) != sp)
+      if ((rp = parse_until_next_opt(sp, "-_o", "--_orphaned", cmdline, &alp)) != sp)
          continue;
-      if ((rp = parse_until_next_opt(sp, "-_do", "--_dorphaned", ppcmdline, &alp)) != sp)
+      if ((rp = parse_until_next_opt(sp, "-_do", "--_dorphaned", cmdline, &alp)) != sp)
          continue;
-      if ((rp = parse_until_next_opt(sp, "-_u", "--_unknown", ppcmdline, &alp)) != sp)
+      if ((rp = parse_until_next_opt(sp, "-_u", "--_unknown", cmdline, &alp)) != sp)
          continue;
-      if ((rp = parse_until_next_opt(sp, "-_du", "--_dunknown", ppcmdline, &alp)) != sp)
+      if ((rp = parse_until_next_opt(sp, "-_du", "--_dunknown", cmdline, &alp)) != sp)
          continue;
-      if ((rp = parse_until_next_opt(sp, "-_c", "--_confambiguous", ppcmdline, &alp)) != sp)
+      if ((rp = parse_until_next_opt(sp, "-_c", "--_confambiguous", cmdline, &alp)) != sp)
          continue;
-      if ((rp = parse_until_next_opt(sp, "-_dc", "--_dconfambiguous", ppcmdline, &alp)) != sp)
+      if ((rp = parse_until_next_opt(sp, "-_dc", "--_dconfambiguous", cmdline, &alp)) != sp)
          continue;
 #endif
 
@@ -359,25 +361,29 @@ error:
 /**
  * @brief 'Stage 2' parsing of the qmod options
  *
- * Gets the options from @p ppcmdline, sets the force and action flags and puts
- * the queue/job names/numbers in @p ppreflist.
+ * Gets the options from @p cmdline, sets the force and action flags and puts
+ * the queue/job names/numbers in @p reflist.
  *
- * @param ppcmdline the parsed options (`SPA_Type`); the options served are removed
- * @param ppreflist receives the queue and job references (`ID_Type`)
+ * @param cmdline the parsed options (`SPA_Type`); the options served are removed
+ * @param reflist receives the queue and job references (`ID_Type`)
  * @param pforce receives the -f flag
  * @return the answer list with the errors, nullptr if there were none
  */
-static lList *sge_parse_qmod(lList **ppcmdline, lList **ppreflist, uint32_t *pforce) {
+static lList *sge_parse_qmod(const ocs::tom::List<ocs::tom::SPA> cmdline, ocs::tom::ListPtr<ocs::tom::ID> &reflist,
+                             uint32_t *pforce) {
    DENTER(TOP_LAYER);
 
    lList *alp = nullptr;
+   /* parse_multi_jobtaskslist() and id_list_build_from_str_list() have no typed form for the destination list
+    * yet; they create it with ID_Type */
+   lList *refs = reflist.release();
    uint32_t helpflag;
    int usageshowed = 0;
 
    /* Loop over all options. Only valid options can be in the
-      ppcmdline list. Except f_OPT all options are exclusive.
+      cmdline list. Except f_OPT all options are exclusive.
    */
-   while(lGetNumberOfElem(*ppcmdline)) {
+   while (!cmdline.empty()) {
       ocs::tom::Element<ocs::tom::SPA> ep;
       static const char *options[] = {
          "-c",
@@ -433,31 +439,30 @@ static lList *sge_parse_qmod(lList **ppcmdline, lList **ppreflist, uint32_t *pfo
       };
       int i;
 
-      if (parse_flag(ppcmdline, "-help",  &alp, &helpflag)) {
+      if (parse_flag(cmdline, "-help",  &alp, &helpflag)) {
          usageshowed = qmod_usage(stdout, nullptr);
          break;
       }
 
-      if (parse_flag(ppcmdline, "-f", &alp, pforce)) {
+      if (parse_flag(cmdline, "-f", &alp, pforce)) {
          continue;
       }
 
       i = 0;
       while (options[i] != nullptr) {
          if ((transitions[i] & QUEUE_DO_ACTION) == 0) {
-            parse_multi_jobtaskslist(ppcmdline, options[i], &alp, ppreflist, true, transitions[i]);
+            parse_multi_jobtaskslist(cmdline, options[i], &alp, &refs, true, transitions[i]);
          } else {
             ocs::tom::ListPtr<ocs::tom::ST> queues;
-            if (parse_multi_stringlist<ST_name>(ocs::tom::List<ocs::tom::SPA>(*ppcmdline), options[i], &alp,
-                                                queues)) {
-               id_list_build_from_str_list(ppreflist, &alp, *queues, transitions[i], *pforce);
+            if (parse_multi_stringlist<ST_name>(cmdline, options[i], &alp, queues)) {
+               id_list_build_from_str_list(&refs, &alp, *queues, transitions[i], *pforce);
             }
          }
          i++;
       }
 
       /* we get to this point, than there are -t options without job names. We have to write an error message */
-      if ((ep = ocs::tom::find_first_rw<SPA_switch_val>(*ppcmdline, "-t")) != nullptr) {
+      if ((ep = cmdline.find_first<SPA_switch_val>("-t"))) {
          answer_list_add_sprintf(&alp, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
                                  MSG_JOB_LONELY_TOPTION_S, ocs::tom::get<SPA_switch_arg>(ep));
 
@@ -466,7 +471,7 @@ static lList *sge_parse_qmod(lList **ppcmdline, lList **ppreflist, uint32_t *pfo
 
    }
 
-   if (lGetNumberOfElem(*ppcmdline)) {
+   if (!cmdline.empty()) {
       if (!usageshowed) {
          qmod_usage(stderr, nullptr);
       }
@@ -474,6 +479,7 @@ static lList *sge_parse_qmod(lList **ppcmdline, lList **ppreflist, uint32_t *pfo
                               SFNMAX, MSG_PARSE_TOOMANYOPTIONS);
    }
 
+   reflist = ocs::tom::ListPtr<ocs::tom::ID>::from_typed(refs);
    DRETURN(alp);
 }
 

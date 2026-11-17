@@ -68,9 +68,12 @@
 #include "sgeobj/sge_feature.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/ocs_DataStore.h"
+#include "sgeobj/tom/ocs_tom_ET.h"
 #include "sgeobj/tom/ocs_tom_JAT.h"
 #include "sgeobj/tom/ocs_tom_JB.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "tom/ocs_Select.h"
 
 #include "mir/sge_mirror.h"
 
@@ -96,8 +99,10 @@ static void qevent_testsuite_mode(sge_evc_class_t *evc);
 static void qevent_subscribe_mode(sge_evc_class_t *evc);
 static void qevent_monitor_all_mode(sge_evc_class_t *evc);
 static const char* qevent_get_event_name(int event);
-static void qevent_trigger_scripts(int qevent_event, qevent_options *option_struct, lListElem *event);
-static void qevent_start_trigger_script(int qevent_event, const char* script_file, lListElem *event);
+static void qevent_trigger_scripts(int qevent_event, qevent_options *option_struct,
+                                   ocs::tom::ConstElement<ocs::tom::ET> event);
+static void qevent_start_trigger_script(int qevent_event, const char* script_file,
+                                        ocs::tom::ConstElement<ocs::tom::ET> event);
 static qevent_options* qevent_get_option_struct();
 static void qevent_set_option_struct(qevent_options *option_struct);
 
@@ -133,20 +138,40 @@ print_event([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type,
 
 #ifndef QEVENT_SHOW_ALL
 
+/**
+ * @brief The status of an array task in the mirrored job list
+ *
+ * @param job_id the job
+ * @param ja_task_id the array task
+ *
+ * @return the status of the task, JIDLE if the mirror does not hold it
+ */
 static u_long
-get_current_jatask_status(u_long job_id, u_long ja_task_id) {
+get_current_jatask_status(const u_long job_id, const u_long ja_task_id) {
+   DENTER(TOP_LAYER);
    uint32_t ret = JIDLE;
-   const lList *master_job_list = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
-   ocs::tom::ConstElement<ocs::tom::JB> job = ocs::tom::find_first<JB_job_number>(master_job_list, job_id);
-   if (job != nullptr) {
-      ocs::tom::ConstElement<ocs::tom::JAT> ja_task = ocs::tom::find_first_in<JB_ja_tasks, JAT_task_number>(job, ja_task_id);
-      if (ja_task != nullptr) {
+   // the mirror keeps the job master list with JB_Type, so it is wrapped unchecked
+   const auto master_job_list =
+      ocs::tom::ConstList<ocs::tom::JB>::from_typed(*ocs::DataStore::get_master_list(SGE_TYPE_JOB));
+   if (const auto job = master_job_list.find_first<JB_job_number>(job_id)) {
+      if (const auto ja_task = ocs::tom::find_first_in<JB_ja_tasks, JAT_task_number>(job, ja_task_id)) {
          ret = ocs::tom::get<JAT_status>(ja_task);
       }
    }
-   return ret;
+   DRETURN(ret);
 }
 
+/**
+ * @brief Mirror callback of the testsuite mode: print job start, finish, add and delete
+ *
+ * @param evc the event client
+ * @param type the object type of the event
+ * @param action the mirror action
+ * @param event the event (ET_Type)
+ * @param client_data unused
+ *
+ * @return SGE_EMA_OK
+ */
 static sge_callback_result
 print_jatask_event([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type,
                    [[maybe_unused]] sge_event_action action, lListElem *event, [[maybe_unused]] void *client_data) {
@@ -158,19 +183,22 @@ print_jatask_event([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type,
    sge_dstring_init(&buffer_wrapper, buffer, sizeof(buffer));
 
    DPRINTF("%s\n", event_text(event, &buffer_wrapper));
-   if (ocs::tom::has<ET_type>(event)) {
-      uint32_t event_type = ocs::tom::get<ET_type>(event);
-      uint64_t timestamp = ocs::tom::get<ET_timestamp>(event);
+   // the event client delivers ET_Type elements, so the event is wrapped unchecked
+   const auto et = ocs::tom::ConstElement<ocs::tom::ET>::from_typed(event);
+   if (ocs::tom::has<ET_type>(et)) {
+      uint32_t event_type = ocs::tom::get<ET_type>(et);
+      uint64_t timestamp = ocs::tom::get<ET_timestamp>(et);
 
       if (event_type == sgeE_JATASK_MOD) {
-         lList *jat = ocs::tom::get<ET_new_version>(event);
-         u_long job_id  = ocs::tom::get<ET_intkey>(event);
-         u_long task_id = ocs::tom::get<ET_intkey2>(event);
+         // ET_new_version carries the objects of the event's type, JAT_Type for a task event
+         const auto jat = ocs::tom::ConstList<ocs::tom::JAT>::from_typed(ocs::tom::get<ET_new_version>(et));
+         u_long job_id  = ocs::tom::get<ET_intkey>(et);
+         u_long task_id = ocs::tom::get<ET_intkey2>(et);
          // we might get a JATASK_MOD event for a task that is already in transfer or running == already counted
          // then ignore the event
          uint32_t current_status = get_current_jatask_status(job_id, task_id);
          if (current_status != JRUNNING && current_status != JTRANSFERING) {
-            const lListElem *ep = lFirst(jat);
+            const auto ep = jat.front();
             u_long job_status = ocs::tom::get<JAT_status>(ep);
             int task_running = (job_status==JRUNNING || job_status==JTRANSFERING);
 
@@ -182,17 +210,18 @@ print_jatask_event([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type,
          }
       }
       if (event_type == sgeE_JOB_FINISH) {
-         u_long job_id = ocs::tom::get<ET_intkey>(event);
-         u_long task_id = ocs::tom::get<ET_intkey2>(event);
+         u_long job_id = ocs::tom::get<ET_intkey>(et);
+         u_long task_id = ocs::tom::get<ET_intkey2>(et);
          fprintf(stdout,"JOB_FINISH (%ld.%ld:ECL_TIME=" sge_u64 ")\n", job_id, task_id, timestamp);
          Global_jobs_running--;
          fflush(stdout);
       }
       if (event_type == sgeE_JOB_ADD) {
-         const lList *jat = ocs::tom::get<ET_new_version>(event);
-         u_long job_id  = ocs::tom::get<ET_intkey>(event);
-         u_long task_id = ocs::tom::get<ET_intkey2>(event);
-         const lListElem *ep = lFirst(jat);
+         // ET_new_version carries the objects of the event's type, JB_Type for a job event
+         const auto jobs = ocs::tom::ConstList<ocs::tom::JB>::from_typed(ocs::tom::get<ET_new_version>(et));
+         u_long job_id  = ocs::tom::get<ET_intkey>(et);
+         u_long task_id = ocs::tom::get<ET_intkey2>(et);
+         const auto ep = jobs.front();
          const char* job_project = ocs::tom::get<JB_project>(ep);
          if (job_project == nullptr) {
             job_project = "NONE";
@@ -202,8 +231,8 @@ print_jatask_event([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type,
          fflush(stdout);
       }
       if (event_type == sgeE_JOB_DEL) {
-         u_long job_id  = ocs::tom::get<ET_intkey>(event);
-         u_long task_id = ocs::tom::get<ET_intkey2>(event);
+         u_long job_id  = ocs::tom::get<ET_intkey>(et);
+         u_long task_id = ocs::tom::get<ET_intkey2>(et);
          fprintf(stdout,"JOB_DEL (%ld.%ld:ECL_TIME=" sge_u64 ")\n", job_id, task_id, timestamp);
          Global_jobs_registered--;
          fflush(stdout);
@@ -213,6 +242,17 @@ print_jatask_event([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type,
 }
 #endif
 
+/**
+ * @brief Mirror callback of the trigger mode: start the trigger scripts of a job or task end
+ *
+ * @param evc the event client
+ * @param type the object type of the event
+ * @param action the mirror action
+ * @param event the event (ET_Type)
+ * @param client_data unused
+ *
+ * @return SGE_EMA_OK
+ */
 static sge_callback_result
 analyze_jatask_event([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type,
                      [[maybe_unused]] sge_event_action action, lListElem *event, [[maybe_unused]] void *client_data) {
@@ -221,12 +261,15 @@ analyze_jatask_event([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type
 
    sge_dstring_init(&buffer_wrapper, buffer, sizeof(buffer));
 
-   if (ocs::tom::has<ET_type>(event)) {
-      uint32_t event_type = ocs::tom::get<ET_type>(event);
+   // the event client delivers ET_Type elements, so the event is wrapped unchecked
+   const auto et = ocs::tom::ConstElement<ocs::tom::ET>::from_typed(event);
+   if (ocs::tom::has<ET_type>(et)) {
+      uint32_t event_type = ocs::tom::get<ET_type>(et);
 
       if (event_type == sgeE_JATASK_MOD) {
-         const lList *jat = ocs::tom::get<ET_new_version>(event);
-         const lListElem *ep = lFirst(jat);
+         // ET_new_version carries the objects of the event's type, JAT_Type for a task event
+         const auto jat = ocs::tom::ConstList<ocs::tom::JAT>::from_typed(ocs::tom::get<ET_new_version>(et));
+         const auto ep = jat.front();
          u_long job_status = ocs::tom::get<JAT_status>(ep);
          int task_running = (job_status==JRUNNING || job_status==JTRANSFERING);
          if (task_running) {
@@ -241,11 +284,11 @@ analyze_jatask_event([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type
       }
 
       if (event_type == sgeE_JOB_DEL) {
-         qevent_trigger_scripts(QEVENT_JB_END, qevent_get_option_struct(), event);
+         qevent_trigger_scripts(QEVENT_JB_END, qevent_get_option_struct(), et);
       }
 
       if (event_type == sgeE_JATASK_DEL) {
-         qevent_trigger_scripts(QEVENT_JB_TASK_END,qevent_get_option_struct() , event);
+         qevent_trigger_scripts(QEVENT_JB_TASK_END, qevent_get_option_struct(), et);
       }
 
 
@@ -255,7 +298,15 @@ analyze_jatask_event([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type
 }
 
 
-static void qevent_trigger_scripts( int qevent_event, qevent_options *option_struct, lListElem *event) {
+/**
+ * @brief Start the trigger scripts registered for an event
+ *
+ * @param qevent_event the qevent event (QEVENT_JB_END, QEVENT_JB_TASK_END)
+ * @param option_struct the options holding the registered scripts
+ * @param event the event (ET_Type)
+ */
+static void qevent_trigger_scripts(const int qevent_event, qevent_options *option_struct,
+                                   const ocs::tom::ConstElement<ocs::tom::ET> event) {
    DENTER(TOP_LAYER);
 
    if (option_struct->trigger_option_count > 0) {
@@ -269,7 +320,15 @@ static void qevent_trigger_scripts( int qevent_event, qevent_options *option_str
    DRETURN_VOID;
 }
 
-static void qevent_start_trigger_script(int qevent_event, const char* script_file, lListElem *event ) {
+/**
+ * @brief Start one trigger script for an event, with the event name, job id and task id as arguments
+ *
+ * @param qevent_event the qevent event
+ * @param script_file the script
+ * @param event the event (ET_Type)
+ */
+static void qevent_start_trigger_script(const int qevent_event, const char* script_file,
+                                        const ocs::tom::ConstElement<ocs::tom::ET> event) {
    DENTER(TOP_LAYER);
 
    uint32_t jobid, taskid;
@@ -456,6 +515,14 @@ static void qevent_parse_command_line([[maybe_unused]] int argc, char **argv, qe
    DRETURN_VOID;
 }
 
+/**
+ * @brief qevent: subscribe to the event master and print events or start trigger scripts
+ *
+ * @param argc the number of arguments
+ * @param argv the arguments
+ *
+ * @return the exit status; the process ends with sge_exit()
+ */
 int main(int argc, char *argv[]) {
    DENTER_MAIN(TOP_LAYER, "qevent");
    qevent_options enabled_options;
@@ -535,9 +602,6 @@ int main(int argc, char *argv[]) {
    }
 
    if (enabled_options.trigger_option_count > 0) {
-      lCondition *where =nullptr;
-      lEnumeration *what = nullptr;
-
       sge_mirror_initialize(evc, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr);
       evc->ec_set_busy_handling(evc, EV_BUSY_UNTIL_ACK);
 
@@ -547,17 +611,17 @@ int main(int argc, char *argv[]) {
          switch((enabled_options.trigger_option_events)[i]) {
             case QEVENT_JB_END:
 
+               {
                   /* build mask for the job structure to contain only the needed elements */
-                  where = nullptr;
                   // CS-3031: all range lists that job_is_enrolled() reads, the
                   // mirror calls it for the DEL event of a task it does not hold
-                  what = lWhat("%T(%I %I %I %I %I %I %I %I %I)", JB_Type, JB_job_number, JB_ja_tasks,
-                                                                 JB_ja_structure, JB_ja_n_h_ids, JB_ja_u_h_ids,
-                                                                 JB_ja_s_h_ids, JB_ja_o_h_ids, JB_ja_a_h_ids,
-                                                                 JB_ja_template);
+                  const auto what = ocs::tom::what<JB_job_number, JB_ja_tasks, JB_ja_structure, JB_ja_n_h_ids,
+                                                   JB_ja_u_h_ids, JB_ja_s_h_ids, JB_ja_o_h_ids, JB_ja_a_h_ids,
+                                                   JB_ja_template>();
 
                   /* register for job events */
-                  sge_mirror_subscribe(evc, SGE_TYPE_JOB, analyze_jatask_event, nullptr, nullptr, where, what);
+                  sge_mirror_subscribe(evc, SGE_TYPE_JOB, analyze_jatask_event, nullptr, nullptr, nullptr,
+                                       what.get());
                   evc->ec_set_flush(evc, sgeE_JOB_DEL,true, 1);
 
                   /* the mirror interface registers more events, than we need,
@@ -568,27 +632,23 @@ int main(int argc, char *argv[]) {
                   evc->ec_unsubscribe(evc, sgeE_JOB_FINAL_USAGE);
                   evc->ec_unsubscribe(evc, sgeE_JOB_FINISH);
                /*   evc->ec_unsubscribe(evc, sgeE_JOB_ADD); */
-
-                  /* free the what and where mask */
-                  lFreeWhere(&where);
-                  lFreeWhat(&what);
+               }
                break;
             case QEVENT_JB_TASK_END:
 
+               {
                   /* build mask for the job structure to contain only the needed elements */
-                  where = nullptr;
-                  what = lWhat("%T(%I)", JAT_Type, JAT_status);
+                  const auto what = ocs::tom::what<JAT_status>();
                   /* register for JAT events */
-                  sge_mirror_subscribe(evc, SGE_TYPE_JATASK, analyze_jatask_event, nullptr, nullptr, where, what);
+                  sge_mirror_subscribe(evc, SGE_TYPE_JATASK, analyze_jatask_event, nullptr, nullptr, nullptr,
+                                       what.get());
                   evc->ec_set_flush(evc, sgeE_JATASK_DEL,true, 1);
 
                   /* the mirror interface registers more events, than we need,
                      thus we free the ones, we do not need */
                   evc->ec_unsubscribe(evc, sgeE_JATASK_ADD);
                   evc->ec_unsubscribe(evc, sgeE_JATASK_MOD);
-                  /* free the what and where mask */
-                  lFreeWhere(&where);
-                  lFreeWhat(&what);
+               }
                break;
          }
       }
@@ -626,38 +686,16 @@ static const char* qevent_get_event_name(int event) {
    return "unexpected event id";
 }
 
-
+/**
+ * @brief `-testsuite` mode: print job and task events and the event client state
+ *
+ * @param evc the event client
+ */
 static void qevent_testsuite_mode(sge_evc_class_t *evc) {
    DENTER(TOP_LAYER);
 
 #ifndef QEVENT_SHOW_ALL
    uint64_t timestamp;
-   lCondition *where =nullptr;
-   lEnumeration *what = nullptr;
-
-   // CS-3031: all range lists that job_is_enrolled() reads, the mirror
-   // calls it for the DEL event of a task it does not hold
-   const int job_nm[] = {
-         JB_job_number,
-         JB_host,
-         JB_category,
-         JB_project,
-         JB_ja_tasks,
-         JB_ja_structure,
-         JB_ja_n_h_ids,
-         JB_ja_u_h_ids,
-         JB_ja_s_h_ids,
-         JB_ja_o_h_ids,
-         JB_ja_a_h_ids,
-         JB_ja_template,
-         NoName
-      };
-
-   const int jat_nm[] = {
-      JAT_status,
-      JAT_task_number,
-      NoName
-   };
 #endif
 
    sge_mirror_initialize(evc, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr);
@@ -665,17 +703,17 @@ static void qevent_testsuite_mode(sge_evc_class_t *evc) {
 #ifdef QEVENT_SHOW_ALL
    sge_mirror_subscribe(evc, SGE_TYPE_ALL, print_event, nullptr, nullptr, nullptr, nullptr);
 #else /* QEVENT_SHOW_ALL */
-   where = nullptr;
-   what =  lIntVector2What(JB_Type, job_nm);
-   sge_mirror_subscribe(evc, SGE_TYPE_JOB, print_jatask_event, nullptr, nullptr, where, what);
-   lFreeWhere(&where);
-   lFreeWhat(&what);
+   {
+      // CS-3031: all range lists that job_is_enrolled() reads, the mirror
+      // calls it for the DEL event of a task it does not hold
+      const auto job_what = ocs::tom::what<JB_job_number, JB_host, JB_category, JB_project, JB_ja_tasks,
+                                           JB_ja_structure, JB_ja_n_h_ids, JB_ja_u_h_ids, JB_ja_s_h_ids,
+                                           JB_ja_o_h_ids, JB_ja_a_h_ids, JB_ja_template>();
+      sge_mirror_subscribe(evc, SGE_TYPE_JOB, print_jatask_event, nullptr, nullptr, nullptr, job_what.get());
 
-   where = nullptr;
-   what = lIntVector2What(JAT_Type, jat_nm);
-   sge_mirror_subscribe(evc, SGE_TYPE_JATASK, print_jatask_event, nullptr, nullptr, where, what);
-   lFreeWhere(&where);
-   lFreeWhat(&what);
+      const auto jat_what = ocs::tom::what<JAT_status, JAT_task_number>();
+      sge_mirror_subscribe(evc, SGE_TYPE_JATASK, print_jatask_event, nullptr, nullptr, nullptr, jat_what.get());
+   }
 
    // There are some JOB events we are not interested in.
    evc->ec_unsubscribe(evc, sgeE_JOB_USAGE);

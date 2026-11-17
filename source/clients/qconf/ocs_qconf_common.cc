@@ -412,10 +412,7 @@ qconf_names_host_list(const qconf_op &op, std::vector<std::string> &names, bool 
    DENTER(TOP_LAYER);
 
    std::string arg = op.args[0];
-   lList *hosts_out = nullptr;
-   /* parse_name_list_to_cull() creates the list with EH_Type, so it is taken over unchecked */
-   parse_name_list_to_cull("hosts to change", &hosts_out, EH_Type, EH_name, arg.data());
-   const auto hosts = ocs::tom::ListPtr<ocs::tom::EH>::from_typed(hosts_out);
+   const auto hosts = parse_name_list_to_cull<EH_name>("hosts to change", arg.data());
    for (const auto host_ep : *hosts) {
       if (sge_resolve_host(host_ep, EH_name) != CL_RETVAL_OK) {
          qconf_answer(alpp, ANSWER_QUALITY_ERROR, MSG_SGETEXT_CANTRESOLVEHOST_S,
@@ -435,10 +432,7 @@ qconf_names_userset_list(const qconf_op &op, std::vector<std::string> &names, [[
    DENTER(TOP_LAYER);
 
    std::string arg = op.args[0];
-   lList *usersets_out = nullptr;
-   /* parse_name_list_to_cull() creates the list with US_Type, so it is taken over unchecked */
-   parse_name_list_to_cull("usersets", &usersets_out, US_Type, US_name, arg.data());
-   const auto usersets = ocs::tom::ListPtr<ocs::tom::US>::from_typed(usersets_out);
+   const auto usersets = parse_name_list_to_cull<US_name>("usersets", arg.data());
    for (const auto us_ep : *usersets) {
       const char *name = ocs::tom::get<US_name>(us_ep);
       names.emplace_back(name != nullptr ? name : "");
