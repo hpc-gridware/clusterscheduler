@@ -37,6 +37,8 @@
 #include <cstdlib>
 #include <cstring>
 #include <cctype>
+#include <cerrno>
+#include <limits>
 
 #include "uti/ocs_Pattern.h"
 #include "uti/ocs_TerminationManager.h"
@@ -2024,13 +2026,18 @@ qstat_job_owner_where(const lList *user_list) {
    DRETURN(where);
 }
 
-/*
-** qstat_show_job
-** displays information about a given job
-** to be extended
-**
-** returns 0 on success, non-zero on failure
-*/
+/**
+ * @brief Display the detailed information of the jobs given with qstat -j.
+ *
+ * A job argument that starts with a digit is taken as a job id only when it
+ * is a complete number that fits into 32 bit (CS-2005); anything else is
+ * matched against the job names.
+ *
+ * @param jid_list  job ids or job name patterns (ST_Type)
+ * @param isXML     true for XML output
+ * @param qstat_env qstat environment
+ * @return 0 on success, non-zero on failure
+ */
 static int
 qstat_show_job(lList *jid_list, u_long32 isXML, qstat_env_t *qstat_env) {
    const lListElem *j_elem = 0;
@@ -2067,9 +2074,17 @@ qstat_show_job(lList *jid_list, u_long32 isXML, qstat_env_t *qstat_env) {
    for_each_ep(j_elem, jid_list) {
       const char *job_name = lGetString(j_elem, ST_name);
 
-      if (isdigit(job_name[0])) {
-         u_long32 jid = atol(lGetString(j_elem, ST_name));
-         newcp = lWhere("%T(%I==%u)", JB_Type, JB_job_number, jid);
+      if (job_name != nullptr && isdigit(static_cast<unsigned char>(job_name[0]))) {
+         // a job id must be a complete number in the uint32 range; atol() used
+         // to accept trailing garbage and wrap large values to another job (CS-2005)
+         char *end = nullptr;
+         errno = 0;
+         const unsigned long raw = strtoul(job_name, &end, 10);
+         if (errno == 0 && end != job_name && *end == '\0' && raw <= std::numeric_limits<uint32_t>::max()) {
+            newcp = lWhere("%T(%I==%u)", JB_Type, JB_job_number, static_cast<uint32_t>(raw));
+         } else {
+            newcp = lWhere("%T(%I p= %s)", JB_Type, JB_job_name, job_name);
+         }
       } else {
          newcp = lWhere("%T(%I p= %s)", JB_Type, JB_job_name, job_name);
       }
