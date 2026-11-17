@@ -63,7 +63,11 @@
 #include "sgeobj/sge_mailrec.h"
 #include "sgeobj/sge_var.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
 #include "sgeobj/tom/ocs_tom_MR.h"
+#include "sgeobj/tom/ocs_tom_PA.h"
+#include "sgeobj/tom/ocs_tom_PN.h"
 #include "sgeobj/tom/ocs_tom_RN.h"
 #include "sgeobj/tom/ocs_tom_ST.h"
 #include "sgeobj/tom/ocs_tom_VA.h"
@@ -131,7 +135,6 @@ lList *cull_parse_job_parameter(uint32_t uid, const char *username, const char *
    const char *cp;
    lListElem *ep;
    lList *answer = nullptr;
-   lList *path_alias = nullptr;
    char error_string[MAX_STRING_SIZE];
 
    if (pjob == nullptr || sync_options == nullptr) {
@@ -159,11 +162,16 @@ lList *cull_parse_job_parameter(uint32_t uid, const char *username, const char *
    /*
    ** path aliasing
    */
-   if (path_alias_list_initialize(&path_alias, &answer, cell_root, username, qualified_hostname) == -1) {
+   lList *path_alias_out = nullptr;
+   const int path_alias_ret = path_alias_list_initialize(&path_alias_out, &answer, cell_root, username,
+                                                         qualified_hostname);
+   /* path_alias_list_initialize() creates the list with PA_Type, so it is taken over unchecked */
+   const auto path_alias = ocs::tom::ListPtr<ocs::tom::PA>::from_typed(path_alias_out);
+   if (path_alias_ret == -1) {
       DRETURN(answer);
    }
 
-   job_initialize_env(*pjob, &answer, path_alias, unqualified_hostname, qualified_hostname);
+   job_initialize_env(*pjob, &answer, *path_alias, unqualified_hostname, qualified_hostname);
    if (answer) {
       DRETURN(answer);
    }
@@ -354,10 +362,9 @@ lList *cull_parse_job_parameter(uint32_t uid, const char *username, const char *
     */
    ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-t");
    if (ep != nullptr) {
-      const lList *range_list = ocs::tom::get<SPA_argval_lListT>(ep);
-      lList *new_range_list = lCopyList("task_id_range",  range_list);
-
-      ocs::tom::set<JB_ja_structure>(*pjob, new_range_list);
+      /* the -t argument is a range list (RN_Type), parsed by cull_parse_cmdline() or drmaa_set_bulk_range() */
+      const auto range_list = ocs::tom::ConstList<ocs::tom::RN>::from_typed(ocs::tom::get<SPA_argval_lListT>(ep));
+      ocs::tom::set<JB_ja_structure>(*pjob, range_list.clone("task_id_range"));
       lRemoveElem(cmdline, &ep);
    
       {
@@ -473,8 +480,9 @@ lList *cull_parse_job_parameter(uint32_t uid, const char *username, const char *
    }
 
    while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-jsv"))) {
-      const lList *list = ocs::tom::get<SPA_argval_lListT>(ep);
-      const char *file = ocs::tom::get<PN_path>(lFirst(list));
+      /* the -jsv argument is a path list (PN_Type) built by cull_parse_cmdline() */
+      const auto list = ocs::tom::ConstList<ocs::tom::PN>::from_typed(ocs::tom::get<SPA_argval_lListT>(ep));
+      const char *file = ocs::tom::get<PN_path>(list.front());
 
       jsv_list_add("jsv_switch", JSV_CONTEXT_CLIENT, nullptr, file);
       lRemoveElem(cmdline, &ep);
@@ -505,8 +513,7 @@ lList *cull_parse_job_parameter(uint32_t uid, const char *username, const char *
    /* -h */
    while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-h"))) {
       if (ocs::tom::get<SPA_argval_lIntT>(ep) & MINUS_H_TGT_USER) {
-         ocs::tom::set<JB_ja_u_h_ids>(*pjob, lCopyList("task_id_range",
-                  ocs::tom::get<JB_ja_n_h_ids>(*pjob)));
+         ocs::tom::set<JB_ja_u_h_ids>(*pjob, ocs::tom::get<JB_ja_n_h_ids>(*pjob).clone("task_id_range"));
          ocs::tom::set<JB_ja_n_h_ids>(*pjob, nullptr);
       }
       lRemoveElem(cmdline, &ep);
@@ -529,7 +536,8 @@ lList *cull_parse_job_parameter(uint32_t uid, const char *username, const char *
       lListElem *ep;
       lList *jref_list = nullptr;
       while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-hold_jid"))) {
-         for_each_rw_lv(sep, ocs::tom::get<SPA_argval_lListT>(ep)) {
+         /* the argument is a job name list (ST_Type) built by cull_parse_jid_hold_list() */
+         for (const auto sep : ocs::tom::ConstList<ocs::tom::ST>::from_typed(ocs::tom::get<SPA_argval_lListT>(ep))) {
             DPRINTF("-hold_jid %s\n", ocs::tom::get<ST_name>(sep));
             ocs::tom::emplace_back<JRE_job_name>(&jref_list, ocs::tom::get<ST_name>(sep));
          }
@@ -543,7 +551,8 @@ lList *cull_parse_job_parameter(uint32_t uid, const char *username, const char *
       lListElem *ep;
       lList *jref_list = nullptr;
       while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, "-hold_jid_ad"))) {
-         for_each_ep_lv(sep, ocs::tom::get<SPA_argval_lListT>(ep)) {
+         /* the argument is a job name list (ST_Type) built by cull_parse_jid_hold_list() */
+         for (const auto sep : ocs::tom::ConstList<ocs::tom::ST>::from_typed(ocs::tom::get<SPA_argval_lListT>(ep))) {
             DPRINTF("-hold_jid_ad %s\n", ocs::tom::get<ST_name>(sep));
             ocs::tom::emplace_back<JRE_job_name>(&jref_list, ocs::tom::get<ST_name>(sep));
          }
@@ -748,7 +757,7 @@ lList *cull_parse_job_parameter(uint32_t uid, const char *username, const char *
             DRETURN(answer);
          }
          
-         path = reroot_path(*pjob, tmp_str, &answer);
+         path = reroot_path(ocs::tom::ConstElement<ocs::tom::JB>(*pjob), tmp_str, &answer);
          
          if (path == nullptr) {
             DRETURN(answer);
@@ -758,15 +767,13 @@ lList *cull_parse_job_parameter(uint32_t uid, const char *username, const char *
       ocs::tom::set<JB_cwd>(*pjob, path);
       lRemoveElem(cmdline, &ep);
       
-      ocs::tom::set<JB_path_aliases>(*pjob, lCopyList("PathAliases", path_alias));
+      ocs::tom::set<JB_path_aliases>(*pjob, path_alias->clone("PathAliases"));
 
       if (is_cwd) {
          sge_free(&path);
       }
    }
 
-   lFreeList(&path_alias);
-   
    /*
    ** no switch - must be scriptfile
    ** only for qalter and qsub, not for qsh
@@ -787,16 +794,21 @@ lList *cull_parse_job_parameter(uint32_t uid, const char *username, const char *
    }
 
    {
-      lList *lp;
-      
-      lp = lCopyList("job args", ocs::tom::get<JB_job_args>(*pjob));
+      auto job_args = ocs::tom::get<JB_job_args>(*pjob).clone("job args");
 
       while ((ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, STR_PSEUDO_JOBARG))) {
-         ocs::tom::emplace_back<ST_name>(&lp, ocs::tom::get<SPA_argval_lStringT>(ep));
-         
+         // a null argument adds nothing, as the free emplace_back() did
+         if (const char *job_arg = ocs::tom::get<SPA_argval_lStringT>(ep); job_arg != nullptr) {
+            if (!job_args) {
+               // created as the free emplace_back() creates a missing list
+               job_args = ocs::tom::ListPtr<ocs::tom::ST>::create("");
+            }
+            job_args->emplace_back<ST_name>(job_arg);
+         }
+
          lRemoveElem(cmdline, &ep);
       }
-      ocs::tom::set<JB_job_args>(*pjob, lp);
+      ocs::tom::set<JB_job_args>(*pjob, std::move(job_args));
    }
 
    // if there are any elements left in cmdline it is unknown options

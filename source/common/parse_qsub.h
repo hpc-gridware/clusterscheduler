@@ -39,6 +39,9 @@
 
 #include "sgeobj/cull/sge_boundaries.h"
 #include "cull/cull.h"
+#include "tom/ocs_Element.h"
+#include "tom/ocs_Transitional.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
 
 /*
  * defines for SPA_occurrence
@@ -77,4 +80,5 @@
 
 lList *cull_parse_cmdline(uint32_t prog_number, const char **arg_list, char **envp, lList **pcmdline, uint32_t flags);
 
-char *reroot_path(lListElem* pjob, const char *path, lList **alpp);
+char *reroot_path(ocs::tom::ConstElement<ocs::tom::JB> pjob, const char *path, lList **alpp);
+OCS_TRANSITIONAL char *reroot_path(const lListElem *pjob, const char *path, lList **alpp);

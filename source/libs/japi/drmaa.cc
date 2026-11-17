@@ -108,10 +108,13 @@
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/config.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
 #include "sgeobj/tom/ocs_tom_ST.h"
 #include "sgeobj/tom/ocs_tom_CF.h"
 #include "sgeobj/tom/ocs_tom_MR.h"
 #include "sgeobj/tom/ocs_tom_NSV.h"
+#include "sgeobj/tom/ocs_tom_PN.h"
+#include "sgeobj/tom/ocs_tom_RN.h"
 #include "sgeobj/tom/ocs_tom_SPA.h"
 #include "sgeobj/tom/ocs_tom_VA.h"
 
@@ -128,12 +131,12 @@ static drmaa_attr_names_t *drmaa_fill_string_vector(const char *name[]);
 
 static int drmaa_job2sge_job(lListElem **jtp, const drmaa_job_template_t *drmaa_jt,
                              int is_bulk, int start, int end, int step, dstring *diag);
-static int drmaa_path2path_opt(const lList *attrs, lList **args,
+static int drmaa_path2path_opt(ocs::tom::ConstList<ocs::tom::VA> attrs, lList **args,
                                int is_bulk, const char *attribute_key,
                                const char *sw, int opt, dstring *diag,
                                bool bFileStaging);
-static int drmaa_path2wd_opt(const lList *attrs, lList **args, int is_bulk, dstring *diag);
-static int drmaa_path2sge_path(const lList *attrs, int is_bulk,
+static int drmaa_path2wd_opt(ocs::tom::ConstList<ocs::tom::VA> attrs, lList **args, int is_bulk, dstring *diag);
+static int drmaa_path2sge_path(ocs::tom::ConstList<ocs::tom::VA> attrs, int is_bulk,
                                const char *attribute_key, int do_wd,
                                const char **new_path, dstring *diag);
 static void prune_arg_list(lList *args);
@@ -142,8 +145,9 @@ static void merge_drmaa_options(lList **opts_all, lList **opts_default,
                                  lList **opts_defaults, lList **opts_scriptfile,
                                  lList **opts_job_cat, lList **opts_native,
                                  lList **opts_drmaa);
-static int opt_list_append_opts_from_drmaa_attr(lList **args, const lList *attrs,
-                                                const lList *vattrs, int is_bulk, dstring *diag);
+static int opt_list_append_opts_from_drmaa_attr(lList **args, ocs::tom::ConstList<ocs::tom::VA> attrs,
+                                                ocs::tom::ConstList<ocs::tom::NSV> vattrs, int is_bulk,
+                                                dstring *diag);
 static char *drmaa_time2sge_time(const char *drmaa_time, dstring *diag);
 static char *drmaa_get_home_directory(const char *username, lList **answer_list);
 static char *drmaa_expand_wd_path(const char *username, const char *path, lList **answer_list);
@@ -207,13 +211,30 @@ static pthread_mutex_t qtask_mutex = PTHREAD_MUTEX_INITIALIZER;
 static lList *task_config = nullptr;
 static int mode_verbose = 0;
 
+/**
+ * @brief Read the qtask files into the task configuration
+ *
+ * Reads the cluster global qtask file and the user's ~/.qtask file, merges
+ * the user entries into the cluster entries and replaces #task_config with
+ * the result. Task names containing '/' are skipped. A cluster entry whose
+ * name starts with '!' cannot be overridden by the user; the '!' is removed
+ * once the lists are merged.
+ *
+ * @param alpp used to return error messages
+ * @param ostream the function every error message is printed with as well
+ * @return 0 on success, -1 on an error
+ *
+ * @note Not MT safe: it replaces #task_config, the caller holds qtask_mutex.
+ */
 static int init_qtask_config(lList **alpp, print_func_t ostream) {
+   DENTER(TOP_LAYER);
+
    struct passwd *pwd;
    char fname[SGE_PATH_MAX + 1];
    char buffer[10000];
    FILE *fp;
-   lList *clp_cluster = nullptr, *clp_user = nullptr;
-   lListElem *nxt, *cep_dest, *cep, *next;
+   ocs::tom::ListPtr<ocs::tom::CF> clp_cluster;
+   ocs::tom::ListPtr<ocs::tom::CF> clp_user;
    const char *task_name;
    struct passwd pw_struct{};
    char *pw_buffer;
@@ -232,8 +253,12 @@ static int init_qtask_config(lList **alpp, print_func_t ostream) {
    }
    if (fp) {
       /* read in config file */
-      if (read_config_list(fp, &clp_cluster, alpp, CF_Type, CF_name, CF_value,
-                        CF_sublist, nullptr, RCL_NO_VALUE, buffer, sizeof(buffer)-1)) {
+      lList *cluster_out = nullptr;
+      const int read_ret = read_config_list(fp, &cluster_out, alpp, CF_Type, CF_name, CF_value,
+                                            CF_sublist, nullptr, RCL_NO_VALUE, buffer, sizeof(buffer)-1);
+      /* read_config_list() creates the list with CF_Type, so it is taken over unchecked */
+      clp_cluster = ocs::tom::ListPtr<ocs::tom::CF>::from_typed(cluster_out);
+      if (read_ret) {
          FCLOSE(fp);
          goto Error;
       }
@@ -241,12 +266,12 @@ static int init_qtask_config(lList **alpp, print_func_t ostream) {
    }
 
    /* skip tasknames containing '/' */
-   nxt = lFirstRW(clp_cluster);
-   while ((cep=nxt)) {
-      nxt = lNextRW(cep);
-      if (strrchr(ocs::tom::get<CF_name>(cep), '/'))
-         lRemoveElem(clp_cluster, &cep);
-
+   for (auto cep = clp_cluster->front(); cep;) {
+      const auto nxt = cep.next();
+      if (strrchr(ocs::tom::get<CF_name>(cep), '/')) {
+         clp_cluster->erase(cep);
+      }
+      cep = nxt;
    }
 
    pw_buffer_size = get_pw_buffer_size();
@@ -277,8 +302,12 @@ static int init_qtask_config(lList **alpp, print_func_t ostream) {
    }
    if (fp) {
       /* read in config file */
-      if (read_config_list(fp, &clp_user, alpp, CF_Type, CF_name, CF_value,
-                           CF_sublist, nullptr, RCL_NO_VALUE, buffer, sizeof(buffer)-1)) {
+      lList *user_out = nullptr;
+      const int read_ret = read_config_list(fp, &user_out, alpp, CF_Type, CF_name, CF_value,
+                                            CF_sublist, nullptr, RCL_NO_VALUE, buffer, sizeof(buffer)-1);
+      /* read_config_list() creates the list with CF_Type, so it is taken over unchecked */
+      clp_user = ocs::tom::ListPtr<ocs::tom::CF>::from_typed(user_out);
+      if (read_ret) {
          FCLOSE(fp);
          goto Error;
       }
@@ -286,18 +315,18 @@ static int init_qtask_config(lList **alpp, print_func_t ostream) {
    }
 
    /* skip tasknames containing '/' */
-   nxt = lFirstRW(clp_user);
-   while ((cep=nxt)) {
-      nxt = lNextRW(cep);
-      if (strrchr(ocs::tom::get<CF_name>(cep), '/'))
-         lRemoveElem(clp_user, &cep);
+   for (auto cep = clp_user->front(); cep;) {
+      const auto nxt = cep.next();
+      if (strrchr(ocs::tom::get<CF_name>(cep), '/')) {
+         clp_user->erase(cep);
+      }
+      cep = nxt;
    }
 
    /* merge contents of user list into cluster list */
-   next = lFirstRW(clp_user);
-   while ((cep=next)) {
+   for (auto cep = clp_user->front(); cep;) {
       char *ro_task_name;
-      next = lNextRW(cep);
+      const auto next = cep.next();
       task_name = ocs::tom::get<CF_name>(cep);
 
       /* build task name with leading '!' for search operation */
@@ -306,51 +335,57 @@ static int init_qtask_config(lList **alpp, print_func_t ostream) {
       ro_task_name[0] = '!';
       strcpy(&ro_task_name[1], task_name);
 
-      if ((cep_dest=ocs::tom::find_first_rw<CF_name>(clp_cluster, ro_task_name))) {
+      if (clp_cluster->find_first<CF_name>(ro_task_name)) {
          /* do not override cluster global task entry */
-         lRemoveElem(clp_user, &cep);
-      } else if ((cep_dest=ocs::tom::find_first_rw<CF_name>(clp_cluster, task_name))) {
+         clp_user->erase(cep);
+      } else if (const auto cep_dest = clp_cluster->find_first<CF_name>(task_name)) {
          /* override cluster global task entry */
          ocs::tom::set<CF_value>(cep_dest, ocs::tom::get<CF_value>(cep));
-         lRemoveElem(clp_user, &cep);
+         clp_user->erase(cep);
       } else {
          /* no entry in cluster global task list
             use entry from user task list */
-         lDechainElem(clp_user, cep);
-         if (!clp_cluster)
-            clp_cluster = lCreateList("cluster config", CF_Type);
-         lAppendElem(clp_cluster, cep);
+         auto user_entry = clp_user->extract(cep);
+         if (!clp_cluster) {
+            clp_cluster = ocs::tom::ListPtr<ocs::tom::CF>::create("cluster config");
+         }
+         clp_cluster->push_back(std::move(user_entry));
       }
 
       sge_free(&ro_task_name);
+      cep = next;
    }
-   lFreeList(&clp_user);
+   clp_user.reset();
 
 
    lFreeList(&task_config);
-   task_config = clp_cluster;
+   {
+      // task_config is a process-lifetime global, so it holds the list raw
+      const auto tasks = *clp_cluster;
+      task_config = clp_cluster.release();
 
-   /* remove leading '!' from command names */
-   for_each_rw(cep, clp_cluster) {
-      task_name = ocs::tom::get<CF_name>(cep);
-      if (task_name[0] == '!') {
-         char *t = sge_malloc(strlen(task_name));
-         SGE_ASSERT(t != nullptr);
-         strcpy(t, &task_name[1]);
-         ocs::tom::set<CF_name>(cep, t);
-         sge_free(&t);
+      /* remove leading '!' from command names */
+      for (const auto cep : tasks) {
+         task_name = ocs::tom::get<CF_name>(cep);
+         if (task_name[0] == '!') {
+            char *t = sge_malloc(strlen(task_name));
+            SGE_ASSERT(t != nullptr);
+            strcpy(t, &task_name[1]);
+            ocs::tom::set<CF_name>(cep, t);
+            sge_free(&t);
+         }
       }
    }
 
    sge_free(&pw_buffer);
-   return 0;
+   DRETURN(0);
 
 FCLOSE_ERROR:
 Error:
-   lFreeList(&clp_cluster);
-   lFreeList(&clp_user);
+   clp_cluster.reset();
+   clp_user.reset();
    sge_free(&pw_buffer);
-   return -1;
+   DRETURN(-1);
 }
 
 /**
@@ -662,7 +697,9 @@ int drmaa_delete_job_template(drmaa_job_template_t *jt, char *error_diagnosis, s
 /**
  * @brief Returns values in 'name' as string vector
  *
- * @return The string vector as it is used for DRMAA.
+ * @param name the nullptr terminated array of strings
+ *
+ * @return The string vector as it is used for DRMAA, nullptr on an error
  *
  * @note MT-NOTES: drmaa_fill_string_vector() is MT safe
  */
@@ -685,8 +722,8 @@ static drmaa_attr_names_t *drmaa_fill_string_vector(const char *name[]) {
       }
    }
 
-   /* initialize iterator */
-   vector->it.si.next_pos = lFirstRW(vector->it.si.strings);
+   /* initialize iterator; the strings were added as ST_Type elements above */
+   vector->it.si.next_pos = ocs::tom::List<ocs::tom::ST>::from_typed(vector->it.si.strings).front();
 
    DRETURN(vector);
 }
@@ -897,7 +934,7 @@ int drmaa_set_vector_attribute(drmaa_job_template_t *jt, const char *name,
                                const char *value[], char *error_diagnosis, size_t error_diag_len) {
    DENTER(TOP_LAYER);
 
-   lListElem *ep = nullptr;
+   ocs::tom::Element<ocs::tom::NSV> ep;
    dstring diag, *diagp = nullptr;
    int i;
    int ret = DRMAA_ERRNO_SUCCESS;
@@ -935,7 +972,7 @@ int drmaa_set_vector_attribute(drmaa_job_template_t *jt, const char *name,
    for (i=0; value[i] != nullptr; i++) {
       auto sep = ocs::tom::ElementPtr<ocs::tom::ST>::create();
       ocs::tom::set<ST_name>(sep, value[i]);
-      lAppendElem(*lp, std::move(sep));
+      lp->push_back(std::move(sep));
    }
    ocs::tom::set<NSV_strings>(ep, std::move(lp));
 
@@ -998,15 +1035,15 @@ int drmaa_get_vector_attribute(drmaa_job_template_t *jt, const char *name,
    }
 
    /* copy job template attributes into iterator */
-   iter->it.si.strings = lCopyList(nullptr, ocs::tom::get<NSV_strings>(nsv));
+   iter->it.si.strings = ocs::tom::get<NSV_strings>(nsv).clone().release();
    if (!iter->it.si.strings) {
       japi_delete_string_vector(iter);
       japi_standard_error(DRMAA_ERRNO_NO_MEMORY, diagp);
       DRETURN(DRMAA_ERRNO_NO_MEMORY);
    }
 
-   /* initialize iterator */
-   iter->it.si.next_pos = lFirstRW(iter->it.si.strings);
+   /* initialize iterator; the copy holds the ST_Type strings of NSV_strings */
+   iter->it.si.next_pos = ocs::tom::List<ocs::tom::ST>::from_typed(iter->it.si.strings).front();
 
    *values = iter;
 
@@ -1969,7 +2006,7 @@ int drmaa_version(unsigned int *major, unsigned int *minor,
  *
  * @note MT-NOTE: drmaa_path2wd_opt() is MT safe
  */
-static int drmaa_path2wd_opt(const lList *attrs, lList **args, int is_bulk,
+static int drmaa_path2wd_opt(const ocs::tom::ConstList<ocs::tom::VA> attrs, lList **args, const int is_bulk,
                              dstring *diag) {
    DENTER(TOP_LAYER);
 
@@ -1980,13 +2017,13 @@ static int drmaa_path2wd_opt(const lList *attrs, lList **args, int is_bulk,
                                            DRMAA_WD, 0, &new_path,
                                            diag)) == DRMAA_ERRNO_SUCCESS) {
       if (new_path != nullptr) {
-         lListElem *ep = ocs::tom::find_first_rw<VA_variable>(attrs, DRMAA_WD);
-         const char *value = ocs::tom::get<VA_value>(ep);
+         const auto wd_attr = attrs.find_first<VA_variable>(DRMAA_WD);
+         const char *value = ocs::tom::get<VA_value>(wd_attr);
 
          DPRINTF("-wd = \"%s\"\n", new_path);
 
-         ep = sge_add_arg(args, wd_OPT, lStringT, "-wd", value);
-         ocs::tom::set<SPA_argval_lStringT>(ep, new_path);
+         lListElem *ep_opt = sge_add_arg(args, wd_OPT, lStringT, "-wd", value);
+         ocs::tom::set<SPA_argval_lStringT>(ep_opt, new_path);
          sge_free(&new_path);
       }
       else {
@@ -2015,32 +2052,28 @@ static int drmaa_path2wd_opt(const lList *attrs, lList **args, int is_bulk,
  * @param sw The qsub switch to store this under
  * @param opt The type to store this under
  * @param diag diagnosis inforation
+ * @param bFileStaging whether the file is staged; an input path is then mandatory
  *
  * @return DRMAA error codes
  *
  * @note MT-NOTE: drmaa_path2path_opt() is MT safe
  */
-static int drmaa_path2path_opt(const lList *attrs, lList **args, int is_bulk,
+static int drmaa_path2path_opt(const ocs::tom::ConstList<ocs::tom::VA> attrs, lList **args, const int is_bulk,
                                const char *attribute_key, const char *sw,
-                               int opt, dstring *diag, bool bFileStaging) {
+                               const int opt, dstring *diag, const bool bFileStaging) {
    DENTER(TOP_LAYER);
 
    const char *new_path = nullptr;
    int drmaa_errno;
-   lList *path_list = lCreateList("path_list", PN_Type);
+   auto path_list = ocs::tom::ListPtr<ocs::tom::PN>::create("path_list");
    const char *unqualified_hostname = component_get_unqualified_hostname();
-
-   if (path_list == nullptr) {
-      japi_standard_error(DRMAA_ERRNO_NO_MEMORY, diag);
-      DRETURN(DRMAA_ERRNO_INTERNAL_ERROR);
-   }
 
    if ((drmaa_errno = drmaa_path2sge_path(attrs, is_bulk,
                                            attribute_key, 1, &new_path,
                                            diag)) == DRMAA_ERRNO_SUCCESS) {
       if (new_path) {
-         lListElem *ep = ocs::tom::find_first_rw<VA_variable>(attrs, attribute_key);
-         const char *value = ocs::tom::get<VA_value>(ep);
+         const auto path_attr = attrs.find_first<VA_variable>(attribute_key);
+         const char *value = ocs::tom::get<VA_value>(path_attr);
          char *cell = nullptr;
          char *path = nullptr;
 
@@ -2064,8 +2097,7 @@ static int drmaa_path2path_opt(const lList *attrs, lList **args, int is_bulk,
             DRETURN(DRMAA_ERRNO_INVALID_ARGUMENT);
          }
 
-         ep = lCreateElem(PN_Type);
-         lAppendElem(path_list, ep);
+         const auto ep = path_list->push_back(ocs::tom::ElementPtr<ocs::tom::PN>::create());
          DPRINTF("PN_path = \"%s\"\n", path);
          if( strlen( path )>0 ) {
             ocs::tom::set<PN_path>(ep, path);
@@ -2089,18 +2121,15 @@ static int drmaa_path2path_opt(const lList *attrs, lList **args, int is_bulk,
          ocs::tom::set<PN_file_staging>(ep, bFileStaging);
 
          DPRINTF("Adding args\n");
-         ep = sge_add_arg(args, opt, lListT, sw, value);
+         lListElem *ep_opt = sge_add_arg(args, opt, lListT, sw, value);
          DPRINTF("Setting List\n");
-         ocs::tom::set<SPA_argval_lListT>(ep, path_list);
-         path_list = nullptr; /* must not free it later */
+         ocs::tom::set<SPA_argval_lListT>(ep_opt, std::move(path_list));
          DPRINTF("Freeing Path\n");
          sge_free(&new_path);
       } else {
          drmaa_errno = DRMAA_ERRNO_SUCCESS;
       }
    }
-
-   lFreeList(&path_list);
 
    DRETURN(drmaa_errno);
 }
@@ -2127,14 +2156,12 @@ static int drmaa_path2path_opt(const lList *attrs, lList **args, int is_bulk,
  *
  * @note MT-NOTE: drmaa_path2sge_path() is MT safe
  */
-static int drmaa_path2sge_path(const lList *attrs, int is_bulk,
-                               const char *attribute_key, int do_wd,
+static int drmaa_path2sge_path(const ocs::tom::ConstList<ocs::tom::VA> attrs, const int is_bulk,
+                               const char *attribute_key, const int do_wd,
                                const char **new_path, dstring *diag) {
    DENTER(TOP_LAYER);
 
-   ocs::tom::ConstElement<ocs::tom::VA> ep = nullptr;
-
-   if ((ep=ocs::tom::find_first<VA_variable>(attrs, attribute_key ))) {
+   if (const auto ep = attrs.find_first<VA_variable>(attribute_key)) {
       dstring ds = DSTRING_INIT;
       const char *p = nullptr;
       const char *value = ocs::tom::get<VA_value>(ep);
@@ -2230,7 +2257,7 @@ static int drmaa_job2sge_job(lListElem **jtp, const drmaa_job_template_t *drmaa_
    DENTER(TOP_LAYER);
 
    lListElem *jt;
-   const lListElem *ep;
+   ocs::tom::ConstElement<ocs::tom::VA> ep;
    int drmaa_errno;
    lList *alp = nullptr;
    lList *opts_drmaa = nullptr;
@@ -2343,7 +2370,8 @@ static int drmaa_job2sge_job(lListElem **jtp, const drmaa_job_template_t *drmaa_
    lFreeList(&alp);
 
    if ((drmaa_errno = opt_list_append_opts_from_drmaa_attr(&opts_drmaa,
-                           drmaa_jt->strings, drmaa_jt->string_vectors,
+                           ocs::tom::ConstList<ocs::tom::VA>(drmaa_jt->strings),
+                           ocs::tom::ConstList<ocs::tom::NSV>(drmaa_jt->string_vectors),
                            is_bulk, diag)) != DRMAA_ERRNO_SUCCESS) {
       lFreeList(&opts_defaults);
       lFreeList(&opts_native);
@@ -2632,19 +2660,20 @@ static int drmaa_job2sge_job(lListElem **jtp, const drmaa_job_template_t *drmaa_
  *
  * @note MT-NOTE: opt_list_append_opts_from_drmaa_attr() is MT safe
  */
-static int opt_list_append_opts_from_drmaa_attr(lList **args, const lList *attrs,
-                                                const lList *vattrs, int is_bulk,
+static int opt_list_append_opts_from_drmaa_attr(lList **args, const ocs::tom::ConstList<ocs::tom::VA> attrs,
+                                                const ocs::tom::ConstList<ocs::tom::NSV> vattrs, const int is_bulk,
                                                 dstring *diag) {
    DENTER(TOP_LAYER);
 
    int drmaa_errno;
-   const lListElem *ep = nullptr;
+   ocs::tom::ConstElement<ocs::tom::VA> ep;
+   ocs::tom::ConstElement<ocs::tom::NSV> nsv;
    lListElem *ep_opt = nullptr;
    const char *scriptname = nullptr;
    /* Turn each DRMAA attribute into a list entry. */
 
-   DPRINTF("%d DRMAA attributes\n", lGetNumberOfElem(attrs));
-   DPRINTF("%d DRMAA vector attributes\n", lGetNumberOfElem(vattrs));
+   DPRINTF("%d DRMAA attributes\n", static_cast<int>(attrs.size()));
+   DPRINTF("%d DRMAA vector attributes\n", static_cast<int>(vattrs.size()));
 
    /* job name -- -N <name>*/
    if ((ep=ocs::tom::find_first<VA_variable>(attrs, DRMAA_JOB_NAME))) {
@@ -2726,12 +2755,12 @@ static int opt_list_append_opts_from_drmaa_attr(lList **args, const lList *attrs
    }
 
    /* job environment -- -v */
-   if ((ep=ocs::tom::find_first<NSV_name>(vattrs, DRMAA_V_ENV))) {
+   if ((nsv = ocs::tom::find_first<NSV_name>(vattrs, DRMAA_V_ENV))) {
       dstring env = DSTRING_INIT;
       char *variable = nullptr;
       char *value = nullptr;
-      ocs::tom::ConstList<ocs::tom::ST> olp = ocs::tom::get<NSV_strings>(ep);
-      lList *nlp = lCreateList("variable list", VA_Type);
+      ocs::tom::ConstList<ocs::tom::ST> olp = ocs::tom::get<NSV_strings>(nsv);
+      auto nlp = ocs::tom::ListPtr<ocs::tom::VA>::create("variable list");
       int first_time = 1;
 
       DPRINTF("processing %s\n", DRMAA_V_ENV);
@@ -2755,9 +2784,9 @@ static int opt_list_append_opts_from_drmaa_attr(lList **args, const lList *attrs
          }
 
          // a variable given twice keeps the last value (CS-3053)
-         ocs::tom::Element<ocs::tom::VA> nep = ocs::tom::find_first_rw<VA_variable>(nlp, variable);
+         auto nep = nlp->find_first<VA_variable>(variable);
          if (nep == nullptr) {
-            nep = ocs::tom::emplace_back<VA_variable>(&nlp, variable);
+            nep = nlp->emplace_back<VA_variable>(variable);
          }
 
          // the value is the rest of the entry, it may contain '=' itself
@@ -2771,15 +2800,15 @@ static int opt_list_append_opts_from_drmaa_attr(lList **args, const lList *attrs
 
       ep_opt = sge_add_arg(args, v_OPT, lListT, "-v", sge_dstring_get_string(&env));
       sge_dstring_free(&env);
-      ocs::tom::set<SPA_argval_lListT>(ep_opt, nlp);
+      ocs::tom::set<SPA_argval_lListT>(ep_opt, std::move(nlp));
    }
 
    /* email address -- -M */
-   if ((ep=ocs::tom::find_first<NSV_name>(vattrs, DRMAA_V_EMAIL))) {
+   if ((nsv = ocs::tom::find_first<NSV_name>(vattrs, DRMAA_V_EMAIL))) {
       dstring email = DSTRING_INIT;
       char *user = nullptr;
       char *host = nullptr;
-      ocs::tom::ConstList<ocs::tom::ST> olp = ocs::tom::get<NSV_strings>(ep);
+      ocs::tom::ConstList<ocs::tom::ST> olp = ocs::tom::get<NSV_strings>(nsv);
       auto nlp = ocs::tom::ListPtr<ocs::tom::MR>::create("mail list");
       ocs::tom::ConstElement<ocs::tom::MR> tmp = nullptr;
       int first_time = 1;
@@ -2887,8 +2916,8 @@ static int opt_list_append_opts_from_drmaa_attr(lList **args, const lList *attrs
       ocs::tom::set<SPA_argval_lStringT>(ep_opt, scriptname);
 
       /* job arguments -- last thing on the command line */
-      if ((ep=ocs::tom::find_first<NSV_name>(vattrs, DRMAA_V_ARGV))) {
-         ocs::tom::ConstList<ocs::tom::ST> lp = ocs::tom::get<NSV_strings>(ep);
+      if ((nsv = ocs::tom::find_first<NSV_name>(vattrs, DRMAA_V_ARGV))) {
+         ocs::tom::ConstList<ocs::tom::ST> lp = ocs::tom::get<NSV_strings>(nsv);
 
          DPRINTF("processing %s\n", DRMAA_V_ARGV);
 
@@ -3580,7 +3609,7 @@ static char *drmaa_get_home_directory(const char *username, lList **answer_list)
  * @param step the increment between consequetive task ids
  * @param alp errors
  *
- * @return error code: 1 = OK, 0 = Error
+ * @return 0 on success, 1 on an error
  *
  * @note MT-NOTE: drmaa_set_bulk_range() is MT safe
  */
@@ -3590,16 +3619,17 @@ static int drmaa_set_bulk_range(lList **opts, int start, int end, int step,
 
    char str[128];
    lListElem *ep_opt = nullptr;
-   lList *task_id_range_list = nullptr;
 
    snprintf(str, sizeof(str), "%d-%d:%d", start, end, step);
 
-   range_list_parse_from_string(&task_id_range_list, alp, str,
-                                   false, true, INF_NOT_ALLOWED);
+   lList *task_id_ranges_out = nullptr;
+   range_list_parse_from_string(&task_id_ranges_out, alp, str, false, true, INF_NOT_ALLOWED);
+   /* range_list_parse_from_string() creates the list with RN_Type, so it is taken over unchecked */
+   auto task_id_range_list = ocs::tom::ListPtr<ocs::tom::RN>::from_typed(task_id_ranges_out);
 
    if (task_id_range_list) {
       ep_opt = sge_add_arg(opts, t_OPT, lStringT, "-t", str);
-      ocs::tom::set<SPA_argval_lListT>(ep_opt, task_id_range_list);
+      ocs::tom::set<SPA_argval_lListT>(ep_opt, std::move(task_id_range_list));
 
       DRETURN(0);
    }
